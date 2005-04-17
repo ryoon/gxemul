@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.20 2005-04-17 00:15:24 debug Exp $
+ *  $Id: cpu_x86.c,v 1.21 2005-04-17 01:38:30 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -33,7 +33,7 @@
  *  TODO:  Pretty much everything.
  *
  *  See http://www.amd.com/us-en/Processors/DevelopWithAMD/
- *	0,,30_2252_875_7044,00.html for more info on AMD25964.
+ *	0,,30_2252_875_7044,00.html for more info on AMD64.
  */
 
 #include <stdio.h>
@@ -126,10 +126,8 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->cd.x86.mode = 32;
 	cpu->cd.x86.bits = 32;
 
-	if (strcasecmp(cpu_type_name, "amd64") == 0) {
-		/*  TODO: boot in 64-bit mode?  */
+	if (cpu->cd.x86.model.model_number == X86_MODEL_AMD64)
 		cpu->cd.x86.bits = 64;
-	}
 
 	cpu->cd.x86.r[R_SP] = 0xff0;
 
@@ -202,7 +200,7 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("cpu%i:  ds = 0x%04x  es = 0x%04x  ss = 0x%04x  flags "
 		    "= 0x%04x\n", x,
 		    (int)cpu->cd.x86.s[S_DS], (int)cpu->cd.x86.s[S_ES],
-		    (int)cpu->cd.x86.s[S_SS], (int)cpu->cd.x86.eflags);
+		    (int)cpu->cd.x86.s[S_SS], (int)cpu->cd.x86.rflags);
 	} else if (cpu->cd.x86.mode == 32) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
@@ -244,10 +242,20 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (int)cpu->cd.x86.s[S_CS], (int)cpu->cd.x86.s[S_DS],
 		    (int)cpu->cd.x86.s[S_ES], (int)cpu->cd.x86.s[S_FS],
 		    (int)cpu->cd.x86.s[S_GS], (int)cpu->cd.x86.s[S_SS]);
+	}
 
+	if (cpu->cd.x86.mode == 32) {
 		debug("cpu%i:  cr0 = 0x%08x  cr3 = 0x%08x  eflags = 0x%08x\n",
-		    x, (int)cpu->cd.x86.cr0,
-		    (int)cpu->cd.x86.cr3, (int)cpu->cd.x86.eflags);
+		    x, (int)cpu->cd.x86.cr[0],
+		    (int)cpu->cd.x86.cr[3], (int)cpu->cd.x86.rflags);
+	}
+
+	if (cpu->cd.x86.mode == 64) {
+		debug("cpu%i:  cr0 = 0x%016llx  cr3 = 0x%016llx\n", x,
+		    "0x%016llx\n", x, (long long)cpu->cd.x86.cr[0], (long long)
+		    cpu->cd.x86.cr[3]);
+		debug("cpu%i:  rflags = 0x%016llx\n", x,
+		    (long long)cpu->cd.x86.rflags);
 	}
 }
 
@@ -280,14 +288,23 @@ TODO: regmatch for 64, 32, 16, and 8 bit register names
 }
 
 
+/*  Macro which modifies the lower part of a value, or the entire value,
+    depending on 'mode':  */
+#define modify(old,new) (					\
+		mode==16? (					\
+			((old) & ~0xffff) + ((new) & 0xffff)	\
+		) : (new) )
+
 #define	HEXPRINT(x,n) { int j; for (j=0; j<(n); j++) debug("%02x",(x)[j]); }
 #define	HEXSPACES(i) { int j; for (j=0; j<10-(i);j++) debug("  "); debug(" "); }
+#define	SPACES	HEXSPACES(ilen)
 
 
-static uint32_t read_imm_common(unsigned char *instr, int *instr_lenp,
+static uint32_t read_imm_common(unsigned char **instrp, int *ilenp,
 	int len, int printflag)
 {
 	uint32_t imm;
+	unsigned char *instr = *instrp;
 
 	if (len == 8)
 		imm = instr[0];
@@ -300,26 +317,38 @@ static uint32_t read_imm_common(unsigned char *instr, int *instr_lenp,
 	if (printflag)
 		HEXPRINT(instr, len / 8);
 
-	(*instr_lenp) += (len / 8);
-
+	(*ilenp) += len/8;
+	(*instrp) += len/8;
 	return imm;
 }
 
 
-static uint32_t read_imm_and_print(unsigned char *instr, int *instr_lenp,
+static uint32_t read_imm_and_print(unsigned char **instrp, int *ilenp,
 	int mode)
 {
-	return read_imm_common(instr, instr_lenp, mode, 1);
+	return read_imm_common(instrp, ilenp, mode, 1);
 }
 
 
-static uint32_t read_imm(unsigned char *instr, uint64_t *newpc,
+static uint32_t read_imm(unsigned char **instrp, uint64_t *newpc,
 	int mode)
 {
 	int x = 0;
-	uint32_t r = read_imm_common(instr, &x, mode, 0);
+	uint32_t r = read_imm_common(instrp, &x, mode, 0);
 	(*newpc) += x;
 	return r;
+}
+
+
+static void print_csip(struct cpu *cpu)
+{
+	if (cpu->cd.x86.mode < 64)
+		fatal("0x%04x:", cpu->cd.x86.s[S_CS]);
+	switch (cpu->cd.x86.mode) {
+	case 16: fatal("0x%04x", (int)cpu->pc); break;
+	case 32: fatal("0x%08x", (int)cpu->pc); break;
+	case 64: fatal("0x%016llx", (long long)cpu->pc); break;
+	}
 }
 
 
@@ -338,7 +367,7 @@ static uint32_t read_imm(unsigned char *instr, uint64_t *newpc,
 int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	int instr_len = 0, op, rep = 0;
+	int ilen = 0, op, rep = 0;
 	uint64_t offset;
 	uint32_t imm=0, imm2, mode = cpu->cd.x86.mode;
 	char *symbol, *tmp = "ERROR", *mnem = "ERROR", *e = "e",
@@ -367,75 +396,76 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%08x:  ", (int)dumpaddr);
 	}
 
-	if (bintrans && !running) {
-		debug("(bintrans)");
-		goto disasm_ret;
-	}
-
 	/*
 	 *  Decode the instruction:
 	 */
 
 	/*  All instructions are at least 1 byte long:  */
 	HEXPRINT(instr,1);
-	instr_len=1;
+	ilen = 1;
 
 	/*  Any prefix?  */
-	while (instr[0] == 0x66 || instr[0] == 0xf3 || instr[0] == 0x26) {
-		switch (instr[0]) {
-		case 0x26:
-			prefix = "es";
-			break;
-		case 0x66:
+	for (;;) {
+		if (instr[0] == 0x66) {
 			if (mode == 32)
 				mode = 16;
 			else
 				mode = 32;
-			break;
-		case 0xf3:
+		} else if (instr[0] == 0xf3) {
 			rep = 1;
+		} else
 			break;
-		}
+
 		/*  TODO: lock, segment overrides etc  */
-		instr ++;
-		instr_len ++;
-		HEXPRINT(instr,1);
+		read_imm_and_print(&instr, &ilen, 8);
 	}
 
 	if (mode == 16)
 		e = "";
 
-	switch ((op = instr[0])) {
+	op = instr[0];
+	instr ++;
 
-	case 0x90:
-		HEXSPACES(instr_len);
-		switch (op) {
-		case 0x90:  debug("nop"); break;
-		}
-		break;
-
-	case 0xcd:
-		instr ++;
-		imm = instr[0];
-		HEXPRINT(instr,1);
-		instr_len += 1;
-		HEXSPACES(instr_len);
-		debug("int\t$0x%x", imm);
-		break;
-
-	default:
-		HEXSPACES(instr_len);
-		debug("UNIMPLEMENTED");
+	if (op == 0x90) {
+		SPACES; debug("nop");
+	} else if (op == 0xcd) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("int\t0x%x", imm);
+	} else if (op == 0xea) {
+		imm = read_imm_and_print(&instr, &ilen, mode);
+		imm2 = read_imm_and_print(&instr, &ilen, 16);
+		SPACES; debug("jmp\t0x%04x:", imm2);
+		if (mode == 16)
+			debug("0x%04x", imm);
+		else
+			debug("0x%08x", imm);
+	} else if (op == 0xeb) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		imm = dumpaddr + ilen + (signed char)imm;
+		SPACES; debug("jmp\t0x%x", imm);
+	} else if (op == 0xf8) {
+		SPACES; debug("clc");
+	} else if (op == 0xf9) {
+		SPACES; debug("stc");
+	} else if (op == 0xfa) {
+		SPACES; debug("cli");
+	} else if (op == 0xfb) {
+		SPACES; debug("sti");
+	} else if (op == 0xfc) {
+		SPACES; debug("cld");
+	} else if (op == 0xfd) {
+		SPACES; debug("std");
+	} else {
+		SPACES; debug("UNIMPLEMENTED 0x%02x", op);
 	}
 
-disasm_ret:
 	if (rep)
 		debug(" (rep)");
 	if (prefix != NULL)
 		debug(" (%s)", prefix);
 
 	debug("\n");
-	return instr_len;
+	return ilen;
 }
 
 
@@ -501,8 +531,6 @@ static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
 				databuf[5] = data >> 40;
 				databuf[6] = data >> 48;
 				databuf[7] = data >> 56;
-				if (len > 8)
-					fatal("x86_store: bad len?\n");
 			}
 		}
 	}
@@ -515,12 +543,17 @@ static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
 /*
  *  x86_interrupt():
  *
- *  NOTE/TODO: Only for 16-bit mode.
+ *  NOTE/TODO: Only for 16-bit mode so far.
  */
-static void x86_interrupt(struct cpu *cpu, int nr)
+static int x86_interrupt(struct cpu *cpu, int nr)
 {
 	uint64_t seg, ofs;
 	const int len = sizeof(uint16_t);
+
+	if (cpu->cd.x86.mode != 16) {
+		fatal("x86 'int' only implemented for 16-bit so far\n");
+		exit(1);
+	}
 
 	/*  Read the interrupt vector from beginning of RAM:  */
 	cpu->cd.x86.cursegment = 0;
@@ -529,7 +562,7 @@ static void x86_interrupt(struct cpu *cpu, int nr)
 
 	/*  Push flags, cs, and ip (pc):  */
 	cpu->cd.x86.cursegment = cpu->cd.x86.s[S_SS];
-	if (x86_store(cpu, cpu->cd.x86.r[R_SP] - len * 1, cpu->cd.x86.eflags,
+	if (x86_store(cpu, cpu->cd.x86.r[R_SP] - len * 1, cpu->cd.x86.rflags,
 	    len) != MEMORY_ACCESS_OK)
 		fatal("x86_interrupt(): TODO: how to handle this\n");
 	if (x86_store(cpu, cpu->cd.x86.r[R_SP] - len * 2, cpu->cd.x86.s[S_CS],
@@ -546,6 +579,8 @@ static void x86_interrupt(struct cpu *cpu, int nr)
 
 	cpu->cd.x86.s[S_CS] = seg;
 	cpu->pc = ofs;
+
+	return 1;
 }
 
 
@@ -555,14 +590,14 @@ static void x86_interrupt(struct cpu *cpu, int nr)
 static void x86_cmp(struct cpu *cpu, uint64_t a, uint64_t b)
 {
 	if (a == b)
-		cpu->cd.x86.eflags |= X86_EFLAGS_ZF;
+		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
 	else
-		cpu->cd.x86.eflags &= ~X86_EFLAGS_ZF;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
 
 	if (a < b)
-		cpu->cd.x86.eflags |= X86_EFLAGS_CF;
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 	else
-		cpu->cd.x86.eflags &= ~X86_EFLAGS_CF;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 
 	/*  TODO: other bits?  */
 }
@@ -576,17 +611,17 @@ static void x86_test(struct cpu *cpu, uint64_t a, uint64_t b)
 	a &= b;
 
 	if (a == 0)
-		cpu->cd.x86.eflags |= X86_EFLAGS_ZF;
+		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
 	else
-		cpu->cd.x86.eflags &= ~X86_EFLAGS_ZF;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
 
 	if ((int32_t)a < 0)
-		cpu->cd.x86.eflags |= X86_EFLAGS_SF;
+		cpu->cd.x86.rflags |= X86_FLAGS_SF;
 	else
-		cpu->cd.x86.eflags &= ~X86_EFLAGS_SF;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_SF;
 
-	cpu->cd.x86.eflags &= ~X86_EFLAGS_CF;
-	cpu->cd.x86.eflags &= ~X86_EFLAGS_OF;
+	cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+	cpu->cd.x86.rflags &= ~X86_FLAGS_OF;
 	/*  TODO: PF  */
 }
 
@@ -602,6 +637,7 @@ static void x86_test(struct cpu *cpu, uint64_t a, uint64_t b)
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int i, r, rep = 0, op, len, diff, mode = cpu->cd.x86.mode;
+	int mode_67 = mode;
 	uint32_t imm, imm2, value;
 	unsigned char buf[32];
 	unsigned char *instr = buf;
@@ -644,51 +680,57 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	cpu->cd.x86.cursegment = cpu->cd.x86.s[S_DS];
 
 	/*  Any prefix?  */
-	while (instr[0] == 0x66 || instr[0] == 0x26 || instr[0] == 0x36
-	    || instr[0] == 0x2e || instr[0] == 0x3e || instr[0] == 0xf3) {
-		if (instr[0] == 0x26)
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[S_ES];
-		if (instr[0] == 0x2e)
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[S_CS];
-		if (instr[0] == 0x36)
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[S_SS];
-		if (instr[0] == 0x3e)
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[S_DS];
+	for (;;) {
 		if (instr[0] == 0x66) {
 			if (mode == 16)
 				mode = 32;
 			else
 				mode = 16;
-		}
-		if (instr[0] == 0xf3)
+		} else if (instr[0] == 0x67) {
+			if (mode_67 == 16)
+				mode_67 = 32;
+			else
+				mode_67 = 16;
+		} else if (instr[0] == 0xf3)
 			rep = 1;
+		else
+			break;
 		/*  TODO: repnz, lock etc  */
 		instr ++;
 		newpc ++;
 	}
 
-	switch ((op = instr[0])) {
+	op = instr[0];
+	instr ++;
 
-	case 0x90:
-		/*  NOP  */
-		break;
-
-	case 0xcd:
-		instr ++;
-		imm = read_imm(instr, &newpc, 8);
-		if (mode == 16) {
-			cpu->pc = newpc;
-			x86_interrupt(cpu, imm);
-			return 1;
-		} else {
-			fatal("x86 'int' only implemented for 16-bit so far\n");
-			exit(1);
-		}
-		break;
-
-	default:
+	if (op == 0x90) {		/*  NOP  */
+	} else if (op == 0xcd) {	/*  INT  */
+		imm = read_imm(&instr, &newpc, 8);
+		cpu->pc = newpc;
+		return x86_interrupt(cpu, imm);
+	} else if (op == 0xea) {	/*  JMP seg:ofs  */
+		imm = read_imm(&instr, &newpc, mode);
+		imm2 = read_imm(&instr, &newpc, 16);
+		cpu->cd.x86.s[S_CS] = imm2;
+		newpc = modify(cpu->pc, imm);
+	} else if (op == 0xeb) {	/*  JMP short  */
+		imm = read_imm(&instr, &newpc, 8);
+		newpc = modify(newpc, newpc + (signed char)imm);
+	} else if (op == 0xf8) {	/*  CLC  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+	} else if (op == 0xf9) {	/*  STC  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+	} else if (op == 0xfa) {	/*  CLI  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
+	} else if (op == 0xfb) {	/*  STI  */
+		cpu->cd.x86.rflags |= X86_FLAGS_IF;
+	} else if (op == 0xfc) {	/*  CLD  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_DF;
+	} else if (op == 0xfd) {	/*  STD  */
+		cpu->cd.x86.rflags |= X86_FLAGS_DF;
+	} else {
 		fatal("x86_cpu_run_instr(): unimplemented opcode 0x%02x"
-		    " at pc=0x%016llx\n", instr[0], (long long)cpu->pc);
+		    " at ", op); print_csip(cpu); fatal("\n");
 		cpu->running = 0;
 		return 0;
 	}

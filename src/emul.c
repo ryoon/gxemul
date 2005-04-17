@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.182 2005-04-17 00:15:24 debug Exp $
+ *  $Id: emul.c,v 1.183 2005-04-17 01:38:30 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -262,7 +262,9 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 		}
 
 		debug("loading PC bootsector from disk %i\n", boot_disk_id);
-
+		if (bootblock_buf[510] != 0x55 || bootblock_buf[511] != 0xaa)
+			debug("WARNING! The 0x55,0xAA marker is missing! "
+			    "Booting anyway.\n");
 		store_buf(cpu, 0x7c00, (char *)bootblock_buf, 512);
 		free(bootblock_buf);
 		break;

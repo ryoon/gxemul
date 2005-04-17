@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.4 2005-04-17 00:15:26 debug Exp $
+ *  $Id: cpu_x86.h,v 1.5 2005-04-17 01:38:32 debug Exp $
  */
 
 #include "misc.h"
@@ -61,6 +61,7 @@ struct cpu_family;
 #define	S_GS		4
 #define	S_SS		5
 
+#define	N_X86_CREGS		8
 
 #define	X86_MODEL_8086		1
 #define	X86_MODEL_80386		2
@@ -89,28 +90,27 @@ struct x86_cpu {
 
 	uint16_t	cursegment;	/*  for 16-bit memory_rw  */
 
-	uint32_t	eflags;
-	uint32_t	cr0;
-	uint32_t	cr3;
+	uint64_t	rflags;
+	uint64_t	cr[N_X86_CREGS];
 
 	uint16_t	s[N_X86_SEGMENTS];
 	uint64_t	r[N_X86_REGS];
 };
 
 
-#define	X86_EFLAGS_CF	(1)		/*  Carry Flag  */
-#define	X86_EFLAGS_PF	(4)		/*  Parity Flag  */
-#define	X86_EFLAGS_AF	(16)		/*  Adjust/AuxilaryCarry Flag  */
-#define	X86_EFLAGS_ZF	(64)		/*  Zero Flag  */
-#define	X86_EFLAGS_SF	(128)		/*  Sign Flag  */
-#define	X86_EFLAGS_TF	(256)		/*  Trap Flag  */
-#define	X86_EFLAGS_IF	(512)		/*  Interrupt Enable Flag  */
-#define	X86_EFLAGS_DF	(1024)		/*  Direction Flag  */
-#define	X86_EFLAGS_OF	(2048)		/*  Overflow Flag  */
+#define	X86_FLAGS_CF	(1)		/*  Carry Flag  */
+#define	X86_FLAGS_PF	(4)		/*  Parity Flag  */
+#define	X86_FLAGS_AF	(16)		/*  Adjust/AuxilaryCarry Flag  */
+#define	X86_FLAGS_ZF	(64)		/*  Zero Flag  */
+#define	X86_FLAGS_SF	(128)		/*  Sign Flag  */
+#define	X86_FLAGS_TF	(256)		/*  Trap Flag  */
+#define	X86_FLAGS_IF	(512)		/*  Interrupt Enable Flag  */
+#define	X86_FLAGS_DF	(1024)		/*  Direction Flag  */
+#define	X86_FLAGS_OF	(2048)		/*  Overflow Flag  */
 /*  Bits 12 and 13 are I/O Privilege Level  */
-#define	X86_EFLAGS_NT	(1<<14)		/*  Nested Task Flag  */
-#define	X86_EFLAGS_RF	(1<<16)		/*  Resume Flag  */
-#define	X86_EFLAGS_VM	(1<<17)		/*  VM86 Flag  */
+#define	X86_FLAGS_NT	(1<<14)		/*  Nested Task Flag  */
+#define	X86_FLAGS_RF	(1<<16)		/*  Resume Flag  */
+#define	X86_FLAGS_VM	(1<<17)		/*  VM86 Flag  */
 
 
 /*  cpu_x86.c:  */

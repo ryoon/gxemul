@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.122 2005-04-15 21:56:24 debug Exp $
+#  $Id: configure,v 1.123 2005-04-17 01:42:21 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -54,13 +54,13 @@
 #
 ###############################################################################
 
-ENABLEALPHA=YES
-ENABLEHPPA=YES
+ENABLEALPHA=NO
+ENABLEHPPA=NO
 ENABLEMIPS=YES
 ENABLEPPC=YES
-ENABLESPARC=YES
+ENABLESPARC=NO
 ENABLEURISC=YES
-ENABLEX86=YES
+ENABLEX86=NO
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -73,20 +73,20 @@ if [ z"$*" != z ]; then
 			NOBINTRANS=YES
 		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
-		else if [ z$a = z--disable-alpha ]; then
-			ENABLEALPHA=NO
-		else if [ z$a = z--disable-hppa ]; then
-			ENABLEHPPA=NO
+		else if [ z$a = z--enable-alpha ]; then
+			ENABLEALPHA=YES
+		else if [ z$a = z--enable-hppa ]; then
+			ENABLEHPPA=YES
 		else if [ z$a = z--disable-mips ]; then
 			ENABLEMIPS=NO
 		else if [ z$a = z--disable-ppc ]; then
 			ENABLEPPC=NO
-		else if [ z$a = z--disable-sparc ]; then
-			ENABLESPARC=NO
+		else if [ z$a = z--enable-sparc ]; then
+			ENABLESPARC=YES
 		else if [ z$a = z--disable-urisc ]; then
 			ENABLEURISC=NO
-		else if [ z$a = z--disable-x86 ]; then
-			ENABLEX86=NO
+		else if [ z$a = z--enable-x86 ]; then
+			ENABLEX86=YES
 		else if [ z$a = z--enable-delays ]; then
 			DELAYS=YES
 		else if [ z$a = z--enable-caches ]; then
@@ -105,14 +105,15 @@ if [ z"$*" != z ]; then
 			echo "  --enable-delays     enable instruction" \
 			    "latency/delay emulation"
 			echo "  --disable-x         don't include X11 support"
-			printf "\nCPU selection options:\n"
-			echo "  --disable-alpha     disable Alpha CPU emulation"
-			echo "  --disable-hppa      disable HPPA CPU emulation"
+			printf "\nCPU selection options: (most of these"
+			printf " are experimental)\n"
+			echo "  --enable-alpha      enable Alpha CPU emulation"
+			echo "  --enable-hppa       enable HPPA CPU emulation"
 			echo "  --disable-mips      disable MIPS CPU emulation"
 			echo "  --disable-ppc       disable PPC CPU emulation"
-			echo "  --disable-sparc     disable SPARC CPU emulation"
+			echo "  --enable-sparc      enable SPARC CPU emulation"
 			echo "  --disable-urisc     disable URISC CPU emulation"
-			echo "  --disable-x86       disable x86 CPU emulation"
+			echo "  --enable-x86        enable x86 CPU emulation"
 			printf "\nMIPS-specific options:\n"
 			echo "  --enable-mips16     enable MIPS16 instruction" \
 			    "support (experimental)"
@@ -166,38 +167,24 @@ if [ z$MIPS16 = zYES ]; then
 fi
 if [ z$ENABLEALPHA = zYES ]; then
 	printf "#define ENABLE_ALPHA\n" >> config.h
-else
-	echo 'Disabling Alpha emulation support.'
 fi
 if [ z$ENABLEHPPA = zYES ]; then
 	printf "#define ENABLE_HPPA\n" >> config.h
-else
-	echo 'Disabling HPPA emulation support.'
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
-else
-	echo 'Disabling MIPS emulation support.'
 fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
-else
-	echo 'Disabling PPC emulation support.'
 fi
 if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h
-else
-	echo 'Disabling SPARC emulation support.'
 fi
 if [ z$ENABLEURISC = zYES ]; then
 	printf "#define ENABLE_URISC\n" >> config.h
-else
-	echo 'Disabling URISC emulation support.'
 fi
 if [ z$ENABLEX86 = zYES ]; then
 	printf "#define ENABLE_X86\n" >> config.h
-else
-	echo 'Disabling x86 emulation support.'
 fi
 
 

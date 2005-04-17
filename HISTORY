@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.699 2005-04-17 00:15:22 debug Exp $
+$Id: HISTORY,v 1.700 2005-04-17 18:48:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1853,3 +1853,6 @@ Changelog for GXemul:
 		support for software interrupts in 16-bit mode.)
 20050417	Ripping out most of the x86 instruction decoding stuff, trying
 		to rewrite it in a cleaner way.
+		Disabling some of the least working CPU families in the
+		configure script (sparc, x86, alpha, hppa), so that they are
+		not enabled by default.

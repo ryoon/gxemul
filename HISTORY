@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.698 2005-04-16 02:02:26 debug Exp $
+$Id: HISTORY,v 1.699 2005-04-17 00:15:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1851,3 +1851,5 @@ Changelog for GXemul:
 		and src/include/, respectively.
 20050416	Continuing on the x86 stuff. (Adding pc_bios.c and some simple
 		support for software interrupts in 16-bit mode.)
+20050417	Ripping out most of the x86 instruction decoding stuff, trying
+		to rewrite it in a cleaner way.

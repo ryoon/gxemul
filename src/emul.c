@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.181 2005-04-15 21:39:59 debug Exp $
+ *  $Id: emul.c,v 1.182 2005-04-17 00:15:24 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -41,7 +41,6 @@
 #include "arcbios.h"
 #include "bintrans.h"
 #include "cpu.h"
-#include "cpu_mips.h"
 #include "emul.h"
 #include "console.h"
 #include "debugger.h"
@@ -261,6 +260,8 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 			printf("Couldn't read the disk image. Aborting.\n");
 			exit(1);
 		}
+
+		debug("loading PC bootsector from disk %i\n", boot_disk_id);
 
 		store_buf(cpu, 0x7c00, (char *)bootblock_buf, 512);
 		free(bootblock_buf);
@@ -638,8 +639,14 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			break;
 
 		case ARCH_X86:
-			/*  TODO: amd64  */
-			cpu->pc &= 0xffffffffULL;
+			/*
+			 *  NOTE: The toc field is used to indicate an ELF64
+			 *  load, on AMD64!
+			 */
+			if (toc != 0) {
+				cpu->cd.x86.mode = 64;
+			} else
+				cpu->pc &= 0xffffffffULL;
 			break;
 
 		default:
@@ -756,7 +763,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		break;
 	case ARCH_X86:
 		if (cpu->cd.x86.mode == 16)
-			debug("0x%04x:0x%04x", cpu->cd.x86.cs, (int)cpu->pc);
+			debug("0x%04x:0x%04x", cpu->cd.x86.s[S_CS],
+			    (int)cpu->pc);
 		else if (cpu->cd.x86.mode == 32)
 			debug("0x%08x", (int)cpu->pc);
 		else

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.419 2005-04-16 02:02:27 debug Exp $
+ *  $Id: machine.c,v 1.420 2005-04-17 00:15:24 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4821,7 +4821,7 @@ void machine_default_cputype(struct machine *m)
 	/*  x86:  */
 	case MACHINE_BAREX86:
 	case MACHINE_X86:
-		m->cpu_name = strdup("386");
+		m->cpu_name = strdup("PENTIUM");
 		break;
 	}
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.3 2005-04-15 21:39:57 debug Exp $
+ *  $Id: cpu_x86.h,v 1.4 2005-04-17 00:15:26 debug Exp $
  */
 
 #include "misc.h"
@@ -36,31 +36,65 @@
 
 struct cpu_family;
 
+#define	N_X86_REGS		16
+
+#define	x86_reg_names		{			\
+	"ax", "cx", "dx", "bx", "sp", "bp", "si", "di",	\
+	"08", "09", "10", "11", "12", "13", "14", "15" }
+
+#define	R_AX		0
+#define	R_CX		1
+#define	R_DX		2
+#define	R_BX		3
+#define	R_SP		4
+#define	R_BP		5
+#define	R_SI		6
+#define	R_DI		7
+
+#define	N_X86_SEGMENTS		8
+/*  (All of these 8 are not actually used.)  */
+
+#define	S_CS		0
+#define	S_DS		1
+#define	S_ES		2
+#define	S_FS		3
+#define	S_GS		4
+#define	S_SS		5
+
+
+#define	X86_MODEL_8086		1
+#define	X86_MODEL_80386		2
+#define	X86_MODEL_PENTIUM	3
+#define	X86_MODEL_AMD64		4
+
+struct x86_model {
+	int		model_number;
+	char		*name;
+};
+
+#define	x86_models {							\
+	{ X86_MODEL_8086, "8086" },					\
+	{ X86_MODEL_80386, "80386" },					\
+	{ X86_MODEL_PENTIUM, "PENTIUM" },				\
+	{ X86_MODEL_AMD64, "AMD64" },					\
+	{ 0, NULL }							\
+	}
+
+
 struct x86_cpu {
-	int		bits;		/*  32 or 64  */
+	struct x86_model model;
+
+	int		bits;		/*  16, 32, or 64  */
 	int		mode;		/*  16, 32, or 64  */
 
 	uint16_t	cursegment;	/*  for 16-bit memory_rw  */
 
-	uint16_t	cs;
-	uint16_t	ds;
-	uint16_t	es;
-	uint16_t	fs;
-	uint16_t	gs;
-	uint16_t	ss;
-
-	/*  TODO: change into 64-bit registers for amd64  */
-	uint32_t	eax;
-	uint32_t	ebx;
-	uint32_t	ecx;
-	uint32_t	edx;
-	uint32_t	esi;
-	uint32_t	edi;
-	uint32_t	ebp;
-	uint32_t	esp;
-
 	uint32_t	eflags;
+	uint32_t	cr0;
 	uint32_t	cr3;
+
+	uint16_t	s[N_X86_SEGMENTS];
+	uint64_t	r[N_X86_REGS];
 };
 
 
@@ -77,6 +111,7 @@ struct x86_cpu {
 #define	X86_EFLAGS_NT	(1<<14)		/*  Nested Task Flag  */
 #define	X86_EFLAGS_RF	(1<<16)		/*  Resume Flag  */
 #define	X86_EFLAGS_VM	(1<<17)		/*  VM86 Flag  */
+
 
 /*  cpu_x86.c:  */
 int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,

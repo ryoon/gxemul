@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.100 2005-04-15 21:39:59 debug Exp $
+ *  $Id: debugger.c,v 1.101 2005-04-18 21:41:19 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -54,6 +54,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "bintrans.h"
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
@@ -380,6 +381,8 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
 {
+	int i;
+
 	if (*cmd_line == '\0')
 		goto printstate;
 
@@ -393,9 +396,11 @@ static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
 		cmd_line++;
 
 	/*  Note: len 3 and 4, to include the NUL char.  */
-	if (strncasecmp(cmd_line, "on", 3) == 0)
+	if (strncasecmp(cmd_line, "on", 3) == 0) {
 		m->bintrans_enable = 1;
-	else if (strncasecmp(cmd_line, "off", 4) == 0)
+		for (i=0; i<m->ncpus; i++)
+			bintrans_restart(m->cpus[i]);
+	} else if (strncasecmp(cmd_line, "off", 4) == 0)
 		m->bintrans_enable = 0;
 	else
 		printf("syntax: bintrans [on|off]\n");

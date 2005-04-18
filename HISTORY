@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.700 2005-04-17 18:48:17 debug Exp $
+$Id: HISTORY,v 1.701 2005-04-18 21:41:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1856,3 +1856,6 @@ Changelog for GXemul:
 		Disabling some of the least working CPU families in the
 		configure script (sparc, x86, alpha, hppa), so that they are
 		not enabled by default.
+20050418	Trying to fix the bug which caused problems when turning on
+		and off bintrans interactively, by flushing the bintrans cache
+		whenever bintrans is manually (re)enabled.

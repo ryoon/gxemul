@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.15 2005-04-12 14:14:06 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.16 2005-04-18 21:41:19 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -684,8 +684,11 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 	for (a=0; a<0x400; a++) {
 		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 		if (tbl1 != cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
-			for (b=0; b<0x400; b++)
+			for (b=0; b<0x400; b++) {
+				tbl1->haddr_entry[b] = NULL;
+				tbl1->paddr_entry[b] = 0;
 				tbl1->bintrans_chunks[b] = NULL;
+			}
 		}
 	}
 }

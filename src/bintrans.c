@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.163 2005-04-13 03:45:34 debug Exp $
+ *  $Id: bintrans.c,v 1.164 2005-04-18 21:41:19 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -278,6 +278,26 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 
 
 /*
+ *  bintrans_restart():
+ *
+ *  Starts over by throwing away the bintrans cache contents.
+ */
+void bintrans_restart(struct cpu *cpu)
+{
+	int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
+
+	for (i=0; i<n; i++)
+		cpu->mem->translation_page_entry_array[i] = NULL;
+
+	cpu->mem->translation_code_chunk_space_head = 0;
+	cpu->mem->n_quick_jumps = 0;
+
+	/*  debug("bintrans: Starting over!\n");  */
+	clear_all_chunks_from_all_tables(cpu);
+}
+
+
+/*
  *  enter_chunks_into_tables():
  */
 static void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr,
@@ -380,14 +400,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 	 */
 	if (cpu->mem->translation_code_chunk_space_head >=
 	    cpu->machine->bintrans_size) {
-		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
-		for (i=0; i<n; i++)
-			cpu->mem->translation_page_entry_array[i] = NULL;
-		cpu->mem->translation_code_chunk_space_head = 0;
-		cpu->mem->n_quick_jumps = 0;
+		bintrans_restart(cpu);
 		tep = NULL;
-		/*  debug("bintrans: Starting over!\n");  */
-		clear_all_chunks_from_all_tables(cpu);
 	}
 
 

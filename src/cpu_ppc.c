@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.61 2005-04-01 16:44:36 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.62 2005-04-18 23:00:56 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1038,12 +1038,18 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_SYNC:
 			debug("%s", power? "dcs" : "sync");
 			break;
+		case PPC_31_LSWI:
 		case PPC_31_STSWI:
-			rs = (iword >> 21) & 31;
+			rs = (iword >> 21) & 31;	/*  lwsi uses rt  */
 			ra = (iword >> 16) & 31;
 			nb = (iword >> 11) & 31;
-			debug("%s\tr%i,r%i,%i", power? "stsi" : "stswi",
-			    rs, ra, nb);
+			switch (xo) {
+			case PPC_31_LSWI:
+				mnem = power? "lsi" : "lswi"; break;
+			case PPC_31_STSWI:
+				mnem = power? "stsi" : "stswi"; break;
+			}
+			debug("%s\tr%i,r%i,%i", mnem, rs, ra, nb);
 			if (running)
 				goto disasm_ret_nonewline;
 			break;
@@ -2461,6 +2467,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  TODO: actually sync  */
 			break;
 
+		case PPC_31_LSWI:
 		case PPC_31_STSWI:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -2472,6 +2479,10 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			else
 				addr = cpu->cd.ppc.gpr[ra];
 
+			load = 0;
+			if (xo == PPC_31_LSWI)
+				load = 1;
+
 			if (cpu->machine->instruction_trace) {
 				if (cpu->cd.ppc.bits == 32)
 					debug("\t[0x%08llx", (long long)addr);
@@ -2480,14 +2491,30 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 			i = 24;
-			r = 0;	/*  There can be multiple errors  */
-			while (nb > 0) {
-				tmp_data[0] = cpu->cd.ppc.gpr[rs] >> i;
-				if (cpu->memory_rw(cpu, cpu->mem, addr,
-				    tmp_data, 1, MEM_WRITE, CACHE_DATA)
-				    != MEMORY_ACCESS_OK)
-					r++;
-				nb--; addr++; i-=8;
+			r = 0;		/*  Error count.  */
+			while (nb-- > 0) {
+				if (load) {
+					/*  (Actually rt should be used.)  */
+					if (cpu->memory_rw(cpu, cpu->mem, addr,
+					    tmp_data, 1, MEM_READ, CACHE_DATA)
+					    != MEMORY_ACCESS_OK) {
+						r++;
+						break;
+					}
+					if (i == 24)
+						cpu->cd.ppc.gpr[rs] = 0;
+					cpu->cd.ppc.gpr[rs] |=
+					    (tmp_data[0] << i);
+				} else {
+					tmp_data[0] = cpu->cd.ppc.gpr[rs] >> i;
+					if (cpu->memory_rw(cpu, cpu->mem, addr,
+					    tmp_data, 1, MEM_WRITE, CACHE_DATA)
+					    != MEMORY_ACCESS_OK) {
+						r++;
+						break;
+					}
+				}
+				addr++; i-=8;
 				if (i < 0) {
 					i = 24;
 					rs = (rs + 1) % 32;
@@ -2503,6 +2530,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (r > 0) {
 				/*  TODO: exception  */
+				fatal("TODO: exception.\n");
 				return 0;
 			}
 			break;

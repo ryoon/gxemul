@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.701 2005-04-18 21:41:18 debug Exp $
+$Id: HISTORY,v 1.702 2005-04-18 23:00:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1859,3 +1859,4 @@ Changelog for GXemul:
 20050418	Trying to fix the bug which caused problems when turning on
 		and off bintrans interactively, by flushing the bintrans cache
 		whenever bintrans is manually (re)enabled.
+20050419	Adding the 'lswi' ppc instruction.

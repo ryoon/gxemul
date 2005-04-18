@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.231 2005-04-16 06:05:21 debug Exp $
+ *  $Id: main.c,v 1.232 2005-04-18 21:40:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -578,6 +578,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 'Y':
 			m->x11_scaledown = atoi(optarg);
+			if (m->x11_scaledown < 1) {
+				fprintf(stderr, "Invalid scaledown value.\n");
+				exit(1);
+			}
 			msopts = 1;
 			break;
 		case 'y':

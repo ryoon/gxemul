@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.110 2005-04-15 22:06:09 debug Exp $
+$Id: RELEASE,v 1.111 2005-04-18 21:50:17 debug Exp $
 
 I'm now working on post-0.3.1.
 
@@ -46,6 +46,9 @@ The most important/visible changes from 0.3.1 to 0.3.X are:
 
 	x)  NetBSD/cobalt can run from a harddisk image. (Installation
 	    must be done using another OS though, for example NetBSD/pmax.)
+
+	x)  Some minor fixes to make the binary translation system a bit
+	    more stable.
 
 	x)  ..
 

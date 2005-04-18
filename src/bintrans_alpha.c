@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.117 2005-04-11 21:22:13 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.118 2005-04-18 22:30:31 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -39,17 +39,16 @@
  *	a1..a5		17..21		5
  *	t8..t11		22..25		4
  *
- *  These can be "mapped" to MIPS registers in the translated code,
- *  except a0 which points to the cpu struct, and t0..t4 (or so)
- *  which are used by the translated code as temporaries.
+ *  These can be "mapped" to MIPS registers in the translated code, except a0
+ *  which points to the cpu struct, and t0..t4 (or so) which are used by the
+ *  translated code as temporaries.
  *
- *  3 + 7 + 5 + 4 = 19 available registers. Of course, all (except
- *  s0..s6) must be saved when calling external functions, such as
- *  when doing load/store.
+ *  3 + 7 + 5 + 4 = 19 available registers. Of course, all (except s0..s6) must
+ *  be saved when calling external functions, such as when calling tlbp and
+ *  other external functions.
  *
- *  Which are the 19 most commonly used MIPS registers? (This will
- *  include the pc, and the "current number of executed translated
- *  instructions.)
+ *  Which are the 19 most commonly used MIPS registers? (This will include the
+ *  pc, and the "current number of executed translated instructions.)
  *
  *  The current allocation is as follows:
  *

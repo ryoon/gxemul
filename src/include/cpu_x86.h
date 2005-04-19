@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.5 2005-04-17 01:38:32 debug Exp $
+ *  $Id: cpu_x86.h,v 1.6 2005-04-19 01:24:36 debug Exp $
  */
 
 #include "misc.h"
@@ -51,17 +51,22 @@ struct cpu_family;
 #define	R_SI		6
 #define	R_DI		7
 
-#define	N_X86_SEGMENTS		8
+#define	N_X86_SEGS		8
 /*  (All of these 8 are not actually used.)  */
 
-#define	S_CS		0
-#define	S_DS		1
-#define	S_ES		2
-#define	S_FS		3
-#define	S_GS		4
-#define	S_SS		5
+#define	S_ES		0
+#define	S_CS		1
+#define	S_SS		2
+#define	S_DS		3
+#define	S_FS		4
+#define	S_GS		5
+
+#define	x86_seg_names	{ "es", "cs", "ss", "ds", "es", "gs", "xx6", "xx7" }
 
 #define	N_X86_CREGS		8
+
+#define	x86_cond_names	{ "o", "b", "z", "be", "s", "p", "l", "le" }
+#define	N_X86_CONDS		8
 
 #define	X86_MODEL_8086		1
 #define	X86_MODEL_80386		2
@@ -93,7 +98,7 @@ struct x86_cpu {
 	uint64_t	rflags;
 	uint64_t	cr[N_X86_CREGS];
 
-	uint16_t	s[N_X86_SEGMENTS];
+	uint16_t	s[N_X86_SEGS];
 	uint64_t	r[N_X86_REGS];
 };
 

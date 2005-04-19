@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.702 2005-04-18 23:00:55 debug Exp $
+$Id: HISTORY,v 1.703 2005-04-19 01:25:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1860,3 +1860,4 @@ Changelog for GXemul:
 		and off bintrans interactively, by flushing the bintrans cache
 		whenever bintrans is manually (re)enabled.
 20050419	Adding the 'lswi' ppc instruction.
+		Minor updates to the x86 instruction decoding.

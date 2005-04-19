@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.21 2005-04-17 01:38:30 debug Exp $
+ *  $Id: cpu_x86.c,v 1.22 2005-04-19 01:24:35 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -34,6 +34,9 @@
  *
  *  See http://www.amd.com/us-en/Processors/DevelopWithAMD/
  *	0,,30_2252_875_7044,00.html for more info on AMD64.
+ *
+ *  http://www.cs.ucla.edu/~kohler/class/04f-aos/ref/i386/appa.htm has a
+ *  nice overview of the standard i386 opcodes.
  */
 
 #include <stdio.h>
@@ -80,6 +83,8 @@ extern int quiet_mode;
 
 static struct x86_model models[] = x86_models;
 static char *reg_names[N_X86_REGS] = x86_reg_names;
+static char *seg_names[N_X86_SEGS] = x86_seg_names;
+static char *cond_names[N_X86_CONDS] = x86_cond_names;
 
 
 /*
@@ -367,7 +372,7 @@ static void print_csip(struct cpu *cpu)
 int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	int ilen = 0, op, rep = 0;
+	int ilen = 0, op, rep = 0, n_prefix_bytes = 0;
 	uint64_t offset;
 	uint32_t imm=0, imm2, mode = cpu->cd.x86.mode;
 	char *symbol, *tmp = "ERROR", *mnem = "ERROR", *e = "e",
@@ -416,6 +421,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		} else
 			break;
 
+		if (++n_prefix_bytes > 4) {
+			SPACES; debug("more than 4 prefix bytes?\n");
+			return 4;
+		}
+
 		/*  TODO: lock, segment overrides etc  */
 		read_imm_and_print(&instr, &ilen, 8);
 	}
@@ -426,11 +436,91 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	op = instr[0];
 	instr ++;
 
-	if (op == 0x90) {
+	if ((op & 0xf0) <= 0x30 && (op & 7) <= 5) {
+		switch (op & 0x38) {
+		case 0x00: mnem = "add"; break;
+		case 0x08: mnem = "or"; break;
+		case 0x10: mnem = "adc"; break;
+		case 0x18: mnem = "sbb"; break;
+		case 0x20: mnem = "and"; break;
+		case 0x28: mnem = "sub"; break;
+		case 0x30: mnem = "xor"; break;
+		case 0x38: mnem = "cmp"; break;
+		}
+
+		/*  TODO  */
+		/*  read_modrm(&instr, &ilen, 1);  */
+
+		SPACES; debug("%s\t", mnem);
+		/*  TODO  */
+	} else if (op == 0xf) {
+		/*  "pop cs" on 8086  */
+		if (cpu->cd.x86.model.model_number == X86_MODEL_8086) {
+			SPACES; debug("pop\tcs");
+		} else {
+			SPACES; debug("UNIMPLEMENTED 0x0f");
+		}
+	} else if (op < 0x20 && (op & 7) == 6) {
+		SPACES; debug("push\t%s", seg_names[op/8]);
+	} else if (op < 0x20 && (op & 7) == 7) {
+		SPACES; debug("pop\t%s", seg_names[op/8]);
+	} else if (op >= 0x20 && op < 0x40 && (op & 7) == 7) {
+		SPACES; debug("%sa%s", op < 0x30? "d" : "a",
+		    (op & 0xf)==7? "a" : "s");
+	} else if (op >= 0x40 && op <= 0x5f) {
+		switch (op & 0x38) {
+		case 0x00: mnem = "inc"; break;
+		case 0x08: mnem = "dec"; break;
+		case 0x10: mnem = "push"; break;
+		case 0x18: mnem = "pop"; break;
+		}
+		SPACES; debug("%s\t%s%s", mnem, e, reg_names[op & 7]);
+	} else if (op == 0x60) {
+		SPACES; debug("pusha");
+	} else if (op == 0x61) {
+		SPACES; debug("popa");
+	} else if ((op & 0xf0) == 0x70) {
+		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
+		imm = dumpaddr + 2 + imm;
+		SPACES; debug("j%s%s\t0x%x", op&1? "n" : "",
+		    cond_names[(op/2) & 0x7], imm);
+	} else if (op == 0x90) {
 		SPACES; debug("nop");
+	} else if (op >= 0x91 && op <= 0x97) {
+		SPACES; debug("xchg\t%sax,%s%s", e, e, reg_names[op & 7]);
+	} else if (op >= 0xb0 && op <= 0xb7) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		switch (op & 7) {
+		case 0: tmp = "al"; break;
+		case 1: tmp = "cl"; break;
+		case 2: tmp = "dl"; break;
+		case 3: tmp = "bl"; break;
+		case 4: tmp = "ah"; break;
+		case 5: tmp = "ch"; break;
+		case 6: tmp = "dh"; break;
+		case 7: tmp = "bh"; break;
+		}
+		SPACES; debug("mov\t%s,0x%x", tmp, imm);
+	} else if (op >= 0xb8 && op <= 0xbf) {
+		imm = read_imm_and_print(&instr, &ilen, mode);
+		SPACES; debug("mov\t%s%s,0x%x", e, reg_names[op & 7], imm);
+	} else if (op == 0xc9) {
+		SPACES; debug("leave");
+	} else if (op == 0xcc) {
+		SPACES; debug("int3");
 	} else if (op == 0xcd) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("int\t0x%x", imm);
+	} else if (op == 0xce) {
+		SPACES; debug("into");
+	} else if (op == 0xcf) {
+		SPACES; debug("iret");
+	} else if (op == 0xd4) {
+		SPACES; debug("aam");
+	} else if (op == 0xd5) {
+		SPACES; debug("aad");
+	} else if (op == 0xd7) {
+		SPACES; debug("xlat");
 	} else if (op == 0xea) {
 		imm = read_imm_and_print(&instr, &ilen, mode);
 		imm2 = read_imm_and_print(&instr, &ilen, 16);
@@ -443,6 +533,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		imm = dumpaddr + ilen + (signed char)imm;
 		SPACES; debug("jmp\t0x%x", imm);
+	} else if (op == 0xf4) {
+		SPACES; debug("hlt");
 	} else if (op == 0xf8) {
 		SPACES; debug("clc");
 	} else if (op == 0xf9) {
@@ -637,9 +729,9 @@ static void x86_test(struct cpu *cpu, uint64_t a, uint64_t b)
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int i, r, rep = 0, op, len, diff, mode = cpu->cd.x86.mode;
-	int mode_67 = mode;
+	int mode_67 = mode, nprefixbytes = 0;
 	uint32_t imm, imm2, value;
-	unsigned char buf[32];
+	unsigned char buf[16];
 	unsigned char *instr = buf;
 	uint64_t newpc = cpu->pc;
 	unsigned char databuf[8];
@@ -698,6 +790,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  TODO: repnz, lock etc  */
 		instr ++;
 		newpc ++;
+		if (++nprefixbytes > 4) {
+			fatal("x86: too many prefix bytes at ");
+			print_csip(cpu); fatal("\n");
+			cpu->running = 0;
+			return 0;
+		}
 	}
 
 	op = instr[0];

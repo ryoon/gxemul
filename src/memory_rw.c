@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.15 2005-04-16 02:02:27 debug Exp $
+ *  $Id: memory_rw.c,v 1.16 2005-04-19 01:24:35 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -98,6 +98,13 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 			if (cpu->cd.x86.mode == 16) {
 				vaddr = (cpu->cd.x86.cursegment<<4) +
 				    (vaddr & 0xffff);
+				/*  TODO: A20 stuff  */
+				if ((vaddr & 0xffff) + len > 0x10000) {
+					fatal("x86 memory access crossing"
+					    " segment boundary: TODO\n");
+					cpu->running = 0;
+					return 0;
+				}
 			}
 		}
 	}

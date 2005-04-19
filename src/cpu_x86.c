@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.22 2005-04-19 01:24:35 debug Exp $
+ *  $Id: cpu_x86.c,v 1.23 2005-04-19 01:55:44 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -357,6 +357,24 @@ static void print_csip(struct cpu *cpu)
 }
 
 
+static char modrm_dst[65];
+static char modrm_src[65];
+static void read_modrm(int mode, unsigned char **instrp, int *ilenp)
+{
+	uint32_t imm = read_imm_and_print(instrp, ilenp, 8);
+	modrm_dst[0] = modrm_dst[64] = '\0';
+	modrm_src[0] = modrm_src[64] = '\0';
+
+fatal("read_modrm(): TODO\n");
+
+	if ((imm & 0xc0) == 0xc0) {
+
+	} else {
+		fatal("read_modrm(): unimplemented modr/m\n");
+	}
+}
+
+
 /*
  *  x86_cpu_disassemble_instr():
  *
@@ -427,7 +445,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 
 		/*  TODO: lock, segment overrides etc  */
-		read_imm_and_print(&instr, &ilen, 8);
+		instr ++; ilen ++;
+		debug("%02x", instr[0]);
 	}
 
 	if (mode == 16)
@@ -447,12 +466,17 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0x30: mnem = "xor"; break;
 		case 0x38: mnem = "cmp"; break;
 		}
-
-		/*  TODO  */
-		/*  read_modrm(&instr, &ilen, 1);  */
-
-		SPACES; debug("%s\t", mnem);
-		/*  TODO  */
+		switch (op & 7) {
+		case 4:	imm = read_imm_and_print(&instr, &ilen, 8);
+			SPACES; debug("%s\tal,0x%02x", mnem, imm);
+			break;
+		case 5:	imm = read_imm_and_print(&instr, &ilen, mode);
+			SPACES; debug("%s\t%sax,0x%x", mnem, e, imm);
+			break;
+		default:
+			read_modrm(mode, &instr, &ilen);
+			SPACES; debug("%s\t%s,%s", mnem, modrm_dst, modrm_src);
+		}
 	} else if (op == 0xf) {
 		/*  "pop cs" on 8086  */
 		if (cpu->cd.x86.model.model_number == X86_MODEL_8086) {
@@ -488,6 +512,20 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("nop");
 	} else if (op >= 0x91 && op <= 0x97) {
 		SPACES; debug("xchg\t%sax,%s%s", e, e, reg_names[op & 7]);
+	} else if (op == 0x98) {
+		SPACES; debug("cbw");
+	} else if (op == 0x99) {
+		SPACES; debug("cwd");
+	} else if (op == 0x9b) {
+		SPACES; debug("wait");
+	} else if (op == 0x9c) {
+		SPACES; debug("pushf");
+	} else if (op == 0x9d) {
+		SPACES; debug("popf");
+	} else if (op == 0x9e) {
+		SPACES; debug("sahf");
+	} else if (op == 0x9f) {
+		SPACES; debug("lahf");
 	} else if (op >= 0xb0 && op <= 0xb7) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		switch (op & 7) {
@@ -729,7 +767,7 @@ static void x86_test(struct cpu *cpu, uint64_t a, uint64_t b)
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int i, r, rep = 0, op, len, diff, mode = cpu->cd.x86.mode;
-	int mode_67 = mode, nprefixbytes = 0;
+	int mode_addr = mode, nprefixbytes = 0;
 	uint32_t imm, imm2, value;
 	unsigned char buf[16];
 	unsigned char *instr = buf;
@@ -779,10 +817,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			else
 				mode = 16;
 		} else if (instr[0] == 0x67) {
-			if (mode_67 == 16)
-				mode_67 = 32;
+			if (mode_addr == 16)
+				mode_addr = 32;
 			else
-				mode_67 = 16;
+				mode_addr = 16;
 		} else if (instr[0] == 0xf3)
 			rep = 1;
 		else
@@ -801,7 +839,21 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	op = instr[0];
 	instr ++;
 
-	if (op == 0x90) {		/*  NOP  */
+	if (op >= 0x40 && op <= 0x4f) {
+		if (op < 0x48)
+			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
+			    cpu->cd.x86.r[op & 7] + 1);
+		else
+			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
+			    cpu->cd.x86.r[op & 7] - 1);
+		/*  TODO: flags etc  */
+	} else if (op == 0x90) {		/*  NOP  */
+	} else if (op >= 0xb8 && op <= 0xbf) {
+		imm = read_imm(&instr, &newpc, mode);
+		cpu->cd.x86.r[op & 7] = imm;
+	} else if (op == 0xcc) {	/*  INT3  */
+		cpu->pc = newpc;
+		return x86_interrupt(cpu, 3);
 	} else if (op == 0xcd) {	/*  INT  */
 		imm = read_imm(&instr, &newpc, 8);
 		cpu->pc = newpc;

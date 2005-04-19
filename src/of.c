@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.5 2005-04-01 16:44:36 debug Exp $
+ *  $Id: of.c,v 1.6 2005-04-19 00:02:00 debug Exp $
  *
  *  OpenFirmware emulation.
  */
@@ -225,6 +225,9 @@ int of_emul(struct cpu *cpu)
 		/*  TODO: a package handle  */
 		store_32bit_word(cpu, base + ofs, 1000);
 	} else if (strcmp(service, "getproplen") == 0) {
+		/*  TODO  */
+		store_32bit_word(cpu, base + ofs, 0);
+	} else if (strcmp(service, "peer") == 0) {
 		/*  TODO  */
 		store_32bit_word(cpu, base + ofs, 0);
 	} else {

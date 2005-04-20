@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.183 2005-04-17 01:38:30 debug Exp $
+ *  $Id: emul.c,v 1.184 2005-04-20 04:43:52 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -765,7 +765,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		break;
 	case ARCH_X86:
 		if (cpu->cd.x86.mode == 16)
-			debug("0x%04x:0x%04x", cpu->cd.x86.s[S_CS],
+			debug("0x%04x:0x%04x", cpu->cd.x86.s[X86_S_CS],
 			    (int)cpu->pc);
 		else if (cpu->cd.x86.mode == 32)
 			debug("0x%08x", (int)cpu->pc);

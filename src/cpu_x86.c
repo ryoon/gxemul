@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.23 2005-04-19 01:55:44 debug Exp $
+ *  $Id: cpu_x86.c,v 1.24 2005-04-20 02:05:56 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -134,7 +134,7 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 	if (cpu->cd.x86.model.model_number == X86_MODEL_AMD64)
 		cpu->cd.x86.bits = 64;
 
-	cpu->cd.x86.r[R_SP] = 0xff0;
+	cpu->cd.x86.r[X86_R_SP] = 0xff0;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -191,21 +191,21 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 	if (cpu->cd.x86.mode == 16) {
 		debug("cpu%i:  cs:ip = 0x%04x:0x%04x\n", x,
-		    cpu->cd.x86.s[S_CS], (int)cpu->pc);
+		    cpu->cd.x86.s[X86_S_CS], (int)cpu->pc);
 
 		debug("cpu%i:  ax = 0x%04x  bx = 0x%04x  cx = 0x%04x  dx = "
 		    "0x%04x\n", x,
-		    (int)cpu->cd.x86.r[R_AX], (int)cpu->cd.x86.r[R_BX],
-		    (int)cpu->cd.x86.r[R_CX], (int)cpu->cd.x86.r[R_DX]);
+		    (int)cpu->cd.x86.r[X86_R_AX], (int)cpu->cd.x86.r[X86_R_BX],
+		    (int)cpu->cd.x86.r[X86_R_CX], (int)cpu->cd.x86.r[X86_R_DX]);
 		debug("cpu%i:  si = 0x%04x  di = 0x%04x  bp = 0x%04x  sp = "
 		    "0x%04x\n", x,
-		    (int)cpu->cd.x86.r[R_SI], (int)cpu->cd.x86.r[R_DI],
-		    (int)cpu->cd.x86.r[R_BP], (int)cpu->cd.x86.r[R_SP]);
+		    (int)cpu->cd.x86.r[X86_R_SI], (int)cpu->cd.x86.r[X86_R_DI],
+		    (int)cpu->cd.x86.r[X86_R_BP], (int)cpu->cd.x86.r[X86_R_SP]);
 
 		debug("cpu%i:  ds = 0x%04x  es = 0x%04x  ss = 0x%04x  flags "
 		    "= 0x%04x\n", x,
-		    (int)cpu->cd.x86.s[S_DS], (int)cpu->cd.x86.s[S_ES],
-		    (int)cpu->cd.x86.s[S_SS], (int)cpu->cd.x86.rflags);
+		    (int)cpu->cd.x86.s[X86_S_DS], (int)cpu->cd.x86.s[X86_S_ES],
+		    (int)cpu->cd.x86.s[X86_S_SS], (int)cpu->cd.x86.rflags);
 	} else if (cpu->cd.x86.mode == 32) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
@@ -216,12 +216,12 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i:  eax=0x%08x  ebx=0x%08x  ecx=0x%08x  edx="
 		    "0x%08x\n", x,
-		    (int)cpu->cd.x86.r[R_AX], (int)cpu->cd.x86.r[R_BX],
-		    (int)cpu->cd.x86.r[R_CX], (int)cpu->cd.x86.r[R_DX]);
+		    (int)cpu->cd.x86.r[X86_R_AX], (int)cpu->cd.x86.r[X86_R_BX],
+		    (int)cpu->cd.x86.r[X86_R_CX], (int)cpu->cd.x86.r[X86_R_DX]);
 		debug("cpu%i:  esi=0x%08x  edi=0x%08x  ebp=0x%08x  esp="
 		    "0x%08x\n", x,
-		    (int)cpu->cd.x86.r[R_SI], (int)cpu->cd.x86.r[R_DI],
-		    (int)cpu->cd.x86.r[R_BP], (int)cpu->cd.x86.r[R_SP]);
+		    (int)cpu->cd.x86.r[X86_R_SI], (int)cpu->cd.x86.r[X86_R_DI],
+		    (int)cpu->cd.x86.r[X86_R_BP], (int)cpu->cd.x86.r[X86_R_SP]);
 	} else {
 		/*  64-bit  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
@@ -244,9 +244,9 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (cpu->cd.x86.mode >= 32) {
 		debug("cpu%i:  cs=0x%04x  ds=0x%04x  es=0x%04x  "
 		    "fs=0x%04x  gs=0x%04x  ss=0x%04x\n", x,
-		    (int)cpu->cd.x86.s[S_CS], (int)cpu->cd.x86.s[S_DS],
-		    (int)cpu->cd.x86.s[S_ES], (int)cpu->cd.x86.s[S_FS],
-		    (int)cpu->cd.x86.s[S_GS], (int)cpu->cd.x86.s[S_SS]);
+		    (int)cpu->cd.x86.s[X86_S_CS], (int)cpu->cd.x86.s[X86_S_DS],
+		    (int)cpu->cd.x86.s[X86_S_ES], (int)cpu->cd.x86.s[X86_S_FS],
+		    (int)cpu->cd.x86.s[X86_S_GS], (int)cpu->cd.x86.s[X86_S_SS]);
 	}
 
 	if (cpu->cd.x86.mode == 32) {
@@ -348,7 +348,7 @@ static uint32_t read_imm(unsigned char **instrp, uint64_t *newpc,
 static void print_csip(struct cpu *cpu)
 {
 	if (cpu->cd.x86.mode < 64)
-		fatal("0x%04x:", cpu->cd.x86.s[S_CS]);
+		fatal("0x%04x:", cpu->cd.x86.s[X86_S_CS]);
 	switch (cpu->cd.x86.mode) {
 	case 16: fatal("0x%04x", (int)cpu->pc); break;
 	case 32: fatal("0x%08x", (int)cpu->pc); break;
@@ -413,7 +413,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("%016llx:  ", (long long)dumpaddr);
 	else { /*  16-bit mode  */
 		if (running)
-			debug("%04x:%04x  ", cpu->cd.x86.s[S_CS],
+			debug("%04x:%04x  ", cpu->cd.x86.s[X86_S_CS],
 			    (int)dumpaddr);
 		else
 			debug("%08x:  ", (int)dumpaddr);
@@ -691,23 +691,23 @@ static int x86_interrupt(struct cpu *cpu, int nr)
 	x86_load(cpu, nr * 4 + 2, &seg, sizeof(uint16_t));
 
 	/*  Push flags, cs, and ip (pc):  */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[S_SS];
-	if (x86_store(cpu, cpu->cd.x86.r[R_SP] - len * 1, cpu->cd.x86.rflags,
-	    len) != MEMORY_ACCESS_OK)
+	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 1,
+	    cpu->cd.x86.rflags, len) != MEMORY_ACCESS_OK)
 		fatal("x86_interrupt(): TODO: how to handle this\n");
-	if (x86_store(cpu, cpu->cd.x86.r[R_SP] - len * 2, cpu->cd.x86.s[S_CS],
-	    len) != MEMORY_ACCESS_OK)
+	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 2,
+	    cpu->cd.x86.s[X86_S_CS], len) != MEMORY_ACCESS_OK)
 		fatal("x86_interrupt(): TODO: how to handle this\n");
-	if (x86_store(cpu, cpu->cd.x86.r[R_SP] - len * 3, cpu->pc,
+	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 3, cpu->pc,
 	    len) != MEMORY_ACCESS_OK)
 		fatal("x86_interrupt(): TODO: how to handle this\n");
 
-	cpu->cd.x86.r[R_SP] = (cpu->cd.x86.r[R_SP] & ~0xffff)
-	    | ((cpu->cd.x86.r[R_SP] - len*3) & 0xffff);
+	cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
+	    | ((cpu->cd.x86.r[X86_R_SP] - len*3) & 0xffff);
 
 	/*  TODO: clear the Interrupt Flag?  */
 
-	cpu->cd.x86.s[S_CS] = seg;
+	cpu->cd.x86.s[X86_S_CS] = seg;
 	cpu->pc = ofs;
 
 	return 1;
@@ -786,14 +786,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 	/*  16-bit BIOS emulation:  */
-	if (mode == 16 && ((newpc + (cpu->cd.x86.s[S_CS] << 4)) & 0xff000)
+	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
 		pc_bios_emul(cpu);
 		return 1;
 	}
 
 	/*  Read an instruction from memory:  */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[S_CS];
+	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_CS];
 
 	r = cpu->memory_rw(cpu, cpu->mem, cpu->pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION);
@@ -807,7 +807,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	newpc ++;
 
 	/*  Default is to use the data segment, or the stack segment:  */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[S_DS];
+	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_DS];
 
 	/*  Any prefix?  */
 	for (;;) {
@@ -861,7 +861,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xea) {	/*  JMP seg:ofs  */
 		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);
-		cpu->cd.x86.s[S_CS] = imm2;
+		cpu->cd.x86.s[X86_S_CS] = imm2;
 		newpc = modify(cpu->pc, imm);
 	} else if (op == 0xeb) {	/*  JMP short  */
 		imm = read_imm(&instr, &newpc, 8);

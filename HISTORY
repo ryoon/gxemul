@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.703 2005-04-19 01:25:09 debug Exp $
+$Id: HISTORY,v 1.704 2005-04-20 02:05:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1861,3 +1861,5 @@ Changelog for GXemul:
 		whenever bintrans is manually (re)enabled.
 20050419	Adding the 'lswi' ppc instruction.
 		Minor updates to the x86 instruction decoding.
+20050420	Renaming x86 register name indices from R_xx to X86_R_xx (this
+		makes building on Tru64 nicer).

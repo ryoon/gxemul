@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.6 2005-04-19 01:24:36 debug Exp $
+ *  $Id: cpu_x86.h,v 1.7 2005-04-20 02:05:57 debug Exp $
  */
 
 #include "misc.h"
@@ -42,24 +42,24 @@ struct cpu_family;
 	"ax", "cx", "dx", "bx", "sp", "bp", "si", "di",	\
 	"08", "09", "10", "11", "12", "13", "14", "15" }
 
-#define	R_AX		0
-#define	R_CX		1
-#define	R_DX		2
-#define	R_BX		3
-#define	R_SP		4
-#define	R_BP		5
-#define	R_SI		6
-#define	R_DI		7
+#define	X86_R_AX	0
+#define	X86_R_CX	1
+#define	X86_R_DX	2
+#define	X86_R_BX	3
+#define	X86_R_SP	4
+#define	X86_R_BP	5
+#define	X86_R_SI	6
+#define	X86_R_DI	7
 
 #define	N_X86_SEGS		8
 /*  (All of these 8 are not actually used.)  */
 
-#define	S_ES		0
-#define	S_CS		1
-#define	S_SS		2
-#define	S_DS		3
-#define	S_FS		4
-#define	S_GS		5
+#define	X86_S_ES	0
+#define	X86_S_CS	1
+#define	X86_S_SS	2
+#define	X86_S_DS	3
+#define	X86_S_FS	4
+#define	X86_S_GS	5
 
 #define	x86_seg_names	{ "es", "cs", "ss", "ds", "es", "gs", "xx6", "xx7" }
 

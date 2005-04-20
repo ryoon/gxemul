@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.4 2005-04-17 01:38:31 debug Exp $
+ *  $Id: pc_bios.c,v 1.5 2005-04-20 02:05:56 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -92,8 +92,8 @@ static void set_cursor_pos(struct cpu *cpu, int x, int y)
 static void pc_bios_int10(struct cpu *cpu)
 {
 	int x,y;
-	int ah = (cpu->cd.x86.r[R_AX] >> 8) & 0xff;
-	int al = cpu->cd.x86.r[R_AX] & 0xff;
+	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
 
 	switch (ah) {
 	case 0x00:	/*  Switch video mode.  */
@@ -129,9 +129,7 @@ static void pc_bios_int10(struct cpu *cpu)
  */
 static void pc_bios_int13(struct cpu *cpu)
 {
-	int ah = (cpu->cd.x86.r[R_AX] >> 8) & 0xff;
-/*	int al = cpu->cd.x86.r[R_AX] & 0xff;  */
-/*	int dl = cpu->cd.x86.r[R_DX] & 0xff;  */
+	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 
 	switch (ah) {
 	case 0x00:	/*  Reset disk, dl = drive  */
@@ -153,14 +151,13 @@ static void pc_bios_int13(struct cpu *cpu)
  */
 static void pc_bios_int1a(struct cpu *cpu)
 {
-	int ah = (cpu->cd.x86.r[R_AX] >> 8) & 0xff;
-/*	int al = cpu->cd.x86.r[R_AX] & 0xff;  */
+	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 
 	switch (ah) {
 	case 0x00:
 		/*  Return tick count? TODO  */
-		cpu->cd.x86.r[R_CX] = 0;
-		cpu->cd.x86.r[R_DX] = 0;
+		cpu->cd.x86.r[X86_R_CX] = 0;
+		cpu->cd.x86.r[X86_R_DX] = 0;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x1a function"
@@ -176,7 +173,7 @@ static void pc_bios_int1a(struct cpu *cpu)
  */
 int pc_bios_emul(struct cpu *cpu)
 {
-	uint32_t addr = (cpu->cd.x86.s[S_CS] << 4) + cpu->pc;
+	uint32_t addr = (cpu->cd.x86.s[X86_S_CS] << 4) + cpu->pc;
 	int int_nr;
 
 	int_nr = addr & 0xfff;
@@ -201,14 +198,15 @@ int pc_bios_emul(struct cpu *cpu)
 	/*
 	 *  Return from the interrupt:  Pop ip (pc), cs, and flags.
 	 */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[S_SS];
-	cpu->pc = load_16bit_word(cpu, cpu->cd.x86.r[R_SP]);
-	cpu->cd.x86.s[S_CS] = load_16bit_word(cpu, cpu->cd.x86.r[R_SP] + 2);
+	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+	cpu->pc = load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP]);
+	cpu->cd.x86.s[X86_S_CS] =
+	    load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 2);
 	cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
-	    | load_16bit_word(cpu, cpu->cd.x86.r[R_SP] + 4);
+	    | load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 4);
 
-	cpu->cd.x86.r[R_SP] = (cpu->cd.x86.r[R_SP] & ~0xffff)
-	    | ((cpu->cd.x86.r[R_SP] + 6) & 0xffff);
+	cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
+	    | ((cpu->cd.x86.r[X86_R_SP] + 6) & 0xffff);
 
 	return 1;
 }

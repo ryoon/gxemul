@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.16 2005-04-18 21:41:19 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.17 2005-04-22 16:03:43 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2290,6 +2290,42 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		    cpu, 0, oldvaddr & ~0x1fff, 0, 0);
 		invalidate_translation_caches(
 		    cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
+	}
+
+
+	/*
+	 *  Check for duplicate entries.  (There should not be two mappings
+	 *  from one virtual address to physical addresses.)
+	 *
+	 *  TODO: Do this for MMU3K and R4100 too.
+	 *
+	 *  TODO: Make this detection more robust.
+	 */
+	if (cpu->cd.mips.cpu_type.mmu_model != MMU3K &&
+	    cpu->cd.mips.cpu_type.rev != MIPS_R4100) {
+		uint64_t vaddr1, vaddr2;
+		int i, asid;
+
+		vaddr1 = cp->reg[COP0_ENTRYHI] & ENTRYHI_VPN2_MASK_R10K;
+		asid = cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
+		/*  Since this is just a warning, it's probably not necessary
+		    to use R4000 masks etc.  */
+
+		for (i=0; i<cp->nr_of_tlbs; i++) {
+			if (i == index && !randomflag)
+				continue;
+
+			if (!(cp->tlbs[i].hi & TLB_G) &&
+			    (cp->tlbs[i].hi & ENTRYHI_ASID) != asid)
+				continue;
+
+			vaddr2 = cp->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
+			if (vaddr1 == vaddr2 && ((cp->tlbs[i].lo0 &
+			    ENTRYLO_V) || (cp->tlbs[i].lo1 & ENTRYLO_V)))
+				fatal("\n[ WARNING! tlbw%s vaddr=0x%llx is "
+				    "already in the TLB! ]\n\n", randomflag?
+				    "r" : "i", (long long)vaddr1);
+		}
 	}
 
 

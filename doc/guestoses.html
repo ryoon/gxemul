@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.33 2005-04-16 00:29:45 debug Exp $
+$Id: guestoses.html,v 1.34 2005-04-27 15:22:17 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -99,6 +99,11 @@ system, the harddisk image looks and acts like a real disk.
 <a name="netbsdinstall"></a>
 <h3>Installing NetBSD/pmax in GXemul:</h3>
 
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a>
+
+<p>
 To install NetBSD/pmax onto a harddisk image in the emulator, follow these
 instructions:
 
@@ -201,8 +206,11 @@ If you want to run without the X framebuffer, use this instead:<pre>
 <a name="netbsdarcinstall"></a>
 <h3>Installing NetBSD/arc in GXemul:</h3>
 
-It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the
-emulator.
+It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the emulator.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a>
 
 <p>
 To install NetBSD/arc from a CDROM image onto an emulated harddisk image,
@@ -339,6 +347,12 @@ possible with an aligned framebuffer.
 than the other models, for some reason. (This is a known bug.)
 
 <p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20050427-netbsd-hpcmips-1.png"><img src="20050427-netbsd-hpcmips-1_small.png"></a>
+&nbsp;&nbsp;&nbsp;
+<a href="20050427-netbsd-hpcmips-2.png"><img src="20050427-netbsd-hpcmips-2_small.png"></a>
+
+<p>
 These instructions show an example of how to install
 NetBSD/hpcmips on an emulated MobilePro 800:
 
@@ -402,6 +416,10 @@ to install, because the Cobalt machines were designed for Linux, and not
 very flexible. There is no INSTALL kernel for NetBSD/cobalt. One way to
 install the NetBSD/cobalt distribution onto a disk image is to do it from
 another (emulated) machine.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20050413-netbsd-cobalt.png"><img src="20050413-netbsd-cobalt_small.png"></a>
 
 <p>
 The following instructions will let you install NetBSD/cobalt onto a disk 
@@ -511,6 +529,10 @@ before continuing here. If you have never installed OpenBSD on any
 architecture, then you need a great deal of patience to do this.
 If, on the other hand you are used to installing OpenBSD, then
 this should be no problem for you.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a>
 
 <p>
 OpenBSD/pmax died at release 2.8 of OpenBSD, so you should be
@@ -646,6 +668,10 @@ enter <b>rcons</b> if you are using the graphical framebuffer,
 
 It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
 emulator.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a>
 
 <p>
 (You should be aware of the fact that OpenBSD for the ARC platform died at 
@@ -821,8 +847,14 @@ TODO...
 <a name="ultrixinstall"></a>
 <h3>Installing Ultrix/RISC in GXemul:</h3>
 
-The following instructions should guide you through an install of Ultrix
-onto a disk image:
+Ultrix 4.x can run in GXemul on an emulated DECstation 5000/200.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a>
+
+<p>
+The following instructions should let you install Ultrix onto a disk image:
 
 <ol>
   <li>Create an empty harddisk image, which will be the root disk
@@ -913,6 +945,12 @@ If you want to find out more about Sprite in general, read
 http://www.cs.berkeley.edu/projects/sprite/retrospective.html</a>.
 
 <p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20040711-sprite-1.png"><img src="20040711-sprite-1_small.png"></a>
+&nbsp;&nbsp;&nbsp;
+<a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a>
+
+<p>
 The following instructions should let you run Sprite in the emulator:
 
 <p>
@@ -969,8 +1007,7 @@ adding <b>-b</b> to the command line options).
 <a name="declinux"></a>
 <h3>Installing Debian GNU/Linux for DECstation in GXemul:</h3>
 
-<p>
-<font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
+<font color="#ef0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. During my tests, even pressing the wrong key during the install
 (for example the wrong cursor key) can cause a kernel Oops.
 I <i>think</i> this has to do with interrupts from the serial controller.
@@ -979,6 +1016,16 @@ crashes. (I haven't had time to come up with a clean solution to this yet;
 it feels like a buffer overflow in Linux' serial driver for the 5000/200,
 but it is also likely that it is a bug in GXemul.)
 </font>
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041212-debian_1.png"><img src="20041212-debian_1_small.gif"></a>
+&nbsp;&nbsp;&nbsp;
+<a href="20041212-debian_2.png"><img src="20041212-debian_2_small.gif"></a>
+&nbsp;&nbsp;&nbsp;
+<a href="20041213-debian_3.png"><img src="20041213-debian_3_small.gif"></a>
+&nbsp;&nbsp;&nbsp;
+<a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a>
 
 <p>
 The following steps should let you install Debian GNU/Linux for DECstation
@@ -1102,12 +1149,14 @@ example), but at least it doesn't Oops that often.&nbsp;]
 <a name="declinuxredhat"></a>
 <h3>Running Redhat Linux for DECstation in GXemul:</h3>
 
-<p>
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. Read the note about '-U' in the section on how to install 
 Debian.
 </font>
 
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a>
 
 <p>
 The following steps should let you run Redhat Linux for DECstation in GXemul:
@@ -1186,7 +1235,6 @@ It should work with framebuffer/keyboard.&nbsp;]
 <a name="mach"></a>
 <h3>Running Mach/PMAX in GXemul:</h3>
 
-<p>
 Read the following link if you want to know more about Mach in general:
 <a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">
 http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html</a>
@@ -1197,6 +1245,10 @@ http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html</a>
 on the web. Without these, Mach will not get very far. These
 installation instructions are preliminary.
 </font>
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041018-mach_pmax.png"><img src="20041018-mach_pmax_small.png"></a>
 
 <p>
 The following steps should let you experiment with running Mach

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.111 2005-04-18 21:50:17 debug Exp $
+$Id: RELEASE,v 1.112 2005-04-27 16:37:33 debug Exp $
 
 I'm now working on post-0.3.1.
 
@@ -49,8 +49,6 @@ The most important/visible changes from 0.3.1 to 0.3.X are:
 
 	x)  Some minor fixes to make the binary translation system a bit
 	    more stable.
-
-	x)  ..
 
 Files included in this release are:
 

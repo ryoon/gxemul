@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.707 2005-04-27 16:37:33 debug Exp $
+$Id: HISTORY,v 1.708 2005-04-28 17:56:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1869,3 +1869,5 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.3.2  ==============
 
+20050428	Disabling the "-fmove-all-movables" option in the configure
+		script, because it causes the compile to fail on OpenBSD/sgi.

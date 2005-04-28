@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.60 2005-04-16 00:29:45 debug Exp $
+$Id: experiments.html,v 1.61 2005-04-28 22:17:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -601,6 +601,20 @@ probably doesn't work in GXemul.
 
   <p>
 
+  <li>Cobalt:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<br>gunzip, and run with <b>-E cobalt</b>
+      <p>
+      <li>Linux:
+	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
+	<br>gunzip, and run with <b>-E cobalt</b>
+    </ul>
+  </li>
+
+  <p>
+
   <li>Playstation 2:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/playstation2/">NetBSD/playstation2</a>:
@@ -624,20 +638,6 @@ The following work even less than the ones listed above:
 
 <p>
 <ul>
-  <li>Cobalt:
-    <ul>
-      <li><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>:
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>gunzip, and run with <b>-E cobalt</b>
-      <p>
-      <li>Linux:
-	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
-	<br>gunzip, and run with <b>-E cobalt</b>
-    </ul>
-  </li>
-
-  <p>
-
   <li>Sony NeWS:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/newsmips/">NetBSD/newsmips</a>:
@@ -675,6 +675,7 @@ The following work even less than the ones listed above:
 	<br>(Unzip wg602_v1715.zip to get WG602_V1715.img.)
 	<br>Try running with <b>-E netgear 0xbfc80000:0x40:WG602_V1715.img</b>.
 	<br>(It takes some time to decompress the kernel, so be patient.)
+	<br>(This doesn't really work yet.)
     </ul>
   </li>
 
@@ -693,6 +694,7 @@ The following work even less than the ones listed above:
 	<br>$ <b>dd if=openwrt-g-code.bin of=piggy.gz bs=60 iseek=1 oseek=0</b>
 	<br>$ <b>gunzip piggy.gz</b>
 	<br>$ <b>gxemul -E linksys -t 0x80001000:piggy</b>
+	<br>(It doesn't really work yet.)
 	<br>There's also a .bin file available from linksys:
 		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
     </ul>

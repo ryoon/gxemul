@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.24 2005-04-20 02:05:56 debug Exp $
+ *  $Id: cpu_x86.c,v 1.25 2005-05-01 23:47:28 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -83,6 +83,7 @@ extern int quiet_mode;
 
 static struct x86_model models[] = x86_models;
 static char *reg_names[N_X86_REGS] = x86_reg_names;
+static char *reg_names_bytes[8] = x86_reg_names_bytes;
 static char *seg_names[N_X86_SEGS] = x86_seg_names;
 static char *cond_names[N_X86_CONDS] = x86_cond_names;
 
@@ -357,20 +358,57 @@ static void print_csip(struct cpu *cpu)
 }
 
 
-static char modrm_dst[65];
-static char modrm_src[65];
-static void read_modrm(int mode, unsigned char **instrp, int *ilenp)
+static char modrm_r[65];
+static char modrm_rm[65];
+static void read_modrm(struct cpu *cpu, int mode, int eightbit,
+	unsigned char **instrp, void *ip, uint64_t *op1p, uint64_t *op2p)
 {
-	uint32_t imm = read_imm_and_print(instrp, ilenp, 8);
-	modrm_dst[0] = modrm_dst[64] = '\0';
+
+/*
+
+TODO: rewrite
+
+register or memory, and in case of memory return a memory address.
+or how should this be solved nicely?
+
+
+ */
+
+	int *ilenp = (int *)ip;
+	uint64_t *newpcp = (uint64_t *)ip;
+	uint32_t imm;
+	int r, rm;
+
+	modrm_r[0] = modrm_r[64] = '\0';
 	modrm_src[0] = modrm_src[64] = '\0';
 
-fatal("read_modrm(): TODO\n");
+	if (op1p == NULL)
+		imm = read_imm_and_print(instrp, ilenp, 8);
+	else
+		imm = read_imm(instrp, newpcp, 8);
+
+	r = (imm >> 3) & 7;
+	rm = imm & 7;
 
 	if ((imm & 0xc0) == 0xc0) {
-
+		if (eightbit) {
+			strcpy(modrm_r, reg_names_bytes[r]);
+			strcpy(modrm_rm, reg_names_bytes[rm]);
+			if (op1p != NULL) {
+				fatal("read_modrm(): todo\n");
+				exit(1);
+			}
+		} else {
+			strcpy(modrm_r, reg_names[r]);
+			strcpy(modrm_src, reg_names[rm]);
+			if (op1p != NULL) {
+				*op1p = cpu->cd.x86.r[r];
+				*op2p = cpu->cd.x86.r[rm];
+			}
+		}
 	} else {
 		fatal("read_modrm(): unimplemented modr/m\n");
+		exit(1);
 	}
 }
 
@@ -474,8 +512,9 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			SPACES; debug("%s\t%sax,0x%x", mnem, e, imm);
 			break;
 		default:
-			read_modrm(mode, &instr, &ilen);
-			SPACES; debug("%s\t%s,%s", mnem, modrm_dst, modrm_src);
+			read_modrm(cpu, mode, !(op & 1), &instr, &ilen,
+			    NULL, NULL);
+			SPACES; debug("%s\t%s,%s", mnem, modrm_r, modrm_rm);
 		}
 	} else if (op == 0xf) {
 		/*  "pop cs" on 8086  */
@@ -573,6 +612,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("jmp\t0x%x", imm);
 	} else if (op == 0xf4) {
 		SPACES; debug("hlt");
+	} else if (op == 0xf5) {
+		SPACES; debug("cmc");
 	} else if (op == 0xf8) {
 		SPACES; debug("clc");
 	} else if (op == 0xf9) {
@@ -773,7 +814,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	unsigned char *instr = buf;
 	uint64_t newpc = cpu->pc;
 	unsigned char databuf[8];
-	uint64_t tmp;
+	uint64_t tmp, op1, op2;
 
 	/*  Check PC against breakpoints:  */
 	if (!single_step)
@@ -839,7 +880,48 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	op = instr[0];
 	instr ++;
 
-	if (op >= 0x40 && op <= 0x4f) {
+	if ((op & 0xf0) <= 0x30 && (op & 7) <= 5) {
+		switch (op & 7) {
+		case 4:	imm = read_imm(&instr, &newpc, 8);
+			op1 = cpu->cd.x86.r[X86_R_AX]; op2 = (signed char)imm;
+			mode = 8;
+			break;
+		case 5:	imm = read_imm(&instr, &newpc, mode);
+			op1 = cpu->cd.x86.r[X86_R_AX]; op2 = imm;
+			break;
+		default:
+			read_modrm(cpu, mode, !(op & 1), &instr, &newpc,
+			    &op1, &op2);
+		}
+
+		printf("op1=0x%x op2=0x%x => op1=", (int)op1, (int)op2);
+
+		switch (op & 0x38) {
+		case 0x30:	/*  xor  */
+			op1 = op1 ^ op2;
+			break;
+		default:
+			fatal("not yet\n");
+			exit(1);
+		}
+
+		printf("0x%x\n", (int)op1);
+
+		/*  Write back the result:  */
+		switch (op & 7) {
+		case 4:
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX]
+			    & ~0xff) | (op1 & 0xff);
+			break;
+		case 5:
+			cpu->cd.x86.r[X86_R_AX] = modify(cpu->
+			    cd.x86.r[X86_R_AX], op1);
+			break;
+		default:
+			fatal("todo: writeback\n");
+			exit(1);
+		}
+	} else if (op >= 0x40 && op <= 0x4f) {
 		if (op < 0x48)
 			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
 			    cpu->cd.x86.r[op & 7] + 1);
@@ -866,6 +948,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xeb) {	/*  JMP short  */
 		imm = read_imm(&instr, &newpc, 8);
 		newpc = modify(newpc, newpc + (signed char)imm);
+	} else if (op == 0xf5) {	/*  CMC  */
+		cpu->cd.x86.rflags ^= X86_FLAGS_CF;
 	} else if (op == 0xf8) {	/*  CLC  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 	} else if (op == 0xf9) {	/*  STC  */

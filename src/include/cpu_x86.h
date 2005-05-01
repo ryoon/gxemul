@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.7 2005-04-20 02:05:57 debug Exp $
+ *  $Id: cpu_x86.h,v 1.8 2005-05-01 23:47:30 debug Exp $
  */
 
 #include "misc.h"
@@ -41,6 +41,8 @@ struct cpu_family;
 #define	x86_reg_names		{			\
 	"ax", "cx", "dx", "bx", "sp", "bp", "si", "di",	\
 	"08", "09", "10", "11", "12", "13", "14", "15" }
+#define	x86_reg_names_bytes	{			\
+	"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh" }
 
 #define	X86_R_AX	0
 #define	X86_R_CX	1

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.232 2005-04-18 21:40:58 debug Exp $
+ *  $Id: main.c,v 1.233 2005-05-01 23:47:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -868,7 +868,8 @@ int main(int argc, char *argv[])
 	}
 
 	if (n_emuls == 0) {
-		fprintf(stderr, "No emulations defined.\n");
+		fprintf(stderr, "No emulations defined. Maybe you forgot to "
+		    "use -E xx (where xx is the\nmachine type).\n");
 		exit(1);
 	}
 

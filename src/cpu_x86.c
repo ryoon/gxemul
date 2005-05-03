@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.28 2005-05-03 21:08:35 debug Exp $
+ *  $Id: cpu_x86.c,v 1.29 2005-05-03 21:17:27 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -373,7 +373,7 @@ static char modrm_rm[65];
 static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 	unsigned char **instrp, uint64_t *lenp, uint64_t *op1p, uint64_t *op2p)
 {
-	uint32_t imm;
+	uint32_t imm, imm2;
 	int mod, r, rm;
 	int disasm = (op1p == NULL);
 
@@ -386,6 +386,44 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 	mod = (imm >> 6) & 3; r = (imm >> 3) & 7; rm = imm & 7;
 
 	switch (mod) {
+	case 0:
+		if (eightbit & MODRM_EIGHTBIT) {
+			fatal("modrm(): todo 2\n");
+		} else {
+			if (disasm) {
+
+/*  Ugly.  */
+
+				switch (rm) {
+				case 0:	sprintf(modrm_rm, "[bx+si]");
+					break;
+				case 1:	sprintf(modrm_rm, "[bx+di]");
+					break;
+				case 2:	sprintf(modrm_rm, "[bp+si]");
+					break;
+				case 3:	sprintf(modrm_rm, "[bp+di]");
+					break;
+				case 4:	sprintf(modrm_rm, "[si]");
+					break;
+				case 5:	sprintf(modrm_rm, "[di]");
+					break;
+				case 6:	imm2 = read_imm_common(instrp, lenp,
+					    mode, disasm);
+					sprintf(modrm_rm, "[0x%x]", imm2);
+					break;
+				case 7:	sprintf(modrm_rm, "[bx]");
+					break;
+				}
+
+				if (eightbit & MODRM_SEG)
+					strcpy(modrm_r, seg_names[r]);
+				else
+					strcpy(modrm_r, reg_names[r]);
+			} else {
+				fatal("modrm(): todo 3\n");
+			}
+		}
+		break;
 	case 3:
 		if (eightbit & MODRM_EIGHTBIT) {
 			fatal("modrm(): todo\n");
@@ -564,6 +602,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = dumpaddr + 2 + imm;
 		SPACES; debug("j%s%s\t0x%x", op&1? "n" : "",
 		    cond_names[(op/2) & 0x7], imm);
+	} else if (op == 0x89) {
+		modrm(cpu, MODRM_READ, mode, 0, &instr, &ilen,
+		    NULL, NULL);
+		SPACES; debug("mov\t");
+		debug("%s,%s", modrm_rm, modrm_r);
 	} else if (op == 0x8c || op == 0x8e) {
 		modrm(cpu, MODRM_READ, mode, MODRM_SEG, &instr, &ilen,
 		    NULL, NULL);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.709 2005-05-03 15:55:29 debug Exp $
+$Id: HISTORY,v 1.710 2005-05-03 21:08:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1874,3 +1874,4 @@ Changelog for GXemul:
 20050502	Minor updates.
 20050503	Removing the WRT54G mode (it was bogus anyway), and adding a
 		comment about Windows NT for MIPS in doc/experiments.html.
+		Minor updates to the x86 instruction decoding.

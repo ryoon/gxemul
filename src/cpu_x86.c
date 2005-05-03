@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.27 2005-05-03 20:31:39 debug Exp $
+ *  $Id: cpu_x86.c,v 1.28 2005-05-03 21:08:35 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -364,6 +364,7 @@ static char modrm_rm[65];
 #define MODRM_WRITE2	2
 /*  eightbit flags:  */
 #define	MODRM_EIGHTBIT	1
+#define	MODRM_SEG	2
 /*
  *  modrm():
  *
@@ -391,24 +392,33 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 		} else {
 			if (disasm) {
 				strcpy(modrm_rm, reg_names[rm]);
-				strcpy(modrm_r, reg_names[r]);
+				if (eightbit & MODRM_SEG)
+					strcpy(modrm_r, seg_names[r]);
+				else
+					strcpy(modrm_r, reg_names[r]);
 			} else {
 				switch (writeflag) {
 				case MODRM_WRITE:
 					cpu->cd.x86.r[rm] = *op1p;
 					break;
 				case MODRM_WRITE2:
-					cpu->cd.x86.r[r] = *op2p;
+					if (eightbit & MODRM_SEG)
+						cpu->cd.x86.s[r] = *op2p;
+					else
+						cpu->cd.x86.r[r] = *op2p;
 					break;
 				default:	/*  read  */
 					*op1p = cpu->cd.x86.r[rm];
-					*op2p = cpu->cd.x86.r[r];
+					if (eightbit & MODRM_SEG)
+						*op2p = cpu->cd.x86.s[r];
+					else
+						*op2p = cpu->cd.x86.r[r];
 				}
 			}
 		}
 		break;
 	default:
-		fatal("modrm(): unimplemented mod\n");
+		fatal("modrm(): unimplemented mod %i\n", mod);
 		exit(1);
 	}
 
@@ -554,6 +564,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = dumpaddr + 2 + imm;
 		SPACES; debug("j%s%s\t0x%x", op&1? "n" : "",
 		    cond_names[(op/2) & 0x7], imm);
+	} else if (op == 0x8c || op == 0x8e) {
+		modrm(cpu, MODRM_READ, mode, MODRM_SEG, &instr, &ilen,
+		    NULL, NULL);
+		SPACES; debug("mov\t");
+		if (op == 0x8c)
+			debug("%s,%s", modrm_rm, modrm_r);
+		else
+			debug("%s,%s", modrm_r, modrm_rm);
 	} else if (op == 0x90) {
 		SPACES; debug("nop");
 	} else if (op >= 0x91 && op <= 0x97) {
@@ -572,6 +590,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("sahf");
 	} else if (op == 0x9f) {
 		SPACES; debug("lahf");
+	} else if (op == 0xaa) {
+		SPACES; debug("stosb");
+	} else if (op == 0xab) {
+		SPACES; debug("stos%s", mode==16? "w" : (mode==32? "d" : "q"));
 	} else if (op >= 0xb0 && op <= 0xb7) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		switch (op & 7) {
@@ -715,6 +737,34 @@ static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
 
 	return cpu->memory_rw(cpu, cpu->mem, addr, &databuf[0], len,
 	    MEM_WRITE, CACHE_DATA);
+}
+
+
+/*
+ *  x86_push():
+ */
+static int x86_push(struct cpu *cpu, uint64_t value)
+{
+	int res = 1;
+
+	cpu->cd.x86.r[X86_R_SP] -= (cpu->cd.x86.mode / 8);
+	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value,
+	    cpu->cd.x86.mode / 8);
+	return res;
+}
+
+
+/*
+ *  x86_pop():
+ */
+static int x86_pop(struct cpu *cpu, uint64_t *valuep)
+{
+	int res = 1;
+
+	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep,
+	    cpu->cd.x86.mode / 8);
+	cpu->cd.x86.r[X86_R_SP] += (cpu->cd.x86.mode / 8);
+	return res;
 }
 
 
@@ -941,6 +991,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!success)
 				return 0;
 		}
+	} else if ((op & 0xf0) < 0x20 && (op & 7) == 6) {
+		success = x86_push(cpu, cpu->cd.x86.s[op / 8]);
+		if (!success)
+			return 0;
+	} else if (op == 0x0f) {
+		fatal("TODO: 0x0f\n");
+		exit(1);
+	} else if ((op & 0xf0) < 0x20 && (op & 7) == 7) {
+		uint64_t tmp;
+		success = x86_pop(cpu, &tmp);
+		if (!success)
+			return 0;
+		cpu->cd.x86.s[op / 8] = tmp;
 	} else if (op >= 0x40 && op <= 0x4f) {
 		if (op < 0x48)
 			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
@@ -949,7 +1012,53 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
 			    cpu->cd.x86.r[op & 7] - 1);
 		/*  TODO: flags etc  */
+	} else if (op == 0x8c || op == 0x8e) {
+		instr_orig = instr;
+		success = modrm(cpu, MODRM_READ, mode, MODRM_SEG, &instr,
+		    &newpc, &op1, &op2);
+		if (op == 0x8c)
+			op1 = op2;
+		else
+			op2 = op1;
+		success = modrm(cpu, op == 0x8e? MODRM_WRITE2 : MODRM_WRITE,
+		    mode, MODRM_SEG, &instr_orig, NULL, &op1, &op2);
 	} else if (op == 0x90) {		/*  NOP  */
+	} else if (op == 0xaa || op == 0xab) {		/*  STOS  */
+		int dir = 1;
+		len = 1;
+		if (op == 0xab)
+			len = mode / 8;
+		if (cpu->cd.x86.rflags & X86_FLAGS_DF)
+			dir = -1;
+		cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+		do {
+			if (!x86_store(cpu, cpu->cd.x86.r[X86_R_DI],
+			    cpu->cd.x86.r[X86_R_AX], len))
+				return 0;
+
+			/*  Modify edi:  */
+			cpu->cd.x86.r[X86_R_DI] = modify(cpu->cd.x86.r[
+			    X86_R_DI], cpu->cd.x86.r[X86_R_DI] + len*dir);
+
+			if (rep) {
+				/*  Decrement ecx:  */
+				cpu->cd.x86.r[X86_R_CX] = modify(cpu->cd.x86.r[
+				    X86_R_CX], cpu->cd.x86.r[X86_R_CX] - 1);
+				if (mode == 16 && (cpu->cd.x86.r[X86_R_CX] &
+				    0xffff) == 0)
+					rep = 0;
+				if (mode != 16 && cpu->cd.x86.r[X86_R_CX] == 0)
+					rep = 0;
+			}
+		} while (rep);
+	} else if (op >= 0xb0 && op <= 0xb3) {
+		imm = read_imm(&instr, &newpc, 8);
+		cpu->cd.x86.r[op & 3] = (cpu->cd.x86.r[op & 3] & ~0xff)
+		    | (imm & 0xff);
+	} else if (op >= 0xb4 && op <= 0xb7) {
+		imm = read_imm(&instr, &newpc, 8);
+		cpu->cd.x86.r[op & 3] = (cpu->cd.x86.r[op & 3] & ~0xff00)
+		    | ((imm & 0xff) << 8);
 	} else if (op >= 0xb8 && op <= 0xbf) {
 		imm = read_imm(&instr, &newpc, mode);
 		cpu->cd.x86.r[op & 7] = imm;

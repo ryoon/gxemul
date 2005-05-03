@@ -1,6 +1,6 @@
-$Id: RELEASE,v 1.112 2005-04-27 16:37:33 debug Exp $
+$Id: RELEASE,v 1.113 2005-05-03 19:34:50 debug Exp $
 
-I'm now working on post-0.3.1.
+I'm now working on post-0.3.2.
 
 ------------------------------------------------------------------------------
 
@@ -42,13 +42,9 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-The most important/visible changes from 0.3.1 to 0.3.X are:
+The most important/visible changes from 0.3.2 to 0.3.X are:
 
-	x)  NetBSD/cobalt can run from a harddisk image. (Installation
-	    must be done using another OS though, for example NetBSD/pmax.)
-
-	x)  Some minor fixes to make the binary translation system a bit
-	    more stable.
+	x)  ..
 
 Files included in this release are:
 

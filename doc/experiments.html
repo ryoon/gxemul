@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.61 2005-04-28 22:17:06 debug Exp $
+$Id: experiments.html,v 1.62 2005-05-03 15:55:30 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -405,9 +405,11 @@ register of the system coprocessor.)
 <h3>Experiments with other kernels and guest OSes:</h3>
 
 <p>
-Operating system kernels and other test programs can be downloaded from 
-various places. Here are links to some of the kernels that I usually 
-experiment with.
+Free Operating system kernels and other test programs can be
+downloaded from various places on the Internet. Other kinds of software 
+(non-Free), if obsolete enough (such as Ultrix or Windows NT), can
+sometimes be found in garbage containers, or perhaps be found for a cheap
+price on ebay or at a flea market.
 
 <p>
 <font color="#ff0000">
@@ -553,6 +555,15 @@ probably doesn't work in GXemul.
 	<br><a href="http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html">http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html</a> (Deskstation Tyne)
 	<br><a href="http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html">http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html</a> (NEC RISCserver 4200)
 	<br><a href="http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out">http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out</a> (NEC-R96)
+      <p>
+      <li>Windows NT:
+	<br>This works with a Swedish Windows NT 4.0 for MIPS CDROM, and
+		possibly others:
+	<br>Extract the mips/setupldr program from the cdrom. Then, start
+		gxemul like this (assuming /dev/cd0c is your cdrom drive):
+	<br><b>gxemul -XbEarc -epica -d bc:/dev/cd0c -j MIPS\\SETUPLDR setupldr</b>
+	<br>It should load some drivers from the cdrom, and then
+	crash with a bluescreen.
     </ul>
   </li>
 
@@ -679,26 +690,6 @@ The following work even less than the ones listed above:
     </ul>
   </li>
 
-  <p>
-
-  <li>Linksys WRT54G:
-    <ul>
-      <li>Linux:
-	<br><a href="http://openwrt.org/">OpenWRT</a> is a Linux
-		distribution for the WRT54G.
-	<br><a href="http://www.batbox.org/wrt54g-linux.html">BatBox</a>
-		is another distribution.
-	<br>Download <a href="http://pjf.dotgeek.org/downloads/openwrt/openwrt-g-code.bin">http://pjf.dotgeek.org/downloads/openwrt/openwrt-g-code.bin</a>
-		(or a similar .bin file).
-	<br>From offset 60 and forward in the bin file, there is a gzip file.
-	<br>$ <b>dd if=openwrt-g-code.bin of=piggy.gz bs=60 iseek=1 oseek=0</b>
-	<br>$ <b>gunzip piggy.gz</b>
-	<br>$ <b>gxemul -E linksys -t 0x80001000:piggy</b>
-	<br>(It doesn't really work yet.)
-	<br>There's also a .bin file available from linksys:
-		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
-    </ul>
-  </li>
 </ul>
 
 <p>

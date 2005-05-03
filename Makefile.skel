@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.28 2005-04-15 22:28:42 debug Exp $
+#  $Id: Makefile.skel,v 1.29 2005-05-03 15:55:29 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -7,6 +7,8 @@
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE)
 BIN=gxemul
 LIBS=$(XLIB) $(OTHERLIBS)
+
+all: build
 
 build:
 	cd src; $(MAKE); cd ..

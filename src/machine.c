@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.420 2005-04-17 00:15:24 debug Exp $
+ *  $Id: machine.c,v 1.421 2005-05-03 15:55:30 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4184,46 +4184,6 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		device_add(machine, "8250 addr=0x18000800 addr_mult=4 irq=0");
 		break;
 
-	case MACHINE_WRT54G:
-		machine->machine_name = "Linksys WRT54G";
-
-		if (machine->use_x11)
-			fprintf(stderr, "WARNING! Linksys WRT54G with -X is meaningless. Continuing anyway.\n");
-
-		/*  200 MHz default  */
-		if (machine->emulated_hz == 0)
-			machine->emulated_hz = 200000000;
-
-		/*
-		 *  Linux should be loaded at 0x80001000.
-		 *  RAM: 16 or 32 MB, Flash RAM: 4 or 8 MB.
-		 *  http://www.bumpclub.ee/~jaanus/wrt54g/vana/minicom.cap:
-		 *
-		 *  Starting program at 0x80001000
-		 *  CPU revision is: 00029007
-		 *  Primary instruction cache 8kb, linesize 16 bytes (2 ways)
-		 *  Primary data cache 4kb, linesize 16 bytes (2 ways)
-		 *   memory: 01000000 @ 00000000 (usable)
-		 *  Kernel command line: root=/dev/mtdblock2 rootfstype=squashfs init=/etc/preinit noinitrd console=ttyS0,115200
-		 *  CPU: BCM4712 rev 1 at 200 MHz
-		 *  Calibrating delay loop... 199.47 BogoMIPS
-		 *  ttyS00 at 0xb8000300 (irq = 3) is a 16550A
-		 *  ttyS01 at 0xb8000400 (irq = 0) is a 16550A
-		 *  Flash device: 0x400000 at 0x1c000000
-		 *  ..
-		 */
-
-		/*  TODO: What should the initial register contents be?  */
-#if 1
-{
-int i;
-for (i=0; i<32; i++)
-		cpu->cd.mips.gpr[i] = 0x01230000 + (i << 8) + 0x55;
-}
-#endif
-
-		break;
-
 	case MACHINE_SONYNEWS:
 		/*
 		 *  There are several models, according to
@@ -4581,9 +4541,6 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_NETGEAR:
 			m->physical_ram_in_mb = 16;
 			break;
-		case MACHINE_WRT54G:
-			m->physical_ram_in_mb = 32;
-			break;
 		case MACHINE_ARC:
 			switch (m->machine_subtype) {
 			case MACHINE_ARC_JAZZ_PICA:
@@ -4615,9 +4572,8 @@ void machine_memsize_fix(struct machine *m)
 		}
 	}
 
-	/*  Special hack for WRT54G and hpcmips machines:  */
-	if (m->machine_type == MACHINE_WRT54G ||
-	    m->machine_type == MACHINE_HPCMIPS) {
+	/*  Special hack for hpcmips machines:  */
+	if (m->machine_type == MACHINE_HPCMIPS) {
 		m->dbe_on_nonexistant_memaccess = 0;
 	}
 
@@ -4712,9 +4668,6 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_NETGEAR:
 		m->cpu_name = strdup("RC32334");
-		break;
-	case MACHINE_WRT54G:
-		m->cpu_name = strdup("BCM4712");
 		break;
 	case MACHINE_ARC:
 		switch (m->machine_subtype) {
@@ -5228,15 +5181,6 @@ void machine_init(void)
 	    MACHINE_MACPPC_G5, 1);
 	me->subtype[1]->aliases[0] = "g5";
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Linksys:  */
-	me = machine_entry_new("Linksys WRT54G", ARCH_MIPS,
-	    MACHINE_WRT54G, 2, 0);
-	me->aliases[0] = "linksys";
-	me->aliases[1] = "wrt54g";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

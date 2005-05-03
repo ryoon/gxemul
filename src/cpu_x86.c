@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.25 2005-05-01 23:47:28 debug Exp $
+ *  $Id: cpu_x86.c,v 1.26 2005-05-03 15:55:30 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -306,7 +306,7 @@ TODO: regmatch for 64, 32, 16, and 8 bit register names
 #define	SPACES	HEXSPACES(ilen)
 
 
-static uint32_t read_imm_common(unsigned char **instrp, int *ilenp,
+static uint32_t read_imm_common(unsigned char **instrp, uint64_t *ilenp,
 	int len, int printflag)
 {
 	uint32_t imm;
@@ -323,26 +323,25 @@ static uint32_t read_imm_common(unsigned char **instrp, int *ilenp,
 	if (printflag)
 		HEXPRINT(instr, len / 8);
 
-	(*ilenp) += len/8;
+	if (ilenp != NULL)
+		(*ilenp) += len/8;
+
 	(*instrp) += len/8;
 	return imm;
 }
 
 
-static uint32_t read_imm_and_print(unsigned char **instrp, int *ilenp,
+static uint32_t read_imm_and_print(unsigned char **instrp, uint64_t *ilenp,
 	int mode)
 {
 	return read_imm_common(instrp, ilenp, mode, 1);
 }
 
 
-static uint32_t read_imm(unsigned char **instrp, uint64_t *newpc,
+static uint32_t read_imm(unsigned char **instrp, uint64_t *newpcp,
 	int mode)
 {
-	int x = 0;
-	uint32_t r = read_imm_common(instrp, &x, mode, 0);
-	(*newpc) += x;
-	return r;
+	return read_imm_common(instrp, newpcp, mode, 0);
 }
 
 
@@ -360,54 +359,36 @@ static void print_csip(struct cpu *cpu)
 
 static char modrm_r[65];
 static char modrm_rm[65];
-static void read_modrm(struct cpu *cpu, int mode, int eightbit,
-	unsigned char **instrp, void *ip, uint64_t *op1p, uint64_t *op2p)
+#define MODRM_READ	0
+#define MODRM_WRITE	1
+static void modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
+	unsigned char **instrp, uint64_t *lenp, uint64_t *op1p, uint64_t *op2p)
 {
-
-/*
-
-TODO: rewrite
-
-register or memory, and in case of memory return a memory address.
-or how should this be solved nicely?
-
-
- */
-
-	int *ilenp = (int *)ip;
-	uint64_t *newpcp = (uint64_t *)ip;
 	uint32_t imm;
-	int r, rm;
+	int mod, r, rm;
 
 	modrm_r[0] = modrm_r[64] = '\0';
-	modrm_src[0] = modrm_src[64] = '\0';
+	modrm_rm[0] = modrm_rm[64] = '\0';
 
-	if (op1p == NULL)
-		imm = read_imm_and_print(instrp, ilenp, 8);
-	else
-		imm = read_imm(instrp, newpcp, 8);
+	imm = read_imm_common(instrp, lenp, 8, op1p == NULL);
 
+	mod = (imm >> 6) & 3;
 	r = (imm >> 3) & 7;
 	rm = imm & 7;
 
-	if ((imm & 0xc0) == 0xc0) {
+	if (mod == 3) {
 		if (eightbit) {
-			strcpy(modrm_r, reg_names_bytes[r]);
-			strcpy(modrm_rm, reg_names_bytes[rm]);
-			if (op1p != NULL) {
-				fatal("read_modrm(): todo\n");
-				exit(1);
-			}
+			fatal("modrm(): todo\n");
 		} else {
 			strcpy(modrm_r, reg_names[r]);
-			strcpy(modrm_src, reg_names[rm]);
+			strcpy(modrm_rm, reg_names[rm]);
 			if (op1p != NULL) {
 				*op1p = cpu->cd.x86.r[r];
 				*op2p = cpu->cd.x86.r[rm];
 			}
 		}
 	} else {
-		fatal("read_modrm(): unimplemented modr/m\n");
+		fatal("modrm(): unimplemented mod\n");
 		exit(1);
 	}
 }
@@ -428,8 +409,8 @@ or how should this be solved nicely?
 int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	int ilen = 0, op, rep = 0, n_prefix_bytes = 0;
-	uint64_t offset;
+	int op, rep = 0, n_prefix_bytes = 0;
+	uint64_t ilen = 0, offset;
 	uint32_t imm=0, imm2, mode = cpu->cd.x86.mode;
 	char *symbol, *tmp = "ERROR", *mnem = "ERROR", *e = "e",
 	    *prefix = NULL;
@@ -512,7 +493,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			SPACES; debug("%s\t%sax,0x%x", mnem, e, imm);
 			break;
 		default:
-			read_modrm(cpu, mode, !(op & 1), &instr, &ilen,
+			modrm(cpu, MODRM_READ, mode, !(op & 1), &instr, &ilen,
 			    NULL, NULL);
 			SPACES; debug("%s\t%s,%s", mnem, modrm_r, modrm_rm);
 		}
@@ -890,8 +871,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			op1 = cpu->cd.x86.r[X86_R_AX]; op2 = imm;
 			break;
 		default:
-			read_modrm(cpu, mode, !(op & 1), &instr, &newpc,
-			    &op1, &op2);
+			modrm(cpu, MODRM_READ, mode, !(op & 1), &instr,
+			    &newpc, &op1, &op2);
 		}
 
 		printf("op1=0x%x op2=0x%x => op1=", (int)op1, (int)op2);

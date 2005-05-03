@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.30 2005-05-03 21:43:21 debug Exp $
+ *  $Id: cpu_x86.c,v 1.31 2005-05-03 22:36:05 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -357,11 +357,75 @@ static void print_csip(struct cpu *cpu)
 }
 
 
+/*
+ *  x86_load():
+ *
+ *  Returns same error code as memory_rw().
+ */
+static int x86_load(struct cpu *cpu, uint64_t addr, uint64_t *data, int len)
+{
+	unsigned char databuf[8];
+	int res;
+	uint64_t d;
+
+	res = cpu->memory_rw(cpu, cpu->mem, addr, &databuf[0], len,
+	    MEM_READ, CACHE_DATA);
+
+	d = databuf[0];
+	if (len > 1) {
+		d += ((uint64_t)databuf[1] << 8);
+		if (len > 2) {
+			d += ((uint64_t)databuf[2] << 16);
+			d += ((uint64_t)databuf[3] << 24);
+			if (len > 4) {
+				d += ((uint64_t)databuf[4] << 32);
+				d += ((uint64_t)databuf[5] << 40);
+				d += ((uint64_t)databuf[6] << 48);
+				d += ((uint64_t)databuf[7] << 56);
+			}
+		}
+	}
+
+	*data = d;
+	return res;
+}
+
+
+/*
+ *  x86_store():
+ *
+ *  Returns same error code as memory_rw().
+ */
+static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
+{
+	unsigned char databuf[8];
+
+	/*  x86 is always little-endian:  */
+	databuf[0] = data;
+	if (len > 1) {
+		databuf[1] = data >> 8;
+		if (len > 2) {
+			databuf[2] = data >> 16;
+			databuf[3] = data >> 24;
+			if (len > 4) {
+				databuf[4] = data >> 32;
+				databuf[5] = data >> 40;
+				databuf[6] = data >> 48;
+				databuf[7] = data >> 56;
+			}
+		}
+	}
+
+	return cpu->memory_rw(cpu, cpu->mem, addr, &databuf[0], len,
+	    MEM_WRITE, CACHE_DATA);
+}
+
+
 static char modrm_r[65];
 static char modrm_rm[65];
 #define MODRM_READ	0
-#define MODRM_WRITE	1
-#define MODRM_WRITE2	2
+#define MODRM_WRITE_RM	1
+#define MODRM_WRITE_R	2
 /*  eightbit flags:  */
 #define	MODRM_EIGHTBIT	1
 #define	MODRM_SEG	2
@@ -374,7 +438,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 	unsigned char **instrp, uint64_t *lenp, uint64_t *op1p, uint64_t *op2p)
 {
 	uint32_t imm, imm2;
-	int mod, r, rm;
+	uint64_t addr;
+	int mod, r, rm, res = 1, z, q = mode/8;
 	int disasm = (op1p == NULL);
 
 	if (disasm) {
@@ -385,72 +450,160 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 	imm = read_imm_common(instrp, lenp, 8, disasm);
 	mod = (imm >> 6) & 3; r = (imm >> 3) & 7; rm = imm & 7;
 
+	if (eightbit & MODRM_EIGHTBIT)
+		q = 1;
+
+	/*
+	 *  R/M:
+	 */
+
 	switch (mod) {
 	case 0:
-		if (eightbit & MODRM_EIGHTBIT) {
-			fatal("modrm(): todo 2\n");
+		if (disasm) {
+			switch (rm) {
+			case 0:	sprintf(modrm_rm, "[bx+si]");
+				break;
+			case 1:	sprintf(modrm_rm, "[bx+di]");
+				break;
+			case 2:	sprintf(modrm_rm, "[bp+si]");
+				break;
+			case 3:	sprintf(modrm_rm, "[bp+di]");
+				break;
+			case 4:	sprintf(modrm_rm, "[si]");
+				break;
+			case 5:	sprintf(modrm_rm, "[di]");
+				break;
+			case 6:	imm2 = read_imm_common(instrp, lenp,
+				    mode, disasm);
+				sprintf(modrm_rm, "[0x%x]", imm2);
+				break;
+			case 7:	sprintf(modrm_rm, "[bx]");
+				break;
+			}
 		} else {
-			if (disasm) {
+			switch (rm) {
+			case 0:	addr = cpu->cd.x86.r[X86_R_BX] +
+				    cpu->cd.x86.r[X86_R_SI]; break;
+			case 1:	addr = cpu->cd.x86.r[X86_R_BX] +
+				    cpu->cd.x86.r[X86_R_DI]; break;
+			case 2:	addr = cpu->cd.x86.r[X86_R_BP] +
+				    cpu->cd.x86.r[X86_R_SI]; break;
+			case 3:	addr = cpu->cd.x86.r[X86_R_BP] +
+				    cpu->cd.x86.r[X86_R_DI]; break;
+			case 4:	addr = cpu->cd.x86.r[X86_R_SI]; break;
+			case 5:	addr = cpu->cd.x86.r[X86_R_DI]; break;
+			case 6:	addr = read_imm_common(instrp, lenp,
+				    mode, disasm); break;
+			case 7:	addr = cpu->cd.x86.r[X86_R_BX]; break;
+			}
 
-/*  Ugly.  */
+			switch (writeflag) {
+			case MODRM_WRITE_RM:
+				res = x86_store(cpu, addr, *op1p, q);
+				break;
+			case MODRM_READ:	/*  read  */
+				res = x86_load(cpu, addr, op1p, q);
+			}
+		}
+		break;
+	case 1:
+	case 2:
+		z = (mod == 1)? 8 : mode;
+		if (disasm) {
+			switch (rm) {
+			case 0:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[bx+si+0x%x]", imm2); break;
+			case 1:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[bx+di+0x%x]", imm2); break;
+			case 2:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[bp+si+0x%x]", imm2); break;
+			case 3:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[bp+di+0x%x]", imm2); break;
+			case 4:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[si+0x%x]", imm2); break;
+			case 5:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[di+0x%x]", imm2); break;
+			case 6:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[bp+0x%x]", imm2); break;
+			case 7:	imm2 = read_imm_common(instrp, lenp, z, disasm);
+				sprintf(modrm_rm, "[bx+0x%x]", imm2); break;
+			}
+		} else {
+			switch (rm) {
+			case 0:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BX]
+				    + cpu->cd.x86.r[X86_R_SI];
+				break;
+			case 1:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BX]
+				    + cpu->cd.x86.r[X86_R_DI];
+				break;
+			case 2:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BP]
+				    + cpu->cd.x86.r[X86_R_SI];
+				break;
+			case 3:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BP]
+				    + cpu->cd.x86.r[X86_R_DI];
+				break;
+			case 4:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_SI];
+				break;
+			case 5:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_DI];
+				break;
+			case 6:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BP];
+				break;
+			case 7:	addr = (signed char)read_imm_common(instrp,
+				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BX];
+				break;
+			}
 
-				switch (rm) {
-				case 0:	sprintf(modrm_rm, "[bx+si]");
-					break;
-				case 1:	sprintf(modrm_rm, "[bx+di]");
-					break;
-				case 2:	sprintf(modrm_rm, "[bp+si]");
-					break;
-				case 3:	sprintf(modrm_rm, "[bp+di]");
-					break;
-				case 4:	sprintf(modrm_rm, "[si]");
-					break;
-				case 5:	sprintf(modrm_rm, "[di]");
-					break;
-				case 6:	imm2 = read_imm_common(instrp, lenp,
-					    mode, disasm);
-					sprintf(modrm_rm, "[0x%x]", imm2);
-					break;
-				case 7:	sprintf(modrm_rm, "[bx]");
-					break;
-				}
-
-				if (eightbit & MODRM_SEG)
-					strcpy(modrm_r, seg_names[r]);
-				else
-					strcpy(modrm_r, reg_names[r]);
-			} else {
-				fatal("modrm(): todo 3\n");
+			switch (writeflag) {
+			case MODRM_WRITE_RM:
+				res = x86_store(cpu, addr, *op1p, q);
+				break;
+			case MODRM_READ:	/*  read  */
+				res = x86_load(cpu, addr, op1p, q);
 			}
 		}
 		break;
 	case 3:
 		if (eightbit & MODRM_EIGHTBIT) {
-			fatal("modrm(): todo\n");
+			if (disasm) {
+				strcpy(modrm_rm, reg_names_bytes[rm]);
+			} else {
+				switch (writeflag) {
+				case MODRM_WRITE_RM:
+					if (rm < 4)
+						cpu->cd.x86.r[rm] =
+						    (cpu->cd.x86.r[rm] &
+						    ~0xff) | (*op1p & 0xff);
+					else
+						cpu->cd.x86.r[rm] = (cpu->
+						    cd.x86.r[rm] & ~0xff00) |
+						    ((*op1p & 0xff) << 8);
+					break;
+				case MODRM_READ:
+					if (rm < 4)
+						*op1p = cpu->cd.x86.r[rm] &
+						    0xff;
+					else
+						*op1p = (cpu->cd.x86.r[rm] &
+						     0xff00) >> 8;
+				}
+			}
 		} else {
 			if (disasm) {
 				strcpy(modrm_rm, reg_names[rm]);
-				if (eightbit & MODRM_SEG)
-					strcpy(modrm_r, seg_names[r]);
-				else
-					strcpy(modrm_r, reg_names[r]);
 			} else {
 				switch (writeflag) {
-				case MODRM_WRITE:
+				case MODRM_WRITE_RM:
 					cpu->cd.x86.r[rm] = *op1p;
 					break;
-				case MODRM_WRITE2:
-					if (eightbit & MODRM_SEG)
-						cpu->cd.x86.s[r] = *op2p;
-					else
-						cpu->cd.x86.r[r] = *op2p;
-					break;
-				default:	/*  read  */
+				case MODRM_READ:	/*  read  */
 					*op1p = cpu->cd.x86.r[rm];
-					if (eightbit & MODRM_SEG)
-						*op2p = cpu->cd.x86.s[r];
-					else
-						*op2p = cpu->cd.x86.r[r];
 				}
 			}
 		}
@@ -460,7 +613,56 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 		exit(1);
 	}
 
-	return 1;
+
+	/*
+	 *  R:
+	 */
+
+	if (eightbit & MODRM_EIGHTBIT) {
+		if (disasm) {
+			strcpy(modrm_r, reg_names_bytes[r]);
+		} else {
+			switch (writeflag) {
+			case MODRM_WRITE_R:
+				if (r < 4)
+					cpu->cd.x86.r[r] = (cpu->cd.x86.r[r] &
+					    ~0xff) | (*op2p & 0xff);
+				else
+					cpu->cd.x86.r[r] = (cpu->cd.x86.r[r] &
+					    ~0xff00) | ((*op2p & 0xff) << 8);
+				break;
+			case MODRM_READ:
+				if (r < 4)
+					*op2p = cpu->cd.x86.r[r] & 0xff;
+				else
+					*op2p = (cpu->cd.x86.r[r] & 0xff00) >>8;
+			}
+		}
+	} else {
+		if (disasm) {
+			if (eightbit & MODRM_SEG)
+				strcpy(modrm_r, seg_names[r]);
+			else
+				strcpy(modrm_r, reg_names[r]);
+		} else {
+			switch (writeflag) {
+			case MODRM_WRITE_R:
+				if (eightbit & MODRM_SEG)
+					cpu->cd.x86.s[r] = *op2p;
+				else
+					cpu->cd.x86.r[r] =
+					    modify(cpu->cd.x86.r[r], *op2p);
+				break;
+			case MODRM_READ:
+				if (eightbit & MODRM_SEG)
+					*op2p = cpu->cd.x86.s[r];
+				else
+					*op2p = cpu->cd.x86.r[r];
+			}
+		}
+	}
+
+	return res;
 }
 
 
@@ -605,8 +807,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0x89) {
 		modrm(cpu, MODRM_READ, mode, 0, &instr, &ilen,
 		    NULL, NULL);
-		SPACES; debug("mov\t");
-		debug("%s,%s", modrm_rm, modrm_r);
+		SPACES; debug("mov\t%s,%s", modrm_rm, modrm_r);
 	} else if (op == 0x8c || op == 0x8e) {
 		modrm(cpu, MODRM_READ, mode, MODRM_SEG, &instr, &ilen,
 		    NULL, NULL);
@@ -704,6 +905,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("cld");
 	} else if (op == 0xfd) {
 		SPACES; debug("std");
+	} else if (op == 0xfe || op == 0xff) {
+		modrm(cpu, MODRM_READ, mode, op = 0xfe? MODRM_EIGHTBIT : 0,
+		    &instr, &ilen, NULL, NULL);
+		SPACES; debug("inc\t%s", modrm_rm);
 	} else {
 		SPACES; debug("UNIMPLEMENTED 0x%02x", op);
 	}
@@ -723,70 +928,6 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 #include "memory_rw.c"
 #undef MEM_X86
 #undef MEMORY_RW
-
-
-/*
- *  x86_load():
- *
- *  Returns same error code as memory_rw().
- */
-static int x86_load(struct cpu *cpu, uint64_t addr, uint64_t *data, int len)
-{
-	unsigned char databuf[8];
-	int res;
-	uint64_t d;
-
-	res = cpu->memory_rw(cpu, cpu->mem, addr, &databuf[0], len,
-	    MEM_READ, CACHE_DATA);
-
-	d = databuf[0];
-	if (len > 1) {
-		d += ((uint64_t)databuf[1] << 8);
-		if (len > 2) {
-			d += ((uint64_t)databuf[2] << 16);
-			d += ((uint64_t)databuf[3] << 24);
-			if (len > 4) {
-				d += ((uint64_t)databuf[4] << 32);
-				d += ((uint64_t)databuf[5] << 40);
-				d += ((uint64_t)databuf[6] << 48);
-				d += ((uint64_t)databuf[7] << 56);
-			}
-		}
-	}
-
-	*data = d;
-	return res;
-}
-
-
-/*
- *  x86_store():
- *
- *  Returns same error code as memory_rw().
- */
-static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
-{
-	unsigned char databuf[8];
-
-	/*  x86 is always little-endian:  */
-	databuf[0] = data;
-	if (len > 1) {
-		databuf[1] = data >> 8;
-		if (len > 2) {
-			databuf[2] = data >> 16;
-			databuf[3] = data >> 24;
-			if (len > 4) {
-				databuf[4] = data >> 32;
-				databuf[5] = data >> 40;
-				databuf[6] = data >> 48;
-				databuf[7] = data >> 56;
-			}
-		}
-	}
-
-	return cpu->memory_rw(cpu, cpu->mem, addr, &databuf[0], len,
-	    MEM_WRITE, CACHE_DATA);
-}
 
 
 /*
@@ -1035,7 +1176,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			success = modrm(cpu, (op & 6) == 2?
-			    MODRM_WRITE2 : MODRM_WRITE, mode, !(op & 1),
+			    MODRM_WRITE_R : MODRM_WRITE_RM, mode, !(op & 1),
 			    &instr_orig, NULL, &op1, &op2);
 			if (!success)
 				return 0;
@@ -1086,19 +1227,27 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		instr_orig = instr;
 		success = modrm(cpu, MODRM_READ, mode, 0, &instr,
 		    &newpc, &op1, &op2);
+		if (!success)
+			return 0;
 		op1 = op2;
-		success = modrm(cpu, MODRM_WRITE,
+		success = modrm(cpu, MODRM_WRITE_RM,
 		    mode, 0, &instr_orig, NULL, &op1, &op2);
+		if (!success)
+			return 0;
 	} else if (op == 0x8c || op == 0x8e) {
 		instr_orig = instr;
 		success = modrm(cpu, MODRM_READ, mode, MODRM_SEG, &instr,
 		    &newpc, &op1, &op2);
+		if (!success)
+			return 0;
 		if (op == 0x8c)
 			op1 = op2;
 		else
 			op2 = op1;
-		success = modrm(cpu, op == 0x8e? MODRM_WRITE2 : MODRM_WRITE,
+		success = modrm(cpu, op == 0x8e? MODRM_WRITE_R : MODRM_WRITE_RM,
 		    mode, MODRM_SEG, &instr_orig, NULL, &op1, &op2);
+		if (!success)
+			return 0;
 	} else if (op == 0x90) {		/*  NOP  */
 	} else if (op == 0xaa || op == 0xab) {		/*  STOS  */
 		int dir = 1;
@@ -1173,6 +1322,18 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.x86.rflags &= ~X86_FLAGS_DF;
 	} else if (op == 0xfd) {	/*  STD  */
 		cpu->cd.x86.rflags |= X86_FLAGS_DF;
+	} else if (op == 0xfe || op == 0xff) {
+		instr_orig = instr;
+		success = modrm(cpu, MODRM_READ, mode,
+		    op = 0xfe? MODRM_EIGHTBIT : 0, &instr, &newpc, &op1, &op2);
+		if (!success)
+			return 0;
+		op1 = modify(op1, op1 + 1);
+		success = modrm(cpu, MODRM_WRITE_RM, mode,
+		    op = 0xfe? MODRM_EIGHTBIT : 0, &instr_orig, NULL,
+		    &op1, &op2);
+		if (!success)
+			return 0;
 	} else {
 		fatal("x86_cpu_run_instr(): unimplemented opcode 0x%02x"
 		    " at ", op); print_csip(cpu); fatal("\n");

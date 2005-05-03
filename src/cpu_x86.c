@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.29 2005-05-03 21:17:27 debug Exp $
+ *  $Id: cpu_x86.c,v 1.30 2005-05-03 21:43:21 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -670,6 +670,12 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("aad");
 	} else if (op == 0xd7) {
 		SPACES; debug("xlat");
+	} else if (op == 0xe9) {
+		imm = read_imm_and_print(&instr, &ilen, mode);
+		if (mode == 16)
+			imm = (int16_t)imm;
+		imm = dumpaddr + ilen + imm;
+		SPACES; debug("jmp\t0x%x", imm);
 	} else if (op == 0xea) {
 		imm = read_imm_and_print(&instr, &ilen, mode);
 		imm2 = read_imm_and_print(&instr, &ilen, 16);
@@ -1054,7 +1060,35 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		else
 			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
 			    cpu->cd.x86.r[op & 7] - 1);
-		/*  TODO: flags etc  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
+		if (mode != 16 && cpu->cd.x86.r[op & 7] == 0)
+			cpu->cd.x86.rflags |= X86_FLAGS_ZF;
+		if (mode == 16 && (cpu->cd.x86.r[op & 7] & 0xffff) == 0)
+			cpu->cd.x86.rflags |= X86_FLAGS_ZF;
+		/*  TODO: more flags: SF,AF,PF  */
+	} else if ((op & 0xf0) == 0x70) {
+		success = 0;
+		imm = read_imm(&instr, &newpc, 8);
+		switch (op & 0xf) {
+		case 0x04:	/*  z  */
+			success = cpu->cd.x86.rflags & X86_FLAGS_ZF;
+			break;
+		case 0x05:	/*  nz  */
+			success = !(cpu->cd.x86.rflags & X86_FLAGS_ZF);
+			break;
+		default:
+			fatal("unimplemented condition\n");
+			exit(1);
+		}
+		if (success)
+			newpc = modify(newpc, newpc + (signed char)imm);
+	} else if (op == 0x89) {
+		instr_orig = instr;
+		success = modrm(cpu, MODRM_READ, mode, 0, &instr,
+		    &newpc, &op1, &op2);
+		op1 = op2;
+		success = modrm(cpu, MODRM_WRITE,
+		    mode, 0, &instr_orig, NULL, &op1, &op2);
 	} else if (op == 0x8c || op == 0x8e) {
 		instr_orig = instr;
 		success = modrm(cpu, MODRM_READ, mode, MODRM_SEG, &instr,
@@ -1112,6 +1146,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		imm = read_imm(&instr, &newpc, 8);
 		cpu->pc = newpc;
 		return x86_interrupt(cpu, imm);
+	} else if (op == 0xe9) {	/*  JMP near  */
+		imm = read_imm(&instr, &newpc, mode);
+		if (mode == 16)
+			imm = (int16_t)imm;
+		newpc = modify(newpc, newpc + imm);
 	} else if (op == 0xea) {	/*  JMP seg:ofs  */
 		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);

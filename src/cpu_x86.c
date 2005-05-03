@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.26 2005-05-03 15:55:30 debug Exp $
+ *  $Id: cpu_x86.c,v 1.27 2005-05-03 20:31:39 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -361,36 +361,58 @@ static char modrm_r[65];
 static char modrm_rm[65];
 #define MODRM_READ	0
 #define MODRM_WRITE	1
-static void modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
+#define MODRM_WRITE2	2
+/*  eightbit flags:  */
+#define	MODRM_EIGHTBIT	1
+/*
+ *  modrm():
+ *
+ *  Yuck. I have a feeling that this function will become really ugly.
+ */
+static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 	unsigned char **instrp, uint64_t *lenp, uint64_t *op1p, uint64_t *op2p)
 {
 	uint32_t imm;
 	int mod, r, rm;
+	int disasm = (op1p == NULL);
 
-	modrm_r[0] = modrm_r[64] = '\0';
-	modrm_rm[0] = modrm_rm[64] = '\0';
+	if (disasm) {
+		modrm_rm[0] = modrm_rm[sizeof(modrm_rm)-1] = '\0';
+		modrm_r[0] = modrm_r[sizeof(modrm_r)-1] = '\0';
+	}
 
-	imm = read_imm_common(instrp, lenp, 8, op1p == NULL);
+	imm = read_imm_common(instrp, lenp, 8, disasm);
+	mod = (imm >> 6) & 3; r = (imm >> 3) & 7; rm = imm & 7;
 
-	mod = (imm >> 6) & 3;
-	r = (imm >> 3) & 7;
-	rm = imm & 7;
-
-	if (mod == 3) {
-		if (eightbit) {
+	switch (mod) {
+	case 3:
+		if (eightbit & MODRM_EIGHTBIT) {
 			fatal("modrm(): todo\n");
 		} else {
-			strcpy(modrm_r, reg_names[r]);
-			strcpy(modrm_rm, reg_names[rm]);
-			if (op1p != NULL) {
-				*op1p = cpu->cd.x86.r[r];
-				*op2p = cpu->cd.x86.r[rm];
+			if (disasm) {
+				strcpy(modrm_rm, reg_names[rm]);
+				strcpy(modrm_r, reg_names[r]);
+			} else {
+				switch (writeflag) {
+				case MODRM_WRITE:
+					cpu->cd.x86.r[rm] = *op1p;
+					break;
+				case MODRM_WRITE2:
+					cpu->cd.x86.r[r] = *op2p;
+					break;
+				default:	/*  read  */
+					*op1p = cpu->cd.x86.r[rm];
+					*op2p = cpu->cd.x86.r[r];
+				}
 			}
 		}
-	} else {
+		break;
+	default:
 		fatal("modrm(): unimplemented mod\n");
 		exit(1);
 	}
+
+	return 1;
 }
 
 
@@ -495,7 +517,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		default:
 			modrm(cpu, MODRM_READ, mode, !(op & 1), &instr, &ilen,
 			    NULL, NULL);
-			SPACES; debug("%s\t%s,%s", mnem, modrm_r, modrm_rm);
+			SPACES; debug("%s\t", mnem);
+			if (op & 2)
+				debug("%s,%s", modrm_r, modrm_rm);
+			else
+				debug("%s,%s", modrm_rm, modrm_r);
 		}
 	} else if (op == 0xf) {
 		/*  "pop cs" on 8086  */
@@ -789,10 +815,10 @@ static void x86_test(struct cpu *cpu, uint64_t a, uint64_t b)
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int i, r, rep = 0, op, len, diff, mode = cpu->cd.x86.mode;
-	int mode_addr = mode, nprefixbytes = 0;
+	int mode_addr = mode, nprefixbytes = 0, success;
 	uint32_t imm, imm2, value;
 	unsigned char buf[16];
-	unsigned char *instr = buf;
+	unsigned char *instr = buf, *instr_orig;
 	uint64_t newpc = cpu->pc;
 	unsigned char databuf[8];
 	uint64_t tmp, op1, op2;
@@ -862,6 +888,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	instr ++;
 
 	if ((op & 0xf0) <= 0x30 && (op & 7) <= 5) {
+		success = 1;
+		instr_orig = instr;
 		switch (op & 7) {
 		case 4:	imm = read_imm(&instr, &newpc, 8);
 			op1 = cpu->cd.x86.r[X86_R_AX]; op2 = (signed char)imm;
@@ -871,22 +899,30 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			op1 = cpu->cd.x86.r[X86_R_AX]; op2 = imm;
 			break;
 		default:
-			modrm(cpu, MODRM_READ, mode, !(op & 1), &instr,
-			    &newpc, &op1, &op2);
+			success = modrm(cpu, MODRM_READ, mode, !(op & 1),
+			    &instr, &newpc, &op1, &op2);
+			if (!success)
+				return 0;
 		}
 
-		printf("op1=0x%x op2=0x%x => op1=", (int)op1, (int)op2);
+		if ((op & 6) == 2) {
+			uint64_t tmp = op1; op1 = op2; op2 = tmp;
+		}
+
+		printf("op1=0x%x op2=0x%x => ", (int)op1, (int)op2);
 
 		switch (op & 0x38) {
-		case 0x30:	/*  xor  */
-			op1 = op1 ^ op2;
-			break;
+		case 0x30:	op1 = op1 ^ op2; break;
 		default:
 			fatal("not yet\n");
 			exit(1);
 		}
 
-		printf("0x%x\n", (int)op1);
+		printf("op1=0x%x op2=0x%x\n", (int)op1, (int)op2);
+
+		if ((op & 6) == 2) {
+			uint64_t tmp = op1; op1 = op2; op2 = tmp;
+		}
 
 		/*  Write back the result:  */
 		switch (op & 7) {
@@ -899,8 +935,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    cd.x86.r[X86_R_AX], op1);
 			break;
 		default:
-			fatal("todo: writeback\n");
-			exit(1);
+			success = modrm(cpu, (op & 6) == 2?
+			    MODRM_WRITE2 : MODRM_WRITE, mode, !(op & 1),
+			    &instr_orig, NULL, &op1, &op2);
+			if (!success)
+				return 0;
 		}
 	} else if (op >= 0x40 && op <= 0x4f) {
 		if (op < 0x48)

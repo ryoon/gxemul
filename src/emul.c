@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.185 2005-05-04 13:45:47 debug Exp $
+ *  $Id: emul.c,v 1.186 2005-05-04 14:30:31 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -142,9 +142,9 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	int disk_id, int iso_type, unsigned char *buf)
 {
 	char str[35];
-	int i, ofs, dirlen, res;
+	int filenr, i, ofs, dirlen, res;
 	uint64_t dirofs;
-	unsigned char *dirbuf;
+	unsigned char *dirbuf, *dp;
 
 	debug("ISO9660 boot:");
 
@@ -195,6 +195,28 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	if (!res) {
 		fatal("Couldn't read the disk image. Aborting.\n");
 		return 0;
+	}
+
+	dp = dirbuf; filenr = 1;
+	while (dp < dirbuf + dirlen) {
+		int i, nlen = dp[0];
+		int x = dp[2] + (dp[3] << 8) + (dp[4] << 16) + (dp[5] << 24);
+		int y = dp[6] + (dp[7] << 8);
+
+		dp += 8;
+
+		/*  16-bit aligned lenght:  */
+		if (nlen & 1)
+			nlen ++;
+
+		debug("%i: %i, %i, \"", filenr, x, y);
+		for (i=0; i<nlen; i++)
+			if (dp[i])
+				debug("%c", dp[i]);
+		debug("\"\n");
+
+		dp += nlen;
+		filenr ++;
 	}
 
 	free(dirbuf);

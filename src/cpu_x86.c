@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.37 2005-05-04 20:59:13 debug Exp $
+ *  $Id: cpu_x86.c,v 1.38 2005-05-04 23:20:23 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -530,34 +530,30 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int eightbit,
 				sprintf(modrm_rm, "[bx+0x%x]", imm2); break;
 			}
 		} else {
+			addr = read_imm_common(instrp, lenp, z, disasm);
+			if (z == 8)
+				addr = (signed char)addr;
+
 			switch (rm) {
-			case 0:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BX]
+			case 0:	addr += cpu->cd.x86.r[X86_R_BX]
 				    + cpu->cd.x86.r[X86_R_SI];
 				break;
-			case 1:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BX]
+			case 1:	addr += cpu->cd.x86.r[X86_R_BX]
 				    + cpu->cd.x86.r[X86_R_DI];
 				break;
-			case 2:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BP]
+			case 2:	addr += cpu->cd.x86.r[X86_R_BP]
 				    + cpu->cd.x86.r[X86_R_SI];
 				break;
-			case 3:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BP]
+			case 3:	addr += cpu->cd.x86.r[X86_R_BP]
 				    + cpu->cd.x86.r[X86_R_DI];
 				break;
-			case 4:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_SI];
+			case 4:	addr += cpu->cd.x86.r[X86_R_SI];
 				break;
-			case 5:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_DI];
+			case 5:	addr += cpu->cd.x86.r[X86_R_DI];
 				break;
-			case 6:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BP];
+			case 6:	addr += cpu->cd.x86.r[X86_R_BP];
 				break;
-			case 7:	addr = (signed char)read_imm_common(instrp,
-				    lenp, z, disasm) + cpu->cd.x86.r[X86_R_BX];
+			case 7:	addr += cpu->cd.x86.r[X86_R_BX];
 				break;
 			}
 
@@ -782,7 +778,18 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (cpu->cd.x86.model.model_number == X86_MODEL_8086) {
 			SPACES; debug("pop\tcs");
 		} else {
-			SPACES; debug("UNIMPLEMENTED 0x0f");
+			imm = read_imm_and_print(&instr, &ilen, 8);
+			switch (imm) {
+			case 0xa1:
+				SPACES; debug("pop\tfs");
+				break;
+			case 0xa9:
+				SPACES; debug("pop\tgs");
+				break;
+			default:
+				SPACES; debug("UNIMPLEMENTED 0x0f,0x%02x",
+				    *instr);
+			}
 		}
 	} else if (op < 0x20 && (op & 7) == 6) {
 		SPACES; debug("push\t%s", seg_names[op/8]);
@@ -803,6 +810,12 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("pusha");
 	} else if (op == 0x61) {
 		SPACES; debug("popa");
+	} else if (op == 0x68) {
+		imm = read_imm_and_print(&instr, &ilen, mode);
+		SPACES; debug("push\t%sword 0x%x", mode==32?"d":"", imm);
+	} else if (op == 0x6a) {
+		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("push\tbyte 0x%x", imm);
 	} else if ((op & 0xf0) == 0x70) {
 		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
 		imm = dumpaddr + 2 + imm;
@@ -1338,8 +1351,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 	} else if (op == 0x0f) {
-		fatal("TODO: 0x0f\n");
-		exit(1);
+		uint64_t tmp;
+		imm = read_imm(&instr, &newpc, 8);
+		switch (imm) {
+		case 0xa1:
+			if (!x86_pop(cpu, &tmp))
+				return 0;
+			cpu->cd.x86.s[X86_S_FS] = tmp;
+			break;
+		case 0xa9:
+			if (!x86_pop(cpu, &tmp))
+				return 0;
+			cpu->cd.x86.s[X86_S_GS] = tmp;
+			break;
+		default:fatal("TODO: 0x0f,0x%02x\n", imm);
+			exit(1);
+		}
 	} else if ((op & 0xf0) < 0x20 && (op & 7) == 7) {
 		uint64_t tmp;
 		success = x86_pop(cpu, &tmp);
@@ -1368,6 +1395,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 		cpu->cd.x86.r[op & 7] = tmp;
+	} else if (op == 0x68) {		/*  PUSH imm16/32  */
+		imm = read_imm(&instr, &newpc, mode);
+		if (!x86_push(cpu, imm))
+			return 0;
+	} else if (op == 0x6a) {		/*  PUSH imm8  */
+		imm = (signed char)read_imm(&instr, &newpc, 8);
+		if (!x86_push(cpu, imm))
+			return 0;
 	} else if ((op & 0xf0) == 0x70) {
 		success = 0;
 		imm = read_imm(&instr, &newpc, 8);
@@ -1415,6 +1450,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 		imm = read_imm(&instr, &newpc, op==0x80? 8 : mode);
+		if (op==0x80) {
+			op1 = (uint32_t)(signed char)op1;
+			imm = (uint32_t)(signed char)imm;
+		}
 		switch ((*instr_orig >> 3) & 0x7) {
 		case 0:	op1 += imm; break;
 		case 4:	op1 &= imm; break;
@@ -1658,7 +1697,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    &instr, &newpc, &op1, &op2);
 			if (!success)
 				return 0;
-			if (((*instr >> 3) & 0x7) == 4)
+			if (((*instr_orig >> 3) & 0x7) == 4)
 				op1 <<= (cpu->cd.x86.r[X86_R_CX] & 31);
 			else
 				op1 >>= (cpu->cd.x86.r[X86_R_CX] & 31);
@@ -1680,7 +1719,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    &newpc, &op1, &op2);
 			if (!success)
 				return 0;
-			if (((*instr >> 3) & 0x7) == 4)
+			if (((*instr_orig >> 3) & 0x7) == 4)
 				op1 <<= (cpu->cd.x86.r[X86_R_CX] & 31);
 			else
 				op1 >>= (cpu->cd.x86.r[X86_R_CX] & 31);

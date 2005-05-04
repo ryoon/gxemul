@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.422 2005-05-04 15:06:17 debug Exp $
+ *  $Id: machine.c,v 1.423 2005-05-04 23:20:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4463,6 +4463,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			store_16bit_word(cpu, i*4, 0x8000 + i);
 			store_16bit_word(cpu, i*4 + 2, 0xf000);
 		}
+
+		store_byte(cpu, 0x449, 0x03);	/*  initial video mode  */
 
 		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
 		    "Generic x86 PC");

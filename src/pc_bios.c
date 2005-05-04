@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.9 2005-05-04 20:59:13 debug Exp $
+ *  $Id: pc_bios.c,v 1.10 2005-05-04 23:20:23 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -177,9 +177,13 @@ static void pc_bios_printstr(struct cpu *cpu, char *s)
  */
 static void pc_bios_int10(struct cpu *cpu)
 {
-	int x,y;
+	int x,y, oldx,oldy;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
+	int dh = (cpu->cd.x86.r[X86_R_DX] >> 8) & 0xff;
+	int dl = cpu->cd.x86.r[X86_R_DX] & 0xff;
+	int cx = cpu->cd.x86.r[X86_R_CX] & 0xffff;
+	int bp = cpu->cd.x86.r[X86_R_BP] & 0xffff;
 
 	switch (ah) {
 	case 0x00:	/*  Switch video mode.  */
@@ -203,8 +207,26 @@ static void pc_bios_int10(struct cpu *cpu)
 		/*  ch = starting line, cl = ending line  */
 		/*  fatal("pc_bios_int10(): TODO: set cursor\n");  */
 		break;
-	case 0x0e:
+	case 0x09:	/*  write character and attribute(todo)  */
+		while (cx-- > 0)
+			pc_bios_putchar(cpu, al);
+		break;
+	case 0x0e:	/*  tty output  */
 		pc_bios_putchar(cpu, al);
+		break;
+	case 0x13:	/*  write string  */
+		/*  TODO: other flags in al  */
+		get_cursor_pos(cpu, &oldx, &oldy);
+		set_cursor_pos(cpu, dl, dh);
+		while (cx-- > 0) {
+			unsigned char byte;
+			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+			cpu->memory_rw(cpu, cpu->mem, bp++, &byte, 1,
+			    MEM_READ, CACHE_NONE | PHYSICAL);
+			pc_bios_putchar(cpu, byte);
+		}
+		if (!(al & 1))
+			set_cursor_pos(cpu, oldx, oldy);
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"
@@ -259,6 +281,7 @@ static void pc_bios_int13(struct cpu *cpu)
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
 			store_buf(cpu, bx, (char *)buf, sizeof(buf));
 			offset += sizeof(buf);
+			bx += sizeof(buf);
 			al --;
 		}
 		/*  TODO: error code?  */

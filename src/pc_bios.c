@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.6 2005-05-03 22:49:17 debug Exp $
+ *  $Id: pc_bios.c,v 1.7 2005-05-04 00:52:28 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -115,7 +115,7 @@ static void pc_bios_int10(struct cpu *cpu)
 		break;
 	case 0x01:
 		/*  ch = starting line, cl = ending line  */
-		fatal("pc_bios_int10(): TODO: set cursor\n");
+		/*  fatal("pc_bios_int10(): TODO: set cursor\n");  */
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"

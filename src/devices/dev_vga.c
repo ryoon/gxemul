@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.37 2005-04-15 21:39:56 debug Exp $
+ *  $Id: dev_vga.c,v 1.38 2005-05-04 20:10:24 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -442,7 +442,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	char *name)
 {
 	struct vga_data *d;
-	int r,g,b,i, x,y;
+	int r,g,b,i, x,y, tmpi;
 	size_t allocsize;
 
 	d = malloc(sizeof(struct vga_data));
@@ -535,5 +535,9 @@ with Windows NT yet. Why? */
 	machine_add_tickfunction(machine, dev_vga_tick, d, VGA_TICK_SHIFT);
 
 	vga_update_cursor(d);
+
+	tmpi = d->cursor_y * d->max_x + d->cursor_x;
+	d->reg[0x0e] = tmpi >> 8;
+	d->reg[0x0f] = tmpi;
 }
 

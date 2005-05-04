@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.7 2005-05-04 00:52:28 debug Exp $
+ *  $Id: pc_bios.c,v 1.8 2005-05-04 20:10:24 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -81,6 +81,68 @@ static void set_cursor_pos(struct cpu *cpu, int x, int y)
 	byte = addr & 255;
 	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+}
+
+
+/*
+ *  get_cursor_pos():
+ */
+static void get_cursor_pos(struct cpu *cpu, int *x, int *y)
+{
+	int addr;
+	unsigned char byte;
+	uint64_t ctrlregs = 0x1000003c0ULL;
+
+	byte = 0x0e;
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
+	    &byte, sizeof(byte), MEM_READ, CACHE_NONE | PHYSICAL);
+	addr = byte;
+
+	byte = 0x0f;
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
+	    &byte, sizeof(byte), MEM_READ, CACHE_NONE | PHYSICAL);
+	addr = addr*256 + byte;
+
+	*x = addr % 80;
+	*y = addr / 80;
+}
+
+
+/*
+ *  pc_bios_putchar():
+ */
+static void pc_bios_putchar(struct cpu *cpu, char ch)
+{
+	int x, y;
+
+	get_cursor_pos(cpu, &x, &y);
+	switch (ch) {
+	case '\r':	x=-1; break;
+	case '\n':	x=80; break;
+	default:	output_char(cpu, x, y, ch, 0x07);
+	}
+	x++;
+	if (x >= 80) {
+		x=0; y++;
+	}
+	if (y >= 25) {
+		fatal("pc_bios_putchar(): TODO: scroll\n");
+	}
+	set_cursor_pos(cpu, x, y);
+}
+
+
+/*
+ *  pc_bios_printstr():
+ */
+static void pc_bios_printstr(struct cpu *cpu, char *s)
+{
+	while (*s)
+		pc_bios_putchar(cpu, *s++);
 }
 
 
@@ -188,6 +250,10 @@ int pc_bios_emul(struct cpu *cpu)
 		break;
 	case 0x13:
 		pc_bios_int13(cpu);
+		break;
+	case 0x18:
+		pc_bios_printstr(cpu, "Disk boot failed. (INT 0x18 called.)\n");
+		cpu->running = 0;
 		break;
 	case 0x1a:
 		pc_bios_int1a(cpu);

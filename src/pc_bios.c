@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.8 2005-05-04 20:10:24 debug Exp $
+ *  $Id: pc_bios.c,v 1.9 2005-05-04 20:59:13 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -37,6 +37,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "cpu_x86.h"
+#include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -119,6 +120,13 @@ static void pc_bios_putchar(struct cpu *cpu, char ch)
 {
 	int x, y;
 
+	if (!cpu->machine->use_x11) {
+		console_putchar(cpu->machine->main_console_handle, ch);
+		return;
+	}
+
+	/*  Put the character on the screen, move cursor, and so on:  */
+
 	get_cursor_pos(cpu, &x, &y);
 	switch (ch) {
 	case '\r':	x=-1; break;
@@ -130,7 +138,23 @@ static void pc_bios_putchar(struct cpu *cpu, char ch)
 		x=0; y++;
 	}
 	if (y >= 25) {
-		fatal("pc_bios_putchar(): TODO: scroll\n");
+		/*  Scroll up by copying lines:  */
+		for (y=1; y<25; y++) {
+			int addr = 160*y;
+			unsigned char w[160];
+			cpu->cd.x86.cursegment = 0xb800;
+			cpu->memory_rw(cpu, cpu->mem, addr, &w[0], sizeof(w),
+			    MEM_READ, CACHE_NONE | PHYSICAL);
+			addr -= 160;
+			cpu->memory_rw(cpu, cpu->mem, addr, &w[0], sizeof(w),
+			    MEM_WRITE, CACHE_NONE | PHYSICAL);
+		}
+
+		/*  Clear lowest line:  */
+		for (x=0; x<80; x++)
+			output_char(cpu, x, 24, ' ', 0x07);
+
+		x = 0; y = 24;
 	}
 	set_cursor_pos(cpu, x, y);
 }
@@ -179,6 +203,9 @@ static void pc_bios_int10(struct cpu *cpu)
 		/*  ch = starting line, cl = ending line  */
 		/*  fatal("pc_bios_int10(): TODO: set cursor\n");  */
 		break;
+	case 0x0e:
+		pc_bios_putchar(cpu, al);
+		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"
 		    " 0x%02x.\n", ah);
@@ -195,14 +222,49 @@ static void pc_bios_int10(struct cpu *cpu)
  */
 static void pc_bios_int13(struct cpu *cpu)
 {
+	int res;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+	int al = (cpu->cd.x86.r[X86_R_AX] >> 0) & 0xff;
+	int dh = (cpu->cd.x86.r[X86_R_DX] >> 8) & 0xff;
+	int dl = (cpu->cd.x86.r[X86_R_DX] >> 0) & 0xff;
+	int ch = (cpu->cd.x86.r[X86_R_CX] >> 8) & 0xff;
+	int cl = (cpu->cd.x86.r[X86_R_CX] >> 0) & 0xff;
+	int bx = cpu->cd.x86.r[X86_R_BX];
+	uint64_t offset;
 
 	switch (ah) {
 	case 0x00:	/*  Reset disk, dl = drive  */
 		/*  Do nothing. :-)  */
 		break;
+	case 0x02:
+		/*
+		 *  Read sector.  al = nr of sectors
+		 *  dh = head, dl = disk id (0-based),
+		 *  ch = cyl,  cl = 1-based starting sector nr
+		 *  es:bx = destination buffer; return carryflag = error
+		 */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
+		while (al > 0) {
+			unsigned char buf[512];
+
+			res = diskimage_access(cpu->machine, dl, 0, offset,
+			    buf, sizeof(buf));
+
+			if (!res) {
+				cpu->cd.x86.rflags |= X86_FLAGS_CF;
+				break;
+			}
+
+			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+			store_buf(cpu, bx, (char *)buf, sizeof(buf));
+			offset += sizeof(buf);
+			al --;
+		}
+		/*  TODO: error code?  */
+		break;
 	default:
-		fatal("FATAL: Unimplemented PC BIOS interrupt 0x1a function"
+		fatal("FATAL: Unimplemented PC BIOS interrupt 0x13 function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
 		cpu->dead = 1;
@@ -253,6 +315,10 @@ int pc_bios_emul(struct cpu *cpu)
 		break;
 	case 0x18:
 		pc_bios_printstr(cpu, "Disk boot failed. (INT 0x18 called.)\n");
+		cpu->running = 0;
+		break;
+	case 0x19:
+		pc_bios_printstr(cpu, "Rebooting. (INT 0x19 called.)\n");
 		cpu->running = 0;
 		break;
 	case 0x1a:

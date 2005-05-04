@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.713 2005-05-04 19:24:52 debug Exp $
+$Id: HISTORY,v 1.714 2005-05-04 20:59:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1878,3 +1878,4 @@ Changelog for GXemul:
 20050504	Adding some more x86 instructions.
 		Adding support for reading files from ISO9660 CDROMs (including
 		gzipped files). It's an ugly hack, but it seems to work.
+		Various other minor updates (dev_vga.c, pc_bios.c etc).

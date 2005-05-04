@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.38 2005-05-04 20:10:24 debug Exp $
+ *  $Id: dev_vga.c,v 1.39 2005-05-04 20:59:14 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -87,6 +87,8 @@ struct vga_data {
 
 	int		cursor_x;
 	int		cursor_y;
+	int		cursor_scanline_start;
+	int		cursor_scanline_end;
 
 	int		modified;
 	int		update_x1;
@@ -176,10 +178,10 @@ static void vga_update(struct machine *machine, struct vga_data *d,
  */
 static void vga_update_cursor(struct vga_data *d)
 {
-	/*  TODO: Don't hardcode the cursor size.  */
 	dev_fb_setcursor(d->fb,
 	    d->cursor_x * 8, d->cursor_y * d->font_size +
-	    d->font_size - 4, 1, 8, 3);
+	    d->cursor_scanline_start, 1, 8, d->cursor_scanline_end -
+	    d->cursor_scanline_start + 1);
 }
 
 
@@ -493,6 +495,9 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->font_size = 16;
 	d->font = font8x16;
 
+	d->cursor_scanline_start = d->font_size - 4;
+	d->cursor_scanline_end = d->font_size - 2;
+
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
 	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
 
@@ -539,5 +544,6 @@ with Windows NT yet. Why? */
 	tmpi = d->cursor_y * d->max_x + d->cursor_x;
 	d->reg[0x0e] = tmpi >> 8;
 	d->reg[0x0f] = tmpi;
+	/*  TODO: scanline -> some reg  */
 }
 

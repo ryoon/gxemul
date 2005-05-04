@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.36 2005-05-04 20:10:23 debug Exp $
+ *  $Id: cpu_x86.c,v 1.37 2005-05-04 20:59:13 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -832,6 +832,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		modrm(cpu, MODRM_READ, mode, 0, &instr, &ilen, NULL, NULL);
 		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("%s\t%s,0x%x", mnem, modrm_rm, imm);
+	} else if (op == 0x84 || op == 0x85) {
+		modrm(cpu, MODRM_READ, mode, op == 0x84? MODRM_EIGHTBIT : 0,
+		    &instr, &ilen, NULL, NULL);
+		SPACES; debug("test\t%s,%s", modrm_rm, modrm_r);
 	} else if (op == 0x88 || op == 0x89) {
 		modrm(cpu, MODRM_READ, mode, op == 0x88? MODRM_EIGHTBIT : 0,
 		    &instr, &ilen, NULL, NULL);
@@ -880,6 +884,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("stosb");
 	} else if (op == 0xab) {
 		SPACES; debug("stos%s", mode==16? "w" : (mode==32? "d" : "q"));
+	} else if (op == 0xac) {
+		SPACES; debug("lodsb");
+	} else if (op == 0xad) {
+		SPACES; debug("lods%s", mode==16? "w" : (mode==32? "d" : "q"));
 	} else if (op >= 0xb0 && op <= 0xb7) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		switch (op & 7) {
@@ -1001,10 +1009,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("std");
 	} else if (op == 0xf6 || op == 0xf7) {
 		/*  F6 /4 = mul  */
+		/*  F6 /6 = div  */
 		switch ((*instr >> 3) & 0x7) {
 		case 4:	modrm(cpu, MODRM_READ, mode, op == 0xf6?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			SPACES; debug("mul\t%s", modrm_rm);
+			break;
+		case 6:	modrm(cpu, MODRM_READ, mode, op == 0xf6?
+			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
+			SPACES; debug("div\t%s", modrm_rm);
 			break;
 		default:
 			SPACES; debug("UNIMPLEMENTED 0x%02x", op);
@@ -1271,6 +1284,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		switch (op & 0x38) {
 		case 0x00:	op1 = op1 + op2; break;
 		case 0x08:	op1 = op1 | op2; break;
+		case 0x10:	op1 = op1 + op2;
+				if (cpu->cd.x86.rflags & X86_FLAGS_CF)
+					op1 ++;
+				break;
+		case 0x18:	op1 = op1 - op2;
+				if (cpu->cd.x86.rflags & X86_FLAGS_CF)
+					op1 --;
+				break;
 		case 0x20:	op1 = op1 & op2; break;
 		case 0x28:	op1 = op1 - op2; break;
 		case 0x30:	op1 = op1 ^ op2; break;
@@ -1427,6 +1448,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    mode, 0, &instr_orig, NULL, &op1, &op2);
 		if (!success)
 			return 0;
+	} else if (op == 0x84 || op == 0x85) {		/*  test  */
+		success = modrm(cpu, MODRM_READ, mode, op == 0x84?
+		    MODRM_EIGHTBIT : 0, &instr, &newpc, &op1, &op2);
+		if (!success)
+			return 0;
+		op1 &= op2;
+		if (op == 0x84)
+			op1 &= 0xff;
+		x86_cmp(cpu, op1, 0);
 	} else if (op >= 0x88 && op <= 0x8b) {
 		instr_orig = instr;
 		success = modrm(cpu, MODRM_READ, mode, (op & 1) == 0?
@@ -1461,6 +1491,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 	} else if (op == 0x90) {		/*  NOP  */
+	} else if (op >= 0x91 && op <= 0x97) {	/*  XCHG  */
+		uint64_t tmp;
+		if (mode == 16) {
+			tmp = cpu->cd.x86.r[X86_R_AX];
+			cpu->cd.x86.r[X86_R_AX] = modify(
+			    cpu->cd.x86.r[X86_R_AX], cpu->cd.x86.r[op & 7]);
+			cpu->cd.x86.r[op & 7] = modify(
+			    cpu->cd.x86.r[op & 7], tmp);
+		} else {
+			tmp = cpu->cd.x86.r[X86_R_AX];
+			cpu->cd.x86.r[X86_R_AX] = cpu->cd.x86.r[op & 7];
+			cpu->cd.x86.r[op & 7] = tmp;
+		}
 	} else if (op == 0x9c) {		/*  PUSHF  */
 		if (!x86_push(cpu, cpu->cd.x86.rflags))
 			return 0;
@@ -1479,21 +1522,24 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!x86_store(cpu, imm, cpu->cd.x86.r[X86_R_AX], mode/8))
 			return 0;
 	} else if (op == 0xa4 || op == 0xa5 ||		/*  MOVS  */
-	    op == 0xaa || op == 0xab) {			/*  STOS  */
-		int dir = 1, movs = 1;
+	    op == 0xaa || op == 0xab ||			/*  STOS  */
+	    op == 0xac || op == 0xad) {			/*  LODS  */
+		int dir = 1, movs = 1, lods = 0;
 
 		len = 1;
 		if (op & 1)
 			len = mode / 8;
 		if (op >= 0xaa)
 			movs = 0;
+		if (op >= 0xac)
+			lods = 1;
 		if (cpu->cd.x86.rflags & X86_FLAGS_DF)
 			dir = -1;
 
 		do {
 			uint64_t value;
 
-			if (movs) {
+			if (movs || lods) {
 				cpu->cd.x86.cursegment =
 				    cpu->cd.x86.s[X86_S_DS];
 				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_SI],
@@ -1501,22 +1547,30 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					return 0;
 			} else
 				value = cpu->cd.x86.r[X86_R_AX];
+			if (lods)
+				cpu->cd.x86.r[X86_R_AX] = value;
 
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
-			if (!x86_store(cpu, cpu->cd.x86.r[X86_R_DI],
-			    value, len))
-				return 0;
+			if (!lods) {
+				cpu->cd.x86.cursegment = cpu->cd.x86.s[
+				    X86_S_ES];
+				if (!x86_store(cpu, cpu->cd.x86.r[X86_R_DI],
+				    value, len))
+					return 0;
+			}
 
-			if (movs) {
+			if (movs || lods) {
 				/*  Modify esi:  */
 				cpu->cd.x86.r[X86_R_SI] = modify(cpu->cd.
 				    x86.r[X86_R_SI], cpu->cd.x86.r[X86_R_SI]
 				    + len*dir);
 			}
 
-			/*  Modify edi:  */
-			cpu->cd.x86.r[X86_R_DI] = modify(cpu->cd.x86.r[
-			    X86_R_DI], cpu->cd.x86.r[X86_R_DI] + len*dir);
+			if (!lods) {
+				/*  Modify edi:  */
+				cpu->cd.x86.r[X86_R_DI] = modify(cpu->cd.x86.r[
+				    X86_R_DI], cpu->cd.x86.r[X86_R_DI] +
+				    len*dir);
+			}
 
 			if (rep) {
 				/*  Decrement ecx:  */
@@ -1669,7 +1723,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.x86.rflags &= ~X86_FLAGS_DF;
 	} else if (op == 0xfd) {	/*  STD  */
 		cpu->cd.x86.rflags |= X86_FLAGS_DF;
-	} else if (op == 0xf6 || op == 0xf7) {		/*  MUL  */
+	} else if (op == 0xf6 || op == 0xf7) {		/*  MUL, DIV etc  */
 		uint64_t res;
 		/*  F6 /4 = mul  */
 		switch ((*instr >> 3) & 0x7) {
@@ -1697,6 +1751,34 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    0xffffffff;
 			}
 			break;
+		case 6:	success = modrm(cpu, MODRM_READ, mode, op == 0xf6?
+			    MODRM_EIGHTBIT : 0, &instr, &newpc, &op1, &op2);
+			if (!success)
+				return 0;
+			if (op1 == 0) {
+				fatal("TODO: division by zero\n");
+				exit(1);
+			}
+			if (op == 0xf6) {
+				int al = (cpu->cd.x86.r[X86_R_AX] & 0xffff)
+				    / op1;
+				int ah = (cpu->cd.x86.r[X86_R_AX] & 0xffff)
+				    % op1;
+				cpu->cd.x86.r[X86_R_AX] = modify(
+				    cpu->cd.x86.r[X86_R_AX], ah<<8 + al);
+			} else if (mode == 16) {
+				uint64_t a = (cpu->cd.x86.r[X86_R_AX] & 0xffff)
+				    + ((cpu->cd.x86.r[X86_R_DX] & 0xffff)<<16);
+				int ax = a / op1, dx = a % op1;
+				cpu->cd.x86.r[X86_R_AX] = modify(
+				    cpu->cd.x86.r[X86_R_AX], ax);
+				cpu->cd.x86.r[X86_R_DX] = modify(
+				    cpu->cd.x86.r[X86_R_DX], dx);
+			} else if (mode == 32) {
+				fatal("Todo: 32bitdiv\n");
+				exit(1);
+			}
+			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
 		}
@@ -1716,6 +1798,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    MODRM_EIGHTBIT : 0, &instr_orig, NULL, &op1, &op2);
 			if (!success)
 				return 0;
+			x86_cmp(cpu, op1, 0);
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.186 2005-05-04 14:30:31 debug Exp $
+ *  $Id: emul.c,v 1.187 2005-05-04 14:53:03 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -142,11 +142,21 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	int disk_id, int iso_type, unsigned char *buf)
 {
 	char str[35];
-	int filenr, i, ofs, dirlen, res;
+	int filenr, i, ofs, dirlen, res = 0, res2, iadd = 4;
+	int found_dir;
 	uint64_t dirofs;
-	unsigned char *dirbuf, *dp;
+	unsigned char *dirbuf = NULL, *dp;
+	char *p, *filename_orig;
+	char *filename = strdup(cpu->machine->boot_kernel_filename);
 
-	debug("ISO9660 boot:");
+	if (filename == NULL) {
+		fatal("out of memory\n");
+		exit(1);
+	}
+	filename_orig = filename;
+
+	debug("ISO9660 boot:\n");
+	debug_indentation(iadd);
 
 	/*  Volume ID:  */
 	ofs = iso_type == 3? 48 : 40;
@@ -155,7 +165,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	while (i >= 0 && str[i]==' ')
 		str[i--] = '\0';
 	if (str[0])
-		debug(" \"%s\"", str);
+		debug("\"%s\"", str);
 	else {
 		/*  System ID:  */
 		ofs = iso_type == 3? 16 : 8;
@@ -164,12 +174,12 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		while (i >= 0 && str[i]==' ')
 			str[i--] = '\0';
 		if (str[0])
-			debug(" \"%s\"", str);
+			debug("\"%s\"", str);
 		else
-			debug(" (no ID)");
+			debug("(no ID)");
 	}
 
-	debug(":%s\n", cpu->machine->boot_kernel_filename);
+	debug(":%s\n", filename);
 
 
 	/*
@@ -191,37 +201,73 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		exit(1);
 	}
 
-	res = diskimage_access(m, disk_id, 0, dirofs, dirbuf, dirlen);
-	if (!res) {
+	res2 = diskimage_access(m, disk_id, 0, dirofs, dirbuf, dirlen);
+	if (!res2) {
 		fatal("Couldn't read the disk image. Aborting.\n");
-		return 0;
+		goto ret;
 	}
 
+	found_dir = 1;	/*  Assume root dir  */
 	dp = dirbuf; filenr = 1;
+	p = NULL;
 	while (dp < dirbuf + dirlen) {
 		int i, nlen = dp[0];
 		int x = dp[2] + (dp[3] << 8) + (dp[4] << 16) + (dp[5] << 24);
 		int y = dp[6] + (dp[7] << 8);
+		char direntry[65];
 
 		dp += 8;
 
-		/*  16-bit aligned lenght:  */
-		if (nlen & 1)
-			nlen ++;
+		/*
+		 *  As long as there is an \ or / in the filename, then we
+		 *  have not yet found the directory.
+		 */
+		p = strchr(filename, '/');
+		if (p == NULL)
+			p = strchr(filename, '\\');
+		if (p != NULL) {
+		}
 
-		debug("%i: %i, %i, \"", filenr, x, y);
-		for (i=0; i<nlen; i++)
-			if (dp[i])
+		debug("%i%s: %i, %i, \"", filenr, filenr == found_dir?
+		    " [CURRENT]" : "", x, y);
+		for (i=0; i<nlen && i<sizeof(direntry)-1; i++)
+			if (dp[i]) {
+				direntry[i] = dp[i];
 				debug("%c", dp[i]);
+			} else
+				break;
 		debug("\"\n");
+		direntry[i] = '\0';
+
+		/*  A directory name match?  */
+		if (p != NULL && strncasecmp(filename, direntry, nlen) == 0
+		    && nlen == (size_t)p - (size_t)filename && found_dir == y) {
+			found_dir = filenr;
+			filename = p+1;
+		}
 
 		dp += nlen;
+
+		/*  16-bit aligned lenght:  */
+		if (nlen & 1)
+			dp ++;
+
 		filenr ++;
 	}
 
-	free(dirbuf);
+	if (p != NULL) {
+		fatal("could not find '%s'\n", filename);
+		goto ret;
+	}
 
-	return 0;
+ret:
+	if (dirbuf != NULL)
+		free(dirbuf);
+
+	free(filename_orig);
+
+	debug_indentation(-iadd);
+	return res;
 }
 
 

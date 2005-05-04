@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.187 2005-05-04 14:53:03 debug Exp $
+ *  $Id: emul.c,v 1.188 2005-05-04 15:06:17 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -193,7 +193,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	dirofs = (int64_t)(buf[0x8c] + (buf[0x8d] << 8) + (buf[0x8e] << 16) +
 	    (buf[0x8f] << 24)) * 2048;
 
-	debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);
+	/*  debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);  */
 
 	dirbuf = malloc(dirlen);
 	if (dirbuf == NULL) {
@@ -228,15 +228,15 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		if (p != NULL) {
 		}
 
-		debug("%i%s: %i, %i, \"", filenr, filenr == found_dir?
-		    " [CURRENT]" : "", x, y);
+		/*  debug("%i%s: %i, %i, \"", filenr, filenr == found_dir?
+		    " [CURRENT]" : "", x, y);  */
 		for (i=0; i<nlen && i<sizeof(direntry)-1; i++)
 			if (dp[i]) {
 				direntry[i] = dp[i];
-				debug("%c", dp[i]);
+				/*  debug("%c", dp[i]);  */
 			} else
 				break;
-		debug("\"\n");
+		/*  debug("\"\n");  */
 		direntry[i] = '\0';
 
 		/*  A directory name match?  */
@@ -244,6 +244,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		    && nlen == (size_t)p - (size_t)filename && found_dir == y) {
 			found_dir = filenr;
 			filename = p+1;
+			dirofs = 2048 * (int64_t)x;
 		}
 
 		dp += nlen;
@@ -256,9 +257,19 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	}
 
 	if (p != NULL) {
-		fatal("could not find '%s'\n", filename);
+		char *blah = filename_orig;
+
+		fatal("could not find '%s' in /", filename);
+
+		/*  Print the first part of the filename:  */
+		while (blah != filename)
+			fatal("%c", *blah++);
+		
+		fatal("\n");
 		goto ret;
 	}
+
+	debug("dirofs = 0x%llx\n", (long long)dirofs);
 
 ret:
 	if (dirbuf != NULL)

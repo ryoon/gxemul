@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.421 2005-05-03 15:55:30 debug Exp $
+ *  $Id: machine.c,v 1.422 2005-05-04 15:06:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -195,8 +195,11 @@ int machine_name_to_type(char *stype, char *ssubtype,
 							return 1;
 						}
 
-				fatal("unknown subtype '%s' for emulation"
+				fatal("Unknown subtype '%s' for emulation"
 				    " '%s'\n", ssubtype, stype);
+				if (!ssubtype[0])
+					fatal("(Maybe you forgot the -e"
+					    " command line option?)\n");
 				exit(1);
 			}
 

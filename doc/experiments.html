@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.63 2005-05-04 19:24:53 debug Exp $
+$Id: experiments.html,v 1.64 2005-05-04 19:41:10 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -557,11 +557,15 @@ probably doesn't work in GXemul.
 	<br><a href="http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out">http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out</a> (NEC-R96)
       <p>
       <li>Windows NT:
-	<br>This works with a Swedish Windows NT 4.0 for MIPS CDROM, and
-		possibly others. (Assuming /dev/cd0c is the cdrom drive.)
-	<br><b>gxemul -X -b -Earc -epica -d bc:/dev/cd0c -j MIPS\\SETUPLDR</b>
-	<br>It should load some drivers from the cdrom, and then
-	crash with a bluescreen.
+	<br>Put a "Windows NT 4.0 for MIPS" CDROM (or similar) into
+		your CDROM drive. (I'm assuming here that it is called /dev/cd0c.)
+		I have tried this with the Swedish version, but it might
+		work with other versions too.<pre>
+	$ <b>dd if=/dev/zero of=winnt_test.img bs=1024 count=1 seek=999000</b>
+	$ <b>gxemul -X -b -Earc -epica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\ARCINST</b>
+	$ <b>gxemul -X -b -Earc -epica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\SETUPLDR</b>
+</pre>	<br>ARCINST tries to prepare the disk image for installation. (It <i>almost</i> works.)
+	<br>SETUPLDR should load some drivers from the cdrom, but then it crashes with a bluescreen.
     </ul>
   </li>
 

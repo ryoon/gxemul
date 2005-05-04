@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.188 2005-05-04 15:06:17 debug Exp $
+ *  $Id: emul.c,v 1.189 2005-05-04 19:24:54 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -136,18 +136,27 @@ static void fix_console(void)
  *  Try to load a kernel from an ISO 9660 disk image. iso_type is 1 for
  *  "CD001" (standard), 2 for "CDW01" (ECMA), and 3 for "CDROM" (Sierra).
  *
+ *  TODO: This function uses too many magic offsets and so on; it should be
+ *  cleaned up some day.
+ *
  *  Returns 1 on success, 0 on failure.
  */
 static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
-	int disk_id, int iso_type, unsigned char *buf)
+	int disk_id, int iso_type, unsigned char *buf,
+	int *n_loadp, char ***load_namesp)
 {
 	char str[35];
 	int filenr, i, ofs, dirlen, res = 0, res2, iadd = 4;
 	int found_dir;
 	uint64_t dirofs;
+	uint64_t fileofs, filelen;
 	unsigned char *dirbuf = NULL, *dp;
+	unsigned char *match_entry = NULL;
 	char *p, *filename_orig;
 	char *filename = strdup(cpu->machine->boot_kernel_filename);
+	unsigned char *filebuf = NULL;
+	char *tmpfilename;
+	char **new_array;
 
 	if (filename == NULL) {
 		fatal("out of memory\n");
@@ -225,8 +234,6 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		p = strchr(filename, '/');
 		if (p == NULL)
 			p = strchr(filename, '\\');
-		if (p != NULL) {
-		}
 
 		/*  debug("%i%s: %i, %i, \"", filenr, filenr == found_dir?
 		    " [CURRENT]" : "", x, y);  */
@@ -256,6 +263,10 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		filenr ++;
 	}
 
+	p = strchr(filename, '/');
+	if (p == NULL)
+		p = strchr(filename, '\\');
+
 	if (p != NULL) {
 		char *blah = filename_orig;
 
@@ -269,11 +280,146 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		goto ret;
 	}
 
-	debug("dirofs = 0x%llx\n", (long long)dirofs);
+	/*  debug("dirofs = 0x%llx\n", (long long)dirofs);  */
+
+	/*  Free the old dirbuf, and allocate a new one:  */
+	free(dirbuf);
+	dirbuf = malloc(512);
+	if (dirbuf == NULL) {
+		fatal("out of memory in iso_load_bootblock()\n");
+		exit(1);
+	}
+
+	for (;;) {
+		int len, i;
+
+		/*  Too close to another sector? Then realign.  */
+		if ((dirofs & 2047) + 70 > 2047) {
+			dirofs = (dirofs | 2047) + 1;
+			/*  debug("realign dirofs = 0x%llx\n", dirofs);  */
+		}
+
+		res2 = diskimage_access(m, disk_id, 0, dirofs, dirbuf, 256);
+		if (!res2) {
+			fatal("Couldn't read the disk image. Aborting.\n");
+			goto ret;
+		}
+
+		dp = dirbuf;
+		len = dp[0];
+		if (len < 2)
+			break;
+
+		/*
+		 *  TODO: Actually parse the directory entry!
+		 *
+		 *  Haha, this must be rewritten.
+		 */
+		for (i=32; i<len; i++) {
+			if (i < len - strlen(filename))
+				if (strncasecmp(filename, (char *)dp + i,
+				    strlen(filename)) == 0) {
+					/*  The filename was found somewhere
+					    in the directory entry.  */
+					if (match_entry != NULL) {
+						fatal("TODO: I'm too lazy to"
+						    " implement a correct "
+						    "directory parser right "
+						    "now... (BUG)\n");
+						exit(1);
+					}
+					match_entry = malloc(512);
+					if (match_entry == NULL) {
+						fatal("out of memory\n");
+						exit(1);
+					}
+					memcpy(match_entry, dp, 512);
+					break;
+				}
+		}
+
+		dirofs += len;
+	}
+
+	if (match_entry == NULL) {
+		char *blah = filename_orig;
+
+		fatal("could not find '%s' in /", filename);
+
+		/*  Print the first part of the filename:  */
+		while (blah != filename)
+			fatal("%c", *blah++);
+		
+		fatal("\n");
+		goto ret;
+	}
+
+	fileofs = match_entry[2] + (match_entry[3] << 8) +
+	    (match_entry[4] << 16) + (match_entry[5] << 24);
+	filelen = match_entry[10] + (match_entry[11] << 8) +
+	    (match_entry[12] << 16) + (match_entry[13] << 24);
+	fileofs *= 2048;
+
+	/*  debug("filelen=%llx fileofs=%llx\n", (long long)filelen,
+	    (long long)fileofs);  */
+
+	filebuf = malloc(filelen);
+	if (filebuf == NULL) {
+		fatal("could not allocate %lli bytes to read the file"
+		    " from the disk image!\n", (long long)filelen);
+		goto ret;
+	}
+
+	/*  TODO: something better than tmpnam?  */
+	tmpfilename = strdup(tmpnam(NULL));
+
+	debug("extracting %lli bytes into %s\n",
+	    (long long)filelen, tmpfilename);
+
+	res2 = diskimage_access(m, disk_id, 0, fileofs, filebuf, filelen);
+	if (!res2) {
+		fatal("could not read the file from the disk image!\n");
+		goto ret;
+	} else {
+		FILE *f = fopen(tmpfilename, "w");
+		if (f == NULL) {
+			fatal("could not create temporary file\n");
+			exit(1);
+		}
+		fwrite(filebuf, 1, filelen, f);
+		fclose(f);
+	}
+
+	/*  Add the temporary filename to the load_namesp array:  */
+	(*n_loadp)++;
+	new_array = malloc(sizeof(char *) * (*n_loadp));
+	if (new_array == NULL) {
+		fatal("out of memory\n");
+		exit(1);
+	}
+	memcpy(new_array, *load_namesp, sizeof(char *) * (*n_loadp));
+	*load_namesp = new_array;
+
+	/*  This adds a Backspace char in front of the filename; this
+	    is a special hack which causes the file to be removed once
+	    it has been loaded.  */
+	tmpfilename = realloc(tmpfilename, strlen(tmpfilename) + 2);
+	memmove(tmpfilename + 1, tmpfilename, strlen(tmpfilename) + 1);
+	tmpfilename[0] = 8;
+
+	(*load_namesp)[*n_loadp - 1] = tmpfilename;
+
+	res = 1;
 
 ret:
 	if (dirbuf != NULL)
 		free(dirbuf);
+
+	if (filebuf != NULL)
+		free(filebuf);
+
+	if (match_entry != NULL)
+		free(match_entry);
 
 	free(filename_orig);
 
@@ -292,7 +438,8 @@ ret:
  *
  *  Returns 1 on success, 0 on failure.
  */
-static int load_bootblock(struct machine *m, struct cpu *cpu)
+static int load_bootblock(struct machine *m, struct cpu *cpu,
+	int *n_loadp, char ***load_namesp)
 {
 	int boot_disk_id, n_blocks, res, readofs, iso_type;
 	unsigned char minibuf[0x20];
@@ -461,8 +608,9 @@ static int load_bootblock(struct machine *m, struct cpu *cpu)
 				    "specified? (Use the -j option.)\n");
 				res = 0;
 			} else
-				res = iso_load_bootblock(m, cpu,
-				    boot_disk_id, iso_type, bootblock_buf);
+				res = iso_load_bootblock(m, cpu, boot_disk_id,
+				    iso_type, bootblock_buf, n_loadp,
+				    load_namesp);
 		}
 
 		free(bootblock_buf);
@@ -790,7 +938,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (n_load == 0) {
 		if (m->first_diskimage != NULL) {
-			if (!load_bootblock(m, cpu)) {
+			if (!load_bootblock(m, cpu, &n_load, &load_names)) {
 				fprintf(stderr, "\nNo executable files were"
 				    " specified, and booting directly from disk"
 				    " failed.\n");
@@ -805,10 +953,48 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	}
 
 	while (n_load > 0) {
+		FILE *tmp_f;
+		char *name_to_load = *load_names;
+		int remove_after_load = 0;
+
+		/*  Special hack for removing temporary files:  */
+		if (name_to_load[0] == 8) {
+			name_to_load ++;
+			remove_after_load = 1;
+		}
+
+		/*
+		 *  Another special hack for temporary files; running gunzip
+		 *  on them, if they have a gzip header.  TODO: Change this
+		 *  into some kind of generic support for gzipped files!
+		 */
+		tmp_f = fopen(name_to_load, "r");
+		if (tmp_f != NULL) {
+			unsigned char buf[2];		/*  gzip header  */
+			memset(buf, 0, sizeof(buf));
+			fread(buf, 1, sizeof(buf), tmp_f);
+			if (buf[0]==0x1f && buf[1]==0x8b) {
+				char *zz = malloc(strlen(name_to_load)*2 + 100);
+				debug("gunziping %s\n", name_to_load);
+				sprintf(zz, "mv %s %s.gz", name_to_load,
+				    name_to_load);
+				system(zz);
+				sprintf(zz, "gunzip %s.gz", name_to_load);
+				system(zz);
+				free(zz);
+			}
+			fclose(tmp_f);
+		}
+
 		byte_order = NO_BYTE_ORDER_OVERRIDE;
 
-		file_load(m, m->memory, *load_names, &entrypoint,
+		file_load(m, m->memory, name_to_load, &entrypoint,
 		    m->arch, &gp, &byte_order, &toc);
+
+		if (remove_after_load) {
+			debug("removing %s\n", name_to_load);
+			unlink(name_to_load);
+		}
 
 		if (byte_order != NO_BYTE_ORDER_OVERRIDE)
 			cpu->byte_order = byte_order;

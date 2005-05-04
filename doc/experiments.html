@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.62 2005-05-03 15:55:30 debug Exp $
+$Id: experiments.html,v 1.63 2005-05-04 19:24:53 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -558,10 +558,8 @@ probably doesn't work in GXemul.
       <p>
       <li>Windows NT:
 	<br>This works with a Swedish Windows NT 4.0 for MIPS CDROM, and
-		possibly others:
-	<br>Extract the mips/setupldr program from the cdrom. Then, start
-		gxemul like this (assuming /dev/cd0c is your cdrom drive):
-	<br><b>gxemul -XbEarc -epica -d bc:/dev/cd0c -j MIPS\\SETUPLDR setupldr</b>
+		possibly others. (Assuming /dev/cd0c is the cdrom drive.)
+	<br><b>gxemul -X -b -Earc -epica -d bc:/dev/cd0c -j MIPS\\SETUPLDR</b>
 	<br>It should load some drivers from the cdrom, and then
 	crash with a bluescreen.
     </ul>

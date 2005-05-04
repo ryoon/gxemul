@@ -1,4 +1,4 @@
-$Id: TODO,v 1.127 2005-04-15 21:39:54 debug Exp $
+$Id: TODO,v 1.128 2005-05-04 19:24:52 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -152,6 +152,7 @@ Order is random. Don't trust it to be up-to-date.
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
 			(ELF structure format)?
 		o)  Better handling of tape files
+		o)  gzip support (also for non-ISO9660 files)
 
 	Userland ABI emulation:
 		o)  see src/useremul.c

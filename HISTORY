@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.712 2005-05-04 13:45:43 debug Exp $
+$Id: HISTORY,v 1.713 2005-05-04 19:24:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1876,4 +1876,5 @@ Changelog for GXemul:
 		comment about Windows NT for MIPS in doc/experiments.html.
 		Minor updates to the x86 instruction decoding.
 20050504	Adding some more x86 instructions.
-		Adding a skeleton for reading files from ISO9660 CDROMs.
+		Adding support for reading files from ISO9660 CDROMs (including
+		gzipped files). It's an ugly hack, but it seems to work.

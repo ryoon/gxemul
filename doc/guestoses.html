@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.37 2005-04-28 22:17:06 debug Exp $
+$Id: guestoses.html,v 1.38 2005-05-04 19:24:53 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -223,17 +223,13 @@ follow these instructions:
 	$ <b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=900000</b>
 
 </pre>
-  <li>Download a NetBSD/arc CDROM image from ftp:<pre>
+  <li>Download a NetBSD/arc 1.6.2 CDROM image from ftp:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso</a>
 
 </pre>
-  <li>Download a NetBSD/arc installation (ramdisk) kernel,
-	and gunzip it:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
-
-</pre>
   <li>Start the emulator using this command line:<pre>
-	$ <b>gxemul -E arc -e pica -b -d nbsd_arc.img -d arccd.iso netbsd.RAMDISK</b>
+	$ <b>gxemul -E arc -e pica -b -d nbsd_arc.img -d bc:arccd.iso \
+	  -j arc/binary/kernel/netbsd.RAMDISK.gz</b>
 
 </pre>
   <li>From now on, you have to use your imagination, as there is no
@@ -363,15 +359,14 @@ NetBSD/hpcmips on an emulated MobilePro 800:
 	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
 
 </pre>
-  <li>Download the installation kernel (and gunzip it) and an ISO
-	image of NetBSD 2.0 for hpcmips:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/netbsd.gz">netbsd.gz</a>
+  <li>Download the NetBSD 2.0 for hpcmips ISO image:<pre>
 	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">hpcmipscd.iso</a>
 
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
   <li>Start the installation like this:<pre>
-	$ <b>gxemul -E hpc -e mobilepro800 -b -X -d nbsd_hpcmips.img -d hpcmipscd.iso netbsd</b>
+	$ <b>gxemul -E hpc -e mobilepro800 -b -X -d nbsd_hpcmips.img  \
+	  -d b:hpcmipscd.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -706,8 +701,7 @@ instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	$ <b>gxemul -X -b -E arc -e pica -d obsd_arc.img -d openbsd_arc_2.3.iso \
-	    ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</b>
+	$ <b>gxemul -X -b -E arc -e pica -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD

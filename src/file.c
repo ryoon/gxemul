@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.88 2005-04-17 00:15:24 debug Exp $
+ *  $Id: file.c,v 1.89 2005-05-04 13:45:47 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1632,7 +1632,7 @@ void file_load(struct machine *machine, struct memory *mem,
 		fprintf(stderr, "\nThis file is very large (%lli bytes)\n",
 		    (long long)size);
 		fprintf(stderr, "Are you sure it is a kernel and not a disk "
-		    "image?\n");
+		    "image? (Use the -d option.)\n");
 		exit(1);
 	}
 

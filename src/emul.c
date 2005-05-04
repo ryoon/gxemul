@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.184 2005-04-20 04:43:52 debug Exp $
+ *  $Id: emul.c,v 1.185 2005-05-04 13:45:47 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -131,25 +131,99 @@ static void fix_console(void)
 
 
 /*
+ *  iso_load_bootblock():
+ *
+ *  Try to load a kernel from an ISO 9660 disk image. iso_type is 1 for
+ *  "CD001" (standard), 2 for "CDW01" (ECMA), and 3 for "CDROM" (Sierra).
+ *
+ *  Returns 1 on success, 0 on failure.
+ */
+static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
+	int disk_id, int iso_type, unsigned char *buf)
+{
+	char str[35];
+	int i, ofs, dirlen, res;
+	uint64_t dirofs;
+	unsigned char *dirbuf;
+
+	debug("ISO9660 boot:");
+
+	/*  Volume ID:  */
+	ofs = iso_type == 3? 48 : 40;
+	memcpy(str, buf + ofs, sizeof(str));
+	str[32] = '\0';  i = 31;
+	while (i >= 0 && str[i]==' ')
+		str[i--] = '\0';
+	if (str[0])
+		debug(" \"%s\"", str);
+	else {
+		/*  System ID:  */
+		ofs = iso_type == 3? 16 : 8;
+		memcpy(str, buf + ofs, sizeof(str));
+		str[32] = '\0';  i = 31;
+		while (i >= 0 && str[i]==' ')
+			str[i--] = '\0';
+		if (str[0])
+			debug(" \"%s\"", str);
+		else
+			debug(" (no ID)");
+	}
+
+	debug(":%s\n", cpu->machine->boot_kernel_filename);
+
+
+	/*
+	 *  Traverse the directory structure to find the kernel.
+	 */
+
+	dirlen = buf[0x84] + 256*buf[0x85] + 65536*buf[0x86];
+	if (dirlen != buf[0x8b] + 256*buf[0x8a] + 65536*buf[0x89])
+		fatal("WARNING: Root directory length mismatch?\n");
+
+	dirofs = (int64_t)(buf[0x8c] + (buf[0x8d] << 8) + (buf[0x8e] << 16) +
+	    (buf[0x8f] << 24)) * 2048;
+
+	debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);
+
+	dirbuf = malloc(dirlen);
+	if (dirbuf == NULL) {
+		fatal("out of memory in iso_load_bootblock()\n");
+		exit(1);
+	}
+
+	res = diskimage_access(m, disk_id, 0, dirofs, dirbuf, dirlen);
+	if (!res) {
+		fatal("Couldn't read the disk image. Aborting.\n");
+		return 0;
+	}
+
+	free(dirbuf);
+
+	return 0;
+}
+
+
+/*
  *  load_bootblock():
  *
  *  For some emulation modes, it is possible to boot from a harddisk image by
  *  loading a bootblock from a specific disk offset into memory, and executing
  *  that, instead of requiring a separate kernel file.  It is then up to the
  *  bootblock to load a kernel.
+ *
+ *  Returns 1 on success, 0 on failure.
  */
-static void load_bootblock(struct machine *m, struct cpu *cpu)
+static int load_bootblock(struct machine *m, struct cpu *cpu)
 {
-	int boot_disk_id;
+	int boot_disk_id, n_blocks, res, readofs, iso_type;
 	unsigned char minibuf[0x20];
 	unsigned char *bootblock_buf;
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
-	int n_blocks, res, readofs;
 
 	boot_disk_id = diskimage_bootdev(m);
 	if (boot_disk_id < 0)
-		return;
+		return 0;
 
 	switch (m->machine_type) {
 	case MACHINE_DEC:
@@ -199,8 +273,9 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 			res = diskimage_access(m, boot_disk_id, 0, readofs,
 			    minibuf, sizeof(minibuf));
 			if (!res) {
-				printf("couldn't read disk?\n");
-				exit(1);
+				fatal("Couldn't read the disk image. "
+				    "Aborting.\n");
+				return 0;
 			}
 
 			n_blocks = minibuf[0] + (minibuf[1] << 8)
@@ -242,7 +317,7 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 		}
 
 		debug(readofs == 0x18? ": no blocks?\n" : " blocks\n");
-		break;
+		return 1;
 
 	case MACHINE_X86:
 		cpu->cd.x86.mode = 16;
@@ -257,8 +332,8 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 		res = diskimage_access(m, boot_disk_id, 0, 0,
 		    bootblock_buf, 512);
 		if (!res) {
-			printf("Couldn't read the disk image. Aborting.\n");
-			exit(1);
+			fatal("Couldn't read the disk image. Aborting.\n");
+			return 0;
 		}
 
 		debug("loading PC bootsector from disk %i\n", boot_disk_id);
@@ -267,12 +342,52 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 			    "Booting anyway.\n");
 		store_buf(cpu, 0x7c00, (char *)bootblock_buf, 512);
 		free(bootblock_buf);
-		break;
+
+		return 1;
 
 	default:
-		fatal("Booting from disk without a separate kernel "
-		    "doesn't work in this emulation mode.\n");
-		exit(1);
+		/*
+		 *  Try reading a kernel manually from the disk. The code here
+		 *  does not rely on machine-dependant boot blocks etc.
+		 */
+
+		/*  ISO9660: (0x800 bytes at 0x8000)  */
+		bootblock_buf = malloc(0x800);
+		if (bootblock_buf == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(1);
+		}
+
+		res = diskimage_access(m, boot_disk_id, 0, 0x8000,
+		    bootblock_buf, 0x800);
+		if (!res) {
+			fatal("Couldn't read the disk image. Aborting.\n");
+			return 0;
+		}
+
+		iso_type = 0;
+		if (strncmp((char *)bootblock_buf+1, "CD001", 5) == 0)
+			iso_type = 1;
+		if (strncmp((char *)bootblock_buf+1, "CDW01", 5) == 0)
+			iso_type = 2;
+		if (strncmp((char *)bootblock_buf+1, "CDROM", 5) == 0)
+			iso_type = 3;
+
+		if (iso_type != 0) {
+			/*  We can't load a kernel if the name
+			    isn't specified.  */
+			if (cpu->machine->boot_kernel_filename == NULL ||
+			    cpu->machine->boot_kernel_filename[0] == '\0') {
+				fatal("ISO9660 filesystem, but no kernel "
+				    "specified? (Use the -j option.)\n");
+				res = 0;
+			} else
+				res = iso_load_bootblock(m, cpu,
+				    boot_disk_id, iso_type, bootblock_buf);
+		}
+
+		free(bootblock_buf);
+		return res;
 	}
 }
 
@@ -595,9 +710,14 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (n_load == 0) {
-		if (m->first_diskimage != NULL)
-			load_bootblock(m, cpu);
-		else {
+		if (m->first_diskimage != NULL) {
+			if (!load_bootblock(m, cpu)) {
+				fprintf(stderr, "\nNo executable files were"
+				    " specified, and booting directly from disk"
+				    " failed.\n");
+				exit(1);
+			}
+		} else {
 			fprintf(stderr, "No executable file(s) loaded, and "
 			    "we are not booting directly from a disk image."
 			    "\nAborting.\n");

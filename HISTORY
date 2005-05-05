@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.717 2005-05-05 21:39:39 debug Exp $
+$Id: HISTORY,v 1.718 2005-05-05 23:22:49 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1882,3 +1882,4 @@ Changelog for GXemul:
 20050505	Some more x86-related updates.
 		Beginning (what I hope will be) a major code cleanup phase.
 		"bootris" (an x86 bootsector) runs :-)
+20050506	Adding some more x86 instructions.

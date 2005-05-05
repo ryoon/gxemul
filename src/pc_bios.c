@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.12 2005-05-05 20:12:08 debug Exp $
+ *  $Id: pc_bios.c,v 1.13 2005-05-05 21:26:38 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -215,6 +215,10 @@ static void pc_bios_int10(struct cpu *cpu)
 	case 0x0e:	/*  tty output  */
 		pc_bios_putchar(cpu, al);
 		break;
+	case 0x0f:	/*  get video mode  */
+		cpu->cd.x86.r[X86_R_AX] = (80 << 8) + 25;
+		cpu->cd.x86.r[X86_R_BX] &= ~0xff00;	/*  BH = pagenr  */
+		break;
 	case 0x13:	/*  write string  */
 		/*  TODO: other flags in al  */
 		get_cursor_pos(cpu, &oldx, &oldy);
@@ -315,7 +319,7 @@ static int pc_bios_int16(struct cpu *cpu)
 		if (console_charavail(cpu->machine->main_console_handle)) {
 			asciicode = console_readchar(cpu->machine->
 			    main_console_handle);
-			scancode = 0x47;
+			/*  scancode = TODO  */
 			cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
 			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
 			    ~0xffff) | scancode << 8 | asciicode;

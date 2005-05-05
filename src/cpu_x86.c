@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.41 2005-05-05 21:26:38 debug Exp $
+ *  $Id: cpu_x86.c,v 1.42 2005-05-05 21:39:11 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2124,7 +2124,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    &newpc, &op1, &op2);
 			if (!success)
 				return 0;
-			switch ((*instr >> 3) & 0x7) {
+			switch ((*instr_orig >> 3) & 0x7) {
 			case 0:	op1 = modify(op1, op1 + 1); break; /* inc */
 			case 1:	op1 = modify(op1, op1 - 1); break; /* dec */
 			}

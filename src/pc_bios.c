@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.13 2005-05-05 21:26:38 debug Exp $
+ *  $Id: pc_bios.c,v 1.14 2005-05-05 21:39:12 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -351,7 +351,7 @@ static void pc_bios_int1a(struct cpu *cpu)
 	case 0x00:
 		/*  Return tick count.  */
 		gettimeofday(&tv, NULL);
-		x = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+		x = tv.tv_sec * 10 + tv.tv_usec / 100000;
 		cpu->cd.x86.r[X86_R_CX] = (x >> 16) & 0xffff;
 		cpu->cd.x86.r[X86_R_DX] = x & 0xffff;
 		break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.11 2005-05-05 19:23:40 debug Exp $
+ *  $Id: pc_bios.c,v 1.12 2005-05-05 20:12:08 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -270,7 +270,6 @@ static void pc_bios_int13(struct cpu *cpu)
 		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
 		while (al > 0) {
 			unsigned char buf[512];
-
 			res = diskimage_access(cpu->machine, dl, 0, offset,
 			    buf, sizeof(buf));
 
@@ -373,6 +372,9 @@ int pc_bios_emul(struct cpu *cpu)
 
 	switch (int_nr) {
 	case 0x10:  pc_bios_int10(cpu); break;
+	case 0x12:	/*  return memory size in KBs  */
+		cpu->cd.x86.r[X86_R_AX] = 640;
+		break;
 	case 0x13:  pc_bios_int13(cpu); break;
 	case 0x16:
 		if (pc_bios_int16(cpu) == 0)

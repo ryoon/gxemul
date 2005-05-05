@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.10 2005-05-04 23:20:23 debug Exp $
+ *  $Id: pc_bios.c,v 1.11 2005-05-05 19:23:40 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "console.h"
 #include "cpu.h"
@@ -296,6 +297,43 @@ static void pc_bios_int13(struct cpu *cpu)
 
 
 /*
+ *  pc_bios_int16():
+ *
+ *  Keyboard-related functions.
+ */
+static int pc_bios_int16(struct cpu *cpu)
+{
+	int res;
+	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
+	int scancode, asciicode;
+
+	switch (ah) {
+	case 0x00:	/*  getchar  */
+	case 0x01:	/*  isavail + getchar  */
+		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
+		scancode = asciicode = 0;
+		if (console_charavail(cpu->machine->main_console_handle)) {
+			asciicode = console_readchar(cpu->machine->
+			    main_console_handle);
+			scancode = 0x47;
+			cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
+			    ~0xffff) | scancode << 8 | asciicode;
+		}
+		break;
+	default:
+		fatal("FATAL: Unimplemented PC BIOS interrupt 0x16 function"
+		    " 0x%02x.\n", ah);
+		cpu->running = 0;
+		cpu->dead = 1;
+	}
+
+	return 1;
+}
+
+
+/*
  *  pc_bios_int1a():
  *
  *  Time of Day stuff.
@@ -303,12 +341,16 @@ static void pc_bios_int13(struct cpu *cpu)
 static void pc_bios_int1a(struct cpu *cpu)
 {
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+	struct timeval tv;
+	uint32_t x;
 
 	switch (ah) {
 	case 0x00:
-		/*  Return tick count? TODO  */
-		cpu->cd.x86.r[X86_R_CX] = 0;
-		cpu->cd.x86.r[X86_R_DX] = 0;
+		/*  Return tick count.  */
+		gettimeofday(&tv, NULL);
+		x = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+		cpu->cd.x86.r[X86_R_CX] = (x >> 16) & 0xffff;
+		cpu->cd.x86.r[X86_R_DX] = x & 0xffff;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x1a function"
@@ -330,11 +372,11 @@ int pc_bios_emul(struct cpu *cpu)
 	int_nr = addr & 0xfff;
 
 	switch (int_nr) {
-	case 0x10:
-		pc_bios_int10(cpu);
-		break;
-	case 0x13:
-		pc_bios_int13(cpu);
+	case 0x10:  pc_bios_int10(cpu); break;
+	case 0x13:  pc_bios_int13(cpu); break;
+	case 0x16:
+		if (pc_bios_int16(cpu) == 0)
+			return 0;
 		break;
 	case 0x18:
 		pc_bios_printstr(cpu, "Disk boot failed. (INT 0x18 called.)\n");
@@ -344,9 +386,7 @@ int pc_bios_emul(struct cpu *cpu)
 		pc_bios_printstr(cpu, "Rebooting. (INT 0x19 called.)\n");
 		cpu->running = 0;
 		break;
-	case 0x1a:
-		pc_bios_int1a(cpu);
-		break;
+	case 0x1a:  pc_bios_int1a(cpu); break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x%02x.\n",
 		    int_nr);

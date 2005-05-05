@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.50 2005-04-16 02:02:27 debug Exp $
+#  $Id: Makefile.skel,v 1.51 2005-05-05 19:23:40 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -7,8 +7,8 @@
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
 OBJS=console.o cpu.o debugger.o diskimage.o emul.o emul_parse.o file.o \
-	machine.o main.o memory.o device.o net.o symbol.o useremul.o x11.o \
-	cpu_mips.o cpu_mips_coproc.o memory_fast_v2h.o bintrans.o \
+	machine.o main.o misc.o memory.o device.o net.o symbol.o useremul.o \
+	x11.o cpu_mips.o cpu_mips_coproc.o memory_fast_v2h.o bintrans.o \
 	cpu_alpha.o cpu_hppa.o cpu_ppc.o cpu_sparc.o cpu_urisc.o cpu_x86.o \
 	arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o
 

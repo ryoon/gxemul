@@ -1,7 +1,35 @@
-$Id: TODO,v 1.128 2005-05-04 19:24:52 debug Exp $
+$Id: TODO,v 1.129 2005-05-05 19:23:39 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
+
+	o)  Bug-hunt and Clean-up of All the code.
+		o)  Fix tmpnam(), snprintf() etc
+		o)  Refactor some things (cpu_x86.c).
+
+	o)  Read function types from ELFs!
+
+	o)  Generalize the trace functionality for all arch (mips, x86, ppc...)
+
+	o)  New debugger command?  "step one function call"
+		and/or print function return values.
+
+	o)  More stable ISO9660 filename stuff.
+
+	o)  Generalize the gzip support.
+
+	o)  Incoming network connections?
+
+	o)  The new bintrans system, with multiple front-ends and
+	    back-ends.
+
+	o)  Continue the redesign of the device drivers.
+
+	o)  x86 stuff (including amd64 support)
+
+-------------------------------------------------------------------------------
+
+A more complete list:
 
 
 	Caches / memory hierarchies: (this is mostly MIPS-specific)
@@ -159,6 +187,11 @@ Order is random. Don't trust it to be up-to-date.
 
 	Terminal based interactive debugger:
 		o)  see src/debugger.c
+
+	Terminal/console stuff:
+		o)  allow emulated serial ports to be connected to the outside
+		    world in a more generic way, or even to other emulated
+		    machines(!)
 
 	GDB interface? (Maybe not necessary; the built-in debugger feels
 	more useful.)

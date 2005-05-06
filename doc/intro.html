@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.40 2005-04-27 15:22:17 debug Exp $
+$Id: intro.html,v 1.41 2005-05-06 10:05:48 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -52,6 +52,7 @@ SUCH DAMAGE.
   <li><a href="#overview">Overview</a>
   <li><a href="#free">Is GXemul Free software?</a>
   <li><a href="#build">How to compile/build the emulator</a>
+  <li><a href="#run">How to run the emulator</a>
   <li><a href="#cpus">Which CPU types does GXemul emulate?</a>
   <li><a href="#accuracy">Emulation accuracy</a>
   <li><a href="#emulmodes">Which machines does GXemul emulate?</a>
@@ -73,10 +74,10 @@ hardware components are emulated well enough to let unmodified operating
 systems run as if they were running on a real machine.
 
 <p>
-It is important to keep in mind that devices and CPUs are not simulated 
-with 100% accuracy. They are only "faked" well enough to make operating 
-systems (eg NetBSD) run. Still, the emulator could be of interest for
-academic research and experiments, such as when learning how to write 
+Devices and CPUs are not simulated with 100% accuracy. They are only
+"faked" well enough to make operating systems (eg NetBSD) run without
+complaining too much. Still, the emulator could be of interest for
+academic research and experiments, such as when learning how to write
 operating system code.
 
 <p>
@@ -171,29 +172,43 @@ you could try the following:
 </pre>
 
 <p>
-Run <b>./configure --help</b> to get a list of configure options. (The 
+Run <b><tt>./configure --help</tt></b> to get a list of configure options. (The 
 possible options differ between different releases and snapshots.)
 
-<p>
+
+
+
+
+
+<p><br>
+<a name="run"></a>
+<h3>How to run the emulator:</h3>
+
 Once you have built GXemul, running it should be rather straight-forward.
+Running <tt><b>gxemul</b></tt> without arguments (or with the
+<b><tt>-h</tt></b> or <b><tt>-H</tt></b> command line options) will
+display a help message.
+
+<p>
 To exit the emulator, type CTRL-C to enter the 
-single-step debugger, and then type <b>quit</b>.
+single-step debugger, and then type <tt><b>quit</b></tt>.
 
 <p>
 If you are starting an emulation by entering settings directly on the 
-command line, and you are not using the <b>-x</b> option, then all 
+command line, and you are not using the <tt><b>-x</b></tt> option, then all 
 terminal input and output will go to the main controlling terminal.
 CTRL-C is used to break into the debugger, so in order to send CTRL-C to 
 the running (emulated) program, you may use CTRL-B.
+(This should be a reasonable compromise to allow the emulator to be usable
+even on systems without X Windows.)
 
 <p>
-(This is an ugly hack; there is no way to send an actual CTRL-B to the
-emulated program, when typing in the main controlling terminal window.
-The solution is to either use configuration files, or use <b>-x</b>. Both 
-these solutions cause new xterms to be opened for each emulated serial 
-port. CTRL-B and CTRL-C both have their original meaning in those 
-xterm windows.)
-
+There is no way to send an actual CTRL-B to the emulated program, when
+typing in the main controlling terminal window. The solution is to either
+use configuration files, or use <tt><b>-x</b></tt>. Both these solutions
+cause new xterms to be opened for each emulated serial port that is 
+written to. CTRL-B and CTRL-C both have their original meaning in those 
+xterm windows.
 
 
 

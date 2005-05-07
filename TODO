@@ -1,4 +1,4 @@
-$Id: TODO,v 1.129 2005-05-05 19:23:39 debug Exp $
+$Id: TODO,v 1.130 2005-05-07 10:40:29 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -13,6 +13,15 @@ Order is random. Don't trust it to be up-to-date.
 
 	o)  New debugger command?  "step one function call"
 		and/or print function return values.
+
+	o)  Debugger memory addresses:  seg:ofs, and per cpu?
+		(for all cases where addresses are used; "u", "d" etc)
+
+	o)  PC register name matching for the debugger.
+
+	o)  Arithmetic expression evaluation in the debugger.
+
+	o)  Keyboard input for VGA, when running without -X.
 
 	o)  More stable ISO9660 filename stuff.
 

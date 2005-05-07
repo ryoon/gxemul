@@ -25,16 +25,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.41 2005-05-07 03:39:44 debug Exp $
+ *  $Id: dev_vga.c,v 1.42 2005-05-07 10:40:30 debug Exp $
  *  
  *  VGA text console device.
  *
- *  A few ugly hacks are used. The default resolution is 640x480, which
+ *  A few ugly hacks are used. The default resolution is 640x400, which
  *  means that the following font sizes and text resolutions can be used:
  *
- *	8x16						80 x 30
- *	8x10 (with the last line repeated twice)	80 x 43
- *	8x8						80 x 60
+ *	8x16						80 x 25
+ *	8x10 (with the last line repeated twice)	80 x 36
+ *	8x8						80 x 50
  *
  *  There is only a mode switch when actual non-space text is written outside
  *  the current window.
@@ -60,8 +60,8 @@
 /*  For bintranslated videomem -> framebuffer updates:  */
 #define	VGA_TICK_SHIFT		14
 
-#define	VGA_MEM_MAXY		60
-#define	VGA_MEM_ALLOCY		67
+#define	VGA_MEM_MAXY		50
+#define	VGA_MEM_ALLOCY		50
 
 
 #define	VGA_FB_ADDR	0x1230000000ULL
@@ -155,6 +155,7 @@ static void vga_update_textmode(struct machine *machine,
 		case 6:	c_putstr(d, "43"); break;
 		case 7:	c_putstr(d, "47"); break;
 		}
+		/*  TODO: blink  */
 		c_putstr(d, "m");
 
 		if (ch >= 0x20)
@@ -264,12 +265,6 @@ static void vga_update_cursor(struct machine *machine, struct vga_data *d)
 	dev_fb_setcursor(d->fb,
 	    d->cursor_x * 8, d->cursor_y * d->font_size +
 	    d->cursor_scanline_start, onoff, 8, height);
-
-	if (!machine->use_x11) {
-		/*  NOTE: 2 > 0, so this only updates the cursor, no
-		    character cells.  */
-		vga_update_textmode(machine, d, 2, 0);
-	}
 }
 
 
@@ -293,6 +288,12 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 		if (d->update_y2 >= d->max_y)
 			d->update_y2 = d->max_y - 1;
 		d->modified = 1;
+	}
+
+	if (!cpu->machine->use_x11) {
+		/*  NOTE: 2 > 0, so this only updates the cursor, no
+		    character cells.  */
+		vga_update_textmode(cpu->machine, d, 2, 0);
 	}
 
 	if (d->modified) {
@@ -334,7 +335,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	 *  screen. (Specially "crafted" :-) to work with Windows NT.)
 	 */
 	if (writeflag && (idata & 255) != 0x20 && (relative_addr & 1) == 0) {
-		if (y >= 43 && d->font_size > 8) {
+		if (y >= 36 && d->font_size > 8) {
 			/*  Switch to 8x8 font:  */
 			debug("SWITCHING to 8x8 font\n");
 			d->font_size = 8;
@@ -343,14 +344,14 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			vga_update(cpu->machine, d, 0, 0,
 			    d->max_x - 1, d->max_y - 1);
 			vga_update_cursor(cpu->machine, d);
-		} else if (y >= 30 && d->font_size > 11) {
+		} else if (y >= 25 && d->font_size > 11) {
 			/*  Switch to 8x10 font:  */
 			debug("SWITCHING to 8x10 font\n");
 			d->font_size = 11;	/*  NOTE! 11  */
 			d->font = font8x10;
 			vga_update(cpu->machine, d, 0, 0,
 			    d->max_x - 1, d->max_y - 1);
-			d->max_y = 43;
+			d->max_y = 36;
 			vga_update_cursor(cpu->machine, d);
 		}
 	}

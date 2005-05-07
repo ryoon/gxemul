@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.19 2005-05-07 14:52:53 debug Exp $
+ *  $Id: pc_bios.c,v 1.20 2005-05-07 15:21:32 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -302,6 +302,7 @@ static void pc_bios_int13(struct cpu *cpu)
 		 *  es:bx = destination buffer; return carryflag = error
 		 */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cl &= 0x7f; ch &= 0x7f; dh &= 1;
 		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
 		while (al > 0) {
 			unsigned char buf[512];
@@ -310,6 +311,8 @@ static void pc_bios_int13(struct cpu *cpu)
 
 			if (!res) {
 				cpu->cd.x86.rflags |= X86_FLAGS_CF;
+				fatal("[ PC BIOS: disk access failed: disk %i, "
+				    "CHS = %i,%i,%i ]\n", dl, ch, dh, cl);
 				break;
 			}
 
@@ -456,8 +459,11 @@ int pc_bios_emul(struct cpu *cpu)
 	cpu->pc = load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP]);
 	cpu->cd.x86.s[X86_S_CS] =
 	    load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 2);
-	cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
-	    | load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 4);
+
+	/*  Actually, don't pop flags, because they contain result bits
+	    from interrupt calls.  */
+	/*  cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
+	    | load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 4);  */
 
 	cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
 	    | ((cpu->cd.x86.r[X86_R_SP] + 6) & 0xffff);

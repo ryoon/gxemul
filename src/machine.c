@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.425 2005-05-07 14:52:53 debug Exp $
+ *  $Id: machine.c,v 1.426 2005-05-07 15:21:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4451,9 +4451,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "Generic x86 PC";
 
 		if (!machine->use_x11)
-			fprintf(stderr, "WARNING! You are emulating a PC "
-			    "without -X. You will miss any output going\n"
-			    "to the screen!\n\n");
+			fprintf(stderr, "\nWARNING! You are emulating a PC wi"
+			    "thout -X. You will miss any graphics output!\n\n");
 
 		/*
 		 *  Initialize all 16-bit interrupt vectors to point to

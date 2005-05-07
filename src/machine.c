@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.424 2005-05-07 02:43:18 debug Exp $
+ *  $Id: machine.c,v 1.425 2005-05-07 14:52:53 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3088,8 +3088,8 @@ Why is this here? TODO
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
 					dev_vga_init(machine, mem,
-					    0x400b8000ULL, 0x600003c0ULL,
-					    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
+					    0x400a0000ULL, 0x600003c0ULL,
+					    machine->machine_name);
 					arcbios_console_init(cpu, 0x400b8000ULL,
 					    0x600003c0ULL, ARC_CONSOLE_MAX_X,
 					    ARC_CONSOLE_MAX_Y);
@@ -3197,8 +3197,8 @@ Not yet.
 				else
 					machine->main_console_handle = i;
 
-				dev_vga_init(machine, mem, 0x1000b8000ULL, 0x9000003c0ULL,
-				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
+				dev_vga_init(machine, mem, 0x1000a0000ULL,
+				    0x9000003c0ULL, machine->machine_name);
 
 				arcbios_console_init(cpu, 0x1000b8000ULL,
 				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
@@ -4306,7 +4306,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		dev_ns16550_init(machine, mem, 0x800002f8, 0, 1, 0, "serial 1");
 
 		/*  This is used by Linux too:  */
-		dev_vga_init(machine, mem, 0xc00b8000ULL, 0x800003c0ULL, 80, 25,
+		dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,
 		    machine->machine_name);
 
 		store_32bit_word(cpu, 0x3010,
@@ -4475,7 +4475,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		dev_ns16550_init(machine, mem, 0x100000378ULL, 3, 1, 0, "com2");
 
 		/*  This should be _after_ the main console handle is valid.  */
-		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
+		dev_vga_init(machine, mem, 0xa0000ULL, 0x1000003c0ULL,
 		    "Generic x86 PC");
 
 		break;

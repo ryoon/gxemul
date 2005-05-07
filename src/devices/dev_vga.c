@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.42 2005-05-07 10:40:30 debug Exp $
+ *  $Id: dev_vga.c,v 1.43 2005-05-07 14:52:54 debug Exp $
  *  
- *  VGA text console device.
+ *  VGA text (and graphics) console device.
  *
  *  A few ugly hacks are used. The default resolution is 640x400, which
  *  means that the following font sizes and text resolutions can be used:
@@ -78,8 +78,10 @@ struct vga_data {
 
 	int		max_x;
 	int		max_y;
-	size_t		videomem_size;
-	unsigned char	*videomem;	/*  2 bytes per char  */
+	size_t		charcells_size;
+	unsigned char	*charcells;	/*  2 bytes per char  */
+
+	unsigned char	*gfx_mem;	/*  0xa0000...  */
 
 	unsigned char	selected_register;
 	unsigned char	reg[256];
@@ -123,9 +125,9 @@ static void vga_update_textmode(struct machine *machine,
 	int i;
 
 	for (i=start; i<=end; i+=2) {
-		unsigned char ch = d->videomem[i];
-		int fg = d->videomem[i+1] & 15;
-		int bg = (d->videomem[i+1] >> 4) & 15;	/*  top bit = blink  */
+		unsigned char ch = d->charcells[i];
+		int fg = d->charcells[i+1] & 15;
+		int bg = (d->charcells[i+1] >> 4) & 15;	/*  top bit = blink  */
 		int x = (i/2) % d->max_x;
 		int y = (i/2) / d->max_x;
 
@@ -171,7 +173,7 @@ static void vga_update_textmode(struct machine *machine,
 /*
  *  vga_update():
  *
- *  This function should be called whenever any part of d->videomem[] has
+ *  This function should be called whenever any part of d->charcells[] has
  *  been written to. It will redraw all characters within the range x1,y1
  *  .. x2,y2 using the right palette.
  */
@@ -187,19 +189,19 @@ static void vga_update(struct machine *machine, struct vga_data *d,
 	start &= ~1;
 	end |= 1;
 
-	if (end >= d->videomem_size)
-		end = d->videomem_size - 1;
+	if (end >= d->charcells_size)
+		end = d->charcells_size - 1;
 
 	if (!machine->use_x11)
 		vga_update_textmode(machine, d, start, end);
 
 	for (i=start; i<=end; i+=2) {
-		unsigned char ch = d->videomem[i];
-		fg = d->videomem[i+1] & 15;
-		bg = (d->videomem[i+1] >> 4) & 7;
+		unsigned char ch = d->charcells[i];
+		fg = d->charcells[i+1] & 15;
+		bg = (d->charcells[i+1] >> 4) & 7;
 
 		/*  Blink is hard to do :-), but inversion might be ok too:  */
-		if (d->videomem[i+1] & 128) {
+		if (d->charcells[i+1] & 128) {
 			int tmp = fg; fg = bg; bg = tmp;
 		}
 
@@ -235,7 +237,6 @@ static void vga_update(struct machine *machine, struct vga_data *d,
 					    [fg * 3 + 2];
 				}
 
-				/*  TODO: don't hardcode  */
 				if (addr < d->fb_size)
 					dev_fb_access(machine->cpus[0],
 					    machine->memory, addr, &pixel[0],
@@ -310,9 +311,58 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 
 
 /*
+ *  vga_graphics_access():
+ *
+ *  Reads and writes to the VGA video memory (pixels).
+ */
+int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct vga_data *d = extra;
+	uint64_t idata = 0, odata = 0;
+	int x, y, ix, iy;
+
+	idata = memory_readmax64(cpu, data, len);
+
+/*
+ *  TODO:
+ *
+ *  This should be completely rewritten, using the memory -> update fashion.
+ */
+
+	x = relative_addr % 320;
+	y = relative_addr / 320;
+
+	if (writeflag == MEM_WRITE) {
+		unsigned char pixel[3];
+		int fg = idata;
+
+		pixel[0] = d->fb->rgb_palette[fg * 3 + 0];
+		pixel[1] = d->fb->rgb_palette[fg * 3 + 1];
+		pixel[2] = d->fb->rgb_palette[fg * 3 + 2];
+
+		for (iy=y*2; iy<=y*2+1; iy++)
+			for (ix=x*2; ix<=x*2+1; ix++) {
+				uint32_t addr = (d->max_x*8 * iy + ix) * 3;
+				if (addr < d->fb_size)
+					dev_fb_access(cpu->machine->cpus[0],
+					    cpu->machine->memory, addr, pixel,
+					    sizeof(pixel), MEM_WRITE, d->fb);
+			}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
  *  dev_vga_access():
  *
- *  Reads and writes to the VGA video memory.
+ *  Reads and writes to the VGA video memory (charcells).
  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
@@ -356,12 +406,12 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		}
 	}
 
-	if (relative_addr < d->videomem_size) {
+	if (relative_addr < d->charcells_size) {
 		if (writeflag == MEM_WRITE) {
 			for (i=0; i<len; i++) {
-				int old = d->videomem[relative_addr + i];
+				int old = d->charcells[relative_addr + i];
 				if (old != data[i]) {
-					d->videomem[relative_addr + i] =
+					d->charcells[relative_addr + i] =
 					    data[i];
 					d->modified = 1;
 				}
@@ -379,7 +429,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 				if (y2 > d->update_y2)  d->update_y2 = y2;
 			}
 		} else
-			memcpy(data, d->videomem + relative_addr, len);
+			memcpy(data, d->charcells + relative_addr, len);
 		return 1;
 	}
 
@@ -539,8 +589,7 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
  *  like 80 and 25, respectively.
  */
 void dev_vga_init(struct machine *machine, struct memory *mem,
-	uint64_t videomem_base, uint64_t control_base, int max_x, int max_y,
-	char *name)
+	uint64_t videomem_base, uint64_t control_base, char *name)
 {
 	struct vga_data *d;
 	int r,g,b,i, x,y, tmpi;
@@ -557,26 +606,29 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	d->videomem_base = videomem_base;
 	d->control_base  = control_base;
-	d->max_x         = max_x;
-	d->max_y         = max_y;
-	d->videomem_size = max_x * VGA_MEM_MAXY * 2;
+	d->max_x         = 80;
+	d->max_y         = 25;
+	d->charcells_size = d->max_x * VGA_MEM_MAXY * 2;
 
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
-	allocsize = ((d->videomem_size - 1) | 0xfff) + 1;
-	d->videomem = malloc(d->videomem_size);
-	if (d->videomem == NULL) {
+	allocsize = ((d->charcells_size - 1) | 0xfff) + 1;
+	d->charcells = malloc(d->charcells_size);
+	d->gfx_mem = malloc(0x18000);
+	if (d->charcells == NULL || d->gfx_mem == NULL) {
 		fprintf(stderr, "out of memory in dev_vga_init()\n");
 		exit(1);
 	}
 
 	for (y=0; y<VGA_MEM_MAXY; y++) {
-		for (x=0; x<max_x; x++) {
+		for (x=0; x<d->max_x; x++) {
 			char ch = ' ';
-			i = (x + max_x * y) * 2;
-			d->videomem[i] = ch;
-			d->videomem[i+1] = 0x07;  /*  Default color  */
+			i = (x + d->max_x * y) * 2;
+			d->charcells[i] = ch;
+			d->charcells[i+1] = 0x07;  /*  Default color  */
 		}
 	}
+
+	memset(d->gfx_mem, 0, 0x18000);
 
 	d->font_size = 16;
 	d->font = font8x16;
@@ -585,8 +637,8 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->cursor_scanline_end = d->font_size - 2;
 
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
-	d->fb_size = 8*max_x * d->font_size*max_y * 3;
+	    8*d->max_x, 16*d->max_y, 8*d->max_x, 16*d->max_y, 24, "VGA", 0);
+	d->fb_size = 8*d->max_x * d->font_size*d->max_y * 3;
 
 	i = 0;
 	for (r=0; r<2; r++)
@@ -606,12 +658,12 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 				i+=3;
 			}
 
-	memory_device_register(mem, "vga_mem", videomem_base, allocsize,
-	    dev_vga_access, d, MEM_BINTRANS_OK
-/*  | MEM_BINTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not 
-with Windows NT yet. Why? */
-,
-	    d->videomem);
+	/*  MEM_BINTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not
+	    with Windows NT yet. Why? */
+	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
+	    allocsize, dev_vga_access, d, MEM_BINTRANS_OK, d->charcells);
+	memory_device_register(mem, "vga_gfx", videomem_base,
+	    0x18000, dev_vga_graphics_access, d, MEM_DEFAULT, d->gfx_mem);
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 

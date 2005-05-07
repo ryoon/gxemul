@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.18 2005-05-07 04:56:36 debug Exp $
+ *  $Id: pc_bios.c,v 1.19 2005-05-07 14:52:53 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -217,6 +217,10 @@ static void pc_bios_int10(struct cpu *cpu)
 			for (y=0; y<25; y++)
 				for (x=0; x<80; x++)
 					output_char(cpu, x,y, ' ', 0x07);
+			break;
+		case 0x13:	/*  320x200 x 256 colors graphics  */
+			/*  TODO  */
+			set_cursor_scanlines(cpu, 0x40, 0);
 			break;
 		default:
 			fatal("pc_bios_int10(): unimplemented video mode "

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.17 2005-05-07 03:39:43 debug Exp $
+ *  $Id: pc_bios.c,v 1.18 2005-05-07 04:56:36 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -229,6 +229,12 @@ static void pc_bios_int10(struct cpu *cpu)
 		/*  ch = starting line, cl = ending line  */
 		set_cursor_scanlines(cpu, ch, cl);
 		break;
+	case 0x03:	/*  read cursor position  */
+		get_cursor_pos(cpu, &x, &y);
+		cpu->cd.x86.r[X86_R_DX] = (y << 8) + x;
+		/*  ch/cl = cursor start end... TODO  */
+		cpu->cd.x86.r[X86_R_CX] = 0x000f;
+		break;
 	case 0x09:	/*  write character and attribute(todo)  */
 		while (cx-- > 0)
 			pc_bios_putchar(cpu, al);
@@ -321,6 +327,23 @@ static void pc_bios_int13(struct cpu *cpu)
 
 
 /*
+ *  pc_bios_int15():
+ */
+static void pc_bios_int15(struct cpu *cpu)
+{
+	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+
+	switch (ah) {
+	default:
+		fatal("FATAL: Unimplemented PC BIOS interrupt 0x15 function"
+		    " 0x%02x.\n", ah);
+		cpu->running = 0;
+		cpu->dead = 1;
+	}
+}
+
+
+/*
  *  pc_bios_int16():
  *
  *  Keyboard-related functions.
@@ -401,6 +424,7 @@ int pc_bios_emul(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] = 640;
 		break;
 	case 0x13:  pc_bios_int13(cpu); break;
+	case 0x15:  pc_bios_int15(cpu); break;
 	case 0x16:
 		if (pc_bios_int16(cpu) == 0)
 			return 0;

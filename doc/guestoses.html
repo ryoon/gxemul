@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.38 2005-05-04 19:24:53 debug Exp $
+$Id: guestoses.html,v 1.39 2005-05-07 02:43:45 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -228,7 +228,7 @@ follow these instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	$ <b>gxemul -E arc -e pica -b -d nbsd_arc.img -d bc:arccd.iso \
+	$ <b>gxemul -E arc -e pica -Xb -d nbsd_arc.img -d bc:arccd.iso \
 	  -j arc/binary/kernel/netbsd.RAMDISK.gz</b>
 
 </pre>
@@ -264,7 +264,7 @@ You can now use the generic NetBSD/arc kernel to boot from the harddisk
 image, using the following command:
 <p>
 <pre>
-	$ <b>gxemul -E arc -e pica -b -d nbsd_arc.img netbsd-GENERIC</b>
+	$ <b>gxemul -E arc -e pica -Xb -d nbsd_arc.img netbsd-GENERIC</b>
 
 </pre>
 

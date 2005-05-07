@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.17 2005-04-22 16:03:43 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.18 2005-05-07 02:13:22 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2322,9 +2322,11 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			vaddr2 = cp->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
 			if (vaddr1 == vaddr2 && ((cp->tlbs[i].lo0 &
 			    ENTRYLO_V) || (cp->tlbs[i].lo1 & ENTRYLO_V)))
-				fatal("\n[ WARNING! tlbw%s vaddr=0x%llx is "
-				    "already in the TLB! ]\n\n", randomflag?
-				    "r" : "i", (long long)vaddr1);
+				fatal("\n[ WARNING! tlbw%s to index 0x%02x "
+				    "vaddr=0x%llx (asid 0x%02x) is already in"
+				    " the TLB (entry 0x%02x) ! ]\n\n",
+				    randomflag? "r" : "i", index,
+				    (long long)vaddr1, asid, i);
 		}
 	}
 

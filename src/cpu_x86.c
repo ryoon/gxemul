@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.44 2005-05-05 23:48:31 debug Exp $
+ *  $Id: cpu_x86.c,v 1.45 2005-05-07 03:56:20 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -973,6 +973,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("lodsb");
 	} else if (op == 0xad) {
 		SPACES; debug("lods%s", mode==16? "w" : (mode==32? "d" : "q"));
+	} else if (op == 0xae) {
+		SPACES; debug("scasb");
+	} else if (op == 0xaf) {
+		SPACES; debug("scas%s", mode==16? "w" : (mode==32? "d" : "q"));
 	} else if (op >= 0xb0 && op <= 0xb7) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		switch (op & 7) {
@@ -1154,6 +1158,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			imm = read_imm_and_print(&instr, &ilen,
 			    op == 0xf6? 8 : mode);
 			SPACES; debug("test\t%s,0x%x", modrm_rm, imm);
+			break;
+		case 2:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xf6?
+			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
+			SPACES; debug("not\t%s", modrm_rm);
 			break;
 		case 4:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xf6?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
@@ -1822,8 +1830,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xa4 || op == 0xa5 ||		/*  MOVS  */
 	    op == 0xa6 || op == 0xa7 ||			/*  CMPS  */
 	    op == 0xaa || op == 0xab ||			/*  STOS  */
-	    op == 0xac || op == 0xad) {			/*  LODS  */
-		int dir = 1, movs = 1, lods = 0, cmps = 0, stos = 0;
+	    op == 0xac || op == 0xad ||			/*  LODS  */
+	    op == 0xae || op == 0xaf) {			/*  SCAS  */
+		int dir = 1, movs = 1, lods = 0, cmps = 0, stos = 0, scas = 0;
 		int origcursegment = cpu->cd.x86.cursegment;
 
 		len = 1;
@@ -1835,15 +1844,17 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			movs = 0;
 		if (op >= 0xaa && op <= 0xab)
 			stos = 1;
-		if (op >= 0xac)
+		if (op >= 0xac && op <= 0xad)
 			lods = 1;
+		if (op >= 0xae && op <= 0xaf)
+			scas = 1;
 		if (cpu->cd.x86.rflags & X86_FLAGS_DF)
 			dir = -1;
 
 		do {
 			uint64_t value;
 
-			if (!stos) {
+			if (!stos && !scas) {
 				cpu->cd.x86.cursegment = origcursegment;
 				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_SI],
 				    &value, len))
@@ -1860,7 +1871,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    value, len))
 					return 0;
 			}
-			if (cmps) {
+			if (cmps || scas) {
 				cpu->cd.x86.cursegment = cpu->cd.x86.s[
 				    X86_S_ES];
 				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_DI],
@@ -1894,7 +1905,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (mode != 16 && cpu->cd.x86.r[X86_R_CX] == 0)
 					rep = 0;
 
-				if (cmps) {
+				if (cmps || scas) {
 					if (rep == REP_REP && !(
 					    cpu->cd.x86.rflags & X86_FLAGS_ZF))
 						rep = 0;
@@ -2213,6 +2224,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (op == 0xf6)
 				op1 &= 0xff;
 			x86_cmp(cpu, op1, 0, op==0xf6? 8 : mode);
+			break;
+		case 2:	/*  not  */
+			instr_orig = instr;
+			success = modrm(cpu, MODRM_READ, mode, mode67,
+			    op == 0xf6? MODRM_EIGHTBIT : 0, &instr,
+			    &newpc, &op1, &op2);
+			if (!success)
+				return 0;
+			op1 ^= 0xffffffffffffffffULL;
+			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
+			    op == 0xfe? MODRM_EIGHTBIT : 0, &instr_orig,
+			    NULL, &op1, &op2);
+			if (!success)
+				return 0;
 			break;
 		case 4:	/*  mul  */
 			success = modrm(cpu, MODRM_READ, mode, mode67,

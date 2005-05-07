@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.49 2005-05-07 15:58:03 debug Exp $
+ *  $Id: cpu_x86.c,v 1.50 2005-05-07 16:09:04 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -470,6 +470,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	switch (mod) {
 	case 0:
 		if (disasm) {
+
+/*  TODO: SIB for 32-bit mode!  */
+
 			switch (rm) {
 			case 0:	sprintf(modrm_rm, "[bx+si]");
 				break;
@@ -523,6 +526,12 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	case 2:
 		z = (mod == 1)? 8 : mode67;
 		if (disasm) {
+			if (mode == 32) {
+				imm2 = read_imm_common(instrp, lenp, z, disasm);
+				if (z == 8)  imm2 = (signed char)imm2;
+				sprintf(modrm_rm, "[e%s+0x%x]",
+				    reg_names[rm], imm2); break;
+			} else
 			switch (rm) {
 			case 0:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
@@ -554,27 +563,31 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 			if (z == 8)
 				addr = (signed char)addr;
 
-			switch (rm) {
-			case 0:	addr += cpu->cd.x86.r[X86_R_BX]
-				    + cpu->cd.x86.r[X86_R_SI];
-				break;
-			case 1:	addr += cpu->cd.x86.r[X86_R_BX]
-				    + cpu->cd.x86.r[X86_R_DI];
-				break;
-			case 2:	addr += cpu->cd.x86.r[X86_R_BP]
-				    + cpu->cd.x86.r[X86_R_SI];
-				break;
-			case 3:	addr += cpu->cd.x86.r[X86_R_BP]
-				    + cpu->cd.x86.r[X86_R_DI];
-				break;
-			case 4:	addr += cpu->cd.x86.r[X86_R_SI];
-				break;
-			case 5:	addr += cpu->cd.x86.r[X86_R_DI];
-				break;
-			case 6:	addr += cpu->cd.x86.r[X86_R_BP];
-				break;
-			case 7:	addr += cpu->cd.x86.r[X86_R_BX];
-				break;
+			if (mode == 32) {
+				addr += cpu->cd.x86.r[rm];
+			} else {
+				switch (rm) {
+				case 0:	addr += cpu->cd.x86.r[X86_R_BX]
+					    + cpu->cd.x86.r[X86_R_SI];
+					break;
+				case 1:	addr += cpu->cd.x86.r[X86_R_BX]
+					    + cpu->cd.x86.r[X86_R_DI];
+					break;
+				case 2:	addr += cpu->cd.x86.r[X86_R_BP]
+					    + cpu->cd.x86.r[X86_R_SI];
+					break;
+				case 3:	addr += cpu->cd.x86.r[X86_R_BP]
+					    + cpu->cd.x86.r[X86_R_DI];
+					break;
+				case 4:	addr += cpu->cd.x86.r[X86_R_SI];
+					break;
+				case 5:	addr += cpu->cd.x86.r[X86_R_DI];
+					break;
+				case 6:	addr += cpu->cd.x86.r[X86_R_BP];
+					break;
+				case 7:	addr += cpu->cd.x86.r[X86_R_BX];
+					break;
+				}
 			}
 
 			switch (writeflag) {
@@ -592,7 +605,11 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	case 3:
 		if (eightbit & MODRM_EIGHTBIT) {
 			if (disasm) {
-				strcpy(modrm_rm, reg_names_bytes[rm]);
+				if (mode == 32)
+					sprintf(modrm_rm, "e%s",
+					    reg_names_bytes[rm]);
+				else
+					strcpy(modrm_rm, reg_names_bytes[rm]);
 			} else {
 				switch (writeflag) {
 				case MODRM_WRITE_RM:
@@ -616,7 +633,10 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 			}
 		} else {
 			if (disasm) {
-				strcpy(modrm_rm, reg_names[rm]);
+				if (mode == 32)
+					sprintf(modrm_rm, "e%s", reg_names[rm]);
+				else
+					strcpy(modrm_rm, reg_names[rm]);
 			} else {
 				switch (writeflag) {
 				case MODRM_WRITE_RM:
@@ -663,8 +683,12 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 		if (disasm) {
 			if (eightbit & MODRM_SEG)
 				strcpy(modrm_r, seg_names[r]);
-			else
-				strcpy(modrm_r, reg_names[r]);
+			else {
+				if (mode == 32)
+					sprintf(modrm_r, "e%s", reg_names[r]);
+				else
+					strcpy(modrm_r, reg_names[r]);
+			}
 		} else {
 			switch (writeflag) {
 			case MODRM_WRITE_R:
@@ -680,6 +704,13 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				else
 					*op2p = cpu->cd.x86.r[r];
 			}
+		}
+	}
+
+	if (!disasm) {
+		switch (mode) {
+		case 16:*op1p &= 0xffff; *op2p &= 0xffff; break;
+		case 32:*op1p &= 0xffffffffULL; *op2p &= 0xffffffffULL; break;
 		}
 	}
 

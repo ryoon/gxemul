@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.48 2005-05-07 15:21:32 debug Exp $
+ *  $Id: cpu_x86.c,v 1.49 2005-05-07 15:58:03 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -303,7 +303,7 @@ TODO: regmatch for 64, 32, 16, and 8 bit register names
 #define modify(old,new) (					\
 		mode==16? (					\
 			((old) & ~0xffff) + ((new) & 0xffff)	\
-		) : (new) )
+		) : (new & 0xffffffffULL) )
 
 #define	HEXPRINT(x,n) { int j; for (j=0; j<(n); j++) debug("%02x",(x)[j]); }
 #define	HEXSPACES(i) { int j; for (j=0; j<10-(i);j++) debug("  "); debug(" "); }
@@ -1006,21 +1006,21 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op >= 0xb8 && op <= 0xbf) {
 		imm = read_imm_and_print(&instr, &ilen, mode);
 		SPACES; debug("mov\t%s%s,0x%x", e, reg_names[op & 7], imm);
-	} else if (op == 0xc1) {
+	} else if (op == 0xc0 || op == 0xc1) {
 		switch ((*instr >> 3) & 0x7) {
-		case 4:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
-			    NULL, NULL);
-			imm = read_imm_and_print(&instr, &ilen, 8);
-			SPACES; debug("shl\t%s,%i", modrm_rm, imm);
-			break;
-		case 5:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
-			    NULL, NULL);
-			imm = read_imm_and_print(&instr, &ilen, 8);
-			SPACES; debug("shr\t%s,%i", modrm_rm, imm);
-			break;
-		default:
-			SPACES; debug("UNIMPLEMENTED 0x%02x", op);
+		case 0:	mnem = "rol"; break;
+		case 1:	mnem = "ror"; break;
+		case 2:	mnem = "rcl"; break;
+		case 3:	mnem = "rcl"; break;
+		case 4:	mnem = "shl"; break;
+		case 5:	mnem = "shr"; break;
+		default:fatal("unimpl 0xc0/0xc1\n");
+			exit(1);
 		}
+		modrm(cpu, MODRM_READ, mode, mode67, op == 0xc0?
+		    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("%s\t%s,%i", mnem, modrm_rm, imm);
 	} else if (op == 0xc2) {
 		imm = read_imm_and_print(&instr, &ilen, 16);
 		SPACES; debug("ret\t0x%x", imm);
@@ -1039,7 +1039,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xc6?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			imm = read_imm_and_print(&instr, &ilen,
-			    op == 0xc6? 8 : mode);
+			    op == 0xc6? 8 : mode67);
 			SPACES; debug("mov\t%s,0x%x", modrm_rm, imm);
 			break;
 		default:
@@ -1137,6 +1137,18 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		else
 			mnem = "jecxz";
 		SPACES; debug("%s\t0x%x", mnem, imm);
+	} else if (op == 0xe4) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("in\tal,0x%x", imm);
+	} else if (op == 0xe5) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("in\t%sax,0x%x", e, imm);
+	} else if (op == 0xe6) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("out\t0x%x,al", imm);
+	} else if (op == 0xe7) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("out\t0x%x,%sax", imm, e);
 	} else if (op == 0xe8 || op == 0xe9) {
 		imm = read_imm_and_print(&instr, &ilen, mode);
 		if (mode == 16)
@@ -1165,6 +1177,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0xeb: mnem = "jmp"; break;
 		}
 		SPACES; debug("%s\t0x%x", mnem, imm);
+	} else if (op == 0xec) {
+		SPACES; debug("in\tal,dx");
+	} else if (op == 0xed) {
+		SPACES; debug("in\t%sax,dx", e);
+	} else if (op == 0xee) {
+		SPACES; debug("out\tdx,al");
+	} else if (op == 0xef) {
+		SPACES; debug("out\tdx,%sax", e);
 	} else if (op == 0xf4) {
 		SPACES; debug("hlt");
 	} else if (op == 0xf5) {
@@ -2033,14 +2053,16 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op >= 0xb8 && op <= 0xbf) {
 		imm = read_imm(&instr, &newpc, mode);
 		cpu->cd.x86.r[op & 7] = imm;
-	} else if (op == 0xc1) {
+	} else if (op == 0xc0 || op == 0xc1) {
 		int cf = -1;
 		switch ((*instr >> 3) & 0x7) {
+		case 1:	/*  ror op1,imm  */
 		case 4:	/*  shl op1,imm  */
 		case 5:	/*  shr op1,imm  */
 			instr_orig = instr;
 			success = modrm(cpu, MODRM_READ, mode, mode67,
-			    0, &instr, &newpc, &op1, &op2);
+			    op==0xc0? MODRM_EIGHTBIT : 0, &instr, &newpc,
+			    &op1, &op2);
 			imm = read_imm(&instr, &newpc, 8);
 			if (!success)
 				return 0;
@@ -2048,6 +2070,16 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			while (imm-- != 0) {
 				cf = 0;
 				switch ((*instr_orig >> 3) & 0x7) {
+				case 1:	if (op1 & 1)
+						cf = 1;
+					op1 >>= 1;
+					if (cf && op == 0xc0)
+						op1 |= 0x80;
+					if (cf && op == 0xc1 && mode == 16)
+						op1 |= 0x8000;
+					if (cf && op == 0xc1 && mode == 32)
+						op1 |= 0x80000000ULL;
+					break;
 				case 4:	if ((mode == 16 && op1 & 0x8000) ||
 					    (mode == 32 && op1 & 0x80000000ULL))
 						cf = 1;
@@ -2066,7 +2098,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					cpu->cd.x86.rflags |= X86_FLAGS_CF;
 			}
 			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
-			    0, &instr_orig, NULL, &op1, &op2);
+			    op==0xc0? MODRM_EIGHTBIT : 0, &instr_orig,
+			    NULL, &op1, &op2);
 			if (!success)
 				return 0;
 			break;
@@ -2105,7 +2138,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    &newpc, &op1, &op2);
 			if (!success)
 				return 0;
-			imm = read_imm(&instr, &newpc, op == 0xc6? 8 : mode);
+			imm = read_imm(&instr, &newpc, op == 0xc6? 8 : mode67);
 			op1 = imm;
 			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 			    op == 0xc6? MODRM_EIGHTBIT : 0, &instr_orig,
@@ -2341,6 +2374,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		if (perform_jump)
 			newpc = modify(newpc, newpc + (signed char)imm);
+	} else if (op == 0xee || op == 0xef) {	/*  OUT DX,AL or AX/EAX  */
+		unsigned char databuf[8];
+		databuf[0] = cpu->cd.x86.r[X86_R_AX];
+		if (op == 0xef) {
+			databuf[1] = cpu->cd.x86.r[X86_R_AX] >> 8;
+			if (mode >= 32) {
+				databuf[2] = cpu->cd.x86.r[X86_R_AX] >> 16;
+				databuf[3] = cpu->cd.x86.r[X86_R_AX] >> 24;
+			}
+		}
+		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL +
+		    (cpu->cd.x86.r[X86_R_DX] & 0xffff), &databuf[0],
+		    op == 0xee? 1 : (mode/8), MEM_WRITE, CACHE_DATA);
 	} else if (op == 0xf5) {	/*  CMC  */
 		cpu->cd.x86.rflags ^= X86_FLAGS_CF;
 	} else if (op == 0xf8) {	/*  CLC  */

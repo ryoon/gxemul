@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.189 2005-05-04 19:24:54 debug Exp $
+ *  $Id: emul.c,v 1.190 2005-05-07 02:13:29 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -155,8 +155,9 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	char *p, *filename_orig;
 	char *filename = strdup(cpu->machine->boot_kernel_filename);
 	unsigned char *filebuf = NULL;
-	char *tmpfilename;
+	char *tmpfilename = NULL;
 	char **new_array;
+	int tmpfile_handle;
 
 	if (filename == NULL) {
 		fatal("out of memory\n");
@@ -370,8 +371,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		goto ret;
 	}
 
-	/*  TODO: something better than tmpnam?  */
-	tmpfilename = strdup(tmpnam(NULL));
+	tmpfilename = strdup("/tmp/gxemul.XXXXXXXXXXXX");
 
 	debug("extracting %lli bytes into %s\n",
 	    (long long)filelen, tmpfilename);
@@ -380,15 +380,15 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	if (!res2) {
 		fatal("could not read the file from the disk image!\n");
 		goto ret;
-	} else {
-		FILE *f = fopen(tmpfilename, "w");
-		if (f == NULL) {
-			fatal("could not create temporary file\n");
-			exit(1);
-		}
-		fwrite(filebuf, 1, filelen, f);
-		fclose(f);
 	}
+
+	tmpfile_handle = mkstemp(tmpfilename);
+	if (tmpfile_handle < 0) {
+		fatal("could not create %s\n", tmpfilename);
+		exit(1);
+	}
+	write(tmpfile_handle, filebuf, filelen);
+	close(tmpfile_handle);
 
 	/*  Add the temporary filename to the load_namesp array:  */
 	(*n_loadp)++;
@@ -422,6 +422,9 @@ ret:
 		free(match_entry);
 
 	free(filename_orig);
+
+	if (tmpfilename != NULL)
+		free(tmpfilename);
 
 	debug_indentation(-iadd);
 	return res;

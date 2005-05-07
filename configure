@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.124 2005-04-28 17:56:29 debug Exp $
+#  $Id: configure,v 1.125 2005-05-07 02:13:28 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -804,9 +804,24 @@ if [ ! -x _tests ]; then
 	printf "missing, using mystrtoull\n"
 	printf "#define strtoull mystrtoull\n" >> config.h
 else
-	printf "yes\n"
+	printf "found\n"
 fi
-rm -f _testlong* _tests.[co] _tests
+rm -f _tests.[co] _tests
+
+
+#  mkstemp missing?
+printf "checking for mkstemp... "
+printf "#include <unistd.h>
+int main(int argc, char *argv[]) { int x; char *y = \"abc\";
+x = mkstemp(y); return 0;}\n" > _tests.c
+$CC $CFLAGS _tests.c -o _tests 2> /dev/null
+if [ ! -x _tests ]; then
+	printf "missing, using workaround\n"
+	printf "#define mkstemp mymkstemp\n" >> config.h
+else
+	printf "found\n"
+fi
+rm -f _tests.[co] _tests
 
 
 #  fseeko missing?
@@ -818,12 +833,12 @@ printf "#include <stdlib.h>
 int main(int argc, char *argv[]) { fseeko(NULL, 0, 0); return 0;}\n" > _tests.c
 $CC $CFLAGS _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
-	printf "no\n"
+	printf "missing\n"
 	printf "WARNING! fseeko missing from libc. Using a hack, "
 	printf "which probably doesn't work.\n"
 	printf "#define HACK_FSEEKO\n" >> config.h
 else
-	printf "yes\n"
+	printf "found\n"
 fi
 rm -f _tests.[co] _tests
 
@@ -841,7 +856,7 @@ if [ ! -x _tests ]; then
 	printf "no, using int\n"
 	CFLAGS="$CFLAGS -Dsocklen_t=int"
 else
-	printf "yes\n"
+	printf "socklen_t\n"
 fi
 rm -f _tests.[co] _tests
 

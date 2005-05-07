@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.c,v 1.1 2005-05-05 19:23:40 debug Exp $
+ *  $Id: misc.c,v 1.2 2005-05-07 02:13:29 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include "misc.h"
 
@@ -100,4 +101,25 @@ unsigned long long mystrtoull(const char *s, char **endp, int base)
 	return res;
 }
 
+
+/*
+ *  mymkstemp():
+ *
+ *  mkstemp() replacement for systems that lack that function. This is NOT
+ *  really safe, but should at least allow the emulator to build and run.
+ */
+int mymkstemp(char *template)
+{
+	int h = 0;
+	char *p = template;
+
+	while (*p) {
+		if (*p == 'X')
+			*p = 48 + random() % 10;
+		p++;
+	}
+
+	h = open(template, O_RDWR, 0600);
+	return h;
+}
 

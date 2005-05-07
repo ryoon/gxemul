@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.6 2005-03-05 12:17:53 debug Exp $
+ *  $Id: console.c,v 1.7 2005-05-07 03:39:43 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -181,13 +181,15 @@ static void start_xterm(int handle)
 	a[0] = getenv("XTERM");
 	if (a[0] == NULL)
 		a[0] = "xterm";
-	a[1] = "-title";
-	a[2] = console_handles[handle].name;
-	a[3] = "-e";
-	a[4] = progname;
-	a[5] = malloc(50);
-	sprintf(a[5], "-WW@S%i,%i", filedes[0], filedesB[1]);
-	a[6] = NULL;
+	a[1] = "-geometry";
+	a[2] = "80x25";
+	a[3] = "-title";
+	a[4] = console_handles[handle].name;
+	a[5] = "-e";
+	a[6] = progname;
+	a[7] = malloc(50);
+	sprintf(a[7], "-WW@S%i,%i", filedes[0], filedesB[1]);
+	a[8] = NULL;
 
 	p = fork();
 	if (p == -1) {

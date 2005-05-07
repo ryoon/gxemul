@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.40 2005-05-07 02:43:20 debug Exp $
+ *  $Id: dev_vga.c,v 1.41 2005-05-07 03:39:44 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -71,6 +71,7 @@ struct vga_data {
 	uint64_t	control_base;
 
 	struct vfb_data *fb;
+	size_t		fb_size;
 
 	int		font_size;
 	unsigned char	*font;
@@ -86,6 +87,8 @@ struct vga_data {
 	int		palette_index;
 	int		palette_subindex;
 
+	int		console_handle;
+
 	int		cursor_x;
 	int		cursor_y;
 	int		cursor_scanline_start;
@@ -99,10 +102,10 @@ struct vga_data {
 };
 
 
-static void c_putstr(struct machine *machine, char *s)
+static void c_putstr(struct vga_data *d, char *s)
 {
 	while (*s)
-		console_putchar(machine->main_console_handle, *s++);
+		console_putchar(d->console_handle, *s++);
 }
 
 
@@ -126,16 +129,41 @@ static void vga_update_textmode(struct machine *machine,
 		int x = (i/2) % d->max_x;
 		int y = (i/2) / d->max_x;
 
-		sprintf(s, "\033[%i;%iH", y + 1, x + 1);
-		c_putstr(machine, s);
+		sprintf(s, "\033[%i;%iH\033[0;", y + 1, x + 1);
+		c_putstr(d, s);
+
+		switch (fg & 7) {
+		case 0:	c_putstr(d, "30"); break;
+		case 1:	c_putstr(d, "34"); break;
+		case 2:	c_putstr(d, "32"); break;
+		case 3:	c_putstr(d, "36"); break;
+		case 4:	c_putstr(d, "31"); break;
+		case 5:	c_putstr(d, "35"); break;
+		case 6:	c_putstr(d, "33"); break;
+		case 7:	c_putstr(d, "37"); break;
+		}
+		if (fg & 8)
+			c_putstr(d, ";1");
+		c_putstr(d, ";");
+		switch (bg & 7) {
+		case 0:	c_putstr(d, "40"); break;
+		case 1:	c_putstr(d, "44"); break;
+		case 2:	c_putstr(d, "42"); break;
+		case 3:	c_putstr(d, "46"); break;
+		case 4:	c_putstr(d, "41"); break;
+		case 5:	c_putstr(d, "45"); break;
+		case 6:	c_putstr(d, "43"); break;
+		case 7:	c_putstr(d, "47"); break;
+		}
+		c_putstr(d, "m");
 
 		if (ch >= 0x20)
-			console_putchar(machine->main_console_handle, ch);
+			console_putchar(d->console_handle, ch);
 	}
 
 	/*  Restore the terminal's cursor position:  */
 	sprintf(s, "\033[%i;%iH", d->cursor_y + 1, d->cursor_x + 1);
-	c_putstr(machine, s);
+	c_putstr(d, s);
 }
 
 
@@ -207,7 +235,7 @@ static void vga_update(struct machine *machine, struct vga_data *d,
 				}
 
 				/*  TODO: don't hardcode  */
-				if (addr < 640 * 480 *3)
+				if (addr < d->fb_size)
 					dev_fb_access(machine->cpus[0],
 					    machine->memory, addr, &pixel[0],
 					    sizeof(pixel), MEM_WRITE, d->fb);
@@ -220,12 +248,28 @@ static void vga_update(struct machine *machine, struct vga_data *d,
 /*
  *  vga_update_cursor():
  */
-static void vga_update_cursor(struct vga_data *d)
+static void vga_update_cursor(struct machine *machine, struct vga_data *d)
 {
+	int onoff = 1, height = d->cursor_scanline_end -
+	    d->cursor_scanline_start + 1;
+
+	if (d->cursor_scanline_start > d->cursor_scanline_end) {
+		onoff = 0;
+		height = 1;
+	}
+
+	if (d->cursor_scanline_start >= d->font_size)
+		onoff = 0;
+
 	dev_fb_setcursor(d->fb,
 	    d->cursor_x * 8, d->cursor_y * d->font_size +
-	    d->cursor_scanline_start, 1, 8, d->cursor_scanline_end -
-	    d->cursor_scanline_start + 1);
+	    d->cursor_scanline_start, onoff, 8, height);
+
+	if (!machine->use_x11) {
+		/*  NOTE: 2 > 0, so this only updates the cursor, no
+		    character cells.  */
+		vga_update_textmode(machine, d, 2, 0);
+	}
 }
 
 
@@ -298,7 +342,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			d->max_y = VGA_MEM_MAXY;
 			vga_update(cpu->machine, d, 0, 0,
 			    d->max_x - 1, d->max_y - 1);
-			vga_update_cursor(d);
+			vga_update_cursor(cpu->machine, d);
 		} else if (y >= 30 && d->font_size > 11) {
 			/*  Switch to 8x10 font:  */
 			debug("SWITCHING to 8x10 font\n");
@@ -307,7 +351,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			vga_update(cpu->machine, d, 0, 0,
 			    d->max_x - 1, d->max_y - 1);
 			d->max_y = 43;
-			vga_update_cursor(d);
+			vga_update_cursor(cpu->machine, d);
 		}
 	}
 
@@ -361,17 +405,26 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
  *
  *  Writes to VGA control registers.
  */
-static void vga_reg_write(struct vga_data *d, int regnr, int idata)
+static void vga_reg_write(struct machine *machine, struct vga_data *d,
+	int regnr, int idata)
 {
 	int ofs;
 
 	switch (regnr) {
+	case 0x0a:
+		d->cursor_scanline_start = d->reg[0x0a];
+		vga_update_cursor(machine, d);
+		break;
+	case 0x0b:
+		d->cursor_scanline_end = d->reg[0x0b];
+		vga_update_cursor(machine, d);
+		break;
 	case 0x0e:
 	case 0x0f:
 		ofs = d->reg[0x0e] * 256 + d->reg[0x0f];
 		d->cursor_x = ofs % d->max_x;
 		d->cursor_y = ofs / d->max_x;
-		vga_update_cursor(d);
+		vga_update_cursor(machine, d);
 		break;
 	default:
 		debug("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n",
@@ -444,7 +497,8 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 			odata = d->reg[d->selected_register];
 		else {
 			d->reg[d->selected_register] = idata;
-			vga_reg_write(d, d->selected_register, idata);
+			vga_reg_write(cpu->machine, d,
+			    d->selected_register, idata);
 		}
 		break;
 	case 0x1a:	/*  Status register  */
@@ -458,9 +512,9 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			static int warning = 0;
 			warning ++;
-			if (warning > 2)
+			if (warning > 8)
 				break;
-			if (warning > 1) {
+			if (warning > 7) {
 				fatal("[ vga_ctrl: multiple unimplemented wr"
 				    "ites, ignoring warnings from now on ]\n");
 				break;
@@ -498,12 +552,13 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct vga_data));
 
+	d->console_handle = console_start_slave(machine, name);
+
 	d->videomem_base = videomem_base;
 	d->control_base  = control_base;
 	d->max_x         = max_x;
 	d->max_y         = max_y;
 	d->videomem_size = max_x * VGA_MEM_MAXY * 2;
-	d->cursor_y      = 2;
 
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
 	allocsize = ((d->videomem_size - 1) | 0xfff) + 1;
@@ -514,25 +569,11 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	}
 
 	for (y=0; y<VGA_MEM_MAXY; y++) {
-		char s[81];
-#ifdef VERSION
-		strcpy(s, " GXemul " VERSION);
-#else
-		strcpy(s, " GXemul");
-#endif
-		memset(s+strlen(s), ' ', 80 - strlen(s));
-		memcpy(s+79-strlen(name), name, strlen(name));
-		s[80] = 0;
-
 		for (x=0; x<max_x; x++) {
 			char ch = ' ';
-			if (y == 0)
-				ch = s[x];
 			i = (x + max_x * y) * 2;
 			d->videomem[i] = ch;
-
-			/*  Default color:  */
-			d->videomem[i+1] = y==0? 0x70 : 0x07;
+			d->videomem[i+1] = 0x07;  /*  Default color  */
 		}
 	}
 
@@ -544,6 +585,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
 	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
+	d->fb_size = 8*max_x * d->font_size*max_y * 3;
 
 	i = 0;
 	for (r=0; r<2; r++)
@@ -572,22 +614,22 @@ with Windows NT yet. Why? */
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
-	/*  Make sure that the framebuffer/terminal is in synch.  */
-	vga_update(machine, d, 0, 0, d->max_x - 1, d->max_y - 1);
-
-	d->update_x1 = 999999;
-	d->update_x2 = -1;
-	d->update_y1 = 999999;
-	d->update_y2 = -1;
-	d->modified = 0;
+	/*  This will force an initial redraw/resynch:  */
+	d->update_x1 = 0;
+	d->update_x2 = d->max_x - 1;
+	d->update_y1 = 0;
+	d->update_y2 = d->max_y - 1;
+	d->modified = 1;
 
 	machine_add_tickfunction(machine, dev_vga_tick, d, VGA_TICK_SHIFT);
 
-	vga_update_cursor(d);
+	vga_update_cursor(machine, d);
+
+	d->reg[0x0a] = d->cursor_scanline_start;
+	d->reg[0x0b] = d->cursor_scanline_end;
 
 	tmpi = d->cursor_y * d->max_x + d->cursor_x;
 	d->reg[0x0e] = tmpi >> 8;
 	d->reg[0x0f] = tmpi;
-	/*  TODO: scanline -> some reg  */
 }
 

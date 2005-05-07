@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.97 2005-05-07 02:43:18 debug Exp $
+ *  $Id: arcbios.c,v 1.98 2005-05-07 03:39:43 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -190,12 +190,12 @@ void arcbios_console_init(struct cpu *cpu,
 	arcbios_escape_sequence[0] = '\0';
 	arcbios_console_curcolor = 0x1f;
 
-	for (y=1; y<arcbios_console_maxy; y++)
+	for (y=0; y<arcbios_console_maxy; y++)
 		for (x=0; x<arcbios_console_maxx; x++)
 			arcbios_putcell(cpu, ' ', x, y);
 
 	arcbios_console_curx = 0;
-	arcbios_console_cury = 2;
+	arcbios_console_cury = 0;
 }
 
 

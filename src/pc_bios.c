@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.16 2005-05-07 02:43:18 debug Exp $
+ *  $Id: pc_bios.c,v 1.17 2005-05-07 03:39:43 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -81,6 +81,29 @@ static void set_cursor_pos(struct cpu *cpu, int x, int y)
 	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = addr & 255;
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+}
+
+
+/*
+ *  set_cursor_scanlines():
+ */
+static void set_cursor_scanlines(struct cpu *cpu, int start, int end)
+{
+	unsigned char byte;
+	uint64_t ctrlregs = 0x1000003c0ULL;
+
+	byte = 0x0a;
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	byte = start;
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	byte = 0x0b;
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	byte = end;
 	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 }
@@ -179,6 +202,8 @@ static void pc_bios_int10(struct cpu *cpu)
 	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
 	int dh = (cpu->cd.x86.r[X86_R_DX] >> 8) & 0xff;
 	int dl = cpu->cd.x86.r[X86_R_DX] & 0xff;
+	int ch = (cpu->cd.x86.r[X86_R_CX] >> 8) & 0xff;
+	int cl = cpu->cd.x86.r[X86_R_CX] & 0xff;
 	int cx = cpu->cd.x86.r[X86_R_CX] & 0xffff;
 	int bp = cpu->cd.x86.r[X86_R_BP] & 0xffff;
 
@@ -202,7 +227,7 @@ static void pc_bios_int10(struct cpu *cpu)
 		break;
 	case 0x01:
 		/*  ch = starting line, cl = ending line  */
-		/*  fatal("pc_bios_int10(): TODO: set cursor\n");  */
+		set_cursor_scanlines(cpu, ch, cl);
 		break;
 	case 0x09:	/*  write character and attribute(todo)  */
 		while (cx-- > 0)

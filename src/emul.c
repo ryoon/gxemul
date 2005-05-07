@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.190 2005-05-07 02:13:29 debug Exp $
+ *  $Id: emul.c,v 1.191 2005-05-07 03:39:43 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -422,9 +422,6 @@ ret:
 		free(match_entry);
 
 	free(filename_orig);
-
-	if (tmpfilename != NULL)
-		free(tmpfilename);
 
 	debug_indentation(-iadd);
 	return res;

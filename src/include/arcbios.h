@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.4 2005-01-29 14:34:22 debug Exp $
+ *  $Id: arcbios.h,v 1.5 2005-05-07 03:39:45 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -42,7 +42,7 @@
 struct cpu;
 
 #define	ARC_CONSOLE_MAX_X	80
-#define	ARC_CONSOLE_MAX_Y	30
+#define	ARC_CONSOLE_MAX_Y	25
 
 /*  arcbios.c:  */
 void arcbios_add_string_to_component(char *string, uint64_t component);

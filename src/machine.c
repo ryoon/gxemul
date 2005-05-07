@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.423 2005-05-04 23:20:23 debug Exp $
+ *  $Id: machine.c,v 1.424 2005-05-07 02:43:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3071,6 +3071,20 @@ Why is this here? TODO
 				    "jazz addr=0x80000000");
 				machine->md_interrupt = jazz_interrupt;
 
+				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
+				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
+
+				j = dev_ns16550_init(machine, mem,
+				    0x80006000ULL, 8 + 8, 1,
+				    machine->use_x11? 0 : 1, "serial 0");
+				dev_ns16550_init(machine, mem,
+				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
+
+				if (machine->use_x11)
+					machine->main_console_handle = i;
+				else
+					machine->main_console_handle = j;
+
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
 					dev_vga_init(machine, mem,
@@ -3104,20 +3118,6 @@ Why is this here? TODO
 
 				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
-
-				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
-				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
-
-				j = dev_ns16550_init(machine, mem,
-				    0x80006000ULL, 8 + 8, 1,
-				    machine->use_x11? 0 : 1, "serial 0");
-				dev_ns16550_init(machine, mem,
-				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
-
-				if (machine->use_x11)
-					machine->main_console_handle = i;
-				else
-					machine->main_console_handle = j;
 
 #if 0
 Not yet.
@@ -3176,13 +3176,6 @@ Not yet.
 
 				strcat(machine->machine_name, " (Deskstation Tyne)");
 
-				dev_vga_init(machine, mem, 0x1000b8000ULL, 0x9000003c0ULL,
-				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
-
-				arcbios_console_init(cpu, 0x1000b8000ULL,
-				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
-				    ARC_CONSOLE_MAX_Y);
-
 				i = dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1, "serial 0");
 				dev_ns16550_init(machine, mem, 0x9000002f8ULL, 0, 1, 0, "serial 1");
 				dev_ns16550_init(machine, mem, 0x9000003e8ULL, 0, 1, 0, "serial 2");
@@ -3203,6 +3196,13 @@ Not yet.
 					machine->main_console_handle = j;
 				else
 					machine->main_console_handle = i;
+
+				dev_vga_init(machine, mem, 0x1000b8000ULL, 0x9000003c0ULL,
+				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
+
+				arcbios_console_init(cpu, 0x1000b8000ULL,
+				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
+				    ARC_CONSOLE_MAX_Y);
 
 				break;
 
@@ -4466,9 +4466,6 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		store_byte(cpu, 0x449, 0x03);	/*  initial video mode  */
 
-		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
-		    "Generic x86 PC");
-
 		dev_wdc_init(machine, mem, 0x1000001f0ULL, 14, 0);
 
 		/*  TODO: disable the "enable" flag when a keyboard has
@@ -4476,6 +4473,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->main_console_handle = dev_ns16550_init(machine, mem,
 		    0x1000003f8ULL, 4, 1, 1, "com1");
 		dev_ns16550_init(machine, mem, 0x100000378ULL, 3, 1, 0, "com2");
+
+		/*  This should be _after_ the main console handle is valid.  */
+		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
+		    "Generic x86 PC");
 
 		break;
 

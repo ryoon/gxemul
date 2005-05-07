@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.39 2005-05-04 20:59:14 debug Exp $
+ *  $Id: dev_vga.c,v 1.40 2005-05-07 02:43:20 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
 #include "cpu.h"
 #include "devices.h"
 #include "machine.h"
@@ -98,6 +99,46 @@ struct vga_data {
 };
 
 
+static void c_putstr(struct machine *machine, char *s)
+{
+	while (*s)
+		console_putchar(machine->main_console_handle, *s++);
+}
+
+
+/*
+ *  vga_update_textmode():
+ *
+ *  Called from vga_update() when use_x11 is false. This causes modified
+ *  character cells to be "simulated" by outputing ANSI escape sequences
+ *  that draw the characters in a terminal window instead.
+ */
+static void vga_update_textmode(struct machine *machine,
+	struct vga_data *d, int start, int end)
+{
+	char s[50];
+	int i;
+
+	for (i=start; i<=end; i+=2) {
+		unsigned char ch = d->videomem[i];
+		int fg = d->videomem[i+1] & 15;
+		int bg = (d->videomem[i+1] >> 4) & 15;	/*  top bit = blink  */
+		int x = (i/2) % d->max_x;
+		int y = (i/2) / d->max_x;
+
+		sprintf(s, "\033[%i;%iH", y + 1, x + 1);
+		c_putstr(machine, s);
+
+		if (ch >= 0x20)
+			console_putchar(machine->main_console_handle, ch);
+	}
+
+	/*  Restore the terminal's cursor position:  */
+	sprintf(s, "\033[%i;%iH", d->cursor_y + 1, d->cursor_x + 1);
+	c_putstr(machine, s);
+}
+
+
 /*
  *  vga_update():
  *
@@ -119,6 +160,9 @@ static void vga_update(struct machine *machine, struct vga_data *d,
 
 	if (end >= d->videomem_size)
 		end = d->videomem_size - 1;
+
+	if (!machine->use_x11)
+		vga_update_textmode(machine, d, start, end);
 
 	for (i=start; i<=end; i+=2) {
 		unsigned char ch = d->videomem[i];
@@ -528,8 +572,8 @@ with Windows NT yet. Why? */
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
-	/*  Make sure that the first line is in synch.  */
-	vga_update(machine, d, 0, 0, d->max_x - 1, 0);
+	/*  Make sure that the framebuffer/terminal is in synch.  */
+	vga_update(machine, d, 0, 0, d->max_x - 1, d->max_y - 1);
 
 	d->update_x1 = 999999;
 	d->update_x2 = -1;

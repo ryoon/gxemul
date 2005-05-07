@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.15 2005-05-05 23:48:31 debug Exp $
+ *  $Id: pc_bios.c,v 1.16 2005-05-07 02:43:18 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -120,11 +120,6 @@ static void get_cursor_pos(struct cpu *cpu, int *x, int *y)
 static void pc_bios_putchar(struct cpu *cpu, char ch)
 {
 	int x, y;
-
-	if (!cpu->machine->use_x11) {
-		console_putchar(cpu->machine->main_console_handle, ch);
-		return;
-	}
 
 	/*  Put the character on the screen, move cursor, and so on:  */
 
@@ -346,7 +341,7 @@ static void pc_bios_int1a(struct cpu *cpu)
 {
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	struct timeval tv;
-	uint32_t x;
+	uint64_t x;
 
 	switch (ah) {
 	case 0x00:

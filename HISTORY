@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.719 2005-05-07 02:13:28 debug Exp $
+$Id: HISTORY,v 1.720 2005-05-07 02:43:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1884,3 +1884,5 @@ Changelog for GXemul:
 		"bootris" (an x86 bootsector) runs :-)
 20050506	Adding some more x86 instructions.
 20050607	tmpnam => mkstemp.
+		Working on a hack to allow VGA charcells to be shown even when
+		not running with X11.

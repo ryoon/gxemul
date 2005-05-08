@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.426 2005-05-07 15:21:32 debug Exp $
+ *  $Id: machine.c,v 1.427 2005-05-08 02:26:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4476,6 +4476,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		/*  This should be _after_ the main console handle is valid.  */
 		dev_vga_init(machine, mem, 0xa0000ULL, 0x1000003c0ULL,
 		    "Generic x86 PC");
+
+		/*  These values are the same as what Bochs seems to use:  */
+		cpu->cd.x86.r[X86_R_AX] = 0xaa55;
+		cpu->cd.x86.r[X86_R_CX] = 0x0001;
+		/*  DX = boot device? TODO  */
+		cpu->cd.x86.r[X86_R_DI] = 0xffe4;
+		cpu->cd.x86.r[X86_R_SP] = 0xfffe;
 
 		break;
 

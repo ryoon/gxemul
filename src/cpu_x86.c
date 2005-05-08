@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.53 2005-05-08 01:49:31 debug Exp $
+ *  $Id: cpu_x86.c,v 1.54 2005-05-08 02:26:58 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1383,7 +1383,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0xfe || op == 0xff) {
 		/*  FE /0 = inc r/m8 */
 		/*  FE /1 = dec r/m8 */
-		/*  FF /6 = push imm16/32 */
+		/*  FF /6 = push r/m16/32 */
 		switch ((*instr >> 3) & 0x7) {
 		case 0:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xfe?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
@@ -1590,6 +1590,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  16-bit BIOS emulation:  */
 	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
+		int addr = (newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff;
+		if (cpu->machine->instruction_trace)
+			debug("(PC BIOS emulation, int 0x%02x)\n", addr);
 		pc_bios_emul(cpu);
 		return 1;
 	}
@@ -2071,11 +2074,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    0, &instr_orig, NULL, &op1, &op2);
 	} else if (op == 0x8f) {
 		switch ((*instr >> 3) & 0x7) {
-		case 0:	if (!x86_pop(cpu, &op1))
-				return 0;
+		case 0:	instr_orig = instr;
 			success = modrm(cpu, MODRM_READ, mode, mode67,
-			    op == 0xfe? MODRM_EIGHTBIT : 0, &instr,
-			    &newpc, &op1, &op2);
+			    0, &instr, &newpc, &op1, &op2);
+			if (!success)
+				return 0;
+			if (!x86_pop(cpu, &op1))
+				return 0;
+			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
+			    0, &instr_orig, NULL, &op1, &op2);
 			if (!success)
 				return 0;
 			break;

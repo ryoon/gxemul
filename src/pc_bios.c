@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.21 2005-05-08 01:49:31 debug Exp $
+ *  $Id: pc_bios.c,v 1.22 2005-05-08 02:26:59 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -424,7 +424,7 @@ int pc_bios_emul(struct cpu *cpu)
 	uint32_t addr = (cpu->cd.x86.s[X86_S_CS] << 4) + cpu->pc;
 	int int_nr;
 
-	int_nr = addr & 0xfff;
+	int_nr = addr & 0xff;
 
 	switch (int_nr) {
 	case 0x10:  pc_bios_int10(cpu); break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.54 2005-05-08 02:26:58 debug Exp $
+ *  $Id: cpu_x86.c,v 1.55 2005-05-08 03:17:40 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1885,7 +1885,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0x61) {		/*  POPA/POPAD  */
 		uint64_t r[8];
 		int i;
-		for (i=0; i<8; i++)
+		for (i=7; i>=0; i--)
 			if (!x86_pop(cpu, &r[i]))
 				return 0;
 		for (i=0; i<8; i++)
@@ -2641,9 +2641,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    &newpc, &op1, &op2);
 			if (!success)
 				return 0;
-			switch ((*instr >> 3) & 0x7) {
+			switch ((*instr_orig >> 3) & 0x7) {
 			case 2:	op1 ^= 0xffffffffffffffffULL; break;
 			case 3:	op1 = 0 - op1;
+				if (op == 0xf6)
+					op1 &= 0xff;
+				if (op == 0xf7 && mode == 16)
+					op1 &= 0xffff;
+				if (op == 0xf7 && mode == 32)
+					op1 &= 0xffffffffULL;
 				x86_cmp(cpu, op1, 0, op == 0xf6? 8 : mode);
 				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 				if (op1 != 0)
@@ -2651,7 +2657,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			}
 			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
-			    op == 0xfe? MODRM_EIGHTBIT : 0, &instr_orig,
+			    op == 0xf6? MODRM_EIGHTBIT : 0, &instr_orig,
 			    NULL, &op1, &op2);
 			if (!success)
 				return 0;

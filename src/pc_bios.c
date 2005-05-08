@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.22 2005-05-08 02:26:59 debug Exp $
+ *  $Id: pc_bios.c,v 1.23 2005-05-08 03:17:40 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -323,7 +323,8 @@ static void pc_bios_int13(struct cpu *cpu)
 			bx += sizeof(buf);
 			al --;
 		}
-		/*  TODO: error code?  */
+		/*  error code in ah? TODO  */
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x13 function"

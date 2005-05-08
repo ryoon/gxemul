@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.52 2005-05-08 01:17:18 debug Exp $
+ *  $Id: cpu_x86.c,v 1.53 2005-05-08 01:49:31 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -859,7 +859,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("%016llx:  ", (long long)dumpaddr);
 	else { /*  16-bit mode  */
 		debug("%04x:%04x  ", cpu->cd.x86.s[X86_S_CS],
-		    (int)dumpaddr);
+		    (int)dumpaddr & 0xffff);
 	}
 
 	/*
@@ -1361,6 +1361,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			SPACES; debug("not\t%s", modrm_rm);
 			break;
+		case 3:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xf6?
+			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
+			SPACES; debug("neg\t%s", modrm_rm);
+			break;
 		case 4:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xf6?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			SPACES; debug("mul\t%s", modrm_rm);
@@ -1445,6 +1449,7 @@ static int x86_push(struct cpu *cpu, uint64_t value)
 {
 	int res = 1;
 
+	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
 	cpu->cd.x86.r[X86_R_SP] -= (cpu->cd.x86.mode / 8);
 	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value,
 	    cpu->cd.x86.mode / 8);
@@ -1459,6 +1464,7 @@ static int x86_pop(struct cpu *cpu, uint64_t *valuep)
 {
 	int res = 1;
 
+	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
 	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep,
 	    cpu->cd.x86.mode / 8);
 	cpu->cd.x86.r[X86_R_SP] += (cpu->cd.x86.mode / 8);
@@ -2621,13 +2627,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			x86_cmp(cpu, op1, 0, op==0xf6? 8 : mode);
 			break;
 		case 2:	/*  not  */
+		case 3:	/*  neg  */
 			instr_orig = instr;
 			success = modrm(cpu, MODRM_READ, mode, mode67,
 			    op == 0xf6? MODRM_EIGHTBIT : 0, &instr,
 			    &newpc, &op1, &op2);
 			if (!success)
 				return 0;
-			op1 ^= 0xffffffffffffffffULL;
+			switch ((*instr >> 3) & 0x7) {
+			case 2:	op1 ^= 0xffffffffffffffffULL; break;
+			case 3:	op1 = 0 - op1;
+				x86_cmp(cpu, op1, 0, op == 0xf6? 8 : mode);
+				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+				if (op1 != 0)
+					cpu->cd.x86.rflags |= X86_FLAGS_CF;
+				break;
+			}
 			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 			    op == 0xfe? MODRM_EIGHTBIT : 0, &instr_orig,
 			    NULL, &op1, &op2);

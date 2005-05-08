@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.20 2005-05-07 15:21:32 debug Exp $
+ *  $Id: pc_bios.c,v 1.21 2005-05-08 01:49:31 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -292,6 +292,7 @@ static void pc_bios_int13(struct cpu *cpu)
 
 	switch (ah) {
 	case 0x00:	/*  Reset disk, dl = drive  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		/*  Do nothing. :-)  */
 		break;
 	case 0x02:

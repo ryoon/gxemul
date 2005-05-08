@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.16 2005-04-19 01:24:35 debug Exp $
+ *  $Id: memory_rw.c,v 1.17 2005-05-08 01:17:18 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -458,8 +458,13 @@ have_paddr:
 			}
 
 			if (writeflag == MEM_READ) {
+#ifdef MEM_X86
+				/*  Reading non-existant memory on x86:  */
+				memset(data, 0xff, len);
+#else
 				/*  Return all zeroes? (Or 0xff? TODO)  */
 				memset(data, 0, len);
+#endif
 
 #ifdef MEM_MIPS
 				/*

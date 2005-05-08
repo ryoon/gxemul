@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.50 2005-05-07 16:09:04 debug Exp $
+ *  $Id: cpu_x86.c,v 1.51 2005-05-08 00:31:31 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -447,7 +447,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 {
 	uint32_t imm, imm2;
 	uint64_t addr;
-	int mod, r, rm, res = 1, z, q = mode67/8;
+	int mod, r, rm, res = 1, z, q = mode67/8, sib, s, i, b;
 	int disasm = (op1p == NULL);
 
 	if (disasm) {
@@ -463,51 +463,102 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 
 	/*
 	 *  R/M:
-	 *
-	 *  TODO: This isn't right for 32-bit mode
 	 */
 
 	switch (mod) {
 	case 0:
 		if (disasm) {
-
-/*  TODO: SIB for 32-bit mode!  */
-
-			switch (rm) {
-			case 0:	sprintf(modrm_rm, "[bx+si]");
-				break;
-			case 1:	sprintf(modrm_rm, "[bx+di]");
-				break;
-			case 2:	sprintf(modrm_rm, "[bp+si]");
-				break;
-			case 3:	sprintf(modrm_rm, "[bp+di]");
-				break;
-			case 4:	sprintf(modrm_rm, "[si]");
-				break;
-			case 5:	sprintf(modrm_rm, "[di]");
-				break;
-			case 6:	imm2 = read_imm_common(instrp, lenp,
-				    mode67, disasm);
-				sprintf(modrm_rm, "[0x%x]", imm2);
-				break;
-			case 7:	sprintf(modrm_rm, "[bx]");
-				break;
+			if (mode67 == 32) {
+				if (rm == 5) {
+					imm2 = read_imm_common(instrp, lenp,
+					    mode67, disasm);
+					sprintf(modrm_rm, "[0x%x]",
+					    imm2);
+				} else if (rm == 4) {
+					char tmp[20];
+					sib = read_imm_common(instrp, lenp,
+					    8, disasm);
+					s = 1 << (sib >> 6);
+					i = (sib >> 3) & 7;
+					b = sib & 7;
+					if (b == 5) {	/*  imm base  */
+						imm2 = read_imm_common(instrp,
+						    lenp, mode67, disasm);
+						sprintf(tmp, "0x%x", imm2);
+					} else
+						sprintf(tmp, "e%s",
+						    reg_names[b]);
+					if (i == 4)
+						sprintf(modrm_rm, "[%s]", tmp);
+					else if (s == 1)
+						sprintf(modrm_rm, "[e%s+%s]",
+						    reg_names[i], tmp);
+					else
+						sprintf(modrm_rm, "[e%s*%i+%s]",
+						    reg_names[i], s, tmp);
+				} else {
+					sprintf(modrm_rm, "[e%s]",
+					    reg_names[rm]);
+				}
+			} else {
+				switch (rm) {
+				case 0:	sprintf(modrm_rm, "[bx+si]");
+					break;
+				case 1:	sprintf(modrm_rm, "[bx+di]");
+					break;
+				case 2:	sprintf(modrm_rm, "[bp+si]");
+					break;
+				case 3:	sprintf(modrm_rm, "[bp+di]");
+					break;
+				case 4:	sprintf(modrm_rm, "[si]");
+					break;
+				case 5:	sprintf(modrm_rm, "[di]");
+					break;
+				case 6:	imm2 = read_imm_common(instrp, lenp,
+					    mode67, disasm);
+					sprintf(modrm_rm, "[0x%x]", imm2);
+					break;
+				case 7:	sprintf(modrm_rm, "[bx]");
+					break;
+				}
 			}
 		} else {
-			switch (rm) {
-			case 0:	addr = cpu->cd.x86.r[X86_R_BX] +
-				    cpu->cd.x86.r[X86_R_SI]; break;
-			case 1:	addr = cpu->cd.x86.r[X86_R_BX] +
-				    cpu->cd.x86.r[X86_R_DI]; break;
-			case 2:	addr = cpu->cd.x86.r[X86_R_BP] +
-				    cpu->cd.x86.r[X86_R_SI]; break;
-			case 3:	addr = cpu->cd.x86.r[X86_R_BP] +
-				    cpu->cd.x86.r[X86_R_DI]; break;
-			case 4:	addr = cpu->cd.x86.r[X86_R_SI]; break;
-			case 5:	addr = cpu->cd.x86.r[X86_R_DI]; break;
-			case 6:	addr = read_imm_common(instrp, lenp,
-				    mode, disasm); break;
-			case 7:	addr = cpu->cd.x86.r[X86_R_BX]; break;
+			if (mode67 == 32) {
+				if (rm == 5) {
+					addr = read_imm_common(instrp, lenp,
+					    mode67, disasm);
+				} else if (rm == 4) {
+					sib = read_imm_common(instrp, lenp,
+					    8, disasm);
+					s = 1 << (sib >> 6);
+					i = (sib >> 3) & 7;
+					b = sib & 7;
+					if (b == 5)
+						addr = read_imm_common(instrp,
+						    lenp, mode67, disasm);
+					else
+						addr = cpu->cd.x86.r[b];
+					if (i != 4)
+						addr += cpu->cd.x86.r[i] * s;
+				} else {
+					addr = cpu->cd.x86.r[rm];
+				}
+			} else {
+				switch (rm) {
+				case 0:	addr = cpu->cd.x86.r[X86_R_BX] +
+					    cpu->cd.x86.r[X86_R_SI]; break;
+				case 1:	addr = cpu->cd.x86.r[X86_R_BX] +
+					    cpu->cd.x86.r[X86_R_DI]; break;
+				case 2:	addr = cpu->cd.x86.r[X86_R_BP] +
+					    cpu->cd.x86.r[X86_R_SI]; break;
+				case 3:	addr = cpu->cd.x86.r[X86_R_BP] +
+					    cpu->cd.x86.r[X86_R_DI]; break;
+				case 4:	addr = cpu->cd.x86.r[X86_R_SI]; break;
+				case 5:	addr = cpu->cd.x86.r[X86_R_DI]; break;
+				case 6:	addr = read_imm_common(instrp, lenp,
+					    mode, disasm); break;
+				case 7:	addr = cpu->cd.x86.r[X86_R_BX]; break;
+				}
 			}
 
 			switch (writeflag) {
@@ -526,11 +577,34 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	case 2:
 		z = (mod == 1)? 8 : mode67;
 		if (disasm) {
-			if (mode == 32) {
-				imm2 = read_imm_common(instrp, lenp, z, disasm);
-				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[e%s+0x%x]",
-				    reg_names[rm], imm2); break;
+			if (mode67 == 32) {
+				if (rm == 4) {
+					sib = read_imm_common(instrp, lenp,
+					    8, disasm);
+					s = 1 << (sib >> 6);
+					i = (sib >> 3) & 7;
+					b = sib & 7;
+					imm2 = read_imm_common(instrp, lenp,
+					    z, disasm);
+					if (z == 8)  imm2 = (signed char)imm2;
+					if (i == 4)
+						sprintf(modrm_rm, "[e%s+0x%x]",
+						    reg_names[b], imm2);
+					else if (s == 1)
+						sprintf(modrm_rm, "[e%s+e"
+						    "%s+0x%x]", reg_names[i],
+						    reg_names[b], imm2);
+					else
+						sprintf(modrm_rm, "[e%s*%i+e"
+						    "%s+0x%x]", reg_names[i], s,
+						    reg_names[b], imm2);
+				} else {
+					imm2 = read_imm_common(instrp, lenp,
+					    z, disasm);
+					if (z == 8)  imm2 = (signed char)imm2;
+					sprintf(modrm_rm, "[e%s+0x%x]",
+					    reg_names[rm], imm2);
+				}
 			} else
 			switch (rm) {
 			case 0:	imm2 = read_imm_common(instrp, lenp, z, disasm);
@@ -559,13 +633,33 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				sprintf(modrm_rm, "[bx+0x%x]", imm2); break;
 			}
 		} else {
-			addr = read_imm_common(instrp, lenp, z, disasm);
-			if (z == 8)
-				addr = (signed char)addr;
-
-			if (mode == 32) {
-				addr += cpu->cd.x86.r[rm];
+			if (mode67 == 32) {
+				if (rm == 4) {
+					sib = read_imm_common(instrp, lenp,
+					    8, disasm);
+					s = 1 << (sib >> 6);
+					i = (sib >> 3) & 7;
+					b = sib & 7;
+					addr = read_imm_common(instrp, lenp,
+					    z, disasm);
+					if (z == 8)
+						addr = (signed char)addr;
+					if (i == 4)
+						addr = cpu->cd.x86.r[b] + addr;
+					else
+						addr = cpu->cd.x86.r[i] * s +
+						    cpu->cd.x86.r[b] + addr;
+				} else {
+					addr = read_imm_common(instrp, lenp,
+					    z, disasm);
+					if (z == 8)
+						addr = (signed char)addr;
+					addr = cpu->cd.x86.r[rm] + addr;
+				}
 			} else {
+				addr = read_imm_common(instrp, lenp, z, disasm);
+				if (z == 8)
+					addr = (signed char)addr;
 				switch (rm) {
 				case 0:	addr += cpu->cd.x86.r[X86_R_BX]
 					    + cpu->cd.x86.r[X86_R_SI];
@@ -858,6 +952,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				    : "", cond_names[(op/2) & 0x7], imm);
 			} else if (imm == 0xa1) {
 				SPACES; debug("pop\tfs");
+			} else if (imm == 0xa2) {
+				SPACES; debug("cpuid");
 			} else if (imm == 0xa9) {
 				SPACES; debug("pop\tgs");
 			} else if (imm == 0xb4 || imm == 0xb5) {
@@ -1070,7 +1166,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xc6?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			imm = read_imm_and_print(&instr, &ilen,
-			    op == 0xc6? 8 : mode67);
+			    op == 0xc6? 8 : mode);
 			SPACES; debug("mov\t%s,0x%x", modrm_rm, imm);
 			break;
 		default:
@@ -2169,7 +2265,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    &newpc, &op1, &op2);
 			if (!success)
 				return 0;
-			imm = read_imm(&instr, &newpc, op == 0xc6? 8 : mode67);
+			imm = read_imm(&instr, &newpc, op == 0xc6? 8 : mode);
 			op1 = imm;
 			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 			    op == 0xc6? MODRM_EIGHTBIT : 0, &instr_orig,

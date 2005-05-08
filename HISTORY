@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.721 2005-05-07 15:58:02 debug Exp $
+$Id: HISTORY,v 1.722 2005-05-08 00:31:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1886,3 +1886,5 @@ Changelog for GXemul:
 20050507	tmpnam => mkstemp.
 		Working on a hack to allow VGA charcells to be shown even when
 		not running with X11.
+		Adding more x86 instructions.
+20050508	x86 32-bit SIB addressing fix.

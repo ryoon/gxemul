@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.55 2005-05-08 03:17:40 debug Exp $
+ *  $Id: cpu_x86.c,v 1.56 2005-05-08 04:09:16 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1695,7 +1695,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					op1 --;
 				break;
 		case 0x20:	op1 = op1 & op2; break;
-		case 0x28:	op1 = op1 - op2; break;
+		case 0x28:	x86_cmp(cpu, op1, op2, !(op & 1)? 8 : mode);
+				op1 = op1 - op2; break;
 		case 0x30:	op1 = op1 ^ op2; break;
 		case 0x38:	x86_cmp(cpu, op1, op2, !(op & 1)? 8 : mode);
 				break;
@@ -1709,7 +1710,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 32: op1 &= 0xffffffffULL; op2 &= 0xffffffffULL; break;
 		}
 
-		if ((op & 0x38) != 0x38)
+		/*  NOTE: Manual cmp for "sub" and "cmp" instructions.
+		    TODO: probably sbb as well  */
+		if ((op & 0x38) != 0x38 && (op & 0x38) != 0x28)
 			x86_cmp(cpu, op1, 0, !(op & 1)? 8 : mode);
 
 		/*  printf("op1=0x%x op2=0x%x\n", (int)op1, (int)op2);  */
@@ -1956,10 +1959,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 1:	op1 |= imm; break;
 		case 2: op1 += imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0); break;
-		case 3: op1 = op1 - imm -
+		case 3: op1 = op1 - imm -	/*  TODO: cmp ala sub?  */
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0); break;
 		case 4:	op1 &= imm; break;
-		case 5:	op1 -= imm; break;
+		case 5:	x86_cmp(cpu, op1, imm, op==0x80? 8 : mode);
+			op1 -= imm; break;
 		case 6:	op1 ^= imm; break;
 		case 7:	x86_cmp(cpu, op1, imm, op==0x80? 8 : mode); /* cmp */
 			break;
@@ -1969,7 +1973,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		if (((*instr_orig >> 3) & 0x7) != 7) {
-			x86_cmp(cpu, op1, 0, op==0x80? 8 : mode);
+			if (((*instr_orig >> 3) & 0x7) != 5)
+				x86_cmp(cpu, op1, 0, op==0x80? 8 : mode);
 			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 			    op == 0x80? MODRM_EIGHTBIT : 0, &instr_orig,
 			    NULL, &op1, &op2);
@@ -1988,10 +1993,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 1:	op1 |= (signed char)imm; break;
 		case 2: op1 += (signed char)imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0); break;
-		case 3: op1 = op1 - (signed char)imm -
+		case 3: op1 = op1 - (signed char)imm -    /*TODO:see sub*/
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0); break;
 		case 4:	op1 &= (signed char)imm; break;
-		case 5:	op1 -= (signed char)imm; break;
+		case 5:	x86_cmp(cpu, op1, (signed char)imm, mode);
+			op1 -= (signed char)imm; break;
 		case 6:	op1 ^= (signed char)imm; break;
 		case 7: x86_cmp(cpu, op1, (signed char)imm, mode); break;
 		default:
@@ -1999,7 +2005,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			exit(1);
 		}
 		if (((*instr_orig >> 3) & 0x7) != 7) {
-			x86_cmp(cpu, op1, 0, mode);
+			if (((*instr_orig >> 3) & 0x7) != 5)
+				x86_cmp(cpu, op1, 0, mode);
 			success = modrm(cpu, MODRM_WRITE_RM, mode,
 			    mode67, 0, &instr_orig, NULL, &op1, &op2);
 			if (!success)
@@ -2533,15 +2540,21 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		imm = read_imm(&instr, &newpc, mode);
 		if (mode == 16)
 			imm = (int16_t)imm;
-		success = x86_push(cpu, newpc);
-		if (!success)
-			return 0;
+		if (op == 0xe8) {
+			success = x86_push(cpu, newpc);
+			if (!success)
+				return 0;
+		}
 		newpc = modify(newpc, newpc + imm);
+		if (mode == 16)
+			newpc &= 0xffff;
 	} else if (op == 0xea) {	/*  JMP seg:ofs  */
 		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);
 		cpu->cd.x86.s[X86_S_CS] = imm2;
 		newpc = modify(cpu->pc, imm);
+		if (mode == 16)
+			newpc &= 0xffff;
 	} else if ((op >= 0xe0 && op <= 0xe3) || op == 0xeb) {	/*  LOOP,JMP */
 		int perform_jump = 0;
 		imm = read_imm(&instr, &newpc, 8);
@@ -2573,8 +2586,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			perform_jump = 1;
 			break;
 		}
-		if (perform_jump)
+		if (perform_jump) {
 			newpc = modify(newpc, newpc + (signed char)imm);
+			if (mode == 16)
+				newpc &= 0xffff;
+		}
 	} else if (op == 0xec || op == 0xed) {	/*  IN DX,AL or AX/EAX  */
 		unsigned char databuf[8];
 		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL +

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.23 2005-05-08 03:17:40 debug Exp $
+ *  $Id: pc_bios.c,v 1.24 2005-05-08 04:09:17 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -336,6 +336,27 @@ static void pc_bios_int13(struct cpu *cpu)
 
 
 /*
+ *  pc_bios_int14():
+ *
+ *  Serial port stuff.
+ */
+static void pc_bios_int14(struct cpu *cpu)
+{
+	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+
+	switch (ah) {
+	case 0:	debug("[ pc_bios_14(): TODO ]\n");
+		break;
+	default:
+		fatal("FATAL: Unimplemented PC BIOS interrupt 0x14 function"
+		    " 0x%02x.\n", ah);
+		cpu->running = 0;
+		cpu->dead = 1;
+	}
+}
+
+
+/*
  *  pc_bios_int15():
  */
 static void pc_bios_int15(struct cpu *cpu)
@@ -433,6 +454,7 @@ int pc_bios_emul(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] = 640;
 		break;
 	case 0x13:  pc_bios_int13(cpu); break;
+	case 0x14:  pc_bios_int14(cpu); break;
 	case 0x15:  pc_bios_int15(cpu); break;
 	case 0x16:
 		if (pc_bios_int16(cpu) == 0)

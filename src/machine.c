@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.427 2005-05-08 02:26:58 debug Exp $
+ *  $Id: machine.c,v 1.428 2005-05-08 04:09:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4462,6 +4462,12 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			store_16bit_word(cpu, i*4, 0x8000 + i);
 			store_16bit_word(cpu, i*4 + 2, 0xf000);
 		}
+
+		/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
+		    for more info.  */
+
+		store_16bit_word(cpu, 0x400, 0x03F8);
+		store_16bit_word(cpu, 0x402, 0x0378);
 
 		store_byte(cpu, 0x449, 0x03);	/*  initial video mode  */
 

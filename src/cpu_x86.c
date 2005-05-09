@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.57 2005-05-09 13:36:29 debug Exp $
+ *  $Id: cpu_x86.c,v 1.58 2005-05-09 13:49:50 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1126,6 +1126,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("cmpsb");
 	} else if (op == 0xa7) {
 		SPACES; debug("cmps%s", mode==16? "w" : (mode==32? "d" : "q"));
+	} else if (op == 0xa8 || op == 0xa9) {
+		imm = read_imm_and_print(&instr, &ilen, op == 0xa8? 8 : mode);
+		if (op == 0xa8)
+			mnem = "al";
+		else if (mode == 16)
+			mnem = "ax";
+		else
+			mnem = "eax";
+		SPACES; debug("test\t%s,0x%x", mnem, imm);
 	} else if (op == 0xaa) {
 		SPACES; debug("stosb");
 	} else if (op == 0xab) {
@@ -1445,7 +1454,7 @@ static void x86_cpuid(struct cpu *cpu)
 		break;
 	default:fatal("x86_cpuid(): unimplemented eax = 0x%x\n",
 		    cpu->cd.x86.r[X86_R_AX]);
-		exit(1);
+		cpu->running = 0;
 	}
 }
 
@@ -1497,7 +1506,7 @@ static int x86_interrupt(struct cpu *cpu, int nr)
 
 	if (cpu->cd.x86.mode != 16) {
 		fatal("x86 'int' only implemented for 16-bit so far\n");
-		exit(1);
+		cpu->running = 0;
 	}
 
 	/*  Read the interrupt vector from beginning of RAM:  */
@@ -1856,7 +1865,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;
 			default:fatal("TODO: 0x0f,0x%02x\n", imm);
-				exit(1);
+				cpu->running = 0;
 			}
 		}
 	} else if ((op & 0xf0) < 0x20 && (op & 7) == 7) {
@@ -1951,7 +1960,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("unimplemented condition\n");
-			exit(1);
+			cpu->running = 0;
 		}
 		if (op & 1)
 			success = !success;
@@ -1986,7 +1995,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr_orig);
-			exit(1);
+			cpu->running = 0;
 		}
 
 		if (((*instr_orig >> 3) & 0x7) != 7) {
@@ -2023,7 +2032,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 7: x86_cmp(cpu, op1, (signed char)imm, mode); break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr_orig);
-			exit(1);
+			cpu->running = 0;
 		}
 		if (((*instr_orig >> 3) & 0x7) != 7) {
 			if (((*instr_orig >> 3) & 0x7) != 3 &&
@@ -2273,6 +2282,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				}
 			}
 		} while (rep);
+	} else if (op >= 0xa8 && op <= 0xa9) {
+		op2 = read_imm(&instr, &newpc, op==0xa8? 8 : mode);
+		op1 &= op2;
+		x86_cmp(cpu, op1, 0, op==0xa8? 8 : mode);
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_OF;
 	} else if (op >= 0xb0 && op <= 0xb3) {
 		imm = read_imm(&instr, &newpc, 8);
 		cpu->cd.x86.r[op & 3] = (cpu->cd.x86.r[op & 3] & ~0xff)
@@ -2336,7 +2351,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
-			exit(1);
+			cpu->running = 0;
 		}
 	} else if (op == 0xc2 || op == 0xc3) {	/*  RET near  */
 		uint64_t popped_pc;
@@ -2379,7 +2394,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
-			exit(1);
+			cpu->running = 0;
 		}
 	} else if (op == 0xc8) {	/*  ENTER  */
 		imm = read_imm(&instr, &newpc, 16);
@@ -2387,7 +2402,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (tmp != 0) {
 			fatal("x86 ENTER with nested stack frame not yet"
 			    " implemented\n");
-			exit(1);
+			cpu->running = 0;
 		}
 		success = x86_push(cpu, cpu->cd.x86.r[X86_R_BP], mode);
 		if (!success)
@@ -2452,7 +2467,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
-			exit(1);
+			cpu->running = 0;
 		}
 	} else if (op == 0xd1) {
 		int subop = (*instr >> 3) & 0x7;
@@ -2509,7 +2524,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
-			exit(1);
+			cpu->running = 0;
 		}
 	} else if (op == 0xd2 || op == 0xd3) {
 		int cf = -1, n;
@@ -2556,7 +2571,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
-			exit(1);
+			cpu->running = 0;
 		}
 	} else if (op == 0xe8 || op == 0xe9) {	/*  CALL/JMP near  */
 		imm = read_imm(&instr, &newpc, mode);
@@ -2738,7 +2753,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			if (op1 == 0) {
 				fatal("TODO: division by zero\n");
-				exit(1);
+				cpu->running = 0;
 			}
 			if (op == 0xf6) {
 				int al, ah;
@@ -2771,7 +2786,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    cpu->cd.x86.r[X86_R_DX], dx);
 			} else if (mode == 32) {
 				fatal("Todo: 32bitdiv\n");
-				exit(1);
+				cpu->running = 0;
 			}
 			break;
 		default:

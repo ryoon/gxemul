@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.24 2005-05-08 04:09:17 debug Exp $
+ *  $Id: pc_bios.c,v 1.25 2005-05-09 13:36:29 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -293,6 +293,7 @@ static void pc_bios_int13(struct cpu *cpu)
 	switch (ah) {
 	case 0x00:	/*  Reset disk, dl = drive  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
 		/*  Do nothing. :-)  */
 		break;
 	case 0x02:
@@ -303,15 +304,22 @@ static void pc_bios_int13(struct cpu *cpu)
 		 *  es:bx = destination buffer; return carryflag = error
 		 */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
-		cl &= 0x7f; ch &= 0x7f; dh &= 1;
+/*		cl &= 0x7f; ch &= 0x7f; dh &= 1;  */
 		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
 		while (al > 0) {
 			unsigned char buf[512];
+
+			debug("[ pc_bios_int13(): reading from disk 0x%x, "
+			    "CHS=%i,%i,%i (=offset 0x%llx) to 0x%04x:0x%04x "
+			    "]\n", dl, ch, dh, cl, (long long)offset,
+			    cpu->cd.x86.s[X86_S_ES], bx);
+
 			res = diskimage_access(cpu->machine, dl, 0, offset,
 			    buf, sizeof(buf));
 
 			if (!res) {
 				cpu->cd.x86.rflags |= X86_FLAGS_CF;
+
 				fatal("[ PC BIOS: disk access failed: disk %i, "
 				    "CHS = %i,%i,%i ]\n", dl, ch, dh, cl);
 				break;
@@ -325,6 +333,22 @@ static void pc_bios_int13(struct cpu *cpu)
 		}
 		/*  error code in ah? TODO  */
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		break;
+	case 4:	/*  verify disk sectors  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		/*  Do nothing. :-)  */
+		break;
+	case 8:	/*  get drive status: TODO  */
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_BX] &= ~0xff;
+		cpu->cd.x86.r[X86_R_BX] |= 4;
+		cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_CX] |= (80 << 8) | 18;
+		cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_DX] |= 0x0201;  /* dl = nr of drives  */
+		/*  TODO: dl, es:di and all other regs  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x13 function"
@@ -384,6 +408,7 @@ static int pc_bios_int16(struct cpu *cpu)
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
 	int scancode, asciicode;
+	unsigned char tmpchar;
 
 	switch (ah) {
 	case 0x00:	/*  getchar  */
@@ -398,6 +423,14 @@ static int pc_bios_int16(struct cpu *cpu)
 			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
 			    ~0xffff) | scancode << 8 | asciicode;
 		}
+		break;
+	case 0x02:	/*  read keyboard flags  */
+		/*  TODO: keep this byte updated  */
+		cpu->cd.x86.cursegment = 0;
+		cpu->memory_rw(cpu, cpu->mem, 0x417, &tmpchar, 1,
+		    MEM_READ, CACHE_DATA);
+		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
+		    | tmpchar;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x16 function"

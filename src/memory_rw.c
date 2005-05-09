@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.18 2005-05-08 04:09:17 debug Exp $
+ *  $Id: memory_rw.c,v 1.19 2005-05-09 13:36:29 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -87,30 +87,33 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 #ifdef MEM_X86
-	if (cpu->cd.x86.bits == 32) {
-		if ((vaddr >> 32) == 0xffffffff)
-			vaddr &= 0xffffffff;
+	if ((vaddr >> 32) == 0xffffffff)
+		vaddr &= 0xffffffff;
 
-		/*  TODO: Actual address translation  */
-		if ((vaddr >> 32) == 0) {
-			vaddr &= 0x0fffffff;
+	/*  TODO: Actual address translation  */
+	if ((vaddr >> 32) == 0) {
+		vaddr &= 0x0fffffff;
 
-			if (cpu->cd.x86.mode == 16) {
-				vaddr = (cpu->cd.x86.cursegment<<4) +
-				    (vaddr & 0xffff);
-				/*  TODO: A20 stuff  */
-				if ((vaddr & 0xffff) + len > 0x10000) {
-					/*  Do one byte at a time:  */
-					int res, i;
-					for (i=0; i<len; i++)
-						res = MEMORY_RW(cpu, mem,
-						    vaddr+i, &data[i], 1,
-						    writeflag, cache_flags);
-					return res;
-				}
+		if (cpu->cd.x86.mode == 16) {
+			vaddr = (cpu->cd.x86.cursegment<<4) + (vaddr & 0xffff);
+			/*  TODO: A20 stuff  */
+			if ((vaddr & 0xffff) + len > 0x10000) {
+				/*  Do one byte at a time:  */
+				int res, i;
+				for (i=0; i<len; i++)
+					res = MEMORY_RW(cpu, mem,
+					    vaddr+i, &data[i], 1,
+					    writeflag, cache_flags);
+				return res;
 			}
 		}
 	}
+
+	/*  DOS debugging :-)  */
+	if (vaddr >= 0x400 && vaddr <= 0x4ff)
+		debug("{ PC BIOS DATA AREA: %s 0x%x }\n",
+		    writeflag == MEM_WRITE? "writing to" : "reading from",
+		    (int)vaddr);
 #endif
 
 #ifdef MEM_URISC

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.43 2005-05-07 14:52:54 debug Exp $
+ *  $Id: dev_vga.c,v 1.44 2005-05-09 13:36:30 debug Exp $
  *  
  *  VGA text (and graphics) console device.
  *
@@ -58,7 +58,7 @@
 
 
 /*  For bintranslated videomem -> framebuffer updates:  */
-#define	VGA_TICK_SHIFT		14
+#define	VGA_TICK_SHIFT		15
 
 #define	VGA_MEM_MAXY		50
 #define	VGA_MEM_ALLOCY		50

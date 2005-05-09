@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.29 2005-05-09 22:44:27 debug Exp $
+ *  $Id: pc_bios.c,v 1.30 2005-05-09 23:14:07 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -371,6 +371,12 @@ static void pc_bios_int13(struct cpu *cpu)
 		/*  TODO: dl, es:di and all other regs  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		break;
+	case 0x15:	/*  Read DASD Type  */
+		/*  TODO: generalize  */
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_AX] |= 0x0100;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x13 function"
 		    " 0x%02x.\n", ah);
@@ -409,6 +415,14 @@ static void pc_bios_int15(struct cpu *cpu)
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 
 	switch (ah) {
+	case 0x41:	/*  TODO  */
+		fatal("[ PC BIOS int 0x15,0x41: TODO ]\n");
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		break;
+	case 0xc0:	/*  TODO  */
+		fatal("[ PC BIOS int 0x15,0xc0: TODO ]\n");
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x15 function"
 		    " 0x%02x.\n", ah);
@@ -465,6 +479,29 @@ static int pc_bios_int16(struct cpu *cpu)
 
 
 /*
+ *  pc_bios_int17():
+ *
+ *  Printer port stuff.
+ */
+static void pc_bios_int17(struct cpu *cpu)
+{
+	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+
+	switch (ah) {
+	case 0x01:
+		debug("[ PC BIOS int 0x17,0x01: TODO ]\n");
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		break;
+	default:
+		fatal("FATAL: Unimplemented PC BIOS interrupt 0x17 function"
+		    " 0x%02x.\n", ah);
+		cpu->running = 0;
+		cpu->dead = 1;
+	}
+}
+
+
+/*
  *  pc_bios_int1a():
  *
  *  Time of Day stuff.
@@ -476,12 +513,18 @@ static void pc_bios_int1a(struct cpu *cpu)
 	uint64_t x;
 
 	switch (ah) {
-	case 0x00:
-		/*  Return tick count.  */
+	case 0x00:	/*  Read tick count.  */
 		gettimeofday(&tv, NULL);
 		x = tv.tv_sec * 10 + tv.tv_usec / 100000;
 		cpu->cd.x86.r[X86_R_CX] = (x >> 16) & 0xffff;
 		cpu->cd.x86.r[X86_R_DX] = x & 0xffff;
+		break;
+	case 0x01:	/*  Set tick count.  */
+		fatal("[ PC BIOS int 0x1a function 0x01: Set tick count:"
+		    " TODO ]\n");
+		break;
+	case 0x02:	/*  Read real time clock time (AT,PS/2)  */
+		fatal("[ PC BIOS int 0x1a function 0x02: TODO ]\n");
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x1a function"
@@ -519,6 +562,7 @@ int pc_bios_emul(struct cpu *cpu)
 		if (pc_bios_int16(cpu) == 0)
 			return 0;
 		break;
+	case 0x17:  pc_bios_int17(cpu); break;
 	case 0x18:
 		pc_bios_printstr(cpu, "Disk boot failed. (INT 0x18 called.)\n");
 		cpu->running = 0;

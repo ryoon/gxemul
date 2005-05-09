@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.66 2005-05-09 22:44:27 debug Exp $
+ *  $Id: cpu_x86.c,v 1.67 2005-05-09 23:14:07 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2685,6 +2685,34 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
 			cpu->running = 0;
 		}
+	} else if (op == 0xe4 || op == 0xe5) {	/*  IN imm,AL or AX/EAX  */
+		unsigned char databuf[8];
+		imm = read_imm(&instr, &newpc, 8);
+		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL + imm, &databuf[0],
+		    op == 0xe4? 1 : (mode/8), MEM_READ, CACHE_NONE);
+		if (op == 0xe4)
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
+			    ~0xff) | databuf[0];
+		else if (op == 0xe5 && mode == 16)
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
+			    ~0xffff) | databuf[0] | (databuf[1] << 8);
+		else if (op == 0xe5 && mode == 32)
+			cpu->cd.x86.r[X86_R_AX] = databuf[0] |
+			    (databuf[1] << 8) | (databuf[2] << 16) |
+			    (databuf[3] << 24);
+	} else if (op == 0xe6 || op == 0xe7) {	/*  OUT imm,AL or AX/EAX  */
+		unsigned char databuf[8];
+		imm = read_imm(&instr, &newpc, 8);
+		databuf[0] = cpu->cd.x86.r[X86_R_AX];
+		if (op == 0xe7) {
+			databuf[1] = cpu->cd.x86.r[X86_R_AX] >> 8;
+			if (mode >= 32) {
+				databuf[2] = cpu->cd.x86.r[X86_R_AX] >> 16;
+				databuf[3] = cpu->cd.x86.r[X86_R_AX] >> 24;
+			}
+		}
+		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL + imm, &databuf[0],
+		    op == 0xe6? 1 : (mode/8), MEM_WRITE, CACHE_NONE);
 	} else if (op == 0xe8 || op == 0xe9) {	/*  CALL/JMP near  */
 		imm = read_imm(&instr, &newpc, mode67);
 		if (mode == 16)

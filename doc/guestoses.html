@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.41 2005-05-09 22:44:26 debug Exp $
+$Id: guestoses.html,v 1.42 2005-05-09 23:14:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -565,8 +565,9 @@ common sense and imagination to modify them as you see fit.
 	$ <b>gxemul -E dec -e 3max -b -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
 
 </pre>
-	(If you add -X, you will run with the graphical framebuffer. This is <i>REALLY</i> slow
-	because the console has to scroll a lot during the install. I don't recommend it.)
+	(If you add <tt><b>-X</b></tt>, you will run with the graphical
+	framebuffer. This is <i>REALLY</i> slow because the console has to
+	scroll a lot during the install. I don't recommend it.)
   <p>
   <li>Go on with the installation as you would do if you were installing on a real machine.
 	If you are not used to the OpenBSD installer, then this will most likely
@@ -1005,10 +1006,10 @@ environment.
 unstable. During my tests, even pressing the wrong key during the install
 (for example the wrong cursor key) can cause a kernel Oops.
 I <i>think</i> this has to do with interrupts from the serial controller.
-Hopefully using the -U command line option will reduce the risk for such 
-crashes. (I haven't had time to come up with a clean solution to this yet;
-it feels like a buffer overflow in Linux' serial driver for the 5000/200,
-but it is also likely that it is a bug in GXemul.)
+Hopefully using the <tt><b>-U</b></tt> command line option will reduce the 
+risk for such crashes. (I haven't had time to come up with a clean
+solution to this yet; it feels like a buffer overflow in Linux' serial 
+driver for the 5000/200, but it is also likely that it is a bug in GXemul.)
 </font>
 
 <p>
@@ -1127,8 +1128,8 @@ Kaj-Michael Lang noticed that the current CVS-version of
 <a href="http://www.linux-mips.org/">linux-mips</a> has
 support for keyboards now, on DECstation 5000/200, so it is
 possible to run Debian GNU/Linux with framebuffer/keyboard.
-(Add -X (or -XY2) and remove the console=ttyS3 option.)
-He has made a kernel available here:
+(Add <b><tt>-X</tt></b> (or <b><tt>-XY2</tt></b>) and remove the
+<b><tt>console=ttyS3</tt></b> option.) He has made a kernel available here:
 <a href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
 http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
 It has other problems (ethernet doesn't seem to work, for
@@ -1144,8 +1145,8 @@ example), but at least it doesn't Oops that often.&nbsp;]
 <h3>Running Redhat Linux for DECstation in GXemul:</h3>
 
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
-unstable. Read the note about '-U' in the section on how to install 
-Debian.
+unstable. Read the note about <b><tt>-U</tt></b> in the section on how to 
+install Debian.
 </font>
 
 <p>

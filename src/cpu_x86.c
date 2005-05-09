@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.62 2005-05-09 19:06:54 debug Exp $
+ *  $Id: cpu_x86.c,v 1.63 2005-05-09 19:51:56 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -566,6 +566,11 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				}
 			}
 
+			if (mode67 == 16)
+				addr &= 0xffff;
+			if (mode67 == 32)
+				addr &= 0xffffffffULL;
+
 			switch (writeflag) {
 			case MODRM_WRITE_RM:
 				res = x86_store(cpu, addr, *op1p, q);
@@ -688,6 +693,11 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					break;
 				}
 			}
+
+			if (mode67 == 16)
+				addr &= 0xffff;
+			if (mode67 == 32)
+				addr &= 0xffffffffULL;
 
 			switch (writeflag) {
 			case MODRM_WRITE_RM:
@@ -1761,7 +1771,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		instr_orig = instr;
 		switch (op & 7) {
 		case 4:	imm = read_imm(&instr, &newpc, 8);
-			op1 = cpu->cd.x86.r[X86_R_AX]; op2 = (signed char)imm;
+			op1 = cpu->cd.x86.r[X86_R_AX] & 0xff;
+			op2 = (signed char)imm;
 			mode = 8;
 			break;
 		case 5:	imm = read_imm(&instr, &newpc, mode);
@@ -1780,6 +1791,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		/*  printf("op1=0x%x op2=0x%x => ", (int)op1, (int)op2);  */
+
+		switch (mode) {
+		case 16: op1 &= 0xffff; op2 &= 0xffff; break;
+		case 32: op1 &= 0xffffffffULL; op2 &= 0xffffffffULL; break;
+		}
 
 		switch (op & 0x38) {
 		case 0x00:	op1 = op1 + op2; break;
@@ -1934,14 +1950,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.r[op & 7] &= 0xffffffffULL;
 		}
 		x86_cmp(cpu, cpu->cd.x86.r[op & 7], 0, mode);
-#if 0
-		cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
-		if (mode != 16 && cpu->cd.x86.r[op & 7] == 0)
-			cpu->cd.x86.rflags |= X86_FLAGS_ZF;
-		if (mode == 16 && (cpu->cd.x86.r[op & 7] & 0xffff) == 0)
-			cpu->cd.x86.rflags |= X86_FLAGS_ZF;
-		/*  TODO: more flags: SF,AF,PF  */
-#endif
 	} else if (op >= 0x50 && op <= 0x57) {
 		if (!x86_push(cpu, cpu->cd.x86.r[op & 7], mode))
 			return 0;
@@ -1949,7 +1957,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		success = x86_pop(cpu, &tmp, mode);
 		if (!success)
 			return 0;
-		cpu->cd.x86.r[op & 7] = tmp;
+		if (mode == 16)
+			cpu->cd.x86.r[op & 7] = (cpu->cd.x86.r[op & 7] &
+			    ~0xffff) | (tmp & 0xffff);
+		else
+			cpu->cd.x86.r[op & 7] = tmp;
 	} else if (op == 0x60) {		/*  PUSHA/PUSHAD  */
 		uint64_t r[8];
 		int i;
@@ -2330,6 +2342,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!success)
 				return 0;
 			imm &= 31;
+			if (op == 0xc0)
+				op1 &= 0xff;
+			if (op == 0xc1 && mode == 16)
+				op1 &= 0xffff;
+			if (op == 0xc1 && mode == 32)
+				op1 &= 0xffffffffULL;
 			while (imm-- != 0) {
 				cf = 0;
 				switch ((*instr_orig >> 3) & 0x7) {
@@ -2364,6 +2382,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					break;
 				}
 			}
+			if (op == 0xc0)
+				op1 &= 0xff;
+			if (op == 0xc1 && mode == 16)
+				op1 &= 0xffff;
+			if (op == 0xc1 && mode == 32)
+				op1 &= 0xffffffffULL;
 			x86_cmp(cpu, op1, 0, mode);
 			if (cf > -1) {
 				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
@@ -2392,6 +2416,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    + imm) & 0xffff);
 		}
 		newpc = modify(newpc, popped_pc);
+		if (mode == 16)
+			newpc &= 0xffff;
 	} else if (op == 0xc4 || op == 0xc5) {		/*  LDS,LES  */
 		instr_orig = instr;
 		modrm(cpu, MODRM_READ, mode, mode67,
@@ -2456,6 +2482,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 		newpc = modify(newpc, tmp);
+		if (mode == 16)
+			newpc &= 0xffff;
 		cpu->cd.x86.s[X86_S_CS] = tmp2 & 0xffff;
 	} else if (op == 0xcc) {	/*  INT3  */
 		cpu->pc = newpc;
@@ -2538,6 +2566,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					op1 |= 0x80000000ULL;
 				break;
 			}
+			if (mode == 16)
+				op1 &= 0xffff;
+			if (mode == 32)
+				op1 &= 0xffffffffULL;
 			x86_cmp(cpu, op1, 0, mode);
 			if (cf > -1) {
 				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
@@ -2584,6 +2616,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					break;
 				}
 			}
+			if (op == 0xd2)
+				op1 &= 0xff;
+			if (op == 0xd3 && mode == 16)
+				op1 &= 0xffff;
+			if (op == 0xd3 && mode == 32)
+				op1 &= 0xffffffffULL;
 			x86_cmp(cpu, op1, 0, op==0xd2? 8 : mode);
 			if (cf > -1) {
 				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;

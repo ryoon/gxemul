@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.25 2005-05-09 13:36:29 debug Exp $
+ *  $Id: pc_bios.c,v 1.26 2005-05-09 14:11:09 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -333,6 +333,8 @@ static void pc_bios_int13(struct cpu *cpu)
 		}
 		/*  error code in ah? TODO  */
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		if (cpu->cd.x86.rflags & X86_FLAGS_CF)
+			cpu->cd.x86.r[X86_R_AX] |= 0x0400;
 		break;
 	case 4:	/*  verify disk sectors  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;

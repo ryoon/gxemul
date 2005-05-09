@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.58 2005-05-09 13:49:50 debug Exp $
+ *  $Id: cpu_x86.c,v 1.59 2005-05-09 14:11:09 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2302,6 +2302,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xc0 || op == 0xc1) {
 		int cf = -1;
 		switch ((*instr >> 3) & 0x7) {
+		case 0:	/*  rol op1,imm  */
 		case 1:	/*  ror op1,imm  */
 		case 4:	/*  shl op1,imm  */
 		case 5:	/*  shr op1,imm  */
@@ -2316,6 +2317,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			while (imm-- != 0) {
 				cf = 0;
 				switch ((*instr_orig >> 3) & 0x7) {
+				case 0:	if ((op == 0xc0 && op1 & 0x80) ||
+					    (op == 0xc1 && mode == 16 && op1
+					    & 0x8000) || (op == 0xc1 &&
+					    mode == 32 && op1 & 0x80000000ULL))
+						cf = 1;
+					op1 <<= 1;
+					op1 |= cf;
+					break;
 				case 1:	if (op1 & 1)
 						cf = 1;
 					op1 >>= 1;
@@ -2326,8 +2335,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					if (cf && op == 0xc1 && mode == 32)
 						op1 |= 0x80000000ULL;
 					break;
-				case 4:	if ((mode == 16 && op1 & 0x8000) ||
-					    (mode == 32 && op1 & 0x80000000ULL))
+				case 4:	if ((op == 0xc0 && op1 & 0x80) ||
+					    (op == 0xc1 && mode == 16 && op1
+					    & 0x8000) || (op == 0xc1 &&
+					    mode == 32 && op1 & 0x80000000ULL))
 						cf = 1;
 					op1 <<= 1;
 					break;

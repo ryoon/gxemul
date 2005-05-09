@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.44 2005-05-09 13:36:30 debug Exp $
+ *  $Id: dev_vga.c,v 1.45 2005-05-09 14:11:10 debug Exp $
  *  
  *  VGA text (and graphics) console device.
  *
@@ -79,7 +79,9 @@ struct vga_data {
 	int		max_x;
 	int		max_y;
 	size_t		charcells_size;
-	unsigned char	*charcells;	/*  2 bytes per char  */
+
+	unsigned char	*charcells;		/*  2 bytes per char  */
+	unsigned char	*charcells_outputed;
 
 	unsigned char	*gfx_mem;	/*  0xa0000...  */
 
@@ -130,6 +132,13 @@ static void vga_update_textmode(struct machine *machine,
 		int bg = (d->charcells[i+1] >> 4) & 15;	/*  top bit = blink  */
 		int x = (i/2) % d->max_x;
 		int y = (i/2) / d->max_x;
+
+		if (d->charcells[i] == d->charcells_outputed[i] &&
+		    d->charcells[i+1] == d->charcells_outputed[i+1])
+			continue;
+
+		d->charcells_outputed[i] = d->charcells[i];
+		d->charcells_outputed[i+1] = d->charcells[i+1];
 
 		sprintf(s, "\033[%i;%iH\033[0;", y + 1, x + 1);
 		c_putstr(d, s);
@@ -613,8 +622,10 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
 	allocsize = ((d->charcells_size - 1) | 0xfff) + 1;
 	d->charcells = malloc(d->charcells_size);
+	d->charcells_outputed = malloc(d->charcells_size);
 	d->gfx_mem = malloc(0x18000);
-	if (d->charcells == NULL || d->gfx_mem == NULL) {
+	if (d->charcells == NULL || d->charcells_outputed == NULL ||
+	    d->gfx_mem == NULL) {
 		fprintf(stderr, "out of memory in dev_vga_init()\n");
 		exit(1);
 	}
@@ -628,6 +639,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 		}
 	}
 
+	memset(d->charcells_outputed, 0, d->charcells_size);
 	memset(d->gfx_mem, 0, 0x18000);
 
 	d->font_size = 16;

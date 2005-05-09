@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.30 2005-05-09 23:14:07 debug Exp $
+ *  $Id: pc_bios.c,v 1.31 2005-05-09 23:42:24 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -242,6 +242,9 @@ static void pc_bios_int10(struct cpu *cpu)
 	case 0x01:
 		/*  ch = starting line, cl = ending line  */
 		set_cursor_scanlines(cpu, ch, cl);
+		break;
+	case 0x02:	/*  set cursor position  */
+		set_cursor_pos(cpu, dl, dh);
 		break;
 	case 0x03:	/*  read cursor position  */
 		get_cursor_pos(cpu, &x, &y);

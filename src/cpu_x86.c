@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.67 2005-05-09 23:14:07 debug Exp $
+ *  $Id: cpu_x86.c,v 1.68 2005-05-09 23:42:23 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -38,6 +38,8 @@
  *
  *  http://www.cs.ucla.edu/~kohler/class/04f-aos/ref/i386/appa.htm has a
  *  nice overview of the standard i386 opcodes.
+ *
+ *  HelpPC (http://members.tripod.com/~oldboard/assembly/) is also useful.
  */
 
 #include <stdio.h>
@@ -1419,6 +1421,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			SPACES; debug("mul\t%s", modrm_rm);
 			break;
+		case 5:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xf6?
+			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
+			SPACES; debug("imul\t%s", modrm_rm);
+			break;
 		case 6:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xf6?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			SPACES; debug("div\t%s", modrm_rm);
@@ -1443,6 +1449,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 1:	modrm(cpu, MODRM_READ, mode, mode67, op == 0xfe?
 			    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);
 			SPACES; debug("dec\t%s", modrm_rm);
+			break;
+		case 2:	if (op == 0xfe) {
+				SPACES; debug("UNIMPLEMENTED "
+				    "0x%02x,0x%02x", op,*instr);
+			} else {
+				modrm(cpu, MODRM_READ, mode, mode67, 0, &instr,
+				    &ilen, NULL, NULL);
+				SPACES; debug("call\t%s", modrm_rm);
+			}
 			break;
 		case 3:	if (op == 0xfe) {
 				SPACES; debug("UNIMPLEMENTED "
@@ -2858,26 +2873,42 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			break;
 		case 4:	/*  mul  */
+			unsigned_op = 0;
+		case 5:	/*  imul  */
 			success = modrm(cpu, MODRM_READ, mode, mode67,
 			    op == 0xf6? MODRM_EIGHTBIT : 0, &instr,
 			    &newpc, &op1, &op2);
 			if (!success)
 				return 0;
 			if (op == 0xf6) {
-				res = (cpu->cd.x86.r[X86_R_AX] & 0xff) * (op1
-				    & 0xff);
+				if (unsigned_op)
+					res = (cpu->cd.x86.r[X86_R_AX] & 0xff)
+					    * (op1 & 0xff);
+				else
+					res = (signed char)(cpu->cd.x86.r[
+					    X86_R_AX] & 0xff) * (signed char)
+					    (op1 & 0xff);
 				cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[
 				    X86_R_AX] & ~0xffff) | (res & 0xffff);
 			} else if (mode == 16) {
-				res = (cpu->cd.x86.r[X86_R_AX] & 0xffff)
-				    * (op1 & 0xffff);
+				if (unsigned_op)
+					res = (cpu->cd.x86.r[X86_R_AX] & 0xffff)
+					    * (op1 & 0xffff);
+				else
+					res = (int16_t)(cpu->cd.x86.r[X86_R_AX]
+					    & 0xffff) * (int16_t)(op1 & 0xffff);
 				cpu->cd.x86.r[X86_R_AX] = modify(cpu->
 				    cd.x86.r[X86_R_AX], res & 0xffff);
 				cpu->cd.x86.r[X86_R_DX] = modify(cpu->cd.x86
 				    .r[X86_R_DX], (res>>16) & 0xffff);
 			} else if (mode == 32) {
-				res = (cpu->cd.x86.r[X86_R_AX] & 0xffffffff)
-				    * (op1 & 0xffffffff);
+				if (unsigned_op)
+					res = (cpu->cd.x86.r[X86_R_AX] &
+					    0xffffffff) * (op1 & 0xffffffff);
+				else
+					res = (int32_t)(cpu->cd.x86.r[X86_R_AX]
+					    & 0xffffffff) * (int32_t)
+					    (op1 & 0xffffffff);
 				cpu->cd.x86.r[X86_R_AX] = res & 0xffffffff;
 				cpu->cd.x86.r[X86_R_DX] = (res >> 32) &
 				    0xffffffff;
@@ -2953,29 +2984,37 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			x86_cmp(cpu, op1, 0, op==0xfe? 8 : mode);
 			break;
+		case 2:
 		case 3:	if (op == 0xfe) {
 				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
 				    *instr);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
+				int far = (((*instr >> 3) & 0x7) == 3);
 				success = modrm(cpu, MODRM_READ, mode, mode67,
 				    MODRM_JUST_GET_ADDR, &instr,
 				    &newpc, &op1, &op2);
 				if (!success)
 					return 0;
-				/*  Load a far address from op1:  */
+				/*  Load an address (or a far address)
+				    from op1:  */
 				if (!x86_load(cpu, op1, &tmp1, mode/8))
 					return 0;
-				if (!x86_load(cpu, op1 + (mode/8), &tmp2, 2))
-					return 0;
+				if (far)
+					if (!x86_load(cpu, op1 + (mode/8),
+					    &tmp2, 2))
+						return 0;
 				/*  Push return CS:[E]IP  */
-				x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode);
+				if (far)
+					x86_push(cpu, cpu->cd.x86.s[X86_S_CS],
+					    mode);
 				x86_push(cpu, newpc, mode);
 				newpc = tmp1;
 				if (mode == 16)
 					newpc &= 0xffff;
-				cpu->cd.x86.s[X86_S_CS] = tmp2;
+				if (far)
+					cpu->cd.x86.s[X86_S_CS] = tmp2;
 			}
 			break;
 		case 4:	if (op == 0xfe) {

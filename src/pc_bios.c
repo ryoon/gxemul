@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.26 2005-05-09 14:11:09 debug Exp $
+ *  $Id: pc_bios.c,v 1.27 2005-05-09 21:28:27 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -197,6 +197,8 @@ static void pc_bios_printstr(struct cpu *cpu, char *s)
  */
 static void pc_bios_int10(struct cpu *cpu)
 {
+	uint64_t ctrlregs = 0x1000003c0ULL;
+	unsigned char byte;
 	int x,y, oldx,oldy;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
@@ -219,7 +221,15 @@ static void pc_bios_int10(struct cpu *cpu)
 					output_char(cpu, x,y, ' ', 0x07);
 			break;
 		case 0x13:	/*  320x200 x 256 colors graphics  */
-			/*  TODO  */
+			/*  TODO: really change mode  */
+			byte = 0xff;
+			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE
+			    | PHYSICAL);
+			byte = 0x13;
+			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
 			set_cursor_scanlines(cpu, 0x40, 0);
 			break;
 		default:
@@ -280,7 +290,7 @@ static void pc_bios_int10(struct cpu *cpu)
  */
 static void pc_bios_int13(struct cpu *cpu)
 {
-	int res;
+	int res, nread, err;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = (cpu->cd.x86.r[X86_R_AX] >> 0) & 0xff;
 	int dh = (cpu->cd.x86.r[X86_R_DX] >> 8) & 0xff;
@@ -306,6 +316,7 @@ static void pc_bios_int13(struct cpu *cpu)
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 /*		cl &= 0x7f; ch &= 0x7f; dh &= 1;  */
 		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
+		nread = 0; err = 0;
 		while (al > 0) {
 			unsigned char buf[512];
 
@@ -318,23 +329,30 @@ static void pc_bios_int13(struct cpu *cpu)
 			    buf, sizeof(buf));
 
 			if (!res) {
-				cpu->cd.x86.rflags |= X86_FLAGS_CF;
-
+				err = 4;
 				fatal("[ PC BIOS: disk access failed: disk %i, "
 				    "CHS = %i,%i,%i ]\n", dl, ch, dh, cl);
 				break;
 			}
 
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+			if (bx > 0xfe00) {
+				err = 9;
+				break;
+			}
 			store_buf(cpu, bx, (char *)buf, sizeof(buf));
 			offset += sizeof(buf);
 			bx += sizeof(buf);
 			al --;
+			nread ++;
 		}
+		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_AX] |= nread;
 		/*  error code in ah? TODO  */
-		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
-		if (cpu->cd.x86.rflags & X86_FLAGS_CF)
-			cpu->cd.x86.r[X86_R_AX] |= 0x0400;
+		if (err) {
+			cpu->cd.x86.rflags |= X86_FLAGS_CF;
+			cpu->cd.x86.r[X86_R_AX] |= (err << 8);
+		}
 		break;
 	case 4:	/*  verify disk sectors  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;

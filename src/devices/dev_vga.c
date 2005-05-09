@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.46 2005-05-09 19:06:56 debug Exp $
+ *  $Id: dev_vga.c,v 1.47 2005-05-09 21:28:28 debug Exp $
  *  
  *  VGA text (and graphics) console device.
  *
@@ -62,9 +62,12 @@
 
 #define	VGA_MEM_MAXY		50
 #define	VGA_MEM_ALLOCY		50
-
+#define	GFX_MEM_SIZE		0x18000
 
 #define	VGA_FB_ADDR	0x1230000000ULL
+
+#define	MODE_TEXT		1
+#define	MODE_GRAPHICS		2
 
 struct vga_data {
 	uint64_t	videomem_base;
@@ -76,6 +79,7 @@ struct vga_data {
 	int		font_size;
 	unsigned char	*font;
 
+	int		fb_max_x;
 	int		max_x;
 	int		max_y;
 	size_t		charcells_size;
@@ -84,6 +88,8 @@ struct vga_data {
 	unsigned char	*charcells_outputed;
 
 	unsigned char	*gfx_mem;	/*  0xa0000...  */
+
+	int		cur_mode;
 
 	unsigned char	selected_register;
 	unsigned char	reg[256];
@@ -180,13 +186,46 @@ static void vga_update_textmode(struct machine *machine,
 
 
 /*
- *  vga_update():
+ *  vga_update_graphics():
  *
  *  This function should be called whenever any part of d->charcells[] has
  *  been written to. It will redraw all characters within the range x1,y1
  *  .. x2,y2 using the right palette.
  */
-static void vga_update(struct machine *machine, struct vga_data *d,
+static void vga_update_graphics(struct machine *machine, struct vga_data *d,
+	int x1, int y1, int x2, int y2)
+{
+	int x, y, ix, iy;
+	unsigned char pixel[3];
+
+	for (y=y1; y<=y2; y++)
+		for (x=x1; x<=x2; x++) {
+			int addr = y * d->max_x + x;
+			int c = d->gfx_mem[addr];
+			for (iy=y*2; iy<y*2+2; iy++)
+				for (ix=x*2; ix<x*2+2; ix++) {
+					int addr2 = (d->fb_max_x * iy + ix) * 3;
+					pixel[0] = d->fb->rgb_palette[c*3+0];
+					pixel[1] = d->fb->rgb_palette[c*3+1];
+					pixel[2] = d->fb->rgb_palette[c*3+2];
+					if (addr2 < d->fb_size)
+						dev_fb_access(machine->cpus[0],
+						    machine->memory, addr2,
+						    pixel, sizeof(pixel),
+						    MEM_WRITE, d->fb);
+				}
+		}
+}
+
+
+/*
+ *  vga_update_text():
+ *
+ *  This function should be called whenever any part of d->charcells[] has
+ *  been written to. It will redraw all characters within the range x1,y1
+ *  .. x2,y2 using the right palette.
+ */
+static void vga_update_text(struct machine *machine, struct vga_data *d,
 	int x1, int y1, int x2, int y2)
 {
 	int fg, bg, i, x,y, subx, line, start, end;
@@ -264,6 +303,9 @@ static void vga_update_cursor(struct machine *machine, struct vga_data *d)
 	int onoff = 1, height = d->cursor_scanline_end -
 	    d->cursor_scanline_start + 1;
 
+	if (d->cur_mode != MODE_TEXT)
+		onoff = 0;
+
 	if (d->cursor_scanline_start > d->cursor_scanline_end) {
 		onoff = 0;
 		height = 1;
@@ -286,6 +328,7 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 	struct vga_data *d = extra;
 	uint64_t low = (uint64_t)-1, high;
 
+	/*  TODO: text vs graphics tick?  */
 	memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);
 
 	if ((int64_t)low != -1) {
@@ -307,8 +350,12 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 	}
 
 	if (d->modified) {
-		vga_update(cpu->machine, d,
-		    d->update_x1, d->update_y1, d->update_x2, d->update_y2);
+		if (d->cur_mode == MODE_TEXT)
+			vga_update_text(cpu->machine, d, d->update_x1,
+			    d->update_y1, d->update_x2, d->update_y2);
+		else
+			vga_update_graphics(cpu->machine, d, d->update_x1,
+			    d->update_y1, d->update_x2, d->update_y2);
 
 		d->modified = 0;
 		d->update_x1 = 999999;
@@ -330,39 +377,32 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 {
 	struct vga_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int x, y, ix, iy;
+	int x, y, x2, y2;
 
-	idata = memory_readmax64(cpu, data, len);
+	y = relative_addr / d->max_x;
+	x = relative_addr % d->max_x;
 
-/*
- *  TODO:
- *
- *  This should be completely rewritten, using the memory -> update fashion.
- */
+	y2 = (relative_addr+len-1) / d->max_x;
+	x2 = (relative_addr+len-1) % d->max_x;
 
-	x = relative_addr % 320;
-	y = relative_addr / 320;
+	if (relative_addr + len >= GFX_MEM_SIZE)
+		return 0;
 
 	if (writeflag == MEM_WRITE) {
-		unsigned char pixel[3];
-		int fg = idata;
+		memcpy(d->gfx_mem + relative_addr, data, len);
+		d->modified = 1;
 
-		pixel[0] = d->fb->rgb_palette[fg * 3 + 0];
-		pixel[1] = d->fb->rgb_palette[fg * 3 + 1];
-		pixel[2] = d->fb->rgb_palette[fg * 3 + 2];
+		if (x < d->update_x1)  d->update_x1 = x;
+		if (x > d->update_x2)  d->update_x2 = x;
+		if (y < d->update_y1)  d->update_y1 = y;
+		if (y > d->update_y2)  d->update_y2 = y;
 
-		for (iy=y*2; iy<=y*2+1; iy++)
-			for (ix=x*2; ix<=x*2+1; ix++) {
-				uint32_t addr = (d->max_x*8 * iy + ix) * 3;
-				if (addr < d->fb_size)
-					dev_fb_access(cpu->machine->cpus[0],
-					    cpu->machine->memory, addr, pixel,
-					    sizeof(pixel), MEM_WRITE, d->fb);
-			}
-	}
-
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
+		if (x2 < d->update_x1)  d->update_x1 = x2;
+		if (x2 > d->update_x2)  d->update_x2 = x2;
+		if (y2 < d->update_y1)  d->update_y1 = y2;
+		if (y2 > d->update_y2)  d->update_y2 = y2;
+	} else
+		memcpy(data, d->gfx_mem + relative_addr, len);
 
 	return 1;
 }
@@ -400,7 +440,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			d->font_size = 8;
 			d->font = font8x8;
 			d->max_y = VGA_MEM_MAXY;
-			vga_update(cpu->machine, d, 0, 0,
+			vga_update_text(cpu->machine, d, 0, 0,
 			    d->max_x - 1, d->max_y - 1);
 			vga_update_cursor(cpu->machine, d);
 		} else if (y >= 25 && d->font_size > 11) {
@@ -408,7 +448,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			debug("SWITCHING to 8x10 font\n");
 			d->font_size = 11;	/*  NOTE! 11  */
 			d->font = font8x10;
-			vga_update(cpu->machine, d, 0, 0,
+			vga_update_text(cpu->machine, d, 0, 0,
 			    d->max_x - 1, d->max_y - 1);
 			d->max_y = 36;
 			vga_update_cursor(cpu->machine, d);
@@ -485,6 +525,33 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 		d->cursor_x = ofs % d->max_x;
 		d->cursor_y = ofs / d->max_x;
 		vga_update_cursor(machine, d);
+		break;
+	case 0xff:
+		switch (d->reg[0xff]) {
+		case 0x03:
+			d->cur_mode = MODE_TEXT;
+			d->max_x = 80;
+			d->max_y = 25;
+			d->update_x1 = 0;
+			d->update_x2 = d->max_x - 1;
+			d->update_y1 = 0;
+			d->update_y2 = d->max_y - 1;
+			d->modified = 1;
+			break;
+		case 0x13:
+			d->cur_mode = MODE_GRAPHICS;
+			d->max_x = 320;
+			d->max_y = 200;
+			d->update_x1 = 0;
+			d->update_x2 = d->max_x - 1;
+			d->update_y1 = 0;
+			d->update_y2 = d->max_y - 1;
+			d->modified = 1;
+			break;
+		default:
+			fatal("TODO! video mode change hack\n");
+			exit(1);
+		}
 		break;
 	default:
 		debug("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n",
@@ -617,13 +684,14 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->control_base  = control_base;
 	d->max_x         = 80;
 	d->max_y         = 25;
+	d->cur_mode      = MODE_TEXT;
 	d->charcells_size = d->max_x * VGA_MEM_MAXY * 2;
 
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
 	allocsize = ((d->charcells_size - 1) | 0xfff) + 1;
 	d->charcells = malloc(d->charcells_size);
 	d->charcells_outputed = malloc(d->charcells_size);
-	d->gfx_mem = malloc(0x18000);
+	d->gfx_mem = malloc(GFX_MEM_SIZE);
 	if (d->charcells == NULL || d->charcells_outputed == NULL ||
 	    d->gfx_mem == NULL) {
 		fprintf(stderr, "out of memory in dev_vga_init()\n");
@@ -640,17 +708,18 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	}
 
 	memset(d->charcells_outputed, 0, d->charcells_size);
-	memset(d->gfx_mem, 0, 0x18000);
+	memset(d->gfx_mem, 0, GFX_MEM_SIZE);
 
 	d->font_size = 16;
 	d->font = font8x16;
+	d->fb_max_x = 8*d->max_x;
 
 	d->cursor_scanline_start = d->font_size - 4;
 	d->cursor_scanline_end = d->font_size - 2;
 
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    8*d->max_x, 16*d->max_y, 8*d->max_x, 16*d->max_y, 24, "VGA", 0);
-	d->fb_size = 8*d->max_x * d->font_size*d->max_y * 3;
+	    d->fb_max_x, 16*d->max_y, d->fb_max_x, 16*d->max_y, 24, "VGA", 0);
+	d->fb_size = d->fb_max_x * d->font_size*d->max_y * 3;
 
 	i = 0;
 	for (r=0; r<2; r++)
@@ -675,7 +744,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
 	    allocsize, dev_vga_access, d, MEM_BINTRANS_OK, d->charcells);
 	memory_device_register(mem, "vga_gfx", videomem_base,
-	    0x18000, dev_vga_graphics_access, d, MEM_DEFAULT, d->gfx_mem);
+	    GFX_MEM_SIZE, dev_vga_graphics_access, d, MEM_DEFAULT, d->gfx_mem);
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 

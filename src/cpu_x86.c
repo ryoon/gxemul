@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.60 2005-05-09 14:34:18 debug Exp $
+ *  $Id: cpu_x86.c,v 1.61 2005-05-09 18:30:46 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1419,6 +1419,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				modrm(cpu, MODRM_READ, mode, mode67, 0, &instr,
 				    &ilen, NULL, NULL);
 				SPACES; debug("jmp\t%s", modrm_rm);
+			}
+			break;
+		case 5:	if (op == 0xfe) {
+				SPACES; debug("UNIMPLEMENTED "
+				    "0x%02x,0x%02x", op,*instr);
+			} else {
+				modrm(cpu, MODRM_READ, mode, mode67, 0, &instr,
+				    &ilen, NULL, NULL);
+				SPACES; debug("jmp\tfar %s", modrm_rm);
 			}
 			break;
 		case 6:	if (op == 0xfe) {
@@ -2852,6 +2861,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					return 0;
 				if (!x86_load(cpu, op1 + (mode/8), &tmp2, 2))
 					return 0;
+				/*  Push return CS:[E]IP  */
+				x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode);
+				x86_push(cpu, newpc, mode);
 				newpc = tmp1;
 				if (mode == 16)
 					newpc &= 0xffff;
@@ -2872,6 +2884,28 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				newpc = op1;
 				if (mode == 16)
 					newpc &= 0xffff;
+			}
+			break;
+		case 5:	if (op == 0xfe) {
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				    *instr);
+				cpu->running = 0;
+			} else {
+				uint64_t tmp1, tmp2;
+				success = modrm(cpu, MODRM_READ, mode, mode67,
+				    MODRM_JUST_GET_ADDR, &instr,
+				    &newpc, &op1, &op2);
+				if (!success)
+					return 0;
+				/*  Load a far address from op1:  */
+				if (!x86_load(cpu, op1, &tmp1, mode/8))
+					return 0;
+				if (!x86_load(cpu, op1 + (mode/8), &tmp2, 2))
+					return 0;
+				newpc = tmp1;
+				if (mode == 16)
+					newpc &= 0xffff;
+				cpu->cd.x86.s[X86_S_CS] = tmp2;
 			}
 			break;
 		case 6:	if (op == 0xfe) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.59 2005-05-09 14:11:09 debug Exp $
+ *  $Id: cpu_x86.c,v 1.60 2005-05-09 14:34:18 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1412,6 +1412,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("call\tfar %s", modrm_rm);
 			}
 			break;
+		case 4:	if (op == 0xfe) {
+				SPACES; debug("UNIMPLEMENTED "
+				    "0x%02x,0x%02x", op,*instr);
+			} else {
+				modrm(cpu, MODRM_READ, mode, mode67, 0, &instr,
+				    &ilen, NULL, NULL);
+				SPACES; debug("jmp\t%s", modrm_rm);
+			}
+			break;
 		case 6:	if (op == 0xfe) {
 				SPACES; debug("UNIMPLEMENTED "
 				    "0x%02x,0x%02x", op,*instr);
@@ -1885,12 +1894,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.r[op & 7] --;
 			cpu->cd.x86.r[op & 7] &= 0xffffffffULL;
 		}
+		x86_cmp(cpu, cpu->cd.x86.r[op & 7], 0, mode);
+#if 0
 		cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
 		if (mode != 16 && cpu->cd.x86.r[op & 7] == 0)
 			cpu->cd.x86.rflags |= X86_FLAGS_ZF;
 		if (mode == 16 && (cpu->cd.x86.r[op & 7] & 0xffff) == 0)
 			cpu->cd.x86.rflags |= X86_FLAGS_ZF;
 		/*  TODO: more flags: SF,AF,PF  */
+#endif
 	} else if (op >= 0x50 && op <= 0x57) {
 		if (!x86_push(cpu, cpu->cd.x86.r[op & 7], mode))
 			return 0;
@@ -2844,6 +2856,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (mode == 16)
 					newpc &= 0xffff;
 				cpu->cd.x86.s[X86_S_CS] = tmp2;
+			}
+			break;
+		case 4:	if (op == 0xfe) {
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				    *instr);
+				cpu->running = 0;
+			} else {
+				uint64_t tmp1, tmp2;
+				success = modrm(cpu, MODRM_READ, mode, mode67,
+				    MODRM_JUST_GET_ADDR, &instr,
+				    &newpc, &op1, &op2);
+				if (!success)
+					return 0;
+				newpc = op1;
+				if (mode == 16)
+					newpc &= 0xffff;
 			}
 			break;
 		case 6:	if (op == 0xfe) {

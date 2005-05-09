@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.63 2005-05-09 19:51:56 debug Exp $
+ *  $Id: cpu_x86.c,v 1.64 2005-05-09 20:14:31 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -848,7 +848,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	int op, rep = 0, n_prefix_bytes = 0;
+	int op, rep = 0, lock = 0, n_prefix_bytes = 0;
 	uint64_t ilen = 0, offset;
 	uint32_t imm=0, imm2;
 	int mode = cpu->cd.x86.mode;
@@ -912,6 +912,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			prefix = "fs:";
 		} else if (instr[0] == 0x65) {
 			prefix = "gs:";
+		} else if (instr[0] == 0xf0) {
+			lock = 1;
 		} else
 			break;
 
@@ -974,6 +976,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				    mode67, MODRM_CR, &instr, &ilen,
 				    NULL, NULL);
 				SPACES; debug("mov\t%s,%s", modrm_r, modrm_rm);
+			} else if (imm == 0x31) {
+				SPACES; debug("rdtsc");
+			} else if (imm == 0x32) {
+				SPACES; debug("rdmsr");
 			} else if (imm >= 0x80 && imm <= 0x8f) {
 				op = imm;
 				imm = (signed char)read_imm_and_print(&instr,
@@ -994,6 +1000,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("cpuid");
 			} else if (imm == 0xa9) {
 				SPACES; debug("pop\tgs");
+			} else if (imm == 0xaa) {
+				SPACES; debug("rsm");
 			} else if (imm == 0xb4 || imm == 0xb5) {
 				modrm(cpu, MODRM_READ, mode, mode67, 0,
 				    &instr, &ilen, NULL, NULL);
@@ -1003,6 +1011,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				}
 				SPACES; debug("%s\t%s,%s", mnem,
 				    modrm_r, modrm_rm);
+			} else if (imm >= 0xc8 && imm <= 0xcf) {
+				SPACES; debug("bswap\te%s", reg_names[imm & 7]);
 			} else {
 				SPACES; debug("UNIMPLEMENTED 0x0f,0x%02x", imm);
 			}
@@ -1189,7 +1199,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0:	mnem = "rol"; break;
 		case 1:	mnem = "ror"; break;
 		case 2:	mnem = "rcl"; break;
-		case 3:	mnem = "rcl"; break;
+		case 3:	mnem = "rcr"; break;
 		case 4:	mnem = "shl"; break;
 		case 5:	mnem = "shr"; break;
 		default:fatal("unimpl 0xc0/0xc1\n");
@@ -1260,12 +1270,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		int subop = (*instr >> 3) & 0x7;
 		switch (subop) {
 		case 2:
+		case 3:
 		case 4:
 		case 5:
 		case 7:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
 			    NULL, NULL);
 			switch (subop) {
 			case 2: mnem = "rcl"; break;
+			case 3: mnem = "rcr"; break;
 			case 4: mnem = "shl"; break;
 			case 5: mnem = "shr"; break;
 			case 7: mnem = "sar"; break;
@@ -1474,6 +1486,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	}
 	if (prefix != NULL)
 		debug(" (%s)", prefix);
+	if (lock)
+		debug(" (lock)");
 
 	debug("\n");
 	return ilen;

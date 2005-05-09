@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.27 2005-05-09 21:28:27 debug Exp $
+ *  $Id: pc_bios.c,v 1.28 2005-05-09 21:46:42 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -317,12 +317,13 @@ static void pc_bios_int13(struct cpu *cpu)
 /*		cl &= 0x7f; ch &= 0x7f; dh &= 1;  */
 		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
 		nread = 0; err = 0;
+		debug("[ pc_bios_int13(): reading from disk 0x%x, "
+		    "CHS=%i,%i,%i ]\n", dl, ch, dh, cl);
 		while (al > 0) {
 			unsigned char buf[512];
 
-			debug("[ pc_bios_int13(): reading from disk 0x%x, "
-			    "CHS=%i,%i,%i (=offset 0x%llx) to 0x%04x:0x%04x "
-			    "]\n", dl, ch, dh, cl, (long long)offset,
+			debug("[ pc_bios_int13(): disk offset = 0x%llx, mem = "
+			    " 0x%04x:0x%04x ]\n", (long long)offset,
 			    cpu->cd.x86.s[X86_S_ES], bx);
 
 			res = diskimage_access(cpu->machine, dl, 0, offset,

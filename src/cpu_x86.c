@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.64 2005-05-09 20:14:31 debug Exp $
+ *  $Id: cpu_x86.c,v 1.65 2005-05-09 21:46:42 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -134,14 +134,14 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 
 	cpu->cd.x86.model = models[i];
 	cpu->cd.x86.bits = 32;
-	cpu->cd.x86.mode = 16;
+
+	/*  TODO: How should this be solved nicely? ELFs are 32- (or 64-)bit,
+	    so setting 16 as the default here causes them to not load
+	    correctly.  */
+	cpu->cd.x86.mode = 32;
 
 	if (cpu->cd.x86.model.model_number == X86_MODEL_AMD64)
 		cpu->cd.x86.bits = 64;
-
-	/*  16-bit BIOS reset:  */
-	cpu->cd.x86.s[X86_S_CS] = 0xffff;
-	cpu->pc = 0;
 
 	cpu->cd.x86.r[X86_R_SP] = 0x0ff0;
 
@@ -1255,20 +1255,19 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("iret");
 	} else if (op == 0xd0) {
 		switch ((*instr >> 3) & 0x7) {
-		case 1:	modrm(cpu, MODRM_READ, mode, mode67, MODRM_EIGHTBIT,
-			    &instr, &ilen, NULL, NULL);
-			SPACES; debug("ror\t%s,1", modrm_rm);
-			break;
-		case 5:	modrm(cpu, MODRM_READ, mode, mode67, MODRM_EIGHTBIT,
-			    &instr, &ilen, NULL, NULL);
-			SPACES; debug("shr\t%s,1", modrm_rm);
-			break;
+		case 1:	mnem = "ror"; break;
+		case 4:	mnem = "shl"; break;
+		case 5:	mnem = "shr"; break;
 		default:
 			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op,*instr);
 		}
+		modrm(cpu, MODRM_READ, mode, mode67, MODRM_EIGHTBIT,
+		    &instr, &ilen, NULL, NULL);
+		SPACES; debug("%s\t%s,1", mnem, modrm_rm);
 	} else if (op == 0xd1) {
 		int subop = (*instr >> 3) & 0x7;
 		switch (subop) {
+		case 1:
 		case 2:
 		case 3:
 		case 4:
@@ -1276,6 +1275,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 7:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
 			    NULL, NULL);
 			switch (subop) {
+			case 1: mnem = "ror"; break;
 			case 2: mnem = "rcl"; break;
 			case 3: mnem = "rcr"; break;
 			case 4: mnem = "shl"; break;
@@ -2510,6 +2510,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		int cf = -1;
 		switch ((*instr >> 3) & 0x7) {
 		case 1:	/*  ror op1,1  */
+		case 4:	/*  shl op1,1  */
 		case 5:	/*  shr op1,1  */
 			instr_orig = instr;
 			success = modrm(cpu, MODRM_READ, mode, mode67,
@@ -2517,12 +2518,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!success)
 				return 0;
 			cf = 0;
-			if (op1 & 1)
-				cf = 1;
-			if (((*instr >> 3) & 0x7) == 1)
+			switch ((*instr_orig >> 3) & 0x7) {
+			case 1:	if (op1 & 1)
+					cf = 1;
 				op1 = (op1 >> 1) | ((op & 1) << 7);
-			else
+				break;
+			case 4:	if (op1 & 0x80)
+					cf = 1;
+				op1 <<= 1;
+				break;
+			case 5:	if (op1 & 1)
+					cf = 1;
 				op1 >>= 1;
+				break;
+			}
 			x86_cmp(cpu, op1, 0, 8);
 			if (cf > -1) {
 				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.61 2005-05-09 18:30:46 debug Exp $
+ *  $Id: cpu_x86.c,v 1.62 2005-05-09 19:06:54 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -133,13 +133,17 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->running            = 0;
 
 	cpu->cd.x86.model = models[i];
-	cpu->cd.x86.mode = 32;
 	cpu->cd.x86.bits = 32;
+	cpu->cd.x86.mode = 16;
 
 	if (cpu->cd.x86.model.model_number == X86_MODEL_AMD64)
 		cpu->cd.x86.bits = 64;
 
-	cpu->cd.x86.r[X86_R_SP] = 0xff0;
+	/*  16-bit BIOS reset:  */
+	cpu->cd.x86.s[X86_S_CS] = 0xffff;
+	cpu->pc = 0;
+
+	cpu->cd.x86.r[X86_R_SP] = 0x0ff0;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -967,6 +971,13 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				imm = dumpaddr + 2 + mode/8 + imm;
 				SPACES; debug("j%s%s\tnear 0x%x", op&1? "n"
 				    : "", cond_names[(op/2) & 0x7], imm);
+			} else if (imm >= 0x90 && imm <= 0x9f) {
+				op = imm;
+				modrm(cpu, MODRM_READ, mode,
+				    mode67, MODRM_EIGHTBIT, &instr, &ilen,
+				    NULL, NULL);
+				SPACES; debug("set%s%s\t%s", op&1? "n"
+				    : "", cond_names[(op/2) & 0x7], modrm_rm);
 			} else if (imm == 0xa1) {
 				SPACES; debug("pop\tfs");
 			} else if (imm == 0xa2) {
@@ -1599,6 +1610,53 @@ static void x86_cmp(struct cpu *cpu, uint64_t a, uint64_t b, int mode)
 
 
 /*
+ *  x86_condition():
+ *
+ *  Returns 0 or 1 (false or true) depending on flag bits.
+ */
+static int x86_condition(struct cpu *cpu, int op)
+{
+	int success;
+
+	switch (op & 0xe) {
+	case 0x00:	/*  o  */
+		success = cpu->cd.x86.rflags & X86_FLAGS_OF;
+		break;
+	case 0x02:	/*  c  */
+		success = cpu->cd.x86.rflags & X86_FLAGS_CF;
+		break;
+	case 0x04:	/*  z  */
+		success = cpu->cd.x86.rflags & X86_FLAGS_ZF;
+		break;
+	case 0x06:	/*  be  */
+		success = (cpu->cd.x86.rflags & X86_FLAGS_ZF) ||
+		    (cpu->cd.x86.rflags & X86_FLAGS_CF);
+		break;
+	case 0x08:	/*  s  */
+		success = cpu->cd.x86.rflags & X86_FLAGS_SF;
+		break;
+	case 0x0a:	/*  p  */
+		success = cpu->cd.x86.rflags & X86_FLAGS_PF;
+		break;
+	case 0x0c:	/*  nge  */
+		success = (cpu->cd.x86.rflags & X86_FLAGS_SF? 1 : 0)
+		    != (cpu->cd.x86.rflags & X86_FLAGS_OF? 1 : 0);
+		break;
+	case 0x0e:	/*  ng  */
+		success = (cpu->cd.x86.rflags & X86_FLAGS_SF? 1 : 0)
+		    != (cpu->cd.x86.rflags & X86_FLAGS_OF? 1 : 0);
+		success |= (cpu->cd.x86.rflags & X86_FLAGS_ZF ? 1 : 0);
+		break;
+	}
+
+	if (op & 1)
+		success = !success;
+
+	return success;
+}
+
+
+/*
  *  x86_cpu_run_instr():
  *
  *  Execute one instruction on a specific CPU.
@@ -1791,50 +1849,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		uint64_t tmp;
 		imm = read_imm(&instr, &newpc, 8);
 		if (imm >= 0x80 && imm <= 0x8f) {
-			/*  TODO: refactor! see 0x7? below  */
-			success = 0;
 			op = imm;
 			imm = read_imm(&instr, &newpc, mode);
-			switch (op & 0xe) {
-			case 0x00:	/*  o  */
-				success = cpu->cd.x86.rflags & X86_FLAGS_OF;
-				break;
-			case 0x02:	/*  c  */
-				success = cpu->cd.x86.rflags & X86_FLAGS_CF;
-				break;
-			case 0x04:	/*  z  */
-				success = cpu->cd.x86.rflags & X86_FLAGS_ZF;
-				break;
-			case 0x06:	/*  be  */
-				success = (cpu->cd.x86.rflags & X86_FLAGS_ZF) ||
-				    (cpu->cd.x86.rflags & X86_FLAGS_CF);
-				break;
-			case 0x08:	/*  s  */
-				success = cpu->cd.x86.rflags & X86_FLAGS_SF;
-				break;
-			case 0x0a:	/*  p  */
-				success = cpu->cd.x86.rflags & X86_FLAGS_PF;
-				break;
-			case 0x0c:	/*  nge  */
-				success = (cpu->cd.x86.rflags & X86_FLAGS_SF? 1
-				    : 0) != (cpu->cd.x86.rflags & X86_FLAGS_OF?
-				    1 : 0);
-				break;
-			case 0x0e:	/*  ng  */
-				success = (cpu->cd.x86.rflags & X86_FLAGS_SF? 1
-				    : 0) != (cpu->cd.x86.rflags & X86_FLAGS_OF?
-				    1 : 0);
-				success |= (cpu->cd.x86.rflags & X86_FLAGS_ZF ?
-				    1 : 0);
-				break;
-			default:
-				fatal("unimplemented condition\n");
-				exit(1);
-			}
-			if (op & 1)
-				success = !success;
+			success = x86_condition(cpu, op);
 			if (success)
 				newpc = modify(newpc, newpc + (signed char)imm);
+		} else if (imm >= 0x90 && imm <= 0x9f) {
+			instr_orig = instr;
+			if (!modrm(cpu, MODRM_READ, mode, mode67,
+			    MODRM_EIGHTBIT, &instr, &newpc, &op1, &op2))
+				return 0;
+			success = x86_condition(cpu, imm);
+			if (success) {
+				if (!modrm(cpu, MODRM_WRITE_RM, mode, mode67,
+				    MODRM_CR, &instr_orig, NULL, &op1, &op2))
+					return 0;
+			}
 		} else {
 			switch (imm) {
 			case 0x20:	/*  MOV r/m,CRx  */
@@ -1948,43 +1978,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!x86_push(cpu, imm, mode))
 			return 0;
 	} else if ((op & 0xf0) == 0x70) {
-		success = 0;
 		imm = read_imm(&instr, &newpc, 8);
-		switch (op & 0xe) {
-		case 0x00:	/*  o  */
-			success = cpu->cd.x86.rflags & X86_FLAGS_OF;
-			break;
-		case 0x02:	/*  c  */
-			success = cpu->cd.x86.rflags & X86_FLAGS_CF;
-			break;
-		case 0x04:	/*  z  */
-			success = cpu->cd.x86.rflags & X86_FLAGS_ZF;
-			break;
-		case 0x06:	/*  be  */
-			success = (cpu->cd.x86.rflags & X86_FLAGS_ZF) ||
-			    (cpu->cd.x86.rflags & X86_FLAGS_CF);
-			break;
-		case 0x08:	/*  s  */
-			success = cpu->cd.x86.rflags & X86_FLAGS_SF;
-			break;
-		case 0x0a:	/*  p  */
-			success = cpu->cd.x86.rflags & X86_FLAGS_PF;
-			break;
-		case 0x0c:	/*  nge  */
-			success = (cpu->cd.x86.rflags & X86_FLAGS_SF? 1 : 0)
-			    != (cpu->cd.x86.rflags & X86_FLAGS_OF? 1 : 0);
-			break;
-		case 0x0e:	/*  ng  */
-			success = (cpu->cd.x86.rflags & X86_FLAGS_SF? 1 : 0)
-			    != (cpu->cd.x86.rflags & X86_FLAGS_OF? 1 : 0);
-			success |= (cpu->cd.x86.rflags & X86_FLAGS_ZF ? 1 : 0);
-			break;
-		default:
-			fatal("unimplemented condition\n");
-			cpu->running = 0;
-		}
-		if (op & 1)
-			success = !success;
+		success = x86_condition(cpu, op);
 		if (success)
 			newpc = modify(newpc, newpc + (signed char)imm);
 	} else if (op == 0x80 || op == 0x81) {	/*  add/and r/m, imm  */

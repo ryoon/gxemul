@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.191 2005-05-07 03:39:43 debug Exp $
+ *  $Id: emul.c,v 1.192 2005-05-09 19:06:54 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -547,6 +547,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 
 	case MACHINE_X86:
 		cpu->cd.x86.mode = 16;
+		cpu->cd.x86.s[X86_S_CS] = 0x0000;
 		cpu->pc = 0x7c00;
 
 		bootblock_buf = malloc(512);
@@ -1027,13 +1028,18 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 		case ARCH_X86:
 			/*
-			 *  NOTE: The toc field is used to indicate an ELF64
-			 *  load, on AMD64!
+			 *  NOTE: The toc field is used to indicate an ELF32
+			 *  or ELF64 load.
 			 */
-			if (toc != 0) {
-				cpu->cd.x86.mode = 64;
-			} else
+			switch (toc) {
+			case 0:	cpu->pc &= 0xffffffffULL;
+				break;
+			case 1:	cpu->cd.x86.mode = 32;
 				cpu->pc &= 0xffffffffULL;
+				break;
+			case 2:	cpu->cd.x86.mode = 64;
+				break;
+			}
 			break;
 
 		default:

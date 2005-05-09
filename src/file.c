@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.89 2005-05-04 13:45:47 debug Exp $
+ *  $Id: file.c,v 1.90 2005-05-09 19:06:54 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1080,10 +1080,11 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		switch (emachine) {
 		case EM_386:
 		case EM_486:
+			*tocp = 1;
 			ok = 1;
 			break;
 		case EM_AMD64:
-			*tocp = 1;
+			*tocp = 2;
 			ok = 1;
 			break;
 		}

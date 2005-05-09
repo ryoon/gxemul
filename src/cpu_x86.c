@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.65 2005-05-09 21:46:42 debug Exp $
+ *  $Id: cpu_x86.c,v 1.66 2005-05-09 22:44:27 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -307,7 +307,7 @@ TODO: regmatch for 64, 32, 16, and 8 bit register names
 #define modify(old,new) (					\
 		mode==16? (					\
 			((old) & ~0xffff) + ((new) & 0xffff)	\
-		) : (new & 0xffffffffULL) )
+		) : ((new) & 0xffffffffULL) )
 
 #define	HEXPRINT(x,n) { int j; for (j=0; j<(n); j++) debug("%02x",(x)[j]); }
 #define	HEXSPACES(i) { int j; for (j=0; j<10-(i);j++) debug("  "); debug(" "); }
@@ -451,7 +451,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	uint64_t *op1p, uint64_t *op2p)
 {
 	uint32_t imm, imm2;
-	uint64_t addr;
+	uint64_t addr = 0;
 	int mod, r, rm, res = 1, z, q = mode67/8, sib, s, i, b;
 	int disasm = (op1p == NULL);
 
@@ -1127,6 +1127,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("cbw");
 	} else if (op == 0x99) {
 		SPACES; debug("cwd");
+	} else if (op == 0x9a) {
+		imm = read_imm_and_print(&instr, &ilen, mode67);
+		imm2 = read_imm_and_print(&instr, &ilen, 16);
+		SPACES; debug("call\t0x%04x:", imm2);
+		if (mode == 16)
+			debug("0x%04x", imm);
+		else
+			debug("0x%08x", imm);
 	} else if (op == 0x9b) {
 		SPACES; debug("wait");
 	} else if (op == 0x9c) {
@@ -1350,7 +1358,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		SPACES; debug("%s\t0x%x", mnem, imm);
 	} else if (op == 0xea) {
-		imm = read_imm_and_print(&instr, &ilen, mode);
+		imm = read_imm_and_print(&instr, &ilen, mode67);
 		imm2 = read_imm_and_print(&instr, &ilen, 16);
 		SPACES; debug("jmp\t0x%04x:", imm2);
 		if (mode == 16)
@@ -1640,7 +1648,7 @@ static void x86_cmp(struct cpu *cpu, uint64_t a, uint64_t b, int mode)
  */
 static int x86_condition(struct cpu *cpu, int op)
 {
-	int success;
+	int success = 0;
 
 	switch (op & 0xe) {
 	case 0x00:	/*  o  */
@@ -1690,13 +1698,12 @@ static int x86_condition(struct cpu *cpu, int op)
  */
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
-	int i, r, rep = 0, op, len, diff, mode = cpu->cd.x86.mode;
+	int i, r, rep = 0, op, len, mode = cpu->cd.x86.mode;
 	int mode67 = mode, nprefixbytes = 0, success;
-	uint32_t imm, imm2, value;
+	uint32_t imm, imm2;
 	unsigned char buf[16];
 	unsigned char *instr = buf, *instr_orig;
 	uint64_t newpc = cpu->pc;
-	unsigned char databuf[8];
 	uint64_t tmp, op1, op2;
 
 	/*  Check PC against breakpoints:  */
@@ -2209,6 +2216,17 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (cpu->cd.x86.r[X86_R_AX] & 0x80000000ULL)
 				cpu->cd.x86.r[X86_R_DX] = 0xffffffff;
 		}
+	} else if (op == 0x9a) {	/*  CALL seg:ofs  */
+		imm = read_imm(&instr, &newpc, mode67);
+		imm2 = read_imm(&instr, &newpc, 16);
+		if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
+			return 0;
+		if (!x86_push(cpu, newpc, mode))
+			return 0;
+		cpu->cd.x86.s[X86_S_CS] = imm2;
+		newpc = modify(cpu->pc, imm);
+		if (mode == 16)
+			newpc &= 0xffff;
 	} else if (op == 0x9c) {		/*  PUSHF  */
 		if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
 			return 0;
@@ -2487,8 +2505,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 		cpu->cd.x86.r[X86_R_BP] = tmp;
-	} else if (op == 0xcb) {	/*  RET far  */
+	} else if (op == 0xca || op == 0xcb) {	/*  RET far  */
 		uint64_t tmp2;
+		if (op == 0xca)
+			imm = read_imm(&instr, &newpc, 16);
+		else
+			imm = 0;
 		success = x86_pop(cpu, &tmp, mode);
 		if (!success)
 			return 0;
@@ -2499,6 +2521,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (mode == 16)
 			newpc &= 0xffff;
 		cpu->cd.x86.s[X86_S_CS] = tmp2 & 0xffff;
+		cpu->cd.x86.r[X86_R_SP] = modify(cpu->cd.x86.r[X86_R_SP],
+		    cpu->cd.x86.r[X86_R_SP] + imm);
 	} else if (op == 0xcc) {	/*  INT3  */
 		cpu->pc = newpc;
 		return x86_interrupt(cpu, 3);
@@ -2662,7 +2686,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->running = 0;
 		}
 	} else if (op == 0xe8 || op == 0xe9) {	/*  CALL/JMP near  */
-		imm = read_imm(&instr, &newpc, mode);
+		imm = read_imm(&instr, &newpc, mode67);
 		if (mode == 16)
 			imm = (int16_t)imm;
 		if (op == 0xe8) {
@@ -2674,7 +2698,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (mode == 16)
 			newpc &= 0xffff;
 	} else if (op == 0xea) {	/*  JMP seg:ofs  */
-		imm = read_imm(&instr, &newpc, mode);
+		imm = read_imm(&instr, &newpc, mode67);
 		imm2 = read_imm(&instr, &newpc, 16);
 		cpu->cd.x86.s[X86_S_CS] = imm2;
 		newpc = modify(cpu->pc, imm);
@@ -2857,7 +2881,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					    X86_R_AX] & 0xffff) % (int16_t)op1;
 				}
 				cpu->cd.x86.r[X86_R_AX] = modify(
-				    cpu->cd.x86.r[X86_R_AX], ah<<8 + al);
+				    cpu->cd.x86.r[X86_R_AX], (ah<<8) + al);
 			} else if (mode == 16) {
 				uint64_t a = (cpu->cd.x86.r[X86_R_AX] & 0xffff)
 				    + ((cpu->cd.x86.r[X86_R_DX] & 0xffff)<<16);
@@ -2931,7 +2955,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    *instr);
 				cpu->running = 0;
 			} else {
-				uint64_t tmp1, tmp2;
 				success = modrm(cpu, MODRM_READ, mode, mode67,
 				    MODRM_JUST_GET_ADDR, &instr,
 				    &newpc, &op1, &op2);

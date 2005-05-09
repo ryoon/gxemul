@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.28 2005-05-09 21:46:42 debug Exp $
+ *  $Id: pc_bios.c,v 1.29 2005-05-09 22:44:27 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -504,6 +504,11 @@ int pc_bios_emul(struct cpu *cpu)
 
 	switch (int_nr) {
 	case 0x10:  pc_bios_int10(cpu); break;
+	case 0x11:	/*  return bios equipment data in ax  */
+		/*  TODO: see http://www.uv.tietgen.dk/staff/mlha/
+		    PC/Prog/ASM/INT/index.htm#INT 11  */
+		cpu->cd.x86.r[X86_R_AX] = 0x042f;
+		break;
 	case 0x12:	/*  return memory size in KBs  */
 		cpu->cd.x86.r[X86_R_AX] = 640;
 		break;

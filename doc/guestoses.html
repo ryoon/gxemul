@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.40 2005-05-07 03:39:43 debug Exp $
+$Id: guestoses.html,v 1.41 2005-05-09 22:44:26 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -268,10 +268,6 @@ image, using the following command:
 
 </pre>
 
-<p>
-Using <b>-b</b> (enabling dynamic binary translation), as in the instructions
-above, is not 100% stable. If you experiment weird crashes, try removing that
-option and try again.
 
 
 
@@ -559,9 +555,9 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
   <li>You now need to make an ISO image of the entire directory you downloaded.
-	I recommend using <b>mkisofs</b> for that purpose. If you don't already
-	have mkisofs installed on your system, you need to install it in
-	order to do this.<pre>
+	I recommend using <tt>mkisofs</tt> for that purpose. If you don't
+	already have <tt>mkisofs</tt> installed on your system, you need
+	to install it in order to do this.<pre>
 	$ <b>mkisofs -o openbsd_pmax_2.8.iso ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax</b>
 
 </pre>
@@ -642,17 +638,14 @@ will let you boot from the new rootdisk image:
 </pre>
 
 <p>
-OpenBSD/pmax seems to work fine with dynamic binary translation (enabled 
-by the <b>-b</b> command line option).
+(Normally, you would be asked about which root device to use (<tt>rz0</tt>),
+but using <b><tt>-o '-aN'</tt></b> supresses that.)
 
 <p>
-(Normally, you would be asked about which root device to use (rz0), but 
-using -o '-aN' supresses that.)
-<p>
 When asked for which terminal type to use, when logging in as root,
-enter <b>rcons</b> if you are using the graphical framebuffer,
-<b>vt100</b> for text-mode.
-<br>Use <b>startx</b> to start X windows.
+enter <b><tt>rcons</tt></b> if you are using the graphical framebuffer,
+<b><tt>vt100</tt></b> for text-mode.
+<br>Use <b><tt>startx</tt></b> to start X windows.
 
 
 
@@ -694,9 +687,9 @@ instructions:
 </pre>
 
   <li>You now need to make an ISO image of the entire directory you downloaded.
-	I recommend using <b>mkisofs</b> for that purpose. If you don't already
-	have mkisofs installed on your system, you need to install it in
-	order to do this.<pre>
+	I recommend using <tt>mkisofs</tt> for that purpose. If you don't
+	already have <tt>mkisofs</tt> installed on your system, you need
+	to install it in order to do this.<pre>
 	$ <b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
 
 </pre>
@@ -718,10 +711,6 @@ boot from the harddisk image:
 
 </pre>
 
-<p>
-(The <b>-b</b> command line option enables dynamic binary translation,
-which isn't always 100% stable, so if things seem buggy you might want
-to try to remove that from the command line.)
 
 
 
@@ -861,8 +850,8 @@ The following instructions should let you install Ultrix onto a disk image:
 
 </pre>
   <li>Place your Ultrix installation media in your CDROM drive. (I'm assuming
-        it is called /dev/cd0c here, replace that with the name of your
-        CDROM drive, or the name of a .iso image file.)
+        it is called <tt>/dev/cd0c</tt> here; replace that with the name
+	of your CDROM drive, or the name of a .iso image file.)
         Then, start the emulator like this:<pre>
         $ <b>gxemul -X -b -M64 -E dec -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
@@ -870,7 +859,7 @@ The following instructions should let you install Ultrix onto a disk image:
   <li>Once the first stage of the installation is done (restoring the root
 	filesystem), you need to restart the emulator, booting from the 
 	new rootdisk, to continue the installation process.
-	This is done by removing the bootflag ('b') from the second
+	This is done by removing the bootflag ('<tt>b</tt>') from the second
 	diskimage argument:<pre>
         $ <b>gxemul -X -b -M64 -E dec -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
@@ -885,25 +874,37 @@ Ultrix from the harddisk image:<pre>
 
 <p>
 Ultrix mostly seems to work with dynamic binary translation (enabled by 
-the <b>-b</b> command line option). If you have a very fast
+the <b><tt>-b</tt></b> command line option). If you have a very fast
 host machine, and use bintrans, you might experience a weird timer related
 bug, which makes it impossible to logon to the system. It is triggered
 when the emulation goes faster than any real DECstation machine was 
-capable of running. A temporary workaround is to add <b>-I33000000</b>
+capable of running. A temporary workaround is to add <b><tt>-I33000000</tt></b>
 to fix the emulated clock speed to 33 million instructions per emulated
-second. (When using -CR4400, -I16000000 should be used instead.)
+second. (When using <tt><b>-CR4400</b></tt>, <b><tt>-I16000000</tt></b> 
+should be used instead.)
 
 <p>
-You can experiment with adding <b>-Z2</b> (for emulating a 
-dual-headed workstation) or even <b>-Z3</b> (tripple-headed), and also the
-<b>-Y2</b> option for scaling down the framebuffer windows by a factor 2x2.
-There is also a <b>-z</b> option for supplying names of X11 displays to 
-use. The following example starts Ultrix on an emulated tripple-headed 
-workstation, on three different displays (remote1:0.0, localhost:0.0, and 
-remote2:0.0), using no scaledown:<pre>
+You can experiment with adding <b><tt>-Z2</tt></b> (for emulating a 
+dual-headed workstation) or even <b><tt>-Z3</tt></b> (tripple-headed), and 
+also the <b><tt>-Y2</tt></b> option for scaling down the framebuffer 
+windows by a factor 2x2.
+There is also a <b><tt>-z</tt></b> option for supplying names of X11 
+displays to use. The following example starts Ultrix on an emulated
+tripple-headed workstation, on three different displays (<tt>remote1:0.0</tt>,
+<tt>localhost:0.0</tt>, and <tt>remote2:0.0</tt>), using no scaledown:<pre>
         $ <b>gxemul -M64 -bN -E dec -e 3max -jgenvmunix -d rootdisk.img \
-            -XZ3 -z remote1:0.0 -z localhost -z remote2:0.0</b>
+            -XZ3 -z remote1:0.0 -z localhost:0.0 -z remote2:0.0</b>
 </pre>
+
+<p>
+The photo below shows Ultrix running tripple-headed in GXemul on an Alpha
+21164PC, with displays on a Sun Ultra1 (to the left), on the Alpha itself
+(in the middle), and on an 8-bit HP700/RX X-terminal (which is running off 
+the Alpha) to the right.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041209-ultrix-tripplehead.jpg"><img src="20041209-ultrix-tripplehead_small.jpg"></a>
 
 <p>
 The X11 displays may differ in bit depth and endianness. Unfortunately, 
@@ -911,18 +912,18 @@ there is no way yet to set the scaledown factor on a per-window basis, so
 the scaledown factor affects all windows.
 
 <p>
-(If you didn't use -Z<i>n</i> during the installation, and 
-compiled your own /vmunix, then it will not contain support for multiple 
-graphics cards. To overcome this problem, use the generic kernel, <b>-j 
-genvmunix</b>, whenever you are running the emulator with a different 
-setup than the one you used when Ultrix was installed.)
+(If you didn't use <tt><b>-Z<i>n</i></b></tt> during the installation, and 
+compiled your own <tt>/vmunix</tt>, then it will not contain support for 
+multiple graphics cards. To overcome this problem, use the generic kernel,
+<tt><b>-j genvmunix</b></tt>, whenever you are running the emulator with a 
+different setup than the one you used when Ultrix was installed.)
 
 <p>
 A note for the historically interested: OSF/1 for MIPS was quite similar
 to Ultrix, so that is possible to run as well.  If you are unsuccessful
 in installing Ultrix or OSF/1 directly in the emulator, you can always
 install it on your real machine onto a real SCSI disk, and then copy the
-contents of that SCSI disk into a file (using <b>dd(1)</b>), and use
+contents of that SCSI disk into a file (using <b><tt>dd(1)</tt></b>), and use
 that file as a disk image file in the emulator.
 
 
@@ -992,10 +993,6 @@ following sad statement can be found:
 Once you are logged in as root, running <b>xinit</b> will start the X11 
 environment.
 
-<p>
-Sprite works fine with dynamic binary translation (enabled by
-adding <b>-b</b> to the command line options).
-
 
 
 
@@ -1054,9 +1051,9 @@ onto a harddisk image:
 
 <p>
 Debian GNU/Linux on DECstation works reasonably fine with dynamic
-binary translation, enabled by the <b>-b</b> command line option. (Without
-this option, the emulator might be less buggy, but also too slow to be 
-useful when running Linux as a guest OS.)
+binary translation, enabled by the <b><tt>-b</tt></b> command line option. 
+(Without this option, the emulator might be less buggy, but also too slow 
+to be useful when running Linux as a guest OS.)
 
 <p>
 (If you want to, you can try <b>-X</b> instead of <b>-o 'console=ttyS3'</b> on

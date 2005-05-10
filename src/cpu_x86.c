@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.74 2005-05-10 17:14:11 debug Exp $
+ *  $Id: cpu_x86.c,v 1.75 2005-05-10 18:17:54 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -598,7 +598,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				case 4:	addr = cpu->cd.x86.r[X86_R_SI]; break;
 				case 5:	addr = cpu->cd.x86.r[X86_R_DI]; break;
 				case 6:	addr = read_imm_common(instrp, lenp,
-					    mode, disasm); break;
+					    mode67, disasm); break;
 				case 7:	addr = cpu->cd.x86.r[X86_R_BX]; break;
 				}
 			}
@@ -1049,8 +1049,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("rdmsr");
 			} else if (imm >= 0x80 && imm <= 0x8f) {
 				op = imm;
-				imm = (signed char)read_imm_and_print(&instr,
-				    &ilen, mode);
+				imm = read_imm_and_print(&instr, &ilen, mode);
 				imm = dumpaddr + 2 + mode/8 + imm;
 				SPACES; debug("j%s%s\tnear 0x%x", op&1? "n"
 				    : "", cond_names[(op/2) & 0x7], imm);
@@ -1713,6 +1712,8 @@ static int x86_interrupt(struct cpu *cpu, int nr)
  */
 static void x86_cmp(struct cpu *cpu, uint64_t a, uint64_t b, int mode)
 {
+	uint64_t c;
+
 	if (mode == 8)
 		a &= 0xff, b &= 0xff;
 	if (mode == 16)
@@ -1728,23 +1729,24 @@ static void x86_cmp(struct cpu *cpu, uint64_t a, uint64_t b, int mode)
 	if (a < b)
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 
-	a -= b;
-
-	cpu->cd.x86.rflags &= ~X86_FLAGS_OF;
-	if (mode == 8 && a >= 0x100)
-		cpu->cd.x86.rflags |= X86_FLAGS_OF;
-	if (mode == 16 && a >= 0x10000)
-		cpu->cd.x86.rflags |= X86_FLAGS_OF;
-	if (mode == 32 && a >= 0x1000000ULL)
-		cpu->cd.x86.rflags |= X86_FLAGS_OF;
+	c = a - b;
 
 	cpu->cd.x86.rflags &= ~X86_FLAGS_SF;
-	if (mode == 8 && a & 0x80)
+	if ((mode == 8 && (c & 0x80)) ||
+	    (mode == 16 && (c & 0x8000)) ||
+	    (mode == 32 && (c & 0x80000000ULL))) {
 		cpu->cd.x86.rflags |= X86_FLAGS_SF;
-	if (mode == 16 && a & 0x8000)
-		cpu->cd.x86.rflags |= X86_FLAGS_SF;
-	if (mode == 32 && a & 0x8000000ULL)
-		cpu->cd.x86.rflags |= X86_FLAGS_SF;
+	}
+
+	cpu->cd.x86.rflags &= ~X86_FLAGS_OF;
+	if (cpu->cd.x86.rflags & X86_FLAGS_SF)
+		cpu->cd.x86.rflags |= X86_FLAGS_OF;
+	if (mode == 8 && (int8_t)a < (int8_t)b)
+		cpu->cd.x86.rflags ^= X86_FLAGS_OF;
+	if (mode == 16 && (int16_t)a < (int16_t)b)
+		cpu->cd.x86.rflags ^= X86_FLAGS_OF;
+	if (mode == 32 && (int32_t)a < (int32_t)b)
+		cpu->cd.x86.rflags ^= X86_FLAGS_OF;
 
 	/*  TODO: other bits?  AF, PF  */
 }
@@ -2019,8 +2021,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			op = imm;
 			imm = read_imm(&instr, &newpc, mode);
 			success = x86_condition(cpu, op);
-			if (success)
-				newpc = modify(newpc, newpc + (signed char)imm);
+			if (success) {
+				newpc = modify(newpc, newpc + imm);
+				if (mode == 16)
+					newpc &= 0xffff;
+			}
 		} else if (imm >= 0x90 && imm <= 0x9f) {
 			instr_orig = instr;
 			if (!modrm(cpu, MODRM_READ, mode, mode67,

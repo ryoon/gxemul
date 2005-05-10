@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.19 2005-05-09 13:36:29 debug Exp $
+ *  $Id: memory_rw.c,v 1.20 2005-05-10 18:17:54 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -95,8 +95,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		vaddr &= 0x0fffffff;
 
 		if (cpu->cd.x86.mode == 16) {
-			vaddr = (cpu->cd.x86.cursegment<<4) + (vaddr & 0xffff);
-			/*  TODO: A20 stuff  */
 			if ((vaddr & 0xffff) + len > 0x10000) {
 				/*  Do one byte at a time:  */
 				int res, i;
@@ -106,6 +104,9 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 					    writeflag, cache_flags);
 				return res;
 			}
+
+			vaddr = (cpu->cd.x86.cursegment<<4) + (vaddr & 0xffff);
+			/*  TODO: A20 stuff  */
 		}
 	}
 

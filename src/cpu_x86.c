@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.77 2005-05-10 19:34:49 debug Exp $
+ *  $Id: cpu_x86.c,v 1.78 2005-05-10 20:37:48 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1545,6 +1545,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0xfe || op == 0xff) {
 		/*  FE /0 = inc r/m8 */
 		/*  FE /1 = dec r/m8 */
+		/*  FF /2 = call near rm16/32  */
 		/*  FF /3 = call far m16:32  */
 		/*  FF /6 = push r/m16/32 */
 		switch ((*instr >> 3) & 0x7) {
@@ -2180,13 +2181,16 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				modrm(cpu, MODRM_READ, mode, mode67,
 				    MODRM_JUST_GET_ADDR, &instr, &newpc,
 				    &op1, &op2);
-				if (imm == 0xb4)
-					cpu->cd.x86.s[X86_S_FS] =
-					    cpu->cd.x86.cursegment;
+				/*  op1 is the address to load from  */
+				if (!x86_load(cpu, op1, &tmp, mode/8))
+					return 0;
+				op2 = tmp;
+				if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
+					return 0;
+				if (op == 0xb4)
+					cpu->cd.x86.s[X86_S_FS] = tmp;
 				else
-					cpu->cd.x86.s[X86_S_GS] =
-					    cpu->cd.x86.cursegment;
-				op2 = op1;
+					cpu->cd.x86.s[X86_S_GS] = tmp;
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;
@@ -2549,6 +2553,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		do {
 			uint64_t value;
 
+			if (rep) {
+				/*  Abort if [e]cx already 0:  */
+				if (mode == 16 && (cpu->cd.x86.r[X86_R_CX] &
+				    0xffff) == 0)
+					break;
+				if (mode != 16 && cpu->cd.x86.r[X86_R_CX] == 0)
+					break;
+			}
+
 			if (!stos && !scas) {
 				cpu->cd.x86.cursegment = origcursegment;
 				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_SI],
@@ -2736,12 +2749,17 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xc4 || op == 0xc5) {		/*  LDS,LES  */
 		instr_orig = instr;
 		modrm(cpu, MODRM_READ, mode, mode67,
-		    0, &instr, &newpc, &op1, &op2);
+		    MODRM_JUST_GET_ADDR, &instr, &newpc, &op1, &op2);
+		/*  op1 is the address to load from  */
+		if (!x86_load(cpu, op1, &tmp, mode/8))
+			return 0;
+		op2 = tmp;
+		if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
+			return 0;
 		if (op == 0xc4)
-			cpu->cd.x86.s[X86_S_ES] = cpu->cd.x86.cursegment;
+			cpu->cd.x86.s[X86_S_ES] = tmp;
 		else
-			cpu->cd.x86.s[X86_S_DS] = cpu->cd.x86.cursegment;
-		op2 = op1;
+			cpu->cd.x86.s[X86_S_DS] = tmp;
 		modrm(cpu, MODRM_WRITE_R, mode, mode67,
 		    0, &instr_orig, NULL, &op1, &op2);
 	} else if (op >= 0xc6 && op <= 0xc7) {
@@ -2784,8 +2802,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.r[X86_R_SP] -= imm;
 	} else if (op == 0xc9) {	/*  LEAVE  */
 		cpu->cd.x86.r[X86_R_SP] = cpu->cd.x86.r[X86_R_BP];
-		success = x86_pop(cpu, &tmp, mode);
-		if (!success)
+		if (!x86_pop(cpu, &tmp, mode))
 			return 0;
 		cpu->cd.x86.r[X86_R_BP] = tmp;
 	} else if (op == 0xca || op == 0xcb) {	/*  RET far  */

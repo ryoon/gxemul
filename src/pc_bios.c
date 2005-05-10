@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.31 2005-05-09 23:42:24 debug Exp $
+ *  $Id: pc_bios.c,v 1.32 2005-05-10 15:15:12 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -422,6 +422,11 @@ static void pc_bios_int15(struct cpu *cpu)
 		fatal("[ PC BIOS int 0x15,0x41: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
+	case 0x88:	/*  Extended Memory Size Determination  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] = (cpu->machine->physical_ram_in_mb
+		    - 1) * 1024;
+		break;
 	case 0xc0:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0xc0: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
@@ -469,6 +474,9 @@ static int pc_bios_int16(struct cpu *cpu)
 		    MEM_READ, CACHE_DATA);
 		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
 		    | tmpchar;
+		break;
+	case 0x03:	/*  Set Keyboard Typematic Rate  */
+		/*  TODO  */
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x16 function"

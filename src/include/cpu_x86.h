@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.9 2005-05-03 21:08:36 debug Exp $
+ *  $Id: cpu_x86.h,v 1.10 2005-05-10 15:15:13 debug Exp $
  */
 
 #include "misc.h"
@@ -96,6 +96,11 @@ struct x86_cpu {
 	int		mode;		/*  16, 32, or 64  */
 
 	uint16_t	cursegment;	/*  for 16-bit memory_rw  */
+
+	uint64_t	gdtr;
+	uint64_t	gdtr_limit;
+	uint64_t	idtr;
+	uint64_t	idtr_limit;
 
 	uint64_t	rflags;
 	uint64_t	cr[N_X86_CREGS];

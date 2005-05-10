@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.726 2005-05-09 22:44:25 debug Exp $
+$Id: HISTORY,v 1.727 2005-05-10 15:15:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1889,4 +1889,4 @@ Changelog for GXemul:
 		Adding more x86 instructions.
 20050508	x86 32-bit SIB addressing fix, and more instructions.
 20050509	Adding more x86 instructions.
-20050510	Minor documentation updates and other updates.
+20050510	Minor documentation updates, and other updates (x86 stuff etc.)

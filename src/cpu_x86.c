@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.71 2005-05-10 16:06:27 debug Exp $
+ *  $Id: cpu_x86.c,v 1.72 2005-05-10 16:31:03 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -451,10 +451,8 @@ static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
 				debug("[ switching to Protected Mode ]\n");
 				cpu->cd.x86.delayed_mode_change = 2;
 			} else {
-				fatal("[ switching from Protected Mode: "
-				    "TODO ]\n");
+				debug("[ switching from Protected Mode ]\n");
 				cpu->cd.x86.delayed_mode_change = 2;
-				cpu->running = 0;
 			}
 		}
 		break;
@@ -1023,8 +1021,17 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					    0, &instr, &ilen, NULL, NULL);
 					SPACES; debug("%s\t%s", mnem, modrm_rm);
 					break;
+				case 4:
+				case 6:	if (((*instr >> 3) & 0x7) == 4)
+						mnem = "smsw";
+					else
+						mnem = "lmsw";
+					modrm(cpu, MODRM_READ, 16, mode67,
+					    0, &instr, &ilen, NULL, NULL);
+					SPACES; debug("%s\t%s", mnem, modrm_rm);
+					break;
 				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
-				    ",0x%02x,0x%02x", op, imm, *instr);
+					    ",0x%02x,0x%02x", op, imm, *instr);
 				}
 			} else if (imm == 0x20) {
 				modrm(cpu, MODRM_READ, 32 /* note: 32  */,
@@ -1814,19 +1821,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			}
 
-	if (cpu->cd.x86.delayed_mode_change) {
-		cpu->cd.x86.delayed_mode_change --;
-		if (cpu->cd.x86.delayed_mode_change == 0) {
-			/*  TODO: perhaps this should only occur on JMP
-			    or CALL instructions? Hm...  */
-			if (cpu->cd.x86.cr[0] & 1)
-				cpu->cd.x86.mode = 32;
-			else
-				cpu->cd.x86.mode = 16;
-			return 0;
-		}
-	}
-
 	/*  16-bit BIOS emulation:  */
 	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
@@ -1844,6 +1838,25 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	    MEM_READ, CACHE_INSTRUCTION);
 	if (!r)
 		return 0;
+
+	if (cpu->cd.x86.delayed_mode_change) {
+		cpu->cd.x86.delayed_mode_change --;
+
+		/*  From protected mode to real mode:  */
+		if ((cpu->cd.x86.cr[0] & 1) == 0) {
+			cpu->cd.x86.delayed_mode_change = 0;
+			mode = mode67 = cpu->cd.x86.mode = 16;
+		} else {
+			/*  From real mode to protected mode:  */
+			if ((cpu->cd.x86.cr[0] & 1) == 1 &&
+			    cpu->cd.x86.delayed_mode_change == 0) {
+				/*  TODO: perhaps this should only occur on JMP
+				    or CALL instructions? Hm...  */
+				cpu->cd.x86.mode = 32;
+				return 0;
+			}
+		}
+	}
 
 	if (cpu->machine->instruction_trace)
 		x86_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
@@ -2038,6 +2051,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						cpu->cd.x86.idtr_limit =
 						    tmp & 0xffff;
 						cpu->cd.x86.idtr = op2;
+					}
+					break;
+				case 4:	/*  smsw  */
+				case 6:	/*  lmsw  */
+					instr_orig = instr;
+					modrm(cpu, MODRM_READ, 16, mode67,
+					    0, &instr, &newpc, &op1, &op2);
+					if (((*instr_orig >> 3) & 0x7) == 4) {
+						op1 = cpu->cd.x86.cr[0] &0xffff;
+						modrm(cpu, MODRM_WRITE_RM, 16,
+						    mode67, 0, &instr_orig,
+						    NULL, &op1, &op2);
+					} else {
+						x86_write_cr(cpu, 0,
+						    (cpu->cd.x86.cr[0] & ~0xf)
+						    | (op1 & 0xf));
 					}
 					break;
 				default:fatal("UNIMPLEMENTED 0x%02x"

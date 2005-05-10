@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.70 2005-05-10 15:15:12 debug Exp $
+ *  $Id: cpu_x86.c,v 1.71 2005-05-10 16:06:27 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -258,6 +258,9 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (int)cpu->cd.x86.s[X86_S_CS], (int)cpu->cd.x86.s[X86_S_DS],
 		    (int)cpu->cd.x86.s[X86_S_ES], (int)cpu->cd.x86.s[X86_S_FS],
 		    (int)cpu->cd.x86.s[X86_S_GS], (int)cpu->cd.x86.s[X86_S_SS]);
+		debug("cpu%i:  gdtr=0x%08llx:0x%04x idtr=0x%08llx:0x%04x\n",
+		    x, (long long)cpu->cd.x86.gdtr, (int)cpu->cd.x86.gdtr_limit,
+		    (long long)cpu->cd.x86.idtr, (int)cpu->cd.x86.idtr_limit);
 	}
 
 	if (cpu->cd.x86.mode == 32) {
@@ -428,6 +431,38 @@ static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
 
 	return cpu->memory_rw(cpu, cpu->mem, addr, &databuf[0], len,
 	    MEM_WRITE, CACHE_DATA);
+}
+
+
+/*
+ *  x86_write_cr():
+ *
+ *  Write to a control register.
+ */
+static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
+{
+	uint64_t new, old = cpu->cd.x86.cr[r];
+
+	switch (r) {
+	case 0:	new = cpu->cd.x86.cr[r] = value;
+		/*  Check for mode change:  */
+		if ((old & 1) != (new & 1)) {
+			if (new & 1) {
+				debug("[ switching to Protected Mode ]\n");
+				cpu->cd.x86.delayed_mode_change = 2;
+			} else {
+				fatal("[ switching from Protected Mode: "
+				    "TODO ]\n");
+				cpu->cd.x86.delayed_mode_change = 2;
+				cpu->running = 0;
+			}
+		}
+		break;
+	case 3:	new = cpu->cd.x86.cr[r] = value;
+		break;
+	default:fatal("x86_write_cr(): write to UNIMPLEMENTED cr%i\n", r);
+		cpu->running = 0;
+	}
 }
 
 
@@ -817,7 +852,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				if (flags & MODRM_SEG)
 					cpu->cd.x86.s[r] = *op2p;
 				else if (flags & MODRM_CR)
-					cpu->cd.x86.cr[r] = *op2p;
+					x86_write_cr(cpu, r, *op2p);
 				else
 					cpu->cd.x86.r[r] =
 					    modify(cpu->cd.x86.r[r], *op2p);
@@ -1779,6 +1814,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			}
 
+	if (cpu->cd.x86.delayed_mode_change) {
+		cpu->cd.x86.delayed_mode_change --;
+		if (cpu->cd.x86.delayed_mode_change == 0) {
+			/*  TODO: perhaps this should only occur on JMP
+			    or CALL instructions? Hm...  */
+			if (cpu->cd.x86.cr[0] & 1)
+				cpu->cd.x86.mode = 32;
+			else
+				cpu->cd.x86.mode = 16;
+			return 0;
+		}
+	}
+
 	/*  16-bit BIOS emulation:  */
 	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
@@ -1967,6 +2015,36 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 		} else {
 			switch (imm) {
+			case 0x01:
+				switch ((*instr >> 3) & 0x7) {
+				case 2:	/*  lgdt  */
+				case 3:	/*  lidt  */
+					instr_orig = instr;
+					modrm(cpu, MODRM_READ, mode, mode67,
+					    MODRM_JUST_GET_ADDR, &instr,
+					    &newpc, &op1, &op2);
+					/*  TODO/NOTE: how about errors?  */
+					x86_load(cpu, op1, &tmp, 2);
+					x86_load(cpu, op1 + 2, &op2, 4);
+					if (mode == 16)
+						op2 &= 0x00ffffffULL;
+					else
+						op2 &= 0xffffffffULL;
+					if (((*instr_orig >> 3) & 0x7) == 2) {
+						cpu->cd.x86.gdtr_limit =
+						    tmp & 0xffff;
+						cpu->cd.x86.gdtr = op2;
+					} else {
+						cpu->cd.x86.idtr_limit =
+						    tmp & 0xffff;
+						cpu->cd.x86.idtr = op2;
+					}
+					break;
+				default:fatal("UNIMPLEMENTED 0x%02x"
+					    ",0x%02x,0x%02x", op, imm, *instr);
+					cpu->running = 0;
+				}
+				break;
 			case 0x20:	/*  MOV r/m,CRx  */
 				instr_orig = instr;
 				modrm(cpu, MODRM_READ, 32, mode67,

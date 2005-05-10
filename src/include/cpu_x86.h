@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.10 2005-05-10 15:15:13 debug Exp $
+ *  $Id: cpu_x86.h,v 1.11 2005-05-10 16:06:28 debug Exp $
  */
 
 #include "misc.h"
@@ -94,6 +94,8 @@ struct x86_cpu {
 
 	int		bits;		/*  16, 32, or 64  */
 	int		mode;		/*  16, 32, or 64  */
+
+	int		delayed_mode_change;
 
 	uint16_t	cursegment;	/*  for 16-bit memory_rw  */
 

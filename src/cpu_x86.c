@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.68 2005-05-09 23:42:23 debug Exp $
+ *  $Id: cpu_x86.c,v 1.69 2005-05-10 11:46:58 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -436,11 +436,13 @@ static char modrm_rm[65];
 #define MODRM_READ	0
 #define MODRM_WRITE_RM	1
 #define MODRM_WRITE_R	2
-/*  eightbit flags:  */
+/*  flags:  */
 #define	MODRM_EIGHTBIT		1
 #define	MODRM_SEG		2
 #define	MODRM_JUST_GET_ADDR	4
 #define	MODRM_CR		8
+#define	MODRM_R_NONEIGHTBIT	16
+#define	MODRM_RM_16BIT		32
 
 
 /*
@@ -449,12 +451,12 @@ static char modrm_rm[65];
  *  Yuck. I have a feeling that this function will become really ugly.
  */
 static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
-	int eightbit, unsigned char **instrp, uint64_t *lenp,
+	int flags, unsigned char **instrp, uint64_t *lenp,
 	uint64_t *op1p, uint64_t *op2p)
 {
 	uint32_t imm, imm2;
 	uint64_t addr = 0;
-	int mod, r, rm, res = 1, z, q = mode67/8, sib, s, i, b;
+	int mod, r, rm, res = 1, z, q = mode/8, sib, s, i, b;
 	int disasm = (op1p == NULL);
 
 	if (disasm) {
@@ -465,7 +467,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	imm = read_imm_common(instrp, lenp, 8, disasm);
 	mod = (imm >> 6) & 3; r = (imm >> 3) & 7; rm = imm & 7;
 
-	if (eightbit & MODRM_EIGHTBIT)
+	if (flags & MODRM_EIGHTBIT)
 		q = 1;
 
 	/*
@@ -578,7 +580,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				res = x86_store(cpu, addr, *op1p, q);
 				break;
 			case MODRM_READ:	/*  read  */
-				if (eightbit & MODRM_JUST_GET_ADDR)
+				if (flags & MODRM_JUST_GET_ADDR)
 					*op1p = addr;
 				else
 					res = x86_load(cpu, addr, op1p, q);
@@ -706,7 +708,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				res = x86_store(cpu, addr, *op1p, q);
 				break;
 			case MODRM_READ:	/*  read  */
-				if (eightbit & MODRM_JUST_GET_ADDR)
+				if (flags & MODRM_JUST_GET_ADDR)
 					*op1p = addr;
 				else
 					res = x86_load(cpu, addr, op1p, q);
@@ -714,13 +716,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 		}
 		break;
 	case 3:
-		if (eightbit & MODRM_EIGHTBIT) {
+		if (flags & MODRM_EIGHTBIT) {
 			if (disasm) {
-				if (mode == 32)
-					sprintf(modrm_rm, "e%s",
-					    reg_names_bytes[rm]);
-				else
-					strcpy(modrm_rm, reg_names_bytes[rm]);
+				strcpy(modrm_rm, reg_names_bytes[rm]);
 			} else {
 				switch (writeflag) {
 				case MODRM_WRITE_RM:
@@ -744,17 +742,28 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 			}
 		} else {
 			if (disasm) {
-				if (mode == 32)
-					sprintf(modrm_rm, "e%s", reg_names[rm]);
-				else
+				if (mode == 16 || flags & MODRM_RM_16BIT)
 					strcpy(modrm_rm, reg_names[rm]);
+				else
+					sprintf(modrm_rm, "e%s", reg_names[rm]);
 			} else {
 				switch (writeflag) {
 				case MODRM_WRITE_RM:
-					cpu->cd.x86.r[rm] = *op1p;
+					if (mode == 16 ||
+					    flags & MODRM_RM_16BIT)
+						cpu->cd.x86.r[rm] = (
+						    cpu->cd.x86.r[rm] & ~0xffff)
+						    | (*op1p & 0xffff);
+					else
+						cpu->cd.x86.r[rm] = *op1p;
 					break;
 				case MODRM_READ:	/*  read  */
-					*op1p = cpu->cd.x86.r[rm];
+					if (mode == 16 ||
+					    flags & MODRM_RM_16BIT)
+						*op1p = cpu->cd.x86.r[rm]
+						    & 0xffff;
+					else
+						*op1p = cpu->cd.x86.r[rm];
 				}
 			}
 		}
@@ -769,7 +778,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	 *  R:
 	 */
 
-	if (eightbit & MODRM_EIGHTBIT) {
+	if (flags & MODRM_EIGHTBIT && !(flags & MODRM_R_NONEIGHTBIT)) {
 		if (disasm) {
 			strcpy(modrm_r, reg_names_bytes[r]);
 		} else {
@@ -792,9 +801,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 		}
 	} else {
 		if (disasm) {
-			if (eightbit & MODRM_SEG)
+			if (flags & MODRM_SEG)
 				strcpy(modrm_r, seg_names[r]);
-			else if (eightbit & MODRM_CR)
+			else if (flags & MODRM_CR)
 				sprintf(modrm_r, "cr%i", r);
 			else {
 				if (mode == 32)
@@ -805,18 +814,18 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 		} else {
 			switch (writeflag) {
 			case MODRM_WRITE_R:
-				if (eightbit & MODRM_SEG)
+				if (flags & MODRM_SEG)
 					cpu->cd.x86.s[r] = *op2p;
-				else if (eightbit & MODRM_CR)
+				else if (flags & MODRM_CR)
 					cpu->cd.x86.cr[r] = *op2p;
 				else
 					cpu->cd.x86.r[r] =
 					    modify(cpu->cd.x86.r[r], *op2p);
 				break;
 			case MODRM_READ:
-				if (eightbit & MODRM_SEG)
+				if (flags & MODRM_SEG)
 					*op2p = cpu->cd.x86.s[r];
-				else if (eightbit & MODRM_CR)
+				else if (flags & MODRM_CR)
 					*op2p = cpu->cd.x86.cr[r];
 				else
 					*op2p = cpu->cd.x86.r[r];
@@ -1013,6 +1022,17 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				}
 				SPACES; debug("%s\t%s,%s", mnem,
 				    modrm_r, modrm_rm);
+			} else if (imm == 0xb6 || imm == 0xb7 ||
+			    imm == 0xbe || imm == 0xbf) {
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    (imm&1)==0? (MODRM_EIGHTBIT |
+				    MODRM_R_NONEIGHTBIT) : MODRM_RM_16BIT,
+				    &instr, &ilen, NULL, NULL);
+				mnem = "movsx";
+				if (imm <= 0xb7)
+					mnem = "movzx";
+				SPACES; debug("%s\t%s,%s", mnem,
+				    modrm_r, modrm_rm);
 			} else if (imm >= 0xc8 && imm <= 0xcf) {
 				SPACES; debug("bswap\te%s", reg_names[imm & 7]);
 			} else {
@@ -1130,7 +1150,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0x99) {
 		SPACES; debug("cwd");
 	} else if (op == 0x9a) {
-		imm = read_imm_and_print(&instr, &ilen, mode67);
+		imm = read_imm_and_print(&instr, &ilen, mode);
 		imm2 = read_imm_and_print(&instr, &ilen, 16);
 		SPACES; debug("call\t0x%04x:", imm2);
 		if (mode == 16)
@@ -1360,7 +1380,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		SPACES; debug("%s\t0x%x", mnem, imm);
 	} else if (op == 0xea) {
-		imm = read_imm_and_print(&instr, &ilen, mode67);
+		imm = read_imm_and_print(&instr, &ilen, mode);
 		imm2 = read_imm_and_print(&instr, &ilen, 16);
 		SPACES; debug("jmp\t0x%04x:", imm2);
 		if (mode == 16)
@@ -1899,6 +1919,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 	} else if (op == 0x0f) {
 		uint64_t tmp;
+		int signflag;
 		imm = read_imm(&instr, &newpc, 8);
 		if (imm >= 0x80 && imm <= 0x8f) {
 			op = imm;
@@ -1963,6 +1984,33 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				op2 = op1;
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
+				break;
+			case 0xb6:
+			case 0xb7:	/*  movzx  */
+			case 0xbe:
+			case 0xbf:	/*  movsx  */
+				instr_orig = instr;
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    (imm&1)==0? (MODRM_EIGHTBIT |
+				    MODRM_R_NONEIGHTBIT) : MODRM_RM_16BIT,
+				    &instr, &newpc, &op1, &op2);
+				signflag = 0;
+				if (imm >= 0xbe)
+					signflag = 1;
+				op2 = op1;
+				if (imm & 1) {		/*  r32 = r16  */
+					op2 &= 0xffff;
+					if (signflag && op2 & 0x8000)
+						op2 |= 0xffff0000ULL;
+				} else {		/*  r(mode) = r8  */
+					op2 &= 0xff;
+					if (signflag && op2 & 0x80)
+						op2 |= 0xffffff00ULL;
+				}
+				modrm(cpu, MODRM_WRITE_R, mode, mode67,
+				    (imm&1)==0? (MODRM_EIGHTBIT |
+				    MODRM_R_NONEIGHTBIT) : MODRM_RM_16BIT,
+				    &instr_orig, NULL, &op1, &op2);
 				break;
 			default:fatal("TODO: 0x0f,0x%02x\n", imm);
 				cpu->running = 0;
@@ -2232,7 +2280,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.x86.r[X86_R_DX] = 0xffffffff;
 		}
 	} else if (op == 0x9a) {	/*  CALL seg:ofs  */
-		imm = read_imm(&instr, &newpc, mode67);
+		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);
 		if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
 			return 0;
@@ -2729,7 +2777,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL + imm, &databuf[0],
 		    op == 0xe6? 1 : (mode/8), MEM_WRITE, CACHE_NONE);
 	} else if (op == 0xe8 || op == 0xe9) {	/*  CALL/JMP near  */
-		imm = read_imm(&instr, &newpc, mode67);
+		imm = read_imm(&instr, &newpc, mode);
 		if (mode == 16)
 			imm = (int16_t)imm;
 		if (op == 0xe8) {
@@ -2741,7 +2789,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (mode == 16)
 			newpc &= 0xffff;
 	} else if (op == 0xea) {	/*  JMP seg:ofs  */
-		imm = read_imm(&instr, &newpc, mode67);
+		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);
 		cpu->cd.x86.s[X86_S_CS] = imm2;
 		newpc = modify(cpu->pc, imm);

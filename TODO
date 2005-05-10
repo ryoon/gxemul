@@ -1,11 +1,15 @@
-$Id: TODO,v 1.130 2005-05-07 10:40:29 debug Exp $
+$Id: TODO,v 1.131 2005-05-10 11:46:57 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
 
 	o)  Bug-hunt and Clean-up of All the code.
-		o)  Fix tmpnam(), snprintf() etc
-		o)  Refactor some things (cpu_x86.c).
+		o)  snprintf() ==> strlcat etc.?
+
+	o)  x86 stuff:
+		o)  32-bit MMU support
+		o)  amd64 support
+		o)  refactor / cleanup!
 
 	o)  Read function types from ELFs!
 
@@ -21,7 +25,10 @@ Order is random. Don't trust it to be up-to-date.
 
 	o)  Arithmetic expression evaluation in the debugger.
 
-	o)  Keyboard input for VGA, when running without -X.
+	o)  VGA-related stuff:
+		o)  resizable windows?
+		o)  actual graphics modes depending on registers
+		o)  Keyboard input connected to keyboard / VGA
 
 	o)  More stable ISO9660 filename stuff.
 
@@ -33,8 +40,6 @@ Order is random. Don't trust it to be up-to-date.
 	    back-ends.
 
 	o)  Continue the redesign of the device drivers.
-
-	o)  x86 stuff (including amd64 support)
 
 -------------------------------------------------------------------------------
 

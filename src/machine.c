@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.428 2005-05-08 04:09:17 debug Exp $
+ *  $Id: machine.c,v 1.429 2005-05-10 19:34:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4471,17 +4471,18 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		store_byte(cpu, 0x449, 0x03);	/*  initial video mode  */
 
+		/*  TODO: irq numbers  */
+
 		dev_wdc_init(machine, mem, 0x1000001f0ULL, 14, 0);
 
-		/*  TODO: disable the "enable" flag when a keyboard has
-		    been added:  */
-		machine->main_console_handle = dev_ns16550_init(machine, mem,
-		    0x1000003f8ULL, 4, 1, 1, "com1");
+		dev_ns16550_init(machine, mem, 0x1000003f8ULL, 4, 1, 0, "com1");
 		dev_ns16550_init(machine, mem, 0x100000378ULL, 3, 1, 0, "com2");
 
 		/*  This should be _after_ the main console handle is valid.  */
 		dev_vga_init(machine, mem, 0xa0000ULL, 0x1000003c0ULL,
 		    "Generic x86 PC");
+		machine->main_console_handle = dev_pckbc_init(machine,
+		    mem, 0x100000060ULL, PCKBC_8042, 0, 0, 1);
 
 		/*  These values are the same as what Bochs seems to use:  */
 		cpu->cd.x86.r[X86_R_AX] = 0xaa55;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.72 2005-05-10 16:31:03 debug Exp $
+ *  $Id: cpu_x86.c,v 1.73 2005-05-10 16:40:21 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1061,10 +1061,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				    NULL, NULL);
 				SPACES; debug("set%s%s\t%s", op&1? "n"
 				    : "", cond_names[(op/2) & 0x7], modrm_rm);
+			} else if (imm == 0xa0) {
+				SPACES; debug("push\tfs");
 			} else if (imm == 0xa1) {
 				SPACES; debug("pop\tfs");
 			} else if (imm == 0xa2) {
 				SPACES; debug("cpuid");
+			} else if (imm == 0xa8) {
+				SPACES; debug("push\tgs");
 			} else if (imm == 0xa9) {
 				SPACES; debug("pop\tgs");
 			} else if (imm == 0xaa) {
@@ -2090,6 +2094,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    MODRM_CR, &instr_orig, NULL, &op1, &op2);
 				break;
+			case 0xa0:
+				if (!x86_push(cpu, cpu->cd.x86.s[X86_S_FS],
+				    mode))
+					return 0;
+				break;
 			case 0xa1:
 				if (!x86_pop(cpu, &tmp, mode))
 					return 0;
@@ -2097,6 +2106,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			case 0xa2:
 				x86_cpuid(cpu);
+				break;
+			case 0xa8:
+				if (!x86_push(cpu, cpu->cd.x86.s[X86_S_GS],
+				    mode))
+					return 0;
 				break;
 			case 0xa9:
 				if (!x86_pop(cpu, &tmp, mode))
@@ -3148,6 +3162,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (op1 == 0) {
 				fatal("TODO: division by zero\n");
 				cpu->running = 0;
+				break;
 			}
 			if (op == 0xf6) {
 				int al, ah;

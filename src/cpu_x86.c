@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.75 2005-05-10 18:17:54 debug Exp $
+ *  $Id: cpu_x86.c,v 1.76 2005-05-10 19:12:54 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2723,7 +2723,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xc4 || op == 0xc5) {		/*  LDS,LES  */
 		instr_orig = instr;
 		modrm(cpu, MODRM_READ, mode, mode67,
-		    MODRM_JUST_GET_ADDR, &instr, &newpc, &op1, &op2);
+		    0, &instr, &newpc, &op1, &op2);
 		if (op == 0xc4)
 			cpu->cd.x86.s[X86_S_ES] = cpu->cd.x86.cursegment;
 		else
@@ -3355,6 +3355,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		return 0;
 	}
 
+	if (mode == 16)
+		newpc &= 0xffff;
 	cpu->pc = newpc;
 
 	return 1;

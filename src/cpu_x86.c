@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.73 2005-05-10 16:40:21 debug Exp $
+ *  $Id: cpu_x86.c,v 1.74 2005-05-10 17:14:11 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2117,6 +2117,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					return 0;
 				cpu->cd.x86.s[X86_S_GS] = tmp;
 				break;
+			case 0xaf:	/*  imul r16/32, rm16/32  */
+				instr_orig = instr;
+				if (!modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &newpc, &op1, &op2))
+					return 0;
+				if (mode == 16)
+					op2 = (int16_t)op1 * (int16_t)op2;
+				else
+					op2 = (int32_t)op1 * (int32_t)op2;
+				if (!modrm(cpu, MODRM_WRITE_R, mode, mode67,
+				    0, &instr_orig, NULL, &op1, &op2))
+					return 0;
+				break;
 			case 0xb0:
 			case 0xb1:	/*  CMPXCHG  */
 				instr_orig = instr;
@@ -3233,37 +3246,46 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			x86_cmp(cpu, op1, 0, op==0xfe? 8 : mode);
 			break;
-		case 2:
+		case 2:	if (op == 0xfe) {
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				    *instr);
+				cpu->running = 0;
+			} else {
+				uint64_t tmp1, tmp2;
+				success = modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &newpc, &op1, &op2);
+				if (!success)
+					return 0;
+				/*  Push return CS:[E]IP  */
+				x86_push(cpu, newpc, mode);
+				newpc = op1;
+				if (mode == 16)
+					newpc &= 0xffff;
+			}
+			break;
 		case 3:	if (op == 0xfe) {
 				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
 				    *instr);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
-				int far = (((*instr >> 3) & 0x7) == 3);
 				success = modrm(cpu, MODRM_READ, mode, mode67,
 				    MODRM_JUST_GET_ADDR, &instr,
 				    &newpc, &op1, &op2);
 				if (!success)
 					return 0;
-				/*  Load an address (or a far address)
-				    from op1:  */
+				/*  Load a far address from op1:  */
 				if (!x86_load(cpu, op1, &tmp1, mode/8))
 					return 0;
-				if (far)
-					if (!x86_load(cpu, op1 + (mode/8),
-					    &tmp2, 2))
-						return 0;
+				if (!x86_load(cpu, op1 + (mode/8), &tmp2, 2))
+					return 0;
 				/*  Push return CS:[E]IP  */
-				if (far)
-					x86_push(cpu, cpu->cd.x86.s[X86_S_CS],
-					    mode);
+				x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode);
 				x86_push(cpu, newpc, mode);
 				newpc = tmp1;
 				if (mode == 16)
 					newpc &= 0xffff;
-				if (far)
-					cpu->cd.x86.s[X86_S_CS] = tmp2;
+				cpu->cd.x86.s[X86_S_CS] = tmp2;
 			}
 			break;
 		case 4:	if (op == 0xfe) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.32 2005-05-10 15:15:12 debug Exp $
+ *  $Id: pc_bios.c,v 1.33 2005-05-10 17:14:11 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -154,6 +154,8 @@ static void pc_bios_putchar(struct cpu *cpu, char ch)
 	default:	output_char(cpu, x, y, ch, 0x07);
 	}
 	x++;
+	if (x < 0)
+		x = 0;
 	if (x >= 80) {
 		x=0; y++;
 	}

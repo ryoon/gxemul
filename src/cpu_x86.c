@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.84 2005-05-11 12:52:21 debug Exp $
+ *  $Id: cpu_x86.c,v 1.85 2005-05-11 14:25:41 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1771,18 +1771,31 @@ static void x86_cmp(struct cpu *cpu, uint64_t a, uint64_t b, int mode)
 {
 	uint64_t c;
 
-	if (mode == 8)
+	cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+
+	if (mode == 8) {
+		if (a >= 0x100)
+			cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		a &= 0xff, b &= 0xff;
-	if (mode == 16)
+	}
+	if (mode == 16) {
+		if (a >= 0x10000)
+			cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		a &= 0xffff, b &= 0xffff;
-	if (mode == 32)
+	}
+	if (mode == 32) {
+		if (a >= 0x100000000ULL)
+			cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		a &= 0xffffffff, b &= 0xffffffff;
+	}
 
 	cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
 	if (a == b)
 		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
 
-	cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+/*  TODO  */
+cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+
 	if (a < b)
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 
@@ -2006,14 +2019,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		switch (op & 0x38) {
-		case 0x00:	tmp = op1; op1 = op1 + op2;
-				x86_cmp(cpu, op1, tmp, !(op & 1)? 8 : mode);
+		case 0x00:	op1 = op1 + op2;
+				x86_cmp(cpu, op1, 0, !(op & 1)? 8 : mode);
 				break;
 		case 0x08:	op1 = op1 | op2; break;
-		case 0x10:	tmp = op1; op1 = op1 + op2;
+		case 0x10:	op1 = op1 + op2;
 				if (cpu->cd.x86.rflags & X86_FLAGS_CF)
 					op1 ++;
-				x86_cmp(cpu, op1, tmp, !(op & 1)? 8 : mode);
+				x86_cmp(cpu, op1, 0, !(op & 1)? 8 : mode);
 				break;
 		case 0x18:	x86_cmp(cpu, op1, op2 + (cpu->cd.x86.rflags &
 				    X86_FLAGS_CF? 1 : 0), !(op & 1)? 8 : mode);
@@ -2347,17 +2360,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.x86.s[op / 8] = tmp;
 	} else if (op >= 0x40 && op <= 0x4f) {
 		int old_cf = cpu->cd.x86.rflags & X86_FLAGS_CF;
-		if (op < 0x48)
+		if (op < 0x48) {
 			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
 			    cpu->cd.x86.r[op & 7] + 1);
-		else if (mode == 16)
-			cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op & 7],
-			    (cpu->cd.x86.r[op & 7] & 0xffff) - 1);
-		else {
-			cpu->cd.x86.r[op & 7] --;
-			cpu->cd.x86.r[op & 7] &= 0xffffffffULL;
+			x86_cmp(cpu, cpu->cd.x86.r[op & 7], 0, mode);
+		} else {
+			x86_cmp(cpu, cpu->cd.x86.r[op & 7], 1, mode);
+			if (mode == 16)
+				cpu->cd.x86.r[op & 7] = modify(cpu->cd.x86.r[op
+				    & 7], (cpu->cd.x86.r[op & 7] & 0xffff) - 1);
+			else {
+				cpu->cd.x86.r[op & 7] --;
+				cpu->cd.x86.r[op & 7] &= 0xffffffffULL;
+			}
 		}
-		x86_cmp(cpu, cpu->cd.x86.r[op & 7], 0, mode);
 		/*  preserve CF:  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		cpu->cd.x86.rflags |= old_cf;
@@ -2422,13 +2438,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			imm = (uint32_t)(signed char)imm;
 		}
 		switch ((*instr_orig >> 3) & 0x7) {
-		case 0:	x86_cmp(cpu, op1+imm, op1, op==0x80? 8 : mode);
-			op1 += imm; break;
+		case 0:	op1 += imm;
+			x86_cmp(cpu, op1, 0, op==0x80? 8 : mode);
+			break;
 		case 1:	op1 |= imm; break;
-		case 2:	tmp = op1 + imm +
+		case 2:	op1 += imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0);
-			x86_cmp(cpu, tmp, op1, op==0x80? 8 : mode);
-			op1 = tmp;
+			x86_cmp(cpu, op1, 0, op==0x80? 8 : mode);
 			break;
 		case 3: x86_cmp(cpu, op1, imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0),
@@ -2474,15 +2490,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		imm = read_imm(&instr, &newpc, 8);
 		switch ((*instr_orig >> 3) & 0x7) {
-		case 0:	tmp = op1 + (signed char)imm;
-			x86_cmp(cpu, tmp, op1, op==0x80? 8 : mode);
-			op1 = tmp;
+		case 0:	op1 += (signed char)imm;
+			x86_cmp(cpu, op1, 0, op==0x80? 8 : mode);
 			break;
 		case 1:	op1 |= (signed char)imm; break;
-		case 2: tmp = op1 + (signed char)imm +
+		case 2: op1 += (signed char)imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0);
-			x86_cmp(cpu, tmp, op1, op==0x80? 8 : mode);
-			op1 = tmp;
+			x86_cmp(cpu, op1, 0, op==0x80? 8 : mode);
 			break;
 		case 3: x86_cmp(cpu, op1, (signed char)imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0), mode);
@@ -2945,17 +2959,27 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->running = 0;
 		}
 	} else if (op == 0xc8) {	/*  ENTER  */
+		uint64_t tmp_frame_ptr;
+		int level;
 		imm = read_imm(&instr, &newpc, 16);
-		tmp = read_imm(&instr, &newpc, 8);
-		if (tmp != 0) {
-			fatal("x86 ENTER with nested stack frame not yet"
-			    " implemented\n");
-			cpu->running = 0;
-		}
-		success = x86_push(cpu, cpu->cd.x86.r[X86_R_BP], mode);
-		if (!success)
+		level = read_imm(&instr, &newpc, 8);
+		if (!x86_push(cpu, cpu->cd.x86.r[X86_R_BP], mode))
 			return 0;
-		cpu->cd.x86.r[X86_R_BP] = cpu->cd.x86.r[X86_R_SP];
+		tmp_frame_ptr = cpu->cd.x86.r[X86_R_SP];
+		if (level > 0) {
+			while (--level > 0) {
+				uint64_t tmpword;
+				cpu->cd.x86.r[X86_R_BP] -= mode/8;
+				cpu->cd.x86.cursegment =
+				    cpu->cd.x86.s[X86_S_SS];
+				x86_load(cpu, cpu->cd.x86.r[X86_R_BP], 
+				    &tmpword, mode/8);
+				x86_push(cpu, tmpword, mode);
+			}
+			if (!x86_push(cpu, tmp_frame_ptr, mode))
+				return 0;
+		}
+		cpu->cd.x86.r[X86_R_BP] = tmp_frame_ptr;
 		if (mode == 16)
 			cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] &
 			    ~0xffff) | ((cpu->cd.x86.r[X86_R_SP] & 0xffff)
@@ -3504,15 +3528,17 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			old_cf = cpu->cd.x86.rflags & X86_FLAGS_CF;
 			switch ((*instr_orig >> 3) & 0x7) {
-			case 0:	op1 = modify(op1, op1 + 1); break; /* inc */
-			case 1:	op1 = modify(op1, op1 - 1); break; /* dec */
+			case 0:	op1 = modify(op1, op1 + 1);
+				x86_cmp(cpu, op1, 0, op==0xfe? 8 : mode);
+				break; /* inc */
+			case 1:	x86_cmp(cpu, op1, 1, op==0xfe? 8 : mode);
+				op1 = modify(op1, op1 - 1); break; /* dec */
 			}
 			success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 			    op == 0xfe? MODRM_EIGHTBIT : 0, &instr_orig,
 			    NULL, &op1, &op2);
 			if (!success)
 				return 0;
-			x86_cmp(cpu, op1, 0, op==0xfe? 8 : mode);
 			/*  preserve CF:  */
 			cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 			cpu->cd.x86.rflags |= old_cf;

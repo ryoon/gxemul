@@ -1,49 +1,7 @@
-$Id: TODO,v 1.131 2005-05-10 11:46:57 debug Exp $
+$Id: TODO,v 1.132 2005-05-11 14:25:41 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
-
-	o)  Bug-hunt and Clean-up of All the code.
-		o)  snprintf() ==> strlcat etc.?
-
-	o)  x86 stuff:
-		o)  32-bit MMU support
-		o)  amd64 support
-		o)  refactor / cleanup!
-
-	o)  Read function types from ELFs!
-
-	o)  Generalize the trace functionality for all arch (mips, x86, ppc...)
-
-	o)  New debugger command?  "step one function call"
-		and/or print function return values.
-
-	o)  Debugger memory addresses:  seg:ofs, and per cpu?
-		(for all cases where addresses are used; "u", "d" etc)
-
-	o)  PC register name matching for the debugger.
-
-	o)  Arithmetic expression evaluation in the debugger.
-
-	o)  VGA-related stuff:
-		o)  resizable windows?
-		o)  actual graphics modes depending on registers
-		o)  Keyboard input connected to keyboard / VGA
-
-	o)  More stable ISO9660 filename stuff.
-
-	o)  Generalize the gzip support.
-
-	o)  Incoming network connections?
-
-	o)  The new bintrans system, with multiple front-ends and
-	    back-ends.
-
-	o)  Continue the redesign of the device drivers.
-
--------------------------------------------------------------------------------
-
-A more complete list:
 
 
 	Caches / memory hierarchies: (this is mostly MIPS-specific)

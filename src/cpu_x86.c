@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.82 2005-05-11 01:32:10 debug Exp $
+ *  $Id: cpu_x86.c,v 1.83 2005-05-11 02:19:35 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1987,11 +1987,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		switch (op & 0x38) {
-		case 0x00:	op1 = op1 + op2; break;
+		case 0x00:	op1 = op1 + op2;
+				x86_cmp(cpu, op1, op2, !(op & 1)? 8 : mode);
+				break;
 		case 0x08:	op1 = op1 | op2; break;
 		case 0x10:	op1 = op1 + op2;
 				if (cpu->cd.x86.rflags & X86_FLAGS_CF)
 					op1 ++;
+				x86_cmp(cpu, op1, op2, !(op & 1)? 8 : mode);
 				break;
 		case 0x18:	x86_cmp(cpu, op1, op2 + (cpu->cd.x86.rflags &
 				    X86_FLAGS_CF? 1 : 0), !(op & 1)? 8 : mode);
@@ -2016,8 +2019,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		/*  NOTE: Manual cmp for "sbb, "sub" and "cmp" instructions.  */
+		/*  TODO/Hm... also for add?  */
 		if ((op & 0x38) != 0x38 && (op & 0x38) != 0x28 &&
-		    (op & 0x38) != 0x18)
+		    (op & 0x38) != 0x18 && (op & 0x38) != 0x00 &&
+		    (op & 0x38) != 0x10)
 			x86_cmp(cpu, op1, 0, !(op & 1)? 8 : mode);
 
 		/*  "and","or" always clears CF and OF:  */
@@ -2318,8 +2323,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!x86_pop(cpu, &r[i], mode))
 				return 0;
 		for (i=0; i<8; i++)
-			if (i != X86_R_SP)
-				cpu->cd.x86.r[i] = r[i];
+			if (i != X86_R_SP) {
+				if (mode == 16)
+					cpu->cd.x86.r[i] = (cpu->cd.x86.r[i]
+					    & ~0xffff) | (r[i] & 0xffff);
+				else
+					cpu->cd.x86.r[i] = r[i];
+			}
 		/*  TODO: how about errors during push/pop?  */
 	} else if (op == 0x68) {		/*  PUSH imm16/32  */
 		uint64_t imm = read_imm(&instr, &newpc, mode);
@@ -2346,10 +2356,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			imm = (uint32_t)(signed char)imm;
 		}
 		switch ((*instr_orig >> 3) & 0x7) {
-		case 0:	op1 += imm; break;
+		case 0:	x86_cmp(cpu, op1, op1+imm, op==0x80? 8 : mode);
+			op1 += imm; break;
 		case 1:	op1 |= imm; break;
-		case 2: op1 += imm +
-			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0); break;
+		case 2:	tmp = op1 + imm +
+			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0);
+			x86_cmp(cpu, op1, tmp, op==0x80? 8 : mode);
+			op1 = tmp;
+			break;
 		case 3: x86_cmp(cpu, op1, imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0),
 			    op==0x80? 8 : mode);
@@ -2367,7 +2381,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		if (((*instr_orig >> 3) & 0x7) != 7) {
-			if (((*instr_orig >> 3) & 0x7) != 3 &&
+			if (((*instr_orig >> 3) & 0x7) != 0 &&
+			    ((*instr_orig >> 3) & 0x7) != 2 &&
+			    ((*instr_orig >> 3) & 0x7) != 3 &&
 			    ((*instr_orig >> 3) & 0x7) != 5)
 				x86_cmp(cpu, op1, 0, op==0x80? 8 : mode);
 
@@ -2392,10 +2408,16 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		imm = read_imm(&instr, &newpc, 8);
 		switch ((*instr_orig >> 3) & 0x7) {
-		case 0:	op1 += (signed char)imm; break;
+		case 0:	tmp = op1 + (signed char)imm;
+			x86_cmp(cpu, op1, tmp, op==0x80? 8 : mode);
+			op1 = tmp;
+			break;
 		case 1:	op1 |= (signed char)imm; break;
-		case 2: op1 += (signed char)imm +
-			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0); break;
+		case 2: tmp = op1 + (signed char)imm +
+			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0);
+			x86_cmp(cpu, op1, tmp, op==0x80? 8 : mode);
+			op1 = tmp;
+			break;
 		case 3: x86_cmp(cpu, op1, (signed char)imm +
 			    (cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0), mode);
 			op1 = op1 - (signed char)imm -
@@ -2411,7 +2433,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->running = 0;
 		}
 		if (((*instr_orig >> 3) & 0x7) != 7) {
-			if (((*instr_orig >> 3) & 0x7) != 3 &&
+			if (((*instr_orig >> 3) & 0x7) != 0 &&
+			    ((*instr_orig >> 3) & 0x7) != 2 &&
+			    ((*instr_orig >> 3) & 0x7) != 3 &&
 			    ((*instr_orig >> 3) & 0x7) != 5)
 				x86_cmp(cpu, op1, 0, mode);
 
@@ -3333,7 +3357,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.x86.r[X86_R_AX] = res & 0xffffffff;
 				cpu->cd.x86.r[X86_R_DX] = (res >> 32) &
 				    0xffffffff;
-				if ((res & 0xffffffff) >= 0x100000000ULL)
+				if (res >= 0x100000000ULL)
 					cpu->cd.x86.rflags |= X86_FLAGS_CF
 					    | X86_FLAGS_OF;
 			}

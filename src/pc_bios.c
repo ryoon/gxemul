@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.35 2005-05-11 00:38:01 debug Exp $
+ *  $Id: pc_bios.c,v 1.36 2005-05-11 02:19:36 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -208,6 +208,8 @@ static void pc_bios_int10(struct cpu *cpu)
 	int dl = cpu->cd.x86.r[X86_R_DX] & 0xff;
 	int ch = (cpu->cd.x86.r[X86_R_CX] >> 8) & 0xff;
 	int cl = cpu->cd.x86.r[X86_R_CX] & 0xff;
+	int bh = (cpu->cd.x86.r[X86_R_BX] >> 8) & 0xff;
+	int bl = cpu->cd.x86.r[X86_R_BX] & 0xff;
 	int cx = cpu->cd.x86.r[X86_R_CX] & 0xffff;
 	int bp = cpu->cd.x86.r[X86_R_BP] & 0xffff;
 
@@ -264,6 +266,17 @@ static void pc_bios_int10(struct cpu *cpu)
 	case 0x0f:	/*  get video mode  */
 		cpu->cd.x86.r[X86_R_AX] = (80 << 8) + 25;
 		cpu->cd.x86.r[X86_R_BX] &= ~0xff00;	/*  BH = pagenr  */
+		break;
+	case 0x12:	/*  Video Subsystem Configuration  */
+		/*  TODO  */
+		switch (bl) {
+		case 0x10:
+			cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_BX] |= 0x0003;
+			break;
+		default:fatal("Unimplemented INT 0x10,AH=0x12,BL=0x%02x\n", bl);
+			cpu->running = 0;
+		}
 		break;
 	case 0x13:	/*  write string  */
 		/*  TODO: other flags in al  */

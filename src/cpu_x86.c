@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.81 2005-05-11 00:38:01 debug Exp $
+ *  $Id: cpu_x86.c,v 1.82 2005-05-11 01:32:10 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1386,6 +1386,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("iret");
 	} else if (op == 0xd0) {
 		switch ((*instr >> 3) & 0x7) {
+		case 0:	mnem = "rol"; break;
 		case 1:	mnem = "ror"; break;
 		case 2: mnem = "rcl"; break;
 		case 3: mnem = "rcr"; break;
@@ -1400,27 +1401,20 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("%s\t%s,1", mnem, modrm_rm);
 	} else if (op == 0xd1) {
 		int subop = (*instr >> 3) & 0x7;
+		modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
+		    NULL, NULL);
 		switch (subop) {
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 7:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
-			    NULL, NULL);
-			switch (subop) {
-			case 1: mnem = "ror"; break;
-			case 2: mnem = "rcl"; break;
-			case 3: mnem = "rcr"; break;
-			case 4: mnem = "shl"; break;
-			case 5: mnem = "shr"; break;
-			case 7: mnem = "sar"; break;
-			}
-			SPACES; debug("%s\t%s,1", mnem, modrm_rm);
-			break;
+		case 0: mnem = "rol"; break;
+		case 1: mnem = "ror"; break;
+		case 2: mnem = "rcl"; break;
+		case 3: mnem = "rcr"; break;
+		case 4: mnem = "shl"; break;
+		case 5: mnem = "shr"; break;
+		case 7: mnem = "sar"; break;
 		default:
 			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op,*instr);
 		}
+		SPACES; debug("%s\t%s,1", mnem, modrm_rm);
 	} else if (op == 0xd2) {
 		switch ((*instr >> 3) & 0x7) {
 		case 4:	modrm(cpu, MODRM_READ, mode, mode67, MODRM_EIGHTBIT,
@@ -1867,8 +1861,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
 		int addr = (newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff;
-		if (cpu->machine->instruction_trace)
-			debug("(PC BIOS emulation, int 0x%02x)\n", addr);
+		/*  if (cpu->machine->instruction_trace)
+			debug("(PC BIOS emulation, int 0x%02x)\n", addr);  */
 		pc_bios_emul(cpu);
 		return 1;
 	}
@@ -2572,6 +2566,18 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		cpu->cd.x86.rflags = tmp;
 		/*  TODO: only affect some bits?  */
+	} else if (op == 0x9e) {		/*  SAHF  */
+		int mask = (X86_FLAGS_SF | X86_FLAGS_ZF
+		    | X86_FLAGS_AF | X86_FLAGS_PF | X86_FLAGS_CF);
+		cpu->cd.x86.rflags &= ~mask;
+		mask &= ((cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff);
+		cpu->cd.x86.rflags |= mask;
+	} else if (op == 0x9f) {		/*  LAHF  */
+		int b = cpu->cd.x86.rflags & (X86_FLAGS_SF | X86_FLAGS_ZF
+		    | X86_FLAGS_AF | X86_FLAGS_PF | X86_FLAGS_CF);
+		b |= 2;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_AX] |= (b << 8);
 	} else if (op == 0xa0) {		/*  MOV AL,[addr]  */
 		imm = read_imm(&instr, &newpc, mode67);
 		if (!x86_load(cpu, imm, &tmp, 1))
@@ -2689,6 +2695,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 		} while (rep);
 	} else if (op >= 0xa8 && op <= 0xa9) {
+		op1 = cpu->cd.x86.r[X86_R_AX];
 		op2 = read_imm(&instr, &newpc, op==0xa8? 8 : mode);
 		op1 &= op2;
 		x86_cmp(cpu, op1, 0, op==0xa8? 8 : mode);
@@ -2910,9 +2917,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.x86.rflags = tmp3;
 		/*  TODO: only affect some bits?  */
 	} else if (op == 0xd0) {
-		int cf = -1;
+		int cf = -1, oldcarry;
 		switch ((*instr >> 3) & 0x7) {
+		case 0:	/*  rol op1,1  */
 		case 1:	/*  ror op1,1  */
+		case 3:	/*  rcr op1,1  */
 		case 4:	/*  shl op1,1  */
 		case 5:	/*  shr op1,1  */
 			instr_orig = instr;
@@ -2921,10 +2930,21 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!success)
 				return 0;
 			cf = 0;
+			oldcarry = cpu->cd.x86.rflags & X86_FLAGS_CF;
 			switch ((*instr_orig >> 3) & 0x7) {
+			case 0:	if (op1 & 0x80)
+					cf = 1;
+				op1 = ((op1 << 1) & 0xff) | cf;
+				break;
 			case 1:	if (op1 & 1)
 					cf = 1;
 				op1 = (op1 >> 1) | ((op & 1) << 7);
+				break;
+			case 3:	if (op1 & 1)
+					cf = 1;
+				op1 >>= 1;
+				if (oldcarry)
+					op1 |= 0x80;
 				break;
 			case 4:	if (op1 & 0x80)
 					cf = 1;
@@ -2955,6 +2975,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		int oldcarry, cf = -1;
 		switch (subop) {
 		case 2:	/*  rcl op1,1  */
+		case 3:	/*  rcr op1,1  */
 		case 4:	/*  shl op1,1  */
 		case 5:	/*  shr op1,1  */
 		case 7:	/*  sar op1,1  */
@@ -2972,6 +2993,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					cf = 1;
 				op1 <<= 1;
 				op1 |= oldcarry? 1 : 0;
+				break;
+			case 3:	if (op1 & 1)
+					cf = 1;
+				op1 >>= 1;
+				if (mode == 16 && oldcarry)
+					op1 |= 0x8000;
+				if (mode == 32 && oldcarry)
+					op1 |= 0x80000000ULL;
 				break;
 			case 4:	op1 <<= 1;
 				if (mode == 16 && op1 & 0x8000)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.90 2005-05-09 19:06:54 debug Exp $
+ *  $Id: file.c,v 1.91 2005-05-11 11:40:34 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1529,7 +1529,8 @@ void file_load(struct machine *machine, struct memory *mem,
 	int iadd = 4;
 	FILE *f;
 	unsigned char buf[12];
-	int len, i;
+	unsigned char buf2[2];
+	size_t len, len2, i;
 	off_t size;
 
 	if (byte_orderp == NULL) {
@@ -1566,6 +1567,8 @@ void file_load(struct machine *machine, struct memory *mem,
 
 	memset(buf, 0, sizeof(buf));
 	len = fread(buf, 1, sizeof(buf), f);
+	fseek(f, 510, SEEK_SET);
+	len2 = fread(buf2, 1, sizeof(buf2), f);
 	fclose(f);
 
 	if (len < (signed int)sizeof(buf)) {
@@ -1656,6 +1659,11 @@ void file_load(struct machine *machine, struct memory *mem,
 			    "unknown.\n\n ", filename);
 			for (i=0; i<(signed)sizeof(buf); i++)
 				fprintf(stderr, " %02x", buf[i]);
+
+			if (len2 == 2 && buf2[0] == 0x55 && buf2[1] == 0xaa)
+				fprintf(stderr, "\n\nIt has a PC-style "
+				    "bootsector marker.");
+
 			fprintf(stderr, "\n\nPossible explanations:\n\n"
 			    "  o)  If this is a disk image, you forgot '-d' "
 			    "on the command line.\n"

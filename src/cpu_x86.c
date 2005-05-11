@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.86 2005-05-11 17:19:52 debug Exp $
+ *  $Id: cpu_x86.c,v 1.87 2005-05-11 17:52:42 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -445,7 +445,8 @@ void x86_cpu_register_match(struct machine *m, char *name,
 		) : ((new) & 0xffffffffULL) )
 
 #define	HEXPRINT(x,n) { int j; for (j=0; j<(n); j++) debug("%02x",(x)[j]); }
-#define	HEXSPACES(i) { int j; for (j=0; j<10-(i);j++) debug("  "); debug(" "); }
+#define	HEXSPACES(i) { int j; j = i>10? 10:i; while (j++<10) debug("  "); \
+	debug(" "); }
 #define	SPACES	HEXSPACES(ilen)
 
 
@@ -619,13 +620,22 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 {
 	uint32_t imm, imm2;
 	uint64_t addr = 0;
-	int mod, r, rm, res = 1, z, q = mode/8, sib, s, i, b;
+	int mod, r, rm, res = 1, z, q = mode/8, sib, s, i, b, immlen;
+	char *e = "";
 	int disasm = (op1p == NULL);
 
 	if (disasm) {
+		if (mode67 == 32)
+			e = "e";
+		if (mode67 == 64)
+			e = "r";
 		modrm_rm[0] = modrm_rm[sizeof(modrm_rm)-1] = '\0';
 		modrm_r[0] = modrm_r[sizeof(modrm_r)-1] = '\0';
 	}
+
+	immlen = mode67;
+	if (immlen == 64)
+		immlen = 32;
 
 	imm = read_imm_common(instrp, lenp, 8, disasm);
 	mod = (imm >> 6) & 3; r = (imm >> 3) & 7; rm = imm & 7;
@@ -640,10 +650,10 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	switch (mod) {
 	case 0:
 		if (disasm) {
-			if (mode67 == 32) {
+			if (mode67 >= 32) {
 				if (rm == 5) {
 					imm2 = read_imm_common(instrp, lenp,
-					    mode67, disasm);
+					    immlen, disasm);
 					sprintf(modrm_rm, "[0x%x]",
 					    imm2);
 				} else if (rm == 4) {
@@ -655,7 +665,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					b = sib & 7;
 					if (b == 5) {	/*  imm base  */
 						imm2 = read_imm_common(instrp,
-						    lenp, mode67, disasm);
+						    lenp, immlen, disasm);
 						sprintf(tmp, "0x%x", imm2);
 					} else
 						sprintf(tmp, "e%s",
@@ -687,7 +697,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				case 5:	sprintf(modrm_rm, "[di]");
 					break;
 				case 6:	imm2 = read_imm_common(instrp, lenp,
-					    mode67, disasm);
+					    immlen, disasm);
 					sprintf(modrm_rm, "[0x%x]", imm2);
 					break;
 				case 7:	sprintf(modrm_rm, "[bx]");
@@ -695,10 +705,10 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				}
 			}
 		} else {
-			if (mode67 == 32) {
+			if (mode67 >= 32) {
 				if (rm == 5) {
 					addr = read_imm_common(instrp, lenp,
-					    mode67, disasm);
+					    immlen, disasm);
 				} else if (rm == 4) {
 					sib = read_imm_common(instrp, lenp,
 					    8, disasm);
@@ -736,7 +746,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				case 4:	addr = cpu->cd.x86.r[X86_R_SI]; break;
 				case 5:	addr = cpu->cd.x86.r[X86_R_DI]; break;
 				case 6:	addr = read_imm_common(instrp, lenp,
-					    mode67, disasm); break;
+					    immlen, disasm); break;
 				case 7:	addr = cpu->cd.x86.r[X86_R_BX]; break;
 				}
 			}
@@ -760,9 +770,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 		break;
 	case 1:
 	case 2:
-		z = (mod == 1)? 8 : mode67;
+		z = (mod == 1)? 8 : immlen;
 		if (disasm) {
-			if (mode67 == 32) {
+			if (mode67 >= 32) {
 				if (rm == 4) {
 					sib = read_imm_common(instrp, lenp,
 					    8, disasm);
@@ -818,7 +828,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				sprintf(modrm_rm, "[bx+0x%x]", imm2); break;
 			}
 		} else {
-			if (mode67 == 32) {
+			if (mode67 >= 32) {
 				if (rm == 4) {
 					sib = read_imm_common(instrp, lenp,
 					    8, disasm);
@@ -925,7 +935,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				if (mode == 16 || flags & MODRM_RM_16BIT)
 					strcpy(modrm_rm, reg_names[rm]);
 				else
-					sprintf(modrm_rm, "e%s", reg_names[rm]);
+					sprintf(modrm_rm, "%s%s", e,
+					    reg_names[rm]);
 			} else {
 				switch (writeflag) {
 				case MODRM_WRITE_RM:
@@ -986,8 +997,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 			else if (flags & MODRM_CR)
 				sprintf(modrm_r, "cr%i", r);
 			else {
-				if (mode == 32)
-					sprintf(modrm_r, "e%s", reg_names[r]);
+				if (mode >= 32)
+					sprintf(modrm_r, "%s%s", e,
+					    reg_names[r]);
 				else
 					strcpy(modrm_r, reg_names[r]);
 			}
@@ -1078,15 +1090,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	/*  Any prefix?  */
 	for (;;) {
 		if (instr[0] == 0x66) {
-			if (mode == 32)
-				mode = 16;
-			else
+			if (mode == 16)
 				mode = 32;
-		} else if (instr[0] == 0x67) {
-			if (mode67 == 32)
-				mode67 = 16;
 			else
+				mode = 16;
+		} else if (instr[0] == 0x67) {
+			if (mode67 == 16)
 				mode67 = 32;
+			else
+				mode67 = 16;
 		} else if (instr[0] == 0xf2) {
 			rep = REP_REPNE;
 		} else if (instr[0] == 0xf3) {
@@ -1519,25 +1531,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("into");
 	} else if (op == 0xcf) {
 		SPACES; debug("iret");
-	} else if (op == 0xd0) {
-		switch ((*instr >> 3) & 0x7) {
-		case 0:	mnem = "rol"; break;
-		case 1:	mnem = "ror"; break;
-		case 2: mnem = "rcl"; break;
-		case 3: mnem = "rcr"; break;
-		case 4:	mnem = "shl"; break;
-		case 5:	mnem = "shr"; break;
-		case 7:	mnem = "sar"; break;
-		default:
-			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op,*instr);
-		}
-		modrm(cpu, MODRM_READ, mode, mode67, MODRM_EIGHTBIT,
-		    &instr, &ilen, NULL, NULL);
-		SPACES; debug("%s\t%s,1", mnem, modrm_rm);
-	} else if (op == 0xd1) {
+	} else if (op >= 0xd0 && op <= 0xd3) {
 		int subop = (*instr >> 3) & 0x7;
-		modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
-		    NULL, NULL);
+		modrm(cpu, MODRM_READ, mode, mode67, op&1? 0 :
+		    MODRM_EIGHTBIT, &instr, &ilen, NULL, NULL);
 		switch (subop) {
 		case 0: mnem = "rol"; break;
 		case 1: mnem = "ror"; break;
@@ -1549,37 +1546,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		default:
 			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op,*instr);
 		}
-		SPACES; debug("%s\t%s,1", mnem, modrm_rm);
-	} else if (op == 0xd2) {
-		switch ((*instr >> 3) & 0x7) {
-		case 4:	modrm(cpu, MODRM_READ, mode, mode67, MODRM_EIGHTBIT,
-			    &instr, &ilen, NULL, NULL);
-			SPACES; debug("shl\t%s,cl", modrm_rm);
-			break;
-		case 5:	modrm(cpu, MODRM_READ, mode, mode67, MODRM_EIGHTBIT,
-			    &instr, &ilen, NULL, NULL);
-			SPACES; debug("shr\t%s,cl", modrm_rm);
-			break;
-		default:
-			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op,*instr);
-		}
-	} else if (op == 0xd3) {
-		switch ((*instr >> 3) & 0x7) {
-		case 4:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
-			    NULL, NULL);
-			SPACES; debug("shl\t%s,cl", modrm_rm);
-			break;
-		case 5:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
-			    NULL, NULL);
-			SPACES; debug("shr\t%s,cl", modrm_rm);
-			break;
-		case 7:	modrm(cpu, MODRM_READ, mode, mode67, 0, &instr, &ilen,
-			    NULL, NULL);
-			SPACES; debug("sar\t%s,cl", modrm_rm);
-			break;
-		default:
-			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op,*instr);
-		}
+		SPACES; debug("%s\t%s,", mnem, modrm_rm);
+		if (op <= 0xd1)
+			debug("1");
+		else
+			debug("cl");
 	} else if (op == 0xd4) {
 		SPACES; debug("aam");
 	} else if (op == 0xd5) {

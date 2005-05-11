@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.85 2005-05-11 14:25:41 debug Exp $
+ *  $Id: cpu_x86.c,v 1.86 2005-05-11 17:19:52 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -283,27 +283,157 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  *  x86_cpu_register_match():
  */
 void x86_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
+	int writeflag, uint64_t *valuep, int *mr)
 {
 	int cpunr = 0;
+	int r;
 
-	/*  CPU number:  */
+	/*  CPU number:  TODO  */
 
-	/*  TODO  */
-
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0 || strcasecmp(name, "ip") == 0
-	    || strcasecmp(name, "eip") == 0) {
-		if (writeflag) {
+	if (strcasecmp(name, "pc") == 0 || strcasecmp(name, "rip") == 0) {
+		if (writeflag)
 			m->cpus[cpunr]->pc = *valuep;
-		} else
+		else
 			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
+		*mr = 1;
+		return;
+	}
+	if (strcasecmp(name, "ip") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->pc = (m->cpus[cpunr]->pc & ~0xffff)
+			    | (*valuep & 0xffff);
+		else
+			*valuep = m->cpus[cpunr]->pc & 0xffff;
+		*mr = 1;
+		return;
+	}
+	if (strcasecmp(name, "eip") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->pc = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->pc & 0xffffffffULL;
+		*mr = 1;
+		return;
 	}
 
-#if 0
-TODO: regmatch for 64, 32, 16, and 8 bit register names
-#endif
+	if (strcasecmp(name, "rflags") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->cd.x86.rflags = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->cd.x86.rflags;
+		*mr = 1;
+		return;
+	}
+	if (strcasecmp(name, "eflags") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->cd.x86.rflags = (m->cpus[cpunr]->
+			    cd.x86.rflags & ~0xffffffffULL) | (*valuep &
+			    0xffffffffULL);
+		else
+			*valuep = m->cpus[cpunr]->cd.x86.rflags & 0xffffffffULL;
+		*mr = 1;
+		return;
+	}
+	if (strcasecmp(name, "flags") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->cd.x86.rflags = (m->cpus[cpunr]->
+			    cd.x86.rflags & ~0xffff) | (*valuep & 0xffff);
+		else
+			*valuep = m->cpus[cpunr]->cd.x86.rflags & 0xffff;
+		*mr = 1;
+		return;
+	}
+
+	/*  8-bit low:  */
+	for (r=0; r<4; r++)
+		if (strcasecmp(name, reg_names_bytes[r]) == 0) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.x86.r[r] =
+				    (m->cpus[cpunr]->cd.x86.r[r] & ~0xff)
+				    | (*valuep & 0xff);
+			else
+				*valuep = m->cpus[cpunr]->cd.x86.r[r] & 0xff;
+			*mr = 1;
+			return;
+		}
+
+	/*  8-bit high:  */
+	for (r=0; r<4; r++)
+		if (strcasecmp(name, reg_names_bytes[r+4]) == 0) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.x86.r[r] =
+				    (m->cpus[cpunr]->cd.x86.r[r] & ~0xff00)
+				    | ((*valuep & 0xff) << 8);
+			else
+				*valuep = (m->cpus[cpunr]->cd.x86.r[r] >>
+				    8) & 0xff;
+			*mr = 1;
+			return;
+		}
+
+	/*  16-, 32-, 64-bit registers:  */
+	for (r=0; r<N_X86_REGS; r++) {
+		/*  16-bit:  */
+		if (r<8 && strcasecmp(name, reg_names[r]) == 0) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.x86.r[r] =
+				    (m->cpus[cpunr]->cd.x86.r[r] & ~0xffff)
+				    | (*valuep & 0xffff);
+			else
+				*valuep = m->cpus[cpunr]->cd.x86.r[r] & 0xffff;
+			*mr = 1;
+			return;
+		}
+
+		/*  32-bit:  */
+		if (r<8 && (name[0]=='e' || name[0]=='E') &&
+		    strcasecmp(name+1, reg_names[r]) == 0) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.x86.r[r] =
+				    *valuep & 0xffffffffULL;
+			else
+				*valuep = m->cpus[cpunr]->cd.x86.r[r] &
+				    0xffffffffULL;
+			*mr = 1;
+			return;
+		}
+
+		/*  64-bit:  */
+		if ((name[0]=='r' || name[0]=='R') &&
+		    strcasecmp(name+1, reg_names[r]) == 0) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.x86.r[r] = *valuep;
+			else
+				*valuep = m->cpus[cpunr]->cd.x86.r[r];
+			*mr = 1;
+			return;
+		}
+	}
+
+	/*  segment names:  */
+	for (r=0; r<N_X86_SEGS; r++) {
+		if (strcasecmp(name, seg_names[r]) == 0) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.x86.s[r] =
+				    (m->cpus[cpunr]->cd.x86.s[r] & ~0xffff)
+				    | (*valuep & 0xffff);
+			else
+				*valuep = m->cpus[cpunr]->cd.x86.s[r] & 0xffff;
+			*mr = 1;
+			return;
+		}
+	}
+
+	/*  control registers: (TODO: 32- vs 64-bit on AMD64?)  */
+	if (strncasecmp(name, "cr", 2) == 0 && atoi(name+2) < N_X86_CREGS ) {
+		int r = atoi(name+2);
+		if (writeflag)
+			m->cpus[cpunr]->cd.x86.cr[r] = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->cd.x86.cr[r];
+		*mr = 1;
+		return;
+	}
 }
 
 

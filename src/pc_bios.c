@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.36 2005-05-11 02:19:36 debug Exp $
+ *  $Id: pc_bios.c,v 1.37 2005-05-11 12:52:21 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -236,6 +236,9 @@ static void pc_bios_int10(struct cpu *cpu)
 			    PHYSICAL);
 			set_cursor_scanlines(cpu, 0x40, 0);
 			break;
+		case 0x19:
+			fatal("TODO: mode 0x19?\n");
+			break;
 		default:
 			fatal("pc_bios_int10(): unimplemented video mode "
 			    "0x%02x\n", al);
@@ -435,6 +438,10 @@ static void pc_bios_int15(struct cpu *cpu)
 	switch (ah) {
 	case 0x41:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x41: TODO ]\n");
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		break;
+	case 0x53:	/*  TODO  */
+		fatal("[ PC BIOS int 0x15,0x53: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	case 0x88:	/*  Extended Memory Size Determination  */

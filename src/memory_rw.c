@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.20 2005-05-10 18:17:54 debug Exp $
+ *  $Id: memory_rw.c,v 1.21 2005-05-11 12:52:21 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -318,6 +318,8 @@ have_paddr:
 				    ( (abs(res) - 1) *
 				     cpu->cd.mips.cpu_type.instrs_per_cycle );
 #endif
+
+#ifndef MEM_X86
 				/*
 				 *  If accessing the memory mapped device
 				 *  failed, then return with a DBE exception.
@@ -333,7 +335,7 @@ have_paddr:
 #endif
 					return MEMORY_ACCESS_FAILED;
 				}
-
+#endif
 				goto do_return_ok;
 			}
 

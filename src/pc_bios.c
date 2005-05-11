@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.34 2005-05-11 00:21:46 debug Exp $
+ *  $Id: pc_bios.c,v 1.35 2005-05-11 00:38:01 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -431,6 +431,10 @@ static void pc_bios_int15(struct cpu *cpu)
 		break;
 	case 0xc0:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0xc0: TODO ]\n");
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		break;
+	case 0xe8:	/*  TODO  */
+		fatal("[ PC BIOS int 0x15,0xe8: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	default:

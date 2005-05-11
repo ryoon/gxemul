@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.80 2005-05-11 00:21:46 debug Exp $
+ *  $Id: cpu_x86.c,v 1.81 2005-05-11 00:38:01 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1103,10 +1103,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				    &instr, &ilen, NULL, NULL);
 				SPACES; debug("cmpxchg\t%s,%s",
 				    modrm_rm, modrm_r);
-			} else if (imm == 0xb4 || imm == 0xb5) {
+			} else if (imm == 0xb2 || imm == 0xb4 || imm == 0xb5) {
 				modrm(cpu, MODRM_READ, mode, mode67, 0,
 				    &instr, &ilen, NULL, NULL);
 				switch (imm) {
+				case 0xb2: mnem = "lss"; break;
 				case 0xb4: mnem = "lfs"; break;
 				case 0xb5: mnem = "lgs"; break;
 				}
@@ -2218,6 +2219,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						cpu->cd.x86.r[X86_R_AX] = op1;
 				}
 				break;
+			case 0xb2:	/*  LSS  */
 			case 0xb4:	/*  LFS  */
 			case 0xb5:	/*  LGS  */
 				instr_orig = instr;
@@ -2230,10 +2232,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				op2 = tmp;
 				if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
 					return 0;
-				if (op == 0xb4)
-					cpu->cd.x86.s[X86_S_FS] = tmp;
-				else
-					cpu->cd.x86.s[X86_S_GS] = tmp;
+				switch (op) {
+				case 0xb2:
+					cpu->cd.x86.s[X86_S_SS] = tmp; break;
+				case 0xb4:
+					cpu->cd.x86.s[X86_S_FS] = tmp; break;
+				case 0xb5:
+					cpu->cd.x86.s[X86_S_GS] = tmp; break;
+				}
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;
@@ -3071,6 +3077,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
 			cpu->running = 0;
 		}
+	} else if (op == 0xd7) {		/*  XLAT  */
+		if (!x86_load(cpu, cpu->cd.x86.r[X86_R_BX] +
+		    (cpu->cd.x86.r[X86_R_AX] & 0xff), &tmp, 1))
+			return 0;
+		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
+		    | (tmp & 0xff);
 	} else if (op == 0xe4 || op == 0xe5) {	/*  IN imm,AL or AX/EAX  */
 		unsigned char databuf[8];
 		imm = read_imm(&instr, &newpc, 8);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.79 2005-05-10 22:51:17 debug Exp $
+ *  $Id: cpu_x86.c,v 1.80 2005-05-11 00:21:46 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -592,9 +592,17 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				case 1:	addr = cpu->cd.x86.r[X86_R_BX] +
 					    cpu->cd.x86.r[X86_R_DI]; break;
 				case 2:	addr = cpu->cd.x86.r[X86_R_BP] +
-					    cpu->cd.x86.r[X86_R_SI]; break;
+					    cpu->cd.x86.r[X86_R_SI];
+					if (!cpu->cd.x86.seg_override)
+						cpu->cd.x86.cursegment =
+						    cpu->cd.x86.s[X86_S_SS];
+					break;
 				case 3:	addr = cpu->cd.x86.r[X86_R_BP] +
-					    cpu->cd.x86.r[X86_R_DI]; break;
+					    cpu->cd.x86.r[X86_R_DI];
+					if (!cpu->cd.x86.seg_override)
+						cpu->cd.x86.cursegment =
+						    cpu->cd.x86.s[X86_S_SS];
+					break;
 				case 4:	addr = cpu->cd.x86.r[X86_R_SI]; break;
 				case 5:	addr = cpu->cd.x86.r[X86_R_DI]; break;
 				case 6:	addr = read_imm_common(instrp, lenp,
@@ -716,15 +724,24 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					break;
 				case 2:	addr += cpu->cd.x86.r[X86_R_BP]
 					    + cpu->cd.x86.r[X86_R_SI];
+					if (!cpu->cd.x86.seg_override)
+						cpu->cd.x86.cursegment =
+						    cpu->cd.x86.s[X86_S_SS];
 					break;
 				case 3:	addr += cpu->cd.x86.r[X86_R_BP]
 					    + cpu->cd.x86.r[X86_R_DI];
+					if (!cpu->cd.x86.seg_override)
+						cpu->cd.x86.cursegment =
+						    cpu->cd.x86.s[X86_S_SS];
 					break;
 				case 4:	addr += cpu->cd.x86.r[X86_R_SI];
 					break;
 				case 5:	addr += cpu->cd.x86.r[X86_R_DI];
 					break;
 				case 6:	addr += cpu->cd.x86.r[X86_R_BP];
+					if (!cpu->cd.x86.seg_override)
+						cpu->cd.x86.cursegment =
+						    cpu->cd.x86.s[X86_S_SS];
 					break;
 				case 7:	addr += cpu->cd.x86.r[X86_R_BX];
 					break;
@@ -1857,6 +1874,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  Read an instruction from memory:  */
 	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_CS];
+	cpu->cd.x86.seg_override = 0;
 
 	r = cpu->memory_rw(cpu, cpu->mem, cpu->pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION);
@@ -1905,16 +1923,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				mode67 = 16;
 		} else if (instr[0] == 0x26) {
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x2e) {
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_CS];
+			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x36) {
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x3e) {
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_DS];
+			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x64) {
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_FS];
+			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x65) {
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_GS];
+			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0xf0) {
 			/*  lock  */
 		} else if (instr[0] == 0xf2) {
@@ -3408,8 +3432,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->running = 0;
 			} else {
 				success = modrm(cpu, MODRM_READ, mode, mode67,
-				    MODRM_JUST_GET_ADDR, &instr,
-				    &newpc, &op1, &op2);
+				    0, &instr, &newpc, &op1, &op2);
 				if (!success)
 					return 0;
 				newpc = op1;

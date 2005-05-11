@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.33 2005-05-10 17:14:11 debug Exp $
+ *  $Id: pc_bios.c,v 1.34 2005-05-11 00:21:46 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -366,13 +366,13 @@ static void pc_bios_int13(struct cpu *cpu)
 		/*  Do nothing. :-)  */
 		break;
 	case 8:	/*  get drive status: TODO  */
-		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
-		cpu->cd.x86.r[X86_R_BX] &= ~0xff;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
 		cpu->cd.x86.r[X86_R_BX] |= 4;
 		cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
-		cpu->cd.x86.r[X86_R_CX] |= (80 << 8) | 18;
+		cpu->cd.x86.r[X86_R_CX] |= (79 << 8) | 18;
 		cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
-		cpu->cd.x86.r[X86_R_DX] |= 0x0201;  /* dl = nr of drives  */
+		cpu->cd.x86.r[X86_R_DX] |= 0x0101;  /* dl = nr of drives  */
 		/*  TODO: dl, es:di and all other regs  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		break;
@@ -468,6 +468,8 @@ static int pc_bios_int16(struct cpu *cpu)
 			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
 			    ~0xffff) | scancode << 8 | asciicode;
 		}
+		if (asciicode == 0 && ah == 0)
+			return 0;
 		break;
 	case 0x02:	/*  read keyboard flags  */
 		/*  TODO: keep this byte updated  */

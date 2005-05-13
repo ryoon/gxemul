@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.13 2005-05-13 01:42:30 debug Exp $
+ *  $Id: cpu_x86.h,v 1.14 2005-05-13 13:29:40 debug Exp $
  */
 
 #include "misc.h"
@@ -131,6 +131,8 @@ struct x86_cpu {
 #define	X86_FLAGS_RF	(1<<16)		/*  Resume Flag  */
 #define	X86_FLAGS_VM	(1<<17)		/*  VM86 Flag  */
 #define	X86_FLAGS_AC	(1<<18)		/*  Alignment Check  */
+#define	X86_FLAGS_VIF	(1<<19)		/*  ?  */
+#define	X86_FLAGS_VIP	(1<<20)		/*  ?  */
 #define	X86_FLAGS_ID	(1<<21)		/*  CPUID present  */
 
 

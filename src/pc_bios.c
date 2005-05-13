@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.37 2005-05-11 12:52:21 debug Exp $
+ *  $Id: pc_bios.c,v 1.38 2005-05-13 13:29:39 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -294,6 +294,17 @@ static void pc_bios_int10(struct cpu *cpu)
 		}
 		if (!(al & 1))
 			set_cursor_pos(cpu, oldx, oldy);
+		break;
+	case 0x1a:	/*  get/set video display combination  */
+		if (al != 0) {
+			fatal("FATAL: Unimplemented BIOS int 0x10 function"
+			    " 0x%02x, al=0x%02\n", ah, al);
+			cpu->running = 0;
+		}
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff;
+		cpu->cd.x86.r[X86_R_AX] |= 0x1a;
+		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_BX] |= 0x0008;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"

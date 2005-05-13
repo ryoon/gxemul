@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.87 2005-05-11 17:52:42 debug Exp $
+ *  $Id: cpu_x86.c,v 1.88 2005-05-13 00:40:38 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -146,6 +146,7 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 		cpu->cd.x86.bits = 64;
 
 	cpu->cd.x86.r[X86_R_SP] = 0x0ff0;
+	cpu->cd.x86.rflags = 0x0002;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -1753,6 +1754,11 @@ static void x86_cpuid(struct cpu *cpu)
 {
 	switch (cpu->cd.x86.r[X86_R_AX]) {
 	case 0:	cpu->cd.x86.r[X86_R_AX] = 0;	/*  TODO  */
+		/*  Either AMD...  */
+		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
+		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
+		cpu->cd.x86.r[X86_R_CX] = 0x69746E65;
+		/*  ... or Intel:  */
 		cpu->cd.x86.r[X86_R_BX] = 0x756e6547;  /*  "Genu"  */
 		cpu->cd.x86.r[X86_R_DX] = 0x49656e69;  /*  "ineI"  */
 		cpu->cd.x86.r[X86_R_CX] = 0x6c65746e;  /*  "ntel"  */
@@ -1992,8 +1998,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	if (!single_step)
 		for (i=0; i<cpu->machine->n_breakpoints; i++)
 			if (cpu->pc == cpu->machine->breakpoint_addr[i]) {
-				fatal("Breakpoint reached, pc=0x%llx",
-				    (long long)cpu->pc);
+				fatal("Breakpoint reached, 0x%04x:0x%llx\n",
+				    cpu->cd.x86.s[X86_S_CS],
+				   (long long)cpu->pc);
 				single_step = 1;
 				return 0;
 			}
@@ -2771,6 +2778,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		cpu->cd.x86.rflags = tmp;
 		/*  TODO: only affect some bits?  */
+		cpu->cd.x86.rflags |= 0x0002;
 	} else if (op == 0x9e) {		/*  SAHF  */
 		int mask = (X86_FLAGS_SF | X86_FLAGS_ZF
 		    | X86_FLAGS_AF | X86_FLAGS_PF | X86_FLAGS_CF);
@@ -2845,8 +2853,18 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					return 0;
 			} else
 				value = cpu->cd.x86.r[X86_R_AX];
-			if (lods)
-				cpu->cd.x86.r[X86_R_AX] = value;
+			if (lods) {
+				if (op == 0xac)
+					cpu->cd.x86.r[X86_R_AX] =
+					    (cpu->cd.x86.r[X86_R_AX] & ~0xff)
+					    | (value & 0xff);
+				else if (mode == 16)
+					cpu->cd.x86.r[X86_R_AX] =
+					    (cpu->cd.x86.r[X86_R_AX] & ~0xffff)
+					    | (value & 0xffff);
+				else
+					cpu->cd.x86.r[X86_R_AX] = value;
+			}
 
 			if (stos || movs) {
 				cpu->cd.x86.cursegment = cpu->cd.x86.s[

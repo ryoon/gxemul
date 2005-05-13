@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.91 2005-05-13 14:19:55 debug Exp $
+ *  $Id: cpu_x86.c,v 1.92 2005-05-13 15:53:55 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1173,7 +1173,23 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			SPACES; debug("pop\tcs");
 		} else {
 			imm = read_imm_and_print(&instr, &ilen, 8);
-			if (imm == 0x01) {
+			if (imm == 0x00) {
+				int subop = (*instr >> 3) & 0x7;
+				switch (subop) {
+				case 1:	modrm(cpu, MODRM_READ, 16 /* note:16 */,
+					    mode67, 0, &instr, &ilen,
+					    NULL, NULL);
+					SPACES; debug("str\t%s", modrm_rm);
+					break;
+				case 3:	modrm(cpu, MODRM_READ, 16 /* note:16 */,
+					    mode67, 0, &instr, &ilen,
+					    NULL, NULL);
+					SPACES; debug("ltr\t%s", modrm_rm);
+					break;
+				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
+					    ",0x%02x,0x%02x", op, imm, *instr);
+				}
+			} else if (imm == 0x01) {
 				int subop = (*instr >> 3) & 0x7;
 				switch (subop) {
 				case 0:
@@ -1234,6 +1250,20 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("pop\tfs");
 			} else if (imm == 0xa2) {
 				SPACES; debug("cpuid");
+			} else if (imm == 0xa4 || imm == 0xa5 ||
+			    imm == 0xac || imm == 0xad) {
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &ilen, NULL, NULL);
+				SPACES; debug("sh%sd\t%s,%s,",
+				    imm <= 0xa5? "l" : "r",
+				    modrm_rm, modrm_r);
+				if (imm & 1)
+					debug("cl");
+				else {
+					imm2 = read_imm_and_print(&instr,
+					    &ilen, 8);
+					debug("%i", imm2);
+				}
 			} else if (imm == 0xa8) {
 				SPACES; debug("push\tgs");
 			} else if (imm == 0xa9) {
@@ -2114,6 +2144,8 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 			cpu->cd.x86.rflags |= X86_FLAGS_CF;
 	}
 
+	/*  TODO: OF flag  */
+
 	*op1p = op1;
 }
 
@@ -2468,6 +2500,46 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			case 0xa2:
 				x86_cpuid(cpu);
+				break;
+			case 0xa4:
+			case 0xa5:
+			case 0xac:
+			case 0xad:
+				instr_orig = instr;
+				if (!modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &newpc, &op1, &op2))
+					return 0;
+				if (imm & 1)
+					imm2 = cpu->cd.x86.r[X86_R_CX];
+				else
+					imm2 = read_imm(&instr, &newpc, 8);
+				imm2 &= 31;
+				if (imm <= 0xa5) {	/*  SHLD  */
+					if (mode == 16) {
+						op1 = (op1 << 16) & 0xffff;
+						op1 |= (op2 & 0xffff);
+					} else {
+						op1 = (op1 << 32) & 0xffffffff;
+						op1 |= (op2 & 0xffffffff);
+					}
+					x86_shiftrotate(cpu, &op1, 4, imm2,
+					    mode == 64? 64 : mode * 2);
+					op1 >>= (mode==16? 16 : 32);
+				} else {		/*  SHRD  */
+					if (mode == 16) {
+						op2 = (op2 << 16) & 0xffff;
+						op1 = (op1 & 0xffff) | op2;
+					} else {
+						op2 = (op2 << 32) & 0xffffffff;
+						op1 = (op1 & 0xffffffff) | op2;
+					}
+					x86_shiftrotate(cpu, &op1, 5, imm2,
+					    mode == 64? 64 : mode * 2);
+					op1 &= (mode==16? 0xffff : 0xffffffff);
+				}
+				if (!modrm(cpu, MODRM_WRITE_RM, mode, mode67,
+				    0, &instr_orig, NULL, &op1, &op2))
+					return 0;
 				break;
 			case 0xa8:
 				if (!x86_push(cpu, cpu->cd.x86.s[X86_S_GS],

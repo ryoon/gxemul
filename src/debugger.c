@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.102 2005-05-11 17:19:52 debug Exp $
+ *  $Id: debugger.c,v 1.103 2005-05-13 14:26:29 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -904,6 +904,8 @@ static void debugger_cmd_print(struct machine *m, char *cmd_line)
 		printf("Multiple matches. Try prefixing with %%, $, or @.\n");
 		break;
 	case NAME_PARSE_REGISTER:
+		printf("%s = 0x%llx\n", cmd_line, (long long)tmp);
+		break;
 	case NAME_PARSE_SYMBOL:
 		printf("%s = 0x%016llx\n", cmd_line, (long long)tmp);
 		break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.88 2005-05-13 00:40:38 debug Exp $
+ *  $Id: cpu_x86.c,v 1.89 2005-05-13 01:42:30 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -147,6 +147,12 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 
 	cpu->cd.x86.r[X86_R_SP] = 0x0ff0;
 	cpu->cd.x86.rflags = 0x0002;
+
+	if (cpu->cd.x86.model.model_number == X86_MODEL_8086)
+		cpu->cd.x86.rflags |= 0xf000;
+
+	if (cpu->cd.x86.model.model_number >= X86_MODEL_80486)
+		cpu->cd.x86.rflags |= X86_FLAGS_ID;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -1299,9 +1305,9 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		SPACES; debug("%s\t%s%s", mnem, e, reg_names[op & 7]);
 	} else if (op == 0x60) {
-		SPACES; debug("pusha");
+		SPACES; debug("pusha%s", mode==16? "" : (mode==32? "d" : "q"));
 	} else if (op == 0x61) {
-		SPACES; debug("popa");
+		SPACES; debug("popa%s", mode==16? "" : (mode==32? "d" : "q"));
 	} else if (op == 0x62) {
 		modrm(cpu, MODRM_READ, mode, mode67,
 		    0, &instr, &ilen, NULL, NULL);
@@ -1408,9 +1414,9 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0x9b) {
 		SPACES; debug("wait");
 	} else if (op == 0x9c) {
-		SPACES; debug("pushf");
+		SPACES; debug("pushf%s", mode==16? "" : (mode==32? "d" : "q"));
 	} else if (op == 0x9d) {
-		SPACES; debug("popf");
+		SPACES; debug("popf%s", mode==16? "" : (mode==32? "d" : "q"));
 	} else if (op == 0x9e) {
 		SPACES; debug("sahf");
 	} else if (op == 0x9f) {
@@ -1753,7 +1759,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 static void x86_cpuid(struct cpu *cpu)
 {
 	switch (cpu->cd.x86.r[X86_R_AX]) {
-	case 0:	cpu->cd.x86.r[X86_R_AX] = 0;	/*  TODO  */
+	case 0:	cpu->cd.x86.r[X86_R_AX] = 1;	/*  TODO  */
 		/*  Either AMD...  */
 		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
 		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
@@ -1762,6 +1768,11 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_BX] = 0x756e6547;  /*  "Genu"  */
 		cpu->cd.x86.r[X86_R_DX] = 0x49656e69;  /*  "ineI"  */
 		cpu->cd.x86.r[X86_R_CX] = 0x6c65746e;  /*  "ntel"  */
+		break;
+	case 1:	cpu->cd.x86.r[X86_R_AX] = 0;
+		cpu->cd.x86.r[X86_R_BX] = 0;
+		cpu->cd.x86.r[X86_R_CX] = 0;
+		cpu->cd.x86.r[X86_R_DX] = 0;
 		break;
 	default:fatal("x86_cpuid(): unimplemented eax = 0x%x\n",
 		    cpu->cd.x86.r[X86_R_AX]);
@@ -1926,6 +1937,8 @@ cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		cpu->cd.x86.rflags ^= X86_FLAGS_OF;
 
 	/*  TODO: other bits?  AF, PF  */
+	cpu->cd.x86.rflags &= ~X86_FLAGS_AF;
+	cpu->cd.x86.rflags &= ~X86_FLAGS_PF;
 }
 
 
@@ -2466,6 +2479,17 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 		cpu->cd.x86.s[op / 8] = tmp;
+	} else if (op == 0x37) {			/*  AAA  */
+		int b = cpu->cd.x86.r[X86_R_AX] & 0xf;
+		if (b > 9) {
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX]
+			    & ~0xff00) | ((cpu->cd.x86.r[X86_R_AX] &
+			    0xff00) + 0x100);
+			cpu->cd.x86.rflags |= X86_FLAGS_CF | X86_FLAGS_AF;
+		} else {
+			cpu->cd.x86.rflags &= ~(X86_FLAGS_CF | X86_FLAGS_AF);
+		}
+		cpu->cd.x86.r[X86_R_AX] &= ~0xf0;
 	} else if (op >= 0x40 && op <= 0x4f) {
 		int old_cf = cpu->cd.x86.rflags & X86_FLAGS_CF;
 		if (op < 0x48) {
@@ -2776,9 +2800,25 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0x9d) {		/*  POPF  */
 		if (!x86_pop(cpu, &tmp, mode))
 			return 0;
-		cpu->cd.x86.rflags = tmp;
+		if (mode == 16)
+			cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
+			    | (tmp & 0xffff);
+		else if (mode == 32)
+			cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffffffff)
+			    | (tmp & 0xffffffff);
+		else
+			cpu->cd.x86.rflags = tmp;
 		/*  TODO: only affect some bits?  */
 		cpu->cd.x86.rflags |= 0x0002;
+		if (cpu->cd.x86.model.model_number == X86_MODEL_8086)
+			cpu->cd.x86.rflags |= 0xf000;
+		/*  TODO: all these bits aren't really cleared on a 286:  */
+		if (cpu->cd.x86.model.model_number == X86_MODEL_80286)
+			cpu->cd.x86.rflags &= ~0xf000;
+		if (cpu->cd.x86.model.model_number == X86_MODEL_80386)
+			cpu->cd.x86.rflags &= ~X86_FLAGS_AC;
+		if (cpu->cd.x86.model.model_number == X86_MODEL_80486)
+			cpu->cd.x86.rflags |= X86_FLAGS_ID;
 	} else if (op == 0x9e) {		/*  SAHF  */
 		int mask = (X86_FLAGS_SF | X86_FLAGS_ZF
 		    | X86_FLAGS_AF | X86_FLAGS_PF | X86_FLAGS_CF);

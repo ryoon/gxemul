@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.12 2005-05-11 00:21:47 debug Exp $
+ *  $Id: cpu_x86.h,v 1.13 2005-05-13 01:42:30 debug Exp $
  */
 
 #include "misc.h"
@@ -71,9 +71,11 @@ struct cpu_family;
 #define	N_X86_CONDS		8
 
 #define	X86_MODEL_8086		1
-#define	X86_MODEL_80386		2
-#define	X86_MODEL_PENTIUM	3
-#define	X86_MODEL_AMD64		4
+#define	X86_MODEL_80286		2
+#define	X86_MODEL_80386		3
+#define	X86_MODEL_80486		4
+#define	X86_MODEL_PENTIUM	5
+#define	X86_MODEL_AMD64		6
 
 struct x86_model {
 	int		model_number;
@@ -82,7 +84,9 @@ struct x86_model {
 
 #define	x86_models {							\
 	{ X86_MODEL_8086, "8086" },					\
+	{ X86_MODEL_80286, "80286" },					\
 	{ X86_MODEL_80386, "80386" },					\
+	{ X86_MODEL_80486, "80486" },					\
 	{ X86_MODEL_PENTIUM, "PENTIUM" },				\
 	{ X86_MODEL_AMD64, "AMD64" },					\
 	{ 0, NULL }							\
@@ -126,6 +130,8 @@ struct x86_cpu {
 #define	X86_FLAGS_NT	(1<<14)		/*  Nested Task Flag  */
 #define	X86_FLAGS_RF	(1<<16)		/*  Resume Flag  */
 #define	X86_FLAGS_VM	(1<<17)		/*  VM86 Flag  */
+#define	X86_FLAGS_AC	(1<<18)		/*  Alignment Check  */
+#define	X86_FLAGS_ID	(1<<21)		/*  CPUID present  */
 
 
 /*  cpu_x86.c:  */

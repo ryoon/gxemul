@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.93 2005-05-13 16:15:20 debug Exp $
+ *  $Id: cpu_x86.c,v 1.94 2005-05-13 17:57:59 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -643,14 +643,21 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	uint32_t imm, imm2;
 	uint64_t addr = 0;
 	int mod, r, rm, res = 1, z, q = mode/8, sib, s, i, b, immlen;
-	char *e = "";
+	char *e, *f;
 	int disasm = (op1p == NULL);
 
+	/*  e for data, f for addresses  */
+	e = f = "";
+
 	if (disasm) {
-		if (mode67 == 32)
+		if (mode == 32)
 			e = "e";
-		if (mode67 == 64)
+		if (mode == 64)
 			e = "r";
+		if (mode67 == 32)
+			f = "e";
+		if (mode67 == 64)
+			f = "r";
 		modrm_rm[0] = modrm_rm[sizeof(modrm_rm)-1] = '\0';
 		modrm_r[0] = modrm_r[sizeof(modrm_r)-1] = '\0';
 	}
@@ -689,18 +696,19 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 						    lenp, immlen, disasm);
 						sprintf(tmp, "0x%x", imm2);
 					} else
-						sprintf(tmp, "e%s",
+						sprintf(tmp, "%s%s", f,
 						    reg_names[b]);
 					if (i == 4)
 						sprintf(modrm_rm, "[%s]", tmp);
 					else if (s == 1)
-						sprintf(modrm_rm, "[e%s+%s]",
-						    reg_names[i], tmp);
+						sprintf(modrm_rm, "[%s%s+%s]",
+						    f, reg_names[i], tmp);
 					else
-						sprintf(modrm_rm, "[e%s*%i+%s]",
-						    reg_names[i], s, tmp);
+						sprintf(modrm_rm, "[%s%s*%i+%s"
+						    "]", f, reg_names[i],
+						    s, tmp);
 				} else {
-					sprintf(modrm_rm, "[e%s]",
+					sprintf(modrm_rm, "[%s%s]", f,
 					    reg_names[rm]);
 				}
 			} else {
@@ -804,52 +812,60 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					    z, disasm);
 					if (z == 8)  imm2 = (signed char)imm2;
 					if (i == 4)
-						sprintf(modrm_rm, "[e%s%s]",
-						    reg_names[b],
+						sprintf(modrm_rm, "[%s%s%s]",
+						    f, reg_names[b],
 						    ofs_string(imm2));
 					else if (s == 1)
-						sprintf(modrm_rm, "[e%s+e"
-						    "%s%s]", reg_names[i],
-						    reg_names[b],
+						sprintf(modrm_rm, "[%s%s+%s"
+						    "%s%s]", f, reg_names[i],
+						    f, reg_names[b],
 						    ofs_string(imm2));
 					else
-						sprintf(modrm_rm, "[e%s*%i+e"
-						    "%s%s]", reg_names[i], s,
-						    reg_names[b],
+						sprintf(modrm_rm, "[%s%s*%i+%s"
+						    "%s%s]", f, reg_names[i], s,
+						    f, reg_names[b],
 						    ofs_string(imm2));
 				} else {
 					imm2 = read_imm_common(instrp, lenp,
 					    z, disasm);
 					if (z == 8)  imm2 = (signed char)imm2;
-					sprintf(modrm_rm, "[e%s%s]",
+					sprintf(modrm_rm, "[%s%s%s]", f,
 					    reg_names[rm], ofs_string(imm2));
 				}
 			} else
 			switch (rm) {
 			case 0:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[bx+si+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[bx+si%s]",ofs_string(imm2));
+				break;
 			case 1:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[bx+di+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[bx+di%s]",ofs_string(imm2));
+				break;
 			case 2:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[bp+si+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[bp+si%s]",ofs_string(imm2));
+				break;
 			case 3:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[bp+di+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[bp+di%s]",ofs_string(imm2));
+				break;
 			case 4:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[si+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[si%s]", ofs_string(imm2));
+				break;
 			case 5:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[di+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[di%s]", ofs_string(imm2));
+				break;
 			case 6:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[bp+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[bp%s]", ofs_string(imm2));
+				break;
 			case 7:	imm2 = read_imm_common(instrp, lenp, z, disasm);
 				if (z == 8)  imm2 = (signed char)imm2;
-				sprintf(modrm_rm, "[bx+0x%x]", imm2); break;
+				sprintf(modrm_rm, "[bx%s]", ofs_string(imm2));
+				break;
 			}
 		} else {
 			if (mode67 >= 32) {
@@ -1179,8 +1195,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			SPACES; debug("%s\t%sax,0x%x", mnem, e, imm);
 			break;
 		default:
-			modrm(cpu, MODRM_READ, mode, mode67, !(op & 1),
-			    &instr, &ilen, NULL, NULL);
+			modrm(cpu, MODRM_READ, mode, mode67, op&1? 0 :
+			    MODRM_EIGHTBIT, &instr, &ilen, NULL, NULL);
 			SPACES; debug("%s\t", mnem);
 			if (op & 2)
 				debug("%s,%s", modrm_r, modrm_rm);
@@ -2410,6 +2426,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		success = x86_push(cpu, cpu->cd.x86.s[op / 8], mode);
 		if (!success)
 			return 0;
+	} else if (op == 0x0f && cpu->cd.x86.model.model_number ==
+	    X86_MODEL_8086) {
+		uint64_t tmp;
+		if (!x86_pop(cpu, &tmp, mode))
+			return 0;
+		cpu->cd.x86.s[X86_S_CS] = tmp;
 	} else if (op == 0x0f) {
 		uint64_t tmp;
 		int signflag, i;
@@ -2787,6 +2809,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0x68) {		/*  PUSH imm16/32  */
 		uint64_t imm = read_imm(&instr, &newpc, mode);
 		if (!x86_push(cpu, imm, mode))
+			return 0;
+	} else if (op == 0x69 || op == 0x6b) {
+		instr_orig = instr;
+		if (!modrm(cpu, MODRM_READ, mode, mode67, 0, &instr,
+		    &newpc, &op1, &op2))
+			return 0;
+		if (op == 0x69)
+			imm = read_imm(&instr, &newpc, mode);
+		else
+			imm = (signed char)read_imm(&instr, &newpc, 8);
+		op2 = op1 * imm;
+		/*  TODO: overflow!  */
+		if (!modrm(cpu, MODRM_WRITE_R, mode, mode67, 0,
+		    &instr_orig, NULL, &op1, &op2))
 			return 0;
 	} else if (op == 0x6a) {		/*  PUSH imm8  */
 		uint64_t imm = (signed char)read_imm(&instr, &newpc, 8);

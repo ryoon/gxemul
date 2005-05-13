@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.92 2005-05-13 15:53:55 debug Exp $
+ *  $Id: cpu_x86.c,v 1.93 2005-05-13 16:15:20 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -599,6 +599,24 @@ static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
 }
 
 
+static char *ofs_string(int32_t imm)
+{
+	static char buf[25];
+	buf[0] = buf[sizeof(buf)-1] = '\0';
+
+	if (imm > 32)
+		sprintf(buf, "+0x%x", imm);
+	else if (imm > 0)
+		sprintf(buf, "+%i", imm);
+	else if (imm < -32)
+		sprintf(buf, "-0x%x", -imm);
+	else if (imm < 0)
+		sprintf(buf, "-%i", -imm);
+
+	return buf;
+}
+
+
 static char modrm_r[65];
 static char modrm_rm[65];
 #define MODRM_READ	0
@@ -658,8 +676,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				if (rm == 5) {
 					imm2 = read_imm_common(instrp, lenp,
 					    immlen, disasm);
-					sprintf(modrm_rm, "[0x%x]",
-					    imm2);
+					sprintf(modrm_rm, "[0x%x]", imm2);
 				} else if (rm == 4) {
 					char tmp[20];
 					sib = read_imm_common(instrp, lenp,
@@ -787,22 +804,25 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					    z, disasm);
 					if (z == 8)  imm2 = (signed char)imm2;
 					if (i == 4)
-						sprintf(modrm_rm, "[e%s+0x%x]",
-						    reg_names[b], imm2);
+						sprintf(modrm_rm, "[e%s%s]",
+						    reg_names[b],
+						    ofs_string(imm2));
 					else if (s == 1)
 						sprintf(modrm_rm, "[e%s+e"
-						    "%s+0x%x]", reg_names[i],
-						    reg_names[b], imm2);
+						    "%s%s]", reg_names[i],
+						    reg_names[b],
+						    ofs_string(imm2));
 					else
 						sprintf(modrm_rm, "[e%s*%i+e"
-						    "%s+0x%x]", reg_names[i], s,
-						    reg_names[b], imm2);
+						    "%s%s]", reg_names[i], s,
+						    reg_names[b],
+						    ofs_string(imm2));
 				} else {
 					imm2 = read_imm_common(instrp, lenp,
 					    z, disasm);
 					if (z == 8)  imm2 = (signed char)imm2;
-					sprintf(modrm_rm, "[e%s+0x%x]",
-					    reg_names[rm], imm2);
+					sprintf(modrm_rm, "[e%s%s]",
+					    reg_names[rm], ofs_string(imm2));
 				}
 			} else
 			switch (rm) {
@@ -1342,6 +1362,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0x68) {
 		imm = read_imm_and_print(&instr, &ilen, mode);
 		SPACES; debug("push\t%sword 0x%x", mode==32?"d":"", imm);
+	} else if (op == 0x69 || op == 0x6b) {
+		modrm(cpu, MODRM_READ, mode, mode67,
+		    0, &instr, &ilen, NULL, NULL);
+		if (op == 0x69)
+			imm = read_imm_and_print(&instr, &ilen, mode);
+		else
+			imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
+		SPACES; debug("imul\t%s,%s,%i", modrm_r, modrm_rm, imm);
 	} else if (op == 0x6a) {
 		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("push\tbyte 0x%x", imm);
@@ -2477,7 +2505,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				modrm(cpu, MODRM_READ, 32, mode67,
 				    MODRM_CR, &instr, &newpc, &op1, &op2);
 				op1 = op2;
-				modrm(cpu, MODRM_WRITE_R, mode, mode67,
+				modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 				    MODRM_CR, &instr_orig, NULL, &op1, &op2);
 				break;
 			case 0x22:	/*  MOV CRx,r/m  */

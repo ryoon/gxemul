@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.729 2005-05-13 00:40:37 debug Exp $
+$Id: HISTORY,v 1.730 2005-05-13 14:19:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1891,4 +1891,6 @@ Changelog for GXemul:
 20050509	Adding more x86 instructions.
 20050510	Minor documentation updates, and other updates (x86 stuff etc.)
 20050511	More x86-related updates.
-20050513	Minor updates.
+20050513	Various updates, mostly x86-related. (Trying to fix flag 
+		calculation, factoring out the ugly shift/rotate code, and
+		some other things.)

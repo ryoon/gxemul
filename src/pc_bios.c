@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.39 2005-05-14 00:06:03 debug Exp $
+ *  $Id: pc_bios.c,v 1.40 2005-05-14 00:31:46 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -276,6 +276,9 @@ static void pc_bios_int10(struct cpu *cpu)
 		break;
 	case 0x06:
 		scroll_up(cpu, cl, ch, dl, dh, bh);
+		break;
+	case 0x08:	/*  read char and attr at cur position  */
+		/*  TODO: return AH=attr, AL=char  */
 		break;
 	case 0x09:	/*  write character and attribute(todo)  */
 		while (cx-- > 0)

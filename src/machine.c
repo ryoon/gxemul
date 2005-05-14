@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.430 2005-05-13 00:40:38 debug Exp $
+ *  $Id: machine.c,v 1.431 2005-05-14 00:31:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -420,6 +420,17 @@ void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
 	if ((addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
+
+	if ((addr & 255) == 0 && (((size_t)s) & 255) == 0) {
+		while (len >= 256) {
+			cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)s,
+			    256, MEM_WRITE, CACHE_DATA);
+			addr += 256;
+			s += 256;
+			len -= 256;
+		}
+	}
+
 	if ((addr & 7) == 0 && (((size_t)s) & 7) == 0) {
 		while (len >= 8) {
 			cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)s,

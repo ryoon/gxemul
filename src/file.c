@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.91 2005-05-11 11:40:34 debug Exp $
+ *  $Id: file.c,v 1.92 2005-05-14 00:05:55 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -123,6 +123,8 @@ struct ms_sym {
 	}
 
 
+#define	AOUT_FLAG_DECOSF1		1
+#define	AOUT_FLAG_FROM_BEGINNING	2
 /*
  *  file_load_aout():
  *
@@ -133,7 +135,7 @@ struct ms_sym {
  *         formats, where text/data are aligned differently.
  */
 static void file_load_aout(struct machine *m, struct memory *mem,
-	char *filename, int osf1_hack,
+	char *filename, int flags,
 	uint64_t *entrypointp, int arch, int *byte_orderp)
 {
 	struct exec aout_header;
@@ -152,7 +154,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		exit(1);
 	}
 
-	if (osf1_hack) {
+	if (flags & AOUT_FLAG_DECOSF1) {
 		fread(&buf, 1, 32, f);
 		vaddr = buf[16] + (buf[17] << 8) +
 		    (buf[18] << 16) + (buf[19] << 24);
@@ -185,6 +187,11 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		unencode(symbsize, &aout_header.a_syms, uint32_t);
 	}
 
+	if (flags & AOUT_FLAG_FROM_BEGINNING) {
+		fseek(f, 0, SEEK_SET);
+		vaddr &= ~0xfff;
+	}
+
 	/*  Load text and data:  */
 	total_len = textsize + datasize;
 	while (total_len != 0) {
@@ -198,7 +205,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr,
 			    &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
 		else {
-			if (osf1_hack)
+			if (flags & AOUT_FLAG_DECOSF1)
 				break;
 			else {
 				fprintf(stderr, "could not read from %s\n",
@@ -268,7 +275,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 
 	fclose(f);
 
-	*entrypointp = entry;
+	*entrypointp = (int32_t)entry;
 
 	if (encoding == ELFDATA2LSB)
 		*byte_orderp = EMUL_LITTLE_ENDIAN;
@@ -1584,14 +1591,22 @@ void file_load(struct machine *machine, struct memory *mem,
 		goto ret;
 	}
 
-	/*  Is it an a.out?  (Special case for DEC OSF1 kernels.)  */
+	/*  Is it an a.out?  */
 	if (buf[0]==0x00 && buf[1]==0x8b && buf[2]==0x01 && buf[3]==0x07) {
+		/*  MIPS a.out  */
 		file_load_aout(machine, mem, filename, 0,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}
+	if (buf[0]==0x00 && buf[1]==0x86 && buf[2]==0x01 && buf[3]==0x0b) {
+		/*  i386 a.out (old OpenBSD and NetBSD etc)  */
+		file_load_aout(machine, mem, filename, AOUT_FLAG_FROM_BEGINNING,
+		    entrypointp, arch, byte_orderp);
+		goto ret;
+	}
 	if (buf[0]==0x00 && buf[2]==0x00 && buf[8]==0x7a && buf[9]==0x75) {
-		file_load_aout(machine, mem, filename, 1,
+		/*  DEC OSF1 on MIPS:  */
+		file_load_aout(machine, mem, filename, AOUT_FLAG_DECOSF1,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}

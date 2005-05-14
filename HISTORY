@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.733 2005-05-14 18:31:15 debug Exp $
+$Id: HISTORY,v 1.734 2005-05-14 20:14:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1898,3 +1898,4 @@ Changelog for GXemul:
 		Finally beginning the cleanup of machine/PROM/bios dependant
 		info.
 		Some minor documentation updates.
+		Trying to clean up ARCBIOS stuff a little.

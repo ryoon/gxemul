@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.6 2005-05-14 19:48:00 debug Exp $
+ *  $Id: arcbios.h,v 1.7 2005-05-14 20:14:22 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -47,8 +47,6 @@ struct cpu;
 /*  arcbios.c:  */
 void arcbios_add_string_to_component(char *string, uint64_t component);
 void arcbios_get_dsp_stat(struct cpu *cpu, struct arcbios_dsp_stat *dspstat);
-void arcbios_console_init(struct machine *machine,
-	uint64_t vram, uint64_t ctrlregs);
 void arcbios_register_scsicontroller(uint64_t scsicontroller_component);
 uint64_t arcbios_get_scsicontroller(void);
 void arcbios_add_memory_descriptor(struct cpu *cpu,
@@ -60,12 +58,28 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	size_t config_len);
 int arcbios_emul(struct cpu *cpu);
 void arcbios_set_default_exception_handler(struct cpu *cpu);
+
+void arcbios_console_init(struct machine *machine,
+	uint64_t vram, uint64_t ctrlregs);
 void arcbios_init(struct machine *machine, int is64bit);
 
 
+#define	MAX_ESC		16
+
 struct machine_arcbios {
-	int	arc_64bit;
-	int	vgaconsole;
+	int		arc_64bit;
+	int		vgaconsole;
+
+	uint64_t	console_vram;
+	uint64_t	console_ctrlregs;
+	char		escape_sequence[MAX_ESC+1];
+	int		in_escape_sequence;
+	int		console_maxx;
+	int		console_maxy;
+	int		console_curx;
+	int		console_cury;
+	int		console_reverse;
+	int		console_curcolor;
 };
 
 

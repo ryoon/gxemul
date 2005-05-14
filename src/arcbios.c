@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.99 2005-05-14 19:47:58 debug Exp $
+ *  $Id: arcbios.c,v 1.100 2005-05-14 20:14:21 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -70,7 +70,6 @@ static uint64_t configuration_data_component[MAX_CONFIG_DATA];
 static int configuration_data_len[MAX_CONFIG_DATA];
 static uint64_t configuration_data_configdata[MAX_CONFIG_DATA];
 
-static int arc_64bit = 0;		/*  For some SGI modes  */
 static int arc_wordlen = sizeof(uint32_t);
 
 static uint64_t scsicontroller = 0;
@@ -80,16 +79,6 @@ static uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
 
 static uint64_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
 static int n_arc_components = 0;
-
-static uint64_t arcbios_console_vram = 0;
-static uint64_t arcbios_console_ctrlregs = 0;
-#define MAX_ESC		16
-static char arcbios_escape_sequence[MAX_ESC+1];
-static int arcbios_in_escape_sequence;
-static int arcbios_console_maxx, arcbios_console_maxy;
-int arcbios_console_curx = 0, arcbios_console_cury = 0;
-static int arcbios_console_reverse = 0;
-int arcbios_console_curcolor = 0x1f;
 
 /*  Open file handles:  */
 #define	MAX_OPEN_STRINGLEN	200
@@ -141,15 +130,15 @@ void arcbios_get_dsp_stat(struct cpu *cpu, struct arcbios_dsp_stat *dspstat)
 	memset(dspstat, 0, sizeof(struct arcbios_dsp_stat));
 
 	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
-	    CursorXPosition, arcbios_console_curx + 1);
+	    CursorXPosition, cpu->machine->md.arc.console_curx + 1);
 	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
-	    CursorYPosition, arcbios_console_cury + 1);
+	    CursorYPosition, cpu->machine->md.arc.console_cury + 1);
 	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
 	    CursorMaxXPosition, ARC_CONSOLE_MAX_X);
 	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
 	    CursorMaxYPosition, ARC_CONSOLE_MAX_Y);
-	dspstat->ForegroundColor = arcbios_console_curcolor;
-	dspstat->HighIntensity = arcbios_console_curcolor ^ 0x08;
+	dspstat->ForegroundColor = cpu->machine->md.arc.console_curcolor;
+	dspstat->HighIntensity = cpu->machine->md.arc.console_curcolor ^ 0x08;
 }
 
 
@@ -160,12 +149,12 @@ static void arcbios_putcell(struct cpu *cpu, int ch, int x, int y)
 {
 	unsigned char buf[2];
 	buf[0] = ch;
-	buf[1] = arcbios_console_curcolor;
-	if (arcbios_console_reverse)
+	buf[1] = cpu->machine->md.arc.console_curcolor;
+	if (cpu->machine->md.arc.console_reverse)
 		buf[1] = ((buf[1] & 0x70) >> 4) | ((buf[1] & 7) << 4)
 		    | (buf[1] & 0x88);
-	cpu->memory_rw(cpu, cpu->mem, arcbios_console_vram +
-	    2*(x + arcbios_console_maxx * y),
+	cpu->memory_rw(cpu, cpu->mem, cpu->machine->md.arc.console_vram +
+	    2*(x + cpu->machine->md.arc.console_maxx * y),
 	    &buf[0], sizeof(buf), MEM_WRITE,
 	    CACHE_NONE | PHYSICAL);
 }
@@ -178,90 +167,90 @@ static void arcbios_putcell(struct cpu *cpu, int ch, int x, int y)
  */
 static void handle_esc_seq(struct cpu *cpu)
 {
-	int i, len = strlen(arcbios_escape_sequence);
+	int i, len = strlen(cpu->machine->md.arc.escape_sequence);
 	int row, col, color, code, start, stop;
 	char *p;
 
-	if (arcbios_escape_sequence[0] != '[')
+	if (cpu->machine->md.arc.escape_sequence[0] != '[')
 		return;
 
-	code = arcbios_escape_sequence[len-1];
-	arcbios_escape_sequence[len-1] = '\0';
+	code = cpu->machine->md.arc.escape_sequence[len-1];
+	cpu->machine->md.arc.escape_sequence[len-1] = '\0';
 
 	switch (code) {
 	case 'm':
-		color = atoi(arcbios_escape_sequence + 1);
+		color = atoi(cpu->machine->md.arc.escape_sequence + 1);
 		switch (color) {
 		case 0:	/*  Default.  */
-			arcbios_console_curcolor = 0x1f;
-			arcbios_console_reverse = 0; break;
+			cpu->machine->md.arc.console_curcolor = 0x1f;
+			cpu->machine->md.arc.console_reverse = 0; break;
 		case 1:	/*  "Bold".  */
-			arcbios_console_curcolor |= 0x08; break;
+			cpu->machine->md.arc.console_curcolor |= 0x08; break;
 		case 7:	/*  "Reverse".  */
-			arcbios_console_reverse = 1; break;
+			cpu->machine->md.arc.console_reverse = 1; break;
 		case 30: /*  Black foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x00; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x00; break;
 		case 31: /*  Red foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x04; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x04; break;
 		case 32: /*  Green foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x02; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x02; break;
 		case 33: /*  Yellow foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x06; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x06; break;
 		case 34: /*  Blue foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x01; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x01; break;
 		case 35: /*  Red-blue foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x05; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x05; break;
 		case 36: /*  Green-blue foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x03; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x03; break;
 		case 37: /*  White foreground.  */
-			arcbios_console_curcolor &= 0xf0;
-			arcbios_console_curcolor |= 0x07; break;
+			cpu->machine->md.arc.console_curcolor &= 0xf0;
+			cpu->machine->md.arc.console_curcolor |= 0x07; break;
 		case 40: /*  Black background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x00; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x00; break;
 		case 41: /*  Red background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x40; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x40; break;
 		case 42: /*  Green background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x20; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x20; break;
 		case 43: /*  Yellow background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x60; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x60; break;
 		case 44: /*  Blue background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x10; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x10; break;
 		case 45: /*  Red-blue background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x50; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x50; break;
 		case 46: /*  Green-blue background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x30; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x30; break;
 		case 47: /*  White background.  */
-			arcbios_console_curcolor &= 0x0f;
-			arcbios_console_curcolor |= 0x70; break;
+			cpu->machine->md.arc.console_curcolor &= 0x0f;
+			cpu->machine->md.arc.console_curcolor |= 0x70; break;
 		default:fatal("{ handle_esc_seq: color %i }\n", color);
 		}
 		return;
 	case 'H':
-		p = strchr(arcbios_escape_sequence, ';');
+		p = strchr(cpu->machine->md.arc.escape_sequence, ';');
 		if (p == NULL)
 			return;		/*  TODO  */
-		row = atoi(arcbios_escape_sequence + 1);
+		row = atoi(cpu->machine->md.arc.escape_sequence + 1);
 		col = atoi(p + 1);
 		if (col < 1)
 			col = 1;
 		if (row < 1)
 			row = 1;
-		arcbios_console_curx = col - 1;
-		arcbios_console_cury = row - 1;
+		cpu->machine->md.arc.console_curx = col - 1;
+		cpu->machine->md.arc.console_cury = row - 1;
 		return;
 	case 'J':
 		/*
@@ -269,36 +258,37 @@ static void handle_esc_seq(struct cpu *cpu)
 		 *      current line,
 		 *  2J = clear whole screen.
 		 */
-		i = atoi(arcbios_escape_sequence + 1);
+		i = atoi(cpu->machine->md.arc.escape_sequence + 1);
 		if (i != 0 && i != 2)
 			fatal("{ handle_esc_seq(): %iJ }\n", i);
 		if (i == 0)
-			for (col = arcbios_console_curx;
-			    col < arcbios_console_maxx; col++)
+			for (col = cpu->machine->md.arc.console_curx;
+			    col < cpu->machine->md.arc.console_maxx; col++)
 				arcbios_putcell(cpu, ' ', col,
-				    arcbios_console_cury);
-		for (col = 0; col < arcbios_console_maxx; col++)
-			for (row = i? 0 : arcbios_console_cury+1;
-			    row < arcbios_console_maxy; row++)
+				    cpu->machine->md.arc.console_cury);
+		for (col = 0; col < cpu->machine->md.arc.console_maxx; col++)
+			for (row = i? 0 : cpu->machine->md.arc.console_cury+1;
+			    row < cpu->machine->md.arc.console_maxy; row++)
 				arcbios_putcell(cpu, ' ', col, row);
 		return;
 	case 'K':
-		col = atoi(arcbios_escape_sequence + 1);
+		col = atoi(cpu->machine->md.arc.escape_sequence + 1);
 		/*  2 = clear line to the right. 1 = to the left (?)  */
-		start = 0; stop = arcbios_console_curx;
+		start = 0; stop = cpu->machine->md.arc.console_curx;
 		if (col == 2) {
-			start = arcbios_console_curx;
-			stop = arcbios_console_maxx-1;
+			start = cpu->machine->md.arc.console_curx;
+			stop = cpu->machine->md.arc.console_maxx - 1;
 		}
 		for (i=start; i<=stop; i++)
-			arcbios_putcell(cpu, ' ', i, arcbios_console_cury);
+			arcbios_putcell(cpu, ' ', i,
+			    cpu->machine->md.arc.console_cury);
 
 		return;
 	}
 
 	fatal("{ handle_esc_seq(): unimplemented escape sequence: ");
 	for (i=0; i<len; i++) {
-		int x = arcbios_escape_sequence[i];
+		int x = cpu->machine->md.arc.escape_sequence[i];
 		if (i == len-1)
 			x = code;
 
@@ -317,27 +307,33 @@ static void handle_esc_seq(struct cpu *cpu)
 static void scroll_if_necessary(struct cpu *cpu)
 {
 	/*  Scroll?  */
-	if (arcbios_console_cury >= arcbios_console_maxy) {
+	if (cpu->machine->md.arc.console_cury >=
+	    cpu->machine->md.arc.console_maxy) {
 		unsigned char buf[2];
 		int x, y;
-		for (y=0; y<arcbios_console_maxy-1; y++)
-			for (x=0; x<arcbios_console_maxx; x++) {
+		for (y=0; y<cpu->machine->md.arc.console_maxy-1; y++)
+			for (x=0; x<cpu->machine->md.arc.console_maxx;
+			    x++) {
 				cpu->memory_rw(cpu, cpu->mem,
-				    arcbios_console_vram +
-				    2*(x + arcbios_console_maxx * (y+1)),
+				    cpu->machine->md.arc.console_vram +
+				    2*(x + cpu->machine->md.arc.
+					console_maxx * (y+1)),
 				    &buf[0], sizeof(buf), MEM_READ,
 				    CACHE_NONE | PHYSICAL);
 				cpu->memory_rw(cpu, cpu->mem,
-				    arcbios_console_vram +
-				    2*(x + arcbios_console_maxx * y),
+				    cpu->machine->md.arc.console_vram +
+				    2*(x + cpu->machine->md.arc.
+					console_maxx * y),
 				    &buf[0], sizeof(buf), MEM_WRITE,
 				    CACHE_NONE | PHYSICAL);
 			}
 
-		arcbios_console_cury = arcbios_console_maxy - 1;
+		cpu->machine->md.arc.console_cury =
+		    cpu->machine->md.arc.console_maxy - 1;
 
-		for (x=0; x<arcbios_console_maxx; x++)
-			arcbios_putcell(cpu, ' ', x, arcbios_console_cury);
+		for (x=0; x<cpu->machine->md.arc.console_maxx; x++)
+			arcbios_putcell(cpu, ' ', x,
+			    cpu->machine->md.arc.console_cury);
 	}
 }
 
@@ -365,67 +361,77 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 		return;
 	}
 
-	if (arcbios_in_escape_sequence) {
-		int len = strlen(arcbios_escape_sequence);
-		arcbios_escape_sequence[len] = ch;
+	if (cpu->machine->md.arc.in_escape_sequence) {
+		int len = strlen(cpu->machine->md.arc.escape_sequence);
+		cpu->machine->md.arc.escape_sequence[len] = ch;
 		len++;
 		if (len >= MAX_ESC)
 			len = MAX_ESC;
-		arcbios_escape_sequence[len] = '\0';
+		cpu->machine->md.arc.escape_sequence[len] = '\0';
 		if ((ch >= 'a' && ch <= 'z') ||
 		    (ch >= 'A' && ch <= 'Z') || len >= MAX_ESC) {
 			handle_esc_seq(cpu);
-			arcbios_in_escape_sequence = 0;
+			cpu->machine->md.arc.in_escape_sequence = 0;
 		}
 	} else {
 		if (ch == 27) {
-			arcbios_in_escape_sequence = 1;
-			arcbios_escape_sequence[0] = '\0';
+			cpu->machine->md.arc.in_escape_sequence = 1;
+			cpu->machine->md.arc.escape_sequence[0] = '\0';
 		} else if (ch == 0x9b) {
-			arcbios_in_escape_sequence = 1;
-			arcbios_escape_sequence[0] = '[';
-			arcbios_escape_sequence[1] = '\0';
+			cpu->machine->md.arc.in_escape_sequence = 1;
+			cpu->machine->md.arc.escape_sequence[0] = '[';
+			cpu->machine->md.arc.escape_sequence[1] = '\0';
 		} else if (ch == '\b') {
-			if (arcbios_console_curx > 0)
-				arcbios_console_curx --;
+			if (cpu->machine->md.arc.console_curx > 0)
+				cpu->machine->md.arc.console_curx --;
 		} else if (ch == '\r') {
-			arcbios_console_curx = 0;
+			cpu->machine->md.arc.console_curx = 0;
 		} else if (ch == '\n') {
-			arcbios_console_cury ++;
+			cpu->machine->md.arc.console_cury ++;
 		} else if (ch == '\t') {
-			arcbios_console_curx =
-			    ((arcbios_console_curx - 1) | 7) + 1;
+			cpu->machine->md.arc.console_curx =
+			    ((cpu->machine->md.arc.console_curx - 1)
+			    | 7) + 1;
 			/*  TODO: Print spaces?  */
 		} else {
 			/*  Put char:  */
-			if (arcbios_console_curx >= arcbios_console_maxx) {
-				arcbios_console_curx = 0;
-				arcbios_console_cury ++;
+			if (cpu->machine->md.arc.console_curx >=
+			    cpu->machine->md.arc.console_maxx) {
+				cpu->machine->md.arc.console_curx = 0;
+				cpu->machine->md.arc.console_cury ++;
 				scroll_if_necessary(cpu);
 			}
-			arcbios_putcell(cpu, ch, arcbios_console_curx,
-			    arcbios_console_cury);
-			arcbios_console_curx ++;
+			arcbios_putcell(cpu, ch,
+			    cpu->machine->md.arc.console_curx,
+			    cpu->machine->md.arc.console_cury);
+			cpu->machine->md.arc.console_curx ++;
 		}
 	}
 
 	scroll_if_necessary(cpu);
 
 	/*  Update cursor position:  */
-	addr = (arcbios_console_curx >= arcbios_console_maxx?
-	    arcbios_console_maxx-1 : arcbios_console_curx) +
-	    arcbios_console_cury * arcbios_console_maxx;
+	addr = (cpu->machine->md.arc.console_curx >=
+	    cpu->machine->md.arc.console_maxx?
+	    cpu->machine->md.arc.console_maxx - 1 :
+		cpu->machine->md.arc.console_curx) +
+	    cpu->machine->md.arc.console_cury *
+	    cpu->machine->md.arc.console_maxx;
 	byte = 0x0e;
-	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
+	cpu->memory_rw(cpu, cpu->mem, cpu->machine->md.arc.
+	    console_ctrlregs + 0x14,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = (addr >> 8) & 255;
-	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
+	cpu->memory_rw(cpu, cpu->mem, cpu->machine->md.arc.
+	    console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = 0x0f;
-	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
+	cpu->memory_rw(cpu, cpu->mem, cpu->machine->md.arc.
+	    console_ctrlregs + 0x14,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = addr & 255;
-	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
+	cpu->memory_rw(cpu, cpu->mem, cpu->machine->md.arc.
+	    console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 }
 
@@ -501,7 +507,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 		/*  printf("%i\n", arctype);  */
 	}
 #endif
-	if (arc_64bit)
+	if (cpu->machine->md.arc.arc_64bit)
 		s = sizeof(arcbios_mem64);
 	else
 		s = sizeof(arcbios_mem);
@@ -509,7 +515,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 	memdesc_addr = arcbios_memdescriptor_base +
 	    arc_n_memdescriptors * s;
 
-	if (arc_64bit) {
+	if (cpu->machine->md.arc.arc_64bit) {
 		memset(&arcbios_mem64, 0, s);
 		store_32bit_word_in_host(cpu,
 		    (unsigned char *)&arcbios_mem64.Type, arctype);
@@ -886,7 +892,8 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		    configuration_data_next_addr;
 		configuration_data_next_addr += config_len;
 		configuration_data_component[n_configuration_data] =
-		    arcbios_next_component_address + (arc_64bit? 0x18 : 0x0c);
+		    arcbios_next_component_address +
+		    (cpu->machine->md.arc.arc_64bit? 0x18 : 0x0c);
 
 		/*  printf("& ADDING %i: configdata=0x%016llx "
 		    "component=0x%016llx\n", n_configuration_data,
@@ -898,7 +905,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		n_configuration_data ++;
 	}
 
-	if (!arc_64bit) {
+	if (!cpu->machine->md.arc.arc_64bit) {
 		component.Class                 = class;
 		component.Type                  = type;
 		component.Flags                 = flags;
@@ -1182,7 +1189,7 @@ int arcbios_emul(struct cpu *cpu)
 		return 1;
 	}
 
-	if (arc_64bit)
+	if (cpu->machine->md.arc.arc_64bit)
 		vector /= 2;
 
 	/*  Special case for reboot by jumping to 0xbfc00000:  */
@@ -1213,7 +1220,7 @@ int arcbios_emul(struct cpu *cpu)
 			cpu->memory_rw(cpu, cpu->mem,
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 3 * arc_wordlen,
 			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
-			if (arc_64bit) {
+			if (cpu->machine->md.arc.arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0];
 					buf[0] = buf[7]; buf[7] = tmp;
@@ -1244,7 +1251,7 @@ int arcbios_emul(struct cpu *cpu)
 
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = peer?
 			    (peer + 3 * arc_wordlen) : 0;
-			if (!arc_64bit)
+			if (!cpu->machine->md.arc.arc_64bit)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
@@ -1262,7 +1269,7 @@ int arcbios_emul(struct cpu *cpu)
 			cpu->memory_rw(cpu, cpu->mem,
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 2 * arc_wordlen,
 			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
-			if (arc_64bit) {
+			if (cpu->machine->md.arc.arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0];
 					buf[0] = buf[7]; buf[7] = tmp;
@@ -1294,7 +1301,7 @@ int arcbios_emul(struct cpu *cpu)
 
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = child?
 			    (child + 3 * arc_wordlen) : 0;
-			if (!arc_64bit)
+			if (!cpu->machine->md.arc.arc_64bit)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t)cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
@@ -1310,7 +1317,7 @@ int arcbios_emul(struct cpu *cpu)
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 1 * arc_wordlen,
 			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 
-			if (arc_64bit) {
+			if (cpu->machine->md.arc.arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0];
 					buf[0] = buf[7]; buf[7] = tmp;
@@ -1342,7 +1349,7 @@ int arcbios_emul(struct cpu *cpu)
 
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = parent?
 			    (parent + 3 * arc_wordlen) : 0;
-			if (!arc_64bit)
+			if (!cpu->machine->md.arc.arc_64bit)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
@@ -1439,7 +1446,8 @@ int arcbios_emul(struct cpu *cpu)
 			cpu->cd.mips.gpr[MIPS_GPR_V0] =
 			    arcbios_memdescriptor_base;
 		else {
-			int s = arc_64bit? sizeof(struct arcbios_mem64)
+			int s = cpu->machine->md.arc.arc_64bit?
+			    sizeof(struct arcbios_mem64)
 			    : sizeof(struct arcbios_mem);
 			int nr = cpu->cd.mips.gpr[MIPS_GPR_A0] -
 			    arcbios_memdescriptor_base;
@@ -1902,12 +1910,12 @@ void arcbios_console_init(struct machine *machine,
 {
 	machine->md.arc.vgaconsole = 1;
 
-	arcbios_console_vram = vram;
-	arcbios_console_ctrlregs = ctrlregs;
-	arcbios_console_maxx = ARC_CONSOLE_MAX_X;
-	arcbios_console_maxy = ARC_CONSOLE_MAX_Y;
-	arcbios_in_escape_sequence = 0;
-	arcbios_escape_sequence[0] = '\0';
+	machine->md.arc.console_vram = vram;
+	machine->md.arc.console_ctrlregs = ctrlregs;
+	machine->md.arc.console_maxx = ARC_CONSOLE_MAX_X;
+	machine->md.arc.console_maxy = ARC_CONSOLE_MAX_Y;
+	machine->md.arc.in_escape_sequence = 0;
+	machine->md.arc.escape_sequence[0] = '\0';
 }
 
 
@@ -1921,8 +1929,8 @@ void arcbios_init(struct machine *machine, int is64bit)
 {
 	int i;
 
-	arc_64bit = is64bit;
-	arc_wordlen = arc_64bit? sizeof(uint64_t) : sizeof(uint32_t);
+	machine->md.arc.arc_64bit = is64bit;
+	arc_wordlen = is64bit? sizeof(uint64_t) : sizeof(uint32_t);
 
 	/*  File handles 0, 1, and 2 are stdin, stdout, and stderr.  */
 	for (i=0; i<MAX_HANDLES; i++) {
@@ -1938,14 +1946,13 @@ void arcbios_init(struct machine *machine, int is64bit)
 		char tmpstr[100];
 		int x, y;
 
-		arcbios_console_curcolor = 0x1f;
-
-		for (y=0; y<arcbios_console_maxy; y++)
-			for (x=0; x<arcbios_console_maxx; x++)
+		machine->md.arc.console_curcolor = 0x1f;
+		for (y=0; y<machine->md.arc.console_maxy; y++)
+			for (x=0; x<machine->md.arc.console_maxx; x++)
 				arcbios_putcell(machine->cpus[0], ' ', x, y);
 
-		arcbios_console_curx = 0;
-		arcbios_console_cury = 0;
+		machine->md.arc.console_curx = 0;
+		machine->md.arc.console_cury = 0;
 
 		arcbios_putstring(machine->cpus[0], "GXemul");
 #ifdef VERSION

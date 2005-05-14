@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.38 2005-05-13 13:29:39 debug Exp $
+ *  $Id: pc_bios.c,v 1.39 2005-05-14 00:06:03 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "console.h"
 #include "cpu.h"
@@ -45,6 +46,9 @@
 
 
 extern int quiet_mode;
+
+
+#define dec_to_bcd(x) ( (((x) / 10) << 4) + ((x) % 10) )
 
 
 /*
@@ -138,9 +142,35 @@ static void get_cursor_pos(struct cpu *cpu, int *x, int *y)
 
 
 /*
+ *  scroll_up():
+ */
+static void scroll_up(struct cpu *cpu, int x1, int y1, int x2, int y2, int attr)
+{
+	int x, y;
+
+	/*  Scroll up by copying lines:  */
+	for (y=y1; y<=y2-1; y++) {
+		int addr = 160*y + x1*2;
+		int len = (x2-x1) * 2 + 2;
+		unsigned char w[160];
+		cpu->cd.x86.cursegment = 0xb800;
+		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
+		    MEM_READ, CACHE_NONE | PHYSICAL);
+		addr += 160;
+		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
+		    MEM_WRITE, CACHE_NONE | PHYSICAL);
+	}
+
+	/*  Clear lowest line:  */
+	for (x=x1; x<=x2; x++)
+		output_char(cpu, x, y2, ' ', attr);
+}
+
+
+/*
  *  pc_bios_putchar():
  */
-static void pc_bios_putchar(struct cpu *cpu, char ch)
+static void pc_bios_putchar(struct cpu *cpu, char ch, int attr)
 {
 	int x, y;
 
@@ -151,7 +181,7 @@ static void pc_bios_putchar(struct cpu *cpu, char ch)
 	case '\r':	x = -1; break;
 	case '\n':	x = 80; break;
 	case '\b':	x -= 2; break;
-	default:	output_char(cpu, x, y, ch, 0x07);
+	default:	output_char(cpu, x, y, ch, attr);
 	}
 	x++;
 	if (x < 0)
@@ -160,22 +190,7 @@ static void pc_bios_putchar(struct cpu *cpu, char ch)
 		x=0; y++;
 	}
 	if (y >= 25) {
-		/*  Scroll up by copying lines:  */
-		for (y=1; y<25; y++) {
-			int addr = 160*y;
-			unsigned char w[160];
-			cpu->cd.x86.cursegment = 0xb800;
-			cpu->memory_rw(cpu, cpu->mem, addr, &w[0], sizeof(w),
-			    MEM_READ, CACHE_NONE | PHYSICAL);
-			addr -= 160;
-			cpu->memory_rw(cpu, cpu->mem, addr, &w[0], sizeof(w),
-			    MEM_WRITE, CACHE_NONE | PHYSICAL);
-		}
-
-		/*  Clear lowest line:  */
-		for (x=0; x<80; x++)
-			output_char(cpu, x, 24, ' ', 0x07);
-
+		scroll_up(cpu, 0,0, 79,24, attr);
 		x = 0; y = 24;
 	}
 	set_cursor_pos(cpu, x, y);
@@ -185,10 +200,10 @@ static void pc_bios_putchar(struct cpu *cpu, char ch)
 /*
  *  pc_bios_printstr():
  */
-static void pc_bios_printstr(struct cpu *cpu, char *s)
+static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
 {
 	while (*s)
-		pc_bios_putchar(cpu, *s++);
+		pc_bios_putchar(cpu, *s++, attr);
 }
 
 
@@ -259,12 +274,15 @@ static void pc_bios_int10(struct cpu *cpu)
 		/*  ch/cl = cursor start end... TODO  */
 		cpu->cd.x86.r[X86_R_CX] = 0x000f;
 		break;
+	case 0x06:
+		scroll_up(cpu, cl, ch, dl, dh, bh);
+		break;
 	case 0x09:	/*  write character and attribute(todo)  */
 		while (cx-- > 0)
-			pc_bios_putchar(cpu, al);
+			pc_bios_putchar(cpu, al, bl);
 		break;
 	case 0x0e:	/*  tty output  */
-		pc_bios_putchar(cpu, al);
+		pc_bios_putchar(cpu, al, 0x07);
 		break;
 	case 0x0f:	/*  get video mode  */
 		cpu->cd.x86.r[X86_R_AX] = (80 << 8) + 25;
@@ -286,11 +304,16 @@ static void pc_bios_int10(struct cpu *cpu)
 		get_cursor_pos(cpu, &oldx, &oldy);
 		set_cursor_pos(cpu, dl, dh);
 		while (cx-- > 0) {
-			unsigned char byte;
+			int len = 1;
+			unsigned char byte[2];
+			byte[1] = 0x07;
+			if (al & 2)
+				len = 2;
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
-			cpu->memory_rw(cpu, cpu->mem, bp++, &byte, 1,
+			cpu->memory_rw(cpu, cpu->mem, bp, &byte[0], len,
 			    MEM_READ, CACHE_NONE | PHYSICAL);
-			pc_bios_putchar(cpu, byte);
+			bp += len;
+				pc_bios_putchar(cpu, byte[0], byte[1]);
 		}
 		if (!(al & 1))
 			set_cursor_pos(cpu, oldx, oldy);
@@ -306,6 +329,9 @@ static void pc_bios_int10(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
 		cpu->cd.x86.r[X86_R_BX] |= 0x0008;
 		break;
+	case 0x4f:
+		fatal("TODO: int 0x10, function 0x4f\n");
+		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"
 		    " 0x%02x.\n", ah);
@@ -318,7 +344,7 @@ static void pc_bios_int10(struct cpu *cpu)
 /*
  *  pc_bios_int13():
  *
- *  Disk-related functions.
+ *  Disk-related functions. These usually return CF on error.
  */
 static void pc_bios_int13(struct cpu *cpu)
 {
@@ -393,21 +419,29 @@ static void pc_bios_int13(struct cpu *cpu)
 		/*  Do nothing. :-)  */
 		break;
 	case 8:	/*  get drive status: TODO  */
-		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
-		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
-		cpu->cd.x86.r[X86_R_BX] |= 4;
-		cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
-		cpu->cd.x86.r[X86_R_CX] |= (79 << 8) | 18;
-		cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
-		cpu->cd.x86.r[X86_R_DX] |= 0x0101;  /* dl = nr of drives  */
-		/*  TODO: dl, es:di and all other regs  */
-		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		if ((cpu->cd.x86.r[X86_R_DX] & 0xff) == 0x00) {
+			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_BX] |= 4;
+			cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_CX] |= (79 << 8) | 18;
+			cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_DX] |= 0x0101;
+			/*  dl = nr of drives   */
+			/*  TODO: dl, es:di and all other regs  */
+			cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		}
 		break;
 	case 0x15:	/*  Read DASD Type  */
 		/*  TODO: generalize  */
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
 		cpu->cd.x86.r[X86_R_AX] |= 0x0100;
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		break;
+	case 0x41:	/*  Check for Extended Functions  */
+		/*  There is no such support.  :)  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x13 function"
@@ -561,6 +595,8 @@ static void pc_bios_int1a(struct cpu *cpu)
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	struct timeval tv;
 	uint64_t x;
+	time_t tim;
+	struct tm *tm;
 
 	switch (ah) {
 	case 0x00:	/*  Read tick count.  */
@@ -574,7 +610,26 @@ static void pc_bios_int1a(struct cpu *cpu)
 		    " TODO ]\n");
 		break;
 	case 0x02:	/*  Read real time clock time (AT,PS/2)  */
-		fatal("[ PC BIOS int 0x1a function 0x02: TODO ]\n");
+		tim = time(NULL);
+		tm = gmtime(&tim);
+		cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_CX] |= (dec_to_bcd(tm->tm_hour) << 8) |
+		    dec_to_bcd(tm->tm_min);
+		cpu->cd.x86.r[X86_R_DX] |= dec_to_bcd(tm->tm_sec) << 8;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		break;
+	case 0x04:	/*  Read real time clock date (AT,PS/2)  */
+		tim = time(NULL);
+		tm = gmtime(&tim);
+		cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_CX] |=
+		    (dec_to_bcd((tm->tm_year+1900)/100) << 8) |
+		    dec_to_bcd(tm->tm_year % 100);
+		cpu->cd.x86.r[X86_R_DX] |= (dec_to_bcd(tm->tm_mon) << 8) |
+		    dec_to_bcd(tm->tm_mday + 1);
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x1a function"
@@ -614,11 +669,12 @@ int pc_bios_emul(struct cpu *cpu)
 		break;
 	case 0x17:  pc_bios_int17(cpu); break;
 	case 0x18:
-		pc_bios_printstr(cpu, "Disk boot failed. (INT 0x18 called.)\n");
+		pc_bios_printstr(cpu, "Disk boot failed. (INT 0x18 called.)\n",
+		    0x07);
 		cpu->running = 0;
 		break;
 	case 0x19:
-		pc_bios_printstr(cpu, "Rebooting. (INT 0x19 called.)\n");
+		pc_bios_printstr(cpu, "Rebooting. (INT 0x19 called.)\n", 0x07);
 		cpu->running = 0;
 		break;
 	case 0x1a:  pc_bios_int1a(cpu); break;

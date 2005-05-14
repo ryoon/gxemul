@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.229 2005-04-16 02:02:28 debug Exp $
+ *  $Id: misc.h,v 1.230 2005-05-14 16:39:56 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -129,6 +129,7 @@ int of_emul(struct cpu *cpu);
 
 
 /*  pc_bios.c:  */
+void pc_bios_init(struct cpu *cpu);
 int pc_bios_emul(struct cpu *cpu);
 
 

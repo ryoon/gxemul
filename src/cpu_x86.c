@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.95 2005-05-14 01:14:18 debug Exp $
+ *  $Id: cpu_x86.c,v 1.96 2005-05-14 16:39:55 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -3441,7 +3441,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xe4 || op == 0xe5) {	/*  IN imm,AL or AX/EAX  */
 		unsigned char databuf[8];
 		imm = read_imm(&instr, &newpc, 8);
-		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL + imm, &databuf[0],
+		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + imm, &databuf[0],
 		    op == 0xe4? 1 : (mode/8), MEM_READ, CACHE_NONE);
 		if (op == 0xe4)
 			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
@@ -3464,7 +3464,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				databuf[3] = cpu->cd.x86.r[X86_R_AX] >> 24;
 			}
 		}
-		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL + imm, &databuf[0],
+		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + imm, &databuf[0],
 		    op == 0xe6? 1 : (mode/8), MEM_WRITE, CACHE_NONE);
 	} else if (op == 0xe8 || op == 0xe9) {	/*  CALL/JMP near  */
 		imm = read_imm(&instr, &newpc, mode);
@@ -3524,7 +3524,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 	} else if (op == 0xec || op == 0xed) {	/*  IN DX,AL or AX/EAX  */
 		unsigned char databuf[8];
-		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL +
+		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE +
 		    (cpu->cd.x86.r[X86_R_DX] & 0xffff), &databuf[0],
 		    op == 0xec? 1 : (mode/8), MEM_READ, CACHE_NONE);
 		if (op == 0xec)
@@ -3547,7 +3547,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				databuf[3] = cpu->cd.x86.r[X86_R_AX] >> 24;
 			}
 		}
-		cpu->memory_rw(cpu, cpu->mem, 0x100000000ULL +
+		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE +
 		    (cpu->cd.x86.r[X86_R_DX] & 0xffff), &databuf[0],
 		    op == 0xee? 1 : (mode/8), MEM_WRITE, CACHE_NONE);
 	} else if (op == 0xf4) {	/*  HLT  */

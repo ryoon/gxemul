@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.192 2005-05-09 19:06:54 debug Exp $
+ *  $Id: emul.c,v 1.193 2005-05-14 16:39:55 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -549,6 +549,8 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		cpu->cd.x86.mode = 16;
 		cpu->cd.x86.s[X86_S_CS] = 0x0000;
 		cpu->pc = 0x7c00;
+		cpu->cd.x86.r[X86_R_DX] = boot_disk_id;
+		/*  TODO: 0x80 for harddisks, etc.  */
 
 		bootblock_buf = malloc(512);
 		if (bootblock_buf == NULL) {

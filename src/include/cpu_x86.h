@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.14 2005-05-13 13:29:40 debug Exp $
+ *  $Id: cpu_x86.h,v 1.15 2005-05-14 16:39:56 debug Exp $
  */
 
 #include "misc.h"
@@ -134,6 +134,9 @@ struct x86_cpu {
 #define	X86_FLAGS_VIF	(1<<19)		/*  ?  */
 #define	X86_FLAGS_VIP	(1<<20)		/*  ?  */
 #define	X86_FLAGS_ID	(1<<21)		/*  CPUID present  */
+
+
+#define	X86_IO_BASE	0x1000000000ULL
 
 
 /*  cpu_x86.c:  */

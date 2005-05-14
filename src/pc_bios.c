@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.41 2005-05-14 01:14:18 debug Exp $
+ *  $Id: pc_bios.c,v 1.42 2005-05-14 16:39:55 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -56,12 +56,16 @@ extern int quiet_mode;
  */
 static void output_char(struct cpu *cpu, int x, int y, int ch, int color)
 {
-	uint64_t addr = (y * 80 + x) * 2;
+	uint64_t addr = (y * 80 + x) * 2 + 0xb8000;
 	unsigned char w[2];
+	int len = 2;
+	int oldseg;
 
 	w[0] = ch; w[1] = color;
-	cpu->cd.x86.cursegment = 0xb800;
-	cpu->memory_rw(cpu, cpu->mem, addr, &w[0], sizeof(w), MEM_WRITE,
+	if (color < 0)
+		len = 1;
+
+	cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len, MEM_WRITE,
 	    CACHE_NONE | PHYSICAL);
 }
 
@@ -73,7 +77,7 @@ static void set_cursor_pos(struct cpu *cpu, int x, int y)
 {
 	int addr = y * 80 + x;
 	unsigned char byte;
-	uint64_t ctrlregs = 0x1000003c0ULL;
+	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 
 	byte = 0x0e;
 	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
@@ -96,7 +100,7 @@ static void set_cursor_pos(struct cpu *cpu, int x, int y)
 static void set_cursor_scanlines(struct cpu *cpu, int start, int end)
 {
 	unsigned char byte;
-	uint64_t ctrlregs = 0x1000003c0ULL;
+	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 
 	byte = 0x0a;
 	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
@@ -120,7 +124,7 @@ static void get_cursor_pos(struct cpu *cpu, int *x, int *y)
 {
 	int addr;
 	unsigned char byte;
-	uint64_t ctrlregs = 0x1000003c0ULL;
+	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 
 	byte = 0x0e;
 	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
@@ -150,10 +154,9 @@ static void scroll_up(struct cpu *cpu, int x1, int y1, int x2, int y2, int attr)
 
 	/*  Scroll up by copying lines:  */
 	for (y=y1; y<=y2-1; y++) {
-		int addr = 160*y + x1*2;
+		int addr = 160*y + x1*2 + 0xb8000;
 		int len = (x2-x1) * 2 + 2;
 		unsigned char w[160];
-		cpu->cd.x86.cursegment = 0xb800;
 		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
 		    MEM_READ, CACHE_NONE | PHYSICAL);
 		addr += 160;
@@ -189,6 +192,10 @@ static void pc_bios_putchar(struct cpu *cpu, char ch, int attr)
 	if (x >= 80) {
 		x=0; y++;
 	}
+
+	if (attr < 0)
+		attr = cpu->machine->md.pc.curcolor;
+
 	if (y >= 25) {
 		scroll_up(cpu, 0,0, 79,24, attr);
 		x = 0; y = 24;
@@ -214,7 +221,7 @@ static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
  */
 static void pc_bios_int10(struct cpu *cpu)
 {
-	uint64_t ctrlregs = 0x1000003c0ULL;
+	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 	unsigned char byte;
 	int x,y, oldx,oldy;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
@@ -260,6 +267,7 @@ static void pc_bios_int10(struct cpu *cpu)
 			cpu->running = 0;
 			cpu->dead = 1;
 		}
+		cpu->machine->md.pc.curcolor = 0x07;
 		break;
 	case 0x01:
 		/*  ch = starting line, cl = ending line  */
@@ -283,9 +291,10 @@ static void pc_bios_int10(struct cpu *cpu)
 	case 0x09:	/*  write character and attribute(todo)  */
 		while (cx-- > 0)
 			pc_bios_putchar(cpu, al, bl);
+		cpu->machine->md.pc.curcolor = bl;
 		break;
 	case 0x0e:	/*  tty output  */
-		pc_bios_putchar(cpu, al, 0x07);
+		pc_bios_putchar(cpu, al, -1);
 		break;
 	case 0x0f:	/*  get video mode  */
 		cpu->cd.x86.r[X86_R_AX] = (80 << 8) + 25;
@@ -317,6 +326,7 @@ static void pc_bios_int10(struct cpu *cpu)
 			    MEM_READ, CACHE_NONE | PHYSICAL);
 			bp += len;
 				pc_bios_putchar(cpu, byte[0], byte[1]);
+			cpu->machine->md.pc.curcolor = byte[1];
 		}
 		if (!(al & 1))
 			set_cursor_pos(cpu, oldx, oldy);
@@ -645,6 +655,35 @@ static void pc_bios_int1a(struct cpu *cpu)
 
 
 /*
+ *  pc_bios_init():
+ */
+void pc_bios_init(struct cpu *cpu)
+{
+	char tmpstr[100];
+
+	if (cpu->machine->md.pc.initialized) {
+		fatal("ERROR: pc_bios_init(): Already initialized.\n");
+		return;
+	}
+
+	pc_bios_printstr(cpu, "GXemul", 0x0f);
+#ifdef VERSION
+	pc_bios_printstr(cpu, " "VERSION, 0x0f);
+#endif
+	pc_bios_printstr(cpu, "   PC BIOS software emulation\n", 0x0f);
+
+	sprintf(tmpstr, "%i cpu%s, %i MB memory\n\n",
+	    cpu->machine->ncpus, cpu->machine->ncpus > 1? "s" : "",
+	    cpu->machine->physical_ram_in_mb);
+	pc_bios_printstr(cpu, tmpstr, 0x07);
+
+	cpu->machine->md.pc.curcolor = 0x07;
+
+	cpu->machine->md.pc.initialized = 1;
+}
+
+
+/*
  *  pc_bios_emul():
  */
 int pc_bios_emul(struct cpu *cpu)
@@ -653,6 +692,9 @@ int pc_bios_emul(struct cpu *cpu)
 	int int_nr;
 
 	int_nr = addr & 0xff;
+
+	if (!cpu->machine->md.pc.initialized)
+		pc_bios_init(cpu);
 
 	switch (int_nr) {
 	case 0x10:  pc_bios_int10(cpu); break;

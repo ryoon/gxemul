@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.431 2005-05-14 00:31:46 debug Exp $
+ *  $Id: machine.c,v 1.432 2005-05-14 16:39:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4484,16 +4484,16 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		/*  TODO: irq numbers  */
 
-		dev_wdc_init(machine, mem, 0x1000001f0ULL, 14, 0);
+		dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);
 
-		dev_ns16550_init(machine, mem, 0x1000003f8ULL, 4, 1, 0, "com1");
-		dev_ns16550_init(machine, mem, 0x100000378ULL, 3, 1, 0, "com2");
+		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x3f8, 4, 1, 0, "com1");
+		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x378, 3, 1, 0, "com2");
 
 		/*  This should be _after_ the main console handle is valid.  */
-		dev_vga_init(machine, mem, 0xa0000ULL, 0x1000003c0ULL,
+		dev_vga_init(machine, mem, 0xa0000ULL, X86_IO_BASE + 0x3c0,
 		    "Generic x86 PC");
 		machine->main_console_handle = dev_pckbc_init(machine,
-		    mem, 0x100000060ULL, PCKBC_8042, 0, 0, 1);
+		    mem, X86_IO_BASE + 0x60, PCKBC_8042, 0, 0, 1);
 
 		/*  These values are the same as what Bochs seems to use:  */
 		cpu->cd.x86.r[X86_R_AX] = 0xaa55;
@@ -4502,6 +4502,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		cpu->cd.x86.r[X86_R_DI] = 0xffe4;
 		cpu->cd.x86.r[X86_R_SP] = 0xfffe;
 
+		pc_bios_init(cpu);
 		break;
 
 	default:

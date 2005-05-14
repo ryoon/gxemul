@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.49 2005-04-16 00:29:45 debug Exp $
+$Id: technical.html,v 1.50 2005-05-14 18:31:16 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -50,6 +50,10 @@ SUCH DAMAGE.
 
 <p>
 This page describes some of the internals of GXemul.
+
+<p>
+<font color="#e00000"><b>NOTE: This page is probably not
+very up-to-date by now.</b></font>
 
 <p>
 <ul>
@@ -128,8 +132,8 @@ code into machine code that can be executed on the host machine
 on-the-fly. The translation itself obviously takes some time, but this is 
 usually made up for by the fact that the translated code chunks are 
 executed multiple times.
-To run the emulator with binary translation enabled, just add <b>-b</b>
-to the command line.
+To run the emulator with binary translation enabled, just add 
+<tt><b>-b</b></tt> to the command line.
 
 <p>
 Only small pieces of MIPS machine code are translated, usually the size of 
@@ -138,9 +142,9 @@ all translations are done directly from MIPS to host machine code.
 
 <p>
 The default bintrans cache size is 16 MB, but you can change this by adding
--DDEFAULT_BINTRANS_SIZE_IN_MB=<i>xx</i> to your CFLAGS environment variable
-before running the configure script, or by using the bintrans_size()
-configuration file option when running the emulator.
+<tt>-DDEFAULT_BINTRANS_SIZE_IN_MB=<i>xx</i></tt> to your CFLAGS environment
+variable before running the configure script, or by using the
+<tt>bintrans_size()</tt> configuration file option when running the emulator.
 
 <p>
 By default, an emulated OS running under DECstation emulation which listens to
@@ -149,17 +153,18 @@ host's clock. That is, if the emulated OS says it wants 100 interrupts per
 second, it will get approximately 100 interrupts per real second.
 
 <p>
-There is however a -I option, which sets the number of emulated cycles per
-seconds to a fixed value. Let's say you wish to make the emulated OS think it
-is running on a 40 MHz DECstation, and not a 7 MHz one, then you can add
--I 40000000 to the command line. This will not make the emulation faster, of
-course. It might even make it seem slower; for example, if NetBSD/pmax waits
-2 seconds for SCSI devices to settle during bootup, those 2 seconds will take
-2*40000000 cycles (which will take more time than 2*7000000).
+There is however a <tt><b>-I</b></tt> option, which sets the number of
+emulated cycles per seconds to a fixed value. Let's say you wish to make the
+emulated OS think it is running on a 40 MHz DECstation, and not a 7 MHz one,
+then you can add <tt><b>-I 40000000</b></tt> to the command line. This will not
+make the emulation faster, of course. It might even make it seem slower; for
+example, if NetBSD/pmax waits 2 seconds for SCSI devices to settle during
+bootup, those 2 seconds will take 2*40000000 cycles (which will take more 
+time than 2*7000000).
 
 <p>
-The -I option is also necessary if you want to run deterministic experiments,
-if a mc146818 device is present.
+The <b><tt>-I</tt></b> option is also necessary if you want to run
+deterministic experiments, if a mc146818 (or similar) device is present.
 
 <p>
 Some emulators make claims such as "x times slowdown," but in the case of
@@ -205,6 +210,8 @@ As far as I have understood it, there seems to be two different ways to go:
 		connect from the emulated OS to the OS running on the
 		host, as packets sent out on the host's NIC are not
 		received by itself. (?)
+	  <li>All specific networking protocols will be handled by the
+		physical network.
 	</ul>
   <p>
   or
@@ -233,8 +240,10 @@ As far as I have understood it, there seems to be two different ways to go:
 	</ul>
 </ol>
 
-Other emulators that I have heard of seem to use the first one, if they 
-support networking.
+<p>
+Some emulators/simulators use the first approach, while others use the 
+second. I think that SIMH and QEMU are examples of emulators using the 
+first and second approach, respectively.
 
 <p>
 Since I have choosen the second kind of implementation, I have to write 
@@ -249,7 +258,7 @@ emulation (-E dec -e 3max):
 	and converted to ARP responses. (This is used by the emulated OS
 	to find out the MAC address of the gateway.)
   <li>ICMP echo requests (that is the kind of packet produced by the
-	<b>ping</b> program) are interpreted and converted to ICMP echo
+	<b><tt>ping</tt></b> program) are interpreted and converted to ICMP echo
 	replies, <i>regardless of the IP address</i>. This means that
 	running ping from within the emulated OS will <i>always</i>
 	receive a response. The ping packets never leave the emulated
@@ -263,30 +272,36 @@ emulation (-E dec -e 3max):
 	packets are handled (but more state is kept for each connection).
 	<font color="#ff0000">NOTE: Much of the TCP handling code is very
 	ugly and hardcoded.</font>
+<!--
   <li>RARP is not implemented yet. (I haven't needed it so far.)
+-->
 </ul>
 
+<p>
 The gateway machine, which is the only "other" machine that the emulated 
 OS sees on its emulated network, works as a NAT-style firewall/gateway. It 
-has a fixed IPv4 address of 10.0.0.254. An OS running in the emulator 
-can thus have any 10.x.x.x address; a typical choice would be 10.0.0.1.
+usually has a fixed IPv4 address of <tt>10.0.0.254</tt>. An OS running in 
+the emulator would usually have an address of the form <tt>10.x.x.x</tt>;
+a typical choice would be <tt>10.0.0.1</tt>.
 
 <p>
-Inside emulated NetBSD or OpenBSD, running the following commands should
-configure the emulated NIC:
+Inside emulated NetBSD/pmax or OpenBSD/pmax, running the following 
+commands should configure the emulated NIC:
 <pre>
 	# <b>ifconfig le0 10.0.0.1</b>
 	# <b>route add default 10.0.0.254</b>
 	add net default: gateway 10.0.0.254
 </pre>
 
+<p>
 If you want nameserver lookups to work, you need a valid /etc/resolv.conf 
 as well:
 <pre>
 	# <b>echo nameserver 129.16.1.3 > /etc/resolv.conf</b>
 </pre>
-(But replace 129.16.1.3 with the actual real-world IP address of your
-nearest nameserver.)
+(But replace <tt>129.16.1.3</tt> with the actual real-world IP address of 
+your nearest nameserver.)
+
 <p>
 Now, host lookups should work:
 <pre>
@@ -309,33 +324,20 @@ Now, host lookups should work:
 	uucp-gw-2.pa.dec.com	172799 IN	A	204.123.2.19
 </pre>
 
-To transfer files via UDP, you can use the tftp program.
-
-<pre>
-	# <b>tftp 12.34.56.78</b>
-	tftp> <b>get filename</b>
-	Received XXXXXX bytes in X.X seconds
-	tftp> <b>quit</b>
-	# 
-</pre>
-
-or, to do it non-interactively (with ugly output):
-
-<pre>
-	# <b>echo get filename | tftp 12.34.56.78</b>
-	tftp> Received XXXXXX bytes in X.X seconds
-	tftp> #
-</pre>
-
-This, of course, requires that you have put the file <i>filename</i> in 
-the root directory of the tftp server (12.34.56.78).
+<p>
+At this point, UDP and TCP should (mostly) work.
 
 <p>
-It is also possible to run NFS via UDP. This is very useful if you want to
-share entire directory trees between the emulated environment and another
-machine. These instruction will work for FreeBSD, if you are running
-something else, use your imagination to modify them:
+Here is an example of how to configure a server machine and an emulated 
+client machine for sharing files via NFS:
 
+<p>
+(This is very useful if you want to share entire directory trees
+between the emulated environment and another machine. These instruction
+will work for FreeBSD, if you are running something else, use your
+imagination to modify them.)
+
+<p>
 <ul>
   <li>On the server, add a line to your /etc/exports file, exporting
 	the files you wish to use in the emulator:<pre>
@@ -374,10 +376,6 @@ a CDROM ISO image. You can use a read-write mount if you wish to share
 files in both directions, but then you should be aware of the 
 fragmentation issue mentioned above.
 
-<p>
-TCP is implemented to some extent, but should not be considered to be
-stable yet. It is enough to let NetBSD/pmax and OpenBSD/pmax install via 
-ftp, though.
 
 
 
@@ -498,7 +496,7 @@ Each device should have the following:
 </ul>
 
 <p>
-The return value of the access function has until 20040702 been a 
+The return value of the access function has until 2004-07-02 been a 
 true/false value; 1 for success, or 0 for device access failure. A device 
 access failure (on MIPS) will result in a DBE exception.
 
@@ -512,7 +510,7 @@ means that the access failed, and took 5 cycles.
 
 <p>
 To be compatible with pre-20040702 devices, a return value of 0 is treated 
-by the caller (in src/memory.c) as a value of -1.
+by the caller (in <tt>src/memory_rw.c</tt>) as a value of -1.
 
 
 
@@ -524,7 +522,7 @@ by the caller (in src/memory.c) as a value of -1.
 
 In order to make sure that the emulator actually works like it is supposed 
 to, it must be tested. For this purpose, there is a simple regression 
-testing framework in the <b>tests/</b> directory.
+testing framework in the <tt>tests/</tt> directory.
 
 <p>
 <i>NOTE:  The regression testing framework is basically just a skeleton so far.
@@ -534,8 +532,8 @@ probably not too incorrect. This makes it less of a priority to write
 regression tests.</i>
 
 <p>
-To run all the regression tests, type <b>make regtest</b>. Each assembly 
-language file matching the pattern <b>test_*.S</b> will be compiled and 
+To run all the regression tests, type <tt>make regtest</tt>. Each assembly 
+language file matching the pattern <tt>test_*.S</tt> will be compiled and 
 linked into a 64-bit MIPS ELF (using a gcc cross compiler), and run in the 
 emulator. If everything goes well, you should see something like this:
 
@@ -578,12 +576,13 @@ emulator. If everything goes well, you should see something like this:
 </pre>
 
 <p>
-Each test writes output to stdout, and there is a <b>test_*.good</b> for 
-each <b>.S</b> file which contains the wanted output. If the actual output 
-matches the <b>.good</b> file, then the test passes, otherwise it fails.
+Each test writes output to stdout, and there is a <tt>test_*.good</tt> for 
+each <tt>.S</tt> file which contains the wanted output. If the actual 
+output matches the <tt>.good</tt> file, then the test passes, otherwise it 
+fails.
 
 <p>
-Read <b>tests/README</b> for more information.
+Read <tt>tests/README</tt> for more information.
 
 
 

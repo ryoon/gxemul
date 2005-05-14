@@ -1,11 +1,11 @@
-$Id: README,v 1.69 2005-05-03 19:34:50 debug Exp $
+$Id: README,v 1.70 2005-05-14 18:31:15 debug Exp $
 
 I'm now working on post-0.3.2.
 
 ------------------------------------------------------------------------------
 
-GXemul 0.3.X
-============
+Gavare's Experimental Emulator   --   GXemul 0.3.X
+==================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.732 2005-05-14 16:39:54 debug Exp $
+$Id: HISTORY,v 1.733 2005-05-14 18:31:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1897,3 +1897,4 @@ Changelog for GXemul:
 20050514	Adding support for loading some old i386 a.out executables.
 		Finally beginning the cleanup of machine/PROM/bios dependant
 		info.
+		Some minor documentation updates.

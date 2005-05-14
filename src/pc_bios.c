@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.42 2005-05-14 16:39:55 debug Exp $
+ *  $Id: pc_bios.c,v 1.43 2005-05-14 16:43:20 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -672,9 +672,9 @@ void pc_bios_init(struct cpu *cpu)
 #endif
 	pc_bios_printstr(cpu, "   PC BIOS software emulation\n", 0x0f);
 
-	sprintf(tmpstr, "%i cpu%s, %i MB memory\n\n",
+	sprintf(tmpstr, "%i cpu%s (%s), %i MB memory\n\n",
 	    cpu->machine->ncpus, cpu->machine->ncpus > 1? "s" : "",
-	    cpu->machine->physical_ram_in_mb);
+	    cpu->cd.x86.model.name, cpu->machine->physical_ram_in_mb);
 	pc_bios_printstr(cpu, tmpstr, 0x07);
 
 	cpu->machine->md.pc.curcolor = 0x07;

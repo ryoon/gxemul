@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.40 2005-05-14 00:31:46 debug Exp $
+ *  $Id: pc_bios.c,v 1.41 2005-05-14 01:14:18 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -375,7 +375,6 @@ static void pc_bios_int13(struct cpu *cpu)
 		 *  es:bx = destination buffer; return carryflag = error
 		 */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
-/*		cl &= 0x7f; ch &= 0x7f; dh &= 1;  */
 		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
 		nread = 0; err = 0;
 		debug("[ pc_bios_int13(): reading from disk 0x%x, "
@@ -423,6 +422,8 @@ static void pc_bios_int13(struct cpu *cpu)
 		break;
 	case 8:	/*  get drive status: TODO  */
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_AX] |= 0x8080;
 		if ((cpu->cd.x86.r[X86_R_DX] & 0xff) == 0x00) {
 			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_BX] &= ~0xffff;

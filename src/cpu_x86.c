@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.94 2005-05-13 17:57:59 debug Exp $
+ *  $Id: cpu_x86.c,v 1.95 2005-05-14 01:14:18 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1826,11 +1826,13 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 /*
  *  x86_cpuid():
+ *
+ *  TODO: Level 1 and 2 info.
  */
 static void x86_cpuid(struct cpu *cpu)
 {
 	switch (cpu->cd.x86.r[X86_R_AX]) {
-	case 0:	cpu->cd.x86.r[X86_R_AX] = 1;	/*  TODO  */
+	case 0:	cpu->cd.x86.r[X86_R_AX] = 2;	/*  TODO  */
 		/*  Either AMD...  */
 		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
 		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
@@ -1841,6 +1843,11 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_CX] = 0x6c65746e;  /*  "ntel"  */
 		break;
 	case 1:	cpu->cd.x86.r[X86_R_AX] = 0;
+		cpu->cd.x86.r[X86_R_BX] = 0;
+		cpu->cd.x86.r[X86_R_CX] = 0;
+		cpu->cd.x86.r[X86_R_DX] = 0;
+		break;
+	case 2:	cpu->cd.x86.r[X86_R_AX] = 0;
 		cpu->cd.x86.r[X86_R_BX] = 0;
 		cpu->cd.x86.r[X86_R_CX] = 0;
 		cpu->cd.x86.r[X86_R_DX] = 0;
@@ -2738,6 +2745,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 		cpu->cd.x86.s[op / 8] = tmp;
+	} else if (op == 0x27) {			/*  DAA  */
+		int b = cpu->cd.x86.r[X86_R_AX] & 0xf;
+		if (b > 9) {
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX]
+			    & ~0xf) | ((cpu->cd.x86.r[X86_R_AX] &
+			    0xf) - 10);
+			cpu->cd.x86.rflags |= X86_FLAGS_AF;
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX]
+			    & ~0xf0) | ((cpu->cd.x86.r[X86_R_AX] + 0x10) &
+			    0xf0);
+			if ((cpu->cd.x86.r[X86_R_AX] & 0xf0) == 0x00)
+				cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		}
 	} else if (op == 0x37) {			/*  AAA  */
 		int b = cpu->cd.x86.r[X86_R_AX] & 0xf;
 		if (b > 9) {

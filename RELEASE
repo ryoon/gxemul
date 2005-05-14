@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.113 2005-05-03 19:34:50 debug Exp $
+$Id: RELEASE,v 1.114 2005-05-14 19:47:58 debug Exp $
 
 I'm now working on post-0.3.2.
 
@@ -42,7 +42,11 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-The most important/visible changes from 0.3.2 to 0.3.X are:
+Here are some of the changes between release 0.3.2 and 0.3.X:
+
+	x)  Files on ISO9660 disk images can now be read directly from
+	    within the emulator, so there is no need to extract kernels
+	    manually in order to boot an emulated machine.
 
 	x)  ..
 

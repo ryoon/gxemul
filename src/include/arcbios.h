@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.5 2005-05-07 03:39:45 debug Exp $
+ *  $Id: arcbios.h,v 1.6 2005-05-14 19:48:00 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -47,8 +47,8 @@ struct cpu;
 /*  arcbios.c:  */
 void arcbios_add_string_to_component(char *string, uint64_t component);
 void arcbios_get_dsp_stat(struct cpu *cpu, struct arcbios_dsp_stat *dspstat);
-void arcbios_console_init(struct cpu *cpu,
-	uint64_t vram, uint64_t ctrlregs, int maxx, int maxy);
+void arcbios_console_init(struct machine *machine,
+	uint64_t vram, uint64_t ctrlregs);
 void arcbios_register_scsicontroller(uint64_t scsicontroller_component);
 uint64_t arcbios_get_scsicontroller(void);
 void arcbios_add_memory_descriptor(struct cpu *cpu,
@@ -59,9 +59,14 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	char *identifier, uint64_t parent, void *config_data,
 	size_t config_len);
 int arcbios_emul(struct cpu *cpu);
-void arcbios_set_64bit_mode(int enable);
 void arcbios_set_default_exception_handler(struct cpu *cpu);
-void arcbios_init(void);
+void arcbios_init(struct machine *machine, int is64bit);
+
+
+struct machine_arcbios {
+	int	arc_64bit;
+	int	vgaconsole;
+};
 
 
 /*  For internal use in arcbios.c:  */

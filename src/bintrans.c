@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.166 2005-05-13 00:40:38 debug Exp $
+ *  $Id: bintrans.c,v 1.167 2005-05-14 19:47:59 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -357,8 +357,6 @@ int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	if (cpu->cd.mips.delay_slot || cpu->cd.mips.nullify_next ||
 	    (paddr & 3) != 0)
 		return cpu->cd.mips.bintrans_instructions_executed;
-
-	cpu->cd.mips.rmw = 0;
 
 	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.98 2005-05-07 03:39:43 debug Exp $
+ *  $Id: arcbios.c,v 1.99 2005-05-14 19:47:58 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -168,34 +168,6 @@ static void arcbios_putcell(struct cpu *cpu, int ch, int x, int y)
 	    2*(x + arcbios_console_maxx * y),
 	    &buf[0], sizeof(buf), MEM_WRITE,
 	    CACHE_NONE | PHYSICAL);
-}
-
-
-/*
- *  arcbios_console_init():
- *
- *  Called from machine.c whenever an ARC-based machine is running with
- *  a graphical VGA-style framebuffer, which can be used as console.
- */
-void arcbios_console_init(struct cpu *cpu,
-	uint64_t vram, uint64_t ctrlregs, int maxx, int maxy)
-{
-	int x, y;
-
-	arcbios_console_vram = vram;
-	arcbios_console_ctrlregs = ctrlregs;
-	arcbios_console_maxx = maxx;
-	arcbios_console_maxy = maxy;
-	arcbios_in_escape_sequence = 0;
-	arcbios_escape_sequence[0] = '\0';
-	arcbios_console_curcolor = 0x1f;
-
-	for (y=0; y<arcbios_console_maxy; y++)
-		for (x=0; x<arcbios_console_maxx; x++)
-			arcbios_putcell(cpu, ' ', x, y);
-
-	arcbios_console_curx = 0;
-	arcbios_console_cury = 0;
 }
 
 
@@ -381,7 +353,7 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 	int addr;
 	unsigned char byte;
 
-	if (!cpu->machine->use_x11) {
+	if (!cpu->machine->md.arc.vgaconsole) {
 		/*  Text console output:  */
 
 		/*  Hack for Windows NT, which uses 0x9b instead of ESC + [  */
@@ -455,6 +427,19 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 	byte = addr & 255;
 	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+}
+
+
+/*
+ *  arcbios_putstring():
+ */
+static void arcbios_putstring(struct cpu *cpu, char *s)
+{
+	while (*s) {
+		if (*s == '\n')
+			arcbios_putchar(cpu, '\r');
+		arcbios_putchar(cpu, *s++);
+	}
 }
 
 
@@ -1876,18 +1861,6 @@ int arcbios_emul(struct cpu *cpu)
 
 
 /*
- *  arcbios_set_64bit_mode():
- *
- *  Should be used for some SGI modes.
- */
-void arcbios_set_64bit_mode(int enable)
-{
-	arc_64bit = enable;
-	arc_wordlen = arc_64bit? sizeof(uint64_t) : sizeof(uint32_t);
-}
-
-
-/*
  *  arcbios_set_default_exception_handler():
  */
 void arcbios_set_default_exception_handler(struct cpu *cpu)
@@ -1919,19 +1892,72 @@ void arcbios_set_default_exception_handler(struct cpu *cpu)
 
 
 /*
+ *  arcbios_console_init():
+ *
+ *  Called from machine.c whenever an ARC-based machine is running with
+ *  a graphical VGA-style framebuffer, which can be used as console.
+ */
+void arcbios_console_init(struct machine *machine,
+	uint64_t vram, uint64_t ctrlregs)
+{
+	machine->md.arc.vgaconsole = 1;
+
+	arcbios_console_vram = vram;
+	arcbios_console_ctrlregs = ctrlregs;
+	arcbios_console_maxx = ARC_CONSOLE_MAX_X;
+	arcbios_console_maxy = ARC_CONSOLE_MAX_Y;
+	arcbios_in_escape_sequence = 0;
+	arcbios_escape_sequence[0] = '\0';
+}
+
+
+/*
  *  arcbios_init():
  *
- *  Should be called before any other arcbios function is used.
+ *  Should be called before any other arcbios function is used. An exception
+ *  is arcbios_console_init(), which may be called before this function.
  */
-void arcbios_init(void)
+void arcbios_init(struct machine *machine, int is64bit)
 {
 	int i;
+
+	arc_64bit = is64bit;
+	arc_wordlen = arc_64bit? sizeof(uint64_t) : sizeof(uint32_t);
 
 	/*  File handles 0, 1, and 2 are stdin, stdout, and stderr.  */
 	for (i=0; i<MAX_HANDLES; i++) {
 		file_handle_in_use[i] = i<3? 1 : 0;
 		file_handle_string[i] = NULL;
 		arcbios_current_seek_offset[i] = 0;
+	}
+
+	if (!machine->use_x11)
+		machine->md.arc.vgaconsole = 0;
+
+	if (machine->md.arc.vgaconsole) {
+		char tmpstr[100];
+		int x, y;
+
+		arcbios_console_curcolor = 0x1f;
+
+		for (y=0; y<arcbios_console_maxy; y++)
+			for (x=0; x<arcbios_console_maxx; x++)
+				arcbios_putcell(machine->cpus[0], ' ', x, y);
+
+		arcbios_console_curx = 0;
+		arcbios_console_cury = 0;
+
+		arcbios_putstring(machine->cpus[0], "GXemul");
+#ifdef VERSION
+		arcbios_putstring(machine->cpus[0], " "VERSION);
+#endif
+		arcbios_putstring(machine->cpus[0], "   ARCBIOS emulation\n");
+
+		sprintf(tmpstr, "%i cpu%s (%s), %i MB memory\n\n",
+		    machine->ncpus, machine->ncpus > 1? "s" : "",
+		    machine->cpus[0]->cd.mips.cpu_type.name,
+		    machine->physical_ram_in_mb);
+		arcbios_putstring(machine->cpus[0], tmpstr);
 	}
 }
 

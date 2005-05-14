@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.193 2005-05-14 16:39:55 debug Exp $
+ *  $Id: emul.c,v 1.194 2005-05-14 19:47:59 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -907,22 +907,16 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		x11_init(m);
 
 	/*  Fill memory with random bytes:  */
-	/*  TODO: This is MIPS-specific!  */
 	if (m->random_mem_contents) {
 		for (i=0; i<m->physical_ram_in_mb * 1048576; i+=256) {
 			unsigned char data[256];
 			unsigned int j;
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
-			addr = 0xffffffff80000000ULL + i;
-			cpu->memory_rw(cpu, m->memory, addr, data, sizeof(data),
-			    MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+			cpu->memory_rw(cpu, m->memory, i, data, sizeof(data),
+			    MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS | PHYSICAL);
 		}
 	}
-
-	if ((m->machine_type == MACHINE_ARC ||
-	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
-		arcbios_init();
 
 	if (m->userland_emul != NULL) {
 		/*

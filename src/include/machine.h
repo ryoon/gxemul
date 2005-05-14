@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.48 2005-05-14 16:39:56 debug Exp $
+ *  $Id: machine.h,v 1.49 2005-05-14 19:48:00 debug Exp $
  */
 
 #include <sys/types.h>
@@ -36,6 +36,7 @@
 
 #include "symbol.h"
 
+#include "arcbios.h"
 #include "machine_x86.h"
 
 #define	MAX_BREAKPOINTS		8
@@ -176,10 +177,11 @@ struct machine {
 
 	/*  Machine dependant: (PROM and interrupt stuff, etc.)  */
 	union {
+		struct machine_arcbios	arc;
 		struct machine_pc	pc;
 	} md;
 
-	/*  Yuck, this is ugly:  TODO: Move all of these into 'md'  */
+	/*  Yuck, this is ugly:  TODO: Move all of these into 'md'?  */
 	struct kn230_csr *kn230_csr;
 	struct kn02_csr *kn02_csr;
 	struct dec_ioasic_data *dec_ioasic_data;

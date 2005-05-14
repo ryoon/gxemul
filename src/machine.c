@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.432 2005-05-14 16:39:55 debug Exp $
+ *  $Id: machine.c,v 1.433 2005-05-14 19:47:59 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3098,12 +3098,13 @@ Why is this here? TODO
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
-					dev_vga_init(machine, mem,
-					    0x400a0000ULL, 0x600003c0ULL,
-					    machine->machine_name);
-					arcbios_console_init(cpu, 0x400b8000ULL,
-					    0x600003c0ULL, ARC_CONSOLE_MAX_X,
-					    ARC_CONSOLE_MAX_Y);
+					if (machine->use_x11) {
+						dev_vga_init(machine, mem,
+						    0x400a0000ULL, 0x600003c0ULL,
+						    machine->machine_name);
+						arcbios_console_init(machine,
+						    0x400b8000ULL, 0x600003c0ULL);
+					}
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
 					/*  PROM mirror?  */
@@ -3208,13 +3209,13 @@ Not yet.
 				else
 					machine->main_console_handle = i;
 
-				dev_vga_init(machine, mem, 0x1000a0000ULL,
-				    0x9000003c0ULL, machine->machine_name);
+				if (machine->use_x11) {
+					dev_vga_init(machine, mem, 0x1000a0000ULL,
+					    0x9000003c0ULL, machine->machine_name);
 
-				arcbios_console_init(cpu, 0x1000b8000ULL,
-				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
-				    ARC_CONSOLE_MAX_Y);
-
+					arcbios_console_init(machine,
+					    0x1000b8000ULL, 0x9000003c0ULL);
+				}
 				break;
 
 			default:
@@ -3232,16 +3233,18 @@ Not yet.
 		/*
 		 *  This is important:  :-)
 		 *
-		 *  TODO:  There should not be any use of
-		 *  ARCBIOS before this statement.
+		 *  TODO:  There should not be any use of ARCBIOS before this
+		 *  point.
 		 */
-		if (arc_wordlen == sizeof(uint64_t))
-			arcbios_set_64bit_mode(1);
+
+		if (machine->prom_emulation)
+			arcbios_init(machine, arc_wordlen == sizeof(uint64_t));
 
 		if (machine->physical_ram_in_mb < 16)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
 
-		arcbios_set_default_exception_handler(cpu);
+		if (machine->prom_emulation)
+			arcbios_set_default_exception_handler(cpu);
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
 		if (machine->machine_type == MACHINE_SGI) {

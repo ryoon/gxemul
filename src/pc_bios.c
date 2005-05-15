@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.48 2005-05-15 20:06:05 debug Exp $
+ *  $Id: pc_bios.c,v 1.49 2005-05-15 21:58:27 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -324,6 +324,9 @@ static void pc_bios_int10(struct cpu *cpu)
 
 	switch (ah) {
 	case 0x00:	/*  Switch video mode.  */
+		if (al == 0x02)
+			al = 0x03;
+
 		/*  TODO: really change mode  */
 		byte = 0xff;
 		cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
@@ -930,7 +933,12 @@ void pc_bios_init(struct cpu *cpu)
 		pc_bios_printstr(cpu, "No disks attached.\n\n",
 		    cpu->machine->md.pc.curcolor);
 
-	 cpu->cd.x86.r[X86_R_DX] = bios_boot_id;
+	/*  Registers passed to the bootsector code:  */
+	cpu->cd.x86.r[X86_R_AX] = 0xaa55;
+	cpu->cd.x86.r[X86_R_CX] = 0x0001;
+	cpu->cd.x86.r[X86_R_DI] = 0xffe4;
+	cpu->cd.x86.r[X86_R_SP] = 0xfffe;
+	cpu->cd.x86.r[X86_R_DX] = bios_boot_id;
 
 	cpu->machine->md.pc.initialized = 1;
 }

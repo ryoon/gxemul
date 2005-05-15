@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.45 2005-05-15 02:52:09 debug Exp $
+ *  $Id: pc_bios.c,v 1.46 2005-05-15 04:15:16 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -49,6 +49,54 @@ extern int quiet_mode;
 
 
 #define dec_to_bcd(x) ( (((x) / 10) << 4) + ((x) % 10) )
+
+
+/*
+ *  add_disk():
+ */
+static void add_disk(struct machine *machine, int biosnr, int id, int type)
+{
+	uint64_t size, bytespercyl;
+	struct pc_bios_disk *p = malloc(sizeof(struct pc_bios_disk));
+
+	if (p == NULL) {
+		fprintf(stderr, "add_disk(): out of memory\n");
+		exit(1);
+	}
+
+	p->next = machine->md.pc.first_disk;
+	machine->md.pc.first_disk = p;
+
+	p->nr = biosnr; p->id = id; p->type = type;
+
+	switch (type) {
+	case DISKIMAGE_FLOPPY:
+		/*  TODO: other floppy types?  */
+		p->cylinders = 80;
+		p->heads = 2;
+		p->sectorspertrack = 18;
+		break;
+	default:size = diskimage_getsize(machine, id, type);
+		p->heads = 15;
+		p->sectorspertrack = 63;
+		bytespercyl = p->heads * p->sectorspertrack * 512;
+		p->cylinders = size / bytespercyl;
+		if (p->cylinders * bytespercyl < size)
+			p->cylinders ++;
+	}
+}
+
+
+static struct pc_bios_disk *get_disk(struct machine *machine, int biosnr)
+{
+	struct pc_bios_disk *p = machine->md.pc.first_disk;
+	while (p != NULL) {
+		if (p->nr == biosnr)
+			break;
+		p = p->next;
+	}
+	return p;
+}
 
 
 /*
@@ -435,6 +483,7 @@ static void pc_bios_int10(struct cpu *cpu)
  */
 static void pc_bios_int13(struct cpu *cpu)
 {
+	struct pc_bios_disk *disk;
 	int res, nread, err;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = (cpu->cd.x86.r[X86_R_AX] >> 0) & 0xff;
@@ -458,46 +507,54 @@ static void pc_bios_int13(struct cpu *cpu)
 		 *  ch = cyl,  cl = 1-based starting sector nr
 		 *  es:bx = destination buffer; return carryflag = error
 		 */
-		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
-		offset = (cl-1 + 18 * dh + 36 * ch) * 512;
-		nread = 0; err = 0;
-		debug("[ pc_bios_int13(): reading from disk 0x%x, "
-		    "CHS=%i,%i,%i ]\n", dl, ch, dh, cl);
-		if (cl > 18 || dh > 1 || ch > 79) {
-			al = 0; err = 4;  /*  sector not found  */
-		}
-		while (al > 0) {
-			unsigned char buf[512];
-
-			debug("[ pc_bios_int13(): disk offset = 0x%llx, mem = "
-			    " 0x%04x:0x%04x ]\n", (long long)offset,
-			    cpu->cd.x86.s[X86_S_ES], bx);
-
-			res = diskimage_access(cpu->machine, dl & 0x7f,
-			    dl&0x80? DISKIMAGE_IDE : DISKIMAGE_FLOPPY,
-			    0, offset, buf, sizeof(buf));
-
-			if (!res) {
-				err = 4;
-				fatal("[ PC BIOS: disk access failed: disk %i, "
-				    "CHS = %i,%i,%i ]\n", dl, ch, dh, cl);
-				break;
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		disk = get_disk(cpu->machine, cpu->cd.x86.r[X86_R_DX] & 0xff);
+		if (disk != NULL) {
+			cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+			ch = ch + ((cl >> 6) << 8);
+			cl = (cl & 0x3f) - 1;
+			offset = (cl + disk->sectorspertrack * dh +
+			    disk->sectorspertrack * disk->heads * ch) * 512;
+			nread = 0; err = 0;
+			debug("[ pc_bios_int13(): reading from disk 0x%x, "
+			    "CHS=%i,%i,%i ]\n", dl, ch, dh, cl);
+			if (cl > 18 || dh > 1 || ch > 79) {
+				al = 0; err = 4;  /*  sector not found  */
 			}
+			while (al > 0) {
+				unsigned char buf[512];
 
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
-			if (bx > 0xfe00) {
-				err = 9;
-				break;
+				debug("[ pc_bios_int13(): disk offset=0x%llx,"
+				    " mem=0x%04x:0x%04x ]\n", (long long)offset,
+				    cpu->cd.x86.s[X86_S_ES], bx);
+
+				res = diskimage_access(cpu->machine, disk->id,
+				    disk->type, 0, offset, buf, sizeof(buf));
+
+				if (!res) {
+					err = 4;
+					fatal("[ PC BIOS: disk access failed: "
+					    "disk %i, CHS = %i,%i,%i ]\n", dl,
+					    ch, dh, cl);
+					break;
+				}
+
+				cpu->cd.x86.cursegment =
+				    cpu->cd.x86.s[X86_S_ES];
+				if (bx > 0xfe00) {
+					err = 9;
+					break;
+				}
+				store_buf(cpu, bx, (char *)buf, sizeof(buf));
+				offset += sizeof(buf);
+				bx += sizeof(buf);
+				al --;
+				nread ++;
 			}
-			store_buf(cpu, bx, (char *)buf, sizeof(buf));
-			offset += sizeof(buf);
-			bx += sizeof(buf);
-			al --;
-			nread ++;
-		}
-		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
-		cpu->cd.x86.r[X86_R_AX] |= nread;
-		/*  error code in ah? TODO  */
+			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_AX] |= nread;
+		} else
+			err = 0x80;
 		if (err) {
 			cpu->cd.x86.rflags |= X86_FLAGS_CF;
 			cpu->cd.x86.r[X86_R_AX] |= (err << 8);
@@ -512,16 +569,25 @@ static void pc_bios_int13(struct cpu *cpu)
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
 		cpu->cd.x86.r[X86_R_AX] |= 0x8080;
-		if ((cpu->cd.x86.r[X86_R_DX] & 0xff) == 0x00) {
+		disk = get_disk(cpu->machine, cpu->cd.x86.r[X86_R_DX] & 0xff);
+		if (disk != NULL) {
+			int cyl_hi, cyl_lo;
+
+			cyl_lo = disk->cylinders & 255;
+			cyl_hi = ((disk->cylinders >> 8) & 3) << 6;
+			cyl_hi |= disk->sectorspertrack;
+
 			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
-			cpu->cd.x86.r[X86_R_BX] |= 4;
+			if (disk->type == DISKIMAGE_FLOPPY)
+				cpu->cd.x86.r[X86_R_BX] |= 4;
 			cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
-			cpu->cd.x86.r[X86_R_CX] |= (79 << 8) | 18;
+			cpu->cd.x86.r[X86_R_CX] |= (cyl_lo << 8) | cyl_hi;
 			cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
-			cpu->cd.x86.r[X86_R_DX] |= 0x0101;
-			/*  dl = nr of drives   */
-			/*  TODO: dl, es:di and all other regs  */
+			cpu->cd.x86.r[X86_R_DX] |= 0x01 |
+			    ((disk->heads - 1) << 8);
+			/*  TODO: dl = nr of drives   */
+			/*  TODO: es:di?  */
 			cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		}
 		break;
@@ -575,6 +641,11 @@ static void pc_bios_int14(struct cpu *cpu)
 static void pc_bios_int15(struct cpu *cpu)
 {
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+	int cx = cpu->cd.x86.r[X86_R_CX] & 0xffff;
+	int si = cpu->cd.x86.r[X86_R_SI] & 0xffff;
+	unsigned char src_entry[8];
+	unsigned char dst_entry[8];
+	uint32_t src_addr, dst_addr;
 
 	switch (ah) {
 	case 0x41:	/*  TODO  */
@@ -585,8 +656,34 @@ static void pc_bios_int15(struct cpu *cpu)
 		fatal("[ PC BIOS int 0x15,0x53: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
+	case 0x87:	/*  Move to/from extended memory, via a GDT  */
+		cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+		cpu->memory_rw(cpu, cpu->mem, si + 0x10, src_entry, 8,
+		    MEM_READ, CACHE_DATA);
+		cpu->memory_rw(cpu, cpu->mem, si + 0x18, dst_entry, 8,
+		    MEM_READ, CACHE_DATA);
+		src_addr = src_entry[2]+(src_entry[3]<<8)+(src_entry[4]<<16);
+		dst_addr = dst_entry[2]+(dst_entry[3]<<8)+(dst_entry[4]<<16);
+		if (src_entry[5] != 0x93)
+			fatal("WARNING: int15,87: bad src access right?\n");
+		if (dst_entry[5] != 0x93)
+			fatal("WARNING: int15,87: bad dst access right?\n");
+		debug("[ pc_bios: INT15: copying %i bytes from 0x%x to 0x%x"
+		    " ]\n", cx*2, src_addr, dst_addr);
+		while (cx*2 > 0) {
+			unsigned char buf[2];
+			cpu->memory_rw(cpu, cpu->mem, src_addr, buf, 2,
+			    MEM_READ, CACHE_DATA);
+			cpu->memory_rw(cpu, cpu->mem, dst_addr, buf, 2,
+			    MEM_READ, CACHE_DATA);
+			src_addr += 2; dst_addr += 2; cx --;
+		}
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
+		break;
 	case 0x88:	/*  Extended Memory Size Determination  */
-		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		cpu->cd.x86.r[X86_R_AX] = (cpu->machine->physical_ram_in_mb
 		    - 1) * 1024;
 		break;
@@ -764,6 +861,7 @@ void pc_bios_init(struct cpu *cpu)
 	/*  "Detect" Floppies, IDE disks, and SCSI disks:  */
 	for (i=0; i<4; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_FLOPPY)) {
+			add_disk(cpu->machine, i, i, DISKIMAGE_FLOPPY);
 			sprintf(t, "%c%c (bios disk %02x)  FLOPPY\n",
 			    i<2? ('A'+i) : ' ', i<2? ':' : ' ', i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
@@ -773,6 +871,7 @@ void pc_bios_init(struct cpu *cpu)
 	disknr = 0x80;
 	for (i=0; i<8; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_IDE)) {
+			add_disk(cpu->machine, disknr, i, DISKIMAGE_IDE);
 			sprintf(t, "%s (bios disk %02x)  IDE %s, id %i\n",
 			    disknr==0x80? "C:" : "  ", disknr,
 			    diskimage_is_a_cdrom(cpu->machine, i,
@@ -787,6 +886,7 @@ void pc_bios_init(struct cpu *cpu)
 	}
 	for (i=0; i<8; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_SCSI)) {
+			add_disk(cpu->machine, disknr, i, DISKIMAGE_SCSI);
 			sprintf(t, "%s (bios disk %02x)  SCSI disk, id %i\n",
 			    disknr==0x80? "C:" : "  ", disknr, i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_x86.h,v 1.1 2005-05-14 16:39:56 debug Exp $
+ *  $Id: machine_x86.h,v 1.2 2005-05-15 04:15:17 debug Exp $
  */
 
 #include "misc.h"
@@ -37,9 +37,25 @@
 /*
  *  Machine-specific data for x86 machines. (BIOS settings, etc.)
  */
+
+struct pc_bios_disk {
+	struct pc_bios_disk *next;
+
+	int	nr;		/*  0x00 = A:, 0x80 = C:  */
+
+	int	type;
+	int	id;
+
+	int	cylinders;
+	int	heads;
+	int	sectorspertrack;
+};
+
 struct machine_pc {
 	int	initialized;
 	int	curcolor;
+
+	struct pc_bios_disk *first_disk;
 };
 
 

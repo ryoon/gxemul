@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.97 2005-05-15 01:55:49 debug Exp $
+ *  $Id: cpu_x86.c,v 1.98 2005-05-15 04:15:16 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1632,7 +1632,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0xd4) {
 		SPACES; debug("aam");
 	} else if (op == 0xd5) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("aad");
+		if (imm != 10)
+			debug("\t%i", imm);
 	} else if (op == 0xd7) {
 		SPACES; debug("xlat");
 	} else if (op == 0xe3) {
@@ -3436,6 +3439,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    NULL, &op1, &op2);
 		if (!success)
 			return 0;
+	} else if (op == 0xd5) {	/*  AAD  */
+		int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
+		int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+		imm = read_imm(&instr, &newpc, 8);
+		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xffff)
+		    | ((al + 10*ah) & 0xff);
+		x86_calc_flags(cpu, cpu->cd.x86.r[X86_R_AX],
+		    0, 8, CALCFLAGS_OP_XOR);
 	} else if (op == 0xd7) {		/*  XLAT  */
 		if (!x86_load(cpu, cpu->cd.x86.r[X86_R_BX] +
 		    (cpu->cd.x86.r[X86_R_AX] & 0xff), &tmp, 1))

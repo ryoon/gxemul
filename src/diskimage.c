@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.86 2005-05-15 02:52:09 debug Exp $
+ *  $Id: diskimage.c,v 1.87 2005-05-15 20:06:05 debug Exp $
  *
  *  Disk image support.
  *
@@ -1563,15 +1563,17 @@ int diskimage_add(struct machine *machine, char *fname)
 /*
  *  diskimage_bootdev():
  *
- *  Returns the disk id (0..7) of the device which we're booting from.
- *  If typep is non-NULL, the type is returned as well.
+ *  Returns the disk id of the device which we're booting from.  If typep is
+ *  non-NULL, the type is returned as well.
  *
  *  If no disk was used as boot device, then -1 is returned. (In practice,
  *  this is used to fake network (tftp) boot.)
  */
 int diskimage_bootdev(struct machine *machine, int *typep)
 {
-	struct diskimage *d = machine->first_diskimage;
+	struct diskimage *d;
+
+	d = machine->first_diskimage;
 	while (d != NULL) {
 		if (d->is_boot_device) {
 			if (typep != NULL)
@@ -1582,10 +1584,11 @@ int diskimage_bootdev(struct machine *machine, int *typep)
 	}
 
 	d = machine->first_diskimage;
-	if (typep != NULL)
-		*typep = d->type;
-	if (d != NULL)
+	if (d != NULL) {
+		if (typep != NULL)
+			*typep = d->type;
 		return d->id;
+	}
 
 	return -1;
 }

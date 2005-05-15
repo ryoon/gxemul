@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.435 2005-05-15 19:02:48 debug Exp $
+ *  $Id: machine.c,v 1.436 2005-05-15 20:06:05 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4504,14 +4504,16 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->main_console_handle = dev_pckbc_init(machine,
 		    mem, X86_IO_BASE + 0x60, PCKBC_8042, 1, 0, 1);
 
-		/*  These values are the same as what Bochs seems to use:  */
-		cpu->cd.x86.r[X86_R_AX] = 0xaa55;
-		cpu->cd.x86.r[X86_R_CX] = 0x0001;
-		cpu->cd.x86.r[X86_R_DI] = 0xffe4;
-		cpu->cd.x86.r[X86_R_SP] = 0xfffe;
-		/*  Note: DL = boot device, set by pc_bios_init()  */
+		if (machine->prom_emulation) {
+			cpu->cd.x86.r[X86_R_AX] = 0xaa55;
+			cpu->cd.x86.r[X86_R_CX] = 0x0001;
+			cpu->cd.x86.r[X86_R_DI] = 0xffe4;
+			cpu->cd.x86.r[X86_R_SP] = 0xfffe;
+			/*  Note: DL = boot device, set by pc_bios_init()  */
 
-		pc_bios_init(cpu);
+			pc_bios_init(cpu);
+		}
+
 		break;
 
 	default:

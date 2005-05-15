@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.50 2005-05-15 19:02:50 debug Exp $
+ *  $Id: dev_vga.c,v 1.51 2005-05-15 20:06:06 debug Exp $
  *  
  *  VGA text (and graphics) console device.
  *
@@ -774,5 +774,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	tmpi = d->cursor_y * d->max_x + d->cursor_x;
 	d->reg[0x0e] = tmpi >> 8;
 	d->reg[0x0f] = tmpi;
+
+	d->reg[0xff] = 0x03;
 }
 

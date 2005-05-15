@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.98 2005-05-15 04:15:16 debug Exp $
+ *  $Id: cpu_x86.c,v 1.99 2005-05-15 20:06:05 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -141,6 +141,12 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 	    so setting 16 as the default here causes them to not load
 	    correctly.  */
 	cpu->cd.x86.mode = 32;
+
+	if (!machine->prom_emulation) {
+		cpu->cd.x86.mode = 16;
+		cpu->cd.x86.s[X86_S_CS] = 0xf000;
+		cpu->pc = 0xfff0;
+	}
 
 	if (cpu->cd.x86.model.model_number == X86_MODEL_AMD64)
 		cpu->cd.x86.bits = 64;
@@ -1337,6 +1343,19 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					mnem = "movzx";
 				SPACES; debug("%s\t%s,%s", mnem,
 				    modrm_r, modrm_rm);
+			} else if (imm == 0xba) {
+				int subop = (*instr >> 3) & 0x7;
+				switch (subop) {
+				case 4:	modrm(cpu, MODRM_READ, mode, mode67,
+					    0, &instr, &ilen, NULL, NULL);
+					imm2 = read_imm_and_print(&instr,
+					    &ilen, 8);
+					SPACES; debug("bt\t%s,%i",
+					    modrm_rm, imm2);
+					break;
+				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
+					    ",0x%02x,0x%02x", op, imm, *instr);
+				}
 			} else if (imm == 0xbc || imm == 0xbd) {
 				modrm(cpu, MODRM_READ, mode, mode67,
 				    0, &instr, &ilen, NULL, NULL);
@@ -2714,6 +2733,26 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    (imm&1)==0? (MODRM_EIGHTBIT |
 				    MODRM_R_NONEIGHTBIT) : MODRM_RM_16BIT,
 				    &instr_orig, NULL, &op1, &op2);
+				break;
+			case 0xba:
+				subop = (*instr >> 3) & 0x7;
+				switch (subop) {
+				case 4:	/*  BT  */
+					modrm(cpu, MODRM_READ, mode, mode67,
+					    0, &instr, &newpc, &op1, &op2);
+					imm = read_imm(&instr, &newpc, 8);
+					imm &= 31;
+					if (mode == 16)
+						imm &= 15;
+					cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+					if (op1 & ((uint64_t)1 << imm))
+						cpu->cd.x86.rflags |=
+						    X86_FLAGS_CF;
+					break;
+				default:fatal("UNIMPLEMENTED 0x%02x"
+					    ",0x%02x,0x%02x", op, imm, *instr);
+					cpu->running = 0;
+				}
 				break;
 			case 0xbc:	/*  bsf  */
 			case 0xbd:	/*  bsr  */

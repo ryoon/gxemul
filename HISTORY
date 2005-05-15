@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.735 2005-05-15 01:55:48 debug Exp $
+$Id: HISTORY,v 1.736 2005-05-15 22:44:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1901,3 +1901,7 @@ Changelog for GXemul:
 		Trying to clean up ARCBIOS stuff a little.
 20050515	Trying to make it possible to actually use more than one disk
 		type per machine (floppy, ide, scsi).
+		Trying to clean up the kbd vs PROM console stuff. (For PC and
+		ARC emulation modes, mostly.)
+		Beginning to add an 8259 interrupt controller, and connecting
+		it to the x86 emulation.

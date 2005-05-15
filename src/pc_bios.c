@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.49 2005-05-15 21:58:27 debug Exp $
+ *  $Id: pc_bios.c,v 1.50 2005-05-15 22:44:40 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -39,6 +39,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "cpu_x86.h"
+#include "devices.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
@@ -856,6 +857,9 @@ void pc_bios_init(struct cpu *cpu)
 		return;
 	}
 
+	cpu->machine->md.pc.pic1->irq_base = 0x08;
+	cpu->machine->md.pc.pic2->irq_base = 0x70;
+
 	pc_bios_printstr(cpu, "GXemul", 0x0f);
 #ifdef VERSION
 	pc_bios_printstr(cpu, " "VERSION, 0x0f);
@@ -940,6 +944,8 @@ void pc_bios_init(struct cpu *cpu)
 	cpu->cd.x86.r[X86_R_SP] = 0xfffe;
 	cpu->cd.x86.r[X86_R_DX] = bios_boot_id;
 
+	cpu->cd.x86.rflags |= X86_FLAGS_IF;
+
 	cpu->machine->md.pc.initialized = 1;
 }
 
@@ -950,7 +956,7 @@ void pc_bios_init(struct cpu *cpu)
 int pc_bios_emul(struct cpu *cpu)
 {
 	uint32_t addr = (cpu->cd.x86.s[X86_S_CS] << 4) + cpu->pc;
-	int int_nr;
+	int int_nr, flags;
 
 	int_nr = addr & 0xff;
 
@@ -990,6 +996,7 @@ int pc_bios_emul(struct cpu *cpu)
 		    int_nr);
 		cpu->running = 0;
 		cpu->dead = 1;
+		return 0;
 	}
 
 	/*
@@ -1001,9 +1008,10 @@ int pc_bios_emul(struct cpu *cpu)
 	    load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 2);
 
 	/*  Actually, don't pop flags, because they contain result bits
-	    from interrupt calls.  */
-	/*  cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
-	    | load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 4);  */
+	    from interrupt calls. Only pop the Interrupt Flag.  */
+	flags = load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 4);
+	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
+	cpu->cd.x86.rflags |= (flags & X86_FLAGS_IF);
 
 	cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
 	    | ((cpu->cd.x86.r[X86_R_SP] + 6) & 0xffff);

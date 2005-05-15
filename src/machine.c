@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.436 2005-05-15 20:06:05 debug Exp $
+ *  $Id: machine.c,v 1.437 2005-05-15 22:44:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1217,6 +1217,42 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 	/*  TODO: What _is_ request1?  */
 
 	/*  TODO: Controller 1  */
+}
+
+
+/*
+ *  x86 (PC) interrupts:
+ */
+void x86_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
+{
+	int mask = 1 << (irq_nr & 7);
+
+	if (irq_nr < 8) {
+		if (assrt)
+			m->md.pc.pic1->irr |= mask;
+		else
+			m->md.pc.pic1->irr &= ~mask;
+	} else {
+		if (assrt)
+			m->md.pc.pic2->irr |= mask;
+		else
+			m->md.pc.pic2->irr &= ~mask;
+
+		/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+		/*  (TODO: don't hardcode this here)  */
+		if (m->md.pc.pic2->irr & ~m->md.pc.pic2->ier)
+			x86_interrupt(m, cpu, 2, 1);
+		else
+			x86_interrupt(m, cpu, 2, 0);
+
+		return;
+	}
+
+	/*  Now, PIC1:  */
+	if (m->md.pc.pic1->irr & ~m->md.pc.pic1->ier)
+		cpu->cd.x86.interrupt_asserted = 1;
+	else
+		cpu->cd.x86.interrupt_asserted = 0;
 }
 
 
@@ -4474,6 +4510,15 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			fprintf(stderr, "\nWARNING! You are emulating a PC wi"
 			    "thout -X. You will miss any graphics output!\n\n");
 
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx",
+		    (long long)(X86_IO_BASE + 0x20));
+		machine->md.pc.pic1 = device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx irq=2",
+		    (long long)(X86_IO_BASE + 0xa0));
+		machine->md.pc.pic2 = device_add(machine, tmpstr);
+
+		machine->md_interrupt = x86_interrupt;
+
 		/*
 		 *  Initialize all 16-bit interrupt vectors to point to
 		 *  somewhere within the PC BIOS area (0xf000:0x8yyy):
@@ -4491,28 +4536,22 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		store_byte(cpu, 0x449, 0x03);	/*  initial video mode  */
 
-		/*  TODO: irq numbers  */
-
 		dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);
+		dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 0);
+
+		/*  floppy at irq 6  */
+		/*  sound blaster (eventually) at irq 7?  */
 
 		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x3f8, 4, 1, 0, "com1");
 		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x378, 3, 1, 0, "com2");
 
-		/*  This should be _after_ the main console handle is valid.  */
 		dev_vga_init(machine, mem, 0xa0000ULL, X86_IO_BASE + 0x3c0,
 		    "Generic x86 PC");
 		machine->main_console_handle = dev_pckbc_init(machine,
-		    mem, X86_IO_BASE + 0x60, PCKBC_8042, 1, 0, 1);
+		    mem, X86_IO_BASE + 0x60, PCKBC_8042, 1, 12, 1);
 
-		if (machine->prom_emulation) {
-			cpu->cd.x86.r[X86_R_AX] = 0xaa55;
-			cpu->cd.x86.r[X86_R_CX] = 0x0001;
-			cpu->cd.x86.r[X86_R_DI] = 0xffe4;
-			cpu->cd.x86.r[X86_R_SP] = 0xfffe;
-			/*  Note: DL = boot device, set by pc_bios_init()  */
-
+		if (machine->prom_emulation)
 			pc_bios_init(cpu);
-		}
 
 		break;
 

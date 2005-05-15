@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.163 2005-05-07 14:52:54 debug Exp $
+ *  $Id: devices.h,v 1.164 2005-05-15 22:44:42 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -48,6 +48,18 @@ struct pci_data;
 #include <X11/Xlib.h>
 #endif */
 
+/*  dev_8259.c:  */
+struct pic8259_data {
+	int		irq_nr;		/*  if connected to another 8259  */
+
+	int		irq_base;
+	int		current_command;
+
+	int		priority_reg;
+	uint8_t		irr;		/*  interrupt request register  */
+	uint8_t		isr;		/*  interrupt in-service register  */
+	uint8_t		ier;		/*  interrupt enable register  */
+};
 
 /*  dev_dec_ioasic.c:  */
 #define	DEV_DEC_IOASIC_LENGTH		0x80100

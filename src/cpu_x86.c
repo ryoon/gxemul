@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.99 2005-05-15 20:06:05 debug Exp $
+ *  $Id: cpu_x86.c,v 1.100 2005-05-15 22:44:39 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -72,6 +72,7 @@ int x86_cpu_family_init(struct cpu_family *fp)
 
 #include "cpu.h"
 #include "cpu_x86.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "symbol.h"
@@ -508,6 +509,42 @@ static void print_csip(struct cpu *cpu)
 	case 32: fatal("0x%08x", (int)cpu->pc); break;
 	case 64: fatal("0x%016llx", (long long)cpu->pc); break;
 	}
+}
+
+
+/*
+ *  x86_cpu_interrupt():
+ *
+ *  NOTE: Interacting with the 8259 PIC is done in src/machine.c.
+ */
+int x86_cpu_interrupt(struct cpu *cpu, uint64_t nr)
+{
+	if (cpu->machine->md_interrupt != NULL)
+		cpu->machine->md_interrupt(cpu->machine, cpu, nr, 1);
+	else {
+		fatal("x86_cpu_interrupt(): no md_interrupt()?\n");
+		return 1;
+	}
+
+        return 1;
+}
+
+
+/*
+ *  x86_cpu_interrupt_ack():
+ *
+ *  NOTE: Interacting with the 8259 PIC is done in src/machine.c.
+ */
+int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
+{
+	if (cpu->machine->md_interrupt != NULL)
+		cpu->machine->md_interrupt(cpu->machine, cpu, nr, 0);
+	else {
+		fatal("x86_cpu_interrupt(): no md_interrupt()?\n");
+		return 1;
+	}
+
+        return 1;
 }
 
 
@@ -2228,6 +2265,77 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 
 
 /*
+ *  cause_interrupt():
+ *
+ *  Read the registers of PIC1 (and possibly PIC2) to find out which interrupt
+ *  has occured.
+ */
+static void cause_interrupt(struct cpu *cpu)
+{
+	int i, irq_nr = -1;
+	uint64_t seg, ofs;
+
+	for (i=0; i<8; i++) {
+		if (cpu->machine->md.pc.pic1->irr &
+		    ~cpu->machine->md.pc.pic1->ier & (1 << i))
+			irq_nr = i;
+	}
+
+	if (irq_nr == 2) {
+		for (i=0; i<8; i++) {
+			if (cpu->machine->md.pc.pic2->irr &
+			    ~cpu->machine->md.pc.pic2->ier & (1 << i))
+				irq_nr = 8+i;
+		}
+	}
+
+	if (irq_nr == 2) {
+		fatal("cause_interrupt(): Huh? irq 2 but no secondary irq\n");
+		cpu->running = 0;
+	}
+
+	/*  Set the in-service bit, and calculate actual INT nr:  */
+	if (irq_nr < 8) {
+		cpu->machine->md.pc.pic1->isr |= (1 << irq_nr);
+		irq_nr = cpu->machine->md.pc.pic1->irq_base + irq_nr;
+	} else {
+		cpu->machine->md.pc.pic2->isr |= (1 << (irq_nr&7));
+		irq_nr = cpu->machine->md.pc.pic2->irq_base + (irq_nr & 7);
+	}
+
+	/*
+	 *  TODO:
+	 *
+	 *  Protected mode, and/or other things when the interrupt descriptor
+	 *  table needs to be used.
+	 */
+
+	if (cpu->cd.x86.mode != 16) {
+		fatal("Interrupts in non-16-bit-modes not yet implemented\n");
+		cpu->running = 0;
+		return;
+	}
+
+	/*  Figure out where to jump to:  */
+	cpu->cd.x86.cursegment = 0;
+	x86_load(cpu, irq_nr * 4, &ofs, 2);
+	x86_load(cpu, irq_nr * 4 + 2, &seg, 2);
+
+	/*  Push flags, CS, and IP:  */
+	x86_push(cpu, cpu->cd.x86.rflags, 2);
+	x86_push(cpu, cpu->cd.x86.s[X86_S_CS], 2);
+	x86_push(cpu, cpu->pc, 2);
+
+	/*  Clear the interrupt flag, and jump to the interrupt handler:  */
+	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
+	cpu->cd.x86.s[X86_S_CS] = seg;
+	cpu->pc = ofs;
+
+	cpu->cd.x86.halted = 0;
+}
+
+
+/*
  *  x86_cpu_run_instr():
  *
  *  Execute one instruction on a specific CPU.
@@ -2263,6 +2371,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  if (cpu->machine->instruction_trace)
 			debug("(PC BIOS emulation, int 0x%02x)\n", addr);  */
 		pc_bios_emul(cpu);
+		return 1;
+	}
+
+	if (cpu->cd.x86.interrupt_asserted &&
+	    cpu->cd.x86.rflags & X86_FLAGS_IF) {
+		cause_interrupt(cpu);
+		return 0;
+	}
+
+	if (cpu->cd.x86.halted) {
+		if (!(cpu->cd.x86.rflags & X86_FLAGS_IF)) {
+			fatal("[ Halting with interrupts disabled. ]\n");
+			cpu->running = 0;
+		}
 		return 1;
 	}
 
@@ -3605,8 +3727,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    (cpu->cd.x86.r[X86_R_DX] & 0xffff), &databuf[0],
 		    op == 0xee? 1 : (mode/8), MEM_WRITE, CACHE_NONE);
 	} else if (op == 0xf4) {	/*  HLT  */
-		/*  Jump to the same instruction... :)  */
-		return 1;
+		cpu->cd.x86.halted = 1;
 	} else if (op == 0xf5) {	/*  CMC  */
 		cpu->cd.x86.rflags ^= X86_FLAGS_CF;
 	} else if (op == 0xf8) {	/*  CLC  */
@@ -3953,8 +4074,8 @@ int x86_cpu_family_init(struct cpu_family *fp)
 	fp->dumpinfo = x86_cpu_dumpinfo;
 	/*  fp->show_full_statistics = x86_cpu_show_full_statistics;  */
 	/*  fp->tlbdump = x86_cpu_tlbdump;  */
-	/*  fp->interrupt = x86_cpu_interrupt;  */
-	/*  fp->interrupt_ack = x86_cpu_interrupt_ack;  */
+	fp->interrupt = x86_cpu_interrupt;
+	fp->interrupt_ack = x86_cpu_interrupt_ack;
 	return 1;
 }
 

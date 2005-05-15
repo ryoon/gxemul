@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_x86.h,v 1.2 2005-05-15 04:15:17 debug Exp $
+ *  $Id: machine_x86.h,v 1.3 2005-05-15 22:44:42 debug Exp $
  */
 
 #include "misc.h"
@@ -56,6 +56,8 @@ struct machine_pc {
 	int	curcolor;
 
 	struct pc_bios_disk *first_disk;
+	struct pic8259_data *pic1;
+	struct pic8259_data *pic2;
 };
 
 

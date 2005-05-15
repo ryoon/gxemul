@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.46 2005-05-15 04:15:16 debug Exp $
+ *  $Id: pc_bios.c,v 1.47 2005-05-15 19:02:48 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -69,14 +69,16 @@ static void add_disk(struct machine *machine, int biosnr, int id, int type)
 
 	p->nr = biosnr; p->id = id; p->type = type;
 
+	size = diskimage_getsize(machine, id, type);
+
 	switch (type) {
 	case DISKIMAGE_FLOPPY:
-		/*  TODO: other floppy types?  */
+		/*  TODO: other floppy types? 360KB etc?  */
 		p->cylinders = 80;
 		p->heads = 2;
-		p->sectorspertrack = 18;
+		p->sectorspertrack = size / (p->cylinders * p->heads * 512);
 		break;
-	default:size = diskimage_getsize(machine, id, type);
+	default:/*  Non-floppies:  */
 		p->heads = 15;
 		p->sectorspertrack = 63;
 		bytespercyl = p->heads * p->sectorspertrack * 512;
@@ -322,35 +324,30 @@ static void pc_bios_int10(struct cpu *cpu)
 
 	switch (ah) {
 	case 0x00:	/*  Switch video mode.  */
+		/*  TODO: really change mode  */
+		byte = 0xff;
+		cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
+		    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE
+		    | PHYSICAL);
+		byte = al;
+		cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
+		    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+		    PHYSICAL);
+
 		switch (al) {
 		case 0x03:	/*  80x25 color textmode  */
 		case 0x19:
 			/*  Simply clear the screen and home the cursor
 			    for now. TODO: More advanced stuff.  */
-			/*  TODO: really change mode  */
-			byte = 0xff;
-			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE
-			    | PHYSICAL);
-			byte = 0x03;
-			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
 			set_cursor_pos(cpu, 0, 0);
 			for (y=0; y<25; y++)
 				for (x=0; x<80; x++)
 					output_char(cpu, x,y, ' ', 0x07);
 			break;
+		case 0x12:	/*  640x480 x 16 colors graphics  */
+			set_cursor_scanlines(cpu, 0x40, 0);
+			break;
 		case 0x13:	/*  320x200 x 256 colors graphics  */
-			/*  TODO: really change mode  */
-			byte = 0xff;
-			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE
-			    | PHYSICAL);
-			byte = 0x13;
-			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
 			set_cursor_scanlines(cpu, 0x40, 0);
 			break;
 		default:
@@ -839,6 +836,9 @@ void pc_bios_init(struct cpu *cpu)
 {
 	char t[80];
 	int i, any_disk = 0, disknr;
+	int boot_id, boot_type, bios_boot_id = 0;
+
+	boot_id = diskimage_bootdev(cpu->machine, &boot_type);
 
 	if (cpu->machine->md.pc.initialized) {
 		fatal("ERROR: pc_bios_init(): Already initialized.\n");
@@ -862,9 +862,16 @@ void pc_bios_init(struct cpu *cpu)
 	for (i=0; i<4; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_FLOPPY)) {
 			add_disk(cpu->machine, i, i, DISKIMAGE_FLOPPY);
-			sprintf(t, "%c%c (bios disk %02x)  FLOPPY\n",
+			sprintf(t, "%c%c (bios disk %02x)  FLOPPY",
 			    i<2? ('A'+i) : ' ', i<2? ':' : ' ', i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			if (boot_id == i && boot_type == DISKIMAGE_FLOPPY) {
+				bios_boot_id = i;
+				pc_bios_printstr(cpu, " (boot device)",
+				    cpu->machine->md.pc.curcolor);
+			}
+			pc_bios_printstr(cpu, "\n",
+			    cpu->machine->md.pc.curcolor);
 			any_disk = 1;
 		}
 	}
@@ -872,7 +879,7 @@ void pc_bios_init(struct cpu *cpu)
 	for (i=0; i<8; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_IDE)) {
 			add_disk(cpu->machine, disknr, i, DISKIMAGE_IDE);
-			sprintf(t, "%s (bios disk %02x)  IDE %s, id %i\n",
+			sprintf(t, "%s (bios disk %02x)  IDE %s, id %i",
 			    disknr==0x80? "C:" : "  ", disknr,
 			    diskimage_is_a_cdrom(cpu->machine, i,
 				DISKIMAGE_IDE)? "cdrom" : (
@@ -880,6 +887,13 @@ void pc_bios_init(struct cpu *cpu)
 				DISKIMAGE_IDE)? "tape" : "disk"),
 			    i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			if (boot_id == i && boot_type == DISKIMAGE_IDE) {
+				bios_boot_id = disknr;
+				pc_bios_printstr(cpu, " (boot device)",
+				    cpu->machine->md.pc.curcolor);
+			}
+			pc_bios_printstr(cpu, "\n",
+			    cpu->machine->md.pc.curcolor);
 			disknr++;
 			any_disk = 1;
 		}
@@ -887,9 +901,16 @@ void pc_bios_init(struct cpu *cpu)
 	for (i=0; i<8; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_SCSI)) {
 			add_disk(cpu->machine, disknr, i, DISKIMAGE_SCSI);
-			sprintf(t, "%s (bios disk %02x)  SCSI disk, id %i\n",
+			sprintf(t, "%s (bios disk %02x)  SCSI disk, id %i",
 			    disknr==0x80? "C:" : "  ", disknr, i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			if (boot_id == i && boot_type == DISKIMAGE_SCSI) {
+				bios_boot_id = disknr;
+				pc_bios_printstr(cpu, " (boot device)",
+				    cpu->machine->md.pc.curcolor);
+			}
+			pc_bios_printstr(cpu, "\n",
+			    cpu->machine->md.pc.curcolor);
 			disknr++;
 			any_disk = 1;
 		}
@@ -897,6 +918,11 @@ void pc_bios_init(struct cpu *cpu)
 
 	if (any_disk)
 		pc_bios_printstr(cpu, "\n", cpu->machine->md.pc.curcolor);
+	else
+		pc_bios_printstr(cpu, "No disks attached.\n\n",
+		    cpu->machine->md.pc.curcolor);
+
+	 cpu->cd.x86.r[X86_R_DX] = bios_boot_id;
 
 	cpu->machine->md.pc.initialized = 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.49 2005-05-15 01:55:51 debug Exp $
+ *  $Id: dev_vga.c,v 1.50 2005-05-15 19:02:50 debug Exp $
  *  
  *  VGA text (and graphics) console device.
  *
@@ -531,6 +531,16 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 			d->cur_mode = MODE_TEXT;
 			d->max_x = 80;
 			d->max_y = 25;
+			d->update_x1 = 0;
+			d->update_x2 = d->max_x - 1;
+			d->update_y1 = 0;
+			d->update_y2 = d->max_y - 1;
+			d->modified = 1;
+			break;
+		case 0x12:
+			d->cur_mode = MODE_GRAPHICS;
+			d->max_x = 640;
+			d->max_y = 400;		/*  TODO: 480  */
 			d->update_x1 = 0;
 			d->update_x2 = d->max_x - 1;
 			d->update_y1 = 0;

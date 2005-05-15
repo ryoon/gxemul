@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.37 2005-02-22 06:26:10 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.38 2005-05-15 19:02:50 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -69,7 +69,7 @@
 struct pckbc_data {
 	int		console_handle;
 	int		in_use;
-	int		any_command_used;
+	int		accessed;
 
 	int		reg[DEV_PCKBC_LENGTH];
 	int		keyboard_irqnr;
@@ -274,8 +274,7 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 	int port_nr;
 	int ch;
 
-	if (d->in_use && d->any_command_used &&
-	    console_charavail(d->console_handle)) {
+	if (d->in_use && d->accessed && console_charavail(d->console_handle)) {
 		ch = console_readchar(d->console_handle);
 		if (ch >= 0)
 			ascii_to_pc_scancodes(ch, d);
@@ -303,8 +302,6 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 {
 	int cmd = d->reg[PC_CMD];
-
-	d->any_command_used = 1;
 
 	if (d->type == PCKBC_8242)
 		cmd = d->reg[PS2_TXBUF];
@@ -362,6 +359,8 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 	struct pckbc_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	d->accessed = 1;
 
 #ifdef PCKBC_DEBUG
 	if (writeflag == MEM_WRITE)

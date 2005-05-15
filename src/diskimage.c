@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.85 2005-05-15 01:55:49 debug Exp $
+ *  $Id: diskimage.c,v 1.86 2005-05-15 02:52:09 debug Exp $
  *
  *  Disk image support.
  *
@@ -1298,11 +1298,6 @@ int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 	off_t offset, unsigned char *buf, size_t len)
 {
 	struct diskimage *d = machine->first_diskimage;
-
-	/*
-	 *  TODO: How about mixing SCSI, IDE, and FLOPPY in one
-	 *        emulated machine?
-	 */
 
 	while (d != NULL) {
 		if (d->type == type && d->id == id)

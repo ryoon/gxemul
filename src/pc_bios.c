@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.44 2005-05-15 01:55:50 debug Exp $
+ *  $Id: pc_bios.c,v 1.45 2005-05-15 02:52:09 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -276,8 +276,18 @@ static void pc_bios_int10(struct cpu *cpu)
 	case 0x00:	/*  Switch video mode.  */
 		switch (al) {
 		case 0x03:	/*  80x25 color textmode  */
+		case 0x19:
 			/*  Simply clear the screen and home the cursor
 			    for now. TODO: More advanced stuff.  */
+			/*  TODO: really change mode  */
+			byte = 0xff;
+			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE
+			    | PHYSICAL);
+			byte = 0x03;
+			cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
 			set_cursor_pos(cpu, 0, 0);
 			for (y=0; y<25; y++)
 				for (x=0; x<80; x++)
@@ -294,9 +304,6 @@ static void pc_bios_int10(struct cpu *cpu)
 			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
 			    PHYSICAL);
 			set_cursor_scanlines(cpu, 0x40, 0);
-			break;
-		case 0x19:
-			fatal("TODO: mode 0x19?\n");
 			break;
 		default:
 			fatal("pc_bios_int10(): unimplemented video mode "
@@ -390,7 +397,7 @@ static void pc_bios_int10(struct cpu *cpu)
 				len = 2;
 			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
 			cpu->memory_rw(cpu, cpu->mem, bp, &byte[0], len,
-			    MEM_READ, CACHE_NONE | PHYSICAL);
+			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			bp += len;
 				pc_bios_putchar(cpu, byte[0], byte[1]);
 			cpu->machine->md.pc.curcolor = byte[1];
@@ -456,6 +463,9 @@ static void pc_bios_int13(struct cpu *cpu)
 		nread = 0; err = 0;
 		debug("[ pc_bios_int13(): reading from disk 0x%x, "
 		    "CHS=%i,%i,%i ]\n", dl, ch, dh, cl);
+		if (cl > 18 || dh > 1 || ch > 79) {
+			al = 0; err = 4;  /*  sector not found  */
+		}
 		while (al > 0) {
 			unsigned char buf[512];
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.100 2005-05-14 20:14:21 debug Exp $
+ *  $Id: arcbios.c,v 1.101 2005-05-15 01:55:48 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -955,7 +955,8 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
  *  for more info.
  */
 static void arcbios_get_msdos_partition_size(struct machine *machine,
-	int scsi_id, int partition_nr, uint64_t *start, uint64_t *size)
+	int disk_id, int disk_type, int partition_nr, uint64_t *start,
+	uint64_t *size)
 {
 	int res, i, partition_type, cur_partition = 0;
 	unsigned char sector[512];
@@ -964,7 +965,7 @@ static void arcbios_get_msdos_partition_size(struct machine *machine,
 
 	/*  Partition 0 is the entire disk image:  */
 	*start = 0;
-	*size = diskimage_getsize(machine, scsi_id);
+	*size = diskimage_getsize(machine, disk_id, disk_type);
 	if (partition_nr == 0)
 		return;
 
@@ -974,12 +975,12 @@ ugly_goto:
 	/*  printf("reading MSDOS partition from offset 0x%llx\n",
 	    (long long)offset);  */
 
-	res = diskimage_access(machine, scsi_id, 0, offset,
+	res = diskimage_access(machine, disk_id, disk_type, 0, offset,
 	    sector, sizeof(sector));
 	if (!res) {
 		fatal("[ arcbios_get_msdos_partition_size(): couldn't "
 		    "read the disk image, id %i, offset 0x%llx ]\n",
-		    scsi_id, (long long)offset);
+		    disk_id, (long long)offset);
 		return;
 	}
 
@@ -1033,9 +1034,9 @@ ugly_goto:
 
 
 /*
- *  arcbios_handle_to_scsi_id():
+ *  arcbios_handle_to_disk_id_and_type():
  */
-static int arcbios_handle_to_scsi_id(int handle)
+static int arcbios_handle_to_disk_id_and_type(int handle, int *typep)
 {
 	int id, cdrom;
 	char *s;
@@ -1055,6 +1056,8 @@ static int arcbios_handle_to_scsi_id(int handle)
 	if (strncmp(s, "scsi(", 5) != 0 || strlen(s) < 13)
 		return -1;
 
+	*typep = DISKIMAGE_SCSI;
+
 	cdrom = (s[7] == 'c');
 	id = cdrom? atoi(s + 13) : atoi(s + 12);
 
@@ -1070,14 +1073,16 @@ static void arcbios_handle_to_start_and_size(struct machine *machine,
 {
 	char *s = (char *)file_handle_string[handle];
 	char *s2;
-	int scsi_id = arcbios_handle_to_scsi_id(handle);
+	int disk_id, disk_type;
 
-	if (scsi_id < 0)
+	disk_id = arcbios_handle_to_disk_id_and_type(handle, &disk_type);
+
+	if (disk_id < 0)
 		return;
 
 	/*  This works for "partition(0)":  */
 	*start = 0;
-	*size = diskimage_getsize(machine, scsi_id);
+	*size = diskimage_getsize(machine, disk_id, disk_type);
 
 	s2 = strstr(s, "partition(");
 	if (s2 != NULL) {
@@ -1085,7 +1090,7 @@ static void arcbios_handle_to_start_and_size(struct machine *machine,
 		/*  printf("partition_nr = %i\n", partition_nr);  */
 		if (partition_nr != 0)
 			arcbios_get_msdos_partition_size(machine,
-			    scsi_id, partition_nr, start, size);
+			    disk_id, disk_type, partition_nr, start, size);
 	}
 }
 
@@ -1599,7 +1604,9 @@ int arcbios_emul(struct cpu *cpu)
 			    nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;
 		} else {
 			int handle = cpu->cd.mips.gpr[MIPS_GPR_A0];
-			int disk_id = arcbios_handle_to_scsi_id(handle);
+			int disk_type;
+			int disk_id = arcbios_handle_to_disk_id_and_type(
+			    handle, &disk_type);
 			uint64_t partition_offset = 0;
 			int res;
 			uint64_t size;		/*  dummy  */
@@ -1622,8 +1629,8 @@ int arcbios_emul(struct cpu *cpu)
 				break;
 			}
 
-			res = diskimage_access(cpu->machine, disk_id, 0,
-			    partition_offset + arcbios_current_seek_offset[
+			res = diskimage_access(cpu->machine, disk_id, disk_type,
+			    0, partition_offset + arcbios_current_seek_offset[
 			    handle], tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the
@@ -1668,7 +1675,9 @@ int arcbios_emul(struct cpu *cpu)
 			 *  TODO: this is just a test
 			 */
 			int handle = cpu->cd.mips.gpr[MIPS_GPR_A0];
-			int disk_id = arcbios_handle_to_scsi_id(handle);
+			int disk_type;
+			int disk_id = arcbios_handle_to_disk_id_and_type(
+			    handle, &disk_type);
 			uint64_t partition_offset = 0;
 			int res, i;
 			uint64_t size;		/*  dummy  */
@@ -1697,8 +1706,8 @@ int arcbios_emul(struct cpu *cpu)
 				    &tmp_buf[i], sizeof(char), MEM_READ,
 				    CACHE_NONE);
 
-			res = diskimage_access(cpu->machine, disk_id, 1,
-			    partition_offset + arcbios_current_seek_offset[
+			res = diskimage_access(cpu->machine, disk_id, disk_type,
+			    1, partition_offset + arcbios_current_seek_offset[
 			    handle], tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			if (res) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.194 2005-05-14 19:47:59 debug Exp $
+ *  $Id: emul.c,v 1.195 2005-05-15 01:55:49 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -65,6 +65,8 @@ extern int quiet_mode;
 
 extern struct emul *debugger_emul;
 extern struct diskimage *diskimages[];
+
+static char *diskimage_types[] = DISKIMAGE_TYPES;
 
 
 /*
@@ -142,7 +144,7 @@ static void fix_console(void)
  *  Returns 1 on success, 0 on failure.
  */
 static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
-	int disk_id, int iso_type, unsigned char *buf,
+	int disk_id, int disk_type, int iso_type, unsigned char *buf,
 	int *n_loadp, char ***load_namesp)
 {
 	char str[35];
@@ -211,7 +213,8 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		exit(1);
 	}
 
-	res2 = diskimage_access(m, disk_id, 0, dirofs, dirbuf, dirlen);
+	res2 = diskimage_access(m, disk_id, disk_type, 0, dirofs, dirbuf,
+	    dirlen);
 	if (!res2) {
 		fatal("Couldn't read the disk image. Aborting.\n");
 		goto ret;
@@ -300,7 +303,8 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 			/*  debug("realign dirofs = 0x%llx\n", dirofs);  */
 		}
 
-		res2 = diskimage_access(m, disk_id, 0, dirofs, dirbuf, 256);
+		res2 = diskimage_access(m, disk_id, disk_type, 0, dirofs,
+		    dirbuf, 256);
 		if (!res2) {
 			fatal("Couldn't read the disk image. Aborting.\n");
 			goto ret;
@@ -376,7 +380,8 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	debug("extracting %lli bytes into %s\n",
 	    (long long)filelen, tmpfilename);
 
-	res2 = diskimage_access(m, disk_id, 0, fileofs, filebuf, filelen);
+	res2 = diskimage_access(m, disk_id, disk_type, 0, fileofs, filebuf,
+	    filelen);
 	if (!res2) {
 		fatal("could not read the file from the disk image!\n");
 		goto ret;
@@ -441,13 +446,13 @@ ret:
 static int load_bootblock(struct machine *m, struct cpu *cpu,
 	int *n_loadp, char ***load_namesp)
 {
-	int boot_disk_id, n_blocks, res, readofs, iso_type;
+	int boot_disk_id, boot_disk_type = 0, n_blocks, res, readofs, iso_type;
 	unsigned char minibuf[0x20];
 	unsigned char *bootblock_buf;
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
 
-	boot_disk_id = diskimage_bootdev(m);
+	boot_disk_id = diskimage_bootdev(m, &boot_disk_type);
 	if (boot_disk_id < 0)
 		return 0;
 
@@ -469,7 +474,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		 *  nr of blocks to read and offset are repeated until nr of
 		 *  blocks to read is zero.
 		 */
-		res = diskimage_access(m, boot_disk_id, 0, 0,
+		res = diskimage_access(m, boot_disk_id, boot_disk_type, 0, 0,
 		    minibuf, sizeof(minibuf));
 
 		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
@@ -496,8 +501,8 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		readofs = 0x18;
 
 		for (;;) {
-			res = diskimage_access(m, boot_disk_id, 0, readofs,
-			    minibuf, sizeof(minibuf));
+			res = diskimage_access(m, boot_disk_id, boot_disk_type,
+			    0, readofs, minibuf, sizeof(minibuf));
 			if (!res) {
 				fatal("Couldn't read the disk image. "
 				    "Aborting.\n");
@@ -526,8 +531,8 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 				exit(1);
 			}
 
-			res = diskimage_access(m, boot_disk_id, 0,
-			    bootblock_offset, bootblock_buf, n_blocks * 512);
+			res = diskimage_access(m, boot_disk_id, boot_disk_type,
+			    0, bootblock_offset, bootblock_buf, n_blocks * 512);
 			if (!res) {
 				fatal("WARNING: could not load bootblocks from"
 				    " disk offset 0x%llx\n",
@@ -546,6 +551,11 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		return 1;
 
 	case MACHINE_X86:
+		/*  TODO: "El Torito" etc?  */
+		if (diskimage_is_a_cdrom(cpu->machine, boot_disk_id,
+		    boot_disk_type))
+			break;
+
 		cpu->cd.x86.mode = 16;
 		cpu->cd.x86.s[X86_S_CS] = 0x0000;
 		cpu->pc = 0x7c00;
@@ -558,14 +568,16 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 			exit(1);
 		}
 
-		res = diskimage_access(m, boot_disk_id, 0, 0,
+		debug("loading PC bootsector from %s id %i\n",
+		    diskimage_types[boot_disk_type], boot_disk_id);
+
+		res = diskimage_access(m, boot_disk_id, boot_disk_type, 0, 0,
 		    bootblock_buf, 512);
 		if (!res) {
 			fatal("Couldn't read the disk image. Aborting.\n");
 			return 0;
 		}
 
-		debug("loading PC bootsector from disk %i\n", boot_disk_id);
 		if (bootblock_buf[510] != 0x55 || bootblock_buf[511] != 0xaa)
 			debug("WARNING! The 0x55,0xAA marker is missing! "
 			    "Booting anyway.\n");
@@ -573,52 +585,51 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		free(bootblock_buf);
 
 		return 1;
-
-	default:
-		/*
-		 *  Try reading a kernel manually from the disk. The code here
-		 *  does not rely on machine-dependant boot blocks etc.
-		 */
-
-		/*  ISO9660: (0x800 bytes at 0x8000)  */
-		bootblock_buf = malloc(0x800);
-		if (bootblock_buf == NULL) {
-			fprintf(stderr, "Out of memory.\n");
-			exit(1);
-		}
-
-		res = diskimage_access(m, boot_disk_id, 0, 0x8000,
-		    bootblock_buf, 0x800);
-		if (!res) {
-			fatal("Couldn't read the disk image. Aborting.\n");
-			return 0;
-		}
-
-		iso_type = 0;
-		if (strncmp((char *)bootblock_buf+1, "CD001", 5) == 0)
-			iso_type = 1;
-		if (strncmp((char *)bootblock_buf+1, "CDW01", 5) == 0)
-			iso_type = 2;
-		if (strncmp((char *)bootblock_buf+1, "CDROM", 5) == 0)
-			iso_type = 3;
-
-		if (iso_type != 0) {
-			/*  We can't load a kernel if the name
-			    isn't specified.  */
-			if (cpu->machine->boot_kernel_filename == NULL ||
-			    cpu->machine->boot_kernel_filename[0] == '\0') {
-				fatal("ISO9660 filesystem, but no kernel "
-				    "specified? (Use the -j option.)\n");
-				res = 0;
-			} else
-				res = iso_load_bootblock(m, cpu, boot_disk_id,
-				    iso_type, bootblock_buf, n_loadp,
-				    load_namesp);
-		}
-
-		free(bootblock_buf);
-		return res;
 	}
+
+
+	/*
+	 *  Try reading a kernel manually from the disk. The code here
+	 *  does not rely on machine-dependant boot blocks etc.
+	 */
+	/*  ISO9660: (0x800 bytes at 0x8000)  */
+	bootblock_buf = malloc(0x800);
+	if (bootblock_buf == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		exit(1);
+	}
+
+	res = diskimage_access(m, boot_disk_id, boot_disk_type,
+	    0, 0x8000, bootblock_buf, 0x800);
+	if (!res) {
+		fatal("Couldn't read the disk image. Aborting.\n");
+		return 0;
+	}
+
+	iso_type = 0;
+	if (strncmp((char *)bootblock_buf+1, "CD001", 5) == 0)
+		iso_type = 1;
+	if (strncmp((char *)bootblock_buf+1, "CDW01", 5) == 0)
+		iso_type = 2;
+	if (strncmp((char *)bootblock_buf+1, "CDROM", 5) == 0)
+		iso_type = 3;
+
+	if (iso_type != 0) {
+		/*  We can't load a kernel if the name
+		    isn't specified.  */
+		if (cpu->machine->boot_kernel_filename == NULL ||
+		    cpu->machine->boot_kernel_filename[0] == '\0') {
+			fatal("\nISO9660 filesystem, but no kernel "
+			    "specified? (Use the -j option.)\n");
+			res = 0;
+		} else
+			res = iso_load_bootblock(m, cpu, boot_disk_id,
+			    boot_disk_type, iso_type, bootblock_buf,
+			    n_loadp, load_namesp);
+	}
+
+	free(bootblock_buf);
+	return res;
 }
 
 
@@ -802,7 +813,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	struct emul *emul;
 	struct cpu *cpu;
 	int i, iadd=4;
-	uint64_t addr, memory_amount, entrypoint = 0, gp = 0, toc = 0;
+	uint64_t memory_amount, entrypoint = 0, gp = 0, toc = 0;
 	int byte_order;
 
 	emul = m->emul;

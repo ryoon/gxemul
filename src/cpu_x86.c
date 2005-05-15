@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.96 2005-05-14 16:39:55 debug Exp $
+ *  $Id: cpu_x86.c,v 1.97 2005-05-15 01:55:49 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1969,7 +1969,7 @@ static int x86_interrupt(struct cpu *cpu, int nr)
 static void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
 	int op)
 {
-	uint64_t c, mask;
+	uint64_t c=0, mask;
 	int i, count;
 
 	if (mode == 8)
@@ -1980,8 +1980,10 @@ static void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
 		mask = 0xffffffffULL;
 	else if (mode == 64)
 		mask = 0xffffffffffffffffULL;
-	else
+	else {
 		fatal("x86_calc_flags(): Bad mode (%i)\n", mode);
+		return;
+	}
 
 	a &= mask;
 	b &= mask;
@@ -2043,6 +2045,7 @@ static void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
 			cpu->cd.x86.rflags ^= X86_FLAGS_OF;
 		break;
 	case CALCFLAGS_OP_XOR:
+		;
 	}
 
 	/*  AF:  */
@@ -2060,6 +2063,7 @@ static void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
 			cpu->cd.x86.rflags &= ~X86_FLAGS_AF;
 		break;
 	case CALCFLAGS_OP_XOR:
+		;
 	}
 
 	/*  PF:  */

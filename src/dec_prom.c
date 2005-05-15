@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.57 2005-02-22 12:05:19 debug Exp $
+ *  $Id: dec_prom.c,v 1.58 2005-05-15 01:55:49 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -133,7 +133,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 	case 0x38:	/*  read(handle, ptr, length)  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = -1;
 		if ((int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2] > 0) {
-			int disk_id = diskimage_bootdev(cpu->machine);
+			int disk_id = diskimage_bootdev(cpu->machine, NULL);
 			int res;
 			unsigned char *tmp_buf;
 
@@ -145,8 +145,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 				break;
 			}
 
-			res = diskimage_access(cpu->machine, disk_id, 0,
-			    current_file_offset, tmp_buf,
+			res = diskimage_access(cpu->machine, disk_id,
+			    DISKIMAGE_SCSI, 0, current_file_offset, tmp_buf,
 			    cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the data
@@ -469,7 +469,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 
 		if ((int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2] > 0) {
-			int disk_id = diskimage_bootdev(cpu->machine);
+			int disk_id = diskimage_bootdev(cpu->machine, NULL);
 			int res;
 			unsigned char *tmp_buf;
 
@@ -481,7 +481,8 @@ int decstation_prom_emul(struct cpu *cpu)
 				break;
 			}
 
-			res = diskimage_access(cpu->machine, disk_id, 0,
+			res = diskimage_access(cpu->machine, disk_id,
+			    DISKIMAGE_SCSI, 0,
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] * 512, tmp_buf,
 			    cpu->cd.mips.gpr[MIPS_GPR_A2]);
 

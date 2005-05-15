@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.26 2005-04-15 21:39:57 debug Exp $
+ *  $Id: diskimage.h,v 1.27 2005-05-15 01:55:51 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -42,6 +42,8 @@
 #define	DISKIMAGE_SCSI		1
 #define	DISKIMAGE_IDE		2
 #define	DISKIMAGE_FLOPPY	3
+
+#define	DISKIMAGE_TYPES		{ "(NONE)", "SCSI", "IDE", "FLOPPY" }
 
 struct diskimage {
 	struct diskimage *next;
@@ -102,16 +104,16 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp,
 	size_t want_len, int clearflag);
 
 
-int64_t diskimage_getsize(struct machine *machine, int scsi_id);
-int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
+int64_t diskimage_getsize(struct machine *machine, int id, int type);
+int diskimage_scsicommand(struct cpu *cpu, int id, int type,
 	struct scsi_transfer *);
-int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
+int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 	off_t offset, unsigned char *buf, size_t len);
-int diskimage_exist(struct machine *machine, int scsi_id);
-int diskimage_bootdev(struct machine *machine);
+int diskimage_exist(struct machine *machine, int scsi_id, int type);
+int diskimage_bootdev(struct machine *machine, int *typep);
 int diskimage_add(struct machine *machine, char *fname);
-int diskimage_is_a_cdrom(struct machine *machine, int scsi_id);
-int diskimage_is_a_tape(struct machine *machine, int scsi_id);
+int diskimage_is_a_cdrom(struct machine *machine, int id, int type);
+int diskimage_is_a_tape(struct machine *machine, int id, int type);
 void diskimage_dump_info(struct machine *machine);
 
 /*

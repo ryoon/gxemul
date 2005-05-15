@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.43 2005-05-14 16:43:20 debug Exp $
+ *  $Id: pc_bios.c,v 1.44 2005-05-15 01:55:50 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -59,7 +59,6 @@ static void output_char(struct cpu *cpu, int x, int y, int ch, int color)
 	uint64_t addr = (y * 80 + x) * 2 + 0xb8000;
 	unsigned char w[2];
 	int len = 2;
-	int oldseg;
 
 	w[0] = ch; w[1] = color;
 	if (color < 0)
@@ -152,14 +151,20 @@ static void scroll_up(struct cpu *cpu, int x1, int y1, int x2, int y2, int attr)
 {
 	int x, y;
 
+	if (x1 < 0)   x1 = 0;
+	if (y1 < 0)   y1 = 0;
+	if (x2 >= 80) x2 = 79;
+	if (y2 >= 25) y2 = 24;
+
 	/*  Scroll up by copying lines:  */
 	for (y=y1; y<=y2-1; y++) {
 		int addr = 160*y + x1*2 + 0xb8000;
 		int len = (x2-x1) * 2 + 2;
 		unsigned char w[160];
+		addr += 160;
 		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
 		    MEM_READ, CACHE_NONE | PHYSICAL);
-		addr += 160;
+		addr -= 160;
 		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
 		    MEM_WRITE, CACHE_NONE | PHYSICAL);
 	}
@@ -167,6 +172,38 @@ static void scroll_up(struct cpu *cpu, int x1, int y1, int x2, int y2, int attr)
 	/*  Clear lowest line:  */
 	for (x=x1; x<=x2; x++)
 		output_char(cpu, x, y2, ' ', attr);
+}
+
+
+/*
+ *  scroll_down():
+ */
+static void scroll_down(struct cpu *cpu, int x1, int y1, int x2, int y2,
+	int attr)
+{
+	int x, y;
+
+	if (x1 < 0)   x1 = 0;
+	if (y1 < 0)   y1 = 0;
+	if (x2 >= 80) x2 = 79;
+	if (y2 >= 25) y2 = 24;
+
+	/*  Scroll down by copying lines:  */
+	for (y=y2; y>=y1+1; y--) {
+		int addr = 160*y + x1*2 + 0xb8000;
+		int len = (x2-x1) * 2 + 2;
+		unsigned char w[160];
+		addr -= 160;
+		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
+		    MEM_READ, CACHE_NONE | PHYSICAL);
+		addr += 160;
+		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
+		    MEM_WRITE, CACHE_NONE | PHYSICAL);
+	}
+
+	/*  Clear the uppermost line:  */
+	for (x=x1; x<=x2; x++)
+		output_char(cpu, x, y1, ' ', attr);
 }
 
 
@@ -282,8 +319,21 @@ static void pc_bios_int10(struct cpu *cpu)
 		/*  ch/cl = cursor start end... TODO  */
 		cpu->cd.x86.r[X86_R_CX] = 0x000f;
 		break;
+	case 0x05:	/*  set active display page  */
+		if (al != 0)
+			fatal("WARNING: int 0x10, func 0x05, al = 0x%02\n", al);
+		break;
 	case 0x06:
-		scroll_up(cpu, cl, ch, dl, dh, bh);
+		if (al < 1)
+			al = 25;
+		while (al-- > 0)
+			scroll_up(cpu, cl, ch, dl, dh, bh);
+		break;
+	case 0x07:
+		if (al < 1)
+			al = 25;
+		while (al-- > 0)
+			scroll_down(cpu, cl, ch, dl, dh, bh);
 		break;
 	case 0x08:	/*  read char and attr at cur position  */
 		/*  TODO: return AH=attr, AL=char  */
@@ -293,6 +343,9 @@ static void pc_bios_int10(struct cpu *cpu)
 			pc_bios_putchar(cpu, al, bl);
 		cpu->machine->md.pc.curcolor = bl;
 		break;
+	case 0x0b:	/*  set color palette  */
+		debug("WARNING: int 0x10, func 0x0b: TODO\n");
+		break;
 	case 0x0e:	/*  tty output  */
 		pc_bios_putchar(cpu, al, -1);
 		break;
@@ -300,12 +353,26 @@ static void pc_bios_int10(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] = (80 << 8) + 25;
 		cpu->cd.x86.r[X86_R_BX] &= ~0xff00;	/*  BH = pagenr  */
 		break;
+	case 0x11:	/*  Character generator  */
+		/*  TODO  */
+		switch (al) {
+		case 0x12:
+			break;
+		default:fatal("Unimplemented INT 0x10,AH=0x11,AL=0x%02x\n", al);
+			cpu->running = 0;
+		}
+		break;
 	case 0x12:	/*  Video Subsystem Configuration  */
 		/*  TODO  */
 		switch (bl) {
 		case 0x10:
 			cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_BX] |= 0x0003;
+			break;
+		case 0x30:	/*  select nr of scanlines (200 + 50*al)  */
+			debug("[ pc_bios: %i scanlines ]\n", 200+50*al);
+			cpu->cd.x86.r[X86_R_AX] &= ~0xff;
+			cpu->cd.x86.r[X86_R_AX] |= 0x12;
 			break;
 		default:fatal("Unimplemented INT 0x10,AH=0x12,BL=0x%02x\n", bl);
 			cpu->running = 0;
@@ -396,8 +463,9 @@ static void pc_bios_int13(struct cpu *cpu)
 			    " 0x%04x:0x%04x ]\n", (long long)offset,
 			    cpu->cd.x86.s[X86_S_ES], bx);
 
-			res = diskimage_access(cpu->machine, dl, 0, offset,
-			    buf, sizeof(buf));
+			res = diskimage_access(cpu->machine, dl & 0x7f,
+			    dl&0x80? DISKIMAGE_IDE : DISKIMAGE_FLOPPY,
+			    0, offset, buf, sizeof(buf));
 
 			if (!res) {
 				err = 4;
@@ -455,6 +523,10 @@ static void pc_bios_int13(struct cpu *cpu)
 		break;
 	case 0x41:	/*  Check for Extended Functions  */
 		/*  There is no such support.  :)  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		break;
+	case 0x48:	/*  ?  */
+		/*  TODO  */
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	default:
@@ -532,9 +604,8 @@ static void pc_bios_int15(struct cpu *cpu)
  */
 static int pc_bios_int16(struct cpu *cpu)
 {
-	int res;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
-	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
+	/*  int al = cpu->cd.x86.r[X86_R_AX] & 0xff;  */
 	int scancode, asciicode;
 	unsigned char tmpchar;
 
@@ -659,7 +730,8 @@ static void pc_bios_int1a(struct cpu *cpu)
  */
 void pc_bios_init(struct cpu *cpu)
 {
-	char tmpstr[100];
+	char t[80];
+	int i, any_disk = 0, disknr;
 
 	if (cpu->machine->md.pc.initialized) {
 		fatal("ERROR: pc_bios_init(): Already initialized.\n");
@@ -672,12 +744,49 @@ void pc_bios_init(struct cpu *cpu)
 #endif
 	pc_bios_printstr(cpu, "   PC BIOS software emulation\n", 0x0f);
 
-	sprintf(tmpstr, "%i cpu%s (%s), %i MB memory\n\n",
+	sprintf(t, "%i cpu%s (%s), %i MB memory\n\n",
 	    cpu->machine->ncpus, cpu->machine->ncpus > 1? "s" : "",
 	    cpu->cd.x86.model.name, cpu->machine->physical_ram_in_mb);
-	pc_bios_printstr(cpu, tmpstr, 0x07);
+	pc_bios_printstr(cpu, t, 0x07);
 
 	cpu->machine->md.pc.curcolor = 0x07;
+
+	/*  "Detect" Floppies, IDE disks, and SCSI disks:  */
+	for (i=0; i<4; i++) {
+		if (diskimage_exist(cpu->machine, i, DISKIMAGE_FLOPPY)) {
+			sprintf(t, "%c%c (bios disk %02x)  FLOPPY\n",
+			    i<2? ('A'+i) : ' ', i<2? ':' : ' ', i);
+			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			any_disk = 1;
+		}
+	}
+	disknr = 0x80;
+	for (i=0; i<8; i++) {
+		if (diskimage_exist(cpu->machine, i, DISKIMAGE_IDE)) {
+			sprintf(t, "%s (bios disk %02x)  IDE %s, id %i\n",
+			    disknr==0x80? "C:" : "  ", disknr,
+			    diskimage_is_a_cdrom(cpu->machine, i,
+				DISKIMAGE_IDE)? "cdrom" : (
+			        diskimage_is_a_tape(cpu->machine, i,
+				DISKIMAGE_IDE)? "tape" : "disk"),
+			    i);
+			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			disknr++;
+			any_disk = 1;
+		}
+	}
+	for (i=0; i<8; i++) {
+		if (diskimage_exist(cpu->machine, i, DISKIMAGE_SCSI)) {
+			sprintf(t, "%s (bios disk %02x)  SCSI disk, id %i\n",
+			    disknr==0x80? "C:" : "  ", disknr, i);
+			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			disknr++;
+			any_disk = 1;
+		}
+	}
+
+	if (any_disk)
+		pc_bios_printstr(cpu, "\n", cpu->machine->md.pc.curcolor);
 
 	cpu->machine->md.pc.initialized = 1;
 }

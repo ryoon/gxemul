@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.48 2005-05-11 11:40:34 debug Exp $
+ *  $Id: dev_vga.c,v 1.49 2005-05-15 01:55:51 debug Exp $
  *  
  *  VGA text (and graphics) console device.
  *
@@ -376,7 +376,6 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	struct vga_data *d = extra;
-	uint64_t idata = 0, odata = 0;
 	int x, y, x2, y2;
 
 	y = relative_addr / d->max_x;

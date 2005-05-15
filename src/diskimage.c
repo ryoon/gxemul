@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.84 2005-04-17 00:15:24 debug Exp $
+ *  $Id: diskimage.c,v 1.85 2005-05-15 01:55:49 debug Exp $
  *
  *  Disk image support.
  *
@@ -36,10 +36,7 @@
  *         that return feof (which results in a filemark).  This is probably
  *         trivial to fix, but I don't feel like it right now.
  *
- *  TODO:  Non-SCSI disk images?
- *
  *  TODO:  diskimage_remove() ?
- *         Actually test diskimage_access() to see that it works.
  */
 
 #include <stdio.h>
@@ -58,6 +55,7 @@
 extern int quiet_mode;
 extern int single_step;
 
+static char *diskimage_types[] = DISKIMAGE_TYPES;
 
 static struct scsi_transfer *first_free_scsi_transfer_alloc = NULL;
 
@@ -209,14 +207,15 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len,
 /*
  *  diskimage_exist():
  *
- *  Returns 1 if the specified SCSI id exists, 0 otherwise.
+ *  Returns 1 if the specified disk id (for a specific type) exists, 0
+ *  otherwise.
  */
-int diskimage_exist(struct machine *machine, int scsi_id)
+int diskimage_exist(struct machine *machine, int id, int type)
 {
 	struct diskimage *d = machine->first_diskimage;
 
 	while (d != NULL) {
-		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
+		if (d->type == type && d->id == id)
 			return 1;
 		d = d->next;
 	}
@@ -262,15 +261,15 @@ static void diskimage_recalc_size(struct diskimage *d)
 /*
  *  diskimage_getsize():
  *
- *  Returns -1 if the specified SCSI id does not exists, otherwise
+ *  Returns -1 if the specified disk id/type does not exists, otherwise
  *  the size of the disk image is returned.
  */
-int64_t diskimage_getsize(struct machine *machine, int scsi_id)
+int64_t diskimage_getsize(struct machine *machine, int id, int type)
 {
 	struct diskimage *d = machine->first_diskimage;
 
 	while (d != NULL) {
-		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
+		if (d->type == type && d->id == id)
 			return d->total_size;
 		d = d->next;
 	}
@@ -447,7 +446,7 @@ static int diskimage__internal_access(struct diskimage *d, int writeflag,
  *	1 if otherwise ok,
  *	0 on error.
  */
-int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
+int diskimage_scsicommand(struct cpu *cpu, int id, int type,
 	struct scsi_transfer *xferp)
 {
 	int retlen, i;
@@ -464,13 +463,13 @@ int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
 
 	d = machine->first_diskimage;
 	while (d != NULL) {
-		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
+		if (d->type == type && d->id == id)
 			break;
 		d = d->next;
 	}
 	if (d == NULL) {
-		fprintf(stderr, "[ diskimage_scsicommand(): SCSI disk"
-		    " with id %i not connected? ]\n", scsi_id);
+		fprintf(stderr, "[ diskimage_scsicommand(): %s "
+		    " id %i not connected? ]\n", diskimage_types[type], id);
 	}
 
 	if (xferp->cmd == NULL) {
@@ -485,11 +484,11 @@ int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
 	}
 
 	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ",
-	    scsi_id, xferp->cmd[0]);
+	    id, xferp->cmd[0]);
 
 #if 0
 	fatal("[ diskimage_scsicommand(id=%i) cmd=0x%02x len=%i:",
-	    scsi_id, xferp->cmd[0], xferp->cmd_len);
+	    id, xferp->cmd[0], xferp->cmd_len);
 	for (i=0; i<xferp->cmd_len; i++)
 		fatal(" %02x", xferp->cmd[i]);
 	fatal("\n");
@@ -504,7 +503,7 @@ if (xferp->cmd_len > 7 && xferp->cmd[5] == 0x11)
 		f = fopen("scsi_log.txt", "w"); 
 	if (f != NULL) {
 		int i;
-		fprintf(f, "id=%i cmd =", scsi_id);
+		fprintf(f, "id=%i cmd =", id);
 		for (i=0; i<xferp->cmd_len; i++)
 			fprintf(f, " %02x", xferp->cmd[i]);
 		fprintf(f, "\n");
@@ -694,7 +693,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		pagecode = xferp->cmd[2] & 0x3f;
 
-		debug("[ MODE SENSE id %i, pagecode=%i ]\n", scsi_id, pagecode);
+		debug("[ MODE SENSE id %i, pagecode=%i ]\n", id, pagecode);
 
 		/*  4 bytes of header for 6-byte command,
 		    8 bytes of header for 10-byte command.  */
@@ -819,7 +818,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			ofs = d->tape_offset;
 
 			fatal("[ READ tape, id=%i file=%i, cmd[1]=%02x size=%i"
-			    ", ofs=%lli ]\n", scsi_id, d->tape_filenr,
+			    ", ofs=%lli ]\n", id, d->tape_filenr,
 			    xferp->cmd[1], (int)size, (long long)ofs);
 		} else {
 			if (xferp->cmd[0] == SCSICMD_READ) {
@@ -882,7 +881,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		 *   be set to NO SENSE"..
 		 */
 		if (d->is_a_tape && d->f != NULL && feof(d->f)) {
-			debug(" feof id=%i\n", scsi_id);
+			debug(" feof id=%i\n", id);
 			xferp->status[0] = 0x02;	/*  CHECK CONDITION  */
 
 			d->filemark = 1;
@@ -1279,7 +1278,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 	default:
 		fatal("[ UNIMPLEMENTED SCSI command 0x%02x, disk id=%i ]\n",
-		    xferp->cmd[0], scsi_id);
+		    xferp->cmd[0], id);
 		exit(1);
 	}
 	debug(" ]\n");
@@ -1295,7 +1294,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
  *
  *  Returns 1 if the access completed successfully, 0 otherwise.
  */
-int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
+int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 	off_t offset, unsigned char *buf, size_t len)
 {
 	struct diskimage *d = machine->first_diskimage;
@@ -1306,14 +1305,15 @@ int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
 	 */
 
 	while (d != NULL) {
-		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
+		if (d->type == type && d->id == id)
 			break;
 		d = d->next;
 	}
 
 	if (d == NULL) {
 		fatal("[ diskimage_access(): ERROR: trying to access a "
-		    "non-existant SCSI disk image (%i)\n", scsi_id);
+		    "non-existant %s disk image (id %i)\n",
+		    diskimage_types[type], id);
 		return 0;
 	}
 
@@ -1411,39 +1411,6 @@ int diskimage_add(struct machine *machine, char *fname)
 		}
 	}
 
-	/*  Calculate which ID to use:  */
-	if (prefix_id == -1) {
-		int free = 0, collision = 1;
-
-		while (collision) {
-			collision = 0;
-			d = machine->first_diskimage;
-			while (d != NULL) {
-				if (d->id == free) {
-					collision = 1;
-					break;
-				}
-				d = d->next;
-			}
-			if (!collision)
-				id = free;
-			else
-				free ++;
-		}
-	} else {
-		id = prefix_id;
-
-		d = machine->first_diskimage;
-		while (d != NULL) {
-			if (d->id == id) {
-				fprintf(stderr, "disk image SCSI id %i "
-				    "already in use\n", id);
-				exit(1);
-			}
-			d = d->next;
-		}
-	}
-
 	/*  Allocate a new diskimage struct:  */
 	d = malloc(sizeof(struct diskimage));
 	if (d == NULL) {
@@ -1462,7 +1429,6 @@ int diskimage_add(struct machine *machine, char *fname)
 	}
 
 	d->type = DISKIMAGE_SCSI;
-	d->id = id;
 
 	/*  Special cases: some machines usually have FLOPPY/IDE, not SCSI:  */
 	if (machine->arch == ARCH_X86 ||
@@ -1551,6 +1517,50 @@ int diskimage_add(struct machine *machine, char *fname)
 		exit(1);
 	}
 
+	/*  Calculate which ID to use:  */
+	if (prefix_id == -1) {
+		int free = 0, collision = 1;
+
+		while (collision) {
+			collision = 0;
+			d2 = machine->first_diskimage;
+			while (d2 != NULL) {
+				/*  (don't compare against ourselves :)  */
+				if (d2 == d) {
+					d2 = d2->next;
+					continue;
+				}
+				if (d2->id == free && d2->type == d->type) {
+					collision = 1;
+					break;
+				}
+				d2 = d2->next;
+			}
+			if (!collision)
+				id = free;
+			else
+				free ++;
+		}
+	} else {
+		id = prefix_id;
+		d2 = machine->first_diskimage;
+		while (d2 != NULL) {
+			/*  (don't compare against ourselves :)  */
+			if (d2 == d) {
+				d2 = d2->next;
+				continue;
+			}
+			if (d2->id == id && d2->type == d->type) {
+				fprintf(stderr, "disk image id %i "
+				    "already in use\n", id);
+				exit(1);
+			}
+			d2 = d2->next;
+		}
+	}
+
+	d->id = id;
+
 	return id;
 }
 
@@ -1559,20 +1569,26 @@ int diskimage_add(struct machine *machine, char *fname)
  *  diskimage_bootdev():
  *
  *  Returns the disk id (0..7) of the device which we're booting from.
+ *  If typep is non-NULL, the type is returned as well.
  *
  *  If no disk was used as boot device, then -1 is returned. (In practice,
  *  this is used to fake network (tftp) boot.)
  */
-int diskimage_bootdev(struct machine *machine)
+int diskimage_bootdev(struct machine *machine, int *typep)
 {
 	struct diskimage *d = machine->first_diskimage;
 	while (d != NULL) {
-		if (d->is_boot_device)
+		if (d->is_boot_device) {
+			if (typep != NULL)
+				*typep = d->type;
 			return d->id;
+		}
 		d = d->next;
 	}
 
 	d = machine->first_diskimage;
+	if (typep != NULL)
+		*typep = d->type;
 	if (d != NULL)
 		return d->id;
 
@@ -1583,14 +1599,14 @@ int diskimage_bootdev(struct machine *machine)
 /*
  *  diskimage_is_a_cdrom():
  *
- *  Returns 1 if a disk image is a SCSI CDROM, 0 otherwise.
+ *  Returns 1 if a disk image is a CDROM, 0 otherwise.
  */
-int diskimage_is_a_cdrom(struct machine *machine, int scsi_id)
+int diskimage_is_a_cdrom(struct machine *machine, int id, int type)
 {
 	struct diskimage *d = machine->first_diskimage;
 
 	while (d != NULL) {
-		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+		if (d->type == type && d->id == id)
 			return d->is_a_cdrom;
 		d = d->next;
 	}
@@ -1601,16 +1617,17 @@ int diskimage_is_a_cdrom(struct machine *machine, int scsi_id)
 /*
  *  diskimage_is_a_tape():
  *
- *  Returns 1 if a disk image is a SCSI tape, 0 otherwise.
+ *  Returns 1 if a disk image is a tape, 0 otherwise.
+ *
  *  (Used in src/machine.c, to select 'rz' vs 'tz' for DECstation
  *  boot strings.)
  */
-int diskimage_is_a_tape(struct machine *machine, int scsi_id)
+int diskimage_is_a_tape(struct machine *machine, int id, int type)
 {
 	struct diskimage *d = machine->first_diskimage;
 
 	while (d != NULL) {
-		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+		if (d->type == type && d->id == id)
 			return d->is_a_tape;
 		d = d->next;
 	}

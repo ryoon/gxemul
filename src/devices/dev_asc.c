@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.70 2005-03-23 08:45:49 debug Exp $
+ *  $Id: dev_asc.c,v 1.71 2005-05-15 01:55:50 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -563,8 +563,8 @@ fatal("TODO.......asdgasin\n");
 
 	/*  Redo the command if data was just sent using DATA_OUT:  */
 	if (d->cur_phase == PHASE_DATA_OUT) {
-		res = diskimage_scsicommand(cpu,
-		    d->reg_wo[NCR_SELID] & 7, d->xferp);
+		res = diskimage_scsicommand(cpu, d->reg_wo[NCR_SELID] & 7,
+		    DISKIMAGE_SCSI, d->xferp);
 	}
 
 	if (all_done) {
@@ -720,7 +720,7 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 	/*
 	 *  Call the SCSI device to perform the command:
 	 */
-	ok = diskimage_scsicommand(cpu, to_id, d->xferp);
+	ok = diskimage_scsicommand(cpu, to_id, DISKIMAGE_SCSI, d->xferp);
 
 
 	/*  Cause an interrupt:  */
@@ -1072,7 +1072,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			/*  TODO: not just disk, but some generic
 			    SCSI device  */
 			target_exists = diskimage_exist(cpu->machine,
-			    d->reg_wo[NCR_SELID] & 7);
+			    d->reg_wo[NCR_SELID] & 7, DISKIMAGE_SCSI);
 
 			if (target_exists) {
 				/*

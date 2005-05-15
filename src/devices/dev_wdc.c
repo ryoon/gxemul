@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.33 2005-04-14 20:55:23 debug Exp $
+ *  $Id: dev_wdc.c,v 1.34 2005-05-15 01:55:51 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -143,7 +143,8 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
 	uint64_t total_size, cyls;
 
-	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive);
+	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE);
 
 	memset(d->identify_struct, 0, sizeof(d->identify_struct));
 
@@ -206,8 +207,8 @@ static int status_byte(struct wdc_data *d, struct cpu *cpu)
 {
 	int odata = 0;
 
-	if (diskimage_exist(cpu->machine,
-	    d->drive + d->base_drive))
+	if (diskimage_exist(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE))
 		odata |= WDCS_DRDY;
 	if (d->inbuf_head != d->inbuf_tail)
 		odata |= WDCS_DRQ;
@@ -222,8 +223,8 @@ static int status_byte(struct wdc_data *d, struct cpu *cpu)
 	 *
 	 *  NetBSD/cobalt seems to want it, but Linux on MobilePro does not.
 	 */
-	if (!diskimage_exist(cpu->machine,
-	    d->drive + d->base_drive))
+	if (!diskimage_exist(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE))
 		odata = 0xff;
 #endif
 
@@ -341,7 +342,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 					buf[i] = wdc_get_inbuf(d);
 
 				diskimage_access(cpu->machine,
-				    d->drive + d->base_drive, 1,
+				    d->drive + d->base_drive, DISKIMAGE_IDE, 1,
 				    d->write_offset, buf, 512 * count);
 				free(buf);
 
@@ -441,7 +442,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 
 			/*  TODO:  Is this correct behaviour?  */
 			if (!diskimage_exist(cpu->machine,
-			    d->drive + d->base_drive)) {
+			    d->drive + d->base_drive, DISKIMAGE_IDE)) {
 				d->error |= WDCE_ABRT;
 				d->delayed_interrupt = INT_DELAY;
 				break;
@@ -470,7 +471,8 @@ if (d->lba)
 printf("WDC read from offset %lli\n", (long long)offset);
 #endif
 					diskimage_access(cpu->machine,
-					    d->drive + d->base_drive, 0,
+					    d->drive + d->base_drive,
+					    DISKIMAGE_IDE, 0,
 					    offset, buf, 512 * count);
 					/*  TODO: result code  */
 					for (i=0; i<512 * count; i++)

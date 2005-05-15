@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.433 2005-05-14 19:47:59 debug Exp $
+ *  $Id: machine.c,v 1.434 2005-05-15 01:55:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1276,7 +1276,8 @@ void machine_setup(struct machine *machine)
 	unsigned char macaddr[6];
 
 	/*  Generic bootstring stuff:  */
-	int bootdev_id = diskimage_bootdev(machine);
+	int bootdev_type = 0;
+	int bootdev_id;
 	char *bootstr = NULL;
 	char *bootarg = NULL;
 	char *init_bootpath;
@@ -1290,6 +1291,8 @@ void machine_setup(struct machine *machine)
 	/*  Abreviation:  :-)  */
 	struct cpu *cpu = machine->cpus[machine->bootstrap_cpu];
 
+
+	bootdev_id = diskimage_bootdev(machine, &bootdev_type);
 
 	mem = cpu->mem;
 	machine->machine_name = NULL;
@@ -1909,7 +1912,8 @@ void machine_setup(struct machine *machine)
 			} else {
 				/*  disk boot:  */
 				bootpath[0] = '0' + boot_scsi_boardnumber;
-				if (diskimage_is_a_tape(machine, bootdev_id))
+				if (diskimage_is_a_tape(machine, bootdev_id,
+				    bootdev_type))
 					bootpath[2] = 't';
 				bootpath[4] = '0' + bootdev_id;
 			}
@@ -2467,7 +2471,8 @@ void machine_setup(struct machine *machine)
 
 		/*  Set the Harddisk controller present flag, if either
 		    disk 0 or 1 is present:  */
-		if (diskimage_exist(machine, 0) || diskimage_exist(machine, 1)) {
+		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 			store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
 			dev_ps2_spd_init(machine, mem, 0x14000000);
 		}
@@ -2910,7 +2915,7 @@ Why is this here? TODO
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-#if 1
+#if 0
 				bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
 #endif
 				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
@@ -3977,7 +3982,8 @@ config[77] = 0x30;
 					strcat(init_bootpath, "pci(0)");
 			}
 
-			if (diskimage_is_a_cdrom(machine, bootdev_id))
+			if (diskimage_is_a_cdrom(machine, bootdev_id,
+			    bootdev_type))
 				snprintf(init_bootpath + strlen(init_bootpath), 400,
 				    "scsi(0)cdrom(%i)fdisk(0)", bootdev_id);
 			else

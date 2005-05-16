@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.39 2005-05-15 22:44:41 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.40 2005-05-16 00:18:40 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -120,8 +120,8 @@ int pckbc_get_code(struct pckbc_data *d, int port)
 {
 	if (d->head[port] == d->tail[port])
 		fatal("[ pckbc: queue empty, port %i! ]\n", port);
-
-	d->tail[port] = (d->tail[port]+1) % MAX_8042_QUEUELEN;
+	else
+		d->tail[port] = (d->tail[port]+1) % MAX_8042_QUEUELEN;
 	return d->key_queue[port][d->tail[port]];
 }
 
@@ -282,8 +282,8 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 	/*  TODO: mouse movements?  */
 
 	for (port_nr=0; port_nr<2; port_nr++) {
-		/*  Cause receive interrupt,
-		    if there's something in the receive buffer:  */
+		/*  Cause receive interrupt, if there's something in the
+		    receive buffer: (Otherwise deassert the interrupt.)  */
 		if (d->head[port_nr] != d->tail[port_nr] && d->rx_int_enable) {
 			cpu_interrupt(cpu, port_nr==0? d->keyboard_irqnr
 			    : d->mouse_irqnr);

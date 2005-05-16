@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_x86.h,v 1.3 2005-05-15 22:44:42 debug Exp $
+ *  $Id: machine_x86.h,v 1.4 2005-05-16 00:18:41 debug Exp $
  */
 
 #include "misc.h"
@@ -51,9 +51,16 @@ struct pc_bios_disk {
 	int	sectorspertrack;
 };
 
+#define	PC_BIOS_KBD_BUF_SIZE		256
+
 struct machine_pc {
 	int	initialized;
 	int	curcolor;
+
+	uint8_t	kbd_buf_scancode[PC_BIOS_KBD_BUF_SIZE];
+	uint8_t	kbd_buf[PC_BIOS_KBD_BUF_SIZE];
+	int	kbd_buf_head;
+	int	kbd_buf_tail;
 
 	struct pc_bios_disk *first_disk;
 	struct pic8259_data *pic1;

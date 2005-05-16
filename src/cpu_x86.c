@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.100 2005-05-15 22:44:39 debug Exp $
+ *  $Id: cpu_x86.c,v 1.101 2005-05-16 00:18:39 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2269,22 +2269,25 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
  *
  *  Read the registers of PIC1 (and possibly PIC2) to find out which interrupt
  *  has occured.
+ *
+ *  Returns 1 if an interrupt happened, 0 otherwise (for example if the
+ *  in-service bit of an interrupt was already set).
  */
-static void cause_interrupt(struct cpu *cpu)
+static int cause_interrupt(struct cpu *cpu)
 {
 	int i, irq_nr = -1;
 	uint64_t seg, ofs;
 
 	for (i=0; i<8; i++) {
 		if (cpu->machine->md.pc.pic1->irr &
-		    ~cpu->machine->md.pc.pic1->ier & (1 << i))
+		    (~cpu->machine->md.pc.pic1->ier) & (1 << i))
 			irq_nr = i;
 	}
 
 	if (irq_nr == 2) {
 		for (i=0; i<8; i++) {
 			if (cpu->machine->md.pc.pic2->irr &
-			    ~cpu->machine->md.pc.pic2->ier & (1 << i))
+			    (~cpu->machine->md.pc.pic2->ier) & (1 << i))
 				irq_nr = 8+i;
 		}
 	}
@@ -2294,14 +2297,28 @@ static void cause_interrupt(struct cpu *cpu)
 		cpu->running = 0;
 	}
 
+	/*
+	 *  TODO: How about multiple interrupt levels?
+	 */
+
+printf("cause1: %i (irr1=%02x ier1=%02x, irr2=%02x ier2=%02x\n", irq_nr,
+cpu->machine->md.pc.pic1->irr, cpu->machine->md.pc.pic1->ier,
+cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
+
 	/*  Set the in-service bit, and calculate actual INT nr:  */
 	if (irq_nr < 8) {
+		if (cpu->machine->md.pc.pic1->isr & (1 << irq_nr))
+			return 0;
 		cpu->machine->md.pc.pic1->isr |= (1 << irq_nr);
 		irq_nr = cpu->machine->md.pc.pic1->irq_base + irq_nr;
 	} else {
+		if (cpu->machine->md.pc.pic2->isr & (1 << (irq_nr & 7)))
+			return 0;
 		cpu->machine->md.pc.pic2->isr |= (1 << (irq_nr&7));
 		irq_nr = cpu->machine->md.pc.pic2->irq_base + (irq_nr & 7);
 	}
+
+printf("cause2: %i\n", irq_nr);
 
 	/*
 	 *  TODO:
@@ -2313,7 +2330,7 @@ static void cause_interrupt(struct cpu *cpu)
 	if (cpu->cd.x86.mode != 16) {
 		fatal("Interrupts in non-16-bit-modes not yet implemented\n");
 		cpu->running = 0;
-		return;
+		return 1;
 	}
 
 	/*  Figure out where to jump to:  */
@@ -2321,10 +2338,10 @@ static void cause_interrupt(struct cpu *cpu)
 	x86_load(cpu, irq_nr * 4, &ofs, 2);
 	x86_load(cpu, irq_nr * 4 + 2, &seg, 2);
 
-	/*  Push flags, CS, and IP:  */
-	x86_push(cpu, cpu->cd.x86.rflags, 2);
-	x86_push(cpu, cpu->cd.x86.s[X86_S_CS], 2);
-	x86_push(cpu, cpu->pc, 2);
+	/*  Push flags, CS, and return IP:  */
+	x86_push(cpu, cpu->cd.x86.rflags, 16);
+	x86_push(cpu, cpu->cd.x86.s[X86_S_CS], 16);
+	x86_push(cpu, cpu->pc, 16);
 
 	/*  Clear the interrupt flag, and jump to the interrupt handler:  */
 	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
@@ -2332,6 +2349,8 @@ static void cause_interrupt(struct cpu *cpu)
 	cpu->pc = ofs;
 
 	cpu->cd.x86.halted = 0;
+
+	return 1;
 }
 
 
@@ -2364,6 +2383,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			}
 
+	if (cpu->cd.x86.interrupt_asserted &&
+	    cpu->cd.x86.rflags & X86_FLAGS_IF) {
+		if (cause_interrupt(cpu))
+			return 0;
+	}
+
 	/*  16-bit BIOS emulation:  */
 	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
@@ -2372,12 +2397,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			debug("(PC BIOS emulation, int 0x%02x)\n", addr);  */
 		pc_bios_emul(cpu);
 		return 1;
-	}
-
-	if (cpu->cd.x86.interrupt_asserted &&
-	    cpu->cd.x86.rflags & X86_FLAGS_IF) {
-		cause_interrupt(cpu);
-		return 0;
 	}
 
 	if (cpu->cd.x86.halted) {

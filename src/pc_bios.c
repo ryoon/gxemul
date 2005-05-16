@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.50 2005-05-15 22:44:40 debug Exp $
+ *  $Id: pc_bios.c,v 1.51 2005-05-16 00:18:39 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -299,6 +299,50 @@ static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
 {
 	while (*s)
 		pc_bios_putchar(cpu, *s++, attr);
+}
+
+
+/*
+ *  pc_bios_int9():
+ *
+ *  Interrupt handler for the keyboard.
+ */
+static void pc_bios_int9(struct cpu *cpu)
+{
+	uint8_t byte;
+
+	/*  Read a key from the keyboard:  */
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x60,
+	    &byte, sizeof(byte), MEM_READ, CACHE_NONE | PHYSICAL);
+
+	/*  (The read should have acknowdledged the interrupt.)  */
+
+	/*  Add the key to the keyboard buffer:  */
+	cpu->machine->md.pc.kbd_buf_scancode[
+	    cpu->machine->md.pc.kbd_buf_tail] = byte;
+
+	/*  Convert scancode into ASCII:  */
+	/*  (TODO: Maybe this should be somewhere else?)  */
+	if (byte >= 1 && byte <= 0xf)
+		byte = "\0331234567890-=\b\t"[byte-1];
+	else if (byte >= 0x10 && byte <= 0x1b)
+		byte = "qwertyuiop[]"[byte-0x10];
+	else if (byte >= 0x1c && byte <= 0x2b)
+		byte = "\nXasdfghjkl;'`X\\"[byte-0x1c];
+	else if (byte >= 0x2c && byte <= 0x35)
+		byte = "zxcvbnm,./"[byte-0x2c];
+	else if (byte >= 0x37 && byte <= 0x39)
+		byte = "*X "[byte-0x37];
+	else
+		byte = 0;
+
+	cpu->machine->md.pc.kbd_buf[cpu->machine->md.pc.kbd_buf_tail] = byte;
+
+	cpu->machine->md.pc.kbd_buf_tail ++;
+	cpu->machine->md.pc.kbd_buf_tail %= PC_BIOS_KBD_BUF_SIZE;
+
+	/*  EOI the interrupt.  */
+	cpu->machine->md.pc.pic1->isr &= ~0x02;
 }
 
 
@@ -727,19 +771,37 @@ static int pc_bios_int16(struct cpu *cpu)
 
 	switch (ah) {
 	case 0x00:	/*  getchar  */
-	case 0x01:	/*  isavail + getchar  */
-		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
 		scancode = asciicode = 0;
-		if (console_charavail(cpu->machine->main_console_handle)) {
-			asciicode = console_readchar(cpu->machine->
-			    main_console_handle);
-			/*  scancode = TODO  */
-			cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
-			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
-			    ~0xffff) | scancode << 8 | asciicode;
+		if (cpu->machine->md.pc.kbd_buf_head !=
+		    cpu->machine->md.pc.kbd_buf_tail) {
+			asciicode = cpu->machine->md.pc.kbd_buf[
+			    cpu->machine->md.pc.kbd_buf_head];
+			scancode = cpu->machine->md.pc.kbd_buf_scancode[
+			    cpu->machine->md.pc.kbd_buf_head];
+			if (asciicode != 0) {
+				cpu->cd.x86.r[X86_R_AX] =
+				    (scancode << 8) | asciicode;
+			}
+			cpu->machine->md.pc.kbd_buf_head ++;
+			cpu->machine->md.pc.kbd_buf_head %=
+			    PC_BIOS_KBD_BUF_SIZE;
 		}
-		if (asciicode == 0 && ah == 0)
+		if (asciicode == 0)
 			return 0;
+		break;
+	case 0x01:	/*  non-destructive "isavail"  */
+		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+		scancode = asciicode = 0;
+		if (cpu->machine->md.pc.kbd_buf_head !=
+		    cpu->machine->md.pc.kbd_buf_tail) {
+			asciicode = cpu->machine->md.pc.kbd_buf[
+			    cpu->machine->md.pc.kbd_buf_head];
+			scancode = cpu->machine->md.pc.kbd_buf_scancode[
+			    cpu->machine->md.pc.kbd_buf_head];
+			cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
+			cpu->cd.x86.r[X86_R_AX] |= (scancode << 8) | asciicode;
+		}
 		break;
 	case 0x02:	/*  read keyboard flags  */
 		/*  TODO: keep this byte updated  */
@@ -964,6 +1026,7 @@ int pc_bios_emul(struct cpu *cpu)
 		pc_bios_init(cpu);
 
 	switch (int_nr) {
+	case 0x09:  pc_bios_int9(cpu); break;
 	case 0x10:  pc_bios_int10(cpu); break;
 	case 0x11:	/*  return bios equipment data in ax  */
 		/*  TODO: see http://www.uv.tietgen.dk/staff/mlha/

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.52 2005-05-16 02:15:51 debug Exp $
+ *  $Id: pc_bios.c,v 1.53 2005-05-16 02:47:36 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -988,20 +988,31 @@ void pc_bios_init(struct cpu *cpu)
 	for (y=0; y<3; y++)
 		for (x=0; x<80; x++) {
 			unsigned char ch = ' ';
-			if (y == 0) {
-				ch = 196;
-				if (x == 0)
-					ch = 218;
-				if (x == 79)
-					ch = 191;
-			} else if (y == 2) {
-				ch = 196;
-				if (x == 0)
-					ch = 192;
-				if (x == 79)
-					ch = 217;
-			} else if (x == 0 || x == 79)
-				ch = 179;
+			if (cpu->machine->use_x11) {
+				if (y == 0) {
+					ch = 196;
+					if (x == 0)
+						ch = 218;
+					if (x == 79)
+						ch = 191;
+				} else if (y == 2) {
+					ch = 196;
+					if (x == 0)
+						ch = 192;
+					if (x == 79)
+						ch = 217;
+				} else if (x == 0 || x == 79)
+					ch = 179;
+			} else {
+				if (y == 0 || y == 2) {
+					ch = '-';
+					if (x == 0 || x == 79)
+						ch = '+';
+				} else {
+					if (x == 0 || x == 79)
+						ch = '|';
+				}
+			}
 			output_char(cpu, x,y, ch, 0x19);
 		}
 

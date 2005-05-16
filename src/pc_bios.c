@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.55 2005-05-16 04:58:08 debug Exp $
+ *  $Id: pc_bios.c,v 1.56 2005-05-16 06:13:38 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -35,18 +35,32 @@
 #include <string.h>
 #include <time.h>
 
-#include "console.h"
 #include "cpu.h"
+#include "misc.h"
+
+#ifndef	ENABLE_X86
+
+/*  Don't include PC bios support if we don't have x86 cpu support.  */
+/*  These are just do-nothing functions.  */
+
+void pc_bios_init(struct cpu *cpu) { }
+int pc_bios_emul(struct cpu *cpu) { }
+
+
+#else
+
+
+#include "console.h"
 #include "cpu_x86.h"
 #include "devices.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
-#include "misc.h"
 
 
 extern int quiet_mode;
 
+extern unsigned char font8x8[];
 
 #define dec_to_bcd(x) ( (((x) / 10) << 4) + ((x) % 10) )
 
@@ -550,8 +564,21 @@ static void pc_bios_int10(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
 		cpu->cd.x86.r[X86_R_BX] |= 0x0008;
 		break;
-	case 0x4f:
-		fatal("TODO: int 0x10, function 0x4f\n");
+	case 0x4f:	/*  VESA  */
+		/*  TODO: See http://www.uv.tietgen.dk/staff/mlha/PC/
+		    Prog/asm/int/INT10.htm#4F for more info.  */
+		switch (al) {
+		case 0x00:	/*  Detect VESA  */
+			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_AX] |= 0x004f;
+			/*  TODO: the VESA struct at ES:DI  */
+			break;
+		case 0x01:	/*  Return mode info  */
+			fatal("TODO: VESA mode 0x%04x\n", cx);
+			break;
+		default:
+			fatal("TODO: int 0x10, function 0x4f, al=0x%02x\n", al);
+		}
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"
@@ -984,20 +1011,20 @@ void pc_bios_init(struct cpu *cpu)
 	cpu->machine->md.pc.pic1->irq_base = 0x08;
 	cpu->machine->md.pc.pic2->irq_base = 0x70;
 
-	/*  Disk Base Table (11 or 12 bytes?) at 0xfffb:0:  */
-	cpu->cd.x86.cursegment = 0xfffb;
-	store_byte(cpu, 0, 0xcf);
-	store_byte(cpu, 1, 0xb8);
-	store_byte(cpu, 2, 1);		/*  timer ticks till shutoff  */
-	store_byte(cpu, 3, 2);		/*  512 bytes per sector  */
-	store_byte(cpu, 4, 17);
-	store_byte(cpu, 5, 0xd8);
-	store_byte(cpu, 6, 0xff);
-	store_byte(cpu, 7, 0);
-	store_byte(cpu, 8, 0xf6);
-	store_byte(cpu, 9, 1);		/*  head bounce delay in msec  */
-	store_byte(cpu, 10, 1);		/*  motor start time in 1/8 secs  */
-	store_byte(cpu, 11, 1);		/*  motor stop time in 1/4 secs  */
+	/*  Disk Base Table (11 or 12 bytes?) at F000h:EFC7:  */
+	cpu->cd.x86.cursegment = 0xf000;
+	store_byte(cpu, 0xefc7 + 0, 0xcf);
+	store_byte(cpu, 0xefc7 + 1, 0xb8);
+	store_byte(cpu, 0xefc7 + 2, 1);		/*  timer ticks till shutoff  */
+	store_byte(cpu, 0xefc7 + 3, 2);		/*  512 bytes per sector  */
+	store_byte(cpu, 0xefc7 + 4, 17);
+	store_byte(cpu, 0xefc7 + 5, 0xd8);
+	store_byte(cpu, 0xefc7 + 6, 0xff);
+	store_byte(cpu, 0xefc7 + 7, 0);
+	store_byte(cpu, 0xefc7 + 8, 0xf6);
+	store_byte(cpu, 0xefc7 + 9, 1);	/*  head bounce delay in msec  */
+	store_byte(cpu, 0xefc7 + 10, 1);/*  motor start time in 1/8 secs  */
+	store_byte(cpu, 0xefc7 + 11, 1);/*  motor stop time in 1/4 secs  */
 
 	/*  BIOS System Configuration Parameters (8 bytes) at 0xfffd:0:  */
 	cpu->cd.x86.cursegment = 0xfffd;
@@ -1019,6 +1046,11 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0x0b, '0'); store_byte(cpu, 0x0c, '5');
 	store_byte(cpu, 0x0e, 0xfc);
 
+	/*  Copy the first 128 chars of the 8x8 VGA font into 0xf000:0xfa6e  */
+	cpu->cd.x86.cursegment = 0xf000;
+	store_buf(cpu, 0xfa6e, (char *)font8x8, 8*128);
+	store_buf(cpu, 0xfa6e - 1024, (char *)font8x8 + 1024, 8*128);
+
 	/*
 	 *  Initialize all real-mode interrupt vectors to point to somewhere
 	 *  within the PC BIOS area (0xf000:0x8yy0), and place an IRET
@@ -1033,9 +1065,11 @@ void pc_bios_init(struct cpu *cpu)
 		store_16bit_word(cpu, i*4, 0x8000 + i*16);
 		store_16bit_word(cpu, i*4 + 2, 0xf000);
 
-		/*  An exception: int 0x1e = ptr to disk table  */
+		/*  Exceptions: int 0x1e = ptr to disk table, 1f=fonthigh  */
 		if (i == 0x1e)
-			store_16bit_word(cpu, i*4, 0xffb0);
+			store_16bit_word(cpu, i*4, 0xefc7);
+		if (i == 0x1f)
+			store_16bit_word(cpu, i*4, 0xfa6e - 1024);
 
 		cpu->cd.x86.cursegment = 0xf000;
 		store_byte(cpu, 0x8000 + i*16, 0xCF);	/*  IRET  */
@@ -1254,3 +1288,5 @@ int pc_bios_emul(struct cpu *cpu)
 	return 1;
 }
 
+
+#endif	/*  ENABLE_X86  */

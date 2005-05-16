@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.56 2005-05-16 06:13:38 debug Exp $
+ *  $Id: pc_bios.c,v 1.57 2005-05-16 07:47:08 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -343,6 +343,9 @@ static void pc_bios_int8(struct cpu *cpu)
 
 	/*  EOI the interrupt.  */
 	cpu->machine->md.pc.pic1->isr &= ~0x01;
+
+	/*  Call INT 0x1C:  */
+	/*  TODO  */
 }
 
 

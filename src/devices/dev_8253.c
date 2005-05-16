@@ -25,12 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.2 2005-05-16 02:15:52 debug Exp $
+ *  $Id: dev_8253.c,v 1.1 2005-05-16 02:15:52 debug Exp $
  *  
- *  8259 Programmable Interrupt Controller.
+ *  8253/8254 Programmable Interval Timer.
  *
- *  This is mostly bogus. TODO. See the following URL for more details:
- *	http://www.nondot.org/sabre/os/files/MiscHW/8259pic.txt
+ *  This is mostly bogus.
  */
 
 #include <stdio.h>
@@ -47,72 +46,65 @@
 #include "net.h"
 
 
-#define	DEV_8259_LENGTH		2
+#define	DEV_8253_LENGTH		4
+#define	TICK_SHIFT		14
+
+
+struct pit8253_data {
+	int		irq_nr;
+	int		counter_select;
+};
 
 
 /*
- *  dev_8259_access():
+ *  dev_8253_tick():
+ */     
+void dev_8253_tick(struct cpu *cpu, void *extra)
+{
+	struct pit8253_data *d = (struct pit8253_data *) extra;
+	cpu_interrupt(cpu, d->irq_nr);
+}
+
+
+/*
+ *  dev_8253_access():
  */
-int dev_8259_access(struct cpu *cpu, struct memory *mem,
+int dev_8253_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pic8259_data *d = (struct pic8259_data *) extra;
+	struct pit8253_data *d = (struct pit8253_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 
+	/*  TODO: ack somewhere else  */
+	cpu_interrupt_ack(cpu, d->irq_nr);
+
 	switch (relative_addr) {
 	case 0x00:
 		if (writeflag == MEM_WRITE) {
-			switch (idata) {
-			case 0x0a:
-				d->current_command = 0x0a;
-				break;
-			case 0x0b:
-				d->current_command = 0x0b;
-				break;
-			case 0x20:	/*  End Of Interrupt  */
-				d->isr = 0;
-				break;
-			default:
-				fatal("[ 8259: unimplemented command 0x%02x"
-				    " ]\n", idata);
-				cpu->running = 0;
-			}
+			/*  TODO  */
 		} else {
-			switch (d->current_command) {
-			case 0x0a:
-				odata = d->irr;
-				break;
-			case 0x0b:
-				odata = d->isr;
-				break;
-			default:
-				fatal("[ 8259: unimplemented command 0x%02x"
-				    " while reading ]\n", d->current_command);
-				cpu->running = 0;
-			}
+			/*  TODO  */
+			odata = 1;
 		}
 		break;
-	case 0x01:
+	case 0x03:
 		if (writeflag == MEM_WRITE) {
-			d->ier = idata;
-			/*  Recalculate interrupt assertions:  */
-			cpu_interrupt(cpu, 16);
+			d->counter_select = idata >> 6;
+			/*  TODO: other bits  */
 		} else {
-			odata = d->ier;
+			odata = d->counter_select << 6;
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ 8259: unimplemented write to address 0x%x"
+			fatal("[ 8253: unimplemented write to address 0x%x"
 			    " data=0x%02x ]\n", (int)relative_addr, (int)idata);
-			cpu->running = 0;
 		} else {
-			fatal("[ 8259: unimplemented read from address 0x%x "
+			fatal("[ 8253: unimplemented read from address 0x%x "
 			    "]\n", (int)relative_addr);
-			cpu->running = 0;
 		}
 	}
 
@@ -124,25 +116,27 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  devinit_8259():
+ *  devinit_8253():
  */
-int devinit_8259(struct devinit *devinit)
+int devinit_8253(struct devinit *devinit)
 {
 	char *name2;
-	struct pic8259_data *d = malloc(sizeof(struct pic8259_data));
+	struct pit8253_data *d = malloc(sizeof(struct pit8253_data));
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct pic8259_data));
+	memset(d, 0, sizeof(struct pit8253_data));
 	d->irq_nr = devinit->irq_nr;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_8259_LENGTH, dev_8259_access, (void *)d,
+	    devinit->addr, DEV_8253_LENGTH, dev_8253_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 
-	devinit->return_ptr = d;
+	machine_add_tickfunction(devinit->machine, dev_8253_tick,
+	    d, TICK_SHIFT);
+
 	return 1;
 }
 

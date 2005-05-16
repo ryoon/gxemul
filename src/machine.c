@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.437 2005-05-15 22:44:39 debug Exp $
+ *  $Id: machine.c,v 1.438 2005-05-16 02:15:51 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1232,7 +1232,7 @@ void x86_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 			m->md.pc.pic1->irr |= mask;
 		else
 			m->md.pc.pic1->irr &= ~mask;
-	} else {
+	} else if (irq_nr < 16) {
 		if (assrt)
 			m->md.pc.pic2->irr |= mask;
 		else
@@ -4519,22 +4519,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		machine->md_interrupt = x86_interrupt;
 
-		/*
-		 *  Initialize all 16-bit interrupt vectors to point to
-		 *  somewhere within the PC BIOS area (0xf000:0x8yyy):
-		 */
-		for (i=0; i<256; i++) {
-			store_16bit_word(cpu, i*4, 0x8000 + i);
-			store_16bit_word(cpu, i*4 + 2, 0xf000);
-		}
-
-		/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
-		    for more info.  */
-
-		store_16bit_word(cpu, 0x400, 0x03F8);
-		store_16bit_word(cpu, 0x402, 0x0378);
-
-		store_byte(cpu, 0x449, 0x03);	/*  initial video mode  */
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8253 addr=0x%llx irq=0",
+		    (long long)(X86_IO_BASE + 0x40));
+		device_add(machine, tmpstr);
 
 		dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);
 		dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 0);

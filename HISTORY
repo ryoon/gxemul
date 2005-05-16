@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.737 2005-05-16 00:18:38 debug Exp $
+$Id: HISTORY,v 1.738 2005-05-16 02:15:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1906,3 +1906,4 @@ Changelog for GXemul:
 		Beginning to add an 8259 interrupt controller, and connecting
 		it to the x86 emulation.
 20050516	The first x86 interrupts seem to work (keyboard stuff).
+		Adding a 8253/8254 programmable interval timer skeleton.

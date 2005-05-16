@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.51 2005-05-16 00:18:39 debug Exp $
+ *  $Id: pc_bios.c,v 1.52 2005-05-16 02:15:51 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <time.h>
 
 #include "console.h"
@@ -303,6 +302,37 @@ static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
 
 
 /*
+ *  pc_bios_int8():
+ *
+ *  Interrupt handler for the timer.
+ */
+static void pc_bios_int8(struct cpu *cpu)
+{
+	unsigned char ticks[4];
+	unsigned char tmpbyte;
+	int i;
+
+	/*  TODO: ack the timer interrupt some other way?  */
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x43,
+	    &tmpbyte, 1, MEM_READ, CACHE_NONE | PHYSICAL);
+
+	/*  Increase word at 0x0040:0x006C  */
+	cpu->memory_rw(cpu, cpu->mem, 0x46C,
+	    ticks, sizeof(ticks), MEM_READ, CACHE_NONE | PHYSICAL);
+	for (i=0; i<sizeof(ticks); i++) {
+		ticks[i] ++;
+		if (ticks[i] != 0)
+			break;
+	}
+	cpu->memory_rw(cpu, cpu->mem, 0x46C,
+	    ticks, sizeof(ticks), MEM_WRITE, CACHE_NONE | PHYSICAL);
+
+	/*  EOI the interrupt.  */
+	cpu->machine->md.pc.pic1->isr &= ~0x01;
+}
+
+
+/*
  *  pc_bios_int9():
  *
  *  Interrupt handler for the keyboard.
@@ -328,7 +358,7 @@ static void pc_bios_int9(struct cpu *cpu)
 	else if (byte >= 0x10 && byte <= 0x1b)
 		byte = "qwertyuiop[]"[byte-0x10];
 	else if (byte >= 0x1c && byte <= 0x2b)
-		byte = "\nXasdfghjkl;'`X\\"[byte-0x1c];
+		byte = "\rXasdfghjkl;'`X\\"[byte-0x1c];
 	else if (byte >= 0x2c && byte <= 0x35)
 		byte = "zxcvbnm,./"[byte-0x2c];
 	else if (byte >= 0x37 && byte <= 0x39)
@@ -408,6 +438,9 @@ static void pc_bios_int10(struct cpu *cpu)
 		break;
 	case 0x01:
 		/*  ch = starting line, cl = ending line  */
+		/*  TODO: it seems that FreeDOS uses start=6 end=7. hm  */
+		if (ch == 6 && cl == 7)
+			ch = 12, cl = 14;
 		set_cursor_scanlines(cpu, ch, cl);
 		break;
 	case 0x02:	/*  set cursor position  */
@@ -855,22 +888,26 @@ static void pc_bios_int17(struct cpu *cpu)
  */
 static void pc_bios_int1a(struct cpu *cpu)
 {
+	unsigned char ticks[4];
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
-	struct timeval tv;
 	uint64_t x;
 	time_t tim;
 	struct tm *tm;
 
 	switch (ah) {
 	case 0x00:	/*  Read tick count.  */
-		gettimeofday(&tv, NULL);
-		x = tv.tv_sec * 10 + tv.tv_usec / 100000;
-		cpu->cd.x86.r[X86_R_CX] = (x >> 16) & 0xffff;
-		cpu->cd.x86.r[X86_R_DX] = x & 0xffff;
+		cpu->memory_rw(cpu, cpu->mem, 0x46C,
+		    ticks, sizeof(ticks), MEM_READ, CACHE_NONE | PHYSICAL);
+		cpu->cd.x86.r[X86_R_CX] = (ticks[3] << 8) | ticks[2];
+		cpu->cd.x86.r[X86_R_DX] = (ticks[1] << 8) | ticks[0];
 		break;
 	case 0x01:	/*  Set tick count.  */
-		fatal("[ PC BIOS int 0x1a function 0x01: Set tick count:"
-		    " TODO ]\n");
+		ticks[0] = cpu->cd.x86.r[X86_R_DX];
+		ticks[1] = cpu->cd.x86.r[X86_R_DX] >> 8;
+		ticks[2] = cpu->cd.x86.r[X86_R_CX];
+		ticks[3] = cpu->cd.x86.r[X86_R_CX] >> 8;
+		cpu->memory_rw(cpu, cpu->mem, 0x46C,
+		    ticks, sizeof(ticks), MEM_WRITE, CACHE_NONE | PHYSICAL);
 		break;
 	case 0x02:	/*  Read real time clock time (AT,PS/2)  */
 		tim = time(NULL);
@@ -908,8 +945,8 @@ static void pc_bios_int1a(struct cpu *cpu)
  */
 void pc_bios_init(struct cpu *cpu)
 {
-	char t[80];
-	int i, any_disk = 0, disknr;
+	char t[81];
+	int x, y, i, any_disk = 0, disknr;
 	int boot_id, boot_type, bios_boot_id = 0;
 
 	boot_id = diskimage_bootdev(cpu->machine, &boot_type);
@@ -922,18 +959,67 @@ void pc_bios_init(struct cpu *cpu)
 	cpu->machine->md.pc.pic1->irq_base = 0x08;
 	cpu->machine->md.pc.pic2->irq_base = 0x70;
 
-	pc_bios_printstr(cpu, "GXemul", 0x0f);
-#ifdef VERSION
-	pc_bios_printstr(cpu, " "VERSION, 0x0f);
-#endif
-	pc_bios_printstr(cpu, "   PC BIOS software emulation\n", 0x0f);
+	/*
+	 *  Initialize all 16-bit interrupt vectors to point to
+	 *  somewhere within the PC BIOS area (0xf000:0x8yyy):
+	 */
+	for (i=0; i<256; i++) {
+		store_16bit_word(cpu, i*4, 0x8000 + i);
+		store_16bit_word(cpu, i*4 + 2, 0xf000);
+	}
 
-	sprintf(t, "%i cpu%s (%s), %i MB memory\n\n",
+	/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
+	    for more info.  */
+	store_16bit_word(cpu, 0x400, 0x03F8);	/*  COM1  */
+	store_16bit_word(cpu, 0x402, 0x0378);	/*  COM2  */
+	store_16bit_word(cpu, 0x413, 640);	/*  KB of low RAM  */
+	store_byte(cpu, 0x449, 0x03);		/*  initial video mode  */
+	store_16bit_word(cpu, 0x44a, 80);	/*  nr of columns  */
+	store_16bit_word(cpu, 0x463, 0x3D4);	/*  CRT base port  */
+	store_byte(cpu, 0x484, 24);		/*  nr of lines - 1  */
+
+	/*  Clear the screen first:  */
+	set_cursor_pos(cpu, 0, 0);
+	for (y=0; y<25; y++)
+		for (x=0; x<80; x++)
+			output_char(cpu, x,y, ' ', 0x07);
+
+	/*  Draw a nice box at the top:  */
+	for (y=0; y<3; y++)
+		for (x=0; x<80; x++) {
+			unsigned char ch = ' ';
+			if (y == 0) {
+				ch = 196;
+				if (x == 0)
+					ch = 218;
+				if (x == 79)
+					ch = 191;
+			} else if (y == 2) {
+				ch = 196;
+				if (x == 0)
+					ch = 192;
+				if (x == 79)
+					ch = 217;
+			} else if (x == 0 || x == 79)
+				ch = 179;
+			output_char(cpu, x,y, ch, 0x19);
+		}
+
+	sprintf(t, "GXemul");
+#ifdef VERSION
+	sprintf(t + strlen(t), " "VERSION);
+#endif
+	set_cursor_pos(cpu, 2, 1);
+	pc_bios_printstr(cpu, t, 0x1f);
+
+	sprintf(t, "%i cpu%s (%s), %i MB memory",
 	    cpu->machine->ncpus, cpu->machine->ncpus > 1? "s" : "",
 	    cpu->cd.x86.model.name, cpu->machine->physical_ram_in_mb);
-	pc_bios_printstr(cpu, t, 0x07);
+	set_cursor_pos(cpu, 78 - strlen(t), 1);
+	pc_bios_printstr(cpu, t, 0x17);
 
-	cpu->machine->md.pc.curcolor = 0x07;
+	set_cursor_pos(cpu, 0, 4);
+	cpu->machine->md.pc.curcolor = 0x08;
 
 	/*  "Detect" Floppies, IDE disks, and SCSI disks:  */
 	for (i=0; i<4; i++) {
@@ -993,6 +1079,8 @@ void pc_bios_init(struct cpu *cpu)
 		}
 	}
 
+	cpu->machine->md.pc.curcolor = 0x07;
+
 	if (any_disk)
 		pc_bios_printstr(cpu, "\n", cpu->machine->md.pc.curcolor);
 	else
@@ -1026,6 +1114,7 @@ int pc_bios_emul(struct cpu *cpu)
 		pc_bios_init(cpu);
 
 	switch (int_nr) {
+	case 0x08:  pc_bios_int8(cpu); break;
 	case 0x09:  pc_bios_int9(cpu); break;
 	case 0x10:  pc_bios_int10(cpu); break;
 	case 0x11:	/*  return bios equipment data in ax  */

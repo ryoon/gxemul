@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.101 2005-05-16 00:18:39 debug Exp $
+ *  $Id: cpu_x86.c,v 1.102 2005-05-16 02:15:51 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2301,9 +2301,11 @@ static int cause_interrupt(struct cpu *cpu)
 	 *  TODO: How about multiple interrupt levels?
 	 */
 
+#if 0
 printf("cause1: %i (irr1=%02x ier1=%02x, irr2=%02x ier2=%02x\n", irq_nr,
 cpu->machine->md.pc.pic1->irr, cpu->machine->md.pc.pic1->ier,
 cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
+#endif
 
 	/*  Set the in-service bit, and calculate actual INT nr:  */
 	if (irq_nr < 8) {
@@ -2318,7 +2320,7 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 		irq_nr = cpu->machine->md.pc.pic2->irq_base + (irq_nr & 7);
 	}
 
-printf("cause2: %i\n", irq_nr);
+/*  printf("cause2: %i\n", irq_nr);  */
 
 	/*
 	 *  TODO:
@@ -2429,6 +2431,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	if (cpu->machine->instruction_trace)
 		x86_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
+
+	/*  For debugging:  */
+	if (instr[0] == 0 && instr[1] == 0 && instr[2] == 0 && instr[3] == 0) {
+		fatal("WARNING: Running in nothingness?\n");
+		cpu->running = 0;
+		return 0;
+	}
 
 	/*  All instructions are at least one byte long :-)  */
 	newpc ++;
@@ -3538,9 +3547,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		tmp_frame_ptr = cpu->cd.x86.r[X86_R_SP];
 		if (level > 0) {
-			while (--level > 0) {
+			while (level-- > 1) {
 				uint64_t tmpword;
-				cpu->cd.x86.r[X86_R_BP] -= mode/8;
+				cpu->cd.x86.r[X86_R_BP] = modify(
+				    cpu->cd.x86.r[X86_R_BP],
+				    cpu->cd.x86.r[X86_R_BP] - mode/8);
 				cpu->cd.x86.cursegment =
 				    cpu->cd.x86.s[X86_S_SS];
 				x86_load(cpu, cpu->cd.x86.r[X86_R_BP], 
@@ -3550,7 +3561,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!x86_push(cpu, tmp_frame_ptr, mode))
 				return 0;
 		}
-		cpu->cd.x86.r[X86_R_BP] = tmp_frame_ptr;
+		cpu->cd.x86.r[X86_R_BP] = modify(cpu->cd.x86.r[X86_R_BP],
+		    tmp_frame_ptr);
 		if (mode == 16)
 			cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] &
 			    ~0xffff) | ((cpu->cd.x86.r[X86_R_SP] & 0xffff)

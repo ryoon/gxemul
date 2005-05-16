@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.103 2005-05-16 04:14:09 debug Exp $
+ *  $Id: cpu_x86.c,v 1.104 2005-05-16 09:13:29 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1255,15 +1255,34 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if (imm == 0x00) {
 				int subop = (*instr >> 3) & 0x7;
 				switch (subop) {
+				case 0:	modrm(cpu, MODRM_READ, mode, mode67,
+					    0, &instr, &ilen, NULL, NULL);
+					SPACES; debug("sldt\t%s", modrm_rm);
+					break;
 				case 1:	modrm(cpu, MODRM_READ, 16 /* note:16 */,
 					    mode67, 0, &instr, &ilen,
 					    NULL, NULL);
 					SPACES; debug("str\t%s", modrm_rm);
 					break;
+				case 2:	modrm(cpu, MODRM_READ, 16 /* note:16 */,
+					    mode67, 0, &instr, &ilen,
+					    NULL, NULL);
+					SPACES; debug("lldt\t%s", modrm_rm);
+					break;
 				case 3:	modrm(cpu, MODRM_READ, 16 /* note:16 */,
 					    mode67, 0, &instr, &ilen,
 					    NULL, NULL);
 					SPACES; debug("ltr\t%s", modrm_rm);
+					break;
+				case 4:	modrm(cpu, MODRM_READ, 16 /* note:16 */,
+					    mode67, 0, &instr, &ilen,
+					    NULL, NULL);
+					SPACES; debug("verr\t%s", modrm_rm);
+					break;
+				case 5:	modrm(cpu, MODRM_READ, 16 /* note:16 */,
+					    mode67, 0, &instr, &ilen,
+					    NULL, NULL);
+					SPACES; debug("verw\t%s", modrm_rm);
 					break;
 				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
 					    ",0x%02x,0x%02x", op, imm, *instr);
@@ -1289,11 +1308,42 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					    0, &instr, &ilen, NULL, NULL);
 					SPACES; debug("%s\t%s", mnem, modrm_rm);
 					break;
+				case 7:	modrm(cpu, MODRM_READ, mode,
+					    mode67, 0, &instr, &ilen,
+					    NULL, NULL);
+					SPACES; debug("invlpg\t%s", modrm_rm);
+					break;
 				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
 					    ",0x%02x,0x%02x", op, imm, *instr);
 				}
+			} else if (imm == 0x02) {
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &ilen, NULL, NULL);
+				SPACES; debug("lar\t%s,%s", modrm_r, modrm_rm);
+			} else if (imm == 0x03) {
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &ilen, NULL, NULL);
+				SPACES; debug("lsl\t%s,%s", modrm_r, modrm_rm);
+			} else if (imm == 0x05) {
+				SPACES;		/* TODO: exactly which models?*/
+				if (cpu->cd.x86.model.model_number >
+				    X86_MODEL_80486)
+					debug("syscall");
+				else
+					debug("loadall286");
 			} else if (imm == 0x06) {
 				SPACES; debug("clts");
+			} else if (imm == 0x07) {
+				SPACES;		/* TODO: exactly which models?*/
+				if (cpu->cd.x86.model.model_number >
+				    X86_MODEL_80486)
+					debug("sysret");
+				else
+					debug("loadall");
+			} else if (imm == 0x08) {
+				SPACES; debug("invd");
+			} else if (imm == 0x09) {
+				SPACES; debug("wbinvd");
 			} else if (imm == 0x20) {
 				modrm(cpu, MODRM_READ, 32 /* note: 32  */,
 				    mode67, MODRM_CR, &instr, &ilen,
@@ -1310,6 +1360,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("rdtsc");
 			} else if (imm == 0x32) {
 				SPACES; debug("rdmsr");
+			} else if (imm == 0x34) {
+				SPACES; debug("sysenter");
+			} else if (imm == 0x36) {
+				SPACES; debug("sysexit");
 			} else if (imm >= 0x80 && imm <= 0x8f) {
 				op = imm;
 				imm = read_imm_and_print(&instr, &ilen, mode);
@@ -1390,6 +1444,20 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					SPACES; debug("bt\t%s,%i",
 					    modrm_rm, imm2);
 					break;
+				case 5:	modrm(cpu, MODRM_READ, mode, mode67,
+					    0, &instr, &ilen, NULL, NULL);
+					imm2 = read_imm_and_print(&instr,
+					    &ilen, 8);
+					SPACES; debug("bts\t%s,%i",
+					    modrm_rm, imm2);
+					break;
+				case 7:	modrm(cpu, MODRM_READ, mode, mode67,
+					    0, &instr, &ilen, NULL, NULL);
+					imm2 = read_imm_and_print(&instr,
+					    &ilen, 8);
+					SPACES; debug("btc\t%s,%i",
+					    modrm_rm, imm2);
+					break;
 				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
 					    ",0x%02x,0x%02x", op, imm, *instr);
 				}
@@ -1402,6 +1470,21 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					mnem = "bsr";
 				SPACES; debug("%s\t%s,%s", mnem, modrm_r,
 				    modrm_rm);
+			} else if (imm == 0xc0 || imm == 0xc1) {
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    imm&1? 0 : MODRM_EIGHTBIT,
+				    &instr, &ilen, NULL, NULL);
+				SPACES; debug("xadd\t%s,%s", modrm_rm, modrm_r);
+			} else if (imm == 0xc7) {
+				int subop = (*instr >> 3) & 0x7;
+				switch (subop) {
+				case 1:	modrm(cpu, MODRM_READ, 64, mode67,
+					    0, &instr, &ilen, NULL, NULL);
+					SPACES; debug("cmpxchg8b\t%s",modrm_rm);
+					break;
+				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
+					    ",0x%02x,0x%02x", op, imm, *instr);
+				}
 			} else if (imm >= 0xc8 && imm <= 0xcf) {
 				SPACES; debug("bswap\te%s", reg_names[imm & 7]);
 			} else {
@@ -1431,6 +1514,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		modrm(cpu, MODRM_READ, mode, mode67,
 		    0, &instr, &ilen, NULL, NULL);
 		SPACES; debug("bound\t%s,%s", modrm_r, modrm_rm);
+	} else if (op == 0x63) {
+		modrm(cpu, MODRM_READ, 16, mode67,
+		    0, &instr, &ilen, NULL, NULL);
+		SPACES; debug("arpl\t%s,%s", modrm_rm, modrm_r);
 	} else if (op == 0x68) {
 		imm = read_imm_and_print(&instr, &ilen, mode);
 		SPACES; debug("push\t%sword 0x%x", mode==32?"d":"", imm);
@@ -1686,7 +1773,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		else
 			debug("cl");
 	} else if (op == 0xd4) {
+		imm = read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("aam");
+		if (imm != 10)
+			debug("\t%i", imm);
 	} else if (op == 0xd5) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("aad");
@@ -2370,7 +2460,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	int mode67 = mode, nprefixbytes = 0, success;
 	uint32_t imm, imm2;
 	unsigned char buf[16];
-	unsigned char *instr = buf, *instr_orig;
+	unsigned char *instr = buf, *instr_orig, *really_orig_instr;
 	uint64_t newpc = cpu->pc;
 	uint64_t tmp, op1, op2;
 
@@ -2430,6 +2520,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  From real to protected mode only occurs on a
 		    far JMP or CALL. (TODO: is this correct?)  */
 	}
+
+	really_orig_instr = instr;	/*  Used to display an error message
+					    for unimplemented instructions.  */
 
 	if (cpu->machine->instruction_trace)
 		x86_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
@@ -2704,6 +2797,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					break;
 				default:fatal("UNIMPLEMENTED 0x%02x"
 					    ",0x%02x,0x%02x", op, imm, *instr);
+					quiet_mode = 0;
+					x86_cpu_disassemble_instr(cpu,
+					    really_orig_instr, 1, 0, 0);
 					cpu->running = 0;
 				}
 				break;
@@ -2903,6 +2999,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					break;
 				default:fatal("UNIMPLEMENTED 0x%02x"
 					    ",0x%02x,0x%02x", op, imm, *instr);
+					quiet_mode = 0;
+					x86_cpu_disassemble_instr(cpu,
+					    really_orig_instr, 1, 0, 0);
 					cpu->running = 0;
 				}
 				break;
@@ -2934,6 +3033,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;
 			default:fatal("TODO: 0x0f,0x%02x\n", imm);
+				quiet_mode = 0;
+				x86_cpu_disassemble_instr(cpu,
+				    really_orig_instr, 1, 0, 0);
 				cpu->running = 0;
 			}
 		}
@@ -3086,9 +3188,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 7:	x86_calc_flags(cpu, op1, imm, op==0x80? 8 : mode,
 			    CALCFLAGS_OP_SUB); /* cmp */
 			break;
-		default:
-			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr_orig);
-			cpu->running = 0;
 		}
 
 		if (((*instr_orig >> 3) & 0x7) != 7) {
@@ -3143,9 +3242,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 7: x86_calc_flags(cpu, op1, (signed char)imm, mode,
 			    CALCFLAGS_OP_SUB);
 			break;
-		default:
-			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr_orig);
-			cpu->running = 0;
 		}
 		if (((*instr_orig >> 3) & 0x7) != 7) {
 			if (((*instr_orig >> 3) & 0x7) != 0 &&
@@ -3246,6 +3342,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
+			quiet_mode = 0;
+			x86_cpu_disassemble_instr(cpu,
+			    really_orig_instr, 1, 0, 0);
 			cpu->running = 0;
 		}
 	} else if (op == 0x90) {		/*  NOP  */
@@ -3538,6 +3637,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
+			quiet_mode = 0;
+			x86_cpu_disassemble_instr(cpu,
+			    really_orig_instr, 1, 0, 0);
 			cpu->running = 0;
 		}
 	} else if (op == 0xc8) {	/*  ENTER  */
@@ -3936,6 +4038,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
+			quiet_mode = 0;
+			x86_cpu_disassemble_instr(cpu,
+			    really_orig_instr, 1, 0, 0);
 			cpu->running = 0;
 		}
 	} else if (op == 0xfe || op == 0xff) {		/*  INC, DEC etc  */
@@ -3971,6 +4076,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 2:	if (op == 0xfe) {
 				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
 				    *instr);
+				quiet_mode = 0;
+				x86_cpu_disassemble_instr(cpu,
+				    really_orig_instr, 1, 0, 0);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
@@ -3988,6 +4096,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 3:	if (op == 0xfe) {
 				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
 				    *instr);
+				quiet_mode = 0;
+				x86_cpu_disassemble_instr(cpu,
+				    really_orig_instr, 1, 0, 0);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
@@ -4014,6 +4125,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 4:	if (op == 0xfe) {
 				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
 				    *instr);
+				quiet_mode = 0;
+				x86_cpu_disassemble_instr(cpu,
+				    really_orig_instr, 1, 0, 0);
 				cpu->running = 0;
 			} else {
 				success = modrm(cpu, MODRM_READ, mode, mode67,
@@ -4028,6 +4142,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 5:	if (op == 0xfe) {
 				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
 				    *instr);
+				quiet_mode = 0;
+				x86_cpu_disassemble_instr(cpu,
+				    really_orig_instr, 1, 0, 0);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
@@ -4051,6 +4168,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 6:	if (op == 0xfe) {
 				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
 				    *instr);
+				quiet_mode = 0;
+				x86_cpu_disassemble_instr(cpu,
+				    really_orig_instr, 1, 0, 0);
 				cpu->running = 0;
 			} else {
 				instr_orig = instr;
@@ -4069,6 +4189,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else {
 		fatal("x86_cpu_run_instr(): unimplemented opcode 0x%02x"
 		    " at ", op); print_csip(cpu); fatal("\n");
+		quiet_mode = 0;
+		x86_cpu_disassemble_instr(cpu,
+		    really_orig_instr, 1, 0, 0);
 		cpu->running = 0;
 		return 0;
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.54 2005-05-16 04:14:09 debug Exp $
+ *  $Id: pc_bios.c,v 1.55 2005-05-16 04:58:08 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -729,16 +729,23 @@ static void pc_bios_int15(struct cpu *cpu)
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int cx = cpu->cd.x86.r[X86_R_CX] & 0xffff;
 	int si = cpu->cd.x86.r[X86_R_SI] & 0xffff;
+	int m;
 	unsigned char src_entry[8];
 	unsigned char dst_entry[8];
 	uint32_t src_addr, dst_addr;
 
 	switch (ah) {
+	case 0x24:	/*  TODO  */
+		fatal("[ PC BIOS int 0x15,0x24: TODO ]\n");
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_AX] |= 0x8600;	/*  TODO  */
+		break;
 	case 0x41:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x41: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
-		cpu->cd.x86.r[X86_R_AX] |= 0x0000;	/*  TODO  */
+		cpu->cd.x86.r[X86_R_AX] |= 0x8600;	/*  TODO  */
 		break;
 	case 0x53:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x53: TODO ]\n");
@@ -760,6 +767,9 @@ static void pc_bios_int15(struct cpu *cpu)
 			    " (0x%02, should be 0x93)\n", dst_entry[5]);
 		debug("[ pc_bios: INT15: copying %i bytes from 0x%x to 0x%x"
 		    " ]\n", cx*2, src_addr, dst_addr);
+		if (cx > 0x8000)
+			fatal("WARNING! INT15 func 0x87 cx=0x%04x, max allowed"
+			    " is supposed to be 0x8000!\n", cx);
 		while (cx*2 > 0) {
 			unsigned char buf[2];
 			cpu->memory_rw(cpu, cpu->mem, src_addr, buf, 2,
@@ -774,8 +784,17 @@ static void pc_bios_int15(struct cpu *cpu)
 		break;
 	case 0x88:	/*  Extended Memory Size Determination  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
-		cpu->cd.x86.r[X86_R_AX] = (cpu->machine->physical_ram_in_mb
-		    - 1) * 1024;
+		if (cpu->machine->physical_ram_in_mb <= 16)
+			cpu->cd.x86.r[X86_R_AX] = (cpu->machine->
+			    physical_ram_in_mb - 1) * 1024;
+		else
+			cpu->cd.x86.r[X86_R_AX] = 15*1024;
+		break;
+	case 0x8A:	/*  Get "Big" memory size  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		m = (cpu->machine->physical_ram_in_mb - 1) * 1024;
+		cpu->cd.x86.r[X86_R_AX] = m & 0xffff;
+		cpu->cd.x86.r[X86_R_DX] = (m >> 16) & 0xffff;
 		break;
 	case 0xc0:	/*  System Config: (at 0xfffd:0)  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;

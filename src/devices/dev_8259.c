@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.2 2005-05-16 02:15:52 debug Exp $
+ *  $Id: dev_8259.c,v 1.3 2005-05-16 04:58:09 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -65,6 +65,29 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0x00:
 		if (writeflag == MEM_WRITE) {
+			if ((idata & 0x10) == 0x10) {
+				/*  Bit 3: 0=edge, 1=level  */
+				if (idata & 0x08)
+					fatal("[ 8259: TODO: Level "
+					    "triggered (MCA bus) ]\n");
+				if (idata & 0x04)
+					fatal("[ 8259: WARNING: Bit 2 set ]\n");
+				/*  Bit 1: 0=cascade, 1=single  */
+				/*  Bit 0: 1=4th init byte  */
+				if (!(idata & 0x01))
+					fatal("[ 8259: WARNING: Bit 0 NOT set!"
+					    "!! ]\n");
+				d->init_state = 1;
+				break;
+			}
+
+			/*  TODO: Is it ok to abort init state when there
+			    is a non-init command?  */
+			if (d->init_state)
+				fatal("[ 8259: WARNING: Was in init-state, but"
+				    " it was aborted? ]\n");
+			d->init_state = 0;
+
 			switch (idata) {
 			case 0x0a:
 				d->current_command = 0x0a;
@@ -96,6 +119,30 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 		}
 		break;
 	case 0x01:
+		if (d->init_state > 0) {
+			if (d->init_state == 1) {
+				d->irq_base = idata & 0xf8;
+				if (idata & 7)
+					fatal("[ 8259: WARNING! Lowest"
+					    " bits in Init Cmd 1 are"
+					    " non-zero! ]\n");
+				d->init_state = 2;
+			} else if (d->init_state == 2) {
+				/*  Slave attachment. TODO  */
+				d->init_state = 3;
+			} else if (d->init_state == 3) {
+				if (idata & 0x02)
+					fatal("[ 8259: WARNING! Bit 1 i"
+					    "n Init Cmd 4 is set! ]\n");
+				if (!(idata & 0x01))
+					fatal("[ 8259: WARNING! Bit 0 "
+					    "in Init Cmd 4 is not"
+					    " set! ]\n");
+				d->init_state = 0;
+			}
+			break;
+		}
+
 		if (writeflag == MEM_WRITE) {
 			d->ier = idata;
 			/*  Recalculate interrupt assertions:  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.164 2005-05-15 22:44:42 debug Exp $
+ *  $Id: devices.h,v 1.165 2005-05-16 04:58:10 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -54,6 +54,8 @@ struct pic8259_data {
 
 	int		irq_base;
 	int		current_command;
+
+	int		init_state;
 
 	int		priority_reg;
 	uint8_t		irr;		/*  interrupt request register  */

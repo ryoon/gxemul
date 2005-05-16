@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.23 2005-05-14 16:39:55 debug Exp $
+ *  $Id: memory_rw.c,v 1.24 2005-05-16 04:14:09 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -125,6 +125,11 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	/*  DOS debugging :-)  */
 	if (vaddr >= 0x400 && vaddr <= 0x4ff)
 		debug("{ PC BIOS DATA AREA: %s 0x%x }\n",
+		    writeflag == MEM_WRITE? "writing to" : "reading from",
+		    (int)vaddr);
+
+	if (vaddr >= 0xf0000 && vaddr <= 0xfffff)
+		fatal("{ BIOS ACCESS: %s 0x%x }\n",
 		    writeflag == MEM_WRITE? "writing to" : "reading from",
 		    (int)vaddr);
 #endif

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.102 2005-05-16 02:15:51 debug Exp $
+ *  $Id: cpu_x86.c,v 1.103 2005-05-16 04:14:09 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2394,11 +2394,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  16-bit BIOS emulation:  */
 	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
-		int addr = (newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff;
+		int addr = (newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xfff;
 		/*  if (cpu->machine->instruction_trace)
-			debug("(PC BIOS emulation, int 0x%02x)\n", addr);  */
+			debug("(PC BIOS emulation, int 0x%02x)\n",
+			    addr >> 4);  */
 		pc_bios_emul(cpu);
-		return 1;
+		/*  Approximately equivalent to 1000 instructions.  */
+		return 1000;
 	}
 
 	if (cpu->cd.x86.halted) {

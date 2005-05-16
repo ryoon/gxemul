@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.53 2005-05-16 02:47:36 debug Exp $
+ *  $Id: pc_bios.c,v 1.54 2005-05-16 04:14:09 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -737,6 +737,8 @@ static void pc_bios_int15(struct cpu *cpu)
 	case 0x41:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x41: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_AX] |= 0x0000;	/*  TODO  */
 		break;
 	case 0x53:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x53: TODO ]\n");
@@ -751,9 +753,11 @@ static void pc_bios_int15(struct cpu *cpu)
 		src_addr = src_entry[2]+(src_entry[3]<<8)+(src_entry[4]<<16);
 		dst_addr = dst_entry[2]+(dst_entry[3]<<8)+(dst_entry[4]<<16);
 		if (src_entry[5] != 0x93)
-			fatal("WARNING: int15,87: bad src access right?\n");
+			fatal("WARNING: int15,87: bad src access right?"
+			    " (0x%02, should be 0x93)\n", src_entry[5]);
 		if (dst_entry[5] != 0x93)
-			fatal("WARNING: int15,87: bad dst access right?\n");
+			fatal("WARNING: int15,87: bad dst access right?"
+			    " (0x%02, should be 0x93)\n", dst_entry[5]);
 		debug("[ pc_bios: INT15: copying %i bytes from 0x%x to 0x%x"
 		    " ]\n", cx*2, src_addr, dst_addr);
 		while (cx*2 > 0) {
@@ -773,9 +777,11 @@ static void pc_bios_int15(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] = (cpu->machine->physical_ram_in_mb
 		    - 1) * 1024;
 		break;
-	case 0xc0:	/*  TODO  */
-		fatal("[ PC BIOS int 0x15,0xc0: TODO ]\n");
-		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+	case 0xc0:	/*  System Config: (at 0xfffd:0)  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
+		cpu->cd.x86.s[X86_S_ES] = 0xfffd;
 		break;
 	case 0xe8:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0xe8: TODO ]\n");
@@ -959,14 +965,64 @@ void pc_bios_init(struct cpu *cpu)
 	cpu->machine->md.pc.pic1->irq_base = 0x08;
 	cpu->machine->md.pc.pic2->irq_base = 0x70;
 
+	/*  Disk Base Table (11 or 12 bytes?) at 0xfffb:0:  */
+	cpu->cd.x86.cursegment = 0xfffb;
+	store_byte(cpu, 0, 0xcf);
+	store_byte(cpu, 1, 0xb8);
+	store_byte(cpu, 2, 1);		/*  timer ticks till shutoff  */
+	store_byte(cpu, 3, 2);		/*  512 bytes per sector  */
+	store_byte(cpu, 4, 17);
+	store_byte(cpu, 5, 0xd8);
+	store_byte(cpu, 6, 0xff);
+	store_byte(cpu, 7, 0);
+	store_byte(cpu, 8, 0xf6);
+	store_byte(cpu, 9, 1);		/*  head bounce delay in msec  */
+	store_byte(cpu, 10, 1);		/*  motor start time in 1/8 secs  */
+	store_byte(cpu, 11, 1);		/*  motor stop time in 1/4 secs  */
+
+	/*  BIOS System Configuration Parameters (8 bytes) at 0xfffd:0:  */
+	cpu->cd.x86.cursegment = 0xfffd;
+	store_byte(cpu, 0, 8); store_byte(cpu, 1, 0);	/*  len  */
+	store_byte(cpu, 2, 0xfc);			/*  model  */
+	store_byte(cpu, 3, 0);				/*  sub-model  */
+	store_byte(cpu, 4, 0);				/*  bios revision  */
+	store_byte(cpu, 5, 0x60);			/*  features  */
+		/*  see http://members.tripod.com/~oldboard/assembly/
+			int_15-c0.html for details  */
+
+	/*  Some info in the last paragraph of the BIOS:  */
+	cpu->cd.x86.cursegment = 0xffff;
+	/*  TODO: current date :-)  */
+	store_byte(cpu, 0x05, '0'); store_byte(cpu, 0x06, '1');
+	store_byte(cpu, 0x07, '/');
+	store_byte(cpu, 0x08, '0'); store_byte(cpu, 0x09, '1');
+	store_byte(cpu, 0x0a, '/');
+	store_byte(cpu, 0x0b, '0'); store_byte(cpu, 0x0c, '5');
+	store_byte(cpu, 0x0e, 0xfc);
+
 	/*
-	 *  Initialize all 16-bit interrupt vectors to point to
-	 *  somewhere within the PC BIOS area (0xf000:0x8yyy):
+	 *  Initialize all real-mode interrupt vectors to point to somewhere
+	 *  within the PC BIOS area (0xf000:0x8yy0), and place an IRET
+	 *  instruction (too fool someone who really reads the BIOS memory).
 	 */
 	for (i=0; i<256; i++) {
-		store_16bit_word(cpu, i*4, 0x8000 + i);
+		if (i == 0x20)
+			i = 0x70;
+		if (i == 0x78)
+			break;
+		cpu->cd.x86.cursegment = 0;
+		store_16bit_word(cpu, i*4, 0x8000 + i*16);
 		store_16bit_word(cpu, i*4 + 2, 0xf000);
+
+		/*  An exception: int 0x1e = ptr to disk table  */
+		if (i == 0x1e)
+			store_16bit_word(cpu, i*4, 0xffb0);
+
+		cpu->cd.x86.cursegment = 0xf000;
+		store_byte(cpu, 0x8000 + i*16, 0xCF);	/*  IRET  */
 	}
+
+	cpu->cd.x86.cursegment = 0;
 
 	/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
 	    for more info.  */
@@ -1119,10 +1175,7 @@ int pc_bios_emul(struct cpu *cpu)
 	uint32_t addr = (cpu->cd.x86.s[X86_S_CS] << 4) + cpu->pc;
 	int int_nr, flags;
 
-	int_nr = addr & 0xff;
-
-	if (!cpu->machine->md.pc.initialized)
-		pc_bios_init(cpu);
+	int_nr = (addr >> 4) & 0xff;
 
 	switch (int_nr) {
 	case 0x08:  pc_bios_int8(cpu); break;

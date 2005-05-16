@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.57 2005-05-16 07:47:08 debug Exp $
+ *  $Id: pc_bios.c,v 1.58 2005-05-16 18:55:40 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -985,6 +985,10 @@ static void pc_bios_int1a(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_DX] |= (dec_to_bcd(tm->tm_mon) << 8) |
 		    dec_to_bcd(tm->tm_mday + 1);
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		break;
+	case 0xb1:	/*  Intel PCI Bios  */
+		/*  ... not installed :)  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x1a function"

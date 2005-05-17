@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.60 2005-05-17 05:11:21 debug Exp $
+ *  $Id: pc_bios.c,v 1.61 2005-05-17 06:44:23 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -1188,7 +1188,7 @@ void pc_bios_init(struct cpu *cpu)
 	pc_bios_printstr(cpu, t, 0x17);
 
 	set_cursor_pos(cpu, 0, 4);
-	cpu->machine->md.pc.curcolor = 0x09;
+	cpu->machine->md.pc.curcolor = 0x07;
 
 	/*  "Detect" Floppies, IDE disks, and SCSI disks:  */
 	for (i=0; i<4; i++) {
@@ -1259,13 +1259,10 @@ void pc_bios_init(struct cpu *cpu)
 		}
 	}
 
-	cpu->machine->md.pc.curcolor = 0x07;
-
 	if (any_disk)
 		pc_bios_printstr(cpu, "\n", cpu->machine->md.pc.curcolor);
 	else
-		pc_bios_printstr(cpu, "No disks attached.\n\n",
-		    cpu->machine->md.pc.curcolor);
+		pc_bios_printstr(cpu, "No disks attached!\n\n", 0x0f);
 
 	/*  Registers passed to the bootsector code:  */
 	cpu->cd.x86.r[X86_R_AX] = 0xaa55;

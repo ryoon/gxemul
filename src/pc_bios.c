@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.61 2005-05-17 06:44:23 debug Exp $
+ *  $Id: pc_bios.c,v 1.62 2005-05-17 08:52:18 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -277,13 +277,23 @@ static void scroll_down(struct cpu *cpu, int x1, int y1, int x2, int y2,
 /*
  *  pc_bios_putchar():
  */
-static void pc_bios_putchar(struct cpu *cpu, char ch, int attr)
+static void pc_bios_putchar(struct cpu *cpu, char ch, int attr,
+	int linewrap_and_scroll)
 {
 	int x, y;
 
-	/*  Put the character on the screen, move cursor, and so on:  */
-
 	get_cursor_pos(cpu, &x, &y);
+
+	if (!linewrap_and_scroll) {
+		if (x < 80 && y < 25) {
+			output_char(cpu, x, y, ch, attr);
+			x++;
+			set_cursor_pos(cpu, x, y);
+		}
+		return;
+	}
+
+	/*  Put the character on the screen, move cursor, and so on:  */
 	switch (ch) {
 	case '\r':	x = -1; break;
 	case '\n':	x = 80; break;
@@ -314,7 +324,7 @@ static void pc_bios_putchar(struct cpu *cpu, char ch, int attr)
 static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
 {
 	while (*s)
-		pc_bios_putchar(cpu, *s++, attr);
+		pc_bios_putchar(cpu, *s++, attr, 1);
 }
 
 
@@ -488,15 +498,19 @@ static void pc_bios_int10(struct cpu *cpu)
 		/*  TODO: return AH=attr, AL=char  */
 		break;
 	case 0x09:	/*  write character and attribute(todo)  */
+	case 0x0a:	/*  write character only  */
+		get_cursor_pos(cpu, &oldx, &oldy);
 		while (cx-- > 0)
-			pc_bios_putchar(cpu, al, bl);
-		cpu->machine->md.pc.curcolor = bl;
+			pc_bios_putchar(cpu, al, ah==9? bl : -1, 0);
+		if (ah == 9)
+			cpu->machine->md.pc.curcolor = bl;
+		set_cursor_pos(cpu, oldx, oldy);
 		break;
 	case 0x0b:	/*  set color palette  */
 		debug("WARNING: int 0x10, func 0x0b: TODO\n");
 		break;
 	case 0x0e:	/*  tty output  */
-		pc_bios_putchar(cpu, al, -1);
+		pc_bios_putchar(cpu, al, -1, 1);
 		break;
 	case 0x0f:	/*  get video mode  */
 		cpu->cd.x86.r[X86_R_AX] = 80 << 8;
@@ -515,6 +529,8 @@ static void pc_bios_int10(struct cpu *cpu)
 		switch (al) {
 		case 0x12:
 			break;
+		case 0x14:
+			break;
 		default:fatal("Unimplemented INT 0x10,AH=0x11,AL=0x%02x\n", al);
 			cpu->running = 0;
 		}
@@ -530,6 +546,8 @@ static void pc_bios_int10(struct cpu *cpu)
 			debug("[ pc_bios: %i scanlines ]\n", 200+50*al);
 			cpu->cd.x86.r[X86_R_AX] &= ~0xff;
 			cpu->cd.x86.r[X86_R_AX] |= 0x12;
+			break;
+		case 0x34:	/*  TODO  */
 			break;
 		default:fatal("Unimplemented INT 0x10,AH=0x12,BL=0x%02x\n", bl);
 			cpu->running = 0;
@@ -549,7 +567,7 @@ static void pc_bios_int10(struct cpu *cpu)
 			cpu->memory_rw(cpu, cpu->mem, bp, &byte[0], len,
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			bp += len;
-				pc_bios_putchar(cpu, byte[0], byte[1]);
+				pc_bios_putchar(cpu, byte[0], byte[1], 1);
 			cpu->machine->md.pc.curcolor = byte[1];
 		}
 		if (!(al & 1))
@@ -789,6 +807,9 @@ static void pc_bios_int15(struct cpu *cpu)
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
 		cpu->cd.x86.r[X86_R_AX] |= 0x8600;	/*  TODO  */
+		break;
+	case 0x4f:	/*  Keyboard Scancode Intercept (TODO)  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		break;
 	case 0x53:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x53: TODO ]\n");

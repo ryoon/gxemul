@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.58 2005-05-16 18:55:40 debug Exp $
+ *  $Id: pc_bios.c,v 1.59 2005-05-17 04:06:30 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -68,7 +68,8 @@ extern unsigned char font8x8[];
 /*
  *  add_disk():
  */
-static void add_disk(struct machine *machine, int biosnr, int id, int type)
+static struct pc_bios_disk *add_disk(struct machine *machine, int biosnr,
+	int id, int type)
 {
 	uint64_t size, bytespercyl;
 	struct pc_bios_disk *p = malloc(sizeof(struct pc_bios_disk));
@@ -83,23 +84,25 @@ static void add_disk(struct machine *machine, int biosnr, int id, int type)
 
 	p->nr = biosnr; p->id = id; p->type = type;
 
-	size = diskimage_getsize(machine, id, type);
+	p->size = size = diskimage_getsize(machine, id, type);
 
 	switch (type) {
 	case DISKIMAGE_FLOPPY:
 		/*  TODO: other floppy types? 360KB etc?  */
 		p->cylinders = 80;
 		p->heads = 2;
-		p->sectorspertrack = size / (p->cylinders * p->heads * 512);
+		p->sectorspertrack = p->size / (p->cylinders * p->heads * 512);
 		break;
 	default:/*  Non-floppies:  */
 		p->heads = 15;
 		p->sectorspertrack = 63;
 		bytespercyl = p->heads * p->sectorspertrack * 512;
-		p->cylinders = size / bytespercyl;
+		p->cylinders = p->size / bytespercyl;
 		if (p->cylinders * bytespercyl < size)
 			p->cylinders ++;
 	}
+
+	return p;
 }
 
 
@@ -320,32 +323,25 @@ static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
  *
  *  Interrupt handler for the timer.
  */
-static void pc_bios_int8(struct cpu *cpu)
+static int pc_bios_int8(struct cpu *cpu)
 {
 	unsigned char ticks[4];
 	unsigned char tmpbyte;
-	int i;
 
 	/*  TODO: ack the timer interrupt some other way?  */
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x43,
 	    &tmpbyte, 1, MEM_READ, CACHE_NONE | PHYSICAL);
 
-	/*  Increase word at 0x0040:0x006C  */
-	cpu->memory_rw(cpu, cpu->mem, 0x46C,
-	    ticks, sizeof(ticks), MEM_READ, CACHE_NONE | PHYSICAL);
-	for (i=0; i<sizeof(ticks); i++) {
-		ticks[i] ++;
-		if (ticks[i] != 0)
-			break;
-	}
-	cpu->memory_rw(cpu, cpu->mem, 0x46C,
-	    ticks, sizeof(ticks), MEM_WRITE, CACHE_NONE | PHYSICAL);
-
 	/*  EOI the interrupt.  */
 	cpu->machine->md.pc.pic1->isr &= ~0x01;
 
-	/*  Call INT 0x1C:  */
-	/*  TODO  */
+	/*  "Call" INT 0x1C:  */
+	/*  TODO: how about non-real-mode?  */
+	cpu->memory_rw(cpu, cpu->mem, 0x1C * 4,
+	    ticks, 4, MEM_READ, CACHE_NONE | PHYSICAL);
+	cpu->pc = ticks[0] + (ticks[1] << 8);
+	cpu->cd.x86.s[X86_S_CS] = ticks[2] + (ticks[3] << 8);
+	return 0;
 }
 
 
@@ -982,8 +978,8 @@ static void pc_bios_int1a(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_CX] |=
 		    (dec_to_bcd((tm->tm_year+1900)/100) << 8) |
 		    dec_to_bcd(tm->tm_year % 100);
-		cpu->cd.x86.r[X86_R_DX] |= (dec_to_bcd(tm->tm_mon) << 8) |
-		    dec_to_bcd(tm->tm_mday + 1);
+		cpu->cd.x86.r[X86_R_DX] |= (dec_to_bcd(tm->tm_mon+1) << 8) |
+		    dec_to_bcd(tm->tm_mday);
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		break;
 	case 0xb1:	/*  Intel PCI Bios  */
@@ -996,6 +992,29 @@ static void pc_bios_int1a(struct cpu *cpu)
 		cpu->running = 0;
 		cpu->dead = 1;
 	}
+}
+
+
+/*
+ *  pc_bios_int1c():
+ *
+ *  Increase the timer-tick word at 0x40:0x6C.
+ */
+static void pc_bios_int1c(struct cpu *cpu)
+{
+	unsigned char ticks[4];
+	int i;
+
+	/*  Increase word at 0x0040:0x006C  */
+	cpu->memory_rw(cpu, cpu->mem, 0x46C,
+	    ticks, sizeof(ticks), MEM_READ, CACHE_NONE | PHYSICAL);
+	for (i=0; i<sizeof(ticks); i++) {
+		ticks[i] ++;
+		if (ticks[i] != 0)
+			break;
+	}
+	cpu->memory_rw(cpu, cpu->mem, 0x46C,
+	    ticks, sizeof(ticks), MEM_WRITE, CACHE_NONE | PHYSICAL);
 }
 
 
@@ -1146,19 +1165,22 @@ void pc_bios_init(struct cpu *cpu)
 	pc_bios_printstr(cpu, t, 0x17);
 
 	set_cursor_pos(cpu, 0, 4);
-	cpu->machine->md.pc.curcolor = 0x08;
+	cpu->machine->md.pc.curcolor = 0x09;
 
 	/*  "Detect" Floppies, IDE disks, and SCSI disks:  */
 	for (i=0; i<4; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_FLOPPY)) {
-			add_disk(cpu->machine, i, i, DISKIMAGE_FLOPPY);
+			struct pc_bios_disk *p;
+			p = add_disk(cpu->machine, i, i, DISKIMAGE_FLOPPY);
 			sprintf(t, "%c%c (bios disk %02x)  FLOPPY",
 			    i<2? ('A'+i) : ' ', i<2? ':' : ' ', i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			sprintf(t, ", %i KB (CHS=%i,%i,%i)", (int)(p->size /
+			    1024), p->cylinders, p->heads, p->sectorspertrack);
+			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_FLOPPY) {
 				bios_boot_id = i;
-				pc_bios_printstr(cpu, " (boot device)",
-				    cpu->machine->md.pc.curcolor);
+				pc_bios_printstr(cpu, "  [boot device]", 0xf);
 			}
 			pc_bios_printstr(cpu, "\n",
 			    cpu->machine->md.pc.curcolor);
@@ -1168,7 +1190,8 @@ void pc_bios_init(struct cpu *cpu)
 	disknr = 0x80;
 	for (i=0; i<8; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_IDE)) {
-			add_disk(cpu->machine, disknr, i, DISKIMAGE_IDE);
+			struct pc_bios_disk *p;
+			p = add_disk(cpu->machine, disknr, i, DISKIMAGE_IDE);
 			sprintf(t, "%s (bios disk %02x)  IDE %s, id %i",
 			    disknr==0x80? "C:" : "  ", disknr,
 			    diskimage_is_a_cdrom(cpu->machine, i,
@@ -1177,10 +1200,11 @@ void pc_bios_init(struct cpu *cpu)
 				DISKIMAGE_IDE)? "tape" : "disk"),
 			    i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			sprintf(t, ", %lli MB", (long long) (p->size >> 20));
+			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_IDE) {
 				bios_boot_id = disknr;
-				pc_bios_printstr(cpu, " (boot device)",
-				    cpu->machine->md.pc.curcolor);
+				pc_bios_printstr(cpu, "  [boot device]", 0xf);
 			}
 			pc_bios_printstr(cpu, "\n",
 			    cpu->machine->md.pc.curcolor);
@@ -1190,14 +1214,16 @@ void pc_bios_init(struct cpu *cpu)
 	}
 	for (i=0; i<8; i++) {
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_SCSI)) {
-			add_disk(cpu->machine, disknr, i, DISKIMAGE_SCSI);
+			struct pc_bios_disk *p;
+			p = add_disk(cpu->machine, disknr, i, DISKIMAGE_SCSI);
 			sprintf(t, "%s (bios disk %02x)  SCSI disk, id %i",
 			    disknr==0x80? "C:" : "  ", disknr, i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			sprintf(t, ", %lli MB", (long long) (p->size >> 20));
+			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_SCSI) {
 				bios_boot_id = disknr;
-				pc_bios_printstr(cpu, " (boot device)",
-				    cpu->machine->md.pc.curcolor);
+				pc_bios_printstr(cpu, "  [boot device]", 0xf);
 			}
 			pc_bios_printstr(cpu, "\n",
 			    cpu->machine->md.pc.curcolor);
@@ -1237,8 +1263,18 @@ int pc_bios_emul(struct cpu *cpu)
 
 	int_nr = (addr >> 4) & 0xff;
 
+	if (cpu->cd.x86.cr[0] & 1) {
+		fatal("TODO: BIOS interrupt 0x%02x, but we're not in real-"
+		    "mode?\n", int_nr);
+		cpu->running = 0;
+		return 0;
+	}
+
 	switch (int_nr) {
-	case 0x08:  pc_bios_int8(cpu); break;
+	case 0x08:
+		if (pc_bios_int8(cpu) == 0)
+			return 0;
+		break;
 	case 0x09:  pc_bios_int9(cpu); break;
 	case 0x10:  pc_bios_int10(cpu); break;
 	case 0x11:	/*  return bios equipment data in ax  */
@@ -1267,6 +1303,7 @@ int pc_bios_emul(struct cpu *cpu)
 		cpu->running = 0;
 		break;
 	case 0x1a:  pc_bios_int1a(cpu); break;
+	case 0x1c:  pc_bios_int1c(cpu); break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x%02x.\n",
 		    int_nr);

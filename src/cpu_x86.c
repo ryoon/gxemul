@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.105 2005-05-16 18:55:40 debug Exp $
+ *  $Id: cpu_x86.c,v 1.106 2005-05-17 04:06:30 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2070,11 +2070,11 @@ cpu->running = 0;
 
 
 /*
- *  x86_interrupt():
+ *  x86_software_interrupt():
  *
  *  NOTE/TODO: Only for 16-bit mode so far.
  */
-static int x86_interrupt(struct cpu *cpu, int nr)
+static int x86_software_interrupt(struct cpu *cpu, int nr)
 {
 	uint64_t seg, ofs;
 	const int len = sizeof(uint16_t);
@@ -2093,13 +2093,13 @@ static int x86_interrupt(struct cpu *cpu, int nr)
 	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
 	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 1,
 	    cpu->cd.x86.rflags, len) != MEMORY_ACCESS_OK)
-		fatal("x86_interrupt(): TODO: how to handle this\n");
+		fatal("x86_software_interrupt(): TODO: how to handle this\n");
 	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 2,
 	    cpu->cd.x86.s[X86_S_CS], len) != MEMORY_ACCESS_OK)
-		fatal("x86_interrupt(): TODO: how to handle this\n");
+		fatal("x86_software_interrupt(): TODO: how to handle this\n");
 	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 3, cpu->pc,
 	    len) != MEMORY_ACCESS_OK)
-		fatal("x86_interrupt(): TODO: how to handle this\n");
+		fatal("x86_software_interrupt(): TODO: how to handle this\n");
 
 	cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
 	    | ((cpu->cd.x86.r[X86_R_SP] - len*3) & 0xffff);
@@ -2836,6 +2836,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.x86.s[X86_S_FS] = tmp;
 				break;
 			case 0xa2:
+				if (!(cpu->cd.x86.rflags & X86_FLAGS_ID))
+					fatal("TODO: ID bit off in flags,"
+					    " but CPUID attempted?\n");
 				x86_cpuid(cpu);
 				break;
 			case 0xa4:
@@ -3709,11 +3712,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		potential_mode_change(cpu);
 	} else if (op == 0xcc) {	/*  INT3  */
 		cpu->pc = newpc;
-		return x86_interrupt(cpu, 3);
+		return x86_software_interrupt(cpu, 3);
 	} else if (op == 0xcd) {	/*  INT  */
 		imm = read_imm(&instr, &newpc, 8);
 		cpu->pc = newpc;
-		return x86_interrupt(cpu, imm);
+		return x86_software_interrupt(cpu, imm);
 	} else if (op == 0xcf) {	/*  IRET  */
 		uint64_t tmp2, tmp3;
 		if (!x86_pop(cpu, &tmp, mode))

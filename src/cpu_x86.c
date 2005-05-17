@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.106 2005-05-17 04:06:30 debug Exp $
+ *  $Id: cpu_x86.c,v 1.107 2005-05-17 05:11:21 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2020,11 +2020,13 @@ static void x86_cpuid(struct cpu *cpu)
  */
 static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 {
-	int res = 1;
+	int res = 1, oldseg;
 
+	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
 	cpu->cd.x86.r[X86_R_SP] -= (mode / 8);
 	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value, mode / 8);
+	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
 
@@ -2034,11 +2036,13 @@ static int x86_push(struct cpu *cpu, uint64_t value, int mode)
  */
 static int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
 {
-	int res = 1;
+	int res = 1, oldseg;
 
+	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
 	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep, mode / 8);
 	cpu->cd.x86.r[X86_R_SP] += (mode / 8);
+	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
 
@@ -2289,47 +2293,45 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 	int cf = -1, oldcf = 0;
 
 	n &= 31;
+	op1 &= (((uint64_t)1 << mode) - 1);
 
 	oldcf = cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0;
 
 	while (n-- > 0) {
 		cf = 0;
+
+		if (op & 1) {	/*  right  */
+			if (op1 & 1)
+				cf = 1;
+		} else {	/*  left  */
+			cf = (op1 & ((uint64_t)1 << (mode-1)))? 1 : 0;
+		}
+
 		switch (op) {
 		case 0:	/*  rol  */
-			cf = (op1 & ((uint64_t)1 << (mode-1)))? 1 : 0;
 			op1 = (op1 << 1) | cf;
 			break;
 		case 1:	/*  ror  */
-			if (op1 & 1)
-				cf = 1;
 			op1 >>= 1;
 			op1 |= ((uint64_t)cf << (mode - 1));
 			break;
 		case 2:	/*  rcl  */
-			cf = (op1 & ((uint64_t)1 << (mode-1)))? 1 : 0;
 			op1 = (op1 << 1) | oldcf;
 			oldcf = cf;
 			break;
 		case 3:	/*  rcr  */
-			if (op1 & 1)
-				cf = 1;
 			op1 >>= 1;
 			op1 |= ((uint64_t)oldcf << (mode - 1));
 			oldcf = cf;
 			break;
 		case 4:	/*  shl  */
 		case 6:	/*  sal  */
-			cf = (op1 & ((uint64_t)1 << (mode-1)))? 1 : 0;
 			op1 <<= 1;
 			break;
 		case 5:	/*  shr  */
-			if (op1 & 1)
-				cf = 1;
 			op1 >>= 1;
 			break;
 		case 7:	/*  sar  */
-			if (op1 & 1)
-				cf = 1;
 			op1 >>= 1;
 			if (mode == 8 && op1 & 0x40)
 				op1 |= 0x80;
@@ -2342,12 +2344,7 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 			fatal("x86_shiftrotate(): unimplemented op %i\n", op);
 			cpu->running = 0;
 		}
-		if (mode == 8)
-			op1 &= 0xff;
-		if (mode == 16)
-			op1 &= 0xffff;
-		if (mode == 32)
-			op1 &= 0xffffffffULL;
+		op1 &= (((uint64_t)1 << mode) - 1);
 		x86_calc_flags(cpu, op1, 0, mode, CALCFLAGS_OP_XOR);
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		if (cf)
@@ -3590,16 +3587,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		int n = 1;
 		instr_orig = instr;
 		success = modrm(cpu, MODRM_READ, mode, mode67,
-		    op&1? 0 : MODRM_EIGHTBIT, &instr, &newpc,
-		    &op1, &op2);
+		    op&1? 0 : MODRM_EIGHTBIT, &instr, &newpc, &op1, &op2);
 		if (!success)
 			return 0;
 		n = read_imm(&instr, &newpc, 8);
 		x86_shiftrotate(cpu, &op1, (*instr_orig >> 3) & 0x7,
 		    n, op&1? mode : 8);
 		success = modrm(cpu, MODRM_WRITE_RM, mode, mode67,
-		    op&1? 0 : MODRM_EIGHTBIT, &instr_orig,
-		    NULL, &op1, &op2);
+		    op&1? 0 : MODRM_EIGHTBIT, &instr_orig, NULL, &op1, &op2);
 		if (!success)
 			return 0;
 	} else if (op == 0xc2 || op == 0xc3) {	/*  RET near  */
@@ -3934,9 +3929,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!success)
 				return 0;
 			break;
-		case 4:	/*  mul  */
-			unsigned_op = 0;
 		case 5:	/*  imul  */
+			unsigned_op = 0;
+		case 4:	/*  mul  */
 			success = modrm(cpu, MODRM_READ, mode, mode67,
 			    op == 0xf6? MODRM_EIGHTBIT : 0, &instr,
 			    &newpc, &op1, &op2);
@@ -3988,9 +3983,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					    | X86_FLAGS_OF;
 			}
 			break;
-		case 6:	/*  div  */
-			unsigned_op = 0;
 		case 7:	/*  idiv  */
+			unsigned_op = 0;
+		case 6:	/*  div  */
 			success = modrm(cpu, MODRM_READ, mode, mode67,
 			    op == 0xf6? MODRM_EIGHTBIT : 0, &instr,
 			    &newpc, &op1, &op2);

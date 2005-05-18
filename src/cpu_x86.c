@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.109 2005-05-18 10:07:53 debug Exp $
+ *  $Id: cpu_x86.c,v 1.110 2005-05-18 12:26:21 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -280,7 +280,26 @@ if (cpu->cd.x86.mode == 32) {
 #endif
 	}
 
-	if (PROTECTED_MODE) {
+	if (coprocs != 0) {
+		for (i=0; i<6; i++) {
+			debug("cpu%i: %s=0x%04x (", x, seg_names[i],
+			    cpu->cd.x86.s[i]);
+			if (cpu->cd.x86.descr_cache[i].valid) {
+				debug("base=0x%08x, limit=0x%08x, ",
+				    (int)cpu->cd.x86.descr_cache[i].base,
+				    (int)cpu->cd.x86.descr_cache[i].limit);
+				debug("%s", cpu->cd.x86.descr_cache[i].
+				    descr_type==DESCR_TYPE_CODE?"CODE":"DATA");
+				debug(", %i-bit", cpu->cd.x86.descr_cache[i].
+				    default_op_size);
+				debug(", %s%s", cpu->cd.x86.descr_cache[i].
+				    readable? "R" : "-", cpu->cd.x86.
+				    descr_cache[i].writable? "W" : "-");
+			} else
+				debug("invalid");
+			debug(")\n");
+		}
+	} else if (PROTECTED_MODE) {
 		/*  Protected mode:  */
 		debug("cpu%i:  cs=0x%04x  ds=0x%04x  es=0x%04x  "
 		    "fs=0x%04x  gs=0x%04x  ss=0x%04x\n", x,
@@ -574,7 +593,7 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
  */
 void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 {
-	int res, readable, writable, granularity, descr_type;
+	int res, i, readable, writable, granularity, descr_type;
 	unsigned char descr[8];
 	uint64_t base, limit;
 
@@ -640,10 +659,14 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	limit = descr[0] + (descr[1] << 8) + ((descr[6]&15) << 16);
 	descr_type = readable = writable = granularity = 0;
 
+printf("base = %llx\n",(long long)base);
+for (i=0; i<8; i++)
+	fatal(" %02x", descr[i]);
+
 	if ((descr[5] & 0x18) == 0x18) {
 		descr_type = DESCR_TYPE_CODE;
 		readable = descr[5] & 0x02? 1 : 0;
-		if ((descr[5] & 0x98) != 0x98 || (descr[6] & 0xf0) != 0xc0) {
+		if ((descr[5] & 0x98) != 0x98) {
 			fatal("TODO CODE\n");
 			goto fail_dump;
 		}
@@ -651,7 +674,7 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 		descr_type = DESCR_TYPE_DATA;
 		readable = 1;
 		writable = descr[5] & 0x02? 1 : 0;
-		if ((descr[5] & 0x98) != 0x90 || (descr[6] & 0xf0) != 0xc0) {
+		if ((descr[5] & 0x98) != 0x90) {
 			fatal("TODO DATA\n");
 			goto fail_dump;
 		}
@@ -661,6 +684,8 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	}
 
 	granularity = (descr[6] & 0x80)? 1 : 0;
+	if (granularity)
+		limit = (limit << 12) | 0xfff;
 
 	cpu->cd.x86.descr_cache[segnr].valid = 1;
 	cpu->cd.x86.descr_cache[segnr].default_op_size =
@@ -676,7 +701,8 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	return;
 
 fail_dump:
-	fatal("TODO: fail_dump\n");
+	for (i=0; i<8; i++)
+		fatal(" %02x", descr[i]);
 	cpu->running = 0;
 }
 
@@ -1520,16 +1546,16 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			    imm == 0xac || imm == 0xad) {
 				modrm(cpu, MODRM_READ, mode, mode67,
 				    0, &instr, &ilen, NULL, NULL);
+				if (!(imm & 1))
+					imm2 = read_imm_and_print(&instr,
+					    &ilen, 8);
 				SPACES; debug("sh%sd\t%s,%s,",
 				    imm <= 0xa5? "l" : "r",
 				    modrm_rm, modrm_r);
 				if (imm & 1)
 					debug("cl");
-				else {
-					imm2 = read_imm_and_print(&instr,
-					    &ilen, 8);
+				else
 					debug("%i", imm2);
-				}
 			} else if (imm == 0xa8) {
 				SPACES; debug("push\tgs");
 			} else if (imm == 0xa9) {
@@ -2160,11 +2186,14 @@ static void x86_cpuid(struct cpu *cpu)
 static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 {
 	int res = 1, oldseg;
+	int ssize = cpu->cd.x86.descr_cache[X86_S_SS].default_op_size;
+
+	/*  TODO: up/down?  */
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
-	cpu->cd.x86.r[X86_R_SP] -= (mode / 8);
-	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value, mode / 8);
+	cpu->cd.x86.r[X86_R_SP] -= (ssize / 8);
+	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value, ssize / 8);
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
@@ -2176,11 +2205,14 @@ static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 static int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
 {
 	int res = 1, oldseg;
+	int ssize = cpu->cd.x86.descr_cache[X86_S_SS].default_op_size;
+
+	/*  TODO: up/down?  */
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
-	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep, mode / 8);
-	cpu->cd.x86.r[X86_R_SP] += (mode / 8);
+	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep, ssize / 8);
+	cpu->cd.x86.r[X86_R_SP] += (ssize / 8);
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
@@ -2416,7 +2448,8 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 	int cf = -1, oldcf = 0;
 
 	n &= 31;
-	op1 &= (((uint64_t)1 << mode) - 1);
+	if (mode != 64)
+		op1 &= (((uint64_t)1 << mode) - 1);
 
 	oldcf = cpu->cd.x86.rflags & X86_FLAGS_CF? 1 : 0;
 
@@ -2467,7 +2500,8 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 			fatal("x86_shiftrotate(): unimplemented op %i\n", op);
 			cpu->running = 0;
 		}
-		op1 &= (((uint64_t)1 << mode) - 1);
+		if (mode != 64)
+			op1 &= (((uint64_t)1 << mode) - 1);
 		x86_calc_flags(cpu, op1, 0, mode, CALCFLAGS_OP_XOR);
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		if (cf)
@@ -2615,7 +2649,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		return 0;
 	}
 	mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
-	omode = mode67 = mode;
+	omode = mode;
 	if (mode != 16 && mode != 32 && mode != 64) {
 		fatal("x86_cpu_run_instr(): Invalid CS default op size, %i\n",
 		    mode);
@@ -2681,6 +2715,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  Default is to use the data segment, or the stack segment:  */
 	cpu->cd.x86.cursegment = X86_S_DS;
+	mode67 = mode;
 
 	/*  Any prefix?  */
 	for (;;) {
@@ -2967,7 +3002,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0xa1:
 				if (!x86_pop(cpu, &tmp, mode))
 					return 0;
-				cpu->cd.x86.s[X86_S_FS] = tmp;
+				reload_segment_descriptor(cpu, X86_S_FS, tmp);
 				break;
 			case 0xa2:
 				if (!(cpu->cd.x86.rflags & X86_FLAGS_ID))
@@ -2990,25 +3025,25 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				imm2 &= 31;
 				if (imm <= 0xa5) {	/*  SHLD  */
 					if (mode == 16) {
-						op1 = (op1 << 16) & 0xffff;
+						op1 <<= 16;
 						op1 |= (op2 & 0xffff);
 					} else {
-						op1 = (op1 << 32) & 0xffffffff;
+						op1 <<= 32;
 						op1 |= (op2 & 0xffffffff);
 					}
 					x86_shiftrotate(cpu, &op1, 4, imm2,
-					    mode == 64? 64 : mode * 2);
+					    mode == 64? 64 : (mode * 2));
 					op1 >>= (mode==16? 16 : 32);
 				} else {		/*  SHRD  */
 					if (mode == 16) {
-						op2 = (op2 << 16) & 0xffff;
+						op2 <<= 16;
 						op1 = (op1 & 0xffff) | op2;
 					} else {
-						op2 = (op2 << 32) & 0xffffffff;
+						op2 <<= 32;
 						op1 = (op1 & 0xffffffff) | op2;
 					}
 					x86_shiftrotate(cpu, &op1, 5, imm2,
-					    mode == 64? 64 : mode * 2);
+					    mode == 64? 64 : (mode * 2));
 					op1 &= (mode==16? 0xffff : 0xffffffff);
 				}
 				if (!modrm(cpu, MODRM_WRITE_RM, mode, mode67,
@@ -3023,7 +3058,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0xa9:
 				if (!x86_pop(cpu, &tmp, mode))
 					return 0;
-				cpu->cd.x86.s[X86_S_GS] = tmp;
+				reload_segment_descriptor(cpu, X86_S_GS, tmp);
 				break;
 			case 0xaf:	/*  imul r16/32, rm16/32  */
 				instr_orig = instr;
@@ -3087,14 +3122,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				op2 = tmp;
 				if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
 					return 0;
-				switch (op) {
-				case 0xb2:
-					cpu->cd.x86.s[X86_S_SS] = tmp; break;
-				case 0xb4:
-					cpu->cd.x86.s[X86_S_FS] = tmp; break;
-				case 0xb5:
-					cpu->cd.x86.s[X86_S_GS] = tmp; break;
-				}
+				reload_segment_descriptor(cpu, op==0xb2?
+				    X86_S_SS:(op==0xb4?X86_S_FS:X86_S_GS), tmp);
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;
@@ -3456,9 +3485,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!modrm(cpu, MODRM_READ, 16, mode67, MODRM_SEG,
 		    &instr, &newpc, &op1, &op2))
 			return 0;
-		if (!modrm(cpu, op == 0x8e? MODRM_WRITE_R : MODRM_WRITE_RM,
-		    16, mode67, MODRM_SEG, &instr_orig, NULL, &op2, &op1))
-			return 0;
+		if (op == 0x8c) {
+			if (!modrm(cpu, MODRM_WRITE_RM, 16, mode67, MODRM_SEG,
+			    &instr_orig, NULL, &op2, &op1))
+				return 0;
+		} else {
+			reload_segment_descriptor(cpu, (*instr_orig >> 3) & 7,
+			    op1 & 0xffff);
+		}
 	} else if (op == 0x8d) {			/*  LEA  */
 		instr_orig = instr;
 		modrm(cpu, MODRM_READ, mode, mode67,
@@ -3741,10 +3775,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		op2 = tmp;
 		if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
 			return 0;
-		if (op == 0xc4)
-			cpu->cd.x86.s[X86_S_ES] = tmp;
-		else
-			cpu->cd.x86.s[X86_S_DS] = tmp;
+		reload_segment_descriptor(cpu, op==0xc4? X86_S_ES:X86_S_DS,tmp);
 		modrm(cpu, MODRM_WRITE_R, mode, mode67,
 		    0, &instr_orig, NULL, &op1, &op2);
 	} else if (op >= 0xc6 && op <= 0xc7) {
@@ -4276,8 +4307,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			} else {
 				instr_orig = instr;
 				success = modrm(cpu, MODRM_READ, mode, mode67,
-				    op == 0xfe? MODRM_EIGHTBIT : 0, &instr,
-				    &newpc, &op1, &op2);
+				    0, &instr, &newpc, &op1, &op2);
 				if (!success)
 					return 0;
 				x86_push(cpu, op1, mode);

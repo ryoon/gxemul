@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.1 2005-05-18 10:07:53 debug Exp $
+ *  $Id: memory_x86.c,v 1.2 2005-05-18 12:26:21 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -50,19 +50,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	int selector, res, i;
 	struct descriptor_cache *dc;
 
-	if (cpu->cd.x86.cr[0] & 0x80000000) {
-		fatal("TODO: PAGING not yet supported\n");
+	if (cpu->cd.x86.cursegment < 0 || cpu->cd.x86.cursegment >= 8) {
+		fatal("TODO: Weird x86 segment nr %i\n",
+		    cpu->cd.x86.cursegment);
 		cpu->running = 0;
 		return 0;
-	}
-
-	/*  Real-mode:  */
-	if (!(cpu->cd.x86.cr[0] & X86_CR0_PE)) {
-		/*  TODO: A20 stuff  */
-		vaddr = (cpu->cd.x86.s[cpu->cd.x86.cursegment] << 4)
-		    + (vaddr & 0xffff);
-		*return_addr = vaddr;
-		return 2;
 	}
 
 	if ((vaddr >> 32) == 0xffffffff)
@@ -74,10 +66,19 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	/*  TODO: Check the Privilege Level  */
 
+	vaddr += dc->base;
+
+	/*  TODO: Paging  */
+	if (cpu->cd.x86.cr[0] & X86_CR0_PG) {
+		fatal("TODO: PAGING not yet supported\n");
+		cpu->running = 0;
+		return 0;
+	}
+
 	/*  Code:  */
 	if (flags & FLAG_INSTR) {
 		if (dc->descr_type == DESCR_TYPE_CODE) {
-			*return_addr = (vaddr + dc->base) & 0xffffffffULL;
+			*return_addr = vaddr;
 			return 1;
 		}
 		fatal("TODO instr load but not code descriptor?\n");
@@ -86,16 +87,15 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	/*  We are here on non-instruction fetch.  */
 
-	if (dc->descr_type == DESCR_TYPE_DATA) {
-		if (writeflag == MEM_WRITE && !dc->writable) {
-			fatal("TODO write to nonwritable segment\n");
-			goto fail;
-		}
-		*return_addr = (vaddr + dc->base) & 0xffffffffULL;
-		return 1 + dc->writable;
+	if (writeflag == MEM_WRITE && !dc->writable) {
+		fatal("TODO write to nonwritable segment\n");
+		goto fail;
 	}
+	*return_addr = vaddr;
+	return 1 + dc->writable;
 
 fail:
+	fatal("memory_x86 FAIL: TODO\n");
 	cpu->running = 0;
 	return 0;
 }

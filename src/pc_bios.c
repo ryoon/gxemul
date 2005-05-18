@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.63 2005-05-18 10:07:53 debug Exp $
+ *  $Id: pc_bios.c,v 1.64 2005-05-18 12:26:21 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -354,7 +354,7 @@ static int pc_bios_int8(struct cpu *cpu)
 	cpu->memory_rw(cpu, cpu->mem, 0x1C * 4,
 	    ticks, 4, MEM_READ, CACHE_NONE | PHYSICAL);
 	cpu->pc = ticks[0] + (ticks[1] << 8);
-	cpu->cd.x86.s[X86_S_CS] = ticks[2] + (ticks[3] << 8);
+	reload_segment_descriptor(cpu, X86_S_CS, ticks[2] + (ticks[3] << 8));
 	return 0;
 }
 
@@ -898,6 +898,7 @@ static void pc_bios_int15(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
 		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
 		cpu->cd.x86.s[X86_S_ES] = 0xfffd;
+		reload_segment_descriptor(cpu, X86_S_ES, 0xfffd);
 		break;
 	case 0xc1:	/*  Extended Bios Data-seg (TODO)  */
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
@@ -1118,7 +1119,7 @@ void pc_bios_init(struct cpu *cpu)
 
 	/*  Disk Base Table (11 or 12 bytes?) at F000h:EFC7:  */
 	cpu->cd.x86.cursegment = X86_S_FS;
-	cpu->cd.x86.s[X86_S_FS] = 0xf000;
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
 	store_byte(cpu, 0xefc7 + 0, 0xcf);
 	store_byte(cpu, 0xefc7 + 1, 0xb8);
 	store_byte(cpu, 0xefc7 + 2, 1);		/*  timer ticks till shutoff  */
@@ -1133,7 +1134,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0xefc7 + 11, 1);/*  motor stop time in 1/4 secs  */
 
 	/*  BIOS System Configuration Parameters (8 bytes) at 0xfffd:0:  */
-	cpu->cd.x86.s[X86_S_FS] = 0xfffd;
+	reload_segment_descriptor(cpu, X86_S_FS, 0xfffd);
 	store_byte(cpu, 0, 8); store_byte(cpu, 1, 0);	/*  len  */
 	store_byte(cpu, 2, 0xfc);			/*  model  */
 	store_byte(cpu, 3, 0);				/*  sub-model  */
@@ -1143,7 +1144,7 @@ void pc_bios_init(struct cpu *cpu)
 			int_15-c0.html for details  */
 
 	/*  Some info in the last paragraph of the BIOS:  */
-	cpu->cd.x86.s[X86_S_FS] = 0xffff;
+	reload_segment_descriptor(cpu, X86_S_FS, 0xffff);
 	/*  TODO: current date :-)  */
 	store_byte(cpu, 0x05, '0'); store_byte(cpu, 0x06, '1');
 	store_byte(cpu, 0x07, '/');
@@ -1153,7 +1154,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0x0e, 0xfc);
 
 	/*  Copy the first 128 chars of the 8x8 VGA font into 0xf000:0xfa6e  */
-	cpu->cd.x86.s[X86_S_FS] = 0xf000;
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
 	store_buf(cpu, 0xfa6e, (char *)font8x8, 8*128);
 	store_buf(cpu, 0xfa6e - 1024, (char *)font8x8 + 1024, 8*128);
 
@@ -1167,7 +1168,7 @@ void pc_bios_init(struct cpu *cpu)
 			i = 0x70;
 		if (i == 0x78)
 			break;
-		cpu->cd.x86.s[X86_S_FS] = 0x0000;
+		reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
 		store_16bit_word(cpu, i*4, 0x8000 + i*16);
 		store_16bit_word(cpu, i*4 + 2, 0xf000);
 
@@ -1177,11 +1178,11 @@ void pc_bios_init(struct cpu *cpu)
 		if (i == 0x1f)
 			store_16bit_word(cpu, i*4, 0xfa6e - 1024);
 
-		cpu->cd.x86.s[X86_S_FS] = 0xf000;
+		reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
 		store_byte(cpu, 0x8000 + i*16, 0xCF);	/*  IRET  */
 	}
 
-	cpu->cd.x86.s[X86_S_FS] = 0x0000;
+	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
 
 	/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
 	    for more info.  */
@@ -1322,19 +1323,10 @@ void pc_bios_init(struct cpu *cpu)
 		pc_bios_printstr(cpu, "No disks attached!\n\n", 0x0f);
 
 	/*  Registers passed to the bootsector code:  */
-	for (i=0; i<4; i++) {
-		cpu->cd.x86.descr_cache[i].valid = 1;
-		cpu->cd.x86.descr_cache[i].default_op_size = 16;
-		cpu->cd.x86.descr_cache[i].access_rights = 0x93;
-		cpu->cd.x86.descr_cache[i].descr_type =
-		    i == X86_S_CS? DESCR_TYPE_CODE : DESCR_TYPE_DATA;
-		cpu->cd.x86.descr_cache[i].readable = 1;
-		cpu->cd.x86.descr_cache[i].writable = 1;
-		cpu->cd.x86.descr_cache[i].granularity = 0;
-		cpu->cd.x86.descr_cache[i].base = 0x00000000;
-		cpu->cd.x86.descr_cache[i].limit = 0xffff;
-		cpu->cd.x86.s[i] = 0x0000;
-	}
+	reload_segment_descriptor(cpu, X86_S_CS, 0x0000);
+	reload_segment_descriptor(cpu, X86_S_DS, 0x0000);
+	reload_segment_descriptor(cpu, X86_S_ES, 0x0000);
+	reload_segment_descriptor(cpu, X86_S_SS, 0x0000);
 
 	cpu->cd.x86.r[X86_R_AX] = 0xaa55;
 	cpu->cd.x86.r[X86_R_CX] = 0x0001;

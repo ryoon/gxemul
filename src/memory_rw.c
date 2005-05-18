@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.26 2005-05-18 12:26:21 debug Exp $
+ *  $Id: memory_rw.c,v 1.27 2005-05-18 13:31:28 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -91,7 +91,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	if (REAL_MODE && !(cache_flags & PHYSICAL)) {
 		if ((vaddr & 0xffff) + len > 0x10000) {
 			/*  Do one byte at a time:  */
-			int res, i;
+			int res = 0, i;
 			for (i=0; i<len; i++)
 				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
 				    writeflag, cache_flags);
@@ -104,7 +104,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	    (1 << BITS_PER_MEMBLOCK)) {
 fatal("TODO: x86 memblock cross\n");
 		/*  Do one byte at a time:  */
-		int res, i;
+		int res = 0, i;
 		for (i=0; i<len; i++) {
 			res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
 			    writeflag, cache_flags);

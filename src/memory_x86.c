@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.2 2005-05-18 12:26:21 debug Exp $
+ *  $Id: memory_x86.c,v 1.3 2005-05-18 13:31:28 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -46,8 +46,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
-	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
-	int selector, res, i;
+	/*  int no_exceptions = flags & FLAG_NOEXCEPTIONS;  */
 	struct descriptor_cache *dc;
 
 	if (cpu->cd.x86.cursegment < 0 || cpu->cd.x86.cursegment >= 8) {

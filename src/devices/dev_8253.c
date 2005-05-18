@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.1 2005-05-16 02:15:52 debug Exp $
+ *  $Id: dev_8253.c,v 1.2 2005-05-18 13:31:29 debug Exp $
  *  
  *  8253/8254 Programmable Interval Timer.
  *
@@ -120,7 +120,6 @@ int dev_8253_access(struct cpu *cpu, struct memory *mem,
  */
 int devinit_8253(struct devinit *devinit)
 {
-	char *name2;
 	struct pit8253_data *d = malloc(sizeof(struct pit8253_data));
 
 	if (d == NULL) {

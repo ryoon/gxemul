@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.111 2005-05-18 12:44:56 debug Exp $
+ *  $Id: cpu_x86.c,v 1.112 2005-05-18 13:31:27 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -494,8 +494,24 @@ void x86_cpu_register_match(struct machine *m, char *name,
 			((old) & ~0xffff) + ((new) & 0xffff)	\
 		) : ((new) & 0xffffffffULL) )
 
-#define	HEXPRINT(x,n) { int j; for (j=0; j<(n); j++) debug("%02x",(x)[j]); }
-#define	HEXSPACES(i) { int j; j = i>10? 10:i; while (j++<10) debug("  "); \
+/******************************************************************************
+ *
+ *  Haha, this triggers a bug with at least "gcc version 3.2.2 20030222 (Red
+ *  Hat Linux 3.2.2-5)" when compiling with -O3. If the volatile keyword isn't
+ *  used, the call to debug() is sometimes randomly ignored. For example,
+ *
+ *  #define HEXPRINT(x,n) { int j; debug("{n=%i:",(n)); for (j=0; 
+ *	j<(n); j++) debug("[%02x]",(x)[j]); debug("}"); }
+ *
+ *  sometimes prints "{n=1:[a8]}" etc, but sometimes just "{n=1:}".
+ *
+ *  :-)
+ *
+ *****************************************************************************/
+
+#define	HEXPRINT(x,n) { volatile int j; for (j=0; j<(n); j++) \
+	debug("%02x",(x)[j]); }
+#define	HEXSPACES(i) { int j; j = (i)>10? 10:(i); while (j++<10) debug("  "); \
 	debug(" "); }
 #define	SPACES	HEXSPACES(ilen)
 
@@ -1551,6 +1567,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				if (!(imm & 1))
 					imm2 = read_imm_and_print(&instr,
 					    &ilen, 8);
+				else
+					imm2 = 0;
 				SPACES; debug("sh%sd\t%s,%s,",
 				    imm <= 0xa5? "l" : "r",
 				    modrm_rm, modrm_r);
@@ -4229,7 +4247,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
-				uint64_t tmp1, tmp2;
 				success = modrm(cpu, MODRM_READ, mode, mode67,
 				    0, &instr, &newpc, &op1, &op2);
 				if (!success)

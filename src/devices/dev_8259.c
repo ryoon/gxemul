@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.3 2005-05-16 04:58:09 debug Exp $
+ *  $Id: dev_8259.c,v 1.4 2005-05-18 13:31:29 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -175,7 +175,6 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
  */
 int devinit_8259(struct devinit *devinit)
 {
-	char *name2;
 	struct pic8259_data *d = malloc(sizeof(struct pic8259_data));
 
 	if (d == NULL) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.65 2005-05-18 12:44:56 debug Exp $
+ *  $Id: pc_bios.c,v 1.66 2005-05-18 13:31:28 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -857,6 +857,10 @@ static void pc_bios_int15(struct cpu *cpu)
 		fatal("[ PC BIOS int 0x15,0x53: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
+	case 0x86:	/*  Wait  */
+		/*  No. :-)  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		break;
 	case 0x87:	/*  Move to/from extended memory, via a GDT  */
 		cpu->cd.x86.cursegment = X86_S_ES;
 		cpu->memory_rw(cpu, cpu->mem, si + 0x10, src_entry, 8,
@@ -1030,7 +1034,6 @@ static void pc_bios_int1a(struct cpu *cpu)
 {
 	unsigned char ticks[4];
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
-	uint64_t x;
 	time_t tim;
 	struct tm *tm;
 

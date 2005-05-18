@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.108 2005-05-17 06:44:23 debug Exp $
+ *  $Id: cpu_x86.c,v 1.109 2005-05-18 10:07:53 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -136,25 +136,36 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->running            = 0;
 
 	cpu->cd.x86.model = models[i];
-	cpu->cd.x86.bits = 32;
 
-	/*  TODO: How should this be solved nicely? ELFs are 32- (or 64-)bit,
-	    so setting 16 as the default here causes them to not load
-	    correctly.  */
-	cpu->cd.x86.mode = 32;
-
-	if (!machine->prom_emulation) {
-		cpu->cd.x86.mode = 16;
-		cpu->cd.x86.s[X86_S_CS] = 0xf000;
-		cpu->pc = 0xfff0;
+	switch (cpu->cd.x86.model.model_number) {
+	case X86_MODEL_8086:
+		cpu->cd.x86.bits = 16;
+		break;
+	case X86_MODEL_AMD64:
+		cpu->cd.x86.bits = 64;
+		break;
+	default:
+		cpu->cd.x86.bits = 32;
 	}
 
-	if (cpu->cd.x86.model.model_number == X86_MODEL_AMD64)
-		cpu->cd.x86.bits = 64;
+	/*  Initial startup is in 16-bit real mode:  */
+	cpu->pc = 0xfff0;
 
-	cpu->cd.x86.r[X86_R_SP] = 0x0ff0;
+	/*  Initial segments:  */
+	cpu->cd.x86.descr_cache[X86_S_CS].valid = 1;
+	cpu->cd.x86.descr_cache[X86_S_CS].default_op_size = 16;
+	cpu->cd.x86.descr_cache[X86_S_CS].access_rights = 0x93;
+	cpu->cd.x86.descr_cache[X86_S_CS].base = 0xf0000; /* ffff0000  */
+	cpu->cd.x86.descr_cache[X86_S_CS].limit = 0xffff;
+	cpu->cd.x86.descr_cache[X86_S_CS].descr_type = DESCR_TYPE_CODE;
+	cpu->cd.x86.descr_cache[X86_S_CS].readable = 1;
+	cpu->cd.x86.descr_cache[X86_S_CS].writable = 1;
+	cpu->cd.x86.descr_cache[X86_S_CS].granularity = 0;
+	cpu->cd.x86.s[X86_S_CS] = 0xf000;
+
+	cpu->translate_address = translate_address_x86;
+
 	cpu->cd.x86.rflags = 0x0002;
-
 	if (cpu->cd.x86.model.model_number == X86_MODEL_8086)
 		cpu->cd.x86.rflags |= 0xf000;
 
@@ -173,7 +184,7 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 void x86_cpu_dumpinfo(struct cpu *cpu)
 {
 	debug(" (%i-bit)", cpu->cd.x86.bits);
-	debug(", currently in %i-bit mode", cpu->cd.x86.mode);
+	debug(", currently in %s mode", PROTECTED_MODE? "protected" : "real");
 	debug("\n");
 }
 
@@ -211,7 +222,8 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	uint64_t offset;
 	int i, x = cpu->cpu_id;
 
-	if (cpu->cd.x86.mode == 16) {
+	if (REAL_MODE) {
+		/*  Real-mode:  */
 		debug("cpu%i:  cs:ip = 0x%04x:0x%04x\n", x,
 		    cpu->cd.x86.s[X86_S_CS], (int)cpu->pc);
 
@@ -228,7 +240,10 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    "= 0x%04x\n", x,
 		    (int)cpu->cd.x86.s[X86_S_DS], (int)cpu->cd.x86.s[X86_S_ES],
 		    (int)cpu->cd.x86.s[X86_S_SS], (int)cpu->cd.x86.rflags);
-	} else if (cpu->cd.x86.mode == 32) {
+	} else {
+#if 0
+if (cpu->cd.x86.mode == 32) {
+#endif
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
@@ -244,6 +259,7 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    "0x%08x\n", x,
 		    (int)cpu->cd.x86.r[X86_R_SI], (int)cpu->cd.x86.r[X86_R_DI],
 		    (int)cpu->cd.x86.r[X86_R_BP], (int)cpu->cd.x86.r[X86_R_SP]);
+#if 0
 	} else {
 		/*  64-bit  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
@@ -261,9 +277,11 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i & 1) == 1)
 				debug("\n");
 		}
+#endif
 	}
 
-	if (cpu->cd.x86.mode >= 32) {
+	if (PROTECTED_MODE) {
+		/*  Protected mode:  */
 		debug("cpu%i:  cs=0x%04x  ds=0x%04x  es=0x%04x  "
 		    "fs=0x%04x  gs=0x%04x  ss=0x%04x\n", x,
 		    (int)cpu->cd.x86.s[X86_S_CS], (int)cpu->cd.x86.s[X86_S_DS],
@@ -274,12 +292,13 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (long long)cpu->cd.x86.idtr, (int)cpu->cd.x86.idtr_limit);
 	}
 
-	if (cpu->cd.x86.mode == 32) {
+	if (PROTECTED_MODE) {
+		/*  Protected mode:  */
 		debug("cpu%i:  cr0 = 0x%08x  cr3 = 0x%08x  eflags = 0x%08x\n",
 		    x, (int)cpu->cd.x86.cr[0],
 		    (int)cpu->cd.x86.cr[3], (int)cpu->cd.x86.rflags);
 	}
-
+#if 0
 	if (cpu->cd.x86.mode == 64) {
 		debug("cpu%i:  cr0 = 0x%016llx  cr3 = 0x%016llx\n", x,
 		    "0x%016llx\n", x, (long long)cpu->cd.x86.cr[0], (long long)
@@ -287,6 +306,7 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("cpu%i:  rflags = 0x%016llx\n", x,
 		    (long long)cpu->cd.x86.rflags);
 	}
+#endif
 }
 
 
@@ -502,13 +522,11 @@ static uint32_t read_imm(unsigned char **instrp, uint64_t *newpcp,
 
 static void print_csip(struct cpu *cpu)
 {
-	if (cpu->cd.x86.mode < 64)
-		fatal("0x%04x:", cpu->cd.x86.s[X86_S_CS]);
-	switch (cpu->cd.x86.mode) {
-	case 16: fatal("0x%04x", (int)cpu->pc); break;
-	case 32: fatal("0x%08x", (int)cpu->pc); break;
-	case 64: fatal("0x%016llx", (long long)cpu->pc); break;
-	}
+	fatal("0x%04x:", cpu->cd.x86.s[X86_S_CS]);
+	if (PROTECTED_MODE)
+		fatal("0x%llx", (long long)cpu->pc);
+	else
+		fatal("0x%04x", (int)cpu->pc);
 }
 
 
@@ -545,6 +563,121 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
 	}
 
         return 1;
+}
+
+
+/*
+ *  reload_segment_descriptor():
+ *
+ *  Loads base, limit and other settings from the Global Descriptor Table into
+ *  segment descriptors.
+ */
+void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
+{
+	int res, readable, writable, granularity, descr_type;
+	unsigned char descr[8];
+	uint64_t base, limit;
+
+	if (segnr < 0 || segnr >= N_X86_SEGS) {
+		fatal("reload_segment_descriptor(): segnr = %i\n", segnr);
+		exit(1);
+	}
+
+	if (REAL_MODE) {
+		/*  Real mode:  */
+		cpu->cd.x86.descr_cache[segnr].valid = 1;
+		cpu->cd.x86.descr_cache[segnr].default_op_size = 16;
+		cpu->cd.x86.descr_cache[segnr].access_rights = 0x93;
+		cpu->cd.x86.descr_cache[segnr].descr_type =
+		    segnr == X86_S_CS? DESCR_TYPE_CODE : DESCR_TYPE_DATA;
+		cpu->cd.x86.descr_cache[segnr].readable = 1;
+		cpu->cd.x86.descr_cache[segnr].writable = 1;
+		cpu->cd.x86.descr_cache[segnr].granularity = 0;
+		cpu->cd.x86.descr_cache[segnr].base = selector << 4;
+		cpu->cd.x86.descr_cache[segnr].limit = 0xffff;
+		cpu->cd.x86.s[segnr] = selector;
+		return;
+	}
+
+	/*
+	 *  Protected mode:  Load the descriptor cache from the GDT.
+	 */
+
+	/*  Special case: Null-descriptor:  */
+	if ((selector & ~7) == 0) {
+		cpu->cd.x86.descr_cache[segnr].valid = 0;
+		cpu->cd.x86.s[segnr] = selector;
+		return;
+	}
+
+	if (selector & 7) {
+		fatal("TODO: x86 translation with lowest segment selector"
+		    " bits non-zero\n");
+		cpu->running = 0;
+		return;
+	}
+
+	selector &= ~7;
+
+	if (selector >= cpu->cd.x86.gdtr_limit) {
+		fatal("TODO: selector 0x%04x outside GDT limit (0x%04x)\n",
+		    selector, (int)cpu->cd.x86.gdtr_limit);
+		cpu->running = 0;
+		return;
+	}
+
+	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.gdtr + selector,
+	    descr, sizeof(descr), MEM_READ, PHYSICAL);
+	if (!res) {
+		fatal("reload_segment_descriptor(): TODO: "
+		    "could not read the GDT\n");
+		cpu->running = 0;
+		return;
+	}
+
+	base = descr[2] + (descr[3] << 8) + (descr[4] << 16) +
+	    (descr[7] << 24);
+	limit = descr[0] + (descr[1] << 8) + ((descr[6]&15) << 16);
+	descr_type = readable = writable = granularity = 0;
+
+	if ((descr[5] & 0x18) == 0x18) {
+		descr_type = DESCR_TYPE_CODE;
+		readable = descr[5] & 0x02? 1 : 0;
+		if ((descr[5] & 0x98) != 0x98 || (descr[6] & 0xf0) != 0xc0) {
+			fatal("TODO CODE\n");
+			goto fail_dump;
+		}
+	} else if ((descr[5] & 0x18) == 0x10) {
+		descr_type = DESCR_TYPE_DATA;
+		readable = 1;
+		writable = descr[5] & 0x02? 1 : 0;
+		if ((descr[5] & 0x98) != 0x90 || (descr[6] & 0xf0) != 0xc0) {
+			fatal("TODO DATA\n");
+			goto fail_dump;
+		}
+	} else {
+		fatal("TODO: other\n");
+		goto fail_dump;
+	}
+
+	granularity = (descr[6] & 0x80)? 1 : 0;
+
+	cpu->cd.x86.descr_cache[segnr].valid = 1;
+	cpu->cd.x86.descr_cache[segnr].default_op_size =
+	    (descr[6] & 0x40)? 32 : 16;
+	cpu->cd.x86.descr_cache[segnr].access_rights = descr[5];
+	cpu->cd.x86.descr_cache[segnr].descr_type = descr_type;
+	cpu->cd.x86.descr_cache[segnr].readable = readable;
+	cpu->cd.x86.descr_cache[segnr].writable = writable;
+	cpu->cd.x86.descr_cache[segnr].granularity = granularity;
+	cpu->cd.x86.descr_cache[segnr].base = base;
+	cpu->cd.x86.descr_cache[segnr].limit = limit;
+	cpu->cd.x86.s[segnr] = selector;
+	return;
+
+fail_dump:
+	fatal("TODO: fail_dump\n");
+	cpu->running = 0;
 }
 
 
@@ -627,10 +760,8 @@ static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
 		if ((old & 1) != (new & 1)) {
 			if (new & 1) {
 				debug("[ switching to Protected Mode ]\n");
-				cpu->cd.x86.delayed_mode_change = 2;
 			} else {
 				debug("[ switching from Protected Mode ]\n");
-				cpu->cd.x86.delayed_mode_change = 2;
 			}
 		}
 		break;
@@ -806,14 +937,12 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				case 2:	addr = cpu->cd.x86.r[X86_R_BP] +
 					    cpu->cd.x86.r[X86_R_SI];
 					if (!cpu->cd.x86.seg_override)
-						cpu->cd.x86.cursegment =
-						    cpu->cd.x86.s[X86_S_SS];
+						cpu->cd.x86.cursegment=X86_S_SS;
 					break;
 				case 3:	addr = cpu->cd.x86.r[X86_R_BP] +
 					    cpu->cd.x86.r[X86_R_DI];
 					if (!cpu->cd.x86.seg_override)
-						cpu->cd.x86.cursegment =
-						    cpu->cd.x86.s[X86_S_SS];
+						cpu->cd.x86.cursegment=X86_S_SS;
 					break;
 				case 4:	addr = cpu->cd.x86.r[X86_R_SI]; break;
 				case 5:	addr = cpu->cd.x86.r[X86_R_DI]; break;
@@ -948,14 +1077,12 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				case 2:	addr += cpu->cd.x86.r[X86_R_BP]
 					    + cpu->cd.x86.r[X86_R_SI];
 					if (!cpu->cd.x86.seg_override)
-						cpu->cd.x86.cursegment =
-						    cpu->cd.x86.s[X86_S_SS];
+						cpu->cd.x86.cursegment=X86_S_SS;
 					break;
 				case 3:	addr += cpu->cd.x86.r[X86_R_BP]
 					    + cpu->cd.x86.r[X86_R_DI];
 					if (!cpu->cd.x86.seg_override)
-						cpu->cd.x86.cursegment =
-						    cpu->cd.x86.s[X86_S_SS];
+						cpu->cd.x86.cursegment=X86_S_SS;
 					break;
 				case 4:	addr += cpu->cd.x86.r[X86_R_SI];
 					break;
@@ -963,8 +1090,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					break;
 				case 6:	addr += cpu->cd.x86.r[X86_R_BP];
 					if (!cpu->cd.x86.seg_override)
-						cpu->cd.x86.cursegment =
-						    cpu->cd.x86.s[X86_S_SS];
+						cpu->cd.x86.cursegment=X86_S_SS;
 					break;
 				case 7:	addr += cpu->cd.x86.r[X86_R_BX];
 					break;
@@ -1125,11 +1251,13 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->pc should be the address of the instruction.
+ *  If running&1 is 1, cpu->pc should be the address of the instruction.
  *
- *  If running is 0, things that depend on the runtime environment (eg.
+ *  If running&1 is 0, things that depend on the runtime environment (eg.
  *  register contents) will not be shown, and addr will be used instead of
  *  cpu->pc for relative addresses.
+ *
+ *  The rest of running tells us the default (code) operand size.
  */
 int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
@@ -1137,13 +1265,18 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int op, rep = 0, lock = 0, n_prefix_bytes = 0;
 	uint64_t ilen = 0, offset;
 	uint32_t imm=0, imm2;
-	int mode = cpu->cd.x86.mode;
+	int mode = running & ~1;
 	int mode67 = mode;
 	char *symbol, *tmp = "ERROR", *mnem = "ERROR", *e = "e",
 	    *prefix = NULL;
 
 	if (running)
 		dumpaddr = cpu->pc;
+
+	if (mode == 0) {
+		fatal("x86_cpu_disassemble_instr(): no mode: TODO\n");
+		return 1;
+	}
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    dumpaddr, &offset);
@@ -2009,6 +2142,11 @@ static void x86_cpuid(struct cpu *cpu)
 }
 
 
+#define	TRANSLATE_ADDRESS       translate_address_x86
+#include "memory_x86.c"
+#undef TRANSLATE_ADDRESS
+
+
 #define MEMORY_RW	x86_memory_rw
 #define MEM_X86
 #include "memory_rw.c"
@@ -2024,7 +2162,7 @@ static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 	int res = 1, oldseg;
 
 	oldseg = cpu->cd.x86.cursegment;
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+	cpu->cd.x86.cursegment = X86_S_SS;
 	cpu->cd.x86.r[X86_R_SP] -= (mode / 8);
 	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value, mode / 8);
 	cpu->cd.x86.cursegment = oldseg;
@@ -2040,37 +2178,11 @@ static int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
 	int res = 1, oldseg;
 
 	oldseg = cpu->cd.x86.cursegment;
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+	cpu->cd.x86.cursegment = X86_S_SS;
 	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep, mode / 8);
 	cpu->cd.x86.r[X86_R_SP] += (mode / 8);
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
-}
-
-
-/*
- *  potential_mode_change():
- */
-static void potential_mode_change(struct cpu *cpu)
-{
-	/*
-	 *  Switching between real and protected mode only takes
-	 *  effect after an inter-segment jump? Or after a pipe-line
-	 *  flush of some kind.
-	 *
-	 *  TODO: Fix this.
-	 */
-	if (cpu->cd.x86.delayed_mode_change) {
-
-fatal("TODO: mode change\n");
-cpu->running = 0;
-
-		/*  From real mode to protected mode:  */
-		if ((cpu->cd.x86.cr[0] & 1) == 1) {
-			cpu->cd.x86.delayed_mode_change = 0;
-			cpu->cd.x86.mode = 32;
-		}
-	}
 }
 
 
@@ -2082,20 +2194,30 @@ cpu->running = 0;
 static int x86_software_interrupt(struct cpu *cpu, int nr)
 {
 	uint64_t seg, ofs;
+	int res;
+	unsigned char buf[4];
 	const int len = sizeof(uint16_t);
 
-	if (cpu->cd.x86.mode != 16) {
-		fatal("x86 'int' only implemented for 16-bit so far\n");
+	if (PROTECTED_MODE) {
+		fatal("x86 'int' only implemented for real mode so far\n");
 		cpu->running = 0;
 	}
 
-	/*  Read the interrupt vector from beginning of RAM:  */
-	cpu->cd.x86.cursegment = 0;
-	x86_load(cpu, nr * 4 + 0, &ofs, sizeof(uint16_t));
-	x86_load(cpu, nr * 4 + 2, &seg, sizeof(uint16_t));
+	/*  Read the interrupt vector:  */
+	/*  TODO: check the idtr_limit  */
+	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.idtr + nr*4, buf, 4,
+	    MEM_READ, PHYSICAL);
+	if (!res) {
+		fatal("x86_software_interrupt(): could not read the"
+		    " interrupt descriptor table\n");
+		cpu->running = 0;
+		return 0;
+	}
+	ofs = buf[0] + (buf[1] << 8);
+	seg = buf[2] + (buf[3] << 8);
 
 	/*  Push flags, cs, and ip (pc):  */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+	cpu->cd.x86.cursegment = X86_S_SS;
 	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 1,
 	    cpu->cd.x86.rflags, len) != MEMORY_ACCESS_OK)
 		fatal("x86_software_interrupt(): TODO: how to handle this\n");
@@ -2111,7 +2233,7 @@ static int x86_software_interrupt(struct cpu *cpu, int nr)
 
 	/*  TODO: clear the Interrupt Flag?  */
 
-	cpu->cd.x86.s[X86_S_CS] = seg;
+	reload_segment_descriptor(cpu, X86_S_CS, seg);
 	cpu->pc = ofs;
 
 	return 1;
@@ -2369,8 +2491,9 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
  */
 static int cause_interrupt(struct cpu *cpu)
 {
-	int i, irq_nr = -1;
+	int i, irq_nr = -1, res;
 	uint64_t seg, ofs;
+	unsigned char buf[8];
 
 	for (i=0; i<8; i++) {
 		if (cpu->machine->md.pc.pic1->irr &
@@ -2423,16 +2546,23 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 	 *  table needs to be used.
 	 */
 
-	if (cpu->cd.x86.mode != 16) {
-		fatal("Interrupts in non-16-bit-modes not yet implemented\n");
+	if (PROTECTED_MODE) {
+		fatal("Interrupts in protected mode not yet implemented\n");
 		cpu->running = 0;
 		return 1;
 	}
 
 	/*  Figure out where to jump to:  */
-	cpu->cd.x86.cursegment = 0;
-	x86_load(cpu, irq_nr * 4, &ofs, 2);
-	x86_load(cpu, irq_nr * 4 + 2, &seg, 2);
+	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.idtr + irq_nr*4, buf, 4,
+	    MEM_READ, PHYSICAL);
+	if (!res) {
+		fatal("cause_interrupt(): could not read the"
+		    " interrupt descriptor table\n");
+		cpu->running = 0;
+		return 0;
+	}
+	ofs = buf[0] + (buf[1] << 8);
+	seg = buf[2] + (buf[3] << 8);
 
 	/*  Push flags, CS, and return IP:  */
 	x86_push(cpu, cpu->cd.x86.rflags, 16);
@@ -2440,8 +2570,8 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 	x86_push(cpu, cpu->pc, 16);
 
 	/*  Clear the interrupt flag, and jump to the interrupt handler:  */
+	reload_segment_descriptor(cpu, X86_S_CS, seg);
 	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
-	cpu->cd.x86.s[X86_S_CS] = seg;
 	cpu->pc = ofs;
 
 	cpu->cd.x86.halted = 0;
@@ -2460,8 +2590,8 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
  */
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
-	int i, r, rep = 0, op, len, mode = cpu->cd.x86.mode;
-	int mode67 = mode, nprefixbytes = 0, success;
+	int i, r, rep = 0, op, len, mode, omode, mode67;
+	int nprefixbytes = 0, success;
 	uint32_t imm, imm2;
 	unsigned char buf[16];
 	unsigned char *instr = buf, *instr_orig, *really_orig_instr;
@@ -2479,6 +2609,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			}
 
+	if (!cpu->cd.x86.descr_cache[X86_S_CS].valid) {
+		fatal("x86_cpu_run_instr(): Invalid CS descriptor?\n");
+		cpu->running = 0;
+		return 0;
+	}
+	mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
+	omode = mode67 = mode;
+	if (mode != 16 && mode != 32 && mode != 64) {
+		fatal("x86_cpu_run_instr(): Invalid CS default op size, %i\n",
+		    mode);
+		cpu->running = 0;
+		return 0;
+	}
+
 	if (cpu->cd.x86.interrupt_asserted &&
 	    cpu->cd.x86.rflags & X86_FLAGS_IF) {
 		if (cause_interrupt(cpu))
@@ -2489,12 +2633,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	if (mode == 16 && ((newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xff000)
 	    == 0xf8000 && cpu->machine->prom_emulation) {
 		int addr = (newpc + (cpu->cd.x86.s[X86_S_CS] << 4)) & 0xfff;
-		/*  if (cpu->machine->instruction_trace)
+		if (cpu->machine->instruction_trace)
 			debug("(PC BIOS emulation, int 0x%02x)\n",
-			    addr >> 4);  */
+			    addr >> 4);
 		pc_bios_emul(cpu);
-		/*  Approximately equivalent to 1000 instructions.  */
-		return 1000;
+		/*  Approximately equivalent to 500 instructions.  */
+		return 500;
 	}
 
 	if (cpu->cd.x86.halted) {
@@ -2502,34 +2646,28 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("[ Halting with interrupts disabled. ]\n");
 			cpu->running = 0;
 		}
-		return 1;
+		/*  Treating this as more than one instruction makes us
+		    wait less for devices.  */
+		return 1000;
 	}
 
 	/*  Read an instruction from memory:  */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_CS];
+	cpu->cd.x86.cursegment = X86_S_CS;
 	cpu->cd.x86.seg_override = 0;
 
 	r = cpu->memory_rw(cpu, cpu->mem, cpu->pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION);
-	if (!r)
+	if (!r) {
+		fatal("x86_cpu_run_instr(): could not read instr. TODO\n");
+		cpu->running = 0;
 		return 0;
-
-	if (cpu->cd.x86.delayed_mode_change) {
-		/*  From protected mode to real mode:  */
-		if ((cpu->cd.x86.cr[0] & 1) == 0) {
-			cpu->cd.x86.delayed_mode_change = 0;
-			mode = mode67 = cpu->cd.x86.mode = 16;
-		}
-
-		/*  From real to protected mode only occurs on a
-		    far JMP or CALL. (TODO: is this correct?)  */
 	}
 
 	really_orig_instr = instr;	/*  Used to display an error message
 					    for unimplemented instructions.  */
 
 	if (cpu->machine->instruction_trace)
-		x86_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
+		x86_cpu_disassemble_instr(cpu, instr, 1 | omode, 0, 0);
 
 	/*  For debugging:  */
 	if (instr[0] == 0 && instr[1] == 0 && instr[2] == 0 && instr[3] == 0) {
@@ -2542,7 +2680,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	newpc ++;
 
 	/*  Default is to use the data segment, or the stack segment:  */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_DS];
+	cpu->cd.x86.cursegment = X86_S_DS;
 
 	/*  Any prefix?  */
 	for (;;) {
@@ -2557,22 +2695,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			else
 				mode67 = 16;
 		} else if (instr[0] == 0x26) {
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+			cpu->cd.x86.cursegment = X86_S_ES;
 			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x2e) {
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_CS];
+			cpu->cd.x86.cursegment = X86_S_CS;
 			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x36) {
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+			cpu->cd.x86.cursegment = X86_S_SS;
 			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x3e) {
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_DS];
+			cpu->cd.x86.cursegment = X86_S_DS;
 			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x64) {
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_FS];
+			cpu->cd.x86.cursegment = X86_S_FS;
 			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0x65) {
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_GS];
+			cpu->cd.x86.cursegment = X86_S_GS;
 			cpu->cd.x86.seg_override = 1;
 		} else if (instr[0] == 0xf0) {
 			/*  lock  */
@@ -2713,7 +2851,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		fatal("WARNING: pop cs\n");
 		if (!x86_pop(cpu, &tmp, mode))
 			return 0;
-		cpu->cd.x86.s[X86_S_CS] = tmp;
+		reload_segment_descriptor(cpu, X86_S_CS, tmp);
 	} else if (op == 0x0f) {
 		uint64_t tmp;
 		int signflag, i;
@@ -2722,11 +2860,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			op = imm;
 			imm = read_imm(&instr, &newpc, mode);
 			success = x86_condition(cpu, op);
-			if (success) {
-				newpc = modify(newpc, newpc + imm);
-				if (mode == 16)
-					newpc &= 0xffff;
-			}
+			if (success)
+				newpc += imm;
 		} else if (imm >= 0x90 && imm <= 0x9f) {
 			instr_orig = instr;
 			if (!modrm(cpu, MODRM_READ, mode, mode67,
@@ -2793,7 +2928,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					} else {
 						/*  lmsw cannot be used to
 						    clear bit 0:  */
-						op1 |= (cpu->cd.x86.cr[0] & 1);
+						op1 |= (cpu->cd.x86.cr[0] &
+						    X86_CR0_PE);
 						x86_write_cr(cpu, 0,
 						    (cpu->cd.x86.cr[0] & ~0xf)
 						    | (op1 & 0xf));
@@ -2803,7 +2939,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					    ",0x%02x,0x%02x", op, imm, *instr);
 					quiet_mode = 0;
 					x86_cpu_disassemble_instr(cpu,
-					    really_orig_instr, 1, 0, 0);
+					    really_orig_instr, 1 | omode, 0, 0);
 					cpu->running = 0;
 				}
 				break;
@@ -3008,7 +3144,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					    ",0x%02x,0x%02x", op, imm, *instr);
 					quiet_mode = 0;
 					x86_cpu_disassemble_instr(cpu,
-					    really_orig_instr, 1, 0, 0);
+					    really_orig_instr, 1|omode, 0, 0);
 					cpu->running = 0;
 				}
 				break;
@@ -3042,7 +3178,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			default:fatal("TODO: 0x0f,0x%02x\n", imm);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
-				    really_orig_instr, 1, 0, 0);
+				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			}
 		}
@@ -3051,7 +3187,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		success = x86_pop(cpu, &tmp, mode);
 		if (!success)
 			return 0;
-		cpu->cd.x86.s[op / 8] = tmp;
+		reload_segment_descriptor(cpu, op/8, tmp);
 	} else if (op == 0x27) {			/*  DAA  */
 		int a = (cpu->cd.x86.r[X86_R_AX] >> 4) & 0xf;
 		int b = cpu->cd.x86.r[X86_R_AX] & 0xf;
@@ -3343,7 +3479,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
-			    really_orig_instr, 1, 0, 0);
+			    really_orig_instr, 1|omode, 0, 0);
 			cpu->running = 0;
 		}
 	} else if (op == 0x90) {		/*  NOP  */
@@ -3387,10 +3523,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		if (!x86_push(cpu, newpc, mode))
 			return 0;
-		cpu->cd.x86.s[X86_S_CS] = imm2;
+		reload_segment_descriptor(cpu, X86_S_CS, imm2);
 		newpc = imm;
-		if (mode == 16)
-			newpc &= 0xffff;
 	} else if (op == 0x9c) {		/*  PUSHF  */
 		if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
 			return 0;
@@ -3504,15 +3638,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 			if (stos || movs) {
-				cpu->cd.x86.cursegment = cpu->cd.x86.s[
-				    X86_S_ES];
+				cpu->cd.x86.cursegment = X86_S_ES;
 				if (!x86_store(cpu, cpu->cd.x86.r[X86_R_DI],
 				    value, len))
 					return 0;
 			}
 			if (cmps || scas) {
-				cpu->cd.x86.cursegment = cpu->cd.x86.s[
-				    X86_S_ES];
+				cpu->cd.x86.cursegment = X86_S_ES;
 				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_DI],
 				    &tmp, len))
 					return 0;
@@ -3599,8 +3731,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    X86_R_SP], cpu->cd.x86.r[X86_R_SP] + imm);
 		}
 		newpc = popped_pc;
-		if (mode == 16)
-			newpc &= 0xffff;
 	} else if (op == 0xc4 || op == 0xc5) {		/*  LDS,LES  */
 		instr_orig = instr;
 		modrm(cpu, MODRM_READ, mode, mode67,
@@ -3637,7 +3767,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
-			    really_orig_instr, 1, 0, 0);
+			    really_orig_instr, 1|omode, 0, 0);
 			cpu->running = 0;
 		}
 	} else if (op == 0xc8) {	/*  ENTER  */
@@ -3654,8 +3784,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.x86.r[X86_R_BP] = modify(
 				    cpu->cd.x86.r[X86_R_BP],
 				    cpu->cd.x86.r[X86_R_BP] - mode/8);
-				cpu->cd.x86.cursegment =
-				    cpu->cd.x86.s[X86_S_SS];
+				cpu->cd.x86.cursegment = X86_S_SS;
 				x86_load(cpu, cpu->cd.x86.r[X86_R_BP], 
 				    &tmpword, mode/8);
 				x86_push(cpu, tmpword, mode);
@@ -3689,12 +3818,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!success)
 			return 0;
 		newpc = tmp;
-		if (mode == 16)
-			newpc &= 0xffff;
-		cpu->cd.x86.s[X86_S_CS] = tmp2;
+		reload_segment_descriptor(cpu, X86_S_CS, tmp2);
 		cpu->cd.x86.r[X86_R_SP] = modify(cpu->cd.x86.r[X86_R_SP],
 		    cpu->cd.x86.r[X86_R_SP] + imm);
-		potential_mode_change(cpu);
 	} else if (op == 0xcc) {	/*  INT3  */
 		cpu->pc = newpc;
 		return x86_software_interrupt(cpu, 3);
@@ -3711,9 +3837,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!x86_pop(cpu, &tmp3, mode))
 			return 0;
 		newpc = tmp;
-		if (mode == 16)
-			newpc &= 0xffff;
-		cpu->cd.x86.s[X86_S_CS] = tmp2;
+		reload_segment_descriptor(cpu, X86_S_CS, tmp2);
 		cpu->cd.x86.rflags = tmp3;
 		/*  TODO: only affect some bits?  */
 	} else if (op >= 0xd0 && op <= 0xd3) {
@@ -3749,7 +3873,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		unsigned char databuf[8];
 		imm = read_imm(&instr, &newpc, 8);
 		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + imm, &databuf[0],
-		    op == 0xe4? 1 : (mode/8), MEM_READ, CACHE_NONE);
+		    op == 0xe4? 1 : (mode/8), MEM_READ, CACHE_NONE | PHYSICAL);
 		if (op == 0xe4)
 			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
 			    ~0xff) | databuf[0];
@@ -3772,7 +3896,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 		}
 		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + imm, &databuf[0],
-		    op == 0xe6? 1 : (mode/8), MEM_WRITE, CACHE_NONE);
+		    op == 0xe6? 1 : (mode/8), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	} else if (op == 0xe8 || op == 0xe9) {	/*  CALL/JMP near  */
 		imm = read_imm(&instr, &newpc, mode);
 		if (mode == 16)
@@ -3785,16 +3909,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 		}
 		newpc += imm;
-		if (mode == 16)
-			newpc &= 0xffff;
 	} else if (op == 0xea) {	/*  JMP seg:ofs  */
 		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);
-		cpu->cd.x86.s[X86_S_CS] = imm2;
+		reload_segment_descriptor(cpu, X86_S_CS, imm2);
 		newpc = imm;
-		if (mode == 16)
-			newpc &= 0xffff;
-		potential_mode_change(cpu);
 	} else if ((op >= 0xe0 && op <= 0xe3) || op == 0xeb) {	/*  LOOP,JMP */
 		int perform_jump = 0;
 		imm = read_imm(&instr, &newpc, 8);
@@ -3831,16 +3950,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			perform_jump = 1;
 			break;
 		}
-		if (perform_jump) {
+		if (perform_jump)
 			newpc += (signed char)imm;
-			if (mode == 16)
-				newpc &= 0xffff;
-		}
 	} else if (op == 0xec || op == 0xed) {	/*  IN DX,AL or AX/EAX  */
 		unsigned char databuf[8];
 		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE +
 		    (cpu->cd.x86.r[X86_R_DX] & 0xffff), &databuf[0],
-		    op == 0xec? 1 : (mode/8), MEM_READ, CACHE_NONE);
+		    op == 0xec? 1 : (mode/8), MEM_READ, CACHE_NONE | PHYSICAL);
 		if (op == 0xec)
 			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
 			    ~0xff) | databuf[0];
@@ -3863,7 +3979,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE +
 		    (cpu->cd.x86.r[X86_R_DX] & 0xffff), &databuf[0],
-		    op == 0xee? 1 : (mode/8), MEM_WRITE, CACHE_NONE);
+		    op == 0xee? 1 : (mode/8), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	} else if (op == 0xf4) {	/*  HLT  */
 		cpu->cd.x86.halted = 1;
 	} else if (op == 0xf5) {	/*  CMC  */
@@ -4035,7 +4151,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
-			    really_orig_instr, 1, 0, 0);
+			    really_orig_instr, 1|omode, 0, 0);
 			cpu->running = 0;
 		}
 	} else if (op == 0xfe || op == 0xff) {		/*  INC, DEC etc  */
@@ -4073,7 +4189,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
-				    really_orig_instr, 1, 0, 0);
+				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
@@ -4084,8 +4200,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				/*  Push return [E]IP  */
 				x86_push(cpu, newpc, mode);
 				newpc = op1;
-				if (mode == 16)
-					newpc &= 0xffff;
 			}
 			break;
 		case 3:	if (op == 0xfe) {
@@ -4093,7 +4207,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
-				    really_orig_instr, 1, 0, 0);
+				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
@@ -4111,10 +4225,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode);
 				x86_push(cpu, newpc, mode);
 				newpc = tmp1;
-				if (mode == 16)
-					newpc &= 0xffff;
-				cpu->cd.x86.s[X86_S_CS] = tmp2;
-				potential_mode_change(cpu);
+				reload_segment_descriptor(cpu, X86_S_CS, tmp2);
 			}
 			break;
 		case 4:	if (op == 0xfe) {
@@ -4122,7 +4233,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
-				    really_orig_instr, 1, 0, 0);
+				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
 				success = modrm(cpu, MODRM_READ, mode, mode67,
@@ -4130,8 +4241,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (!success)
 					return 0;
 				newpc = op1;
-				if (mode == 16)
-					newpc &= 0xffff;
 			}
 			break;
 		case 5:	if (op == 0xfe) {
@@ -4139,7 +4248,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
-				    really_orig_instr, 1, 0, 0);
+				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
 				uint64_t tmp1, tmp2;
@@ -4154,10 +4263,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (!x86_load(cpu, op1 + (mode/8), &tmp2, 2))
 					return 0;
 				newpc = tmp1;
-				if (mode == 16)
-					newpc &= 0xffff;
-				cpu->cd.x86.s[X86_S_CS] = tmp2;
-				potential_mode_change(cpu);
+				reload_segment_descriptor(cpu, X86_S_CS, tmp2);
 			}
 			break;
 		case 6:	if (op == 0xfe) {
@@ -4165,7 +4271,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
-				    really_orig_instr, 1, 0, 0);
+				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
 				instr_orig = instr;
@@ -4181,7 +4287,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
-			    really_orig_instr, 1, 0, 0);
+			    really_orig_instr, 1|omode, 0, 0);
 			cpu->running = 0;
 		}
 	} else {
@@ -4189,14 +4295,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    " at ", op); print_csip(cpu); fatal("\n");
 		quiet_mode = 0;
 		x86_cpu_disassemble_instr(cpu,
-		    really_orig_instr, 1, 0, 0);
+		    really_orig_instr, 1|omode, 0, 0);
 		cpu->running = 0;
 		return 0;
 	}
 
-	if (cpu->cd.x86.mode == 16)
-		newpc &= 0xffff;
-	cpu->pc = newpc;
+	/*  Wrap-around and update [E]IP:  */
+	cpu->pc = newpc & (((uint64_t)1 << omode) - 1);
 
 	return 1;
 }

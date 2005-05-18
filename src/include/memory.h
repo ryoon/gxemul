@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.29 2005-02-26 16:53:32 debug Exp $
+ *  $Id: memory.h,v 1.30 2005-05-18 10:07:55 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -143,6 +143,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu, uint64_t vaddr,
 	int writeflag);
 
+/*  MIPS stuff:  */
 int translate_address_mmu3k(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 int translate_address_mmu8k(struct cpu *cpu, uint64_t vaddr,
@@ -152,6 +153,10 @@ int translate_address_mmu10k(struct cpu *cpu, uint64_t vaddr,
 int translate_address_mmu4100(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+
+/*  X86 stuff:  */
+int translate_address_x86(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 
 #define FLAG_WRITEFLAG          1

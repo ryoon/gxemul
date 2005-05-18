@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.40 2005-05-16 00:18:40 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.41 2005-05-18 10:07:54 debug Exp $
  *  
- *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
- *  controller.
+ *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
+ *  controller), including the 8048 keyboard chip.
  *
  *
  *  TODO: Finish the rewrite for 8242.
@@ -83,6 +83,7 @@ struct pckbc_data {
 	int		keyscanning_enabled;
 	int		state;
 	int		cmdbyte;
+	int		output_byte;
 	int		last_scancode;
 
 	unsigned	key_queue[2][MAX_8042_QUEUELEN];
@@ -93,6 +94,8 @@ struct pckbc_data {
 #define	STATE_LDCMDBYTE			1
 #define	STATE_RDCMDBYTE			2
 #define	STATE_WAITING_FOR_TRANSLTABLE	3
+#define	STATE_LDOUTPUT			4
+#define	STATE_RDOUTPUT			5
 
 
 /*
@@ -270,8 +273,7 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 void dev_pckbc_tick(struct cpu *cpu, void *extra)
 {
 	struct pckbc_data *d = extra;
-	int port_nr;
-	int ch;
+	int port_nr, ch, ints_enabled;
 
 	if (d->in_use && console_charavail(d->console_handle)) {
 		ch = console_readchar(d->console_handle);
@@ -279,12 +281,17 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 			ascii_to_pc_scancodes(ch, d);
 	}
 
+	ints_enabled = d->rx_int_enable;
+
 	/*  TODO: mouse movements?  */
+
+	if (d->cmdbyte & KC8_KDISABLE)
+		ints_enabled = 0;
 
 	for (port_nr=0; port_nr<2; port_nr++) {
 		/*  Cause receive interrupt, if there's something in the
 		    receive buffer: (Otherwise deassert the interrupt.)  */
-		if (d->head[port_nr] != d->tail[port_nr] && d->rx_int_enable) {
+		if (d->head[port_nr] != d->tail[port_nr] && ints_enabled) {
 			cpu_interrupt(cpu, port_nr==0? d->keyboard_irqnr
 			    : d->mouse_irqnr);
 		} else {
@@ -297,6 +304,8 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_pckbc_command():
+ *
+ *  Handle commands to the 8048 in the emulated keyboard.
  */
 static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 {
@@ -341,7 +350,7 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		pckbc_add_code(d, KBR_RSTDONE, port_nr);
 		break;
 	default:
-		fatal("[ pckbc: UNIMPLEMENTED command 0x%02x ]\n", cmd);
+		fatal("[ pckbc: UNIMPLEMENTED 8048 command 0x%02x ]\n", cmd);
 	}
 }
 
@@ -369,11 +378,12 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 #endif
 
 	/*  For JAZZ-based machines:  */
-	if (relative_addr >= 0x60)
+	if (relative_addr >= 0x60) {
 		relative_addr -= 0x60;
-
-	/*  8242 PS2-style:  */
-	if (d->type == PCKBC_8242) {
+		if (relative_addr != 0)
+			relative_addr = 1;
+	} else if (d->type == PCKBC_8242) {
+		/*  8242 PS2-style:  */
 		/*  when using 8-byte alignment...  */
 		relative_addr /= sizeof(uint64_t);
 		/*  port_nr = 0 for keyboard, 1 for mouse  */
@@ -381,10 +391,21 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 		relative_addr &= 3;
 		relative_addr += PS2;
 	} else {
-		/*  The relative_addr is either 0 or 1,
-		    but some machines use longer registers than one byte
-		    each, so this will make things simpler for us:  */
-		if (relative_addr)
+		/*  PC-style:  */
+		if (relative_addr != 0 && relative_addr != 4) {
+			/*  TODO (port 0x61)  */
+			odata = 0x21;
+{
+static int x = 0;
+x++;
+if (x&1)
+			odata ^= 0x10;
+}
+			if (writeflag == MEM_READ)
+				memory_writemax64(cpu, data, len, odata);
+			return 0;
+		}
+		if (relative_addr != 0)
 			relative_addr = 1;
 	}
 
@@ -396,11 +417,16 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 
 	case 0:		/*  data  */
 		if (writeflag==MEM_READ) {
-			if (d->state == STATE_RDCMDBYTE) {
+			switch (d->state) {
+			case STATE_RDCMDBYTE:
 				odata = d->cmdbyte;
 				d->state = STATE_NORMAL;
-			} else {
-				if (d->head[0] != d->tail[0]) {
+				break;
+			case STATE_RDOUTPUT:
+				odata = d->output_byte;
+				d->state = STATE_NORMAL;
+				break;
+			default:if (d->head[0] != d->tail[0]) {
 					odata = pckbc_get_code(d, 0);
 					d->last_scancode = odata;
 				} else {
@@ -415,13 +441,18 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 				debug(" %02x", data[i]);
 			debug(" ]\n");
 
-			if (d->state == STATE_LDCMDBYTE) {
+			switch (d->state) {
+			case STATE_LDCMDBYTE:
 				d->cmdbyte = idata;
 				d->rx_int_enable = d->cmdbyte &
 				    (KC8_KENABLE | KC8_MENABLE) ? 1 : 0;
 				d->state = STATE_NORMAL;
-			} else {
-				d->reg[relative_addr] = idata;
+				break;
+			case STATE_LDOUTPUT:
+				d->output_byte = idata;
+				d->state = STATE_NORMAL;
+				break;
+			default:d->reg[relative_addr] = idata;
 				dev_pckbc_command(d, port_nr);
 			}
 		}
@@ -434,11 +465,16 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 
 			/*  "Data in buffer" bit  */
 			if (d->head[0] != d->tail[0] ||
-			    d->state == STATE_RDCMDBYTE)
+			    d->state == STATE_RDCMDBYTE ||
+			    d->state == STATE_RDOUTPUT)
 				odata |= KBS_DIB;
-			/*  odata |= KBS_OCMD;  */
-			/*  debug("[ pckbc: read from CTL status port: "
-			    "0x%02x ]\n", (int)odata);  */
+
+			if (d->state == STATE_RDCMDBYTE)
+				odata |= KBS_OCMD;
+
+			odata |= KBS_NOSEC;
+			debug("[ pckbc: read from CTL status port: "
+			    "0x%02x ]\n", (int)odata);
 		} else {
 			debug("[ pckbc: write to CTL:");
 			for (i=0; i<len; i++)
@@ -453,11 +489,29 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 			case K_LDCMDBYTE:
 				d->state = STATE_LDCMDBYTE;
 				break;
+			case 0xa7:
+				d->cmdbyte |= KC8_MDISABLE;
+				break;
+			case 0xa8:
+				d->cmdbyte &= ~KC8_MDISABLE;
+				break;
 			case 0xa9:	/*  test auxiliary port  */
 				debug("[ pckbc: CONTROL 0xa9, TODO ]\n");
 				break;
 			case 0xaa:	/*  keyboard self-test  */
 				pckbc_add_code(d, 0x55, port_nr);
+				break;
+			case 0xad:
+				d->cmdbyte |= KC8_KDISABLE;
+				break;
+			case 0xae:
+				d->cmdbyte &= ~KC8_KDISABLE;
+				break;
+			case 0xd0:
+				d->state = STATE_RDOUTPUT;
+				break;
+			case 0xd1:
+				d->state = STATE_LDOUTPUT;
 				break;
 			case 0xd4:	/*  write to auxiliary port  */
 				debug("[ pckbc: CONTROL 0xd4, TODO ]\n");
@@ -652,6 +706,7 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	d->in_use         = in_use;
 	d->console_handle = console_start_slave_inputonly(machine, "pckbc");
 	d->rx_int_enable  = 1;
+	d->output_byte    = 0x02;	/*  A20 enable on PCs  */
 
 	memory_device_register(mem, "pckbc", baseaddr,
 	    len, dev_pckbc_access, d, MEM_DEFAULT, NULL);

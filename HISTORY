@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.739 2005-05-17 06:44:22 debug Exp $
+$Id: HISTORY,v 1.740 2005-05-18 10:07:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1911,3 +1911,6 @@ Changelog for GXemul:
 		with.
 20050517	After some bugfixes, MS-DOS also (sometimes) reaches a
 		command prompt now.
+		Trying to fix the pckbc to work with MS-DOS' keyb.com, but no
+		success yet.
+20050518	Adding a simple 32-bit x86 MMU skeleton.

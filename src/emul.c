@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.195 2005-05-15 01:55:49 debug Exp $
+ *  $Id: emul.c,v 1.196 2005-05-18 10:07:53 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -556,12 +556,6 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		    boot_disk_type))
 			break;
 
-		cpu->cd.x86.mode = 16;
-		cpu->cd.x86.s[X86_S_CS] = 0x0000;
-		cpu->pc = 0x7c00;
-		cpu->cd.x86.r[X86_R_DX] = boot_disk_id;
-		/*  TODO: 0x80 for harddisks, etc.  */
-
 		bootblock_buf = malloc(512);
 		if (bootblock_buf == NULL) {
 			fprintf(stderr, "Out of memory.\n");
@@ -1038,6 +1032,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			 *  NOTE: The toc field is used to indicate an ELF32
 			 *  or ELF64 load.
 			 */
+			fatal("TODO: x86 load etc\n");
+			exit(1);
+#if 0
 			switch (toc) {
 			case 0:	cpu->pc &= 0xffffffffULL;
 				break;
@@ -1047,6 +1044,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			case 2:	cpu->cd.x86.mode = 64;
 				break;
 			}
+#endif
 			break;
 
 		default:
@@ -1162,13 +1160,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		}
 		break;
 	case ARCH_X86:
-		if (cpu->cd.x86.mode == 16)
-			debug("0x%04x:0x%04x", cpu->cd.x86.s[X86_S_CS],
-			    (int)cpu->pc);
-		else if (cpu->cd.x86.mode == 32)
-			debug("0x%08x", (int)cpu->pc);
-		else
-			debug("0x%016llx", (long long)cpu->pc);
+		debug("0x%04x:0x%llx", cpu->cd.x86.s[X86_S_CS],
+		    (long long)cpu->pc);
 		break;
 	default:
 		debug("0x%016llx", (long long)cpu->pc);

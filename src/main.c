@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.234 2005-05-05 19:23:40 debug Exp $
+ *  $Id: main.c,v 1.235 2005-05-18 10:07:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -799,7 +799,10 @@ int main(int argc, char *argv[])
 
 	if (n_emuls == 0) {
 		fprintf(stderr, "No emulations defined. Maybe you forgot to "
-		    "use -E xx (where xx is the\nmachine type).\n");
+		    "use -E xx (and -e yy), to specify\nthe machine type)."
+		    " For example:\n\n    %s -E dec -e 3max -d disk.img\n\n"
+		    "to boot an emulated DECstation 5000/200 with a disk "
+		    "image.\n", progname);
 		exit(1);
 	}
 

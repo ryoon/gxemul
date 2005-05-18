@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.62 2005-05-17 08:52:18 debug Exp $
+ *  $Id: pc_bios.c,v 1.63 2005-05-18 10:07:53 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -71,7 +71,7 @@ extern unsigned char font8x8[];
 static struct pc_bios_disk *add_disk(struct machine *machine, int biosnr,
 	int id, int type)
 {
-	uint64_t size, bytespercyl;
+	uint64_t bytespercyl;
 	struct pc_bios_disk *p = malloc(sizeof(struct pc_bios_disk));
 
 	if (p == NULL) {
@@ -84,11 +84,15 @@ static struct pc_bios_disk *add_disk(struct machine *machine, int biosnr,
 
 	p->nr = biosnr; p->id = id; p->type = type;
 
-	p->size = size = diskimage_getsize(machine, id, type);
+	p->size = diskimage_getsize(machine, id, type);
 
 	switch (type) {
 	case DISKIMAGE_FLOPPY:
-		/*  TODO: other floppy types? 360KB etc?  */
+		if (p->size < 737280) {
+			fatal("\nTODO: add_disk() in pc_bios.c: small (non-80-"
+			    "cylinder) floppies?\n\n");
+			exit(1);
+		}
 		p->cylinders = 80;
 		p->heads = 2;
 		p->sectorspertrack = p->size / (p->cylinders * p->heads * 512);
@@ -98,7 +102,7 @@ static struct pc_bios_disk *add_disk(struct machine *machine, int biosnr,
 		p->sectorspertrack = 63;
 		bytespercyl = p->heads * p->sectorspertrack * 512;
 		p->cylinders = p->size / bytespercyl;
-		if (p->cylinders * bytespercyl < size)
+		if (p->cylinders * bytespercyl < p->size)
 			p->cylinders ++;
 	}
 
@@ -524,6 +528,33 @@ static void pc_bios_int10(struct cpu *cpu)
 
 		cpu->cd.x86.r[X86_R_BX] &= ~0xff00;	/*  BH = pagenr  */
 		break;
+	case 0x10:	/*  Palette stuff  */
+		/*  TODO  */
+		switch (al) {
+		case 0x01:
+			break;
+		case 0x10:
+			byte = bl;
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
+			byte = dh;
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
+			byte = cl;
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
+			byte = ch;
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
+			break;
+		default:fatal("Unimplemented INT 0x10,AH=0x10,AL=0x%02x\n", al);
+			cpu->running = 0;
+		}
+		break;
 	case 0x11:	/*  Character generator  */
 		/*  TODO  */
 		switch (al) {
@@ -563,7 +594,7 @@ static void pc_bios_int10(struct cpu *cpu)
 			byte[1] = 0x07;
 			if (al & 2)
 				len = 2;
-			cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+			cpu->cd.x86.cursegment = X86_S_ES;
 			cpu->memory_rw(cpu, cpu->mem, bp, &byte[0], len,
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			bp += len;
@@ -675,8 +706,7 @@ static void pc_bios_int13(struct cpu *cpu)
 						break;
 					}
 
-					cpu->cd.x86.cursegment =
-					    cpu->cd.x86.s[X86_S_ES];
+					cpu->cd.x86.cursegment = X86_S_ES;
 					if (bx > 0xfe00) {
 						err = 9;
 						break;
@@ -809,14 +839,14 @@ static void pc_bios_int15(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] |= 0x8600;	/*  TODO  */
 		break;
 	case 0x4f:	/*  Keyboard Scancode Intercept (TODO)  */
-		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	case 0x53:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x53: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	case 0x87:	/*  Move to/from extended memory, via a GDT  */
-		cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_ES];
+		cpu->cd.x86.cursegment = X86_S_ES;
 		cpu->memory_rw(cpu, cpu->mem, si + 0x10, src_entry, 8,
 		    MEM_READ, CACHE_DATA);
 		cpu->memory_rw(cpu, cpu->mem, si + 0x18, dst_entry, 8,
@@ -859,6 +889,9 @@ static void pc_bios_int15(struct cpu *cpu)
 		m = (cpu->machine->physical_ram_in_mb - 1) * 1024;
 		cpu->cd.x86.r[X86_R_AX] = m & 0xffff;
 		cpu->cd.x86.r[X86_R_DX] = (m >> 16) & 0xffff;
+		break;
+	case 0x91:	/*  Interrupt Complete (bogus)  */
+		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		break;
 	case 0xc0:	/*  System Config: (at 0xfffd:0)  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
@@ -930,9 +963,8 @@ static int pc_bios_int16(struct cpu *cpu)
 		break;
 	case 0x02:	/*  read keyboard flags  */
 		/*  TODO: keep this byte updated  */
-		cpu->cd.x86.cursegment = 0;
 		cpu->memory_rw(cpu, cpu->mem, 0x417, &tmpchar, 1,
-		    MEM_READ, CACHE_DATA);
+		    MEM_READ, PHYSICAL);
 		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
 		    | tmpchar;
 		break;
@@ -1071,6 +1103,9 @@ void pc_bios_init(struct cpu *cpu)
 	int x, y, i, any_disk = 0, disknr;
 	int boot_id, boot_type, bios_boot_id = 0;
 
+	/*  Go to real mode:  */
+	cpu->cd.x86.cr[0] &= ~X86_CR0_PE;
+
 	boot_id = diskimage_bootdev(cpu->machine, &boot_type);
 
 	if (cpu->machine->md.pc.initialized) {
@@ -1082,7 +1117,8 @@ void pc_bios_init(struct cpu *cpu)
 	cpu->machine->md.pc.pic2->irq_base = 0x70;
 
 	/*  Disk Base Table (11 or 12 bytes?) at F000h:EFC7:  */
-	cpu->cd.x86.cursegment = 0xf000;
+	cpu->cd.x86.cursegment = X86_S_FS;
+	cpu->cd.x86.s[X86_S_FS] = 0xf000;
 	store_byte(cpu, 0xefc7 + 0, 0xcf);
 	store_byte(cpu, 0xefc7 + 1, 0xb8);
 	store_byte(cpu, 0xefc7 + 2, 1);		/*  timer ticks till shutoff  */
@@ -1097,7 +1133,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0xefc7 + 11, 1);/*  motor stop time in 1/4 secs  */
 
 	/*  BIOS System Configuration Parameters (8 bytes) at 0xfffd:0:  */
-	cpu->cd.x86.cursegment = 0xfffd;
+	cpu->cd.x86.s[X86_S_FS] = 0xfffd;
 	store_byte(cpu, 0, 8); store_byte(cpu, 1, 0);	/*  len  */
 	store_byte(cpu, 2, 0xfc);			/*  model  */
 	store_byte(cpu, 3, 0);				/*  sub-model  */
@@ -1107,7 +1143,7 @@ void pc_bios_init(struct cpu *cpu)
 			int_15-c0.html for details  */
 
 	/*  Some info in the last paragraph of the BIOS:  */
-	cpu->cd.x86.cursegment = 0xffff;
+	cpu->cd.x86.s[X86_S_FS] = 0xffff;
 	/*  TODO: current date :-)  */
 	store_byte(cpu, 0x05, '0'); store_byte(cpu, 0x06, '1');
 	store_byte(cpu, 0x07, '/');
@@ -1117,7 +1153,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0x0e, 0xfc);
 
 	/*  Copy the first 128 chars of the 8x8 VGA font into 0xf000:0xfa6e  */
-	cpu->cd.x86.cursegment = 0xf000;
+	cpu->cd.x86.s[X86_S_FS] = 0xf000;
 	store_buf(cpu, 0xfa6e, (char *)font8x8, 8*128);
 	store_buf(cpu, 0xfa6e - 1024, (char *)font8x8 + 1024, 8*128);
 
@@ -1131,7 +1167,7 @@ void pc_bios_init(struct cpu *cpu)
 			i = 0x70;
 		if (i == 0x78)
 			break;
-		cpu->cd.x86.cursegment = 0;
+		cpu->cd.x86.s[X86_S_FS] = 0x0000;
 		store_16bit_word(cpu, i*4, 0x8000 + i*16);
 		store_16bit_word(cpu, i*4 + 2, 0xf000);
 
@@ -1141,11 +1177,11 @@ void pc_bios_init(struct cpu *cpu)
 		if (i == 0x1f)
 			store_16bit_word(cpu, i*4, 0xfa6e - 1024);
 
-		cpu->cd.x86.cursegment = 0xf000;
+		cpu->cd.x86.s[X86_S_FS] = 0xf000;
 		store_byte(cpu, 0x8000 + i*16, 0xCF);	/*  IRET  */
 	}
 
-	cpu->cd.x86.cursegment = 0;
+	cpu->cd.x86.s[X86_S_FS] = 0x0000;
 
 	/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
 	    for more info.  */
@@ -1286,6 +1322,20 @@ void pc_bios_init(struct cpu *cpu)
 		pc_bios_printstr(cpu, "No disks attached!\n\n", 0x0f);
 
 	/*  Registers passed to the bootsector code:  */
+	for (i=0; i<4; i++) {
+		cpu->cd.x86.descr_cache[i].valid = 1;
+		cpu->cd.x86.descr_cache[i].default_op_size = 16;
+		cpu->cd.x86.descr_cache[i].access_rights = 0x93;
+		cpu->cd.x86.descr_cache[i].descr_type =
+		    i == X86_S_CS? DESCR_TYPE_CODE : DESCR_TYPE_DATA;
+		cpu->cd.x86.descr_cache[i].readable = 1;
+		cpu->cd.x86.descr_cache[i].writable = 1;
+		cpu->cd.x86.descr_cache[i].granularity = 0;
+		cpu->cd.x86.descr_cache[i].base = 0x00000000;
+		cpu->cd.x86.descr_cache[i].limit = 0xffff;
+		cpu->cd.x86.s[i] = 0x0000;
+	}
+
 	cpu->cd.x86.r[X86_R_AX] = 0xaa55;
 	cpu->cd.x86.r[X86_R_CX] = 0x0001;
 	cpu->cd.x86.r[X86_R_DI] = 0xffe4;
@@ -1293,6 +1343,7 @@ void pc_bios_init(struct cpu *cpu)
 	cpu->cd.x86.r[X86_R_DX] = bios_boot_id;
 
 	cpu->cd.x86.rflags |= X86_FLAGS_IF;
+	cpu->pc = 0x7c00;
 
 	cpu->machine->md.pc.initialized = 1;
 }
@@ -1316,6 +1367,9 @@ int pc_bios_emul(struct cpu *cpu)
 	}
 
 	switch (int_nr) {
+	case 0x02:	/*  NMI?  */
+		debug("[ pc_bios: NMI? TODO ]\n");
+		break;
 	case 0x08:
 		if (pc_bios_int8(cpu) == 0)
 			return 0;
@@ -1360,10 +1414,10 @@ int pc_bios_emul(struct cpu *cpu)
 	/*
 	 *  Return from the interrupt:  Pop ip (pc), cs, and flags.
 	 */
-	cpu->cd.x86.cursegment = cpu->cd.x86.s[X86_S_SS];
+	cpu->cd.x86.cursegment = X86_S_SS;
 	cpu->pc = load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP]);
-	cpu->cd.x86.s[X86_S_CS] =
-	    load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 2);
+	reload_segment_descriptor(cpu, X86_S_CS,
+	    load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 2));
 
 	/*  Actually, don't pop flags, because they contain result bits
 	    from interrupt calls. Only pop the Interrupt Flag.  */

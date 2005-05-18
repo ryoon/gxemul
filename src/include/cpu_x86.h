@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.16 2005-05-15 22:44:42 debug Exp $
+ *  $Id: cpu_x86.h,v 1.17 2005-05-18 10:07:55 debug Exp $
  */
 
 #include "misc.h"
@@ -93,17 +93,28 @@ struct x86_model {
 	}
 
 
+struct descriptor_cache {
+	int		valid;
+	int		default_op_size;
+	int		access_rights;
+	int		descr_type;
+	int		readable;
+	int		writable;
+	int		granularity;
+	uint64_t	base;
+	uint64_t	limit;
+};
+
+
 struct x86_cpu {
 	struct x86_model model;
 
 	int		bits;		/*  16, 32, or 64  */
-	int		mode;		/*  16, 32, or 64  */
 
-	int		delayed_mode_change;
 	int		halted;
 	int		interrupt_asserted;
 
-	uint16_t	cursegment;	/*  for 16-bit memory_rw  */
+	int		cursegment;	/*  NOTE: 0..N_X86_SEGS-1  */
 	int		seg_override;
 
 	uint64_t	gdtr;
@@ -115,6 +126,8 @@ struct x86_cpu {
 	uint64_t	cr[N_X86_CREGS];
 
 	uint16_t	s[N_X86_SEGS];
+	struct descriptor_cache descr_cache[N_X86_SEGS];
+
 	uint64_t	r[N_X86_REGS];
 };
 
@@ -137,11 +150,30 @@ struct x86_cpu {
 #define	X86_FLAGS_VIP	(1<<20)		/*  ?  */
 #define	X86_FLAGS_ID	(1<<21)		/*  CPUID present  */
 
+#define	X86_CR0_PE	0x00000001	/*  Protection Enable  */
+#define	X86_CR0_MP	0x00000002
+#define	X86_CR0_EM	0x00000004
+#define	X86_CR0_TS	0x00000008
+#define	X86_CR0_ET	0x00000010
+#define	X86_CR0_NE	0x00000020
+#define	X86_CR0_WP	0x00001000
+#define	X86_CR0_AM	0x00004000
+#define	X86_CR0_NW	0x20000000
+#define	X86_CR0_CD	0x40000000
+#define	X86_CR0_PG	0x80000000	/*  Paging Enable  */
 
 #define	X86_IO_BASE	0x1000000000ULL
 
 
+#define	DESCR_TYPE_CODE		1
+#define	DESCR_TYPE_DATA		2
+
+
+#define	PROTECTED_MODE		(cpu->cd.x86.cr[0] & X86_CR0_PE)
+#define	REAL_MODE		(!PROTECTED_MODE)
+
 /*  cpu_x86.c:  */
+void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector);
 int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int x86_cpu_family_init(struct cpu_family *);

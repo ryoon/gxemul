@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.24 2005-05-16 04:14:09 debug Exp $
+ *  $Id: memory_rw.c,v 1.25 2005-05-18 10:07:53 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -87,26 +87,29 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 #ifdef MEM_X86
-	if ((vaddr >> 32) == 0xffffffff)
-		vaddr &= 0xffffffff;
+	if (cache_flags & PHYSICAL || cpu->translate_address == NULL) {
+		paddr = vaddr;
+	} else {
+		ok = cpu->translate_address(cpu, vaddr, &paddr,
+		    (writeflag? FLAG_WRITEFLAG : 0) +
+		    (no_exceptions? FLAG_NOEXCEPTIONS : 0) +
+		    (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
+		/*  If the translation caused an exception, or
+		    was invalid in some way, we simply return
+		    without doing the memory access:  */
+		if (!ok)
+			return MEMORY_ACCESS_FAILED;
+	}
 
-	/*  TODO: Actual address translation  */
-	if ((vaddr >> 32) == 0) {
-		vaddr &= 0x0fffffff;
-
-		if (cpu->cd.x86.mode == 16 && !(cache_flags & PHYSICAL)) {
-			if ((vaddr & 0xffff) + len > 0x10000) {
-				/*  Do one byte at a time:  */
-				int res, i;
-				for (i=0; i<len; i++)
-					res = MEMORY_RW(cpu, mem,
-					    vaddr+i, &data[i], 1,
-					    writeflag, cache_flags);
-				return res;
-			}
-
-			vaddr = (cpu->cd.x86.cursegment<<4) + (vaddr & 0xffff);
-			/*  TODO: A20 stuff  */
+	/*  Real-mode wrap-around:  */
+	if (!(cpu->cd.x86.cr[0] & X86_CR0_PE) && !(cache_flags & PHYSICAL)) {
+		if ((vaddr & 0xffff) + len > 0x10000) {
+			/*  Do one byte at a time:  */
+			int res, i;
+			for (i=0; i<len; i++)
+				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
+				    writeflag, cache_flags);
+			return res;
 		}
 	}
 
@@ -123,15 +126,17 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 
 	/*  DOS debugging :-)  */
-	if (vaddr >= 0x400 && vaddr <= 0x4ff)
-		debug("{ PC BIOS DATA AREA: %s 0x%x }\n",
-		    writeflag == MEM_WRITE? "writing to" : "reading from",
-		    (int)vaddr);
+	if (!quiet_mode) {
+		if (paddr >= 0x400 && paddr <= 0x4ff)
+			debug("{ PC BIOS DATA AREA: %s 0x%x }\n", writeflag ==
+			    MEM_WRITE? "writing to" : "reading from",
+			    (int)paddr);
 
-	if (vaddr >= 0xf0000 && vaddr <= 0xfffff)
-		fatal("{ BIOS ACCESS: %s 0x%x }\n",
-		    writeflag == MEM_WRITE? "writing to" : "reading from",
-		    (int)vaddr);
+		if (paddr >= 0xf0000 && paddr <= 0xfffff)
+			debug("{ BIOS ACCESS: %s 0x%x }\n",
+			    writeflag == MEM_WRITE? "writing to" :
+			    "reading from", (int)paddr);
+	}
 #endif
 
 #ifdef MEM_URISC

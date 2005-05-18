@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.110 2005-05-18 12:26:21 debug Exp $
+ *  $Id: cpu_x86.c,v 1.111 2005-05-18 12:44:56 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -659,9 +659,11 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	limit = descr[0] + (descr[1] << 8) + ((descr[6]&15) << 16);
 	descr_type = readable = writable = granularity = 0;
 
+#if 0
 printf("base = %llx\n",(long long)base);
 for (i=0; i<8; i++)
 	fatal(" %02x", descr[i]);
+#endif
 
 	if ((descr[5] & 0x18) == 0x18) {
 		descr_type = DESCR_TYPE_CODE;
@@ -2189,6 +2191,8 @@ static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 	int ssize = cpu->cd.x86.descr_cache[X86_S_SS].default_op_size;
 
 	/*  TODO: up/down?  */
+	/*  TODO: stacksize?  */
+ssize = mode;
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
@@ -2208,6 +2212,8 @@ static int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
 	int ssize = cpu->cd.x86.descr_cache[X86_S_SS].default_op_size;
 
 	/*  TODO: up/down?  */
+	/*  TODO: stacksize?  */
+ssize = mode;
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;

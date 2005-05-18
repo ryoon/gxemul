@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.64 2005-05-18 12:26:21 debug Exp $
+ *  $Id: pc_bios.c,v 1.65 2005-05-18 12:44:56 debug Exp $
  *
  *  Generic PC BIOS emulation.
  */
@@ -772,6 +772,12 @@ static void pc_bios_int13(struct cpu *cpu)
 		/*  There is no such support.  :)  */
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
+	case 0x42:	/*  Extended Read:  */
+		/*  TODO  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_AX] |= 0x0100;
+		break;
 	case 0x48:	/*  ?  */
 		/*  TODO  */
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
@@ -820,6 +826,12 @@ static void pc_bios_int15(struct cpu *cpu)
 	uint32_t src_addr, dst_addr;
 
 	switch (ah) {
+	case 0x00:	/*  TODO?  */
+		fatal("[ PC BIOS int 0x15,0x00: TODO ]\n");
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+		cpu->cd.x86.r[X86_R_AX] |= 0x8600;	/*  TODO  */
+		break;
 	case 0x06:	/*  TODO  */
 		fatal("[ PC BIOS int 0x15,0x06: TODO ]\n");
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;

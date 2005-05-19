@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.118 2005-05-19 16:04:12 debug Exp $
+ *  $Id: cpu_x86.c,v 1.119 2005-05-19 16:21:49 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2980,7 +2980,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		uint64_t tmp;
 		int signflag, i;
 		imm = read_imm(&instr, &newpc, 8);
-		if (imm >= 0x80 && imm <= 0x8f) {
+		if (imm >= 0x40 && imm <= 0x4f) {	/*  CMOVxx  */
+			op = imm & 0xf;
+			if (!modrm(cpu, MODRM_READ, mode, mode67,
+			    0, &instr, &newpc, &op1, &op2))
+				return 0;
+			success = x86_condition(cpu, op);
+			if (success)
+				if (!modrm(cpu, MODRM_WRITE_R, mode, mode67,
+				    MODRM_EIGHTBIT, &instr_orig, NULL,
+				    &op2, &op1))
+					return 0;
+		} else if (imm >= 0x80 && imm <= 0x8f) {
+			/*  conditional near jump  */
 			op = imm & 0xf;
 			imm = read_imm(&instr, &newpc, mode);
 			success = x86_condition(cpu, op);

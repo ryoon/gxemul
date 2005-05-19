@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.72 2005-05-19 16:04:12 debug Exp $
+ *  $Id: pc_bios.c,v 1.73 2005-05-19 16:48:46 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -894,12 +894,12 @@ static void pc_bios_int15(struct cpu *cpu)
 		    MEM_READ, CACHE_DATA);
 		src_addr = src_entry[2]+(src_entry[3]<<8)+(src_entry[4]<<16);
 		dst_addr = dst_entry[2]+(dst_entry[3]<<8)+(dst_entry[4]<<16);
-		if (src_entry[5] != 0x93)
+		if (src_entry[5] != 0x92 && src_entry[5] != 0x93)
 			fatal("WARNING: int15,87: bad src access right?"
-			    " (0x%02, should be 0x93)\n", src_entry[5]);
-		if (dst_entry[5] != 0x93)
+			    " (0x%02x, should be 0x93)\n", src_entry[5]);
+		if (dst_entry[5] != 0x92 && dst_entry[5] != 0x93)
 			fatal("WARNING: int15,87: bad dst access right?"
-			    " (0x%02, should be 0x93)\n", dst_entry[5]);
+			    " (0x%02x, should be 0x93)\n", dst_entry[5]);
 		debug("[ pc_bios: INT15: copying %i bytes from 0x%x to 0x%x"
 		    " ]\n", cx*2, src_addr, dst_addr);
 		if (cx > 0x8000)
@@ -908,9 +908,9 @@ static void pc_bios_int15(struct cpu *cpu)
 		while (cx*2 > 0) {
 			unsigned char buf[2];
 			cpu->memory_rw(cpu, cpu->mem, src_addr, buf, 2,
-			    MEM_READ, CACHE_DATA);
+			    MEM_READ, NO_SEGMENTATION | CACHE_DATA);
 			cpu->memory_rw(cpu, cpu->mem, dst_addr, buf, 2,
-			    MEM_READ, CACHE_DATA);
+			    MEM_WRITE, NO_SEGMENTATION | CACHE_DATA);
 			src_addr += 2; dst_addr += 2; cx --;
 		}
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;

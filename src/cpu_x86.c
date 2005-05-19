@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.119 2005-05-19 16:21:49 debug Exp $
+ *  $Id: cpu_x86.c,v 1.120 2005-05-19 16:48:46 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1571,6 +1571,9 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("rdtsc");
 			} else if (imm == 0x32) {
 				SPACES; debug("rdmsr");
+			} else if (imm == 0x33) {
+				SPACES; debug("rdpmc");		/*  http://www
+				    .x86.org/secrets/opcodes/rdpmc.htm  */
 			} else if (imm == 0x34) {
 				SPACES; debug("sysenter");
 			} else if (imm == 0x36) {
@@ -2004,7 +2007,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (imm != 10)
 			debug("\t%i", imm);
 	} else if (op == 0xd6) {
-		SPACES; debug("setalc");	/*  undocumented?  */
+		SPACES; debug("salc");		/*  undocumented?  */
 	} else if (op == 0xd7) {
 		SPACES; debug("xlat");
 	} else if (op == 0xe3) {
@@ -2063,6 +2066,9 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("out\tdx,al");
 	} else if (op == 0xef) {
 		SPACES; debug("out\tdx,%sax", e);
+	} else if (op == 0xf1) {
+		SPACES; debug("icebp");		/*  undocumented?  */
+		/*  http://www.x86.org/secrets/opcodes/icebp.htm  */
 	} else if (op == 0xf4) {
 		SPACES; debug("hlt");
 	} else if (op == 0xf5) {

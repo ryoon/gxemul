@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.52 2005-05-17 05:11:22 debug Exp $
+ *  $Id: dev_vga.c,v 1.53 2005-05-19 13:59:07 debug Exp $
  *  
  *  VGA text (and graphics) console device.
  *
@@ -426,33 +426,6 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	y2 = (relative_addr+len-1) / (d->max_x * 2);
 	x2 = ((relative_addr+len-1)/2) % d->max_x;
-
-	/*
-	 *  Switch fonts?   This is an ugly hack which only switches when
-	 *  parts of the video ram is accessed that are outside the current
-	 *  screen. (Specially "crafted" :-) to work with Windows NT.)
-	 */
-	if (writeflag && (idata & 255) != 0x20 && (relative_addr & 1) == 0) {
-		if (y >= 36 && d->font_size > 8) {
-			/*  Switch to 8x8 font:  */
-			debug("SWITCHING to 8x8 font\n");
-			d->font_size = 8;
-			d->font = font8x8;
-			d->max_y = VGA_MEM_MAXY;
-			vga_update_text(cpu->machine, d, 0, 0,
-			    d->max_x - 1, d->max_y - 1);
-			vga_update_cursor(cpu->machine, d);
-		} else if (y >= 25 && d->font_size > 11) {
-			/*  Switch to 8x10 font:  */
-			debug("SWITCHING to 8x10 font\n");
-			d->font_size = 11;	/*  NOTE! 11  */
-			d->font = font8x10;
-			vga_update_text(cpu->machine, d, 0, 0,
-			    d->max_x - 1, d->max_y - 1);
-			d->max_y = 36;
-			vga_update_cursor(cpu->machine, d);
-		}
-	}
 
 	if (relative_addr < d->charcells_size) {
 		if (writeflag == MEM_WRITE) {

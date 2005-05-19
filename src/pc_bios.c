@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.70 2005-05-19 07:54:47 debug Exp $
+ *  $Id: pc_bios.c,v 1.71 2005-05-19 13:59:06 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1220,6 +1220,25 @@ void pc_bios_init(struct cpu *cpu)
 
 		reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
 		store_byte(cpu, 0x8000 + i*16, 0xCF);	/*  IRET  */
+	}
+
+	/*  For SMP emulation, create an "MP" struct in BIOS memory:  */
+	if (cpu->machine->ncpus > 1) {
+		int chksum;
+
+		reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
+		store_buf(cpu, 0x9000, "_MP_", 4);
+		store_byte(cpu, 0x9004, 0x10);	/*  ptr to table  */
+		store_byte(cpu, 0x9005, 0x90);
+		store_byte(cpu, 0x9006, 0x0f);
+		store_byte(cpu, 0x9007, 0x00);
+		store_byte(cpu, 0x9008, 0x01);	/*  length. should be 1  */
+		store_byte(cpu, 0x9009, 0x04);	/*  version. 4 means "1.4"  */
+		/*  Byte at 0x0a is checksum. TODO: make this automagic  */
+		chksum = '_' + 'M' + 'P' + '_' + 0x10 + 0x90 + 0xf + 1 + 4;
+		store_byte(cpu, 0x900a, 0 - chksum);
+
+		/*  TODO: The PCMP struct, at addr 0x9010.  */
 	}
 
 	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);

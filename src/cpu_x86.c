@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.116 2005-05-19 07:54:47 debug Exp $
+ *  $Id: cpu_x86.c,v 1.117 2005-05-19 13:59:06 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -672,7 +672,7 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	}
 
 	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.gdtr + selector,
-	    descr, sizeof(descr), MEM_READ, PHYSICAL);
+	    descr, sizeof(descr), MEM_READ, NO_SEGMENTATION);
 	if (!res) {
 		fatal("reload_segment_descriptor(): TODO: "
 		    "could not read the GDT\n");
@@ -1330,7 +1330,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	uint64_t ilen = 0, offset;
 	uint32_t imm=0, imm2;
 	int mode = running & ~1;
-	int mode67 = mode;
+	int mode67;
 	char *symbol, *tmp = "ERROR", *mnem = "ERROR", *e = "e",
 	    *prefix = NULL;
 
@@ -1344,6 +1344,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			return 1;
 		}
 	}
+
+	mode67 = mode;
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    dumpaddr, &offset);
@@ -2307,7 +2309,7 @@ static int x86_software_interrupt(struct cpu *cpu, int nr)
 	/*  Read the interrupt vector:  */
 	/*  TODO: check the idtr_limit  */
 	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.idtr + nr*4, buf, 4,
-	    MEM_READ, PHYSICAL);
+	    MEM_READ, NO_SEGMENTATION);
 	if (!res) {
 		fatal("x86_software_interrupt(): could not read the"
 		    " interrupt descriptor table\n");
@@ -2659,7 +2661,7 @@ return 0;
 
 	/*  Figure out where to jump to:  */
 	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.idtr + irq_nr*4, buf, 4,
-	    MEM_READ, PHYSICAL);
+	    MEM_READ, NO_SEGMENTATION);
 	if (!res) {
 		fatal("cause_interrupt(): could not read the"
 		    " interrupt descriptor table\n");
@@ -3093,6 +3095,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				modrm(cpu, MODRM_WRITE_R, 32, mode67,
 				    MODRM_CR, &instr_orig, NULL, &op1, &op2);
 				break;
+			case 0x31:	/*  RDTSC  */
+				if (cpu->cd.x86.model.model_number <
+				    X86_MODEL_PENTIUM)
+					fatal("WARNING: rdtsc usually requires"
+					    " a Pentium. continuing anyway\n");
+				if (cpu->cd.x86.cr[4] & X86_CR4_TSD)
+					fatal("WARNING: time stamp disable:"
+					    " TODO\n");
+				cpu->cd.x86.r[X86_R_DX] = cpu->cd.x86.tsc >> 32;
+				cpu->cd.x86.r[X86_R_AX] = cpu->cd.x86.tsc
+				    & 0xffffffff;
+				/*  TODO: make this better  */
+				cpu->cd.x86.tsc += 1000;
+				break;
 			case 0xa0:
 				if (!x86_push(cpu, cpu->cd.x86.s[X86_S_FS],
 				    mode))
@@ -3302,6 +3318,43 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				}
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
+				break;
+			case 0xc7:
+				subop = (*instr >> 3) & 0x7;
+				switch (subop) {
+				case 1:	/*  CMPXCHG8B  */
+					modrm(cpu, MODRM_READ, mode, mode67,
+					    MODRM_JUST_GET_ADDR, &instr,
+					    &newpc, &op1, &op2);
+					if (!x86_load(cpu, op1, &tmp, 8))
+						return 0;
+					cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
+					if ((tmp >> 32) == (0xffffffff &
+					    cpu->cd.x86.r[X86_R_DX]) &&
+					    (tmp & 0xffffffff) == (0xffffffff &
+					    cpu->cd.x86.r[X86_R_AX])) {
+						cpu->cd.x86.rflags |=
+						    X86_FLAGS_ZF;
+						tmp = ((cpu->cd.x86.r[X86_R_CX]
+						    & 0xffffffff) << 32) |
+						    (cpu->cd.x86.r[X86_R_BX] &
+						    0xffffffff);
+						if (!x86_store(cpu, op1, tmp,8))
+							return 0;
+					} else {
+						cpu->cd.x86.r[X86_R_DX] =
+						    tmp >> 32;
+						cpu->cd.x86.r[X86_R_AX] =
+						    tmp & 0xffffffff;
+					}
+					break;
+				default:fatal("UNIMPLEMENTED 0x%02x"
+					    ",0x%02x,0x%02x", op, imm, *instr);
+					quiet_mode = 0;
+					x86_cpu_disassemble_instr(cpu,
+					    really_orig_instr, 1|omode, 0, 0);
+					cpu->running = 0;
+				}
 				break;
 			default:fatal("TODO: 0x0f,0x%02x\n", imm);
 				quiet_mode = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.29 2005-05-19 06:45:59 debug Exp $
+ *  $Id: memory_rw.c,v 1.30 2005-05-19 13:59:06 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -164,6 +164,9 @@ fatal("TODO: x86 memblock cross\n");
 		ok = cpu->translate_address(cpu, vaddr, &paddr,
 		    (writeflag? FLAG_WRITEFLAG : 0) +
 		    (no_exceptions? FLAG_NOEXCEPTIONS : 0)
+#ifdef MEM_X86
+		    + (cache_flags & NO_SEGMENTATION)
+#endif
 		    + (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
 		/*  If the translation caused an exception, or was invalid in
 		    some way, we simply return without doing the memory

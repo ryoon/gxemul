@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.3 2005-05-19 13:59:07 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.1 2005-05-19 13:59:07 debug Exp $
  *  
- *  8253/8254 Programmable Interval Timer.
+ *  PC CMOS/RTC device.
  *
  *  This is mostly bogus.
  */
@@ -45,64 +45,33 @@
 #include "misc.h"
 
 
-#define	DEV_8253_LENGTH		4
-#define	TICK_SHIFT		14
+#define	DEV_PCCMOS_LENGTH		2
 
 
-struct pit8253_data {
-	int		irq_nr;
-	int		counter_select;
+struct pccmos_data {
+	int		dummy;
 };
 
 
 /*
- *  dev_8253_tick():
- */     
-void dev_8253_tick(struct cpu *cpu, void *extra)
-{
-	struct pit8253_data *d = (struct pit8253_data *) extra;
-	cpu_interrupt(cpu, d->irq_nr);
-}
-
-
-/*
- *  dev_8253_access():
+ *  dev_pccmos_access():
  */
-int dev_8253_access(struct cpu *cpu, struct memory *mem,
+int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pit8253_data *d = (struct pit8253_data *) extra;
+	struct pccmos_data *d = (struct pccmos_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  TODO: ack somewhere else  */
-	cpu_interrupt_ack(cpu, d->irq_nr);
-
 	switch (relative_addr) {
-	case 0x00:
-		if (writeflag == MEM_WRITE) {
-			/*  TODO  */
-		} else {
-			/*  TODO  */
-			odata = 1;
-		}
-		break;
-	case 0x03:
-		if (writeflag == MEM_WRITE) {
-			d->counter_select = idata >> 6;
-			/*  TODO: other bits  */
-		} else {
-			odata = d->counter_select << 6;
-		}
-		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ 8253: unimplemented write to address 0x%x"
+			fatal("[ pccmos: unimplemented write to address 0x%x"
 			    " data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ 8253: unimplemented read from address 0x%x "
+			fatal("[ pccmos: unimplemented read from address 0x%x "
 			    "]\n", (int)relative_addr);
 		}
 	}
@@ -115,25 +84,21 @@ int dev_8253_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  devinit_8253():
+ *  devinit_pccmos():
  */
-int devinit_8253(struct devinit *devinit)
+int devinit_pccmos(struct devinit *devinit)
 {
-	struct pit8253_data *d = malloc(sizeof(struct pit8253_data));
+	struct pccmos_data *d = malloc(sizeof(struct pccmos_data));
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct pit8253_data));
-	d->irq_nr = devinit->irq_nr;
+	memset(d, 0, sizeof(struct pccmos_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_8253_LENGTH, dev_8253_access, (void *)d,
+	    devinit->addr, DEV_PCCMOS_LENGTH, dev_pccmos_access, (void *)d,
 	    MEM_DEFAULT, NULL);
-
-	machine_add_tickfunction(devinit->machine, dev_8253_tick,
-	    d, TICK_SHIFT);
 
 	return 1;
 }

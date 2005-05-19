@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.438 2005-05-16 02:15:51 debug Exp $
+ *  $Id: machine.c,v 1.439 2005-05-19 13:59:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4521,6 +4521,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8253 addr=0x%llx irq=0",
 		    (long long)(X86_IO_BASE + 0x40));
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "pccmos addr=0x%llx",
+		    (long long)(X86_IO_BASE + 0x70));
 		device_add(machine, tmpstr);
 
 		dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);

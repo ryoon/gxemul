@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.5 2005-05-19 07:54:47 debug Exp $
+ *  $Id: memory_x86.c,v 1.6 2005-05-19 13:59:06 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -51,7 +51,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	uint32_t pte, pde;
 	int a, b, res, writable;
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
-	/*  int no_exceptions = flags & FLAG_NOEXCEPTIONS;  */
+	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
+	int no_segmentation = flags & NO_SEGMENTATION;
 	struct descriptor_cache *dc;
 
 	if (cpu->cd.x86.cursegment < 0 || cpu->cd.x86.cursegment >= 8) {
@@ -66,16 +67,21 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	dc = &cpu->cd.x86.descr_cache[cpu->cd.x86.cursegment & 7];
 
-	if (PROTECTED_MODE && vaddr > dc->limit) {
-		fatal("TODO: vaddr=0x%llx > limit (0x%llx)\n",
-		    (long long)vaddr, (long long)dc->limit);
-		goto fail;
+	if (no_segmentation) {
+		/*  "no exceptions" is used with x86 emulation to read
+		    from linear addresses  */
+		writable = 1;
+	} else {
+		if (PROTECTED_MODE && vaddr > dc->limit) {
+			fatal("TODO: vaddr=0x%llx > limit (0x%llx)\n",
+			    (long long)vaddr, (long long)dc->limit);
+			goto fail;
+		}
+
+		/*  TODO: Check the Privilege Level  */
+		vaddr += dc->base;
+		writable = dc->writable;
 	}
-
-	/*  TODO: Check the Privilege Level  */
-
-	vaddr += dc->base;
-	writable = dc->writable;
 
 	/*  Paging:  */
 	if (cpu->cd.x86.cr[0] & X86_CR0_PG) {
@@ -137,16 +143,15 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	/*  Code:  */
 	if (flags & FLAG_INSTR) {
-		if (dc->descr_type == DESCR_TYPE_CODE) {
+		if (dc->descr_type == DESCR_TYPE_CODE)
 			return 1;
-		}
 		fatal("TODO instr load but not code descriptor?\n");
 		goto fail;
 	}
 
 	/*  We are here on non-instruction fetch.  */
 
-	if (writeflag == MEM_WRITE && !dc->writable) {
+	if (writeflag == MEM_WRITE && !writable) {
 		fatal("TODO write to nonwritable segment\n");
 		goto fail;
 	}

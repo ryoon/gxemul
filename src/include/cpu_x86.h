@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.19 2005-05-19 06:46:00 debug Exp $
+ *  $Id: cpu_x86.h,v 1.20 2005-05-19 13:59:08 debug Exp $
  */
 
 #include "misc.h"
@@ -117,6 +117,8 @@ struct x86_cpu {
 	int		cursegment;	/*  NOTE: 0..N_X86_SEGS-1  */
 	int		seg_override;
 
+	uint64_t	tsc;		/*  time stamp counter  */
+
 	uint64_t	gdtr;		/*  global descriptor table */
 	uint32_t	gdtr_limit;
 	uint64_t	idtr;		/*  interrupt descriptor table  */
@@ -165,6 +167,18 @@ struct x86_cpu {
 #define	X86_CR0_NW	0x20000000
 #define	X86_CR0_CD	0x40000000
 #define	X86_CR0_PG	0x80000000	/*  Paging Enable  */
+
+#define	X86_CR4_OSXMEX	0x00000400
+#define	X86_CR4_OSFXSR	0x00000200
+#define	X86_CR4_PCE	0x00000100
+#define	X86_CR4_PGE	0x00000080
+#define	X86_CR4_MCE	0x00000040
+#define	X86_CR4_PAE	0x00000020
+#define	X86_CR4_PSE	0x00000010
+#define	X86_CR4_DE	0x00000008
+#define	X86_CR4_TSD	0x00000004	/*  Time Stamp Disable  */
+#define	X86_CR4_PVI	0x00000002
+#define	X86_CR4_VME	0x00000001
 
 /*  CPUID feature bits:  */
 #define	X86_CPUID_ECX_ETPRD	0x00004000

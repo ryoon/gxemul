@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.4 2005-05-18 13:31:29 debug Exp $
+ *  $Id: dev_8259.c,v 1.5 2005-05-19 13:59:07 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -44,7 +44,6 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "net.h"
 
 
 #define	DEV_8259_LENGTH		2

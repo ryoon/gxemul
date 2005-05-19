@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.30 2005-05-18 10:07:55 debug Exp $
+ *  $Id: memory.h,v 1.31 2005-05-19 13:59:08 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -118,8 +118,9 @@ struct memory {
 
 #define	CACHE_FLAGS_MASK		0x3
 
-#define	NO_EXCEPTIONS			8
-#define	PHYSICAL			16
+#define	NO_EXCEPTIONS			16
+#define	PHYSICAL			32
+#define	NO_SEGMENTATION			64	/*  for X86  */
 
 
 /*  memory.c:  */
@@ -158,6 +159,7 @@ int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
 /*  X86 stuff:  */
 int translate_address_x86(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
+
 
 #define FLAG_WRITEFLAG          1
 #define FLAG_NOEXCEPTIONS       2

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.126 2005-05-09 13:36:28 debug Exp $
+#  $Id: configure,v 1.127 2005-05-19 13:59:05 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -190,9 +190,13 @@ if [ z$MIPS16 = zYES ]; then
 fi
 if [ z$ENABLEALPHA = zYES ]; then
 	printf "#define ENABLE_ALPHA\n" >> config.h
+	printf "\nWARNING: Alpha emulation enabled, but it isn't really"
+	printf " implemented yet.\n"
 fi
 if [ z$ENABLEHPPA = zYES ]; then
 	printf "#define ENABLE_HPPA\n" >> config.h
+	printf "\nWARNING: HPPA emulation enabled, but it isn't really"
+	printf " implemented yet.\n"
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
@@ -202,12 +206,16 @@ if [ z$ENABLEPPC = zYES ]; then
 fi
 if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h
+	printf "\nWARNING: SPARC emulation enabled, but it isn't really"
+	printf " implemented yet.\n"
 fi
 if [ z$ENABLEURISC = zYES ]; then
 	printf "#define ENABLE_URISC\n" >> config.h
 fi
 if [ z$ENABLEX86 = zYES ]; then
 	printf "#define ENABLE_X86\n" >> config.h
+	printf "\nWARNING: X86 emulation enabled, but it isn't really"
+	printf " working yet.\n"
 fi
 
 

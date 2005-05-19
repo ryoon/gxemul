@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.52 2005-05-18 10:07:53 debug Exp $
+#  $Id: Makefile.skel,v 1.53 2005-05-19 06:45:59 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -24,9 +24,13 @@ $(OBJS): Makefile
 
 bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
-cpu_mips.o: cpu_mips.c memory_mips_v2p.c cpu_mips16.c memory_mips.c
+cpu_mips.o: cpu_mips.c cpu_mips16.c memory_mips.c
+
+memory_mips.c: memory_rw.c memory_mips_v2p.c
 
 cpu_x86.o: cpu_x86.c memory_x86.c
+
+memory_x86.c: memory_rw.c
 
 clean:
 	rm -f $(OBJS) *core

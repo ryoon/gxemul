@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.114 2005-05-19 05:24:55 debug Exp $
+ *  $Id: cpu_x86.c,v 1.115 2005-05-19 06:45:59 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -314,8 +314,11 @@ if (cpu->cd.x86.mode == 32) {
 	if (PROTECTED_MODE) {
 		/*  Protected mode:  */
 		debug("cpu%i:  cr0 = 0x%08x  cr3 = 0x%08x  eflags = 0x%08x\n",
-		    x, (int)cpu->cd.x86.cr[0],
-		    (int)cpu->cd.x86.cr[3], (int)cpu->cd.x86.rflags);
+		    x, (int)cpu->cd.x86.cr[0], (int)cpu->cd.x86.cr[3],
+		    (int)cpu->cd.x86.rflags);
+		debug("cpu%i:  tr = 0x%04x (base=0x%llx, limit=0x%x)\n",
+		    x, (int)cpu->cd.x86.tr, (long long)cpu->cd.x86.tr_base,
+		    (int)cpu->cd.x86.tr_limit);
 	}
 #if 0
 	if (cpu->cd.x86.mode == 64) {
@@ -601,24 +604,31 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
 }
 
 
+#define	RELOAD_TR	0x1000
 /*
  *  reload_segment_descriptor():
  *
  *  Loads base, limit and other settings from the Global Descriptor Table into
  *  segment descriptors.
+ *
+ *  This function can also be used to reload the TR (task register).
  */
 void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 {
 	int res, i, readable, writable, granularity, descr_type;
+	int segment = 1;
 	unsigned char descr[8];
 	uint64_t base, limit;
 
-	if (segnr < 0 || segnr >= N_X86_SEGS) {
+	if (segnr & RELOAD_TR)
+		segment = 0;
+
+	if (segment && (segnr < 0 || segnr >= N_X86_SEGS)) {
 		fatal("reload_segment_descriptor(): segnr = %i\n", segnr);
 		exit(1);
 	}
 
-	if (REAL_MODE) {
+	if (segment && REAL_MODE) {
 		/*  Real mode:  */
 		cpu->cd.x86.descr_cache[segnr].valid = 1;
 		cpu->cd.x86.descr_cache[segnr].default_op_size = 16;
@@ -673,13 +683,27 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	base = descr[2] + (descr[3] << 8) + (descr[4] << 16) +
 	    (descr[7] << 24);
 	limit = descr[0] + (descr[1] << 8) + ((descr[6]&15) << 16);
+
 	descr_type = readable = writable = granularity = 0;
+	granularity = (descr[6] & 0x80)? 1 : 0;
+	if (granularity)
+		limit = (limit << 12) | 0xfff;
 
 #if 0
 printf("base = %llx\n",(long long)base);
 for (i=0; i<8; i++)
 	fatal(" %02x", descr[i]);
 #endif
+
+	if (!segment) {
+		/*  Reload the task register:  */
+		cpu->cd.x86.tr = selector;
+		/*  TODO: Check that this is indeed a TSS descriptor  */
+		cpu->cd.x86.tr_base = base;
+		cpu->cd.x86.tr_limit = limit;
+		/*  TODO: Mark the new TSS as busy!  */
+		return;
+	}
 
 	if ((descr[5] & 0x18) == 0x18) {
 		descr_type = DESCR_TYPE_CODE;
@@ -700,10 +724,6 @@ for (i=0; i<8; i++)
 		fatal("TODO: other\n");
 		goto fail_dump;
 	}
-
-	granularity = (descr[6] & 0x80)? 1 : 0;
-	if (granularity)
-		limit = (limit << 12) | 0xfff;
 
 	cpu->cd.x86.descr_cache[segnr].valid = 1;
 	cpu->cd.x86.descr_cache[segnr].default_op_size =
@@ -912,9 +932,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					if (b == 5) {	/*  imm base  */
 						imm2 = read_imm_common(instrp,
 						    lenp, immlen, disasm);
-						sprintf(tmp, "0x%x", imm2);
+						sprintf(tmp, ofs_string(imm2));
 					} else
-						sprintf(tmp, "%s%s", f,
+						sprintf(tmp, "+%s%s", f,
 						    reg_names[b]);
 					if (i == 4)
 						sprintf(modrm_rm, "[%s]", tmp);
@@ -922,7 +942,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 						sprintf(modrm_rm, "[%s%s+%s]",
 						    f, reg_names[i], tmp);
 					else
-						sprintf(modrm_rm, "[%s%s*%i+%s"
+						sprintf(modrm_rm, "[%s%s*%i%s"
 						    "]", f, reg_names[i],
 						    s, tmp);
 				} else {
@@ -2625,6 +2645,8 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 	 */
 
 	if (PROTECTED_MODE) {
+/*  urk  */
+return 0;
 		fatal("Interrupts in protected mode not yet implemented\n");
 		cpu->running = 0;
 		return 1;
@@ -2953,6 +2975,25 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		} else {
 			int subop;
 			switch (imm) {
+			case 0x00:
+				subop = (*instr >> 3) & 0x7;
+				switch (subop) {
+				case 3:	/*  ltr  */
+					/*  TODO: Check cpl=0 and Prot.mode  */
+					instr_orig = instr;
+					modrm(cpu, MODRM_READ, 16, mode67,
+					    0, &instr, &newpc, &op1, &op2);
+					reload_segment_descriptor(cpu,
+					    RELOAD_TR, op1);
+					break;
+				default:fatal("UNIMPLEMENTED 0x%02x"
+					    ",0x%02x,0x%02x", op, imm, *instr);
+					quiet_mode = 0;
+					x86_cpu_disassemble_instr(cpu,
+					    really_orig_instr, 1 | omode, 0, 0);
+					cpu->running = 0;
+				}
+				break;
 			case 0x01:
 				subop = (*instr >> 3) & 0x7;
 				switch (subop) {
@@ -3696,9 +3737,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 			if (!stos && !scas) {
+				uint64_t addr = cpu->cd.x86.r[X86_R_SI];
+				if (mode == 16)
+					addr &= 0xffff;
+				if (mode == 32)
+					addr &= 0xffffffff;
 				cpu->cd.x86.cursegment = origcursegment;
-				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_SI],
-				    &value, len))
+				if (!x86_load(cpu, addr, &value, len))
 					return 0;
 			} else
 				value = cpu->cd.x86.r[X86_R_AX];
@@ -3716,15 +3761,23 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 			if (stos || movs) {
+				uint64_t addr = cpu->cd.x86.r[X86_R_DI];
+				if (mode == 16)
+					addr &= 0xffff;
+				if (mode == 32)
+					addr &= 0xffffffff;
 				cpu->cd.x86.cursegment = X86_S_ES;
-				if (!x86_store(cpu, cpu->cd.x86.r[X86_R_DI],
-				    value, len))
+				if (!x86_store(cpu, addr, value, len))
 					return 0;
 			}
 			if (cmps || scas) {
+				uint64_t addr = cpu->cd.x86.r[X86_R_DI];
+				if (mode == 16)
+					addr &= 0xffff;
+				if (mode == 32)
+					addr &= 0xffffffff;
 				cpu->cd.x86.cursegment = X86_S_ES;
-				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_DI],
-				    &tmp, len))
+				if (!x86_load(cpu, addr, &tmp, len))
 					return 0;
 
 				x86_calc_flags(cpu, value, tmp, len*8,

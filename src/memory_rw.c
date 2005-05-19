@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.28 2005-05-19 05:24:55 debug Exp $
+ *  $Id: memory_rw.c,v 1.29 2005-05-19 06:45:59 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -412,6 +412,7 @@ have_paddr:
 
 	/*  Outside of physical RAM?  */
 	if (paddr >= mem->physical_max) {
+#ifdef MEM_MIPS
 		if ((paddr & 0xffff000000ULL) == 0x1f000000) {
 			/*  Ok, this is PROM stuff  */
 		} else if ((paddr & 0xfffff00000ULL) == 0x1ff00000) {
@@ -420,13 +421,19 @@ have_paddr:
 			if (writeflag == MEM_READ)
 				memset(data, 0, len);
 			goto do_return_ok;
-		} else {
-			if (paddr >= mem->physical_max + 0 * 1024) {
+		} else
+#endif /* MIPS */
+		{
+			if (paddr >= mem->physical_max) {
 				char *symbol;
 #ifdef MEM_MIPS
 				uint64_t offset;
 #endif
-				if (!quiet_mode) {
+				/*  This allows for example OS kernels to probe
+				    memory a few KBs past the end of memory,
+				    without giving too many warnings.  */
+				if (!quiet_mode && paddr >=
+				    mem->physical_max + 0x40000) {
 					fatal("[ memory_rw(): writeflag=%i ",
 					    writeflag);
 					if (writeflag) {

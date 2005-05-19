@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.18 2005-05-19 05:24:55 debug Exp $
+ *  $Id: cpu_x86.h,v 1.19 2005-05-19 06:46:00 debug Exp $
  */
 
 #include "misc.h"
@@ -117,10 +117,14 @@ struct x86_cpu {
 	int		cursegment;	/*  NOTE: 0..N_X86_SEGS-1  */
 	int		seg_override;
 
-	uint64_t	gdtr;
-	uint64_t	gdtr_limit;
-	uint64_t	idtr;
-	uint64_t	idtr_limit;
+	uint64_t	gdtr;		/*  global descriptor table */
+	uint32_t	gdtr_limit;
+	uint64_t	idtr;		/*  interrupt descriptor table  */
+	uint32_t	idtr_limit;
+
+	uint16_t	tr;		/*  task register  */
+	uint64_t	tr_base;
+	uint32_t	tr_limit;
 
 	uint64_t	rflags;
 	uint64_t	cr[N_X86_CREGS];

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.3 2005-05-18 13:31:28 debug Exp $
+ *  $Id: memory_x86.c,v 1.4 2005-05-19 06:45:59 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -45,6 +45,11 @@
 int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
+	unsigned char pded[4];
+	unsigned char pted[4];
+	uint64_t table_addr;
+	uint32_t pte, pde;
+	int a, b, res, writable;
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
 	/*  int no_exceptions = flags & FLAG_NOEXCEPTIONS;  */
 	struct descriptor_cache *dc;
@@ -61,23 +66,80 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	dc = &cpu->cd.x86.descr_cache[cpu->cd.x86.cursegment & 7];
 
+	if (vaddr > dc->limit) {
+		fatal("TODO: vaddr=0x%llx > limit (0x%llx)\n",
+		    (long long)vaddr, (long long)dc->limit);
+		goto fail;
+	}
+
 	/*  TODO: Check the limit. (depends on granularity?)  */
 
 	/*  TODO: Check the Privilege Level  */
 
 	vaddr += dc->base;
+	writable = dc->writable;
 
-	/*  TODO: Paging  */
+	/*  Paging:  */
 	if (cpu->cd.x86.cr[0] & X86_CR0_PG) {
-		fatal("TODO: PAGING not yet supported\n");
-		cpu->running = 0;
-		return 0;
-	}
+		/*  TODO: This should be cached somewhere, in some
+			kind of simulated TLB.  */
+		if (cpu->cd.x86.cr[3] & 0xfff) {
+			fatal("TODO: cr3=%016llx (lowest bits non-zero)\n",
+			    (long long)cpu->cd.x86.cr[3]);
+			goto fail;
+		}
+
+		a = (vaddr >> 22) & 1023;
+		b = (vaddr >> 12) & 1023;
+		/*  fatal("vaddr = 0x%08x ==> %i, %i\n", (int)vaddr, a, b);  */
+
+		/*  Read the Page Directory Entry:  */
+		table_addr = cpu->cd.x86.cr[3] & ~0xfff;
+		if (table_addr == 0)
+			fatal("WARNING: The page directory (cr3) is at"
+			    " physical address 0 (?)\n");
+		res = cpu->memory_rw(cpu, cpu->mem, table_addr + 4*a, pded,
+		    sizeof(pded), MEM_READ, PHYSICAL);
+		if (!res) {
+			fatal("TODO: could not read pde (table = 0x%llx)\n",
+			    (long long)table_addr);
+			goto fail;
+		}
+		pde = pded[0] + (pded[1] << 8) + (pded[2] << 16) +
+		    (pded[3] << 24);
+		/*  fatal("  pde: 0x%08x\n", (int)pde);  */
+		/*  TODO: lowest bits of the pde  */
+		if (!(pde & 0x01)) {
+			fatal("TODO: pde not present\n");
+			goto fail;
+		}
+
+		/*  Read the Page Table Entry:  */
+		table_addr = pde & ~0xfff;
+		res = cpu->memory_rw(cpu, cpu->mem, table_addr + 4*b, pted,
+		    sizeof(pted), MEM_READ, PHYSICAL);
+		if (!res) {
+			fatal("TODO: could not read pte (pt = 0x%llx)\n",
+			    (long long)table_addr);
+			goto fail;
+		}
+		pte = pted[0] + (pted[1] << 8) + (pted[2] << 16) +
+		    (pted[3] << 24);
+		/*  fatal("  pte: 0x%08x\n", (int)pte);  */
+		if (!(pte & 0x02))
+			writable = 0;
+		if (!(pte & 0x01)) {
+			fatal("TODO: pte not present\n");
+			goto fail;
+		}
+
+		(*return_addr) = (pte & ~0xfff) | (vaddr & 0xfff);
+	} else
+		*return_addr = vaddr;
 
 	/*  Code:  */
 	if (flags & FLAG_INSTR) {
 		if (dc->descr_type == DESCR_TYPE_CODE) {
-			*return_addr = vaddr;
 			return 1;
 		}
 		fatal("TODO instr load but not code descriptor?\n");
@@ -90,8 +152,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		fatal("TODO write to nonwritable segment\n");
 		goto fail;
 	}
-	*return_addr = vaddr;
-	return 1 + dc->writable;
+
+	return 1 + writable;
 
 fail:
 	fatal("memory_x86 FAIL: TODO\n");

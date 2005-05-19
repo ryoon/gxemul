@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.68 2005-05-19 05:24:55 debug Exp $
+ *  $Id: pc_bios.c,v 1.69 2005-05-19 06:45:59 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -658,7 +658,7 @@ static void pc_bios_int13(struct cpu *cpu)
 	int dl = (cpu->cd.x86.r[X86_R_DX] >> 0) & 0xff;
 	int ch = (cpu->cd.x86.r[X86_R_CX] >> 8) & 0xff;
 	int cl = (cpu->cd.x86.r[X86_R_CX] >> 0) & 0xff;
-	int bx = cpu->cd.x86.r[X86_R_BX];
+	int bx = cpu->cd.x86.r[X86_R_BX] & 0xffff;
 	uint64_t offset;
 
 	switch (ah) {

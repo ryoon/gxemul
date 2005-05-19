@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.741 2005-05-19 06:45:58 debug Exp $
+$Id: HISTORY,v 1.742 2005-05-19 07:54:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1914,4 +1914,5 @@ Changelog for GXemul:
 		Trying to fix the pckbc to work with MS-DOS' keyb.com, but no
 		success yet.
 20050518	Adding a simple 32-bit x86 MMU skeleton.
-20050519	Some more work on the x86 stuff (paging etc).
+20050519	Some more work on the x86 stuff. (Beginning the work on paging,
+		and various other fixes).

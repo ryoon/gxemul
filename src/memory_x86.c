@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.4 2005-05-19 06:45:59 debug Exp $
+ *  $Id: memory_x86.c,v 1.5 2005-05-19 07:54:47 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -66,13 +66,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	dc = &cpu->cd.x86.descr_cache[cpu->cd.x86.cursegment & 7];
 
-	if (vaddr > dc->limit) {
+	if (PROTECTED_MODE && vaddr > dc->limit) {
 		fatal("TODO: vaddr=0x%llx > limit (0x%llx)\n",
 		    (long long)vaddr, (long long)dc->limit);
 		goto fail;
 	}
-
-	/*  TODO: Check the limit. (depends on granularity?)  */
 
 	/*  TODO: Check the Privilege Level  */
 

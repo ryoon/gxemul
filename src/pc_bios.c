@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.69 2005-05-19 06:45:59 debug Exp $
+ *  $Id: pc_bios.c,v 1.70 2005-05-19 07:54:47 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -565,6 +565,22 @@ static void pc_bios_int10(struct cpu *cpu)
 			break;
 		case 0x14:
 			break;
+		case 0x30:
+			switch (bh) {
+			case 0x03:	/*  8x8 font  */
+				cpu->cd.x86.r[X86_R_BP] &= ~0xffff;
+				cpu->cd.x86.r[X86_R_BP] |= 0xfa6e;
+				reload_segment_descriptor(cpu, X86_S_ES,0xf000);
+				/*  TODO: cx and dl, better values?  */
+				cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
+				cpu->cd.x86.r[X86_R_CX] |= 16;
+				cpu->cd.x86.r[X86_R_DX] &= ~0xff;
+				cpu->cd.x86.r[X86_R_DX] |= 24;
+				break;
+			default:
+				fatal("[ pc_bios: Get Font: TODO ]\n");
+			}
+			break;
 		default:fatal("Unimplemented INT 0x10,AH=0x11,AL=0x%02x\n", al);
 			cpu->running = 0;
 		}
@@ -720,7 +736,7 @@ static void pc_bios_int13(struct cpu *cpu)
 				    "write to", dl, (long long)offset);
 			} else if (ah == 2) {
 				cpu->cd.x86.cursegment = X86_S_ES;
-				if (bx > 0xfe00) {
+				if (bx + 512*al > 0x10000) {
 					/*  DMA overrun  */
 					fatal("[ pc_bios: DMA overrun ]\n");
 					err = 9;

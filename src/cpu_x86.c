@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.115 2005-05-19 06:45:59 debug Exp $
+ *  $Id: cpu_x86.c,v 1.116 2005-05-19 07:54:47 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -939,7 +939,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					if (i == 4)
 						sprintf(modrm_rm, "[%s]", tmp);
 					else if (s == 1)
-						sprintf(modrm_rm, "[%s%s+%s]",
+						sprintf(modrm_rm, "[%s%s%s]",
 						    f, reg_names[i], tmp);
 					else
 						sprintf(modrm_rm, "[%s%s*%i%s"
@@ -1052,7 +1052,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 						    f, reg_names[b],
 						    ofs_string(imm2));
 					else if (s == 1)
-						sprintf(modrm_rm, "[%s%s+%s"
+						sprintf(modrm_rm, "[%s%s%s"
 						    "%s%s]", f, reg_names[i],
 						    f, reg_names[b],
 						    ofs_string(imm2));
@@ -1338,8 +1338,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		dumpaddr = cpu->pc;
 
 	if (mode == 0) {
-		fatal("x86_cpu_disassemble_instr(): no mode: TODO\n");
-		return 1;
+		mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
+		if (mode == 0) {
+			fatal("x86_cpu_disassemble_instr(): no mode: TODO\n");
+			return 1;
+		}
 	}
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
@@ -1982,6 +1985,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("aad");
 		if (imm != 10)
 			debug("\t%i", imm);
+	} else if (op == 0xd6) {
+		SPACES; debug("setalc");	/*  undocumented?  */
 	} else if (op == 0xd7) {
 		SPACES; debug("xlat");
 	} else if (op == 0xe3) {
@@ -3063,6 +3068,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					cpu->running = 0;
 				}
 				break;
+			case 0x06:	/*  CLTS  */
+				cpu->cd.x86.cr[0] &= ~X86_CR0_TS;
+				break;
+			case 0x08:	/*  INVD  */
+				/*  TODO  */
+				break;
+			case 0x09:	/*  WBINVD  */
+				/*  TODO  */
+				break;
 			case 0x20:	/*  MOV r/m,CRx  */
 				instr_orig = instr;
 				modrm(cpu, MODRM_READ, 32, mode67,
@@ -3207,8 +3221,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				op2 = tmp;
 				if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
 					return 0;
-				reload_segment_descriptor(cpu, op==0xb2?
-				    X86_S_SS:(op==0xb4?X86_S_FS:X86_S_GS), tmp);
+				reload_segment_descriptor(cpu, imm==0xb2?
+				    X86_S_SS:(imm==0xb4?X86_S_FS:X86_S_GS),tmp);
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;

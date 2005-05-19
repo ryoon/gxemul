@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.30 2005-05-19 13:59:06 debug Exp $
+ *  $Id: memory_rw.c,v 1.31 2005-05-19 16:04:12 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -567,6 +567,7 @@ no_exception_access:
 		else
 			memcpy(data, memblock + offset, len);
 
+#ifdef MEM_MIPS
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->cd.mips.pc_last_host_4k_page = memblock
 			    + (offset & ~0xfff);
@@ -577,6 +578,7 @@ no_exception_access:
 			}
 #endif
 		}
+#endif	/*  MIPS  */
 	}
 
 

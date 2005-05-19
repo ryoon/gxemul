@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.117 2005-05-19 13:59:06 debug Exp $
+ *  $Id: cpu_x86.c,v 1.118 2005-05-19 16:04:12 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -865,8 +865,9 @@ static char modrm_rm[65];
 #define	MODRM_SEG		2
 #define	MODRM_JUST_GET_ADDR	4
 #define	MODRM_CR		8
-#define	MODRM_R_NONEIGHTBIT	16
-#define	MODRM_RM_16BIT		32
+#define	MODRM_DR		16
+#define	MODRM_R_NONEIGHTBIT	32
+#define	MODRM_RM_16BIT		64
 
 
 /*
@@ -1219,7 +1220,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 						    cpu->cd.x86.r[rm] & ~0xffff)
 						    | (*op1p & 0xffff);
 					else
-						cpu->cd.x86.r[rm] = *op1p;
+						cpu->cd.x86.r[rm] =
+						    modify(cpu->cd.x86.r[rm],
+						    *op1p);
 					break;
 				case MODRM_READ:	/*  read  */
 					if (mode == 16 ||
@@ -1269,6 +1272,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 				strcpy(modrm_r, seg_names[r]);
 			else if (flags & MODRM_CR)
 				sprintf(modrm_r, "cr%i", r);
+			else if (flags & MODRM_DR)
+				sprintf(modrm_r, "dr%i", r);
 			else {
 				if (mode >= 32)
 					sprintf(modrm_r, "%s%s", e,
@@ -1283,6 +1288,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					cpu->cd.x86.s[r] = *op2p;
 				else if (flags & MODRM_CR)
 					x86_write_cr(cpu, r, *op2p);
+				else if (flags & MODRM_DR)
+					cpu->cd.x86.dr[r] = *op2p;
 				else
 					cpu->cd.x86.r[r] =
 					    modify(cpu->cd.x86.r[r], *op2p);
@@ -1292,6 +1299,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					*op2p = cpu->cd.x86.s[r];
 				else if (flags & MODRM_CR)
 					*op2p = cpu->cd.x86.cr[r];
+				else if (flags & MODRM_DR)
+					*op2p = cpu->cd.x86.dr[r];
 				else
 					*op2p = cpu->cd.x86.r[r];
 			}
@@ -1546,15 +1555,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("invd");
 			} else if (imm == 0x09) {
 				SPACES; debug("wbinvd");
-			} else if (imm == 0x20) {
+			} else if (imm == 0x20 || imm == 0x21) {
 				modrm(cpu, MODRM_READ, 32 /* note: 32  */,
-				    mode67, MODRM_CR, &instr, &ilen,
-				    NULL, NULL);
+				    mode67, imm == 0x20? MODRM_CR : MODRM_DR,
+				    &instr, &ilen, NULL, NULL);
 				SPACES; debug("mov\t%s,%s", modrm_rm, modrm_r);
-			} else if (imm == 0x22) {
+			} else if (imm == 0x22 || imm == 0x23) {
 				modrm(cpu, MODRM_READ, 32 /* note: 32  */,
-				    mode67, MODRM_CR, &instr, &ilen,
-				    NULL, NULL);
+				    mode67, imm == 0x22? MODRM_CR : MODRM_DR,
+				    &instr, &ilen, NULL, NULL);
 				SPACES; debug("mov\t%s,%s", modrm_r, modrm_rm);
 			} else if (imm == 0x30) {
 				SPACES; debug("wrmsr");
@@ -1566,8 +1575,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("sysenter");
 			} else if (imm == 0x36) {
 				SPACES; debug("sysexit");
+			} else if (imm >= 0x40 && imm <= 0x4f) {
+				modrm(cpu, MODRM_READ, mode, mode67, 0,
+				    &instr, &ilen, NULL, NULL);
+				op = imm & 0xf;
+				SPACES; debug("cmov%s%s\t%s,%s", op&1? "n"
+				    : "", cond_names[(op/2) & 0x7],
+				    modrm_r, modrm_rm);
 			} else if (imm >= 0x80 && imm <= 0x8f) {
-				op = imm;
+				op = imm & 0xf;
 				imm = read_imm_and_print(&instr, &ilen, mode);
 				imm = dumpaddr + 2 + mode/8 + imm;
 				SPACES; debug("j%s%s\tnear 0x%x", op&1? "n"
@@ -2965,7 +2981,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		int signflag, i;
 		imm = read_imm(&instr, &newpc, 8);
 		if (imm >= 0x80 && imm <= 0x8f) {
-			op = imm;
+			op = imm & 0xf;
 			imm = read_imm(&instr, &newpc, mode);
 			success = x86_condition(cpu, op);
 			if (success)
@@ -2975,7 +2991,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!modrm(cpu, MODRM_READ, mode, mode67,
 			    MODRM_EIGHTBIT, &instr, &newpc, &op1, &op2))
 				return 0;
-			op1 = x86_condition(cpu, imm);
+			op1 = x86_condition(cpu, imm & 0xf);
 			if (!modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 			    MODRM_EIGHTBIT, &instr_orig, NULL, &op1, &op2))
 				return 0;
@@ -3080,20 +3096,26 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				/*  TODO  */
 				break;
 			case 0x20:	/*  MOV r/m,CRx  */
+			case 0x21:	/*  MOV r/m,DRx: TODO: is this right? */
 				instr_orig = instr;
-				modrm(cpu, MODRM_READ, 32, mode67,
-				    MODRM_CR, &instr, &newpc, &op1, &op2);
+				modrm(cpu, MODRM_READ, 32, mode67, imm==0x22?
+				    MODRM_CR : MODRM_DR, &instr, &newpc, &op1,
+				    &op2);
 				op1 = op2;
 				modrm(cpu, MODRM_WRITE_RM, 32, mode67,
-				    MODRM_CR, &instr_orig, NULL, &op1, &op2);
+				    imm==0x22? MODRM_CR : MODRM_DR,
+				    &instr_orig, NULL, &op1, &op2);
 				break;
 			case 0x22:	/*  MOV CRx,r/m  */
+			case 0x23:	/*  MOV DRx,r/m  */
 				instr_orig = instr;
-				modrm(cpu, MODRM_READ, 32, mode67,
-				    MODRM_CR, &instr, &newpc, &op1, &op2);
+				modrm(cpu, MODRM_READ, 32, mode67, imm==0x22?
+				    MODRM_CR : MODRM_DR, &instr, &newpc, &op1,
+				    &op2);
 				op2 = op1;
-				modrm(cpu, MODRM_WRITE_R, 32, mode67,
-				    MODRM_CR, &instr_orig, NULL, &op1, &op2);
+				modrm(cpu, MODRM_WRITE_R, 32, mode67, imm==0x22?
+				    MODRM_CR : MODRM_DR, &instr_orig, NULL,
+				    &op1, &op2);
 				break;
 			case 0x31:	/*  RDTSC  */
 				if (cpu->cd.x86.model.model_number <
@@ -3317,6 +3339,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					}
 				}
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
+				    0, &instr_orig, NULL, &op1, &op2);
+				break;
+			case 0xc0:	/*  xadd  */
+			case 0xc1:
+				instr_orig = instr;
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    imm == 0xc0? MODRM_EIGHTBIT : 0,
+				    &instr, &newpc, &op1, &op2);
+				tmp = op1; op1 = op2; op2 = tmp;
+				x86_calc_flags(cpu, op1, op2, imm==0xc0?
+				    8 : mode, CALCFLAGS_OP_ADD);
+				op1 += op2;
+				modrm(cpu, MODRM_WRITE_RM, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;
 			case 0xc7:
@@ -4494,7 +4529,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	}
 
 	/*  Wrap-around and update [E]IP:  */
-	cpu->pc = newpc & (((uint64_t)1 << omode) - 1);
+	cpu->pc = newpc & (((uint64_t)1 << (cpu->cd.x86.descr_cache[
+	    X86_S_CS].default_op_size)) - 1);
 
 	return 1;
 }

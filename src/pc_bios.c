@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.71 2005-05-19 13:59:06 debug Exp $
+ *  $Id: pc_bios.c,v 1.72 2005-05-19 16:04:12 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -842,6 +842,7 @@ static void pc_bios_int14(struct cpu *cpu)
 static void pc_bios_int15(struct cpu *cpu)
 {
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
+	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
 	int cx = cpu->cd.x86.r[X86_R_CX] & 0xffff;
 	int si = cpu->cd.x86.r[X86_R_SI] & 0xffff;
 	int m;
@@ -919,17 +920,20 @@ static void pc_bios_int15(struct cpu *cpu)
 	case 0x88:	/*  Extended Memory Size Determination  */
 		/*  TODO: Max 16 or 64 MB?  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
 		if (cpu->machine->physical_ram_in_mb <= 64)
-			cpu->cd.x86.r[X86_R_AX] = (cpu->machine->
+			cpu->cd.x86.r[X86_R_AX] |= (cpu->machine->
 			    physical_ram_in_mb - 1) * 1024;
 		else
-			cpu->cd.x86.r[X86_R_AX] = 63*1024;
+			cpu->cd.x86.r[X86_R_AX] |= 63*1024;
 		break;
 	case 0x8A:	/*  Get "Big" memory size  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 		m = (cpu->machine->physical_ram_in_mb - 1) * 1024;
-		cpu->cd.x86.r[X86_R_AX] = m & 0xffff;
-		cpu->cd.x86.r[X86_R_DX] = (m >> 16) & 0xffff;
+		cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_DX] |= ((m >> 16) & 0xffff);
+		cpu->cd.x86.r[X86_R_AX] |= (m & 0xffff);
 		break;
 	case 0x91:	/*  Interrupt Complete (bogus)  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
@@ -945,8 +949,41 @@ static void pc_bios_int15(struct cpu *cpu)
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
 	case 0xe8:	/*  TODO  */
-		fatal("[ PC BIOS int 0x15,0xe8: TODO ]\n");
-		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		switch (al) {
+		case 0x01:
+			cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+			m = cpu->machine->physical_ram_in_mb;
+			if (m > 16)
+				m = 16;
+			m = (m - 1) * 1024;
+			/*  between 1MB and 16MB: (1KB blocks)  */
+			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_AX] |= (m & 0xffff);
+			/*  mem above 16MB, 64K blocks:  */
+			m = cpu->machine->physical_ram_in_mb;
+			if (m < 16)
+				m = 0;
+			else
+				m = (m-16) / 16;
+			cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_BX] |= (m & 0xffff);
+			/*  CX and DX are "configured" memory  */
+			cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
+			cpu->cd.x86.r[X86_R_CX] |= (
+			    cpu->cd.x86.r[X86_R_CX] & 0xffff);
+			cpu->cd.x86.r[X86_R_DX] |= (
+			    cpu->cd.x86.r[X86_R_BX] & 0xffff);
+			break;
+		case 0x20:	/*  Get memory map:  TODO  */
+			cpu->cd.x86.rflags |= X86_FLAGS_CF;
+			cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
+			cpu->cd.x86.r[X86_R_AX] |= 0x8600;
+			break;
+		default:fatal("[ PC BIOS int 0x15,0xe8: al=0x%02x "
+			    " TODO ]\n", al);
+			cpu->running = 0;
+		}
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x15 function"

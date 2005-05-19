@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.113 2005-05-19 04:28:04 debug Exp $
+ *  $Id: cpu_x86.c,v 1.114 2005-05-19 05:24:55 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2161,25 +2161,45 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 static void x86_cpuid(struct cpu *cpu)
 {
 	switch (cpu->cd.x86.r[X86_R_AX]) {
-	case 0:	cpu->cd.x86.r[X86_R_AX] = 2;	/*  TODO  */
-		/*  Either AMD...  */
-		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
-		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
-		cpu->cd.x86.r[X86_R_CX] = 0x69746E65;
-		/*  ... or Intel:  */
+	/*  Normal CPU id:  */
+	case 0:	cpu->cd.x86.r[X86_R_AX] = 2;
+		/*  Intel...  */
 		cpu->cd.x86.r[X86_R_BX] = 0x756e6547;  /*  "Genu"  */
 		cpu->cd.x86.r[X86_R_DX] = 0x49656e69;  /*  "ineI"  */
 		cpu->cd.x86.r[X86_R_CX] = 0x6c65746e;  /*  "ntel"  */
+		/*  ... or AMD:  */
+		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
+		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
+		cpu->cd.x86.r[X86_R_CX] = 0x69746E65;
 		break;
 	case 1:	cpu->cd.x86.r[X86_R_AX] = 0;
-		cpu->cd.x86.r[X86_R_BX] = 0;
-		cpu->cd.x86.r[X86_R_CX] = 0;
-		cpu->cd.x86.r[X86_R_DX] = 0;
+		cpu->cd.x86.r[X86_R_BX] = (cpu->cpu_id << 24);
+		/*  TODO: are bits 8..15 the _total_ nr of cpus, or the
+		    cpu id of this one?  */
+		cpu->cd.x86.r[X86_R_CX] = X86_CPUID_ECX_CX16;
+		cpu->cd.x86.r[X86_R_DX] = X86_CPUID_EDX_CX8 | X86_CPUID_EDX_FPU
+		    | X86_CPUID_EDX_MSR | X86_CPUID_EDX_MTRR
+		    | X86_CPUID_EDX_CMOV;
 		break;
 	case 2:	cpu->cd.x86.r[X86_R_AX] = 0;
 		cpu->cd.x86.r[X86_R_BX] = 0;
 		cpu->cd.x86.r[X86_R_CX] = 0;
 		cpu->cd.x86.r[X86_R_DX] = 0;
+		break;
+
+	/*  Extended CPU id:  */
+	case 0x80000000:
+		cpu->cd.x86.r[X86_R_AX] = 0x80000002;
+		/*  AMD...  */
+		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
+		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
+		cpu->cd.x86.r[X86_R_CX] = 0x69746E65;
+		break;
+	case 0x80000001:
+		cpu->cd.x86.r[X86_R_AX] = 0;
+		cpu->cd.x86.r[X86_R_BX] = 0;
+		cpu->cd.x86.r[X86_R_CX] = 0;
+		cpu->cd.x86.r[X86_R_DX] = X86_CPUID_EXT_EDX_LM;
 		break;
 	default:fatal("x86_cpuid(): unimplemented eax = 0x%x\n",
 		    cpu->cd.x86.r[X86_R_AX]);

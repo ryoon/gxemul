@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.67 2005-05-19 04:28:05 debug Exp $
+ *  $Id: pc_bios.c,v 1.68 2005-05-19 05:24:55 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -678,6 +678,8 @@ static void pc_bios_int13(struct cpu *cpu)
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		disk = get_disk(cpu->machine, cpu->cd.x86.r[X86_R_DX] & 0xff);
 		if (disk != NULL) {
+			unsigned char *buf;
+
 			cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
 			ch = ch + ((cl >> 6) << 8);
 			cl = (cl & 0x3f) - 1;
@@ -686,45 +688,48 @@ static void pc_bios_int13(struct cpu *cpu)
 			nread = 0; err = 0;
 			debug("[ pc_bios_int13(): reading from disk 0x%x, "
 			    "CHS=%i,%i,%i ]\n", dl, ch, dh, cl);
-			if (cl > 18 || dh > 1 || ch > 79) {
+
+			buf = malloc(512 * al);
+
+			if (cl > disk->sectorspertrack || dh >= disk->heads ||
+			    ch > disk->cylinders) {
 				al = 0; err = 4;  /*  sector not found  */
+				fatal("[ pc_bios: attempt to %s outside the d"
+				    "isk? bios id=0x%02x, chs=%i,%i,%i, acces"
+				    "s at %i,%i,%i ]\n", ah==2? "read" :
+				    "write", dl, disk->cylinders, disk->heads,
+				    disk->sectorspertrack, ch, dh, cl);
 			}
-			while (al > 0) {
-				unsigned char buf[512];
 
-				debug("[ pc_bios_int13(): disk offset=0x%llx,"
-				    " mem=0x%04x:0x%04x ]\n", (long long)offset,
-				    cpu->cd.x86.s[X86_S_ES], bx);
+			debug("[ pc_bios_int13(): %s biosdisk 0x%02x (offset="
+			    "0x%llx) mem=0x%04x:0x%04x ]\n", ah==2? "read from"
+			    : "write to", dl, (long long)offset,
+			    cpu->cd.x86.s[X86_S_ES], bx);
 
-				if (ah == 2) {
-					res = diskimage_access(cpu->machine,
-					    disk->id, disk->type, 0, offset,
-					    buf, sizeof(buf));
-					if (!res) {
-						err = 4;
-						fatal("[ PC BIOS: disk access "
-						    "failed: disk %i, CHS = %i"
-						    ",%i,%i ]\n", dl, ch, dh,
-						    cl);
-						break;
-					}
-
-					cpu->cd.x86.cursegment = X86_S_ES;
-					if (bx > 0xfe00) {
-						err = 9;
-						break;
-					}
-					store_buf(cpu, bx, (char *)buf,
-					    sizeof(buf));
-				} else {
-					fatal("TODO: bios disk write\n");
+			if (ah == 3) {
+				fatal("TODO: bios disk write\n");
+				/*  TODO  */
+			}
+			res = diskimage_access(cpu->machine, disk->id,
+			    disk->type, 0, offset, buf, al * 512);
+			if (!res) {
+				err = 4;
+				fatal("[ pc_bios_int13(): FAILED to %s"
+				    " biosdisk 0x%02x (offset=0x%llx)"
+				    " ]\n", ah==2? "read from" :
+				    "write to", dl, (long long)offset);
+			} else if (ah == 2) {
+				cpu->cd.x86.cursegment = X86_S_ES;
+				if (bx > 0xfe00) {
+					/*  DMA overrun  */
+					fatal("[ pc_bios: DMA overrun ]\n");
+					err = 9;
 				}
-
-				offset += sizeof(buf);
-				bx += sizeof(buf);
-				al --;
-				nread ++;
+				store_buf(cpu, bx, (char *)buf, 512 * al);
 			}
+
+			nread = al;
+			free(buf);
 			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_AX] |= nread;
 		} else

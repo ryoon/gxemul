@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.66 2005-05-18 13:31:28 debug Exp $
+ *  $Id: pc_bios.c,v 1.67 2005-05-19 04:28:05 debug Exp $
  *
  *  Generic PC BIOS emulation.
+ *
+ *  See http://hdebruijn.soo.dto.tudelft.nl/newpage/interupt/INT.HTM for
+ *  details on what different BIOS interrupts do.
  */
 
 #include <stdio.h>
@@ -893,12 +896,13 @@ static void pc_bios_int15(struct cpu *cpu)
 		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
 		break;
 	case 0x88:	/*  Extended Memory Size Determination  */
+		/*  TODO: Max 16 or 64 MB?  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
-		if (cpu->machine->physical_ram_in_mb <= 16)
+		if (cpu->machine->physical_ram_in_mb <= 64)
 			cpu->cd.x86.r[X86_R_AX] = (cpu->machine->
 			    physical_ram_in_mb - 1) * 1024;
 		else
-			cpu->cd.x86.r[X86_R_AX] = 15*1024;
+			cpu->cd.x86.r[X86_R_AX] = 63*1024;
 		break;
 	case 0x8A:	/*  Get "Big" memory size  */
 		cpu->cd.x86.rflags &= ~X86_FLAGS_CF;

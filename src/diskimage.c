@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.87 2005-05-15 20:06:05 debug Exp $
+ *  $Id: diskimage.c,v 1.88 2005-05-19 04:28:04 debug Exp $
  *
  *  Disk image support.
  *
@@ -1493,7 +1493,9 @@ int diskimage_add(struct machine *machine, char *fname)
 
 	diskimage_recalc_size(d);
 
-	if (d->total_size == 1474560 && !prefix_i && !prefix_s)
+	if ((d->total_size == 720*1024 || d->total_size == 1474560
+	    || d->total_size == 2949120 || d->total_size == 1228800)
+	    && !prefix_i && !prefix_s)
 		d->type = DISKIMAGE_FLOPPY;
 
 	d->rpms = 3600;

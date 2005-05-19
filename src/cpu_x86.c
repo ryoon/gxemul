@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.112 2005-05-18 13:31:27 debug Exp $
+ *  $Id: cpu_x86.c,v 1.113 2005-05-19 04:28:04 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -3007,7 +3007,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				modrm(cpu, MODRM_READ, 32, mode67,
 				    MODRM_CR, &instr, &newpc, &op1, &op2);
 				op1 = op2;
-				modrm(cpu, MODRM_WRITE_RM, mode, mode67,
+				modrm(cpu, MODRM_WRITE_RM, 32, mode67,
 				    MODRM_CR, &instr_orig, NULL, &op1, &op2);
 				break;
 			case 0x22:	/*  MOV CRx,r/m  */
@@ -3015,7 +3015,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				modrm(cpu, MODRM_READ, 32, mode67,
 				    MODRM_CR, &instr, &newpc, &op1, &op2);
 				op2 = op1;
-				modrm(cpu, MODRM_WRITE_R, mode, mode67,
+				modrm(cpu, MODRM_WRITE_R, 32, mode67,
 				    MODRM_CR, &instr_orig, NULL, &op1, &op2);
 				break;
 			case 0xa0:

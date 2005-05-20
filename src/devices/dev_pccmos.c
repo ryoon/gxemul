@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.1 2005-05-19 13:59:07 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.2 2005-05-20 07:42:12 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -46,10 +46,11 @@
 
 
 #define	DEV_PCCMOS_LENGTH		2
-
+#define	PCCMOS_MC146818_FAKE_ADDR	0x1d00000000ULL
 
 struct pccmos_data {
-	int		dummy;
+	unsigned char	select;
+	unsigned char	ram[256];
 };
 
 
@@ -66,6 +67,32 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+	case 0:	if (writeflag == MEM_WRITE) {
+			d->select = idata;
+			if (idata <= 0x0d)
+				cpu->memory_rw(cpu, cpu->mem,
+				    PCCMOS_MC146818_FAKE_ADDR, data, 1,
+				    MEM_WRITE, PHYSICAL);
+		} else
+			odata = d->select;
+		break;
+	case 1:	if (d->select <= 0x0d) {
+			if (writeflag == MEM_WRITE)
+				cpu->memory_rw(cpu, cpu->mem,
+				    PCCMOS_MC146818_FAKE_ADDR + 1, data, 1,
+				    MEM_WRITE, PHYSICAL);
+			else
+				cpu->memory_rw(cpu, cpu->mem,
+				    PCCMOS_MC146818_FAKE_ADDR + 1, data, 1,
+				    MEM_READ, PHYSICAL);
+			return 1;
+		} else {
+			if (writeflag == MEM_WRITE)
+				d->ram[d->select] = idata;
+			else
+				odata = d->ram[d->select];
+		}
+		break;
 	default:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ pccmos: unimplemented write to address 0x%x"
@@ -99,6 +126,10 @@ int devinit_pccmos(struct devinit *devinit)
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_PCCMOS_LENGTH, dev_pccmos_access, (void *)d,
 	    MEM_DEFAULT, NULL);
+
+	dev_mc146818_init(devinit->machine, devinit->machine->memory,
+	    PCCMOS_MC146818_FAKE_ADDR, 16  /*  NOTE/TODO: No irq  */,
+	    MC146818_PC_CMOS, 4);
 
 	return 1;
 }

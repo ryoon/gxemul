@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.41 2005-05-18 10:07:54 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.42 2005-05-20 07:42:12 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -473,8 +473,8 @@ if (x&1)
 				odata |= KBS_OCMD;
 
 			odata |= KBS_NOSEC;
-			debug("[ pckbc: read from CTL status port: "
-			    "0x%02x ]\n", (int)odata);
+			/*  debug("[ pckbc: read from CTL status port: "
+			    "0x%02x ]\n", (int)odata);  */
 		} else {
 			debug("[ pckbc: write to CTL:");
 			for (i=0; i<len; i++)

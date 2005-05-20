@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.68 2005-02-07 05:51:54 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.69 2005-05-20 07:42:12 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -587,45 +587,45 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	d->access_style  = access_style;
 	d->addrdiv       = addrdiv;
 
+	/*  Only SGIs and PCs use BCD format (?)  */
+	d->use_bcd = 0;
+	if (access_style == MC146818_SGI || access_style == MC146818_PC_CMOS)
+		d->use_bcd = 1;
+
+	if (access_style == MC146818_DEC) {
 	/*  Station Ethernet Address, on DECstation 3100:  */
 	for (i=0; i<6; i++)
 		ether_address[i] = 0x10 * (i+1);
 
-	d->reg[0x01] = ether_address[0];
-	d->reg[0x05] = ether_address[1];
-	d->reg[0x09] = ether_address[2];
-	d->reg[0x0d] = ether_address[3];
-	d->reg[0x11] = ether_address[4];
-	d->reg[0x15] = ether_address[5];
-	/*  TODO:  19, 1d, 21, 25 = checksum bytes 1,2,2,1 resp. */
-	d->reg[0x29] = ether_address[5];
-	d->reg[0x2d] = ether_address[4];
-	d->reg[0x31] = ether_address[3];
-	d->reg[0x35] = ether_address[2];
-	d->reg[0x39] = ether_address[1];
-	d->reg[0x3d] = ether_address[1];
-	d->reg[0x41] = ether_address[0];
-	d->reg[0x45] = ether_address[1];
-	d->reg[0x49] = ether_address[2];
-	d->reg[0x4d] = ether_address[3];
-	d->reg[0x51] = ether_address[4];
-	d->reg[0x55] = ether_address[5];
-	/*  TODO:  59, 5d = checksum bytes 1,2 resp. */
-	d->reg[0x61] = 0xff;
-	d->reg[0x65] = 0x00;
-	d->reg[0x69] = 0x55;
-	d->reg[0x6d] = 0xaa;
-	d->reg[0x71] = 0xff;
-	d->reg[0x75] = 0x00;
-	d->reg[0x79] = 0x55;
-	d->reg[0x7d] = 0xaa;
+		d->reg[0x01] = ether_address[0];
+		d->reg[0x05] = ether_address[1];
+		d->reg[0x09] = ether_address[2];
+		d->reg[0x0d] = ether_address[3];
+		d->reg[0x11] = ether_address[4];
+		d->reg[0x15] = ether_address[5];
+		/*  TODO:  19, 1d, 21, 25 = checksum bytes 1,2,2,1 resp. */
+		d->reg[0x29] = ether_address[5];
+		d->reg[0x2d] = ether_address[4];
+		d->reg[0x31] = ether_address[3];
+		d->reg[0x35] = ether_address[2];
+		d->reg[0x39] = ether_address[1];
+		d->reg[0x3d] = ether_address[1];
+		d->reg[0x41] = ether_address[0];
+		d->reg[0x45] = ether_address[1];
+		d->reg[0x49] = ether_address[2];
+		d->reg[0x4d] = ether_address[3];
+		d->reg[0x51] = ether_address[4];
+		d->reg[0x55] = ether_address[5];
+		/*  TODO:  59, 5d = checksum bytes 1,2 resp. */
+		d->reg[0x61] = 0xff;
+		d->reg[0x65] = 0x00;
+		d->reg[0x69] = 0x55;
+		d->reg[0x6d] = 0xaa;
+		d->reg[0x71] = 0xff;
+		d->reg[0x75] = 0x00;
+		d->reg[0x79] = 0x55;
+		d->reg[0x7d] = 0xaa;
 
-	/*  Only SGI uses BCD format (?)  */
-	d->use_bcd = 0;
-	if (access_style == MC146818_SGI)
-		d->use_bcd = 1;
-
-	if (access_style == MC146818_DEC) {
 		/*  Battery valid, for DECstations  */
 		d->reg[0xf8] = 1;
 	}

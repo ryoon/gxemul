@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.74 2005-05-20 06:39:03 debug Exp $
+ *  $Id: pc_bios.c,v 1.75 2005-05-20 07:42:11 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -139,6 +139,21 @@ static void output_char(struct cpu *cpu, int x, int y, int ch, int color)
 		len = 1;
 
 	cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len, MEM_WRITE,
+	    CACHE_NONE | PHYSICAL);
+}
+
+
+/*
+ *  cmos_write():
+ */
+static void cmos_write(struct cpu *cpu, int addr, int value)
+{
+	unsigned char c;
+	c = addr;
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x70, &c, 1, MEM_WRITE,
+	    CACHE_NONE | PHYSICAL);
+	c = value;
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x71, &c, 1, MEM_WRITE,
 	    CACHE_NONE | PHYSICAL);
 }
 
@@ -563,9 +578,12 @@ static void pc_bios_int10(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_BX] &= ~0xff00;	/*  BH = pagenr  */
 		break;
 	case 0x10:	/*  Palette stuff  */
-		/*  TODO  */
 		switch (al) {
+		case 0x00:
+			/*  TODO  */
+			break;
 		case 0x01:
+			/*  TODO  */
 			break;
 		case 0x10:
 			byte = bl;
@@ -1002,7 +1020,7 @@ static void pc_bios_int15(struct cpu *cpu)
 			cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_DX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_CX] |= (
-			    cpu->cd.x86.r[X86_R_CX] & 0xffff);
+			    cpu->cd.x86.r[X86_R_AX] & 0xffff);
 			cpu->cd.x86.r[X86_R_DX] |= (
 			    cpu->cd.x86.r[X86_R_BX] & 0xffff);
 			break;
@@ -1209,7 +1227,7 @@ static void pc_bios_int1c(struct cpu *cpu)
 void pc_bios_init(struct cpu *cpu)
 {
 	char t[81];
-	int x, y, nboxlines, i, any_disk = 0, disknr;
+	int x, y, nboxlines, i, any_disk = 0, disknr, tmp;
 	int boot_id, boot_type, bios_boot_id = 0;
 
 	/*  Go to real mode:  */
@@ -1322,6 +1340,14 @@ void pc_bios_init(struct cpu *cpu)
 	store_16bit_word(cpu, 0x44a, cpu->machine->md.pc.columns);/* columns */
 	store_16bit_word(cpu, 0x463, 0x3D4);	/*  CRT base port  */
 	store_byte(cpu, 0x484, cpu->machine->md.pc.rows-1);/*  nr of lines-1 */
+
+	cmos_write(cpu, 0x15, 640 & 255);
+	cmos_write(cpu, 0x16, 640 >> 8);
+	tmp = cpu->machine->physical_ram_in_mb / 1024;
+	if (tmp > 63*1024)
+		tmp = 63*1024;
+	cmos_write(cpu, 0x17, tmp & 255);
+	cmos_write(cpu, 0x18, tmp >> 8);
 
 	/*  Clear the screen first:  */
 	set_cursor_pos(cpu, 0, 0);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.121 2005-05-20 06:39:03 debug Exp $
+ *  $Id: cpu_x86.c,v 1.122 2005-05-20 07:42:10 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1772,6 +1772,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0x6a) {
 		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("push\tbyte 0x%x", imm);
+	} else if (op == 0x6c) {
+		SPACES; debug("ins");
+	} else if (op == 0x6d) {
+		SPACES; debug("ins%s", mode==16? "w" : (mode==32? "d" : "q"));
+	} else if (op == 0x6e) {
+		SPACES; debug("outs");
+	} else if (op == 0x6f) {
+		SPACES; debug("outs%s", mode==16? "w" : (mode==32? "d" : "q"));
 	} else if ((op & 0xf0) == 0x70) {
 		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
 		imm = dumpaddr + 2 + imm;
@@ -2300,7 +2308,12 @@ ssize = mode;
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
-	cpu->cd.x86.r[X86_R_SP] -= (ssize / 8);
+	if (cpu->cd.x86.descr_cache[X86_S_SS].default_op_size == 16)
+		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
+		    | ((cpu->cd.x86.r[X86_R_SP] - (ssize / 8)) & 0xffff);
+	else
+		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] -
+		    (ssize / 8)) & 0xffffffff;
 	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value, ssize / 8);
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
@@ -2322,7 +2335,12 @@ ssize = mode;
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
 	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep, ssize / 8);
-	cpu->cd.x86.r[X86_R_SP] += (ssize / 8);
+	if (cpu->cd.x86.descr_cache[X86_S_SS].default_op_size == 16)
+		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
+		    | ((cpu->cd.x86.r[X86_R_SP] + (ssize / 8)) & 0xffff);
+	else
+		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] +
+		    (ssize / 8)) & 0xffffffff;
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
@@ -2336,7 +2354,7 @@ ssize = mode;
 static int x86_software_interrupt(struct cpu *cpu, int nr)
 {
 	uint64_t seg, ofs;
-	int res;
+	int res, mode;
 	unsigned char buf[4];
 	const int len = sizeof(uint16_t);
 
@@ -2360,18 +2378,13 @@ static int x86_software_interrupt(struct cpu *cpu, int nr)
 
 	/*  Push flags, cs, and ip (pc):  */
 	cpu->cd.x86.cursegment = X86_S_SS;
-	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 1,
-	    cpu->cd.x86.rflags, len) != MEMORY_ACCESS_OK)
+	mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
+	if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
 		fatal("x86_software_interrupt(): TODO: how to handle this\n");
-	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 2,
-	    cpu->cd.x86.s[X86_S_CS], len) != MEMORY_ACCESS_OK)
+	if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
 		fatal("x86_software_interrupt(): TODO: how to handle this\n");
-	if (x86_store(cpu, cpu->cd.x86.r[X86_R_SP] - len * 3, cpu->pc,
-	    len) != MEMORY_ACCESS_OK)
+	if (!x86_push(cpu, cpu->pc, mode))
 		fatal("x86_software_interrupt(): TODO: how to handle this\n");
-
-	cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
-	    | ((cpu->cd.x86.r[X86_R_SP] - len*3) & 0xffff);
 
 	/*  TODO: clear the Interrupt Flag?  */
 

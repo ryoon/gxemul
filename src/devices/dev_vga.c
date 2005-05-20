@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.54 2005-05-20 06:39:04 debug Exp $
+ *  $Id: dev_vga.c,v 1.55 2005-05-20 07:42:12 debug Exp $
  *
  *  VGA charcell and graphics device.
  */
@@ -447,6 +447,9 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 	if (relative_addr + len >= GFX_MEM_SIZE)
 		return 0;
 
+	if (d->cur_mode != MODE_GRAPHICS)
+		return 1;
+
 	switch (d->graphics_mode) {
 	case GRAPHICS_MODE_8BIT:
 		y = relative_addr / d->max_x;
@@ -471,8 +474,8 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			/*  i is byte index to write, j is bit index  */
 			for (i=0; i<len; i++)
-				for (j=0; j<7; j++) {
-					int b = data[i] & (1 << j);
+				for (j=0; j<8; j++) {
+					int b = data[i] & (1 << (7-j));
 					int addr = (y * d->max_x + x + i*8 + j)
 					    * d->bits_per_pixel / 8;
 					unsigned char byte;

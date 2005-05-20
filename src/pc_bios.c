@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.79 2005-05-20 22:35:59 debug Exp $
+ *  $Id: pc_bios.c,v 1.80 2005-05-20 23:05:41 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1279,6 +1279,54 @@ static void pc_bios_int1c(struct cpu *cpu)
 
 
 /*
+ *  pc_bios_smp_init():
+ *
+ *  Initialize the "_MP_" struct in BIOS memory.
+ *
+ *  TODO: Don't use hardcoded values like this.
+ */
+void pc_bios_smp_init(struct cpu *cpu)
+{
+	int i, chksum;
+
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
+	store_buf(cpu, 0x9000, "_MP_", 4);
+	store_byte(cpu, 0x9004, 0x10);	/*  ptr to table  */
+	store_byte(cpu, 0x9005, 0x90);
+	store_byte(cpu, 0x9006, 0x0f);
+	store_byte(cpu, 0x9007, 0x00);
+	store_byte(cpu, 0x9008, 0x01);	/*  length. should be 1  */
+	store_byte(cpu, 0x9009, 0x04);	/*  version. 4 means "1.4"  */
+	/*  Byte at 0x0a is checksum. TODO: make this automagic  */
+	chksum = '_' + 'M' + 'P' + '_' + 0x10 + 0x90 + 0xf + 1 + 4;
+	store_byte(cpu, 0x900a, 0 - chksum);
+
+	/*  PCMP struct, at addr 0x9010.  */
+	store_buf(cpu, 0x9010, "PCMP", 4);
+	store_16bit_word(cpu, 0x9014, 43);
+	store_byte(cpu, 0x9016, 4);	/*  rev 1.4  */
+	/*  9017 is checksum  */
+	store_buf(cpu, 0x9018, "GXemul  ", 8);
+	store_buf(cpu, 0x9020, "SMP         ", 12);
+
+	/*  Nr of entries (one per cpu):  */
+	store_16bit_word(cpu, 0x9010 + 34, cpu->machine->ncpus);
+
+	if (cpu->machine->ncpus > 16)
+		fatal("WARNING: More than 16 CPUs?\n");
+
+	for (i=0; i<cpu->machine->ncpus; i++) {
+		int ofs = 44 + 20*i;
+		/*  20 bytes per CPU:  */
+		store_byte(cpu, 0x9010 + ofs + 0, 0x00);	/*  cpu  */
+		store_byte(cpu, 0x9010 + ofs + 1, i);		/*  id  */
+		store_byte(cpu, 0x9010 + ofs + 3, 1 |		/*  enable  */
+		    ((i == cpu->machine->bootstrap_cpu)? 2 : 0));
+	}
+}
+
+
+/*
  *  pc_bios_init():
  */
 void pc_bios_init(struct cpu *cpu)
@@ -1366,23 +1414,8 @@ void pc_bios_init(struct cpu *cpu)
 	}
 
 	/*  For SMP emulation, create an "MP" struct in BIOS memory:  */
-	if (cpu->machine->ncpus > 1) {
-		int chksum;
-
-		reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
-		store_buf(cpu, 0x9000, "_MP_", 4);
-		store_byte(cpu, 0x9004, 0x10);	/*  ptr to table  */
-		store_byte(cpu, 0x9005, 0x90);
-		store_byte(cpu, 0x9006, 0x0f);
-		store_byte(cpu, 0x9007, 0x00);
-		store_byte(cpu, 0x9008, 0x01);	/*  length. should be 1  */
-		store_byte(cpu, 0x9009, 0x04);	/*  version. 4 means "1.4"  */
-		/*  Byte at 0x0a is checksum. TODO: make this automagic  */
-		chksum = '_' + 'M' + 'P' + '_' + 0x10 + 0x90 + 0xf + 1 + 4;
-		store_byte(cpu, 0x900a, 0 - chksum);
-
-		/*  TODO: The PCMP struct, at addr 0x9010.  */
-	}
+	if (cpu->machine->ncpus > 1)
+		pc_bios_smp_init(cpu);
 
 	/*  Prepare for text mode: (0x03 = 80x25, 0x01 = 40x25)  */
 	set_video_mode(cpu, 0x03);

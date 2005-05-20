@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.55 2005-05-20 07:42:12 debug Exp $
+ *  $Id: dev_vga.c,v 1.56 2005-05-20 08:59:58 debug Exp $
  *
  *  VGA charcell and graphics device.
  */
@@ -52,7 +52,8 @@
 
 #define	VGA_MEM_MAXY		60
 #define	VGA_MEM_ALLOCY		60
-#define	GFX_MEM_SIZE		0x18000
+#define	GFX_MEM_SIZE		(640 * 480 / 2)
+#define	GFX_ADDR_WINDOW		0x18000
 
 #define	VGA_FB_ADDR	0x1c00000000ULL
 
@@ -93,6 +94,9 @@ struct vga_data {
 
 	unsigned char	selected_register;
 	unsigned char	reg[256];
+
+	int		other_select;
+	unsigned char	mask_reg;
 
 	int		palette_index;
 	int		palette_subindex;
@@ -257,8 +261,7 @@ static void vga_update_graphics(struct machine *machine, struct vga_data *d,
 				if (addr & 1)
 					c = d->gfx_mem[addr >> 1] >> 4;
 				else
-					c = d->gfx_mem[addr >> 1];
-				c &= 0x0f;
+					c = d->gfx_mem[addr >> 1] & 0xf;
 				pixel[0] = d->fb->rgb_palette[c*3+0];
 				pixel[1] = d->fb->rgb_palette[c*3+1];
 				pixel[2] = d->fb->rgb_palette[c*3+2];
@@ -444,7 +447,7 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 	struct vga_data *d = extra;
 	int i,j, x=0, y=0, x2=0, y2=0, modified = 0;
 
-	if (relative_addr + len >= GFX_MEM_SIZE)
+	if (relative_addr + len >= GFX_ADDR_WINDOW)
 		return 0;
 
 	if (d->cur_mode != MODE_GRAPHICS)
@@ -464,10 +467,10 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 			memcpy(data, d->gfx_mem + relative_addr, len);
 		break;
 	case GRAPHICS_MODE_4BIT:
-		y = (relative_addr*8) / d->max_x;
-		x = (relative_addr*8) % d->max_x;
-		y2 = (relative_addr*8+len-1) / d->max_x;
-		x2 = (relative_addr*8+len-1) % d->max_x;
+		y = relative_addr * 8 / d->max_x;
+		x = relative_addr * 8 % d->max_x;
+		y2 = ((relative_addr+len)*8-1) / d->max_x;
+		x2 = ((relative_addr+len)*8-1) % d->max_x;
 		/*  TODO: color stuff  */
 
 		/*  Read/write d->gfx_mem in 4-bit color:  */
@@ -476,6 +479,7 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 			for (i=0; i<len; i++)
 				for (j=0; j<8; j++) {
 					int b = data[i] & (1 << (7-j));
+					int m = d->mask_reg & 0x0f;
 					int addr = (y * d->max_x + x + i*8 + j)
 					    * d->bits_per_pixel / 8;
 					unsigned char byte;
@@ -483,13 +487,13 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 						continue;
 					byte = d->gfx_mem[addr];
 					if (b && j&1)
-						byte |= 0xf0;
+						byte |= m << 4;
 					if (b && !(j&1))
-						byte |= 0x0f;
+						byte |= m;
 					if (!b && j&1)
-						byte &= ~0xf0;
+						byte &= ~(m << 4);
 					if (!b && !(j&1))
-						byte &= ~0x0f;
+						byte &= ~m;
 					d->gfx_mem[addr] = byte;
 				}
 			modified = 1;
@@ -512,6 +516,10 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 		if (x2 > d->update_x2)  d->update_x2 = x2;
 		if (y2 < d->update_y1)  d->update_y1 = y2;
 		if (y2 > d->update_y2)  d->update_y2 = y2;
+		if (y != y2) {
+			d->update_x1 = 0;
+			d->update_x2 = d->max_x - 1;
+		}
 	}
 	return 1;
 }
@@ -553,11 +561,15 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 				if (x > d->update_x2)  d->update_x2 = x;
 				if (y < d->update_y1)  d->update_y1 = y;
 				if (y > d->update_y2)  d->update_y2 = y;
-
 				if (x2 < d->update_x1)  d->update_x1 = x2;
 				if (x2 > d->update_x2)  d->update_x2 = x2;
 				if (y2 < d->update_y1)  d->update_y1 = y2;
 				if (y2 > d->update_y2)  d->update_y2 = y2;
+
+				if (y != y2) {
+					d->update_x1 = 0;
+					d->update_x2 = d->max_x - 1;
+				}
 			}
 		} else
 			memcpy(data, d->charcells + relative_addr, len);
@@ -671,11 +683,35 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 		d->cursor_scanline_end = d->font_size - 2;
 		d->reg[0x0a] = d->cursor_scanline_start;
 		d->reg[0x0b] = d->cursor_scanline_end;
+
+		d->other_select = -1;
+		d->mask_reg = 0x0f;
 		break;
-	default:
-		debug("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n",
+	default:fatal("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n",
 		    regnr, idata);
 	}
+}
+
+
+/*
+ *  vga_other():
+ */
+static int vga_other(struct cpu *cpu, struct vga_data *d, int value,
+	int writeflag)
+{
+	int retval = 0;
+	switch (d->other_select) {
+	case 0x02:
+		if (writeflag)
+			d->mask_reg = value;
+		else
+			retval = d->mask_reg;
+		break;
+	default:fatal("[ vga_other: %s select %i ]\n", writeflag?
+	    "write to" : "read from", d->other_select);
+		cpu->running = 0;
+	}
+	return retval;
 }
 
 
@@ -689,84 +725,91 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	struct vga_data *d = extra;
+	int i;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	for (i=0; i<len; i++) {
+		idata = data[i];
 
-	switch (relative_addr) {
-	case 0x01:	/*  "Other video attributes"  */
-		odata = 0xff;	/*  ?  */
-		break;
-	case 0x08:
-		if (writeflag == MEM_WRITE) {
-			d->palette_index = idata;
-			d->palette_subindex = 0;
-		} else {
-			odata = d->palette_index;
-		}
-		break;
-	case 0x09:
-		if (writeflag == MEM_WRITE) {
-			int new = (idata & 63) << 2;
-			int old = d->fb->rgb_palette[d->palette_index * 3 +
-			    d->palette_subindex];
-			d->fb->rgb_palette[d->palette_index * 3 +
-			    d->palette_subindex] = new;
-			/*  Redraw whole screen, if the palette changed:  */
-			if (new != old) {
-				d->modified = 1;
-				d->update_x1 = d->update_y1 = 0;
-				d->update_x2 = d->max_x - 1;
-				d->update_y2 = d->max_y - 1;
+		switch (relative_addr) {
+		case 0x01:	/*  "Other video attributes"  */
+			odata = 0xff;	/*  ?  */
+			break;
+		case 0x04:
+			if (writeflag == MEM_WRITE) {
+				if (d->other_select < 0)
+					d->other_select = idata;
+				else {
+					vga_other(cpu, d, idata, MEM_WRITE);
+					d->other_select = -1;
+				}
+			} else {
+				odata = vga_other(cpu, d, idata, MEM_READ);
 			}
-		} else {
-			odata = (d->fb->rgb_palette[d->palette_index * 3 +
-			    d->palette_subindex] >> 2) & 63;
-		}
-		d->palette_subindex ++;
-		if (d->palette_subindex == 3) {
-			d->palette_index ++;
-			d->palette_subindex = 0;
-		}
-		d->palette_index &= 255;
-		break;
-	case 0x0c:	/*  VGA graphics 1 position  */
-		odata = 1;	/*  ?  */
-		break;
-	case 0x14:	/*  register select  */
-		if (writeflag == MEM_READ)
-			odata = d->selected_register;
-		else
-			d->selected_register = idata;
-		break;
-	case 0x15:	if (writeflag == MEM_READ)
-			odata = d->reg[d->selected_register];
-		else {
-			d->reg[d->selected_register] = idata;
-			vga_reg_write(cpu->machine, d,
-			    d->selected_register, idata);
-		}
-		break;
-	case 0x1a:	/*  Status register  */
-		odata = 1;	/*  Display enabled  */
-		/*  odata |= 16;  */  /*  Vertical retrace  */
-		break;
-	default:
-		if (writeflag==MEM_READ) {
-			fatal("[ vga_ctrl: read from 0x%08lx ]\n",
-			    (long)relative_addr);
-		} else {
-			static int warning = 0;
-			warning ++;
-			if (warning > 8)
-				break;
-			if (warning > 7) {
-				fatal("[ vga_ctrl: multiple unimplemented wr"
-				    "ites, ignoring warnings from now on ]\n");
-				break;
+			break;
+		case 0x08:
+			if (writeflag == MEM_WRITE) {
+				d->palette_index = idata;
+				d->palette_subindex = 0;
+			} else {
+				odata = d->palette_index;
 			}
-			fatal("[ vga_ctrl: write to  0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, idata);
+			break;
+		case 0x09:
+			if (writeflag == MEM_WRITE) {
+				int new = (idata & 63) << 2;
+				int old = d->fb->rgb_palette[d->palette_index*3+
+				    d->palette_subindex];
+				d->fb->rgb_palette[d->palette_index * 3 +
+				    d->palette_subindex] = new;
+				/*  Redraw whole screen, if the
+				    palette changed:  */
+				if (new != old) {
+					d->modified = 1;
+					d->update_x1 = d->update_y1 = 0;
+					d->update_x2 = d->max_x - 1;
+					d->update_y2 = d->max_y - 1;
+				}
+			} else {
+				odata = (d->fb->rgb_palette[d->palette_index*3+
+				    d->palette_subindex] >> 2) & 63;
+			}
+			d->palette_subindex ++;
+			if (d->palette_subindex == 3) {
+				d->palette_index ++;
+				d->palette_subindex = 0;
+			}
+			d->palette_index &= 255;
+			break;
+		case 0x0c:	/*  VGA graphics 1 position  */
+			odata = 1;	/*  ?  */
+			break;
+		case 0x14:	/*  register select  */
+			if (writeflag == MEM_READ)
+				odata = d->selected_register;
+			else
+				d->selected_register = idata;
+			break;
+		case 0x15:	if (writeflag == MEM_READ)
+				odata = d->reg[d->selected_register];
+			else {
+				d->reg[d->selected_register] = idata;
+				vga_reg_write(cpu->machine, d,
+				    d->selected_register, idata);
+			}
+			break;
+		case 0x1a:	/*  Status register  */
+			odata = 1;	/*  Display enabled  */
+			/*  odata |= 16;  */  /*  Vertical retrace  */
+			break;
+		default:
+			if (writeflag==MEM_READ) {
+				fatal("[ vga_ctrl: read from 0x%08lx ]\n",
+				    (long)relative_addr);
+			} else {
+				fatal("[ vga_ctrl: write to  0x%08lx: 0x%08x"
+				    " ]\n", (long)relative_addr, (int)idata);
+			}
 		}
 	}
 
@@ -848,8 +891,8 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	    with Windows NT yet. Why? */
 	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
 	    allocsize, dev_vga_access, d, MEM_BINTRANS_OK, d->charcells);
-	memory_device_register(mem, "vga_gfx", videomem_base,
-	    GFX_MEM_SIZE, dev_vga_graphics_access, d, MEM_DEFAULT, d->gfx_mem);
+	memory_device_register(mem, "vga_gfx", videomem_base, GFX_ADDR_WINDOW,
+	    dev_vga_graphics_access, d, MEM_DEFAULT, d->gfx_mem);
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
@@ -872,5 +915,8 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->reg[0x0f] = tmpi;
 
 	d->reg[0xff] = 0x03;
+
+	d->other_select = -1;
+	d->mask_reg = 0x0f;
 }
 

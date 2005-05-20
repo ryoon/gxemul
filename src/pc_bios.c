@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.75 2005-05-20 07:42:11 debug Exp $
+ *  $Id: pc_bios.c,v 1.76 2005-05-20 08:59:57 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -560,7 +560,8 @@ static void pc_bios_int10(struct cpu *cpu)
 		set_cursor_pos(cpu, oldx, oldy);
 		break;
 	case 0x0b:	/*  set color palette  */
-		debug("WARNING: int 0x10, func 0x0b: TODO\n");
+		fatal("WARNING: int 0x10, func 0x0b: TODO\n");
+		cpu->running = 0;
 		break;
 	case 0x0e:	/*  tty output  */
 		pc_bios_putchar(cpu, al, -1, 1);
@@ -580,10 +581,28 @@ static void pc_bios_int10(struct cpu *cpu)
 	case 0x10:	/*  Palette stuff  */
 		switch (al) {
 		case 0x00:
-			/*  TODO  */
+			/*  Hm. Is this correct? How about the upper 4
+			    bits of bh? TODO  */
+			byte = bl;
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
+			byte = ((bh >> 2) & 1) * 0xaa + (bh&8? 0x55 : 0);
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
+			byte = ((bh >> 1) & 1) * 0xaa + (bh&8? 0x55 : 0);
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
+			byte = ((bh >> 0) & 1) * 0xaa + (bh&8? 0x55 : 0);
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+			    PHYSICAL);
 			break;
 		case 0x01:
-			/*  TODO  */
+			/*  TODO: Set border color.  */
+			debug("TODO int 10,ah=10,al=01\n");
 			break;
 		case 0x10:
 			byte = bl;

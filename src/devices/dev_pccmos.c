@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.2 2005-05-20 07:42:12 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.3 2005-05-20 08:59:58 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -129,7 +129,7 @@ int devinit_pccmos(struct devinit *devinit)
 
 	dev_mc146818_init(devinit->machine, devinit->machine->memory,
 	    PCCMOS_MC146818_FAKE_ADDR, 16  /*  NOTE/TODO: No irq  */,
-	    MC146818_PC_CMOS, 4);
+	    MC146818_PC_CMOS, 1);
 
 	return 1;
 }

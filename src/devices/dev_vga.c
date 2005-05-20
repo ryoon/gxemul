@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.56 2005-05-20 08:59:58 debug Exp $
+ *  $Id: dev_vga.c,v 1.57 2005-05-20 20:07:25 debug Exp $
  *
  *  VGA charcell and graphics device.
  */
@@ -52,7 +52,6 @@
 
 #define	VGA_MEM_MAXY		60
 #define	VGA_MEM_ALLOCY		60
-#define	GFX_MEM_SIZE		(640 * 480 / 2)
 #define	GFX_ADDR_WINDOW		0x18000
 
 #define	VGA_FB_ADDR	0x1c00000000ULL
@@ -90,7 +89,8 @@ struct vga_data {
 	/*  Graphics:  */
 	int		graphics_mode;
 	int		bits_per_pixel;
-	unsigned char	*gfx_mem;	/*  0xa0000...  */
+	unsigned char	*gfx_mem;
+	size_t		gfx_mem_size;
 
 	unsigned char	selected_register;
 	unsigned char	reg[256];
@@ -483,7 +483,7 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 					int addr = (y * d->max_x + x + i*8 + j)
 					    * d->bits_per_pixel / 8;
 					unsigned char byte;
-					if (addr >= GFX_MEM_SIZE)
+					if (addr >= d->gfx_mem_size)
 						continue;
 					byte = d->gfx_mem[addr];
 					if (b && j&1)
@@ -629,6 +629,7 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 			d->cur_mode = MODE_CHARCELL;
 			d->max_x = 40; d->max_y = 25;
 			d->pixel_repx = 2; d->pixel_repy = 1;
+			d->font_size = 16;
 			break;
 		case 0x02:
 			grayscale = 1;
@@ -636,10 +637,11 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 			d->cur_mode = MODE_CHARCELL;
 			d->max_x = 80; d->max_y = 25;
 			d->pixel_repx = d->pixel_repy = 1;
+			d->font_size = 16;
 			break;
 		case 0x12:
 			d->cur_mode = MODE_GRAPHICS;
-			d->max_x = 640; d->max_y = 400;	/*  TODO: 480  */
+			d->max_x = 640; d->max_y = 480;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
 			d->pixel_repx = d->pixel_repy = 1;
@@ -663,9 +665,30 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 			    d->reg[0xff]);
 			exit(1);
 		}
+
+		if (d->cur_mode == MODE_CHARCELL) {
+			dev_fb_resize(d->fb, d->max_x * 8 * d->pixel_repx,
+			    d->max_y * d->font_size * d->pixel_repy);
+			d->fb_size = d->max_x * d->pixel_repx * 8 *
+			     d->max_y * d->pixel_repy * d->font_size * 3;
+		} else {
+			dev_fb_resize(d->fb, d->max_x * d->pixel_repx,
+			    d->max_y * d->pixel_repy);
+			d->fb_size = d->max_x * d->pixel_repx *
+			     d->max_y * d->pixel_repy * 3;
+		}
+
+		if (d->gfx_mem != NULL)
+			free(d->gfx_mem);
+		d->gfx_mem_size = 1;
+		if (d->cur_mode == MODE_GRAPHICS)
+			d->gfx_mem_size = d->max_x * d->max_y /
+			    (d->graphics_mode == GRAPHICS_MODE_8BIT? 1 : 2);
+		d->gfx_mem = malloc(d->gfx_mem_size);
+
 		/*  Clear screen and reset the palette:  */
 		memset(d->charcells_outputed, 0, d->charcells_size);
-		memset(d->gfx_mem, 0, GFX_MEM_SIZE);
+		memset(d->gfx_mem, 0, d->gfx_mem_size);
 		d->update_x1 = 0;
 		d->update_x2 = d->max_x - 1;
 		d->update_y1 = 0;
@@ -850,12 +873,13 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->pixel_repy    = 1;
 	d->cur_mode      = MODE_CHARCELL;
 	d->charcells_size = d->max_x * VGA_MEM_MAXY * 2;
+	d->gfx_mem_size = 1;	/*  Nothing, as we start in text mode  */
 
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
 	allocsize = ((d->charcells_size - 1) | 0xfff) + 1;
 	d->charcells = malloc(d->charcells_size);
 	d->charcells_outputed = malloc(d->charcells_size);
-	d->gfx_mem = malloc(GFX_MEM_SIZE);
+	d->gfx_mem = malloc(d->gfx_mem_size);
 	if (d->charcells == NULL || d->charcells_outputed == NULL ||
 	    d->gfx_mem == NULL) {
 		fprintf(stderr, "out of memory in dev_vga_init()\n");
@@ -872,7 +896,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	}
 
 	memset(d->charcells_outputed, 0, d->charcells_size);
-	memset(d->gfx_mem, 0, GFX_MEM_SIZE);
+	memset(d->gfx_mem, 0, d->gfx_mem_size);
 
 	d->font_size = 16;
 	d->font = font8x16;

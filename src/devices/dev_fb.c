@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.91 2005-05-05 19:23:41 debug Exp $
+ *  $Id: dev_fb.c,v 1.92 2005-05-20 20:07:25 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -111,6 +111,69 @@ void set_blackwhite_palette(struct vfb_data *d, int ncolors)
 		d->rgb_palette[i*3 + 1] = gray;
 		d->rgb_palette[i*3 + 2] = gray;
 	}
+}
+
+
+/*
+ *  dev_fb_resize():
+ *
+ *  Resize a framebuffer window. (This functionality is probably a bit buggy,
+ *  because I didn't think of including it from the start.)
+ */
+void dev_fb_resize(struct vfb_data *d, int new_xsize, int new_ysize)
+{
+	unsigned char *new_framebuffer;
+	int y, new_bytes_per_line;
+	size_t size;
+
+	if (d == NULL) {
+		fatal("dev_fb_resize(): d == NULL\n");
+		return;
+	}
+
+	new_bytes_per_line = new_xsize * d->bit_depth / 8;
+	size = new_ysize * new_bytes_per_line;
+
+	new_framebuffer = malloc(size);
+	if (new_framebuffer == NULL) {
+		fprintf(stderr, "dev_fb_resize(): out of memory\n");
+		exit(1);
+	}
+
+	/*  Copy the old framebuffer to the new:  */
+	if (d->framebuffer != NULL) {
+		for (y=0; y<new_ysize; y++) {
+			size_t fromofs = d->bytes_per_line * y;
+			size_t toofs = new_bytes_per_line * y;
+			size_t len_to_copy = d->bytes_per_line <
+			    new_bytes_per_line? d->bytes_per_line	
+			    : new_bytes_per_line;
+			memset(new_framebuffer + toofs, 0, new_bytes_per_line);
+			if (y < d->x11_ysize)
+				memmove(new_framebuffer + toofs,
+				    d->framebuffer + fromofs, len_to_copy);
+		}
+
+		free(d->framebuffer);
+	}
+
+	d->framebuffer = new_framebuffer;
+	d->framebuffer_size = size;
+
+	if (new_xsize > d->x11_xsize || new_ysize > d->x11_ysize) {
+		d->update_x1 = d->update_y1 = 0;
+		d->update_x2 = new_xsize - 1;
+		d->update_y2 = new_ysize - 1;
+	}
+
+	d->bytes_per_line = new_bytes_per_line;
+	d->x11_xsize = d->visible_xsize = new_xsize;
+	d->x11_ysize = d->visible_ysize = new_ysize;
+
+#ifdef WITH_X11
+	if (d->fb_window != NULL)
+		x11_fb_resize(d->fb_window, new_xsize, new_ysize);
+#endif
 }
 
 
@@ -749,6 +812,9 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 		fatal("]\n");
 	}
 #endif
+
+	if (relative_addr >= d->framebuffer_size)
+		return 0;
 
 	/*  See if a write actually modifies the framebuffer contents:  */
 	if (writeflag == MEM_WRITE) {

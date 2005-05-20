@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.h,v 1.3 2005-01-29 10:30:30 debug Exp $
+ *  $Id: x11.h,v 1.4 2005-05-20 20:07:26 debug Exp $
  *
  *  Headerfile for src/x11.c.
  */
@@ -94,6 +94,7 @@ void x11_putpixel_fb(struct machine *, int, int x, int y, int color);
 void x11_putimage_fb(struct machine *, int);
 #endif
 void x11_init(struct machine *);
+void x11_fb_resize(struct fb_window *win, int new_xsize, int new_ysize);
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	int scaledown, struct machine *);
 void x11_check_event(struct emul **emuls, int n_emuls);

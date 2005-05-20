@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.122 2005-05-20 07:42:10 debug Exp $
+ *  $Id: cpu_x86.c,v 1.123 2005-05-20 20:07:25 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -833,18 +833,15 @@ static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
  */
 static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
 {
-	uint64_t new, old = cpu->cd.x86.cr[r];
+	uint64_t new, old = cpu->cd.x86.cr[r], tmp;
 
 	switch (r) {
 	case 0:	new = cpu->cd.x86.cr[r] = value;
-		/*  Check for mode change:  */
-		if ((old & 1) != (new & 1)) {
-			if (new & 1) {
-				debug("[ switching to Protected Mode ]\n");
-			} else {
-				debug("[ switching from Protected Mode ]\n");
-			}
-		}
+		/*  Warn about unimplemented bits:  */
+		tmp = new & ~(X86_CR0_PE | X86_CR0_PG);
+		if (tmp != 0)
+			fatal("x86_write_cr(): unimplemented cr0 bits: "
+			    "0x%08llx\n", (long long)tmp);
 		break;
 	case 3:	new = cpu->cd.x86.cr[r] = value;
 		break;

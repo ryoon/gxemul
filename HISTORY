@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.743 2005-05-20 06:39:02 debug Exp $
+$Id: HISTORY,v 1.744 2005-05-20 20:07:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1918,3 +1918,5 @@ Changelog for GXemul:
 		and various other fixes).
 20050520	More updates. Working on dev_vga (4-bit graphics modes), adding
 		40 columns support to the PC bios emulation.
+		Trying to add support for resizing windows when switching
+		between graphics modes.

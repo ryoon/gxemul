@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.92 2005-05-20 20:07:25 debug Exp $
+ *  $Id: dev_fb.c,v 1.93 2005-05-20 20:25:13 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -1011,8 +1011,13 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 			}
 	}
 
-	snprintf(title, sizeof(title), "GXemul: %ix%ix%i %s framebuffer",
-	    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
+	/*  Don't set the title to include the size of the framebuffer for
+	    VGA, since then the resolution might change during runtime.  */
+	if (strcmp(name, "VGA") == 0)
+		snprintf(title, sizeof(title),"GXemul: %s framebuffer", name);
+	else
+		snprintf(title, sizeof(title),"GXemul: %ix%ix%i %s framebuffer",
+		    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
 	title[sizeof(title)-1] = '\0';
 
 #ifdef WITH_X11

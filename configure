@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.128 2005-05-20 06:39:02 debug Exp $
+#  $Id: configure,v 1.129 2005-05-20 20:25:13 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -61,6 +61,7 @@ ENABLEPPC=YES
 ENABLESPARC=NO
 ENABLEURISC=NO
 ENABLEX86=NO
+STABLE=NO
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -128,17 +129,27 @@ if [ z"$*" != z ]; then
 			    "latency/delay emulation"
 			echo "  --disable-x        don't include X11 support"
 			printf "\nCPU selection options:\n"
-			printf "  --enable-alpha     enable Alpha CPU emulation"
-			printf " (NOT YET)\n"
-			printf "  --enable-hppa      enable HPPA CPU emulation"
-			printf " (NOT YET)\n"
+			if [ z$STABLE = zNO ]; then
+				printf "  --enable-alpha     "
+				printf "enable Alpha CPU emulation"
+				printf " (NOT YET)\n"
+				printf "  --enable-hppa      "
+				printf "enable HPPA CPU emulation"
+				printf " (NOT YET)\n"
+			fi
 			echo "  --disable-mips     disable MIPS CPU emulation"
 			echo "  --disable-ppc      disable PPC CPU emulation"
-			printf "  --enable-sparc     enable SPARC CPU emulation"
-			printf " (NOT YET)\n"
+			if [ z$STABLE = zNO ]; then
+				printf "  --enable-sparc     "
+				printf "enable SPARC CPU emulation"
+				printf " (NOT YET)\n"
+			fi
 			echo "  --enable-urisc     enable URISC CPU emulation"
-			printf "  --enable-x86       enable x86 CPU emulation"
-			printf " (NOT YET)\n"
+			if [ z$STABLE = zNO ]; then
+				printf "  --enable-x86       "
+				printf "enable x86 CPU emulation"
+				printf " (NOT YET)\n"
+			fi
 			printf "\nMIPS-specific options:\n"
 			printf "  --enable-mips16    enable MIPS16 instruction"
 			printf " support (NOT YET)\n\n"
@@ -192,13 +203,23 @@ if [ z$MIPS16 = zYES ]; then
 fi
 if [ z$ENABLEALPHA = zYES ]; then
 	printf "#define ENABLE_ALPHA\n" >> config.h
-	printf "\nWARNING: Alpha emulation enabled, but it isn't really"
-	printf " implemented yet.\n\n"
+	if [ z$STABLE = zNO ]; then
+		printf "\nWARNING: Alpha emulation enabled, but it isn't really"
+		printf " implemented yet.\n\n"
+	else
+		printf "Not in the stable release.\n"
+		exit
+	fi
 fi
 if [ z$ENABLEHPPA = zYES ]; then
 	printf "#define ENABLE_HPPA\n" >> config.h
-	printf "\nWARNING: HPPA emulation enabled, but it isn't really"
-	printf " implemented yet.\n\n"
+	if [ z$STABLE = zNO ]; then
+		printf "\nWARNING: HPPA emulation enabled, but it isn't really"
+		printf " implemented yet.\n\n"
+	else
+		printf "Not in the stable release.\n"
+		exit
+	fi
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
@@ -208,16 +229,26 @@ if [ z$ENABLEPPC = zYES ]; then
 fi
 if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h
-	printf "\nWARNING: SPARC emulation enabled, but it isn't really"
-	printf " implemented yet.\n\n"
+	if [ z$STABLE = zNO ]; then
+		printf "\nWARNING: SPARC emulation enabled, but it isn't really"
+		printf " implemented yet.\n\n"
+	else
+		printf "Not in the stable release.\n"
+		exit
+	fi
 fi
 if [ z$ENABLEURISC = zYES ]; then
 	printf "#define ENABLE_URISC\n" >> config.h
 fi
 if [ z$ENABLEX86 = zYES ]; then
 	printf "#define ENABLE_X86\n" >> config.h
-	printf "\nWARNING: X86 emulation enabled, but it isn't really"
-	printf " working yet.\n\n"
+	if [ z$STABLE = zNO ]; then
+		printf "\nWARNING: X86 emulation enabled, but it isn't really"
+		printf " working yet.\n\n"
+	else
+		printf "Not in the stable release.\n"
+		exit
+	fi
 fi
 
 

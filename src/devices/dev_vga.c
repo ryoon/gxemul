@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.57 2005-05-20 20:07:25 debug Exp $
+ *  $Id: dev_vga.c,v 1.58 2005-05-20 20:25:13 debug Exp $
  *
  *  VGA charcell and graphics device.
  */
@@ -498,7 +498,8 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 				}
 			modified = 1;
 		} else {
-			fatal("TODO: 4 bit graphics read\n");
+			fatal("TODO: 4 bit graphics read, mask=0x%02x\n",
+			    d->mask_reg);
 		}
 		break;
 	default:fatal("dev_vga: Unimplemented graphics mode %i\n",

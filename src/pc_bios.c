@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.73 2005-05-19 16:48:46 debug Exp $
+ *  $Id: pc_bios.c,v 1.74 2005-05-20 06:39:03 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -130,7 +130,7 @@ static struct pc_bios_disk *get_disk(struct machine *machine, int biosnr)
  */
 static void output_char(struct cpu *cpu, int x, int y, int ch, int color)
 {
-	uint64_t addr = (y * 80 + x) * 2 + 0xb8000;
+	uint64_t addr = (y * cpu->machine->md.pc.columns + x) * 2 + 0xb8000;
 	unsigned char w[2];
 	int len = 2;
 
@@ -148,7 +148,7 @@ static void output_char(struct cpu *cpu, int x, int y, int ch, int color)
  */
 static void set_cursor_pos(struct cpu *cpu, int x, int y)
 {
-	int addr = y * 80 + x;
+	int addr = y * cpu->machine->md.pc.columns + x;
 	unsigned char byte;
 	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 
@@ -213,8 +213,8 @@ static void get_cursor_pos(struct cpu *cpu, int *x, int *y)
 	    &byte, sizeof(byte), MEM_READ, CACHE_NONE | PHYSICAL);
 	addr = addr*256 + byte;
 
-	*x = addr % 80;
-	*y = addr / 80;
+	*x = addr % cpu->machine->md.pc.columns;
+	*y = addr / cpu->machine->md.pc.columns;
 }
 
 
@@ -227,18 +227,20 @@ static void scroll_up(struct cpu *cpu, int x1, int y1, int x2, int y2, int attr)
 
 	if (x1 < 0)   x1 = 0;
 	if (y1 < 0)   y1 = 0;
-	if (x2 >= 80) x2 = 79;
-	if (y2 >= 25) y2 = 24;
+	if (x2 >= cpu->machine->md.pc.columns)
+		x2 = cpu->machine->md.pc.columns - 1;
+	if (y2 >= cpu->machine->md.pc.rows)
+		y2 = cpu->machine->md.pc.rows - 1;
 
 	/*  Scroll up by copying lines:  */
 	for (y=y1; y<=y2-1; y++) {
-		int addr = 160*y + x1*2 + 0xb8000;
-		int len = (x2-x1) * 2 + 2;
+		int addr = (cpu->machine->md.pc.columns*y + x1) * 2 + 0xb8000;
+		int len = (x2-x1+1) * 2;
 		unsigned char w[160];
-		addr += 160;
+		addr += (cpu->machine->md.pc.columns * 2);
 		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
 		    MEM_READ, CACHE_NONE | PHYSICAL);
-		addr -= 160;
+		addr -= (cpu->machine->md.pc.columns * 2);
 		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
 		    MEM_WRITE, CACHE_NONE | PHYSICAL);
 	}
@@ -259,18 +261,20 @@ static void scroll_down(struct cpu *cpu, int x1, int y1, int x2, int y2,
 
 	if (x1 < 0)   x1 = 0;
 	if (y1 < 0)   y1 = 0;
-	if (x2 >= 80) x2 = 79;
-	if (y2 >= 25) y2 = 24;
+	if (x2 >= cpu->machine->md.pc.columns)
+		x2 = cpu->machine->md.pc.columns - 1;
+	if (y2 >= cpu->machine->md.pc.rows)
+		y2 = cpu->machine->md.pc.rows - 1;
 
 	/*  Scroll down by copying lines:  */
 	for (y=y2; y>=y1+1; y--) {
-		int addr = 160*y + x1*2 + 0xb8000;
-		int len = (x2-x1) * 2 + 2;
+		int addr = (cpu->machine->md.pc.columns*y + x1) * 2 + 0xb8000;
+		int len = (x2-x1+1) * 2;
 		unsigned char w[160];
-		addr -= 160;
+		addr -= cpu->machine->md.pc.columns * 2;
 		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
 		    MEM_READ, CACHE_NONE | PHYSICAL);
-		addr += 160;
+		addr += cpu->machine->md.pc.columns * 2;
 		cpu->memory_rw(cpu, cpu->mem, addr, &w[0], len,
 		    MEM_WRITE, CACHE_NONE | PHYSICAL);
 	}
@@ -292,7 +296,8 @@ static void pc_bios_putchar(struct cpu *cpu, char ch, int attr,
 	get_cursor_pos(cpu, &x, &y);
 
 	if (!linewrap_and_scroll) {
-		if (x < 80 && y < 25) {
+		if (x < cpu->machine->md.pc.columns &&
+		    y < cpu->machine->md.pc.rows) {
 			output_char(cpu, x, y, ch, attr);
 			x++;
 			set_cursor_pos(cpu, x, y);
@@ -303,23 +308,24 @@ static void pc_bios_putchar(struct cpu *cpu, char ch, int attr,
 	/*  Put the character on the screen, move cursor, and so on:  */
 	switch (ch) {
 	case '\r':	x = -1; break;
-	case '\n':	x = 80; break;
+	case '\n':	x = cpu->machine->md.pc.columns; break;
 	case '\b':	x -= 2; break;
 	default:	output_char(cpu, x, y, ch, attr);
 	}
 	x++;
 	if (x < 0)
 		x = 0;
-	if (x >= 80) {
+	if (x >= cpu->machine->md.pc.columns) {
 		x=0; y++;
 	}
 
 	if (attr < 0)
 		attr = cpu->machine->md.pc.curcolor;
 
-	if (y >= 25) {
-		scroll_up(cpu, 0,0, 79,24, attr);
-		x = 0; y = 24;
+	if (y >= cpu->machine->md.pc.rows) {
+		scroll_up(cpu, 0,0, cpu->machine->md.pc.columns-1,
+		    cpu->machine->md.pc.rows-1, attr);
+		x = 0; y = cpu->machine->md.pc.rows - 1;
 	}
 	set_cursor_pos(cpu, x, y);
 }
@@ -332,6 +338,69 @@ static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
 {
 	while (*s)
 		pc_bios_putchar(cpu, *s++, attr, 1);
+}
+
+
+/*
+ *  set_video_mode():
+ */
+static void set_video_mode(struct cpu *cpu, int al)
+{
+	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
+	int text, x, y;
+	unsigned char byte = 0xff;
+
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14, &byte, sizeof(byte),
+	    MEM_WRITE, CACHE_NONE | PHYSICAL);
+	byte = al;
+	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15, &byte, sizeof(byte),
+	    MEM_WRITE, CACHE_NONE | PHYSICAL);
+
+	text = 0;
+
+	switch (al) {
+	case 0x00:	/*  40x25 non-color textmode  */
+	case 0x01:	/*  40x25 color textmode  */
+		cpu->machine->md.pc.columns = 40;
+		cpu->machine->md.pc.rows = 25;
+		text = 1;
+		break;
+	case 0x02:	/*  80x25 non-color textmode  */
+	case 0x03:	/*  80x25 color textmode  */
+		cpu->machine->md.pc.columns = 80;
+		cpu->machine->md.pc.rows = 25;
+		text = 1;
+		break;
+	case 0x19:	/*  ?  */
+		break;
+	case 0x0d:	/*  320x200 x 16 colors graphics  */
+		set_cursor_scanlines(cpu, 0x40, 0);
+		break;
+	case 0x12:	/*  640x480 x 16 colors graphics  */
+		set_cursor_scanlines(cpu, 0x40, 0);
+		break;
+	case 0x13:	/*  320x200 x 256 colors graphics  */
+		set_cursor_scanlines(cpu, 0x40, 0);
+		break;
+	default:
+		fatal("pc_bios_int10(): unimplemented video mode "
+		    "0x%02x\n", al);
+		cpu->running = 0;
+		cpu->dead = 1;
+	}
+
+	cpu->machine->md.pc.curcolor = 0x07;
+	cpu->machine->md.pc.videomode = al;
+
+	if (text) {
+		/*  Simply clear the screen and home the cursor
+		    for now. TODO: More advanced stuff.  */
+		set_cursor_pos(cpu, 0, 0);
+		for (y=0; y<cpu->machine->md.pc.rows; y++)
+			for (x=0; x<cpu->machine->md.pc.columns; x++)
+				output_char(cpu, x,y, ' ',
+				    cpu->machine->md.pc.curcolor);
+	}
 }
 
 
@@ -415,7 +484,7 @@ static void pc_bios_int10(struct cpu *cpu)
 {
 	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 	unsigned char byte;
-	int x,y, oldx,oldy;
+	int x,y, oldx,oldy, text;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
 	int dh = (cpu->cd.x86.r[X86_R_DX] >> 8) & 0xff;
@@ -429,45 +498,7 @@ static void pc_bios_int10(struct cpu *cpu)
 
 	switch (ah) {
 	case 0x00:	/*  Switch video mode.  */
-		if (al == 0x02)
-			al = 0x03;
-
-		/*  TODO: really change mode  */
-		byte = 0xff;
-		cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
-		    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE
-		    | PHYSICAL);
-		byte = al;
-		cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x15,
-		    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-		    PHYSICAL);
-
-		switch (al) {
-		case 0x03:	/*  80x25 color textmode  */
-		case 0x19:
-			/*  Simply clear the screen and home the cursor
-			    for now. TODO: More advanced stuff.  */
-			set_cursor_pos(cpu, 0, 0);
-			for (y=0; y<25; y++)
-				for (x=0; x<80; x++)
-					output_char(cpu, x,y, ' ', 0x07);
-			break;
-		case 0x0d:	/*  320x200 x 16 colors graphics  */
-			set_cursor_scanlines(cpu, 0x40, 0);
-			break;
-		case 0x12:	/*  640x480 x 16 colors graphics  */
-			set_cursor_scanlines(cpu, 0x40, 0);
-			break;
-		case 0x13:	/*  320x200 x 256 colors graphics  */
-			set_cursor_scanlines(cpu, 0x40, 0);
-			break;
-		default:
-			fatal("pc_bios_int10(): unimplemented video mode "
-			    "0x%02x\n", al);
-			cpu->running = 0;
-			cpu->dead = 1;
-		}
-		cpu->machine->md.pc.curcolor = 0x07;
+		set_video_mode(cpu, al);
 		break;
 	case 0x01:
 		/*  ch = starting line, cl = ending line  */
@@ -520,7 +551,7 @@ static void pc_bios_int10(struct cpu *cpu)
 		pc_bios_putchar(cpu, al, -1, 1);
 		break;
 	case 0x0f:	/*  get video mode  */
-		cpu->cd.x86.r[X86_R_AX] = 80 << 8;
+		cpu->cd.x86.r[X86_R_AX] = cpu->machine->md.pc.columns << 8;
 
 		byte = 0xff;
 		cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14,
@@ -1178,7 +1209,7 @@ static void pc_bios_int1c(struct cpu *cpu)
 void pc_bios_init(struct cpu *cpu)
 {
 	char t[81];
-	int x, y, i, any_disk = 0, disknr;
+	int x, y, nboxlines, i, any_disk = 0, disknr;
 	int boot_id, boot_type, bios_boot_id = 0;
 
 	/*  Go to real mode:  */
@@ -1278,50 +1309,57 @@ void pc_bios_init(struct cpu *cpu)
 		/*  TODO: The PCMP struct, at addr 0x9010.  */
 	}
 
-	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
+	/*  Prepare for text mode: (0x03 = 80x25, 0x01 = 40x25)  */
+	set_video_mode(cpu, 0x03);
 
 	/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
 	    for more info.  */
+	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
 	store_16bit_word(cpu, 0x400, 0x03F8);	/*  COM1  */
 	store_16bit_word(cpu, 0x402, 0x0378);	/*  COM2  */
 	store_16bit_word(cpu, 0x413, 640);	/*  KB of low RAM  */
-	store_byte(cpu, 0x449, 0x03);		/*  initial video mode  */
-	store_16bit_word(cpu, 0x44a, 80);	/*  nr of columns  */
+	store_byte(cpu, 0x449, cpu->machine->md.pc.videomode);	/* video mode */
+	store_16bit_word(cpu, 0x44a, cpu->machine->md.pc.columns);/* columns */
 	store_16bit_word(cpu, 0x463, 0x3D4);	/*  CRT base port  */
-	store_byte(cpu, 0x484, 24);		/*  nr of lines - 1  */
+	store_byte(cpu, 0x484, cpu->machine->md.pc.rows-1);/*  nr of lines-1 */
 
 	/*  Clear the screen first:  */
 	set_cursor_pos(cpu, 0, 0);
-	for (y=0; y<25; y++)
-		for (x=0; x<80; x++)
+	for (y=0; y<cpu->machine->md.pc.rows; y++)
+		for (x=0; x<cpu->machine->md.pc.columns; x++)
 			output_char(cpu, x,y, ' ', 0x07);
 
+	nboxlines = cpu->machine->md.pc.columns <= 40? 4 : 3;
+
 	/*  Draw a nice box at the top:  */
-	for (y=0; y<3; y++)
-		for (x=0; x<80; x++) {
+	for (y=0; y<nboxlines; y++)
+		for (x=0; x<cpu->machine->md.pc.columns; x++) {
 			unsigned char ch = ' ';
 			if (cpu->machine->use_x11) {
 				if (y == 0) {
 					ch = 196;
 					if (x == 0)
 						ch = 218;
-					if (x == 79)
+					if (x == cpu->machine->md.pc.columns-1)
 						ch = 191;
-				} else if (y == 2) {
+				} else if (y == nboxlines-1) {
 					ch = 196;
 					if (x == 0)
 						ch = 192;
-					if (x == 79)
+					if (x == cpu->machine->md.pc.columns-1)
 						ch = 217;
-				} else if (x == 0 || x == 79)
+				} else if (x == 0 || x ==
+					    cpu->machine->md.pc.columns-1)
 					ch = 179;
 			} else {
-				if (y == 0 || y == 2) {
+				if (y == 0 || y == nboxlines-1) {
 					ch = '-';
-					if (x == 0 || x == 79)
+					if (x == 0 || x ==
+					    cpu->machine->md.pc.columns-1)
 						ch = '+';
 				} else {
-					if (x == 0 || x == 79)
+					if (x == 0 || x ==
+					    cpu->machine->md.pc.columns-1)
 						ch = '|';
 				}
 			}
@@ -1338,10 +1376,16 @@ void pc_bios_init(struct cpu *cpu)
 	sprintf(t, "%i cpu%s (%s), %i MB memory",
 	    cpu->machine->ncpus, cpu->machine->ncpus > 1? "s" : "",
 	    cpu->cd.x86.model.name, cpu->machine->physical_ram_in_mb);
-	set_cursor_pos(cpu, 78 - strlen(t), 1);
+	if (cpu->machine->md.pc.columns <= 40)
+		set_cursor_pos(cpu, 2, 2);
+	else
+		set_cursor_pos(cpu, 78 - strlen(t), 1);
 	pc_bios_printstr(cpu, t, 0x17);
+	if (cpu->machine->md.pc.columns <= 40)
+		set_cursor_pos(cpu, 0, 5);
+	else
+		set_cursor_pos(cpu, 0, 4);
 
-	set_cursor_pos(cpu, 0, 4);
 	cpu->machine->md.pc.curcolor = 0x07;
 
 	/*  "Detect" Floppies, IDE disks, and SCSI disks:  */

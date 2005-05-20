@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.742 2005-05-19 07:54:45 debug Exp $
+$Id: HISTORY,v 1.743 2005-05-20 06:39:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1916,3 +1916,5 @@ Changelog for GXemul:
 20050518	Adding a simple 32-bit x86 MMU skeleton.
 20050519	Some more work on the x86 stuff. (Beginning the work on paging,
 		and various other fixes).
+20050520	More updates. Working on dev_vga (4-bit graphics modes), adding
+		40 columns support to the PC bios emulation.

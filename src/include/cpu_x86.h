@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.21 2005-05-19 16:04:12 debug Exp $
+ *  $Id: cpu_x86.h,v 1.22 2005-05-20 06:39:05 debug Exp $
  */
 
 #include "misc.h"
@@ -129,6 +129,9 @@ struct x86_cpu {
 	uint16_t	tr;		/*  task register  */
 	uint64_t	tr_base;
 	uint32_t	tr_limit;
+	uint16_t	ldtr;		/*  local descriptor table register  */
+	uint64_t	ldtr_base;
+	uint32_t	ldtr_limit;
 
 	uint64_t	rflags;
 	uint64_t	cr[N_X86_CREGS];

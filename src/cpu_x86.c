@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.120 2005-05-19 16:48:46 debug Exp $
+ *  $Id: cpu_x86.c,v 1.121 2005-05-20 06:39:03 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -306,9 +306,11 @@ if (cpu->cd.x86.mode == 32) {
 		    (int)cpu->cd.x86.s[X86_S_CS], (int)cpu->cd.x86.s[X86_S_DS],
 		    (int)cpu->cd.x86.s[X86_S_ES], (int)cpu->cd.x86.s[X86_S_FS],
 		    (int)cpu->cd.x86.s[X86_S_GS], (int)cpu->cd.x86.s[X86_S_SS]);
-		debug("cpu%i:  gdtr=0x%08llx:0x%04x idtr=0x%08llx:0x%04x\n",
-		    x, (long long)cpu->cd.x86.gdtr, (int)cpu->cd.x86.gdtr_limit,
-		    (long long)cpu->cd.x86.idtr, (int)cpu->cd.x86.idtr_limit);
+		debug("cpu%i:  gdtr=0x%08llx:0x%04x idtr=0x%08llx:0x%04x "
+		    " ldtr=0x%08x:0x%04x\n", x, (long long)cpu->cd.x86.gdtr,
+		    (int)cpu->cd.x86.gdtr_limit, (long long)cpu->cd.x86.idtr,
+		    (int)cpu->cd.x86.idtr_limit, (long long)cpu->cd.x86.ldtr,
+		    (int)cpu->cd.x86.ldtr_limit);
 	}
 
 	if (PROTECTED_MODE) {
@@ -604,7 +606,9 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
 }
 
 
+/*  (NOTE: Don't use the lowest 3 bits in these defines)  */
 #define	RELOAD_TR	0x1000
+#define	RELOAD_LDTR	0x1008
 /*
  *  reload_segment_descriptor():
  *
@@ -616,11 +620,11 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
 void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 {
 	int res, i, readable, writable, granularity, descr_type;
-	int segment = 1;
+	int segment = 1, rpl;
 	unsigned char descr[8];
 	uint64_t base, limit;
 
-	if (segnr & RELOAD_TR)
+	if (segnr & RELOAD_TR || segnr & RELOAD_LDTR)
 		segment = 0;
 
 	if (segment && (segnr < 0 || segnr >= N_X86_SEGS)) {
@@ -655,12 +659,15 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 		return;
 	}
 
-	if (selector & 7) {
-		fatal("TODO: x86 translation with lowest segment selector"
-		    " bits non-zero\n");
+	if (selector & 4) {
+		fatal("TODO: x86 translation via LDT?\n");
 		cpu->running = 0;
 		return;
 	}
+
+	rpl = selector & 3;
+
+	/*  TODO: check rpl  */
 
 	selector &= ~7;
 
@@ -696,12 +703,22 @@ for (i=0; i<8; i++)
 #endif
 
 	if (!segment) {
-		/*  Reload the task register:  */
-		cpu->cd.x86.tr = selector;
-		/*  TODO: Check that this is indeed a TSS descriptor  */
-		cpu->cd.x86.tr_base = base;
-		cpu->cd.x86.tr_limit = limit;
-		/*  TODO: Mark the new TSS as busy!  */
+		switch (selector) {
+		case RELOAD_TR:
+			/*  Reload the task register:  */
+			cpu->cd.x86.tr = selector;
+			/*  TODO: Check that this is indeed a TSS descriptor  */
+			cpu->cd.x86.tr_base = base;
+			cpu->cd.x86.tr_limit = limit;
+			/*  TODO: Mark the new TSS as busy!  */
+			break;
+		case RELOAD_LDTR:
+			/*  Reload the Local Descriptor Table register:  */
+			cpu->cd.x86.ldtr = selector;
+			cpu->cd.x86.ldtr_base = base;
+			cpu->cd.x86.ldtr_limit = limit;
+			break;
+		}
 		return;
 	}
 
@@ -3019,6 +3036,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0x00:
 				subop = (*instr >> 3) & 0x7;
 				switch (subop) {
+				case 2:	/*  lldt  */
+					/*  TODO: Check cpl? and Prot.mode  */
+					instr_orig = instr;
+					modrm(cpu, MODRM_READ, 16, mode67,
+					    0, &instr, &newpc, &op1, &op2);
+					reload_segment_descriptor(cpu,
+					    RELOAD_LDTR, op1);
+					break;
 				case 3:	/*  ltr  */
 					/*  TODO: Check cpl=0 and Prot.mode  */
 					instr_orig = instr;

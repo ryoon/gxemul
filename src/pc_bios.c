@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.76 2005-05-20 08:59:57 debug Exp $
+ *  $Id: pc_bios.c,v 1.77 2005-05-20 09:17:31 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -465,20 +465,56 @@ static void pc_bios_int9(struct cpu *cpu)
 	cpu->machine->md.pc.kbd_buf_scancode[
 	    cpu->machine->md.pc.kbd_buf_tail] = byte;
 
+	if (byte == 0x2a) {
+		cpu->machine->md.pc.shift_state |= PC_KBD_SHIFT;
+		byte = 0;
+	}
+	if (byte == 0x1d) {
+		cpu->machine->md.pc.shift_state |= PC_KBD_CTRL;
+		byte = 0;
+	}
+	if (byte == 0x2a + 0x80) {
+		cpu->machine->md.pc.shift_state &= ~PC_KBD_SHIFT;
+		byte = 0;
+	}
+	if (byte == 0x1d + 0x80) {
+		cpu->machine->md.pc.shift_state &= ~PC_KBD_CTRL;
+		byte = 0;
+	}
+
 	/*  Convert scancode into ASCII:  */
 	/*  (TODO: Maybe this should be somewhere else?)  */
-	if (byte >= 1 && byte <= 0xf)
-		byte = "\0331234567890-=\b\t"[byte-1];
-	else if (byte >= 0x10 && byte <= 0x1b)
-		byte = "qwertyuiop[]"[byte-0x10];
-	else if (byte >= 0x1c && byte <= 0x2b)
-		byte = "\rXasdfghjkl;'`X\\"[byte-0x1c];
-	else if (byte >= 0x2c && byte <= 0x35)
-		byte = "zxcvbnm,./"[byte-0x2c];
-	else if (byte >= 0x37 && byte <= 0x39)
-		byte = "*X "[byte-0x37];
-	else
+	switch (cpu->machine->md.pc.shift_state) {
+	case 0:	if (byte >= 1 && byte <= 0xf)
+			byte = "\0331234567890-=\b\t"[byte-1];
+		else if (byte >= 0x10 && byte <= 0x1b)
+			byte = "qwertyuiop[]"[byte-0x10];
+		else if (byte >= 0x1c && byte <= 0x2b)
+			byte = "\r\000asdfghjkl;'`\000\\"[byte-0x1c];
+		else if (byte >= 0x2c && byte <= 0x35)
+			byte = "zxcvbnm,./"[byte-0x2c];
+		else if (byte >= 0x37 && byte <= 0x39)
+			byte = "*\000 "[byte-0x37];
+		else
+			byte = 0;
+		break;
+	case PC_KBD_SHIFT:
+		if (byte >= 1 && byte <= 0xf)
+			byte = "\033!@#$%^&*()_+\b\t"[byte-1];
+		else if (byte >= 0x10 && byte <= 0x1b)
+			byte = "QWERTYUIOP{}"[byte-0x10];
+		else if (byte >= 0x1c && byte <= 0x2b)
+			byte = "\r\000ASDFGHJKL:\"~\000|"[byte-0x1c];
+		else if (byte >= 0x2c && byte <= 0x35)
+			byte = "ZXCVBNM<>?"[byte-0x2c];
+		else if (byte >= 0x37 && byte <= 0x39)
+			byte = "*\000 "[byte-0x37];
+		else
+			byte = 0;
+		break;
+	default:
 		byte = 0;
+	}
 
 	cpu->machine->md.pc.kbd_buf[cpu->machine->md.pc.kbd_buf_tail] = byte;
 

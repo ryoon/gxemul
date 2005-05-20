@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_x86.h,v 1.6 2005-05-20 06:39:05 debug Exp $
+ *  $Id: machine_x86.h,v 1.7 2005-05-20 09:17:32 debug Exp $
  */
 
 #include "misc.h"
@@ -55,6 +55,10 @@ struct pc_bios_disk {
 
 #define	PC_BIOS_KBD_BUF_SIZE		256
 
+#define	PC_KBD_SHIFT		1
+#define	PC_KBD_ALT		2
+#define	PC_KBD_CTRL		4
+
 struct machine_pc {
 	int	initialized;
 
@@ -63,6 +67,7 @@ struct machine_pc {
 	int	rows;
 	int	columns;
 
+	int	shift_state;
 	uint8_t	kbd_buf_scancode[PC_BIOS_KBD_BUF_SIZE];
 	uint8_t	kbd_buf[PC_BIOS_KBD_BUF_SIZE];
 	int	kbd_buf_head;

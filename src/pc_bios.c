@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.77 2005-05-20 09:17:31 debug Exp $
+ *  $Id: pc_bios.c,v 1.78 2005-05-20 11:01:32 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1283,7 +1283,7 @@ void pc_bios_init(struct cpu *cpu)
 {
 	char t[81];
 	int x, y, nboxlines, i, any_disk = 0, disknr, tmp;
-	int boot_id, boot_type, bios_boot_id = 0;
+	int boot_id, boot_type, bios_boot_id = 0, nfloppies = 0;
 
 	/*  Go to real mode:  */
 	cpu->cd.x86.cr[0] &= ~X86_CR0_PE;
@@ -1385,17 +1385,6 @@ void pc_bios_init(struct cpu *cpu)
 	/*  Prepare for text mode: (0x03 = 80x25, 0x01 = 40x25)  */
 	set_video_mode(cpu, 0x03);
 
-	/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
-	    for more info.  */
-	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
-	store_16bit_word(cpu, 0x400, 0x03F8);	/*  COM1  */
-	store_16bit_word(cpu, 0x402, 0x0378);	/*  COM2  */
-	store_16bit_word(cpu, 0x413, 640);	/*  KB of low RAM  */
-	store_byte(cpu, 0x449, cpu->machine->md.pc.videomode);	/* video mode */
-	store_16bit_word(cpu, 0x44a, cpu->machine->md.pc.columns);/* columns */
-	store_16bit_word(cpu, 0x463, 0x3D4);	/*  CRT base port  */
-	store_byte(cpu, 0x484, cpu->machine->md.pc.rows-1);/*  nr of lines-1 */
-
 	cmos_write(cpu, 0x15, 640 & 255);
 	cmos_write(cpu, 0x16, 640 >> 8);
 	tmp = cpu->machine->physical_ram_in_mb / 1024;
@@ -1476,6 +1465,8 @@ void pc_bios_init(struct cpu *cpu)
 			p = add_disk(cpu->machine, i, i, DISKIMAGE_FLOPPY);
 			sprintf(t, "%c%c", i<2? ('A'+i):' ', i<2? ':':' ');
 			pc_bios_printstr(cpu, t, 0xf);
+			if (i < 2)
+				nfloppies ++;
 			sprintf(t, " (bios disk %02x)  FLOPPY", i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			sprintf(t, ", %i KB (CHS=%i,%i,%i)", (int)(p->size /
@@ -1543,6 +1534,23 @@ void pc_bios_init(struct cpu *cpu)
 	else
 		pc_bios_printstr(cpu, "No disks attached!\n\n", 0x0f);
 
+	/*  See http://members.tripod.com/~oldboard/assembly/bios_data_area.html
+	    for more info.  */
+	if (nfloppies > 0)
+		nfloppies --;
+
+	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
+	store_16bit_word(cpu, 0x400, 0x03F8);	/*  COM1  */
+	store_16bit_word(cpu, 0x402, 0x0378);	/*  COM2  */
+	store_byte(cpu, 0x410, (nfloppies << 6) |  /*  nfloppies etc  */
+	    (cpu->machine->md.pc.videomode << 4) | 0xf);
+	store_byte(cpu, 0x411, 2 << 1);		/* nserials etc  */
+	store_16bit_word(cpu, 0x413, 640);	/*  KB of low RAM  */
+	store_byte(cpu, 0x449, cpu->machine->md.pc.videomode);	/* video mode */
+	store_16bit_word(cpu, 0x44a, cpu->machine->md.pc.columns);/* columns */
+	store_16bit_word(cpu, 0x463, 0x3D4);	/*  CRT base port  */
+	store_byte(cpu, 0x484, cpu->machine->md.pc.rows-1);/*  nr of lines-1 */
+
 	/*  Registers passed to the bootsector code:  */
 	reload_segment_descriptor(cpu, X86_S_CS, 0x0000);
 	reload_segment_descriptor(cpu, X86_S_DS, 0x0000);
@@ -1569,6 +1577,7 @@ int pc_bios_emul(struct cpu *cpu)
 {
 	uint32_t addr = (cpu->cd.x86.s[X86_S_CS] << 4) + cpu->pc;
 	int int_nr, flags;
+	unsigned char w[2];
 
 	int_nr = (addr >> 4) & 0xff;
 
@@ -1589,10 +1598,12 @@ int pc_bios_emul(struct cpu *cpu)
 		break;
 	case 0x09:  pc_bios_int9(cpu); break;
 	case 0x10:  pc_bios_int10(cpu); break;
-	case 0x11:	/*  return bios equipment data in ax  */
-		/*  TODO: see http://www.uv.tietgen.dk/staff/mlha/
-		    PC/Prog/ASM/INT/index.htm#INT 11  */
-		cpu->cd.x86.r[X86_R_AX] = 0x042f;
+	case 0x11:
+		/*  return bios equipment data in ax  */
+		cpu->memory_rw(cpu, cpu->mem, 0x410, &w[0], sizeof(w),
+		    MEM_READ, CACHE_NONE | PHYSICAL);
+		cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
+		cpu->cd.x86.r[X86_R_AX] |= (w[1] << 8) | w[0];
 		break;
 	case 0x12:	/*  return memory size in KBs  */
 		cpu->cd.x86.r[X86_R_AX] = 640;

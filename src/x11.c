@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.57 2005-05-20 20:07:25 debug Exp $
+ *  $Id: x11.c,v 1.58 2005-05-20 22:35:59 debug Exp $
  *
  *  X11-related functions.
  */
@@ -333,7 +333,7 @@ void x11_init(struct machine *m)
 void x11_fb_resize(struct fb_window *win, int new_xsize, int new_ysize)
 {
 	int alloc_depth;
-printf("A1\n");
+
 	if (win == NULL) {
 		fatal("x11_fb_resize(): win == NULL\n");
 		return;
@@ -342,43 +342,38 @@ printf("A1\n");
 	win->x11_fb_winxsize = new_xsize;
 	win->x11_fb_winysize = new_ysize;
 
-printf("A2\n");
 	alloc_depth = win->x11_screen_depth;
 	if (alloc_depth == 24)
 		alloc_depth = 32;
 	if (alloc_depth == 15)
 		alloc_depth = 16;
 
-printf("A3\n");
 	/*  Note: ximage_data seems to be freed by XDestroyImage below.  */
 	/*  if (win->ximage_data != NULL)
 		free(win->ximage_data);  */
-printf("A4\n");
 	win->ximage_data = malloc(new_xsize * new_ysize * alloc_depth / 8);
-printf("A5\n");
 	if (win->ximage_data == NULL) {
 		fprintf(stderr, "x11_fb_resize(): out of memory "
 		    "allocating ximage_data\n");
 		exit(1);
 	}
-printf("A6\n");
+
+	/*  TODO: clear for non-truecolor modes  */
+	memset(win->ximage_data, 0, new_xsize * new_ysize * alloc_depth / 8);
+
 	if (win->fb_ximage != NULL)
 		XDestroyImage(win->fb_ximage);
-printf("A7\n");
 	win->fb_ximage = XCreateImage(win->x11_display, CopyFromParent,
 	    win->x11_screen_depth, ZPixmap, 0, (char *)win->ximage_data,
 	    new_xsize, new_ysize, 8, new_xsize * alloc_depth / 8);
-printf("A8\n");
 	if (win->fb_ximage == NULL) {
 		fprintf(stderr, "x11_fb_resize(): out of memory "
 		    "allocating fb_ximage\n");
 		exit(1);
 	}
 
-printf("A9\n");
 	XResizeWindow(win->x11_display, win->x11_fb_window,
 	    new_xsize, new_ysize);
-printf("A10\n");
 }
 
 

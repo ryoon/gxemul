@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.78 2005-05-20 11:01:32 debug Exp $
+ *  $Id: pc_bios.c,v 1.79 2005-05-20 22:35:59 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -743,9 +743,11 @@ static void pc_bios_int10(struct cpu *cpu)
 		    Prog/asm/int/INT10.htm#4F for more info.  */
 		switch (al) {
 		case 0x00:	/*  Detect VESA  */
+#if 0
 			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_AX] |= 0x004f;
 			/*  TODO: the VESA struct at ES:DI  */
+#endif
 			break;
 		case 0x01:	/*  Return mode info  */
 			fatal("TODO: VESA mode 0x%04x\n", cx);
@@ -1542,8 +1544,7 @@ void pc_bios_init(struct cpu *cpu)
 	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
 	store_16bit_word(cpu, 0x400, 0x03F8);	/*  COM1  */
 	store_16bit_word(cpu, 0x402, 0x0378);	/*  COM2  */
-	store_byte(cpu, 0x410, (nfloppies << 6) |  /*  nfloppies etc  */
-	    (cpu->machine->md.pc.videomode << 4) | 0xf);
+	store_byte(cpu, 0x410, (nfloppies << 6) | 0x0f); /*  nfloppies etc  */
 	store_byte(cpu, 0x411, 2 << 1);		/* nserials etc  */
 	store_16bit_word(cpu, 0x413, 640);	/*  KB of low RAM  */
 	store_byte(cpu, 0x449, cpu->machine->md.pc.videomode);	/* video mode */

@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.58 2005-05-20 20:25:13 debug Exp $
+ *  $Id: dev_vga.c,v 1.59 2005-05-20 22:36:00 debug Exp $
  *
  *  VGA charcell and graphics device.
+ *
+ *  It should work with 80x25 and 40x25 text modes, and with a few graphics
+ *  modes as long as no fancy VGA features are used.
  */
 
 #include <stdio.h>
@@ -97,6 +100,7 @@ struct vga_data {
 
 	int		other_select;
 	unsigned char	mask_reg;
+	int		pixel_mask_select;
 
 	int		palette_index;
 	int		palette_subindex;
@@ -128,7 +132,14 @@ static void c_putstr(struct vga_data *d, char *s)
  */
 static void reset_palette(struct vga_data *d, int grayscale)
 {
-	int i = 0, r, g, b;
+	int i, r, g, b;
+
+	/*  TODO: default values for entry 16..255?  */
+	for (i=16; i<256; i++)
+		d->fb->rgb_palette[i*3 + 0] = d->fb->rgb_palette[i*3 + 1] =
+		    d->fb->rgb_palette[i*3 + 2] = (i & 15) * 4;
+
+	i = 0;
 
 	if (grayscale) {
 		for (r=0; r<2; r++)
@@ -478,11 +489,14 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 			/*  i is byte index to write, j is bit index  */
 			for (i=0; i<len; i++)
 				for (j=0; j<8; j++) {
-					int b = data[i] & (1 << (7-j));
+					int pixelmask = 1 << (7-j);
+					int b = data[i] & pixelmask;
 					int m = d->mask_reg & 0x0f;
 					int addr = (y * d->max_x + x + i*8 + j)
 					    * d->bits_per_pixel / 8;
 					unsigned char byte;
+					if (!(d->pixel_mask_select & pixelmask))
+						continue;
 					if (addr >= d->gfx_mem_size)
 						continue;
 					byte = d->gfx_mem[addr];
@@ -500,6 +514,8 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			fatal("TODO: 4 bit graphics read, mask=0x%02x\n",
 			    d->mask_reg);
+			for (i=0; i<len; i++)
+				data[i] = 0xff;
 		}
 		break;
 	default:fatal("dev_vga: Unimplemented graphics mode %i\n",
@@ -708,8 +724,10 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 		d->reg[0x0a] = d->cursor_scanline_start;
 		d->reg[0x0b] = d->cursor_scanline_end;
 
+		/*  TODO: refactor  */
 		d->other_select = -1;
 		d->mask_reg = 0x0f;
+		d->pixel_mask_select = 0xff;
 		break;
 	default:fatal("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n",
 		    regnr, idata);
@@ -807,6 +825,13 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 			break;
 		case 0x0c:	/*  VGA graphics 1 position  */
 			odata = 1;	/*  ?  */
+			break;
+		case 0x0f:
+			if (writeflag == MEM_WRITE) {
+/* idata = (idata >> 4) | (idata << 4); */
+				d->pixel_mask_select = idata;
+			} else
+				fatal("TODO: read of pixel_mask_select\n");
 			break;
 		case 0x14:	/*  register select  */
 			if (writeflag == MEM_READ)
@@ -943,5 +968,6 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	d->other_select = -1;
 	d->mask_reg = 0x0f;
+	d->pixel_mask_select = 0xff;
 }
 

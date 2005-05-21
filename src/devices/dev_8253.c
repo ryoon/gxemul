@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.3 2005-05-19 13:59:07 debug Exp $
+ *  $Id: dev_8253.c,v 1.4 2005-05-21 07:41:11 debug Exp $
  *  
  *  8253/8254 Programmable Interval Timer.
  *
@@ -87,6 +87,7 @@ int dev_8253_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			/*  TODO  */
 			odata = 1;
+odata = random();
 		}
 		break;
 	case 0x03:

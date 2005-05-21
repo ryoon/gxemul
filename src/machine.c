@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.439 2005-05-19 13:59:06 debug Exp $
+ *  $Id: machine.c,v 1.440 2005-05-21 07:41:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4528,7 +4528,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		device_add(machine, tmpstr);
 
 		dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);
-		dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 0);
+		dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 2);
 
 		/*  floppy at irq 6  */
 		/*  sound blaster (eventually) at irq 7?  */

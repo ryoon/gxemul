@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.130 2005-05-21 05:31:30 debug Exp $
+ *  $Id: cpu_x86.c,v 1.131 2005-05-21 07:41:10 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -346,26 +346,29 @@ void x86_cpu_register_match(struct machine *m, char *name,
 	/*  CPU number:  TODO  */
 
 	if (strcasecmp(name, "pc") == 0 || strcasecmp(name, "rip") == 0) {
-		if (writeflag)
+		if (writeflag) {
 			m->cpus[cpunr]->pc = *valuep;
-		else
+			m->cpus[cpunr]->cd.x86.halted = 0;
+		} else
 			*valuep = m->cpus[cpunr]->pc;
 		*mr = 1;
 		return;
 	}
 	if (strcasecmp(name, "ip") == 0) {
-		if (writeflag)
+		if (writeflag) {
 			m->cpus[cpunr]->pc = (m->cpus[cpunr]->pc & ~0xffff)
 			    | (*valuep & 0xffff);
-		else
+			m->cpus[cpunr]->cd.x86.halted = 0;
+		} else
 			*valuep = m->cpus[cpunr]->pc & 0xffff;
 		*mr = 1;
 		return;
 	}
 	if (strcasecmp(name, "eip") == 0) {
-		if (writeflag)
+		if (writeflag) {
 			m->cpus[cpunr]->pc = *valuep;
-		else
+			m->cpus[cpunr]->cd.x86.halted = 0;
+		} else
 			*valuep = m->cpus[cpunr]->pc & 0xffffffffULL;
 		*mr = 1;
 		return;
@@ -4009,9 +4012,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (!stos && !scas) {
 				uint64_t addr = cpu->cd.x86.r[X86_R_SI];
-				if (mode == 16)
+				if (mode67 == 16)
 					addr &= 0xffff;
-				if (mode == 32)
+				if (mode67 == 32)
 					addr &= 0xffffffff;
 				cpu->cd.x86.cursegment = origcursegment;
 				if (!x86_load(cpu, addr, &value, len))
@@ -4033,9 +4036,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (stos || movs) {
 				uint64_t addr = cpu->cd.x86.r[X86_R_DI];
-				if (mode == 16)
+				if (mode67 == 16)
 					addr &= 0xffff;
-				if (mode == 32)
+				if (mode67 == 32)
 					addr &= 0xffffffff;
 				cpu->cd.x86.cursegment = X86_S_ES;
 				if (!x86_store(cpu, addr, value, len))
@@ -4043,9 +4046,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			if (cmps || scas) {
 				uint64_t addr = cpu->cd.x86.r[X86_R_DI];
-				if (mode == 16)
+				if (mode67 == 16)
 					addr &= 0xffff;
-				if (mode == 32)
+				if (mode67 == 32)
 					addr &= 0xffffffff;
 				cpu->cd.x86.cursegment = X86_S_ES;
 				if (!x86_load(cpu, addr, &tmp, len))
@@ -4057,16 +4060,32 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (movs || lods || cmps) {
 				/*  Modify esi:  */
-				cpu->cd.x86.r[X86_R_SI] = modify(cpu->cd.
-				    x86.r[X86_R_SI], cpu->cd.x86.r[X86_R_SI]
-				    + len*dir);
+				if (mode67 == 16)
+					cpu->cd.x86.r[X86_R_SI] =
+					    (cpu->cd.x86.r[X86_R_SI] & ~0xffff)
+					    | ((cpu->cd.x86.r[X86_R_SI]+len*dir)
+					    & 0xffff);
+				else {
+					cpu->cd.x86.r[X86_R_SI] += len*dir;
+					if (mode67 == 32)
+						cpu->cd.x86.r[X86_R_SI] &=
+						    0xffffffff;
+				}
 			}
 
 			if (!lods) {
 				/*  Modify edi:  */
-				cpu->cd.x86.r[X86_R_DI] = modify(cpu->cd.x86.r[
-				    X86_R_DI], cpu->cd.x86.r[X86_R_DI] +
-				    len*dir);
+				if (mode67 == 16)
+					cpu->cd.x86.r[X86_R_DI] =
+					    (cpu->cd.x86.r[X86_R_DI] & ~0xffff)
+					    | ((cpu->cd.x86.r[X86_R_DI]+len*dir)
+					    & 0xffff);
+				else {
+					cpu->cd.x86.r[X86_R_DI] += len*dir;
+					if (mode67 == 32)
+						cpu->cd.x86.r[X86_R_DI] &=
+						    0xffffffff;
+				}
 			}
 
 			if (rep) {
@@ -4339,21 +4358,75 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    1 | omode, 0, 0);
 			cpu->running = 0;
 		}
-	} else if (op == 0xe4 || op == 0xe5) {	/*  IN imm,AL or AX/EAX  */
+	} else if (op == 0xe4 || op == 0xe5	/*  IN imm,AL or AX/EAX  */
+	    || op == 0x6c || op == 0x6d) {	/*  INSB or INSW/INSD  */
 		unsigned char databuf[8];
-		imm = read_imm(&instr, &newpc, 8);
-		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + imm, &databuf[0],
-		    op == 0xe4? 1 : (mode/8), MEM_READ, CACHE_NONE | PHYSICAL);
-		if (op == 0xe4)
-			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
-			    ~0xff) | databuf[0];
-		else if (op == 0xe5 && mode == 16)
-			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
-			    ~0xffff) | databuf[0] | (databuf[1] << 8);
-		else if (op == 0xe5 && mode == 32)
-			cpu->cd.x86.r[X86_R_AX] = databuf[0] |
-			    (databuf[1] << 8) | (databuf[2] << 16) |
-			    (databuf[3] << 24);
+		int port_nr, ins = 0, len = 1, dir = 1;
+		if (op == 0x6c || op == 0x6d) {
+			port_nr = cpu->cd.x86.r[X86_R_DX] & 0xffff;
+			ins = 1;
+		} else
+			port_nr = read_imm(&instr, &newpc, 8);
+		if (op & 1)
+			len = mode/8;
+		if (cpu->cd.x86.rflags & X86_FLAGS_DF)
+			dir = -1;
+		do {
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE+port_nr,
+			    &databuf[0], len, MEM_READ, CACHE_NONE | PHYSICAL);
+
+			if (ins) {
+				uint64_t addr = cpu->cd.x86.r[X86_R_DI];
+				uint32_t value = databuf[0] + (databuf[1] << 8)
+				    + (databuf[2] << 16) + (databuf[3] << 24);
+				if (mode67 == 16)
+					addr &= 0xffff;
+				if (mode67 == 32)
+					addr &= 0xffffffff;
+				cpu->cd.x86.cursegment = X86_S_ES;
+				if (!x86_store(cpu, addr, value, len))
+					return 0;
+
+				/*  Advance (e)di:  */
+				if (mode67 == 16)
+					cpu->cd.x86.r[X86_R_DI] =
+					    (cpu->cd.x86.r[X86_R_DI] & ~0xffff)
+					    | ((cpu->cd.x86.r[X86_R_DI]+len*dir)
+					    & 0xffff);
+				else {
+					cpu->cd.x86.r[X86_R_DI] += len*dir;
+					if (mode67 == 32)
+						cpu->cd.x86.r[X86_R_DI] &=
+						    0xffffffff;
+				}
+
+				if (rep) {
+					/*  Decrement ecx:  */
+					cpu->cd.x86.r[X86_R_CX] =
+					    modify(cpu->cd.x86.r[X86_R_CX],
+					    cpu->cd.x86.r[X86_R_CX] - 1);
+					if (mode == 16 && (cpu->cd.x86.r[
+					    X86_R_CX] & 0xffff) == 0)
+						rep = 0;
+					if (mode != 16 && cpu->cd.x86.r[
+					    X86_R_CX] == 0)
+						rep = 0;
+				}
+			} else {
+				if (len == 1)
+					cpu->cd.x86.r[X86_R_AX] =
+					    (cpu->cd.x86.r[X86_R_AX] &
+					    ~0xff) | databuf[0];
+				else if (len == 2)
+					cpu->cd.x86.r[X86_R_AX] =
+					    (cpu->cd.x86.r[X86_R_AX] & ~0xffff)
+					    | databuf[0] | (databuf[1] << 8);
+				else if (len == 4)
+					cpu->cd.x86.r[X86_R_AX] = databuf[0] |
+					    (databuf[1] << 8) | (databuf[2]
+					    << 16) | (databuf[3] << 24);
+			}
+		} while (rep);
 	} else if (op == 0xe6 || op == 0xe7) {	/*  OUT imm,AL or AX/EAX  */
 		unsigned char databuf[8];
 		imm = read_imm(&instr, &newpc, 8);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.123 2005-05-20 20:07:25 debug Exp $
+ *  $Id: cpu_x86.c,v 1.124 2005-05-21 00:20:14 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1509,8 +1509,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					    NULL, NULL);
 					SPACES; debug("verw\t%s", modrm_rm);
 					break;
-				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:SPACES; debug("UNIMPLEMENTED 0x%02x,0x"
+					    "%02x,0x%02x", op, imm, *instr);
 				}
 			} else if (imm == 0x01) {
 				int subop = (*instr >> 3) & 0x7;
@@ -1538,8 +1538,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					    NULL, NULL);
 					SPACES; debug("invlpg\t%s", modrm_rm);
 					break;
-				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:SPACES; debug("UNIMPLEMENTED 0x%02x,0x"
+					    "%02x,0x%02x", op, imm, *instr);
 				}
 			} else if (imm == 0x02) {
 				modrm(cpu, MODRM_READ, mode, mode67,
@@ -1640,6 +1640,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("pop\tgs");
 			} else if (imm == 0xaa) {
 				SPACES; debug("rsm");
+			} else if (imm == 0xab) {
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &ilen, NULL, NULL);
+				SPACES; debug("bts\t%s,%s", modrm_rm, modrm_r);
 			} else if (imm == 0xaf) {
 				modrm(cpu, MODRM_READ, mode, mode67,
 				    0, &instr, &ilen, NULL, NULL);
@@ -1695,8 +1699,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					SPACES; debug("btc\t%s,%i",
 					    modrm_rm, imm2);
 					break;
-				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:SPACES; debug("UNIMPLEMENTED 0x%02x,0x"
+					    "%02x,0x%02x", op, imm, *instr);
 				}
 			} else if (imm == 0xbc || imm == 0xbd) {
 				modrm(cpu, MODRM_READ, mode, mode67,
@@ -1719,8 +1723,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					    0, &instr, &ilen, NULL, NULL);
 					SPACES; debug("cmpxchg8b\t%s",modrm_rm);
 					break;
-				default:SPACES; debug("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:SPACES; debug("UNIMPLEMENTED 0x%02x,0x"
+					    "%02x,0x%02x", op, imm, *instr);
 				}
 			} else if (imm >= 0xc8 && imm <= 0xcf) {
 				SPACES; debug("bswap\te%s", reg_names[imm & 7]);
@@ -2270,7 +2274,8 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] = 0;
 		cpu->cd.x86.r[X86_R_BX] = 0;
 		cpu->cd.x86.r[X86_R_CX] = 0;
-		cpu->cd.x86.r[X86_R_DX] = X86_CPUID_EXT_EDX_LM;
+		cpu->cd.x86.r[X86_R_DX] = (cpu->cd.x86.model.model_number 
+		    >= X86_MODEL_AMD64)? X86_CPUID_EXT_EDX_LM : 0;
 		break;
 	default:fatal("x86_cpuid(): unimplemented eax = 0x%x\n",
 		    cpu->cd.x86.r[X86_R_AX]);
@@ -3062,8 +3067,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					reload_segment_descriptor(cpu,
 					    RELOAD_TR, op1);
 					break;
-				default:fatal("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
+					    ",0x%02x\n", op, imm, *instr);
 					quiet_mode = 0;
 					x86_cpu_disassemble_instr(cpu,
 					    really_orig_instr, 1 | omode, 0, 0);
@@ -3131,8 +3136,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						    | (op1 & 0xf));
 					}
 					break;
-				default:fatal("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
+					    ",0x%02x\n", op, imm, *instr);
 					quiet_mode = 0;
 					x86_cpu_disassemble_instr(cpu,
 					    really_orig_instr, 1 | omode, 0, 0);
@@ -3359,8 +3364,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						cpu->cd.x86.rflags |=
 						    X86_FLAGS_CF;
 					break;
-				default:fatal("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
+					    ",0x%02x", op, imm, *instr);
 					quiet_mode = 0;
 					x86_cpu_disassemble_instr(cpu,
 					    really_orig_instr, 1|omode, 0, 0);
@@ -3436,8 +3441,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						    tmp & 0xffffffff;
 					}
 					break;
-				default:fatal("UNIMPLEMENTED 0x%02x"
-					    ",0x%02x,0x%02x", op, imm, *instr);
+				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
+					    ",0x%02x\n", op, imm, *instr);
 					quiet_mode = 0;
 					x86_cpu_disassemble_instr(cpu,
 					    really_orig_instr, 1|omode, 0, 0);
@@ -3750,7 +3755,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			break;
 		default:
-			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
 			    really_orig_instr, 1|omode, 0, 0);
@@ -4047,7 +4052,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			break;
 		default:
-			fatal("UNIMPLEMENTED 0x%02x, 0x%02x", op, *instr);
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
 			    really_orig_instr, 1|omode, 0, 0);
@@ -4431,7 +4436,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 		default:
-			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
 			    really_orig_instr, 1|omode, 0, 0);
@@ -4468,7 +4473,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.rflags |= old_cf;
 			break;
 		case 2:	if (op == 0xfe) {
-				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op,
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
@@ -4485,7 +4490,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 		case 3:	if (op == 0xfe) {
-				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op,
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
@@ -4511,7 +4516,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 		case 4:	if (op == 0xfe) {
-				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op,
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
@@ -4526,7 +4531,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 		case 5:	if (op == 0xfe) {
-				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op,
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
@@ -4549,7 +4554,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 		case 6:	if (op == 0xfe) {
-				fatal("UNIMPLEMENTED 0x%02x,0x%02x", op,
+				fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op,
 				    *instr);
 				quiet_mode = 0;
 				x86_cpu_disassemble_instr(cpu,
@@ -4565,7 +4570,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 		default:
-			fatal("UNIMPLEMENTED 0x%02x,0x%02x", op, *instr);
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
 			quiet_mode = 0;
 			x86_cpu_disassemble_instr(cpu,
 			    really_orig_instr, 1|omode, 0, 0);

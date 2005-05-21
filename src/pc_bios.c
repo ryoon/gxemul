@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.80 2005-05-20 23:05:41 debug Exp $
+ *  $Id: pc_bios.c,v 1.81 2005-05-21 00:20:15 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -912,6 +912,12 @@ static void pc_bios_int13(struct cpu *cpu)
 		/*  TODO  */
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
 		break;
+	case 0x4b:	/*  CDROM emulation (TODO)  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		break;
+	case 0xfa:	/*  ?  */
+		cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x13 function"
 		    " 0x%02x.\n", ah);
@@ -1105,7 +1111,7 @@ static void pc_bios_int15(struct cpu *cpu)
  *
  *  Keyboard-related functions.
  */
-static int pc_bios_int16(struct cpu *cpu)
+static int pc_bios_int16(struct cpu *cpu, int *enable_ints_after_returnp)
 {
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	/*  int al = cpu->cd.x86.r[X86_R_AX] & 0xff;  */
@@ -1131,6 +1137,7 @@ static int pc_bios_int16(struct cpu *cpu)
 		}
 		if (asciicode == 0)
 			return 0;
+		*enable_ints_after_returnp = 1;
 		break;
 	case 0x01:	/*  non-destructive "isavail"  */
 		cpu->cd.x86.rflags |= X86_FLAGS_ZF;
@@ -1145,6 +1152,7 @@ static int pc_bios_int16(struct cpu *cpu)
 			cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
 			cpu->cd.x86.r[X86_R_AX] |= (scancode << 8) | asciicode;
 		}
+		*enable_ints_after_returnp = 1;
 		break;
 	case 0x02:	/*  read keyboard flags  */
 		/*  TODO: keep this byte updated  */
@@ -1611,6 +1619,7 @@ int pc_bios_emul(struct cpu *cpu)
 {
 	uint32_t addr = (cpu->cd.x86.s[X86_S_CS] << 4) + cpu->pc;
 	int int_nr, flags;
+	int enable_ints_after_return = 0;
 	unsigned char w[2];
 
 	int_nr = (addr >> 4) & 0xff;
@@ -1646,7 +1655,7 @@ int pc_bios_emul(struct cpu *cpu)
 	case 0x14:  pc_bios_int14(cpu); break;
 	case 0x15:  pc_bios_int15(cpu); break;
 	case 0x16:
-		if (pc_bios_int16(cpu) == 0)
+		if (pc_bios_int16(cpu, &enable_ints_after_return) == 0)
 			return 0;
 		break;
 	case 0x17:  pc_bios_int17(cpu); break;
@@ -1682,6 +1691,9 @@ int pc_bios_emul(struct cpu *cpu)
 	flags = load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 4);
 	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
 	cpu->cd.x86.rflags |= (flags & X86_FLAGS_IF);
+
+	if (enable_ints_after_return)
+		cpu->cd.x86.rflags |= X86_FLAGS_IF;
 
 	cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
 	    | ((cpu->cd.x86.r[X86_R_SP] + 6) & 0xffff);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.82 2005-05-21 01:36:23 debug Exp $
+ *  $Id: pc_bios.c,v 1.83 2005-05-21 04:43:14 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1595,6 +1595,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_16bit_word(cpu, 0x463, 0x3D4);	/*  CRT base port  */
 	store_byte(cpu, 0x475, nhds);		/*  nr of harddisks  */
 	store_byte(cpu, 0x484, cpu->machine->md.pc.rows-1);/*  nr of lines-1 */
+	store_byte(cpu, 0x485, 16);		/*  font height  */
 
 	/*  Registers passed to the bootsector code:  */
 	reload_segment_descriptor(cpu, X86_S_CS, 0x0000);

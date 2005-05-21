@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.127 2005-05-21 04:09:58 debug Exp $
+ *  $Id: cpu_x86.c,v 1.128 2005-05-21 04:43:14 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -653,7 +653,7 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	 */
 
 	/*  Special case: Null-descriptor:  */
-	if ((selector & ~7) == 0) {
+	if (segment && (selector & ~7) == 0) {
 		cpu->cd.x86.descr_cache[segnr].valid = 0;
 		cpu->cd.x86.s[segnr] = selector;
 		return;
@@ -2281,9 +2281,9 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_DX] = 0x49656e69;  /*  "ineI"  */
 		cpu->cd.x86.r[X86_R_CX] = 0x6c65746e;  /*  "ntel"  */
 		/*  ... or AMD:  */
-		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
-		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
-		cpu->cd.x86.r[X86_R_CX] = 0x69746E65;
+		cpu->cd.x86.r[X86_R_BX] = 0x68747541;  /*  "Auth"  */
+		cpu->cd.x86.r[X86_R_DX] = 0x69746E65;  /*  "enti"  */
+		cpu->cd.x86.r[X86_R_CX] = 0x444D4163;  /*  "cAMD"  */
 		break;
 	case 1:	cpu->cd.x86.r[X86_R_AX] = 0;
 		cpu->cd.x86.r[X86_R_BX] = (cpu->cpu_id << 24);
@@ -3247,19 +3247,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					    " but CPUID attempted?\n");
 				x86_cpuid(cpu);
 				break;
-			case 0xa3:		/*  BT  */
-				instr_orig = instr;
-				if (!modrm(cpu, MODRM_READ, mode, mode67,
-				    0, &instr, &newpc, &op1, &op2))
-					return 0;
-				imm2 = op2 & 31;
-				if (mode == 16)
-					imm2 &= 15;
-				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
-				if (op1 & ((uint64_t)1 << imm2))
-					cpu->cd.x86.rflags |=
-					    X86_FLAGS_CF;
-				break;
 			case 0xa4:
 			case 0xa5:
 			case 0xac:
@@ -3310,9 +3297,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					return 0;
 				reload_segment_descriptor(cpu, X86_S_GS, tmp);
 				break;
-			case 0xab:	/*  BTS  */
-			case 0xb3:	/*  BTR  */
-			case 0xbb:	/*  BTC  */
+			case 0xa3:		/*  BT  */
+			case 0xab:		/*  BTS  */
+			case 0xb3:		/*  BTR  */
+			case 0xbb:		/*  BTC  */
 				instr_orig = instr;
 				if (!modrm(cpu, MODRM_READ, mode, mode67,
 				    0, &instr, &newpc, &op1, &op2))
@@ -3335,9 +3323,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					op1 ^= ((uint64_t)1 << imm2);
 					break;
 				}
-				if (!modrm(cpu, MODRM_WRITE_RM, mode, mode67,
-				    0, &instr_orig, NULL, &op1, &op2))
-					return 0;
+				if (imm != 0xa3) {
+					if (!modrm(cpu, MODRM_WRITE_RM, mode,
+					    mode67, 0, &instr_orig, NULL,
+					    &op1, &op2))
+						return 0;
+				}
 				break;
 			case 0xaf:	/*  imul r16/32, rm16/32  */
 				instr_orig = instr;
@@ -3437,6 +3428,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				subop = (*instr >> 3) & 0x7;
 				switch (subop) {
 				case 4:	/*  BT  */
+				case 5:	/*  BTS  */
+					instr_orig = instr;
 					modrm(cpu, MODRM_READ, mode, mode67,
 					    0, &instr, &newpc, &op1, &op2);
 					imm = read_imm(&instr, &newpc, 8);
@@ -3447,9 +3440,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					if (op1 & ((uint64_t)1 << imm))
 						cpu->cd.x86.rflags |=
 						    X86_FLAGS_CF;
+					switch (subop) {
+					case 5:	op1 |= ((uint64_t)1 << imm);
+						break;
+					case 6:	op1 &= ~((uint64_t)1 << imm);
+						break;
+					case 7:	op1 ^= ((uint64_t)1 << imm);
+						break;
+					}
+					if (subop != 4)
+						modrm(cpu, MODRM_WRITE_RM,
+						    mode, mode67, 0,
+						    &instr_orig, NULL,
+						    &op1, &op2);
 					break;
 				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
-					    ",0x%02x", op, imm, *instr);
+					    ",0x%02x\n", op, imm, *instr);
 					quiet_mode = 0;
 					x86_cpu_disassemble_instr(cpu,
 					    really_orig_instr, 1|omode, 0, 0);

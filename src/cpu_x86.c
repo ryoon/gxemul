@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.131 2005-05-21 07:41:10 debug Exp $
+ *  $Id: cpu_x86.c,v 1.132 2005-05-21 10:54:53 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2061,7 +2061,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	} else if (op == 0xd9) {
 		int subop = (*instr >> 3) & 7;
 		imm = *instr;
-		if (subop == 7) {
+		if (subop == 5) {
+			modrm(cpu, MODRM_READ, 16, mode67, 0,
+			    &instr, &ilen, NULL, NULL);
+			SPACES; debug("fldcw\t%s", modrm_rm);
+		} else if (subop == 7) {
 			modrm(cpu, MODRM_READ, 16, mode67, 0,
 			    &instr, &ilen, NULL, NULL);
 			SPACES; debug("fstcw\t%s", modrm_rm);
@@ -2070,7 +2074,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 	} else if (op == 0xdb) {
 		imm = *instr;
-		if (imm == 0xe3) {
+		if (imm == 0xe2) {
+			read_imm_and_print(&instr, &ilen, 8);
+			SPACES; debug("fclex");
+		} else if (imm == 0xe3) {
 			read_imm_and_print(&instr, &ilen, 8);
 			SPACES; debug("finit");
 		} else if (imm == 0xe4) {
@@ -4306,7 +4313,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	} else if (op == 0xd9) {
 		int subop = (*instr >> 3) & 7;
 		imm = *instr;
-		if (subop == 7) {		/*  FSTCW mem16  */
+		if (subop == 5) {			/*  FLDCW mem16  */
+			modrm(cpu, MODRM_READ, 16, mode67, 0, &instr,
+			    &newpc, &op1, &op2);
+			cpu->cd.x86.fpu_cw = op1;
+		} else if (subop == 7) {		/*  FSTCW mem16  */
 			op1 = cpu->cd.x86.fpu_cw;
 			modrm(cpu, MODRM_WRITE_RM, 16, mode67, 0, &instr,
 			    &newpc, &op1, &op2);
@@ -4319,7 +4330,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 	} else if (op == 0xdb) {
 		imm = *instr;
-		if (imm == 0xe3) {			/*  FINIT  */
+		if (imm == 0xe2) {			/*  FCLEX  */
+			read_imm(&instr, &newpc, 8);
+			/*  TODO: actually clear exceptions  */
+		} else if (imm == 0xe3) {		/*  FINIT  */
 			read_imm(&instr, &newpc, 8);
 			/*  TODO: actually init?  */
 		} else if (imm == 0xe4) {		/*  FSETPM  */

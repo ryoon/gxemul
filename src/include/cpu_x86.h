@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.22 2005-05-20 06:39:05 debug Exp $
+ *  $Id: cpu_x86.h,v 1.23 2005-05-21 04:09:59 debug Exp $
  */
 
 #include "misc.h"
@@ -141,6 +141,9 @@ struct x86_cpu {
 	struct descriptor_cache descr_cache[N_X86_SEGS];
 
 	uint64_t	r[N_X86_REGS];
+
+	/*  FPU:  */
+	uint16_t	fpu_sw;		/*  status word  */
 };
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.126 2005-05-21 03:02:43 debug Exp $
+ *  $Id: cpu_x86.c,v 1.127 2005-05-21 04:09:58 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -624,7 +624,7 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	unsigned char descr[8];
 	uint64_t base, limit;
 
-	if (segnr & RELOAD_TR || segnr & RELOAD_LDTR)
+	if (segnr == RELOAD_TR || segnr == RELOAD_LDTR)
 		segment = 0;
 
 	if (segment && (segnr < 0 || segnr >= N_X86_SEGS)) {
@@ -2055,6 +2055,25 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("salc");		/*  undocumented?  */
 	} else if (op == 0xd7) {
 		SPACES; debug("xlat");
+	} else if (op == 0xdb) {
+		imm = *instr;
+		if (imm == 0xe3) {
+			read_imm_and_print(&instr, &ilen, 8);
+			SPACES; debug("finit");
+		} else if (imm == 0xe4) {
+			read_imm_and_print(&instr, &ilen, 8);
+			SPACES; debug("fsetpm");
+		} else {
+			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op, imm);
+		}
+	} else if (op == 0xdf) {
+		imm = *instr;
+		if (imm == 0xe0) {
+			read_imm_and_print(&instr, &ilen, 8);
+			SPACES; debug("fstsw\tax");
+		} else {
+			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op, imm);
+		}
 	} else if (op == 0xe3) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
 		imm = dumpaddr + ilen + (signed char)imm;
@@ -3154,6 +3173,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						    | (op1 & 0xf));
 					}
 					break;
+				case 7:	/*  invlpg  */
+					modrm(cpu, MODRM_READ, mode, mode67, 0,
+					    &instr, &newpc, &op1, &op2);
+					/*  TODO  */
+					break;
 				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
 					    ",0x%02x\n", op, imm, *instr);
 					quiet_mode = 0;
@@ -3864,6 +3888,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		reload_segment_descriptor(cpu, X86_S_CS, imm2);
 		newpc = imm;
+	} else if (op == 0x9b) {		/*  WAIT  */
 	} else if (op == 0x9c) {		/*  PUSHF  */
 		if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
 			return 0;
@@ -4217,6 +4242,33 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
 		    | (tmp & 0xff);
+	} else if (op == 0xdb) {
+		imm = *instr;
+		if (imm == 0xe3) {			/*  FINIT  */
+			read_imm(&instr, &newpc, 8);
+			/*  TODO: actually init?  */
+		} else if (imm == 0xe4) {		/*  FSETPM  */
+			read_imm(&instr, &newpc, 8);
+		} else {
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
+			quiet_mode = 0;
+			x86_cpu_disassemble_instr(cpu, really_orig_instr,
+			    1 | omode, 0, 0);
+			cpu->running = 0;
+		}
+	} else if (op == 0xdf) {
+		imm = *instr;
+		if (imm == 0xe0) {		/*  FSTSW  */
+			read_imm(&instr, &newpc, 8);
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
+			    ~0xffff) | (cpu->cd.x86.fpu_sw & 0xffff);
+		} else {
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
+			quiet_mode = 0;
+			x86_cpu_disassemble_instr(cpu, really_orig_instr,
+			    1 | omode, 0, 0);
+			cpu->running = 0;
+		}
 	} else if (op == 0xe4 || op == 0xe5) {	/*  IN imm,AL or AX/EAX  */
 		unsigned char databuf[8];
 		imm = read_imm(&instr, &newpc, 8);

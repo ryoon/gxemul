@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.59 2005-05-20 22:36:00 debug Exp $
+ *  $Id: dev_vga.c,v 1.60 2005-05-21 01:36:24 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -879,7 +879,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	uint64_t videomem_base, uint64_t control_base, char *name)
 {
 	struct vga_data *d;
-	int r,g,b,i, x,y, tmpi;
+	int i, x,y, tmpi;
 	size_t allocsize;
 
 	d = malloc(sizeof(struct vga_data));

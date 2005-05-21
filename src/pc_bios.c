@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.81 2005-05-21 00:20:15 debug Exp $
+ *  $Id: pc_bios.c,v 1.82 2005-05-21 01:36:23 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -362,7 +362,7 @@ static void pc_bios_printstr(struct cpu *cpu, char *s, int attr)
 static void set_video_mode(struct cpu *cpu, int al)
 {
 	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
-	int text, x, y;
+	int x, y, text;
 	unsigned char byte = 0xff;
 
 	cpu->memory_rw(cpu, cpu->mem, ctrlregs + 0x14, &byte, sizeof(byte),
@@ -535,7 +535,7 @@ static void pc_bios_int10(struct cpu *cpu)
 {
 	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 	unsigned char byte;
-	int x,y, oldx,oldy, text;
+	int x,y, oldx,oldy;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
 	int dh = (cpu->cd.x86.r[X86_R_DX] >> 8) & 0xff;
@@ -1341,7 +1341,7 @@ void pc_bios_init(struct cpu *cpu)
 {
 	char t[81];
 	int x, y, nboxlines, i, any_disk = 0, disknr, tmp;
-	int boot_id, boot_type, bios_boot_id = 0, nfloppies = 0;
+	int boot_id, boot_type, bios_boot_id = 0, nfloppies = 0, nhds = 0;
 
 	/*  Go to real mode:  */
 	cpu->cd.x86.cr[0] &= ~X86_CR0_PE;
@@ -1531,6 +1531,7 @@ void pc_bios_init(struct cpu *cpu)
 			p = add_disk(cpu->machine, disknr, i, DISKIMAGE_IDE);
 			sprintf(t, "%s", disknr==0x80? "C:" : "  ");
 			pc_bios_printstr(cpu, t, 0xf);
+			nhds ++;
 			sprintf(t, " (bios disk %02x)  IDE %s, id %i",
 			    disknr, diskimage_is_a_cdrom(cpu->machine, i,
 				DISKIMAGE_IDE)? "cdrom" : (
@@ -1556,6 +1557,7 @@ void pc_bios_init(struct cpu *cpu)
 			p = add_disk(cpu->machine, disknr, i, DISKIMAGE_SCSI);
 			sprintf(t, "%s", disknr==0x80? "C:" : "  ");
 			pc_bios_printstr(cpu, t, 0xf);
+			nhds ++;
 			sprintf(t, " (bios disk %02x)  SCSI disk, id %i",
 			    disknr, i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
@@ -1591,6 +1593,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0x449, cpu->machine->md.pc.videomode);	/* video mode */
 	store_16bit_word(cpu, 0x44a, cpu->machine->md.pc.columns);/* columns */
 	store_16bit_word(cpu, 0x463, 0x3D4);	/*  CRT base port  */
+	store_byte(cpu, 0x475, nhds);		/*  nr of harddisks  */
 	store_byte(cpu, 0x484, cpu->machine->md.pc.rows-1);/*  nr of lines-1 */
 
 	/*  Registers passed to the bootsector code:  */

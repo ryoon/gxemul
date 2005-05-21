@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.5 2005-05-19 13:59:07 debug Exp $
+ *  $Id: dev_8259.c,v 1.6 2005-05-21 01:36:24 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -96,6 +96,9 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				break;
 			case 0x20:	/*  End Of Interrupt  */
 				d->isr = 0;
+				break;
+			case 0x68:	/*  Set Special Mask Mode  */
+				/*  TODO  */
 				break;
 			default:
 				fatal("[ 8259: unimplemented command 0x%02x"

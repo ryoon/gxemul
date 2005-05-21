@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.6 2005-05-19 13:59:06 debug Exp $
+ *  $Id: memory_x86.c,v 1.7 2005-05-21 01:36:23 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -51,7 +51,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	uint32_t pte, pde;
 	int a, b, res, writable;
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
-	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
+	/*  int no_exceptions = flags & FLAG_NOEXCEPTIONS;  */
 	int no_segmentation = flags & NO_SEGMENTATION;
 	struct descriptor_cache *dc;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.744 2005-05-20 20:07:24 debug Exp $
+$Id: HISTORY,v 1.745 2005-05-21 01:36:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1920,3 +1920,4 @@ Changelog for GXemul:
 		40 columns support to the PC bios emulation.
 		Trying to add support for resizing windows when switching
 		between graphics modes.
+20050521	More updates.

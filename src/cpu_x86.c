@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.124 2005-05-21 00:20:14 debug Exp $
+ *  $Id: cpu_x86.c,v 1.125 2005-05-21 01:36:22 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -693,6 +693,10 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 
 	descr_type = readable = writable = granularity = 0;
 	granularity = (descr[6] & 0x80)? 1 : 0;
+	if (limit == 0) {
+		fatal("WARNING: descriptor limit = 0\n");
+		limit = 0xfffff;
+	}
 	if (granularity)
 		limit = (limit << 12) | 0xfff;
 
@@ -833,7 +837,7 @@ static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
  */
 static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
 {
-	uint64_t new, old = cpu->cd.x86.cr[r], tmp;
+	uint64_t new, tmp;
 
 	switch (r) {
 	case 0:	new = cpu->cd.x86.cr[r] = value;
@@ -1618,6 +1622,16 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("pop\tfs");
 			} else if (imm == 0xa2) {
 				SPACES; debug("cpuid");
+			} else if (imm == 0xa3 || imm == 0xab || imm == 0xbb) {
+				modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &ilen, NULL, NULL);
+				switch (imm) {
+				case 0xa3: mnem = "bt"; break;
+				case 0xab: mnem = "bts"; break;
+				case 0xbb: mnem = "btc"; break;
+				}
+				SPACES; debug("%s\t%s,%s",
+				    mnem, modrm_rm, modrm_r);
 			} else if (imm == 0xa4 || imm == 0xa5 ||
 			    imm == 0xac || imm == 0xad) {
 				modrm(cpu, MODRM_READ, mode, mode67,
@@ -1640,10 +1654,6 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("pop\tgs");
 			} else if (imm == 0xaa) {
 				SPACES; debug("rsm");
-			} else if (imm == 0xab) {
-				modrm(cpu, MODRM_READ, mode, mode67,
-				    0, &instr, &ilen, NULL, NULL);
-				SPACES; debug("bts\t%s,%s", modrm_rm, modrm_r);
 			} else if (imm == 0xaf) {
 				modrm(cpu, MODRM_READ, mode, mode67,
 				    0, &instr, &ilen, NULL, NULL);
@@ -2358,7 +2368,6 @@ static int x86_software_interrupt(struct cpu *cpu, int nr)
 	uint64_t seg, ofs;
 	int res, mode;
 	unsigned char buf[4];
-	const int len = sizeof(uint16_t);
 
 	if (PROTECTED_MODE) {
 		fatal("x86 'int' only implemented for real mode so far\n");
@@ -3156,12 +3165,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0x20:	/*  MOV r/m,CRx  */
 			case 0x21:	/*  MOV r/m,DRx: TODO: is this right? */
 				instr_orig = instr;
-				modrm(cpu, MODRM_READ, 32, mode67, imm==0x22?
+				modrm(cpu, MODRM_READ, 32, mode67, imm==0x20?
 				    MODRM_CR : MODRM_DR, &instr, &newpc, &op1,
 				    &op2);
 				op1 = op2;
 				modrm(cpu, MODRM_WRITE_RM, 32, mode67,
-				    imm==0x22? MODRM_CR : MODRM_DR,
+				    imm==0x20? MODRM_CR : MODRM_DR,
 				    &instr_orig, NULL, &op1, &op2);
 				break;
 			case 0x22:	/*  MOV CRx,r/m  */
@@ -3204,6 +3213,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					fatal("TODO: ID bit off in flags,"
 					    " but CPUID attempted?\n");
 				x86_cpuid(cpu);
+				break;
+			case 0xa3:		/*  BT  */
+				instr_orig = instr;
+				if (!modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &newpc, &op1, &op2))
+					return 0;
+				imm2 = op2 & 31;
+				if (mode == 16)
+					imm2 &= 15;
+				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+				if (op1 & ((uint64_t)1 << imm2))
+					cpu->cd.x86.rflags |=
+					    X86_FLAGS_CF;
 				break;
 			case 0xa4:
 			case 0xa5:

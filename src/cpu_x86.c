@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.125 2005-05-21 01:36:22 debug Exp $
+ *  $Id: cpu_x86.c,v 1.126 2005-05-21 03:02:43 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1622,12 +1622,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("pop\tfs");
 			} else if (imm == 0xa2) {
 				SPACES; debug("cpuid");
-			} else if (imm == 0xa3 || imm == 0xab || imm == 0xbb) {
+			} else if (imm == 0xa3 || imm == 0xab
+			    || imm == 0xb3 || imm == 0xbb) {
 				modrm(cpu, MODRM_READ, mode, mode67,
 				    0, &instr, &ilen, NULL, NULL);
 				switch (imm) {
 				case 0xa3: mnem = "bt"; break;
 				case 0xab: mnem = "bts"; break;
+				case 0xb3: mnem = "btr"; break;
 				case 0xbb: mnem = "btc"; break;
 				}
 				SPACES; debug("%s\t%s,%s",
@@ -1695,11 +1697,18 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					SPACES; debug("bt\t%s,%i",
 					    modrm_rm, imm2);
 					break;
-				case 5:	modrm(cpu, MODRM_READ, mode, mode67,
+				case 5: modrm(cpu, MODRM_READ, mode, mode67,
 					    0, &instr, &ilen, NULL, NULL);
 					imm2 = read_imm_and_print(&instr,
 					    &ilen, 8);
 					SPACES; debug("bts\t%s,%i",
+					    modrm_rm, imm2);
+					break;
+				case 6: modrm(cpu, MODRM_READ, mode, mode67,
+					    0, &instr, &ilen, NULL, NULL);
+					imm2 = read_imm_and_print(&instr,
+					    &ilen, 8);
+					SPACES; debug("btr\t%s,%i",
 					    modrm_rm, imm2);
 					break;
 				case 7:	modrm(cpu, MODRM_READ, mode, mode67,
@@ -3276,6 +3285,35 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (!x86_pop(cpu, &tmp, mode))
 					return 0;
 				reload_segment_descriptor(cpu, X86_S_GS, tmp);
+				break;
+			case 0xab:	/*  BTS  */
+			case 0xb3:	/*  BTR  */
+			case 0xbb:	/*  BTC  */
+				instr_orig = instr;
+				if (!modrm(cpu, MODRM_READ, mode, mode67,
+				    0, &instr, &newpc, &op1, &op2))
+					return 0;
+				imm2 = op2 & 31;
+				if (mode == 16)
+					imm2 &= 15;
+				cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+				if (op1 & ((uint64_t)1 << imm2))
+					cpu->cd.x86.rflags |=
+					    X86_FLAGS_CF;
+				switch (imm) {
+				case 0xab:
+					op1 |= ((uint64_t)1 << imm2);
+					break;
+				case 0xb3:
+					op1 &= ~((uint64_t)1 << imm2);
+					break;
+				case 0xbb:
+					op1 ^= ((uint64_t)1 << imm2);
+					break;
+				}
+				if (!modrm(cpu, MODRM_WRITE_RM, mode, mode67,
+				    0, &instr_orig, NULL, &op1, &op2))
+					return 0;
 				break;
 			case 0xaf:	/*  imul r16/32, rm16/32  */
 				instr_orig = instr;

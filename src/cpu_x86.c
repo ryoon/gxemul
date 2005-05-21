@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.129 2005-05-21 05:22:11 debug Exp $
+ *  $Id: cpu_x86.c,v 1.130 2005-05-21 05:31:30 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -4254,6 +4254,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    op&1? 0 : MODRM_EIGHTBIT, &instr_orig, NULL, &op1, &op2);
 		if (!success)
 			return 0;
+	} else if (op == 0xd4) {	/*  AAM  */
+		int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
+		/*  al should be in the range 0..81  */
+		int high;
+		imm = read_imm(&instr, &newpc, 8);
+		if (imm == 0) {
+			fatal("[ x86: \"aam 0\" ]\n");
+			cpu->running = 0;
+		} else {
+			high = al / imm;
+			al %= imm;
+			cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] &
+			    ~0xffff) | al | ((high & 0xff) << 8);
+			x86_calc_flags(cpu, cpu->cd.x86.r[X86_R_AX],
+			    0, 8, CALCFLAGS_OP_XOR);
+		}
 	} else if (op == 0xd5) {	/*  AAD  */
 		int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
 		int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;

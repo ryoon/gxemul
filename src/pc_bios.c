@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.83 2005-05-21 04:43:14 debug Exp $
+ *  $Id: pc_bios.c,v 1.84 2005-05-21 06:25:07 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -230,6 +230,30 @@ static void get_cursor_pos(struct cpu *cpu, int *x, int *y)
 
 	*x = addr % cpu->machine->md.pc.columns;
 	*y = addr / cpu->machine->md.pc.columns;
+}
+
+
+/*
+ *  set_palette():
+ */
+static void set_palette(struct cpu *cpu, int n, int r, int g, int b)
+{
+	unsigned char byte = n;
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+	    PHYSICAL);
+	byte = r;
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+	    PHYSICAL);
+	byte = g;
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+	    PHYSICAL);
+	byte = b;
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+	    PHYSICAL);
 }
 
 
@@ -535,6 +559,7 @@ static void pc_bios_int10(struct cpu *cpu)
 {
 	uint64_t ctrlregs = X86_IO_BASE + 0x3c0;
 	unsigned char byte;
+	unsigned char rgb[3];
 	int x,y, oldx,oldy;
 	int ah = (cpu->cd.x86.r[X86_R_AX] >> 8) & 0xff;
 	int al = cpu->cd.x86.r[X86_R_AX] & 0xff;
@@ -545,6 +570,7 @@ static void pc_bios_int10(struct cpu *cpu)
 	int bh = (cpu->cd.x86.r[X86_R_BX] >> 8) & 0xff;
 	int bl = cpu->cd.x86.r[X86_R_BX] & 0xff;
 	int cx = cpu->cd.x86.r[X86_R_CX] & 0xffff;
+	int dx = cpu->cd.x86.r[X86_R_DX] & 0xffff;
 	int bp = cpu->cd.x86.r[X86_R_BP] & 0xffff;
 
 	switch (ah) {
@@ -619,44 +645,33 @@ static void pc_bios_int10(struct cpu *cpu)
 		case 0x00:
 			/*  Hm. Is this correct? How about the upper 4
 			    bits of bh? TODO  */
-			byte = bl;
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
-			byte = ((bh >> 2) & 1) * 0xaa + (bh&8? 0x55 : 0);
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
-			byte = ((bh >> 1) & 1) * 0xaa + (bh&8? 0x55 : 0);
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
-			byte = ((bh >> 0) & 1) * 0xaa + (bh&8? 0x55 : 0);
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
+			set_palette(cpu, bl,
+			    ((bh >> 2) & 1) * 0xaa + (bh&8? 0x55 : 0),
+			    ((bh >> 1) & 1) * 0xaa + (bh&8? 0x55 : 0),
+			    ((bh >> 0) & 1) * 0xaa + (bh&8? 0x55 : 0));
 			break;
 		case 0x01:
 			/*  TODO: Set border color.  */
 			debug("TODO int 10,ah=10,al=01\n");
 			break;
+		case 0x02:	/*  Set all palette registers.  */
+			/*  Load from ES:DX  */
+/*  TODO  */
+			break;
 		case 0x10:
-			byte = bl;
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
-			byte = dh;
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
-			byte = cl;
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
-			byte = ch;
-			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-			    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-			    PHYSICAL);
+			set_palette(cpu, bl, dh, cl, ch);
+			break;
+		case 0x12:	/*  Set block of palette registers.  */
+			/*  Load from ES:DX, BX=start color, CX =
+			    nr of registers to load  */
+			while (cx-- > 0) {
+				cpu->cd.x86.cursegment = X86_S_ES;
+				cpu->memory_rw(cpu, cpu->mem, dx, rgb, 3,
+				    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
+				set_palette(cpu, bl, rgb[0],rgb[1],rgb[2]);
+				dx += 3;
+				bl ++;
+			}
 			break;
 		default:fatal("Unimplemented INT 0x10,AH=0x10,AL=0x%02x\n", al);
 			cpu->running = 0;
@@ -1512,12 +1527,16 @@ void pc_bios_init(struct cpu *cpu)
 				nfloppies ++;
 			sprintf(t, " (bios disk %02x)  FLOPPY", i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
-			sprintf(t, ", %i KB (CHS=%i,%i,%i)", (int)(p->size /
-			    1024), p->cylinders, p->heads, p->sectorspertrack);
+			sprintf(t, ", %i KB", (int)(p->size / 1024));
+			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
+			if (cpu->machine->md.pc.columns <= 40)
+				pc_bios_printstr(cpu, "\n  ", 0x07);
+			sprintf(t, " (CHS=%i,%i,%i)", p->cylinders, p->heads,
+			    p->sectorspertrack);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_FLOPPY) {
 				bios_boot_id = i;
-				pc_bios_printstr(cpu, "  [boot device]", 0xf);
+				pc_bios_printstr(cpu, "   [boot device]", 0xf);
 			}
 			pc_bios_printstr(cpu, "\n",
 			    cpu->machine->md.pc.curcolor);
@@ -1539,7 +1558,12 @@ void pc_bios_init(struct cpu *cpu)
 				DISKIMAGE_IDE)? "tape" : "disk"),
 			    i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
-			sprintf(t, ", %lli MB", (long long) (p->size >> 20));
+			if (cpu->machine->md.pc.columns <= 40)
+				pc_bios_printstr(cpu, "\n   ", 0x07);
+			else
+				pc_bios_printstr(cpu, ", ",
+				    cpu->machine->md.pc.curcolor);
+			sprintf(t, "%lli MB", (long long) (p->size >> 20));
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_IDE) {
 				bios_boot_id = disknr;
@@ -1561,7 +1585,12 @@ void pc_bios_init(struct cpu *cpu)
 			sprintf(t, " (bios disk %02x)  SCSI disk, id %i",
 			    disknr, i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
-			sprintf(t, ", %lli MB", (long long) (p->size >> 20));
+			if (cpu->machine->md.pc.columns <= 40)
+				pc_bios_printstr(cpu, "\n   ", 0x07);
+			else
+				pc_bios_printstr(cpu, ", ",
+				    cpu->machine->md.pc.curcolor);
+			sprintf(t, "%lli MB", (long long) (p->size >> 20));
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_SCSI) {
 				bios_boot_id = disknr;

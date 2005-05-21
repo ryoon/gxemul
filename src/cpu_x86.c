@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.128 2005-05-21 04:43:14 debug Exp $
+ *  $Id: cpu_x86.c,v 1.129 2005-05-21 05:22:11 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2055,6 +2055,16 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("salc");		/*  undocumented?  */
 	} else if (op == 0xd7) {
 		SPACES; debug("xlat");
+	} else if (op == 0xd9) {
+		int subop = (*instr >> 3) & 7;
+		imm = *instr;
+		if (subop == 7) {
+			modrm(cpu, MODRM_READ, 16, mode67, 0,
+			    &instr, &ilen, NULL, NULL);
+			SPACES; debug("fstcw\t%s", modrm_rm);
+		} else {
+			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op, imm);
+		}
 	} else if (op == 0xdb) {
 		imm = *instr;
 		if (imm == 0xe3) {
@@ -2063,6 +2073,16 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		} else if (imm == 0xe4) {
 			read_imm_and_print(&instr, &ilen, 8);
 			SPACES; debug("fsetpm");
+		} else {
+			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op, imm);
+		}
+	} else if (op == 0xdd) {
+		int subop = (*instr >> 3) & 7;
+		imm = *instr;
+		if (subop == 7) {
+			modrm(cpu, MODRM_READ, 16, mode67, 0,
+			    &instr, &ilen, NULL, NULL);
+			SPACES; debug("fstsw\t%s", modrm_rm);
 		} else {
 			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op, imm);
 		}
@@ -4248,6 +4268,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
 		    | (tmp & 0xff);
+	} else if (op == 0xd9) {
+		int subop = (*instr >> 3) & 7;
+		imm = *instr;
+		if (subop == 7) {		/*  FSTCW mem16  */
+			op1 = cpu->cd.x86.fpu_cw;
+			modrm(cpu, MODRM_WRITE_RM, 16, mode67, 0, &instr,
+			    &newpc, &op1, &op2);
+		} else {
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
+			quiet_mode = 0;
+			x86_cpu_disassemble_instr(cpu, really_orig_instr,
+			    1 | omode, 0, 0);
+			cpu->running = 0;
+		}
 	} else if (op == 0xdb) {
 		imm = *instr;
 		if (imm == 0xe3) {			/*  FINIT  */
@@ -4255,6 +4289,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  TODO: actually init?  */
 		} else if (imm == 0xe4) {		/*  FSETPM  */
 			read_imm(&instr, &newpc, 8);
+		} else {
+			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
+			quiet_mode = 0;
+			x86_cpu_disassemble_instr(cpu, really_orig_instr,
+			    1 | omode, 0, 0);
+			cpu->running = 0;
+		}
+	} else if (op == 0xdd) {
+		int subop = (*instr >> 3) & 7;
+		imm = *instr;
+		if (subop == 7) {		/*  FSTSW mem16  */
+			op1 = cpu->cd.x86.fpu_sw;
+			modrm(cpu, MODRM_WRITE_RM, 16, mode67, 0, &instr,
+			    &newpc, &op1, &op2);
 		} else {
 			fatal("UNIMPLEMENTED 0x%02x,0x%02x\n", op, *instr);
 			quiet_mode = 0;

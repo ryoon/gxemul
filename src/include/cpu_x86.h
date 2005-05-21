@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.23 2005-05-21 04:09:59 debug Exp $
+ *  $Id: cpu_x86.h,v 1.24 2005-05-21 05:22:13 debug Exp $
  */
 
 #include "misc.h"
@@ -144,6 +144,7 @@ struct x86_cpu {
 
 	/*  FPU:  */
 	uint16_t	fpu_sw;		/*  status word  */
+	uint16_t	fpu_cw;		/*  control word  */
 };
 
 

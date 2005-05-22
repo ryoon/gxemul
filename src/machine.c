@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.440 2005-05-21 07:41:10 debug Exp $
+ *  $Id: machine.c,v 1.441 2005-05-22 10:48:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4042,7 +4042,8 @@ config[77] = 0x30;
 		cpu->cd.mips.gpr[MIPS_GPR_A0] = 0;	/*  note: argc is increased later  */
 
 		/*  TODO:  not needed?  */
-		cpu->cd.mips.gpr[MIPS_GPR_SP] = machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+		cpu->cd.mips.gpr[MIPS_GPR_SP] = (int64_t)(int32_t)
+		    (machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080);
 
 		/*  Set up argc/argv:  */
 		addr = ARC_ENV_STRINGS;

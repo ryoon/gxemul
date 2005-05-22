@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.60 2005-05-21 01:36:24 debug Exp $
+ *  $Id: dev_vga.c,v 1.61 2005-05-22 19:39:50 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -188,7 +188,7 @@ static void vga_update_textmode(struct machine *machine,
 	struct vga_data *d, int start, int end)
 {
 	char s[50];
-	int i;
+	int i, oldcolor = -1, printed_last = 0;
 
 	for (i=start; i<=end; i+=2) {
 		unsigned char ch = d->charcells[i];
@@ -198,43 +198,53 @@ static void vga_update_textmode(struct machine *machine,
 		int y = (i/2) / d->max_x;
 
 		if (d->charcells[i] == d->charcells_outputed[i] &&
-		    d->charcells[i+1] == d->charcells_outputed[i+1])
+		    d->charcells[i+1] == d->charcells_outputed[i+1]) {
+			printed_last = 0;
 			continue;
+		}
 
 		d->charcells_outputed[i] = d->charcells[i];
 		d->charcells_outputed[i+1] = d->charcells[i+1];
 
-		sprintf(s, "\033[%i;%iH\033[0;", y + 1, x + 1);
-		c_putstr(d, s);
-
-		switch (fg & 7) {
-		case 0:	c_putstr(d, "30"); break;
-		case 1:	c_putstr(d, "34"); break;
-		case 2:	c_putstr(d, "32"); break;
-		case 3:	c_putstr(d, "36"); break;
-		case 4:	c_putstr(d, "31"); break;
-		case 5:	c_putstr(d, "35"); break;
-		case 6:	c_putstr(d, "33"); break;
-		case 7:	c_putstr(d, "37"); break;
+		if (!printed_last || x == 0) {
+			sprintf(s, "\033[%i;%iH", y + 1, x + 1);
+			c_putstr(d, s);
 		}
-		if (fg & 8)
-			c_putstr(d, ";1");
-		c_putstr(d, ";");
-		switch (bg & 7) {
-		case 0:	c_putstr(d, "40"); break;
-		case 1:	c_putstr(d, "44"); break;
-		case 2:	c_putstr(d, "42"); break;
-		case 3:	c_putstr(d, "46"); break;
-		case 4:	c_putstr(d, "41"); break;
-		case 5:	c_putstr(d, "45"); break;
-		case 6:	c_putstr(d, "43"); break;
-		case 7:	c_putstr(d, "47"); break;
-		}
-		/*  TODO: blink  */
-		c_putstr(d, "m");
+		if (oldcolor < 0 || (bg<<4)+fg != oldcolor || !printed_last) {
+			sprintf(s, "\033[0;"); c_putstr(d, s);
 
-		if (ch >= 0x20)
+			switch (fg & 7) {
+			case 0:	c_putstr(d, "30"); break;
+			case 1:	c_putstr(d, "34"); break;
+			case 2:	c_putstr(d, "32"); break;
+			case 3:	c_putstr(d, "36"); break;
+			case 4:	c_putstr(d, "31"); break;
+			case 5:	c_putstr(d, "35"); break;
+			case 6:	c_putstr(d, "33"); break;
+			case 7:	c_putstr(d, "37"); break;
+			}
+			if (fg & 8)
+				c_putstr(d, ";1");
+			c_putstr(d, ";");
+			switch (bg & 7) {
+			case 0:	c_putstr(d, "40"); break;
+			case 1:	c_putstr(d, "44"); break;
+			case 2:	c_putstr(d, "42"); break;
+			case 3:	c_putstr(d, "46"); break;
+			case 4:	c_putstr(d, "41"); break;
+			case 5:	c_putstr(d, "45"); break;
+			case 6:	c_putstr(d, "43"); break;
+			case 7:	c_putstr(d, "47"); break;
+			}
+			/*  TODO: blink  */
+			c_putstr(d, "m");
+		}
+
+		if (ch >= 0x20 && ch != 127)
 			console_putchar(d->console_handle, ch);
+
+		oldcolor = (bg << 4) + fg;
+		printed_last = 1;
 	}
 
 	/*  Restore the terminal's cursor position:  */
@@ -750,8 +760,8 @@ static int vga_other(struct cpu *cpu, struct vga_data *d, int value,
 			retval = d->mask_reg;
 		break;
 	default:fatal("[ vga_other: %s select %i ]\n", writeflag?
-	    "write to" : "read from", d->other_select);
-		cpu->running = 0;
+		    "write to" : "read from", d->other_select);
+		/*  cpu->running = 0;  */
 	}
 	return retval;
 }

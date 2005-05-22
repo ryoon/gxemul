@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.197 2005-05-21 01:36:23 debug Exp $
+ *  $Id: emul.c,v 1.198 2005-05-22 19:39:59 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -715,7 +715,7 @@ static void add_arc_components(struct machine *m)
 	arcbios_add_memory_descriptor(cpu,
 	    start, len, ARCBIOS_MEM_LoadedProgram);
 
-	scsicontroller = arcbios_get_scsicontroller();
+	scsicontroller = arcbios_get_scsicontroller(m);
 	if (scsicontroller == 0)
 		return;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.7 2005-05-14 20:14:22 debug Exp $
+ *  $Id: arcbios.h,v 1.8 2005-05-22 19:40:01 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -41,14 +41,11 @@
 
 struct cpu;
 
-#define	ARC_CONSOLE_MAX_X	80
-#define	ARC_CONSOLE_MAX_Y	25
-
 /*  arcbios.c:  */
 void arcbios_add_string_to_component(char *string, uint64_t component);
-void arcbios_get_dsp_stat(struct cpu *cpu, struct arcbios_dsp_stat *dspstat);
-void arcbios_register_scsicontroller(uint64_t scsicontroller_component);
-uint64_t arcbios_get_scsicontroller(void);
+void arcbios_register_scsicontroller(struct machine *machine,
+	uint64_t scsicontroller_component);
+uint64_t arcbios_get_scsicontroller(struct machine *machine);
 void arcbios_add_memory_descriptor(struct cpu *cpu,
 	uint64_t base, uint64_t len, int arctype);
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
@@ -61,18 +58,28 @@ void arcbios_set_default_exception_handler(struct cpu *cpu);
 
 void arcbios_console_init(struct machine *machine,
 	uint64_t vram, uint64_t ctrlregs);
-void arcbios_init(struct machine *machine, int is64bit);
+void arcbios_init(struct machine *machine, int is64bit,
+	uint64_t sgi_ram_offset);
 
 
-#define	MAX_ESC		16
+#define	ARC_CONSOLE_MAX_X	80
+#define	ARC_CONSOLE_MAX_Y	25
+
+#define	ARC_MAX_ESC		16
+
+#define	MAX_OPEN_STRINGLEN	200
+#define	ARC_MAX_HANDLES		10
 
 struct machine_arcbios {
+	/*  General stuff:  */
 	int		arc_64bit;
-	int		vgaconsole;
+	int		wordlen;		/*  cached  */
 
+	/*  VGA Console I/O:  */
+	int		vgaconsole;		/*  1 or 0  */
 	uint64_t	console_vram;
 	uint64_t	console_ctrlregs;
-	char		escape_sequence[MAX_ESC+1];
+	char		escape_sequence[ARC_MAX_ESC+1];
 	int		in_escape_sequence;
 	int		console_maxx;
 	int		console_maxy;
@@ -80,6 +87,14 @@ struct machine_arcbios {
 	int		console_cury;
 	int		console_reverse;
 	int		console_curcolor;
+
+	/*  File handles:  */
+	int		file_handle_in_use[ARC_MAX_HANDLES];
+	char		*file_handle_string[ARC_MAX_HANDLES];
+	uint64_t	current_seek_offset[ARC_MAX_HANDLES];
+
+	/*  SCSI:  */
+	uint64_t	scsicontroller;		/*  component addr  */
 };
 
 

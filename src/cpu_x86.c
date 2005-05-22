@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.132 2005-05-21 10:54:53 debug Exp $
+ *  $Id: cpu_x86.c,v 1.133 2005-05-22 19:39:59 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -55,16 +55,8 @@
 
 #include "cpu_x86.h"
 
-
-/*
- *  x86_cpu_family_init():
- *
- *  Bogus, when ENABLE_X86 isn't defined.
- */
-int x86_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
+/*  (Bogus, when ENABLE_X86 isn't defined.)  */
+int x86_cpu_family_init(struct cpu_family *fp) { return 0; }
 
 
 #else	/*  ENABLE_X86  */

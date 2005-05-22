@@ -25,15 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.101 2005-05-15 01:55:48 debug Exp $
+ *  $Id: arcbios.c,v 1.102 2005-05-22 19:39:59 debug Exp $
  *
  *  ARCBIOS emulation.
- *
- *  This whole file is a mess.
- *
- *  TODO:  Fix.
- *
- *  TODO:  FACTOR OUT COMMON PARTS OF THE 64-bit and 32-bit stuff!!
  */
 
 #include <stdio.h>
@@ -46,6 +40,7 @@
 #include <sys/resource.h>
 
 #include "arcbios.h"
+#include "arcbios_other.h"
 #include "console.h"
 #include "cpu.h"
 #include "cpu_mips.h"
@@ -70,22 +65,11 @@ static uint64_t configuration_data_component[MAX_CONFIG_DATA];
 static int configuration_data_len[MAX_CONFIG_DATA];
 static uint64_t configuration_data_configdata[MAX_CONFIG_DATA];
 
-static int arc_wordlen = sizeof(uint32_t);
-
-static uint64_t scsicontroller = 0;
-
 static int arc_n_memdescriptors = 0;
 static uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
 
 static uint64_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
 static int n_arc_components = 0;
-
-/*  Open file handles:  */
-#define	MAX_OPEN_STRINGLEN	200
-#define	MAX_HANDLES	10
-static int file_handle_in_use[MAX_HANDLES];
-static unsigned char *file_handle_string[MAX_HANDLES];
-static uint64_t arcbios_current_seek_offset[MAX_HANDLES];
 
 #define	MAX_STRING_TO_COMPONENT		20
 static char *arcbios_string_to_component[MAX_STRING_TO_COMPONENT];
@@ -125,7 +109,8 @@ void arcbios_add_string_to_component(char *string, uint64_t component)
  *
  *  Fills in an arcbios_dsp_stat struct with valid data.
  */
-void arcbios_get_dsp_stat(struct cpu *cpu, struct arcbios_dsp_stat *dspstat)
+static void arcbios_get_dsp_stat(struct cpu *cpu,
+	struct arcbios_dsp_stat *dspstat)
 {
 	memset(dspstat, 0, sizeof(struct arcbios_dsp_stat));
 
@@ -365,11 +350,11 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 		int len = strlen(cpu->machine->md.arc.escape_sequence);
 		cpu->machine->md.arc.escape_sequence[len] = ch;
 		len++;
-		if (len >= MAX_ESC)
-			len = MAX_ESC;
+		if (len >= ARC_MAX_ESC)
+			len = ARC_MAX_ESC;
 		cpu->machine->md.arc.escape_sequence[len] = '\0';
 		if ((ch >= 'a' && ch <= 'z') ||
-		    (ch >= 'A' && ch <= 'Z') || len >= MAX_ESC) {
+		    (ch >= 'A' && ch <= 'Z') || len >= ARC_MAX_ESC) {
 			handle_esc_seq(cpu);
 			cpu->machine->md.arc.in_escape_sequence = 0;
 		}
@@ -452,18 +437,19 @@ static void arcbios_putstring(struct cpu *cpu, char *s)
 /*
  *  arcbios_register_scsicontroller():
  */
-void arcbios_register_scsicontroller(uint64_t scsicontroller_component)
+void arcbios_register_scsicontroller(struct machine *machine,
+	uint64_t scsicontroller_component)
 {
-	scsicontroller = scsicontroller_component;
+	machine->md.arc.scsicontroller = scsicontroller_component;
 }
 
 
 /*
  *  arcbios_get_scsicontroller():
  */
-uint64_t arcbios_get_scsicontroller(void)
+uint64_t arcbios_get_scsicontroller(struct machine *machine)
 {
-	return scsicontroller;
+	return machine->md.arc.scsicontroller;
 }
 
 
@@ -555,6 +541,7 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 	struct arcbios_component *host_tmp_component,
 	char *identifier, uint32_t parent)
 {
+	struct machine *machine = cpu->machine;
 	uint64_t a = arcbios_next_component_address;
 	uint32_t peer=0;
 	uint32_t child=0;
@@ -588,8 +575,8 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		    (int)peeraddr);  */
 
 		cpu->memory_rw(cpu, cpu->mem,
-		    peeraddr + 0 * arc_wordlen, &buf[0], sizeof(eparent),
-		    MEM_READ, CACHE_NONE);
+		    peeraddr + 0 * machine->md.arc.wordlen, &buf[0],
+		    sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
 			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
@@ -597,7 +584,8 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		}
 		epeer   = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		cpu->memory_rw(cpu, cpu->mem, peeraddr + 1 * arc_wordlen,
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 1 *
+		    machine->md.arc.wordlen,
 		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0];
@@ -606,7 +594,8 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		}
 		echild  = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		cpu->memory_rw(cpu, cpu->mem, peeraddr + 2 * arc_wordlen,
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 2 *
+		    machine->md.arc.wordlen,
 		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0];
@@ -702,6 +691,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 	struct arcbios_component64 *host_tmp_component,
 	char *identifier, uint64_t parent)
 {
+	struct machine *machine = cpu->machine;
 	uint64_t a = arcbios_next_component_address;
 	uint64_t peer=0;
 	uint64_t child=0;
@@ -735,8 +725,8 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    (long long)peeraddr);  */
 
 		cpu->memory_rw(cpu, cpu->mem,
-		    peeraddr + 0 * arc_wordlen, &buf[0], sizeof(eparent),
-		    MEM_READ, CACHE_NONE);
+		    peeraddr + 0 * machine->md.arc.wordlen, &buf[0],
+		    sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
 			tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -748,7 +738,8 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		cpu->memory_rw(cpu, cpu->mem, peeraddr + 1 * arc_wordlen,
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 1 *
+		    machine->md.arc.wordlen,
 		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
@@ -761,7 +752,8 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		cpu->memory_rw(cpu, cpu->mem, peeraddr + 2 * arc_wordlen,
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 2 *
+		    machine->md.arc.wordlen,
 		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
@@ -780,16 +772,16 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 
 		if (eparent == parent && epeer == 0) {
 			epeer = a;
-			store_64bit_word(cpu, peeraddr + 0 * arc_wordlen,
-			    epeer);
+			store_64bit_word(cpu, peeraddr + 0 *
+			    machine->md.arc.wordlen, epeer);
 			/*  debug("[ addchild: adding 0x%016llx as peer "
 			    "to 0x%016llx ]\n", (long long)a,
 			    (long long)peeraddr);  */
 		}
 		if (peeraddr == parent && echild == 0) {
 			echild = a;
-			store_64bit_word(cpu, peeraddr + 1 * arc_wordlen,
-			    echild);
+			store_64bit_word(cpu, peeraddr + 1 *
+			    machine->md.arc.wordlen, echild);
 			/*  debug("[ addchild: adding 0x%016llx as child "
 			    "to 0x%016llx ]\n", (long long)a,
 			    (long long)peeraddr);  */
@@ -1036,15 +1028,16 @@ ugly_goto:
 /*
  *  arcbios_handle_to_disk_id_and_type():
  */
-static int arcbios_handle_to_disk_id_and_type(int handle, int *typep)
+static int arcbios_handle_to_disk_id_and_type(struct machine *machine,
+	int handle, int *typep)
 {
 	int id, cdrom;
 	char *s;
 
-	if (handle < 0 || handle >= MAX_HANDLES)
+	if (handle < 0 || handle >= ARC_MAX_HANDLES)
 		return -1;
 
-	s = (char *)file_handle_string[handle];
+	s = machine->md.arc.file_handle_string[handle];
 	if (s == NULL)
 		return -1;
 
@@ -1071,11 +1064,12 @@ static int arcbios_handle_to_disk_id_and_type(int handle, int *typep)
 static void arcbios_handle_to_start_and_size(struct machine *machine,
 	int handle, uint64_t *start, uint64_t *size)
 {
-	char *s = (char *)file_handle_string[handle];
+	char *s = machine->md.arc.file_handle_string[handle];
 	char *s2;
 	int disk_id, disk_type;
 
-	disk_id = arcbios_handle_to_disk_id_and_type(handle, &disk_type);
+	disk_id = arcbios_handle_to_disk_id_and_type(machine,
+	    handle, &disk_type);
 
 	if (disk_id < 0)
 		return;
@@ -1183,6 +1177,7 @@ void arcbios_private_emul(struct cpu *cpu)
  */
 int arcbios_emul(struct cpu *cpu)
 {
+	struct machine *machine = cpu->machine;
 	int vector = cpu->pc & 0xfff;
 	int i, j, handle;
 	unsigned char ch2;
@@ -1194,7 +1189,7 @@ int arcbios_emul(struct cpu *cpu)
 		return 1;
 	}
 
-	if (cpu->machine->md.arc.arc_64bit)
+	if (machine->md.arc.arc_64bit)
 		vector /= 2;
 
 	/*  Special case for reboot by jumping to 0xbfc00000:  */
@@ -1210,11 +1205,11 @@ int arcbios_emul(struct cpu *cpu)
 	case 0x20:		/*  ReturnFromMain()  */
 		debug("[ ARCBIOS Halt() or similar ]\n");
 		/*  Halt all CPUs.  */
-		for (i=0; i<cpu->machine->ncpus; i++) {
-			cpu->machine->cpus[i]->running = 0;
-			cpu->machine->cpus[i]->dead = 1;
+		for (i=0; i<machine->ncpus; i++) {
+			machine->cpus[i]->running = 0;
+			machine->cpus[i]->dead = 1;
 		}
-		cpu->machine->exit_without_entering_debugger = 1;
+		machine->exit_without_entering_debugger = 1;
 		break;
 	case 0x24:		/*  GetPeer(node)  */
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == 0) {
@@ -1223,9 +1218,10 @@ int arcbios_emul(struct cpu *cpu)
 		} else {
 			uint64_t peer;
 			cpu->memory_rw(cpu, cpu->mem,
-			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 3 * arc_wordlen,
-			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
-			if (cpu->machine->md.arc.arc_64bit) {
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 3 *
+			    machine->md.arc.wordlen, &buf[0],
+			    machine->md.arc.wordlen, MEM_READ, CACHE_NONE);
+			if (machine->md.arc.arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0];
 					buf[0] = buf[7]; buf[7] = tmp;
@@ -1255,8 +1251,8 @@ int arcbios_emul(struct cpu *cpu)
 			}
 
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = peer?
-			    (peer + 3 * arc_wordlen) : 0;
-			if (!cpu->machine->md.arc.arc_64bit)
+			    (peer + 3 * machine->md.arc.wordlen) : 0;
+			if (!machine->md.arc.arc_64bit)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
@@ -1267,14 +1263,15 @@ int arcbios_emul(struct cpu *cpu)
 	case 0x28:		/*  GetChild(node)  */
 		/*  0 for the root, non-0 for children:  */
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == 0)
-			cpu->cd.mips.gpr[MIPS_GPR_V0] =
-			    FIRST_ARC_COMPONENT + arc_wordlen * 3;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = FIRST_ARC_COMPONENT
+			    + machine->md.arc.wordlen * 3;
 		else {
 			uint64_t child = 0;
 			cpu->memory_rw(cpu, cpu->mem,
-			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 2 * arc_wordlen,
-			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
-			if (cpu->machine->md.arc.arc_64bit) {
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 2 *
+			    machine->md.arc.wordlen, &buf[0], machine->
+			    md.arc.wordlen, MEM_READ, CACHE_NONE);
+			if (machine->md.arc.arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0];
 					buf[0] = buf[7]; buf[7] = tmp;
@@ -1305,8 +1302,8 @@ int arcbios_emul(struct cpu *cpu)
 			}
 
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = child?
-			    (child + 3 * arc_wordlen) : 0;
-			if (!cpu->machine->md.arc.arc_64bit)
+			    (child + 3 * machine->md.arc.wordlen) : 0;
+			if (!machine->md.arc.arc_64bit)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t)cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
@@ -1319,10 +1316,11 @@ int arcbios_emul(struct cpu *cpu)
 			uint64_t parent;
 
 			cpu->memory_rw(cpu, cpu->mem,
-			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 1 * arc_wordlen,
-			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 1 * machine->
+			    md.arc.wordlen, &buf[0], machine->md.arc.wordlen,
+			    MEM_READ, CACHE_NONE);
 
-			if (cpu->machine->md.arc.arc_64bit) {
+			if (machine->md.arc.arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0];
 					buf[0] = buf[7]; buf[7] = tmp;
@@ -1353,8 +1351,8 @@ int arcbios_emul(struct cpu *cpu)
 			}
 
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = parent?
-			    (parent + 3 * arc_wordlen) : 0;
-			if (!cpu->machine->md.arc.arc_64bit)
+			    (parent + 3 * machine->md.arc.wordlen) : 0;
+			if (!machine->md.arc.arc_64bit)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
 				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
@@ -1451,7 +1449,7 @@ int arcbios_emul(struct cpu *cpu)
 			cpu->cd.mips.gpr[MIPS_GPR_V0] =
 			    arcbios_memdescriptor_base;
 		else {
-			int s = cpu->machine->md.arc.arc_64bit?
+			int s = machine->md.arc.arc_64bit?
 			    sizeof(struct arcbios_mem64)
 			    : sizeof(struct arcbios_mem);
 			int nr = cpu->cd.mips.gpr[MIPS_GPR_A0] -
@@ -1484,15 +1482,15 @@ int arcbios_emul(struct cpu *cpu)
 
 		handle = 3;
 		/*  TODO: Starting at 0 would require some updates...  */
-		while (file_handle_in_use[handle]) {
+		while (machine->md.arc.file_handle_in_use[handle]) {
 			handle ++;
-			if (handle >= MAX_HANDLES) {
+			if (handle >= ARC_MAX_HANDLES) {
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EMFILE;
 				break;
 			}
 		}
 
-		if (handle >= MAX_HANDLES) {
+		if (handle >= ARC_MAX_HANDLES) {
 			fatal("[ ARCBIOS Open: out of file handles ]\n");
 		} else if (cpu->cd.mips.gpr[MIPS_GPR_A0] == 0) {
 			fatal("[ ARCBIOS Open: NULL ptr ]\n");
@@ -1516,8 +1514,9 @@ int arcbios_emul(struct cpu *cpu)
 					i = MAX_OPEN_STRINGLEN;
 			}
 			buf[MAX_OPEN_STRINGLEN - 1] = '\0';
-			file_handle_string[handle] = buf;
-			arcbios_current_seek_offset[handle] = 0;
+			machine->md.arc.file_handle_string[handle] =
+			    (char *)buf;
+			machine->md.arc.current_seek_offset[handle] = 0;
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 
@@ -1525,7 +1524,7 @@ int arcbios_emul(struct cpu *cpu)
 			debug(" = handle %i ]\n", (int)handle);
 			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A2],
 			    handle);
-			file_handle_in_use[handle] = 1;
+			machine->md.arc.file_handle_in_use[handle] = 1;
 		} else
 			debug(" = ERROR %i ]\n",
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_V0]);
@@ -1533,18 +1532,20 @@ int arcbios_emul(struct cpu *cpu)
 	case 0x60:		/*  Close(uint32_t handle)  */
 		debug("[ ARCBIOS Close(%i) ]\n",
 		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
-		if (!file_handle_in_use[cpu->cd.mips.gpr[MIPS_GPR_A0]]) {
+		if (!machine->md.arc.file_handle_in_use[cpu->cd.mips.gpr[
+		    MIPS_GPR_A0]]) {
 			fatal("ARCBIOS Close(%i): bad handle\n",
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EBADF;
 		} else {
-			file_handle_in_use[cpu->cd.mips.gpr[MIPS_GPR_A0]] = 0;
-			if (file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]]
-			    != NULL)
-				free(file_handle_string[cpu->cd.mips.gpr[
-				    MIPS_GPR_A0]]);
-			file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]] =
-			    NULL;
+			machine->md.arc.file_handle_in_use[
+			    cpu->cd.mips.gpr[MIPS_GPR_A0]] = 0;
+			if (machine->md.arc.file_handle_string[
+			    cpu->cd.mips.gpr[MIPS_GPR_A0]] != NULL)
+				free(machine->md.arc.file_handle_string[
+				    cpu->cd.mips.gpr[MIPS_GPR_A0]]);
+			machine->md.arc.file_handle_string[cpu->cd.mips.
+			    gpr[MIPS_GPR_A0]] = NULL;
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 		break;
@@ -1559,9 +1560,9 @@ int arcbios_emul(struct cpu *cpu)
 			fflush(stdin);
 			fflush(stdout);
 			/*  NOTE/TODO: This gives a tick to _everything_  */
-			for (i=0; i<cpu->machine->n_tick_entries; i++)
-				cpu->machine->tick_func[i](cpu,
-				    cpu->machine->tick_extra[i]);
+			for (i=0; i<machine->n_tick_entries; i++)
+				machine->tick_func[i](cpu,
+				    machine->tick_extra[i]);
 
 			for (i=0; i<cpu->cd.mips.gpr[MIPS_GPR_A2]; i++) {
 				int x;
@@ -1570,8 +1571,8 @@ int arcbios_emul(struct cpu *cpu)
 				/*  Read from STDIN is blocking (at least
 				    that seems to be how NetBSD's arcdiag
 				    wants it)  */
-				x = console_readchar(cpu->machine->
-				    main_console_handle);
+				x = console_readchar(
+				    machine->main_console_handle);
 				if (x < 0)
 					return 0;
 
@@ -1606,14 +1607,14 @@ int arcbios_emul(struct cpu *cpu)
 			int handle = cpu->cd.mips.gpr[MIPS_GPR_A0];
 			int disk_type;
 			int disk_id = arcbios_handle_to_disk_id_and_type(
-			    handle, &disk_type);
+			    machine, handle, &disk_type);
 			uint64_t partition_offset = 0;
 			int res;
 			uint64_t size;		/*  dummy  */
 			unsigned char *tmp_buf;
 
-			arcbios_handle_to_start_and_size(cpu->machine,
-			    handle, &partition_offset, &size);
+			arcbios_handle_to_start_and_size(machine, handle,
+			    &partition_offset, &size);
 
 			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n",
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
@@ -1629,9 +1630,10 @@ int arcbios_emul(struct cpu *cpu)
 				break;
 			}
 
-			res = diskimage_access(cpu->machine, disk_id, disk_type,
-			    0, partition_offset + arcbios_current_seek_offset[
-			    handle], tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
+			res = diskimage_access(machine, disk_id, disk_type,
+			    0, partition_offset + machine->md.arc.
+			    current_seek_offset[handle], tmp_buf,
+			    cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the
 			    data to emulated memory:  */
@@ -1642,7 +1644,7 @@ int arcbios_emul(struct cpu *cpu)
 				store_32bit_word(cpu,
 				    cpu->cd.mips.gpr[MIPS_GPR_A3],
 				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				arcbios_current_seek_offset[handle] +=
+				machine->md.arc.current_seek_offset[handle] +=
 				    cpu->cd.mips.gpr[MIPS_GPR_A2];
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 			} else
@@ -1660,7 +1662,7 @@ int arcbios_emul(struct cpu *cpu)
 		 */
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == ARCBIOS_STDIN) {
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = console_charavail(
-			    cpu->machine->main_console_handle)? 0 : 1;
+			    machine->main_console_handle)? 0 : 1;
 		} else {
 			fatal("[ ARCBIOS GetReadStatus(%i) from "
 			    "something other than STDIN: TODO ]\n",
@@ -1677,13 +1679,13 @@ int arcbios_emul(struct cpu *cpu)
 			int handle = cpu->cd.mips.gpr[MIPS_GPR_A0];
 			int disk_type;
 			int disk_id = arcbios_handle_to_disk_id_and_type(
-			    handle, &disk_type);
+			    machine, handle, &disk_type);
 			uint64_t partition_offset = 0;
 			int res, i;
 			uint64_t size;		/*  dummy  */
 			unsigned char *tmp_buf;
 
-			arcbios_handle_to_start_and_size(cpu->machine,
+			arcbios_handle_to_start_and_size(machine,
 			    handle, &partition_offset, &size);
 
 			debug("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
@@ -1706,15 +1708,16 @@ int arcbios_emul(struct cpu *cpu)
 				    &tmp_buf[i], sizeof(char), MEM_READ,
 				    CACHE_NONE);
 
-			res = diskimage_access(cpu->machine, disk_id, disk_type,
-			    1, partition_offset + arcbios_current_seek_offset[
-			    handle], tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
+			res = diskimage_access(machine, disk_id, disk_type,
+			    1, partition_offset + machine->md.arc.
+			    current_seek_offset[handle], tmp_buf,
+			    cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			if (res) {
 				store_32bit_word(cpu,
 				    cpu->cd.mips.gpr[MIPS_GPR_A3],
 				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				arcbios_current_seek_offset[handle] +=
+				machine->md.arc.current_seek_offset[handle] +=
 				    cpu->cd.mips.gpr[MIPS_GPR_A2];
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 			} else
@@ -1767,7 +1770,7 @@ int arcbios_emul(struct cpu *cpu)
 			    (buf[3] << 24) + ((uint64_t)buf[4] << 32) +
 			    ((uint64_t)buf[5] << 40) + ((uint64_t)buf[6] << 48)
 			    + ((uint64_t)buf[7] << 56);
-			arcbios_current_seek_offset[
+			machine->md.arc.current_seek_offset[
 			    cpu->cd.mips.gpr[MIPS_GPR_A0]] = ofs;
 			debug("%016llx ]\n", (long long)ofs);
 		}
@@ -1821,14 +1824,15 @@ int arcbios_emul(struct cpu *cpu)
 		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1]);
 
-		if (cpu->cd.mips.gpr[MIPS_GPR_A0] >= MAX_HANDLES) {
+		if (cpu->cd.mips.gpr[MIPS_GPR_A0] >= ARC_MAX_HANDLES) {
 			debug("invalid file handle ]\n");
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EINVAL;
-		} else if (!file_handle_in_use[cpu->cd.mips.gpr[MIPS_GPR_A0]]) {
+		} else if (!machine->md.arc.file_handle_in_use[cpu->cd.
+		    mips.gpr[MIPS_GPR_A0]]) {
 			debug("file handle not in use! ]\n");
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EBADF;
 		} else {
-			debug("'%s' ]\n", file_handle_string[
+			debug("'%s' ]\n", machine->md.arc.file_handle_string[
 			    cpu->cd.mips.gpr[MIPS_GPR_A0]]);
 			cpu->cd.mips.gpr[MIPS_GPR_V0] =
 			    arcbios_getfileinformation(cpu);
@@ -1858,13 +1862,13 @@ int arcbios_emul(struct cpu *cpu)
 		 */
 		fatal("EXCEPTION, but no exception handler installed yet.\n");
 		quiet_mode = 0;
-		cpu_register_dump(cpu->machine, cpu, 1, 0x1);
+		cpu_register_dump(machine, cpu, 1, 0x1);
 		cpu->running = 0;
 		cpu->dead = 1;
 		break;
 	default:
 		quiet_mode = 0;
-		cpu_register_dump(cpu->machine, cpu, 1, 0x1);
+		cpu_register_dump(machine, cpu, 1, 0x1);
 		debug("a0 points to: ");
 		dump_mem_string(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		debug("\n");
@@ -1909,6 +1913,318 @@ void arcbios_set_default_exception_handler(struct cpu *cpu)
 
 
 /*
+ *  arcbios_add_other_components():
+ *
+ *  TODO: How should this be synched with the hardware devices
+ *  added in machine.c?
+ */
+static void arcbios_add_other_components(struct machine *machine,
+	uint64_t system)
+{
+	struct cpu *cpu = machine->cpus[0];
+
+	if (machine->machine_type == MACHINE_ARC &&
+	    ( machine->machine_subtype == MACHINE_ARC_NEC_RD94 ||
+	    machine->machine_subtype == MACHINE_ARC_NEC_R94 ||
+	    machine->machine_subtype == MACHINE_ARC_NEC_R96 )) {
+		uint64_t jazzbus, eisa, other;
+
+		jazzbus = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_AdapterClass,
+		    COMPONENT_TYPE_MultiFunctionAdapter,
+		    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
+		    system, NULL, 0);
+
+		switch (machine->machine_subtype) {
+		case MACHINE_ARC_NEC_RD94:
+		case MACHINE_ARC_NEC_R94:
+			if (machine->use_x11)
+				arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_ControllerClass,
+				    COMPONENT_TYPE_DisplayController,
+		    0, 1, 2, 0, 0x0, "10110004",
+				    system, NULL, 0);
+			break;
+		case MACHINE_ARC_NEC_R96:
+			if (machine->use_x11) {
+				uint64_t x;
+				x = arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_DisplayController,
+				    COMPONENT_FLAG_ConsoleOut |
+				      COMPONENT_FLAG_Output,
+				    1, 2, 0, 0x0, "necvdfrb",
+				    jazzbus, NULL, 0);
+				arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_PeripheralClass,
+				    COMPONENT_TYPE_MonitorPeripheral,
+				    COMPONENT_FLAG_ConsoleOut |
+					COMPONENT_FLAG_Output,
+				    1, 2, 0, 0xffffffff, "640x480",
+				    x, NULL, 0);
+			}
+
+			/*  TODO: R[D]94 too?  */
+			eisa = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_AdapterClass,
+			    COMPONENT_TYPE_EISAAdapter,
+			    0, 1, 2, 0, 0xffffffff, "EISA",
+			    system, NULL, 0);
+
+			other = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_OtherController,
+			    0, 1, 2, 0, 0xffffffff, "NEC1C01",
+			    eisa, NULL, 0);
+			break;
+		}
+	}
+
+	if (machine->machine_type == MACHINE_ARC &&
+	    (machine->machine_subtype == MACHINE_ARC_JAZZ_PICA
+	    || machine->machine_subtype == MACHINE_ARC_JAZZ_MAGNUM)) {
+		uint64_t jazzbus, ali_s3, vxl;
+		uint64_t diskcontroller, floppy, kbdctl, kbd;
+		uint64_t ptrctl, ptr, paral, audio;
+		uint64_t eisa, scsi;
+		/*  uint64_t serial1, serial2;  */
+
+		jazzbus = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_AdapterClass,
+		    COMPONENT_TYPE_MultiFunctionAdapter,
+		    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
+		    system, NULL, 0);
+
+		/*
+		 *  DisplayController, needed by NetBSD:
+		 *  TODO: NetBSD still doesn't use it :(
+		 */
+		switch (machine->machine_subtype) {
+		case MACHINE_ARC_JAZZ_PICA:
+			/*  Default TLB entries on PICA-61:  */
+
+			/* 7: 256K, asid: 0x0, v: 0xe1000000,
+			   p0: 0xfff00000(2.VG), p1: 0x0(0..G)  */
+			mips_coproc_tlb_set_entry(cpu, 7, 262144,
+			    0xffffffffe1000000ULL,
+			    0x0fff00000ULL, 0, 1, 0, 0, 0, 1, 0, 2, 0);
+
+			/* 8: 64K, asid: 0x0, v: 0xe0000000,
+			   p0: 0x80000000(2DVG), p1: 0x0(0..G) */
+			mips_coproc_tlb_set_entry(cpu, 8, 65536,
+			    0xffffffffe0000000ULL,
+			    0x080000000ULL, 0, 1, 0, 1, 0, 1, 0, 2, 0);
+
+			/* 9: 64K, asid: 0x0, v: 0xe00e0000,
+			   p0: 0x800e0000(2DVG), p1: 0x800f0000(2DVG) */
+			mips_coproc_tlb_set_entry(cpu, 9, 65536,
+			    (uint64_t)0xffffffffe00e0000ULL,
+			    (uint64_t)0x0800e0000ULL,
+			    (uint64_t)0x0800f0000ULL, 1, 1, 1, 1, 1, 0, 2, 2);
+
+			/* 10: 4K, asid: 0x0, v: 0xe0100000,
+			   p0: 0xf0000000(2DVG), p1: 0x0(0..G) */
+			mips_coproc_tlb_set_entry(cpu, 10, 4096,
+			    (uint64_t)0xffffffffe0100000ULL,
+			    (uint64_t)0x0f0000000ULL, 0,1, 0, 1, 0, 1, 0, 2, 0);
+
+			/* 11: 1M, asid: 0x0, v: 0xe0200000,
+			   p0: 0x60000000(2DVG), p1: 0x60100000(2DVG) */
+			mips_coproc_tlb_set_entry(cpu, 11, 1048576,
+			    0xffffffffe0200000ULL,
+			    0x060000000ULL, 0x060100000ULL,1,1,1,1,1, 0, 2, 2);
+
+			/* 12: 1M, asid: 0x0, v: 0xe0400000,
+			   p0: 0x60200000(2DVG), p1: 0x60300000(2DVG) */
+			mips_coproc_tlb_set_entry(cpu, 12, 1048576,
+			    0xffffffffe0400000ULL, 0x060200000ULL,
+			    0x060300000ULL, 1, 1, 1, 1, 1, 0, 2, 2);
+
+			/* 13: 4M, asid: 0x0, v: 0xe0800000,
+			   p0: 0x40000000(2DVG), p1: 0x40400000(2DVG) */
+			mips_coproc_tlb_set_entry(cpu, 13, 1048576*4,
+			    0xffffffffe0800000ULL, 0x040000000ULL,
+			    0x040400000ULL, 1, 1, 1, 1, 1, 0, 2, 2);
+
+			/* 14: 16M, asid: 0x0, v: 0xe2000000,
+			   p0: 0x90000000(2DVG), p1: 0x91000000(2DVG) */
+			mips_coproc_tlb_set_entry(cpu, 14, 1048576*16,
+			    0xffffffffe2000000ULL, 0x090000000ULL,
+			    0x091000000ULL, 1, 1, 1, 1, 1, 0, 2, 2);
+
+			if (machine->use_x11) {
+				ali_s3 = arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_ControllerClass,
+				    COMPONENT_TYPE_DisplayController,
+				    COMPONENT_FLAG_ConsoleOut |
+					COMPONENT_FLAG_Output,
+				    1, 2, 0, 0xffffffff, "ALI_S3",
+				    jazzbus, NULL, 0);
+
+				arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_PeripheralClass,
+				    COMPONENT_TYPE_MonitorPeripheral,
+				    COMPONENT_FLAG_ConsoleOut |
+					COMPONENT_FLAG_Output,
+				    1, 2, 0, 0xffffffff, "1024x768",
+				    ali_s3, NULL, 0);
+			}
+			break;
+		case MACHINE_ARC_JAZZ_MAGNUM:
+			if (machine->use_x11) {
+				vxl = arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_ControllerClass,
+				    COMPONENT_TYPE_DisplayController,
+				    COMPONENT_FLAG_ConsoleOut |
+					COMPONENT_FLAG_Output,
+				    1, 2, 0, 0xffffffff, "VXL",
+				    jazzbus, NULL, 0);
+
+				arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_PeripheralClass,
+				    COMPONENT_TYPE_MonitorPeripheral,
+				    COMPONENT_FLAG_ConsoleOut |
+					COMPONENT_FLAG_Output,
+				    1, 2, 0, 0xffffffff, "1024x768",
+				    vxl, NULL, 0);
+			}
+			break;
+		}
+
+		diskcontroller = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ControllerClass,
+		    COMPONENT_TYPE_DiskController,
+			COMPONENT_FLAG_Input | COMPONENT_FLAG_Output,
+		    1, 2, 0, 0xffffffff, "I82077", jazzbus, NULL, 0);
+
+		floppy = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_PeripheralClass,
+		    COMPONENT_TYPE_FloppyDiskPeripheral,
+			COMPONENT_FLAG_Removable |
+			COMPONENT_FLAG_Input | COMPONENT_FLAG_Output,
+		    1, 2, 0, 0xffffffff, NULL, diskcontroller, NULL, 0);
+
+		kbdctl = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ControllerClass,
+		    COMPONENT_TYPE_KeyboardController,
+			COMPONENT_FLAG_ConsoleIn | COMPONENT_FLAG_Input,
+		    1, 2, 0, 0xffffffff, "I8742", jazzbus, NULL, 0);
+
+		kbd = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_PeripheralClass,
+		    COMPONENT_TYPE_KeyboardPeripheral,
+			COMPONENT_FLAG_ConsoleIn | COMPONENT_FLAG_Input,
+		    1, 2, 0, 0xffffffff, "PCAT_ENHANCED", kbdctl, NULL, 0);
+
+		ptrctl = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ControllerClass,
+		    COMPONENT_TYPE_PointerController, COMPONENT_FLAG_Input,
+		    1, 2, 0, 0xffffffff, "I8742", jazzbus, NULL, 0);
+
+		ptr = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_PeripheralClass,
+		    COMPONENT_TYPE_PointerPeripheral, COMPONENT_FLAG_Input,
+		    1, 2, 0, 0xffffffff, "PS2 MOUSE", ptrctl, NULL, 0);
+
+/*  These cause Windows NT to bug out.  */
+#if 0
+		serial1 = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ControllerClass,
+		    COMPONENT_TYPE_SerialController,
+			COMPONENT_FLAG_Input | COMPONENT_FLAG_Output,
+		    1, 2, 0, 0xffffffff, "COM1", jazzbus, NULL, 0);
+
+		serial2 = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ControllerClass,
+		    COMPONENT_TYPE_SerialController,
+			COMPONENT_FLAG_Input | COMPONENT_FLAG_Output,
+		    1, 2, 0, 0xffffffff, "COM1", jazzbus, NULL, 0);
+#endif
+
+		paral = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ControllerClass,
+		    COMPONENT_TYPE_ParallelController,
+			COMPONENT_FLAG_Input | COMPONENT_FLAG_Output,
+		    1, 2, 0, 0xffffffff, "LPT1", jazzbus, NULL, 0);
+
+		audio = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ControllerClass,
+		    COMPONENT_TYPE_AudioController,
+			COMPONENT_FLAG_Input | COMPONENT_FLAG_Output,
+		    1, 2, 0, 0xffffffff, "MAGNUM", jazzbus, NULL, 0);
+
+		eisa = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_AdapterClass, COMPONENT_TYPE_EISAAdapter,
+		    0, 1, 2, 0, 0xffffffff, "EISA", system, NULL, 0);
+
+		{
+			unsigned char config[78];
+			memset(config, 0, sizeof(config));
+
+/*  config data version: 1, revision: 2, count: 4  */
+config[0] = 0x01; config[1] = 0x00;
+config[2] = 0x02; config[3] = 0x00;
+config[4] = 0x04; config[5] = 0x00; config[6] = 0x00; config[7] = 0x00;
+
+/*
+          type: Interrupt
+           share_disposition: DeviceExclusive, flags: LevelSensitive
+           level: 4, vector: 22, reserved1: 0
+*/
+			config[8] = arc_CmResourceTypeInterrupt;
+			config[9] = arc_CmResourceShareDeviceExclusive;
+			config[10] = arc_CmResourceInterruptLevelSensitive;
+			config[12] = 4;
+			config[16] = 22;
+			config[20] = 0;
+
+/*
+          type: Memory
+           share_disposition: DeviceExclusive, flags: ReadWrite
+           start: 0x 0 80002000, length: 0x1000
+*/
+			config[24] = arc_CmResourceTypeMemory;
+			config[25] = arc_CmResourceShareDeviceExclusive;
+			config[26] = arc_CmResourceMemoryReadWrite;
+config[28] = 0x00; config[29] = 0x20; config[30] = 0x00; config[31] = 0x80;
+  config[32] = 0x00; config[33] = 0x00; config[34] = 0x00; config[35] = 0x00;
+config[36] = 0x00; config[37] = 0x10; config[38] = 0x00; config[39] = 0x00;
+
+/*
+          type: DMA
+           share_disposition: DeviceExclusive, flags: 0x0
+           channel: 0, port: 0, reserved1: 0
+*/
+			config[40] = arc_CmResourceTypeDMA;
+			config[41] = arc_CmResourceShareDeviceExclusive;
+/*  42..43 = flags, 44,45,46,47 = channel, 48,49,50,51 = port, 52,53,54,55
+ = reserved  */
+
+/*          type: DeviceSpecific
+           share_disposition: DeviceExclusive, flags: 0x0
+           datasize: 6, reserved1: 0, reserved2: 0
+           data: [0x1:0x0:0x2:0x0:0x7:0x30]
+*/
+			config[56] = arc_CmResourceTypeDeviceSpecific;
+			config[57] = arc_CmResourceShareDeviceExclusive;
+/*  58,59 = flags  60,61,62,63 = data size, 64..71 = reserved  */
+			config[60] = 6;
+/*  72..77 = the data  */
+			config[72] = 0x01; config[73] = 0x00; config[74] = 0x02;
+			config[75] = 0x00; config[76] = 0x07; config[77] = 0x30;
+			scsi = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_AdapterClass,
+			    COMPONENT_TYPE_SCSIAdapter,
+			    0, 1, 2, 0, 0xffffffff, "ESP216",
+			    system, config, sizeof(config));
+
+			arcbios_register_scsicontroller(machine, scsi);
+		}
+	}
+}
+
+
+/*
  *  arcbios_console_init():
  *
  *  Called from machine.c whenever an ARC-based machine is running with
@@ -1934,18 +2250,33 @@ void arcbios_console_init(struct machine *machine,
  *  Should be called before any other arcbios function is used. An exception
  *  is arcbios_console_init(), which may be called before this function.
  */
-void arcbios_init(struct machine *machine, int is64bit)
+void arcbios_init(struct machine *machine, int is64bit,
+	uint64_t sgi_ram_offset)
 {
-	int i;
+	int i, alloclen = 20;
+	char *name;
+	uint64_t arc_reserved, mem_base, mem_count;
+	struct cpu *cpu = machine->cpus[0];
+	struct arcbios_sysid arcbios_sysid;
+	struct arcbios_dsp_stat arcbios_dsp_stat;
+	uint64_t system = 0;
+	struct arcbios_spb arcbios_spb;
+	struct arcbios_spb_64 arcbios_spb_64;
 
 	machine->md.arc.arc_64bit = is64bit;
-	arc_wordlen = is64bit? sizeof(uint64_t) : sizeof(uint32_t);
+	machine->md.arc.wordlen = is64bit? sizeof(uint64_t) : sizeof(uint32_t);
+
+	if (machine->physical_ram_in_mb < 16)
+		fprintf(stderr, "WARNING! The ARC platform specification "
+		    "doesn't allow less than 16 MB of RAM. Continuing "
+		    "anyway.\n");
 
 	/*  File handles 0, 1, and 2 are stdin, stdout, and stderr.  */
-	for (i=0; i<MAX_HANDLES; i++) {
-		file_handle_in_use[i] = i<3? 1 : 0;
-		file_handle_string[i] = NULL;
-		arcbios_current_seek_offset[i] = 0;
+	for (i=0; i<ARC_MAX_HANDLES; i++) {
+		machine->md.arc.file_handle_in_use[i] = i<3? 1 : 0;
+		machine->md.arc.file_handle_string[i] = i>=3? NULL :
+		    (i==0? "(stdin)" : (i==1? "(stdout)" : "(stderr)"));
+		machine->md.arc.current_seek_offset[i] = 0;
 	}
 
 	if (!machine->use_x11)
@@ -1958,22 +2289,431 @@ void arcbios_init(struct machine *machine, int is64bit)
 		machine->md.arc.console_curcolor = 0x1f;
 		for (y=0; y<machine->md.arc.console_maxy; y++)
 			for (x=0; x<machine->md.arc.console_maxx; x++)
-				arcbios_putcell(machine->cpus[0], ' ', x, y);
+				arcbios_putcell(cpu, ' ', x, y);
 
 		machine->md.arc.console_curx = 0;
 		machine->md.arc.console_cury = 0;
 
-		arcbios_putstring(machine->cpus[0], "GXemul");
+		arcbios_putstring(cpu, "GXemul");
 #ifdef VERSION
-		arcbios_putstring(machine->cpus[0], " "VERSION);
+		arcbios_putstring(cpu, " "VERSION);
 #endif
-		arcbios_putstring(machine->cpus[0], "   ARCBIOS emulation\n");
+		arcbios_putstring(cpu, "   ARCBIOS emulation\n");
 
 		sprintf(tmpstr, "%i cpu%s (%s), %i MB memory\n\n",
 		    machine->ncpus, machine->ncpus > 1? "s" : "",
-		    machine->cpus[0]->cd.mips.cpu_type.name,
+		    cpu->cd.mips.cpu_type.name,
 		    machine->physical_ram_in_mb);
-		arcbios_putstring(machine->cpus[0], tmpstr);
+		arcbios_putstring(cpu, tmpstr);
+	}
+
+	arcbios_set_default_exception_handler(cpu);
+
+	memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
+	if (machine->machine_type == MACHINE_SGI) {
+		/*  Vendor ID, max 8 chars:  */
+		strncpy(arcbios_sysid.VendorId,  "SGI", 3);
+		switch (machine->machine_subtype) {
+		case 22:
+			strncpy(arcbios_sysid.ProductId,
+			    "87654321", 8);	/*  some kind of ID?  */
+			break;
+		case 32:
+			strncpy(arcbios_sysid.ProductId, "8", 1);
+			    /*  6 or 8 (?)  */
+			break;
+		default:
+			snprintf(arcbios_sysid.ProductId, 8, "IP%i",
+			    machine->machine_subtype);
+		}
+	} else {
+		switch (machine->machine_subtype) {
+		case MACHINE_ARC_NEC_RD94:
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
+			break;
+		case MACHINE_ARC_NEC_R94:
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			break;
+		case MACHINE_ARC_NEC_R96:
+			strncpy(arcbios_sysid.VendorId,  "MIPS DUO", 8);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "blahblah", 8);	/*  NOTE: max 8 chars  */
+			break;
+		case MACHINE_ARC_NEC_R98:
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "R98", 4);	/*  NOTE: max 8 chars  */
+			break;
+		case MACHINE_ARC_JAZZ_PICA:
+			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			break;
+		case MACHINE_ARC_JAZZ_MAGNUM:
+			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			break;
+		case MACHINE_ARC_JAZZ_M700:
+			strncpy(arcbios_sysid.VendorId,  "OLI00000", 8);/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			break;
+		case MACHINE_ARC_DESKTECH_TYNE:
+			strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			break;
+		default:
+			fatal("error in machine.c sysid\n");
+			exit(1);
+		}
+	}
+
+	store_buf(cpu, SGI_SYSID_ADDR, (char *)&arcbios_sysid,
+	    sizeof(arcbios_sysid));
+
+	arcbios_get_dsp_stat(cpu, &arcbios_dsp_stat);
+	store_buf(cpu, ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat,
+	    sizeof(arcbios_dsp_stat));
+
+	/*
+	 *  The first 12 MBs of RAM are simply reserved... this simplifies
+	 *  things a lot.  If there's more than 512MB of RAM, it has to be
+	 *  split in two, according to the ARC spec.  This code creates a
+	 *  number of chunks of at most 512MB each.
+	 *
+	 *  NOTE:  The region of physical address space between 0x10000000 and
+	 *  0x1fffffff (256 - 512 MB) is usually occupied by memory mapped
+	 *  devices, so that portion is "lost".
+	 */
+	arc_reserved = 0x2000;
+	if (machine->machine_type == MACHINE_SGI)
+		arc_reserved = 0x4000;
+
+	arcbios_add_memory_descriptor(cpu, 0, arc_reserved,
+	    ARCBIOS_MEM_FirmwarePermanent);
+	arcbios_add_memory_descriptor(cpu, sgi_ram_offset + arc_reserved,
+	    0x60000-arc_reserved, ARCBIOS_MEM_FirmwareTemporary);
+
+	mem_base = 12;
+	mem_base += sgi_ram_offset / 1048576;
+
+	while (mem_base < machine->physical_ram_in_mb+sgi_ram_offset/1048576) {
+		mem_count = machine->physical_ram_in_mb+sgi_ram_offset/1048576
+		    - mem_base;
+
+		/*  Skip the 256-512MB region (for devices)  */
+		if (mem_base < 256 && mem_base + mem_count > 256) {
+			mem_count = 256-mem_base;
+		}
+
+		/*  At most 512MB per descriptor (at least the first 512MB
+		    must be separated this way, according to the ARC spec)  */
+		if (mem_count > 512)
+			mem_count = 512;
+
+		arcbios_add_memory_descriptor(cpu, mem_base * 1048576,
+		    mem_count * 1048576, ARCBIOS_MEM_FreeMemory);
+
+		mem_base += mem_count;
+
+		/*  Skip the devices:  */
+		if (mem_base == 256)
+			mem_base = 512;
+	}
+
+	/*
+	 *  Components:   (this is an example of what a system could look like)
+	 *
+	 *  [System]
+	 *	[CPU]  (one for each cpu)
+	 *	    [FPU]  (one for each cpu)
+	 *	    [CPU Caches]
+	 *	[Memory]
+	 *	[Ethernet]
+	 *	[Serial]
+	 *	[SCSI]
+	 *	    [Disk]
+	 *
+	 *  Here's a good list of what hardware is in different IP-models:
+	 *  http://www.linux-mips.org/archives/linux-mips/2001-03/msg00101.html
+	 */
+
+	if (machine->machine_name == NULL)
+		fatal("ERROR: machine_name == NULL\n");
+
+	/*  Add the root node:  */
+	switch (machine->machine_type) {
+	case MACHINE_SGI:
+		name = malloc(alloclen);
+		if (name == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		snprintf(name, alloclen, "SGI-IP%i",
+		    machine->machine_subtype);
+
+		/*  A very special case for IP24 (which identifies itself
+		    as an IP22):  */
+		if (machine->machine_subtype == 24)
+			sprintf(name, "SGI-IP22");
+		break;
+	case MACHINE_ARC:
+		/*  ARC:  */
+		switch (machine->machine_subtype) {
+		case MACHINE_ARC_NEC_RD94:
+			name = "NEC-RD94";
+			break;
+		case MACHINE_ARC_NEC_R94:
+			name = "NEC-R94";
+			break;
+		case MACHINE_ARC_NEC_R96:
+			name = "NEC-R96";
+			break;
+		case MACHINE_ARC_NEC_R98:
+			name = "NEC-R98";
+			break;
+		case MACHINE_ARC_JAZZ_PICA:
+			name = "PICA-61";
+			break;
+		case MACHINE_ARC_JAZZ_MAGNUM:
+		case MACHINE_ARC_JAZZ_M700:
+			name = "Microsoft-Jazz";
+			break;
+		case MACHINE_ARC_DESKTECH_TYNE:
+			name = "DESKTECH-TYNE";
+			break;
+		default:
+			fatal("Unimplemented ARC machine type %i\n",
+			    machine->machine_subtype);
+			exit(1);
+		}
+		break;
+	default:
+		fatal("ERROR: non-SGI and non-ARC?\n");
+		exit(1);
+	}
+
+	system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass,
+	    COMPONENT_TYPE_ARC, 0,1,2,0, 0xffffffff, name, 0/*ROOT*/, NULL, 0);
+
+	debug("ARC system @ 0x%llx (\"%s\")\n", (long long)system, name);
+
+
+	/*
+	 *  Add tree nodes for CPUs and their caches:
+	 */
+
+	for (i=0; i<machine->ncpus; i++) {
+		uint64_t cpuaddr, fpu=0, picache, pdcache, sdcache=0;
+		int cache_size, cache_line_size;
+		unsigned int jj;
+		char arc_cpu_name[100];
+		char arc_fpc_name[105];
+
+		snprintf(arc_cpu_name, sizeof(arc_cpu_name),
+		    "MIPS-%s", machine->cpu_name);
+
+		if (machine->machine_type == MACHINE_ARC &&
+		    machine->machine_subtype == MACHINE_ARC_NEC_R96)
+			snprintf(arc_cpu_name, sizeof(arc_cpu_name),
+			    "MIPS-%s - Pr 4/5.0, Fp 5/0", machine->cpu_name);
+
+		arc_cpu_name[sizeof(arc_cpu_name)-1] = 0;
+		for (jj=0; jj<strlen(arc_cpu_name); jj++)
+			if (arc_cpu_name[jj] >= 'a' && arc_cpu_name[jj] <= 'z')
+				arc_cpu_name[jj] += ('A' - 'a');
+
+		strcpy(arc_fpc_name, arc_cpu_name);
+		strcat(arc_fpc_name, "FPC");
+
+		cpuaddr = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
+		    0, 1, 2, i, 0xffffffff, arc_cpu_name, system, NULL, 0);
+
+		/*
+		 *  TODO: This was in the ARC specs, but it isn't really used
+		 *  by ARC implementations?   At least SGI-IP32 uses it.
+		 */
+		if (machine->machine_type == MACHINE_SGI)
+			fpu = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
+			    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr,
+			    NULL, 0);
+
+		cache_size = DEFAULT_PCACHE_SIZE - 12;
+		if (machine->cache_picache)
+			cache_size = machine->cache_picache - 12;
+		if (cache_size < 0)
+			cache_size = 0;
+
+		cache_line_size = DEFAULT_PCACHE_LINESIZE;
+		if (machine->cache_picache_linesize)
+			cache_line_size = machine->cache_picache_linesize;
+		if (cache_line_size < 0)
+			cache_line_size = 0;
+
+		picache = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_CacheClass, COMPONENT_TYPE_PrimaryICache,
+		    0, 1, 2,
+		    /*
+		     *  Key bits:  0xXXYYZZZZ
+		     *  XX is refill-size.
+		     *  Cache line size is 1 << YY,
+		     *  Cache size is 4KB << ZZZZ.
+		     */
+		    0x01000000 + (cache_line_size << 16) + cache_size,
+			/*  32 bytes per line, default = 32 KB total  */
+		    0xffffffff, NULL, cpuaddr, NULL, 0);
+
+		cache_size = DEFAULT_PCACHE_SIZE - 12;
+		if (machine->cache_pdcache)
+			cache_size = machine->cache_pdcache - 12;
+		if (cache_size < 0)
+			cache_size = 0;
+
+		cache_line_size = DEFAULT_PCACHE_LINESIZE;
+		if (machine->cache_pdcache_linesize)
+			cache_line_size = machine->cache_pdcache_linesize;
+		if (cache_line_size < 0)
+			cache_line_size = 0;
+
+		pdcache = arcbios_addchild_manual(cpu,
+		    COMPONENT_CLASS_CacheClass,
+		    COMPONENT_TYPE_PrimaryDCache, 0, 1, 2,
+		    /*
+		     *  Key bits:  0xYYZZZZ
+		     *  Cache line size is 1 << YY,
+		     *  Cache size is 4KB << ZZZZ.
+		     */
+		    0x01000000 + (cache_line_size << 16) + cache_size,
+			/*  32 bytes per line, default = 32 KB total  */
+		    0xffffffff, NULL, cpuaddr, NULL, 0);
+
+		if (machine->cache_secondary >= 12) {
+			cache_size = machine->cache_secondary - 12;
+
+			cache_line_size = 6;	/*  64 bytes default  */
+			if (machine->cache_secondary_linesize)
+				cache_line_size = machine->
+				    cache_secondary_linesize;
+			if (cache_line_size < 0)
+				cache_line_size = 0;
+
+			sdcache = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_CacheClass,
+			    COMPONENT_TYPE_SecondaryDCache, 0, 1, 2,
+			    /*
+			     *  Key bits:  0xYYZZZZ
+			     *  Cache line size is 1 << YY,
+			     *  Cache size is 4KB << ZZZZ.
+			     */
+			    0x01000000 + (cache_line_size << 16) + cache_size,
+				/*  64 bytes per line, default = 1 MB total  */
+			    0xffffffff, NULL, cpuaddr, NULL, 0);
+		}
+
+		debug("ARC cpu%i @ 0x%llx", i, (long long)cpuaddr);
+
+		if (fpu != 0)
+			debug(" (fpu @ 0x%llx)\n", (long long)fpu);
+		else
+			debug("\n");
+
+		debug("    picache @ 0x%llx, pdcache @ 0x%llx\n",
+		    (long long)picache, (long long)pdcache);
+
+		if (machine->cache_secondary >= 12)
+			debug("    sdcache @ 0x%llx\n",
+			    (long long)sdcache);
+
+		if (machine->machine_type == MACHINE_SGI) {
+			/*  TODO:  Memory amount (and base address?)!  */
+			uint64_t memory = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_MemoryClass,
+			    COMPONENT_TYPE_MemoryUnit, 0, 1, 2, 0,
+			    0xffffffff, "memory", cpuaddr, NULL, 0);
+			debug("ARC memory @ 0x%llx\n", (long long)memory);
+		}
+	}
+
+
+	/*
+	 *  Add other components:
+	 *
+	 *  TODO: How should this be synched with the hardware devices
+	 *  added in machine.c?
+	 */
+
+	arcbios_add_other_components(machine, system);
+
+
+	/*
+	 *  Defalt TLB entry for 64-bit SGI machines:
+	 */
+	if (machine->machine_type == MACHINE_SGI) {
+		/*  TODO: On which models is this required?  */
+		mips_coproc_tlb_set_entry(cpu, 0, 1048576*16,
+		    0xc000000000000000ULL, 0, 1048576*16, 1,1,1,1,1, 0, 2, 2);
+	}
+
+
+	/*
+	 *  Set up Firmware Vectors:
+	 */
+	add_symbol_name(&machine->symbol_context,
+	    ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
+
+	for (i=0; i<100; i++) {
+		if (is64bit) {
+			store_64bit_word(cpu, ARC_FIRMWARE_VECTORS + i*8,
+			    ARC_FIRMWARE_ENTRIES + i*8);
+			store_64bit_word(cpu, ARC_PRIVATE_VECTORS + i*8,
+			    ARC_PRIVATE_ENTRIES + i*8);
+		} else {
+			store_32bit_word(cpu, ARC_FIRMWARE_VECTORS + i*4,
+			    ARC_FIRMWARE_ENTRIES + i*4);
+			store_32bit_word(cpu, ARC_PRIVATE_VECTORS + i*4,
+			    ARC_PRIVATE_ENTRIES + i*4);
+		}
+	}
+
+
+	/*
+	 *  Set up the ARC SPD:
+	 */
+	if (is64bit) {
+		/*  ARCS64 SPD (TODO: This is just a guess)  */
+		memset(&arcbios_spb_64, 0, sizeof(arcbios_spb_64));
+		store_64bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+		store_16bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb_64.Version, 64);
+		store_16bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb_64.Revision, 0);
+		store_64bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
+		store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb_64, 
+		    sizeof(arcbios_spb_64));
+	} else {
+		/*  ARCBIOS SPB:  (For ARC and 32-bit SGI modes)  */
+		memset(&arcbios_spb, 0, sizeof(arcbios_spb));
+		store_32bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+		store_32bit_word_in_host(cpu, (unsigned char *)   
+		    &arcbios_spb.SPBLength, sizeof(arcbios_spb));     
+		store_16bit_word_in_host(cpu, (unsigned char *)   
+		    &arcbios_spb.Version, 1);
+		store_16bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb.Revision, machine->machine_type ==
+		    MACHINE_SGI? 10 : 2);
+		store_32bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
+		store_32bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb.FirmwareVectorLength, 100 * 4);    /*  ?  */
+		store_32bit_word_in_host(cpu, (unsigned char *)
+		    &arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
+		store_32bit_word_in_host(cpu, (unsigned char *)  
+		    &arcbios_spb.PrivateVectorLength, 100 * 4);     /*  ?  */
+		store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb,
+		    sizeof(arcbios_spb));
 	}
 }
 

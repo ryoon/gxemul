@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.747 2005-05-22 10:48:54 debug Exp $
+$Id: HISTORY,v 1.748 2005-05-22 19:39:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1924,3 +1924,5 @@ Changelog for GXemul:
 20050522	Correcting the initial stack pointer's sign-extension for
 		ARCBIOS emulation (thanks to Alec Voropay for noticing the
 		error).
+		Continuing on the cleanup (ARCBIOS etc).
+		dev_vga updates.

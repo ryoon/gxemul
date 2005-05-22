@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.84 2005-05-21 06:25:07 debug Exp $
+ *  $Id: pc_bios.c,v 1.85 2005-05-22 19:40:00 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -47,7 +47,7 @@
 /*  These are just do-nothing functions.  */
 
 void pc_bios_init(struct cpu *cpu) { }
-int pc_bios_emul(struct cpu *cpu) { }
+int pc_bios_emul(struct cpu *cpu) { return 0; }
 
 
 #else

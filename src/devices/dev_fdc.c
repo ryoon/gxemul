@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.9 2005-02-24 15:38:34 debug Exp $
+ *  $Id: dev_fdc.c,v 1.10 2005-05-22 10:13:57 debug Exp $
  *  
  *  Floppy controller.
  *
@@ -36,7 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "console.h"
 #include "device.h"
 #include "machine.h"
 #include "memory.h"

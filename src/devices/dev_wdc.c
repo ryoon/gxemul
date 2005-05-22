@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.34 2005-05-15 01:55:51 debug Exp $
+ *  $Id: dev_wdc.c,v 1.35 2005-05-22 10:13:57 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -112,7 +112,7 @@ static void wdc_addtoinbuf(struct wdc_data *d, int c)
 
 	d->inbuf_head = (d->inbuf_head + 1) % WDC_INBUF_SIZE;
 	if (d->inbuf_head == d->inbuf_tail)
-		fatal("WARNING! wdc inbuf overrun\n");
+		fatal("[ wdc_addtoinbuf(): WARNING! wdc inbuf overrun ]\n");
 }
 
 
@@ -126,8 +126,8 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
 	int c = d->inbuf[d->inbuf_tail];
 
 	if (d->inbuf_head == d->inbuf_tail) {
-		fatal("WARNING! someone is reading too much from the "
-		    "wdc inbuf!\n");
+		fatal("[ wdc: WARNING! someone is reading too much from the "
+		    "wdc inbuf! ]\n");
 		return -1;
 	}
 

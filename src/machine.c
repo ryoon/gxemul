@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.442 2005-05-22 19:39:59 debug Exp $
+ *  $Id: machine.c,v 1.443 2005-05-22 20:05:38 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2719,7 +2719,7 @@ Why is this here? TODO
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
 				j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
-				    0, 0, machine->use_x11);  /*  TODO: irq numbers  */
+				    0, 0, machine->use_x11, 0);  /*  TODO: irq numbers  */
 
 				if (machine->use_x11)
 					machine->main_console_handle = j;
@@ -2889,7 +2889,7 @@ Why is this here? TODO
 
 				i = dev_pckbc_init(machine, mem, 0x1f320000,
 				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-				    0x800 + MACE_PERIPH_MISC, machine->use_x11);
+				    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
 							/*  keyb+mouse (mace irq numbers)  */
 
 				net_generate_unique_mac(machine, macaddr);
@@ -2990,7 +2990,7 @@ Why is this here? TODO
 
 				device_add(machine, "sn addr=0x80001000 irq=0");
 				dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
-				i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
+				i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11, 0);
 				j = dev_ns16550_init(machine, mem, 0x80006000ULL,
 				    3, 1, machine->use_x11? 0 : 1, "serial 0");  /*  com0  */
 				dev_ns16550_init(machine, mem, 0x80007000ULL,
@@ -3104,7 +3104,7 @@ Why is this here? TODO
 				machine->md_interrupt = jazz_interrupt;
 
 				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
-				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
+				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11, 0);
 
 				j = dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
@@ -3181,7 +3181,7 @@ Not yet.
 				i = 0;		/*  TODO: Yuck!  */
 #if 0
 				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
-				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
+				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11, 0);
 #endif
 				j = dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
@@ -3223,7 +3223,7 @@ Not yet.
 #endif
 				/*  PC kbd  */
 				j = dev_pckbc_init(machine, mem, 0x900000060ULL,
-				    PCKBC_8042, 0, 0, machine->use_x11);
+				    PCKBC_8042, 0, 0, machine->use_x11, 0);
 
 				if (machine->use_x11)
 					machine->main_console_handle = j;
@@ -3811,7 +3811,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		dev_vga_init(machine, mem, 0xa0000ULL, X86_IO_BASE + 0x3c0,
 		    "Generic x86 PC");
 		machine->main_console_handle = dev_pckbc_init(machine,
-		    mem, X86_IO_BASE + 0x60, PCKBC_8042, 1, 12, 1);
+		    mem, X86_IO_BASE + 0x60, PCKBC_8042, 1, 12, 1, 1);
 
 		if (machine->prom_emulation)
 			pc_bios_init(cpu);

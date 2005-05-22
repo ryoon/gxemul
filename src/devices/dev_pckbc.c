@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.43 2005-05-20 20:25:13 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.44 2005-05-22 20:05:39 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -74,6 +74,7 @@ struct pckbc_data {
 	int		keyboard_irqnr;
 	int		mouse_irqnr;
 	int		type;
+	int		pc_style_flag;
 
 	/*  TODO: one of these for each port?  */
 	int		clocksignal;
@@ -390,7 +391,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 		port_nr = (relative_addr >> 2);
 		relative_addr &= 3;
 		relative_addr += PS2;
-	} else {
+	} else if (d->pc_style_flag) {
 		/*  PC-style:  */
 		if (relative_addr != 0 && relative_addr != 4) {
 			/*  TODO (port 0x61)  */
@@ -405,6 +406,10 @@ if (x&1)
 				memory_writemax64(cpu, data, len, odata);
 			return 0;
 		}
+		if (relative_addr != 0)
+			relative_addr = 1;
+	} else {
+		/*  Others... Non-Jazz ARC-based machines etc.  */
 		if (relative_addr != 0)
 			relative_addr = 1;
 	}
@@ -684,7 +689,7 @@ if (x&1)
  */
 int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr,
-	int in_use)
+	int in_use, int pc_style_flag)
 {
 	struct pckbc_data *d;
 	int len = DEV_PCKBC_LENGTH;
@@ -705,6 +710,7 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	d->keyboard_irqnr = keyboard_irqnr;
 	d->mouse_irqnr    = mouse_irqnr;
 	d->in_use         = in_use;
+	d->pc_style_flag  = pc_style_flag;
 	d->console_handle = console_start_slave_inputonly(machine, "pckbc");
 	d->rx_int_enable  = 1;
 	d->output_byte    = 0x02;	/*  A20 enable on PCs  */

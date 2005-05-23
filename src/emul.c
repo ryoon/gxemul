@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.199 2005-05-23 12:21:45 debug Exp $
+ *  $Id: emul.c,v 1.200 2005-05-23 18:21:36 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -988,8 +988,25 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			fclose(tmp_f);
 		}
 
+		/*  Special things required _before_ loading the file:  */
+		switch (m->arch) {
+		case ARCH_X86:
+			/*
+			 *  X86 machines normally don't need to load any files,
+			 *  they can boot from disk directly. Therefore, an x86
+			 *  machine usually boots up in 16-bit real mode. When
+			 *  loading a 32-bit (or even 64-bit) ELF, that's not
+			 *  very nice, hence this special case.
+			 */
+			pc_bios_simple_pmode_setup(cpu);
+			break;
+		}
+
 		byte_order = NO_BYTE_ORDER_OVERRIDE;
 
+		/*
+		 *  Load the file:  :-)
+		 */
 		file_load(m, m->memory, name_to_load, &entrypoint,
 		    m->arch, &gp, &byte_order, &toc);
 
@@ -1035,19 +1052,17 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			 *  NOTE: The toc field is used to indicate an ELF32
 			 *  or ELF64 load.
 			 */
-			fatal("TODO: x86 load etc\n");
-			exit(1);
-#if 0
 			switch (toc) {
-			case 0:	cpu->pc &= 0xffffffffULL;
-				break;
-			case 1:	cpu->cd.x86.mode = 32;
+			case 0:	/*  16-bit? TODO  */
 				cpu->pc &= 0xffffffffULL;
 				break;
-			case 2:	cpu->cd.x86.mode = 64;
+			case 1:	/*  32-bit.  */
+				cpu->pc &= 0xffffffffULL;
 				break;
+			case 2:	/*  64-bit:  TODO  */
+				fatal("64-bit x86 load. TODO\n");
+				exit(1);
 			}
-#endif
 			break;
 
 		default:

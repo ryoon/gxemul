@@ -25,12 +25,23 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.89 2005-05-23 11:22:26 debug Exp $
+ *  $Id: pc_bios.c,v 1.90 2005-05-23 18:21:37 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
  *  See http://hdebruijn.soo.dto.tudelft.nl/newpage/interupt/INT.HTM for
  *  details on what different BIOS interrupts do.
+ *
+ *
+ *  The BIOS address space is used as follows:
+ *
+ *	0xf1000		GDT + PD + PTs used for booting in pmode
+ *	0xf8yy0		real mode interrupt handler (int 0xyy)
+ *	0xf9000		SMP tables
+ *	0xfefc7		disk table
+ *	0xff66e		8x8 font (chars 128..255)
+ *	0xffa6e		8x8 font (chars 0..127)
+ *	0xfffd0		System Configuration Parameters (8 bytes)
  */
 
 #include <stdio.h>
@@ -46,6 +57,7 @@
 /*  Don't include PC bios support if we don't have x86 cpu support.  */
 /*  These are just do-nothing functions.  */
 
+void pc_bios_simple_pmode_setup(struct cpu *cpu) { }
 void pc_bios_init(struct cpu *cpu) { }
 int pc_bios_emul(struct cpu *cpu) { return 0; }
 
@@ -1392,6 +1404,90 @@ void pc_bios_smp_init(struct cpu *cpu)
 		store_byte(cpu, 0x9010 + ofs + 3, 1 |		/*  enable  */
 		    ((i == cpu->machine->bootstrap_cpu)? 2 : 0));
 	}
+}
+
+
+/*
+ *  pc_bios_simple_pmode_setup():
+ *
+ *  This function is called from emul.c before loading a 32-bit or 64-bit ELF.
+ *  Loading ELFs when the emulation is set to 16-bit real mode is not a good
+ *  thing, so this function sets up a simple GDT which maps every 0xZyyyyyyy
+ *  to 0x0yyyyyyy.
+ *
+ *	0xf4000		GDT:
+ *			00 = NULL
+ *			08 = code
+ *			10 = data
+ */
+void pc_bios_simple_pmode_setup(struct cpu *cpu)
+{
+	int i, j, addr = 0, npts;
+	uint32_t pt_base;
+	cpu->cd.x86.cursegment = X86_S_FS;
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf100);
+
+	/*  0x00 = NULL descriptor.  */
+	addr += 8;
+
+	/*  0x08 = Code descriptor.  */
+	store_byte(cpu, addr + 0, 0xff);
+	store_byte(cpu, addr + 1, 0xff);
+	store_byte(cpu, addr + 2, 0x00);
+	store_byte(cpu, addr + 3, 0x00);
+	store_byte(cpu, addr + 4, 0x00);
+	store_byte(cpu, addr + 5, 0x9f);
+	store_byte(cpu, addr + 6, 0xcf);
+	store_byte(cpu, addr + 7, 0x00);
+	addr += 8;
+
+	/*  0x10 = Data descriptor.  */
+	store_byte(cpu, addr + 0, 0xff);
+	store_byte(cpu, addr + 1, 0xff);
+	store_byte(cpu, addr + 2, 0x00);
+	store_byte(cpu, addr + 3, 0x00);
+	store_byte(cpu, addr + 4, 0x00);
+	store_byte(cpu, addr + 5, 0x93);
+	store_byte(cpu, addr + 6, 0xcf);
+	store_byte(cpu, addr + 7, 0x00);
+	addr += 8;
+
+	cpu->cd.x86.gdtr = 0xf1000;
+	cpu->cd.x86.gdtr_limit = 0xfff;
+
+	addr = 0x1000;
+	cpu->cd.x86.cr[3] = 0xf2000;
+
+	npts = 4;
+	pt_base = 0xf3000;	/*  0xf3000, f4000, f5000, f6000  */
+
+	/*  Set up the page directory:  */
+	for (i=0; i<1024; i++) {
+		uint32_t pde = pt_base + 0x03 + ((i & (npts-1)) << 12);
+		store_32bit_word(cpu, addr + i*4, pde);
+	}
+	addr += 4096;
+
+	/*  Set up the page tables:  */
+	for (i=0; i<npts; i++) {
+		for (j=0; j<1024; j++) {
+			uint32_t pte = (i << 22) + (j << 12) + 0x03;
+			store_32bit_word(cpu, addr + j*4, pte);
+		}
+		addr += 4096;
+	}
+
+	cpu->cd.x86.cr[0] |= X86_CR0_PE | X86_CR0_PG;
+
+	/*  Interrupts are dangerous when we start in pmode!  */
+	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
+
+	reload_segment_descriptor(cpu, X86_S_CS, 0x08);
+	reload_segment_descriptor(cpu, X86_S_DS, 0x10);
+	reload_segment_descriptor(cpu, X86_S_ES, 0x10);
+	reload_segment_descriptor(cpu, X86_S_SS, 0x10);
+	cpu->cd.x86.r[X86_R_SP] = 0x7000;
+	cpu->cd.x86.cursegment = X86_S_DS;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.9 2005-05-23 11:22:26 debug Exp $
+ *  $Id: memory_x86.c,v 1.10 2005-05-23 18:21:37 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -51,7 +51,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	uint32_t pte, pde;
 	int a, b, res, writable;
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
-	/*  int no_exceptions = flags & FLAG_NOEXCEPTIONS;  */
+	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int no_segmentation = flags & NO_SEGMENTATION;
 	struct descriptor_cache *dc;
 
@@ -68,8 +68,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	dc = &cpu->cd.x86.descr_cache[cpu->cd.x86.cursegment & 7];
 
 	if (no_segmentation) {
-		/*  "no exceptions" is used with x86 emulation to read
-		    from linear addresses  */
+		/*  linear address  */
 		writable = 1;
 	} else {
 		if (PROTECTED_MODE && vaddr > dc->limit) {
@@ -114,9 +113,12 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		/*  fatal("  pde: 0x%08x\n", (int)pde);  */
 		/*  TODO: lowest bits of the pde  */
 		if (!(pde & 0x01)) {
-			fatal("TODO: pde not present: usermode etc\n");
-			x86_interrupt(cpu, 14, writeflag? 2 : 0);
-			cpu->cd.x86.cr[2] = vaddr;
+			fatal("TODO: pde not present: vaddr=0x%08x, "
+			    "usermode etc\n", (int)vaddr);
+			if (!no_exceptions) {
+				x86_interrupt(cpu, 14, writeflag? 2 : 0);
+				cpu->cd.x86.cr[2] = vaddr;
+			}
 			return 0;
 		}
 
@@ -135,9 +137,13 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		if (!(pte & 0x02))
 			writable = 0;
 		if (!(pte & 0x01)) {
-			fatal("TODO: pte not present: usermode etc\n");
-			x86_interrupt(cpu, 14, writeflag? 2 : 0);
-			cpu->cd.x86.cr[2] = vaddr;
+			fatal("TODO: pte not present: table_addr=0x%08x "
+			    "vaddr=0x%08x, usermode etc\n",
+			    (int)table_addr, (int)vaddr);
+			if (!no_exceptions) {
+				x86_interrupt(cpu, 14, writeflag? 2 : 0);
+				cpu->cd.x86.cr[2] = vaddr;
+			}
 			return 0;
 		}
 

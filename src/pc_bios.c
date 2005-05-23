@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.85 2005-05-22 19:40:00 debug Exp $
+ *  $Id: pc_bios.c,v 1.86 2005-05-23 04:49:21 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -258,6 +258,24 @@ static void set_palette(struct cpu *cpu, int n, int r, int g, int b)
 
 
 /*
+ *  get_palette():
+ */
+static void get_palette(struct cpu *cpu, int n, unsigned char *rgb)
+{
+	unsigned char byte = n;
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
+	    PHYSICAL);
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+	    &rgb[0], 1, MEM_READ, CACHE_NONE | PHYSICAL);
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+	    &rgb[1], 1, MEM_READ, CACHE_NONE | PHYSICAL);
+	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
+	    &rgb[2], 1, MEM_READ, CACHE_NONE | PHYSICAL);
+}
+
+
+/*
  *  scroll_up():
  */
 static void scroll_up(struct cpu *cpu, int x1, int y1, int x2, int y2, int attr)
@@ -422,10 +440,9 @@ static void set_video_mode(struct cpu *cpu, int al)
 		set_cursor_scanlines(cpu, 0x40, 0);
 		break;
 	default:
-		fatal("pc_bios_int10(): unimplemented video mode "
-		    "0x%02x\n", al);
+		fatal("[ set_video_mode(): unimplemented video mode "
+		    "0x%02x ]\n", al);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 
 	cpu->machine->md.pc.curcolor = 0x07;
@@ -650,13 +667,15 @@ static void pc_bios_int10(struct cpu *cpu)
 			    ((bh >> 1) & 1) * 0xaa + (bh&8? 0x55 : 0),
 			    ((bh >> 0) & 1) * 0xaa + (bh&8? 0x55 : 0));
 			break;
-		case 0x01:
-			/*  TODO: Set border color.  */
-			debug("TODO int 10,ah=10,al=01\n");
+		case 0x01:	/*  TODO: Set border color.  */
+			fatal("TODO int 10,ah=10,al=01\n");
 			break;
 		case 0x02:	/*  Set all palette registers.  */
 			/*  Load from ES:DX  */
-/*  TODO  */
+			fatal("TODO: int10,10,02\n");
+			break;
+		case 0x03:	/*  TODO: intensity/blinking bit  */
+			debug("TODO int 10,ah=10,al=03\n");
 			break;
 		case 0x10:
 			set_palette(cpu, bl, dh, cl, ch);
@@ -672,6 +691,21 @@ static void pc_bios_int10(struct cpu *cpu)
 				dx += 3;
 				bl ++;
 			}
+			break;
+		case 0x17:	/*  Read block of palette registers.  */
+			/*  Load into ES:DX, BX=start color, CX =
+			    nr of registers to load  */
+			while (cx-- > 0) {
+				get_palette(cpu, bl, rgb);
+				cpu->cd.x86.cursegment = X86_S_ES;
+				cpu->memory_rw(cpu, cpu->mem, dx, rgb, 3,
+				    MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+				dx += 3;
+				bl ++;
+			}
+			break;
+		case 0x1a:	/*  Get DAC State:  TODO  */
+			cpu->cd.x86.r[X86_R_BX] &= ~0xff;
 			break;
 		default:fatal("Unimplemented INT 0x10,AH=0x10,AL=0x%02x\n", al);
 			cpu->running = 0;
@@ -753,6 +787,9 @@ static void pc_bios_int10(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
 		cpu->cd.x86.r[X86_R_BX] |= 0x0008;
 		break;
+	case 0x1b:	/*  State Information: TODO  */
+		fatal("TODO: int10,1b\n");
+		break;
 	case 0x4f:	/*  VESA  */
 		/*  TODO: See http://www.uv.tietgen.dk/staff/mlha/PC/
 		    Prog/asm/int/INT10.htm#4F for more info.  */
@@ -770,6 +807,11 @@ static void pc_bios_int10(struct cpu *cpu)
 		default:
 			fatal("TODO: int 0x10, function 0x4f, al=0x%02x\n", al);
 		}
+		break;
+	case 0xef:	/*  Hercules Detection  */
+	case 0xfa:	/*  EGA Register Interface Library  */
+		/*  TODO: How to accurately return failure?  */
+		debug("TODO: int10,ah=0x%02x\n", ah);
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"
@@ -1176,11 +1218,11 @@ static int pc_bios_int16(struct cpu *cpu, int *enable_ints_after_returnp)
 		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
 		    | tmpchar;
 		break;
-	case 0x03:	/*  Set Keyboard Typematic Rate  */
-		/*  TODO  */
+	case 0x03:	/*  Set Keyboard Typematic Rate: TODO  */
 		break;
-	case 0x92:	/*  Keyboard "Capabilities Check"  */
-		/*  TODO  */
+	case 0x55:	/*  Microsoft stuff: Ignore :-)  */
+		break;
+	case 0x92:	/*  Keyboard "Capabilities Check":  TODO  */
 		break;
 	default:
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x16 function"

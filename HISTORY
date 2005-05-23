@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.748 2005-05-22 19:39:58 debug Exp $
+$Id: HISTORY,v 1.749 2005-05-23 04:49:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1926,3 +1926,4 @@ Changelog for GXemul:
 		error).
 		Continuing on the cleanup (ARCBIOS etc).
 		dev_vga updates.
+20050523	Minor x86 updates.

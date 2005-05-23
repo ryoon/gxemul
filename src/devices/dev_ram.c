@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.13 2005-02-11 09:53:48 debug Exp $
+ *  $Id: dev_ram.c,v 1.14 2005-05-23 14:22:02 debug Exp $
  *  
  *  A generic RAM (memory) device.  Can also be used to mirror/alias another
  *  part of RAM.
@@ -144,7 +144,9 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length,
 		exit(1);
 	}
 
-	memory_device_register(mem, "ram", baseaddr, length,
-	    dev_ram_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, d->mode == DEV_RAM_MIRROR?
+	    "ram [mirror]" : "ram", baseaddr, length,
+	    dev_ram_access, d, MEM_DEFAULT | MEM_READING_HAS_NO_SIDE_EFFECTS,
+	    NULL);
 }
 

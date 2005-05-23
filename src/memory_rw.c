@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.32 2005-05-23 07:44:20 debug Exp $
+ *  $Id: memory_rw.c,v 1.33 2005-05-23 14:22:01 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -230,10 +230,6 @@ have_paddr:
 #endif	/*  MEM_MIPS  */
 
 
-	if (!(cache_flags & PHYSICAL))
-		if (no_exceptions)
-			goto no_exception_access;
-
 
 #ifndef MEM_USERLAND
 	/*
@@ -323,8 +319,12 @@ have_paddr:
 				}
 #endif
 
-				res = mem->dev_f[i](cpu, mem, paddr, data, len,
-				    writeflag, mem->dev_extra[i]);
+				res = 0;
+				if (!no_exceptions || (mem->dev_flags[i] &
+				    MEM_READING_HAS_NO_SIDE_EFFECTS))
+					res = mem->dev_f[i](cpu, mem, paddr,
+					    data, len, writeflag,
+					    mem->dev_extra[i]);
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 				if (res == 0)
@@ -340,7 +340,7 @@ have_paddr:
 				 *  If accessing the memory mapped device
 				 *  failed, then return with a DBE exception.
 				 */
-				if (res <= 0) {
+				if (res <= 0 && !no_exceptions) {
 					debug("%s device '%s' addr %08lx "
 					    "failed\n", writeflag?
 					    "writing to" : "reading from",
@@ -504,7 +504,8 @@ have_paddr:
 				 *  an exceptions on an illegal read:
 				 */
 				if (cache != CACHE_NONE && cpu->machine->
-				    dbe_on_nonexistant_memaccess) {
+				    dbe_on_nonexistant_memaccess &&
+				    !no_exceptions) {
 					if (paddr >= mem->physical_max &&
 					    paddr < mem->physical_max+1048576)
 						mips_cpu_exception(cpu,
@@ -523,8 +524,6 @@ have_paddr:
 
 #endif	/*  ifndef MEM_USERLAND  */
 
-
-no_exception_access:
 
 	/*
 	 *  Uncached access:

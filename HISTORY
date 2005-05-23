@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.752 2005-05-23 12:21:44 debug Exp $
+$Id: HISTORY,v 1.753 2005-05-23 14:22:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1929,3 +1929,6 @@ Changelog for GXemul:
 20050523	More x86 updates: trying to add some support for protected mode
 		interrupts (via gate descriptors) and many other fixes.
 		More ARCBIOS cleanup.
+		Adding a device flag which indicates that reads cause no
+		side-effects. (Useful for the "dump" command in the debugger,
+		and other things.)

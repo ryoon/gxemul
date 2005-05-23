@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.138 2005-05-23 09:32:00 debug Exp $
+ *  $Id: cpu_x86.c,v 1.139 2005-05-23 10:34:44 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2319,7 +2319,8 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_DX] = 0x69746E65;  /*  "enti"  */
 		cpu->cd.x86.r[X86_R_CX] = 0x444D4163;  /*  "cAMD"  */
 		break;
-	case 1:	cpu->cd.x86.r[X86_R_AX] = 0;
+	case 1:	/*  TODO  */
+		cpu->cd.x86.r[X86_R_AX] = 0x0623;
 		cpu->cd.x86.r[X86_R_BX] = (cpu->cpu_id << 24);
 		/*  TODO: are bits 8..15 the _total_ nr of cpus, or the
 		    cpu id of this one?  */
@@ -2338,7 +2339,7 @@ static void x86_cpuid(struct cpu *cpu)
 
 	/*  Extended CPU id:  */
 	case 0x80000000:
-		cpu->cd.x86.r[X86_R_AX] = 0x80000002;
+		cpu->cd.x86.r[X86_R_AX] = 0x80000008;
 		/*  AMD...  */
 		cpu->cd.x86.r[X86_R_BX] = 0x68747541;
 		cpu->cd.x86.r[X86_R_DX] = 0x444D4163;
@@ -2351,10 +2352,20 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_DX] = (cpu->cd.x86.model.model_number 
 		    >= X86_MODEL_AMD64)? X86_CPUID_EXT_EDX_LM : 0;
 		break;
+	case 0x80000002:
+	case 0x80000003:
+	case 0x80000004:
 	case 0x80000005:
 	case 0x80000006:
+	case 0x80000007:
 		fatal("[ CPUID 0x%08x ]\n", (int)cpu->cd.x86.r[X86_R_AX]);
 		cpu->cd.x86.r[X86_R_AX] = 0;
+		cpu->cd.x86.r[X86_R_BX] = 0;
+		cpu->cd.x86.r[X86_R_CX] = 0;
+		cpu->cd.x86.r[X86_R_DX] = 0;
+		break;
+	case 0x80000008:
+		cpu->cd.x86.r[X86_R_AX] = 0x00003028;
 		cpu->cd.x86.r[X86_R_BX] = 0;
 		cpu->cd.x86.r[X86_R_CX] = 0;
 		cpu->cd.x86.r[X86_R_DX] = 0;

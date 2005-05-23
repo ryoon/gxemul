@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.139 2005-05-23 10:34:44 debug Exp $
+ *  $Id: cpu_x86.c,v 1.140 2005-05-23 12:37:55 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -3159,6 +3159,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		reload_segment_descriptor(cpu, X86_S_CS, tmp);
 	} else if (op == 0x0f) {
 		uint64_t tmp;
+		unsigned char *instr_orig_2;
 		int signflag, i;
 		imm = read_imm(&instr, &newpc, 8);
 		if (imm >= 0x40 && imm <= 0x4f) {	/*  CMOVxx  */
@@ -3606,7 +3607,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			case 0xc0:	/*  xadd  */
 			case 0xc1:
-				instr_orig = instr;
+				instr_orig = instr_orig_2 = instr;
 				modrm(cpu, MODRM_READ, mode, mode67,
 				    imm == 0xc0? MODRM_EIGHTBIT : 0,
 				    &instr, &newpc, &op1, &op2);
@@ -3615,7 +3616,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    8 : mode, CALCFLAGS_OP_ADD);
 				op1 += op2;
 				modrm(cpu, MODRM_WRITE_RM, mode, mode67,
-				    0, &instr_orig, NULL, &op1, &op2);
+				    imm == 0xc0? MODRM_EIGHTBIT : 0,
+				    &instr_orig, NULL, &op1, &op2);
+				modrm(cpu, MODRM_WRITE_R, mode, mode67,
+				    imm == 0xc0? MODRM_EIGHTBIT : 0,
+				    &instr_orig_2, NULL, &op1, &op2);
 				break;
 			case 0xc7:
 				subop = (*instr >> 3) & 0x7;

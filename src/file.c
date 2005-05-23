@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.94 2005-05-23 07:44:20 debug Exp $
+ *  $Id: file.c,v 1.95 2005-05-23 12:37:56 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1031,14 +1031,16 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		unencode(eshoff,     &hdr32.e_shoff,     Elf32_Off);
 		if (ephentsize != sizeof(Elf32_Phdr)) {
 			fprintf(stderr, "%s: incorrect phentsize? %i, should "
-			    "be %i\n", filename, (int)ephentsize,
-			    (int)sizeof(Elf32_Phdr));
+			    "be %i\nPerhaps this is a dynamically linked "
+			    "binary (which isn't supported yet).\n", filename,
+			    (int)ephentsize, (int)sizeof(Elf32_Phdr));
 			exit(1);
 		}
 		if (eshentsize != sizeof(Elf32_Shdr)) {
-			fprintf(stderr, "%s: incorrect phentsize? %i, should "
-			    "be %i\n", filename, (int)ephentsize,
-			    (int)sizeof(Elf32_Shdr));
+			fprintf(stderr, "%s: incorrect shentsize? %i, should "
+			    "be %i\nPerhaps this is a dynamically linked "
+			    "binary (which isn't supported yet).\n", filename,
+			    (int)eshentsize, (int)sizeof(Elf32_Shdr));
 			exit(1);
 		}
 	}

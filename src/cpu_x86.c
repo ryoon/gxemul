@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.137 2005-05-23 09:06:57 debug Exp $
+ *  $Id: cpu_x86.c,v 1.138 2005-05-23 09:32:00 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1977,9 +1977,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 3:	mnem = "rcr"; break;
 		case 4:	mnem = "shl"; break;
 		case 5:	mnem = "shr"; break;
+		case 6:	mnem = "sal"; break;
 		case 7:	mnem = "sar"; break;
-		default:fatal("unimpl 0xc0/0xc1\n");
-			exit(1);
 		}
 		modrm(cpu, MODRM_READ, mode, mode67, op == 0xc0?
 		    MODRM_EIGHTBIT : 0, &instr, &ilen, NULL, NULL);

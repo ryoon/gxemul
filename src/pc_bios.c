@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.87 2005-05-23 09:06:58 debug Exp $
+ *  $Id: pc_bios.c,v 1.88 2005-05-23 10:48:14 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1192,9 +1192,9 @@ static int pc_bios_int16(struct cpu *cpu, int *enable_ints_after_returnp)
 			cpu->machine->md.pc.kbd_buf_head %=
 			    PC_BIOS_KBD_BUF_SIZE;
 		}
+		*enable_ints_after_returnp = 1;
 		if (asciicode == 0)
 			return 0;
-		*enable_ints_after_returnp = 1;
 		break;
 	case 0x01:	/*  non-destructive "isavail"  */
 		cpu->cd.x86.rflags |= X86_FLAGS_ZF;

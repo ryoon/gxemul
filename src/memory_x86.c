@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.8 2005-05-23 08:10:33 debug Exp $
+ *  $Id: memory_x86.c,v 1.9 2005-05-23 11:22:26 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -79,7 +79,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		}
 
 		/*  TODO: Check the Privilege Level  */
-		vaddr += dc->base;
+		vaddr = (vaddr + dc->base) & 0xffffffff;
 		writable = dc->writable;
 	}
 

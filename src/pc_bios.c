@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.88 2005-05-23 10:48:14 debug Exp $
+ *  $Id: pc_bios.c,v 1.89 2005-05-23 11:22:26 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -870,7 +870,7 @@ static void pc_bios_int13(struct cpu *cpu)
 
 			buf = malloc(512 * al);
 
-			if (cl > disk->sectorspertrack || dh >= disk->heads ||
+			if (cl+al > disk->sectorspertrack || dh >= disk->heads ||
 			    ch > disk->cylinders) {
 				al = 0; err = 4;  /*  sector not found  */
 				fatal("[ pc_bios: attempt to %s outside the d"
@@ -887,10 +887,15 @@ static void pc_bios_int13(struct cpu *cpu)
 
 			if (ah == 3) {
 				fatal("TODO: bios disk write\n");
+				cpu->running = 0;
 				/*  TODO  */
 			}
-			res = diskimage_access(cpu->machine, disk->id,
-			    disk->type, 0, offset, buf, al * 512);
+			if (al > 0)
+				res = diskimage_access(cpu->machine, disk->id,
+				    disk->type, 0, offset, buf, al * 512);
+			else
+				res = 0;
+			nread = al;
 			if (!res) {
 				err = 4;
 				fatal("[ pc_bios_int13(): FAILED to %s"
@@ -903,11 +908,10 @@ static void pc_bios_int13(struct cpu *cpu)
 					/*  DMA overrun  */
 					fatal("[ pc_bios: DMA overrun ]\n");
 					err = 9;
+					nread = al = (0x10000 - bx) / 512;
 				}
 				store_buf(cpu, bx, (char *)buf, 512 * al);
 			}
-
-			nread = al;
 			free(buf);
 			cpu->cd.x86.r[X86_R_AX] &= ~0xffff;
 			cpu->cd.x86.r[X86_R_AX] |= nread;

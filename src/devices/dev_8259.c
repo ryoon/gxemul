@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.7 2005-05-23 07:44:21 debug Exp $
+ *  $Id: dev_8259.c,v 1.8 2005-05-23 11:22:26 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -114,6 +114,16 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				cpu_interrupt(cpu, 16);
 				break;
 			case 0x68:	/*  Set Special Mask Mode  */
+				/*  TODO  */
+				break;
+			case 0xc0:
+			case 0xc1:
+			case 0xc2:
+			case 0xc3:
+			case 0xc4:
+			case 0xc5:
+			case 0xc6:
+			case 0xc7:	/*  Set IRQ Priority Order  */
 				/*  TODO  */
 				break;
 			default:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.140 2005-05-23 12:37:55 debug Exp $
+ *  $Id: cpu_x86.c,v 1.141 2005-05-23 15:21:35 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2741,7 +2741,7 @@ static int x86_condition(struct cpu *cpu, int op)
 	if (op & 1)
 		success = !success;
 
-	return success;
+	return success? 1 : 0;
 }
 
 
@@ -3632,23 +3632,23 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					if (!x86_load(cpu, op1, &tmp, 8))
 						return 0;
 					cpu->cd.x86.rflags &= ~X86_FLAGS_ZF;
-					if ((tmp >> 32) == (0xffffffff &
-					    cpu->cd.x86.r[X86_R_DX]) &&
-					    (tmp & 0xffffffff) == (0xffffffff &
+					if ((tmp >> 32) == (0xffffffffULL &
+					    cpu->cd.x86.r[X86_R_DX]) && (tmp
+					    & 0xffffffffULL) == (0xffffffffULL &
 					    cpu->cd.x86.r[X86_R_AX])) {
 						cpu->cd.x86.rflags |=
 						    X86_FLAGS_ZF;
 						tmp = ((cpu->cd.x86.r[X86_R_CX]
-						    & 0xffffffff) << 32) |
+						    & 0xffffffffULL) << 32) |
 						    (cpu->cd.x86.r[X86_R_BX] &
-						    0xffffffff);
+						    0xffffffffULL);
 						if (!x86_store(cpu, op1, tmp,8))
 							return 0;
 					} else {
 						cpu->cd.x86.r[X86_R_DX] =
 						    tmp >> 32;
 						cpu->cd.x86.r[X86_R_AX] =
-						    tmp & 0xffffffff;
+						    tmp & 0xffffffffULL;
 					}
 					break;
 				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"

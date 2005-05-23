@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.61 2005-05-22 19:39:50 debug Exp $
+ *  $Id: dev_vga.c,v 1.62 2005-05-23 15:21:36 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -950,9 +950,11 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	/*  MEM_BINTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not
 	    with Windows NT yet. Why? */
 	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
-	    allocsize, dev_vga_access, d, MEM_BINTRANS_OK, d->charcells);
+	    allocsize, dev_vga_access, d, MEM_BINTRANS_OK |
+	    MEM_READING_HAS_NO_SIDE_EFFECTS, d->charcells);
 	memory_device_register(mem, "vga_gfx", videomem_base, GFX_ADDR_WINDOW,
-	    dev_vga_graphics_access, d, MEM_DEFAULT, d->gfx_mem);
+	    dev_vga_graphics_access, d, MEM_DEFAULT |
+	    MEM_READING_HAS_NO_SIDE_EFFECTS, d->gfx_mem);
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 

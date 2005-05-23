@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.141 2005-05-23 15:21:35 debug Exp $
+ *  $Id: cpu_x86.c,v 1.142 2005-05-23 16:01:39 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2327,7 +2327,9 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_CX] = X86_CPUID_ECX_CX16;
 		cpu->cd.x86.r[X86_R_DX] = X86_CPUID_EDX_CX8 | X86_CPUID_EDX_FPU
 		    | X86_CPUID_EDX_MSR | X86_CPUID_EDX_TSC | X86_CPUID_EDX_MTRR
-		    | X86_CPUID_EDX_CMOV;
+		    | X86_CPUID_EDX_CMOV | X86_CPUID_EDX_PSE |
+		    X86_CPUID_EDX_SEP | X86_CPUID_EDX_PGE |
+		    X86_CPUID_EDX_MMX | X86_CPUID_EDX_FXSR;
 		break;
 	case 2:	/*  TODO: actual Cache info  */
 		/*  This is just bogus  */

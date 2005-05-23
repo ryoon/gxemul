@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.25 2005-05-23 07:44:22 debug Exp $
+ *  $Id: cpu_x86.h,v 1.26 2005-05-23 16:01:41 debug Exp $
  */
 
 #include "misc.h"
@@ -216,7 +216,7 @@ struct x86_cpu {
 #define	X86_CPUID_EDX_PAT	0x00010000
 #define	X86_CPUID_EDX_CMOV	0x00008000
 #define	X86_CPUID_EDX_MCA	0x00004000
-#define	X86_CPUID_EDX_PGE	0x00002000
+#define	X86_CPUID_EDX_PGE	0x00002000	/*  global bit in PDE/PTE  */
 #define	X86_CPUID_EDX_MTRR	0x00001000
 #define	X86_CPUID_EDX_SEP	0x00000800	/*  sysenter/sysexit  */
 #define	X86_CPUID_EDX_APIC	0x00000200

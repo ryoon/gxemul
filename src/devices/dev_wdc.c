@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.35 2005-05-22 10:13:57 debug Exp $
+ *  $Id: dev_wdc.c,v 1.36 2005-05-23 16:01:40 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -51,6 +51,8 @@
 
 /*  INT_DELAY=2 to be safe, 1 is faster but maybe buggy.  */
 #define	INT_DELAY		1
+
+extern int quiet_mode;
 
 /*  #define debug fatal  */
 /*  #define DATA_DEBUG  */
@@ -431,7 +433,9 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag==MEM_READ) {
 			odata = status_byte(d, cpu);
 #if 1
-			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
+			if (!quiet_mode)
+				debug("[ wdc: read from STATUS: 0x%02x ]\n",
+				    odata);
 #endif
 
 			cpu_interrupt_ack(cpu, d->irq_nr);

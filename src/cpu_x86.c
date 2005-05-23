@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.133 2005-05-22 19:39:59 debug Exp $
+ *  $Id: cpu_x86.c,v 1.134 2005-05-23 05:56:24 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -154,6 +154,9 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->cd.x86.descr_cache[X86_S_CS].writable = 1;
 	cpu->cd.x86.descr_cache[X86_S_CS].granularity = 0;
 	cpu->cd.x86.s[X86_S_CS] = 0xf000;
+
+	cpu->cd.x86.idtr = 0;
+	cpu->cd.x86.idtr_limit = 0x3ff;
 
 	cpu->translate_address = translate_address_x86;
 
@@ -2408,47 +2411,136 @@ ssize = mode;
 }
 
 
+#define	INT_TYPE_CALLGATE		1
+#define	INT_TYPE_INTGATE		2
+#define	INT_TYPE_TRAPGATE		3
 /*
- *  x86_software_interrupt():
+ *  x86_interrupt():
  *
- *  NOTE/TODO: Only for 16-bit mode so far.
+ *  Read the interrupt descriptor table (or, in real mode, the interrupt
+ *  vector table), push flags/cs/eip, and jump to the interrupt handler.
  */
-static int x86_software_interrupt(struct cpu *cpu, int nr)
+static int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 {
-	uint64_t seg, ofs;
+	uint16_t seg;
+	uint32_t ofs;
 	int res, mode;
-	unsigned char buf[4];
+	unsigned char buf[8];
 
 	if (PROTECTED_MODE) {
-		fatal("x86 'int' only implemented for real mode so far\n");
-		cpu->running = 0;
+		int i, int_type = 0;
+
+		if (nr * 8 > cpu->cd.x86.idtr_limit) {
+			fatal("TODO: protected mode int 0x%02x outside idtr"
+			    " limit (%i)?\n", nr, (int)cpu->cd.x86.idtr_limit);
+			cpu->running = 0;
+			return 0;
+		}
+
+		/*  Read the interrupt descriptor:  */
+		res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.idtr + nr*8,
+		    buf, 8, MEM_READ, NO_SEGMENTATION);
+		if (!res) {
+			fatal("x86_interrupt(): could not read the"
+			    " interrupt descriptor table (prot. mode)\n");
+			cpu->running = 0;
+			return 0;
+		}
+
+		if ((buf[5] & 0x17) == 0x04)
+			int_type = INT_TYPE_CALLGATE;
+		if ((buf[5] & 0x17) == 0x06)
+			int_type = INT_TYPE_INTGATE;
+		if ((buf[5] & 0x17) == 0x07)
+			int_type = INT_TYPE_TRAPGATE;
+
+		if (!int_type) {
+			fatal("x86_interrupt(): TODO:\n");
+			for (i=0; i<8; i++)
+				fatal("  %02x", buf[i]);
+			fatal("\n");
+			cpu->running = 0;
+			return 0;
+		}
+
+		seg = buf[2] + (buf[3] << 8);
+		ofs = buf[0] + (buf[1] << 8) + (buf[6] << 16) + (buf[7] << 24);
+
+		switch (int_type) {
+		case INT_TYPE_INTGATE:
+		case INT_TYPE_TRAPGATE:
+			break;
+		default:
+			fatal("INT type: %i, cs:eip = 0x%04x:0x%08x\n",
+			    int_type, (int)seg, (int)ofs);
+			cpu->running = 0;
+			return 0;
+		}
+
+		/*  TODO: Switch stacks and push old SS:ESP!  */
+
+		/*  Push flags, cs, and ip (pc):  */
+		cpu->cd.x86.cursegment = X86_S_SS;
+		mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
+		if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
+			fatal("x86_interrupt(): TODO: how to handle this 1\n");
+		if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
+			fatal("x86_interrupt(): TODO: how to handle this 2\n");
+		if (!x86_push(cpu, cpu->pc, mode))
+			fatal("x86_interrupt(): TODO: how to handle this 3\n");
+
+		/*  Push error code for some exceptions:  */
+		if ((nr >= 8 && nr <=14) || nr == 17) {
+			if (!x86_push(cpu, cpu->pc, errcode))
+				fatal("x86_interrupt(): TODO: blah\n");
+		}
+
+		/*  Only turn off interrupts for Interrupt Gates:  */
+		if (int_type == INT_TYPE_INTGATE)
+			cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
+
+		/*  Turn off TF for Interrupt and Trap Gates:  */
+		if (int_type == INT_TYPE_INTGATE ||
+		    int_type == INT_TYPE_TRAPGATE)
+			cpu->cd.x86.rflags &= ~X86_FLAGS_TF;
+
+		goto int_jump;
 	}
 
+	/*
+	 *  Real mode:
+	 */
+	if (nr * 4 > cpu->cd.x86.idtr_limit) {
+		fatal("TODO: real mode int 0x%02x outside idtr limit ("
+		    "%i)?\n", nr, (int)cpu->cd.x86.idtr_limit);
+		cpu->running = 0;
+		return 0;
+	}
 	/*  Read the interrupt vector:  */
-	/*  TODO: check the idtr_limit  */
 	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.idtr + nr*4, buf, 4,
 	    MEM_READ, NO_SEGMENTATION);
 	if (!res) {
-		fatal("x86_software_interrupt(): could not read the"
+		fatal("x86_interrupt(): could not read the"
 		    " interrupt descriptor table\n");
 		cpu->running = 0;
 		return 0;
 	}
-	ofs = buf[0] + (buf[1] << 8);
-	seg = buf[2] + (buf[3] << 8);
+	ofs = buf[0] + (buf[1] << 8);  seg = buf[2] + (buf[3] << 8);
 
 	/*  Push flags, cs, and ip (pc):  */
 	cpu->cd.x86.cursegment = X86_S_SS;
 	mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
 	if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
-		fatal("x86_software_interrupt(): TODO: how to handle this\n");
+		fatal("x86_interrupt(): TODO: how to handle this 4\n");
 	if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
-		fatal("x86_software_interrupt(): TODO: how to handle this\n");
+		fatal("x86_interrupt(): TODO: how to handle this 5\n");
 	if (!x86_push(cpu, cpu->pc, mode))
-		fatal("x86_software_interrupt(): TODO: how to handle this\n");
+		fatal("x86_interrupt(): TODO: how to handle this 6\n");
 
-	/*  TODO: clear the Interrupt Flag?  */
+	/*  Turn off interrupts and jump to the int handler:  */
+	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
 
+int_jump:
 	reload_segment_descriptor(cpu, X86_S_CS, seg);
 	cpu->pc = ofs;
 
@@ -2709,9 +2801,7 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
  */
 static int cause_interrupt(struct cpu *cpu)
 {
-	int i, irq_nr = -1, res;
-	uint64_t seg, ofs;
-	unsigned char buf[8];
+	int i, irq_nr = -1;
 
 	for (i=0; i<8; i++) {
 		if (cpu->machine->md.pc.pic1->irr &
@@ -2757,45 +2847,8 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 
 /*  printf("cause2: %i\n", irq_nr);  */
 
-	/*
-	 *  TODO:
-	 *
-	 *  Protected mode, and/or other things when the interrupt descriptor
-	 *  table needs to be used.
-	 */
-
-	if (PROTECTED_MODE) {
-/*  urk  */
-return 0;
-		fatal("Interrupts in protected mode not yet implemented\n");
-		cpu->running = 0;
-		return 1;
-	}
-
-	/*  Figure out where to jump to:  */
-	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.idtr + irq_nr*4, buf, 4,
-	    MEM_READ, NO_SEGMENTATION);
-	if (!res) {
-		fatal("cause_interrupt(): could not read the"
-		    " interrupt descriptor table\n");
-		cpu->running = 0;
-		return 0;
-	}
-	ofs = buf[0] + (buf[1] << 8);
-	seg = buf[2] + (buf[3] << 8);
-
-	/*  Push flags, CS, and return IP:  */
-	x86_push(cpu, cpu->cd.x86.rflags, 16);
-	x86_push(cpu, cpu->cd.x86.s[X86_S_CS], 16);
-	x86_push(cpu, cpu->pc, 16);
-
-	/*  Clear the interrupt flag, and jump to the interrupt handler:  */
-	reload_segment_descriptor(cpu, X86_S_CS, seg);
-	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
-	cpu->pc = ofs;
-
+	x86_interrupt(cpu, irq_nr, 0);
 	cpu->cd.x86.halted = 0;
-
 	return 1;
 }
 
@@ -4240,11 +4293,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    cpu->cd.x86.r[X86_R_SP] + imm);
 	} else if (op == 0xcc) {	/*  INT3  */
 		cpu->pc = newpc;
-		return x86_software_interrupt(cpu, 3);
+		return x86_interrupt(cpu, 3, 0);
 	} else if (op == 0xcd) {	/*  INT  */
 		imm = read_imm(&instr, &newpc, 8);
 		cpu->pc = newpc;
-		return x86_software_interrupt(cpu, imm);
+		return x86_interrupt(cpu, imm, 0);
 	} else if (op == 0xcf) {	/*  IRET  */
 		uint64_t tmp2, tmp3;
 		if (!x86_pop(cpu, &tmp, mode))

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.751 2005-05-23 11:22:25 debug Exp $
+$Id: HISTORY,v 1.752 2005-05-23 12:21:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1928,3 +1928,4 @@ Changelog for GXemul:
 		dev_vga updates.
 20050523	More x86 updates: trying to add some support for protected mode
 		interrupts (via gate descriptors) and many other fixes.
+		More ARCBIOS cleanup.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.102 2005-05-22 19:39:59 debug Exp $
+ *  $Id: arcbios.c,v 1.103 2005-05-23 12:21:45 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -54,43 +54,20 @@ extern int quiet_mode;
 
 
 /*
- *  TODO: all this should be _per machine_!
- */
-
-/*  Configuration data:  */
-#define	MAX_CONFIG_DATA		50
-static int n_configuration_data = 0;
-static uint64_t configuration_data_next_addr = ARC_CONFIG_DATA_ADDR;
-static uint64_t configuration_data_component[MAX_CONFIG_DATA];
-static int configuration_data_len[MAX_CONFIG_DATA];
-static uint64_t configuration_data_configdata[MAX_CONFIG_DATA];
-
-static int arc_n_memdescriptors = 0;
-static uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
-
-static uint64_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
-static int n_arc_components = 0;
-
-#define	MAX_STRING_TO_COMPONENT		20
-static char *arcbios_string_to_component[MAX_STRING_TO_COMPONENT];
-static uint64_t arcbios_string_to_component_value[MAX_STRING_TO_COMPONENT];
-static int arcbios_n_string_to_components = 0;
-
-
-/*
  *  arcbios_add_string_to_component():
  */
-void arcbios_add_string_to_component(char *string, uint64_t component)
+void arcbios_add_string_to_component(struct machine *machine,
+	char *string, uint64_t component)
 {
-	if (arcbios_n_string_to_components >= MAX_STRING_TO_COMPONENT) {
+	if (machine->md.arc.n_string_to_components >= MAX_STRING_TO_COMPONENT) {
 		printf("Too many string-to-component mappings.\n");
 		exit(1);
 	}
 
-	arcbios_string_to_component[arcbios_n_string_to_components] =
-	    strdup(string);
-	if (arcbios_string_to_component[arcbios_n_string_to_components] ==
-	    NULL) {
+	machine->md.arc.string_to_component[machine->
+	    md.arc.n_string_to_components] = strdup(string);
+	if (machine->md.arc.string_to_component[machine->
+	    md.arc.n_string_to_components] == NULL) {
 		fprintf(stderr, "out of memory in "
 		    "arcbios_add_string_to_component()\n");
 		exit(1);
@@ -98,9 +75,10 @@ void arcbios_add_string_to_component(char *string, uint64_t component)
 	debug("adding ARC component mapping: 0x%08x = %s\n",
 	    (int)component, string);
 
-	arcbios_string_to_component_value[arcbios_n_string_to_components] =
-	    component;
-	arcbios_n_string_to_components ++;
+	machine->md.arc.string_to_component_value[
+	    machine->md.arc.n_string_to_components] = component;
+
+	machine->md.arc.n_string_to_components ++;
 }
 
 
@@ -498,8 +476,8 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 	else
 		s = sizeof(arcbios_mem);
 
-	memdesc_addr = arcbios_memdescriptor_base +
-	    arc_n_memdescriptors * s;
+	memdesc_addr = cpu->machine->md.arc.memdescriptor_base +
+	    cpu->machine->md.arc.n_memdescriptors * s;
 
 	if (cpu->machine->md.arc.arc_64bit) {
 		memset(&arcbios_mem64, 0, s);
@@ -521,7 +499,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 		store_buf(cpu, memdesc_addr, (char *)&arcbios_mem, s);
 	}
 
-	arc_n_memdescriptors ++;
+	cpu->machine->md.arc.n_memdescriptors ++;
 }
 
 
@@ -542,7 +520,7 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 	char *identifier, uint32_t parent)
 {
 	struct machine *machine = cpu->machine;
-	uint64_t a = arcbios_next_component_address;
+	uint64_t a = machine->md.arc.next_component_address;
 	uint32_t peer=0;
 	uint32_t child=0;
 	int n_left;
@@ -565,7 +543,7 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 	 *  TODO:  make this nicer
 	 */
 
-	n_left = n_arc_components;
+	n_left = machine->md.arc.n_components;
 	while (n_left > 0) {
 		/*  Load parent, child, and peer values:  */
 		uint32_t eparent, echild, epeer, tmp;
@@ -653,23 +631,23 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 	store_32bit_word(cpu, a+  0x28, host_tmp_component->IdentifierLength);
 	store_32bit_word(cpu, a+  0x2c, host_tmp_component->Identifier);
 
-	arcbios_next_component_address += 0x30;
+	machine->md.arc.next_component_address += 0x30;
 
 	if (host_tmp_component->IdentifierLength != 0) {
 		store_32bit_word(cpu, a + 0x2c, a + 0x30);
 		store_string(cpu, a + 0x30, identifier);
 		if (identifier != NULL)
-			arcbios_next_component_address +=
+			machine->md.arc.next_component_address +=
 			    strlen(identifier) + 1;
 	}
 
-	arcbios_next_component_address ++;
+	machine->md.arc.next_component_address ++;
 
 	/*  Round up to next 0x4 bytes:  */
-	arcbios_next_component_address =
-	    ((arcbios_next_component_address - 1) | 3) + 1;
+	machine->md.arc.next_component_address =
+	    ((machine->md.arc.next_component_address - 1) | 3) + 1;
 
-	n_arc_components ++;
+	machine->md.arc.n_components ++;
 
 	return a;
 }
@@ -692,7 +670,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 	char *identifier, uint64_t parent)
 {
 	struct machine *machine = cpu->machine;
-	uint64_t a = arcbios_next_component_address;
+	uint64_t a = machine->md.arc.next_component_address;
 	uint64_t peer=0;
 	uint64_t child=0;
 	int n_left;
@@ -715,7 +693,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 	 *  TODO:  make this nicer
 	 */
 
-	n_left = n_arc_components;
+	n_left = machine->md.arc.n_components;
 	while (n_left > 0) {
 		/*  Load parent, child, and peer values:  */
 		uint64_t eparent, echild, epeer, tmp;
@@ -823,23 +801,23 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 
 	/*  TODO: Find out how a REAL ARCS64 implementation does it.  */
 
-	arcbios_next_component_address += 0x50;
+	machine->md.arc.next_component_address += 0x50;
 
 	if (host_tmp_component->IdentifierLength != 0) {
 		store_64bit_word(cpu, a + 0x48, a + 0x50);
 		store_string(cpu, a + 0x50, identifier);
 		if (identifier != NULL)
-			arcbios_next_component_address +=
+			machine->md.arc.next_component_address +=
 			    strlen(identifier) + 1;
 	}
 
-	arcbios_next_component_address ++;
+	machine->md.arc.next_component_address ++;
 
 	/*  Round up to next 0x8 bytes:  */
-	arcbios_next_component_address =
-	    ((arcbios_next_component_address - 1) | 7) + 1;
+	machine->md.arc.next_component_address =
+	    ((machine->md.arc.next_component_address - 1) | 7) + 1;
 
-	n_arc_components ++;
+	machine->md.arc.n_components ++;
 	return a;
 }
 
@@ -858,6 +836,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	uint64_t affinitymask, char *identifier, uint64_t parent,
 	void *config_data, size_t config_len)
 {
+	struct machine *machine = cpu->machine;
 	/*  This component is only for temporary use:  */
 	struct arcbios_component component;
 	struct arcbios_component64 component64;
@@ -866,7 +845,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		unsigned char *p = config_data;
 		int i;
 
-		if (n_configuration_data >= MAX_CONFIG_DATA) {
+		if (machine->md.arc.n_configuration_data >= MAX_CONFIG_DATA) {
 			printf("fatal error: you need to increase "
 			    "MAX_CONFIG_DATA\n");
 			exit(1);
@@ -875,26 +854,30 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		for (i=0; i<config_len; i++) {
 			unsigned char ch = p[i];
 			cpu->memory_rw(cpu, cpu->mem,
-			    configuration_data_next_addr + i,
+			    machine->md.arc.configuration_data_next_addr + i,
 			    &ch, 1, MEM_WRITE, CACHE_NONE);
 		}
 
-		configuration_data_len[n_configuration_data] = config_len;
-		configuration_data_configdata[n_configuration_data] =
-		    configuration_data_next_addr;
-		configuration_data_next_addr += config_len;
-		configuration_data_component[n_configuration_data] =
-		    arcbios_next_component_address +
+		machine->md.arc.configuration_data_len[
+		    machine->md.arc.n_configuration_data] = config_len;
+		machine->md.arc.configuration_data_configdata[
+		    machine->md.arc.n_configuration_data] =
+		    machine->md.arc.configuration_data_next_addr;
+		machine->md.arc.configuration_data_next_addr += config_len;
+		machine->md.arc.configuration_data_component[
+		    machine->md.arc.n_configuration_data] =
+		    machine->md.arc.next_component_address +
 		    (cpu->machine->md.arc.arc_64bit? 0x18 : 0x0c);
 
 		/*  printf("& ADDING %i: configdata=0x%016llx "
-		    "component=0x%016llx\n", n_configuration_data,
-		    (long long)configuration_data_configdata[
-			n_configuration_data],
-		    (long long)configuration_data_component[
-			n_configuration_data]);  */
+		    "component=0x%016llx\n",
+		     machine->md.arc.n_configuration_data,
+		    (long long)machine->md.arc.configuration_data_configdata[
+			machine->md.arc.n_configuration_data],
+		    (long long)machine->md.arc.configuration_data_component[
+			machine->md.arc.n_configuration_data]);  */
 
-		n_configuration_data ++;
+		machine->md.arc.n_configuration_data ++;
 	}
 
 	if (!cpu->machine->md.arc.arc_64bit) {
@@ -1365,16 +1348,18 @@ int arcbios_emul(struct cpu *cpu)
 		    "0x%016llx) ]\n", (long long)cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1]);  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EINVAL;
-		for (i=0; i<n_configuration_data; i++) {
+		for (i=0; i<machine->md.arc.n_configuration_data; i++) {
 			/*  fatal("configuration_data_component[%i] = "
-			    "0x%016llx\n", i,
-			    (long long)configuration_data_component[i]);  */
+			    "0x%016llx\n", i, (long long)machine->
+			    md.arc.configuration_data_component[i]);  */
 			if (cpu->cd.mips.gpr[MIPS_GPR_A1] ==
-			    configuration_data_component[i]) {
+			    machine->md.arc.configuration_data_component[i]) {
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
-				for (j=0; j<configuration_data_len[i]; j++) {
+				for (j=0; j<machine->
+				    md.arc.configuration_data_len[i]; j++) {
 					unsigned char ch;
 					cpu->memory_rw(cpu, cpu->mem,
+					    machine->md.arc.
 					    configuration_data_configdata[i] +
 					    j, &ch, 1, MEM_READ, CACHE_NONE);
 					cpu->memory_rw(cpu, cpu->mem,
@@ -1414,10 +1399,12 @@ int arcbios_emul(struct cpu *cpu)
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 
 			/*  Scan the string to component table:  */
-			for (i=0; i<arcbios_n_string_to_components; i++) {
+			for (i=0; i<machine->md.arc.n_string_to_components;
+			    i++) {
 				int m = 0;
-				while (buf[m] && arcbios_string_to_component
-				    [i][m] && arcbios_string_to_component[i][m]
+				while (buf[m] && machine->md.arc.
+				    string_to_component[i][m] &&
+				    machine->md.arc.string_to_component[i][m]
 				    == buf[m])
 					m++;
 				if (m > match_len) {
@@ -1428,10 +1415,10 @@ int arcbios_emul(struct cpu *cpu)
 
 			if (match_index >= 0) {
 				/*  printf("Longest match: '%s'\n",
-				    arcbios_string_to_component[
+				    machine->md.arc.string_to_component[
 				    match_index]);  */
 				cpu->cd.mips.gpr[MIPS_GPR_V0] =
-				    arcbios_string_to_component_value[
+				    machine->md.arc.string_to_component_value[
 				    match_index];
 			}
 		}
@@ -1447,18 +1434,18 @@ int arcbios_emul(struct cpu *cpu)
 		/*  If a0=NULL, then return the first descriptor:  */
 		if ((uint32_t)cpu->cd.mips.gpr[MIPS_GPR_A0] == 0)
 			cpu->cd.mips.gpr[MIPS_GPR_V0] =
-			    arcbios_memdescriptor_base;
+			    machine->md.arc.memdescriptor_base;
 		else {
 			int s = machine->md.arc.arc_64bit?
 			    sizeof(struct arcbios_mem64)
 			    : sizeof(struct arcbios_mem);
 			int nr = cpu->cd.mips.gpr[MIPS_GPR_A0] -
-			    arcbios_memdescriptor_base;
+			    machine->md.arc.memdescriptor_base;
 			nr /= s;
 			nr ++;
 			cpu->cd.mips.gpr[MIPS_GPR_V0] =
-			    arcbios_memdescriptor_base + s * nr;
-			if (nr >= arc_n_memdescriptors)
+			    machine->md.arc.memdescriptor_base + s * nr;
+			if (nr >= machine->md.arc.n_memdescriptors)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		}
 		break;
@@ -2266,6 +2253,9 @@ void arcbios_init(struct machine *machine, int is64bit,
 	machine->md.arc.arc_64bit = is64bit;
 	machine->md.arc.wordlen = is64bit? sizeof(uint64_t) : sizeof(uint32_t);
 
+	machine->md.arc.next_component_address = FIRST_ARC_COMPONENT;
+	machine->md.arc.configuration_data_next_addr = ARC_CONFIG_DATA_ADDR;
+
 	if (machine->physical_ram_in_mb < 16)
 		fprintf(stderr, "WARNING! The ARC platform specification "
 		    "doesn't allow less than 16 MB of RAM. Continuing "
@@ -2329,36 +2319,36 @@ void arcbios_init(struct machine *machine, int is64bit,
 	} else {
 		switch (machine->machine_subtype) {
 		case MACHINE_ARC_NEC_RD94:
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);
+			strncpy(arcbios_sysid.ProductId, "RD94", 4);
 			break;
 		case MACHINE_ARC_NEC_R94:
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
 			break;
 		case MACHINE_ARC_NEC_R96:
-			strncpy(arcbios_sysid.VendorId,  "MIPS DUO", 8);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "blahblah", 8);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "MIPS DUO", 8);
+			strncpy(arcbios_sysid.ProductId, "blahblah", 8);
 			break;
 		case MACHINE_ARC_NEC_R98:
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "R98", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);
+			strncpy(arcbios_sysid.ProductId, "R98", 4);
 			break;
 		case MACHINE_ARC_JAZZ_PICA:
-			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
 			break;
 		case MACHINE_ARC_JAZZ_MAGNUM:
-			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
 			break;
 		case MACHINE_ARC_JAZZ_M700:
-			strncpy(arcbios_sysid.VendorId,  "OLI00000", 8);/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "OLI00000", 8);
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
 			break;
 		case MACHINE_ARC_DESKTECH_TYNE:
-			strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);
+			strncpy(arcbios_sysid.ProductId, "ijkl", 4);
 			break;
 		default:
 			fatal("error in machine.c sysid\n");
@@ -2383,6 +2373,8 @@ void arcbios_init(struct machine *machine, int is64bit,
 	 *  0x1fffffff (256 - 512 MB) is usually occupied by memory mapped
 	 *  devices, so that portion is "lost".
 	 */
+	machine->md.arc.memdescriptor_base = ARC_MEMDESC_ADDR;
+
 	arc_reserved = 0x2000;
 	if (machine->machine_type == MACHINE_SGI)
 		arc_reserved = 0x4000;
@@ -2493,7 +2485,6 @@ void arcbios_init(struct machine *machine, int is64bit,
 
 	system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass,
 	    COMPONENT_TYPE_ARC, 0,1,2,0, 0xffffffff, name, 0/*ROOT*/, NULL, 0);
-
 	debug("ARC system @ 0x%llx (\"%s\")\n", (long long)system, name);
 
 

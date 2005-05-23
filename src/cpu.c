@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.292 2005-04-14 21:01:53 debug Exp $
+ *  $Id: cpu.c,v 1.293 2005-05-23 07:44:19 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -90,7 +90,7 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 		fp = fp->next;
 	}
 
-	fprintf(stderr, "cpu_new(): unknown cpu type '%s'\n", cpu_type_name);
+	fatal(stderr, "\ncpu_new(): unknown cpu type '%s'\n", cpu_type_name);
 	exit(1);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.443 2005-05-22 20:05:38 debug Exp $
+ *  $Id: machine.c,v 1.444 2005-05-23 07:44:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1221,8 +1221,10 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 
 /*
  *  x86 (PC) interrupts:
+ *
+ *  (irq_nr = 16 can be used to just reassert/deassert interrupts.)
  */
-void x86_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
+void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	int mask = 1 << (irq_nr & 7);
 
@@ -1236,16 +1238,14 @@ void x86_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 			m->md.pc.pic2->irr |= mask;
 		else
 			m->md.pc.pic2->irr &= ~mask;
-
-		/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
-		/*  (TODO: don't hardcode this here)  */
-		if (m->md.pc.pic2->irr & ~m->md.pc.pic2->ier)
-			x86_interrupt(m, cpu, 2, 1);
-		else
-			x86_interrupt(m, cpu, 2, 0);
-
-		return;
 	}
+
+	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+	/*  (TODO: don't hardcode this here)  */
+	if (m->md.pc.pic2->irr & ~m->md.pc.pic2->ier)
+		m->md.pc.pic1->irr |= 0x04;
+	else
+		m->md.pc.pic1->irr &= ~0x04;
 
 	/*  Now, PIC1:  */
 	if (m->md.pc.pic1->irr & ~m->md.pc.pic1->ier)
@@ -2076,8 +2076,14 @@ void machine_setup(struct machine *machine)
 		 */
 /*		dev_XXX_init(cpu, mem, 0x10000000, machine->emulated_hz);	*/
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
+
 		machine->main_console_handle = dev_ns16550_init(machine, mem,
 		    0x1c800000, 5, 1, 1, "serial console");
+
+#if 0
+		dev_ns16550_init(machine, mem, 0x1f000010, 0, 1, 1,
+		    "other serial console");
+#endif
 
 		/*
 		 *  According to NetBSD/cobalt:
@@ -3789,7 +3795,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		    (long long)(X86_IO_BASE + 0xa0));
 		machine->md.pc.pic2 = device_add(machine, tmpstr);
 
-		machine->md_interrupt = x86_interrupt;
+		machine->md_interrupt = x86_pc_interrupt;
 
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8253 addr=0x%llx irq=0",
 		    (long long)(X86_IO_BASE + 0x40));

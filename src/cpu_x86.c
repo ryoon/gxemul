@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.134 2005-05-23 05:56:24 debug Exp $
+ *  $Id: cpu_x86.c,v 1.135 2005-05-23 07:44:20 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -294,6 +294,14 @@ if (cpu->cd.x86.mode == 32) {
 				debug("invalid");
 			debug(")\n");
 		}
+		debug("cpu%i: pic1 irr=0x%02x ier=0x%02x isr=0x%02x\n",
+		    x, cpu->machine->md.pc.pic1->irr,
+		    cpu->machine->md.pc.pic1->ier,
+		    cpu->machine->md.pc.pic1->isr);
+		debug("cpu%i: pic2 irr=0x%02x ier=0x%02x isr=0x%02x\n",
+		    x, cpu->machine->md.pc.pic2->irr,
+		    cpu->machine->md.pc.pic2->ier,
+		    cpu->machine->md.pc.pic2->isr);
 	} else if (PROTECTED_MODE) {
 		/*  Protected mode:  */
 		debug("cpu%i:  cs=0x%04x  ds=0x%04x  es=0x%04x  "
@@ -301,7 +309,7 @@ if (cpu->cd.x86.mode == 32) {
 		    (int)cpu->cd.x86.s[X86_S_CS], (int)cpu->cd.x86.s[X86_S_DS],
 		    (int)cpu->cd.x86.s[X86_S_ES], (int)cpu->cd.x86.s[X86_S_FS],
 		    (int)cpu->cd.x86.s[X86_S_GS], (int)cpu->cd.x86.s[X86_S_SS]);
-		debug("cpu%i:  gdtr=0x%08llx:0x%04x idtr=0x%08llx:0x%04x "
+		debug("cpu%i:  gdtr=0x%08llx:0x%04x  idtr=0x%08llx:0x%04x "
 		    " ldtr=0x%08x:0x%04x\n", x, (long long)cpu->cd.x86.gdtr,
 		    (int)cpu->cd.x86.gdtr_limit, (long long)cpu->cd.x86.idtr,
 		    (int)cpu->cd.x86.idtr_limit, (long long)cpu->cd.x86.ldtr,
@@ -2316,7 +2324,7 @@ static void x86_cpuid(struct cpu *cpu)
 		    cpu id of this one?  */
 		cpu->cd.x86.r[X86_R_CX] = X86_CPUID_ECX_CX16;
 		cpu->cd.x86.r[X86_R_DX] = X86_CPUID_EDX_CX8 | X86_CPUID_EDX_FPU
-		    | X86_CPUID_EDX_MSR | X86_CPUID_EDX_MTRR
+		    | X86_CPUID_EDX_MSR | X86_CPUID_EDX_TSC | X86_CPUID_EDX_MTRR
 		    | X86_CPUID_EDX_CMOV;
 		break;
 	case 2:	cpu->cd.x86.r[X86_R_AX] = 0;
@@ -2420,7 +2428,7 @@ ssize = mode;
  *  Read the interrupt descriptor table (or, in real mode, the interrupt
  *  vector table), push flags/cs/eip, and jump to the interrupt handler.
  */
-static int x86_interrupt(struct cpu *cpu, int nr, int errcode)
+int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 {
 	uint16_t seg;
 	uint32_t ofs;

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.65 2005-05-14 19:46:46 debug Exp $
+$Id: experiments.html,v 1.66 2005-05-23 07:44:19 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -625,6 +625,11 @@ probably doesn't work in GXemul.
       <li>Linux:
 	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
 	<br>gunzip, and run with <b>-E cobalt</b>
+      <p>
+      <li>CoLo:
+	<br><a href="http://www.colonel-panic.org/cobalt-mips/colo/colo-1.19.tar.gz">http://www.colonel-panic.org/cobalt-mips/colo/colo-1.19.tar.gz</a>
+	<br><tt><b>tar zxvf colo-1.19.tar.gz colo-1.19/binaries/colo-rom-image.bin</b></tt>
+	<br><tt><b>gxemul -Q -Ecobalt -v 0xbfc00000:colo-1.19/binaries/colo-rom-image.bin</b></tt>
     </ul>
   </li>
 

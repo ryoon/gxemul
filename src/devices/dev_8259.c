@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.6 2005-05-21 01:36:24 debug Exp $
+ *  $Id: dev_8259.c,v 1.7 2005-05-23 07:44:21 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -95,7 +95,23 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				d->current_command = 0x0b;
 				break;
 			case 0x20:	/*  End Of Interrupt  */
+				d->irr &= ~d->isr;
 				d->isr = 0;
+				/*  Recalculate interrupt assertions:  */
+				cpu_interrupt(cpu, 16);
+				break;
+			case 0x60:
+			case 0x61:
+			case 0x62:
+			case 0x63:
+			case 0x64:
+			case 0x65:
+			case 0x66:
+			case 0x67:	/*  Specific EOI  */
+				d->irr &= ~(1 << (idata & 7));
+				d->isr &= ~(1 << (idata & 7));
+				/*  Recalculate interrupt assertions:  */
+				cpu_interrupt(cpu, 16);
 				break;
 			case 0x68:	/*  Set Special Mask Mode  */
 				/*  TODO  */

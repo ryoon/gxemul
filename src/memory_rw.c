@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.31 2005-05-19 16:04:12 debug Exp $
+ *  $Id: memory_rw.c,v 1.32 2005-05-23 07:44:20 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -416,7 +416,7 @@ have_paddr:
 	/*  Outside of physical RAM?  */
 	if (paddr >= mem->physical_max) {
 #ifdef MEM_MIPS
-		if ((paddr & 0xffff000000ULL) == 0x1f000000) {
+		if ((paddr & 0xffffc00000ULL) == 0x1fc00000) {
 			/*  Ok, this is PROM stuff  */
 		} else if ((paddr & 0xfffff00000ULL) == 0x1ff00000) {
 			/*  Sprite reads from this area of memory...  */

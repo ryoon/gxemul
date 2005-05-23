@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.24 2005-05-21 05:22:13 debug Exp $
+ *  $Id: cpu_x86.h,v 1.25 2005-05-23 07:44:22 debug Exp $
  */
 
 #include "misc.h"
@@ -250,6 +250,7 @@ struct x86_cpu {
 
 /*  cpu_x86.c:  */
 void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector);
+int x86_interrupt(struct cpu *cpu, int nr, int errcode);
 int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int x86_cpu_family_init(struct cpu_family *);

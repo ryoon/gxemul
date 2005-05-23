@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.135 2005-05-23 07:44:20 debug Exp $
+ *  $Id: cpu_x86.c,v 1.136 2005-05-23 08:10:33 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2327,10 +2327,12 @@ static void x86_cpuid(struct cpu *cpu)
 		    | X86_CPUID_EDX_MSR | X86_CPUID_EDX_TSC | X86_CPUID_EDX_MTRR
 		    | X86_CPUID_EDX_CMOV;
 		break;
-	case 2:	cpu->cd.x86.r[X86_R_AX] = 0;
-		cpu->cd.x86.r[X86_R_BX] = 0;
-		cpu->cd.x86.r[X86_R_CX] = 0;
-		cpu->cd.x86.r[X86_R_DX] = 0;
+	case 2:	/*  TODO: actual Cache info  */
+		/*  This is just bogus  */
+		cpu->cd.x86.r[X86_R_AX] = 0x03020101;
+		cpu->cd.x86.r[X86_R_BX] = 0x00000000;
+		cpu->cd.x86.r[X86_R_CX] = 0x00000000;
+		cpu->cd.x86.r[X86_R_DX] = 0x06040a42;
 		break;
 
 	/*  Extended CPU id:  */
@@ -2348,8 +2350,16 @@ static void x86_cpuid(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_DX] = (cpu->cd.x86.model.model_number 
 		    >= X86_MODEL_AMD64)? X86_CPUID_EXT_EDX_LM : 0;
 		break;
+	case 0x80000005:
+	case 0x80000006:
+		fatal("[ CPUID 0x%08x ]\n", (int)cpu->cd.x86.r[X86_R_AX]);
+		cpu->cd.x86.r[X86_R_AX] = 0;
+		cpu->cd.x86.r[X86_R_BX] = 0;
+		cpu->cd.x86.r[X86_R_CX] = 0;
+		cpu->cd.x86.r[X86_R_DX] = 0;
+		break;
 	default:fatal("x86_cpuid(): unimplemented eax = 0x%x\n",
-		    cpu->cd.x86.r[X86_R_AX]);
+		    (int)cpu->cd.x86.r[X86_R_AX]);
 		cpu->running = 0;
 	}
 }

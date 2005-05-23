@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.7 2005-05-21 01:36:23 debug Exp $
+ *  $Id: memory_x86.c,v 1.8 2005-05-23 08:10:33 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -114,8 +114,10 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		/*  fatal("  pde: 0x%08x\n", (int)pde);  */
 		/*  TODO: lowest bits of the pde  */
 		if (!(pde & 0x01)) {
-			fatal("TODO: pde not present\n");
-			goto fail;
+			fatal("TODO: pde not present: usermode etc\n");
+			x86_interrupt(cpu, 14, writeflag? 2 : 0);
+			cpu->cd.x86.cr[2] = vaddr;
+			return 0;
 		}
 
 		/*  Read the Page Table Entry:  */
@@ -133,8 +135,10 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		if (!(pte & 0x02))
 			writable = 0;
 		if (!(pte & 0x01)) {
-			fatal("TODO: pte not present\n");
-			goto fail;
+			fatal("TODO: pte not present: usermode etc\n");
+			x86_interrupt(cpu, 14, writeflag? 2 : 0);
+			cpu->cd.x86.cr[2] = vaddr;
+			return 0;
 		}
 
 		(*return_addr) = (pte & ~0xfff) | (vaddr & 0xfff);

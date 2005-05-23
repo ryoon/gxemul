@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.86 2005-05-23 04:49:21 debug Exp $
+ *  $Id: pc_bios.c,v 1.87 2005-05-23 09:06:58 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1699,7 +1699,7 @@ int pc_bios_emul(struct cpu *cpu)
 
 	int_nr = (addr >> 4) & 0xff;
 
-	if (cpu->cd.x86.cr[0] & 1) {
+	if (cpu->cd.x86.cr[0] & X86_CR0_PE) {
 		fatal("TODO: BIOS interrupt 0x%02x, but we're not in real-"
 		    "mode?\n", int_nr);
 		cpu->running = 0;
@@ -1730,8 +1730,11 @@ int pc_bios_emul(struct cpu *cpu)
 	case 0x14:  pc_bios_int14(cpu); break;
 	case 0x15:  pc_bios_int15(cpu); break;
 	case 0x16:
-		if (pc_bios_int16(cpu, &enable_ints_after_return) == 0)
+		if (pc_bios_int16(cpu, &enable_ints_after_return) == 0) {
+			if (enable_ints_after_return)
+				cpu->cd.x86.rflags |= X86_FLAGS_IF;
 			return 0;
+		}
 		break;
 	case 0x17:  pc_bios_int17(cpu); break;
 	case 0x18:

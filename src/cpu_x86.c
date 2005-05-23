@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.136 2005-05-23 08:10:33 debug Exp $
+ *  $Id: cpu_x86.c,v 1.137 2005-05-23 09:06:57 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1579,6 +1579,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				SPACES; debug("invd");
 			} else if (imm == 0x09) {
 				SPACES; debug("wbinvd");
+			} else if (imm == 0x0b) {
+				SPACES; debug("reserved_0b");
 			} else if (imm == 0x20 || imm == 0x21) {
 				modrm(cpu, MODRM_READ, 32 /* note: 32  */,
 				    mode67, imm == 0x20? MODRM_CR : MODRM_DR,
@@ -2548,6 +2550,7 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 	/*  Push flags, cs, and ip (pc):  */
 	cpu->cd.x86.cursegment = X86_S_SS;
 	mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
+
 	if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
 		fatal("x86_interrupt(): TODO: how to handle this 4\n");
 	if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
@@ -3181,9 +3184,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0x00:
 				subop = (*instr >> 3) & 0x7;
 				switch (subop) {
+				case 1:	/*  str  */
+					/*  TODO: Check Prot.mode?  */
+					op1 = cpu->cd.x86.tr;
+					modrm(cpu, MODRM_WRITE_RM, 16, mode67,
+					    0, &instr, &newpc, &op1, &op2);
+					break;
 				case 2:	/*  lldt  */
 					/*  TODO: Check cpl? and Prot.mode  */
-					instr_orig = instr;
 					modrm(cpu, MODRM_READ, 16, mode67,
 					    0, &instr, &newpc, &op1, &op2);
 					reload_segment_descriptor(cpu,
@@ -3191,7 +3199,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					break;
 				case 3:	/*  ltr  */
 					/*  TODO: Check cpl=0 and Prot.mode  */
-					instr_orig = instr;
 					modrm(cpu, MODRM_READ, 16, mode67,
 					    0, &instr, &newpc, &op1, &op2);
 					reload_segment_descriptor(cpu,
@@ -3288,6 +3295,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0x09:	/*  WBINVD  */
 				/*  TODO  */
 				break;
+			case 0x0b:	/*  Reserved  */
+				x86_interrupt(cpu, 6, 0);
+				return 1;
 			case 0x20:	/*  MOV r/m,CRx  */
 			case 0x21:	/*  MOV r/m,DRx: TODO: is this right? */
 				instr_orig = instr;
@@ -3522,6 +3532,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				switch (subop) {
 				case 4:	/*  BT  */
 				case 5:	/*  BTS  */
+				case 6:	/*  BTR  */
+				case 7:	/*  BTC  */
 					instr_orig = instr;
 					modrm(cpu, MODRM_READ, mode, mode67,
 					    0, &instr, &newpc, &op1, &op2);
@@ -4326,7 +4338,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		newpc = tmp;
 		reload_segment_descriptor(cpu, X86_S_CS, tmp2);
-		cpu->cd.x86.rflags = tmp3;
+		if (mode == 16)
+			cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
+			    | (tmp3 & 0xffff);
+		else
+			cpu->cd.x86.rflags = tmp3;
 		/*  TODO: only affect some bits?  */
 	} else if (op >= 0xd0 && op <= 0xd3) {
 		int n = 1;

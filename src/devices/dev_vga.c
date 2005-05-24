@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.64 2005-05-24 14:54:32 debug Exp $
+ *  $Id: dev_vga.c,v 1.65 2005-05-24 15:13:37 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -993,8 +993,13 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 			break;
 
 		case VGA_INPUT_STATUS_1:	/*  0x1A  */
-			odata = VGA_IS1_DISPLAY_ENABLE;
-			/*  odata |= VGA_IS1_DISPLAY_VRETRACE;  */
+			odata = 0;
+			/*  These need to go on and off, to fake the
+			    real vertical and horizontal retrace info.  */
+			if ((random() & 0xff) != 0)
+				odata = VGA_IS1_DISPLAY_ENABLE;
+			if (random() & 1)
+				odata |= VGA_IS1_DISPLAY_VRETRACE;
 			break;
 
 		default:

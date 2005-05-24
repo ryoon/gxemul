@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.10 2005-05-23 18:21:37 debug Exp $
+ *  $Id: memory_x86.c,v 1.11 2005-05-24 15:13:37 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -115,6 +115,10 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		if (!(pde & 0x01)) {
 			fatal("TODO: pde not present: vaddr=0x%08x, "
 			    "usermode etc\n", (int)vaddr);
+
+cpu->machine->instruction_trace = 1;
+printf("CS:EIP = 0x%04x:0x%016llx\n",(int)cpu->cd.x86.s[X86_S_CS],
+(long long)cpu->pc);
 			if (!no_exceptions) {
 				x86_interrupt(cpu, 14, writeflag? 2 : 0);
 				cpu->cd.x86.cr[2] = vaddr;

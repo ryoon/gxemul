@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.144 2005-05-24 11:14:51 debug Exp $
+ *  $Id: cpu_x86.c,v 1.145 2005-05-24 15:13:36 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -668,6 +668,7 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 	cpu->cd.x86.tr_base + ofs, buf, sizeof(buf), MEM_WRITE,  \
 	NO_SEGMENTATION); }
 
+	ofs = 0x1c; value = cpu->cd.x86.cr[3]; WRITE_VALUE;
 	ofs = 0x20; value = *curpc; WRITE_VALUE;
 	ofs = 0x24; value = cpu->cd.x86.rflags; WRITE_VALUE;
 	for (i=0; i<N_X86_REGS; i++) {
@@ -706,6 +707,7 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 	ofs, buf, sizeof(buf), MEM_READ, NO_SEGMENTATION); \
 	value = buf[0] + (buf[1] << 8) + (buf[2] << 16) + (buf[3] << 24); }
 
+	ofs = 0x1c; READ_VALUE; cpu->cd.x86.cr[3] = value;
 	ofs = 0x20; READ_VALUE; cpu->pc = value;
 	ofs = 0x24; READ_VALUE; cpu->cd.x86.rflags = value;
 	for (i=0; i<N_X86_REGS; i++) {
@@ -2545,6 +2547,8 @@ ssize = mode;
 		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] -
 		    (ssize / 8)) & 0xffffffff;
 	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value, ssize / 8);
+	if (!res)
+		fatal("WARNIG: x86_push store failed\n");
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
@@ -2565,6 +2569,8 @@ ssize = mode;
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
 	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep, ssize / 8);
+	if (!res)
+		fatal("WARNIG: x86_pop load failed\n");
 	if (cpu->cd.x86.descr_cache[X86_S_SS].default_op_size == 16)
 		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
 		    | ((cpu->cd.x86.r[X86_R_SP] + (ssize / 8)) & 0xffff);

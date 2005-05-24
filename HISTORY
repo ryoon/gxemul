@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.757 2005-05-24 20:07:54 debug Exp $
+$Id: HISTORY,v 1.758 2005-05-24 20:26:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1939,4 +1939,4 @@ Changelog for GXemul:
 		level support yet.
 		More work on dev_vga.
 		Adding support for Trap Flag (single-step exceptions), at least
-		in real mode.
+		in real mode, and various other x86-related fixes.

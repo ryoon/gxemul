@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.147 2005-05-24 20:07:55 debug Exp $
+ *  $Id: cpu_x86.c,v 1.148 2005-05-24 20:26:31 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1510,8 +1510,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	uint32_t imm=0, imm2;
 	int mode = running & ~1;
 	int mode67;
-	char *symbol, *tmp = "ERROR", *mnem = "ERROR", *e = "e",
-	    *prefix = NULL;
+	char *symbol, *mnem = "ERROR", *e = "e", *prefix = NULL;
 
 	if (running)
 		dumpaddr = cpu->pc;

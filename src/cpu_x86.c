@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.143 2005-05-24 07:39:32 debug Exp $
+ *  $Id: cpu_x86.c,v 1.144 2005-05-24 11:14:51 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -659,6 +659,9 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 
 	x86_cpu_register_dump(cpu, 1, 1);
 
+	/*  Set the task-switched bit in CR0:  */
+	cpu->cd.x86.cr[0] |= X86_CR0_TS;
+
 	/*  Save away all the old registers:  */
 #define WRITE_VALUE { buf[0]=value; buf[1]=value>>8; buf[2]=value>>16; \
 	buf[3]=value>>24; cpu->memory_rw(cpu, cpu->mem, \
@@ -986,7 +989,15 @@ static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
 			fatal("x86_write_cr(): unimplemented cr0 bits: "
 			    "0x%08llx\n", (long long)tmp);
 		break;
+	case 2:
 	case 3:	new = cpu->cd.x86.cr[r] = value;
+		break;
+	case 4:	new = cpu->cd.x86.cr[r] = value;
+		/*  Warn about unimplemented bits:  */
+		tmp = new; /*  & ~(X86_CR0_PE | X86_CR0_PG); */
+		if (tmp != 0)
+			fatal("x86_write_cr(): unimplemented cr4 bits: "
+			    "0x%08llx\n", (long long)tmp);
 		break;
 	default:fatal("x86_write_cr(): write to UNIMPLEMENTED cr%i\n", r);
 		cpu->running = 0;
@@ -2523,7 +2534,7 @@ static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 
 	/*  TODO: up/down?  */
 	/*  TODO: stacksize?  */
-/*  ssize = mode;  */
+ssize = mode;
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
@@ -2549,7 +2560,7 @@ static int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
 
 	/*  TODO: up/down?  */
 	/*  TODO: stacksize?  */
-/*  ssize = mode;  */
+ssize = mode;
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;

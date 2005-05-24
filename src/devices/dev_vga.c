@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.62 2005-05-23 15:21:36 debug Exp $
+ *  $Id: dev_vga.c,v 1.63 2005-05-24 11:14:52 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -418,6 +418,8 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 	struct vga_data *d = extra;
 	uint64_t low = (uint64_t)-1, high;
 
+	vga_update_cursor(cpu->machine, d);
+
 	/*  TODO: text vs graphics tick?  */
 	memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);
 
@@ -634,18 +636,15 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 	switch (regnr) {
 	case 0x0a:
 		d->cursor_scanline_start = d->reg[0x0a];
-		vga_update_cursor(machine, d);
 		break;
 	case 0x0b:
 		d->cursor_scanline_end = d->reg[0x0b];
-		vga_update_cursor(machine, d);
 		break;
 	case 0x0e:
 	case 0x0f:
 		ofs = d->reg[0x0e] * 256 + d->reg[0x0f];
 		d->cursor_x = ofs % d->max_x;
 		d->cursor_y = ofs / d->max_x;
-		vga_update_cursor(machine, d);
 		break;
 	case 0xff:
 		grayscale = 0;
@@ -726,7 +725,6 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 		/*  Home cursor:  */
 		d->cursor_x = d->cursor_y = 0;
 		d->reg[0x0e] = d->reg[0x0f] = 0;
-		vga_update_cursor(machine, d);
 
 		/*  Reset cursor scanline stuff:  */
 		d->cursor_scanline_start = d->font_size - 4;

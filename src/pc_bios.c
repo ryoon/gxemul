@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.91 2005-05-24 07:39:32 debug Exp $
+ *  $Id: pc_bios.c,v 1.92 2005-05-24 11:14:51 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -901,8 +901,9 @@ static void pc_bios_int13(struct cpu *cpu)
 
 			if (ah == 3) {
 				fatal("TODO: bios disk write\n");
-				cpu->running = 0;
+				/*  cpu->running = 0;  */
 				/*  TODO  */
+				al = 0;
 			}
 			if (al > 0)
 				res = diskimage_access(cpu->machine, disk->id,

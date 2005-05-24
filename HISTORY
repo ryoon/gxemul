@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.756 2005-05-24 15:13:36 debug Exp $
+$Id: HISTORY,v 1.757 2005-05-24 20:07:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1938,3 +1938,5 @@ Changelog for GXemul:
 20050524	Adding simple 32-bit x86 TSS task switching, but no privilege
 		level support yet.
 		More work on dev_vga.
+		Adding support for Trap Flag (single-step exceptions), at least
+		in real mode.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.146 2005-05-24 15:52:56 debug Exp $
+ *  $Id: cpu_x86.c,v 1.147 2005-05-24 20:07:55 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2598,6 +2598,8 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 	int res, mode;
 	unsigned char buf[8];
 
+	cpu->cd.x86.rflags &= ~X86_FLAGS_TF;
+
 	if (PROTECTED_MODE) {
 		int i, int_type = 0;
 
@@ -2826,10 +2828,10 @@ static void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
 		;
 	}
 
-	/*  PF:  */
+	/*  PF:  (NOTE: Only the lowest 8 bits)  */
 	cpu->cd.x86.rflags &= ~X86_FLAGS_PF;
 	count = 0;
-	for (i=0; i<mode; i++) {
+	for (i=0; i<8; i++) {
 		if (c & 1)
 			count ++;
 		c >>= 1;
@@ -3042,6 +3044,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	unsigned char *instr = buf, *instr_orig, *really_orig_instr;
 	uint64_t newpc = cpu->pc;
 	uint64_t tmp, op1, op2;
+	int trap_flag_was_set = cpu->cd.x86.rflags & X86_FLAGS_TF;
 
 	/*  Check PC against breakpoints:  */
 	if (!single_step)
@@ -5114,6 +5117,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  Wrap-around and update [E]IP:  */
 	cpu->pc = newpc & (((uint64_t)1 << (cpu->cd.x86.descr_cache[
 	    X86_S_CS].default_op_size)) - 1);
+
+	if (trap_flag_was_set) {
+		if (REAL_MODE) {
+			x86_interrupt(cpu, 1, 0);
+		} else {
+			fatal("TRAP flag in protected mode?\n");
+			cpu->running = 0;
+		}
+	}
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.67 2005-05-24 16:20:52 debug Exp $
+ *  $Id: dev_vga.c,v 1.68 2005-05-24 20:08:05 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -54,6 +54,9 @@
 
 /*  For bintranslated videomem -> framebuffer updates:  */
 #define	VGA_TICK_SHIFT		15
+
+#define	MAX_RETRACE_SCANLINES	420
+#define	N_IS1_READ_THRESHOLD	30
 
 #define	VGA_MEM_MAXY		60
 #define	VGA_MEM_ALLOCY		60
@@ -118,6 +121,14 @@ struct vga_data {
 	unsigned char	palette_write_index;
 	char		palette_write_subindex;
 
+	int		current_retrace_line;
+	int		input_status_1;
+
+	/*  Palette _per scanline_ during retrace:  */
+	unsigned char	retrace_palette[MAX_RETRACE_SCANLINES][768];
+	int		use_palette_per_line;
+	int64_t		n_is1_reads;
+
 	/*  Misc.:  */
 	int		console_handle;
 
@@ -155,6 +166,7 @@ static void register_reset(struct vga_data *d)
 	d->graphcontr_reg[VGA_GRAPHCONTR_MASK] = 0xff;
 
 	d->misc_output_reg = VGA_MISC_OUTPUT_IOAS;
+	d->n_is1_reads = 0;
 }
 
 
@@ -350,6 +362,8 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 	int x1, int y1, int x2, int y2)
 {
 	int fg, bg, i, x,y, subx, line, start, end;
+	int fontsize = d->font_size;
+	unsigned char *pal = d->fb->rgb_palette;
 
 	/*  Hm... I'm still using the old start..end code:  */
 	start = (d->max_x * y1 + x1) * 2;
@@ -375,34 +389,32 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 		}
 
 		x = (i/2) % d->max_x; x *= 8;
-		y = (i/2) / d->max_x; y *= d->font_size;
+		y = (i/2) / d->max_x; y *= fontsize;
 
-		for (line = 0; line < d->font_size; line++) {
+		/*  Draw the character:  */
+		for (line = 0; line < fontsize; line++) {
 			for (subx = 0; subx < 8; subx++) {
 				unsigned char pixel[3];
-				int line2readfrom = line;
-				int actualfontheight = d->font_size;
-				int ix, iy;
+				int ix, iy, color_index;
 
-				if (d->font_size == 11) {
-					actualfontheight = 10;
-					if (line == 10)
-						line2readfrom = 9;
+				if (d->use_palette_per_line) {
+					int sline = d->pixel_repy * (line+y);
+					if (sline < MAX_RETRACE_SCANLINES)
+						pal = &d->retrace_palette
+						    [sline][0];
+					else
+						pal = d->fb->rgb_palette;
 				}
 
-				pixel[0] = d->fb->rgb_palette[bg * 3 + 0];
-				pixel[1] = d->fb->rgb_palette[bg * 3 + 1];
-				pixel[2] = d->fb->rgb_palette[bg * 3 + 2];
+				if (d->font[ch * fontsize + line] &
+				    (128 >> subx))
+					color_index = fg;
+				else
+					color_index = bg;
 
-				if (d->font[ch * actualfontheight +
-				    line2readfrom] & (128 >> subx)) {
-					pixel[0] = d->fb->rgb_palette
-					    [fg * 3 + 0];
-					pixel[1] = d->fb->rgb_palette
-					    [fg * 3 + 1];
-					pixel[2] = d->fb->rgb_palette
-					    [fg * 3 + 2];
-				}
+				pixel[0] = pal[color_index * 3 + 0];
+				pixel[1] = pal[color_index * 3 + 1];
+				pixel[2] = pal[color_index * 3 + 2];
 
 				for (iy=0; iy<d->pixel_repy; iy++)
 				    for (ix=0; ix<d->pixel_repx; ix++) {
@@ -473,6 +485,24 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 		d->modified = 1;
 	}
 
+	if (d->n_is1_reads > N_IS1_READ_THRESHOLD) {
+		d->use_palette_per_line = 1;
+		d->update_x1 = 0;
+		d->update_x2 = d->max_x - 1;
+		d->update_y1 = 0;
+		d->update_y2 = d->max_y - 1;
+		d->modified = 1;
+	} else {
+		if (d->use_palette_per_line) {
+			d->use_palette_per_line = 0;
+			d->update_x1 = 0;
+			d->update_x2 = d->max_x - 1;
+			d->update_y1 = 0;
+			d->update_y2 = d->max_y - 1;
+			d->modified = 1;
+		}
+	}
+
 	if (!cpu->machine->use_x11) {
 		/*  NOTE: 2 > 0, so this only updates the cursor, no
 		    character cells.  */
@@ -493,6 +523,9 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 		d->update_y1 = 999999;
 		d->update_y2 = -1;
 	}
+
+	if (d->n_is1_reads > N_IS1_READ_THRESHOLD)
+		d->n_is1_reads = 0;
 }
 
 
@@ -994,12 +1027,23 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 
 		case VGA_INPUT_STATUS_1:	/*  0x1A  */
 			odata = 0;
+			d->n_is1_reads ++;
+			d->current_retrace_line ++;
+			d->current_retrace_line %= (MAX_RETRACE_SCANLINES * 8);
+			/*  Whenever we are "inside" a scan line, copy the
+			    current palette into retrace_palette[][]:  */
+			if (d->current_retrace_line & 1)
+				memcpy(&d->retrace_palette[d->
+				    current_retrace_line >> 3][0],
+				    d->fb->rgb_palette, 768);
 			/*  These need to go on and off, to fake the
 			    real vertical and horizontal retrace info.  */
-			if ((random() & 0xff) != 0)
-				odata = VGA_IS1_DISPLAY_ENABLE;
-			if (random() & 1)
+			if (d->current_retrace_line < 20*8)
 				odata |= VGA_IS1_DISPLAY_VRETRACE;
+			else {
+				if ((d->current_retrace_line & 7) == 0)
+					odata = VGA_IS1_DISPLAY_DISPLAY_DISABLE;
+			}
 			break;
 
 		default:
@@ -1012,12 +1056,12 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 			}
 		}
 
+		if (writeflag == MEM_READ)
+			data[i] = odata;
+
 		/*  For multi-byte accesses:  */
 		relative_addr ++;
 	}
-
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

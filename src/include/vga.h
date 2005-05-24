@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: vga.h,v 1.2 2005-05-24 15:13:38 debug Exp $
+ *  $Id: vga.h,v 1.3 2005-05-24 20:08:06 debug Exp $
  *
  *  VGA register definitions, used by src/devices/dev_vga.c.
  */
@@ -75,6 +75,6 @@
 
 #define	VGA_INPUT_STATUS_1		0x1A	/*  R  */
 #define	   VGA_IS1_DISPLAY_VRETRACE	   0x08
-#define	   VGA_IS1_DISPLAY_ENABLE	   0x01
+#define	   VGA_IS1_DISPLAY_DISPLAY_DISABLE 0x01
 
 #endif	/*  VGA_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.93 2005-05-24 15:52:56 debug Exp $
+ *  $Id: pc_bios.c,v 1.94 2005-05-24 16:20:51 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -646,9 +646,9 @@ static void pc_bios_int10(struct cpu *cpu)
 			cpu->machine->md.pc.curcolor = bl;
 		set_cursor_pos(cpu, oldx, oldy);
 		break;
-	case 0x0b:	/*  set color palette  */
+	case 0x0b:	/*  set background palette  */
 		fatal("WARNING: int 0x10, func 0x0b: TODO\n");
-		cpu->running = 0;
+		/*  cpu->running = 0;  */
 		break;
 	case 0x0e:	/*  tty output  */
 		pc_bios_putchar(cpu, al, -1, 1);

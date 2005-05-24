@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.754 2005-05-23 18:21:36 debug Exp $
+$Id: HISTORY,v 1.755 2005-05-24 07:39:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1935,3 +1935,5 @@ Changelog for GXemul:
 		Adding support for directly starting up x86 ELFs, skipping the
 		bootloader stage. (Most ELFs, however, are not suitable for
 		this.)
+20050524	Adding simple 32-bit x86 TSS task switching, but no privilege
+		level support yet.

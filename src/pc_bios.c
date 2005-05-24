@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.90 2005-05-23 18:21:37 debug Exp $
+ *  $Id: pc_bios.c,v 1.91 2005-05-24 07:39:32 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -494,7 +494,8 @@ static int pc_bios_int8(struct cpu *cpu)
 	cpu->memory_rw(cpu, cpu->mem, 0x1C * 4,
 	    ticks, 4, MEM_READ, CACHE_NONE | PHYSICAL);
 	cpu->pc = ticks[0] + (ticks[1] << 8);
-	reload_segment_descriptor(cpu, X86_S_CS, ticks[2] + (ticks[3] << 8));
+	reload_segment_descriptor(cpu, X86_S_CS, ticks[2] + (ticks[3] << 8),
+	    NULL);
 	return 0;
 }
 
@@ -735,7 +736,8 @@ static void pc_bios_int10(struct cpu *cpu)
 			case 0x03:	/*  8x8 font  */
 				cpu->cd.x86.r[X86_R_BP] &= ~0xffff;
 				cpu->cd.x86.r[X86_R_BP] |= 0xfa6e;
-				reload_segment_descriptor(cpu, X86_S_ES,0xf000);
+				reload_segment_descriptor(cpu, X86_S_ES,
+				    0xf000, NULL);
 				/*  TODO: cx and dl, better values?  */
 				cpu->cd.x86.r[X86_R_CX] &= ~0xffff;
 				cpu->cd.x86.r[X86_R_CX] |= 16;
@@ -882,8 +884,8 @@ static void pc_bios_int13(struct cpu *cpu)
 
 			buf = malloc(512 * al);
 
-			if (cl+al > disk->sectorspertrack || dh >= disk->heads ||
-			    ch > disk->cylinders) {
+			if (cl+al > disk->sectorspertrack ||
+			    dh >= disk->heads || ch > disk->cylinders) {
 				al = 0; err = 4;  /*  sector not found  */
 				fatal("[ pc_bios: attempt to %s outside the d"
 				    "isk? bios id=0x%02x, chs=%i,%i,%i, acces"
@@ -1128,7 +1130,7 @@ static void pc_bios_int15(struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff00;
 		cpu->cd.x86.r[X86_R_BX] &= ~0xffff;
 		cpu->cd.x86.s[X86_S_ES] = 0xfffd;
-		reload_segment_descriptor(cpu, X86_S_ES, 0xfffd);
+		reload_segment_descriptor(cpu, X86_S_ES, 0xfffd, NULL);
 		break;
 	case 0xc1:	/*  Extended Bios Data-seg (TODO)  */
 		cpu->cd.x86.rflags |= X86_FLAGS_CF;
@@ -1370,7 +1372,7 @@ void pc_bios_smp_init(struct cpu *cpu)
 {
 	int i, chksum;
 
-	reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf000, NULL);
 	store_buf(cpu, 0x9000, "_MP_", 4);
 	store_byte(cpu, 0x9004, 0x10);	/*  ptr to table  */
 	store_byte(cpu, 0x9005, 0x90);
@@ -1425,7 +1427,7 @@ void pc_bios_simple_pmode_setup(struct cpu *cpu)
 	int i, j, addr = 0, npts;
 	uint32_t pt_base;
 	cpu->cd.x86.cursegment = X86_S_FS;
-	reload_segment_descriptor(cpu, X86_S_FS, 0xf100);
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf100, NULL);
 
 	/*  0x00 = NULL descriptor.  */
 	addr += 8;
@@ -1482,10 +1484,10 @@ void pc_bios_simple_pmode_setup(struct cpu *cpu)
 	/*  Interrupts are dangerous when we start in pmode!  */
 	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
 
-	reload_segment_descriptor(cpu, X86_S_CS, 0x08);
-	reload_segment_descriptor(cpu, X86_S_DS, 0x10);
-	reload_segment_descriptor(cpu, X86_S_ES, 0x10);
-	reload_segment_descriptor(cpu, X86_S_SS, 0x10);
+	reload_segment_descriptor(cpu, X86_S_CS, 0x08, NULL);
+	reload_segment_descriptor(cpu, X86_S_DS, 0x10, NULL);
+	reload_segment_descriptor(cpu, X86_S_ES, 0x10, NULL);
+	reload_segment_descriptor(cpu, X86_S_SS, 0x10, NULL);
 	cpu->cd.x86.r[X86_R_SP] = 0x7000;
 	cpu->cd.x86.cursegment = X86_S_DS;
 }
@@ -1515,7 +1517,7 @@ void pc_bios_init(struct cpu *cpu)
 
 	/*  Disk Base Table (11 or 12 bytes?) at F000h:EFC7:  */
 	cpu->cd.x86.cursegment = X86_S_FS;
-	reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf000, NULL);
 	store_byte(cpu, 0xefc7 + 0, 0xcf);
 	store_byte(cpu, 0xefc7 + 1, 0xb8);
 	store_byte(cpu, 0xefc7 + 2, 1);		/*  timer ticks till shutoff  */
@@ -1530,7 +1532,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0xefc7 + 11, 1);/*  motor stop time in 1/4 secs  */
 
 	/*  BIOS System Configuration Parameters (8 bytes) at 0xfffd:0:  */
-	reload_segment_descriptor(cpu, X86_S_FS, 0xfffd);
+	reload_segment_descriptor(cpu, X86_S_FS, 0xfffd, NULL);
 	store_byte(cpu, 0, 8); store_byte(cpu, 1, 0);	/*  len  */
 	store_byte(cpu, 2, 0xfc);			/*  model  */
 	store_byte(cpu, 3, 0);				/*  sub-model  */
@@ -1540,7 +1542,7 @@ void pc_bios_init(struct cpu *cpu)
 			int_15-c0.html for details  */
 
 	/*  Some info in the last paragraph of the BIOS:  */
-	reload_segment_descriptor(cpu, X86_S_FS, 0xffff);
+	reload_segment_descriptor(cpu, X86_S_FS, 0xffff, NULL);
 	/*  TODO: current date :-)  */
 	store_byte(cpu, 0x05, '0'); store_byte(cpu, 0x06, '1');
 	store_byte(cpu, 0x07, '/');
@@ -1550,7 +1552,7 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0x0e, 0xfc);
 
 	/*  Copy the first 128 chars of the 8x8 VGA font into 0xf000:0xfa6e  */
-	reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
+	reload_segment_descriptor(cpu, X86_S_FS, 0xf000, NULL);
 	store_buf(cpu, 0xfa6e, (char *)font8x8, 8*128);
 	store_buf(cpu, 0xfa6e - 1024, (char *)font8x8 + 1024, 8*128);
 
@@ -1564,7 +1566,7 @@ void pc_bios_init(struct cpu *cpu)
 			i = 0x70;
 		if (i == 0x78)
 			break;
-		reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
+		reload_segment_descriptor(cpu, X86_S_FS, 0x0000, NULL);
 		store_16bit_word(cpu, i*4, 0x8000 + i*16);
 		store_16bit_word(cpu, i*4 + 2, 0xf000);
 
@@ -1574,7 +1576,7 @@ void pc_bios_init(struct cpu *cpu)
 		if (i == 0x1f)
 			store_16bit_word(cpu, i*4, 0xfa6e - 1024);
 
-		reload_segment_descriptor(cpu, X86_S_FS, 0xf000);
+		reload_segment_descriptor(cpu, X86_S_FS, 0xf000, NULL);
 		store_byte(cpu, 0x8000 + i*16, 0xCF);	/*  IRET  */
 	}
 
@@ -1755,7 +1757,7 @@ void pc_bios_init(struct cpu *cpu)
 	if (nfloppies > 0)
 		nfloppies --;
 
-	reload_segment_descriptor(cpu, X86_S_FS, 0x0000);
+	reload_segment_descriptor(cpu, X86_S_FS, 0x0000, NULL);
 	store_16bit_word(cpu, 0x400, 0x03F8);	/*  COM1  */
 	store_16bit_word(cpu, 0x402, 0x0378);	/*  COM2  */
 	store_byte(cpu, 0x410, (nfloppies << 6) | 0x0f); /*  nfloppies etc  */
@@ -1769,10 +1771,10 @@ void pc_bios_init(struct cpu *cpu)
 	store_byte(cpu, 0x485, 16);		/*  font height  */
 
 	/*  Registers passed to the bootsector code:  */
-	reload_segment_descriptor(cpu, X86_S_CS, 0x0000);
-	reload_segment_descriptor(cpu, X86_S_DS, 0x0000);
-	reload_segment_descriptor(cpu, X86_S_ES, 0x0000);
-	reload_segment_descriptor(cpu, X86_S_SS, 0x0000);
+	reload_segment_descriptor(cpu, X86_S_CS, 0x0000, NULL);
+	reload_segment_descriptor(cpu, X86_S_DS, 0x0000, NULL);
+	reload_segment_descriptor(cpu, X86_S_ES, 0x0000, NULL);
+	reload_segment_descriptor(cpu, X86_S_SS, 0x0000, NULL);
 
 	cpu->cd.x86.r[X86_R_AX] = 0xaa55;
 	cpu->cd.x86.r[X86_R_CX] = 0x0001;
@@ -1826,7 +1828,10 @@ int pc_bios_emul(struct cpu *cpu)
 	case 0x12:	/*  return memory size in KBs  */
 		cpu->cd.x86.r[X86_R_AX] = 640;
 		break;
-	case 0x13:  pc_bios_int13(cpu); break;
+	case 0x13:
+		pc_bios_int13(cpu);
+		enable_ints_after_return = 1;
+		break;
 	case 0x14:  pc_bios_int14(cpu); break;
 	case 0x15:  pc_bios_int15(cpu); break;
 	case 0x16:
@@ -1862,7 +1867,7 @@ int pc_bios_emul(struct cpu *cpu)
 	cpu->cd.x86.cursegment = X86_S_SS;
 	cpu->pc = load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP]);
 	reload_segment_descriptor(cpu, X86_S_CS,
-	    load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 2));
+	    load_16bit_word(cpu, cpu->cd.x86.r[X86_R_SP] + 2), NULL);
 
 	/*  Actually, don't pop flags, because they contain result bits
 	    from interrupt calls. Only pop the Interrupt Flag.  */

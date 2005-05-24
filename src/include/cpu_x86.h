@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.26 2005-05-23 16:01:41 debug Exp $
+ *  $Id: cpu_x86.h,v 1.27 2005-05-24 07:39:33 debug Exp $
  */
 
 #include "misc.h"
@@ -249,7 +249,8 @@ struct x86_cpu {
 #define	REAL_MODE		(!PROTECTED_MODE)
 
 /*  cpu_x86.c:  */
-void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector);
+void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
+	uint64_t *curpcp);
 int x86_interrupt(struct cpu *cpu, int nr, int errcode);
 int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);

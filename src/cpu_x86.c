@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.142 2005-05-23 16:01:39 debug Exp $
+ *  $Id: cpu_x86.c,v 1.143 2005-05-24 07:39:32 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -236,9 +236,6 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (int)cpu->cd.x86.s[X86_S_DS], (int)cpu->cd.x86.s[X86_S_ES],
 		    (int)cpu->cd.x86.s[X86_S_SS], (int)cpu->cd.x86.rflags);
 	} else {
-#if 0
-if (cpu->cd.x86.mode == 32) {
-#endif
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
@@ -277,7 +274,7 @@ if (cpu->cd.x86.mode == 32) {
 
 	if (coprocs != 0) {
 		for (i=0; i<6; i++) {
-			debug("cpu%i: %s=0x%04x (", x, seg_names[i],
+			debug("cpu%i:  %s=0x%04x (", x, seg_names[i],
 			    cpu->cd.x86.s[i]);
 			if (cpu->cd.x86.descr_cache[i].valid) {
 				debug("base=0x%08x, limit=0x%08x, ",
@@ -294,14 +291,19 @@ if (cpu->cd.x86.mode == 32) {
 				debug("invalid");
 			debug(")\n");
 		}
-		debug("cpu%i: pic1 irr=0x%02x ier=0x%02x isr=0x%02x\n",
-		    x, cpu->machine->md.pc.pic1->irr,
-		    cpu->machine->md.pc.pic1->ier,
-		    cpu->machine->md.pc.pic1->isr);
-		debug("cpu%i: pic2 irr=0x%02x ier=0x%02x isr=0x%02x\n",
-		    x, cpu->machine->md.pc.pic2->irr,
-		    cpu->machine->md.pc.pic2->ier,
-		    cpu->machine->md.pc.pic2->isr);
+		debug("cpu%i:  gdtr=0x%08llx:0x%04x  idtr=0x%08llx:0x%04x "
+		    " ldtr=0x%08x:0x%04x\n", x, (long long)cpu->cd.x86.gdtr,
+		    (int)cpu->cd.x86.gdtr_limit, (long long)cpu->cd.x86.idtr,
+		    (int)cpu->cd.x86.idtr_limit, (long long)cpu->cd.x86.ldtr,
+		    (int)cpu->cd.x86.ldtr_limit);
+		debug("cpu%i:  pic1: irr=0x%02x ier=0x%02x isr=0x%02x "
+		    "base=0x%02x\n", x, cpu->machine->md.pc.pic1->irr,
+		    cpu->machine->md.pc.pic1->ier,cpu->machine->md.pc.pic1->isr,
+		    cpu->machine->md.pc.pic1->irq_base);
+		debug("cpu%i:  pic2: irr=0x%02x ier=0x%02x isr=0x%02x "
+		    "base=0x%02x\n", x, cpu->machine->md.pc.pic2->irr,
+		    cpu->machine->md.pc.pic2->ier,cpu->machine->md.pc.pic2->isr,
+		    cpu->machine->md.pc.pic2->irq_base);
 	} else if (PROTECTED_MODE) {
 		/*  Protected mode:  */
 		debug("cpu%i:  cs=0x%04x  ds=0x%04x  es=0x%04x  "
@@ -309,11 +311,6 @@ if (cpu->cd.x86.mode == 32) {
 		    (int)cpu->cd.x86.s[X86_S_CS], (int)cpu->cd.x86.s[X86_S_DS],
 		    (int)cpu->cd.x86.s[X86_S_ES], (int)cpu->cd.x86.s[X86_S_FS],
 		    (int)cpu->cd.x86.s[X86_S_GS], (int)cpu->cd.x86.s[X86_S_SS]);
-		debug("cpu%i:  gdtr=0x%08llx:0x%04x  idtr=0x%08llx:0x%04x "
-		    " ldtr=0x%08x:0x%04x\n", x, (long long)cpu->cd.x86.gdtr,
-		    (int)cpu->cd.x86.gdtr_limit, (long long)cpu->cd.x86.idtr,
-		    (int)cpu->cd.x86.idtr_limit, (long long)cpu->cd.x86.ldtr,
-		    (int)cpu->cd.x86.ldtr_limit);
 	}
 
 	if (PROTECTED_MODE) {
@@ -613,8 +610,119 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
 
 
 /*  (NOTE: Don't use the lowest 3 bits in these defines)  */
-#define	RELOAD_TR	0x1000
-#define	RELOAD_LDTR	0x1008
+#define	RELOAD_TR		0x1000
+#define	RELOAD_LDTR		0x1008
+
+
+/*
+ *  x86_task_switch():
+ *
+ *  Save away current state into the current task state segment, and
+ *  load the new state from the new task.
+ *
+ *  TODO: 16-bit TSS, etc. And clean up all of this :)
+ *
+ *  TODO: Link word. AMD64 stuff. And lots more.
+ */
+void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
+{
+	unsigned char old_descr[8];
+	unsigned char new_descr[8];
+	uint32_t value, ofs;
+	int i;
+	unsigned char buf[4];
+
+	fatal("x86_task_switch():\n");
+	cpu->pc = *curpc;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.gdtr + cpu->cd.x86.tr,
+	    old_descr, sizeof(old_descr), MEM_READ, NO_SEGMENTATION)) {
+		fatal("x86_task_switch(): TODO: 1\n");
+		cpu->running = 0;
+		return;
+	}
+
+	/*  Check the busy bit, and then clear it:  */
+	if (!(old_descr[5] & 0x02)) {
+		fatal("x86_task_switch(): TODO: switching FROM a non-BUSY"
+		    " TSS descriptor?\n");
+		cpu->running = 0;
+		return;
+	}
+	old_descr[5] &= ~0x02;
+	if (!cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.gdtr + cpu->cd.x86.tr,
+	    old_descr, sizeof(old_descr), MEM_WRITE, NO_SEGMENTATION)) {
+		fatal("x86_task_switch(): TODO: could not clear busy bit\n");
+		cpu->running = 0;
+		return;
+	}
+
+	x86_cpu_register_dump(cpu, 1, 1);
+
+	/*  Save away all the old registers:  */
+#define WRITE_VALUE { buf[0]=value; buf[1]=value>>8; buf[2]=value>>16; \
+	buf[3]=value>>24; cpu->memory_rw(cpu, cpu->mem, \
+	cpu->cd.x86.tr_base + ofs, buf, sizeof(buf), MEM_WRITE,  \
+	NO_SEGMENTATION); }
+
+	ofs = 0x20; value = *curpc; WRITE_VALUE;
+	ofs = 0x24; value = cpu->cd.x86.rflags; WRITE_VALUE;
+	for (i=0; i<N_X86_REGS; i++) {
+		ofs = 0x28+i*4; value = cpu->cd.x86.r[i]; WRITE_VALUE;
+	}
+	for (i=0; i<6; i++) {
+		ofs = 0x48+i*4; value = cpu->cd.x86.s[i]; WRITE_VALUE;
+	}
+
+	fatal("-------\n");
+
+	if ((cpu->cd.x86.tr & 0xfffc) == 0) {
+		fatal("TODO: x86_task_switch(): task switch, but old TR"
+		    " was 0?\n");
+		cpu->running = 0;
+		return;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.gdtr + new_tr,
+	    new_descr, sizeof(new_descr), MEM_READ, NO_SEGMENTATION)) {
+		fatal("x86_task_switch(): TODO: 1\n");
+		cpu->running = 0;
+		return;
+	}
+	if (new_descr[5] & 0x02) {
+		fatal("x86_task_switch(): TODO: switching TO an already BUSY"
+		    " TSS descriptor?\n");
+		cpu->running = 0;
+		return;
+	}
+
+	reload_segment_descriptor(cpu, RELOAD_TR, new_tr, NULL);
+
+	/*  Read new registers:  */
+#define READ_VALUE { cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.tr_base + \
+	ofs, buf, sizeof(buf), MEM_READ, NO_SEGMENTATION); \
+	value = buf[0] + (buf[1] << 8) + (buf[2] << 16) + (buf[3] << 24); }
+
+	ofs = 0x20; READ_VALUE; cpu->pc = value;
+	ofs = 0x24; READ_VALUE; cpu->cd.x86.rflags = value;
+	for (i=0; i<N_X86_REGS; i++) {
+		ofs = 0x28+i*4; READ_VALUE; cpu->cd.x86.r[i] = value;
+	}
+	for (i=0; i<6; i++) {
+		ofs = 0x48+i*4; READ_VALUE;
+		reload_segment_descriptor(cpu, i, value, NULL);
+	}
+
+	x86_cpu_register_dump(cpu, 1, 1);
+	fatal("-------\n");
+
+	*curpc = cpu->pc;
+
+cpu->machine->instruction_trace = 1;
+	/*  cpu->running = 0;  */
+}
+
+
 /*
  *  reload_segment_descriptor():
  *
@@ -622,15 +730,19 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
  *  segment descriptors.
  *
  *  This function can also be used to reload the TR (task register).
+ *
+ *  And also to do a task switch, or jump into a trap handler etc.
+ *  (Perhaps this function should be renamed.)
  */
-void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
+void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
+	uint64_t *curpcp)
 {
 	int res, i, readable, writable, granularity, descr_type;
 	int segment = 1, rpl;
 	unsigned char descr[8];
 	uint64_t base, limit;
 
-	if (segnr == RELOAD_TR || segnr == RELOAD_LDTR)
+	if (segnr > 0x100)	/*  arbitrary, larger than N_X86_SEGS  */
 		segment = 0;
 
 	if (segment && (segnr < 0 || segnr >= N_X86_SEGS)) {
@@ -658,16 +770,16 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector)
 	 *  Protected mode:  Load the descriptor cache from the GDT.
 	 */
 
+	if (selector & 4) {
+		fatal("TODO: x86 translation via LDT?\n");
+		cpu->running = 0;
+		return;
+	}
+
 	/*  Special case: Null-descriptor:  */
 	if (segment && (selector & ~7) == 0) {
 		cpu->cd.x86.descr_cache[segnr].valid = 0;
 		cpu->cd.x86.s[segnr] = selector;
-		return;
-	}
-
-	if (selector & 4) {
-		fatal("TODO: x86 translation via LDT?\n");
-		cpu->running = 0;
 		return;
 	}
 
@@ -712,15 +824,31 @@ for (i=0; i<8; i++)
 	fatal(" %02x", descr[i]);
 #endif
 
+	if (selector != 0x0000 && (descr[5] & 0x80) == 0x00) {
+		fatal("TODO: nonpresent descriptor?\n");
+		goto fail_dump;
+	}
+
 	if (!segment) {
-		switch (selector) {
+		switch (segnr) {
 		case RELOAD_TR:
+			/*  Check that this is indeed a TSS descriptor:  */
+			if ((descr[5] & 0x15) != 0x01) {
+				fatal("TODO: load TR but entry in table is"
+				    " not a TSS descriptor?\n");
+				goto fail_dump;
+			}
+
 			/*  Reload the task register:  */
 			cpu->cd.x86.tr = selector;
-			/*  TODO: Check that this is indeed a TSS descriptor  */
 			cpu->cd.x86.tr_base = base;
 			cpu->cd.x86.tr_limit = limit;
-			/*  TODO: Mark the new TSS as busy!  */
+
+			/*  Mark the TSS as busy:  */
+			descr[5] |= 0x02;
+			res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.gdtr +
+			    selector, descr, sizeof(descr), MEM_WRITE,
+			    NO_SEGMENTATION);
 			break;
 		case RELOAD_LDTR:
 			/*  Reload the Local Descriptor Table register:  */
@@ -747,6 +875,11 @@ for (i=0; i<8; i++)
 			fatal("TODO DATA\n");
 			goto fail_dump;
 		}
+	} else if (segnr == X86_S_CS && (descr[5] & 0x15) == 0x01
+	    && curpcp != NULL) {
+		/*  TSS  */
+		x86_task_switch(cpu, selector, curpcp);
+		return;
 	} else {
 		fatal("TODO: other\n");
 		goto fail_dump;
@@ -1955,17 +2088,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		SPACES; debug("scas%s", mode==16? "w" : (mode==32? "d" : "q"));
 	} else if (op >= 0xb0 && op <= 0xb7) {
 		imm = read_imm_and_print(&instr, &ilen, 8);
-		switch (op & 7) {
-		case 0: tmp = "al"; break;
-		case 1: tmp = "cl"; break;
-		case 2: tmp = "dl"; break;
-		case 3: tmp = "bl"; break;
-		case 4: tmp = "ah"; break;
-		case 5: tmp = "ch"; break;
-		case 6: tmp = "dh"; break;
-		case 7: tmp = "bh"; break;
-		}
-		SPACES; debug("mov\t%s,0x%x", tmp, imm);
+		SPACES; debug("mov\t%s,0x%x", reg_names_bytes[op&7], imm);
 	} else if (op >= 0xb8 && op <= 0xbf) {
 		imm = read_imm_and_print(&instr, &ilen, mode);
 		SPACES; debug("mov\t%s%s,0x%x", e, reg_names[op & 7], imm);
@@ -2039,9 +2162,8 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 3: mnem = "rcr"; break;
 		case 4: mnem = "shl"; break;
 		case 5: mnem = "shr"; break;
+		case 6: mnem = "sal"; break;
 		case 7: mnem = "sar"; break;
-		default:
-			SPACES; debug("UNIMPLEMENTED 0x%02x,0x%02x", op,*instr);
 		}
 		SPACES; debug("%s\t%s,", mnem, modrm_rm);
 		if (op <= 0xd1)
@@ -2401,7 +2523,7 @@ static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 
 	/*  TODO: up/down?  */
 	/*  TODO: stacksize?  */
-ssize = mode;
+/*  ssize = mode;  */
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
@@ -2427,7 +2549,7 @@ static int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
 
 	/*  TODO: up/down?  */
 	/*  TODO: stacksize?  */
-ssize = mode;
+/*  ssize = mode;  */
 
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
@@ -2574,7 +2696,7 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
 
 int_jump:
-	reload_segment_descriptor(cpu, X86_S_CS, seg);
+	reload_segment_descriptor(cpu, X86_S_CS, seg, &cpu->pc);
 	cpu->pc = ofs;
 
 	return 1;
@@ -3158,7 +3280,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		fatal("WARNING: pop cs\n");
 		if (!x86_pop(cpu, &tmp, mode))
 			return 0;
-		reload_segment_descriptor(cpu, X86_S_CS, tmp);
+		reload_segment_descriptor(cpu, X86_S_CS, tmp, &newpc);
 	} else if (op == 0x0f) {
 		uint64_t tmp;
 		unsigned char *instr_orig_2;
@@ -3208,14 +3330,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					modrm(cpu, MODRM_READ, 16, mode67,
 					    0, &instr, &newpc, &op1, &op2);
 					reload_segment_descriptor(cpu,
-					    RELOAD_LDTR, op1);
+					    RELOAD_LDTR, op1, &newpc);
 					break;
 				case 3:	/*  ltr  */
 					/*  TODO: Check cpl=0 and Prot.mode  */
 					modrm(cpu, MODRM_READ, 16, mode67,
 					    0, &instr, &newpc, &op1, &op2);
 					reload_segment_descriptor(cpu,
-					    RELOAD_TR, op1);
+					    RELOAD_TR, op1, &newpc);
 					break;
 				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
 					    ",0x%02x\n", op, imm, *instr);
@@ -3355,7 +3477,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0xa1:
 				if (!x86_pop(cpu, &tmp, mode))
 					return 0;
-				reload_segment_descriptor(cpu, X86_S_FS, tmp);
+				reload_segment_descriptor(cpu, X86_S_FS,
+				    tmp, &newpc);
 				break;
 			case 0xa2:
 				if (!(cpu->cd.x86.rflags & X86_FLAGS_ID))
@@ -3411,7 +3534,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case 0xa9:
 				if (!x86_pop(cpu, &tmp, mode))
 					return 0;
-				reload_segment_descriptor(cpu, X86_S_GS, tmp);
+				reload_segment_descriptor(cpu, X86_S_GS,
+				    tmp, &newpc);
 				break;
 			case 0xa3:		/*  BT  */
 			case 0xab:		/*  BTS  */
@@ -3509,7 +3633,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
 					return 0;
 				reload_segment_descriptor(cpu, imm==0xb2?
-				    X86_S_SS:(imm==0xb4?X86_S_FS:X86_S_GS),tmp);
+				    X86_S_SS:(imm==0xb4?X86_S_FS:X86_S_GS),
+				    tmp, &newpc);
 				modrm(cpu, MODRM_WRITE_R, mode, mode67,
 				    0, &instr_orig, NULL, &op1, &op2);
 				break;
@@ -3673,7 +3798,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		success = x86_pop(cpu, &tmp, mode);
 		if (!success)
 			return 0;
-		reload_segment_descriptor(cpu, op/8, tmp);
+		reload_segment_descriptor(cpu, op/8, tmp, &newpc);
 	} else if (op == 0x27) {			/*  DAA  */
 		int a = (cpu->cd.x86.r[X86_R_AX] >> 4) & 0xf;
 		int b = cpu->cd.x86.r[X86_R_AX] & 0xf;
@@ -3948,7 +4073,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 		} else {
 			reload_segment_descriptor(cpu, (*instr_orig >> 3) & 7,
-			    op1 & 0xffff);
+			    op1 & 0xffff, &newpc);
 		}
 	} else if (op == 0x8d) {			/*  LEA  */
 		instr_orig = instr;
@@ -4008,14 +4133,16 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.x86.r[X86_R_DX] = 0xffffffff;
 		}
 	} else if (op == 0x9a) {	/*  CALL seg:ofs  */
+		uint16_t old_tr = cpu->cd.x86.tr;
 		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);
 		if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
 			return 0;
 		if (!x86_push(cpu, newpc, mode))
 			return 0;
-		reload_segment_descriptor(cpu, X86_S_CS, imm2);
-		newpc = imm;
+		reload_segment_descriptor(cpu, X86_S_CS, imm2, &newpc);
+		if (cpu->cd.x86.tr == old_tr)
+			newpc = imm;
 	} else if (op == 0x9b) {		/*  WAIT  */
 	} else if (op == 0x9c) {		/*  PUSHF  */
 		if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
@@ -4261,7 +4388,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		op2 = tmp;
 		if (!x86_load(cpu, op1 + mode/8, &tmp, 2))
 			return 0;
-		reload_segment_descriptor(cpu, op==0xc4? X86_S_ES:X86_S_DS,tmp);
+		reload_segment_descriptor(cpu, op==0xc4? X86_S_ES:X86_S_DS,
+		    tmp, &newpc);
 		modrm(cpu, MODRM_WRITE_R, mode, mode67,
 		    0, &instr_orig, NULL, &op1, &op2);
 	} else if (op >= 0xc6 && op <= 0xc7) {
@@ -4324,6 +4452,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.x86.r[X86_R_BP] = tmp;
 	} else if (op == 0xca || op == 0xcb) {	/*  RET far  */
 		uint64_t tmp2;
+		uint16_t old_tr = cpu->cd.x86.tr;
 		if (op == 0xca)
 			imm = read_imm(&instr, &newpc, 16);
 		else
@@ -4334,10 +4463,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		success = x86_pop(cpu, &tmp2, mode);
 		if (!success)
 			return 0;
-		newpc = tmp;
-		reload_segment_descriptor(cpu, X86_S_CS, tmp2);
 		cpu->cd.x86.r[X86_R_SP] = modify(cpu->cd.x86.r[X86_R_SP],
 		    cpu->cd.x86.r[X86_R_SP] + imm);
+		reload_segment_descriptor(cpu, X86_S_CS, tmp2, &newpc);
+		if (cpu->cd.x86.tr == old_tr)
+			newpc = tmp;
 	} else if (op == 0xcc) {	/*  INT3  */
 		cpu->pc = newpc;
 		return x86_interrupt(cpu, 3, 0);
@@ -4347,20 +4477,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		return x86_interrupt(cpu, imm, 0);
 	} else if (op == 0xcf) {	/*  IRET  */
 		uint64_t tmp2, tmp3;
+		uint16_t old_tr = cpu->cd.x86.tr;
 		if (!x86_pop(cpu, &tmp, mode))
 			return 0;
 		if (!x86_pop(cpu, &tmp2, mode))
 			return 0;
 		if (!x86_pop(cpu, &tmp3, mode))
 			return 0;
-		newpc = tmp;
-		reload_segment_descriptor(cpu, X86_S_CS, tmp2);
 		if (mode == 16)
 			cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
 			    | (tmp3 & 0xffff);
 		else
 			cpu->cd.x86.rflags = tmp3;
 		/*  TODO: only affect some bits?  */
+		reload_segment_descriptor(cpu, X86_S_CS, tmp2, &newpc);
+		if (cpu->cd.x86.tr == old_tr)
+			newpc = tmp;
 	} else if (op >= 0xd0 && op <= 0xd3) {
 		int n = 1;
 		instr_orig = instr;
@@ -4563,10 +4695,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		newpc += imm;
 	} else if (op == 0xea) {	/*  JMP seg:ofs  */
+		uint16_t old_tr = cpu->cd.x86.tr;
 		imm = read_imm(&instr, &newpc, mode);
 		imm2 = read_imm(&instr, &newpc, 16);
-		reload_segment_descriptor(cpu, X86_S_CS, imm2);
-		newpc = imm;
+		reload_segment_descriptor(cpu, X86_S_CS, imm2, &newpc);
+		if (cpu->cd.x86.tr == old_tr)
+			newpc = imm;
 	} else if ((op >= 0xe0 && op <= 0xe3) || op == 0xeb) {	/*  LOOP,JMP */
 		int perform_jump = 0;
 		imm = read_imm(&instr, &newpc, 8);
@@ -4862,6 +4996,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
+				uint16_t old_tr = cpu->cd.x86.tr;
 				uint64_t tmp1, tmp2;
 				success = modrm(cpu, MODRM_READ, mode, mode67,
 				    MODRM_JUST_GET_ADDR, &instr,
@@ -4876,8 +5011,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				/*  Push return CS:[E]IP  */
 				x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode);
 				x86_push(cpu, newpc, mode);
-				newpc = tmp1;
-				reload_segment_descriptor(cpu, X86_S_CS, tmp2);
+				reload_segment_descriptor(cpu, X86_S_CS,
+				    tmp2, &newpc);
+				if (cpu->cd.x86.tr == old_tr)
+					newpc = tmp1;
 			}
 			break;
 		case 4:	if (op == 0xfe) {
@@ -4903,6 +5040,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    really_orig_instr, 1|omode, 0, 0);
 				cpu->running = 0;
 			} else {
+				uint16_t old_tr = cpu->cd.x86.tr;
 				uint64_t tmp1, tmp2;
 				success = modrm(cpu, MODRM_READ, mode, mode67,
 				    MODRM_JUST_GET_ADDR, &instr,
@@ -4914,8 +5052,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					return 0;
 				if (!x86_load(cpu, op1 + (mode/8), &tmp2, 2))
 					return 0;
-				newpc = tmp1;
-				reload_segment_descriptor(cpu, X86_S_CS, tmp2);
+				reload_segment_descriptor(cpu, X86_S_CS,
+				    tmp2, &newpc);
+				if (cpu->cd.x86.tr == old_tr)
+					newpc = tmp1;
 			}
 			break;
 		case 6:	if (op == 0xfe) {

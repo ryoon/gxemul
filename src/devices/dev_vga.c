@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.65 2005-05-24 15:13:37 debug Exp $
+ *  $Id: dev_vga.c,v 1.66 2005-05-24 15:52:57 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -98,8 +98,8 @@ struct vga_data {
 	size_t		gfx_mem_size;
 
 	/*  Registers:  */
-	unsigned char	attribute_reg_select;
 	int		attribute_state;	/*  0 or 1  */
+	unsigned char	attribute_reg_select;
 	unsigned char	attribute_reg[256];
 
 	unsigned char	misc_output_reg;
@@ -890,8 +890,8 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 				odata = d->sequencer_reg[
 				    d->sequencer_reg_select];
 			else {
-				d->sequencer_reg[d->sequencer_reg_select] =
-				    idata;
+				d->sequencer_reg[d->
+				    sequencer_reg_select] = idata;
 				vga_sequencer_reg_write(cpu->machine, d,
 				    d->sequencer_reg_select, idata);
 			}
@@ -1011,6 +1011,9 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 				    " ]\n", (long)relative_addr, (int)idata);
 			}
 		}
+
+		/*  For multi-byte accesses:  */
+		relative_addr ++;
 	}
 
 	if (writeflag == MEM_READ)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.145 2005-05-24 15:13:36 debug Exp $
+ *  $Id: cpu_x86.c,v 1.146 2005-05-24 15:52:56 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -4550,8 +4550,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		x86_calc_flags(cpu, cpu->cd.x86.r[X86_R_AX],
 		    0, 8, CALCFLAGS_OP_XOR);
 	} else if (op == 0xd7) {		/*  XLAT  */
-		if (!x86_load(cpu, cpu->cd.x86.r[X86_R_BX] +
-		    (cpu->cd.x86.r[X86_R_AX] & 0xff), &tmp, 1))
+		uint64_t addr = cpu->cd.x86.r[X86_R_BX];
+		if (mode == 16)
+			addr &= 0xffff;
+		addr += (cpu->cd.x86.r[X86_R_AX] & 0xff);
+		if (!x86_load(cpu, addr, &tmp, 1))
 			return 0;
 		cpu->cd.x86.r[X86_R_AX] = (cpu->cd.x86.r[X86_R_AX] & ~0xff)
 		    | (tmp & 0xff);

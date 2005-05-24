@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.92 2005-05-24 11:14:51 debug Exp $
+ *  $Id: pc_bios.c,v 1.93 2005-05-24 15:52:56 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -252,20 +252,16 @@ static void set_palette(struct cpu *cpu, int n, int r, int g, int b)
 {
 	unsigned char byte = n;
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
-	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-	    PHYSICAL);
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = r;
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-	    PHYSICAL);
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = g;
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-	    PHYSICAL);
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = b;
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
-	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-	    PHYSICAL);
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 }
 
 
@@ -276,8 +272,7 @@ static void get_palette(struct cpu *cpu, int n, unsigned char *rgb)
 {
 	unsigned char byte = n;
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c8,
-	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE |
-	    PHYSICAL);
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,
 	    &rgb[0], 1, MEM_READ, CACHE_NONE | PHYSICAL);
 	cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + 0x3c9,

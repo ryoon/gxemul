@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.63 2005-05-24 11:14:52 debug Exp $
+ *  $Id: dev_vga.c,v 1.64 2005-05-24 14:54:32 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -43,6 +43,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "vga.h"
 
 /*  These are generated from binary font files:  */
 #include "fonts/font8x8.c"
@@ -95,16 +97,28 @@ struct vga_data {
 	unsigned char	*gfx_mem;
 	size_t		gfx_mem_size;
 
-	unsigned char	selected_register;
-	unsigned char	reg[256];
+	/*  Registers:  */
+	unsigned char	attribute_reg_select;
+	int		attribute_state;	/*  0 or 1  */
+	unsigned char	attribute_reg[256];
 
-	int		other_select;
-	unsigned char	mask_reg;
-	int		pixel_mask_select;
+	unsigned char	misc_output_reg;
 
-	int		palette_index;
-	int		palette_subindex;
+	unsigned char	sequencer_reg_select;
+	unsigned char	sequencer_reg[256];
 
+	unsigned char	graphcontr_reg_select;
+	unsigned char	graphcontr_reg[256];
+
+	unsigned char	crtc_reg_select;
+	unsigned char	crtc_reg[256];
+
+	unsigned char	palette_read_index;
+	char		palette_read_subindex;
+	unsigned char	palette_write_index;
+	char		palette_write_subindex;
+
+	/*  Misc.:  */
 	int		console_handle;
 
 	int		cursor_x;
@@ -118,6 +132,30 @@ struct vga_data {
 	int		update_x2;
 	int		update_y2;
 };
+
+
+/*
+ *  register_reset():
+ *
+ *  Resets many registers to sane values.
+ */
+static void register_reset(struct vga_data *d)
+{
+	/*  Home cursor:  */
+	d->cursor_x = d->cursor_y = 0;
+	d->crtc_reg[0x0e] = d->crtc_reg[0x0f] = 0;
+
+	/*  Reset cursor scanline stuff:  */
+	d->cursor_scanline_start = d->font_size - 4;
+	d->cursor_scanline_end = d->font_size - 2;
+	d->crtc_reg[0x0a] = d->cursor_scanline_start;
+	d->crtc_reg[0x0b] = d->cursor_scanline_end;
+
+	d->sequencer_reg[VGA_SEQ_MAP_MASK] = 0x0f;
+	d->graphcontr_reg[VGA_GRAPHCONTR_MASK] = 0xff;
+
+	d->misc_output_reg = VGA_MISC_OUTPUT_IOAS;
+}
 
 
 static void c_putstr(struct vga_data *d, char *s)
@@ -503,11 +541,13 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 				for (j=0; j<8; j++) {
 					int pixelmask = 1 << (7-j);
 					int b = data[i] & pixelmask;
-					int m = d->mask_reg & 0x0f;
+					int m = d->sequencer_reg[
+					    VGA_SEQ_MAP_MASK] & 0x0f;
 					int addr = (y * d->max_x + x + i*8 + j)
 					    * d->bits_per_pixel / 8;
 					unsigned char byte;
-					if (!(d->pixel_mask_select & pixelmask))
+					if (!(d->graphcontr_reg[
+					    VGA_GRAPHCONTR_MASK] & pixelmask))
 						continue;
 					if (addr >= d->gfx_mem_size)
 						continue;
@@ -525,9 +565,9 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 			modified = 1;
 		} else {
 			fatal("TODO: 4 bit graphics read, mask=0x%02x\n",
-			    d->mask_reg);
+			    d->sequencer_reg[VGA_SEQ_MAP_MASK]);
 			for (i=0; i<len; i++)
-				data[i] = 0xff;
+				data[i] = random();
 		}
 		break;
 	default:fatal("dev_vga: Unimplemented graphics mode %i\n",
@@ -624,31 +664,31 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 
 /*
- *  vga_reg_write():
+ *  vga_crtc_reg_write():
  *
- *  Writes to VGA control registers.
+ *  Writes to VGA CRTC registers.
  */
-static void vga_reg_write(struct machine *machine, struct vga_data *d,
+static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 	int regnr, int idata)
 {
 	int ofs, grayscale;
 
 	switch (regnr) {
 	case 0x0a:
-		d->cursor_scanline_start = d->reg[0x0a];
+		d->cursor_scanline_start = d->crtc_reg[0x0a];
 		break;
 	case 0x0b:
-		d->cursor_scanline_end = d->reg[0x0b];
+		d->cursor_scanline_end = d->crtc_reg[0x0b];
 		break;
 	case 0x0e:
 	case 0x0f:
-		ofs = d->reg[0x0e] * 256 + d->reg[0x0f];
+		ofs = d->crtc_reg[0x0e] * 256 + d->crtc_reg[0x0f];
 		d->cursor_x = ofs % d->max_x;
 		d->cursor_y = ofs / d->max_x;
 		break;
 	case 0xff:
 		grayscale = 0;
-		switch (d->reg[0xff]) {
+		switch (d->crtc_reg[0xff]) {
 		case 0x00:
 			grayscale = 1;
 		case 0x01:
@@ -688,7 +728,7 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 			break;
 		default:
 			fatal("TODO! video mode change hack (mode 0x%02x)\n",
-			    d->reg[0xff]);
+			    d->crtc_reg[0xff]);
 			exit(1);
 		}
 
@@ -721,47 +761,60 @@ static void vga_reg_write(struct machine *machine, struct vga_data *d,
 		d->update_y2 = d->max_y - 1;
 		d->modified = 1;
 		reset_palette(d, grayscale);
-
-		/*  Home cursor:  */
-		d->cursor_x = d->cursor_y = 0;
-		d->reg[0x0e] = d->reg[0x0f] = 0;
-
-		/*  Reset cursor scanline stuff:  */
-		d->cursor_scanline_start = d->font_size - 4;
-		d->cursor_scanline_end = d->font_size - 2;
-		d->reg[0x0a] = d->cursor_scanline_start;
-		d->reg[0x0b] = d->cursor_scanline_end;
-
-		/*  TODO: refactor  */
-		d->other_select = -1;
-		d->mask_reg = 0x0f;
-		d->pixel_mask_select = 0xff;
+		register_reset(d);
 		break;
-	default:fatal("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n",
+	default:fatal("[ vga_crtc_reg_write: regnr=0x%02x idata=0x%02x ]\n",
 		    regnr, idata);
 	}
 }
 
 
 /*
- *  vga_other():
+ *  vga_sequencer_reg_write():
+ *
+ *  Writes to VGA Sequencer registers.
  */
-static int vga_other(struct cpu *cpu, struct vga_data *d, int value,
-	int writeflag)
+static void vga_sequencer_reg_write(struct machine *machine, struct vga_data *d,
+	int regnr, int idata)
 {
-	int retval = 0;
-	switch (d->other_select) {
-	case 0x02:
-		if (writeflag)
-			d->mask_reg = value;
-		else
-			retval = d->mask_reg;
+	switch (regnr) {
+	case VGA_SEQ_MAP_MASK:		/*  0x02  */
 		break;
-	default:fatal("[ vga_other: %s select %i ]\n", writeflag?
-		    "write to" : "read from", d->other_select);
+	default:fatal("[ vga_sequencer_reg_write: select %i ]\n", regnr);
 		/*  cpu->running = 0;  */
 	}
-	return retval;
+}
+
+
+/*
+ *  vga_graphcontr_reg_write():
+ *
+ *  Writes to VGA Graphics Controller registers.
+ */
+static void vga_graphcontr_reg_write(struct machine *machine,
+	struct vga_data *d, int regnr, int idata)
+{
+	switch (regnr) {
+	case VGA_GRAPHCONTR_MASK:		/*  0x08  */
+		break;
+	default:fatal("[ vga_graphcontr_reg_write: select %i ]\n", regnr);
+		/*  cpu->running = 0;  */
+	}
+}
+
+
+/*
+ *  vga_attribute_reg_write():
+ *
+ *  Writes to VGA Attribute registers.
+ */
+static void vga_attribute_reg_write(struct machine *machine, struct vga_data *d,
+	int regnr, int idata)
+{
+	switch (regnr) {
+	default:fatal("[ vga_attribute_reg_write: select %i ]\n", regnr);
+		/*  cpu->running = 0;  */
+	}
 }
 
 
@@ -781,37 +834,101 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 	for (i=0; i<len; i++) {
 		idata = data[i];
 
+		/*  0x3C0 + relative_addr...  */
+
 		switch (relative_addr) {
-		case 0x01:	/*  "Other video attributes"  */
-			odata = 0xff;	/*  ?  */
-			break;
-		case 0x04:
-			if (writeflag == MEM_WRITE) {
-				if (d->other_select < 0)
-					d->other_select = idata;
+
+		case VGA_ATTRIBUTE_ADDR:		/*  0x00  */
+			switch (d->attribute_state) {
+			case 0:	if (writeflag == MEM_READ)
+					odata = d->attribute_reg_select;
 				else {
-					vga_other(cpu, d, idata, MEM_WRITE);
-					d->other_select = -1;
+					d->attribute_reg_select = 1;
+					d->attribute_state = 1;
 				}
-			} else {
-				odata = vga_other(cpu, d, idata, MEM_READ);
+				break;
+			case 1:	d->attribute_state = 0;
+				d->attribute_reg[d->attribute_reg_select] =
+				    idata;
+				vga_attribute_reg_write(cpu->machine, d,
+				    d->attribute_reg_select, idata);
+				break;
 			}
 			break;
-		case 0x08:
+		case VGA_ATTRIBUTE_DATA_READ:		/*  0x01  */
+			if (writeflag == MEM_WRITE)
+				fatal("[ dev_vga: WARNING: Write to "
+				    "VGA_ATTRIBUTE_DATA_READ? ]\n");
+			else {
+				if (d->attribute_state == 0)
+					fatal("[ dev_vga: WARNING: Read from "
+					    "VGA_ATTRIBUTE_DATA_READ, but no"
+					    " register selected? ]\n");
+				else
+					odata = d->attribute_reg[
+					    d->attribute_reg_select];
+			}
+			break;
+
+		case VGA_MISC_OUTPUT_W:			/*  0x02  */
+			if (writeflag == MEM_WRITE)
+				d->misc_output_reg = idata;
+			else {
+				/*  Reads: Input Status 0  */
+				odata = 0x00;
+			}
+			break;
+
+		case VGA_SEQUENCER_ADDR:		/*  0x04  */
+			if (writeflag == MEM_READ)
+				odata = d->sequencer_reg_select;
+			else
+				d->sequencer_reg_select = idata;
+			break;
+		case VGA_SEQUENCER_DATA:		/*  0x05  */
+			if (writeflag == MEM_READ)
+				odata = d->sequencer_reg[
+				    d->sequencer_reg_select];
+			else {
+				d->sequencer_reg[d->sequencer_reg_select] =
+				    idata;
+				vga_sequencer_reg_write(cpu->machine, d,
+				    d->sequencer_reg_select, idata);
+			}
+			break;
+
+		case VGA_DAC_ADDR_READ:			/*  0x07  */
 			if (writeflag == MEM_WRITE) {
-				d->palette_index = idata;
-				d->palette_subindex = 0;
+				d->palette_read_index = idata;
+				d->palette_read_subindex = 0;
 			} else {
-				odata = d->palette_index;
+				fatal("[ dev_vga: WARNING: Read from "
+				    "VGA_DAC_ADDR_READ? TODO ]\n");
+				/*  TODO  */
 			}
 			break;
-		case 0x09:
+		case VGA_DAC_ADDR_WRITE:		/*  0x08  */
+			if (writeflag == MEM_WRITE) {
+				d->palette_write_index = idata;
+				d->palette_write_subindex = 0;
+
+				/*  TODO: Is this correct?  */
+				d->palette_read_index = idata;
+				d->palette_read_subindex = 0;
+			} else {
+				fatal("[ dev_vga: WARNING: Read from "
+				    "VGA_DAC_ADDR_WRITE? ]\n");
+				odata = d->palette_write_index;
+			}
+			break;
+		case VGA_DAC_DATA:			/*  0x09  */
 			if (writeflag == MEM_WRITE) {
 				int new = (idata & 63) << 2;
-				int old = d->fb->rgb_palette[d->palette_index*3+
-				    d->palette_subindex];
-				d->fb->rgb_palette[d->palette_index * 3 +
-				    d->palette_subindex] = new;
+				int old = d->fb->rgb_palette[d->
+				    palette_write_index*3+d->
+				    palette_write_subindex];
+				d->fb->rgb_palette[d->palette_write_index * 3 +
+				    d->palette_write_subindex] = new;
 				/*  Redraw whole screen, if the
 				    palette changed:  */
 				if (new != old) {
@@ -820,45 +937,66 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 					d->update_x2 = d->max_x - 1;
 					d->update_y2 = d->max_y - 1;
 				}
+				d->palette_write_subindex ++;
+				if (d->palette_write_subindex == 3) {
+					d->palette_write_index ++;
+					d->palette_write_subindex = 0;
+				}
 			} else {
-				odata = (d->fb->rgb_palette[d->palette_index*3+
-				    d->palette_subindex] >> 2) & 63;
+				odata = (d->fb->rgb_palette[d->
+				    palette_read_index * 3 +
+				    d->palette_read_subindex] >> 2) & 63;
+				d->palette_read_subindex ++;
+				if (d->palette_read_subindex == 3) {
+					d->palette_read_index ++;
+					d->palette_read_subindex = 0;
+				}
 			}
-			d->palette_subindex ++;
-			if (d->palette_subindex == 3) {
-				d->palette_index ++;
-				d->palette_subindex = 0;
-			}
-			d->palette_index &= 255;
 			break;
-		case 0x0c:	/*  VGA graphics 1 position  */
-			odata = 1;	/*  ?  */
+
+		case VGA_MISC_OUTPUT_R:
+			odata = d->misc_output_reg;
 			break;
-		case 0x0f:
-			if (writeflag == MEM_WRITE) {
-/* idata = (idata >> 4) | (idata << 4); */
-				d->pixel_mask_select = idata;
-			} else
-				fatal("TODO: read of pixel_mask_select\n");
-			break;
-		case 0x14:	/*  register select  */
+
+		case VGA_GRAPHCONTR_ADDR:		/*  0x0e  */
 			if (writeflag == MEM_READ)
-				odata = d->selected_register;
+				odata = d->graphcontr_reg_select;
 			else
-				d->selected_register = idata;
+				d->graphcontr_reg_select = idata;
 			break;
-		case 0x15:	if (writeflag == MEM_READ)
-				odata = d->reg[d->selected_register];
+		case VGA_GRAPHCONTR_DATA:		/*  0x0f  */
+			if (writeflag == MEM_READ)
+				odata = d->graphcontr_reg[
+				    d->graphcontr_reg_select];
 			else {
-				d->reg[d->selected_register] = idata;
-				vga_reg_write(cpu->machine, d,
-				    d->selected_register, idata);
+				d->graphcontr_reg[d->
+				    graphcontr_reg_select] = idata;
+				vga_graphcontr_reg_write(cpu->machine, d,
+				    d->graphcontr_reg_select, idata);
 			}
 			break;
-		case 0x1a:	/*  Status register  */
-			odata = 1;	/*  Display enabled  */
-			/*  odata |= 16;  */  /*  Vertical retrace  */
+
+		case VGA_CRTC_ADDR:			/*  0x14  */
+			if (writeflag == MEM_READ)
+				odata = d->crtc_reg_select;
+			else
+				d->crtc_reg_select = idata;
 			break;
+		case VGA_CRTC_DATA:			/*  0x15  */
+			if (writeflag == MEM_READ)
+				odata = d->crtc_reg[d->crtc_reg_select];
+			else {
+				d->crtc_reg[d->crtc_reg_select] = idata;
+				vga_crtc_reg_write(cpu->machine, d,
+				    d->crtc_reg_select, idata);
+			}
+			break;
+
+		case VGA_INPUT_STATUS_1:	/*  0x1A  */
+			odata = VGA_IS1_DISPLAY_ENABLE;
+			/*  odata |= VGA_IS1_DISPLAY_VRETRACE;  */
+			break;
+
 		default:
 			if (writeflag==MEM_READ) {
 				fatal("[ vga_ctrl: read from 0x%08lx ]\n",
@@ -967,17 +1105,15 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	vga_update_cursor(machine, d);
 
-	d->reg[0x0a] = d->cursor_scanline_start;
-	d->reg[0x0b] = d->cursor_scanline_end;
+	d->crtc_reg[0x0a] = d->cursor_scanline_start;
+	d->crtc_reg[0x0b] = d->cursor_scanline_end;
 
 	tmpi = d->cursor_y * d->max_x + d->cursor_x;
-	d->reg[0x0e] = tmpi >> 8;
-	d->reg[0x0f] = tmpi;
+	d->crtc_reg[0x0e] = tmpi >> 8;
+	d->crtc_reg[0x0f] = tmpi;
 
-	d->reg[0xff] = 0x03;
+	d->crtc_reg[0xff] = 0x03;
 
-	d->other_select = -1;
-	d->mask_reg = 0x0f;
-	d->pixel_mask_select = 0xff;
+	register_reset(d);
 }
 

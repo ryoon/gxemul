@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.95 2005-05-25 06:40:18 debug Exp $
+ *  $Id: pc_bios.c,v 1.96 2005-05-25 13:59:36 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -86,7 +86,6 @@ extern unsigned char font8x8[];
 static struct pc_bios_disk *add_disk(struct machine *machine, int biosnr,
 	int id, int type)
 {
-	uint64_t bytespercyl;
 	struct pc_bios_disk *p = malloc(sizeof(struct pc_bios_disk));
 
 	if (p == NULL) {

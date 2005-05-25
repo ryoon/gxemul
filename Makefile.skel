@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.29 2005-05-03 15:55:29 debug Exp $
+#  $Id: Makefile.skel,v 1.30 2005-05-25 06:41:19 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -30,9 +30,10 @@ clean:
 	rm -f $(BIN) *core core.* *.gmon _*
 	cd src; $(MAKE) clean; cd ..
 
-#  Tests are not cleaned on a normal clean, only on a clean_all.
+#  Tests and experiments are not cleaned on a normal clean, only on a clean_all.
 
 clean_all: clean
 	cd tests; $(MAKE) clean_all; cd ..
+	cd experiments; $(MAKE) clean_all; cd ..
 	rm -f config.h Makefile src/Makefile src/devices/Makefile src/devices/fonts/Makefile tests/Makefile
 

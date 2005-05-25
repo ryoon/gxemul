@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.235 2005-05-18 10:07:53 debug Exp $
+ *  $Id: main.c,v 1.236 2005-05-25 06:40:18 debug Exp $
  */
 
 #include <stdio.h>
@@ -226,17 +226,19 @@ static void usage(int longusage)
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\""
 	    " as a prefix\n");
 	printf("            where xxx is one or more of the following:\n");
-	printf("                b     specifies that this is the boot"
+	printf("                b      specifies that this is the boot"
 	    " device\n");
-	printf("                c     CD-ROM\n");
-	printf("                d     DISK\n");
-	printf("                f     FLOPPY\n");
-	printf("                i     IDE\n");
-	printf("                r     read-only (don't allow changes to the"
+	printf("                c      CD-ROM\n");
+	printf("                d      DISK\n");
+	printf("                f      FLOPPY\n");
+	printf("                gH;S;  set geometry to H heads and S"
+	    " sectors-per-track\n");
+	printf("                i      IDE\n");
+	printf("                r      read-only (don't allow changes to the"
 	    " file)\n");
-	printf("                s     SCSI\n");
-	printf("                t     tape\n");
-	printf("                0-7   force a specific ID\n");
+	printf("                s      SCSI\n");
+	printf("                t      tape\n");
+	printf("                0-7    force a specific ID\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects"
 	    " rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic"

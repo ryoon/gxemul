@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.758 2005-05-24 20:26:47 debug Exp $
+$Id: HISTORY,v 1.759 2005-05-25 06:40:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1940,3 +1940,5 @@ Changelog for GXemul:
 		More work on dev_vga.
 		Adding support for Trap Flag (single-step exceptions), at least
 		in real mode, and various other x86-related fixes.
+20050525	Adding a new disk image prefix (gH;S;) which can be used to
+		override the default nr of heads and sectors per track.

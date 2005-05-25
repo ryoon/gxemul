@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.94 2005-05-24 16:20:51 debug Exp $
+ *  $Id: pc_bios.c,v 1.95 2005-05-25 06:40:18 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -100,26 +100,8 @@ static struct pc_bios_disk *add_disk(struct machine *machine, int biosnr,
 	p->nr = biosnr; p->id = id; p->type = type;
 
 	p->size = diskimage_getsize(machine, id, type);
-
-	switch (type) {
-	case DISKIMAGE_FLOPPY:
-		if (p->size < 737280) {
-			fatal("\nTODO: add_disk() in pc_bios.c: small (non-80-"
-			    "cylinder) floppies?\n\n");
-			exit(1);
-		}
-		p->cylinders = 80;
-		p->heads = 2;
-		p->sectorspertrack = p->size / (p->cylinders * p->heads * 512);
-		break;
-	default:/*  Non-floppies:  */
-		p->heads = 15;
-		p->sectorspertrack = 63;
-		bytespercyl = p->heads * p->sectorspertrack * 512;
-		p->cylinders = p->size / bytespercyl;
-		if (p->cylinders * bytespercyl < p->size)
-			p->cylinders ++;
-	}
+	diskimage_getchs(machine, id, type, &p->cylinders, &p->heads,
+	    &p->sectorspertrack);
 
 	return p;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.88 2005-05-19 04:28:04 debug Exp $
+ *  $Id: diskimage.c,v 1.89 2005-05-25 06:40:18 debug Exp $
  *
  *  Disk image support.
  *
@@ -36,7 +36,8 @@
  *         that return feof (which results in a filemark).  This is probably
  *         trivial to fix, but I don't feel like it right now.
  *
- *  TODO:  diskimage_remove() ?
+ *  TODO:  diskimage_remove()? This would be useful for floppies in PC-style
+ *	   machines, where disks may need to be swapped during boot etc.
  */
 
 #include <stdio.h>
@@ -274,6 +275,31 @@ int64_t diskimage_getsize(struct machine *machine, int id, int type)
 		d = d->next;
 	}
 	return -1;
+}
+
+
+/*
+ *  diskimage_getchs():
+ *
+ *  Returns the current CHS values of a disk image.
+ */
+void diskimage_getchs(struct machine *machine, int id, int type,
+	int *c, int *h, int *s)
+{
+	struct diskimage *d = machine->first_diskimage;
+
+	while (d != NULL) {
+		if (d->type == type && d->id == id) {
+			*c = d->cylinders;
+			*h = d->heads;
+			*s = d->sectors_per_track;
+			return;
+		}
+		d = d->next;
+	}
+	fatal("diskimage_getchs(): disk id %i (type %i) not found?\n",
+	    id, diskimage_types[type]);
+	exit(1);
 }
 
 
@@ -1323,10 +1349,12 @@ int diskimage_access(struct machine *machine, int id, int type, int writeflag,
  *  The filename may be prefixed with one or more modifiers, followed
  *  by a colon.
  *
- *	b	specifies that this is the boot device
- *	c	CD-ROM (instead of normal SCSI DISK)
+ *	b	specifies that this is a bootable device
+ *	c	CD-ROM (instead of a normal DISK)
  *	d	DISK (this is the default)
  *	f	FLOPPY (instead of SCSI)
+ *	gH;S;	set geometry (H=heads, S=sectors per track, cylinders are
+ *		automatically calculated). (This is ignored for floppies.)
  *	i	IDE (instead of SCSI)
  *	r       read-only (don't allow changes to the file)
  *	s	SCSI (this is the default)
@@ -1339,17 +1367,11 @@ int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 int diskimage_add(struct machine *machine, char *fname)
 {
 	struct diskimage *d, *d2;
-	int id = 0;
+	int id = 0, override_heads=0, override_spt=0;
+	int64_t bytespercyl;
 	char *cp;
-	int prefix_b = 0;
-	int prefix_c = 0;
-	int prefix_d = 0;
-	int prefix_f = 0;
-	int prefix_i = 0;
-	int prefix_r = 0;
-	int prefix_s = 0;
-	int prefix_t = 0;
-	int prefix_id = -1;
+	int prefix_b=0, prefix_c=0, prefix_d=0, prefix_f=0, prefix_g=0;
+	int prefix_i=0, prefix_r=0, prefix_s=0, prefix_t=0, prefix_id = -1;
 
 	if (fname == NULL) {
 		fprintf(stderr, "diskimage_add(): NULL ptr\n");
@@ -1383,6 +1405,27 @@ int diskimage_add(struct machine *machine, char *fname)
 				break;
 			case 'f':
 				prefix_f = 1;
+				break;
+			case 'g':
+				prefix_g = 1;
+				override_heads = atoi(fname);
+				while (*fname != '\0' && *fname != ';')
+					fname ++;
+				if (*fname == ';')
+					fname ++;
+				override_spt = atoi(fname);
+				while (*fname != '\0' && *fname != ';' &&
+				    *fname != ':')
+					fname ++;
+				if (*fname == ';')
+					fname ++;
+				if (override_heads < 1 ||
+				    override_spt < 1) {
+					fatal("Bad geometry: heads=%i "
+					    "spt=%i\n", override_heads,
+					    override_spt);
+					exit(1);
+				}
 				break;
 			case 'i':
 				prefix_i = 1;
@@ -1497,6 +1540,31 @@ int diskimage_add(struct machine *machine, char *fname)
 	    || d->total_size == 2949120 || d->total_size == 1228800)
 	    && !prefix_i && !prefix_s)
 		d->type = DISKIMAGE_FLOPPY;
+
+	switch (d->type) {
+	case DISKIMAGE_FLOPPY:
+		if (d->total_size < 737280) {
+			fatal("\nTODO: small (non-80-cylinder) floppies?\n\n");
+			exit(1);
+		}
+		d->cylinders = 80;
+		d->heads = 2;
+		d->sectors_per_track = d->total_size / (d->cylinders *
+		    d->heads * 512);
+		break;
+	default:/*  Non-floppies:  */
+		d->heads = 15;
+		d->sectors_per_track = 63;
+		if (prefix_g) {
+			d->chs_override = 1;
+			d->heads = override_heads;
+			d->sectors_per_track = override_spt;
+		}
+		bytespercyl = d->heads * d->sectors_per_track * 512;
+		d->cylinders = d->total_size / bytespercyl;
+		if (d->cylinders * bytespercyl < d->total_size)
+			d->cylinders ++;
+	}
 
 	d->rpms = 3600;
 
@@ -1673,9 +1741,16 @@ void diskimage_dump_info(struct machine *machine)
 		else
 			debug("%lli MB", (long long) (d->total_size / 1048576));
 
-		debug(" (%lli sectors)%s\n",
-		    (long long) (d->total_size / 512),
-		    d->is_boot_device? " (BOOT)" : "");
+		if (d->type == DISKIMAGE_FLOPPY || d->chs_override)
+			debug(" (CHS=%i,%i,%i)", d->cylinders, d->heads,
+			    d->sectors_per_track);
+		else
+			debug(" (%lli sectors)", (long long)
+			   (d->total_size / 512));
+
+		if (d->is_boot_device)
+			debug(" (BOOT)");
+		debug("\n");
 
 		debug_indentation(-iadd);
 

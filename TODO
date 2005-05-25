@@ -1,8 +1,7 @@
-$Id: TODO,v 1.132 2005-05-11 14:25:41 debug Exp $
+$Id: TODO,v 1.133 2005-05-25 06:40:16 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
-
 
 	Caches / memory hierarchies: (this is mostly MIPS-specific)
 		o)  MIPS coproc.c: bits in config registers should reflect

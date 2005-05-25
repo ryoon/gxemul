@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.16 2005-05-10 18:17:53 debug Exp $
+.\" $Id: gxemul.1,v 1.17 2005-05-25 06:40:17 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -136,6 +136,9 @@ CD-ROM.
 DISK (this is the default).
 .It f
 FLOPPY.
+.It gH;S;
+Override the default geometry; use H heads and S sectors-per-track.
+(Not for floppies.)
 .It i
 IDE.
 .It r
@@ -321,6 +324,9 @@ to select the old bintrans system, if you want speed.
 does not simulate individual pipe-line stages or penalties caused by
 branch-prediction misses, so it cannot be used for accurate performance 
 measurement.
+.Pp
+.Nm
+is not timing accurate.
 .Sh AUTHOR
 Anders Gavare <anders@gavare.se>
 .Pp

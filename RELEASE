@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.114 2005-05-14 19:47:58 debug Exp $
+$Id: RELEASE,v 1.115 2005-05-25 06:40:16 debug Exp $
 
 I'm now working on post-0.3.2.
 
@@ -47,6 +47,9 @@ Here are some of the changes between release 0.3.2 and 0.3.X:
 	x)  Files on ISO9660 disk images can now be read directly from
 	    within the emulator, so there is no need to extract kernels
 	    manually in order to boot an emulated machine.
+
+	x)  Mixing more than one disk image type (SCSI, IDE, PC-style floppy)
+	    in the same emulated machine should now be possible.
 
 	x)  ..
 

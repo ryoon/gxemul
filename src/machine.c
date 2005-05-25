@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.444 2005-05-23 07:44:20 debug Exp $
+ *  $Id: machine.c,v 1.445 2005-05-25 06:40:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3788,6 +3788,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			fprintf(stderr, "\nWARNING! You are emulating a PC wi"
 			    "thout -X. You will miss any graphics output!\n\n");
 
+		/*  Interrupt controllers:  */
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x20));
 		machine->md.pc.pic1 = device_add(machine, tmpstr);
@@ -3797,6 +3798,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		machine->md_interrupt = x86_pc_interrupt;
 
+		/*  Timer:  */
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8253 addr=0x%llx irq=0",
 		    (long long)(X86_IO_BASE + 0x40));
 		device_add(machine, tmpstr);
@@ -3805,15 +3807,25 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		    (long long)(X86_IO_BASE + 0x70));
 		device_add(machine, tmpstr);
 
-		dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);
-		dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 2);
+		/*  IDE controllers:  */
+		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 1, DISKIMAGE_IDE))
+			dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);
+		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
+			dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 2);
 
-		/*  floppy at irq 6  */
-		/*  sound blaster (eventually) at irq 7?  */
+		/*  TODO: floppy at irq 6  */
 
+		/*  TODO: sound blaster (eventually) at irq 7?  */
+
+		/*  TODO: parallel port  */
+
+		/*  Serial ports:  */
 		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x3f8, 4, 1, 0, "com1");
 		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x378, 3, 1, 0, "com2");
 
+		/*  VGA + keyboard:  */
 		dev_vga_init(machine, mem, 0xa0000ULL, X86_IO_BASE + 0x3c0,
 		    "Generic x86 PC");
 		machine->main_console_handle = dev_pckbc_init(machine,

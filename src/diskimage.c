@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.89 2005-05-25 06:40:18 debug Exp $
+ *  $Id: diskimage.c,v 1.90 2005-05-25 07:10:41 debug Exp $
  *
  *  Disk image support.
  *
@@ -256,6 +256,9 @@ static void diskimage_recalc_size(struct diskimage *d)
 
 	d->total_size = size;
 	d->ncyls = d->total_size / 1048576;
+
+	/*  TODO: There is a mismatch between d->ncyls and d->cylinders,
+	    SCSI-based stuff usually doesn't care.  TODO: Fix this.  */
 }
 
 
@@ -760,7 +763,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 			/*  10,11 = sectors per track  */
 			xferp->data_in[12 + 10] = 0;
-			xferp->data_in[12 + 11] = 1;	/*  TODO  */
+			xferp->data_in[12 + 11] = d->sectors_per_track;
 
 			/*  12,13 = physical sector size  */
 			xferp->data_in[12 + 12] =
@@ -773,7 +776,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 2] = (d->ncyls >> 16) & 255;
 			xferp->data_in[12 + 3] = (d->ncyls >> 8) & 255;
 			xferp->data_in[12 + 4] = d->ncyls & 255;
-			xferp->data_in[12 + 5] = 15;	/*  nr of heads  */
+			xferp->data_in[12 + 5] = d->heads;
 
 			xferp->data_in[12 + 20] = (d->rpms >> 8) & 255;
 			xferp->data_in[12 + 21] = d->rpms & 255;
@@ -786,8 +789,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 2] = ((5000) >> 8) & 255;
 			xferp->data_in[12 + 3] = (5000) & 255;
 
-			xferp->data_in[12 + 4] = 2;    /*  nr of heads  */
-			xferp->data_in[12 + 5] = 18;   /*  sectors per track  */
+			xferp->data_in[12 + 4] = d->heads;
+			xferp->data_in[12 + 5] = d->sectors_per_track;
 
 			/*  6,7 = data bytes per sector  */
 			xferp->data_in[12 + 6] = (d->logical_block_size >> 8)

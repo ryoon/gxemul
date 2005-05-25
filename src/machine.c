@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.445 2005-05-25 06:40:18 debug Exp $
+ *  $Id: machine.c,v 1.446 2005-05-25 13:19:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2937,9 +2937,19 @@ Why is this here? TODO
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-#if 0
-				bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
-#endif
+
+				/*  TODO: make this nicer  */
+				if (diskimage_exist(machine, 0, DISKIMAGE_SCSI) ||
+				    diskimage_exist(machine, 1, DISKIMAGE_SCSI) ||
+				    diskimage_exist(machine, 2, DISKIMAGE_SCSI) ||
+				    diskimage_exist(machine, 3, DISKIMAGE_SCSI) ||
+				    diskimage_exist(machine, 4, DISKIMAGE_SCSI) ||
+				    diskimage_exist(machine, 5, DISKIMAGE_SCSI) ||
+				    diskimage_exist(machine, 6, DISKIMAGE_SCSI) ||
+				    diskimage_exist(machine, 7, DISKIMAGE_SCSI))
+					bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
+
+				/*  TODO: second ahc  */
 				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
 
 				break;

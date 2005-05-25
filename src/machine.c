@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.446 2005-05-25 13:19:14 debug Exp $
+ *  $Id: machine.c,v 1.447 2005-05-25 14:22:56 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -205,14 +205,12 @@ int machine_name_to_type(char *stype, char *ssubtype,
 		me = me->next;
 	}
 
-	fatal("machine_name_to_type(): unknown emulation type '%s' (", stype);
-	if (ssubtype == NULL)
-		fatal("no subtype)\n");
-	else
-		fatal("subtype '%s')\n", ssubtype);
-
+	fatal("\nSorry, emulation \"%s\"", stype);
+	if (ssubtype != NULL && ssubtype[0] != '\0')
+		fatal(" (subtype \"%s\")", ssubtype);
+	fatal(" is unknown.\n");
 	fatal("Use the -H command line option to get a list of available"
-	    " types and subtypes.\n");
+	    " types and subtypes.\n\n");
 	return 0;
 }
 

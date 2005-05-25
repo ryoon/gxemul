@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.33 2005-05-23 14:22:01 debug Exp $
+ *  $Id: memory_rw.c,v 1.34 2005-05-25 14:22:56 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -183,11 +183,12 @@ fatal("TODO: x86 memblock cross\n");
 			debug("{ PC BIOS DATA AREA: %s 0x%x }\n", writeflag ==
 			    MEM_WRITE? "writing to" : "reading from",
 			    (int)paddr);
-
+#if 0
 		if (paddr >= 0xf0000 && paddr <= 0xfffff)
 			debug("{ BIOS ACCESS: %s 0x%x }\n",
 			    writeflag == MEM_WRITE? "writing to" :
 			    "reading from", (int)paddr);
+#endif
 	}
 #endif
 

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.17 2005-05-25 06:40:17 debug Exp $
+.\" $Id: gxemul.1,v 1.18 2005-05-27 11:12:59 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -51,7 +51,7 @@ is an experimental instruction-level machine emulator. It can be used
 to run binary code for (among others) MIPS-based machines.
 Several emulation modes are available. For some emulation modes, processors
 and surrounding hardware components are emulated well enough to let
-unmodified operating systems (eg NetBSD) run as if they were running on a
+unmodified operating systems (eg. NetBSD) run as if they were running on a
 real machine.
 .Pp
 There are three ways to invoke the emulator. When emulating a 
@@ -126,7 +126,7 @@ Add
 as a disk image. By adding one or more modifier characters and then a
 colon (":") as a prefix to
 .Ar "name",
-you can modify the disk image's behaviour. Available modifiers are:
+you can modify the way the disk image is treated. Available modifiers are:
 .Bl -tag -width Ds
 .It b
 Specifies that this is a boot device.
@@ -138,7 +138,7 @@ DISK (this is the default).
 FLOPPY.
 .It gH;S;
 Override the default geometry; use H heads and S sectors-per-track.
-(Not for floppies.)
+(The number of cylinders is calculated automatically.)
 .It i
 IDE.
 .It r
@@ -148,12 +148,20 @@ SCSI (this is the default for most machine types).
 .It t
 Tape.
 .It 0-7
-Force a specific SCSI ID number.
+Force a specific ID number.
 .El
 .Pp
-Filenames ending with ".iso" are assumed to be CDROM images. Files with a 
-size of exactly 1.44 MB are assumed to be floppy images. All others
-are assumed to be disks.
+Unless otherwise specified, filenames ending with ".iso" are assumed to be
+CDROM images. Most others are assumed to be disks. Depending on which
+machine is being emulated, the default for disks can be either SCSI or
+IDE. Some disk images that are very small are assumed to be floppy disks.
+(If you are not happy with the way a disk image is detected, then you need 
+to use explicit prefixes to force a specific type.)
+.Pp
+For floppies, the gH;S; prefix is ignored. Instead, the number of 
+heads and cylinders are assumed to be 2 and 80, respectively, and the 
+number of sectors per track is calculated automatically. (This works for 
+720KB, 1.2MB, 1.44MB, and 2.88MB floppies.)
 .It Fl I Ar x
 Emulate clock interrupts at
 .Ar x
@@ -167,8 +175,10 @@ Disable some speed tricks.
 .It Fl j Ar n
 Set the name of the kernel to
 .Ar "n".
-Useful names are "bsd" for OpenBSD/pmax, or "vmunix" for Ultrix.
-("netbsd" is usually the default value.)
+When booting from an ISO9660 filesystem, the kernel will try to boot from 
+this file. (In some emulation modes, eg. DECstation, this name is passed 
+along to the boot program. Useful names are "bsd" for OpenBSD/pmax, 
+or "vmunix" for Ultrix.)
 .It Fl M Ar m
 Emulate
 .Ar m
@@ -189,9 +199,9 @@ present (for DECstation, SGI, and ARC emulation).
 Set the boot argument (for DEC, ARC, or SGI emulation).
 Default
 .Ar arg
-for DEC is '-a', for ARC '-aN'.
+for DEC is "-a", for ARC "-aN".
 .It Fl p Ar pc
-Add a breakpoint (remember to use the '0x' prefix for hex).
+Add a breakpoint. (Remember to use the "0x" prefix for hex.)
 .It Fl Q
 Disable the built-in PROM emulation. This is useful for running raw ROM
 images from real machines.
@@ -250,7 +260,8 @@ srandom() with a seed based on the current time at startup. When the
 .Fl D
 option is used, the srandom() call is skipped, which should cause two 
 subsequent invokations of the emulator to be identical, if all other 
-settings are identical. (If this option is used, then
+settings are identical and no user input is taking place. (If this option 
+is used, then
 .Fl I
 must also be used.)
 .It Fl H

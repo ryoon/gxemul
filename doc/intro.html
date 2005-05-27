@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.42 2005-05-23 12:21:44 debug Exp $
+$Id: intro.html,v 1.43 2005-05-27 07:29:23 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -86,10 +86,7 @@ X11, but that is optional), and should compile and run on most Unix-like
 systems. If it doesn't, then that is a bug.
 (You do not need any MIPS compiler toolchain to build or use GXemul.
 If you need to compile MIPS binaries from sources, then of course you need 
-such a toolchain, but that is completely separate from GXemul. There
-is a <a href="technical.html#regtest">regression testing</a> framework,
-which requires that a GNU CC for mips64-unknown-elf or similar is available.
-For simply building and using the emulator, it is not required.) 
+such a toolchain, but that is completely separate from GXemul.)
 
 <p>
 The emulator contains code which tries to emulate the workings of CPUs and
@@ -102,7 +99,14 @@ emulator itself, so you do not need to use any ROM image at all.
 You can use pre-compiled kernels (for example NetBSD kernels, or Linux),
 or other programs that are in binary format, and in some cases even actual
 ROM images. A couple of different file formats are supported (ELF, a.out,
-ECOFF, SREC, raw binaries).
+ECOFF, SREC, and raw binaries).
+
+<p>
+If you do not have a kernel as a separate file, but you have a bootable
+disk image, then it is sometimes possible to boot directly from that
+image. (This works for example with DECstation emulation, or when booting
+from ISO9660 CDROM images.)
+
 
 
 
@@ -112,14 +116,13 @@ ECOFF, SREC, raw binaries).
 <a name="free"></a>
 <h3>Is GXemul Free software?</h3>
 
-Yes. I have released GXemul under a Free license.
-(For a definitions of the four freedoms associated with Free software,
-please read <a href="http://www.gnu.org/philosophy/free-sw.html">
+Yes. I have released GXemul under a Free license. The code in GXemul is
+Copyrighted software, it is <i>not</i> public domain. (If this is
+confusing to you, might might want to read up on the definitions of the
+four freedoms associated with Free software, <a
+href="http://www.gnu.org/philosophy/free-sw.html">
 http://www.gnu.org/philosophy/free-sw.html</a>.)
 
-<p>
-The code in GXemul is Copyrighted software, it is <i>not</i> public
-domain or anything like that.
 
 <p>
 The code I have written is released under a 3-clause BSD-style license
@@ -190,6 +193,13 @@ Running <tt><b>gxemul</b></tt> without arguments (or with the
 display a help message.
 
 <p>
+To get some ideas about what is possible to run in the emulator, please 
+read the section about <a href="guestoses.html">installing "guest" 
+operating systems</a>. If you are interested in using the emulator to 
+develop code on your own, then you should also read the section about
+<a href="experiments.html#hello">Hello World</a>.
+
+<p>
 To exit the emulator, type CTRL-C to enter the 
 single-step debugger, and then type <tt><b>quit</b></tt>.
 
@@ -205,10 +215,10 @@ even on systems without X Windows.)
 <p>
 There is no way to send an actual CTRL-B to the emulated program, when
 typing in the main controlling terminal window. The solution is to either
-use configuration files, or use <tt><b>-x</b></tt>. Both these solutions
-cause new xterms to be opened for each emulated serial port that is 
-written to. CTRL-B and CTRL-C both have their original meaning in those 
-xterm windows.
+use <a href="configfiles.html">configuration files</a>, or use
+<tt><b>-x</b></tt>. Both these solutions cause new xterms to be opened for 
+each emulated serial port that is written to. CTRL-B and CTRL-C both have 
+their original meaning in those xterm windows.
 
 
 
@@ -262,11 +272,26 @@ These are not enabled by default though, because of their unstable-ness.
 <a name="accuracy"></a>
 <h3>Emulation accuracy:</h3>
 
-GXemul is an instruction-level simulator; things that would happen in
+GXemul is an instruction-level emulator; things that would happen in
 several steps within a real CPU are not taken into account (eg. pipe-line
-stages or out-of-order execution). Still, instruction-level accuracy seems 
-to be enough to be able to run complete guest operating systems inside the 
+stalls or out-of-order execution). Still, instruction-level accuracy seems
+to be enough to be able to run complete guest operating systems inside the
 emulator.
+
+<p>
+Caches are by default not emulated. In some cases, the existance of caches
+is "faked" to let operating systems think that they are there. (There is
+some old code for R2000/R3000 caches, but it has probably suffered from
+bitrot by now.)
+
+<p>
+The emulator is <i>not</i> timing accurate. It can be run in a 
+"deterministic" mode, <tt><b>-D</b></tt>. The meaning of deterministic is 
+simply that running two emulations with the same settings will result in 
+identical runs. Obviously, this requires that no user interaction is 
+taking place, and that clock speeds are fixed with the <tt><b>-I</b></tt> 
+option. (Deterministic in this case does <i>not</i> mean that the emulation
+will be identical to some actual real-world machine.)
 
 
 

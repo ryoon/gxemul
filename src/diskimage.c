@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.90 2005-05-25 07:10:41 debug Exp $
+ *  $Id: diskimage.c,v 1.91 2005-05-27 07:29:24 debug Exp $
  *
  *  Disk image support.
  *
@@ -1556,7 +1556,7 @@ int diskimage_add(struct machine *machine, char *fname)
 		    d->heads * 512);
 		break;
 	default:/*  Non-floppies:  */
-		d->heads = 15;
+		d->heads = 16;
 		d->sectors_per_track = 63;
 		if (prefix_g) {
 			d->chs_override = 1;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.760 2005-05-25 13:19:12 debug Exp $
+$Id: HISTORY,v 1.761 2005-05-27 07:29:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1942,3 +1942,4 @@ Changelog for GXemul:
 		in real mode, and various other x86-related fixes.
 20050525	Adding a new disk image prefix (gH;S;) which can be used to
 		override the default nr of heads and sectors per track.
+20050527	Minor bug fixes, and some minor documentation updates.

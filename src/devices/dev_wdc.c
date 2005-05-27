@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.36 2005-05-23 16:01:40 debug Exp $
+ *  $Id: dev_wdc.c,v 1.37 2005-05-27 07:29:25 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -143,16 +143,16 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
  */
 static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
-	uint64_t total_size, cyls;
+	uint64_t total_size;
+	int cyls, heads, sectors_per_track;
 
 	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE);
 
-	memset(d->identify_struct, 0, sizeof(d->identify_struct));
+	diskimage_getchs(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE, &cyls, &heads, &sectors_per_track);
 
-	cyls = total_size / (63 * 16 * 512);
-	if (cyls * 63*16*512 < total_size)
-		cyls ++;
+	memset(d->identify_struct, 0, sizeof(d->identify_struct));
 
 	/*  Offsets are in 16-bit WORDS!  High byte, then low.  */
 
@@ -165,12 +165,12 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	d->identify_struct[2 * 1 + 1] = cyls & 255;
 
 	/*  3: nr of heads  */
-	d->identify_struct[2 * 3 + 0] = 0;
-	d->identify_struct[2 * 3 + 1] = 16;
+	d->identify_struct[2 * 3 + 0] = heads >> 8;
+	d->identify_struct[2 * 3 + 1] = heads;
 
 	/*  6: sectors per track  */
-	d->identify_struct[2 * 6 + 0] = 0;
-	d->identify_struct[2 * 6 + 1] = 63;
+	d->identify_struct[2 * 6 + 0] = sectors_per_track >> 8;
+	d->identify_struct[2 * 6 + 1] = sectors_per_track;
 
 	/*  10-19: Serial number  */
 	memcpy(&d->identify_struct[2 * 10], "S/N 1234-5678       ", 20);
@@ -272,7 +272,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 {
 	struct wdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int i;
+	int i, cyls, heads, sectors_per_track;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -461,12 +461,17 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				    d->sector, d->seccnt);
 				/*  TODO:  HAHA! This should be removed
 				    quickly  */
+				diskimage_getchs(cpu->machine, d->drive +
+				    d->base_drive, DISKIMAGE_IDE, &cyls,
+				    &heads, &sectors_per_track);
+
 				{
 					unsigned char buf[512*256];
 					int cyl = d->cyl_hi * 256+ d->cyl_lo;
 					int count = d->seccnt? d->seccnt : 256;
 					uint64_t offset = 512 * (d->sector - 1
-					    + d->head * 63 + 16*63*cyl);
+					    + d->head * sectors_per_track +
+					    heads*sectors_per_track*cyl);
 
 #if 0
 /*  LBA:  */
@@ -491,11 +496,15 @@ printf("WDC read from offset %lli\n", (long long)offset);
 				    d->sector, d->seccnt);
 				/*  TODO:  HAHA! This should be removed
 				    quickly  */
+				diskimage_getchs(cpu->machine, d->drive +
+				    d->base_drive, DISKIMAGE_IDE, &cyls,
+				    &heads, &sectors_per_track);
 				{
 					int cyl = d->cyl_hi * 256+ d->cyl_lo;
 					int count = d->seccnt? d->seccnt : 256;
 					uint64_t offset = 512 * (d->sector - 1
-					    + d->head * 63 + 16*63*cyl);
+					    + d->head * sectors_per_track +
+					    heads*sectors_per_track*cyl);
 
 #if 0
 /*  LBA:  */

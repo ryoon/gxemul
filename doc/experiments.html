@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.67 2005-05-25 13:19:13 debug Exp $
+$Id: experiments.html,v 1.68 2005-05-27 07:29:23 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -74,12 +74,6 @@ that you do two things:
 </ul>
 
 <p>
-The emulator has several modes where it doesn't emulate any real machine.
-It can either run in "bare" mode, where no devices are included by default
-(just the CPU), or in a "test" mode where some simple devices are 
-emulated.
-
-<p>
 <table border="0"><tr><td width="40">&nbsp;</td><td>
 <pre>
 <font color=#f00000>/*  Hello world for GXemul  */
@@ -113,8 +107,10 @@ emulated.
 </font></pre>
 </td></tr></table>
 
-This hello world program is available here as well:
-<a href="hello_mips.c">hello_mips.c</a>
+<p>
+(This hello world program is available here as well:
+<a href="hello_mips.c">hello_mips.c</a>)
+
 <p>
 I recommend that you build a GCC cross compiler for the
 <b>mips64-unknown-elf</b> target, and install it. Other compilers could
@@ -219,6 +215,12 @@ that aren't present on my FreeBSD system. 32-bit PPC works ok, though.&nbsp;]
 <a name="expdevices"></a>
 <h3>Experimental devices:</h3>
 
+The emulator has several modes where it doesn't emulate any real machine.
+It can either run in "bare" mode, where no devices are included by default
+(just the CPU), or in a "test" mode where some simple devices are 
+emulated.
+
+<p>
 The "test" MIPS machine has the following experimental devices:
 
 <p>
@@ -430,39 +432,32 @@ probably doesn't work in GXemul.
       <li><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
-	<br>gunzip the files, and run the emulator with <b>-E dec -e 3max -q -N -XY2</b>
-	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
+	<br>gunzip the files, and run the emulator with <b><tt>-E dec -e 3max -q -N -XY2</tt></b>
+	for a graphical framebuffer console. Remove <b><tt>-XY2</tt></b> and <b><tt>-N</tt></b> to use serial (stdin/stdout) console.
 	Read <a href="guestoses.html#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
       <p>
       <li><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
-	<br>This is an old OpenBSD kernel in a.out format. Try <b>-E dec -e 3max</b>.
+	<br>This is an old OpenBSD kernel in a.out format. Try <b><tt>-E dec -e 3max</tt></b>.
 	<br>Read <a href="guestoses.html#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
-	It's a bit more complicated than installing NetBSD/pmax, but might work.
+	It's a bit more complicated than installing NetBSD/pmax, but 
+	it usually works.
       <p>
       <li>Linux for DECstation:
-	<br>Here is a Debian package containing a Linux 2.4.26 kernel for
-		DECstation which supports framebuffer!
-	<br><a href="http://ftp.debian.org/debian/pool/main/k/kernel-patch-2.4.26-mips/kernel-image-2.4.26-r3k-kn02_2.4.26-0.040505.1_mipsel.deb">http://ftp.debian.org/debian/pool/main/k/kernel-patch-2.4.26-mips/
-	<br>kernel-image-2.4.26-r3k-kn02_2.4.26-0.040505.1_mipsel.deb</a>
-	<br>Run the following commands to extract the kernel:<pre>
-	<b>ar x kernel-image-2.4.26-r3k-kn02_2.4.26-0.040505.1_mipsel.deb data.tar.gz</b>
-	<b>tar xfzv data.tar.gz ./boot/vmlinux-2.4.26-r3k-kn02</b>
-	<b>mv boot/vmlinux-* .; rmdir boot</b>
-</pre>
-	<br>To try with the framebuffer: <b>-E dec -e 3max -X vmlinux-2.4.26-r3k-kn02</b>
-	<br>To try with serial console: <b>-E dec -e 3max -o 'console=ttyS3' vmlinux-2.4.26-r3k-kn02</b>
 	<br>Read <a href="guestoses.html#declinux">this section</a> about how to run a Debian Linux install kernel.
 	<br>Here are some older kernels (these don't support framebuffer, I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
-	<br>Note: Make sure you add <b>-CR4400</b> to the command line for
+	<br>Note: Make sure you add <b><tt>-CR4400</tt></b> to the command line for
 		R4000 kernels, as Linux doesn't autodetect CPU type at runtime.
+	<br>Linux also doesn't detect automatically whether you are booting
+		in graphical or serial console mode, so you need to add
+		<tt><b>-o 'console=ttyS3'</b></tt> or similar for serial
+		console mode.
       <p>
-      <li>Sprite:
+      <li><a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">Sprite</a>:
 	<br>The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
-		has preserved a copy of a harddisk image for a DECstation 5000/200:
-		<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/">http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite</a>/<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/ds5000.bt">ds5000.bt</a>
-	<br>(MD5 (ds5000.bt) = ec84eeeb20fe77b758370d5e312e4a5e)
+		has preserved a copy of a harddisk image for a DECstation
+		5000/200 (3MAX).
 	<br>Read <a href="guestoses.html#sprite">this section</a> for more information
 		about running this harddisk image in the emulator.
       <p>
@@ -482,10 +477,10 @@ probably doesn't work in GXemul.
       <li><a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.symbols.gz</a>
-	<br>gunzip, and try running with <b>-E sgi -e ip32</b>.
+	<br>gunzip, and try running with <b><tt>-E sgi -e ip32</tt></b>.
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.symbols.gz</a>
-	<br>gunzip, and try running with <b>-E sgi -e ip22</b> (or <b>-e ip24</b> or <b>-e ip20</b>).
+	<br>gunzip, and try running with <b><tt>-E sgi -e ip22</tt></b> (or <b><tt>ip24</tt></b> or <b><tt>ip20</tt></b>).
       <p>
       <li>Linux/SGI:
 	<br>Some kernels are available here: <a href="http://www.linux-mips.org/~glaurung/">http://www.linux-mips.org/~glaurung/</a>
@@ -529,7 +524,8 @@ probably doesn't work in GXemul.
 	<br>gunzip, and try with <b><tt>-E arc -e rd94</tt></b>.
 	<br>(You may also try other ARC models.)
 	<br>Read <a href="guestoses.html#netbsdarcinstall">this section</a> about how
-		to install NetBSD/arc onto a harddisk image.
+		to install NetBSD/arc 1.6.2 onto a harddisk image.
+	<br>(NetBSD/arc 2.0 doesn't work with disk images yet in GXemul.)
       <p>
       <li><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
@@ -558,11 +554,17 @@ probably doesn't work in GXemul.
 	<br><a href="http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html">http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html</a> (Deskstation Tyne)
 	<br><a href="http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html">http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html</a> (NEC RISCserver 4200)
 	<br><a href="http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out">http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out</a> (NEC-R96)
+	<br>For some machines, such as <tt><b>-e pica</b></tt>, you can
+		add <b><tt>-X</tt></b> to boot with a graphical VGA-style
+		console. This however is probably a bit unstable and/or
+		broken right now.
       <p>
       <li>Windows NT:
 	<br>Put a "Windows NT 4.0 for MIPS" CDROM (or similar) into
-		your CDROM drive. (I'm assuming here that it is called /dev/cd0c.)
-		I have tried this with the Swedish version, but it might
+		your CDROM drive. (On FreeBSD systems, it is usually called
+		/dev/cd0c or similar. Change that to whatever the CDROM
+		is called on your system, or the name of a raw .iso image.)
+	<br>I have tried this with the Swedish version, but it might
 		work with other versions too.<pre>
 	$ <b><tt>dd if=/dev/zero of=winnt_test.img bs=1024 count=1 seek=999000</tt></b>
 	$ <b><tt>gxemul -X -b -Earc -epica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\ARCINST</tt></b>
@@ -621,16 +623,19 @@ probably doesn't work in GXemul.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>gunzip, and run with <b>-E cobalt</b>
+	<br>gunzip, and run with <b><tt>-E cobalt</tt></b>
+	<br>(Or read <a href="guestoses.html#netbsdcobaltinstall">this
+	section</a> on how to install NetBSD/cobalt onto a harddisk image.)
       <p>
       <li>Linux:
 	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
-	<br>gunzip, and run with <b>-E cobalt</b>
+	<br>gunzip, and run with <b><tt>-E cobalt</tt></b>
       <p>
       <li>CoLo:
 	<br><a href="http://www.colonel-panic.org/cobalt-mips/colo/colo-1.19.tar.gz">http://www.colonel-panic.org/cobalt-mips/colo/colo-1.19.tar.gz</a>
 	<br><tt><b>tar zxvf colo-1.19.tar.gz colo-1.19/binaries/colo-rom-image.bin</b></tt>
 	<br><tt><b>gxemul -Q -Ecobalt -v 0xbfc00000:colo-1.19/binaries/colo-rom-image.bin</b></tt>
+	<br>(This doesn't work yet.)
     </ul>
   </li>
 
@@ -642,13 +647,13 @@ probably doesn't work in GXemul.
 	<br>NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz</a>
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>Try running with <b>-X -E playstation2</b>  (<b>-X</b> is required, for the framebuffer).
+	<br>Try running with <b><tt>-X -E playstation2</tt></b>  (<b><tt>-X</tt></b> is required, for the framebuffer).
 
       <p>
       <li>Linux:
 	<br>A Linux kernel (2.2.21-pre1-xr7) is available from
 	<a href="http://playstation2-linux.com/projects/xrhino-kernel/">http://playstation2-linux.com/projects/xrhino-kernel/</a>
-	<br>Try running with <b>-X -E playstation2</b>  (<b>-X</b> is required, for the framebuffer).
+	<br>Try running with <b><tt>-X -E playstation2</tt></b>  (<b><tt>-X</tt></b> is required, for the framebuffer).
     </ul>
   </li>
 
@@ -666,7 +671,7 @@ The following work even less than the ones listed above:
 		available here:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
-	<br>Try running with <b>-E sonynews</b>.
+	<br>Try running with <b><tt>-E sonynews</tt></b>.
 	<br>There's also a boot floppy available, but the emulator currently
 		doesn't support booting from it:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs</a>
@@ -680,9 +685,9 @@ The following work even less than the ones listed above:
       <li>Linux:
 	<br>A Linux kernel is available from
 	<a href="http://www.meshcube.org/feed/stable/">http://www.meshcube.org/feed/stable</a>/<a href="http://www.meshcube.org/feed/stable/kernel-image-mtx_2.4.24-3_mipsel.ipk">kernel-image-mtx_2.4.24-3_mipsel.ipk</a>
-	<br>(This is a Debian package, you can use <b>ar</b> and <b>tar</b>
-		to extract kernel.img from it.)
-	<br>Try running with <b>-E meshcube 0x80800000:kernel.img</b>.
+	<br>(This is a Debian package, you can use <tt><b>ar</b></tt> and
+		<tt><b>tar</b></tt> to extract kernel.img from it.)
+	<br>Try running with <b><tt>-E meshcube 0x80800000:kernel.img</tt></b>.
     </ul>
   </li>
 
@@ -694,7 +699,7 @@ The following work even less than the ones listed above:
 	<br>A Linux kernel is available from
 	<a href="ftp://downloads.netgear.com/files/wg602_v1715.zip">ftp://downloads.netgear.com/files/wg602_v1715.zip</a>
 	<br>(Unzip wg602_v1715.zip to get WG602_V1715.img.)
-	<br>Try running with <b>-E netgear 0xbfc80000:0x40:WG602_V1715.img</b>.
+	<br>Try running with <b><tt>-E netgear 0xbfc80000:0x40:WG602_V1715.img</tt></b>.
 	<br>(It takes some time to decompress the kernel, so be patient.)
 	<br>(This doesn't really work yet.)
     </ul>
@@ -714,7 +719,7 @@ modes are just skeletons so far.
       <li><a href="http://www.netbsd.org/Ports/evbppc/">NetBSD/evbppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>gxemul -E walnut -v -t netbsd-INSTALL_WALNUT</b>
+	<br><tt><b>gxemul -E walnut -v -t netbsd-INSTALL_WALNUT</b></tt>
     </ul>
   </li>
 
@@ -725,7 +730,7 @@ modes are just skeletons so far.
       <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>gxemul -E pmppc netbsd-INSTALL</b>
+	<br><tt><b>gxemul -E pmppc netbsd-INSTALL</b></tt>
     </ul>
   </li>
 
@@ -736,7 +741,7 @@ modes are just skeletons so far.
       <li><a href="http://www.netbsd.org/Ports/sandpoint/">NetBSD/sandpoint</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>gxemul -E sandpoint -v -t netbsd-INSTALL</b>
+	<br><tt><b>gxemul -E sandpoint -v -t netbsd-INSTALL</b></tt>
     </ul>
   </li>
 
@@ -747,11 +752,11 @@ modes are just skeletons so far.
       <li><a href="http://www.netbsd.org/Ports/prep/">NetBSD/prep</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/prep/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/prep/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>gxemul -E prep -v -t netbsd-INSTALL</b>
+	<br><tt><b>gxemul -E prep -v -t netbsd-INSTALL</b></tt>
       <p>
       <li>Linux:
 	<br><a href="http://jocelyn.mayer.free.fr/qemu-ppc/linux_images/2.4.25-PPC/vmlinux">http://jocelyn.mayer.free.fr/qemu-ppc/linux_images/2.4.25-PPC/vmlinux</a>
-	<br>$ <b>gxemul -E prep -v -t vmlinux</b>
+	<br><tt><b>gxemul -E prep -v -t vmlinux</b></tt>
     </ul>
   </li>
 
@@ -761,11 +766,11 @@ modes are just skeletons so far.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/macppc/">NetBSD/macppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/macppc/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/macppc/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/macppc/binary/kernel/netbsd-INSTALL.gz">netbsd-INSTALL.gz</a>
-	<br>$ <b>gxemul -E macppc -e g4 -t netbsd-INSTALL</b>
+	<br><tt><b>gxemul -E macppc -e g4 -t netbsd-INSTALL</b></tt>
       <p>
       <li><a href="http://www.openbsd.org/macppc.html">OpenBSD/macppc</a>:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.6/macppc/">ftp://ftp.openbsd.org/pub/OpenBSD/3.6/macppc</a>/<a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.6/macppc/bsd.rd">bsd.rd</a>
-	<br>$ <b>gxemul -E macppc -e g4 -t bsd.rd</b>
+	<br><tt><b>gxemul -E macppc -e g4 -t bsd.rd</b></tt>
     </ul>
   </li>
 
@@ -775,13 +780,13 @@ modes are just skeletons so far.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/bebox/">NetBSD/bebox</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/">ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz">kern.tgz</a>
-	<br>$ <b>tar tvzf kern.tgz</b>
-	<br>$ <b>gxemul -E bebox netbsd</b>
+	<br><tt><b>tar xvzf kern.tgz</b></tt>
+	<br><tt><b>gxemul -E bebox netbsd</b></tt>
       <p>
       <li><a href="http://www.bebox.nu/os.php?s=os/linux/index">Linux/bebox</a>:
 	<br><a href="http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz">http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz</a>
-	<br>$ <b>gunzip BeBox-scsi-980610.gz</b>
-	<br>$ <b>gxemul -E bebox 0x3100:0x400:BeBox-scsi-980610</b>
+	<br><tt><b>gunzip BeBox-scsi-980610.gz</b></tt>
+	<br><tt><b>gxemul -E bebox 0x3100:0x400:BeBox-scsi-980610</b></tt>
     </ul>
   </li>
 
@@ -792,12 +797,12 @@ modes are just skeletons so far.
       <li><a href="http://www.netbsd.org/Ports/sparc64/">NetBSD/sparc64</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>gxemul -E ultra1 -v -i netbsd-INSTALL</b>
+	<br><tt><b>gxemul -E ultra1 -v -i netbsd-INSTALL</b></tt>
       <p>
       <li><a href="http://www.openbsd.org/sparc64.html">OpenBSD/sparc64</a>:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd">ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd</a>
 	<br>rename to bsd.rd.gz, gunzip, and try the following:
-	<br>$ <b>gxemul -E ultra1 -v -i bsd.rd</b>
+	<br><tt><b>gxemul -E ultra1 -v -i bsd.rd</b></tt>
     </ul>
   </li>
 </ul>
@@ -813,9 +818,9 @@ for more info.)
   <li>URISC:
     <ul>
       <li>I've placed a small test program in the experiments directory.
-	<br>Start like this: <b>gxemul -E testurisc 0:urisc_test.bin</b>
+	<br>Start like this: <tt><b>gxemul -E testurisc 0:urisc_test.bin</b></tt>
 	<br>or, if you want to single-step:
-		<b>gxemul -V -E testurisc 0:urisc_test.bin</b>
+		<b><tt>gxemul -V -E testurisc 0:urisc_test.bin</b></tt>
 	<br>2005-03-01: All outputed characters are printed twice. I'll
 	try to make a pseudo-device for outputing to "normal" devices
 	later.

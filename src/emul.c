@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.200 2005-05-23 18:21:36 debug Exp $
+ *  $Id: emul.c,v 1.201 2005-05-27 07:29:24 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -446,7 +446,8 @@ ret:
 static int load_bootblock(struct machine *m, struct cpu *cpu,
 	int *n_loadp, char ***load_namesp)
 {
-	int boot_disk_id, boot_disk_type = 0, n_blocks, res, readofs, iso_type;
+	int boot_disk_id, boot_disk_type = 0, n_blocks, res, readofs,
+	    iso_type, retval = 0;
 	unsigned char minibuf[0x20];
 	unsigned char *bootblock_buf;
 	uint64_t bootblock_offset;
@@ -612,18 +613,17 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		/*  We can't load a kernel if the name
 		    isn't specified.  */
 		if (cpu->machine->boot_kernel_filename == NULL ||
-		    cpu->machine->boot_kernel_filename[0] == '\0') {
+		    cpu->machine->boot_kernel_filename[0] == '\0')
 			fatal("\nISO9660 filesystem, but no kernel "
 			    "specified? (Use the -j option.)\n");
-			res = 0;
-		} else
-			res = iso_load_bootblock(m, cpu, boot_disk_id,
+		else
+			retval = iso_load_bootblock(m, cpu, boot_disk_id,
 			    boot_disk_type, iso_type, bootblock_buf,
 			    n_loadp, load_namesp);
 	}
 
 	free(bootblock_buf);
-	return res;
+	return retval;
 }
 
 

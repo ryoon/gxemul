@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.69 2005-05-27 07:44:58 debug Exp $
+ *  $Id: dev_vga.c,v 1.70 2005-05-27 13:46:56 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -134,8 +134,6 @@ struct vga_data {
 
 	int		cursor_x;
 	int		cursor_y;
-	int		cursor_scanline_start;
-	int		cursor_scanline_end;
 
 	int		modified;
 	int		update_x1;
@@ -154,13 +152,12 @@ static void register_reset(struct vga_data *d)
 {
 	/*  Home cursor:  */
 	d->cursor_x = d->cursor_y = 0;
-	d->crtc_reg[0x0e] = d->crtc_reg[0x0f] = 0;
+	d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_HIGH] =
+	    d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_LOW] = 0;
 
 	/*  Reset cursor scanline stuff:  */
-	d->cursor_scanline_start = d->font_size - 4;
-	d->cursor_scanline_end = d->font_size - 2;
-	d->crtc_reg[0x0a] = d->cursor_scanline_start;
-	d->crtc_reg[0x0b] = d->cursor_scanline_end;
+	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] = d->font_size - 4;
+	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END] = d->font_size - 2;
 
 	d->sequencer_reg[VGA_SEQ_MAP_MASK] = 0x0f;
 	d->graphcontr_reg[VGA_GRAPHCONTR_MASK] = 0xff;
@@ -439,24 +436,25 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
  */
 static void vga_update_cursor(struct machine *machine, struct vga_data *d)
 {
-	int onoff = 1, height = d->cursor_scanline_end -
-	    d->cursor_scanline_start + 1;
+	int onoff = 1, height = d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END]
+	    - d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] + 1;
 
 	if (d->cur_mode != MODE_CHARCELL)
 		onoff = 0;
 
-	if (d->cursor_scanline_start > d->cursor_scanline_end) {
+	if (d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] >
+	    d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END]) {
 		onoff = 0;
 		height = 1;
 	}
 
-	if (d->cursor_scanline_start >= d->font_size)
+	if (d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] >= d->font_size)
 		onoff = 0;
 
 	dev_fb_setcursor(d->fb,
 	    d->cursor_x * 8 * d->pixel_repx, (d->cursor_y * d->font_size +
-	    d->cursor_scanline_start) * d->pixel_repy, onoff,
-	    8*d->pixel_repx, height * d->pixel_repy);
+	    d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START]) * d->pixel_repy,
+	    onoff, 8*d->pixel_repx, height * d->pixel_repy);
 }
 
 
@@ -708,15 +706,13 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 	int ofs, grayscale;
 
 	switch (regnr) {
-	case 0x0a:
-		d->cursor_scanline_start = d->crtc_reg[0x0a];
+	case VGA_CRTC_CURSOR_SCANLINE_START:		/*  0x0a  */
+	case VGA_CRTC_CURSOR_SCANLINE_END:		/*  0x0b  */
 		break;
-	case 0x0b:
-		d->cursor_scanline_end = d->crtc_reg[0x0b];
-		break;
-	case 0x0e:
-	case 0x0f:
-		ofs = d->crtc_reg[0x0e] * 256 + d->crtc_reg[0x0f];
+	case VGA_CRTC_CURSOR_LOCATION_HIGH:		/*  0x0e  */
+	case VGA_CRTC_CURSOR_LOCATION_LOW:		/*  0x0f  */
+		ofs = d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_HIGH] * 256 +
+		    d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_LOW];
 		d->cursor_x = ofs % d->max_x;
 		d->cursor_y = ofs / d->max_x;
 		break;
@@ -1102,15 +1098,16 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	d->console_handle = console_start_slave(machine, name);
 
-	d->videomem_base = videomem_base;
-	d->control_base  = control_base;
-	d->max_x         = 80;
-	d->max_y         = 25;
-	d->pixel_repx    = 1;
-	d->pixel_repy    = 1;
-	d->cur_mode      = MODE_CHARCELL;
+	d->videomem_base  = videomem_base;
+	d->control_base   = control_base;
+	d->max_x          = 80;
+	d->max_y          = 25;
+	d->pixel_repx     = 1;
+	d->pixel_repy     = 1;
+	d->cur_mode       = MODE_CHARCELL;
+	d->crtc_reg[0xff] = 0x03;
 	d->charcells_size = d->max_x * VGA_MEM_MAXY * 2;
-	d->gfx_mem_size = 1;	/*  Nothing, as we start in text mode  */
+	d->gfx_mem_size   = 1;	/*  Nothing, as we start in text mode  */
 
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
 	allocsize = ((d->charcells_size - 1) | 0xfff) + 1;
@@ -1138,9 +1135,6 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->font_size = 16;
 	d->font = font8x16;
 	d->fb_max_x = 8*d->max_x;
-
-	d->cursor_scanline_start = d->font_size - 4;
-	d->cursor_scanline_end = d->font_size - 2;
 
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
 	    d->fb_max_x, 16*d->max_y, d->fb_max_x, 16*d->max_y, 24, "VGA", 0);
@@ -1170,14 +1164,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	vga_update_cursor(machine, d);
 
-	d->crtc_reg[0x0a] = d->cursor_scanline_start;
-	d->crtc_reg[0x0b] = d->cursor_scanline_end;
-
 	tmpi = d->cursor_y * d->max_x + d->cursor_x;
-	d->crtc_reg[0x0e] = tmpi >> 8;
-	d->crtc_reg[0x0f] = tmpi;
-
-	d->crtc_reg[0xff] = 0x03;
 
 	register_reset(d);
 }

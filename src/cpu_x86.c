@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.148 2005-05-24 20:26:31 debug Exp $
+ *  $Id: cpu_x86.c,v 1.149 2005-05-27 13:46:55 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -294,8 +294,8 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("cpu%i:  gdtr=0x%08llx:0x%04x  idtr=0x%08llx:0x%04x "
 		    " ldtr=0x%08x:0x%04x\n", x, (long long)cpu->cd.x86.gdtr,
 		    (int)cpu->cd.x86.gdtr_limit, (long long)cpu->cd.x86.idtr,
-		    (int)cpu->cd.x86.idtr_limit, (long long)cpu->cd.x86.ldtr,
-		    (int)cpu->cd.x86.ldtr_limit);
+		    (int)cpu->cd.x86.idtr_limit, (long long)cpu->cd.x86.
+		    ldtr_base, (int)cpu->cd.x86.ldtr_limit);
 		debug("cpu%i:  pic1: irr=0x%02x ier=0x%02x isr=0x%02x "
 		    "base=0x%02x\n", x, cpu->machine->md.pc.pic1->irr,
 		    cpu->machine->md.pc.pic1->ier,cpu->machine->md.pc.pic1->isr,
@@ -718,12 +718,15 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 		reload_segment_descriptor(cpu, i, value, NULL);
 	}
 
+	if ((cpu->cd.x86.s[X86_S_CS] & 3) != (cpu->cd.x86.s[X86_S_SS] & 3))
+		fatal("WARNING: rpl in CS and SS differ!\n");
+
 	x86_cpu_register_dump(cpu, 1, 1);
 	fatal("-------\n");
 
 	*curpc = cpu->pc;
 
-cpu->machine->instruction_trace = 1;
+	/*  cpu->machine->instruction_trace = 1;  */
 	/*  cpu->running = 0;  */
 }
 
@@ -743,9 +746,10 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 	uint64_t *curpcp)
 {
 	int res, i, readable, writable, granularity, descr_type;
-	int segment = 1, rpl;
+	int segment = 1, rpl, orig_selector = selector;
 	unsigned char descr[8];
-	uint64_t base, limit;
+	char *table_name = "GDT";
+	uint64_t base, limit, table_base, table_limit;
 
 	if (segnr > 0x100)	/*  arbitrary, larger than N_X86_SEGS  */
 		segment = 0;
@@ -775,10 +779,14 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 	 *  Protected mode:  Load the descriptor cache from the GDT.
 	 */
 
+	table_base = cpu->cd.x86.gdtr;
+	table_limit = cpu->cd.x86.gdtr_limit;
 	if (selector & 4) {
-		fatal("TODO: x86 translation via LDT?\n");
-		cpu->running = 0;
-		return;
+		table_name = "LDT";
+		/*  fatal("TODO: x86 translation via LDT: 0x%04x\n",
+		    selector);  */
+		table_base = cpu->cd.x86.ldtr_base;
+		table_limit = cpu->cd.x86.ldtr_limit;
 	}
 
 	/*  Special case: Null-descriptor:  */
@@ -794,14 +802,14 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 
 	selector &= ~7;
 
-	if (selector >= cpu->cd.x86.gdtr_limit) {
-		fatal("TODO: selector 0x%04x outside GDT limit (0x%04x)\n",
-		    selector, (int)cpu->cd.x86.gdtr_limit);
+	if (selector + 7 > table_limit) {
+		fatal("TODO: selector 0x%04x outside %s limit (0x%04x)\n",
+		    selector, table_name, (int)cpu->cd.x86.gdtr_limit);
 		cpu->running = 0;
 		return;
 	}
 
-	res = cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.gdtr + selector,
+	res = cpu->memory_rw(cpu, cpu->mem, table_base + selector,
 	    descr, sizeof(descr), MEM_READ, NO_SEGMENTATION);
 	if (!res) {
 		fatal("reload_segment_descriptor(): TODO: "
@@ -900,7 +908,7 @@ for (i=0; i<8; i++)
 	cpu->cd.x86.descr_cache[segnr].granularity = granularity;
 	cpu->cd.x86.descr_cache[segnr].base = base;
 	cpu->cd.x86.descr_cache[segnr].limit = limit;
-	cpu->cd.x86.s[segnr] = selector;
+	cpu->cd.x86.s[segnr] = orig_selector;
 	return;
 
 fail_dump:
@@ -2592,12 +2600,12 @@ ssize = mode;
  */
 int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 {
-	uint16_t seg;
+	uint16_t seg, old_cs;
 	uint32_t ofs;
 	int res, mode;
 	unsigned char buf[8];
 
-	cpu->cd.x86.rflags &= ~X86_FLAGS_TF;
+	old_cs = cpu->cd.x86.s[X86_S_CS];
 
 	if (PROTECTED_MODE) {
 		int i, int_type = 0;
@@ -2649,21 +2657,77 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 			return 0;
 		}
 
-		/*  TODO: Switch stacks and push old SS:ESP!  */
+		reload_segment_descriptor(cpu, X86_S_CS, seg, &cpu->pc);
+
+		/*
+		 *  If we're changing privilege level, the we should change
+		 *  stack here, and push the old SS:ESP.
+		 */
+		if ((old_cs & X86_PL_MASK) != (seg & X86_PL_MASK)) {
+			unsigned char buf[16];
+			uint16_t new_ss, old_ss;
+			uint32_t new_esp, old_esp;
+			int pl;
+
+			pl = seg & X86_PL_MASK;
+
+			/*  Load SSx:ESPx from the Task State Segment:  */
+			if (cpu->cd.x86.tr < 8)
+				fatal("WARNING: interrupt with stack switch"
+				    ", but task register = 0?\n");
+
+			/*  fatal("::: old SS:ESP=0x%04x:0x%08x\n",
+			    (int)cpu->cd.x86.s[X86_S_SS],
+			    (int)cpu->cd.x86.r[X86_R_SP]);  */
+
+			if (!cpu->memory_rw(cpu, cpu->mem, 4 + pl*8 +
+			    cpu->cd.x86.tr_base, buf, sizeof(buf), MEM_READ,
+			    NO_SEGMENTATION)) {
+				fatal("ERROR: couldn't read tss blah blah\n");
+				cpu->running = 0;
+				return 0;
+			}
+
+			new_esp = buf[0] + (buf[1] << 8) +
+			    (buf[2] << 16) + (buf[3] << 24);
+			new_ss = buf[4] + (buf[5] << 8);
+
+			old_ss = cpu->cd.x86.s[X86_S_SS];
+			old_esp = cpu->cd.x86.r[X86_R_SP];
+
+			cpu->cd.x86.s[X86_S_SS] = new_ss;
+			cpu->cd.x86.r[X86_R_SP] = new_esp;
+
+			/*  fatal("::: new SS:ESP=0x%04x:0x%08x\n",
+			    (int)new_ss, (int)new_esp);  */
+
+			cpu->cd.x86.cursegment = X86_S_SS;
+			mode = cpu->cd.x86.descr_cache[X86_S_CS].
+			    default_op_size;
+
+			if (!x86_push(cpu, old_ss, mode))
+				fatal("TODO: problem adgsadg 1\n");
+			if (!x86_push(cpu, old_esp, mode))
+				fatal("TODO: problem adgsadg 2\n");
+
+			fatal("TODO: switch from ring3\n");
+			/*  cpu->running = 0;
+			    return 0;  */
+		}
 
 		/*  Push flags, cs, and ip (pc):  */
 		cpu->cd.x86.cursegment = X86_S_SS;
 		mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
 		if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
-			fatal("x86_interrupt(): TODO: how to handle this 1\n");
-		if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
-			fatal("x86_interrupt(): TODO: how to handle this 2\n");
+			fatal("TODO: how to handle this 1\n");
+		if (!x86_push(cpu, old_cs, mode))
+			fatal("TODO: how to handle this 2\n");
 		if (!x86_push(cpu, cpu->pc, mode))
-			fatal("x86_interrupt(): TODO: how to handle this 3\n");
+			fatal("TODO: how to handle this 3\n");
 
 		/*  Push error code for some exceptions:  */
 		if ((nr >= 8 && nr <=14) || nr == 17) {
-			if (!x86_push(cpu, cpu->pc, errcode))
+			if (!x86_push(cpu, errcode, mode))
 				fatal("x86_interrupt(): TODO: blah\n");
 		}
 
@@ -2699,22 +2763,24 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 	}
 	ofs = buf[0] + (buf[1] << 8);  seg = buf[2] + (buf[3] << 8);
 
-	/*  Push flags, cs, and ip (pc):  */
+	reload_segment_descriptor(cpu, X86_S_CS, seg, &cpu->pc);
+
+	/*  Push old flags, old cs, and old ip (pc):  */
 	cpu->cd.x86.cursegment = X86_S_SS;
 	mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
 
 	if (!x86_push(cpu, cpu->cd.x86.rflags, mode))
 		fatal("x86_interrupt(): TODO: how to handle this 4\n");
-	if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
+	if (!x86_push(cpu, old_cs, mode))
 		fatal("x86_interrupt(): TODO: how to handle this 5\n");
 	if (!x86_push(cpu, cpu->pc, mode))
 		fatal("x86_interrupt(): TODO: how to handle this 6\n");
 
-	/*  Turn off interrupts and jump to the int handler:  */
-	cpu->cd.x86.rflags &= ~X86_FLAGS_IF;
+	/*  Turn off interrupts and the Trap Flag, and jump to the interrupt
+	    handler:  */
+	cpu->cd.x86.rflags &= ~(X86_FLAGS_IF | X86_FLAGS_TF);
 
 int_jump:
-	reload_segment_descriptor(cpu, X86_S_CS, seg, &cpu->pc);
 	cpu->pc = ofs;
 
 	return 1;
@@ -3105,8 +3171,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	r = cpu->memory_rw(cpu, cpu->mem, cpu->pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION);
 	if (!r) {
-		fatal("x86_cpu_run_instr(): could not read instr. TODO\n");
-		cpu->running = 0;
+		/*  This could happen if, for example, there was an
+		    exception while we tried to read the instruction.  */
 		return 0;
 	}
 
@@ -4503,12 +4569,42 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		if (!x86_pop(cpu, &tmp3, mode))
 			return 0;
+		/*  TODO: only affect some bits?  */
 		if (mode == 16)
 			cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
 			    | (tmp3 & 0xffff);
 		else
 			cpu->cd.x86.rflags = tmp3;
-		/*  TODO: only affect some bits?  */
+		/*
+		 *  In protected mode, if we're switching back from, say, an
+		 *  interrupt handler, then we should pop the old ss:esp too:
+		 */
+		if (PROTECTED_MODE && (tmp2 & X86_PL_MASK) >
+		    (cpu->cd.x86.s[X86_S_CS] & X86_PL_MASK)) {
+			uint64_t old_ss, old_esp;
+			if (!x86_pop(cpu, &old_esp, mode))
+				return 0;
+			if (!x86_pop(cpu, &old_ss, mode))
+				return 0;
+printf(": : : BEFORE tmp=%016llx tmp2=%016llx tmp3=%016llx\n",
+(long long)tmp, (long long)tmp2, (long long)tmp3);
+x86_cpu_register_dump(cpu, 1, 1);
+
+			reload_segment_descriptor(cpu, X86_S_SS, old_ss,
+			    &newpc);
+			cpu->cd.x86.r[X86_R_SP] = old_esp;
+printf(": : : AFTER\n");
+x86_cpu_register_dump(cpu, 1, 1);
+
+			/*  AFTER popping ss, check that the pl of
+			    the popped ss is the same as tmp2 (the new
+			    pl in cs)!  */
+			if ((old_ss & X86_PL_MASK) != (tmp2 & X86_PL_MASK))
+				fatal("WARNING: iret: popped ss' pl = %i,"
+				    " different from cs' pl = %i\n",
+				    (int)(old_ss & X86_PL_MASK),
+				    (int)(tmp2 & X86_PL_MASK));
+		}
 		reload_segment_descriptor(cpu, X86_S_CS, tmp2, &newpc);
 		if (cpu->cd.x86.tr == old_tr)
 			newpc = tmp;

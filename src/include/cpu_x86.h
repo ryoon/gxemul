@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.27 2005-05-24 07:39:33 debug Exp $
+ *  $Id: cpu_x86.h,v 1.28 2005-05-27 13:46:57 debug Exp $
  */
 
 #include "misc.h"
@@ -240,6 +240,12 @@ struct x86_cpu {
 
 #define	X86_IO_BASE	0x1000000000ULL
 
+/*  Privilege level in the lowest 2 bits of a selector:  */
+#define	X86_PL_MASK		0x0003
+#define	X86_RING0		0
+#define	X86_RING1		1
+#define	X86_RING2		2
+#define	X86_RING3		3
 
 #define	DESCR_TYPE_CODE		1
 #define	DESCR_TYPE_DATA		2

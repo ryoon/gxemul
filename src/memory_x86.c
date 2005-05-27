@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.11 2005-05-24 15:13:37 debug Exp $
+ *  $Id: memory_x86.c,v 1.12 2005-05-27 13:46:55 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -49,7 +49,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	unsigned char pted[4];
 	uint64_t table_addr;
 	uint32_t pte, pde;
-	int a, b, res, writable;
+	int a, b, res, writable, usermode;
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int no_segmentation = flags & NO_SEGMENTATION;
@@ -84,6 +84,9 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	/*  Paging:  */
 	if (cpu->cd.x86.cr[0] & X86_CR0_PG) {
+		usermode = (cpu->cd.x86.s[X86_S_CS] & X86_PL_MASK) ==
+		    X86_RING3;
+
 		/*  TODO: This should be cached somewhere, in some
 			kind of simulated TLB.  */
 		if (cpu->cd.x86.cr[3] & 0xfff) {
@@ -113,14 +116,14 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		/*  fatal("  pde: 0x%08x\n", (int)pde);  */
 		/*  TODO: lowest bits of the pde  */
 		if (!(pde & 0x01)) {
-			fatal("TODO: pde not present: vaddr=0x%08x, "
-			    "usermode etc\n", (int)vaddr);
-
-cpu->machine->instruction_trace = 1;
-printf("CS:EIP = 0x%04x:0x%016llx\n",(int)cpu->cd.x86.s[X86_S_CS],
-(long long)cpu->pc);
+			fatal("PAGE FAULT: pde not present: vaddr=0x%08x, "
+			    "usermode=%i\n", (int)vaddr, usermode);
+			fatal("            CS:EIP = 0x%04x:0x%016llx\n",
+			    (int)cpu->cd.x86.s[X86_S_CS],
+			    (long long)cpu->pc);
 			if (!no_exceptions) {
-				x86_interrupt(cpu, 14, writeflag? 2 : 0);
+				x86_interrupt(cpu, 14, (writeflag? 2 : 0) +
+				    (usermode? 4 : 0));
 				cpu->cd.x86.cr[2] = vaddr;
 			}
 			return 0;
@@ -142,10 +145,11 @@ printf("CS:EIP = 0x%04x:0x%016llx\n",(int)cpu->cd.x86.s[X86_S_CS],
 			writable = 0;
 		if (!(pte & 0x01)) {
 			fatal("TODO: pte not present: table_addr=0x%08x "
-			    "vaddr=0x%08x, usermode etc\n",
-			    (int)table_addr, (int)vaddr);
+			    "vaddr=0x%08x, usermode=%i\n",
+			    (int)table_addr, (int)vaddr, usermode);
 			if (!no_exceptions) {
-				x86_interrupt(cpu, 14, writeflag? 2 : 0);
+				x86_interrupt(cpu, 14, (writeflag? 2 : 0)
+				    + (usermode? 4 : 0));
 				cpu->cd.x86.cr[2] = vaddr;
 			}
 			return 0;
@@ -166,7 +170,7 @@ printf("CS:EIP = 0x%04x:0x%016llx\n",(int)cpu->cd.x86.s[X86_S_CS],
 	/*  We are here on non-instruction fetch.  */
 
 	if (writeflag == MEM_WRITE && !writable) {
-		fatal("TODO write to nonwritable segment\n");
+		fatal("TODO write to nonwritable segment or page\n");
 		goto fail;
 	}
 

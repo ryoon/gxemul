@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.68 2005-05-24 20:08:05 debug Exp $
+ *  $Id: dev_vga.c,v 1.69 2005-05-27 07:44:58 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -53,10 +53,10 @@
 
 
 /*  For bintranslated videomem -> framebuffer updates:  */
-#define	VGA_TICK_SHIFT		15
+#define	VGA_TICK_SHIFT		16
 
 #define	MAX_RETRACE_SCANLINES	420
-#define	N_IS1_READ_THRESHOLD	30
+#define	N_IS1_READ_THRESHOLD	50
 
 #define	VGA_MEM_MAXY		60
 #define	VGA_MEM_ALLOCY		60
@@ -124,8 +124,8 @@ struct vga_data {
 	int		current_retrace_line;
 	int		input_status_1;
 
-	/*  Palette _per scanline_ during retrace:  */
-	unsigned char	retrace_palette[MAX_RETRACE_SCANLINES][768];
+	/*  Palette per scanline during retrace:  */
+	unsigned char	*retrace_palette;
 	int		use_palette_per_line;
 	int64_t		n_is1_reads;
 
@@ -400,8 +400,8 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 				if (d->use_palette_per_line) {
 					int sline = d->pixel_repy * (line+y);
 					if (sline < MAX_RETRACE_SCANLINES)
-						pal = &d->retrace_palette
-						    [sline][0];
+						pal = d->retrace_palette
+						    + sline * 256*3;
 					else
 						pal = d->fb->rgb_palette;
 				}
@@ -485,7 +485,8 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 		d->modified = 1;
 	}
 
-	if (d->n_is1_reads > N_IS1_READ_THRESHOLD) {
+	if (d->n_is1_reads > N_IS1_READ_THRESHOLD &&
+	    d->retrace_palette != NULL) {
 		d->use_palette_per_line = 1;
 		d->update_x1 = 0;
 		d->update_x2 = d->max_x - 1;
@@ -1032,10 +1033,22 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 			d->current_retrace_line %= (MAX_RETRACE_SCANLINES * 8);
 			/*  Whenever we are "inside" a scan line, copy the
 			    current palette into retrace_palette[][]:  */
-			if (d->current_retrace_line & 1)
-				memcpy(&d->retrace_palette[d->
-				    current_retrace_line >> 3][0],
-				    d->fb->rgb_palette, 768);
+			if ((d->current_retrace_line & 7) == 7) {
+				if (d->retrace_palette == NULL &&
+				    d->n_is1_reads > N_IS1_READ_THRESHOLD) {
+					d->retrace_palette = malloc(
+					    MAX_RETRACE_SCANLINES * 256*3);
+					if (d->retrace_palette == NULL) {
+						fatal("out of memory\n");
+						exit(1);
+					}
+				}
+				if (d->retrace_palette != NULL)
+					memcpy(d->retrace_palette + (d->
+					    current_retrace_line >> 3) * 256*3,
+					    d->fb->rgb_palette, d->cur_mode ==
+					    MODE_CHARCELL? (16*3) : (256*3));
+			}
 			/*  These need to go on and off, to fake the
 			    real vertical and horizontal retrace info.  */
 			if (d->current_retrace_line < 20*8)

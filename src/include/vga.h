@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: vga.h,v 1.4 2005-05-27 13:46:57 debug Exp $
+ *  $Id: vga.h,v 1.5 2005-05-27 14:11:58 debug Exp $
  *
  *  VGA register definitions, used by src/devices/dev_vga.c.
  */
@@ -74,6 +74,8 @@
 #define	VGA_CRTC_DATA			0x15	/*  R/W  */
 #define	   VGA_CRTC_CURSOR_SCANLINE_START  0x0a
 #define	   VGA_CRTC_CURSOR_SCANLINE_END    0x0b
+#define	   VGA_CRTC_START_ADDR_HIGH	   0x0c
+#define	   VGA_CRTC_START_ADDR_LOW	   0x0d
 #define	   VGA_CRTC_CURSOR_LOCATION_HIGH   0x0e
 #define	   VGA_CRTC_CURSOR_LOCATION_LOW    0x0f
 

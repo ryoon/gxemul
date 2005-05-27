@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.70 2005-05-27 13:46:56 debug Exp $
+ *  $Id: dev_vga.c,v 1.71 2005-05-27 14:11:57 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -155,6 +155,9 @@ static void register_reset(struct vga_data *d)
 	d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_HIGH] =
 	    d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_LOW] = 0;
 
+	d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] =
+	    d->crtc_reg[VGA_CRTC_START_ADDR_LOW] = 0;
+
 	/*  Reset cursor scanline stuff:  */
 	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] = d->font_size - 4;
 	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END] = d->font_size - 2;
@@ -232,26 +235,27 @@ static void reset_palette(struct vga_data *d, int grayscale)
  *  that draw the characters in a terminal window instead.
  */
 static void vga_update_textmode(struct machine *machine,
-	struct vga_data *d, int start, int end)
+	struct vga_data *d, int base, int start, int end)
 {
 	char s[50];
 	int i, oldcolor = -1, printed_last = 0;
 
 	for (i=start; i<=end; i+=2) {
-		unsigned char ch = d->charcells[i];
-		int fg = d->charcells[i+1] & 15;
-		int bg = (d->charcells[i+1] >> 4) & 15;	/*  top bit = blink  */
+		unsigned char ch = d->charcells[base+i];
+		int fg = d->charcells[base+i+1] & 15;
+		int bg = (d->charcells[base+i+1] >> 4) & 15;
+			/*  top bit of bg = blink  */
 		int x = (i/2) % d->max_x;
 		int y = (i/2) / d->max_x;
 
-		if (d->charcells[i] == d->charcells_outputed[i] &&
-		    d->charcells[i+1] == d->charcells_outputed[i+1]) {
+		if (d->charcells[base+i] == d->charcells_outputed[i] &&
+		    d->charcells[base+i+1] == d->charcells_outputed[i+1]) {
 			printed_last = 0;
 			continue;
 		}
 
-		d->charcells_outputed[i] = d->charcells[i];
-		d->charcells_outputed[i+1] = d->charcells[i+1];
+		d->charcells_outputed[i] = d->charcells[base+i];
+		d->charcells_outputed[i+1] = d->charcells[base+i+1];
 
 		if (!printed_last || x == 0) {
 			sprintf(s, "\033[%i;%iH", y + 1, x + 1);
@@ -358,7 +362,7 @@ static void vga_update_graphics(struct machine *machine, struct vga_data *d,
 static void vga_update_text(struct machine *machine, struct vga_data *d,
 	int x1, int y1, int x2, int y2)
 {
-	int fg, bg, i, x,y, subx, line, start, end;
+	int fg, bg, i, x,y, subx, line, start, end, base;
 	int fontsize = d->font_size;
 	unsigned char *pal = d->fb->rgb_palette;
 
@@ -372,16 +376,19 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 	if (end >= d->charcells_size)
 		end = d->charcells_size - 1;
 
+	base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
+	    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
+
 	if (!machine->use_x11)
-		vga_update_textmode(machine, d, start, end);
+		vga_update_textmode(machine, d, base, start, end);
 
 	for (i=start; i<=end; i+=2) {
-		unsigned char ch = d->charcells[i];
-		fg = d->charcells[i+1] & 15;
-		bg = (d->charcells[i+1] >> 4) & 7;
+		unsigned char ch = d->charcells[i + base];
+		fg = d->charcells[i+base + 1] & 15;
+		bg = (d->charcells[i+base + 1] >> 4) & 7;
 
 		/*  Blink is hard to do :-), but inversion might be ok too:  */
-		if (d->charcells[i+1] & 128) {
+		if (d->charcells[i+base + 1] & 128) {
 			int tmp = fg; fg = bg; bg = tmp;
 		}
 
@@ -505,7 +512,7 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 	if (!cpu->machine->use_x11) {
 		/*  NOTE: 2 > 0, so this only updates the cursor, no
 		    character cells.  */
-		vga_update_textmode(cpu->machine, d, 2, 0);
+		vga_update_textmode(cpu->machine, d, 0, 2, 0);
 	}
 
 	if (d->modified) {
@@ -708,6 +715,14 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 	switch (regnr) {
 	case VGA_CRTC_CURSOR_SCANLINE_START:		/*  0x0a  */
 	case VGA_CRTC_CURSOR_SCANLINE_END:		/*  0x0b  */
+		break;
+	case VGA_CRTC_START_ADDR_HIGH:			/*  0x0c  */
+	case VGA_CRTC_START_ADDR_LOW:			/*  0x0d  */
+		d->update_x1 = 0;
+		d->update_x2 = d->max_x - 1;
+		d->update_y1 = 0;
+		d->update_y2 = d->max_y - 1;
+		d->modified = 1;
 		break;
 	case VGA_CRTC_CURSOR_LOCATION_HIGH:		/*  0x0e  */
 	case VGA_CRTC_CURSOR_LOCATION_LOW:		/*  0x0f  */

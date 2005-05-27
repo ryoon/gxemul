@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.149 2005-05-27 13:46:55 debug Exp $
+ *  $Id: cpu_x86.c,v 1.150 2005-05-27 14:40:43 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2695,7 +2695,7 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 			old_ss = cpu->cd.x86.s[X86_S_SS];
 			old_esp = cpu->cd.x86.r[X86_R_SP];
 
-			cpu->cd.x86.s[X86_S_SS] = new_ss;
+			reload_segment_descriptor(cpu, X86_S_SS, new_ss, NULL);
 			cpu->cd.x86.r[X86_R_SP] = new_esp;
 
 			/*  fatal("::: new SS:ESP=0x%04x:0x%08x\n",
@@ -3947,19 +3947,25 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.r[op & 7] = tmp;
 	} else if (op == 0x60) {		/*  PUSHA/PUSHAD  */
 		uint64_t r[8];
+		uint64_t orig_esp = cpu->cd.x86.r[X86_R_SP];
 		int i;
 		for (i=0; i<8; i++)
 			r[i] = cpu->cd.x86.r[i];
 		for (i=0; i<8; i++)
-			if (!x86_push(cpu, r[i], mode))
+			if (!x86_push(cpu, r[i], mode)) {
+				cpu->cd.x86.r[X86_R_SP] = orig_esp;
 				return 0;
+			}
 		/*  TODO: how about errors during push/pop?  */
 	} else if (op == 0x61) {		/*  POPA/POPAD  */
 		uint64_t r[8];
+		uint64_t orig_esp = cpu->cd.x86.r[X86_R_SP];
 		int i;
 		for (i=7; i>=0; i--)
-			if (!x86_pop(cpu, &r[i], mode))
+			if (!x86_pop(cpu, &r[i], mode)) {
+				cpu->cd.x86.r[X86_R_SP] = orig_esp;
 				return 0;
+			}
 		for (i=0; i<8; i++)
 			if (i != X86_R_SP) {
 				if (mode == 16)
@@ -4517,7 +4523,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.x86.cursegment = X86_S_SS;
 				x86_load(cpu, cpu->cd.x86.r[X86_R_BP], 
 				    &tmpword, mode/8);
-				x86_push(cpu, tmpword, mode);
+				if (!x86_push(cpu, tmpword, mode))
+					return 0;
 			}
 			if (!x86_push(cpu, tmp_frame_ptr, mode))
 				return 0;
@@ -5102,7 +5109,8 @@ x86_cpu_register_dump(cpu, 1, 1);
 				if (!success)
 					return 0;
 				/*  Push return [E]IP  */
-				x86_push(cpu, newpc, mode);
+				if (!x86_push(cpu, newpc, mode))
+					return 0;
 				newpc = op1;
 			}
 			break;
@@ -5127,8 +5135,11 @@ x86_cpu_register_dump(cpu, 1, 1);
 				if (!x86_load(cpu, op1 + (mode/8), &tmp2, 2))
 					return 0;
 				/*  Push return CS:[E]IP  */
-				x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode);
-				x86_push(cpu, newpc, mode);
+				if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS],
+				    mode))
+					return 0;
+				if (!x86_push(cpu, newpc, mode))
+					return 0;
 				reload_segment_descriptor(cpu, X86_S_CS,
 				    tmp2, &newpc);
 				if (cpu->cd.x86.tr == old_tr)
@@ -5189,7 +5200,8 @@ x86_cpu_register_dump(cpu, 1, 1);
 				    0, &instr, &newpc, &op1, &op2);
 				if (!success)
 					return 0;
-				x86_push(cpu, op1, mode);
+				if (!x86_push(cpu, op1, mode))
+					return 0;
 			}
 			break;
 		default:

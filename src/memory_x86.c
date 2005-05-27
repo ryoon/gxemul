@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.12 2005-05-27 13:46:55 debug Exp $
+ *  $Id: memory_x86.c,v 1.13 2005-05-27 14:40:43 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -49,7 +49,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	unsigned char pted[4];
 	uint64_t table_addr;
 	uint32_t pte, pde;
-	int a, b, res, writable, usermode;
+	int a, b, res, writable, usermode = 0;
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int no_segmentation = flags & NO_SEGMENTATION;
@@ -74,7 +74,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		if (PROTECTED_MODE && vaddr > dc->limit) {
 			fatal("TODO: vaddr=0x%llx > limit (0x%llx)\n",
 			    (long long)vaddr, (long long)dc->limit);
-			goto fail;
+/*			goto fail;  */
 		}
 
 		/*  TODO: Check the Privilege Level  */
@@ -82,11 +82,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		writable = dc->writable;
 	}
 
+	usermode = (cpu->cd.x86.s[X86_S_CS] & X86_PL_MASK) ==
+	    X86_RING3;
+
 	/*  Paging:  */
 	if (cpu->cd.x86.cr[0] & X86_CR0_PG) {
-		usermode = (cpu->cd.x86.s[X86_S_CS] & X86_PL_MASK) ==
-		    X86_RING3;
-
 		/*  TODO: This should be cached somewhere, in some
 			kind of simulated TLB.  */
 		if (cpu->cd.x86.cr[3] & 0xfff) {
@@ -171,7 +171,10 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	if (writeflag == MEM_WRITE && !writable) {
 		fatal("TODO write to nonwritable segment or page\n");
-		goto fail;
+		x86_interrupt(cpu, 14, (writeflag? 2 : 0)
+		    + (usermode? 4 : 0) + 1);
+		/*  goto fail;  */
+		return 0;
 	}
 
 	return 1 + writable;

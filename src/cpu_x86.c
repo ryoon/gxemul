@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.151 2005-05-28 09:34:37 debug Exp $
+ *  $Id: cpu_x86.c,v 1.152 2005-05-28 10:33:34 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -669,7 +669,7 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 	NO_SEGMENTATION); }
 
 	ofs = 0x1c; value = cpu->cd.x86.cr[3]; WRITE_VALUE;
-	ofs = 0x20; value = *curpc; WRITE_VALUE;
+	ofs = 0x20; value = cpu->pc; WRITE_VALUE;
 	ofs = 0x24; value = cpu->cd.x86.rflags; WRITE_VALUE;
 	for (i=0; i<N_X86_REGS; i++) {
 		ofs = 0x28+i*4; value = cpu->cd.x86.r[i]; WRITE_VALUE;
@@ -702,6 +702,10 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 
 	reload_segment_descriptor(cpu, RELOAD_TR, new_tr, NULL);
 
+	if (cpu->cd.x86.tr_limit < 0x67)
+		fatal("WARNING: tr_limit = 0x%x, must be at least 0x67!\n",
+		    (int)cpu->cd.x86.tr_limit);
+
 	/*  Read new registers:  */
 #define READ_VALUE { cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.tr_base + \
 	ofs, buf, sizeof(buf), MEM_READ, NO_SEGMENTATION); \
@@ -717,9 +721,17 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 		ofs = 0x48+i*4; READ_VALUE;
 		reload_segment_descriptor(cpu, i, value, NULL);
 	}
+	ofs = 0x60; READ_VALUE; value &= 0xffff;
+	reload_segment_descriptor(cpu, RELOAD_LDTR, value, NULL);
 
-	if ((cpu->cd.x86.s[X86_S_CS] & 3) != (cpu->cd.x86.s[X86_S_SS] & 3))
+	if ((cpu->cd.x86.s[X86_S_CS] & X86_PL_MASK) !=
+	    (cpu->cd.x86.s[X86_S_SS] & X86_PL_MASK))
 		fatal("WARNING: rpl in CS and SS differ!\n");
+
+	if ((cpu->cd.x86.s[X86_S_CS] & X86_PL_MASK) == X86_RING3 &&
+	    !(cpu->cd.x86.rflags & X86_FLAGS_IF))
+		fatal("WARNING (?): switching to userland task, but interrupts"
+		    " are disabled?\n");
 
 	x86_cpu_register_dump(cpu, 1, 1);
 	fatal("-------\n");

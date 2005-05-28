@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.71 2005-05-27 14:11:57 debug Exp $
+ *  $Id: dev_vga.c,v 1.72 2005-05-28 20:03:25 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -77,9 +77,10 @@ struct vga_data {
 	struct vfb_data *fb;
 	size_t		fb_size;
 
-	int		fb_max_x;
-	int		max_x;
-	int		max_y;
+	int		fb_max_x;		/*  pixels  */
+	int		fb_max_y;		/*  pixels  */
+	int		max_x;			/*  charcells or pixels  */
+	int		max_y;			/*  charcells or pixels  */
 
 	/*  Selects charcell mode or graphics mode:  */
 	int		cur_mode;
@@ -88,7 +89,8 @@ struct vga_data {
 	int		pixel_repx, pixel_repy;
 
 	/*  Textmode:  */
-	int		font_size;
+	int		font_width;
+	int		font_height;
 	unsigned char	*font;
 	size_t		charcells_size;
 	unsigned char	*charcells;		/*  2 bytes per char  */
@@ -159,8 +161,8 @@ static void register_reset(struct vga_data *d)
 	    d->crtc_reg[VGA_CRTC_START_ADDR_LOW] = 0;
 
 	/*  Reset cursor scanline stuff:  */
-	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] = d->font_size - 4;
-	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END] = d->font_size - 2;
+	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] = d->font_height - 4;
+	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END] = d->font_height - 2;
 
 	d->sequencer_reg[VGA_SEQ_MAP_MASK] = 0x0f;
 	d->graphcontr_reg[VGA_GRAPHCONTR_MASK] = 0xff;
@@ -363,7 +365,8 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 	int x1, int y1, int x2, int y2)
 {
 	int fg, bg, i, x,y, subx, line, start, end, base;
-	int fontsize = d->font_size;
+	int font_size = d->font_height;
+	int font_width = d->font_width;
 	unsigned char *pal = d->fb->rgb_palette;
 
 	/*  Hm... I'm still using the old start..end code:  */
@@ -392,13 +395,12 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 			int tmp = fg; fg = bg; bg = tmp;
 		}
 
-		x = (i/2) % d->max_x; x *= 8;
-		y = (i/2) / d->max_x; y *= fontsize;
+		x = (i/2) % d->max_x; x *= font_width;
+		y = (i/2) / d->max_x; y *= font_size;
 
 		/*  Draw the character:  */
-		for (line = 0; line < fontsize; line++) {
-			for (subx = 0; subx < 8; subx++) {
-				unsigned char pixel[3];
+		for (line = 0; line < font_size; line++) {
+			for (subx = 0; subx < font_width; subx++) {
 				int ix, iy, color_index;
 
 				if (d->use_palette_per_line) {
@@ -410,15 +412,11 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 						pal = d->fb->rgb_palette;
 				}
 
-				if (d->font[ch * fontsize + line] &
+				if (d->font[ch * font_size + line] &
 				    (128 >> subx))
 					color_index = fg;
 				else
 					color_index = bg;
-
-				pixel[0] = pal[color_index * 3 + 0];
-				pixel[1] = pal[color_index * 3 + 1];
-				pixel[2] = pal[color_index * 3 + 2];
 
 				for (iy=0; iy<d->pixel_repy; iy++)
 				    for (ix=0; ix<d->pixel_repx; ix++) {
@@ -429,8 +427,9 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 					if (addr >= d->fb_size)
 						continue;
 					dev_fb_access(machine->cpus[0],
-					    machine->memory, addr, &pixel[0],
-					    sizeof(pixel), MEM_WRITE, d->fb);
+					    machine->memory, addr,
+					    &pal[color_index * 3], 3,
+					    MEM_WRITE, d->fb);
 				    }
 			}
 		}
@@ -455,13 +454,14 @@ static void vga_update_cursor(struct machine *machine, struct vga_data *d)
 		height = 1;
 	}
 
-	if (d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] >= d->font_size)
+	if (d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] >= d->font_height)
 		onoff = 0;
 
 	dev_fb_setcursor(d->fb,
-	    d->cursor_x * 8 * d->pixel_repx, (d->cursor_y * d->font_size +
-	    d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START]) * d->pixel_repy,
-	    onoff, 8*d->pixel_repx, height * d->pixel_repy);
+	    d->cursor_x * d->font_width * d->pixel_repx, (d->cursor_y *
+	    d->font_height + d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START]) *
+	    d->pixel_repy, onoff, d->font_width * d->pixel_repx, height *
+	    d->pixel_repy);
 }
 
 
@@ -740,7 +740,9 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 			d->cur_mode = MODE_CHARCELL;
 			d->max_x = 40; d->max_y = 25;
 			d->pixel_repx = 2; d->pixel_repy = 1;
-			d->font_size = 16;
+			d->font_width = 8;
+			d->font_height = 16;
+			d->font = font8x16;
 			break;
 		case 0x02:
 			grayscale = 1;
@@ -748,7 +750,9 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 			d->cur_mode = MODE_CHARCELL;
 			d->max_x = 80; d->max_y = 25;
 			d->pixel_repx = d->pixel_repy = 1;
-			d->font_size = 16;
+			d->font_width = 8;
+			d->font_height = 16;
+			d->font = font8x16;
 			break;
 		case 0x12:
 			d->cur_mode = MODE_GRAPHICS;
@@ -778,10 +782,11 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 		}
 
 		if (d->cur_mode == MODE_CHARCELL) {
-			dev_fb_resize(d->fb, d->max_x * 8 * d->pixel_repx,
-			    d->max_y * d->font_size * d->pixel_repy);
-			d->fb_size = d->max_x * d->pixel_repx * 8 *
-			     d->max_y * d->pixel_repy * d->font_size * 3;
+			dev_fb_resize(d->fb, d->max_x * d->font_width *
+			    d->pixel_repx, d->max_y * d->font_height *
+			    d->pixel_repy);
+			d->fb_size = d->max_x * d->pixel_repx * d->font_width *
+			     d->max_y * d->pixel_repy * d->font_height * 3;
 		} else {
 			dev_fb_resize(d->fb, d->max_x * d->pixel_repx,
 			    d->max_y * d->pixel_repy);
@@ -1147,13 +1152,20 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	memset(d->charcells_outputed, 0, d->charcells_size);
 	memset(d->gfx_mem, 0, d->gfx_mem_size);
 
-	d->font_size = 16;
 	d->font = font8x16;
-	d->fb_max_x = 8*d->max_x;
+	d->font_width  = 8;
+	d->font_height = 16;
+
+	d->fb_max_x = d->pixel_repx * d->max_x;
+	d->fb_max_y = d->pixel_repy * d->max_y;
+	if (d->cur_mode == MODE_CHARCELL) {
+		d->fb_max_x *= d->font_width;
+		d->fb_max_y *= d->font_height;
+	}
 
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    d->fb_max_x, 16*d->max_y, d->fb_max_x, 16*d->max_y, 24, "VGA", 0);
-	d->fb_size = d->fb_max_x * d->font_size*d->max_y * 3;
+	    d->fb_max_x, d->fb_max_y, d->fb_max_x, d->fb_max_y, 24, "VGA", 0);
+	d->fb_size = d->fb_max_x * d->fb_max_y * 3;
 
 	reset_palette(d, 0);
 

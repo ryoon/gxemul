@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.155 2005-05-28 12:59:34 debug Exp $
+ *  $Id: cpu_x86.c,v 1.156 2005-05-28 20:03:24 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -999,6 +999,12 @@ static void x86_write_cr(struct cpu *cpu, int r, uint64_t value)
 	case 0:	new = cpu->cd.x86.cr[r] = value;
 		/*  Warn about unimplemented bits:  */
 		tmp = new & ~(X86_CR0_PE | X86_CR0_PG);
+		if (cpu->cd.x86.model.model_number <= X86_MODEL_80386) {
+			if (tmp & X86_CR0_WP)
+				fatal("WARNING: cr0 WP bit set, but this is"
+				    " not an 80486 or higher (?)\n");
+		}
+		tmp &= ~X86_CR0_WP;
 		if (tmp != 0)
 			fatal("x86_write_cr(): unimplemented cr0 bits: "
 			    "0x%08llx\n", (long long)tmp);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.28 2005-05-27 13:46:57 debug Exp $
+ *  $Id: cpu_x86.h,v 1.29 2005-05-28 22:03:58 debug Exp $
  */
 
 #include "misc.h"
@@ -172,8 +172,8 @@ struct x86_cpu {
 #define	X86_CR0_TS	0x00000008
 #define	X86_CR0_ET	0x00000010
 #define	X86_CR0_NE	0x00000020
-#define	X86_CR0_WP	0x00001000
-#define	X86_CR0_AM	0x00004000
+#define	X86_CR0_WP	0x00010000
+#define	X86_CR0_AM	0x00040000
 #define	X86_CR0_NW	0x20000000
 #define	X86_CR0_CD	0x40000000
 #define	X86_CR0_PG	0x80000000	/*  Paging Enable  */

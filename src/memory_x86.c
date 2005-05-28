@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.14 2005-05-28 11:02:17 debug Exp $
+ *  $Id: memory_x86.c,v 1.15 2005-05-28 11:39:03 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -122,9 +122,9 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			    (int)cpu->cd.x86.s[X86_S_CS],
 			    (long long)cpu->pc);
 			if (!no_exceptions) {
+				cpu->cd.x86.cr[2] = vaddr;
 				x86_interrupt(cpu, 14, (writeflag? 2 : 0) +
 				    (usermode? 4 : 0));
-				cpu->cd.x86.cr[2] = vaddr;
 			}
 			return 0;
 		}
@@ -148,9 +148,9 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			    "vaddr=0x%08x, usermode=%i\n",
 			    (int)table_addr, (int)vaddr, usermode);
 			if (!no_exceptions) {
+				cpu->cd.x86.cr[2] = vaddr;
 				x86_interrupt(cpu, 14, (writeflag? 2 : 0)
 				    + (usermode? 4 : 0));
-				cpu->cd.x86.cr[2] = vaddr;
 			}
 			return 0;
 		}
@@ -173,6 +173,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		fatal("TODO: write to nonwritable segment or page: "
 		    "vaddr=0x%08x pde=0x%08x pte=0x%08x\n",
 		    (int)vaddr, (int)pde, (int)pte);
+		cpu->cd.x86.cr[2] = vaddr;
 		x86_interrupt(cpu, 14, (writeflag? 2 : 0)
 		    + (usermode? 4 : 0) + 1);
 		/*  goto fail;  */

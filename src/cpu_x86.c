@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.153 2005-05-28 11:02:17 debug Exp $
+ *  $Id: cpu_x86.c,v 1.154 2005-05-28 11:39:03 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2552,6 +2552,7 @@ static int x86_push(struct cpu *cpu, uint64_t value, int mode)
 {
 	int res = 1, oldseg;
 	int ssize = cpu->cd.x86.descr_cache[X86_S_SS].default_op_size;
+	uint64_t old_esp = cpu->cd.x86.r[X86_R_SP];
 
 	/*  TODO: up/down?  */
 	/*  TODO: stacksize?  */
@@ -2566,8 +2567,10 @@ ssize = mode;
 		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] -
 		    (ssize / 8)) & 0xffffffff;
 	res = x86_store(cpu, cpu->cd.x86.r[X86_R_SP], value, ssize / 8);
-	if (!res)
+	if (!res) {
 		fatal("WARNIG: x86_push store failed\n");
+		cpu->cd.x86.r[X86_R_SP] = old_esp;
+	}
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
@@ -2588,14 +2591,17 @@ ssize = mode;
 	oldseg = cpu->cd.x86.cursegment;
 	cpu->cd.x86.cursegment = X86_S_SS;
 	res = x86_load(cpu, cpu->cd.x86.r[X86_R_SP], valuep, ssize / 8);
-	if (!res)
+	if (!res) {
 		fatal("WARNIG: x86_pop load failed\n");
-	if (cpu->cd.x86.descr_cache[X86_S_SS].default_op_size == 16)
-		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] & ~0xffff)
-		    | ((cpu->cd.x86.r[X86_R_SP] + (ssize / 8)) & 0xffff);
-	else
-		cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] +
-		    (ssize / 8)) & 0xffffffff;
+	} else {
+		if (cpu->cd.x86.descr_cache[X86_S_SS].default_op_size == 16)
+			cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] &
+			    ~0xffff) | ((cpu->cd.x86.r[X86_R_SP] + (ssize / 8))
+			    & 0xffff);
+		else
+			cpu->cd.x86.r[X86_R_SP] = (cpu->cd.x86.r[X86_R_SP] +
+			    (ssize / 8)) & 0xffffffff;
+	}
 	cpu->cd.x86.cursegment = oldseg;
 	return res;
 }
@@ -3986,7 +3992,6 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				else
 					cpu->cd.x86.r[i] = r[i];
 			}
-		/*  TODO: how about errors during push/pop?  */
 	} else if (op == 0x68) {		/*  PUSH imm16/32  */
 		uint64_t imm = read_imm(&instr, &newpc, mode);
 		if (!x86_push(cpu, imm, mode))

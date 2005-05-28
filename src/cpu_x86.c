@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.150 2005-05-27 14:40:43 debug Exp $
+ *  $Id: cpu_x86.c,v 1.151 2005-05-28 09:34:37 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -790,7 +790,7 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 	}
 
 	/*  Special case: Null-descriptor:  */
-	if (segment && (selector & ~7) == 0) {
+	if (segment && (selector & ~3) == 0) {
 		cpu->cd.x86.descr_cache[segnr].valid = 0;
 		cpu->cd.x86.s[segnr] = selector;
 		return;

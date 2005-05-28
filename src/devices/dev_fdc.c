@@ -25,11 +25,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.10 2005-05-22 10:13:57 debug Exp $
+ *  $Id: dev_fdc.c,v 1.11 2005-05-28 11:02:20 debug Exp $
  *  
- *  Floppy controller.
+ *  PC-style floppy controller.
  *
  *  TODO!  (This is just a dummy skeleton right now.)
+ *
+ *  TODO 2: Make it work nicely with both ARC and PC emulation.
+ *
+ *  See http://members.tripod.com/~oldboard/assembly/765.html for a
+ *  quick overview.
  */
 
 #include <stdio.h>
@@ -42,7 +47,7 @@
 #include "misc.h"
 
 
-#define	DEV_FDC_LENGTH		0x100
+#define	DEV_FDC_LENGTH		8
 
 
 struct fdc_data {
@@ -64,26 +69,16 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem,
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  TODO:  this is 100% dummy  */
-
 	switch (relative_addr) {
-	case 0x04:
-		/*  no debug warning  */
-		if (writeflag==MEM_READ) {
-			odata = d->reg[relative_addr];
-		} else
-			d->reg[relative_addr] = idata;
-		break;
-	default:
-		if (writeflag==MEM_READ) {
-			debug("[ fdc: read from reg %i ]\n",
+	default:if (writeflag==MEM_READ) {
+			fatal("[ fdc: read from reg %i ]\n",
 			    (int)relative_addr);
 			odata = d->reg[relative_addr];
 		} else {
-			debug("[ fdc: write to reg %i:", (int)relative_addr);
+			fatal("[ fdc: write to reg %i:", (int)relative_addr);
 			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-			debug(" ]\n");
+				fatal(" %02x", data[i]);
+			fatal(" ]\n");
 			d->reg[relative_addr] = idata;
 		}
 	}

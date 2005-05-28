@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.447 2005-05-25 14:22:56 debug Exp $
+ *  $Id: machine.c,v 1.448 2005-05-28 11:02:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3823,7 +3823,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
 			dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 2);
 
-		/*  TODO: floppy at irq 6  */
+		/*  Floppy controller at irq 6  */
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "fdc addr=0x%llx irq=6",
+		    (long long)(X86_IO_BASE + 0x3f0));
+		device_add(machine, tmpstr);
 
 		/*  TODO: sound blaster (eventually) at irq 7?  */
 

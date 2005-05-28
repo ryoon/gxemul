@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.152 2005-05-28 10:33:34 debug Exp $
+ *  $Id: cpu_x86.c,v 1.153 2005-05-28 11:02:17 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2675,7 +2675,7 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 		 *  If we're changing privilege level, the we should change
 		 *  stack here, and push the old SS:ESP.
 		 */
-		if ((old_cs & X86_PL_MASK) != (seg & X86_PL_MASK)) {
+		if ((seg & X86_PL_MASK) < (old_cs & X86_PL_MASK)) {
 			unsigned char buf[16];
 			uint16_t new_ss, old_ss;
 			uint32_t new_esp, old_esp;
@@ -2684,7 +2684,7 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 			pl = seg & X86_PL_MASK;
 
 			/*  Load SSx:ESPx from the Task State Segment:  */
-			if (cpu->cd.x86.tr < 8)
+			if (cpu->cd.x86.tr < 4)
 				fatal("WARNING: interrupt with stack switch"
 				    ", but task register = 0?\n");
 

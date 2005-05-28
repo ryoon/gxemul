@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.156 2005-05-28 20:03:24 debug Exp $
+ *  $Id: cpu_x86.c,v 1.157 2005-05-28 21:33:33 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -808,7 +808,7 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 
 	if (selector + 7 > table_limit) {
 		fatal("TODO: selector 0x%04x outside %s limit (0x%04x)\n",
-		    selector, table_name, (int)cpu->cd.x86.gdtr_limit);
+		    selector, table_name, (int)table_limit);
 		cpu->running = 0;
 		return;
 	}
@@ -1963,11 +1963,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = (signed char)read_imm_and_print(&instr, &ilen, 8);
 		SPACES; debug("push\tbyte 0x%x", imm);
 	} else if (op == 0x6c) {
-		SPACES; debug("ins");
+		SPACES; debug("insb");
 	} else if (op == 0x6d) {
 		SPACES; debug("ins%s", mode==16? "w" : (mode==32? "d" : "q"));
 	} else if (op == 0x6e) {
-		SPACES; debug("outs");
+		SPACES; debug("outsb");
 	} else if (op == 0x6f) {
 		SPACES; debug("outs%s", mode==16? "w" : (mode==32? "d" : "q"));
 	} else if ((op & 0xf0) == 0x70) {
@@ -4468,12 +4468,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (rep) {
 				/*  Decrement ecx:  */
-				cpu->cd.x86.r[X86_R_CX] = modify(cpu->cd.x86.r[
-				    X86_R_CX], cpu->cd.x86.r[X86_R_CX] - 1);
-				if (mode == 16 && (cpu->cd.x86.r[X86_R_CX] &
+				if (mode67 == 16)
+					cpu->cd.x86.r[X86_R_CX] =
+					    (cpu->cd.x86.r[X86_R_CX] & ~0xffff)
+					    | ((cpu->cd.x86.r[X86_R_CX] - 1)
+					    & 0xffff);
+				else {
+					cpu->cd.x86.r[X86_R_CX] --;
+					cpu->cd.x86.r[X86_R_CX] &= 0xffffffff;
+				}
+				if (mode67 == 16 && (cpu->cd.x86.r[X86_R_CX] &
 				    0xffff) == 0)
 					rep = 0;
-				if (mode != 16 && cpu->cd.x86.r[X86_R_CX] == 0)
+				if (mode67 != 16 &&
+				    cpu->cd.x86.r[X86_R_CX] == 0)
 					rep = 0;
 
 				if (cmps || scas) {
@@ -4837,14 +4845,21 @@ x86_cpu_register_dump(cpu, 1, 1); */
 
 				if (rep) {
 					/*  Decrement ecx:  */
-					cpu->cd.x86.r[X86_R_CX] =
-					    modify(cpu->cd.x86.r[X86_R_CX],
-					    cpu->cd.x86.r[X86_R_CX] - 1);
-					if (mode == 16 && (cpu->cd.x86.r[
+					if (mode67 == 16)
+						cpu->cd.x86.r[X86_R_CX] =
+						    (cpu->cd.x86.r[X86_R_CX] &
+						    ~0xffff) | ((cpu->cd.x86.r[
+						    X86_R_CX] - 1) & 0xffff);
+					else {
+						cpu->cd.x86.r[X86_R_CX] --;
+						cpu->cd.x86.r[X86_R_CX] &=
+						    0xffffffff;
+					}
+					if (mode67 == 16 && (cpu->cd.x86.r[
 					    X86_R_CX] & 0xffff) == 0)
 						rep = 0;
-					if (mode != 16 && cpu->cd.x86.r[
-					    X86_R_CX] == 0)
+					if (mode67 != 16 &&
+					    cpu->cd.x86.r[X86_R_CX] == 0)
 						rep = 0;
 				}
 			} else {
@@ -4862,19 +4877,77 @@ x86_cpu_register_dump(cpu, 1, 1); */
 					    << 16) | (databuf[3] << 24);
 			}
 		} while (rep);
-	} else if (op == 0xe6 || op == 0xe7) {	/*  OUT imm,AL or AX/EAX  */
+	} else if (op == 0xe6 || op == 0xe7	/*  OUT imm,AL or AX/EAX  */
+	    || op == 0x6e || op == 0x6f) {	/*  OUTSB or OUTSW/OUTSD  */
 		unsigned char databuf[8];
-		imm = read_imm(&instr, &newpc, 8);
-		databuf[0] = cpu->cd.x86.r[X86_R_AX];
-		if (op == 0xe7) {
-			databuf[1] = cpu->cd.x86.r[X86_R_AX] >> 8;
-			if (mode >= 32) {
-				databuf[2] = cpu->cd.x86.r[X86_R_AX] >> 16;
-				databuf[3] = cpu->cd.x86.r[X86_R_AX] >> 24;
+		int port_nr, outs = 0, len = 1, dir = 1;
+		if (op == 0x6e || op == 0x6f) {
+			port_nr = cpu->cd.x86.r[X86_R_DX] & 0xffff;
+			outs = 1;
+		} else
+			port_nr = read_imm(&instr, &newpc, 8);
+		if (op & 1)
+			len = mode/8;
+		if (cpu->cd.x86.rflags & X86_FLAGS_DF)
+			dir = -1;
+		do {
+			if (outs) {
+				int i;
+				uint64_t addr = cpu->cd.x86.r[X86_R_DI];
+				uint64_t value;
+				if (mode67 == 16)
+					addr &= 0xffff;
+				if (mode67 == 32)
+					addr &= 0xffffffff;
+				cpu->cd.x86.cursegment = X86_S_ES;
+				if (!x86_load(cpu, addr, &value, len))
+					return 0;
+
+				/*  Advance (e)di:  */
+				if (mode67 == 16)
+					cpu->cd.x86.r[X86_R_DI] =
+					    (cpu->cd.x86.r[X86_R_DI] & ~0xffff)
+					    | ((cpu->cd.x86.r[X86_R_DI]+len*dir)
+					    & 0xffff);
+				else {
+					cpu->cd.x86.r[X86_R_DI] += len*dir;
+					if (mode67 == 32)
+						cpu->cd.x86.r[X86_R_DI] &=
+						    0xffffffff;
+				}
+
+				for (i=0; i<8; i++)
+					databuf[i] = value >> (i*8);
+
+				if (rep) {
+					/*  Decrement ecx:  */
+					if (mode67 == 16)
+						cpu->cd.x86.r[X86_R_CX] =
+						    (cpu->cd.x86.r[X86_R_CX] &
+						    ~0xffff) | ((cpu->cd.x86.r[
+						    X86_R_CX] - 1) & 0xffff);
+					else {
+						cpu->cd.x86.r[X86_R_CX] --;
+						cpu->cd.x86.r[X86_R_CX] &=
+						    0xffffffff;
+					}
+					if (mode67 == 16 && (cpu->cd.x86.r[
+					    X86_R_CX] & 0xffff) == 0)
+						rep = 0;
+					if (mode67 != 16 &&
+					    cpu->cd.x86.r[X86_R_CX] == 0)
+						rep = 0;
+				}
+			} else {
+				int i;
+				for (i=0; i<8; i++)
+					databuf[i] = cpu->cd.x86.r[X86_R_AX]
+					    >> (i*8);
 			}
-		}
-		cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE + imm, &databuf[0],
-		    op == 0xe6? 1 : (mode/8), MEM_WRITE, CACHE_NONE | PHYSICAL);
+
+			cpu->memory_rw(cpu, cpu->mem, X86_IO_BASE+port_nr,
+			    &databuf[0], len, MEM_WRITE, CACHE_NONE | PHYSICAL);
+		} while (rep);
 	} else if (op == 0xe8 || op == 0xe9) {	/*  CALL/JMP near  */
 		imm = read_imm(&instr, &newpc, mode);
 		if (mode == 16)

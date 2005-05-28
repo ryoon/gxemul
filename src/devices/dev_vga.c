@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.72 2005-05-28 20:03:25 debug Exp $
+ *  $Id: dev_vga.c,v 1.73 2005-05-28 21:33:34 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -754,19 +754,43 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 			d->font_height = 16;
 			d->font = font8x16;
 			break;
-		case 0x12:
+		case 0x08:
 			d->cur_mode = MODE_GRAPHICS;
-			d->max_x = 640; d->max_y = 480;
+			d->max_x = 160;	d->max_y = 200;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
-			d->pixel_repx = d->pixel_repy = 1;
+			d->pixel_repx = 4;
+			d->pixel_repy = 2;
 			break;
+		case 0x09:
 		case 0x0d:
 			d->cur_mode = MODE_GRAPHICS;
 			d->max_x = 320;	d->max_y = 200;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
 			d->pixel_repx = d->pixel_repy = 2;
+			break;
+		case 0x0e:
+			d->cur_mode = MODE_GRAPHICS;
+			d->max_x = 640;	d->max_y = 200;
+			d->graphics_mode = GRAPHICS_MODE_4BIT;
+			d->bits_per_pixel = 4;
+			d->pixel_repx = 1;
+			d->pixel_repy = 2;
+			break;
+		case 0x10:
+			d->cur_mode = MODE_GRAPHICS;
+			d->max_x = 640; d->max_y = 350;
+			d->graphics_mode = GRAPHICS_MODE_4BIT;
+			d->bits_per_pixel = 4;
+			d->pixel_repx = d->pixel_repy = 1;
+			break;
+		case 0x12:
+			d->cur_mode = MODE_GRAPHICS;
+			d->max_x = 640; d->max_y = 480;
+			d->graphics_mode = GRAPHICS_MODE_4BIT;
+			d->bits_per_pixel = 4;
+			d->pixel_repx = d->pixel_repy = 1;
 			break;
 		case 0x13:
 			d->cur_mode = MODE_GRAPHICS;

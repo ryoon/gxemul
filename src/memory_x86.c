@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.16 2005-05-28 12:59:34 debug Exp $
+ *  $Id: memory_x86.c,v 1.17 2005-05-28 22:11:22 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -111,6 +111,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			    (long long)table_addr);
 			goto fail;
 		}
+		if (!(pded[0] & 0x20)) {
+			pded[0] |= 0x20;
+			cpu->memory_rw(cpu, cpu->mem, table_addr + 4*a, pded,
+			    sizeof(pded), MEM_WRITE, PHYSICAL);
+		}
 		pde = pded[0] + (pded[1] << 8) + (pded[2] << 16) +
 		    (pded[3] << 24);
 		/*  fatal("  pde: 0x%08x\n", (int)pde);  */
@@ -140,6 +145,16 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		}
 		pte = pted[0] + (pted[1] << 8) + (pted[2] << 16) +
 		    (pted[3] << 24);
+		if (!(pted[0] & 0x20)) {
+			pted[0] |= 0x20;
+			cpu->memory_rw(cpu, cpu->mem, table_addr + 4*b, pted,
+			    sizeof(pted), MEM_WRITE, PHYSICAL);
+		}
+		if (writeflag == MEM_WRITE && !(pted[0] & 0x40)) {
+			pted[0] |= 0x40;
+			cpu->memory_rw(cpu, cpu->mem, table_addr + 4*b, pted,
+			    sizeof(pted), MEM_WRITE, PHYSICAL);
+		}
 		/*  fatal("  pte: 0x%08x\n", (int)pte);  */
 		if (!(pte & 0x02))
 			writable = 0;

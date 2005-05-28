@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.15 2005-05-28 11:39:03 debug Exp $
+ *  $Id: memory_x86.c,v 1.16 2005-05-28 12:59:34 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -170,14 +170,19 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	/*  We are here on non-instruction fetch.  */
 
 	if (writeflag == MEM_WRITE && !writable) {
-		fatal("TODO: write to nonwritable segment or page: "
-		    "vaddr=0x%08x pde=0x%08x pte=0x%08x\n",
-		    (int)vaddr, (int)pde, (int)pte);
-		cpu->cd.x86.cr[2] = vaddr;
-		x86_interrupt(cpu, 14, (writeflag? 2 : 0)
-		    + (usermode? 4 : 0) + 1);
-		/*  goto fail;  */
-		return 0;
+		if (!usermode && !(cpu->cd.x86.cr[0] & X86_CR0_WP)) {
+			/*  80386 compatiblity: allow writes to userspace,
+			    if we are running in kernel mode.  */
+			writable = 1;
+		} else {
+			fatal("TODO: write to nonwritable segment or page: "
+			    "vaddr=0x%08x pde=0x%08x pte=0x%08x\n",
+			    (int)vaddr, (int)pde, (int)pte);
+			cpu->cd.x86.cr[2] = vaddr;
+			x86_interrupt(cpu, 14, (writeflag? 2 : 0)
+			    + (usermode? 4 : 0) + 1);
+			return 0;
+		}
 	}
 
 	return 1 + writable;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.7 2005-05-07 03:39:43 debug Exp $
+ *  $Id: console.c,v 1.8 2005-05-29 17:51:45 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -42,7 +42,6 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
-#include <sys/time.h>
 #include <sys/types.h>
 
 #include "console.h"

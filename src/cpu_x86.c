@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.157 2005-05-28 21:33:33 debug Exp $
+ *  $Id: cpu_x86.c,v 1.158 2005-05-29 10:35:11 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2631,6 +2631,8 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 
 	old_cs = cpu->cd.x86.s[X86_S_CS];
 
+	debug("{ x86_interrupt %i }\n", nr);
+
 	if (PROTECTED_MODE) {
 		int i, int_type = 0;
 
@@ -2722,8 +2724,8 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 			reload_segment_descriptor(cpu, X86_S_SS, new_ss, NULL);
 			cpu->cd.x86.r[X86_R_SP] = new_esp;
 
-			/*  fatal("::: new SS:ESP=0x%04x:0x%08x\n",
-			    (int)new_ss, (int)new_esp);  */
+			fatal("::: Switching Stack: new SS:ESP=0x%04x:0x%08x\n",
+			    (int)new_ss, (int)new_esp);
 
 			mode = cpu->cd.x86.descr_cache[X86_S_CS].
 			    default_op_size;
@@ -3533,10 +3535,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					}
 					break;
 				case 7:	/*  invlpg  */
-					if (!modrm(cpu, MODRM_READ, mode,
-					    mode67, 0, &instr, &newpc, &op1,
-					    &op2))
-						return 0;
+					modrm(cpu, MODRM_READ, mode,
+					    mode67, MODRM_JUST_GET_ADDR, &instr,
+					    &newpc, &op1, &op2);
 					/*  TODO  */
 					break;
 				default:fatal("UNIMPLEMENTED 0x%02x,0x%02x"
@@ -3965,6 +3966,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		cpu->cd.x86.r[X86_R_AX] &= ~0xff;
 		cpu->cd.x86.r[X86_R_AX] |= ((a*16 + b) & 0xff);
+	} else if (op == 0x2f) {			/*  DAS  */
+		int tmp_al = cpu->cd.x86.r[X86_R_AX] & 0xff;
+		if ((tmp_al & 0xf) > 9 || cpu->cd.x86.rflags & X86_FLAGS_AF) {
+			cpu->cd.x86.r[X86_R_AX] &= ~0xff;
+			cpu->cd.x86.r[X86_R_AX] |= ((tmp_al - 6) & 0xff);
+			cpu->cd.x86.rflags |= X86_FLAGS_AF;
+		} else
+			cpu->cd.x86.rflags &= ~X86_FLAGS_AF;
+		if (tmp_al > 0x9f || cpu->cd.x86.rflags & X86_FLAGS_CF) {
+			cpu->cd.x86.r[X86_R_AX] &= ~0xff;
+			cpu->cd.x86.r[X86_R_AX] |= ((tmp_al - 0x60) & 0xff);
+			cpu->cd.x86.rflags |= X86_FLAGS_CF;
+		} else
+			cpu->cd.x86.rflags &= ~X86_FLAGS_CF;
+		x86_calc_flags(cpu, cpu->cd.x86.r[X86_R_AX] & 0xff,
+		    0, 8, CALCFLAGS_OP_XOR);
 	} else if (op == 0x37) {			/*  AAA  */
 		int b = cpu->cd.x86.r[X86_R_AX] & 0xf;
 		if (b > 9) {
@@ -4647,6 +4664,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 		if (!x86_pop(cpu, &tmp3, mode))
 			return 0;
+debug("{ iret to 0x%04x:0x%08x }\n", (int)tmp2,(int)tmp);
 		/*  TODO: only affect some bits?  */
 		if (mode == 16)
 			cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)

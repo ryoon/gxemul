@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.34 2005-05-25 14:22:56 debug Exp $
+ *  $Id: memory_rw.c,v 1.35 2005-05-29 10:35:11 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -99,10 +99,8 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		}
 	}
 
-	/*  Crossing a memblock boundary? Then do one byte at a time:  */
-	if ((vaddr & ((1 << BITS_PER_MEMBLOCK) - 1)) + len >
-	    (1 << BITS_PER_MEMBLOCK)) {
-fatal("TODO: x86 memblock cross\n");
+	/*  Crossing a page boundary? Then do one byte at a time:  */
+	if ((vaddr & 0xfff) + len > 0x1000) {
 		/*  Do one byte at a time:  */
 		int res = 0, i;
 		for (i=0; i<len; i++) {

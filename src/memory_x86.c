@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.17 2005-05-28 22:11:22 debug Exp $
+ *  $Id: memory_x86.c,v 1.18 2005-05-29 10:35:11 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -111,8 +111,14 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			    (long long)table_addr);
 			goto fail;
 		}
-		if (!(pded[0] & 0x20)) {
+		if ((pded[0] & 0x01) && !(pded[0] & 0x20)) {
 			pded[0] |= 0x20;
+			cpu->memory_rw(cpu, cpu->mem, table_addr + 4*a, pded,
+			    sizeof(pded), MEM_WRITE, PHYSICAL);
+		}
+		if ((pded[0] & 0x01) && writeflag == MEM_WRITE &&
+		    !(pded[0] & 0x40)) {
+			pded[0] |= 0x40;
 			cpu->memory_rw(cpu, cpu->mem, table_addr + 4*a, pded,
 			    sizeof(pded), MEM_WRITE, PHYSICAL);
 		}
@@ -145,12 +151,13 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		}
 		pte = pted[0] + (pted[1] << 8) + (pted[2] << 16) +
 		    (pted[3] << 24);
-		if (!(pted[0] & 0x20)) {
+		if ((pted[0] & 0x01) && !(pted[0] & 0x20)) {
 			pted[0] |= 0x20;
 			cpu->memory_rw(cpu, cpu->mem, table_addr + 4*b, pted,
 			    sizeof(pted), MEM_WRITE, PHYSICAL);
 		}
-		if (writeflag == MEM_WRITE && !(pted[0] & 0x40)) {
+		if ((pted[0] & 0x01) && writeflag == MEM_WRITE &&
+		    !(pted[0] & 0x40)) {
 			pted[0] |= 0x40;
 			cpu->memory_rw(cpu, cpu->mem, table_addr + 4*b, pted,
 			    sizeof(pted), MEM_WRITE, PHYSICAL);
@@ -160,8 +167,9 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			writable = 0;
 		if (!(pte & 0x01)) {
 			fatal("TODO: pte not present: table_addr=0x%08x "
-			    "vaddr=0x%08x, usermode=%i\n",
-			    (int)table_addr, (int)vaddr, usermode);
+			    "vaddr=0x%08x, usermode=%i wf=%i pte=0x%08x\n",
+			    (int)table_addr, (int)vaddr, usermode, writeflag,
+			    (int)pte);
 			if (!no_exceptions) {
 				cpu->cd.x86.cr[2] = vaddr;
 				x86_interrupt(cpu, 14, (writeflag? 2 : 0)

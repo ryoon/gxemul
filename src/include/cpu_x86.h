@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.29 2005-05-28 22:03:58 debug Exp $
+ *  $Id: cpu_x86.h,v 1.30 2005-05-29 16:04:29 debug Exp $
  */
 
 #include "misc.h"
@@ -145,6 +145,9 @@ struct x86_cpu {
 	/*  FPU:  */
 	uint16_t	fpu_sw;		/*  status word  */
 	uint16_t	fpu_cw;		/*  control word  */
+
+	/*  MSRs:  */
+	uint64_t	efer;
 };
 
 
@@ -189,6 +192,14 @@ struct x86_cpu {
 #define	X86_CR4_TSD	0x00000004	/*  Time Stamp Disable  */
 #define	X86_CR4_PVI	0x00000002
 #define	X86_CR4_VME	0x00000001
+
+/*  EFER bits:  */
+#define	X86_EFER_FFXSR	0x00004000
+#define	X86_EFER_LMSLE	0x00002000
+#define	X86_EFER_NXE	0x00000800
+#define	X86_EFER_LMA	0x00000400
+#define	X86_EFER_LME	0x00000100	/*  Long Mode (64-bit)  */
+#define	X86_EFER_SCE	0x00000001
 
 /*  CPUID feature bits:  */
 #define	X86_CPUID_ECX_ETPRD	0x00004000

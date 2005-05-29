@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.158 2005-05-29 10:35:11 debug Exp $
+ *  $Id: cpu_x86.c,v 1.159 2005-05-29 16:04:27 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1171,6 +1171,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					s = 1 << (sib >> 6);
 					i = (sib >> 3) & 7;
 					b = sib & 7;
+					if (b == 4 &&
+					    !cpu->cd.x86.seg_override)
+						cpu->cd.x86.cursegment=X86_S_SS;
 					if (b == 5)
 						addr = read_imm_common(instrp,
 						    lenp, mode67, disasm);
@@ -1302,6 +1305,9 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					b = sib & 7;
 					addr = read_imm_common(instrp, lenp,
 					    z, disasm);
+					if ((b == 4 || b == 5) &&
+					    !cpu->cd.x86.seg_override)
+						cpu->cd.x86.cursegment=X86_S_SS;
 					if (z == 8)
 						addr = (signed char)addr;
 					if (i == 4)
@@ -3067,6 +3073,41 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 
 
 /*
+ *  x86_msr():
+ *
+ *  This function reads or writes the MSRs (Model Specific Registers).
+ */
+static void x86_msr(struct cpu *cpu, int writeflag)
+{
+	uint32_t regnr = cpu->cd.x86.r[X86_R_CX] & 0xffffffff;
+	uint64_t odata=0, idata = (cpu->cd.x86.r[X86_R_AX] & 0xffffffff) +
+	    ((cpu->cd.x86.r[X86_R_DX] & 0xffffffff) << 32);
+
+	switch (regnr) {
+	case 0xc0000080:	/*  AMD64 EFER  */
+		if (writeflag) {
+			if (cpu->cd.x86.efer & X86_EFER_LME &&
+			    !(idata & X86_EFER_LME))
+				debug("[ switching FROM 64-bit mode ]\n");
+			if (!(cpu->cd.x86.efer & X86_EFER_LME) &&
+			    idata & X86_EFER_LME)
+				debug("[ switching to 64-bit mode ]\n");
+			cpu->cd.x86.efer = idata;
+		} else
+			odata = cpu->cd.x86.efer;
+		break;
+	default:fatal("x86_msr: unimplemented MSR 0x%08x\n", (int)regnr);
+		cpu->running = 0;
+	}
+
+	if (!writeflag) {
+		cpu->cd.x86.r[X86_R_AX] = odata & 0xffffffff;
+		cpu->cd.x86.r[X86_R_DX] = (odata >> 32) & 0xffffffff;
+	}
+}
+
+
+/*
  *  cause_interrupt():
  *
  *  Read the registers of PIC1 (and possibly PIC2) to find out which interrupt
@@ -3140,7 +3181,7 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int i, r, rep = 0, op, len, mode, omode, mode67;
-	int nprefixbytes = 0, success;
+	int nprefixbytes = 0, success, longmode;
 	uint32_t imm, imm2;
 	unsigned char buf[16];
 	unsigned char *instr = buf, *instr_orig, *really_orig_instr;
@@ -3164,9 +3205,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->running = 0;
 		return 0;
 	}
+
+	longmode = cpu->cd.x86.efer & X86_EFER_LME;
 	mode = cpu->cd.x86.descr_cache[X86_S_CS].default_op_size;
 	omode = mode;
-	if (mode != 16 && mode != 32 && mode != 64) {
+	if (mode != 16 && mode != 32) {
 		fatal("x86_cpu_run_instr(): Invalid CS default op size, %i\n",
 		    mode);
 		cpu->running = 0;
@@ -3235,7 +3278,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  Any prefix?  */
 	for (;;) {
-		if (instr[0] == 0x66) {
+		if (longmode && (instr[0] & 0xf0) == 0x40) {
+			fatal("TODO: REX byte 0x%02x\n", instr[0]);
+			cpu->running = 0;
+		} else if (instr[0] == 0x66) {
 			if (mode == 16)
 				mode = 32;
 			else
@@ -3585,6 +3631,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    imm==0x22? MODRM_CR : MODRM_DR, &instr_orig,
 				    NULL, &op1, &op2))
 					return 0;
+				break;
+			case 0x30:	/*  WRMSR  */
+			case 0x32:	/*  RDMSR  */
+				x86_msr(cpu, imm==0x30? 1 : 0);
 				break;
 			case 0x31:	/*  RDTSC  */
 				if (cpu->cd.x86.model.model_number <
@@ -4018,8 +4068,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!x86_push(cpu, cpu->cd.x86.r[op & 7], mode))
 			return 0;
 	} else if (op >= 0x58 && op <= 0x5f) {
-		success = x86_pop(cpu, &tmp, mode);
-		if (!success)
+		if (!x86_pop(cpu, &tmp, mode))
 			return 0;
 		if (mode == 16)
 			cpu->cd.x86.r[op & 7] = (cpu->cd.x86.r[op & 7] &
@@ -4028,23 +4077,22 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.r[op & 7] = tmp;
 	} else if (op == 0x60) {		/*  PUSHA/PUSHAD  */
 		uint64_t r[8];
-		uint64_t orig_esp = cpu->cd.x86.r[X86_R_SP];
 		int i;
 		for (i=0; i<8; i++)
 			r[i] = cpu->cd.x86.r[i];
 		for (i=0; i<8; i++)
 			if (!x86_push(cpu, r[i], mode)) {
-				cpu->cd.x86.r[X86_R_SP] = orig_esp;
+				fatal("TODO: failed pusha\n");
+				cpu->running = 0;
 				return 0;
 			}
-		/*  TODO: how about errors during push/pop?  */
 	} else if (op == 0x61) {		/*  POPA/POPAD  */
 		uint64_t r[8];
-		uint64_t orig_esp = cpu->cd.x86.r[X86_R_SP];
 		int i;
 		for (i=7; i>=0; i--)
 			if (!x86_pop(cpu, &r[i], mode)) {
-				cpu->cd.x86.r[X86_R_SP] = orig_esp;
+				fatal("TODO: failed popa\n");
+				cpu->running = 0;
 				return 0;
 			}
 		for (i=0; i<8; i++)
@@ -4307,8 +4355,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		imm2 = read_imm(&instr, &newpc, 16);
 		if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS], mode))
 			return 0;
-		if (!x86_push(cpu, newpc, mode))
+		if (!x86_push(cpu, newpc, mode)) {
+			fatal("TODO: push failed in CALL seg:ofs\n");
+			cpu->running = 0;
 			return 0;
+		}
 		reload_segment_descriptor(cpu, X86_S_CS, imm2, &newpc);
 		if (cpu->cd.x86.tr == old_tr)
 			newpc = imm;
@@ -4546,8 +4597,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 0;
 	} else if (op == 0xc2 || op == 0xc3) {	/*  RET near  */
 		uint64_t popped_pc;
-		success = x86_pop(cpu, &popped_pc, mode);
-		if (!success)
+		if (!x86_pop(cpu, &popped_pc, mode))
 			return 0;
 		if (op == 0xc2) {
 			imm = read_imm(&instr, &newpc, 16);
@@ -4609,10 +4659,19 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    cpu->cd.x86.r[X86_R_BP],
 				    cpu->cd.x86.r[X86_R_BP] - mode/8);
 				cpu->cd.x86.cursegment = X86_S_SS;
-				x86_load(cpu, cpu->cd.x86.r[X86_R_BP], 
-				    &tmpword, mode/8);
-				if (!x86_push(cpu, tmpword, mode))
+				if (!x86_load(cpu, cpu->cd.x86.r[X86_R_BP], 
+				    &tmpword, mode/8)) {
+					fatal("TODO: load error inside"
+					    " ENTER\n");
+					cpu->running = 0;
 					return 0;
+				}
+				if (!x86_push(cpu, tmpword, mode)) {
+					fatal("TODO: push error inside"
+					    " ENTER\n");
+					cpu->running = 0;
+					return 0;
+				}
 			}
 			if (!x86_push(cpu, tmp_frame_ptr, mode))
 				return 0;
@@ -4627,8 +4686,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.x86.r[X86_R_SP] -= imm;
 	} else if (op == 0xc9) {	/*  LEAVE  */
 		cpu->cd.x86.r[X86_R_SP] = cpu->cd.x86.r[X86_R_BP];
-		if (!x86_pop(cpu, &tmp, mode))
+		if (!x86_pop(cpu, &tmp, mode)) {
+			fatal("TODO: pop error inside LEAVE\n");
+			cpu->running = 0;
 			return 0;
+		}
 		cpu->cd.x86.r[X86_R_BP] = tmp;
 	} else if (op == 0xca || op == 0xcb) {	/*  RET far  */
 		uint64_t tmp2;
@@ -4637,12 +4699,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			imm = read_imm(&instr, &newpc, 16);
 		else
 			imm = 0;
-		success = x86_pop(cpu, &tmp, mode);
-		if (!success)
+		if (!x86_pop(cpu, &tmp, mode))
 			return 0;
-		success = x86_pop(cpu, &tmp2, mode);
-		if (!success)
+		if (!x86_pop(cpu, &tmp2, mode)) {
+			fatal("TODO: pop error inside RET\n");
+			cpu->running = 0;
 			return 0;
+		}
 		cpu->cd.x86.r[X86_R_SP] = modify(cpu->cd.x86.r[X86_R_SP],
 		    cpu->cd.x86.r[X86_R_SP] + imm);
 		reload_segment_descriptor(cpu, X86_S_CS, tmp2, &newpc);
@@ -4665,6 +4728,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (!x86_pop(cpu, &tmp3, mode))
 			return 0;
 debug("{ iret to 0x%04x:0x%08x }\n", (int)tmp2,(int)tmp);
+		tmp2 &= 0xffff;
 		/*  TODO: only affect some bits?  */
 		if (mode == 16)
 			cpu->cd.x86.rflags = (cpu->cd.x86.rflags & ~0xffff)
@@ -4682,6 +4746,7 @@ debug("{ iret to 0x%04x:0x%08x }\n", (int)tmp2,(int)tmp);
 				return 0;
 			if (!x86_pop(cpu, &old_ss, mode))
 				return 0;
+			old_ss &= 0xffff;
 
 printf(": : : BEFORE tmp=%016llx tmp2=%016llx tmp3=%016llx\n",
 (long long)tmp, (long long)tmp2, (long long)tmp3);
@@ -4973,8 +5038,7 @@ x86_cpu_register_dump(cpu, 1, 1); */
 		if (mode == 32)
 			imm = (int32_t)imm;
 		if (op == 0xe8) {
-			success = x86_push(cpu, newpc, mode);
-			if (!success)
+			if (!x86_push(cpu, newpc, mode))
 				return 0;
 		}
 		newpc += imm;
@@ -5297,8 +5361,12 @@ x86_cpu_register_dump(cpu, 1, 1); */
 				if (!x86_push(cpu, cpu->cd.x86.s[X86_S_CS],
 				    mode))
 					return 0;
-				if (!x86_push(cpu, newpc, mode))
+				if (!x86_push(cpu, newpc, mode)) {
+					fatal("TODO: push failed, call "
+					    "far indirect?\n");
+					cpu->running = 0;
 					return 0;
+				}
 				reload_segment_descriptor(cpu, X86_S_CS,
 				    tmp2, &newpc);
 				if (cpu->cd.x86.tr == old_tr)

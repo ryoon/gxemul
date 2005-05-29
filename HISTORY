@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.766 2005-05-29 10:35:10 debug Exp $
+$Id: HISTORY,v 1.767 2005-05-29 16:06:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1946,4 +1946,8 @@ Changelog for GXemul:
 		interrupts between different priv.levels), and some minor
 		documentation updates.
 20050528	Various fixes (x86 stuff).
-20050529	More x86 fixes.
+20050529	More x86 fixes. An OpenBSD/i386 bootfloppy reaches userland
+		and can be interacted with (although there are problems with
+		key repetition). NetBSD/i386 triggers a serious CISC-related
+		problem: instruction fetches across page boundaries, where
+		the later part isn't actually part of the instruction.

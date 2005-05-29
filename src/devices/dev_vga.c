@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.73 2005-05-28 21:33:34 debug Exp $
+ *  $Id: dev_vga.c,v 1.74 2005-05-29 16:04:28 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -643,15 +643,17 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 {
 	struct vga_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int i, x, y, x2, y2;
+	int i, x, y, x2, y2, r, base;
 
 	idata = memory_readmax64(cpu, data, len);
 
-	y = relative_addr / (d->max_x * 2);
-	x = (relative_addr/2) % d->max_x;
-
-	y2 = (relative_addr+len-1) / (d->max_x * 2);
-	x2 = ((relative_addr+len-1)/2) % d->max_x;
+	base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
+	    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
+	r = relative_addr - base;
+	y = r / (d->max_x * 2);
+	x = (r/2) % d->max_x;
+	y2 = (r+len-1) / (d->max_x * 2);
+	x2 = ((r+len-1)/2) % d->max_x;
 
 	if (relative_addr < d->charcells_size) {
 		if (writeflag == MEM_WRITE) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.35 2005-05-29 10:35:11 debug Exp $
+ *  $Id: memory_rw.c,v 1.36 2005-05-29 16:04:27 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -100,14 +100,47 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 
 	/*  Crossing a page boundary? Then do one byte at a time:  */
-	if ((vaddr & 0xfff) + len > 0x1000) {
-		/*  Do one byte at a time:  */
+	if ((vaddr & 0xfff) + len > 0x1000 && !(cache_flags & PHYSICAL)
+	    && cpu->cd.x86.cr[0] & X86_CR0_PG) {
+		/*  For WRITES: Read ALL BYTES FIRST and write them back!!!
+		    Then do a write of all the new bytes. This is to make sure
+		    than both pages around the boundary are writable so we don't
+		    do a partial write.  */
 		int res = 0, i;
-		for (i=0; i<len; i++) {
-			res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
-			    writeflag, cache_flags);
-			if (!res)
-				return 0;
+		if (writeflag == MEM_WRITE) {
+			unsigned char tmp;
+			for (i=0; i<len; i++) {
+				res = MEMORY_RW(cpu, mem, vaddr+i, &tmp, 1,
+				    MEM_READ, cache_flags);
+				if (!res)
+					return 0;
+				res = MEMORY_RW(cpu, mem, vaddr+i, &tmp, 1,
+				    MEM_WRITE, cache_flags);
+				if (!res)
+					return 0;
+			}
+			for (i=0; i<len; i++) {
+				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
+				    MEM_WRITE, cache_flags);
+				if (!res)
+					return 0;
+			}
+		} else {
+			for (i=0; i<len; i++) {
+				/*  Do one byte at a time:  */
+				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
+				    writeflag, cache_flags);
+				if (!res) {
+					if (cache == CACHE_INSTRUCTION) {
+						fatal("FAILED instruction "
+						    "fetch across page boundar"
+						    "y: todo. vaddr=0x%08x\n",
+						    (int)vaddr);
+						cpu->running = 0;
+					}
+					return 0;
+				}
+			}
 		}
 		return res;
 	}

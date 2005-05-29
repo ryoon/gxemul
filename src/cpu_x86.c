@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.159 2005-05-29 16:04:27 debug Exp $
+ *  $Id: cpu_x86.c,v 1.160 2005-05-29 19:21:04 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -129,17 +129,6 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 
 	cpu->cd.x86.model = models[i];
 
-	switch (cpu->cd.x86.model.model_number) {
-	case X86_MODEL_8086:
-		cpu->cd.x86.bits = 16;
-		break;
-	case X86_MODEL_AMD64:
-		cpu->cd.x86.bits = 64;
-		break;
-	default:
-		cpu->cd.x86.bits = 32;
-	}
-
 	/*  Initial startup is in 16-bit real mode:  */
 	cpu->pc = 0xfff0;
 
@@ -178,7 +167,6 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
  */
 void x86_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug(" (%i-bit)", cpu->cd.x86.bits);
 	debug(", currently in %s mode", PROTECTED_MODE? "protected" : "real");
 	debug("\n");
 }
@@ -494,23 +482,7 @@ void x86_cpu_register_match(struct machine *m, char *name,
 			((old) & ~0xffff) + ((new) & 0xffff)	\
 		) : ((new) & 0xffffffffULL) )
 
-/******************************************************************************
- *
- *  Haha, this triggers a bug with at least "gcc version 3.2.2 20030222 (Red
- *  Hat Linux 3.2.2-5)" when compiling with -O3. If the volatile keyword isn't
- *  used, the call to debug() is sometimes randomly ignored. For example,
- *
- *  #define HEXPRINT(x,n) { int j; debug("{n=%i:",(n)); for (j=0; 
- *	j<(n); j++) debug("[%02x]",(x)[j]); debug("}"); }
- *
- *  sometimes prints "{n=1:[a8]}" etc, but sometimes just "{n=1:}".
- *
- *  :-)
- *
- *****************************************************************************/
-
-#define	HEXPRINT(x,n) { volatile int j; for (j=0; j<(n); j++) \
-	debug("%02x",(x)[j]); }
+#define	HEXPRINT(x,n) { int j; for (j=0; j<(n); j++) debug("%02x",(x)[j]); }
 #define	HEXSPACES(i) { int j; j = (i)>10? 10:(i); while (j++<10) debug("  "); \
 	debug(" "); }
 #define	SPACES	HEXSPACES(ilen)
@@ -3780,19 +3752,16 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    imm == 0xb0? MODRM_EIGHTBIT : 0,
 				    &instr, &newpc, &op1, &op2))
 					return 0;
+				x86_calc_flags(cpu, op1, cpu->cd.x86.r[
+				    X86_R_AX], imm == 0xb0? 8 : mode,
+				    CALCFLAGS_OP_SUB);
 				if (cpu->cd.x86.rflags & X86_FLAGS_ZF) {
 					if (!modrm(cpu, MODRM_WRITE_RM, mode,
 					    mode67, imm == 0xb0?
 					    MODRM_EIGHTBIT : 0,
 					    &instr_orig, NULL, &op2, &op1))
 						return 0;
-					x86_calc_flags(cpu, op1, cpu->cd.x86.r[
-					    X86_R_AX], imm == 0xb0? 8 : mode,
-					    CALCFLAGS_OP_SUB);
 				} else {
-					x86_calc_flags(cpu, op1, cpu->cd.x86.r[
-					    X86_R_AX], imm == 0xb0? 8 : mode,
-					    CALCFLAGS_OP_SUB);
 					if (imm == 0xb0)
 						cpu->cd.x86.r[X86_R_AX] =
 						    (cpu->cd.x86.r[X86_R_AX] &

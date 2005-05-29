@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.30 2005-05-29 16:04:29 debug Exp $
+ *  $Id: cpu_x86.h,v 1.31 2005-05-29 19:21:05 debug Exp $
  */
 
 #include "misc.h"
@@ -111,13 +111,11 @@ struct descriptor_cache {
 struct x86_cpu {
 	struct x86_model model;
 
-	int		bits;		/*  16, 32, or 64  */
-
 	int		halted;
 	int		interrupt_asserted;
 
 	int		cursegment;	/*  NOTE: 0..N_X86_SEGS-1  */
-	int		seg_override;
+	int		seg_override;	/*  0 or 1  */
 
 	uint64_t	tsc;		/*  time stamp counter  */
 
@@ -134,13 +132,13 @@ struct x86_cpu {
 	uint32_t	ldtr_limit;
 
 	uint64_t	rflags;
-	uint64_t	cr[N_X86_CREGS];
-	uint64_t	dr[N_X86_DREGS];
+	uint64_t	cr[N_X86_CREGS];	/*  control registers  */
+	uint64_t	dr[N_X86_DREGS];	/*  debug registers  */
 
-	uint16_t	s[N_X86_SEGS];
+	uint16_t	s[N_X86_SEGS];		/*  segment selectors  */
 	struct descriptor_cache descr_cache[N_X86_SEGS];
 
-	uint64_t	r[N_X86_REGS];
+	uint64_t	r[N_X86_REGS];		/*  GPRs  */
 
 	/*  FPU:  */
 	uint16_t	fpu_sw;		/*  status word  */

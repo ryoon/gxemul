@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.448 2005-05-28 11:02:17 debug Exp $
+ *  $Id: machine.c,v 1.449 2005-05-29 17:18:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -105,6 +105,11 @@ struct machine_entry {
 	int			n_subtypes;
 	struct machine_entry_subtype **subtype;
 };
+
+
+/*  See main.c:  */
+extern int quiet_mode;
+
 
 /*  This is initialized by machine_init():  */
 static struct machine_entry *first_machine_entry = NULL;
@@ -3792,10 +3797,6 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_X86:
 		machine->machine_name = "Generic x86 PC";
 
-		if (!machine->use_x11)
-			fprintf(stderr, "\nWARNING! You are emulating a PC wi"
-			    "thout -X. You will miss any graphics output!\n\n");
-
 		/*  Interrupt controllers:  */
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x20));
@@ -3845,6 +3846,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		if (machine->prom_emulation)
 			pc_bios_init(cpu);
 
+		if (!machine->use_x11 && !quiet_mode)
+			fprintf(stderr, "-------------------------------------"
+			    "------------------------------------------\n"
+			    "\n  WARNING! You are emulating a PC without -X. "
+			    "You will miss graphical output!\n\n"
+			    "-------------------------------------"
+			    "------------------------------------------\n");
 		break;
 
 	default:

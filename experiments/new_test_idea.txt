@@ -1,0 +1,182 @@
+2005-05-31: Idea about reasonably fast emulation using Dynamic Translation,
+but _NOT_ binary translation. (So there is no need for individual assembly 
+language backends.)
+
+-------------------------------------------------------------------------------
+
+Initial tests:  a full page of 1024 add instructions followed by a return 
+to the start of the page gives the following result:
+
+	2.8 GHz Xeon:	168 MIPS (16.66 cycles per emulated instruction)
+	533 MHz pca56:	14.6 MIPS (36.3 cycles per emulated instruction)
+
+(see new_test_1.c)
+
+-------------------------------------------------------------------------------
+
+	run_one_instruction(struct cpu *cpu)
+	{
+		/*
+		 *  Get the instruction to execute, and advance the
+		 *  program counter:
+		 *
+		 *  Actually, the program counter itself isn't increased here.
+		 *  cpu->next_instr_call can be seen as an offset into the
+		 *  current "page".  cpu->current_page can be a pointer to that
+		 *  page. So by taking
+		 *
+		 *   ((size_t)cpu->next_instr_call - (size_t)cpu->current_page
+		 *    )  / sizeof(struct instr_call)
+		 *
+		 *  we get the lowest bits of the program counter.
+		 */
+		struct instr_call *ic = cpu->next_instr_call;
+		cpu->next_instr_call ++;
+		ic->f(cpu, ic);
+
+Pseudo-code for Alpha:  cpu is in a0.
+	move	a0, s0			; save away a0
+lop:
+	lq	a1, next_instr_call(a0)	; a1 is ic
+	addq	a1, 64, t1		; t1 = a1 + sizeof(struct instr_call)
+	sq	t1, next_instr_call(a0)	; cpu->next_instr_call ++;
+
+	lq	t2, f(a1)		; t2 = ic->f
+	jsr	ra,(t2),0		; call ic->f(cpu, ic);
+
+	move	s0, a0			; restore a0
+	+ some fuss about the global pointer
+	(goto lop)
+
+On i386, perhaps:
+	;  assuming ebx is cpu
+	mov	esi, [ebx + next_instr_call]	; esi = ic = cpu->next_ic..
+	add	[ebx + next_instr_call], 32	; cpu->next_instr_call ++;
+	push	esi				; push ic
+	push	ebx				; push cpu
+	call	[esi + f]			; ic->f
+	pop	ebx				; restore cpu pointer
+	pop	eax	; nonsense
+loop...
+
+		/*
+		 *  If the program counter is changed because of a jump or so,
+		 *  then cpu->next_instr_call should have been updated by
+		 *  the 'f' function.
+		 *
+		 *  If there was an exception, it could simply have been set
+		 *  to something outside of the array.
+		 *
+		 *  If we reach the end of a "translated" page, then there
+		 *  could be a special function there as well.
+		 */
+	}
+
+f could be something like:
+
+	f_add(struct cpu *cpu, struct instr_call *ic)
+	{
+		int32_t *a = (int32_t *) ic->arg[0];
+		int32_t *b = (int32_t *) ic->arg[1];
+		int32_t *c = (int32_t *) ic->arg[2];
+
+		*a = (*b) + (*c);
+
+In alpha assembler:  a0=cpu, a1=ic
+	ld t0, 8(a1)
+	ld t1, 16(a1)
+	ld t2, 24(a1)
+	ld t3, 0(t1)
+	ld t4, 0(t2)
+	addl t3,t4, t5
+	sd t5, 0(t0)
+	ret
+	}
+
+Things to think about:
+
+	x)  Exceptions:
+		need to be detected by individual functions, and when
+		detected, change cpu->next_instr_call to something which
+		breaks out of the main loop.
+
+	x)  Single-stepping
+		One solution is to have multiple run-loops. One which is
+		used with single-stepping, and one for fast runs.
+
+	x)  End of page?  What is a good page size?  (It must be equal or
+		less than an emulated hardware page, so maybe 4KB or less.)
+
+	x)  Default page = filled with entries of "this needs to be
+		translated" function. (An optimization is to try to translate
+		a few at a time, not just one, to minimize the number of
+		calls/returns from the translator function.)
+
+	x)  Writes to a translated page should either invalidate the entire
+		page's translations, or at least those entries that are
+		written to.
+
+	x)  Common "combinations":
+		o)  Doesn't work at the end of a page.
+		o)  The second (and third etc) of the instructions still
+		    has to be translated, but still, common instructions
+		    can be combined.
+
+	x)  Keeping track of the number of executed instructions:
+		Any instruction which changes the execution flow, or at
+		the end of a page, or if an exception occurs, can check
+		what the program counter is and compare it to the last
+		value where the number of instructions was known. This
+		works for fixed-size ISAs such as MIPS, anyway.
+
+-------------------------------------------------------------------------------
+
+A variant for non-fixed-size-ISAs:
+
+	o)  The instr_call struct can contain a field which says how many
+	    bytes long the instruction was.
+
+		struct instr_call *ic = cpu->next_instr_call;
+		cpu->next_instr_call ++;
+		ic->f(cpu, ic);
+
+	    must then be changed into
+
+		struct instr_call *ic = cpu->next_instr_call;
+		cpu->next_instr_call += id->instruction_length;
+		ic->f(cpu, ic);
+
+	    At the end of the page, there must be more than one "end of page"
+	    entry, to account for the various possible instruction lengths.
+
+	o)  There has to be one translation entry for each _byte_ of code,
+	    not just for each possible instruction (say, every fourth byte
+	    for MIPS).  (Another example would be m68k, where there would
+	    have to be a translation entry for every other byte of code.)
+
+-------------------------------------------------------------------------------
+
+An alternative would be to have the main run-loop look like this:
+(see new_test_2.c)
+
+        for (;;) {
+                ic = cpu->next_instr_call++;
+                ic->f(ic);
+
+                ic = cpu->next_instr_call++;
+                ic->f(ic);
+
+		/*  ..  */
+	}
+
+if ic contains a pointer to the cpu struct (for those functions that need 
+it; a simple "add" doesn't, for example).
+
+However, initial experiments on both Alpha and i386 hosts indicate that 
+this is _slower_ than ic->f(cpu, ic), even when cpu is not used.
+
+So, since passing along cpu produces faster code, and since cpu often 
+_will_ be used, then the first choice is better.
+
+-------------------------------------------------------------------------------
+

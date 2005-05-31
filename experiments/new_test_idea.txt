@@ -93,6 +93,12 @@ In alpha assembler:  a0=cpu, a1=ic
 	ret
 	}
 
+The arguments in the instr_call struct should be set up specifically for 
+each function. An "add", as seen in the example above, usually needs two 
+pointers to source values in memory, and a destination.
+
+-------------------------------------------------------------------------------
+
 Things to think about:
 
 	x)  Exceptions:
@@ -172,8 +178,25 @@ An alternative would be to have the main run-loop look like this:
 if ic contains a pointer to the cpu struct (for those functions that need 
 it; a simple "add" doesn't, for example).
 
-However, initial experiments on both Alpha and i386 hosts indicate that 
-this is _slower_ than ic->f(cpu, ic), even when cpu is not used.
+This results in just 5 (!) instructions overhead per emulated instruction, 
+plus the code for the specific instruction (for example 8 for a simple 
+"add"). objdump -d shows that the main run-loop looks like this on i386, 
+if no cpu struct argument is used:
+
+  080485ba <r>:
+   80485ba:       53                      push   %ebx
+   80485bb:       83 ec 08                sub    $0x8,%esp
+   80485be:       8b 5c 24 10             mov    0x10(%esp,1),%ebx
+   80485c2:       8b 43 08                mov    0x8(%ebx),%eax       ! 1
+   80485c5:       8d 48 14                lea    0x14(%eax),%ecx      ! 2
+   80485c8:       89 4b 08                mov    %ecx,0x8(%ebx)       ! 3
+   80485cb:       89 04 24                mov    %eax,(%esp,1)        ! 4
+   80485ce:       ff 10                   call   *(%eax)              ! 5
+
+where the last 5 lines are then repeated for each inlined instruction call.
+
+However, initial experiments on both Alpha and i386 hosts indicate that
+this is _slower_ in practice than ic->f(cpu, ic), even when cpu is not used.
 
 So, since passing along cpu produces faster code, and since cpu often 
 _will_ be used, then the first choice is better.

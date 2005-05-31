@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.160 2005-05-29 19:21:04 debug Exp $
+ *  $Id: cpu_x86.c,v 1.161 2005-05-31 06:20:38 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -482,7 +482,9 @@ void x86_cpu_register_match(struct machine *m, char *name,
 			((old) & ~0xffff) + ((new) & 0xffff)	\
 		) : ((new) & 0xffffffffULL) )
 
-#define	HEXPRINT(x,n) { int j; for (j=0; j<(n); j++) debug("%02x",(x)[j]); }
+/*  "volatile" here, because some versions of gcc with -O3 on i386 are buggy  */
+#define	HEXPRINT(x,n) { volatile int j; for (j=0; j<(n); j++) \
+	debug("%02x",(x)[j]); }
 #define	HEXSPACES(i) { int j; j = (i)>10? 10:(i); while (j++<10) debug("  "); \
 	debug(" "); }
 #define	SPACES	HEXSPACES(ilen)

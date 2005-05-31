@@ -49,6 +49,7 @@ void r(struct cpu *cpu)
 	}
 }
 
+
 void f_add(struct cpu *cpu, struct instr_call *ic)
 {
 	int32_t *a = (int32_t *) ic->arg[0];
@@ -57,6 +58,7 @@ void f_add(struct cpu *cpu, struct instr_call *ic)
 
 	*a = (*b) + (*c);
 }
+
 
 void f_end(struct cpu *cpu, struct instr_call *ic)
 {
@@ -70,7 +72,7 @@ void f_end(struct cpu *cpu, struct instr_call *ic)
 	exit(1);
 }
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int32_t tmp_a, tmp_b, tmp_c;
 	struct instr_call *call_array;
@@ -106,5 +108,6 @@ void main(int argc, char *argv[])
 	r(cpu);
 
 	printf("ERROR!\n");
+	return 0;
 }
 

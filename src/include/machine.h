@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.50 2005-05-16 02:15:53 debug Exp $
+ *  $Id: machine.h,v 1.51 2005-05-31 06:20:40 debug Exp $
  */
 
 #include <sys/types.h>
@@ -175,26 +175,30 @@ struct machine {
 
 	int	n_gfx_cards;
 
-	/*  Machine dependant: (PROM and interrupt stuff, etc.)  */
+	/*  Machine-dependent: (PROM stuff, etc.)  */
 	union {
 		struct machine_arcbios	arc;
 		struct machine_pc	pc;
 	} md;
 
-	/*  Yuck, this is ugly:  TODO: Move all of these into 'md'?  */
-	struct kn230_csr *kn230_csr;
-	struct kn02_csr *kn02_csr;
-	struct dec_ioasic_data *dec_ioasic_data;
-	struct ps2_data *ps2_data;
-	struct dec5800_data *dec5800_csr;
-	struct au1x00_ic_data *au1x00_ic_data;
-	struct vr41xx_data *vr41xx_data;       
-	struct jazz_data *jazz_data;
-	struct crime_data *crime_data;
-	struct mace_data *mace_data;
-	struct sgi_ip20_data *sgi_ip20_data;
-	struct sgi_ip22_data *sgi_ip22_data;
-	struct sgi_ip30_data *sgi_ip30_data;
+	/*  Machine-dependent interrupt specific structs:  */
+	union {
+		struct kn230_csr *kn230_csr;
+		struct kn02_csr *kn02_csr;
+		struct dec_ioasic_data *dec_ioasic_data;
+		struct ps2_data *ps2_data;
+		struct dec5800_data *dec5800_csr;
+		struct au1x00_ic_data *au1x00_ic_data;
+		struct vr41xx_data *vr41xx_data;       
+		struct jazz_data *jazz_data;
+		struct sgi_ip20_data *sgi_ip20_data;
+		struct sgi_ip22_data *sgi_ip22_data;
+		struct sgi_ip30_data *sgi_ip30_data;
+		struct {
+			struct crime_data *crime_data;
+			struct mace_data *mace_data;
+		} ip32;
+	} md_int;
 
 	/*  X11/framebuffer stuff:  */
 	int	use_x11;

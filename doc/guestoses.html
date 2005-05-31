@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.44 2005-05-27 07:29:23 debug Exp $
+$Id: guestoses.html,v 1.45 2005-05-31 06:20:37 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -59,9 +59,7 @@ SUCH DAMAGE.
 -->
   <li><a href="#openbsdinstall">Installing OpenBSD/pmax in GXemul</a>
   <li><a href="#openbsdarcinstall">Installing OpenBSD/arc in GXemul</a>
-<!--
   <li><a href="#openbsdsgiinstall">Running OpenBSD/sgi in GXemul</a>
--->
   <li><a href="#ultrixinstall">Installing Ultrix/RISC in GXemul</a>
   <li><a href="#sprite">Running Sprite for DECstation in GXemul</a>
   <li><a href="#declinux">Installing Debian GNU/Linux for DECstation in GXemul</a>
@@ -101,7 +99,7 @@ system, the harddisk image looks and acts like a real disk.
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a>
+<a href="20050317-example.png"><img src="20050317-example_small.png"></a>
 
 <p>
 To install NetBSD/pmax onto a harddisk image in the emulator, follow these
@@ -492,7 +490,7 @@ for more information.
 TODO...
 
 <pre>
-cd /x; ftp -i ftp.se.netbsd.org
+cd /tftpboot; ftp -i ftp.se.netbsd.org
 ..
 cd pub/NetBSD/NetBSD-2.0/sgimips/binary/sets
 mget *.tgz
@@ -717,8 +715,6 @@ boot from the harddisk image:
 
 
 
-<!--
-
 <p><br>
 <a name="openbsdsgiinstall"></a>
 <h3>Running OpenBSD/sgi in GXemul:</h3>
@@ -730,11 +726,6 @@ can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
 <font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
 
 <p>
-<font color="#0000f0">
-[&nbsp;2005-02-09: There is no stable release yet of OpenBSD/sgi, but there
-are -current snapshots available on ftp sites.&nbsp;]</font>
-
-<p>
 GXemul does not yet emulate the AHC PCI SCSI controller in the O2, so 
 another emulated machine must be used as the nfs root server, and the
 emulated O2 machine must boot as a
@@ -743,27 +734,30 @@ client. Performing this setup is very time consuming, but necessary.
 
 <p>
 <ol>
-  <li><a href="#netbsdinstall">Install NetBSD/pmax 1.6.2</a> or some other
-	similar OS inside the emulator. This will be the "nfs server" machine.
+  <li><a href="#netbsdinstall">Install NetBSD/pmax 2.0 from CDROM</a>
+	(or install some other similar OS) inside the emulator. This will 
+	be the "nfs server" machine. Create a 600 MB <tt>/tftpboot</tt>
+	partition during the installation.
   <p>
   <li>Configure the nfs server machine to act as an nfs server.<pre>
-	# <b>echo hostname=blahblah &gt;&gt; /etc/rc.conf</b>
-	# <b>echo ifconfig_le0="inet 10.0.0.2" &gt;&gt; /etc/rc.conf</b>
+	# <b>echo hostname=server &gt;&gt; /etc/rc.conf</b>
+	# <b>echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf</b>
 	# <b>echo nameserver 10.0.0.254 &gt;&gt; /etc/rc.conf</b>
 	# <b>echo 10.0.0.254 &gt; /etc/mygate</b>
-	# <b>mkdir /x; echo /x -maproot=root 10.0.0.1 &gt; /etc/exports</b>
+	# <b>echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports</b>
 	# <b>echo rpcbind=YES &gt;&gt; /etc/rc.conf</b>
 	# <b>echo nfs_server=YES &gt;&gt; /etc/rc.conf</b>
 	# <b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
 	# <b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
-	# <b>printf "client root=10.0.0.2:/x \\\n swap=10.0.0.2:/x/swap\n" &gt; /etc/bootparams</b>
+	# <b>printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams</b>
 	# <b>echo 10.0.0.1 client &gt; /etc/hosts</b>
 
-	Reboot. Then download the OpenBSD/sgi distribution:
+	Reboot. Then download the OpenBSD/sgi distribution:  (NOTE: This
+	takes quite some time, even if you have a fast network connection.)
 
-	# <b>cd /x; ftp -i ftp.se.openbsd.org</b>
+	# <b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
 	...
-	<b>cd pub/OpenBSD/snapshots/sgi</b>
+	<b>cd pub/OpenBSD/3.7/sgi</b>
 	<b>mget *</b>
 
 	# <b>sh</b>
@@ -821,8 +815,6 @@ client. Performing this setup is very time consuming, but necessary.
 
 <p>
 TODO...
-
--->
 
 
 

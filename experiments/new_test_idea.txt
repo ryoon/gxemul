@@ -2,13 +2,34 @@
 but _NOT_ binary translation. (So there is no need for individual assembly 
 language backends.)
 
+I got the inspiration for this when geist (in #osdev on Freenode) said 
+that he had a 10-instruction overhead per emulated instruction in his 
+emulator. I went to sleep with that statement ringing in my mind, and woke 
+up a few hours later. Depending on how you count, it seems to be possible 
+to get down to as few as 5+n+1 instructions overhead on i386, per emulated 
+instruction, where n is the number of instructions it takes to do the 
+actual work (for example 7 for a simple "add"-like instruction).
+
+(On Alpha, it's about 8+n+1, or 7+n+1 if you skip an alignment-unop. 
+Also, on i386, a variant with 6+n+1 instructions gives better performance 
+than 5+n+1, so this is probably best to leave for the compiler to 
+optimize.)
+
 -------------------------------------------------------------------------------
 
 Initial tests:  a full page of 1024 add instructions followed by a return 
 to the start of the page gives the following result:
 
 	2.8 GHz Xeon:	168 MIPS (16.66 cycles per emulated instruction)
+			  [ 6 instrs in the main loop + 7 instrs for the add
+			  + 1 instr for the return from the add function = 14. ]
+			with gcc -O3 -fomit-frame-pointer
+
 	533 MHz pca56:	14.6 MIPS (36.3 cycles per emulated instruction)
+			  [ 7 instrs in the main loop + 7 instrs for the add
+			  + 1 instr for the return from the add function
+			  + 1 unop for alignment in the main loop = 16 instrs. ]
+			with ccc -fast -O4
 
 (see new_test_1.c)
 
@@ -28,7 +49,9 @@ to the start of the page gives the following result:
 		 *   ((size_t)cpu->next_instr_call - (size_t)cpu->current_page
 		 *    )  / sizeof(struct instr_call)
 		 *
-		 *  we get the lowest bits of the program counter.
+		 *  we get the lowest bits of the program counter. This is
+		 *  only necessary for jumps and at the end of a translated
+		 *  page.
 		 */
 		struct instr_call *ic = cpu->next_instr_call;
 		cpu->next_instr_call ++;
@@ -82,7 +105,7 @@ f could be something like:
 
 		*a = (*b) + (*c);
 
-In alpha assembler:  a0=cpu, a1=ic
+In pseudo-alpha assembler:  a0=cpu, a1=ic
 	ld t0, 8(a1)
 	ld t1, 16(a1)
 	ld t2, 24(a1)
@@ -122,7 +145,7 @@ Things to think about:
 		page's translations, or at least those entries that are
 		written to.
 
-	x)  Common "combinations":
+	x)  Common "combinations" of instructions:
 		o)  Doesn't work at the end of a page.
 		o)  The second (and third etc) of the instructions still
 		    has to be translated, but still, common instructions

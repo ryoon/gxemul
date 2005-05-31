@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.449 2005-05-29 17:18:11 debug Exp $
+ *  $Id: machine.c,v 1.450 2005-05-31 06:20:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -420,37 +420,23 @@ int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
  */
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
+	int psize = 1024;	/*  1024 256 64 16 4 1  */
+
 	if ((addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
 
-	if ((addr & 255) == 0 && (((size_t)s) & 255) == 0) {
-		while (len >= 256) {
-			cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)s,
-			    256, MEM_WRITE, CACHE_DATA);
-			addr += 256;
-			s += 256;
-			len -= 256;
+	while (len != 0) {
+		if ((addr & (psize-1)) == 0) {
+			while (len >= psize) {
+				cpu->memory_rw(cpu, cpu->mem, addr,
+				    (unsigned char *)s, psize, MEM_WRITE,
+				    CACHE_DATA);
+				addr += psize;
+				s += psize;
+				len -= psize;
+			}
 		}
-	}
-
-	if ((addr & 7) == 0 && (((size_t)s) & 7) == 0) {
-		while (len >= 8) {
-			cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)s,
-			    8, MEM_WRITE, CACHE_DATA);
-			addr += 8;
-			s += 8;
-			len -= 8;
-		}
-	}
-
-	if ((addr & 3) == 0 && (((size_t)s) & 3) == 0) {
-		while (len >= 4) {
-			cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)s,
-			    4, MEM_WRITE, CACHE_DATA);
-			addr += 4;
-			s += 4;
-			len -= 4;
-		}
+		psize >>= 2;
 	}
 
 	while (len-- != 0)
@@ -610,13 +596,13 @@ void kn02_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	if (assrt) {
 		/*  OR in the irq_nr into the CSR:  */
-		m->kn02_csr->csr[0] |= irq_nr;
+		m->md_int.kn02_csr->csr[0] |= irq_nr;
 	} else {
 		/*  AND out the irq_nr from the CSR:  */
-		m->kn02_csr->csr[0] &= ~irq_nr;
+		m->md_int.kn02_csr->csr[0] &= ~irq_nr;
 	}
 
-	current = m->kn02_csr->csr[0] & m->kn02_csr->csr[2];
+	current = m->md_int.kn02_csr->csr[0] & m->md_int.kn02_csr->csr[2];
 	if (current == 0)
 		cpu_interrupt_ack(cpu, 2);
 	else
@@ -635,12 +621,12 @@ void kmin_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 	/*  debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);  */
 
 	if (assrt)
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KMIN_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, KMIN_INT_TC3);
@@ -656,12 +642,12 @@ void kn03_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 	/*  debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);  */
 
 	if (assrt)
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KN03_INT_ASIC);
 	else
 		cpu_interrupt_ack(cpu, KN03_INT_ASIC);
@@ -678,14 +664,14 @@ void maxine_interrupt(struct machine *m, struct cpu *cpu,
 	debug("maxine_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
 
 	if (assrt)
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
 		    / 0x10] |= irq_nr;
 	else
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
 		    / 0x10] &= ~irq_nr;
 
-	if (m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START)
+	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START)
 	    / 0x10])
 		cpu_interrupt(cpu, XINE_INT_TC3);
 	else
@@ -700,7 +686,7 @@ void kn230_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	int r2 = 0;
 
-	m->kn230_csr->csr |= irq_nr;
+	m->md_int.kn230_csr->csr |= irq_nr;
 
 	switch (irq_nr) {
 	case KN230_CSR_INTR_SII:
@@ -718,24 +704,24 @@ void kn230_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	if (assrt) {
 		/*  OR in the irq_nr mask into the CSR:  */
-		m->kn230_csr->csr |= irq_nr;
+		m->md_int.kn230_csr->csr |= irq_nr;
 
 		/*  Assert MIPS interrupt 2 or 3:  */
 		cpu_interrupt(cpu, r2);
 	} else {
 		/*  AND out the irq_nr mask from the CSR:  */
-		m->kn230_csr->csr &= ~irq_nr;
+		m->md_int.kn230_csr->csr &= ~irq_nr;
 
 		/*  If the CSR interrupt bits are all zero,
 		    clear the bit in the cause register as well.  */
 		if (r2 == 2) {
 			/*  irq 2:  */
-			if ((m->kn230_csr->csr & (KN230_CSR_INTR_DZ0
+			if ((m->md_int.kn230_csr->csr & (KN230_CSR_INTR_DZ0
 			    | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) == 0)
 				cpu_interrupt_ack(cpu, r2);
 		} else {
 			/*  irq 3:  */
-			if ((m->kn230_csr->csr & (KN230_CSR_INTR_SII |
+			if ((m->md_int.kn230_csr->csr & (KN230_CSR_INTR_SII |
 			    KN230_CSR_INTR_LANCE)) == 0)
 				cpu_interrupt_ack(cpu, r2);
 		}
@@ -769,34 +755,35 @@ void jazz_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	if (isa) {
 		if (assrt)
-			m->jazz_data->isa_int_asserted |= irq;
+			m->md_int.jazz_data->isa_int_asserted |= irq;
 		else
-			m->jazz_data->isa_int_asserted &= ~irq;
+			m->md_int.jazz_data->isa_int_asserted &= ~irq;
 	} else {
 		if (assrt)
-			m->jazz_data->int_asserted |= irq;
+			m->md_int.jazz_data->int_asserted |= irq;
 		else
-			m->jazz_data->int_asserted &= ~irq;
+			m->md_int.jazz_data->int_asserted &= ~irq;
 	}
 
-	/*  debug("   %08x %08x\n", m->jazz_data->int_asserted,
-		m->jazz_data->int_enable_mask);  */
-	/*  debug("   %08x %08x\n", m->jazz_data->isa_int_asserted,
-		m->jazz_data->isa_int_enable_mask);  */
+	/*  debug("   %08x %08x\n", m->md_int.jazz_data->int_asserted,
+		m->md_int.jazz_data->int_enable_mask);  */
+	/*  debug("   %08x %08x\n", m->md_int.jazz_data->isa_int_asserted,
+		m->md_int.jazz_data->isa_int_enable_mask);  */
 
-	if (m->jazz_data->int_asserted /* & m->jazz_data->int_enable_mask  */
-	    & ~0x8000 )
+	if (m->md_int.jazz_data->int_asserted
+	    /* & m->md_int.jazz_data->int_enable_mask  */ & ~0x8000 )
 		cpu_interrupt(cpu, 3);
 	else
 		cpu_interrupt_ack(cpu, 3);
 
-	if (m->jazz_data->isa_int_asserted & m->jazz_data->isa_int_enable_mask)
+	if (m->md_int.jazz_data->isa_int_asserted &
+	    m->md_int.jazz_data->isa_int_enable_mask)
 		cpu_interrupt(cpu, 4);
 	else
 		cpu_interrupt_ack(cpu, 4);
 
 	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
-	if (m->jazz_data->int_asserted & 0x8000)
+	if (m->md_int.jazz_data->int_asserted & 0x8000)
 		cpu_interrupt(cpu, 6);
 	else
 		cpu_interrupt_ack(cpu, 6);
@@ -821,9 +808,9 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 		giu_irq = irq_nr - 32;
 
 		if (assrt)
-			m->vr41xx_data->giuint |= (1 << giu_irq);
+			m->md_int.vr41xx_data->giuint |= (1 << giu_irq);
 		else
-			m->vr41xx_data->giuint &= ~(1 << giu_irq);
+			m->md_int.vr41xx_data->giuint &= ~(1 << giu_irq);
 	}
 
 	/*  TODO: This is wrong. What about GIU bit 8?  */
@@ -831,7 +818,8 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 	if (irq_nr != 8) {
 		/*  If any GIU bit is asserted, then assert the main
 		    GIU interrupt:  */
-		if (m->vr41xx_data->giuint & m->vr41xx_data->giumask)
+		if (m->md_int.vr41xx_data->giuint &
+		    m->md_int.vr41xx_data->giumask)
 			vr41xx_interrupt(m, cpu, 8 + 8, 1);
 		else
 			vr41xx_interrupt(m, cpu, 8 + 8, 0);
@@ -842,25 +830,25 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 
 	if (irq_nr < 16) {
 		if (assrt)
-			m->vr41xx_data->sysint1 |= (1 << irq_nr);
+			m->md_int.vr41xx_data->sysint1 |= (1 << irq_nr);
 		else
-			m->vr41xx_data->sysint1 &= ~(1 << irq_nr);
+			m->md_int.vr41xx_data->sysint1 &= ~(1 << irq_nr);
 	} else if (irq_nr < 32) {
 		irq_nr -= 16;
 		if (assrt)
-			m->vr41xx_data->sysint2 |= (1 << irq_nr);
+			m->md_int.vr41xx_data->sysint2 |= (1 << irq_nr);
 		else
-			m->vr41xx_data->sysint2 &= ~(1 << irq_nr);
+			m->md_int.vr41xx_data->sysint2 &= ~(1 << irq_nr);
 	}
 
 	/*  TODO: Which hardware interrupt pin?  */
 
 	/*  debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
-	    m->vr41xx_data->sysint1, m->vr41xx_data->msysint1,
-	    m->vr41xx_data->sysint2, m->vr41xx_data->msysint2);  */
+	    m->md_int.vr41xx_data->sysint1, m->md_int.vr41xx_data->msysint1,
+	    m->md_int.vr41xx_data->sysint2, m->md_int.vr41xx_data->msysint2); */
 
-	if ((m->vr41xx_data->sysint1 & m->vr41xx_data->msysint1) |
-	    (m->vr41xx_data->sysint2 & m->vr41xx_data->msysint2))
+	if ((m->md_int.vr41xx_data->sysint1 & m->md_int.vr41xx_data->msysint1) |
+	    (m->md_int.vr41xx_data->sysint2 & m->md_int.vr41xx_data->msysint2))
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
@@ -894,11 +882,11 @@ void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		}
 
 		if (assrt)
-			m->ps2_data->sbus_smflg |= msk;
+			m->md_int.ps2_data->sbus_smflg |= msk;
 		else
-			m->ps2_data->sbus_smflg &= ~msk;
+			m->md_int.ps2_data->sbus_smflg &= ~msk;
 
-		if (m->ps2_data->sbus_smflg != 0)
+		if (m->md_int.ps2_data->sbus_smflg != 0)
 			cpu_interrupt(cpu, 8 + 1);
 		else
 			cpu_interrupt_ack(cpu, 8 + 1);
@@ -908,25 +896,27 @@ void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 	if (assrt) {
 		/*  OR into the INTR:  */
 		if (irq_nr < 16)
-			m->ps2_data->intr |= (1 << irq_nr);
+			m->md_int.ps2_data->intr |= (1 << irq_nr);
 		else
-			m->ps2_data->dmac_reg[0x601] |= (1 << (irq_nr-16));
+			m->md_int.ps2_data->dmac_reg[0x601] |=
+			    (1 << (irq_nr-16));
 	} else {
 		/*  AND out of the INTR:  */
 		if (irq_nr < 16)
-			m->ps2_data->intr &= ~(1 << irq_nr);
+			m->md_int.ps2_data->intr &= ~(1 << irq_nr);
 		else
-			m->ps2_data->dmac_reg[0x601] &= ~(1 << (irq_nr-16));
+			m->md_int.ps2_data->dmac_reg[0x601] &=
+			    ~(1 << (irq_nr-16));
 	}
 
 	/*  TODO: Hm? How about the mask?  */
-	if (m->ps2_data->intr /*  & m->ps2_data->imask */ )
+	if (m->md_int.ps2_data->intr /*  & m->md_int.ps2_data->imask */ )
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
 
 	/*  TODO: mask?  */
-	if (m->ps2_data->dmac_reg[0x601] & 0xffff)
+	if (m->md_int.ps2_data->dmac_reg[0x601] & 0xffff)
 		cpu_interrupt(cpu, 3);
 	else
 		cpu_interrupt_ack(cpu, 3);
@@ -958,36 +948,36 @@ void sgi_ip22_interrupt(struct machine *m, struct cpu *cpu,
 		int ms = irq_nr / 64;
 		uint32_t new = 1 << ms;
 		if (assrt)
-			m->sgi_ip22_data->reg[4] |= new;
+			m->md_int.sgi_ip22_data->reg[4] |= new;
 		else
-			m->sgi_ip22_data->reg[4] &= ~new;
+			m->md_int.sgi_ip22_data->reg[4] &= ~new;
 		/*  TODO: is this enough?  */
 		irq_nr &= 63;
 	}
 
 	if (irq_nr < 32) {
 		if (assrt)
-			m->sgi_ip22_data->reg[0] |= newmask;
+			m->md_int.sgi_ip22_data->reg[0] |= newmask;
 		else
-			m->sgi_ip22_data->reg[0] &= ~newmask;
+			m->md_int.sgi_ip22_data->reg[0] &= ~newmask;
 	} else {
 		if (assrt)
-			m->sgi_ip22_data->reg[2] |= newmask;
+			m->md_int.sgi_ip22_data->reg[2] |= newmask;
 		else
-			m->sgi_ip22_data->reg[2] &= ~newmask;
+			m->md_int.sgi_ip22_data->reg[2] &= ~newmask;
 	}
 
 	/*  Read stat and mask for local0:  */
-	stat = m->sgi_ip22_data->reg[0];
-	mask = m->sgi_ip22_data->reg[1];
+	stat = m->md_int.sgi_ip22_data->reg[0];
+	mask = m->md_int.sgi_ip22_data->reg[1];
 	if ((stat & mask) == 0)
 		cpu_interrupt_ack(cpu, 2);
 	else
 		cpu_interrupt(cpu, 2);
 
 	/*  Read stat and mask for local1:  */
-	stat = m->sgi_ip22_data->reg[2];
-	mask = m->sgi_ip22_data->reg[3];
+	stat = m->md_int.sgi_ip22_data->reg[2];
+	mask = m->md_int.sgi_ip22_data->reg[3];
 	if ((stat & mask) == 0)
 		cpu_interrupt_ack(cpu, 3);
 	else
@@ -1019,9 +1009,9 @@ void sgi_ip30_interrupt(struct machine *m, struct cpu *cpu,
 	newmask = (int64_t)1 << irq_nr;
 
 	if (assrt)
-		m->sgi_ip30_data->isr |= newmask;
+		m->md_int.sgi_ip30_data->isr |= newmask;
 	else
-		m->sgi_ip30_data->isr &= ~newmask;
+		m->md_int.sgi_ip30_data->isr &= ~newmask;
 
 just_assert_and_such:
 
@@ -1031,8 +1021,8 @@ just_assert_and_such:
 	cpu_interrupt_ack(cpu, 5);
 	cpu_interrupt_ack(cpu, 6);
 
-	stat = m->sgi_ip30_data->isr;
-	mask = m->sgi_ip30_data->imask0;
+	stat = m->md_int.sgi_ip30_data->isr;
+	mask = m->md_int.sgi_ip30_data->imask0;
 
 	if ((stat & mask) & 0x000000000000ffffULL)
 		cpu_interrupt(cpu, 2);
@@ -1085,7 +1075,7 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 	 */
 	if (irq_nr & MACE_PERIPH_SERIAL) {
 		/*  Read current MACE interrupt bits:  */
-		memcpy(x, m->mace_data->reg + mace_addr, sizeof(uint32_t));
+		memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr, sizeof(uint32_t));
 		mace_interrupts = 0;
 		for (i=0; i<sizeof(uint32_t); i++) {
 			/*  SGI is big-endian...  */
@@ -1101,7 +1091,7 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 		/*  Write back MACE interrupt bits:  */
 		for (i=0; i<4; i++)
 			x[3-i] = mace_interrupts >> (i*8);
-		memcpy(m->mace_data->reg + mace_addr, x, sizeof(uint32_t));
+		memcpy(m->md_int.ip32.mace_data->reg + mace_addr, x, sizeof(uint32_t));
 
 		irq_nr = MACE_PERIPH_SERIAL;
 		if (mace_interrupts == 0)
@@ -1113,7 +1103,7 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 	/*  Hopefully _MISC and _SERIAL will not be both on at the same time.  */
 	if (irq_nr & MACE_PERIPH_MISC) {
 		/*  Read current MACE interrupt bits:  */
-		memcpy(x, m->mace_data->reg + mace_addr, sizeof(uint32_t));
+		memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr, sizeof(uint32_t));
 		mace_interrupts = 0;
 		for (i=0; i<sizeof(uint32_t); i++) {
 			/*  SGI is big-endian...  */
@@ -1129,7 +1119,7 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 		/*  Write back MACE interrupt bits:  */
 		for (i=0; i<4; i++)
 			x[3-i] = mace_interrupts >> (i*8);
-		memcpy(m->mace_data->reg + mace_addr, x, sizeof(uint32_t));
+		memcpy(m->md_int.ip32.mace_data->reg + mace_addr, x, sizeof(uint32_t));
 
 		irq_nr = MACE_PERIPH_MISC;
 		if (mace_interrupts == 0)
@@ -1139,7 +1129,7 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 	}
 
 	/*  Read CRIME_INTSTAT:  */
-	memcpy(x, m->crime_data->reg + crime_addr, sizeof(uint64_t));
+	memcpy(x, m->md_int.ip32.crime_data->reg + crime_addr, sizeof(uint64_t));
 	crime_interrupts = 0;
 	for (i=0; i<8; i++) {
 		/*  SGI is big-endian...  */
@@ -1155,10 +1145,10 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 	/*  Write back CRIME_INTSTAT:  */
 	for (i=0; i<8; i++)
 		x[7-i] = crime_interrupts >> (i*8);
-	memcpy(m->crime_data->reg + crime_addr, x, sizeof(uint64_t));
+	memcpy(m->md_int.ip32.crime_data->reg + crime_addr, x, sizeof(uint64_t));
 
 	/*  Read CRIME_INTMASK:  */
-	memcpy(x, m->crime_data->reg + CRIME_INTMASK, sizeof(uint64_t));
+	memcpy(x, m->md_int.ip32.crime_data->reg + CRIME_INTMASK, sizeof(uint64_t));
 	crime_interrupts_mask = 0;
 	for (i=0; i<8; i++) {
 		crime_interrupts_mask <<= 8;
@@ -1203,15 +1193,15 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 		ms = 1 << (irq_nr & 31);
 
 		if (assrt)
-			m->au1x00_ic_data->request0_int |= ms;
+			m->md_int.au1x00_ic_data->request0_int |= ms;
 		else
-			m->au1x00_ic_data->request0_int &= ~ms;
+			m->md_int.au1x00_ic_data->request0_int &= ~ms;
 
 		/*  TODO: Controller 1  */
 	}
 
-	if ((m->au1x00_ic_data->request0_int &
-	    m->au1x00_ic_data->mask) != 0)
+	if ((m->md_int.au1x00_ic_data->request0_int &
+	    m->md_int.au1x00_ic_data->mask) != 0)
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
@@ -1507,7 +1497,7 @@ void machine_setup(struct machine *machine)
 			dev_mc146818_init(machine, mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
-			machine->kn02_csr =
+			machine->md_int.kn02_csr =
 			    dev_kn02_init(cpu, mem, KN02_SYS_CSR);
 
 			framebuffer_console_name = "osconsole=0,7";
@@ -1541,7 +1531,7 @@ void machine_setup(struct machine *machine)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
-			machine->dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
+			machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 			dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
 			dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
 			dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
@@ -1607,14 +1597,14 @@ void machine_setup(struct machine *machine)
 			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
-			machine->dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000, 0);
+			machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000, 0);
 
 			dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
 
-			machine->dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
-			machine->dec_ioasic_data->dma_func_extra[2] = dev_scc_init(machine, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-			machine->dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
-			machine->dec_ioasic_data->dma_func_extra[3] = dev_scc_init(machine, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+			machine->md_int.dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
+			machine->md_int.dec_ioasic_data->dma_func_extra[2] = dev_scc_init(machine, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+			machine->md_int.dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
+			machine->md_int.dec_ioasic_data->dma_func_extra[3] = dev_scc_init(machine, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 
 			dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
 			dev_asc_init(machine, mem, KN03_SYS_SCSI,
@@ -1673,9 +1663,9 @@ void machine_setup(struct machine *machine)
 			 *  Clock uses interrupt 3 (shared with XMI?).
 			 */
 
-			machine->dec5800_csr = dev_dec5800_init(machine, mem, 0x10000000);
+			machine->md_int.dec5800_csr = dev_dec5800_init(machine, mem, 0x10000000);
 			dev_decbi_init(mem, 0x10000000);
-			dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11, &machine->dec5800_csr->csr);
+			dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11, &machine->md_int.dec5800_csr->csr);
 			dev_decxmi_init(mem, 0x11800000);
 			dev_deccca_init(mem, DEC_DECCCA_BASEADDR);
 
@@ -1744,7 +1734,7 @@ void machine_setup(struct machine *machine)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7		(0x1c300000)
 			 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8 built-in framebuffer	(0xa000000)
 			 */
-			machine->dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
+			machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 
 			/*  TURBOchannel slots (0 and 1):  */
 			dev_turbochannel_init(machine, mem, 0,
@@ -1851,7 +1841,7 @@ void machine_setup(struct machine *machine)
 
 			snprintf(tmpstr, sizeof(tmpstr) - 1,
 			    "kn230 addr=0x%llx", (long long)KN230_SYS_ICSR);
-			machine->kn230_csr = device_add(machine, tmpstr);
+			machine->md_int.kn230_csr = device_add(machine, tmpstr);
 
 			serial_console_name = "osconsole=0";
 			break;
@@ -2156,7 +2146,7 @@ void machine_setup(struct machine *machine)
 			machine->main_console_handle = dev_ns16550_init(
 			    machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1, "serial console");  /*  TODO: irq?  */
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -2187,7 +2177,7 @@ void machine_setup(struct machine *machine)
 			machine->main_console_handle = dev_ns16550_init(
 			    machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1, "serial console");  /*  TODO: irq?  */
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -2215,7 +2205,7 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_0000;
 
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -2243,7 +2233,7 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_0000;
 
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -2271,7 +2261,7 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_0000;
 
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -2299,7 +2289,7 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_0000;
 
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -2327,7 +2317,7 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 4;
 			hpcmips_fb_encoding = BIFB_D4_M2L_F;
 
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4181);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4181);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			/*  TODO: Hm... irq 17 according to linux, but
@@ -2368,7 +2358,7 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_0000;
 
-			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -2391,7 +2381,7 @@ void machine_setup(struct machine *machine)
 
 		if (machine->use_x11)
 			machine->main_console_handle =
-			    machine->vr41xx_data->kiu_console_handle;
+			    machine->md_int.vr41xx_data->kiu_console_handle;
 
 		/*  NetBSD/hpcmips and possibly others expects the following:  */
 
@@ -2491,7 +2481,7 @@ void machine_setup(struct machine *machine)
 		 *	ohci0: OHCI version 1.0
 		 */
 
-		machine->ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
+		machine->md_int.ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
 		device_add(machine, "ps2_gs addr=0x12000000");
 		device_add(machine, "ps2_ether addr=0x14001000");
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
@@ -2646,7 +2636,7 @@ void machine_setup(struct machine *machine)
 				 */
 
 				/*  int0 at mainbus0 addr 0x1fb801c0  */
-				machine->sgi_ip20_data = dev_sgi_ip20_init(cpu, mem, DEV_SGI_IP20_BASE);
+				machine->md_int.sgi_ip20_data = dev_sgi_ip20_init(cpu, mem, DEV_SGI_IP20_BASE);
 
 				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
@@ -2682,10 +2672,10 @@ void machine_setup(struct machine *machine)
 			case 24:
 				if (machine->machine_subtype == 22) {
 					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
-					machine->sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
+					machine->md_int.sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
 				} else {
 					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
-					machine->sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
+					machine->md_int.sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
 				}
 
 /*
@@ -2809,7 +2799,7 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine->machine_name, " (Octane)");
 
-				machine->sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
+				machine->md_int.sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
 				machine->md_interrupt = sgi_ip30_interrupt;
 
 				dev_ram_init(mem,    0xa0000000ULL,
@@ -2852,7 +2842,7 @@ Why is this here? TODO
 				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 
-				machine->crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
+				machine->md_int.ip32.crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  framebuffer?  */
 
@@ -2879,7 +2869,7 @@ Why is this here? TODO
 				 * 	  1f3a0000	  mcclock0
 				 */
 
-				machine->mace_data = dev_mace_init(mem, 0x1f310000, 2);
+				machine->md_int.ip32.mace_data = dev_mace_init(mem, 0x1f310000, 2);
 				machine->md_interrupt = sgi_ip32_interrupt;
 
 				/*
@@ -3118,7 +3108,7 @@ Why is this here? TODO
 					exit(1);
 				}
 
-				machine->jazz_data = device_add(machine,
+				machine->md_int.jazz_data = device_add(machine,
 				    "jazz addr=0x80000000");
 				machine->md_interrupt = jazz_interrupt;
 
@@ -3164,7 +3154,8 @@ Why is this here? TODO
 
 				dev_asc_init(machine, mem,
 				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
-				    dev_jazz_dma_controller, machine->jazz_data);
+				    dev_jazz_dma_controller,
+				    machine->md_int.jazz_data);
 
 				device_add(machine, "fdc addr=0x80003000, irq=0");
 
@@ -3190,7 +3181,7 @@ Not yet.
 
 				strcat(machine->machine_name, " (Microsoft Jazz, Olivetti M700)");
 
-				machine->jazz_data = device_add(machine,
+				machine->md_int.jazz_data = device_add(machine,
 				    "jazz addr=0x80000000");
 				machine->md_interrupt = jazz_interrupt;
 
@@ -3486,7 +3477,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
 		machine->md_interrupt = au1x00_interrupt;
-		machine->au1x00_ic_data = dev_au1x00_init(machine, mem);
+		machine->md_int.au1x00_ic_data = dev_au1x00_init(machine, mem);
 
 		/*
 		 *  TODO:  Which non-Au1500 devices, and at what addresses?

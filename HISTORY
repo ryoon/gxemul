@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.767 2005-05-29 16:06:25 debug Exp $
+$Id: HISTORY,v 1.768 2005-05-31 06:20:36 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1951,3 +1951,7 @@ Changelog for GXemul:
 		key repetition). NetBSD/i386 triggers a serious CISC-related
 		problem: instruction fetches across page boundaries, where
 		the later part isn't actually part of the instruction.
+20050530	Various minor updates. (Documentation updates, etc.)
+20050531	Adding some experimental code (experiments/new_test_*) which
+		could be useful for dynamic (but not binary) translation in
+		the future.

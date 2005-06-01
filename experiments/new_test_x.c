@@ -12,7 +12,7 @@ struct cpu;
 
 struct instr_call {
 	void	(*f)(struct cpu *cpu, struct instr_call *ic);
-/*	int	instr_len;  */
+	int	instr_len;
 	void	*arg[3];
 };
 
@@ -64,7 +64,7 @@ void f_add(struct cpu *cpu, struct instr_call *ic)
 
 	*a = (*b) + (*c);
 
-#if 1
+#if 0
 	ic = cpu->next_instr_call++;
 
 	a = (int *) ic->arg[0];
@@ -73,6 +73,33 @@ void f_add(struct cpu *cpu, struct instr_call *ic)
 
 	*a = (*b) + (*c);
 #endif
+}
+
+
+void f_sub(struct cpu *cpu, struct instr_call *ic)
+{
+	int *a = (int *) ic->arg[0];
+	int *b = (int *) ic->arg[1];
+	int *c = (int *) ic->arg[2];
+	*a = (*b) - (*c);
+}
+
+
+void f_and(struct cpu *cpu, struct instr_call *ic)
+{
+	int *a = (int *) ic->arg[0];
+	int *b = (int *) ic->arg[1];
+	int *c = (int *) ic->arg[2];
+	*a = (*b) & (*c);
+}
+
+
+void f_or(struct cpu *cpu, struct instr_call *ic)
+{
+	int *a = (int *) ic->arg[0];
+	int *b = (int *) ic->arg[1];
+	int *c = (int *) ic->arg[2];
+	*a = (*b) | (*c);
 }
 
 
@@ -123,7 +150,13 @@ int main(int argc, char *argv[])
 		if (i == ncalls-1) {
 			call_array[i].f = f_end;
 		} else {
-			call_array[i].f = f_add;
+			switch (i & 3) {
+			case 0:	call_array[i].f = f_add;
+			case 1:	call_array[i].f = f_sub;
+			case 2:	call_array[i].f = f_and;
+			case 3:	call_array[i].f = f_or;
+			}
+
 			call_array[i].arg[0] = &tmp_a;
 			call_array[i].arg[1] = &tmp_b;
 			call_array[i].arg[2] = &tmp_c;

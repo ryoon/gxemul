@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.768 2005-05-31 06:20:36 debug Exp $
+$Id: HISTORY,v 1.769 2005-06-01 22:09:39 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1955,3 +1955,4 @@ Changelog for GXemul:
 20050531	Adding some experimental code (experiments/new_test_*) which
 		could be useful for dynamic (but not binary) translation in
 		the future.
+20050602	Adding a dummy ARM skeleton.

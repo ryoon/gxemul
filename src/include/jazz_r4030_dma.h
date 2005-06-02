@@ -1,12 +1,12 @@
-/*  gxemul: $Id: jazz_r4030_dma.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
+/*  gxemul: $Id: jazz_r4030_dma.h,v 1.4 2005-06-02 12:31:40 debug Exp $  */
 /*	$NetBSD: dma.h,v 1.2 2001/07/24 16:26:53 tsutsui Exp $	*/
 /*	$OpenBSD: dma.h,v 1.3 1997/04/19 17:19:51 pefo Exp $	*/
 
 #ifndef __JAZZ_R4030_DMA
 #define __JAZZ_R4030_DMA
 
-#ifndef MIPS64EMUL
-#define MIPS64EMUL
+#ifndef GXEMUL
+#define GXEMUL
 #endif
 
 /*
@@ -84,7 +84,7 @@ typedef volatile struct {
  *  Structure used to control dma.
  */
 
-#ifndef MIPS64EMUL
+#ifndef GXEMUL
 typedef struct dma_softc {
 	struct device	sc_dev;		/* use as a device */
 	struct esp_softc *sc_esp;
@@ -116,7 +116,7 @@ typedef struct dma_softc {
 #define	DMA_DRAIN(r)
 #define	DMA_END(r)		((r->end)(r))
 
-#ifndef MIPS64EMUL
+#ifndef GXEMUL
 void picaDmaInit __P((void));
 void picaDmaTLBAlloc __P((dma_softc_t *));
 void picaDmaTLBFree __P((dma_softc_t *));

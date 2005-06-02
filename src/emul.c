@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.201 2005-05-27 07:29:24 debug Exp $
+ *  $Id: emul.c,v 1.202 2005-06-02 12:31:39 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1042,6 +1042,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			break;
 
 		case ARCH_ALPHA:
+		case ARCH_ARM:
 		case ARCH_HPPA:
 		case ARCH_SPARC:
 		case ARCH_URISC:

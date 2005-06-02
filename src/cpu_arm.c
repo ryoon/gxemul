@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.1 2005-06-02 00:08:41 debug Exp $
+ *  $Id: cpu_arm.c,v 1.2 2005-06-02 13:52:57 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -161,6 +161,37 @@ void arm_cpu_register_match(struct machine *m, char *name,
 }
 
 
+/*
+ *  arm_cpu_disassemble_instr():
+ *
+ *  Convert an instruction word into human readable format, for instruction
+ *  tracing.
+ *              
+ *  If running is 1, cpu->pc should be the address of the instruction.
+ *
+ *  If running is 0, things that depend on the runtime environment (eg.
+ *  register contents) will not be shown, and addr will be used instead of
+ *  cpu->pc for relative addresses.
+ */                     
+int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+        int running, uint64_t dumpaddr, int bintrans)
+{
+	uint32_t iw;
+
+	if (running)
+		dumpaddr = cpu->pc;
+
+	debug("%08x:  ", (int)dumpaddr);
+
+	iw = instr[0] + (instr[1] << 8) + (instr[2] << 16) + (instr[3] << 24);
+	debug("%08x\t", (int)iw);
+
+	debug("arm_cpu_disassemble_instr(): TODO\n");
+
+	return sizeof(uint32_t);
+}
+
+
 #define MEMORY_RW	arm_memory_rw
 #define MEM_ARM
 #include "memory_rw.c"
@@ -179,7 +210,7 @@ int arm_cpu_family_init(struct cpu_family *fp)
 	fp->cpu_new = arm_cpu_new;
 	fp->list_available_types = arm_cpu_list_available_types;
 	fp->register_match = arm_cpu_register_match;
-	/*  fp->disassemble_instr = arm_cpu_disassemble_instr;  */
+	fp->disassemble_instr = arm_cpu_disassemble_instr;
 	/*  fp->register_dump = arm_cpu_register_dump;  */
 	/*  fp->run = arm_cpu_run;  */
 	fp->dumpinfo = arm_cpu_dumpinfo;

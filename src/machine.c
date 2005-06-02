@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.450 2005-05-31 06:20:39 debug Exp $
+ *  $Id: machine.c,v 1.451 2005-06-02 00:08:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3781,6 +3781,16 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		/*  TODO  */
 		break;
 
+	case MACHINE_BAREARM:
+		machine->machine_name = "\"Bare\" ARM machine";
+		break;
+
+	case MACHINE_TESTARM:
+		machine->machine_name = "ARM test machine";
+
+		/*  TODO  */
+		break;
+
 	case MACHINE_BAREX86:
 		machine->machine_name = "\"Bare\" x86 machine";
 		break;
@@ -4143,6 +4153,12 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("EV4");
 		break;
 
+	/*  ARM:  */
+	case MACHINE_BAREARM:
+	case MACHINE_TESTARM:
+		m->cpu_name = strdup("ARM");
+		break;
+
 	/*  x86:  */
 	case MACHINE_BAREX86:
 	case MACHINE_X86:
@@ -4446,6 +4462,14 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for ARM:  */
+	me = machine_entry_new("Test-machine for ARM", ARCH_ARM,
+	    MACHINE_TESTARM, 1, 0);
+	me->aliases[0] = "testarm";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Test-machine for Alpha:  */
 	me = machine_entry_new("Test-machine for Alpha", ARCH_ALPHA,
 	    MACHINE_TESTALPHA, 1, 0);
@@ -4638,6 +4662,14 @@ void machine_init(void)
 	    MACHINE_BAREHPPA, 1, 0);
 	me->aliases[0] = "barehppa";
 	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" ARM machine:  */
+	me = machine_entry_new("Generic \"bare\" ARM machine", ARCH_ARM,
+	    MACHINE_BAREARM, 1, 0);
+	me->aliases[0] = "barearm";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.129 2005-05-20 20:25:13 debug Exp $
+#  $Id: configure,v 1.130 2005-06-02 00:08:40 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -55,6 +55,7 @@
 ###############################################################################
 
 ENABLEALPHA=NO
+ENABLEARM=NO
 ENABLEHPPA=NO
 ENABLEMIPS=YES
 ENABLEPPC=YES
@@ -82,6 +83,10 @@ if [ z"$*" != z ]; then
 			ENABLEALPHA=NO
 		else if [ z$a = z--enable-alpha ]; then
 			ENABLEALPHA=YES
+		else if [ z$a = z--disable-arm ]; then
+			ENABLEARM=NO
+		else if [ z$a = z--enable-arm ]; then
+			ENABLEARM=YES
 		else if [ z$a = z--disable-hppa ]; then
 			ENABLEHPPA=NO
 		else if [ z$a = z--enable-hppa ]; then
@@ -133,6 +138,9 @@ if [ z"$*" != z ]; then
 				printf "  --enable-alpha     "
 				printf "enable Alpha CPU emulation"
 				printf " (NOT YET)\n"
+				printf "  --enable-arm       "
+				printf "enable ARM CPU emulation"
+				printf " (NOT YET)\n"
 				printf "  --enable-hppa      "
 				printf "enable HPPA CPU emulation"
 				printf " (NOT YET)\n"
@@ -160,7 +168,7 @@ if [ z"$*" != z ]; then
 			    "available options."
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -205,6 +213,16 @@ if [ z$ENABLEALPHA = zYES ]; then
 	printf "#define ENABLE_ALPHA\n" >> config.h
 	if [ z$STABLE = zNO ]; then
 		printf "\nWARNING: Alpha emulation enabled, but it isn't really"
+		printf " implemented yet.\n\n"
+	else
+		printf "Not in the stable release.\n"
+		exit
+	fi
+fi
+if [ z$ENABLEARM = zYES ]; then
+	printf "#define ENABLE_ARM\n" >> config.h
+	if [ z$STABLE = zNO ]; then
+		printf "\nWARNING: ARM emulation enabled, but it isn't really"
 		printf " implemented yet.\n\n"
 	else
 		printf "Not in the stable release.\n"

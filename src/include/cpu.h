@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.22 2005-04-15 21:56:25 debug Exp $
+ *  $Id: cpu.h,v 1.23 2005-06-02 00:08:43 debug Exp $
  *
  *  See cpu.c.
  */
@@ -42,6 +42,7 @@
 #include "../../config.h"
 
 #include "cpu_alpha.h"
+#include "cpu_arm.h"
 #include "cpu_hppa.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
@@ -112,6 +113,7 @@ struct cpu {
 	/*  CPU-family dependant:  */
 	union {
 		struct alpha_cpu   alpha;
+		struct arm_cpu     arm;
 		struct hppa_cpu    hppa;
 		struct mips_cpu    mips;
 		struct ppc_cpu     ppc;

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.53 2005-05-19 06:45:59 debug Exp $
+#  $Id: Makefile.skel,v 1.54 2005-06-02 00:08:41 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -9,8 +9,8 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 OBJS=console.o cpu.o debugger.o diskimage.o emul.o emul_parse.o file.o \
 	machine.o main.o misc.o memory.o device.o net.o symbol.o useremul.o \
 	x11.o cpu_mips.o cpu_mips_coproc.o memory_fast_v2h.o bintrans.o \
-	cpu_alpha.o cpu_hppa.o cpu_ppc.o cpu_sparc.o cpu_urisc.o cpu_x86.o \
-	arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o
+	cpu_alpha.o cpu_arm.o cpu_hppa.o cpu_ppc.o cpu_sparc.o cpu_urisc.o \
+	cpu_x86.o arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o
 
 
 all: do_src do_devices
@@ -24,9 +24,13 @@ $(OBJS): Makefile
 
 bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
+cpu_arm.o: cpu_arm.c memory_rw.c
+
 cpu_mips.o: cpu_mips.c cpu_mips16.c memory_mips.c
 
 memory_mips.c: memory_rw.c memory_mips_v2p.c
+
+cpu_ppc.o: cpu_ppc.c memory_rw.c
 
 cpu_x86.o: cpu_x86.c memory_x86.c
 

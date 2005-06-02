@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.44 2005-05-22 20:05:39 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.45 2005-06-02 15:42:49 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -138,6 +138,7 @@ int pckbc_get_code(struct pckbc_data *d, int port)
  */
 static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 {
+	int old_head;
 	int p = 0;	/*  port  */
 	int shift = 0, ctrl = 0;
 
@@ -154,8 +155,15 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 		pckbc_add_code(d, 0x1d, p);
 
 	/*
-	 *  TODO: Release for all of these?
+	 *  Note: The ugly hack used to add release codes for all of these
+	 *  keys is as follows:  we remember how much of the kbd buf that
+	 *  is in use here, before we add any scancode. After we've added
+	 *  one or more scancodes (ie an optional shift + another key)
+	 *  then we duplicate the last scancode | 0x80 _if_ the kbd buf
+	 *  was altered.
 	 */
+
+	old_head = d->head[p];
 
 	if (a==27)	pckbc_add_code(d, 0x01, p);
 
@@ -261,6 +269,12 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 			pckbc_add_code(d, 0x35, p); }
 
 	if (a==' ')	pckbc_add_code(d, 0x39, p);
+
+	/*  Add release code, if a key was pressed:  */
+	if (d->head[p] != old_head) {
+		int code = d->key_queue[p][d->head[p]] | 0x80;
+		pckbc_add_code(d, code, p);
+	}
 
 	/*  Release ctrl:  */
 	if (ctrl)

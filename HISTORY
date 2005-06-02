@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.769 2005-06-01 22:09:39 debug Exp $
+$Id: HISTORY,v 1.770 2005-06-02 15:42:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1956,3 +1956,5 @@ Changelog for GXemul:
 		could be useful for dynamic (but not binary) translation in
 		the future.
 20050602	Adding a dummy ARM skeleton.
+		Fixing the pckbc key repetition problem (by adding release
+		scancodes for all keypresses).

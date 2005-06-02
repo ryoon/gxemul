@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.8 2005-05-23 11:22:26 debug Exp $
+ *  $Id: dev_8259.c,v 1.9 2005-06-02 17:11:35 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -204,6 +204,8 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 int devinit_8259(struct devinit *devinit)
 {
 	struct pic8259_data *d = malloc(sizeof(struct pic8259_data));
+	char *name2;
+	int nlen = 40;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -212,7 +214,12 @@ int devinit_8259(struct devinit *devinit)
 	memset(d, 0, sizeof(struct pic8259_data));
 	d->irq_nr = devinit->irq_nr;
 
-	memory_device_register(devinit->machine->memory, devinit->name,
+	name2 = malloc(nlen);
+	snprintf(name2, nlen, "%s", devinit->name);
+	if ((devinit->addr & 0xfff) == 0xa0)
+		strcat(name2, " [secondary]");
+
+	memory_device_register(devinit->machine->memory, name2,
 	    devinit->addr, DEV_8259_LENGTH, dev_8259_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 

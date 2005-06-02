@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.451 2005-06-02 00:08:41 debug Exp $
+ *  $Id: machine.c,v 1.452 2005-06-02 17:11:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1227,18 +1227,25 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		else
 			m->md.pc.pic1->irr &= ~mask;
 	} else if (irq_nr < 16) {
+		if (m->md.pc.pic2 == NULL) {
+			fatal("x86_pc_interrupt(): pic2 used (irq_nr = %i), "
+			    "but we are emulating an XT?\n", irq_nr);
+			return;
+		}
 		if (assrt)
 			m->md.pc.pic2->irr |= mask;
 		else
 			m->md.pc.pic2->irr &= ~mask;
 	}
 
-	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
-	/*  (TODO: don't hardcode this here)  */
-	if (m->md.pc.pic2->irr & ~m->md.pc.pic2->ier)
-		m->md.pc.pic1->irr |= 0x04;
-	else
-		m->md.pc.pic1->irr &= ~0x04;
+	if (m->md.pc.pic2 != NULL) {
+		/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+		/*  (TODO: don't hardcode this here)  */
+		if (m->md.pc.pic2->irr & ~m->md.pc.pic2->ier)
+			m->md.pc.pic1->irr |= 0x04;
+		else
+			m->md.pc.pic1->irr &= ~0x04;
+	}
 
 	/*  Now, PIC1:  */
 	if (m->md.pc.pic1->irr & ~m->md.pc.pic1->ier)
@@ -3796,15 +3803,20 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 
 	case MACHINE_X86:
-		machine->machine_name = "Generic x86 PC";
+		if (machine->machine_subtype == MACHINE_X86_XT)
+			machine->machine_name = "PC XT";
+		else
+			machine->machine_name = "Generic x86 PC";
 
 		/*  Interrupt controllers:  */
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x20));
 		machine->md.pc.pic1 = device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx irq=2",
-		    (long long)(X86_IO_BASE + 0xa0));
-		machine->md.pc.pic2 = device_add(machine, tmpstr);
+		if (machine->machine_subtype != MACHINE_X86_XT) {
+			snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx irq=2",
+			    (long long)(X86_IO_BASE + 0xa0));
+			machine->md.pc.pic2 = device_add(machine, tmpstr);
+		}
 
 		machine->md_interrupt = x86_pc_interrupt;
 
@@ -3816,6 +3828,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "pccmos addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x70));
 		device_add(machine, tmpstr);
+
+		/*  TODO: IRQ when emulating a PC XT?  */
 
 		/*  IDE controllers:  */
 		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
@@ -3834,7 +3848,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		/*  TODO: parallel port  */
 
-		/*  Serial ports:  */
+		/*  Serial ports:  (TODO: 8250 for PC XT?)  */
 		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x3f8, 4, 1, 0, "com1");
 		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x378, 3, 1, 0, "com2");
 
@@ -3950,6 +3964,10 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_BAREURISC:
 		case MACHINE_TESTURISC:
 			m->physical_ram_in_mb = 2;
+			break;
+		case MACHINE_X86:
+			if (m->machine_subtype == MACHINE_X86_XT)
+				m->physical_ram_in_mb = 1;
 			break;
 		}
 	}
@@ -4162,7 +4180,10 @@ void machine_default_cputype(struct machine *m)
 	/*  x86:  */
 	case MACHINE_BAREX86:
 	case MACHINE_X86:
-		m->cpu_name = strdup("AMD64");
+		if (m->machine_subtype == MACHINE_X86_XT)
+			m->cpu_name = strdup("8086");
+		else
+			m->cpu_name = strdup("AMD64");
 		break;
 	}
 
@@ -4413,10 +4434,15 @@ void machine_init(void)
 	 */
 
 	/*  X86 machine:  */
-	me = machine_entry_new("x86 (generic PC-style machine)", ARCH_X86,
-	    MACHINE_X86, 2, 0);
+	me = machine_entry_new("x86-based PC", ARCH_X86,
+	    MACHINE_X86, 2, 2);
 	me->aliases[0] = "pc";
 	me->aliases[1] = "x86";
+	me->subtype[0] = machine_entry_subtype_new("Generic PC",
+	    MACHINE_X86_GENERIC, 1);
+	me->subtype[0]->aliases[0] = "generic";
+	me->subtype[1] = machine_entry_subtype_new("PC XT", MACHINE_X86_XT, 1);
+	me->subtype[1]->aliases[0] = "xt";
 	if (cpu_family_ptr_by_number(ARCH_X86) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.96 2005-05-25 13:59:36 debug Exp $
+ *  $Id: pc_bios.c,v 1.97 2005-06-02 17:11:34 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -42,6 +42,10 @@
  *	0xff66e		8x8 font (chars 128..255)
  *	0xffa6e		8x8 font (chars 0..127)
  *	0xfffd0		System Configuration Parameters (8 bytes)
+ *	0xffff0		Reboot "code".
+ *
+ *  TODO: Keep the "BIOS data area" in synch. (Such as keyboard shift state,
+ *  disk access, video mode, error codes, x and y charcell resolution...)
  */
 
 #include <stdio.h>
@@ -494,6 +498,9 @@ static void pc_bios_int9(struct cpu *cpu)
 	/*  Add the key to the keyboard buffer:  */
 	cpu->machine->md.pc.kbd_buf_scancode[
 	    cpu->machine->md.pc.kbd_buf_tail] = byte;
+
+	/*  TODO: The shift state should be located in the BIOS
+	    data area.  */
 
 	if (byte == 0x2a) {
 		cpu->machine->md.pc.shift_state |= PC_KBD_SHIFT;
@@ -1489,8 +1496,15 @@ void pc_bios_init(struct cpu *cpu)
 		return;
 	}
 
-	cpu->machine->md.pc.pic1->irq_base = 0x08;
-	cpu->machine->md.pc.pic2->irq_base = 0x70;
+	if (cpu->machine->md.pc.pic1 == NULL) {
+		fatal("ERROR: No interrupt controller?\n");
+		exit(1);
+	} else
+		cpu->machine->md.pc.pic1->irq_base = 0x08;
+
+	/*  pic2 can be NULL when emulating an original XT:  */
+	if (cpu->machine->md.pc.pic2 != NULL)
+		cpu->machine->md.pc.pic2->irq_base = 0x70;
 
 	/*  Disk Base Table (11 or 12 bytes?) at F000h:EFC7:  */
 	cpu->cd.x86.cursegment = X86_S_FS;
@@ -1775,6 +1789,12 @@ int pc_bios_emul(struct cpu *cpu)
 	int int_nr, flags;
 	int enable_ints_after_return = 0;
 	unsigned char w[2];
+
+	if (addr == 0xffff0) {
+		fatal("[ bios reboot ]\n");
+		cpu->running = 0;
+		return 0;
+	}
 
 	int_nr = (addr >> 4) & 0xff;
 

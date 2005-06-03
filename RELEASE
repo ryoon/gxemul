@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.115 2005-05-25 06:40:16 debug Exp $
+$Id: RELEASE,v 1.116 2005-06-03 07:39:25 debug Exp $
 
-I'm now working on post-0.3.2.
+I'm now working on what will be 0.3.3.
 
 ------------------------------------------------------------------------------
 
-Release notes for GXemul 0.3.X
+Release notes for GXemul 0.3.3
 ==============================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -42,16 +42,18 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-Here are some of the changes between release 0.3.2 and 0.3.X:
+Summary of changes between release 0.3.2 and 0.3.3:
 
-	x)  Files on ISO9660 disk images can now be read directly from
-	    within the emulator, so there is no need to extract kernels
-	    manually in order to boot an emulated machine.
+	x)  When booting from an ISO9660 (CDROM) filesystem image, the kernel
+	    can now be read directly from the image.  It is a quick, buggy, and
+	    very ugly hack which doesn't always work, but it makes booting
+	    easier in some cases.
 
 	x)  Mixing more than one disk image type (SCSI, IDE, PC-style floppy)
-	    in the same emulated machine should now be possible.
+	    within one emulated machine is now possible. (There is however no
+	    stable emulation mode yet that uses this.)
 
-	x)  ..
+	x)  Many minor updates and bugfixes.
 
 Files included in this release are:
 

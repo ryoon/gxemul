@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.19 2005-05-29 17:18:10 debug Exp $
+.\" $Id: gxemul.1,v 1.20 2005-06-03 07:39:26 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -29,7 +29,7 @@
 .\" This is a minimal man page for GXemul. Process this file with
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd MAY 2005
+.Dd JUNE 2005
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -255,11 +255,11 @@ emulation.
 General options:
 .Bl -tag -width Ds
 .It Fl D
-Guarantee fully deterministic behaviour. Normally, the emulator calls
+Guarantee fully deterministic behavior. Normally, the emulator calls
 srandom() with a seed based on the current time at startup. When the
 .Fl D
 option is used, the srandom() call is skipped, which should cause two 
-subsequent invokations of the emulator to be identical, if all other 
+subsequent invocations of the emulator to be identical, if all other 
 settings are identical and no user input is taking place. (If this option 
 is used, then
 .Fl I

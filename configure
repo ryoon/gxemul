@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.130 2005-06-02 00:08:40 debug Exp $
+#  $Id: configure,v 1.131 2005-06-03 07:48:50 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -60,7 +60,7 @@ ENABLEHPPA=NO
 ENABLEMIPS=YES
 ENABLEPPC=YES
 ENABLESPARC=NO
-ENABLEURISC=NO
+ENABLEURISC=YES
 ENABLEX86=NO
 STABLE=NO
 
@@ -152,7 +152,7 @@ if [ z"$*" != z ]; then
 				printf "enable SPARC CPU emulation"
 				printf " (NOT YET)\n"
 			fi
-			echo "  --enable-urisc     enable URISC CPU emulation"
+			echo "  --disable-urisc    disable URISC CPU emulation"
 			if [ z$STABLE = zNO ]; then
 				printf "  --enable-x86       "
 				printf "enable x86 CPU emulation"

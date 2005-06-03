@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.20 2005-06-03 07:39:26 debug Exp $
+.\" $Id: gxemul.1,v 1.21 2005-06-03 23:14:52 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -78,14 +78,19 @@ from SGI. Use
 .Fl H
 to get a list of available emulation modes.
 .Pp
-(There is an exception to the normal invocation usage mentioned above;
-if you want to use the DECstation emulation mode, and have a bootable
+There are two exceptions to the normal invocation usage mentioned above.
+The first is for DECstation emulation: if you have a bootable
 DECstation harddisk or CDROM image, then just supplying the diskimage via 
 the
 .Fl d
-option is sufficient. The filename of the kernel can then be 
+option is sufficient. (The filename of the kernel can then be 
 skipped, as the emulator runs the bootblocks from the diskimage directly and 
 doesn't need the kernel as a separate file.)
+The second is if you supply an ISO9660 CDROM disk image. You may then use 
+the
+.Fl j
+option to indicate which file on the CDROM filesystem that should be 
+loaded into emulated memory.
 .Pp
 Machine selection options:
 .Bl -tag -width Ds

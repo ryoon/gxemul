@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.116 2005-06-03 07:39:25 debug Exp $
+$Id: RELEASE,v 1.117 2005-06-03 23:08:37 debug Exp $
 
 I'm now working on what will be 0.3.3.
 
@@ -45,9 +45,9 @@ and other effects are not simulated.
 Summary of changes between release 0.3.2 and 0.3.3:
 
 	x)  When booting from an ISO9660 (CDROM) filesystem image, the kernel
-	    can now be read directly from the image.  It is a quick, buggy, and
-	    very ugly hack which doesn't always work, but it makes booting
-	    easier in some cases.
+	    can now in some cases be read directly from the image, so there is
+	    no need any longer to supply an external kernel. (It is a quick,
+	    buggy, and very ugly hack, but it sometimes works.)
 
 	x)  Mixing more than one disk image type (SCSI, IDE, PC-style floppy)
 	    within one emulated machine is now possible. (There is however no

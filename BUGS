@@ -1,4 +1,4 @@
-$Id: BUGS,v 1.32 2005-03-05 11:18:31 debug Exp $
+$Id: BUGS,v 1.33 2005-06-04 12:35:14 debug Exp $
 
 
 Serious bugs:
@@ -7,6 +7,9 @@ Serious bugs:
       weird.)
 
   x)  Enabling cache emulation (./configure --enable-caches) triggers bugs.
+
+  x)  Compiling with certain versions of gcc and -O3 optimization on i386
+      triggers bugs. I'm not sure whether they are in gcc or in GXemul.
 
   x)  Linux/DECstation (Debian) oopses extremely often unless -U is used
       at run-time. I'm not sure yet why it bugs out. With -U, the risk is

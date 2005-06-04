@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.47 2005-06-03 23:08:38 debug Exp $
+$Id: guestoses.html,v 1.48 2005-06-04 01:11:01 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -614,9 +614,7 @@ Execute the following commands in the emulator:
 	# <b>mount /</b>
 	# <b>passwd root</b>
 
-	# <b>cd /</b>
-	# <b>mount -t cd9660 /dev/rz2c /mnt</b>
-	# <b>sh</b>
+	# <b>cd /; mount -t cd9660 /dev/rz2c /mnt; sh</b>
 	# <b>for a in /mnt/[xX]*; do tar zxvf $a; done</b>
 	# <b>ln -s /usr/X11R6/bin/Xcfbpmax /usr/X11R6/bin/X</b>
 	# <b>ln -s /dev/fb0 /dev/mouse</b>

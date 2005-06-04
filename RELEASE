@@ -1,7 +1,6 @@
-$Id: RELEASE,v 1.118 2005-06-04 12:02:16 debug Exp $
+$Id: RELEASE,v 1.119 2005-06-04 22:47:48 debug Exp $
 
-Working on a quick bugfix version 0.3.3.1.
-Haha, that's what you get for releasing too quickly.
+Working on post-0.3.3.1.
 
 ------------------------------------------------------------------------------
 
@@ -43,7 +42,7 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-Summary of changes between release 0.3.2 and 0.3.3:
+Summary of changes between release 0.3.2 and 0.3.3.1:
 
 	x)  When booting from an ISO9660 (CDROM) filesystem image, the kernel
 	    can now in some cases be read directly from the image, so there is

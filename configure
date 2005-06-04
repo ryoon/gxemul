@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.132 2005-06-04 12:05:50 debug Exp $
+#  $Id: configure,v 1.133 2005-06-04 22:47:48 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -62,7 +62,7 @@ ENABLEPPC=YES
 ENABLESPARC=NO
 ENABLEURISC=YES
 ENABLEX86=NO
-STABLE=YES
+STABLE=NO
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:

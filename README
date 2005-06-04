@@ -1,11 +1,11 @@
-$Id: README,v 1.71 2005-06-03 07:39:25 debug Exp $
+$Id: README,v 1.72 2005-06-04 12:02:16 debug Exp $
 
-I'm now working on what will be 0.3.3.
+I'm now working on what will be 0.3.3.1.
 
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.3.3
-==================================================
+Gavare's eXperimental Emulator   --   GXemul 0.3.3.1
+====================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 

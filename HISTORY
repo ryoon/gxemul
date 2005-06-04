@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.771 2005-06-03 23:08:37 debug Exp $
+$Id: HISTORY,v 1.772 2005-06-04 12:02:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1960,3 +1960,9 @@ Changelog for GXemul:
 		scancodes for all keypresses).
 20050603	Minor updates for the next release.
 20050604	Release testing. Minor updates.
+
+==============  RELEASE 0.3.3  ==============
+
+20050604	There'll probably be a 0.3.3.1 release soon, with some very
+		very tiny updates.
+

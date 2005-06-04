@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.131 2005-06-03 07:48:50 debug Exp $
+#  $Id: configure,v 1.132 2005-06-04 12:05:50 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -62,7 +62,7 @@ ENABLEPPC=YES
 ENABLESPARC=NO
 ENABLEURISC=YES
 ENABLEX86=NO
-STABLE=NO
+STABLE=YES
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -761,24 +761,6 @@ else
 	fi
 fi
 rm -f _testprog _testprog.error _testprog.stdout
-
-
-#  -fmove-all-movables
-#printf "checking whether -fmove-all-movables can be used... "
-#$CC $CFLAGS -fmove-all-movables _testprog.c -o \
-#    _testprog > _testprog.stdout 2>&1
-#cat _testprog.stdout >> _testprog.error
-#if grep movables _testprog.error > /dev/null 2>&1; then
-#	printf "no\n"
-#else
-#	if [ -x _testprog ]; then
-#		CFLAGS="-fmove-all-movables $CFLAGS"
-#		printf "yes\n"
-#	else
-#		printf "no\n"
-#	fi
-#fi
-#rm -f _testprog _testprog.error _testprog.stdout
 
 
 #  -fomit-frame-pointer

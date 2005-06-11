@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.25 2005-02-25 06:27:48 debug Exp $
+ *  $Id: dev_mp.c,v 1.26 2005-06-11 11:53:36 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -50,6 +50,10 @@ struct mp_data {
 	uint64_t	startup_addr;
 	uint64_t	stack_addr;
 	uint64_t	pause_addr;
+
+	/*  Each CPU has an array of pending ipis.  */
+	int		*n_pending_ipis;
+	int		**ipi;
 };
 
 
@@ -153,6 +157,70 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		odata = cpu->machine->physical_ram_in_mb * 1048576;
 		break;
 
+	case DEV_MP_IPI_ONE:
+	case DEV_MP_IPI_MANY:
+		/*
+		 *  idata should be of the form:
+		 *
+		 *		(IPI_nr << 16) | cpu_id
+		 *
+		 *  This will send an Inter-processor interrupt to a specific
+		 *  CPU. (DEV_MP_IPI_MANY sends to all _except_ the specific
+		 *  CPU.)
+		 *
+		 *  Sending an IPI means adding the IPI last in the list of
+		 *  pending IPIs, and asserting the IPI "pin".
+		 */
+		which_cpu = (idata & 0xffff);
+		for (i=0; i<cpu->machine->ncpus; i++) {
+			int send_it = 0;
+			if (relative_addr == DEV_MP_IPI_ONE && i == which_cpu)
+				send_it = 1;
+			if (relative_addr == DEV_MP_IPI_MANY && i != which_cpu)
+				send_it = 1;
+			if (send_it) {
+
+printf("[ SENDING to cpu %i: %i ]\n", i, (int)(idata >> 16);
+
+				d->n_pending_ipis[i] ++;
+				d->ipi[i] = realloc(d->ipi[i],
+				    d->n_pending_ipis[i] * sizeof(int));
+				if (d->ipi[i] == NULL) {
+					fprintf(stderr, "out of memory\n");
+					exit(1);
+				}
+				/*  Add the IPI last in the array:  */
+				d->ipi[i][d->n_pending_ipis[i] - 1] =
+				    idata >> 16;
+				cpu_interrupt(d->cpus[i], MIPS_IPI_INT);
+			}
+		}
+		break;
+
+	case DEV_MP_IPI_READ:
+		/*
+		 *  If the current CPU has any IPIs pending, accessing this
+		 *  address reads the IPI value. (Writing to this address
+		 *  discards _all_ pending IPIs.)  If there is no pending
+		 *  IPI, then 0 is returned. Usage of the value 0 for real
+		 *  IPIs should thus be avoided.
+		 */
+		if (writeflag == MEM_WRITE) {
+			d->n_pending_ipis[cpu->cpu_id] = 0;
+		}
+		odata = 0;
+		if (d->n_pending_ipis[cpu->cpu_id] > 0) {
+			odata = d->ipi[cpu->cpu_id][0];
+			if (d->n_pending_ipis[cpu->cpu_id]-- > 1)
+				memmove(&d->ipi[cpu->cpu_id][0],
+				    &d->ipi[cpu->cpu_id][1],
+				    d->n_pending_ipis[cpu->cpu_id]);
+		}
+		/*  Deassert the interrupt, if there are no pending IPIs:  */
+		if (d->n_pending_ipis[cpu->cpu_id] == 0)
+			cpu_interrupt_ack(d->cpus[cpu->cpu_id], MIPS_IPI_INT);
+		break;
+
 	default:
 		fatal("[ dev_mp: unimplemented relative addr 0x%x ]\n",
 		    relative_addr);
@@ -171,6 +239,8 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 int devinit_mp(struct devinit *devinit)
 {
 	struct mp_data *d;
+	int n;
+
 	d = malloc(sizeof(struct mp_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -181,9 +251,18 @@ int devinit_mp(struct devinit *devinit)
 	d->startup_addr = INITIAL_PC;
 	d->stack_addr = INITIAL_STACK_POINTER;
 
-	memory_device_register(devinit->machine->memory,
-	    devinit->name, devinit->addr, DEV_MP_LENGTH,
-	    dev_mp_access, d, MEM_DEFAULT, NULL);
+	n = devinit->machine->ncpus;
+	d->n_pending_ipis = malloc(n * sizeof(int));
+	d->ipi = malloc(n * sizeof(int *));
+	if (d->ipi == NULL || d->n_pending_ipis == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d->n_pending_ipis, 0, sizeof(int) * n);
+	memset(d->ipi, 0, sizeof(int *) * n);
+
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_MP_LENGTH, dev_mp_access, d, MEM_DEFAULT, NULL);
 
 	return 1;
 }

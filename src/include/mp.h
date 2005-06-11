@@ -28,10 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mp.h,v 1.5 2005-01-17 11:27:33 debug Exp $
+ *  $Id: mp.h,v 1.6 2005-06-11 11:53:37 debug Exp $
  *
  *  dev_mp definitions.
  */
+
+#define	MIPS_IPI_INT			6
 
 #define	DEV_MP_ADDRESS			0x0000000011000000ULL
 #define	DEV_MP_LENGTH			0x0000000000000100ULL
@@ -45,5 +47,8 @@
 #define     DEV_MP_STARTUPSTACK		    0x0070
 #define     DEV_MP_HARDWARE_RANDOM	    0x0080
 #define     DEV_MP_MEMORY		    0x0090
+#define	    DEV_MP_IPI_ONE		    0x00a0
+#define	    DEV_MP_IPI_MANY		    0x00b0
+#define	    DEV_MP_IPI_READ		    0x00c0
 
 #endif	/*  MP_H  */

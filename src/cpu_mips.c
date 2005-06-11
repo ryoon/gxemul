@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.41 2005-05-29 17:51:46 debug Exp $
+ *  $Id: cpu_mips.c,v 1.42 2005-06-11 20:59:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1618,7 +1618,21 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		    "pc=%08llx <%s> ]\n", (long long)vaddr,
 		    exception_names[exccode], (long long)cpu->cd.mips.pc_last,
 		    symbol? symbol : "(no symbol)");
-cpu->running = 0;
+
+#ifdef TRACE_NULL_CRASHES
+		/*  This can be useful for debugging kernel bugs:  */
+		{
+			int i = cpu->trace_null_index;
+			do {
+				fatal("TRACE: 0x%016llx\n",
+				    cpu->trace_null_addr[i]);
+				i ++;
+				i %= TRACE_NULL_N_ENTRIES;
+			} while (i != cpu->trace_null_index);
+		}
+		cpu->running = 0;
+		cpu->dead = 1;
+#endif
 	}
 
 	/*  Clear the exception code bits of the cause register...  */
@@ -1887,6 +1901,12 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  Cache the program counter in a local variable:  */
 	cached_pc = cpu->pc;
+
+#ifdef TRACE_NULL_CRASHES
+	cpu->trace_null_addr[cpu->trace_null_index] = cached_pc;
+	cpu->trace_null_index ++;
+	cpu->trace_null_index %= TRACE_NULL_N_ENTRIES;
+#endif
 
 	/*  Hardwire the zero register to 0:  */
 	cpu->cd.mips.gpr[MIPS_GPR_ZERO] = 0;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.774 2005-06-11 11:53:30 debug Exp $
+$Id: HISTORY,v 1.775 2005-06-11 20:59:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1969,3 +1969,5 @@ Changelog for GXemul:
 ==============  RELEASE 0.3.3.1  ==============
 
 20050609	Adding simple MIPS IPIs (to dev_mp).
+20050611	Adding an ugly hack to track down low-reference bugs
+		(define TRACE_NULL_CRASHES, or configure --tracenull).

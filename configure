@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.133 2005-06-04 22:47:48 debug Exp $
+#  $Id: configure,v 1.134 2005-06-11 20:59:10 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -71,6 +71,8 @@ if [ z"$*" != z ]; then
 			NOX11=YES
 		else if [ z$a = z--always32 ]; then
 			ALWAYS32=YES
+		else if [ z$a = z--tracenull ]; then
+			TRACENULL=YES
 		else if [ z$a = z--disable-bintrans ]; then
 			NOBINTRANS=YES
 		else if [ z$a = z--enable-bintrans ]; then
@@ -125,6 +127,8 @@ if [ z"$*" != z ]; then
 			echo "  --always32         enable" \
 			    "ALWAYS_SIGNEXTEND_32 (for hunting down"
 			echo "                     32/64-bit bugs)"
+			echo "  --tracenull        enable" \
+			    "TRACE_NULL_CRASHES (for bug hunting)"
 			printf "\nGeneral options:\n"
 			echo "  --disable-bintrans configure without" \
 			    "bintrans, even if the host supports it"
@@ -168,7 +172,7 @@ if [ z"$*" != z ]; then
 			    "available options."
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -277,11 +281,19 @@ if [ z$DELAYS = zYES ]; then
 fi
 
 
-#  Instruction delay/latency emulation:
+#  Development option: ALWAYS_SIGNEXTEND_32
 if [ z$ALWAYS32 = zYES ]; then
 	echo 'Enabling ALWAYS_SIGNEXTEND_32. (NOTE:' \
 	    'This slows down everything.)'
 	printf "#define ALWAYS_SIGNEXTEND_32\n" >> config.h
+fi
+
+
+#  Development option: TRACE_NULL_CRASHES
+if [ z$TRACENULL = zYES ]; then
+	echo 'Enabling TRACE_NULL_CRASHES. (NOTE:' \
+	    'This slows down the emulator.)'
+	printf "#define TRACE_NULL_CRASHES\n" >> config.h
 fi
 
 

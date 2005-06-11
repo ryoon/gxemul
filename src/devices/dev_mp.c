@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.26 2005-06-11 11:53:36 debug Exp $
+ *  $Id: dev_mp.c,v 1.27 2005-06-11 20:51:41 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -55,6 +55,9 @@ struct mp_data {
 	int		*n_pending_ipis;
 	int		**ipi;
 };
+
+
+extern int single_step;
 
 
 /*
@@ -179,9 +182,6 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			if (relative_addr == DEV_MP_IPI_MANY && i != which_cpu)
 				send_it = 1;
 			if (send_it) {
-
-printf("[ SENDING to cpu %i: %i ]\n", i, (int)(idata >> 16);
-
 				d->n_pending_ipis[i] ++;
 				d->ipi[i] = realloc(d->ipi[i],
 				    d->n_pending_ipis[i] * sizeof(int));

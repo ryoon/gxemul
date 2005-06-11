@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.24 2005-02-19 11:51:33 debug Exp $
+ *  $Id: dev_cons.c,v 1.25 2005-06-11 21:04:31 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
+ *  It is hardwared to the lowest available MIPS hardware IRQ, and only
+ *  interrupts CPU 0.
  *
  *  This device provides memory mapped I/O for a simple console supporting
  *  putchar (writing to memory) and getchar (reading from memory), and
@@ -60,12 +62,13 @@ struct cons_data {
  */
 void dev_cons_tick(struct cpu *cpu, void *extra)
 {
+	struct cpu *c = cpu->machine->cpus[0];
 	struct cons_data *d = extra;
 
-	cpu_interrupt_ack(cpu, d->irq_nr);
+	cpu_interrupt_ack(c, d->irq_nr);
 
 	if (console_charavail(d->console_handle))
-		cpu_interrupt(cpu, d->irq_nr);
+		cpu_interrupt(c, d->irq_nr);
 }
 
 

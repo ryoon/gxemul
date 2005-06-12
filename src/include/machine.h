@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.53 2005-06-02 17:11:36 debug Exp $
+ *  $Id: machine.h,v 1.54 2005-06-12 12:31:55 debug Exp $
  */
 
 #include <sys/types.h>
@@ -238,6 +238,7 @@ struct machine {
 #define	MACHINE_MESHCUBE	1008
 #define	MACHINE_NETGEAR		1009
 #define	MACHINE_SONYNEWS	1010
+#define	MACHINE_EVBMIPS		1011
 
 /*  PPC:  */
 #define	MACHINE_BAREPPC		2000
@@ -296,9 +297,7 @@ struct machine {
 #define	DEC_PROM_TCINFO			0xffffffffbfc2c000ULL
 #define	DEC_MEMMAP_ADDR			0xffffffffbfc30000ULL
 
-
 /*  HPCmips:  */
-/*  Machine types:  */
 #define	MACHINE_HPCMIPS_CASIO_BE300		1
 #define	MACHINE_HPCMIPS_CASIO_E105		2
 #define	MACHINE_HPCMIPS_NEC_MOBILEPRO_770	3
@@ -322,6 +321,10 @@ struct machine {
 #define	MACHINE_ARC_NEC_R98		6
 #define	MACHINE_ARC_JAZZ_M700		7
 #define	MACHINE_ARC_NEC_R96		8
+
+/*  EVBMIPS:  */
+#define	MACHINE_EVBMIPS_MALTA		1
+#define	MACHINE_EVBMIPS_PB1000		2
 
 /*  MacPPC:  TODO: Real model names  */
 #define	MACHINE_MACPPC_G4		1

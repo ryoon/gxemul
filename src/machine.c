@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.452 2005-06-02 17:11:34 debug Exp $
+ *  $Id: machine.c,v 1.453 2005-06-12 12:31:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3569,6 +3569,34 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		break;
 
+	case MACHINE_EVBMIPS:
+		/*
+		 *  http://www.netbsd.org/Ports/evbmips/
+		 */
+		switch (machine->machine_subtype) {
+		case MACHINE_EVBMIPS_MALTA:
+			machine->machine_name = "MALTA (evbmips)";
+			break;
+		case MACHINE_EVBMIPS_PB1000:
+			machine->machine_name = "PB1000 (evbmips)";
+			break;
+		default:
+			fatal("Unimplemented EVBMIPS model.\n");
+			exit(1);
+		}
+
+		/*  This is just a test.  TODO  */
+		{
+			int i;
+			for (i=0; i<32; i++)
+				cpu->cd.mips.gpr[i] =
+				    0x01230000 + (i << 8) + 0x55;
+		}
+
+		/*  TODO: Yamon emulation. 0x9fc00504 = putchar? etc.  */
+
+		break;
+
 	case MACHINE_BAREPPC:
 		/*
 		 *  A "bare" PPC machine.
@@ -4032,6 +4060,18 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_SONYNEWS:
 		m->cpu_name = strdup("R3000");
+		break;
+	case MACHINE_EVBMIPS:
+		switch (m->machine_subtype) {
+		case MACHINE_EVBMIPS_MALTA:
+			m->cpu_name = strdup("5Kc");
+			break;
+		case MACHINE_EVBMIPS_PB1000:
+			m->cpu_name = strdup("AU1000");
+			break;
+		default:fatal("Unimpl. evbmips.\n");
+			exit(1);
+		}
 		break;
 	case MACHINE_HPCMIPS:
 		switch (m->machine_subtype) {
@@ -4588,6 +4628,20 @@ void machine_init(void)
 	/*  Meshcube:  */
 	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
 	me->aliases[0] = "meshcube";
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Evaluation Boards (MALTA etc):  */
+	me = machine_entry_new("evbmips", ARCH_MIPS,
+	    MACHINE_EVBMIPS, 1, 2);
+	me->aliases[0] = "evbmips";
+	me->subtype[0] = machine_entry_subtype_new("Malta",
+	    MACHINE_EVBMIPS_MALTA, 1);
+	me->subtype[0]->aliases[0] = "malta";
+	me->subtype[1] = machine_entry_subtype_new("PB1000",
+	    MACHINE_EVBMIPS_PB1000, 1);
+	me->subtype[1]->aliases[0] = "pb1000";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.776 2005-06-11 21:35:39 debug Exp $
+$Id: HISTORY,v 1.777 2005-06-12 12:31:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1972,3 +1972,4 @@ Changelog for GXemul:
 20050611	Adding an ugly hack to track down low-reference bugs
 		(define TRACE_NULL_CRASHES, or configure --tracenull).
 		Other minor updates.
+20050612	Adding a dummy evbmips mode.

@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.50 2005-06-11 11:53:33 debug Exp $
+$Id: guestoses.html,v 1.51 2005-06-17 18:10:37 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -716,8 +716,6 @@ boot from the harddisk image:
 
 
 
-<!--
-
 <p><br>
 <a name="openbsdsgiinstall"></a>
 <h3>Running OpenBSD/sgi in GXemul:</h3>
@@ -725,101 +723,130 @@ boot from the harddisk image:
 <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
 can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
 
-<p>
-<font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
+<p><font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
 
-<p>
-GXemul does not yet emulate the AHC PCI SCSI controller in the O2, so 
-another emulated machine must be used as the nfs root server, and the
-emulated O2 machine must boot as a
-<a href="http://www.openbsd.org/cgi-bin/man.cgi?query=diskless&manpath=OpenBSD+Current&format=html">diskless</a>
-client. Performing this setup is very time consuming, but necessary.
+<p>GXemul does not yet emulate the AHC PCI SCSI controller in the O2. (I have 
+mailed Adaptec several times, asking for documentation, but never received 
+any reply.) OpenBSD/sgi can still run, as long as it doesn't use SCSI. For
+a simple test with the ramdisk (install) kernel, try dowloading<pre>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd</a>
+
+</pre>and run <b><tt>gxemul -b -E sgi -e o2 bsd.rd</tt></b>.
+
+<p>It might also be possible to netboot. Another emulated machine must 
+then be used as the nfs root server, and the emulated O2 machine must boot 
+as a <a href="http://www.openbsd.org/cgi-bin/man.cgi?query=diskless&manpath=OpenBSD+Current&format=html">diskless</a>
+client. Performing this setup is quite time consuming, but necessary:
 
 <p>
 <ol>
   <li><a href="#netbsdinstall">Install NetBSD/pmax 2.0 from CDROM</a>
 	(or install some other similar OS) inside the emulator. This will 
-	be the "nfs server" machine. Create a 600 MB <tt>/tftpboot</tt>
+	be the "<tt>nfs server</tt>" machine. Create a 600 MB <tt>/tftpboot</tt>
 	partition during the installation.
   <p>
-  <li>Configure the nfs server machine to act as an nfs server.<pre>
-	# <b>echo hostname=server &gt;&gt; /etc/rc.conf</b>
-	# <b>echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf</b>
-	# <b>echo nameserver 10.0.0.254 &gt;&gt; /etc/rc.conf</b>
-	# <b>echo 10.0.0.254 &gt; /etc/mygate</b>
-	# <b>echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports</b>
-	# <b>echo rpcbind=YES &gt;&gt; /etc/rc.conf</b>
-	# <b>echo nfs_server=YES &gt;&gt; /etc/rc.conf</b>
-	# <b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
-	# <b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
-	# <b>printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams</b>
-	# <b>echo 10.0.0.1 client &gt; /etc/hosts</b>
-
-	Reboot. Then download the OpenBSD/sgi distribution:  (NOTE: This
-	takes quite some time, even if you have a fast network connection.)
-
-	# <b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
-	...
+  <li>Configure the nfs server machine to act as an nfs server.
+	Start up the emulated DECstation:<pre>
+	$ <b>gxemul -b -M64 -Edec -e3max -d nbsd_pmax.img</b>
+</pre>and enter the following commands as <tt>root</tt>
+	inside the emulator:<pre>
+	<b>echo hostname=server &gt;&gt; /etc/rc.conf</b>
+	<b>echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf</b>
+	<b>echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf</b>
+	<b>echo 10.0.0.254 &gt; /etc/mygate</b>
+	<b>echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports</b>
+	<b>echo rpcbind=YES &gt;&gt; /etc/rc.conf</b>
+	<b>echo nfs_server=YES &gt;&gt; /etc/rc.conf</b>
+	<b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
+	<b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
+	<b>printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams</b>
+	<b>echo 10.0.0.1 client &gt; /etc/hosts</b>
+	<b>reboot</b>
+</pre>
+	Then start the DECstation emulation again, and download the
+	OpenBSD/sgi distribution:<br>(NOTE: This
+	takes quite some time, even if you have a fast network connection.)<pre>
+	<b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
+	(log in as anonymous...)
 	<b>cd pub/OpenBSD/3.7/sgi</b>
 	<b>mget *</b>
-
-	# <b>sh</b>
-	# <b>for a in base* etc* misc*; do tar vzxfp $a; done</b>
-	# <b>dd if=/dev/zero of=swap bs=1024 count=16384</b>
+	<b>quit</b>
+	<b>sh; for a in *.tgz; do echo $a; tar zxfp $a; done</b>
+	<b>dd if=/dev/zero of=swap bs=1024 count=32768</b>
 
 </pre>
   <p>
-  <li>Create a configuration file along these lines:<pre>
+  <li>Download the GENERIC OpenBSD/sgi kernel which the client will use
+	for netbooting:<pre>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd</a>
+	MD5 (bsd) = f16eaf3dcbd51876db7c25f70e6d8a08
+
+</pre>and create a configuration file called <tt>config_client</tt>:<pre>
 	<font color="#2020cf">!!gxemul
 	!
 	!  Configuration file for running OpenBSD/sgi diskless with
 	!  a NetBSD/pmax machine as the nfs server.
 	!
-	!  Change the filenames to suit your setup.</font>
+	!  This config file is for the client.
+	!
+	!  Change the filenames, if needed, to suit your setup.</font>
 
 	<b>emul(
 	    net()
 
 	    machine(
 		name("client machine")
+		serial_nr(1)
+
 	        type("sgi")
-	        subtype("ip32")
+	        subtype("o2")
+
 	        bintrans(yes)
-	        load("openbsd-sgi-20050202-bsd")
-		start_paused(yes)
+		old_bintrans(yes)
+
+	        load("bsd")
 	    )
+	)</b>
+
+</pre>... and another configuration file for the server,
+	<tt>config_server</tt>:<pre>
+	<font color="#2020cf">!!gxemul</font>
+	<b>emul(
+	    net()
 
 	    machine(
 		name("nfs server")
+		serial_nr(2)
+
 	        type("dec")
 	        subtype("5000/200")
+
 	        bintrans(yes)
+	        old_bintrans(yes)
+
 	        disk("nbsd_pmax.img")
 	    )
 	)</b>
 
 </pre>
-  <li>Boot the nfs server and the OpenBSD/sgi client machine like this:<pre>
-	$ <b>gxemul @myconf</b>
+  <li>Boot the "<tt>nfs server</tt>" and the OpenBSD/sgi
+	"<tt>client machine</tt>" as two separate emulator instances:<pre>
+	in one xterm:
+	$ <b>gxemul @config_server</b>
+
+	and then, in another xterm:
+	$ <b>gxemul @config_client</b>
 
 </pre>
-	You might want to log in as root on the server machine, and
-	run <b>tcpdump -lnvv</b> or similar, to see that what the client
-	machine actually does on the network.
-	<p>
-	The OpenBSD box ("client machine") will be paused, so when you
-	are ready to unpause it, press CTRL-C in the main GXemul
-	window and use the <b>focus</b> and <b>pause</b> commands to
-	unpause the main CPU in that machine, and then <b>continue</b>
-	to resume execution.
-	<p>
-	When asked for "root device :", enter <b>mec0</b>.
 </ol>
 
-<p>
-TODO...
+<p>You might want to log in as <tt>root</tt> on the server machine, and
+run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
+actually does on the network.
 
--->
+<p>When asked for "<tt>root device :</tt>", enter <tt><b>mec0</b></tt>.
+
+<p>TODO...
 
 
 

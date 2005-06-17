@@ -25,13 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.29 2005-03-14 19:14:04 debug Exp $
+ *  $Id: emul_parse.c,v 1.30 2005-06-17 21:00:03 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
- *
  *  TODO: This could be extended to support XML config files as well, but
- *        XML is ugly.
+ *        XML is ugly. It is ugly right now as well. The question is: which
+ *        solution is the least ugly?
  */
 
 #include <stdio.h>
@@ -198,6 +198,11 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 
 static char cur_net_ipv4net[50];
 static char cur_net_ipv4len[50];
+static char cur_net_local_port[10];
+#define	MAX_N_REMOTE		20
+#define	MAX_REMOTE_LEN		100
+static char *cur_net_remote[MAX_N_REMOTE];
+static int cur_net_n_remote;
 
 static char cur_machine_name[50];
 static char cur_machine_cpu[50];
@@ -341,6 +346,8 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		/*  Default net:  */
 		strcpy(cur_net_ipv4net, "10.0.0.0");
 		strcpy(cur_net_ipv4len, "8");
+		strcpy(cur_net_local_port, "");
+		cur_net_n_remote = 0;
 		return;
 	}
 
@@ -390,7 +397,9 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 /*
  *  parse__net():
  *
- *  Simple words: ipv4net, ipv4len
+ *  Simple words: ipv4net, ipv4len, local_port
+ *
+ *  Complex: add_remote
  *
  *  TODO: more words? for example an option to disable the gateway? that would
  *  have to be implemented correctly in src/net.c first.
@@ -398,6 +407,8 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 	int *parsestate, char *word, size_t maxbuflen)
 {
+	int i;
+
 	if (word[0] == ')') {
 		/*  Finished with the 'net' section. Let's create the net:  */
 		if (e->net != NULL) {
@@ -406,13 +417,23 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 			exit(1);
 		}
 
+		if (!cur_net_local_port[0])
+			strcpy(cur_net_local_port, "0");
+
 		e->net = net_init(e, NET_INIT_FLAG_GATEWAY,
-		    cur_net_ipv4net, atoi(cur_net_ipv4len));
+		    cur_net_ipv4net, atoi(cur_net_ipv4len),
+		    cur_net_remote, cur_net_n_remote,
+		    atoi(cur_net_local_port));
 
 		if (e->net == NULL) {
 			fatal("line %i: fatal error: could not create"
 			    " the net (?)\n", *line);
 			exit(1);
+		}
+
+		for (i=0; i<cur_net_n_remote; i++) {
+			free(cur_net_remote[i]);
+			cur_net_remote[i] = NULL;
 		}
 
 		*parsestate = PARSESTATE_EMUL;
@@ -421,6 +442,27 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 
 	WORD("ipv4net", cur_net_ipv4net);
 	WORD("ipv4len", cur_net_ipv4len);
+	WORD("local_port", cur_net_local_port);
+
+	if (strcmp(word, "add_remote") == 0) {
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_LEFT_PARENTHESIS);
+		if (cur_net_n_remote >= MAX_N_REMOTE) {
+			fprintf(stderr, "too many remote networks\n");
+			exit(1);
+		}
+		cur_net_remote[cur_net_n_remote] = malloc(MAX_REMOTE_LEN);
+		if (cur_net_remote[cur_net_n_remote] == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		read_one_word(f, cur_net_remote[cur_net_n_remote],
+		    MAX_REMOTE_LEN, line, EXPECT_WORD);
+		cur_net_n_remote ++;
+		read_one_word(f, word, maxbuflen, line,
+		    EXPECT_RIGHT_PARENTHESIS);
+		return;
+	}
 
 	fatal("line %i: not expecting '%s' in a 'net' section\n", *line, word);
 	exit(1);

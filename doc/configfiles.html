@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: configfiles.html,v 1.8 2005-06-04 22:47:49 debug Exp $
+$Id: configfiles.html,v 1.9 2005-06-17 21:00:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -78,10 +78,12 @@ through an example is good enough:
 <b>emul(</b>
     <b>name(<font color="#ff003f">"my test emul"</font>)</b>	 <font color="#2020cf">!  Optional name of this emulation</font>
 
-    <font color="#2020cf">!  This creates a network (ethernet):</font>
+    <font color="#2020cf">!  This creates an ethernet network:</font>
     <b>net(</b>
 	<b>ipv4net(<font color="#ff003f">"10.2.0.0"</font>)</b>  <font color="#2020cf">!  The default is 10.0.0.0/8, but</font>
 	<b>ipv4len(16)</b>          <font color="#2020cf">!  it can be overridden like this.</font>
+	<font color="#2020cf">!  local_port(12345)</font>
+	<font color="#2020cf">!  add_remote("127.0.0.1:12346")</font>
     <b>)</b>
 
     <font color="#2020cf">!  This creates a machine:</font>

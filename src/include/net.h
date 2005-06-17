@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.11 2005-03-14 19:14:03 debug Exp $
+ *  $Id: net.h,v 1.12 2005-06-17 21:00:04 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -39,6 +39,7 @@
 
 struct emul;
 struct ethernet_packet_link;
+struct remote_net;
 
 
 /*****************************************************************************/
@@ -128,6 +129,11 @@ struct net {
 
 	struct udp_connection udp_connections[MAX_UDP_CONNECTIONS];
 	struct tcp_connection tcp_connections[MAX_TCP_CONNECTIONS];
+
+	/*  Distributed network:  */
+	int		local_port;
+	int		local_port_socket;
+	struct remote_net *remote_nets;
 };
 
 /*  net.c:  */
@@ -140,7 +146,8 @@ void net_ethernet_tx(struct net *net, void *extra,
 void net_dumpinfo(struct net *net);
 void net_add_nic(struct net *net, void *extra, unsigned char *macaddr);
 struct net *net_init(struct emul *emul, int init_flags,
-	char *ipv4addr, int netipv4len);
+	char *ipv4addr, int netipv4len, char **remote, int n_remote,
+	int local_port);
 
 /*  Flag used to signify that this net should have a gateway:  */
 #define	NET_INIT_FLAG_GATEWAY		1
@@ -149,7 +156,6 @@ struct net *net_init(struct emul *emul, int init_flags,
 /*
  *  This is for internal use in src/net.c:
  */
-
 struct ethernet_packet_link {
 	struct ethernet_packet_link *prev;
 	struct ethernet_packet_link *next;
@@ -159,6 +165,13 @@ struct ethernet_packet_link {
 	int		len;
 };
 
+struct remote_net {
+	struct remote_net *next;
+
+	char		*name;
+	struct in_addr	ipv4_addr;
+	int		portnr;
+};
 
 #define	TCP_OUTSIDE_TRYINGTOCONNECT	1
 #define	TCP_OUTSIDE_CONNECTED		2
@@ -166,6 +179,5 @@ struct ethernet_packet_link {
 #define	TCP_OUTSIDE_DISCONNECTED2	4
 
 #define	TCP_INCOMING_BUF_LEN	2000
-
 
 #endif	/*  NET_H  */

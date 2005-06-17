@@ -25,27 +25,26 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.72 2005-03-14 19:14:05 debug Exp $
+ *  $Id: net.c,v 1.73 2005-06-17 21:00:03 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
  *
- *	NOTE:	This is just an ugly hack, and just barely enough to get some
- *		Internet networking up and running for the guest OS.
+ *  NOTE:  This is just an ugly hack, and just barely enough to get some
+ *         Internet networking up and running for the guest OS.
  *
- *	TODO:	o)  TCP: fin/ack stuff, and connection time-outs and
- *                  connection refused (reset on connect?), resend
- *                  data to the guest OS if no ack has arrived for
- *                  some time (? buffers?)
- *                  http://www.tcpipguide.com/free/
- *			t_TCPConnectionTermination-2.htm
- *		o)  remove the netbsd-specific options in the tcp header (?)
- *		o)  Outgoing UDP packet fragment support.
- *		o)  IPv6  (outgoing, incoming, and the nameserver/gateway)
- *		o)  Incoming connections
- *		o)  if multiple NICs are connected to the same network,
- *		    they should be able to see each other's packets, and
- *		    they should have different MAC addresses!
+ *  TODO:
+ *	o)  TCP: fin/ack stuff, and connection time-outs and
+ *	    connection refused (reset on connect?), resend
+ *	    data to the guest OS if no ack has arrived for
+ *	    some time (? buffers?)
+ *		http://www.tcpipguide.com/free/t_TCPConnectionTermination-2.htm
+ *	o)  remove the netbsd-specific options in the tcp header (?)
+ *	o)  Outgoing UDP packet fragment support.
+ *	o)  IPv6  (outgoing, incoming, and the nameserver/gateway)
+ *	o)  Incoming connections
+ *
+ *  TODO 2: The following comments are old! Fix this.
  *
  *
  *  The emulated NIC has a MAC address of (for example) 10:20:30:40:50:60.
@@ -65,7 +64,7 @@
  *  for some other controller.
  *
  *
- *	<------------------  a network  ------------------------------>
+ *	|------------------  a network  --------------------------------|
  *		^               ^				^
  *		|               |				|
  *	    a NIC connected    another NIC                the gateway
@@ -159,21 +158,19 @@ void net_generate_unique_mac(struct machine *machine, unsigned char *macbuf)
 	y = machine->nr_of_nics;
 
 	/*
-	 *  TODO: What is a good starting value? Right now, it looks like this:
+	 *  TODO: What is a good starting value? Something like this?
 	 *
 	 *  +-----------+-------------------+-------------+-------------+
 	 *  |  16 bits  |  16 bits machine  |  12 bits    |  4 bits of  |
 	 *  |  fixed    |  serial nr        |  NIC nr(*)  |  zeroes     |
 	 *  +-----------+-------------------+-------------+-------------+
-	 *
-	 *  (*) = almost
 	 */
 	macbuf[0] = 0x10;
 	macbuf[1] = 0x20;
-	macbuf[2] = x >> 8;
-	macbuf[3] = x & 255;
-	macbuf[4] = y / 15;
-	macbuf[5] = (y % 15) * 0x10 + 0x10;
+	macbuf[2] = 0x30;
+	macbuf[3] = 0;
+	macbuf[4] = 0;
+	macbuf[5] = machine->serial_nr << 4;
 
 	/*  TODO: Remember the mac addresses somewhere?  */
 	machine->nr_of_nics ++;
@@ -1482,18 +1479,16 @@ static void net_arp(struct net *net, void *extra,
 			 *  generated from the MAC address. :-)
 			 *
 			 *  packet+8 points to the client's mac address,
-			 *  for example 10:20:30:x0:y0:z0, where x,y,z are
-			 *  1..15.
-			 *  10:20:30:10:10:10 results in 10.0.0.1.
+			 *  for example 10:20:30:00:00:z0, where z is 0..15.
+			 *  10:20:30:00:00:10 results in 10.0.0.1.
 			 */
-			q = (((packet[8 + 3]) >> 4) - 1);
-			q = q*15 + (((packet[8 + 4]) >> 4) - 1);
-			q = q*15 + (((packet[8 + 5]) >> 4) - 1);
+			/*  q = (packet[8 + 3]) >> 4;  */
+			/*  q = q*15 + ((packet[8 + 4]) >> 4);  */
+			q = (packet[8 + 5]) >> 4;
 			lp->data[24 + 14] = 10;
-			lp->data[25 + 14] =  q / 225;	q /= 15;
-			lp->data[26 + 14] =  q / 15;	q /= 15;
-			lp->data[27 + 14] =  q + 1;
-
+			lp->data[25 + 14] =  0;
+			lp->data[26 + 14] =  0;
+			lp->data[27 + 14] =  q;
 			break;
 		case 2:		/*  Reply  */
 		case 4:		/*  Reverse Reply  */
@@ -1529,6 +1524,29 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 
 	if (net == NULL)
 		return 0;
+
+	/*
+	 *  If the network is distributed across multiple emulator processes,
+	 *  then receive incoming packets from those processes.
+	 */
+	if (net->local_port != 0) {
+		struct sockaddr_in si;
+		socklen_t si_len = sizeof(si);
+		int res, i;
+		unsigned char buf[60000];
+
+		if ((res = recvfrom(net->local_port_socket, buf, sizeof(buf), 0,
+		    (struct sockaddr *)&si, &si_len)) != -1) {
+			fatal("DISTRIBUTED packet, %i bytes from %s:%d\n",
+			    res, inet_ntoa(si.sin_addr), ntohs(si.sin_port));
+			for (i=0; i<net->n_nics; i++) {
+				struct ethernet_packet_link *lp;
+				lp = net_allocate_packet_link(net,
+				    net->nic_extra[i], res);
+				memcpy(lp->data, buf, res);
+			}
+		}
+	}
 
 	/*
 	 *  UDP:
@@ -1912,6 +1930,38 @@ int net_ethernet_rx(struct net *net, void *extra,
 
 
 /*
+ *  send_udp():
+ *
+ *  Send a simple UDP packet to some other (real) host. Used for distributed
+ *  network simulations.
+ */
+void send_udp(struct in_addr *addrp, int portnr, char *packet, size_t len)
+{
+	int s;
+	struct sockaddr_in si;
+
+	s = socket(AF_INET, SOCK_DGRAM, 0);
+	if (s < 0) {
+		perror("send_udp(): socket");
+		return;
+	}
+
+printf("send_udp(): sending to port %i\n", portnr);
+
+	si.sin_family = AF_INET;
+	si.sin_addr = *addrp;
+	si.sin_port = htons(portnr);
+
+	if (sendto(s, packet, len, 0, (struct sockaddr *)&si,
+	    sizeof(si)) != len) {
+		perror("send_udp(): sendto");
+	}
+
+	close(s);
+}
+
+
+/*
  *  net_ethernet_tx():
  *
  *  Transmit an ethernet packet, as seen from the emulated ethernet controller.
@@ -1930,7 +1980,9 @@ void net_ethernet_tx(struct net *net, void *extra,
 	if (len < 20)
 		return;
 
-	/*  Copy this packet to all other NICs on this network:  */
+	/*
+	 *  Copy this packet to all other NICs on this network:
+	 */
 	if (extra != NULL && net->n_nics > 0) {
 		for (i=0; i<net->n_nics; i++)
 			if (extra != net->nic_extra[i]) {
@@ -1943,25 +1995,33 @@ void net_ethernet_tx(struct net *net, void *extra,
 			}
 	}
 
+	/*
+	 *  If this network is distributed across multiple emulator processes,
+	 *  then transmit the packet to those other processes.
+	 */
+	if (net->remote_nets != NULL) {
+		struct remote_net *rnp = net->remote_nets;
+		while (rnp != NULL) {
+			send_udp(&rnp->ipv4_addr, rnp->portnr, packet, len);
+			rnp = rnp->next;
+		}
+	}
+
 	/*  Drop packets that are not destined for the gateway:  */
 	if (memcmp(packet, net->gateway_ethernet_addr, 6) != 0
 	    && packet[0] != 0xff && packet[0] != 0x00)
 		return;
 
+	/*
+	 *  The code below simulates the behaviour of a "NAT"-style
+	 *  gateway.
+	 */
 #if 0
 	fatal("[ net: ethernet: ");
-	for (i=0; i<6; i++)
-		fatal("%02x", packet[i]);
-	fatal(" ");
-	for (i=6; i<12; i++)
-		fatal("%02x", packet[i]);
-	fatal(" ");
-	for (i=12; i<14; i++)
-		fatal("%02x", packet[i]);
-	fatal(" ");
-	for (i=14; i<len; i++)
-		fatal("%02x", packet[i]);
-	fatal(" ]\n");
+	for (i=0; i<6; i++)	fatal("%02x", packet[i]); fatal(" ");
+	for (i=6; i<12; i++)	fatal("%02x", packet[i]); fatal(" ");
+	for (i=12; i<14; i++)	fatal("%02x", packet[i]); fatal(" ");
+	for (i=14; i<len; i++)	fatal("%02x", packet[i]); fatal(" ]\n");
 #endif
 
 	/*  Sprite:  */
@@ -2191,6 +2251,7 @@ static void net_gateway_init(struct net *net)
 void net_dumpinfo(struct net *net)
 {
 	int iadd = 4;
+	struct remote_net *rnp;
 
 	debug("net: ");
 
@@ -2220,6 +2281,23 @@ void net_dumpinfo(struct net *net)
 	debug("\n");
 	debug_indentation(-iadd);
 
+	rnp = net->remote_nets;
+	if (rnp != NULL)
+		debug("distributed network: other hosts:\n");
+
+	debug_indentation(iadd);
+	while (rnp != NULL) {
+		debug("\"%s\": ", rnp->name);
+		net_debugaddr(&rnp->ipv4_addr, ADDR_IPV4);
+		debug(" port %i\n", rnp->portnr);
+		rnp = rnp->next;
+	}
+	debug_indentation(-iadd);
+
+	if (net->local_port != 0)
+		debug("distributed network: local port = %i\n",
+		    net->local_port);
+
 	debug_indentation(-iadd);
 }
 
@@ -2228,12 +2306,15 @@ void net_dumpinfo(struct net *net)
  *  net_init():
  *
  *  This function creates a network, and returns a pointer to it.
- *  Example: ipv4addr should be something like "10.0.0.0", netipv4len = 8.
+ *  ipv4addr should be something like "10.0.0.0", netipv4len = 8.
+ *  If n_remote is more than zero, remote should be a pointer to an array
+ *  of strings of the following format: "host:portnr".
  *
- *  (On failure, exit() is called.)
+ *  On failure, exit() is called.
  */
 struct net *net_init(struct emul *emul, int init_flags,
-	char *ipv4addr, int netipv4len)
+	char *ipv4addr, int netipv4len, char **remote, int n_remote,
+	int local_port)
 {
 	struct net *net;
 	int res;
@@ -2274,6 +2355,62 @@ struct net *net_init(struct emul *emul, int init_flags,
 	net->nameserver_known = 0;
 	net->domain_name = "";
 	parse_resolvconf(net);
+
+	/*  Distributed network? Then add remote hosts:  */
+	if (local_port != 0) {
+		struct sockaddr_in si_self;
+
+		net->local_port = local_port;
+		net->local_port_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		if (net->local_port_socket < 0) {
+			perror("socket");
+			exit(1);
+		}
+
+		memset((char *)&si_self, sizeof(si_self), 0);
+		si_self.sin_family = AF_INET;
+		si_self.sin_port = htons(local_port);
+		si_self.sin_addr.s_addr = htonl(INADDR_ANY);
+		if (bind(net->local_port_socket, (struct sockaddr *)&si_self,
+		    sizeof(si_self)) < 0) {
+			perror("bind");
+			exit(1);
+		}
+
+		/*  Set the socket to non-blocking:  */
+		res = fcntl(net->local_port_socket, F_GETFL);
+		fcntl(net->local_port_socket, F_SETFL, res | O_NONBLOCK);
+	}
+	if (n_remote != 0) {
+		struct remote_net *rnp;
+		while ((n_remote--) != 0) {
+			/*  debug("adding '%s'\n", remote[n_remote]);  */
+			rnp = malloc(sizeof(struct remote_net));
+			memset(rnp, 0, sizeof(struct remote_net));
+
+			rnp->next = net->remote_nets;
+			net->remote_nets = rnp;
+
+			rnp->name = strdup(remote[n_remote]);
+			if (strchr(rnp->name, ':') != NULL)
+				strchr(rnp->name, ':')[0] = '\0';
+			/*  TODO: Name resolution?  */
+#ifdef HAVE_INET_PTON
+			res = inet_pton(AF_INET, rnp->name, &rnp->ipv4_addr);
+#else
+			res = inet_aton(rnp->name, &rnp->ipv4_addr);
+#endif
+			free(rnp->name);
+			/*  And again:  */
+			rnp->name = strdup(remote[n_remote]);
+			if (strchr(rnp->name, ':') == NULL) {
+				fprintf(stderr, "Remote network '%s' is not "
+				    "'host:portnr'?\n", rnp->name);
+				exit(1);
+			}
+			rnp->portnr = atoi(strchr(rnp->name, ':') + 1);
+		}
+	}
 
 	if (init_flags & NET_INIT_FLAG_GATEWAY)
 		net_gateway_init(net);

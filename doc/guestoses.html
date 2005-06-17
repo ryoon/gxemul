@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.51 2005-06-17 18:10:37 debug Exp $
+$Id: guestoses.html,v 1.52 2005-06-17 21:00:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -760,6 +760,7 @@ client. Performing this setup is quite time consuming, but necessary:
 	<b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
 	<b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
 	<b>printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams</b>
+	<b>echo "10:20:30:00:00:10 client" > /etc/ethers</b>
 	<b>echo 10.0.0.1 client &gt; /etc/hosts</b>
 	<b>reboot</b>
 </pre>
@@ -776,10 +777,11 @@ client. Performing this setup is quite time consuming, but necessary:
 
 </pre>
   <p>
-  <li>Download the GENERIC OpenBSD/sgi kernel which the client will use
-	for netbooting:<pre>
+  <li>Download the OpenBSD/sgi GENERIC and RAMDISK kernels:<pre>
 	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd</a>
 	MD5 (bsd) = f16eaf3dcbd51876db7c25f70e6d8a08
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd</a>
+	MD5 (bsd.rd) = 4843e6139d8dd04b03d5f0e33e9a4f7b
 
 </pre>and create a configuration file called <tt>config_client</tt>:<pre>
 	<font color="#2020cf">!!gxemul
@@ -804,7 +806,7 @@ client. Performing this setup is quite time consuming, but necessary:
 	        bintrans(yes)
 		old_bintrans(yes)
 
-	        load("bsd")
+	        load("bsd.rd")
 	    )
 	)</b>
 
@@ -838,15 +840,24 @@ client. Performing this setup is quite time consuming, but necessary:
 	$ <b>gxemul @config_client</b>
 
 </pre>
+  <li>In the OpenBSD/sgi window, choose "S" (for Shell), and type:<pre>
+	<b>ifconfig mec0 10.0.0.1; route add default 10.0.0.254</b>
+	<b>mount -v 10.0.0.2:/tftpboot /mnt</b>
+	<b>cd /mnt/dev; ./MAKEDEV std; cd /; umount /mnt</b>
+	<b>halt</b>
+</pre>
 </ol>
 
 <p>You might want to log in as <tt>root</tt> on the server machine, and
 run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
 actually does on the network.
 
-<p>When asked for "<tt>root device :</tt>", enter <tt><b>mec0</b></tt>.
+<p>Once everything has been set up correctly, change <tt>bsd.rd</tt>
+in <tt>config_client</tt> to just <tt>bsd</tt> (the GENERIC kernel).
+It should now be possible to boot OpenBSD/sgi and the NetBSD/pmax nfs 
+server. (When asked for "<tt>root device :</tt>" on the OpenBSD machine, 
+enter <tt><b>mec0</b></tt>.)
 
-<p>TODO...
 
 
 
@@ -996,7 +1007,7 @@ values, then you should use the following:
 <p>
 
 <pre>
-    Your machine's Ethernet address:    10:20:30:40:50:60
+    Your machine's Ethernet address:    10:20:30:00:00:10
     Your machine's IP:                  10.0.0.1
     Subnet mask:                        0xff000000
     Gateway's Ethernet address:         60:50:40:30:20:10

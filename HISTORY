@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.778 2005-06-17 18:10:36 debug Exp $
+$Id: HISTORY,v 1.779 2005-06-17 21:00:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1976,3 +1976,4 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.3.3.2  ==============
 
+20050617	Experimenting some more with netbooting OpenBSD/sgi.

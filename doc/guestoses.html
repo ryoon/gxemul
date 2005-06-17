@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.52 2005-06-17 21:00:02 debug Exp $
+$Id: guestoses.html,v 1.53 2005-06-17 21:35:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -58,9 +58,7 @@ SUCH DAMAGE.
 -->
   <li><a href="#openbsdinstall">Installing OpenBSD/pmax in GXemul</a>
   <li><a href="#openbsdarcinstall">Installing OpenBSD/arc in GXemul</a>
-<!--
   <li><a href="#openbsdsgiinstall">Running OpenBSD/sgi in GXemul</a>
--->
   <li><a href="#ultrixinstall">Installing Ultrix/RISC in GXemul</a>
   <li><a href="#sprite">Running Sprite for DECstation in GXemul</a>
   <li><a href="#declinux">Installing Debian GNU/Linux for DECstation in GXemul</a>
@@ -721,9 +719,10 @@ boot from the harddisk image:
 <h3>Running OpenBSD/sgi in GXemul:</h3>
 
 <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
-can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
+can run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
 
-<p><font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
+<p><font color="#ff0000">NOTE: I haven't succeeded all the way with
+this yet, but some of it works.</font>
 
 <p>GXemul does not yet emulate the AHC PCI SCSI controller in the O2. (I have 
 mailed Adaptec several times, asking for documentation, but never received 
@@ -742,7 +741,7 @@ client. Performing this setup is quite time consuming, but necessary:
 <ol>
   <li><a href="#netbsdinstall">Install NetBSD/pmax 2.0 from CDROM</a>
 	(or install some other similar OS) inside the emulator. This will 
-	be the "<tt>nfs server</tt>" machine. Create a 600 MB <tt>/tftpboot</tt>
+	be the "<tt>nfs server</tt>" machine. Create a 750 MB <tt>/tftpboot</tt>
 	partition during the installation.
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
@@ -760,7 +759,7 @@ client. Performing this setup is quite time consuming, but necessary:
 	<b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
 	<b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
 	<b>printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams</b>
-	<b>echo "10:20:30:00:00:10 client" > /etc/ethers</b>
+	<b>echo "10:20:30:00:00:10 client" &gt; /etc/ethers</b>
 	<b>echo 10.0.0.1 client &gt; /etc/hosts</b>
 	<b>reboot</b>
 </pre>
@@ -852,11 +851,20 @@ client. Performing this setup is quite time consuming, but necessary:
 run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
 actually does on the network.
 
+<p><font color="#ff0000">NOTE: Everything up to this point should work. 
+However, the next step doesn't actually work:</font>
+
 <p>Once everything has been set up correctly, change <tt>bsd.rd</tt>
 in <tt>config_client</tt> to just <tt>bsd</tt> (the GENERIC kernel).
 It should now be possible to boot OpenBSD/sgi and the NetBSD/pmax nfs 
 server. (When asked for "<tt>root device :</tt>" on the OpenBSD machine, 
 enter <tt><b>mec0</b></tt>.)
+
+<p><font color="#ff0000">NOTE: Use the <tt>bsd.rd</tt> kernel for now,
+and type "<tt>cd /mnt; usr/sbin/chmod .</tt>" to use the nfs filesystem.
+The system will not really be up and running as a normal OpenBSD/sgi
+system.</font>
+
 
 
 

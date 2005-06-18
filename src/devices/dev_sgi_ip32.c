@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.24 2005-03-18 23:20:52 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.25 2005-06-18 21:13:33 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -519,7 +519,7 @@ static int mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 	}
 	/*  printf("\n");  */
 
-#if 1
+#if 0
 	printf("RX: %i bytes, index %i, base = 0x%x\n",
 	    d->cur_rx_packet_len, d->cur_rx_addr_index, (int)base);
 #endif

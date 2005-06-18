@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.74 2005-06-18 21:07:39 debug Exp $
+ *  $Id: net.c,v 1.75 2005-06-18 21:13:32 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1537,8 +1537,8 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 
 		if ((res = recvfrom(net->local_port_socket, buf, sizeof(buf), 0,
 		    (struct sockaddr *)&si, &si_len)) != -1) {
-			fatal("DISTRIBUTED packet, %i bytes from %s:%d\n",
-			    res, inet_ntoa(si.sin_addr), ntohs(si.sin_port));
+			/*  fatal("DISTRIBUTED packet, %i bytes from %s:%d\n",
+			    res, inet_ntoa(si.sin_addr), ntohs(si.sin_port)); */
 			for (i=0; i<net->n_nics; i++) {
 				struct ethernet_packet_link *lp;
 				lp = net_allocate_packet_link(net,
@@ -1947,7 +1947,7 @@ void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
 		return;
 	}
 
-printf("send_udp(): sending to port %i\n", portnr);
+	/*  fatal("send_udp(): sending to port %i\n", portnr);  */
 
 	si.sin_family = AF_INET;
 	si.sin_addr = *addrp;

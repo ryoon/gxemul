@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.54 2005-06-17 22:30:29 debug Exp $
+$Id: guestoses.html,v 1.55 2005-06-18 19:57:10 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -53,9 +53,6 @@ SUCH DAMAGE.
   <li><a href="#netbsdarcinstall">Installing NetBSD/arc in GXemul</a>
   <li><a href="#netbsdhpcmipsinstall">Installing NetBSD/hpcmips in GXemul</a>
   <li><a href="#netbsdcobaltinstall">Installing NetBSD/cobalt in GXemul</a>
-<!--
-  <li><a href="#netbsdsgimips">Running NetBSD/sgimips in GXemul</a>
--->
   <li><a href="#openbsdinstall">Installing OpenBSD/pmax in GXemul</a>
   <li><a href="#openbsdarcinstall">Installing OpenBSD/arc in GXemul</a>
   <li><a href="#openbsdsgiinstall">Running OpenBSD/sgi in GXemul</a>
@@ -63,7 +60,13 @@ SUCH DAMAGE.
   <li><a href="#sprite">Running Sprite for DECstation in GXemul</a>
   <li><a href="#declinux">Installing Debian GNU/Linux for DECstation in GXemul</a>
   <li><a href="#declinuxredhat">Running Redhat Linux for DECstation in GXemul</a>
+</ul>
+
+<p>In addition to the "working" guest operating systems listed above,
+you might find the following information interesting:
+<ul>
   <li><a href="#mach">Running Mach/PMAX in GXemul</a>
+  <li><a href="#netbsdsgimips">Running NetBSD/sgimips in GXemul</a>
 </ul>
 
 
@@ -125,7 +128,7 @@ steps:
   <li>Download a NetBSD CD-ROM iso image:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
 	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0/pmaxcd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/pmaxcd.iso</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
@@ -140,7 +143,7 @@ For an ftp install, substitute steps 2 and 3 above with these:
   <li>Download a NetBSD pmax INSTALL kernel, and gunzip it:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 
 	$ <b>gunzip netbsd-INSTALL.gz</b>
 
@@ -152,9 +155,10 @@ For an ftp install, substitute steps 2 and 3 above with these:
 
 <p>
 (If you don't want to use a graphical framebuffer during the install,
-you can remove <b>-X</b> from the command line, but then make sure you
-choose 'vt100' when prompted with which terminal type to use, and not
-'rcons'.)
+you can remove <b><tt>-X</tt></b> from the command line, but then make sure you
+choose "<tt>vt100</tt>" when prompted with which terminal type to use, and not
+"<tt>rcons</tt>". If you want to use X, but think that the default framebuffer
+window is too large, try adding <tt><b>-Y2</b></tt> to the command line.)
 
 <p>
 Then proceed like you would do if you were installing NetBSD on a real
@@ -184,7 +188,7 @@ NetBSD from the harddisk image:<pre>
 Use <b>startx</b> to start X windows.
 
 <p>
-<font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0 doesn't
+<font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0.2 doesn't
 work with X out-of-the-box on pmax. It seems that this has to do with a 
 switch to WSCONS. For now, if you want X, then try NetBSD 1.6.2.
 
@@ -472,44 +476,6 @@ generic kernel:<pre>
 
 
 
-<!--
-
-<p><br>
-<a name="netbsdsgimips"></a>
-<h3>Running NetBSD/sgimips in GXemul:</h3>
-
-<a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
-can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
-
-<p>
-<font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
-
-<p>
-See the section on <a href="#openbsdsgiinstall">how to run OpenBSD/sgi</a>
-for more information.
-
-<p>
-TODO...
-
-<pre>
-cd /tftpboot; ftp -i ftp.se.netbsd.org
-..
-cd pub/NetBSD/NetBSD-2.0/sgimips/binary/sets
-mget *.tgz
-exit
-sh
-for a in etc.tgz base.tgz comp.tgz; do tar zxvfp $a; done
-
-</pre>
-
--->
-
-
-
-
-
-
-
 <p><br>
 <a name="openbsdinstall"></a>
 <h3>Installing OpenBSD/pmax in GXemul:</h3>
@@ -769,7 +735,7 @@ client. Performing this setup is quite time consuming, but necessary:
 	<b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
 	(log in as anonymous...)
 	<b>cd pub/OpenBSD/3.7/sgi</b>
-	<b>mget *</b>
+	<b>mget *.tgz</b>
 	<b>quit</b>
 	<b>sh; for a in *.tgz; do echo $a; tar zxfp $a; done</b>
 	<b>echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab</b>
@@ -880,7 +846,7 @@ boot) type:</font><pre>
 
 <p><font color="#ff0000">This will not cause OpenBSD to be booted 
 normally, but at least a few basic things will work.
-By the way, the emulator performs so bad, that you will have time to 
+By the way, the emulator performs so poorly, that you will have time to 
 fetch several cups of coffee for each of the steps above.</font>
 
 
@@ -893,6 +859,8 @@ fetch several cups of coffee for each of the steps above.</font>
 <h3>Installing Ultrix/RISC in GXemul:</h3>
 
 Ultrix 4.x can run in GXemul on an emulated DECstation 5000/200.
+(Ultrix was the native OS for these machines, but NetBSD/pmax is
+also usable.)
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1013,9 +981,8 @@ The following instructions should let you run Sprite in the emulator:
 
 <p>
 <ol>
-  <li>Download the Sprite harddisk image using ftp or http:<pre>
-	<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/">http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite</a>/<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/ds5000.bt">ds5000.bt</a>
-	or <a href="ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/ds5000.bt">ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/ds5000.bt</a>
+  <li>Download the Sprite harddisk image:<pre>
+	<a href="ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/ds5000.bt">ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/ds5000.bt</a>
 	83973120 bytes, MD5 = ec84eeeb20fe77b758370d5e312e4a5e
 
 </pre>
@@ -1286,6 +1253,15 @@ It should work with framebuffer/keyboard.&nbsp;]
 
 
 <p><br>
+<hr>
+
+
+
+
+
+
+
+<p><br>
 <a name="mach"></a>
 <h3>Running Mach/PMAX in GXemul:</h3>
 
@@ -1348,6 +1324,28 @@ for DECstation in the emulator:
 </ol>
 
 
+
+
+
+
+<p><br>
+<a name="netbsdsgimips"></a>
+<h3>Running NetBSD/sgimips in GXemul:</h3>
+
+<a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
+could theoretically run in GXemul on an emulated O2 (SGI-IP32)
+with root on nfs, in the future. Right now, GXemul doesn't work very well 
+with NetBSD/sgimips 2.0.
+
+<p>For a simple test with the old 1.6.2 ramdisk (install) kernel, try 
+dowloading<pre>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz</a>
+
+</pre>gunzip the kernel, and run
+<b><tt>gxemul -b -Esgi -eo2 -CR5000 netbsd-INSTALL</tt></b>.
+
+<p>Unfortunately, NetBSD/sgimips 1.6.2 didn't have support for the 
+<tt>mec</tt> ethernet controller used in the O2, so you cannot netboot.
 
 
 

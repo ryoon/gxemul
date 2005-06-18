@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.43 2005-06-18 21:07:39 debug Exp $
+ *  $Id: cpu_mips.c,v 1.44 2005-06-18 23:11:00 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -663,7 +663,7 @@ void mips_cpu_register_match(struct machine *m, char *name,
 				if (writeflag) {
 					coproc_register_write(m->cpus[cpunr],
 					    m->cpus[cpunr]->cd.mips.coproc[0], nr,
-					    valuep, 1);
+					    valuep, 1, 0);
 				} else {
 					/*  TODO: Use coproc_register_read instead?  */
 					*valuep = m->cpus[cpunr]->cd.mips.coproc[0]->reg[nr];
@@ -3379,15 +3379,15 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 								    !(cp0->reg[COP0_STATUS] & STATUS_FR))) {
 									uint64_t a, b;
 									coproc_register_read(cpu,
-									    cpu->cd.mips.coproc[cpnr], rt, &a);
+									    cpu->cd.mips.coproc[cpnr], rt, &a, 0);
 									coproc_register_read(cpu,
-									    cpu->cd.mips.coproc[cpnr], rt^1, &b);
+									    cpu->cd.mips.coproc[cpnr], rt^1, &b, 0);
 									if (rt & 1)
 										fatal("WARNING: SDCx in 32-bit mode from odd register!\n");
 									value = (a & 0xffffffffULL)
 									    | (b << 32);
 								} else
-									coproc_register_read(cpu, cpu->cd.mips.coproc[cpnr], rt, &value);
+									coproc_register_read(cpu, cpu->cd.mips.coproc[cpnr], rt, &value, 0);
 							}
 							break;
 					default:
@@ -3524,16 +3524,16 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 								b = (int64_t)(int32_t) (value >> 32);
 								coproc_register_write(cpu,
 								    cpu->cd.mips.coproc[cpnr], rt, &a,
-								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
+								    hi6==HI6_LDC1 || hi6==HI6_LDC2, 0);
 								coproc_register_write(cpu,
 								    cpu->cd.mips.coproc[cpnr], rt ^ 1, &b,
-								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
+								    hi6==HI6_LDC1 || hi6==HI6_LDC2, 0);
 								if (rt & 1)
 									fatal("WARNING: LDCx in 32-bit mode to odd register!\n");
 							} else {
 								coproc_register_write(cpu,
 								    cpu->cd.mips.coproc[cpnr], rt, &value,
-								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
+								    hi6==HI6_LDC1 || hi6==HI6_LDC2, 0);
 							}
 						}
 						break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.18 2005-05-07 02:13:22 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.19 2005-06-18 23:11:00 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -111,7 +111,7 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 				(TODO)  */
 	    ;
 
-	switch (cpu->cd.mips.cpu_type.rev) {
+	switch (cpu->cd.mips.cpu_type.rev & 0xff) {
 	case MIPS_R4000:	/*  according to the R4000 manual  */
 	case MIPS_R4600:
 		IB = cpu->machine->cache_picache_linesize - 4;
@@ -308,13 +308,27 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 		    | (   0 << 16)	/*  BM:   burst mode  */
 		    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
 				 	/*  endian mode  */
-		    | ((cpu->cd.mips.cpu_type.rev==MIPS_5Kc?2:1) << 13)
-					/*  1=32-bit only, 2=32/64  */
+		    | (((cpu->cd.mips.cpu_type.rev&0xff)==MIPS_5Kc?2:0) << 13)
+					/*  0=MIPS32, 1=64S, 2=64  */
 		    | (   0 << 10)	/*  Architecture revision  */
 		    | (   1 <<  7)	/*  MMU type: 1=TLB, 3=FMT  */
 		    | (   2 <<  0)	/*  kseg0 cache coherency algorithm  */
 		    ;
-		/*  TODO:  Config select 1: caches and such  */
+		/*  Config select 1: caches etc. TODO: Most things  */
+		cpu->cd.mips.cop0_config_select1 =
+		    ((cpu->cd.mips.cpu_type.nr_of_tlb_entries - 1) << 25)
+		    | (1 << 22)		/*  IS: I-cache sets per way  */
+		    | (4 << 19)		/*  IL: I-cache line-size  */
+		    | (0 << 16)		/*  IA: I-cache assoc. (ways-1)  */
+		    | (1 << 13)		/*  DS: D-cache sets per way  */
+		    | (4 << 10)		/*  DL: D-cache line-size  */
+		    | (0 <<  7)		/*  DA: D-cache assoc. (ways-1)  */
+		    | (16 * 0)		/*  Existance of PerformanceCounters  */
+		    | ( 8 * 0)		/*  Existance of Watch Registers  */
+		    | ( 4 * m16)	/*  Existance of MIPS16  */
+		    | ( 2 * 0)		/*  Existance of EJTAG  */
+		    | ( 1 * 1)		/*  Existance of FPU  */
+		    ;
 		break;
 	default:
 		;
@@ -940,7 +954,7 @@ nobintrans:
  *  Read a value from a MIPS coprocessor register.
  */
 void coproc_register_read(struct cpu *cpu,
-	struct mips_coproc *cp, int reg_nr, uint64_t *ptr)
+	struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int select)
 {
 	int unimpl = 1;
 
@@ -982,7 +996,19 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_CAUSE)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_EPC)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_PRID)	unimpl = 0;
-	if (cp->coproc_nr==0 && reg_nr==COP0_CONFIG)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_CONFIG) {
+		if (select > 0) {
+			switch (select) {
+			case 1:	*ptr = cpu->cd.mips.cop0_config_select1;
+				break;
+			default:fatal("coproc_register_read(): unimplemented"
+				    " config register select %i\n", select);
+				exit(1);
+			}
+			return;
+		}
+		unimpl = 0;
+	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_LLADDR)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_WATCHLO)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_WATCHHI)	unimpl = 0;
@@ -1022,7 +1048,8 @@ void coproc_register_read(struct cpu *cpu,
  *  Write a value to a MIPS coprocessor register.
  */
 void coproc_register_write(struct cpu *cpu,
-	struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int flag64)
+	struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int flag64,
+	int select)
 {
 	int unimpl = 1;
 	int readonly = 0;
@@ -1188,6 +1215,18 @@ void coproc_register_write(struct cpu *cpu,
 			readonly = 1;
 			break;
 		case COP0_CONFIG:
+			if (select > 0) {
+				switch (select) {
+				case 1:	cpu->cd.mips.cop0_config_select1 = tmp;
+					break;
+				default:fatal("coproc_register_write(): unimpl"
+					    "emented config register select "
+					    "%i\n", select);
+					exit(1);
+				}
+				return;
+			}
+
 			/*  fatal("COP0_CONFIG: modifying K0 bits: "
 			    "0x%08x => ", cp->reg[reg_nr]);  */
 			tmp = *ptr;
@@ -2515,13 +2554,16 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MFCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMFCz << 21)))) {
 		if (unassemble_only) {
-			debug("%s%i\t%s,%s\n",
+			debug("%s%i\t%s,%s",
 			    copz==COPz_DMFCz? "dmfc" : "mfc", cpnr,
 			    regnames[rt], cop0_names[rd]);
+			if (function & 7)
+				debug(",%i", (int)(function & 7));
+			debug("\n");
 			return;
 		}
 		coproc_register_read(cpu, cpu->cd.mips.coproc[cpnr],
-		    rd, &tmpvalue);
+		    rd, &tmpvalue, function & 7);
 		cpu->cd.mips.gpr[rt] = tmpvalue;
 		if (copz == COPz_MFCz) {
 			/*  Sign-extend:  */
@@ -2535,9 +2577,12 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MTCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMTCz << 21)))) {
 		if (unassemble_only) {
-			debug("%s%i\t%s,%s\n",
+			debug("%s%i\t%s,%s",
 			    copz==COPz_DMTCz? "dmtc" : "mtc", cpnr,
 			    regnames[rt], cop0_names[rd]);
+			if (function & 7)
+				debug(",%i", (int)(function & 7));
+			debug("\n");
 			return;
 		}
 		tmpvalue = cpu->cd.mips.gpr[rt];
@@ -2548,7 +2593,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 				tmpvalue |= 0xffffffff00000000ULL;
 		}
 		coproc_register_write(cpu, cpu->cd.mips.coproc[cpnr], rd,
-		    &tmpvalue, copz == COPz_DMTCz);
+		    &tmpvalue, copz == COPz_DMTCz, function & 7);
 		return;
 	}
 

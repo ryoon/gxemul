@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.455 2005-06-18 21:07:39 debug Exp $
+ *  $Id: machine.c,v 1.456 2005-06-18 23:11:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3578,6 +3578,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		switch (machine->machine_subtype) {
 		case MACHINE_EVBMIPS_MALTA:
 			machine->machine_name = "MALTA (evbmips)";
+			dev_mc146818_init(machine, mem, 0x18000070,
+			    0, MC146818_PC_CMOS, 4);
 			break;
 		case MACHINE_EVBMIPS_PB1000:
 			machine->machine_name = "PB1000 (evbmips)";

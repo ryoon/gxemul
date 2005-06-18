@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.121 2005-06-17 18:10:36 debug Exp $
+$Id: RELEASE,v 1.122 2005-06-18 23:11:00 debug Exp $
 
 Now working on post-0.3.3.2.
 
 ------------------------------------------------------------------------------
 
-Release notes for GXemul 0.3.3.2
-================================
+Release notes for GXemul 0.3.X
+==============================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -21,7 +21,7 @@ inside the emulator:
 
     Guest operating system             Emulated machine
     ----------------------             ----------------
-    NetBSD/pmax 2.0 (and 1.6.2)        DECstation 5000/200
+    NetBSD/pmax 2.0.2 (and 1.6.2)      DECstation 5000/200
     OpenBSD/pmax 2.8-BETA              DECstation 5000/200
     Ultrix 4.2-4.5                     DECstation 5000/200
     Sprite demo harddisk image         DECstation 5000/200
@@ -42,18 +42,14 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-Summary of changes between release 0.3.2 and 0.3.3.2:
+Summary of changes between release 0.3.3.2 and 0.3.X:
 
-	x)  When booting from an ISO9660 (CDROM) filesystem image, the kernel
-	    can now in some cases be read directly from the image, so there is
-	    no need any longer to supply an external kernel. (It is a quick,
-	    buggy, and very ugly hack, but it sometimes works.)
+	x)  When emulating a network of multiple machines, the emulated
+	    machines can now be placed on different hosts. (Actually, it
+	    is the emulated ethernet networks that are being connected to
+	    eachother, not the machines.)
 
-	x)  Mixing more than one disk image type (SCSI, IDE, PC-style floppy)
-	    within one emulated machine is now possible. (There is however no
-	    stable emulation mode yet that uses this.)
-
-	x)  Many minor updates and bugfixes.
+	x)  Other updates and bugfixes.
 
 Files included in this release are:
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.1 2005-06-18 21:07:39 debug Exp $
+ *  $Id: yamon.c,v 1.2 2005-06-18 23:11:01 debug Exp $
  *
  *  YAMON emulation.
  */
@@ -77,6 +77,11 @@ int yamon_emul(struct cpu *cpu)
 			    ch);
 			n++;
 		}
+		break;
+	case 0x854:	/*  "syscon"  */
+		fatal("[ yamon_emul(): syscon: TODO ]\n");
+		/*  TODO. For now, return some kind of "failure":  */
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
 		break;
 	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
 		printf("\n");

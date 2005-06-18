@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.55 2005-06-18 19:57:10 debug Exp $
+$Id: guestoses.html,v 1.56 2005-06-18 20:18:46 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -49,24 +49,24 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
-  <li><a href="#netbsdinstall">Installing NetBSD/pmax in GXemul</a>
-  <li><a href="#netbsdarcinstall">Installing NetBSD/arc in GXemul</a>
-  <li><a href="#netbsdhpcmipsinstall">Installing NetBSD/hpcmips in GXemul</a>
-  <li><a href="#netbsdcobaltinstall">Installing NetBSD/cobalt in GXemul</a>
-  <li><a href="#openbsdinstall">Installing OpenBSD/pmax in GXemul</a>
-  <li><a href="#openbsdarcinstall">Installing OpenBSD/arc in GXemul</a>
-  <li><a href="#openbsdsgiinstall">Running OpenBSD/sgi in GXemul</a>
-  <li><a href="#ultrixinstall">Installing Ultrix/RISC in GXemul</a>
-  <li><a href="#sprite">Running Sprite for DECstation in GXemul</a>
-  <li><a href="#declinux">Installing Debian GNU/Linux for DECstation in GXemul</a>
-  <li><a href="#declinuxredhat">Running Redhat Linux for DECstation in GXemul</a>
+  <li><a href="#netbsdinstall">Installing NetBSD/pmax</a>
+  <li><a href="#netbsdarcinstall">Installing NetBSD/arc</a>
+  <li><a href="#netbsdhpcmipsinstall">Installing NetBSD/hpcmips</a>
+  <li><a href="#netbsdcobaltinstall">Installing NetBSD/cobalt</a>
+  <li><a href="#openbsdinstall">Installing OpenBSD/pmax</a>
+  <li><a href="#openbsdarcinstall">Installing OpenBSD/arc</a>
+  <li><a href="#openbsdsgiinstall">Running OpenBSD/sgi</a>
+  <li><a href="#ultrixinstall">Installing Ultrix/RISC</a>
+  <li><a href="#sprite">Running Sprite for DECstation</a>
+  <li><a href="#declinux">Installing Debian GNU/Linux for DECstation</a>
+  <li><a href="#declinuxredhat">Running Redhat Linux for DECstation</a>
 </ul>
 
 <p>In addition to the "working" guest operating systems listed above,
 you might find the following information interesting:
 <ul>
-  <li><a href="#mach">Running Mach/PMAX in GXemul</a>
-  <li><a href="#netbsdsgimips">Running NetBSD/sgimips in GXemul</a>
+  <li><a href="#mach">Running Mach/PMAX</a>
+  <li><a href="#netbsdsgimips">Running NetBSD/sgimips</a>
 </ul>
 
 
@@ -97,7 +97,7 @@ system, the harddisk image looks and acts like a real disk.
 
 <p><br>
 <a name="netbsdinstall"></a>
-<h3>Installing NetBSD/pmax in GXemul:</h3>
+<h3>Installing NetBSD/pmax:</h3>
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -205,7 +205,7 @@ If you want to run without the X framebuffer, use this instead:<pre>
 
 <p><br>
 <a name="netbsdarcinstall"></a>
-<h3>Installing NetBSD/arc in GXemul:</h3>
+<h3>Installing NetBSD/arc:</h3>
 
 It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the emulator.
 
@@ -280,7 +280,7 @@ image, using the following command:
 
 <p><br>
 <a name="netbsdhpcmipsinstall"></a>
-<h3>Installing NetBSD/hpcmips in GXemul:</h3>
+<h3>Installing NetBSD/hpcmips:</h3>
 
 It is possible to install NetBSD/hpcmips onto a disk image, on an an
 emulated MobilePro 770, 780, 800, or 880. The emulator treats the
@@ -403,7 +403,7 @@ keyboard input.)
 
 <p><br>
 <a name="netbsdcobaltinstall"></a>
-<h3>Installing NetBSD/cobalt in GXemul:</h3>
+<h3>Installing NetBSD/cobalt:</h3>
 
 <a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a> is tricky
 to install, because the Cobalt machines were designed for Linux, and not
@@ -478,7 +478,7 @@ generic kernel:<pre>
 
 <p><br>
 <a name="openbsdinstall"></a>
-<h3>Installing OpenBSD/pmax in GXemul:</h3>
+<h3>Installing OpenBSD/pmax:</h3>
 
 Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
 You should first read the section above on how to install NetBSD/pmax,
@@ -619,7 +619,7 @@ enter <b><tt>rcons</tt></b> if you are using the graphical framebuffer,
 
 <p><br>
 <a name="openbsdarcinstall"></a>
-<h3>Installing OpenBSD/arc in GXemul:</h3>
+<h3>Installing OpenBSD/arc:</h3>
 
 It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
 emulator.
@@ -682,7 +682,7 @@ boot from the harddisk image:
 
 <p><br>
 <a name="openbsdsgiinstall"></a>
-<h3>Running OpenBSD/sgi in GXemul:</h3>
+<h3>Running OpenBSD/sgi:</h3>
 
 <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
 can run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
@@ -728,8 +728,9 @@ client. Performing this setup is quite time consuming, but necessary:
 	<b>echo "10:20:30:00:00:10 client" &gt; /etc/ethers</b>
 	<b>echo 10.0.0.1 client &gt; /etc/hosts</b>
 	<b>reboot</b>
+
 </pre>
-	Then start the DECstation emulation again, and download the
+  <li>Start the DECstation emulation again, and download the
 	OpenBSD/sgi distribution:<br>(NOTE: This
 	takes quite some time, even if you have a fast network connection.)<pre>
 	<b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
@@ -742,14 +743,14 @@ client. Performing this setup is quite time consuming, but necessary:
 	<b>dd if=/dev/zero of=swap bs=1024 count=32768</b>
 
 </pre>
-  <p>
   <li>Download the OpenBSD/sgi GENERIC and RAMDISK kernels:<pre>
 	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd</a>
 	MD5 (bsd) = f16eaf3dcbd51876db7c25f70e6d8a08
 	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd</a>
 	MD5 (bsd.rd) = 4843e6139d8dd04b03d5f0e33e9a4f7b
 
-</pre>and create a configuration file called <tt>config_client</tt>:<pre>
+</pre>
+  <li>Create a configuration file called <tt>config_client</tt>:<pre>
 	<font color="#2020cf">!!gxemul
 	!
 	!  Configuration file for running OpenBSD/sgi diskless with
@@ -856,7 +857,7 @@ fetch several cups of coffee for each of the steps above.</font>
 
 <p><br>
 <a name="ultrixinstall"></a>
-<h3>Installing Ultrix/RISC in GXemul:</h3>
+<h3>Installing Ultrix/RISC:</h3>
 
 Ultrix 4.x can run in GXemul on an emulated DECstation 5000/200.
 (Ultrix was the native OS for these machines, but NetBSD/pmax is
@@ -961,7 +962,7 @@ that file as a disk image file in the emulator.
 
 <p><br>
 <a name="sprite"></a>
-<h3>Running Sprite for DECstation in GXemul:</h3>
+<h3>Running Sprite for DECstation:</h3>
 
 Sprite was a research operating system at the University of Berkeley.
 The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
@@ -1026,7 +1027,7 @@ environment.
 
 <p><br>
 <a name="declinux"></a>
-<h3>Installing Debian GNU/Linux for DECstation in GXemul:</h3>
+<h3>Installing Debian GNU/Linux for DECstation:</h3>
 
 <font color="#ef0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. During my tests, even pressing the wrong key during the install
@@ -1168,7 +1169,7 @@ example), but at least it doesn't Oops that often.&nbsp;]
 
 <p><br>
 <a name="declinuxredhat"></a>
-<h3>Running Redhat Linux for DECstation in GXemul:</h3>
+<h3>Running Redhat Linux for DECstation:</h3>
 
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. Read the note about <b><tt>-U</tt></b> in the section on how to 
@@ -1263,7 +1264,7 @@ It should work with framebuffer/keyboard.&nbsp;]
 
 <p><br>
 <a name="mach"></a>
-<h3>Running Mach/PMAX in GXemul:</h3>
+<h3>Running Mach/PMAX:</h3>
 
 Read the following link if you want to know more about Mach in general:
 <a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">
@@ -1330,7 +1331,7 @@ for DECstation in the emulator:
 
 <p><br>
 <a name="netbsdsgimips"></a>
-<h3>Running NetBSD/sgimips in GXemul:</h3>
+<h3>Running NetBSD/sgimips:</h3>
 
 <a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
 could theoretically run in GXemul on an emulated O2 (SGI-IP32)

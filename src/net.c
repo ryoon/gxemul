@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.73 2005-06-17 21:00:03 debug Exp $
+ *  $Id: net.c,v 1.74 2005-06-18 21:07:39 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1935,7 +1935,8 @@ int net_ethernet_rx(struct net *net, void *extra,
  *  Send a simple UDP packet to some other (real) host. Used for distributed
  *  network simulations.
  */
-void send_udp(struct in_addr *addrp, int portnr, char *packet, size_t len)
+void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
+	size_t len)
 {
 	int s;
 	struct sockaddr_in si;

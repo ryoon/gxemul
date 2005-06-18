@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.56 2005-06-18 20:18:46 debug Exp $
+$Id: guestoses.html,v 1.57 2005-06-18 21:07:38 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -738,9 +738,11 @@ client. Performing this setup is quite time consuming, but necessary:
 	<b>cd pub/OpenBSD/3.7/sgi</b>
 	<b>mget *.tgz</b>
 	<b>quit</b>
-	<b>sh; for a in *.tgz; do echo $a; tar zxfp $a; done</b>
+	<b>sh</b>
+	<b>for a in *.tgz; do echo $a; tar zxfp $a; done</b>
 	<b>echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab</b>
 	<b>dd if=/dev/zero of=swap bs=1024 count=32768</b>
+	<b>halt</b>
 
 </pre>
   <li>Download the OpenBSD/sgi GENERIC and RAMDISK kernels:<pre>

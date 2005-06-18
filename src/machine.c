@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.454 2005-06-17 21:35:07 debug Exp $
+ *  $Id: machine.c,v 1.455 2005-06-18 21:07:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3573,6 +3573,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		/*
 		 *  http://www.netbsd.org/Ports/evbmips/
 		 */
+		cpu->byte_order = EMUL_BIG_ENDIAN;
+
 		switch (machine->machine_subtype) {
 		case MACHINE_EVBMIPS_MALTA:
 			machine->machine_name = "MALTA (evbmips)";
@@ -3586,14 +3588,14 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		}
 
 		/*  This is just a test.  TODO  */
-		{
-			int i;
-			for (i=0; i<32; i++)
-				cpu->cd.mips.gpr[i] =
-				    0x01230000 + (i << 8) + 0x55;
-		}
+		for (i=0; i<32; i++)
+			cpu->cd.mips.gpr[i] =
+			    0x01230000 + (i << 8) + 0x55;
 
 		/*  TODO: Yamon emulation. 0x9fc00504 = putchar? etc.  */
+		for (i=0; i<0x100; i+=4)
+			store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,
+			    (int64_t)(int32_t)0x9fc00800 + i);
 
 		break;
 

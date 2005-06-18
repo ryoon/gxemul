@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.42 2005-06-11 20:59:11 debug Exp $
+ *  $Id: cpu_mips.c,v 1.43 2005-06-18 21:07:39 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1988,27 +1988,27 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 
 	/*
-	 *  ROM emulation:
+	 *  ROM emulation:  (0xbfcXXXXX or 0x9fcXXXXX)
 	 *
 	 *  This assumes that a jal was made to a ROM address,
 	 *  and we should return via gpr ra.
 	 */
-	if ((cached_pc & 0xfff00000) == 0xbfc00000 &&
+	if ((cached_pc & 0xdff00000) == 0x9fc00000 &&
 	    cpu->machine->prom_emulation) {
-		int rom_jal, res = 1;
+		int rom_jal = 1, res = 1;
 		switch (cpu->machine->machine_type) {
 		case MACHINE_DEC:
 			res = decstation_prom_emul(cpu);
-			rom_jal = 1;
 			break;
 		case MACHINE_PS2:
 			res = playstation2_sifbios_emul(cpu);
-			rom_jal = 1;
 			break;
 		case MACHINE_ARC:
 		case MACHINE_SGI:
 			res = arcbios_emul(cpu);
-			rom_jal = 1;
+			break;
+		case MACHINE_EVBMIPS:
+			res = yamon_emul(cpu);
 			break;
 		default:
 			rom_jal = 0;

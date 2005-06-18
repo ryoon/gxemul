@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.780 2005-06-17 21:35:05 debug Exp $
+$Id: HISTORY,v 1.781 2005-06-18 21:07:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1979,3 +1979,4 @@ Changelog for GXemul:
 20050617	Experimenting some more with netbooting OpenBSD/sgi. Adding
 		a hack which allows emulated ethernet networks to be
 		distributed across multiple emulator processes.
+20050618	Minor updates (documentation, dummy YAMON emulation, etc).

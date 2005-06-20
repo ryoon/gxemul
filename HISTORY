@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.782 2005-06-20 05:52:44 debug Exp $
+$Id: HISTORY,v 1.783 2005-06-20 08:19:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1980,4 +1980,5 @@ Changelog for GXemul:
 		a hack which allows emulated ethernet networks to be
 		distributed across multiple emulator processes.
 20050618	Minor updates (documentation, dummy YAMON emulation, etc).
-20050620	Some strcpy/strcat -> strlcpy/strlcat updates.
+20050620	strcpy/strcat -> strlcpy/strlcat updates.
+		Some more progress on evbmips (Malta).

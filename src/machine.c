@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.457 2005-06-20 05:52:47 debug Exp $
+ *  $Id: machine.c,v 1.458 2005-06-20 08:19:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2110,7 +2110,7 @@ void machine_setup(struct machine *machine)
 		 *  pciide0 at pci0 dev 9 function 1: VIA Technologies VT82C586 (Apollo VP) ATA33 cr
 		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
 		 */
-		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 6);	/*  7 for PCI, not 6?  */
+		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 6, 11);	/*  7 for PCI, not 6?  */
 		/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
 		bus_pci_add(machine, pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 		bus_pci_add(machine, pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
@@ -3620,16 +3620,19 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 
 	case MACHINE_EVBMIPS:
-		/*
-		 *  http://www.netbsd.org/Ports/evbmips/
-		 */
+		/*  http://www.netbsd.org/Ports/evbmips/  */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 
 		switch (machine->machine_subtype) {
 		case MACHINE_EVBMIPS_MALTA:
 			machine->machine_name = "MALTA (evbmips)";
 			dev_mc146818_init(machine, mem, 0x18000070,
-			    0, MC146818_PC_CMOS, 4);
+			    0, MC146818_PC_CMOS, 1);
+			machine->main_console_handle = dev_ns16550_init(machine, mem,
+			    0x180003f8, 0, 1, 1, "serial console");
+			/*  TODO: Irqs  */
+			pci_data = dev_gt_init(machine, mem, 0x1be00000, 0, 0, 120);
+			device_add(machine, "malta_lcd addr=0x1f000400");
 			break;
 		case MACHINE_EVBMIPS_PB1000:
 			machine->machine_name = "PB1000 (evbmips)";
@@ -3644,11 +3647,32 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			cpu->cd.mips.gpr[i] =
 			    0x01230000 + (i << 8) + 0x55;
 
-		/*  TODO: Yamon emulation. 0x9fc00504 = putchar? etc.  */
+		/*  NetBSD/evbmips wants these: (at least for Malta)  */
+
+		/*  a0 = argc  */
+		cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
+
+		/*  a1 = argv  */
+		cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
+		store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
+		store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
+
+		bootstr = strdup(machine->boot_kernel_filename);
+		bootarg = strdup(machine->boot_string_argument);
+		store_string(cpu, (int32_t)0x9fc01040, bootstr);
+		store_string(cpu, (int32_t)0x9fc01200, bootarg);
+
+		/*  a2 = (yamon_env_var *)envp  */
+		cpu->cd.mips.gpr[MIPS_GPR_A2] = 0;
+
+		/*  a3 = memsize  */
+		cpu->cd.mips.gpr[MIPS_GPR_A3] =
+		    machine->physical_ram_in_mb * 1048576;
+
+		/*  Yamon emulation vectors at 0x9fc005xx:  */
 		for (i=0; i<0x100; i+=4)
 			store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,
 			    (int64_t)(int32_t)0x9fc00800 + i);
-
 		break;
 
 	case MACHINE_BAREPPC:

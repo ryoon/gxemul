@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.21 2005-03-18 23:20:52 debug Exp $
+ *  $Id: dev_gt.c,v 1.22 2005-06-20 08:19:58 debug Exp $
  *  
- *  The "gt" device used in Cobalt machines.
+ *  Galileo Technology GT-64xxx PCI controller.
+ *
+ *	GT-64011	Used in Cobalt machines.
+ *	GT-64120	Used in evbmips machines (Malta).
  *
  *  TODO:  This more or less just a dummy device, so far.
  */
@@ -48,11 +51,13 @@
 
 #define PCI_VENDOR_GALILEO           0x11ab    /* Galileo Technology */
 #define PCI_PRODUCT_GALILEO_GT64011  0x4146    /* GT-64011 System Controller */
+#define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /* GT-64120 */
 
 struct gt_data {
 	int	reg[8];
 	int	irqnr;
 	int	pciirq;
+	int	type;
 
 	struct pci_data *pci_data;
 };
@@ -131,15 +136,31 @@ cpu_interrupt_ack(cpu, d->irqnr);
 
 
 /*
- *  pci_gt_rr():
+ *  pci_gt_rr_011():
  */
-uint32_t pci_gt_rr(int reg)
+static uint32_t pci_gt_rr_011(int reg)
 {
 	switch (reg) {
 	case 0x00:
 		return PCI_VENDOR_GALILEO + (PCI_PRODUCT_GALILEO_GT64011 << 16);
 	case 0x08:
-		return 0x01;	/*  Revision 1  */
+		return 0x06000001;	/*  Revision 1  */
+	default:
+		return 0;
+	}
+}
+
+
+/*
+ *  pci_gt_rr_120():
+ */
+static uint32_t pci_gt_rr_120(int reg)
+{
+	switch (reg) {
+	case 0x00:
+		return PCI_VENDOR_GALILEO + (PCI_PRODUCT_GALILEO_GT64120 << 16);
+	case 0x08:
+		return 0x06000002;	/*  Revision 2?  */
 	default:
 		return 0;
 	}
@@ -162,7 +183,7 @@ void pci_gt_init(struct machine *machine, struct memory *mem)
  *  itself.
  */
 struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int pciirq)
+	uint64_t baseaddr, int irq_nr, int pciirq, int type)
 {
 	struct gt_data *d;
 
@@ -176,12 +197,25 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	d->pciirq   = pciirq;
 	d->pci_data = bus_pci_init(pciirq);
 
+	switch (type) {
+	case 11:
+		d->type = PCI_PRODUCT_GALILEO_GT64011;
+		break;
+	case 120:
+		d->type = PCI_PRODUCT_GALILEO_GT64120;
+		break;
+	default:fatal("dev_gt_init(): type must be 11 or 120.\n");
+		exit(1);
+	}
+
 	/*
 	 *  According to NetBSD/cobalt:
 	 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64011
 	 *  System Controller, rev 1
 	 */
-	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0, pci_gt_init, pci_gt_rr);
+	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0, pci_gt_init,
+	    d->type == PCI_PRODUCT_GALILEO_GT64011?
+	    pci_gt_rr_011 : pci_gt_rr_120);
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH,
 	    dev_gt_access, d, MEM_DEFAULT, NULL);

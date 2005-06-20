@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.167 2005-05-22 20:05:40 debug Exp $
+ *  $Id: devices.h,v 1.168 2005-06-20 08:19:59 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -232,9 +232,11 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem, uint64
 	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name, int logo);
 
 /*  dev_gt.c:  */
-#define	DEV_GT_LENGTH			0x0000000000001000
-int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int pciirq);
+#define	DEV_GT_LENGTH			0x1000
+int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int pciirq, int type);
 
 /*  dev_jazz.c:  */
 #define	DEV_JAZZ_LENGTH			0x280

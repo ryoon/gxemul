@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.40 2005-02-18 06:19:19 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.41 2005-06-20 05:52:48 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -41,6 +41,10 @@
 #include "sfbreg.h"
 
 
+#define	DEVICE_NAME_BUFLEN		9
+#define	CARD_NAME_BUFLEN		9
+#define	CARD_FIRMWARE_BUFLEN		5
+
 struct turbochannel_data {
 	int		slot_nr;
 	uint64_t	baseaddr;
@@ -49,13 +53,13 @@ struct turbochannel_data {
 
 	int		rom_skip;
 
-	char		device_name[9];		/*  NUL-terminated  */
+	char		device_name[DEVICE_NAME_BUFLEN];  /*  NUL-terminated  */
 
 	/*  These should be terminated with spaces  */
-	char		card_firmware_version[8];
-	char		card_vendor_name[8];
-	char		card_module_name[8];
-	char		card_firmware_type[4];
+	char		card_firmware_version[CARD_NAME_BUFLEN];
+	char		card_vendor_name[CARD_NAME_BUFLEN];
+	char		card_module_name[CARD_NAME_BUFLEN];
+	char		card_firmware_type[CARD_FIRMWARE_BUFLEN];
 };
 
 
@@ -203,14 +207,14 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 	d->endaddr  = endaddr;
 	d->irq      = irq;
 
-	strcpy(d->device_name, device_name);
+	strlcpy(d->device_name, device_name, DEVICE_NAME_BUFLEN);
 
-	strncpy(d->card_firmware_version, "V5.3a   ", 8);
-	strncpy(d->card_vendor_name,      "DEC     ", 8);
-	strncpy(d->card_firmware_type,    "TCF0", 4);
+	strncpy(d->card_firmware_version, "V5.3a   ", CARD_NAME_BUFLEN);
+	strncpy(d->card_vendor_name,      "DEC     ", CARD_NAME_BUFLEN);
+	strncpy(d->card_firmware_type,    "TCF0", CARD_FIRMWARE_BUFLEN);
 
 	memset(d->card_module_name, ' ', 8);
-	strncpy(d->card_module_name, device_name, strlen(device_name));
+	memcpy(d->card_module_name, device_name, strlen(device_name));
 
 	/*
 	 *  According to NetBSD/pmax:

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.232 2005-06-18 21:07:40 debug Exp $
+ *  $Id: misc.h,v 1.233 2005-06-20 05:52:49 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -121,7 +121,15 @@ void file_load(struct machine *machine, struct memory *mem,
 void debug_indentation(int diff);
 void debug(char *fmt, ...);
 void fatal(char *fmt, ...);
+
+
+/*  misc.c:  */
 unsigned long long mystrtoull(const char *s, char **endp, int base);
+int mymkstemp(char *template);
+#ifdef USE_STRLCPY_REPLACEMENTS
+size_t mystrlcpy(char *dst, const char *src, size_t size);
+size_t mystrlcat(char *dst, const char *src, size_t size);
+#endif
 
 
 /*  of.c:  */

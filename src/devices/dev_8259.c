@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.9 2005-06-02 17:11:35 debug Exp $
+ *  $Id: dev_8259.c,v 1.10 2005-06-20 05:52:48 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -217,7 +217,7 @@ int devinit_8259(struct devinit *devinit)
 	name2 = malloc(nlen);
 	snprintf(name2, nlen, "%s", devinit->name);
 	if ((devinit->addr & 0xfff) == 0xa0)
-		strcat(name2, " [secondary]");
+		strlcat(name2, " [secondary]", nlen);
 
 	memory_device_register(devinit->machine->memory, name2,
 	    devinit->addr, DEV_8259_LENGTH, dev_8259_access, (void *)d,

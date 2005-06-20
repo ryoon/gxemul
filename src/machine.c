@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.456 2005-06-18 23:11:00 debug Exp $
+ *  $Id: machine.c,v 1.457 2005-06-20 05:52:47 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -83,6 +83,8 @@
 #include "hpc_bootinfo.h"
 #include "vripreg.h"
 
+#define	BOOTSTR_BUFLEN		1000
+#define	BOOTARG_BUFLEN		2000
 
 struct machine_entry_subtype {
 	int			machine_subtype;/*  Old-style subtype  */
@@ -1927,14 +1929,14 @@ void machine_setup(struct machine *machine)
 
 #if 0
 			if (machine->machine_subtype == MACHINE_DEC_PMAX_3100)
-				strcpy(bootpath, "rz(0,0,0)");
+				strlcpy(bootpath, "rz(0,0,0)", sizeof(bootpath));
 			else
 #endif
-				strcpy(bootpath, "5/rz1/");
+				strlcpy(bootpath, "5/rz1/", sizeof(bootpath));
 
 			if (bootdev_id < 0 || machine->force_netboot) {
 				/*  tftp boot:  */
-				strcpy(bootpath, "5/tftp/");
+				strlcpy(bootpath, "5/tftp/", sizeof(bootpath));
 				bootpath[0] = '0' + boot_net_boardnumber;
 			} else {
 				/*  disk boot:  */
@@ -1948,11 +1950,17 @@ void machine_setup(struct machine *machine)
 			init_bootpath = bootpath;
 		}
 
-		bootarg = malloc(strlen(init_bootpath) +
-		    strlen(machine->boot_kernel_filename) + 1 +
-		    strlen(machine->boot_string_argument) + 1);
-		strcpy(bootarg, init_bootpath);
-		strcat(bootarg, machine->boot_kernel_filename);
+		bootarg = malloc(BOOTARG_BUFLEN);
+		if (bootarg == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		strlcpy(bootarg, init_bootpath, BOOTARG_BUFLEN);
+		if (strlcat(bootarg, machine->boot_kernel_filename,
+		    BOOTARG_BUFLEN) > BOOTARG_BUFLEN) {
+			fprintf(stderr, "bootarg truncated?\n");
+			exit(1);
+		}
 
 		bootstr = "boot";
 
@@ -1967,8 +1975,12 @@ void machine_setup(struct machine *machine)
 			cpu->cd.mips.gpr[MIPS_GPR_A0] --;
 
 		if (machine->boot_string_argument[0] != '\0') {
-			strcat(bootarg, " ");
-			strcat(bootarg, machine->boot_string_argument);
+			strlcat(bootarg, " ", BOOTARG_BUFLEN);
+			if (strlcat(bootarg, machine->boot_string_argument,
+			    BOOTARG_BUFLEN) >= BOOTARG_BUFLEN) {
+				fprintf(stderr, "bootstr truncated?\n");
+				exit(1);
+			}
 		}
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
@@ -1977,7 +1989,7 @@ void machine_setup(struct machine *machine)
 
 		xx.b.common.next = (char *)&xx.c - (char *)&xx.b;
 		xx.b.common.type = BTINFO_BOOTPATH;
-		strcpy(xx.b.bootpath, bootstr);
+		strlcpy(xx.b.bootpath, bootstr, sizeof(xx.b.bootpath));
 
 		xx.c.common.next = 0;
 		xx.c.common.type = BTINFO_SYMTAB;
@@ -2025,18 +2037,21 @@ void machine_setup(struct machine *machine)
 
 		/*  These are needed for Sprite to boot:  */
 		{
-			char tmps[300];
+			char tmps[500];
 
 			sprintf(tmps, "boot=%s", bootarg);
+			tmps[sizeof(tmps)-1] = '\0';
 			add_environment_string(cpu, tmps, &addr);
 
 			sprintf(tmps, "bitmap=0x%x", (uint32_t)((
 			    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
 			    & 0xffffffffULL));
+			tmps[sizeof(tmps)-1] = '\0';
 			add_environment_string(cpu, tmps, &addr);
 
 			sprintf(tmps, "bitmaplen=0x%x",
 			    machine->physical_ram_in_mb * 1048576 / 4096 / 8);
+			tmps[sizeof(tmps)-1] = '\0';
 			add_environment_string(cpu, tmps, &addr);
 		}
 
@@ -2519,7 +2534,7 @@ void machine_setup(struct machine *machine)
 				exit(1);
 			}
 
-			strcpy(tmp, "root=/dev/hda1 crtmode=vesa0,60");
+			strlcpy(tmp, "root=/dev/hda1 crtmode=vesa0,60", tmplen);
 
 			if (machine->boot_string_argument[0])
 				snprintf(tmp+strlen(tmp), tmplen-strlen(tmp),
@@ -2562,7 +2577,7 @@ void machine_setup(struct machine *machine)
 		 *  detailed list of IP ("Inhouse Processor") model numbers.
 		 *  (Or http://hardware.majix.org/computers/sgi/iptable.shtml)
 		 */
-		machine->machine_name = malloc(500);
+		machine->machine_name = malloc(MACHINE_NAME_MAXBUF);
 		if (machine->machine_name == NULL) {
 			fprintf(stderr, "out of memory\n");
 			exit(1);
@@ -2595,7 +2610,8 @@ void machine_setup(struct machine *machine)
 			/*  TODO:  Other SGI machine types?  */
 			switch (machine->machine_subtype) {
 			case 12:
-				strcat(machine->machine_name, " (Iris Indigo IP12)");
+				strlcat(machine->machine_name,
+				    " (Iris Indigo IP12)", MACHINE_NAME_MAXBUF);
 
 				/*  TODO  */
 				/*  33 MHz R3000, according to http://www.irisindigo.com/  */
@@ -2603,7 +2619,8 @@ void machine_setup(struct machine *machine)
 
 				break;
 			case 19:
-				strcat(machine->machine_name, " (Everest IP19)");
+				strlcat(machine->machine_name,
+				    " (Everest IP19)", MACHINE_NAME_MAXBUF);
 				machine->main_console_handle =
 				    dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "serial zs");	/*  serial? netbsd?  */
 				dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
@@ -2623,7 +2640,8 @@ void machine_setup(struct machine *machine)
 
 				break;
 			case 20:
-				strcat(machine->machine_name, " (Indigo)");
+				strlcat(machine->machine_name,
+				    " (Indigo)", MACHINE_NAME_MAXBUF);
 
 				/*
 				 *  Guesses based on NetBSD 2.0 beta, 20040606.
@@ -2668,7 +2686,8 @@ void machine_setup(struct machine *machine)
 
 				break;
 			case 21:
-				strcat(machine->machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
+				strlcat(machine->machine_name,	/*  TODO  */
+				    " (uknown SGI-IP21 ?)", MACHINE_NAME_MAXBUF);
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 
@@ -2678,10 +2697,14 @@ void machine_setup(struct machine *machine)
 			case 22:
 			case 24:
 				if (machine->machine_subtype == 22) {
-					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
+					strlcat(machine->machine_name,
+					    " (Indy, Indigo2, Challenge S; Full-house)",
+					    MACHINE_NAME_MAXBUF);
 					machine->md_int.sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
 				} else {
-					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
+					strlcat(machine->machine_name,
+					    " (Indy, Indigo2, Challenge S; Guiness)",
+					    MACHINE_NAME_MAXBUF);
 					machine->md_int.sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
 				}
 
@@ -2754,7 +2777,8 @@ Why is this here? TODO
 			case 25:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine->machine_name, " (Everest IP25)");
+				strlcat(machine->machine_name,
+				    " (Everest IP25)", MACHINE_NAME_MAXBUF);
 
 				 /*  serial? irix?  */
 				dev_scc_init(machine, mem,
@@ -2775,15 +2799,17 @@ Why is this here? TODO
 			case 26:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine->machine_name,
-				    " (uknown SGI-IP26 ?)");	/*  TODO  */
+				strlcat(machine->machine_name,
+				    " (uknown SGI-IP26 ?)",
+				    MACHINE_NAME_MAXBUF);	/*  TODO  */
 				machine->main_console_handle =
 				    dev_zs_init(machine, mem, 0x1fbd9830,
 				    0, 1, "zs console");
 				break;
 			case 27:
-				strcat(machine->machine_name,
-				    " (Origin 200/2000, Onyx2)");
+				strlcat(machine->machine_name,
+				    " (Origin 200/2000, Onyx2)",
+				    MACHINE_NAME_MAXBUF);
 				arc_wordlen = sizeof(uint64_t);
 				/*  2 cpus per node  */
 
@@ -2794,7 +2820,8 @@ Why is this here? TODO
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine->machine_name, " (Impact Indigo2 ?)");
+				strlcat(machine->machine_name,
+				    " (Impact Indigo2 ?)", MACHINE_NAME_MAXBUF);
 
 				device_add(machine, "random addr=0x1fbe0000, len=1");
 
@@ -2804,7 +2831,8 @@ Why is this here? TODO
 			case 30:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine->machine_name, " (Octane)");
+				strlcat(machine->machine_name,
+				    " (Octane)", MACHINE_NAME_MAXBUF);
 
 				machine->md_int.sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
 				machine->md_interrupt = sgi_ip30_interrupt;
@@ -2838,7 +2866,8 @@ Why is this here? TODO
 
 				break;
 			case 32:
-				strcat(machine->machine_name, " (O2)");
+				strlcat(machine->machine_name,
+				    " (O2)", MACHINE_NAME_MAXBUF);
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
 				dev_ram_init(mem, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
@@ -2954,7 +2983,8 @@ Why is this here? TODO
 
 				break;
 			case 35:
-				strcat(machine->machine_name, " (Origin 3000)");
+				strlcat(machine->machine_name,
+				    " (Origin 3000)", MACHINE_NAME_MAXBUF);
 				/*  4 cpus per node  */
 
 				machine->main_console_handle =
@@ -2962,7 +2992,8 @@ Why is this here? TODO
 				    0, 1, "zs console");
 				break;
 			case 53:
-				strcat(machine->machine_name, " (Origin 350)");
+				strlcat(machine->machine_name,
+				    " (Origin 350)", MACHINE_NAME_MAXBUF);
 				/*
 				 *  According to http://kumba.drachentekh.net/xml/myguide.html
 				 *  Origin 350, Tezro IP53 R16000
@@ -2989,13 +3020,17 @@ Why is this here? TODO
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_NEC_RD94:
-					strcat(machine->machine_name, " (NEC-RD94, NEC RISCstation 2250)");
+					strlcat(machine->machine_name,
+					    " (NEC-RD94, NEC RISCstation 2250)",
+					    MACHINE_NAME_MAXBUF);
 					break;
 				case MACHINE_ARC_NEC_R94:
-					strcat(machine->machine_name, " (NEC-R94; NEC RISCstation 2200)");
+					strlcat(machine->machine_name, " (NEC-R94; NEC RISCstation 2200)",
+					    MACHINE_NAME_MAXBUF);
 					break;
 				case MACHINE_ARC_NEC_R96:
-					strcat(machine->machine_name, " (NEC-R96; NEC Express RISCserver)");
+					strlcat(machine->machine_name, " (NEC-R96; NEC Express RISCserver)",
+					    MACHINE_NAME_MAXBUF);
 					break;
 				}
 
@@ -3049,7 +3084,9 @@ Why is this here? TODO
 				 *  Parallel at "start: 0x 0 18c10278, length: 0x1000, level: 5, vector: 5"
 				 */
 
-				strcat(machine->machine_name, " (NEC-R98; NEC RISCserver 4200)");
+				strlcat(machine->machine_name,
+				    " (NEC-R98; NEC RISCserver 4200)",
+				    MACHINE_NAME_MAXBUF);
 
 				/*
 				 *  Windows NT access stuff at these addresses:
@@ -3105,10 +3142,12 @@ Why is this here? TODO
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
-					strcat(machine->machine_name, " (Microsoft Jazz, Acer PICA-61)");
+					strlcat(machine->machine_name, " (Microsoft Jazz, Acer PICA-61)",
+					    MACHINE_NAME_MAXBUF);
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
-					strcat(machine->machine_name, " (Microsoft Jazz, MIPS Magnum)");
+					strlcat(machine->machine_name, " (Microsoft Jazz, MIPS Magnum)",
+					    MACHINE_NAME_MAXBUF);
 					break;
 				default:
 					fatal("error in machine.c. jazz\n");
@@ -3186,7 +3225,8 @@ Not yet.
 				 *  See http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html.
 				 */
 
-				strcat(machine->machine_name, " (Microsoft Jazz, Olivetti M700)");
+				strlcat(machine->machine_name, " (Microsoft Jazz, Olivetti M700)",
+				    MACHINE_NAME_MAXBUF);
 
 				machine->md_int.jazz_data = device_add(machine,
 				    "jazz addr=0x80000000");
@@ -3224,7 +3264,8 @@ Not yet.
 				 *  http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html
 				 */
 
-				strcat(machine->machine_name, " (Deskstation Tyne)");
+				strlcat(machine->machine_name, " (Deskstation Tyne)",
+				    MACHINE_NAME_MAXBUF);
 
 				i = dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1, "serial 0");
 				dev_ns16550_init(machine, mem, 0x9000002f8ULL, 0, 1, 0, "serial 1");
@@ -3300,9 +3341,11 @@ Not yet.
 			/*  TODO: Make this nicer.  */
 			if (machine->machine_type == MACHINE_SGI) {
 				if (machine->machine_subtype == 30)
-					strcat(init_bootpath, "xio(0)pci(15)");
+					strlcat(init_bootpath, "xio(0)pci(15)",
+					    MACHINE_NAME_MAXBUF);
 				if (machine->machine_subtype == 32)
-					strcat(init_bootpath, "pci(0)");
+					strlcat(init_bootpath, "pci(0)",
+					    MACHINE_NAME_MAXBUF);
 			}
 
 			if (diskimage_is_a_cdrom(machine, bootdev_id,
@@ -3316,12 +3359,19 @@ Not yet.
 		}
 
 		if (machine->machine_type == MACHINE_ARC)
-			strcat(init_bootpath, "\\");
+			strlcat(init_bootpath, "\\", MACHINE_NAME_MAXBUF);
 
-		bootstr = malloc(strlen(init_bootpath) +
-		    strlen(machine->boot_kernel_filename) + 1);
-		strcpy(bootstr, init_bootpath);
-		strcat(bootstr, machine->boot_kernel_filename);
+		bootstr = malloc(BOOTSTR_BUFLEN);
+		if (bootstr == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		strlcpy(bootstr, init_bootpath, BOOTSTR_BUFLEN);
+		if (strlcat(bootstr, machine->boot_kernel_filename,
+		    BOOTSTR_BUFLEN) >= BOOTSTR_BUFLEN) {
+			fprintf(stderr, "boot string too long?\n");
+			exit(1);
+		}
 
 		/*  Boot args., eg "-a"  */
 		bootarg = machine->boot_string_argument;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.103 2005-05-23 12:21:45 debug Exp $
+ *  $Id: arcbios.c,v 1.104 2005-06-20 05:52:46 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -2512,8 +2512,8 @@ void arcbios_init(struct machine *machine, int is64bit,
 			if (arc_cpu_name[jj] >= 'a' && arc_cpu_name[jj] <= 'z')
 				arc_cpu_name[jj] += ('A' - 'a');
 
-		strcpy(arc_fpc_name, arc_cpu_name);
-		strcat(arc_fpc_name, "FPC");
+		strlcpy(arc_fpc_name, arc_cpu_name, sizeof(arc_fpc_name));
+		strlcat(arc_fpc_name, "FPC", sizeof(arc_fpc_name));
 
 		cpuaddr = arcbios_addchild_manual(cpu,
 		    COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,

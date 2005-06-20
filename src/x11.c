@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.58 2005-05-20 22:35:59 debug Exp $
+ *  $Id: x11.c,v 1.59 2005-06-20 05:52:47 debug Exp $
  *
  *  X11-related functions.
  */
@@ -456,8 +456,8 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 		debug("WARNING! X11 screen depth is not enough for color; "
 		    "using only 16 grayscales instead\n");
 
-	strcpy(bg, "Black");
-	strcpy(fg, "White");
+	strlcpy(bg, "Black", sizeof(bg));
+	strlcpy(fg, "White", sizeof(fg));
 
 	XParseColor(x11_display, DefaultColormap(x11_display,
 	    m->fb_windows[fb_number]->x11_screen), fg, &tmpcolor);

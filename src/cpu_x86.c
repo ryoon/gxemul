@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.161 2005-05-31 06:20:38 debug Exp $
+ *  $Id: cpu_x86.c,v 1.162 2005-06-20 05:52:46 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1350,7 +1350,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	case 3:
 		if (flags & MODRM_EIGHTBIT) {
 			if (disasm) {
-				strcpy(modrm_rm, reg_names_bytes[rm]);
+				strlcpy(modrm_rm, reg_names_bytes[rm],
+				    sizeof(modrm_rm));
 			} else {
 				switch (writeflag) {
 				case MODRM_WRITE_RM:
@@ -1375,7 +1376,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 		} else {
 			if (disasm) {
 				if (mode == 16 || flags & MODRM_RM_16BIT)
-					strcpy(modrm_rm, reg_names[rm]);
+					strlcpy(modrm_rm, reg_names[rm],
+					    sizeof(modrm_rm));
 				else
 					sprintf(modrm_rm, "%s%s", e,
 					    reg_names[rm]);
@@ -1415,7 +1417,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 
 	if (flags & MODRM_EIGHTBIT && !(flags & MODRM_R_NONEIGHTBIT)) {
 		if (disasm) {
-			strcpy(modrm_r, reg_names_bytes[r]);
+			strlcpy(modrm_r, reg_names_bytes[r],
+			    sizeof(modrm_r));
 		} else {
 			switch (writeflag) {
 			case MODRM_WRITE_R:
@@ -1437,7 +1440,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 	} else {
 		if (disasm) {
 			if (flags & MODRM_SEG)
-				strcpy(modrm_r, seg_names[r]);
+				strlcpy(modrm_r, seg_names[r],
+				    sizeof(modrm_r));
 			else if (flags & MODRM_CR)
 				sprintf(modrm_r, "cr%i", r);
 			else if (flags & MODRM_DR)
@@ -1447,7 +1451,8 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
 					sprintf(modrm_r, "%s%s", e,
 					    reg_names[r]);
 				else
-					strcpy(modrm_r, reg_names[r]);
+					strlcpy(modrm_r, reg_names[r],
+					    sizeof(modrm_r));
 			}
 		} else {
 			switch (writeflag) {

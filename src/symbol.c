@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.24 2005-04-10 16:42:56 debug Exp $
+ *  $Id: symbol.c,v 1.25 2005-06-20 05:52:47 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -271,8 +271,8 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 		memset(b4, 0, sizeof(b4));
 		fscanf(f, "%s %s\n", b1,b2);
 		if (strlen(b2) < 2 && !(b2[0]>='0' && b2[0]<='9')) {
-			strcpy(b3, b2);
-			strcpy(b2, "0");
+			strlcpy(b3, b2, sizeof(b3));
+			strlcpy(b2, "0", sizeof(b2));
 			fscanf(f, "%s\n", b4);
 		} else {
 			fscanf(f, "%s %s\n", b3,b4);

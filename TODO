@@ -1,4 +1,4 @@
-$Id: TODO,v 1.133 2005-05-25 06:40:16 debug Exp $
+$Id: TODO,v 1.134 2005-06-20 05:52:45 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -26,9 +26,6 @@ Order is random. Don't trust it to be up-to-date.
 	Network layer:
 		o)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
-		o)  Network across multiple hosts.
-		o)  Fixed MAC addresses for NICs, fixed IPv4 addresses if
-		    DHCP or RARP is used.
 		o)  many other issues: see src/net.c
 
 	Configure script:

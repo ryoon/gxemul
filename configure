@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.135 2005-06-17 18:10:36 debug Exp $
+#  $Id: configure,v 1.136 2005-06-20 05:52:45 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -869,6 +869,23 @@ else
 	printf " none needed\n"
 fi
 rm -f _testr.[co] _testr
+
+
+#  strlcpy missing?
+printf "checking for strlcpy... "
+printf "#include <string.h>
+int main(int argc, char *argv[]) { char *p; char *q; size_t x;
+  x = strlcpy(p, q, 50); return 0;}\n" > _tests.c
+$CC $CFLAGS _tests.c -o _tests 2> /dev/null
+if [ ! -x _tests ]; then
+	printf "missing, using mystrlcpy\n"
+	printf "#define strlcpy mystrlcpy\n" >> config.h
+	printf "#define strlcat mystrlcat\n" >> config.h
+	printf "#define USE_STRLCPY_REPLACEMENTS\n" >> config.h
+else
+	printf "found\n"
+fi
+rm -f _tests.[co] _tests
 
 
 #  strtoull missing?

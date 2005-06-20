@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.30 2005-06-17 21:00:03 debug Exp $
+ *  $Id: emul_parse.c,v 1.31 2005-06-20 05:52:47 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -344,9 +344,9 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		    line, EXPECT_LEFT_PARENTHESIS);
 
 		/*  Default net:  */
-		strcpy(cur_net_ipv4net, "10.0.0.0");
-		strcpy(cur_net_ipv4len, "8");
-		strcpy(cur_net_local_port, "");
+		strlcpy(cur_net_ipv4net, "10.0.0.0", sizeof(cur_net_ipv4net));
+		strlcpy(cur_net_ipv4len, "8", sizeof(cur_net_ipv4len));
+		strlcpy(cur_net_local_port, "", sizeof(cur_net_local_port));
 		cur_net_n_remote = 0;
 		return;
 	}
@@ -418,7 +418,8 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 		}
 
 		if (!cur_net_local_port[0])
-			strcpy(cur_net_local_port, "0");
+			strlcpy(cur_net_local_port, "0",
+			    sizeof(cur_net_local_port));
 
 		e->net = net_init(e, NET_INIT_FLAG_GATEWAY,
 		    cur_net_ipv4net, atoi(cur_net_ipv4len),
@@ -482,7 +483,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		struct machine *m;
 
 		if (!cur_machine_name[0])
-			strcpy(cur_machine_name, "no_name");
+			strlcpy(cur_machine_name, "no_name",
+			    sizeof(cur_machine_name));
 
 		m = emul_add_machine(e, cur_machine_name);
 
@@ -495,30 +497,36 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			m->cpu_name = strdup(cur_machine_cpu);
 
 		if (!cur_machine_use_x11[0])
-			strcpy(cur_machine_use_x11, "no");
+			strlcpy(cur_machine_use_x11, "no",
+			    sizeof(cur_machine_use_x11));
 		m->use_x11 = parse_on_off(cur_machine_use_x11);
 
 		if (!cur_machine_slowsi[0])
-			strcpy(cur_machine_slowsi, "no");
+			strlcpy(cur_machine_slowsi, "no",
+			    sizeof(cur_machine_slowsi));
 		m->slow_serial_interrupts_hack_for_linux =
 		    parse_on_off(cur_machine_slowsi);
 
 		if (!cur_machine_debugger_on_badaddr[0])
-			strcpy(cur_machine_debugger_on_badaddr, "no");
+			strlcpy(cur_machine_debugger_on_badaddr, "no",
+			    sizeof(cur_machine_debugger_on_badaddr));
 		m->single_step_on_bad_addr =
 		    parse_on_off(cur_machine_debugger_on_badaddr);
 
 		if (!cur_machine_prom_emulation[0])
-			strcpy(cur_machine_prom_emulation, "yes");
+			strlcpy(cur_machine_prom_emulation, "yes",
+			    sizeof(cur_machine_prom_emulation));
 		m->prom_emulation = parse_on_off(cur_machine_prom_emulation);
 
 		if (!cur_machine_random_mem[0])
-			strcpy(cur_machine_random_mem, "no");
+			strlcpy(cur_machine_random_mem, "no",
+			    sizeof(cur_machine_random_mem));
 		m->random_mem_contents =
 		    parse_on_off(cur_machine_random_mem);
 
 		if (!cur_machine_random_cpu[0])
-			strcpy(cur_machine_random_cpu, "no");
+			strlcpy(cur_machine_random_cpu, "no",
+			    sizeof(cur_machine_random_cpu));
 		m->use_random_bootstrap_cpu =
 		    parse_on_off(cur_machine_random_cpu);
 
@@ -537,12 +545,14 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		}
 
 		if (!cur_machine_bintrans[0])
-			strcpy(cur_machine_bintrans, "yes");
+			strlcpy(cur_machine_bintrans, "yes",
+			    sizeof(cur_machine_bintrans));
 		m->bintrans_enable = m->bintrans_enabled_from_start =
 		    parse_on_off(cur_machine_bintrans);
 
 		if (!cur_machine_old_bintrans[0])
-			strcpy(cur_machine_old_bintrans, "no");
+			strlcpy(cur_machine_old_bintrans, "no",
+			    sizeof(cur_machine_old_bintrans));
 		m->old_bintrans_enable = parse_on_off(cur_machine_old_bintrans);
 
 		if (!m->bintrans_enable && m->old_bintrans_enable) {
@@ -560,16 +570,19 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			    atoi(cur_machine_bintrans_size);
 
 		if (!cur_machine_force_netboot[0])
-			strcpy(cur_machine_force_netboot, "no");
+			strlcpy(cur_machine_force_netboot, "no",
+			    sizeof(cur_machine_force_netboot));
 		m->force_netboot = parse_on_off(cur_machine_force_netboot);
 
 		if (!cur_machine_start_paused[0])
-			strcpy(cur_machine_start_paused, "no");
+			strlcpy(cur_machine_start_paused, "no",
+			    sizeof(cur_machine_start_paused));
 		m->start_paused = parse_on_off(cur_machine_start_paused);
 
 		/*  NOTE: Default nr of CPUs is 0:  */
 		if (!cur_machine_ncpus[0])
-			strcpy(cur_machine_ncpus, "0");
+			strlcpy(cur_machine_ncpus, "0",
+			    sizeof(cur_machine_ncpus));
 		m->ncpus = atoi(cur_machine_ncpus);
 
 		if (cur_machine_n_gfx_cards[0])
@@ -588,7 +601,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 
 		/*  NOTE: Default nr of CPUs is 0:  */
 		if (!cur_machine_memory[0])
-			strcpy(cur_machine_memory, "0");
+			strlcpy(cur_machine_memory, "0",
+			    sizeof(cur_machine_memory));
 		m->physical_ram_in_mb = atoi(cur_machine_memory);
 
 		if (!cur_machine_x11_scaledown[0])

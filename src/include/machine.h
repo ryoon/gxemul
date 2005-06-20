@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.54 2005-06-12 12:31:55 debug Exp $
+ *  $Id: machine.h,v 1.55 2005-06-20 05:52:49 debug Exp $
  */
 
 #include <sys/types.h>
@@ -64,6 +64,8 @@ struct mace_data;
 struct sgi_ip20_data;
 struct sgi_ip22_data;
 struct sgi_ip30_data;
+
+#define	MACHINE_NAME_MAXBUF		200
 
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.44 2005-06-18 23:11:00 debug Exp $
+ *  $Id: cpu_mips.c,v 1.45 2005-06-20 05:52:46 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -113,11 +113,11 @@ static char *regname(struct machine *machine, int r)
 	ch[3] = ch[2] = '\0';
 
 	if (r<0 || r>=32)
-		strcpy(ch, "xx");
+		strlcpy(ch, "xx", sizeof(ch));
 	else if (machine->show_symbolic_register_names)
-		strcpy(ch, regnames[r]);
+		strlcpy(ch, regnames[r], sizeof(ch));
 	else
-		sprintf(ch, "r%i", r);
+		snprintf(ch, sizeof(ch), "r%i", r);
 
 	return ch;
 }

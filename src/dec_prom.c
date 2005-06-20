@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.58 2005-05-15 01:55:49 debug Exp $
+ *  $Id: dec_prom.c,v 1.59 2005-06-20 05:52:47 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -363,7 +363,8 @@ int decstation_prom_emul(struct cpu *cpu)
 
 				switch (ch) {
 				case '%':
-					strcpy(printfbuf, "%%");
+					strlcpy(printfbuf, "%%",
+					    sizeof(printfbuf));
 					break;
 				case 'c':
 				case 'd':
@@ -375,7 +376,8 @@ int decstation_prom_emul(struct cpu *cpu)
 						/*  Linux booters seem to go
 						    over the edge sometimes: */
 						ch = '\0';
-						strcpy(printfbuf, "[...]\n");
+						strlcpy(printfbuf, "[...]\n",
+						    sizeof(printfbuf));
 #else
 						printf("[ decstation_prom_emul"
 						    "(): too many arguments ]");

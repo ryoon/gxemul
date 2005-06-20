@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.103 2005-05-13 14:26:29 debug Exp $
+ *  $Id: debugger.c,v 1.104 2005-06-20 05:52:46 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -101,12 +101,12 @@ static struct machine *debugger_machine;
 static int exit_debugger;
 static int n_steps_left_before_interaction = 0;
 
-#define	MAX_CMD_LEN		70
+#define	MAX_CMD_BUFLEN		72
 #define	N_PREVIOUS_CMDS		150
 static char *last_cmd[N_PREVIOUS_CMDS];
 static int last_cmd_index;
 
-static char repeat_cmd[MAX_CMD_LEN + 1];
+static char repeat_cmd[MAX_CMD_BUFLEN];
 
 #define	MAGIC_UNTOUCHED		0x98ca76c2ffcc0011ULL
 
@@ -128,7 +128,7 @@ void debugger_activate(int x)
 	if (single_step) {
 		/*  Already in the debugger. Do nothing.  */
 		int i;
-		for (i=0; i<MAX_CMD_LEN+1; i++)
+		for (i=0; i<MAX_CMD_BUFLEN; i++)
 			console_makeavail(MAIN_CONSOLE, '\b');
 		console_makeavail(MAIN_CONSOLE, ' ');
 		console_makeavail(MAIN_CONSOLE, '\n');
@@ -234,7 +234,7 @@ static int debugger_parse_name(struct machine *m, char *name, int writeflag,
 			fprintf(stderr, "out of memory in debugger\n");
 			exit(1);
 		}
-		strcpy(sn, name);
+		strlcpy(sn, name, strlen(name)+1);
 
 		/*  Is there a '+' in there? Then treat that as an offset:  */
 		p = strchr(sn, '+');
@@ -342,6 +342,7 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 
 	if (strncmp(cmd_line, "add ", 4) == 0) {
 		uint64_t tmp;
+		size_t breakpoint_buf_len;
 
 		if (m->n_breakpoints >= MAX_BREAKPOINTS) {
 			printf("Too many breakpoints. (You need to recompile"
@@ -358,12 +359,14 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 			return;
 		}
 
-		m->breakpoint_string[i] = malloc(strlen(cmd_line+4) + 1);
+		breakpoint_buf_len = strlen(cmd_line+4) + 1;
+		m->breakpoint_string[i] = malloc(breakpoint_buf_len);
 		if (m->breakpoint_string[i] == NULL) {
 			printf("out of memory in debugger_cmd_breakpoint()\n");
 			exit(1);
 		}
-		strcpy(m->breakpoint_string[i], cmd_line+4);
+		strlcpy(m->breakpoint_string[i], cmd_line+4,
+		    breakpoint_buf_len);
 		m->breakpoint_addr[i] = tmp;
 		m->breakpoint_flags[i] = 0;
 
@@ -658,7 +661,7 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 
 	last_dump_addr = addr_end;
 
-	strcpy(repeat_cmd, "dump");
+	strlcpy(repeat_cmd, "dump", MAX_CMD_BUFLEN);
 }
 
 
@@ -1209,7 +1212,7 @@ static void debugger_cmd_step(struct machine *m, char *cmd_line)
 	/*  Special hack, see debugger() for more info.  */
 	exit_debugger = -1;
 
-	strcpy(repeat_cmd, "step");
+	strlcpy(repeat_cmd, "step", MAX_CMD_BUFLEN);
 }
 
 
@@ -1381,7 +1384,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 
 	last_unasm_addr = addr;
 
-	strcpy(repeat_cmd, "unassemble");
+	strlcpy(repeat_cmd, "unassemble", MAX_CMD_BUFLEN);
 }
 
 
@@ -1558,12 +1561,12 @@ void debugger_assignment(struct machine *m, char *cmd)
 	int res_left, res_right;
 	uint64_t tmp;
 
-	left  = malloc(strlen(cmd) + 1);
+	left  = malloc(MAX_CMD_BUFLEN);
 	if (left == NULL) {
 		fprintf(stderr, "out of memory in debugger_assignment()\n");
 		exit(1);
 	}
-	strcpy(left, cmd);
+	strlcpy(left, cmd, MAX_CMD_BUFLEN);
 	right = strchr(left, '=');
 	if (right == NULL) {
 		fprintf(stderr, "internal error in the debugger\n");
@@ -1692,7 +1695,7 @@ static char *debugger_readline(void)
 			}
 		} else if (ch == 11) {
 			/*  CTRL-K: Kill to end of line.  */
-			for (i=0; i<MAX_CMD_LEN; i++)
+			for (i=0; i<MAX_CMD_BUFLEN; i++)
 				console_makeavail(MAIN_CONSOLE, 4); /*  :-)  */
 		} else if (ch == 14 || ch == 16) {
 			/*  CTRL-P: Previous line in the command history,
@@ -1730,14 +1733,15 @@ static char *debugger_readline(void)
 						printf(" ");
 					for (i=cmd_len-1; i>=0; i--)
 						printf("\b \b");
-					strcpy(cmd,
-					    last_cmd[read_from_index]);
+					strlcpy(cmd,
+					    last_cmd[read_from_index],
+					    MAX_CMD_BUFLEN);
 					cmd_len = strlen(cmd);
 					printf("%s", cmd);
 					cursor_pos = cmd_len;
 				}
 			} while (0);
-		} else if (ch >= ' ' && cmd_len < MAX_CMD_LEN) {
+		} else if (ch >= ' ' && cmd_len < MAX_CMD_BUFLEN-1) {
 			/*  Visible character:  */
 			memmove(cmd + cursor_pos + 1, cmd + cursor_pos,
 			    cmd_len - cursor_pos);
@@ -1908,7 +1912,7 @@ void debugger(void)
 		if (cmd_len == 0) {
 			/*  Special case for repeated commands:  */
 			if (repeat_cmd[0] != '\0')
-				strcpy(cmd, repeat_cmd);
+				strlcpy(cmd, repeat_cmd, MAX_CMD_BUFLEN);
 			else
 				continue;
 		} else {
@@ -2053,7 +2057,7 @@ void debugger_init(struct emul **emuls, int n_emuls)
 	debugger_machine = emuls[0]->machines[0];
 
 	for (i=0; i<N_PREVIOUS_CMDS; i++) {
-		last_cmd[i] = malloc(MAX_CMD_LEN + 1);
+		last_cmd[i] = malloc(MAX_CMD_BUFLEN);
 		if (last_cmd[i] == NULL) {
 			fprintf(stderr, "debugger_init(): out of memory\n");
 			exit(1);

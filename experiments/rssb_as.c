@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: rssb_as.c,v 1.2 2005-03-08 23:10:10 debug Exp $
+ *  $Id: rssb_as.c,v 1.3 2005-06-20 05:52:45 debug Exp $
  *
  *  A simple assembler for URISC ("reverse subtract and skip on borrow").
  */
@@ -82,8 +82,7 @@ void add_symbol(char *symbol, uint32_t addr)
 		exit(1);
 	}
 
-	strcpy(s->name, symbol);
-	s->name[strlen(symbol)] = 0;
+	strlcpy(s->name, symbol, MAX_SYMBOL_LEN);
 	s->addr = addr;
 
 	if (debug > 1)

@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.c,v 1.2 2005-05-07 02:13:29 debug Exp $
+ *  $Id: misc.c,v 1.3 2005-06-20 05:52:47 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 
 #include "misc.h"
@@ -122,4 +123,33 @@ int mymkstemp(char *template)
 	h = open(template, O_RDWR, 0600);
 	return h;
 }
+
+
+#ifdef USE_STRLCPY_REPLACEMENTS
+/*
+ *  mystrlcpy():
+ *
+ *  Quick hack strlcpy() replacement for systems that lack that function.
+ *  NOTE: No length checking is done.
+ */
+size_t mystrlcpy(char *dst, const char *src, size_t size)
+{
+	strcpy(dst, src);
+	return strlen(src);
+}
+
+
+/*
+ *  mystrlcat():
+ *
+ *  Quick hack strlcat() replacement for systems that lack that function.
+ *  NOTE: No length checking is done.
+ */
+size_t mystrlcat(char *dst, const char *src, size_t size)
+{
+	size_t orig_dst_len = strlen(dst);
+	strcat(dst, src);
+	return strlen(src) + orig_dst_len;
+}
+#endif
 

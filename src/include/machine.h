@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.55 2005-06-20 05:52:49 debug Exp $
+ *  $Id: machine.h,v 1.56 2005-06-21 18:48:09 debug Exp $
  */
 
 #include <sys/types.h>
@@ -57,6 +57,7 @@ struct dec_ioasic_data;
 struct ps2_data;
 struct dec5800_data;
 struct au1x00_ic_data;
+struct malta_data;
 struct vr41xx_data;
 struct jazz_data;
 struct crime_data;
@@ -193,6 +194,7 @@ struct machine {
 		struct au1x00_ic_data *au1x00_ic_data;
 		struct vr41xx_data *vr41xx_data;       
 		struct jazz_data *jazz_data;
+		struct malta_data *malta_data;
 		struct sgi_ip20_data *sgi_ip20_data;
 		struct sgi_ip22_data *sgi_ip22_data;
 		struct sgi_ip30_data *sgi_ip30_data;

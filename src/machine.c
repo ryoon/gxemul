@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.459 2005-06-21 17:35:36 debug Exp $
+ *  $Id: machine.c,v 1.460 2005-06-21 18:48:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1211,6 +1211,45 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 	/*  TODO: What _is_ request1?  */
 
 	/*  TODO: Controller 1  */
+}
+
+
+/*
+ *  Malta (evbmips) interrupts:
+ *
+ *  ISA interrupts.
+ *  (irq_nr = 16 can be used to just reassert/deassert interrupts.)
+ */
+void malta_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
+	int assrt)
+{
+	int mask = 1 << (irq_nr & 7);
+
+	if (irq_nr < 8) {
+		if (assrt)
+			m->md_int.malta_data->assert_lo |= mask;
+		else
+			m->md_int.malta_data->assert_lo &= ~mask;
+	} else if (irq_nr < 16) {
+		if (assrt)
+			m->md_int.malta_data->assert_hi |= mask;
+		else
+			m->md_int.malta_data->assert_hi &= ~mask;
+	}
+
+	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+	if (m->md_int.malta_data->assert_hi &
+	    m->md_int.malta_data->enable_hi)
+		m->md_int.malta_data->assert_lo |= 0x04;
+	else
+		m->md_int.malta_data->assert_lo &= ~0x04;
+
+	/*  Now, PIC1:  */
+	if (m->md_int.malta_data->assert_lo &
+	    m->md_int.malta_data->enable_lo)
+		cpu_interrupt(cpu, 2);
+	else
+		cpu_interrupt_ack(cpu, 2);
 }
 
 
@@ -3626,12 +3665,19 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		switch (machine->machine_subtype) {
 		case MACHINE_EVBMIPS_MALTA:
 			machine->machine_name = "MALTA (evbmips)";
+
+			machine->md_int.malta_data =
+			    device_add(machine, "malta addr=0x18000020");
+			machine->md_interrupt = malta_interrupt;
+
 			dev_mc146818_init(machine, mem, 0x18000070,
 			    0, MC146818_PC_CMOS, 1);
 			machine->main_console_handle = dev_ns16550_init(machine, mem,
-			    0x180003f8, 0, 1, 1, "serial console");
+			    0x180003f8, 8 + 3, 1, 1, "serial console");
+
 			/*  TODO: Irqs  */
-			pci_data = dev_gt_init(machine, mem, 0x1be00000, 0, 0, 120);
+			pci_data = dev_gt_init(machine, mem, 0x1be00000,
+			    2, 2, 120);
 
 			/*  TODO: Haha, this is bogus. Just a cut&paste
 			    from the Cobalt emulation above.  */

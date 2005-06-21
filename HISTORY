@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.783 2005-06-20 08:19:56 debug Exp $
+$Id: HISTORY,v 1.784 2005-06-21 05:38:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1982,3 +1982,5 @@ Changelog for GXemul:
 20050618	Minor updates (documentation, dummy YAMON emulation, etc).
 20050620	strcpy/strcat -> strlcpy/strlcat updates.
 		Some more progress on evbmips (Malta).
+20050621	Adding a section to doc/configfiles.html about ethernet
+		emulation across multiple hosts.

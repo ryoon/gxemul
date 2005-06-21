@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: configfiles.html,v 1.9 2005-06-17 21:00:02 debug Exp $
+$Id: configfiles.html,v 1.10 2005-06-21 05:38:05 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -50,6 +50,7 @@ SUCH DAMAGE.
 <ul>
   <li><a href="#config">Configuration file syntax</a>
   <li><a href="#minimal">A minimal example</a>
+  <li><a href="#multihost">Network across multiple hosts</a>
 </ul>
 
 
@@ -187,10 +188,12 @@ through an example is good enough:
 Starting the emulator with a configuration file is as simple as
 
 <pre>
-	$ <b>./gxemul @myconfig</b>
+	$ <b>gxemul @myconfig</b>
 </pre>
 
 if <b>myconfig</b> is the name of the configuration file.
+
+
 
 
 
@@ -203,9 +206,7 @@ if <b>myconfig</b> is the name of the configuration file.
 
 Here is an example of what a minimal configuration file might look like:
 
-<p>
-<table border="0"><tr><td width="40">&nbsp;</td><td>
-<pre>
+<p><table border="0"><tr><td width="40">&nbsp;</td><td><pre>
 <font color="#2020cf">!!gxemul</font>
 
 <b>emul(</b>
@@ -218,11 +219,63 @@ Here is an example of what a minimal configuration file might look like:
 </pre>
 </td></tr></table>
 
-<p>
-For some machine types, specifying the <b>subtype</b> might not even be
-necessary. Also, adding a <b>net</b> is quite useful, especially for 
+<p>For some machine types, specifying the <tt>subtype</tt> might not even
+be necessary. Also, adding a <tt>net</tt> is quite useful, especially for
 netbooting kernels.
 
+
+
+
+
+
+<p><br>
+<a name="multihost"></a>
+<h3>Network across multiple hosts:</h3>
+
+<font color="#ff0000">2005-06-21: This a very new feature, so it might not 
+be totally stable yet.</font>
+
+<p>It is possible to add multiple <tt>machine</tt> entries into one 
+configuration file. This will cause the emulator to try to run all those 
+machines simultaneously. An alternative solution for doing this, which 
+gives higher reliability (stability) and performance, is to have one
+configuration file per machine.
+
+<p><table border="0"><tr><td width="40">&nbsp;</td><td><pre>
+<font color="#2020cf">!!gxemul</font>
+
+<b>emul(</b>
+    <b>net(</b>
+	<b>local_port(15000)</b>
+	<b>remote_add(<font color="#ff003f">"127.0.0.1:15001"</font>)</b>
+    <b>)</b>
+    <b>machine(</b>
+        <b>type(<font color="#ff003f">"dec"</font>)</b>
+        <b>subtype(<font color="#ff003f">"3max"</font>)</b>
+        <b>load(<font color="#ff003f">"netbsd-pmax-2.0-GENERIC"</font>)</b>
+    <b>)</b>
+<b>)</b>
+</pre>
+</td></tr></table>
+
+<p>This example creates a network using the default settings (10.0.0.0/8), 
+but it also allows the network to be connected to other emulator 
+instances. <tt>local_port(15000)</tt> means that anything coming in to 
+UDP port 15000 on the host is added to the network. All ethernet packets 
+on the network are also sent out to all other connected machines (those 
+added with <tt>remote_add()</tt>).
+
+<p>As you can see in the example, this is a configuration file for running
+NetBSD/pmax 2.0, with a netbooting GENERIC kernel. (Netbooting because
+there is no disk image.) Another emulator instance (which must have 
+the same kind of <tt>net()</tt>, except that it listens to port 15001)  
+emulates the nfs server.
+
+<p>There is no error checking or security checking of any kind. All UDP 
+packets arriving at the input port are added to the emulated ethernet.
+<font color="#ff0000">This is not very good, and is the primary 
+reason why there needs to be some kind of rewrite before this 
+is to be considered stable.</font>
 
 
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.122 2005-06-18 23:11:00 debug Exp $
+$Id: RELEASE,v 1.123 2005-06-21 05:38:04 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -32,15 +32,19 @@ inside the emulator:
     NetBSD/hpcmips 2.0                 NEC MobilePro 770, 780, 800, 880
     NetBSD/cobalt 2.0                  Cobalt
 
+Some of these guest operating systems are easier to install and run than 
+others. The best supported mode is the DECstation 5000/200 emulation mode,
+with NetBSD/pmax as the guest operating system.
+
 A couple of other emulation modes exist. Some of these modes are almost 
 working well enough to run complete guest operating systems, but most are 
 just skeletons. The modes that work are listed in the documentation.
 
 The emulator can also be used in other experiments; it does not have to
-run entire guest operating systems. It is important to remember, though,
-that GXemul does not simulate things smaller than an instruction; this
-means that pipe-line stalls, penalties caused by branch-prediction misses,
-and other effects are not simulated.
+run entire guest operating systems. (However, GXemul does not simulate
+things smaller than an instruction. What this means is that pipe-line
+stalls, penalties caused by branch-prediction misses or cache misses, and
+other micro-architectural effects are not simulated.)
 
 Summary of changes between release 0.3.3.2 and 0.3.X:
 
@@ -49,7 +53,7 @@ Summary of changes between release 0.3.3.2 and 0.3.X:
 	    is the emulated ethernet networks that are being connected to
 	    eachother, not the machines.)
 
-	x)  Other updates and bugfixes.
+There have also been many other updates and bugfixes.
 
 Files included in this release are:
 

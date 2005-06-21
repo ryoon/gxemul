@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: intro.html,v 1.47 2005-06-04 22:47:49 debug Exp $
+$Id: intro.html,v 1.48 2005-06-21 05:38:05 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -66,45 +66,43 @@ SUCH DAMAGE.
 <a name="overview"></a>
 <h3>Overview:</h3>
 
-GXemul is a machine emulator, which can be used to experiment with
-binary code for (among others) MIPS-based machines. Several emulation
-modes are available. For some emulation modes, processors and surrounding
-hardware components are emulated well enough to let unmodified operating
-systems run as if they were running on a real machine.
+GXemul is an instruction-level machine emulator, which can be used to
+experiment with binary code for (among others) MIPS-based machines.
+Several emulation modes are available. For some emulation modes,
+processors and surrounding hardware components are emulated well enough to
+let unmodified operating systems run as if they were running on a real
+machine.
 
-<p>
-Devices and CPUs are not simulated with 100% accuracy. They are only
-"faked" well enough to make operating systems (eg NetBSD) run without
+<p>Devices and CPUs are not simulated with 100% accuracy. They are only
+``faked'' well enough to make operating systems (e.g. NetBSD) run without
 complaining too much. Still, the emulator could be of interest for
 academic research and experiments, such as when learning how to write
 operating system code.
 
-<p>
-The emulator is written in C, does not depend on external libraries (except
-X11, but that is optional), and should compile and run on most Unix-like
-systems. If it doesn't, then that is a bug.
-(You do not need any MIPS compiler toolchain to build or use GXemul.
-If you need to compile MIPS binaries from sources, then of course you need 
-such a toolchain, but that is completely separate from GXemul.)
+<p>The emulator is written in C, does not depend on external libraries
+(except X11, but that is optional), and should compile and run on most
+Unix-like systems. If it doesn't, then that is a bug. (You do not need any
+MIPS compiler toolchain to build or use GXemul. If you need to compile
+MIPS binaries from sources, then of course you need such a toolchain, but
+that is completely separate from GXemul.)
 
-<p>
-The emulator contains code which tries to emulate the workings of CPUs and
-surrounding hardware found in real machines, but it does not contain any
-ROM code. You will need some form of program (in binary form) to run in 
-the emulator. For many emulation modes, PROM calls are handled by the 
+<p>The emulator contains code which tries to emulate the workings of CPUs
+and surrounding hardware found in real machines, but it does not contain
+any ROM code. You will need some form of program (in binary form) to run
+in the emulator. For many emulation modes, PROM calls are handled by the
 emulator itself, so you do not need to use any ROM image at all.
 
-<p>
-You can use pre-compiled kernels (for example NetBSD kernels, or Linux),
-or other programs that are in binary format, and in some cases even actual
-ROM images. A couple of different file formats are supported (ELF, a.out,
-ECOFF, SREC, and raw binaries).
+<p>You can use pre-compiled kernels (for example NetBSD kernels, or
+Linux), or other programs that are in binary format, and in some cases
+even actual ROM images. A couple of different file formats are supported
+(ELF, a.out, ECOFF, SREC, and raw binaries).
 
-<p>
-If you do not have a kernel as a separate file, but you have a bootable
+<p>If you do not have a kernel as a separate file, but you have a bootable
 disk image, then it is sometimes possible to boot directly from that
 image. (This works for example with DECstation emulation, or when booting
 from ISO9660 CDROM images.)
+
+
 
 
 

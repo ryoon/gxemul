@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.2 2005-06-18 23:11:01 debug Exp $
+ *  $Id: yamon.c,v 1.3 2005-06-21 17:42:08 debug Exp $
  *
  *  YAMON emulation.
  */
@@ -77,6 +77,10 @@ int yamon_emul(struct cpu *cpu)
 			    ch);
 			n++;
 		}
+		break;
+	case 0x820:	/*  "exit"  */
+		debug("[ yamon_emul(): exit ]\n");
+		cpu->running = 0;
 		break;
 	case 0x854:	/*  "syscon"  */
 		fatal("[ yamon_emul(): syscon: TODO ]\n");

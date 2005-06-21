@@ -1,4 +1,4 @@
-$Id: TODO,v 1.134 2005-06-20 05:52:45 debug Exp $
+$Id: TODO,v 1.135 2005-06-21 21:57:16 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -142,8 +142,6 @@ Order is random. Don't trust it to be up-to-date.
 		o)  non-MIPS
 
 	File/disk handling:
-		o)  More than one type of disk in a machine (say, IDE + FLOPPY,
-		    or SCSI + IDE); how to handle this nicely?
 		o)  Read function argument count and types from binaries? (ELF?)
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
 			(ELF structure format)?

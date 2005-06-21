@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.3 2005-06-21 16:22:52 debug Exp $
+ *  $Id: cpu_arm.h,v 1.4 2005-06-21 21:57:17 debug Exp $
  */
 
 #include "misc.h"
@@ -46,9 +46,10 @@ struct cpu_family;
  *  to arm_tc_physpage structs.
  */
 #define	N_IC_ARGS			3
-#define	IC_ENTRIES_PER_PAGE		256
+#define	IC_ENTRIES_SHIFT		8
+#define	IC_ENTRIES_PER_PAGE		(1 << IC_ENTRIES_SHIFT)
 #define	PC_TO_IC_ENTRY(a)		(((a) >> 2) & (IC_ENTRIES_PER_PAGE-1))
-#define	ADDR_TO_PAGENR(a)		(((a) >> 2) & ~(IC_ENTRIES_PER_PAGE-1))
+#define	ADDR_TO_PAGENR(a)		((a) >> (IC_ENTRIES_SHIFT+2))
 #define	N_BASE_TABLE_ENTRIES		32768
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 #define	ARM_TRANSLATION_CACHE_SIZE	(1048576 * 8)

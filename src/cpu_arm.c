@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.4 2005-06-21 16:22:52 debug Exp $
+ *  $Id: cpu_arm.c,v 1.5 2005-06-21 21:57:16 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -378,7 +378,8 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 fatal("arm_cpu_run_instr: TODO\n");
 printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
-"physpage_ofs = 0x%08x\n", cached_pc, pagenr, table_index, physpage_ofs);
+"physpage_ofs = 0x%08x\n",
+(int)cached_pc, (int)pagenr, (int)table_index, (int)physpage_ofs);
 
 	cpu->cd.arm.n_translated_instrs = 0;
 	cpu->cd.arm.running_translated = 1;

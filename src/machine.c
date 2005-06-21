@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.458 2005-06-20 08:19:57 debug Exp $
+ *  $Id: machine.c,v 1.459 2005-06-21 17:35:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3632,10 +3632,21 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			    0x180003f8, 0, 1, 1, "serial console");
 			/*  TODO: Irqs  */
 			pci_data = dev_gt_init(machine, mem, 0x1be00000, 0, 0, 120);
+
+			/*  TODO: Haha, this is bogus. Just a cut&paste
+			    from the Cobalt emulation above.  */
+			bus_pci_add(machine, pci_data, mem, 0,  9, 0,
+			    pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
+			/*  bus_pci_add(machine, pci_data, mem, 0,  9, 1,
+			    pci_vt82c586_ide_init, pci_vt82c586_ide_rr);  */
+
 			device_add(machine, "malta_lcd addr=0x1f000400");
 			break;
 		case MACHINE_EVBMIPS_PB1000:
 			machine->machine_name = "PB1000 (evbmips)";
+			machine->md_interrupt = au1x00_interrupt;
+			machine->md_int.au1x00_ic_data =
+			    dev_au1x00_init(machine, mem);
 			break;
 		default:
 			fatal("Unimplemented EVBMIPS model.\n");

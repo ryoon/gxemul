@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.785 2005-06-21 09:10:16 debug Exp $
+$Id: HISTORY,v 1.786 2005-06-21 17:35:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1986,3 +1986,5 @@ Changelog for GXemul:
 		emulation across multiple hosts.
 		Beginning the work on the ARM translation engine (using the
 		dynamic-but-not-binary translation method).
+		Fixing a bintrans bug: 0x9fc00000 should always be treated as
+		PROM area, just as 0xbfc00000 is.

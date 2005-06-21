@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.91 2005-05-27 07:29:24 debug Exp $
+ *  $Id: diskimage.c,v 1.92 2005-06-21 17:35:36 debug Exp $
  *
  *  Disk image support.
  *
@@ -1474,6 +1474,7 @@ int diskimage_add(struct machine *machine, char *fname)
 	/*  Special cases: some machines usually have FLOPPY/IDE, not SCSI:  */
 	if (machine->arch == ARCH_X86 ||
 	    machine->machine_type == MACHINE_COBALT ||
+	    machine->machine_type == MACHINE_EVBMIPS ||
 	    machine->machine_type == MACHINE_HPCMIPS ||
 	    machine->machine_type == MACHINE_PS2)
 		d->type = DISKIMAGE_IDE;

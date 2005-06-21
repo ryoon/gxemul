@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.12 2005-02-26 18:00:38 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.13 2005-06-21 17:35:38 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
@@ -118,10 +119,28 @@ uint32_t pci_vt82c586_ide_rr(int reg)
 void pci_vt82c586_ide_init(struct machine *machine, struct memory *mem)
 {
 	/*
-	 *  TODO:  what about these base addresses and interrupt
-	 * numbers? They work for Cobalt...   7 = PCI interrupt?? (TODO)
+	 *  TODO: The check for machine type shouldn't be here?
 	 */
-	dev_wdc_init(machine, mem, 0x100001f0, 6, 0);	/*  primary  */
-	dev_wdc_init(machine, mem, 0x10000170, 6, 2);	/*  secondary  */
+
+	switch (machine->machine_type) {
+
+	case MACHINE_COBALT:
+		/*  what about these base addresses and interrupt
+		 *  numbers? They work for Cobalt...
+		 *  7 = PCI interrupt?? (TODO)
+		 */
+		dev_wdc_init(machine, mem, 0x100001f0, 6, 0);	/*  primary  */
+		dev_wdc_init(machine, mem, 0x10000170, 6, 2);	/*  secondary */
+		break;
+
+	case MACHINE_EVBMIPS:
+		/*  TODO: Irqs...  */
+		dev_wdc_init(machine, mem, 0x180001f0, 7, 0);	/*  primary  */
+		dev_wdc_init(machine, mem, 0x18000170, 7, 2);	/*  secondary */
+		break;
+
+	default:fatal("pci_vt82c586_ide_init(): unimplemented machine type\n");
+		exit(1);
+	}
 }
 

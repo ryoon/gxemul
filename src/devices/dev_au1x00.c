@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.11 2005-02-21 09:37:43 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.12 2005-06-21 17:35:38 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
- *  The MeshCube uses an Au1500 CPU.
+ *  Used in at least the MeshCube (Au1500) and on PB1000 (evbmips) boards.
  *
  *  This is basically just a huge TODO. :-)
  */

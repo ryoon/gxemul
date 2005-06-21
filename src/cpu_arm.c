@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.3 2005-06-21 09:10:18 debug Exp $
+ *  $Id: cpu_arm.c,v 1.4 2005-06-21 16:22:52 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -217,9 +217,19 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
         int running, uint64_t dumpaddr, int bintrans)
 {
 	uint32_t iw;
+	char *symbol;
+	uint64_t offset;
 
 	if (running)
 		dumpaddr = cpu->pc;
+
+	symbol = get_symbol_name(&cpu->machine->symbol_context,
+	    dumpaddr, &offset);
+	if (symbol != NULL && offset == 0)
+		debug("<%s>\n", symbol);
+
+	if (cpu->machine->ncpus > 1 && running)
+		debug("cpu%i:\t", cpu->cpu_id);
 
 	debug("%08x:  ", (int)dumpaddr);
 
@@ -315,7 +325,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 */
 
 	uint32_t cached_pc, physaddr, physpage_ofs;
-	int pagenr, table_index;
+	int pagenr, table_index, n_instrs, low_pc;
 	uint32_t *physpage_entryp;
 	struct arm_tc_physpage *ppp;
 
@@ -326,7 +336,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	cached_pc = cpu->cd.arm.r[ARM_PC];
 
-	physaddr = cached_pc & ~((IC_ENTRIES_PER_PAGE << 2) | 3);
+	physaddr = cached_pc & ~(((IC_ENTRIES_PER_PAGE-1) << 2) | 3);
 	/*  TODO: virtual to physical  */
 
 	pagenr = ADDR_TO_PAGENR(physaddr);
@@ -338,22 +348,30 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  Traverse the physical page chain:  */
 	while (physpage_ofs != 0) {
-		fatal("TODO: physpage_ofs != 0 osv\n");
-		exit(1);
+		ppp = (struct arm_tc_physpage *)(cpu->cd.arm.translation_cache
+		    + physpage_ofs);
+		/*  If we found the page in the cache, then we're done:  */
+		if (ppp->physaddr == physaddr)
+			break;
+		/*  Try the next page in the chain:  */
+		physpage_ofs = ppp->next_ofs;
 	}
 
 	/*  If the offset is 0, then we need to create a new "default"
 	    empty translation page.  */
 
 	if (physpage_ofs == 0) {
-		fatal("CREATING page %i, table index = %i\n",
-		    pagenr, table_index);
-		*physpage_entryp = cpu->cd.arm.translation_cache_cur_ofs;
+		fatal("CREATING page %i (physaddr 0x%08x), table index = %i\n",
+		    pagenr, physaddr, table_index);
+		*physpage_entryp = physpage_ofs =
+		    cpu->cd.arm.translation_cache_cur_ofs;
+
 		arm_tc_allocate_default_page(cpu, physaddr);
+
+		ppp = (struct arm_tc_physpage *)(cpu->cd.arm.translation_cache
+		    + physpage_ofs);
 	}
 
-	ppp = (struct arm_tc_physpage *)(cpu->cd.arm.translation_cache
-	    + *physpage_entryp);
 	cpu->cd.arm.cur_ic_page = &ppp->ics[0];
 	cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
 	    PC_TO_IC_ENTRY(cached_pc);
@@ -362,15 +380,65 @@ fatal("arm_cpu_run_instr: TODO\n");
 printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 "physpage_ofs = 0x%08x\n", cached_pc, pagenr, table_index, physpage_ofs);
 
-	{
-		struct arm_instr_call *ic;
+	cpu->cd.arm.n_translated_instrs = 0;
+	cpu->cd.arm.running_translated = 1;
 
-		ic = cpu->cd.arm.next_ic ++;
+	if (single_step) {
+		/*
+		 *  When single-stepping, multiple instruction calls cannot
+		 *  be combined into one.  TODO
+		 *
+		 *  (TODO: This should be a flag per physpage!)
+		 */
+		struct arm_instr_call *ic = cpu->cd.arm.next_ic ++;
 		ic->f(cpu, ic);
+		n_instrs = 1;
+	} else {
+		n_instrs = 0;
+		for (;;) {
+			struct arm_instr_call *ic;
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			n_instrs += 16;
+			if (!cpu->cd.arm.running_translated)
+				break;
+		}
 	}
 
-	/*  TODO  */
-	return 1;
+
+	/*
+	 *  Update the program counter and return the correct number of
+	 *  executed instructions:
+	 */
+	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+
+	if (low_pc >= 0 && low_pc < IC_ENTRIES_PER_PAGE) {
+		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+		cpu->cd.arm.r[ARM_PC] |= (low_pc << 2);
+		cpu->pc = cpu->cd.arm.r[ARM_PC];
+	} else {
+		fatal("Outside a page (This is actually ok)\n");
+	}
+
+printf("YO 1: %i\n", n_instrs);
+printf("YO 2: %i\n", cpu->cd.arm.n_translated_instrs);
+
+	return n_instrs + cpu->cd.arm.n_translated_instrs;
 }
 
 
@@ -386,7 +454,7 @@ printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 /*
  *  arm_cpu_family_init():
  *
- *  Fill in the cpu_family struct for ARM.
+ *  This function fills the cpu_family struct with valid data.
  */
 int arm_cpu_family_init(struct cpu_family *fp)
 {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.2 2005-06-21 09:10:20 debug Exp $
+ *  $Id: cpu_arm.h,v 1.3 2005-06-21 16:22:52 debug Exp $
  */
 
 #include "misc.h"
@@ -77,6 +77,9 @@ struct arm_cpu {
 	    call to be executed.  */
 	struct arm_instr_call	*cur_ic_page;
 	struct arm_instr_call	*next_ic;
+
+	int			running_translated;
+	int32_t			n_translated_instrs;
 };
 
 

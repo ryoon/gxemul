@@ -25,26 +25,57 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.1 2005-06-21 09:10:18 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.2 2005-06-21 16:22:52 debug Exp $
  *
  *  ARM instructions.
+ *
+ *  Individual functions should keep track of cpu->cd.arm.n_translated_instrs.
+ *  (If no instruction was executed, then it should be decreased. If, say, 4
+ *  instructions were combined into one function and executed, then it should
+ *  be increased by 3.)
  */
 
 #define X(n) static void arm_instr_ ## n(struct cpu *cpu, \
 	struct arm_instr_call *ic)
 
 
+X(nop)
+{
+}
+
+
+X(nothing)
+{
+	cpu->cd.arm.running_translated = 0;
+	cpu->cd.arm.n_translated_instrs --;
+	cpu->cd.arm.next_ic --;
+}
+
+
+static struct arm_instr_call nothing_call = { instr(nothing), 0,0,0 };
+
+
 X(to_be_translated)
 {
 	printf("to_be_translated()!\n");
-	exit(1);
+	cpu->cd.arm.n_translated_instrs --;
+	cpu->cd.arm.next_ic = &nothing_call;
 }
 
 
 X(end_of_page)
 {
-	printf("end_of_page()!\n");
-	exit(1);
-}
+	printf("end_of_page()! pc=0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 
+	/*  Update the PC:  Offset 0, but then go to next page:  */
+	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (IC_ENTRIES_PER_PAGE << 2);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
+
+	/*  Find the new (physical) page:  */
+	/*  TODO  */
+
+printf("end_of_page()! new pc=0x%08x\n", cpu->cd.arm.r[ARM_PC]);
+exit(1);
+}
 

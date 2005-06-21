@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.25 2005-06-20 05:52:47 debug Exp $
+ *  $Id: symbol.c,v 1.26 2005-06-21 16:22:52 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -209,6 +209,9 @@ void add_symbol_name(struct symbol_context *sc,
 		fprintf(stderr, "add_symbol_name(): name = NULL\n");
 		exit(1);
 	}
+
+	if (name[0] == '\0')
+		return;
 
 	/*  TODO: Maybe this should be optional?  */
 	if (name[0] == '$')

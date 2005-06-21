@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.1 2005-06-03 07:39:28 debug Exp $
+ *  $Id: cpu_arm.h,v 1.2 2005-06-21 09:10:20 debug Exp $
  */
 
 #include "misc.h"
@@ -36,8 +36,47 @@
 
 struct cpu_family;
 
+#define	N_ARM_REGS		32
+#define	ARM_PC			15	/*  gpr 15  */
+
+/*
+ *  Translated instruction calls:
+ *
+ *  The translation cache begins with N_BASE_TABLE_ENTRIES uint32_t offsets
+ *  to arm_tc_physpage structs.
+ */
+#define	N_IC_ARGS			3
+#define	IC_ENTRIES_PER_PAGE		256
+#define	PC_TO_IC_ENTRY(a)		(((a) >> 2) & (IC_ENTRIES_PER_PAGE-1))
+#define	ADDR_TO_PAGENR(a)		(((a) >> 2) & ~(IC_ENTRIES_PER_PAGE-1))
+#define	N_BASE_TABLE_ENTRIES		32768
+#define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
+#define	ARM_TRANSLATION_CACHE_SIZE	(1048576 * 8)
+#define	ARM_TRANSLATION_CACHE_MARGIN	65536
+
+struct arm_instr_call {
+	void	(*f)(struct cpu *, struct arm_instr_call *);
+	size_t	arg[N_IC_ARGS];
+};
+
+struct arm_tc_physpage {
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	uint32_t	physaddr;
+	struct arm_instr_call ics[IC_ENTRIES_PER_PAGE + 1];
+};
+
 struct arm_cpu {
-	int		dummy;
+	/*  General Purpose Registers (including the program counter):  */
+	uint32_t		r[N_ARM_REGS];
+
+	unsigned char		*translation_cache;
+	size_t			translation_cache_cur_ofs;
+
+	/*  cur_ic_page is a pointer to an array of IC_ENTRIES_PER_PAGE
+	    instruction call entries. next_ic points to the next such
+	    call to be executed.  */
+	struct arm_instr_call	*cur_ic_page;
+	struct arm_instr_call	*next_ic;
 };
 
 

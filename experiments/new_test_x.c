@@ -4,7 +4,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#define	N_CALLS_PER_PAGE	1024
+/*  #define	N_CALLS_PER_PAGE	1024  */
+#define	N_CALLS_PER_PAGE	128
 
 #define MHZ	533
 
@@ -12,7 +13,7 @@ struct cpu;
 
 struct instr_call {
 	void	(*f)(struct cpu *cpu, struct instr_call *ic);
-	int	instr_len;
+/*	int	instr_len;  */
 	void	*arg[3];
 };
 
@@ -58,20 +59,27 @@ void r(struct cpu *cpu)
 
 void f_add(struct cpu *cpu, struct instr_call *ic)
 {
+#if 0
+#if 0
 	int *a = (int *) ic->arg[0];
 	int *b = (int *) ic->arg[1];
 	int *c = (int *) ic->arg[2];
 
 	*a = (*b) + (*c);
+#else
+	int *a = (int *) ic->arg[0];
+	int *b = (int *) ic->arg[1];
+	int *c = (int *) ic->arg[2];
+	int *d, *e, *f;
 
-#if 0
 	ic = cpu->next_instr_call++;
-
-	a = (int *) ic->arg[0];
-	b = (int *) ic->arg[1];
-	c = (int *) ic->arg[2];
+	d = (int *) ic->arg[0];
+	e = (int *) ic->arg[1];
+	f = (int *) ic->arg[2];
 
 	*a = (*b) + (*c);
+	*d = (*e) + (*f);
+#endif
 #endif
 }
 
@@ -150,12 +158,16 @@ int main(int argc, char *argv[])
 		if (i == ncalls-1) {
 			call_array[i].f = f_end;
 		} else {
+#if 0
 			switch (i & 3) {
 			case 0:	call_array[i].f = f_add;
 			case 1:	call_array[i].f = f_sub;
 			case 2:	call_array[i].f = f_and;
 			case 3:	call_array[i].f = f_or;
 			}
+#else
+			call_array[i].f = f_add;
+#endif
 
 			call_array[i].arg[0] = &tmp_a;
 			call_array[i].arg[1] = &tmp_b;

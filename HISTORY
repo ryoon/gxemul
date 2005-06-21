@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.784 2005-06-21 05:38:03 debug Exp $
+$Id: HISTORY,v 1.785 2005-06-21 09:10:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1984,3 +1984,5 @@ Changelog for GXemul:
 		Some more progress on evbmips (Malta).
 20050621	Adding a section to doc/configfiles.html about ethernet
 		emulation across multiple hosts.
+		Beginning the work on the ARM translation engine (using the
+		dynamic-but-not-binary translation method).

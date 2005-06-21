@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.123 2005-06-21 05:38:04 debug Exp $
+$Id: RELEASE,v 1.124 2005-06-21 09:10:16 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -51,7 +51,7 @@ Summary of changes between release 0.3.3.2 and 0.3.X:
 	x)  When emulating a network of multiple machines, the emulated
 	    machines can now be placed on different hosts. (Actually, it
 	    is the emulated ethernet networks that are being connected to
-	    eachother, not the machines.)
+	    each other, not the machines.)
 
 There have also been many other updates and bugfixes.
 

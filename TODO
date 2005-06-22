@@ -1,4 +1,4 @@
-$Id: TODO,v 1.135 2005-06-21 21:57:16 debug Exp $
+$Id: TODO,v 1.136 2005-06-22 08:13:37 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -162,22 +162,7 @@ Order is random. Don't trust it to be up-to-date.
 	GDB interface? (Maybe not necessary; the built-in debugger feels
 	more useful.)
 
-	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
-		o)  Breakpoints (complex expressions? combinations of register
-			states, memory accesses and so on)
-		o)  Instruction trace
-		o)  Disassembly of RAM (_NOT_ the same as instruction trace)
-		o)  Function call trace
-		o)  Inspection of CPU registers/state, coprocessor
-			registers/state, any device registers/state/contents
-			o)  Framebuffers in windows / tabs.
-			o)  Contents of RAM
-		o)  "Start new emulation" should allow amount of
-			RAM and nr of cpus to easily be specified.
-			Multiple simultaneous machines should be possible.
-		o)  Disk images.
-
-	Regression tests:
+	Regression tests:  (Should be totally rewritten.)
 		o)  see tests/
 
 	Save state of the whole emulated machine, to be able to load it back

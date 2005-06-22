@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.125 2005-06-22 00:51:10 debug Exp $
+$Id: RELEASE,v 1.126 2005-06-22 08:13:37 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -50,11 +50,9 @@ other micro-architectural effects are not simulated.)
 Summary of changes between release 0.3.3.2 and 0.3.X:
 
 	x)  When emulating a network of multiple machines, the emulated
-	    machines can now be placed on different hosts. (Actually, it
-	    is the emulated ethernet networks that are being connected to
-	    each other, not the machines.)
+	    machines can now be placed on different hosts.
 
-	x)  NetBSD/evbmips can be installed and run from a disk image.
+	x)  NetBSD/evbmips can now be installed and run from a disk image.
 	    (There is no INSTALL kernel for NetBSD/evbmips, so you need to
 	    install using another OS, for example emulated NetBSD/pmax.)
 

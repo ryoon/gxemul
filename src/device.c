@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.13 2005-02-26 17:37:25 debug Exp $
+ *  $Id: device.c,v 1.14 2005-06-22 08:13:38 debug Exp $
  *
  *  Device registry framework.
  */
@@ -164,7 +164,10 @@ struct device_entry *device_lookup(char *name)
 		if (step == 0)
 			do_return = 1;
 
-		step /= 2;
+		if (step & 1)
+			step = (step/2) + 1;
+		else
+			step /= 2;
 	}
 }
 
@@ -213,9 +216,10 @@ int device_unregister(char *name)
 /*
  *  device_add():
  *
- *  Add a device to a machine.
+ *  Add a device to a machine. For example: "kn210 addr=0x12340000" adds a
+ *  device called "kn210" at a specific address.
  *
- *	"kn210 addr=0x12340000"   adds a kn210 device at a specific address.
+ *  TODO: This function is quite ugly, and should be cleaned up.
  */
 void *device_add(struct machine *machine, char *name_and_params)
 {
@@ -349,6 +353,11 @@ void device_dumplist(void)
 
 /*
  *  device_set_exit_on_error():
+ *
+ *  This function selects the behaviour of the emulator when a device is not
+ *  found. During startup, it is nicest to abort the whole emulator session,
+ *  but if a device addition is attempted from within the debugger, then it is
+ *  nicer to just print a warning and continue.
  */
 void device_set_exit_on_error(int exit_on_error)
 {
@@ -360,7 +369,7 @@ void device_set_exit_on_error(int exit_on_error)
  *  device_init():
  *
  *  Initialize the device registry, and call autodev_init() to automatically
- *  add all normal devices (from the devices/ directory).
+ *  add all normal devices (from the src/devices/ directory).
  *
  *  This function should be called before any other device_*() function is used.
  */

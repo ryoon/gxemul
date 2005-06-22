@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.73 2005-06-21 17:42:07 debug Exp $
+$Id: experiments.html,v 1.74 2005-06-22 01:12:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -678,6 +678,24 @@ probably doesn't work in GXemul.
     </ul>
   </li>
 
+  <p>
+
+  <li>EVBMIPS:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/netbsd-MALTA.gz">netbsd-MALTA.gz</a>
+	<br><b><tt>gxemul -b -E evbmips -e malta netbsd-MALTA</tt></b>
+	<br>The default CPU is a 5Kc (MIPS64). Add
+		<tt>-C 4Kc</tt> to use a MIPS32 CPU instead.
+	<br>(NetBSD/evbmips runs in 32-bit mode on MIPS64 anyway...)
+	<br>Read <a href="guestoses.html#netbsdevbmipsinstall">this
+	section</a> on how to install NetBSD/evbmips onto a harddisk image.
+	<br>or
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/netbsd-PB1000.gz">netbsd-PB1000.gz</a>
+	<br><b><tt>gxemul -b -E evbmips -e pb1000 netbsd-PB1000</tt></b>
+    </ul>
+  </li>
+
 </ul>
 
 <p>
@@ -723,22 +741,6 @@ The following don't work at all, or just very very little.
 	<br>Try running with <b><tt>-E netgear 0xbfc80000:0x40:WG602_V1715.img</tt></b>.
 	<br>(It takes some time to decompress the kernel, so be patient.)
 	<br>(This doesn't really work yet.)
-    </ul>
-  </li>
-
-  <p>
-
-  <li>EVBMIPS:
-    <ul>
-      <li><a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a>:
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/netbsd-MALTA.gz">netbsd-MALTA.gz</a>
-	<br><b><tt>gxemul -b -E evbmips -e malta netbsd-MALTA</tt></b>
-	<br>The default CPU is a 5Kc (MIPS64). Add
-		<tt>-C 4Kc</tt> to use a MIPS32 CPU instead.
-	<br>(NetBSD/evbmips runs in 32-bit mode on MIPS64 anyway...)
-	<br>or
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/netbsd-PB1000.gz">netbsd-PB1000.gz</a>
-	<br><b><tt>gxemul -b -E evbmips -e pb1000 netbsd-PB1000</tt></b>
     </ul>
   </li>
 

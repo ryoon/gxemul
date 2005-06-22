@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.60 2005-06-22 00:51:10 debug Exp $
+$Id: guestoses.html,v 1.61 2005-06-22 01:12:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -539,7 +539,12 @@ image, from an emulated DECstation 3MAX machine:
 really very fast, so delays take very long. Even on a multi-GHz host, you 
 will need a lot of patience.
 
-<p>Note 2: The installation instructions above create a filesystem
+<p>Note 2: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
+(MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
+2.0.2, however, there will be little or no difference in functionality.
+(NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs.)
+
+<p>Note 3: The installation instructions above create a filesystem
 <i>without</i> a disklabel, so there is only one ffs partition and no
 swap. You will need to enter the following things when booting with the
 generic kernel:<pre>

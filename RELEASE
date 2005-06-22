@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.126 2005-06-22 08:13:37 debug Exp $
+$Id: RELEASE,v 1.127 2005-06-22 11:09:44 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -29,8 +29,8 @@ inside the emulator:
     Redhat Linux 7.1 for mips          DECstation 5000/200
     NetBSD/arc 1.6.2                   Acer PICA-61
     OpenBSD/arc 2.3                    Acer PICA-61
-    NetBSD/hpcmips 2.0                 NEC MobilePro 770, 780, 800, 880
-    NetBSD/cobalt 2.0                  Cobalt
+    NetBSD/hpcmips 2.0.2               NEC MobilePro 770, 780, 800, 880
+    NetBSD/cobalt 2.0.2                Cobalt
     NetBSD/evbmips 2.0.2               Malta 5Kc/4Kc evaluation board
 
 Some of these guest operating systems are easier to install and run than 

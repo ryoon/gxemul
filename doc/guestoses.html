@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.61 2005-06-22 01:12:02 debug Exp $
+$Id: guestoses.html,v 1.62 2005-06-22 10:46:16 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -104,12 +104,10 @@ system, the harddisk image looks and acts like a real disk.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20050317-example.png"><img src="20050317-example_small.png"></a>
 
-<p>
-To install NetBSD/pmax onto a harddisk image in the emulator, follow these
-instructions:
+<p>To install <a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>
+onto a harddisk image in the emulator, follow these instructions:
 
-<p>
-<ol start="1">
+<p><ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=nbsd_pmax.img bs=1 count=512 seek=1900000000</b>
@@ -135,6 +133,8 @@ steps:
   <li>Start the emulator like this:<pre>
 	$ <b>gxemul -X -b -E dec -e 3max -d nbsd_pmax.img -d bc:pmaxcd.iso</b>
 </pre>
+	and proceed like you would do if you were installing NetBSD on a real
+	DECstation.
 </ol>
 <p>
 For an ftp install, substitute steps 2 and 3 above with these:
@@ -146,25 +146,12 @@ For an ftp install, substitute steps 2 and 3 above with these:
 	or
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 
-	$ <b>gunzip netbsd-INSTALL.gz</b>
-
 </pre>
   <li>Start the emulator like this:<pre>
 	$ <b>gxemul -X -b -E dec -e 3max -d nbsd_pmax.img -O netbsd-INSTALL</b>
 </pre>
-</ol>
-
-<p>
-(If you don't want to use a graphical framebuffer during the install,
-you can remove <b><tt>-X</tt></b> from the command line, but then make sure you
-choose "<tt>vt100</tt>" when prompted with which terminal type to use, and not
-"<tt>rcons</tt>". If you want to use X, but think that the default framebuffer
-window is too large, try adding <tt><b>-Y2</b></tt> to the command line.)
-
-<p>
-Then proceed like you would do if you were installing NetBSD on a real
-DECstation. If you are installing from the network, then suitable networking 
-parameters are as follows:<pre>
+	and proceed like you would do if you were installing NetBSD on a real
+	DECstation. Suitable networking parameters are as follows:<pre>
 	Which device shall I use? [le0]: <b>le0</b>
 	..
 	Your DNS domain: <b>mydomain.com</b>
@@ -174,13 +161,17 @@ parameters are as follows:<pre>
 	IPv4 gateway: <b>10.0.0.254</b>
 	IPv4 name server: <b>10.0.0.254</b>
 </pre>
+	(If using 10.0.0.254 as the nameserver fails, then try entering the
+	IP number of a real-world nameserver instead.)
+</ol>
 
-<p>
-(If using 10.0.0.254 as the nameserver fails, then try entering the
-IP number of a real-world nameserver instead.)
+<p>(If you don't want to use a graphical framebuffer during the install,
+you can remove <b><tt>-X</tt></b> from the command line, but then make sure you
+choose "<tt>vt100</tt>" when prompted with which terminal type to use, and not
+"<tt>rcons</tt>". If you want to use X, but think that the default framebuffer
+window is too large, try adding <tt><b>-Y2</b></tt> to the command line.)
 
-<p>
-When the installation is completed, the following command should start
+<p>When the installation is completed, the following command should start
 NetBSD from the harddisk image:<pre>
 	$ <b>gxemul -X -b -M64 -E dec -e 3max -d nbsd_pmax.img</b>
 </pre>
@@ -208,7 +199,9 @@ If you want to run without the X framebuffer, use this instead:<pre>
 <a name="netbsdarcinstall"></a>
 <h3>Installing NetBSD/arc:</h3>
 
-It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the emulator.
+It is possible to run <a
+href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>
+on an emulated Acer PICA-61 in the emulator.
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -283,13 +276,13 @@ image, using the following command:
 <a name="netbsdhpcmipsinstall"></a>
 <h3>Installing NetBSD/hpcmips:</h3>
 
-It is possible to install NetBSD/hpcmips onto a disk image, on an an
-emulated MobilePro 770, 780, 800, or 880. The emulator treats the
-different machine models as being almost identical; the most important
-difference is regarding the framebuffer.
+It is possible to install <a
+href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a> onto a disk
+image, on an an emulated MobilePro 770, 780, 800, or 880. The emulator
+treats the different machine models as being almost identical; the most
+important difference is regarding the framebuffer.
 
-<p>
-<table border="0">
+<p><table border="0">
 	<tr>
 		<td width="80">&nbsp;</td>
 		<td><u>Model:</u></td>
@@ -359,8 +352,8 @@ NetBSD/hpcmips on an emulated MobilePro 800:
 	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
 
 </pre>
-  <li>Download the NetBSD 2.0 for hpcmips ISO image:<pre>
-	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">hpcmipscd.iso</a>
+  <li>Download the NetBSD 2.0.2 for hpcmips ISO image:<pre>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/hpcmipscd.iso">hpcmipscd.iso</a>
 
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
@@ -379,7 +372,7 @@ NetBSD/hpcmips on an emulated MobilePro 800:
 If everything worked, NetBSD should now be installed on the disk image.
 GXemul does not (yet) support reading the kernel directly from the
 disk image, so you need to download a generic kernel separately:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
 
 </pre>
 
@@ -428,14 +421,14 @@ image, from an emulated DECstation 3MAX machine:
 
 </pre>
   <li>Download the generic kernel for Cobalt (and gunzip it) and
-	the 2.0 ISO image:<pre>
-	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/cobaltcd.iso">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/cobaltcd.iso</a>
+	the 2.0.2 ISO image:<pre>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/cobaltcd.iso">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/cobaltcd.iso</a>
 
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
-  <li>Install NetBSD/pmax 2.0.2 according to instructions further up
-	on this page.
+  <li>Install NetBSD/pmax 2.0.2 according to instructions
+	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
 	$ <b>gxemul -b -Edec -e3max -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
@@ -509,8 +502,8 @@ image, from an emulated DECstation 3MAX machine:
 
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
-  <li>Install NetBSD/pmax 2.0.2 according to instructions further up
-	on this page.
+  <li>Install NetBSD/pmax 2.0.2 according to instructions
+	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
 	$ <b>gxemul -b -Edec -e3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>

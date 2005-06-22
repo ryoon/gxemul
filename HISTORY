@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.788 2005-06-22 10:12:24 debug Exp $
+$Id: HISTORY,v 1.789 2005-06-22 10:46:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1994,3 +1994,4 @@ Changelog for GXemul:
 		Spliting up the bintrans haddr_entry field into two (one for
 		read, one for write). Probably not much of a speed increase,
 		though.
+		Updating some NetBSD 2.0 -> 2.0.2 in the documentation.

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.124 2005-06-21 09:10:16 debug Exp $
+$Id: RELEASE,v 1.125 2005-06-22 00:51:10 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -31,6 +31,7 @@ inside the emulator:
     OpenBSD/arc 2.3                    Acer PICA-61
     NetBSD/hpcmips 2.0                 NEC MobilePro 770, 780, 800, 880
     NetBSD/cobalt 2.0                  Cobalt
+    NetBSD/evbmips 2.0.2               Malta 5Kc/4Kc evaluation board
 
 Some of these guest operating systems are easier to install and run than 
 others. The best supported mode is the DECstation 5000/200 emulation mode,
@@ -52,6 +53,10 @@ Summary of changes between release 0.3.3.2 and 0.3.X:
 	    machines can now be placed on different hosts. (Actually, it
 	    is the emulated ethernet networks that are being connected to
 	    each other, not the machines.)
+
+	x)  NetBSD/evbmips can be installed and run from a disk image.
+	    (There is no INSTALL kernel for NetBSD/evbmips, so you need to
+	    install using another OS, for example emulated NetBSD/pmax.)
 
 There have also been many other updates and bugfixes.
 

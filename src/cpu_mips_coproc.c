@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.20 2005-06-21 17:35:36 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.21 2005-06-22 10:12:26 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -533,7 +533,7 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 #ifdef BINTRANS
 	int a, b;
 	struct vth32_table *tbl1;
-	void *p;
+	void *p_r, *p_w;
 	uint32_t p_paddr;
 
 	/*  This table stuff only works for 32-bit mode:  */
@@ -574,11 +574,12 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			exit(1);
 		}
 	}
-	p = tbl1->haddr_entry[b];
+	p_r = tbl1->haddr_entry[b*2];
+	p_w = tbl1->haddr_entry[b*2+1];
 	p_paddr = tbl1->paddr_entry[b];
-	/* printf("   p = %p\n", p); */
-	if (p == NULL && p_paddr == 0 &&
-	    (host_page!=NULL || paddr_page!=0)) {
+	/*  printf("   p_r=%p p_w=%p\n", p_r, p_w);  */
+	if (p_r == NULL && p_paddr == 0 &&
+	    (host_page != NULL || paddr_page != 0)) {
 		tbl1->refcount ++;
 		/*  printf("ADDING %08x -> %p wf=%i (refcount is "
 		    "now %i)\n", (int)vaddr_page, host_page,
@@ -586,16 +587,20 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	}
 	if (writeflag == -1) {
 		/*  Forced downgrade to read-only:  */
-		tbl1->haddr_entry[b] = (void *)
-		    ((size_t)tbl1->haddr_entry[b] & ~1);
-	} else if (writeflag==0 && (size_t)p&1 && host_page != NULL) {
+		tbl1->haddr_entry[b*2 + 1] = NULL;
+	} else if (writeflag==0 && p_w != NULL && host_page != NULL) {
 		/*  Don't degrade a page from writable to readonly.  */
 	} else {
-		if (host_page != NULL)
-			tbl1->haddr_entry[b] = (void *)
-			    ((size_t)host_page + (writeflag?1:0));
-		else
-			tbl1->haddr_entry[b] = NULL;
+		if (host_page != NULL) {
+			tbl1->haddr_entry[b*2] = host_page;
+			if (writeflag)
+				tbl1->haddr_entry[b*2+1] = host_page;
+			else
+				tbl1->haddr_entry[b*2+1] = NULL;
+		} else {
+			tbl1->haddr_entry[b*2] = NULL;
+			tbl1->haddr_entry[b*2+1] = NULL;
+		}
 		tbl1->paddr_entry[b] = paddr_page;
 	}
 	tbl1->bintrans_chunks[b] = NULL;
@@ -636,7 +641,7 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 {
 	int a, b;
 	struct vth32_table *tbl1;
-	void *p;
+	void *p_r, *p_w;
 	uint32_t p_paddr;
 
 	if (!cpu->machine->old_bintrans_enable) {
@@ -666,14 +671,16 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 
 	tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 	/*  printf("tbl1 = %p\n", tbl1);  */
-	p = tbl1->haddr_entry[b];
+	p_r = tbl1->haddr_entry[b*2];
+	p_w = tbl1->haddr_entry[b*2+1];
 	p_paddr = tbl1->paddr_entry[b];
 	tbl1->bintrans_chunks[b] = NULL;
-	/*  printf("   p = %p\n", p);  */
-	if (p != NULL || p_paddr != 0) {
+	/*  printf("B:  p_r=%p p_w=%p\n", p_r,p_w);  */
+	if (p_r != NULL || p_paddr != 0) {
 		/*  printf("Found a mapping, "
 		    "vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
-		tbl1->haddr_entry[b] = NULL;
+		tbl1->haddr_entry[b*2] = NULL;
+		tbl1->haddr_entry[b*2+1] = NULL;
 		tbl1->paddr_entry[b] = 0;
 		tbl1->refcount --;
 		if (tbl1->refcount == 0) {
@@ -704,7 +711,8 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 		if (tbl1 != cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
 			for (b=0; b<0x400; b++) {
-				tbl1->haddr_entry[b] = NULL;
+				tbl1->haddr_entry[b*2] = NULL;
+				tbl1->haddr_entry[b*2+1] = NULL;
 				tbl1->paddr_entry[b] = 0;
 				tbl1->bintrans_chunks[b] = NULL;
 			}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.75 2005-03-22 09:12:04 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.76 2005-06-22 10:12:25 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -68,7 +68,8 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 
 static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
 static void (*bintrans_jump_to_32bit_pc)(struct cpu *);
-static void (*bintrans_loadstore_32bit)(struct cpu *);
+static void (*bintrans_load_32bit)(struct cpu *);
+static void (*bintrans_store_32bit)(struct cpu *);
 
 
 /*
@@ -1890,7 +1891,10 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 
 	if (mem->bintrans_32bit_only) {
 		/*  Call the quick lookup routine:  */
-		ofs = (size_t)bintrans_loadstore_32bit;
+		if (load)
+			ofs = (size_t)bintrans_load_32bit;
+		else
+			ofs = (size_t)bintrans_store_32bit;
 		ofs = ofs - ((size_t)a + 5);
 		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
 		    *a++ = ofs >> 16; *a++ = ofs >> 24;
@@ -1905,20 +1909,6 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 		*a++ = 0x75; retfail = a; *a++ = 0x00;
 		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 		*retfail = (size_t)a - (size_t)retfail - 1;
-
-		/*
-		 *  If the lowest bit is zero, and we're storing, then fail.
-		 */
-		if (!load) {
-			/*
-			 *  f7 c1 01 00 00 00       test   $0x1,%ecx
-			 *  75 01                   jne    <ok>
-			 */
-			*a++ = 0xf7; *a++ = 0xc1; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
-			*a++ = 0x75; retfail = a; *a++ = 0x00;
-			bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
-			*retfail = (size_t)a - (size_t)retfail - 1;
-		}
 
 		/*
 		 *  eax = offset within page = vaddr & 0xfff
@@ -1955,7 +1945,10 @@ TODO: top 33 bits!!!!!!!
 		*a++ = 0x75; generic64bit = a; *a++ = 0x01;
 
 		/*  Call the quick lookup routine:  */
-		ofs = (size_t)bintrans_loadstore_32bit;
+		if (load)
+			ofs = (size_t)bintrans_load_32bit;
+		else
+			ofs = (size_t)bintrans_store_32bit;
 		ofs = ofs - ((size_t)a + 5);
 		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
 		    *a++ = ofs >> 16; *a++ = ofs >> 24;
@@ -1970,20 +1963,6 @@ TODO: top 33 bits!!!!!!!
 		*a++ = 0x75; retfail = a; *a++ = 0x00;
 		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 		*retfail = (size_t)a - (size_t)retfail - 1;
-
-		/*
-		 *  If the lowest bit is zero, and we're storing, then fail.
-		 */
-		if (!load) {
-			/*
-			 *  f7 c1 01 00 00 00       test   $0x1,%ecx
-			 *  75 01                   jne    <ok>
-			 */
-			*a++ = 0xf7; *a++ = 0xc1; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
-			*a++ = 0x75; retfail = a; *a++ = 0x00;
-			bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
-			*retfail = (size_t)a - (size_t)retfail - 1;
-		}
 
 		/*
 		 *  eax = offset within page = vaddr & 0xfff
@@ -2846,7 +2825,7 @@ static void bintrans_backend_init(void)
 
 
 
-	/*  "loadstore_32bit":  */
+	/*  "load_32bit":  */
 	size = 48;		/*  NOTE: This MUST be enough, or we fail  */
 	p = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE |
 	    PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -2861,7 +2840,7 @@ static void bintrans_backend_init(void)
 		}
 	}
 
-	bintrans_loadstore_32bit = (void *)p;
+	bintrans_load_32bit = (void *)p;
 
 	/*
 	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
@@ -2902,11 +2881,78 @@ static void bintrans_backend_init(void)
 	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
 
 	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a][b]
+	 *  ecx = vaddr_to_hostaddr_table0[a][b*2]
 	 *
-	 *  8b 0c 19                mov    (%ecx,%ebx,1),%ecx
+	 *  8b 0c 59                mov    0(%ecx,%ebx,2),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x59;
+
+	/*  ret  */
+	*p++ = 0xc3;
+
+
+
+	/*  "store_32bit":  */
+	size = 48;		/*  NOTE: This MUST be enough, or we fail  */
+	p = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE |
+	    PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	/*  If mmap() failed, try malloc():  */
+	if (p == NULL) {
+		p = malloc(size);
+		if (p == NULL) {
+			fprintf(stderr, "bintrans_backend_init():"
+			    " out of memory\n");
+			exit(1);
+		}
+	}
+
+	bintrans_store_32bit = (void *)p;
+
+	/*
+	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 14                shr    $20,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	*p++ = 0x89; *p++ = 0xc3;
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x14;
+	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0
+	 *
+	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_tabl0 & 255;
+	*p++ = (ofs_tabl0 >> 8) & 255;
+	*p++ = (ofs_tabl0 >> 16) & 255; *p++ = (ofs_tabl0 >> 24) & 255;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a]
+	 *
+	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
 	 */
 	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x19;
+
+	/*
+	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 0a                shr    $10,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	*p++ = 0x89; *p++ = 0xc3;
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0a;
+	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a][b*2]
+	 *
+	 *  8b 4c 59 04             mov    4(%ecx,%ebx,2),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x4c; *p++ = 0x59; *p++ = 0x04;
 
 	/*  ret  */
 	*p++ = 0xc3;

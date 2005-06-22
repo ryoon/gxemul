@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.14 2005-06-18 23:11:01 debug Exp $
+ *  $Id: cpu_mips.h,v 1.15 2005-06-22 10:12:26 debug Exp $
  */
 
 #include "misc.h"
@@ -203,7 +203,7 @@ struct r4000_cache_line {
 
 /*  Virtual to host address translation tables:  */
 struct vth32_table {
-	void			*haddr_entry[1024];
+	void			*haddr_entry[1024 * 2];
 	uint32_t		paddr_entry[1024];
 	uint32_t		*bintrans_chunks[1024];
 	struct vth32_table	*next_free;
@@ -290,7 +290,8 @@ struct mips_cpu {
 	uint64_t	bintrans_data_vaddr[N_BINTRANS_VADDR_TO_HOST];
 	unsigned char	*bintrans_data_hostpage[N_BINTRANS_VADDR_TO_HOST];
 
-	void		(*bintrans_loadstore_32bit)(struct cpu *);	/*  Note: incorrect args  */
+	void		(*bintrans_load_32bit)(struct cpu *);	/*  Note: incorrect args  */
+	void		(*bintrans_store_32bit)(struct cpu *);	/*  Note: incorrect args  */
 	void		(*bintrans_jump_to_32bit_pc)(struct cpu *);
 	void		(*bintrans_simple_exception)(struct cpu *, int);
 	void		(*bintrans_fast_rfe)(struct cpu *);

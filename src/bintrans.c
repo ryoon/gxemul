@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.168 2005-06-21 17:35:36 debug Exp $
+ *  $Id: bintrans.c,v 1.169 2005-06-22 10:12:25 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -312,7 +312,7 @@ static void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr,
 		a = (vaddr >> 22) & 0x3ff;
 		b = (vaddr >> 12) & 0x3ff;
 		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
-		if (tbl1->haddr_entry[b] != NULL)
+		if (tbl1->haddr_entry[b*2] != NULL)
 			tbl1->bintrans_chunks[b] = chunk0;
 		break;
 	default:
@@ -918,7 +918,7 @@ run_it:
 			/*  tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];  */
 
 			tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0[a];
-			if (tbl1->haddr_entry[b] != NULL) {
+			if (tbl1->haddr_entry[b*2] != NULL) {
 				paddr = tbl1->paddr_entry[b] | (cpu->pc & 0xfff);
 				ok = 1;
 			}
@@ -981,11 +981,10 @@ run_it:
 				    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel)
 					ok = 0;
 				tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
-				if (ok && tbl1->haddr_entry[b] != NULL) {
+				if (ok && tbl1->haddr_entry[b*2] != NULL) {
 					cpu->cd.mips.pc_last_virtual_page = cpu->pc & ~0xfff;
 					cpu->cd.mips.pc_last_physical_page = paddr & ~0xfff;
-					cpu->cd.mips.pc_last_host_4k_page = (unsigned char *)
-					    (((size_t)tbl1->haddr_entry[b]) & ~1);
+					cpu->cd.mips.pc_last_host_4k_page = (unsigned char *)tbl1->haddr_entry[b*2];
 					cpu->cd.mips.pc_bintrans_host_4kpage = cpu->cd.mips.pc_last_host_4k_page;
 					cpu->cd.mips.pc_bintrans_paddr = paddr;
 
@@ -1041,7 +1040,8 @@ void old_bintrans_init_cpu(struct cpu *cpu)
 	int i, offset;
 
 	cpu->cd.mips.chunk_base_address        = cpu->mem->translation_code_chunk_space;
-	cpu->cd.mips.bintrans_loadstore_32bit  = bintrans_loadstore_32bit;
+	cpu->cd.mips.bintrans_load_32bit       = bintrans_load_32bit;
+	cpu->cd.mips.bintrans_store_32bit      = bintrans_store_32bit;
 	cpu->cd.mips.bintrans_jump_to_32bit_pc = bintrans_jump_to_32bit_pc;
 	cpu->cd.mips.bintrans_fast_tlbwri      = coproc_tlbwri;
 	cpu->cd.mips.bintrans_fast_tlbpr       = coproc_tlbpr;
@@ -1059,8 +1059,10 @@ void old_bintrans_init_cpu(struct cpu *cpu)
 	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable =
 	    zeroed_alloc(sizeof(struct vth32_table));
 	for (i=0; i<1024; i++) {
-		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable->haddr_entry[i] =
-		    (void *)(((size_t)cpu->cd.mips.cache[0]+offset) | 1);
+		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable->
+		    haddr_entry[i*2] = (void *)((size_t)cpu->cd.mips.cache[0]+offset);
+		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable->
+		    haddr_entry[i*2+1] = (void *)((size_t)cpu->cd.mips.cache[0]+offset);
 		offset = (offset + 4096) % cpu->cd.mips.cache_size[0];
 	}
 	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable->refcount = 1024;
@@ -1070,8 +1072,12 @@ void old_bintrans_init_cpu(struct cpu *cpu)
 	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable =
 	    zeroed_alloc(sizeof(struct vth32_table));
 	for (i=0; i<1024; i++) {
-		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable->haddr_entry[i] =
-		    (void *)(((size_t)cpu->cd.mips.cache[1]+offset) | 1);
+		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable->
+		    haddr_entry[i*2] =
+		    (void *)((size_t)cpu->cd.mips.cache[1]+offset);
+		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable->
+		    haddr_entry[i*2+1] =
+		    (void *)((size_t)cpu->cd.mips.cache[1]+offset);
 		offset = (offset + 4096) % cpu->cd.mips.cache_size[1];
 	}
 	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable->refcount = 1024;

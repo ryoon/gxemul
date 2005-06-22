@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.118 2005-04-18 22:30:31 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.119 2005-06-22 10:12:25 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -196,7 +196,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_cb (((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu)
 
 
-static uint32_t bintrans_alpha_loadstore_32bit[19] = {
+static uint32_t bintrans_alpha_load_32bit[18] = {
 	/*
 	 *  t1 = 1023;
 	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
@@ -227,6 +227,9 @@ static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 	/*  00 00 72 a6     ldq     a3,0(a2)  */
 	0xa6720000,
 
+	/*  24 37 80 48     sll     t3,0x1,t3  */
+	0x48803724,
+
 	/*  ff 0f 5f 20     lda     t1,4095  */
 	0x205f0fff,
 
@@ -244,14 +247,74 @@ static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 
 	/*  NULL? Then return failure at once.  */
 	/*  beq a3, return  */
-	0xe6600004,
+	0xe6600002,
 
-	/*  01 30 60 46     and     a3,0x1,t0  */
-	0x46603001,
+	/*  The rest of the load/store code was written with t3 as the address.  */
 
-	/*  Get rid of the lowest bit:  */
-	/*  33 05 61 42     subq    a3,t0,a3  */
-	0x42610533,
+	/*  Add the offset within the page:  */
+	/*  04 04 62 42     addq    a3,t1,t3  */
+	0x42620404,
+
+	0x6be50000,		/*  jmp (t4)  */
+
+	/*  return:  */
+	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
+	0x44270407,					/*  or      t0,t6,t6  */
+	0x6bfa8001					/*  ret  */
+};
+
+static uint32_t bintrans_alpha_store_32bit[18] = {
+	/*
+	 *  t1 = 1023;
+	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
+	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
+	 *  t1 = a1 & 4095;
+	 *
+	 *  f8 1f 5f 20     lda     t1,1023 * 8
+	 *  83 76 22 4a     srl     a1,19,t2
+	 *  84 36 21 4a     srl     a1, 9,t3
+	 *  03 00 62 44     and     t2,t1,t2
+	 */
+	0x205f1ff8,
+	0x4a227683,
+	0x4a213684,
+	0x44620003,
+
+	/*
+	 *  t10 is vaddr_to_hostaddr_table0
+	 *
+	 *  a3 = tbl0[t2]  (load entry from tbl0)
+	 *  12 04 03 43     addq    t10,t2,a2
+	 */
+	0x43030412,
+
+	/*  04 00 82 44     and     t3,t1,t3  */
+	0x44820004,
+
+	/*  00 00 72 a6     ldq     a3,0(a2)  */
+	0xa6720000,
+
+	/*  24 37 80 48     sll     t3,0x1,t3  */
+	0x48803724,
+
+	/*  ff 0f 5f 20     lda     t1,4095  */
+	0x205f0fff,
+
+	/*
+	 *  a3 = tbl1[t3]  (load entry from tbl1 (which is a3))
+	 *  13 04 64 42     addq    a3,t3,a3
+	 */
+	0x42640413,
+
+	/*  02 00 22 46     and     a1,t1,t1  */
+	0x46220002,
+
+	/*  00 00 73 a6     ldq     a3,8(a3)  */
+	0xa6730008,
+
+	/*  NULL? Then return failure at once.  */
+	/*  beq a3, return  */
+	0xe6600002,
 
 	/*  The rest of the load/store code was written with t3 as the address.  */
 
@@ -271,8 +334,11 @@ static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
 
 static void (*bintrans_jump_to_32bit_pc)(struct cpu *);
 
-static void (*bintrans_loadstore_32bit)
-    (struct cpu *) = (void *)bintrans_alpha_loadstore_32bit;
+static void (*bintrans_load_32bit)
+    (struct cpu *) = (void *)bintrans_alpha_load_32bit;
+
+static void (*bintrans_store_32bit)
+    (struct cpu *) = (void *)bintrans_alpha_store_32bit;
 
 
 /*
@@ -1436,28 +1502,17 @@ static int bintrans_write_instruction__loadstore(
 	if (mem->bintrans_32bit_only) {
 		/*  Special case for 32-bit addressing:  */
 
-		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
+		if (load)
+			ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_load_32bit) - (size_t)&dummy_cpu;
+		else
+			ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_store_32bit) - (size_t)&dummy_cpu;
 		/*  ldq t12,bintrans_loadstore_32bit(a0)  */
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
 		/*  jsr t4,(t12),<after>  */
 		*a++ = 0x00; *a++ = 0x40; *a++ = 0xbb; *a++ = 0x68;
 
-		/*
-		 *  Now:
-		 *	a3 = host page
-		 *	t0 = 0 for readonly pages, 1 for read/write pages
-		 *	t3 = address of host load/store
-		 */
-
-		/*  If this is a store, then the lowest bit must be set:  */
-		if (!load) {
-			/*  01 00 20 f4     bne     t0,<okzzz>  */
-			fail = a;
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
-			bintrans_write_chunkreturn_fail(&a);
-			*fail = ((size_t)a - (size_t)fail - 4) / 4;
-		}
+		/*  Now: a3 = host page, t3 = address of host load/store  */
 	} else {
 		/*
 		 *  If the highest 33 bits of the address are either all ones
@@ -1478,7 +1533,10 @@ static int bintrans_write_instruction__loadstore(
 		generic64bitA = a;
 		*a++ = 0x04; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;	/*  br <generic>  */
 
-		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
+		if (load)
+			ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_load_32bit) - (size_t)&dummy_cpu;
+		else
+			ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_store_32bit) - (size_t)&dummy_cpu;
 		/*  ldq t12,bintrans_loadstore_32bit(a0)  */
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
@@ -1486,20 +1544,9 @@ static int bintrans_write_instruction__loadstore(
 		*a++ = 0x00; *a++ = 0x40; *a++ = 0xbb; *a++ = 0x68;
 
 		/*
-		 *  Now:
-		 *	a3 = host page  (or NULL if not found)
-		 *	t0 = 0 for readonly pages, 1 for read/write pages
-		 *	t3 = (potential) address of host load/store
+		 *  Now:  a3 = host page
+		 *	  t3 = (potential) address of host load/store
 		 */
-
-		/*  If this is a store, then the lowest bit must be set:  */
-		if (!load) {
-			/*  01 00 20 f4     bne     t0,<okzzz>  */
-			fail = a;
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
-			bintrans_write_chunkreturn_fail(&a);
-			*fail = ((size_t)a - (size_t)fail - 4) / 4;
-		}
 
 		doloadstore = a;
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;

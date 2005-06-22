@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.787 2005-06-22 00:39:41 debug Exp $
+$Id: HISTORY,v 1.788 2005-06-22 10:12:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1991,3 +1991,6 @@ Changelog for GXemul:
 		Minor progress on Malta emulation (the PCI-ISA bus).
 20050622	NetBSD/evbmips can now be installed (using another emulated
 		machine) and run (including userland and so on). :-)
+		Spliting up the bintrans haddr_entry field into two (one for
+		read, one for write). Probably not much of a speed increase,
+		though.

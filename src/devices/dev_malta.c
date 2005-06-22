@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta.c,v 1.1 2005-06-21 18:48:08 debug Exp $
+ *  $Id: dev_malta.c,v 1.2 2005-06-22 00:39:45 debug Exp $
  *
  *  Malta (evbmips) interrupt controller.
  *
@@ -59,6 +59,19 @@ int dev_malta_hi_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+	case 0:	if (writeflag == MEM_READ) {
+			odata = 0;
+			for (i=0; i<7; i++)
+				if (d->assert_hi & (1<<i))
+					odata = i;
+			if (odata)
+				odata |= 0x80;
+			d->assert_hi = 0;
+			cpu_interrupt_ack(cpu, 8 + 2);
+		} else {
+			/*  TODO  */
+		}
+		break;
 	default:if (writeflag == MEM_WRITE) {
 			fatal("[ malta: hi unimplemented write to "
 			    "offset 0x%x: data=0x%02x ]\n", (int)
@@ -91,9 +104,16 @@ int dev_malta_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 	case 0:	if (writeflag == MEM_READ) {
-			odata = d->assert_lo;
-		} else {
+			odata = 0;
+			for (i=0; i<7; i++)
+				if (d->assert_lo & (1<<i))
+					odata = i;
+			if (odata)
+				odata |= 0x80;
 			d->assert_lo = 0;
+			cpu_interrupt_ack(cpu, 8 + 16);
+		} else {
+			/*  TODO  */
 		}
 		break;
 	default:if (writeflag == MEM_WRITE) {

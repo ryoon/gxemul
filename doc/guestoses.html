@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.58 2005-06-18 22:00:32 debug Exp $
+$Id: guestoses.html,v 1.59 2005-06-22 00:39:42 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -53,6 +53,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdarcinstall">Installing NetBSD/arc</a>
   <li><a href="#netbsdhpcmipsinstall">Installing NetBSD/hpcmips</a>
   <li><a href="#netbsdcobaltinstall">Installing NetBSD/cobalt</a>
+  <li><a href="#netbsdevbmipsinstall">Installing NetBSD/evbmips</a>
   <li><a href="#openbsdinstall">Installing OpenBSD/pmax</a>
   <li><a href="#openbsdarcinstall">Installing OpenBSD/arc</a>
   <li><a href="#ultrixinstall">Installing Ultrix/RISC</a>
@@ -433,7 +434,7 @@ image, from an emulated DECstation 3MAX machine:
 
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
-  <li>Install NetBSD/pmax 2.0 according to instructions further up
+  <li>Install NetBSD/pmax 2.0.2 according to instructions further up
 	on this page.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
@@ -442,16 +443,16 @@ image, from an emulated DECstation 3MAX machine:
 </pre>
   <li>Log in as root (on the emulated 3MAX machine), and execute the
 	following commands: (adjust according to taste)<pre>
-	# <b>newfs /dev/sd1c</b>
-	# <b>mount /dev/cd0c /mnt</b>
-	# <b>mkdir /mnt2; mount /dev/sd1c /mnt2</b>
-	# <b>cd /mnt2; sh</b>
-	# <b>for a in /mnt/cobalt/binary/sets/*.tgz; do echo $a; tar zxfp $a; done</b>
-	# <b>exit</b>
-	# <b>cd dev; sh ./MAKEDEV all; cd ../etc</b>
-	# <b>echo rc_configured=YES >> rc.conf</b>
-	# <b>echo "/dev/wd0d / ffs rw 1 1" > fstab</b>
-	# <b>cd /; umount /mnt; umount /mnt2; halt</b>
+	<b>newfs /dev/sd1c</b>
+	<b>mount /dev/cd0c /mnt</b>
+	<b>mkdir /mnt2; mount /dev/sd1c /mnt2</b>
+	<b>cd /mnt2; sh</b>
+	<b>for a in /mnt/cobalt/binary/sets/*.tgz; do echo $a; tar zxfp $a; done</b>
+	<b>exit</b>
+	<b>cd dev; sh ./MAKEDEV all; cd ../etc</b>
+	<b>echo rc_configured=YES >> rc.conf</b>
+	<b>echo "/dev/wd0d / ffs rw 1 1" > fstab</b>
+	<b>cd /; umount /mnt; umount /mnt2; halt</b>
 </pre>
 </ol>
 
@@ -465,6 +466,87 @@ Note that the installation instructions above create a filesystem
 swap. You will need to enter the following things when booting with the
 generic kernel:<pre>
 	root device (default wd0a): <b>wd0d</b>
+	dump device (default wd0b): <b>none</b>
+	file system (default generic): <b>ffs</b>
+	init path (default /sbin/init):     <i>(just press enter here)</i>
+</pre>
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdevbmipsinstall"></a>
+<h3>Installing NetBSD/evbmips:</h3>
+
+<a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a> can run
+in GXemul on an emulated Malta evaluation board. It is tricky to install,
+because there is (as far as I know) no INSTALL kernel.
+
+<p>One way to install the NetBSD/evbmips distribution onto a disk image is
+to install the files is to do it using another (emulated) machine.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20050413-netbsd-cobalt.png"><img src="20050413-netbsd-cobalt_small.png"></a>
+
+<p>
+<font color="#ff0000">TODO: malta picture!</font>
+
+<p>
+The following instructions will let you install NetBSD/evbmips onto a disk 
+image, from an emulated DECstation 3MAX machine:
+
+<p>
+<ol>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD onto:<pre>
+	$ <b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=999000</b>
+
+</pre>
+  <li>Download the generic kernel (and gunzip it) and the 2.0.2 ISO image:<pre>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso</a>
+
+</pre>(You may want to choose a mirror closer to you, if .se is slow.)
+  <p>
+  <li>Install NetBSD/pmax 2.0.2 according to instructions further up
+	on this page.
+  <p>
+  <li>Start NetBSD/pmax like this:<pre>
+	$ <b>gxemul -b -Edec -e3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
+
+</pre>
+  <li>Log in as root (on the emulated 3MAX machine), and execute the
+	following commands: (adjust according to taste)<pre>
+	<b>newfs /dev/sd1c</b>
+	<b>mount /dev/cd0c /mnt</b>
+	<b>mkdir /mnt2; mount /dev/sd1c /mnt2</b>
+	<b>cd /mnt2; sh</b>
+	<b>for a in /mnt/evbmips-mipsel/binary/sets/*.tgz; do echo $a; tar zxfp $a; done</b>
+	<b>exit</b>
+	<b>cd dev; sh ./MAKEDEV all; cd ../etc</b>
+	<b>echo rc_configured=YES >> rc.conf</b>
+	<b>echo "/dev/wd0c / ffs rw 1 1" > fstab</b>
+	<b>cd /; umount /mnt; umount /mnt2; halt</b>
+</pre>
+</ol>
+
+<p>You should now be able to boot NetBSD/evbmips like this:<pre>
+	$ <b>gxemul -b -Eevbmips -emalta -d nbsd_malta.img netbsd-MALTA</b>
+</pre>
+
+<p>Note 1: NetBSD detects a very fast CPU although the emulation isn't 
+really very fast, so delays take very long. Even on a multi-GHz host, you 
+will need a lot of patience.
+
+<p>Note 2: The installation instructions above create a filesystem
+<i>without</i> a disklabel, so there is only one ffs partition and no
+swap. You will need to enter the following things when booting with the
+generic kernel:<pre>
+	root device (default wd0a): <b>wd0c</b>
 	dump device (default wd0b): <b>none</b>
 	file system (default generic): <b>ffs</b>
 	init path (default /sbin/init):     <i>(just press enter here)</i>
@@ -1183,7 +1265,7 @@ client. Performing this setup is quite time consuming, but necessary:
 
 <p>
 <ol>
-  <li><a href="#netbsdinstall">Install NetBSD/pmax 2.0 from CDROM</a>
+  <li><a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>
 	(or install some other similar OS) inside the emulator. This will 
 	be the "<tt>nfs server</tt>" machine. Create a 750 MB <tt>/tftpboot</tt>
 	partition during the installation.

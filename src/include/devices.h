@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.169 2005-06-21 18:48:09 debug Exp $
+ *  $Id: devices.h,v 1.170 2005-06-22 00:39:46 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -340,8 +340,9 @@ int dev_ns16550_init(struct machine *machine, struct memory *mem,
 struct malta_data {
 	uint8_t		assert_lo;
 	uint8_t		assert_hi;
-	uint8_t		enable_lo;
-	uint8_t		enable_hi;
+	uint8_t		disable_lo;
+	uint8_t		disable_hi;
+	int		poll_mode;
 };
 
 /*  dev_mc146818.c:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.460 2005-06-21 18:48:07 debug Exp $
+ *  $Id: machine.c,v 1.461 2005-06-22 00:39:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1218,12 +1218,15 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
  *  Malta (evbmips) interrupts:
  *
  *  ISA interrupts.
- *  (irq_nr = 16 can be used to just reassert/deassert interrupts.)
+ *  (irq_nr = 16+8 can be used to just reassert/deassert interrupts.)
  */
 void malta_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	int assrt)
 {
-	int mask = 1 << (irq_nr & 7);
+	int mask;
+
+	irq_nr -= 8;
+	mask = 1 << (irq_nr & 7);
 
 	if (irq_nr < 8) {
 		if (assrt)
@@ -1239,14 +1242,14 @@ void malta_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
 	if (m->md_int.malta_data->assert_hi &
-	    m->md_int.malta_data->enable_hi)
+	    ~m->md_int.malta_data->disable_hi)
 		m->md_int.malta_data->assert_lo |= 0x04;
 	else
 		m->md_int.malta_data->assert_lo &= ~0x04;
 
 	/*  Now, PIC1:  */
 	if (m->md_int.malta_data->assert_lo &
-	    m->md_int.malta_data->enable_lo)
+	    ~m->md_int.malta_data->disable_lo)
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
@@ -3660,7 +3663,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 	case MACHINE_EVBMIPS:
 		/*  http://www.netbsd.org/Ports/evbmips/  */
-		cpu->byte_order = EMUL_BIG_ENDIAN;
+		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
 		switch (machine->machine_subtype) {
 		case MACHINE_EVBMIPS_MALTA:
@@ -3671,20 +3674,20 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			machine->md_interrupt = malta_interrupt;
 
 			dev_mc146818_init(machine, mem, 0x18000070,
-			    0, MC146818_PC_CMOS, 1);
+			    8 + 8, MC146818_PC_CMOS, 1);
 			machine->main_console_handle = dev_ns16550_init(machine, mem,
-			    0x180003f8, 8 + 3, 1, 1, "serial console");
+			    0x180003f8, 8 + 4, 1, 1, "serial console");
 
 			/*  TODO: Irqs  */
 			pci_data = dev_gt_init(machine, mem, 0x1be00000,
-			    2, 2, 120);
+			    8+16, 8+16, 120);
 
 			/*  TODO: Haha, this is bogus. Just a cut&paste
 			    from the Cobalt emulation above.  */
 			bus_pci_add(machine, pci_data, mem, 0,  9, 0,
 			    pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
-			/*  bus_pci_add(machine, pci_data, mem, 0,  9, 1,
-			    pci_vt82c586_ide_init, pci_vt82c586_ide_rr);  */
+			bus_pci_add(machine, pci_data, mem, 0,  9, 1,
+			    pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
 
 			device_add(machine, "malta_lcd addr=0x1f000400");
 			break;
@@ -4099,6 +4102,9 @@ void machine_memsize_fix(struct machine *m)
 			break;
 		case MACHINE_NETGEAR:
 			m->physical_ram_in_mb = 16;
+			break;
+		case MACHINE_EVBMIPS:
+			m->physical_ram_in_mb = 64;
 			break;
 		case MACHINE_ARC:
 			switch (m->machine_subtype) {

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.786 2005-06-21 17:35:35 debug Exp $
+$Id: HISTORY,v 1.787 2005-06-22 00:39:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1988,3 +1988,6 @@ Changelog for GXemul:
 		dynamic-but-not-binary translation method).
 		Fixing a bintrans bug: 0x9fc00000 should always be treated as
 		PROM area, just as 0xbfc00000 is.
+		Minor progress on Malta emulation (the PCI-ISA bus).
+20050622	NetBSD/evbmips can now be installed (using another emulated
+		machine) and run (including userland and so on). :-)

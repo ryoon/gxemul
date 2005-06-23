@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.63 2005-06-23 07:25:22 debug Exp $
+$Id: guestoses.html,v 1.64 2005-06-23 07:36:22 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -475,15 +475,16 @@ generic kernel:<pre>
 <h3>Installing NetBSD/evbmips:</h3>
 
 <a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a> can run
-in GXemul on an emulated Malta evaluation board. It is tricky to install,
-because there is (as far as I know) no INSTALL kernel.
-
-<p>One way to install the NetBSD/evbmips distribution onto a disk image is
-to install the files is to do it using another (emulated) machine.
+in GXemul on an emulated Malta evaluation board (with a 5Kc or 4Kc CPU).
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20050622-netbsd-evbmips-malta.png"><img src="20050622-netbsd-evbmips-malta_small.png"></a>
+
+<p>It is tricky to install, because there is (as far as I know) no INSTALL
+kernel. One way to install the NetBSD/evbmips distribution onto a disk
+image is to install the files is to do it using another (emulated)
+machine.
 
 <p>
 The following instructions will let you install NetBSD/evbmips onto a disk 

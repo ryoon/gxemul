@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.127 2005-06-22 11:09:44 debug Exp $
+$Id: RELEASE,v 1.128 2005-06-23 06:55:43 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -11,10 +11,11 @@ Copyright (C) 2003-2005  Anders Gavare.
 
 
 GXemul is an experimental instruction-level machine emulator. It can be
-used to run binary code for (among others) MIPS-based machines. Several
-emulation modes are available. For some emulation modes, processors and
-surrounding hardware components are emulated well enough to let unmodified
-operating systems run as if they were running on a real machine.
+used to run binary code for (among others) MIPS-based machines, regardless
+of host platform. Several emulation modes are available. For some modes,
+processors and surrounding hardware components are emulated well enough to
+let unmodified operating systems (e.g. NetBSD) run as if they were running
+on a real machine.
 
 I have verified that the following "guest" operating systems can run
 inside the emulator:

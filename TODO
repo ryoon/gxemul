@@ -1,4 +1,4 @@
-$Id: TODO,v 1.138 2005-06-23 06:28:08 debug Exp $
+$Id: TODO,v 1.139 2005-06-23 06:55:43 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -36,6 +36,7 @@ Order is random. Don't trust it to be up-to-date.
 			+)  on Alpha: don't assume pca56-like byte load/store?
 			+)  write backends for UltraSparc and MIPS
 			+)  see src/bintrans.c for more info
+		o)  Dynamic-but-not-binary translation?
 		o)  All the non-MIPS modes need a bit of work.
 
 	MIPS CPU emulation:
@@ -128,8 +129,6 @@ Order is random. Don't trust it to be up-to-date.
 
 	File/disk handling:
 		o)  Read function argument count and types from binaries? (ELF?)
-		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
-			(ELF structure format)?
 		o)  Better handling of tape files
 
 	Userland ABI emulation:

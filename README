@@ -1,11 +1,11 @@
-$Id: README,v 1.75 2005-06-17 18:10:36 debug Exp $
+$Id: README,v 1.76 2005-06-23 06:55:43 debug Exp $
 
 Now working on post-0.3.3.2.
 
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.3.3.2
-====================================================
+Gavare's eXperimental Emulator   --   GXemul 0.3.X
+==================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -14,10 +14,11 @@ Overview
 --------
 
 GXemul is an experimental instruction-level machine emulator. It can be
-used to run binary code for (among others) MIPS-based machines. Several
-emulation modes are available. For some emulation modes, processors and
-surrounding hardware components are emulated well enough to let unmodified
-operating systems (eg. NetBSD) run as if they were running on a real machine.
+used to run binary code for (among others) MIPS-based machines, regardless
+of host platform. Several emulation modes are available. For some modes,
+processors and surrounding hardware components are emulated well enough to
+let unmodified operating systems (e.g. NetBSD) run as if they were running
+on a real machine.
 
 
 Quick start
@@ -26,8 +27,15 @@ Quick start
 To compile, type './configure' and then 'make'. This should work on most
 Unix-like systems. If not, then please mail me a bug report.
 
-Please read the the documentation in the doc/ sub-directory for more
-detailed information on how to use the emulator.
+If you are impatient, and want to try out running a guest operating system 
+inside GXemul, please read this:  doc/guestoses.html#netbsdinstall
+
+If you want to use GXemul for experimenting with code of your own, 
+then I suggest you compile a Hello World program according to the tips 
+listed here:  doc/experiments.html#hello
+
+Please read the rest of the documentation in the doc/ sub-directory for
+more detailed information on how to use the emulator.
 
 
 Feedback

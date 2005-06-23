@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.205 2005-06-21 09:10:18 debug Exp $
+ *  $Id: emul.c,v 1.206 2005-06-23 06:28:09 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -967,9 +967,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		}
 
 		/*
-		 *  Another special hack for temporary files; running gunzip
-		 *  on them, if they have a gzip header.  TODO: Change this
-		 *  into some kind of generic support for gzipped files!
+		 *  gzipped files are automagically gunzipped:
+		 *  NOTE/TODO: This isn't secure. system() is used.
 		 */
 		tmp_f = fopen(name_to_load, "r");
 		if (tmp_f != NULL) {
@@ -979,11 +978,32 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			if (buf[0]==0x1f && buf[1]==0x8b) {
 				char *zz = malloc(strlen(name_to_load)*2 + 100);
 				debug("gunziping %s\n", name_to_load);
-				sprintf(zz, "mv %s %s.gz", name_to_load,
-				    name_to_load);
-				system(zz);
-				sprintf(zz, "gunzip %s.gz", name_to_load);
-				system(zz);
+				/*
+				 *  gzip header found.  If this was a file
+				 *  extracted from, say, a CDROM image, then it
+				 *  already has a temporary name. Otherwise we
+				 *  have to gunzip into a temporary file.
+				 */
+				if (remove_after_load) {
+					sprintf(zz, "mv %s %s.gz", name_to_load,
+					    name_to_load);
+					system(zz);
+					sprintf(zz, "gunzip %s.gz",
+					    name_to_load);
+					system(zz);
+				} else {
+					/*  gunzip into new temp file:  */
+					int tmpfile_handle;
+					char *new_temp_name =
+					    strdup("/tmp/gxemul.XXXXXXXXXXXX");
+					tmpfile_handle = mkstemp(new_temp_name);
+					close(tmpfile_handle);
+					sprintf(zz, "gunzip -c '%s' > "
+					    "%s", name_to_load, new_temp_name);
+					system(zz);
+					name_to_load = new_temp_name;
+					remove_after_load = 1;
+				}
 				free(zz);
 			}
 			fclose(tmp_f);

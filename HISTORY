@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.790 2005-06-23 06:01:25 debug Exp $
+$Id: HISTORY,v 1.791 2005-06-23 06:28:08 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1996,3 +1996,5 @@ Changelog for GXemul:
 		though.
 		Updating some NetBSD 2.0 -> 2.0.2 in the documentation.
 20050623	Minor updates.
+		gzipped kernels are now always automagically gunzipped when
+		loaded.

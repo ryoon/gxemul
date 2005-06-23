@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.62 2005-06-22 10:46:16 debug Exp $
+$Id: guestoses.html,v 1.63 2005-06-23 07:25:22 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -598,9 +598,9 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
   <li>You now need to make an ISO image of the entire directory you downloaded.
-	I recommend using <tt>mkisofs</tt> for that purpose. If you don't
+	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
 	already have <tt>mkisofs</tt> installed on your system, you need
-	to install it in order to do this.<pre>
+	to install it in order to do this.)<pre>
 	$ <b>mkisofs -o openbsd_pmax_2.8.iso ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax</b>
 
 </pre>
@@ -729,9 +729,9 @@ instructions:
 </pre>
 
   <li>You now need to make an ISO image of the entire directory you downloaded.
-	I recommend using <tt>mkisofs</tt> for that purpose. If you don't
+	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
 	already have <tt>mkisofs</tt> installed on your system, you need
-	to install it in order to do this.<pre>
+	to install it in order to do this.)<pre>
 	$ <b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
 
 </pre>
@@ -912,18 +912,17 @@ values, then you should use the following:
 </pre>
 
 <p>
-Unfortunately, at the end of <a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/boot.txt">
-http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/boot.txt</a>, the 
-following sad statement can be found:
+Unfortunately, at the end of <a href="ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/boot.txt">ftp://ftp.es.embnet.org/pub/misc/TUHS/other_os/Sprite/boot.txt</a>,
+the following sad statement can be found:
 <pre>
     The bootable Sprite image is meant to be a demonstration of Sprite, not
     a robust Sprite system.  There are several missing things, such as 
     floating point and network support.
 </pre>
 
-<p>
-Once you are logged in as root, running <b>xinit</b> will start the X11 
-environment.
+<p>Once you are logged in as root, running <b><tt>xinit</tt></b> will
+start the X11 environment.
+
 
 
 
@@ -1239,7 +1238,11 @@ for DECstation in the emulator:
 <h3>Running OpenBSD/sgi:</h3>
 
 <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
-can run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
+can (almost) run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20050617-openbsd-sgi.png"><img src="20050617-openbsd-sgi_small.png"></a>
 
 <p><font color="#ff0000">NOTE: I haven't succeeded all the way with
 this yet, and this shows/triggers many bugs in the emulator, but some of

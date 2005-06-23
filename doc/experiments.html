@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.74 2005-06-22 01:12:02 debug Exp $
+$Id: experiments.html,v 1.75 2005-06-23 08:36:38 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -106,15 +106,13 @@ that you do two things:
 </font></pre>
 </td></tr></table>
 
-<p>
-(This hello world program is available here as well:
+<p>(This hello world program is available here as well:
 <a href="hello_mips.c"><tt>hello_mips.c</tt></a>)
 
-<p>
-I recommend that you build a GCC cross compiler for the
+<p>I recommend that you build a GCC cross compiler for the
 <b>mips64-unknown-elf</b> target, and install it. Other compilers could
 work too, but GCC is good because of its portability. Then try to compile
-the hello world program:
+and link the hello world program:
 <pre>
 	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -mips4 -mabi=64 -c</b>
 	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello_mips.o -o hello_mips --oformat=elf64-bigmips</b>

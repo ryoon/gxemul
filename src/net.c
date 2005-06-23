@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.75 2005-06-18 21:13:32 debug Exp $
+ *  $Id: net.c,v 1.76 2005-06-23 06:01:26 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -47,7 +47,7 @@
  *  TODO 2: The following comments are old! Fix this.
  *
  *
- *  The emulated NIC has a MAC address of (for example) 10:20:30:40:50:60.
+ *  The emulated NIC has a MAC address of (for example) 10:20:30:00:00:10.
  *  From the emulated environment, the only other machine existing on the
  *  network is a "gateway" or "firewall", which has an address of
  *  60:50:40:30:20:10. This module (net.c) contains the emulation of that

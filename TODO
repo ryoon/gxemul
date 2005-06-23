@@ -1,4 +1,4 @@
-$Id: TODO,v 1.136 2005-06-22 08:13:37 debug Exp $
+$Id: TODO,v 1.137 2005-06-23 06:01:25 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -27,16 +27,6 @@ Order is random. Don't trust it to be up-to-date.
 		o)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
 		o)  many other issues: see src/net.c
-
-	Configure script:
-		o)  Only enable Alpha prefetch on pca56 etc, not on ev4, ev5.
-		o)  Use getopts?
-		o)  X11 libs and headers via command line option?
-		o)  Verify that the configure script, building and running
-		    the emulator works on some platforms:
-			+)  Irix, AIX, QNX
-			+)  MacOS X  (I've not tried this personally yet)
-			+)  Ultrix using gcc? (Inside the emulator)
 
 	CPU emulation:
 		o)  Binary translation:
@@ -90,8 +80,6 @@ Order is random. Don't trust it to be up-to-date.
 			+)  Own experiments with ycx2.
 
 	Emulation of specific machines and devices:
-		o)  Clean up stuff to make it possible to emulate multiple
-		    (different) machines simultaneously.
 		o)  Use same clock for all emulations and machines.
 		o)  Clean up the device stuff (registering of devices etc)
 		o)  Various SCSI and IDE controllers
@@ -126,8 +114,6 @@ Order is random. Don't trust it to be up-to-date.
 			x)  SMP / NUMA?  (SGI and various ARC machines)
 		o)  Playstation 2:
 			Hardware:  OHCI usb controller, keyboard, ...
-		o)  Cobalt:  PCI and interrupt system, ethernet,
-			harddisk controller(s)
 		o)  Less interesting platforms:
 			o)  newsmips:
 				o)  NetBSD/newsmips, get it to detect a "real"
@@ -139,7 +125,6 @@ Order is random. Don't trust it to be up-to-date.
 				No FPU, but something as coproc 2.
 			o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
 				(R4300, 4MB RAM, really weird memory map)
-		o)  non-MIPS
 
 	File/disk handling:
 		o)  Read function argument count and types from binaries? (ELF?)
@@ -158,9 +143,6 @@ Order is random. Don't trust it to be up-to-date.
 		o)  allow emulated serial ports to be connected to the outside
 		    world in a more generic way, or even to other emulated
 		    machines(!)
-
-	GDB interface? (Maybe not necessary; the built-in debugger feels
-	more useful.)
 
 	Regression tests:  (Should be totally rewritten.)
 		o)  see tests/

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.92 2005-06-21 17:35:36 debug Exp $
+ *  $Id: diskimage.c,v 1.93 2005-06-24 19:54:59 debug Exp $
  *
  *  Disk image support.
  *
@@ -1303,6 +1303,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		    &xferp->data_in, retlen, 1);
 
 		diskimage__return_default_status_and_message(xferp);
+
 		break;
 
 	default:

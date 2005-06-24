@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.465 2005-06-24 12:31:40 debug Exp $
+ *  $Id: machine.c,v 1.466 2005-06-24 22:11:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4005,7 +4005,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_TESTARM:
 		machine->machine_name = "ARM test machine";
 
-		/*  TODO  */
+		machine->main_console_handle = dev_cons_init(
+		    machine, mem, DEV_CONS_ADDRESS, "console", 2);
+
+		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
+		    640,480, 640,480, 24, "generic", 1);
 		break;
 
 	case MACHINE_BAREX86:

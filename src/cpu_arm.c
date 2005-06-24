@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.5 2005-06-21 21:57:16 debug Exp $
+ *  $Id: cpu_arm.c,v 1.6 2005-06-24 22:11:55 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -69,6 +69,13 @@ int arm_cpu_family_init(struct cpu_family *fp)
 
 /*  instr uses the same names as in cpu_arm_instr.c  */
 #define instr(n) arm_instr_ ## n
+
+static char *arm_condition_string[16] = {
+	"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc",
+	"hi", "ls", "ge", "lt", "gt", "le", ""/*Always*/, "(INVALID)" };
+static char *arm_regname[16] = {
+	"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", 
+	"r8", "r9", "sl", "fp", "ip", "sp", "lr", "pc" };
 
 extern volatile int single_step;
 extern int old_show_trace_tree;   
@@ -182,7 +189,7 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (gprs) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->cd.arm.r[ARM_PC], &offset);
-		debug("cpu%i:  pc  = 0x%08x", x, (int)cpu->cd.arm.r[ARM_PC]);
+		debug("cpu%i:  pc = 0x%08x", x, (int)cpu->cd.arm.r[ARM_PC]);
 
 		/*  TODO: Flags  */
 
@@ -192,7 +199,7 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i % 4) == 0)
 				debug("cpu%i:", x);
 			if (i != ARM_PC)
-				debug("  r%02i = 0x%08x", i,
+				debug("  %s = 0x%08x", arm_regname[i],
 				    (int)cpu->cd.arm.r[i]);
 			if ((i % 4) == 3)
 				debug("\n");
@@ -213,11 +220,13 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  *  register contents) will not be shown, and addr will be used instead of
  *  cpu->pc for relative addresses.
  */                     
-int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
         int running, uint64_t dumpaddr, int bintrans)
 {
 	uint32_t iw;
-	char *symbol;
+	uint32_t tmp;
+	int main_opcode, secondary_opcode, r16, r12, r8;
+	char *symbol, *condition;
 	uint64_t offset;
 
 	if (running)
@@ -233,10 +242,49 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	debug("%08x:  ", (int)dumpaddr);
 
-	iw = instr[0] + (instr[1] << 8) + (instr[2] << 16) + (instr[3] << 24);
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
+	else
+		iw = ib[3] + (ib[2]<<8) + (ib[1]<<16) + (ib[0]<<24);
 	debug("%08x\t", (int)iw);
 
-	debug("arm_cpu_disassemble_instr(): TODO\n");
+	condition = arm_condition_string[iw >> 28];
+	main_opcode = (iw >> 24) & 15;
+	secondary_opcode = (iw >> 20) & 15;
+	r16 = (iw >> 16) & 15;
+	r12 = (iw >> 12) & 15;
+	r8 = (iw >> 8) & 15;
+
+	switch (main_opcode) {
+	case 0x1:
+	case 0x3:
+		switch (secondary_opcode) {
+		case 0xa:
+		case 0xb:
+			debug("mov%s%s\t", condition,
+			    secondary_opcode == 0xa? "" : "s");
+			debug("%s,", arm_regname[r12]);
+			debug("\n");
+			break;
+		default:debug("UNIMPLEMENTED\n");
+		}
+		break;
+	case 0xa:				/*  B: branch  */
+	case 0xb:				/*  BL: branch and link  */
+		debug("b%s%s\t", main_opcode == 0xa? "" : "l", condition);
+		tmp = (iw & 0x00ffffff) << 2;
+		if (tmp & 0x02000000)
+			tmp |= 0xfc000000;
+		tmp = (int32_t)(dumpaddr + tmp + 8);
+		debug("0x%x", (int)tmp);
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    tmp, &offset);
+		if (symbol != NULL)
+			debug("\t\t<%s>", symbol);
+		debug("\n");
+		break;
+	default:debug("UNIMPLEMENTED\n");
+	}
 
 	return sizeof(uint32_t);
 }
@@ -376,15 +424,14 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
 	    PC_TO_IC_ENTRY(cached_pc);
 
-fatal("arm_cpu_run_instr: TODO\n");
-printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
-"physpage_ofs = 0x%08x\n",
-(int)cached_pc, (int)pagenr, (int)table_index, (int)physpage_ofs);
+	/*  printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
+	    "physpage_ofs = 0x%08x\n", (int)cached_pc, (int)pagenr,
+	    (int)table_index, (int)physpage_ofs);  */
 
 	cpu->cd.arm.n_translated_instrs = 0;
 	cpu->cd.arm.running_translated = 1;
 
-	if (single_step) {
+	if (single_step || cpu->machine->instruction_trace) {
 		/*
 		 *  When single-stepping, multiple instruction calls cannot
 		 *  be combined into one.  TODO
@@ -392,6 +439,15 @@ printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 		 *  (TODO: This should be a flag per physpage!)
 		 */
 		struct arm_instr_call *ic = cpu->cd.arm.next_ic ++;
+		if (cpu->machine->instruction_trace) {
+			unsigned char instr[4];
+			if (!cpu->memory_rw(cpu, cpu->mem, cpu->pc, &instr[0],
+			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
+				fatal("arm_cpu_run_instr(): could not read "
+				    "the instruction\n");
+			} else
+				arm_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
+		}
 		ic->f(cpu, ic);
 		n_instrs = 1;
 	} else {
@@ -406,6 +462,7 @@ printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
@@ -414,8 +471,10 @@ printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
 			n_instrs += 16;
-			if (!cpu->cd.arm.running_translated)
+			if (!cpu->cd.arm.running_translated || single_step ||
+			    n_instrs + cpu->cd.arm.n_translated_instrs > 16384)
 				break;
 		}
 	}
@@ -435,9 +494,6 @@ printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 	} else {
 		fatal("Outside a page (This is actually ok)\n");
 	}
-
-printf("YO 1: %i\n", n_instrs);
-printf("YO 2: %i\n", cpu->cd.arm.n_translated_instrs);
 
 	return n_instrs + cpu->cd.arm.n_translated_instrs;
 }

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.795 2005-06-24 19:15:06 debug Exp $
+$Id: HISTORY,v 1.796 2005-06-24 22:11:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2004,3 +2004,4 @@ Changelog for GXemul:
 		by default instead. It makes more sense.
 		Trying to finally fix the non-working performance measurement
 		thing (instr/second etc).
+20050625	Continuing on the essential basics for ARM emulation.

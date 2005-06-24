@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.57 2005-06-24 00:21:54 debug Exp $
+ *  $Id: machine.h,v 1.58 2005-06-24 19:15:08 debug Exp $
  */
 
 #include <sys/types.h>
@@ -121,10 +121,11 @@ struct machine {
 	struct cpu **cpus;
 
 	/*  These are used by stuff in cpu.c, mostly:  */
-	struct timeval starttime;
 	int64_t ncycles;
 	int64_t	ncycles_show;
 	int64_t	ncycles_flush;
+	int64_t	ncycles_since_gettimeofday;
+	struct timeval starttime;
 	int	a_few_cycles;
 	int	a_few_instrs;
 

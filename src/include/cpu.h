@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.24 2005-06-11 20:59:12 debug Exp $
+ *  $Id: cpu.h,v 1.25 2005-06-24 19:15:08 debug Exp $
  *
  *  See cpu.c.
  */
@@ -150,8 +150,7 @@ int cpu_run(struct emul *emul, struct machine *machine);
 void cpu_run_deinit(struct emul *emul, struct machine *machine);
 void cpu_dumpinfo(struct machine *m, struct cpu *cpu);
 void cpu_list_available_types(void);
-void cpu_show_cycles(struct machine *machine,
-	struct timeval *starttime, int64_t ncycles, int forced);
+void cpu_show_cycles(struct machine *machine, int forced);
 struct cpu_family *cpu_family_ptr_by_number(int arch);
 void cpu_init(void);
 

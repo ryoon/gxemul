@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.207 2005-06-24 12:31:40 debug Exp $
+ *  $Id: emul.c,v 1.208 2005-06-24 19:15:07 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -833,6 +833,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 	m->cpu_family = cpu_family_ptr_by_number(m->arch);
 
+	if (m->arch != ARCH_MIPS)
+		m->bintrans_enable = 0;
+
 	machine_memsize_fix(m);
 
 	/*
@@ -895,6 +898,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	}
 	debug("\n");
 
+#if 0
 	/*  Special case: The Playstation Portable has an additional CPU:  */
 	if (m->machine_type == MACHINE_PSP) {
 		debug("cpu%i: ", m->ncpus);
@@ -906,6 +910,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		debug("\n");
 		m->ncpus ++;
 	}
+#endif
 
 	if (m->use_random_bootstrap_cpu)
 		m->bootstrap_cpu = random() % m->ncpus;

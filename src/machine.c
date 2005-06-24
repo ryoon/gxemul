@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.463 2005-06-24 09:33:34 debug Exp $
+ *  $Id: machine.c,v 1.464 2005-06-24 10:07:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3746,6 +3746,14 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 */
 		machine->machine_name = "Playstation Portable";
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
+		if (!machine->use_x11 && !quiet_mode)
+			fprintf(stderr, "-------------------------------------"
+			    "------------------------------------------\n"
+			    "\n  WARNING! You are emulating a PSP without -X. "
+			    "You will miss graphical output!\n\n"
+			    "-------------------------------------"
+			    "------------------------------------------\n");
 
 		/*  480 x 272 pixels framebuffer (512 bytes per line)  */
 		fb = dev_fb_init(machine, mem, 0x04000000, VFB_HPCMIPS,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.7 2005-06-24 22:23:28 debug Exp $
+ *  $Id: cpu_arm.c,v 1.8 2005-06-24 23:25:38 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -73,7 +73,7 @@ int arm_cpu_family_init(struct cpu_family *fp)
 static char *arm_condition_string[16] = {
 	"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc",
 	"hi", "ls", "ge", "lt", "gt", "le", ""/*Always*/, "(INVALID)" };
-static char *arm_regname[16] = {
+static char *arm_regname[N_ARM_REGS] = {
 	"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", 
 	"r8", "r9", "sl", "fp", "ip", "sp", "lr", "pc" };
 
@@ -127,9 +127,8 @@ struct cpu *arm_cpu_new(struct memory *mem, struct machine *machine,
  */
 void arm_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug("\n");
-
-	/*  TODO  */
+	debug(" (%i MB translation cache)\n",
+	    (int)(ARM_TRANSLATION_CACHE_SIZE / 1048576));
 }
 
 
@@ -152,23 +151,24 @@ void arm_cpu_list_available_types(void)
 void arm_cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
-	int cpunr = 0;
+	int i, cpunr = 0;
 
 	/*  CPU number:  */
 
 	/*  TODO  */
 
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-			m->cpus[cpunr]->cd.arm.r[ARM_PC] = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
+	/*  Register names:  */
+	for (i=0; i<N_ARM_REGS; i++) {
+		if (strcasecmp(name, arm_regname[i]) == 0) {
+			if (writeflag) {
+				m->cpus[cpunr]->cd.arm.r[i] = *valuep;
+				if (i == ARM_PC)
+					m->cpus[cpunr]->pc = *valuep;
+			} else
+				*valuep = m->cpus[cpunr]->cd.arm.r[i];
+			*match_register = 1;
+		}
 	}
-
-	/*  TODO: _LOTS_ of stuff.  */
 }
 
 
@@ -195,7 +195,7 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		for (i=0; i<16; i++) {
+		for (i=0; i<N_ARM_REGS; i++) {
 			if ((i % 4) == 0)
 				debug("cpu%i:", x);
 			if (i != ARM_PC)
@@ -377,9 +377,8 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	uint32_t *physpage_entryp;
 	struct arm_tc_physpage *ppp;
 
-	if (cpu->cd.arm.translation_cache == NULL ||
-	    cpu->cd.arm.translation_cache_cur_ofs >=
-	    ARM_TRANSLATION_CACHE_SIZE)
+	if (cpu->cd.arm.translation_cache == NULL || cpu->cd.
+	    arm.translation_cache_cur_ofs >= ARM_TRANSLATION_CACHE_SIZE)
 		arm_create_or_reset_tc(cpu);
 
 	cached_pc = cpu->cd.arm.r[ARM_PC];

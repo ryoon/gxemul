@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.7 2005-06-24 19:15:07 debug Exp $
+ *  $Id: cpu_run.c,v 1.8 2005-06-24 19:23:03 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -237,10 +237,9 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 		}
 
 		if (machine->ncycles > machine->ncycles_show + (1<<23)) {
-			cpu_show_cycles(machine, &machine->starttime,
-			    machine->ncycles, 0);
 			machine->ncycles_since_gettimeofday +=
 			    (machine->ncycles - machine->ncycles_show);
+			cpu_show_cycles(machine, 0);
 			machine->ncycles_show = machine->ncycles;
 		}
 

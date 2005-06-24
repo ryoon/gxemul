@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.3 2005-06-24 22:11:55 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.4 2005-06-24 22:23:28 debug Exp $
  *
  *  ARM instructions.
  *
@@ -50,7 +50,7 @@ X(nothing)
 }
 
 
-static struct arm_instr_call nothing_call = { instr(nothing), 0,0,0 };
+static struct arm_instr_call nothing_call = { instr(nothing), {0,0,0} };
 
 
 /*****************************************************************************/

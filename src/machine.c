@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.461 2005-06-22 00:39:43 debug Exp $
+ *  $Id: machine.c,v 1.462 2005-06-24 00:21:53 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3735,6 +3735,34 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			    (int64_t)(int32_t)0x9fc00800 + i);
 		break;
 
+	case MACHINE_PSP:
+		/*
+		 *  The Playstation Portable seems to be a strange beast.
+		 *
+		 *  http://yun.cup.com/psppg004.html (in Japanese) seems to
+		 *  suggest that virtual addresses are not displaced by
+		 *  0x80000000 as on normal CPUs, but by 0x40000000?
+		 */
+		machine->machine_name = "Playstation Portable";
+		cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
+		/*  480 x 272 pixels framebuffer (512 bytes per line)  */
+		fb = dev_fb_init(machine, mem, 0x4000000, VFB_HPCMIPS,
+		    480,272, 512,272, 15, "Playstation Portable", 0);
+
+		mips_coproc_tlb_set_entry(cpu, 0, 1048576*16,
+		    0x44000000 /*vaddr*/, 0x4000000, 0x4000000 + 1048576*16,
+		    1,1,1,1,1, 0, 2, 2);
+
+		/*
+		 *  TODO: This is ugly, but necessary to run the Hello World
+		 *  ELF example from http://sec.pn.to/.
+		 */
+		mips_coproc_tlb_set_entry(cpu, 1, 1048576*16,
+		    0x8900000 /*vaddr*/, 0x0, 0x0 + 1048576*16,
+		    1,1,1,1,1, 0, 2, 2);
+		break;
+
 	case MACHINE_BAREPPC:
 		/*
 		 *  A "bare" PPC machine.
@@ -4106,6 +4134,9 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_EVBMIPS:
 			m->physical_ram_in_mb = 64;
 			break;
+		case MACHINE_PSP:
+			m->physical_ram_in_mb = 16;	/*  todo: should be 8?*/
+			break;
 		case MACHINE_ARC:
 			switch (m->machine_subtype) {
 			case MACHINE_ARC_JAZZ_PICA:
@@ -4202,18 +4233,6 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_SONYNEWS:
 		m->cpu_name = strdup("R3000");
 		break;
-	case MACHINE_EVBMIPS:
-		switch (m->machine_subtype) {
-		case MACHINE_EVBMIPS_MALTA:
-			m->cpu_name = strdup("5Kc");
-			break;
-		case MACHINE_EVBMIPS_PB1000:
-			m->cpu_name = strdup("AU1000");
-			break;
-		default:fatal("Unimpl. evbmips.\n");
-			exit(1);
-		}
-		break;
 	case MACHINE_HPCMIPS:
 		switch (m->machine_subtype) {
 		case MACHINE_HPCMIPS_CASIO_BE300:
@@ -4280,6 +4299,21 @@ void machine_default_cputype(struct machine *m)
 		    R4000, R4400 or R5000 or similar:  */
 		if (m->cpu_name == NULL)
 			m->cpu_name = strdup("R4400");
+		break;
+	case MACHINE_EVBMIPS:
+		switch (m->machine_subtype) {
+		case MACHINE_EVBMIPS_MALTA:
+			m->cpu_name = strdup("5Kc");
+			break;
+		case MACHINE_EVBMIPS_PB1000:
+			m->cpu_name = strdup("AU1000");
+			break;
+		default:fatal("Unimpl. evbmips.\n");
+			exit(1);
+		}
+		break;
+	case MACHINE_PSP:
+		m->cpu_name = strdup("R4000");
 		break;
 
 	/*  PowerPC:  */
@@ -4746,6 +4780,14 @@ void machine_init(void)
 	    MACHINE_PREP, 1, 0);
 	me->aliases[0] = "prep";
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Playstation Portable:  */
+	me = machine_entry_new("Playstation Portable", ARCH_MIPS,
+	    MACHINE_PSP, 1, 0);
+	me->aliases[0] = "psp";
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

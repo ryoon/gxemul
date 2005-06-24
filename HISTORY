@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.792 2005-06-23 06:55:42 debug Exp $
+$Id: HISTORY,v 1.793 2005-06-24 00:21:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1998,3 +1998,5 @@ Changelog for GXemul:
 20050623	Minor updates (documentation, the TODO file, etc).
 		gzipped kernels are now always automagically gunzipped when
 		loaded.
+20050624	Adding a dummy Playstation Portable (PSP) mode, just barely
+		enough to run Hello World (in weird colors :-).

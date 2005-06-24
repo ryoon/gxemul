@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.464 2005-06-24 10:07:43 debug Exp $
+ *  $Id: machine.c,v 1.465 2005-06-24 12:31:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3767,8 +3767,15 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		    0x44000000 /*vaddr*/, 0x4000000, 0x4000000 + 1048576*16,
 		    1,1,1,1,1, 0, 2, 2);
 		mips_coproc_tlb_set_entry(cpu, 1, 1048576*16,
-		    0x8800000 /*vaddr*/, 0x0, 0x0 + 1048576*16,
+		    0x8000000 /*vaddr*/, 0x0, 0x0 + 1048576*16,
 		    1,1,1,1,1, 0, 2, 2);
+		mips_coproc_tlb_set_entry(cpu, 2, 1048576*16,
+		    0x9000000 /*vaddr*/, 0x01000000, 0x01000000 + 1048576*16,
+		    1,1,1,1,1, 0, 2, 2);
+		mips_coproc_tlb_set_entry(cpu, 3, 1048576*16,
+		    0x0 /*vaddr*/, 0, 0 + 1048576*16, 1,1,1,1,1, 0, 2, 2);
+
+		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0xfff0;
 
 		break;
 
@@ -4144,7 +4151,13 @@ void machine_memsize_fix(struct machine *m)
 			m->physical_ram_in_mb = 64;
 			break;
 		case MACHINE_PSP:
-			m->physical_ram_in_mb = 8 + 8;
+			/*
+			 *  According to
+			 *  http://wiki.ps2dev.org/psp:memory_map:
+			 *	0×08000000 = 8 MB kernel memory
+			 *	0×08800000 = 24 MB user memory
+			 */
+			m->physical_ram_in_mb = 8 + 24;
 			break;
 		case MACHINE_ARC:
 			switch (m->machine_subtype) {

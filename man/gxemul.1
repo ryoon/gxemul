@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.22 2005-06-23 06:55:44 debug Exp $
+.\" $Id: gxemul.1,v 1.23 2005-06-24 09:33:33 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -111,13 +111,8 @@ Use this together with
 Other options:
 .Bl -tag -width Ds
 .It Fl B
-Disable dynamic binary translation completely. By default, bintrans
+Disable dynamic binary translation. By default, bintrans
 will be turned on if the host architecture supports it.
-However, in this release (0.3.X), there is no new bintrans system.
-If you want to enable binary translation, use
-.Fl "b".
-.It Fl b
-Use the OLD binary translation subsystem. (Alpha and i386 hosts only.)
 .It Fl C Ar x
 Try to emulate a specific CPU type,
 .Ar "x".
@@ -304,7 +299,7 @@ distribution.
 The following command will start NetBSD/pmax on an emulated DECstation 
 5000/200 (3MAX), with the old bintrans system enabled:
 .Pp
-.Dl "gxemul -E dec -e 3max -b -d netbsddisk.img"
+.Dl "gxemul -E dec -e 3max -d netbsddisk.img"
 .Pp
 netbsddisk.img should be a raw disk image containing a bootable 
 NetBSD/pmax filesystem.

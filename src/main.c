@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.236 2005-05-25 06:40:18 debug Exp $
+ *  $Id: main.c,v 1.237 2005-06-24 09:33:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -218,8 +218,9 @@ static void usage(int longusage)
 
 	printf("\nOther options:\n");
 #ifdef BINTRANS
-	printf("  -B        disable dynamic binary translation completely\n");
-	printf("  -b        use the OLD binary translation subsystem\n");
+	printf("  -B        disable dynamic binary translation. (translation"
+	    " is turned on\n            by default, if the host "
+	    "supports it)\n");
 #endif
 	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
 	    "list of types.)\n");
@@ -337,15 +338,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "BbC:Dd:E:e:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "BC:Dd:E:e:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XxY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'B':
 			m->bintrans_enable = 0;
-			msopts = 1;
-			break;
-		case 'b':
-			m->old_bintrans_enable = 1;
 			msopts = 1;
 			break;
 		case 'C':
@@ -544,8 +541,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		default:
-			fprintf(stderr, "Invalid option.\n");
-			usage(0);
+			fprintf(stderr, "Run  %s -h  for help on command "
+			    "line options.\n", progname);
 			exit(1);
 		}
 	}
@@ -565,17 +562,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	extra_argc = argc;
 	extra_argv = argv;
 
-
-	if (!m->bintrans_enable && m->old_bintrans_enable) {
-		fprintf(stderr, "You cannot both select old bintrans and"
-		    " disable bintrans at the same time.\n");
-		exit(1);
-	}
-
-	/*  TODO: Remove this once there is a new bintrans system.  */
-	if (m->bintrans_enable && !m->old_bintrans_enable) {
-		m->bintrans_enable = 0;
-	}
 
 	if (m->machine_type == MACHINE_NONE && msopts) {
 		fprintf(stderr, "Machine specific options used directly on "

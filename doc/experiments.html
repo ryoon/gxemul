@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.75 2005-06-23 08:36:38 debug Exp $
+$Id: experiments.html,v 1.76 2005-06-24 09:33:32 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -510,7 +510,7 @@ probably doesn't work in GXemul.
 		a kernel compiled for R5000, because Linux doesn't autodetect
 		the CPU type at runtime.)
 	<br>Also: <a href="http://www.tal.org/~milang/o2/kernels/">http://www.tal.org/~milang/o2/kernels</a>/<a href="http://home.tal.org/~milang/o2/kernels/vmlinux64-2.6.8.1-IP32">vmlinux64-2.6.8.1-IP32</a>
-	<br>Try <b><tt>-E sgi -e ip32 -b -X -CR5000 vmlinux64-2.6.8.1-IP32</tt></b>.
+	<br>Try <b><tt>-E sgi -e ip32 -X -CR5000 vmlinux64-2.6.8.1-IP32</tt></b>.
 	<br>And also some IP27 kernels:
 		<a href="http://www.total-knowledge.com/progs/mips/kernels/vmlinux.ip27-20040428">http://www.total-knowledge.com/progs/mips/kernels/vmlinux.ip27-20040428</a>
 		and
@@ -521,7 +521,7 @@ probably doesn't work in GXemul.
       <li><a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd">ftp://ftp.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd</a>
 	<br>More recent snapshots can be found at <a href="ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/">ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/</a>.
-	<br>Try <b><tt>gxemul -b -E sgi -e ip32 bsd.rd</tt></b>
+	<br>Try <b><tt>gxemul -E sgi -e ip32 bsd.rd</tt></b>
       <p>
       <li><a href="http://www.freebsd.org/platforms/mips.html">FreeBSD/MIPS</a>:
 		I don't think public binary snapshots are available yet.
@@ -586,8 +586,8 @@ probably doesn't work in GXemul.
 	<br>I have tried this with the Swedish version, but it might
 		work with other versions too.<pre>
 	$ <b><tt>dd if=/dev/zero of=winnt_test.img bs=1024 count=1 seek=999000</tt></b>
-	$ <b><tt>gxemul -X -b -Earc -epica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\ARCINST</tt></b>
-	$ <b><tt>gxemul -X -b -Earc -epica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\SETUPLDR</tt></b>
+	$ <b><tt>gxemul -X -Earc -epica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\ARCINST</tt></b>
+	$ <b><tt>gxemul -X -Earc -epica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\SETUPLDR</tt></b>
 </pre>	<br><tt>ARCINST</tt> tries to prepare the disk image for installation. (It <i>almost</i> works.)
 	<br><tt>SETUPLDR</tt> should load some drivers from the cdrom, but then it crashes with a bluescreen.
     </ul>
@@ -599,19 +599,19 @@ probably doesn't work in GXemul.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/netbsd.gz">netbsd.gz</a>
-	<br>Try <b><tt>gxemul -X -b -E hpc -e mobilepro770 netbsd</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpc -e mobilepro770 netbsd</tt></b>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>Try <b><tt>gxemul -X -b -E hpc -e mobilepro770 netbsd-GENERIC</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpc -e mobilepro770 netbsd-GENERIC</tt></b>
       <p>
       <li>Linux for BE300:
 	<br><a href="http://www.linux4.be/2004/linux4be20040908.zip">http://www.linux4.be/2004/linux4be20040908.zip</a>
-	<br>Try <b><tt>gxemul -X -b -E hpc -e be300 vmlinux</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpc -e be300 vmlinux</tt></b>
       <p>
       <li>Linux for Agenda VR3:
 	<br>Download <a href="http://agenda-snow.sourceforge.net/kernel-old-versions/binary/">http://agenda-snow.sourceforge.net/kernel-old-versions/binary</a>/<a href="http://agenda-snow.sourceforge.net/kernel-old-versions/binary/root1.2.6.kernel-8.00">root1.2.6.kernel-8.00</a>
 	<br>and <a href="http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O/">http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O</a>/<a href="http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O/root1.2.6.cramfs">root1.2.6.cramfs</a>.
 	<br>(or <a href="http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs">http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs</a>)
-	<br>Try <b><tt>gxemul -b -X -E hpc -e vr3 -x 0xbf200000:root1.2.6.cramfs 0xbf000000:0:0xbf0005e0:root1.2.6.kernel-8.00</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpc -e vr3 -x 0xbf200000:root1.2.6.cramfs 0xbf000000:0:0xbf0005e0:root1.2.6.kernel-8.00</tt></b>
 	<br>(or replace root1.2.6.cramfs with dream-1-noxip.cramfs)
 	<br>Remove <b><tt>-X</tt></b> to try with serial console instead of X, and
 		remove <b><tt>-b</tt></b> to try without (old) bintrans.
@@ -623,7 +623,7 @@ probably doesn't work in GXemul.
       <li>Linux for MobilePro etc.:
 	<br><a href="http://pc1.peanuts.gr.jp/~kei/Hard-Float/Kernels/">http://pc1.peanuts.gr.jp/~kei/Hard-Float/Kernels/</a>
 	<br>Uncompress the archive to get a kernel, vmlinux-800 for example.
-	<br>Try <b><tt>./gxemul -b -X -o 'root=/dev/hda1' -d r:disk.img -d r:disk.img -Ehpc -e mobilepro800 vmlinux-800</tt></b>
+	<br>Try <b><tt>./gxemul -X -o 'root=/dev/hda1' -d r:disk.img -d r:disk.img -Ehpc -e mobilepro800 vmlinux-800</tt></b>
 	<br>where disk.img is an ext2fs filesystem with contents from
 	<a href="http://pc1.peanuts.gr.jp/~kei/Hard-Float/Miniroots/miniroot-20010330.tar.bz2">http://pc1.peanuts.gr.jp/~kei/Hard-Float/Miniroots/miniroot-20010330.tar.bz2</a>
 	<br>(Note the double disk arguments.)
@@ -631,8 +631,8 @@ probably doesn't work in GXemul.
       <p>
       <li><a href="http://www.disorder.ru/openbsd/be300/">OpenBSD/be300</a>:
 	<br><a href="http://www.disorder.ru/openbsd/be300/bsd.rd">http://www.disorder.ru/openbsd/be300/bsd.rd</a>
-	<br>Try <b><tt>gxemul -X -b -E hpc -e be300 bsd.rd</tt></b>
-	<br>Note: -b might be buggy, so you can try without that if you want to.
+	<br>Try <b><tt>gxemul -X -E hpc -e be300 bsd.rd</tt></b>
+	<br>Note: bintrans might be buggy, so you can try with -B if you want to.
     </ul>
   </li>
 
@@ -682,7 +682,7 @@ probably doesn't work in GXemul.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/netbsd-MALTA.gz">netbsd-MALTA.gz</a>
-	<br><b><tt>gxemul -b -E evbmips -e malta netbsd-MALTA</tt></b>
+	<br><b><tt>gxemul -E evbmips -e malta netbsd-MALTA</tt></b>
 	<br>The default CPU is a 5Kc (MIPS64). Add
 		<tt>-C 4Kc</tt> to use a MIPS32 CPU instead.
 	<br>(NetBSD/evbmips runs in 32-bit mode on MIPS64 anyway...)
@@ -690,7 +690,7 @@ probably doesn't work in GXemul.
 	section</a> on how to install NetBSD/evbmips onto a harddisk image.
 	<br>or
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipseb/binary/kernel/netbsd-PB1000.gz">netbsd-PB1000.gz</a>
-	<br><b><tt>gxemul -b -E evbmips -e pb1000 netbsd-PB1000</tt></b>
+	<br><b><tt>gxemul -E evbmips -e pb1000 netbsd-PB1000</tt></b>
     </ul>
   </li>
 

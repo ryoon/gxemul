@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.462 2005-06-24 00:21:53 debug Exp $
+ *  $Id: machine.c,v 1.463 2005-06-24 09:33:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -143,6 +143,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->machine_type = MACHINE_NONE;
 	m->machine_subtype = MACHINE_NONE;
 	m->bintrans_enable = 1;
+	m->old_bintrans_enable = 1;
 	m->prom_emulation = 1;
 	m->speed_tricks = 1;
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
@@ -3747,20 +3748,20 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
 		/*  480 x 272 pixels framebuffer (512 bytes per line)  */
-		fb = dev_fb_init(machine, mem, 0x4000000, VFB_HPCMIPS,
-		    480,272, 512,272, 15, "Playstation Portable", 0);
+		fb = dev_fb_init(machine, mem, 0x04000000, VFB_HPCMIPS,
+		    480,272, 512,1088, -15, "Playstation Portable", 0);
 
+		/*
+		 *  TODO/NOTE: This is ugly, but necessary since GXemul doesn't
+		 *  emulate any MIPS CPU without MMU right now.
+		 */
 		mips_coproc_tlb_set_entry(cpu, 0, 1048576*16,
 		    0x44000000 /*vaddr*/, 0x4000000, 0x4000000 + 1048576*16,
 		    1,1,1,1,1, 0, 2, 2);
-
-		/*
-		 *  TODO: This is ugly, but necessary to run the Hello World
-		 *  ELF example from http://sec.pn.to/.
-		 */
 		mips_coproc_tlb_set_entry(cpu, 1, 1048576*16,
-		    0x8900000 /*vaddr*/, 0x0, 0x0 + 1048576*16,
+		    0x8800000 /*vaddr*/, 0x0, 0x0 + 1048576*16,
 		    1,1,1,1,1, 0, 2, 2);
+
 		break;
 
 	case MACHINE_BAREPPC:
@@ -4135,7 +4136,7 @@ void machine_memsize_fix(struct machine *m)
 			m->physical_ram_in_mb = 64;
 			break;
 		case MACHINE_PSP:
-			m->physical_ram_in_mb = 16;	/*  todo: should be 8?*/
+			m->physical_ram_in_mb = 8 + 8;
 			break;
 		case MACHINE_ARC:
 			switch (m->machine_subtype) {
@@ -4313,7 +4314,7 @@ void machine_default_cputype(struct machine *m)
 		}
 		break;
 	case MACHINE_PSP:
-		m->cpu_name = strdup("R4000");
+		m->cpu_name = strdup("Allegrex");
 		break;
 
 	/*  PowerPC:  */

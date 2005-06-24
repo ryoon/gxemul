@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.96 2005-06-22 11:09:44 debug Exp $
+ *  $Id: dev_fb.c,v 1.97 2005-06-24 09:33:36 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -445,6 +445,13 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 							r = r & 31;
 							g = (g & 31) * 2;
 							b = b & 31;
+						} else if (d->psp_15bit) {
+							int tmp;
+							r = (b >> 10) & 0x1f;
+							g = (b >>  5) & 0x1f;
+							b = b & 0x1f;
+							g <<= 1;
+							tmp = r; r = b; b = tmp;
 						} else {
 							r = (b >> 11) & 0x1f;
 							g = (b >>  5) & 0x3f;
@@ -901,7 +908,23 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_fb_init():
  *
- *  xsize and ysize are ignored if vfb_type is VFB_DEC_VFB01 or 02.
+ *  This function is big and ugly, but the point is to initialize a framebuffer
+ *  device. :-)
+ *
+ *  visible_xsize and visible_ysize are the sizes of the visible display area.
+ *  xsize and ysize tell how much memory is actually allocated (for example
+ *  visible_xsize could be 640, but xsize could be 1024, for better alignment).
+ *
+ *  vfb_type is useful for selecting special features.
+ *
+ *  type = VFB_GENERIC is the most useful type, especially when bit_depth = 24.
+ *
+ *  VFB_DEC_VFB01, _VFB02, and VFB_DEC_MAXINE are DECstation specific.
+ *
+ *  If type is VFB_HPCMIPS, then color encoding differs from the generic case.
+ *
+ *  If bit_depth = -15 (note the minus sign), then a special hack is used for
+ *  the Playstation Portable's 5-bit R, 5-bit G, 5-bit B.
  */
 struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
@@ -931,6 +954,9 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 
 	if (bit_depth == 15) {
 		d->color32k = 1;
+		bit_depth = d->bit_depth = 16;
+	} else if (bit_depth == -15) {
+		d->psp_15bit = 1;
 		bit_depth = d->bit_depth = 16;
 	}
 

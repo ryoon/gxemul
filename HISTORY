@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.793 2005-06-24 00:21:52 debug Exp $
+$Id: HISTORY,v 1.794 2005-06-24 09:33:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2000,3 +2000,5 @@ Changelog for GXemul:
 		loaded.
 20050624	Adding a dummy Playstation Portable (PSP) mode, just barely
 		enough to run Hello World (in weird colors :-).
+		Removing the -b command line option; old bintrans is enabled
+		by default instead. It makes more sense.

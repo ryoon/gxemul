@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.237 2005-06-24 09:33:34 debug Exp $
+ *  $Id: main.c,v 1.238 2005-06-25 13:25:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -591,6 +591,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		    " of -t\n", quiet_mode? "turning off -q and " : "");
 		verbose = 1;
 		quiet_mode = 0;
+	}
+
+	if ((m->instruction_trace || m->register_dump || m->show_trace_tree)
+	    && m->bintrans_enable) {
+		fprintf(stderr, "Implicitly turning off bintrans.\n");
+		m->bintrans_enable = 0;
 	}
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.9 2005-06-25 14:06:12 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.10 2005-06-25 14:14:56 debug Exp $
  *
  *  ARM instructions.
  *
@@ -74,10 +74,11 @@ X(nop)
 
 /*
  *  b:  Branch (to a different translated page)
+ *
+ *  arg[0] = relative offset
  */
 X(b)
 {
-	/*  Branch to a different page:  */
 	int low_pc;
 	uint32_t old_pc;
 	uint32_t mask_within_page = ((IC_ENTRIES_PER_PAGE-1) << 2) | 3;
@@ -102,16 +103,19 @@ X(b)
 
 /*
  *  b_samepage:  Branch (to within the same translated page)
+ *
+ *  arg[0] = pointer to new arm_instr_call
  */
 X(b_samepage)
 {
-	/*  A branch within the same page:  */
 	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 }
 
 
 /*
  *  bl:  Branch and Link (to a different translated page)
+ *
+ *  arg[0] = relative address
  *
  *  TODO: Implement this.
  *  TODO: How about function call trace?
@@ -125,6 +129,8 @@ X(bl)
 
 /*
  *  bl_samepage:  A branch + link within the same page
+ *
+ *  arg[0] = pointer to new arm_instr_call
  *
  *  TODO: How about function call trace?
  */
@@ -149,24 +155,36 @@ X(bl_samepage)
 
 /*
  *  mov:  Set a 32-bit register to a 32-bit value.
+ *
+ *  arg[0] = pointer to uint32_t in host memory
+ *  arg[1] = 32-bit value
  */
 X(mov)
 {
-	/*  arg[0] = address to an uint32_t, arg[1] = the new value  */
 	*((uint32_t *)ic->arg[0]) = ic->arg[1];
 }
 
 
 /*
+ *  clear:  Set a 32-bit register to 0. (A "mov" to fixed value zero.)
+ *
+ *  arg[0] = pointer to uint32_t in host memory
+ */
+X(clear)
+{
+	*((uint32_t *)ic->arg[0]) = 0;
+}
+
+
+/*
  *  mov_2:  Double "mov".
+ *
+ *  The current and the next arm_instr_call are treated as "mov"s.
  */
 X(mov_2)
 {
-	/*  arg[0] = address to an uint32_t, arg[1] = the new value  */
-	/*  Do this for two consecutive instructions.  */
 	*((uint32_t *)ic[0].arg[0]) = ic[0].arg[1];
 	*((uint32_t *)ic[1].arg[0]) = ic[1].arg[1];
-
 	cpu->cd.arm.next_ic ++;
 	cpu->cd.arm.n_translated_instrs ++;
 }
@@ -283,6 +301,8 @@ void arm_translate_instruction(struct cpu *cpu)
 				ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
 				/*  TODO: shifter argument  */
 				ic->arg[1] = iword & 0xfff;
+				if (ic->arg[1] == 0)
+					ic->f = instr(clear);
 			}
 			break;
 		default:goto bad;
@@ -341,6 +361,18 @@ void arm_translate_instruction(struct cpu *cpu)
 		/*  Double "mov":  */
 		if (ic[0].f == instr(mov) && ic[-1].f == instr(mov)) {
 			ic[-1].f = instr(mov_2);
+			cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS;
+		}
+		/*  Double "mov": (special case)  */
+		if (ic[0].f == instr(mov) && ic[-1].f == instr(clear)) {
+			ic[-1].f = instr(mov_2);
+			ic[-1].arg[1] = 0;
+			cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS;
+		}
+		/*  Double "mov": (special case)  */
+		if (ic[0].f == instr(clear) && ic[-1].f == instr(mov)) {
+			ic[-1].f = instr(mov_2);
+			ic[0].arg[1] = 0;
 			cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS;
 		}
 	}

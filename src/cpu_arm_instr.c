@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.4 2005-06-24 22:23:28 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.5 2005-06-25 11:50:27 debug Exp $
  *
  *  ARM instructions.
  *
@@ -81,13 +81,22 @@ X(b)
 	/*  fatal("b: 2: pc=0x%08x\n", cpu->pc);  */
 
 	if ((cpu->pc & ~mask_within_page) == (old_pc & ~mask_within_page)) {
-		/*  fatal("within the same page\n");  */
+		fatal("within the same page\n");
+		fatal("is this even possible now, when b_samepage exists?\n");
+		exit(1);
 		cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
 		    ((cpu->pc & mask_within_page) >> 2);
 	} else {
-		fatal("different page!\n");
+		fatal("different page! TODO\n");
 		exit(1);
 	}
+}
+
+
+X(b_samepage)
+{
+	/*  A branch within the same page:  */
+	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 }
 
 
@@ -206,6 +215,21 @@ void arm_translate_instruction(struct cpu *cpu)
 			ic->arg[0] |= 0xfc000000;
 		/*  Branches are calculated as PC + 8 + offset:  */
 		ic->arg[0] = (int32_t)(ic->arg[0] + 8);
+
+		/*  Special case: jump within the same page:  */
+		{
+			uint32_t mask_within_page =
+			    ((IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+			uint32_t old_pc = addr;
+			uint32_t new_pc = old_pc + (int32_t)ic->arg[0];
+			if ((old_pc & ~mask_within_page) ==
+			    (new_pc & ~mask_within_page)) {
+				ic->f = instr(b_samepage);
+				ic->arg[0] = (size_t) (
+				    cpu->cd.arm.cur_ic_page +
+				    ((new_pc & mask_within_page) >> 2));
+			}
+		}
 		break;
 
 	default:goto bad;

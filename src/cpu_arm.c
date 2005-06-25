@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.10 2005-06-25 13:55:51 debug Exp $
+ *  $Id: cpu_arm.c,v 1.11 2005-06-25 14:06:12 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -452,6 +452,10 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			int i;
 			for (i=0; i<IC_ENTRIES_PER_PAGE; i++)
 				ppp->ics[i].f = instr(to_be_translated);
+			debug("[ Note: The translation of physical page 0x%08x"
+			    " contained combinations of instructions; these "
+			    "are now flushed because we are single-stepping."
+			    " ]\n", ppp->physaddr);
 			ppp->flags &= ~ARM_COMBINATIONS;
 		}
 

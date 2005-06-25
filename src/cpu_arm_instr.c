@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.8 2005-06-25 13:57:12 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.9 2005-06-25 14:06:12 debug Exp $
  *
  *  ARM instructions.
  *
@@ -248,7 +248,8 @@ void arm_translate_instruction(struct cpu *cpu)
 	else
 		iword = ib[3] + (ib[2]<<8) + (ib[1]<<16) + (ib[0]<<24);
 
-	fatal("{ ARM translating pc=0x%08x iword=0x%08x }\n", addr, iword);
+	/*  fatal("{ ARM translating pc=0x%08x iword=0x%08x }\n",
+	    addr, iword);  */
 
 	/*  The idea of taking bits 27..24 was found here:
 	    http://armphetamine.sourceforge.net/oldinfo.html  */
@@ -352,7 +353,8 @@ bad:	/*
 	 *  Nothing was translated. (Unimplemented or illegal instruction.)
 	 */
 
-	fatal("unimplemented ARM instruction 0x%08x\n", iword);
+	fatal("TODO: unimplemented ARM instruction 0x%08x (at pc=0x%08x)\n",
+	    iword, addr);
 	cpu->running = 0;
 	cpu->dead = 1;
 	cpu->cd.arm.running_translated = 0;

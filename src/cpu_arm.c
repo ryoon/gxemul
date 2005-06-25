@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.9 2005-06-25 13:25:50 debug Exp $
+ *  $Id: cpu_arm.c,v 1.10 2005-06-25 13:55:51 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -419,6 +419,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    + physpage_ofs);
 	}
 
+	cpu->cd.arm.cur_physpage = ppp;
 	cpu->cd.arm.cur_ic_page = &ppp->ics[0];
 	cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
 	    PC_TO_IC_ENTRY(cached_pc);
@@ -432,10 +433,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	if (single_step || cpu->machine->instruction_trace) {
 		/*
-		 *  When single-stepping, multiple instruction calls cannot
-		 *  be combined into one.  TODO
-		 *
-		 *  (TODO: This should be a flag per physpage!)
+		 *  Single-step:
 		 */
 		struct arm_instr_call *ic = cpu->cd.arm.next_ic ++;
 		if (cpu->machine->instruction_trace) {
@@ -447,6 +445,17 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			} else
 				arm_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
 		}
+
+		/*  When single-stepping, multiple instruction calls cannot
+		    be combined into one. This clears all translations:  */
+		if (ppp->flags & ARM_COMBINATIONS) {
+			int i;
+			for (i=0; i<IC_ENTRIES_PER_PAGE; i++)
+				ppp->ics[i].f = instr(to_be_translated);
+			ppp->flags &= ~ARM_COMBINATIONS;
+		}
+
+		/*  Execute just one instruction:  */
 		ic->f(cpu, ic);
 		n_instrs = 1;
 	} else {

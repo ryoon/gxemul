@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.7 2005-06-25 13:25:51 debug Exp $
+ *  $Id: cpu_arm.h,v 1.8 2005-06-25 13:55:52 debug Exp $
  */
 
 #include "misc.h"
@@ -68,8 +68,12 @@ struct arm_instr_call {
 struct arm_tc_physpage {
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	uint32_t	physaddr;
+	int		flags;
 	struct arm_instr_call ics[IC_ENTRIES_PER_PAGE + 1];
 };
+
+#define	ARM_COMBINATIONS		1
+
 
 struct arm_cpu {
 	/*  General Purpose Registers (including the program counter):  */
@@ -81,6 +85,7 @@ struct arm_cpu {
 	/*  cur_ic_page is a pointer to an array of IC_ENTRIES_PER_PAGE
 	    instruction call entries. next_ic points to the next such
 	    call to be executed.  */
+	struct arm_tc_physpage	*cur_physpage;
 	struct arm_instr_call	*cur_ic_page;
 	struct arm_instr_call	*next_ic;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.6 2005-06-25 13:25:50 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.7 2005-06-25 13:55:51 debug Exp $
  *
  *  ARM instructions.
  *
@@ -152,6 +152,21 @@ X(mov)
 }
 
 
+/*
+ *  mov_2:  Double "mov".
+ */
+X(mov_2)
+{
+	/*  arg[0] = address to an uint32_t, arg[1] = the new value  */
+	/*  Do this for two consecutive instructions.  */
+	*((uint32_t *)ic[0].arg[0]) = ic[0].arg[1];
+	*((uint32_t *)ic[1].arg[0]) = ic[1].arg[1];
+
+	cpu->cd.arm.next_ic ++;
+	cpu->cd.arm.n_translated_instrs ++;
+}
+
+
 /*****************************************************************************/
 
 
@@ -212,6 +227,7 @@ void arm_translate_instruction(struct cpu *cpu)
 	unsigned char ib[4];
 	uint32_t iword;
 	int condition_code, main_opcode, secondary_opcode, r16, r12, r8;
+	int n_back;
 
 	/*  Read the instruction word from memory:  */
 	addr = cpu->pc & ~0x3;
@@ -242,6 +258,11 @@ void arm_translate_instruction(struct cpu *cpu)
 		fatal("TODO: ARM condition code 0x%x\n", condition_code);
 		exit(1);
 	}
+
+
+	/*
+	 *  Translate the instruction:
+	 */
 
 	switch (main_opcode) {
 
@@ -297,9 +318,35 @@ void arm_translate_instruction(struct cpu *cpu)
 	default:goto bad;
 	}
 
+
+	/*
+	 *  If we end up here, then an instruction was translated. Now it is
+	 *  time to check for combinations of instructions that can be
+	 *  converted into a single function call.
+	 */
+
+	/*  Single-stepping doesn't work with combinations:  */
+	if (single_step || cpu->machine->instruction_trace)
+		return;
+
+#if 1
+	n_back = (addr >> 2) & (IC_ENTRIES_PER_PAGE-1);
+	if (n_back >= 1) {
+		/*  Double "mov":  */
+		if (ic[0].f == instr(mov) && ic[-1].f == instr(mov)) {
+			ic[-1].f = instr(mov_2);
+			cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS;
+		}
+	}
+#endif
+
 	return;
 
-bad:
+
+bad:	/*
+	 *  Nothing was translated. (Unimplemented or illegal instruction.)
+	 */
+
 	fatal("unimplemented ARM instruction 0x%08x\n", iword);
 	cpu->running = 0;
 	cpu->dead = 1;

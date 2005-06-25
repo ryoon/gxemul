@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.798 2005-06-25 13:25:50 debug Exp $
+$Id: HISTORY,v 1.799 2005-06-25 13:55:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2010,3 +2010,6 @@ Changelog for GXemul:
 		reasonable.
 		Various other minor updates.
 		Adding the ARM "bl" instruction.
+		Adding support for combining multiple ARM instructions into one
+		function call. ("mov" + "mov" is the only one implemented so
+		far, but it seems to work.)

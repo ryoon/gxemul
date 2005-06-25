@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.10 2005-06-25 14:14:56 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.11 2005-06-25 14:26:49 debug Exp $
  *
  *  ARM instructions.
  *
@@ -37,6 +37,10 @@
 
 #define X(n) void arm_instr_ ## n(struct cpu *cpu, \
 	struct arm_instr_call *ic)
+
+/*  Short define for marking a physical page as containing combined 
+    instructions:  */
+#define	combined	(cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS)
 
 
 void arm_translate_instruction(struct cpu *cpu);
@@ -239,6 +243,44 @@ X(end_of_page)
 
 
 /*
+ *  arm_combine_instructions():
+ *
+ *  Combine two or more instructions, if possible, into a single function call.
+ */
+void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
+{
+	int n_back;
+	n_back = (cpu->pc >> 2) & (IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 1) {
+		/*  Double "mov":  */
+		if (ic[-1].f == instr(mov) || ic[-1].f == instr(clear)) {
+			if (ic[-1].f == instr(mov) && ic[0].f == instr(mov)) {
+				ic[-1].f = instr(mov_2);
+				combined;
+			}
+			if (ic[-1].f == instr(clear) && ic[0].f == instr(mov)) {
+				ic[-1].f = instr(mov_2);
+				ic[-1].arg[1] = 0;
+				combined;
+			}
+			if (ic[-1].f == instr(mov) && ic[0].f == instr(clear)) {
+				ic[-1].f = instr(mov_2);
+				ic[0].arg[1] = 0;
+				combined;
+			}
+			if (ic[-1].f == instr(clear) && ic[0].f==instr(clear)) {
+				ic[-1].f = instr(mov_2);
+				ic[-1].arg[1] = 0;
+				ic[0].arg[1] = 0;
+				combined;
+			}
+		}
+	}
+}
+
+
+/*
  *  arm_translate_instruction():
  *
  *  Translate an instruction word into an arm_instr_call.
@@ -250,7 +292,6 @@ void arm_translate_instruction(struct cpu *cpu)
 	unsigned char ib[4];
 	uint32_t iword;
 	int condition_code, main_opcode, secondary_opcode, r16, r12, r8;
-	int n_back;
 
 	/*  Read the instruction word from memory:  */
 	addr = cpu->pc & ~0x3;
@@ -355,28 +396,7 @@ void arm_translate_instruction(struct cpu *cpu)
 	if (single_step || cpu->machine->instruction_trace)
 		return;
 
-#if 1
-	n_back = (addr >> 2) & (IC_ENTRIES_PER_PAGE-1);
-	if (n_back >= 1) {
-		/*  Double "mov":  */
-		if (ic[0].f == instr(mov) && ic[-1].f == instr(mov)) {
-			ic[-1].f = instr(mov_2);
-			cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS;
-		}
-		/*  Double "mov": (special case)  */
-		if (ic[0].f == instr(mov) && ic[-1].f == instr(clear)) {
-			ic[-1].f = instr(mov_2);
-			ic[-1].arg[1] = 0;
-			cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS;
-		}
-		/*  Double "mov": (special case)  */
-		if (ic[0].f == instr(clear) && ic[-1].f == instr(mov)) {
-			ic[-1].f = instr(mov_2);
-			ic[0].arg[1] = 0;
-			cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS;
-		}
-	}
-#endif
+	arm_combine_instructions(cpu, ic);
 
 	return;
 

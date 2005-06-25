@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.11 2005-06-25 14:06:12 debug Exp $
+ *  $Id: cpu_arm.c,v 1.12 2005-06-25 14:26:49 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -264,6 +264,11 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("mov%s%s\t", condition,
 			    secondary_opcode == 0xa? "" : "s");
 			debug("%s,", arm_regname[r12]);
+			/*  TODO: shifter etc  */
+			if ((iw & 0xfff) < 16)
+				debug("#%i", iw & 0xfff);
+			else
+				debug("#0x%x", iw & 0xfff);
 			debug("\n");
 			break;
 		default:debug("UNIMPLEMENTED\n");

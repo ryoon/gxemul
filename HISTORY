@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.799 2005-06-25 13:55:50 debug Exp $
+$Id: HISTORY,v 1.800 2005-06-25 21:19:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2013,3 +2013,6 @@ Changelog for GXemul:
 		Adding support for combining multiple ARM instructions into one
 		function call. ("mov" + "mov" is the only one implemented so
 		far, but it seems to work.)
+		Cleaning up some IP32 interrupt things (crime/mace); disabling
+		the PS/2 keyboard controller on IP32, so that NetBSD/sgimips
+		boots into userland again.

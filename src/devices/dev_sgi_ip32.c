@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.25 2005-06-18 21:13:33 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.26 2005-06-25 21:19:45 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -154,17 +154,18 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	else
 		memcpy(data, &d->reg[relative_addr], len);
 
-	if (relative_addr == 0x18 || relative_addr == 0x1c) {
+	if ((relative_addr >= 0x18 && relative_addr <= 0x1f) ||
+	    (relative_addr+len-1 >= 0x18 && relative_addr+len-1 <= 0x1f)) {
 		/*
 		 *  Force interrupt re-assertion:
 		 *
 		 *  NOTE: Ugly hack. Hopefully CRMERR is never used.
 		 */
 #if 0
-
+/*
 No. If this is enabled, the mec bugs out on either NetBSD or OpenBSD.
 TODO.
-
+*/
 		cpu_interrupt_ack(cpu, 8); /* CRM_INT_CRMERR); */
 #endif
 	}
@@ -195,15 +196,15 @@ TODO.
 				    "control 0x%016llx ]\n", (long long)idata);
 		}
 		break;
-#if 1
+#if 0
 	case CRIME_INTSTAT:	/*  0x010, Current interrupt status  */
 	case 0x14:
 	case CRIME_INTMASK:	/*  0x018,  Current interrupt mask  */
 	case 0x1c:
 	case 0x34:
-#endif
 		/*  don't dump debug info for these  */
 		break;
+#endif
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ crime: read from 0x%x, len=%i:",
@@ -266,18 +267,34 @@ int dev_mace_access(struct cpu *cpu, struct memory *mem,
 	else
 		memcpy(data, &d->reg[relative_addr], len);
 
+	if ((relative_addr >= 0x18 && relative_addr <= 0x1f) ||
+	    (relative_addr+len-1 >= 0x18 && relative_addr+len-1 <= 0x1f))
+		cpu_interrupt_ack(cpu, 8); /* CRM_INT_CRMERR); */
+
 	switch (relative_addr) {
 #if 0
-	case 0x14:	/*  Current interrupt assertions  */
-	case 0x18:	/*  ???  */
-	case 0x1c:	/*  Interrupt mask  */
+	case 0x10:	/*  Current interrupt assertions  */
+	case 0x14:
+		/*  don't dump debug info for these  */
+		if (writeflag == MEM_WRITE) {
+			fatal("[ NOTE/TODO: WRITE to mace intr: "
+			    "reladdr=0x%x data=", (int)relative_addr);
+			for (i=0; i<len; i++)
+				fatal(" %02x", data[i]);
+			fatal(" (len=%i) ]\n", len);
+		}
+		break;
+	case 0x18:	/*  Interrupt mask  */
+	case 0x1c:
 		/*  don't dump debug info for these  */
 		break;
 #endif
 	default:
-		if (writeflag==MEM_READ) {
-			debug("[ mace: read from 0x%x, len=%i ]\n",
-			    (int)relative_addr, len);
+		if (writeflag == MEM_READ) {
+			debug("[ mace: read from 0x%x:", (int)relative_addr);
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
+			debug(" (len=%i) ]\n", len);
 		} else {
 			debug("[ mace: write to 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)

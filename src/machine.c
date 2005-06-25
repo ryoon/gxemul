@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.467 2005-06-25 13:25:33 debug Exp $
+ *  $Id: machine.c,v 1.468 2005-06-25 21:19:44 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1058,15 +1058,32 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 	 *  interrupt 2 should be asserted.
 	 *
 	 *  TODO:  how should all this be done nicely?
-	 *
-	 *  TODO:  mace interrupt mask
 	 */
 
 	uint64_t crime_addr = CRIME_INTSTAT;
-	uint64_t mace_addr = 0x14;
-	uint64_t crime_interrupts, crime_interrupts_mask, mace_interrupts;
+	uint64_t mace_addr = 0x10;
+	uint64_t crime_interrupts, crime_interrupts_mask;
+	uint64_t mace_interrupts, mace_interrupt_mask;
 	unsigned int i;
 	unsigned char x[8];
+
+	/*  Read current MACE interrupt assertions:  */
+	memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr,
+	    sizeof(uint64_t));
+	mace_interrupts = 0;
+	for (i=0; i<sizeof(uint64_t); i++) {
+		mace_interrupts <<= 8;
+		mace_interrupts |= x[i];
+	}
+
+	/*  Read current MACE interrupt mask:  */
+	memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr + 8,
+	    sizeof(uint64_t));
+	mace_interrupt_mask = 0;
+	for (i=0; i<sizeof(uint64_t); i++) {
+		mace_interrupt_mask <<= 8;
+		mace_interrupt_mask |= x[i];
+	}
 
 	/*
 	 *  This mapping of both MACE and CRIME interrupts into the same
@@ -1079,27 +1096,13 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 	 *  TODO: fix.
 	 */
 	if (irq_nr & MACE_PERIPH_SERIAL) {
-		/*  Read current MACE interrupt bits:  */
-		memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr, sizeof(uint32_t));
-		mace_interrupts = 0;
-		for (i=0; i<sizeof(uint32_t); i++) {
-			/*  SGI is big-endian...  */
-			mace_interrupts <<= 8;
-			mace_interrupts |= x[i];
-		}
-
 		if (assrt)
 			mace_interrupts |= (irq_nr & ~MACE_PERIPH_SERIAL);
 		else
 			mace_interrupts &= ~(irq_nr & ~MACE_PERIPH_SERIAL);
 
-		/*  Write back MACE interrupt bits:  */
-		for (i=0; i<4; i++)
-			x[3-i] = mace_interrupts >> (i*8);
-		memcpy(m->md_int.ip32.mace_data->reg + mace_addr, x, sizeof(uint32_t));
-
 		irq_nr = MACE_PERIPH_SERIAL;
-		if (mace_interrupts == 0)
+		if ((mace_interrupts & mace_interrupt_mask) == 0)
 			assrt = 0;
 		else
 			assrt = 1;
@@ -1107,37 +1110,28 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 
 	/*  Hopefully _MISC and _SERIAL will not be both on at the same time.  */
 	if (irq_nr & MACE_PERIPH_MISC) {
-		/*  Read current MACE interrupt bits:  */
-		memcpy(x, m->md_int.ip32.mace_data->reg + mace_addr, sizeof(uint32_t));
-		mace_interrupts = 0;
-		for (i=0; i<sizeof(uint32_t); i++) {
-			/*  SGI is big-endian...  */
-			mace_interrupts <<= 8;
-			mace_interrupts |= x[i];
-		}
-
 		if (assrt)
 			mace_interrupts |= (irq_nr & ~MACE_PERIPH_MISC);
 		else
 			mace_interrupts &= ~(irq_nr & ~MACE_PERIPH_MISC);
 
-		/*  Write back MACE interrupt bits:  */
-		for (i=0; i<4; i++)
-			x[3-i] = mace_interrupts >> (i*8);
-		memcpy(m->md_int.ip32.mace_data->reg + mace_addr, x, sizeof(uint32_t));
-
 		irq_nr = MACE_PERIPH_MISC;
-		if (mace_interrupts == 0)
+		if ((mace_interrupts & mace_interrupt_mask) == 0)
 			assrt = 0;
 		else
 			assrt = 1;
 	}
 
+	/*  Write back MACE interrupt assertions:  */
+	for (i=0; i<sizeof(uint64_t); i++)
+		x[7-i] = mace_interrupts >> (i*8);
+	memcpy(m->md_int.ip32.mace_data->reg + mace_addr, x, sizeof(uint64_t));
+
 	/*  Read CRIME_INTSTAT:  */
-	memcpy(x, m->md_int.ip32.crime_data->reg + crime_addr, sizeof(uint64_t));
+	memcpy(x, m->md_int.ip32.crime_data->reg + crime_addr,
+	    sizeof(uint64_t));
 	crime_interrupts = 0;
-	for (i=0; i<8; i++) {
-		/*  SGI is big-endian...  */
+	for (i=0; i<sizeof(uint64_t); i++) {
 		crime_interrupts <<= 8;
 		crime_interrupts |= x[i];
 	}
@@ -1148,14 +1142,16 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 		crime_interrupts &= ~irq_nr;
 
 	/*  Write back CRIME_INTSTAT:  */
-	for (i=0; i<8; i++)
+	for (i=0; i<sizeof(uint64_t); i++)
 		x[7-i] = crime_interrupts >> (i*8);
-	memcpy(m->md_int.ip32.crime_data->reg + crime_addr, x, sizeof(uint64_t));
+	memcpy(m->md_int.ip32.crime_data->reg + crime_addr, x,
+	    sizeof(uint64_t));
 
 	/*  Read CRIME_INTMASK:  */
-	memcpy(x, m->md_int.ip32.crime_data->reg + CRIME_INTMASK, sizeof(uint64_t));
+	memcpy(x, m->md_int.ip32.crime_data->reg + CRIME_INTMASK,
+	    sizeof(uint64_t));
 	crime_interrupts_mask = 0;
-	for (i=0; i<8; i++) {
+	for (i=0; i<sizeof(uint64_t); i++) {
 		crime_interrupts_mask <<= 8;
 		crime_interrupts_mask |= x[i];
 	}
@@ -1165,7 +1161,8 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 	else
 		cpu_interrupt(cpu, 2);
 
-	/*  printf("sgi_crime_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irq_nr, crime_interrupts);  */
+	/*  printf("sgi_crime_machine_irq(%i,%i): new interrupts = 0x%08x\n",
+	    assrt, irq_nr, crime_interrupts);  */
 }
 
 
@@ -2967,10 +2964,12 @@ Why is this here? TODO
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
+#if 0
 				i = dev_pckbc_init(machine, mem, 0x1f320000,
 				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
 				    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
 							/*  keyb+mouse (mace irq numbers)  */
+#endif
 
 				net_generate_unique_mac(machine, macaddr);
 				eaddr_string = malloc(30);
@@ -2982,7 +2981,8 @@ Why is this here? TODO
 				    "%02x:%02x:%02x:%02x",
 				    macaddr[0], macaddr[1], macaddr[2],
 				    macaddr[3], macaddr[4], macaddr[5]);
-				dev_sgi_mec_init(machine, mem, 0x1f280000, MACE_ETHERNET, macaddr);
+				dev_sgi_mec_init(machine, mem, 0x1f280000,
+				    MACE_ETHERNET, macaddr);
 
 				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
@@ -2993,9 +2993,11 @@ Why is this here? TODO
 				    (1<<26) + MACE_PERIPH_SERIAL, 0x100,
 				    0, "serial 1");				/*  com1  */
 
+#if 0
 				if (machine->use_x11)
 					machine->main_console_handle = i;
 				else
+#endif
 					machine->main_console_handle = j;
 
 				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */

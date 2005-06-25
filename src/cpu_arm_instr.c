@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.11 2005-06-25 14:26:49 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.12 2005-06-25 21:19:44 debug Exp $
  *
  *  ARM instructions.
  *
@@ -35,15 +35,19 @@
  *  be increased by 3.)
  */
 
+
+/*
+ *  Helper definitions:
+ */
+
 #define X(n) void arm_instr_ ## n(struct cpu *cpu, \
 	struct arm_instr_call *ic)
 
-/*  Short define for marking a physical page as containing combined 
-    instructions:  */
+/*  This is for marking a physical page as containing combined instructions:  */
 #define	combined	(cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS)
 
 
-void arm_translate_instruction(struct cpu *cpu);
+void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic);
 
 
 /*
@@ -199,26 +203,11 @@ X(mov_2)
 
 X(to_be_translated)
 {
-	int low_pc;
+	/*  Translate the instruction...  */
+	arm_translate_instruction(cpu, ic);
 
-	/*  We didn't execute any translated instruction.  */
-	cpu->cd.arm.n_translated_instrs --;
-
-	/*  Go back to the instruction which wasn't translated:  */
-	cpu->cd.arm.next_ic = ic;
-
-	/*  Make sure that PC is in synch:  */
-	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
-	cpu->pc = cpu->cd.arm.r[ARM_PC];
-
-	/*  Translate the instruction:  */
-	arm_translate_instruction(cpu);
-
-	/*  We can just as well execute the instruction right away:  */
-	ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+	/*  ... and execute it:  */
+	ic->f(cpu, ic);
 }
 
 
@@ -285,13 +274,19 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
  *
  *  Translate an instruction word into an arm_instr_call.
  */
-void arm_translate_instruction(struct cpu *cpu)
+void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 {
-	struct arm_instr_call *ic = cpu->cd.arm.next_ic;
-	uint32_t addr;
+	uint32_t addr, low_pc;
 	unsigned char ib[4];
 	uint32_t iword;
 	int condition_code, main_opcode, secondary_opcode, r16, r12, r8;
+
+	/*  Make sure that PC is in synch:  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
+	    / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	/*  Read the instruction word from memory:  */
 	addr = cpu->pc & ~0x3;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.797 2005-06-25 11:50:26 debug Exp $
+$Id: HISTORY,v 1.798 2005-06-25 13:25:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2005,6 +2005,8 @@ Changelog for GXemul:
 		Trying to finally fix the non-working performance measurement
 		thing (instr/second etc).
 20050625	Continuing on the essential basics for ARM emulation. Two
-		instructions almost work, a branch and a simple "mov". (The
+		instructions seem to work, a branch and a simple "mov". (The
 		mov arguments are not correct yet.) Performance is definitely
 		reasonable.
+		Various other minor updates.
+		Adding the ARM "bl" instruction.

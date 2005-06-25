@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.6 2005-06-25 11:50:27 debug Exp $
+ *  $Id: cpu_arm.h,v 1.7 2005-06-25 13:25:51 debug Exp $
  */
 
 #include "misc.h"
@@ -36,8 +36,13 @@
 
 struct cpu_family;
 
+#define	ARM_SL			10
+#define	ARM_FP			11
+#define	ARM_IP			12
+#define	ARM_SP			13
+#define	ARM_LR			14
+#define	ARM_PC			15
 #define	N_ARM_REGS		16
-#define	ARM_PC			15	/*  gpr 15  */
 
 /*
  *  Translated instruction calls:

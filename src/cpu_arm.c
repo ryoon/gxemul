@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.8 2005-06-24 23:25:38 debug Exp $
+ *  $Id: cpu_arm.c,v 1.9 2005-06-25 13:25:50 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -488,7 +488,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	if (low_pc >= 0 && low_pc < IC_ENTRIES_PER_PAGE) {
 		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->cd.arm.r[ARM_PC] |= (low_pc << 2);
+		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
 	} else {
 		fatal("Outside a page (This is actually ok)\n");

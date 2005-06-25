@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.5 2005-06-25 11:50:27 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.6 2005-06-25 13:25:50 debug Exp $
  *
  *  ARM instructions.
  *
@@ -35,13 +35,21 @@
  *  be increased by 3.)
  */
 
-#define X(n) static void arm_instr_ ## n(struct cpu *cpu, \
+#define X(n) void arm_instr_ ## n(struct cpu *cpu, \
 	struct arm_instr_call *ic)
 
 
 void arm_translate_instruction(struct cpu *cpu);
 
 
+/*
+ *  nothing:  Do nothing.
+ *
+ *  The difference between this function and the "nop" instruction is that
+ *  this function does not increase the program counter or the number of
+ *  translated instructions.  It is used to "get out" of running in translated
+ *  mode.
+ */
 X(nothing)
 {
 	cpu->cd.arm.running_translated = 0;
@@ -56,13 +64,20 @@ static struct arm_instr_call nothing_call = { instr(nothing), {0,0,0} };
 /*****************************************************************************/
 
 
+/*
+ *  nop:  Do nothing.
+ */
 X(nop)
 {
 }
 
 
+/*
+ *  b:  Branch (to a different translated page)
+ */
 X(b)
 {
+	/*  Branch to a different page:  */
 	int low_pc;
 	uint32_t old_pc;
 	uint32_t mask_within_page = ((IC_ENTRIES_PER_PAGE-1) << 2) | 3;
@@ -73,26 +88,21 @@ X(b)
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] |= (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 	old_pc = cpu->cd.arm.r[ARM_PC];
 	/*  fatal("b: 3: old_pc=0x%08x\n", old_pc);  */
 	cpu->cd.arm.r[ARM_PC] += (int32_t)ic->arg[0];
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 	/*  fatal("b: 2: pc=0x%08x\n", cpu->pc);  */
 
-	if ((cpu->pc & ~mask_within_page) == (old_pc & ~mask_within_page)) {
-		fatal("within the same page\n");
-		fatal("is this even possible now, when b_samepage exists?\n");
-		exit(1);
-		cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
-		    ((cpu->pc & mask_within_page) >> 2);
-	} else {
-		fatal("different page! TODO\n");
-		exit(1);
-	}
+	fatal("b: different page! TODO\n");
+	exit(1);
 }
 
 
+/*
+ *  b_samepage:  Branch (to within the same translated page)
+ */
 X(b_samepage)
 {
 	/*  A branch within the same page:  */
@@ -100,6 +110,41 @@ X(b_samepage)
 }
 
 
+/*
+ *  bl:  Branch and Link (to a different translated page)
+ */
+X(bl)
+{
+	fatal("bl different page: TODO\n");
+	exit(1);
+}
+
+
+/*
+ *  bl_samepage:  A branch + link within the same page
+ */
+X(bl_samepage)
+{
+	uint32_t lr, low_pc;
+
+	/*  Figure out what the return (link) address will be:  */
+	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	lr = cpu->cd.arm.r[ARM_PC];
+	lr &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	lr += (low_pc << 2);
+
+	/*  Link:  */
+	cpu->cd.arm.r[ARM_LR] = lr;
+
+	/*  Branch:  */
+	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  mov:  Set a 32-bit register to a 32-bit value.
+ */
 X(mov)
 {
 	/*  arg[0] = address to an uint32_t, arg[1] = the new value  */
@@ -124,7 +169,7 @@ X(to_be_translated)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] |= (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	/*  Translate the instruction:  */
@@ -147,8 +192,8 @@ X(end_of_page)
 	/*  Find the new (physical) page:  */
 	/*  TODO  */
 
-printf("end_of_page()! new pc=0x%08x\n", cpu->cd.arm.r[ARM_PC]);
-exit(1);
+	printf("TODO: end_of_page()! new pc=0x%08x\n", cpu->cd.arm.r[ARM_PC]);
+	exit(1);
 }
 
 
@@ -193,22 +238,36 @@ void arm_translate_instruction(struct cpu *cpu)
 	r12 = (iword >> 12) & 15;
 	r8 = (iword >> 8) & 15;
 
+	if (condition_code != 0xe) {
+		fatal("TODO: ARM condition code 0x%x\n", condition_code);
+		exit(1);
+	}
+
 	switch (main_opcode) {
 
-	case 0x1:
 	case 0x3:
 		switch (secondary_opcode) {
 		case 0x0a:					/*  MOV  */
-			ic->f = instr(mov);
-			ic->arg[0] = (size_t)((void *)&cpu->cd.arm.r[r12]);
-			ic->arg[1] = iword & 0xfff;
+			if (r12 == ARM_PC) {
+				fatal("TODO: mov used as branch\n");
+				exit(1);
+			} else {
+				ic->f = instr(mov);
+				ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
+				/*  TODO: shifter argument  */
+				ic->arg[1] = iword & 0xfff;
+			}
 			break;
 		default:goto bad;
 		}
 		break;
 
 	case 0xa:					/*  B: branch  */
-		ic->f = instr(b);
+	case 0xb:					/*  BL: branch+link  */
+		if (main_opcode == 0x0a)
+			ic->f = instr(b);
+		else
+			ic->f = instr(bl);
 		ic->arg[0] = (iword & 0x00ffffff) << 2;
 		/*  Sign-extend:  */
 		if (ic->arg[0] & 0x02000000)
@@ -216,7 +275,7 @@ void arm_translate_instruction(struct cpu *cpu)
 		/*  Branches are calculated as PC + 8 + offset:  */
 		ic->arg[0] = (int32_t)(ic->arg[0] + 8);
 
-		/*  Special case: jump within the same page:  */
+		/*  Special case: branch within the same page:  */
 		{
 			uint32_t mask_within_page =
 			    ((IC_ENTRIES_PER_PAGE-1) << 2) | 3;
@@ -224,7 +283,10 @@ void arm_translate_instruction(struct cpu *cpu)
 			uint32_t new_pc = old_pc + (int32_t)ic->arg[0];
 			if ((old_pc & ~mask_within_page) ==
 			    (new_pc & ~mask_within_page)) {
-				ic->f = instr(b_samepage);
+				if (main_opcode == 0x0a)
+					ic->f = instr(b_samepage);
+				else
+					ic->f = instr(bl_samepage);
 				ic->arg[0] = (size_t) (
 				    cpu->cd.arm.cur_ic_page +
 				    ((new_pc & mask_within_page) >> 2));

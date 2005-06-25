@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.7 2005-06-25 13:55:51 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.8 2005-06-25 13:57:12 debug Exp $
  *
  *  ARM instructions.
  *
@@ -112,6 +112,9 @@ X(b_samepage)
 
 /*
  *  bl:  Branch and Link (to a different translated page)
+ *
+ *  TODO: Implement this.
+ *  TODO: How about function call trace?
  */
 X(bl)
 {
@@ -122,6 +125,8 @@ X(bl)
 
 /*
  *  bl_samepage:  A branch + link within the same page
+ *
+ *  TODO: How about function call trace?
  */
 X(bl_samepage)
 {

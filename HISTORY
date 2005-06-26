@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.800 2005-06-25 21:19:42 debug Exp $
+$Id: HISTORY,v 1.801 2005-06-26 06:48:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2016,3 +2016,5 @@ Changelog for GXemul:
 		Cleaning up some IP32 interrupt things (crime/mace); disabling
 		the PS/2 keyboard controller on IP32, so that NetBSD/sgimips
 		boots into userland again.
+20050626	Finally! NetBSD/sgimips netboots. Adding instructions to
+		doc/guestoses.html on how to set up an nfs server etc.

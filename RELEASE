@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.128 2005-06-23 06:55:43 debug Exp $
+$Id: RELEASE,v 1.129 2005-06-26 06:48:11 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -33,6 +33,7 @@ inside the emulator:
     NetBSD/hpcmips 2.0.2               NEC MobilePro 770, 780, 800, 880
     NetBSD/cobalt 2.0.2                Cobalt
     NetBSD/evbmips 2.0.2               Malta 5Kc/4Kc evaluation board
+    NetBSD/sgimips 2.0.2               SGI O2 ("IP32")
 
 Some of these guest operating systems are easier to install and run than 
 others. The best supported mode is the DECstation 5000/200 emulation mode,
@@ -56,6 +57,11 @@ Summary of changes between release 0.3.3.2 and 0.3.X:
 	x)  NetBSD/evbmips can now be installed and run from a disk image.
 	    (There is no INSTALL kernel for NetBSD/evbmips, so you need to
 	    install using another OS, for example emulated NetBSD/pmax.)
+
+	x)  NetBSD/sgimips can now be installed. Not onto a SCSI disk directly,
+	    but into an nfs exported directory on another emulated machine.
+	    The sgimips machine can then netboot. (See the documentation for
+	    details.)
 
 There have also been many other updates and bugfixes.
 

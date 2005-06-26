@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.801 2005-06-26 06:48:11 debug Exp $
+$Id: HISTORY,v 1.802 2005-06-26 08:50:39 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2018,3 +2018,4 @@ Changelog for GXemul:
 		boots into userland again.
 20050626	Finally! NetBSD/sgimips netboots. Adding instructions to
 		doc/guestoses.html on how to set up an nfs server etc.
+		Various other minor fixes.

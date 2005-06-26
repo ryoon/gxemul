@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.67 2005-06-26 06:48:12 debug Exp $
+$Id: guestoses.html,v 1.68 2005-06-26 07:25:03 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -578,10 +578,10 @@ time consuming, but necessary:
 
 <p>
 <ol>
-  <li><a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>
-	(or install some other similar OS) inside the emulator. This will 
-	be the "<tt>nfs server</tt>" machine. Create a 750 MB <tt>/tftpboot</tt>
-	partition during the installation.
+  <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
+	This needs to have a 750 MB <tt>/tftpboot</tt> partition.
+	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>
+	inside the emulator. (Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
@@ -610,7 +610,7 @@ time consuming, but necessary:
 	<b>cd /tftpboot; ftp -i ftp.se.netbsd.org</b>
 	(log in as anonymous...)
 	<b>cd /pub/NetBSD/NetBSD-2.0.2/sgimips/binary/sets</b>
-	<b>mget *.tgz</b>
+	<b>mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz</b>
 	<b>quit</b>
 	<b>sh</b>
 	<b>for a in *.tgz; do echo $a; tar zxfp $a; done</b>
@@ -625,54 +625,56 @@ time consuming, but necessary:
 	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>
-  <li>Create a configuration file called <tt>config_client</tt>:<pre>
-	<font color="#2020cf">!!gxemul
-	!
-	!  Configuration file for running NetBSD/sgimips diskless with
-	!  a NetBSD/pmax machine as the nfs server.
-	!
-	!  This config file is for the client.
-	!
-	!  Change the filenames, if needed, to suit your setup.</font>
+  <li>Create a configuration file called <tt>config_client</tt>:
+<table border="0"><tr><td width="60">&nbsp;</td><td><pre>
+<font color="#2020cf">!!gxemul
+!
+!  Configuration file for running NetBSD/sgimips diskless with
+!  a NetBSD/pmax machine as the nfs server.
+!
+!  This config file is for the client.
+!
+!  Change the filenames, if needed, to suit your setup.</font>
 
-	<b>emul(
-	    net(
-		add_remote("127.0.0.1:12444")   ! the server
-		local_port(12445)               ! the client
-	    )
+<b>emul(
+    net(
+	add_remote("127.0.0.1:12444")   </b>! the server<b>
+	local_port(12445)               </b>! the client<b>
+    )
 
-	    machine(
-		name("client machine")
-		serial_nr(1)
+    machine(
+	name("client machine")
+	serial_nr(1)
 
-	        type("sgi")
-	        subtype("o2")
+        type("sgi")
+        subtype("o2")
 
-	        load("netbsd-INSTALL32_IP3x.gz")
-	    )
-	)</b>
+        load("netbsd-INSTALL32_IP3x.gz")</b>
+        ! load("netbsd-GENERIC32_IP3x.gz")<b>
+    )
+)</b>
+</pre></td></tr></table>
+	... and another configuration file for the server,
+	<tt>config_server</tt>:
+<table border="0"><tr><td width="60">&nbsp;</td><td><pre>
+<font color="#2020cf">!!gxemul</font>
+<b>emul(
+    net(
+	local_port(12444)               </b>! the server<b>
+	add_remote("127.0.0.1:12445")   </b>! the client<b>
+    )
 
-</pre>... and another configuration file for the server,
-	<tt>config_server</tt>:<pre>
-	<font color="#2020cf">!!gxemul</font>
-	<b>emul(
-	    net(
-		local_port(12444)               ! the server
-		add_remote("127.0.0.1:12445")   ! the client
-	    )
+    machine(
+	name("nfs server")
+	serial_nr(2)
 
-	    machine(
-		name("nfs server")
-		serial_nr(2)
+        type("dec")
+        subtype("5000/200")
 
-	        type("dec")
-	        subtype("5000/200")
-
-	        disk("nbsd_pmax.img")
-	    )
-	)</b>
-
-</pre>
+        disk("nbsd_pmax.img")
+    )
+)</b>
+</pre></td></tr></table>
   <li>Boot the "<tt>nfs server</tt>" and the NetBSD/sgimips
 	"<tt>client machine</tt>" as two separate emulator instances:<pre>
 	in one xterm:

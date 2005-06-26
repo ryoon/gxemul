@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: intro.html,v 1.51 2005-06-23 06:55:43 debug Exp $
+$Id: intro.html,v 1.52 2005-06-26 07:25:03 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -316,7 +316,12 @@ are emulated well enough to run at least one "guest OS":
   <p>
   <li><b>Malta (evbmips)</b>
 	<br>Serial controller and PCI IDE.
+  <p>
+  <li><b>SGI O2 ("IP32")</b>
+	<br>Serial controller and ethernet. <super>*</super>
 </ul>
+
+<p><super>*</super> <small>Enough for netboot, but not for disk boot.</small>
 
 <p>
 There is code in GXemul for emulation of many other machine types;
@@ -437,6 +442,11 @@ interacted with similar to a real machine.
 	<tr><td height="10"></td></tr>
 
 	<tr>
+	  <td></td>
+	  <td align="center"><a href="20050626-netbsd-sgimips-netboot.png"><img src="20050626-netbsd-sgimips-netboot_small.png"></a></td>
+	  <td></td>
+	  <td><a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
+		<br>SGI O2 ("IP32")</td>
 	  <td></td>
 	  <td align="center"><a href="20050622-netbsd-evbmips-malta.png"><img src="20050622-netbsd-evbmips-malta_small.png"></a></td>
 	  <td></td>

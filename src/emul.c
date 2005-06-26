@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.209 2005-06-26 09:21:28 debug Exp $
+ *  $Id: emul.c,v 1.210 2005-06-26 10:05:03 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1058,8 +1058,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				int tmpfile_handle;
 				char *new_temp_name =
 				    strdup("/tmp/gxemul.XXXXXXXXXXXX");
-
-				debug("extracting ELF from %s\n", name_to_load);
+				debug("extracting ELF from %s (offset 0x%x)\n",
+				    name_to_load, (int)found);
 				tmpfile_handle = mkstemp(new_temp_name);
 				write(tmpfile_handle, buf + found,
 				    filesize - found);
@@ -1067,7 +1067,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				name_to_load = new_temp_name;
 				remove_after_load = 1;
 			}
-			fclose(tmp_f);
 		}
 
 		/*  Special things required _before_ loading the file:  */

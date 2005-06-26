@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.23 2005-06-24 09:33:33 debug Exp $
+.\" $Id: gxemul.1,v 1.24 2005-06-26 10:05:02 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -112,7 +112,8 @@ Other options:
 .Bl -tag -width Ds
 .It Fl B
 Disable dynamic binary translation. By default, bintrans
-will be turned on if the host architecture supports it.
+will be turned on if the host+target architecture combination is 
+supported.
 .It Fl C Ar x
 Try to emulate a specific CPU type,
 .Ar "x".
@@ -175,8 +176,8 @@ Disable some speed tricks.
 .It Fl j Ar n
 Set the name of the kernel to
 .Ar "n".
-When booting from an ISO9660 filesystem, the kernel will try to boot from 
-this file. (In some emulation modes, eg. DECstation, this name is passed 
+When booting from an ISO9660 filesystem, the emulator will try to boot 
+using this file. (In some emulation modes, eg. DECstation, this name is passed 
 along to the boot program. Useful names are "bsd" for OpenBSD/pmax, 
 or "vmunix" for Ultrix.)
 .It Fl M Ar m
@@ -297,11 +298,11 @@ subdirectory of the
 distribution.
 .Sh EXAMPLES
 The following command will start NetBSD/pmax on an emulated DECstation 
-5000/200 (3MAX), with the old bintrans system enabled:
+5000/200 (3MAX):
 .Pp
-.Dl "gxemul -E dec -e 3max -d netbsddisk.img"
+.Dl "gxemul -E dec -e 3max -d nbsd_pmax.img"
 .Pp
-netbsddisk.img should be a raw disk image containing a bootable 
+nbsd_pmax.img should be a raw disk image containing a bootable 
 NetBSD/pmax filesystem.
 .Pp
 The following command will start an emulation session based on settings in 
@@ -327,9 +328,8 @@ file in the
 .Nm
 source distribution, some are indirectly mentioned in the TODO file.
 .Pp
-There is no new bintrans system in this release, so you will need to add
-.Fl b
-to select the old bintrans system, if you want reasonable speed.
+The binary translation subsystem is really terrible, but it is less
+terrible than running without it.
 .Pp
 .Nm
 does not simulate individual pipe-line stages or penalties caused by

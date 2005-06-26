@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.97 2005-06-24 09:33:36 debug Exp $
+ *  $Id: dev_fb.c,v 1.98 2005-06-26 11:43:48 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -931,11 +931,10 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	int xsize, int ysize, int bit_depth, char *name, int logo)
 {
 	struct vfb_data *d;
-	size_t size;
-	int x, y;
+	size_t size, nlen;
+	int x, y, flag;
 	char title[400];
 	char *name2;
-	int flags;
 
 	d = malloc(sizeof(struct vfb_data));
 	if (d == NULL) {
@@ -1055,12 +1054,13 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 #endif
 		d->fb_window = NULL;
 
-	name2 = malloc(strlen(name) + 10);
+	nlen = strlen(name) + 10;
+	name2 = malloc(nlen);
 	if (name2 == NULL) {
 		fprintf(stderr, "out of memory in dev_fb_init()\n");
 		exit(1);
 	}
-	sprintf(name2, "fb [%s]", name);
+	snprintf(name2, nlen, "fb [%s]", name);
 
 	flags = MEM_DEFAULT;
 	if ((baseaddr & 0xfff) == 0)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.41 2005-06-20 05:52:48 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.42 2005-06-26 11:43:48 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -183,10 +183,9 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 {
 	struct vfb_data *fb;
 	struct turbochannel_data *d;
-	int rom_offset = 0x3c0000;
-	int rom_length = DEV_TURBOCHANNEL_LEN;
-	int rom_skip = 0;
+	int rom_offset=0x3c0000, rom_length=DEV_TURBOCHANNEL_LEN, rom_skip=0;
 	char *name2;
+	size_t nlen;
 
 	if (device_name == NULL)
 		return;
@@ -324,15 +323,16 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 
 	d->rom_skip = rom_skip;
 
-	name2 = malloc(strlen(device_name) + 30);
+	nlen = strlen(device_name) + 30;
+	name2 = malloc(nlen);
 	if (name2 == NULL) {
 		fprintf(stderr, "out of memory in dev_turbochannel_init()\n");
 		exit(1);
 	}
 	if (*device_name)
-		sprintf(name2, "turbochannel [%s]", device_name);
+		snprintf(name2, nlen, "turbochannel [%s]", device_name);
 	else
-		sprintf(name2, "turbochannel");
+		snprintf(name2, nlen, "turbochannel");
 
 	memory_device_register(mem, name2, baseaddr + rom_offset + rom_skip,
 	    rom_length-rom_skip, dev_turbochannel_access, d, MEM_DEFAULT, NULL);

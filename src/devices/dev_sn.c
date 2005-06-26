@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.10 2005-03-14 19:14:02 debug Exp $
+ *  $Id: dev_sn.c,v 1.11 2005-06-26 11:43:48 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -103,6 +103,7 @@ int dev_sn_access(struct cpu *cpu, struct memory *mem,
 int devinit_sn(struct devinit *devinit)
 {
 	char *name2;
+	size_t nlen = 55;
 	struct sn_data *d = malloc(sizeof(struct sn_data));
 
 	if (d == NULL) {
@@ -114,14 +115,13 @@ int devinit_sn(struct devinit *devinit)
 
 	net_generate_unique_mac(devinit->machine, d->macaddr);
 
-	name2 = malloc(50);
+	name2 = malloc(nlen);
 	if (name2 == NULL) {
 		fprintf(stderr, "out of memory in dev_sn_init()\n");
 		exit(1);
 	}
-	sprintf(name2, "%s [%02x:%02x:%02x:%02x:%02x:%02x]",
-	    devinit->name,
-	    d->macaddr[0], d->macaddr[1], d->macaddr[2],
+	snprintf(name2, nlen, "%s [%02x:%02x:%02x:%02x:%02x:%02x]",
+	    devinit->name, d->macaddr[0], d->macaddr[1], d->macaddr[2],
 	    d->macaddr[3], d->macaddr[4], d->macaddr[5]);
 
 	memory_device_register(devinit->machine->memory, name2,

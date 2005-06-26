@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.25 2005-06-11 21:04:31 debug Exp $
+ *  $Id: dev_cons.c,v 1.26 2005-06-26 11:43:48 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *  It is hardwared to the lowest available MIPS hardware IRQ, and only
@@ -126,6 +126,7 @@ int dev_cons_init(struct machine *machine, struct memory *mem,
 {
 	struct cons_data *d;
 	char *name2;
+	size_t nlen;
 
 	d = malloc(sizeof(struct cons_data));
 	if (d == NULL) {
@@ -136,15 +137,16 @@ int dev_cons_init(struct machine *machine, struct memory *mem,
 	d->irq_nr = irq_nr;
 	d->console_handle = console_start_slave(machine, name);
 
-	name2 = malloc(strlen(name) + 20);
+	nlen = strlen(name) + 20;
+	name2 = malloc(nlen);
 	if (name2 == NULL) {
 		fprintf(stderr, "out of memory in dev_cons_init()\n");
 		exit(1);
 	}
 	if (name != NULL && name[0])
-		sprintf(name2, "cons [%s]", name);
+		snprintf(name2, nlen, "cons [%s]", name);
 	else
-		sprintf(name2, "cons");
+		snprintf(name2, nlen, "cons");
 
 	memory_device_register(mem, name2, baseaddr, DEV_CONS_LENGTH,
 	    dev_cons_access, d, MEM_DEFAULT, NULL);

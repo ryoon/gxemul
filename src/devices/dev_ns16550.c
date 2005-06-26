@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.32 2005-02-19 11:51:33 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.33 2005-06-26 11:43:48 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -298,6 +298,7 @@ int dev_ns16550_init(struct machine *machine, struct memory *mem,
 	char *name)
 {
 	struct ns_data *d;
+	size_t nlen;
 	char *name2;
 
 	d = malloc(sizeof(struct ns_data));
@@ -316,15 +317,16 @@ int dev_ns16550_init(struct machine *machine, struct memory *mem,
 	d->stopbits = "1";
 	d->console_handle = console_start_slave(machine, name);
 
-	name2 = malloc(strlen(name) + 20);
+	nlen = strlen(name) + 20;
+	name2 = malloc(nlen);
 	if (name2 == NULL) {
 		fprintf(stderr, "out of memory in dev_ns16550_init()\n");
 		exit(1);
 	}
 	if (name != NULL && name[0])
-		sprintf(name2, "ns16550 [%s]", name);
+		snprintf(name2, nlen, "ns16550 [%s]", name);
 	else
-		sprintf(name2, "ns16550");
+		snprintf(name2, nlen, "ns16550");
 
 	memory_device_register(mem, name2, baseaddr,
 	    DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d,

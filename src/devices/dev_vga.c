@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.74 2005-05-29 16:04:28 debug Exp $
+ *  $Id: dev_vga.c,v 1.75 2005-06-26 11:43:48 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -260,11 +260,11 @@ static void vga_update_textmode(struct machine *machine,
 		d->charcells_outputed[i+1] = d->charcells[base+i+1];
 
 		if (!printed_last || x == 0) {
-			sprintf(s, "\033[%i;%iH", y + 1, x + 1);
+			snprintf(s, sizeof(s), "\033[%i;%iH", y + 1, x + 1);
 			c_putstr(d, s);
 		}
 		if (oldcolor < 0 || (bg<<4)+fg != oldcolor || !printed_last) {
-			sprintf(s, "\033[0;"); c_putstr(d, s);
+			snprintf(s, sizeof(s), "\033[0;"); c_putstr(d, s);
 
 			switch (fg & 7) {
 			case 0:	c_putstr(d, "30"); break;
@@ -301,7 +301,7 @@ static void vga_update_textmode(struct machine *machine,
 	}
 
 	/*  Restore the terminal's cursor position:  */
-	sprintf(s, "\033[%i;%iH", d->cursor_y + 1, d->cursor_x + 1);
+	snprintf(s, sizeof(s), "\033[%i;%iH", d->cursor_y + 1, d->cursor_x + 1);
 	c_putstr(d, s);
 }
 

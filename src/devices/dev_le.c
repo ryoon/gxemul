@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.39 2005-03-14 19:14:02 debug Exp $
+ *  $Id: dev_le.c,v 1.40 2005-06-26 11:43:48 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -768,6 +768,7 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	uint64_t buf_start, uint64_t buf_end, int irq_nr, int len)
 {
 	char *name2;
+	size_t nlen = 55;
 	struct le_data *d = malloc(sizeof(struct le_data));
 
 	if (d == NULL) {
@@ -818,12 +819,12 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	    SRAM_SIZE, dev_le_sram_access, (void *)d,
 	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->sram);
 
-	name2 = malloc(50);
+	name2 = malloc(nlen);
 	if (name2 == NULL) {
 		fprintf(stderr, "out of memory in dev_le_init()\n");
 		exit(1);
 	}
-	sprintf(name2, "le [%02x:%02x:%02x:%02x:%02x:%02x]",
+	snprintf(name2, nlen, "le [%02x:%02x:%02x:%02x:%02x:%02x]",
 	    d->rom[0], d->rom[1], d->rom[2], d->rom[3], d->rom[4], d->rom[5]);
 
 	memory_device_register(mem, name2, baseaddr + 0x100000,

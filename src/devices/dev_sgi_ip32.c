@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.26 2005-06-25 21:19:45 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.27 2005-06-26 11:43:48 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -929,6 +929,7 @@ void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, unsigned char *macaddr)
 {
 	char *name2;
+	size_t nlen = 55;
 	struct sgi_mec_data *d = malloc(sizeof(struct sgi_mec_data));
 
 	if (d == NULL) {
@@ -941,12 +942,12 @@ void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 
 	mec_reset(d);
 
-	name2 = malloc(50);
+	name2 = malloc(nlen);
 	if (name2 == NULL) {
 		fprintf(stderr, "out of memory in dev_sgi_mec_init()\n");
 		exit(1);
 	}
-	sprintf(name2, "mec [%02x:%02x:%02x:%02x:%02x:%02x]",
+	snprintf(name2, nlen, "mec [%02x:%02x:%02x:%02x:%02x:%02x]",
 	    d->macaddr[0], d->macaddr[1], d->macaddr[2],
 	    d->macaddr[3], d->macaddr[4], d->macaddr[5]);
 

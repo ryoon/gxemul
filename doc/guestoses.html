@@ -11,7 +11,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.70 2005-06-26 08:24:27 debug Exp $
+$Id: guestoses.html,v 1.71 2005-06-26 17:14:39 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1121,13 +1121,17 @@ start the X11 environment.
 
 <font color="#ef0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. During my tests, even pressing the wrong key during the install
-(for example the wrong cursor key) can cause a kernel Oops.
-I <i>think</i> this has to do with interrupts from the serial controller.
+(for example the wrong cursor key) can cause a kernel Oops. My success
+rate is probably around 50%.
+
+<p>I <i>think</i> this has to do with interrupts from the serial controller.
 Hopefully using the <tt><b>-U</b></tt> command line option will reduce the 
 risk for such crashes. (I haven't had time to come up with a clean
 solution to this yet; it feels like a buffer overflow in Linux' serial 
 driver for the 5000/200, but it is also likely that it is a bug in GXemul.)
-</font>
+
+<p>Everything runs extremely slow. Even if you have a very fast host
+machine, an install attempt can still take several hours! </font>
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1165,57 +1169,45 @@ onto a harddisk image:
 	$ <b>gxemul -E dec -e 3max -U -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
 
 </pre>
-</ol>
-
-<p>Debian GNU/Linux on DECstation works reasonably fine with dynamic
-binary translation, which can be disabled by the <b><tt>-B</tt></b>
-command line option.  (With this option, the emulator might be less buggy,
-but also too slow to be useful when running Linux as a guest OS.)
-
-<p>
-(If you want to, you can try <b>-X</b> instead of <b>-o 'console=ttyS3'</b> on
-the command line. This will cause Linux to use the graphical framebuffer.
-Unfortunately, Linux does not seem to have a driver for the DZ11 keyboard
-controller yet, so you cannot interact with the system. You will see the
-penguin in the upper lefthand corner while booting, and nicely rendered Unicode
-characters, but that's about it.)
-
-<p>
-You need to enter some values during the installation procedure, for example
-network settings. The following should work:
-<p>
-<pre>
-    DHCP:                       No, choose "Configure network manually"
-    IP address:                 10.0.0.1
-    Netmask:                    255.0.0.0
-    Gateway:                    10.0.0.254
-    Name server addresses:      10.0.0.254
+	Debian GNU/Linux on DECstation works reasonably fine with dynamic
+	binary translation, which can be disabled by the <b><tt>-B</tt></b>
+	command line option.  (With this option, the emulator might be less
+	buggy, but also too slow to be useful when running Linux as a guest
+	OS.)
+	<p>
+	(If you want to, you can try <b><tt>-X</tt></b> instead of
+	<b><tt>-o 'console=ttyS3'</tt></b> on the command line. This will
+	cause Linux to use the graphical framebuffer. Unfortunately, Linux
+	does not seem to have a driver for the DZ11 keyboard controller yet,
+	so you cannot interact with the system. You will see the penguin in
+	the upper lefthand corner while booting, and nicely rendered Unicode
+	characters, but that's about it.)
+	<p>
+	You need to enter some values during the installation procedure, for
+	example network settings. The following should work:<pre>
+	DHCP:                       No, choose "Configure network manually"
+	IP address:                 10.0.0.1
+	Netmask:                    255.0.0.0
+	Gateway:                    10.0.0.254
+	Name server addresses:      10.0.0.254
 </pre>
-
-<p>
-<ol start="4">
   <li>Once the first phase of the install has finished, the following command
 	should let you boot into Debian, and perform post-install
 	configuration:<pre>
 	$ <b>gxemul -E dec -e 3max -U -M64 -o 'console=ttyS3' -d debian.img</b>
 
-</pre>
-</ol>
-
-<p>
-It seems that there's a problem with getting a login prompt on serial 
-console (at least when I've done test installs), so when the installation 
-is finished and you're supposed to get a login prompt, you need to press 
-CTRL-C and type <b>quit</b>, and then:
-
-<p>
-<ol start="5">
-  <li>Download a normal kernel (<i>not</i> a RAMDISK kernel):<pre>
+</pre>Note: All these steps take a lot of time, so you will have plenty
+	of time for drinking lots of cups of coffee.
+  <p>
+  <li>It seems that there's a problem with getting a login prompt on serial 
+	console (at least when I've done test installs), so when the
+	installation is finished and you're supposed to get a login prompt,
+	you need to press CTRL-C and type <b><tt>quit</tt></b>, and then:
+	download a normal kernel (<i>not</i> a RAMDISK kernel):<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
 	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
 
-</pre>
-  <li>Boot Debian using the following command line:<pre>
+</pre>and boot Debian using the following command line:<pre>
 	$ <b>gxemul -E dec -e 3max -U -M64 -o \
 	    'console=ttyS3 root=/dev/sda1 rw init=/bin/sh' \
 	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
@@ -1226,6 +1218,7 @@ CTRL-C and type <b>quit</b>, and then:
 	sh-2.05b# <b>echo 'T3:23:respawn:/sbin/getty -L ttyS3 9600 vt100' >> /etc/inittab</b>
 	sh-2.05b# <b>echo 'ttyS3' >> /etc/securetty</b>
 	sh-2.05b# <b>sync; umount /</b>
+	sh-2.05b# <b>halt</b>
 </pre>
 </ol>
 
@@ -1449,46 +1442,46 @@ client. Performing this setup is quite time consuming, but necessary:
 
 <p>
 <ol>
-  <li><a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>
-	(or install some other similar OS) inside the emulator. This will 
-	be the "<tt>nfs server</tt>" machine. Create a 750 MB <tt>/tftpboot</tt>
-	partition during the installation.
+  <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
+	This needs to have a 800 MB <tt>/tftpboot</tt> partition.
+	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>
+	inside the emulator. (Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
 	$ <b>gxemul -M64 -Edec -e3max -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
-	inside the emulator:<pre>
-	<b>echo hostname=server &gt;&gt; /etc/rc.conf</b>
-	<b>echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf</b>
-	<b>echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf</b>
-	<b>echo 10.0.0.254 &gt; /etc/mygate</b>
-	<b>echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports</b>
-	<b>echo rpcbind=YES &gt;&gt; /etc/rc.conf</b>
-	<b>echo nfs_server=YES &gt;&gt; /etc/rc.conf</b>
-	<b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
-	<b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
-	<b>printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams</b>
-	<b>echo "10:20:30:00:00:10 client" &gt; /etc/ethers</b>
-	<b>echo 10.0.0.1 client &gt; /etc/hosts</b>
-	<b>reboot</b>
-
-</pre>
+	inside the emulator:
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>echo hostname=server &gt;&gt; /etc/rc.conf
+echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf
+echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf
+echo 10.0.0.254 &gt; /etc/mygate
+echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports
+echo rpcbind=YES &gt;&gt; /etc/rc.conf
+echo nfs_server=YES &gt;&gt; /etc/rc.conf
+echo mountd=YES &gt;&gt; /etc/rc.conf
+echo bootparamd=YES &gt;&gt; /etc/rc.conf
+printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams
+echo "10:20:30:00:00:10 client" &gt; /etc/ethers
+echo 10.0.0.1 client &gt; /etc/hosts
+reboot</b>
+</pre></td></tr></table>
   <li>Start the DECstation emulation again, and download the
 	OpenBSD/sgi distribution:<br>(NOTE: This
-	takes quite some time, even if you have a fast network connection.)<pre>
-	<b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
-	(log in as anonymous...)
-	<b>cd pub/OpenBSD/3.7/sgi</b>
-	<b>mget *.tgz</b>
-	<b>quit</b>
-	<b>sh</b>
-	<b>for a in *.tgz; do echo $a; tar zxfp $a; done</b>
-	<b>echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab</b>
-	<b>dd if=/dev/zero of=swap bs=1024 count=32768</b>
-	<b>halt</b>
-
-</pre>
+	takes quite some time, even if you have a fast network connection.)
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
+(log in as anonymous...)
+<b>cd pub/OpenBSD/3.7/sgi
+mget b* c* e* g* m*
+quit
+sh
+for a in *.tgz; do echo $a; tar zxfp $a; done
+echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
+dd if=/dev/zero of=swap bs=1024 count=32768
+halt</b>
+</pre></td></tr></table>
   <li>Download the OpenBSD/sgi GENERIC and RAMDISK kernels:<pre>
 	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd</a>
 	MD5 (bsd) = f16eaf3dcbd51876db7c25f70e6d8a08
@@ -1496,54 +1489,54 @@ client. Performing this setup is quite time consuming, but necessary:
 	MD5 (bsd.rd) = 4843e6139d8dd04b03d5f0e33e9a4f7b
 
 </pre>
-  <li>Create a configuration file called <tt>config_client</tt>:<pre>
-	<font color="#2020cf">!!gxemul
-	!
-	!  Configuration file for running OpenBSD/sgi diskless with
-	!  a NetBSD/pmax machine as the nfs server.
-	!
-	!  This config file is for the client.
-	!
-	!  Change the filenames, if needed, to suit your setup.</font>
+  <li>Create a configuration file called <tt>config_client</tt>:
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<font color="#2020cf">!!gxemul
+!
+!  Configuration file for running OpenBSD/sgi diskless with
+!  a NetBSD/pmax machine as the nfs server.
+!
+!  This config file is for the client.</font>
 
-	<b>emul(
-	    net(
-		add_remote("127.0.0.1:12444")   ! the server
-		local_port(12445)               ! the client
-	    )
+<b>emul(
+    net(
+	add_remote("127.0.0.1:12444")   </b>! the server<b>
+	local_port(12445)               </b>! the client<b>
+    )
 
-	    machine(
-		name("client machine")
-		serial_nr(1)
+    machine(
+	name("client machine")
+	serial_nr(1)
 
-	        type("sgi")
-	        subtype("o2")
+        type("sgi")
+        subtype("o2")
 
-	        load("bsd.rd")
-	    )
-	)</b>
+        </b>! load("bsd")<b>
+        load("bsd.rd")
+    )
+)</b>
+</pre></td></tr></table>
+	... and another configuration file for the server,
+	<tt>config_server</tt>:
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<font color="#2020cf">!!gxemul</font>
+<b>emul(
+    net(
+	local_port(12444)               </b>! the server<b>
+	add_remote("127.0.0.1:12445")   </b>! the client<b>
+    )
 
-</pre>... and another configuration file for the server,
-	<tt>config_server</tt>:<pre>
-	<font color="#2020cf">!!gxemul</font>
-	<b>emul(
-	    net(
-		local_port(12444)               ! the server
-		add_remote("127.0.0.1:12445")   ! the client
-	    )
+    machine(
+	name("nfs server")
+	serial_nr(2)
 
-	    machine(
-		name("nfs server")
-		serial_nr(2)
+        type("dec")
+        subtype("5000/200")
 
-	        type("dec")
-	        subtype("5000/200")
-
-	        disk("nbsd_pmax.img")
-	    )
-	)</b>
-
-</pre>
+        disk("nbsd_pmax.img")
+    )
+)</b>
+</pre></td></tr></table>
   <li>Boot the "<tt>nfs server</tt>" and the OpenBSD/sgi
 	"<tt>client machine</tt>" as two separate emulator instances:<pre>
 	in one xterm:
@@ -1553,17 +1546,19 @@ client. Performing this setup is quite time consuming, but necessary:
 	$ <b>gxemul @config_client</b>
 
 </pre>
-  <li>In the OpenBSD/sgi window, choose "S" (for Shell), and type:<pre>
-	<b>ifconfig mec0 10.0.0.1; route add default 10.0.0.254</b>
-	<b>mount -v 10.0.0.2:/tftpboot /mnt</b>
-	<b>cd /mnt/dev; ./MAKEDEV all; cd /; umount /mnt</b>
-	<b>halt</b>
-</pre>
+  <li>In the OpenBSD/sgi window, choose "S" (for Shell), and type:
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>ifconfig mec0 10.0.0.1; route add default 10.0.0.254
+mount -v 10.0.0.2:/tftpboot /mnt
+cd /mnt/dev; ./MAKEDEV all; cd /; umount /mnt
+halt</b>
+</pre></td></tr></table>
 </ol>
 
 <p>You might want to log in as <tt>root</tt> on the server machine, and
 run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
-actually does on the network.
+actually does on the network. The <tt>MAKEDEV</tt> script takes almost 
+forever, so be patient.
 
 <p><font color="#ff0000">NOTE: Everything up to this point should work. 
 However, the next step (in gray) doesn't actually work:</font>

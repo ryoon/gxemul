@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.130 2005-06-26 13:49:05 debug Exp $
+$Id: RELEASE,v 1.131 2005-06-26 17:14:38 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -58,10 +58,10 @@ Summary of changes between release 0.3.3.2 and 0.3.X:
 	    (There is no INSTALL kernel for NetBSD/evbmips, so you need to
 	    install using another OS, for example emulated NetBSD/pmax.)
 
-	x)  NetBSD/sgimips can now be installed. Not onto a SCSI disk directly,
-	    but into an nfs exported directory on another emulated machine.
-	    The sgimips machine can then netboot. (Read the documentation for
-	    details.)
+	x)  NetBSD/sgimips can now be installed. Not onto a SCSI disk,
+	    but the files can be exported via nfs from another emulated
+	    machine. The sgimips machine can then netboot. (Read the
+	    documentation for details.)
 
 There have also been many other updates and bugfixes.
 

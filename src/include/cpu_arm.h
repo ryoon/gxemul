@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.8 2005-06-25 13:55:52 debug Exp $
+ *  $Id: cpu_arm.h,v 1.9 2005-06-26 21:32:56 debug Exp $
  */
 
 #include "misc.h"
@@ -74,10 +74,17 @@ struct arm_tc_physpage {
 
 #define	ARM_COMBINATIONS		1
 
+#define	ARM_FLAG_N	0x80000000	/*  Negative flag  */
+#define	ARM_FLAG_Z	0x40000000	/*  Zero flag  */
+#define	ARM_FLAG_C	0x20000000	/*  Carry flag  */
+#define	ARM_FLAG_V	0x10000000	/*  Overflow flag  */
+#define	ARM_FLAG_I	0x08000000	/*  Interrupt disable  */
+#define	ARM_FLAG_F	0x04000000	/*  Fast Interrupt disable  */
 
 struct arm_cpu {
 	/*  General Purpose Registers (including the program counter):  */
 	uint32_t		r[N_ARM_REGS];
+	uint32_t		flags;
 
 	unsigned char		*translation_cache;
 	size_t			translation_cache_cur_ofs;

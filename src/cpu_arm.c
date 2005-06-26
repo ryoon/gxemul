@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.13 2005-06-25 21:19:44 debug Exp $
+ *  $Id: cpu_arm.c,v 1.14 2005-06-26 21:32:56 debug Exp $
  *
  *  ARM CPU emulation.
  *
- *  TODO: This is just a dummy so far.
+ *  Whenever there is a reference to "(1)", that means
+ *  "http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html".
  */
 
 #include <stdio.h>
@@ -73,9 +74,20 @@ int arm_cpu_family_init(struct cpu_family *fp)
 static char *arm_condition_string[16] = {
 	"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc",
 	"hi", "ls", "ge", "lt", "gt", "le", ""/*Always*/, "(INVALID)" };
+
+/*  ARM symbolic register names:  */
 static char *arm_regname[N_ARM_REGS] = {
 	"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", 
 	"r8", "r9", "sl", "fp", "ip", "sp", "lr", "pc" };
+
+/* Data processing instructions:  */
+static char *arm_dpiname[16] = {
+	"and", "eor", "sub", "rsb", "add", "adc", "sbc", "rsc",
+	"tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn" };
+static int arm_dpi_uses_d[16] = { 
+	1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1 };
+static int arm_dpi_uses_n[16] = { 
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0 };
 
 extern volatile int single_step;
 extern int old_show_trace_tree;   
@@ -223,9 +235,8 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
         int running, uint64_t dumpaddr, int bintrans)
 {
-	uint32_t iw;
-	uint32_t tmp;
-	int main_opcode, secondary_opcode, r16, r12, r8;
+	uint32_t iw, tmp;
+	int main_opcode, secondary_opcode, s_bit, r16, r12, r8;
 	char *symbol, *condition;
 	uint64_t offset;
 
@@ -250,29 +261,77 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	condition = arm_condition_string[iw >> 28];
 	main_opcode = (iw >> 24) & 15;
-	secondary_opcode = (iw >> 20) & 15;
+	secondary_opcode = (iw >> 21) & 15;
+	s_bit = (iw >> 20) & 1;
 	r16 = (iw >> 16) & 15;
 	r12 = (iw >> 12) & 15;
 	r8 = (iw >> 8) & 15;
 
 	switch (main_opcode) {
+	case 0x0:
 	case 0x1:
+	case 0x2:
 	case 0x3:
-		switch (secondary_opcode) {
-		case 0xa:
-		case 0xb:
-			debug("mov%s%s\t", condition,
-			    secondary_opcode == 0xa? "" : "s");
-			debug("%s,", arm_regname[r12]);
-			/*  TODO: shifter etc  */
-			if ((iw & 0xfff) < 16)
-				debug("#%i", iw & 0xfff);
-			else
-				debug("#0x%x", iw & 0xfff);
-			debug("\n");
+		/*
+		 *  See (1):
+		 *  xxxx000a aaaSnnnn ddddcccc ctttmmmm  Register form
+		 *  xxxx001a aaaSnnnn ddddrrrr bbbbbbbb  Immediate form
+		 */
+		if (iw & 0x80 && !(main_opcode & 2)) {
+			debug("UNIMPLEMENTED reg (c!=0)\n");
 			break;
-		default:debug("UNIMPLEMENTED\n");
 		}
+
+		debug("%s%s%s\t", arm_dpiname[secondary_opcode],
+		    condition, s_bit? "s" : "");
+		if (arm_dpi_uses_d[secondary_opcode])
+			debug("%s,", arm_regname[r12]);
+		if (arm_dpi_uses_n[secondary_opcode])
+			debug("%s,", arm_regname[r16]);
+
+		if (main_opcode & 2) {
+			/*  Immediate form:  */
+			int r = (iw >> 7) & 30;
+			uint32_t b = iw & 0xff;
+			while (r-- > 0)
+				b = (b >> 1) | ((b & 1) << 31);
+			if (b < 15)
+				debug("#%i", b);
+			else
+				debug("#0x%x", b);
+		} else {
+			/*  Register form:  */
+			int t = (iw >> 4) & 7;
+			int c = (iw >> 7) & 31;
+			debug("%s", arm_regname[iw & 15]);
+			switch (t) {
+			case 0:	if (c != 0)
+					debug(" LSL #%i", c);
+				break;
+			case 1:	debug(" LSL %s", arm_regname[c >> 1]);
+				break;
+			case 2:	debug(" LSR #%i", c? c : 32);
+				break;
+			case 3:	debug(" LSR %s", arm_regname[c >> 1]);
+				break;
+			case 4:	debug(" ASR #%i", c? c : 32);
+				break;
+			case 5:	debug(" ASR %s", arm_regname[c >> 1]);
+				break;
+			case 6:	if (c != 0)
+					debug("ROR #%i", c);
+				else
+					debug("RRX");
+				break;
+			case 7:	debug(" ROR %s", arm_regname[c >> 1]);
+				break;
+			}
+		}
+		debug("\n");
+		break;
+	case 0x8:				/*  Block Data Transfer  */
+	case 0x9:
+		debug("TODO: block data transfer\n");
 		break;
 	case 0xa:				/*  B: branch  */
 	case 0xb:				/*  BL: branch and link  */
@@ -287,6 +346,41 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		if (symbol != NULL)
 			debug("\t\t<%s>", symbol);
 		debug("\n");
+		break;
+	case 0xc:				/*  Coprocessor  */
+	case 0xd:				/*  LDC/STC  */
+		/*  xxxx110P UNWLnnnn DDDDpppp oooooooo LDC/STC  */
+		debug("TODO: coprocessor LDC/STC\n");
+		break;
+	case 0xe:				/*  CDP (Coprocessor Op)  */
+		/*				    or MRC/MCR!
+		 *  According to (1):
+		 *  xxxx1110 oooonnnn ddddpppp qqq0mmmm		CDP
+		 *  xxxx1110 oooLNNNN ddddpppp qqq1MMMM		MRC/MCR
+		 */
+		if (iw & 0x10) {
+			debug("%s%s\t",
+			    (iw & 0x00100000)? "mrc" : "mcr", condition);
+			debug("%i,%i,r%i,cr%i,cr%i,%i",
+			    (int)((iw >> 8) & 15), (int)((iw >>21) & 7),
+			    (int)((iw >>12) & 15), (int)((iw >>16) & 15),
+			    (int)((iw >> 0) & 15), (int)((iw >> 5) & 7));
+		} else {
+			debug("cdp%s\t", condition);
+			debug("%i,%i,cr%i,cr%i,cr%i",
+			    (int)((iw >> 8) & 15),
+			    (int)((iw >>20) & 15),
+			    (int)((iw >>12) & 15),
+			    (int)((iw >>16) & 15),
+			    (int)((iw >> 0) & 15));
+			if ((iw >> 5) & 7)
+				debug(",0x%x", (int)((iw >> 5) & 7));
+		}
+		debug("\n");
+		break;
+	case 0xf:				/*  SWI  */
+		debug("swi%s\t", condition);
+		debug("0x%x\n", (int)(iw & 0x00ffffff));
 		break;
 	default:debug("UNIMPLEMENTED\n");
 	}

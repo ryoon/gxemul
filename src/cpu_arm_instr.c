@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.14 2005-06-26 22:23:42 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.15 2005-06-26 22:40:16 debug Exp $
  *
  *  ARM instructions.
  *
@@ -275,10 +275,9 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
  */
 void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 {
-	uint32_t addr, low_pc;
+	uint32_t addr, low_pc, iword, imm;
 	unsigned char ib[4];
-	uint32_t iword;
-	int condition_code, main_opcode, secondary_opcode, r16, r12, r8;
+	int condition_code, main_opcode, secondary_opcode, s_bit, r16, r12, r8;
 
 	/*  Make sure that PC is in synch:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
@@ -293,7 +292,7 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
 	    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
 		fatal("arm_translate_instruction(): read failed: TODO\n");
-		exit(1);
+		goto bad;
 	}
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
@@ -308,14 +307,15 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	    http://armphetamine.sourceforge.net/oldinfo.html  */
 	condition_code = iword >> 28;
 	main_opcode = (iword >> 24) & 15;
-	secondary_opcode = (iword >> 20) & 15;
+	secondary_opcode = (iword >> 21) & 15;
+	s_bit = (iword >> 20) & 1;
 	r16 = (iword >> 16) & 15;
 	r12 = (iword >> 12) & 15;
 	r8 = (iword >> 8) & 15;
 
 	if (condition_code != 0xe) {
 		fatal("TODO: ARM condition code 0x%x\n", condition_code);
-		exit(1);
+		goto bad;
 	}
 
 
@@ -325,18 +325,32 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 
 	switch (main_opcode) {
 
+	case 0x0:
+	case 0x1:
+	case 0x2:
 	case 0x3:
+		if ((main_opcode & 2) == 0) {
+			fatal("REGISTER FORM! TODO\n");
+			goto bad;
+		}
+		if (s_bit) {
+			fatal("s_bit! TODO\n");
+			goto bad;
+		}
 		switch (secondary_opcode) {
-		case 0x0a:					/*  MOV  */
+		case 0xd:				/*  MOV  */
 			if (r12 == ARM_PC) {
 				fatal("TODO: mov used as branch\n");
-				exit(1);
+				goto bad;
 			} else {
 				ic->f = instr(mov);
 				ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
-				/*  TODO: shifter argument  */
-				ic->arg[1] = iword & 0xfff;
-				if (ic->arg[1] == 0)
+				imm = iword & 0xff;
+				r8 <<= 1;
+				while (r8-- > 0)
+					imm = (imm >> 1) | ((imm & 1) << 31);
+				ic->arg[1] = imm;
+				if (imm == 0)
 					ic->f = instr(clear);
 			}
 			break;
@@ -398,7 +412,6 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 bad:	/*
 	 *  Nothing was translated. (Unimplemented or illegal instruction.)
 	 */
-
 	quiet_mode = 0;
 	fatal("arm_translate_instruction(): TODO: "
 	    "unimplemented ARM instruction:\n");

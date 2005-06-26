@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.15 2005-06-26 22:23:41 debug Exp $
+ *  $Id: cpu_arm.c,v 1.16 2005-06-26 22:40:16 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -452,7 +452,7 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 /*
  *  arm_cpu_run_instr():
  *
- *  Execute one instruction on a specific CPU.
+ *  Execute one or more instructions on a specific CPU.
  *
  *  Return value is the number of instructions executed during this call,
  *  0 if no instructions were executed.
@@ -555,6 +555,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		ic->f(cpu, ic);
 		n_instrs = 1;
 	} else {
+		/*  Execute multiple instructions:  */
 		n_instrs = 0;
 		for (;;) {
 			struct arm_instr_call *ic;

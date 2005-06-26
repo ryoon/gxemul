@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.22 2005-06-23 06:01:26 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.23 2005-06-26 11:36:27 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -532,13 +532,13 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 }
 
 
+#ifdef BINTRANS
 /*
  *  old_update_translation_table():
  */
 static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
-#ifdef BINTRANS
 	int a, b;
 	struct vth32_table *tbl1;
 	void *p_r, *p_w;
@@ -612,8 +612,8 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		tbl1->paddr_entry[b] = paddr_page;
 	}
 	tbl1->bintrans_chunks[b] = NULL;
-#endif
 }
+#endif
 
 
 /*

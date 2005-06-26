@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.12 2005-06-25 21:19:44 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.13 2005-06-26 11:36:27 debug Exp $
  *
  *  ARM instructions.
  *
@@ -89,7 +89,6 @@ X(b)
 {
 	int low_pc;
 	uint32_t old_pc;
-	uint32_t mask_within_page = ((IC_ENTRIES_PER_PAGE-1) << 2) | 3;
 
 	/*  fatal("b: arg[0] = 0x%08x, pc=0x%08x\n", ic->arg[0], cpu->pc);  */
 

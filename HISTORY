@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.803 2005-06-26 09:21:27 debug Exp $
+$Id: HISTORY,v 1.804 2005-06-26 11:36:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2021,3 +2021,4 @@ Changelog for GXemul:
 		Various other minor fixes.
 		Playstation Portable ".pbp" files can now be used directly.
 		(The ELF part of the .pbp is extracted transparently.)
+		Converting some sprintf -> snprintf.

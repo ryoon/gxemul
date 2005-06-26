@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.210 2005-06-26 10:05:03 debug Exp $
+ *  $Id: emul.c,v 1.211 2005-06-26 11:36:28 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -994,7 +994,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			memset(buf, 0, sizeof(buf));
 			fread(buf, 1, sizeof(buf), tmp_f);
 			if (buf[0]==0x1f && buf[1]==0x8b) {
-				char *zz = malloc(strlen(name_to_load)*2 + 100);
+				size_t zzlen = strlen(name_to_load)*2 + 100;
+				char *zz = malloc(zzlen);
 				debug("gunziping %s\n", name_to_load);
 				/*
 				 *  gzip header found.  If this was a file
@@ -1003,10 +1004,10 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				 *  have to gunzip into a temporary file.
 				 */
 				if (remove_after_load) {
-					sprintf(zz, "mv %s %s.gz", name_to_load,
-					    name_to_load);
+					snprintf(zz, zzlen, "mv %s %s.gz",
+					    name_to_load, name_to_load);
 					system(zz);
-					sprintf(zz, "gunzip %s.gz",
+					snprintf(zz, zzlen, "gunzip %s.gz",
 					    name_to_load);
 					system(zz);
 				} else {
@@ -1016,7 +1017,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 					    strdup("/tmp/gxemul.XXXXXXXXXXXX");
 					tmpfile_handle = mkstemp(new_temp_name);
 					close(tmpfile_handle);
-					sprintf(zz, "gunzip -c '%s' > "
+					snprintf(zz, zzlen, "gunzip -c '%s' > "
 					    "%s", name_to_load, new_temp_name);
 					system(zz);
 					name_to_load = new_temp_name;
@@ -1262,7 +1263,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 					    cd.urisc.wordlen/8 - 1 - i];
 			}
 
-			sprintf(tmps, "0x%%0%illx", cpu->cd.urisc.wordlen / 4);
+			snprintf(tmps, sizeof(tmps), "0x%%0%illx",
+			    cpu->cd.urisc.wordlen / 4);
 			debug(tmps, (long long)entrypoint);
 			cpu->pc = entrypoint;
 		}

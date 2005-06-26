@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.105 2005-06-24 19:15:07 debug Exp $
+ *  $Id: debugger.c,v 1.106 2005-06-26 11:36:27 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1501,10 +1501,16 @@ static struct cmd cmds[] = {
  *
  *  NOTE: This is placed after the cmds[] array, because it needs to
  *  access it.
+ *
+ *  TODO: Command completion (ie just type "help s" for "help step").
  */
 static void debugger_cmd_help(struct machine *m, char *cmd_line)
 {
-	int i, j, max_name_len = 0;
+	int i, j, max_name_len = 0, only_one = 0, only_one_match = 0;
+
+	if (cmd_line[0] != '\0') {
+		only_one = 1;
+	}
 
 	i = 0;
 	while (cmds[i].name != NULL) {
@@ -1516,12 +1522,22 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 		i++;
 	}
 
-	printf("Available commands:\n");
+	if (!only_one)
+		printf("Available commands:\n");
 
 	i = 0;
 	while (cmds[i].name != NULL) {
 		char buf[100];
 		snprintf(buf, sizeof(buf), "%s", cmds[i].name);
+
+		if (only_one) {
+			if (strcmp(cmds[i].name, cmd_line) != 0) {
+				i++;
+				continue;
+			}
+			only_one_match = 1;
+		}
+
 		if (cmds[i].args != NULL)
 			snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
 			    " %s", cmds[i].args);
@@ -1535,6 +1551,12 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 
 		printf("   %s\n", cmds[i].description);
 		i++;
+	}
+
+	if (only_one) {
+		if (!only_one_match)
+			printf("%s: no such command\n", cmd_line);
+		return;
 	}
 
 	printf("Generic assignments:   x = expr\n");

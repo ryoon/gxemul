@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.6 2005-04-04 20:08:58 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.7 2005-06-26 11:36:27 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -178,10 +178,12 @@ void urisc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    cpu->pc, &offset);
-	sprintf(tmps, "cpu%%i: pc  = 0x%%0%illx", (cpu->cd.urisc.wordlen/4));
+	snprintf(tmps, sizeof(tmps), "cpu%%i: pc  = 0x%%0%illx",
+	    (cpu->cd.urisc.wordlen/4));
 	debug(tmps, x, (long long)cpu->pc);
 	debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
-	sprintf(tmps, "cpu%%i: acc = 0x%%0%illx\n", (cpu->cd.urisc.wordlen/4));
+	snprintf(tmps, sizeof(tmps), "cpu%%i: acc = 0x%%0%illx\n",
+	    (cpu->cd.urisc.wordlen/4));
 	debug(tmps, x, (long long)cpu->cd.urisc.acc);
 }
 
@@ -216,7 +218,7 @@ int urisc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
-	sprintf(tmps, "0x%%0%illx:  0x", nbytes * 2);
+	snprintf(tmps, sizeof(tmps), "0x%%0%illx:  0x", nbytes * 2);
 	debug(tmps, (long long)dumpaddr);
 
 	/*  TODO:  Little-endian?  */
@@ -350,9 +352,9 @@ int urisc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	}
 
 	if (cpu->machine->instruction_trace) {
-		sprintf(tmps, "\t[mem=0x%%0%illx", nbytes * 2);
+		snprintf(tmps, sizeof(tmps), "\t[mem=0x%%0%illx", nbytes * 2);
 		debug(tmps, (long long)data);
-		sprintf(tmps, "; acc: 0x%%0%illx", nbytes * 2);
+		snprintf(tmps, sizeof(tmps), "; acc: 0x%%0%illx", nbytes * 2);
 		debug(tmps, (long long)cpu->cd.urisc.acc);
 	}
 
@@ -364,7 +366,7 @@ int urisc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	cpu->cd.urisc.acc = data;
 
 	if (cpu->machine->instruction_trace) {
-		sprintf(tmps, " ==> 0x%%0%illx", nbytes * 2);
+		snprintf(tmps, sizeof(tmps), " ==> 0x%%0%illx", nbytes * 2);
 		debug(tmps, (long long)cpu->cd.urisc.acc);
 		if (skip)
 			debug(", SKIP");

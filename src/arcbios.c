@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.104 2005-06-20 05:52:46 debug Exp $
+ *  $Id: arcbios.c,v 1.105 2005-06-26 11:36:27 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -2290,8 +2290,8 @@ void arcbios_init(struct machine *machine, int is64bit,
 #endif
 		arcbios_putstring(cpu, "   ARCBIOS emulation\n");
 
-		sprintf(tmpstr, "%i cpu%s (%s), %i MB memory\n\n",
-		    machine->ncpus, machine->ncpus > 1? "s" : "",
+		snprintf(tmpstr, sizeof(tmpstr), "%i cpu%s (%s), %i MB "
+		    "memory\n\n", machine->ncpus, machine->ncpus > 1? "s" : "",
 		    cpu->cd.mips.cpu_type.name,
 		    machine->physical_ram_in_mb);
 		arcbios_putstring(cpu, tmpstr);
@@ -2445,7 +2445,7 @@ void arcbios_init(struct machine *machine, int is64bit,
 		/*  A very special case for IP24 (which identifies itself
 		    as an IP22):  */
 		if (machine->machine_subtype == 24)
-			sprintf(name, "SGI-IP22");
+			snprintf(name, alloclen, "SGI-IP22");
 		break;
 	case MACHINE_ARC:
 		/*  ARC:  */

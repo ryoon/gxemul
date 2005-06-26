@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.97 2005-06-02 17:11:34 debug Exp $
+ *  $Id: pc_bios.c,v 1.98 2005-06-26 11:36:28 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1629,14 +1629,14 @@ void pc_bios_init(struct cpu *cpu)
 			output_char(cpu, x,y, ch, 0x19);
 		}
 
-	sprintf(t, "GXemul");
+	snprintf(t, sizeof(t), "GXemul");
 #ifdef VERSION
-	sprintf(t + strlen(t), " "VERSION);
+	snprintf(t + strlen(t), sizeof(t)-strlen(t), " "VERSION);
 #endif
 	set_cursor_pos(cpu, 2, 1);
 	pc_bios_printstr(cpu, t, 0x1f);
 
-	sprintf(t, "%i cpu%s (%s), %i MB memory",
+	snprintf(t, sizeof(t), "%i cpu%s (%s), %i MB memory",
 	    cpu->machine->ncpus, cpu->machine->ncpus > 1? "s" : "",
 	    cpu->cd.x86.model.name, cpu->machine->physical_ram_in_mb);
 	if (cpu->machine->md.pc.columns <= 40)
@@ -1656,18 +1656,19 @@ void pc_bios_init(struct cpu *cpu)
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_FLOPPY)) {
 			struct pc_bios_disk *p;
 			p = add_disk(cpu->machine, i, i, DISKIMAGE_FLOPPY);
-			sprintf(t, "%c%c", i<2? ('A'+i):' ', i<2? ':':' ');
+			snprintf(t, sizeof(t), "%c%c", i<2? ('A'+i):' ',
+			    i<2? ':':' ');
 			pc_bios_printstr(cpu, t, 0xf);
 			if (i < 2)
 				nfloppies ++;
-			sprintf(t, " (bios disk %02x)  FLOPPY", i);
+			snprintf(t, sizeof(t), " (bios disk %02x)  FLOPPY", i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
-			sprintf(t, ", %i KB", (int)(p->size / 1024));
+			snprintf(t, sizeof(t), ", %i KB", (int)(p->size/1024));
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (cpu->machine->md.pc.columns <= 40)
 				pc_bios_printstr(cpu, "\n  ", 0x07);
-			sprintf(t, " (CHS=%i,%i,%i)", p->cylinders, p->heads,
-			    p->sectorspertrack);
+			snprintf(t, sizeof(t), " (CHS=%i,%i,%i)", p->cylinders,
+			    p->heads, p->sectorspertrack);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_FLOPPY) {
 				bios_boot_id = i;
@@ -1683,10 +1684,11 @@ void pc_bios_init(struct cpu *cpu)
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_IDE)) {
 			struct pc_bios_disk *p;
 			p = add_disk(cpu->machine, disknr, i, DISKIMAGE_IDE);
-			sprintf(t, "%s", disknr==0x80? "C:" : "  ");
+			snprintf(t, sizeof(t), "%s", disknr==0x80? "C:" : "  ");
 			pc_bios_printstr(cpu, t, 0xf);
 			nhds ++;
-			sprintf(t, " (bios disk %02x)  IDE %s, id %i",
+			snprintf(t, sizeof(t),
+			    " (bios disk %02x)  IDE %s, id %i",
 			    disknr, diskimage_is_a_cdrom(cpu->machine, i,
 				DISKIMAGE_IDE)? "cdrom" : (
 			        diskimage_is_a_tape(cpu->machine, i,
@@ -1698,7 +1700,8 @@ void pc_bios_init(struct cpu *cpu)
 			else
 				pc_bios_printstr(cpu, ", ",
 				    cpu->machine->md.pc.curcolor);
-			sprintf(t, "%lli MB", (long long) (p->size >> 20));
+			snprintf(t, sizeof(t), "%lli MB", (long long)
+			    (p->size >> 20));
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_IDE) {
 				bios_boot_id = disknr;
@@ -1714,18 +1717,19 @@ void pc_bios_init(struct cpu *cpu)
 		if (diskimage_exist(cpu->machine, i, DISKIMAGE_SCSI)) {
 			struct pc_bios_disk *p;
 			p = add_disk(cpu->machine, disknr, i, DISKIMAGE_SCSI);
-			sprintf(t, "%s", disknr==0x80? "C:" : "  ");
+			snprintf(t, sizeof(t), "%s", disknr==0x80? "C:" : "  ");
 			pc_bios_printstr(cpu, t, 0xf);
 			nhds ++;
-			sprintf(t, " (bios disk %02x)  SCSI disk, id %i",
-			    disknr, i);
+			snprintf(t, sizeof(t),
+			    " (bios disk %02x)  SCSI disk, id %i", disknr, i);
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (cpu->machine->md.pc.columns <= 40)
 				pc_bios_printstr(cpu, "\n   ", 0x07);
 			else
 				pc_bios_printstr(cpu, ", ",
 				    cpu->machine->md.pc.curcolor);
-			sprintf(t, "%lli MB", (long long) (p->size >> 20));
+			snprintf(t, sizeof(t), "%lli MB", (long long)
+			    (p->size >> 20));
 			pc_bios_printstr(cpu, t, cpu->machine->md.pc.curcolor);
 			if (boot_id == i && boot_type == DISKIMAGE_SCSI) {
 				bios_boot_id = disknr;

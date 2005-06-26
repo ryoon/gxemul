@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.8 2005-05-29 17:51:45 debug Exp $
+ *  $Id: console.c,v 1.9 2005-06-26 11:36:27 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -186,8 +186,8 @@ static void start_xterm(int handle)
 	a[4] = console_handles[handle].name;
 	a[5] = "-e";
 	a[6] = progname;
-	a[7] = malloc(50);
-	sprintf(a[7], "-WW@S%i,%i", filedes[0], filedesB[1]);
+	a[7] = malloc(80);
+	snprintf(a[7], 80, "-WW@S%i,%i", filedes[0], filedesB[1]);
 	a[8] = NULL;
 
 	p = fork();
@@ -641,6 +641,7 @@ static struct console_handle *console_new_handle(char *name, int *handlep)
 int console_start_slave(struct machine *machine, char *consolename)
 {
 	int handle;
+	size_t mlen;
 	struct console_handle *chp;
 
 	if (machine == NULL || consolename == NULL) {
@@ -650,12 +651,14 @@ int console_start_slave(struct machine *machine, char *consolename)
 
 	chp = console_new_handle(consolename, &handle);
 
-	chp->name = malloc(strlen(machine->name) + strlen(consolename) + 100);
+	mlen = strlen(machine->name) + strlen(consolename) + 40;
+	chp->name = malloc(mlen);
 	if (chp->name == NULL) {
 		printf("out of memory\n");
 		exit(1);
 	}
-	sprintf(chp->name, "GXemul: '%s' %s", machine->name, consolename);
+	snprintf(chp->name, mlen, "GXemul: '%s' %s",
+	    machine->name, consolename);
 
 #if 0
 	if (!machine->use_x11) {
@@ -684,6 +687,7 @@ int console_start_slave_inputonly(struct machine *machine, char *consolename)
 {
 	struct console_handle *chp;
 	int handle;
+	size_t mlen;
 
 	if (machine == NULL || consolename == NULL) {
 		printf("console_start_slave(): NULL ptr\n");
@@ -693,12 +697,14 @@ int console_start_slave_inputonly(struct machine *machine, char *consolename)
 	chp = console_new_handle(consolename, &handle);
 	chp->inputonly = 1;
 
-	chp->name = malloc(strlen(machine->name) + strlen(consolename) + 100);
+	mlen = strlen(machine->name) + strlen(consolename) + 40;
+	chp->name = malloc(mlen);
 	if (chp->name == NULL) {
 		printf("out of memory\n");
 		exit(1);
 	}
-	sprintf(chp->name, "GXemul: '%s' %s", machine->name, consolename);
+	snprintf(chp->name, mlen, "GXemul: '%s' %s",
+	    machine->name, consolename);
 
 	return handle;
 }

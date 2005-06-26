@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.76 2005-06-23 06:01:26 debug Exp $
+ *  $Id: net.c,v 1.77 2005-06-26 11:36:28 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1220,7 +1220,7 @@ static void net_ip_broadcast_dhcp(struct net *net, void *extra,
 	/*  This is a Reply:  */
 	lp->data[42] = 0x02;
 
-	sprintf(lp->data + 70+16+64, "gxemul");
+	snprintf(lp->data + 70+16+64, 8, "gxemul");
 
 	/*  Recalculate IP header checksum:  */
 	net_ip_checksum(lp->data + 14, 10, 20);

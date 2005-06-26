@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.469 2005-06-26 09:21:28 debug Exp $
+ *  $Id: machine.c,v 1.470 2005-06-26 11:36:28 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -85,6 +85,7 @@
 
 #define	BOOTSTR_BUFLEN		1000
 #define	BOOTARG_BUFLEN		2000
+#define	ETHERNET_STRING_MAXLEN	40
 
 struct machine_entry_subtype {
 	int			machine_subtype;/*  Old-style subtype  */
@@ -2072,7 +2073,7 @@ void machine_setup(struct machine *machine)
 		 */
 		{
 			char tmps[300];
-			sprintf(tmps, "cca=%x",
+			snprintf(tmps, sizeof(tmps), "cca=%x",
 			    (int)(DEC_DECCCA_BASEADDR + 0xa0000000ULL));
 			add_environment_string(cpu, tmps, &addr);
 		}
@@ -2081,17 +2082,17 @@ void machine_setup(struct machine *machine)
 		{
 			char tmps[500];
 
-			sprintf(tmps, "boot=%s", bootarg);
+			snprintf(tmps, sizeof(tmps), "boot=%s", bootarg);
 			tmps[sizeof(tmps)-1] = '\0';
 			add_environment_string(cpu, tmps, &addr);
 
-			sprintf(tmps, "bitmap=0x%x", (uint32_t)((
+			snprintf(tmps, sizeof(tmps), "bitmap=0x%x", (uint32_t)((
 			    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
 			    & 0xffffffffULL));
 			tmps[sizeof(tmps)-1] = '\0';
 			add_environment_string(cpu, tmps, &addr);
 
-			sprintf(tmps, "bitmaplen=0x%x",
+			snprintf(tmps, sizeof(tmps), "bitmaplen=0x%x",
 			    machine->physical_ram_in_mb * 1048576 / 4096 / 8);
 			tmps[sizeof(tmps)-1] = '\0';
 			add_environment_string(cpu, tmps, &addr);
@@ -2627,7 +2628,8 @@ void machine_setup(struct machine *machine)
 
 		if (machine->machine_type == MACHINE_SGI) {
 			cpu->byte_order = EMUL_BIG_ENDIAN;
-			sprintf(machine->machine_name, "SGI-IP%i", machine->machine_subtype);
+			snprintf(machine->machine_name, MACHINE_NAME_MAXBUF,
+			    "SGI-IP%i", machine->machine_subtype);
 
 			sgi_ram_offset = 1048576 * machine->memory_offset_in_mb;
 
@@ -2645,7 +2647,8 @@ void machine_setup(struct machine *machine)
 			}
 		} else {
 			cpu->byte_order = EMUL_LITTLE_ENDIAN;
-			sprintf(machine->machine_name, "ARC");
+			snprintf(machine->machine_name,
+			    MACHINE_NAME_MAXBUF, "ARC");
 		}
 
 		if (machine->machine_type == MACHINE_SGI) {
@@ -2972,13 +2975,13 @@ Why is this here? TODO
 #endif
 
 				net_generate_unique_mac(machine, macaddr);
-				eaddr_string = malloc(30);
+				eaddr_string = malloc(ETHERNET_STRING_MAXLEN);
 				if (eaddr_string == NULL) {
 					fprintf(stderr, "out of memory\n");
 					exit(1);
 				}
-				sprintf(eaddr_string, "eaddr=%02x:%02x:"
-				    "%02x:%02x:%02x:%02x",
+				snprintf(eaddr_string, ETHERNET_STRING_MAXLEN,
+				    "eaddr=%02x:%02x:%02x:%02x:%02x:%02x",
 				    macaddr[0], macaddr[1], macaddr[2],
 				    macaddr[3], macaddr[4], macaddr[5]);
 				dev_sgi_mec_init(machine, mem, 0x1f280000,
@@ -3546,8 +3549,9 @@ Not yet.
 			add_environment_string(cpu, "kernname=unix", &addr);
 		} else {
 			char *tmp;
-			tmp = malloc(strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2);
-			sprintf(tmp, "OSLOADOPTIONS=%s", bootarg);
+			size_t mlen = strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2;
+			tmp = malloc(mlen);
+			snprintf(tmp, mlen, "OSLOADOPTIONS=%s", bootarg);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, tmp, &addr);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.59 2005-06-20 05:52:47 debug Exp $
+ *  $Id: dec_prom.c,v 1.60 2005-06-26 11:36:28 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -393,15 +393,16 @@ int decstation_prom_emul(struct cpu *cpu)
 
 					switch (ch) {
 					case 'c':
-						sprintf(printfbuf, "%c", ch2);
+						snprintf(printfbuf, sizeof(
+						    printfbuf), "%c", ch2);
 						break;
 					case 'd':
-						sprintf(printfbuf, "%d",
-						    argdata);
+						snprintf(printfbuf, sizeof(
+						    printfbuf), "%d", argdata);
 						break;
 					case 'x':
-						sprintf(printfbuf, "%x",
-						    argdata);
+						snprintf(printfbuf, sizeof(
+						    printfbuf), "%x", argdata);
 						break;
 					case 's':
 						/*  Print a "%s" string.  */
@@ -434,7 +435,8 @@ int decstation_prom_emul(struct cpu *cpu)
 			case '\0':
 				break;
 			default:
-				sprintf(printfbuf, "%c", ch);
+				snprintf(printfbuf, sizeof(printfbuf),
+				    "%c", ch);
 			}
 
 			printfbuf[sizeof(printfbuf)-1] = '\0';

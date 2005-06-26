@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.129 2005-06-26 06:48:11 debug Exp $
+$Id: RELEASE,v 1.130 2005-06-26 13:49:05 debug Exp $
 
 Now working on post-0.3.3.2.
 
@@ -60,7 +60,7 @@ Summary of changes between release 0.3.3.2 and 0.3.X:
 
 	x)  NetBSD/sgimips can now be installed. Not onto a SCSI disk directly,
 	    but into an nfs exported directory on another emulated machine.
-	    The sgimips machine can then netboot. (See the documentation for
+	    The sgimips machine can then netboot. (Read the documentation for
 	    details.)
 
 There have also been many other updates and bugfixes.

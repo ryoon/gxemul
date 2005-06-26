@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.98 2005-06-26 11:43:48 debug Exp $
+ *  $Id: dev_fb.c,v 1.99 2005-06-26 13:49:06 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -932,7 +932,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 {
 	struct vfb_data *d;
 	size_t size, nlen;
-	int x, y, flag;
+	int x, y, flags;
 	char title[400];
 	char *name2;
 

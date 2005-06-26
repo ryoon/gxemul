@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.16 2005-06-26 22:40:16 debug Exp $
+ *  $Id: cpu_arm.c,v 1.17 2005-06-26 23:28:52 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -188,7 +188,15 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (gprs) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->cd.arm.r[ARM_PC], &offset);
-		debug("cpu%i:  pc = 0x%08x", x, (int)cpu->cd.arm.r[ARM_PC]);
+		debug("cpu%i:  flags = ", x);
+		debug("%s%s%s%s%s%s",
+		    (cpu->cd.arm.flags & ARM_FLAG_N)? "N" : "n",
+		    (cpu->cd.arm.flags & ARM_FLAG_Z)? "Z" : "z",
+		    (cpu->cd.arm.flags & ARM_FLAG_C)? "C" : "c",
+		    (cpu->cd.arm.flags & ARM_FLAG_V)? "V" : "v",
+		    (cpu->cd.arm.flags & ARM_FLAG_I)? "I" : "i",
+		    (cpu->cd.arm.flags & ARM_FLAG_F)? "F" : "f");
+		debug("   pc = 0x%08x", (int)cpu->cd.arm.r[ARM_PC]);
 
 		/*  TODO: Flags  */
 
@@ -224,6 +232,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 {
 	uint32_t iw, tmp;
 	int main_opcode, secondary_opcode, s_bit, r16, r12, r8;
+	int p_bit, u_bit, b_bit, w_bit, l_bit;
 	char *symbol, *condition;
 	uint64_t offset;
 
@@ -249,7 +258,10 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	condition = arm_condition_string[iw >> 28];
 	main_opcode = (iw >> 24) & 15;
 	secondary_opcode = (iw >> 21) & 15;
-	s_bit = (iw >> 20) & 1;
+	u_bit = (iw >> 23) & 1;
+	b_bit = (iw >> 22) & 1;
+	w_bit = (iw >> 21) & 1;
+	s_bit = l_bit = (iw >> 20) & 1;
 	r16 = (iw >> 16) & 15;
 	r12 = (iw >> 12) & 15;
 	r8 = (iw >> 8) & 15;
@@ -306,9 +318,9 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			case 5:	debug(" ASR %s", arm_regname[c >> 1]);
 				break;
 			case 6:	if (c != 0)
-					debug("ROR #%i", c);
+					debug(" ROR #%i", c);
 				else
-					debug("RRX");
+					debug(" RRX");
 				break;
 			case 7:	debug(" ROR %s", arm_regname[c >> 1]);
 				break;
@@ -320,7 +332,31 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x5:
 	case 0x6:
 	case 0x7:
-		debug("TODO: single data transfer\n");
+		/*
+		 *  See (1):
+		 *  xxxx010P UBWLnnnn ddddoooo oooooooo  Immediate form
+		 *  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register form
+		 */
+		p_bit = main_opcode & 1;
+		if (main_opcode >= 6 && iw & 0x10) {
+			debug("TODO: single data transf. but 0x10\n");
+			break;
+		}
+		debug("%s%s%s", l_bit? "ldr" : "str",
+		    condition, b_bit? "b" : "");
+		if (!p_bit && w_bit)
+			debug("t");
+		debug("\t%s,[%s", arm_regname[r12], arm_regname[r16]);
+		if (main_opcode < 6) {
+			/*  Immediate form:  */
+			uint32_t imm = iw & 0xfff;
+			if (imm != 0)
+				debug(",#%s%i", u_bit? "" : "-", imm);
+			debug("]");
+		} else {
+			debug(" TODO: REG-form]");
+		}
+		debug("%s\n", (p_bit && w_bit)? "!" : "");
 		break;
 	case 0x8:				/*  Block Data Transfer  */
 	case 0x9:

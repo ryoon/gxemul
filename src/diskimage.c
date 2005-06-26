@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.93 2005-06-24 19:54:59 debug Exp $
+ *  $Id: diskimage.c,v 1.94 2005-06-26 09:21:27 debug Exp $
  *
  *  Disk image support.
  *
@@ -919,7 +919,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			    xferp->data_in, size);
 
 		if (d->is_a_tape && d->f != NULL)
-			d->tape_offset = ftell(d->f);
+			d->tape_offset = ftello(d->f);
 
 		/*  TODO: other errors?  */
 		break;

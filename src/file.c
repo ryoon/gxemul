@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.98 2005-06-24 09:33:34 debug Exp $
+ *  $Id: file.c,v 1.99 2005-06-26 09:21:28 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -165,7 +165,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		symbsize = 0;
 		fseek(f, 0, SEEK_END);
 		/*  This is of course wrong, but should work anyway:  */
-		textsize = ftell(f) - 512;
+		textsize = ftello(f) - 512;
 		datasize = 0;
 		fseek(f, 512, SEEK_SET);
 	} else {
@@ -226,7 +226,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		char *string_symbols;
 		off_t oldpos;
 
-		debug("symbols: %i bytes @ 0x%x\n", symbsize, (int)ftell(f));
+		debug("symbols: %i bytes @ 0x%x\n", symbsize, (int)ftello(f));
 		syms = malloc(symbsize);
 		if (syms == NULL) {
 			fprintf(stderr, "out of memory\n");
@@ -239,11 +239,11 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 			exit(1);
 		}
 
-		oldpos = ftell(f);
+		oldpos = ftello(f);
 		fseek(f, 0, SEEK_END);
-		strings_len = ftell(f) - oldpos;
+		strings_len = ftello(f) - oldpos;
 		fseek(f, oldpos, SEEK_SET);
-		debug("strings: %i bytes @ 0x%x\n", strings_len, (int)ftell(f));
+		debug("strings: %i bytes @ 0x%x\n", strings_len,(int)ftello(f));
 		string_symbols = malloc(strings_len);
 		if (string_symbols == NULL) {
 			fprintf(stderr, "out of memory\n");
@@ -474,7 +474,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		if (s_scnptr != 0 && s_size != 0 &&
 		    s_vaddr != 0 && !(s_flags & 0x02)) {
 			/*  Remember the current file offset:  */
-			oldpos = ftell(f);
+			oldpos = ftello(f);
 
 			/*  Load the section into emulated memory:  */
 			fseek(f, s_scnptr, SEEK_SET);
@@ -900,7 +900,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 	}
 
 	debug("RAW: 0x%llx bytes @ 0x%08llx",
-	    (long long) (ftell(f) - skip), (long long)loadaddr);
+	    (long long) (ftello(f) - skip), (long long)loadaddr);
 	if (skip != 0)
 		debug(" (0x%llx bytes of header skipped)", (long long)skip);
 	debug("\n");
@@ -1577,7 +1577,7 @@ void file_load(struct machine *machine, struct memory *mem,
 	}
 
 	fseek(f, 0, SEEK_END);
-	size = ftell(f);
+	size = ftello(f);
 	fseek(f, 0, SEEK_SET);
 
 	memset(buf, 0, sizeof(buf));

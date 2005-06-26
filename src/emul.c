@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.208 2005-06-24 19:15:07 debug Exp $
+ *  $Id: emul.c,v 1.209 2005-06-26 09:21:28 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -46,6 +46,7 @@
 #include "debugger.h"
 #include "device.h"
 #include "diskimage.h"
+#include "exec_elf.h"
 #include "machine.h"
 #include "memory.h"
 #include "mips_cpu_types.h"
@@ -1022,6 +1023,49 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 					remove_after_load = 1;
 				}
 				free(zz);
+			}
+			fclose(tmp_f);
+		}
+
+		/*
+		 *  Ugly (but usable) hack for Playstation Portable:  If the
+		 *  filename ends with ".pbp" and the file contains an ELF
+		 *  header, then extract the ELF file into a temporary file.
+		 */
+		if (strlen(name_to_load) > 4 && strcasecmp(name_to_load +
+		    strlen(name_to_load) - 4, ".pbp") == 0 &&
+		    (tmp_f = fopen(name_to_load, "r")) != NULL) {
+			off_t filesize, j, found=0;
+			unsigned char *buf;
+			fseek(tmp_f, 0, SEEK_END);
+			filesize = ftello(tmp_f);
+			fseek(tmp_f, 0, SEEK_SET);
+			buf = malloc(filesize);
+			if (buf == NULL) {
+				fprintf(stderr, "out of memory while trying"
+				    " to read %s\n", name_to_load);
+				exit(1);
+			}
+			fread(buf, 1, filesize, tmp_f);
+			fclose(tmp_f);
+			/*  Search for the ELF header, from offset 1 (!):  */
+			for (j=1; j<filesize - 4; j++)
+				if (memcmp(buf + j, ELFMAG, SELFMAG) == 0) {
+					found = j;
+					break;
+				}
+			if (found != 0) {
+				int tmpfile_handle;
+				char *new_temp_name =
+				    strdup("/tmp/gxemul.XXXXXXXXXXXX");
+
+				debug("extracting ELF from %s\n", name_to_load);
+				tmpfile_handle = mkstemp(new_temp_name);
+				write(tmpfile_handle, buf + found,
+				    filesize - found);
+				close(tmpfile_handle);
+				name_to_load = new_temp_name;
+				remove_after_load = 1;
 			}
 			fclose(tmp_f);
 		}

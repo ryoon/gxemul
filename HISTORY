@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.802 2005-06-26 08:50:39 debug Exp $
+$Id: HISTORY,v 1.803 2005-06-26 09:21:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2019,3 +2019,5 @@ Changelog for GXemul:
 20050626	Finally! NetBSD/sgimips netboots. Adding instructions to
 		doc/guestoses.html on how to set up an nfs server etc.
 		Various other minor fixes.
+		Playstation Portable ".pbp" files can now be used directly.
+		(The ELF part of the .pbp is extracted transparently.)

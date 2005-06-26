@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.468 2005-06-25 21:19:44 debug Exp $
+ *  $Id: machine.c,v 1.469 2005-06-26 09:21:28 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1402,8 +1402,8 @@ void machine_setup(struct machine *machine)
 
 	case MACHINE_TESTMIPS:
 		/*
-		 *  A MIPS test machine (which happens to work with my
-		 *  thesis work).
+		 *  A MIPS test machine (which happens to work with the
+		 *  code in my master's thesis).  :-)
 		 */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "MIPS test machine";

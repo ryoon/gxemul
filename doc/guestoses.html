@@ -1,5 +1,4 @@
-<html>
-<head><title>GXemul documentation: Installing and running "guest OSes"</title>
+<html><head><title>GXemul documentation: Installing and running "guest OSes"</title>
 <meta name="robots" content="noarchive,nofollow,noindex">
 </head>
 <body bgcolor="#f8f8f8" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
@@ -12,7 +11,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.69 2005-06-26 07:51:35 debug Exp $
+$Id: guestoses.html,v 1.70 2005-06-26 08:24:27 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -49,25 +48,25 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
-  <li><a href="#netbsdinstall">Installing NetBSD/pmax</a>
-  <li><a href="#netbsdarcinstall">Installing NetBSD/arc</a>
-  <li><a href="#netbsdhpcmipsinstall">Installing NetBSD/hpcmips</a>
-  <li><a href="#netbsdcobaltinstall">Installing NetBSD/cobalt</a>
-  <li><a href="#netbsdevbmipsinstall">Installing NetBSD/evbmips</a>
-  <li><a href="#netbsdsgimips">Running NetBSD/sgimips</a>
-  <li><a href="#openbsdinstall">Installing OpenBSD/pmax</a>
-  <li><a href="#openbsdarcinstall">Installing OpenBSD/arc</a>
-  <li><a href="#ultrixinstall">Installing Ultrix/RISC</a>
-  <li><a href="#sprite">Running Sprite for DECstation</a>
-  <li><a href="#declinux">Installing Debian GNU/Linux for DECstation</a>
-  <li><a href="#declinuxredhat">Running Redhat Linux for DECstation</a>
+  <li><a href="#netbsdinstall">NetBSD/pmax</a>
+  <li><a href="#netbsdarcinstall">NetBSD/arc</a>
+  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips</a>
+  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt</a>
+  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips</a>
+  <li><a href="#netbsdsgimips">NetBSD/sgimips</a>
+  <li><a href="#openbsdinstall">OpenBSD/pmax</a>
+  <li><a href="#openbsdarcinstall">OpenBSD/arc</a>
+  <li><a href="#ultrixinstall">Ultrix/RISC</a>
+  <li><a href="#sprite">Sprite for DECstation</a>
+  <li><a href="#declinux">Debian GNU/Linux for DECstation</a>
+  <li><a href="#declinuxredhat">Redhat Linux for DECstation</a>
 </ul>
 
 <p>In addition to the "working" guest operating systems listed above,
 you might find the following information interesting:
 <ul>
-  <li><a href="#mach">Running Mach/PMAX</a>
-  <li><a href="#openbsdsgiinstall">Running OpenBSD/sgi</a>
+  <li><a href="#mach">Mach/PMAX</a>
+  <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
 </ul>
 
 
@@ -98,7 +97,7 @@ system, the harddisk image looks and acts like a real disk.
 
 <p><br>
 <a name="netbsdinstall"></a>
-<h3>Installing NetBSD/pmax:</h3>
+<h3>NetBSD/pmax:</h3>
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -197,7 +196,7 @@ If you want to run without the X framebuffer, use this instead:<pre>
 
 <p><br>
 <a name="netbsdarcinstall"></a>
-<h3>Installing NetBSD/arc:</h3>
+<h3>NetBSD/arc:</h3>
 
 It is possible to run <a
 href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>
@@ -270,7 +269,7 @@ image, using the following command:<pre>
 
 <p><br>
 <a name="netbsdhpcmipsinstall"></a>
-<h3>Installing NetBSD/hpcmips:</h3>
+<h3>NetBSD/hpcmips:</h3>
 
 It is possible to install <a
 href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a> onto a disk
@@ -396,7 +395,7 @@ keyboard input.)
 
 <p><br>
 <a name="netbsdcobaltinstall"></a>
-<h3>Installing NetBSD/cobalt:</h3>
+<h3>NetBSD/cobalt:</h3>
 
 <a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a> is tricky
 to install, because the Cobalt machines were designed for Linux, and not
@@ -470,7 +469,7 @@ generic kernel:<pre>
 
 <p><br>
 <a name="netbsdevbmipsinstall"></a>
-<h3>Installing NetBSD/evbmips:</h3>
+<h3>NetBSD/evbmips:</h3>
 
 <a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a> can run
 in GXemul on an emulated Malta evaluation board (with a 5Kc or 4Kc CPU).
@@ -554,7 +553,7 @@ generic kernel:<pre>
 
 <p><br>
 <a name="netbsdsgimips"></a>
-<h3>Running NetBSD/sgimips:</h3>
+<h3>NetBSD/sgimips:</h3>
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -587,54 +586,59 @@ time consuming, but necessary:
 	Start up the emulated DECstation:<pre>
 	$ <b>gxemul -M64 -Edec -e3max -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
-	inside the emulator:<pre>
-	<b>echo hostname=server &gt;&gt; /etc/rc.conf</b>
-	<b>echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf</b>
-	<b>echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf</b>
-	<b>echo 10.0.0.254 &gt; /etc/mygate</b>
-	<b>echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports</b>
-	<b>echo rpcbind=YES &gt;&gt; /etc/rc.conf</b>
-	<b>echo nfs_server=YES &gt;&gt; /etc/rc.conf</b>
-	<b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
-	<b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
-	<b>printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams</b>
-	<b>echo "bootps dgram udp wait root /usr/sbin/bootpd bootpd -d 4 -h 10.0.0.2" &gt;&gt; /etc/inetd.conf</b>
-	<b>echo "10:20:30:00:00:10 client" &gt; /etc/ethers</b>
-	<b>echo 10.0.0.1 client &gt; /etc/hosts</b>
-	<b>reboot</b>
-
-</pre>
+	inside the emulator:
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>echo hostname=server &gt;&gt; /etc/rc.conf
+echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf
+echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf
+echo 10.0.0.254 &gt; /etc/mygate
+echo /tftpboot -maproot=root 10.0.0.1 &gt; /etc/exports
+echo rpcbind=YES &gt;&gt; /etc/rc.conf
+echo nfs_server=YES &gt;&gt; /etc/rc.conf
+echo mountd=YES &gt;&gt; /etc/rc.conf
+echo bootparamd=YES &gt;&gt; /etc/rc.conf
+printf "client root=10.0.0.2:/tftpboot \\\n swap=10.0.0.2:/tftpboot/swap\n" &gt; /etc/bootparams
+echo "bootps dgram udp wait root /usr/sbin/bootpd bootpd -d 4 -h 10.0.0.2" &gt;&gt; /etc/inetd.conf
+cat &gt;&gt; /etc/bootptab
+client:\
+        :ht=ether:\
+        :ha=102030000010:\
+        :sm=255.0.0.0:\
+        :lg=10.0.0.254:\
+        :ip=10.0.0.1:\
+        :rp=/tftpboot:
+</b>(press CTRL-D)
+<b>echo "10:20:30:00:00:10 client" &gt; /etc/ethers
+echo 10.0.0.1 client &gt; /etc/hosts
+reboot</b>
+</pre></td></tr></table>
   <li>Start the DECstation emulation again, and download the
 	NetBSD/sgimips distribution sets:<br>(NOTE: This
-	takes quite some time, even if you have a fast network connection.)<pre>
-	<b>cd /tftpboot; ftp -i ftp.se.netbsd.org</b>
-	(log in as anonymous...)
-	<b>cd /pub/NetBSD/NetBSD-2.0.2/sgimips/binary/sets</b>
-	<b>mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz</b>
-	<b>quit</b>
-	<b>sh</b>
-	<b>for a in *.tgz; do echo $a; tar zxfp $a; done</b>
-	<b>echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab</b>
-	<b>echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf</b>
-	<b>dd if=/dev/zero of=swap bs=1024 count=32768</b>
-	<b>halt</b>
-
-</pre>
+	takes quite some time, even if you have a fast network connection.)
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>cd /tftpboot; ftp -i ftp.se.netbsd.org</b>
+(log in as anonymous...)
+<b>cd /pub/NetBSD/NetBSD-2.0.2/sgimips/binary/sets
+mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz
+quit
+sh
+for a in *.tgz; do echo $a; tar zxfp $a; done
+echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
+echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
+dd if=/dev/zero of=swap bs=1024 count=32768
+halt</b>
+</pre></td></tr></table>
   <li>Download the NetBSD/sgimips GENERIC and INSTALL kernels:<pre>
 	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
 	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>
   <li>Create a configuration file called <tt>config_client</tt>:
-<table border="0"><tr><td width="60">&nbsp;</td><td><pre>
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <font color="#2020cf">!!gxemul
 !
 !  Configuration file for running NetBSD/sgimips diskless with
-!  a NetBSD/pmax machine as the nfs server.
-!
-!  This config file is for the client.
-!
-!  Change the filenames, if needed, to suit your setup.</font>
+!  a NetBSD/pmax machine as the nfs server.</font>
 
 <b>emul(
     net(
@@ -656,7 +660,7 @@ time consuming, but necessary:
 </pre></td></tr></table>
 	... and another configuration file for the server,
 	<tt>config_server</tt>:
-<table border="0"><tr><td width="60">&nbsp;</td><td><pre>
+<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <font color="#2020cf">!!gxemul</font>
 <b>emul(
     net(
@@ -723,6 +727,11 @@ the following values:<pre>
 </pre>
 
 <p>Note: Netbooting like this is very slow, so you need a lot of patience.
+For example, when NetBSD says "<tt>nfs_boot: trying DHCP/BOOTP</tt>",
+there will be a long pause, even on a very fast host machine. The reason
+for this is mostly because the emulator doesn't deal with timing issues
+very well, but also because NetBSD tries IPv6 first, before falling back
+to IPv4.
 
 
 
@@ -732,7 +741,7 @@ the following values:<pre>
 
 <p><br>
 <a name="openbsdinstall"></a>
-<h3>Installing OpenBSD/pmax:</h3>
+<h3>OpenBSD/pmax:</h3>
 
 Installing <a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a> is
 a bit harder than installing NetBSD/pmax. You should first read the <a
@@ -872,9 +881,10 @@ enter <b><tt>rcons</tt></b> if you are using the graphical framebuffer,
 
 
 
+
 <p><br>
 <a name="openbsdarcinstall"></a>
-<h3>Installing OpenBSD/arc:</h3>
+<h3>OpenBSD/arc:</h3>
 
 It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
 emulator.
@@ -939,7 +949,7 @@ boot from the harddisk image:
 
 <p><br>
 <a name="ultrixinstall"></a>
-<h3>Installing Ultrix/RISC:</h3>
+<h3>Ultrix/RISC:</h3>
 
 Ultrix 4.x can run in GXemul on an emulated DECstation 5000/200.
 (Ultrix was the native OS for these machines, but NetBSD/pmax is
@@ -1043,7 +1053,7 @@ that file as a disk image file in the emulator.
 
 <p><br>
 <a name="sprite"></a>
-<h3>Running Sprite for DECstation:</h3>
+<h3>Sprite for DECstation:</h3>
 
 Sprite was a research operating system at the University of Berkeley.
 The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
@@ -1107,7 +1117,7 @@ start the X11 environment.
 
 <p><br>
 <a name="declinux"></a>
-<h3>Installing Debian GNU/Linux for DECstation:</h3>
+<h3>Debian GNU/Linux for DECstation:</h3>
 
 <font color="#ef0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. During my tests, even pressing the wrong key during the install
@@ -1248,7 +1258,7 @@ example), but at least it doesn't Oops that often.&nbsp;]
 
 <p><br>
 <a name="declinuxredhat"></a>
-<h3>Running Redhat Linux for DECstation:</h3>
+<h3>Redhat Linux for DECstation:</h3>
 
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. Read the note about <b><tt>-U</tt></b> in the section on how to 
@@ -1343,7 +1353,7 @@ It should work with framebuffer/keyboard.&nbsp;]
 
 <p><br>
 <a name="mach"></a>
-<h3>Running Mach/PMAX:</h3>
+<h3>Mach/PMAX:</h3>
 
 Read the following link if you want to know more about Mach in general:
 <a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">
@@ -1411,7 +1421,7 @@ for DECstation in the emulator:
 
 <p><br>
 <a name="openbsdsgiinstall"></a>
-<h3>Running OpenBSD/sgi:</h3>
+<h3>OpenBSD/sgi:</h3>
 
 <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
 can (almost) run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.

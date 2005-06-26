@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: intro.html,v 1.52 2005-06-26 07:25:03 debug Exp $
+$Id: intro.html,v 1.53 2005-06-26 08:42:26 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -247,17 +247,11 @@ program relies on self-modifying code, which is bad for bintrans
 performance.)
 
 
-<h4>POWER/PowerPC</h4>
-
-There is some code for 64-bit (and 32-bit) POWER/PowerPC emulation, enough
-to run "Hello World", but not enough to run complete operating systems.  
-This mode isn't really working yet.
-
-
 <h4>Other CPU types:</h4>
 
-Some other CPU architectures can also be partially emulated.
-These are not enabled by default though, because of their unstable-ness.
+Some other CPU architectures can also be partially emulated. These are not
+working well enough yet to run guest operating systems.
+
 
 
 
@@ -318,21 +312,18 @@ are emulated well enough to run at least one "guest OS":
 	<br>Serial controller and PCI IDE.
   <p>
   <li><b>SGI O2 ("IP32")</b>
-	<br>Serial controller and ethernet. <super>*</super>
+	<br>Serial controller and ethernet.&nbsp;&nbsp;<small>(Enough for
+	root-on-nfs, but not for disk boot.)</small>
 </ul>
 
-<p><super>*</super> <small>Enough for netboot, but not for disk boot.</small>
+<p>There is code in GXemul for emulation of many other machine types; the
+degree to which these work range from almost being able to run a complete
+OS, to almost completely unsupported (perhaps just enough support to
+output a few boot messages via serial console).
 
-<p>
-There is code in GXemul for emulation of many other machine types;
-the degree to which these work range from "almost" being able to run
-a complete OS, to almost completely unsupported (perhaps just enough
-support to output a few boot messages via serial console).
-
-<p>
-In addition to emulating real machines, there is also a "test-machine".
-A test-machine consists of one or more CPUs and a few experimental 
-devices such as:
+<p>In addition to emulating real machines, there is also a "test-machine".
+A test-machine consists of one or more CPUs and a few experimental devices
+such as:
 
 <p>
 <ul>
@@ -341,14 +332,12 @@ devices such as:
   <li>a very simple linear framebuffer device (for graphics output)
 </ul>
 
-<p>
-This mode is useful if you wish to run experimental code, but do not
+<p>This mode is useful if you wish to run experimental code, but do not
 wish to target any specific real-world machine type, for example for
 educational purposes.
 
-<p>
-You can read more about these experimental devices
-<a href="experiments.html#expdevices">here</a>.
+<p>You can read more about these experimental devices <a
+href="experiments.html#expdevices">here</a>.
 
 
 

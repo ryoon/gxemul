@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.137 2005-06-23 06:01:25 debug Exp $
+#  $Id: configure,v 1.138 2005-06-26 07:51:34 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -59,7 +59,7 @@
 ###############################################################################
 
 ENABLEALPHA=NO
-ENABLEARM=NO
+ENABLEARM=YES
 ENABLEHPPA=NO
 ENABLEMIPS=YES
 ENABLEPPC=YES
@@ -146,9 +146,10 @@ if [ z"$*" != z ]; then
 				printf "  --enable-alpha     "
 				printf "enable Alpha CPU emulation"
 				printf " (NOT YET)\n"
-				printf "  --enable-arm       "
-				printf "enable ARM CPU emulation"
-				printf " (NOT YET)\n"
+			fi
+			printf "  --disable-arm      "
+			printf "disable ARM CPU emulation\n"
+			if [ z$STABLE = zNO ]; then
 				printf "  --enable-hppa      "
 				printf "enable HPPA CPU emulation"
 				printf " (NOT YET)\n"
@@ -229,13 +230,6 @@ if [ z$ENABLEALPHA = zYES ]; then
 fi
 if [ z$ENABLEARM = zYES ]; then
 	printf "#define ENABLE_ARM\n" >> config.h
-	if [ z$STABLE = zNO ]; then
-		printf "\nWARNING: ARM emulation enabled, but it isn't really"
-		printf " implemented yet.\n\n"
-	else
-		printf "Not in the stable release.\n"
-		exit
-	fi
 fi
 if [ z$ENABLEHPPA = zYES ]; then
 	printf "#define ENABLE_HPPA\n" >> config.h

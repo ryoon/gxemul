@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.68 2005-06-26 07:25:03 debug Exp $
+$Id: guestoses.html,v 1.69 2005-06-26 07:51:35 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -684,12 +684,15 @@ time consuming, but necessary:
 	$ <b>gxemul @config_client</b>
 
 </pre>
-  <li>In the NetBSD/sgimips window, choose "S" (for Shell), and type:<pre>
+  <li>In the NetBSD/sgimips window, choose "<tt>x: Exit Install System</tt>"
+	in the installer's main menu, and then type:<pre>
 	<b>ifconfig mec0 10.0.0.1; route add default 10.0.0.254</b>
 	<b>mount -v 10.0.0.2:/tftpboot /mnt</b>
 	<b>cd /mnt/dev; ./MAKEDEV all; cd /; umount /mnt</b>
 	<b>halt</b>
-</pre>
+</pre>Then log in as <tt>root</tt> on the server machine and type
+	<tt><b>reboot</b></tt>.
+  <p>
   <li>Once everything has been set up correctly, change
 	<tt>netbsd-INSTALL32_IP3x.gz</tt> in <tt>config_client</tt> to
 	<tt>netbsd-GENERIC32_IP3x.gz</tt> (the GENERIC kernel).
@@ -731,12 +734,13 @@ the following values:<pre>
 <a name="openbsdinstall"></a>
 <h3>Installing OpenBSD/pmax:</h3>
 
-Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
-You should first read the section above on how to install NetBSD/pmax,
+Installing <a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a> is
+a bit harder than installing NetBSD/pmax. You should first read the <a
+href="#netbsdinstall">section above</a> on how to install NetBSD/pmax,
 before continuing here. If you have never installed OpenBSD on any
-architecture, then you need a great deal of patience to do this.
-If, on the other hand you are used to installing OpenBSD, then
-this should be no problem for you.
+architecture, then you need a great deal of patience to do this. If, on
+the other hand you are used to installing OpenBSD, then this should be no
+problem for you.
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

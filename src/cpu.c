@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.296 2005-06-24 19:15:07 debug Exp $
+ *  $Id: cpu.c,v 1.297 2005-06-26 22:23:41 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -56,7 +56,7 @@ static struct cpu_family *first_cpu_family = NULL;
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *name)
 {
-	struct cpu *c;
+	struct cpu *cpu;
 	struct cpu_family *fp;
 	char *cpu_type_name;
 
@@ -71,19 +71,35 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 		exit(1);
 	}
 
+	cpu = malloc(sizeof(struct cpu));
+	if (cpu == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	memset(cpu, 0, sizeof(struct cpu));
+	cpu->memory_rw          = NULL;
+	cpu->name               = cpu_type_name;
+	cpu->mem                = mem;
+	cpu->machine            = machine;
+	cpu->cpu_id             = cpu_id;
+	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
+	cpu->bootstrap_cpu_flag = 0;
+	cpu->running            = 0;
+
 	fp = first_cpu_family;
 
 	while (fp != NULL) {
 		if (fp->cpu_new != NULL) {
-			c = fp->cpu_new(mem, machine, cpu_id, cpu_type_name);
-			if (c != NULL) {
-				/*  Some sanity-checks:  */
-				if (c->memory_rw == NULL) {
-					fatal("No memory_rw?\n");
+			if (fp->cpu_new(cpu, mem, machine, cpu_id,
+			    cpu_type_name)) {
+				/*  Sanity check:  */
+				if (cpu->memory_rw == NULL) {
+					fatal("\ncpu_new(): memory_rw == "
+					    "NULL\n");
 					exit(1);
 				}
-
-				return c;
+				return cpu;
 			}
 		}
 

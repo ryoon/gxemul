@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.62 2005-04-18 23:00:56 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.63 2005-06-26 22:23:42 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -77,11 +77,13 @@ extern int quiet_mode;
  *  ppc_cpu_new():
  *
  *  Create a new PPC cpu object.
+ *
+ *  Returns 1 on success, 0 if there was no matching PPC processor with
+ *  this cpu_type_name.
  */
-struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
+int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	struct cpu *cpu;
 	int any_cache = 0;
 	int i, found;
 	struct ppc_cpu_type_def cpu_type_defs[] = PPC_CPU_TYPE_DEFS;
@@ -97,29 +99,17 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 		i++;
 	}
 	if (found == -1)
-		return NULL;
+		return 0;
 
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
-	memset(cpu, 0, sizeof(struct cpu));
 	cpu->memory_rw          = ppc_memory_rw;
 	cpu->cd.ppc.cpu_type    = cpu_type_defs[found];
 	cpu->name               = cpu->cd.ppc.cpu_type.name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
 	cpu->cd.ppc.mode        = MODE_PPC;	/*  TODO  */
 	cpu->cd.ppc.of_emul_addr = 0xff000000;	/*  TODO  */
 
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits        = cpu->cd.ppc.cpu_type.bits;
-	cpu->bootstrap_cpu_flag = 0;
-	cpu->running            = 0;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -150,7 +140,7 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	/*  Some default stack pointer value.  TODO: move this?  */
 	cpu->cd.ppc.gpr[1] = machine->physical_ram_in_mb * 1048576 - 4096;
 
-	return cpu;
+	return 1;
 }
 
 

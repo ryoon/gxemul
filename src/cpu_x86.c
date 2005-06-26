@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.162 2005-06-20 05:52:46 debug Exp $
+ *  $Id: cpu_x86.c,v 1.163 2005-06-26 22:23:42 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -92,14 +92,10 @@ static char *cond_names[N_X86_CONDS] = x86_cond_names;
  *
  *  Create a new x86 cpu object.
  */
-struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
+int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
 	int i = 0;
-	struct cpu *cpu;
-
-	if (cpu_type_name == NULL)
-		return NULL;
 
 	/*  Try to find a match:  */
 	while (models[i].model_number != 0) {
@@ -109,23 +105,10 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 	}
 
 	if (models[i].name == NULL)
-		return NULL;
+		return 0;
 
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
-	memset(cpu, 0, sizeof(struct cpu));
-	cpu->memory_rw          = x86_memory_rw;
-	cpu->name               = cpu_type_name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
-	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
-	cpu->bootstrap_cpu_flag = 0;
-	cpu->running            = 0;
+	cpu->memory_rw  = x86_memory_rw;
+	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
 	cpu->cd.x86.model = models[i];
 
@@ -158,7 +141,7 @@ struct cpu *x86_cpu_new(struct memory *mem, struct machine *machine,
 		debug("%s", cpu->name);
 	}
 
-	return cpu;
+	return 1;
 }
 
 

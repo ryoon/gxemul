@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.4 2005-06-01 22:09:40 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.5 2005-06-26 22:23:41 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -78,42 +78,29 @@ extern int quiet_mode;
  *  alpha_cpu_new():
  *
  *  Create a new Alpha cpu object.
+ *
+ *  Return 1 on success, or 0 if cpu_type_name does not match a valid
+ *  Alpha processor name.
  */
-struct cpu *alpha_cpu_new(struct memory *mem, struct machine *machine,
+int alpha_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	struct cpu *cpu;
-
-	if (cpu_type_name == NULL || (
-	    strcasecmp(cpu_type_name, "ev4") != 0 &&
+	if (strcasecmp(cpu_type_name, "ev4") != 0 &&
 	    strcasecmp(cpu_type_name, "ev5") != 0 &&
 	    strcasecmp(cpu_type_name, "ev6") != 0 &&
 	    strcasecmp(cpu_type_name, "ev7") != 0 &&
-	    strcasecmp(cpu_type_name, "pca56") != 0) )
-		return NULL;
+	    strcasecmp(cpu_type_name, "pca56") != 0)
+		return 0;
 
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
-	memset(cpu, 0, sizeof(struct cpu));
-	cpu->memory_rw          = alpha_memory_rw;
-	cpu->name               = cpu_type_name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
-	cpu->byte_order         = EMUL_BIG_ENDIAN;
-	cpu->bootstrap_cpu_flag = 0;
-	cpu->running            = 0;
+	cpu->memory_rw  = alpha_memory_rw;
+	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
 
-	return cpu;
+	return 1;
 }
 
 

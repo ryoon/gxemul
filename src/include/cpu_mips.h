@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.15 2005-06-22 10:12:26 debug Exp $
+ *  $Id: cpu_mips.h,v 1.16 2005-06-26 22:23:43 debug Exp $
  */
 
 #include "misc.h"
@@ -370,8 +370,6 @@ struct mips_cpu {
 
 
 /*  cpu_mips.c:  */
-struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
-        int cpu_id, char *cpu_type_name);
 void mips_cpu_show_full_statistics(struct machine *m);
 void mips_cpu_tlbdump(struct machine *m, int x, int rawflag);
 void mips_cpu_register_match(struct machine *m, char *name, 

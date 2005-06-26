@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.45 2005-06-20 05:52:46 debug Exp $
+ *  $Id: cpu_mips.c,v 1.46 2005-06-26 22:23:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -127,11 +127,13 @@ static char *regname(struct machine *machine, int r)
  *  mips_cpu_new():
  *
  *  Create a new MIPS cpu object.
+ *
+ *  Returns 1 on success, 0 if there was no valid MIPS processor with
+ *  a matching name.
  */
-struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
+int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	struct cpu *cpu;
 	int i, found, j, tags_size, n_cache_lines, size_per_cache_line;
 	struct mips_cpu_type_def cpu_type_defs[] = MIPS_CPU_TYPE_DEFS;
 	int64_t secondary_cache_size;
@@ -149,24 +151,12 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
 	}
 
 	if (found == -1)
-		return NULL;
+		return 0;
 
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
-	memset(cpu, 0, sizeof(struct cpu));
 	cpu->memory_rw          = mips_memory_rw;
 	cpu->cd.mips.cpu_type   = cpu_type_defs[found];
 	cpu->name               = cpu->cd.mips.cpu_type.name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
-	cpu->bootstrap_cpu_flag = 0;
-	cpu->running            = 0;
 	cpu->cd.mips.gpr[MIPS_GPR_SP]	= INITIAL_STACK_POINTER;
 
 	if (cpu_id == 0)
@@ -339,7 +329,7 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
 			cpu->translate_address = translate_address_generic;
 	}
 
-	return cpu;
+	return 1;
 }
 
 

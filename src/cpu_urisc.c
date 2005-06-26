@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.7 2005-06-26 11:36:27 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.8 2005-06-26 22:23:42 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -93,27 +93,14 @@ extern int quiet_mode;
  *
  *  Create a new URISC cpu object.
  */
-struct cpu *urisc_cpu_new(struct memory *mem, struct machine *machine,
+int urisc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	struct cpu *cpu;
+	if (strcmp(cpu_type_name, "URISC") != 0)
+		return 0;
 
-	if (cpu_type_name == NULL || strcmp(cpu_type_name, "URISC") != 0)
-		return NULL;
-
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
-	memset(cpu, 0, sizeof(struct cpu));
-	cpu->memory_rw          = urisc_memory_rw;
-	cpu->name               = cpu_type_name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
-	cpu->byte_order         = EMUL_BIG_ENDIAN;
+	cpu->memory_rw  = urisc_memory_rw;
+	cpu->byte_order = EMUL_BIG_ENDIAN;
 
 	cpu->cd.urisc.wordlen = 32;
 	cpu->cd.urisc.acc_in_mem = 0;
@@ -130,7 +117,7 @@ struct cpu *urisc_cpu_new(struct memory *mem, struct machine *machine,
 		debug(")");
 	}
 
-	return cpu;
+	return 1;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.10 2005-06-01 22:09:40 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.11 2005-06-26 22:23:42 debug Exp $
  *
  *  SPARC CPU emulation.
  *
@@ -78,37 +78,25 @@ extern int quiet_mode;
  *  sparc_cpu_new():
  *
  *  Create a new SPARC cpu object.
+ *
+ *  Return 1 on success, 0 if there was no matching SPARC processor with
+ *  the specified cpu_type_name.
  */
-struct cpu *sparc_cpu_new(struct memory *mem, struct machine *machine,
+int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	struct cpu *cpu;
+	if (strcmp(cpu_type_name, "SPARCV9") != 0)
+		return 0;
 
-	if (cpu_type_name == NULL || strcmp(cpu_type_name, "SPARCV9") != 0)
-		return NULL;
-
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
-	memset(cpu, 0, sizeof(struct cpu));
 	cpu->memory_rw          = sparc_memory_rw;
-	cpu->name               = cpu_type_name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
-	cpu->bootstrap_cpu_flag = 0;
-	cpu->running            = 0;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
 
-	return cpu;
+	return 1;
 }
 
 

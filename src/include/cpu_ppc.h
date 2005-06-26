@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.22 2005-03-08 22:58:58 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.23 2005-06-26 22:23:43 debug Exp $
  */
 
 #include "misc.h"
@@ -136,8 +136,6 @@ struct ppc_cpu {
 
 
 /*  cpu_ppc.c:  */
-struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
-        int cpu_id, char *cpu_type_name);
 void ppc_cpu_show_full_statistics(struct machine *m);
 void ppc_cpu_register_match(struct machine *m, char *name, 
 	int writeflag, uint64_t *valuep, int *match_register);

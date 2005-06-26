@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.25 2005-06-24 19:15:08 debug Exp $
+ *  $Id: cpu.h,v 1.26 2005-06-26 22:23:43 debug Exp $
  *
  *  See cpu.c.
  */
@@ -62,7 +62,7 @@ struct cpu_family {
 
 	/*  These are filled in by each CPU family's init function:  */
 	char			*name;
-	struct cpu		*(*cpu_new)(struct memory *mem,
+	int			(*cpu_new)(struct cpu *cpu, struct memory *mem,
 				    struct machine *machine,
 				    int cpu_id, char *cpu_type_name);
 	void			(*list_available_types)(void);

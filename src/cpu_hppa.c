@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.4 2005-04-15 21:39:59 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.5 2005-06-26 22:23:42 debug Exp $
  *
  *  HPPA CPU emulation.
  *
@@ -79,35 +79,19 @@ extern int quiet_mode;
  *  hppa_cpu_new():
  *
  *  Create a new HPPA cpu object.
+ *
+ *  Return 1 on success, 0 if cpu_type_name didn't match a valid HPPA name.
  */
-struct cpu *hppa_cpu_new(struct memory *mem, struct machine *machine,
+int hppa_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	struct cpu *cpu;
-
-	if (cpu_type_name == NULL)
-		return NULL;
-
 	if (strcasecmp(cpu_type_name, "HPPA1.0") != 0 &&
 	    strcasecmp(cpu_type_name, "HPPA1.1") != 0 &&
 	    strcasecmp(cpu_type_name, "HPPA2.0") != 0)
-		return NULL;
+		return 0;
 
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
-	memset(cpu, 0, sizeof(struct cpu));
-	cpu->memory_rw          = hppa_memory_rw;
-	cpu->name               = cpu_type_name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
-	cpu->byte_order         = EMUL_BIG_ENDIAN;
-	cpu->bootstrap_cpu_flag = 0;
-	cpu->running            = 0;
+	cpu->memory_rw  = hppa_memory_rw;
+	cpu->byte_order = EMUL_BIG_ENDIAN;	/*  TODO  */
 
 	cpu->cd.hppa.bits = 32;
 	if (strcasecmp(cpu_type_name, "HPPA2.0") == 0)
@@ -118,7 +102,7 @@ struct cpu *hppa_cpu_new(struct memory *mem, struct machine *machine,
 		debug("%s", cpu->name);
 	}
 
-	return cpu;
+	return 1;
 }
 
 

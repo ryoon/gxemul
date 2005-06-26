@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.14 2005-06-26 21:32:56 debug Exp $
+ *  $Id: cpu_arm.c,v 1.15 2005-06-26 22:23:41 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -99,38 +99,25 @@ extern int quiet_mode;
 /*
  *  arm_cpu_new():
  *
- *  Create a new ARM cpu object.
+ *  Create a new ARM cpu object by filling in the CPU struct.
+ *  Return 1 on success, 0 if cpu_type_name isn't a valid ARM processor.
  */
-struct cpu *arm_cpu_new(struct memory *mem, struct machine *machine,
-	int cpu_id, char *cpu_type_name)
+int arm_cpu_new(struct cpu *cpu, struct memory *mem,
+	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
-	struct cpu *cpu;
+	if (strcmp(cpu_type_name, "ARM") != 0)
+		return 0;
 
-	if (cpu_type_name == NULL || strcmp(cpu_type_name, "ARM") != 0)
-		return NULL;
+	cpu->memory_rw = arm_memory_rw;
 
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	cpu->cd.arm.flags = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
 
-	memset(cpu, 0, sizeof(struct cpu));
-	cpu->memory_rw          = arm_memory_rw;
-	cpu->name               = cpu_type_name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
-	cpu->byte_order         = EMUL_BIG_ENDIAN;
-	cpu->bootstrap_cpu_flag = 0;
-	cpu->running            = 0;
-
-	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
+	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
 
-	return cpu;
+	return 1;
 }
 
 
@@ -328,6 +315,12 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			}
 		}
 		debug("\n");
+		break;
+	case 0x4:				/*  Single Data Transfer  */
+	case 0x5:
+	case 0x6:
+	case 0x7:
+		debug("TODO: single data transfer\n");
 		break;
 	case 0x8:				/*  Block Data Transfer  */
 	case 0x9:

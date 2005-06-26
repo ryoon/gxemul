@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.13 2005-06-26 11:36:27 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.14 2005-06-26 22:23:42 debug Exp $
  *
  *  ARM instructions.
  *
@@ -399,8 +399,10 @@ bad:	/*
 	 *  Nothing was translated. (Unimplemented or illegal instruction.)
 	 */
 
-	fatal("TODO: unimplemented ARM instruction 0x%08x (at pc=0x%08x)\n",
-	    iword, addr);
+	quiet_mode = 0;
+	fatal("arm_translate_instruction(): TODO: "
+	    "unimplemented ARM instruction:\n");
+	arm_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
 	cpu->running = 0;
 	cpu->dead = 1;
 	cpu->cd.arm.running_translated = 0;

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.139 2005-06-27 10:43:15 debug Exp $
+#  $Id: configure,v 1.140 2005-06-27 17:31:50 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -187,44 +187,14 @@ if [ z$MIPS16 = zYES ]; then
 	printf 'NOTE: MIPS16 support is not really working yet.\n'
 	printf "#define ENABLE_MIPS16\n" >> config.h
 fi
-if [ z$ENABLEALPHA = zYES ]; then
-	printf "#define ENABLE_ALPHA\n" >> config.h
-	if [ z$STABLE = zNO ]; then
-		printf "\nWARNING: Alpha emulation enabled, but it isn't really"
-		printf " implemented yet.\n\n"
-	else
-		printf "Not in the stable release.\n"
-		exit
-	fi
-fi
 if [ z$ENABLEARM = zYES ]; then
 	printf "#define ENABLE_ARM\n" >> config.h
-fi
-if [ z$ENABLEHPPA = zYES ]; then
-	printf "#define ENABLE_HPPA\n" >> config.h
-	if [ z$STABLE = zNO ]; then
-		printf "\nWARNING: HPPA emulation enabled, but it isn't really"
-		printf " implemented yet.\n\n"
-	else
-		printf "Not in the stable release.\n"
-		exit
-	fi
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
 fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
-fi
-if [ z$ENABLESPARC = zYES ]; then
-	printf "#define ENABLE_SPARC\n" >> config.h
-	if [ z$STABLE = zNO ]; then
-		printf "\nWARNING: SPARC emulation enabled, but it isn't really"
-		printf " implemented yet.\n\n"
-	else
-		printf "Not in the stable release.\n"
-		exit
-	fi
 fi
 if [ z$ENABLEURISC = zYES ]; then
 	printf "#define ENABLE_URISC\n" >> config.h
@@ -1128,43 +1098,6 @@ echo "" >> _Makefile.header
 
 
 printf "Regression test setup: (not really needed to build gxemul)\n"
-
-
-##  64-bit HPPA cross-assembler:
-#
-#HPPA=''
-#if [ z$ENABLEHPPA = zYES ]; then
-#	printf "Checking for a GNU cross-assembler for 64-bit HPPA... "
-#	echo 'nop' > _testprog.s
-#
-#	for HPPA_TRY in hppa64-unknown-elf hppa64-elf; do
-#		printf '#!/bin/sh\n'$HPPA_TRY'-as _testprog.s' > _test.sh
-#		printf ' -o _testprog.o\n' >> _test.sh
-#		chmod 755 _test.sh
-#		rm -f _testprog.o
-#		./_test.sh > /dev/null 2> /dev/null
-#		if [ -f _testprog.o ]; then
-#			HPPA=$HPPA_TRY
-#			break
-#		fi
-#		rm -f _testprog.o
-#	done
-#
-#	if [ z$HPPA = z ]; then
-#		echo "none"
-#	else
-#		echo $HPPA"-gcc"
-#	fi
-#fi
-#rm -f _testprog* _test.sh
-#
-## TODO: are these ok?  64-bit mode!
-##echo "HPPA_CC="$HPPA"-gcc -g -O2 -fno-builtin -fschedule-insns" \
-##	>> _Makefile.header
-#echo "HPPA_AS="$HPPA"-as " >> _Makefile.header
-#echo "HPPA_LD="$HPPA"-ld -Ttext 0xa800000000030000 -e main" \
-#    "--oformat=elf64-bigmips" >> _Makefile.header
-#echo "" >> _Makefile.header
 
 
 #  64-bit MIPS cross-compiler:

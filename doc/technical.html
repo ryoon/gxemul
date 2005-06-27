@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.52 2005-06-18 20:18:46 debug Exp $
+$Id: technical.html,v 1.53 2005-06-27 17:31:50 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -45,17 +45,11 @@ SUCH DAMAGE.
 <p><br>
 <h2>Technical details</h2>
 
-<p>
-This page describes some of the internals of GXemul.
-
-<p>
-<font color="#e00000"><b>NOTE: This page is probably not
-very up-to-date by now.</b></font>
+<p>This page describes some of the internals of GXemul.
 
 <p>
 <ul>
-  <li><a href="#overview">Overview</a>
-  <li><a href="#speed">Speed</a>
+  <li><a href="#speed">Speed and emulation modes</a>
   <li><a href="#net">Networking</a>
   <li><a href="#devices">Emulation of hardware devices</a>
   <li><a href="#regtest">Regression tests</a>
@@ -64,116 +58,77 @@ very up-to-date by now.</b></font>
 
 
 
-<p><br>
-<a name="overview"></a>
-<h3>Overview</h3>
-
-<font color="#ff0000">NOTE/TODO: This section is very old and a bit
-out of date.</font>
-
-<p>In simple terms, GXemul is just a simple fetch-and-execute loop; an
-instruction is fetched from memory, and executed.
-
-<p>In reality, a lot of things need to be handled. Before each instruction
-is executed, the emulator checks to see if any interrupts are asserted
-which are not masked away. If so, then an INT exception is generated.
-Exceptions cause the program counter to be set to a specific value, and
-some of the system coprocessor's registers to be set to values signifying
-what kind of exception it was (an interrupt exception in this case).
-
-<p>Reading instructions from memory is done through a TLB, a translation
-lookaside buffer. The TLB on MIPS is software controlled, which means that
-the program running inside the emulator (for example an operating system
-kernel) has to take care of manually updating the TLB. Some memory
-addresses are translated into physical addresses directly, some are
-translated into valid physical addresses via the TLB, and some memory
-references are not valid. Invalid memory references cause exceptions.
-
-<p>After an instruction has been read from memory, the emulator checks
-which opcode it contains and executes the instruction. Executing an
-instruction usually involves reading some register and writing some
-register, or perhaps a load from memory (or a store to memory). The
-program counter is increased for every instruction.
-
-<p>Some memory references point to physical addresses which are not in the
-normal RAM address space. They may point to hardware devices. If that is
-the case, then loads and stores are converted into calls to a device
-access function. The device access function is then responsible for
-handling these reads and writes.  For example, a graphical framebuffer
-device may put a pixel on the screen when a value is written to it, or a
-serial controller device may output a character to stdout when written to.
-
-
 
 
 <p><br>
 <a name="speed"></a>
-<h3>Speed</h3>
+<h3>Speed and emulation modes</h3>
 
-There are two modes in which the emulator can run, <b>a</b>) a straight forward 
-loop which fetches one instruction from emulated RAM and executes it
-(described in the previous section), and <b>b</b>)
-using dynamic binary translation.
+So, how fast is GXemul? There is no good answer to this. There is 
+especially no answer to the question <b>What is the slowdown factor?</b>, 
+because the host architecture and emulated architecture can usually not be 
+compared just like that.
 
-<p>
-Mode <b>a</b> is very slow. On a 2.8 GHz Intel Xeon host the resulting 
-emulated machine is rougly equal to a 7 MHz R3000 (or a 3.5 MHz R4000). 
-The actual performance varies a lot, maybe between 5 and 10 million 
-instructions per second, depending on workload.
+<p>Performance depends on several factors, including (but not limited to)  
+host architecture, host clock speed, which compiler and compiler flags
+were used to build the emulator, what the workload is, and so on. For
+example, if an emulated operating system tries to read a block from disk,
+from its point of view the read was instantaneous (no waiting). So 1 MIPS
+in an emulated OS might have taken more than one million instructions on a
+real machine.
 
-<p>
-Mode <b>b</b> ("bintrans") is still to be considered experimental, but 
-gives higher performance than mode <b>a</b>. It translates MIPS machine 
-code into machine code that can be executed on the host machine 
-on-the-fly. The translation itself obviously takes some time, but this is 
-usually made up for by the fact that the translated code chunks are 
-executed multiple times.
-To run the emulator with binary translation enabled, just add 
-<tt><b>-b</b></tt> to the command line.
+<p>Also, if the emulator says it has executed 1 million instructions, and 
+the CPU family in question was capable of scalar execution (i.e. one cycle 
+per instruction), it might still have taken more than 1 million cycles on 
+a real machine because of cache misses and similar micro-architectural 
+penalties that are not simulated by GXemul.
 
-<p>
-Only small pieces of MIPS machine code are translated, usually the size of 
-a function, or less. There is no "intermediate representation" code, so 
-all translations are done directly from MIPS to host machine code.
+<p>Because of these issues, it is in my opinion best to measure
+performance as the actual (real-world) time it takes to perform a task
+with the emulator. Typical examples would be "How long does it take to 
+install NetBSD?", or "How long does it take to compile XYZ inside NetBSD 
+in the emulator?".
 
-<p>
-The default bintrans cache size is 16 MB, but you can change this by adding
-<tt>-DDEFAULT_BINTRANS_SIZE_IN_MB=<i>xx</i></tt> to your CFLAGS environment
-variable before running the configure script, or by using the
-<tt>bintrans_size()</tt> configuration file option when running the emulator.
+<p>The emulation technique used varies depending on which processor type 
+is being emulated. (One of my main goals with GXemul is to experiment with 
+different kinds of emulation, so these might change in the future.)
 
-<p>
-By default, an emulated OS running under DECstation emulation which listens to
-interrupts from the mc146818 clock will get interrupts that are close to the
-host's clock. That is, if the emulated OS says it wants 100 interrupts per
-second, it will get approximately 100 interrupts per real second.
+<ul>
+  <li><b>MIPS</b><br>
+	There are two emulation modes. The most important one is an
+	implementation of a <i>dynamic binary translator</i>.
+	(Compared to real binary translators, though, GXemul's bintrans
+	subsystem is very simple and does not perform very well.)
+	This mode can be used on Alpha and i386 host. The other emulation
+	mode is simple interpretation, where an instruction is read from
+	emulated memory, and interpreted one-at-a-time. (Slow, but it
+	works. It can be forcefully used by using the <tt>-B</tt> command
+	line option.)
+  <p>
+  <li><b>ARM</b><br>
+	This mode does not really work yet, but will use
+	dynamic translation, but not binary translation. Stay tuned. :-)
+  <p>
+  <li><b>URISC</b><br>
+	Simple interpretation, one instruction at a time. There is probably
+	no other way to emulate URISC, because it relies too heavily
+	on self-modifying code.
+  <p>
+  <li><b>POWER/PowerPC</b><br>
+	This emulation mode is very much unfinished, but still enabled by
+	default. So far it uses plain interpretation, where an instruction
+	is read from emulated memory, and interpreted one at a time.
+	Slow. Not very interesting.
+  <p>
+  <li><b>x86</b><br>
+	Although too unstable and non-working to be enabled by default,
+	there is some code for emulating x86 machines. It simply reads
+	one instruction at a time from emulated memory, and executes it.
+	This is as slow as it gets. Not very interesting.
+</ul>
 
-<p>
-There is however a <tt><b>-I</b></tt> option, which sets the number of
-emulated cycles per seconds to a fixed value. Let's say you wish to make the
-emulated OS think it is running on a 40 MHz DECstation, and not a 7 MHz one,
-then you can add <tt><b>-I 40000000</b></tt> to the command line. This will not
-make the emulation faster, of course. It might even make it seem slower; for
-example, if NetBSD/pmax waits 2 seconds for SCSI devices to settle during
-bootup, those 2 seconds will take 2*40000000 cycles (which will take more 
-time than 2*7000000).
 
-<p>
-The <b><tt>-I</tt></b> option is also necessary if you want to run
-deterministic experiments, if a mc146818 (or similar) device is present.
 
-<p>
-Some emulators make claims such as "x times slowdown," but in the case of
-GXemul, the host is often not a MIPS-based machine, and hence comparing
-one MIPS instruction to a host instruction doesn't work. Performance depends on
-a lot of factors, including (but not limited to) host architecture, host speed,
-which compiler and compiler flags were used to build GXemul, what the
-workload is, and so on. For example, if an emulated operating system tries
-to read a block from disk, from its point of view the read was instantaneous
-(no waiting). So 1 MIPS in an emulated OS might have taken more than one
-million instructions on a real machine.  Because of this, imho it is best 
-to measure performance as the actual (real-world) time it takes to perform 
-a task with the emulator.
 
 
 

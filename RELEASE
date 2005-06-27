@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.131 2005-06-26 17:14:38 debug Exp $
+$Id: RELEASE,v 1.132 2005-06-27 17:31:49 debug Exp $
 
-Now working on post-0.3.3.2.
+Now working on what will be 0.3.4.
 
 ------------------------------------------------------------------------------
 
-Release notes for GXemul 0.3.X
+Release notes for GXemul 0.3.4
 ==============================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -49,7 +49,7 @@ things smaller than an instruction. What this means is that pipe-line
 stalls, penalties caused by branch-prediction misses or cache misses, and
 other micro-architectural effects are not simulated.)
 
-Summary of changes between release 0.3.3.2 and 0.3.X:
+Summary of changes between release 0.3.3.2 and 0.3.4:
 
 	x)  When emulating a network of multiple machines, the emulated
 	    machines can now be placed on different hosts.
@@ -63,7 +63,7 @@ Summary of changes between release 0.3.3.2 and 0.3.X:
 	    machine. The sgimips machine can then netboot. (Read the
 	    documentation for details.)
 
-There have also been many other updates and bugfixes.
+	x)  Various other updates and bugfixes.
 
 Files included in this release are:
 

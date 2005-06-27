@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.809 2005-06-27 07:03:38 debug Exp $
+$Id: HISTORY,v 1.810 2005-06-27 08:31:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2024,4 +2024,7 @@ Changelog for GXemul:
 		Converting some sprintf -> snprintf.
 		Adding some more instructions to the ARM disassembler.
 20050627	More ARM updates. Adding some simple ldr(b), str(b),
-		cmps, and conditional branch instructions.
+		cmps, and conditional branch instructions, enough to run
+		Hello World.
+		All ARM instructions are now inlines/generated for all possible
+		condition codes.

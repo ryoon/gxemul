@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.17 2005-06-27 07:03:39 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.18 2005-06-27 08:31:47 debug Exp $
  *
  *  ARM instructions.
  *
@@ -38,10 +38,101 @@
 
 /*
  *  Helper definitions:
+ *
+ *  Each instruction is defined like this:
+ *
+ *	X(foo)
+ *	{
+ *		code for foo;
+ *	}
+ *	Y(foo)
+ *
+ *  The Y line defines 14 copies of the instruction, one for each possible
+ *  condition code. (The NV condition code is not included, and the AL
+ *  condition code uses the main foo function.)  Y also defines an array with
+ *  pointers to all of these functions.
  */
 
 #define X(n) void arm_instr_ ## n(struct cpu *cpu, \
 	struct arm_instr_call *ic)
+
+#define Y(n) void arm_instr_ ## n ## __eq(struct cpu *cpu,		\
+			struct arm_instr_call *ic)			\
+	{  if (cpu->cd.arm.flags & ARM_FLAG_Z)				\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __ne(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (!(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __cs(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (cpu->cd.arm.flags & ARM_FLAG_C)				\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __cc(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (!(cpu->cd.arm.flags & ARM_FLAG_C))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __mi(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (cpu->cd.arm.flags & ARM_FLAG_N)				\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __pl(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (!(cpu->cd.arm.flags & ARM_FLAG_N))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __vs(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (cpu->cd.arm.flags & ARM_FLAG_V)				\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __vc(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (!(cpu->cd.arm.flags & ARM_FLAG_V))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __hi(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (cpu->cd.arm.flags & ARM_FLAG_C &&			\
+		!(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __ls(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (cpu->cd.arm.flags & ARM_FLAG_Z &&			\
+		!(cpu->cd.arm.flags & ARM_FLAG_C))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __ge(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==		\
+		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __lt(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=		\
+		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __gt(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==		\
+		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) &&		\
+		!(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void arm_instr_ ## n ## __le(struct cpu *cpu,			\
+			struct arm_instr_call *ic)			\
+	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=		\
+		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) ||		\
+		(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+		arm_instr_ ## n (cpu, ic);		}		\
+	void (*arm_cond_instr_ ## n ## [16])(struct cpu *,		\
+			struct arm_instr_call *) = {			\
+		arm_instr_ ## n ## __eq, arm_instr_ ## n ## __ne,	\
+		arm_instr_ ## n ## __cs, arm_instr_ ## n ## __cc,	\
+		arm_instr_ ## n ## __mi, arm_instr_ ## n ## __pl,	\
+		arm_instr_ ## n ## __vs, arm_instr_ ## n ## __vc,	\
+		arm_instr_ ## n ## __hi, arm_instr_ ## n ## __ls,	\
+		arm_instr_ ## n ## __ge, arm_instr_ ## n ## __lt,	\
+		arm_instr_ ## n ## __gt, arm_instr_ ## n ## __le,	\
+		arm_instr_ ## n , arm_instr_nop };
+
+#define cond_instr(n)	( arm_cond_instr_ ## n  [condition_code] )
+
 
 /*  This is for marking a physical page as containing combined instructions:  */
 #define	combined	(cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS)
@@ -106,20 +197,7 @@ X(b)
 	fatal("b: different page! TODO\n");
 	exit(1);
 }
-
-
-X(b__eq)
-{
-	fatal("b_eq: TODO\n");
-	exit(1);
-}
-
-
-X(b__ne)
-{
-	fatal("b_ne: TODO\n");
-	exit(1);
-}
+Y(b)
 
 
 /*
@@ -131,30 +209,7 @@ X(b_samepage)
 {
 	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 }
-
-
-/*
- *  b_samepage__eq:  Branch (to within the same translated page) on equal.
- *
- *  arg[0] = pointer to new arm_instr_call
- */
-X(b_samepage__eq)
-{
-	if (cpu->cd.arm.flags & ARM_FLAG_Z)
-		cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
-}
-
-
-/*
- *  b_samepage__ne:  Branch (to within the same translated page) on not equal.
- *
- *  arg[0] = pointer to new arm_instr_call
- */
-X(b_samepage__ne)
-{
-	if (!(cpu->cd.arm.flags & ARM_FLAG_Z))
-		cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
-}
+Y(b_samepage)
 
 
 /*
@@ -170,6 +225,7 @@ X(bl)
 	fatal("bl different page: TODO\n");
 	exit(1);
 }
+Y(bl)
 
 
 /*
@@ -196,6 +252,7 @@ X(bl_samepage)
 	/*  Branch:  */
 	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 }
+Y(bl_samepage)
 
 
 /*
@@ -208,6 +265,7 @@ X(mov)
 {
 	*((uint32_t *)ic->arg[0]) = ic->arg[1];
 }
+Y(mov)
 
 
 /*
@@ -219,20 +277,7 @@ X(clear)
 {
 	*((uint32_t *)ic->arg[0]) = 0;
 }
-
-
-/*
- *  mov_2:  Double "mov".
- *
- *  The current and the next arm_instr_call are treated as "mov"s.
- */
-X(mov_2)
-{
-	*((uint32_t *)ic[0].arg[0]) = ic[0].arg[1];
-	*((uint32_t *)ic[1].arg[0]) = ic[1].arg[1];
-	cpu->cd.arm.next_ic ++;
-	cpu->cd.arm.n_translated_instrs ++;
-}
+Y(clear)
 
 
 /*
@@ -254,6 +299,7 @@ X(load_byte_imm)
 	}
 	*((uint32_t *)ic->arg[2]) = data[0];
 }
+Y(load_byte_imm)
 
 
 /*
@@ -277,6 +323,7 @@ X(load_byte_w_imm)
 	*((uint32_t *)ic->arg[2]) = data[0];
 	*((uint32_t *)ic->arg[0]) = addr;
 }
+Y(load_byte_w_imm)
 
 
 /*
@@ -299,6 +346,7 @@ X(store_byte_imm)
 		exit(1);
 	}
 }
+Y(store_byte_imm)
 
 
 /*
@@ -323,6 +371,7 @@ X(load_word_imm)
 	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
 	    (data[2] << 16) + (data[3] << 24);
 }
+Y(load_word_imm)
 
 
 /*
@@ -348,6 +397,7 @@ X(load_word_w_imm)
 	    (data[2] << 16) + (data[3] << 24);
 	*((uint32_t *)ic->arg[0]) = addr;
 }
+Y(load_word_w_imm)
 
 
 /*
@@ -371,6 +421,7 @@ X(store_word_imm)
 		exit(1);
 	}
 }
+Y(store_word_imm)
 
 
 /*
@@ -400,6 +451,7 @@ X(load_byte_imm_pcrel)
 	}
 	*((uint32_t *)ic->arg[2]) = data[0];
 }
+Y(load_byte_imm_pcrel)
 
 
 /*
@@ -431,6 +483,7 @@ X(load_word_imm_pcrel)
 	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
 	    (data[2] << 16) + (data[3] << 24);
 }
+Y(load_word_imm_pcrel)
 
 
 /*
@@ -463,6 +516,24 @@ X(cmps)
 		cpu->cd.arm.flags |= ARM_FLAG_V;
 	if (a > b)
 		cpu->cd.arm.flags |= ARM_FLAG_C;
+}
+Y(cmps)
+
+
+/*****************************************************************************/
+
+
+/*
+ *  mov_2:  Double "mov".
+ *
+ *  The current and the next arm_instr_call are treated as "mov"s.
+ */
+X(mov_2)
+{
+	*((uint32_t *)ic[0].arg[0]) = ic[0].arg[1];
+	*((uint32_t *)ic[1].arg[0]) = ic[1].arg[1];
+	cpu->cd.arm.next_ic ++;
+	cpu->cd.arm.n_translated_instrs ++;
 }
 
 
@@ -587,15 +658,10 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	r12 = (iword >> 12) & 15;
 	r8 = (iword >> 8) & 15;
 
-	if (condition_code != 0xe) {
-		switch (main_opcode) {
-		case 0x0a:
-			break;
-		default:
-			fatal("TODO: ARM condition code 0x%x\n",
-			    condition_code);
-			goto bad;
-		}
+	if (condition_code == 0xf) {
+		fatal("TODO: ARM condition code 0x%x\n",
+		    condition_code);
+		goto bad;
 	}
 
 
@@ -623,7 +689,7 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 				fatal("cmp !s_bit: TODO\n");
 				goto bad;
 			}
-			ic->f = instr(cmps);
+			ic->f = cond_instr(cmps);
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
 			ic->arg[1] = imm;
 			break;
@@ -636,11 +702,11 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 				fatal("TODO: mov used as branch\n");
 				goto bad;
 			} else {
-				ic->f = instr(mov);
+				ic->f = cond_instr(mov);
 				ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
 				ic->arg[1] = imm;
 				if (imm == 0)
-					ic->f = instr(clear);
+					ic->f = cond_instr(clear);
 			}
 			break;
 		default:goto bad;
@@ -662,12 +728,12 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 					fatal("WARNING: ldr to pc register?\n");
 				if (w_bit) {
 					ic->f = b_bit?
-					    instr(load_byte_w_imm) :
-					    instr(load_word_w_imm);
+					    cond_instr(load_byte_w_imm) :
+					    cond_instr(load_word_w_imm);
 				} else {
 					ic->f = b_bit?
-					    instr(load_byte_imm) :
-					    instr(load_word_imm);
+					    cond_instr(load_byte_imm) :
+					    cond_instr(load_word_imm);
 				}
 				if (r16 == ARM_PC) {
 					if (w_bit) {
@@ -675,8 +741,8 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 						goto bad;
 					}
 					ic->f = b_bit?
-					    instr(load_byte_imm_pcrel) :
-					    instr(load_word_imm_pcrel);
+					    cond_instr(load_byte_imm_pcrel) :
+					    cond_instr(load_word_imm_pcrel);
 				}
 			} else {
 				if (w_bit) {
@@ -688,8 +754,8 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 					goto bad;
 				}
 				ic->f = b_bit?
-				    instr(store_byte_imm) :
-				    instr(store_word_imm);
+				    cond_instr(store_byte_imm) :
+				    cond_instr(store_word_imm);
 				if (r16 == ARM_PC) {
 					fatal("TODO: store pc rel\n");
 					goto bad;
@@ -707,25 +773,11 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	case 0xa:					/*  B: branch  */
 	case 0xb:					/*  BL: branch+link  */
 		if (main_opcode == 0x0a) {
-			switch (condition_code) {
-			case 0x0:
-				ic->f = instr(b__eq);
-				samepage_function = instr(b_samepage__eq);
-				break;
-			case 0x1:
-				ic->f = instr(b__ne);
-				samepage_function = instr(b_samepage__ne);
-				break;
-			case 0xe:
-				ic->f = instr(b);
-				samepage_function = instr(b_samepage);
-				break;
-			default:fatal("ARM: b: unimplemented condition\n");
-				goto bad;
-			}
+			ic->f = cond_instr(b);
+			samepage_function = cond_instr(b_samepage);
 		} else {
-			ic->f = instr(bl);
-			samepage_function = instr(bl_samepage);
+			ic->f = cond_instr(bl);
+			samepage_function = cond_instr(bl_samepage);
 		}
 
 		ic->arg[0] = (iword & 0x00ffffff) << 2;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.19 2005-06-27 08:55:28 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.20 2005-06-27 09:20:19 debug Exp $
  *
  *  ARM instructions.
  *
@@ -327,6 +327,30 @@ Y(load_byte_w_imm)
 
 
 /*
+ *  load_byte_wpost_imm:
+ *	Load an 8-bit byte from emulated memory and store it in
+ *	a 32-bit word in host memory, with address writeback AFTER the load.
+ *
+ *  arg[0] = pointer to uint32_t in host memory of base address
+ *  arg[1] = 32-bit offset
+ *  arg[2] = pointer to uint32_t in host memory where to store the value
+ */
+X(load_byte_wpost_imm)
+{
+	unsigned char data[1];
+	uint32_t addr = *((uint32_t *)ic->arg[0]);
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	*((uint32_t *)ic->arg[2]) = data[0];
+	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+}
+Y(load_byte_wpost_imm)
+
+
+/*
  *  store_byte_imm:  Load a word from a 32-bit word in host memory, and store
  *                   the lowest 8 bits of that word at an emulated memory
  *                   address.
@@ -347,6 +371,32 @@ X(store_byte_imm)
 	}
 }
 Y(store_byte_imm)
+
+
+/*
+ *  store_byte_wpost_imm:
+ *	Load a word from a 32-bit word in host memory, and store
+ *	the lowest 8 bits of that word at an emulated memory address.
+ *	Then add the immediate offset to the address, and write back
+ *	to the first word.
+ *
+ *  arg[0] = pointer to uint32_t in host memory of base address
+ *  arg[1] = 32-bit offset
+ *  arg[2] = pointer to uint32_t in host memory where to load the value from
+ */
+X(store_byte_wpost_imm)
+{
+	unsigned char data[1];
+	uint32_t addr = *((uint32_t *)ic->arg[0]);
+	data[0] = *((uint32_t *)ic->arg[2]);
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_WRITE, CACHE_DATA)) {
+		fatal("store failed: TODO\n");
+		exit(1);
+	}
+	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+}
+Y(store_byte_wpost_imm)
 
 
 /*
@@ -520,6 +570,46 @@ X(cmps)
 Y(cmps)
 
 
+/*
+ *  sub:  Subtract an immediate value from a 32-bit word, and store the
+ *        result in a 32-bit word.
+ *
+ *  arg[0] = pointer to destination uint32_t in host memory
+ *  arg[1] = pointer to source uint32_t in host memory
+ *  arg[2] = 32-bit value
+ */
+X(sub)
+{
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) - ic->arg[2];
+}
+Y(sub)
+X(sub_self)
+{
+	*((uint32_t *)ic->arg[0]) -= ic->arg[2];
+}
+Y(sub_self)
+
+
+/*
+ *  add:  Add an immediate value to a 32-bit word, and store the
+ *        result in a 32-bit word.
+ *
+ *  arg[0] = pointer to destination uint32_t in host memory
+ *  arg[1] = pointer to source uint32_t in host memory
+ *  arg[2] = 32-bit value
+ */
+X(add)
+{
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) + ic->arg[2];
+}
+Y(add)
+X(add_self)
+{
+	*((uint32_t *)ic->arg[0]) += ic->arg[2];
+}
+Y(add_self)
+
+
 /*****************************************************************************/
 
 
@@ -684,6 +774,30 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 		while (r8-- > 0)
 			imm = (imm >> 1) | ((imm & 1) << 31);
 		switch (secondary_opcode) {
+		case 0x2:				/*  SUB  */
+		case 0x4:				/*  ADD  */
+			if (s_bit) {
+				fatal("sub s_bit: TODO\n");
+				goto bad;
+			}
+			switch (secondary_opcode) {
+			case 0x2:
+				if (r12 == r16)
+					ic->f = cond_instr(sub_self);
+				else
+					ic->f = cond_instr(sub);
+				break;
+			case 0x4:
+				if (r12 == r16)
+					ic->f = cond_instr(add_self);
+				else
+					ic->f = cond_instr(add);
+				break;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
+			ic->arg[1] = (size_t)(&cpu->cd.arm.r[r16]);
+			ic->arg[2] = imm;
+			break;
 		case 0xa:				/*  CMP  */
 			if (!s_bit) {
 				fatal("cmp !s_bit: TODO\n");
@@ -718,11 +832,31 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	case 0x6:	/*  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register  */
 	case 0x7:
 		p_bit = main_opcode & 1;
-		if (main_opcode == 5) {
-			/*  Pre-index, immediate:  */
+		if (main_opcode < 6) {
+			/*  Immediate:  */
 			imm = iword & 0xfff;
 			if (!u_bit)
 				imm = (int32_t)0-imm;
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
+			ic->arg[1] = (size_t)(imm);
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[r12]);
+		}
+		if (main_opcode == 4 && b_bit) {
+			/*  Post-index, immediate:  */
+			if (w_bit) {
+				fatal("load/store: T-bit\n");
+				goto bad;
+			}
+			if (r16 == ARM_PC) {
+				fatal("load/store writeback PC: error\n");
+				goto bad;
+			}
+			if (l_bit)
+				ic->f = cond_instr(load_byte_wpost_imm);
+			else
+				ic->f = cond_instr(store_byte_wpost_imm);
+		} else if (main_opcode == 5) {
+			/*  Pre-index, immediate:  */
 			/*  ldr(b) Rd,[Rn,#imm]  */
 			if (l_bit) {
 				if (r12 == ARM_PC)
@@ -762,9 +896,6 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 					goto bad;
 				}
 			}
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
-			ic->arg[1] = (size_t)(imm);
-			ic->arg[2] = (size_t)(&cpu->cd.arm.r[r12]);
 		} else {
 			fatal("Specific Load/store TODO\n");
 			goto bad;

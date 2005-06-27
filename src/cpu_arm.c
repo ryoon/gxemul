@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.17 2005-06-26 23:28:52 debug Exp $
+ *  $Id: cpu_arm.c,v 1.18 2005-06-27 09:20:19 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -350,9 +350,12 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		if (main_opcode < 6) {
 			/*  Immediate form:  */
 			uint32_t imm = iw & 0xfff;
+			if (!p_bit)
+				debug("]");
 			if (imm != 0)
 				debug(",#%s%i", u_bit? "" : "-", imm);
-			debug("]");
+			if (p_bit)
+				debug("]");
 		} else {
 			debug(" TODO: REG-form]");
 		}

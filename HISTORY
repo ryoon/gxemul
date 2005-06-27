@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.810 2005-06-27 08:31:46 debug Exp $
+$Id: HISTORY,v 1.811 2005-06-27 09:20:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2028,3 +2028,4 @@ Changelog for GXemul:
 		Hello World.
 		All ARM instructions are now inlines/generated for all possible
 		condition codes.
+		Adding add and sub, and more load/store instructions.

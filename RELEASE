@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.133 2005-06-27 23:04:35 debug Exp $
+$Id: RELEASE,v 1.134 2005-06-27 23:21:26 debug Exp $
 
-Now working on what will be 0.3.4.
+Now working on post-0.3.4.
 
 ------------------------------------------------------------------------------
 
-Release notes for GXemul 0.3.4
+Release notes for GXemul 0.3.X
 ==============================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -49,21 +49,10 @@ things smaller than an instruction. What this means is that pipe-line
 stalls, penalties caused by branch-prediction misses or cache misses, and
 other micro-architectural effects are not simulated.)
 
-Summary of changes between release 0.3.3.2 and 0.3.4:
+Summary of changes between release 0.3.4 and 0.3.X:
 
-	x)  When emulating a network of multiple machines, the emulated
-	    machines can now be placed on different hosts.
-
-	x)  NetBSD/evbmips can now be installed and run from a disk image.
-	    (There is no INSTALL kernel for NetBSD/evbmips, so you need to
-	    install using another OS, for example emulated NetBSD/pmax.)
-
-	x)  NetBSD/sgimips can now be installed. Not onto a SCSI disk,
-	    but the files can be exported via nfs from another emulated
-	    machine. The sgimips machine can then netboot. (Read the
-	    documentation for details.)
-
-There have also been various other minor updates and bugfixes.
+	TODO
+	..
 
 Files included in this release are:
 
@@ -152,7 +141,9 @@ them like this is in order:
 See individual files for license details, if you plan to redistribute GXemul
 or reuse code.
 
-Thanks to everyone who has provided me with feedback.
+Thanks to (in no specific order, that is, this is in alphabetic order :-)
+Joachim Buss, Juli Mallett, Juan RP, Alec Voropay, Alexander Yurchenko,
+and everyone else who has provided me with feedback.
 
 If you have found GXemul useful in some way, or feel like sending me comments
 or feedback in general, then mail me at anders(at)gavare.se.

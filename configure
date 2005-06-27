@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.138 2005-06-26 07:51:34 debug Exp $
+#  $Id: configure,v 1.139 2005-06-27 10:43:15 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -58,12 +58,9 @@
 #
 ###############################################################################
 
-ENABLEALPHA=NO
 ENABLEARM=YES
-ENABLEHPPA=NO
 ENABLEMIPS=YES
 ENABLEPPC=YES
-ENABLESPARC=NO
 ENABLEURISC=YES
 ENABLEX86=NO
 STABLE=NO
@@ -85,18 +82,10 @@ if [ z"$*" != z ]; then
 			MIPS16=NO
 		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
-		else if [ z$a = z--disable-alpha ]; then
-			ENABLEALPHA=NO
-		else if [ z$a = z--enable-alpha ]; then
-			ENABLEALPHA=YES
 		else if [ z$a = z--disable-arm ]; then
 			ENABLEARM=NO
 		else if [ z$a = z--enable-arm ]; then
 			ENABLEARM=YES
-		else if [ z$a = z--disable-hppa ]; then
-			ENABLEHPPA=NO
-		else if [ z$a = z--enable-hppa ]; then
-			ENABLEHPPA=YES
 		else if [ z$a = z--disable-mips ]; then
 			ENABLEMIPS=NO
 		else if [ z$a = z--enable-mips ]; then
@@ -105,10 +94,6 @@ if [ z"$*" != z ]; then
 			ENABLEPPC=NO
 		else if [ z$a = z--enable-ppc ]; then
 			ENABLEPPC=YES
-		else if [ z$a = z--disable-sparc ]; then
-			ENABLESPARC=NO
-		else if [ z$a = z--enable-sparc ]; then
-			ENABLESPARC=YES
 		else if [ z$a = z--disable-urisc ]; then
 			ENABLEURISC=NO
 		else if [ z$a = z--enable-urisc ]; then
@@ -142,25 +127,9 @@ if [ z"$*" != z ]; then
 			    "latency/delay emulation"
 			echo "  --disable-x        don't include X11 support"
 			printf "\nCPU selection options:\n"
-			if [ z$STABLE = zNO ]; then
-				printf "  --enable-alpha     "
-				printf "enable Alpha CPU emulation"
-				printf " (NOT YET)\n"
-			fi
-			printf "  --disable-arm      "
-			printf "disable ARM CPU emulation\n"
-			if [ z$STABLE = zNO ]; then
-				printf "  --enable-hppa      "
-				printf "enable HPPA CPU emulation"
-				printf " (NOT YET)\n"
-			fi
+			echo "  --disable-arm      disable ARM CPU emulation"
 			echo "  --disable-mips     disable MIPS CPU emulation"
 			echo "  --disable-ppc      disable PPC CPU emulation"
-			if [ z$STABLE = zNO ]; then
-				printf "  --enable-sparc     "
-				printf "enable SPARC CPU emulation"
-				printf " (NOT YET)\n"
-			fi
 			echo "  --disable-urisc    disable URISC CPU emulation"
 			if [ z$STABLE = zNO ]; then
 				printf "  --enable-x86       "
@@ -177,7 +146,7 @@ if [ z"$*" != z ]; then
 			    "available options."
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 

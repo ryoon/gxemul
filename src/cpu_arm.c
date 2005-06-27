@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.18 2005-06-27 09:20:19 debug Exp $
+ *  $Id: cpu_arm.c,v 1.19 2005-06-27 16:44:54 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -523,6 +523,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	physpage_entryp = &(((uint32_t *)
 	    cpu->cd.arm.translation_cache)[table_index]);
 	physpage_ofs = *physpage_entryp;
+	ppp = NULL;
 
 	/*  Traverse the physical page chain:  */
 	while (physpage_ofs != 0) {
@@ -535,10 +536,10 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		physpage_ofs = ppp->next_ofs;
 	}
 
-	/*  If the offset is 0, then we need to create a new "default"
-	    empty translation page.  */
+	/*  If the offset is 0 (or ppp is NULL), then we need to create a
+	    new "default" empty translation page.  */
 
-	if (physpage_ofs == 0) {
+	if (ppp == NULL) {
 		fatal("CREATING page %i (physaddr 0x%08x), table index = %i\n",
 		    pagenr, physaddr, table_index);
 		*physpage_entryp = physpage_ofs =

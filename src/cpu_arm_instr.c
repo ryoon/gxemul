@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.18 2005-06-27 08:31:47 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.19 2005-06-27 08:55:28 debug Exp $
  *
  *  ARM instructions.
  *
@@ -47,10 +47,10 @@
  *	}
  *	Y(foo)
  *
- *  The Y line defines 14 copies of the instruction, one for each possible
- *  condition code. (The NV condition code is not included, and the AL
- *  condition code uses the main foo function.)  Y also defines an array with
- *  pointers to all of these functions.
+ *  The Y macro defines 14 copies of the instruction, one for each possible
+ *  condition code. (The NV condition code is not included, and the AL code
+ *  uses the main foo function.)  Y also defines an array with pointers to
+ *  all of these functions.
  */
 
 #define X(n) void arm_instr_ ## n(struct cpu *cpu, \
@@ -120,7 +120,7 @@
 		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) ||		\
 		(cpu->cd.arm.flags & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
-	void (*arm_cond_instr_ ## n ## [16])(struct cpu *,		\
+	void (*arm_cond_instr_ ## n  [16])(struct cpu *,		\
 			struct arm_instr_call *) = {			\
 		arm_instr_ ## n ## __eq, arm_instr_ ## n ## __ne,	\
 		arm_instr_ ## n ## __cs, arm_instr_ ## n ## __cc,	\
@@ -719,6 +719,7 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	case 0x7:
 		p_bit = main_opcode & 1;
 		if (main_opcode == 5) {
+			/*  Pre-index, immediate:  */
 			imm = iword & 0xfff;
 			if (!u_bit)
 				imm = (int32_t)0-imm;

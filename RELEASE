@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.132 2005-06-27 17:31:49 debug Exp $
+$Id: RELEASE,v 1.133 2005-06-27 23:04:35 debug Exp $
 
 Now working on what will be 0.3.4.
 
@@ -63,7 +63,7 @@ Summary of changes between release 0.3.3.2 and 0.3.4:
 	    machine. The sgimips machine can then netboot. (Read the
 	    documentation for details.)
 
-	x)  Various other updates and bugfixes.
+There have also been various other minor updates and bugfixes.
 
 Files included in this release are:
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.814 2005-06-27 17:31:49 debug Exp $
+$Id: HISTORY,v 1.815 2005-06-27 23:04:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2031,4 +2031,7 @@ Changelog for GXemul:
 		Adding add and sub, and more load/store instructions.
 		Removing dummy files: cpu_alpha.c, cpu_hppa.c, and cpu_sparc.c.
 		Some minor documentation updates; preparing for a 0.3.4
-		release.
+		release. Updating some URLs.
+
+==============  RELEASE 0.3.4  ==============
+

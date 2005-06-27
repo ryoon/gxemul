@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.15 2005-06-26 22:40:16 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.16 2005-06-27 00:28:06 debug Exp $
  *
  *  ARM instructions.
  *
@@ -197,6 +197,112 @@ X(mov_2)
 }
 
 
+/*
+ *  load_byte_imm:  Load an 8-bit byte from emulated memory and store it in
+ *                  a 32-bit word in host memory.
+ *
+ *  arg[0] = pointer to uint32_t in host memory of base address
+ *  arg[1] = 32-bit offset
+ *  arg[2] = pointer to uint32_t in host memory where to store the value
+ */
+X(load_byte_imm)
+{
+	unsigned char data[1];
+	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	*((uint32_t *)ic->arg[2]) = data[0];
+}
+
+
+/*
+ *  load_word_imm:  Load a 32-bit word from emulated memory and store it in
+ *                  a 32-bit word in host memory.
+ *
+ *  arg[0] = pointer to uint32_t in host memory of base address
+ *  arg[1] = 32-bit offset
+ *  arg[2] = pointer to uint32_t in host memory where to store the value
+ */
+X(load_word_imm)
+{
+	unsigned char data[sizeof(uint32_t)];
+	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	/*  TODO: Big endian  */
+	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
+	    (data[2] << 16) + (data[3] << 24);
+}
+
+
+/*
+ *  load_byte_imm_pcrel:
+ *	Like load_byte_imm, but the source address is the PC register.
+ *	Before loading, we have to synchronize the PC register and add 8.
+ *
+ *  arg[0] = pointer to ARM_PC  (not used here)
+ *  arg[1] = 32-bit offset
+ *  arg[2] = pointer to uint32_t in host memory where to store the value
+ */
+X(load_byte_imm_pcrel)
+{
+	uint32_t low_pc, addr;
+	unsigned char data[1];
+
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+
+	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	*((uint32_t *)ic->arg[2]) = data[0];
+}
+
+
+/*
+ *  load_word_imm_pcrel:
+ *	Like load_word_imm, but the source address is the PC register.
+ *	Before loading, we have to synchronize the PC register and add 8.
+ *
+ *  arg[0] = pointer to ARM_PC  (not used here)
+ *  arg[1] = 32-bit offset
+ *  arg[2] = pointer to uint32_t in host memory where to store the value
+ */
+X(load_word_imm_pcrel)
+{
+	uint32_t low_pc, addr;
+	unsigned char data[sizeof(uint32_t)];
+
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+
+	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	/*  TODO: Big endian  */
+	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
+	    (data[2] << 16) + (data[3] << 24);
+}
+
+
 /*****************************************************************************/
 
 
@@ -278,6 +384,7 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	uint32_t addr, low_pc, iword, imm;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, r16, r12, r8;
+	int p_bit, u_bit, b_bit, w_bit, l_bit;
 
 	/*  Make sure that PC is in synch:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
@@ -308,7 +415,10 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	condition_code = iword >> 28;
 	main_opcode = (iword >> 24) & 15;
 	secondary_opcode = (iword >> 21) & 15;
-	s_bit = (iword >> 20) & 1;
+	u_bit = (iword >> 23) & 1;
+	b_bit = (iword >> 22) & 1;
+	w_bit = (iword >> 21) & 1;
+	s_bit = l_bit = (iword >> 20) & 1;
 	r16 = (iword >> 16) & 15;
 	r12 = (iword >> 12) & 15;
 	r8 = (iword >> 8) & 15;
@@ -355,6 +465,34 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 			}
 			break;
 		default:goto bad;
+		}
+		break;
+
+	case 0x4:	/*  Load and store...  */
+	case 0x5:	/*  xxxx010P UBWLnnnn ddddoooo oooooooo  Immediate  */
+	case 0x6:	/*  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register  */
+	case 0x7:
+		p_bit = main_opcode & 1;
+		if (main_opcode == 5 && u_bit && !w_bit && l_bit) {
+			/*  ldr(b) Rd,[Rn,#imm]  */
+			if (r12 == ARM_PC)
+				fatal("WARNING: ldr to pc register?\n");
+			if (b_bit)
+				ic->f = instr(load_byte_imm);
+			else
+				ic->f = instr(load_word_imm);
+			if (r16 == ARM_PC) {
+				if (b_bit)
+					ic->f = instr(load_byte_imm_pcrel);
+				else
+					ic->f = instr(load_word_imm_pcrel);
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
+			ic->arg[1] = (size_t)(iword & 0xfff);
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[r12]);
+		} else {
+			fatal("Specific Load/store TODO\n");
+			goto bad;
 		}
 		break;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.12 2005-06-28 20:23:08 debug Exp $
+ *  $Id: cpu_arm.h,v 1.13 2005-06-28 23:18:26 debug Exp $
  */
 
 #include "misc.h"
@@ -63,9 +63,11 @@ struct arm_instr_call {
 	size_t	arg[N_IC_ARGS];
 };
 
+/*  512 translated pages should be good enough:  */
 #define	ARM_TRANSLATION_CACHE_SIZE	(512 * \
 		sizeof(struct arm_instr_call) * IC_ENTRIES_PER_PAGE)
-#define	ARM_TRANSLATION_CACHE_MARGIN	65536
+#define	ARM_TRANSLATION_CACHE_MARGIN	(2 * \
+		sizeof(struct arm_instr_call) * IC_ENTRIES_PER_PAGE)
 
 struct arm_tc_physpage {
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
@@ -74,7 +76,9 @@ struct arm_tc_physpage {
 	struct arm_instr_call ics[IC_ENTRIES_PER_PAGE + 1];
 };
 
-#define	ARM_COMBINATIONS		1
+/*  Physpage flags:  */
+#define	ARM_TRANSLATIONS		1
+#define	ARM_COMBINATIONS		2
 
 #define	ARM_FLAG_N	0x80000000	/*  Negative flag  */
 #define	ARM_FLAG_Z	0x40000000	/*  Zero flag  */

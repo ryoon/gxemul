@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.24 2005-06-28 20:23:07 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.25 2005-06-28 23:18:25 debug Exp $
  *
  *  ARM instructions.
  *
@@ -134,7 +134,9 @@
 #define cond_instr(n)	( arm_cond_instr_ ## n  [condition_code] )
 
 
-/*  This is for marking a physical page as containing combined instructions:  */
+/*  This is for marking a physical page as containing translated or
+    combined instructions, respectively:  */
+#define	translated	(cpu->cd.arm.cur_physpage->flags |= ARM_TRANSLATIONS)
 #define	combined	(cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS)
 
 
@@ -178,24 +180,18 @@ X(nop)
  */
 X(b)
 {
-	int low_pc;
-	uint32_t old_pc;
-
-	/*  fatal("b: arg[0] = 0x%08x, pc=0x%08x\n", ic->arg[0], cpu->pc);  */
+	uint32_t low_pc;
 
 	/*  Calculate new PC from this instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
-	old_pc = cpu->cd.arm.r[ARM_PC];
-	/*  fatal("b: 3: old_pc=0x%08x\n", old_pc);  */
 	cpu->cd.arm.r[ARM_PC] += (int32_t)ic->arg[0];
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
-	/*  fatal("b: 2: pc=0x%08x\n", cpu->pc);  */
 
-	fatal("b: different page! TODO\n");
-	exit(1);
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
 }
 Y(b)
 
@@ -217,13 +213,27 @@ Y(b_samepage)
  *
  *  arg[0] = relative address
  *
- *  TODO: Implement this.
  *  TODO: How about function call trace?
  */
 X(bl)
 {
-	fatal("bl different page: TODO\n");
-	exit(1);
+	uint32_t lr, low_pc;
+
+	/*  Figure out what the return (link) address will be:  */
+	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	lr = cpu->cd.arm.r[ARM_PC];
+	lr &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	lr += (low_pc << 2);
+
+	/*  Link:  */
+	cpu->cd.arm.r[ARM_LR] = lr;
+
+	/*  Calculate new PC from this instruction + arg[0]  */
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr + (int32_t)ic->arg[0];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
 }
 Y(bl)
 
@@ -612,9 +622,11 @@ X(cmps)
 	a = *((uint32_t *)ic->arg[0]);
 	b = ic->arg[1];
 
-	c = a - b;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	c = a - b;
+	if (a > b)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
 	if (c == 0)
 		cpu->cd.arm.flags |= ARM_FLAG_Z;
 	if ((int32_t)c < 0) {
@@ -622,15 +634,29 @@ X(cmps)
 		n = 1;
 	} else
 		n = 0;
-	v = !n;
 	if ((int32_t)a >= (int32_t)b)
 		v = n;
+	else
+		v = !n;
 	if (v)
 		cpu->cd.arm.flags |= ARM_FLAG_V;
-	if (a > b)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
 }
 Y(cmps)
+X(cmps_0)
+{
+	/*  arg[1] is assumed to be 0.  */
+	uint32_t a = *((uint32_t *)ic->arg[0]);
+
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (a != 0)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	else
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)a < 0)
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+}
+Y(cmps_0)
 
 
 /*
@@ -651,6 +677,11 @@ X(sub_self)
 	*((uint32_t *)ic->arg[0]) -= ic->arg[2];
 }
 Y(sub_self)
+X(sub_self_1)
+{
+	*((uint32_t *)ic->arg[0]) -= 1;
+}
+Y(sub_self_1)
 
 
 /*
@@ -671,6 +702,11 @@ X(add_self)
 	*((uint32_t *)ic->arg[0]) += ic->arg[2];
 }
 Y(add_self)
+X(add_self_1)
+{
+	*((uint32_t *)ic->arg[0]) += 1;
+}
+Y(add_self_1)
 
 
 /*****************************************************************************/
@@ -755,7 +791,7 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
 
 
 /*
- *  arm_translate_instruction():
+ *  arm_instr_to_be_translated():
  *
  *  Translate an instruction word into an arm_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
@@ -829,6 +865,7 @@ X(to_be_translated)
 				ic->f = cond_instr(mov_pc);
 				ic->arg[0] = (size_t)
 				    (&cpu->cd.arm.r[iword & 15]);
+				translated;
 			} else {
 				fatal("REGISTER FORM! TODO\n");
 				goto bad;
@@ -848,21 +885,26 @@ X(to_be_translated)
 			}
 			switch (secondary_opcode) {
 			case 0x2:
-				if (r12 == r16)
+				ic->f = cond_instr(sub);
+				if (r12 == r16) {
 					ic->f = cond_instr(sub_self);
-				else
-					ic->f = cond_instr(sub);
+					if (imm == 1)
+						ic->f = cond_instr(sub_self_1);
+				}
 				break;
 			case 0x4:
-				if (r12 == r16)
+				ic->f = cond_instr(add);
+				if (r12 == r16) {
 					ic->f = cond_instr(add_self);
-				else
-					ic->f = cond_instr(add);
+					if (imm == 1)
+						ic->f = cond_instr(add_self_1);
+				}
 				break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[r16]);
 			ic->arg[2] = imm;
+			translated;
 			break;
 		case 0xa:				/*  CMP  */
 			if (!s_bit) {
@@ -872,6 +914,9 @@ X(to_be_translated)
 			ic->f = cond_instr(cmps);
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
 			ic->arg[1] = imm;
+			if (imm == 0)
+				ic->f = cond_instr(cmps_0);
+			translated;
 			break;
 		case 0xd:				/*  MOV  */
 			if (s_bit) {
@@ -888,6 +933,7 @@ X(to_be_translated)
 				if (imm == 0)
 					ic->f = cond_instr(clear);
 			}
+			translated;
 			break;
 		default:goto bad;
 		}
@@ -966,6 +1012,7 @@ X(to_be_translated)
 			fatal("Specific Load/store TODO\n");
 			goto bad;
 		}
+		translated;
 		break;
 
 	case 0xa:					/*  B: branch  */
@@ -982,7 +1029,9 @@ X(to_be_translated)
 		/*  Sign-extend:  */
 		if (ic->arg[0] & 0x02000000)
 			ic->arg[0] |= 0xfc000000;
-		/*  Branches are calculated as PC + 8 + offset:  */
+		/*
+		 *  Branches are calculated as PC + 8 + offset.
+		 */
 		ic->arg[0] = (int32_t)(ic->arg[0] + 8);
 
 		/*  Special case: branch within the same page:  */
@@ -999,6 +1048,7 @@ X(to_be_translated)
 				    ((new_pc & mask_within_page) >> 2));
 			}
 		}
+		translated;
 		break;
 
 	default:goto bad;
@@ -1012,10 +1062,8 @@ X(to_be_translated)
 	 */
 
 	/*  Single-stepping doesn't work with combinations:  */
-	if (single_step || cpu->machine->instruction_trace)
-		return;
-
-	arm_combine_instructions(cpu, ic);
+	if (!single_step && !cpu->machine->instruction_trace)
+		arm_combine_instructions(cpu, ic);
 
 	/*  ... and finally execute the translated instruction:  */
 	ic->f(cpu, ic);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.22 2005-06-28 20:23:07 debug Exp $
+ *  $Id: cpu_arm.c,v 1.23 2005-06-28 23:18:25 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -638,6 +638,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    "are now flushed because we are single-stepping."
 			    " ]\n", cpu->cd.arm.cur_physpage->physaddr);
 			cpu->cd.arm.cur_physpage->flags &= ~ARM_COMBINATIONS;
+			cpu->cd.arm.cur_physpage->flags &= ~ARM_TRANSLATIONS;
 		}
 
 		/*  Execute just one instruction:  */

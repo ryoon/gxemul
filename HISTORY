@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.818 2005-06-28 16:38:02 debug Exp $
+$Id: HISTORY,v 1.819 2005-06-28 23:18:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2038,3 +2038,4 @@ Changelog for GXemul:
 20050628	Continuing the work on the ARM translation engine. end_of_page
 		works. Experimenting with load/store translation caches
 		(virtual -> physical -> host).
+20050629	More ARM stuff.

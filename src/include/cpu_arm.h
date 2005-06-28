@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.11 2005-06-28 16:38:04 debug Exp $
+ *  $Id: cpu_arm.h,v 1.12 2005-06-28 20:23:08 debug Exp $
  */
 
 #include "misc.h"
@@ -57,13 +57,15 @@ struct cpu_family;
 #define	ADDR_TO_PAGENR(a)		((a) >> (IC_ENTRIES_SHIFT+2))
 #define	N_BASE_TABLE_ENTRIES		32768
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
-#define	ARM_TRANSLATION_CACHE_SIZE	(1048576 * 16)
-#define	ARM_TRANSLATION_CACHE_MARGIN	65536
 
 struct arm_instr_call {
 	void	(*f)(struct cpu *, struct arm_instr_call *);
 	size_t	arg[N_IC_ARGS];
 };
+
+#define	ARM_TRANSLATION_CACHE_SIZE	(512 * \
+		sizeof(struct arm_instr_call) * IC_ENTRIES_PER_PAGE)
+#define	ARM_TRANSLATION_CACHE_MARGIN	65536
 
 struct arm_tc_physpage {
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
@@ -96,6 +98,7 @@ struct arm_tc_physpage {
 
 /*  Virtual->physical->host page entry:  */
 #define	N_VPH_ENTRIES		1024
+#define	ARM_MAX_VPH_PAGES	96
 struct vph_page {
 	void		*host_load[N_VPH_ENTRIES];
 	void		*host_store[N_VPH_ENTRIES];

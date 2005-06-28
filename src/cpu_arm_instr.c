@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.23 2005-06-28 16:54:26 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.24 2005-06-28 20:23:07 debug Exp $
  *
  *  ARM instructions.
  *
@@ -693,16 +693,6 @@ X(mov_2)
 /*****************************************************************************/
 
 
-X(to_be_translated)
-{
-	/*  Translate the instruction...  */
-	arm_translate_instruction(cpu, ic);
-
-	/*  ... and execute it:  */
-	ic->f(cpu, ic);
-}
-
-
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
@@ -761,6 +751,9 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
 }
 
 
+/*****************************************************************************/
+
+
 /*
  *  arm_translate_instruction():
  *
@@ -770,7 +763,7 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
  *
  *  (This function should only be called from to_be_translated.)
  */
-void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
+X(to_be_translated)
 {
 	uint32_t addr, low_pc, iword, imm;
 	unsigned char ib[4];
@@ -1024,6 +1017,9 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 
 	arm_combine_instructions(cpu, ic);
 
+	/*  ... and finally execute the translated instruction:  */
+	ic->f(cpu, ic);
+
 	return;
 
 
@@ -1038,5 +1034,8 @@ bad:	/*
 	cpu->dead = 1;
 	cpu->cd.arm.running_translated = 0;
 	*ic = nothing_call;
+
+	/*  Execute the "nothing" instruction:  */
+	ic->f(cpu, ic);
 }
 

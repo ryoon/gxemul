@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.21 2005-06-28 16:38:04 debug Exp $
+ *  $Id: cpu_arm.c,v 1.22 2005-06-28 20:23:07 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -118,6 +118,10 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
+		debug(" (host: %i MB code translation cache, %.2f MB addr"
+		    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
+		    (float)(sizeof(struct vph_page) * ARM_MAX_VPH_PAGES
+		    / 1048576.0));
 	}
 
 	/*  Create the default virtual->physical->host translation:  */
@@ -130,6 +134,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	for (i=0; i<N_VPH_ENTRIES; i++)
 		cpu->cd.arm.vph_table0[i] = cpu->cd.arm.vph_default_page;
 
+#if 1
 {
 uint32_t addr = 0x8000;
 struct vph_page *p = malloc(sizeof(struct vph_page));
@@ -139,6 +144,7 @@ cpu->cd.arm.vph_table0[addr >> 22] = p;
 for (i=0; i<1024; i++)  p->host_load[i] = tmp_page;
 for (i=0; i<1024; i++)  p->host_store[i] = tmp_page;
 }
+#endif
 
 	return 1;
 }
@@ -669,7 +675,16 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 
-			n_instrs += 24;
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			n_instrs += 32;
 			if (!cpu->cd.arm.running_translated || single_step ||
 			    n_instrs + cpu->cd.arm.n_translated_instrs >= 8192)
 				break;

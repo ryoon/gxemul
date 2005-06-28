@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.21 2005-06-28 09:48:11 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.22 2005-06-28 16:38:04 debug Exp $
  *
  *  ARM instructions.
  *
@@ -256,6 +256,25 @@ Y(bl_samepage)
 
 
 /*
+ *  mov_pc:  "mov pc,reg"
+ *
+ *  arg[0] = pointer to uint32_t in host memory of source register
+ */
+X(mov_pc)
+{
+	/*  Update the PC register:  */
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = *((uint32_t *)ic->arg[0]);
+
+	/*  TODO: There is no need to update the pointers if this
+	    is a return to the same page!  */
+
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
+}
+Y(mov_pc)
+
+
+/*
  *  mov:  Set a 32-bit register to a 32-bit value.
  *
  *  arg[0] = pointer to uint32_t in host memory
@@ -326,6 +345,23 @@ X(load_byte_w_imm)
 Y(load_byte_w_imm)
 
 
+void arm_general_load_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
+{
+	unsigned char data[1];
+	uint32_t addr = *((uint32_t *)ic->arg[0]);
+
+fatal("arm_general_load_wpost_imm()!\n");
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	*((uint32_t *)ic->arg[2]) = data[0];
+	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+}
+
+
 /*
  *  load_byte_wpost_imm:
  *	Load an 8-bit byte from emulated memory and store it in
@@ -337,15 +373,15 @@ Y(load_byte_w_imm)
  */
 X(load_byte_wpost_imm)
 {
-	unsigned char data[1];
 	uint32_t addr = *((uint32_t *)ic->arg[0]);
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	*((uint32_t *)ic->arg[2]) = data[0];
-	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
+	unsigned char *page = vph_p->host_load[(addr >> 12) & 1023];
+
+	if (page != NULL) {
+		*((uint32_t *)ic->arg[2]) = page[addr & 4095];
+		*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+	} else
+		arm_general_load_wpost_imm(cpu, ic);
 }
 Y(load_byte_wpost_imm)
 
@@ -373,6 +409,23 @@ X(store_byte_imm)
 Y(store_byte_imm)
 
 
+void arm_general_store_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
+{
+	unsigned char data[1];
+	uint32_t addr = *((uint32_t *)ic->arg[0]);
+
+fatal("arm_general_store_wpost_imm()!\n");
+
+	data[0] = *((uint32_t *)ic->arg[2]);
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_WRITE, CACHE_DATA)) {
+		fatal("store failed: TODO\n");
+		exit(1);
+	}
+	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+}
+
+
 /*
  *  store_byte_wpost_imm:
  *	Load a word from a 32-bit word in host memory, and store
@@ -386,15 +439,15 @@ Y(store_byte_imm)
  */
 X(store_byte_wpost_imm)
 {
-	unsigned char data[1];
 	uint32_t addr = *((uint32_t *)ic->arg[0]);
-	data[0] = *((uint32_t *)ic->arg[2]);
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store failed: TODO\n");
-		exit(1);
-	}
-	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
+	unsigned char *page = vph_p->host_store[(addr >> 12) & 1023];
+
+	if (page != NULL) {
+		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
+		*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+	} else
+		arm_general_store_wpost_imm(cpu, ic);
 }
 Y(store_byte_wpost_imm)
 
@@ -715,14 +768,12 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	int p_bit, u_bit, b_bit, w_bit, l_bit;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
-	/*  Figure out the address of the instruction:  */
-printf("X1: arm=0x%08x cpu=0x%08x\n", cpu->cd.arm.r[ARM_PC],(int)cpu->pc);
+	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
 	    / sizeof(struct arm_instr_call);
 	addr = cpu->cd.arm.r[ARM_PC] & ~((IC_ENTRIES_PER_PAGE-1) << 2);
 	addr += (low_pc << 2);
 	addr &= ~0x3;
-printf("X2: arm=0x%08x cpu=0x%08x\n", cpu->cd.arm.r[ARM_PC],(int)cpu->pc);
 
 	/*  Read the instruction word from memory:  */
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
@@ -770,8 +821,16 @@ printf("X2: arm=0x%08x cpu=0x%08x\n", cpu->cd.arm.r[ARM_PC],(int)cpu->pc);
 	case 0x2:
 	case 0x3:
 		if ((main_opcode & 2) == 0) {
-			fatal("REGISTER FORM! TODO\n");
-			goto bad;
+			if ((iword & 0x0ffffff0) == 0x01a0f000) {
+				/*  Hardcoded: mov pc, rX  */
+				ic->f = cond_instr(mov_pc);
+				ic->arg[0] = (size_t)
+				    (&cpu->cd.arm.r[iword & 15]);
+			} else {
+				fatal("REGISTER FORM! TODO\n");
+				goto bad;
+			}
+			break;
 		}
 		imm = iword & 0xff;
 		r8 <<= 1;

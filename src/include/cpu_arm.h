@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.10 2005-06-26 22:23:43 debug Exp $
+ *  $Id: cpu_arm.h,v 1.11 2005-06-28 16:38:04 debug Exp $
  */
 
 #include "misc.h"
@@ -93,8 +93,22 @@ struct arm_tc_physpage {
 #define	ARM_MODE_ABT32	      0x17
 #define	ARM_MODE_UND32	      0x1b
 
+
+/*  Virtual->physical->host page entry:  */
+#define	N_VPH_ENTRIES		1024
+struct vph_page {
+	void		*host_load[N_VPH_ENTRIES];
+	void		*host_store[N_VPH_ENTRIES];
+	uint32_t	phys_addr[N_VPH_ENTRIES];
+};
+
+
 struct arm_cpu {
+	/*
+	 *  Misc.:
+	 */
 	uint32_t		flags;
+
 
 	/*
 	 *  General Purpose Registers (including the program counter):
@@ -103,6 +117,7 @@ struct arm_cpu {
 	 *  only used to swap to/from when changing modes. (An exception is
 	 *  r[0..7], which are never swapped out, they are always present.)
 	 */
+
 	uint32_t		r[N_ARM_REGS];
 	uint32_t		usr_r8_r14[7];
 	uint32_t		fiq_r8_r14[7];
@@ -111,9 +126,11 @@ struct arm_cpu {
 	uint32_t		abt_r13_r14[2];
 	uint32_t		und_r13_r14[2];
 
+
 	/*
 	 *  Instruction translation cache:
 	 */
+
 	unsigned char		*translation_cache;
 	size_t			translation_cache_cur_ofs;
 
@@ -126,6 +143,14 @@ struct arm_cpu {
 
 	int			running_translated;
 	int32_t			n_translated_instrs;
+
+
+	/*
+	 *  Virtual -> physical -> host address translation:
+	 */
+
+	struct vph_page		*vph_default_page;
+	struct vph_page		*vph_table0[N_VPH_ENTRIES];
 };
 
 

@@ -1,11 +1,12 @@
-/*  $Id: new_test_loadstore.h,v 1.1 2005-06-28 11:34:52 debug Exp $  */
+/*  $Id: new_test_loadstore.h,v 1.2 2005-06-28 16:38:03 debug Exp $  */
 
 struct cpu {
 	int pc;
-	unsigned char ***table0;
+	unsigned char **table0[1024];
 };
 
 struct ic {
+	int dummy;
 	int *arg1;
 	int arg2;
 	int *arg3;

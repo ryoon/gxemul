@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.20 2005-06-28 09:48:11 debug Exp $
+ *  $Id: cpu_arm.c,v 1.21 2005-06-28 16:38:04 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -106,6 +106,8 @@ extern int quiet_mode;
 int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
+	int i;
+
 	if (strcmp(cpu_type_name, "ARM") != 0)
 		return 0;
 
@@ -117,6 +119,26 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
+
+	/*  Create the default virtual->physical->host translation:  */
+	cpu->cd.arm.vph_default_page = malloc(sizeof(struct vph_page));
+	if (cpu->cd.arm.vph_default_page == NULL) {
+		fprintf(stderr, "out of memory in arm_cpu_new()\n");
+		exit(1);
+	}
+	memset(cpu->cd.arm.vph_default_page, 0, sizeof(struct vph_page));
+	for (i=0; i<N_VPH_ENTRIES; i++)
+		cpu->cd.arm.vph_table0[i] = cpu->cd.arm.vph_default_page;
+
+{
+uint32_t addr = 0x8000;
+struct vph_page *p = malloc(sizeof(struct vph_page));
+char *tmp_page = malloc(4096);
+memset(p, 0, sizeof(struct vph_page));
+cpu->cd.arm.vph_table0[addr >> 22] = p;
+for (i=0; i<1024; i++)  p->host_load[i] = tmp_page;
+for (i=0; i<1024; i++)  p->host_store[i] = tmp_page;
+}
 
 	return 1;
 }
@@ -583,7 +605,6 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	cpu->cd.arm.n_translated_instrs = 0;
 	cpu->cd.arm.running_translated = 1;
 
-printf("A: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 	if (single_step || cpu->machine->instruction_trace) {
 		/*
 		 *  Single-step:
@@ -663,7 +684,6 @@ printf("A: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 
-printf("B: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 	if (low_pc >= 0 && low_pc < IC_ENTRIES_PER_PAGE) {
 		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
 		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
@@ -676,7 +696,6 @@ printf("B: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 	} else {
 		fatal("Outside a page (This is actually ok)\n");
 	}
-printf("C: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 
 	return n_instrs + cpu->cd.arm.n_translated_instrs;
 }

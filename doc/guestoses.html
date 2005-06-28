@@ -11,7 +11,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.72 2005-06-27 23:04:36 debug Exp $
+$Id: guestoses.html,v 1.73 2005-06-28 09:48:10 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -708,13 +708,13 @@ run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
 actually does on the network.
 
 <p>It should now be possible to boot NetBSD/sgimips using the NetBSD/pmax
-nfs server, using the following commands: (NOTE! Execute these in two 
-separate xterms!)<pre>
+nfs server, using the following commands: (NOTE! Execute these two 
+commands in separate xterms!)<pre>
 	$ <b>gxemul @config_server</b>
 	$ <b>gxemul @config_client</b>
 </pre>
 
-<p>When asked for "<tt>root device:</tt>" etc. on the clientmachine, enter
+<p>When asked for "<tt>root device:</tt>" etc. on the client machine, enter
 the following values:<pre>
 	root device: <b>mec0</b>
 	dump device: 				<b>(leave blank)</b>

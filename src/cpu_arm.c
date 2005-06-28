@@ -25,12 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.19 2005-06-27 16:44:54 debug Exp $
+ *  $Id: cpu_arm.c,v 1.20 2005-06-28 09:48:11 debug Exp $
  *
  *  ARM CPU emulation.
  *
- *  Whenever there is a reference to "(1)", that means
- *  "http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html".
+ *  Sources of information refered to in cpu_arm*.c:
+ *
+ *	(1)  http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html
  */
 
 #include <stdio.h>
@@ -485,37 +486,34 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 #undef MEMORY_RW
 
 
-#include "cpu_arm_instr.c"
-
-
 /*
- *  arm_cpu_run_instr():
+ *  arm_pc_to_pointers():
  *
- *  Execute one or more instructions on a specific CPU.
+ *  This function uses the current program counter (a virtual address) to
+ *  find out which physical translation page to use, and then sets the current
+ *  translation page pointers to that page.
  *
- *  Return value is the number of instructions executed during this call,
- *  0 if no instructions were executed.
+ *  If there was no translation page for that physical page, then an empty
+ *  one is created.
  */
-int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
+void arm_pc_to_pointers(struct cpu *cpu)
 {
-	/*
-	 *  Find the correct translated page in the translation cache,
-	 *  and start running code on that page.
-	 */
-
 	uint32_t cached_pc, physaddr, physpage_ofs;
-	int pagenr, table_index, n_instrs, low_pc;
+	int pagenr, table_index;
 	uint32_t *physpage_entryp;
 	struct arm_tc_physpage *ppp;
+
+	cached_pc = cpu->cd.arm.r[ARM_PC];
+
+	/*
+	 *  TODO: virtual to physical address translation
+	 */
+
+	physaddr = cached_pc & ~(((IC_ENTRIES_PER_PAGE-1) << 2) | 3);
 
 	if (cpu->cd.arm.translation_cache == NULL || cpu->cd.
 	    arm.translation_cache_cur_ofs >= ARM_TRANSLATION_CACHE_SIZE)
 		arm_create_or_reset_tc(cpu);
-
-	cached_pc = cpu->cd.arm.r[ARM_PC];
-
-	physaddr = cached_pc & ~(((IC_ENTRIES_PER_PAGE-1) << 2) | 3);
-	/*  TODO: virtual to physical  */
 
 	pagenr = ADDR_TO_PAGENR(physaddr);
 	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
@@ -559,10 +557,33 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 	    "physpage_ofs = 0x%08x\n", (int)cached_pc, (int)pagenr,
 	    (int)table_index, (int)physpage_ofs);  */
+}
 
+
+#include "cpu_arm_instr.c"
+
+
+/*
+ *  arm_cpu_run_instr():
+ *
+ *  Execute one or more instructions on a specific CPU.
+ *
+ *  Return value is the number of instructions executed during this call,
+ *  0 if no instructions were executed.
+ */
+int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
+{
+	uint32_t cached_pc;
+	ssize_t low_pc;
+	int n_instrs;
+
+	arm_pc_to_pointers(cpu);
+
+	cached_pc = cpu->cd.arm.r[ARM_PC] & ~3;
 	cpu->cd.arm.n_translated_instrs = 0;
 	cpu->cd.arm.running_translated = 1;
 
+printf("A: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 	if (single_step || cpu->machine->instruction_trace) {
 		/*
 		 *  Single-step:
@@ -570,7 +591,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		struct arm_instr_call *ic = cpu->cd.arm.next_ic ++;
 		if (cpu->machine->instruction_trace) {
 			unsigned char instr[4];
-			if (!cpu->memory_rw(cpu, cpu->mem, cpu->pc, &instr[0],
+			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
 				fatal("arm_cpu_run_instr(): could not read "
 				    "the instruction\n");
@@ -580,15 +601,16 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		/*  When single-stepping, multiple instruction calls cannot
 		    be combined into one. This clears all translations:  */
-		if (ppp->flags & ARM_COMBINATIONS) {
+		if (cpu->cd.arm.cur_physpage->flags & ARM_COMBINATIONS) {
 			int i;
 			for (i=0; i<IC_ENTRIES_PER_PAGE; i++)
-				ppp->ics[i].f = instr(to_be_translated);
+				cpu->cd.arm.cur_physpage->ics[i].f =
+				    instr(to_be_translated);
 			debug("[ Note: The translation of physical page 0x%08x"
 			    " contained combinations of instructions; these "
 			    "are now flushed because we are single-stepping."
-			    " ]\n", ppp->physaddr);
-			ppp->flags &= ~ARM_COMBINATIONS;
+			    " ]\n", cpu->cd.arm.cur_physpage->physaddr);
+			cpu->cd.arm.cur_physpage->flags &= ~ARM_COMBINATIONS;
 		}
 
 		/*  Execute just one instruction:  */
@@ -641,13 +663,20 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 
+printf("B: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 	if (low_pc >= 0 && low_pc < IC_ENTRIES_PER_PAGE) {
 		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
 		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
+	} else if (low_pc == IC_ENTRIES_PER_PAGE) {
+		/*  Switch to next page:  */
+		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+		cpu->cd.arm.r[ARM_PC] += (IC_ENTRIES_PER_PAGE << 2);
+		cpu->pc = cpu->cd.arm.r[ARM_PC];
 	} else {
 		fatal("Outside a page (This is actually ok)\n");
 	}
+printf("C: 0x%08x\n", cpu->cd.arm.r[ARM_PC]);
 
 	return n_instrs + cpu->cd.arm.n_translated_instrs;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.20 2005-06-27 09:20:19 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.21 2005-06-28 09:48:11 debug Exp $
  *
  *  ARM instructions.
  *
@@ -642,18 +642,16 @@ X(to_be_translated)
 
 X(end_of_page)
 {
-	printf("end_of_page()! pc=0x%08x\n", cpu->cd.arm.r[ARM_PC]);
-
-	/*  Update the PC:  Offset 0, but then go to next page:  */
+	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.arm.r[ARM_PC] += (IC_ENTRIES_PER_PAGE << 2);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
-	/*  Find the new (physical) page:  */
-	/*  TODO  */
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
 
-	printf("TODO: end_of_page()! new pc=0x%08x\n", cpu->cd.arm.r[ARM_PC]);
-	exit(1);
+	/*  end_of_page doesn't count as an executed instruction:  */
+	cpu->cd.arm.n_translated_instrs --;
 }
 
 
@@ -695,13 +693,19 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
 			}
 		}
 	}
+
+	/*  TODO: Combine forward as well  */
 }
 
 
 /*
  *  arm_translate_instruction():
  *
- *  Translate an instruction word into an arm_instr_call.
+ *  Translate an instruction word into an arm_instr_call. ic is filled in with
+ *  valid data for the translated instruction, or a "nothing" instruction if
+ *  there was a translation failure.
+ *
+ *  (This function should only be called from to_be_translated.)
  */
 void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 {
@@ -711,16 +715,16 @@ void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic)
 	int p_bit, u_bit, b_bit, w_bit, l_bit;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
-	/*  Make sure that PC is in synch:  */
+	/*  Figure out the address of the instruction:  */
+printf("X1: arm=0x%08x cpu=0x%08x\n", cpu->cd.arm.r[ARM_PC],(int)cpu->pc);
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
 	    / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
-	cpu->pc = cpu->cd.arm.r[ARM_PC];
+	addr = cpu->cd.arm.r[ARM_PC] & ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	addr += (low_pc << 2);
+	addr &= ~0x3;
+printf("X2: arm=0x%08x cpu=0x%08x\n", cpu->cd.arm.r[ARM_PC],(int)cpu->pc);
 
 	/*  Read the instruction word from memory:  */
-	addr = cpu->pc & ~0x3;
-
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
 	    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
 		fatal("arm_translate_instruction(): read failed: TODO\n");

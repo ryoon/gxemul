@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.22 2005-06-28 16:38:04 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.23 2005-06-28 16:54:26 debug Exp $
  *
  *  ARM instructions.
  *
@@ -348,7 +348,11 @@ Y(load_byte_w_imm)
 void arm_general_load_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
 {
 	unsigned char data[1];
-	uint32_t addr = *((uint32_t *)ic->arg[0]);
+	uint32_t addr;
+
+	/*  Because the register was already optimistically increased:  */
+	*((uint32_t *)ic->arg[0]) -= ic->arg[1];
+	addr = *((uint32_t *)ic->arg[0]);
 
 fatal("arm_general_load_wpost_imm()!\n");
 
@@ -377,9 +381,10 @@ X(load_byte_wpost_imm)
 	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
 	unsigned char *page = vph_p->host_load[(addr >> 12) & 1023];
 
+	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+
 	if (page != NULL) {
 		*((uint32_t *)ic->arg[2]) = page[addr & 4095];
-		*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
 	} else
 		arm_general_load_wpost_imm(cpu, ic);
 }
@@ -412,7 +417,11 @@ Y(store_byte_imm)
 void arm_general_store_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
 {
 	unsigned char data[1];
-	uint32_t addr = *((uint32_t *)ic->arg[0]);
+	uint32_t addr;
+
+	/*  Because the register was already optimistically increased:  */
+	*((uint32_t *)ic->arg[0]) -= ic->arg[1];
+	addr = *((uint32_t *)ic->arg[0]);
 
 fatal("arm_general_store_wpost_imm()!\n");
 
@@ -443,9 +452,10 @@ X(store_byte_wpost_imm)
 	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
 	unsigned char *page = vph_p->host_store[(addr >> 12) & 1023];
 
+	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
+
 	if (page != NULL) {
 		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
-		*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
 	} else
 		arm_general_store_wpost_imm(cpu, ic);
 }

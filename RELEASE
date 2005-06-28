@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.134 2005-06-27 23:21:26 debug Exp $
+$Id: RELEASE,v 1.135 2005-06-28 00:27:28 debug Exp $
 
 Now working on post-0.3.4.
 
@@ -142,8 +142,8 @@ See individual files for license details, if you plan to redistribute GXemul
 or reuse code.
 
 Thanks to (in no specific order, that is, this is in alphabetic order :-)
-Joachim Buss, Juli Mallett, Juan RP, Alec Voropay, Alexander Yurchenko,
-and everyone else who has provided me with feedback.
+Joachim Buss, Juli Mallett, Juan RP, Alec Voropay, Göran Weinholt, Alexander
+Yurchenko, and everyone else who has provided me with feedback.
 
 If you have found GXemul useful in some way, or feel like sending me comments
 or feedback in general, then mail me at anders(at)gavare.se.

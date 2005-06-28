@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.815 2005-06-27 23:04:35 debug Exp $
+$Id: HISTORY,v 1.816 2005-06-28 00:27:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2035,3 +2035,4 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.3.4  ==============
 
+20050628	Minor updates.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.38 2005-06-27 07:03:39 debug Exp $
+ *  $Id: memory_rw.c,v 1.39 2005-06-29 21:07:43 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -74,10 +74,8 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	uint64_t paddr;
 	int cache, no_exceptions, offset;
 	unsigned char *memblock;
-#ifdef BINTRANS
 	int bintrans_cached = cpu->machine->bintrans_enable;
 	int bintrans_device_danger = 0;
-#endif
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
@@ -160,14 +158,12 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 #ifdef MEM_MIPS
-#ifdef BINTRANS
 	if (bintrans_cached) {
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->cd.mips.pc_bintrans_host_4kpage = NULL;
 			cpu->cd.mips.pc_bintrans_paddr_valid = 0;
 		}
 	}
-#endif
 #endif	/*  MEM_MIPS  */
 
 #ifdef MEM_USERLAND
@@ -255,14 +251,12 @@ have_paddr:
 
 #ifdef MEM_MIPS
 	/*  TODO: How about bintrans vs cache emulation?  */
-#ifdef BINTRANS
 	if (bintrans_cached) {
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->cd.mips.pc_bintrans_paddr_valid = 1;
 			cpu->cd.mips.pc_bintrans_paddr = paddr;
 		}
 	}
-#endif
 #endif	/*  MEM_MIPS  */
 
 
@@ -276,12 +270,9 @@ have_paddr:
 	 *  to a device to
 	 */
 	if (paddr >= mem->mmap_dev_minaddr && paddr < mem->mmap_dev_maxaddr) {
-#ifdef BINTRANS
 		uint64_t orig_paddr = paddr;
-#endif
 		int i, start, res;
 
-#ifdef BINTRANS
 		/*
 		 *  Really really slow, but unfortunately necessary. This is
 		 *  to avoid the folowing scenario:
@@ -309,7 +300,6 @@ have_paddr:
 					break;
 				}
 		}
-#endif
 
 		i = start = mem->last_accessed_device;
 
@@ -324,9 +314,8 @@ have_paddr:
 				if (paddr + len > mem->dev_length[i])
 					len = mem->dev_length[i] - paddr;
 
-#ifdef BINTRANS
-				if (bintrans_cached && mem->dev_flags[i] &
-				    MEM_BINTRANS_OK) {
+				if (cpu->update_translation_table != NULL &&
+				    mem->dev_flags[i] & MEM_BINTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 
 					if (writeflag) {
@@ -347,13 +336,12 @@ have_paddr:
 					    MEM_BINTRANS_WRITE_OK))
 						wf = 0;
 
-					update_translation_table(cpu,
+					cpu->update_translation_table(cpu,
 					    vaddr & ~0xfff,
 					    mem->dev_bintrans_data[i] +
 					    (paddr & ~0xfff),
 					    wf, orig_paddr & ~0xfff);
 				}
-#endif
 
 				res = 0;
 				if (!no_exceptions || (mem->dev_flags[i] &
@@ -573,9 +561,8 @@ have_paddr:
 
 	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
-#ifdef BINTRANS
-	if (bintrans_cached && !bintrans_device_danger)
-		update_translation_table(cpu, vaddr & ~0xfff,
+	if (cpu->update_translation_table != NULL && !bintrans_device_danger)
+		cpu->update_translation_table(cpu, vaddr & ~0xfff,
 		    memblock + (offset & ~0xfff),
 #if 0
 		    cache == CACHE_INSTRUCTION?
@@ -585,7 +572,6 @@ have_paddr:
 		    writeflag == MEM_WRITE? 1 : 0,
 #endif
 		    paddr & ~0xfff);
-#endif
 
 	if (writeflag == MEM_WRITE) {
 		if (len == sizeof(uint32_t) && (offset & 3)==0)
@@ -606,12 +592,10 @@ have_paddr:
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->cd.mips.pc_last_host_4k_page = memblock
 			    + (offset & ~0xfff);
-#ifdef BINTRANS
 			if (bintrans_cached) {
 				cpu->cd.mips.pc_bintrans_host_4kpage =
 				    cpu->cd.mips.pc_last_host_4k_page;
 			}
-#endif
 		}
 #endif	/*  MIPS  */
 	}

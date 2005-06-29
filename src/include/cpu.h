@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.27 2005-06-27 10:43:17 debug Exp $
+ *  $Id: cpu.h,v 1.28 2005-06-29 21:07:44 debug Exp $
  *
  *  See cpu.c.
  */
@@ -104,6 +104,9 @@ struct cpu {
 			    int writeflag, int cache_flags);
 	int		(*translate_address)(struct cpu *, uint64_t vaddr,
 			    uint64_t *return_addr, int flags);
+	void		(*update_translation_table)(struct cpu *,
+			    uint64_t vaddr_page, unsigned char *host_page,
+			    int writeflag, uint64_t paddr_page);
 	void		(*useremul_syscall)(struct cpu *cpu,
 			    uint32_t code);
 

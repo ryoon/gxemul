@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.25 2005-06-28 23:18:25 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.26 2005-06-29 21:07:42 debug Exp $
  *
  *  ARM instructions.
  *
@@ -364,8 +364,6 @@ void arm_general_load_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
 	*((uint32_t *)ic->arg[0]) -= ic->arg[1];
 	addr = *((uint32_t *)ic->arg[0]);
 
-fatal("arm_general_load_wpost_imm()!\n");
-
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_READ, CACHE_DATA)) {
 		fatal("load failed: TODO\n");
@@ -393,12 +391,26 @@ X(load_byte_wpost_imm)
 
 	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
 
-	if (page != NULL) {
+	if (page != NULL)
 		*((uint32_t *)ic->arg[2]) = page[addr & 4095];
-	} else
+	else
 		arm_general_load_wpost_imm(cpu, ic);
 }
 Y(load_byte_wpost_imm)
+
+
+void arm_general_store_byte_imm(struct cpu *cpu, struct arm_instr_call *ic)
+{
+	unsigned char data[1];
+
+	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
+	data[0] = *((uint32_t *)ic->arg[2]);
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_WRITE, CACHE_DATA)) {
+		fatal("store failed: TODO\n");
+		exit(1);
+	}
+}
 
 
 /*
@@ -412,14 +424,14 @@ Y(load_byte_wpost_imm)
  */
 X(store_byte_imm)
 {
-	unsigned char data[1];
 	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	data[0] = *((uint32_t *)ic->arg[2]);
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store failed: TODO\n");
-		exit(1);
-	}
+	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
+	unsigned char *page = vph_p->host_store[(addr >> 12) & 1023];
+
+	if (page != NULL)
+		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
+	else
+		arm_general_store_byte_imm(cpu, ic);
 }
 Y(store_byte_imm)
 
@@ -432,8 +444,6 @@ void arm_general_store_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
 	/*  Because the register was already optimistically increased:  */
 	*((uint32_t *)ic->arg[0]) -= ic->arg[1];
 	addr = *((uint32_t *)ic->arg[0]);
-
-fatal("arm_general_store_wpost_imm()!\n");
 
 	data[0] = *((uint32_t *)ic->arg[2]);
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
@@ -464,9 +474,9 @@ X(store_byte_wpost_imm)
 
 	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
 
-	if (page != NULL) {
+	if (page != NULL)
 		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
-	} else
+	else
 		arm_general_store_wpost_imm(cpu, ic);
 }
 Y(store_byte_wpost_imm)
@@ -752,10 +762,11 @@ X(end_of_page)
  *
  *  Combine two or more instructions, if possible, into a single function call.
  */
-void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
+void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
+	uint32_t addr)
 {
 	int n_back;
-	n_back = (cpu->pc >> 2) & (IC_ENTRIES_PER_PAGE-1);
+	n_back = (addr >> 2) & (IC_ENTRIES_PER_PAGE-1);
 
 	if (n_back >= 1) {
 		/*  Double "mov":  */
@@ -795,13 +806,14 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic)
  *
  *  Translate an instruction word into an arm_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
- *  there was a translation failure.
- *
- *  (This function should only be called from to_be_translated.)
+ *  there was a translation failure. The newly translated instruction is then
+ *  executed.
  */
 X(to_be_translated)
 {
 	uint32_t addr, low_pc, iword, imm;
+	struct vph_page *vph_p;
+	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, r16, r12, r8;
 	int p_bit, u_bit, b_bit, w_bit, l_bit;
@@ -815,10 +827,20 @@ X(to_be_translated)
 	addr &= ~0x3;
 
 	/*  Read the instruction word from memory:  */
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
-	    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
-		fatal("arm_translate_instruction(): read failed: TODO\n");
-		goto bad;
+	vph_p = cpu->cd.arm.vph_table0[addr >> 22];
+	page = vph_p->host_load[(addr >> 12) & 1023];
+
+	if (page != NULL) {
+		fatal("TRANSLATION HIT!\n");
+		memcpy(ib, page + (addr & 0xffc), sizeof(ib));
+	} else {
+		fatal("TRANSLATION MISS!\n");
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
+		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
+			fatal("arm_translate_instruction(): "
+			    "read failed: TODO\n");
+			goto bad;
+		}
 	}
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
@@ -1063,7 +1085,7 @@ X(to_be_translated)
 
 	/*  Single-stepping doesn't work with combinations:  */
 	if (!single_step && !cpu->machine->instruction_trace)
-		arm_combine_instructions(cpu, ic);
+		arm_combine_instructions(cpu, ic, addr);
 
 	/*  ... and finally execute the translated instruction:  */
 	ic->f(cpu, ic);

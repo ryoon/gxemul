@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.16 2005-06-26 22:23:43 debug Exp $
+ *  $Id: cpu_mips.h,v 1.17 2005-06-29 21:07:44 debug Exp $
  */
 
 #include "misc.h"
@@ -259,7 +259,7 @@ struct mips_cpu {
 	uint64_t	pc_last_physical_page;
 	unsigned char	*pc_last_host_4k_page;
 
-#ifdef BINTRANS
+	/*  MIPS Bintrans:  */
 	int		dont_run_next_bintrans;
 	int		bintrans_instructions_executed;  /*  set to the
 				number of bintranslated instructions executed
@@ -298,7 +298,6 @@ struct mips_cpu {
 	void		(*bintrans_fast_eret)(struct cpu *);
 	void		(*bintrans_fast_tlbwri)(struct cpu *, int);
 	void		(*bintrans_fast_tlbpr)(struct cpu *, int);
-#endif
 
 #ifdef ENABLE_MIPS16
 	int		mips16;			/*  non-zero if MIPS16 code is allowed  */
@@ -395,7 +394,7 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
         uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
         int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
         int cachealgo0, int cachealgo1);
-void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
         unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void clear_all_chunks_from_all_tables(struct cpu *cpu);
 void mips_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);

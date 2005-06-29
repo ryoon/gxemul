@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.13 2005-06-28 23:18:26 debug Exp $
+ *  $Id: cpu_arm.h,v 1.14 2005-06-29 21:07:44 debug Exp $
  */
 
 #include "misc.h"
@@ -101,14 +101,23 @@ struct arm_tc_physpage {
 
 
 /*  Virtual->physical->host page entry:  */
-#define	N_VPH_ENTRIES		1024
-#define	ARM_MAX_VPH_PAGES	96
+#define	N_VPH_ENTRIES			1024
 struct vph_page {
 	void		*host_load[N_VPH_ENTRIES];
 	void		*host_store[N_VPH_ENTRIES];
 	uint32_t	phys_addr[N_VPH_ENTRIES];
+	int		refcount;
 };
 
+#define	ARM_MAX_VPH_TLB_ENTRIES		64
+struct vpg_tlb_entry {
+	int		valid;
+	int		writeflag;
+	int64_t		timestamp;
+	unsigned char	*host_page;
+	uint32_t	vaddr_page;
+	uint32_t	paddr_page;
+};
 
 struct arm_cpu {
 	/*
@@ -156,12 +165,16 @@ struct arm_cpu {
 	 *  Virtual -> physical -> host address translation:
 	 */
 
+	struct vpg_tlb_entry	vph_tlb_entry[ARM_MAX_VPH_TLB_ENTRIES];
 	struct vph_page		*vph_default_page;
+	struct vph_page		*vph_next_free_page;
 	struct vph_page		*vph_table0[N_VPH_ENTRIES];
 };
 
 
 /*  cpu_arm.c:  */
+void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 int arm_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int arm_cpu_family_init(struct cpu_family *);

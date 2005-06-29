@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.23 2005-06-26 11:36:27 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.24 2005-06-29 21:07:43 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -532,7 +532,6 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 }
 
 
-#ifdef BINTRANS
 /*
  *  old_update_translation_table():
  */
@@ -572,8 +571,7 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			memset(tbl1, 0, sizeof(struct vth32_table));
 		} else {
 			tbl1 = cpu->cd.mips.next_free_vth_table;
-			cpu->cd.mips.next_free_vth_table =
-			    tbl1->next_free;
+			cpu->cd.mips.next_free_vth_table = tbl1->next_free;
 			tbl1->next_free = NULL;
 		}
 		cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a] = tbl1;
@@ -613,16 +611,14 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	}
 	tbl1->bintrans_chunks[b] = NULL;
 }
-#endif
 
 
 /*
- *  update_translation_table():
+ *  mips_update_translation_table():
  */
-void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
-#ifdef BINTRANS
 	if (!cpu->machine->bintrans_enable)
 		return;
 
@@ -637,11 +633,9 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 
 	/*  TODO  */
 	/*  printf("update_translation_table(): TODO\n");  */
-#endif
 }
 
 
-#ifdef BINTRANS
 /*
  *  invalidate_table_entry():
  */
@@ -727,7 +721,6 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 		}
 	}
 }
-#endif
 
 
 /*
@@ -737,7 +730,6 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
  */
 void mips_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 {
-#ifdef BINTRANS
 	paddr &= ~0xfff;
 
 	if (cpu->machine->bintrans_enable) {
@@ -842,8 +834,6 @@ void mips_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 		cpu->bintrans_data_hostpage[i] = NULL;
 }
 #endif
-
-#endif
 }
 
 
@@ -862,7 +852,6 @@ static void invalidate_translation_caches(struct cpu *cpu,
 	/*  printf("inval(all=%i, kernel=%i, addr=%016llx)\n",
 	    all, kernelspace, (long long)vaddr);  */
 
-#ifdef BINTRANS
 	if (!cpu->machine->bintrans_enable)
 		goto nobintrans;
 
@@ -943,7 +932,6 @@ nobintrans:
 	/*  TODO: Don't invalidate everything.  */
 	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
 		cpu->cd.mips.bintrans_data_hostpage[i] = NULL;
-#endif
 
 	if (kernelspace)
 		all = 1;
@@ -1276,7 +1264,6 @@ void coproc_register_write(struct cpu *cpu,
 			}
 #endif
 
-#ifdef BINTRANS
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
 			    (oldmode & MIPS1_ISOL_CACHES) !=
 			    (tmp & MIPS1_ISOL_CACHES)) {
@@ -1301,7 +1288,6 @@ void coproc_register_write(struct cpu *cpu,
 					    vaddr_to_hostaddr_table0_user;  */
 				}
 			}
-#endif
 			unimpl = 0;
 			break;
 		case COP0_CAUSE:
@@ -2422,7 +2408,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 /*			if (vaddr < 0x10000000)  */
 				wf = 0;
 
-			update_translation_table(cpu, vaddr, memblock,
+			cpu->update_translation_table(cpu, vaddr, memblock,
 			    wf, paddr);
 		}
 	} else {

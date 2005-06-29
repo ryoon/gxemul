@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.46 2005-06-26 22:23:42 debug Exp $
+ *  $Id: cpu_mips.c,v 1.47 2005-06-29 21:07:43 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -157,7 +157,8 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.mips.cpu_type   = cpu_type_defs[found];
 	cpu->name               = cpu->cd.mips.cpu_type.name;
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
-	cpu->cd.mips.gpr[MIPS_GPR_SP]	= INITIAL_STACK_POINTER;
+	cpu->cd.mips.gpr[MIPS_GPR_SP] = INITIAL_STACK_POINTER;
+	cpu->update_translation_table = mips_update_translation_table;
 
 	if (cpu_id == 0)
 		debug("%s", cpu->cd.mips.cpu_type.name);

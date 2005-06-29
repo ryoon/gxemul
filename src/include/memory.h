@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.32 2005-05-23 14:22:03 debug Exp $
+ *  $Id: memory.h,v 1.33 2005-06-29 21:07:44 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -74,9 +74,13 @@ struct memory {
 			    int *type, char **namep, void **data, size_t *len);
 	unsigned char	*dev_bintrans_data[MAX_DEVICES];
 
-#ifdef BINTRANS
 	uint64_t	dev_bintrans_write_low[MAX_DEVICES];
 	uint64_t	dev_bintrans_write_high[MAX_DEVICES];
+
+
+	/*
+	 *  NOTE/TODO: This bintrans was for MIPS only. Ugly. :-/
+	 */
 
 	/*
 	 *  translation_code_chunk_space is a large chunk of (linear) memory
@@ -101,7 +105,6 @@ struct memory {
 	int		quick_jump_page_offset[MAX_QUICK_JUMPS];
 	int		n_quick_jumps;
 	int		quick_jumps_index;
-#endif
 };
 
 #define	BITS_PER_PAGETABLE	20

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.23 2005-06-28 23:18:25 debug Exp $
+ *  $Id: cpu_arm.c,v 1.24 2005-06-29 21:07:42 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -112,6 +112,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		return 0;
 
 	cpu->memory_rw = arm_memory_rw;
+	cpu->update_translation_table = arm_update_translation_table;
 
 	cpu->cd.arm.flags = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
 
@@ -120,7 +121,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		debug("%s", cpu->name);
 		debug(" (host: %i MB code translation cache, %.2f MB addr"
 		    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
-		    (float)(sizeof(struct vph_page) * ARM_MAX_VPH_PAGES
+		    (float)(sizeof(struct vph_page) * ARM_MAX_VPH_TLB_ENTRIES
 		    / 1048576.0));
 	}
 
@@ -133,18 +134,6 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	memset(cpu->cd.arm.vph_default_page, 0, sizeof(struct vph_page));
 	for (i=0; i<N_VPH_ENTRIES; i++)
 		cpu->cd.arm.vph_table0[i] = cpu->cd.arm.vph_default_page;
-
-#if 1
-{
-uint32_t addr = 0x8000;
-struct vph_page *p = malloc(sizeof(struct vph_page));
-char *tmp_page = malloc(4096);
-memset(p, 0, sizeof(struct vph_page));
-cpu->cd.arm.vph_table0[addr >> 22] = p;
-for (i=0; i<1024; i++)  p->host_load[i] = tmp_page;
-for (i=0; i<1024; i++)  p->host_store[i] = tmp_page;
-}
-#endif
 
 	return 1;
 }
@@ -507,6 +496,99 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 }
 
 
+/*
+ *  arm_update_translation_table():
+ *
+ *  Update the memory translation tables.
+ */
+void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag, uint64_t paddr_page)
+{
+	uint32_t a, b;
+	struct vph_page *vph_p;
+	int found, r, lowest_index;
+	int64_t lowest, highest = -1;
+
+	/*  fatal("arm_update_translation_table(): v=0x%08x, h=%p w=%i"
+	    " p=0x%08x\n", (int)vaddr_page, host_page, writeflag,
+	    (int)paddr_page);  */
+
+	/*  Scan the current TLB entries:  */
+	found = -1;
+	lowest_index = 0; lowest = cpu->cd.arm.vph_tlb_entry[0].timestamp;
+	for (r=0; r<ARM_MAX_VPH_TLB_ENTRIES; r++) {
+		if (cpu->cd.arm.vph_tlb_entry[r].timestamp < lowest) {
+			lowest = cpu->cd.arm.vph_tlb_entry[r].timestamp;
+			lowest_index = r;
+		}
+		if (cpu->cd.arm.vph_tlb_entry[r].timestamp > highest)
+			highest = cpu->cd.arm.vph_tlb_entry[r].timestamp;
+		if (cpu->cd.arm.vph_tlb_entry[r].valid &&
+		    cpu->cd.arm.vph_tlb_entry[r].vaddr_page == vaddr_page) {
+			found = r;
+			break;
+		}
+	}
+
+	if (found < 0) {
+		/*  Create the new TLB entry, overwriting the oldest one:  */
+		r = lowest_index;
+		if (cpu->cd.arm.vph_tlb_entry[r].valid) {
+			/*  This one has to be invalidated first:  */
+			uint32_t addr = cpu->cd.arm.vph_tlb_entry[r].vaddr_page;
+			a = addr >> 22; b = (addr >> 12) & 1023;
+			vph_p = cpu->cd.arm.vph_table0[a];
+			vph_p->refcount --;
+fatal("TODO: zxcvzv\n");
+exit(1);
+		}
+
+		cpu->cd.arm.vph_tlb_entry[r].valid = 1;
+		cpu->cd.arm.vph_tlb_entry[r].host_page = host_page;
+		cpu->cd.arm.vph_tlb_entry[r].paddr_page = paddr_page;
+		cpu->cd.arm.vph_tlb_entry[r].vaddr_page = vaddr_page;
+		cpu->cd.arm.vph_tlb_entry[r].writeflag = writeflag;
+		cpu->cd.arm.vph_tlb_entry[r].timestamp = highest + 1;
+
+		/*  Add the new translation to the table:  */
+		a = (vaddr_page >> 22) & 1023;
+		b = (vaddr_page >> 12) & 1023;
+		vph_p = cpu->cd.arm.vph_table0[a];
+		if (vph_p == cpu->cd.arm.vph_default_page) {
+			vph_p = cpu->cd.arm.vph_table0[a] =
+			    malloc(sizeof(struct vph_page));
+			memset(vph_p, 0, sizeof(struct vph_page));
+		}
+		vph_p->refcount ++;
+		vph_p->host_load[b] = host_page;
+		vph_p->host_store[b] = writeflag? host_page : NULL;
+		vph_p->phys_addr[b] = paddr_page;
+	} else {
+		/*
+		 *  The translation was already in the TLB.
+		 *	Writeflag = 0:  Do nothing.
+		 *	Writeflag = 1:  Make sure the page is writable.
+		 *	Writeflag = -1: Downgrade to readonly.
+		 */
+		a = (vaddr_page >> 22) & 1023;
+		b = (vaddr_page >> 12) & 1023;
+		vph_p = cpu->cd.arm.vph_table0[a];
+		cpu->cd.arm.vph_tlb_entry[found].timestamp = highest + 1;
+		if (vph_p->phys_addr[b] == paddr_page) {
+			if (writeflag == 1)
+				vph_p->host_store[b] = host_page;
+			if (writeflag == -1)
+				vph_p->host_store[b] = NULL;
+		} else {
+			/*  Change the entire physical/host mapping:  */
+			vph_p->host_load[b] = host_page;
+			vph_p->host_store[b] = writeflag? host_page : NULL;
+			vph_p->phys_addr[b] = paddr_page;
+		}
+	}
+}
+
+
 #define MEMORY_RW	arm_memory_rw
 #define MEM_ARM
 #include "memory_rw.c"
@@ -633,7 +715,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			for (i=0; i<IC_ENTRIES_PER_PAGE; i++)
 				cpu->cd.arm.cur_physpage->ics[i].f =
 				    instr(to_be_translated);
-			debug("[ Note: The translation of physical page 0x%08x"
+			fatal("[ Note: The translation of physical page 0x%08x"
 			    " contained combinations of instructions; these "
 			    "are now flushed because we are single-stepping."
 			    " ]\n", cpu->cd.arm.cur_physpage->physaddr);

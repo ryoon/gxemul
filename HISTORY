@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.820 2005-06-29 21:07:42 debug Exp $
+$Id: HISTORY,v 1.821 2005-06-29 23:25:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2041,3 +2041,5 @@ Changelog for GXemul:
 20050629	More ARM stuff (memory access translation cache, mostly). This
 		might break a lot of stuff elsewhere, probably some MIPS-
 		related translation things.
+20050630	Many load/stores are now automatically generated and included
+		into cpu_arm_instr.c.

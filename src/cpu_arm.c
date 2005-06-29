@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.24 2005-06-29 21:07:42 debug Exp $
+ *  $Id: cpu_arm.c,v 1.25 2005-06-29 23:25:19 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -769,7 +769,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			n_instrs += 32;
 			if (!cpu->cd.arm.running_translated || single_step ||
-			    n_instrs + cpu->cd.arm.n_translated_instrs >= 8192)
+			    n_instrs + cpu->cd.arm.n_translated_instrs >= 16384)
 				break;
 		}
 	}

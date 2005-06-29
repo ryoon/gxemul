@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.57 2005-06-27 10:43:16 debug Exp $
+#  $Id: Makefile.skel,v 1.58 2005-06-29 23:25:19 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -26,6 +26,12 @@ bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
 cpu_arm.o: cpu_arm.c cpu_arm_instr.c memory_rw.c
 
+cpu_arm_instr.c: tmp_arm_include.c
+
+tmp_arm_include.c: cpu_arm_instr_loadstore.c
+	cd tools; make; cd ..
+	./tools/generate_arm_loadstore > tmp_arm_include.c
+
 cpu_mips.o: cpu_mips.c cpu_mips16.c memory_mips.c
 
 memory_mips.c: memory_rw.c memory_mips_v2p.c
@@ -37,7 +43,8 @@ cpu_x86.o: cpu_x86.c memory_x86.c
 memory_x86.c: memory_rw.c
 
 clean:
-	rm -f $(OBJS) *core
+	rm -f $(OBJS) *core tmp_arm_include.c
+	cd tools; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 
 clean_all: clean

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.26 2005-06-29 21:07:42 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.27 2005-06-29 23:25:19 debug Exp $
  *
  *  ARM instructions.
  *
@@ -309,252 +309,7 @@ X(clear)
 Y(clear)
 
 
-/*
- *  load_byte_imm:  Load an 8-bit byte from emulated memory and store it in
- *                  a 32-bit word in host memory.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to store the value
- */
-X(load_byte_imm)
-{
-	unsigned char data[1];
-	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	*((uint32_t *)ic->arg[2]) = data[0];
-}
-Y(load_byte_imm)
-
-
-/*
- *  load_byte_w_imm:
- *	Load an 8-bit byte from emulated memory and store it in
- *	a 32-bit word in host memory, with address writeback.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to store the value
- */
-X(load_byte_w_imm)
-{
-	unsigned char data[1];
-	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	*((uint32_t *)ic->arg[2]) = data[0];
-	*((uint32_t *)ic->arg[0]) = addr;
-}
-Y(load_byte_w_imm)
-
-
-void arm_general_load_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
-{
-	unsigned char data[1];
-	uint32_t addr;
-
-	/*  Because the register was already optimistically increased:  */
-	*((uint32_t *)ic->arg[0]) -= ic->arg[1];
-	addr = *((uint32_t *)ic->arg[0]);
-
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	*((uint32_t *)ic->arg[2]) = data[0];
-	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
-}
-
-
-/*
- *  load_byte_wpost_imm:
- *	Load an 8-bit byte from emulated memory and store it in
- *	a 32-bit word in host memory, with address writeback AFTER the load.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to store the value
- */
-X(load_byte_wpost_imm)
-{
-	uint32_t addr = *((uint32_t *)ic->arg[0]);
-	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
-	unsigned char *page = vph_p->host_load[(addr >> 12) & 1023];
-
-	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
-
-	if (page != NULL)
-		*((uint32_t *)ic->arg[2]) = page[addr & 4095];
-	else
-		arm_general_load_wpost_imm(cpu, ic);
-}
-Y(load_byte_wpost_imm)
-
-
-void arm_general_store_byte_imm(struct cpu *cpu, struct arm_instr_call *ic)
-{
-	unsigned char data[1];
-
-	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	data[0] = *((uint32_t *)ic->arg[2]);
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store failed: TODO\n");
-		exit(1);
-	}
-}
-
-
-/*
- *  store_byte_imm:  Load a word from a 32-bit word in host memory, and store
- *                   the lowest 8 bits of that word at an emulated memory
- *                   address.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to load the value from
- */
-X(store_byte_imm)
-{
-	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
-	unsigned char *page = vph_p->host_store[(addr >> 12) & 1023];
-
-	if (page != NULL)
-		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
-	else
-		arm_general_store_byte_imm(cpu, ic);
-}
-Y(store_byte_imm)
-
-
-void arm_general_store_wpost_imm(struct cpu *cpu, struct arm_instr_call *ic)
-{
-	unsigned char data[1];
-	uint32_t addr;
-
-	/*  Because the register was already optimistically increased:  */
-	*((uint32_t *)ic->arg[0]) -= ic->arg[1];
-	addr = *((uint32_t *)ic->arg[0]);
-
-	data[0] = *((uint32_t *)ic->arg[2]);
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store failed: TODO\n");
-		exit(1);
-	}
-	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
-}
-
-
-/*
- *  store_byte_wpost_imm:
- *	Load a word from a 32-bit word in host memory, and store
- *	the lowest 8 bits of that word at an emulated memory address.
- *	Then add the immediate offset to the address, and write back
- *	to the first word.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to load the value from
- */
-X(store_byte_wpost_imm)
-{
-	uint32_t addr = *((uint32_t *)ic->arg[0]);
-	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
-	unsigned char *page = vph_p->host_store[(addr >> 12) & 1023];
-
-	*((uint32_t *)ic->arg[0]) = addr + ic->arg[1];
-
-	if (page != NULL)
-		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
-	else
-		arm_general_store_wpost_imm(cpu, ic);
-}
-Y(store_byte_wpost_imm)
-
-
-/*
- *  load_word_imm:
- *	Load a 32-bit word from emulated memory and store it in
- *	a 32-bit word in host memory.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to store the value
- */
-X(load_word_imm)
-{
-	unsigned char data[sizeof(uint32_t)];
-	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load word failed: TODO\n");
-		exit(1);
-	}
-	/*  TODO: Big endian  */
-	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
-	    (data[2] << 16) + (data[3] << 24);
-}
-Y(load_word_imm)
-
-
-/*
- *  load_word_w_imm:
- *	Load a 32-bit word from emulated memory and store it in
- *	a 32-bit word in host memory, with address writeback.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to store the value
- */
-X(load_word_w_imm)
-{
-	unsigned char data[sizeof(uint32_t)];
-	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load word failed: TODO\n");
-		exit(1);
-	}
-	/*  TODO: Big endian  */
-	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
-	    (data[2] << 16) + (data[3] << 24);
-	*((uint32_t *)ic->arg[0]) = addr;
-}
-Y(load_word_w_imm)
-
-
-/*
- *  store_word_imm:  Load a 32-bit word from host memory and store it
- *                   in emulated memory.
- *
- *  arg[0] = pointer to uint32_t in host memory of base address
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to load the value from.
- */
-X(store_word_imm)
-{
-	unsigned char data[sizeof(uint32_t)];
-	uint32_t addr = *((uint32_t *)ic->arg[0]) + ic->arg[1];
-	uint32_t x = *((uint32_t *)ic->arg[2]);
-	/*  TODO: Big endian  */
-	data[0] = x; data[1] = x >> 8; data[2] = x >> 16; data[3] = x >> 24;
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store word failed: TODO\n");
-		exit(1);
-	}
-}
-Y(store_word_imm)
+#include "tmp_arm_include.c"
 
 
 /*
@@ -966,6 +721,7 @@ X(to_be_translated)
 	case 0x6:	/*  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register  */
 	case 0x7:
 		p_bit = main_opcode & 1;
+		ic->f = load_store_instr[((iword >> 16) & 0x3f0) + condition_code];
 		if (main_opcode < 6) {
 			/*  Immediate:  */
 			imm = iword & 0xfff;
@@ -985,24 +741,13 @@ X(to_be_translated)
 				fatal("load/store writeback PC: error\n");
 				goto bad;
 			}
-			if (l_bit)
-				ic->f = cond_instr(load_byte_wpost_imm);
-			else
-				ic->f = cond_instr(store_byte_wpost_imm);
 		} else if (main_opcode == 5) {
 			/*  Pre-index, immediate:  */
 			/*  ldr(b) Rd,[Rn,#imm]  */
 			if (l_bit) {
-				if (r12 == ARM_PC)
+				if (r12 == ARM_PC) {
 					fatal("WARNING: ldr to pc register?\n");
-				if (w_bit) {
-					ic->f = b_bit?
-					    cond_instr(load_byte_w_imm) :
-					    cond_instr(load_word_w_imm);
-				} else {
-					ic->f = b_bit?
-					    cond_instr(load_byte_imm) :
-					    cond_instr(load_word_imm);
+					goto bad;
 				}
 				if (r16 == ARM_PC) {
 					if (w_bit) {
@@ -1022,9 +767,6 @@ X(to_be_translated)
 					fatal("TODO: store pc\n");
 					goto bad;
 				}
-				ic->f = b_bit?
-				    cond_instr(store_byte_imm) :
-				    cond_instr(store_word_imm);
 				if (r16 == ARM_PC) {
 					fatal("TODO: store pc rel\n");
 					goto bad;

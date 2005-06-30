@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.825 2005-06-30 21:42:55 debug Exp $
+$Id: HISTORY,v 1.826 2005-06-30 22:45:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2057,3 +2057,5 @@ Changelog for GXemul:
 		some MIPS things.)
 		Adding multi-load/store instructions to the ARM disassembler
 		and the translator, and some optimizations of various kinds.
+20050701	Adding a simple dev_disk (it can read/write sectors from
+		disk images).

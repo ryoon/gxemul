@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.40 2005-06-30 10:44:15 debug Exp $
+ *  $Id: memory_rw.c,v 1.41 2005-06-30 11:55:54 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -74,7 +74,9 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	uint64_t paddr;
 	int cache, no_exceptions, offset;
 	unsigned char *memblock;
+#ifdef MEM_MIPS
 	int bintrans_cached = cpu->machine->bintrans_enable;
+#endif
 	int bintrans_device_danger = 0;
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;

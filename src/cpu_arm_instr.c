@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.29 2005-06-30 15:37:13 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.30 2005-06-30 15:49:33 debug Exp $
  *
  *  ARM instructions.
  *
@@ -481,9 +481,21 @@ X(bdt_store)
 		exit(1);
 	}
 
+	if (iw & 0x8000) {
+		/*  Synchronize the program counter:  */
+		uint32_t low_pc = ((size_t)ic - (size_t)
+		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+		cpu->pc = cpu->cd.arm.r[ARM_PC];
+	}
+
 	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1))
 		if ((iw >> i) & 1) {
 			/*  Store register i:  */
+			uint32_t value = cpu->cd.arm.r[i];
+			if (i == ARM_PC)
+				value += 12;	/*  TODO: 8 on some ARMs?  */
 			if (p_bit) {
 				if (u_bit)
 					addr += sizeof(uint32_t);
@@ -491,15 +503,15 @@ X(bdt_store)
 					addr -= sizeof(uint32_t);
 			}
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-				data[0] = cpu->cd.arm.r[i];
-				data[1] = cpu->cd.arm.r[i] >> 8;
-				data[2] = cpu->cd.arm.r[i] >> 16;
-				data[3] = cpu->cd.arm.r[i] >> 24;
+				data[0] = value;
+				data[1] = value >> 8;
+				data[2] = value >> 16;
+				data[3] = value >> 24;
 			} else {
-				data[0] = cpu->cd.arm.r[i] >> 24;
-				data[1] = cpu->cd.arm.r[i] >> 16;
-				data[2] = cpu->cd.arm.r[i] >> 8;
-				data[3] = cpu->cd.arm.r[i];
+				data[0] = value >> 24;
+				data[1] = value >> 16;
+				data[2] = value >> 8;
+				data[3] = value;
 			}
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_WRITE, CACHE_DATA)) {
@@ -949,10 +961,6 @@ X(to_be_translated)
 			ic->f = cond_instr(bdt_store);
 		ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
 		ic->arg[1] = (size_t)iword;
-		if (!l_bit && iword & 0x8000) {
-			fatal("TODO: bdt store with PC\n");
-			goto bad;
-		}
 		if (r16 == ARM_PC) {
 			fatal("TODO: bdt with PC as base\n");
 			goto bad;

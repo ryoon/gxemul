@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.28 2005-06-30 00:19:05 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.29 2005-06-30 15:37:13 debug Exp $
  *
  *  ARM instructions.
  *
@@ -388,6 +388,139 @@ Y(load_word_imm_pcrel)
 
 
 /*
+ *  bdt_load:  Block Data Transfer, Load
+ *
+ *  arg[0] = pointer to uint32_t in host memory, pointing to the base register
+ *  arg[1] = 32-bit instruction word. Most bits are read from this.
+ */
+X(bdt_load)
+{
+	unsigned char data[4];
+	uint32_t *np = (uint32_t *)ic->arg[0];
+	uint32_t addr = *np;
+	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
+	int p_bit = iw & 0x01000000;
+	int u_bit = iw & 0x00800000;
+	int s_bit = iw & 0x00400000;
+	int w_bit = iw & 0x00200000;
+	int i;
+
+	if (s_bit) {
+		fatal("bdt: TODO: s-bit\n");
+		exit(1);
+	}
+
+	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1))
+		if ((iw >> i) & 1) {
+			/*  Load register i:  */
+			if (p_bit) {
+				if (u_bit)
+					addr += sizeof(uint32_t);
+				else
+					addr -= sizeof(uint32_t);
+			}
+			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
+			    sizeof(data), MEM_READ, CACHE_DATA)) {
+				fatal("bdt: load failed: TODO\n");
+				exit(1);
+			}
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				cpu->cd.arm.r[i] = data[0] +
+				    (data[1] << 8) + (data[2] << 16)
+				    + (data[3] << 24);
+			} else {
+				cpu->cd.arm.r[i] = data[3] +
+				    (data[2] << 8) + (data[1] << 16)
+				    + (data[0] << 24);
+			}
+			/*  NOTE: Special case:  */
+			if (i == ARM_PC) {
+				cpu->cd.arm.r[ARM_PC] &= ~3;
+				cpu->pc = cpu->cd.arm.r[ARM_PC];
+				/*  TODO: There is no need to update the
+				    pointers if this is a return to the
+				    same page!  */
+				/*  Find the new physical page and update the
+				    translation pointers:  */
+				arm_pc_to_pointers(cpu);
+			}
+			if (!p_bit) {
+				if (u_bit)
+					addr += sizeof(uint32_t);
+				else
+					addr -= sizeof(uint32_t);
+			}
+		}
+
+	if (w_bit)
+		*np = addr;
+}
+Y(bdt_load)
+
+
+/*
+ *  bdt_store:  Block Data Transfer, Store
+ *
+ *  arg[0] = pointer to uint32_t in host memory, pointing to the base register
+ *  arg[1] = 32-bit instruction word. Most bits are read from this.
+ */
+X(bdt_store)
+{
+	unsigned char data[4];
+	uint32_t *np = (uint32_t *)ic->arg[0];
+	uint32_t addr = *np;
+	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
+	int p_bit = iw & 0x01000000;
+	int u_bit = iw & 0x00800000;
+	int s_bit = iw & 0x00400000;
+	int w_bit = iw & 0x00200000;
+	int i;
+
+	if (s_bit) {
+		fatal("bdt: TODO: s-bit\n");
+		exit(1);
+	}
+
+	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1))
+		if ((iw >> i) & 1) {
+			/*  Store register i:  */
+			if (p_bit) {
+				if (u_bit)
+					addr += sizeof(uint32_t);
+				else
+					addr -= sizeof(uint32_t);
+			}
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				data[0] = cpu->cd.arm.r[i];
+				data[1] = cpu->cd.arm.r[i] >> 8;
+				data[2] = cpu->cd.arm.r[i] >> 16;
+				data[3] = cpu->cd.arm.r[i] >> 24;
+			} else {
+				data[0] = cpu->cd.arm.r[i] >> 24;
+				data[1] = cpu->cd.arm.r[i] >> 16;
+				data[2] = cpu->cd.arm.r[i] >> 8;
+				data[3] = cpu->cd.arm.r[i];
+			}
+			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
+			    sizeof(data), MEM_WRITE, CACHE_DATA)) {
+				fatal("bdt: store failed: TODO\n");
+				exit(1);
+			}
+			if (!p_bit) {
+				if (u_bit)
+					addr += sizeof(uint32_t);
+				else
+					addr -= sizeof(uint32_t);
+			}
+		}
+
+	if (w_bit)
+		*np = addr;
+}
+Y(bdt_store)
+
+
+/*
  *  cmps:  Compare a 32-bit register to a 32-bit value. (Subtraction.)
  *
  *  arg[0] = pointer to uint32_t in host memory
@@ -686,7 +819,11 @@ X(to_be_translated)
 		case 0x2:				/*  SUB  */
 		case 0x4:				/*  ADD  */
 			if (s_bit) {
-				fatal("sub s_bit: TODO\n");
+				fatal("add/sub s_bit: TODO\n");
+				goto bad;
+			}
+			if (r12 == ARM_PC || r16 == ARM_PC) {
+				fatal("add/sub: PC\n");
 				goto bad;
 			}
 			switch (secondary_opcode) {
@@ -802,6 +939,24 @@ X(to_be_translated)
 			goto bad;
 		}
 		translated;
+		break;
+
+	case 0x8:	/*  Multiple load/store...  (Block data transfer)  */
+	case 0x9:	/*  xxxx100P USWLnnnn llllllll llllllll  */
+		if (l_bit)
+			ic->f = cond_instr(bdt_load);
+		else
+			ic->f = cond_instr(bdt_store);
+		ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
+		ic->arg[1] = (size_t)iword;
+		if (!l_bit && iword & 0x8000) {
+			fatal("TODO: bdt store with PC\n");
+			goto bad;
+		}
+		if (r16 == ARM_PC) {
+			fatal("TODO: bdt with PC as base\n");
+			goto bad;
+		}
 		break;
 
 	case 0xa:					/*  B: branch  */

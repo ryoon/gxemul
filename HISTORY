@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.823 2005-06-30 11:52:12 debug Exp $
+$Id: HISTORY,v 1.824 2005-06-30 15:37:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2055,3 +2055,5 @@ Changelog for GXemul:
 		Generalizing the bintrans stuff for device accesses to also
 		work with the new translation system. (This might also break
 		some MIPS things.)
+		Adding multi-load/store instructions to the ARM disassembler
+		and the translator.

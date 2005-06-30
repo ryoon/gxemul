@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.470 2005-06-26 11:36:28 debug Exp $
+ *  $Id: machine.c,v 1.471 2005-06-30 15:37:13 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -53,7 +53,6 @@
 #include "arcbios.h"
 #include "bus_pci.h"
 #include "cpu.h"
-#include "cpu_mips.h"
 #include "device.h"
 #include "devices.h"
 #include "diskimage.h"
@@ -4014,10 +4013,18 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "ARM test machine";
 
 		machine->main_console_handle = dev_cons_init(
-		    machine, mem, DEV_CONS_ADDRESS, "console", 2);
+		    machine, mem, 0x10000000, "console", 2);
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
+
+		/*  Place a tiny stub at end of memory, and set the link
+		    register to point to it. This stub halts the machine.  */
+		cpu->cd.arm.r[ARM_SP] =
+		    machine->physical_ram_in_mb * 1048576 - 4096;
+		cpu->cd.arm.r[ARM_LR] = cpu->cd.arm.r[ARM_SP] + 32;
+		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 0, 0xe3a00201);
+		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 4, 0xe5c00010);
 		break;
 
 	case MACHINE_BAREX86:

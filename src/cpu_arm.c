@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.29 2005-06-30 12:06:23 debug Exp $
+ *  $Id: cpu_arm.c,v 1.30 2005-06-30 15:37:13 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -255,7 +255,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 {
 	uint32_t iw, tmp;
 	int main_opcode, secondary_opcode, s_bit, r16, r12, r8;
-	int p_bit, u_bit, b_bit, w_bit, l_bit;
+	int i, n, p_bit, u_bit, b_bit, w_bit, l_bit;
 	char *symbol, *condition;
 	uint64_t offset;
 
@@ -386,7 +386,30 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 	case 0x8:				/*  Block Data Transfer  */
 	case 0x9:
-		debug("TODO: block data transfer\n");
+		/*  See (1):  xxxx100P USWLnnnn llllllll llllllll  */
+		p_bit = main_opcode & 1;
+		s_bit = b_bit;
+		debug("%s%s", l_bit? "ldm" : "stm", condition);
+		switch (u_bit * 2 + p_bit) {
+		case 0:	debug("da"); break;
+		case 1:	debug("db"); break;
+		case 2:	debug("ia"); break;
+		case 3:	debug("ib"); break;
+		}
+		debug("\t%s", arm_regname[r16]);
+		if (w_bit)
+			debug("!");
+		debug(",{");
+		n = 0;
+		for (i=0; i<16; i++)
+			if ((iw >> i) & 1) {
+				debug("%s%s", (n > 0)? ",":"", arm_regname[i]);
+				n++;
+			}
+		debug("}");
+		if (s_bit)
+			debug("^");
+		debug("\n");
 		break;
 	case 0xa:				/*  B: branch  */
 	case 0xb:				/*  BL: branch and link  */

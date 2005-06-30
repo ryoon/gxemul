@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.39 2005-06-29 21:07:43 debug Exp $
+ *  $Id: memory_rw.c,v 1.40 2005-06-30 10:44:15 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -453,9 +453,17 @@ have_paddr:
 		{
 			if (paddr >= mem->physical_max) {
 				char *symbol;
-#ifdef MEM_MIPS
+				uint64_t old_pc;
 				uint64_t offset;
+
+#ifdef MEM_MIPS
+				old_pc = cpu->cd.mips.pc_last;
+#else
+				/*  Default instruction size on most
+				    RISC archs is 32 bits:  */
+				old_pc = cpu->pc - sizeof(uint32_t);
 #endif
+
 				/*  This allows for example OS kernels to probe
 				    memory a few KBs past the end of memory,
 				    without giving too many warnings.  */
@@ -487,28 +495,30 @@ have_paddr:
 								    data[i]);
 						debug("}");
 					}
-#ifdef MEM_MIPS
+
+					fatal(" paddr=0x%llx >= physical_max"
+					    "; pc=", (long long)paddr);
+					if (cpu->is_32bit)
+						fatal("0x%08x",(int)old_pc);
+					else
+						fatal("0x%016llx",
+						    (long long)old_pc);
 					symbol = get_symbol_name(
 					    &cpu->machine->symbol_context,
-					    cpu->cd.mips.pc_last, &offset);
-#else
-					symbol = "(unimpl for non-MIPS)";
-#endif
-
-/*  TODO: fix! not mips.pc_last for for example ppc  */
-
-					fatal(" paddr=%llx >= physical_max pc="
-					    "0x%08llx <%s> ]\n",
-					    (long long)paddr,
-					    (long long)cpu->cd.mips.pc_last,
-					    symbol? symbol : "no symbol");
+					    old_pc, &offset);
+					fatal(" <%s> ]\n",
+					    symbol? symbol : " no symbol ");
 				}
 
 				if (cpu->machine->single_step_on_bad_addr) {
 					fatal("[ unimplemented access to "
-					    "0x%016llx, pc = 0x%016llx ]\n",
-					    (long long)paddr,
-					    (long long)cpu->pc);
+					    "0x%llx, pc=0x",(long long)paddr);
+					if (cpu->is_32bit)
+						fatal("%08x ]\n",
+						    (int)old_pc);
+					else
+						fatal("%016llx ]\n",
+						    (long long)old_pc);
 					single_step = 1;
 				}
 			}

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.17 2005-06-29 21:07:44 debug Exp $
+ *  $Id: cpu_mips.h,v 1.18 2005-06-30 10:44:16 debug Exp $
  */
 
 #include "misc.h"
@@ -57,12 +57,15 @@ struct mips_cpu_type_def {
 	char		isa_level;		/*  1, 2, 3, 4, 5, 32, 64  */
 	int		nr_of_tlb_entries;	/*  32, 48, 64, ...  */
 	char		instrs_per_cycle;	/*  simplified, 1, 2, or 4  */
-	int		default_picache;
-	int		default_pdcache;
-	int		default_pilinesize;
-	int		default_pdlinesize;
-	int		default_scache;
-	int		default_slinesize;
+	int		picache;
+	int		pilinesize;
+	int		piways;
+	int		pdcache;
+	int		pdlinesize;
+	int		pdways;
+	int		scache;
+	int		slinesize;
+	int		sways;
 };
 
 #define	INITIAL_PC			0xffffffffbfc00000ULL

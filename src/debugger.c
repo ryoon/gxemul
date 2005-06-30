@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.106 2005-06-26 11:36:27 debug Exp $
+ *  $Id: debugger.c,v 1.107 2005-06-30 10:44:15 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -198,10 +198,17 @@ static int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	}
 
 	/*  Warn about non-signextended values:  */
-	if (writeflag &&
-	    ((*valuep) >> 32) == 0 && (*valuep) & 0x80000000ULL)
-		printf("WARNING: The value is not sign-extended. "
-		    "Is this what you intended?\n");
+	if (writeflag) {
+		if (m->cpus[0]->is_32bit) {
+			/*  Automagically sign-extend.  TODO: Is this good?  */
+			if (((*valuep) >> 32) == 0 && (*valuep) & 0x80000000ULL)
+				(*valuep) |= 0xffffffff00000000ULL;
+		} else {
+			if (((*valuep) >> 32) == 0 && (*valuep) & 0x80000000ULL)
+				printf("WARNING: The value is not sign-extende"
+				    "d. Is this what you intended?\n");
+		}
+	}
 
 	skip_register = name[0] == '$' || name[0] == '@';
 	skip_numeric  = name[0] == '%' || name[0] == '@';
@@ -274,8 +281,11 @@ static int debugger_parse_name(struct machine *m, char *name, int writeflag,
  */
 static void show_breakpoint(struct machine *m, int i)
 {
-	printf("%3i: 0x%016llx", i,
-	    (long long)m->breakpoint_addr[i]);
+	printf("%3i: 0x", i);
+	if (m->cpus[0]->is_32bit)
+		printf("%08x", (int)m->breakpoint_addr[i]);
+	else
+		printf("%016llx", (long long)m->breakpoint_addr[i]);
 	if (m->breakpoint_string[i] != NULL)
 		printf(" (%s)", m->breakpoint_string[i]);
 	if (m->breakpoint_flags[i])
@@ -803,15 +813,23 @@ static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
 			printf("lookup for '%s' failed\n", cmd_line);
 			return;
 		}
-		printf("%s = 0x%016llx\n", cmd_line, (long long)newaddr);
+		printf("%s = 0x", cmd_line);
+		if (m->cpus[0]->is_32bit)
+			printf("%08x\n", (int)newaddr);
+		else
+			printf("%016llx\n", (long long)newaddr);
 		return;
 	}
 
 	symbol = get_symbol_name(&m->symbol_context, addr, &offset);
 
-	if (symbol != NULL)
-		printf("0x%016llx = %s\n", (long long)addr, symbol);
-	else
+	if (symbol != NULL) {
+		if (m->cpus[0]->is_32bit)
+			printf("0x%08x", (int)addr);
+		else
+			printf("0x%016llx", (long long)addr);
+		printf(" = %s\n", symbol);
+	} else
 		printf("lookup for '%s' failed\n", cmd_line);
 }
 

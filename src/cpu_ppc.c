@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.63 2005-06-26 22:23:42 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.64 2005-06-30 10:44:15 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -110,6 +110,8 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits        = cpu->cd.ppc.cpu_type.bits;
+
+	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {

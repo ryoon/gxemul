@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.28 2005-06-29 21:07:44 debug Exp $
+ *  $Id: cpu.h,v 1.29 2005-06-30 10:44:16 debug Exp $
  *
  *  See cpu.c.
  */
@@ -112,10 +112,11 @@ struct cpu {
 
 	/*  Things that all CPU families have:  */
 	uint64_t	pc;
+	int		is_32bit;	/*  0 for 64-bit, 1 for 32-bit  */
 
 #ifdef TRACE_NULL_CRASHES
-	uint64_t	trace_null_addr[TRACE_NULL_N_ENTRIES];
 	int		trace_null_index;
+	uint64_t	trace_null_addr[TRACE_NULL_N_ENTRIES];
 #endif  
 
 	/*  CPU-family dependant:  */

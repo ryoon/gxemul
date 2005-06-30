@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.26 2005-06-30 00:19:05 debug Exp $
+ *  $Id: cpu_arm.c,v 1.27 2005-06-30 10:44:15 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -113,7 +113,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	cpu->memory_rw = arm_memory_rw;
 	cpu->update_translation_table = arm_update_translation_table;
-
+	cpu->is_32bit = 1;
 	cpu->cd.arm.flags = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
 
 	/*  Only show name and caches etc for CPU nr 0:  */

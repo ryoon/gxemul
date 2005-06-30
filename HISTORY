@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.821 2005-06-29 23:25:18 debug Exp $
+$Id: HISTORY,v 1.822 2005-06-30 10:44:14 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2042,4 +2042,12 @@ Changelog for GXemul:
 		might break a lot of stuff elsewhere, probably some MIPS-
 		related translation things.
 20050630	Many load/stores are now automatically generated and included
-		into cpu_arm_instr.c.
+		into cpu_arm_instr.c; 1024 functions in total (!).
+		Fixes based on feedback from Alec Voropay: only print 8 hex
+		digits instead of 16 in some cases when emulating 32-bit
+		machines; similar 8 vs 16 digit fix for breakpoint addresses;
+		4Kc has 16 TLB entries, not 48; the MIPS config select1
+		register is now printed with "reg ,0".
+		Also changing many other occurances of 16 vs 8 digit output.
+		Adding cache associativity fields to mips_cpu_types.h; making
+		the output of mips_cpu_dumpinfo() look nicer.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.5 2005-06-24 09:33:37 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.6 2005-06-30 10:44:16 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -67,49 +67,49 @@
  */
 
 #define	MIPS_CPU_TYPE_DEFS	{	\
-	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
-	{ "R2000A",	MIPS_R2000, 0x10,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
-	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,12,12, 2, 2, 0, 0 }, \
-	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
-	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32, 1,16,16, 2, 2, 0, 0 }, /*  instrs/cycle?  */  \
-	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,13,13, 4, 4,19, 6 }, \
-	{ "R4000PC",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,13,13, 4, 4, 0, 6 }, \
-	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64, 4,15,15, 6, 5,20, 6 }, /*  2way I,D,Secondary  */ \
-	{ "R4200",	MIPS_R4200, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
-	{ "R4300",	MIPS_R4300, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
-	{ "R4100",	MIPS_R4100, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
-	{ "VR4102",	MIPS_R4100, 0x40,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,12,10, 0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4181",	MIPS_R4100, 0x50,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,12,12, 0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4121",	MIPS_R4100, 0x60,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,13, 0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4122",	MIPS_R4100, 0x70,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,14, 0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4131",	MIPS_R4100, 0x80,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,14, 0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,14,14, 4, 4,20, 6 }, /*  direct mapped I,D,Sec  */ \
-	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, \
-	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
-	{ "R4650",	MIPS_R4650, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
-	{ "R8000",	MIPS_R8000, 0,		0,	EXC4K, MMU8K,	4,     192, 2, 0, 0, 0, 0, 0, 0 }, /*  192 tlb entries? or 384? instrs/cycle?  */ \
-	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64, 4,15,15, 6, 5,23, 6 }, \
-	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4,15,15, 6, 5,22, 6 }, \
-	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4,15,15, 5, 5, 0, 0 }, /*  2way I,D; instrs/cycle?  */ \
-	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4,14,13, 6, 6, 0, 0 }, /*  instrs/cycle?  */ \
-	{ "TX3920",	MIPS_TX3900,0x30,	0,	EXC32, MMU32,	1,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
-	{ "TX7901",	0x38,	    0x01,	0,	EXC4K, MMU4K,  64,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
-	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
-	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
-	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,14, 5, 5,18, 6 }, /*  instrs/cycle? cachelinesize & assoc.? RM7000A? */ \
-	{ "RM7900",	0 /*TODO*/, 0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	64, 4,14,14, 5, 5,18, 6 }, /*  instrs/cycle? cachelinesize? assoc = 4ways for all  */ \
-	{ "RM9000",	0x34,       0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,14, 5, 5,18, 6 }, /*  This is totally bogus  */ \
-	{ "RC32334",	MIPS_RC32300,0x00,	0,	EXC32, MMU4K,  32,      16, 1, 0, 0, 0, 0, 0, 0 }, \
-	{ "4Kc",	0x100+MIPS_4Kc, 1 /*?*/,0,	EXC32, MMU32,  32,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
-	{ "5Kc",	0x100+MIPS_5Kc, 1,	0,	EXC64, MMU64,  64,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
-	{ "BCM4710",	0x000240,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "BCM4712",	0x000290,   0x07,       0,	EXC32, MMU32,  32,      32, 2,13,12, 4, 4, 0, 0 }, /*  2ways I, 2ways D  */ \
-	{ "AU1000",	0x000301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "AU1500",	0x010301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "AU1100",	0x020301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "SB1",	0x000401,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "SR7100",	0x000504,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "Allegrex",	0x000000,   0x00,	0,	EXC3K, MMU32,   2,       4, 1,14,14, 6, 6, 0, 0 }, \
-	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0, 0, 0, 0, 0, 0, 0 } }
+	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,2,1,13,2,1, 0, 0, 0 }, \
+	{ "R2000A",	MIPS_R2000, 0x10,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,2,1,13,2,1, 0, 0, 0 }, \
+	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,12,2,1,12,2,1, 0, 0, 0 }, \
+	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,2,1,13,2,1, 0, 0, 0 }, \
+	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32, 1,16,2,2,16,2,2, 0, 0, 0 }, /*  instrs/cycle?  */  \
+	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,13,4,2,13,4,2,19, 6, 1 }, \
+	{ "R4000PC",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,13,4,2,13,4,2, 0, 6, 1 }, \
+	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64, 4,15,6,2,15,5,2,20, 6, 1 }, \
+	{ "R4200",	MIPS_R4200, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
+	{ "R4300",	MIPS_R4300, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
+	{ "R4100",	MIPS_R4100, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
+	{ "VR4102",	MIPS_R4100, 0x40,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,12,0,0,10,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
+	{ "VR4181",	MIPS_R4100, 0x50,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,12,0,0,12,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
+	{ "VR4121",	MIPS_R4100, 0x60,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,0,0,13,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
+	{ "VR4122",	MIPS_R4100, 0x70,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,0,0,14,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
+	{ "VR4131",	MIPS_R4100, 0x80,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,0,0,14,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
+	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,14,4,1,14,4,1,20, 6, 1 }, \
+	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, \
+	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
+	{ "R4650",	MIPS_R4650, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
+	{ "R8000",	MIPS_R8000, 0,		0,	EXC4K, MMU8K,	4,     192, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  192 tlb entries? or 384? instrs/cycle?  */ \
+	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64, 4,15,6,2,15,5,2,23, 6, 1 }, \
+	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4,15,6,2,15,5,2,22, 6, 1 }, \
+	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4,15,5,2,15,5,2, 0, 0, 0 }, /*  2way I,D; instrs/cycle?  */ \
+	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4,14,6,2,13,6,2, 0, 0, 0 }, /*  instrs/cycle?  */ \
+	{ "TX3920",	MIPS_TX3900,0x30,	0,	EXC32, MMU32,	1,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
+	{ "TX7901",	0x38,	    0x01,	0,	EXC4K, MMU4K,  64,	48, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
+	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,   4,	48, 4,15,0,0,15,0,0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? linesize? etc */ \
+	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
+	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,5,1,14,5,1,18, 6, 1 }, /*  instrs/cycle? cachelinesize & assoc.? RM7000A? */ \
+	{ "RM7900",	0 /*TODO*/, 0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	64, 4,14,5,1,14,5,1,18, 6, 1 }, /*  instrs/cycle? cachelinesize? assoc = 4ways for all  */ \
+	{ "RM9000",	0x34,       0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,5,1,14,5,1,18, 6, 1 }, /*  This is totally bogus  */ \
+	{ "RC32334",	MIPS_RC32300,0x00,	0,	EXC32, MMU4K,  32,      16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, \
+	{ "4Kc",	0x100+MIPS_4Kc, 1,	0,	EXC32, MMU32,  32,	16, 4,15,5,2,15,5,2, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
+	{ "5Kc",	0x100+MIPS_5Kc, 1,	0,	EXC64, MMU64,  64,	48, 4,15,5,2,15,5,2, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
+	{ "BCM4710",	0x000240,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "BCM4712",	0x000290,   0x07,       0,	EXC32, MMU32,  32,      32, 2,13,4,1,12,4,1, 0, 0, 0 }, /*  2ways I, 2ways D  */ \
+	{ "AU1000",	0x000301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "AU1500",	0x010301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "AU1100",	0x020301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "SB1",	0x000401,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "SR7100",	0x000504,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "Allegrex",	0x000000,   0x00,	0,	EXC3K, MMU32,   2,       4, 1,14,6,2,14,6,2, 0, 0, 0 }, \
+	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
 
 #endif	/*  CPU_TYPES_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.24 2005-06-29 21:07:43 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.25 2005-06-30 10:44:15 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -88,7 +88,7 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 #else
 	const int m16 = 0;
 #endif
-	int cpu_type, IB, DB, SB, IC, DC, SC;
+	int cpu_type, IB, DB, SB, IC, DC, SC, IA, DA;
 
 	/*  Default values:  */
 	c->reg[COP0_CONFIG] =
@@ -319,7 +319,8 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 		    | (   1 <<  7)	/*  MMU type: 1=TLB, 3=FMT  */
 		    | (   2 <<  0)	/*  kseg0 cache coherency algorithm  */
 		    ;
-		/*  Config select 1: caches etc. TODO: Associativity?  */
+		/*  Config select 1: caches etc. TODO: Don't use
+			cpu->machine for this stuff!  */
 		IB = cpu->machine->cache_picache_linesize - 1;
 		IB = IB < 0? 0 : (IB > 7? 7 : IB);
 		DB = cpu->machine->cache_pdcache_linesize - 1;
@@ -328,14 +329,16 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 		    cpu->machine->cache_picache_linesize - 7;
 		DC = cpu->machine->cache_pdcache -
 		    cpu->machine->cache_pdcache_linesize - 7;
+		IA = cpu->cd.mips.cpu_type.piways - 1;
+		DA = cpu->cd.mips.cpu_type.pdways - 1;
 		cpu->cd.mips.cop0_config_select1 =
 		    ((cpu->cd.mips.cpu_type.nr_of_tlb_entries - 1) << 25)
 		    | (IC << 22)	/*  IS: I-cache sets per way  */
 		    | (IB << 19)	/*  IL: I-cache line-size  */
-		    | (1 << 16)		/*  IA: I-cache assoc. (ways-1)  */
+		    | (IA << 16)	/*  IA: I-cache assoc. (ways-1)  */
 		    | (DC << 13)	/*  DS: D-cache sets per way  */
 		    | (DB << 10)	/*  DL: D-cache line-size  */
-		    | (1 <<  7)		/*  DA: D-cache assoc. (ways-1)  */
+		    | (DA <<  7)	/*  DA: D-cache assoc. (ways-1)  */
 		    | (16 * 0)		/*  Existance of PerformanceCounters  */
 		    | ( 8 * 0)		/*  Existance of Watch Registers  */
 		    | ( 4 * m16)	/*  Existance of MIPS16  */

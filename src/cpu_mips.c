@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.47 2005-06-29 21:07:43 debug Exp $
+ *  $Id: cpu_mips.c,v 1.48 2005-06-30 10:44:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -160,6 +160,10 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = INITIAL_STACK_POINTER;
 	cpu->update_translation_table = mips_update_translation_table;
 
+	if (cpu->cd.mips.cpu_type.isa_level <= 2 ||
+	    cpu->cd.mips.cpu_type.isa_level == 32)
+		cpu->is_32bit = 1;
+
 	if (cpu_id == 0)
 		debug("%s", cpu->cd.mips.cpu_type.name);
 
@@ -176,35 +180,35 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	 */
 
 	x = DEFAULT_PCACHE_SIZE;
-	if (cpu->cd.mips.cpu_type.default_pdcache)
-		x = cpu->cd.mips.cpu_type.default_pdcache;
+	if (cpu->cd.mips.cpu_type.pdcache)
+		x = cpu->cd.mips.cpu_type.pdcache;
 	if (machine->cache_pdcache == 0)
 		machine->cache_pdcache = x;
 
 	x = DEFAULT_PCACHE_SIZE;
-	if (cpu->cd.mips.cpu_type.default_picache)
-		x = cpu->cd.mips.cpu_type.default_picache;
+	if (cpu->cd.mips.cpu_type.picache)
+		x = cpu->cd.mips.cpu_type.picache;
 	if (machine->cache_picache == 0)
 		machine->cache_picache = x;
 
 	if (machine->cache_secondary == 0)
-		machine->cache_secondary = cpu->cd.mips.cpu_type.default_scache;
+		machine->cache_secondary = cpu->cd.mips.cpu_type.scache;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
-	if (cpu->cd.mips.cpu_type.default_pdlinesize)
-		linesize = cpu->cd.mips.cpu_type.default_pdlinesize;
+	if (cpu->cd.mips.cpu_type.pdlinesize)
+		linesize = cpu->cd.mips.cpu_type.pdlinesize;
 	if (machine->cache_pdcache_linesize == 0)
 		machine->cache_pdcache_linesize = linesize;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
-	if (cpu->cd.mips.cpu_type.default_pilinesize)
-		linesize = cpu->cd.mips.cpu_type.default_pilinesize;
+	if (cpu->cd.mips.cpu_type.pilinesize)
+		linesize = cpu->cd.mips.cpu_type.pilinesize;
 	if (machine->cache_picache_linesize == 0)
 		machine->cache_picache_linesize = linesize;
 
 	linesize = 0;
-	if (cpu->cd.mips.cpu_type.default_slinesize)
-		linesize = cpu->cd.mips.cpu_type.default_slinesize;
+	if (cpu->cd.mips.cpu_type.slinesize)
+		linesize = cpu->cd.mips.cpu_type.slinesize;
 	if (machine->cache_secondary_linesize == 0)
 		machine->cache_secondary_linesize = linesize;
 
@@ -534,8 +538,7 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 		/*  Print index, random, and wired:  */
 		printf("cpu%i: (", i);
 
-		if (m->cpus[i]->cd.mips.cpu_type.isa_level < 3 ||
-		    m->cpus[i]->cd.mips.cpu_type.isa_level == 32)
+		if (m->cpus[i]->is_32bit)
 			printf("index=0x%08x random=0x%08x",
 			    (int)m->cpus[i]->cd.mips.coproc[0]->reg[COP0_INDEX],
 			    (int)m->cpus[i]->cd.mips.coproc[0]->reg[COP0_RANDOM]);
@@ -557,8 +560,7 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				    j,
 				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
 				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0);
-			else if (m->cpus[i]->cd.mips.cpu_type.isa_level < 3 ||
-			    m->cpus[i]->cd.mips.cpu_type.isa_level == 32)
+			else if (m->cpus[i]->is_32bit)
 				printf("%3i: hi=0x%08x mask=0x%08x "
 				    "lo0=0x%08x lo1=0x%08x\n", j,
 				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
@@ -728,8 +730,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-	    cpu->cd.mips.cpu_type.isa_level == 32)
+	if (cpu->is_32bit)
 		debug("%08x", (int)dumpaddr);
 	else
 		debug("%016llx", (long long)dumpaddr);
@@ -970,8 +971,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 		debug("%s,", regname(cpu->machine, rs));
 
-		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-		    cpu->cd.mips.cpu_type.isa_level == 32)
+		if (cpu->is_32bit)
 			debug("0x%08x", (int)addr);
 		else
 			debug("0x%016llx", (long long)addr);
@@ -1081,8 +1081,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		if (running) {
 			debug("\t[");
 
-			if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-			    cpu->cd.mips.cpu_type.isa_level == 32)
+			if (cpu->is_32bit)
 				debug("0x%08x", (int)(cpu->cd.mips.gpr[rs] + imm));
 			else
 				debug("0x%016llx",
@@ -1106,8 +1105,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    addr, &offset);
 		debug("%s\t0x", hi6_names[hi6]);
-		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-		    cpu->cd.mips.cpu_type.isa_level == 32)
+		if (cpu->is_32bit)
 			debug("%08x", (int)addr);
 		else
 			debug("%016llx", (long long)addr);
@@ -1235,8 +1233,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 			addr = (dumpaddr + 4) + (imm << 2);
 
-			if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-			    cpu->cd.mips.cpu_type.isa_level == 32)
+			if (cpu->is_32bit)
 				debug("0x%08x", (int)addr);
 			else
 				debug("0x%016llx", (long long)addr);
@@ -1269,8 +1266,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	uint64_t offset;
 	char *symbol;
 
-	bits32 = (cpu->cd.mips.cpu_type.isa_level < 3 ||
-	    cpu->cd.mips.cpu_type.isa_level == 32)? 1 : 0;
+	bits32 = cpu->is_32bit;
 
 	if (gprs) {
 		/*  Special registers (pc, hi/lo) first:  */
@@ -1373,6 +1369,16 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				i = 31;
 		}
 
+		if (coprocnr == 0 && cpu->cd.mips.cpu_type.isa_level >= 32) {
+			debug("cpu%i: ", cpu->cpu_id);
+			debug("config_select1 = 0x");
+			if (cpu->is_32bit)
+				debug("%08x", (int)cpu->cd.mips.cop0_config_select1);
+			else
+				debug("%016llx", (long long)cpu->cd.mips.cop0_config_select1);
+			debug("\n");
+		}
+
 		/*  Floating point control registers:  */
 		if (coprocnr == 1) {
 			for (i=0; i<32; i++)
@@ -1424,8 +1430,7 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 		debug("<%s(", symbol);
 	else {
 		debug("<0x");
-		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-		    cpu->cd.mips.cpu_type.isa_level == 32)
+		if (cpu->is_32bit)
 			debug("%08x", (int)addr);
 		else
 			debug("%016llx", (long long)addr);
@@ -1454,8 +1459,7 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 			debug("\"%s\"", memory_conv_to_string(cpu,
 			    cpu->mem, d, strbuf, sizeof(strbuf)));
 		else {
-			if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-			    cpu->cd.mips.cpu_type.isa_level == 32)
+			if (cpu->is_32bit)
 				debug("0x%x", (int)d);
 			else
 				debug("0x%llx", (long long)d);
@@ -1558,8 +1562,8 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (!quiet_mode) {
 		uint64_t offset;
 		int x;
-		char *symbol = get_symbol_name(
-		    &cpu->machine->symbol_context, cpu->cd.mips.pc_last, &offset);
+		char *symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    cpu->cd.mips.pc_last, &offset);
 
 		debug("[ ");
 		if (cpu->machine->ncpus > 1)
@@ -1587,10 +1591,16 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			}
 			break;
 		default:
-			debug(" vaddr=0x%016llx", (long long)vaddr);
+			if (cpu->is_32bit)
+				debug(" vaddr=0x%08x", (int)vaddr);
+			else
+				debug(" vaddr=0x%016llx", (long long)vaddr);
 		}
 
-		debug(" pc=%08llx ", (long long)cpu->cd.mips.pc_last);
+		if (cpu->is_32bit)
+			debug(" pc=0x%08x ", (int)cpu->cd.mips.pc_last);
+		else
+			debug(" pc=0x%016llx ", (long long)cpu->cd.mips.pc_last);
 
 		if (symbol != NULL)
 			debug("<%s> ]\n", symbol);
@@ -1605,10 +1615,17 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		fatal("[ ");
 		if (cpu->machine->ncpus > 1)
 			fatal("cpu%i: ", cpu->cpu_id);
-		fatal("warning: LOW reference vaddr=0x%08llx, exception %s, "
-		    "pc=%08llx <%s> ]\n", (long long)vaddr,
-		    exception_names[exccode], (long long)cpu->cd.mips.pc_last,
-		    symbol? symbol : "(no symbol)");
+		fatal("warning: LOW reference: vaddr=");
+		if (cpu->is_32bit)
+			fatal("0x%08x", (int)vaddr);
+		else
+			fatal("0x%016llx", (long long)vaddr);
+		fatal(", exception %s, pc=", exception_names[exccode]);
+		if (cpu->is_32bit)
+			fatal("0x%08x", (int)cpu->cd.mips.pc_last);
+		else
+			fatal("0x%016llx", (long long)cpu->cd.mips.pc_last);
+		fatal(" <%s> ]\n", symbol? symbol : "(no symbol)");
 
 #ifdef TRACE_NULL_CRASHES
 		/*  This can be useful for debugging kernel bugs:  */
@@ -1920,8 +1937,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		for (i=0; i<cpu->machine->n_breakpoints; i++)
 			if (cached_pc == cpu->machine->breakpoint_addr[i]) {
 				fatal("Breakpoint reached, pc=0x");
-				if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-				    cpu->cd.mips.cpu_type.isa_level == 32)
+				if (cpu->is_32bit)
 					fatal("%08x", (int)cached_pc);
 				else
 					fatal("%016llx", (long long)cached_pc);
@@ -2038,7 +2054,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  registers are sign-extended:   (Slow, but might be useful
 	 *  to detect bugs that have to do with sign-extension.)
 	 */
-	if (cpu->cd.mips.cpu_type.isa_level < 3 || cpu->cd.mips.cpu_type.isa_level == 32) {
+	if (cpu->is_32bit)
 		int warning = 0;
 		uint64_t x;
 
@@ -2954,7 +2970,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		default:
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, cpu->cd.mips.pc_last,
+				    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented special6 = 0x%02x\n", special6);
@@ -3777,7 +3793,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		default:
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, cpu->cd.mips.pc_last,
+				    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented regimm5 = 0x%02x\n", regimm5);
@@ -4048,7 +4064,7 @@ Remove this...
 		} else {
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, cpu->cd.mips.pc_last,
+				    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented special_2 = 0x%02x, rs=0x%02x rt=0x%02x rd=0x%02x\n",
@@ -4060,7 +4076,7 @@ Remove this...
 	default:
 		if (!instruction_trace_cached) {
 			fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, cpu->cd.mips.pc_last,
+			    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
 			    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 		}
 		fatal("unimplemented hi6 = 0x%02x\n", hi6);
@@ -4088,28 +4104,54 @@ Remove this...
  */
 void mips_cpu_dumpinfo(struct cpu *cpu)
 {
+	int iadd = 4;
 	struct mips_cpu_type_def *ct = &cpu->cd.mips.cpu_type;
 
-	debug(" (%i-bit ", (ct->isa_level < 3 ||
-	    ct->isa_level == 32)? 32 : 64);
+	debug_indentation(iadd);
 
-	debug("%s, ", cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE");
+	debug("\n%i-bit %s (ISA level %i)",
+	    cpu->is_32bit? 32 : 64,
+	    cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE",
+	    ct->isa_level);
 
-	debug("nTLB=%i", ct->nr_of_tlb_entries);
+	debug(", %i TLB entries\n", ct->nr_of_tlb_entries);
 
-	if (ct->default_picache || ct->default_pdcache)
-		debug(", I+D = %i+%i KB",
-		    (1 << ct->default_picache) / 1024,
-		    (1 << ct->default_pdcache) / 1024);
-
-	if (ct->default_scache) {
-		int kb = (1 << ct->default_scache) / 1024;
-		debug(", L2 = %i %cB",
-		    kb >= 1024? kb / 1024 : kb,
-		    kb >= 1024? 'M' : 'K');
+	if (ct->picache) {
+		debug("L1 I-cache: %i KB", (1 << ct->picache) / 1024);
+		if (ct->pilinesize)
+			debug(", %i bytes per line", 1 << ct->pilinesize);
+		if (ct->piways > 1)
+			debug(", %i-way", ct->piways);
+		else
+			debug(", direct-mapped");
+		debug("\n");
 	}
 
-	debug(")\n");
+	if (ct->pdcache) {
+		debug("L1 D-cache: %i KB", (1 << ct->pdcache) / 1024);
+		if (ct->pdlinesize)
+			debug(", %i bytes per line", 1 << ct->pdlinesize);
+		if (ct->pdways > 1)
+			debug(", %i-way", ct->pdways);
+		else
+			debug(", direct-mapped");
+		debug("\n");
+	}
+
+	if (ct->scache) {
+		int kb = (1 << ct->scache) / 1024;
+		debug("L2 cache: %i %s",
+		    kb >= 1024? kb / 1024 : kb, kb >= 1024? "MB":"KB");
+		if (ct->slinesize)
+			debug(", %i bytes per line", 1 << ct->slinesize);
+		if (ct->sways > 1)
+			debug(", %i-way", ct->sways);
+		else
+			debug(", direct-mapped");
+		debug("\n");
+	}
+
+	debug_indentation(-iadd);
 }
 
 

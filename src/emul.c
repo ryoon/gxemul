@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.211 2005-06-26 11:36:28 debug Exp $
+ *  $Id: emul.c,v 1.212 2005-06-30 10:49:12 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1219,8 +1219,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	debug("starting cpu%i at ", m->bootstrap_cpu);
 	switch (m->arch) {
 	case ARCH_MIPS:
-		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
-		    cpu->cd.mips.cpu_type.isa_level == 32) {
+		if (cpu->is_32bit) {
 			debug("0x%08x", (int)m->cpus[
 			    m->bootstrap_cpu]->pc);
 			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)

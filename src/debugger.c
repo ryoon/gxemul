@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.107 2005-06-30 10:44:15 debug Exp $
+ *  $Id: debugger.c,v 1.108 2005-06-30 10:49:12 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -638,7 +638,10 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 		r = c->memory_rw(c, mem, addr, &buf[0], sizeof(buf),
 		    MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 
-		printf("0x%016llx  ", (long long)addr);
+		if (c->is_32bit)
+			printf("0x%08x  ", (int)addr);
+		else
+			printf("0x%016llx  ", (long long)addr);
 
 		if (r == MEMORY_ACCESS_FAILED)
 			printf("(memory access failed)\n");
@@ -928,7 +931,10 @@ static void debugger_cmd_print(struct machine *m, char *cmd_line)
 		printf("%s = 0x%llx\n", cmd_line, (long long)tmp);
 		break;
 	case NAME_PARSE_SYMBOL:
-		printf("%s = 0x%016llx\n", cmd_line, (long long)tmp);
+		if (m->cpus[0]->is_32bit)
+			printf("%s = 0x%08x\n", cmd_line, (int)tmp);
+		else
+			printf("%s = 0x%016llx\n", cmd_line, (long long)tmp);
 		break;
 	case NAME_PARSE_NUMBER:
 		printf("0x%llx\n", (long long)tmp);
@@ -1040,7 +1046,11 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 	switch (put_type) {
 	case 'b':
 		a_byte = data;
-		printf("0x%016llx: %02x", (long long)addr, a_byte);
+		if (m->cpus[0]->is_32bit)
+			printf("0x%08x", (int)addr);
+		else
+			printf("0x%016llx", (long long)addr);
+		printf(": %02x", a_byte);
 		if (data > 255)
 			printf(" (NOTE: truncating %0llx)", (long long)data);
 		res = m->cpus[0]->memory_rw(m->cpus[0], m->cpus[0]->mem, addr,
@@ -1052,7 +1062,11 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 	case 'h':
 		if ((data & 1) != 0)
 			printf("WARNING: address isn't aligned\n");
-		printf("0x%016llx: %04x", (long long)addr, (int)data);
+		if (m->cpus[0]->is_32bit)
+			printf("0x%08x", (int)addr);
+		else
+			printf("0x%016llx", (long long)addr);
+		printf(": %04x", (int)data);
 		if (data > 0xffff)
 			printf(" (NOTE: truncating %0llx)", (long long)data);
 		res = store_16bit_word(m->cpus[0], addr, data);
@@ -1063,7 +1077,11 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 	case 'w':
 		if ((data & 3) != 0)
 			printf("WARNING: address isn't aligned\n");
-		printf("0x%016llx: %08x", (long long)addr, (int)data);
+		if (m->cpus[0]->is_32bit)
+			printf("0x%08x", (int)addr);
+		else
+			printf("0x%016llx", (long long)addr);
+		printf(": %08x", (int)data);
 		if (data > 0xffffffff && (data >> 32) != 0
 		    && (data >> 32) != 0xffffffff)
 			printf(" (NOTE: truncating %0llx)", (long long)data);
@@ -1075,7 +1093,11 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 	case 'd':
 		if ((data & 7) != 0)
 			printf("WARNING: address isn't aligned\n");
-		printf("0x%016llx: %016llx", (long long)addr, (long long)data);
+		if (m->cpus[0]->is_32bit)
+			printf("0x%08x", (int)addr);
+		else
+			printf("0x%016llx", (long long)addr);
+		printf(": %016llx", (long long)data);
 		res = store_64bit_word(m->cpus[0], addr, data);
 		if (!res)
 			printf("  FAILED!\n");

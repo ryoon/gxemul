@@ -1,5 +1,5 @@
 /*
- *  $Id: new_test_loadstore_b.c,v 1.2 2005-06-28 16:38:03 debug Exp $
+ *  $Id: new_test_loadstore_b.c,v 1.3 2005-06-30 09:20:23 debug Exp $
  *
  *  Experimenting with dynamic-but-not-binary-translation load/store.
  */
@@ -22,12 +22,17 @@ int main(int argc, char *argv[])
 	int i;
 	char *page = malloc(4096);
 
+#ifdef AAA
+	cpu.table0 = malloc(sizeof(void *) * 1048576);
+	for (i=0; i<1048576; i++)
+		cpu.table0[i] = page;
+#else
 	cpu.table0[0] = malloc(sizeof(void *) * 2 * 1024);
 	for (i=0; i<1024; i++) {
 		cpu.table0[0][i*2+0] = page;
 		cpu.table0[0][i*2+1] = page;
 	}
-
+#endif
 	printf("A: 100 Million loads + 100 Million stores\n");
 	printf("y=%i\n", x2);
 	for (i=0; i<100000000; i++) {

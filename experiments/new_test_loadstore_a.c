@@ -1,5 +1,5 @@
 /*
- *  $Id: new_test_loadstore_a.c,v 1.1 2005-06-28 11:34:52 debug Exp $
+ *  $Id: new_test_loadstore_a.c,v 1.2 2005-06-30 09:20:23 debug Exp $
  *
  *  Experimenting with dynamic-but-not-binary-translation load/store.
  *  See new_test_loadstore_b.c for the main() function.
@@ -17,8 +17,12 @@ void x(struct cpu *cpu, struct ic *ic)
 	int addr = *ic->arg1 + ic->arg2;
 	unsigned char **table1, *page;
 
+#ifdef AAA
+	page = cpu->table0[addr >> 12];
+#else
 	table1 = cpu->table0[addr >> 22];
 	page = table1[((addr >> 12) & 1023)*2 + 1];
+#endif
 
 	if (page != 0)
 		page[addr & 4095] = *(ic->arg3);
@@ -31,9 +35,12 @@ void y(struct cpu *cpu, struct ic *ic)
 	int addr = *ic->arg1 + ic->arg2;
 	unsigned char **table1, *page;
 
+#ifdef AAA
+	page = cpu->table0[addr >> 12];
+#else
 	table1 = cpu->table0[addr >> 22];
 	page = table1[((addr >> 12) & 1023)*2 + 0];
-
+#endif
 	if (page != 0)
 		*(ic->arg3) = page[addr & 4095];
 	else

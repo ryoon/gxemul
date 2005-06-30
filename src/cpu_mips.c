@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.49 2005-06-30 10:58:06 debug Exp $
+ *  $Id: cpu_mips.c,v 1.50 2005-06-30 11:02:38 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4121,10 +4121,15 @@ void mips_cpu_dumpinfo(struct cpu *cpu)
 	case 5:	debug(" ISA V"); break;
 	case 32:
 	case 64:debug("%i", ct->isa_level); break;
-	default:debug(" ISA level %i)", ct->isa_level);
+	default:debug(" ISA level %i", ct->isa_level);
 	}
 
-	debug(", %i TLB entries\n", ct->nr_of_tlb_entries);
+	debug("), ");
+	if (ct->nr_of_tlb_entries)
+		debug("%i TLB entries", ct->nr_of_tlb_entries);
+	else
+		debug("no TLB");
+	debug("\n");
 
 	if (ct->picache) {
 		debug("L1 I-cache: %i KB", (1 << ct->picache) / 1024);

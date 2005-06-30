@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.77 2005-06-26 11:36:28 debug Exp $
+ *  $Id: net.c,v 1.78 2005-06-30 11:02:38 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2264,7 +2264,7 @@ void net_dumpinfo(struct net *net)
 
 	debug_indentation(iadd);
 
-	debug("gateway: ");
+	debug("emulated gateway: ");
 	net_debugaddr(&net->gateway_ipv4_addr, ADDR_IPV4);
 	debug(" (");
 	net_debugaddr(&net->gateway_ethernet_addr, ADDR_ETHERNET);

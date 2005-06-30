@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.1 2005-06-29 23:25:37 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.2 2005-06-30 20:41:28 debug Exp $
  */
 
 #ifdef A__REG
@@ -53,7 +53,11 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	    -
 #endif
+#ifdef A__FIXINC
+	    A__FIXINC;
+#else
 	    ic->arg[1];
+#endif
 #endif
 	    ;
 
@@ -96,7 +100,11 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	    -
 #endif
+#ifdef A__FIXINC
+	    A__FIXINC;
+#else
 	    ic->arg[1];
+#endif
 #endif
 }
 
@@ -109,7 +117,11 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	    -
 #endif
+#ifdef A__FIXINC
+	    A__FIXINC;
+#else
 	    ic->arg[1];
+#endif
 #endif
 	    ;
 	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
@@ -133,7 +145,11 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 		    -
 #endif
+#ifdef A__FIXINC
+		    A__FIXINC;
+#else
 		    ic->arg[1];
+#endif
 #endif
 
 #ifdef A__L
@@ -162,6 +178,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 }
 #endif
 
+#ifndef A__NOCONDITIONS
 void A__NAME__eq(struct cpu *cpu, struct arm_instr_call *ic)
 { if (cpu->cd.arm.flags & ARM_FLAG_Z) A__NAME(cpu, ic); }
 void A__NAME__ne(struct cpu *cpu, struct arm_instr_call *ic)
@@ -199,4 +216,4 @@ void A__NAME__le(struct cpu *cpu, struct arm_instr_call *ic)
 { if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=
 ((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) ||
 (cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME(cpu, ic); }
-
+#endif

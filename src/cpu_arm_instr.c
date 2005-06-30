@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.32 2005-06-30 19:43:48 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.33 2005-06-30 20:41:28 debug Exp $
  *
  *  ARM instructions.
  *
@@ -327,6 +327,20 @@ Y(clear)
 #include "tmp_arm_include.c"
 
 
+#define A__NAME arm_instr_store_w0_byte_u1_p0_imm_fixinc1
+#define A__NAME__general arm_instr_store_w0_byte_u1_p0_imm_fixinc1__general
+#define A__B
+#define A__U
+#define	A__NOCONDITIONS
+#define A__FIXINC	1
+#include "cpu_arm_instr_loadstore.c"
+#undef A__NOCONDITIONS
+#undef A__B
+#undef A__U
+#undef A__NAME__general
+#undef A__NAME
+
+
 /*
  *  load_byte_imm_pcrel:
  *	Like load_byte_imm, but the source address is the PC register.
@@ -567,21 +581,9 @@ X(cmps)
 		cpu->cd.arm.flags |= ARM_FLAG_V;
 }
 Y(cmps)
-X(cmps_0)
-{
-	/*  arg[1] is assumed to be 0.  */
-	uint32_t a = *((uint32_t *)ic->arg[0]);
 
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	if (a != 0)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	else
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)a < 0)
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-}
-Y(cmps_0)
+
+#include "cpu_arm_instr_cmps.c"
 
 
 /*
@@ -602,11 +604,9 @@ X(sub_self)
 	*((uint32_t *)ic->arg[0]) -= ic->arg[2];
 }
 Y(sub_self)
-X(sub_self_1)
-{
-	*((uint32_t *)ic->arg[0]) -= 1;
-}
-Y(sub_self_1)
+
+
+#include "cpu_arm_instr_sub_self.c"
 
 
 /*
@@ -648,21 +648,6 @@ X(mov_2)
 	*((uint32_t *)ic[1].arg[0]) = ic[1].arg[1];
 	cpu->cd.arm.next_ic ++;
 	cpu->cd.arm.n_translated_instrs ++;
-}
-
-
-X(test_B)
-{
-	(*((uint32_t *)ic->arg[0])) --;
-
-	cpu->cd.arm.n_translated_instrs ++;
-
-	if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==
-	    ((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) &&
-	    !(cpu->cd.arm.flags & ARM_FLAG_Z))
-		cpu->cd.arm.next_ic = (struct arm_instr_call *)ic[1].arg[0];
-	else
-		cpu->cd.arm.next_ic ++;
 }
 
 
@@ -722,12 +707,6 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 				combined;
 			}
 		}
-
-#if 0
-		if (ic[-1].f == instr(sub_self_1) &&
-		    ic[0].f == instr(b_samepage__gt))
-			ic[-1].f = instr(test_B);
-#endif
 	}
 
 	/*  TODO: Combine forward as well  */
@@ -866,8 +845,8 @@ X(to_be_translated)
 				ic->f = cond_instr(sub);
 				if (r12 == r16) {
 					ic->f = cond_instr(sub_self);
-					if (imm == 1)
-						ic->f = cond_instr(sub_self_1);
+					if (imm == 1 && r12 != ARM_PC)
+						ic->f = arm_sub_self_1[r12];
 				}
 				break;
 			case 0x4:
@@ -892,8 +871,8 @@ X(to_be_translated)
 			ic->f = cond_instr(cmps);
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
 			ic->arg[1] = imm;
-			if (imm == 0)
-				ic->f = cond_instr(cmps_0);
+			if (imm == 0 && r16 != ARM_PC)
+				ic->f = arm_cmps_0[r16];
 			translated;
 			break;
 		case 0xd:				/*  MOV  */
@@ -934,6 +913,8 @@ X(to_be_translated)
 		}
 		if (main_opcode == 4 && b_bit) {
 			/*  Post-index, immediate:  */
+			if (imm == 1 && !w_bit && l_bit)
+				ic->f = instr(store_w0_byte_u1_p0_imm_fixinc1);
 			if (w_bit) {
 				fatal("load/store: T-bit\n");
 				goto bad;

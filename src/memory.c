@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.164 2005-04-09 21:10:54 debug Exp $
+ *  $Id: memory.c,v 1.165 2005-06-30 11:52:14 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -260,7 +260,6 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high)
 {
-#ifdef BINTRANS
 	int i, j;
 	size_t s;
 	int need_inval = 0;
@@ -285,38 +284,40 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 			if (!need_inval)
 				return;
 
-			if (cpu->machine->arch != ARCH_MIPS) {
-				/*  TODO!  */
-
-				return;
-			}
-
 			/*  Invalidate any pages of this device that might
 			    be in the bintrans load/store cache, by marking
 			    the pages read-only.  */
-
-			for (s=0; s<mem->dev_length[i]; s+=4096) {
-				mips_invalidate_translation_caches_paddr(
-				    cpu, mem->dev_baseaddr[i] + s);
+			if (cpu->invalidate_translation_caches_paddr != NULL) {
+				for (s=0; s<mem->dev_length[i]; s+=4096) {
+					cpu->
+					invalidate_translation_caches_paddr(
+					    cpu, mem->dev_baseaddr[i] + s);
+				}
 			}
 
-			/*  ... and invalidate the "fast_vaddr_to_hostaddr"
-			    cache entries that contain pointers to this
-			    device:  (NOTE: Device i, cache entry j)  */
-			for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
-				if (cpu->cd.mips.bintrans_data_hostpage[j] >=
-				    mem->dev_bintrans_data[i] &&
-				    cpu->cd.mips.bintrans_data_hostpage[j] <
-				    mem->dev_bintrans_data[i] +
-				    mem->dev_length[i])
-					cpu->cd.mips.
-					    bintrans_data_hostpage[j] = NULL;
+			if (cpu->machine->arch == ARCH_MIPS) {
+				/*
+				 *  ... and invalidate the "fast_vaddr_to_
+				 *  hostaddr" cache entries that contain
+				 *  pointers to this device:  (NOTE: Device i,
+				 *  cache entry j)
+				 */
+				for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
+					if (cpu->cd.
+					    mips.bintrans_data_hostpage[j] >=
+					    mem->dev_bintrans_data[i] &&
+					    cpu->cd.mips.
+					    bintrans_data_hostpage[j] <
+					    mem->dev_bintrans_data[i] +
+					    mem->dev_length[i])
+						cpu->cd.mips.
+						    bintrans_data_hostpage[j]
+						    = NULL;
+				}
 			}
-
 			return;
 		}
 	}
-#endif
 }
 
 
@@ -383,7 +384,6 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	debug("device %2i at 0x%010llx: %s",
 	    mem->n_mmapped_devices, (long long)baseaddr, device_name);
 
-#ifdef BINTRANS
 	if (flags & (MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK)
 	    && (baseaddr & 0xfff) != 0) {
 		fatal("\nWARNING: Device bintrans access, but unaligned"
@@ -394,7 +394,6 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		debug(" (bintrans %s)",
 		    (flags & MEM_BINTRANS_WRITE_OK)? "R/W" : "R");
 	}
-#endif
 	debug("\n");
 
 	mem->dev_name[mem->n_mmapped_devices] = strdup(device_name);
@@ -414,10 +413,8 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		exit(1);
 	}
 
-#ifdef BINTRANS
 	mem->dev_bintrans_write_low[mem->n_mmapped_devices] = (uint64_t)-1;
 	mem->dev_bintrans_write_high[mem->n_mmapped_devices] = 0;
-#endif
 	mem->dev_f[mem->n_mmapped_devices] = f;
 	mem->dev_extra[mem->n_mmapped_devices] = extra;
 	mem->n_mmapped_devices++;
@@ -466,12 +463,10 @@ void memory_device_remove(struct memory *mem, int i)
 	    (MAX_DEVICES - i - 1));
 	memmove(&mem->dev_bintrans_data[i], &mem->dev_bintrans_data[i+1],
 	    sizeof(void *) * (MAX_DEVICES - i - 1));
-#ifdef BINTRANS
 	memmove(&mem->dev_bintrans_write_low[i], &mem->dev_bintrans_write_low
 	    [i+1], sizeof(void *) * (MAX_DEVICES - i - 1));
 	memmove(&mem->dev_bintrans_write_high[i], &mem->dev_bintrans_write_high
 	    [i+1], sizeof(void *) * (MAX_DEVICES - i - 1));
-#endif
 }
 
 

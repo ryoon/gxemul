@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.27 2005-06-30 10:44:15 debug Exp $
+ *  $Id: cpu_arm.c,v 1.28 2005-06-30 11:52:13 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -113,6 +113,8 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	cpu->memory_rw = arm_memory_rw;
 	cpu->update_translation_table = arm_update_translation_table;
+	cpu->invalidate_translation_caches_paddr =
+	    arm_invalidate_translation_caches_paddr;
 	cpu->is_32bit = 1;
 	cpu->cd.arm.flags = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
 
@@ -493,6 +495,61 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 
 	cpu->cd.arm.translation_cache_cur_ofs +=
 	    sizeof(struct arm_tc_physpage);
+}
+
+
+/*
+ *  arm_invalidate_tlb_entry():
+ *
+ *  Invalidate a translation entry (based on virtual address).
+ */
+void arm_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
+{
+	struct vph_page *vph_p;
+	uint32_t a, b;
+
+	a = vaddr_page >> 22; b = (vaddr_page >> 12) & 1023;
+	vph_p = cpu->cd.arm.vph_table0[a];
+
+	if (vph_p == cpu->cd.arm.vph_default_page) {
+		fatal("arm_invalidate_tlb_entry(): huh? Problem 1.\n");
+		exit(1);
+	}
+
+	vph_p->host_load[b] = NULL;
+	vph_p->host_store[b] = NULL;
+	vph_p->phys_addr[b] = 0;
+	vph_p->refcount --;
+	if (vph_p->refcount < 0) {
+		fatal("arm_invalidate_tlb_entry(): huh? Problem 2.\n");
+		exit(1);
+	}
+	if (vph_p->refcount == 0) {
+		vph_p->next = cpu->cd.arm.vph_next_free_page;
+		cpu->cd.arm.vph_next_free_page = vph_p;
+		cpu->cd.arm.vph_table0[a] = cpu->cd.arm.vph_default_page;
+	}
+}
+
+
+/*
+ *  arm_invalidate_translation_caches_paddr():
+ *
+ *  Invalidate all entries matching a specific physical address.
+ */
+void arm_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
+{
+	int r;
+	uint32_t paddr_page = paddr & 0xfffff000;
+
+	for (r=0; r<ARM_MAX_VPH_TLB_ENTRIES; r++) {
+		if (cpu->cd.arm.vph_tlb_entry[r].valid &&
+		    cpu->cd.arm.vph_tlb_entry[r].paddr_page == paddr_page) {
+			arm_invalidate_tlb_entry(cpu,
+			    cpu->cd.arm.vph_tlb_entry[r].vaddr_page);
+			cpu->cd.arm.vph_tlb_entry[r].valid = 0;
+		}
+	}
 }
 
 

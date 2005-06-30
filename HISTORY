@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.822 2005-06-30 10:44:14 debug Exp $
+$Id: HISTORY,v 1.823 2005-06-30 11:52:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2049,5 +2049,9 @@ Changelog for GXemul:
 		4Kc has 16 TLB entries, not 48; the MIPS config select1
 		register is now printed with "reg ,0".
 		Also changing many other occurances of 16 vs 8 digit output.
-		Adding cache associativity fields to mips_cpu_types.h; making
-		the output of mips_cpu_dumpinfo() look nicer.
+		Adding cache associativity fields to mips_cpu_types.h; updating
+		some other cache fields; making the output of
+		mips_cpu_dumpinfo() look nicer.
+		Generalizing the bintrans stuff for device accesses to also
+		work with the new translation system. (This might also break
+		some MIPS things.)

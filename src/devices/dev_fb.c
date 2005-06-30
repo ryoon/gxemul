@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.100 2005-06-29 21:07:43 debug Exp $
+ *  $Id: dev_fb.c,v 1.101 2005-06-30 11:52:14 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -623,7 +623,6 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (!cpu->machine->use_x11)
 		return;
 
-#ifdef BINTRANS
 	do {
 		uint64_t low = -1, high;
 		int x, y;
@@ -689,7 +688,6 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			d->update_x2 = d->xsize-1;
 		}
 	} while (0);
-#endif
 
 #ifdef WITH_X11
 	/*  Do we need to redraw the cursor?  */

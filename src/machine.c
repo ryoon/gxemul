@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.471 2005-06-30 15:37:13 debug Exp $
+ *  $Id: machine.c,v 1.472 2005-06-30 19:25:33 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4025,6 +4025,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		cpu->cd.arm.r[ARM_LR] = cpu->cd.arm.r[ARM_SP] + 32;
 		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 0, 0xe3a00201);
 		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 4, 0xe5c00010);
+		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 8,
+		    0xeafffffe);
 		break;
 
 	case MACHINE_BAREX86:

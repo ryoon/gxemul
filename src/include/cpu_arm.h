@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.14 2005-06-29 21:07:44 debug Exp $
+ *  $Id: cpu_arm.h,v 1.15 2005-06-30 00:19:07 debug Exp $
  */
 
 #include "misc.h"
@@ -107,9 +107,10 @@ struct vph_page {
 	void		*host_store[N_VPH_ENTRIES];
 	uint32_t	phys_addr[N_VPH_ENTRIES];
 	int		refcount;
+	struct vph_page	*next;		/*  Freelist, used if refcount = 0.  */
 };
 
-#define	ARM_MAX_VPH_TLB_ENTRIES		64
+#define	ARM_MAX_VPH_TLB_ENTRIES		96
 struct vpg_tlb_entry {
 	int		valid;
 	int		writeflag;

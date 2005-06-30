@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.27 2005-06-29 23:25:19 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.28 2005-06-30 00:19:05 debug Exp $
  *
  *  ARM instructions.
  *
@@ -282,6 +282,19 @@ X(mov_pc)
 	arm_pc_to_pointers(cpu);
 }
 Y(mov_pc)
+
+
+/*
+ *  mov_regreg:
+ *
+ *  arg[0] = pointer to uint32_t in host memory of destination register
+ *  arg[1] = pointer to uint32_t in host memory of source register
+ */
+X(mov_regreg)
+{
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]);
+}
+Y(mov_regreg)
 
 
 /*
@@ -639,8 +652,24 @@ X(to_be_translated)
 		if ((main_opcode & 2) == 0) {
 			if ((iword & 0x0ffffff0) == 0x01a0f000) {
 				/*  Hardcoded: mov pc, rX  */
+				if ((iword & 15) == ARM_PC) {
+					fatal("mov pc,pc?\n");
+					goto bad;
+				}
 				ic->f = cond_instr(mov_pc);
 				ic->arg[0] = (size_t)
+				    (&cpu->cd.arm.r[iword & 15]);
+				translated;
+			} else if ((iword & 0x0fff0ff0) == 0x01a00000) {
+				/*  Hardcoded: mov reg,reg  */
+				if ((iword & 15) == ARM_PC) {
+					fatal("mov reg,pc?\n");
+					goto bad;
+				}
+				ic->f = cond_instr(mov_regreg);
+				ic->arg[0] = (size_t)
+				    (&cpu->cd.arm.r[r12]);
+				ic->arg[1] = (size_t)
 				    (&cpu->cd.arm.r[iword & 15]);
 				translated;
 			} else {
@@ -759,10 +788,6 @@ X(to_be_translated)
 					    cond_instr(load_word_imm_pcrel);
 				}
 			} else {
-				if (w_bit) {
-					fatal("w bit store etc\n");
-					goto bad;
-				}
 				if (r12 == ARM_PC) {
 					fatal("TODO: store pc\n");
 					goto bad;

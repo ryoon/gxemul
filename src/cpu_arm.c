@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.25 2005-06-29 23:25:19 debug Exp $
+ *  $Id: cpu_arm.c,v 1.26 2005-06-30 00:19:05 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -538,9 +538,16 @@ void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			uint32_t addr = cpu->cd.arm.vph_tlb_entry[r].vaddr_page;
 			a = addr >> 22; b = (addr >> 12) & 1023;
 			vph_p = cpu->cd.arm.vph_table0[a];
+			vph_p->host_load[b] = NULL;
+			vph_p->host_store[b] = NULL;
+			vph_p->phys_addr[b] = 0;
 			vph_p->refcount --;
-fatal("TODO: zxcvzv\n");
-exit(1);
+			if (vph_p->refcount == 0) {
+				vph_p->next = cpu->cd.arm.vph_next_free_page;
+				cpu->cd.arm.vph_next_free_page = vph_p;
+				cpu->cd.arm.vph_table0[a] =
+				    cpu->cd.arm.vph_default_page;
+			}
 		}
 
 		cpu->cd.arm.vph_tlb_entry[r].valid = 1;
@@ -555,9 +562,15 @@ exit(1);
 		b = (vaddr_page >> 12) & 1023;
 		vph_p = cpu->cd.arm.vph_table0[a];
 		if (vph_p == cpu->cd.arm.vph_default_page) {
-			vph_p = cpu->cd.arm.vph_table0[a] =
-			    malloc(sizeof(struct vph_page));
-			memset(vph_p, 0, sizeof(struct vph_page));
+			if (cpu->cd.arm.vph_next_free_page != NULL) {
+				vph_p = cpu->cd.arm.vph_table0[a] =
+				    cpu->cd.arm.vph_next_free_page;
+				cpu->cd.arm.vph_next_free_page = vph_p->next;
+			} else {
+				vph_p = cpu->cd.arm.vph_table0[a] =
+				    malloc(sizeof(struct vph_page));
+				memset(vph_p, 0, sizeof(struct vph_page));
+			}
 		}
 		vph_p->refcount ++;
 		vph_p->host_load[b] = host_page;

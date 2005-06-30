@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.33 2005-06-30 20:41:28 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.34 2005-06-30 21:42:30 debug Exp $
  *
  *  ARM instructions.
  *
@@ -606,9 +606,6 @@ X(sub_self)
 Y(sub_self)
 
 
-#include "cpu_arm_instr_sub_self.c"
-
-
 /*
  *  add:  Add an immediate value to a 32-bit word, and store the
  *        result in a 32-bit word.
@@ -627,11 +624,9 @@ X(add_self)
 	*((uint32_t *)ic->arg[0]) += ic->arg[2];
 }
 Y(add_self)
-X(add_self_1)
-{
-	*((uint32_t *)ic->arg[0]) += 1;
-}
-Y(add_self_1)
+
+
+#include "tmp_arm_include_self.c"
 
 
 /*****************************************************************************/
@@ -847,14 +842,18 @@ X(to_be_translated)
 					ic->f = cond_instr(sub_self);
 					if (imm == 1 && r12 != ARM_PC)
 						ic->f = arm_sub_self_1[r12];
+					if (imm == 4 && r12 != ARM_PC)
+						ic->f = arm_sub_self_4[r12];
 				}
 				break;
 			case 0x4:
 				ic->f = cond_instr(add);
 				if (r12 == r16) {
 					ic->f = cond_instr(add_self);
-					if (imm == 1)
-						ic->f = cond_instr(add_self_1);
+					if (imm == 1 && r12 != ARM_PC)
+						ic->f = arm_add_self_1[r12];
+					if (imm == 4 && r12 != ARM_PC)
+						ic->f = arm_add_self_4[r12];
 				}
 				break;
 			}
@@ -902,11 +901,11 @@ X(to_be_translated)
 	case 0x7:
 		p_bit = main_opcode & 1;
 		ic->f = load_store_instr[((iword >> 16) & 0x3f0) + condition_code];
+		imm = iword & 0xfff;
+		if (!u_bit)
+			imm = (int32_t)0-imm;
 		if (main_opcode < 6) {
 			/*  Immediate:  */
-			imm = iword & 0xfff;
-			if (!u_bit)
-				imm = (int32_t)0-imm;
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
 			ic->arg[1] = (size_t)(imm);
 			ic->arg[2] = (size_t)(&cpu->cd.arm.r[r12]);

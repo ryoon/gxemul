@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.48 2005-06-30 10:44:15 debug Exp $
+ *  $Id: cpu_mips.c,v 1.49 2005-06-30 10:58:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4109,10 +4109,20 @@ void mips_cpu_dumpinfo(struct cpu *cpu)
 
 	debug_indentation(iadd);
 
-	debug("\n%i-bit %s (ISA level %i)",
+	debug("\n%i-bit %s (MIPS",
 	    cpu->is_32bit? 32 : 64,
-	    cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE",
-	    ct->isa_level);
+	    cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE");
+
+	switch (ct->isa_level) {
+	case 1:	debug(" ISA I"); break;
+	case 2:	debug(" ISA II"); break;
+	case 3:	debug(" ISA III"); break;
+	case 4:	debug(" ISA IV"); break;
+	case 5:	debug(" ISA V"); break;
+	case 32:
+	case 64:debug("%i", ct->isa_level); break;
+	default:debug(" ISA level %i)", ct->isa_level);
+	}
 
 	debug(", %i TLB entries\n", ct->nr_of_tlb_entries);
 

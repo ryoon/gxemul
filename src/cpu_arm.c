@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.28 2005-06-30 11:52:13 debug Exp $
+ *  $Id: cpu_arm.c,v 1.29 2005-06-30 12:06:23 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -121,7 +121,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
-		debug(" (host: %i MB code translation cache, %.2f MB addr"
+		debug(" (host: %i MB code cache, %.2f MB addr"
 		    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
 		    (float)(sizeof(struct vph_page) * ARM_MAX_VPH_TLB_ENTRIES
 		    / 1048576.0));
@@ -146,8 +146,11 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
  */
 void arm_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug(" (%i MB translation cache)\n",
-	    (int)(ARM_TRANSLATION_CACHE_SIZE / 1048576));
+	debug(" (host: %i MB code cache, %.2f MB addr"
+	    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
+	    (float)(sizeof(struct vph_page) * ARM_MAX_VPH_TLB_ENTRIES
+	    / 1048576.0));
+	debug("\n");
 }
 
 

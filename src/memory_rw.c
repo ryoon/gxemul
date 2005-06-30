@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.41 2005-06-30 11:55:54 debug Exp $
+ *  $Id: memory_rw.c,v 1.42 2005-06-30 12:06:23 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -293,15 +293,13 @@ have_paddr:
 		 *  on _any_ offset on pages that are device mapped avoids
 		 *  this problem, but it is probably not very fast.
 		 */
-		if (bintrans_cached) {
-			for (i=0; i<mem->n_mmapped_devices; i++)
-				if (paddr >= (mem->dev_baseaddr[i] & ~0xfff) &&
-				    paddr <= ((mem->dev_baseaddr[i] +
-				    mem->dev_length[i] - 1) | 0xfff)) {
-					bintrans_device_danger = 1;
-					break;
-				}
-		}
+		for (i=0; i<mem->n_mmapped_devices; i++)
+			if (paddr >= (mem->dev_baseaddr[i] & ~0xfff) &&
+			    paddr <= ((mem->dev_baseaddr[i] +
+			    mem->dev_length[i] - 1) | 0xfff)) {
+				bintrans_device_danger = 1;
+				break;
+			}
 
 		i = start = mem->last_accessed_device;
 

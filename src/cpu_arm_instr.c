@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.31 2005-06-30 19:25:33 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.32 2005-06-30 19:43:48 debug Exp $
  *
  *  ARM instructions.
  *
@@ -651,27 +651,6 @@ X(mov_2)
 }
 
 
-X(test_A)
-{
-	/*  arg[1] is assumed to be 0.  */
-	uint32_t a = *((uint32_t *)ic->arg[0]);
-
-	ic = cpu->cd.arm.next_ic ++;
-	cpu->cd.arm.n_translated_instrs ++;
-
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	if (a != 0)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	else
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)a < 0)
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-
-	instr(store_w0_byte_u1_p0_imm)(cpu, ic);
-}
-
-
 X(test_B)
 {
 	(*((uint32_t *)ic->arg[0])) --;
@@ -681,9 +660,9 @@ X(test_B)
 	if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==
 	    ((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) &&
 	    !(cpu->cd.arm.flags & ARM_FLAG_Z))
-		cpu->cd.arm.next_ic = (struct arm_instr_call *)ic->arg[1];
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)ic[1].arg[0];
 	else
-		ic = cpu->cd.arm.next_ic ++;
+		cpu->cd.arm.next_ic ++;
 }
 
 
@@ -744,14 +723,11 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 			}
 		}
 
-		/*  cmps_0 followed by arm_instr_store_w0_byte_u1_p0_imm  */
-		if (ic[-1].f == instr(cmps_0) &&
-		    ic[0].f == instr(store_w0_byte_u1_p0_imm))
-			ic[-1].f = instr(test_A);
-
-		if (ic[-1].f == instr(b_samepage__gt) &&
-		    ic[0].f == instr(sub_self_1))
+#if 0
+		if (ic[-1].f == instr(sub_self_1) &&
+		    ic[0].f == instr(b_samepage__gt))
 			ic[-1].f = instr(test_B);
+#endif
 	}
 
 	/*  TODO: Combine forward as well  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.2 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_disk.c,v 1.3 2005-07-12 21:58:37 debug Exp $
  *
  *  Basic "Disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
@@ -55,6 +55,23 @@ struct disk_data {
 
 
 /*
+ *  dev_disk_buf_access():
+ */
+int dev_disk_buf_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct disk_data *d = (struct disk_data *) extra;
+
+	if (writeflag == MEM_WRITE)
+		memcpy(d->buf + relative_addr, data, len);
+	else
+		memcpy(data, d->buf + relative_addr, len);
+	return 1;
+}
+
+
+/*
  *  dev_disk_access():
  */
 int dev_disk_access(struct cpu *cpu, struct memory *mem,
@@ -64,15 +81,6 @@ int dev_disk_access(struct cpu *cpu, struct memory *mem,
 	struct disk_data *d = (struct disk_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int i;
-
-	if (relative_addr >= 512 && relative_addr+len-1 < 1024) {
-		relative_addr -= 512;
-		if (writeflag == MEM_WRITE)
-			memcpy(d->buf + relative_addr, data, len);
-		else
-			memcpy(data, d->buf + relative_addr, len);
-		return 1;
-	}
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -138,15 +146,30 @@ int dev_disk_access(struct cpu *cpu, struct memory *mem,
 int devinit_disk(struct devinit *devinit)
 {
 	struct disk_data *d = malloc(sizeof(struct disk_data));
-	if (d == NULL) {
+	size_t nlen;
+	char *n1, *n2;
+                 
+	nlen = strlen(devinit->name) + 30;
+	n1 = malloc(nlen);
+	n2 = malloc(nlen);
+
+	if (d == NULL || n1 == NULL || n2 == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct disk_data));
 
-	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_DISK_LENGTH, dev_disk_access, (void *)d,
+	snprintf(n1, nlen, "%s [control]", devinit->name);
+	snprintf(n2, nlen, "%s [data buffer]", devinit->name);
+
+	memory_device_register(devinit->machine->memory, n1,
+	    devinit->addr, 4096, dev_disk_access, (void *)d,
 	    MEM_DEFAULT, NULL);
+
+	memory_device_register(devinit->machine->memory, n2,
+	    devinit->addr + 4096, DEV_DISK_LENGTH - 4096, dev_disk_buf_access,
+	    (void *)d, MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK |
+            MEM_READING_HAS_NO_SIDE_EFFECTS, NULL);
 
 	return 1;
 }

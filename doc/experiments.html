@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.77 2005-07-12 08:49:11 debug Exp $
+$Id: experiments.html,v 1.78 2005-07-12 21:58:36 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -372,7 +372,7 @@ following experimental devices:
 	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x00000-</tt>&nbsp;&nbsp;&nbsp;<br><tt>0xe0fff</tt></td>
+	    <td align="left" valign="top"><tt>0x00000-</tt><br><tt>0xe0fff</tt></td>
 	    <td align="left" valign="top">Read: read pixel values.
 		<br>Write: write pixel values.</td>
 	  </tr>
@@ -401,28 +401,28 @@ following experimental devices:
 	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x000</tt></td>
+	    <td align="left" valign="top"><tt>0x0000</tt></td>
 	    <td align="left" valign="top">Write: Set the offset (in bytes) from the beginning
 		of the disk image. This offset will be used for the next read/write operation.</td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x010</tt></td>
+	    <td align="left" valign="top"><tt>0x0010</tt></td>
 	    <td align="left" valign="top">Write: Select the SCSI ID to be used in the next
 		read/write operation.</td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x020</tt></td>
+	    <td align="left" valign="top"><tt>0x0020</tt></td>
 	    <td align="left" valign="top">Write: Start a read or write operation.
 		(Writing <tt>0</tt> means a Read operation, a <tt>1</tt> means a
 		Write operation.)</td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x030</tt></td>
+	    <td align="left" valign="top"><tt>0x0030</tt></td>
 	    <td align="left" valign="top">Read: Get status of the last operation.
 		(Status 0 means failure, non-zero means success.)</td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x200-0x3ff</tt>&nbsp;&nbsp;&nbsp;</td>
+	    <td align="left" valign="top"><tt>0x1000-</tt><br><tt>0x11ff</tt>&nbsp;&nbsp;&nbsp;</td>
 	    <td align="left" valign="top">Read/Write: Data buffer.</td>
 	  </tr>
 	</table>
@@ -449,12 +449,26 @@ following experimental devices:
 	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x0000-&nbsp;&nbsp;&nbsp;</tt><br><tt>0xffff</tt></td>
+	    <td align="left" valign="top"><tt>0x0000-</tt><br><tt>0x3fff</tt></td>
 	    <td align="left" valign="top">Read/write buffer for the packet to be sent/received.</td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top"><tt>0x10000</tt></td>
-	    <td align="left" valign="top">TODO</td>
+	    <td align="left" valign="top"><tt>0x4000</tt></td>
+	    <td align="left" valign="top">Read: status word, one or more of these:
+		<br><tt>0x01</tt>&nbsp;=&nbsp;something was received (because of
+		the last command)
+		<br><tt>0x02</tt>&nbsp;=&nbsp;more packets are available</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x4010</tt></td>
+	    <td align="left" valign="top">Read: get the Length of the received packet
+		<br>Write: set the Length of the next packet to transmit</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x4020</tt></td>
+	    <td align="left" valign="top">Write: command:
+		<br><tt>0x00:</tt>&nbsp;receive a packet
+		<br><tt>0x01:</tt>&nbsp;send a packet</td>
 	  </tr>
 	</table>
     </td>
@@ -477,11 +491,14 @@ a non-cached manner.)
 <tt>0x10000000</tt>, <tt>0x11000000</tt> etc., so no need to add any
 virtual displacement.)
 
-<p>The <b><tt>mp</tt></b> device is agnostic when it comes to word-length.
-For example, when reading offset <tt>0x0000</tt> of the <b><tt>mp</tt></b>
+<p>The <b><tt>mp</tt></b>, <b><tt>disk</tt></b>, and <b><tt>ether</tt></b>
+devices are agnostic when it comes to word-length. For example, when
+reading offset <tt>0x0000</tt> of the <b><tt>mp</tt></b>
 device, you may use any kind of read (an 8-bit read will work just as well
 as a 64-bit read, although the value will be truncated to 8 bits in the
-first case).
+first case). You can <i>not</i>, however, read one byte from <tt>0x0000</tt>
+and one from <tt>0x0001</tt>, and combine the result. The read from
+<tt>0x0001</tt> will be invalid.
 
 <p>The <b><tt>cons</tt></b> device should be accessed using 8-bit reads
 and writes. Doing a getchar() (ie reading from offset <tt>0x00</tt>)  
@@ -492,6 +509,8 @@ returns <tt>0</tt> if no character was available.
 interrupt is asserted. When there are no more available characters, the
 interrupt is deasserted. (Remember that the interrupt has to be enabled in
 the status register of the system coprocessor.)
+
+<p>The <b><tt>ether</tt></b> device is hardwired to interrupt 3.
 
 <p>The IPIs controlled by the <b><tt>mp</tt></b> device are hardwired to
 interrupt 6. Whenever an IPI is "sent", interrupt 6 is asserted on the

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.1 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_ether.c,v 1.2 2005-07-12 21:58:37 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -37,6 +37,7 @@
 
 #include "cpu.h"
 #include "device.h"
+#include "devices.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
@@ -44,12 +45,33 @@
 #include "net.h"
 
 
-#define	DEV_ETHER_LEN		1024
-#define	DEV_ETHER_MAXBUFLEN	65536
+#define	DEV_ETHER_MAXBUFLEN	16384
+
+#define	STATUS_RECEIVED		0x01
+#define	STATUS_MORE_AVAIL	0x02
 
 struct ether_data {
 	unsigned char	buf[DEV_ETHER_MAXBUFLEN];
+	int		status;
+	int		packet_len;
 };
+
+
+/*
+ *  dev_ether_buf_access():
+ */
+int dev_ether_buf_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct ether_data *d = (struct ether_data *) extra;
+
+	if (writeflag == MEM_WRITE)
+		memcpy(d->buf + relative_addr, data, len);
+	else
+		memcpy(data, d->buf + relative_addr, len);
+	return 1;
+}
 
 
 /*
@@ -63,18 +85,43 @@ int dev_ether_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i;
 
-	if (relative_addr + len - 1 < sizeof(d->buf)) {
-		relative_addr -= 512;
-		if (writeflag == MEM_WRITE)
-			memcpy(d->buf + relative_addr, data, len);
-		else
-			memcpy(data, d->buf + relative_addr, len);
-		return 1;
-	}
-
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+	case 0x0000:
+		if (writeflag == MEM_READ)
+			odata = d->status;
+		else
+			fatal("[ ether: WARNING: write to status ]\n");
+		break;
+	case 0x0010:
+		if (writeflag == MEM_READ)
+			odata = d->packet_len;
+		else {
+			if ((int64_t)idata < 0) {
+				fatal("[ ether: ERROR: packet len too"
+				    " short (%i bytes) ]\n", (int)idata);
+				idata = -1;
+			}
+			if (idata > DEV_ETHER_MAXBUFLEN) {
+				fatal("[ ether: ERROR: packet len too"
+				    " large (%i bytes) ]\n", (int)idata);
+				idata = DEV_ETHER_MAXBUFLEN;
+			}
+			d->packet_len = idata;
+		}
+		break;
+	case 0x0020:
+		if (writeflag == MEM_READ)
+			fatal("[ ether: WARNING: read from command ]\n");
+		else {
+			switch (idata) {
+			default:fatal("[ ether: UNIMPLEMENTED command 0x"
+				    "%02x ]\n", idata);
+				cpu->running = 0;
+			}
+		}
+		break;
 	default:if (writeflag == MEM_WRITE) {
 			fatal("[ ether: unimplemented write to "
 			    "offset 0x%x: data=0x%x ]\n", (int)
@@ -98,14 +145,28 @@ int dev_ether_access(struct cpu *cpu, struct memory *mem,
 int devinit_ether(struct devinit *devinit)
 {
 	struct ether_data *d = malloc(sizeof(struct ether_data));
-	if (d == NULL) {
+	size_t nlen;
+	char *n1, *n2;
+
+	nlen = strlen(devinit->name) + 30;
+	n1 = malloc(nlen);
+	n2 = malloc(nlen);
+
+	if (d == NULL || n1 == NULL || n2 == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ether_data));
+	snprintf(n1, nlen, "%s [data buffer]", devinit->name);
+	snprintf(n2, nlen, "%s [control]", devinit->name);
 
-	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_ETHER_LEN, dev_ether_access, (void *)d,
+	memory_device_register(devinit->machine->memory, n1,
+	    devinit->addr, DEV_ETHER_MAXBUFLEN, dev_ether_buf_access, (void *)d,
+	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK |
+	    MEM_READING_HAS_NO_SIDE_EFFECTS, NULL);
+	memory_device_register(devinit->machine->memory, n2,
+	    devinit->addr + DEV_ETHER_MAXBUFLEN,
+	    DEV_ETHER_LENGTH-DEV_ETHER_MAXBUFLEN, dev_ether_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 
 	return 1;

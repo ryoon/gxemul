@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.473 2005-07-12 08:49:12 debug Exp $
+ *  $Id: machine.c,v 1.474 2005-07-12 21:58:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1405,6 +1405,14 @@ void machine_setup(struct machine *machine)
 		/*
 		 *  A MIPS test machine (which happens to work with the
 		 *  code in my master's thesis).  :-)
+		 *
+		 *  IRQ map:
+		 *	7	CPU counter
+		 *	6	SMP IPIs
+		 *	5	not used yet
+		 *	4	not used yet
+		 *	3	ethernet
+		 *	2	serial console
 		 */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "MIPS test machine";
@@ -1423,6 +1431,10 @@ void machine_setup(struct machine *machine)
 
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=3",
+		    (long long)DEV_ETHER_ADDRESS);
 		device_add(machine, tmpstr);
 
 		break;
@@ -3826,6 +3838,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		    (long long)DEV_DISK_ADDRESS);
 		device_add(machine, tmpstr);
 
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
 		break;
 
 	case MACHINE_WALNUT:
@@ -4041,6 +4057,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
 		device_add(machine, tmpstr);
 
 		/*  Place a tiny stub at end of memory, and set the link

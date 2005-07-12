@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.298 2005-06-27 10:43:16 debug Exp $
+ *  $Id: cpu.c,v 1.299 2005-07-12 07:10:01 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -345,7 +345,7 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	uint64_t offset, pc;
 	int is_32bit = 0, instrs_per_cycle = 1;
 	char *symbol;
-	int64_t mseconds, ninstrs;
+	int64_t mseconds, ninstrs, is, avg;
 	struct timeval tv;
 	int h, m, s, ms, d;
 
@@ -427,10 +427,13 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	}
 
 	/*  Instructions per second, and average so far:  */
-	printf("; i/s=%lli avg=%lli; ",
-	    (long long) ((long long)1000 * (ninstrs-ninstrs_last)
-		/ (mseconds-mseconds_last)),
-	    (long long) ((long long)1000 * ninstrs / mseconds));
+	is = 1000 * (ninstrs-ninstrs_last) / (mseconds-mseconds_last);
+	avg = (long long)1000 * ninstrs / mseconds;
+	if (is < 0)
+		is = 0;
+	if (avg < 0)
+		avg = 0;
+	printf("; i/s=%lli avg=%lli; ", (long long)is, (long long)avg);
 
 	symbol = get_symbol_name(&machine->symbol_context, pc, &offset);
 

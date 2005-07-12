@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.108 2005-06-30 10:49:12 debug Exp $
+ *  $Id: debugger.c,v 1.109 2005-07-12 07:09:48 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -859,6 +859,33 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_ninstrs():
+ */
+static void debugger_cmd_ninstrs(struct machine *m, char *cmd_line)
+{
+	int i;
+
+	if (*cmd_line == '\0')
+		goto printstate;
+
+	while (*cmd_line == ' ')
+		cmd_line++;
+
+	/*  Note: len 3 and 4, to include the NUL char.  */
+	if (strncasecmp(cmd_line, "on", 3) == 0)
+		m->show_nr_of_instructions = 1;
+	else if (strncasecmp(cmd_line, "off", 4) == 0)
+		m->show_nr_of_instructions = 0;
+	else
+		printf("syntax: ninstrs [on|off]\n");
+
+printstate:
+	printf("show_nr_of_instructions is now %s\n",
+	     m->show_nr_of_instructions? "ON" : "OFF");
+}
+
+
+/*
  *  debugger_cmd_opcodestats():
  */
 static void debugger_cmd_opcodestats(struct machine *m, char *cmd_line)
@@ -1490,6 +1517,9 @@ static struct cmd cmds[] = {
 
 	{ "machine", "", 0, debugger_cmd_machine,
 		"print a summary of the current machine" },
+
+	{ "ninstrs", "", 0, debugger_cmd_ninstrs,
+		"set (or unset) show_nr_of_instructions" },
 
 	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
 		"show opcode statistics" },

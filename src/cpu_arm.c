@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.30 2005-06-30 15:37:13 debug Exp $
+ *  $Id: cpu_arm.c,v 1.31 2005-07-12 20:09:58 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -206,6 +206,7 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
+	int mode = cpu->cd.arm.flags & ARM_FLAG_MODE;
 	int i, x = cpu->cpu_id;
 
 	if (gprs) {
@@ -219,7 +220,11 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (cpu->cd.arm.flags & ARM_FLAG_V)? "V" : "v",
 		    (cpu->cd.arm.flags & ARM_FLAG_I)? "I" : "i",
 		    (cpu->cd.arm.flags & ARM_FLAG_F)? "F" : "f");
-		debug("   pc = 0x%08x", (int)cpu->cd.arm.r[ARM_PC]);
+		if (mode < ARM_MODE_USR32)
+			debug("   pc =  0x%07x",
+			    (int)(cpu->cd.arm.r[ARM_PC] & 0x03ffffff));
+		else
+			debug("   pc = 0x%08x", (int)cpu->cd.arm.r[ARM_PC]);
 
 		/*  TODO: Flags  */
 

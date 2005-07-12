@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.26 2005-02-18 07:29:56 debug Exp $
+ *  $Id: dev_px.c,v 1.27 2005-07-12 08:49:13 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -796,7 +796,7 @@ void dev_px_init(struct machine *machine, struct memory *mem,
 	}
 
 	d->vfb_data = dev_fb_init(machine, d->fb_mem, 0, VFB_GENERIC,
-	    PX_XSIZE, PX_YSIZE, PX_XSIZE, PX_YSIZE, d->bitdepth, d->px_name, 1);
+	    PX_XSIZE, PX_YSIZE, PX_XSIZE, PX_YSIZE, d->bitdepth, d->px_name);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "dev_px_init(): out of memory (2)\n");
 		exit(2);

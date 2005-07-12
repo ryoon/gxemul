@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.472 2005-06-30 19:25:33 debug Exp $
+ *  $Id: machine.c,v 1.473 2005-07-12 08:49:12 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1318,6 +1318,7 @@ void machine_setup(struct machine *machine)
 	int i, j;
 	struct memory *mem;
 	char tmpstr[1000];
+	struct cons_data *cons_data;
 
 	/*  DECstation:  */
 	char *framebuffer_console_name, *serial_console_name;
@@ -1408,15 +1409,22 @@ void machine_setup(struct machine *machine)
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "MIPS test machine";
 
-		machine->main_console_handle = dev_cons_init(
-		    machine, mem, DEV_CONS_ADDRESS, "console", 2);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=2",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
 
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
 		device_add(machine, tmpstr);
 
-		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
-		    640,480, 640,480, 24, "generic", 1);
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testmips generic");
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
 		break;
 
 	case MACHINE_DEC:
@@ -1458,7 +1466,7 @@ void machine_setup(struct machine *machine)
 			 */
 			fb = dev_fb_init(machine, mem, KN01_PHYS_FBUF_START,
 			    color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
-			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01", 1);
+			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01");
 			dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
 			dev_le_init(machine, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
@@ -2515,7 +2523,7 @@ void machine_setup(struct machine *machine)
 			dev_fb_init(machine, mem, hpcmips_fb_addr, VFB_HPCMIPS,
 			    hpcmips_fb_xsize, hpcmips_fb_ysize,
 			    hpcmips_fb_xsize_mem, hpcmips_fb_ysize_mem,
-			    hpcmips_fb_bits, "HPCmips", 0);
+			    hpcmips_fb_bits, "HPCmips");
 
 			/*  NetBSD/hpcmips uses framebuffer at physical
 			    address 0x8.......:  */
@@ -3114,7 +3122,7 @@ Why is this here? TODO
 				case MACHINE_ARC_NEC_R96:
 					dev_fb_init(machine, mem, 0x100e00000ULL,
 					    VFB_GENERIC, 640,480, 1024,480,
-					    8, "necvdfrb", 1);
+					    8, "necvdfrb");
 					break;
 				}
 				break;
@@ -3240,7 +3248,7 @@ Why is this here? TODO
 					/*  control at 0x60100000?  */
 					dev_fb_init(machine, mem, 0x60200000ULL,
 					    VFB_GENERIC, 1024,768, 1024,768,
-					    8, "VXL", 1);
+					    8, "VXL");
 					break;
 				}
 
@@ -3764,7 +3772,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		/*  480 x 272 pixels framebuffer (512 bytes per line)  */
 		fb = dev_fb_init(machine, mem, 0x04000000, VFB_HPCMIPS,
-		    480,272, 512,1088, -15, "Playstation Portable", 0);
+		    480,272, 512,1088, -15, "Playstation Portable");
 
 		/*
 		 *  TODO/NOTE: This is ugly, but necessary since GXemul doesn't
@@ -3802,15 +3810,22 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "PPC test machine";
 
 		/*  TODO: interrupt for PPC?  */
-		machine->main_console_handle = dev_cons_init(
-		    machine, mem, DEV_CONS_ADDRESS, "console", 0);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
 
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
 		device_add(machine, tmpstr);
 
-		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
-		    640,480, 640,480, 24, "generic", 1);
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testppc generic");
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
 		break;
 
 	case MACHINE_WALNUT:
@@ -4012,11 +4027,21 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_TESTARM:
 		machine->machine_name = "ARM test machine";
 
-		machine->main_console_handle = dev_cons_init(
-		    machine, mem, 0x10000000, "console", 2);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
 
-		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
-		    640,480, 640,480, 24, "generic", 1);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testarm generic");
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
 
 		/*  Place a tiny stub at end of memory, and set the link
 		    register to point to it. This stub halts the machine.  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.15 2005-02-26 18:00:38 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.16 2005-07-12 08:49:13 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -293,6 +293,6 @@ void pci_dec21030_init(struct machine *machine, struct memory *mem)
 	 */
 	d->vfb_data = dev_fb_init(machine, mem, FRAMEBUFFER_PADDR, VFB_GENERIC,
 	    dec21030_default_xsize, dec21030_default_ysize,
-	    dec21030_default_xsize, dec21030_default_ysize, 8, "TGA", 0);
+	    dec21030_default_xsize, dec21030_default_ysize, 8, "TGA");
 }
 

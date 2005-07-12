@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_m700_fb.c,v 1.11 2005-02-22 06:26:10 debug Exp $
+ *  $Id: dev_m700_fb.c,v 1.12 2005-07-12 08:49:13 debug Exp $
  *  
  *  Olivetti M700 framebuffer.
  *
@@ -138,7 +138,7 @@ void dev_m700_fb_init(struct machine *machine, struct memory *mem,
 	d->ysize = DEFAULT_YSIZE;
 
 	d->fb = dev_fb_init(machine, mem, baseaddr2, VFB_GENERIC,
-	    d->xsize, d->ysize, d->xsize, d->ysize, 8, "M700 G364", 0);
+	    d->xsize, d->ysize, d->xsize, d->ysize, 8, "M700 G364");
 	if (d->fb == NULL) {
 		fprintf(stderr, "dev_m700_fb_init(): out of memory\n");
 		exit(1);

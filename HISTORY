@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.826 2005-06-30 22:45:24 debug Exp $
+$Id: HISTORY,v 1.827 2005-07-12 08:49:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2059,3 +2059,7 @@ Changelog for GXemul:
 		and the translator, and some optimizations of various kinds.
 20050701	Adding a simple dev_disk (it can read/write sectors from
 		disk images).
+20050712	Adding dev_ether (a simple ethernet send/receive device).
+		Debugger command "ninstrs" for toggling show_nr_of_instructions
+		during runtime.
+		Removing the framebuffer logo.

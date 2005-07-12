@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.2 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_ether.c,v 1.1 2005-07-12 08:49:13 debug Exp $
  *
- *  Basic "Disk" device. This is a simple test device which can be used to
- *  read and write data from disk devices.
+ *  Basic "ethernet" network device. This is a simple test device which can
+ *  be used to send and receive packets to/from a simulated ethernet network.
  */
 
 #include <stdio.h>
@@ -37,35 +37,33 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
-#include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "net.h"
 
 
-struct disk_data {
-	int64_t		offset;
-	int		disk_id;
-	int		command;
-	int		status;
-	unsigned char	buf[512];
+#define	DEV_ETHER_LEN		1024
+#define	DEV_ETHER_MAXBUFLEN	65536
+
+struct ether_data {
+	unsigned char	buf[DEV_ETHER_MAXBUFLEN];
 };
 
 
 /*
- *  dev_disk_access():
+ *  dev_ether_access():
  */
-int dev_disk_access(struct cpu *cpu, struct memory *mem,
+int dev_ether_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct disk_data *d = (struct disk_data *) extra;
+	struct ether_data *d = (struct ether_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int i;
 
-	if (relative_addr >= 512 && relative_addr+len-1 < 1024) {
+	if (relative_addr + len - 1 < sizeof(d->buf)) {
 		relative_addr -= 512;
 		if (writeflag == MEM_WRITE)
 			memcpy(d->buf + relative_addr, data, len);
@@ -77,50 +75,12 @@ int dev_disk_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
-	case 0x00:
-		if (writeflag == MEM_READ) {
-			odata = d->offset;
-		} else {
-			d->offset = idata;
-		}
-		break;
-	case 0x10:
-		if (writeflag == MEM_READ) {
-			odata = d->disk_id;
-		} else {
-			d->disk_id = idata;
-		}
-		break;
-	case 0x20:
-		if (writeflag == MEM_READ) {
-			odata = d->command;
-		} else {
-			d->command = idata;
-			switch (d->command) {
-			case 0:	d->status = diskimage_access(cpu->machine,
-				     d->disk_id, DISKIMAGE_SCSI, 0,
-				     d->offset, d->buf, sizeof(d->buf));
-				break;
-			case 1:	d->status = diskimage_access(cpu->machine,
-				     d->disk_id, DISKIMAGE_SCSI, 1,
-				     d->offset, d->buf, sizeof(d->buf));
-				break;
-			}
-		}
-		break;
-	case 0x30:
-		if (writeflag == MEM_READ) {
-			odata = d->status;
-		} else {
-			d->status = idata;
-		}
-		break;
 	default:if (writeflag == MEM_WRITE) {
-			fatal("[ disk: unimplemented write to "
+			fatal("[ ether: unimplemented write to "
 			    "offset 0x%x: data=0x%x ]\n", (int)
 			    relative_addr, (int)idata);
 		} else {
-			fatal("[ disk: unimplemented read from "
+			fatal("[ ether: unimplemented read from "
 			    "offset 0x%x ]\n", (int)relative_addr);
 		}
 	}
@@ -133,19 +93,19 @@ int dev_disk_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  devinit_disk():
+ *  devinit_ether():
  */
-int devinit_disk(struct devinit *devinit)
+int devinit_ether(struct devinit *devinit)
 {
-	struct disk_data *d = malloc(sizeof(struct disk_data));
+	struct ether_data *d = malloc(sizeof(struct ether_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct disk_data));
+	memset(d, 0, sizeof(struct ether_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_DISK_LENGTH, dev_disk_access, (void *)d,
+	    devinit->addr, DEV_ETHER_LEN, dev_ether_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 
 	return 1;

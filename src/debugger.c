@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.109 2005-07-12 07:09:48 debug Exp $
+ *  $Id: debugger.c,v 1.110 2005-07-12 08:49:12 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -112,6 +112,24 @@ static char repeat_cmd[MAX_CMD_BUFLEN];
 
 static uint64_t last_dump_addr = MAGIC_UNTOUCHED;
 static uint64_t last_unasm_addr = MAGIC_UNTOUCHED;
+
+
+/*
+ *  debugger_readchar():
+ *
+ *  TODO: This uses up 100% CPU, maybe that isn't too good. The usleep() call
+ *        might make it a tiny bit nicer on other running processes, but it
+ *        is still very ugly.
+ */
+char debugger_readchar(void)
+{
+	int ch;
+	while ((ch = console_readchar(MAIN_CONSOLE)) < 0) {
+		x11_check_event(debugger_emuls, debugger_n_emuls);
+		usleep(1);
+	}
+	return ch;
+}
 
 
 /*
@@ -1518,7 +1536,7 @@ static struct cmd cmds[] = {
 	{ "machine", "", 0, debugger_cmd_machine,
 		"print a summary of the current machine" },
 
-	{ "ninstrs", "", 0, debugger_cmd_ninstrs,
+	{ "ninstrs", "[on|off]", 0, debugger_cmd_ninstrs,
 		"set (or unset) show_nr_of_instructions" },
 
 	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
@@ -1560,6 +1578,10 @@ static struct cmd cmds[] = {
 	{ "version", "", 0, debugger_cmd_version,
 		"print version information" },
 
+	/*  Note: Spaces in the name will cause this to not actually be
+	    matches as a command. This is intentional.  */
+	{ "x = expr", "", 0, NULL, "generic assignment" },
+
 	{ NULL, NULL, 0, NULL, NULL }
 };
 
@@ -1577,6 +1599,9 @@ static struct cmd cmds[] = {
 static void debugger_cmd_help(struct machine *m, char *cmd_line)
 {
 	int i, j, max_name_len = 0, only_one = 0, only_one_match = 0;
+	char *nlines_env = getenv("LINES");
+	int nlines = atoi(nlines_env != NULL? nlines_env : "999999");
+	int curlines;
 
 	if (cmd_line[0] != '\0') {
 		only_one = 1;
@@ -1592,8 +1617,11 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 		i++;
 	}
 
-	if (!only_one)
+	curlines = 0;
+	if (!only_one) {
 		printf("Available commands:\n");
+		curlines++;
+	}
 
 	i = 0;
 	while (cmds[i].name != NULL) {
@@ -1621,6 +1649,17 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 
 		printf("   %s\n", cmds[i].description);
 		i++;
+
+		curlines ++;
+		if (curlines >= nlines - 1) {
+			char ch;
+			printf("-- more --"); fflush(stdout);
+			ch = debugger_readchar();
+			printf("\n");
+			if (ch == 'q' || ch == 'Q')
+				return;
+			curlines = 0;
+		}
 	}
 
 	if (only_one) {
@@ -1629,13 +1668,24 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 		return;
 	}
 
-	printf("Generic assignments:   x = expr\n");
-	printf("where x must be a register, and expr can be a register, a "
-	    "numeric value, or\na symbol name (+ an optional numeric offset)."
-	    " In case there are multiple\nmatches (ie a symbol that has the "
-	    "same name as a register), you may add a\nprefix character as a "
-	    "hint: '%%' for registers, '@' for symbols, and\n'$' for numeric"
-	    " values. Use 0x for hexadecimal values.\n");
+	/*  TODO: generalize/refactor  */
+	curlines += 8;
+	if (curlines > nlines - 1) {
+		char ch;
+		printf("-- more --"); fflush(stdout);
+		ch = debugger_readchar();
+		printf("\n");
+		if (ch == 'q' || ch == 'Q')
+			return;
+		curlines = 0;
+	}
+
+	printf("\nIn generic assignments, x must be a register, and expr can be"
+	    " a register, a\nnumeric value, or a symbol name (+ an optional "
+	    "numeric offset). In case there\nare multiple matches (i.e. a "
+	    "symbol that has the same name as a register), you\nmay add a "
+	    "prefix character as a hint: '%%' for registers, '@' for symbols,"
+	    " and\n'$' for numeric values. Use 0x for hexadecimal values.\n");
 }
 
 
@@ -1726,15 +1776,7 @@ static char *debugger_readline(void)
 	cursor_pos = 0;
 
 	while (ch != '\n') {
-		/*
-		 *  TODO: This uses up 100% CPU, maybe that isn't too good.
-		 *  The usleep() call might make it a tiny bit nicer on other
-		 *  running processes, but it is still very ugly.
-		 */
-		while ((ch = console_readchar(MAIN_CONSOLE)) < 0) {
-			x11_check_event(debugger_emuls, debugger_n_emuls);
-			usleep(2);
-		}
+		ch = debugger_readchar();
 
 		if ((ch == '\b' || ch == 127) && cursor_pos > 0) {
 			/*  Backspace.  */

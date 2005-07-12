@@ -25,11 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.26 2005-06-26 11:43:48 debug Exp $
+ *  $Id: dev_cons.c,v 1.27 2005-07-12 08:49:13 debug Exp $
  *  
- *  A console device.  (Fake, only useful for simple tests.)
- *  It is hardwared to the lowest available MIPS hardware IRQ, and only
- *  interrupts CPU 0.
+ *  A simple console device, useful for simple tests.
  *
  *  This device provides memory mapped I/O for a simple console supporting
  *  putchar (writing to memory) and getchar (reading from memory), and
@@ -43,6 +41,7 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "device.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
@@ -50,11 +49,6 @@
 
 
 #define	CONS_TICK_SHIFT		14
-
-struct cons_data {
-	int		console_handle;
-	int		irq_nr;
-};
 
 
 /*
@@ -119,13 +113,12 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_cons_init():
+ *  devinit_cons():
  */
-int dev_cons_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, char *name, int irq_nr)
+int devinit_cons(struct devinit *devinit)
 {
 	struct cons_data *d;
-	char *name2;
+	char *name3;
 	size_t nlen;
 
 	d = malloc(sizeof(struct cons_data));
@@ -134,24 +127,30 @@ int dev_cons_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct cons_data));
-	d->irq_nr = irq_nr;
-	d->console_handle = console_start_slave(machine, name);
 
-	nlen = strlen(name) + 20;
-	name2 = malloc(nlen);
-	if (name2 == NULL) {
+	nlen = strlen(devinit->name) + 10;
+	if (devinit->name2 != NULL)
+		nlen += strlen(devinit->name2) + 10;
+	name3 = malloc(nlen);
+	if (name3 == NULL) {
 		fprintf(stderr, "out of memory in dev_cons_init()\n");
 		exit(1);
 	}
-	if (name != NULL && name[0])
-		snprintf(name2, nlen, "cons [%s]", name);
+	if (devinit->name2 != NULL && devinit->name2[0])
+		snprintf(name3, nlen, "%s [%s]", devinit->name, devinit->name2);
 	else
-		snprintf(name2, nlen, "cons");
+		snprintf(name3, nlen, "%s", devinit->name);
 
-	memory_device_register(mem, name2, baseaddr, DEV_CONS_LENGTH,
-	    dev_cons_access, d, MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_cons_tick, d, CONS_TICK_SHIFT);
+	d->irq_nr = devinit->irq_nr;
+	d->console_handle = console_start_slave(devinit->machine, name3);
 
-	return d->console_handle;
+	memory_device_register(devinit->machine->memory, name3,
+	    devinit->addr, DEV_CONS_LENGTH, dev_cons_access, d,
+	    MEM_DEFAULT, NULL);
+	machine_add_tickfunction(devinit->machine, dev_cons_tick,
+	    d, CONS_TICK_SHIFT);
+
+	devinit->return_ptr = d;
+	return 1;
 }
 

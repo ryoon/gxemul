@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.171 2005-06-24 09:33:37 debug Exp $
+ *  $Id: devices.h,v 1.172 2005-07-12 08:49:14 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -137,11 +137,10 @@ void dev_bt459_init(struct machine *machine, struct memory *mem,
 #define	DEV_CONS_LENGTH			0x0000000000000020
 #define	    DEV_CONS_PUTGETCHAR		    0x0000
 #define	    DEV_CONS_HALT		    0x0010
-int dev_cons_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-int dev_cons_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, char *name, int irq_nr);
+struct cons_data {
+	int	console_handle;
+	int	irq_nr;
+};
 
 /*  dev_colorplanemask.c:  */
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010
@@ -178,14 +177,21 @@ void dev_deccca_init(struct memory *mem, uint64_t baseaddr);
 int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_decxmi_init(struct memory *mem, uint64_t baseaddr);
 
+/*  dev_disk.c:  */
+#define	DEV_DISK_ADDRESS		0x13000000
+#define	DEV_DISK_LENGTH			0x400
+
 /*  dev_fb.c:  */
-#define	DEV_FB_LENGTH			0x3c0000	/*  3c0000 to not colide with turbochannel rom, otherwise size = (4*1024*1024)  */
-#define	VFB_GENERIC			0
-#define	VFB_HPCMIPS			1
-#define	VFB_DEC_VFB01			2
-#define	VFB_DEC_VFB02			3
-#define	VFB_DEC_MAXINE			4
-#define	VFB_PLAYSTATION2		5
+#define	DEV_FB_ADDRESS		0x12000000	/*  Default for testmips  */
+#define	DEV_FB_LENGTH		0x3c0000	/*  3c0000 to not colide with */
+						/*  turbochannel rom,         */
+						/*  otherwise size = 4MB      */
+#define	VFB_GENERIC		0
+#define	VFB_HPCMIPS		1
+#define	VFB_DEC_VFB01		2
+#define	VFB_DEC_VFB02		3
+#define	VFB_DEC_MAXINE		4
+#define	VFB_PLAYSTATION2	5
 struct vfb_data {
 	int		vfb_type;
 
@@ -228,9 +234,11 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	int fill_g, int fill_b, int x1, int y1, int x2, int y2,
 	int from_x, int from_y);
 void dev_fb_tick(struct cpu *, void *);
-int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int vfb_type,
-	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name, int logo);
+int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
+	int xsize, int ysize, int bit_depth, char *name);
 
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x1000

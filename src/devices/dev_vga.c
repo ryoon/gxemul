@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.75 2005-06-26 11:43:48 debug Exp $
+ *  $Id: dev_vga.c,v 1.76 2005-07-12 08:49:13 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -1190,7 +1190,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	}
 
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    d->fb_max_x, d->fb_max_y, d->fb_max_x, d->fb_max_y, 24, "VGA", 0);
+	    d->fb_max_x, d->fb_max_y, d->fb_max_x, d->fb_max_y, 24, "VGA");
 	d->fb_size = d->fb_max_x * d->fb_max_y * 3;
 
 	reset_palette(d, 0);

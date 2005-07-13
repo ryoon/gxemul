@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.32 2005-07-13 11:13:44 debug Exp $
+ *  $Id: cpu_arm.c,v 1.33 2005-07-13 21:22:13 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -77,9 +77,7 @@ static char *arm_condition_string[16] = {
 	"hi", "ls", "ge", "lt", "gt", "le", ""/*Always*/, "(INVALID)" };
 
 /*  ARM symbolic register names:  */
-static char *arm_regname[N_ARM_REGS] = {
-	"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", 
-	"r8", "r9", "sl", "fp", "ip", "sp", "lr", "pc" };
+static char *arm_regname[N_ARM_REGS] = ARM_REG_NAMES;
 
 /* Data processing instructions:  */
 static char *arm_dpiname[16] = {

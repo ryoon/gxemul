@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.475 2005-07-13 11:13:44 debug Exp $
+ *  $Id: machine.c,v 1.476 2005-07-13 21:22:13 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4033,7 +4033,26 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_TESTALPHA:
 		machine->machine_name = "Alpha test machine";
 
-		/*  TODO  */
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testalpha generic");
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
 		break;
 
 	case MACHINE_BAREARM:

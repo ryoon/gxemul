@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.18 2005-07-13 11:13:46 debug Exp $
+ *  $Id: cpu_arm.h,v 1.19 2005-07-13 21:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -43,6 +43,11 @@ struct cpu_family;
 #define	ARM_LR			14
 #define	ARM_PC			15
 #define	N_ARM_REGS		16
+
+#define	ARM_REG_NAMES	{					\
+	"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",		\
+	"r8", "r9", "sl", "fp", "ip", "sp", "lr", "pc"  }
+
 
 /*
  *  Translated instruction calls:

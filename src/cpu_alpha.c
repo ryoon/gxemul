@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.7 2005-07-13 11:13:44 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.8 2005-07-13 21:22:13 debug Exp $
  *
  *  Alpha CPU emulation.
  */
@@ -67,6 +67,9 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 
 /*  instr uses the same names as in cpu_alpha_instr.c  */
 #define instr(n) alpha_instr_ ## n
+
+/*  Alpha symbolic register names:  */
+static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES; 
 
 
 extern volatile int single_step;
@@ -172,6 +175,26 @@ void alpha_cpu_register_match(struct machine *m, char *name,
 
 
 /*
+ *  alpha_print_imm16_disp():
+ *
+ *  Used internally by alpha_cpu_disassemble_instr().
+ */
+static void alpha_print_imm16_disp(int16_t imm, int rb)
+{
+	if (imm < 0) {
+		debug("-");
+		imm = -imm;
+	}
+	if (imm <= 256)
+		debug("%i", imm);
+	else
+		debug("0x%x", imm);
+	if (rb != ALPHA_ZERO)
+		debug("(%s)", alpha_regname[rb]);
+}
+
+
+/*
  *  alpha_cpu_disassemble_instr():
  *
  *  Convert an instruction word into human readable format, for instruction
@@ -189,6 +212,8 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	uint32_t iw;
 	char *symbol, *condition;
 	uint64_t offset;
+	int opcode, ra, rb, func, rc, imm;
+	char *mnem = NULL;
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -206,7 +231,105 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
 	debug("%08x\t", (int)iw);
 
-	debug("UNIMPLEMENTED\n");
+	opcode = iw >> 26;
+	ra = (iw >> 21) & 31;
+	rb = (iw >> 16) & 31;
+	func = (iw >> 5) & 0x7ff;
+	rc = iw & 31;
+	imm = iw & 0xffff;
+
+	switch (opcode) {
+	case 0x08:
+	case 0x09:
+		debug("lda%s\t%s,", opcode == 9? "h" : "", alpha_regname[ra]);
+		alpha_print_imm16_disp(imm, rb);
+		debug("\n");
+		break;
+	case 0x0a:
+	case 0x0c:
+	case 0x0d:
+	case 0x0e:
+	case 0x28:
+	case 0x29:
+	case 0x2c:
+	case 0x2d:
+		switch (opcode) {
+		case 0x0a: mnem = "ldbu"; break;
+		case 0x0c: mnem = "ldwu"; break;
+		case 0x0d: mnem = "stw"; break;
+		case 0x0e: mnem = "stb"; break;
+		case 0x28: mnem = "ldl"; break;
+		case 0x29: mnem = "ldq"; break;
+		case 0x2c: mnem = "stl"; break;
+		case 0x2d: mnem = "stq"; break;
+		}
+		debug("%s\t%s,", mnem, alpha_regname[ra]);
+		alpha_print_imm16_disp(imm, rb);
+		debug("\n");
+		break;
+	case 0x10:
+		switch (func) {
+		case 0x000:
+		case 0x009:
+		case 0x020:
+		case 0x029:
+			switch (func) {
+			case 0x000: mnem = "addl"; break;
+			case 0x009: mnem = "subl"; break;
+			case 0x020: mnem = "addq"; break;
+			case 0x029: mnem = "subq"; break;
+			}
+			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
+			    alpha_regname[rb], alpha_regname[rc]);
+			break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		break;
+	case 0x11:
+		switch (func) {
+		case 0x000:
+		case 0x020:
+		case 0x040:
+			switch (func) {
+			case 0x000: mnem = "and"; break;
+			case 0x020: mnem = "or"; break;
+			case 0x040: mnem = "xor"; break;
+			}
+			/*  Special cases: "nop" etc:  */
+			if (func == 0x020 && rc == ALPHA_ZERO)
+				debug("nop\n");
+			else if (func == 0x020 && ra == ALPHA_ZERO) {
+				if (rb == ALPHA_ZERO)
+					debug("clr\t%s\n", alpha_regname[rc]);
+				else
+					debug("mov\t%s,%s\n", alpha_regname[rb],
+					    alpha_regname[rc]);
+			} else
+				debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
+				    alpha_regname[rb], alpha_regname[rc]);
+			break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		break;
+	case 0x12:
+		switch (func) {
+		case 0x030:
+		case 0x031:
+			switch (func) {
+			case 0x030: mnem = "zap"; break;
+			case 0x031: mnem = "zapnot"; break;
+			}
+			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
+			    alpha_regname[rb], alpha_regname[rc]);
+			break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		break;
+	default:debug("UNIMPLEMENTED opcode 0x%x\n", opcode);
+	}
 
 	return sizeof(uint32_t);
 }

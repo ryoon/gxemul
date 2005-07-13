@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.3 2005-07-13 11:13:46 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.4 2005-07-13 21:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -36,7 +36,15 @@
 
 struct cpu_family;
 
+#define	ALPHA_ZERO		31
 #define	N_ALPHA_REGS		32
+
+#define ALPHA_REG_NAMES		{				\
+	"v0", "t0", "t1", "t2", "t3", "t4", "t5", "t6",		\
+	"t7", "s0", "s1", "s2", "s3", "s4", "s5", "fp",		\
+	"a0", "a1", "a2", "a3", "a4", "a5", "t8", "t9",		\
+	"t10", "t11", "ra", "t12", "at", "gp", "sp", "zero" 	}
+
 
 /*
  *  Translated instruction calls:

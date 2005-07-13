@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.17 2005-06-30 11:55:54 debug Exp $
+ *  $Id: cpu_arm.h,v 1.18 2005-07-13 11:13:46 debug Exp $
  */
 
 #include "misc.h"
@@ -50,35 +50,32 @@ struct cpu_family;
  *  The translation cache begins with N_BASE_TABLE_ENTRIES uint32_t offsets
  *  to arm_tc_physpage structs.
  */
-#define	N_IC_ARGS			3
-#define	IC_ENTRIES_SHIFT		10
-#define	IC_ENTRIES_PER_PAGE		(1 << IC_ENTRIES_SHIFT)
-#define	PC_TO_IC_ENTRY(a)		(((a) >> 2) & (IC_ENTRIES_PER_PAGE-1))
-#define	ADDR_TO_PAGENR(a)		((a) >> (IC_ENTRIES_SHIFT+2))
-#define	N_BASE_TABLE_ENTRIES		32768
-#define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
+#define	ARM_N_IC_ARGS			3
+#define	ARM_IC_ENTRIES_SHIFT		10
+#define	ARM_IC_ENTRIES_PER_PAGE		(1 << ARM_IC_ENTRIES_SHIFT)
+#define	ARM_PC_TO_IC_ENTRY(a)		(((a)>>2) & (ARM_IC_ENTRIES_PER_PAGE-1))
+#define	ARM_ADDR_TO_PAGENR(a)		((a) >> (ARM_IC_ENTRIES_SHIFT+2))
+#define	ARM_N_BASE_TABLE_ENTRIES	32768
+#define	ARM_PAGENR_TO_TABLE_INDEX(a)	((a) & (ARM_N_BASE_TABLE_ENTRIES-1))
 
 struct arm_instr_call {
 	void	(*f)(struct cpu *, struct arm_instr_call *);
-	size_t	arg[N_IC_ARGS];
+	size_t	arg[ARM_N_IC_ARGS];
 };
 
 /*  512 translated pages should be good enough:  */
 #define	ARM_TRANSLATION_CACHE_SIZE	(512 * \
-		sizeof(struct arm_instr_call) * IC_ENTRIES_PER_PAGE)
+		sizeof(struct arm_instr_call) * ARM_IC_ENTRIES_PER_PAGE)
 #define	ARM_TRANSLATION_CACHE_MARGIN	(2 * \
-		sizeof(struct arm_instr_call) * IC_ENTRIES_PER_PAGE)
+		sizeof(struct arm_instr_call) * ARM_IC_ENTRIES_PER_PAGE)
 
 struct arm_tc_physpage {
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	uint32_t	physaddr;
 	int		flags;
-	struct arm_instr_call ics[IC_ENTRIES_PER_PAGE + 1];
+	struct arm_instr_call ics[ARM_IC_ENTRIES_PER_PAGE + 1];
 };
 
-/*  Physpage flags:  */
-#define	ARM_TRANSLATIONS		1
-#define	ARM_COMBINATIONS		2
 
 #define	ARM_FLAG_N	0x80000000	/*  Negative flag  */
 #define	ARM_FLAG_Z	0x40000000	/*  Zero flag  */
@@ -101,17 +98,17 @@ struct arm_tc_physpage {
 
 
 /*  Virtual->physical->host page entry:  */
-#define	N_VPH_ENTRIES			1024
-struct vph_page {
-	void		*host_load[N_VPH_ENTRIES];
-	void		*host_store[N_VPH_ENTRIES];
-	uint32_t	phys_addr[N_VPH_ENTRIES];
+#define	ARM_N_VPH_ENTRIES		1024
+struct arm_vph_page {
+	void		*host_load[ARM_N_VPH_ENTRIES];
+	void		*host_store[ARM_N_VPH_ENTRIES];
+	uint32_t	phys_addr[ARM_N_VPH_ENTRIES];
 	int		refcount;
-	struct vph_page	*next;		/*  Freelist, used if refcount = 0.  */
+	struct arm_vph_page *next;	/*  Freelist, used if refcount = 0.  */
 };
 
 #define	ARM_MAX_VPH_TLB_ENTRIES		64
-struct vpg_tlb_entry {
+struct arm_vpg_tlb_entry {
 	int		valid;
 	int		writeflag;
 	int64_t		timestamp;
@@ -119,6 +116,7 @@ struct vpg_tlb_entry {
 	uint32_t	vaddr_page;
 	uint32_t	paddr_page;
 };
+
 
 struct arm_cpu {
 	/*
@@ -151,7 +149,7 @@ struct arm_cpu {
 	unsigned char		*translation_cache;
 	size_t			translation_cache_cur_ofs;
 
-	/*  cur_ic_page is a pointer to an array of IC_ENTRIES_PER_PAGE
+	/*  cur_ic_page is a pointer to an array of ARM_IC_ENTRIES_PER_PAGE
 	    instruction call entries. next_ic points to the next such
 	    call to be executed.  */
 	struct arm_tc_physpage	*cur_physpage;
@@ -166,10 +164,10 @@ struct arm_cpu {
 	 *  Virtual -> physical -> host address translation:
 	 */
 
-	struct vpg_tlb_entry	vph_tlb_entry[ARM_MAX_VPH_TLB_ENTRIES];
-	struct vph_page		*vph_default_page;
-	struct vph_page		*vph_next_free_page;
-	struct vph_page		*vph_table0[N_VPH_ENTRIES];
+	struct arm_vpg_tlb_entry	vph_tlb_entry[ARM_MAX_VPH_TLB_ENTRIES];
+	struct arm_vph_page		*vph_default_page;
+	struct arm_vph_page		*vph_next_free_page;
+	struct arm_vph_page		*vph_table0[ARM_N_VPH_ENTRIES];
 };
 
 

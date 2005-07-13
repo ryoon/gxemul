@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.42 2005-06-30 12:06:23 debug Exp $
+ *  $Id: memory_rw.c,v 1.43 2005-07-13 11:13:44 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -84,6 +84,10 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #ifdef MEM_PPC
 	if (cpu->cd.ppc.bits == 32)
 		vaddr &= 0xffffffff;
+#endif
+
+#ifdef MEM_ALPHA
+	vaddr &= 0x0fffffff;
 #endif
 
 #ifdef MEM_ARM

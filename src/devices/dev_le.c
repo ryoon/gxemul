@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.40 2005-06-26 11:43:48 debug Exp $
+ *  $Id: dev_le.c,v 1.41 2005-07-13 11:13:45 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -817,7 +817,8 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "le_sram", baseaddr,
 	    SRAM_SIZE, dev_le_sram_access, (void *)d,
-	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->sram);
+	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK
+	    | MEM_READING_HAS_NO_SIDE_EFFECTS, d->sram);
 
 	name2 = malloc(nlen);
 	if (name2 == NULL) {

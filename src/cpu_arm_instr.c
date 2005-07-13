@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.34 2005-06-30 21:42:30 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.35 2005-07-13 11:13:44 debug Exp $
  *
  *  ARM instructions.
  *
@@ -136,11 +136,8 @@
 
 /*  This is for marking a physical page as containing translated or
     combined instructions, respectively:  */
-#define	translated	(cpu->cd.arm.cur_physpage->flags |= ARM_TRANSLATIONS)
-#define	combined	(cpu->cd.arm.cur_physpage->flags |= ARM_COMBINATIONS)
-
-
-void arm_translate_instruction(struct cpu *cpu, struct arm_instr_call *ic);
+#define	translated	(cpu->cd.arm.cur_physpage->flags |= TRANSLATIONS)
+#define	combined	(cpu->cd.arm.cur_physpage->flags |= COMBINATIONS)
 
 
 /*
@@ -187,7 +184,7 @@ X(b)
 	/*  Calculate new PC from this instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 	cpu->cd.arm.r[ARM_PC] += (int32_t)ic->arg[0];
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
@@ -225,7 +222,7 @@ X(bl)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	lr += (low_pc << 2);
 
 	/*  Link:  */
@@ -255,7 +252,7 @@ X(bl_samepage)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	lr += (low_pc << 2);
 
 	/*  Link:  */
@@ -357,7 +354,7 @@ X(load_byte_imm_pcrel)
 
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 
 	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
@@ -387,7 +384,7 @@ X(load_word_imm_pcrel)
 
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 
 	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
@@ -501,7 +498,7 @@ X(bdt_store)
 		/*  Synchronize the program counter:  */
 		uint32_t low_pc = ((size_t)ic - (size_t)
 		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+		cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
 	}
@@ -652,8 +649,8 @@ X(mov_2)
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
-	cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (IC_ENTRIES_PER_PAGE << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (ARM_IC_ENTRIES_PER_PAGE << 2);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	/*  Find the new physical page and update the translation pointers:  */
@@ -676,7 +673,7 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 	uint32_t addr)
 {
 	int n_back;
-	n_back = (addr >> 2) & (IC_ENTRIES_PER_PAGE-1);
+	n_back = (addr >> 2) & (ARM_IC_ENTRIES_PER_PAGE-1);
 
 	if (n_back >= 1) {
 		/*  Double "mov":  */
@@ -722,7 +719,7 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 X(to_be_translated)
 {
 	uint32_t addr, low_pc, iword, imm;
-	struct vph_page *vph_p;
+	struct arm_vph_page *vph_p;
 	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, r16, r12, r8;
@@ -732,7 +729,7 @@ X(to_be_translated)
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
 	    / sizeof(struct arm_instr_call);
-	addr = cpu->cd.arm.r[ARM_PC] & ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	addr = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	addr += (low_pc << 2);
 	addr &= ~0x3;
 
@@ -747,7 +744,7 @@ X(to_be_translated)
 		fatal("TRANSLATION MISS!\n");
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
 		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
-			fatal("arm_translate_instruction(): "
+			fatal("to_be_translated(): "
 			    "read failed: TODO\n");
 			goto bad;
 		}
@@ -992,7 +989,7 @@ X(to_be_translated)
 		/*  Special case: branch within the same page:  */
 		{
 			uint32_t mask_within_page =
-			    ((IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+			    ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
 			uint32_t old_pc = addr;
 			uint32_t new_pc = old_pc + (int32_t)ic->arg[0];
 			if ((old_pc & ~mask_within_page) ==
@@ -1030,13 +1027,14 @@ bad:	/*
 	 *  Nothing was translated. (Unimplemented or illegal instruction.)
 	 */
 	quiet_mode = 0;
-	fatal("arm_translate_instruction(): TODO: "
+	fatal("to_be_translated(): TODO: "
 	    "unimplemented ARM instruction:\n");
 	arm_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
 	cpu->running = 0;
 	cpu->dead = 1;
 	cpu->cd.arm.running_translated = 0;
-	cpu->cd.arm.next_ic = &nothing_call;
+	ic = cpu->cd.arm.next_ic = &nothing_call;
+	cpu->cd.arm.next_ic ++;
 
 	/*  Execute the "nothing" instruction:  */
 	ic->f(cpu, ic);

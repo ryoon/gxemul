@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.2 2005-07-12 21:58:37 debug Exp $
+ *  $Id: dev_ether.c,v 1.3 2005-07-13 11:13:45 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -46,15 +46,34 @@
 
 
 #define	DEV_ETHER_MAXBUFLEN	16384
+#define	DEV_ETHER_TICK_SHIFT	14
 
 #define	STATUS_RECEIVED		0x01
 #define	STATUS_MORE_AVAIL	0x02
 
 struct ether_data {
 	unsigned char	buf[DEV_ETHER_MAXBUFLEN];
+	unsigned char	mac[6];
+
 	int		status;
 	int		packet_len;
+
+	int		irq_nr;
 };
+
+
+/*
+ *  dev_ether_tick():
+ */
+void dev_ether_tick(struct cpu *cpu, void *extra)
+{  
+	struct ether_data *d = (struct ether_data *) extra;
+
+	if (d->status)
+		cpu_interrupt(cpu, d->irq_nr);
+	else
+		cpu_interrupt_ack(cpu, d->irq_nr);
+}
 
 
 /*
@@ -89,9 +108,11 @@ int dev_ether_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 	case 0x0000:
-		if (writeflag == MEM_READ)
+		if (writeflag == MEM_READ) {
 			odata = d->status;
-		else
+			d->status = 0;
+			cpu_interrupt_ack(cpu, d->irq_nr);
+		} else
 			fatal("[ ether: WARNING: write to status ]\n");
 		break;
 	case 0x0010:
@@ -147,8 +168,9 @@ int devinit_ether(struct devinit *devinit)
 	struct ether_data *d = malloc(sizeof(struct ether_data));
 	size_t nlen;
 	char *n1, *n2;
+	char tmp[50];
 
-	nlen = strlen(devinit->name) + 30;
+	nlen = strlen(devinit->name) + 80;
 	n1 = malloc(nlen);
 	n2 = malloc(nlen);
 
@@ -157,8 +179,14 @@ int devinit_ether(struct devinit *devinit)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ether_data));
-	snprintf(n1, nlen, "%s [data buffer]", devinit->name);
-	snprintf(n2, nlen, "%s [control]", devinit->name);
+	d->irq_nr = devinit->irq_nr;
+
+	net_generate_unique_mac(devinit->machine, d->mac);
+	snprintf(tmp, sizeof(tmp), "%02x:%02x:%02x:%02x:%02x:%02x",
+	    d->mac[0], d->mac[1], d->mac[2], d->mac[3], d->mac[4], d->mac[5]);
+
+	snprintf(n1, nlen, "%s [%s]", devinit->name, tmp);
+	snprintf(n2, nlen, "%s [%s, control]", devinit->name, tmp);
 
 	memory_device_register(devinit->machine->memory, n1,
 	    devinit->addr, DEV_ETHER_MAXBUFLEN, dev_ether_buf_access, (void *)d,
@@ -168,6 +196,11 @@ int devinit_ether(struct devinit *devinit)
 	    devinit->addr + DEV_ETHER_MAXBUFLEN,
 	    DEV_ETHER_LENGTH-DEV_ETHER_MAXBUFLEN, dev_ether_access, (void *)d,
 	    MEM_DEFAULT, NULL);
+
+	net_add_nic(devinit->machine->emul->net, d, d->mac);
+
+	machine_add_tickfunction(devinit->machine,
+	    dev_ether_tick, d, DEV_ETHER_TICK_SHIFT);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.31 2005-07-12 20:09:58 debug Exp $
+ *  $Id: cpu_arm.c,v 1.32 2005-07-13 11:13:44 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -123,18 +123,18 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		debug("%s", cpu->name);
 		debug(" (host: %i MB code cache, %.2f MB addr"
 		    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
-		    (float)(sizeof(struct vph_page) * ARM_MAX_VPH_TLB_ENTRIES
-		    / 1048576.0));
+		    (float)(sizeof(struct arm_vph_page) *
+		    ARM_MAX_VPH_TLB_ENTRIES / 1048576.0));
 	}
 
 	/*  Create the default virtual->physical->host translation:  */
-	cpu->cd.arm.vph_default_page = malloc(sizeof(struct vph_page));
+	cpu->cd.arm.vph_default_page = malloc(sizeof(struct arm_vph_page));
 	if (cpu->cd.arm.vph_default_page == NULL) {
 		fprintf(stderr, "out of memory in arm_cpu_new()\n");
 		exit(1);
 	}
-	memset(cpu->cd.arm.vph_default_page, 0, sizeof(struct vph_page));
-	for (i=0; i<N_VPH_ENTRIES; i++)
+	memset(cpu->cd.arm.vph_default_page, 0, sizeof(struct arm_vph_page));
+	for (i=0; i<ARM_N_VPH_ENTRIES; i++)
 		cpu->cd.arm.vph_table0[i] = cpu->cd.arm.vph_default_page;
 
 	return 1;
@@ -148,7 +148,7 @@ void arm_cpu_dumpinfo(struct cpu *cpu)
 {
 	debug(" (host: %i MB code cache, %.2f MB addr"
 	    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
-	    (float)(sizeof(struct vph_page) * ARM_MAX_VPH_TLB_ENTRIES
+	    (float)(sizeof(struct arm_vph_page) * ARM_MAX_VPH_TLB_ENTRIES
 	    / 1048576.0));
 	debug("\n");
 }
@@ -492,10 +492,10 @@ static void arm_create_or_reset_tc(struct cpu *cpu)
 
 	/*  Create an empty table at the beginning of the translation cache:  */
 	memset(cpu->cd.arm.translation_cache, 0, sizeof(uint32_t) *
-	    N_BASE_TABLE_ENTRIES);
+	    ARM_N_BASE_TABLE_ENTRIES);
 
 	cpu->cd.arm.translation_cache_cur_ofs =
-	    N_BASE_TABLE_ENTRIES * sizeof(uint32_t);
+	    ARM_N_BASE_TABLE_ENTRIES * sizeof(uint32_t);
 }
 
 
@@ -519,10 +519,10 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 	ppp->next_ofs = 0;
 	ppp->physaddr = physaddr;
 
-	for (i=0; i<IC_ENTRIES_PER_PAGE; i++)
+	for (i=0; i<ARM_IC_ENTRIES_PER_PAGE; i++)
 		ppp->ics[i].f = instr(to_be_translated);
 
-	ppp->ics[IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
+	ppp->ics[ARM_IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
 
 	cpu->cd.arm.translation_cache_cur_ofs +=
 	    sizeof(struct arm_tc_physpage);
@@ -536,7 +536,7 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
  */
 void arm_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
 {
-	struct vph_page *vph_p;
+	struct arm_vph_page *vph_p;
 	uint32_t a, b;
 
 	a = vaddr_page >> 22; b = (vaddr_page >> 12) & 1023;
@@ -593,7 +593,7 @@ void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
 	uint32_t a, b;
-	struct vph_page *vph_p;
+	struct arm_vph_page *vph_p;
 	int found, r, lowest_index;
 	int64_t lowest, highest = -1;
 
@@ -656,8 +656,8 @@ void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 				cpu->cd.arm.vph_next_free_page = vph_p->next;
 			} else {
 				vph_p = cpu->cd.arm.vph_table0[a] =
-				    malloc(sizeof(struct vph_page));
-				memset(vph_p, 0, sizeof(struct vph_page));
+				    malloc(sizeof(struct arm_vph_page));
+				memset(vph_p, 0, sizeof(struct arm_vph_page));
 			}
 		}
 		vph_p->refcount ++;
@@ -720,14 +720,14 @@ void arm_pc_to_pointers(struct cpu *cpu)
 	 *  TODO: virtual to physical address translation
 	 */
 
-	physaddr = cached_pc & ~(((IC_ENTRIES_PER_PAGE-1) << 2) | 3);
+	physaddr = cached_pc & ~(((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3);
 
 	if (cpu->cd.arm.translation_cache == NULL || cpu->cd.
 	    arm.translation_cache_cur_ofs >= ARM_TRANSLATION_CACHE_SIZE)
 		arm_create_or_reset_tc(cpu);
 
-	pagenr = ADDR_TO_PAGENR(physaddr);
-	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
+	pagenr = ARM_ADDR_TO_PAGENR(physaddr);
+	table_index = ARM_PAGENR_TO_TABLE_INDEX(pagenr);
 
 	physpage_entryp = &(((uint32_t *)
 	    cpu->cd.arm.translation_cache)[table_index]);
@@ -763,7 +763,7 @@ void arm_pc_to_pointers(struct cpu *cpu)
 	cpu->cd.arm.cur_physpage = ppp;
 	cpu->cd.arm.cur_ic_page = &ppp->ics[0];
 	cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
-	    PC_TO_IC_ENTRY(cached_pc);
+	    ARM_PC_TO_IC_ENTRY(cached_pc);
 
 	/*  printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
 	    "physpage_ofs = 0x%08x\n", (int)cached_pc, (int)pagenr,
@@ -811,17 +811,17 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		/*  When single-stepping, multiple instruction calls cannot
 		    be combined into one. This clears all translations:  */
-		if (cpu->cd.arm.cur_physpage->flags & ARM_COMBINATIONS) {
+		if (cpu->cd.arm.cur_physpage->flags & COMBINATIONS) {
 			int i;
-			for (i=0; i<IC_ENTRIES_PER_PAGE; i++)
+			for (i=0; i<ARM_IC_ENTRIES_PER_PAGE; i++)
 				cpu->cd.arm.cur_physpage->ics[i].f =
 				    instr(to_be_translated);
 			fatal("[ Note: The translation of physical page 0x%08x"
 			    " contained combinations of instructions; these "
 			    "are now flushed because we are single-stepping."
 			    " ]\n", cpu->cd.arm.cur_physpage->physaddr);
-			cpu->cd.arm.cur_physpage->flags &= ~ARM_COMBINATIONS;
-			cpu->cd.arm.cur_physpage->flags &= ~ARM_TRANSLATIONS;
+			cpu->cd.arm.cur_physpage->flags &= ~COMBINATIONS;
+			cpu->cd.arm.cur_physpage->flags &= ~TRANSLATIONS;
 		}
 
 		/*  Execute just one instruction:  */
@@ -883,14 +883,14 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 
-	if (low_pc >= 0 && low_pc < IC_ENTRIES_PER_PAGE) {
-		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
+	if (low_pc >= 0 && low_pc < ARM_IC_ENTRIES_PER_PAGE) {
+		cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
-	} else if (low_pc == IC_ENTRIES_PER_PAGE) {
+	} else if (low_pc == ARM_IC_ENTRIES_PER_PAGE) {
 		/*  Switch to next page:  */
-		cpu->cd.arm.r[ARM_PC] &= ~((IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->cd.arm.r[ARM_PC] += (IC_ENTRIES_PER_PAGE << 2);
+		cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+		cpu->cd.arm.r[ARM_PC] += (ARM_IC_ENTRIES_PER_PAGE << 2);
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
 	} else {
 		fatal("Outside a page (This is actually ok)\n");

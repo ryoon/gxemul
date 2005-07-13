@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.827 2005-07-12 08:49:10 debug Exp $
+$Id: HISTORY,v 1.828 2005-07-13 11:13:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2063,3 +2063,5 @@ Changelog for GXemul:
 		Debugger command "ninstrs" for toggling show_nr_of_instructions
 		during runtime.
 		Removing the framebuffer logo.
+20050713	Continuing on dev_ether.
+		Adding a dummy cpu_alpha (again).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.474 2005-07-12 21:58:36 debug Exp $
+ *  $Id: machine.c,v 1.475 2005-07-13 11:13:44 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4471,7 +4471,7 @@ void machine_default_cputype(struct machine *m)
 	/*  Alpha:  */
 	case MACHINE_BAREALPHA:
 	case MACHINE_TESTALPHA:
-		m->cpu_name = strdup("EV4");
+		m->cpu_name = strdup("Alpha");
 		break;
 
 	/*  ARM:  */

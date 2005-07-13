@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.141 2005-06-28 00:27:28 debug Exp $
+#  $Id: configure,v 1.142 2005-07-13 11:13:42 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -58,6 +58,7 @@
 #
 ###############################################################################
 
+ENABLEALPHA=YES
 ENABLEARM=YES
 ENABLEMIPS=YES
 ENABLEPPC=YES
@@ -81,6 +82,10 @@ if [ z"$*" != z ]; then
 			MIPS16=NO
 		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
+		else if [ z$a = z--disable-alpha ]; then
+			ENABLEALPHA=NO
+		else if [ z$a = z--enable-alpha ]; then
+			ENABLEALPHA=YES
 		else if [ z$a = z--disable-arm ]; then
 			ENABLEARM=NO
 		else if [ z$a = z--enable-arm ]; then
@@ -126,6 +131,7 @@ if [ z"$*" != z ]; then
 			    "latency/delay emulation"
 			echo "  --disable-x        don't include X11 support"
 			printf "\nCPU selection options:\n"
+			echo "  --disable-alpha    disable Alpha CPU emulation"
 			echo "  --disable-arm      disable ARM CPU emulation"
 			echo "  --disable-mips     disable MIPS CPU emulation"
 			echo "  --disable-ppc      disable PPC CPU emulation"
@@ -143,7 +149,7 @@ if [ z"$*" != z ]; then
 			    "available options."
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -183,6 +189,9 @@ if [ z$MIPS16 = zYES ]; then
 	printf 'Enabling MIPS16 support.  '
 	printf 'NOTE: MIPS16 support is not really working yet.\n'
 	printf "#define ENABLE_MIPS16\n" >> config.h
+fi
+if [ z$ENABLEALPHA = zYES ]; then
+	printf "#define ENABLE_ALPHA\n" >> config.h
 fi
 if [ z$ENABLEARM = zYES ]; then
 	printf "#define ENABLE_ARM\n" >> config.h

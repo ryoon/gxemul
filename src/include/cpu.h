@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.30 2005-06-30 11:52:15 debug Exp $
+ *  $Id: cpu.h,v 1.31 2005-07-13 11:13:46 debug Exp $
  *
  *  See cpu.c.
  */
@@ -42,6 +42,7 @@
 #include "../../config.h"
 
 #include "cpu_arm.h"
+#include "cpu_alpha.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
 #include "cpu_urisc.h"
@@ -86,6 +87,20 @@ struct cpu_family {
 #define	TRACE_NULL_N_ENTRIES		16
 #endif
 
+
+/*
+ *  Dynamic translation definitions:
+ */
+
+/*  Physpage flags:  */
+#define	TRANSLATIONS		1
+#define	COMBINATIONS		2
+
+
+/*
+ *  The generic CPU struct:
+ */
+
 struct cpu {
 	/*  Pointer back to the machine this CPU is in:  */
 	struct machine	*machine;
@@ -123,6 +138,7 @@ struct cpu {
 
 	/*  CPU-family dependant:  */
 	union {
+		struct alpha_cpu   alpha;
 		struct arm_cpu     arm;
 		struct mips_cpu    mips;
 		struct ppc_cpu     ppc;

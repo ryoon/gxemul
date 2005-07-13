@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.2 2005-06-30 20:41:28 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.3 2005-07-13 11:13:44 debug Exp $
  */
 
 #ifdef A__REG
@@ -124,7 +124,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 	    ;
-	struct vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
+	struct arm_vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
 	unsigned char *page = vph_p->
 #ifdef A__L
 	    host_load

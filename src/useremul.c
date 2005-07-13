@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.46 2005-04-14 21:01:54 debug Exp $
+ *  $Id: useremul.c,v 1.47 2005-07-13 11:13:44 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -1479,7 +1479,7 @@ void useremul_init(void)
 	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",
 	    useremul__linux, useremul__linux_setup);
 
-	add_useremul("FreeBSD/Alpha", ARCH_ALPHA, "EV4",
+	add_useremul("FreeBSD/Alpha", ARCH_ALPHA, "Alpha",
 	    useremul__freebsd, useremul__freebsd_setup);
 }
 

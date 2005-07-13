@@ -12,7 +12,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.78 2005-07-12 21:58:36 debug Exp $
+$Id: experiments.html,v 1.79 2005-07-13 11:13:30 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -168,13 +168,13 @@ learn more about how MIPS programs run, then add -V to the command line:
 	a800000000030038: 00021600      sll     v0,v0,24
 	GXemul&gt; <b>print v0</b>
 	v0 = 0x0000000048000000
-	GXemul&gt; <b><blink>_</blink></b>
+	GXemul&gt; <b>_</b>
 </pre>
 
-<p>
-The syntax of the single-step debugger shouldn't be too hard to grasp.
-Type 's' to single-step one instruction. Just pressing enter after that
-will repeat the 's' command. Type 'quit' to quit.
+<p>The syntax of the single-step debugger shouldn't be too hard to grasp.
+Type "<tt>s</tt>" to single-step one instruction. For some commands (e.g.
+the single-step command), just pressing enter on a blank line will cause
+the last command to be repeated. Type "<tt>quit</tt>" to quit.
 
 <p>
 Hopefully this is enough to get you inspired. :-)
@@ -457,7 +457,10 @@ following experimental devices:
 	    <td align="left" valign="top">Read: status word, one or more of these:
 		<br><tt>0x01</tt>&nbsp;=&nbsp;something was received (because of
 		the last command)
-		<br><tt>0x02</tt>&nbsp;=&nbsp;more packets are available</td>
+		<br><tt>0x02</tt>&nbsp;=&nbsp;more packets are available
+		<br><i>NOTE:</i> Whenever the status word is non-zero,
+			an interrupt is asserted. Reading the status word
+			clears it, and deasserts the interrupt.</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top"><tt>0x4010</tt></td>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.3 2005-07-13 11:13:45 debug Exp $
+ *  $Id: dev_ether.c,v 1.4 2005-07-13 20:23:29 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -68,6 +68,13 @@ struct ether_data {
 void dev_ether_tick(struct cpu *cpu, void *extra)
 {  
 	struct ether_data *d = (struct ether_data *) extra;
+	int r = 0;
+
+	d->status &= ~STATUS_MORE_AVAIL;
+	if (cpu->machine->emul->net != NULL)
+		r = net_ethernet_rx_avail(cpu->machine->emul->net, d);
+	if (r)
+		d->status |= STATUS_MORE_AVAIL;
 
 	if (d->status)
 		cpu_interrupt(cpu, d->irq_nr);
@@ -103,6 +110,8 @@ int dev_ether_access(struct cpu *cpu, struct memory *mem,
 	struct ether_data *d = (struct ether_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int i;
+	unsigned char *incoming_ptr;
+	int incoming_len;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -137,6 +146,37 @@ int dev_ether_access(struct cpu *cpu, struct memory *mem,
 			fatal("[ ether: WARNING: read from command ]\n");
 		else {
 			switch (idata) {
+			case 0x00:		/*  Receive:  */
+				if (cpu->machine->emul->net == NULL)
+					fatal("[ ether: RECEIVE but no "
+					    "net? ]\n");
+				else {
+					d->status &= ~STATUS_RECEIVED;
+					net_ethernet_rx(cpu->machine->emul->net,
+					    d, &incoming_ptr, &incoming_len);
+					if (incoming_ptr != NULL) {
+						d->status |= STATUS_RECEIVED;
+						if (incoming_len >
+						    DEV_ETHER_MAXBUFLEN)
+							incoming_len =
+							    DEV_ETHER_MAXBUFLEN;
+						memcpy(d->buf, incoming_ptr,
+						    incoming_len);
+						free(incoming_ptr);
+						d->packet_len = incoming_len;
+					}
+				}
+				dev_ether_tick(cpu, d);
+				break;
+			case 0x01:		/*  Send  */
+				if (cpu->machine->emul->net == NULL)
+					fatal("[ ether: SEND but no net? ]\n");
+				else
+					net_ethernet_tx(cpu->machine->emul->net,
+					    d, d->buf, d->packet_len);
+				d->status &= ~STATUS_RECEIVED;
+				dev_ether_tick(cpu, d);
+				break;
 			default:fatal("[ ether: UNIMPLEMENTED command 0x"
 				    "%02x ]\n", idata);
 				cpu->running = 0;

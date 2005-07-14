@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.828 2005-07-13 11:13:42 debug Exp $
+$Id: HISTORY,v 1.829 2005-07-14 08:28:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2065,3 +2065,4 @@ Changelog for GXemul:
 		Removing the framebuffer logo.
 20050713	Continuing on dev_ether.
 		Adding a dummy cpu_alpha (again).
+20050714	More work on cpu_alpha.

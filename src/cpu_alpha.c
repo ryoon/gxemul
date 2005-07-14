@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.8 2005-07-13 21:22:13 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.9 2005-07-14 08:28:13 debug Exp $
  *
  *  Alpha CPU emulation.
  */
@@ -175,12 +175,46 @@ void alpha_cpu_register_match(struct machine *m, char *name,
 
 
 /*
+ *  alpha_cpu_register_dump():
+ *  
+ *  Dump cpu registers in a relatively readable format.
+ *  
+ *  gprs: set to non-zero to dump GPRs and some special-purpose registers.
+ *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
+ */
+void alpha_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
+{ 
+	char *symbol;
+	uint64_t offset;
+	int i, x = cpu->cpu_id;
+
+	if (gprs) {
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    cpu->pc, &offset);
+		debug("cpu%i:\t pc = 0x%016llx", x, (long long)cpu->pc);
+		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
+		for (i=0; i<N_ALPHA_REGS; i++) {
+			int r = (i >> 1) + ((i & 1) << 4);
+			if ((i % 2) == 0)
+				debug("cpu%i:\t", x);
+			if (r != ALPHA_ZERO)
+				debug("%3s = 0x%016llx", alpha_regname[r],
+				    (long long)cpu->cd.alpha.r[r]);
+			debug((i % 2) == 1? "\n" : "   ");
+		}
+	}
+}
+
+
+/*
  *  alpha_print_imm16_disp():
  *
  *  Used internally by alpha_cpu_disassemble_instr().
  */
-static void alpha_print_imm16_disp(int16_t imm, int rb)
+static void alpha_print_imm16_disp(int imm, int rb)
 {
+	imm = (int16_t)imm;
+
 	if (imm < 0) {
 		debug("-");
 		imm = -imm;
@@ -211,7 +245,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 {
 	uint32_t iw;
 	char *symbol, *condition;
-	uint64_t offset;
+	uint64_t offset, tmp;
 	int opcode, ra, rb, func, rc, imm;
 	char *mnem = NULL;
 
@@ -327,6 +361,53 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}
+		break;
+	case 0x30:
+		tmp = iw & 0x1fffff;
+		if (tmp & 0x100000)
+			tmp |= 0xffffffffffe00000ULL;
+		tmp <<= 2;
+		tmp += dumpaddr + sizeof(uint32_t);
+		debug("br\t");
+		if (ra != ALPHA_ZERO)
+			debug("%s,", alpha_regname[ra]);
+		debug("0x%llx", (long long)tmp);
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    tmp, &offset);
+		if (symbol != NULL)
+			debug("\t<%s>", symbol);
+		debug("\n");
+		break;
+	case 0x38:
+	case 0x39:
+	case 0x3a:
+	case 0x3b:
+	case 0x3c:
+	case 0x3d:
+	case 0x3e:
+	case 0x3f:
+		switch (opcode) {
+		case 0x38: mnem = "blbc"; break;
+		case 0x39: mnem = "beq"; break;
+		case 0x3a: mnem = "blt"; break;
+		case 0x3b: mnem = "ble"; break;
+		case 0x3c: mnem = "blbs"; break;
+		case 0x3d: mnem = "bne"; break;
+		case 0x3e: mnem = "bge"; break;
+		case 0x3f: mnem = "bgt"; break;
+		}
+		tmp = iw & 0x1fffff;
+		if (tmp & 0x100000)
+			tmp |= 0xffffffffffe00000ULL;
+		tmp <<= 2;
+		tmp += dumpaddr + sizeof(uint32_t);
+		debug("%s\t%s,", mnem, alpha_regname[ra]);
+		debug("0x%llx", (long long)tmp);
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    tmp, &offset);
+		if (symbol != NULL)
+			debug("\t<%s>", symbol);
+		debug("\n");
 		break;
 	default:debug("UNIMPLEMENTED opcode 0x%x\n", opcode);
 	}
@@ -788,7 +869,7 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 	fp->list_available_types = alpha_cpu_list_available_types;
 	fp->register_match = alpha_cpu_register_match;
 	fp->disassemble_instr = alpha_cpu_disassemble_instr;
-	/*  fp->register_dump = alpha_cpu_register_dump;  */
+	fp->register_dump = alpha_cpu_register_dump;
 	fp->run = alpha_cpu_run;
 	fp->dumpinfo = alpha_cpu_dumpinfo;
 	/*  fp->show_full_statistics = alpha_cpu_show_full_statistics;  */

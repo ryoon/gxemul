@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.6 2005-07-15 09:36:36 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.7 2005-07-15 19:08:53 debug Exp $
  */
 
 #include "misc.h"
@@ -92,12 +92,12 @@ struct alpha_tc_physpage {
 struct alpha_vph_page {
 	void		*host_load[ALPHA_LEVEL1];
 	void		*host_store[ALPHA_LEVEL1];
-	uint32_t	phys_addr[ALPHA_LEVEL1];
+	uint64_t	phys_addr[ALPHA_LEVEL1];
 	int		refcount;
 	struct alpha_vph_page	*next;	/*  Freelist, used if refcount = 0.  */
 };
 
-#define	ALPHA_MAX_VPH_TLB_ENTRIES	32
+#define	ALPHA_MAX_VPH_TLB_ENTRIES	48
 struct alpha_vpg_tlb_entry {
 	int		valid;
 	int		writeflag;

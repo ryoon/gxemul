@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.46 2005-07-15 09:36:35 debug Exp $
+ *  $Id: memory_rw.c,v 1.47 2005-07-15 19:08:53 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -86,19 +86,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	int bintrans_device_danger = 0;
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
-
-#ifdef MEM_PPC
-	if (cpu->cd.ppc.bits == 32)
-		vaddr &= 0xffffffff;
-#endif
-
-#ifdef MEM_ALPHA
-	vaddr &= 0x1fffffff;
-#endif
-
-#ifdef MEM_ARM
-	vaddr &= 0x3fffffff;
-#endif
 
 #ifdef MEM_X86
 	/*  Real-mode wrap-around:  */
@@ -203,6 +190,20 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 	if (cache_flags & PHYSICAL || cpu->translate_address == NULL) {
 		paddr = vaddr;
+
+#ifdef MEM_ALPHA
+	paddr &= 0x1fffffff;
+#endif
+
+#ifdef MEM_ARM
+	paddr &= 0x3fffffff;
+#endif
+
+#ifdef MEM_PPC
+	if (cpu->cd.ppc.bits == 32)
+		paddr &= 0xffffffff;
+#endif
+
 	} else {
 		ok = cpu->translate_address(cpu, vaddr, &paddr,
 		    (writeflag? FLAG_WRITEFLAG : 0) +

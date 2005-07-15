@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.2 2005-07-15 09:36:35 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.3 2005-07-15 19:08:53 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -111,6 +111,20 @@ X(b)
 X(b_samepage)
 {
 	cpu->cd.alpha.next_ic = (struct alpha_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  lda:  Load address.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(lda)
+{
+	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1])
+	    + (int64_t)(int32_t)ic->arg[2];
 }
 
 
@@ -225,6 +239,18 @@ X(to_be_translated)
 	imm = iword & 0xffff;
 
 	switch (opcode) {
+	case 0x08:						/*  LDA  */
+		if (ra == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		ic->f = instr(lda);
+		ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
+		ic->arg[2] = (size_t) imm;
+		if (imm & 0x8000)
+			ic->arg[2] |= 0xffffffffffff0000ULL;
+		break;
 	case 0x30:						/*  BR  */
 		if (ra != ALPHA_ZERO)
 			fatal("[ WARNING! Alpha 'br' but ra isn't zero? ]\n");
@@ -253,11 +279,12 @@ X(to_be_translated)
 				    ((new_pc & mask_within_page) >> 2));
 			}
 		}
-		translated;
 		break;
 	default:fatal("[ UNIMPLEMENTED Alpha opcode 0x%x ]\n", opcode);
 		goto bad;
 	}
+
+	translated;
 
 	/*
 	 *  If we end up here, then an instruction was translated. Now it is

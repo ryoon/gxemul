@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.165 2005-06-30 11:52:14 debug Exp $
+ *  $Id: memory.c,v 1.166 2005-07-15 07:34:05 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -253,11 +253,11 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 
 
 /*
- *  memory_device_bintrans_access():
+ *  memory_device_dyntrans_access():
  *
  *  Get the lowest and highest bintrans access since last time.
  */
-void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
+void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high)
 {
 	int i, j;
@@ -384,15 +384,15 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	debug("device %2i at 0x%010llx: %s",
 	    mem->n_mmapped_devices, (long long)baseaddr, device_name);
 
-	if (flags & (MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK)
+	if (flags & (MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK)
 	    && (baseaddr & 0xfff) != 0) {
-		fatal("\nWARNING: Device bintrans access, but unaligned"
+		fatal("\nWARNING: Device dyntrans access, but unaligned"
 		    " baseaddr 0x%llx.\n", (long long)baseaddr);
 	}
 
-	if (flags & (MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK)) {
-		debug(" (bintrans %s)",
-		    (flags & MEM_BINTRANS_WRITE_OK)? "R/W" : "R");
+	if (flags & (MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK)) {
+		debug(" (dyntrans %s)",
+		    (flags & MEM_DYNTRANS_WRITE_OK)? "R/W" : "R");
 	}
 	debug("\n");
 

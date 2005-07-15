@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.4 2005-07-13 21:22:14 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.5 2005-07-15 07:34:07 debug Exp $
  */
 
 #include "misc.h"
@@ -79,8 +79,28 @@ struct alpha_tc_physpage {
 };
 
 
-/*  Virtual->physical->host page entry:  */
+/*
+ *  Virtual->physical->host page entry:
+ *
+ *  64 bits - 13 = 51 bits to describe a page.
+ *
+ *	15 + 12 + 12 + 12     a, b, c, and d indices
+ *
+ *  For example, to get a pointer to the host page for a load:
+ *
+ *	cpu->cd.alpha.vph_table0[a]->entry[b]->entry[c]->host_load[d]
+ *
+ *  with the appropriate casts for entry[b] and entry[c].
+ */
 #define	ALPHA_N_VPH_ENTRIES		1024
+#define	ALPHA_LEVEL0			32768
+#define	ALPHA_LEVELN			4096
+struct alpha_vph_table {
+	void		*entry[ALPHA_LEVELN];	/*  Ptr to alpha_vph_table
+						    or alpha_vph_page  */
+	int		refcount;
+	struct alpha_vph_table *next;	/*  Freelist, used if refcount = 0.  */
+};
 struct alpha_vph_page {
 	void		*host_load[ALPHA_N_VPH_ENTRIES];
 	void		*host_store[ALPHA_N_VPH_ENTRIES];
@@ -89,7 +109,7 @@ struct alpha_vph_page {
 	struct alpha_vph_page	*next;	/*  Freelist, used if refcount = 0.  */
 };
 
-#define	ALPHA_MAX_VPH_TLB_ENTRIES	64
+#define	ALPHA_MAX_VPH_TLB_ENTRIES	32
 struct alpha_vpg_tlb_entry {
 	int		valid;
 	int		writeflag;
@@ -132,7 +152,8 @@ struct alpha_cpu {
 	struct alpha_vpg_tlb_entry vph_tlb_entry[ALPHA_MAX_VPH_TLB_ENTRIES];
 	struct alpha_vph_page	*vph_default_page;
 	struct alpha_vph_page	*vph_next_free_page;
-	struct alpha_vph_page	*vph_table0[ALPHA_N_VPH_ENTRIES];
+	struct alpha_vph_table	*vph_next_free_table;
+	struct alpha_vph_table	*vph_table0[ALPHA_LEVEL0];
 };
 
 

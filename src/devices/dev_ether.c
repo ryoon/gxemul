@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.4 2005-07-13 20:23:29 debug Exp $
+ *  $Id: dev_ether.c,v 1.5 2005-07-15 07:34:06 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -230,7 +230,7 @@ int devinit_ether(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, n1,
 	    devinit->addr, DEV_ETHER_MAXBUFLEN, dev_ether_buf_access, (void *)d,
-	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK |
+	    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK |
 	    MEM_READING_HAS_NO_SIDE_EFFECTS, NULL);
 	memory_device_register(devinit->machine->memory, n2,
 	    devinit->addr + DEV_ETHER_MAXBUFLEN,

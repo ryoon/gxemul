@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.44 2005-07-13 21:22:13 debug Exp $
+ *  $Id: memory_rw.c,v 1.45 2005-07-15 07:34:05 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -319,7 +319,7 @@ have_paddr:
 					len = mem->dev_length[i] - paddr;
 
 				if (cpu->update_translation_table != NULL &&
-				    mem->dev_flags[i] & MEM_BINTRANS_OK) {
+				    mem->dev_flags[i] & MEM_DYNTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 
 					if (writeflag) {
@@ -337,7 +337,7 @@ have_paddr:
 					}
 
 					if (!(mem->dev_flags[i] &
-					    MEM_BINTRANS_WRITE_OK))
+					    MEM_DYNTRANS_WRITE_OK))
 						wf = 0;
 
 					cpu->update_translation_table(cpu,

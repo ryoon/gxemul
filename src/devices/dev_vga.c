@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.76 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_vga.c,v 1.77 2005-07-15 07:34:06 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -476,7 +476,7 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 	vga_update_cursor(cpu->machine, d);
 
 	/*  TODO: text vs graphics tick?  */
-	memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);
+	memory_device_dyntrans_access(cpu, cpu->mem, extra, &low, &high);
 
 	if ((int64_t)low != -1) {
 		debug("[ dev_vga_tick: bintrans access, %llx .. %llx ]\n",
@@ -1195,10 +1195,10 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	reset_palette(d, 0);
 
-	/*  MEM_BINTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not
+	/*  MEM_DYNTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not
 	    with Windows NT yet. Why? */
 	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
-	    allocsize, dev_vga_access, d, MEM_BINTRANS_OK |
+	    allocsize, dev_vga_access, d, MEM_DYNTRANS_OK |
 	    MEM_READING_HAS_NO_SIDE_EFFECTS, d->charcells);
 	memory_device_register(mem, "vga_gfx", videomem_base, GFX_ADDR_WINDOW,
 	    dev_vga_graphics_access, d, MEM_DEFAULT |

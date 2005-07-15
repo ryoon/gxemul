@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.33 2005-06-29 21:07:44 debug Exp $
+ *  $Id: memory.h,v 1.34 2005-07-15 07:34:07 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -173,7 +173,7 @@ int userland_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #define	MEMORY_ACCESS_FAILED	0
 #define	MEMORY_ACCESS_OK	1
 
-void memory_device_bintrans_access(struct cpu *, struct memory *mem,
+void memory_device_dyntrans_access(struct cpu *, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high);
 
 void memory_device_register_statefunction(
@@ -190,8 +190,8 @@ void memory_device_remove(struct memory *mem, int i);
 
 /*  Bit flags:  */
 #define	MEM_DEFAULT				0
-#define	MEM_BINTRANS_OK				1
-#define	MEM_BINTRANS_WRITE_OK			2
+#define	MEM_DYNTRANS_OK				1
+#define	MEM_DYNTRANS_WRITE_OK			2
 #define	MEM_READING_HAS_NO_SIDE_EFFECTS		4
 
 

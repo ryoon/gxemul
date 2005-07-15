@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.47 2005-07-13 11:13:44 debug Exp $
+ *  $Id: useremul.c,v 1.48 2005-07-15 07:34:05 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -216,6 +216,10 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 			store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
 			cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 		}
+		break;
+
+	case ARCH_ARM:
+		debug("useremul__netbsd_setup(): ARM: TODO\n");
 		break;
 
 	case ARCH_PPC:
@@ -1466,6 +1470,9 @@ void useremul_init(void)
 
 	add_useremul("Ultrix", ARCH_MIPS, "R3000",
 	    useremul__ultrix, useremul__ultrix_setup);
+
+	add_useremul("NetBSD/arm", ARCH_ARM, "ARM",
+	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("NetBSD/powerpc", ARCH_PPC, "PPC750",
 	    useremul__netbsd, useremul__netbsd_setup);

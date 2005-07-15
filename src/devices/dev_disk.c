@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.3 2005-07-12 21:58:37 debug Exp $
+ *  $Id: dev_disk.c,v 1.4 2005-07-15 07:34:06 debug Exp $
  *
  *  Basic "Disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
@@ -168,7 +168,7 @@ int devinit_disk(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, n2,
 	    devinit->addr + 4096, DEV_DISK_LENGTH - 4096, dev_disk_buf_access,
-	    (void *)d, MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK |
+	    (void *)d, MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK |
             MEM_READING_HAS_NO_SIDE_EFFECTS, NULL);
 
 	return 1;

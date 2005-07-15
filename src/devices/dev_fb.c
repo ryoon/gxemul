@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.102 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_fb.c,v 1.103 2005-07-15 07:34:06 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -620,7 +620,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		uint64_t low = -1, high;
 		int x, y;
 
-		memory_device_bintrans_access(cpu, cpu->mem,
+		memory_device_dyntrans_access(cpu, cpu->mem,
 		    extra, &low, &high);
 		if ((int64_t)low == -1)
 			break;
@@ -1034,7 +1034,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 
 	flags = MEM_DEFAULT;
 	if ((baseaddr & 0xfff) == 0)
-		flags = MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK;
+		flags = MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK;
 
 	flags |= MEM_READING_HAS_NO_SIDE_EFFECTS;
 

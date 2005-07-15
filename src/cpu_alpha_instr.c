@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.1 2005-07-13 11:13:44 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.2 2005-07-15 09:36:35 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -155,33 +155,10 @@ void alpha_combine_instructions(struct cpu *cpu, struct alpha_instr_call *ic,
 {
 	int n_back;
 	n_back = (addr >> 2) & (ALPHA_IC_ENTRIES_PER_PAGE-1);
-#if 0
+
 	if (n_back >= 1) {
-		/*  Double "mov":  */
-		if (ic[-1].f == instr(mov) || ic[-1].f == instr(clear)) {
-			if (ic[-1].f == instr(mov) && ic[0].f == instr(mov)) {
-				ic[-1].f = instr(mov_2);
-				combined;
-			}
-			if (ic[-1].f == instr(clear) && ic[0].f == instr(mov)) {
-				ic[-1].f = instr(mov_2);
-				ic[-1].arg[1] = 0;
-				combined;
-			}
-			if (ic[-1].f == instr(mov) && ic[0].f == instr(clear)) {
-				ic[-1].f = instr(mov_2);
-				ic[0].arg[1] = 0;
-				combined;
-			}
-			if (ic[-1].f == instr(clear) && ic[0].f==instr(clear)) {
-				ic[-1].f = instr(mov_2);
-				ic[-1].arg[1] = 0;
-				ic[0].arg[1] = 0;
-				combined;
-			}
-		}
 	}
-#endif
+
 	/*  TODO: Combine forward as well  */
 }
 
@@ -199,11 +176,12 @@ void alpha_combine_instructions(struct cpu *cpu, struct alpha_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc, iword, imm;
+	uint64_t addr, low_pc, iword;
 	struct alpha_vph_page *vph_p;
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
+	int opcode, ra, rb, func, rc, imm;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)
@@ -212,18 +190,19 @@ X(to_be_translated)
 	addr += (low_pc << 2);
 	addr &= ~0x3;
 
-
-printf("TO BE TRANSLATED todo\n");
-goto bad;
-
-
 	/*  Read the instruction word from memory:  */
-	vph_p = cpu->cd.alpha.vph_table0[addr >> 22];
-	page = vph_p->host_load[(addr >> 12) & 1023];
+	if ((addr >> 39) == 0) {
+		vph_p = cpu->cd.alpha.vph_table0[(addr >> 26) & 8191];
+		page = vph_p->host_load[(addr >> 13) & 8191];
+	} else if ((addr >> 39) == 0x1fffff8) {
+		vph_p = cpu->cd.alpha.vph_table0_kernel[(addr >> 26) & 8191];
+		page = vph_p->host_load[(addr >> 13) & 8191];
+	} else
+		page = NULL;
 
 	if (page != NULL) {
 		fatal("TRANSLATION HIT!\n");
-		memcpy(ib, page + (addr & 0xffc), sizeof(ib));
+		memcpy(ib, page + (addr & 0x1ffc), sizeof(ib));
 	} else {
 		fatal("TRANSLATION MISS!\n");
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
@@ -238,9 +217,47 @@ goto bad;
 	fatal("{ Alpha: translating pc=0x%016llx iword=0x%08x }\n",
 	    (long long)addr, (int)iword);
 
+	opcode = (iword >> 26) & 63;
+	ra = (iword >> 21) & 31;
+	rb = (iword >> 16) & 31;
+	func = (iword >> 5) & 0x7ff;
+	rc = iword & 31;
+	imm = iword & 0xffff;
 
-/*  ...  */
+	switch (opcode) {
+	case 0x30:						/*  BR  */
+		if (ra != ALPHA_ZERO)
+			fatal("[ WARNING! Alpha 'br' but ra isn't zero? ]\n");
+		ic->f = instr(b);
+		samepage_function = instr(b_samepage);
+		ic->arg[0] = (iword & 0x001fffff) << 2;
+		/*  Sign-extend:  */
+		if (ic->arg[0] & 0x00400000)
+			ic->arg[0] |= 0xffffffffff800000ULL;
+		/*
+		 *  Branches are calculated as PC + 4 + offset.
+		 */
+		ic->arg[0] = (size_t)(ic->arg[0] + 4);
 
+		/*  Special case: branch within the same page:  */
+		{
+			uint32_t mask_within_page =
+			    ((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+			uint32_t old_pc = addr;
+			uint32_t new_pc = old_pc + (int32_t)ic->arg[0];
+			if ((old_pc & ~mask_within_page) ==
+			    (new_pc & ~mask_within_page)) {
+				ic->f = samepage_function;
+				ic->arg[0] = (size_t) (
+				    cpu->cd.alpha.cur_ic_page +
+				    ((new_pc & mask_within_page) >> 2));
+			}
+		}
+		translated;
+		break;
+	default:fatal("[ UNIMPLEMENTED Alpha opcode 0x%x ]\n", opcode);
+		goto bad;
+	}
 
 	/*
 	 *  If we end up here, then an instruction was translated. Now it is

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.45 2005-07-15 07:34:05 debug Exp $
+ *  $Id: memory_rw.c,v 1.46 2005-07-15 09:36:35 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -68,6 +68,12 @@
 int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags)
 {
+#ifdef MEM_ALPHA
+	const int offset_mask = 0x1fff;
+#else
+	const int offset_mask = 0xfff;
+#endif
+
 #ifndef MEM_USERLAND
 	int ok = 1;
 #endif
@@ -298,9 +304,9 @@ have_paddr:
 		 *  this problem, but it is probably not very fast.
 		 */
 		for (i=0; i<mem->n_mmapped_devices; i++)
-			if (paddr >= (mem->dev_baseaddr[i] & ~0xfff) &&
+			if (paddr >= (mem->dev_baseaddr[i] & ~offset_mask) &&
 			    paddr <= ((mem->dev_baseaddr[i] +
-			    mem->dev_length[i] - 1) | 0xfff)) {
+			    mem->dev_length[i] - 1) | offset_mask)) {
 				bintrans_device_danger = 1;
 				break;
 			}
@@ -327,13 +333,14 @@ have_paddr:
 						    dev_bintrans_write_low[i])
 							mem->
 							dev_bintrans_write_low
-							    [i] =
-							    paddr & ~0xfff;
+							    [i] = paddr &
+							    ~offset_mask;
 						if (paddr > mem->
 						    dev_bintrans_write_high[i])
 							mem->
 						 	dev_bintrans_write_high
-							    [i] = paddr | 0xfff;
+							    [i] = paddr |
+							    offset_mask;
 					}
 
 					if (!(mem->dev_flags[i] &
@@ -341,10 +348,10 @@ have_paddr:
 						wf = 0;
 
 					cpu->update_translation_table(cpu,
-					    vaddr & ~0xfff,
+					    vaddr & ~offset_mask,
 					    mem->dev_bintrans_data[i] +
-					    (paddr & ~0xfff),
-					    wf, orig_paddr & ~0xfff);
+					    (paddr & ~offset_mask),
+					    wf, orig_paddr & ~offset_mask);
 				}
 
 				res = 0;
@@ -576,8 +583,8 @@ have_paddr:
 	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
 	if (cpu->update_translation_table != NULL && !bintrans_device_danger)
-		cpu->update_translation_table(cpu, vaddr & ~0xfff,
-		    memblock + (offset & ~0xfff),
+		cpu->update_translation_table(cpu, vaddr & ~offset_mask,
+		    memblock + (offset & ~offset_mask),
 #if 0
 		    cache == CACHE_INSTRUCTION?
 			(writeflag == MEM_WRITE? 1 : 0)
@@ -585,7 +592,7 @@ have_paddr:
 #else
 		    writeflag == MEM_WRITE? 1 : 0,
 #endif
-		    paddr & ~0xfff);
+		    paddr & ~offset_mask);
 
 	if (writeflag == MEM_WRITE) {
 		if (len == sizeof(uint32_t) && (offset & 3)==0)
@@ -605,7 +612,7 @@ have_paddr:
 #ifdef MEM_MIPS
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->cd.mips.pc_last_host_4k_page = memblock
-			    + (offset & ~0xfff);
+			    + (offset & ~offset_mask);
 			if (bintrans_cached) {
 				cpu->cd.mips.pc_bintrans_host_4kpage =
 				    cpu->cd.mips.pc_last_host_4k_page;

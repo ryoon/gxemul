@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.5 2005-07-15 07:34:07 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.6 2005-07-15 09:36:36 debug Exp $
  */
 
 #include "misc.h"
@@ -82,29 +82,17 @@ struct alpha_tc_physpage {
 /*
  *  Virtual->physical->host page entry:
  *
- *  64 bits - 13 = 51 bits to describe a page.
+ *	13 + 13 + 13 bits = 39 bits (should be enough for most userspace
+ *	applications)
  *
- *	15 + 12 + 12 + 12     a, b, c, and d indices
- *
- *  For example, to get a pointer to the host page for a load:
- *
- *	cpu->cd.alpha.vph_table0[a]->entry[b]->entry[c]->host_load[d]
- *
- *  with the appropriate casts for entry[b] and entry[c].
+ *  There is also an additional check for kernel space addresses.
  */
-#define	ALPHA_N_VPH_ENTRIES		1024
-#define	ALPHA_LEVEL0			32768
-#define	ALPHA_LEVELN			4096
-struct alpha_vph_table {
-	void		*entry[ALPHA_LEVELN];	/*  Ptr to alpha_vph_table
-						    or alpha_vph_page  */
-	int		refcount;
-	struct alpha_vph_table *next;	/*  Freelist, used if refcount = 0.  */
-};
+#define	ALPHA_LEVEL0			8192
+#define	ALPHA_LEVEL1			8192
 struct alpha_vph_page {
-	void		*host_load[ALPHA_N_VPH_ENTRIES];
-	void		*host_store[ALPHA_N_VPH_ENTRIES];
-	uint32_t	phys_addr[ALPHA_N_VPH_ENTRIES];
+	void		*host_load[ALPHA_LEVEL1];
+	void		*host_store[ALPHA_LEVEL1];
+	uint32_t	phys_addr[ALPHA_LEVEL1];
 	int		refcount;
 	struct alpha_vph_page	*next;	/*  Freelist, used if refcount = 0.  */
 };
@@ -115,8 +103,8 @@ struct alpha_vpg_tlb_entry {
 	int		writeflag;
 	int64_t		timestamp;
 	unsigned char	*host_page;
-	uint32_t	vaddr_page;
-	uint32_t	paddr_page;
+	uint64_t	vaddr_page;
+	uint64_t	paddr_page;
 };
 
 struct alpha_cpu {
@@ -153,7 +141,8 @@ struct alpha_cpu {
 	struct alpha_vph_page	*vph_default_page;
 	struct alpha_vph_page	*vph_next_free_page;
 	struct alpha_vph_table	*vph_next_free_table;
-	struct alpha_vph_table	*vph_table0[ALPHA_LEVEL0];
+	struct alpha_vph_page	*vph_table0[ALPHA_LEVEL0];
+	struct alpha_vph_page	*vph_table0_kernel[ALPHA_LEVEL0];
 };
 
 

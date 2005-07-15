@@ -25,9 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.9 2005-07-14 08:28:13 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.10 2005-07-15 09:36:35 debug Exp $
  *
  *  Alpha CPU emulation.
+ *
+ *  TODO: Many things.
+ *
+ *  See http://www.eecs.harvard.edu/~nr/toolkit/specs/alpha.html for info
+ *  on instruction formats etc.
  */
 
 #include <stdio.h>
@@ -109,19 +114,16 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	}
 
 	/*  Create the default virtual->physical->host translation:  */
-/* TODO */
-#if 0
 	cpu->cd.alpha.vph_default_page = malloc(sizeof(struct alpha_vph_page));
 	if (cpu->cd.alpha.vph_default_page == NULL) {
 		fprintf(stderr, "out of memory in alpha_cpu_new()\n");
 		exit(1);
 	}
-	memset(cpu->cd.alpha.vph_default_page, 
-0, sizeof(struct alpha_vph_page));
-	for (i=0; i<N_VPH_ENTRIES; i++)
-		cpu->cd.alpha.vph_table0[i] = 
-cpu->cd.alpha.vph_default_page;
-#endif
+	memset(cpu->cd.alpha.vph_default_page, 0,
+	    sizeof(struct alpha_vph_page));
+	for (i=0; i<ALPHA_LEVEL0; i++)
+		cpu->cd.alpha.vph_table0[i] = cpu->cd.alpha.vph_default_page;
+
 	return 1;
 }
 

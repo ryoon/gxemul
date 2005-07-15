@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.33 2005-07-13 21:22:13 debug Exp $
+ *  $Id: cpu_arm.c,v 1.34 2005-07-15 09:36:35 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -517,13 +517,14 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 	ppp->next_ofs = 0;
 	ppp->physaddr = physaddr;
 
+	/*  TODO: Is this faster than copying an entire template page?  */
+
 	for (i=0; i<ARM_IC_ENTRIES_PER_PAGE; i++)
 		ppp->ics[i].f = instr(to_be_translated);
 
 	ppp->ics[ARM_IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
 
-	cpu->cd.arm.translation_cache_cur_ofs +=
-	    sizeof(struct arm_tc_physpage);
+	cpu->cd.arm.translation_cache_cur_ofs += sizeof(struct arm_tc_physpage);
 }
 
 

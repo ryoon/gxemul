@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.4 2005-07-15 07:34:06 debug Exp $
+ *  $Id: dev_disk.c,v 1.5 2005-07-15 09:46:24 debug Exp $
  *
  *  Basic "Disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
@@ -80,7 +80,6 @@ int dev_disk_access(struct cpu *cpu, struct memory *mem,
 {
 	struct disk_data *d = (struct disk_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int i;
 
 	idata = memory_readmax64(cpu, data, len);
 

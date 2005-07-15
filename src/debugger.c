@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.111 2005-07-15 07:34:05 debug Exp $
+ *  $Id: debugger.c,v 1.112 2005-07-15 09:46:23 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -881,8 +881,6 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_ninstrs(struct machine *m, char *cmd_line)
 {
-	int i;
-
 	if (*cmd_line == '\0')
 		goto printstate;
 

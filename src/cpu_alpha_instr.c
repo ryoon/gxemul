@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.3 2005-07-15 19:08:53 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.4 2005-07-16 01:26:23 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -83,11 +83,11 @@ X(nop)
 
 
 /*
- *  b:  Branch (to a different translated page)
+ *  br:  Branch (to a different translated page)
  *
  *  arg[0] = relative offset (as an int32_t)
  */
-X(b)
+X(br)
 {
 	uint64_t low_pc;
 
@@ -104,13 +104,202 @@ X(b)
 
 
 /*
- *  b_samepage:  Branch (to within the same translated page)
+ *  beq:  Branch (to a different translated page) if Equal
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(beq)
+{
+	if (*((int64_t *)ic->arg[1]) == 0)
+		instr(br)(cpu, ic);
+}
+
+
+/*
+ *  ble:  Branch (to a different translated page) if Less or Equal
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(ble)
+{
+	if (*((int64_t *)ic->arg[1]) <= 0)
+		instr(br)(cpu, ic);
+}
+
+
+/*
+ *  bgt:  Branch (to a different translated page) if Greater Than
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(bgt)
+{
+	if (*((int64_t *)ic->arg[1]) > 0)
+		instr(br)(cpu, ic);
+}
+
+
+/*
+ *  br_samepage:  Branch (to within the same translated page)
  *
  *  arg[0] = pointer to new alpha_instr_call
  */
-X(b_samepage)
+X(br_samepage)
 {
 	cpu->cd.alpha.next_ic = (struct alpha_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  beq_samepage:  Branch (to within the same translated page) if Equal
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(beq_samepage)
+{
+	if (*((int64_t *)ic->arg[1]) == 0)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
+ *  ble_samepage:  Branch (to within the same translated page) if Less or Equal
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(ble_samepage)
+{
+	if (*((int64_t *)ic->arg[1]) <= 0)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
+ *  bgt_samepage:  Branch (to within the same translated page) if Greater Than
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(bgt_samepage)
+{
+	if (*((int64_t *)ic->arg[1]) > 0)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+void alpha_generic_stb(struct cpu *cpu, struct alpha_instr_call *ic)
+{
+	unsigned char data[1];
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+
+	addr += (int64_t)ic->arg[2];
+	data[0] = *((uint64_t *)ic->arg[0]);
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_WRITE, CACHE_DATA)) {
+		fatal("store failed: TODO\n");
+		exit(1);
+	}
+}
+
+
+void alpha_generic_stq(struct cpu *cpu, struct alpha_instr_call *ic)
+{
+	unsigned char data[8];
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+	uint64_t data_x = *((uint64_t *)ic->arg[0]);
+
+	addr += (int64_t)ic->arg[2];
+	data[0] = data_x;
+	data[1] = data_x >> 8;
+	data[2] = data_x >> 16;
+	data[3] = data_x >> 24;
+	data[4] = data_x >> 32;
+	data[5] = data_x >> 40;
+	data[6] = data_x >> 48;
+	data[7] = data_x >> 56;
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_WRITE, CACHE_DATA)) {
+		fatal("store failed: TODO\n");
+		exit(1);
+	}
+}
+
+
+/*
+ *  stb:  Store byte.
+ *
+ *  arg[0] = pointer to the register to store (uint64_t)
+ *  arg[1] = pointer to the base register (uint64_t)
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(stb)
+{
+	int first, a, b, c;
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+	addr += (int64_t)ic->arg[2];
+
+	first = addr >> 39;
+	a = (addr >> 26) & 8191;
+	b = (addr >> 13) & 8191;
+	c = addr & 8191;
+
+	if (first == 0) {
+		struct alpha_vph_page *vph_p;
+		unsigned char *page;
+		vph_p = cpu->cd.alpha.vph_table0[a];
+		page = vph_p->host_load[b];
+		if (page != NULL)
+			page[c] = *((uint64_t *)ic->arg[0]);
+		else
+			alpha_generic_stb(cpu, ic);
+	} else
+		alpha_generic_stb(cpu, ic);
+}
+
+
+/*
+ *  stq:  Store quad.
+ *
+ *  arg[0] = pointer to the register to store (uint64_t)
+ *  arg[1] = pointer to the base register (uint64_t)
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(stq)
+{
+	int first, a, b, c;
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+	addr += (int64_t)ic->arg[2];
+
+	first = addr >> 39;
+	a = (addr >> 26) & 8191;
+	b = (addr >> 13) & 8191;
+	c = addr & 8191;
+
+	if (first == 0) {
+		struct alpha_vph_page *vph_p;
+		unsigned char *page;
+		vph_p = cpu->cd.alpha.vph_table0[a];
+		page = vph_p->host_load[b];
+		if (page != NULL) {
+			uint64_t d = *((uint64_t *)ic->arg[0]);
+			page[c] = d;
+			page[c+1] = d >> 8;
+			page[c+2] = d >> 16;
+			page[c+3] = d >> 24;
+			page[c+4] = d >> 32;
+			page[c+5] = d >> 40;
+			page[c+6] = d >> 48;
+			page[c+7] = d >> 56;
+		} else
+			alpha_generic_stq(cpu, ic);
+	} else
+		alpha_generic_stq(cpu, ic);
 }
 
 
@@ -125,6 +314,140 @@ X(lda)
 {
 	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1])
 	    + (int64_t)(int32_t)ic->arg[2];
+}
+
+
+/*
+ *  lda_0:  Load address compared to the zero register.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = ignored
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(lda_0)
+{
+	*((uint64_t *)ic->arg[0]) = (int64_t)(int32_t)ic->arg[2];
+}
+
+
+/*
+ *  or:  3-register OR
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t nr 1
+ *  arg[2] = pointer to source uint64_t nr 2
+ */
+X(or)
+{
+	*((uint64_t *)ic->arg[0]) =
+	    *((uint64_t *)ic->arg[1]) | *((uint64_t *)ic->arg[2]);
+}
+
+
+/*
+ *  and_imm:  2-register AND with imm
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value
+ */
+X(and_imm)
+{
+	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1]) & ic->arg[2];
+}
+
+
+/*
+ *  sll_imm:  2-register SLL with imm
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value
+ */
+X(sll_imm)
+{
+	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1]) <<
+	    (ic->arg[2] & 63);
+}
+
+
+/*
+ *  addl:  ADD long
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t nr 1
+ *  arg[2] = pointer to source uint64_t nr 2
+ */
+X(addl)
+{
+	int32_t x;
+
+	x = *((uint64_t *)ic->arg[1]) + *((uint64_t *)ic->arg[2]);
+	*((uint64_t *)ic->arg[0]) = x;
+}
+
+
+/*
+ *  addl_imm:  ADD long, immediate
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value
+ */
+X(addl_imm)
+{
+	int32_t x;
+
+	x = *((int64_t *)ic->arg[1]) + ic->arg[2];
+	*((uint64_t *)ic->arg[0]) = x;
+}
+
+
+/*
+ *  addq_imm:  ADD quad, immediate
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value
+ */
+X(addq_imm)
+{
+	int64_t x;
+
+	x = *((int64_t *)ic->arg[1]) + ic->arg[2];
+	*((uint64_t *)ic->arg[0]) = x;
+}
+
+
+/*
+ *  subl_imm:  SUB long, immediate
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value
+ */
+X(subl_imm)
+{
+	int32_t x;
+
+	x = *((uint64_t *)ic->arg[1]) - ic->arg[2];
+	*((uint64_t *)ic->arg[0]) = x;
+}
+
+
+/*
+ *  cmple_imm:  CMPLE with immediate
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value
+ */
+X(cmple_imm)
+{
+	if (*((int64_t *)ic->arg[1]) <= (int64_t)(int32_t)ic->arg[2])
+		*((uint64_t *)ic->arg[0]) = 1;
+	else
+		*((uint64_t *)ic->arg[0]) = 0;
 }
 
 
@@ -228,8 +551,8 @@ X(to_be_translated)
 
 	iword = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
 
-	fatal("{ Alpha: translating pc=0x%016llx iword=0x%08x }\n",
-	    (long long)addr, (int)iword);
+	/*  fatal("{ Alpha: translating pc=0x%016llx iword=0x%08x }\n",
+	    (long long)addr, (int)iword);  */
 
 	opcode = (iword >> 26) & 63;
 	ra = (iword >> 21) & 31;
@@ -240,6 +563,7 @@ X(to_be_translated)
 
 	switch (opcode) {
 	case 0x08:						/*  LDA  */
+	case 0x09:						/*  LDAH  */
 		if (ra == ALPHA_ZERO) {
 			ic->f = instr(nop);
 			break;
@@ -247,30 +571,145 @@ X(to_be_translated)
 		ic->f = instr(lda);
 		ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
 		ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
-		ic->arg[2] = (size_t) imm;
-		if (imm & 0x8000)
-			ic->arg[2] |= 0xffffffffffff0000ULL;
+		if (rb == ALPHA_ZERO)
+			ic->f = instr(lda_0);
+		ic->arg[2] = (ssize_t)(int16_t)imm;
+		if (opcode == 9)
+			ic->arg[2] <<= 16;
+		break;
+	case 0x0b:						/*  LDQ_U  */
+		if (ra == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		fatal("[ Alpha: LDQ_U to non-zero register ]\n");
+		goto bad;
+	case 0x0e:
+	case 0x2d:
+		switch (opcode) {
+		case 0x0e: ic->f = instr(stb); break;
+		case 0x2d: ic->f = instr(stq); break;
+		}
+		ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
+		ic->arg[2] = (ssize_t)(int16_t)imm;
+		break;
+	case 0x10:
+		if (rc == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		ic->arg[0] = (size_t) &cpu->cd.alpha.r[rc];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[ra];
+		if (func & 0x80)
+			ic->arg[2] = (size_t)((rb << 3) + (func >> 8));
+		else
+			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
+		switch (func & 0xff) {
+		case 0x00:
+			ic->f = instr(addl);
+			break;
+		case 0x80:
+			ic->f = instr(addl_imm);
+			break;
+		case 0x89:
+			ic->f = instr(subl_imm);
+			break;
+		case 0xa0:
+			ic->f = instr(addq_imm);
+			break;
+		case 0xed:
+			ic->f = instr(cmple_imm);
+			break;
+		default:fatal("[ Alpha: unimplemented function 0x%03x for"
+			    " opcode 0x%02x ]\n", func, opcode);
+			goto bad;
+		}
+		break;
+	case 0x11:
+		if (rc == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		ic->arg[0] = (size_t) &cpu->cd.alpha.r[rc];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[ra];
+		if (func & 0x80)
+			ic->arg[2] = (size_t)((rb << 3) + (func >> 8));
+		else
+			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
+		switch (func & 0xff) {
+		case 0x20:
+			ic->f = instr(or);
+			/*  TODO: Move if exactly one of ra or rb = 31  */
+			if (ra == ALPHA_ZERO && rb == ALPHA_ZERO)
+				ic->f = instr(clear);
+			break;
+		case 0x80:
+			ic->f = instr(and_imm);
+			break;
+		default:fatal("[ Alpha: unimplemented function 0x%03x for"
+			    " opcode 0x%02x ]\n", func, opcode);
+			goto bad;
+		}
+		break;
+	case 0x12:
+		if (rc == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		ic->arg[0] = (size_t) &cpu->cd.alpha.r[rc];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[ra];
+		if (func & 0x80)
+			ic->arg[2] = (size_t)((rb << 3) + (func >> 8));
+		else
+			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
+		switch (func & 0xff) {
+		case 0xb9:
+			ic->f = instr(sll_imm);
+			break;
+		default:fatal("[ Alpha: unimplemented function 0x%03x for"
+			    " opcode 0x%02x ]\n", func, opcode);
+			goto bad;
+		}
 		break;
 	case 0x30:						/*  BR  */
-		if (ra != ALPHA_ZERO)
-			fatal("[ WARNING! Alpha 'br' but ra isn't zero? ]\n");
-		ic->f = instr(b);
-		samepage_function = instr(b_samepage);
+	case 0x39:						/*  BEQ  */
+	case 0x3b:						/*  BLE  */
+	case 0x3f:						/*  BGT  */
+		switch (opcode) {
+		case 0x30:
+			if (ra != ALPHA_ZERO)
+				fatal("[ WARNING! Alpha 'br' but ra "
+				    "isn't zero? ]\n");
+			ic->f = instr(br);
+			samepage_function = instr(br_samepage);
+			break;
+		case 0x39:
+			ic->f = instr(beq);
+			samepage_function = instr(beq_samepage);
+			break;
+		case 0x3b:
+			ic->f = instr(ble);
+			samepage_function = instr(ble_samepage);
+			break;
+		case 0x3f:
+			ic->f = instr(bgt);
+			samepage_function = instr(bgt_samepage);
+			break;
+		}
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[ra];
 		ic->arg[0] = (iword & 0x001fffff) << 2;
 		/*  Sign-extend:  */
 		if (ic->arg[0] & 0x00400000)
 			ic->arg[0] |= 0xffffffffff800000ULL;
-		/*
-		 *  Branches are calculated as PC + 4 + offset.
-		 */
+		/*  Branches are calculated as PC + 4 + offset.  */
 		ic->arg[0] = (size_t)(ic->arg[0] + 4);
-
 		/*  Special case: branch within the same page:  */
 		{
-			uint32_t mask_within_page =
+			uint64_t mask_within_page =
 			    ((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
-			uint32_t old_pc = addr;
-			uint32_t new_pc = old_pc + (int32_t)ic->arg[0];
+			uint64_t old_pc = addr;
+			uint64_t new_pc = old_pc + (int32_t)ic->arg[0];
 			if ((old_pc & ~mask_within_page) ==
 			    (new_pc & ~mask_within_page)) {
 				ic->f = samepage_function;

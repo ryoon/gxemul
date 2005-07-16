@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.35 2005-07-13 11:13:44 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.36 2005-07-16 01:26:23 debug Exp $
  *
  *  ARM instructions.
  *
@@ -798,7 +798,6 @@ X(to_be_translated)
 				ic->f = cond_instr(mov_pc);
 				ic->arg[0] = (size_t)
 				    (&cpu->cd.arm.r[iword & 15]);
-				translated;
 			} else if ((iword & 0x0fff0ff0) == 0x01a00000) {
 				/*  Hardcoded: mov reg,reg  */
 				if ((iword & 15) == ARM_PC) {
@@ -810,7 +809,6 @@ X(to_be_translated)
 				    (&cpu->cd.arm.r[r12]);
 				ic->arg[1] = (size_t)
 				    (&cpu->cd.arm.r[iword & 15]);
-				translated;
 			} else {
 				fatal("REGISTER FORM! TODO\n");
 				goto bad;
@@ -857,7 +855,6 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[r16]);
 			ic->arg[2] = imm;
-			translated;
 			break;
 		case 0xa:				/*  CMP  */
 			if (!s_bit) {
@@ -869,7 +866,6 @@ X(to_be_translated)
 			ic->arg[1] = imm;
 			if (imm == 0 && r16 != ARM_PC)
 				ic->f = arm_cmps_0[r16];
-			translated;
 			break;
 		case 0xd:				/*  MOV  */
 			if (s_bit) {
@@ -886,7 +882,6 @@ X(to_be_translated)
 				if (imm == 0)
 					ic->f = cond_instr(clear);
 			}
-			translated;
 			break;
 		default:goto bad;
 		}
@@ -950,7 +945,6 @@ X(to_be_translated)
 			fatal("Specific Load/store TODO\n");
 			goto bad;
 		}
-		translated;
 		break;
 
 	case 0x8:	/*  Multiple load/store...  (Block data transfer)  */
@@ -1000,12 +994,12 @@ X(to_be_translated)
 				    ((new_pc & mask_within_page) >> 2));
 			}
 		}
-		translated;
 		break;
 
 	default:goto bad;
 	}
 
+	translated;
 
 	/*
 	 *  If we end up here, then an instruction was translated. Now it is

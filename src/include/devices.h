@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.173 2005-07-12 21:58:38 debug Exp $
+ *  $Id: devices.h,v 1.174 2005-07-16 01:26:25 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -179,7 +179,7 @@ void dev_decxmi_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_disk.c:  */
 #define	DEV_DISK_ADDRESS		0x13000000
-#define	DEV_DISK_LENGTH			0x2000
+#define	DEV_DISK_LENGTH			0x4000
 
 /*  dev_ether.c:  */
 #define	DEV_ETHER_ADDRESS		0x14000000

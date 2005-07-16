@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.11 2005-07-15 19:08:53 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.12 2005-07-16 01:26:23 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -282,6 +282,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("\n");
 		break;
 	case 0x0a:
+	case 0x0b:
 	case 0x0c:
 	case 0x0d:
 	case 0x0e:
@@ -291,6 +292,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x2d:
 		switch (opcode) {
 		case 0x0a: mnem = "ldbu"; break;
+		case 0x0b: mnem = "ldq_u"; break;
 		case 0x0c: mnem = "ldwu"; break;
 		case 0x0d: mnem = "stw"; break;
 		case 0x0e: mnem = "stb"; break;
@@ -299,67 +301,94 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x2c: mnem = "stl"; break;
 		case 0x2d: mnem = "stq"; break;
 		}
-		debug("%s\t%s,", mnem, alpha_regname[ra]);
-		alpha_print_imm16_disp(imm, rb);
+		if (opcode == 0x0b && ra == ALPHA_ZERO) {
+			debug("unop");
+		} else {
+			debug("%s\t%s,", mnem, alpha_regname[ra]);
+			alpha_print_imm16_disp(imm, rb);
+		}
 		debug("\n");
 		break;
 	case 0x10:
-		switch (func) {
-		case 0x000:
-		case 0x009:
-		case 0x020:
-		case 0x029:
-			switch (func) {
-			case 0x000: mnem = "addl"; break;
-			case 0x009: mnem = "subl"; break;
-			case 0x020: mnem = "addq"; break;
-			case 0x029: mnem = "subq"; break;
-			}
-			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
-			    alpha_regname[rb], alpha_regname[rc]);
-			break;
+		switch (func & 0x7f) {
+		case 0x00: mnem = "addl"; break;
+		case 0x02: mnem = "s4addl"; break;
+		case 0x09: mnem = "subl"; break;
+		case 0x0b: mnem = "s4subl"; break;
+		case 0x0f: mnem = "cmpbge"; break;
+		case 0x12: mnem = "s8addl"; break;
+		case 0x1b: mnem = "s8subl"; break;
+		case 0x1d: mnem = "cmpult"; break;
+		case 0x20: mnem = "addq"; break;
+		case 0x22: mnem = "s4addq"; break;
+		case 0x29: mnem = "subq"; break;
+		case 0x2b: mnem = "s4subq"; break;
+		case 0x2d: mnem = "cmpeq"; break;
+		case 0x32: mnem = "s8addq"; break;
+		case 0x3b: mnem = "s8subq"; break;
+		case 0x3d: mnem = "cmpule"; break;
+		case 0x4d: mnem = "cmplt"; break;
+		case 0x6d: mnem = "cmple"; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}
+		if (mnem == NULL)
+			break;
+		if (func & 0x80)
+			debug("%s\t%s,0x%x,%s\n", mnem,
+			    alpha_regname[ra], (rb << 3) + (func >> 8),
+			    alpha_regname[rc]);
+		else
+			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
+			    alpha_regname[rb], alpha_regname[rc]);
 		break;
 	case 0x11:
-		switch (func) {
-		case 0x000:
-		case 0x020:
-		case 0x040:
-			switch (func) {
-			case 0x000: mnem = "and"; break;
-			case 0x020: mnem = "or"; break;
-			case 0x040: mnem = "xor"; break;
-			}
-			/*  Special cases: "nop" etc:  */
-			if (func == 0x020 && rc == ALPHA_ZERO)
-				debug("nop\n");
-			else if (func == 0x020 && ra == ALPHA_ZERO) {
-				if (rb == ALPHA_ZERO)
-					debug("clr\t%s\n", alpha_regname[rc]);
-				else
-					debug("mov\t%s,%s\n", alpha_regname[rb],
-					    alpha_regname[rc]);
-			} else
-				debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
-				    alpha_regname[rb], alpha_regname[rc]);
-			break;
+		switch (func & 0x7f) {
+		case 0x000: mnem = "and"; break;
+		case 0x020: mnem = "or"; break;
+		case 0x040: mnem = "xor"; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}
-		break;
-	case 0x12:
-		switch (func) {
-		case 0x030:
-		case 0x031:
-			switch (func) {
-			case 0x030: mnem = "zap"; break;
-			case 0x031: mnem = "zapnot"; break;
-			}
+		if (mnem == NULL)
+			break;
+		/*  Special cases: "nop" etc:  */
+		if (func == 0x020 && rc == ALPHA_ZERO)
+			debug("nop\n");
+		else if (func == 0x020 && ra == ALPHA_ZERO) {
+			if (rb == ALPHA_ZERO)
+				debug("clr\t%s\n", alpha_regname[rc]);
+			else
+				debug("mov\t%s,%s\n", alpha_regname[rb],
+				    alpha_regname[rc]);
+		} else if (func & 0x80)
+			debug("%s\t%s,0x%x,%s\n", mnem,
+			    alpha_regname[ra], (rb << 3) + (func >> 8),
+			    alpha_regname[rc]);
+		else
 			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
 			    alpha_regname[rb], alpha_regname[rc]);
+		break;
+	case 0x12:
+		switch (func & 0x7f) {
+		case 0x030: mnem = "zap"; break;
+		case 0x031: mnem = "zapnot"; break;
+		case 0x039: mnem = "sll"; break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		if (mnem == NULL)
 			break;
+		if (func & 0x80)
+			debug("%s\t%s,0x%x,%s\n", mnem,
+			    alpha_regname[ra], (rb << 3) + (func >> 8),
+			    alpha_regname[rc]);
+		else
+			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
+			    alpha_regname[rb], alpha_regname[rc]);
+		break;
+	case 0x1a:
+		switch (func) {
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}

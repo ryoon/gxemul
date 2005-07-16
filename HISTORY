@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.830 2005-07-15 09:38:27 debug Exp $
+$Id: HISTORY,v 1.831 2005-07-16 11:36:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2066,5 +2066,6 @@ Changelog for GXemul:
 20050713	Continuing on dev_ether.
 		Adding a dummy cpu_alpha (again).
 20050714	More work on cpu_alpha.
-20050715	More work on cpu_alpha. The first instruction (a branch to
-		itself) works.
+20050715	More work on cpu_alpha. Many instructions work, enough to run
+		a simple framebuffer fill test (similar to the ARM test).
+20050716	More Alpha stuff.

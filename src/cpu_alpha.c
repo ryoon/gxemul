@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.12 2005-07-16 01:26:23 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.13 2005-07-16 11:36:47 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -172,6 +172,17 @@ void alpha_cpu_register_match(struct machine *m, char *name,
 		} else
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
+	}
+
+	/*  Register names:  */
+	for (i=0; i<N_ALPHA_REGS; i++) {
+		if (strcasecmp(name, alpha_regname[i]) == 0) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.alpha.r[i] = *valuep;
+			else
+				*valuep = m->cpus[cpunr]->cd.alpha.r[i];
+			*match_register = 1;
+		}
 	}
 }
 

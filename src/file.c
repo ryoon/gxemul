@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.99 2005-06-26 09:21:28 debug Exp $
+ *  $Id: file.c,v 1.100 2005-07-18 22:00:06 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1277,7 +1277,10 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		}
 	}
 
-	/*  Read the section headers to find the address of the _gp symbol:  */
+	/*
+	 *  Read the section headers to find the address of the _gp
+	 *  symbol (for MIPS):
+	 */
 
 	for (i=0; i<eshnum; i++) {
 		int sh_name, sh_type, sh_flags, sh_link, sh_info, sh_entsize;
@@ -1435,6 +1438,10 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 				unencode(addr,    &sym32.st_value, Elf32_Word);
 				unencode(size,    &sym32.st_size, Elf32_Word);
 			}
+
+			/*  debug("symbol info=0x%02x addr=0x%016llx"
+			    " (%i) '%s'\n", st_info, (long long)addr,
+			    st_name, symbol_strings + st_name);  */
 
 			if (size == 0)
 				size ++;

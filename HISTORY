@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.831 2005-07-16 11:36:47 debug Exp $
+$Id: HISTORY,v 1.832 2005-07-18 22:00:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2069,3 +2069,5 @@ Changelog for GXemul:
 20050715	More work on cpu_alpha. Many instructions work, enough to run
 		a simple framebuffer fill test (similar to the ARM test).
 20050716	More Alpha stuff.
+20050717	Minor updates (Alpha stuff).
+20050718	Minor updates (Alpha stuff).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.14 2005-07-18 11:28:32 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.15 2005-07-18 22:00:06 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -721,7 +721,7 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 {
 	uint64_t cached_pc, physaddr;
 	uint32_t physpage_ofs;
-	int pagenr, table_index;
+	uint64_t pagenr, table_index;
 	uint32_t *physpage_entryp;
 	struct alpha_tc_physpage *ppp;
 

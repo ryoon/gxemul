@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.5 2005-07-18 11:28:32 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.6 2005-07-18 22:00:06 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -845,9 +845,11 @@ X(to_be_translated)
 	case 0x3f:						/*  BGT  */
 		switch (opcode) {
 		case 0x30:
-			if (ra != ALPHA_ZERO)
+			if (ra != ALPHA_ZERO) {
 				fatal("[ WARNING! Alpha 'br' but ra "
 				    "isn't zero? ]\n");
+				goto bad;
+			}
 			ic->f = instr(br);
 			samepage_function = instr(br_samepage);
 			break;

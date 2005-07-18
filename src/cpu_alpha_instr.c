@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.4 2005-07-16 01:26:23 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.5 2005-07-18 11:28:32 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -197,7 +197,7 @@ void alpha_generic_stb(struct cpu *cpu, struct alpha_instr_call *ic)
 	unsigned char data[1];
 	uint64_t addr = *((uint64_t *)ic->arg[1]);
 
-	addr += (int64_t)ic->arg[2];
+	addr += (int32_t)ic->arg[2];
 	data[0] = *((uint64_t *)ic->arg[0]);
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
@@ -208,13 +208,55 @@ void alpha_generic_stb(struct cpu *cpu, struct alpha_instr_call *ic)
 }
 
 
+void alpha_generic_ldl(struct cpu *cpu, struct alpha_instr_call *ic)
+{
+	unsigned char data[4];
+	uint64_t addr = *((uint64_t *)ic->arg[1]) + (int32_t)ic->arg[2];
+	int32_t data_x;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	data_x = data[0];
+	data_x += (data[1] << 8);
+	data_x += (data[2] << 16);
+	data_x += (data[3] << 24);
+	*((uint64_t *)ic->arg[0]) = data_x;
+}
+
+
+void alpha_generic_ldq(struct cpu *cpu, struct alpha_instr_call *ic)
+{
+	unsigned char data[8];
+	uint64_t addr = *((uint64_t *)ic->arg[1]) + (int32_t)ic->arg[2];
+	int64_t data_x;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_DATA)) {
+		fatal("load failed: TODO\n");
+		exit(1);
+	}
+	data_x = data[0];
+	data_x += (data[1] << 8);
+	data_x += (data[2] << 16);
+	data_x += (data[3] << 24);
+	data_x += ((int64_t)data[4] << 32);
+	data_x += ((int64_t)data[5] << 40);
+	data_x += ((int64_t)data[6] << 48);
+	data_x += ((int64_t)data[7] << 56);
+	*((uint64_t *)ic->arg[0]) = data_x;
+}
+
+
 void alpha_generic_stq(struct cpu *cpu, struct alpha_instr_call *ic)
 {
 	unsigned char data[8];
 	uint64_t addr = *((uint64_t *)ic->arg[1]);
 	uint64_t data_x = *((uint64_t *)ic->arg[0]);
 
-	addr += (int64_t)ic->arg[2];
+	addr += (int32_t)ic->arg[2];
 	data[0] = data_x;
 	data[1] = data_x >> 8;
 	data[2] = data_x >> 16;
@@ -274,7 +316,7 @@ X(stq)
 {
 	int first, a, b, c;
 	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	addr += (int64_t)ic->arg[2];
+	addr += (int32_t)ic->arg[2];
 
 	first = addr >> 39;
 	a = (addr >> 26) & 8191;
@@ -300,6 +342,84 @@ X(stq)
 			alpha_generic_stq(cpu, ic);
 	} else
 		alpha_generic_stq(cpu, ic);
+}
+
+
+/*
+ *  ldl:  Load long.
+ *
+ *  arg[0] = pointer to the register to load to (uint64_t)
+ *  arg[1] = pointer to the base register (uint64_t)
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(ldl)
+{
+	int first, a, b, c;
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+	addr += (int32_t)ic->arg[2];
+
+	first = addr >> 39;
+	a = (addr >> 26) & 8191;
+	b = (addr >> 13) & 8191;
+	c = addr & 8191;
+
+	if (first == 0) {
+		struct alpha_vph_page *vph_p;
+		unsigned char *page;
+		vph_p = cpu->cd.alpha.vph_table0[a];
+		page = vph_p->host_load[b];
+		if (page != NULL) {
+			int32_t d;
+			d = page[c];
+			d += (page[c+1] << 8);
+			d += (page[c+2] << 16);
+			d += (page[c+3] << 24);
+			*((uint64_t *)ic->arg[0]) = d;
+		} else
+			alpha_generic_ldl(cpu, ic);
+	} else
+		alpha_generic_ldl(cpu, ic);
+}
+
+
+/*
+ *  ldq:  Load quad.
+ *
+ *  arg[0] = pointer to the register to load to (uint64_t)
+ *  arg[1] = pointer to the base register (uint64_t)
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(ldq)
+{
+	int first, a, b, c;
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+	addr += (int32_t)ic->arg[2];
+
+	first = addr >> 39;
+	a = (addr >> 26) & 8191;
+	b = (addr >> 13) & 8191;
+	c = addr & 8191;
+
+	if (first == 0) {
+		struct alpha_vph_page *vph_p;
+		unsigned char *page;
+		vph_p = cpu->cd.alpha.vph_table0[a];
+		page = vph_p->host_load[b];
+		if (page != NULL) {
+			int64_t d;
+			d = page[c];
+			d += (page[c+1] << 8);
+			d += (page[c+2] << 16);
+			d += (page[c+3] << 24);
+			d += ((int64_t)page[c+4] << 32);
+			d += ((int64_t)page[c+5] << 40);
+			d += ((int64_t)page[c+6] << 48);
+			d += ((int64_t)page[c+7] << 56);
+			*((uint64_t *)ic->arg[0]) = d;
+		} else
+			alpha_generic_ldq(cpu, ic);
+	} else
+		alpha_generic_ldq(cpu, ic);
 }
 
 
@@ -388,6 +508,22 @@ X(addl)
 
 
 /*
+ *  addq:  ADD quad
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t nr 1
+ *  arg[2] = pointer to source uint64_t nr 2
+ */
+X(addq)
+{
+	int64_t x;
+
+	x = *((uint64_t *)ic->arg[1]) + *((uint64_t *)ic->arg[2]);
+	*((uint64_t *)ic->arg[0]) = x;
+}
+
+
+/*
  *  addl_imm:  ADD long, immediate
  *
  *  arg[0] = pointer to destination uint64_t
@@ -415,6 +551,22 @@ X(addq_imm)
 	int64_t x;
 
 	x = *((int64_t *)ic->arg[1]) + ic->arg[2];
+	*((uint64_t *)ic->arg[0]) = x;
+}
+
+
+/*
+ *  s8addq_imm:  ADD quad, scalar 8, immediate
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value
+ */
+X(s8addq_imm)
+{
+	int64_t x;
+
+	x = 8 * (*((int64_t *)ic->arg[1])) + ic->arg[2];
 	*((uint64_t *)ic->arg[0]) = x;
 }
 
@@ -518,7 +670,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
-	int opcode, ra, rb, func, rc, imm;
+	int opcode, ra, rb, func, rc, imm, load;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)
@@ -585,10 +737,19 @@ X(to_be_translated)
 		fatal("[ Alpha: LDQ_U to non-zero register ]\n");
 		goto bad;
 	case 0x0e:
+	case 0x28:
+	case 0x29:
 	case 0x2d:
+		load = 0;
 		switch (opcode) {
 		case 0x0e: ic->f = instr(stb); break;
+		case 0x28: ic->f = instr(ldl); load = 1; break;
+		case 0x29: ic->f = instr(ldq); load = 1; break;
 		case 0x2d: ic->f = instr(stq); break;
+		}
+		if (load && ra == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
 		}
 		ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
 		ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
@@ -609,6 +770,9 @@ X(to_be_translated)
 		case 0x00:
 			ic->f = instr(addl);
 			break;
+		case 0x20:
+			ic->f = instr(addq);
+			break;
 		case 0x80:
 			ic->f = instr(addl_imm);
 			break;
@@ -617,6 +781,9 @@ X(to_be_translated)
 			break;
 		case 0xa0:
 			ic->f = instr(addq_imm);
+			break;
+		case 0xb2:
+			ic->f = instr(s8addq_imm);
 			break;
 		case 0xed:
 			ic->f = instr(cmple_imm);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.13 2005-07-16 11:36:47 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.14 2005-07-18 11:28:32 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -399,10 +399,30 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			    alpha_regname[rb], alpha_regname[rc]);
 		break;
 	case 0x1a:
-		switch (func) {
-		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
-			    opcode, func);
+		tmp = iw & 0x3fff;
+		if (tmp & 0x2000)
+			tmp |= 0xffffffffffffc000ULL;
+		tmp <<= 2;
+		tmp += dumpaddr + sizeof(uint32_t);
+		switch ((iw >> 14) & 3) {
+		case 0:
+		case 1:	if (((iw >> 14) & 3) == 0)
+				debug("jmp");
+			else
+				debug("jsr");
+			debug("\t%s,", alpha_regname[ra]);
+			debug("(%s),", alpha_regname[rb]);
+			debug("0x%llx", (long long)tmp);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    tmp, &offset);
+			if (symbol != NULL)
+				debug("\t<%s>", symbol);
+			break;
+		case 2:	debug("ret");
+			break;
+		default:fatal("unimpl JSR!");
 		}
+		debug("\n");
 		break;
 	case 0x30:
 		tmp = iw & 0x1fffff;

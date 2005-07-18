@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.135 2005-06-28 00:27:28 debug Exp $
+$Id: RELEASE,v 1.136 2005-07-18 22:17:17 debug Exp $
 
 Now working on post-0.3.4.
 
 ------------------------------------------------------------------------------
 
-Release notes for GXemul 0.3.X
-==============================
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
+================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 

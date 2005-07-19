@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.11 2005-07-19 12:37:24 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.12 2005-07-19 22:09:31 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -79,6 +79,30 @@ static struct alpha_instr_call nothing_call = { instr(nothing), {0,0,0} };
  */
 X(nop)
 {
+}
+
+
+/*
+ *  call_pal:  PALcode call
+ *
+ *  arg[0] = pal nr
+ */
+X(call_pal)
+{
+	uint64_t low_pc;
+
+	/*  Synchronize PC first:  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2) + 4;
+
+	alpha_palcode(cpu, ic->arg[0]);
+
+	/*  PC might have been changed by the palcode call:  */
+
+	/*  Find the new physical page and update the translation pointers:  */
+	alpha_pc_to_pointers(cpu);
 }
 
 
@@ -483,6 +507,10 @@ X(to_be_translated)
 	imm = iword & 0xffff;
 
 	switch (opcode) {
+	case 0x00:						/*  CALL_PAL  */
+		ic->f = instr(call_pal);
+		ic->arg[0] = (size_t) (iword & 0x3ffffff);
+		break;
 	case 0x08:						/*  LDA  */
 	case 0x09:						/*  LDAH  */
 		if (ra == ALPHA_ZERO) {

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.833 2005-07-19 00:04:40 debug Exp $
+$Id: HISTORY,v 1.834 2005-07-19 22:09:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2072,3 +2072,4 @@ Changelog for GXemul:
 20050717	Minor updates (Alpha stuff).
 20050718	Minor updates (Alpha stuff).
 20050719	Generalizing some Alpha instructions.
+20050720	More Alpha-related updates.

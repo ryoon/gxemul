@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.477 2005-07-19 10:48:04 debug Exp $
+ *  $Id: machine.c,v 1.478 2005-07-19 22:09:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4056,6 +4056,25 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		break;
 
+	case MACHINE_ALPHA:
+		machine->machine_name = "Alpha";
+
+		/*  TODO:  Most of these...
+		    They are used by NetBSD/alpha:  */
+
+		/*  a0 = First free Page Frame Number  */
+		cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
+		/*  a1 = PFN of current Level 1 page table  */
+		cpu->cd.alpha.r[ALPHA_A1] = 0;
+		/*  a2 = Bootinfo magic  */
+		cpu->cd.alpha.r[ALPHA_A2] = 0;
+		/*  a3 = Bootinfo pointer  */
+		cpu->cd.alpha.r[ALPHA_A3] = 0;
+		/*  a4 = Bootinfo version  */
+		cpu->cd.alpha.r[ALPHA_A4] = 0;
+
+		break;
+
 	case MACHINE_BAREARM:
 		machine->machine_name = "\"Bare\" ARM machine";
 		break;
@@ -4491,6 +4510,7 @@ void machine_default_cputype(struct machine *m)
 	/*  Alpha:  */
 	case MACHINE_BAREALPHA:
 	case MACHINE_TESTALPHA:
+	case MACHINE_ALPHA:
 		m->cpu_name = strdup("Alpha");
 		break;
 
@@ -5181,6 +5201,13 @@ void machine_init(void)
 	me->subtype[7]->aliases[1] = "m700";
 
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Alpha:  */
+	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 0);
+	me->aliases[0] = "alpha";
+	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 }

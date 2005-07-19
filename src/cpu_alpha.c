@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.19 2005-07-19 12:37:24 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.20 2005-07-19 22:09:31 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -64,7 +64,6 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 
 
 #include "cpu.h"
-#include "cpu_alpha.h"
 #include "machine.h"
 #include "memory.h"
 #include "symbol.h"
@@ -262,6 +261,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	uint64_t offset, tmp;
 	int opcode, ra, rb, func, rc, imm;
 	char *mnem = NULL;
+	char palcode_name[30];
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -287,6 +287,11 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	imm = iw & 0xffff;
 
 	switch (opcode) {
+	case 0x00:
+		alpha_palcode_name(iw & 0x3ffffff, palcode_name,
+		    sizeof(palcode_name));
+		debug("call_pal %s\n", palcode_name);
+		break;
 	case 0x08:
 	case 0x09:
 		debug("lda%s\t%s,", opcode == 9? "h" : "", alpha_regname[ra]);

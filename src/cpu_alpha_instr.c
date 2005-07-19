@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.6 2005-07-18 22:00:06 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.7 2005-07-19 00:04:41 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -83,6 +83,51 @@ X(nop)
 
 
 /*
+ *  jsr:  Jump to SubRoutine
+ *
+ *  arg[0] = ptr to uint64_t where to store return PC
+ *  arg[1] = ptr to uint64_t of new PC
+ */
+X(jsr)
+{
+	uint64_t low_pc;
+
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2) + 4;
+
+	*((int64_t *)ic->arg[0]) = cpu->pc;
+	cpu->pc = *((int64_t *)ic->arg[1]);
+
+	/*  Find the new physical page and update the translation pointers:  */
+	alpha_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  jsr_0:  JSR, but don't store return PC.
+ *
+ *  arg[0] = ignored
+ *  arg[1] = ptr to uint64_t of new PC
+ */
+X(jsr_0)
+{
+	uint64_t low_pc;
+
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2) + 4;
+
+	cpu->pc = *((int64_t *)ic->arg[1]);
+
+	/*  Find the new physical page and update the translation pointers:  */
+	alpha_pc_to_pointers(cpu);
+}
+
+
+/*
  *  br:  Branch (to a different translated page)
  *
  *  arg[0] = relative offset (as an int32_t)
@@ -104,6 +149,32 @@ X(br)
 
 
 /*
+ *  br:  Branch (to a different translated page), write return address
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to uint64_t where to write return address
+ */
+X(br_return)
+{
+	uint64_t low_pc;
+
+	/*  Calculate new PC from this instruction + arg[0]  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2);
+
+	/*  ... but first, save away the return address:  */
+	*((int64_t *)ic->arg[1]) = cpu->pc + 4;
+
+	cpu->pc += (int32_t)ic->arg[0];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	alpha_pc_to_pointers(cpu);
+}
+
+
+/*
  *  beq:  Branch (to a different translated page) if Equal
  *
  *  arg[0] = relative offset (as an int32_t)
@@ -112,6 +183,19 @@ X(br)
 X(beq)
 {
 	if (*((int64_t *)ic->arg[1]) == 0)
+		instr(br)(cpu, ic);
+}
+
+
+/*
+ *  bne:  Branch (to a different translated page) if Not Equal
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(bne)
+{
+	if (*((int64_t *)ic->arg[1]) != 0)
 		instr(br)(cpu, ic);
 }
 
@@ -154,6 +238,27 @@ X(br_samepage)
 
 
 /*
+ *  br_return_samepage:  Branch (to within the same translated page),
+ *                       and save return address
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to uint64_t where to store return address
+ */
+X(br_return_samepage)
+{
+	uint64_t low_pc;
+
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2);
+	*((int64_t *)ic->arg[1]) = cpu->pc + 4;
+
+	cpu->cd.alpha.next_ic = (struct alpha_instr_call *) ic->arg[0];
+}
+
+
+/*
  *  beq_samepage:  Branch (to within the same translated page) if Equal
  *
  *  arg[0] = pointer to new alpha_instr_call
@@ -162,6 +267,19 @@ X(br_samepage)
 X(beq_samepage)
 {
 	if (*((int64_t *)ic->arg[1]) == 0)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
+ *  bne_samepage:  Branch (to within the same translated page) if Not Equal
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(bne_samepage)
+{
+	if (*((int64_t *)ic->arg[1]) != 0)
 		instr(br_samepage)(cpu, ic);
 }
 
@@ -192,237 +310,6 @@ X(bgt_samepage)
 }
 
 
-void alpha_generic_stb(struct cpu *cpu, struct alpha_instr_call *ic)
-{
-	unsigned char data[1];
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-
-	addr += (int32_t)ic->arg[2];
-	data[0] = *((uint64_t *)ic->arg[0]);
-
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store failed: TODO\n");
-		exit(1);
-	}
-}
-
-
-void alpha_generic_ldl(struct cpu *cpu, struct alpha_instr_call *ic)
-{
-	unsigned char data[4];
-	uint64_t addr = *((uint64_t *)ic->arg[1]) + (int32_t)ic->arg[2];
-	int32_t data_x;
-
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	data_x = data[0];
-	data_x += (data[1] << 8);
-	data_x += (data[2] << 16);
-	data_x += (data[3] << 24);
-	*((uint64_t *)ic->arg[0]) = data_x;
-}
-
-
-void alpha_generic_ldq(struct cpu *cpu, struct alpha_instr_call *ic)
-{
-	unsigned char data[8];
-	uint64_t addr = *((uint64_t *)ic->arg[1]) + (int32_t)ic->arg[2];
-	int64_t data_x;
-
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	data_x = data[0];
-	data_x += (data[1] << 8);
-	data_x += (data[2] << 16);
-	data_x += (data[3] << 24);
-	data_x += ((int64_t)data[4] << 32);
-	data_x += ((int64_t)data[5] << 40);
-	data_x += ((int64_t)data[6] << 48);
-	data_x += ((int64_t)data[7] << 56);
-	*((uint64_t *)ic->arg[0]) = data_x;
-}
-
-
-void alpha_generic_stq(struct cpu *cpu, struct alpha_instr_call *ic)
-{
-	unsigned char data[8];
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	uint64_t data_x = *((uint64_t *)ic->arg[0]);
-
-	addr += (int32_t)ic->arg[2];
-	data[0] = data_x;
-	data[1] = data_x >> 8;
-	data[2] = data_x >> 16;
-	data[3] = data_x >> 24;
-	data[4] = data_x >> 32;
-	data[5] = data_x >> 40;
-	data[6] = data_x >> 48;
-	data[7] = data_x >> 56;
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store failed: TODO\n");
-		exit(1);
-	}
-}
-
-
-/*
- *  stb:  Store byte.
- *
- *  arg[0] = pointer to the register to store (uint64_t)
- *  arg[1] = pointer to the base register (uint64_t)
- *  arg[2] = offset (possibly as an int32_t)
- */
-X(stb)
-{
-	int first, a, b, c;
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	addr += (int64_t)ic->arg[2];
-
-	first = addr >> 39;
-	a = (addr >> 26) & 8191;
-	b = (addr >> 13) & 8191;
-	c = addr & 8191;
-
-	if (first == 0) {
-		struct alpha_vph_page *vph_p;
-		unsigned char *page;
-		vph_p = cpu->cd.alpha.vph_table0[a];
-		page = vph_p->host_load[b];
-		if (page != NULL)
-			page[c] = *((uint64_t *)ic->arg[0]);
-		else
-			alpha_generic_stb(cpu, ic);
-	} else
-		alpha_generic_stb(cpu, ic);
-}
-
-
-/*
- *  stq:  Store quad.
- *
- *  arg[0] = pointer to the register to store (uint64_t)
- *  arg[1] = pointer to the base register (uint64_t)
- *  arg[2] = offset (possibly as an int32_t)
- */
-X(stq)
-{
-	int first, a, b, c;
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	addr += (int32_t)ic->arg[2];
-
-	first = addr >> 39;
-	a = (addr >> 26) & 8191;
-	b = (addr >> 13) & 8191;
-	c = addr & 8191;
-
-	if (first == 0) {
-		struct alpha_vph_page *vph_p;
-		unsigned char *page;
-		vph_p = cpu->cd.alpha.vph_table0[a];
-		page = vph_p->host_load[b];
-		if (page != NULL) {
-			uint64_t d = *((uint64_t *)ic->arg[0]);
-			page[c] = d;
-			page[c+1] = d >> 8;
-			page[c+2] = d >> 16;
-			page[c+3] = d >> 24;
-			page[c+4] = d >> 32;
-			page[c+5] = d >> 40;
-			page[c+6] = d >> 48;
-			page[c+7] = d >> 56;
-		} else
-			alpha_generic_stq(cpu, ic);
-	} else
-		alpha_generic_stq(cpu, ic);
-}
-
-
-/*
- *  ldl:  Load long.
- *
- *  arg[0] = pointer to the register to load to (uint64_t)
- *  arg[1] = pointer to the base register (uint64_t)
- *  arg[2] = offset (possibly as an int32_t)
- */
-X(ldl)
-{
-	int first, a, b, c;
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	addr += (int32_t)ic->arg[2];
-
-	first = addr >> 39;
-	a = (addr >> 26) & 8191;
-	b = (addr >> 13) & 8191;
-	c = addr & 8191;
-
-	if (first == 0) {
-		struct alpha_vph_page *vph_p;
-		unsigned char *page;
-		vph_p = cpu->cd.alpha.vph_table0[a];
-		page = vph_p->host_load[b];
-		if (page != NULL) {
-			int32_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
-			d += (page[c+2] << 16);
-			d += (page[c+3] << 24);
-			*((uint64_t *)ic->arg[0]) = d;
-		} else
-			alpha_generic_ldl(cpu, ic);
-	} else
-		alpha_generic_ldl(cpu, ic);
-}
-
-
-/*
- *  ldq:  Load quad.
- *
- *  arg[0] = pointer to the register to load to (uint64_t)
- *  arg[1] = pointer to the base register (uint64_t)
- *  arg[2] = offset (possibly as an int32_t)
- */
-X(ldq)
-{
-	int first, a, b, c;
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	addr += (int32_t)ic->arg[2];
-
-	first = addr >> 39;
-	a = (addr >> 26) & 8191;
-	b = (addr >> 13) & 8191;
-	c = addr & 8191;
-
-	if (first == 0) {
-		struct alpha_vph_page *vph_p;
-		unsigned char *page;
-		vph_p = cpu->cd.alpha.vph_table0[a];
-		page = vph_p->host_load[b];
-		if (page != NULL) {
-			int64_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
-			d += (page[c+2] << 16);
-			d += (page[c+3] << 24);
-			d += ((int64_t)page[c+4] << 32);
-			d += ((int64_t)page[c+5] << 40);
-			d += ((int64_t)page[c+6] << 48);
-			d += ((int64_t)page[c+7] << 56);
-			*((uint64_t *)ic->arg[0]) = d;
-		} else
-			alpha_generic_ldq(cpu, ic);
-	} else
-		alpha_generic_ldq(cpu, ic);
-}
-
-
 /*
  *  lda:  Load address.
  *
@@ -450,31 +337,7 @@ X(lda_0)
 }
 
 
-/*
- *  or:  3-register OR
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t nr 1
- *  arg[2] = pointer to source uint64_t nr 2
- */
-X(or)
-{
-	*((uint64_t *)ic->arg[0]) =
-	    *((uint64_t *)ic->arg[1]) | *((uint64_t *)ic->arg[2]);
-}
-
-
-/*
- *  and_imm:  2-register AND with imm
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value
- */
-X(and_imm)
-{
-	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1]) & ic->arg[2];
-}
+#include "cpu_alpha_instr_inc.c"
 
 
 /*
@@ -488,102 +351,6 @@ X(sll_imm)
 {
 	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1]) <<
 	    (ic->arg[2] & 63);
-}
-
-
-/*
- *  addl:  ADD long
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t nr 1
- *  arg[2] = pointer to source uint64_t nr 2
- */
-X(addl)
-{
-	int32_t x;
-
-	x = *((uint64_t *)ic->arg[1]) + *((uint64_t *)ic->arg[2]);
-	*((uint64_t *)ic->arg[0]) = x;
-}
-
-
-/*
- *  addq:  ADD quad
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t nr 1
- *  arg[2] = pointer to source uint64_t nr 2
- */
-X(addq)
-{
-	int64_t x;
-
-	x = *((uint64_t *)ic->arg[1]) + *((uint64_t *)ic->arg[2]);
-	*((uint64_t *)ic->arg[0]) = x;
-}
-
-
-/*
- *  addl_imm:  ADD long, immediate
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value
- */
-X(addl_imm)
-{
-	int32_t x;
-
-	x = *((int64_t *)ic->arg[1]) + ic->arg[2];
-	*((uint64_t *)ic->arg[0]) = x;
-}
-
-
-/*
- *  addq_imm:  ADD quad, immediate
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value
- */
-X(addq_imm)
-{
-	int64_t x;
-
-	x = *((int64_t *)ic->arg[1]) + ic->arg[2];
-	*((uint64_t *)ic->arg[0]) = x;
-}
-
-
-/*
- *  s8addq_imm:  ADD quad, scalar 8, immediate
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value
- */
-X(s8addq_imm)
-{
-	int64_t x;
-
-	x = 8 * (*((int64_t *)ic->arg[1])) + ic->arg[2];
-	*((uint64_t *)ic->arg[0]) = x;
-}
-
-
-/*
- *  subl_imm:  SUB long, immediate
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value
- */
-X(subl_imm)
-{
-	int32_t x;
-
-	x = *((uint64_t *)ic->arg[1]) - ic->arg[2];
-	*((uint64_t *)ic->arg[0]) = x;
 }
 
 
@@ -736,15 +503,23 @@ X(to_be_translated)
 		}
 		fatal("[ Alpha: LDQ_U to non-zero register ]\n");
 		goto bad;
+	case 0x0a:
+	case 0x0c:
+	case 0x0d:
 	case 0x0e:
 	case 0x28:
 	case 0x29:
+	case 0x2c:
 	case 0x2d:
 		load = 0;
 		switch (opcode) {
+		case 0x0a: ic->f = instr(ldbu); load = 1; break;
+		case 0x0c: ic->f = instr(ldwu); load = 1; break;
+		case 0x0d: ic->f = instr(stw); break;
 		case 0x0e: ic->f = instr(stb); break;
 		case 0x28: ic->f = instr(ldl); load = 1; break;
 		case 0x29: ic->f = instr(ldq); load = 1; break;
+		case 0x2c: ic->f = instr(stl); break;
 		case 0x2d: ic->f = instr(stq); break;
 		}
 		if (load && ra == ALPHA_ZERO) {
@@ -767,24 +542,32 @@ X(to_be_translated)
 		else
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
-		case 0x00:
-			ic->f = instr(addl);
-			break;
-		case 0x20:
-			ic->f = instr(addq);
-			break;
-		case 0x80:
-			ic->f = instr(addl_imm);
-			break;
-		case 0x89:
-			ic->f = instr(subl_imm);
-			break;
-		case 0xa0:
-			ic->f = instr(addq_imm);
-			break;
-		case 0xb2:
-			ic->f = instr(s8addq_imm);
-			break;
+		case 0x00: ic->f = instr(addl); break;
+		case 0x02: ic->f = instr(s4addl); break;
+		case 0x09: ic->f = instr(subl); break;
+		case 0x0b: ic->f = instr(s4subl); break;
+		case 0x12: ic->f = instr(s8addl); break;
+		case 0x1b: ic->f = instr(s8subl); break;
+		case 0x20: ic->f = instr(addq); break;
+		case 0x22: ic->f = instr(s4addq); break;
+		case 0x29: ic->f = instr(subq); break;
+		case 0x2b: ic->f = instr(s4subq); break;
+		case 0x32: ic->f = instr(s8addq); break;
+		case 0x3b: ic->f = instr(s8subq); break;
+
+		case 0x80: ic->f = instr(addl_imm); break;
+		case 0x82: ic->f = instr(s4addl_imm); break;
+		case 0x89: ic->f = instr(subl_imm); break;
+		case 0x8b: ic->f = instr(s4subl_imm); break;
+		case 0x92: ic->f = instr(s8addl_imm); break;
+		case 0x9b: ic->f = instr(s8subl_imm); break;
+		case 0xa0: ic->f = instr(addq_imm); break;
+		case 0xa2: ic->f = instr(s4addq_imm); break;
+		case 0xa9: ic->f = instr(subq_imm); break;
+		case 0xab: ic->f = instr(s4subq_imm); break;
+		case 0xb2: ic->f = instr(s8addq_imm); break;
+		case 0xbb: ic->f = instr(s8subq_imm); break;
+
 		case 0xed:
 			ic->f = instr(cmple_imm);
 			break;
@@ -839,19 +622,35 @@ X(to_be_translated)
 			goto bad;
 		}
 		break;
+	case 0x1a:
+		switch ((iword >> 14) & 3) {
+		case 0:	/*  JMP  */
+		case 1:	/*  JSR  */
+		case 2:	/*  RET  */
+			ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
+			ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
+			ic->f = instr(jsr);
+			if (ra == ALPHA_ZERO)
+				ic->f = instr(jsr_0);
+			break;
+		default:fatal("[ Alpha: unimpl JSR type %i, ra=%i rb=%i ]\n",
+			    ((iword >> 14) & 3), ra, rb);
+			goto bad;
+		}
+		break;
 	case 0x30:						/*  BR  */
 	case 0x39:						/*  BEQ  */
 	case 0x3b:						/*  BLE  */
+	case 0x3d:						/*  BNE  */
 	case 0x3f:						/*  BGT  */
 		switch (opcode) {
 		case 0x30:
-			if (ra != ALPHA_ZERO) {
-				fatal("[ WARNING! Alpha 'br' but ra "
-				    "isn't zero? ]\n");
-				goto bad;
-			}
 			ic->f = instr(br);
 			samepage_function = instr(br_samepage);
+			if (ra != ALPHA_ZERO) {
+				ic->f = instr(br_return);
+				samepage_function = instr(br_return_samepage);
+			}
 			break;
 		case 0x39:
 			ic->f = instr(beq);
@@ -860,6 +659,10 @@ X(to_be_translated)
 		case 0x3b:
 			ic->f = instr(ble);
 			samepage_function = instr(ble_samepage);
+			break;
+		case 0x3d:
+			ic->f = instr(bne);
+			samepage_function = instr(bne_samepage);
 			break;
 		case 0x3f:
 			ic->f = instr(bgt);

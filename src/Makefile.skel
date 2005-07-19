@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.61 2005-07-13 11:13:44 debug Exp $
+#  $Id: Makefile.skel,v 1.62 2005-07-19 00:04:41 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -25,7 +25,8 @@ $(OBJS): Makefile
 
 bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
-cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c memory_rw.c
+cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_alpha_instr_alu.c \
+	cpu_alpha_instr_loadstore.c memory_rw.c
 
 cpu_arm.o: cpu_arm.c cpu_arm_instr.c memory_rw.c
 

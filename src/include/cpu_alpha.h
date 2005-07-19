@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.8 2005-07-18 22:00:08 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.9 2005-07-19 06:53:32 debug Exp $
  */
 
 #include "misc.h"
@@ -88,7 +88,11 @@ struct alpha_tc_physpage {
  *
  *  There is also an additional check for kernel space addresses.
  */
+#define	ALPHA_TOPSHIFT			39
+#define	ALPHA_TOP_KERNEL		0x1fffff8
+#define	ALPHA_LEVEL0_SHIFT		26
 #define	ALPHA_LEVEL0			8192
+#define	ALPHA_LEVEL1_SHIFT		13
 #define	ALPHA_LEVEL1			8192
 struct alpha_vph_page {
 	void		*host_load[ALPHA_LEVEL1];

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.15 2005-07-18 22:00:06 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.16 2005-07-19 06:53:31 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -122,7 +122,8 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	memset(cpu->cd.alpha.vph_default_page, 0,
 	    sizeof(struct alpha_vph_page));
 	for (i=0; i<ALPHA_LEVEL0; i++)
-		cpu->cd.alpha.vph_table0[i] = cpu->cd.alpha.vph_default_page;
+		cpu->cd.alpha.vph_table0[i] = cpu->cd.alpha.vph_table0_kernel[i]
+		    = cpu->cd.alpha.vph_default_page;
 
 	return 1;
 }
@@ -515,7 +516,7 @@ static void alpha_create_or_reset_tc(struct cpu *cpu)
 /*  forward declaration of to_be_translated and end_of_page:  */
 static void instr(to_be_translated)(struct cpu *,struct alpha_instr_call *);
 static void instr(end_of_page)(struct cpu *,struct alpha_instr_call *);
-static void alpha_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
+static void alpha_tc_allocate_default_page(struct cpu *cpu, uint64_t physaddr)
 {
 	struct alpha_tc_physpage *ppp;
 	int i;
@@ -541,14 +542,19 @@ static void alpha_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
  *
  *  Invalidate a translation entry (based on virtual address).
  */
-void alpha_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
+void alpha_invalidate_tlb_entry(struct cpu *cpu, uint64_t vaddr_page)
 {
 	struct alpha_vph_page *vph_p;
 	uint32_t a, b;
+	int kernel = 0;
 
-	a = (vaddr_page >> 26) & (ALPHA_LEVEL0 - 1);
-	b = (vaddr_page >> 13) & (ALPHA_LEVEL1 - 1);
-	vph_p = cpu->cd.alpha.vph_table0[a];
+	a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+	b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
+	if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+		kernel = 1;
+	} else
+		vph_p = cpu->cd.alpha.vph_table0[a];
 
 	if (vph_p == cpu->cd.alpha.vph_default_page) {
 		fatal("alpha_invalidate_tlb_entry(): huh? Problem 1.\n");
@@ -566,7 +572,12 @@ void alpha_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
 	if (vph_p->refcount == 0) {
 		vph_p->next = cpu->cd.alpha.vph_next_free_page;
 		cpu->cd.alpha.vph_next_free_page = vph_p;
-		cpu->cd.alpha.vph_table0[a] = cpu->cd.alpha.vph_default_page;
+		if (kernel)
+			cpu->cd.alpha.vph_table0_kernel[a] =
+			    cpu->cd.alpha.vph_default_page;
+		else
+			cpu->cd.alpha.vph_table0[a] =
+			    cpu->cd.alpha.vph_default_page;
 	}
 }
 
@@ -602,7 +613,7 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 {
 	uint32_t a, b;
 	struct alpha_vph_page *vph_p;
-	int found, r, lowest_index;
+	int found, r, lowest_index, kernel = 0;
 	int64_t lowest, highest = -1;
 
 	/*  fatal("alpha_update_translation_table(): v=0x%llx, h=%p w=%i"
@@ -633,9 +644,13 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			/*  This one has to be invalidated first:  */
 			uint64_t addr = cpu->cd.alpha.
 			    vph_tlb_entry[r].vaddr_page;
-			a = (addr >> 26) & (ALPHA_LEVEL0 - 1);
-			b = (addr >> 13) & (ALPHA_LEVEL1 - 1);
-			vph_p = cpu->cd.alpha.vph_table0[a];
+			a = (addr >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+			b = (addr >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
+			if ((addr >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+				vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+				kernel = 1;
+			} else
+				vph_p = cpu->cd.alpha.vph_table0[a];
 			vph_p->host_load[b] = NULL;
 			vph_p->host_store[b] = NULL;
 			vph_p->phys_addr[b] = 0;
@@ -643,8 +658,12 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			if (vph_p->refcount == 0) {
 				vph_p->next = cpu->cd.alpha.vph_next_free_page;
 				cpu->cd.alpha.vph_next_free_page = vph_p;
-				cpu->cd.alpha.vph_table0[a] =
-				    cpu->cd.alpha.vph_default_page;
+				if (kernel)
+					cpu->cd.alpha.vph_table0_kernel[a] =
+					    cpu->cd.alpha.vph_default_page;
+				else
+					cpu->cd.alpha.vph_table0[a] =
+					    cpu->cd.alpha.vph_default_page;
 			}
 		}
 
@@ -656,17 +675,32 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		cpu->cd.alpha.vph_tlb_entry[r].timestamp = highest + 1;
 
 		/*  Add the new translation to the table:  */
-		a = (vaddr_page >> 26) & (ALPHA_LEVEL0 - 1);
-		b = (vaddr_page >> 13) & (ALPHA_LEVEL1 - 1);
-		vph_p = cpu->cd.alpha.vph_table0[a];
+		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
+		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+			vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+			kernel = 1;
+		} else
+			vph_p = cpu->cd.alpha.vph_table0[a];
 		if (vph_p == cpu->cd.alpha.vph_default_page) {
 			if (cpu->cd.alpha.vph_next_free_page != NULL) {
-				vph_p = cpu->cd.alpha.vph_table0[a] =
-				    cpu->cd.alpha.vph_next_free_page;
+				if (kernel)
+					vph_p = cpu->cd.alpha.vph_table0_kernel
+					    [a] = cpu->cd.alpha.
+					    vph_next_free_page;
+				else
+					vph_p = cpu->cd.alpha.vph_table0[a] =
+					    cpu->cd.alpha.vph_next_free_page;
 				cpu->cd.alpha.vph_next_free_page = vph_p->next;
 			} else {
-				vph_p = cpu->cd.alpha.vph_table0[a] =
-				    malloc(sizeof(struct alpha_vph_page));
+				if (kernel)
+					vph_p = cpu->cd.alpha.vph_table0_kernel
+					    [a] = malloc(sizeof(struct
+					    alpha_vph_page));
+				else
+					vph_p = cpu->cd.alpha.vph_table0[a] =
+					    malloc(sizeof(struct
+					    alpha_vph_page));
 				memset(vph_p, 0, sizeof(struct alpha_vph_page));
 			}
 		}
@@ -681,9 +715,13 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		 *	Writeflag = 1:  Make sure the page is writable.
 		 *	Writeflag = -1: Downgrade to readonly.
 		 */
-		a = (vaddr_page >> 26) & (ALPHA_LEVEL0 - 1);
-		b = (vaddr_page >> 13) & (ALPHA_LEVEL1 - 1);
-		vph_p = cpu->cd.alpha.vph_table0[a];
+		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
+		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+			vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+			kernel = 1;
+		} else
+			vph_p = cpu->cd.alpha.vph_table0[a];
 		cpu->cd.alpha.vph_tlb_entry[found].timestamp = highest + 1;
 		if (vph_p->phys_addr[b] == paddr_page) {
 			if (writeflag == 1)
@@ -760,8 +798,9 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 	    new "default" empty translation page.  */
 
 	if (ppp == NULL) {
-		fatal("CREATING page %i (physaddr 0x%016llx), table "
-		    "index = %i\n", pagenr, (uint64_t)physaddr, table_index);
+		fatal("CREATING page %lli (physaddr 0x%016llx), table "
+		    "index = %i\n", (long long)pagenr, (uint64_t)physaddr,
+		    table_index);
 		*physpage_entryp = physpage_ofs =
 		    cpu->cd.alpha.translation_cache_cur_ofs;
 
@@ -776,9 +815,9 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 	cpu->cd.alpha.next_ic = cpu->cd.alpha.cur_ic_page +
 	    ALPHA_PC_TO_IC_ENTRY(cached_pc);
 
-	/*  printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
-	    "physpage_ofs = 0x%08x\n", (int)cached_pc, (int)pagenr,
-	    (int)table_index, (int)physpage_ofs);  */
+	/*  printf("cached_pc = 0x%016llx  pagenr = %lli  table_index = %i, "
+	    "physpage_ofs = 0x%016llx\n", (long long)cached_pc,
+	    (long long)pagenr, (int)table_index, (long long)physpage_ofs);  */
 }
 
 

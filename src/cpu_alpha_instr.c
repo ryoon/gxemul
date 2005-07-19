@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.7 2005-07-19 00:04:41 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.8 2005-07-19 06:53:31 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -437,7 +437,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
-	int opcode, ra, rb, func, rc, imm, load;
+	int opcode, ra, rb, func, rc, imm, load, loadstore_type;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)
@@ -447,12 +447,14 @@ X(to_be_translated)
 	addr &= ~0x3;
 
 	/*  Read the instruction word from memory:  */
-	if ((addr >> 39) == 0) {
-		vph_p = cpu->cd.alpha.vph_table0[(addr >> 26) & 8191];
-		page = vph_p->host_load[(addr >> 13) & 8191];
-	} else if ((addr >> 39) == 0x1fffff8) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[(addr >> 26) & 8191];
-		page = vph_p->host_load[(addr >> 13) & 8191];
+	if ((addr >> ALPHA_TOPSHIFT) == 0) {
+		vph_p = cpu->cd.alpha.vph_table0[(addr >>
+		    ALPHA_LEVEL0_SHIFT) & 8191];
+		page = vph_p->host_load[(addr >> ALPHA_LEVEL1_SHIFT) & 8191];
+	} else if ((addr >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+		vph_p = cpu->cd.alpha.vph_table0_kernel[(addr >>
+		    ALPHA_LEVEL0_SHIFT) & 8191];
+		page = vph_p->host_load[(addr >> ALPHA_LEVEL1_SHIFT) & 8191];
 	} else
 		page = NULL;
 
@@ -513,15 +515,17 @@ X(to_be_translated)
 	case 0x2d:
 		load = 0;
 		switch (opcode) {
-		case 0x0a: ic->f = instr(ldbu); load = 1; break;
-		case 0x0c: ic->f = instr(ldwu); load = 1; break;
-		case 0x0d: ic->f = instr(stw); break;
-		case 0x0e: ic->f = instr(stb); break;
-		case 0x28: ic->f = instr(ldl); load = 1; break;
-		case 0x29: ic->f = instr(ldq); load = 1; break;
-		case 0x2c: ic->f = instr(stl); break;
-		case 0x2d: ic->f = instr(stq); break;
+		case 0x0a: loadstore_type = 0; load = 1; break;	/*  ldbu  */
+		case 0x0c: loadstore_type = 1; load = 1; break;	/*  ldwu  */
+		case 0x0d: loadstore_type = 1; break;		/*  stw  */
+		case 0x0e: loadstore_type = 0; break;		/*  stb  */
+		case 0x28: loadstore_type = 2; load = 1; break;	/*  ldl  */
+		case 0x29: loadstore_type = 3; load = 1; break;	/*  ldq  */
+		case 0x2c: loadstore_type = 2; break;		/*  stl  */
+		case 0x2d: loadstore_type = 3; break;		/*  stq  */
 		}
+		ic->f = alpha_loadstore[8*load + (imm==0? 4 : 0)
+		    + loadstore_type];
 		if (load && ra == ALPHA_ZERO) {
 			ic->f = instr(nop);
 			break;

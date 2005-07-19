@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_inc.c,v 1.1 2005-07-19 00:04:42 debug Exp $
+ *  $Id: cpu_alpha_instr_inc.c,v 1.2 2005-07-19 06:53:31 debug Exp $
  *
  *  Alpha instructions. TODO: This function should probably be generated
  *  automatically, but for now, it is hand-written.
@@ -261,32 +261,52 @@
 #define	LS_GENERIC_N	alpha_generic_stb
 #define	LS_N		alpha_instr_stb
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_stb_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_B
 
 #define	LS_W
 #define	LS_GENERIC_N	alpha_generic_stw
 #define	LS_N		alpha_instr_stw
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_stw_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_W
 
 #define	LS_L
 #define	LS_GENERIC_N	alpha_generic_stl
 #define	LS_N		alpha_instr_stl
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_stl_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_L
 
 #define	LS_Q
 #define	LS_GENERIC_N	alpha_generic_stq
 #define	LS_N		alpha_instr_stq
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_stq_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_Q
 
 
@@ -296,32 +316,68 @@
 #define	LS_GENERIC_N	alpha_generic_ldbu
 #define	LS_N		alpha_instr_ldbu
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_ldbu_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_B
 
 #define	LS_W
 #define	LS_GENERIC_N	alpha_generic_ldwu
 #define	LS_N		alpha_instr_ldwu
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_ldwu_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_W
 
 #define	LS_L
 #define	LS_GENERIC_N	alpha_generic_ldl
 #define	LS_N		alpha_instr_ldl
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_ldl_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_L
 
 #define	LS_Q
 #define	LS_GENERIC_N	alpha_generic_ldq
 #define	LS_N		alpha_instr_ldq
 #include "cpu_alpha_instr_loadstore.c"
-#undef LS_GENERIC_N
 #undef LS_N
+#define LS_IGNORE_OFFSET
+#define	LS_N		alpha_instr_ldq_0
+#include "cpu_alpha_instr_loadstore.c"
+#undef LS_N
+#undef LS_IGNORE_OFFSET
+#undef LS_GENERIC_N
 #undef LS_Q
 
 #undef LS_LOAD
+
+
+void (*alpha_loadstore[16])(struct cpu *, struct alpha_instr_call *) = {
+	alpha_instr_stb, alpha_instr_stw,
+	alpha_instr_stl, alpha_instr_stq,
+
+	alpha_instr_stb_0, alpha_instr_stw_0,
+	alpha_instr_stl_0, alpha_instr_stq_0,
+
+	alpha_instr_ldbu, alpha_instr_ldwu,
+	alpha_instr_ldl, alpha_instr_ldq,
+
+	alpha_instr_ldbu_0, alpha_instr_ldwu_0,
+	alpha_instr_ldl_0, alpha_instr_ldq_0
+};
+

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.1 2005-07-19 00:04:42 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.2 2005-07-19 06:53:31 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -37,6 +37,7 @@
  *  arg[2] = offset (as an int32_t)
  */
 
+#ifndef LS_IGNORE_OFFSET
 void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
 #ifdef LS_B
@@ -104,23 +105,95 @@ void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	}
 #endif
 }
+#endif
 
 void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
 	int first, a, b, c;
 	uint64_t addr;
 
-	addr = (*((uint64_t *)ic->arg[1])) + (int32_t)ic->arg[2];
+	addr = (*((uint64_t *)ic->arg[1]))
+#ifndef LS_IGNORE_OFFSET
+	    + (int32_t)ic->arg[2]
+#endif
+	    ;
 
-	first = addr >> 39;
-	a = (addr >> 26) & 8191;
-	b = (addr >> 13) & 8191;
+	first = addr >> ALPHA_TOPSHIFT;
+	a = (addr >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+	b = (addr >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
 	c = addr & 8191;
 
 	if (first == 0) {
 		struct alpha_vph_page *vph_p;
 		unsigned char *page;
 		vph_p = cpu->cd.alpha.vph_table0[a];
+		page = vph_p->host_load[b];
+		if (page != NULL) {
+#ifdef LS_LOAD
+#ifdef LS_B
+			*((uint64_t *)ic->arg[0]) = page[c];
+#endif
+#ifdef LS_W
+			int32_t d;
+			d = page[c];
+			d += (page[c+1] << 8);
+			*((uint64_t *)ic->arg[0]) = d;
+#endif
+#ifdef LS_L
+			int32_t d;
+			d = page[c];
+			d += (page[c+1] << 8);
+			d += (page[c+2] << 16);
+			d += (page[c+3] << 24);
+			*((uint64_t *)ic->arg[0]) = d;
+#endif
+#ifdef LS_Q
+			uint64_t d;
+			d = page[c];
+			d += (page[c+1] << 8);
+			d += (page[c+2] << 16);
+			d += (page[c+3] << 24);
+			d += ((uint64_t)page[c+4] << 32);
+			d += ((uint64_t)page[c+5] << 40);
+			d += ((uint64_t)page[c+6] << 48);
+			d += ((uint64_t)page[c+7] << 56);
+			*((uint64_t *)ic->arg[0]) = d;
+#endif
+#else
+			/*  Store:  */
+#ifdef LS_B
+			page[c] = *((uint64_t *)ic->arg[0]);
+#endif
+#ifdef LS_W
+			uint32_t d = *((uint64_t *)ic->arg[0]);
+			page[c] = d;
+			page[c+1] = d >> 8;
+#endif
+#ifdef LS_L
+			uint32_t d = *((uint64_t *)ic->arg[0]);
+			page[c] = d;
+			page[c+1] = d >> 8;
+			page[c+2] = d >> 16;
+			page[c+3] = d >> 24;
+#endif
+#ifdef LS_Q
+			uint64_t d = *((uint64_t *)ic->arg[0]);
+			page[c] = d;
+			page[c+1] = d >> 8;
+			page[c+2] = d >> 16;
+			page[c+3] = d >> 24;
+			page[c+4] = d >> 32;
+			page[c+5] = d >> 40;
+			page[c+6] = d >> 48;
+			page[c+7] = d >> 56;
+#endif
+#endif	/*  !LS_LOAD  */
+		} else
+			LS_GENERIC_N(cpu, ic);
+	} else if (first == ALPHA_TOP_KERNEL) {
+		struct alpha_vph_page *vph_p;
+		unsigned char *page;
+		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
 		page = vph_p->host_load[b];
 		if (page != NULL) {
 #ifdef LS_LOAD

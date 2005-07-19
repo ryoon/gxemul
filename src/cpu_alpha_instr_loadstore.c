@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.4 2005-07-19 11:23:25 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.5 2005-07-19 11:26:48 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -154,37 +154,64 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 		page = vph_p->host_load[b];
 		if (page != NULL) {
 #ifdef LS_LOAD
+#ifdef HOST_BIG_ENDIAN
+			uint64_t data_x;
+			data_x = page[c];
+#ifndef LS_B
+			data_x += (page[c+1] << 8);
+#ifndef LS_W
+			data_x += (page[c+2] << 16);
+			data_x += (page[c+3] << 24);
+#ifndef LS_L
+			data_x += ((uint64_t)page[c+4] << 32);
+			data_x += ((uint64_t)page[c+5] << 40);
+			data_x += ((uint64_t)page[c+6] << 48);
+			data_x += ((uint64_t)page[c+7] << 56);
+#endif
+#endif
+#endif
+#ifdef LS_L
+			*((uint64_t *)ic->arg[0]) = (int64_t)(int32_t)data_x;
+#else
+			*((uint64_t *)ic->arg[0]) = data_x;
+#endif
+#else
 #ifdef LS_B
 			*((uint64_t *)ic->arg[0]) = page[c];
 #endif
 #ifdef LS_W
-			int32_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
+			uint16_t d = *((uint16_t *) (page + c));
 			*((uint64_t *)ic->arg[0]) = d;
 #endif
 #ifdef LS_L
-			int32_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
-			d += (page[c+2] << 16);
-			d += (page[c+3] << 24);
-			*((uint64_t *)ic->arg[0]) = d;
+			int32_t d = *((int32_t *) (page + c));
+			*((uint64_t *)ic->arg[0]) = (int64_t)d;
 #endif
 #ifdef LS_Q
-			uint64_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
-			d += (page[c+2] << 16);
-			d += (page[c+3] << 24);
-			d += ((uint64_t)page[c+4] << 32);
-			d += ((uint64_t)page[c+5] << 40);
-			d += ((uint64_t)page[c+6] << 48);
-			d += ((uint64_t)page[c+7] << 56);
+			uint64_t d = *((uint64_t *) (page + c));
 			*((uint64_t *)ic->arg[0]) = d;
+#endif
 #endif
 #else
 			/*  Store:  */
+#ifdef HOST_BIG_ENDIAN
+			uint64_t data_x = *((uint64_t *)ic->arg[0]);
+			page[c] = data_x;
+#ifndef LS_B
+			page[c+1] = data_x >> 8;
+#ifndef LS_W
+			page[c+2] = data_x >> 16;
+			page[c+3] = data_x >> 24;
+#ifndef LS_L
+			page[c+4] = data_x >> 32;
+			page[c+5] = data_x >> 40;
+			page[c+6] = data_x >> 48;
+			page[c+7] = data_x >> 56;
+#endif
+#endif
+#endif
+#else
+			/*  Native byte order:  */
 #ifdef LS_B
 			page[c] = *((uint64_t *)ic->arg[0]);
 #endif
@@ -200,6 +227,7 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 			uint64_t d = *((uint64_t *)ic->arg[0]);
 			*((uint64_t *) (page + c)) = d;
 #endif
+#endif
 #endif	/*  !LS_LOAD  */
 		} else
 			LS_GENERIC_N(cpu, ic);
@@ -210,50 +238,59 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 		page = vph_p->host_load[b];
 		if (page != NULL) {
 #ifdef LS_LOAD
+#ifdef HOST_BIG_ENDIAN
+			uint64_t data_x;
+			data_x = page[c];
+#ifndef LS_B
+			data_x += (page[c+1] << 8);
+#ifndef LS_W
+			data_x += (page[c+2] << 16);
+			data_x += (page[c+3] << 24);
+#ifndef LS_L
+			data_x += ((uint64_t)page[c+4] << 32);
+			data_x += ((uint64_t)page[c+5] << 40);
+			data_x += ((uint64_t)page[c+6] << 48);
+			data_x += ((uint64_t)page[c+7] << 56);
+#endif
+#endif
+#endif
+#ifdef LS_L
+			*((uint64_t *)ic->arg[0]) = (int64_t)(int32_t)data_x;
+#else
+			*((uint64_t *)ic->arg[0]) = data_x;
+#endif
+#else
 #ifdef LS_B
 			*((uint64_t *)ic->arg[0]) = page[c];
 #endif
 #ifdef LS_W
-			uint32_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
+			uint16_t d = *((uint16_t *) (page + c));
 			*((uint64_t *)ic->arg[0]) = d;
 #endif
 #ifdef LS_L
-			uint32_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
-			d += (page[c+2] << 16);
-			d += (page[c+3] << 24);
-			*((uint64_t *)ic->arg[0]) = d;
+			int32_t d = *((int32_t *) (page + c));
+			*((uint64_t *)ic->arg[0]) = (int64_t)d;
 #endif
 #ifdef LS_Q
-			uint64_t d;
-			d = page[c];
-			d += (page[c+1] << 8);
-			d += (page[c+2] << 16);
-			d += (page[c+3] << 24);
-			d += ((uint64_t)page[c+4] << 32);
-			d += ((uint64_t)page[c+5] << 40);
-			d += ((uint64_t)page[c+6] << 48);
-			d += ((uint64_t)page[c+7] << 56);
+			uint64_t d = *((uint64_t *) (page + c));
 			*((uint64_t *)ic->arg[0]) = d;
+#endif
 #endif
 #else
 			/*  Store:  */
 #ifdef HOST_BIG_ENDIAN
 			uint64_t data_x = *((uint64_t *)ic->arg[0]);
-			data[0] = data_x;
+			page[c] = data_x;
 #ifndef LS_B
-			data[1] = data_x >> 8;
+			page[c+1] = data_x >> 8;
 #ifndef LS_W
-			data[2] = data_x >> 16;
-			data[3] = data_x >> 24;
+			page[c+2] = data_x >> 16;
+			page[c+3] = data_x >> 24;
 #ifndef LS_L
-			data[4] = data_x >> 32;
-			data[5] = data_x >> 40;
-			data[6] = data_x >> 48;
-			data[7] = data_x >> 56;
+			page[c+4] = data_x >> 32;
+			page[c+5] = data_x >> 40;
+			page[c+6] = data_x >> 48;
+			page[c+7] = data_x >> 56;
 #endif
 #endif
 #endif

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.167 2005-07-19 10:48:04 debug Exp $
+ *  $Id: memory.c,v 1.168 2005-07-19 11:23:25 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -362,7 +362,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		size_t,int,void *),
 	void *extra, int flags, unsigned char *dyntrans_data)
 {
-	int i, alignment;
+	int i;
 
 	if (mem->n_mmapped_devices >= MAX_DEVICES) {
 		fprintf(stderr, "memory_device_register(): too many "

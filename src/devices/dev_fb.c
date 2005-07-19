@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.104 2005-07-15 09:46:24 debug Exp $
+ *  $Id: dev_fb.c,v 1.105 2005-07-19 11:23:26 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -617,7 +617,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		return;
 
 	do {
-		uint64_t low = -1, high;
+		uint64_t high, low = (uint64_t)(int64_t) -1;
 		int x, y;
 
 		memory_device_dyntrans_access(cpu, cpu->mem,

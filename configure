@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.142 2005-07-13 11:13:42 debug Exp $
+#  $Id: configure,v 1.143 2005-07-19 11:23:25 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -449,8 +449,8 @@ if [ z$OSF1 = zYES ]; then
 fi
 
 
-#  Check for weird 'alpha' define.
-printf "checking for weird 'alpha' define... "
+#  Check for 'alpha' define.
+printf "checking for 'alpha' define... "
 printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef alpha
 printf(\"1\");
@@ -480,8 +480,8 @@ fi
 rm -f _testm*
 
 
-#  Check for weird 'hppa' define.
-printf "checking for weird 'hppa' define... "
+#  Check for 'hppa' define.
+printf "checking for 'hppa' define... "
 printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef hppa
 printf(\"1\");
@@ -512,7 +512,7 @@ rm -f _testm*
 
 
 #  Some OSes on MIPS seems to define 'mips' to 1. (eg OpenBSD/arc)
-printf "checking for weird 'mips' define... "
+printf "checking for 'mips' define... "
 printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef mips
 printf(\"1\");
@@ -544,7 +544,7 @@ rm -f _testm*
 
 #  Similar to the mips define check above, although I don't know if
 #  any OS actually defined ppc like this.
-printf "checking for weird 'ppc' define... "
+printf "checking for 'ppc' define... "
 printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef ppc
 printf(\"1\");
@@ -576,7 +576,7 @@ rm -f _testm*
 
 #  Similar to the mips define check above, although I don't know if
 #  any OS actually defined sparc like this.
-printf "checking for weird 'sparc' define... "
+printf "checking for 'sparc' define... "
 printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef sparc
 printf(\"1\");
@@ -1055,6 +1055,31 @@ else
 	fi
 fi
 
+
+###############################################################################
+
+#  Host byte order?
+printf "checking host endianness... "
+rm -f _test_end*
+printf '#include <stdio.h>
+int main(int argc, char *argv[])
+{  int x = 1; void *xp = (void *)&x; char *p = (char *)xp;
+if (*p) printf("little\\\n"); else printf("big\\\n"); }
+' > _test_end.c
+$CC $CFLAGS _test_end.c -o _test_end 2> /dev/null
+X=`./_test_end`
+echo $X
+if [ z$X = zlittle ]; then
+	printf "#define HOST_LITTLE_ENDIAN\n" >> config.h
+else
+	if [ z$X = zbig ]; then
+		printf "#define HOST_BIG_ENDIAN\n" >> config.h
+	else
+		echo "Error! Could not determine host's endianness."
+		exit
+	fi
+fi
+rm -f _test_end*
 
 ###############################################################################
 

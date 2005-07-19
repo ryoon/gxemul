@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.16 2005-07-19 06:53:31 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.17 2005-07-19 11:23:25 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -258,7 +258,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
         int running, uint64_t dumpaddr, int bintrans)
 {
 	uint32_t iw;
-	char *symbol, *condition;
+	char *symbol;
 	uint64_t offset, tmp;
 	int opcode, ra, rb, func, rc, imm;
 	char *mnem = NULL;

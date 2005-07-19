@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.3 2005-07-19 10:48:04 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.4 2005-07-19 11:23:25 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -143,6 +143,7 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 		LS_GENERIC_N(cpu, ic);
 		return;
 	}
+	else
 #endif
 #endif
 
@@ -240,6 +241,24 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif
 #else
 			/*  Store:  */
+#ifdef HOST_BIG_ENDIAN
+			uint64_t data_x = *((uint64_t *)ic->arg[0]);
+			data[0] = data_x;
+#ifndef LS_B
+			data[1] = data_x >> 8;
+#ifndef LS_W
+			data[2] = data_x >> 16;
+			data[3] = data_x >> 24;
+#ifndef LS_L
+			data[4] = data_x >> 32;
+			data[5] = data_x >> 40;
+			data[6] = data_x >> 48;
+			data[7] = data_x >> 56;
+#endif
+#endif
+#endif
+#else
+			/*  Native byte order:  */
 #ifdef LS_B
 			page[c] = *((uint64_t *)ic->arg[0]);
 #endif
@@ -254,6 +273,7 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #ifdef LS_Q
 			uint64_t d = *((uint64_t *)ic->arg[0]);
 			*((uint64_t *) (page + c)) = d;
+#endif
 #endif
 #endif	/*  !LS_LOAD  */
 		} else

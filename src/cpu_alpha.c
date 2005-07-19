@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.17 2005-07-19 11:23:25 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.18 2005-07-19 12:17:21 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -918,7 +918,106 @@ int alpha_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
 
-			n_instrs += 32;
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
+
+			n_instrs += 120;
 			if (!cpu->cd.alpha.running_translated || single_step ||
 			    n_instrs+cpu->cd.alpha.n_translated_instrs >= 16384)
 				break;

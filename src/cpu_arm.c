@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.34 2005-07-15 09:36:35 debug Exp $
+ *  $Id: cpu_arm.c,v 1.35 2005-07-19 12:17:21 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -867,7 +867,106 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 
-			n_instrs += 32;
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
+
+			n_instrs += 120;
 			if (!cpu->cd.arm.running_translated || single_step ||
 			    n_instrs + cpu->cd.arm.n_translated_instrs >= 16384)
 				break;

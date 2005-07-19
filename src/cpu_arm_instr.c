@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.36 2005-07-16 01:26:23 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.37 2005-07-19 12:37:24 debug Exp $
  *
  *  ARM instructions.
  *
- *  Individual functions should keep track of cpu->cd.arm.n_translated_instrs.
+ *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (If no instruction was executed, then it should be decreased. If, say, 4
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
@@ -148,12 +148,12 @@
  *  translated instructions.  It is used to "get out" of running in translated
  *  mode.
  *
- *  IMPORTANT NOTE: Do a   cpu->cd.arm.running_translated = 0;
+ *  IMPORTANT NOTE: Do a   cpu->running_translated = 0;
  *                  before setting cpu->cd.arm.next_ic = &nothing_call;
  */
 X(nothing)
 {
-	cpu->cd.arm.n_translated_instrs --;
+	cpu->n_translated_instrs --;
 	cpu->cd.arm.next_ic --;
 }
 
@@ -639,7 +639,7 @@ X(mov_2)
 	*((uint32_t *)ic[0].arg[0]) = ic[0].arg[1];
 	*((uint32_t *)ic[1].arg[0]) = ic[1].arg[1];
 	cpu->cd.arm.next_ic ++;
-	cpu->cd.arm.n_translated_instrs ++;
+	cpu->n_translated_instrs ++;
 }
 
 
@@ -657,7 +657,7 @@ X(end_of_page)
 	arm_pc_to_pointers(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
-	cpu->cd.arm.n_translated_instrs --;
+	cpu->n_translated_instrs --;
 }
 
 
@@ -1026,7 +1026,7 @@ bad:	/*
 	arm_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
 	cpu->running = 0;
 	cpu->dead = 1;
-	cpu->cd.arm.running_translated = 0;
+	cpu->running_translated = 0;
 	ic = cpu->cd.arm.next_ic = &nothing_call;
 	cpu->cd.arm.next_ic ++;
 

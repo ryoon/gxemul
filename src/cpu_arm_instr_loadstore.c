@@ -25,7 +25,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.3 2005-07-13 11:13:44 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.4 2005-07-19 12:37:24 debug Exp $
+ *
+ *
+ *  TODO: Native load/store if the endianness is the same as the host's.
  */
 
 #ifdef A__REG

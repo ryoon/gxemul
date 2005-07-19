@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.5 2005-07-19 11:26:48 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.6 2005-07-19 12:37:24 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -40,7 +40,7 @@
 
 #ifndef LS_IGNORE_OFFSET
 #ifndef LS_ALIGN_CHECK
-void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
+static void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
 #ifdef LS_B
 	unsigned char data[1];
@@ -73,6 +73,9 @@ void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #ifndef LS_W
 	data_x += (data[2] << 16);
 	data_x += (data[3] << 24);
+#ifdef LS_L
+	data_x = (int64_t)(int32_t)data_x;
+#endif
 #ifndef LS_L
 	data_x += ((uint64_t)data[4] << 32);
 	data_x += ((uint64_t)data[5] << 40);
@@ -111,7 +114,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif
 
 
-void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
+static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
 	int first, a, b, c;
 	uint64_t addr;

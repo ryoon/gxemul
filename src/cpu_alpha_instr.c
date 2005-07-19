@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.10 2005-07-19 11:23:25 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.11 2005-07-19 12:37:24 debug Exp $
  *
  *  Alpha instructions.
  *
- *  Individual functions should keep track of cpu->cd.alpha.n_translated_instrs.
+ *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (If no instruction was executed, then it should be decreased. If, say, 4
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
@@ -58,12 +58,12 @@
  *  translated instructions.  It is used to "get out" of running in translated
  *  mode.
  *
- *  IMPORTANT NOTE: Do a   cpu->cd.alpha.running_translated = 0;
+ *  IMPORTANT NOTE: Do a   cpu->running_translated = 0;
  *                  before setting cpu->cd.alpha.next_ic = &nothing_call;
  */
 X(nothing)
 {
-	cpu->cd.alpha.n_translated_instrs --;
+	cpu->n_translated_instrs --;
 	cpu->cd.alpha.next_ic --;
 }
 
@@ -394,7 +394,7 @@ X(end_of_page)
 	alpha_pc_to_pointers(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
-	cpu->cd.alpha.n_translated_instrs --;
+	cpu->n_translated_instrs --;
 }
 
 
@@ -726,7 +726,7 @@ bad:	/*
 	alpha_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
 	cpu->running = 0;
 	cpu->dead = 1;
-	cpu->cd.alpha.running_translated = 0;
+	cpu->running_translated = 0;
 	ic = cpu->cd.alpha.next_ic = &nothing_call;
 	cpu->cd.alpha.next_ic ++;
 

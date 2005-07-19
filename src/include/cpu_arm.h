@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.19 2005-07-13 21:22:14 debug Exp $
+ *  $Id: cpu_arm.h,v 1.20 2005-07-19 12:37:24 debug Exp $
  */
 
 #include "misc.h"
@@ -151,19 +151,12 @@ struct arm_cpu {
 	 *  Instruction translation cache:
 	 */
 
-	unsigned char		*translation_cache;
-	size_t			translation_cache_cur_ofs;
-
 	/*  cur_ic_page is a pointer to an array of ARM_IC_ENTRIES_PER_PAGE
 	    instruction call entries. next_ic points to the next such
 	    call to be executed.  */
 	struct arm_tc_physpage	*cur_physpage;
 	struct arm_instr_call	*cur_ic_page;
 	struct arm_instr_call	*next_ic;
-
-	int			running_translated;
-	int32_t			n_translated_instrs;
-
 
 	/*
 	 *  Virtual -> physical -> host address translation:

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.31 2005-07-13 11:13:46 debug Exp $
+ *  $Id: cpu.h,v 1.32 2005-07-19 12:37:24 debug Exp $
  *
  *  See cpu.c.
  */
@@ -110,6 +110,7 @@ struct cpu {
 	int		dead;
 	int		bootstrap_cpu_flag;
 	int		cpu_id;
+	int		is_32bit;	/*  0 for 64-bit, 1 for 32-bit  */
 	char		*name;
 
 	struct memory	*mem;
@@ -127,16 +128,24 @@ struct cpu {
 	void		(*useremul_syscall)(struct cpu *cpu,
 			    uint32_t code);
 
-	/*  Things that all CPU families have:  */
 	uint64_t	pc;
-	int		is_32bit;	/*  0 for 64-bit, 1 for 32-bit  */
 
 #ifdef TRACE_NULL_CRASHES
 	int		trace_null_index;
 	uint64_t	trace_null_addr[TRACE_NULL_N_ENTRIES];
 #endif  
 
-	/*  CPU-family dependant:  */
+	/*
+	 *  Dynamic translation:
+	 */
+	int		running_translated;
+	int		n_translated_instrs;
+	unsigned char	*translation_cache;
+	size_t		translation_cache_cur_ofs;
+
+	/*
+	 *  CPU-family dependent:
+	 */
 	union {
 		struct alpha_cpu   alpha;
 		struct arm_cpu     arm;

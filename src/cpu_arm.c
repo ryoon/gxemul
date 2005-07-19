@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.35 2005-07-19 12:17:21 debug Exp $
+ *  $Id: cpu_arm.c,v 1.36 2005-07-19 12:37:24 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -478,10 +478,10 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
  */
 static void arm_create_or_reset_tc(struct cpu *cpu)
 {
-	if (cpu->cd.arm.translation_cache == NULL) {
-		cpu->cd.arm.translation_cache = malloc(
+	if (cpu->translation_cache == NULL) {
+		cpu->translation_cache = malloc(
 		    ARM_TRANSLATION_CACHE_SIZE + ARM_TRANSLATION_CACHE_MARGIN);
-		if (cpu->cd.arm.translation_cache == NULL) {
+		if (cpu->translation_cache == NULL) {
 			fprintf(stderr, "arm_create_or_reset_tc(): out of "
 			    "memory when allocating the translation cache\n");
 			exit(1);
@@ -489,10 +489,10 @@ static void arm_create_or_reset_tc(struct cpu *cpu)
 	}
 
 	/*  Create an empty table at the beginning of the translation cache:  */
-	memset(cpu->cd.arm.translation_cache, 0, sizeof(uint32_t) *
+	memset(cpu->translation_cache, 0, sizeof(uint32_t) *
 	    ARM_N_BASE_TABLE_ENTRIES);
 
-	cpu->cd.arm.translation_cache_cur_ofs =
+	cpu->translation_cache_cur_ofs =
 	    ARM_N_BASE_TABLE_ENTRIES * sizeof(uint32_t);
 }
 
@@ -501,7 +501,7 @@ static void arm_create_or_reset_tc(struct cpu *cpu)
  *  arm_tc_allocate_default_page():
  *
  *  Create a default page (with just pointers to instr(to_be_translated)
- *  at cpu->cd.arm.translation_cache_cur_ofs.
+ *  at cpu->translation_cache_cur_ofs.
  */
 /*  forward declaration of to_be_translated and end_of_page:  */
 static void instr(to_be_translated)(struct cpu *,struct arm_instr_call *);
@@ -512,8 +512,8 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 	int i;
 
 	/*  Create the physpage header:  */
-	ppp = (struct arm_tc_physpage *)(cpu->cd.arm.translation_cache
-	    + cpu->cd.arm.translation_cache_cur_ofs);
+	ppp = (struct arm_tc_physpage *)(cpu->translation_cache
+	    + cpu->translation_cache_cur_ofs);
 	ppp->next_ofs = 0;
 	ppp->physaddr = physaddr;
 
@@ -524,7 +524,7 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
 
 	ppp->ics[ARM_IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
 
-	cpu->cd.arm.translation_cache_cur_ofs += sizeof(struct arm_tc_physpage);
+	cpu->translation_cache_cur_ofs += sizeof(struct arm_tc_physpage);
 }
 
 
@@ -721,21 +721,21 @@ void arm_pc_to_pointers(struct cpu *cpu)
 
 	physaddr = cached_pc & ~(((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3);
 
-	if (cpu->cd.arm.translation_cache == NULL || cpu->cd.
-	    arm.translation_cache_cur_ofs >= ARM_TRANSLATION_CACHE_SIZE)
+	if (cpu->translation_cache == NULL || cpu->
+	    translation_cache_cur_ofs >= ARM_TRANSLATION_CACHE_SIZE)
 		arm_create_or_reset_tc(cpu);
 
 	pagenr = ARM_ADDR_TO_PAGENR(physaddr);
 	table_index = ARM_PAGENR_TO_TABLE_INDEX(pagenr);
 
 	physpage_entryp = &(((uint32_t *)
-	    cpu->cd.arm.translation_cache)[table_index]);
+	    cpu->translation_cache)[table_index]);
 	physpage_ofs = *physpage_entryp;
 	ppp = NULL;
 
 	/*  Traverse the physical page chain:  */
 	while (physpage_ofs != 0) {
-		ppp = (struct arm_tc_physpage *)(cpu->cd.arm.translation_cache
+		ppp = (struct arm_tc_physpage *)(cpu->translation_cache
 		    + physpage_ofs);
 		/*  If we found the page in the cache, then we're done:  */
 		if (ppp->physaddr == physaddr)
@@ -751,11 +751,11 @@ void arm_pc_to_pointers(struct cpu *cpu)
 		fatal("CREATING page %i (physaddr 0x%08x), table index = %i\n",
 		    pagenr, physaddr, table_index);
 		*physpage_entryp = physpage_ofs =
-		    cpu->cd.arm.translation_cache_cur_ofs;
+		    cpu->translation_cache_cur_ofs;
 
 		arm_tc_allocate_default_page(cpu, physaddr);
 
-		ppp = (struct arm_tc_physpage *)(cpu->cd.arm.translation_cache
+		ppp = (struct arm_tc_physpage *)(cpu->translation_cache
 		    + physpage_ofs);
 	}
 
@@ -790,8 +790,8 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	arm_pc_to_pointers(cpu);
 
 	cached_pc = cpu->cd.arm.r[ARM_PC] & ~3;
-	cpu->cd.arm.n_translated_instrs = 0;
-	cpu->cd.arm.running_translated = 1;
+	cpu->n_translated_instrs = 0;
+	cpu->running_translated = 1;
 
 	if (single_step || cpu->machine->instruction_trace) {
 		/*
@@ -967,8 +967,8 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			ic = cpu->cd.arm.next_ic ++; ic->f(cpu, ic);
 
 			n_instrs += 120;
-			if (!cpu->cd.arm.running_translated || single_step ||
-			    n_instrs + cpu->cd.arm.n_translated_instrs >= 16384)
+			if (!cpu->running_translated || single_step ||
+			    n_instrs + cpu->n_translated_instrs >= 16384)
 				break;
 		}
 	}
@@ -994,7 +994,7 @@ int arm_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		fatal("Outside a page (This is actually ok)\n");
 	}
 
-	return n_instrs + cpu->cd.arm.n_translated_instrs;
+	return n_instrs + cpu->n_translated_instrs;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.18 2005-07-19 12:17:21 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.19 2005-07-19 12:37:24 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -487,11 +487,11 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
  */
 static void alpha_create_or_reset_tc(struct cpu *cpu)
 {
-	if (cpu->cd.alpha.translation_cache == NULL) {
-		cpu->cd.alpha.translation_cache = malloc(
+	if (cpu->translation_cache == NULL) {
+		cpu->translation_cache = malloc(
 		    ALPHA_TRANSLATION_CACHE_SIZE + 
 		    ALPHA_TRANSLATION_CACHE_MARGIN);
-		if (cpu->cd.alpha.translation_cache == NULL) {
+		if (cpu->translation_cache == NULL) {
 			fprintf(stderr, "alpha_create_or_reset_tc(): out of "
 			    "memory when allocating the translation cache\n");
 			exit(1);
@@ -499,10 +499,10 @@ static void alpha_create_or_reset_tc(struct cpu *cpu)
 	}
 
 	/*  Create an empty table at the beginning of the translation cache:  */
-	memset(cpu->cd.alpha.translation_cache, 0, sizeof(uint32_t) *
+	memset(cpu->translation_cache, 0, sizeof(uint32_t) *
 	    ALPHA_N_BASE_TABLE_ENTRIES);
 
-	cpu->cd.alpha.translation_cache_cur_ofs =
+	cpu->translation_cache_cur_ofs =
 	    ALPHA_N_BASE_TABLE_ENTRIES * sizeof(uint32_t);
 }
 
@@ -511,7 +511,7 @@ static void alpha_create_or_reset_tc(struct cpu *cpu)
  *  alpha_tc_allocate_default_page():
  *
  *  Create a default page (with just pointers to instr(to_be_translated)
- *  at cpu->cd.alpha.translation_cache_cur_ofs.
+ *  at cpu->translation_cache_cur_ofs.
  */
 /*  forward declaration of to_be_translated and end_of_page:  */
 static void instr(to_be_translated)(struct cpu *,struct alpha_instr_call *);
@@ -522,8 +522,8 @@ static void alpha_tc_allocate_default_page(struct cpu *cpu, uint64_t physaddr)
 	int i;
 
 	/*  Create the physpage header:  */
-	ppp = (struct alpha_tc_physpage *)(cpu->cd.alpha.translation_cache
-	    + cpu->cd.alpha.translation_cache_cur_ofs);
+	ppp = (struct alpha_tc_physpage *)(cpu->translation_cache
+	    + cpu->translation_cache_cur_ofs);
 	ppp->next_ofs = 0;
 	ppp->physaddr = physaddr;
 
@@ -532,8 +532,7 @@ static void alpha_tc_allocate_default_page(struct cpu *cpu, uint64_t physaddr)
 
 	ppp->ics[ALPHA_IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
 
-	cpu->cd.alpha.translation_cache_cur_ofs +=
-	    sizeof(struct alpha_tc_physpage);
+	cpu->translation_cache_cur_ofs += sizeof(struct alpha_tc_physpage);
 }
 
 
@@ -771,22 +770,21 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 
 	physaddr = cached_pc & ~(((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3);
 
-	if (cpu->cd.alpha.translation_cache == NULL || cpu->cd.
-	    alpha.translation_cache_cur_ofs >= ALPHA_TRANSLATION_CACHE_SIZE)
+	if (cpu->translation_cache == NULL || cpu->
+	    translation_cache_cur_ofs >= ALPHA_TRANSLATION_CACHE_SIZE)
 		alpha_create_or_reset_tc(cpu);
 
 	pagenr = ALPHA_ADDR_TO_PAGENR(physaddr);
 	table_index = ALPHA_PAGENR_TO_TABLE_INDEX(pagenr);
 
-	physpage_entryp = &(((uint32_t *)
-	    cpu->cd.alpha.translation_cache)[table_index]);
+	physpage_entryp = &(((uint32_t *)cpu->translation_cache)[table_index]);
 	physpage_ofs = *physpage_entryp;
 	ppp = NULL;
 
 	/*  Traverse the physical page chain:  */
 	while (physpage_ofs != 0) {
 		ppp = (struct alpha_tc_physpage *)
-		    (cpu->cd.alpha.translation_cache + physpage_ofs);
+		    (cpu->translation_cache + physpage_ofs);
 		/*  If we found the page in the cache, then we're done:  */
 		if (ppp->physaddr == physaddr)
 			break;
@@ -802,12 +800,12 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 		    "index = %i\n", (long long)pagenr, (uint64_t)physaddr,
 		    table_index);
 		*physpage_entryp = physpage_ofs =
-		    cpu->cd.alpha.translation_cache_cur_ofs;
+		    cpu->translation_cache_cur_ofs;
 
 		alpha_tc_allocate_default_page(cpu, physaddr);
 
 		ppp = (struct alpha_tc_physpage *)
-		    (cpu->cd.alpha.translation_cache + physpage_ofs);
+		    (cpu->translation_cache + physpage_ofs);
 	}
 
 	cpu->cd.alpha.cur_physpage = ppp;
@@ -841,8 +839,8 @@ int alpha_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	alpha_pc_to_pointers(cpu);
 
 	cached_pc = cpu->pc;
-	cpu->cd.alpha.n_translated_instrs = 0;
-	cpu->cd.alpha.running_translated = 1;
+	cpu->n_translated_instrs = 0;
+	cpu->running_translated = 1;
 
 	if (single_step || cpu->machine->instruction_trace) {
 		/*
@@ -1018,8 +1016,8 @@ int alpha_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
 
 			n_instrs += 120;
-			if (!cpu->cd.alpha.running_translated || single_step ||
-			    n_instrs+cpu->cd.alpha.n_translated_instrs >= 16384)
+			if (!cpu->running_translated || single_step ||
+			    n_instrs + cpu->n_translated_instrs >= 16384)
 				break;
 		}
 	}
@@ -1043,7 +1041,7 @@ int alpha_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		fatal("Outside a page (This is actually ok)\n");
 	}
 
-	return n_instrs + cpu->cd.alpha.n_translated_instrs;
+	return n_instrs + cpu->n_translated_instrs;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.14 2005-07-15 07:34:05 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.15 2005-07-19 10:48:05 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -160,14 +160,14 @@ if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
 						return NULL;
 
 					if (low_paddr < cpu->mem->
-					    dev_bintrans_write_low[i])
+					    dev_dyntrans_write_low[i])
 						cpu->mem->
-						    dev_bintrans_write_low[i] =
+						    dev_dyntrans_write_low[i] =
 						    low_paddr;
 					if (high_paddr > cpu->mem->
-					    dev_bintrans_write_high[i])
+					    dev_dyntrans_write_high[i])
 						cpu->mem->
-						    dev_bintrans_write_high[i]
+						    dev_dyntrans_write_high[i]
 						    = high_paddr;
 				}
 
@@ -177,12 +177,12 @@ if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
 					    MAX - 1;
 				cpu->cd.mips.bintrans_data_hostpage[cpu->
 				    cd.mips.bintrans_next_index] = cpu->mem->
-				    dev_bintrans_data[i] + (paddr & ~0xfff);
+				    dev_dyntrans_data[i] + (paddr & ~0xfff);
 				cpu->cd.mips.bintrans_data_vaddr[cpu->
 				    cd.mips.bintrans_next_index] = vaddr_page;
 				cpu->cd.mips.bintrans_data_writable[cpu->
 				    cd.mips.bintrans_next_index] = writeflag;
-				return cpu->mem->dev_bintrans_data[i] + paddr;
+				return cpu->mem->dev_dyntrans_data[i] + paddr;
 			} else
 				return NULL;
 		}

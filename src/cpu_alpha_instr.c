@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.8 2005-07-19 06:53:31 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.9 2005-07-19 10:48:04 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -525,7 +525,8 @@ X(to_be_translated)
 		case 0x2d: loadstore_type = 3; break;		/*  stq  */
 		}
 		ic->f = alpha_loadstore[8*load + (imm==0? 4 : 0)
-		    + loadstore_type];
+		    + loadstore_type
+		    + (cpu->machine->dyntrans_alignment_check? 16:0)];
 		if (load && ra == ALPHA_ZERO) {
 			ic->f = instr(nop);
 			break;

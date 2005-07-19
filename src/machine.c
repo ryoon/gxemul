@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.476 2005-07-13 21:22:13 debug Exp $
+ *  $Id: machine.c,v 1.477 2005-07-19 10:48:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -146,6 +146,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->bintrans_enable = 1;
 	m->old_bintrans_enable = 1;
 #endif
+	m->dyntrans_alignment_check = 1;
 	m->prom_emulation = 1;
 	m->speed_tricks = 1;
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;

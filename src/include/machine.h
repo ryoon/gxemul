@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.58 2005-06-24 19:15:08 debug Exp $
+ *  $Id: machine.h,v 1.59 2005-07-19 10:48:07 debug Exp $
  */
 
 #include <sys/types.h>
@@ -154,6 +154,7 @@ struct machine {
 	int	cache_secondary_linesize;
 
 	int	dbe_on_nonexistant_memaccess;
+	int	dyntrans_alignment_check;
 	int	bintrans_enable;
 	int	old_bintrans_enable;
 	int	bintrans_enabled_from_start;

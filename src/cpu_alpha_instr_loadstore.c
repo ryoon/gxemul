@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.2 2005-07-19 06:53:31 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.3 2005-07-19 10:48:04 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -37,7 +37,9 @@
  *  arg[2] = offset (as an int32_t)
  */
 
+
 #ifndef LS_IGNORE_OFFSET
+#ifndef LS_ALIGN_CHECK
 void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
 #ifdef LS_B
@@ -106,6 +108,8 @@ void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif
 }
 #endif
+#endif
+
 
 void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
@@ -122,6 +126,25 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	a = (addr >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
 	b = (addr >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
 	c = addr & 8191;
+
+#ifdef LS_ALIGN_CHECK
+#ifndef LS_B
+	if (c &
+#ifdef LS_W
+	    1
+#endif
+#ifdef LS_L
+	    3
+#endif
+#ifdef LS_Q
+	    7
+#endif
+	    ) {
+		LS_GENERIC_N(cpu, ic);
+		return;
+	}
+#endif
+#endif
 
 	if (first == 0) {
 		struct alpha_vph_page *vph_p;
@@ -166,26 +189,15 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif
 #ifdef LS_W
 			uint32_t d = *((uint64_t *)ic->arg[0]);
-			page[c] = d;
-			page[c+1] = d >> 8;
+			*((uint16_t *) (page + c)) = d;
 #endif
 #ifdef LS_L
 			uint32_t d = *((uint64_t *)ic->arg[0]);
-			page[c] = d;
-			page[c+1] = d >> 8;
-			page[c+2] = d >> 16;
-			page[c+3] = d >> 24;
+			*((uint32_t *) (page + c)) = d;
 #endif
 #ifdef LS_Q
 			uint64_t d = *((uint64_t *)ic->arg[0]);
-			page[c] = d;
-			page[c+1] = d >> 8;
-			page[c+2] = d >> 16;
-			page[c+3] = d >> 24;
-			page[c+4] = d >> 32;
-			page[c+5] = d >> 40;
-			page[c+6] = d >> 48;
-			page[c+7] = d >> 56;
+			*((uint64_t *) (page + c)) = d;
 #endif
 #endif	/*  !LS_LOAD  */
 		} else
@@ -233,26 +245,15 @@ void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif
 #ifdef LS_W
 			uint32_t d = *((uint64_t *)ic->arg[0]);
-			page[c] = d;
-			page[c+1] = d >> 8;
+			*((uint16_t *) (page + c)) = d;
 #endif
 #ifdef LS_L
 			uint32_t d = *((uint64_t *)ic->arg[0]);
-			page[c] = d;
-			page[c+1] = d >> 8;
-			page[c+2] = d >> 16;
-			page[c+3] = d >> 24;
+			*((uint32_t *) (page + c)) = d;
 #endif
 #ifdef LS_Q
 			uint64_t d = *((uint64_t *)ic->arg[0]);
-			page[c] = d;
-			page[c+1] = d >> 8;
-			page[c+2] = d >> 16;
-			page[c+3] = d >> 24;
-			page[c+4] = d >> 32;
-			page[c+5] = d >> 40;
-			page[c+6] = d >> 48;
-			page[c+7] = d >> 56;
+			*((uint64_t *) (page + c)) = d;
 #endif
 #endif	/*  !LS_LOAD  */
 		} else

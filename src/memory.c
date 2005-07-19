@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.166 2005-07-15 07:34:05 debug Exp $
+ *  $Id: memory.c,v 1.167 2005-07-19 10:48:04 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -132,7 +132,7 @@ void *zeroed_alloc(size_t s)
  *  This function creates a new memory object. An emulated machine needs one
  *  of these.
  */
-struct memory *memory_new(uint64_t physical_max)
+struct memory *memory_new(uint64_t physical_max, int arch)
 {
 	struct memory *mem;
 	int bits_per_pagetable = BITS_PER_PAGETABLE;
@@ -157,6 +157,9 @@ struct memory *memory_new(uint64_t physical_max)
 	}
 
 	mem->physical_max = physical_max;
+	mem->dev_dyntrans_alignment = 4095;
+	if (arch == ARCH_ALPHA)
+		mem->dev_dyntrans_alignment = 8191;
 
 	s = entries_per_pagetable * sizeof(void *);
 
@@ -255,7 +258,7 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 /*
  *  memory_device_dyntrans_access():
  *
- *  Get the lowest and highest bintrans access since last time.
+ *  Get the lowest and highest dyntrans (or bintrans) access since last time.
  */
 void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high)
@@ -270,22 +273,22 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 
 	for (i=0; i<mem->n_mmapped_devices; i++) {
 		if (mem->dev_extra[i] == extra &&
-		    mem->dev_bintrans_data[i] != NULL) {
-			if (mem->dev_bintrans_write_low[i] != (uint64_t) -1)
+		    mem->dev_dyntrans_data[i] != NULL) {
+			if (mem->dev_dyntrans_write_low[i] != (uint64_t) -1)
 				need_inval = 1;
 			if (low != NULL)
-				*low = mem->dev_bintrans_write_low[i];
-			mem->dev_bintrans_write_low[i] = (uint64_t) -1;
+				*low = mem->dev_dyntrans_write_low[i];
+			mem->dev_dyntrans_write_low[i] = (uint64_t) -1;
 
 			if (high != NULL)
-				*high = mem->dev_bintrans_write_high[i];
-			mem->dev_bintrans_write_high[i] = 0;
+				*high = mem->dev_dyntrans_write_high[i];
+			mem->dev_dyntrans_write_high[i] = 0;
 
 			if (!need_inval)
 				return;
 
 			/*  Invalidate any pages of this device that might
-			    be in the bintrans load/store cache, by marking
+			    be in the dyntrans load/store cache, by marking
 			    the pages read-only.  */
 			if (cpu->invalidate_translation_caches_paddr != NULL) {
 				for (s=0; s<mem->dev_length[i]; s+=4096) {
@@ -305,10 +308,10 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 				for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
 					if (cpu->cd.
 					    mips.bintrans_data_hostpage[j] >=
-					    mem->dev_bintrans_data[i] &&
+					    mem->dev_dyntrans_data[i] &&
 					    cpu->cd.mips.
 					    bintrans_data_hostpage[j] <
-					    mem->dev_bintrans_data[i] +
+					    mem->dev_dyntrans_data[i] +
 					    mem->dev_length[i])
 						cpu->cd.mips.
 						    bintrans_data_hostpage[j]
@@ -357,9 +360,9 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	uint64_t baseaddr, uint64_t len,
 	int (*f)(struct cpu *,struct memory *,uint64_t,unsigned char *,
 		size_t,int,void *),
-	void *extra, int flags, unsigned char *bintrans_data)
+	void *extra, int flags, unsigned char *dyntrans_data)
 {
-	int i;
+	int i, alignment;
 
 	if (mem->n_mmapped_devices >= MAX_DEVICES) {
 		fprintf(stderr, "memory_device_register(): too many "
@@ -385,7 +388,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	    mem->n_mmapped_devices, (long long)baseaddr, device_name);
 
 	if (flags & (MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK)
-	    && (baseaddr & 0xfff) != 0) {
+	    && (baseaddr & mem->dev_dyntrans_alignment) != 0) {
 		fatal("\nWARNING: Device dyntrans access, but unaligned"
 		    " baseaddr 0x%llx.\n", (long long)baseaddr);
 	}
@@ -400,21 +403,21 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	mem->dev_baseaddr[mem->n_mmapped_devices] = baseaddr;
 	mem->dev_length[mem->n_mmapped_devices] = len;
 	mem->dev_flags[mem->n_mmapped_devices] = flags;
-	mem->dev_bintrans_data[mem->n_mmapped_devices] = bintrans_data;
+	mem->dev_dyntrans_data[mem->n_mmapped_devices] = dyntrans_data;
 
 	if (mem->dev_name[mem->n_mmapped_devices] == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
-	if ((size_t)bintrans_data & 1) {
+	if ((size_t)dyntrans_data & 7) {
 		fprintf(stderr, "memory_device_register():"
-		    " bintrans_data not aligned correctly\n");
+		    " dyntrans_data not aligned correctly\n");
 		exit(1);
 	}
 
-	mem->dev_bintrans_write_low[mem->n_mmapped_devices] = (uint64_t)-1;
-	mem->dev_bintrans_write_high[mem->n_mmapped_devices] = 0;
+	mem->dev_dyntrans_write_low[mem->n_mmapped_devices] = (uint64_t)-1;
+	mem->dev_dyntrans_write_high[mem->n_mmapped_devices] = 0;
 	mem->dev_f[mem->n_mmapped_devices] = f;
 	mem->dev_extra[mem->n_mmapped_devices] = extra;
 	mem->n_mmapped_devices++;
@@ -461,11 +464,11 @@ void memory_device_remove(struct memory *mem, int i)
 	    (MAX_DEVICES - i - 1));
 	memmove(&mem->dev_f_state[i], &mem->dev_f_state[i+1], sizeof(void *) *
 	    (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_bintrans_data[i], &mem->dev_bintrans_data[i+1],
+	memmove(&mem->dev_dyntrans_data[i], &mem->dev_dyntrans_data[i+1],
 	    sizeof(void *) * (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_bintrans_write_low[i], &mem->dev_bintrans_write_low
+	memmove(&mem->dev_dyntrans_write_low[i], &mem->dev_dyntrans_write_low
 	    [i+1], sizeof(void *) * (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_bintrans_write_high[i], &mem->dev_bintrans_write_high
+	memmove(&mem->dev_dyntrans_write_high[i], &mem->dev_dyntrans_write_high
 	    [i+1], sizeof(void *) * (MAX_DEVICES - i - 1));
 }
 

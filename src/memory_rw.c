@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.47 2005-07-15 19:08:53 debug Exp $
+ *  $Id: memory_rw.c,v 1.48 2005-07-19 10:48:05 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -331,15 +331,15 @@ have_paddr:
 
 					if (writeflag) {
 						if (paddr < mem->
-						    dev_bintrans_write_low[i])
+						    dev_dyntrans_write_low[i])
 							mem->
-							dev_bintrans_write_low
+							dev_dyntrans_write_low
 							    [i] = paddr &
 							    ~offset_mask;
 						if (paddr > mem->
-						    dev_bintrans_write_high[i])
+						    dev_dyntrans_write_high[i])
 							mem->
-						 	dev_bintrans_write_high
+						 	dev_dyntrans_write_high
 							    [i] = paddr |
 							    offset_mask;
 					}
@@ -350,7 +350,7 @@ have_paddr:
 
 					cpu->update_translation_table(cpu,
 					    vaddr & ~offset_mask,
-					    mem->dev_bintrans_data[i] +
+					    mem->dev_dyntrans_data[i] +
 					    (paddr & ~offset_mask),
 					    wf, orig_paddr & ~offset_mask);
 				}

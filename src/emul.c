@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.213 2005-07-18 22:00:06 debug Exp $
+ *  $Id: emul.c,v 1.214 2005-07-19 10:48:04 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -857,7 +857,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		debug(" (offset by %iMB)", m->memory_offset_in_mb);
 		memory_amount += 1048576 * m->memory_offset_in_mb;
 	}
-	m->memory = memory_new(memory_amount);
+	m->memory = memory_new(memory_amount, m->arch);
 	if (m->machine_type != MACHINE_USERLAND)
 		debug("\n");
 

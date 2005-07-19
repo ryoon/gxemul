@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.27 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_px.c,v 1.28 2005-07-19 10:48:06 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -789,7 +789,8 @@ void dev_px_init(struct machine *machine, struct memory *mem,
 		fatal("dev_px_init(): unimplemented px_type\n");
 	}
 
-	d->fb_mem = memory_new(PX_XSIZE * PX_YSIZE * d->bitdepth / 8);
+	d->fb_mem = memory_new(PX_XSIZE * PX_YSIZE * d->bitdepth / 8,
+	    machine->arch);
 	if (d->fb_mem == NULL) {
 		fprintf(stderr, "dev_px_init(): out of memory (1)\n");
 		exit(1);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.34 2005-07-15 07:34:07 debug Exp $
+ *  $Id: memory.h,v 1.35 2005-07-19 10:48:07 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -72,10 +72,12 @@ struct memory {
 	int		(*dev_f_state[MAX_DEVICES])(struct cpu *,
 			    struct memory *, void *extra, int wf, int nr,
 			    int *type, char **namep, void **data, size_t *len);
-	unsigned char	*dev_bintrans_data[MAX_DEVICES];
+	unsigned char	*dev_dyntrans_data[MAX_DEVICES];
 
-	uint64_t	dev_bintrans_write_low[MAX_DEVICES];
-	uint64_t	dev_bintrans_write_high[MAX_DEVICES];
+	int		dev_dyntrans_alignment;
+
+	uint64_t	dev_dyntrans_write_low[MAX_DEVICES];
+	uint64_t	dev_dyntrans_write_high[MAX_DEVICES];
 
 
 	/*
@@ -133,7 +135,7 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
 
 void *zeroed_alloc(size_t s);
 
-struct memory *memory_new(uint64_t physical_max);
+struct memory *memory_new(uint64_t physical_max, int arch);
 
 int memory_points_to_string(struct cpu *cpu, struct memory *mem,
 	uint64_t addr, int min_string_length);
@@ -185,7 +187,7 @@ void memory_device_register_statefunction(
 void memory_device_register(struct memory *mem, const char *,
 	uint64_t baseaddr, uint64_t len, int (*f)(struct cpu *,
 	    struct memory *,uint64_t,unsigned char *,size_t,int,void *),
-	void *extra, int flags, unsigned char *bintrans_data);
+	void *extra, int flags, unsigned char *dyntrans_data);
 void memory_device_remove(struct memory *mem, int i);
 
 /*  Bit flags:  */

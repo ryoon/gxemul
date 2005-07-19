@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.62 2005-07-19 00:04:41 debug Exp $
+#  $Id: Makefile.skel,v 1.63 2005-07-19 10:48:04 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -25,8 +25,15 @@ $(OBJS): Makefile
 
 bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
-cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_alpha_instr_alu.c \
-	cpu_alpha_instr_loadstore.c memory_rw.c
+cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c \
+	cpu_alpha_instr_inc.c memory_rw.c
+
+cpu_alpha_instr_inc.c: cpu_alpha_instr_alu.c cpu_alpha_instr_loadstore.c \
+	tmp_alpha_loadstore.c
+
+tmp_alpha_loadstore.c: cpu_alpha_instr_loadstore.c
+	cd tools; make generate_alpha_loadstore; cd ..
+	./tools/generate_alpha_loadstore > tmp_alpha_loadstore.c
 
 cpu_arm.o: cpu_arm.c cpu_arm_instr.c memory_rw.c
 
@@ -53,7 +60,7 @@ memory_x86.c: memory_rw.c
 
 
 clean:
-	rm -f $(OBJS) *core tmp_arm*.c
+	rm -f $(OBJS) *core tmp_*.c
 	cd tools; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 

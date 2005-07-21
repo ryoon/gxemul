@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.6 2005-07-19 12:37:24 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.7 2005-07-21 08:39:36 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -35,6 +35,10 @@
  *  arg[0] = pointer to the register to load to or store from (uint64_t)
  *  arg[1] = pointer to the base register (uint64_t)
  *  arg[2] = offset (as an int32_t)
+ *
+ *  NOTE:
+ *	Alpha byte and word loads (8- and 16-bit) are unsigned, while
+ *	32-bit long words are sign-extended up to 64 bits during a load!
  */
 
 

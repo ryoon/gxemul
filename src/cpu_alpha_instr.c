@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.13 2005-07-21 08:22:08 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.14 2005-07-21 08:34:30 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -394,17 +394,6 @@ X(cmple_imm)
 }
 
 
-/*
- *  clear:  Clear a register.
- *
- *  arg[0] = pointer to an uint64_t to clear.
- */
-X(clear)
-{
-	*((uint64_t *)ic->arg[0]) = 0;
-}
-
-
 /*****************************************************************************/
 
 
@@ -623,12 +612,10 @@ X(to_be_translated)
 		switch (func & 0xff) {
 		case 0x20:
 			ic->f = instr(or);
-			if (ra == ALPHA_ZERO && rb == ALPHA_ZERO)
-				ic->f = instr(clear);
-			else if (ra == ALPHA_ZERO || rb == ALPHA_ZERO) {
+			if (ra == ALPHA_ZERO || rb == ALPHA_ZERO) {
 				if (ra == ALPHA_ZERO)
 					ra = rb;
-				ic->f = alpha_mov_r_r[rc + ra*31];
+				ic->f = alpha_mov_r_r[ra + rc*32];
 			}
 			break;
 		case 0x80:

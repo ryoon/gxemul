@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.478 2005-07-19 22:09:31 debug Exp $
+ *  $Id: machine.c,v 1.479 2005-07-21 15:42:51 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -63,6 +63,9 @@
 #include "mp.h"
 #include "net.h"
 #include "symbol.h"
+
+/*  For Alpha emulation:  */
+#include "alpha_rpb.h"
 
 /*  For SGI and ARC emulation:  */
 #include "sgi_arcbios.h"
@@ -4072,6 +4075,36 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		cpu->cd.alpha.r[ALPHA_A3] = 0;
 		/*  a4 = Bootinfo version  */
 		cpu->cd.alpha.r[ALPHA_A4] = 0;
+
+		{
+			/*  HWRPB: Hardware Restart Parameter Block  */
+			struct rpb rpb;
+			/*  CRB: Console Routine Block  */
+			struct crb crb;
+
+			memset(&rpb, 0, sizeof(struct rpb));
+			memset(&crb, 0, sizeof(struct crb));
+
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(rpb.rpb_size), sizeof(struct rpb));
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(rpb.rpb_crb_off), CRB_ADDR - HWRPB_ADDR);
+
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(crb.crb_v_dispatch), CRB_ADDR - 0x100);
+			store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
+
+			/*
+			 *  Place a special "hack" palcode call at 0x10000:
+			 *  (Hopefully nothing else will be there.)
+			 */
+			store_32bit_word(cpu, 0x10000, 0x3fffffe);
+
+			store_buf(cpu, HWRPB_ADDR, (char *)&rpb,
+			    sizeof(struct rpb));
+			store_buf(cpu, CRB_ADDR, (char *)&crb,
+			    sizeof(struct crb));
+		}
 
 		break;
 

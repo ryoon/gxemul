@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.3 2005-07-21 11:11:55 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.4 2005-07-21 15:42:51 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -88,6 +88,7 @@ void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen)
 	case 0x83: snprintf(buf, buflen, "PAL_OSF1_callsys"); break;
 	case 0x86: snprintf(buf, buflen, "PAL_OSF1_imb"); break;
 	case 0x92: snprintf(buf, buflen, "PAL_OSF1_urti"); break;
+	case 0x3fffffe: snprintf(buf, buflen, "GXemul_PROM"); break;
 	default:snprintf(buf, buflen, "UNKNOWN 0x%x", palcode);
 	}
 }
@@ -133,6 +134,11 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		break;
 	case 0x86:	/*  PAL_OSF1_imb  */
 		/*  TODO  */
+		break;
+	case 0x3fffffe:
+		fatal("[ Alpha PALcode: GXemul PROM call ]\n");
+		/*  TODO  */
+		cpu->pc = cpu->cd.alpha.r[ALPHA_RA];
 		break;
 	default:fatal("[ Alpha PALcode 0x%x unimplemented! ]\n", palcode);
 		cpu->running = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.14 2005-07-21 08:34:30 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.15 2005-07-21 09:55:51 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -361,7 +361,7 @@ X(lda_0)
 }
 
 
-#include "cpu_alpha_instr_inc.c"
+#include "tmp_alpha_misc.c"
 
 
 /*

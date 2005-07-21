@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_inc.c,v 1.3 2005-07-19 10:48:04 debug Exp $
+ *  $Id: cpu_alpha_instr_inc.c,v 1.4 2005-07-21 08:22:08 debug Exp $
  *
  *  Alpha instructions. TODO: This function should probably be generated
  *  automatically, but for now, it is hand-written.
@@ -254,8 +254,12 @@
 
 
 /*
- *  Load/store:
+ *  Misc.:
+ *
+ *	x)  Load/store
+ *
+ *	x)  mov register to register
  */
 
-#include "tmp_alpha_loadstore.c"
+#include "tmp_alpha_misc.c"
 

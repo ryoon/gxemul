@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.12 2005-07-19 22:09:31 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.13 2005-07-21 08:22:08 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -623,9 +623,13 @@ X(to_be_translated)
 		switch (func & 0xff) {
 		case 0x20:
 			ic->f = instr(or);
-			/*  TODO: Move if exactly one of ra or rb = 31  */
 			if (ra == ALPHA_ZERO && rb == ALPHA_ZERO)
 				ic->f = instr(clear);
+			else if (ra == ALPHA_ZERO || rb == ALPHA_ZERO) {
+				if (ra == ALPHA_ZERO)
+					ra = rb;
+				ic->f = alpha_mov_r_r[rc + ra*31];
+			}
 			break;
 		case 0x80:
 			ic->f = instr(and_imm);

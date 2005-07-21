@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.64 2005-07-19 22:09:31 debug Exp $
+#  $Id: Makefile.skel,v 1.65 2005-07-21 08:22:08 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -29,11 +29,11 @@ cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c \
 	cpu_alpha_instr_inc.c memory_rw.c
 
 cpu_alpha_instr_inc.c: cpu_alpha_instr_alu.c cpu_alpha_instr_loadstore.c \
-	tmp_alpha_loadstore.c
+	tmp_alpha_misc.c
 
-tmp_alpha_loadstore.c: cpu_alpha_instr_loadstore.c
-	cd tools; make generate_alpha_loadstore; cd ..
-	./tools/generate_alpha_loadstore > tmp_alpha_loadstore.c
+tmp_alpha_misc.c: cpu_alpha_instr_loadstore.c
+	cd tools; make generate_alpha_misc; cd ..
+	./tools/generate_alpha_misc > tmp_alpha_misc.c
 
 cpu_arm.o: cpu_arm.c cpu_arm_instr.c memory_rw.c
 

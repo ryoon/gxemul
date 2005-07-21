@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.15 2005-07-21 09:55:51 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.16 2005-07-21 11:11:55 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -99,10 +99,16 @@ X(call_pal)
 
 	alpha_palcode(cpu, ic->arg[0]);
 
-	/*  PC might have been changed by the palcode call:  */
-
-	/*  Find the new physical page and update the translation pointers:  */
-	alpha_pc_to_pointers(cpu);
+	if (!cpu->running) {
+		cpu->running_translated = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.alpha.next_ic = &nothing_call;
+	} else {
+		/*  PC might have been changed by the palcode call.  */
+		/*  Find the new physical page and update the translation
+		    pointers:  */
+		alpha_pc_to_pointers(cpu);
+	}
 }
 
 
@@ -123,6 +129,8 @@ X(jsr)
 
 	*((int64_t *)ic->arg[0]) = cpu->pc;
 	cpu->pc = *((int64_t *)ic->arg[1]);
+
+	/*  TODO: just set cpu->cd.alpha.next_ic if it's the same page  */
 
 	/*  Find the new physical page and update the translation pointers:  */
 	alpha_pc_to_pointers(cpu);
@@ -145,6 +153,8 @@ X(jsr_0)
 	cpu->pc += (low_pc << 2) + 4;
 
 	cpu->pc = *((int64_t *)ic->arg[1]);
+
+	/*  TODO: just set cpu->cd.alpha.next_ic if it's the same page  */
 
 	/*  Find the new physical page and update the translation pointers:  */
 	alpha_pc_to_pointers(cpu);
@@ -238,6 +248,19 @@ X(ble)
 
 
 /*
+ *  blt:  Branch (to a different translated page) if Less Than
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(blt)
+{
+	if (*((int64_t *)ic->arg[1]) < 0)
+		instr(br)(cpu, ic);
+}
+
+
+/*
  *  bgt:  Branch (to a different translated page) if Greater Than
  *
  *  arg[0] = relative offset (as an int32_t)
@@ -322,6 +345,19 @@ X(ble_samepage)
 
 
 /*
+ *  blt_samepage:  Branch (to within the same translated page) if Less Than
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(blt_samepage)
+{
+	if (*((int64_t *)ic->arg[1]) < 0)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
  *  bgt_samepage:  Branch (to within the same translated page) if Greater Than
  *
  *  arg[0] = pointer to new alpha_instr_call
@@ -375,22 +411,6 @@ X(sll_imm)
 {
 	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1]) <<
 	    (ic->arg[2] & 63);
-}
-
-
-/*
- *  cmple_imm:  CMPLE with immediate
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value
- */
-X(cmple_imm)
-{
-	if (*((int64_t *)ic->arg[1]) <= (int64_t)(int32_t)ic->arg[2])
-		*((uint64_t *)ic->arg[0]) = 1;
-	else
-		*((uint64_t *)ic->arg[0]) = 0;
 }
 
 
@@ -570,12 +590,17 @@ X(to_be_translated)
 		case 0x0b: ic->f = instr(s4subl); break;
 		case 0x12: ic->f = instr(s8addl); break;
 		case 0x1b: ic->f = instr(s8subl); break;
+		case 0x1d: ic->f = instr(cmpult); break;
 		case 0x20: ic->f = instr(addq); break;
 		case 0x22: ic->f = instr(s4addq); break;
 		case 0x29: ic->f = instr(subq); break;
 		case 0x2b: ic->f = instr(s4subq); break;
+		case 0x2d: ic->f = instr(cmpeq); break;
 		case 0x32: ic->f = instr(s8addq); break;
 		case 0x3b: ic->f = instr(s8subq); break;
+		case 0x3d: ic->f = instr(cmpule); break;
+		case 0x4d: ic->f = instr(cmplt); break;
+		case 0x6d: ic->f = instr(cmple); break;
 
 		case 0x80: ic->f = instr(addl_imm); break;
 		case 0x82: ic->f = instr(s4addl_imm); break;
@@ -583,16 +608,18 @@ X(to_be_translated)
 		case 0x8b: ic->f = instr(s4subl_imm); break;
 		case 0x92: ic->f = instr(s8addl_imm); break;
 		case 0x9b: ic->f = instr(s8subl_imm); break;
+		case 0x9d: ic->f = instr(cmpult_imm); break;
 		case 0xa0: ic->f = instr(addq_imm); break;
 		case 0xa2: ic->f = instr(s4addq_imm); break;
 		case 0xa9: ic->f = instr(subq_imm); break;
 		case 0xab: ic->f = instr(s4subq_imm); break;
+		case 0xad: ic->f = instr(cmpeq_imm); break;
 		case 0xb2: ic->f = instr(s8addq_imm); break;
 		case 0xbb: ic->f = instr(s8subq_imm); break;
+		case 0xbd: ic->f = instr(cmpule_imm); break;
+		case 0xcd: ic->f = instr(cmplt_imm); break;
+		case 0xed: ic->f = instr(cmple_imm); break;
 
-		case 0xed:
-			ic->f = instr(cmple_imm);
-			break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;
@@ -663,12 +690,15 @@ X(to_be_translated)
 		}
 		break;
 	case 0x30:						/*  BR  */
+	case 0x34:						/*  BSR  */
 	case 0x39:						/*  BEQ  */
+	case 0x3a:						/*  BLT  */
 	case 0x3b:						/*  BLE  */
 	case 0x3d:						/*  BNE  */
 	case 0x3f:						/*  BGT  */
 		switch (opcode) {
 		case 0x30:
+		case 0x34:
 			ic->f = instr(br);
 			samepage_function = instr(br_samepage);
 			if (ra != ALPHA_ZERO) {
@@ -679,6 +709,10 @@ X(to_be_translated)
 		case 0x39:
 			ic->f = instr(beq);
 			samepage_function = instr(beq_samepage);
+			break;
+		case 0x3a:
+			ic->f = instr(blt);
+			samepage_function = instr(blt_samepage);
 			break;
 		case 0x3b:
 			ic->f = instr(ble);

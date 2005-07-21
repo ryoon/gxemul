@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.2 2005-07-21 09:30:22 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.3 2005-07-21 11:11:55 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -82,10 +82,10 @@ void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen)
 	case 0x38: snprintf(buf, buflen, "PAL_OSF1_wrusp"); break;
 	case 0x39: snprintf(buf, buflen, "PAL_OSF1_wrperfmon"); break;
 	case 0x3a: snprintf(buf, buflen, "PAL_OSF1_rdusp"); break;
-	case 0x3b: snprintf(buf, buflen, "PAL_OSF1_whami"); break;
-	case 0x3c: snprintf(buf, buflen, "PAL_OSF1_retsys"); break;
-	case 0x3d: snprintf(buf, buflen, "PAL_OSF1_rti"); break;
-	case 0x3f: snprintf(buf, buflen, "PAL_OSF1_callsys"); break;
+	case 0x3c: snprintf(buf, buflen, "PAL_OSF1_whami"); break;
+	case 0x3d: snprintf(buf, buflen, "PAL_OSF1_retsys"); break;
+	case 0x3f: snprintf(buf, buflen, "PAL_OSF1_rti"); break;
+	case 0x83: snprintf(buf, buflen, "PAL_OSF1_callsys"); break;
 	case 0x86: snprintf(buf, buflen, "PAL_OSF1_imb"); break;
 	case 0x92: snprintf(buf, buflen, "PAL_OSF1_urti"); break;
 	default:snprintf(buf, buflen, "UNKNOWN 0x%x", palcode);
@@ -117,11 +117,19 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.ipl;
 		cpu->cd.alpha.ipl = cpu->cd.alpha.r[ALPHA_A0];
 		break;
+	case 0x36:	/*  PAL_OSF1_rdps  */
+		/*  TODO  */
+		cpu->cd.alpha.r[ALPHA_V0] = 0;
+		break;
 	case 0x37:	/*  PAL_OSF1_wrkgp  */
 		/*  "clobbers a0, t0, t8-t11" according to comments in
 		    NetBSD sources  */
 
 		/*  KGP shoudl be set to a0.  (TODO)  */
+		break;
+	case 0x3c:	/*  PAL_OSF1_whami  */
+		/*  Returns CPU id in v0:  */
+		cpu->cd.alpha.r[ALPHA_V0] = cpu->cpu_id;
 		break;
 	case 0x86:	/*  PAL_OSF1_imb  */
 		/*  TODO  */

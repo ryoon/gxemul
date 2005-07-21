@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.2 2005-07-21 09:55:51 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.3 2005-07-21 11:11:55 debug Exp $
  *
- *  Alpha ALU instructions.  (Included from cpu_alpha_instr_inc.c.)
+ *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
  *
  *  Most ALU instructions have the following arguments:
@@ -39,6 +39,46 @@
 
 void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
+
+#ifdef ALU_CMP
+
+	uint64_t x;
+
+	x = (*((
+#ifdef ALU_UNSIGNED
+	    uint64_t
+#else
+	    int64_t
+#endif
+	    *)ic->arg[1]))
+
+#ifdef ALU_CMP_EQ
+	    ==
+#endif
+#ifdef ALU_CMP_LE
+	    <=
+#endif
+#ifdef ALU_CMP_LT
+	    <
+#endif
+
+#ifdef ALU_IMM
+#ifdef ALU_UNSIGNED
+	    (uint64_t)ic->arg[2]
+#else
+	    (int64_t)ic->arg[2]
+#endif
+#else
+#ifdef ALU_UNSIGNED
+	    (*((uint64_t *)ic->arg[2]))
+#else
+	    (*((int64_t *)ic->arg[2]))
+#endif
+#endif
+	    ;
+
+#else	/*  !ALU_CMP  */
+
 #ifdef ALU_LONG
 	/*  Long  */
 	int32_t x;
@@ -78,6 +118,7 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	    (*((uint64_t *)ic->arg[2]))
 #endif
 	    ;
+#endif	/*  !ALU_CMP  */
 
 	*((uint64_t *)ic->arg[0]) = x;
 }

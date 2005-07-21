@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.22 2005-07-21 09:30:22 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.23 2005-07-21 11:11:55 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -431,12 +431,13 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("\n");
 		break;
 	case 0x30:
+	case 0x34:
 		tmp = iw & 0x1fffff;
 		if (tmp & 0x100000)
 			tmp |= 0xffffffffffe00000ULL;
 		tmp <<= 2;
 		tmp += dumpaddr + sizeof(uint32_t);
-		debug("br\t");
+		debug("%s\t", opcode==0x30? "br" : "bsr");
 		if (ra != ALPHA_ZERO)
 			debug("%s,", alpha_regname[ra]);
 		debug("0x%llx", (long long)tmp);

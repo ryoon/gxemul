@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.24 2005-07-22 12:28:03 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.25 2005-07-22 15:52:17 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -257,10 +257,9 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
         int running, uint64_t dumpaddr, int bintrans)
 {
 	uint32_t iw;
-	char *symbol;
 	uint64_t offset, tmp;
-	int opcode, ra, rb, func, rc, imm;
-	char *mnem = NULL;
+	int opcode, ra, rb, func, rc, imm, floating;
+	char *symbol, *mnem = NULL;
 	char palcode_name[30];
 
 	if (running)
@@ -303,16 +302,33 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x0c:
 	case 0x0d:
 	case 0x0e:
+	case 0x20:
+	case 0x21:
+	case 0x22:
+	case 0x23:
+	case 0x24:
+	case 0x25:
+	case 0x26:
+	case 0x27:
 	case 0x28:
 	case 0x29:
 	case 0x2c:
 	case 0x2d:
+		floating = 0;
 		switch (opcode) {
 		case 0x0a: mnem = "ldbu"; break;
 		case 0x0b: mnem = "ldq_u"; break;
 		case 0x0c: mnem = "ldwu"; break;
 		case 0x0d: mnem = "stw"; break;
 		case 0x0e: mnem = "stb"; break;
+		case 0x20: mnem = "ldf"; floating = 1; break;
+		case 0x21: mnem = "ldg"; floating = 1; break;
+		case 0x22: mnem = "lds"; floating = 1; break;
+		case 0x23: mnem = "ldt"; floating = 1; break;
+		case 0x24: mnem = "stf"; floating = 1; break;
+		case 0x25: mnem = "stg"; floating = 1; break;
+		case 0x26: mnem = "sts"; floating = 1; break;
+		case 0x27: mnem = "stt"; floating = 1; break;
 		case 0x28: mnem = "ldl"; break;
 		case 0x29: mnem = "ldq"; break;
 		case 0x2c: mnem = "stl"; break;
@@ -321,7 +337,11 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		if (opcode == 0x0b && ra == ALPHA_ZERO) {
 			debug("unop");
 		} else {
-			debug("%s\t%s,", mnem, alpha_regname[ra]);
+			debug("%s\t", mnem);
+			if (floating)
+				debug("f%i,", ra);
+			else
+				debug("%s,", alpha_regname[ra]);
 			alpha_print_imm16_disp(imm, rb);
 		}
 		debug("\n");
@@ -362,9 +382,20 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x11:
 		switch (func & 0x7f) {
 		case 0x000: mnem = "and"; break;
+		case 0x008: mnem = "bic"; break;
+		case 0x014: mnem = "cmovlbs"; break;
+		case 0x016: mnem = "cmovlbc"; break;
 		case 0x020: mnem = "or"; break;
+		case 0x024: mnem = "cmoveq"; break;
+		case 0x026: mnem = "cmovne"; break;
 		case 0x028: mnem = "ornot"; break;
 		case 0x040: mnem = "xor"; break;
+		case 0x044: mnem = "cmovlt"; break;
+		case 0x046: mnem = "cmovge"; break;
+		case 0x048: mnem = "eqv"; break;
+		case 0x061: mnem = "amask"; break;
+		case 0x064: mnem = "cmovle"; break;
+		case 0x066: mnem = "cmovgt"; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}

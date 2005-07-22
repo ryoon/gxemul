@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.50 2005-07-22 12:28:03 debug Exp $
+ *  $Id: useremul.c,v 1.51 2005-07-22 15:52:17 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -397,6 +397,90 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 }
 
 
+/*****************************************************************************/
+
+
+/*
+ *  useremul_exit():
+ */
+int useremul_exit(struct cpu *cpu, uint64_t arg0)
+{
+	debug("[ exit(%i) ]\n", (int)arg0);
+	cpu->running = 0;
+	cpu->machine->exit_without_entering_debugger = 1;
+	return 0;
+}
+
+
+/*
+ *  useremul_write():
+ */
+int64_t useremul_write(struct cpu *cpu, int64_t *errnop,
+	uint64_t arg0, uint64_t arg1, uint64_t arg2)
+{
+	int64_t res = 0;
+	*errnop = 0;
+	debug("[ write(%i,0x%llx,%lli) ]\n",
+	    (int)arg0, (long long)arg1, (long long)arg2);
+	if (arg2 != 0) {
+		unsigned char *cp = get_userland_buf(cpu, arg1, arg2);
+		res = write(arg0, cp, arg2);
+		if (res < 0)
+			*errnop = errno;
+		free(cp);
+	}
+	return res;
+}
+
+
+/*
+ *  useremul_getpid():
+ */
+int64_t useremul_getpid(struct cpu *cpu)
+{
+	debug("[ getpid() ]\n");
+	return getpid();
+}
+
+
+/*
+ *  useremul_getuid():
+ */
+int64_t useremul_getuid(struct cpu *cpu)
+{
+	debug("[ getuid() ]\n");
+	return getuid();
+}
+
+
+/*
+ *  useremul_sync():
+ */
+int useremul_sync(struct cpu *cpu)
+{
+	debug("[ sync() ]\n");
+	sync();
+	return 0;
+}
+
+
+/*
+ *  useremul_getrusage():
+ */
+int64_t useremul_getrusage(struct cpu *cpu, int *errnop,
+	uint64_t arg0, uint64_t arg1)
+{
+	int64_t res = 0;
+	*errnop = 0;
+	debug("[ getrusage(%i,0x%llx) ]\n", (int)arg0, (long long)arg1);
+
+	return res;
+}
+
+
+/*****************************************************************************/
+
+
 /*
  *  useremul__freebsd():
  *
@@ -408,7 +492,8 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 {
 	unsigned char *cp;
 	int nr;
-	uint64_t arg0, arg1, arg2, arg3, arg4;
+	int64_t res = 0, err = 0;
+	uint64_t arg0, arg1, arg2, arg3, arg4, arg5;
 
 	nr = cpu->cd.alpha.r[ALPHA_V0];
 	arg0 = cpu->cd.alpha.r[ALPHA_A0];
@@ -416,29 +501,31 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 	arg2 = cpu->cd.alpha.r[ALPHA_A2];
 	arg3 = cpu->cd.alpha.r[ALPHA_A3];
 	arg4 = cpu->cd.alpha.r[ALPHA_A4];
+	arg5 = cpu->cd.alpha.r[ALPHA_A5];
 
 	switch (nr) {
 
-	case 1:		/*  exit()  */
-		debug("[ exit(%i) ]\n", (int)arg0);
-		cpu->running = 0;
-		cpu->machine->exit_without_entering_debugger = 1;
+	case 1:	res = useremul_exit(cpu, arg0);
 		break;
 
-	case 4:		/*  write()  */
-		debug("[ write(%i,0x%llx,%lli) ]\n",
-		    (int)arg0, (long long)arg1, (long long)arg2);
-		if (arg2 != 0) {
-			cp = get_userland_buf(cpu, arg1, arg2);
-			write(arg0, cp, arg2);
-			free(cp);
-		}
+	case 4:	res = useremul_write(cpu, &err, arg0, arg1, arg2);
+		break;
+
+	case 20:res = useremul_getpid(cpu);
+		break;
+
+	case 24:res = useremul_getuid(cpu);
+		break;
+
+	case 117:res = useremul_getrusage(cpu, &err, arg0, arg1);
 		break;
 
 	default:fatal("useremul__freebsd(): syscall %i not yet "
 		    "implemented\n", nr);
 		cpu->running = 0;
 	}
+
+	cpu->cd.alpha.r[ALPHA_V0] = res;
 }
 
 
@@ -453,6 +540,7 @@ static void useremul__linux(struct cpu *cpu, uint32_t code)
 {
 	int nr;
 	unsigned char *cp;
+	int64_t res = 0, err = 0;
 	uint64_t arg0, arg1, arg2, arg3;
 
 	if (code != 0) {
@@ -469,16 +557,11 @@ static void useremul__linux(struct cpu *cpu, uint32_t code)
 	switch (nr) {
 
 	case LINUX_PPC_SYS_exit:
-		debug("[ exit(%i) ]\n", (int)arg0);
-		cpu->running = 0;
+		res = useremul_exit(cpu, arg0);
 		break;
 
 	case LINUX_PPC_SYS_write:
-		debug("[ write(%i,0x%llx,%lli) ]\n",
-		    (int)arg0, (long long)arg1, (long long)arg2);
-		cp = get_userland_buf(cpu, arg1, arg2);
-		write(arg0, cp, arg2);
-		free(cp);
+		res = useremul_write(cpu, &err, arg0, arg1, arg2);
 		break;
 
 	default:
@@ -486,6 +569,8 @@ static void useremul__linux(struct cpu *cpu, uint32_t code)
 		    nr);
 		cpu->running = 0;
 	}
+
+	/*  return res: TODO  */
 }
 
 
@@ -650,8 +735,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case NETBSD_SYS_getuid:
-		debug("[ getuid() ]\n");
-		result_low = getuid();
+		result_low = useremul_getuid(cpu);
 		break;
 
 	case NETBSD_SYS_geteuid:
@@ -733,8 +817,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case NETBSD_SYS_sync:
-		debug("[ sync() ]\n");
-		sync();
+		useremul_sync(cpu);
 		break;
 
 	case NETBSD_SYS_gettimeofday:
@@ -1096,13 +1179,11 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 		break;
 
 	case ULTRIX_SYS_sync:
-		debug("[ sync() ]\n");
-		sync();
+		useremul_sync(cpu);
 		break;
 
 	case ULTRIX_SYS_getuid:
-		debug("[ getuid() ]\n");
-		result_low = getuid();
+		result_low = useremul_getuid(cpu);
 		break;
 
 	case ULTRIX_SYS_getgid:

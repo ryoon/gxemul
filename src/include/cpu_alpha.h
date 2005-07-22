@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.13 2005-07-22 12:28:04 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.14 2005-07-22 15:52:18 debug Exp $
  */
 
 #include "misc.h"
@@ -42,6 +42,7 @@ struct cpu_family;
 #define	ALPHA_A2		18
 #define	ALPHA_A3		19
 #define	ALPHA_A4		20
+#define	ALPHA_A5		21
 #define	ALPHA_RA		26
 #define	ALPHA_T12		27
 #define	ALPHA_SP		30

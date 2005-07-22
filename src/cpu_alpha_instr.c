@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.17 2005-07-22 12:28:03 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.18 2005-07-22 15:52:17 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -818,8 +818,13 @@ bad:	/*
 	 *  Nothing was translated. (Unimplemented or illegal instruction.)
 	 */
 	quiet_mode = 0;
-	fatal("to_be_translated(): TODO: unimplemented Alpha instruction:\n");
-	alpha_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
+	fatal("to_be_translated(): TODO: unimplemented instruction");
+	if (cpu->machine->instruction_trace)
+		fatal(" at 0x%llx\n", (long long)cpu->pc);
+	else {
+		fatal(":\n");
+		alpha_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
+	}
 	cpu->running = 0;
 	cpu->dead = 1;
 	cpu->running_translated = 0;

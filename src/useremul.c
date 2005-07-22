@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.52 2005-07-22 16:21:57 debug Exp $
+ *  $Id: useremul.c,v 1.53 2005-07-22 20:45:56 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -466,6 +466,36 @@ int useremul_sync(struct cpu *cpu)
 
 
 /*
+ *  useremul_readlink():
+ */
+int64_t useremul_readlink(struct cpu *cpu, int64_t *errnop,
+	uint64_t arg0, uint64_t arg1, int64_t arg2)
+{
+	int64_t res;
+	unsigned char *charbuf = get_userland_string(cpu, arg0);
+	debug("[ readlink(\"%s\",0x%lli,%lli) ]\n",
+	    charbuf, (long long)arg1, (long long)arg2);
+	if (arg2 != 0 && arg2 < 50000) {
+		unsigned char *buf2 = malloc(arg2);
+		if (buf2 == NULL) {
+			fprintf(stderr, "[ useremul_readlink(): out of"
+			    " memory ]\n");
+			exit(1);
+		}
+		res = readlink((char *)charbuf, (char *)buf2, arg2);
+		buf2[arg2-1] = '\0';
+		if (res < 0)
+			*errnop = errno;
+		else
+			store_string(cpu, arg1, (char *)buf2);
+		free(buf2);
+	}
+	free(charbuf);
+	return res;
+}
+
+
+/*
  *  useremul_getrusage():
  */
 int64_t useremul_getrusage(struct cpu *cpu, int64_t *errnop,
@@ -517,6 +547,9 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case 24:res = useremul_getuid(cpu);
+		break;
+
+	case 58:res = useremul_readlink(cpu, &err, arg0, arg1, arg2);
 		break;
 
 	case 117:res = useremul_getrusage(cpu, &err, arg0, arg1);
@@ -586,7 +619,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 	int error_flag = 0, result_high_set = 0;
 	uint64_t arg0=0,arg1=0,arg2=0,arg3=0,stack0=0,stack1=0,stack2=0;
 	int sysnr = 0;
-	uint64_t error_code = 0;
+	int64_t error_code = 0;
 	uint64_t result_low = 0;
 	uint64_t result_high = 0;
 	struct timeval tv;
@@ -800,22 +833,8 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case NETBSD_SYS_readlink:
-		charbuf = get_userland_string(cpu, arg0);
-		debug("[ readlink(\"%s\",0x%lli,%lli) ]\n",
-		    charbuf, (long long)arg1, (long long)arg2);
-		if (arg2 != 0 && arg2 < 50000) {
-			unsigned char *buf2 = malloc(arg2);
-			buf2[arg2-1] = '\0';
-			result_low = readlink((char *)charbuf,
-			    (char *)buf2, arg2 - 1);
-			if ((int64_t)result_low < 0) {
-				error_flag = 1;
-				error_code = errno;
-			} else
-				store_string(cpu, arg1, (char *)buf2);
-			free(buf2);
-		}
-		free(charbuf);
+		result_low = useremul_readlink(cpu, &error_code,
+		    arg0, arg1, arg2);
 		break;
 
 	case NETBSD_SYS_sync:

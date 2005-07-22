@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.26 2005-07-22 16:21:57 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.27 2005-07-22 20:45:55 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -422,9 +422,32 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 	case 0x12:
 		switch (func & 0x7f) {
-		case 0x030: mnem = "zap"; break;
-		case 0x031: mnem = "zapnot"; break;
-		case 0x039: mnem = "sll"; break;
+		case 0x02: mnem = "mskbl"; break;
+		case 0x06: mnem = "extbl"; break;
+		case 0x0b: mnem = "insbl"; break;
+		case 0x12: mnem = "mskwl"; break;
+		case 0x16: mnem = "extwl"; break;
+		case 0x1b: mnem = "inswl"; break;
+		case 0x22: mnem = "mskll"; break;
+		case 0x26: mnem = "extll"; break;
+		case 0x2b: mnem = "insll"; break;
+		case 0x30: mnem = "zap"; break;
+		case 0x31: mnem = "zapnot"; break;
+		case 0x32: mnem = "mskql"; break;
+		case 0x34: mnem = "srl"; break;
+		case 0x36: mnem = "extql"; break;
+		case 0x39: mnem = "sll"; break;
+		case 0x3b: mnem = "insql"; break;
+		case 0x3c: mnem = "sra"; break;
+		case 0x52: mnem = "mskwh"; break;
+		case 0x57: mnem = "inswh"; break;
+		case 0x5a: mnem = "extwh"; break;
+		case 0x62: mnem = "msklh"; break;
+		case 0x67: mnem = "inslh"; break;
+		case 0x6a: mnem = "extlh"; break;
+		case 0x72: mnem = "mskqh"; break;
+		case 0x77: mnem = "insqh"; break;
+		case 0x7a: mnem = "extqh"; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}

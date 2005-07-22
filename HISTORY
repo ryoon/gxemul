@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.837 2005-07-22 12:28:01 debug Exp $
+$Id: HISTORY,v 1.838 2005-07-22 16:34:08 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2075,4 +2075,4 @@ Changelog for GXemul:
 20050720	More Alpha-related updates.
 20050721	Continuing on cpu_alpha. Importing rpb.h from NetBSD/alpha.
 20050722	Alpha-related updates: userland stuff (Hello World compiled
-		statically for FreeBSD/Alpha runs fine).
+		statically for FreeBSD/Alpha runs fine), and more instructions.

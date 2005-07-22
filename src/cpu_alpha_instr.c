@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.19 2005-07-22 16:21:57 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.20 2005-07-22 16:34:09 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -450,7 +450,7 @@ X(ldq_u)
 			fatal("store failed: TODO\n");
 			exit(1);
 		}
-		data_x |= (data << ((uint64_t)i*8));
+		data_x |= ((uint64_t)data << ((uint64_t)i*8));
 	}
 
 	*((uint64_t *)ic->arg[0]) = data_x;

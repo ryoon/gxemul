@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.4 2005-07-22 12:28:03 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.5 2005-07-22 22:18:15 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
@@ -87,6 +87,37 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	int64_t x;
 #endif
 
+#ifdef ALU_ZAP
+	/*  Prepare for zapping:  */
+	uint64_t zapmask = 0xffffffffffffffffULL;
+	int zapbytes =
+#ifdef ALU_NOT
+	    ~
+#endif
+#ifdef ALU_IMM
+	    (int64_t)ic->arg[2]
+#else
+	    (*((uint64_t *)ic->arg[2]))
+#endif
+	    ;
+	if (zapbytes & 0x80)
+		zapmask &= ~0xff00000000000000ULL;
+	if (zapbytes & 0x40)
+		zapmask &= ~0xff000000000000ULL;
+	if (zapbytes & 0x20)
+		zapmask &= ~0xff0000000000ULL;
+	if (zapbytes & 0x10)
+		zapmask &= ~0xff00000000ULL;
+	if (zapbytes & 0x08)
+		zapmask &= ~0xff000000ULL;
+	if (zapbytes & 0x04)
+		zapmask &= ~0xff0000ULL;
+	if (zapbytes & 0x02)
+		zapmask &= ~0xff00ULL;
+	if (zapbytes & 0x01)
+		zapmask &= ~0xffULL;
+#endif	/*  ZAP  */
+
 	x = (
 	    (*((uint64_t *)ic->arg[1]))
 #ifdef ALU_S4
@@ -112,19 +143,23 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	    &
 #endif
 
+#ifdef ALU_ZAP
+	    & zapmask
+#else	/*  !ZAP  */
 	    (
-
 #ifdef ALU_NOT
 	    ~
 #endif
-
 #ifdef ALU_IMM
 	    (int64_t)ic->arg[2]
 #else
 	    (*((uint64_t *)ic->arg[2]))
 #endif
+	    )
+#endif	/*  !ZAP  */
 
-	    );
+	    ;
+
 #endif	/*  !ALU_CMP  */
 
 	*((uint64_t *)ic->arg[0]) = x;

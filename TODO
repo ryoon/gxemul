@@ -1,7 +1,18 @@
-$Id: TODO,v 1.139 2005-06-23 06:55:43 debug Exp $
+$Id: TODO,v 1.140 2005-07-22 22:18:14 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
+
+
+Alpha:
+	hahaha, zapnot doesn't compile into very nice code :-|
+	implement all shifts and zaps and so on!
+	implement more of freebsd/alpha userland emulation!
+
+
+
+
+Other:
 
 	Caches / memory hierarchies: (this is mostly MIPS-specific)
 		o)  MIPS coproc.c: bits in config registers should reflect

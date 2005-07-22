@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.20 2005-07-22 16:34:09 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.21 2005-07-22 22:18:15 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -423,73 +423,6 @@ X(lda_0)
 }
 
 
-/*
- *  ldq_u:  Load unaligned quad.
- *
- *  arg[0] = pointer to destination register
- *  arg[1] = pointer to base register
- *  arg[2] = offset (possibly as an int32_t)
- */
-X(ldq_u)
-{
-	/*
-	 *  TODO: Optimize this using the page table stuff...
-	 */
-
-	unsigned char data;
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	uint64_t data_x = 0;
-	int i;
-
-	addr += (int32_t)ic->arg[2];
-
-	/*  Load all 8 bytes:  */
-	for (i=0; i<8; i++) {
-		if (!cpu->memory_rw(cpu, cpu->mem, addr + i, &data, 1,
-		    MEM_READ, CACHE_DATA)) {
-			fatal("store failed: TODO\n");
-			exit(1);
-		}
-		data_x |= ((uint64_t)data << ((uint64_t)i*8));
-	}
-
-	*((uint64_t *)ic->arg[0]) = data_x;
-}
-
-
-/*
- *  stq_u:  Store unaligned quad.
- *
- *  arg[0] = pointer to register which to store
- *  arg[1] = pointer to base register
- *  arg[2] = offset (possibly as an int32_t)
- */
-X(stq_u)
-{
-	/*
-	 *  TODO: Optimize this using the page table stuff...
-	 */
-
-	unsigned char data;
-	uint64_t addr = *((uint64_t *)ic->arg[1]);
-	uint64_t data_x = *((uint64_t *)ic->arg[0]);
-	int i;
-
-	addr += (int32_t)ic->arg[2];
-
-	/*  Store all 8 bytes:  */
-	for (i=0; i<8; i++) {
-		data = data_x;
-		data_x >>= 8;
-		if (!cpu->memory_rw(cpu, cpu->mem, addr + i, &data, 1,
-		    MEM_WRITE, CACHE_DATA)) {
-			fatal("store failed: TODO\n");
-			exit(1);
-		}
-	}
-}
-
-
 #include "tmp_alpha_misc.c"
 
 
@@ -586,7 +519,7 @@ X(to_be_translated)
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
-		memcpy(ib, page + (addr & 0x1ffc), sizeof(ib));
+		memcpy(ib, page + (addr & 8191), sizeof(ib));
 	} else {
 		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
@@ -596,7 +529,11 @@ X(to_be_translated)
 		}
 	}
 
+#ifdef HOST_LITTLE_ENDIAN
+	iword = *((uint32_t *)&ib[0]);
+#else
 	iword = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
+#endif
 
 	/*  fatal("{ Alpha: translating pc=0x%016llx iword=0x%08x }\n",
 	    (long long)addr, (int)iword);  */
@@ -772,9 +709,8 @@ X(to_be_translated)
 		else
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
-		case 0xb9:
-			ic->f = instr(sll_imm);
-			break;
+		case 0xb1: ic->f = instr(zapnot_imm); break;
+		case 0xb9: ic->f = instr(sll_imm); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.839 2005-07-22 20:46:58 debug Exp $
+$Id: HISTORY,v 1.840 2005-07-22 22:18:14 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2077,3 +2077,4 @@ Changelog for GXemul:
 20050722	Alpha-related updates: userland stuff (Hello World using
 		write() compiled statically for FreeBSD/Alpha runs fine), and
 		more instructions are now implemented.
+20050723	Adding more instructions.

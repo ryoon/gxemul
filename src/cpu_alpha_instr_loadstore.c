@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.7 2005-07-21 08:39:36 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.8 2005-07-22 22:18:15 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -62,6 +62,9 @@ static void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	uint64_t data_x;
 
 	addr += (int32_t)ic->arg[2];
+#ifdef LS_UNALIGNED
+	addr &= ~7;
+#endif
 
 #ifdef LS_LOAD
 	/*  Load:  */
@@ -128,6 +131,10 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	    + (int32_t)ic->arg[2]
 #endif
 	    ;
+
+#ifdef LS_UNALIGNED
+	addr &= ~7;
+#endif
 
 	first = addr >> ALPHA_TOPSHIFT;
 	a = (addr >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);

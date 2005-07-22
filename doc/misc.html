@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.44 2005-07-18 22:16:41 debug Exp $
+$Id: misc.html,v 1.45 2005-07-22 20:01:24 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -286,12 +286,11 @@ count.)
 <a name="userland"></a>
 <h3>Running userland binaries:</h3>
 
-You can run (some) userland programs as well. This will not emulate any
-particular machine, but instead try to translate syscalls from for example
-NetBSD/pmax into the host's OS' syscalls. Right now, this is just a 
-proof-of-concept, to show that it would work; there's lots of work left to 
-do to make it actually run useful programs (for example dynamically linked 
-programs).
+There is some skeleton code for running userland programs as well. This
+will not emulate any particular machine, but instead try to translate
+syscalls from e.g. NetBSD/pmax into the host's OS' syscalls. (Right now,
+this is just a proof-of-concept, to show that it would work; there's lots
+of work left to do to make it actually run useful programs.)
 
 <p>
 

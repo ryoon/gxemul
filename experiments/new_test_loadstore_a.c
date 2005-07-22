@@ -1,5 +1,5 @@
 /*
- *  $Id: new_test_loadstore_a.c,v 1.2 2005-06-30 09:20:23 debug Exp $
+ *  $Id: new_test_loadstore_a.c,v 1.3 2005-07-22 20:01:25 debug Exp $
  *
  *  Experimenting with dynamic-but-not-binary-translation load/store.
  *  See new_test_loadstore_b.c for the main() function.
@@ -7,14 +7,14 @@
 
 #include "new_test_loadstore.h"
 
-void general_store(struct cpu *cpu, struct ic *ic)
+static void inline general_store(struct cpu *cpu, struct ic *ic)
 {
 	general_store(cpu, ic);
 }
 
 void x(struct cpu *cpu, struct ic *ic)
 {
-	int addr = *ic->arg1 + ic->arg2;
+	unsigned int addr = *ic->arg1; /* + ic->arg2; */
 	unsigned char **table1, *page;
 
 #ifdef AAA
@@ -32,7 +32,7 @@ void x(struct cpu *cpu, struct ic *ic)
 
 void y(struct cpu *cpu, struct ic *ic)
 {
-	int addr = *ic->arg1 + ic->arg2;
+	unsigned int addr = *ic->arg1; /* + ic->arg2; */
 	unsigned char **table1, *page;
 
 #ifdef AAA

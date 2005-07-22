@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.214 2005-07-19 10:48:04 debug Exp $
+ *  $Id: emul.c,v 1.215 2005-07-22 12:28:03 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -924,7 +924,13 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	if (m->userland_emul != NULL) {
 		useremul_name_to_useremul(cpu,
 		    m->userland_emul, NULL, NULL, NULL);
-		cpu->memory_rw = userland_memory_rw;
+
+		switch (m->arch) {
+		case ARCH_ALPHA:
+			cpu->memory_rw = alpha_userland_memory_rw;
+			break;
+		default:cpu->memory_rw = userland_memory_rw;
+		}
 	}
 
 	if (m->use_x11)

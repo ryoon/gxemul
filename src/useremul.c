@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.49 2005-07-15 09:36:35 debug Exp $
+ *  $Id: useremul.c,v 1.50 2005-07-22 12:28:03 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -132,13 +132,26 @@ void useremul__freebsd_setup(struct cpu *cpu, int argc, char **host_argv)
 {
 	debug("useremul__freebsd_setup(): TODO\n");
 
-	if (cpu->machine->arch != ARCH_ALPHA) {
+	switch (cpu->machine->arch) {
+	case ARCH_ALPHA:
+		/*  According to FreeBSD's /usr/src/lib/csu/alpha/crt1.c:  */
+		/*  a0 = char **ap                                         */
+		/*  a1 = void (*cleanup)(void)          from shared loader */
+		/*  a2 = struct Struct_Obj_Entry *obj   from shared loader */
+		/*  a3 = struct ps_strings *ps_strings                     */
+		cpu->cd.alpha.r[ALPHA_A0] = 0;
+		cpu->cd.alpha.r[ALPHA_A1] = 0;
+		cpu->cd.alpha.r[ALPHA_A2] = 0;
+		cpu->cd.alpha.r[ALPHA_A3] = 0;
+
+		/*  What is a good stack pointer? TODO  */
+		cpu->cd.alpha.r[ALPHA_SP] = 0x120000000 +
+		    1048576 * cpu->machine->physical_ram_in_mb - 1024;
+		break;
+	default:
 		fatal("non-Alpha not yet implemented for freebsd emul.\n");
 		exit(1);
 	}
-
-	/*  What is a good stack pointer? TODO  */
-	/*  cpu->cd.alpha.gpr[...] = ...  */
 }
 
 
@@ -343,15 +356,15 @@ static unsigned char *get_userland_string(struct cpu *cpu, uint64_t baseaddr)
  *  TODO: combine this with get_userland_string() in some way
  */
 static unsigned char *get_userland_buf(struct cpu *cpu,
-	uint64_t baseaddr, int len)
+	uint64_t baseaddr, uint64_t len)
 {
 	unsigned char *charbuf;
-	int i;
+	ssize_t i;
 
 	charbuf = malloc(len);
 	if (charbuf == NULL) {
 		fprintf(stderr, "get_userland_buf(): out of memory (trying"
-		    " to allocate %i bytes)\n", len);
+		    " to allocate %lli bytes)\n", (long long)len);
 		exit(1);
 	}
 
@@ -387,44 +400,45 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 /*
  *  useremul__freebsd():
  *
- *  FreeBSD syscall emulation.
+ *  FreeBSD/Alpha syscall emulation.
  *
  *  TODO: How to make this work nicely with non-Alpha archs.
  */
 static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 {
-#if 0
 	unsigned char *cp;
 	int nr;
-	uint64_t arg0, arg1, arg2, arg3;
+	uint64_t arg0, arg1, arg2, arg3, arg4;
 
-	nr = cpu->cd.ppc.gpr[0];
-	arg0 = cpu->cd.ppc.gpr[3];
-	arg1 = cpu->cd.ppc.gpr[4];
-	arg2 = cpu->cd.ppc.gpr[5];
-	arg3 = cpu->cd.ppc.gpr[6];
+	nr = cpu->cd.alpha.r[ALPHA_V0];
+	arg0 = cpu->cd.alpha.r[ALPHA_A0];
+	arg1 = cpu->cd.alpha.r[ALPHA_A1];
+	arg2 = cpu->cd.alpha.r[ALPHA_A2];
+	arg3 = cpu->cd.alpha.r[ALPHA_A3];
+	arg4 = cpu->cd.alpha.r[ALPHA_A4];
 
 	switch (nr) {
 
-	case LINUX_PPC_SYS_exit:
+	case 1:		/*  exit()  */
 		debug("[ exit(%i) ]\n", (int)arg0);
 		cpu->running = 0;
+		cpu->machine->exit_without_entering_debugger = 1;
 		break;
 
-	case LINUX_PPC_SYS_write:
+	case 4:		/*  write()  */
 		debug("[ write(%i,0x%llx,%lli) ]\n",
 		    (int)arg0, (long long)arg1, (long long)arg2);
-		cp = get_userland_buf(cpu, arg1, arg2);
-		write(arg0, cp, arg2);
-		free(cp);
+		if (arg2 != 0) {
+			cp = get_userland_buf(cpu, arg1, arg2);
+			write(arg0, cp, arg2);
+			free(cp);
+		}
 		break;
 
-	default:
-		fatal("useremul__linux(): syscall %i not yet implemented\n",
-		    nr);
+	default:fatal("useremul__freebsd(): syscall %i not yet "
+		    "implemented\n", nr);
 		cpu->running = 0;
 	}
-#endif
 }
 
 

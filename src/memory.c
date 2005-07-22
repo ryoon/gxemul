@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.169 2005-07-21 08:22:08 debug Exp $
+ *  $Id: memory.c,v 1.170 2005-07-22 12:28:03 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -499,7 +499,8 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	table = mem->pagetable;
 	entry = (paddr >> shrcount) & mask;
 
-	/*  printf("   entry = %x\n", entry);  */
+	/*  printf("memory_paddr_to_hostaddr(): p=%16llx w=%i => entry=0x%x\n",
+	    (long long)paddr, writeflag, entry);  */
 
 	if (table[entry] == NULL) {
 		size_t alloclen;

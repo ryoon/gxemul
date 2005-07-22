@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.3 2005-07-21 11:11:55 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.4 2005-07-22 12:28:03 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
@@ -112,12 +112,19 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	    &
 #endif
 
+	    (
+
+#ifdef ALU_NOT
+	    ~
+#endif
+
 #ifdef ALU_IMM
-	    ic->arg[2]
+	    (int64_t)ic->arg[2]
 #else
 	    (*((uint64_t *)ic->arg[2]))
 #endif
-	    ;
+
+	    );
 #endif	/*  !ALU_CMP  */
 
 	*((uint64_t *)ic->arg[0]) = x;

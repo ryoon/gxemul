@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.16 2005-07-21 11:11:55 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.17 2005-07-22 12:28:03 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -261,6 +261,19 @@ X(blt)
 
 
 /*
+ *  bge:  Branch (to a different translated page) if Greater or Equal
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(bge)
+{
+	if (*((int64_t *)ic->arg[1]) >= 0)
+		instr(br)(cpu, ic);
+}
+
+
+/*
  *  bgt:  Branch (to a different translated page) if Greater Than
  *
  *  arg[0] = relative offset (as an int32_t)
@@ -353,6 +366,19 @@ X(ble_samepage)
 X(blt_samepage)
 {
 	if (*((int64_t *)ic->arg[1]) < 0)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
+ *  bge_samepage:  Branch (to within the same translated page) if Greater or Equal
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(bge_samepage)
+{
+	if (*((int64_t *)ic->arg[1]) >= 0)
 		instr(br_samepage)(cpu, ic);
 }
 
@@ -492,10 +518,10 @@ X(to_be_translated)
 		page = NULL;
 
 	if (page != NULL) {
-		fatal("TRANSLATION HIT!\n");
+		/*  fatal("TRANSLATION HIT!\n");  */
 		memcpy(ib, page + (addr & 0x1ffc), sizeof(ib));
 	} else {
-		fatal("TRANSLATION MISS!\n");
+		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
 		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
 			fatal("to_be_translated(): read failed: TODO\n");
@@ -637,6 +663,9 @@ X(to_be_translated)
 		else
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
+		case 0x00:
+			ic->f = instr(and);
+			break;
 		case 0x20:
 			ic->f = instr(or);
 			if (ra == ALPHA_ZERO || rb == ALPHA_ZERO) {
@@ -645,8 +674,17 @@ X(to_be_translated)
 				ic->f = alpha_mov_r_r[ra + rc*32];
 			}
 			break;
+		case 0x28:
+			ic->f = instr(ornot);
+			break;
 		case 0x80:
 			ic->f = instr(and_imm);
+			break;
+		case 0xa0:
+			ic->f = instr(or_imm);
+			break;
+		case 0xa8:
+			ic->f = instr(ornot_imm);
 			break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
@@ -695,6 +733,7 @@ X(to_be_translated)
 	case 0x3a:						/*  BLT  */
 	case 0x3b:						/*  BLE  */
 	case 0x3d:						/*  BNE  */
+	case 0x3e:						/*  BGE  */
 	case 0x3f:						/*  BGT  */
 		switch (opcode) {
 		case 0x30:
@@ -721,6 +760,10 @@ X(to_be_translated)
 		case 0x3d:
 			ic->f = instr(bne);
 			samepage_function = instr(bne_samepage);
+			break;
+		case 0x3e:
+			ic->f = instr(bge);
+			samepage_function = instr(bge_samepage);
 			break;
 		case 0x3f:
 			ic->f = instr(bgt);

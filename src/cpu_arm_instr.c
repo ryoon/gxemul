@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.37 2005-07-19 12:37:24 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.38 2005-07-22 12:28:03 debug Exp $
  *
  *  ARM instructions.
  *
@@ -738,10 +738,10 @@ X(to_be_translated)
 	page = vph_p->host_load[(addr >> 12) & 1023];
 
 	if (page != NULL) {
-		fatal("TRANSLATION HIT!\n");
+		/*  fatal("TRANSLATION HIT!\n");  */
 		memcpy(ib, page + (addr & 0xffc), sizeof(ib));
 	} else {
-		fatal("TRANSLATION MISS!\n");
+		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
 		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
 			fatal("to_be_translated(): "

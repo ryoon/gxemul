@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.55 2005-07-18 22:16:41 debug Exp $
+$Id: technical.html,v 1.56 2005-07-22 12:28:02 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -106,9 +106,16 @@ different kinds of emulation, so these might change in the future.)
 	works. It can be forcefully used by using the <tt>-B</tt> command
 	line option.)
   <p>
+  <li><b>Alpha</b><br>
+	I have only implemented the bare skeleton parts of the Alpha
+	emulation mode so far. I uses dynamic translation, but <i>not</i>
+	binary translation. There is no need to write backends for each
+	host architecture. Speed is somewhere between real binary
+	translation and traditional interpretation.
+  <p>
   <li><b>ARM</b><br>
-	This mode does not really work yet, but will use
-	dynamic translation, but not binary translation. Stay tuned. :-)
+	Only a skeleton exists for this mode. (See the comment about the
+	Alpha emulation mode above.)
   <p>
   <li><b>URISC</b><br>
 	Simple interpretation, one instruction at a time. There is probably

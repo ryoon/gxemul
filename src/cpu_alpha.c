@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.23 2005-07-21 11:11:55 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.24 2005-07-22 12:28:03 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -363,6 +363,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		switch (func & 0x7f) {
 		case 0x000: mnem = "and"; break;
 		case 0x020: mnem = "or"; break;
+		case 0x028: mnem = "ornot"; break;
 		case 0x040: mnem = "xor"; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
@@ -750,6 +751,16 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 #undef MEMORY_RW
 
 
+#define MEMORY_RW       alpha_userland_memory_rw
+#define MEM_ALPHA
+#define MEM_USERLAND
+#include "memory_rw.c"
+#undef MEM_USERLAND
+#undef MEM_ALPHA
+#undef MEMORY_RW
+
+
+
 /*
  *  alpha_pc_to_pointers():
  *
@@ -802,7 +813,7 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 	    new "default" empty translation page.  */
 
 	if (ppp == NULL) {
-		fatal("CREATING page %lli (physaddr 0x%016llx), table "
+		debug("CREATING page %lli (physaddr 0x%016llx), table "
 		    "index = %i\n", (long long)pagenr, (uint64_t)physaddr,
 		    table_index);
 		*physpage_entryp = physpage_ofs =
@@ -838,7 +849,7 @@ void alpha_pc_to_pointers(struct cpu *cpu)
  */
 int alpha_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
-	uint32_t cached_pc;
+	uint64_t cached_pc;
 	ssize_t low_pc;
 	int n_instrs;
 
@@ -920,7 +931,7 @@ int alpha_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
 		cpu->pc += (ALPHA_IC_ENTRIES_PER_PAGE << 2);
 	} else {
-		fatal("Outside a page (This is actually ok)\n");
+		/*  debug("debug: Outside a page (This is actually ok)\n");  */
 	}
 
 	return n_instrs + cpu->n_translated_instrs;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.18 2005-07-22 15:52:17 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.19 2005-07-22 16:21:57 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -423,6 +423,73 @@ X(lda_0)
 }
 
 
+/*
+ *  ldq_u:  Load unaligned quad.
+ *
+ *  arg[0] = pointer to destination register
+ *  arg[1] = pointer to base register
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(ldq_u)
+{
+	/*
+	 *  TODO: Optimize this using the page table stuff...
+	 */
+
+	unsigned char data;
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+	uint64_t data_x = 0;
+	int i;
+
+	addr += (int32_t)ic->arg[2];
+
+	/*  Load all 8 bytes:  */
+	for (i=0; i<8; i++) {
+		if (!cpu->memory_rw(cpu, cpu->mem, addr + i, &data, 1,
+		    MEM_READ, CACHE_DATA)) {
+			fatal("store failed: TODO\n");
+			exit(1);
+		}
+		data_x |= (data << ((uint64_t)i*8));
+	}
+
+	*((uint64_t *)ic->arg[0]) = data_x;
+}
+
+
+/*
+ *  stq_u:  Store unaligned quad.
+ *
+ *  arg[0] = pointer to register which to store
+ *  arg[1] = pointer to base register
+ *  arg[2] = offset (possibly as an int32_t)
+ */
+X(stq_u)
+{
+	/*
+	 *  TODO: Optimize this using the page table stuff...
+	 */
+
+	unsigned char data;
+	uint64_t addr = *((uint64_t *)ic->arg[1]);
+	uint64_t data_x = *((uint64_t *)ic->arg[0]);
+	int i;
+
+	addr += (int32_t)ic->arg[2];
+
+	/*  Store all 8 bytes:  */
+	for (i=0; i<8; i++) {
+		data = data_x;
+		data_x >>= 8;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr + i, &data, 1,
+		    MEM_WRITE, CACHE_DATA)) {
+			fatal("store failed: TODO\n");
+			exit(1);
+		}
+	}
+}
+
+
 #include "tmp_alpha_misc.c"
 
 
@@ -562,12 +629,19 @@ X(to_be_translated)
 			ic->arg[2] <<= 16;
 		break;
 	case 0x0b:						/*  LDQ_U  */
-		if (ra == ALPHA_ZERO) {
+	case 0x0f:						/*  STQ_U  */
+		if (ra == ALPHA_ZERO && opcode == 0x0b) {
 			ic->f = instr(nop);
 			break;
 		}
-		fatal("[ Alpha: LDQ_U to non-zero register ]\n");
-		goto bad;
+		if (opcode == 0x0b)
+			ic->f = instr(ldq_u);
+		else
+			ic->f = instr(stq_u);
+		ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
+		ic->arg[2] = (ssize_t)(int16_t)imm;
+		break;
 	case 0x0a:
 	case 0x0c:
 	case 0x0d:
@@ -663,29 +737,24 @@ X(to_be_translated)
 		else
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
-		case 0x00:
-			ic->f = instr(and);
-			break;
-		case 0x20:
-			ic->f = instr(or);
-			if (ra == ALPHA_ZERO || rb == ALPHA_ZERO) {
+		case 0x00: ic->f = instr(and); break;
+		case 0x08: ic->f = instr(andnot); break;
+		case 0x20: ic->f = instr(or);
+			   if (ra == ALPHA_ZERO || rb == ALPHA_ZERO) {
 				if (ra == ALPHA_ZERO)
 					ra = rb;
 				ic->f = alpha_mov_r_r[ra + rc*32];
-			}
-			break;
-		case 0x28:
-			ic->f = instr(ornot);
-			break;
-		case 0x80:
-			ic->f = instr(and_imm);
-			break;
-		case 0xa0:
-			ic->f = instr(or_imm);
-			break;
-		case 0xa8:
-			ic->f = instr(ornot_imm);
-			break;
+			   }
+			   break;
+		case 0x28: ic->f = instr(ornot); break;
+		case 0x40: ic->f = instr(xor); break;
+		case 0x48: ic->f = instr(xornot); break;
+		case 0x80: ic->f = instr(and_imm); break;
+		case 0x88: ic->f = instr(andnot_imm); break;
+		case 0xa0: ic->f = instr(or_imm); break;
+		case 0xa8: ic->f = instr(ornot_imm); break;
+		case 0xc0: ic->f = instr(xor_imm); break;
+		case 0xc8: ic->f = instr(xornot_imm); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.25 2005-07-22 15:52:17 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.26 2005-07-22 16:21:57 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -302,6 +302,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x0c:
 	case 0x0d:
 	case 0x0e:
+	case 0x0f:
 	case 0x20:
 	case 0x21:
 	case 0x22:
@@ -321,6 +322,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x0c: mnem = "ldwu"; break;
 		case 0x0d: mnem = "stw"; break;
 		case 0x0e: mnem = "stb"; break;
+		case 0x0f: mnem = "stq_u"; break;
 		case 0x20: mnem = "ldf"; floating = 1; break;
 		case 0x21: mnem = "ldg"; floating = 1; break;
 		case 0x22: mnem = "lds"; floating = 1; break;
@@ -382,7 +384,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x11:
 		switch (func & 0x7f) {
 		case 0x000: mnem = "and"; break;
-		case 0x008: mnem = "bic"; break;
+		case 0x008: mnem = "andnot"; break;
 		case 0x014: mnem = "cmovlbs"; break;
 		case 0x016: mnem = "cmovlbc"; break;
 		case 0x020: mnem = "or"; break;

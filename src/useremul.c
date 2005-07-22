@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.51 2005-07-22 15:52:17 debug Exp $
+ *  $Id: useremul.c,v 1.52 2005-07-22 16:21:57 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -67,6 +67,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <sys/resource.h>
 #include <time.h>
 
 #include "cpu.h"
@@ -467,13 +468,14 @@ int useremul_sync(struct cpu *cpu)
 /*
  *  useremul_getrusage():
  */
-int64_t useremul_getrusage(struct cpu *cpu, int *errnop,
+int64_t useremul_getrusage(struct cpu *cpu, int64_t *errnop,
 	uint64_t arg0, uint64_t arg1)
 {
-	int64_t res = 0;
-	*errnop = 0;
+	int64_t res;
+	struct rusage rusage;
 	debug("[ getrusage(%i,0x%llx) ]\n", (int)arg0, (long long)arg1);
-
+	res = getrusage(arg0, &rusage);
+	/*  TODO: convert rusage into emulated memory!  */
 	return res;
 }
 

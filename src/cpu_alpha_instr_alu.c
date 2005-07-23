@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.6 2005-07-23 07:35:55 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.7 2005-07-23 08:33:32 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
@@ -36,10 +36,11 @@
  *  arg[1] = pointer to source uint64_t nr 1
  *  arg[2] = pointer to source uint64_t nr 2
  *
- *  or, if ALU_IMM is set, arg[1] contains an 8-bit immediate value.
+ *  or, if ALU_IMM is set, arg[2] contains an 8-bit immediate value.
  *
  *  The main function groups are:
  *
+ *	ALU_MSK				masks
  *	ALU_CMOV			conditional moves
  *	ALU_CMP				compare instructions
  *	none of the above		everything else
@@ -47,6 +48,44 @@
 
 void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
+#ifdef ALU_MSK
+
+	uint64_t x;
+#ifdef ALU_B
+	uint64_t mask = 0x00000000000000ffULL;
+#endif
+#ifdef ALU_W
+	uint64_t mask = 0x000000000000ffffULL;
+#endif
+#ifdef ALU_L
+	uint64_t mask = 0x00000000ffffffffULL;
+#endif
+#ifdef ALU_Q
+	uint64_t mask = 0xffffffffffffffffULL;
+#endif
+	int r;
+
+	x = *((uint64_t *)ic->arg[1]);
+	r = (
+#ifdef ALU_IMM
+	    ic->arg[2]
+#else
+	    (*((uint64_t *)ic->arg[2]))
+#endif
+	    & 7) * 8;
+
+#ifdef ALU_LO
+	mask <<= r;
+#else
+	if (r == 0)
+		mask = 0;
+	else
+		mask >>= (64 - r);
+#endif
+
+	*((uint64_t *)ic->arg[0]) = x & ~mask;
+
+#else	/*  !MSK  */
 
 #ifdef ALU_CMOV
 
@@ -214,5 +253,6 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 
 	*((uint64_t *)ic->arg[0]) = x;
 #endif	/*  ! CMOV  */
+#endif	/*  ! MSK  */
 }
 

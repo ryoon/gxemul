@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.22 2005-07-23 07:35:55 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.23 2005-07-23 08:33:32 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -729,6 +729,7 @@ X(to_be_translated)
 		else
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
+		case 0x02: ic->f = instr(mskbl); break;
 		case 0xb1: ic->f = instr(zapnot_imm); break;
 /*		case 0xb9: ic->f = instr(sll_imm); break;  */
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"

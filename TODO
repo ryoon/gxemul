@@ -1,4 +1,4 @@
-$Id: TODO,v 1.140 2005-07-22 22:18:14 debug Exp $
+$Id: TODO,v 1.141 2005-07-23 09:43:24 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -6,7 +6,11 @@ Order is random. Don't trust it to be up-to-date.
 
 Alpha:
 	hahaha, zapnot doesn't compile into very nice code :-|
-	implement all shifts and zaps and so on!
+
+	function call trace support?
+
+	generalize alpha + arm common code
+
 	implement more of freebsd/alpha userland emulation!
 
 

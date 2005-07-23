@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.8 2005-07-23 09:12:32 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.9 2005-07-23 09:43:25 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
@@ -238,6 +238,9 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif	/*  ZAP  */
 
 	x = (
+#ifdef ALU_SRA
+	    (int64_t)
+#endif
 	    (*((uint64_t *)ic->arg[1]))
 #ifdef ALU_S4
 	    * 4
@@ -261,6 +264,12 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #ifdef ALU_AND
 	    &
 #endif
+#ifdef ALU_SLL
+	    <<
+#endif
+#if defined(ALU_SRA) || defined(ALU_SRL)
+	    >>
+#endif
 
 #ifdef ALU_ZAP
 	    & zapmask
@@ -269,11 +278,16 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #ifdef ALU_NOT
 	    ~
 #endif
+	    (
 #ifdef ALU_IMM
 	    (int64_t)ic->arg[2]
 #else
 	    (*((uint64_t *)ic->arg[2]))
 #endif
+#if defined(ALU_SRA) || defined(ALU_SRL) || defined(ALU_SLL)
+	    & 63
+#endif
+	    )
 	    )
 #endif	/*  !ZAP  */
 

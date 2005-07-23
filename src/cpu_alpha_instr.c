@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.24 2005-07-23 09:12:32 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.25 2005-07-23 09:43:25 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -426,22 +426,6 @@ X(lda_0)
 #include "tmp_alpha_misc.c"
 
 
-#if 0
-/*
- *  sll_imm:  2-register SLL with imm
- *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value
- */
-X(sll_imm)
-{
-	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1]) <<
-	    (ic->arg[2] & 63);
-}
-#endif
-
-
 /*****************************************************************************/
 
 
@@ -735,8 +719,13 @@ X(to_be_translated)
 		case 0x16: ic->f = instr(extwl); break;
 		case 0x22: ic->f = instr(mskll); break;
 		case 0x26: ic->f = instr(extll); break;
+		case 0x30: ic->f = instr(zap); break;
+		case 0x31: ic->f = instr(zapnot); break;
 		case 0x32: ic->f = instr(mskql); break;
+		case 0x34: ic->f = instr(srl); break;
 		case 0x36: ic->f = instr(extql); break;
+		case 0x39: ic->f = instr(sll); break;
+		case 0x3c: ic->f = instr(sra); break;
 		case 0x52: ic->f = instr(mskwh); break;
 		case 0x5a: ic->f = instr(extwh); break;
 		case 0x62: ic->f = instr(msklh); break;
@@ -749,10 +738,13 @@ X(to_be_translated)
 		case 0x96: ic->f = instr(extwl_imm); break;
 		case 0xa2: ic->f = instr(mskll_imm); break;
 		case 0xa6: ic->f = instr(extll_imm); break;
+		case 0xb0: ic->f = instr(zap_imm); break;
 		case 0xb1: ic->f = instr(zapnot_imm); break;
 		case 0xb2: ic->f = instr(mskql_imm); break;
+		case 0xb4: ic->f = instr(srl_imm); break;
 		case 0xb6: ic->f = instr(extql_imm); break;
-/*		case 0xb9: ic->f = instr(sll_imm); break;  */
+		case 0xb9: ic->f = instr(sll_imm); break;
+		case 0xbc: ic->f = instr(sra_imm); break;
 		case 0xd2: ic->f = instr(mskwh_imm); break;
 		case 0xda: ic->f = instr(extwh_imm); break;
 		case 0xe2: ic->f = instr(msklh_imm); break;

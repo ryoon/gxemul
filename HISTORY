@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.843 2005-07-23 09:12:31 debug Exp $
+$Id: HISTORY,v 1.844 2005-07-23 09:43:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2078,4 +2078,5 @@ Changelog for GXemul:
 		write() compiled statically for FreeBSD/Alpha runs fine), and
 		more instructions are now implemented.
 20050723	Fixing ldq_u and stq_u.
-		Adding more instructions (conditional moves, masks, extracts).
+		Adding more instructions (conditional moves, masks, extracts,
+		shifts).

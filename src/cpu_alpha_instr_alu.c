@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.5 2005-07-22 22:18:15 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.6 2005-07-23 07:35:55 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
@@ -35,10 +35,60 @@
  *  arg[0] = pointer to destination uint64_t
  *  arg[1] = pointer to source uint64_t nr 1
  *  arg[2] = pointer to source uint64_t nr 2
+ *
+ *  or, if ALU_IMM is set, arg[1] contains an 8-bit immediate value.
+ *
+ *  The main function groups are:
+ *
+ *	ALU_CMOV			conditional moves
+ *	ALU_CMP				compare instructions
+ *	none of the above		everything else
  */
 
 void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
+
+#ifdef ALU_CMOV
+
+	if (
+#ifdef ALU_CMP_lbc
+	    !(
+#endif
+	    (*((int64_t *)ic->arg[1]))
+#ifdef ALU_CMP_eq
+	    == 0
+#endif
+#ifdef ALU_CMP_ne
+	    != 0
+#endif
+#ifdef ALU_CMP_le
+	    <= 0
+#endif
+#ifdef ALU_CMP_lt
+	    < 0
+#endif
+#ifdef ALU_CMP_ge
+	    >= 0
+#endif
+#ifdef ALU_CMP_gt
+	    > 0
+#endif
+#ifdef ALU_CMP_lbs
+	    & 1
+#endif
+#ifdef ALU_CMP_lbc
+	    & 1)
+#endif
+	    )
+		*((uint64_t *)ic->arg[0]) =
+#ifdef ALU_IMM
+		    (uint64_t)ic->arg[2]
+#else
+		    (*((uint64_t *)ic->arg[2]))
+#endif
+		    ;
+
+#else	/*  ! CMOV  */
 
 #ifdef ALU_CMP
 
@@ -163,5 +213,6 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif	/*  !ALU_CMP  */
 
 	*((uint64_t *)ic->arg[0]) = x;
+#endif	/*  ! CMOV  */
 }
 

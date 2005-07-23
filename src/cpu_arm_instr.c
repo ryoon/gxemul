@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.38 2005-07-22 12:28:03 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.39 2005-07-23 07:35:55 debug Exp $
  *
  *  ARM instructions.
  *
@@ -739,7 +739,7 @@ X(to_be_translated)
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
-		memcpy(ib, page + (addr & 0xffc), sizeof(ib));
+		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
 	} else {
 		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.21 2005-07-22 22:18:15 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.22 2005-07-23 07:35:55 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -426,6 +426,7 @@ X(lda_0)
 #include "tmp_alpha_misc.c"
 
 
+#if 0
 /*
  *  sll_imm:  2-register SLL with imm
  *
@@ -438,6 +439,7 @@ X(sll_imm)
 	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1]) <<
 	    (ic->arg[2] & 63);
 }
+#endif
 
 
 /*****************************************************************************/
@@ -556,13 +558,15 @@ X(to_be_translated)
 			ic->f = instr(nop);
 			break;
 		}
+		/*  TODO: A special case which is common is to add or subtract
+		    a small offset from sp.  */
 		ic->f = instr(lda);
 		ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
 		ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
 		if (rb == ALPHA_ZERO)
 			ic->f = instr(lda_0);
 		ic->arg[2] = (ssize_t)(int16_t)imm;
-		if (opcode == 9)
+		if (opcode == 0x09)
 			ic->arg[2] <<= 16;
 		break;
 	case 0x0b:						/*  LDQ_U  */
@@ -676,6 +680,8 @@ X(to_be_translated)
 		switch (func & 0xff) {
 		case 0x00: ic->f = instr(and); break;
 		case 0x08: ic->f = instr(andnot); break;
+		case 0x14: ic->f = instr(cmovlbs); break;
+		case 0x16: ic->f = instr(cmovlbc); break;
 		case 0x20: ic->f = instr(or);
 			   if (ra == ALPHA_ZERO || rb == ALPHA_ZERO) {
 				if (ra == ALPHA_ZERO)
@@ -683,15 +689,29 @@ X(to_be_translated)
 				ic->f = alpha_mov_r_r[ra + rc*32];
 			   }
 			   break;
+		case 0x24: ic->f = instr(cmoveq); break;
+		case 0x26: ic->f = instr(cmovne); break;
 		case 0x28: ic->f = instr(ornot); break;
 		case 0x40: ic->f = instr(xor); break;
+		case 0x44: ic->f = instr(cmovlt); break;
+		case 0x46: ic->f = instr(cmovge); break;
 		case 0x48: ic->f = instr(xornot); break;
+		case 0x64: ic->f = instr(cmovle); break;
+		case 0x66: ic->f = instr(cmovgt); break;
 		case 0x80: ic->f = instr(and_imm); break;
 		case 0x88: ic->f = instr(andnot_imm); break;
+		case 0x94: ic->f = instr(cmovlbs_imm); break;
+		case 0x96: ic->f = instr(cmovlbc_imm); break;
 		case 0xa0: ic->f = instr(or_imm); break;
+		case 0xa4: ic->f = instr(cmoveq_imm); break;
+		case 0xa6: ic->f = instr(cmovne_imm); break;
 		case 0xa8: ic->f = instr(ornot_imm); break;
 		case 0xc0: ic->f = instr(xor_imm); break;
+		case 0xc4: ic->f = instr(cmovlt_imm); break;
+		case 0xc6: ic->f = instr(cmovge_imm); break;
 		case 0xc8: ic->f = instr(xornot_imm); break;
+		case 0xe4: ic->f = instr(cmovle_imm); break;
+		case 0xe6: ic->f = instr(cmovgt_imm); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;
@@ -710,7 +730,7 @@ X(to_be_translated)
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
 		case 0xb1: ic->f = instr(zapnot_imm); break;
-		case 0xb9: ic->f = instr(sll_imm); break;
+/*		case 0xb9: ic->f = instr(sll_imm); break;  */
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.57 2005-07-22 20:01:24 debug Exp $
+$Id: technical.html,v 1.58 2005-07-24 10:53:56 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -110,8 +110,8 @@ different kinds of emulation, so these might change in the future.)
 	I have only implemented the bare skeleton parts of the Alpha
 	emulation mode so far. I uses dynamic translation, but <i>not</i>
 	binary translation. There is no need to write backends for each
-	host architecture. Speed is somewhere between real binary
-	translation and traditional interpretation.
+	host architecture. Speed is slower than real binary translation,
+	but faster than traditional interpretation.
   <p>
   <li><b>ARM</b><br>
 	Only a skeleton exists for this mode. (See the comment about the
@@ -135,7 +135,32 @@ different kinds of emulation, so these might change in the future.)
 	This is as slow as it gets. Not very interesting.
 </ul>
 
+<p>Using dynamic-but-not-binary-translation (as in the Alpha and ARM 
+emulation modes) has an obvious drawback:
 
+<p><ul>
+  <li>It can never be as fast as real binary translation, where the
+	emulator (dynamically) produces code for the host's processor.
+</ul>
+
+<p>However, there are a couple of advantages which makes up for this:
+
+<p><ul>
+  <li>If designed carefully, the emulation can still be reasonably fast.
+  <li>Portability. There is no need to know about each individual
+	host architecture. This has at least three sub-advantages:
+  <ul>
+    <li>The code is easier to maintain, as it will be C only. No assembly
+	language.
+    <li>It saves time. Writing backends for Alpha, POWER/PowerPC, x86,
+	MIPS and so on takes time.
+    <li>Whenever the C compiler gets better, all that is needed to take
+	advantage of that in the emulator is to recompile the emulator.
+  </ul>
+  <li>Longevity. If the backend code is written for CPUs of today, it
+	might not work very well in 20 years, or maybe not work at all.
+	(Perhaps requiring emulation in itself :-)
+</ul>
 
 
 

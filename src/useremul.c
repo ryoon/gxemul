@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.53 2005-07-22 20:45:56 debug Exp $
+ *  $Id: useremul.c,v 1.54 2005-07-24 10:53:56 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -435,6 +435,17 @@ int64_t useremul_write(struct cpu *cpu, int64_t *errnop,
 
 
 /*
+ *  useremul_break():
+ */
+int64_t useremul_break(struct cpu *cpu, uint64_t arg0)
+{
+	debug("[ break(0x%llx): TODO ]\n", (long long)arg0);
+	/*  TODO  */
+	return 0;
+}
+
+
+/*
  *  useremul_getpid():
  */
 int64_t useremul_getpid(struct cpu *cpu)
@@ -510,6 +521,41 @@ int64_t useremul_getrusage(struct cpu *cpu, int64_t *errnop,
 }
 
 
+/*
+ *  useremul_mmap():
+ */
+int64_t useremul_mmap(struct cpu *cpu, int64_t *errnop,
+	uint64_t arg0, int64_t arg1, int64_t arg2,
+	int64_t arg3, int64_t arg4, uint64_t arg5)
+{
+	int64_t res = 0;
+
+	/*  arg0..5: addr, len, prot, flags, fd, offset  */
+	debug("[ mmap(0x%llx,%lli,%i,%i,%i,%lli) ]\n",
+	    (long long)arg0, (long long)arg1,
+	    (int)arg2, (int)arg3, (int)arg4, (long long)arg5);
+
+	if (arg4 != -1) {
+		fatal("[ useremul_mmap(): fd != -1: TODO ]\n");
+		cpu->running = 0;
+		return 0;
+	}
+
+	/*  Anonymous allocation.  */
+	if (arg0 != 0) {
+		fatal("[ useremul_mmap(): addr != 0: TODO ]\n");
+		cpu->running = 0;
+		return 0;
+	}
+
+	fatal("[ useremul_mmap(): TODO ]\n");
+
+res = 0x18000000ULL;
+
+	return res;
+}
+
+
 /*****************************************************************************/
 
 
@@ -535,12 +581,26 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 	arg4 = cpu->cd.alpha.r[ALPHA_A4];
 	arg5 = cpu->cd.alpha.r[ALPHA_A5];
 
+	if (nr == 198) {
+		/*  ___syscall  */
+		nr = arg0;
+		arg0 = arg1;
+		arg1 = arg2;
+		arg2 = arg3;
+		arg3 = arg4;
+		arg4 = arg5;
+		/*  TODO: stack arguments  */
+	}
+
 	switch (nr) {
 
 	case 1:	res = useremul_exit(cpu, arg0);
 		break;
 
 	case 4:	res = useremul_write(cpu, &err, arg0, arg1, arg2);
+		break;
+
+	case 17:res = useremul_break(cpu, arg0);
 		break;
 
 	case 20:res = useremul_getpid(cpu);
@@ -555,12 +615,22 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 	case 117:res = useremul_getrusage(cpu, &err, arg0, arg1);
 		break;
 
+	case 197:res = useremul_mmap(cpu, &err, arg0, arg1, arg2, arg3,
+		    arg4, arg5);
+		break;
+
 	default:fatal("useremul__freebsd(): syscall %i not yet "
 		    "implemented\n", nr);
 		cpu->running = 0;
 	}
 
-	cpu->cd.alpha.r[ALPHA_V0] = res;
+	if (err) {
+		cpu->cd.alpha.r[ALPHA_A3] = 1;
+		cpu->cd.alpha.r[ALPHA_V0] = err;
+	} else {
+		cpu->cd.alpha.r[ALPHA_A3] = 0;
+		cpu->cd.alpha.r[ALPHA_V0] = res;
+	}
 }
 
 
@@ -828,8 +898,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case NETBSD_SYS_break:
-		debug("[ break(0x%llx): TODO ]\n", (long long)arg0);
-		/*  TODO  */
+		useremul_break(cpu, arg0);
 		break;
 
 	case NETBSD_SYS_readlink:
@@ -1195,8 +1264,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 		break;
 
 	case ULTRIX_SYS_break:
-		debug("[ break(0x%llx): TODO ]\n", (long long)arg0);
-		/*  TODO  */
+		useremul_break(cpu, arg0);
 		break;
 
 	case ULTRIX_SYS_sync:

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.844 2005-07-23 09:43:24 debug Exp $
+$Id: HISTORY,v 1.845 2005-07-24 10:53:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2080,3 +2080,5 @@ Changelog for GXemul:
 20050723	Fixing ldq_u and stq_u.
 		Adding more instructions (conditional moves, masks, extracts,
 		shifts).
+20050724	More Alpha stuff (FreeBSD/Alpha userland, and adding some more
+		instructions).

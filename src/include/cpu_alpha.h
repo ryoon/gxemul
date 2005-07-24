@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.14 2005-07-22 15:52:18 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.15 2005-07-24 11:19:28 debug Exp $
  */
 
 #include "misc.h"
@@ -126,7 +126,8 @@ struct alpha_cpu {
 	 *  General Purpose Registers:
 	 */
 
-	uint64_t		r[N_ALPHA_REGS];
+	uint64_t		r[N_ALPHA_REGS];	/*  Integer  */
+	uint64_t		f[N_ALPHA_REGS];	/*  Floating Point  */
 
 
 	/*  Misc.:  */

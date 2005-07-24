@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.27 2005-07-22 20:45:55 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.28 2005-07-24 12:04:52 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -448,6 +448,26 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x72: mnem = "mskqh"; break;
 		case 0x77: mnem = "insqh"; break;
 		case 0x7a: mnem = "extqh"; break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		if (mnem == NULL)
+			break;
+		if (func & 0x80)
+			debug("%s\t%s,0x%x,%s\n", mnem,
+			    alpha_regname[ra], (rb << 3) + (func >> 8),
+			    alpha_regname[rc]);
+		else
+			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
+			    alpha_regname[rb], alpha_regname[rc]);
+		break;
+	case 0x13:
+		switch (func & 0x7f) {
+		case 0x00: mnem = "mull"; break;
+		case 0x20: mnem = "mulq"; break;
+		case 0x30: mnem = "umulh"; break;
+		case 0x40: mnem = "mull/v"; break;
+		case 0x60: mnem = "mulq/v"; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}

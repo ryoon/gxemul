@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.9 2005-07-23 09:43:25 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.10 2005-07-24 11:14:57 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
@@ -40,6 +40,7 @@
  *
  *  The main function groups are:
  *
+ *	ALU_INS				inserts
  *	ALU_EXT				extracts
  *	ALU_MSK				masks
  *	ALU_CMOV			conditional moves
@@ -49,6 +50,40 @@
 
 void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
+#ifdef ALU_INS
+
+	uint64_t x = *((uint64_t *)ic->arg[1]);
+	int r = (
+#ifdef ALU_IMM
+	    ic->arg[2]
+#else
+	    (*((uint64_t *)ic->arg[2]))
+#endif
+	    & 7) * 8;
+
+#ifdef ALU_B
+	x &= 0xff;
+#endif
+#ifdef ALU_W
+	x &= 0xffff;
+#endif
+#ifdef ALU_L
+	x &= 0xffffffffULL;
+#endif
+
+#ifdef ALU_LO
+	x <<= r;
+#else
+	r = 64 - r;
+	if (r == 64)
+		x = 0;
+	else
+		x >>= r;
+#endif
+	*((uint64_t *)ic->arg[0]) = x;
+
+#else	/*  ! INS  */
+
 #ifdef ALU_EXT
 
 	uint64_t x = *((uint64_t *)ic->arg[1]);
@@ -299,5 +334,6 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif	/*  ! CMOV  */
 #endif	/*  ! MSK  */
 #endif	/*  ! EXT  */
+#endif	/*  ! INS  */
 }
 

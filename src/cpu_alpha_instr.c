@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.25 2005-07-23 09:43:25 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.26 2005-07-24 11:14:56 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -715,41 +715,55 @@ X(to_be_translated)
 		switch (func & 0xff) {
 		case 0x02: ic->f = instr(mskbl); break;
 		case 0x06: ic->f = instr(extbl); break;
+		case 0x0b: ic->f = instr(insbl); break;
 		case 0x12: ic->f = instr(mskwl); break;
 		case 0x16: ic->f = instr(extwl); break;
+		case 0x1b: ic->f = instr(inswl); break;
 		case 0x22: ic->f = instr(mskll); break;
 		case 0x26: ic->f = instr(extll); break;
+		case 0x2b: ic->f = instr(insll); break;
 		case 0x30: ic->f = instr(zap); break;
 		case 0x31: ic->f = instr(zapnot); break;
 		case 0x32: ic->f = instr(mskql); break;
 		case 0x34: ic->f = instr(srl); break;
 		case 0x36: ic->f = instr(extql); break;
 		case 0x39: ic->f = instr(sll); break;
+		case 0x3b: ic->f = instr(insql); break;
 		case 0x3c: ic->f = instr(sra); break;
 		case 0x52: ic->f = instr(mskwh); break;
+		case 0x57: ic->f = instr(inswh); break;
 		case 0x5a: ic->f = instr(extwh); break;
 		case 0x62: ic->f = instr(msklh); break;
+		case 0x67: ic->f = instr(inslh); break;
 		case 0x6a: ic->f = instr(extlh); break;
 		case 0x72: ic->f = instr(mskqh); break;
+		case 0x77: ic->f = instr(insqh); break;
 		case 0x7a: ic->f = instr(extqh); break;
 		case 0x82: ic->f = instr(mskbl_imm); break;
 		case 0x86: ic->f = instr(extbl_imm); break;
+		case 0x8b: ic->f = instr(insbl_imm); break;
 		case 0x92: ic->f = instr(mskwl_imm); break;
 		case 0x96: ic->f = instr(extwl_imm); break;
+		case 0x9b: ic->f = instr(inswl_imm); break;
 		case 0xa2: ic->f = instr(mskll_imm); break;
 		case 0xa6: ic->f = instr(extll_imm); break;
+		case 0xab: ic->f = instr(insll_imm); break;
 		case 0xb0: ic->f = instr(zap_imm); break;
 		case 0xb1: ic->f = instr(zapnot_imm); break;
 		case 0xb2: ic->f = instr(mskql_imm); break;
 		case 0xb4: ic->f = instr(srl_imm); break;
 		case 0xb6: ic->f = instr(extql_imm); break;
 		case 0xb9: ic->f = instr(sll_imm); break;
+		case 0xbb: ic->f = instr(insql_imm); break;
 		case 0xbc: ic->f = instr(sra_imm); break;
 		case 0xd2: ic->f = instr(mskwh_imm); break;
+		case 0xd7: ic->f = instr(inswh_imm); break;
 		case 0xda: ic->f = instr(extwh_imm); break;
 		case 0xe2: ic->f = instr(msklh_imm); break;
+		case 0xe7: ic->f = instr(inslh_imm); break;
 		case 0xea: ic->f = instr(extlh_imm); break;
 		case 0xf2: ic->f = instr(mskqh_imm); break;
+		case 0xf7: ic->f = instr(insqh_imm); break;
 		case 0xfa: ic->f = instr(extqh_imm); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);

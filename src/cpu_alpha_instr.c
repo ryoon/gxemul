@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.26 2005-07-24 11:14:56 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.27 2005-07-25 05:45:56 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -222,6 +222,19 @@ X(beq)
 
 
 /*
+ *  blbs:  Branch (to a different translated page) if Low Bit Set
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(blbs)
+{
+	if (*((int64_t *)ic->arg[1]) & 1)
+		instr(br)(cpu, ic);
+}
+
+
+/*
  *  bne:  Branch (to a different translated page) if Not Equal
  *
  *  arg[0] = relative offset (as an int32_t)
@@ -327,6 +340,19 @@ X(br_return_samepage)
 X(beq_samepage)
 {
 	if (*((int64_t *)ic->arg[1]) == 0)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
+ *  blbs_samepage:  Branch (to within the same translated page) if Low Bit Set
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(blbs_samepage)
+{
+	if (*((int64_t *)ic->arg[1]) & 1)
 		instr(br_samepage)(cpu, ic);
 }
 
@@ -482,7 +508,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
-	int opcode, ra, rb, func, rc, imm, load, loadstore_type = 0;
+	int opcode, ra, rb, func, rc, imm, load, loadstore_type, fp;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)
@@ -571,16 +597,20 @@ X(to_be_translated)
 	case 0x0c:
 	case 0x0d:
 	case 0x0e:
+	case 0x23:
+	case 0x27:
 	case 0x28:
 	case 0x29:
 	case 0x2c:
 	case 0x2d:
-		load = 0;
+		loadstore_type = 0; fp = 0; load = 0;
 		switch (opcode) {
 		case 0x0a: loadstore_type = 0; load = 1; break;	/*  ldbu  */
 		case 0x0c: loadstore_type = 1; load = 1; break;	/*  ldwu  */
 		case 0x0d: loadstore_type = 1; break;		/*  stw  */
 		case 0x0e: loadstore_type = 0; break;		/*  stb  */
+		case 0x23: loadstore_type = 3; load = 1; fp = 1; break; /*ldt*/
+		case 0x27: loadstore_type = 3; fp = 1; break;	/*  stt  */
 		case 0x28: loadstore_type = 2; load = 1; break;	/*  ldl  */
 		case 0x29: loadstore_type = 3; load = 1; break;	/*  ldq  */
 		case 0x2c: loadstore_type = 2; break;		/*  stl  */
@@ -593,7 +623,10 @@ X(to_be_translated)
 			ic->f = instr(nop);
 			break;
 		}
-		ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
+		if (fp)
+			ic->arg[0] = (size_t) &cpu->cd.alpha.f[ra];
+		else
+			ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
 		ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
 		ic->arg[2] = (ssize_t)(int16_t)imm;
 		break;
@@ -791,6 +824,7 @@ X(to_be_translated)
 	case 0x39:						/*  BEQ  */
 	case 0x3a:						/*  BLT  */
 	case 0x3b:						/*  BLE  */
+	case 0x3c:						/*  BLBS  */
 	case 0x3d:						/*  BNE  */
 	case 0x3e:						/*  BGE  */
 	case 0x3f:						/*  BGT  */
@@ -815,6 +849,10 @@ X(to_be_translated)
 		case 0x3b:
 			ic->f = instr(ble);
 			samepage_function = instr(ble_samepage);
+			break;
+		case 0x3c:
+			ic->f = instr(blbs);
+			samepage_function = instr(blbs_samepage);
 			break;
 		case 0x3d:
 			ic->f = instr(bne);

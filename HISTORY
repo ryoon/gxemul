@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.846 2005-07-24 11:14:56 debug Exp $
+$Id: HISTORY,v 1.847 2005-07-25 05:45:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2082,3 +2082,4 @@ Changelog for GXemul:
 		shifts).
 20050724	More FreeBSD/Alpha userland stuff, and adding some more
 		instructions (inserts).
+20050725	Continuing on the Alpha stuff. (Adding dummy ldt/stt.)

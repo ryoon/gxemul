@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.54 2005-07-24 10:53:56 debug Exp $
+ *  $Id: useremul.c,v 1.55 2005-07-25 06:16:10 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -522,6 +522,26 @@ int64_t useremul_getrusage(struct cpu *cpu, int64_t *errnop,
 
 
 /*
+ *  useremul_fstat():
+ */
+int64_t useremul_fstat(struct cpu *cpu, int64_t *errnop,
+	int64_t arg0, uint64_t arg1)
+{
+	int64_t res;
+	struct stat sb;
+	debug("[ fstat(%i, 0x%llx) ]\n", (int)arg0, (long long)arg1);
+	res = fstat(arg0, &sb);
+	if (res < 0)
+		*errnop = errno;
+	else {
+		fatal("TODO: convert sb into emulated memory!\n");
+
+	}
+	return res;
+}
+
+
+/*
  *  useremul_mmap():
  */
 int64_t useremul_mmap(struct cpu *cpu, int64_t *errnop,
@@ -613,6 +633,9 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case 117:res = useremul_getrusage(cpu, &err, arg0, arg1);
+		break;
+
+	case 189:res = useremul_fstat(cpu, &err, arg0, arg1);
 		break;
 
 	case 197:res = useremul_mmap(cpu, &err, arg0, arg1, arg2, arg3,
@@ -1143,7 +1166,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 	int error_flag = 0, result_high_set = 0;
 	uint64_t arg0,arg1,arg2,arg3,stack0=0,stack1=0,stack2;
 	int sysnr = 0;
-	uint64_t error_code = 0;
+	int64_t error_code = 0;
 	uint64_t result_low = 0;
 	uint64_t result_high = 0;
 	struct timeval tv;
@@ -1378,24 +1401,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 		break;
 
 	case ULTRIX_SYS_fstat:
-		debug("[ fstat(%i, 0x%llx): TODO ]\n",
-		    (int)arg0, (long long)arg1);
-
-		if (arg1 != 0) {
-			struct stat st;
-			result_low = fstat(arg0, &st);
-			if ((int64_t)result_low < 0) {
-				error_flag = 1;
-				error_code = errno;
-			} else {
-				/*  Fill in the Ultrix stat struct at arg1:  */
-
-				/*  TODO  */
-			}
-		} else {
-			error_flag = 1;
-			error_code = 1111;	/*  TODO: ultrix ENOMEM?  */
-		}
+		result_low = useremul_fstat(cpu, &error_code, arg0, arg1);
 		break;
 
 	case ULTRIX_SYS_getpagesize:

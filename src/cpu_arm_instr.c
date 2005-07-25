@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.39 2005-07-23 07:35:55 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.40 2005-07-25 06:16:10 debug Exp $
  *
  *  ARM instructions.
  *
@@ -731,6 +731,7 @@ X(to_be_translated)
 	    / sizeof(struct arm_instr_call);
 	addr = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	addr += (low_pc << 2);
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = addr;
 	addr &= ~0x3;
 
 	/*  Read the instruction word from memory:  */

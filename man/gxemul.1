@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.25 2005-06-30 22:45:25 debug Exp $
+.\" $Id: gxemul.1,v 1.26 2005-07-25 06:16:05 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -110,6 +110,10 @@ Use this together with
 .Pp
 Other options:
 .Bl -tag -width Ds
+.It Fl A
+Disable load/store alignment checks in some cases. This might give a small
+increase in performance, but the emulator will not run correctly if the 
+emulated code actually tries to do unaligned loads or stores.
 .It Fl B
 Disable dynamic binary translation. By default, bintrans
 will be turned on if the host+target architecture combination is 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.238 2005-06-25 13:25:33 debug Exp $
+ *  $Id: main.c,v 1.239 2005-07-25 06:16:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -217,6 +217,8 @@ static void usage(int longusage)
 	    "with -E.)\n");
 
 	printf("\nOther options:\n");
+	printf("  -A        disable alignment checks in some cases (for higher"
+	    " speed)\n");
 #ifdef BINTRANS
 	printf("  -B        disable dynamic binary translation. (translation"
 	    " is turned on\n            by default, if the host "
@@ -338,9 +340,13 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "BC:Dd:E:e:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "ABC:Dd:E:e:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XxY:y:Z:z:")) != -1) {
 		switch (ch) {
+		case 'A':
+			m->dyntrans_alignment_check = 0;
+			msopts = 1;
+			break;
 		case 'B':
 			m->bintrans_enable = 0;
 			msopts = 1;

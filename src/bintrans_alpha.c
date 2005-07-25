@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.119 2005-06-22 10:12:25 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.120 2005-07-25 06:16:10 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1377,7 +1377,8 @@ static int bintrans_write_instruction__delayedbranch(
  */
 static int bintrans_write_instruction__loadstore(
 	struct memory *mem, unsigned char **addrp,
-	int rt, int imm, int rs, int instruction_type, int bigendian)
+	int rt, int imm, int rs, int instruction_type, int bigendian,
+	int do_alignment_check)
 {
 	unsigned char *a, *fail, *generic64bit = NULL, *generic64bitA = NULL;
 	unsigned char *doloadstore = NULL,
@@ -1477,7 +1478,7 @@ static int bintrans_write_instruction__loadstore(
 		 */
 		*a++ = 0x02; *a++ = 0x10 + alignment * 0x20; *a++ = 0x20 + (alignment >> 3); *a++ = 0x46;
 		*a++ = 0x31; *a++ = 0x05; *a++ = 0x22; *a++ = 0x42;
-	} else if (alignment > 0) {
+	} else if (alignment > 0 && do_alignment_check) {
 		/*
 		 *  Check alignment:
 		 *

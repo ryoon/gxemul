@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.76 2005-06-22 10:12:25 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.77 2005-07-25 06:16:10 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1762,7 +1762,7 @@ try_chunk_p:
  */
 static int bintrans_write_instruction__loadstore(struct memory *mem,
 	unsigned char **addrp, int rt, int imm, int rs,
-	int instruction_type, int bigendian)
+	int instruction_type, int bigendian, int do_alignment_check)
 {
 	unsigned char *a, *retfail, *generic64bit, *doloadstore,
 	    *okret0, *okret1, *okret2, *skip;
@@ -1869,7 +1869,7 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 		 *  83 e0 fc       and    $0xfffffffc,%eax
 		 */
 		*a++ = 0x83; *a++ = 0xe0; *a++ = 0xff - alignment;
-	} else if (alignment > 0) {
+	} else if (alignment > 0 && do_alignment_check) {
 		unsigned char *alignskip;
 		/*
 		 *  Check alignment:

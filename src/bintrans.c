@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.169 2005-06-22 10:12:25 debug Exp $
+ *  $Id: bintrans.c,v 1.170 2005-07-25 06:16:09 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -157,7 +157,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 	int only_care_about_chunk_p, int p, int forward);
 static int bintrans_write_instruction__loadstore(struct memory *mem,
 	unsigned char **addrp, int rt, int imm, int rs, int instruction_type,
-	int bigendian);
+	int bigendian, int do_alignment_check);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt,
 	int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd,
@@ -748,7 +748,9 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)
 				imm -= 65536;
-			translated = try_to_translate = bintrans_write_instruction__loadstore(cpu->mem, &ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
+			translated = try_to_translate = bintrans_write_instruction__loadstore(cpu->mem, &ca, rt, imm, rs, hi6,
+			    byte_order_cached_bigendian,
+			    cpu->machine->dyntrans_alignment_check);
 			n_translated += translated;
 			break;
 

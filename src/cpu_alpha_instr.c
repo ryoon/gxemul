@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.27 2005-07-25 05:45:56 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.28 2005-07-25 06:16:10 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -235,6 +235,19 @@ X(blbs)
 
 
 /*
+ *  blbc:  Branch (to a different translated page) if Low Bit Clear
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = pointer to int64_t register
+ */
+X(blbc)
+{
+	if (!(*((int64_t *)ic->arg[1]) & 1))
+		instr(br)(cpu, ic);
+}
+
+
+/*
  *  bne:  Branch (to a different translated page) if Not Equal
  *
  *  arg[0] = relative offset (as an int32_t)
@@ -353,6 +366,19 @@ X(beq_samepage)
 X(blbs_samepage)
 {
 	if (*((int64_t *)ic->arg[1]) & 1)
+		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
+ *  blbc_samepage:  Branch (to within the same translated page) if Low Bit Clear
+ *
+ *  arg[0] = pointer to new alpha_instr_call
+ *  arg[1] = pointer to int64_t register
+ */
+X(blbc_samepage)
+{
+	if (!(*((int64_t *)ic->arg[1]) & 1))
 		instr(br_samepage)(cpu, ic);
 }
 
@@ -516,6 +542,7 @@ X(to_be_translated)
 	addr = cpu->pc & ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
 	addr += (low_pc << 2);
 	addr &= ~0x3;
+	cpu->pc = addr;
 
 	/*  Read the instruction word from memory:  */
 	if ((addr >> ALPHA_TOPSHIFT) == 0) {
@@ -597,7 +624,9 @@ X(to_be_translated)
 	case 0x0c:
 	case 0x0d:
 	case 0x0e:
+	case 0x22:
 	case 0x23:
+	case 0x26:
 	case 0x27:
 	case 0x28:
 	case 0x29:
@@ -609,7 +638,9 @@ X(to_be_translated)
 		case 0x0c: loadstore_type = 1; load = 1; break;	/*  ldwu  */
 		case 0x0d: loadstore_type = 1; break;		/*  stw  */
 		case 0x0e: loadstore_type = 0; break;		/*  stb  */
+		case 0x22: loadstore_type = 2; load = 1; fp = 1; break; /*lds*/
 		case 0x23: loadstore_type = 3; load = 1; fp = 1; break; /*ldt*/
+		case 0x26: loadstore_type = 2; fp = 1; break;	/*  sts  */
 		case 0x27: loadstore_type = 3; fp = 1; break;	/*  stt  */
 		case 0x28: loadstore_type = 2; load = 1; break;	/*  ldl  */
 		case 0x29: loadstore_type = 3; load = 1; break;	/*  ldq  */
@@ -821,6 +852,7 @@ X(to_be_translated)
 		break;
 	case 0x30:						/*  BR  */
 	case 0x34:						/*  BSR  */
+	case 0x38:						/*  BLBC  */
 	case 0x39:						/*  BEQ  */
 	case 0x3a:						/*  BLT  */
 	case 0x3b:						/*  BLE  */
@@ -837,6 +869,10 @@ X(to_be_translated)
 				ic->f = instr(br_return);
 				samepage_function = instr(br_return_samepage);
 			}
+			break;
+		case 0x38:
+			ic->f = instr(blbc);
+			samepage_function = instr(blbc_samepage);
 			break;
 		case 0x39:
 			ic->f = instr(beq);

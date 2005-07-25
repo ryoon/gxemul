@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.847 2005-07-25 05:45:55 debug Exp $
+$Id: HISTORY,v 1.848 2005-07-25 06:33:57 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2083,3 +2083,5 @@ Changelog for GXemul:
 20050724	More FreeBSD/Alpha userland stuff, and adding some more
 		instructions (inserts).
 20050725	Continuing on the Alpha stuff. (Adding dummy ldt/stt.)
+		Adding a -A command line option to turn off alignment checks
+		in some cases (for translated code).

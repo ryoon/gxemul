@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.72 2005-07-15 07:34:06 debug Exp $
+ *  $Id: dev_asc.c,v 1.73 2005-07-25 06:33:59 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -118,8 +118,8 @@ struct asc_data {
 
 	/*  Built-in DMA memory (for DECstation 5000/200):  */
 	uint32_t	dma_address_reg;
-	unsigned char	dma_address_reg_memory[4096];
-				/*  NOTE: full page, for bintrans  */
+	uint64_t	dma_address_reg_memory[4096 / 8];
+			/*  NOTE: full page, 64-bit aligned for dyntrans  */
 	unsigned char	dma[128 * 1024];
 
 	void		*dma_controller_data;
@@ -1273,7 +1273,7 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 		memory_device_register(mem, "asc_dma_address_reg",
 		    baseaddr + 0x40000, 4096, dev_asc_address_reg_access, d,
 		    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK,
-		    d->dma_address_reg_memory);
+		    (unsigned char *)&d->dma_address_reg_memory[0]);
 		memory_device_register(mem, "asc_dma", baseaddr + 0x80000,
 		    128*1024, dev_asc_dma_access, d,
 		    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK, d->dma);

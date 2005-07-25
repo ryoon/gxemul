@@ -1,21 +1,32 @@
-$Id: TODO,v 1.142 2005-07-25 06:16:04 debug Exp $
+$Id: TODO,v 1.143 2005-07-25 07:44:49 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
 
 
-Alpha:
+MIPS:
+	Remove the need to update pc and instruction count between
+	every instruction. On jumps or "aborts",
+	oldpc = cpu->pc; cpu->pc &= ~0xfff   and then cpu->pc |= fixed offset
+	known to the translator. Nr of instructions can then be
+	increased by (cpu->pc - oldpc) before the jump or abort.
 
-	write protection for ARM/Alpha
+	A single 1M-entry table for 32-bit load/stores? Perhaps.
+
+Alpha:
+	GENERALIZE!!! alpha + arm common code
+
+	memory write protection for ARM/Alpha
 
 	hahaha, zapnot and inserts/extracts don't compile into very nice
 	code :-|
 
 	function call trace support?
 
-	generalize alpha + arm common code
-
 	implement more of freebsd/alpha userland emulation!
+
+PPC:
+	Rip out everything and convert into the new dyntrans system.
 
 
 

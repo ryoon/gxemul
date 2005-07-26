@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.120 2005-07-25 06:16:10 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.121 2005-07-26 10:10:50 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1110,12 +1110,12 @@ static int bintrans_write_instruction__delayedbranch(
 		 *  Perform the jump by setting cpu->delay_slot = 0
 		 *  and pc = cpu->delay_jmpaddr.
 		 */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T3);
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_JMPADDR, ALPHA_T5);
+
 		/*  00 00 3f 21     lda     s0,0  */
 		*a++ = 0; *a++ = 0; *a++ = 0x3f; *a++ = 0x21;
 
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_JMPADDR, ALPHA_T0);
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T3);
-		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_PC);
 	}
 
 	if (potential_chunk_p == NULL) {
@@ -2602,6 +2602,9 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	/*  Load PC from the cpu struct.  */
 	*a++ = 0xa4d00000 | ofs_pc;	/*  ldq t5,"pc"(a0)  */
 
+	/*  Increase the nr of instructions:  */
+	*a++ = 0x20e70001;		/*  lda t6,1(t6)  */
+
 	*addrp = (unsigned char *) a;
 
 	switch (itype) {
@@ -2724,19 +2727,17 @@ static void bintrans_backend_init(void)
 	q = p;	/*  *q is updated later  */
 	*p++ = 0xe4200001;		/*  beq ret (far below)  */
 
-	*p++ = 0x40c01411;		/*  addq t5,0,a1  */
-
 	/*
 	 *  Special case for 32-bit addressing:
 	 *
 	 *  t1 = 1023;
-	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
-	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
-	 *  t1 = a1 & 4095;
+	 *  t2 = ((pc >> 22) & t1) * sizeof(void *);
+	 *  t3 = ((pc >> 12) & t1) * sizeof(void *);
+	 *  t1 = pc & 4095;
 	 */
 	*p++ = 0x205f1ff8;	/*  lda     t1,1023 * 8  */
-	*p++ = 0x4a227683;	/*  srl     a1,19,t2  */
-	*p++ = 0x4a213684;	/*  srl     a1, 9,t3  */
+	*p++ = 0x48c27683;	/*  srl     t5,19,t2  */
+	*p++ = 0x48c13684;	/*  srl     t5, 9,t3  */
 	*p++ = 0x44620003;	/*  and     t2,t1,t2  */
 
 	/*
@@ -2753,9 +2754,10 @@ static void bintrans_backend_init(void)
 	 *  a3 = tbl1[t3]  (load entry from tbl1 (which is a3))
 	 */
 	*p++ = 0x42640413;	/*  addq    a3,t3,a3  */
-	*p++ = 0x46220002;	/*  and     a1,t1,t1  */
 
 	*p++ = 0xa6730000 | ofs_c0;	/*  ldq a3,chunks[0](a3)  */
+
+	*p++ = 0x44c20002;	/*  and     t5,t1,t1  */
 
 	/*
 	 *  NULL? Then just return.
@@ -2766,10 +2768,10 @@ static void bintrans_backend_init(void)
 	*p++ = 0x40530402;	/*  addq    t1,a3,t1  */
 	*p++ = 0xa0220000;	/*  ldl     t0,0(t1)  */
 
-	/*  No translation? Then return.  */
-	*p++ = 0xe4200003;	/*  beq t0,<skip>  */
-
 	*p++ = 0xa4700000 | ofs_cb;	/*  ldq t2,chunk_base_address(a0)  */
+
+	/*  No translation? Then return.  */
+	*p++ = 0xe4200002;	/*  beq t0,<skip>  */
 
 	*p++ = 0x40230401;	/*  addq t0,t2,t0  */
 	*p++ = 0x6be10000;	/*  jmp (t0)  */

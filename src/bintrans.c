@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.170 2005-07-25 06:16:09 debug Exp $
+ *  $Id: bintrans.c,v 1.171 2005-07-26 10:10:50 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -202,17 +202,7 @@ static void bintrans_register_potential_quick_jump(struct memory *mem,
 #define BACKEND_NAME "i386"
 #include "bintrans_i386.c"
 #else
-#ifdef MIPS
-#define BACKEND_NAME "MIPS"
-#include "bintrans_mips.c"
-#else
-#ifdef SPARCV9
-#define BACKEND_NAME "UltraSPARC"
-#include "bintrans_sparcv9.c"
-#else
 #error Unsupported host architecture for bintrans.
-#endif	/*  SPARCV9  */
-#endif	/*  MIPS  */
 #endif	/*  I386  */
 #endif	/*  ALPHA  */
 
@@ -348,7 +338,7 @@ int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	int rs,rt,rd,sa,imm;
 	uint32_t *potential_chunk_p;	/*  for branches  */
 	int byte_order_cached_bigendian;
-	int delayed_branch, stop_after_delayed_branch;
+	int delayed_branch, stop_after_delayed_branch, return_code_written;
 	uint64_t delayed_branch_new_p;
 	int prev_p;
 
@@ -453,6 +443,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 	try_to_translate = 1;
 	n_translated = 0;
 	res = 0;
+	return_code_written = 0;
 	delayed_branch = 0;
 	stop_after_delayed_branch = 0;
 	delayed_branch_new_p = 0;
@@ -503,6 +494,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					bintrans_write_chunkreturn_fail(&ca);
 					tep->flags[prev_p >> 3] |= mask;
 					try_to_translate = 0;
+					return_code_written = 1;
 				} else {
 					translated = bintrans_write_instruction__tlb_rfe_etc(&ca,
 					    special6 == SPECIAL_BREAK? CALL_BREAK : CALL_SYSCALL);
@@ -566,6 +558,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					tep->flags[prev_p >> 3] |= mask;
 				}
 				try_to_translate = 0;
+				return_code_written = 1;
 			}
 			break;
 
@@ -584,7 +577,6 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				delayed_branch_new_p = p + 4 + 4*imm;
 				break;
 			default:
-				try_to_translate = 0;
 				/*  Untranslatable:  */
 				/*  TODO: this code should only be in one place  */
 				bintrans_write_chunkreturn_fail(&ca);
@@ -593,6 +585,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					tep->flags[prev_p >> 3] |= mask;
 				}
 				try_to_translate = 0;
+				return_code_written = 1;
 			}
 			break;
 
@@ -680,8 +673,17 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 						translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 1);
 						n_translated += translated;
 					}
-				} else
+				} else {
+					/*  Untranslatable:  */
+					/*  TODO: this code should only be in one place  */
+					bintrans_write_chunkreturn_fail(&ca);
+					{
+						int mask = 1 << (prev_p & 7);
+						tep->flags[prev_p >> 3] |= mask;
+					}
 					try_to_translate = 0;
+					return_code_written = 1;
+				}
 				break;
 			case 0x42:
 				if (instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
@@ -714,11 +716,28 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					/*  standby and suspend on VR41xx etc ==> NOP  */
 					translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
 					n_translated += translated;
-				} else
+				} else {
+					/*  Untranslatable:  */
+					/*  TODO: this code should only be in one place  */
+					bintrans_write_chunkreturn_fail(&ca);
+					{
+						int mask = 1 << (prev_p & 7);
+						tep->flags[prev_p >> 3] |= mask;
+					}
 					try_to_translate = 0;
+					return_code_written = 1;
+				}
 				break;
 			default:
+				/*  Untranslatable:  */
+				/*  TODO: this code should only be in one place  */
+				bintrans_write_chunkreturn_fail(&ca);
+				{
+					int mask = 1 << (prev_p & 7);
+					tep->flags[prev_p >> 3] |= mask;
+				}
 				try_to_translate = 0;
+				return_code_written = 1;
 			}
 			break;
 
@@ -768,6 +787,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				tep->flags[prev_p >> 3] |= mask;
 			}
 			try_to_translate = 0;
+			return_code_written = 1;
 		}
 
 		if (translated && delayed_branch) {
@@ -823,7 +843,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			if (tep->flags[(prev_p+1) >> 3] & mask
 			    && !delayed_branch) {
 				bintrans_write_chunkreturn_fail(&ca);
-				/*  try_to_translate = 0;  */
+				try_to_translate = 0;
+				return_code_written = 1;
 				break;
 			}
 
@@ -839,7 +860,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			if (n_translated > 80 && !delayed_branch) {
 				bintrans_write_instruction__delayedbranch(cpu->mem,
 				    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
-				/*  try_to_translate = 0;  */
+				try_to_translate = 0;
+				return_code_written = 1;
 				break;
 			}
 		}
@@ -866,7 +888,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 	    cpu->mem->translation_code_chunk_space_head;
 
 	/*  Add return code:  */
-	bintrans_write_chunkreturn(&ca);
+	if (!return_code_written)
+		bintrans_write_chunkreturn(&ca);
 
 	/*  chunk_len = nr of bytes occupied by the new code chunk  */
 	chunk_len = (size_t)ca - (size_t)ca2;

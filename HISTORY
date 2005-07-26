@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.848 2005-07-25 06:33:57 debug Exp $
+$Id: HISTORY,v 1.849 2005-07-26 10:10:49 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2085,3 +2085,9 @@ Changelog for GXemul:
 20050725	Continuing on the Alpha stuff. (Adding dummy ldt/stt.)
 		Adding a -A command line option to turn off alignment checks
 		in some cases (for translated code).
+		Trying to remove the old bintrans code which updated the pc
+		and nr_of_executed_instructions for every instruction.
+20050726	Making another attempt att removing the pc/nr of instructions
+		code. This time it worked, huge performance increase for
+		artificial test code, but performance loss for real-world
+		code. :-(

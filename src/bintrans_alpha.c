@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.121 2005-07-26 10:10:50 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.122 2005-07-26 11:40:49 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -255,7 +255,7 @@ static uint32_t bintrans_alpha_load_32bit[18] = {
 	/*  04 04 62 42     addq    a3,t1,t3  */
 	0x42620404,
 
-	0x6be50000,		/*  jmp (t4)  */
+	0x6be58000,		/*  ret (t4)  */
 
 	/*  return:  */
 	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
@@ -322,7 +322,7 @@ static uint32_t bintrans_alpha_store_32bit[18] = {
 	/*  04 04 62 42     addq    a3,t1,t3  */
 	0x42620404,
 
-	0x6be50000,		/*  jmp (t4)  */
+	0x6be58000,		/*  ret (t4)  */
 
 	/*  return:  */
 	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */

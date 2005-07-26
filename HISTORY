@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.849 2005-07-26 10:10:49 debug Exp $
+$Id: HISTORY,v 1.850 2005-07-26 11:40:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2090,4 +2090,4 @@ Changelog for GXemul:
 20050726	Making another attempt att removing the pc/nr of instructions
 		code. This time it worked, huge performance increase for
 		artificial test code, but performance loss for real-world
-		code. :-(
+		code :-( so I'm scrapping that code for now.

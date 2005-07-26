@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.122 2005-07-26 11:40:49 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.123 2005-07-26 16:55:59 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -260,7 +260,7 @@ static uint32_t bintrans_alpha_load_32bit[18] = {
 	/*  return:  */
 	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
 	0x44270407,					/*  or      t0,t6,t6  */
-	0x6bfa8001					/*  ret  */
+	0x6bfa8000					/*  ret  */
 };
 
 static uint32_t bintrans_alpha_store_32bit[18] = {
@@ -327,7 +327,7 @@ static uint32_t bintrans_alpha_store_32bit[18] = {
 	/*  return:  */
 	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
 	0x44270407,					/*  or      t0,t6,t6  */
-	0x6bfa8001					/*  ret  */
+	0x6bfa8000					/*  ret  */
 };
 
 static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
@@ -369,7 +369,7 @@ static void bintrans_write_quickjump(struct memory *mem,
 static void bintrans_write_chunkreturn(unsigned char **addrp)
 {
 	uint32_t *a = (uint32_t *) *addrp;
-	*a++ = 0x6bfa8001;	/*  ret  */
+	*a++ = 0x6bfa8000;	/*  ret  */
 	*addrp = (unsigned char *) a;
 }
 
@@ -384,7 +384,7 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 	/*  07 04 27 44     or      t0,t6,t6  */
 	*a++ = 0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16);
 	*a++ = 0x44270407;
-	*a++ = 0x6bfa8001;	/*  ret  */
+	*a++ = 0x6bfa8000;	/*  ret  */
 	*addrp = (unsigned char *) a;
 }
 
@@ -1172,21 +1172,21 @@ static int bintrans_write_instruction__delayedbranch(
 			 *  04 00 82 44     and     t3,t1,t3
 			 *  a3 05 24 40     cmpeq   t0,t3,t2
 			 *  01 00 60 f4     bne     t2,7c <ok2>
-			 *  01 80 fa 6b     ret
+			 *  00 80 fa 6b     ret
 			 */
 			*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and  */
 			*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;	/*  and  */
 			*a++ = 0xa3; *a++ = 0x05; *a++ = 0x24; *a++ = 0x40;	/*  cmpeq  */
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf4;	/*  bne  */
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			*a++ = 0x00; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
 			/*  Don't execute too many instructions. (see comment below)  */
 			*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
 				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
 			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			*a++ = 0x00; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
 			/*  15 bits at a time, which means max 60 bits, but
 			    that should be enough. the top 4 bits are probably
@@ -1253,7 +1253,7 @@ static int bintrans_write_instruction__delayedbranch(
 			*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
 
 			/*  Failure, then return to the main loop.  */
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			*a++ = 0x00; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 		}
 	} else {
 		/*
@@ -1275,7 +1275,7 @@ static int bintrans_write_instruction__delayedbranch(
 				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
 			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			*a++ = 0x00; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 		}
 
 		/*
@@ -1357,7 +1357,7 @@ static int bintrans_write_instruction__delayedbranch(
 			*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
 
 			/*  "Failure", then let's return to the main loop.  */
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			*a++ = 0x00; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 		}
 	}
 
@@ -1384,6 +1384,7 @@ static int bintrans_write_instruction__loadstore(
 	unsigned char *doloadstore = NULL,
 	    *ok_unaligned_load3, *ok_unaligned_load2, *ok_unaligned_load1;
 	uint32_t *b;
+	int need_imm_lda = 0;
 	int ofs, alignment, load = 0, alpha_rs, alpha_rt, unaligned = 0;
 
 	/*  TODO: Not yet:  */
@@ -1426,16 +1427,21 @@ static int bintrans_write_instruction__loadstore(
 	/*
 	 *  a1 = gpr[rs] + imm;
 	 *
-	 *  88 08 30 a4     ldq     t0,2184(a0)
-	 *  34 12 21 22     lda     a1,4660(t0)
+	 *  rs_ofs 30 a4     ldq     a1,rs(a0)
+	 *  imm    21 22     lda     a1,imm(a1)
 	 */
 
 	alpha_rs = map_MIPS_to_Alpha[rs];
 	if (alpha_rs < 0) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
-		alpha_rs = ALPHA_T0;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_A1);
+		alpha_rs = ALPHA_A1;
+	} else
+		need_imm_lda = 1;
+
+	if (imm != 0 || need_imm_lda) {
+		*a++ = imm; *a++ = (imm >> 8);
+		*a++ = 0x20 + alpha_rs; *a++ = 0x22;
 	}
-	*a++ = imm; *a++ = (imm >> 8); *a++ = 0x20 + alpha_rs; *a++ = 0x22;
 
 	alignment = 0;
 	switch (instruction_type) {
@@ -1487,7 +1493,7 @@ static int bintrans_write_instruction__loadstore(
 		 *  02 f0 20 46     and     a1,0x7,t1
 		 *  02 f0 21 46     and     a1,0xf,t1
 		 *  01 00 40 e4     beq     t1,<okalign>
-		 *  01 80 fa 6b     ret
+		 *  00 80 fa 6b     ret
 		 */
 		*a++ = 0x02; *a++ = 0x10 + alignment * 0x20; *a++ = 0x20 + (alignment >> 3); *a++ = 0x46;
 		fail = a;
@@ -2602,15 +2608,16 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	/*  Load PC from the cpu struct.  */
 	*a++ = 0xa4d00000 | ofs_pc;	/*  ldq t5,"pc"(a0)  */
 
-	/*  Increase the nr of instructions:  */
-	*a++ = 0x20e70001;		/*  lda t6,1(t6)  */
-
 	*addrp = (unsigned char *) a;
 
 	switch (itype) {
 	case CALL_ERET:
 	case CALL_BREAK:
 	case CALL_SYSCALL:
+		/*  Increase the nr of instructions:  */
+		a = (uint32_t *) *addrp;
+		*a++ = 0x20e70001;		/*  lda t6,1(t6)  */
+		*addrp = (unsigned char *) a;
 		break;
 	default:
 		bintrans_write_pc_inc(addrp);
@@ -2701,7 +2708,7 @@ static void bintrans_backend_init(void)
 	*p++ = 0xa5fe0038;		/*  ldq     s6,56(sp)  */
 	*p++ = 0xa7be0058;		/*  ldq     gp,0x58(sp)  */
 	*p++ = 0x23de0060;		/*  lda     sp,0x60(sp)  */
-	*p++ = 0x6bfa8001;		/*  ret   */
+	*p++ = 0x6bfa8000;		/*  ret   */
 
 
 	/*  "jump to 32bit pc":  */
@@ -2763,7 +2770,7 @@ static void bintrans_backend_init(void)
 	 *  NULL? Then just return.
 	 */
 	*p++ = 0xf6600001;	/*  bne     a3,<ok>  */
-	*p++ = 0x6bfa8001;	/*  ret  */
+	*p++ = 0x6bfa8000;	/*  ret  */
 
 	*p++ = 0x40530402;	/*  addq    t1,a3,t1  */
 	*p++ = 0xa0220000;	/*  ldl     t0,0(t1)  */
@@ -2780,6 +2787,6 @@ static void bintrans_backend_init(void)
 	*q = 0xe4200000 | (((size_t)p - (size_t)q)/4 - 1);	/*  beq ret  */
 
 	/*  Return to the main translation loop.  */
-	*p++ = 0x6bfa8001;		/*  ret  */
+	*p++ = 0x6bfa8000;		/*  ret  */
 } 
 

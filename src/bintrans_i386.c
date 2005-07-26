@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.77 2005-07-25 06:16:10 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.78 2005-07-26 16:56:00 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1813,21 +1813,23 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 	else
 		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 
-	if (imm & 0x8000) {
-		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
-		/*  83 d2 ff                adc    $0xffffffff,%edx  */
-		*a++ = 5;
-		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
-		if (!mem->bintrans_32bit_only) {
-			*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
-		}
-	} else {
-		/*  05 34 12 00 00          add    $0x1234,%eax  */
-		/*  83 d2 00                adc    $0x0,%edx  */
-		*a++ = 5;
-		*a++ = imm; *a++ = imm >> 8; *a++ = 0; *a++ = 0;
-		if (!mem->bintrans_32bit_only) {
-			*a++ = 0x83; *a++ = 0xd2; *a++ = 0;
+	if (imm != 0) {
+		if (imm & 0x8000) {
+			/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
+			/*  83 d2 ff                adc    $0xffffffff,%edx  */
+			*a++ = 5;
+			*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
+			if (!mem->bintrans_32bit_only) {
+				*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
+			}
+		} else {
+			/*  05 34 12 00 00          add    $0x1234,%eax  */
+			/*  83 d2 00                adc    $0x0,%edx  */
+			*a++ = 5;
+			*a++ = imm; *a++ = imm >> 8; *a++ = 0; *a++ = 0;
+			if (!mem->bintrans_32bit_only) {
+				*a++ = 0x83; *a++ = 0xd2; *a++ = 0;
+			}
 		}
 	}
 

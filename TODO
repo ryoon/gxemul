@@ -1,16 +1,10 @@
-$Id: TODO,v 1.143 2005-07-25 07:44:49 debug Exp $
+$Id: TODO,v 1.144 2005-07-26 16:55:59 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
 
 
 MIPS:
-	Remove the need to update pc and instruction count between
-	every instruction. On jumps or "aborts",
-	oldpc = cpu->pc; cpu->pc &= ~0xfff   and then cpu->pc |= fixed offset
-	known to the translator. Nr of instructions can then be
-	increased by (cpu->pc - oldpc) before the jump or abort.
-
 	A single 1M-entry table for 32-bit load/stores? Perhaps.
 
 Alpha:

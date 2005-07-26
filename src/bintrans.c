@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.171 2005-07-26 10:10:50 debug Exp $
+ *  $Id: bintrans.c,v 1.172 2005-07-26 16:25:26 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -410,8 +410,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 
 		/*  ... and align again:  */
 		cpu->mem->translation_code_chunk_space_head =
-		    ((cpu->mem->translation_code_chunk_space_head - 1) | 63)
-		    + 1;
+		    ((cpu->mem->translation_code_chunk_space_head - 1) | 31)+1;
 
 		/*  Add the entry to the array:  */
 		memset(tep, 0, sizeof(struct translation_page_entry));
@@ -813,10 +812,9 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				    cpu->mem, &ca,
 				    potential_chunk_p, &tep->chunk[0], 0,
 				    delayed_branch_new_p & 0xfff, forward);
-#if 0
+
 				if (stop_after_delayed_branch)
 					try_to_translate = 0;
-#endif
 			}
 		}
 
@@ -853,11 +851,13 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			if (tep->chunk[prev_p+1] != 0 && !delayed_branch) {
 				bintrans_write_instruction__delayedbranch(cpu->mem,
 				    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
+				try_to_translate = 0;
+				return_code_written = 1;
 				/*  try_to_translate = 0;  */
 				break;
 			}
 
-			if (n_translated > 80 && !delayed_branch) {
+			if (n_translated > 120 && !delayed_branch) {
 				bintrans_write_instruction__delayedbranch(cpu->mem,
 				    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
 				try_to_translate = 0;
@@ -901,7 +901,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 
 	/*  Align the code chunk space:  */
 	cpu->mem->translation_code_chunk_space_head =
-	    ((cpu->mem->translation_code_chunk_space_head - 1) | 63) + 1;
+	    ((cpu->mem->translation_code_chunk_space_head - 1) | 31) + 1;
 
 
 	/*  RUN the code chunk:  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.850 2005-07-26 11:40:48 debug Exp $
+$Id: HISTORY,v 1.851 2005-07-26 16:25:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2091,3 +2091,6 @@ Changelog for GXemul:
 		code. This time it worked, huge performance increase for
 		artificial test code, but performance loss for real-world
 		code :-( so I'm scrapping that code for now.
+		Tiny performance increase on Alpha (by using ret instead of
+		jmp, to play nice with the Alpha's branch prediction) for the
+		MIPS bintrans backend.

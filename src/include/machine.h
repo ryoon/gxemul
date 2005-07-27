@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.60 2005-07-19 22:09:32 debug Exp $
+ *  $Id: machine.h,v 1.61 2005-07-27 06:57:34 debug Exp $
  */
 
 #include <sys/types.h>
@@ -138,6 +138,7 @@ struct machine {
 	int	memory_offset_in_mb;
 	int	prom_emulation;
 	int	register_dump;
+	int	arch_pagesize;
 
 	int	n_breakpoints;
 	char	*breakpoint_string[MAX_BREAKPOINTS];

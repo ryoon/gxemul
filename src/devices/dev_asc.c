@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.73 2005-07-25 06:33:59 debug Exp $
+ *  $Id: dev_asc.c,v 1.74 2005-07-27 06:57:34 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -71,6 +71,8 @@
 /*  #define ASC_FULL_REGISTER_ACCESS_DEBUG  */
 /*  static int quiet_mode = 0;  */
 
+#define	ASC_TICK_SHIFT		15
+
 extern int quiet_mode;
 
 
@@ -89,6 +91,8 @@ extern int quiet_mode;
 
 /*  The controller's SCSI id:  */
 #define	ASC_SCSI_ID		7
+
+#define	ASC_DMA_SIZE		(128*1024)
 
 struct asc_data {
 	int		mode;
@@ -118,9 +122,8 @@ struct asc_data {
 
 	/*  Built-in DMA memory (for DECstation 5000/200):  */
 	uint32_t	dma_address_reg;
-	uint64_t	dma_address_reg_memory[4096 / 8];
-			/*  NOTE: full page, 64-bit aligned for dyntrans  */
-	unsigned char	dma[128 * 1024];
+	unsigned char	*dma_address_reg_memory;
+	unsigned char	*dma;
 
 	void		*dma_controller_data;
 	size_t		(*dma_controller)(void *dma_controller_data,
@@ -319,14 +322,14 @@ fatal("TODO..............\n");
 
 				/*  TODO: check len2 in a similar way?  */
 				if (len + (d->dma_address_reg &
-				    ((sizeof(d->dma)-1))) > sizeof(d->dma))
-					len = sizeof(d->dma) -
+				    (ASC_DMA_SIZE-1)) > ASC_DMA_SIZE)
+					len = ASC_DMA_SIZE -
 					    (d->dma_address_reg &
-					    ((sizeof(d->dma)-1)));
+					    (ASC_DMA_SIZE-1));
 
 				if (len2 > len) {
 					memset(d->dma + (d->dma_address_reg &
-					    ((sizeof(d->dma)-1))), 0, len2);
+					    (ASC_DMA_SIZE-1)), 0, len2);
 					len2 = len;
 				}
 
@@ -352,7 +355,7 @@ fatal("TODO..............\n");
 					    len2, 1);
 				else
 					memcpy(d->dma + (d->dma_address_reg &
-					    ((sizeof(d->dma)-1))),
+					    (ASC_DMA_SIZE-1)),
 					    d->xferp->data_in, len2);
 
 				if (d->xferp->data_in_len > len2) {
@@ -439,7 +442,7 @@ fatal("TODO.......asdgasin\n");
 				else
 					memcpy(d->xferp->data_out,
 					    d->dma + (d->dma_address_reg &
-					    ((sizeof(d->dma)-1))), len2);
+					    (ASC_DMA_SIZE-1)), len2);
 				d->xferp->data_out_offset = len2;
 			} else {
 				/*  Continuing a multi-transfer:  */
@@ -453,7 +456,7 @@ fatal("TODO.......asdgasin\n");
 					memcpy(d->xferp->data_out +
 					    d->xferp->data_out_offset,
 					    d->dma + (d->dma_address_reg &
-					    ((sizeof(d->dma)-1))), len2);
+					    (ASC_DMA_SIZE-1)), len2);
 				d->xferp->data_out_offset += len2;
 			}
 
@@ -705,7 +708,7 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 
 		for (i=0; i<len; i++) {
 			int ofs = d->dma_address_reg + i;
-			ch = d->dma[ofs & (sizeof(d->dma)-1)];
+			ch = d->dma[ofs & (ASC_DMA_SIZE-1)];
 			d->xferp->cmd[i] = ch;
 			if (!quiet_mode)
 				debug("%02x ", ch);
@@ -1261,6 +1264,15 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 
 	d->reg_ro[NCR_CFG3] = NCRF9XCFG3_CDB;
 
+	d->dma_address_reg_memory = malloc(machine->arch_pagesize);
+	d->dma = malloc(ASC_DMA_SIZE);
+	if (d->dma == NULL || d->dma_address_reg_memory == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d->dma_address_reg_memory, 0, machine->arch_pagesize);
+	memset(d->dma, 0, ASC_DMA_SIZE);
+
 	d->dma_controller      = dma_controller;
 	d->dma_controller_data = dma_controller_data;
 
@@ -1275,10 +1287,10 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 		    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK,
 		    (unsigned char *)&d->dma_address_reg_memory[0]);
 		memory_device_register(mem, "asc_dma", baseaddr + 0x80000,
-		    128*1024, dev_asc_dma_access, d,
+		    ASC_DMA_SIZE, dev_asc_dma_access, d,
 		    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK, d->dma);
 	}
 
-	machine_add_tickfunction(machine, dev_asc_tick, d, 15);
+	machine_add_tickfunction(machine, dev_asc_tick, d, ASC_TICK_SHIFT);
 }
 

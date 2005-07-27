@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.215 2005-07-22 12:28:03 debug Exp $
+ *  $Id: emul.c,v 1.216 2005-07-27 06:57:32 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -833,6 +833,9 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	}
 
 	m->cpu_family = cpu_family_ptr_by_number(m->arch);
+
+	if (m->arch == ARCH_ALPHA)
+		m->arch_pagesize = 8192;
 
 	if (m->arch != ARCH_MIPS)
 		m->bintrans_enable = 0;

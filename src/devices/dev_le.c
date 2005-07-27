@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.42 2005-07-15 07:34:06 debug Exp $
+ *  $Id: dev_le.c,v 1.43 2005-07-27 06:57:34 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -93,7 +93,7 @@ struct le_data {
 	int		reg_select;
 	uint16_t	reg[N_REGISTERS];
 
-	unsigned char	sram[SRAM_SIZE];
+	unsigned char	*sram;
 
 	/*  Initialization block:  */
 	uint32_t	init_block_addr;
@@ -778,6 +778,13 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 
 	memset(d, 0, sizeof(struct le_data));
 	d->irq_nr    = irq_nr;
+
+	d->sram = malloc(SRAM_SIZE);
+	if (d->sram == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d->sram, 0, SRAM_SIZE);
 
 	/*  TODO:  Are these actually used yet?  */
 	d->len       = len;

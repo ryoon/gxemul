@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.480 2005-07-21 16:01:39 debug Exp $
+ *  $Id: machine.c,v 1.481 2005-07-27 06:57:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -149,6 +149,8 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->bintrans_enable = 1;
 	m->old_bintrans_enable = 1;
 #endif
+	m->arch_pagesize = 4096;	/*  Should be overriden in
+					    emul.c for other pagesizes.  */
 	m->dyntrans_alignment_check = 1;
 	m->prom_emulation = 1;
 	m->speed_tricks = 1;

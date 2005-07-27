@@ -1,4 +1,4 @@
-$Id: TODO,v 1.144 2005-07-26 16:55:59 debug Exp $
+$Id: TODO,v 1.145 2005-07-27 06:57:32 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -7,21 +7,28 @@ Order is random. Don't trust it to be up-to-date.
 MIPS:
 	A single 1M-entry table for 32-bit load/stores? Perhaps.
 
-Alpha:
+dyntrans:
 	GENERALIZE!!! alpha + arm common code
 
 	memory write protection for ARM/Alpha
 
+	function call trace support?
+
+ARM:
+	1M-entry load/store table
+
+	more instructions
+
+Alpha:
 	hahaha, zapnot and inserts/extracts don't compile into very nice
 	code :-|
-
-	function call trace support?
 
 	implement more of freebsd/alpha userland emulation!
 
 PPC:
 	Rip out everything and convert into the new dyntrans system.
-
+	This would require changes to the dyntrans system to allow for
+	both 32-bit and 64-bit PPC code.
 
 
 

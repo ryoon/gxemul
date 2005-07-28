@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.481 2005-07-27 06:57:32 debug Exp $
+ *  $Id: machine.c,v 1.482 2005-07-28 19:32:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4911,32 +4911,34 @@ void machine_init(void)
 	}
 
 	/*  SGI:  */
-	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 9);
+	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 10);
 	me->aliases[0] = "silicon graphics";
 	me->aliases[1] = "sgi";
-	me->subtype[0] = machine_entry_subtype_new("IP19", 19, 1);
-	me->subtype[0]->aliases[0] = "ip19";
-	me->subtype[1] = machine_entry_subtype_new("IP20", 20, 1);
-	me->subtype[1]->aliases[0] = "ip20";
-	me->subtype[2] = machine_entry_subtype_new("IP22", 22, 2);
-	me->subtype[2]->aliases[0] = "ip22";
-	me->subtype[2]->aliases[1] = "indy";
-	me->subtype[3] = machine_entry_subtype_new("IP24", 24, 1);
-	me->subtype[3]->aliases[0] = "ip24";
-	me->subtype[4] = machine_entry_subtype_new("IP27", 27, 3);
-	me->subtype[4]->aliases[0] = "ip27";
-	me->subtype[4]->aliases[1] = "origin 200";
-	me->subtype[4]->aliases[2] = "origin 2000";
-	me->subtype[5] = machine_entry_subtype_new("IP28", 28, 1);
-	me->subtype[5]->aliases[0] = "ip28";
-	me->subtype[6] = machine_entry_subtype_new("IP30", 30, 2);
-	me->subtype[6]->aliases[0] = "ip30";
-	me->subtype[6]->aliases[1] = "octane";
-	me->subtype[7] = machine_entry_subtype_new("IP32", 32, 2);
-	me->subtype[7]->aliases[0] = "ip32";
-	me->subtype[7]->aliases[1] = "o2";
-	me->subtype[8] = machine_entry_subtype_new("IP35", 35, 1);
-	me->subtype[8]->aliases[0] = "ip35";
+	me->subtype[0] = machine_entry_subtype_new("IP12", 12, 1);
+	me->subtype[0]->aliases[0] = "ip12";
+	me->subtype[1] = machine_entry_subtype_new("IP19", 19, 1);
+	me->subtype[1]->aliases[0] = "ip19";
+	me->subtype[2] = machine_entry_subtype_new("IP20", 20, 1);
+	me->subtype[2]->aliases[0] = "ip20";
+	me->subtype[3] = machine_entry_subtype_new("IP22", 22, 2);
+	me->subtype[3]->aliases[0] = "ip22";
+	me->subtype[3]->aliases[1] = "indy";
+	me->subtype[4] = machine_entry_subtype_new("IP24", 24, 1);
+	me->subtype[4]->aliases[0] = "ip24";
+	me->subtype[5] = machine_entry_subtype_new("IP27", 27, 3);
+	me->subtype[5]->aliases[0] = "ip27";
+	me->subtype[5]->aliases[1] = "origin 200";
+	me->subtype[5]->aliases[2] = "origin 2000";
+	me->subtype[6] = machine_entry_subtype_new("IP28", 28, 1);
+	me->subtype[6]->aliases[0] = "ip28";
+	me->subtype[7] = machine_entry_subtype_new("IP30", 30, 2);
+	me->subtype[7]->aliases[0] = "ip30";
+	me->subtype[7]->aliases[1] = "octane";
+	me->subtype[8] = machine_entry_subtype_new("IP32", 32, 2);
+	me->subtype[8]->aliases[0] = "ip32";
+	me->subtype[8]->aliases[1] = "o2";
+	me->subtype[9] = machine_entry_subtype_new("IP35", 35, 1);
+	me->subtype[9]->aliases[0] = "ip35";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

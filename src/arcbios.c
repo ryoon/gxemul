@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.105 2005-06-26 11:36:27 debug Exp $
+ *  $Id: arcbios.c,v 1.106 2005-07-28 19:32:43 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -2639,7 +2639,8 @@ void arcbios_init(struct machine *machine, int is64bit,
 	/*
 	 *  Defalt TLB entry for 64-bit SGI machines:
 	 */
-	if (machine->machine_type == MACHINE_SGI) {
+	if (machine->machine_type == MACHINE_SGI &&
+	    machine->machine_subtype != 12 /* TODO: ugly */ ) {
 		/*  TODO: On which models is this required?  */
 		mips_coproc_tlb_set_entry(cpu, 0, 1048576*16,
 		    0xc000000000000000ULL, 0, 1048576*16, 1,1,1,1,1, 0, 2, 2);

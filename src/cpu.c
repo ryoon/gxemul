@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.300 2005-07-13 11:13:44 debug Exp $
+ *  $Id: cpu.c,v 1.301 2005-07-28 13:29:36 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -77,7 +77,10 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 		exit(1);
 	}
 
-	memset(cpu, 0, sizeof(struct cpu));
+	/*
+	 *  Note: It is up to each cpu arch's new() to clear cpu->cd!
+	 */
+	memset(cpu, 0, (size_t)&cpu->cd.mips - (size_t)cpu);
 	cpu->memory_rw          = NULL;
 	cpu->name               = cpu_type_name;
 	cpu->mem                = mem;

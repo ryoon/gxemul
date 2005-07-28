@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.163 2005-06-26 22:23:42 debug Exp $
+ *  $Id: cpu_x86.c,v 1.164 2005-07-28 13:29:36 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -106,6 +106,8 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	if (models[i].name == NULL)
 		return 0;
+
+	memset(&cpu->cd.x86, 0, sizeof(struct x86_cpu));
 
 	cpu->memory_rw  = x86_memory_rw;
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;

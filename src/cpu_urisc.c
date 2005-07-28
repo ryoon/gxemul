@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.8 2005-06-26 22:23:42 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.9 2005-07-28 13:29:36 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -101,6 +101,8 @@ int urisc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->memory_rw  = urisc_memory_rw;
 	cpu->byte_order = EMUL_BIG_ENDIAN;
+
+	memset(&cpu->cd.urisc, 0, sizeof(struct urisc_cpu));
 
 	cpu->cd.urisc.wordlen = 32;
 	cpu->cd.urisc.acc_in_mem = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.40 2005-07-28 13:15:24 debug Exp $
+ *  $Id: cpu_arm.c,v 1.41 2005-07-28 13:29:36 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -98,7 +98,7 @@ extern int quiet_mode;
 /*
  *  arm_cpu_new():
  *
- *  Create a new ARM cpu object by filling in the CPU struct.
+ *  Create a new ARM cpu object by filling the CPU struct.
  *  Return 1 on success, 0 if cpu_type_name isn't a valid ARM processor.
  */
 int arm_cpu_new(struct cpu *cpu, struct memory *mem,
@@ -112,6 +112,9 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->invalidate_translation_caches_paddr =
 	    arm_invalidate_translation_caches_paddr;
 	cpu->is_32bit = 1;
+
+	memset(&cpu->cd.arm, 0, sizeof(struct arm_cpu));
+
 	cpu->cd.arm.flags = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
 
 	/*  Only show name and caches etc for CPU nr 0:  */
@@ -122,16 +125,6 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		    (int)(ARM_N_VPH_ENTRIES * (sizeof(unsigned char *) * 2
 		    + sizeof(uint32_t))) / 1048576);
 	}
-
-#if 0
-	/*  Create zeroed host_load, host_store, and phys_addr arrays:  */
-	cpu->cd.arm.host_load = zeroed_alloc(ARM_N_VPH_ENTRIES *
-	    sizeof(unsigned char *));
-	cpu->cd.arm.host_store = zeroed_alloc(ARM_N_VPH_ENTRIES *
-	    sizeof(unsigned char *));
-	cpu->cd.arm.phys_addr = zeroed_alloc(ARM_N_VPH_ENTRIES *
-	    sizeof(uint32_t));
-#endif
 
 	return 1;
 }

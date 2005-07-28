@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.55 2005-07-25 06:16:10 debug Exp $
+ *  $Id: useremul.c,v 1.56 2005-07-28 13:29:36 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -482,25 +482,29 @@ int useremul_sync(struct cpu *cpu)
 int64_t useremul_readlink(struct cpu *cpu, int64_t *errnop,
 	uint64_t arg0, uint64_t arg1, int64_t arg2)
 {
-	int64_t res;
+	int64_t res = 0;
 	unsigned char *charbuf = get_userland_string(cpu, arg0);
+	unsigned char *buf2;
+
 	debug("[ readlink(\"%s\",0x%lli,%lli) ]\n",
 	    charbuf, (long long)arg1, (long long)arg2);
-	if (arg2 != 0 && arg2 < 50000) {
-		unsigned char *buf2 = malloc(arg2);
-		if (buf2 == NULL) {
-			fprintf(stderr, "[ useremul_readlink(): out of"
-			    " memory ]\n");
-			exit(1);
-		}
-		res = readlink((char *)charbuf, (char *)buf2, arg2);
-		buf2[arg2-1] = '\0';
-		if (res < 0)
-			*errnop = errno;
-		else
-			store_string(cpu, arg1, (char *)buf2);
-		free(buf2);
+	if (arg2 == 0 || arg2 > 150000) {
+		fprintf(stderr, "[ useremul_readlink(): TODO ]\n");
+		exit(1);
 	}
+
+	buf2 = malloc(arg2);
+	if (buf2 == NULL) {
+		fprintf(stderr, "[ useremul_readlink(): out of memory ]\n");
+		exit(1);
+	}
+	res = readlink((char *)charbuf, (char *)buf2, arg2);
+	buf2[arg2-1] = '\0';
+	if (res < 0)
+		*errnop = errno;
+	else
+		store_string(cpu, arg1, (char *)buf2);
+	free(buf2);
 	free(charbuf);
 	return res;
 }
@@ -588,7 +592,6 @@ res = 0x18000000ULL;
  */
 static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 {
-	unsigned char *cp;
 	int nr;
 	int64_t res = 0, err = 0;
 	uint64_t arg0, arg1, arg2, arg3, arg4, arg5;
@@ -667,7 +670,6 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 static void useremul__linux(struct cpu *cpu, uint32_t code)
 {
 	int nr;
-	unsigned char *cp;
 	int64_t res = 0, err = 0;
 	uint64_t arg0, arg1, arg2, arg3;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.28 2005-07-24 12:04:52 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.29 2005-07-28 13:29:36 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -86,7 +86,7 @@ extern int quiet_mode;
 /*
  *  alpha_cpu_new():
  *
- *  Create a new Alpha CPU object by filling in the CPU struct.
+ *  Create a new Alpha CPU object by filling the CPU struct.
  *  Return 1 on success, 0 if cpu_type_name isn't a valid Alpha processor.
  */
 int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
@@ -96,6 +96,8 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	if (strcasecmp(cpu_type_name, "Alpha") != 0)
 		return 0;
+
+	memset(&cpu->cd.alpha, 0, sizeof(struct alpha_cpu));
 
 	cpu->memory_rw = alpha_memory_rw;
 	cpu->update_translation_table = alpha_update_translation_table;

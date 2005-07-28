@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.28 2005-07-25 06:16:10 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.29 2005-07-28 13:29:36 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -860,6 +860,8 @@ X(to_be_translated)
 	case 0x3d:						/*  BNE  */
 	case 0x3e:						/*  BGE  */
 	case 0x3f:						/*  BGT  */
+		/*  To avoid a GCC warning:  */
+		samepage_function = instr(nop);
 		switch (opcode) {
 		case 0x30:
 		case 0x34:

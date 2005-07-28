@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.39 2005-07-22 12:28:03 debug Exp $
+ *  $Id: cpu_arm.c,v 1.40 2005-07-28 13:15:24 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -104,8 +104,6 @@ extern int quiet_mode;
 int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
-	int i;
-
 	if (strcmp(cpu_type_name, "ARM") != 0)
 		return 0;
 
@@ -119,21 +117,21 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
-		debug(" (host: %i MB code cache, %.2f MB addr"
+		debug(" (host: %i MB code cache, %i MB addr"
 		    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
-		    (float)(sizeof(struct arm_vph_page) *
-		    ARM_MAX_VPH_TLB_ENTRIES / 1048576.0));
+		    (int)(ARM_N_VPH_ENTRIES * (sizeof(unsigned char *) * 2
+		    + sizeof(uint32_t))) / 1048576);
 	}
 
-	/*  Create the default virtual->physical->host translation:  */
-	cpu->cd.arm.vph_default_page = malloc(sizeof(struct arm_vph_page));
-	if (cpu->cd.arm.vph_default_page == NULL) {
-		fprintf(stderr, "out of memory in arm_cpu_new()\n");
-		exit(1);
-	}
-	memset(cpu->cd.arm.vph_default_page, 0, sizeof(struct arm_vph_page));
-	for (i=0; i<ARM_N_VPH_ENTRIES; i++)
-		cpu->cd.arm.vph_table0[i] = cpu->cd.arm.vph_default_page;
+#if 0
+	/*  Create zeroed host_load, host_store, and phys_addr arrays:  */
+	cpu->cd.arm.host_load = zeroed_alloc(ARM_N_VPH_ENTRIES *
+	    sizeof(unsigned char *));
+	cpu->cd.arm.host_store = zeroed_alloc(ARM_N_VPH_ENTRIES *
+	    sizeof(unsigned char *));
+	cpu->cd.arm.phys_addr = zeroed_alloc(ARM_N_VPH_ENTRIES *
+	    sizeof(uint32_t));
+#endif
 
 	return 1;
 }
@@ -144,10 +142,10 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
  */
 void arm_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug(" (host: %i MB code cache, %.2f MB addr"
+	debug(" (host: %i MB code cache, %i MB addr"
 	    " cache)", (int)(ARM_TRANSLATION_CACHE_SIZE/1048576),
-	    (float)(sizeof(struct arm_vph_page) * ARM_MAX_VPH_TLB_ENTRIES
-	    / 1048576.0));
+	    (int)(ARM_N_VPH_ENTRIES * (sizeof(unsigned char *) * 2
+	    + sizeof(uint32_t))) / 1048576);
 	debug("\n");
 }
 
@@ -535,30 +533,10 @@ static void arm_tc_allocate_default_page(struct cpu *cpu, uint32_t physaddr)
  */
 void arm_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
 {
-	struct arm_vph_page *vph_p;
-	uint32_t a, b;
-
-	a = vaddr_page >> 22; b = (vaddr_page >> 12) & 1023;
-	vph_p = cpu->cd.arm.vph_table0[a];
-
-	if (vph_p == cpu->cd.arm.vph_default_page) {
-		fatal("arm_invalidate_tlb_entry(): huh? Problem 1.\n");
-		exit(1);
-	}
-
-	vph_p->host_load[b] = NULL;
-	vph_p->host_store[b] = NULL;
-	vph_p->phys_addr[b] = 0;
-	vph_p->refcount --;
-	if (vph_p->refcount < 0) {
-		fatal("arm_invalidate_tlb_entry(): huh? Problem 2.\n");
-		exit(1);
-	}
-	if (vph_p->refcount == 0) {
-		vph_p->next = cpu->cd.arm.vph_next_free_page;
-		cpu->cd.arm.vph_next_free_page = vph_p;
-		cpu->cd.arm.vph_table0[a] = cpu->cd.arm.vph_default_page;
-	}
+	uint32_t index = vaddr_page >> 12;
+	cpu->cd.arm.host_load[index] = NULL;
+	cpu->cd.arm.host_store[index] = NULL;
+	cpu->cd.arm.phys_addr[index] = 0;
 }
 
 
@@ -591,8 +569,7 @@ void arm_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
-	uint32_t a, b;
-	struct arm_vph_page *vph_p;
+	uint32_t index;
 	int found, r, lowest_index;
 	int64_t lowest, highest = -1;
 
@@ -622,19 +599,8 @@ void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		r = lowest_index;
 		if (cpu->cd.arm.vph_tlb_entry[r].valid) {
 			/*  This one has to be invalidated first:  */
-			uint32_t addr = cpu->cd.arm.vph_tlb_entry[r].vaddr_page;
-			a = addr >> 22; b = (addr >> 12) & 1023;
-			vph_p = cpu->cd.arm.vph_table0[a];
-			vph_p->host_load[b] = NULL;
-			vph_p->host_store[b] = NULL;
-			vph_p->phys_addr[b] = 0;
-			vph_p->refcount --;
-			if (vph_p->refcount == 0) {
-				vph_p->next = cpu->cd.arm.vph_next_free_page;
-				cpu->cd.arm.vph_next_free_page = vph_p;
-				cpu->cd.arm.vph_table0[a] =
-				    cpu->cd.arm.vph_default_page;
-			}
+			arm_invalidate_tlb_entry(cpu,
+			    cpu->cd.arm.vph_tlb_entry[r].vaddr_page);
 		}
 
 		cpu->cd.arm.vph_tlb_entry[r].valid = 1;
@@ -645,24 +611,10 @@ void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		cpu->cd.arm.vph_tlb_entry[r].timestamp = highest + 1;
 
 		/*  Add the new translation to the table:  */
-		a = (vaddr_page >> 22) & 1023;
-		b = (vaddr_page >> 12) & 1023;
-		vph_p = cpu->cd.arm.vph_table0[a];
-		if (vph_p == cpu->cd.arm.vph_default_page) {
-			if (cpu->cd.arm.vph_next_free_page != NULL) {
-				vph_p = cpu->cd.arm.vph_table0[a] =
-				    cpu->cd.arm.vph_next_free_page;
-				cpu->cd.arm.vph_next_free_page = vph_p->next;
-			} else {
-				vph_p = cpu->cd.arm.vph_table0[a] =
-				    malloc(sizeof(struct arm_vph_page));
-				memset(vph_p, 0, sizeof(struct arm_vph_page));
-			}
-		}
-		vph_p->refcount ++;
-		vph_p->host_load[b] = host_page;
-		vph_p->host_store[b] = writeflag? host_page : NULL;
-		vph_p->phys_addr[b] = paddr_page;
+		index = vaddr_page >> 12;
+		cpu->cd.arm.host_load[index] = host_page;
+		cpu->cd.arm.host_store[index] = writeflag? host_page : NULL;
+		cpu->cd.arm.phys_addr[index] = paddr_page;
 	} else {
 		/*
 		 *  The translation was already in the TLB.
@@ -670,20 +622,19 @@ void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		 *	Writeflag = 1:  Make sure the page is writable.
 		 *	Writeflag = -1: Downgrade to readonly.
 		 */
-		a = (vaddr_page >> 22) & 1023;
-		b = (vaddr_page >> 12) & 1023;
-		vph_p = cpu->cd.arm.vph_table0[a];
+		index = vaddr_page >> 12;
 		cpu->cd.arm.vph_tlb_entry[found].timestamp = highest + 1;
-		if (vph_p->phys_addr[b] == paddr_page) {
+		if (cpu->cd.arm.phys_addr[index] == paddr_page) {
 			if (writeflag == 1)
-				vph_p->host_store[b] = host_page;
+				cpu->cd.arm.host_store[index] = host_page;
 			if (writeflag == -1)
-				vph_p->host_store[b] = NULL;
+				cpu->cd.arm.host_store[index] = NULL;
 		} else {
 			/*  Change the entire physical/host mapping:  */
-			vph_p->host_load[b] = host_page;
-			vph_p->host_store[b] = writeflag? host_page : NULL;
-			vph_p->phys_addr[b] = paddr_page;
+			cpu->cd.arm.host_load[index] = host_page;
+			cpu->cd.arm.host_store[index] =
+			    writeflag? host_page : NULL;
+			cpu->cd.arm.phys_addr[index] = paddr_page;
 		}
 	}
 }

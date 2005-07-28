@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.20 2005-07-19 12:37:24 debug Exp $
+ *  $Id: cpu_arm.h,v 1.21 2005-07-28 13:15:25 debug Exp $
  */
 
 #include "misc.h"
@@ -102,17 +102,9 @@ struct arm_tc_physpage {
 #define	ARM_MODE_UND32	      0x1b
 
 
-/*  Virtual->physical->host page entry:  */
-#define	ARM_N_VPH_ENTRIES		1024
-struct arm_vph_page {
-	void		*host_load[ARM_N_VPH_ENTRIES];
-	void		*host_store[ARM_N_VPH_ENTRIES];
-	uint32_t	phys_addr[ARM_N_VPH_ENTRIES];
-	int		refcount;
-	struct arm_vph_page *next;	/*  Freelist, used if refcount = 0.  */
-};
+#define	ARM_N_VPH_ENTRIES	1048576
 
-#define	ARM_MAX_VPH_TLB_ENTRIES		64
+#define	ARM_MAX_VPH_TLB_ENTRIES		256
 struct arm_vpg_tlb_entry {
 	int		valid;
 	int		writeflag;
@@ -160,12 +152,16 @@ struct arm_cpu {
 
 	/*
 	 *  Virtual -> physical -> host address translation:
+	 *
+	 *  host_load and host_store point to arrays of ARM_N_VPH_ENTRIES
+	 *  pointers (to host pages); phys_addr points to an array of
+	 *  ARM_N_VPH_ENTRIES uint32_t.
 	 */
 
 	struct arm_vpg_tlb_entry	vph_tlb_entry[ARM_MAX_VPH_TLB_ENTRIES];
-	struct arm_vph_page		*vph_default_page;
-	struct arm_vph_page		*vph_next_free_page;
-	struct arm_vph_page		*vph_table0[ARM_N_VPH_ENTRIES];
+	unsigned char			*host_load[ARM_N_VPH_ENTRIES];
+	unsigned char			*host_store[ARM_N_VPH_ENTRIES];
+	uint32_t			phys_addr[ARM_N_VPH_ENTRIES];
 };
 
 

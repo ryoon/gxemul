@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.40 2005-07-25 06:16:10 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.41 2005-07-28 13:15:24 debug Exp $
  *
  *  ARM instructions.
  *
@@ -719,7 +719,6 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 X(to_be_translated)
 {
 	uint32_t addr, low_pc, iword, imm;
-	struct arm_vph_page *vph_p;
 	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, r16, r12, r8;
@@ -735,8 +734,7 @@ X(to_be_translated)
 	addr &= ~0x3;
 
 	/*  Read the instruction word from memory:  */
-	vph_p = cpu->cd.arm.vph_table0[addr >> 22];
-	page = vph_p->host_load[(addr >> 12) & 1023];
+	page = cpu->cd.arm.host_load[addr >> 12];
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

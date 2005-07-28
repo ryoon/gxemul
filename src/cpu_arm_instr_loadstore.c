@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.4 2005-07-19 12:37:24 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.5 2005-07-28 13:15:24 debug Exp $
  *
  *
- *  TODO: Native load/store if the endianness is the same as the host's.
+ *  TODO: Native load/store if the endianness is the same as the host's
+ *	  (and check for alignment?)
  */
 
 #ifdef A__REG
@@ -127,16 +128,17 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 	    ;
-	struct arm_vph_page *vph_p = cpu->cd.arm.vph_table0[addr >> 22];
-	unsigned char *page = vph_p->
+	unsigned char *page = cpu->cd.arm.
 #ifdef A__L
 	    host_load
 #else
 	    host_store
 #endif
-	    [(addr >> 12) & 1023];
+	    [addr >> 12];
 
-	if (page != NULL) {
+	if (page == NULL) {
+	        A__NAME__general(cpu, ic);
+	} else  {
 #ifdef A__P
 #ifdef A__W
 		*((uint32_t *)ic->arg[0]) = addr;
@@ -176,8 +178,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		page[addr+3] = (*((uint32_t *)ic->arg[2])) >> 24;
 #endif
 #endif
-	} else
-	        A__NAME__general(cpu, ic);
+	}
 }
 #endif
 

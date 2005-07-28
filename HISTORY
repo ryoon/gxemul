@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.852 2005-07-27 06:57:31 debug Exp $
+$Id: HISTORY,v 1.853 2005-07-28 13:15:23 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2095,3 +2095,5 @@ Changelog for GXemul:
 		jmp, to play nice with the Alpha's branch prediction) for the
 		old MIPS bintrans backend.
 20050727	Various minor fixes and cleanups.
+20050728	Switching from a 2-level virtual to host/physical translation
+		system for ARM emulation, to a 1-level translation.

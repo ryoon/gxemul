@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.482 2005-07-28 19:32:43 debug Exp $
+ *  $Id: machine.c,v 1.483 2005-07-28 21:29:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2438,7 +2438,7 @@ void machine_setup(struct machine *machine)
 			break;
 		case MACHINE_HPCMIPS_IBM_WORKPAD_Z50:
 			/*  131 MHz VR4121  */
-			machine->machine_name = "Agenda VR3";
+			machine->machine_name = "IBM Workpad Z50";
 			/*  TODO:  */
 			hpcmips_fb_addr = 0xa000000;
 			hpcmips_fb_xsize = 640;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.486 2005-07-30 20:50:34 debug Exp $
+ *  $Id: machine.c,v 1.487 2005-07-30 21:03:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3733,7 +3733,14 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		switch (machine->machine_subtype) {
 		case MACHINE_EVBMIPS_MALTA:
-			machine->machine_name = "MALTA (evbmips)";
+		case MACHINE_EVBMIPS_MALTA_BE:
+			machine->machine_name = "MALTA (evbmips, little endian)";
+			cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
+			if (machine->machine_subtype == MACHINE_EVBMIPS_MALTA_BE) {
+				machine->machine_name = "MALTA (evbmips, big endian)";
+				cpu->byte_order = EMUL_BIG_ENDIAN;
+			}
 
 			machine->md_int.malta_data =
 			    device_add(machine, "malta addr=0x18000020");
@@ -4531,6 +4538,7 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_EVBMIPS:
 		switch (m->machine_subtype) {
 		case MACHINE_EVBMIPS_MALTA:
+		case MACHINE_EVBMIPS_MALTA_BE:
 			m->cpu_name = strdup("5Kc");
 			break;
 		case MACHINE_EVBMIPS_PB1000:
@@ -5046,20 +5054,6 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
-	/*  Evaluation Boards (MALTA etc):  */
-	me = machine_entry_new("evbmips", ARCH_MIPS,
-	    MACHINE_EVBMIPS, 1, 2);
-	me->aliases[0] = "evbmips";
-	me->subtype[0] = machine_entry_subtype_new("Malta",
-	    MACHINE_EVBMIPS_MALTA, 1);
-	me->subtype[0]->aliases[0] = "malta";
-	me->subtype[1] = machine_entry_subtype_new("PB1000",
-	    MACHINE_EVBMIPS_PB1000, 1);
-	me->subtype[1]->aliases[0] = "pb1000";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
 	/*  Macintosh (PPC):  */
 	me = machine_entry_new("Macintosh (PPC)", ARCH_PPC,
 	    MACHINE_MACPPC, 1, 2);
@@ -5172,6 +5166,23 @@ void machine_init(void)
 	    MACHINE_BAREALPHA, 1, 0);
 	me->aliases[0] = "barealpha";
 	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Evaluation Boards (MALTA etc):  */
+	me = machine_entry_new("Evaluation boards (evbmips)", ARCH_MIPS,
+	    MACHINE_EVBMIPS, 1, 3);
+	me->aliases[0] = "evbmips";
+	me->subtype[0] = machine_entry_subtype_new("Malta",
+	    MACHINE_EVBMIPS_MALTA, 1);
+	me->subtype[0]->aliases[0] = "malta";
+	me->subtype[1] = machine_entry_subtype_new("Malta (Big-Endian)",
+	    MACHINE_EVBMIPS_MALTA_BE, 1);
+	me->subtype[1]->aliases[0] = "maltabe";
+	me->subtype[2] = machine_entry_subtype_new("PB1000",
+	    MACHINE_EVBMIPS_PB1000, 1);
+	me->subtype[2]->aliases[0] = "pb1000";
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

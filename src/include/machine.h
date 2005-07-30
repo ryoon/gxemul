@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.61 2005-07-27 06:57:34 debug Exp $
+ *  $Id: machine.h,v 1.62 2005-07-30 21:03:36 debug Exp $
  */
 
 #include <sys/types.h>
@@ -333,7 +333,8 @@ struct machine {
 
 /*  EVBMIPS:  */
 #define	MACHINE_EVBMIPS_MALTA		1
-#define	MACHINE_EVBMIPS_PB1000		2
+#define	MACHINE_EVBMIPS_MALTA_BE	2
+#define	MACHINE_EVBMIPS_PB1000		3
 
 /*  MacPPC:  TODO: Real model names  */
 #define	MACHINE_MACPPC_G4		1

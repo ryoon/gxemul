@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.485 2005-07-30 18:20:04 debug Exp $
+ *  $Id: machine.c,v 1.486 2005-07-30 20:50:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -347,6 +347,35 @@ void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr)
 {
 	store_string(cpu, *addr, s);
 	(*addr) += strlen(s) + 1;
+}
+
+
+/*
+ *  add_environment_string_dual():
+ *
+ *  Add "dual" environment strings, one for the variable name and one for the
+ *  value, and update pointers afterwards.
+ */
+void add_environment_string_dual(struct cpu *cpu,
+	uint64_t *ptrp, uint64_t *addrp, char *s1, char *s2)
+{
+	uint64_t ptr = *ptrp, addr = *addrp;
+
+	store_32bit_word(cpu, ptr, addr);
+	ptr += sizeof(uint32_t);
+	if (addr != 0) {
+		store_string(cpu, addr, s1);
+		addr += strlen(s1) + 1;
+	}
+	store_32bit_word(cpu, ptr, addr);
+	ptr += sizeof(uint32_t);
+	if (addr != 0) {
+		store_string(cpu, addr, s2);
+		addr += strlen(s2) + 1;
+	}
+
+	*ptrp = ptr;
+	*addrp = addr;
 }
 
 
@@ -3762,18 +3791,24 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			store_string(cpu, (int32_t)0x9fc01200, bootarg);
 
 			/*  a2 = (yamon_env_var *)envp  */
-			/*  TODO  */
 			cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
-			store_32bit_word(cpu, (int32_t)0x9fc01800, 0x9fc01c00);
-			store_32bit_word(cpu, (int32_t)0x9fc01804, 0x9fc01c10);
-			store_32bit_word(cpu, (int32_t)0x9fc01808, 0);
 			{
+				uint64_t env = cpu->cd.mips.gpr[MIPS_GPR_A2];
+				uint64_t tmpptr = (int32_t)0x9fc01c00;
 				char tmps[50];
-				snprintf(tmps, sizeof(tmps), "memsize");
-				store_string(cpu, (int32_t)0x9fc01c00, tmps);
-				snprintf(tmps, sizeof(tmps), "0x%x",
+
+				snprintf(tmps, sizeof(tmps), "0x%08x",
 				    machine->physical_ram_in_mb * 1048576);
-				store_string(cpu, (int32_t)0x9fc01c10, tmps);
+				add_environment_string_dual(cpu,
+				    &env, &tmpptr, "memsize", tmps);
+
+				add_environment_string_dual(cpu,
+				    &env, &tmpptr, "yamonrev", "02.06");
+
+				/*  End of env:  */
+				tmpptr = 0;
+				add_environment_string_dual(cpu,
+				    &env, &tmpptr, NULL, NULL);
 			}
 
 			/*  a3 = memsize  */
@@ -3782,14 +3817,14 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			/*  Hm. Linux ignores a3.  */
 
 			/*
-			 *  Yamon emulation etc.
-			 *
 			 *  TODO:
 			 *	Core ID numbers.
 			 *	How much of this is not valid for PBxxxx?
+			 *
+			 *  See maltareg.h for more info.
 			 */
-			/*  See maltareg.h for more info.  */
 			store_32bit_word(cpu, (int32_t)(0x80000000 + MALTA_REVISION), (1 << 10) + 0x26);
+
 			/*  Call vectors at 0x9fc005xx:  */
 			for (i=0; i<0x100; i+=4)
 				store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,

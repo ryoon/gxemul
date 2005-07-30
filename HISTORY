@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.855 2005-07-30 19:41:26 debug Exp $
+$Id: HISTORY,v 1.856 2005-07-30 20:50:33 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2102,6 +2102,6 @@ Changelog for GXemul:
 		problem: caches and/or how they work with device mappings.
 20050730	Doing the 2-level to 1-level conversion for the i386 backend.
 		The cache/device bug is still there for R2K/3K :(
-		Various other minor updates.
+		Various other minor updates (Malta etc).
 		The mc146818 clock now updates the UIP bit in a way which works
 		better with Linux for at least sgimips and Malta emulation.

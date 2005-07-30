@@ -1,32 +1,27 @@
-$Id: TODO,v 1.146 2005-07-30 21:08:44 debug Exp $
+$Id: TODO,v 1.147 2005-07-30 22:54:21 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
 
 
-MIPS:
+MIPS bintrans:
 	FIX THE CACHE/DEVICE BUG FOR 32-BIT EMULATION! This was caused by
 	switching from a 2-level to a 1-level page table system for
 	bintranslated code...
 
 dyntrans:
-	x) GENERALIZE!!! alpha + arm common code
 	x) memory write protection for ARM/Alpha
 	x) function call trace support
 	x) opcode statistics support
 	x) breakpoint support
-
-Alpha:
-	hahaha, zapnot and inserts/extracts don't compile into very nice
-	code :-|
-
-PPC, x86:
-	Rip out everything and convert into the new dyntrans system.
-	This would require changes to the dyntrans system to allow for
-	both multiple "word-length modes".
+	x) Alpha: hahaha, zapnot and inserts/extracts don't
+	   compile into very nice code :-|  fix this
+	x) PPC, x86: rip out everything and convert into the new dyntrans
+	   system. This would require changes to the dyntrans system to
+	   allow for both multiple "word-length modes".
 
 
-Other:
+Other things:
 
 	Caches / memory hierarchies: (this is mostly MIPS-specific)
 		o)  MIPS coproc.c: bits in config registers should reflect

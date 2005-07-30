@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.484 2005-07-30 18:11:20 debug Exp $
+ *  $Id: machine.c,v 1.485 2005-07-30 18:20:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3754,6 +3754,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
 			store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
 			store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
+			store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
 
 			bootstr = strdup(machine->boot_kernel_filename);
 			bootarg = strdup(machine->boot_string_argument);

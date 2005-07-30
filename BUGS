@@ -1,10 +1,14 @@
-$Id: BUGS,v 1.33 2005-06-04 12:35:14 debug Exp $
-
+$Id: BUGS,v 1.34 2005-07-30 18:20:03 debug Exp $
 
 Serious bugs:
 
   x)  An unknown math coprocessor bug. (Ultrix' dxclock sometimes looks
       weird.)
+
+  x)  The current (1-level) page table system for the MIPS bintrans
+      backend doesn't work very well with caches/devices when emulating
+      R2K/3K. (Easily shown by running something with a framebuffer,
+      for example.)
 
   x)  Enabling cache emulation (./configure --enable-caches) triggers bugs.
 

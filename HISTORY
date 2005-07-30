@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.857 2005-07-30 22:40:11 debug Exp $
+$Id: HISTORY,v 1.858 2005-07-30 23:57:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2107,3 +2107,4 @@ Changelog for GXemul:
 		better with Linux for at least sgimips and Malta emulation.
 		Beginning the work on refactoring the dyntrans system.
 20050731	Continuing the refactoring.
+		Fixing a serious host alignment bug in memory_rw.

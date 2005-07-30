@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.50 2005-07-22 12:28:03 debug Exp $
+ *  $Id: memory_rw.c,v 1.51 2005-07-30 23:57:51 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -603,7 +603,8 @@ have_paddr:
 
 	if (writeflag == MEM_WRITE) {
 		/*  Ugly optimization, but it works:  */
-		if (len == sizeof(uint32_t) && (offset & 3)==0)
+		if (len == sizeof(uint32_t) && (offset & 3)==0
+		    && ((size_t)data&3)==0)
 			*(uint32_t *)(memblock + offset) = *(uint32_t *)data;
 		else if (len == sizeof(uint8_t))
 			*(uint8_t *)(memblock + offset) = *(uint8_t *)data;
@@ -611,7 +612,8 @@ have_paddr:
 			memcpy(memblock + offset, data, len);
 	} else {
 		/*  Ugly optimization, but it works:  */
-		if (len == sizeof(uint32_t) && (offset & 3)==0)
+		if (len == sizeof(uint32_t) && (offset & 3)==0
+		    && ((size_t)data&3)==0)
 			*(uint32_t *)data = *(uint32_t *)(memblock + offset);
 		else if (len == sizeof(uint8_t))
 			*(uint8_t *)data = *(uint8_t *)(memblock + offset);

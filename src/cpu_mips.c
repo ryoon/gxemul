@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.52 2005-07-28 13:29:36 debug Exp $
+ *  $Id: cpu_mips.c,v 1.53 2005-07-30 18:11:20 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -337,6 +337,14 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		else
 			cpu->translate_address = translate_address_generic;
 	}
+
+/*  Testing:  */
+	cpu->cd.mips.host_load = zeroed_alloc(1048576 *
+	    sizeof(unsigned char *));
+	cpu->cd.mips.host_store = zeroed_alloc(1048576 *
+	    sizeof(unsigned char *));
+	cpu->cd.mips.host_load_orig = cpu->cd.mips.host_load;
+	cpu->cd.mips.host_store_orig = cpu->cd.mips.host_store;
 
 	return 1;
 }
@@ -2151,14 +2159,11 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	}
 #endif
 
-
-
 #ifdef BINTRANS
 	if ((single_step || instruction_trace_cached)
 	    && cpu->machine->bintrans_enable)
 		cpu->cd.mips.dont_run_next_bintrans = 1;
 #endif
-
 
 	if (!quiet_mode_cached) {
 		/*  Dump CPU registers for debugging:  */

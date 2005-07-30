@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.123 2005-07-26 16:55:59 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.124 2005-07-30 18:11:19 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -60,7 +60,7 @@
  *	t7		a0 (mips register 4)  (64-bit)
  *	t8		a1 (mips register 5)  (64-bit)
  *	t9		s0 (mips register 16)  (64-bit)
- *	t10		table0 cached (for load/store)
+ *	t10		load table base cached
  *	t11		v0 (mips register 2)  (64-bit)
  *	s0		delay_slot (32-bit int)
  *	s1		delay_jmpaddr (64-bit)
@@ -68,7 +68,7 @@
  *	s3		ra (mips register 31)  (64-bit)
  *	s4		t0 (mips register 8)  (64-bit)
  *	s5		t1 (mips register 9)  (64-bit)
- *	s6		t2 (mips register 10)  (64-bit)
+ *	s6		store table base cached
  */
 
 #define	MIPSREG_PC			-3
@@ -105,7 +105,7 @@
 static int map_MIPS_to_Alpha[32] = {
 	ALPHA_ZERO, -1, ALPHA_T11, -1,		/*  0 .. 3  */
 	ALPHA_T7, ALPHA_T8, -1, -1,		/*  4 .. 7  */
-	ALPHA_S4, ALPHA_S5, ALPHA_S6, -1,	/*  8 .. 11  */
+	ALPHA_S4, ALPHA_S5, -1, -1,		/*  8 .. 11  */
 	-1, -1, -1, -1,				/*  12 .. 15  */
 	ALPHA_T9, -1, -1, -1,			/*  16 .. 19  */
 	-1, -1, -1, -1,				/*  20 .. 23  */
@@ -150,31 +150,6 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 }
 
 
-/*
- *  lda sp,-128(sp)	some margin
- *  stq ra,0(sp)
- *  stq s0,8(sp)
- *  stq s1,16(sp)
- *  stq s2,24(sp)
- *  stq s3,32(sp)
- *  stq s4,40(sp)
- *  stq s5,48(sp)
- *  stq s6,56(sp)
- *
- *  jsr ra,(a1),<back>
- *  back:
- *
- *  ldq ra,0(sp)
- *  ldq s0,8(sp)
- *  ldq s1,16(sp)
- *  ldq s2,24(sp)
- *  ldq s3,32(sp)
- *  ldq s4,40(sp)
- *  ldq s5,48(sp)
- *  ldq s6,56(sp)
- *  lda sp,128(sp)
- *  ret
- */
 /*  note: offsetof (in stdarg.h) could possibly be used, but I'm not sure
     if it will take care of the compiler problems...  */
 #define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
@@ -195,67 +170,25 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_c0	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
 #define ofs_cb (((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu)
 
+#define ofs_h_l (((size_t)&dummy_cpu.cd.mips.host_load) - ((size_t)&dummy_cpu))
+#define ofs_h_s (((size_t)&dummy_cpu.cd.mips.host_store) - ((size_t)&dummy_cpu))
+
 
 static uint32_t bintrans_alpha_load_32bit[18] = {
-	/*
-	 *  t1 = 1023;
-	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
-	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
-	 *  t1 = a1 & 4095;
-	 *
-	 *  f8 1f 5f 20     lda     t1,1023 * 8
-	 *  83 76 22 4a     srl     a1,19,t2
-	 *  84 36 21 4a     srl     a1, 9,t3
-	 *  03 00 62 44     and     t2,t1,t2
-	 */
-	0x205f1ff8,
-	0x4a227683,
-	0x4a213684,
-	0x44620003,
-
-	/*
-	 *  t10 is vaddr_to_hostaddr_table0
-	 *
-	 *  a3 = tbl0[t2]  (load entry from tbl0)
-	 *  12 04 03 43     addq    t10,t2,a2
-	 */
-	0x43030412,
-
-	/*  04 00 82 44     and     t3,t1,t3  */
-	0x44820004,
-
-	/*  00 00 72 a6     ldq     a3,0(a2)  */
-	0xa6720000,
-
-	/*  24 37 80 48     sll     t3,0x1,t3  */
-	0x48803724,
-
-	/*  ff 0f 5f 20     lda     t1,4095  */
-	0x205f0fff,
-
-	/*
-	 *  a3 = tbl1[t3]  (load entry from tbl1 (which is a3))
-	 *  13 04 64 42     addq    a3,t3,a3
-	 */
-	0x42640413,
-
-	/*  02 00 22 46     and     a1,t1,t1  */
-	0x46220002,
-
-	/*  00 00 73 a6     ldq     a3,0(a3)  */
-	0xa6730000,
+	0x4a21f622,	/*  zapnot  a1,0xf,t1				*/
+	0x209f0fff,	/*  lda     t3,4095				*/
+	0x48419682,	/*  srl     t1,0xc,t1	t1 = addr >> 12		*/
+	0x46240004,	/*  and     a1,t3,t3	t3 = addr & 4095	*/
+	0x40580642,	/*  s8addq  t1,t10,t1	&host_load[t1]		*/
+	0xa6620000,	/*  ldq     a3,0(t1)	a3 = host_load[t1]	*/
 
 	/*  NULL? Then return failure at once.  */
-	/*  beq a3, return  */
-	0xe6600002,
+	0xe6600002,	/*  beq a3, return  */
 
 	/*  The rest of the load/store code was written with t3 as the address.  */
-
 	/*  Add the offset within the page:  */
-	/*  04 04 62 42     addq    a3,t1,t3  */
-	0x42620404,
-
-	0x6be58000,		/*  ret (t4)  */
+	0x42640404,	/*  addq a3,t3,t3  */
+	0x6be58000,	/*  ret (t4)  */
 
 	/*  return:  */
 	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
@@ -264,65 +197,20 @@ static uint32_t bintrans_alpha_load_32bit[18] = {
 };
 
 static uint32_t bintrans_alpha_store_32bit[18] = {
-	/*
-	 *  t1 = 1023;
-	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
-	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
-	 *  t1 = a1 & 4095;
-	 *
-	 *  f8 1f 5f 20     lda     t1,1023 * 8
-	 *  83 76 22 4a     srl     a1,19,t2
-	 *  84 36 21 4a     srl     a1, 9,t3
-	 *  03 00 62 44     and     t2,t1,t2
-	 */
-	0x205f1ff8,
-	0x4a227683,
-	0x4a213684,
-	0x44620003,
-
-	/*
-	 *  t10 is vaddr_to_hostaddr_table0
-	 *
-	 *  a3 = tbl0[t2]  (load entry from tbl0)
-	 *  12 04 03 43     addq    t10,t2,a2
-	 */
-	0x43030412,
-
-	/*  04 00 82 44     and     t3,t1,t3  */
-	0x44820004,
-
-	/*  00 00 72 a6     ldq     a3,0(a2)  */
-	0xa6720000,
-
-	/*  24 37 80 48     sll     t3,0x1,t3  */
-	0x48803724,
-
-	/*  ff 0f 5f 20     lda     t1,4095  */
-	0x205f0fff,
-
-	/*
-	 *  a3 = tbl1[t3]  (load entry from tbl1 (which is a3))
-	 *  13 04 64 42     addq    a3,t3,a3
-	 */
-	0x42640413,
-
-	/*  02 00 22 46     and     a1,t1,t1  */
-	0x46220002,
-
-	/*  00 00 73 a6     ldq     a3,8(a3)  */
-	0xa6730008,
+	0x4a21f622,	/*  zapnot  a1,0xf,t1				*/
+	0x209f0fff,	/*  lda     t3,4095				*/
+	0x48419682,	/*  srl     t1,0xc,t1	t1 = addr >> 12		*/
+	0x46240004,	/*  and     a1,t3,t3	t3 = addr & 4095	*/
+	0x404f0642,	/*  s8addq  t1,s6,t1	&host_store[t1]		*/
+	0xa6620000,	/*  ldq     a3,0(t1)	a3 = host_store[t1]	*/
 
 	/*  NULL? Then return failure at once.  */
 	/*  beq a3, return  */
 	0xe6600002,
 
 	/*  The rest of the load/store code was written with t3 as the address.  */
-
-	/*  Add the offset within the page:  */
-	/*  04 04 62 42     addq    a3,t1,t3  */
-	0x42620404,
-
-	0x6be58000,		/*  ret (t4)  */
+	0x42640404,	/*  addq a3,t3,t3  */
+	0x6be58000,	/*  ret (t4)  */
 
 	/*  return:  */
 	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
@@ -2678,8 +2566,8 @@ static void bintrans_backend_init(void)
 	*p++ = 0xa5900000 | ofs_ra;	/*  ldq     s3,"gpr[ra]"(a0)  */
 	*p++ = 0xa5b00000 | ofs_t0;	/*  ldq     s4,"gpr[t0]"(a0)  */
 	*p++ = 0xa5d00000 | ofs_t1;	/*  ldq     s5,"gpr[t1]"(a0)  */
-	*p++ = 0xa5f00000 | ofs_t2;	/*  ldq     s6,"gpr[t2]"(a0)  */
-	*p++ = 0xa7100000 | ofs_tbl0;	/*  ldq     t10,table0(a0)  */
+	*p++ = 0xa5f00000 | ofs_h_s;	/*  ldq     s6,host_store(a0)  */
+	*p++ = 0xa7100000 | ofs_h_l;	/*  ldq     t10,host_load(a0)  */
 	*p++ = 0xa7300000 | ofs_v0;	/*  ldq     t11,"gpr[v0]"(a0)  */
 
 	*p++ = 0x6b514000;		/*  jsr     ra,(a1),<back>  */
@@ -2695,7 +2583,6 @@ static void bintrans_backend_init(void)
 	*p++ = 0xb5900000 | ofs_ra;	/*  stq     s3,"gpr[ra]"(a0)  */
 	*p++ = 0xb5b00000 | ofs_t0;	/*  stq     s4,"gpr[t0]"(a0)  */
 	*p++ = 0xb5d00000 | ofs_t1;	/*  stq     s5,"gpr[t1]"(a0)  */
-	*p++ = 0xb5f00000 | ofs_t2;	/*  stq     s6,"gpr[t2]"(a0)  */
 	*p++ = 0xb7300000 | ofs_v0;	/*  stq     t11,"gpr[v0]"(a0)  */
 
 	*p++ = 0xa75e0000;		/*  ldq     ra,0(sp)  */
@@ -2745,14 +2632,14 @@ static void bintrans_backend_init(void)
 	*p++ = 0x205f1ff8;	/*  lda     t1,1023 * 8  */
 	*p++ = 0x48c27683;	/*  srl     t5,19,t2  */
 	*p++ = 0x48c13684;	/*  srl     t5, 9,t3  */
+
 	*p++ = 0x44620003;	/*  and     t2,t1,t2  */
 
-	/*
-	 *  t10 is vaddr_to_hostaddr_table0
-	 *
-	 *  a3 = tbl0[t2]  (load entry from tbl0)
-	 */
-	*p++ = 0x43030412;	/*  addq    t10,t2,a2  */
+	/*  ldq a2, vaddr_to_hostaddr_table0(a0)  */
+	*p++ = 0xa6500000 | ofs_tbl0;
+
+	/*  a3 = tbl0[t2]  (load entry from tbl0)  */
+	*p++ = 0x40720412;	/*  addq    t2,a2,a2  */
 	*p++ = 0x44820004;	/*  and     t3,t1,t3  */
 	*p++ = 0xa6720000;	/*  ldq     a3,0(a2)  */
 	*p++ = 0x205f0ffc;	/*  lda     t1,0xffc  */
@@ -2770,7 +2657,7 @@ static void bintrans_backend_init(void)
 	 *  NULL? Then just return.
 	 */
 	*p++ = 0xf6600001;	/*  bne     a3,<ok>  */
-	*p++ = 0x6bfa8000;	/*  ret  */
+	*p++ = 0x6bfa8001;	/*  ret  */
 
 	*p++ = 0x40530402;	/*  addq    t1,a3,t1  */
 	*p++ = 0xa0220000;	/*  ldl     t0,0(t1)  */
@@ -2787,6 +2674,6 @@ static void bintrans_backend_init(void)
 	*q = 0xe4200000 | (((size_t)p - (size_t)q)/4 - 1);	/*  beq ret  */
 
 	/*  Return to the main translation loop.  */
-	*p++ = 0x6bfa8000;		/*  ret  */
+	*p++ = 0x6bfa8001;		/*  ret  */
 } 
 

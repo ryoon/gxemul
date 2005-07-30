@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.25 2005-06-30 10:44:15 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.26 2005-07-30 18:11:20 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -541,7 +541,7 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
-	int a, b;
+	int a, b, index;
 	struct vth32_table *tbl1;
 	void *p_r, *p_w;
 	uint32_t p_paddr;
@@ -557,8 +557,11 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 
 	a = (vaddr_page >> 22) & 0x3ff;
 	b = (vaddr_page >> 12) & 0x3ff;
+	index = (vaddr_page >> 12) & 0xfffff;
+
 	/*  printf("vaddr = %08x, a = %03x, b = %03x\n",
 	    (int)vaddr_page,a, b);  */
+
 	tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 	/*  printf("tbl1 = %p\n", tbl1);  */
 	if (tbl1 == cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
@@ -597,18 +600,37 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	if (writeflag == -1) {
 		/*  Forced downgrade to read-only:  */
 		tbl1->haddr_entry[b*2 + 1] = NULL;
+		if (cpu->cd.mips.host_store ==
+		    cpu->cd.mips.host_store_orig)
+			cpu->cd.mips.host_store[index] = NULL;
 	} else if (writeflag==0 && p_w != NULL && host_page != NULL) {
 		/*  Don't degrade a page from writable to readonly.  */
 	} else {
 		if (host_page != NULL) {
 			tbl1->haddr_entry[b*2] = host_page;
-			if (writeflag)
+			if (cpu->cd.mips.host_load ==
+			    cpu->cd.mips.host_load_orig)
+				cpu->cd.mips.host_load[index] = host_page;
+			if (writeflag) {
 				tbl1->haddr_entry[b*2+1] = host_page;
-			else
+				if (cpu->cd.mips.host_store ==
+				    cpu->cd.mips.host_store_orig)
+					cpu->cd.mips.host_store[index] =
+					    host_page;
+			} else {
 				tbl1->haddr_entry[b*2+1] = NULL;
+				if (cpu->cd.mips.host_store ==
+				    cpu->cd.mips.host_store_orig)
+					cpu->cd.mips.host_store[index] = NULL;
+			}
 		} else {
 			tbl1->haddr_entry[b*2] = NULL;
 			tbl1->haddr_entry[b*2+1] = NULL;
+			if (cpu->cd.mips.host_store ==
+			    cpu->cd.mips.host_store_orig) {
+				cpu->cd.mips.host_load[index] = NULL;
+				cpu->cd.mips.host_store[index] = NULL;
+			}
 		}
 		tbl1->paddr_entry[b] = paddr_page;
 	}
@@ -644,7 +666,7 @@ void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
  */
 static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 {
-	int a, b;
+	int a, b, index;
 	struct vth32_table *tbl1;
 	void *p_r, *p_w;
 	uint32_t p_paddr;
@@ -671,6 +693,7 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 
 	a = (vaddr >> 22) & 0x3ff;
 	b = (vaddr >> 12) & 0x3ff;
+	index = (vaddr >> 12) & 0xfffff;
 
 	/*  printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
 
@@ -686,6 +709,11 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 		    "vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
 		tbl1->haddr_entry[b*2] = NULL;
 		tbl1->haddr_entry[b*2+1] = NULL;
+		if (cpu->cd.mips.host_store ==
+		    cpu->cd.mips.host_store_orig) {
+			cpu->cd.mips.host_load[index] = NULL;
+			cpu->cd.mips.host_store[index] = NULL;
+		}
 		tbl1->paddr_entry[b] = 0;
 		tbl1->refcount --;
 		if (tbl1->refcount == 0) {
@@ -716,10 +744,19 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 		if (tbl1 != cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
 			for (b=0; b<0x400; b++) {
+				int index;
+
 				tbl1->haddr_entry[b*2] = NULL;
 				tbl1->haddr_entry[b*2+1] = NULL;
 				tbl1->paddr_entry[b] = 0;
 				tbl1->bintrans_chunks[b] = NULL;
+
+				if (cpu->cd.mips.host_store ==
+				    cpu->cd.mips.host_store_orig) {
+					index = (a << 10) + b;
+					cpu->cd.mips.host_load[index] = NULL;
+					cpu->cd.mips.host_store[index] = NULL;
+				}
 			}
 		}
 	}
@@ -1274,21 +1311,32 @@ void coproc_register_write(struct cpu *cpu,
 				    treated in bintrans mode by changing
 				    the vaddr_to_hostaddr_table0 pointer:  */
 				if (tmp & MIPS1_ISOL_CACHES) {
-					/*  cpu->cd.mips.
-					    dont_run_next_bintrans = 1;  */
+					/*  2-level table:  */
 					cpu->cd.mips.vaddr_to_hostaddr_table0 =
 					  tmp & MIPS1_SWAP_CACHES?
 					  cpu->cd.mips.
 					  vaddr_to_hostaddr_table0_cacheisol_i
 					  : cpu->cd.mips.
 					  vaddr_to_hostaddr_table0_cacheisol_d;
+
+					/*  1M-entry table:  */
+					cpu->cd.mips.host_load =
+					    cpu->cd.mips.host_store =
+					    cpu->cd.mips.huge_r2k3k_cache_table;
 				} else {
+					/*  2-level table:  */
 					cpu->cd.mips.vaddr_to_hostaddr_table0 =
 					    cpu->cd.mips.
 						vaddr_to_hostaddr_table0_kernel;
 
 					/*  TODO: cpu->cd.mips.
 					    vaddr_to_hostaddr_table0_user;  */
+
+					/*  1M-entry table:  */
+					cpu->cd.mips.host_load =
+					    cpu->cd.mips.host_load_orig;
+					cpu->cd.mips.host_store =
+					    cpu->cd.mips.host_store_orig;
 				}
 			}
 			unimpl = 0;

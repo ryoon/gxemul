@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.853 2005-07-28 13:15:23 debug Exp $
+$Id: HISTORY,v 1.854 2005-07-30 18:11:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2097,3 +2097,9 @@ Changelog for GXemul:
 20050727	Various minor fixes and cleanups.
 20050728	Switching from a 2-level virtual to host/physical translation
 		system for ARM emulation, to a 1-level translation.
+		Trying to switch from 2-level to 1-level for the MIPS bintrans
+		system as well (Alpha only, so far), but there is at least one
+		problem: caches and/or how they work with device mappings.
+20050730	Doing the 2-level to 1-level conversion for the i386 backend.
+		The cache/device bug is still there for R2K/3K :(
+		Various other minor updates.

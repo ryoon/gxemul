@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.483 2005-07-28 21:29:06 debug Exp $
+ *  $Id: machine.c,v 1.484 2005-07-30 18:11:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -70,6 +70,9 @@
 /*  For SGI and ARC emulation:  */
 #include "sgi_arcbios.h"
 #include "crimereg.h"
+
+/*  For evbmips emulation:  */
+#include "maltareg.h"
 
 /*  For DECstation emulation:  */
 #include "dec_prom.h"
@@ -3736,37 +3739,61 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			exit(1);
 		}
 
-		/*  This is just a test.  TODO  */
-		for (i=0; i<32; i++)
-			cpu->cd.mips.gpr[i] =
-			    0x01230000 + (i << 8) + 0x55;
+		if (machine->prom_emulation) {
+			/*  This is just a test.  TODO  */
+			for (i=0; i<32; i++)
+				cpu->cd.mips.gpr[i] =
+				    0x01230000 + (i << 8) + 0x55;
 
-		/*  NetBSD/evbmips wants these: (at least for Malta)  */
+			/*  NetBSD/evbmips wants these: (at least for Malta)  */
 
-		/*  a0 = argc  */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
+			/*  a0 = argc  */
+			cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
 
-		/*  a1 = argv  */
-		cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
-		store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
-		store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
+			/*  a1 = argv  */
+			cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
+			store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
+			store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
 
-		bootstr = strdup(machine->boot_kernel_filename);
-		bootarg = strdup(machine->boot_string_argument);
-		store_string(cpu, (int32_t)0x9fc01040, bootstr);
-		store_string(cpu, (int32_t)0x9fc01200, bootarg);
+			bootstr = strdup(machine->boot_kernel_filename);
+			bootarg = strdup(machine->boot_string_argument);
+			store_string(cpu, (int32_t)0x9fc01040, bootstr);
+			store_string(cpu, (int32_t)0x9fc01200, bootarg);
 
-		/*  a2 = (yamon_env_var *)envp  */
-		cpu->cd.mips.gpr[MIPS_GPR_A2] = 0;
+			/*  a2 = (yamon_env_var *)envp  */
+			/*  TODO  */
+			cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
+			store_32bit_word(cpu, (int32_t)0x9fc01800, 0x9fc01c00);
+			store_32bit_word(cpu, (int32_t)0x9fc01804, 0x9fc01c10);
+			store_32bit_word(cpu, (int32_t)0x9fc01808, 0);
+			{
+				char tmps[50];
+				snprintf(tmps, sizeof(tmps), "memsize");
+				store_string(cpu, (int32_t)0x9fc01c00, tmps);
+				snprintf(tmps, sizeof(tmps), "0x%x",
+				    machine->physical_ram_in_mb * 1048576);
+				store_string(cpu, (int32_t)0x9fc01c10, tmps);
+			}
 
-		/*  a3 = memsize  */
-		cpu->cd.mips.gpr[MIPS_GPR_A3] =
-		    machine->physical_ram_in_mb * 1048576;
+			/*  a3 = memsize  */
+			cpu->cd.mips.gpr[MIPS_GPR_A3] =
+			    machine->physical_ram_in_mb * 1048576;
+			/*  Hm. Linux ignores a3.  */
 
-		/*  Yamon emulation vectors at 0x9fc005xx:  */
-		for (i=0; i<0x100; i+=4)
-			store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,
-			    (int64_t)(int32_t)0x9fc00800 + i);
+			/*
+			 *  Yamon emulation etc.
+			 *
+			 *  TODO:
+			 *	Core ID numbers.
+			 *	How much of this is not valid for PBxxxx?
+			 */
+			/*  See maltareg.h for more info.  */
+			store_32bit_word(cpu, (int32_t)(0x80000000 + MALTA_REVISION), (1 << 10) + 0x26);
+			/*  Call vectors at 0x9fc005xx:  */
+			for (i=0; i<0x100; i+=4)
+				store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,
+				    (int64_t)(int32_t)0x9fc00800 + i);
+		}
 		break;
 
 	case MACHINE_PSP:

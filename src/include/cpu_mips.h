@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.18 2005-06-30 10:44:16 debug Exp $
+ *  $Id: cpu_mips.h,v 1.19 2005-07-30 18:11:21 debug Exp $
  */
 
 #include "misc.h"
@@ -284,6 +284,13 @@ struct mips_cpu {
 	struct vth32_table **vaddr_to_hostaddr_table0_user;
 	struct vth32_table **vaddr_to_hostaddr_table0;  /*  should point to kernel or user  */
 	struct vth32_table *next_free_vth_table;
+
+/*  Testing...  */
+	unsigned char	**host_load;
+	unsigned char	**host_store;
+	unsigned char	**host_load_orig;
+	unsigned char	**host_store_orig;
+	unsigned char	**huge_r2k3k_cache_table;
 
 	/*  For 64-bit (generic) emulation:  */
 	unsigned char	*(*fast_vaddr_to_hostaddr)(struct cpu *cpu,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.171 2005-07-25 06:33:58 debug Exp $
+ *  $Id: memory.c,v 1.172 2005-07-30 18:11:20 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -291,7 +291,8 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 			    be in the dyntrans load/store cache, by marking
 			    the pages read-only.  */
 			if (cpu->invalidate_translation_caches_paddr != NULL) {
-				for (s=0; s<mem->dev_length[i]; s+=4096) {
+				for (s=0; s<mem->dev_length[i];
+				    s+=cpu->machine->arch_pagesize) {
 					cpu->
 					invalidate_translation_caches_paddr(
 					    cpu, mem->dev_baseaddr[i] + s);

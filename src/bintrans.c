@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.172 2005-07-26 16:25:26 debug Exp $
+ *  $Id: bintrans.c,v 1.173 2005-07-30 18:11:19 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -739,7 +739,6 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				return_code_written = 1;
 			}
 			break;
-
 #if 0
 		case HI6_LQ_MDMX:
 #endif
@@ -1091,6 +1090,23 @@ void old_bintrans_init_cpu(struct cpu *cpu)
 		offset = (offset + 4096) % cpu->cd.mips.cache_size[0];
 	}
 	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable->refcount = 1024;
+
+	/*  1M entry cache stuff for R2K/3K:  */
+	if (cpu->cd.mips.cpu_type.isa_level == 1) {
+		cpu->cd.mips.huge_r2k3k_cache_table =
+		    zeroed_alloc(1048576 * sizeof(unsigned char *));
+#if 1
+		for (i=0; i<1048576; i++) {
+			unsigned char *ptr = NULL;
+			if (i < (0xa0000000ULL >> 12) ||
+			    i >= (0xc0000000ULL >> 12))
+				ptr = cpu->cd.mips.
+				    vaddr_to_hostaddr_r2k3k_dcachetable
+				    ->haddr_entry[(i & 1023) * 2];
+			cpu->cd.mips.huge_r2k3k_cache_table[i] = ptr;
+		}
+#endif
+	}
 
 	/*  Instruction cache:  */
 	offset = 0;

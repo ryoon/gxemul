@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: configfiles.html,v 1.11 2005-07-18 22:16:40 debug Exp $
+$Id: configfiles.html,v 1.12 2005-07-30 18:11:18 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -245,7 +245,7 @@ configuration file per machine.
 <b>emul(</b>
     <b>net(</b>
 	<b>local_port(15000)</b>
-	<b>remote_add(<font color="#ff003f">"127.0.0.1:15001"</font>)</b>
+	<b>add_remote(<font color="#ff003f">"127.0.0.1:15001"</font>)</b>
     <b>)</b>
     <b>machine(</b>
         <b>type(<font color="#ff003f">"dec"</font>)</b>
@@ -261,7 +261,7 @@ but it also allows the network to be connected to other emulator
 instances. <tt>local_port(15000)</tt> means that anything coming in to 
 UDP port 15000 on the host is added to the network. All ethernet packets 
 on the network are also sent out to all other connected machines (those 
-added with <tt>remote_add()</tt>).
+added with <tt>add_remote()</tt>).
 
 <p>As you can see in the example, this is a configuration file for running
 NetBSD/pmax 2.0, with a netbooting GENERIC kernel. (Netbooting because

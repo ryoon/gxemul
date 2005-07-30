@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.78 2005-07-26 16:56:00 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.79 2005-07-30 18:11:19 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -64,6 +64,8 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_tabl0	(((size_t)&dummy_cpu.cd.mips.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
 #define ofs_chunks	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
 #define ofs_chunkbase	((size_t)&dummy_cpu.cd.mips.chunk_base_address - (size_t)&dummy_cpu)
+#define ofs_h_l		(((size_t)&dummy_cpu.cd.mips.host_load) - ((size_t)&dummy_cpu))
+#define ofs_h_s		(((size_t)&dummy_cpu.cd.mips.host_store) - ((size_t)&dummy_cpu))
 
 
 static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
@@ -1892,14 +1894,24 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 	/*  Here, edx:eax = vaddr  */
 
 	if (mem->bintrans_32bit_only) {
-		/*  Call the quick lookup routine:  */
-		if (load)
-			ofs = (size_t)bintrans_load_32bit;
-		else
-			ofs = (size_t)bintrans_store_32bit;
-		ofs = ofs - ((size_t)a + 5);
-		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
-		    *a++ = ofs >> 16; *a++ = ofs >> 24;
+		/*  ebx = vaddr >> 12;  */
+		*a++ = 0x89; *a++ = 0xc3;		/*  mov %eax, %ebx  */
+		*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0c;	/*  shr $12, %ebx   */
+
+		if (load) {
+			/*  ecx = cpu->cd.mips.host_load  */
+			*a++ = 0x8b; *a++ = 0x8e; *a++ = ofs_h_l & 255;
+			*a++ = (ofs_h_l >> 8) & 255;
+			*a++ = (ofs_h_l >> 16) & 255; *a++ = (ofs_h_l >> 24) & 255;
+		} else {
+			/*  ecx = cpu->cd.mips.host_store  */
+			*a++ = 0x8b; *a++ = 0x8e; *a++ = ofs_h_s & 255;
+			*a++ = (ofs_h_s >> 8) & 255;
+			*a++ = (ofs_h_s >> 16) & 255; *a++ = (ofs_h_s >> 24) & 255;
+		}
+
+		/*  ecx = host_load[a] (or host_store[a])  */
+		*a++ = 0x8b; *a++ = 0x0c; *a++ = 0x99;	/*  mov (%ecx,%ebx,4),%ecx  */
 
 		/*
 		 *  ecx = NULL? Then return with failure.
@@ -1914,18 +1926,12 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 
 		/*
 		 *  eax = offset within page = vaddr & 0xfff
-		 *
-		 *  25 ff 0f 00 00       and    $0xfff,%eax
-		 */
-		*a++ = 0x25; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
-
-		/*
 		 *  ecx = host address   ( = host page + offset)
 		 *
-		 *  83 e1 fe                and    $0xfffffffe,%ecx	clear the lowest bit
+		 *  25 ff 0f 00 00          and    $0xfff,%eax
 		 *  01 c1                   add    %eax,%ecx
 		 */
-		*a++ = 0x83; *a++ = 0xe1; *a++ = 0xfe;
+		*a++ = 0x25; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 		*a++ = 0x01; *a++ = 0xc1;
 	} else {
 		/*
@@ -1968,18 +1974,12 @@ TODO: top 33 bits!!!!!!!
 
 		/*
 		 *  eax = offset within page = vaddr & 0xfff
-		 *
-		 *  25 ff 0f 00 00       and    $0xfff,%eax
-		 */
-		*a++ = 0x25; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
-
-		/*
 		 *  ecx = host address   ( = host page + offset)
 		 *
-		 *  83 e1 fe                and    $0xfffffffe,%ecx	clear the lowest bit
+		 *  25 ff 0f 00 00          and    $0xfff,%eax
 		 *  01 c1                   add    %eax,%ecx
 		 */
-		*a++ = 0x83; *a++ = 0xe1; *a++ = 0xfe;
+		*a++ = 0x25; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 		*a++ = 0x01; *a++ = 0xc1;
 
 		*a++ = 0xeb; doloadstore = a; *a++ = 0x01;
@@ -2844,50 +2844,17 @@ static void bintrans_backend_init(void)
 
 	bintrans_load_32bit = (void *)p;
 
-	/*
-	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 14                shr    $20,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	*p++ = 0x89; *p++ = 0xc3;
-	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x14;
-	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+	/*  ebx = vaddr >> 12;  */
+	*p++ = 0x89; *p++ = 0xc3;		/*  mov %eax, %ebx  */
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0c;	/*  shr $12, %ebx   */
 
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0
-	 *
-	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
-	 */
-	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_tabl0 & 255;
-	*p++ = (ofs_tabl0 >> 8) & 255;
-	*p++ = (ofs_tabl0 >> 16) & 255; *p++ = (ofs_tabl0 >> 24) & 255;
+	/*  ecx = cpu->cd.mips.host_load  */
+	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_h_l & 255;
+	*p++ = (ofs_h_l >> 8) & 255;
+	*p++ = (ofs_h_l >> 16) & 255; *p++ = (ofs_h_l >> 24) & 255;
 
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a]
-	 *
-	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
-	 */
-	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x19;
-
-	/*
-	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 0a                shr    $10,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	*p++ = 0x89; *p++ = 0xc3;
-	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0a;
-	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a][b*2]
-	 *
-	 *  8b 0c 59                mov    0(%ecx,%ebx,2),%ecx
-	 */
-	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x59;
+	/*  ecx = host_load[a]  */
+	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x99;	/*  mov (%ecx,%ebx,4),%ecx  */
 
 	/*  ret  */
 	*p++ = 0xc3;
@@ -2911,50 +2878,17 @@ static void bintrans_backend_init(void)
 
 	bintrans_store_32bit = (void *)p;
 
-	/*
-	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 14                shr    $20,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	*p++ = 0x89; *p++ = 0xc3;
-	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x14;
-	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+	/*  ebx = vaddr >> 12;  */
+	*p++ = 0x89; *p++ = 0xc3;		/*  mov %eax, %ebx  */
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0c;	/*  shr $12, %ebx   */
 
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0
-	 *
-	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
-	 */
-	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_tabl0 & 255;
-	*p++ = (ofs_tabl0 >> 8) & 255;
-	*p++ = (ofs_tabl0 >> 16) & 255; *p++ = (ofs_tabl0 >> 24) & 255;
+	/*  ecx = cpu->cd.mips.host_store  */
+	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_h_s & 255;
+	*p++ = (ofs_h_s >> 8) & 255;
+	*p++ = (ofs_h_s >> 16) & 255; *p++ = (ofs_h_s >> 24) & 255;
 
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a]
-	 *
-	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
-	 */
-	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x19;
-
-	/*
-	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 0a                shr    $10,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	*p++ = 0x89; *p++ = 0xc3;
-	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0a;
-	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a][b*2]
-	 *
-	 *  8b 4c 59 04             mov    4(%ecx,%ebx,2),%ecx
-	 */
-	*p++ = 0x8b; *p++ = 0x4c; *p++ = 0x59; *p++ = 0x04;
+	/*  ecx = host_store[a]  */
+	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x99;	/*  mov (%ecx,%ebx,4),%ecx  */
 
 	/*  ret  */
 	*p++ = 0xc3;

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta_lcd.c,v 1.1 2005-06-20 08:19:58 debug Exp $
+ *  $Id: dev_malta_lcd.c,v 1.2 2005-07-30 20:01:57 debug Exp $
  *
- *  Malta (evbmips) LCD thingy.   TODO: This is just a dummy device.
+ *  Malta (evbmips) LCD thingy. Mostly a dummy device.
  */
 
 #include <stdio.h>
@@ -68,11 +68,11 @@ void dev_malta_lcd_tick(struct cpu *cpu, void *extra)
 		d->display_modified = 2;
 		return;
 	}
-	fatal("[ malta_lcd:  ");
+	debug("[ malta_lcd:  ");
 	for (i=0; i<LCD_LEN; i++)
 		if (d->display[i] >= ' ')
-			fatal("%c", d->display[i]);
-	fatal("  ]\n");
+			debug("%c", d->display[i]);
+	debug("  ]\n");
 	d->display_modified = 0;
 }
 

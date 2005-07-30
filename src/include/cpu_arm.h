@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.21 2005-07-28 13:15:25 debug Exp $
+ *  $Id: cpu_arm.h,v 1.22 2005-07-30 22:40:13 debug Exp $
  */
 
 #include "misc.h"
@@ -49,31 +49,18 @@ struct cpu_family;
 	"r8", "r9", "sl", "fp", "ip", "sp", "lr", "pc"  }
 
 
-/*
- *  Translated instruction calls:
- *
- *  The translation cache begins with N_BASE_TABLE_ENTRIES uint32_t offsets
- *  to arm_tc_physpage structs.
- */
 #define	ARM_N_IC_ARGS			3
 #define	ARM_IC_ENTRIES_SHIFT		10
 #define	ARM_IC_ENTRIES_PER_PAGE		(1 << ARM_IC_ENTRIES_SHIFT)
 #define	ARM_PC_TO_IC_ENTRY(a)		(((a)>>2) & (ARM_IC_ENTRIES_PER_PAGE-1))
 #define	ARM_ADDR_TO_PAGENR(a)		((a) >> (ARM_IC_ENTRIES_SHIFT+2))
-#define	ARM_N_BASE_TABLE_ENTRIES	32768
-#define	ARM_PAGENR_TO_TABLE_INDEX(a)	((a) & (ARM_N_BASE_TABLE_ENTRIES-1))
 
 struct arm_instr_call {
 	void	(*f)(struct cpu *, struct arm_instr_call *);
 	size_t	arg[ARM_N_IC_ARGS];
 };
 
-/*  512 translated pages should be good enough:  */
-#define	ARM_TRANSLATION_CACHE_SIZE	(512 * \
-		sizeof(struct arm_instr_call) * ARM_IC_ENTRIES_PER_PAGE)
-#define	ARM_TRANSLATION_CACHE_MARGIN	(2 * \
-		sizeof(struct arm_instr_call) * ARM_IC_ENTRIES_PER_PAGE)
-
+/*  Translation cache struct for each physical page:  */
 struct arm_tc_physpage {
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	uint32_t	physaddr;

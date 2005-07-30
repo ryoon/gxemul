@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.301 2005-07-28 13:29:36 debug Exp $
+ *  $Id: cpu.c,v 1.302 2005-07-30 22:40:12 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -37,6 +37,7 @@
 
 #include "cpu.h"
 #include "machine.h"
+#include "memory.h"
 #include "misc.h"
 
 
@@ -89,6 +90,8 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
+
+	cpu_create_or_reset_tc(cpu);
 
 	fp = first_cpu_family;
 
@@ -230,6 +233,27 @@ int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 		return 0;
 	} else
 		return cpu->machine->cpu_family->interrupt_ack(cpu, irq_nr);
+}
+
+
+/*
+ *  cpu_create_or_reset_tc():
+ *
+ *  Create the translation cache in memory (ie allocate memory for it), if
+ *  necessary, and then reset it to an initial state.
+ */
+void cpu_create_or_reset_tc(struct cpu *cpu)
+{
+	if (cpu->translation_cache == NULL)
+		cpu->translation_cache = zeroed_alloc(DYNTRANS_CACHE_SIZE + 
+		    DYNTRANS_CACHE_MARGIN);
+
+	/*  Create an empty table at the beginning of the translation cache:  */
+	memset(cpu->translation_cache, 0, sizeof(uint32_t)
+	    * N_BASE_TABLE_ENTRIES);
+
+	cpu->translation_cache_cur_ofs =
+	    N_BASE_TABLE_ENTRIES * sizeof(uint32_t);
 }
 
 

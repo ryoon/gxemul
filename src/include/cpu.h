@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.32 2005-07-19 12:37:24 debug Exp $
+ *  $Id: cpu.h,v 1.33 2005-07-30 22:40:13 debug Exp $
  *
  *  See cpu.c.
  */
@@ -90,11 +90,20 @@ struct cpu_family {
 
 /*
  *  Dynamic translation definitions:
+ *
+ *  The translation cache begins with N_BASE_TABLE_ENTRIES uint32_t offsets
+ *  into the cache, for possible translation cache structs for physical pages.
  */
 
 /*  Physpage flags:  */
-#define	TRANSLATIONS		1
-#define	COMBINATIONS		2
+#define	TRANSLATIONS			1
+#define	COMBINATIONS			2
+
+#define	DYNTRANS_CACHE_SIZE		(16*1048576)
+#define	DYNTRANS_CACHE_MARGIN		300000
+
+#define	N_BASE_TABLE_ENTRIES		32768
+#define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 
 
 /*
@@ -170,6 +179,7 @@ int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr, int bintrans);
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
+void cpu_create_or_reset_tc(struct cpu *cpu);
 void cpu_run_init(struct emul *emul, struct machine *machine);
 int cpu_run(struct emul *emul, struct machine *machine);
 void cpu_run_deinit(struct emul *emul, struct machine *machine);

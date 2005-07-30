@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.15 2005-07-24 11:19:28 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.16 2005-07-30 22:40:13 debug Exp $
  */
 
 #include "misc.h"
@@ -56,31 +56,18 @@ struct cpu_family;
 	"t10", "t11", "ra", "t12", "at", "gp", "sp", "zero" 	}
 
 
-/*
- *  Translated instruction calls:
- *
- *  The translation cache begins with N_BASE_TABLE_ENTRIES uint32_t offsets
- *  to alpha_tc_physpage structs.
- */
 #define	ALPHA_N_IC_ARGS			3
 #define	ALPHA_IC_ENTRIES_SHIFT		11
 #define	ALPHA_IC_ENTRIES_PER_PAGE	(1 << ALPHA_IC_ENTRIES_SHIFT)
 #define	ALPHA_PC_TO_IC_ENTRY(a)		(((a)>>2)&(ALPHA_IC_ENTRIES_PER_PAGE-1))
 #define	ALPHA_ADDR_TO_PAGENR(a)		((a) >> (ALPHA_IC_ENTRIES_SHIFT+2))
-#define	ALPHA_N_BASE_TABLE_ENTRIES	32768
-#define	ALPHA_PAGENR_TO_TABLE_INDEX(a)	((a) & (ALPHA_N_BASE_TABLE_ENTRIES-1))
 
 struct alpha_instr_call {
 	void	(*f)(struct cpu *, struct alpha_instr_call *);
 	size_t	arg[ALPHA_N_IC_ARGS];
 };
 
-/*  256 translated pages should be good enough:  */
-#define	ALPHA_TRANSLATION_CACHE_SIZE	(256 * \
-		sizeof(struct alpha_instr_call) * ALPHA_IC_ENTRIES_PER_PAGE)
-#define	ALPHA_TRANSLATION_CACHE_MARGIN	(2 * \
-		sizeof(struct alpha_instr_call) * ALPHA_IC_ENTRIES_PER_PAGE)
-
+/*  Translation cache struct for each physical page:  */
 struct alpha_tc_physpage {
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	uint32_t	physaddr;

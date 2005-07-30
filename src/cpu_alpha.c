@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.29 2005-07-28 13:29:36 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.30 2005-07-30 22:40:12 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -108,10 +108,6 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
-		debug(" (host: %i MB code cache, %.2f MB addr"
-		    " cache)", (int)(ALPHA_TRANSLATION_CACHE_SIZE/1048576),
-		    (float)(sizeof(struct alpha_vph_page) *
-		    ALPHA_MAX_VPH_TLB_ENTRIES / 1048576.0));
 	}
 
 	/*  Create the default virtual->physical->host translation:  */
@@ -135,10 +131,7 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
  */
 void alpha_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug(" (host: %i MB code cache, %.2f MB addr"
-	    " cache)", (int)(ALPHA_TRANSLATION_CACHE_SIZE/1048576),
-	    (float)(sizeof(struct alpha_vph_page) * ALPHA_MAX_VPH_TLB_ENTRIES
-	    / 1048576.0));
+	/*  TODO  */
 	debug("\n");
 }
 
@@ -564,61 +557,19 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 }
 
 
-/*
- *  alpha_create_or_reset_tc():
- *
- *  Create the translation cache in memory (ie allocate memory for it), if
- *  necessary, and then reset it to an initial state.
- */
-static void alpha_create_or_reset_tc(struct cpu *cpu)
-{
-	if (cpu->translation_cache == NULL) {
-		cpu->translation_cache = malloc(
-		    ALPHA_TRANSLATION_CACHE_SIZE + 
-		    ALPHA_TRANSLATION_CACHE_MARGIN);
-		if (cpu->translation_cache == NULL) {
-			fprintf(stderr, "alpha_create_or_reset_tc(): out of "
-			    "memory when allocating the translation cache\n");
-			exit(1);
-		}
-	}
-
-	/*  Create an empty table at the beginning of the translation cache:  */
-	memset(cpu->translation_cache, 0, sizeof(uint32_t) *
-	    ALPHA_N_BASE_TABLE_ENTRIES);
-
-	cpu->translation_cache_cur_ofs =
-	    ALPHA_N_BASE_TABLE_ENTRIES * sizeof(uint32_t);
-}
-
-
-/*
- *  alpha_tc_allocate_default_page():
- *
- *  Create a default page (with just pointers to instr(to_be_translated)
- *  at cpu->translation_cache_cur_ofs.
- */
-/*  forward declaration of to_be_translated and end_of_page:  */
-static void instr(to_be_translated)(struct cpu *,struct alpha_instr_call *);
-static void instr(end_of_page)(struct cpu *,struct alpha_instr_call *);
-static void alpha_tc_allocate_default_page(struct cpu *cpu, uint64_t physaddr)
-{
-	struct alpha_tc_physpage *ppp;
-	int i;
-
-	/*  Create the physpage header:  */
-	ppp = (struct alpha_tc_physpage *)(cpu->translation_cache
-	    + cpu->translation_cache_cur_ofs);
-	ppp->next_ofs = 0;
-	ppp->physaddr = physaddr;
-
-	for (i=0; i<ALPHA_IC_ENTRIES_PER_PAGE; i++)
-		ppp->ics[i].f = instr(to_be_translated);
-
-	ppp->ics[ALPHA_IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
-
-	cpu->translation_cache_cur_ofs += sizeof(struct alpha_tc_physpage);
-}
+#define	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE	alpha_tc_allocate_default_page
+#define DYNTRANS_IC             		alpha_instr_call
+#define DYNTRANS_ARCH           		alpha
+#define DYNTRANS_ALPHA
+#define DYNTRANS_IC_ENTRIES_PER_PAGE		ALPHA_IC_ENTRIES_PER_PAGE
+#define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage
+#include "cpu_dyntrans.c"
+#undef  DYNTRANS_IC_ENTRIES_PER_PAGE
+#undef  DYNTRANS_ALPHA
+#undef	DYNTRANS_TC_PHYSPAGE
+#undef  DYNTRANS_IC
+#undef  DYNTRANS_ARCH
+#undef	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
 
 
 /*
@@ -865,12 +816,11 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 
 	physaddr = cached_pc & ~(((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3);
 
-	if (cpu->translation_cache == NULL || cpu->
-	    translation_cache_cur_ofs >= ALPHA_TRANSLATION_CACHE_SIZE)
-		alpha_create_or_reset_tc(cpu);
+	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
+		cpu_create_or_reset_tc(cpu);
 
 	pagenr = ALPHA_ADDR_TO_PAGENR(physaddr);
-	table_index = ALPHA_PAGENR_TO_TABLE_INDEX(pagenr);
+	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
 
 	physpage_entryp = &(((uint32_t *)cpu->translation_cache)[table_index]);
 	physpage_ofs = *physpage_entryp;
@@ -917,103 +867,19 @@ void alpha_pc_to_pointers(struct cpu *cpu)
 #include "cpu_alpha_instr.c"
 
 
-/*
- *  alpha_cpu_run_instr():
- *
- *  Execute one or more instructions on a specific CPU.
- *
- *  Return value is the number of instructions executed during this call,
- *  0 if no instructions were executed.
- */
-int alpha_cpu_run_instr(struct emul *emul, struct cpu *cpu)
-{
-	uint64_t cached_pc;
-	ssize_t low_pc;
-	int n_instrs;
-
-	alpha_pc_to_pointers(cpu);
-
-	cached_pc = cpu->pc;
-	cpu->n_translated_instrs = 0;
-	cpu->running_translated = 1;
-
-	if (single_step || cpu->machine->instruction_trace) {
-		/*
-		 *  Single-step:
-		 */
-		struct alpha_instr_call *ic = cpu->cd.alpha.next_ic ++;
-		if (cpu->machine->instruction_trace) {
-			unsigned char instr[4];
-			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
-			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
-				fatal("alpha_cpu_run_instr(): could not read "
-				    "the instruction\n");
-			} else
-				alpha_cpu_disassemble_instr(cpu, instr, 1,0,0);
-		}
-
-		/*  When single-stepping, multiple instruction calls cannot
-		    be combined into one. This clears all translations:  */
-		if (cpu->cd.alpha.cur_physpage->flags & COMBINATIONS) {
-			int i;
-			for (i=0; i<ALPHA_IC_ENTRIES_PER_PAGE; i++)
-				cpu->cd.alpha.cur_physpage->ics[i].f =
-				    instr(to_be_translated);
-			fatal("[ Note: The translation of physical page 0x%08x"
-			    " contained combinations of instructions; these "
-			    "are now flushed because we are single-stepping."
-			    " ]\n", cpu->cd.alpha.cur_physpage->physaddr);
-			cpu->cd.alpha.cur_physpage->flags &=~COMBINATIONS;
-			cpu->cd.alpha.cur_physpage->flags &=~TRANSLATIONS;
-		}
-
-		/*  Execute just one instruction:  */
-		ic->f(cpu, ic);
-		n_instrs = 1;
-	} else {
-		/*  Execute multiple instructions:  */
-		n_instrs = 0;
-		for (;;) {
-			struct alpha_instr_call *ic;
-
-#define I		ic = cpu->cd.alpha.next_ic ++; ic->f(cpu, ic);
-
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-
-			n_instrs += 60;
-
-			if (!cpu->running_translated || single_step ||
-			    n_instrs + cpu->n_translated_instrs >= 16384)
-				break;
-		}
-	}
-
-
-	/*
-	 *  Update the program counter and return the correct number of
-	 *  executed instructions:
-	 */
-	low_pc = ((size_t)cpu->cd.alpha.next_ic - (size_t)
-	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
-
-	if (low_pc >= 0 && low_pc < ALPHA_IC_ENTRIES_PER_PAGE) {
-		cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->pc += (low_pc << 2);
-	} else if (low_pc == ALPHA_IC_ENTRIES_PER_PAGE) {
-		/*  Switch to next page:  */
-		cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->pc += (ALPHA_IC_ENTRIES_PER_PAGE << 2);
-	} else {
-		/*  debug("debug: Outside a page (This is actually ok)\n");  */
-	}
-
-	return n_instrs + cpu->n_translated_instrs;
-}
+#define DYNTRANS_CPU_RUN_INSTR  alpha_cpu_run_instr
+#define DYNTRANS_PC_TO_POINTERS alpha_pc_to_pointers
+#define DYNTRANS_IC             alpha_instr_call
+#define DYNTRANS_ARCH           alpha
+#define DYNTRANS_ALPHA
+#define DYNTRANS_IC_ENTRIES_PER_PAGE ALPHA_IC_ENTRIES_PER_PAGE
+#include "cpu_dyntrans.c"
+#undef  DYNTRANS_IC_ENTRIES_PER_PAGE
+#undef  DYNTRANS_ALPHA
+#undef  DYNTRANS_IC
+#undef  DYNTRANS_ARCH
+#undef  DYNTRANS_PC_TO_POINTERS
+#undef  DYNTRANS_CPU_RUN_INSTR
 
 
 #define CPU_RUN         alpha_cpu_run

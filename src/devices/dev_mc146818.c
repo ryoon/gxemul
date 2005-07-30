@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.69 2005-05-20 07:42:12 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.70 2005-07-30 19:41:27 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -366,25 +366,20 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 #endif
 
 	/*
-	 *  For some reason, Linux/sgimips relies on the UIP bit to go
-	 *  on and off. Without this code, booting Linux takes forever:
-	 */
-	d->reg[MC_REGA * 4] &= ~MC_REGA_UIP;
-#if 1
-	/*  TODO:  solve this more nicely  */
-	if ((random() & 0xff) == 0)
-		d->reg[MC_REGA * 4] ^= MC_REGA_UIP;
-#endif
-
-	/*
-	 *  Sprite seens to wants UF interrupt status, once every second, or
+	 *  Sprite seems to wants UF interrupt status, once every second, or
 	 *  it hangs forever during bootup.  (These do not cause interrupts,
 	 *  but it is good enough... Sprite polls this, iirc.)
+	 *
+	 *  Linux on at least sgimips and evbmips (Malta) wants the UIP bit
+	 *  in REGA to be updated once a second.
 	 */
 	timet = time(NULL);
 	tmp = gmtime(&timet);
 	d->reg[MC_REGC * 4] &= ~MC_REGC_UF;
+
 	if (tmp->tm_sec != d->previous_second) {
+		d->reg[MC_REGA * 4] &= ~MC_REGA_UIP;
+
 		d->reg[MC_REGC * 4] |= MC_REGC_UF;
 		d->reg[MC_REGC * 4] |= MC_REGC_IRQF;
 		d->previous_second = tmp->tm_sec;
@@ -393,14 +388,14 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		    the PF (periodic flag) bit set, even though interrupts
 		    are not enabled?  */
 		d->reg[MC_REGC * 4] |= MC_REGC_PF;
-	}
+	} else
+		d->reg[MC_REGA * 4] |= MC_REGA_UIP;
 
 	/*  RTC data is in either BCD format or binary:  */
-	if (d->use_bcd) {
+	if (d->use_bcd)
 		d->reg[MC_REGB * 4] &= ~(1 << 2);
-	} else {
+	else
 		d->reg[MC_REGB * 4] |= (1 << 2);
-	}
 
 	/*  RTC date/time is always Valid:  */
 	d->reg[MC_REGD * 4] |= MC_REGD_VRT;

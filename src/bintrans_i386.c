@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.79 2005-07-30 18:11:19 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.80 2005-07-31 06:32:47 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1774,10 +1774,6 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ)
 		return 0;
 
-	/*  TODO: Not yet:  */
-	if (bigendian)
-		return 0;
-
 	switch (instruction_type) {
 	case HI6_LQ_MDMX:
 	case HI6_LDL:
@@ -1807,6 +1803,10 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 	case HI6_SDR:
 		unaligned = 1;
 	}
+
+	/*  TODO: Not yet:  */
+	if (bigendian && unaligned)
+		return 0;
 
 	a = *addrp;
 
@@ -2040,36 +2040,63 @@ TODO: top 33 bits!!!!!!!
 
 	switch (instruction_type) {
 	case HI6_LD:
-		/*  8b 01                   mov    (%ecx),%eax  */
-		/*  8b 51 04                mov    0x4(%ecx),%edx  */
-		*a++ = 0x8b; *a++ = 0x01;
-		*a++ = 0x8b; *a++ = 0x51; *a++ = 0x04;
+		if (bigendian) {
+			/*  8b 11                   mov    (%ecx),%edx  */
+			/*  8b 41 04                mov    0x4(%ecx),%eax  */
+			/*  0f c8                   bswap  %eax  */
+			/*  0f ca                   bswap  %edx  */
+			*a++ = 0x8b; *a++ = 0x11;
+			*a++ = 0x8b; *a++ = 0x41; *a++ = 0x04;
+			*a++ = 0x0f; *a++ = 0xc8;
+			*a++ = 0x0f; *a++ = 0xca;
+		} else {
+			/*  8b 01                   mov    (%ecx),%eax  */
+			/*  8b 51 04                mov    0x4(%ecx),%edx  */
+			*a++ = 0x8b; *a++ = 0x01;
+			*a++ = 0x8b; *a++ = 0x51; *a++ = 0x04;
+		}
 		break;
 	case HI6_LWU:
 		/*  8b 01                   mov    (%ecx),%eax  */
+		/*  0f c8                   bswap  %eax  (big endian)  */
 		/*  31 d2                   xor    %edx,%edx  */
 		*a++ = 0x8b; *a++ = 0x01;
+		if (bigendian) {
+			*a++ = 0x0f; *a++ = 0xc8;
+		}
 		*a++ = 0x31; *a++ = 0xd2;
 		break;
 	case HI6_LW:
 		/*  8b 01                   mov    (%ecx),%eax  */
+		/*  0f c8                   bswap  %eax  (big endian)  */
 		/*  99                      cltd   */
 		*a++ = 0x8b; *a++ = 0x01;
+		if (bigendian) {
+			*a++ = 0x0f; *a++ = 0xc8;
+		}
 		*a++ = 0x99;
 		break;
 	case HI6_LHU:
 		/*  31 c0                   xor    %eax,%eax  */
 		/*  66 8b 01                mov    (%ecx),%ax  */
+		/*  86 c4                   xchg   %al,%ah  (big endian)  */
 		/*  99                      cltd   */
 		*a++ = 0x31; *a++ = 0xc0;
 		*a++ = 0x66; *a++ = 0x8b; *a++ = 0x01;
+		if (bigendian) {
+			*a++ = 0x86; *a++ = 0xc4;
+		}
 		*a++ = 0x99;
 		break;
 	case HI6_LH:
 		/*  66 8b 01                mov    (%ecx),%ax  */
+		/*  86 c4                   xchg   %al,%ah  (big endian)  */
 		/*  98                      cwtl   */
 		/*  99                      cltd   */
 		*a++ = 0x66; *a++ = 0x8b; *a++ = 0x01;
+		if (bigendian) {
+			*a++ = 0x86; *a++ = 0xc4;
+		}
 		*a++ = 0x98;
 		*a++ = 0x99;
 		break;
@@ -2291,16 +2318,35 @@ TODO: top 33 bits!!!!!!!
 		break;
 
 	case HI6_SD:
-		/*  89 01                   mov    %eax,(%ecx)  */
-		/*  89 51 04                mov    %edx,0x4(%ecx)  */
-		*a++ = 0x89; *a++ = 0x01;
-		*a++ = 0x89; *a++ = 0x51; *a++ = 0x04;
+		if (bigendian) {
+			/*  0f c8                   bswap  %eax  */
+			/*  0f ca                   bswap  %edx  */
+			/*  89 11                   mov    %edx,(%ecx)  */
+			/*  89 41 04                mov    %eax,0x4(%ecx)  */
+			*a++ = 0x0f; *a++ = 0xc8;
+			*a++ = 0x0f; *a++ = 0xca;
+			*a++ = 0x89; *a++ = 0x11;
+			*a++ = 0x89; *a++ = 0x41; *a++ = 0x04;
+		} else {
+			/*  89 01                   mov    %eax,(%ecx)  */
+			/*  89 51 04                mov    %edx,0x4(%ecx)  */
+			*a++ = 0x89; *a++ = 0x01;
+			*a++ = 0x89; *a++ = 0x51; *a++ = 0x04;
+		}
 		break;
 	case HI6_SW:
+		/*  0f c8                   bswap  %eax  (big endian)  */
+		if (bigendian) {
+			*a++ = 0x0f; *a++ = 0xc8;
+		}
 		/*  89 01                   mov    %eax,(%ecx)  */
 		*a++ = 0x89; *a++ = 0x01;
 		break;
 	case HI6_SH:
+		/*  86 c4                   xchg   %al,%ah  (big endian)  */
+		if (bigendian) {
+			*a++ = 0x86; *a++ = 0xc4;
+		}
 		/*  66 89 01                mov    %ax,(%ecx)  */
 		*a++ = 0x66; *a++ = 0x89; *a++ = 0x01;
 		break;

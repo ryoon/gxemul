@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.859 2005-07-31 00:38:22 debug Exp $
+$Id: HISTORY,v 1.860 2005-07-31 06:32:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2108,3 +2108,5 @@ Changelog for GXemul:
 		Beginning the work on refactoring the dyntrans system.
 20050731	Continuing the refactoring.
 		Fixing a small but serious host alignment bug in memory_rw.
+		Adding support for big-endian load/stores to the i386 bintrans
+		backend.

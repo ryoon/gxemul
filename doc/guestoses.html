@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.75 2005-07-18 22:16:41 debug Exp $
+$Id: guestoses.html,v 1.76 2005-07-31 10:08:42 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -580,8 +580,8 @@ time consuming, but necessary:
 <ol>
   <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
 	This needs to have a 750 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>
-	inside the emulator. (Don't forget to add the extra partition!)
+	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>.
+	(Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
@@ -1429,8 +1429,8 @@ client. Performing this setup is quite time consuming, but necessary:
 <ol>
   <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
 	This needs to have a 800 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>
-	inside the emulator. (Don't forget to add the extra partition!)
+	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>.
+	(Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
@@ -1452,14 +1452,14 @@ echo "10:20:30:00:00:10 client" &gt; /etc/ethers
 echo 10.0.0.1 client &gt; /etc/hosts
 reboot</b>
 </pre></td></tr></table>
-  <li>Start the DECstation emulation again, and download the
-	OpenBSD/sgi distribution:<br>(NOTE: This
+  <li>Start the DECstation emulation again, and enter the following
+	commands to download the OpenBSD/sgi distribution:<br>(NOTE: This
 	takes quite some time, even if you have a fast network connection.)
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
 (log in as anonymous...)
 <b>cd pub/OpenBSD/3.7/sgi
-mget b* c* e* g* m*
+mget b*tgz c* e* g* m*
 quit
 sh
 for a in *.tgz; do echo $a; tar zxfp $a; done
@@ -1531,19 +1531,19 @@ halt</b>
 	$ <b>gxemul @config_client</b>
 
 </pre>
-  <li>In the OpenBSD/sgi window, choose "S" (for Shell), and type:
+  <li>In the OpenBSD/sgi window, choose "<tt>s</tt>" (for Shell), and type:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>ifconfig mec0 10.0.0.1; route add default 10.0.0.254
 mount -v 10.0.0.2:/tftpboot /mnt
 cd /mnt/dev; ./MAKEDEV all; cd /; umount /mnt
 halt</b>
 </pre></td></tr></table>
+	You might want to log in as <tt>root</tt> on the server machine, and
+	run <tt>tcpdump -lnvv</tt> or similar, to see that what the client
+	machine actually does on the network. The <tt>MAKEDEV</tt> script
+	takes almost forever, so be patient.
 </ol>
 
-<p>You might want to log in as <tt>root</tt> on the server machine, and
-run <tt>tcpdump -lnvv</tt> or similar, to see that what the client machine
-actually does on the network. The <tt>MAKEDEV</tt> script takes almost 
-forever, so be patient.
 
 <p><font color="#ff0000">NOTE: Everything up to this point should work. 
 However, the next step (in gray) doesn't actually work:</font>

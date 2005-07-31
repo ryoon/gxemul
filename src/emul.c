@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.216 2005-07-27 06:57:32 debug Exp $
+ *  $Id: emul.c,v 1.217 2005-07-31 07:58:03 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -709,11 +709,17 @@ static void add_arc_components(struct machine *m)
 
 	len += 1048576 * m->memory_offset_in_mb;
 
-	/*  NOTE/TODO: magic 12MB end of load program area  */
+	/*
+	 *  NOTE/TODO: magic 12MB end of load program area
+	 *
+	 *  Hm. This breaks the old FreeBSD/MIPS snapshots...
+	 */
+#if 0
 	arcbios_add_memory_descriptor(cpu,
 	    0x60000 + m->memory_offset_in_mb * 1048576,
 	    start-0x60000 - m->memory_offset_in_mb * 1048576,
 	    ARCBIOS_MEM_FreeMemory);
+#endif
 	arcbios_add_memory_descriptor(cpu,
 	    start, len, ARCBIOS_MEM_LoadedProgram);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.173 2005-07-30 18:11:19 debug Exp $
+ *  $Id: bintrans.c,v 1.174 2005-07-31 08:47:56 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -142,10 +142,12 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp);
 static void bintrans_write_pc_inc(unsigned char **addrp);
 static void bintrans_write_quickjump(struct memory *mem,
 	unsigned char *quickjump_code, uint32_t chunkoffset);
-static int bintrans_write_instruction__addiu_etc(unsigned char **addrp, int rt,
-	int rs, int imm, int instruction_type);
-static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd,
-	int rs, int rt, int sa, int instruction_type);
+static int bintrans_write_instruction__addiu_etc(struct memory *mem,
+	unsigned char **addrp, int rt, int rs, int imm,
+	int instruction_type);
+static int bintrans_write_instruction__addu_etc(struct memory *mem,
+	unsigned char **addrp, int rd, int rs, int rt, int sa,
+	int instruction_type);
 static int bintrans_write_instruction__branch(unsigned char **addrp,
 	int instruction_type, int regimm_type, int rt, int rs, int imm);
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs,
@@ -535,7 +537,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					rd = rt = rs = sa = 0;
 					special6 = SPECIAL_SLL;
 				}
-				translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, rd, rs, rt, sa, special6);
+				translated = try_to_translate = bintrans_write_instruction__addu_etc(cpu->mem, &ca, rd, rs, rt, sa, special6);
 				n_translated += translated;
 				break;
 			case SPECIAL_MFHI:
@@ -629,8 +631,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 		case HI6_DADDI:
 		case HI6_DADDIU:
 			translated = try_to_translate =
-			    bintrans_write_instruction__addiu_etc(&ca,
-			    instr[2] & 31,
+			    bintrans_write_instruction__addiu_etc(cpu->mem,
+			    &ca, instr[2] & 31,
 			    ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7),
 			    (instr[1] << 8) + instr[0], hi6);
 			n_translated += translated;
@@ -713,7 +715,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					n_translated += translated;
 				} else if (instr[2] == 0 && instr[1] == 0 && (instr[0] == 0x21 || instr[0] == 0x22)) {
 					/*  standby and suspend on VR41xx etc ==> NOP  */
-					translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
+					translated = try_to_translate = bintrans_write_instruction__addu_etc(cpu->mem, &ca, 0, 0, 0, 0, SPECIAL_SLL);
 					n_translated += translated;
 				} else {
 					/*  Untranslatable:  */
@@ -772,7 +774,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			break;
 
 		case HI6_CACHE:
-			translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
+			translated = try_to_translate = bintrans_write_instruction__addu_etc(cpu->mem, &ca, 0, 0, 0, 0, SPECIAL_SLL);
 			n_translated += translated;
 			break;
 

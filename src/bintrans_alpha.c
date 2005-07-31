@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.124 2005-07-30 18:11:19 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.125 2005-07-31 08:47:56 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -371,7 +371,8 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 /*
  *  bintrans_write_instruction__addiu_etc():
  */
-static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
+static int bintrans_write_instruction__addiu_etc(
+	struct memory *mem, unsigned char **addrp,
 	int rt, int rs, int imm, int instruction_type)
 {
 	uint32_t *a;
@@ -529,7 +530,8 @@ rt0:
 /*
  *  bintrans_write_instruction__addu_etc():
  */
-static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
+static int bintrans_write_instruction__addu_etc(
+	struct memory *mem, unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
 	unsigned char *a, *unmodified = NULL;

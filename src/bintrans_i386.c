@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.82 2005-07-31 08:24:23 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.83 2005-07-31 08:47:57 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -425,7 +425,8 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__addiu_etc():
  */
-static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
+static int bintrans_write_instruction__addiu_etc(
+	struct memory *mem, unsigned char **addrp,
 	int rt, int rs, int imm, int instruction_type)
 {
 	unsigned char *a;
@@ -459,11 +460,9 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		goto rt0;
 	}
 
-#if 0
-	if (bintrans_32bit_only)
+	if (mem->bintrans_32bit_only)
 		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 	else
-#endif
 		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 
 	switch (instruction_type) {
@@ -698,7 +697,8 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__addu_etc():
  */
-static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
+static int bintrans_write_instruction__addu_etc(
+	struct memory *mem, unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
 	unsigned char *a;
@@ -721,10 +721,15 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DSRL32:
 	case SPECIAL_MOVZ:
 	case SPECIAL_MOVN:
-	case SPECIAL_SLT:
-	case SPECIAL_SLTU:
 		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
+	case SPECIAL_SLT:
+	case SPECIAL_SLTU:
+		if (!mem->bintrans_32bit_only) {
+			bintrans_write_chunkreturn_fail(addrp);
+			return 0;
+		}
+		break;
 	}
 
 	switch (instruction_type) {
@@ -768,7 +773,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	}
 
 	/*  edx:eax = rs, ecx:ebx = rt  */
-	if (load64) {
+	if (load64 && !mem->bintrans_32bit_only) {
 		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 		/*  89 c3                   mov    %eax,%ebx  */
 		/*  89 d1                   mov    %edx,%ecx  */
@@ -871,19 +876,11 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		}
 		*a++ = 0x99;
 		break;
-
-#if 0
-	THESE ARE INCORRECT!
-
 	case SPECIAL_SLTU:
-		/*  set if less than, unsigned. (compare edx:eax to ecx:ebx)  */
-		/*  if edx <= ecx and eax < ebx then 1, else 0.  */
-		/*  39 ca                   cmp    %ecx,%edx  */
-		/*  77 0b                   ja     <ret0>  */
+		/*  NOTE: 32-bit ONLY!  */
+		/*  set if less than, unsigned. (compare eax to ebx)  */
 		/*  39 d8                   cmp    %ebx,%eax  */
 		/*  73 07                   jae    58 <ret0>  */
-		*a++ = 0x39; *a++ = 0xca;
-		*a++ = 0x77; *a++ = 0x0b;
 		*a++ = 0x39; *a++ = 0xd8;
 		*a++ = 0x73; *a++ = 0x07;
 
@@ -901,18 +898,10 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x99;
 		break;
 	case SPECIAL_SLT:
-		/*  set if less than, signed. (compare edx:eax to ecx:ebx)  */
-		/*  if edx > ecx then 0.  */
-		/*  if edx < ecx then 1.  */
-		/*  if eax < ebx then 1, else 0.  */
-		/*  39 ca                   cmp    %ecx,%edx  */
-		/*  7c 0a                   jl     <ret1>  */
-		/*  7f 04                   jg     <ret0>  */
+		/*  NOTE: 32-bit ONLY!  */
+		/*  set if less than, signed. (compare eax to ebx)  */
 		/*  39 d8                   cmp    %ebx,%eax  */
 		/*  7c 04                   jl     <ret1>  */
-		*a++ = 0x39; *a++ = 0xca;
-		*a++ = 0x7c; *a++ = 0x0a;
-		*a++ = 0x7f; *a++ = 0x04;
 		*a++ = 0x39; *a++ = 0xd8;
 		*a++ = 0x7c; *a++ = 0x04;
 
@@ -930,7 +919,6 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		/*  99                      cltd   */
 		*a++ = 0x99;
 		break;
-#endif
 	case SPECIAL_SLLV:
 		/*  rd = rt << (rs&31)  (logical)     eax = ebx << (eax&31)  */
 		/*  xchg ebx,eax, then we can do   eax = eax << (ebx&31)  */

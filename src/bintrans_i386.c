@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.80 2005-07-31 06:32:47 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.81 2005-07-31 07:06:50 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -2032,10 +2032,20 @@ TODO: top 33 bits!!!!!!!
 
 
 	if (!load) {
-		if (alignment >= 7)
-			load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
-		else
-			load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
+		if (rt == MIPS_GPR_ZERO) {
+			switch (alignment) {
+			case 7:	*a++ = 0x31; *a++ = 0xd2;	 /*  edx = 0  */
+			case 3:
+			case 1:	*a++ = 0x31; *a++ = 0xc0; break; /*  eax = 0  */
+			case 0:	*a++ = 0xb0; *a++ = 0x00; break; /*  al = 0  */
+			default:fatal("todo: zero\n"); exit(1);
+			}
+		} else {
+			if (alignment >= 7)
+				load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
+			else
+				load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
+		}
 	}
 
 	switch (instruction_type) {

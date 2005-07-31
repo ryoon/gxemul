@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.22 2005-06-20 08:19:58 debug Exp $
+ *  $Id: dev_gt.c,v 1.23 2005-07-31 00:38:23 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -48,6 +48,8 @@
 
 
 #define	TICK_STEPS_SHIFT	16
+
+/*  #define debug fatal  */
 
 #define PCI_VENDOR_GALILEO           0x11ab    /* Galileo Technology */
 #define PCI_PRODUCT_GALILEO_GT64011  0x4146    /* GT-64011 System Controller */

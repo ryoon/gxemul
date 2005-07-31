@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.81 2005-07-31 07:06:50 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.82 2005-07-31 08:24:23 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -721,6 +721,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DSRL32:
 	case SPECIAL_MOVZ:
 	case SPECIAL_MOVN:
+	case SPECIAL_SLT:
+	case SPECIAL_SLTU:
 		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
 	}
@@ -738,8 +740,6 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DSLL32:
 	case SPECIAL_DSRL32:
 	case SPECIAL_DSRA32:
-	case SPECIAL_SLT:
-	case SPECIAL_SLTU:
 		load64 = 1;
 	}
 
@@ -871,6 +871,10 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		}
 		*a++ = 0x99;
 		break;
+
+#if 0
+	THESE ARE INCORRECT!
+
 	case SPECIAL_SLTU:
 		/*  set if less than, unsigned. (compare edx:eax to ecx:ebx)  */
 		/*  if edx <= ecx and eax < ebx then 1, else 0.  */
@@ -926,6 +930,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		/*  99                      cltd   */
 		*a++ = 0x99;
 		break;
+#endif
 	case SPECIAL_SLLV:
 		/*  rd = rt << (rs&31)  (logical)     eax = ebx << (eax&31)  */
 		/*  xchg ebx,eax, then we can do   eax = eax << (ebx&31)  */

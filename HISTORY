@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.861 2005-07-31 07:06:49 debug Exp $
+$Id: HISTORY,v 1.862 2005-07-31 08:24:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2112,3 +2112,5 @@ Changelog for GXemul:
 		backend.
 		Another minor i386 bintrans backend update: stores from the
 		zero register are now one (or two) loads shorter.
+		The slt and sltu instructions were incorrectly implemented for
+		the i386 backend; disabling them for now.

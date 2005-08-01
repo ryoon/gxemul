@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.6 2005-08-01 23:23:18 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.7 2005-08-01 23:32:17 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -395,19 +395,21 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	int64_t lowest, highest = -1;
 	int found, r, lowest_index;
 
-	/*  fatal("update_translation_table(): v=0x%llx, h=%p w=%i"
-	    " p=0x%llx\n", (long long)vaddr_page, host_page, writeflag,
-	    (long long)paddr_page);  */
-
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
 	struct alpha_vph_page *vph_p;
 	int kernel = 0;
+	/*  fatal("update_translation_table(): v=0x%llx, h=%p w=%i"
+	    " p=0x%llx\n", (long long)vaddr_page, host_page, writeflag,
+	    (long long)paddr_page);  */
 #else
-#ifdef DYNTRANS_ARM
+#ifdef DYNTRANS_32
 	uint32_t index;
-#else	/*  !DYNTRANS_ARM  */
-#error	Neither arm nor alpha?
+	/*  fatal("update_translation_table(): v=0x%x, h=%p w=%i"
+	    " p=0x%x\n", (int)vaddr_page, host_page, writeflag,
+	    (int)paddr_page);  */
+#else	/*  !DYNTRANS_32  */
+#error	Neither 32-bit nor Alpha?
 #endif
 #endif
 
@@ -437,7 +439,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			/*  This one has to be invalidated first:  */
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
-			    cpu->cd.arm.vph_tlb_entry[r].vaddr_page);
+			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page);
 		}
 
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid = 1;
@@ -482,6 +484,15 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		vph_p->host_load[b] = host_page;
 		vph_p->host_store[b] = writeflag? host_page : NULL;
 		vph_p->phys_addr[b] = paddr_page;
+#else
+#ifdef DYNTRANS_32
+		index = vaddr_page >> 12;
+		cpu->cd.DYNTRANS_ARCH.host_load[index] = host_page;
+		cpu->cd.DYNTRANS_ARCH.host_store[index] =
+		    writeflag? host_page : NULL;
+		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = paddr_page;
+#endif	/*  32  */
+#endif	/*  !ALPHA  */
 	} else {
 		/*
 		 *  The translation was already in the TLB.
@@ -489,6 +500,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		 *	Writeflag = 1:  Make sure the page is writable.
 		 *	Writeflag = -1: Downgrade to readonly.
 		 */
+#ifdef DYNTRANS_ALPHA
 		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
 		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
 		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
@@ -508,37 +520,27 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			vph_p->host_store[b] = writeflag? host_page : NULL;
 			vph_p->phys_addr[b] = paddr_page;
 		}
-	}
-#else	/*  !DYNTRANS_ALPHA  */
-#ifdef DYNTRANS_ARM
+#else
+#ifdef DYNTRANS_32
 		index = vaddr_page >> 12;
-		cpu->cd.arm.host_load[index] = host_page;
-		cpu->cd.arm.host_store[index] = writeflag? host_page : NULL;
-		cpu->cd.arm.phys_addr[index] = paddr_page;
-	} else {
-		/*
-		 *  The translation was already in the TLB.
-		 *	Writeflag = 0:  Do nothing.
-		 *	Writeflag = 1:  Make sure the page is writable.
-		 *	Writeflag = -1: Downgrade to readonly.
-		 */
-		index = vaddr_page >> 12;
-		cpu->cd.arm.vph_tlb_entry[found].timestamp = highest + 1;
-		if (cpu->cd.arm.phys_addr[index] == paddr_page) {
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[found].timestamp =
+		    highest + 1;
+		if (cpu->cd.DYNTRANS_ARCH.phys_addr[index] == paddr_page) {
 			if (writeflag == 1)
-				cpu->cd.arm.host_store[index] = host_page;
+				cpu->cd.DYNTRANS_ARCH.host_store[index] =
+				    host_page;
 			if (writeflag == -1)
-				cpu->cd.arm.host_store[index] = NULL;
+				cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
 		} else {
 			/*  Change the entire physical/host mapping:  */
-			cpu->cd.arm.host_load[index] = host_page;
-			cpu->cd.arm.host_store[index] =
+			cpu->cd.DYNTRANS_ARCH.host_load[index] = host_page;
+			cpu->cd.DYNTRANS_ARCH.host_store[index] =
 			    writeflag? host_page : NULL;
-			cpu->cd.arm.phys_addr[index] = paddr_page;
+			cpu->cd.DYNTRANS_ARCH.phys_addr[index] = paddr_page;
 		}
+#endif	/*  32  */
+#endif	/*  !ALPHA  */
 	}
-#endif	/*  !DYNTRANS_ARM  */
-#endif	/*  !DYNTRANS_ALPHA  */
 }
 #endif	/*  DYNTRANS_UPDATE_TRANSLATION_TABLE  */
 

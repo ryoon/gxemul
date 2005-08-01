@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.76 2005-07-31 10:08:42 debug Exp $
+$Id: guestoses.html,v 1.77 2005-08-01 05:10:29 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -354,7 +354,7 @@ NetBSD/hpcmips on an emulated MobilePro 800:
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
   <li>Start the installation like this:<pre>
-	$ <b>gxemul -E hpc -e mobilepro800 -X -d nbsd_hpcmips.img  \
+	$ <b>gxemul -E hpcmips -e mobilepro800 -X -d nbsd_hpcmips.img  \
 	  -d b:hpcmipscd.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
@@ -374,7 +374,7 @@ disk image, so you need to download a generic kernel separately:<pre>
 
 <p>The installation is now complete. Use the following command line to
 boot the emulated hpcmips machine:<pre>
-	$ <b>gxemul -E hpc -e mobilepro800 -X -d nbsd_hpcmips.img netbsd-GENERIC.gz</b>
+	$ <b>gxemul -E hpcmips -e mobilepro800 -X -d nbsd_hpcmips.img netbsd-GENERIC.gz</b>
 
 </pre>
 

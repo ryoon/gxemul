@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.489 2005-07-30 22:40:03 debug Exp $
+ *  $Id: machine.c,v 1.490 2005-08-01 05:10:30 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3764,6 +3764,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			break;
 		case MACHINE_EVBMIPS_PB1000:
 			machine->machine_name = "PB1000 (evbmips)";
+			cpu->byte_order = EMUL_BIG_ENDIAN;
+
 			machine->md_interrupt = au1x00_interrupt;
 			machine->md_int.au1x00_ic_data = dev_au1x00_init(machine, mem);
 			/*  TODO  */
@@ -5067,10 +5069,9 @@ void machine_init(void)
 	}
 
 	/*  HPCmips:  */
-	me = machine_entry_new("Handheld MIPS (HPC)",
-	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 8);
+	me = machine_entry_new("Handheld MIPS (HPCmips)",
+	    ARCH_MIPS, MACHINE_HPCMIPS, 1, 8);
 	me->aliases[0] = "hpcmips";
-	me->aliases[1] = "hpc";
 	me->subtype[0] = machine_entry_subtype_new(
 	    "Casio Cassiopeia BE-300", MACHINE_HPCMIPS_CASIO_BE300, 2);
 	me->subtype[0]->aliases[0] = "be-300";

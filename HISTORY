@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.863 2005-07-31 08:47:55 debug Exp $
+$Id: HISTORY,v 1.864 2005-08-01 05:10:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2114,3 +2114,4 @@ Changelog for GXemul:
 		zero register are now one (or two) loads shorter.
 		The slt and sltu instructions were incorrectly implemented for
 		the i386 backend; only using them for 32-bit mode for now.
+20050801	Continuing the dyntrans refactoring.

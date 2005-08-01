@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.42 2005-07-30 22:40:12 debug Exp $
+ *  $Id: cpu_arm.c,v 1.43 2005-08-01 05:10:30 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -590,77 +590,24 @@ void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 #undef MEMORY_RW
 
 
-/*
- *  arm_pc_to_pointers():
- *
- *  This function uses the current program counter (a virtual address) to
- *  find out which physical translation page to use, and then sets the current
- *  translation page pointers to that page.
- *
- *  If there was no translation page for that physical page, then an empty
- *  one is created.
- */
-void arm_pc_to_pointers(struct cpu *cpu)
-{
-	uint32_t cached_pc, physaddr, physpage_ofs;
-	int pagenr, table_index;
-	uint32_t *physpage_entryp;
-	struct arm_tc_physpage *ppp;
+#define	DYNTRANS_PC_TO_POINTERS_FUNC	arm_pc_to_pointers
+#define	DYNTRANS_ARCH		arm
+#define	DYNTRANS_ARM
+#define	DYNTRANS_IC_ENTRIES_PER_PAGE	ARM_IC_ENTRIES_PER_PAGE
+#define	DYNTRANS_ADDR_TO_PAGENR		ARM_ADDR_TO_PAGENR
+#define	DYNTRANS_PC_TO_IC_ENTRY		ARM_PC_TO_IC_ENTRY
+#define DYNTRANS_TC_ALLOCATE		arm_tc_allocate_default_page
+#define DYNTRANS_TC_PHYSPAGE		arm_tc_physpage
+#include "cpu_dyntrans.c"
+#undef	DYNTRANS_PC_TO_IC_ENTRY
+#undef	DYNTRANS_TC_ALLOCATE
+#undef	DYNTRANS_TC_PHYSPAGE
+#undef	DYNTRANS_ADDR_TO_PAGENR
+#undef	DYNTRANS_IC_ENTRIES_PER_PAGE
+#undef	DYNTRANS_ARM
+#undef	DYNTRANS_ARCH
+#undef	DYNTRANS_PC_TO_POINTERS_FUNC
 
-	cached_pc = cpu->cd.arm.r[ARM_PC];
-
-	/*
-	 *  TODO: virtual to physical address translation
-	 */
-
-	physaddr = cached_pc & ~(((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3);
-
-	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
-		cpu_create_or_reset_tc(cpu);
-
-	pagenr = ARM_ADDR_TO_PAGENR(physaddr);
-	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
-
-	physpage_entryp = &(((uint32_t *)
-	    cpu->translation_cache)[table_index]);
-	physpage_ofs = *physpage_entryp;
-	ppp = NULL;
-
-	/*  Traverse the physical page chain:  */
-	while (physpage_ofs != 0) {
-		ppp = (struct arm_tc_physpage *)(cpu->translation_cache
-		    + physpage_ofs);
-		/*  If we found the page in the cache, then we're done:  */
-		if (ppp->physaddr == physaddr)
-			break;
-		/*  Try the next page in the chain:  */
-		physpage_ofs = ppp->next_ofs;
-	}
-
-	/*  If the offset is 0 (or ppp is NULL), then we need to create a
-	    new "default" empty translation page.  */
-
-	if (ppp == NULL) {
-		fatal("CREATING page %i (physaddr 0x%08x), table index = %i\n",
-		    pagenr, physaddr, table_index);
-		*physpage_entryp = physpage_ofs =
-		    cpu->translation_cache_cur_ofs;
-
-		arm_tc_allocate_default_page(cpu, physaddr);
-
-		ppp = (struct arm_tc_physpage *)(cpu->translation_cache
-		    + physpage_ofs);
-	}
-
-	cpu->cd.arm.cur_physpage = ppp;
-	cpu->cd.arm.cur_ic_page = &ppp->ics[0];
-	cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
-	    ARM_PC_TO_IC_ENTRY(cached_pc);
-
-	/*  printf("cached_pc = 0x%08x  pagenr = %i  table_index = %i, "
-	    "physpage_ofs = 0x%08x\n", (int)cached_pc, (int)pagenr,
-	    (int)table_index, (int)physpage_ofs);  */
-}
 
 
 #include "cpu_arm_instr.c"

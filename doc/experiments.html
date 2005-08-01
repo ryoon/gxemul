@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.82 2005-07-18 22:16:40 debug Exp $
+$Id: experiments.html,v 1.83 2005-08-01 05:10:29 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -701,19 +701,19 @@ probably doesn't work in GXemul.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/netbsd.gz">netbsd.gz</a>
-	<br>Try <b><tt>gxemul -X -E hpc -e mobilepro770 netbsd</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpcmips -e mobilepro770 netbsd</tt></b>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>Try <b><tt>gxemul -X -E hpc -e mobilepro770 netbsd-GENERIC</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpcmips -e mobilepro770 netbsd-GENERIC</tt></b>
       <p>
       <li>Linux for BE300:
 	<br><a href="http://www.linux4.be/2004/linux4be20040908.zip">http://www.linux4.be/2004/linux4be20040908.zip</a>
-	<br>Try <b><tt>gxemul -X -E hpc -e be300 vmlinux</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpcmips -e be300 vmlinux</tt></b>
       <p>
       <li>Linux for Agenda VR3:
 	<br>Download <a href="http://agenda-snow.sourceforge.net/kernel-old-versions/binary/">http://agenda-snow.sourceforge.net/kernel-old-versions/binary</a>/<a href="http://agenda-snow.sourceforge.net/kernel-old-versions/binary/root1.2.6.kernel-8.00">root1.2.6.kernel-8.00</a>
 	<br>and <a href="http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O/">http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O</a>/<a href="http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O/root1.2.6.cramfs">root1.2.6.cramfs</a>.
 	<br>(or <a href="http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs">http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs</a>)
-	<br>Try <b><tt>gxemul -X -E hpc -e vr3 -x 0xbf200000:root1.2.6.cramfs 0xbf000000:0:0xbf0005e0:root1.2.6.kernel-8.00</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpcmips -e vr3 -x 0xbf200000:root1.2.6.cramfs 0xbf000000:0:0xbf0005e0:root1.2.6.kernel-8.00</tt></b>
 	<br>(or replace root1.2.6.cramfs with dream-1-noxip.cramfs)
 	<br>Remove <b><tt>-X</tt></b> to try with serial console instead of X, and
 		remove <b><tt>-b</tt></b> to try without (old) bintrans.
@@ -725,7 +725,7 @@ probably doesn't work in GXemul.
       <li>Linux for MobilePro etc.:
 	<br><a href="http://pc1.peanuts.gr.jp/~kei/Hard-Float/Kernels/">http://pc1.peanuts.gr.jp/~kei/Hard-Float/Kernels/</a>
 	<br>Uncompress the archive to get a kernel, vmlinux-800 for example.
-	<br>Try <b><tt>./gxemul -X -o 'root=/dev/hda1' -d r:disk.img -d r:disk.img -Ehpc -e mobilepro800 vmlinux-800</tt></b>
+	<br>Try <b><tt>./gxemul -X -o 'root=/dev/hda1' -d r:disk.img -d r:disk.img -Ehpcmips -e mobilepro800 vmlinux-800</tt></b>
 	<br>where disk.img is an ext2fs filesystem with contents from
 	<a href="http://pc1.peanuts.gr.jp/~kei/Hard-Float/Miniroots/miniroot-20010330.tar.bz2">http://pc1.peanuts.gr.jp/~kei/Hard-Float/Miniroots/miniroot-20010330.tar.bz2</a>
 	<br>(Note the double disk arguments.)
@@ -733,7 +733,7 @@ probably doesn't work in GXemul.
       <p>
       <li><a href="http://www.disorder.ru/openbsd/be300/">OpenBSD/be300</a>:
 	<br><a href="http://www.disorder.ru/openbsd/be300/bsd.rd">http://www.disorder.ru/openbsd/be300/bsd.rd</a>
-	<br>Try <b><tt>gxemul -X -E hpc -e be300 bsd.rd</tt></b>
+	<br>Try <b><tt>gxemul -X -E hpcmips -e be300 bsd.rd</tt></b>
 	<br>Note: bintrans might be buggy, so you can try with -B if you want to.
     </ul>
   </li>

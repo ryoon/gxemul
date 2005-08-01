@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.30 2005-07-30 22:40:12 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.31 2005-08-01 05:10:30 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -789,79 +789,23 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 #undef MEMORY_RW
 
 
-
-/*
- *  alpha_pc_to_pointers():
- *
- *  This function uses the current program counter (a virtual address) to
- *  find out which physical translation page to use, and then sets the current
- *  translation page pointers to that page.
- *
- *  If there was no translation page for that physical page, then an empty
- *  one is created.
- */
-void alpha_pc_to_pointers(struct cpu *cpu)
-{
-	uint64_t cached_pc, physaddr;
-	uint32_t physpage_ofs;
-	uint64_t pagenr, table_index;
-	uint32_t *physpage_entryp;
-	struct alpha_tc_physpage *ppp;
-
-	cached_pc = cpu->pc;
-
-	/*
-	 *  TODO: virtual to physical address translation
-	 */
-
-	physaddr = cached_pc & ~(((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3);
-
-	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
-		cpu_create_or_reset_tc(cpu);
-
-	pagenr = ALPHA_ADDR_TO_PAGENR(physaddr);
-	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
-
-	physpage_entryp = &(((uint32_t *)cpu->translation_cache)[table_index]);
-	physpage_ofs = *physpage_entryp;
-	ppp = NULL;
-
-	/*  Traverse the physical page chain:  */
-	while (physpage_ofs != 0) {
-		ppp = (struct alpha_tc_physpage *)
-		    (cpu->translation_cache + physpage_ofs);
-		/*  If we found the page in the cache, then we're done:  */
-		if (ppp->physaddr == physaddr)
-			break;
-		/*  Try the next page in the chain:  */
-		physpage_ofs = ppp->next_ofs;
-	}
-
-	/*  If the offset is 0 (or ppp is NULL), then we need to create a
-	    new "default" empty translation page.  */
-
-	if (ppp == NULL) {
-		debug("CREATING page %lli (physaddr 0x%016llx), table "
-		    "index = %i\n", (long long)pagenr, (uint64_t)physaddr,
-		    table_index);
-		*physpage_entryp = physpage_ofs =
-		    cpu->translation_cache_cur_ofs;
-
-		alpha_tc_allocate_default_page(cpu, physaddr);
-
-		ppp = (struct alpha_tc_physpage *)
-		    (cpu->translation_cache + physpage_ofs);
-	}
-
-	cpu->cd.alpha.cur_physpage = ppp;
-	cpu->cd.alpha.cur_ic_page = &ppp->ics[0];
-	cpu->cd.alpha.next_ic = cpu->cd.alpha.cur_ic_page +
-	    ALPHA_PC_TO_IC_ENTRY(cached_pc);
-
-	/*  printf("cached_pc = 0x%016llx  pagenr = %lli  table_index = %i, "
-	    "physpage_ofs = 0x%016llx\n", (long long)cached_pc,
-	    (long long)pagenr, (int)table_index, (long long)physpage_ofs);  */
-}
+#define DYNTRANS_PC_TO_POINTERS_FUNC    alpha_pc_to_pointers
+#define DYNTRANS_ARCH           alpha
+#define DYNTRANS_ALPHA
+#define DYNTRANS_IC_ENTRIES_PER_PAGE    ALPHA_IC_ENTRIES_PER_PAGE
+#define DYNTRANS_ADDR_TO_PAGENR         ALPHA_ADDR_TO_PAGENR
+#define DYNTRANS_PC_TO_IC_ENTRY         ALPHA_PC_TO_IC_ENTRY
+#define DYNTRANS_TC_ALLOCATE            alpha_tc_allocate_default_page
+#define DYNTRANS_TC_PHYSPAGE            alpha_tc_physpage
+#include "cpu_dyntrans.c"
+#undef  DYNTRANS_PC_TO_IC_ENTRY
+#undef  DYNTRANS_TC_ALLOCATE
+#undef  DYNTRANS_TC_PHYSPAGE
+#undef  DYNTRANS_ADDR_TO_PAGENR
+#undef  DYNTRANS_IC_ENTRIES_PER_PAGE
+#undef  DYNTRANS_ALPHA
+#undef  DYNTRANS_ARCH
+#undef  DYNTRANS_PC_TO_POINTERS_FUNC
 
 
 #include "cpu_alpha_instr.c"

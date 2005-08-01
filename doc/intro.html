@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.54 2005-07-18 22:16:41 debug Exp $
+$Id: intro.html,v 1.55 2005-08-01 20:57:04 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -228,11 +228,10 @@ R2000/R3000-like CPUs (32-bit), R1x000, and generic MIPS32/MIPS64-style
 CPUs are also emulated, and are hopefully almost as stable as the R4000 
 emulation.
 
-<p>
-I have written an experimental dynamic binary translation subsystem.
+<p>I have written an experimental dynamic binary translation subsystem.
 This gives higher total performance than interpreting one instruction at a
-time and executing it. (If you wish to enable bintrans, add <b>-b</b> to
-the command line, but keep in mind that it is still experimental.)
+time and executing it. (If you wish to disable bintrans, add <b>-B</b> to
+the command line.)
 
 
 <h4>URISC:</h4>

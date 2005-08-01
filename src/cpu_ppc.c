@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.65 2005-07-28 13:29:36 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.66 2005-08-01 22:54:40 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -411,6 +411,52 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 			*match_register = 1;
 		}
 	}
+}
+
+
+/*
+ *  ppc_cpu_show_full_statistics():
+ *
+ *  Show detailed statistics on opcode usage on each cpu.
+ */
+void ppc_cpu_show_full_statistics(struct machine *m)
+{
+	fatal("ppc_cpu_show_full_statistics(): TODO\n");
+}
+
+
+/*
+ *  ppc_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void ppc_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
+	fatal("ppc_cpu_tlbdump(): TODO\n");
+}
+
+
+/*
+ *  ppc_cpu_interrupt():
+ */
+int ppc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
+{
+	fatal("ppc_cpu_interrupt(): TODO\n");
+	return 0;
+}
+
+
+/*
+ *  ppc_cpu_interrupt_ack():
+ */
+int ppc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
+{
+	/*  fatal("ppc_cpu_interrupt_ack(): TODO\n");  */
+	return 0;
 }
 
 
@@ -2899,27 +2945,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #undef MEMORY_RW
 
 
-/*
- *  ppc_cpu_family_init():
- *
- *  Fill in the cpu_family struct for PPC.
- */
-int ppc_cpu_family_init(struct cpu_family *fp)
-{
-	fp->name = "PPC";
-	fp->cpu_new = ppc_cpu_new;
-	fp->list_available_types = ppc_cpu_list_available_types;
-	fp->register_match = ppc_cpu_register_match;
-	fp->disassemble_instr = ppc_cpu_disassemble_instr;
-	fp->register_dump = ppc_cpu_register_dump;
-	fp->run = ppc_cpu_run;
-	fp->dumpinfo = ppc_cpu_dumpinfo;
-	/*  fp->show_full_statistics = ppc_cpu_show_full_statistics;  */
-	/*  fp->tlbdump = ppc_cpu_tlbdump;  */
-	/*  fp->interrupt = ppc_cpu_interrupt;  */
-	/*  fp->interrupt_ack = ppc_cpu_interrupt_ack;  */
-	return 1;
-}
+CPU_FAMILY_INIT(ppc,"PPC")
 
 
 #endif	/*  ENABLE_PPC  */

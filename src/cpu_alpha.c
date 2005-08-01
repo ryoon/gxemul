@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.34 2005-08-01 22:31:12 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.35 2005-08-01 22:54:40 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -209,6 +209,52 @@ void alpha_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug((i % 2) == 1? "\n" : "   ");
 		}
 	}
+}
+
+
+/*
+ *  alpha_cpu_show_full_statistics():
+ *
+ *  Show detailed statistics on opcode usage on each cpu.
+ */
+void alpha_cpu_show_full_statistics(struct machine *m)
+{
+	fatal("alpha_cpu_show_full_statistics(): TODO\n");
+}
+
+
+/*
+ *  alpha_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void alpha_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
+	fatal("alpha_cpu_tlbdump(): TODO\n");
+}
+
+
+/*
+ *  alpha_cpu_interrupt():
+ */
+int alpha_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
+{
+	fatal("alpha_cpu_interrupt(): TODO\n");
+	return 0;
+}
+
+
+/*
+ *  alpha_cpu_interrupt_ack():
+ */
+int alpha_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
+{
+	/*  fatal("alpha_cpu_interrupt_ack(): TODO\n");  */
+	return 0;
 }
 
 

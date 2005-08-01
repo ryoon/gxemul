@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.164 2005-07-28 13:29:36 debug Exp $
+ *  $Id: cpu_x86.c,v 1.165 2005-08-01 22:54:40 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -457,6 +457,32 @@ void x86_cpu_register_match(struct machine *m, char *name,
 		*mr = 1;
 		return;
 	}
+}
+
+
+/*
+ *  x86_cpu_show_full_statistics():
+ *
+ *  Show detailed statistics on opcode usage on each cpu.
+ */
+void x86_cpu_show_full_statistics(struct machine *m)
+{
+	fatal("x86_cpu_show_full_statistics(): TODO\n");
+}
+
+
+/*
+ *  x86_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void x86_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
+	fatal("ppc_cpu_tlbdump(): TODO\n");
 }
 
 
@@ -5435,26 +5461,7 @@ x86_cpu_register_dump(cpu, 1, 1); */
 #undef CPU_RUN
 
 
-/*
- *  x86_cpu_family_init():
- *
- *  Fill in the cpu_family struct for x86.
- */
-int x86_cpu_family_init(struct cpu_family *fp)
-{
-	fp->name = "x86";
-	fp->cpu_new = x86_cpu_new;
-	fp->list_available_types = x86_cpu_list_available_types;
-	fp->register_match = x86_cpu_register_match;
-	fp->disassemble_instr = x86_cpu_disassemble_instr;
-	fp->register_dump = x86_cpu_register_dump;
-	fp->run = x86_cpu_run;
-	fp->dumpinfo = x86_cpu_dumpinfo;
-	/*  fp->show_full_statistics = x86_cpu_show_full_statistics;  */
-	/*  fp->tlbdump = x86_cpu_tlbdump;  */
-	fp->interrupt = x86_cpu_interrupt;
-	fp->interrupt_ack = x86_cpu_interrupt_ack;
-	return 1;
-}
+CPU_FAMILY_INIT(x86,"x86")
+
 
 #endif	/*  ENABLE_X86  */

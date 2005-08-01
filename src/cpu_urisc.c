@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.9 2005-07-28 13:29:36 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.10 2005-08-01 22:54:40 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -174,6 +174,52 @@ void urisc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	snprintf(tmps, sizeof(tmps), "cpu%%i: acc = 0x%%0%illx\n",
 	    (cpu->cd.urisc.wordlen/4));
 	debug(tmps, x, (long long)cpu->cd.urisc.acc);
+}
+
+
+/*
+ *  urisc_cpu_show_full_statistics():
+ *
+ *  Show detailed statistics on opcode usage on each cpu.
+ */
+void urisc_cpu_show_full_statistics(struct machine *m)
+{
+	fatal("urisc_cpu_show_full_statistics(): TODO\n");
+}
+
+
+/*
+ *  urisc_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void urisc_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
+	fatal("urisc_cpu_tlbdump(): TODO\n");
+}
+
+
+/*
+ *  urisc_cpu_interrupt():
+ */
+int urisc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
+{
+	fatal("urisc_cpu_interrupt(): TODO\n");
+	return 0;
+}
+
+
+/*
+ *  urisc_cpu_interrupt_ack():
+ */
+int urisc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
+{
+	/*  fatal("urisc_cpu_interrupt_ack(): TODO\n");  */
+	return 0;
 }
 
 
@@ -411,22 +457,7 @@ int urisc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #undef MEMORY_RW
 
 
-/*
- *  urisc_cpu_family_init():
- *
- *  Fill in the cpu_family struct for URISC.
- */
-int urisc_cpu_family_init(struct cpu_family *fp)
-{
-	fp->name = "URISC";
-	fp->cpu_new = urisc_cpu_new;
-	fp->list_available_types = urisc_cpu_list_available_types;
-	fp->register_match = urisc_cpu_register_match;
-	fp->disassemble_instr = urisc_cpu_disassemble_instr;
-	fp->register_dump = urisc_cpu_register_dump;
-	fp->run = urisc_cpu_run;
-	fp->dumpinfo = urisc_cpu_dumpinfo;
-	return 1;
-}
+CPU_FAMILY_INIT(urisc,"URISC")
+
 
 #endif	/*  ENABLE_URISC  */

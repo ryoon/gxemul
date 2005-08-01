@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.53 2005-07-30 18:11:20 debug Exp $
+ *  $Id: cpu_mips.c,v 1.54 2005-08-01 22:54:40 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4201,27 +4201,7 @@ void mips_cpu_list_available_types(void)
 }
 
 
-/*
- *  mips_cpu_family_init():
- *
- *  Fill in the cpu_family struct for MIPS.
- */
-int mips_cpu_family_init(struct cpu_family *fp)
-{
-	fp->name = "MIPS";
-	fp->cpu_new = mips_cpu_new;
-	fp->list_available_types = mips_cpu_list_available_types;
-	fp->register_match = mips_cpu_register_match;
-	fp->disassemble_instr = mips_cpu_disassemble_instr;
-	fp->register_dump = mips_cpu_register_dump;
-	fp->run = mips_cpu_run;
-	fp->dumpinfo = mips_cpu_dumpinfo;
-	fp->show_full_statistics = mips_cpu_show_full_statistics;
-	fp->tlbdump = mips_cpu_tlbdump;
-	fp->interrupt = mips_cpu_interrupt;
-	fp->interrupt_ack = mips_cpu_interrupt_ack;
-	return 1;
-}
+CPU_FAMILY_INIT(mips,"MIPS")
 
 
 #endif	/*  ENABLE_MIPS  */

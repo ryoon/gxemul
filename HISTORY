@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.865 2005-08-01 20:15:43 debug Exp $
+$Id: HISTORY,v 1.866 2005-08-01 22:31:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2119,3 +2119,4 @@ Changelog for GXemul:
 		code).
 		Bugfix (memory corruption bug) in dev_gt, and a patch/hack from
 		Alec Voropay for Linux/Malta.
+20050802	More cleanup/refactoring for the dyntrans subsystem.

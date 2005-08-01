@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.22 2005-07-30 22:40:13 debug Exp $
+ *  $Id: cpu_arm.h,v 1.23 2005-08-01 22:31:13 debug Exp $
  */
 
 #include "misc.h"
@@ -44,10 +44,18 @@ struct cpu_family;
 #define	ARM_PC			15
 #define	N_ARM_REGS		16
 
-#define	ARM_REG_NAMES	{					\
+#define	ARM_REG_NAMES		{				\
 	"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",		\
 	"r8", "r9", "sl", "fp", "ip", "sp", "lr", "pc"  }
 
+#define	ARM_CONDITION_STRINGS	{				\
+	"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc",		\
+	"hi", "ls", "ge", "lt", "gt", "le", "" /*Always*/ , "(INVALID)" }
+
+/*  Names of Data Processing Instructions:  */
+#define	ARM_DPI_NAMES		{				\
+	"and", "eor", "sub", "rsb", "add", "adc", "sbc", "rsc",	\
+	"tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn" }
 
 #define	ARM_N_IC_ARGS			3
 #define	ARM_IC_ENTRIES_SHIFT		10

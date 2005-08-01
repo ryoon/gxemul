@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.45 2005-08-01 06:09:14 debug Exp $
+ *  $Id: cpu_arm.c,v 1.46 2005-08-01 22:31:12 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -68,31 +68,23 @@ int arm_cpu_family_init(struct cpu_family *fp)
 #include "memory.h"
 #include "symbol.h"
 
+extern volatile int single_step;
+extern int old_show_trace_tree;
+extern int old_instruction_trace;
+extern int old_quiet_mode;
+extern int quiet_mode;
 
 /*  instr uses the same names as in cpu_arm_instr.c  */
 #define instr(n) arm_instr_ ## n
 
-static char *arm_condition_string[16] = {
-	"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc",
-	"hi", "ls", "ge", "lt", "gt", "le", ""/*Always*/, "(INVALID)" };
-
-/*  ARM symbolic register names:  */
+/*  ARM symbolic register names and condition strings:  */
 static char *arm_regname[N_ARM_REGS] = ARM_REG_NAMES;
+static char *arm_condition_string[16] = ARM_CONDITION_STRINGS;
 
-/* Data processing instructions:  */
-static char *arm_dpiname[16] = {
-	"and", "eor", "sub", "rsb", "add", "adc", "sbc", "rsc",
-	"tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn" };
-static int arm_dpi_uses_d[16] = { 
-	1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1 };
-static int arm_dpi_uses_n[16] = { 
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0 };
-
-extern volatile int single_step;
-extern int old_show_trace_tree;   
-extern int old_instruction_trace;
-extern int old_quiet_mode;
-extern int quiet_mode;
+/*  Data Processing Instructions:  */
+static char *arm_dpiname[16] = ARM_DPI_NAMES;
+static int arm_dpi_uses_d[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1 };
+static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
 
 
 /*
@@ -554,26 +546,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #undef CPU_RUN
 
 
-/*
- *  arm_cpu_family_init():
- *
- *  This function fills the cpu_family struct with valid data.
- */
-int arm_cpu_family_init(struct cpu_family *fp)
-{
-	fp->name = "ARM";
-	fp->cpu_new = arm_cpu_new;
-	fp->list_available_types = arm_cpu_list_available_types;
-	fp->register_match = arm_cpu_register_match;
-	fp->disassemble_instr = arm_cpu_disassemble_instr;
-	fp->register_dump = arm_cpu_register_dump;
-	fp->run = arm_cpu_run;
-	fp->dumpinfo = arm_cpu_dumpinfo;
-	/*  fp->show_full_statistics = arm_cpu_show_full_statistics;  */
-	/*  fp->tlbdump = arm_cpu_tlbdump;  */
-	/*  fp->interrupt = arm_cpu_interrupt;  */
-	/*  fp->interrupt_ack = arm_cpu_interrupt_ack;  */
-	return 1;
-}
+CPU_FAMILY_INIT(arm,"ARM")
+
 
 #endif	/*  ENABLE_ARM  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.33 2005-08-01 06:09:14 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.34 2005-08-01 22:31:12 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -68,19 +68,17 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 #include "memory.h"
 #include "symbol.h"
 
+extern volatile int single_step;
+extern int old_show_trace_tree;   
+extern int old_instruction_trace;
+extern int old_quiet_mode;
+extern int quiet_mode;
 
 /*  instr uses the same names as in cpu_alpha_instr.c  */
 #define instr(n) alpha_instr_ ## n
 
 /*  Alpha symbolic register names:  */
 static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES; 
-
-
-extern volatile int single_step;
-extern int old_show_trace_tree;   
-extern int old_instruction_trace;
-extern int old_quiet_mode;
-extern int quiet_mode;
 
 
 /*
@@ -663,26 +661,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #undef CPU_RUN
 
 
-/*
- *  alpha_cpu_family_init():
- *
- *  This function fills the cpu_family struct with valid data.
- */
-int alpha_cpu_family_init(struct cpu_family *fp)
-{
-	fp->name = "Alpha";
-	fp->cpu_new = alpha_cpu_new;
-	fp->list_available_types = alpha_cpu_list_available_types;
-	fp->register_match = alpha_cpu_register_match;
-	fp->disassemble_instr = alpha_cpu_disassemble_instr;
-	fp->register_dump = alpha_cpu_register_dump;
-	fp->run = alpha_cpu_run;
-	fp->dumpinfo = alpha_cpu_dumpinfo;
-	/*  fp->show_full_statistics = alpha_cpu_show_full_statistics;  */
-	/*  fp->tlbdump = alpha_cpu_tlbdump;  */
-	/*  fp->interrupt = alpha_cpu_interrupt;  */
-	/*  fp->interrupt_ack = alpha_cpu_interrupt_ack;  */
-	return 1;
-}
+CPU_FAMILY_INIT(alpha,"Alpha")
+
 
 #endif	/*  ENABLE_ALPHA  */

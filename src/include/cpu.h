@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.33 2005-07-30 22:40:13 debug Exp $
+ *  $Id: cpu.h,v 1.34 2005-08-01 22:31:13 debug Exp $
  *
  *  See cpu.c.
  */
@@ -188,6 +188,25 @@ void cpu_list_available_types(void);
 void cpu_show_cycles(struct machine *machine, int forced);
 struct cpu_family *cpu_family_ptr_by_number(int arch);
 void cpu_init(void);
+
+
+#define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\
+	struct cpu_family *fp) {					\
+	/*  Fill in the cpu_family struct with valid data for this arch.  */ \
+	fp->name = s;							\
+	fp->cpu_new = n ## _cpu_new;					\
+	fp->list_available_types = n ## _cpu_list_available_types;	\
+	fp->register_match = n ## _cpu_register_match;		\
+	fp->disassemble_instr = n ## _cpu_disassemble_instr;		\
+	fp->register_dump = n ## _cpu_register_dump;			\
+	fp->run = n ## _cpu_run;					\
+	fp->dumpinfo = n ## _cpu_dumpinfo;				\
+	/*  fp->show_full_statistics = n ## _cpu_show_full_statistics;  */ \
+	/*  fp->tlbdump = n ## _cpu_tlbdump;  */			\
+	/*  fp->interrupt = n ## _cpu_interrupt;  */			\
+	/*  fp->interrupt_ack = n ## _cpu_interrupt_ack;  */		\
+	return 1;							\
+	}
 
 
 #endif	/*  CPU_H  */

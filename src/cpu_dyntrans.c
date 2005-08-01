@@ -25,19 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.5 2005-08-01 06:17:12 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.6 2005-08-01 23:23:18 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
- *
- *
- *  For DYNTRANS_CPU_RUN_INSTR: (Example for ARM)
- *
- *	DYNTRANS_IC		is the name of the instruction call struct, for
- *				example arm_instr_call.
- *	DYNTRANS_PC_TO_POINTERS	points to the correct XXX_pc_to_pointers.
- *	DYNTRANS_ARM (etc)	for special hacks.
- *	DYNTRANS_ARCH		set to "arm" for ARM, etc.
- *	DYNTRANS_IC_ENTRIES_PER_PAGE set to ARM_IC_ENTRIES_PER_PAGE.
  */
 
 
@@ -298,7 +288,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
  *
  *  Invalidate one translation entry (based on virtual address).
  */
-void DYNTRANS_INVAL_ENTRY(struct cpu *cpu,
+void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 #ifdef DYNTRANS_32
 	uint32_t
 #else
@@ -416,65 +406,49 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #else
 #ifdef DYNTRANS_ARM
 	uint32_t index;
+#else	/*  !DYNTRANS_ARM  */
+#error	Neither arm nor alpha?
 #endif
 #endif
 
 	/*  Scan the current TLB entries:  */
-	found = -1;
-	lowest_index = 0; lowest = cpu->cd.alpha.vph_tlb_entry[0].timestamp;
-	for (r=0; r<ALPHA_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.alpha.vph_tlb_entry[r].timestamp < lowest) {
-			lowest = cpu->cd.alpha.vph_tlb_entry[r].timestamp;
+	found = -1; lowest_index = 0;
+	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
+	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp < lowest) {
+			lowest = cpu->cd.DYNTRANS_ARCH.
+			    vph_tlb_entry[r].timestamp;
 			lowest_index = r;
 		}
-		if (cpu->cd.alpha.vph_tlb_entry[r].timestamp > highest)
-			highest = cpu->cd.alpha.vph_tlb_entry[r].timestamp;
-		if (cpu->cd.alpha.vph_tlb_entry[r].valid &&
-		    cpu->cd.alpha.vph_tlb_entry[r].vaddr_page == vaddr_page) {
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp > highest)
+			highest = cpu->cd.DYNTRANS_ARCH.
+			    vph_tlb_entry[r].timestamp;
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid &&
+		    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page ==
+		    vaddr_page) {
 			found = r;
 			break;
 		}
 	}
 
-#ifdef DYNTRANS_ALPHA
 	if (found < 0) {
 		/*  Create the new TLB entry, overwriting the oldest one:  */
 		r = lowest_index;
-		if (cpu->cd.alpha.vph_tlb_entry[r].valid) {
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			/*  This one has to be invalidated first:  */
-			uint64_t addr = cpu->cd.alpha.
-			    vph_tlb_entry[r].vaddr_page;
-			a = (addr >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-			b = (addr >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-			if ((addr >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-				vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-				kernel = 1;
-			} else
-				vph_p = cpu->cd.alpha.vph_table0[a];
-			vph_p->host_load[b] = NULL;
-			vph_p->host_store[b] = NULL;
-			vph_p->phys_addr[b] = 0;
-			vph_p->refcount --;
-			if (vph_p->refcount == 0) {
-				vph_p->next = cpu->cd.alpha.vph_next_free_page;
-				cpu->cd.alpha.vph_next_free_page = vph_p;
-				if (kernel)
-					cpu->cd.alpha.vph_table0_kernel[a] =
-					    cpu->cd.alpha.vph_default_page;
-				else
-					cpu->cd.alpha.vph_table0[a] =
-					    cpu->cd.alpha.vph_default_page;
-			}
+			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
+			    cpu->cd.arm.vph_tlb_entry[r].vaddr_page);
 		}
 
-		cpu->cd.alpha.vph_tlb_entry[r].valid = 1;
-		cpu->cd.alpha.vph_tlb_entry[r].host_page = host_page;
-		cpu->cd.alpha.vph_tlb_entry[r].paddr_page = paddr_page;
-		cpu->cd.alpha.vph_tlb_entry[r].vaddr_page = vaddr_page;
-		cpu->cd.alpha.vph_tlb_entry[r].writeflag = writeflag;
-		cpu->cd.alpha.vph_tlb_entry[r].timestamp = highest + 1;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid = 1;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].host_page = host_page;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page = paddr_page;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page = vaddr_page;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = writeflag;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp = highest + 1;
 
 		/*  Add the new translation to the table:  */
+#ifdef DYNTRANS_ALPHA
 		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
 		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
 		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
@@ -537,23 +511,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 #else	/*  !DYNTRANS_ALPHA  */
 #ifdef DYNTRANS_ARM
-	if (found < 0) {
-		/*  Create the new TLB entry, overwriting the oldest one:  */
-		r = lowest_index;
-		if (cpu->cd.arm.vph_tlb_entry[r].valid) {
-			/*  This one has to be invalidated first:  */
-			arm_invalidate_tlb_entry(cpu,
-			    cpu->cd.arm.vph_tlb_entry[r].vaddr_page);
-		}
-
-		cpu->cd.arm.vph_tlb_entry[r].valid = 1;
-		cpu->cd.arm.vph_tlb_entry[r].host_page = host_page;
-		cpu->cd.arm.vph_tlb_entry[r].paddr_page = paddr_page;
-		cpu->cd.arm.vph_tlb_entry[r].vaddr_page = vaddr_page;
-		cpu->cd.arm.vph_tlb_entry[r].writeflag = writeflag;
-		cpu->cd.arm.vph_tlb_entry[r].timestamp = highest + 1;
-
-		/*  Add the new translation to the table:  */
 		index = vaddr_page >> 12;
 		cpu->cd.arm.host_load[index] = host_page;
 		cpu->cd.arm.host_store[index] = writeflag? host_page : NULL;
@@ -580,8 +537,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			cpu->cd.arm.phys_addr[index] = paddr_page;
 		}
 	}
-#else	/*  !DYNTRANS_ARM  */
-#error	Neither arm nor alpha?
 #endif	/*  !DYNTRANS_ARM  */
 #endif	/*  !DYNTRANS_ALPHA  */
 }

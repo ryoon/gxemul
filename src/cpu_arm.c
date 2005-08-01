@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.47 2005-08-01 22:54:40 debug Exp $
+ *  $Id: cpu_arm.c,v 1.48 2005-08-01 23:23:18 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -67,6 +67,20 @@ int arm_cpu_family_init(struct cpu_family *fp)
 #include "machine.h"
 #include "memory.h"
 #include "symbol.h"
+
+#define	DYNTRANS_MAX_VPH_TLB_ENTRIES		ARM_MAX_VPH_TLB_ENTRIES
+#define	DYNTRANS_ARCH				arm
+#define	DYNTRANS_ARM
+#define	DYNTRANS_32
+#define	DYNTRANS_1LEVEL
+#define	DYNTRANS_IC				arm_instr_call
+#define	DYNTRANS_IC_ENTRIES_PER_PAGE		ARM_IC_ENTRIES_PER_PAGE
+#define	DYNTRANS_TC_PHYSPAGE			arm_tc_physpage
+#define	DYNTRANS_INVALIDATE_TLB_ENTRY		arm_invalidate_tlb_entry
+#define	DYNTRANS_ADDR_TO_PAGENR			ARM_ADDR_TO_PAGENR
+#define	DYNTRANS_PC_TO_IC_ENTRY			ARM_PC_TO_IC_ENTRY
+#define DYNTRANS_TC_ALLOCATE			arm_tc_allocate_default_page
+#define DYNTRANS_TC_PHYSPAGE			arm_tc_physpage
 
 extern volatile int single_step;
 extern int old_show_trace_tree;
@@ -493,48 +507,22 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 
 #define DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE       arm_tc_allocate_default_page
-#define DYNTRANS_IC                             arm_instr_call
-#define DYNTRANS_ARCH                           arm
-#define DYNTRANS_ARM
-#define DYNTRANS_IC_ENTRIES_PER_PAGE            ARM_IC_ENTRIES_PER_PAGE
-#define DYNTRANS_TC_PHYSPAGE                    arm_tc_physpage
 #include "cpu_dyntrans.c"
-#undef  DYNTRANS_IC_ENTRIES_PER_PAGE
-#undef  DYNTRANS_ARM
-#undef  DYNTRANS_TC_PHYSPAGE
-#undef  DYNTRANS_IC
-#undef  DYNTRANS_ARCH
 #undef  DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
 
 
-#define	DYNTRANS_INVAL_ENTRY		arm_invalidate_tlb_entry
-#define DYNTRANS_ARCH			arm
-#define DYNTRANS_32
-#define	DYNTRANS_1LEVEL
+#define	DYNTRANS_INVAL_ENTRY
 #include "cpu_dyntrans.c"
-#undef	DYNTRANS_1LEVEL
-#undef  DYNTRANS_ARCH
-#undef  DYNTRANS_32
 #undef	DYNTRANS_INVAL_ENTRY
 
 
 #define DYNTRANS_INVALIDATE_TC_PADDR	arm_invalidate_translation_caches_paddr
-#define DYNTRANS_INVALIDATE_TLB_ENTRY   arm_invalidate_tlb_entry
-#define DYNTRANS_ARCH			arm
-#define DYNTRANS_32
-#define	DYNTRANS_MAX_VPH_TLB_ENTRIES	ARM_MAX_VPH_TLB_ENTRIES
 #include "cpu_dyntrans.c"
-#undef	DYNTRANS_MAX_VPH_TLB_ENTRIES
-#undef	DYNTRANS_INVALIDATE_TLB_ENTRY
-#undef  DYNTRANS_ARCH
-#undef  DYNTRANS_32
 #undef  DYNTRANS_INVALIDATE_TC_PADDR
 
 
 #define	DYNTRANS_UPDATE_TRANSLATION_TABLE  arm_update_translation_table
-#define	DYNTRANS_ARM
 #include "cpu_dyntrans.c"
-#undef	DYNTRANS_ARM
 #undef	DYNTRANS_UPDATE_TRANSLATION_TABLE
 
 
@@ -546,21 +534,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 
 #define	DYNTRANS_PC_TO_POINTERS_FUNC	arm_pc_to_pointers
-#define	DYNTRANS_ARCH		arm
-#define	DYNTRANS_ARM
-#define	DYNTRANS_IC_ENTRIES_PER_PAGE	ARM_IC_ENTRIES_PER_PAGE
-#define	DYNTRANS_ADDR_TO_PAGENR		ARM_ADDR_TO_PAGENR
-#define	DYNTRANS_PC_TO_IC_ENTRY		ARM_PC_TO_IC_ENTRY
-#define DYNTRANS_TC_ALLOCATE		arm_tc_allocate_default_page
-#define DYNTRANS_TC_PHYSPAGE		arm_tc_physpage
 #include "cpu_dyntrans.c"
-#undef	DYNTRANS_PC_TO_IC_ENTRY
-#undef	DYNTRANS_TC_ALLOCATE
-#undef	DYNTRANS_TC_PHYSPAGE
-#undef	DYNTRANS_ADDR_TO_PAGENR
-#undef	DYNTRANS_IC_ENTRIES_PER_PAGE
-#undef	DYNTRANS_ARM
-#undef	DYNTRANS_ARCH
 #undef	DYNTRANS_PC_TO_POINTERS_FUNC
 
 
@@ -570,15 +544,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 #define	DYNTRANS_CPU_RUN_INSTR	arm_cpu_run_instr
 #define	DYNTRANS_PC_TO_POINTERS	arm_pc_to_pointers
-#define	DYNTRANS_IC		arm_instr_call
-#define	DYNTRANS_ARCH		arm
-#define	DYNTRANS_ARM
-#define	DYNTRANS_IC_ENTRIES_PER_PAGE ARM_IC_ENTRIES_PER_PAGE
 #include "cpu_dyntrans.c"
-#undef	DYNTRANS_IC_ENTRIES_PER_PAGE
-#undef	DYNTRANS_ARM
-#undef	DYNTRANS_IC
-#undef	DYNTRANS_ARCH
 #undef	DYNTRANS_PC_TO_POINTERS
 #undef	DYNTRANS_CPU_RUN_INSTR
 

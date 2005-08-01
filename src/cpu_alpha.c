@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.35 2005-08-01 22:54:40 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.36 2005-08-01 23:23:18 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -67,6 +67,19 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 #include "machine.h"
 #include "memory.h"
 #include "symbol.h"
+
+#define	DYNTRANS_MAX_VPH_TLB_ENTRIES		ALPHA_MAX_VPH_TLB_ENTRIES
+#define	DYNTRANS_ARCH				alpha
+#define	DYNTRANS_ALPHA
+#define	DYNTRANS_8K
+#define	DYNTRANS_IC				alpha_instr_call
+#define	DYNTRANS_IC_ENTRIES_PER_PAGE		ALPHA_IC_ENTRIES_PER_PAGE
+#define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage
+#define	DYNTRANS_INVALIDATE_TLB_ENTRY		alpha_invalidate_tlb_entry
+#define	DYNTRANS_ADDR_TO_PAGENR			ALPHA_ADDR_TO_PAGENR
+#define	DYNTRANS_PC_TO_IC_ENTRY			ALPHA_PC_TO_IC_ENTRY
+#define	DYNTRANS_TC_ALLOCATE			alpha_tc_allocate_default_page
+#define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage
 
 extern volatile int single_step;
 extern int old_show_trace_tree;   
@@ -602,46 +615,22 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 
 #define	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE	alpha_tc_allocate_default_page
-#define DYNTRANS_IC             		alpha_instr_call
-#define DYNTRANS_ARCH           		alpha
-#define DYNTRANS_ALPHA
-#define DYNTRANS_IC_ENTRIES_PER_PAGE		ALPHA_IC_ENTRIES_PER_PAGE
-#define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage
 #include "cpu_dyntrans.c"
-#undef  DYNTRANS_IC_ENTRIES_PER_PAGE
-#undef  DYNTRANS_ALPHA
-#undef	DYNTRANS_TC_PHYSPAGE
-#undef  DYNTRANS_IC
-#undef  DYNTRANS_ARCH
 #undef	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
 
 
-#define DYNTRANS_INVAL_ENTRY            alpha_invalidate_tlb_entry
-#define DYNTRANS_ARCH                   alpha
-#define	DYNTRANS_ALPHA
+#define DYNTRANS_INVAL_ENTRY
 #include "cpu_dyntrans.c"
-#undef	DYNTRANS_ALPHA
-#undef  DYNTRANS_ARCH
 #undef  DYNTRANS_INVAL_ENTRY
 
 
 #define DYNTRANS_INVALIDATE_TC_PADDR  alpha_invalidate_translation_caches_paddr
-#define	DYNTRANS_INVALIDATE_TLB_ENTRY	alpha_invalidate_tlb_entry
-#define DYNTRANS_ARCH                   alpha
-#define DYNTRANS_8K
-#define DYNTRANS_MAX_VPH_TLB_ENTRIES    ALPHA_MAX_VPH_TLB_ENTRIES  
 #include "cpu_dyntrans.c"
-#undef  DYNTRANS_MAX_VPH_TLB_ENTRIES
-#undef	DYNTRANS_INVALIDATE_TLB_ENTRY
-#undef  DYNTRANS_ARCH
-#undef  DYNTRANS_8K
 #undef  DYNTRANS_INVALIDATE_TC_PADDR
 
 
-#define DYNTRANS_UPDATE_TRANSLATION_TABLE  alpha_update_translation_table
-#define	DYNTRANS_ALPHA
+#define DYNTRANS_UPDATE_TRANSLATION_TABLE	alpha_update_translation_table
 #include "cpu_dyntrans.c"
-#undef	DYNTRANS_ALPHA
 #undef	DYNTRANS_UPDATE_TRANSLATION_TABLE
 
 
@@ -662,21 +651,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 
 #define DYNTRANS_PC_TO_POINTERS_FUNC    alpha_pc_to_pointers
-#define DYNTRANS_ARCH           alpha
-#define DYNTRANS_ALPHA
-#define DYNTRANS_IC_ENTRIES_PER_PAGE    ALPHA_IC_ENTRIES_PER_PAGE
-#define DYNTRANS_ADDR_TO_PAGENR         ALPHA_ADDR_TO_PAGENR
-#define DYNTRANS_PC_TO_IC_ENTRY         ALPHA_PC_TO_IC_ENTRY
-#define DYNTRANS_TC_ALLOCATE            alpha_tc_allocate_default_page
-#define DYNTRANS_TC_PHYSPAGE            alpha_tc_physpage
 #include "cpu_dyntrans.c"
-#undef  DYNTRANS_PC_TO_IC_ENTRY
-#undef  DYNTRANS_TC_ALLOCATE
-#undef  DYNTRANS_TC_PHYSPAGE
-#undef  DYNTRANS_ADDR_TO_PAGENR
-#undef  DYNTRANS_IC_ENTRIES_PER_PAGE
-#undef  DYNTRANS_ALPHA
-#undef  DYNTRANS_ARCH
 #undef  DYNTRANS_PC_TO_POINTERS_FUNC
 
 
@@ -685,15 +660,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 #define DYNTRANS_CPU_RUN_INSTR  alpha_cpu_run_instr
 #define DYNTRANS_PC_TO_POINTERS alpha_pc_to_pointers
-#define DYNTRANS_IC             alpha_instr_call
-#define DYNTRANS_ARCH           alpha
-#define DYNTRANS_ALPHA
-#define DYNTRANS_IC_ENTRIES_PER_PAGE ALPHA_IC_ENTRIES_PER_PAGE
 #include "cpu_dyntrans.c"
-#undef  DYNTRANS_IC_ENTRIES_PER_PAGE
-#undef  DYNTRANS_ALPHA
-#undef  DYNTRANS_IC
-#undef  DYNTRANS_ARCH
 #undef  DYNTRANS_PC_TO_POINTERS
 #undef  DYNTRANS_CPU_RUN_INSTR
 

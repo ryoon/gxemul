@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.4 2005-08-01 06:09:14 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.5 2005-08-01 06:17:12 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -402,15 +402,22 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
 void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
+	int64_t lowest, highest = -1;
+	int found, r, lowest_index;
+
+	/*  fatal("update_translation_table(): v=0x%llx, h=%p w=%i"
+	    " p=0x%llx\n", (long long)vaddr_page, host_page, writeflag,
+	    (long long)paddr_page);  */
+
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
 	struct alpha_vph_page *vph_p;
-	int found, r, lowest_index, kernel = 0;
-	int64_t lowest, highest = -1;
-
-	/*  fatal("alpha_update_translation_table(): v=0x%llx, h=%p w=%i"
-	    " p=0x%llx\n", (long long)vaddr_page, host_page, writeflag,
-	    (long long)paddr_page);  */
+	int kernel = 0;
+#else
+#ifdef DYNTRANS_ARM
+	uint32_t index;
+#endif
+#endif
 
 	/*  Scan the current TLB entries:  */
 	found = -1;
@@ -429,6 +436,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		}
 	}
 
+#ifdef DYNTRANS_ALPHA
 	if (found < 0) {
 		/*  Create the new TLB entry, overwriting the oldest one:  */
 		r = lowest_index;
@@ -529,31 +537,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 #else	/*  !DYNTRANS_ALPHA  */
 #ifdef DYNTRANS_ARM
-	uint32_t index;
-	int found, r, lowest_index;
-	int64_t lowest, highest = -1;
-
-	/*  fatal("arm_update_translation_table(): v=0x%08x, h=%p w=%i"
-	    " p=0x%08x\n", (int)vaddr_page, host_page, writeflag,
-	    (int)paddr_page);  */
-
-	/*  Scan the current TLB entries:  */
-	found = -1;
-	lowest_index = 0; lowest = cpu->cd.arm.vph_tlb_entry[0].timestamp;
-	for (r=0; r<ARM_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.arm.vph_tlb_entry[r].timestamp < lowest) {
-			lowest = cpu->cd.arm.vph_tlb_entry[r].timestamp;
-			lowest_index = r;
-		}
-		if (cpu->cd.arm.vph_tlb_entry[r].timestamp > highest)
-			highest = cpu->cd.arm.vph_tlb_entry[r].timestamp;
-		if (cpu->cd.arm.vph_tlb_entry[r].valid &&
-		    cpu->cd.arm.vph_tlb_entry[r].vaddr_page == vaddr_page) {
-			found = r;
-			break;
-		}
-	}
-
 	if (found < 0) {
 		/*  Create the new TLB entry, overwriting the oldest one:  */
 		r = lowest_index;

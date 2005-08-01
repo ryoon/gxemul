@@ -1,14 +1,14 @@
-$Id: TODO,v 1.148 2005-07-31 10:08:42 debug Exp $
+$Id: TODO,v 1.149 2005-08-01 20:47:31 debug Exp $
 
-Here's a short list of what I have left to do on GXemul. This file is a mess.
-Order is random. Don't trust it to be up-to-date.
+===============================================================================
+
+High priority stuff:
 
 
 MIPS bintrans:
 	FIX THE CACHE/DEVICE BUG FOR 32-BIT EMULATION! This was caused by
 	switching from a 2-level to a 1-level page table system for
 	bintranslated code...
-
 	i386: movn etc, slt[u] for 64-bit mode, 64-bit shifts etc
 
 dyntrans:
@@ -23,7 +23,9 @@ dyntrans:
 	   allow for both multiple "word-length modes".
 
 
-Other things:
+===============================================================================
+
+Low priority stuff:
 
 	Caches / memory hierarchies: (this is mostly MIPS-specific)
 		o)  MIPS coproc.c: bits in config registers should reflect

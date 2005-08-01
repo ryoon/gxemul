@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.32 2005-08-01 05:38:41 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.33 2005-08-01 06:09:14 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -572,49 +572,13 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #undef	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
 
 
-/*
- *  alpha_invalidate_tlb_entry():
- *
- *  Invalidate a translation entry (based on virtual address).
- */
-void alpha_invalidate_tlb_entry(struct cpu *cpu, uint64_t vaddr_page)
-{
-	struct alpha_vph_page *vph_p;
-	uint32_t a, b;
-	int kernel = 0;
-
-	a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-	b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-	if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-		kernel = 1;
-	} else
-		vph_p = cpu->cd.alpha.vph_table0[a];
-
-	if (vph_p == cpu->cd.alpha.vph_default_page) {
-		fatal("alpha_invalidate_tlb_entry(): huh? Problem 1.\n");
-		exit(1);
-	}
-
-	vph_p->host_load[b] = NULL;
-	vph_p->host_store[b] = NULL;
-	vph_p->phys_addr[b] = 0;
-	vph_p->refcount --;
-	if (vph_p->refcount < 0) {
-		fatal("alpha_invalidate_tlb_entry(): huh? Problem 2.\n");
-		exit(1);
-	}
-	if (vph_p->refcount == 0) {
-		vph_p->next = cpu->cd.alpha.vph_next_free_page;
-		cpu->cd.alpha.vph_next_free_page = vph_p;
-		if (kernel)
-			cpu->cd.alpha.vph_table0_kernel[a] =
-			    cpu->cd.alpha.vph_default_page;
-		else
-			cpu->cd.alpha.vph_table0[a] =
-			    cpu->cd.alpha.vph_default_page;
-	}
-}
+#define DYNTRANS_INVAL_ENTRY            alpha_invalidate_tlb_entry
+#define DYNTRANS_ARCH                   alpha
+#define	DYNTRANS_ALPHA
+#include "cpu_dyntrans.c"
+#undef	DYNTRANS_ALPHA
+#undef  DYNTRANS_ARCH
+#undef  DYNTRANS_INVAL_ENTRY
 
 
 #define DYNTRANS_INVALIDATE_TC_PADDR  alpha_invalidate_translation_caches_paddr
@@ -630,139 +594,11 @@ void alpha_invalidate_tlb_entry(struct cpu *cpu, uint64_t vaddr_page)
 #undef  DYNTRANS_INVALIDATE_TC_PADDR
 
 
-/*
- *  alpha_update_translation_table():
- *
- *  Update the memory translation tables.
- */
-void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-	unsigned char *host_page, int writeflag, uint64_t paddr_page)
-{
-	uint32_t a, b;
-	struct alpha_vph_page *vph_p;
-	int found, r, lowest_index, kernel = 0;
-	int64_t lowest, highest = -1;
-
-	/*  fatal("alpha_update_translation_table(): v=0x%llx, h=%p w=%i"
-	    " p=0x%llx\n", (long long)vaddr_page, host_page, writeflag,
-	    (long long)paddr_page);  */
-
-	/*  Scan the current TLB entries:  */
-	found = -1;
-	lowest_index = 0; lowest = cpu->cd.alpha.vph_tlb_entry[0].timestamp;
-	for (r=0; r<ALPHA_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.alpha.vph_tlb_entry[r].timestamp < lowest) {
-			lowest = cpu->cd.alpha.vph_tlb_entry[r].timestamp;
-			lowest_index = r;
-		}
-		if (cpu->cd.alpha.vph_tlb_entry[r].timestamp > highest)
-			highest = cpu->cd.alpha.vph_tlb_entry[r].timestamp;
-		if (cpu->cd.alpha.vph_tlb_entry[r].valid &&
-		    cpu->cd.alpha.vph_tlb_entry[r].vaddr_page == vaddr_page) {
-			found = r;
-			break;
-		}
-	}
-
-	if (found < 0) {
-		/*  Create the new TLB entry, overwriting the oldest one:  */
-		r = lowest_index;
-		if (cpu->cd.alpha.vph_tlb_entry[r].valid) {
-			/*  This one has to be invalidated first:  */
-			uint64_t addr = cpu->cd.alpha.
-			    vph_tlb_entry[r].vaddr_page;
-			a = (addr >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-			b = (addr >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-			if ((addr >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-				vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-				kernel = 1;
-			} else
-				vph_p = cpu->cd.alpha.vph_table0[a];
-			vph_p->host_load[b] = NULL;
-			vph_p->host_store[b] = NULL;
-			vph_p->phys_addr[b] = 0;
-			vph_p->refcount --;
-			if (vph_p->refcount == 0) {
-				vph_p->next = cpu->cd.alpha.vph_next_free_page;
-				cpu->cd.alpha.vph_next_free_page = vph_p;
-				if (kernel)
-					cpu->cd.alpha.vph_table0_kernel[a] =
-					    cpu->cd.alpha.vph_default_page;
-				else
-					cpu->cd.alpha.vph_table0[a] =
-					    cpu->cd.alpha.vph_default_page;
-			}
-		}
-
-		cpu->cd.alpha.vph_tlb_entry[r].valid = 1;
-		cpu->cd.alpha.vph_tlb_entry[r].host_page = host_page;
-		cpu->cd.alpha.vph_tlb_entry[r].paddr_page = paddr_page;
-		cpu->cd.alpha.vph_tlb_entry[r].vaddr_page = vaddr_page;
-		cpu->cd.alpha.vph_tlb_entry[r].writeflag = writeflag;
-		cpu->cd.alpha.vph_tlb_entry[r].timestamp = highest + 1;
-
-		/*  Add the new translation to the table:  */
-		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-			vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-			kernel = 1;
-		} else
-			vph_p = cpu->cd.alpha.vph_table0[a];
-		if (vph_p == cpu->cd.alpha.vph_default_page) {
-			if (cpu->cd.alpha.vph_next_free_page != NULL) {
-				if (kernel)
-					vph_p = cpu->cd.alpha.vph_table0_kernel
-					    [a] = cpu->cd.alpha.
-					    vph_next_free_page;
-				else
-					vph_p = cpu->cd.alpha.vph_table0[a] =
-					    cpu->cd.alpha.vph_next_free_page;
-				cpu->cd.alpha.vph_next_free_page = vph_p->next;
-			} else {
-				if (kernel)
-					vph_p = cpu->cd.alpha.vph_table0_kernel
-					    [a] = malloc(sizeof(struct
-					    alpha_vph_page));
-				else
-					vph_p = cpu->cd.alpha.vph_table0[a] =
-					    malloc(sizeof(struct
-					    alpha_vph_page));
-				memset(vph_p, 0, sizeof(struct alpha_vph_page));
-			}
-		}
-		vph_p->refcount ++;
-		vph_p->host_load[b] = host_page;
-		vph_p->host_store[b] = writeflag? host_page : NULL;
-		vph_p->phys_addr[b] = paddr_page;
-	} else {
-		/*
-		 *  The translation was already in the TLB.
-		 *	Writeflag = 0:  Do nothing.
-		 *	Writeflag = 1:  Make sure the page is writable.
-		 *	Writeflag = -1: Downgrade to readonly.
-		 */
-		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-			vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-			kernel = 1;
-		} else
-			vph_p = cpu->cd.alpha.vph_table0[a];
-		cpu->cd.alpha.vph_tlb_entry[found].timestamp = highest + 1;
-		if (vph_p->phys_addr[b] == paddr_page) {
-			if (writeflag == 1)
-				vph_p->host_store[b] = host_page;
-			if (writeflag == -1)
-				vph_p->host_store[b] = NULL;
-		} else {
-			/*  Change the entire physical/host mapping:  */
-			vph_p->host_load[b] = host_page;
-			vph_p->host_store[b] = writeflag? host_page : NULL;
-			vph_p->phys_addr[b] = paddr_page;
-		}
-	}
-}
+#define DYNTRANS_UPDATE_TRANSLATION_TABLE  alpha_update_translation_table
+#define	DYNTRANS_ALPHA
+#include "cpu_dyntrans.c"
+#undef	DYNTRANS_ALPHA
+#undef	DYNTRANS_UPDATE_TRANSLATION_TABLE
 
 
 #define MEMORY_RW	alpha_memory_rw

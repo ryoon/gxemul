@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.44 2005-08-01 05:38:41 debug Exp $
+ *  $Id: cpu_arm.c,v 1.45 2005-08-01 06:09:14 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -469,18 +469,15 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #undef  DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
 
 
-/*
- *  arm_invalidate_tlb_entry():
- *
- *  Invalidate a translation entry (based on virtual address).
- */
-void arm_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
-{
-	uint32_t index = vaddr_page >> 12;
-	cpu->cd.arm.host_load[index] = NULL;
-	cpu->cd.arm.host_store[index] = NULL;
-	cpu->cd.arm.phys_addr[index] = 0;
-}
+#define	DYNTRANS_INVAL_ENTRY		arm_invalidate_tlb_entry
+#define DYNTRANS_ARCH			arm
+#define DYNTRANS_32
+#define	DYNTRANS_1LEVEL
+#include "cpu_dyntrans.c"
+#undef	DYNTRANS_1LEVEL
+#undef  DYNTRANS_ARCH
+#undef  DYNTRANS_32
+#undef	DYNTRANS_INVAL_ENTRY
 
 
 #define DYNTRANS_INVALIDATE_TC_PADDR	arm_invalidate_translation_caches_paddr
@@ -496,83 +493,11 @@ void arm_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
 #undef  DYNTRANS_INVALIDATE_TC_PADDR
 
 
-/*
- *  arm_update_translation_table():
- *
- *  Update the memory translation tables.
- */
-void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-	unsigned char *host_page, int writeflag, uint64_t paddr_page)
-{
-	uint32_t index;
-	int found, r, lowest_index;
-	int64_t lowest, highest = -1;
-
-	/*  fatal("arm_update_translation_table(): v=0x%08x, h=%p w=%i"
-	    " p=0x%08x\n", (int)vaddr_page, host_page, writeflag,
-	    (int)paddr_page);  */
-
-	/*  Scan the current TLB entries:  */
-	found = -1;
-	lowest_index = 0; lowest = cpu->cd.arm.vph_tlb_entry[0].timestamp;
-	for (r=0; r<ARM_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.arm.vph_tlb_entry[r].timestamp < lowest) {
-			lowest = cpu->cd.arm.vph_tlb_entry[r].timestamp;
-			lowest_index = r;
-		}
-		if (cpu->cd.arm.vph_tlb_entry[r].timestamp > highest)
-			highest = cpu->cd.arm.vph_tlb_entry[r].timestamp;
-		if (cpu->cd.arm.vph_tlb_entry[r].valid &&
-		    cpu->cd.arm.vph_tlb_entry[r].vaddr_page == vaddr_page) {
-			found = r;
-			break;
-		}
-	}
-
-	if (found < 0) {
-		/*  Create the new TLB entry, overwriting the oldest one:  */
-		r = lowest_index;
-		if (cpu->cd.arm.vph_tlb_entry[r].valid) {
-			/*  This one has to be invalidated first:  */
-			arm_invalidate_tlb_entry(cpu,
-			    cpu->cd.arm.vph_tlb_entry[r].vaddr_page);
-		}
-
-		cpu->cd.arm.vph_tlb_entry[r].valid = 1;
-		cpu->cd.arm.vph_tlb_entry[r].host_page = host_page;
-		cpu->cd.arm.vph_tlb_entry[r].paddr_page = paddr_page;
-		cpu->cd.arm.vph_tlb_entry[r].vaddr_page = vaddr_page;
-		cpu->cd.arm.vph_tlb_entry[r].writeflag = writeflag;
-		cpu->cd.arm.vph_tlb_entry[r].timestamp = highest + 1;
-
-		/*  Add the new translation to the table:  */
-		index = vaddr_page >> 12;
-		cpu->cd.arm.host_load[index] = host_page;
-		cpu->cd.arm.host_store[index] = writeflag? host_page : NULL;
-		cpu->cd.arm.phys_addr[index] = paddr_page;
-	} else {
-		/*
-		 *  The translation was already in the TLB.
-		 *	Writeflag = 0:  Do nothing.
-		 *	Writeflag = 1:  Make sure the page is writable.
-		 *	Writeflag = -1: Downgrade to readonly.
-		 */
-		index = vaddr_page >> 12;
-		cpu->cd.arm.vph_tlb_entry[found].timestamp = highest + 1;
-		if (cpu->cd.arm.phys_addr[index] == paddr_page) {
-			if (writeflag == 1)
-				cpu->cd.arm.host_store[index] = host_page;
-			if (writeflag == -1)
-				cpu->cd.arm.host_store[index] = NULL;
-		} else {
-			/*  Change the entire physical/host mapping:  */
-			cpu->cd.arm.host_load[index] = host_page;
-			cpu->cd.arm.host_store[index] =
-			    writeflag? host_page : NULL;
-			cpu->cd.arm.phys_addr[index] = paddr_page;
-		}
-	}
-}
+#define	DYNTRANS_UPDATE_TRANSLATION_TABLE  arm_update_translation_table
+#define	DYNTRANS_ARM
+#include "cpu_dyntrans.c"
+#undef	DYNTRANS_ARM
+#undef	DYNTRANS_UPDATE_TRANSLATION_TABLE
 
 
 #define MEMORY_RW	arm_memory_rw

@@ -25,11 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.33 2005-06-26 11:43:48 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.34 2005-08-01 20:15:45 debug Exp $
  *  
  *  NS16550 serial controller.
  *
- *  TODO: actually implement the fifo :)
+ *
+ *  TODO:
+ *
+ *	x)  Implement the FIFO.
  */
 
 #include <stdio.h>
@@ -46,20 +49,18 @@
 #include "comreg.h"
 
 
-/*  #define	debug		fatal  */
-
-#define	NS16550_TICK_SHIFT		14
-
+/*  #define debug fatal  */
 /*  #define DISABLE_FIFO  */
+
+#define	TICK_SHIFT		14
 
 
 struct ns_data {
-	int		reg[8];
+	unsigned char	reg[8];
 
 	int		irqnr;
 	int		console_handle;
 
-	int		irq_enable;
 	int		addrmult;
 	int		in_use;
 	int		dlab;		/*  Divisor Latch Access bit  */
@@ -77,20 +78,20 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 {
 	struct ns_data *d = extra;
 
-	d->reg[com_iir] |= IIR_NOPEND;
-	cpu_interrupt_ack(cpu, d->irqnr);
-
 	d->reg[com_iir] &= ~IIR_RXRDY;
 	if (d->in_use) {
 		if (console_charavail(d->console_handle))
 			d->reg[com_iir] |= IIR_RXRDY;
 	}
 
-	if ((d->irq_enable & IER_ETXRDY && d->reg[com_iir] & IIR_TXRDY) ||
-	    (d->irq_enable & IER_ERXRDY && d->reg[com_iir] & IIR_RXRDY)) {
+	if (((d->reg[com_ier] & IER_ETXRDY) && (d->reg[com_iir] & IIR_TXRDY)) ||
+	    ((d->reg[com_ier] & IER_ERXRDY) && (d->reg[com_iir] & IIR_RXRDY))) {
 		d->reg[com_iir] &= ~IIR_NOPEND;
 		if (d->reg[com_mcr] & MCR_IENABLE)
 			cpu_interrupt(cpu, d->irqnr);
+	} else {
+		d->reg[com_iir] |= IIR_NOPEND;
+		cpu_interrupt_ack(cpu, d->irqnr);
 	}
 }
 
@@ -107,24 +108,28 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	struct ns_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
+	if (len != 1)
+		fatal("[ ns16550: len=%i! ]\n", len);
 
 	/*  Always ready to transmit:  */
 	d->reg[com_lsr] |= LSR_TXRDY | LSR_TSRE;
 	d->reg[com_lsr] &= ~LSR_RXRDY;
-	d->reg[com_msr] = MSR_DCD | MSR_DSR | MSR_CTS;
+	d->reg[com_msr] |= MSR_DCD | MSR_DSR | MSR_CTS;
 
 #ifdef DISABLE_FIFO
 	/*  FIFO turned off:  */
 	d->reg[com_iir] &= 0x0f;
 #endif
 
-	if (d->in_use) {
-		if (console_charavail(d->console_handle)) {
-			d->reg[com_lsr] |= LSR_RXRDY;
-		}
-	}
+	if (d->in_use && console_charavail(d->console_handle))
+		d->reg[com_lsr] |= LSR_RXRDY;
 
 	relative_addr /= d->addrmult;
+
+	if (relative_addr >= 8) {
+		fatal("[ ns16550: outside register space? ]\n");
+		return 0;
+	}
 
 	switch (relative_addr) {
 	case com_data:	/*  com_data or com_dlbl  */
@@ -142,19 +147,13 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 		/*  Read write of data:  */
 		if (writeflag == MEM_WRITE) {
-			if (d->reg[com_mcr] & MCR_LOOPBACK) {
+			if (d->reg[com_mcr] & MCR_LOOPBACK)
 				console_makeavail(d->console_handle, idata);
-			} else {
-#if 0
-				/*  Ugly hack: don't show form feeds:  */
-				if (idata != 12)
-#endif
+			else
 				console_putchar(d->console_handle, idata);
-			}
 
 			d->reg[com_iir] |= IIR_TXRDY;
 			dev_ns16550_tick(cpu, d);
-			return 1;
 		} else {
 			if (d->in_use)
 				odata = console_readchar(d->console_handle);
@@ -170,11 +169,10 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 				/*  Set the high byte of the divisor:  */
 				d->divisor &= ~0xff00;
 				d->divisor |= ((idata & 0xff) << 8);
-				debug("[ ns16550 speed set to %i bps ]\n",
-				    115200 / d->divisor);
-			} else {
+				debug("[ ns16550: speed set to %i bps ]\n",
+				    (int)(115200 / d->divisor));
+			} else
 				odata = (d->divisor & 0xff00) >> 8;
-			}
 			break;
 		}
 
@@ -182,49 +180,49 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			/*  This is to supress Linux' behaviour  */
 			if (idata != 0)
-				debug("[ ns16550 write to ier: 0x%02x ]\n",
-				    idata);
+				debug("[ ns16550: write to ier: 0x%02x ]\n",
+				    (int)idata);
 
-			/*  Needed for NetBSD 2.0, but not 1.6.2?  */
-			if (!(d->irq_enable & IER_ETXRDY)
+			/*  Needed for NetBSD 2.0.x, but not 1.6.2?  */
+			if (!(d->reg[com_ier] & IER_ETXRDY)
 			    && (idata & IER_ETXRDY))
 				d->reg[com_iir] |= IIR_TXRDY;
 
-			d->irq_enable = idata;
+			d->reg[com_ier] = idata;
 			dev_ns16550_tick(cpu, d);
-		} else {
-			odata = d->reg[relative_addr];
-		}
+		} else
+			odata = d->reg[com_ier];
 		break;
 	case com_iir:	/*  interrupt identification (r), fifo control (w)  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550 write to fifo control ]\n");
-			d->reg[relative_addr] = idata;
+			debug("[ ns16550: write to fifo control ]\n");
+			d->reg[com_iir] = idata;
 		} else {
-			odata = d->reg[relative_addr];
-			debug("[ ns16550 read from iir: 0x%02x ]\n", odata);
+			odata = d->reg[com_iir];
+			debug("[ ns16550: read from iir: 0x%02x ]\n",
+			    (int)odata);
 			dev_ns16550_tick(cpu, d);
 		}
 		break;
 	case com_lsr:
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550 write to lsr ]\n");
-			d->reg[relative_addr] = idata;
+			debug("[ ns16550: write to lsr ]\n");
+			d->reg[com_lsr] = idata;
 		} else {
-			odata = d->reg[relative_addr];
+			odata = d->reg[com_lsr];
 		}
 		break;
 	case com_msr:
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550 write to msr ]\n");
-			d->reg[relative_addr] = idata;
+			debug("[ ns16550: write to msr ]\n");
+			d->reg[com_msr] = idata;
 		} else {
-			odata = d->reg[relative_addr];
+			odata = d->reg[com_msr];
 		}
 		break;
 	case com_lctl:
 		if (writeflag == MEM_WRITE) {
-			d->reg[relative_addr] = idata;
+			d->reg[com_lctl] = idata;
 			switch (idata & 0x7) {
 			case 0:	d->databits = 5; d->stopbits = "1"; break;
 			case 1:	d->databits = 6; d->stopbits = "1"; break;
@@ -248,33 +246,36 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 			d->dlab = idata & 0x80? 1 : 0;
 
-			debug("[ ns16550 write to lctl: 0x%02x (%s%s"
+			debug("[ ns16550: write to lctl: 0x%02x (%s%s"
 			    "setting mode %i%c%s) ]\n",
 			    (int)idata,
 			    d->dlab? "Divisor Latch access, " : "",
 			    idata&0x40? "sending BREAK, " : "",
 			    d->databits, d->parity, d->stopbits);
 		} else {
-			odata = d->reg[relative_addr];
-			debug("[ ns16550 read from lctl: 0x%02x ]\n", odata);
+			odata = d->reg[com_lctl];
+			debug("[ ns16550: read from lctl: 0x%02x ]\n",
+			    (int)odata);
 		}
 		break;
 	case com_mcr:
 		if (writeflag == MEM_WRITE) {
-			d->reg[relative_addr] = idata;
-			debug("[ ns16550 write to mcr: 0x%02x ]\n", idata);
+			d->reg[com_mcr] = idata;
+			debug("[ ns16550: write to mcr: 0x%02x ]\n",
+			    (int)idata);
 		} else {
-			odata = d->reg[relative_addr];
-			debug("[ ns16550 read from mcr: 0x%02x ]\n", odata);
+			odata = d->reg[com_mcr];
+			debug("[ ns16550: read from mcr: 0x%02x ]\n",
+			    (int)odata);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ ns16550 read from reg %i ]\n",
+			debug("[ ns16550: read from reg %i ]\n",
 			    (int)relative_addr);
 			odata = d->reg[relative_addr];
 		} else {
-			debug("[ ns16550 write to reg %i:",
+			debug("[ ns16550: write to reg %i:",
 			    (int)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
@@ -328,11 +329,9 @@ int dev_ns16550_init(struct machine *machine, struct memory *mem,
 	else
 		snprintf(name2, nlen, "ns16550");
 
-	memory_device_register(mem, name2, baseaddr,
-	    DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d,
-	    MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_ns16550_tick,
-	    d, NS16550_TICK_SHIFT);
+	memory_device_register(mem, name2, baseaddr, DEV_NS16550_LENGTH
+	    * addrmult, dev_ns16550_access, d, MEM_DEFAULT, NULL);
+	machine_add_tickfunction(machine, dev_ns16550_tick, d, TICK_SHIFT);
 
 	return d->console_handle;
 }

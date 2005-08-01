@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.491 2005-08-01 20:02:54 debug Exp $
+ *  $Id: machine.c,v 1.492 2005-08-01 20:15:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3749,10 +3749,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			dev_mc146818_init(machine, mem, 0x18000070, 8 + 8, MC146818_PC_CMOS, 1);
 			machine->main_console_handle =
 			    dev_ns16550_init(machine, mem, 0x180003f8, 8 + 4, 1, 1, "serial console (tty0)");
-#if 0
-			dev_ns16550_init(machine, mem, 0x18000378, 8 + 3, 1, 1, "serial console (tty1)");
-			dev_ns16550_init(machine, mem, MALTA_CBUSUART, 4, 8, 1, "serial console (tty2)");
-#endif
+			dev_ns16550_init(machine, mem, 0x18000378, 8 + 3, 1, 0, "serial console (tty1)");
+			dev_ns16550_init(machine, mem, MALTA_CBUSUART, 4, 8, 0, "serial console (tty2)");
 			/*  TODO: Irqs  */
 			pci_data = dev_gt_init(machine, mem, 0x1be00000, 8+16, 8+16, 120);
 

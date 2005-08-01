@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.23 2005-07-31 00:38:23 debug Exp $
+ *  $Id: dev_gt.c,v 1.24 2005-08-01 20:15:45 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -56,7 +56,6 @@
 #define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /* GT-64120 */
 
 struct gt_data {
-	int	reg[8];
 	int	irqnr;
 	int	pciirq;
 	int	type;
@@ -89,21 +88,42 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
+	case 0x48:
+		switch (d->type) {
+		case PCI_PRODUCT_GALILEO_GT64120:
+			/*
+			 *  This is needed for Linux on Malta, according
+			 *  to Alec Voropay.  (TODO: Remove this hack when
+			 *  things have stabilized.)
+			 */
+			if (writeflag == MEM_READ) {
+				odata = 0x18000000 >> 21;
+				debug("[ gt: read from 0x48: 0x%08x ]\n",
+				    (int)odata);
+			}
+			break;
+		default:
+			fatal("[ gt: access to 0x48? (type %i) ]\n", d->type);
+		}
+		break;
+
 	case 0xc18:
 		if (writeflag == MEM_WRITE) {
-			debug("[ gt write to  0xc18: data = 0x%08lx ]\n",
-			    (long)idata);
+			debug("[ gt: write to  0xc18: 0x%08x ]\n", (int)idata);
 			return 1;
 		} else {
 			odata = 0xffffffffULL;
 			/*  ???  interrupt something...  */
 
+/*
+ *  TODO: Remove this hack when things have stabilized.
+ */
 odata = 0x00000100;	/*  netbsd/cobalt cobalt/machdep.c:cpu_intr()  */
 
 cpu_interrupt_ack(cpu, d->irqnr);
 
-			debug("[ gt read from 0xc18 (data = 0x%08lx) ]\n",
-			    (long)odata);
+			debug("[ gt: read from 0xc18 (0x%08x) ]\n", (int)odata);
 		}
 		break;
 	case 0xcf8:	/*  PCI ADDR  */
@@ -118,15 +138,13 @@ cpu_interrupt_ack(cpu, d->irqnr);
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ gt read from addr 0x%x ]\n",
+			debug("[ gt: read from addr 0x%x ]\n",
 			    (int)relative_addr);
-			odata = d->reg[relative_addr];
 		} else {
-			debug("[ gt write to addr 0x%x:", (int)relative_addr);
+			debug("[ gt: write to addr 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
-			d->reg[relative_addr] = idata;
 		}
 	}
 

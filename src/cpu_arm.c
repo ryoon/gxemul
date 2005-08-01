@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.43 2005-08-01 05:10:30 debug Exp $
+ *  $Id: cpu_arm.c,v 1.44 2005-08-01 05:38:41 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -483,25 +483,17 @@ void arm_invalidate_tlb_entry(struct cpu *cpu, uint32_t vaddr_page)
 }
 
 
-/*
- *  arm_invalidate_translation_caches_paddr():
- *
- *  Invalidate all entries matching a specific physical address.
- */
-void arm_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
-{
-	int r;
-	uint32_t paddr_page = paddr & 0xfffff000;
-
-	for (r=0; r<ARM_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.arm.vph_tlb_entry[r].valid &&
-		    cpu->cd.arm.vph_tlb_entry[r].paddr_page == paddr_page) {
-			arm_invalidate_tlb_entry(cpu,
-			    cpu->cd.arm.vph_tlb_entry[r].vaddr_page);
-			cpu->cd.arm.vph_tlb_entry[r].valid = 0;
-		}
-	}
-}
+#define DYNTRANS_INVALIDATE_TC_PADDR	arm_invalidate_translation_caches_paddr
+#define DYNTRANS_INVALIDATE_TLB_ENTRY   arm_invalidate_tlb_entry
+#define DYNTRANS_ARCH			arm
+#define DYNTRANS_32
+#define	DYNTRANS_MAX_VPH_TLB_ENTRIES	ARM_MAX_VPH_TLB_ENTRIES
+#include "cpu_dyntrans.c"
+#undef	DYNTRANS_MAX_VPH_TLB_ENTRIES
+#undef	DYNTRANS_INVALIDATE_TLB_ENTRY
+#undef  DYNTRANS_ARCH
+#undef  DYNTRANS_32
+#undef  DYNTRANS_INVALIDATE_TC_PADDR
 
 
 /*

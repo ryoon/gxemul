@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.2 2005-08-01 05:10:30 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.3 2005-08-01 05:38:41 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  *
@@ -289,4 +289,40 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	    (long long)table_index, (long long)physpage_ofs);  */
 }
 #endif	/*  DYNTRANS_PC_TO_POINTERS_FUNC  */
+
+
+
+#ifdef DYNTRANS_INVALIDATE_TC_PADDR
+/*
+ *  XXX_invalidate_translation_caches_paddr():
+ *
+ *  Invalidate all entries matching a specific physical address.
+ */
+void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
+{
+	int r;
+#ifdef DYNTRANS_32
+	uint32_t
+#else
+	uint64_t
+#endif
+	    paddr_page = paddr &
+#ifdef DYNTRANS_8K
+	    ~0x1fff
+#else
+	    ~0xfff
+#endif
+	    ;
+
+	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid &&
+		    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
+		    paddr_page) {
+			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
+			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page);
+			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid = 0;
+		}
+	}
+}
+#endif	/*  DYNTRANS_INVALIDATE_TC_PADDR  */
 

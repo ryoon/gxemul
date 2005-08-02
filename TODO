@@ -1,4 +1,4 @@
-$Id: TODO,v 1.149 2005-08-01 20:47:31 debug Exp $
+$Id: TODO,v 1.150 2005-08-02 19:06:21 debug Exp $
 
 ===============================================================================
 
@@ -12,7 +12,8 @@ MIPS bintrans:
 	i386: movn etc, slt[u] for 64-bit mode, 64-bit shifts etc
 
 dyntrans:
-	x) memory write protection for ARM/Alpha
+	x) memory write protection for ARM, but NOT for Alpha (because
+		it has the IMB instruction... hm)
 	x) function call trace support
 	x) opcode statistics support
 	x) breakpoint support

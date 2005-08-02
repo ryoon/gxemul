@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.868 2005-08-02 07:56:35 debug Exp $
+$Id: HISTORY,v 1.869 2005-08-02 19:06:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2122,3 +2122,5 @@ Changelog for GXemul:
 20050802	More cleanup/refactoring of the dyntrans subsystem: adding
 		phys_page pointers to the lookup tables, for quick jumps
 		between translated pages.
+		Better fix for the ns16550 device (but still no real FIFO
+		functionality).

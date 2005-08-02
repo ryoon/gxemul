@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.143 2005-07-19 11:23:25 debug Exp $
+#  $Id: configure,v 1.144 2005-08-02 19:06:21 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -63,7 +63,7 @@ ENABLEARM=YES
 ENABLEMIPS=YES
 ENABLEPPC=YES
 ENABLEURISC=YES
-ENABLEX86=NO
+ENABLEX86=YES
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -136,9 +136,7 @@ if [ z"$*" != z ]; then
 			echo "  --disable-mips     disable MIPS CPU emulation"
 			echo "  --disable-ppc      disable PPC CPU emulation"
 			echo "  --disable-urisc    disable URISC CPU emulation"
-			printf "  --enable-x86       "
-			printf "enable x86 CPU emulation"
-			printf " (NOT YET)\n"
+			echo "  --disable-x86      disable X86 CPU emulation"
 			printf "\nMIPS-specific options:\n"
 			printf "  --enable-mips16    enable MIPS16 instruction"
 			printf " support (NOT YET)\n\n"
@@ -207,8 +205,6 @@ if [ z$ENABLEURISC = zYES ]; then
 fi
 if [ z$ENABLEX86 = zYES ]; then
 	printf "#define ENABLE_X86\n" >> config.h
-	printf "\nWARNING: X86 emulation enabled, but it isn't really"
-	printf " working yet.\n\n"
 fi
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.36 2005-08-01 23:23:18 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.37 2005-08-02 07:25:38 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -80,6 +80,7 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 #define	DYNTRANS_PC_TO_IC_ENTRY			ALPHA_PC_TO_IC_ENTRY
 #define	DYNTRANS_TC_ALLOCATE			alpha_tc_allocate_default_page
 #define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage
+#define DYNTRANS_PC_TO_POINTERS			alpha_pc_to_pointers
 
 extern volatile int single_step;
 extern int old_show_trace_tree;   
@@ -659,9 +660,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 
 #define DYNTRANS_CPU_RUN_INSTR  alpha_cpu_run_instr
-#define DYNTRANS_PC_TO_POINTERS alpha_pc_to_pointers
 #include "cpu_dyntrans.c"
-#undef  DYNTRANS_PC_TO_POINTERS
 #undef  DYNTRANS_CPU_RUN_INSTR
 
 

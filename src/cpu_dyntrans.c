@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.8 2005-08-02 07:07:08 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.9 2005-08-02 07:24:26 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -224,13 +224,31 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #ifdef DYNTRANS_ARM
 	int index;
 	cached_pc = cpu->cd.arm.r[ARM_PC];
-
 	index = cached_pc >> 12;
 	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
 	if (ppp != NULL)
 		goto have_it;
 #else
+#ifdef DYNTRANS_ALPHA
+	uint32_t a, b;
+	int kernel = 0;
+	struct alpha_vph_page *vph_p;
 	cached_pc = cpu->pc;
+	a = (cached_pc >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+	b = (cached_pc >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
+	if ((cached_pc >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+		kernel = 1;
+	} else
+		vph_p = cpu->cd.alpha.vph_table0[a];
+	if (vph_p != cpu->cd.alpha.vph_default_page) {
+		ppp = vph_p->phys_page[b];
+		if (ppp != NULL)
+			goto have_it;
+	}
+#else
+#error Neither alpha nor arm?
+#endif
 #endif
 
 	/*
@@ -278,6 +296,11 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #ifdef DYNTRANS_ARM
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL)
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = ppp;
+#endif
+
+#ifdef DYNTRANS_ALPHA
+	if (vph_p->host_load[b] != NULL)
+		vph_p->phys_page[b] = ppp;
 #endif
 
 have_it:
@@ -337,6 +360,7 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 	vph_p->host_load[b] = NULL;
 	vph_p->host_store[b] = NULL;
 	vph_p->phys_addr[b] = 0;
+	vph_p->phys_page[b] = NULL;
 	vph_p->refcount --;
 	if (vph_p->refcount < 0) {
 		fatal("alpha_invalidate_tlb_entry(): huh? Problem 2.\n");
@@ -497,6 +521,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		vph_p->host_load[b] = host_page;
 		vph_p->host_store[b] = writeflag? host_page : NULL;
 		vph_p->phys_addr[b] = paddr_page;
+		vph_p->phys_page[b] = NULL;
 #else
 #ifdef DYNTRANS_32
 		index = vaddr_page >> 12;

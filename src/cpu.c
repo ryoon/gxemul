@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.303 2005-08-02 07:56:36 debug Exp $
+ *  $Id: cpu.c,v 1.304 2005-08-02 20:05:48 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -591,7 +591,6 @@ void cpu_init(void)
 	add_cpu_family(arm_cpu_family_init,   ARCH_ARM);
 	add_cpu_family(mips_cpu_family_init,  ARCH_MIPS);
 	add_cpu_family(ppc_cpu_family_init,   ARCH_PPC);
-	add_cpu_family(urisc_cpu_family_init, ARCH_URISC);
 	add_cpu_family(x86_cpu_family_init,   ARCH_X86);
 }
 

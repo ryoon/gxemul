@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.23 2005-06-26 22:23:43 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.24 2005-08-02 20:05:51 debug Exp $
  */
 
 #include "misc.h"
@@ -72,6 +72,38 @@ struct ppc_cpu_type_def {
 #define	PPC_NGPRS		32
 #define	PPC_NFPRS		32
 
+
+#define	PPC_N_IC_ARGS			3
+#define	PPC_IC_ENTRIES_SHIFT		10
+#define	PPC_IC_ENTRIES_PER_PAGE		(1 << PPC_IC_ENTRIES_SHIFT)
+#define	PPC_PC_TO_IC_ENTRY(a)		(((a)>>2) & (PPC_IC_ENTRIES_PER_PAGE-1))
+#define	PPC_ADDR_TO_PAGENR(a)		((a) >> (PPC_IC_ENTRIES_SHIFT+2))
+
+struct ppc_instr_call {
+	void	(*f)(struct cpu *, struct ppc_instr_call *);
+	size_t	arg[PPC_N_IC_ARGS];
+};
+
+/*  Translation cache struct for each physical page:  */
+struct ppc_tc_physpage {
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	uint32_t	physaddr;
+	int		flags;
+	struct ppc_instr_call ics[PPC_IC_ENTRIES_PER_PAGE + 1];
+};
+
+#define	PPC_N_VPH_ENTRIES		1048576
+
+#define	PPC_MAX_VPH_TLB_ENTRIES		256
+struct ppc_vpg_tlb_entry {
+	int		valid;
+	int		writeflag;
+	int64_t		timestamp;
+	unsigned char	*host_page;
+	uint64_t	vaddr_page;
+	uint64_t	paddr_page;
+};
+
 struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
 
@@ -106,6 +138,33 @@ struct ppc_cpu {
 	uint64_t	sprg3;		/*  Special Purpose Register G3  */
 	uint32_t	pvr;		/*  Processor Version Register  */
 	uint32_t	pir;		/*  Processor ID  */
+
+
+	/*
+	 *  Instruction translation cache:
+	 */
+
+	/*  cur_ic_page is a pointer to an array of PPC_IC_ENTRIES_PER_PAGE
+	    instruction call entries. next_ic points to the next such
+	    call to be executed.  */
+	struct ppc_tc_physpage	*cur_physpage;
+	struct ppc_instr_call	*cur_ic_page;
+	struct ppc_instr_call	*next_ic;
+
+
+	/*
+	 *  Virtual -> physical -> host address translation:
+	 *
+	 *  host_load and host_store point to arrays of PPC_N_VPH_ENTRIES
+	 *  pointers (to host pages); phys_addr points to an array of
+	 *  PPC_N_VPH_ENTRIES uint32_t.
+	 */
+
+	struct ppc_vpg_tlb_entry	vph_tlb_entry[PPC_MAX_VPH_TLB_ENTRIES];
+	unsigned char			*host_load[PPC_N_VPH_ENTRIES]; 
+	unsigned char			*host_store[PPC_N_VPH_ENTRIES];
+	uint32_t			phys_addr[PPC_N_VPH_ENTRIES]; 
+	struct ppc_tc_physpage		*phys_page[PPC_N_VPH_ENTRIES];
 };
 
 
@@ -136,17 +195,9 @@ struct ppc_cpu {
 
 
 /*  cpu_ppc.c:  */
-void ppc_cpu_show_full_statistics(struct machine *m);
-void ppc_cpu_register_match(struct machine *m, char *name, 
-	int writeflag, uint64_t *valuep, int *match_register);
-void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
-int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-        int running, uint64_t addr, int bintrans);
-int ppc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
-int ppc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
-int ppc_cpu_run(struct emul *emul, struct machine *machine);
-void ppc_cpu_dumpinfo(struct cpu *cpu);
-void ppc_cpu_list_available_types(void);
+void ppc_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void ppc_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
 int ppc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int ppc_cpu_family_init(struct cpu_family *);

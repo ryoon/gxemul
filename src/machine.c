@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.493 2005-08-01 20:47:32 debug Exp $
+ *  $Id: machine.c,v 1.494 2005-08-02 20:05:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4076,31 +4076,6 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "Sun Ultra1";
 		break;
 
-	case MACHINE_BAREURISC:
-		machine->machine_name = "\"Bare\" URISC machine";
-		break;
-
-	case MACHINE_TESTURISC:
-		machine->machine_name = "URISC test machine";
-
-		/*  TODO  */
-		/*  A special "device" for accessing normal devices
-		    using urisc accesses?  */
-
-		device_add(machine, "urisc addr=0x12341234");
-
-		break;
-
-	case MACHINE_BAREHPPA:
-		machine->machine_name = "\"Bare\" HPPA machine";
-		break;
-
-	case MACHINE_TESTHPPA:
-		machine->machine_name = "HPPA test machine";
-
-		/*  TODO  */
-		break;
-
 	case MACHINE_BAREALPHA:
 		machine->machine_name = "\"Bare\" Alpha machine";
 		break;
@@ -4395,10 +4370,6 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_BEBOX:
 			m->physical_ram_in_mb = 64;
 			break;
-		case MACHINE_BAREURISC:
-		case MACHINE_TESTURISC:
-			m->physical_ram_in_mb = 2;
-			break;
 		case MACHINE_X86:
 			if (m->machine_subtype == MACHINE_X86_XT)
 				m->physical_ram_in_mb = 1;
@@ -4601,18 +4572,6 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_ULTRA1:
 		m->cpu_name = strdup("SPARCV9");
-		break;
-
-	/*  URISC:  */
-	case MACHINE_BAREURISC:
-	case MACHINE_TESTURISC:
-		m->cpu_name = strdup("URISC");
-		break;
-
-	/*  HPPA:  */
-	case MACHINE_BAREHPPA:
-	case MACHINE_TESTHPPA:
-		m->cpu_name = strdup("HPPA2.0");
 		break;
 
 	/*  Alpha:  */
@@ -4907,14 +4866,6 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
-	/*  Test-machine for URISC:  */
-	me = machine_entry_new("Test-machine for URISC", ARCH_URISC,
-	    MACHINE_TESTURISC, 1, 0);
-	me->aliases[0] = "testurisc";
-	if (cpu_family_ptr_by_number(ARCH_URISC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
 	/*  Test-machine for PPC:  */
 	me = machine_entry_new("Test-machine for PPC", ARCH_PPC,
 	    MACHINE_TESTPPC, 1, 0);
@@ -4928,14 +4879,6 @@ void machine_init(void)
 	    MACHINE_TESTMIPS, 1, 0);
 	me->aliases[0] = "testmips";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Test-machine for HPPA:  */
-	me = machine_entry_new("Test-machine for HPPA", ARCH_HPPA,
-	    MACHINE_TESTHPPA, 1, 0);
-	me->aliases[0] = "testhppa";
-	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
@@ -5111,14 +5054,6 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
-	/*  Generic "bare" URISC machine:  */
-	me = machine_entry_new("Generic \"bare\" URISC machine", ARCH_URISC,
-	    MACHINE_BAREURISC, 1, 0);
-	me->aliases[0] = "bareurisc";
-	if (cpu_family_ptr_by_number(ARCH_URISC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
 	/*  Generic "bare" SPARC machine:  */
 	me = machine_entry_new("Generic \"bare\" SPARC machine", ARCH_SPARC,
 	    MACHINE_BARESPARC, 1, 0);
@@ -5140,14 +5075,6 @@ void machine_init(void)
 	    MACHINE_BAREMIPS, 1, 0);
 	me->aliases[0] = "baremips";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" HPPA machine:  */
-	me = machine_entry_new("Generic \"bare\" HPPA machine", ARCH_HPPA,
-	    MACHINE_BAREHPPA, 1, 0);
-	me->aliases[0] = "barehppa";
-	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.9 2005-08-02 07:24:26 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.10 2005-08-02 20:05:48 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -221,9 +221,9 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	uint32_t *physpage_entryp;
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
-#ifdef DYNTRANS_ARM
+#ifdef DYNTRANS_32
 	int index;
-	cached_pc = cpu->cd.arm.r[ARM_PC];
+	cached_pc = cpu->pc;
 	index = cached_pc >> 12;
 	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
 	if (ppp != NULL)
@@ -247,7 +247,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 			goto have_it;
 	}
 #else
-#error Neither alpha nor arm?
+#error Neither alpha nor 32-bit?
 #endif
 #endif
 
@@ -293,7 +293,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 		    + physpage_ofs);
 	}
 
-#ifdef DYNTRANS_ARM
+#ifdef DYNTRANS_32
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL)
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = ppp;
 #endif

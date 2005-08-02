@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.51 2005-07-30 23:57:51 debug Exp $
+ *  $Id: memory_rw.c,v 1.52 2005-08-02 20:05:49 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -147,15 +147,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		return res;
 	}
 #endif	/*  X86  */
-
-#ifdef MEM_URISC
-	{
-		uint64_t mask = (uint64_t) -1;
-		if (cpu->cd.urisc.wordlen < 64)
-			mask = ((int64_t)1 << cpu->cd.urisc.wordlen) - 1;
-		vaddr &= mask;
-	}
-#endif
 
 #ifdef MEM_MIPS
 	if (bintrans_cached) {

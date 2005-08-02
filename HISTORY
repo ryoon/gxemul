@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.869 2005-08-02 19:06:21 debug Exp $
+$Id: HISTORY,v 1.870 2005-08-02 20:05:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2124,3 +2124,8 @@ Changelog for GXemul:
 		between translated pages.
 		Better fix for the ns16550 device (but still no real FIFO
 		functionality).
+		Converting cpu_ppc to the new dyntrans system. This means that
+		I will have to start from scratch with implementing each
+		instruction, and figure out how to implement dual 64/32-bit
+		modes etc.
+		Removing the URISC CPU family, because it was useless.

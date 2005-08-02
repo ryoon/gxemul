@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.217 2005-07-31 07:58:03 debug Exp $
+ *  $Id: emul.c,v 1.218 2005-08-02 20:05:48 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1143,9 +1143,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			cpu->cd.alpha.r[ALPHA_T12] = cpu->pc;
 			break;
 
-		case ARCH_HPPA:
 		case ARCH_SPARC:
-		case ARCH_URISC:
 			break;
 
 		case ARCH_ARM:
@@ -1262,30 +1260,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	case ARCH_ARM:
 		/*  ARM cpus aren't 64-bit:  */
 		debug("0x%08x", (int)entrypoint);
-		break;
-	case ARCH_URISC:
-		{
-			char tmps[100];
-			unsigned char buf[sizeof(uint64_t)];
-
-			cpu->memory_rw(cpu, m->memory, 0, buf, sizeof(buf),
-			    MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-
-			entrypoint = 0;
-			for (i=0; i<cpu->cd.urisc.wordlen/8; i++) {
-				entrypoint <<= 8;
-				if (cpu->byte_order == EMUL_BIG_ENDIAN)
-					entrypoint += buf[i];
-				else
-					entrypoint += buf[cpu->
-					    cd.urisc.wordlen/8 - 1 - i];
-			}
-
-			snprintf(tmps, sizeof(tmps), "0x%%0%illx",
-			    cpu->cd.urisc.wordlen / 4);
-			debug(tmps, (long long)entrypoint);
-			cpu->pc = entrypoint;
-		}
 		break;
 	case ARCH_X86:
 		debug("0x%04x:0x%llx", cpu->cd.x86.s[X86_S_CS],

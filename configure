@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.144 2005-08-02 19:06:21 debug Exp $
+#  $Id: configure,v 1.145 2005-08-02 20:05:45 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -62,7 +62,6 @@ ENABLEALPHA=YES
 ENABLEARM=YES
 ENABLEMIPS=YES
 ENABLEPPC=YES
-ENABLEURISC=YES
 ENABLEX86=YES
 
 if [ z"$*" != z ]; then
@@ -98,10 +97,6 @@ if [ z"$*" != z ]; then
 			ENABLEPPC=NO
 		else if [ z$a = z--enable-ppc ]; then
 			ENABLEPPC=YES
-		else if [ z$a = z--disable-urisc ]; then
-			ENABLEURISC=NO
-		else if [ z$a = z--enable-urisc ]; then
-			ENABLEURISC=YES
 		else if [ z$a = z--disable-x86 ]; then
 			ENABLEX86=NO
 		else if [ z$a = z--enable-x86 ]; then
@@ -135,7 +130,6 @@ if [ z"$*" != z ]; then
 			echo "  --disable-arm      disable ARM CPU emulation"
 			echo "  --disable-mips     disable MIPS CPU emulation"
 			echo "  --disable-ppc      disable PPC CPU emulation"
-			echo "  --disable-urisc    disable URISC CPU emulation"
 			echo "  --disable-x86      disable X86 CPU emulation"
 			printf "\nMIPS-specific options:\n"
 			printf "  --enable-mips16    enable MIPS16 instruction"
@@ -146,7 +140,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 		fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
@@ -199,9 +193,6 @@ if [ z$ENABLEMIPS = zYES ]; then
 fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
-fi
-if [ z$ENABLEURISC = zYES ]; then
-	printf "#define ENABLE_URISC\n" >> config.h
 fi
 if [ z$ENABLEX86 = zYES ]; then
 	printf "#define ENABLE_X86\n" >> config.h
@@ -464,37 +455,6 @@ else
 	if [ z`./_testm` = z1 ]; then
 		printf "yes, workaround applied\n"
 		echo "#undef alpha" >> config.h
-	else
-		if [ z`./_testm` = z12 ]; then
-			printf "yes, but workaround not possible\n"
-			exit
-		else
-			printf "no\n"
-		fi
-	fi
-fi
-rm -f _testm*
-
-
-#  Check for 'hppa' define.
-printf "checking for 'hppa' define... "
-printf "#include <stdio.h>\nint main(int argc, char *argv[]){
-#ifdef hppa
-printf(\"1\");
-#undef hppa
-#ifdef hppa
-printf(\"2\");
-#endif
-#endif
-printf(\"\\\n\");return 0;}\n" > _testm.c
-$CC $CFLAGS _testm.c -o _testm 2> /dev/null
-if [ ! -x _testm ]; then
-	printf "\nWARNING! COULD NOT COMPILE hppa define TEST"
-	printf " PROGRAM AT ALL!\n"
-else
-	if [ z`./_testm` = z1 ]; then
-		printf "yes, workaround applied\n"
-		echo "#undef hppa" >> config.h
 	else
 		if [ z`./_testm` = z12 ]; then
 			printf "yes, but workaround not possible\n"

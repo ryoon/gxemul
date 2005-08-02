@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.62 2005-07-30 21:03:36 debug Exp $
+ *  $Id: machine.h,v 1.63 2005-08-02 20:05:51 debug Exp $
  */
 
 #include <sys/types.h>
@@ -227,11 +227,9 @@ struct machine {
 #define	ARCH_MIPS		1
 #define	ARCH_PPC		2
 #define	ARCH_SPARC		3
-#define	ARCH_URISC		4
-#define	ARCH_HPPA		5
-#define	ARCH_ALPHA		6
-#define	ARCH_X86		7
-#define	ARCH_ARM		8
+#define	ARCH_ALPHA		4
+#define	ARCH_X86		5
+#define	ARCH_ARM		6
 
 /*  MIPS:  */
 #define	MACHINE_BAREMIPS	1000
@@ -263,26 +261,18 @@ struct machine {
 #define	MACHINE_BARESPARC	3000
 #define	MACHINE_ULTRA1		3001
 
-/*  URISC:  */
-#define	MACHINE_BAREURISC	4000
-#define	MACHINE_TESTURISC	4001
-
-/*  HPPA:  */
-#define	MACHINE_BAREHPPA	5000
-#define	MACHINE_TESTHPPA	5001
-
 /*  Alpha:  */
-#define	MACHINE_BAREALPHA	6000
-#define	MACHINE_TESTALPHA	6001
-#define	MACHINE_ALPHA		6002
+#define	MACHINE_BAREALPHA	4000
+#define	MACHINE_TESTALPHA	4001
+#define	MACHINE_ALPHA		4002
 
 /*  X86:  */
-#define	MACHINE_BAREX86		7000
-#define	MACHINE_X86		7001
+#define	MACHINE_BAREX86		5000
+#define	MACHINE_X86		5001
 
 /*  ARM:  */
-#define	MACHINE_BAREARM		8000
-#define	MACHINE_TESTARM		8001
+#define	MACHINE_BAREARM		6000
+#define	MACHINE_TESTARM		6001
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0

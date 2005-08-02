@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta.c,v 1.3 2005-08-02 18:44:19 debug Exp $
+ *  $Id: dev_malta.c,v 1.4 2005-08-02 18:58:09 debug Exp $
  *
  *  Malta (evbmips) interrupt controller.
  *
- *  TODO: This is basically a dummy device so far.
+ *  TODO: This is basically a dummy device/hack so far. Real solution would be
+ *  to generalize the 8259 device to work with non-x86 modes.
  */
 
 #include <stdio.h>

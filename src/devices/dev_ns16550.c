@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.35 2005-08-02 18:44:19 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.36 2005-08-02 18:58:09 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -59,9 +59,10 @@ struct ns_data {
 	int		in_use;
 	int		irqnr;
 	int		console_handle;
-	int		disable_fifo;
+	int		enable_fifo;
 
 	unsigned char	reg[8];
+	unsigned char	fcr;		/*  FIFO control register  */
 
 	int		dlab;		/*  Divisor Latch Access bit  */
 	int		divisor;
@@ -124,10 +125,10 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	 */
 	d->reg[com_lsr] |= LSR_TXRDY | LSR_TSRE;
 	d->reg[com_msr] |= MSR_DCD | MSR_DSR | MSR_CTS;
-	if (d->disable_fifo) {
-		/*  FIFO off? Then clear the upper 4 bits of the IIR:  */
-		d->reg[com_iir] &= ~0xf0;
-	}
+
+	d->reg[com_iir] &= ~0xf0;
+	if (d->enable_fifo)
+		d->reg[com_iir] |= ((d->fcr << 5) & 0xc0);
 
 	d->reg[com_lsr] &= ~LSR_RXRDY;
 	if (d->in_use && console_charavail(d->console_handle))
@@ -205,7 +206,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	case com_iir:	/*  interrupt identification (r), fifo control (w)  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ ns16550: write to fifo control ]\n");
-			/*  TODO: FIFO control on write  */
+			d->fcr = idata;
 		} else {
 			odata = d->reg[com_iir];
 			debug("[ ns16550: read from iir: 0x%02x ]\n",
@@ -323,7 +324,7 @@ int dev_ns16550_init(struct machine *machine, struct memory *mem,
 	d->irqnr        = irq_nr;
 	d->addrmult     = addrmult;
 	d->in_use       = in_use;
-	d->disable_fifo = 0;
+	d->enable_fifo  = 1;
 	d->dlab         = 0;
 	d->divisor      = 115200 / 9600;
 	d->databits     = 8;

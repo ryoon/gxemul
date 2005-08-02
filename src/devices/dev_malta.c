@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta.c,v 1.2 2005-06-22 00:39:45 debug Exp $
+ *  $Id: dev_malta.c,v 1.3 2005-08-02 18:44:19 debug Exp $
  *
  *  Malta (evbmips) interrupt controller.
  *
@@ -147,10 +147,10 @@ int devinit_malta(struct devinit *devinit)
 	memset(d, 0, sizeof(struct malta_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, 1,
+	    devinit->addr, 2,
 	    dev_malta_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr + 0x80, 1,
+	    devinit->addr + 0x80, 2,
 	    dev_malta_hi_access, (void *)d, MEM_DEFAULT, NULL);
 
 	devinit->return_ptr = d;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.34 2005-08-01 20:15:45 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.35 2005-08-02 18:44:19 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -50,21 +50,22 @@
 
 
 /*  #define debug fatal  */
-/*  #define DISABLE_FIFO  */
 
 #define	TICK_SHIFT		14
 
 
 struct ns_data {
-	unsigned char	reg[8];
-
-	int		irqnr;
-	int		console_handle;
-
 	int		addrmult;
 	int		in_use;
+	int		irqnr;
+	int		console_handle;
+	int		disable_fifo;
+
+	unsigned char	reg[8];
+
 	int		dlab;		/*  Divisor Latch Access bit  */
 	int		divisor;
+
 	int		databits;
 	char		parity;
 	const char	*stopbits;
@@ -73,17 +74,23 @@ struct ns_data {
 
 /*
  *  dev_ns16550_tick():
+ *
+ *  This function is called at regular intervals. An interrupt is caused to the
+ *  CPU if there is a character available for reading, or if the transmitter
+ *  slot is empty (i.e. the ns16550 is ready to transmit).
  */
 void dev_ns16550_tick(struct cpu *cpu, void *extra)
 {
 	struct ns_data *d = extra;
 
 	d->reg[com_iir] &= ~IIR_RXRDY;
-	if (d->in_use) {
-		if (console_charavail(d->console_handle))
-			d->reg[com_iir] |= IIR_RXRDY;
-	}
+	if (d->in_use && console_charavail(d->console_handle))
+		d->reg[com_iir] |= IIR_RXRDY;
 
+	/*
+	 *  If interrupts are enabled, and interrupts are pending, then
+	 *  cause a CPU interrupt.
+ 	 */
 	if (((d->reg[com_ier] & IER_ETXRDY) && (d->reg[com_iir] & IIR_TXRDY)) ||
 	    ((d->reg[com_ier] & IER_ERXRDY) && (d->reg[com_iir] & IIR_RXRDY))) {
 		d->reg[com_iir] &= ~IIR_NOPEND;
@@ -109,70 +116,71 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 	idata = memory_readmax64(cpu, data, len);
 	if (len != 1)
-		fatal("[ ns16550: len=%i! ]\n", len);
+		fatal("[ ns16550: len=%i, idata=0x%16llx! ]\n",
+		    len, (long long)idata);
 
-	/*  Always ready to transmit:  */
+	/*
+	 *  Always ready to transmit:
+	 */
 	d->reg[com_lsr] |= LSR_TXRDY | LSR_TSRE;
-	d->reg[com_lsr] &= ~LSR_RXRDY;
 	d->reg[com_msr] |= MSR_DCD | MSR_DSR | MSR_CTS;
+	if (d->disable_fifo) {
+		/*  FIFO off? Then clear the upper 4 bits of the IIR:  */
+		d->reg[com_iir] &= ~0xf0;
+	}
 
-#ifdef DISABLE_FIFO
-	/*  FIFO turned off:  */
-	d->reg[com_iir] &= 0x0f;
-#endif
-
+	d->reg[com_lsr] &= ~LSR_RXRDY;
 	if (d->in_use && console_charavail(d->console_handle))
 		d->reg[com_lsr] |= LSR_RXRDY;
 
 	relative_addr /= d->addrmult;
 
 	if (relative_addr >= 8) {
-		fatal("[ ns16550: outside register space? ]\n");
+		fatal("[ ns16550: outside register space? relative_addr="
+		    "0x%llx. bad addrmult? bad device length? ]\n",
+		    (long long)relative_addr);
 		return 0;
 	}
 
 	switch (relative_addr) {
-	case com_data:	/*  com_data or com_dlbl  */
+
+	case com_data:	/*  data AND low byte of the divisor  */
 		/*  Read/write of the Divisor value:  */
 		if (d->dlab) {
-			if (writeflag == MEM_WRITE) {
-				/*  Set the low byte of the divisor:  */
-				d->divisor &= ~0xff;
-				d->divisor |= (idata & 0xff);
-			} else {
+			/*  Write or read the low byte of the divisor:  */
+			if (writeflag == MEM_WRITE)
+				d->divisor = d->divisor & 0xff00 | idata;
+			else
 				odata = d->divisor & 0xff;
-			}
 			break;
 		}
 
-		/*  Read write of data:  */
+		/*  Read/write of data:  */
 		if (writeflag == MEM_WRITE) {
 			if (d->reg[com_mcr] & MCR_LOOPBACK)
 				console_makeavail(d->console_handle, idata);
 			else
 				console_putchar(d->console_handle, idata);
-
 			d->reg[com_iir] |= IIR_TXRDY;
-			dev_ns16550_tick(cpu, d);
 		} else {
 			if (d->in_use)
 				odata = console_readchar(d->console_handle);
 			else
 				odata = 0;
-			dev_ns16550_tick(cpu, d);
 		}
+		dev_ns16550_tick(cpu, d);
 		break;
+
 	case com_ier:	/*  interrupt enable AND high byte of the divisor  */
 		/*  Read/write of the Divisor value:  */
 		if (d->dlab) {
 			if (writeflag == MEM_WRITE) {
 				/*  Set the high byte of the divisor:  */
-				d->divisor &= ~0xff00;
-				d->divisor |= ((idata & 0xff) << 8);
+				d->divisor = (d->divisor & 0xff) | (idata << 8);
 				debug("[ ns16550: speed set to %i bps ]\n",
 				    (int)(115200 / d->divisor));
 			} else
-				odata = (d->divisor & 0xff00) >> 8;
+				odata = d->divisor >> 8;
 			break;
 		}
 
@@ -193,10 +201,11 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		} else
 			odata = d->reg[com_ier];
 		break;
+
 	case com_iir:	/*  interrupt identification (r), fifo control (w)  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ ns16550: write to fifo control ]\n");
-			d->reg[com_iir] = idata;
+			/*  TODO: FIFO control on write  */
 		} else {
 			odata = d->reg[com_iir];
 			debug("[ ns16550: read from iir: 0x%02x ]\n",
@@ -204,22 +213,23 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 			dev_ns16550_tick(cpu, d);
 		}
 		break;
+
 	case com_lsr:
 		if (writeflag == MEM_WRITE) {
 			debug("[ ns16550: write to lsr ]\n");
 			d->reg[com_lsr] = idata;
-		} else {
+		} else
 			odata = d->reg[com_lsr];
-		}
 		break;
+
 	case com_msr:
 		if (writeflag == MEM_WRITE) {
 			debug("[ ns16550: write to msr ]\n");
 			d->reg[com_msr] = idata;
-		} else {
+		} else
 			odata = d->reg[com_msr];
-		}
 		break;
+
 	case com_lctl:
 		if (writeflag == MEM_WRITE) {
 			d->reg[com_lctl] = idata;
@@ -258,6 +268,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 			    (int)odata);
 		}
 		break;
+
 	case com_mcr:
 		if (writeflag == MEM_WRITE) {
 			d->reg[com_mcr] = idata;
@@ -269,6 +280,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 			    (int)odata);
 		}
 		break;
+
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ ns16550: read from reg %i ]\n",
@@ -308,14 +320,15 @@ int dev_ns16550_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ns_data));
-	d->irqnr    = irq_nr;
-	d->addrmult = addrmult;
-	d->in_use   = in_use;
-	d->dlab     = 0;
-	d->divisor  = 115200 / 9600;
-	d->databits = 8;
-	d->parity   = 'N';
-	d->stopbits = "1";
+	d->irqnr        = irq_nr;
+	d->addrmult     = addrmult;
+	d->in_use       = in_use;
+	d->disable_fifo = 0;
+	d->dlab         = 0;
+	d->divisor      = 115200 / 9600;
+	d->databits     = 8;
+	d->parity       = 'N';
+	d->stopbits     = "1";
 	d->console_handle = console_start_slave(machine, name);
 
 	nlen = strlen(name) + 20;

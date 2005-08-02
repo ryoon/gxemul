@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.54 2005-08-01 22:54:40 debug Exp $
+ *  $Id: cpu_mips.c,v 1.55 2005-08-02 07:56:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -152,8 +152,6 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	if (found == -1)
 		return 0;
-
-	memset(&cpu->cd.mips, 0, sizeof(struct mips_cpu));
 
 	cpu->memory_rw          = mips_memory_rw;
 	cpu->cd.mips.cpu_type   = cpu_type_defs[found];

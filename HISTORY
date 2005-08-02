@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.867 2005-08-02 07:39:18 debug Exp $
+$Id: HISTORY,v 1.868 2005-08-02 07:56:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2119,6 +2119,6 @@ Changelog for GXemul:
 		code).
 		Bugfix (memory corruption bug) in dev_gt, and a patch/hack from
 		Alec Voropay for Linux/Malta.
-20050802	More cleanup/refactoring for the dyntrans subsystem: adding
+20050802	More cleanup/refactoring of the dyntrans subsystem: adding
 		phys_page pointers to the lookup tables, for quick jumps
 		between translated pages.

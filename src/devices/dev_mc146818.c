@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.71 2005-08-02 07:35:19 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.72 2005-08-02 07:56:37 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -140,8 +140,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 
 	if ((d->reg[MC_REGB * 4] & MC_REGB_PIE) &&
 	     d->interrupt_every_x_cycles > 0) {
-		d->cycles_left_until_interrupt -=
-		    (1 << TICK_STEPS_SHIFT);
+		d->cycles_left_until_interrupt -= (1 << TICK_SHIFT);
 
 		if (d->cycles_left_until_interrupt < 0 ||
 		    d->cycles_left_until_interrupt >=

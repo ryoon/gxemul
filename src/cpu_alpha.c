@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.37 2005-08-02 07:25:38 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.38 2005-08-02 07:56:36 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -108,8 +108,6 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	if (strcasecmp(cpu_type_name, "Alpha") != 0)
 		return 0;
-
-	memset(&cpu->cd.alpha, 0, sizeof(struct alpha_cpu));
 
 	cpu->memory_rw = alpha_memory_rw;
 	cpu->update_translation_table = alpha_update_translation_table;

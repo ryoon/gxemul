@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.302 2005-07-30 22:40:12 debug Exp $
+ *  $Id: cpu.c,v 1.303 2005-08-02 07:56:36 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -72,16 +72,8 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 		exit(1);
 	}
 
-	cpu = malloc(sizeof(struct cpu));
-	if (cpu == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
+	cpu = zeroed_alloc(sizeof(struct cpu));
 
-	/*
-	 *  Note: It is up to each cpu arch's new() to clear cpu->cd!
-	 */
-	memset(cpu, 0, (size_t)&cpu->cd.mips - (size_t)cpu);
 	cpu->memory_rw          = NULL;
 	cpu->name               = cpu_type_name;
 	cpu->mem                = mem;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.7 2005-08-01 23:32:17 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.8 2005-08-02 07:07:08 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -211,7 +211,7 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
  */
 void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 {
-#ifdef DYNTRANS_ARM
+#ifdef DYNTRANS_32
 	uint32_t
 #else
 	uint64_t
@@ -222,7 +222,13 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
 #ifdef DYNTRANS_ARM
+	int index;
 	cached_pc = cpu->cd.arm.r[ARM_PC];
+
+	index = cached_pc >> 12;
+	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
+	if (ppp != NULL)
+		goto have_it;
 #else
 	cached_pc = cpu->pc;
 #endif
@@ -269,6 +275,12 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 		    + physpage_ofs);
 	}
 
+#ifdef DYNTRANS_ARM
+	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL)
+		cpu->cd.DYNTRANS_ARCH.phys_page[index] = ppp;
+#endif
+
+have_it:
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
@@ -301,6 +313,7 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 	cpu->cd.DYNTRANS_ARCH.host_load[index] = NULL;
 	cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
 	cpu->cd.DYNTRANS_ARCH.phys_addr[index] = 0;
+	cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
 #else
 	/*  2-level:  */
 #ifdef DYNTRANS_ALPHA
@@ -491,6 +504,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		cpu->cd.DYNTRANS_ARCH.host_store[index] =
 		    writeflag? host_page : NULL;
 		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = paddr_page;
+		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;;
 #endif	/*  32  */
 #endif	/*  !ALPHA  */
 	} else {

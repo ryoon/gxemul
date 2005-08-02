@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.48 2005-08-01 23:23:18 debug Exp $
+ *  $Id: cpu_arm.c,v 1.49 2005-08-02 07:07:08 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -536,7 +536,6 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #define	DYNTRANS_PC_TO_POINTERS_FUNC	arm_pc_to_pointers
 #include "cpu_dyntrans.c"
 #undef	DYNTRANS_PC_TO_POINTERS_FUNC
-
 
 
 #include "cpu_arm_instr.c"

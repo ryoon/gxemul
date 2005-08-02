@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.23 2005-08-01 22:31:13 debug Exp $
+ *  $Id: cpu_arm.h,v 1.24 2005-08-02 07:07:09 debug Exp $
  */
 
 #include "misc.h"
@@ -145,6 +145,7 @@ struct arm_cpu {
 	struct arm_instr_call	*cur_ic_page;
 	struct arm_instr_call	*next_ic;
 
+
 	/*
 	 *  Virtual -> physical -> host address translation:
 	 *
@@ -157,6 +158,7 @@ struct arm_cpu {
 	unsigned char			*host_load[ARM_N_VPH_ENTRIES];
 	unsigned char			*host_store[ARM_N_VPH_ENTRIES];
 	uint32_t			phys_addr[ARM_N_VPH_ENTRIES];
+	struct arm_tc_physpage		*phys_page[ARM_N_VPH_ENTRIES];
 };
 
 

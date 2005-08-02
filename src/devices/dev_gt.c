@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.24 2005-08-01 20:15:45 debug Exp $
+ *  $Id: dev_gt.c,v 1.25 2005-08-02 07:35:19 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -47,7 +47,7 @@
 #include "misc.h"
 
 
-#define	TICK_STEPS_SHIFT	16
+#define	TICK_SHIFT		15
 
 /*  #define debug fatal  */
 
@@ -239,7 +239,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH,
 	    dev_gt_access, d, MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_gt_tick, d, TICK_STEPS_SHIFT);
+	machine_add_tickfunction(machine, dev_gt_tick, d, TICK_SHIFT);
 
 	return d->pci_data;
 }

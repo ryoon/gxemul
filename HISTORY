@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.871 2005-08-03 09:03:04 debug Exp $
+$Id: HISTORY,v 1.872 2005-08-03 20:43:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2131,3 +2131,7 @@ Changelog for GXemul:
 		Removing the URISC CPU family, because it was useless.
 20050803	When selecting a machine type, the main type can now be omitted
 		if the subtype name is unique. (I.e. -E can be omitted.)
+		Fixing a dyntrans/device update bug. (Writes to offset 0 of
+		a device could sometimes go unnoticed.)
+		Adding an experimental "instruction combination" hack for
+		ARM for memset-like byte fill loops.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.41 2005-07-28 13:15:24 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.42 2005-08-03 20:43:22 debug Exp $
  *
  *  ARM instructions.
  *
@@ -643,6 +643,64 @@ X(mov_2)
 }
 
 
+/*
+ *  fill_loop_test:
+ *
+ *  A byte-fill loop. Fills at most one page at a time. If the page was not
+ *  in the host_store table, then the original sequence (beginning with
+ *  cmps r2,#0) is executed instead.
+ *
+ *  Z:cmps r2,#0		ic[0]
+ *    strb rX,[rY],#1		ic[1]
+ *    sub  r2,r2,#1		ic[2]
+ *    bgt  Z			ic[3]
+ */
+X(fill_loop_test)
+{
+	uint32_t addr, a, n, ofs, maxlen;
+	unsigned char *page;
+
+	addr = *((uint32_t *)ic[1].arg[0]);
+	n = cpu->cd.arm.r[2] + 1;
+	ofs = addr & 0xfff;
+	maxlen = 4096 - ofs;
+	if (n > maxlen)
+		n = maxlen;
+
+	page = cpu->cd.arm.host_store[addr >> 12];
+	if (page == NULL) {
+		arm_cmps_0[2](cpu, ic);
+		return;
+	}
+
+	/*  printf("x = %x, n = %i\n", *((uint32_t *)ic[1].arg[2]), n);  */
+	memset(page + ofs, *((uint32_t *)ic[1].arg[2]), n);
+
+	*((uint32_t *)ic[1].arg[0]) = addr + n;
+
+	cpu->cd.arm.r[2] -= n;
+	cpu->n_translated_instrs += (4 * n);
+
+	a = cpu->cd.arm.r[2];
+
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (a != 0)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	else
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)a < 0)
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+
+	cpu->n_translated_instrs --;
+
+	if ((int32_t)a > 0)
+		cpu->cd.arm.next_ic --;
+	else
+		cpu->cd.arm.next_ic += 3;
+}
+
+
 /*****************************************************************************/
 
 
@@ -698,6 +756,18 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 				ic[0].arg[1] = 0;
 				combined;
 			}
+		}
+	}
+
+	if (n_back >= 3) {
+		if (ic[-3].f == arm_cmps_0[2] &&
+		    ic[-2].f == instr(store_w0_byte_u1_p0_imm) &&
+		    ic[-2].arg[1] == 1 &&
+		    ic[-1].f == arm_sub_self_1[2] &&
+		    ic[ 0].f == instr(b_samepage__gt) &&
+		    ic[ 0].arg[0] == (size_t)&ic[-3]) {
+			ic[-3].f = instr(fill_loop_test);
+			combined;
 		}
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.55 2005-08-02 07:56:36 debug Exp $
+ *  $Id: cpu_mips.c,v 1.56 2005-08-03 23:44:29 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2793,28 +2793,73 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					cpu->cd.mips.hi |= 0xffffffff00000000ULL;
 				break;
 			}
-			/*
-			 *  TODO:  I'm too tired to think now.  DMULT is probably
-			 *  correct, but is DMULTU?  (Unsigned 64x64 multiply.)
-			 *  Or, hm, perhaps it is dmult which is incorrect.
-			 */
-			if (special6 == SPECIAL_DMULT || special6 == SPECIAL_DMULTU) {
-				/*  64x64 = 128 bit multiplication:  SLOW!!!  TODO  */
-				uint64_t i, low_add, high_add;
+			if (special6 == SPECIAL_DMULT) {
+				/*  64x64 = 128 bit multiplication, signed.  */
+				uint64_t s1 = cpu->cd.mips.gpr[rt];
+				uint64_t s2 = cpu->cd.mips.gpr[rs];
+				int n_negative = 0;
+				int i;
+
+				if ((int64_t)s1 < 0) {
+					s1 = -(int64_t)s1;
+					n_negative ++;
+				}
+				if ((int64_t)s2 < 0) {
+					s2 = -(int64_t)s2;
+					n_negative ++;
+				}
 
 				cpu->cd.mips.lo = cpu->cd.mips.hi = 0;
+
 				for (i=0; i<64; i++) {
-					uint64_t bit = cpu->cd.mips.gpr[rt] & ((uint64_t)1 << i);
+					int bit = (s1 & 0x8000000000000000ULL)? 1 : 0;
+					s1 <<= 1;
+					/*  If bit in s1 set, then add s2 to hi/lo:  */
 					if (bit) {
-						/*  Add cpu->cd.mips.gpr[rs] to hi and lo:  */
-						low_add = (cpu->cd.mips.gpr[rs] << i);
-						high_add = (cpu->cd.mips.gpr[rs] >> (64-i));
-						if (i==0)			/*  WEIRD BUG in the compiler? Or maybe I'm just stupid  */
-							high_add = 0;		/*  these lines are necessary, a >> 64 doesn't seem to do anything  */
-						if (cpu->cd.mips.lo + low_add < cpu->cd.mips.lo)
+						uint64_t old_lo = cpu->cd.mips.lo;
+						cpu->cd.mips.lo += s2;
+						if (cpu->cd.mips.lo < old_lo)
 							cpu->cd.mips.hi ++;
-						cpu->cd.mips.lo += low_add;
-						cpu->cd.mips.hi += high_add;
+					}
+					if (i != 63) {
+						cpu->cd.mips.hi <<= 1;
+						cpu->cd.mips.hi +=
+						    (cpu->cd.mips.lo & 0x8000000000000000ULL) ? 1 : 0;
+						cpu->cd.mips.lo <<= 1;
+					}
+				}
+
+				if (n_negative == 1) {
+					cpu->cd.mips.hi = -(int64_t)cpu->cd.mips.hi;
+					cpu->cd.mips.lo = -(int64_t)cpu->cd.mips.lo;
+					if ((int64_t)cpu->cd.mips.lo < 0)
+						cpu->cd.mips.hi --;
+				}
+				break;
+			}
+			if (special6 == SPECIAL_DMULTU) {
+				/*  64x64 = 128 bit multiplication, unsigned.  */
+				uint64_t s1 = cpu->cd.mips.gpr[rt];
+				uint64_t s2 = cpu->cd.mips.gpr[rs];
+				int i;
+
+				cpu->cd.mips.lo = cpu->cd.mips.hi = 0;
+
+				for (i=0; i<64; i++) {
+					int bit = (s1 & 0x8000000000000000ULL)? 1 : 0;
+					s1 <<= 1;
+					/*  If bit in s1 set, then add s2 to hi/lo:  */
+					if (bit) {
+						uint64_t old_lo = cpu->cd.mips.lo;
+						cpu->cd.mips.lo += s2;
+						if (cpu->cd.mips.lo < old_lo)
+							cpu->cd.mips.hi ++;
+					}
+					if (i != 63) {
+						cpu->cd.mips.hi <<= 1;
+						cpu->cd.mips.hi +=
+						    (cpu->cd.mips.lo & 0x8000000000000000ULL) ? 1 : 0;
+						cpu->cd.mips.lo <<= 1;
 					}
 				}
 				break;

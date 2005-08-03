@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.872 2005-08-03 20:43:21 debug Exp $
+$Id: HISTORY,v 1.873 2005-08-03 23:44:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2135,3 +2135,5 @@ Changelog for GXemul:
 		a device could sometimes go unnoticed.)
 		Adding an experimental "instruction combination" hack for
 		ARM for memset-like byte fill loops.
+20050804	Minor progress on cpu_alpha and related things.
+		Finally fixing the MIPS dmult/dmultu bugs.

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.77 2005-08-01 05:10:29 debug Exp $
+$Id: guestoses.html,v 1.78 2005-08-03 09:03:05 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -130,10 +130,11 @@ steps:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	$ <b>gxemul -X -E dec -e 3max -d nbsd_pmax.img -d bc:pmaxcd.iso</b>
+	$ <b>gxemul -e 3max -d nbsd_pmax.img -d bc:pmaxcd.iso</b>
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
-	DECstation.
+	DECstation. Remember to choose <tt>vt100</tt> as your terminal
+	type, and not <tt>rcons</tt>.
 </ol>
 <p>
 For an ftp install, substitute steps 2 and 3 above with these:
@@ -147,10 +148,12 @@ For an ftp install, substitute steps 2 and 3 above with these:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	$ <b>gxemul -X -E dec -e 3max -d nbsd_pmax.img -O netbsd-INSTALL.gz</b>
+	$ <b>gxemul -e 3max -d nbsd_pmax.img -O netbsd-INSTALL.gz</b>
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
-	DECstation. Suitable networking parameters are as follows:<pre>
+	DECstation. Remember to choose <tt>vt100</tt> as your terminal
+	type, and not <tt>rcons</tt>. Suitable networking parameters are as
+	follows:<pre>
 	Which device shall I use? [le0]: <b>le0</b>
 	..
 	Your DNS domain: <b>mydomain.com</b>
@@ -164,29 +167,26 @@ For an ftp install, substitute steps 2 and 3 above with these:
 	IP number of a real-world nameserver instead.)
 </ol>
 
-<p>(If you don't want to use a graphical framebuffer during the install,
-you can remove <b><tt>-X</tt></b> from the command line, but then make sure you
-choose "<tt>vt100</tt>" when prompted with which terminal type to use, and not
-"<tt>rcons</tt>". If you want to use X, but think that the default framebuffer
-window is too large, try adding <tt><b>-Y2</b></tt> to the command line.)
+<p>If you want to use a graphical framebuffer during the install, you can
+add <b><tt>-X</tt></b> to the command line, and choose <tt>rcons</tt>
+instead of <tt>vt100</tt> when prompted with which terminal type to use.
+If you want to use X, but think that the default framebuffer window is too 
+large, try adding <tt><b>-Y2</b></tt> to the command line as well.
 
 <p>When the installation is completed, the following command should start
 NetBSD from the harddisk image:<pre>
-	$ <b>gxemul -X -M64 -E dec -e 3max -d nbsd_pmax.img</b>
+	$ <b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>
 
-<p>
-Use <b>startx</b> to start X windows.
-
-<p>
-<font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0.2 doesn't
+<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0.2 doesn't
 work with X out-of-the-box on pmax. It seems that this has to do with a 
 switch to WSCONS. For now, if you want X, then try NetBSD 1.6.2.
 
-<p>
-If you want to run without the X framebuffer, use this instead:<pre>
-	$ <b>gxemul -E dec -e 3max -d nbsd_pmax.img</b>
+<p>With NetBSD/pmax 1.6.2, try the following to start with a framebuffer:<pre>
+	$ <b>gxemul -X -e 3max -d nbsd_pmax.img</b>
 </pre>
+and log in as <tt>root</tt> and type <tt>startx</tt> to start X windows.
+
 
 
 
@@ -222,7 +222,7 @@ follow these instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	$ <b>gxemul -E arc -e pica -x -d nbsd_arc.img -d bc:arccd.iso \
+	$ <b>gxemul -e pica -x -d nbsd_arc.img -d bc:arccd.iso \
 	  -j arc/binary/kernel/netbsd.RAMDISK.gz</b>
 
 </pre>
@@ -256,7 +256,7 @@ follow these instructions:
 
 <p>You can now use the generic NetBSD/arc kernel to boot from the harddisk 
 image, using the following command:<pre>
-	$ <b>gxemul -E arc -e pica -x -d nbsd_arc.img netbsd-GENERIC.gz</b>
+	$ <b>gxemul -e pica -x -d nbsd_arc.img netbsd-GENERIC.gz</b>
 
 </pre>
 
@@ -354,7 +354,7 @@ NetBSD/hpcmips on an emulated MobilePro 800:
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
   <li>Start the installation like this:<pre>
-	$ <b>gxemul -E hpcmips -e mobilepro800 -X -d nbsd_hpcmips.img  \
+	$ <b>gxemul -e mobilepro800 -X -d nbsd_hpcmips.img  \
 	  -d b:hpcmipscd.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
@@ -374,7 +374,7 @@ disk image, so you need to download a generic kernel separately:<pre>
 
 <p>The installation is now complete. Use the following command line to
 boot the emulated hpcmips machine:<pre>
-	$ <b>gxemul -E hpcmips -e mobilepro800 -X -d nbsd_hpcmips.img netbsd-GENERIC.gz</b>
+	$ <b>gxemul -e mobilepro800 -X -d nbsd_hpcmips.img netbsd-GENERIC.gz</b>
 
 </pre>
 
@@ -429,7 +429,7 @@ image, from an emulated DECstation 3MAX machine:
 	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
-	$ <b>gxemul -Edec -e3max -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
+	$ <b>gxemul -e3max -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
 
 </pre>
   <li>Log in as root (on the emulated 3MAX machine), and execute the
@@ -505,7 +505,7 @@ image, from an emulated DECstation 3MAX machine:
 	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
-	$ <b>gxemul -Edec -e3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
+	$ <b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
 
 </pre>
   <li>Log in as root (on the emulated 3MAX machine), and execute the
@@ -524,7 +524,7 @@ image, from an emulated DECstation 3MAX machine:
 </ol>
 
 <p>You should now be able to boot NetBSD/evbmips like this:<pre>
-	$ <b>gxemul -Eevbmips -emalta -d nbsd_malta.img netbsd-MALTA.gz</b>
+	$ <b>gxemul -e malta -d nbsd_malta.img netbsd-MALTA.gz</b>
 </pre>
 
 <p>Note 1: NetBSD detects a very fast CPU although the emulation isn't 
@@ -570,7 +570,7 @@ NetBSD can still run, as long as it doesn't use SCSI.
 dowloading<pre>
 	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
-</pre>and run&nbsp;&nbsp;<b><tt>gxemul -E sgi -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
+</pre>and run&nbsp;&nbsp;<b><tt>gxemul -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
 
 <p>It is possible to set up an environment for netbooting the emulated SGI
 machine off of another emulated machine. Performing this setup is quite
@@ -585,7 +585,7 @@ time consuming, but necessary:
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
-	$ <b>gxemul -M64 -Edec -e3max -d nbsd_pmax.img</b>
+	$ <b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
 	inside the emulator:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
@@ -793,10 +793,10 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
   <li>Start the emulator with all three (!) disk images:<pre>
-	$ <b>gxemul -E dec -e 3max -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+	$ <b>gxemul -e 3max -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
 
 </pre>
-	(If you add <tt><b>-X</b></tt>, you will run with the graphical
+	(If you add <tt>-X</tt>, you will run with the graphical
 	framebuffer. This is <i>REALLY</i> slow because the console has to
 	scroll a lot during the install. I don't recommend it.)
   <p>
@@ -828,7 +828,7 @@ common sense and imagination to modify them as you see fit.
 	password! The first time you boot up OpenBSD after the install, you
 	need to go into single user mode and run <b>passwd root</b> to set
 	the root password, or you will not be able to log in at all!<pre>
-	$ <b>gxemul -E dec -e 3max -d obsd_pmax.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
+	$ <b>gxemul -e 3max -d obsd_pmax.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
 </pre>
 While you are at it, you might want to extract the X11 install sets
 as well, as the installer seems to ignore them too. (Perhaps due to a bug
@@ -862,7 +862,7 @@ root password, and so on.
 Once you have completed the installation procedure, the following command
 will let you boot from the new rootdisk image:
 <pre>
-	$ <b>gxemul -E dec -e 3max -X -M64 -o '-aN' -d obsd_pmax.img -j bsd</b>
+	$ <b>gxemul -e 3max -X -M64 -o '-aN' -d obsd_pmax.img -j bsd</b>
 </pre>
 
 <p>
@@ -923,7 +923,7 @@ instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	$ <b>gxemul -X -E arc -e pica -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
+	$ <b>gxemul -X -e pica -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
@@ -936,7 +936,7 @@ Once the install has finished, the following command should let you
 boot from the harddisk image:
 <p>
 <pre>
-	$ <b>gxemul -X -E arc -e pica -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
+	$ <b>gxemul -X -e pica -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
 
 </pre>
 
@@ -973,7 +973,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	(On FreeBSD and similar systems, it is called <tt>/dev/cd0c</tt>.
 	Replace that with the name of your CDROM drive, or the name of a
 	.iso image file.) Then, start the emulator like this:<pre>
-        $ <b>gxemul -X -M64 -E dec -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+        $ <b>gxemul -X -M64 -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
 </pre>
   <li>Once the first stage of the installation is done (restoring the root
@@ -981,7 +981,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	new rootdisk, to continue the installation process.
 	This is done by removing the bootflag ('<tt>b</tt>') from the second
 	diskimage argument:<pre>
-        $ <b>gxemul -X -M64 -E dec -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+        $ <b>gxemul -X -M64 -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
 </ol>
@@ -989,7 +989,7 @@ The following instructions should let you install Ultrix onto a disk image:
 <p>
 When the installation is completed, the following command should start  
 Ultrix from the harddisk image:<pre>
-        $ <b>gxemul -X -M64 -E dec -e 3max -j vmunix -d rootdisk.img</b>
+        $ <b>gxemul -X -M64 -e 3max -j vmunix -d rootdisk.img</b>
 </pre>
 
 <p>Ultrix mostly seems to work with dynamic binary translation (which can
@@ -1011,7 +1011,7 @@ There is also a <b><tt>-z</tt></b> option for supplying names of X11
 displays to use. The following example starts Ultrix on an emulated
 tripple-headed workstation, on three different displays (<tt>remote1:0.0</tt>,
 <tt>localhost:0.0</tt>, and <tt>remote2:0.0</tt>), using no scaledown:<pre>
-        $ <b>gxemul -M64 -N -E dec -e 3max -jgenvmunix -d rootdisk.img \
+        $ <b>gxemul -M64 -N -e 3max -jgenvmunix -d rootdisk.img \
             -XZ3 -z remote1:0.0 -z localhost:0.0 -z remote2:0.0</b>
 </pre>
 
@@ -1078,7 +1078,7 @@ The following instructions should let you run Sprite in the emulator:
 
 </pre>
   <li>Start the emulator with the following command line:<pre>
-	$ <b>gxemul -X -E dec -e 3max -M128 -d ds5000.bt -j vmsprite -o ''</b>
+	$ <b>gxemul -X -e 3max -M128 -d ds5000.bt -j vmsprite -o ''</b>
 
 </pre>
 </ol>
@@ -1159,7 +1159,7 @@ onto a harddisk image:
 </pre>
   <p>
   <li>For a text-mode installation, start the emulator like this:<pre>
-	$ <b>gxemul -E dec -e 3max -U -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
+	$ <b>gxemul -e 3max -U -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
 
 </pre>
 	(If you want to, you can try <b><tt>-X</tt></b> instead of
@@ -1181,7 +1181,7 @@ onto a harddisk image:
   <li>Once the first phase of the install has finished, the following command
 	should let you boot into Debian, and perform post-install
 	configuration:<pre>
-	$ <b>gxemul -E dec -e 3max -U -M64 -o 'console=ttyS3' -d debian.img</b>
+	$ <b>gxemul -e 3max -U -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>Note: All these steps take a lot of time, so you will have plenty
 	of time to drink lots of cups of coffee.
@@ -1194,7 +1194,7 @@ onto a harddisk image:
 	<a href="http://ftp.egr.msu.edu/debian/dists/stable/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://ftp.egr.msu.edu/debian/dists/stable/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
 
 </pre>and boot Debian using the following command line:<pre>
-	$ <b>gxemul -E dec -e 3max -U -M64 -o \
+	$ <b>gxemul -e 3max -U -M64 -o \
 	    'console=ttyS3 root=/dev/sda1 rw init=/bin/sh' \
 	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
 
@@ -1213,7 +1213,7 @@ The system should now be ready for everyday use.
 
 <p>
 Use this command to boot from the completely installed disk image:<pre>
-	$ <b>gxemul -E dec -e 3max -U -M64 -o 'console=ttyS3' -d debian.img</b>
+	$ <b>gxemul -e 3max -U -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
 
@@ -1283,7 +1283,7 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
 </pre>(Note sda1 instead of sdc1.)
   <p>
   <li>To boot Linux, start the emulator like this:<pre>
-	$ <b>gxemul -E dec -e 3max -U -M128 -o \
+	$ <b>gxemul -e 3max -U -M128 -o \
 	    "console=ttyS3 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
@@ -1291,7 +1291,7 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
 
 <p>
 If you need to boot into single user mode, try the following:<pre>
-	$ <b>gxemul -E dec -e 3max -U -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" \
+	$ <b>gxemul -e 3max -U -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" \
 	    -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
@@ -1385,7 +1385,7 @@ for DECstation in the emulator:
 	cd /; sync; umount /mnt</i>)
 	<p>
   <li>Start the emulator with the following command:<pre>
-	$ <b>gxemul -E dec -e 3max -X -d disk.img \
+	$ <b>gxemul -e 3max -X -d disk.img \
 	    pmax_mach/special/mach.boot.MK83.STD+ANY</b>
 
 </pre>
@@ -1418,7 +1418,7 @@ any reply.) OpenBSD/sgi can still run, as long as it doesn't use SCSI. For
 a simple test with the ramdisk (install) kernel, try dowloading<pre>
 	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd</a>
 
-</pre>and run <b><tt>gxemul -E sgi -e o2 bsd.rd</tt></b>.
+</pre>and run <b><tt>gxemul -e o2 bsd.rd</tt></b>.
 
 <p>It might also be possible to netboot. Another emulated machine must 
 then be used as the nfs root server, and the emulated O2 machine must boot 
@@ -1434,7 +1434,7 @@ client. Performing this setup is quite time consuming, but necessary:
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
-	$ <b>gxemul -M64 -Edec -e3max -d nbsd_pmax.img</b>
+	$ <b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
 	inside the emulator:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>

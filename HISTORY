@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.870 2005-08-02 20:05:45 debug Exp $
+$Id: HISTORY,v 1.871 2005-08-03 09:03:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2129,3 +2129,5 @@ Changelog for GXemul:
 		instruction, and figure out how to implement dual 64/32-bit
 		modes etc.
 		Removing the URISC CPU family, because it was useless.
+20050803	When selecting a machine type, the main type can now be omitted
+		if the subtype name is unique. (I.e. -E can be omitted.)

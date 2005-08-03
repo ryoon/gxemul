@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.239 2005-07-25 06:16:10 debug Exp $
+ *  $Id: main.c,v 1.240 2005-08-03 09:03:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -553,7 +553,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		}
 	}
 
-	if (type != NULL) {
+	if (type != NULL || subtype != NULL) {
+		if (type == NULL)
+			type = "";
 		if (subtype == NULL)
 			subtype = "";
 		res = machine_name_to_type(type, subtype,

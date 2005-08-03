@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.494 2005-08-02 20:05:49 debug Exp $
+ *  $Id: machine.c,v 1.495 2005-08-03 09:03:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -185,11 +185,12 @@ int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch)
 {
 	struct machine_entry *me;
-	int i, j, k;
+	int i, j, k, nmatches = 0;
 
 	*type = MACHINE_NONE;
 	*subtype = 0;
 
+	/*  Check stype, and optionally ssubtype:  */
 	me = first_machine_entry;
 	while (me != NULL) {
 		for (i=0; i<me->n_aliases; i++)
@@ -224,12 +225,48 @@ int machine_name_to_type(char *stype, char *ssubtype,
 		me = me->next;
 	}
 
-	fatal("\nSorry, emulation \"%s\"", stype);
-	if (ssubtype != NULL && ssubtype[0] != '\0')
-		fatal(" (subtype \"%s\")", ssubtype);
-	fatal(" is unknown.\n");
-	fatal("Use the -H command line option to get a list of available"
-	    " types and subtypes.\n\n");
+	/*  Not found? Then just check ssubtype:  */
+	me = first_machine_entry;
+	while (me != NULL) {
+		if (me->n_subtypes == 0) {
+			me = me->next;
+			continue;
+		}
+
+		/*  Check for subtype:  */
+		for (j=0; j<me->n_subtypes; j++)
+			for (k=0; k<me->subtype[j]->n_aliases; k++)
+				if (strcasecmp(ssubtype, me->subtype[j]->
+				    aliases[k]) == 0) {
+					*type = me->machine_type;
+					*arch = me->arch;
+					*subtype = me->subtype[j]->
+					    machine_subtype;
+					nmatches ++;
+				}
+
+		me = me->next;
+	}
+
+	switch (nmatches) {
+	case 0:	fatal("\nSorry, emulation \"%s\"", stype);
+		if (ssubtype != NULL && ssubtype[0] != '\0')
+			fatal(" (subtype \"%s\")", ssubtype);
+		fatal(" is unknown.\n");
+		break;
+	case 1:	return 1;
+	default:fatal("\nSorry, multiple matches for \"%s\"", stype);
+		if (ssubtype != NULL && ssubtype[0] != '\0')
+			fatal(" (subtype \"%s\")", ssubtype);
+		fatal(".\n");
+	}
+
+	*type = MACHINE_NONE;
+	*subtype = 0;
+
+	fatal("Use the -H command line option to get a list of "
+	    "available types and subtypes.\n\n");
+
 	return 0;
 }
 

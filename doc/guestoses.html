@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.78 2005-08-03 09:03:05 debug Exp $
+$Id: guestoses.html,v 1.79 2005-08-03 09:45:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -171,16 +171,17 @@ For an ftp install, substitute steps 2 and 3 above with these:
 add <b><tt>-X</tt></b> to the command line, and choose <tt>rcons</tt>
 instead of <tt>vt100</tt> when prompted with which terminal type to use.
 If you want to use X, but think that the default framebuffer window is too 
-large, try adding <tt><b>-Y2</b></tt> to the command line as well.
+large, try adding <tt>-Y2</tt> to the command line as well.
 
-<p>When the installation is completed, the following command should start
+<p>When the installation is finished, the following command should start
 NetBSD from the harddisk image:<pre>
 	$ <b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>
 
-<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0.2 doesn't
-work with X out-of-the-box on pmax. It seems that this has to do with a 
-switch to WSCONS. For now, if you want X, then try NetBSD 1.6.2.
+<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0.2
+doesn't work with X out-of-the-box on pmax. It seems that this has to do
+with NetBSD switching console system to "WSCONS" somewhere between 1.6.2
+and 2.0. For now, if you want X, then try NetBSD 1.6.2.
 
 <p>With NetBSD/pmax 1.6.2, try the following to start with a framebuffer:<pre>
 	$ <b>gxemul -X -e 3max -d nbsd_pmax.img</b>
@@ -217,9 +218,11 @@ follow these instructions:
 	$ <b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=900000</b>
 
 </pre>
-  <li>Download a NetBSD/arc 1.6.2 CDROM image from ftp:<pre>
+  <li>Download a NetBSD/arc 1.6.2 CDROM image, and a generic NetBSD/arc
+	kernel:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso</a>
 
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
 </pre>
   <li>Start the emulator using this command line:<pre>
 	$ <b>gxemul -e pica -x -d nbsd_arc.img -d bc:arccd.iso \
@@ -246,10 +249,6 @@ follow these instructions:
 	    (ctrl-d)
 	$ <b>cd /; umount /mnt; umount /mnt2</b>
 	$ <b>halt</b>
-
-</pre>
-  <li>Download a generic NetBSD/arc kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
 
 </pre>
 </ol>
@@ -339,7 +338,7 @@ than the other models, for some reason. (This is a known bug.)
 
 <p>
 These instructions show an example of how to install
-NetBSD/hpcmips on an emulated MobilePro 800:
+NetBSD/hpcmips on an emulated MobilePro 770:
 
 <p>
 <ol start="1">
@@ -348,44 +347,39 @@ NetBSD/hpcmips on an emulated MobilePro 800:
 	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
 
 </pre>
-  <li>Download the NetBSD 2.0.2 for hpcmips ISO image:<pre>
+  <li>Download the NetBSD/hpcmips 2.0.2 ISO image, and a generic kernel:<pre>
 	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/hpcmipscd.iso">hpcmipscd.iso</a>
+
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
 
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
   <li>Start the installation like this:<pre>
-	$ <b>gxemul -e mobilepro800 -X -d nbsd_hpcmips.img  \
+	$ <b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img  \
 	  -d b:hpcmipscd.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
-	MobilePro 800. (Install onto wd0, choose "Use entire disk" when
+	MobilePro 770. (Install onto wd0, choose "Use entire disk" when
 	doing the MBR partitioning, and choose wd1d (not cd0c) as the
 	CDROM device to install from.)
 </ol>
 
 <p>
 If everything worked, NetBSD should now be installed on the disk image.
-GXemul does not (yet) support reading the kernel directly from the
-disk image, so you need to download a generic kernel separately:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
-
-</pre>
-
-<p>The installation is now complete. Use the following command line to
-boot the emulated hpcmips machine:<pre>
-	$ <b>gxemul -e mobilepro800 -X -d nbsd_hpcmips.img netbsd-GENERIC.gz</b>
+Use the following command line to boot the emulated hpcmips machine:<pre>
+	$ <b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img netbsd-GENERIC.gz</b>
 
 </pre>
 
 <p>If you change your mind at this point regarding which machine type to 
-emulate, you might for example prefer a MobilePro 770, then you can change 
+emulate, you might for example prefer a MobilePro 800, then you can change 
 that at any time. NetBSD is designed to be able to boot on many types, 
 without any need to change the kernel.
 
-<p>When you have logged in as root, you can use <b><tt>startx</tt></b> to
-start X Windows. (Note: There is no mouse support yet; you can only use
-keyboard input.)
+<p>When you have logged in as <tt>root</tt>, you can use <tt>startx</tt> to
+start X Windows, but there is no mouse support yet so only keyboard input 
+is available. This makes it a bit akward to use X.
 
 
 
@@ -533,8 +527,11 @@ will need a lot of patience.
 
 <p>Note 2: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
 (MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
-2.0.2, however, there will be little or no difference in functionality.
-(NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs.)
+2.0.2, however, there will be little or no difference in functionality, as
+NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs. The only difference 
+it makes in practice is that GXemul's binary translation subsystem might 
+run a bit faster (because there are some optimizations for 32-bit 
+emulation that don't work with 64-bit emulation).
 
 <p>Note 3: The installation instructions above create a filesystem
 <i>without</i> a disklabel, so there is only one ffs partition and no
@@ -1121,16 +1118,18 @@ start the X11 environment.
 <font color="#ef0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. During my tests, even pressing the wrong key during the install
 (for example the wrong cursor key) can cause a kernel Oops. My success
-rate is probably around 50%.
+rate is probably around 50%.</font>
 
-<p>I <i>think</i> this has to do with interrupts from the serial controller.
-Hopefully using the <tt><b>-U</b></tt> command line option will reduce the 
-risk for such crashes. (I haven't had time to come up with a clean
-solution to this yet; it feels like a buffer overflow in Linux' serial 
-driver for the 5000/200, but it is also likely that it is a bug in GXemul.)
+<p><font color="#ef0000">I <i>think</i> this has to do with interrupts
+from the serial controller. Hopefully using the <tt><b>-U</b></tt> command
+line option will reduce the risk for such crashes. (I haven't had time to
+come up with a clean solution to this yet; it feels like a buffer overflow
+in Linux' serial driver for the 5000/200, but it is also likely that it is
+a bug in GXemul.)</font>
 
-<p>Everything runs extremely slow. Even if you have a very fast host
-machine, an install attempt can still take several hours! </font>
+<p><font color="#ef0000">Everything runs extremely slow. Even if you have
+a very fast host machine, an install attempt can still take several hours!
+</font>
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1225,8 +1224,7 @@ support for keyboards now, on DECstation 5000/200, so it is
 possible to run Debian GNU/Linux with framebuffer/keyboard.
 (Add <b><tt>-X</tt></b> (or <b><tt>-XY2</tt></b>) and remove the
 <b><tt>console=ttyS3</tt></b> option.) He has made a kernel available here:
-<a href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
-http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+<a href="http://home.tal.org/~milang/o2/kernels/">http://home.tal.org/~milang/o2/kernels</a>/<a href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
 It has other problems (ethernet doesn't seem to work, for
 example), but at least it doesn't Oops that often.&nbsp;]
 

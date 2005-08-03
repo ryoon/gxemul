@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.8 2005-06-24 19:23:03 debug Exp $
+ *  $Id: cpu_run.c,v 1.9 2005-08-03 20:42:43 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -67,7 +67,7 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 	running = 1;
 	rounds = 0;
 	while (running || single_step) {
-		ncycles_chunk_end = machine->ncycles + (1 << 16);
+		ncycles_chunk_end = machine->ncycles + (1 << 17);
 
 		machine->a_few_instrs = machine->a_few_cycles *
 		    instrs_per_cycle(cpus[0]);
@@ -231,12 +231,12 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 
 		/*  If we've done buffered console output,
 		    the flush stdout every now and then:  */
-		if (machine->ncycles > machine->ncycles_flush + (1<<16)) {
+		if (machine->ncycles > machine->ncycles_flush + (1<<17)) {
 			console_flush();
 			machine->ncycles_flush = machine->ncycles;
 		}
 
-		if (machine->ncycles > machine->ncycles_show + (1<<23)) {
+		if (machine->ncycles > machine->ncycles_show + (1<<25)) {
 			machine->ncycles_since_gettimeofday +=
 			    (machine->ncycles - machine->ncycles_show);
 			cpu_show_cycles(machine, 0);

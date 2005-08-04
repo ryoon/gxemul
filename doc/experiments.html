@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.86 2005-08-04 10:53:24 debug Exp $
+$Id: experiments.html,v 1.87 2005-08-04 10:58:35 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -176,30 +176,6 @@ the last command to be repeated. Type "<tt>quit</tt>" to quit.
 
 <p>
 Hopefully this is enough to get you inspired. :-)
-
-
-
-<p><br>
-<h4>Hello World for GXemul's PPC mode</h4>
-
-GXemul also has an experimental PowerPC emulation mode.
-<a href="hello_ppc.c"><tt>hello_ppc.c</tt></a> is similar to
-<tt>hello_mips.c</tt>, but should be compiled and run as follows:
-<p>
-<pre>
-	$ <b>ppc-unknown-elf-gcc -O2 hello_ppc.c -c</b>
-	$ <b>ppc-unknown-elf-ld -e f hello_ppc.o -o hello_ppc</b>
-	$ <b>file hello_ppc</b>
-	hello_ppc: ELF 32-bit MSB executable, PowerPC or cisco 4500,
-	  version 1 (SYSV), statically linked, not stripped
-	$ <b>gxemul -q -E testppc hello_ppc</b>
-	Hello world
-</pre>
-
-<p>
-[&nbsp;2005-02-18: I haven't yet been able to build a GCC for ppc64 (only the
-binutils toolchain), because the gcc sources seem to include Linux header files 
-that aren't present on my FreeBSD system. 32-bit PPC works ok, though.&nbsp;]
 
 
 

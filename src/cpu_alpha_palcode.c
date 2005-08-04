@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.5 2005-07-22 12:28:03 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.6 2005-08-04 00:25:08 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -53,6 +53,7 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode) { }
 #else   /*  ENABLE_ALPHA  */
 
 
+#include "console.h"
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
@@ -95,19 +96,66 @@ void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen)
 
 
 /*
+ *  alpha_prom_call():
+ */
+void alpha_prom_call(struct cpu *cpu)
+{
+	uint64_t addr;
+
+	switch (cpu->cd.alpha.r[ALPHA_A0]) {
+	case 0x02:
+		/*  put string. a1 = channel, a2 = ptr to buf, a3 = len  */
+		for (addr = cpu->cd.alpha.r[ALPHA_A2];
+		     addr < cpu->cd.alpha.r[ALPHA_A2] +
+		     cpu->cd.alpha.r[ALPHA_A3]; addr ++) {
+			unsigned char ch;
+			cpu->memory_rw(cpu, cpu->mem, addr, &ch, sizeof(ch),
+			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
+			console_putchar(cpu->machine->main_console_handle, ch);
+		}
+		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.r[ALPHA_A3];
+		break;
+	case 0x22:
+		fatal("[ Alpha PALcode: GXemul PROM call 0x22: TODO ]\n");
+		break;
+	default:fatal("[ Alpha PALcode: GXemul PROM call, a0=0x%llx ]\n",
+		    (long long)cpu->cd.alpha.r[ALPHA_A0]);
+		cpu->running = 0;
+	}
+
+	/*  Return from the PROM call.  */
+	cpu->pc = cpu->cd.alpha.r[ALPHA_RA];
+}
+
+
+/*
  *  alpha_palcode():
  *
- *  Execute an Alpha PALcode instruction.
+ *  Execute an Alpha PALcode instruction. (Most of these correspond to
+ *  NetBSD/alpha code).
  */
 void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 {
 	switch (palcode) {
+	case 0x10:	/*  PAL_OSF1_rdmces  */
+		/*  TODO? Return something in v0.  */
+		break;
+	case 0x11:	/*  PAL_OSF1_wrmces  */
+		/*  TODO? Set something to a0.  */
+		break;
 	case 0x2b:	/*  PAL_OSF1_wrfen  */
 		/*  Floating point enable: a0 = 1 or 0.  */
 		/*  TODO  */
 		break;
 	case 0x33:	/*  PAL_OSF1_tbi  */
 		/*  a0 = op, a1 = vaddr  */
+		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%lli a1=0x%llx ]\n",
+		    (signed long long)cpu->cd.alpha.r[ALPHA_A0],
+		    (long long)cpu->cd.alpha.r[ALPHA_A1]);
+		/*  TODO  */
+		break;
+	case 0x34:	/*  PAL_OSF1_wrent (Write System Entry Address)  */
+		/*  a0 = new vector, a1 = vector selector  */
 		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%lli a1=0x%llx ]\n",
 		    (signed long long)cpu->cd.alpha.r[ALPHA_A0],
 		    (long long)cpu->cd.alpha.r[ALPHA_A1]);
@@ -145,9 +193,7 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		/*  TODO  */
 		break;
 	case 0x3fffffe:
-		fatal("[ Alpha PALcode: GXemul PROM call ]\n");
-		/*  TODO  */
-		cpu->pc = cpu->cd.alpha.r[ALPHA_RA];
+		alpha_prom_call(cpu);
 		break;
 	default:fatal("[ Alpha PALcode 0x%x unimplemented! ]\n", palcode);
 		cpu->running = 0;

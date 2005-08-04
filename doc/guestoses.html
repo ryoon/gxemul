@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.80 2005-08-03 10:20:10 debug Exp $
+$Id: guestoses.html,v 1.81 2005-08-04 00:25:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -561,7 +561,7 @@ generic kernel:<pre>
 in GXemul on an emulated O2 (SGI-IP32). However, GXemul does not yet
 emulate the AHC PCI SCSI controller in the O2. (I have mailed Adaptec
 several times, asking for documentation, but never received any reply.)
-NetBSD can still run, as long as it doesn't use SCSI.
+NetBSD can still run in the emulator, as long as it doesn't use SCSI.
 
 <p>For a simple test with the 2.0.2 ramdisk (install) kernel, try 
 dowloading<pre>
@@ -1416,8 +1416,8 @@ it works.</font>
 
 <p>GXemul does not yet emulate the AHC PCI SCSI controller in the O2. (I have 
 mailed Adaptec several times, asking for documentation, but never received 
-any reply.) OpenBSD/sgi can still run, as long as it doesn't use SCSI. For
-a simple test with the ramdisk (install) kernel, try dowloading<pre>
+any reply.) OpenBSD/sgi can still run in the emulator, as long as it doesn't
+use SCSI. For a simple test with the ramdisk (install) kernel, try dowloading<pre>
 	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.7/sgi/bsd.rd</a>
 
 </pre>and run <b><tt>gxemul -e o2 bsd.rd</tt></b>.
@@ -1466,6 +1466,7 @@ quit
 sh
 for a in *.tgz; do echo $a; tar zxfp $a; done
 echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
+rm *.tgz
 dd if=/dev/zero of=swap bs=1024 count=32768
 halt</b>
 </pre></td></tr></table>

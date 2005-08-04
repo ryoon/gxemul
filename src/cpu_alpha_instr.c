@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.29 2005-07-28 13:29:36 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.30 2005-08-04 00:25:07 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -449,6 +449,42 @@ X(bgt_samepage)
 
 
 /*
+ *  umulh:  Unsigned Multiply 64x64 => 128. Store high part in dest reg.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = pointer to source uint64_t
+ */
+X(umulh)
+{
+	uint64_t reshi = 0, reslo = 0;
+	uint64_t s1 = *((uint64_t *)ic->arg[1]), s2 = *((uint64_t *)ic->arg[2]);
+	int i, bit;
+
+	for (i=0; i<64; i++) {
+		bit = (s1 & 0x8000000000000000ULL)? 1 : 0;
+		s1 <<= 1;
+
+		/*  If bit in s1 set, then add s2 to reshi/lo:  */
+		if (bit) {
+			uint64_t old_reslo = reslo;
+			reslo += s2;
+			if (reslo < old_reslo)
+				reshi ++;
+		}
+
+		if (i != 63) {
+			reshi <<= 1;
+			reshi += (reslo & 0x8000000000000000ULL? 1 : 0);
+			reslo <<= 1;
+		}
+	}
+
+	*((uint64_t *)ic->arg[0]) = reshi;
+}
+
+
+/*
  *  lda:  Load address.
  *
  *  arg[0] = pointer to destination uint64_t
@@ -829,6 +865,24 @@ X(to_be_translated)
 		case 0xf2: ic->f = instr(mskqh_imm); break;
 		case 0xf7: ic->f = instr(insqh_imm); break;
 		case 0xfa: ic->f = instr(extqh_imm); break;
+		default:fatal("[ Alpha: unimplemented function 0x%03x for"
+			    " opcode 0x%02x ]\n", func, opcode);
+			goto bad;
+		}
+		break;
+	case 0x13:
+		if (rc == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		ic->arg[0] = (size_t) &cpu->cd.alpha.r[rc];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.r[ra];
+		if (func & 0x80)
+			ic->arg[2] = (size_t)((rb << 3) + (func >> 8));
+		else
+			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
+		switch (func & 0xff) {
+		case 0x30: ic->f = instr(umulh); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;

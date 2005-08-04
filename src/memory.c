@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.172 2005-07-30 18:11:20 debug Exp $
+ *  $Id: memory.c,v 1.173 2005-08-04 10:53:25 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -408,6 +408,13 @@ void memory_device_register(struct memory *mem, const char *device_name,
 
 	if (mem->dev_name[mem->n_mmapped_devices] == NULL) {
 		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	if (flags & (MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK)
+	    && dyntrans_data == NULL) {
+		fatal("\nERROR: Device dyntrans access, but dyntrans_data"
+		    " = NULL!\n");
 		exit(1);
 	}
 

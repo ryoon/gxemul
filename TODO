@@ -1,4 +1,4 @@
-$Id: TODO,v 1.151 2005-08-03 22:26:32 debug Exp $
+$Id: TODO,v 1.152 2005-08-04 10:53:23 debug Exp $
 
 ===============================================================================
 
@@ -29,6 +29,12 @@ dyntrans:
 	x)  support for multiple word lengths (everything except alpha/arm)
 
 	x)  support for variable-length instructions (x86, m68k, ...)
+		Perhaps:  don't increase the next_ic between every
+		instruction, but let each instruction's handler do
+		that for itself.
+		Problem: what about instructions crossing a (virtual)
+			page boundary? They cannot be translated once
+			and for all :( and must be interpreted slowly!
 
 	x)  support for THUMB or MIPS16  (arm, mips)
 
@@ -37,9 +43,10 @@ dyntrans:
 	x)  Alpha: hahaha, zapnot and inserts/extracts don't
 	    compile into very nice code :-|  fix this
 
-	x) PPC, x86: rip out everything and convert into the new dyntrans
-	   system. This would require changes to the dyntrans system to
-	   allow for both multiple "word-length modes".
+	x)  PPC: convert instructions to dyntrans, allow for both 64-bit
+	    and 32-bit operating modes!
+
+	x)  x86: convert to dyntrans. LOTS of stuff to consider.
 
 
 ===============================================================================

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.6 2005-07-16 01:26:24 debug Exp $
+ *  $Id: dev_disk.c,v 1.7 2005-08-04 10:53:25 debug Exp $
  *
  *  Basic "Disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
@@ -45,12 +45,14 @@
 #include "misc.h"
 
 
+#define	BUF_SIZE	8192
+
 struct disk_data {
 	int64_t		offset;
 	int		disk_id;
 	int		command;
 	int		status;
-	unsigned char	buf[512];
+	unsigned char	*buf;
 };
 
 
@@ -106,11 +108,11 @@ int dev_disk_access(struct cpu *cpu, struct memory *mem,
 			switch (d->command) {
 			case 0:	d->status = diskimage_access(cpu->machine,
 				     d->disk_id, DISKIMAGE_SCSI, 0,
-				     d->offset, d->buf, sizeof(d->buf));
+				     d->offset, d->buf, 512);
 				break;
 			case 1:	d->status = diskimage_access(cpu->machine,
 				     d->disk_id, DISKIMAGE_SCSI, 1,
-				     d->offset, d->buf, sizeof(d->buf));
+				     d->offset, d->buf, 512);
 				break;
 			}
 		}
@@ -158,17 +160,24 @@ int devinit_disk(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct disk_data));
 
+	d->buf = malloc(devinit->machine->arch_pagesize);
+	if (d->buf == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d->buf, 0, devinit->machine->arch_pagesize);
+
 	snprintf(n1, nlen, "%s [control]", devinit->name);
 	snprintf(n2, nlen, "%s [data buffer]", devinit->name);
 
 	memory_device_register(devinit->machine->memory, n1,
-	    devinit->addr, 4096, dev_disk_access, (void *)d,
+	    devinit->addr, 0x4000, dev_disk_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, n2,
-	    devinit->addr + 8192, DEV_DISK_LENGTH - 8192, dev_disk_buf_access,
-	    (void *)d, MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK |
-            MEM_READING_HAS_NO_SIDE_EFFECTS, NULL);
+	    devinit->addr + 0x4000, devinit->machine->arch_pagesize,
+	    dev_disk_buf_access, (void *)d, MEM_DYNTRANS_OK |
+	    MEM_DYNTRANS_WRITE_OK | MEM_READING_HAS_NO_SIDE_EFFECTS, d->buf);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.56 2005-08-03 23:44:29 debug Exp $
+ *  $Id: cpu_mips.c,v 1.57 2005-08-04 11:53:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -488,15 +488,20 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 					printf("\n");
 					break;
 				default:
-					/*  TODO: MIPS32 doesn't need 0x16llx  */
-					if (m->cpus[i]->cd.mips.cpu_type.mmu_model == MMU10K)
+					switch (m->cpus[i]->cd.mips.cpu_type.mmu_model) {
+					case MMU10K:
 						printf("vaddr=0x%1x..%011llx ",
 						    (int) (hi >> 60),
 						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
-					else
+						break;
+					case MMU32:
+						printf("vaddr=0x%08x ", (int)(hi&ENTRYHI_VPN2_MASK));
+						break;
+					default:/*  R4000 etc.  */
 						printf("vaddr=0x%1x..%010llx ",
 						    (int) (hi >> 60),
 						    (long long) (hi&ENTRYHI_VPN2_MASK));
+					}
 					if (hi & TLB_G)
 						printf("(global): ");
 					else
@@ -940,8 +945,12 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				debug("syscall");
 			break;
 		case SPECIAL_BREAK:
-			/*  TODO: imm, as in 'syscall'?  */
-			debug("break");
+			imm = (((instr[3] << 24) + (instr[2] << 16) +
+			    (instr[1] << 8) + instr[0]) >> 6) & 0xfffff;
+			if (imm != 0)
+				debug("break\t0x%05x", imm);
+			else
+				debug("break");
 			break;
 		case SPECIAL_MFSA:
 			rd = (instr[1] >> 3) & 31;
@@ -1061,8 +1070,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		    cpu->cd.mips.gpr[rs] + imm, &offset);
 
 		/*  LWC3 is PREF in the newer ISA levels:  */
-		/*  TODO: Which ISAs? cpu->cd.mips.cpu_type.isa_level >= 4?  */
-		if (hi6 == HI6_LWC3) {
+		/*  TODO: Which ISAs? IV? V? 32? 64?  */
+		if (cpu->cd.mips.cpu_type.isa_level >= 4 && hi6 == HI6_LWC3) {
 			debug("pref\t0x%x,%i(%s)",
 			    rt, imm, regname(cpu->machine, rs));
 
@@ -1286,7 +1295,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		if (bits32)
 			debug("cpu%i:  pc = %08x", cpu->cpu_id, (int)cpu->pc);
 		else
-			debug("cpu%i:    pc = %016llx",
+			debug("cpu%i:    pc = 0x%016llx",
 			    cpu->cpu_id, (long long)cpu->pc);
 
 		debug("    <%s>\n", symbol != NULL? symbol :
@@ -1296,7 +1305,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("cpu%i:  hi = %08x  lo = %08x\n",
 			    cpu->cpu_id, (int)cpu->cd.mips.hi, (int)cpu->cd.mips.lo);
 		else
-			debug("cpu%i:    hi = %016llx    lo = %016llx\n",
+			debug("cpu%i:    hi = 0x%016llx    lo = 0x%016llx\n",
 			    cpu->cpu_id, (long long)cpu->cd.mips.hi,
 			    (long long)cpu->cd.mips.lo);
 
@@ -1318,19 +1327,23 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<32; i++) {
 				if ((i & 3) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug(" %3s = %08x", regname(cpu->machine, i),
-				    (int)cpu->cd.mips.gpr[i]);
+				if (i == MIPS_GPR_ZERO)
+					debug("               ");
+				else
+					debug(" %3s = %08x", regname(cpu->machine, i), (int)cpu->cd.mips.gpr[i]);
 				if ((i & 3) == 3)
 					debug("\n");
 			}
 		} else {
 			/*  64-bit:  */
 			for (i=0; i<32; i++) {
+				int r = (i >> 1) + ((i & 1) << 4);
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug("   %3s = %016llx",
-				    regname(cpu->machine, i),
-				    (long long)cpu->cd.mips.gpr[i]);
+				if (r == MIPS_GPR_ZERO)
+					debug("                           ");
+				else
+					debug("   %3s = 0x%016llx", regname(cpu->machine, r), (long long)cpu->cd.mips.gpr[r]);
 				if ((i & 1) == 1)
 					debug("\n");
 			}
@@ -1366,9 +1379,15 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 			if (bits32)
 				debug("=%08x", (int)cpu->cd.mips.coproc[coprocnr]->reg[i]);
-			else
-				debug(" = 0x%016llx", (long long)
-				    cpu->cd.mips.coproc[coprocnr]->reg[i]);
+			else {
+				if (coprocnr == 0 && (i == COP0_COUNT
+				    || i == COP0_COMPARE || i == COP0_INDEX
+				    || i == COP0_RANDOM))
+					debug(" =         0x%08x", (int)cpu->cd.mips.coproc[coprocnr]->reg[i]);
+				else
+					debug(" = 0x%016llx", (long long)
+					    cpu->cd.mips.coproc[coprocnr]->reg[i]);
+			}
 
 			if ((i & nm1) == nm1)
 				debug("\n");
@@ -1654,16 +1673,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	/*  Clear the exception code bits of the cause register...  */
-	if (exc_model == EXC3K) {
+	if (exc_model == EXC3K)
 		reg[COP0_CAUSE] &= ~R2K3K_CAUSE_EXCCODE_MASK;
-#if 0
-		if (exccode >= 16) {
-			fatal("exccode = %i  (there are only 16 exceptions on R3000 and lower)\n", exccode);
-			cpu->running = 0;
-			return;
-		}
-#endif
-	} else
+	else
 		reg[COP0_CAUSE] &= ~CAUSE_EXCCODE_MASK;
 
 	/*  ... and OR in the exception code:  */
@@ -1672,17 +1684,6 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	/*  Always set CE (according to the R5000 manual):  */
 	reg[COP0_CAUSE] &= ~CAUSE_CE_MASK;
 	reg[COP0_CAUSE] |= (coproc_nr << CAUSE_CE_SHIFT);
-
-	/*  TODO:  On R4000, vaddr should NOT be set on bus errors!!!  */
-#if 0
-	if (exccode == EXCEPTION_DBE) {
-		reg[COP0_BADVADDR] = vaddr;
-		/*  sign-extend vaddr, if it is 32-bit  */
-		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
-			reg[COP0_BADVADDR] |=
-			    0xffffffff00000000ULL;
-	}
-#endif
 
 	if (tlb || (exccode >= EXCEPTION_MOD && exccode <= EXCEPTION_ADES) ||
 	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED) {
@@ -2272,7 +2273,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  NOTE: This only works on the host if offset is
 			    aligned correctly!  (TODO)  */
 			*(uint32_t *)instr = *(uint32_t *)
-			    (cpu->cd.mips.pc_last_host_4k_page + (cached_pc & 0xfff));
+			    (cpu->cd.mips.pc_last_host_4k_page + (cached_pc & 0xffc));
 #ifdef BINTRANS
 			cpu->cd.mips.pc_bintrans_paddr_valid = 1;
 			cpu->cd.mips.pc_bintrans_paddr =
@@ -2342,10 +2343,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		 *  swap if necessary:
 		 */
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			instrword = instr[0]; instr[0] = instr[3];
-			    instr[3] = instrword;
-			instrword = instr[1]; instr[1] = instr[2];
-			    instr[2] = instrword;
+			int tmp = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
+			    tmp = instr[1]; instr[1] = instr[2]; instr[2] = tmp;
 		}
 	}
 
@@ -2989,7 +2988,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			return 1;
 		case SPECIAL_SYNC:
-			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
+			/*  imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);  */
 			/*  TODO: actually sync  */
 
 			/*  Clear the LLbit (at least on R10000):  */
@@ -3010,13 +3009,13 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			mips_cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
 			return 1;
 		case SPECIAL_MFSA:
-			/*  R5900? What on earth does this thing do?  */
-			rd = (instr[1] >> 3) & 31;
+			/*  R5900? Move from shift amount register?  */
+			/*  rd = (instr[1] >> 3) & 31;  */
 			/*  TODO  */
 			return 1;
 		case SPECIAL_MTSA:
-			/*  R5900? What on earth does this thing do?  */
-			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			/*  R5900? Move to shift amount register?  */
+			/*  rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);  */
 			/*  TODO  */
 			return 1;
 		default:
@@ -3950,27 +3949,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		/*
 		 *  TODO:  The cache instruction is implementation dependant.
-		 *  This is really ugly.
 		 */
-
-#if 0
-Remove this...
-
-/*		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {  */
-/*			printf("taghi=%08lx taglo=%08lx\n",
-			    (long)cp0->reg[COP0_TAGDATA_HI],
-			    (long)cp0->reg[COP0_TAGDATA_LO]);
-*/
-			if (cp0->reg[COP0_TAGDATA_HI] == 0 &&
-			    cp0->reg[COP0_TAGDATA_LO] == 0) {
-				/*  Normal cache operation:  */
-				cpu->r10k_cache_disable_TODO = 0;
-			} else {
-				/*  Dislocate the cache:  */
-				cpu->r10k_cache_disable_TODO = 1;
-			}
-/*		}  */
-#endif
 
 		/*
 		 *  Clear the LLbit (at least on R10000):

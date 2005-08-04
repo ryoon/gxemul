@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.53 2005-08-03 20:40:33 debug Exp $
+ *  $Id: memory_rw.c,v 1.54 2005-08-04 11:53:16 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -411,33 +411,6 @@ have_paddr:
 				goto do_return_ok;
 		}
 		break;
-#if 0
-/*  Remove this, it doesn't work anyway  */
-	case MMU10K:
-		/*  other cpus:  */
-		/*
-		 *  SUPER-UGLY HACK for SGI-IP32 PROM, R10000:
-		 *  K0 bits == 0x3 means uncached...
-		 *
-		 *  It seems that during bootup, the SGI-IP32 prom
-		 *  stores a return pointers a 0x80000f10, then tests
-		 *  memory by writing bit patterns to 0xa0000xxx, and
-		 *  then when it's done, reads back the return pointer
-		 *  from 0x80000f10.
-		 *
-		 *  I need to find the correct way to disconnect the
-		 *  cache from the main memory for R10000.  (TODO !!!)
-		 */
-/*		if ((cpu->cd.mips.coproc[0]->reg[COP0_CONFIG] & 7) == 3) {  */
-/*
-		if (cache == CACHE_DATA &&
-		    cpu->r10k_cache_disable_TODO) {
-			paddr &= ((512*1024)-1);
-			paddr += 512*1024;
-		}
-*/
-		break;
-#endif
 	default:
 		/*  R4000 etc  */
 		/*  TODO  */

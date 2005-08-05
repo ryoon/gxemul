@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.10 2005-06-20 05:52:48 debug Exp $
+ *  $Id: dev_8259.c,v 1.11 2005-08-05 07:09:30 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
- *  This is mostly bogus. TODO. See the following URL for more details:
+ *  See the following URL for more details:
  *	http://www.nondot.org/sabre/os/files/MiscHW/8259pic.txt
  */
 
@@ -60,6 +60,12 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	if (writeflag == MEM_READ)
+		fatal("[ 8259: read from 0x%x ]\n", (int)relative_addr);
+	else
+		fatal("[ 8259: write to 0x%x: 0x%x ]\n",
+		    (int)relative_addr, (int)idata);
 
 	switch (relative_addr) {
 	case 0x00:
@@ -94,12 +100,25 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 			case 0x0b:
 				d->current_command = 0x0b;
 				break;
+			case 0x0c:
+				/*  Put Master in Buffered Mode  */
+				d->current_command = 0x0c;
+				break;
 			case 0x20:	/*  End Of Interrupt  */
+/*  TODO: in buffered mode,
+this is a EOI 0?  */
 				d->irr &= ~d->isr;
 				d->isr = 0;
 				/*  Recalculate interrupt assertions:  */
-				cpu_interrupt(cpu, 16);
+				cpu_interrupt(cpu, d->irq_nr);
 				break;
+			case 0x21:	/*  Specific EOI  */
+			case 0x22:
+			case 0x23:
+			case 0x24:
+			case 0x25:
+			case 0x26:
+			case 0x27:
 			case 0x60:
 			case 0x61:
 			case 0x62:
@@ -111,7 +130,7 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				d->irr &= ~(1 << (idata & 7));
 				d->isr &= ~(1 << (idata & 7));
 				/*  Recalculate interrupt assertions:  */
-				cpu_interrupt(cpu, 16);
+				cpu_interrupt(cpu, d->irq_nr);
 				break;
 			case 0x68:	/*  Set Special Mask Mode  */
 				/*  TODO  */
@@ -139,10 +158,24 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 			case 0x0b:
 				odata = d->isr;
 				break;
+			case 0x0c:
+			default:
+				{
+					int i;
+					odata = 0x00;
+					for (i=0; i<8; i++)
+						if ((d->irr >> i) & 1) {
+							odata = 0x80 | i;
+							break;
+						}
+				}
+				break;
+#if 0
 			default:
 				fatal("[ 8259: unimplemented command 0x%02x"
 				    " while reading ]\n", d->current_command);
 				cpu->running = 0;
+#endif
 			}
 		}
 		break;
@@ -174,7 +207,7 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			d->ier = idata;
 			/*  Recalculate interrupt assertions:  */
-			cpu_interrupt(cpu, 16);
+			cpu_interrupt(cpu, d->irq_nr);
 		} else {
 			odata = d->ier;
 		}
@@ -200,12 +233,21 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  devinit_8259():
+ *
+ *  Initialize an 8259 PIC. Important notes:
+ *
+ *	x)  Most systems use _TWO_ 8259 PICs.
+ *
+ *	x)  The irq number specified is the number used to re-calculate
+ *	    CPU interrupt assertions.  It is _not_ the irq number at
+ *	    which the PIC is connected. (That is left to machine specific
+ *	    code in src/machine.c.)
  */
 int devinit_8259(struct devinit *devinit)
 {
 	struct pic8259_data *d = malloc(sizeof(struct pic8259_data));
 	char *name2;
-	int nlen = 40;
+	size_t nlen = strlen(devinit->name + 20);
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -216,8 +258,10 @@ int devinit_8259(struct devinit *devinit)
 
 	name2 = malloc(nlen);
 	snprintf(name2, nlen, "%s", devinit->name);
-	if ((devinit->addr & 0xfff) == 0xa0)
+	if ((devinit->addr & 0xfff) == 0xa0) {
 		strlcat(name2, " [secondary]", nlen);
+		d->irq_base = 8;
+	}
 
 	memory_device_register(devinit->machine->memory, name2,
 	    devinit->addr, DEV_8259_LENGTH, dev_8259_access, (void *)d,

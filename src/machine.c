@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.495 2005-08-03 09:03:07 debug Exp $
+ *  $Id: machine.c,v 1.496 2005-08-05 07:09:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1332,6 +1332,53 @@ void malta_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 
 /*
+ *  Cobalt interrupts:
+ *
+ *  (irq_nr = 8 + 16 can be used to just reassert/deassert interrupts.)
+ */
+void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
+{
+	int mask;
+
+	irq_nr -= 8;
+	mask = 1 << (irq_nr & 7);
+
+	if (irq_nr < 8) {
+		if (assrt)
+			m->md_int.isa_pic_data.pic1->irr |= mask;
+		else
+			m->md_int.isa_pic_data.pic1->irr &= ~mask;
+	} else if (irq_nr < 16) {
+		if (assrt)
+			m->md_int.isa_pic_data.pic2->irr |= mask;
+		else
+			m->md_int.isa_pic_data.pic2->irr &= ~mask;
+	}
+
+	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+	/*  (TODO: don't hardcode this here)  */
+	if (m->md_int.isa_pic_data.pic2->irr &
+	    ~m->md_int.isa_pic_data.pic2->ier)
+		m->md_int.isa_pic_data.pic1->irr |= 0x04;
+	else
+		m->md_int.isa_pic_data.pic1->irr &= ~0x04;
+
+	/*  Now, PIC1:  */
+	if (m->md_int.isa_pic_data.pic1->irr &
+	    ~m->md_int.isa_pic_data.pic1->ier)
+		cpu_interrupt(cpu, 6);
+	else
+		cpu_interrupt_ack(cpu, 6);
+
+	/*  printf("COBALT: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
+	    "ier=0x%02x\n", m->md_int.isa_pic_data.pic1->irr,
+	    m->md_int.isa_pic_data.pic1->ier,
+	    m->md_int.isa_pic_data.pic2->irr,
+	    m->md_int.isa_pic_data.pic2->ier);  */
+}
+
+
+/*
  *  x86 (PC) interrupts:
  *
  *  (irq_nr = 16 can be used to just reassert/deassert interrupts.)
@@ -2224,9 +2271,18 @@ void machine_setup(struct machine *machine)
 		 *	4	Tulip 1
 		 *	5	16550 UART (serial console)
 		 *	6	VIA southbridge PIC
-		 *	7	PCI
+		 *	7	PCI  (Note: Not used. The PCI controller
+		 *		interrupts at ISA interrupt 9.)
 		 */
-/*		dev_XXX_init(cpu, mem, 0x10000000, machine->emulated_hz);	*/
+
+		/*  Interrupt controllers:  */
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x10000020");
+		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x100000a0");
+		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
+
+		machine->md_interrupt = cobalt_interrupt;
+
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
 
 		machine->main_console_handle = dev_ns16550_init(machine, mem,
@@ -2246,8 +2302,10 @@ void machine_setup(struct machine *machine)
 		 *  pcib0 at pci0 dev 9 function 0, VIA Technologies VT82C586 (Apollo VP) PCI-ISA Bridge, rev 37
 		 *  pciide0 at pci0 dev 9 function 1: VIA Technologies VT82C586 (Apollo VP) ATA33 cr
 		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
+		 *
+		 *  The PCI controller interrupts at ISA interrupt 9.
 		 */
-		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 6, 11);	/*  7 for PCI, not 6?  */
+		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 8 + 9, 11);
 		/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
 		bus_pci_add(machine, pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 		bus_pci_add(machine, pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
@@ -2258,14 +2316,15 @@ void machine_setup(struct machine *machine)
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
 		 *  it really wants is the end of memory + 0x80000000.
 		 *
-		 *  The bootstring should be stored starting 512 bytes before end
-		 *  of physical ram.
+		 *  The bootstring is stored 512 bytes before the end of
+		 *  physical ram.
 		 */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = machine->physical_ram_in_mb * 1048576 + 0x80000000;
+		cpu->cd.mips.gpr[MIPS_GPR_A0] =
+		    machine->physical_ram_in_mb * 1048576 + 0xffffffff80000000ULL;
 		bootstr = "root=/dev/hda1 ro";
 		/*  bootstr = "nfsroot=/usr/cobalt/";  */
-		store_string(cpu, 0xffffffff80000000ULL +
-		    machine->physical_ram_in_mb * 1048576 - 512, bootstr);
+		/*  TODO: bootarg, and/or automagic boot device detection  */
+		store_string(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0] - 512, bootstr);
 		break;
 
 	case MACHINE_HPCMIPS:
@@ -4240,11 +4299,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			machine->machine_name = "Generic x86 PC";
 
 		/*  Interrupt controllers:  */
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=16 addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x20));
 		machine->md.pc.pic1 = device_add(machine, tmpstr);
 		if (machine->machine_subtype != MACHINE_X86_XT) {
-			snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 addr=0x%llx irq=2",
+			snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=16 addr=0x%llx irq=2",
 			    (long long)(X86_IO_BASE + 0xa0));
 			machine->md.pc.pic2 = device_add(machine, tmpstr);
 		}

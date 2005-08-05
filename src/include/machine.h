@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.63 2005-08-02 20:05:51 debug Exp $
+ *  $Id: machine.h,v 1.64 2005-08-05 07:09:31 debug Exp $
  */
 
 #include <sys/types.h>
@@ -65,6 +65,11 @@ struct mace_data;
 struct sgi_ip20_data;
 struct sgi_ip22_data;
 struct sgi_ip30_data;
+struct isa_pic_data {
+	struct pic8259_data *pic1;
+	struct pic8259_data *pic2;
+};
+
 
 #define	MACHINE_NAME_MAXBUF		200
 
@@ -198,6 +203,7 @@ struct machine {
 		struct vr41xx_data *vr41xx_data;       
 		struct jazz_data *jazz_data;
 		struct malta_data *malta_data;
+		struct isa_pic_data isa_pic_data;
 		struct sgi_ip20_data *sgi_ip20_data;
 		struct sgi_ip22_data *sgi_ip22_data;
 		struct sgi_ip30_data *sgi_ip30_data;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.14 2005-06-21 18:48:08 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.15 2005-08-05 07:09:30 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -125,12 +125,8 @@ void pci_vt82c586_ide_init(struct machine *machine, struct memory *mem)
 	switch (machine->machine_type) {
 
 	case MACHINE_COBALT:
-		/*  what about these base addresses and interrupt
-		 *  numbers? They work for Cobalt...
-		 *  7 = PCI interrupt?? (TODO)
-		 */
-		dev_wdc_init(machine, mem, 0x100001f0, 6, 0);	/*  primary  */
-		dev_wdc_init(machine, mem, 0x10000170, 6, 2);	/*  secondary */
+		dev_wdc_init(machine, mem, 0x100001f0, 8 + 14, 0);	/*  primary  */
+		dev_wdc_init(machine, mem, 0x10000170, 8 + 15, 2);	/*  secondary */
 		break;
 
 	case MACHINE_EVBMIPS:

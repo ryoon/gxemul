@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.8 2005-07-12 08:49:14 debug Exp $
+ *  $Id: device.h,v 1.9 2005-08-05 09:11:49 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
@@ -45,6 +45,7 @@ struct devinit {
 	uint64_t	addr;		/*  Device base address  */
 	uint64_t	len;
 	int		irq_nr;
+	int		in_use;
 	int		addr_mult;
 
 	void		*return_ptr;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.876 2005-08-05 07:50:34 debug Exp $
+$Id: HISTORY,v 1.877 2005-08-05 09:11:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2140,3 +2140,4 @@ Changelog for GXemul:
 		Fixing some minor TODOs.
 20050805	Generalizing the 8259 PIC. It now also works with Cobalt
 		and evbmips emulation, in addition to the x86 hack.
+		Finally converting the ns16550 device to use devinit.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.29 2005-04-09 12:11:46 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.30 2005-08-05 09:11:48 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -544,7 +544,9 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	struct memory *mem, int cpumodel)
 {
 	uint64_t baseaddr = 0;
+	char tmps[100];
 	struct vr41xx_data *d = malloc(sizeof(struct vr41xx_data));
+
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -587,12 +589,14 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	 *  which chips.
 	 */
 	if (cpumodel == 4131) {
-		dev_ns16550_init(machine, mem, baseaddr + 0x800,
-		    8 + VRIP_INTR_SIU, 1, 1, "vr41xx siu");
+		snprintf(tmps, sizeof(tmps), "ns16550 irq=%i addr=0x%llx "
+		    "name2=siu", 8+VRIP_INTR_SIU, (long long)(baseaddr+0x800));
+		device_add(machine, tmps);
 	} else {
 		/*  This is used by Linux and NetBSD:  */
-		dev_ns16550_init(machine, mem, 0xc000000,
-		    8 + VRIP_INTR_SIU, 1, 1, "vr41xx serial");
+		snprintf(tmps, sizeof(tmps), "ns16550 irq=%i addr=0x%x "
+		    "name2=serial", 8+VRIP_INTR_SIU, 0xc000000);
+		device_add(machine, tmps);
 	}
 
 	/*  Hm... maybe this should not be here.  TODO  */

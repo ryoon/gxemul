@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.36 2005-08-02 18:58:09 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.37 2005-08-05 09:11:48 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -41,7 +41,7 @@
 
 #include "console.h"
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -52,7 +52,7 @@
 /*  #define debug fatal  */
 
 #define	TICK_SHIFT		14
-
+#define	DEV_NS16550_LENGTH	8
 
 struct ns_data {
 	int		addrmult;
@@ -305,48 +305,52 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_ns16550_init():
+ *  devinit_ns16550():
  */
-int dev_ns16550_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int addrmult, int in_use,
-	char *name)
+int devinit_ns16550(struct devinit *devinit)
 {
-	struct ns_data *d;
+	struct ns_data *d = malloc(sizeof(struct ns_data));
 	size_t nlen;
-	char *name2;
+	char *name;
 
-	d = malloc(sizeof(struct ns_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ns_data));
-	d->irqnr        = irq_nr;
-	d->addrmult     = addrmult;
-	d->in_use       = in_use;
+	d->irqnr        = devinit->irq_nr;
+	d->addrmult     = devinit->addr_mult;
+	d->in_use       = devinit->in_use;
 	d->enable_fifo  = 1;
 	d->dlab         = 0;
 	d->divisor      = 115200 / 9600;
 	d->databits     = 8;
 	d->parity       = 'N';
 	d->stopbits     = "1";
-	d->console_handle = console_start_slave(machine, name);
+	d->console_handle =
+	    console_start_slave(devinit->machine, devinit->name);
 
-	nlen = strlen(name) + 20;
-	name2 = malloc(nlen);
-	if (name2 == NULL) {
-		fprintf(stderr, "out of memory in dev_ns16550_init()\n");
+	nlen = strlen(devinit->name) + 20;
+	if (devinit->name2 != NULL)
+		nlen += strlen(devinit->name2);
+	name = malloc(nlen);
+	if (name == NULL) {
+		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	if (name != NULL && name[0])
-		snprintf(name2, nlen, "ns16550 [%s]", name);
+	if (devinit->name2 != NULL && devinit->name2[0])
+		snprintf(name, nlen, "%s [%s]", devinit->name, devinit->name2);
 	else
-		snprintf(name2, nlen, "ns16550");
+		snprintf(name, nlen, "%s", devinit->name);
 
-	memory_device_register(mem, name2, baseaddr, DEV_NS16550_LENGTH
-	    * addrmult, dev_ns16550_access, d, MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_ns16550_tick, d, TICK_SHIFT);
+	memory_device_register(devinit->machine->memory, name, devinit->addr,
+	    DEV_NS16550_LENGTH * d->addrmult, dev_ns16550_access, d,
+	    MEM_DEFAULT, NULL);
+	machine_add_tickfunction(devinit->machine,
+	    dev_ns16550_tick, d, TICK_SHIFT);
 
-	return d->console_handle;
+	/*  NOTE: Ugly cast into a pointer.  */
+	devinit->return_ptr = (void *)(size_t)d->console_handle;
+	return 1;
 }
 

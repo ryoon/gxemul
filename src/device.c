@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.14 2005-06-22 08:13:38 debug Exp $
+ *  $Id: device.c,v 1.15 2005-08-05 09:11:47 debug Exp $
  *
  *  Device registry framework.
  */
@@ -233,6 +233,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 
 	/*  Default values:  */
 	devinit.addr_mult = 1;
+	devinit.in_use = 1;
 
 	/*  Get the device name first:  */
 	s2 = name_and_params;
@@ -290,6 +291,19 @@ void *device_add(struct machine *machine, char *name_and_params)
 			devinit.addr_mult = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "irq=", 4) == 0) {
 			devinit.irq_nr = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "in_use=", 7) == 0) {
+			devinit.in_use = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "name2=", 6) == 0) {
+			char *h = s2 + 6;
+			size_t len = 0;
+			while (*h && *h != ' ')
+				h++, len++;
+			devinit.name2 = malloc(len + 1);
+			if (devinit.name2 == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			snprintf(devinit.name2, len + 1, s2 + 6);
 		} else {
 			fatal("unknown param: %s\n", s2);
 			if (device_exit_on_error)

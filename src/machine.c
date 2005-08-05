@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.497 2005-08-05 07:50:36 debug Exp $
+ *  $Id: machine.c,v 1.498 2005-08-05 09:11:47 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1546,23 +1546,23 @@ void machine_setup(struct machine *machine)
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "MIPS test machine";
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=2",
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=2",
 		    (long long)DEV_CONS_ADDRESS);
 		cons_data = device_add(machine, tmpstr);
 		machine->main_console_handle = cons_data->console_handle;
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
 		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
 		    640,480, 640,480, 24, "testmips generic");
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);
 		device_add(machine, tmpstr);
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=3",
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=3",
 		    (long long)DEV_ETHER_ADDRESS);
 		device_add(machine, tmpstr);
 
@@ -2039,7 +2039,7 @@ void machine_setup(struct machine *machine)
 			dev_le_init(machine, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
 			dev_sii_init(machine, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
 
-			snprintf(tmpstr, sizeof(tmpstr) - 1,
+			snprintf(tmpstr, sizeof(tmpstr),
 			    "kn230 addr=0x%llx", (long long)KN230_SYS_ICSR);
 			machine->md_int.kn230_csr = device_add(machine, tmpstr);
 
@@ -2283,20 +2283,19 @@ void machine_setup(struct machine *machine)
 		 */
 
 		/*  ISA interrupt controllers:  */
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x10000020");
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x10000020");
 		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x100000a0");
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x100000a0");
 		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
 		machine->md_interrupt = cobalt_interrupt;
 
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
 
-		machine->main_console_handle = dev_ns16550_init(machine, mem,
-		    0x1c800000, 5, 1, 1, "serial console");
+		machine->main_console_handle = (size_t)
+		    device_add(machine, "ns16550 irq=5 addr=0x1c800000 name2=tty0 in_use=1");
 
 #if 0
-		dev_ns16550_init(machine, mem, 0x1f000010, 0, 1, 1,
-		    "other serial console");
+		device_add(machine, "ns16550 irq=0 addr=0x1f000010 name2=tty1 in_use=0");
 #endif
 
 		/*
@@ -2367,9 +2366,10 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 15;
 			hpcmips_fb_encoding = BIFB_D16_0000;
 
-			machine->main_console_handle = dev_ns16550_init(
-			    machine, mem, 0xa008680, 0, 4,
-			    machine->use_x11? 0 : 1, "serial console");  /*  TODO: irq?  */
+			/*  TODO: irq?  */
+			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
+			machine->main_console_handle = (size_t)device_add(machine, tmpstr);
+
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
 			machine->md_interrupt = vr41xx_interrupt;
 
@@ -2398,9 +2398,10 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_0000;
 
-			machine->main_console_handle = dev_ns16550_init(
-			    machine, mem, 0xa008680, 0, 4,
-			    machine->use_x11? 0 : 1, "serial console");  /*  TODO: irq?  */
+			/*  TODO: irq?  */
+			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
+			machine->main_console_handle = (size_t)device_add(machine, tmpstr);
+
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
@@ -2548,8 +2549,8 @@ void machine_setup(struct machine *machine)
 			    VRIP_INTR_SIU (=9) here?  */
 			{
 				int x;
-				x = dev_ns16550_init(machine, mem, 0x0c000010,
-				    8 + VRIP_INTR_SIU, 1, 1, "serial 0");
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr=0x0c000010", 8 + VRIP_INTR_SIU);
+				x = (size_t)device_add(machine, tmpstr);
 
 				if (!machine->use_x11)
 					machine->main_console_handle = x;
@@ -3060,10 +3061,12 @@ Why is this here? TODO
 				 *  program dumps something there, but it doesn't look like
 				 *  readable text.  (TODO)
 				 */
-				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x1f620170, 0, 1,
-				    machine->use_x11? 0 : 1, "serial 0");  /*  TODO: irq?  */
-				dev_ns16550_init(machine, mem, 0x1f620178, 0, 1,
-				    0, "serial 1");  /*  TODO: irq?  */
+
+				/*  TODO: irq!  */
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x1f620170 name2=tty0 in_use=%i", machine->use_x11? 0 : 1);
+				machine->main_console_handle = (size_t)device_add(machine, tmpstr);
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x1f620178 name2=tty1 in_use=0");
+				device_add(machine, tmpstr);
 
 				/*  MardiGras graphics:  */
 				device_add(machine, "sgi_mardigras addr=0x1c000000");
@@ -3148,13 +3151,12 @@ Why is this here? TODO
 
 				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
-				j = dev_ns16550_init(machine, mem, 0x1f390000,
-				    (1<<20) + MACE_PERIPH_SERIAL, 0x100,
-				    machine->use_x11? 0 : 1, "serial 0");	/*  com0  */
-				dev_ns16550_init(machine, mem, 0x1f398000,
-				    (1<<26) + MACE_PERIPH_SERIAL, 0x100,
-				    0, "serial 1");				/*  com1  */
-
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr=0x1f390000 addr_mult=0x100 in_use=%i name2=tty0",
+				    (1<<20) + MACE_PERIPH_SERIAL, machine->use_x11? 0 : 1);
+				j = (size_t)device_add(machine, tmpstr);
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr=0x1f398000 addr_mult=0x100 in_use=%i name2=tty1",
+				    (1<<26) + MACE_PERIPH_SERIAL, 0);
+				device_add(machine, tmpstr);
 #if 0
 				if (machine->use_x11)
 					machine->main_console_handle = i;
@@ -3251,10 +3253,11 @@ Why is this here? TODO
 				device_add(machine, "sn addr=0x80001000 irq=0");
 				dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
 				i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11, 0);
-				j = dev_ns16550_init(machine, mem, 0x80006000ULL,
-				    3, 1, machine->use_x11? 0 : 1, "serial 0");  /*  com0  */
-				dev_ns16550_init(machine, mem, 0x80007000ULL,
-				    0, 1, 0, "serial 1"); /*  com1  */
+
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=3 addr=0x80006000 in_use=%i name2=tty0", machine->use_x11? 0 : 1);
+				j = (size_t)device_add(machine, tmpstr);
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x80007000 in_use=%i name2=tty1", 0);
+				device_add(machine, tmpstr);
 
 				if (machine->use_x11)
 					machine->main_console_handle = i;
@@ -3370,11 +3373,10 @@ Why is this here? TODO
 				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11, 0);
 
-				j = dev_ns16550_init(machine, mem,
-				    0x80006000ULL, 8 + 8, 1,
-				    machine->use_x11? 0 : 1, "serial 0");
-				dev_ns16550_init(machine, mem,
-				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=16 addr=0x80006000 in_use=%i name2=tty0", machine->use_x11? 0 : 1);
+				j = (size_t)device_add(machine, tmpstr);
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=17 addr=0x80007000 in_use=%i name2=tty1", 0);
+				device_add(machine, tmpstr);
 
 				if (machine->use_x11)
 					machine->main_console_handle = i;
@@ -3449,11 +3451,11 @@ Not yet.
 				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11, 0);
 #endif
-				j = dev_ns16550_init(machine, mem,
-				    0x80006000ULL, 8 + 8, 1,
-				    machine->use_x11? 0 : 1, "serial 0");
-				dev_ns16550_init(machine, mem,
-				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
+
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=16 addr=0x80006000 in_use=%i name2=tty0", machine->use_x11? 0 : 1);
+				j = (size_t)device_add(machine, tmpstr);
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=17 addr=0x80007000 in_use=%i name2=tty1", 0);
+				device_add(machine, tmpstr);
 
 				if (machine->use_x11)
 					machine->main_console_handle = i;
@@ -3476,10 +3478,11 @@ Not yet.
 				strlcat(machine->machine_name, " (Deskstation Tyne)",
 				    MACHINE_NAME_MAXBUF);
 
-				i = dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1, "serial 0");
-				dev_ns16550_init(machine, mem, 0x9000002f8ULL, 0, 1, 0, "serial 1");
-				dev_ns16550_init(machine, mem, 0x9000003e8ULL, 0, 1, 0, "serial 2");
-				dev_ns16550_init(machine, mem, 0x9000002e8ULL, 0, 1, 0, "serial 3");
+				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x9000003f8 in_use=%i name2=tty0", machine->use_x11? 0 : 1);
+				i = (size_t)device_add(machine, tmpstr);
+				device_add(machine, "ns16550 irq=0 addr=0x9000002f8 in_use=0 name2=tty1");
+				device_add(machine, "ns16550 irq=0 addr=0x9000003e8 in_use=0 name2=tty2");
+				device_add(machine, "ns16550 irq=0 addr=0x9000002e8 in_use=0 name2=tty3");
 
 				dev_mc146818_init(machine, mem,
 				    0x900000070ULL, 2, MC146818_PC_CMOS, 1);
@@ -3844,23 +3847,21 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 				cpu->byte_order = EMUL_BIG_ENDIAN;
 			}
 
-#if 0
-			machine->md_int.malta_data =
-			    device_add(machine, "malta addr=0x18000020");
+			/*  ISA interrupt controllers:  */
+			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x18000020");
+			machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
+			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x180000a0");
+			machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
 			machine->md_interrupt = malta_interrupt;
-#endif
-		/*  ISA interrupt controllers:  */
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x18000020");
-		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x180000a0");
-		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
-		machine->md_interrupt = malta_interrupt;
 
 			dev_mc146818_init(machine, mem, 0x18000070, 8 + 8, MC146818_PC_CMOS, 1);
-			machine->main_console_handle =
-			    dev_ns16550_init(machine, mem, 0x180003f8, 8 + 4, 1, 1, "serial console (tty0)");
-			dev_ns16550_init(machine, mem, 0x180002f8, 8 + 3, 1, 1, "serial console (tty1)");
-			dev_ns16550_init(machine, mem, MALTA_CBUSUART, 4, 8, 1, "serial console (tty2)");
+
+			machine->main_console_handle = (size_t)
+			    device_add(machine, "ns16550 irq=12 addr=0x180003f8 name2=tty0");
+			device_add(machine, "ns16550 irq=11 addr=0x180002f8 name2=tty1");
+
+			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x name2=tty2", MALTA_CBUSUART);
+			device_add(machine, tmpstr);
 			/*  TODO: Irqs  */
 			pci_data = dev_gt_init(machine, mem, 0x1be00000, 8+9, 8+9, 120);
 
@@ -4007,23 +4008,23 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "PPC test machine";
 
 		/*  TODO: interrupt for PPC?  */
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
 		cons_data = device_add(machine, tmpstr);
 		machine->main_console_handle = cons_data->console_handle;
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
 		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
 		    640,480, 640,480, 24, "testppc generic");
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);
 		device_add(machine, tmpstr);
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
 		    (long long)DEV_ETHER_ADDRESS);
 		device_add(machine, tmpstr);
 
@@ -4046,10 +4047,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		dev_pmppc_init(mem);
 
 		/*  com0 = 0xff600300, com1 = 0xff600400  */
-		machine->main_console_handle = dev_ns16550_init(machine, mem,
-		    0xff600300, 0, 1, 1, "serial 0");
-		dev_ns16550_init(machine, mem,
-		    0xff600400, 0, 1, 0, "serial 1");
+
+		machine->main_console_handle = (size_t)device_add(machine, "ns16550 irq=0 addr=0xff600300 name2=tty0");
+		device_add(machine, "ns16550 irq=0 addr=0xff600400 in_use=0 name2=tty1");
 
 		break;
 
@@ -4077,11 +4077,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		device_add(machine, "bebox");
 
 		/*  Serial, used by NetBSD:  */
-		machine->main_console_handle = dev_ns16550_init(machine, mem,
-		    0x800003f8, 0, 1, 1, "serial 0");
+		machine->main_console_handle = (size_t)
+		    device_add(machine, "ns16550 irq=0 addr=0x800003f8 name2=tty0");
 
 		/*  Serial, used by Linux:  */
-		dev_ns16550_init(machine, mem, 0x800002f8, 0, 1, 0, "serial 1");
+		device_add(machine, "ns16550 irq=0 addr=0x800002f8 name2=tty1 in_use=0");
 
 		/*  This is used by Linux too:  */
 		dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,
@@ -4161,8 +4161,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		/*  For playing with PMON2000 for PPC:  */
 		machine->machine_name = "DB64360";
 
-		machine->main_console_handle = dev_ns16550_init(machine, mem,
-		    0x1d000020, 0, 4, 1, "serial console");
+		machine->main_console_handle = (size_t)device_add(machine, "ns16550 irq=0 addr=0x1d000020");
 
 		{
 			int i;
@@ -4193,23 +4192,23 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_TESTALPHA:
 		machine->machine_name = "Alpha test machine";
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
 		cons_data = device_add(machine, tmpstr);
 		machine->main_console_handle = cons_data->console_handle;
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
 		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
 		    640,480, 640,480, 24, "testalpha generic");
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);
 		device_add(machine, tmpstr);
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
 		    (long long)DEV_ETHER_ADDRESS);
 		device_add(machine, tmpstr);
 
@@ -4271,23 +4270,23 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_TESTARM:
 		machine->machine_name = "ARM test machine";
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "cons addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
 		cons_data = device_add(machine, tmpstr);
 		machine->main_console_handle = cons_data->console_handle;
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
 		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
 		    640,480, 640,480, 24, "testarm generic");
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "disk addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);
 		device_add(machine, tmpstr);
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "ether addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
 		    (long long)DEV_ETHER_ADDRESS);
 		device_add(machine, tmpstr);
 
@@ -4313,11 +4312,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			machine->machine_name = "Generic x86 PC";
 
 		/*  Interrupt controllers:  */
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=16 addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=16 addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x20));
 		machine->md.pc.pic1 = device_add(machine, tmpstr);
 		if (machine->machine_subtype != MACHINE_X86_XT) {
-			snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=16 addr=0x%llx irq=2",
+			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=16 addr=0x%llx irq=2",
 			    (long long)(X86_IO_BASE + 0xa0));
 			machine->md.pc.pic2 = device_add(machine, tmpstr);
 		}
@@ -4325,11 +4324,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->md_interrupt = x86_pc_interrupt;
 
 		/*  Timer:  */
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "8253 addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "8253 addr=0x%llx irq=0",
 		    (long long)(X86_IO_BASE + 0x40));
 		device_add(machine, tmpstr);
 
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "pccmos addr=0x%llx",
+		snprintf(tmpstr, sizeof(tmpstr), "pccmos addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x70));
 		device_add(machine, tmpstr);
 
@@ -4344,7 +4343,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 2);
 
 		/*  Floppy controller at irq 6  */
-		snprintf(tmpstr, sizeof(tmpstr) - 1, "fdc addr=0x%llx irq=6",
+		snprintf(tmpstr, sizeof(tmpstr), "fdc addr=0x%llx irq=6",
 		    (long long)(X86_IO_BASE + 0x3f0));
 		device_add(machine, tmpstr);
 
@@ -4353,8 +4352,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		/*  TODO: parallel port  */
 
 		/*  Serial ports:  (TODO: 8250 for PC XT?)  */
-		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x3f8, 4, 1, 0, "com1");
-		dev_ns16550_init(machine, mem, X86_IO_BASE + 0x378, 3, 1, 0, "com2");
+
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%llx name2=com1 in_use=0",
+		    (long long)X86_IO_BASE + 0x3f8);
+		device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=3 addr=0x%llx name2=com2 in_use=0",
+		    (long long)X86_IO_BASE + 0x2f8);
+		device_add(machine, tmpstr);
 
 		/*  VGA + keyboard:  */
 		dev_vga_init(machine, mem, 0xa0000ULL, X86_IO_BASE + 0x3c0,

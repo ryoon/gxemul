@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.175 2005-08-04 10:53:26 debug Exp $
+ *  $Id: devices.h,v 1.176 2005-08-05 09:11:49 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -338,15 +338,6 @@ int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 void dev_m700_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t baseaddr2);
-
-/*  dev_ns16550.c:  */
-#define	DEV_NS16550_LENGTH		0x0000000000000008
-/*  see comreg.h and ns16550reg.h for more info  */
-int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-int dev_ns16550_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int addrmult, int in_use, char *name);
 
 /*  dev_malta.c:  */
 struct malta_data {

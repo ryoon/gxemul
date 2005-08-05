@@ -25,14 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.37 2005-08-05 09:11:48 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.38 2005-08-05 12:14:23 debug Exp $
  *  
  *  NS16550 serial controller.
  *
  *
- *  TODO:
- *
- *	x)  Implement the FIFO.
+ *  TODO: Implement the FIFO.
  */
 
 #include <stdio.h>
@@ -61,7 +59,7 @@ struct ns_data {
 	int		console_handle;
 	int		enable_fifo;
 
-	unsigned char	reg[8];
+	unsigned char	reg[DEV_NS16550_LENGTH];
 	unsigned char	fcr;		/*  FIFO control register  */
 
 	int		dlab;		/*  Divisor Latch Access bit  */
@@ -116,6 +114,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	struct ns_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	/*  The NS16550 should be accessed using byte read/writes:  */
 	if (len != 1)
 		fatal("[ ns16550: len=%i, idata=0x%16llx! ]\n",
 		    len, (long long)idata);
@@ -136,7 +136,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 	relative_addr /= d->addrmult;
 
-	if (relative_addr >= 8) {
+	if (relative_addr >= DEV_NS16550_LENGTH) {
 		fatal("[ ns16550: outside register space? relative_addr="
 		    "0x%llx. bad addrmult? bad device length? ]\n",
 		    (long long)relative_addr);
@@ -205,7 +205,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 	case com_iir:	/*  interrupt identification (r), fifo control (w)  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550: write to fifo control ]\n");
+			debug("[ ns16550: write to fifo control: 0x%02x ]\n",
+			    (int)idata);
 			d->fcr = idata;
 		} else {
 			odata = d->reg[com_iir];
@@ -217,18 +218,26 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 	case com_lsr:
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550: write to lsr ]\n");
+			debug("[ ns16550: write to lsr: 0x%02x ]\n",
+			    (int)idata);
 			d->reg[com_lsr] = idata;
-		} else
+		} else {
 			odata = d->reg[com_lsr];
+			debug("[ ns16550: read from lsr: 0x%02x ]\n",
+			    (int)odata);
+		}
 		break;
 
 	case com_msr:
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550: write to msr ]\n");
+			debug("[ ns16550: write to msr: 0x%02x ]\n",
+			    (int)idata);
 			d->reg[com_msr] = idata;
-		} else
+		} else {
 			odata = d->reg[com_msr];
+			debug("[ ns16550: read from msr: 0x%02x ]\n",
+			    (int)odata);
+		}
 		break;
 
 	case com_lctl:
@@ -330,7 +339,7 @@ int devinit_ns16550(struct devinit *devinit)
 	d->console_handle =
 	    console_start_slave(devinit->machine, devinit->name);
 
-	nlen = strlen(devinit->name) + 20;
+	nlen = strlen(devinit->name) + 10;
 	if (devinit->name2 != NULL)
 		nlen += strlen(devinit->name2);
 	name = malloc(nlen);
@@ -349,8 +358,12 @@ int devinit_ns16550(struct devinit *devinit)
 	machine_add_tickfunction(devinit->machine,
 	    dev_ns16550_tick, d, TICK_SHIFT);
 
-	/*  NOTE: Ugly cast into a pointer.  */
+	/*
+	 *  NOTE:  Ugly cast into a pointer, because this is a convenient way
+	 *         to return the console handle to code in src/machine.c.
+	 */
 	devinit->return_ptr = (void *)(size_t)d->console_handle;
+
 	return 1;
 }
 

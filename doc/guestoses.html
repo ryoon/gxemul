@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.81 2005-08-04 00:25:06 debug Exp $
+$Id: guestoses.html,v 1.82 2005-08-05 10:01:33 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -484,6 +484,9 @@ image, from an emulated DECstation 3MAX machine:
 
 <p>
 <ol>
+  <li>Install NetBSD/pmax 2.0.2 according to instructions
+	<a href="#netbsdinstall">further up on this page</a>.
+  <p>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD onto:<pre>
 	$ <b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=999000</b>
@@ -495,34 +498,30 @@ image, from an emulated DECstation 3MAX machine:
 
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
-  <li>Install NetBSD/pmax 2.0.2 according to instructions
-	<a href="#netbsdinstall">further up on this page</a>.
-  <p>
   <li>Start NetBSD/pmax like this:<pre>
 	$ <b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
 
-</pre>
-  <li>Log in as root (on the emulated 3MAX machine), and execute the
-	following commands: (adjust according to taste)<pre>
-	<b>newfs /dev/sd1c</b>
-	<b>mount /dev/cd0c /mnt</b>
-	<b>mkdir /mnt2; mount /dev/sd1c /mnt2</b>
-	<b>cd /mnt2; sh</b>
-	<b>for a in /mnt/evbmips-mipsel/binary/sets/*.tgz; do echo $a; tar zxfp $a; done</b>
-	<b>exit</b>
-	<b>cd dev; sh ./MAKEDEV all; cd ../etc</b>
-	<b>echo rc_configured=YES >> rc.conf</b>
-	<b>echo "/dev/wd0c / ffs rw 1 1" > fstab</b>
-	<b>cd /; umount /mnt; umount /mnt2; halt</b>
-</pre>
+</pre>and execute the following commands as <tt>root</tt>:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>newfs /dev/sd1c
+mount /dev/cd0c /mnt
+mkdir /mnt2; mount /dev/sd1c /mnt2
+cd /mnt2; sh
+for a in /mnt/evbmips-mipsel/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
+exit
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES >> rc.conf
+echo "/dev/wd0c / ffs rw 1 1" > fstab
+cd /; umount /mnt; umount /mnt2; halt</b>
+</pre></td></tr></table>
 </ol>
 
-<p>You should now be able to boot NetBSD/evbmips like this:<pre>
-	$ <b>gxemul -e malta -d nbsd_malta.img netbsd-MALTA.gz</b>
+<p>You should now be able to boot NetBSD/evbmips using this command:<pre>
+	<b>gxemul -e malta -d nbsd_malta.img netbsd-MALTA.gz</b>
 </pre>
 
 <p>Note 1: NetBSD detects a very fast CPU although the emulation isn't 
-really very fast, so delays take very long. Even on a multi-GHz host, you 
+really that fast, so delays take very long. Even on a multi-GHz host, you 
 will need a lot of patience.
 
 <p>Note 2: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 

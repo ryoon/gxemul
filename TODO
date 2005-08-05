@@ -1,4 +1,4 @@
-$Id: TODO,v 1.153 2005-08-05 10:01:32 debug Exp $
+$Id: TODO,v 1.154 2005-08-05 13:15:40 debug Exp $
 
 ===============================================================================
 
@@ -25,9 +25,8 @@ dyntrans:
 		TODO: is instr_call statistics enough?
 
 	x)  breakpoint support?
-		"glue" functions :)
-		These could be used to check for "anything", if instruction
-		combinations are avoided.
+		TODO: single_step as 2 distinct values?
+		one for normal stepping, and one for breakpoints?
 
 	x)  support for multiple word lengths (everything except alpha/arm)
 

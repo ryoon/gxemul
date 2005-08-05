@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.13 2005-08-05 07:50:37 debug Exp $
+ *  $Id: dev_8259.c,v 1.14 2005-08-05 09:08:20 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -84,9 +84,10 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 					fatal("[ 8259: WARNING: Bit 2 set ]\n");
 				/*  Bit 1: 0=cascade, 1=single  */
 				/*  Bit 0: 1=4th init byte  */
-				if (!(idata & 0x01))
+				/*  This happens on non-x86 systems:
+				    if (!(idata & 0x01))
 					fatal("[ 8259: WARNING: Bit 0 NOT set!"
-					    "!! ]\n");
+					    "!! ]\n");  */
 				d->init_state = 1;
 				break;
 			}
@@ -193,10 +194,11 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 		if (d->init_state > 0) {
 			if (d->init_state == 1) {
 				d->irq_base = idata & 0xf8;
-				if (idata & 7)
+				/*  This happens on non-x86 machines:
+				    if (idata & 7)
 					fatal("[ 8259: WARNING! Lowest"
 					    " bits in Init Cmd 1 are"
-					    " non-zero! ]\n");
+					    " non-zero! ]\n");  */
 				d->init_state = 2;
 			} else if (d->init_state == 2) {
 				/*  Slave attachment. TODO  */
@@ -275,7 +277,7 @@ int devinit_8259(struct devinit *devinit)
 	}
 
 	memory_device_register(devinit->machine->memory, name2,
-	    devinit->addr, DEV_8259_LENGTH, dev_8259_access, (void *)d,
+	    devinit->addr, DEV_8259_LENGTH, dev_8259_access, d,
 	    MEM_DEFAULT, NULL);
 
 	devinit->return_ptr = d;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.57 2005-08-04 11:53:16 debug Exp $
+ *  $Id: cpu_mips.c,v 1.58 2005-08-05 07:23:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1382,7 +1382,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			else {
 				if (coprocnr == 0 && (i == COP0_COUNT
 				    || i == COP0_COMPARE || i == COP0_INDEX
-				    || i == COP0_RANDOM))
+				    || i == COP0_RANDOM || i == COP0_WIRED))
 					debug(" =         0x%08x", (int)cpu->cd.mips.coproc[coprocnr]->reg[i]);
 				else
 					debug(" = 0x%016llx", (long long)

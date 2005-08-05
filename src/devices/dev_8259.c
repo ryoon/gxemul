@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.11 2005-08-05 07:09:30 debug Exp $
+ *  $Id: dev_8259.c,v 1.12 2005-08-05 07:23:27 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -48,6 +48,8 @@
 
 #define	DEV_8259_LENGTH		2
 
+/*  #define DEV_8259_DEBUG  */
+
 
 /*
  *  dev_8259_access():
@@ -58,14 +60,17 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 {
 	struct pic8259_data *d = (struct pic8259_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	int i;
 
 	idata = memory_readmax64(cpu, data, len);
 
+#ifdef DEV_8259_DEBUG
 	if (writeflag == MEM_READ)
 		fatal("[ 8259: read from 0x%x ]\n", (int)relative_addr);
 	else
 		fatal("[ 8259: write to 0x%x: 0x%x ]\n",
 		    (int)relative_addr, (int)idata);
+#endif
 
 	switch (relative_addr) {
 	case 0x00:
@@ -105,8 +110,9 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				d->current_command = 0x0c;
 				break;
 			case 0x20:	/*  End Of Interrupt  */
-/*  TODO: in buffered mode,
-this is a EOI 0?  */
+				/*
+				 *  TODO: in buffered mode, is this an EOI 0?
+				 */
 				d->irr &= ~d->isr;
 				d->isr = 0;
 				/*  Recalculate interrupt assertions:  */
@@ -159,23 +165,27 @@ this is a EOI 0?  */
 				odata = d->isr;
 				break;
 			case 0x0c:
+				/*  Buffered mode.  */
 			default:
-				{
-					int i;
-					odata = 0x00;
-					for (i=0; i<8; i++)
-						if ((d->irr >> i) & 1) {
-							odata = 0x80 | i;
-							break;
-						}
-				}
+				odata = 0x00;
+				for (i=0; i<8; i++)
+					if ((d->irr >> i) & 1) {
+						odata = 0x80 | i;
+						break;
+					}
 				break;
-#if 0
-			default:
-				fatal("[ 8259: unimplemented command 0x%02x"
-				    " while reading ]\n", d->current_command);
-				cpu->running = 0;
-#endif
+			/*
+			 *  TODO: The "default" label should really do
+			 *  something like this:
+			 *
+			 *	fatal("[ 8259: unimplemented command 0x%02x"
+			 *	    " while reading ]\n", d->current_command);
+			 *	cpu->running = 0;
+			 *
+			 *  but Linux seems to read from the secondary PIC
+			 *  in a manner which works better the way things
+			 *  are coded right now.
+			 */
 			}
 		}
 		break;
@@ -236,7 +246,8 @@ this is a EOI 0?  */
  *
  *  Initialize an 8259 PIC. Important notes:
  *
- *	x)  Most systems use _TWO_ 8259 PICs.
+ *	x)  Most systems use _TWO_ 8259 PICs. These should be registered
+ *	    as separate devices.
  *
  *	x)  The irq number specified is the number used to re-calculate
  *	    CPU interrupt assertions.  It is _not_ the irq number at

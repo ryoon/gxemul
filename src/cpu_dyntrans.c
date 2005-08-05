@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.11 2005-08-04 00:25:08 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.12 2005-08-05 12:45:29 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -582,4 +582,67 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 }
 #endif	/*  DYNTRANS_UPDATE_TRANSLATION_TABLE  */
+
+
+
+#ifdef DYNTRANS_TO_BE_TRANSLATED_TAIL
+	/*
+	 *  If we end up here, then an instruction was translated.
+	 */
+	translated;
+
+	/*
+	 *  Check for breakpoints. (Only check the lowest bits, within a page,
+	 *  because we're translating physical pages whereas breakpoints are
+	 *  virtual addresses.)
+	 */
+	for (i=0; i<cpu->machine->n_breakpoints; i++)
+		if ((cpu->pc & (DYNTRANS_PAGESIZE-1)) ==
+		    (cpu->machine->breakpoint_addr[i]&(DYNTRANS_PAGESIZE-1))) {
+
+			fatal("\nADD BREAKPOINT: TODO\n\n");
+			cpu->running = 0;
+
+		}
+	/*
+	 *  Now it is time to check for combinations of instructions that can
+	 *  be converted into a single function call.
+	 *
+	 *  Note: Single-stepping or instruction tracing doesn't work with
+	 *  instruction combination.
+	 */
+
+	if (!single_step && !cpu->machine->instruction_trace)
+		COMBINE_INSTRUCTIONS(cpu, ic, addr);
+
+	/*  ... and finally execute the translated instruction:  */
+	ic->f(cpu, ic);
+
+	return;
+
+
+bad:	/*
+	 *  Nothing was translated. (Unimplemented or illegal instruction.)
+	 */
+	quiet_mode = 0;
+	fatal("to_be_translated(): TODO: unimplemented instruction");
+	if (cpu->machine->instruction_trace)
+#ifdef DYNTRANS_32
+		fatal(" at 0x%08x\n", (int)cpu->pc);
+#else
+		fatal(" at 0x%llx\n", (long long)cpu->pc);
+#endif
+	else {
+		fatal(":\n");
+		DISASSEMBLE(cpu, ib, 1, 0, 0);
+	}
+	cpu->running = 0;
+	cpu->dead = 1;
+	cpu->running_translated = 0;
+	ic = cpu->cd.DYNTRANS_ARCH.next_ic = &nothing_call;
+	cpu->cd.DYNTRANS_ARCH.next_ic ++;
+
+	/*  Execute the "nothing" instruction:  */
+	ic->f(cpu, ic);
+#endif	/*  DYNTRANS_TO_BE_TRANSLATED_TAIL  */
 

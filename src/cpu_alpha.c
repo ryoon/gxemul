@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.38 2005-08-02 07:56:36 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.39 2005-08-05 12:45:29 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -72,6 +72,7 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 #define	DYNTRANS_ARCH				alpha
 #define	DYNTRANS_ALPHA
 #define	DYNTRANS_8K
+#define	DYNTRANS_PAGESIZE			8192
 #define	DYNTRANS_IC				alpha_instr_call
 #define	DYNTRANS_IC_ENTRIES_PER_PAGE		ALPHA_IC_ENTRIES_PER_PAGE
 #define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage

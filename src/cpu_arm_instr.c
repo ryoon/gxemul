@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.42 2005-08-03 20:43:22 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.43 2005-08-05 12:45:29 debug Exp $
  *
  *  ARM instructions.
  *
@@ -788,6 +788,7 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
  */
 X(to_be_translated)
 {
+	int i;
 	uint32_t addr, low_pc, iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
@@ -1068,38 +1069,12 @@ X(to_be_translated)
 	default:goto bad;
 	}
 
-	translated;
-
-	/*
-	 *  If we end up here, then an instruction was translated. Now it is
-	 *  time to check for combinations of instructions that can be
-	 *  converted into a single function call.
-	 */
-
-	/*  Single-stepping doesn't work with combinations:  */
-	if (!single_step && !cpu->machine->instruction_trace)
-		arm_combine_instructions(cpu, ic, addr);
-
-	/*  ... and finally execute the translated instruction:  */
-	ic->f(cpu, ic);
-
-	return;
-
-
-bad:	/*
-	 *  Nothing was translated. (Unimplemented or illegal instruction.)
-	 */
-	quiet_mode = 0;
-	fatal("to_be_translated(): TODO: "
-	    "unimplemented ARM instruction:\n");
-	arm_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
-	cpu->running = 0;
-	cpu->dead = 1;
-	cpu->running_translated = 0;
-	ic = cpu->cd.arm.next_ic = &nothing_call;
-	cpu->cd.arm.next_ic ++;
-
-	/*  Execute the "nothing" instruction:  */
-	ic->f(cpu, ic);
+#define	DYNTRANS_TO_BE_TRANSLATED_TAIL
+#define	COMBINE_INSTRUCTIONS		arm_combine_instructions
+#define	DISASSEMBLE			arm_cpu_disassemble_instr
+#include "cpu_dyntrans.c" 
+#undef	DISASSEMBLE
+#undef	COMBINE_INSTRUCTIONS
+#undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

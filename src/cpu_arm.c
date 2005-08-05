@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.51 2005-08-02 07:56:36 debug Exp $
+ *  $Id: cpu_arm.c,v 1.52 2005-08-05 12:45:29 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -73,6 +73,7 @@ int arm_cpu_family_init(struct cpu_family *fp)
 #define	DYNTRANS_ARM
 #define	DYNTRANS_32
 #define	DYNTRANS_1LEVEL
+#define	DYNTRANS_PAGESIZE			4096
 #define	DYNTRANS_IC				arm_instr_call
 #define	DYNTRANS_IC_ENTRIES_PER_PAGE		ARM_IC_ENTRIES_PER_PAGE
 #define	DYNTRANS_TC_PHYSPAGE			arm_tc_physpage

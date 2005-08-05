@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.68 2005-08-02 20:05:48 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.69 2005-08-05 12:45:29 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -70,6 +70,7 @@ int ppc_cpu_family_init(struct cpu_family *fp)
 #define	DYNTRANS_PPC
 #define	DYNTRANS_32
 #define	DYNTRANS_1LEVEL
+#define	DYNTRANS_PAGESIZE			4096
 #define	DYNTRANS_IC				ppc_instr_call
 #define	DYNTRANS_IC_ENTRIES_PER_PAGE		PPC_IC_ENTRIES_PER_PAGE
 #define	DYNTRANS_TC_PHYSPAGE			ppc_tc_physpage

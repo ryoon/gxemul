@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.30 2005-08-04 00:25:07 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.31 2005-08-05 12:45:29 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -565,12 +565,13 @@ void alpha_combine_instructions(struct cpu *cpu, struct alpha_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc, iword;
+	uint64_t addr, low_pc;
+	uint32_t iword;
 	struct alpha_vph_page *vph_p;
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
-	int opcode, ra, rb, func, rc, imm, load, loadstore_type, fp;
+	int i, opcode, ra, rb, func, rc, imm, load, loadstore_type, fp;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)
@@ -985,42 +986,13 @@ X(to_be_translated)
 		goto bad;
 	}
 
-	translated;
 
-	/*
-	 *  If we end up here, then an instruction was translated. Now it is
-	 *  time to check for combinations of instructions that can be
-	 *  converted into a single function call.
-	 */
-
-	/*  Single-stepping doesn't work with combinations:  */
-	if (!single_step && !cpu->machine->instruction_trace)
-		alpha_combine_instructions(cpu, ic, addr);
-
-	/*  ... and finally execute the translated instruction:  */
-	ic->f(cpu, ic);
-
-	return;
-
-
-bad:	/*
-	 *  Nothing was translated. (Unimplemented or illegal instruction.)
-	 */
-	quiet_mode = 0;
-	fatal("to_be_translated(): TODO: unimplemented instruction");
-	if (cpu->machine->instruction_trace)
-		fatal(" at 0x%llx\n", (long long)cpu->pc);
-	else {
-		fatal(":\n");
-		alpha_cpu_disassemble_instr(cpu, ib, 1, 0, 0);
-	}
-	cpu->running = 0;
-	cpu->dead = 1;
-	cpu->running_translated = 0;
-	ic = cpu->cd.alpha.next_ic = &nothing_call;
-	cpu->cd.alpha.next_ic ++;
-
-	/*  Execute the "nothing" instruction:  */
-	ic->f(cpu, ic);
+#define DYNTRANS_TO_BE_TRANSLATED_TAIL
+#define	COMBINE_INSTRUCTIONS		alpha_combine_instructions
+#define	DISASSEMBLE			alpha_cpu_disassemble_instr
+#include "cpu_dyntrans.c"
+#undef	DISASSEMBLE
+#undef	COMBINE_INSTRUCTIONS
+#undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

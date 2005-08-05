@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.496 2005-08-05 07:09:29 debug Exp $
+ *  $Id: machine.c,v 1.497 2005-08-05 07:50:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1305,29 +1305,36 @@ void malta_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 	if (irq_nr < 8) {
 		if (assrt)
-			m->md_int.malta_data->assert_lo |= mask;
+			m->md_int.isa_pic_data.pic1->irr |= mask;
 		else
-			m->md_int.malta_data->assert_lo &= ~mask;
+			m->md_int.isa_pic_data.pic1->irr &= ~mask;
 	} else if (irq_nr < 16) {
 		if (assrt)
-			m->md_int.malta_data->assert_hi |= mask;
+			m->md_int.isa_pic_data.pic2->irr |= mask;
 		else
-			m->md_int.malta_data->assert_hi &= ~mask;
+			m->md_int.isa_pic_data.pic2->irr &= ~mask;
 	}
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
-	if (m->md_int.malta_data->assert_hi &
-	    ~m->md_int.malta_data->disable_hi)
-		m->md_int.malta_data->assert_lo |= 0x04;
+	/*  (TODO: don't hardcode this here)  */
+	if (m->md_int.isa_pic_data.pic2->irr &
+	    ~m->md_int.isa_pic_data.pic2->ier)
+		m->md_int.isa_pic_data.pic1->irr |= 0x04;
 	else
-		m->md_int.malta_data->assert_lo &= ~0x04;
+		m->md_int.isa_pic_data.pic1->irr &= ~0x04;
 
 	/*  Now, PIC1:  */
-	if (m->md_int.malta_data->assert_lo &
-	    ~m->md_int.malta_data->disable_lo)
+	if (m->md_int.isa_pic_data.pic1->irr &
+	    ~m->md_int.isa_pic_data.pic1->ier)
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
+
+	/*  printf("MALTA: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
+	    "ier=0x%02x\n", m->md_int.isa_pic_data.pic1->irr,
+	    m->md_int.isa_pic_data.pic1->ier,
+	    m->md_int.isa_pic_data.pic2->irr,
+	    m->md_int.isa_pic_data.pic2->ier);  */
 }
 
 
@@ -2275,12 +2282,11 @@ void machine_setup(struct machine *machine)
 		 *		interrupts at ISA interrupt 9.)
 		 */
 
-		/*  Interrupt controllers:  */
+		/*  ISA interrupt controllers:  */
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x10000020");
 		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x100000a0");
 		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
-
 		machine->md_interrupt = cobalt_interrupt;
 
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
@@ -3838,9 +3844,17 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 				cpu->byte_order = EMUL_BIG_ENDIAN;
 			}
 
+#if 0
 			machine->md_int.malta_data =
 			    device_add(machine, "malta addr=0x18000020");
 			machine->md_interrupt = malta_interrupt;
+#endif
+		/*  ISA interrupt controllers:  */
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x18000020");
+		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "8259 irq=24 addr=0x180000a0");
+		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
+		machine->md_interrupt = malta_interrupt;
 
 			dev_mc146818_init(machine, mem, 0x18000070, 8 + 8, MC146818_PC_CMOS, 1);
 			machine->main_console_handle =
@@ -3848,7 +3862,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			dev_ns16550_init(machine, mem, 0x180002f8, 8 + 3, 1, 1, "serial console (tty1)");
 			dev_ns16550_init(machine, mem, MALTA_CBUSUART, 4, 8, 1, "serial console (tty2)");
 			/*  TODO: Irqs  */
-			pci_data = dev_gt_init(machine, mem, 0x1be00000, 8+16, 8+16, 120);
+			pci_data = dev_gt_init(machine, mem, 0x1be00000, 8+9, 8+9, 120);
 
 			/*  TODO: Haha, this is bogus. Just a cut&paste
 			    from the Cobalt emulation above.  */

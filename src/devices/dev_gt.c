@@ -25,14 +25,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.25 2005-08-02 07:35:19 debug Exp $
+ *  $Id: dev_gt.c,v 1.26 2005-08-05 07:50:37 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
  *	GT-64011	Used in Cobalt machines.
  *	GT-64120	Used in evbmips machines (Malta).
  *
- *  TODO:  This more or less just a dummy device, so far.
+ *  TODO: This more or less just a dummy device, so far. It happens to work
+ *        with NetBSD/cobalt and /evbmips, and in some cases it might happen
+ *        to work with Linux as well, but don't rely on it for anything else.
  */
 
 #include <stdio.h>
@@ -47,7 +49,7 @@
 #include "misc.h"
 
 
-#define	TICK_SHIFT		15
+#define	TICK_SHIFT		14
 
 /*  #define debug fatal  */
 
@@ -82,7 +84,7 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i;
+	int i, asserted;
 	struct gt_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
@@ -126,6 +128,24 @@ cpu_interrupt_ack(cpu, d->irqnr);
 			debug("[ gt: read from 0xc18 (0x%08x) ]\n", (int)odata);
 		}
 		break;
+
+	case 0xc34:	/*  GT_PCI0_INTR_ACK  */
+		/*
+		 *  Ugly hack, which works for at least evbmips/Malta:
+		 */
+		asserted =
+		    (cpu->machine->md_int.isa_pic_data.pic1->irr &
+		    ~cpu->machine->md_int.isa_pic_data.pic1->ier) |
+		    ((cpu->machine->md_int.isa_pic_data.pic2->irr &
+		     ~cpu->machine->md_int.isa_pic_data.pic2->ier) << 8);
+		odata = 7;	/*  "Spurious interrupt" defaults to 7.  */
+		for (i=0; i<16; i++)
+			if ((asserted >> i) & 1) {
+				odata = i;
+				break;
+			}
+		break;
+
 	case 0xcf8:	/*  PCI ADDR  */
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {

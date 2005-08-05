@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.12 2005-08-05 07:23:27 debug Exp $
+ *  $Id: dev_8259.c,v 1.13 2005-08-05 07:50:37 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -258,7 +258,7 @@ int devinit_8259(struct devinit *devinit)
 {
 	struct pic8259_data *d = malloc(sizeof(struct pic8259_data));
 	char *name2;
-	size_t nlen = strlen(devinit->name + 20);
+	size_t nlen = strlen(devinit->name) + 20;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.71 2005-08-06 20:25:27 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.72 2005-08-06 20:58:24 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1327,61 +1327,7 @@ static void update_cr0(struct cpu *cpu, uint64_t value)
 }
 
 
-#define	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE	ppc_tc_allocate_default_page
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
-
-
-#define	DYNTRANS_INVAL_ENTRY
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_INVAL_ENTRY
-
-
-#define	DYNTRANS_INVALIDATE_TC_PADDR	ppc_invalidate_translation_caches_paddr
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_INVALIDATE_TC_PADDR
-
-
-#define	DYNTRANS_INVALIDATE_TC_CODE	ppc_invalidate_code_translation_caches
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_INVALIDATE_TC_CODE
-
-
-#define	DYNTRANS_UPDATE_TRANSLATION_TABLE	ppc_update_translation_table
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_UPDATE_TRANSLATION_TABLE
-
-
-#define MEMORY_RW	ppc_memory_rw
-#define MEM_PPC
-#include "memory_rw.c"
-#undef MEM_PPC
-#undef MEMORY_RW
-
-
-#define	DYNTRANS_PC_TO_POINTERS_FUNC	ppc_pc_to_pointers
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_PC_TO_POINTERS_FUNC
-
-
-#include "cpu_ppc_instr.c"
-
-
-#define	DYNTRANS_CPU_RUN_INSTR	ppc_cpu_run_instr
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_CPU_RUN_INSTR
-
-
-#define CPU_RUN		ppc_cpu_run
-#define CPU_RINSTR	ppc_cpu_run_instr
-#define CPU_RUN_PPC
-#include "cpu_run.c"
-#undef CPU_RINSTR
-#undef CPU_RUN_PPC
-#undef CPU_RUN
-
-
-CPU_FAMILY_INIT(ppc,"PPC")
+#include "tmp_ppc_tail.c"
 
 
 #endif	/*  ENABLE_PPC  */

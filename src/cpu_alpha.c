@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.41 2005-08-06 20:25:26 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.42 2005-08-06 20:58:24 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -620,38 +620,6 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 }
 
 
-#define	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE	alpha_tc_allocate_default_page
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
-
-
-#define DYNTRANS_INVAL_ENTRY
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_INVAL_ENTRY
-
-
-#define DYNTRANS_INVALIDATE_TC_PADDR  alpha_invalidate_translation_caches_paddr
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_INVALIDATE_TC_PADDR
-
-
-#define DYNTRANS_INVALIDATE_TC_CODE  alpha_invalidate_code_translation_caches
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_INVALIDATE_TC_CODE
-
-
-#define DYNTRANS_UPDATE_TRANSLATION_TABLE	alpha_update_translation_table
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_UPDATE_TRANSLATION_TABLE
-
-
-#define MEMORY_RW	alpha_memory_rw
-#define MEM_ALPHA
-#include "memory_rw.c"
-#undef MEM_ALPHA
-#undef MEMORY_RW
-
-
 #define MEMORY_RW       alpha_userland_memory_rw
 #define MEM_ALPHA
 #define MEM_USERLAND
@@ -661,29 +629,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #undef MEMORY_RW
 
 
-#define DYNTRANS_PC_TO_POINTERS_FUNC    alpha_pc_to_pointers
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_PC_TO_POINTERS_FUNC
-
-
-#include "cpu_alpha_instr.c"
-
-
-#define DYNTRANS_CPU_RUN_INSTR  alpha_cpu_run_instr
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_CPU_RUN_INSTR
-
-
-#define CPU_RUN         alpha_cpu_run
-#define CPU_RINSTR      alpha_cpu_run_instr
-#define CPU_RUN_ALPHA
-#include "cpu_run.c"
-#undef CPU_RINSTR
-#undef CPU_RUN_ALPHA
-#undef CPU_RUN
-
-
-CPU_FAMILY_INIT(alpha,"Alpha")
+#include "tmp_alpha_tail.c"
 
 
 #endif	/*  ENABLE_ALPHA  */

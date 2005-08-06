@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.54 2005-08-06 20:25:27 debug Exp $
+ *  $Id: cpu_arm.c,v 1.55 2005-08-06 20:58:24 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -512,61 +512,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 }
 
 
-#define DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE       arm_tc_allocate_default_page
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
-
-
-#define	DYNTRANS_INVAL_ENTRY
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_INVAL_ENTRY
-
-
-#define DYNTRANS_INVALIDATE_TC_PADDR	arm_invalidate_translation_caches_paddr
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_INVALIDATE_TC_PADDR
-
-
-#define DYNTRANS_INVALIDATE_TC_CODE	arm_invalidate_code_translation_caches
-#include "cpu_dyntrans.c"
-#undef  DYNTRANS_INVALIDATE_TC_CODE
-
-
-#define	DYNTRANS_UPDATE_TRANSLATION_TABLE  arm_update_translation_table
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_UPDATE_TRANSLATION_TABLE
-
-
-#define MEMORY_RW	arm_memory_rw
-#define MEM_ARM
-#include "memory_rw.c"
-#undef MEM_ARM
-#undef MEMORY_RW
-
-
-#define	DYNTRANS_PC_TO_POINTERS_FUNC	arm_pc_to_pointers
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_PC_TO_POINTERS_FUNC
-
-
-#include "cpu_arm_instr.c"
-
-
-#define	DYNTRANS_CPU_RUN_INSTR	arm_cpu_run_instr
-#include "cpu_dyntrans.c"
-#undef	DYNTRANS_CPU_RUN_INSTR
-
-
-#define CPU_RUN         arm_cpu_run
-#define CPU_RINSTR      arm_cpu_run_instr
-#define CPU_RUN_ARM
-#include "cpu_run.c"
-#undef CPU_RINSTR
-#undef CPU_RUN_ARM
-#undef CPU_RUN
-
-
-CPU_FAMILY_INIT(arm,"ARM")
+#include "tmp_arm_tail.c"
 
 
 #endif	/*  ENABLE_ARM  */

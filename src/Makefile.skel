@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.69 2005-08-06 19:32:43 debug Exp $
+#  $Id: Makefile.skel,v 1.70 2005-08-06 20:58:24 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -25,32 +25,52 @@ $(OBJS): Makefile
 
 bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
-cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_dyntrans.c memory_rw.c
+
+cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_dyntrans.c memory_rw.c \
+	tmp_alpha_tail.c
 
 cpu_alpha_instr.c: cpu_alpha_instr_alu.c tmp_alpha_misc.c
 
 tmp_alpha_misc.c: cpu_alpha_instr_loadstore.c
 	cd tools; make generate_alpha_misc; cd ..
-	./tools/generate_alpha_misc > tmp_alpha_misc.c
+	tools/generate_alpha_misc > tmp_alpha_misc.c
 
-cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c memory_rw.c
+tmp_alpha_tail.c:
+	cd tools; make generate_tail; cd ..
+	tools/generate_tail alpha Alpha > tmp_alpha_tail.c
+
+
+cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c memory_rw.c \
+	tmp_arm_tail.c
 
 cpu_arm_instr.c: tmp_arm_include.c tmp_arm_include_self.c \
 	cpu_arm_instr_cmps.c
 
 tmp_arm_include.c: cpu_arm_instr_loadstore.c
 	cd tools; make generate_arm_loadstore; cd ..
-	./tools/generate_arm_loadstore > tmp_arm_include.c
+	tools/generate_arm_loadstore > tmp_arm_include.c
 
 tmp_arm_include_self.c:
 	cd tools; make generate_arm_self; cd ..
-	./tools/generate_arm_self > tmp_arm_include_self.c
+	tools/generate_arm_self > tmp_arm_include_self.c
+
+tmp_arm_tail.c:
+	cd tools; make generate_tail; cd ..
+	tools/generate_tail arm ARM > tmp_arm_tail.c
+
 
 cpu_mips.o: cpu_mips.c cpu_mips16.c memory_mips.c
 
 memory_mips.c: memory_rw.c memory_mips_v2p.c
 
-cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_rw.c
+
+cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_rw.c \
+	tmp_ppc_tail.c
+
+tmp_ppc_tail.c:
+	cd tools; make generate_tail; cd ..
+	tools/generate_tail ppc PPC > tmp_ppc_tail.c
+
 
 cpu_x86.o: cpu_x86.c memory_x86.c
 

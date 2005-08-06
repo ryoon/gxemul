@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.43 2005-08-05 12:45:29 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.44 2005-08-06 19:32:43 debug Exp $
  *
  *  ARM instructions.
  *
@@ -828,6 +828,12 @@ X(to_be_translated)
 	/*  fatal("{ ARM translating pc=0x%08x iword=0x%08x }\n",
 	    addr, iword);  */
 
+
+#define DYNTRANS_TO_BE_TRANSLATED_HEAD
+#include "cpu_dyntrans.c"
+#undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
+
+
 	/*  The idea of taking bits 27..24 was found here:
 	    http://armphetamine.sourceforge.net/oldinfo.html  */
 	condition_code = iword >> 28;
@@ -1069,12 +1075,9 @@ X(to_be_translated)
 	default:goto bad;
 	}
 
+
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
-#define	COMBINE_INSTRUCTIONS		arm_combine_instructions
-#define	DISASSEMBLE			arm_cpu_disassemble_instr
 #include "cpu_dyntrans.c" 
-#undef	DISASSEMBLE
-#undef	COMBINE_INSTRUCTIONS
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

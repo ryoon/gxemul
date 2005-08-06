@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.2 2005-08-05 12:45:29 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.3 2005-08-06 19:32:43 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -176,6 +176,11 @@ X(to_be_translated)
 	    addr, iword);
 
 
+#define DYNTRANS_TO_BE_TRANSLATED_HEAD
+#include "cpu_dyntrans.c"
+#undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
+
+
 	/*
 	 *  Translate the instruction:
 	 */
@@ -187,12 +192,9 @@ X(to_be_translated)
 	default:goto bad;
 	}
 
+
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
-#define	COMBINE_INSTRUCTIONS		ppc_combine_instructions
-#define	DISASSEMBLE			ppc_cpu_disassemble_instr
 #include "cpu_dyntrans.c" 
-#undef	DISASSEMBLE
-#undef	COMBINE_INSTRUCTIONS
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

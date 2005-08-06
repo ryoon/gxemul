@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.241 2005-08-05 13:15:40 debug Exp $
+ *  $Id: main.c,v 1.242 2005-08-06 19:32:43 debug Exp $
  */
 
 #include <stdio.h>
@@ -658,8 +658,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		/*  TODO: Print a warning about this?  */
 	}
 
-	if (m->n_breakpoints > 0 && m->bintrans_enable) {
-		fprintf(stderr, "Breakpoints and dynamic translation "
+	if (m->n_breakpoints > 0 &&
+	    m->bintrans_enable && m->arch == ARCH_MIPS) {
+		fprintf(stderr, "Breakpoints and MIPS binary translation "
 		    "don't work too well together right now.\n");
 		exit(1);
 	}

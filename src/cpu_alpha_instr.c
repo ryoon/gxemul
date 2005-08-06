@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.31 2005-08-05 12:45:29 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.32 2005-08-06 19:32:43 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -614,6 +614,12 @@ X(to_be_translated)
 	/*  fatal("{ Alpha: translating pc=0x%016llx iword=0x%08x }\n",
 	    (long long)addr, (int)iword);  */
 
+
+#define DYNTRANS_TO_BE_TRANSLATED_HEAD
+#include "cpu_dyntrans.c"
+#undef	DYNTRANS_TO_BE_TRANSLATED_HEAD
+
+
 	opcode = (iword >> 26) & 63;
 	ra = (iword >> 21) & 31;
 	rb = (iword >> 16) & 31;
@@ -988,11 +994,7 @@ X(to_be_translated)
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_TAIL
-#define	COMBINE_INSTRUCTIONS		alpha_combine_instructions
-#define	DISASSEMBLE			alpha_cpu_disassemble_instr
 #include "cpu_dyntrans.c"
-#undef	DISASSEMBLE
-#undef	COMBINE_INSTRUCTIONS
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
 

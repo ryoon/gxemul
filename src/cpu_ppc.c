@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.69 2005-08-05 12:45:29 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.70 2005-08-06 19:32:43 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -80,12 +80,15 @@ int ppc_cpu_family_init(struct cpu_family *fp)
 #define	DYNTRANS_TC_ALLOCATE			ppc_tc_allocate_default_page
 #define	DYNTRANS_TC_PHYSPAGE			ppc_tc_physpage
 #define	DYNTRANS_PC_TO_POINTERS			ppc_pc_to_pointers
+#define	COMBINE_INSTRUCTIONS			ppc_combine_instructions
+#define	DISASSEMBLE				ppc_cpu_disassemble_instr
+
 
 /*  instr uses the same names as in cpu_ppc_instr.c  */
 #define instr(n) ppc_instr_ ## n
 
-extern volatile int single_step;
-extern int old_show_trace_tree;   
+extern volatile int single_step, single_step_breakpoint;
+extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int quiet_mode;

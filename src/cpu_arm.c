@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.52 2005-08-05 12:45:29 debug Exp $
+ *  $Id: cpu_arm.c,v 1.53 2005-08-06 19:32:43 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -83,8 +83,11 @@ int arm_cpu_family_init(struct cpu_family *fp)
 #define DYNTRANS_TC_ALLOCATE			arm_tc_allocate_default_page
 #define DYNTRANS_TC_PHYSPAGE			arm_tc_physpage
 #define	DYNTRANS_PC_TO_POINTERS			arm_pc_to_pointers
+#define	COMBINE_INSTRUCTIONS			arm_combine_instructions
+#define	DISASSEMBLE				arm_cpu_disassemble_instr
 
-extern volatile int single_step;
+
+extern volatile int single_step, single_step_breakpoint;
 extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.13 2005-08-05 13:08:24 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.14 2005-08-06 19:32:43 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -585,21 +585,36 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 
 
 
+#ifdef DYNTRANS_TO_BE_TRANSLATED_HEAD
+	/*
+	 *  Check for breakpoints.
+	 */
+	if (!single_step_breakpoint) {
+		for (i=0; i<cpu->machine->n_breakpoints; i++)
+			if (cpu->pc == cpu->machine->breakpoint_addr[i]) {
+				if (!cpu->machine->instruction_trace) {
+					int old_quiet_mode = quiet_mode;
+					quiet_mode = 0;
+					DISASSEMBLE(cpu, ib, 1, 0, 0);
+					quiet_mode = old_quiet_mode;
+				}
+				fatal("BREAKPOINT: pc = 0x%llx\n(The "
+				    "instruction has not yet executed.)\n",
+				    (long long)cpu->pc);
+				single_step_breakpoint = 1;
+				single_step = 1;
+				goto stop_running_translated;
+			}
+	}
+#endif	/*  DYNTRANS_TO_BE_TRANSLATED_HEAD  */
+
+
+
 #ifdef DYNTRANS_TO_BE_TRANSLATED_TAIL
 	/*
 	 *  If we end up here, then an instruction was translated.
 	 */
 	translated;
-
-	/*
-	 *  Check for breakpoints.
-	 */
-	for (i=0; i<cpu->machine->n_breakpoints; i++)
-		if (cpu->pc == cpu->machine->breakpoint_addr[i]) {
-			fatal("\nBREAKPOINT: TODO\n\n");
-			single_step = 1;
-			goto stop_running_translated;
-		}
 
 	/*
 	 *  Now it is time to check for combinations of instructions that can
@@ -612,7 +627,17 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		COMBINE_INSTRUCTIONS(cpu, ic, addr);
 
 	/*  ... and finally execute the translated instruction:  */
-	ic->f(cpu, ic);
+	if (single_step_breakpoint) {
+		/*
+		 *  Special case when single-stepping: Execute the translated
+		 *  instruction, but then replace it with a "to be translated"
+		 *  directly afterwards.
+		 */
+		single_step_breakpoint = 0;
+		ic->f(cpu, ic);
+		ic->f = instr(to_be_translated);
+	} else
+		ic->f(cpu, ic);
 
 	return;
 

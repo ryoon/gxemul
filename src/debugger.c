@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.112 2005-07-15 09:46:23 debug Exp $
+ *  $Id: debugger.c,v 1.113 2005-08-06 19:32:43 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -79,6 +79,7 @@ extern int quiet_mode;
  */
 
 volatile int single_step = 0;
+volatile int single_step_breakpoint = 0;
 int force_debugger_at_exit = 0;
 int show_opcode_statistics = 0;
 
@@ -1700,6 +1701,7 @@ void debugger_assignment(struct machine *m, char *cmd)
 	char *left, *right;
 	int res_left, res_right;
 	uint64_t tmp;
+	uint64_t old_pc = m->cpus[0]->pc;	/*  TODO: multiple cpus?  */
 
 	left  = malloc(MAX_CMD_BUFLEN);
 	if (left == NULL) {
@@ -1749,6 +1751,15 @@ void debugger_assignment(struct machine *m, char *cmd)
 			debugger_cmd_print(m, left);
 		}
 	}
+
+	/*
+	 *  If the PC has changed, then release any breakpoint we were
+	 *  currently stopped at.
+	 *
+	 *  TODO: multiple cpus?
+	 */
+	if (old_pc != m->cpus[0]->pc)
+		single_step_breakpoint = 0;
 
 	free(left);
 }

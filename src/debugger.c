@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.113 2005-08-06 19:32:43 debug Exp $
+ *  $Id: debugger.c,v 1.114 2005-08-06 19:36:43 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -366,6 +366,11 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 			m->breakpoint_flags[i]  = m->breakpoint_flags[i+1];
 		}
 		m->n_breakpoints --;
+
+		/*  Clear translations:  */
+		for (i=0; i<m->ncpus; i++)
+			if (m->cpus[i]->translation_cache != NULL)
+				cpu_create_or_reset_tc(m->cpus[i]);
 		return;
 	}
 
@@ -401,6 +406,11 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 
 		m->n_breakpoints ++;
 		show_breakpoint(m, i);
+
+		/*  Clear translations:  */
+		for (i=0; i<m->ncpus; i++)
+			if (m->cpus[i]->translation_cache != NULL)
+				cpu_create_or_reset_tc(m->cpus[i]);
 		return;
 	}
 

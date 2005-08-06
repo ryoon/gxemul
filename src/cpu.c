@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.304 2005-08-02 20:05:48 debug Exp $
+ *  $Id: cpu.c,v 1.305 2005-08-06 20:25:26 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -246,6 +246,13 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 
 	cpu->translation_cache_cur_ofs =
 	    N_BASE_TABLE_ENTRIES * sizeof(uint32_t);
+
+	/*
+	 *  There might be other translation pointers that still point to
+	 *  within the translation_cache region. Let's invalidate those too:
+	 */
+	if (cpu->invalidate_code_translation_caches != NULL)
+		cpu->invalidate_code_translation_caches(cpu);
 }
 
 

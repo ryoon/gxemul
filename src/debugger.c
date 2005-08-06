@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.114 2005-08-06 19:36:43 debug Exp $
+ *  $Id: debugger.c,v 1.115 2005-08-06 20:25:27 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -79,9 +79,11 @@ extern int quiet_mode;
  */
 
 volatile int single_step = 0;
-volatile int single_step_breakpoint = 0;
 int force_debugger_at_exit = 0;
 int show_opcode_statistics = 0;
+
+volatile int single_step_breakpoint = 0;
+int debugger_n_steps_left_before_interaction = 0;
 
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
@@ -100,7 +102,6 @@ static struct emul *debugger_emul;
 static struct machine *debugger_machine;
 
 static int exit_debugger;
-static int n_steps_left_before_interaction = 0;
 
 #define	MAX_CMD_BUFLEN		72
 #define	N_PREVIOUS_CMDS		150
@@ -1301,7 +1302,7 @@ static void debugger_cmd_step(struct machine *m, char *cmd_line)
 		}
 	}
 
-	n_steps_left_before_interaction = n - 1;
+	debugger_n_steps_left_before_interaction = n - 1;
 
 	/*  Special hack, see debugger() for more info.  */
 	exit_debugger = -1;
@@ -2043,8 +2044,8 @@ void debugger(void)
 	int i, n, i_match, matchlen, cmd_len;
 	char *cmd;
 
-	if (n_steps_left_before_interaction > 0) {
-		n_steps_left_before_interaction --;
+	if (debugger_n_steps_left_before_interaction > 0) {
+		debugger_n_steps_left_before_interaction --;
 		return;
 	}
 
@@ -2182,7 +2183,7 @@ void debugger(void)
  */
 void debugger_reset(void)
 {
-	n_steps_left_before_interaction = 0;
+	debugger_n_steps_left_before_interaction = 0;
 }
 
 

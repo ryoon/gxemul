@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.40 2005-08-06 19:32:43 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.41 2005-08-06 20:25:26 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -87,6 +87,7 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 
 
 extern volatile int single_step, single_step_breakpoint;
+extern int debugger_n_steps_left_before_interaction;
 extern int old_show_trace_tree;   
 extern int old_instruction_trace;
 extern int old_quiet_mode;
@@ -117,6 +118,8 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->update_translation_table = alpha_update_translation_table;
 	cpu->invalidate_translation_caches_paddr =
 	    alpha_invalidate_translation_caches_paddr;
+	cpu->invalidate_code_translation_caches =
+	    alpha_invalidate_code_translation_caches;
 	cpu->is_32bit = 0;
 
 	/*  Only show name and caches etc for CPU nr 0:  */
@@ -630,6 +633,11 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 #define DYNTRANS_INVALIDATE_TC_PADDR  alpha_invalidate_translation_caches_paddr
 #include "cpu_dyntrans.c"
 #undef  DYNTRANS_INVALIDATE_TC_PADDR
+
+
+#define DYNTRANS_INVALIDATE_TC_CODE  alpha_invalidate_code_translation_caches
+#include "cpu_dyntrans.c"
+#undef  DYNTRANS_INVALIDATE_TC_CODE
 
 
 #define DYNTRANS_UPDATE_TRANSLATION_TABLE	alpha_update_translation_table

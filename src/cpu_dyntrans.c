@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.14 2005-08-06 19:32:43 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.15 2005-08-06 20:25:27 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -420,6 +420,59 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
 
 
 
+#ifdef DYNTRANS_INVALIDATE_TC_CODE
+/*
+ *  XXX_invalidate_code_translation_caches():
+ *
+ *  Invalidate all entries matching a specific virtual address.
+ */
+void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu)
+{
+	int r;
+#ifdef DYNTRANS_32
+	uint32_t
+#else
+	uint64_t
+#endif
+	    vaddr_page;
+
+	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
+			vaddr_page = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
+			    .vaddr_page & ~(DYNTRANS_PAGESIZE-1);
+#ifdef DYNTRANS_1LEVEL
+{
+	uint32_t index = vaddr_page >> 12;
+	cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+}
+#else
+{
+	/*  2-level:  */
+#ifdef DYNTRANS_ALPHA
+	struct alpha_vph_page *vph_p;
+	uint32_t a, b;
+	int kernel = 0;
+
+	a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+	b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
+	if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+		kernel = 1;
+	} else
+		vph_p = cpu->cd.alpha.vph_table0[a];
+	vph_p->phys_page[b] = NULL;
+#else	/*  !DYNTRANS_ALPHA  */
+#error Not yet for non-Alpha, non-1Level
+#endif	/*  !DYNTRANS_ALPHA  */
+}
+#endif
+		}
+	}
+}
+#endif	/*  DYNTRANS_INVALIDATE_TC_CODE  */
+
+
+
 #ifdef DYNTRANS_UPDATE_TRANSLATION_TABLE
 /*
  *  XXX_update_translation_table():
@@ -663,6 +716,7 @@ bad:	/*
 	cpu->running = 0;
 	cpu->dead = 1;
 stop_running_translated:
+	debugger_n_steps_left_before_interaction = 0;
 	cpu->running_translated = 0;
 	ic = cpu->cd.DYNTRANS_ARCH.next_ic = &nothing_call;
 	cpu->cd.DYNTRANS_ARCH.next_ic ++;

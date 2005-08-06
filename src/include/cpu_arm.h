@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.24 2005-08-02 07:07:09 debug Exp $
+ *  $Id: cpu_arm.h,v 1.25 2005-08-06 20:25:28 debug Exp $
  */
 
 #include "misc.h"
@@ -166,6 +166,7 @@ struct arm_cpu {
 void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void arm_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
+void arm_invalidate_code_translation_caches(struct cpu *cpu);
 int arm_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int arm_cpu_family_init(struct cpu_family *);

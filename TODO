@@ -1,4 +1,4 @@
-$Id: TODO,v 1.154 2005-08-05 13:15:40 debug Exp $
+$Id: TODO,v 1.155 2005-08-06 22:04:57 debug Exp $
 
 ===============================================================================
 
@@ -23,10 +23,6 @@ dyntrans:
 
 	x)  opcode statistics support?
 		TODO: is instr_call statistics enough?
-
-	x)  breakpoint support?
-		TODO: single_step as 2 distinct values?
-		one for normal stepping, and one for breakpoints?
 
 	x)  support for multiple word lengths (everything except alpha/arm)
 

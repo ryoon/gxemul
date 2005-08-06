@@ -1,6 +1,4 @@
-$Id: BUGS,v 1.34 2005-07-30 18:20:03 debug Exp $
-
-Serious bugs:
+$Id: BUGS,v 1.35 2005-08-06 22:04:57 debug Exp $
 
   x)  An unknown math coprocessor bug. (Ultrix' dxclock sometimes looks
       weird.)
@@ -12,9 +10,6 @@ Serious bugs:
 
   x)  Enabling cache emulation (./configure --enable-caches) triggers bugs.
 
-  x)  Compiling with certain versions of gcc and -O3 optimization on i386
-      triggers bugs. I'm not sure whether they are in gcc or in GXemul.
-
   x)  Linux/DECstation (Debian) oopses extremely often unless -U is used
       at run-time. I'm not sure yet why it bugs out. With -U, the risk is
       lower, but not completely gone. _Maybe_ this is a bug in Linux. Why?
@@ -23,12 +18,6 @@ Serious bugs:
       this looks like a buffer overflow in the serial driver. (Another thing
       that gives weight to this theory is that the serial driver in Linux is
       still being developed.)  But this is just a guess.
-
-  x)  bintrans bugs.  (For example, NetBSD/sgimips for IP22/24 hangs during
-      boot with bintrans enabled.)
-
-
-Less serious bugs / issues:
 
   o)  hardware device ticks are done at cycle specific intervals, not
       instruction intervals, so sometimes a fraction of a cycle can be

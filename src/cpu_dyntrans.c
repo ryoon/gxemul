@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.15 2005-08-06 20:25:27 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.16 2005-08-07 08:26:11 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -281,8 +281,9 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	    new "default" empty translation page.  */
 
 	if (ppp == NULL) {
-		fatal("CREATING page %lli (physaddr 0x%llx), table index %i\n",
-		    (long long)pagenr, (long long)physaddr, (int)table_index);
+		/*  fatal("CREATING page %lli (physaddr 0x%llx), table index "
+		    "%i\n", (long long)pagenr, (long long)physaddr,
+		    (int)table_index);  */
 		*physpage_entryp = physpage_ofs =
 		    cpu->translation_cache_cur_ofs;
 

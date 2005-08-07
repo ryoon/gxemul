@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.56 2005-07-28 13:29:36 debug Exp $
+ *  $Id: useremul.c,v 1.57 2005-08-07 08:26:11 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -440,6 +440,7 @@ int64_t useremul_write(struct cpu *cpu, int64_t *errnop,
 int64_t useremul_break(struct cpu *cpu, uint64_t arg0)
 {
 	debug("[ break(0x%llx): TODO ]\n", (long long)arg0);
+
 	/*  TODO  */
 	return 0;
 }
@@ -450,8 +451,9 @@ int64_t useremul_break(struct cpu *cpu, uint64_t arg0)
  */
 int64_t useremul_getpid(struct cpu *cpu)
 {
-	debug("[ getpid() ]\n");
-	return getpid();
+	int64_t pid = getpid();
+	debug("[ getpid(): %lli ]\n", (long long)pid);
+	return pid;
 }
 
 
@@ -460,8 +462,31 @@ int64_t useremul_getpid(struct cpu *cpu)
  */
 int64_t useremul_getuid(struct cpu *cpu)
 {
-	debug("[ getuid() ]\n");
-	return getuid();
+	int64_t uid = getuid();
+	debug("[ getuid(): %lli ]\n", (long long)uid);
+	return uid;
+}
+
+
+/*
+ *  useremul_getegid():
+ */
+int64_t useremul_getegid(struct cpu *cpu)
+{
+	int64_t egid = getegid();
+	debug("[ getegid(): %lli ]\n", (long long)egid);
+	return egid;
+}
+
+
+/*
+ *  useremul_getgid():
+ */
+int64_t useremul_getgid(struct cpu *cpu)
+{
+	int64_t gid = getgid();
+	debug("[ getgid(): %lli ]\n", (long long)gid);
+	return gid;
 }
 
 
@@ -486,7 +511,7 @@ int64_t useremul_readlink(struct cpu *cpu, int64_t *errnop,
 	unsigned char *charbuf = get_userland_string(cpu, arg0);
 	unsigned char *buf2;
 
-	debug("[ readlink(\"%s\",0x%lli,%lli) ]\n",
+	debug("[ readlink(\"%s\",0x%llx,%lli) ]\n",
 	    charbuf, (long long)arg1, (long long)arg2);
 	if (arg2 == 0 || arg2 > 150000) {
 		fprintf(stderr, "[ useremul_readlink(): TODO ]\n");
@@ -533,7 +558,7 @@ int64_t useremul_fstat(struct cpu *cpu, int64_t *errnop,
 {
 	int64_t res;
 	struct stat sb;
-	debug("[ fstat(%i, 0x%llx) ]\n", (int)arg0, (long long)arg1);
+	debug("[ fstat(%i,0x%llx) ]\n", (int)arg0, (long long)arg1);
 	res = fstat(arg0, &sb);
 	if (res < 0)
 		*errnop = errno;
@@ -630,6 +655,12 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case 24:res = useremul_getuid(cpu);
+		break;
+
+	case 43:res = useremul_getegid(cpu);
+		break;
+
+	case 47:res = useremul_getgid(cpu);
 		break;
 
 	case 58:res = useremul_readlink(cpu, &err, arg0, arg1, arg2);

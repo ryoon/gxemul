@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.32 2005-08-06 19:32:43 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.33 2005-08-07 08:26:11 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -511,6 +511,17 @@ X(lda_0)
 }
 
 
+/*
+ *  clear:  Clear a 64-bit register.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ */
+X(clear)
+{
+	*((uint64_t *)ic->arg[0]) = 0;
+}
+
+
 #include "tmp_alpha_misc.c"
 
 
@@ -890,6 +901,43 @@ X(to_be_translated)
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
 		case 0x30: ic->f = instr(umulh); break;
+		default:fatal("[ Alpha: unimplemented function 0x%03x for"
+			    " opcode 0x%02x ]\n", func, opcode);
+			goto bad;
+		}
+		break;
+	case 0x16:
+		if (rc == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		ic->arg[0] = (size_t) &cpu->cd.alpha.f[rc];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.f[ra];
+		ic->arg[2] = (size_t) &cpu->cd.alpha.f[rb];
+		switch (func & 0x7ff) {
+		default:fatal("[ Alpha: unimplemented function 0x%03x for"
+			    " opcode 0x%02x ]\n", func, opcode);
+			goto bad;
+		}
+		break;
+	case 0x17:
+		if (rc == ALPHA_ZERO) {
+			ic->f = instr(nop);
+			break;
+		}
+		ic->arg[0] = (size_t) &cpu->cd.alpha.f[rc];
+		ic->arg[1] = (size_t) &cpu->cd.alpha.f[ra];
+		ic->arg[2] = (size_t) &cpu->cd.alpha.f[rb];
+		switch (func & 0x7ff) {
+		case 0x020:
+			/*  fclr:  */
+			if (ra == 31 && rb == 31)
+				ic->f = instr(clear);
+			else {
+				/*  fabs:  */
+				goto bad;
+			}
+			break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;

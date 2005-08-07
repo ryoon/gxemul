@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.42 2005-08-06 20:58:24 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.43 2005-08-07 08:26:11 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -316,7 +316,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 {
 	uint32_t iw;
 	uint64_t offset, tmp;
-	int opcode, ra, rb, func, rc, imm, floating;
+	int opcode, ra, rb, func, rc, imm, floating, rbrc = 0;
 	char *symbol, *mnem = NULL;
 	char palcode_name[30];
 
@@ -538,6 +538,42 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		else
 			debug("%s\t%s,%s,%s\n", mnem, alpha_regname[ra],
 			    alpha_regname[rb], alpha_regname[rc]);
+		break;
+	case 0x16:
+		switch (func & 0x7ff) {
+		case 0x080: mnem = "adds"; break;
+		case 0x081: mnem = "subs"; break;
+		case 0x082: mnem = "muls"; break;
+		case 0x083: mnem = "mult"; break;
+		case 0x0a0: mnem = "addt"; break;
+		case 0x0a1: mnem = "subt"; break;
+		case 0x0a2: mnem = "mult"; break;
+		case 0x0a3: mnem = "divt"; break;
+		case 0x0be: mnem = "cvtqt"; rbrc = 1; break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		if (mnem == NULL)
+			break;
+		if (rbrc)
+			debug("%s\tf%i,f%i\n", mnem, rb, rc);
+		else
+			debug("%s\tf%i,f%i,f%i\n", mnem, ra, rb, rc);
+		break;
+	case 0x17:
+		switch (func & 0x7ff) {
+		case 0x020: mnem = "fabs"; rbrc = 1; break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		if (mnem == NULL)
+			break;
+		if ((func & 0x7ff) == 0x020 && ra == 31 && rb == 31)
+			debug("fclr\tf%i\n", rc);
+		else if (rbrc)
+			debug("%s\tf%i,f%i\n", mnem, rb, rc);
+		else
+			debug("%s\tf%i,f%i,f%i\n", mnem, ra, rb, rc);
 		break;
 	case 0x1a:
 		tmp = iw & 0x3fff;

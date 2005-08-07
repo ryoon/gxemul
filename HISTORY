@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.879 2005-08-06 19:32:42 debug Exp $
+$Id: HISTORY,v 1.880 2005-08-07 08:26:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2144,3 +2144,4 @@ Changelog for GXemul:
 		Continuing the work on the dyntrans system. Thinking about
 		how to add breakpoints.
 20050806	More dyntrans updates. Breakpoints seem to work now.
+20050807	Minor updates to cpu_alpha and related things.

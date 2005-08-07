@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.86 2005-08-02 20:05:50 debug Exp $
+#  $Id: Makefile.skel,v 1.87 2005-08-07 08:26:12 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -28,10 +28,10 @@ OBJS=lk201.o \
 	dev_vr41xx.o dev_au1x00.o \
 	dev_malta.o dev_malta_lcd.o \
 	dev_pmppc.o \
-	bus_pci.o \
-	pci_dec21030.o pci_dec21143.o pci_vt82c586.o pci_ahc.o \
 	dev_pcic.o \
 	dev_bebox.o
+	bus_pci.o \
+	pci_dec21030.o pci_dec21143.o pci_vt82c586.o pci_ahc.o \
 
 all:
 	cd fonts; $(MAKE); cd ..

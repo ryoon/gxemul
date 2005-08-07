@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.45 2005-08-07 11:36:58 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.46 2005-08-07 17:42:02 debug Exp $
  *
  *  ARM instructions.
  *
@@ -211,8 +211,6 @@ Y(b_samepage)
  *  bl:  Branch and Link (to a different translated page)
  *
  *  arg[0] = relative address
- *
- *  TODO: How about function call trace?
  */
 X(bl)
 {
@@ -231,8 +229,6 @@ X(bl)
 	/*  Calculate new PC from this instruction + arg[0]  */
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr + (int32_t)ic->arg[0];
 
-/* printf("BL: %x\n", (int)cpu->pc); */
-
 	/*  Find the new physical page and update the translation pointers:  */
 	arm_pc_to_pointers(cpu);
 }
@@ -240,11 +236,39 @@ Y(bl)
 
 
 /*
+ *  bl_trace:  Branch and Link (to a different translated page), with trace
+ *
+ *  Same as for bl.
+ */
+X(bl_trace)
+{
+	uint32_t lr, low_pc;
+
+	/*  Figure out what the return (link) address will be:  */
+	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	lr = cpu->cd.arm.r[ARM_PC];
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	lr += (low_pc << 2);
+
+	/*  Link:  */
+	cpu->cd.arm.r[ARM_LR] = lr;
+
+	/*  Calculate new PC from this instruction + arg[0]  */
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr + (int32_t)ic->arg[0];
+
+	cpu_functioncall_trace(cpu, cpu->pc);
+
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
+}
+Y(bl_trace)
+
+
+/*
  *  bl_samepage:  A branch + link within the same page
  *
  *  arg[0] = pointer to new arm_instr_call
- *
- *  TODO: How about function call trace?
  */
 X(bl_samepage)
 {
@@ -264,6 +288,38 @@ X(bl_samepage)
 	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 }
 Y(bl_samepage)
+
+
+/*
+ *  bl_samepage_trace:  Branch and Link (to the same page), with trace
+ *
+ *  Same as for bl_samepage.
+ */
+X(bl_samepage_trace)
+{
+	uint32_t tmp_pc, lr, low_pc;
+
+	/*  Figure out what the return (link) address will be:  */
+	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	lr = cpu->cd.arm.r[ARM_PC];
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	lr += (low_pc << 2);
+
+	/*  Link:  */
+	cpu->cd.arm.r[ARM_LR] = lr;
+
+	/*  Branch:  */
+	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
+
+	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	tmp_pc = cpu->cd.arm.r[ARM_PC];
+	tmp_pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	tmp_pc += (low_pc << 2);
+	cpu_functioncall_trace(cpu, tmp_pc);
+}
+Y(bl_samepage_trace)
 
 
 /*
@@ -292,6 +348,36 @@ X(mov_pc)
 	}
 }
 Y(mov_pc)
+
+
+/*
+ *  ret_trace:  "mov pc,lr" with trace enabled
+ *
+ *  arg[0] = ignored  (similar to mov_pc above)
+ */
+X(ret_trace)
+{
+	uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
+	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+
+	/*  Update the PC register:  */
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = cpu->cd.arm.r[ARM_LR];
+
+	cpu_functioncall_trace_return(cpu);
+
+	/*
+	 *  Is this a return to code within the same page? Then there is no
+	 *  need to update all pointers, just next_ic.
+	 */
+	if ((old_pc & ~mask_within_page) == (cpu->pc & ~mask_within_page)) {
+		cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
+		    ((cpu->pc & mask_within_page) >> 2);
+	} else {
+		/*  Find the new physical page and update pointers:  */
+		arm_pc_to_pointers(cpu);
+	}
+}
+Y(ret_trace)
 
 
 /*
@@ -885,6 +971,9 @@ X(to_be_translated)
 				ic->f = cond_instr(mov_pc);
 				ic->arg[0] = (size_t)
 				    (&cpu->cd.arm.r[iword & 15]);
+				if ((iword & 15) == ARM_LR &&
+				    cpu->machine->show_trace_tree)
+					ic->f = cond_instr(ret_trace);
 			} else if ((iword & 0x0fff0ff0) == 0x01a00000) {
 				/*  Hardcoded: mov reg,reg  */
 				if ((iword & 15) == ARM_PC) {
@@ -1054,8 +1143,14 @@ X(to_be_translated)
 			ic->f = cond_instr(b);
 			samepage_function = cond_instr(b_samepage);
 		} else {
-			ic->f = cond_instr(bl);
-			samepage_function = cond_instr(bl_samepage);
+			if (cpu->machine->show_trace_tree) {
+				ic->f = cond_instr(bl_trace);
+				samepage_function =
+				    cond_instr(bl_samepage_trace);
+			} else {
+				ic->f = cond_instr(bl);
+				samepage_function = cond_instr(bl_samepage);
+			}
 		}
 
 		ic->arg[0] = (iword & 0x00ffffff) << 2;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.306 2005-08-07 11:36:58 debug Exp $
+ *  $Id: cpu.c,v 1.307 2005-08-07 17:42:01 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -225,6 +225,61 @@ int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 		return 0;
 	} else
 		return cpu->machine->cpu_family->interrupt_ack(cpu, irq_nr);
+}
+
+
+/*
+ *  cpu_functioncall_trace():
+ *
+ *  This function should be called if machine->show_trace_tree is enabled, and
+ *  a function call is being made. f contains the address of the function.
+ */
+void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
+{
+	int i;
+	char *symbol;
+	uint64_t offset;
+
+	if (cpu->machine->ncpus > 1)
+		fatal("cpu%i:\t", cpu->cpu_id);
+
+	for (i=0; i<cpu->trace_tree_depth; i++)
+		fatal("  ");
+	cpu->trace_tree_depth ++;
+
+	fatal("<");
+	symbol = get_symbol_name(&cpu->machine->symbol_context, f, &offset);
+	if (symbol != NULL)
+		fatal("%s", symbol);
+	else {
+		if (cpu->is_32bit)
+			fatal("0x%08x", (int)f);
+		else
+			fatal("0x%llx", (long long)f);
+	}
+	fatal("(");
+
+	if (cpu->machine->cpu_family->functioncall_trace != NULL)
+		cpu->machine->cpu_family->functioncall_trace(cpu, f);
+
+	fatal(")>\n");
+}
+
+
+/*
+ *  cpu_functioncall_trace_return():
+ *
+ *  This function should be called if machine->show_trace_tree is enabled, and
+ *  a function is being returned from.
+ *
+ *  TODO: Print return value? This could be implemented similar to the
+ *  cpu->functioncall_trace function call above.
+ */
+void cpu_functioncall_trace_return(struct cpu *cpu)
+{
+	cpu->trace_tree_depth --;
+	if (cpu->trace_tree_depth < 0)
+		cpu->trace_tree_depth = 0;
 }
 
 

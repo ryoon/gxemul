@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.16 2005-08-07 08:26:11 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.17 2005-08-07 17:42:02 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -160,6 +160,22 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	return n_instrs + cpu->n_translated_instrs;
 }
 #endif	/*  DYNTRANS_CPU_RUN_INSTR  */
+
+
+
+#ifdef DYNTRANS_FUNCTION_TRACE
+/*
+ *  XXX_cpu_functioncall_trace():
+ *
+ *  Without this function, the main trace tree function prints something
+ *  like    <f()>  or  <0x1234()>   on a function call. It is up to this
+ *  function to print the arguments passed.
+ */
+void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
+{
+	fatal(" YO ");
+}
+#endif
 
 
 
@@ -496,6 +512,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #else
 #ifdef DYNTRANS_32
 	uint32_t index;
+	vaddr_page &= 0xffffffffULL;
+	paddr_page &= 0xffffffffULL;
 	/*  fatal("update_translation_table(): v=0x%x, h=%p w=%i"
 	    " p=0x%x\n", (int)vaddr_page, host_page, writeflag,
 	    (int)paddr_page);  */

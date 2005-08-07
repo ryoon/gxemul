@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.58 2005-08-05 07:23:27 debug Exp $
+ *  $Id: cpu_mips.c,v 1.59 2005-08-07 17:42:02 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1428,11 +1428,21 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 
 /*
+ *  mips_cpu_functioncall_trace():
+ *
+ *  TODO: Move stuff from show_trace() to this function.
+ */
+void mips_cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
+{
+}
+
+
+/*
  *  show_trace():
  *
- *  Show trace tree.   This function should be called every time
- *  a function is called.  cpu->cd.mips.trace_tree_depth is increased here
- *  and should not be increased by the caller.
+ *  Show trace tree. This function should be called every time a function is
+ *  called. cpu->trace_tree_depth is increased here and should not be increased
+ *  by the caller.
  *
  *  Note:  This function should not be called if show_trace_tree == 0.
  */
@@ -1443,28 +1453,28 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 	char strbuf[50];
 	char *symbol;
 
-	cpu->cd.mips.trace_tree_depth ++;
+	cpu->trace_tree_depth ++;
 
 	if (cpu->machine->ncpus > 1)
-		debug("cpu%i:", cpu->cpu_id);
+		fatal("cpu%i:", cpu->cpu_id);
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
 
-	for (x=0; x<cpu->cd.mips.trace_tree_depth; x++)
-		debug("  ");
+	for (x=0; x<cpu->trace_tree_depth; x++)
+		fatal("  ");
 
-	/*  debug("<%s>\n", symbol!=NULL? symbol : "no symbol");  */
+	fatal("<");
 
 	if (symbol != NULL)
-		debug("<%s(", symbol);
+		fatal("%s", symbol);
 	else {
-		debug("<0x");
 		if (cpu->is_32bit)
-			debug("%08x", (int)addr);
+			fatal("0x%08x", (int)addr);
 		else
-			debug("%016llx", (long long)addr);
-		debug("(");
+			fatal("0x%llx", (long long)addr);
 	}
+
+	fatal("(");
 
 	/*
 	 *  TODO:  The number of arguments and the symbol type of each
@@ -1483,19 +1493,19 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 		int64_t d = cpu->cd.mips.gpr[x + MIPS_GPR_A0];
 
 		if (d > -256 && d < 256)
-			debug("%i", (int)d);
+			fatal("%i", (int)d);
 		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
-			debug("\"%s\"", memory_conv_to_string(cpu,
+			fatal("\"%s\"", memory_conv_to_string(cpu,
 			    cpu->mem, d, strbuf, sizeof(strbuf)));
 		else {
 			if (cpu->is_32bit)
-				debug("0x%x", (int)d);
+				fatal("0x%x", (int)d);
 			else
-				debug("0x%llx", (long long)d);
+				fatal("0x%llx", (long long)d);
 		}
 
 		if (x < n_args_to_print - 1)
-			debug(",");
+			fatal(",");
 
 		/*  Cannot go beyound MIPS_GPR_A3:  */
 		if (x == 3)
@@ -1503,9 +1513,9 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 	}
 
 	if (n_args_to_print > 4)
-		debug("..");
+		fatal("..");
 
-	debug(")>\n");
+	fatal(")>\n");
 }
 
 
@@ -2052,7 +2062,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (!quiet_mode_cached &&
 			    cpu->machine->show_trace_tree)
-				cpu->cd.mips.trace_tree_depth --;
+				cpu->trace_tree_depth --;
 
 			/*  TODO: how many instrs should this count as?  */
 			return 10;
@@ -2552,7 +2562,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (!quiet_mode_cached && cpu->machine->show_trace_tree
 			    && rs == 31) {
-				cpu->cd.mips.trace_tree_depth --;
+				cpu->trace_tree_depth --;
 			}
 
 			return 1;

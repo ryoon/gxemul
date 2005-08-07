@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.19 2005-07-30 18:11:21 debug Exp $
+ *  $Id: cpu_mips.h,v 1.20 2005-08-07 17:42:03 debug Exp $
  */
 
 #include "misc.h"
@@ -317,8 +317,6 @@ struct mips_cpu {
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	int		instruction_delay;
 #endif
-
-	int		trace_tree_depth;
 
 	uint64_t	delay_jmpaddr;		/*  only used if delay_slot > 0  */
 	int		delay_slot;

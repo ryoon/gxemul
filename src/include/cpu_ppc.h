@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.25 2005-08-06 20:25:28 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.26 2005-08-07 17:42:03 debug Exp $
  */
 
 #include "misc.h"
@@ -106,8 +106,6 @@ struct ppc_vpg_tlb_entry {
 
 struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
-
-	int		trace_tree_depth;
 
 	uint64_t	of_emul_addr;
 	uint64_t	pc_last;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.72 2005-08-06 20:58:24 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.73 2005-08-07 17:42:02 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1221,9 +1221,9 @@ disasm_ret_nonewline:
 /*
  *  show_trace():
  *
- *  Show trace tree.   This function should be called every time
- *  a function is called.  cpu->cd.ppc.trace_tree_depth is increased here
- *  and should not be increased by the caller.
+ *  Show trace tree. This function should be called every time a function is
+ *  called. cpu->trace_tree_depth is increased here and should not be increased
+ *  by the caller.
  *
  *  Note:  This function should not be called if show_trace_tree == 0.
  */
@@ -1234,14 +1234,14 @@ static void show_trace(struct cpu *cpu)
 	char strbuf[60];
 	char *symbol;
 
-	cpu->cd.ppc.trace_tree_depth ++;
+	cpu->trace_tree_depth ++;
 
 	if (cpu->machine->ncpus > 1)
 		debug("cpu%i:", cpu->cpu_id);
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
 
-	for (x=0; x<cpu->cd.ppc.trace_tree_depth; x++)
+	for (x=0; x<cpu->trace_tree_depth; x++)
 		debug("  ");
 
 	/*  debug("<%s>\n", symbol!=NULL? symbol : "no symbol");  */

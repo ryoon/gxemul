@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.242 2005-08-06 19:32:43 debug Exp $
+ *  $Id: main.c,v 1.243 2005-08-07 17:42:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -578,7 +578,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	}
 
 
-	/*  -i, -r, -t are pretty verbose:  */
+	/*  -i and -r are pretty verbose:  */
 
 	if (m->instruction_trace && !verbose) {
 		fprintf(stderr, "Implicitly %sturning on -v, because"
@@ -590,13 +590,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	if (m->register_dump && !verbose) {
 		fprintf(stderr, "Implicitly %sturning on -v, because"
 		    " of -r\n", quiet_mode? "turning off -q and " : "");
-		verbose = 1;
-		quiet_mode = 0;
-	}
-
-	if (m->show_trace_tree && !verbose) {
-		fprintf(stderr, "Implicitly %sturning on -v, because"
-		    " of -t\n", quiet_mode? "turning off -q and " : "");
 		verbose = 1;
 		quiet_mode = 0;
 	}

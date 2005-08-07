@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.37 2005-08-06 20:25:28 debug Exp $
+ *  $Id: cpu.h,v 1.38 2005-08-07 17:42:03 debug Exp $
  *
  *  See cpu.c.
  */
@@ -80,6 +80,7 @@ struct cpu_family {
 	int			(*interrupt)(struct cpu *cpu, uint64_t irq_nr);
 	int			(*interrupt_ack)(struct cpu *cpu,
 				    uint64_t irq_nr);
+	void			(*functioncall_trace)(struct cpu *, uint64_t f);
 };
 
 #ifdef TRACE_NULL_CRASHES
@@ -143,6 +144,8 @@ struct cpu {
 	uint64_t	trace_null_addr[TRACE_NULL_N_ENTRIES];
 #endif  
 
+	int		trace_tree_depth;
+
 	/*
 	 *  Dynamic translation:
 	 */
@@ -177,6 +180,8 @@ int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr, int bintrans);
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
+void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);
+void cpu_functioncall_trace_return(struct cpu *cpu);
 void cpu_create_or_reset_tc(struct cpu *cpu);
 void cpu_run_init(struct emul *emul, struct machine *machine);
 int cpu_run(struct emul *emul, struct machine *machine);
@@ -203,6 +208,7 @@ void cpu_init(void);
 	fp->tlbdump = n ## _cpu_tlbdump;				\
 	fp->interrupt = n ## _cpu_interrupt; 				\
 	fp->interrupt_ack = n ## _cpu_interrupt_ack;			\
+	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
 	return 1;							\
 	}
 

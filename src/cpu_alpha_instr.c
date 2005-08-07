@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.34 2005-08-07 11:36:58 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.35 2005-08-07 17:42:02 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -146,7 +146,19 @@ X(jsr)
 
 
 /*
- *  jsr_0:  JSR, but don't store return PC.
+ *  jsr_trace:  Jump to SubRoutine (with function call trace enabled)
+ *
+ *  Arguments same as for jsr.
+ */
+X(jsr_trace)
+{
+	cpu_functioncall_trace(cpu, *((int64_t *)ic->arg[1]));
+	instr(jsr)(cpu, ic);
+}
+
+
+/*
+ *  jsr_0:  JSR/RET, don't store return PC.
  *
  *  arg[0] = ignored
  *  arg[1] = ptr to uint64_t of new PC
@@ -169,6 +181,18 @@ X(jsr_0)
 		/*  Find the new physical page and update pointers:  */
 		alpha_pc_to_pointers(cpu);
 	}
+}
+
+
+/*
+ *  jsr_0_trace:  JSR/RET (with function call trace enabled)
+ *
+ *  Arguments same as for jsr_0.
+ */
+X(jsr_0_trace)
+{
+	cpu_functioncall_trace_return(cpu);
+	instr(jsr_0)(cpu, ic);
 }
 
 
@@ -961,9 +985,18 @@ X(to_be_translated)
 		case 2:	/*  RET  */
 			ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
 			ic->arg[1] = (size_t) &cpu->cd.alpha.r[rb];
-			ic->f = instr(jsr);
-			if (ra == ALPHA_ZERO)
-				ic->f = instr(jsr_0);
+			if (ra == ALPHA_ZERO) {
+				if (cpu->machine->show_trace_tree &&
+				    rb == ALPHA_RA)
+					ic->f = instr(jsr_0_trace);
+				else
+					ic->f = instr(jsr_0);
+			} else {
+				if (cpu->machine->show_trace_tree)
+					ic->f = instr(jsr_trace);
+				else
+					ic->f = instr(jsr);
+			}
 			break;
 		default:fatal("[ Alpha: unimpl JSR type %i, ra=%i rb=%i ]\n",
 			    ((iword >> 14) & 3), ra, rb);

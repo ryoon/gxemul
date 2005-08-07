@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.305 2005-08-06 20:25:26 debug Exp $
+ *  $Id: cpu.c,v 1.306 2005-08-07 11:36:58 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -425,8 +425,8 @@ void cpu_show_cycles(struct machine *machine, int forced)
 			    cur_cycles_per_second) / 16;
 		}
 
-		debug("[ updating emulated_hz to %lli Hz ]\n",
-		    (long long)machine->emulated_hz);
+		/*  debug("[ updating emulated_hz to %lli Hz ]\n",
+		    (long long)machine->emulated_hz);  */
 	}
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.115 2005-08-06 20:25:27 debug Exp $
+ *  $Id: debugger.c,v 1.116 2005-08-07 11:36:58 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1354,13 +1354,46 @@ static void debugger_cmd_tlbdump(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 {
-	if (*cmd_line) {
-		printf("syntax: trace\n");
-		return;
+	int i, toggle = 1;
+	int previous_mode = old_show_trace_tree;
+
+	if (cmd_line[0] != '\0') {
+		while (cmd_line[0] != '\0' && cmd_line[0] == ' ')
+			cmd_line ++;
+		switch (cmd_line[0]) {
+		case '0':
+			toggle = 0;
+			old_show_trace_tree = 0;
+			break;
+		case '1':
+			toggle = 0;
+			old_show_trace_tree = 1;
+			break;
+		case 'o':
+		case 'O':
+			toggle = 0;
+			switch (cmd_line[1]) {
+			case 'n':
+			case 'N':
+				old_show_trace_tree = 1;
+				break;
+			default:
+				old_show_trace_tree = 0;
+			}
+			break;
+		default:
+			printf("syntax: trace [on|off]\n");
+			return;
+		}
 	}
 
-	old_show_trace_tree = 1 - old_show_trace_tree;
-	printf("show_trace_tree = %s\n", old_show_trace_tree? "ON" : "OFF");
+	if (toggle)
+		old_show_trace_tree = 1 - old_show_trace_tree;
+
+	printf("show_trace_tree = %s", old_show_trace_tree? "ON" : "OFF");
+	if (old_show_trace_tree != previous_mode)
+		printf("  (was: %s)", old_show_trace_tree? "ON" : "OFF");
+	printf("\n");
 
 	if (m->bintrans_enable && old_show_trace_tree)
 		printf("NOTE: the trace tree functionality doesn't "
@@ -1369,6 +1402,11 @@ static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 	/*  TODO: how to preserve quiet_mode?  */
 	old_quiet_mode = 0;
 	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
+
+	/*  Clear translations:  */
+	for (i=0; i<m->ncpus; i++)
+		if (m->cpus[i]->translation_cache != NULL)
+			cpu_create_or_reset_tc(m->cpus[i]);
 }
 
 
@@ -1579,7 +1617,7 @@ static struct cmd cmds[] = {
 	{ "tlbdump", "[cpuid][,r]", 0, debugger_cmd_tlbdump,
 		"dump TLB contents (add ',r' for raw data)" },
 
-	{ "trace", "", 0, debugger_cmd_trace,
+	{ "trace", "[on|off]", 0, debugger_cmd_trace,
 		"toggle show_trace_tree on or off" },
 
 	{ "unassemble", "[addr [endaddr]]", 0, debugger_cmd_unassemble,

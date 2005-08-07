@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.33 2005-08-07 08:26:11 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.34 2005-08-07 11:36:58 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -120,7 +120,8 @@ X(call_pal)
  */
 X(jsr)
 {
-	uint64_t low_pc;
+	uint64_t old_pc = cpu->pc, low_pc;
+	uint64_t mask_within_page = ((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
 
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
@@ -130,10 +131,17 @@ X(jsr)
 	*((int64_t *)ic->arg[0]) = cpu->pc;
 	cpu->pc = *((int64_t *)ic->arg[1]);
 
-	/*  TODO: just set cpu->cd.alpha.next_ic if it's the same page  */
-
-	/*  Find the new physical page and update the translation pointers:  */
-	alpha_pc_to_pointers(cpu);
+	/*
+	 *  If this is a jump/return into the same code page as we were
+	 *  already in, then just set cpu->cd.alpha.next_ic.
+	 */
+	if ((old_pc & ~mask_within_page) == (cpu->pc & ~mask_within_page)) {
+		cpu->cd.alpha.next_ic = cpu->cd.alpha.cur_ic_page +
+		    ((cpu->pc & mask_within_page) >> 2);
+	} else {
+		/*  Find the new physical page and update pointers:  */
+		alpha_pc_to_pointers(cpu);
+	}
 }
 
 
@@ -145,19 +153,22 @@ X(jsr)
  */
 X(jsr_0)
 {
-	uint64_t low_pc;
-
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
-	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (low_pc << 2) + 4;
+	uint64_t old_pc = cpu->pc;
+	uint64_t mask_within_page = ((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
 
 	cpu->pc = *((int64_t *)ic->arg[1]);
 
-	/*  TODO: just set cpu->cd.alpha.next_ic if it's the same page  */
-
-	/*  Find the new physical page and update the translation pointers:  */
-	alpha_pc_to_pointers(cpu);
+	/*
+	 *  If this is a jump/return into the same code page as we were
+	 *  already in, then just set cpu->cd.alpha.next_ic.
+	 */
+	if ((old_pc & ~mask_within_page) == (cpu->pc & ~mask_within_page)) {
+		cpu->cd.alpha.next_ic = cpu->cd.alpha.cur_ic_page +
+		    ((cpu->pc & mask_within_page) >> 2);
+	} else {
+		/*  Find the new physical page and update pointers:  */
+		alpha_pc_to_pointers(cpu);
+	}
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.44 2005-08-06 19:32:43 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.45 2005-08-07 11:36:58 debug Exp $
  *
  *  ARM instructions.
  *
@@ -231,6 +231,8 @@ X(bl)
 	/*  Calculate new PC from this instruction + arg[0]  */
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr + (int32_t)ic->arg[0];
 
+/* printf("BL: %x\n", (int)cpu->pc); */
+
 	/*  Find the new physical page and update the translation pointers:  */
 	arm_pc_to_pointers(cpu);
 }
@@ -271,14 +273,23 @@ Y(bl_samepage)
  */
 X(mov_pc)
 {
+	uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
+	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+
 	/*  Update the PC register:  */
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = *((uint32_t *)ic->arg[0]);
 
-	/*  TODO: There is no need to update the pointers if this
-	    is a return to the same page!  */
-
-	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	/*
+	 *  Is this a return to code within the same page? Then there is no
+	 *  need to update all pointers, just next_ic.
+	 */
+	if ((old_pc & ~mask_within_page) == (cpu->pc & ~mask_within_page)) {
+		cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
+		    ((cpu->pc & mask_within_page) >> 2);
+	} else {
+		/*  Find the new physical page and update pointers:  */
+		arm_pc_to_pointers(cpu);
+	}
 }
 Y(mov_pc)
 

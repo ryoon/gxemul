@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.116 2005-08-07 11:36:58 debug Exp $
+ *  $Id: debugger.c,v 1.117 2005-08-07 19:12:12 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1398,10 +1398,6 @@ static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 	if (m->bintrans_enable && old_show_trace_tree)
 		printf("NOTE: the trace tree functionality doesn't "
 		    "work very well with bintrans!\n");
-
-	/*  TODO: how to preserve quiet_mode?  */
-	old_quiet_mode = 0;
-	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
 
 	/*  Clear translations:  */
 	for (i=0; i<m->ncpus; i++)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.501 2005-08-07 21:04:27 debug Exp $
+ *  $Id: machine.c,v 1.502 2005-08-07 23:36:48 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4322,6 +4322,35 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		    0xeafffffe);
 		break;
 
+	case MACHINE_BAREIA64:
+		machine->machine_name = "\"Bare\" IA64 machine";
+		break;
+
+	case MACHINE_TESTIA64:
+		machine->machine_name = "IA64 test machine";
+
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
+
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testalpha generic");
+
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
+		break;
+
 	case MACHINE_BAREX86:
 		machine->machine_name = "\"Bare\" x86 machine";
 		break;
@@ -4722,6 +4751,12 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("ARM");
 		break;
 
+	/*  IA64:  */
+	case MACHINE_BAREIA64:
+	case MACHINE_TESTIA64:
+		m->cpu_name = strdup("IA64");
+		break;
+
 	/*  x86:  */
 	case MACHINE_BAREX86:
 	case MACHINE_X86:
@@ -5019,6 +5054,14 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for IA64:  */
+	me = machine_entry_new("Test-machine for IA64", ARCH_IA64,
+	    MACHINE_TESTIA64, 1, 0);
+	me->aliases[0] = "testia64";
+	if (cpu_family_ptr_by_number(ARCH_IA64) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Test-machine for ARM:  */
 	me = machine_entry_new("Test-machine for ARM", ARCH_ARM,
 	    MACHINE_TESTARM, 1, 0);
@@ -5212,6 +5255,14 @@ void machine_init(void)
 	    MACHINE_BAREMIPS, 1, 0);
 	me->aliases[0] = "baremips";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" IA64 machine:  */
+	me = machine_entry_new("Generic \"bare\" IA64 machine", ARCH_IA64,
+	    MACHINE_BAREIA64, 1, 0);
+	me->aliases[0] = "bareia64";
+	if (cpu_family_ptr_by_number(ARCH_IA64) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

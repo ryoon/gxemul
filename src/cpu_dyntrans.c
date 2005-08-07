@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.18 2005-08-07 19:02:48 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.19 2005-08-07 23:36:48 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -197,6 +197,9 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 #ifdef DYNTRANS_ARM
 		    r[0
 #endif
+#ifdef DYNTRANS_IA64
+		    r[0		/*  TODO  */
+#endif
 #ifdef DYNTRANS_MIPS
 		    gpr[MIPS_GPR_A0
 #endif
@@ -312,7 +315,11 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 			goto have_it;
 	}
 #else
-#error Neither alpha nor 32-bit?
+#ifdef DYNTRANS_IA64
+	fatal("IA64 todo\n");
+#else
+#error Neither alpha, ia64, nor 32-bit?
+#endif
 #endif
 #endif
 
@@ -443,7 +450,11 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 			    cpu->cd.alpha.vph_default_page;
 	}
 #else	/*  !DYNTRANS_ALPHA  */
-#error Not yet for non-Alpha
+#ifdef DYNTRANS_IA64
+	fatal("IA64: blah blah TODO\n");
+#else
+#error Not yet for non-1-level, non-Alpha, non-ia64
+#endif	/*  !DYNTRANS_IA64  */
 #endif	/*  !DYNTRANS_ALPHA  */
 #endif
 }
@@ -528,7 +539,11 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu)
 		vph_p = cpu->cd.alpha.vph_table0[a];
 	vph_p->phys_page[b] = NULL;
 #else	/*  !DYNTRANS_ALPHA  */
-#error Not yet for non-Alpha, non-1Level
+#ifdef DYNTRANS_IA64
+	fatal("IA64: blah yo yo TODO\n");
+#else
+#error Not yet for non-Alpha, non-1Level, non-ia64
+#endif	/*  !DYNTRANS_IA64  */
 #endif	/*  !DYNTRANS_ALPHA  */
 }
 #endif
@@ -567,7 +582,11 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	    " p=0x%x\n", (int)vaddr_page, host_page, writeflag,
 	    (int)paddr_page);  */
 #else	/*  !DYNTRANS_32  */
-#error	Neither 32-bit nor Alpha?
+#ifdef DYNTRANS_IA64
+	fatal("IA64 update todo\n");
+#else
+#error	Neither 32-bit, IA64, nor Alpha?
+#endif
 #endif
 #endif
 
@@ -711,6 +730,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *  Check for breakpoints.
 	 */
 	if (!single_step_breakpoint) {
+		int i;
 		for (i=0; i<cpu->machine->n_breakpoints; i++)
 			if (cpu->pc == cpu->machine->breakpoint_addr[i]) {
 				if (!cpu->machine->instruction_trace) {

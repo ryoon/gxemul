@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.884 2005-08-07 20:43:55 debug Exp $
+$Id: HISTORY,v 1.885 2005-08-07 23:36:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2151,3 +2151,5 @@ Changelog for GXemul:
 		with newer dyntrans modes. :)
 		Continuing on Alpha-related stuff (trying to get *BSD to boot
 		a bit further, adding more instructions, etc).
+20050808	Adding a dummy IA64 cpu family, and continuing the refactoring
+		of the dyntrans system.

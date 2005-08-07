@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.55 2005-08-06 20:58:24 debug Exp $
+ *  $Id: cpu_arm.c,v 1.56 2005-08-07 23:36:48 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -68,34 +68,9 @@ int arm_cpu_family_init(struct cpu_family *fp)
 #include "memory.h"
 #include "symbol.h"
 
-#define	DYNTRANS_MAX_VPH_TLB_ENTRIES		ARM_MAX_VPH_TLB_ENTRIES
-#define	DYNTRANS_ARCH				arm
-#define	DYNTRANS_ARM
-#define	DYNTRANS_32
-#define	DYNTRANS_1LEVEL
-#define	DYNTRANS_PAGESIZE			4096
-#define	DYNTRANS_IC				arm_instr_call
-#define	DYNTRANS_IC_ENTRIES_PER_PAGE		ARM_IC_ENTRIES_PER_PAGE
-#define	DYNTRANS_TC_PHYSPAGE			arm_tc_physpage
-#define	DYNTRANS_INVALIDATE_TLB_ENTRY		arm_invalidate_tlb_entry
-#define	DYNTRANS_ADDR_TO_PAGENR			ARM_ADDR_TO_PAGENR
-#define	DYNTRANS_PC_TO_IC_ENTRY			ARM_PC_TO_IC_ENTRY
-#define DYNTRANS_TC_ALLOCATE			arm_tc_allocate_default_page
-#define DYNTRANS_TC_PHYSPAGE			arm_tc_physpage
-#define	DYNTRANS_PC_TO_POINTERS			arm_pc_to_pointers
-#define	COMBINE_INSTRUCTIONS			arm_combine_instructions
-#define	DISASSEMBLE				arm_cpu_disassemble_instr
+#define DYNTRANS_32
+#include "tmp_arm_head.c"
 
-
-extern volatile int single_step, single_step_breakpoint;
-extern int debugger_n_steps_left_before_interaction;
-extern int old_show_trace_tree;
-extern int old_instruction_trace;
-extern int old_quiet_mode;
-extern int quiet_mode;
-
-/*  instr uses the same names as in cpu_arm_instr.c  */
-#define instr(n) arm_instr_ ## n
 
 /*  ARM symbolic register names and condition strings:  */
 static char *arm_regname[N_ARM_REGS] = ARM_REG_NAMES;

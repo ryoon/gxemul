@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.46 2005-08-07 20:43:55 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.47 2005-08-07 23:36:48 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -68,33 +68,10 @@ int alpha_cpu_family_init(struct cpu_family *fp)
 #include "memory.h"
 #include "symbol.h"
 
-#define	DYNTRANS_MAX_VPH_TLB_ENTRIES		ALPHA_MAX_VPH_TLB_ENTRIES
-#define	DYNTRANS_ARCH				alpha
-#define	DYNTRANS_ALPHA
 #define	DYNTRANS_8K
-#define	DYNTRANS_PAGESIZE			8192
-#define	DYNTRANS_IC				alpha_instr_call
-#define	DYNTRANS_IC_ENTRIES_PER_PAGE		ALPHA_IC_ENTRIES_PER_PAGE
-#define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage
-#define	DYNTRANS_INVALIDATE_TLB_ENTRY		alpha_invalidate_tlb_entry
-#define	DYNTRANS_ADDR_TO_PAGENR			ALPHA_ADDR_TO_PAGENR
-#define	DYNTRANS_PC_TO_IC_ENTRY			ALPHA_PC_TO_IC_ENTRY
-#define	DYNTRANS_TC_ALLOCATE			alpha_tc_allocate_default_page
-#define	DYNTRANS_TC_PHYSPAGE			alpha_tc_physpage
-#define DYNTRANS_PC_TO_POINTERS			alpha_pc_to_pointers
-#define	COMBINE_INSTRUCTIONS			alpha_combine_instructions
-#define	DISASSEMBLE				alpha_cpu_disassemble_instr
+#define	DYNTRANS_PAGESIZE	8192
+#include "tmp_alpha_head.c"
 
-
-extern volatile int single_step, single_step_breakpoint;
-extern int debugger_n_steps_left_before_interaction;
-extern int old_show_trace_tree;   
-extern int old_instruction_trace;
-extern int old_quiet_mode;
-extern int quiet_mode;
-
-/*  instr uses the same names as in cpu_alpha_instr.c  */
-#define instr(n) alpha_instr_ ## n
 
 /*  Alpha symbolic register names:  */
 static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES; 

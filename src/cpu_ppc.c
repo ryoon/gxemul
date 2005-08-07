@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.74 2005-08-07 19:02:49 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.75 2005-08-07 23:36:48 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -65,34 +65,8 @@ int ppc_cpu_family_init(struct cpu_family *fp)
 #include "opcodes_ppc.h"
 #include "symbol.h"
 
-#define	DYNTRANS_MAX_VPH_TLB_ENTRIES		PPC_MAX_VPH_TLB_ENTRIES
-#define	DYNTRANS_ARCH				ppc
-#define	DYNTRANS_PPC
-#define	DYNTRANS_32
-#define	DYNTRANS_1LEVEL
-#define	DYNTRANS_PAGESIZE			4096
-#define	DYNTRANS_IC				ppc_instr_call
-#define	DYNTRANS_IC_ENTRIES_PER_PAGE		PPC_IC_ENTRIES_PER_PAGE
-#define	DYNTRANS_TC_PHYSPAGE			ppc_tc_physpage
-#define	DYNTRANS_INVALIDATE_TLB_ENTRY		ppc_invalidate_tlb_entry
-#define	DYNTRANS_ADDR_TO_PAGENR			PPC_ADDR_TO_PAGENR
-#define	DYNTRANS_PC_TO_IC_ENTRY			PPC_PC_TO_IC_ENTRY
-#define	DYNTRANS_TC_ALLOCATE			ppc_tc_allocate_default_page
-#define	DYNTRANS_TC_PHYSPAGE			ppc_tc_physpage
-#define	DYNTRANS_PC_TO_POINTERS			ppc_pc_to_pointers
-#define	COMBINE_INSTRUCTIONS			ppc_combine_instructions
-#define	DISASSEMBLE				ppc_cpu_disassemble_instr
-
-
-/*  instr uses the same names as in cpu_ppc_instr.c  */
-#define instr(n) ppc_instr_ ## n
-
-extern volatile int single_step, single_step_breakpoint;
-extern int debugger_n_steps_left_before_interaction;
-extern int old_show_trace_tree;
-extern int old_instruction_trace;
-extern int old_quiet_mode;
-extern int quiet_mode;
+#define DYNTRANS_32
+#include "tmp_ppc_head.c"
 
 
 /*

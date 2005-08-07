@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.64 2005-08-05 07:09:31 debug Exp $
+ *  $Id: machine.h,v 1.65 2005-08-07 23:36:50 debug Exp $
  */
 
 #include <sys/types.h>
@@ -236,6 +236,7 @@ struct machine {
 #define	ARCH_ALPHA		4
 #define	ARCH_X86		5
 #define	ARCH_ARM		6
+#define	ARCH_IA64		7
 
 /*  MIPS:  */
 #define	MACHINE_BAREMIPS	1000
@@ -279,6 +280,10 @@ struct machine {
 /*  ARM:  */
 #define	MACHINE_BAREARM		6000
 #define	MACHINE_TESTARM		6001
+
+/*  IA64:  */
+#define	MACHINE_BAREIA64	7000
+#define	MACHINE_TESTIA64	7001
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0

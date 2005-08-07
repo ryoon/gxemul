@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.43 2005-08-07 08:26:11 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.44 2005-08-07 08:57:54 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -464,11 +464,15 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		/*  Special cases: "nop" etc:  */
 		if (func == 0x020 && rc == ALPHA_ZERO)
 			debug("nop\n");
-		else if (func == 0x020 && ra == ALPHA_ZERO) {
-			if (rb == ALPHA_ZERO)
+		else if (func == 0x020 && (ra == ALPHA_ZERO
+		    || rb == ALPHA_ZERO)) {
+			if (ra == ALPHA_ZERO && rb == ALPHA_ZERO)
 				debug("clr\t%s\n", alpha_regname[rc]);
-			else
+			else if (ra == ALPHA_ZERO)
 				debug("mov\t%s,%s\n", alpha_regname[rb],
+				    alpha_regname[rc]);
+			else
+				debug("mov\t%s,%s\n", alpha_regname[ra],
 				    alpha_regname[rc]);
 		} else if (func & 0x80)
 			debug("%s\t%s,0x%x,%s\n", mnem,

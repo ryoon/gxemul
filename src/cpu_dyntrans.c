@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.17 2005-08-07 17:42:02 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.18 2005-08-07 19:02:48 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -173,7 +173,56 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
  */
 void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 {
-	fatal(" YO ");
+        char strbuf[50];
+	int x, n_args_to_print =
+#ifdef DYNTRANS_ALPHA
+	    6
+#else
+	    4	/*  Most non-Alpha archs  */
+#endif
+	    ;
+
+	/*
+	 *  TODO:  The number of arguments and the symbol type of each
+	 *  argument should be taken from the symbol table, in some way.
+	 *
+	 *  Print ".." afterwards to show that there might be more arguments
+	 *  than were passed in register.
+	 */
+	for (x=0; x<n_args_to_print; x++) {
+		int64_t d = cpu->cd.DYNTRANS_ARCH.
+#ifdef DYNTRANS_ALPHA
+		    r[ALPHA_A0
+#endif
+#ifdef DYNTRANS_ARM
+		    r[0
+#endif
+#ifdef DYNTRANS_MIPS
+		    gpr[MIPS_GPR_A0
+#endif
+#ifdef DYNTRANS_PPC
+		    gpr[3
+#endif
+		    + x];
+
+		if (d > -256 && d < 256)
+			fatal("%i", (int)d);
+		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
+			fatal("\"%s\"", memory_conv_to_string(cpu,
+			    cpu->mem, d, strbuf, sizeof(strbuf)));
+		else {
+			if (cpu->is_32bit)
+				fatal("0x%x", (int)d);
+			else
+				fatal("0x%llx", (long long)d);
+		}
+
+		if (x < n_args_to_print - 1)
+			fatal(",");
+	}
+
+	/*  For now, since we don't know how many args there actually are:  */
+	fatal(",..");
 }
 #endif
 

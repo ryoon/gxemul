@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.882 2005-08-07 17:42:00 debug Exp $
+$Id: HISTORY,v 1.883 2005-08-07 19:02:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2147,3 +2147,5 @@ Changelog for GXemul:
 20050807	Minor updates: cpu_alpha and related things; removing
 		dev_malta (as it isn't used any more).
 		Dyntrans: working on general "show trace tree" support.
+		The trace tree stuff now works with both the old MIPS code and
+		with newer dyntrans modes. :)

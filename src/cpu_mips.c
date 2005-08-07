@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.59 2005-08-07 17:42:02 debug Exp $
+ *  $Id: cpu_mips.c,v 1.60 2005-08-07 19:02:48 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1427,96 +1427,13 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 }
 
 
-/*
- *  mips_cpu_functioncall_trace():
- *
- *  TODO: Move stuff from show_trace() to this function.
- */
-void mips_cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
-{
-}
-
-
-/*
- *  show_trace():
- *
- *  Show trace tree. This function should be called every time a function is
- *  called. cpu->trace_tree_depth is increased here and should not be increased
- *  by the caller.
- *
- *  Note:  This function should not be called if show_trace_tree == 0.
- */
-static void show_trace(struct cpu *cpu, uint64_t addr)
-{
-	uint64_t offset;
-	int x, n_args_to_print;
-	char strbuf[50];
-	char *symbol;
-
-	cpu->trace_tree_depth ++;
-
-	if (cpu->machine->ncpus > 1)
-		fatal("cpu%i:", cpu->cpu_id);
-
-	symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
-
-	for (x=0; x<cpu->trace_tree_depth; x++)
-		fatal("  ");
-
-	fatal("<");
-
-	if (symbol != NULL)
-		fatal("%s", symbol);
-	else {
-		if (cpu->is_32bit)
-			fatal("0x%08x", (int)addr);
-		else
-			fatal("0x%llx", (long long)addr);
-	}
-
-	fatal("(");
-
-	/*
-	 *  TODO:  The number of arguments and the symbol type of each
-	 *  argument should be taken from the symbol table, in some way.
-	 *
-	 *  The MIPS binary calling convention is that the first 4
-	 *  arguments are in registers a0..a3.
-	 *
-	 *  Choose a value greater than 4 (eg 5) to print all values in
-	 *  the A0..A3 registers and then add a ".." to indicate that
-	 *  there might be more arguments.
-	 */
-	n_args_to_print = 5;
-
-	for (x=0; x<n_args_to_print; x++) {
-		int64_t d = cpu->cd.mips.gpr[x + MIPS_GPR_A0];
-
-		if (d > -256 && d < 256)
-			fatal("%i", (int)d);
-		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
-			fatal("\"%s\"", memory_conv_to_string(cpu,
-			    cpu->mem, d, strbuf, sizeof(strbuf)));
-		else {
-			if (cpu->is_32bit)
-				fatal("0x%x", (int)d);
-			else
-				fatal("0x%llx", (long long)d);
-		}
-
-		if (x < n_args_to_print - 1)
-			fatal(",");
-
-		/*  Cannot go beyound MIPS_GPR_A3:  */
-		if (x == 3)
-			break;
-	}
-
-	if (n_args_to_print > 4)
-		fatal("..");
-
-	fatal(")>\n");
-}
+#define DYNTRANS_FUNCTION_TRACE mips_cpu_functioncall_trace
+#define	DYNTRANS_MIPS
+#define	DYNTRANS_ARCH mips
+#include "cpu_dyntrans.c"
+#undef DYNTRANS_MIPS
+#undef DYNTRANS_ARCH
+#undef DYNTRANS_FUNCTION_TRACE
 
 
 /*
@@ -2060,9 +1977,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  no need to update cached_pc, as we're returning  */
 			cpu->cd.mips.delay_slot = NOT_DELAYED;
 
-			if (!quiet_mode_cached &&
-			    cpu->machine->show_trace_tree)
-				cpu->trace_tree_depth --;
+			if (cpu->machine->show_trace_tree)
+				cpu_functioncall_trace_return(cpu);
 
 			/*  TODO: how many instrs should this count as?  */
 			return 10;
@@ -2180,13 +2096,13 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			debug("\n");
 			mips_cpu_register_dump(cpu, 1, 0x1);
 		}
+	}
 
-		/*  Trace tree:  */
-		if (cpu->machine->show_trace_tree && cpu->cd.mips.show_trace_delay > 0) {
-			cpu->cd.mips.show_trace_delay --;
-			if (cpu->cd.mips.show_trace_delay == 0)
-				show_trace(cpu, cpu->cd.mips.show_trace_addr);
-		}
+	/*  Trace tree:  */
+	if (cpu->machine->show_trace_tree && cpu->cd.mips.show_trace_delay > 0) {
+		cpu->cd.mips.show_trace_delay --;
+		if (cpu->cd.mips.show_trace_delay == 0)
+			cpu_functioncall_trace(cpu, cpu->cd.mips.show_trace_addr);
 	}
 
 #ifdef MFHILO_DELAY
@@ -2560,10 +2476,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 			cpu->cd.mips.delay_jmpaddr = cpu->cd.mips.gpr[rs];
 
-			if (!quiet_mode_cached && cpu->machine->show_trace_tree
-			    && rs == 31) {
-				cpu->trace_tree_depth --;
-			}
+			if (cpu->machine->show_trace_tree && rs == 31)
+				cpu_functioncall_trace_return(cpu);
 
 			return 1;
 		case SPECIAL_JALR:
@@ -2580,8 +2494,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.mips.gpr[rd] = cached_pc + 4;
 			    /*  already increased by 4 earlier  */
 
-			if (!quiet_mode_cached && cpu->machine->show_trace_tree
-			    && rd == 31) {
+			if (cpu->machine->show_trace_tree && rd == 31) {
 				cpu->cd.mips.show_trace_delay = 2;
 				cpu->cd.mips.show_trace_addr = tmpvalue;
 			}
@@ -3881,8 +3794,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 		cpu->cd.mips.delay_jmpaddr = addr;
 
-		if (!quiet_mode_cached && cpu->machine->show_trace_tree &&
-		    hi6 == HI6_JAL) {
+		if (cpu->machine->show_trace_tree && hi6 == HI6_JAL) {
 			cpu->cd.mips.show_trace_delay = 2;
 			cpu->cd.mips.show_trace_addr = addr;
 		}

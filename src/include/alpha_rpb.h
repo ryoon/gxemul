@@ -38,7 +38,8 @@
 #define	HWRPB_ADDR	0x10000000		/* virtual address, at boot */
 
 /*  GXemul:  */
-#define	CRB_ADDR	(HWRPB_ADDR + 0x1000)
+#define	CTB_ADDR	(HWRPB_ADDR + 0x1000)
+#define	CRB_ADDR	(HWRPB_ADDR + 0x1400)
 
 #ifndef	ASSEMBLER
 struct rpb {

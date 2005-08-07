@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.35 2005-08-07 17:42:02 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.36 2005-08-07 20:43:56 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -484,6 +484,35 @@ X(bgt_samepage)
 
 
 /*
+ *  mull:  Signed Multiply 32x32 => 32.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = pointer to source uint64_t
+ */
+X(mull)
+{
+	int32_t a = *((uint64_t *)ic->arg[1]);
+	int32_t b = *((uint64_t *)ic->arg[2]);
+	*((uint64_t *)ic->arg[0]) = (int64_t)(int32_t)(a * b);
+}
+
+
+/*
+ *  mulq:  Unsigned Multiply 64x64 => 64.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = pointer to source uint64_t
+ */
+X(mulq)
+{
+	*((uint64_t *)ic->arg[0]) =
+	    (*((uint64_t *)ic->arg[1])) * (*((uint64_t *)ic->arg[2]));
+}
+
+
+/*
  *  umulh:  Unsigned Multiply 64x64 => 128. Store high part in dest reg.
  *
  *  arg[0] = pointer to destination uint64_t
@@ -554,6 +583,20 @@ X(lda_0)
 X(clear)
 {
 	*((uint64_t *)ic->arg[0]) = 0;
+}
+
+
+/*
+ *  rdcc:  Read the Cycle Counter into a 64-bit register.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ */
+X(rdcc)
+{
+	*((uint64_t *)ic->arg[0]) = cpu->cd.alpha.pcc;
+
+	/*  TODO: actually keep the pcc updated!  */
+	cpu->cd.alpha.pcc += 20;
 }
 
 
@@ -935,6 +978,8 @@ X(to_be_translated)
 		else
 			ic->arg[2] = (size_t) &cpu->cd.alpha.r[rb];
 		switch (func & 0xff) {
+		case 0x00: ic->f = instr(mull); break;
+		case 0x20: ic->f = instr(mulq); break;
 		case 0x30: ic->f = instr(umulh); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
@@ -972,6 +1017,25 @@ X(to_be_translated)
 				/*  fabs:  */
 				goto bad;
 			}
+			break;
+		default:fatal("[ Alpha: unimplemented function 0x%03x for"
+			    " opcode 0x%02x ]\n", func, opcode);
+			goto bad;
+		}
+		break;
+	case 0x18:
+		switch (iword & 0xffff) {
+		case 0x4000:	/*  mb  */
+		case 0x4400:	/*  wmb  */
+			ic->f = instr(nop);
+			break;
+		case 0xc000:	/*  rdcc  ra  */
+			if (ra == ALPHA_ZERO) {
+				ic->f = instr(nop);
+				break;
+			}
+			ic->arg[0] = (size_t) &cpu->cd.alpha.r[ra];
+			ic->f = instr(rdcc);
 			break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);

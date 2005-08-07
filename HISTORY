@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.883 2005-08-07 19:02:47 debug Exp $
+$Id: HISTORY,v 1.884 2005-08-07 20:43:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2149,3 +2149,5 @@ Changelog for GXemul:
 		Dyntrans: working on general "show trace tree" support.
 		The trace tree stuff now works with both the old MIPS code and
 		with newer dyntrans modes. :)
+		Continuing on Alpha-related stuff (trying to get *BSD to boot
+		a bit further, adding more instructions, etc).

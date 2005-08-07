@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.499 2005-08-07 09:26:06 debug Exp $
+ *  $Id: machine.c,v 1.500 2005-08-07 20:43:56 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4215,38 +4215,49 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 
 	case MACHINE_ALPHA:
-		machine->machine_name = "Alpha";
-
-		/*  TODO:  Most of these...
-		    They are used by NetBSD/alpha:  */
-
+		/*  TODO:  Most of these... They are used by NetBSD/alpha:  */
 		/*  a0 = First free Page Frame Number  */
-		cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
 		/*  a1 = PFN of current Level 1 page table  */
-		cpu->cd.alpha.r[ALPHA_A1] = 0;
 		/*  a2 = Bootinfo magic  */
-		cpu->cd.alpha.r[ALPHA_A2] = 0;
 		/*  a3 = Bootinfo pointer  */
-		cpu->cd.alpha.r[ALPHA_A3] = 0;
 		/*  a4 = Bootinfo version  */
+		cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
+		cpu->cd.alpha.r[ALPHA_A1] = 0;
+		cpu->cd.alpha.r[ALPHA_A2] = 0;
+		cpu->cd.alpha.r[ALPHA_A3] = 0;
 		cpu->cd.alpha.r[ALPHA_A4] = 0;
 
 		cpu->cd.alpha.r[ALPHA_SP] = 0xfffffc0000017ff0ULL;
 
 		{
-			/*  HWRPB: Hardware Restart Parameter Block  */
 			struct rpb rpb;
-			/*  CRB: Console Routine Block  */
 			struct crb crb;
+			struct ctb ctb;
 
+			/*  HWRPB: Hardware Restart Parameter Block  */
 			memset(&rpb, 0, sizeof(struct rpb));
-			memset(&crb, 0, sizeof(struct crb));
-
+			strlcpy((char *)&(rpb.rpb_magic), "HWRPB", 8);
 			store_64bit_word_in_host(cpu, (unsigned char *)
 			    &(rpb.rpb_size), sizeof(struct rpb));
 			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(rpb.rpb_page_size), 8192);
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(rpb.rpb_type), machine->machine_subtype);
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(rpb.rpb_cc_freq), 100000000);
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(rpb.rpb_ctb_off), CTB_ADDR - HWRPB_ADDR);
+			store_64bit_word_in_host(cpu, (unsigned char *)
 			    &(rpb.rpb_crb_off), CRB_ADDR - HWRPB_ADDR);
 
+			/*  CTB: Console Terminal Block  */
+			memset(&ctb, 0, sizeof(struct ctb));
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(ctb.ctb_term_type), machine->use_x11?
+			    CTB_GRAPHICS : CTB_PRINTERPORT);
+
+			/*  CRB: Console Routine Block  */
+			memset(&crb, 0, sizeof(struct crb));
 			store_64bit_word_in_host(cpu, (unsigned char *)
 			    &(crb.crb_v_dispatch), CRB_ADDR - 0x100);
 			store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
@@ -4257,10 +4268,18 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			 */
 			store_32bit_word(cpu, 0x10000, 0x3fffffe);
 
-			store_buf(cpu, HWRPB_ADDR, (char *)&rpb,
-			    sizeof(struct rpb));
-			store_buf(cpu, CRB_ADDR, (char *)&crb,
-			    sizeof(struct crb));
+			store_buf(cpu, HWRPB_ADDR, (char *)&rpb, sizeof(struct rpb));
+			store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));
+			store_buf(cpu, CRB_ADDR, (char *)&crb, sizeof(struct crb));
+		}
+
+		switch (machine->machine_subtype) {
+		case ST_DEC_3000_300:
+			machine->machine_name = "DEC 3000/300";
+			break;
+		default:fatal("Unimplemented Alpha machine type %i\n",
+			    machine->machine_subtype);
+			exit(1);
 		}
 
 		break;
@@ -5362,8 +5381,11 @@ void machine_init(void)
 	}
 
 	/*  Alpha:  */
-	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 0);
+	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 1);
 	me->aliases[0] = "alpha";
+	me->subtype[0] = machine_entry_subtype_new(
+	    "DEC 3000/300", ST_DEC_3000_300, 1);
+	me->subtype[0]->aliases[0] = "3000/300";
 	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

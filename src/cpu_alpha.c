@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.45 2005-08-07 09:26:06 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.46 2005-08-07 20:43:55 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -316,7 +316,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 {
 	uint32_t iw;
 	uint64_t offset, tmp;
-	int opcode, ra, rb, func, rc, imm, floating, rbrc = 0;
+	int opcode, ra, rb, func, rc, imm, floating, rbrc = 0, indir = 0;
 	char *symbol, *mnem = NULL;
 	char palcode_name[30];
 
@@ -582,6 +582,34 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("%s\tf%i,f%i\n", mnem, rb, rc);
 		else
 			debug("%s\tf%i,f%i,f%i\n", mnem, ra, rb, rc);
+		break;
+	case 0x18:
+		switch (iw & 0xffff) {
+		case 0x0000: mnem = "trapb"; break;
+		case 0x0400: mnem = "excb"; break;
+		case 0x4000: mnem = "mb"; break;
+		case 0x4400: mnem = "wmb"; break;
+		case 0x8000: mnem = "fetch"; indir = 1; break;
+		case 0xa000: mnem = "fetch_m"; indir = 1; break;
+		case 0xc000: mnem = "rpcc"; break;
+		case 0xe000: mnem = "rc"; break;
+		case 0xe800: mnem = "ecb"; indir = 1; break;
+		case 0xf000: mnem = "rs"; break;
+		case 0xf800: mnem = "wh64"; indir = 1; break;
+		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
+			    opcode, func);
+		}
+		if (mnem == NULL)
+			break;
+		debug("%s", mnem);
+		if ((iw & 0xffff) >= 0x8000) {
+			debug("\t");
+			if (indir)
+				debug("(%s)", alpha_regname[rb]);
+			else
+				debug("%s", alpha_regname[ra]);
+		}
+		debug("\n");
 		break;
 	case 0x1a:
 		tmp = iw & 0x3fff;

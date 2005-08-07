@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.498 2005-08-05 09:11:47 debug Exp $
+ *  $Id: machine.c,v 1.499 2005-08-07 09:26:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4231,6 +4231,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		/*  a4 = Bootinfo version  */
 		cpu->cd.alpha.r[ALPHA_A4] = 0;
 
+		cpu->cd.alpha.r[ALPHA_SP] = 0xfffffc0000017ff0ULL;
+
 		{
 			/*  HWRPB: Hardware Restart Parameter Block  */
 			struct rpb rpb;
@@ -4747,12 +4749,14 @@ void machine_dumpinfo(struct machine *m)
 	if (m->single_step_on_bad_addr)
 		debug("single-step on bad addresses\n");
 
-	if (m->bintrans_enable)
-		debug("bintrans enabled (%i MB cache)\n",
-		    (int) (m->bintrans_size / 1048576));
-	else
-		debug("bintrans disabled, other speedtricks %s\n",
-		    m->speed_tricks? "enabled" : "disabled");
+	if (m->arch == ARCH_MIPS) {
+		if (m->bintrans_enable)
+			debug("bintrans enabled (%i MB cache)\n",
+			    (int) (m->bintrans_size / 1048576));
+		else
+			debug("bintrans disabled, other speedtricks %s\n",
+			    m->speed_tricks? "enabled" : "disabled");
+	}
 
 	debug("clock: ");
 	if (m->automatic_clock_adjustment)

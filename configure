@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.145 2005-08-02 20:05:45 debug Exp $
+#  $Id: configure,v 1.146 2005-08-07 22:12:11 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -58,11 +58,20 @@
 #
 ###############################################################################
 
-ENABLEALPHA=YES
-ENABLEARM=YES
-ENABLEMIPS=YES
-ENABLEPPC=YES
-ENABLEX86=YES
+#  Figure out if this is a stable version (0.x.x).
+X=`basename \`pwd\`|cut -d \- -f 2-|cut -c1-2`
+if [ z"$X" = z0. ]; then
+	#  Stable:
+	ENABLEMIPS=YES
+else
+	#  Development:
+	ENABLEALPHA=YES
+	ENABLEARM=YES
+	ENABLEIA64=YES
+	ENABLEMIPS=YES
+	ENABLEPPC=YES
+	ENABLEX86=YES
+fi
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -89,6 +98,10 @@ if [ z"$*" != z ]; then
 			ENABLEARM=NO
 		else if [ z$a = z--enable-arm ]; then
 			ENABLEARM=YES
+		else if [ z$a = z--disable-ia64 ]; then
+			ENABLEIA64=NO
+		else if [ z$a = z--enable-ia64 ]; then
+			ENABLEIA64=YES
 		else if [ z$a = z--disable-mips ]; then
 			ENABLEMIPS=NO
 		else if [ z$a = z--enable-mips ]; then
@@ -111,13 +124,12 @@ if [ z"$*" != z ]; then
 			CACHES=YES
 		else if [ z$a = z--help ]; then
 			echo "usage: $0 [options]"
-			printf "\nDevelopment (debug) options:\n"
-			echo "  --always32         enable" \
-			    "ALWAYS_SIGNEXTEND_32 (for hunting down"
-			echo "                     32/64-bit bugs)"
+			printf "\nDevelopment (debug) options:\n\n"
+
+			echo "  --always32         enable ALWAYS_SIGNEXTEND_32"\
+			    "(for hunting down 32-bit bugs)"
 			echo "  --tracenull        enable" \
 			    "TRACE_NULL_CRASHES (for bug hunting)"
-			printf "\nGeneral options:\n"
 			echo "  --disable-bintrans configure without" \
 			    "bintrans, even if the host supports it"
 			printf "  --enable-caches    enable cache emulation"
@@ -125,15 +137,55 @@ if [ z"$*" != z ]; then
 			echo "  --enable-delays    enable instruction" \
 			    "latency/delay emulation"
 			echo "  --disable-x        don't include X11 support"
-			printf "\nCPU selection options:\n"
-			echo "  --disable-alpha    disable Alpha CPU emulation"
-			echo "  --disable-arm      disable ARM CPU emulation"
-			echo "  --disable-mips     disable MIPS CPU emulation"
-			echo "  --disable-ppc      disable PPC CPU emulation"
-			echo "  --disable-x86      disable X86 CPU emulation"
-			printf "\nMIPS-specific options:\n"
-			printf "  --enable-mips16    enable MIPS16 instruction"
-			printf " support (NOT YET)\n\n"
+
+			if [ z$ENABLEALPHA = zYES ]; then
+				printf "  --disable-alpha    disable "
+			else
+				printf "  --enable-alpha     enable "
+			fi
+			printf "Alpha CPU emulation\n"
+
+			if [ z$ENABLEARM = zYES ]; then
+				printf "  --disable-arm      disable "
+			else
+				printf "  --enable-arm       enable "
+			fi
+			printf "ARM CPU emulation\n"
+
+			if [ z$ENABLEIA64 = zYES ]; then
+				printf "  --disable-ia64     disable "
+			else
+				printf "  --enable-ia64      enable "
+			fi
+			printf "Alpha CPU emulation\n"
+
+			if [ z$ENABLEMIPS = zYES ]; then
+				printf "  --disable-mips     disable "
+			else
+				printf "  --enable-mips      enable "
+			fi
+			printf "MIPS CPU emulation\n"
+
+			if [ z$ENABLEPPC = zYES ]; then
+				printf "  --disable-ppc      disable "
+			else
+				printf "  --enable-ppc       enable "
+			fi
+			printf "POWER/PPC CPU emulation\n"
+
+			if [ z$ENABLEX86 = zYES ]; then
+				printf "  --disable-x86      disable "
+			else
+				printf "  --enable-x86       enable "
+			fi
+			printf "x86 CPU emulation\n"
+
+			echo "  --enable-mips16    enable MIPS16 support"
+
+			printf "\nPretty much all of these options are only"
+			printf " meaningful during the development of\nthe"
+			printf " emulator, and should not be used when "
+			printf "compiling a stable version.\n"
 			exit
 		else
 			echo "Invalid option: $a"
@@ -141,7 +193,7 @@ if [ z"$*" != z ]; then
 			    "available options."
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -187,6 +239,9 @@ if [ z$ENABLEALPHA = zYES ]; then
 fi
 if [ z$ENABLEARM = zYES ]; then
 	printf "#define ENABLE_ARM\n" >> config.h
+fi
+if [ z$ENABLEIA64 = zYES ]; then
+	printf "#define ENABLE_IA64\n" >> config.h
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h

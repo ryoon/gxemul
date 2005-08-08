@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.48 2005-08-08 10:25:59 debug Exp $
+$Id: misc.html,v 1.49 2005-08-08 20:19:30 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -124,6 +124,12 @@ mind:
 	not be sufficient. Again, this was done as "lazy hacks", and pretty
 	much assumes that the OS being emulated is already developed
 	and bug-free.
+
+	<p>
+	<li>Caches. There is no cache emulation in GXemul right now. Caches
+	for R2000/R3000 are faked well enough to run NetBSD, Ultrix, etc
+	in the DECstation emulation mode, but other than that, cache
+	operations are treated as nops.
 </ul>
 
 <p>The bottom line is that GXemul can be useful as yet another way to test 

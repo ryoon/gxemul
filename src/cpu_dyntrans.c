@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.20 2005-08-08 05:20:17 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.21 2005-08-08 06:00:08 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -187,6 +187,10 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 	/*
 	 *  TODO:  The number of arguments and the symbol type of each
 	 *  argument should be taken from the symbol table, in some way.
+	 *
+	 *  The code here does a kind of "heuristic guess" regarding what the
+	 *  argument values might mean. Sometimes the output looks weird, but
+	 *  usually it looks good enough.
 	 *
 	 *  Print ".." afterwards to show that there might be more arguments
 	 *  than were passed in register.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.174 2005-07-31 08:47:56 debug Exp $
+ *  $Id: bintrans.c,v 1.175 2005-08-08 06:00:07 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -81,9 +81,6 @@
  *
  *	o)  Load/stores: TODO: Comment.
  *
- *  Testing:  Running regression tests with and without the binary translator
- *  enabled should obviously result in the exact same results, or something is
- *  wrong.
  *
  *  The general idea is something like this:
  *

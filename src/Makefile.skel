@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.71 2005-08-07 23:36:48 debug Exp $
+#  $Id: Makefile.skel,v 1.72 2005-08-08 05:20:17 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -89,7 +89,7 @@ tmp_ia64_tail.c:
 
 ###############################################################################
 
-cpu_mips.o: cpu_mips.c cpu_mips16.c memory_mips.c
+cpu_mips.o: cpu_mips.c cpu_mips16.c cpu_dyntrans.c memory_mips.c
 
 memory_mips.c: memory_rw.c memory_mips_v2p.c
 

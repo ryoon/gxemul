@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.219 2005-08-07 23:36:48 debug Exp $
+ *  $Id: emul.c,v 1.220 2005-08-08 05:20:17 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -935,9 +935,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		    m->userland_emul, NULL, NULL, NULL);
 
 		switch (m->arch) {
+#ifdef ENABLE_ALPHA
 		case ARCH_ALPHA:
 			cpu->memory_rw = alpha_userland_memory_rw;
 			break;
+#endif
 		default:cpu->memory_rw = userland_memory_rw;
 		}
 	}

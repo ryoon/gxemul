@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.19 2005-08-07 23:36:48 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.20 2005-08-08 05:20:17 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -174,6 +174,8 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 {
         char strbuf[50];
+	char *symbol;
+	uint64_t ot;
 	int x, n_args_to_print =
 #ifdef DYNTRANS_ALPHA
 	    6
@@ -208,11 +210,15 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 #endif
 		    + x];
 
+		symbol = get_symbol_name(&cpu->machine->symbol_context, d, &ot);
+
 		if (d > -256 && d < 256)
 			fatal("%i", (int)d);
 		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
 			fatal("\"%s\"", memory_conv_to_string(cpu,
 			    cpu->mem, d, strbuf, sizeof(strbuf)));
+		else if (symbol != NULL && ot == 0)
+			fatal("&%s", symbol);
 		else {
 			if (cpu->is_32bit)
 				fatal("0x%x", (int)d);

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.146 2005-08-07 22:12:11 debug Exp $
+#  $Id: configure,v 1.147 2005-08-08 06:00:05 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1132,122 +1132,6 @@ echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "" >> _Makefile.header
-
-
-printf "Regression test setup: (not really needed to build gxemul)\n"
-
-
-#  64-bit MIPS cross-compiler:
-
-MIPS=''
-if [ z$ENABLEMIPS = zYES ]; then
-	printf "Checking for a GNU cross-compiler for 64-bit MIPS... "
-	echo 'int f(int x) { return x; }' > _testprog.c
-
-	for MIPS_TRY in mips64-unknown-elf mips64-elf mips-unknown-elf64; do
-		printf '#!/bin/sh\n'$MIPS_TRY'-gcc _testprog.c -c\n' > _test.sh
-		chmod 755 _test.sh
-		rm -f _testprog.o
-		./_test.sh > /dev/null 2> /dev/null
-		if [ -f _testprog.o ]; then
-			MIPS=$MIPS_TRY
-			break
-		fi
-		rm -f _testprog.o
-	done
-
-	if [ z$MIPS = z ]; then
-		echo "none"
-	else
-		echo $MIPS"-gcc"
-	fi
-fi
-rm -f _testprog* _test.sh
-
-echo "MIPS_CC="$MIPS"-gcc -g -O2 -fno-builtin -fschedule-insns" \
-    "-mips64 -mabi=64" >> _Makefile.header
-echo "MIPS_AS="$MIPS"-as -mabi=64 -mips64" >> _Makefile.header
-echo "MIPS_LD="$MIPS"-ld -Ttext 0xa800000000030000 -e main" \
-    "--oformat=elf64-bigmips" >> _Makefile.header
-echo "" >> _Makefile.header
-
-
-##  PPC64 cross-assembler:
-#
-#PPC=''
-#if [ z$ENABLEPPC = zYES ]; then
-#	printf "Checking for a GNU cross-assembler for 64-bit PPC... "
-#	echo 'nop' > _testprog.s
-#
-#	for a in ppc64 powerpc64; do
-#	  for b in unknown; do
-#	    for c in elf elf64 linux linux64 aix aix5; do
-#		PPC_TRY=$a-$b-$c
-#		printf '#!/bin/sh\n'$PPC_TRY'-as _testprog.s' > _test.sh
-#		printf ' -o _testprog.o\n' >> _test.sh
-#		chmod 755 _test.sh
-#		rm -f _testprog.o
-#		./_test.sh > /dev/null 2> /dev/null
-#		if [ -f _testprog.o ]; then
-#			PPC=$PPC_TRY
-#			break
-#		fi
-#		rm -f _testprog.o
-#	    done
-#	  done
-#	done
-#
-#	if [ z$PPC = z ]; then
-#		echo "none"
-#	else
-#		echo $PPC"-as"
-#	fi
-#fi
-#rm -f _testprog* _test.sh
-#
-##echo "PPC_CC="$PPC"-gcc -g -O2 -fno-builtin" >> _Makefile.header
-#echo "PPC_AS="$PPC"-as" >> _Makefile.header
-#echo "PPC_LD="$PPC"-ld -e main" >> _Makefile.header
-#echo "" >> _Makefile.header
-
-
-##  SPARC64 cross-compiler:
-#
-#SPARC=''
-#if [ z$ENABLESPARC = zYES ]; then
-#	printf "Checking for a GNU cross-compiler for 64-bit SPARC... "
-#	echo 'int f(int x) { return x; }' > _testprog.c
-#
-#	for a in sparc64; do
-#	  for b in unknown; do
-#	    for c in elf elf64; do
-#		SPARC_TRY=$a-$b-$c
-#		printf '#!/bin/sh\n'$SPARC_TRY'-gcc _testprog.c -c' > _test.sh
-#		printf ' -o _testprog.o\n' >> _test.sh
-#		chmod 755 _test.sh
-#		rm -f _testprog.o
-#		./_test.sh > /dev/null 2> /dev/null
-#		if [ -f _testprog.o ]; then
-#			SPARC=$SPARC_TRY
-#			break
-#		fi
-#		rm -f _testprog.o
-#	    done
-#	  done
-#	done
-#
-#	if [ z$SPARC = z ]; then
-#		echo "none"
-#	else
-#		echo $SPARC"-gcc"
-#	fi
-#fi
-#rm -f _testprog* _test.sh
-#
-#echo "SPARC_CC="$SPARC"-gcc -g -O2 -fno-builtin" >> _Makefile.header
-#echo "SPARC_AS="$SPARC"-as" >> _Makefile.header
-#echo "SPARC_LD="$SPARC"-ld -e main" >> _Makefile.header
-#echo "" >> _Makefile.header
 
 
 #  Create the Makefiles:

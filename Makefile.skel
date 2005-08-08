@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.30 2005-05-25 06:41:19 debug Exp $
+#  $Id: Makefile.skel,v 1.31 2005-08-08 06:00:05 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -13,9 +13,6 @@ all: build
 build:
 	cd src; $(MAKE); cd ..
 	$(CC) $(COPTIM) src/*.o src/devices/*.o $(LIBS) -o $(BIN)
-
-regtest: build
-	cd tests; $(MAKE) run_tests; cd ..
 
 install: build
 	@echo

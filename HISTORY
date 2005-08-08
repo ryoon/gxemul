@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.885 2005-08-07 23:36:46 debug Exp $
+$Id: HISTORY,v 1.886 2005-08-08 06:00:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2153,3 +2153,5 @@ Changelog for GXemul:
 		a bit further, adding more instructions, etc).
 20050808	Adding a dummy IA64 cpu family, and continuing the refactoring
 		of the dyntrans system.
+		Removing the regression test stuff, because it was more or
+		less useless.

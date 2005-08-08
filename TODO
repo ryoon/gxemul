@@ -1,4 +1,4 @@
-$Id: TODO,v 1.156 2005-08-07 22:14:11 debug Exp $
+$Id: TODO,v 1.157 2005-08-08 06:00:05 debug Exp $
 
 ===============================================================================
 
@@ -86,7 +86,7 @@ Low priority stuff:
 
 	MIPS CPU emulation:
 		o)  Instructions:
-			o)  Regression tests (see tests/README for more info):
+			o)  All ISAs:
 				o)  Floating point exception handling, and
 					add more instructions.
 				o)  Finish the MIPS16 translator, and test it!
@@ -177,8 +177,8 @@ Low priority stuff:
 		    world in a more generic way, or even to other emulated
 		    machines(!)
 
-	Regression tests:  (Should be totally rewritten.)
-		o)  see tests/
+	Regression tests.  (Needs to be totally rewritten, the old framework
+		was removed because it was useless.)
 
 	Save state of the whole emulated machine, to be able to load it back
 		in later?  (Memory, all device's states, all registers and

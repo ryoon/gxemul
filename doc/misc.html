@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.47 2005-08-03 21:25:45 debug Exp $
+$Id: misc.html,v 1.48 2005-08-08 10:25:59 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -48,7 +48,8 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#networking">Networking</a>
-  <li><a href="#portmips">Porting operating systems to MIPS using GXemul</a>
+  <li><a href="#devel">Writing operating system code, or
+	developing firmware, using GXemul</a>
   <li><a href="#compilercontruct">Using GXemul in compiler contruction courses</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
   <li><a href="#largeimages">How to extract large gzipped disk images</a>
@@ -88,28 +89,45 @@ activities, but not everything works yet.</font>
 
 
 <p><br>
-<a name="portmips"></a>
-<h3>Porting operating systems to MIPS using GXemul:</h3>
+<a name="devel"></a>
+<h3>Writing operating system code, or developing firmware, using GXemul:</h3>
 
-Is this a good idea?  The answer is yes and no, depending on what you are
-trying to port to. If you are developing an operating system or operating
-system kernel of your own, and wish to target MIPS-like systems in general,
-then the answer might be yes, for experimental purposes.
+Is this a good idea?  The answer is yes and no, depending on the level of
+detail you need in your simulations. If you are developing an operating
+system or operating system kernel of your own, and wish to target
+MIPS-like systems in general, then the answer might be yes, for
+experimental purposes.
 
-<p>
-However, if you think that you can port an operating system
-to, say, the Silicon Graphics machine mode of GXemul and hope that your
-operating system will run on a real SGI machine, then you will most
-likely fail. GXemul simply does not emulate things well enough for that to work.
-Another example would be specific CPU details; if your code depends on,
-say, R10000 specifics, chances are that GXemul will not be sufficient.
+<p>Some examples of things that <i>don't</i> work, that you should keep in 
+mind:
 
-<p>
-In many cases, hardware devices in GXemul are only implemented well
-enough to fool eg. NetBSD that they are working correctly, while in
-fact they don't work very much at all.  Please keep this in mind, if you plan
-to use GXemul when porting your code to MIPS.
+<ul>
+	<li>Porting code to a specific machine mode, e.g. a Silicon Graphics
+	machine, using GXemul, will not necessarily cause the code to
+	work on a real machine. Sometimes code works in GXemul which doesn't
+	work on real hardware, sometimes it's the other way around.
 
+	<p>
+	<li>GXemul contains bugs, and many things are not yet implemented.
+
+	<p>
+	<li>I have only implemented devices in GXemul to the degree that
+	NetBSD, OpenBSD, etc, don't complain too much. One way to say it
+	is that the device implementations are "lazy hacks", based on the
+	assumption that the emulated OS is already developed and bug-free.
+	They are not intended to be used for development of new OS code,
+	so if you do that, then be prepared for bugs and inconsitencies.
+
+	<p>
+	<li>CPU details in GXemul are usually wrong. If your code depends
+	on, say, R10000 or MIPS64 specifics, chances are that GXemul will
+	not be sufficient. Again, this was done as "lazy hacks", and pretty
+	much assumes that the OS being emulated is already developed
+	and bug-free.
+</ul>
+
+<p>The bottom line is that GXemul can be useful as yet another way to test 
+your code during development, but it should not be fully relied on.
 
 
 

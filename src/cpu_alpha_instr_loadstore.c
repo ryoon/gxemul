@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.8 2005-07-22 22:18:15 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.9 2005-08-08 20:19:43 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -115,6 +115,13 @@ static void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 		fatal("store failed: TODO\n");
 		exit(1);
 	}
+
+#ifdef LS_LLSC
+#ifndef LS_LOAD
+	*((uint64_t *)ic->arg[0]) = 1;
+#endif
+#endif
+
 #endif
 }
 #endif
@@ -134,6 +141,24 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 
 #ifdef LS_UNALIGNED
 	addr &= ~7;
+#endif
+
+#ifdef LS_LLSC
+#ifdef LS_LOAD
+	/*  TODO: cache-line size!  */
+	cpu->cd.alpha.load_linked_addr = addr & ~63;
+	cpu->cd.alpha.ll_flag = 1;
+#else
+	/*  TODO: only invalidate per cache line, not everything!  */
+	if (cpu->cd.alpha.ll_flag == 1) {
+		int i;
+		for (i=0; i<cpu->machine->ncpus; i++)
+			cpu->machine->cpus[i]->cd.alpha.ll_flag = 0;
+	} else {
+		*((uint64_t *)ic->arg[0]) = 0;
+		return;
+	}
+#endif
 #endif
 
 	first = addr >> ALPHA_TOPSHIFT;
@@ -242,6 +267,13 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 			*((uint64_t *) (page + c)) = d;
 #endif
 #endif
+
+#ifdef LS_LLSC
+#ifndef LS_LOAD
+			*((uint64_t *)ic->arg[0]) = 1;
+#endif
+#endif
+
 #endif	/*  !LS_LOAD  */
 		} else
 			LS_GENERIC_N(cpu, ic);
@@ -326,6 +358,13 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 			*((uint64_t *) (page + c)) = d;
 #endif
 #endif
+
+#ifdef LS_LLSC
+#ifndef LS_LOAD
+			*((uint64_t *)ic->arg[0]) = 1;
+#endif
+#endif
+
 #endif	/*  !LS_LOAD  */
 		} else
 			LS_GENERIC_N(cpu, ic);

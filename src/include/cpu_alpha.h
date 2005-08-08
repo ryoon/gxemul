@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.19 2005-08-07 20:43:57 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.20 2005-08-08 20:19:44 debug Exp $
  */
 
 #include "misc.h"
@@ -121,6 +121,8 @@ struct alpha_cpu {
 	/*  Misc.:  */
 	uint64_t		pcc;			/*  Cycle Counter  */
 	uint64_t		ipl;
+	uint64_t		load_linked_addr;
+	int			ll_flag;
 
 
 	/*

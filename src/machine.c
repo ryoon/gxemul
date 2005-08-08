@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.502 2005-08-07 23:36:48 debug Exp $
+ *  $Id: machine.c,v 1.503 2005-08-08 20:19:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4997,6 +4997,8 @@ void machine_list_available_types_and_cpus(void)
 	debug("\n");
 
 	useremul_list_emuls();
+	debug("Userland emulation works for programs with the complexity"
+	    " of Hello World,\nbut not much more.\n");
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.36 2005-08-07 20:43:56 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.37 2005-08-08 20:19:43 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -660,7 +660,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
-	int i, opcode, ra, rb, func, rc, imm, load, loadstore_type, fp;
+	int i, opcode, ra, rb, func, rc, imm, load, loadstore_type, fp, llsc;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)
@@ -762,9 +762,13 @@ X(to_be_translated)
 	case 0x27:
 	case 0x28:
 	case 0x29:
+	case 0x2a:
+	case 0x2b:
 	case 0x2c:
 	case 0x2d:
-		loadstore_type = 0; fp = 0; load = 0;
+	case 0x2e:
+	case 0x2f:
+		loadstore_type = 0; fp = 0; load = 0; llsc = 0;
 		switch (opcode) {
 		case 0x0a: loadstore_type = 0; load = 1; break;	/*  ldbu  */
 		case 0x0c: loadstore_type = 1; load = 1; break;	/*  ldwu  */
@@ -776,12 +780,19 @@ X(to_be_translated)
 		case 0x27: loadstore_type = 3; fp = 1; break;	/*  stt  */
 		case 0x28: loadstore_type = 2; load = 1; break;	/*  ldl  */
 		case 0x29: loadstore_type = 3; load = 1; break;	/*  ldq  */
+		case 0x2a: loadstore_type = 2; load = llsc = 1; break;/* ldl_l*/
+		case 0x2b: loadstore_type = 3; load = llsc = 1; break;/* ldq_l*/
 		case 0x2c: loadstore_type = 2; break;		/*  stl  */
 		case 0x2d: loadstore_type = 3; break;		/*  stq  */
+		case 0x2e: loadstore_type = 2; llsc = 1; break;	/*  stl_c  */
+		case 0x2f: loadstore_type = 3; llsc = 1; break;	/*  stq_c  */
 		}
-		ic->f = alpha_loadstore[8*load + (imm==0? 4 : 0)
-		    + loadstore_type
-		    + (cpu->machine->dyntrans_alignment_check? 16:0)];
+		ic->f = alpha_loadstore[
+		    loadstore_type + (imm==0? 4 : 0) + 8 * load
+		    + (cpu->machine->dyntrans_alignment_check? 16:0)
+		    + 32 * llsc];
+		/*  Load to the zero register is treated as a prefetch
+		    hint. It is ignored here.  */
 		if (load && ra == ALPHA_ZERO) {
 			ic->f = instr(nop);
 			break;

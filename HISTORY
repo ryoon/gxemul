@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.886 2005-08-08 06:00:05 debug Exp $
+$Id: HISTORY,v 1.887 2005-08-08 20:19:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2155,3 +2155,6 @@ Changelog for GXemul:
 		of the dyntrans system.
 		Removing the regression test stuff, because it was more or
 		less useless.
+		Adding loadlinked/storeconditional type instructions to the
+		Alpha emulation. (Needed for Linux/alpha. Not very well tested
+		yet.)

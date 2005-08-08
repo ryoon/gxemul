@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.47 2005-08-07 23:36:48 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.48 2005-08-08 20:19:43 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -348,8 +348,12 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x27:
 	case 0x28:
 	case 0x29:
+	case 0x2a:
+	case 0x2b:
 	case 0x2c:
 	case 0x2d:
+	case 0x2e:
+	case 0x2f:
 		floating = 0;
 		switch (opcode) {
 		case 0x0a: mnem = "ldbu"; break;
@@ -368,8 +372,12 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x27: mnem = "stt"; floating = 1; break;
 		case 0x28: mnem = "ldl"; break;
 		case 0x29: mnem = "ldq"; break;
+		case 0x2a: mnem = "ldl_l"; break;
+		case 0x2b: mnem = "ldq_l"; break;
 		case 0x2c: mnem = "stl"; break;
 		case 0x2d: mnem = "stq"; break;
+		case 0x2e: mnem = "stl_c"; break;
+		case 0x2f: mnem = "stq_c"; break;
 		}
 		if (opcode == 0x0b && ra == ALPHA_ZERO) {
 			debug("unop");

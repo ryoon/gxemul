@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.46 2005-08-07 17:42:02 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.47 2005-08-08 06:16:49 debug Exp $
  *
  *  ARM instructions.
  *
@@ -227,7 +227,7 @@ X(bl)
 	cpu->cd.arm.r[ARM_LR] = lr;
 
 	/*  Calculate new PC from this instruction + arg[0]  */
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr + (int32_t)ic->arg[0];
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr - 4 + (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
 	arm_pc_to_pointers(cpu);
@@ -255,7 +255,7 @@ X(bl_trace)
 	cpu->cd.arm.r[ARM_LR] = lr;
 
 	/*  Calculate new PC from this instruction + arg[0]  */
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr + (int32_t)ic->arg[0];
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr - 4 + (int32_t)ic->arg[0];
 
 	cpu_functioncall_trace(cpu, cpu->pc);
 

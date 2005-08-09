@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.310 2005-08-09 17:18:22 debug Exp $
+ *  $Id: cpu.c,v 1.311 2005-08-09 22:24:47 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -650,11 +650,29 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
 void cpu_init(void)
 {
 	/*  Note: These are registered in alphabetic order.  */
+
+#ifdef ENABLE_ALPHA
 	add_cpu_family(alpha_cpu_family_init, ARCH_ALPHA);
-	add_cpu_family(arm_cpu_family_init,   ARCH_ARM);
-	add_cpu_family(ia64_cpu_family_init,  ARCH_IA64);
-	add_cpu_family(mips_cpu_family_init,  ARCH_MIPS);
-	add_cpu_family(ppc_cpu_family_init,   ARCH_PPC);
-	add_cpu_family(x86_cpu_family_init,   ARCH_X86);
+#endif
+
+#ifdef ENABLE_ARM
+	add_cpu_family(arm_cpu_family_init, ARCH_ARM);
+#endif
+
+#ifdef ENABLE_IA64
+	add_cpu_family(ia64_cpu_family_init, ARCH_IA64);
+#endif
+
+#ifdef ENABLE_MIPS
+	add_cpu_family(mips_cpu_family_init, ARCH_MIPS);
+#endif
+
+#ifdef ENABLE_PPC
+	add_cpu_family(ppc_cpu_family_init, ARCH_PPC);
+#endif
+
+#ifdef ENABLE_X86
+	add_cpu_family(x86_cpu_family_init, ARCH_X86);
+#endif
 }
 

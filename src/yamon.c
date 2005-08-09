@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.3 2005-06-21 17:42:08 debug Exp $
+ *  $Id: yamon.c,v 1.4 2005-08-09 22:24:47 debug Exp $
  *
  *  YAMON emulation.
  */
@@ -42,6 +42,8 @@
 #include "memory.h"
 #include "misc.h"
 
+
+#ifdef ENABLE_MIPS
 
 /*
  *  mem_readchar():
@@ -97,3 +99,4 @@ int yamon_emul(struct cpu *cpu)
 	return 1;
 }
 
+#endif	/*  ENABLE_MIPS  */

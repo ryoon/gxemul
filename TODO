@@ -1,4 +1,4 @@
-$Id: TODO,v 1.157 2005-08-08 06:00:05 debug Exp $
+$Id: TODO,v 1.158 2005-08-09 18:29:19 debug Exp $
 
 ===============================================================================
 
@@ -14,6 +14,8 @@ MIPS bintrans:
 dyntrans:
 	x)  memory write protection for ARM, but NOT for Alpha (because
 		it has the IMB instruction... hm)
+
+	x)  call/return address cache
 
 	x)  instr_call sequence analysis support? (Useful for
 		handtuning combinations.)

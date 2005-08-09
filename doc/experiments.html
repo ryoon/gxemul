@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.88 2005-08-05 08:01:08 debug Exp $
+$Id: experiments.html,v 1.89 2005-08-09 18:29:20 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -494,6 +494,10 @@ interrupt 6. Whenever an IPI is "sent", interrupt 6 is asserted on the
 target CPU(s), and the IPI number is added last in the IPI queue for that
 CPU. It is then up to that CPU to read from offset <tt>0x00c0</tt>, to
 figure out what kind of IPI it was.
+
+<p>A simple tutorial on how to use the <tt>disk</tt> device, if not clear 
+from the description above, can be found here: <a 
+href="test_disk.c"><tt>test_disk.c</tt></a>
 
 
 

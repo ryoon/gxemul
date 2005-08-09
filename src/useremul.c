@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.57 2005-08-07 08:26:11 debug Exp $
+ *  $Id: useremul.c,v 1.58 2005-08-09 08:56:42 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -545,7 +545,8 @@ int64_t useremul_getrusage(struct cpu *cpu, int64_t *errnop,
 	struct rusage rusage;
 	debug("[ getrusage(%i,0x%llx) ]\n", (int)arg0, (long long)arg1);
 	res = getrusage(arg0, &rusage);
-	/*  TODO: convert rusage into emulated memory!  */
+	fatal("TODO: convert rusage into emulated memory!\n");
+
 	return res;
 }
 
@@ -564,6 +565,27 @@ int64_t useremul_fstat(struct cpu *cpu, int64_t *errnop,
 		*errnop = errno;
 	else {
 		fatal("TODO: convert sb into emulated memory!\n");
+
+		store_32bit_word(cpu, arg1 + 0, sb.st_dev);
+		store_32bit_word(cpu, arg1 + 4, sb.st_ino);
+/*		store_16bit_word(cpu, arg1 + 8, sb.st_mode);
+*/		store_16bit_word(cpu, arg1 + 10, sb.st_nlink);
+		store_32bit_word(cpu, arg1 + 12, sb.st_uid);
+		store_32bit_word(cpu, arg1 + 16, sb.st_gid);
+		store_32bit_word(cpu, arg1 + 20, sb.st_rdev);
+
+		store_64bit_word(cpu, arg1 + 24, sb.st_atimespec.tv_sec);
+		store_64bit_word(cpu, arg1 + 32, sb.st_atimespec.tv_nsec);
+		store_64bit_word(cpu, arg1 + 40, sb.st_mtimespec.tv_sec);
+		store_64bit_word(cpu, arg1 + 48, sb.st_mtimespec.tv_nsec);
+		store_64bit_word(cpu, arg1 + 56, sb.st_ctimespec.tv_sec);
+		store_64bit_word(cpu, arg1 + 64, sb.st_ctimespec.tv_nsec);
+
+		store_64bit_word(cpu, arg1 + 72, sb.st_size);
+		store_64bit_word(cpu, arg1 + 80, sb.st_blocks);
+		store_64bit_word(cpu, arg1 + 88, sb.st_blksize);
+		store_64bit_word(cpu, arg1 + 92, sb.st_flags);
+		store_64bit_word(cpu, arg1 + 96, sb.st_gen);
 
 	}
 	return res;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.39 2005-08-07 23:36:49 debug Exp $
+ *  $Id: cpu.h,v 1.40 2005-08-09 06:18:29 debug Exp $
  *
  *  See cpu.c.
  */
@@ -81,7 +81,8 @@ struct cpu_family {
 	int			(*interrupt)(struct cpu *cpu, uint64_t irq_nr);
 	int			(*interrupt_ack)(struct cpu *cpu,
 				    uint64_t irq_nr);
-	void			(*functioncall_trace)(struct cpu *, uint64_t f);
+	void			(*functioncall_trace)(struct cpu *,
+				    uint64_t f, int n_args);
 };
 
 #ifdef TRACE_NULL_CRASHES

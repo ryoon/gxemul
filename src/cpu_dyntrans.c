@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.23 2005-08-09 06:01:36 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.24 2005-08-09 06:18:28 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -171,7 +171,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
  *  like    <f()>  or  <0x1234()>   on a function call. It is up to this
  *  function to print the arguments passed.
  */
-void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
+void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 {
         char strbuf[50];
 	char *symbol;
@@ -184,10 +184,9 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 #endif
 	    ;
 
-	x = get_symbol_n_args(&cpu->machine->symbol_context, NULL, f);
-	if (x >= 0 && x <= n_args_to_print) {
+	if (n_args >= 0 && n_args <= n_args_to_print) {
 		print_dots = 0;
-		n_args_to_print = x;
+		n_args_to_print = n_args;
 	}
 
 	/*

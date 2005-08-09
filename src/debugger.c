@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.118 2005-08-09 05:19:46 debug Exp $
+ *  $Id: debugger.c,v 1.119 2005-08-09 06:01:36 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -893,23 +893,47 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_ninstrs(struct machine *m, char *cmd_line)
 {
-	if (*cmd_line == '\0')
-		goto printstate;
+	int i, toggle = 1;
+	int previous_mode = m->show_nr_of_instructions;
 
-	while (*cmd_line == ' ')
-		cmd_line++;
+	if (cmd_line[0] != '\0') {
+		while (cmd_line[0] != '\0' && cmd_line[0] == ' ')
+			cmd_line ++;
+		switch (cmd_line[0]) {
+		case '0':
+			toggle = 0;
+			m->show_nr_of_instructions = 0;
+			break;
+		case '1':
+			toggle = 0;
+			m->show_nr_of_instructions = 1;
+			break;
+		case 'o':
+		case 'O':
+			toggle = 0;
+			switch (cmd_line[1]) {
+			case 'n':
+			case 'N':
+				m->show_nr_of_instructions = 1;
+				break;
+			default:
+				m->show_nr_of_instructions = 0;
+			}
+			break;
+		default:
+			printf("syntax: trace [on|off]\n");
+			return;
+		}
+	}
 
-	/*  Note: len 3 and 4, to include the NUL char.  */
-	if (strncasecmp(cmd_line, "on", 3) == 0)
-		m->show_nr_of_instructions = 1;
-	else if (strncasecmp(cmd_line, "off", 4) == 0)
-		m->show_nr_of_instructions = 0;
-	else
-		printf("syntax: ninstrs [on|off]\n");
+	if (toggle)
+		m->show_nr_of_instructions = !m->show_nr_of_instructions;
 
-printstate:
-	printf("show_nr_of_instructions is now %s\n",
-	     m->show_nr_of_instructions? "ON" : "OFF");
+	printf("show_nr_of_instructions = %s",
+	    m->show_nr_of_instructions? "ON" : "OFF");
+	if (m->show_nr_of_instructions != previous_mode)
+		printf("  (was: %s)", previous_mode? "ON" : "OFF");
+	printf("\n");
 }
 
 
@@ -1581,7 +1605,7 @@ static struct cmd cmds[] = {
 		"print a summary of the current machine" },
 
 	{ "ninstrs", "[on|off]", 0, debugger_cmd_ninstrs,
-		"set (or unset) show_nr_of_instructions" },
+		"toggle (set or unset) show_nr_of_instructions" },
 
 	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
 		"show opcode statistics" },

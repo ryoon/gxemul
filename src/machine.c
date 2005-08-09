@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.503 2005-08-08 20:19:43 debug Exp $
+ *  $Id: machine.c,v 1.504 2005-08-09 06:01:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4236,6 +4236,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 			/*  HWRPB: Hardware Restart Parameter Block  */
 			memset(&rpb, 0, sizeof(struct rpb));
+			store_64bit_word_in_host(cpu, (unsigned char *)
+			    &(rpb.rpb_phys), HWRPB_ADDR);
 			strlcpy((char *)&(rpb.rpb_magic), "HWRPB", 8);
 			store_64bit_word_in_host(cpu, (unsigned char *)
 			    &(rpb.rpb_size), sizeof(struct rpb));

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.505 2005-08-09 17:18:22 debug Exp $
+ *  $Id: machine.c,v 1.506 2005-08-09 19:12:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1520,6 +1520,7 @@ void machine_setup(struct machine *machine)
 		printf("\nNo emulation type specified.\n");
 		exit(1);
 
+#ifdef ENABLE_MIPS
 	case MACHINE_BAREMIPS:
 		/*
 		 *  A "bare" MIPS test machine.
@@ -3991,7 +3992,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0xfff0;
 
 		break;
+#endif	/*  ENABLE_MIPS  */
 
+#ifdef ENABLE_PPC
 	case MACHINE_BAREPPC:
 		/*
 		 *  A "bare" PPC machine.
@@ -4171,7 +4174,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		}
 
 		break;
+#endif	/*  ENABLE_PPC  */
 
+#ifdef ENABLE_SPARC
 	case MACHINE_BARESPARC:
 		/*  A bare SPARC machine, with no devices.  */
 		machine->machine_name = "\"Bare\" SPARC machine";
@@ -4184,7 +4189,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 */
 		machine->machine_name = "Sun Ultra1";
 		break;
+#endif	/*  ENABLE_SPARC  */
 
+#ifdef ENABLE_ALPHA
 	case MACHINE_BAREALPHA:
 		machine->machine_name = "\"Bare\" Alpha machine";
 		break;
@@ -4285,7 +4292,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		}
 
 		break;
+#endif	/*  ENABLE_ALPHA  */
 
+#ifdef ENABLE_ARM
 	case MACHINE_BAREARM:
 		machine->machine_name = "\"Bare\" ARM machine";
 		break;
@@ -4323,7 +4332,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 8,
 		    0xeafffffe);
 		break;
+#endif	/*  ENABLE_ARM  */
 
+#ifdef ENABLE_IA64
 	case MACHINE_BAREIA64:
 		machine->machine_name = "\"Bare\" IA64 machine";
 		break;
@@ -4352,7 +4363,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		device_add(machine, tmpstr);
 
 		break;
+#endif	/*  ENABLE_IA64  */
 
+#ifdef ENABLE_X86
 	case MACHINE_BAREX86:
 		machine->machine_name = "\"Bare\" x86 machine";
 		break;
@@ -4429,6 +4442,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			    "-------------------------------------"
 			    "------------------------------------------\n");
 		break;
+#endif	/*  ENABLE_X86  */
 
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);

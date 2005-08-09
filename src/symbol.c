@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.27 2005-07-13 11:13:44 debug Exp $
+ *  $Id: symbol.c,v 1.28 2005-08-09 05:39:51 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -90,6 +90,53 @@ int get_symbol_addr(struct symbol_context *sc, char *symbol, uint64_t *addr)
 	}
 
 	return 0;
+}
+
+
+/*
+ *  get_symbol_n_args():
+ *
+ *  Given a symbol name or address of a function, return the number of
+ *  arguments that function wants. If symbol is non-NULL, then symbol is
+ *  used, otherwise addr is used.
+ *
+ *  Return value is -1 if the function is unknown. Return values of >= 0
+ *  signifies the number of function arguments.
+ */
+int get_symbol_n_args(struct symbol_context *sc, char *symbol, uint64_t addr)
+{
+	/*
+	 *  TODO:
+	 *
+	 *  This functionality hasn't been implemented yet.
+	 */
+	char *s;
+	uint64_t offset;
+
+	if (symbol != NULL)
+		s = symbol;
+	else
+		s = get_symbol_name(sc, addr, &offset);
+
+	/*  Quick test-hack:  */
+	if (s != NULL) {
+		if (strcmp(s, "strlen") == 0)
+			return 1;
+		if (strcmp(s, "strcmp") == 0)
+			return 2;
+		if (strcmp(s, "strcpy") == 0)
+			return 2;
+		if (strcmp(s, "strncmp") == 0)
+			return 3;
+		if (strcmp(s, "memset") == 0)
+			return 3;
+		if (strcmp(s, "memcpy") == 0)
+			return 3;
+		if (strcmp(s, "bzero") == 0)
+			return 3;
+	}
+
+	return -1;
 }
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.887 2005-08-08 20:19:42 debug Exp $
+$Id: HISTORY,v 1.888 2005-08-09 05:39:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2158,3 +2158,7 @@ Changelog for GXemul:
 		Adding loadlinked/storeconditional type instructions to the
 		Alpha emulation. (Needed for Linux/alpha. Not very well tested
 		yet.)
+20050809	The function call trace tree now prints a per-function nr of
+		arguments. (Semi-meaningless, since that data isn't read yet
+		from the ELFs; some hardcoded symbols such as memcpy() and
+		strlen() work fine, though.)

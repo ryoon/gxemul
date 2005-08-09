@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.21 2005-08-08 06:00:08 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.22 2005-08-09 05:39:51 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -176,7 +176,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
         char strbuf[50];
 	char *symbol;
 	uint64_t ot;
-	int x, n_args_to_print =
+	int x, print_dots = 1, n_args_to_print =
 #ifdef DYNTRANS_ALPHA
 	    6
 #else
@@ -184,9 +184,16 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 #endif
 	    ;
 
+	x = get_symbol_n_args(&cpu->machine->symbol_context, NULL, f);
+	if (x >= 0) {
+		if (x <= n_args_to_print)
+			print_dots = 0;
+		n_args_to_print = x;
+	}
+
 	/*
-	 *  TODO:  The number of arguments and the symbol type of each
-	 *  argument should be taken from the symbol table, in some way.
+	 *  TODO: The type of each argument should be taken from the symbol
+	 *  table, in some way.
 	 *
 	 *  The code here does a kind of "heuristic guess" regarding what the
 	 *  argument values might mean. Sometimes the output looks weird, but
@@ -234,8 +241,8 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f)
 			fatal(",");
 	}
 
-	/*  For now, since we don't know how many args there actually are:  */
-	fatal(",..");
+	if (print_dots)
+		fatal(",..");
 }
 #endif
 

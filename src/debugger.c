@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.117 2005-08-07 19:12:12 debug Exp $
+ *  $Id: debugger.c,v 1.118 2005-08-09 05:19:46 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1392,7 +1392,7 @@ static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 
 	printf("show_trace_tree = %s", old_show_trace_tree? "ON" : "OFF");
 	if (old_show_trace_tree != previous_mode)
-		printf("  (was: %s)", old_show_trace_tree? "ON" : "OFF");
+		printf("  (was: %s)", previous_mode? "ON" : "OFF");
 	printf("\n");
 
 	if (m->bintrans_enable && old_show_trace_tree)

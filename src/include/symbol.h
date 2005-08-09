@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.h,v 1.5 2005-08-09 05:39:51 debug Exp $
+ *  $Id: symbol.h,v 1.6 2005-08-09 17:18:23 debug Exp $
  *
  *  Symbol handling routines.
  */
@@ -42,6 +42,9 @@ struct symbol {
 	uint64_t	len;
 	char		*name;
 	int		type;
+
+	int		n_args;
+	/*  TODO: argument types  */
 };
 
 
@@ -55,10 +58,11 @@ struct symbol_context {
 /*  symbol.c:  */
 int symbol_nsymbols(struct symbol_context *);
 int get_symbol_addr(struct symbol_context *, char *symbol, uint64_t *addr);
-int get_symbol_n_args(struct symbol_context *sc, char *symbol, uint64_t addr);
+char *get_symbol_name_and_n_args(struct symbol_context *, uint64_t addr,
+	uint64_t *offset, int *n_argsp);
 char *get_symbol_name(struct symbol_context *, uint64_t addr, uint64_t *offset);
 void add_symbol_name(struct symbol_context *, uint64_t addr,
-	uint64_t len, char *name, int type);
+	uint64_t len, char *name, int type, int n_args);
 void symbol_readfile(struct symbol_context *, char *fname);
 void symbol_recalc_sizes(struct symbol_context *);
 void symbol_init(struct symbol_context *);

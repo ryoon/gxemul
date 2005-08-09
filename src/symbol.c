@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.28 2005-08-09 05:39:51 debug Exp $
+ *  $Id: symbol.c,v 1.29 2005-08-09 17:18:22 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -94,54 +94,7 @@ int get_symbol_addr(struct symbol_context *sc, char *symbol, uint64_t *addr)
 
 
 /*
- *  get_symbol_n_args():
- *
- *  Given a symbol name or address of a function, return the number of
- *  arguments that function wants. If symbol is non-NULL, then symbol is
- *  used, otherwise addr is used.
- *
- *  Return value is -1 if the function is unknown. Return values of >= 0
- *  signifies the number of function arguments.
- */
-int get_symbol_n_args(struct symbol_context *sc, char *symbol, uint64_t addr)
-{
-	/*
-	 *  TODO:
-	 *
-	 *  This functionality hasn't been implemented yet.
-	 */
-	char *s;
-	uint64_t offset;
-
-	if (symbol != NULL)
-		s = symbol;
-	else
-		s = get_symbol_name(sc, addr, &offset);
-
-	/*  Quick test-hack:  */
-	if (s != NULL) {
-		if (strcmp(s, "strlen") == 0)
-			return 1;
-		if (strcmp(s, "strcmp") == 0)
-			return 2;
-		if (strcmp(s, "strcpy") == 0)
-			return 2;
-		if (strcmp(s, "strncmp") == 0)
-			return 3;
-		if (strcmp(s, "memset") == 0)
-			return 3;
-		if (strcmp(s, "memcpy") == 0)
-			return 3;
-		if (strcmp(s, "bzero") == 0)
-			return 3;
-	}
-
-	return -1;
-}
-
-
-/*
- *  get_symbol_name():
+ *  get_symbol_name_and_n_args():
  *
  *  Translate an address into a symbol name.  The return value is a pointer
  *  to a static char array, containing the symbol name.  (In other words,
@@ -154,11 +107,13 @@ int get_symbol_n_args(struct symbol_context *sc, char *symbol, uint64_t addr)
  *  0x1008, the symbol's name will be found in the static char array, and
  *  *offset will be set to 0x8.
  *
+ *  If n_argsp is non-NULL, *n_argsp is set to the symbol's n_args value.
+ *
  *  If no symbol was found, NULL is returned instead.
  */
 static char symbol_buf[SYMBOLBUF_MAX+1];
-char *get_symbol_name(struct symbol_context *sc, uint64_t addr,
-	uint64_t *offset)
+char *get_symbol_name_and_n_args(struct symbol_context *sc, uint64_t addr,
+	uint64_t *offset, int *n_argsp)
 {
 	struct symbol *s;
 	int stepsize, ofs;
@@ -188,6 +143,8 @@ char *get_symbol_name(struct symbol_context *sc, uint64_t addr,
 					    (addr - s->addr));
 				if (offset != NULL)
 					*offset = addr - s->addr;
+				if (n_argsp != NULL)
+					*n_argsp = s->n_args;
 				return symbol_buf;
 			}
 			s = s->next;
@@ -210,6 +167,8 @@ char *get_symbol_name(struct symbol_context *sc, uint64_t addr,
 					    (addr - s->addr));
 				if (offset != NULL)
 					*offset = addr - s->addr;
+				if (n_argsp != NULL)
+					*n_argsp = s->n_args;
 				return symbol_buf;
 			}
 
@@ -237,12 +196,23 @@ char *get_symbol_name(struct symbol_context *sc, uint64_t addr,
 
 
 /*
+ *  get_symbol_name():
+ *
+ *  See get_symbol_name_and_n_args().
+ */
+char *get_symbol_name(struct symbol_context *sc, uint64_t addr, uint64_t *offs)
+{
+	return get_symbol_name_and_n_args(sc, addr, offs, NULL);
+}
+
+
+/*
  *  add_symbol_name():
  *
  *  Add a symbol to the symbol list.
  */
 void add_symbol_name(struct symbol_context *sc,
-	uint64_t addr, uint64_t len, char *name, int type)
+	uint64_t addr, uint64_t len, char *name, int type, int n_args)
 {
 	struct symbol *s;
 
@@ -264,6 +234,26 @@ void add_symbol_name(struct symbol_context *sc,
 	if (name[0] == '.' || name[0] == '$')
 		return;
 
+	/*  Quick test-hack:  */
+	if (n_args < 0) {
+		if (strcmp(name, "strlen") == 0)
+			n_args = 1;
+		if (strcmp(name, "strcmp") == 0)
+			n_args = 2;
+		if (strcmp(name, "strcpy") == 0)
+			n_args = 2;
+		if (strcmp(name, "strncmp") == 0)
+			n_args = 3;
+		if (strcmp(name, "memset") == 0)
+			n_args = 3;
+		if (strcmp(name, "memcpy") == 0)
+			n_args = 3;
+		if (strcmp(name, "bzero") == 0)
+			n_args = 2;
+		if (strcmp(name, "bcopy") == 0)
+			n_args = 3;
+	}
+
 	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
 		addr |= 0xffffffff00000000ULL;
 
@@ -278,9 +268,10 @@ void add_symbol_name(struct symbol_context *sc,
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	s->addr = addr;
-	s->len  = len;
-	s->type = type;
+	s->addr   = addr;
+	s->len    = len;
+	s->type   = type;
+	s->n_args = n_args;
 
 	sc->n_symbols ++;
 
@@ -339,7 +330,7 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 		if (type == 't' || type == 'r' || type == 'g')
 			continue;
 
-		add_symbol_name(sc, addr, len, b4, type);
+		add_symbol_name(sc, addr, len, b4, type, -1);
 	}
 
 	fclose(f);

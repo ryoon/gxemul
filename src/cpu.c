@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.309 2005-08-09 06:18:28 debug Exp $
+ *  $Id: cpu.c,v 1.310 2005-08-09 17:18:22 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -236,7 +236,7 @@ int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  */
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 {
-	int i;
+	int i, n_args = -1;
 	char *symbol;
 	uint64_t offset;
 
@@ -248,7 +248,8 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 	cpu->trace_tree_depth ++;
 
 	fatal("<");
-	symbol = get_symbol_name(&cpu->machine->symbol_context, f, &offset);
+	symbol = get_symbol_name_and_n_args(&cpu->machine->symbol_context,
+	    f, &offset, &n_args);
 	if (symbol != NULL)
 		fatal("%s", symbol);
 	else {
@@ -259,13 +260,8 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 	}
 	fatal("(");
 
-	if (cpu->machine->cpu_family->functioncall_trace != NULL) {
-		/*  TODO: n_args should be returned at the same time
-		    as the symbol name itself, to avoid the extra lookup.  */
-		int n_args = get_symbol_n_args(&cpu->machine->symbol_context,
-		    NULL, f);
+	if (cpu->machine->cpu_family->functioncall_trace != NULL)
 		cpu->machine->cpu_family->functioncall_trace(cpu, f, n_args);
-	}
 
 	fatal(")>\n");
 }

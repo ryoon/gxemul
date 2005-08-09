@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.106 2005-07-28 19:32:43 debug Exp $
+ *  $Id: arcbios.c,v 1.107 2005-08-09 17:18:22 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -2651,7 +2651,7 @@ void arcbios_init(struct machine *machine, int is64bit,
 	 *  Set up Firmware Vectors:
 	 */
 	add_symbol_name(&machine->symbol_context,
-	    ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
+	    ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0, 1);
 
 	for (i=0; i<100; i++) {
 		if (is64bit) {

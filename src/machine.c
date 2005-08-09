@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.504 2005-08-09 06:01:36 debug Exp $
+ *  $Id: machine.c,v 1.505 2005-08-09 17:18:22 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2716,7 +2716,7 @@ void machine_setup(struct machine *machine)
 		machine->md_interrupt = ps2_interrupt;
 
 		add_symbol_name(&machine->symbol_context,
-		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
+		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0, 0);
 		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 

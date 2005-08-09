@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.58 2005-08-09 08:56:42 debug Exp $
+ *  $Id: useremul.c,v 1.59 2005-08-09 17:18:23 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -200,7 +200,7 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 		/*  The userland stack:  */
 		cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
 		add_symbol_name(&cpu->machine->symbol_context,
-		    stack_top - stacksize, stacksize, "userstack", 0);
+		    stack_top - stacksize, stacksize, "userstack", 0, 0);
 
 		/*  Stack contents:  (TODO: is this correct?)  */
 		store_32bit_word(cpu, stack_top - stack_margin, argc);
@@ -278,7 +278,7 @@ void useremul__ultrix_setup(struct cpu *cpu, int argc, char **host_argv)
 	/*  The userland stack:  */
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
 	add_symbol_name(&cpu->machine->symbol_context,
-	    stack_top - stacksize, stacksize, "userstack", 0);
+	    stack_top - stacksize, stacksize, "userstack", 0, 0);
 
 	/*  Stack contents:  (TODO: is this correct?)  */
 	store_32bit_word(cpu, stack_top - stack_margin, argc);
@@ -565,6 +565,8 @@ int64_t useremul_fstat(struct cpu *cpu, int64_t *errnop,
 		*errnop = errno;
 	else {
 		fatal("TODO: convert sb into emulated memory!\n");
+
+/*  NOTE: FreeBSD/alpha only  */
 
 		store_32bit_word(cpu, arg1 + 0, sb.st_dev);
 		store_32bit_word(cpu, arg1 + 4, sb.st_ino);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.220 2005-08-08 05:20:17 debug Exp $
+ *  $Id: emul.c,v 1.221 2005-08-09 17:18:22 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1225,7 +1225,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	if (m->machine_type == MACHINE_DEC &&
 	    cpu->cd.mips.cpu_type.mmu_model == MMU3K)
 		add_symbol_name(&m->symbol_context,
-		    0x9fff0000, 0x10000, "r2k3k_cache", 0);
+		    0x9fff0000, 0x10000, "r2k3k_cache", 0, 0);
 
 	symbol_recalc_sizes(&m->symbol_context);
 

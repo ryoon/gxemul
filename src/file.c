@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.102 2005-08-07 23:36:48 debug Exp $
+ *  $Id: file.c,v 1.103 2005-08-09 17:18:22 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -265,7 +265,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 
 			if (type != 0 && addr != 0)
 				add_symbol_name(&m->symbol_context,
-				    addr, 0, string_symbols + str_index, 0);
+				    addr, 0, string_symbols + str_index, 0, -1);
 			i++;
 		}
 
@@ -575,7 +575,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 					memcpy(name, sym->name, 8);
 					name[8] = '\0';
 					add_symbol_name(&m->symbol_context,
-					    v, 0, name, 0);
+					    v, 0, name, 0, -1);
 					n_real_symbols ++;
 				} else if (t == 0x20 && !sym->name[0]) {
 					off_t ofs;
@@ -587,7 +587,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 					/*  debug(" [altname=0x%x '%s']",
 					    altname, name);  */
 					add_symbol_name(&m->symbol_context,
-					    v, 0, name, 0);
+					    v, 0, name, 0, -1);
 					n_real_symbols ++;
 				}
 
@@ -658,7 +658,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 
 			add_symbol_name(&m->symbol_context,
 			    extsyms[sym_nr].es_value, 0,
-			    symbol_data + extsyms[sym_nr].es_strindex, 0);
+			    symbol_data + extsyms[sym_nr].es_strindex, 0, -1);
 		}
 
 		free(extsyms);
@@ -1452,7 +1452,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 				    " '%s'\n", st_info, (long long)addr,
 				    symbol_strings + st_name);  */
 				add_symbol_name(&m->symbol_context,
-				    addr, size, symbol_strings + st_name, 0);
+				    addr, size, symbol_strings + st_name,
+				    0, -1);
 			}
 
 			if (strcmp(symbol_strings + st_name, "_gp") == 0) {

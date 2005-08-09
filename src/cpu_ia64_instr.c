@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64_instr.c,v 1.1 2005-08-07 23:36:48 debug Exp $
+ *  $Id: cpu_ia64_instr.c,v 1.2 2005-08-09 19:05:49 debug Exp $
  *
  *  IA64 instructions.
  *
@@ -34,43 +34,6 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
-
-
-/*
- *  Helper definitions:
- */
-
-#define X(n) void ia64_instr_ ## n(struct cpu *cpu, struct ia64_instr_call *ic)
-
-
-/*  This is for marking a physical page as containing translated or
-    combined instructions, respectively:  */
-#define	translated	(cpu->cd.ia64.cur_physpage->flags |= TRANSLATIONS)
-#define	combined	(cpu->cd.ia64.cur_physpage->flags |= COMBINATIONS)
-
-
-/*
- *  nothing:  Do nothing.
- *
- *  The difference between this function and the "nop" instruction is that
- *  this function does not increase the program counter or the number of
- *  translated instructions.  It is used to "get out" of running in translated
- *  mode.
- *
- *  IMPORTANT NOTE: Do a   cpu->running_translated = 0;
- *                  before setting cpu->cd.ia64.next_ic = &nothing_call;
- */
-X(nothing)
-{
-	cpu->n_translated_instrs --;
-	cpu->cd.ia64.next_ic --;
-}
-
-
-static struct ia64_instr_call nothing_call = { instr(nothing), {0,0,0} };
-
-
-/*****************************************************************************/
 
 
 /*

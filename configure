@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.148 2005-08-08 06:02:58 debug Exp $
+#  $Id: configure,v 1.149 2005-08-09 19:05:48 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -124,6 +124,11 @@ if [ z"$*" != z ]; then
 			CACHES=YES
 		else if [ z$a = z--help ]; then
 			echo "usage: $0 [options]"
+
+			printf "\nGeneral options:\n\n"
+
+			echo "  --disable-x        don't include X11 support"
+
 			printf "\nDevelopment (debug) options:\n\n"
 
 			echo "  --always32         enable ALWAYS_SIGNEXTEND_32"\
@@ -136,7 +141,6 @@ if [ z"$*" != z ]; then
 			printf " (BUGGY)\n"
 			echo "  --enable-delays    enable instruction" \
 			    "latency/delay emulation"
-			echo "  --disable-x        don't include X11 support"
 
 			if [ z$ENABLEALPHA = zYES ]; then
 				printf "  --disable-alpha    disable "
@@ -157,7 +161,7 @@ if [ z"$*" != z ]; then
 			else
 				printf "  --enable-ia64      enable "
 			fi
-			printf "Alpha CPU emulation\n"
+			printf "IA64 CPU emulation\n"
 
 			if [ z$ENABLEMIPS = zYES ]; then
 				printf "  --disable-mips     disable "

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.167 2005-08-07 17:42:02 debug Exp $
+ *  $Id: cpu_x86.c,v 1.168 2005-08-09 19:05:49 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -474,7 +474,7 @@ void x86_cpu_show_full_statistics(struct machine *m)
  *
  *  TODO.
  */
-void x86_cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
+void x86_cpu_functioncall_trace(struct cpu *cpu, uint64_t f, int n_args)
 {
 	fatal(" x86: TODO ");
 }

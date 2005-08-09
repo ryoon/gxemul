@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.47 2005-08-08 06:16:49 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.48 2005-08-09 19:05:49 debug Exp $
  *
  *  ARM instructions.
  *
@@ -52,9 +52,6 @@
  *  uses the main foo function.)  Y also defines an array with pointers to
  *  all of these functions.
  */
-
-#define X(n) void arm_instr_ ## n(struct cpu *cpu, \
-	struct arm_instr_call *ic)
 
 #define Y(n) void arm_instr_ ## n ## __eq(struct cpu *cpu,		\
 			struct arm_instr_call *ic)			\
@@ -132,33 +129,6 @@
 		arm_instr_ ## n , arm_instr_nop };
 
 #define cond_instr(n)	( arm_cond_instr_ ## n  [condition_code] )
-
-
-/*  This is for marking a physical page as containing translated or
-    combined instructions, respectively:  */
-#define	translated	(cpu->cd.arm.cur_physpage->flags |= TRANSLATIONS)
-#define	combined	(cpu->cd.arm.cur_physpage->flags |= COMBINATIONS)
-
-
-/*
- *  nothing:  Do nothing.
- *
- *  The difference between this function and the "nop" instruction is that
- *  this function does not increase the program counter or the number of
- *  translated instructions.  It is used to "get out" of running in translated
- *  mode.
- *
- *  IMPORTANT NOTE: Do a   cpu->running_translated = 0;
- *                  before setting cpu->cd.arm.next_ic = &nothing_call;
- */
-X(nothing)
-{
-	cpu->n_translated_instrs --;
-	cpu->cd.arm.next_ic --;
-}
-
-
-static struct arm_instr_call nothing_call = { instr(nothing), {0,0,0} };
 
 
 /*****************************************************************************/

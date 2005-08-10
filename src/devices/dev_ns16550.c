@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.38 2005-08-05 12:14:23 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.39 2005-08-10 15:38:47 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -150,7 +150,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		if (d->dlab) {
 			/*  Write or read the low byte of the divisor:  */
 			if (writeflag == MEM_WRITE)
-				d->divisor = d->divisor & 0xff00 | idata;
+				d->divisor = (d->divisor & 0xff00) | idata;
 			else
 				odata = d->divisor & 0xff;
 			break;

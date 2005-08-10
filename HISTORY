@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.889 2005-08-09 19:05:47 debug Exp $
+$Id: HISTORY,v 1.890 2005-08-10 15:38:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2164,3 +2164,5 @@ Changelog for GXemul:
 		strlen() work fine, though.)
 		More dyntrans refactoring; taking out more of the things that
 		are common to all cpu families.
+20050810	Working on adding support for "dual mode" for PPC dyntrans
+		(i.e. both 64-bit and 32-bit modes).

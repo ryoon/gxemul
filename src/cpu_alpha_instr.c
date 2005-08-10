@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.38 2005-08-09 19:05:48 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.39 2005-08-10 15:38:46 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -454,9 +454,9 @@ X(bgt_samepage)
  */
 X(mull)
 {
-	int32_t a = *((uint64_t *)ic->arg[1]);
-	int32_t b = *((uint64_t *)ic->arg[2]);
-	*((uint64_t *)ic->arg[0]) = (int64_t)(int32_t)(a * b);
+	int32_t a = reg(ic->arg[1]);
+	int32_t b = reg(ic->arg[2]);
+	reg(ic->arg[0]) = (int64_t)(int32_t)(a * b);
 }
 
 
@@ -469,8 +469,7 @@ X(mull)
  */
 X(mulq)
 {
-	*((uint64_t *)ic->arg[0]) =
-	    (*((uint64_t *)ic->arg[1])) * (*((uint64_t *)ic->arg[2]));
+	reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]);
 }
 
 
@@ -484,7 +483,7 @@ X(mulq)
 X(umulh)
 {
 	uint64_t reshi = 0, reslo = 0;
-	uint64_t s1 = *((uint64_t *)ic->arg[1]), s2 = *((uint64_t *)ic->arg[2]);
+	uint64_t s1 = reg(ic->arg[1]), s2 = reg(ic->arg[2]);
 	int i, bit;
 
 	for (i=0; i<64; i++) {
@@ -506,7 +505,7 @@ X(umulh)
 		}
 	}
 
-	*((uint64_t *)ic->arg[0]) = reshi;
+	reg(ic->arg[0]) = reshi;
 }
 
 
@@ -519,8 +518,7 @@ X(umulh)
  */
 X(lda)
 {
-	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1])
-	    + (int64_t)(int32_t)ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) + (int64_t)(int32_t)ic->arg[2];
 }
 
 
@@ -533,7 +531,7 @@ X(lda)
  */
 X(lda_0)
 {
-	*((uint64_t *)ic->arg[0]) = (int64_t)(int32_t)ic->arg[2];
+	reg(ic->arg[0]) = (int64_t)(int32_t)ic->arg[2];
 }
 
 
@@ -544,7 +542,7 @@ X(lda_0)
  */
 X(clear)
 {
-	*((uint64_t *)ic->arg[0]) = 0;
+	reg(ic->arg[0]) = 0;
 }
 
 
@@ -555,7 +553,7 @@ X(clear)
  */
 X(rdcc)
 {
-	*((uint64_t *)ic->arg[0]) = cpu->cd.alpha.pcc;
+	reg(ic->arg[0]) = cpu->cd.alpha.pcc;
 
 	/*  TODO: actually keep the pcc updated!  */
 	cpu->cd.alpha.pcc += 20;
@@ -622,7 +620,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
-	int i, opcode, ra, rb, func, rc, imm, load, loadstore_type, fp, llsc;
+	int opcode, ra, rb, func, rc, imm, load, loadstore_type, fp, llsc;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)

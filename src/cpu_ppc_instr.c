@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.5 2005-08-10 08:14:30 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.6 2005-08-10 15:38:46 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -53,8 +53,39 @@ X(nop)
  */
 X(addi)
 {
-	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1])
-	    + (int64_t)(int32_t)ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+}
+
+
+/*
+ *  b:  Branch (to a different translated page)
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ */
+X(b)
+{
+	uint64_t low_pc;
+
+	/*  Calculate new PC from this instruction + arg[0]  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2);
+	cpu->pc += (int32_t)ic->arg[0];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	ppc_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  b_samepage:  Branch (to within the same translated page)
+ *
+ *  arg[0] = pointer to new ppc_instr_call
+ */
+X(b_samepage)
+{
+	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
 }
 
 
@@ -83,7 +114,7 @@ X(end_of_page)
  *
  *  Combine two or more instructions, if possible, into a single function call.
  */
-void ppc_combine_instructions(struct cpu *cpu, struct ppc_instr_call *ic,
+void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct ppc_instr_call *ic,
 	uint32_t addr)
 {
 	int n_back;
@@ -110,10 +141,11 @@ void ppc_combine_instructions(struct cpu *cpu, struct ppc_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint32_t addr, low_pc, iword, imm;
+	uint64_t addr, low_pc, tmp_addr;
+	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, ra;
+	int main_opcode, rt, ra, aa_bit, lk_bit;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -175,6 +207,35 @@ X(to_be_translated)
 		else
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[2] = (ssize_t)(int16_t)(iword & 0xffff);
+		break;
+
+	case PPC_HI6_B:
+		aa_bit = (iword & 2) >> 1;
+		lk_bit = iword & 1;
+		if (aa_bit || lk_bit) {
+			fatal("aa_bit OR lk_bit: NOT YET\n");
+			goto bad;
+		}
+		tmp_addr = (int64_t)(int32_t)((iword & 0x03fffffc) << 6);
+		tmp_addr = (int64_t)tmp_addr >> 6;
+		ic->f = instr(b);
+		samepage_function = instr(b_samepage);
+		ic->arg[0] = (ssize_t)tmp_addr;
+		/*  Branches are calculated as cur PC + offset.  */
+		/*  Special case: branch within the same page:  */
+		{
+			uint64_t mask_within_page =
+			    ((PPC_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+			uint64_t old_pc = addr;
+			uint64_t new_pc = old_pc + (int32_t)ic->arg[0];
+			if ((old_pc & ~mask_within_page) ==
+			    (new_pc & ~mask_within_page)) {
+				ic->f = samepage_function;
+				ic->arg[0] = (size_t) (
+				    cpu->cd.ppc.cur_ic_page +
+				    ((new_pc & mask_within_page) >> 2));
+			}
+		}
 		break;
 
 	default:goto bad;

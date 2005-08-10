@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.48 2005-08-09 19:05:49 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.49 2005-08-10 15:38:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -855,7 +855,6 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
  */
 X(to_be_translated)
 {
-	int i;
 	uint32_t addr, low_pc, iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];

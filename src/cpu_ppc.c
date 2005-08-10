@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.76 2005-08-10 08:14:30 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.77 2005-08-10 15:38:46 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -65,6 +65,7 @@ int ppc_cpu_family_init(struct cpu_family *fp)
 #include "opcodes_ppc.h"
 #include "symbol.h"
 
+#define	DYNTRANS_DUALMODE_32
 #define DYNTRANS_32
 #include "tmp_ppc_head.c"
 

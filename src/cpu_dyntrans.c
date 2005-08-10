@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.24 2005-08-09 06:18:28 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.25 2005-08-10 15:38:46 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -82,11 +82,15 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			int i;
 			for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
 				cpu->cd.DYNTRANS_ARCH.cur_physpage->ics[i].f =
-				    instr(to_be_translated);
-			fatal("[ Note: The translation of physical page 0x%08x"
+#ifdef DYNTRANS_DUALMODE_32
+				    cpu->is_32bit?
+				        instr32(to_be_translated) :
+#endif
+				        instr(to_be_translated);
+			fatal("[ Note: The translation of physical page 0x%llx"
 			    " contained combinations of instructions; these "
 			    "are now flushed because we are single-stepping."
-			    " ]\n", cpu->cd.DYNTRANS_ARCH.
+			    " ]\n", (long long)cpu->cd.DYNTRANS_ARCH.
 			    cur_physpage->physaddr);
 			cpu->cd.DYNTRANS_ARCH.cur_physpage->flags &=
 			    ~(COMBINATIONS | TRANSLATIONS);
@@ -247,15 +251,18 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 
 
 #ifdef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
+/*  forward declaration of to_be_translated and end_of_page:  */
+static void instr(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
+static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
+#ifdef DYNTRANS_DUALMODE_32
+static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
+#endif
 /*
  *  XXX_tc_allocate_default_page():
  *
  *  Create a default page (with just pointers to instr(to_be_translated)
  *  at cpu->translation_cache_cur_ofs.
  */
-/*  forward declaration of to_be_translated and end_of_page:  */
-static void instr(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
-static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 	uint64_t physaddr)
 { 
@@ -271,7 +278,11 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 	/*  TODO: Is this faster than copying an entire template page?  */
 
 	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
-		ppp->ics[i].f = instr(to_be_translated);
+		ppp->ics[i].f =
+#ifdef DYNTRANS_DUALMODE_32
+		    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+		    instr(to_be_translated);
 
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
 
@@ -807,7 +818,7 @@ bad:	/*
 
 	if (cpu->machine->instruction_trace)
 #ifdef DYNTRANS_32
-		fatal(" at 0x%08x\n", (int)cpu->pc);
+		fatal(" at 0x%x\n", (int)cpu->pc);
 #else
 		fatal(" at 0x%llx\n", (long long)cpu->pc);
 #endif

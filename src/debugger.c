@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.119 2005-08-09 06:01:36 debug Exp $
+ *  $Id: debugger.c,v 1.120 2005-08-10 15:38:46 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -893,7 +893,7 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_ninstrs(struct machine *m, char *cmd_line)
 {
-	int i, toggle = 1;
+	int toggle = 1;
 	int previous_mode = m->show_nr_of_instructions;
 
 	if (cmd_line[0] != '\0') {

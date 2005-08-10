@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.175 2005-08-08 06:00:07 debug Exp $
+ *  $Id: bintrans.c,v 1.176 2005-08-10 15:38:45 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -275,6 +275,9 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 void bintrans_restart(struct cpu *cpu)
 {
 	int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
+
+	if (cpu->machine->arch != ARCH_MIPS)
+		return;
 
 	for (i=0; i<n; i++)
 		cpu->mem->translation_page_entry_array[i] = NULL;

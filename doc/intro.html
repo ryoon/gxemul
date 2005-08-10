@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.59 2005-08-10 05:29:11 debug Exp $
+$Id: intro.html,v 1.60 2005-08-10 15:51:08 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -65,11 +65,15 @@ SUCH DAMAGE.
 <h3>Overview:</h3>
 
 GXemul is an experimental instruction-level machine emulator. It can be
-used to run binary code for (among others) MIPS-based machines, regardless
-of host platform. Several emulation modes are available. For some modes,
+used to run binary code for MIPS-based machines, regardless of host
+platform. Several emulation modes are available. For some modes,
 processors and surrounding hardware components are emulated well enough to
 let unmodified operating systems run as if they were running on a real
 machine.
+
+<p>(Non-MIPS emulation modes are also under development, but so far none
+of those modes has reached the completeness required to run unmodified
+operating systems.)
 
 <p>Devices and CPUs are not simulated with 100% accuracy. They are only
 ``faked'' well enough to make operating systems (e.g. NetBSD) run without

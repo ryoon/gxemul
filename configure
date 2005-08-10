@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.150 2005-08-09 22:24:46 debug Exp $
+#  $Id: configure,v 1.151 2005-08-10 05:29:30 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1130,6 +1130,8 @@ fi
 
 INCLUDE=-Iinclude/
 DINCLUDE=-I../include/
+
+rm -f _testprog.c
 
 echo C compiler flags: $CFLAGS $CWARNINGS
 echo Linker flags: $OTHERLIBS

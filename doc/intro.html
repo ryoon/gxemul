@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.58 2005-08-04 10:53:24 debug Exp $
+$Id: intro.html,v 1.59 2005-08-10 05:29:11 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -114,22 +114,30 @@ confusing to you, you might want to read up on the definitions of the
 four freedoms associated with Free software, <a
 href="http://www.gnu.org/philosophy/free-sw.html">http://www.gnu.org/philosophy/free-sw.html</a>.)
 
-<p>
-The code I have written is released under a 3-clause BSD-style license
-(or "revised BSD-style" if one wants to use
-<a href="http://www.gnu.org/philosophy/bsd.html">GNU jargon</a>).
-Apart from the code I have written, some files are copied from other sources
-such as NetBSD, for example header files containing symbolic names of
-bitfields in device registers. They are also covered by similar licenses,
-but with some additional clauses. If you plan to redistribute GXemul
-(for example as a binary package), or reuse code from GXemul,
-then you should check those files for their license terms.
+<p>The code I have written is released under a 3-clause BSD-style license
+(or "revised BSD-style" if one wants to use <a
+href="http://www.gnu.org/philosophy/bsd.html">GNU jargon</a>). Apart from
+the code I have written, some files are copied from other sources such as
+NetBSD, for example header files containing symbolic names of bitfields in
+device registers. They are also covered by similar licenses, but with some
+additional clauses. The main point, however, is that the licenses require
+that the original Copyright and license terms are included when you make a
+copy or modification.
 
-<p>
-(The licenses usually require that the original Copyright and license 
-terms are included when you make a copy or modification. The "easiest way 
-out" if you plan to redistribute code from GXemul is to simply supply 
-the source code. You should however check individual files for details.)
+<p>If you plan to redistribute GXemul <i>without</i> supplying the source
+code, then you need to comply with each individual source file some other
+way, for example by writing additional documentation containing copyright
+notes. I have not done this, since I do not plan on making distributions
+without source code. You need to check all individual files for details.
+The "easiest way out" if you plan to redistribute code from GXemul is, of
+course, to let it remain open source and simply supply the source code.
+
+<p>(If a stable release of GXemul is packaged into binary form, and it is
+obvious which version of GXemul was used to build the package, then it can
+be argued that the source code is available, just not in that specific
+package. Common sense should be used in this case, and not pedanticism.)
+
+
 
 
 
@@ -145,28 +153,18 @@ Uncompress the .tar.gz distribution file, and run
 	$ <b>make</b>
 </pre>
 
-<p>
-This should work on most Unix-like systems. If it doesn't, then
+<p>This should work on most Unix-like systems. If it doesn't, then
 mail me a bug report.
 
-<p>
-(Note for Windows users: there is a possibility that some releases 
-and/or snapshots will also work with Cygwin, but I can't promise that.)
-
-<p>
-The emulator's performance is highly dependent on both runtime settings
+<p>The emulator's performance is highly dependent on both runtime settings
 and on compiler settings, so you might want to experiment with different
-CC and CFLAGS environment variable values. For example, on a modern PC, 
+CC and CFLAGS environment variable values. For example, on a modern PC,
 you could try the following:
-<p>
-<pre>
-        $ <b>CFLAGS="-mcpu=pentium4 -O3" ./configure</b>
-        $ <b>make</b>
+<p><pre>
+	$ <b>CFLAGS="-mcpu=pentium4 -O3" ./configure</b>
+	$ <b>make</b>
 </pre>
 
-<p>
-Run <b><tt>./configure --help</tt></b> to get a list of configure options. (The 
-possible options differ between different releases and snapshots.)
 
 
 

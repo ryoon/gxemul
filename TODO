@@ -1,4 +1,4 @@
-$Id: TODO,v 1.158 2005-08-09 18:29:19 debug Exp $
+$Id: TODO,v 1.159 2005-08-10 05:29:30 debug Exp $
 
 ===============================================================================
 
@@ -6,12 +6,18 @@ High priority stuff:
 
 
 MIPS bintrans:
-	FIX THE CACHE/DEVICE BUG FOR 32-BIT EMULATION! This was caused by
-	switching from a 2-level to a 1-level page table system for
-	bintranslated code...
-	i386: movn etc, slt[u] for 64-bit mode, 64-bit shifts etc
+
+	x)  FIX THE CACHE/DEVICE BUG FOR 32-BIT EMULATION! This was caused
+	    by switching from a 2-level to a 1-level page table system for
+	    bintranslated code...
+
+	x)  call/return address cache?
+
+	x)  i386: movn etc, slt[u] for 64-bit mode, 64-bit shifts etc
+
 
 dyntrans:
+
 	x)  memory write protection for ARM, but NOT for Alpha (because
 		it has the IMB instruction... hm)
 

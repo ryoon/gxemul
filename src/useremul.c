@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.59 2005-08-09 17:18:23 debug Exp $
+ *  $Id: useremul.c,v 1.60 2005-08-10 05:29:31 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -545,7 +545,12 @@ int64_t useremul_getrusage(struct cpu *cpu, int64_t *errnop,
 	struct rusage rusage;
 	debug("[ getrusage(%i,0x%llx) ]\n", (int)arg0, (long long)arg1);
 	res = getrusage(arg0, &rusage);
+
 	fatal("TODO: convert rusage into emulated memory!\n");
+	store_64bit_word(cpu, arg1 +  0, rusage.ru_utime.tv_sec);
+	store_64bit_word(cpu, arg1 +  8, rusage.ru_utime.tv_usec);
+	store_64bit_word(cpu, arg1 + 16, rusage.ru_stime.tv_sec);
+	store_64bit_word(cpu, arg1 + 24, rusage.ru_stime.tv_usec);
 
 	return res;
 }

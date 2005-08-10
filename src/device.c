@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.15 2005-08-05 09:11:47 debug Exp $
+ *  $Id: device.c,v 1.16 2005-08-10 22:25:50 debug Exp $
  *
  *  Device registry framework.
  */
@@ -181,7 +181,7 @@ struct device_entry *device_lookup(char *name)
  */
 int device_unregister(char *name)
 {
-	size_t i;
+	ssize_t i;
 	struct device_entry *p = device_lookup(name);
 
 	if (p == NULL) {

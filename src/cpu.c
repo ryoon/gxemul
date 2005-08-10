@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.311 2005-08-09 22:24:47 debug Exp $
+ *  $Id: cpu.c,v 1.312 2005-08-10 22:25:49 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -386,7 +386,7 @@ void cpu_list_available_types(void)
  *  Shuts down all CPUs in a machine when ending a simulation. (This function
  *  should only need to be called once for each machine.)
  */
-void cpu_run_deinit(struct emul *emul, struct machine *machine)
+void cpu_run_deinit(struct machine *machine)
 {
 	int te;
 
@@ -540,7 +540,7 @@ do_return:
  *  Prepare to run instructions on all CPUs in this machine. (This function
  *  should only need to be called once for each machine.)
  */
-void cpu_run_init(struct emul *emul, struct machine *machine)
+void cpu_run_init(struct machine *machine)
 {
 	int ncpus = machine->ncpus;
 	int te;

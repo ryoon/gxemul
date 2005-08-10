@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.94 2005-06-26 09:21:27 debug Exp $
+ *  $Id: diskimage.c,v 1.95 2005-08-10 22:25:50 debug Exp $
  *
  *  Disk image support.
  *
@@ -409,7 +409,7 @@ static size_t diskimage_access__cdrom(struct diskimage *d, off_t offset,
 static int diskimage__internal_access(struct diskimage *d, int writeflag,
 	off_t offset, unsigned char *buf, size_t len)
 {
-	size_t lendone;
+	ssize_t lendone;
 	int res;
 
 	if (buf == NULL) {
@@ -1006,7 +1006,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		if (xferp->cmd_len != 6)
 			debug(" (weird len=%i)", xferp->cmd_len);
 
-		for (i=0; i<xferp->cmd_len ; i++)
+		for (i=0; i<xferp->cmd_len; i++)
 			debug(" %02x", xferp->cmd[i]);
 
 		/*  TODO: actualy care about cmd[]  */

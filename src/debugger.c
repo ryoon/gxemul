@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.120 2005-08-10 15:38:46 debug Exp $
+ *  $Id: debugger.c,v 1.121 2005-08-10 22:25:50 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1510,8 +1510,8 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	ctrl_c = 0;
 
 	while (addr < addr_end) {
-		int i, len;
-		unsigned char buf[32];	/*  TODO: How long can an
+		unsigned int i, len;
+		unsigned char buf[17];	/*  TODO: How long can an
 					    instruction be, on weird archs?  */
 		memset(buf, 0, sizeof(buf));
 
@@ -1666,10 +1666,10 @@ static struct cmd cmds[] = {
  */
 static void debugger_cmd_help(struct machine *m, char *cmd_line)
 {
-	int i, j, max_name_len = 0, only_one = 0, only_one_match = 0;
+	int i, max_name_len = 0, only_one = 0, only_one_match = 0;
 	char *nlines_env = getenv("LINES");
 	int nlines = atoi(nlines_env != NULL? nlines_env : "999999");
-	int curlines;
+	int j, curlines;
 
 	if (cmd_line[0] != '\0') {
 		only_one = 1;

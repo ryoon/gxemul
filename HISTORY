@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.890 2005-08-10 15:38:44 debug Exp $
+$Id: HISTORY,v 1.891 2005-08-10 22:25:49 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2166,3 +2166,4 @@ Changelog for GXemul:
 		are common to all cpu families.
 20050810	Working on adding support for "dual mode" for PPC dyntrans
 		(i.e. both 64-bit and 32-bit modes).
+		(Re)adding some simple PPC instructions.

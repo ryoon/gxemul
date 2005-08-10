@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.40 2005-08-09 06:18:29 debug Exp $
+ *  $Id: cpu.h,v 1.41 2005-08-10 22:25:51 debug Exp $
  *
  *  See cpu.c.
  */
@@ -186,9 +186,9 @@ int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);
 void cpu_functioncall_trace_return(struct cpu *cpu);
 void cpu_create_or_reset_tc(struct cpu *cpu);
-void cpu_run_init(struct emul *emul, struct machine *machine);
+void cpu_run_init(struct machine *machine);
 int cpu_run(struct emul *emul, struct machine *machine);
-void cpu_run_deinit(struct emul *emul, struct machine *machine);
+void cpu_run_deinit(struct machine *machine);
 void cpu_dumpinfo(struct machine *m, struct cpu *cpu);
 void cpu_list_available_types(void);
 void cpu_show_cycles(struct machine *machine, int forced);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.221 2005-08-09 17:18:22 debug Exp $
+ *  $Id: emul.c,v 1.222 2005-08-10 22:25:50 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1438,7 +1438,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 		if (e == NULL)
 			continue;
 		for (j=0; j<e->n_machines; j++)
-			cpu_run_init(e, e->machines[j]);
+			cpu_run_init(e->machines[j]);
 	}
 
 	/*
@@ -1473,7 +1473,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 		if (e == NULL)
 			continue;
 		for (j=0; j<e->n_machines; j++)
-			cpu_run_deinit(e, e->machines[j]);
+			cpu_run_deinit(e->machines[j]);
 	}
 
 	/*  force_debugger_at_exit flag set? Then enter the debugger:  */

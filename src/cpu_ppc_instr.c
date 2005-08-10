@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.4 2005-08-09 19:05:49 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.5 2005-08-10 08:14:30 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -41,6 +41,20 @@
  */
 X(nop)
 {
+}
+
+
+/*
+ *  addi:  Add immediate.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ *  arg[1] = pointer to source uint64_t
+ *  arg[2] = immediate value (int32_t or larger)
+ */
+X(addi)
+{
+	*((uint64_t *)ic->arg[0]) = *((uint64_t *)ic->arg[1])
+	    + (int64_t)(int32_t)ic->arg[2];
 }
 
 
@@ -96,11 +110,10 @@ void ppc_combine_instructions(struct cpu *cpu, struct ppc_instr_call *ic,
  */
 X(to_be_translated)
 {
-	int i;
 	uint32_t addr, low_pc, iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode;
+	int main_opcode, rt, ra;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -139,9 +152,6 @@ X(to_be_translated)
 			((iword & 0xff0000) >> 8) |
 			((iword & 0xff000000) >> 24);
 
-	fatal("{ PPC translating pc=0x%08x iword=0x%08x }\n",
-	    addr, iword);
-
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
 #include "cpu_dyntrans.c"
@@ -155,6 +165,17 @@ X(to_be_translated)
 	main_opcode = iword >> 26;
 
 	switch (main_opcode) {
+
+	case PPC_HI6_ADDI:
+		rt = (iword >> 21) & 31; ra = (iword >> 16) & 31;
+		ic->f = instr(addi);
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+		if (ra == 0)
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
+		else
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[2] = (ssize_t)(int16_t)(iword & 0xffff);
+		break;
 
 	default:goto bad;
 	}

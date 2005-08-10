@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.26 2005-08-07 17:42:03 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.27 2005-08-10 08:14:30 debug Exp $
  */
 
 #include "misc.h"
@@ -112,6 +112,8 @@ struct ppc_cpu {
 
 	int		mode;		/*  MODE_PPC or MODE_POWER  */
 	int		bits;		/*  32 or 64  */
+
+	uint64_t	zero;		/*  A zero register  */
 
 	uint32_t	cr;		/*  Condition Register  */
 	uint32_t	fpscr;		/*  FP Status and Control Register  */

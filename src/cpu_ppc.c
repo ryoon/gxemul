@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.75 2005-08-07 23:36:48 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.76 2005-08-10 08:14:30 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -288,10 +288,11 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		} else {
 			/*  64-bit:  */
 			for (i=0; i<PPC_NGPRS; i++) {
+				int r = (i >> 1) + ((i & 1) << 4);
 				if ((i % 2) == 0)
 					debug("cpu%i:", x);
-				debug(" r%02i = 0x%016llx ", i,
-				    (long long)cpu->cd.ppc.gpr[i]);
+				debug(" r%02i = 0x%016llx ", r,
+				    (long long)cpu->cd.ppc.gpr[r]);
 				if ((i % 2) == 1)
 					debug("\n");
 			}
@@ -300,7 +301,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		/*  Other special registers:  */
 		reg_access_msr(cpu, &tmp, 0);
 		debug("cpu%i: msr = 0x%016llx  ", x, (long long)tmp);
-		debug("tb = 0x%08x%08x\n",
+		debug("tb  = 0x%08x%08x\n",
 		    (int)cpu->cd.ppc.tbu, (int)cpu->cd.ppc.tbl);
 		debug("cpu%i: dec = 0x%08x  hdec = 0x%08x\n",
 		    x, (int)cpu->cd.ppc.dec, (int)cpu->cd.ppc.hdec);

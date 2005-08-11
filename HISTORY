@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.892 2005-08-11 09:14:10 debug Exp $
+$Id: HISTORY,v 1.893 2005-08-11 15:39:36 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2169,3 +2169,4 @@ Changelog for GXemul:
 		(Re)adding some simple PPC instructions.
 20050811	Adding a dummy M68K cpu family. The dyntrans system isn't ready
 		for variable-length ISAs yet, so it's completely bogus so far.
+		Re-adding more PPC instructions.

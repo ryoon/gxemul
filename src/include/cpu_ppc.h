@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.27 2005-08-10 08:14:30 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.28 2005-08-11 15:39:39 debug Exp $
  */
 
 #include "misc.h"
@@ -87,7 +87,7 @@ struct ppc_instr_call {
 /*  Translation cache struct for each physical page:  */
 struct ppc_tc_physpage {
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint32_t	physaddr;
+	uint64_t	physaddr;
 	int		flags;
 	struct ppc_instr_call ics[PPC_IC_ENTRIES_PER_PAGE + 1];
 };

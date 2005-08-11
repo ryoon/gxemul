@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.6 2005-08-10 15:38:46 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.7 2005-08-11 15:39:37 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -47,13 +47,13 @@ X(nop)
 /*
  *  addi:  Add immediate.
  *
- *  arg[0] = pointer to destination uint64_t
- *  arg[1] = pointer to source uint64_t
- *  arg[2] = immediate value (int32_t or larger)
+ *  arg[0] = pointer to source uint64_t
+ *  arg[1] = immediate value (int32_t or larger)
+ *  arg[2] = pointer to destination uint64_t
  */
 X(addi)
 {
-	reg(ic->arg[0]) = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	reg(ic->arg[2]) = reg(ic->arg[0]) + (int32_t)ic->arg[1];
 }
 
 
@@ -86,6 +86,54 @@ X(b)
 X(b_samepage)
 {
 	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  mflr:  Move from Link Register
+ *
+ *  arg[0] = pointer to destination uint64_t
+ */
+X(mflr)
+{
+	reg(ic->arg[0]) = cpu->cd.ppc.lr;
+}
+
+
+/*
+ *  ori:  OR immediate.
+ *
+ *  arg[0] = pointer to source uint64_t
+ *  arg[1] = immediate value (uint32_t or larger)
+ *  arg[2] = pointer to destination uint64_t
+ */
+X(ori)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) | (uint32_t)ic->arg[1];
+}
+
+
+/*
+ *  user_syscall:  Userland syscall.
+ *
+ *  arg[0] = syscall "level" (usually 0)
+ */
+X(user_syscall)
+{
+	useremul_syscall(cpu, ic->arg[0]);
+}
+
+
+/*
+ *  xori:  XOR immediate.
+ *
+ *  arg[0] = pointer to source uint64_t
+ *  arg[1] = immediate value (uint32_t or larger)
+ *  arg[2] = pointer to destination uint64_t
+ */
+X(xori)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1];
 }
 
 
@@ -145,7 +193,7 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, ra, aa_bit, lk_bit;
+	int main_opcode, rt, rs, ra, aa_bit, lk_bit, spr, xo;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -199,14 +247,45 @@ X(to_be_translated)
 	switch (main_opcode) {
 
 	case PPC_HI6_ADDI:
+	case PPC_HI6_ADDIS:
 		rt = (iword >> 21) & 31; ra = (iword >> 16) & 31;
 		ic->f = instr(addi);
-		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 		if (ra == 0)
-			ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.zero);
 		else
-			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
-		ic->arg[2] = (ssize_t)(int16_t)(iword & 0xffff);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[1] = (ssize_t)(int16_t)(iword & 0xffff);
+		if (main_opcode == PPC_HI6_ADDIS)
+			ic->arg[1] <<= 16;
+		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+		break;
+
+	case PPC_HI6_ORI:
+	case PPC_HI6_ORIS:
+	case PPC_HI6_XORI:
+	case PPC_HI6_XORIS:
+		rs = (iword >> 21) & 31; ra = (iword >> 16) & 31;
+		if (main_opcode == PPC_HI6_ORI ||
+		    main_opcode == PPC_HI6_ORIS)
+			ic->f = instr(ori);
+		else
+			ic->f = instr(xori);
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+		ic->arg[1] = iword & 0xffff;
+		if (main_opcode == PPC_HI6_ORIS ||
+		    main_opcode == PPC_HI6_XORIS)
+			ic->arg[1] <<= 16;
+		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		break;
+
+	case PPC_HI6_SC:
+		ic->arg[0] = (iword >> 5) & 0x7f;
+		if (cpu->machine->userland_emul != NULL)
+			ic->f = instr(user_syscall);
+		else {
+			fatal("PPC non-userland SYSCALL: TODO\n");
+			goto bad;
+		}
 		break;
 
 	case PPC_HI6_B:
@@ -235,6 +314,24 @@ X(to_be_translated)
 				    cpu->cd.ppc.cur_ic_page +
 				    ((new_pc & mask_within_page) >> 2));
 			}
+		}
+		break;
+
+	case PPC_HI6_31:
+		xo = (iword >> 1) & 1023;
+		switch (xo) {
+		case PPC_31_MFSPR:
+			rt = (iword >> 21) & 31;
+			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			switch (spr) {
+			case 8:	ic->f = instr(mflr);
+				break;
+			default:fatal("UNIMPLEMENTED spr %i\n", spr);
+				goto bad;
+			}
+			break;
+		default:goto bad;
 		}
 		break;
 

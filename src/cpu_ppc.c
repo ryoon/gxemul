@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.78 2005-08-11 09:14:11 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.79 2005-08-11 15:39:37 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -976,7 +976,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_MFSPR:
 			rt = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
-			debug("mfspr\tr%i,spr%i", rt, spr);
+			switch (spr) {
+			case 8:	debug("mflr\tr%i", rt);
+				break;
+			default:debug("mfspr\tr%i,spr%i", rt, spr);
+			}
 			break;
 		case PPC_31_TLBIE:
 			/*  TODO: what is ra? The IBM online docs didn't say  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.104 2005-08-11 09:14:11 debug Exp $
+ *  $Id: file.c,v 1.105 2005-08-11 16:11:33 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -125,6 +125,7 @@ struct ms_sym {
 
 #define	AOUT_FLAG_DECOSF1		1
 #define	AOUT_FLAG_FROM_BEGINNING	2
+#define	AOUT_FLAG_VADDR_ZERO_HACK	4
 /*
  *  file_load_aout():
  *
@@ -145,8 +146,11 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 	uint32_t entry, datasize, textsize;
 	int32_t symbsize = 0;
 	uint32_t vaddr, total_len;
-	unsigned char buf[4096];
+	unsigned char buf[65536];
 	unsigned char *syms;
+
+	if (m->cpus[0]->byte_order == EMUL_BIG_ENDIAN)
+		encoding = ELFDATA2MSB;
 
 	f = fopen(filename, "r");
 	if (f == NULL) {
@@ -177,8 +181,11 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		}
 
 		unencode(entry, &aout_header.a_entry, uint32_t);
-		vaddr = entry;
 		debug("a.out, entry point 0x%08lx\n", (long)entry);
+		vaddr = entry;
+
+		if (flags & AOUT_FLAG_VADDR_ZERO_HACK)
+			vaddr = 0;
 
 		unencode(textsize, &aout_header.a_text, uint32_t);
 		unencode(datasize, &aout_header.a_data, uint32_t);
@@ -201,10 +208,20 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		/*  printf("fread len=%i vaddr=%x buf[0..]=%02x %02x %02x\n",
 		    len, (int)vaddr, buf[0], buf[1], buf[2]);  */
 
-		if (len > 0)
-			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr,
-			    &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
-		else {
+		if (len > 0) {
+			int len2 = 0;
+			uint64_t vaddr1 = vaddr &
+			    ((1 << BITS_PER_MEMBLOCK) - 1);
+			uint64_t vaddr2 = (vaddr +
+			    len) & ((1 << BITS_PER_MEMBLOCK) - 1);
+			if (vaddr2 < vaddr1) {
+				len2 = len - vaddr2;
+				m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr,
+				    &buf[0], len2, MEM_WRITE, NO_EXCEPTIONS);
+			}
+			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr + len2,
+			    &buf[len2], len-len2, MEM_WRITE, NO_EXCEPTIONS);
+		} else {
 			if (flags & AOUT_FLAG_DECOSF1)
 				break;
 			else {
@@ -1617,6 +1634,13 @@ void file_load(struct machine *machine, struct memory *mem,
 	if (buf[0]==0x00 && buf[1]==0x8b && buf[2]==0x01 && buf[3]==0x07) {
 		/*  MIPS a.out  */
 		file_load_aout(machine, mem, filename, 0,
+		    entrypointp, arch, byte_orderp);
+		goto ret;
+	}
+	if (buf[0]==0x00 && buf[1]==0x87 && buf[2]==0x01 && buf[3]==0x08) {
+		/*  M68K a.out  */
+		file_load_aout(machine, mem, filename,
+		    AOUT_FLAG_VADDR_ZERO_HACK  /*  for OpenBSD/mac68k  */,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}

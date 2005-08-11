@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.893 2005-08-11 15:39:36 debug Exp $
+$Id: HISTORY,v 1.894 2005-08-11 16:11:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2170,3 +2170,5 @@ Changelog for GXemul:
 20050811	Adding a dummy M68K cpu family. The dyntrans system isn't ready
 		for variable-length ISAs yet, so it's completely bogus so far.
 		Re-adding more PPC instructions.
+		Adding a hack to src/file.c which allows OpenBSD/mac68k a.out
+		kernels to be loaded.

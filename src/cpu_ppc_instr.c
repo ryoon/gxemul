@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.10 2005-08-11 20:55:04 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.11 2005-08-11 21:01:31 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -172,6 +172,17 @@ X(crxor)
 X(mflr)
 {
 	reg(ic->arg[0]) = cpu->cd.ppc.lr;
+}
+
+
+/*
+ *  mfmsr:  Move From MSR
+ *
+ *  arg[0] = pointer to destination register
+ */
+X(mfmsr)
+{
+	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 0);
 }
 
 
@@ -505,6 +516,12 @@ X(to_be_translated)
 			default:fatal("UNIMPLEMENTED spr %i\n", spr);
 				goto bad;
 			}
+			break;
+
+		case PPC_31_MFMSR:
+			rt = (iword >> 21) & 31;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			ic->f = instr(mfmsr);
 			break;
 
 		case PPC_31_MTMSR:

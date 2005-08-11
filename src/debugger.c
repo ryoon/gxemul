@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.121 2005-08-10 22:25:50 debug Exp $
+ *  $Id: debugger.c,v 1.122 2005-08-11 09:43:40 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1646,8 +1646,7 @@ static struct cmd cmds[] = {
 	{ "version", "", 0, debugger_cmd_version,
 		"print version information" },
 
-	/*  Note: Spaces in the name will cause this to not actually be
-	    matches as a command. This is intentional.  */
+	/*  Note: NULL handler.  */
 	{ "x = expr", "", 0, NULL, "generic assignment" },
 
 	{ NULL, NULL, 0, NULL, NULL }
@@ -2175,7 +2174,8 @@ void debugger(void)
 		/*  Check for a command name match:  */
 		n = i = i_match = 0;
 		while (cmds[i].name != NULL) {
-			if (strncasecmp(cmds[i].name, cmd, matchlen) == 0) {
+			if (strncasecmp(cmds[i].name, cmd, matchlen) == 0
+			    && cmds[i].f != NULL) {
 				cmds[i].tmp_flag = 1;
 				i_match = i;
 				n++;

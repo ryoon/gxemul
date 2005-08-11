@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.506 2005-08-09 19:12:26 debug Exp $
+ *  $Id: machine.c,v 1.507 2005-08-11 09:14:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4365,6 +4365,37 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 #endif	/*  ENABLE_IA64  */
 
+#ifdef ENABLE_M68K
+	case MACHINE_BAREM68K:
+		machine->machine_name = "\"Bare\" M68K machine";
+		break;
+
+	case MACHINE_TESTM68K:
+		machine->machine_name = "M68K test machine";
+
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
+
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testalpha generic");
+
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
+		break;
+#endif	/*  ENABLE_M68K  */
+
 #ifdef ENABLE_X86
 	case MACHINE_BAREX86:
 		machine->machine_name = "\"Bare\" x86 machine";
@@ -4773,6 +4804,12 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("IA64");
 		break;
 
+	/*  M68K:  */
+	case MACHINE_BAREM68K:
+	case MACHINE_TESTM68K:
+		m->cpu_name = strdup("68020");
+		break;
+
 	/*  x86:  */
 	case MACHINE_BAREX86:
 	case MACHINE_X86:
@@ -5072,6 +5109,14 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for M68K:  */
+	me = machine_entry_new("Test-machine for M68K", ARCH_M68K,
+	    MACHINE_TESTM68K, 1, 0);
+	me->aliases[0] = "testm68k";
+	if (cpu_family_ptr_by_number(ARCH_M68K) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Test-machine for IA64:  */
 	me = machine_entry_new("Test-machine for IA64", ARCH_IA64,
 	    MACHINE_TESTIA64, 1, 0);
@@ -5273,6 +5318,14 @@ void machine_init(void)
 	    MACHINE_BAREMIPS, 1, 0);
 	me->aliases[0] = "baremips";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" M68K machine:  */
+	me = machine_entry_new("Generic \"bare\" M68K machine", ARCH_M68K,
+	    MACHINE_BAREM68K, 1, 0);
+	me->aliases[0] = "barem68k";
+	if (cpu_family_ptr_by_number(ARCH_M68K) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

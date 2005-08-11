@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.891 2005-08-10 22:25:49 debug Exp $
+$Id: HISTORY,v 1.892 2005-08-11 09:14:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2167,3 +2167,5 @@ Changelog for GXemul:
 20050810	Working on adding support for "dual mode" for PPC dyntrans
 		(i.e. both 64-bit and 32-bit modes).
 		(Re)adding some simple PPC instructions.
+20050811	Adding a dummy M68K cpu family. The dyntrans system isn't ready
+		for variable-length ISAs yet, so it's completely bogus so far.

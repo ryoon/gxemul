@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.73 2005-08-09 22:24:47 debug Exp $
+#  $Id: Makefile.skel,v 1.74 2005-08-11 09:14:11 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -85,6 +85,20 @@ tmp_ia64_head.c:
 tmp_ia64_tail.c:
 	cd tools; make generate_tail; cd ..
 	tools/generate_tail ia64 IA64 > tmp_ia64_tail.c
+
+
+###############################################################################
+
+cpu_m68k.o: cpu_m68k.c cpu_m68k_instr.c cpu_dyntrans.c memory_rw.c \
+	tmp_m68k_head.c tmp_m68k_tail.c
+
+tmp_m68k_head.c:
+	cd tools; make generate_head; cd ..
+	tools/generate_head m68k M68K > tmp_m68k_head.c
+
+tmp_m68k_tail.c:
+	cd tools; make generate_tail; cd ..
+	tools/generate_tail m68k M68K > tmp_m68k_tail.c
 
 
 ###############################################################################

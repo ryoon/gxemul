@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.77 2005-08-10 15:38:46 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.78 2005-08-11 09:14:11 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -506,11 +506,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	    + instr[3];
 
 	debug(": %08x\t", iword);
-
-	if (bintrans && !running) {
-		debug("(bintrans)");
-		goto disasm_ret;
-	}
 
 	/*
 	 *  Decode the instruction:

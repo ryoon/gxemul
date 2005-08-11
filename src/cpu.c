@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.312 2005-08-10 22:25:49 debug Exp $
+ *  $Id: cpu.c,v 1.313 2005-08-11 09:14:11 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -661,6 +661,10 @@ void cpu_init(void)
 
 #ifdef ENABLE_IA64
 	add_cpu_family(ia64_cpu_family_init, ARCH_IA64);
+#endif
+
+#ifdef ENABLE_M68K
+	add_cpu_family(m68k_cpu_family_init, ARCH_M68K);
 #endif
 
 #ifdef ENABLE_MIPS

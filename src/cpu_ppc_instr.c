@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.9 2005-08-11 20:29:29 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.10 2005-08-11 20:55:04 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -96,6 +96,71 @@ X(b)
 X(b_samepage)
 {
 	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  bl:  Branch and Link (to a different translated page)
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ */
+X(bl)
+{
+	uint32_t low_pc;
+
+	/*  Calculate LR:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
+
+	/*  Calculate new PC from this instruction + arg[0]  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2);
+	cpu->pc += (int32_t)ic->arg[0];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	ppc_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  bl_samepage:  Branch and Link (to within the same translated page)
+ *
+ *  arg[0] = pointer to new ppc_instr_call
+ */
+X(bl_samepage)
+{
+	uint32_t low_pc;
+
+	/*  Calculate LR:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
+
+	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  crxor:  Condition Register XOR
+ *
+ *  arg[0] = copy of the instruction word
+ */
+X(crxor)
+{
+	uint32_t iword = ic->arg[0];
+	int bt = (iword >> 21) & 31;
+	int ba = (iword >> 16) & 31;
+	int bb = (iword >> 11) & 31;
+	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
+	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
+	cpu->cd.ppc.cr &= ~(1 << (31-bt));
+	if (ba ^ bb)
+		cpu->cd.ppc.cr |= (1 << (31-bt));
 }
 
 
@@ -316,6 +381,12 @@ X(to_be_translated)
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		break;
 
+	case PPC_HI6_LBZ:
+	case PPC_HI6_LBZU:
+	case PPC_HI6_LHZ:
+	case PPC_HI6_LHZU:
+	case PPC_HI6_LWZ:
+	case PPC_HI6_LWZU:
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
 	case PPC_HI6_STH:
@@ -325,8 +396,14 @@ X(to_be_translated)
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
-		load = 0; zero = 0; size = 0; update = 0;
+		load = 0; zero = 1; size = 0; update = 0;
 		switch (main_opcode) {
+		case PPC_HI6_LBZ:  load = 1; break;
+		case PPC_HI6_LBZU: load = 1; update = 1; break;
+		case PPC_HI6_LHZ:  load = 1; size = 1; break;
+		case PPC_HI6_LHZU: load = 1; size = 1; update = 1; break;
+		case PPC_HI6_LWZ:  load = 1; size = 2; break;
+		case PPC_HI6_LWZU: load = 1; size = 2; update = 1; break;
 		case PPC_HI6_STB:  break;
 		case PPC_HI6_STBU: update = 1; break;
 		case PPC_HI6_STH:  size = 1; break;
@@ -365,14 +442,19 @@ X(to_be_translated)
 	case PPC_HI6_B:
 		aa_bit = (iword & 2) >> 1;
 		lk_bit = iword & 1;
-		if (aa_bit || lk_bit) {
-			fatal("aa_bit OR lk_bit: NOT YET\n");
+		if (aa_bit) {
+			fatal("aa_bit: NOT YET\n");
 			goto bad;
 		}
 		tmp_addr = (int64_t)(int32_t)((iword & 0x03fffffc) << 6);
 		tmp_addr = (int64_t)tmp_addr >> 6;
-		ic->f = instr(b);
-		samepage_function = instr(b_samepage);
+		if (lk_bit) {
+			ic->f = instr(bl);
+			samepage_function = instr(bl_samepage);
+		} else {
+			ic->f = instr(b);
+			samepage_function = instr(b_samepage);
+		}
 		ic->arg[0] = (ssize_t)tmp_addr;
 		/*  Branches are calculated as cur PC + offset.  */
 		/*  Special case: branch within the same page:  */
@@ -398,6 +480,11 @@ X(to_be_translated)
 		case PPC_19_ISYNC:
 			/*  TODO  */
 			ic->f = instr(nop);
+			break;
+
+		case PPC_19_CRXOR:
+			ic->f = instr(crxor);
+			ic->arg[0] = iword;
 			break;
 
 		default:goto bad;

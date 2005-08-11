@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.11 2005-08-11 21:01:31 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.12 2005-08-11 21:13:45 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -127,6 +127,35 @@ X(bl)
 
 
 /*
+ *  bl_trace:  Branch and Link (to a different translated page)  (with trace)
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ */
+X(bl_trace)
+{
+	uint32_t low_pc;
+
+	/*  Calculate LR:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
+
+	/*  Calculate new PC from this instruction + arg[0]  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2);
+	cpu->pc += (int32_t)ic->arg[0];
+
+	cpu_functioncall_trace(cpu, cpu->pc);
+
+	/*  Find the new physical page and update the translation pointers:  */
+	ppc_pc_to_pointers(cpu);
+}
+
+
+/*
  *  bl_samepage:  Branch and Link (to within the same translated page)
  *
  *  arg[0] = pointer to new ppc_instr_call
@@ -142,6 +171,32 @@ X(bl_samepage)
 	cpu->cd.ppc.lr += (low_pc << 2);
 
 	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  bl_samepage_trace:  Branch and Link (to within the same translated page)
+ *
+ *  arg[0] = pointer to new ppc_instr_call
+ */
+X(bl_samepage_trace)
+{
+	uint32_t low_pc;
+
+	/*  Calculate LR:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
+
+	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
+
+	/*  Calculate new PC (for the trace)  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2);
+	cpu_functioncall_trace(cpu, cpu->pc);
 }
 
 
@@ -460,8 +515,13 @@ X(to_be_translated)
 		tmp_addr = (int64_t)(int32_t)((iword & 0x03fffffc) << 6);
 		tmp_addr = (int64_t)tmp_addr >> 6;
 		if (lk_bit) {
-			ic->f = instr(bl);
-			samepage_function = instr(bl_samepage);
+			if (cpu->machine->show_trace_tree) {
+				ic->f = instr(bl_trace);
+				samepage_function = instr(bl_samepage_trace);
+			} else {
+				ic->f = instr(bl);
+				samepage_function = instr(bl_samepage);
+			}
 		} else {
 			ic->f = instr(b);
 			samepage_function = instr(b_samepage);

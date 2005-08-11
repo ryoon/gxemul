@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.313 2005-08-11 09:14:11 debug Exp $
+ *  $Id: cpu.c,v 1.314 2005-08-11 21:13:44 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -243,9 +243,9 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 	if (cpu->machine->ncpus > 1)
 		fatal("cpu%i:\t", cpu->cpu_id);
 
+	cpu->trace_tree_depth ++;
 	for (i=0; i<cpu->trace_tree_depth; i++)
 		fatal("  ");
-	cpu->trace_tree_depth ++;
 
 	fatal("<");
 	symbol = get_symbol_name_and_n_args(&cpu->machine->symbol_context,

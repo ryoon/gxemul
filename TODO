@@ -1,4 +1,4 @@
-$Id: TODO,v 1.159 2005-08-10 05:29:30 debug Exp $
+$Id: TODO,v 1.160 2005-08-11 16:38:05 debug Exp $
 
 ===============================================================================
 
@@ -30,6 +30,8 @@ dyntrans:
 		TODO: is instr_call statistics enough?
 
 	x)  support for multiple word lengths (everything except alpha/arm)
+
+	x)  support for archs that allow transparent unaligned load/stores
 
 	x)  support for variable-length instructions (x86, m68k, ...)
 		Perhaps:  don't increase the next_ic between every

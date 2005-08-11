@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.7 2005-08-11 15:39:37 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.8 2005-08-11 16:36:46 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -92,11 +92,22 @@ X(b_samepage)
 /*
  *  mflr:  Move from Link Register
  *
- *  arg[0] = pointer to destination uint64_t
+ *  arg[0] = pointer to destination register
  */
 X(mflr)
 {
 	reg(ic->arg[0]) = cpu->cd.ppc.lr;
+}
+
+
+/*
+ *  mtmsr:  Move To MSR
+ *
+ *  arg[0] = pointer to source register
+ */
+X(mtmsr)
+{
+	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 1);
 }
 
 
@@ -193,7 +204,7 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, rs, ra, aa_bit, lk_bit, spr, xo;
+	int main_opcode, rt, rs, ra, aa_bit, l_bit, lk_bit, spr, xo;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -317,9 +328,23 @@ X(to_be_translated)
 		}
 		break;
 
+	case PPC_HI6_19:
+		xo = (iword >> 1) & 1023;
+		switch (xo) {
+
+		case PPC_19_ISYNC:
+			/*  TODO  */
+			ic->f = instr(nop);
+			break;
+
+		default:goto bad;
+		}
+		break;
+
 	case PPC_HI6_31:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+
 		case PPC_31_MFSPR:
 			rt = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
@@ -331,6 +356,18 @@ X(to_be_translated)
 				goto bad;
 			}
 			break;
+
+		case PPC_31_MTMSR:
+			rs = (iword >> 21) & 31;
+			l_bit = (iword >> 16) & 1;
+			if (l_bit) {
+				fatal("TODO: mtmsr l-bit\n");
+				goto bad;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			ic->f = instr(mtmsr);
+			break;
+
 		default:goto bad;
 		}
 		break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.507 2005-08-11 09:14:11 debug Exp $
+ *  $Id: machine.c,v 1.508 2005-08-11 16:36:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4352,7 +4352,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testalpha generic");
+		    640,480, 640,480, 24, "testia64 generic");
 
 		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);
@@ -4383,7 +4383,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testalpha generic");
+		    640,480, 640,480, 24, "testm68k generic");
 
 		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
 		    (long long)DEV_DISK_ADDRESS);

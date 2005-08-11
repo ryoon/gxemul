@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.79 2005-08-11 15:39:37 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.80 2005-08-11 20:29:29 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -852,8 +852,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			}
 			debug("%s\tr%i,r%i,r%i", mnem, rs, ra, rb);
-			if (running)
-				goto disasm_ret_nonewline;
 			break;
 		case PPC_31_NEG:
 		case PPC_31_NEGO:
@@ -1091,8 +1089,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				mnem = power? "stsi" : "stswi"; break;
 			}
 			debug("%s\tr%i,r%i,%i", mnem, rs, ra, nb);
-			if (running)
-				goto disasm_ret_nonewline;
 			break;
 		case PPC_31_SRAWI:
 			rs = (iword >> 21) & 31;
@@ -1178,17 +1174,13 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		else
 			debug("r");
 		debug("%i,%i(r%i)", rs, imm, ra);
-		if (running)
-			goto disasm_ret_nonewline;
 		break;
 	default:
 		/*  TODO  */
 		debug("unimplemented hi6 = 0x%02x", hi6);
 	}
 
-disasm_ret:
 	debug("\n");
-disasm_ret_nonewline:
 	return sizeof(iword);
 }
 

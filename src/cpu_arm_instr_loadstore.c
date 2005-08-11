@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.5 2005-07-28 13:15:24 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.6 2005-08-11 20:29:29 debug Exp $
  *
  *
  *  TODO: Native load/store if the endianness is the same as the host's
@@ -138,7 +138,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 
 	if (page == NULL) {
 	        A__NAME__general(cpu, ic);
-	} else  {
+	} else {
 #ifdef A__P
 #ifdef A__W
 		*((uint32_t *)ic->arg[0]) = addr;

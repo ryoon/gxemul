@@ -1,4 +1,4 @@
-$Id: TODO,v 1.160 2005-08-11 16:38:05 debug Exp $
+$Id: TODO,v 1.161 2005-08-11 20:29:28 debug Exp $
 
 ===============================================================================
 
@@ -129,6 +129,8 @@ Low priority stuff:
 			4K (note: NOT R4000), 5K (note: NOT R5000),
 			R6000 (ISA II), R8000
 		o)  Multi-cpu stuff:
+			+)  Interrupt routing (ie devices vs mainbus, or
+			    connect each device to a fixed cpu)
 			+)  SGI's NUMA architecture. Study
 				x)  Linux sources
 				x)  SGI's specs on NUMA address space

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.894 2005-08-11 16:11:30 debug Exp $
+$Id: HISTORY,v 1.895 2005-08-11 20:29:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2172,3 +2172,5 @@ Changelog for GXemul:
 		Re-adding more PPC instructions.
 		Adding a hack to src/file.c which allows OpenBSD/mac68k a.out
 		kernels to be loaded.
+		Beginning to add PPC loads/stores. So far they only work in
+		32-bit mode.

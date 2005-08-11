@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.8 2005-08-11 16:36:46 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.9 2005-08-11 20:29:29 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -41,6 +41,16 @@
  */
 X(nop)
 {
+}
+
+
+/*
+ *  invalid:  To catch bugs.
+ */
+X(invalid)
+{
+	fatal("INTERNAL ERROR\n");
+	exit(1);
 }
 
 
@@ -112,6 +122,19 @@ X(mtmsr)
 
 
 /*
+ *  or:  Or.
+ *
+ *  arg[0] = pointer to source register rs
+ *  arg[1] = pointer to source register rb
+ *  arg[2] = pointer to destination register ra
+ */
+X(or)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]);
+}
+
+
+/*
  *  ori:  OR immediate.
  *
  *  arg[0] = pointer to source uint64_t
@@ -146,6 +169,9 @@ X(xori)
 {
 	reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1];
 }
+
+
+#include "tmp_ppc_loadstore.c"
 
 
 /*****************************************************************************/
@@ -204,7 +230,8 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, rs, ra, aa_bit, l_bit, lk_bit, spr, xo;
+	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr,
+	    xo, imm, load, size, update, zero;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -289,6 +316,42 @@ X(to_be_translated)
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		break;
 
+	case PPC_HI6_STB:
+	case PPC_HI6_STBU:
+	case PPC_HI6_STH:
+	case PPC_HI6_STHU:
+	case PPC_HI6_STW:
+	case PPC_HI6_STWU:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		load = 0; zero = 0; size = 0; update = 0;
+		switch (main_opcode) {
+		case PPC_HI6_STB:  break;
+		case PPC_HI6_STBU: update = 1; break;
+		case PPC_HI6_STH:  size = 1; break;
+		case PPC_HI6_STHU: size = 1; update = 1; break;
+		case PPC_HI6_STW:  size = 2; break;
+		case PPC_HI6_STWU: size = 2; update = 1; break;
+		}
+		ic->f =
+#ifdef MODE32
+		    ppc32_loadstore
+#else
+		    ppc_loadstore
+#endif
+		    [size + 4*zero + 8*load + (imm==0? 16 : 0) + 32*update];
+
+		if (ra == 0 && update) {
+			fatal("TODO: ra=0 && update?\n");
+			goto bad;
+		}
+
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+		ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[2] = (ssize_t)imm;
+		break;
+
 	case PPC_HI6_SC:
 		ic->arg[0] = (iword >> 5) & 0x7f;
 		if (cpu->machine->userland_emul != NULL)
@@ -366,6 +429,21 @@ X(to_be_translated)
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			ic->f = instr(mtmsr);
+			break;
+
+		case PPC_31_OR:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			if (rc) {
+				fatal("RC bit not yet implemented\n");
+				goto bad;
+			}
+			ic->f = instr(or);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			break;
 
 		default:goto bad;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.1 2005-08-11 20:29:29 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.2 2005-08-11 21:22:31 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -71,7 +71,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 	    (int32_t)
 #endif
 	    ((data[0] << 24) + (data[1] << 16) +
-	    (data[0] << 8) + data[1]);
+	    (data[2] << 8) + data[3]);
 #endif
 #ifdef LS_D
 	reg(ic->arg[0]) =
@@ -158,9 +158,40 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 		addr &= 4095;
 #ifdef LS_LOAD
 		/*  Load:  */
-		fatal("LOAD: todo\n");
-		exit(1);
+#ifdef LS_B
+		reg(ic->arg[0]) =
+#ifndef LS_ZERO
+		    (int8_t)
+#endif
+		    page[addr];
+#endif
+#ifdef LS_H
+		reg(ic->arg[0]) =
+#ifndef LS_ZERO
+		    (int16_t)
+#endif
+		    ((page[addr] << 8) + page[addr+1]);
+#endif
+#ifdef LS_W
+		reg(ic->arg[0]) =
+#ifndef LS_ZERO
+		    (int32_t)
+#endif
+		    ((page[addr] << 24) + (page[addr+1] << 16) +
+		    (page[addr+2] << 8) + page[addr+3]);
+#endif
+#ifdef LS_D
+		reg(ic->arg[0]) =
+		    ((uint64_t)page[addr+0] << 56) +
+		    ((uint64_t)page[addr+1] << 48) +
+		    ((uint64_t)page[addr+2] << 40) +
+		    ((uint64_t)page[addr+3] << 32) +
+		    (page[addr+4] << 24) + (page[addr+5] << 16) +
+		    (page[addr+6] << 8) + page[addr+7];
+#endif
+
 #else	/*  !LS_LOAD  */
+
 		/*  Store:  */
 #ifdef LS_B
 		page[addr] = reg(ic->arg[0]);

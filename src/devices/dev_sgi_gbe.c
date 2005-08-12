@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.22 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.23 2005-08-12 19:14:59 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -47,6 +47,7 @@
 #define	FAKE_GBE_FB_ADDRESS	0x38000000
 
 #define	GBE_DEBUG
+#define debug fatal
 
 #define	GBE_DEFAULT_XRES		640
 #define	GBE_DEFAULT_YRES		480
@@ -87,17 +88,22 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 	unsigned char tileptr_buf[sizeof(uint16_t)];
 	uint64_t tileptr, tiletable;
 	int lines_to_copy, pixels_per_line, y;
-	unsigned char buf[16384];		/*  must be power of 2, at most 65536  */
+	unsigned char buf[16384];	/*  must be power of 2, at most 65536 */
 	int copy_len, copy_offset;
 	uint64_t old_fb_offset = 0;
 	int tweaked = 1;
 
+/*
+return;
+*/
 	/*  debug("[ sgi_gbe: dev_sgi_gbe_tick() ]\n");  */
 
 	tiletable = (d->frm_control & 0xfffffe00);
 	if (tiletable == 0)
 		on_screen = 0;
-
+/*
+tweaked = 0;
+*/
 	while (on_screen) {
 		/*  Get pointer to a tile:  */
 		cpu->memory_rw(cpu, cpu->mem, tiletable +
@@ -155,7 +161,13 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 				cpu->memory_rw(cpu, cpu->mem, tileptr + 512 * y,
 				    buf, pixels_per_line * d->bitdepth / 8,
 				    MEM_READ, NO_EXCEPTIONS | PHYSICAL);
-
+#if 0
+{
+int i;
+for (i=0; i<pixels_per_line * d->bitdepth / 8; i++)
+	buf[i] ^= (random() & 0x20);
+}
+#endif
 				dev_fb_access(cpu, cpu->mem, ((ybase + y) *
 				    d->xres + xbase) * d->bitdepth / 8,
 				    buf, pixels_per_line * d->bitdepth / 8,
@@ -387,7 +399,9 @@ void dev_sgi_gbe_init(struct machine *machine, struct memory *mem,
 	d->xres = GBE_DEFAULT_XRES;
 	d->yres = GBE_DEFAULT_YRES;
 	d->bitdepth = 8;
+#if 0
 	d->control = 0x20aa000;		/*  or 0x00000001?  */
+#endif
 	d->fb_data = dev_fb_init(machine, mem, FAKE_GBE_FB_ADDRESS,
 	    VFB_GENERIC, d->xres, d->yres, d->xres, d->yres, 8, "SGI GBE");
 	set_grayscale_palette(d->fb_data, 256);

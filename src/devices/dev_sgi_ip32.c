@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.27 2005-06-26 11:43:48 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.28 2005-08-12 19:14:59 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -562,7 +562,8 @@ skip_and_advance:
 	d->cur_rx_addr_index ++;
 	d->cur_rx_addr_index %= N_RX_ADDRESSES;
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &= ~MEC_INT_RX_MCL_FIFO_ALIAS;
-	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= (d->cur_rx_addr_index & 0x1f) << 8;
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |=
+	    (d->cur_rx_addr_index & 0x1f) << 8;
 	retval = 1;
 
 skip:
@@ -995,9 +996,12 @@ int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ sgi_ust: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+			debug("[ sgi_ust: unimplemented write to "
+			    "address 0x%llx, data=0x%016llx ]\n",
+			    (long long)relative_addr, (long long)idata);
 		else
-			debug("[ sgi_ust: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+			debug("[ sgi_ust: unimplemented read from address"
+			    " 0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ)
@@ -1020,7 +1024,8 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct sgi_ust_data));
 
 	memory_device_register(mem, "sgi_ust", baseaddr,
-	    DEV_SGI_UST_LENGTH, dev_sgi_ust_access, (void *)d, MEM_DEFAULT, NULL);
+	    DEV_SGI_UST_LENGTH, dev_sgi_ust_access, (void *)d,
+	    MEM_DEFAULT, NULL);
 }
 
 
@@ -1029,9 +1034,12 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr)
 
 /*
  *  SGI "mte". This device seems to be an accelerator for copying/clearing
- *  memory.  Used in SGI-IP32.
+ *  memory. Used by (at least) the SGI O2 PROM.
+ *
+ *  Actually, it seems to be used for graphics output as well. (?)
+ *  TODO: Run the O2's prom and try to figure out what it really does.
  */
-
+/*  #define debug fatal  */
 #define	ZERO_CHUNK_LEN		4096
 
 struct sgi_mte_data {
@@ -1061,9 +1069,9 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 		odata = d->reg[regnr];
 
 	/*
-	 *  I've not found any docs about this 'mte' device at all, so this is just
-	 *  a guess. The mte seems to be used for copying and zeroing chunks of
-	 *  memory.
+	 *  I've not found any docs about this 'mte' device at all, so this is
+	 *  just a guess. The mte seems to be used for copying and zeroing
+	 *  chunks of memory.
 	 *
 	 *  [ sgi_mte: unimplemented write to address 0x3030, data=0x00000000003da000 ]  <-- first address
 	 *  [ sgi_mte: unimplemented write to address 0x3038, data=0x00000000003f9fff ]  <-- last address
@@ -1106,6 +1114,27 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 	case 0x1770:
 	case 0x1778:
 		break;
+
+#if 0
+case 0x2074:
+{
+/*  This seems to have to do with graphical output:
+    0x000000000xxx0yyy  where x is usually 0..1279 and y is 0..1023?  */
+/*  Gaaah...  */
+	int x = (idata >> 16) & 0xfff;
+	int y = idata & 0xfff;
+	int addr;
+unsigned char buf[3];
+	printf("x = %i, y = %i\n", x, y);
+buf[0] = buf[1] = buf[2] = random() | 0x80;
+addr = (x/2 + (y/2)*640) * 3;
+if (x < 640 && y < 480)
+cpu->memory_rw(cpu, cpu->mem, 0x38000000 + addr,
+ buf, 3, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+
+}
+break;
+#endif
 
 	/*  Operations:  */
 	case 0x3800:

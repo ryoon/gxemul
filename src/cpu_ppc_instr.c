@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.13 2005-08-12 18:34:00 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.14 2005-08-12 19:14:58 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -77,12 +77,7 @@ X(addi)
 X(bclr)
 {
 	int bo = ic->arg[0], bi = ic->arg[1], bh = ic->arg[2], ctr_ok, cond_ok;
-#ifdef MODE32
-	uint32_t
-#else
-	uint64_t
-#endif
-	    tmp, addr = cpu->cd.ppc.lr;
+	MODE_uint_t tmp, addr = cpu->cd.ppc.lr;
 	if (!(bo & 4))
 		cpu->cd.ppc.ctr --;
 	ctr_ok = (bo >> 2) & 1;
@@ -130,12 +125,7 @@ X(b)
  */
 X(bc)
 {
-#ifdef MODE32
-	uint32_t
-#else
-	uint64_t
-#endif
-	    tmp;
+	MODE_uint_t tmp;
 	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1];
 	if (!(bo & 4))
 		cpu->cd.ppc.ctr --;
@@ -170,12 +160,7 @@ X(b_samepage)
  */
 X(bc_samepage)
 {
-#ifdef MODE32
-	uint32_t
-#else
-	uint64_t
-#endif
-	    tmp;
+	MODE_uint_t tmp;
 	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1];
 	if (!(bo & 4))
 		cpu->cd.ppc.ctr --;

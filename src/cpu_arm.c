@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.56 2005-08-07 23:36:48 debug Exp $
+ *  $Id: cpu_arm.c,v 1.57 2005-08-12 20:20:28 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -319,8 +319,8 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx000a aaaSnnnn ddddcccc ctttmmmm  Register form
 		 *  xxxx001a aaaSnnnn ddddrrrr bbbbbbbb  Immediate form
 		 */
-		if (iw & 0x80 && !(main_opcode & 2)) {
-			debug("UNIMPLEMENTED reg (c!=0)\n");
+		if (iw & 0x80 && !(main_opcode & 2) && iw & 0x10) {
+			debug("UNIMPLEMENTED reg (c!=0), t odd\n");
 			break;
 		}
 
@@ -348,24 +348,24 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("%s", arm_regname[iw & 15]);
 			switch (t) {
 			case 0:	if (c != 0)
-					debug(" LSL #%i", c);
+					debug(", lsl #%i", c);
 				break;
-			case 1:	debug(" LSL %s", arm_regname[c >> 1]);
+			case 1:	debug(", lsl %s", arm_regname[c >> 1]);
 				break;
-			case 2:	debug(" LSR #%i", c? c : 32);
+			case 2:	debug(", lsr #%i", c? c : 32);
 				break;
-			case 3:	debug(" LSR %s", arm_regname[c >> 1]);
+			case 3:	debug(", lsr %s", arm_regname[c >> 1]);
 				break;
-			case 4:	debug(" ASR #%i", c? c : 32);
+			case 4:	debug(", asr #%i", c? c : 32);
 				break;
-			case 5:	debug(" ASR %s", arm_regname[c >> 1]);
+			case 5:	debug(", asr %s", arm_regname[c >> 1]);
 				break;
 			case 6:	if (c != 0)
-					debug(" ROR #%i", c);
+					debug(", ror #%i", c);
 				else
-					debug(" RRX");
+					debug(", rrx");
 				break;
-			case 7:	debug(" ROR %s", arm_regname[c >> 1]);
+			case 7:	debug(", ror %s", arm_regname[c >> 1]);
 				break;
 			}
 		}

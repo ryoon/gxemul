@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.14 2005-08-12 19:14:58 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.15 2005-08-12 20:20:28 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -379,6 +379,19 @@ X(mtmsr)
 
 
 /*
+ *  mulli:  Multiply Low Immediate.
+ *
+ *  arg[0] = pointer to source register ra
+ *  arg[1] = int32_t immediate
+ *  arg[2] = pointer to destination register rt
+ */
+X(mulli)
+{
+	reg(ic->arg[2]) = (uint32_t)(reg(ic->arg[0]) * ic->arg[1]);
+}
+
+
+/*
  *  or:  Or.
  *
  *  arg[0] = pointer to source register rs
@@ -388,6 +401,48 @@ X(mtmsr)
 X(or)
 {
 	reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]);
+}
+
+
+/*
+ *  xor:  Xor.
+ *
+ *  arg[0] = pointer to source register rs
+ *  arg[1] = pointer to source register rb
+ *  arg[2] = pointer to destination register ra
+ */
+X(xor)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]);
+}
+
+
+/*
+ *  mulhwu:  Multiply High Word Unsigned.
+ *
+ *  arg[0] = pointer to source register ra
+ *  arg[1] = pointer to source register rb
+ *  arg[2] = pointer to destination register rt
+ */
+X(mulhwu)
+{
+	uint64_t sum;
+	sum = (uint64_t)(uint32_t)reg(ic->arg[0])
+	    * (uint64_t)(uint32_t)reg(ic->arg[1]);
+	reg(ic->arg[2]) = sum >> 32;
+}
+
+
+/*
+ *  subf:  Subf.
+ *
+ *  arg[0] = pointer to source register ra
+ *  arg[1] = pointer to source register rb
+ *  arg[2] = pointer to destination register rt
+ */
+X(subf)
+{
+	reg(ic->arg[2]) = ~reg(ic->arg[0]) + reg(ic->arg[1]) + 1;
 }
 
 
@@ -488,7 +543,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr,
-	    xo, imm, load, size, update, zero, bf, bo, bi, bh;
+	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -540,6 +595,16 @@ X(to_be_translated)
 	main_opcode = iword >> 26;
 
 	switch (main_opcode) {
+
+	case PPC_HI6_MULLI:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		ic->f = instr(mulli);
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[1] = (ssize_t)imm;
+		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+		break;
 
 /*	case PPC_HI6_CMPLI:  */
 	case PPC_HI6_CMPI:
@@ -796,6 +861,7 @@ X(to_be_translated)
 			break;
 
 		case PPC_31_OR:
+		case PPC_31_XOR:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -804,10 +870,33 @@ X(to_be_translated)
 				fatal("RC bit not yet implemented\n");
 				goto bad;
 			}
-			ic->f = instr(or);
+			switch (xo) {
+			case PPC_31_OR:   ic->f = instr(or); break;
+			case PPC_31_XOR:  ic->f = instr(xor); break;
+			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			break;
+
+		case PPC_31_MULHWU:
+		case PPC_31_SUBF:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			if (rc) {
+				fatal("RC bit not yet implemented\n");
+				goto bad;
+			}
+			switch (xo) {
+			case PPC_31_MULHWU: ic->f = instr(mulhwu); break;
+			case PPC_31_SUBF:   ic->f = instr(subf); break;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			break;
 
 		default:goto bad;

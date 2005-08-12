@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.12 2005-08-11 21:13:45 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.13 2005-08-12 18:34:00 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -68,6 +68,39 @@ X(addi)
 
 
 /*
+ *  bclr:  Branch Conditional to Link Register
+ *
+ *  arg[0] = bo
+ *  arg[1] = bi
+ *  arg[2] = bh
+ */
+X(bclr)
+{
+	int bo = ic->arg[0], bi = ic->arg[1], bh = ic->arg[2], ctr_ok, cond_ok;
+#ifdef MODE32
+	uint32_t
+#else
+	uint64_t
+#endif
+	    tmp, addr = cpu->cd.ppc.lr;
+	if (!(bo & 4))
+		cpu->cd.ppc.ctr --;
+	ctr_ok = (bo >> 2) & 1;
+	tmp = cpu->cd.ppc.ctr;
+	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	if (cpu->machine->show_trace_tree)
+		cpu_functioncall_trace_return(cpu);
+	cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+	if (ctr_ok && cond_ok) {
+		cpu->pc = addr & ~3;
+		/*  Find the new physical page and update pointers:  */
+		ppc_pc_to_pointers(cpu);
+	}
+}
+
+
+/*
  *  b:  Branch (to a different translated page)
  *
  *  arg[0] = relative offset (as an int32_t)
@@ -89,6 +122,35 @@ X(b)
 
 
 /*
+ *  bc:  Branch Conditional (to a different translated page)
+ *
+ *  arg[0] = relative offset (as an int32_t)
+ *  arg[1] = bo
+ *  arg[2] = bi
+ */
+X(bc)
+{
+#ifdef MODE32
+	uint32_t
+#else
+	uint64_t
+#endif
+	    tmp;
+	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1];
+	if (!(bo & 4))
+		cpu->cd.ppc.ctr --;
+	ctr_ok = (bo >> 2) & 1;
+	tmp = cpu->cd.ppc.ctr;
+	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) ==
+	    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
+	if (ctr_ok && cond_ok)
+		instr(b)(cpu,ic);
+}
+
+
+/*
  *  b_samepage:  Branch (to within the same translated page)
  *
  *  arg[0] = pointer to new ppc_instr_call
@@ -96,6 +158,35 @@ X(b)
 X(b_samepage)
 {
 	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  bc_samepage:  Branch Conditional (to within the same page)
+ *
+ *  arg[0] = new ic ptr
+ *  arg[1] = bo
+ *  arg[2] = bi
+ */
+X(bc_samepage)
+{
+#ifdef MODE32
+	uint32_t
+#else
+	uint64_t
+#endif
+	    tmp;
+	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1];
+	if (!(bo & 4))
+		cpu->cd.ppc.ctr --;
+	ctr_ok = (bo >> 2) & 1;
+	tmp = cpu->cd.ppc.ctr;
+	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) ==
+	    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
+	if (ctr_ok && cond_ok)
+		instr(b_samepage)(cpu,ic);
 }
 
 
@@ -197,6 +288,56 @@ X(bl_samepage_trace)
 	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->pc += (low_pc << 2);
 	cpu_functioncall_trace(cpu, cpu->pc);
+}
+
+
+/*
+ *  cmpdi:  Compare Doubleword immediate
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = int32_t imm
+ *  arg[2] = bf
+ */
+X(cmpdi)
+{
+	int64_t tmp = reg(ic->arg[0]), imm = (int32_t)ic->arg[1];
+	int bf = ic->arg[2], c;
+
+	if (tmp < imm)
+		c = 8;
+	else if (tmp > imm)
+		c = 4;
+	else
+		c = 2;
+
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
+
+
+/*
+ *  cmpwi:  Compare Word immediate
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = int32_t imm
+ *  arg[2] = bf
+ */
+X(cmpwi)
+{
+	int32_t tmp = reg(ic->arg[0]), imm = ic->arg[1];
+	int bf = ic->arg[2], c;
+
+	if (tmp < imm)
+		c = 8;
+	else if (tmp > imm)
+		c = 4;
+	else
+		c = 2;
+
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
 
 
@@ -362,7 +503,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr,
-	    xo, imm, load, size, update, zero;
+	    xo, imm, load, size, update, zero, bf, bo, bi, bh;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -414,6 +555,29 @@ X(to_be_translated)
 	main_opcode = iword >> 26;
 
 	switch (main_opcode) {
+
+/*	case PPC_HI6_CMPLI:  */
+	case PPC_HI6_CMPI:
+		bf = (iword >> 23) & 7;
+		l_bit = (iword >> 21) & 1;
+		ra = (iword >> 16) & 31;
+		if (main_opcode == PPC_HI6_CMPLI) {
+/*			imm = iword & 0xffff;
+			if (l_bit)
+				ic->f = instr(cmpldi);
+			else
+				ic->f = instr(cmplwi);
+*/		} else {
+			imm = (int16_t)(iword & 0xffff);
+			if (l_bit)
+				ic->f = instr(cmpdi);
+			else
+				ic->f = instr(cmpwi);
+		}
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[1] = (ssize_t)imm;
+		ic->arg[2] = bf;
+		break;
 
 	case PPC_HI6_ADDI:
 	case PPC_HI6_ADDIS:
@@ -495,6 +659,42 @@ X(to_be_translated)
 		ic->arg[2] = (ssize_t)imm;
 		break;
 
+	case PPC_HI6_BC:
+		aa_bit = (iword >> 1) & 1;
+		lk_bit = iword & 1;
+		bo = (iword >> 21) & 31;
+		bi = (iword >> 16) & 31;
+		tmp_addr = (int64_t)(int16_t)(iword & 0xfffc);
+		if (lk_bit) {
+			fatal("lk_bit: NOT YET\n");
+			goto bad;
+		}
+		if (aa_bit) {
+			fatal("aa_bit: NOT YET\n");
+			goto bad;
+		}
+		ic->f = instr(bc);
+		samepage_function = instr(bc_samepage);
+		ic->arg[0] = (ssize_t)tmp_addr;
+		ic->arg[1] = bo;
+		ic->arg[2] = bi;
+		/*  Branches are calculated as cur PC + offset.  */
+		/*  Special case: branch within the same page:  */
+		{
+			uint64_t mask_within_page =
+			    ((PPC_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+			uint64_t old_pc = addr;
+			uint64_t new_pc = old_pc + (int32_t)ic->arg[0];
+			if ((old_pc & ~mask_within_page) ==
+			    (new_pc & ~mask_within_page)) {
+				ic->f = samepage_function;
+				ic->arg[0] = (size_t) (
+				    cpu->cd.ppc.cur_ic_page +
+				    ((new_pc & mask_within_page) >> 2));
+			}
+		}
+		break;
+
 	case PPC_HI6_SC:
 		ic->arg[0] = (iword >> 5) & 0x7f;
 		if (cpu->machine->userland_emul != NULL)
@@ -547,6 +747,21 @@ X(to_be_translated)
 	case PPC_HI6_19:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+
+		case PPC_19_BCLR:
+			bo = (iword >> 21) & 31;
+			bi = (iword >> 16) & 31;
+			bh = (iword >> 11) & 3;
+			lk_bit = iword & 1;
+			if (lk_bit) {
+				fatal("TODO: bclr with l_bit set\n");
+				goto bad;
+			}
+			ic->f = instr(bclr);
+			ic->arg[0] = bo;
+			ic->arg[1] = bi;
+			ic->arg[2] = bh;
+			break;
 
 		case PPC_19_ISYNC:
 			/*  TODO  */

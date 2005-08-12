@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.314 2005-08-11 21:13:44 debug Exp $
+ *  $Id: cpu.c,v 1.315 2005-08-12 18:34:00 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -425,26 +425,18 @@ void cpu_run_deinit(struct machine *machine)
 void cpu_show_cycles(struct machine *machine, int forced)
 {
 	uint64_t offset, pc;
-	int is_32bit = 0, instrs_per_cycle = 1;
 	char *symbol;
 	int64_t mseconds, ninstrs, is, avg;
 	struct timeval tv;
-	int h, m, s, ms, d;
+	int h, m, s, ms, d, instrs_per_cycle = 1;
 
 	static int64_t mseconds_last = 0;
 	static int64_t ninstrs_last = -1;
 
 	switch (machine->arch) {
 	case ARCH_MIPS:
-		if (machine->cpus[machine->bootstrap_cpu]->cd.mips.
-		    cpu_type.isa_level < 3 || machine->cpus[machine->
-		    bootstrap_cpu]->cd.mips.cpu_type.isa_level == 32)
-			is_32bit = 1;
 		instrs_per_cycle = machine->cpus[machine->bootstrap_cpu]->
 		    cd.mips.cpu_type.instrs_per_cycle;
-		break;
-	case ARCH_ARM:
-		is_32bit = 1;
 		break;
 	}
 
@@ -515,14 +507,16 @@ void cpu_show_cycles(struct machine *machine, int forced)
 		is = 0;
 	if (avg < 0)
 		avg = 0;
-	printf("; i/s=%lli avg=%lli; ", (long long)is, (long long)avg);
+	printf("; i/s=%lli avg=%lli", (long long)is, (long long)avg);
 
 	symbol = get_symbol_name(&machine->symbol_context, pc, &offset);
 
-	if (is_32bit)
-		printf("pc=0x%08x", (int)pc);
-	else
-		printf("pc=0x%016llx", (long long)pc);
+	if (machine->ncpus == 1) {
+		if (machine->cpus[machine->bootstrap_cpu]->is_32bit)
+			printf("; pc=0x%08x", (int)pc);
+		else
+			printf("; pc=0x%016llx", (long long)pc);
+	}
 
 	if (symbol != NULL)
 		printf(" <%s>", symbol);

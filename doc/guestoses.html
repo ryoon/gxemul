@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.83 2005-08-10 05:40:13 debug Exp $
+$Id: guestoses.html,v 1.84 2005-08-12 05:43:16 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -639,7 +639,7 @@ halt</b>
 
 <b>emul(
     net(
-	add_remote("127.0.0.1:12444")   </b>! the server<b>
+	add_remote("localhost:12444")   </b>! the server<b>
 	local_port(12445)               </b>! the client<b>
     )
 
@@ -662,7 +662,7 @@ halt</b>
 <b>emul(
     net(
 	local_port(12444)               </b>! the server<b>
-	add_remote("127.0.0.1:12445")   </b>! the client<b>
+	add_remote("localhost:12445")   </b>! the client<b>
     )
 
     machine(
@@ -1487,7 +1487,7 @@ halt</b>
 
 <b>emul(
     net(
-	add_remote("127.0.0.1:12444")   </b>! the server<b>
+	add_remote("localhost:12444")   </b>! the server<b>
 	local_port(12445)               </b>! the client<b>
     )
 
@@ -1510,7 +1510,7 @@ halt</b>
 <b>emul(
     net(
 	local_port(12444)               </b>! the server<b>
-	add_remote("127.0.0.1:12445")   </b>! the client<b>
+	add_remote("localhost:12445")   </b>! the client<b>
     )
 
     machine(

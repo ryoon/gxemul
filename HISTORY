@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.895 2005-08-11 20:29:27 debug Exp $
+$Id: HISTORY,v 1.896 2005-08-12 05:43:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2174,3 +2174,5 @@ Changelog for GXemul:
 		kernels to be loaded.
 		Beginning to add PPC loads/stores. So far they only work in
 		32-bit mode.
+20050812	The configure file option "add_remote" now accepts symbolic
+		host names, in addition to numeric IPv4 addresses.

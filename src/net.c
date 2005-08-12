@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.78 2005-06-30 11:02:38 debug Exp $
+ *  $Id: net.c,v 1.79 2005-08-12 05:43:17 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2385,6 +2385,8 @@ struct net *net_init(struct emul *emul, int init_flags,
 	if (n_remote != 0) {
 		struct remote_net *rnp;
 		while ((n_remote--) != 0) {
+			struct hostent *hp;
+
 			/*  debug("adding '%s'\n", remote[n_remote]);  */
 			rnp = malloc(sizeof(struct remote_net));
 			memset(rnp, 0, sizeof(struct remote_net));
@@ -2395,13 +2397,16 @@ struct net *net_init(struct emul *emul, int init_flags,
 			rnp->name = strdup(remote[n_remote]);
 			if (strchr(rnp->name, ':') != NULL)
 				strchr(rnp->name, ':')[0] = '\0';
-			/*  TODO: Name resolution?  */
-#ifdef HAVE_INET_PTON
-			res = inet_pton(AF_INET, rnp->name, &rnp->ipv4_addr);
-#else
-			res = inet_aton(rnp->name, &rnp->ipv4_addr);
-#endif
+
+			hp = gethostbyname(rnp->name);
+			if (hp == NULL) {
+				fprintf(stderr, "could not resolve '%s'\n",
+				    rnp->name);
+				exit(1);
+			}
+			memcpy(&rnp->ipv4_addr, hp->h_addr, hp->h_length);
 			free(rnp->name);
+
 			/*  And again:  */
 			rnp->name = strdup(remote[n_remote]);
 			if (strchr(rnp->name, ':') == NULL) {

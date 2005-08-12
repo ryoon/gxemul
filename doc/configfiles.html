@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: configfiles.html,v 1.12 2005-07-30 18:11:18 debug Exp $
+$Id: configfiles.html,v 1.13 2005-08-12 05:43:16 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -82,7 +82,7 @@ through an example is good enough:
 	<b>ipv4net(<font color="#ff003f">"10.2.0.0"</font>)</b>  <font color="#2020cf">!  The default is 10.0.0.0/8, but</font>
 	<b>ipv4len(16)</b>          <font color="#2020cf">!  it can be overridden like this.</font>
 	<font color="#2020cf">!  local_port(12345)</font>
-	<font color="#2020cf">!  add_remote("127.0.0.1:12346")</font>
+	<font color="#2020cf">!  add_remote("localhost:12346")</font>
     <b>)</b>
 
     <font color="#2020cf">!  This creates a machine:</font>
@@ -245,7 +245,7 @@ configuration file per machine.
 <b>emul(</b>
     <b>net(</b>
 	<b>local_port(15000)</b>
-	<b>add_remote(<font color="#ff003f">"127.0.0.1:15001"</font>)</b>
+	<b>add_remote(<font color="#ff003f">"localhost:15001"</font>)</b>
     <b>)</b>
     <b>machine(</b>
         <b>type(<font color="#ff003f">"dec"</font>)</b>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.79 2005-08-12 05:43:17 debug Exp $
+ *  $Id: net.c,v 1.80 2005-08-12 05:49:46 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2254,7 +2254,7 @@ void net_dumpinfo(struct net *net)
 	int iadd = 4;
 	struct remote_net *rnp;
 
-	debug("net: ");
+	debug("net: simulating ");
 
 	net_debugaddr(&net->netmask_ipv4, ADDR_IPV4);
 	debug("/%i", net->netmask_ipv4_len);
@@ -2264,40 +2264,36 @@ void net_dumpinfo(struct net *net)
 
 	debug_indentation(iadd);
 
-	debug("emulated gateway: ");
+	debug("simulated gateway: ");
 	net_debugaddr(&net->gateway_ipv4_addr, ADDR_IPV4);
 	debug(" (");
 	net_debugaddr(&net->gateway_ethernet_addr, ADDR_ETHERNET);
 	debug(")\n");
 
 	debug_indentation(iadd);
-	if (net->domain_name != NULL && net->domain_name[0])
-		debug("domain \"%s\", ", net->domain_name);
 	if (!net->nameserver_known) {
 		debug("(could not determine nameserver)");
 	} else {
-		debug("nameserver ");
+		debug("using nameserver ");
 		net_debugaddr(&net->nameserver_ipv4, ADDR_IPV4);
 	}
+	if (net->domain_name != NULL && net->domain_name[0])
+		debug(", domain \"%s\"", net->domain_name);
 	debug("\n");
 	debug_indentation(-iadd);
 
 	rnp = net->remote_nets;
-	if (rnp != NULL)
-		debug("distributed network: other hosts:\n");
-
+	if (net->local_port != 0)
+		debug("distributed network: local port = %i\n",
+		    net->local_port);
 	debug_indentation(iadd);
 	while (rnp != NULL) {
-		debug("\"%s\": ", rnp->name);
+		debug("remote \"%s\": ", rnp->name);
 		net_debugaddr(&rnp->ipv4_addr, ADDR_IPV4);
 		debug(" port %i\n", rnp->portnr);
 		rnp = rnp->next;
 	}
 	debug_indentation(-iadd);
-
-	if (net->local_port != 0)
-		debug("distributed network: local port = %i\n",
-		    net->local_port);
 
 	debug_indentation(-iadd);
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.32 2005-06-24 09:33:34 debug Exp $
+ *  $Id: emul_parse.c,v 1.33 2005-08-12 06:02:56 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -228,6 +228,7 @@ static char cur_machine_n_gfx_cards[10];
 static char cur_machine_serial_nr[10];
 static char cur_machine_emulated_hz[10];
 static char cur_machine_memory[10];
+static char cur_machine_max_random_cycles[10];
 #define	MAX_N_LOAD		15
 #define	MAX_LOAD_LEN		2000
 static char *cur_machine_load[MAX_N_LOAD];
@@ -385,6 +386,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_serial_nr[0] = '\0';
 		cur_machine_emulated_hz[0] = '\0';
 		cur_machine_memory[0] = '\0';
+		cur_machine_max_random_cycles[0] = '\0';
 		return;
 	}
 
@@ -555,11 +557,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			    sizeof(cur_machine_old_bintrans));
 		m->old_bintrans_enable = parse_on_off(cur_machine_old_bintrans);
 
-		if (!m->bintrans_enable && m->old_bintrans_enable) {
-			fatal("cannot use old bintrans when bintrans is"
-			    " disabled.\n");
-			exit(1);
-		}
+		if (!m->bintrans_enable && m->old_bintrans_enable)
+			m->old_bintrans_enable = 0;
 
 		/*  TODO: Hm...  */
 		if (m->bintrans_enable)
@@ -604,6 +603,16 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strlcpy(cur_machine_memory, "0",
 			    sizeof(cur_machine_memory));
 		m->physical_ram_in_mb = atoi(cur_machine_memory);
+
+		if (cur_machine_max_random_cycles[0]) {
+			if (m->bintrans_enable) {
+				fprintf(stderr, "max_random_cycles doesn't"
+				    " work with bintrans\n");
+				exit(1);
+			}
+			m->max_random_cycles_per_chunk = atoi(
+			    cur_machine_max_random_cycles);
+		}
 
 		if (!cur_machine_x11_scaledown[0])
 			m->x11_scaledown = 1;
@@ -688,6 +697,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("n_gfx_cards", cur_machine_n_gfx_cards);
 	WORD("emulated_hz", cur_machine_emulated_hz);
 	WORD("memory", cur_machine_memory);
+	WORD("max_random_cycles", cur_machine_max_random_cycles);
 	WORD("start_paused", cur_machine_start_paused);
 
 	if (strcmp(word, "load") == 0) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.39 2005-08-10 15:38:47 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.40 2005-08-12 06:15:31 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -223,8 +223,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 			d->reg[com_lsr] = idata;
 		} else {
 			odata = d->reg[com_lsr];
-			debug("[ ns16550: read from lsr: 0x%02x ]\n",
-			    (int)odata);
+			/*  debug("[ ns16550: read from lsr: 0x%02x ]\n",
+			    (int)odata);  */
 		}
 		break;
 

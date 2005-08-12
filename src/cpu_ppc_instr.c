@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.16 2005-08-12 21:57:02 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.17 2005-08-12 22:18:53 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -64,6 +64,31 @@ X(invalid)
 X(addi)
 {
 	reg(ic->arg[2]) = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+}
+
+
+/*
+ *  addic:  Add immediate, Carry.
+ *
+ *  arg[0] = pointer to source uint64_t
+ *  arg[1] = immediate value (int32_t or larger)
+ *  arg[2] = pointer to destination uint64_t
+ */
+X(addic)
+{
+	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
+	uint32_t tmp = reg(ic->arg[0]);
+	uint64_t tmp2 = tmp;
+
+	tmp2 += (int32_t)ic->arg[1];
+
+	/*  NOTE: CA is never cleared, just set.  */
+
+	/*  TODO: Is this correct?  */
+	if ((tmp2 >> 32) != 0)
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+
+	reg(ic->arg[2]) = tmp;
 }
 
 
@@ -483,6 +508,18 @@ X(mtmsr)
 
 
 /*
+ *  mtcrf:  Move To Condition Register Fields
+ *
+ *  arg[0] = pointer to source register
+ */
+X(mtcrf)
+{
+	cpu->cd.ppc.cr &= ~ic->arg[1];
+	cpu->cd.ppc.cr |= (reg(ic->arg[0]) & ic->arg[1]);
+}
+
+
+/*
  *  mulli:  Multiply Low Immediate.
  *
  *  arg[0] = pointer to source register ra
@@ -534,6 +571,19 @@ X(mulhwu)
 	sum = (uint64_t)(uint32_t)reg(ic->arg[0])
 	    * (uint64_t)(uint32_t)reg(ic->arg[1]);
 	reg(ic->arg[2]) = sum >> 32;
+}
+
+
+/*
+ *  add:  Add.
+ *
+ *  arg[0] = pointer to source register ra
+ *  arg[1] = pointer to source register rb
+ *  arg[2] = pointer to destination register rt
+ */
+X(add)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]);
 }
 
 
@@ -731,6 +781,21 @@ X(to_be_translated)
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[1] = (ssize_t)imm;
 		ic->arg[2] = bf;
+		break;
+
+	case PPC_HI6_ADDIC:
+/*	case PPC_HI6_ADDIC_DOT:  */
+		if (!cpu->is_32bit) {
+			fatal("addic for 64-bit: TODO\n");
+			goto bad;
+		}
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		ic->f = instr(addic);
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[1] = (ssize_t)imm;
+		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 		break;
 
 	case PPC_HI6_ADDI:
@@ -1006,6 +1071,22 @@ X(to_be_translated)
 			ic->f = instr(mtmsr);
 			break;
 
+		case PPC_31_MTCRF:
+			rs = (iword >> 21) & 31;
+			{
+				int i, fxm = (iword >> 12) & 255;
+				uint32_t tmp = 0;
+				for (i=0; i<8; i++, fxm <<= 1) {
+					tmp <<= 4;
+					if (fxm & 128)
+						tmp |= 0xf;
+				}
+				ic->arg[1] = (uint32_t)tmp;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			ic->f = instr(mtcrf);
+			break;
+
 		case PPC_31_OR:
 		case PPC_31_XOR:
 			rs = (iword >> 21) & 31;
@@ -1026,6 +1107,7 @@ X(to_be_translated)
 			break;
 
 		case PPC_31_MULHWU:
+		case PPC_31_ADD:
 		case PPC_31_SUBF:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -1036,8 +1118,13 @@ X(to_be_translated)
 				fatal("RC bit not yet implemented\n");
 				goto bad;
 			}
+			if (oe_bit) {
+				fatal("oe_bit not yet implemented\n");
+				goto bad;
+			}
 			switch (xo) {
 			case PPC_31_MULHWU: ic->f = instr(mulhwu); break;
+			case PPC_31_ADD:    ic->f = instr(add); break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.17 2005-08-12 22:18:53 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.18 2005-08-12 23:10:03 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -68,6 +68,21 @@ X(addi)
 
 
 /*
+ *  andi_dot:  AND immediate, update CR.
+ *
+ *  arg[0] = pointer to source uint64_t
+ *  arg[1] = immediate value (uint32_t)
+ *  arg[2] = pointer to destination uint64_t
+ */
+X(andi_dot)
+{
+	MODE_uint_t tmp = reg(ic->arg[0]) & (uint32_t)ic->arg[1];
+	reg(ic->arg[2]) = tmp;
+	update_cr0(cpu, tmp);
+}
+
+
+/*
  *  addic:  Add immediate, Carry.
  *
  *  arg[0] = pointer to source uint64_t
@@ -77,18 +92,66 @@ X(addi)
 X(addic)
 {
 	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
+	uint64_t tmp = (int32_t)reg(ic->arg[0]);
+	uint64_t tmp2 = tmp;
+
+	tmp2 += (int32_t)ic->arg[1];
+
+	/*  NOTE: CA is never cleared, just set.  */
+	/*  TODO: Is this correct?  */
+	if ((tmp2 >> 32) != (tmp >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+
+	reg(ic->arg[2]) = tmp;
+}
+
+
+/*
+ *  subfic:  Subtract from immediate, Carry.
+ *
+ *  arg[0] = pointer to source uint64_t
+ *  arg[1] = immediate value (int32_t or larger)
+ *  arg[2] = pointer to destination uint64_t
+ */
+X(subfic)
+{
+	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
+	uint64_t tmp = (int32_t)(~reg(ic->arg[0]));
+	uint64_t tmp2 = tmp;
+
+	tmp2 += (int32_t)ic->arg[1] + 1;
+
+	/*  NOTE: CA is never cleared, just set. TODO: Is this right?  */
+	/*  TODO: Is this correct?  */
+	if ((tmp2 >> 32) != (tmp >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+
+	reg(ic->arg[2]) = tmp;
+}
+
+
+/*
+ *  addic_dot:  Add immediate, Carry.
+ *
+ *  arg[0] = pointer to source uint64_t
+ *  arg[1] = immediate value (int32_t or larger)
+ *  arg[2] = pointer to destination uint64_t
+ */
+X(addic_dot)
+{
+	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
 	uint32_t tmp = reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
 
 	tmp2 += (int32_t)ic->arg[1];
 
 	/*  NOTE: CA is never cleared, just set.  */
-
 	/*  TODO: Is this correct?  */
 	if ((tmp2 >> 32) != 0)
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 
 	reg(ic->arg[2]) = tmp;
+	update_cr0(cpu, tmp);
 }
 
 
@@ -533,25 +596,28 @@ X(mulli)
 
 
 /*
- *  or:  Or.
+ *  And, or, xor, etc.
  *
  *  arg[0] = pointer to source register rs
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register ra
  */
+X(and)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
+}
+X(andc)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1]));
+}
 X(or)
 {
 	reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]);
 }
-
-
-/*
- *  xor:  Xor.
- *
- *  arg[0] = pointer to source register rs
- *  arg[1] = pointer to source register rb
- *  arg[2] = pointer to destination register ra
- */
+X(orc)
+{
+	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1]));
+}
 X(xor)
 {
 	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]);
@@ -760,6 +826,16 @@ X(to_be_translated)
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 		break;
 
+	case PPC_HI6_SUBFIC:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		ic->f = instr(subfic);
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[1] = (ssize_t)imm;
+		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+		break;
+
 /*	case PPC_HI6_CMPLI:  */
 	case PPC_HI6_CMPI:
 		bf = (iword >> 23) & 7;
@@ -784,7 +860,7 @@ X(to_be_translated)
 		break;
 
 	case PPC_HI6_ADDIC:
-/*	case PPC_HI6_ADDIC_DOT:  */
+	case PPC_HI6_ADDIC_DOT:
 		if (!cpu->is_32bit) {
 			fatal("addic for 64-bit: TODO\n");
 			goto bad;
@@ -792,7 +868,10 @@ X(to_be_translated)
 		rt = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
-		ic->f = instr(addic);
+		if (main_opcode == PPC_HI6_ADDIC)
+			ic->f = instr(addic);
+		else
+			ic->f = instr(addic_dot);
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[1] = (ssize_t)imm;
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
@@ -810,6 +889,17 @@ X(to_be_translated)
 		if (main_opcode == PPC_HI6_ADDIS)
 			ic->arg[1] <<= 16;
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+		break;
+
+	case PPC_HI6_ANDI_DOT:
+	case PPC_HI6_ANDIS_DOT:
+		rs = (iword >> 21) & 31; ra = (iword >> 16) & 31;
+		ic->f = instr(andi_dot);
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+		ic->arg[1] = iword & 0xffff;
+		if (main_opcode == PPC_HI6_ANDIS_DOT)
+			ic->arg[1] <<= 16;
+		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		break;
 
 	case PPC_HI6_ORI:
@@ -1087,7 +1177,10 @@ X(to_be_translated)
 			ic->f = instr(mtcrf);
 			break;
 
+		case PPC_31_AND:
+		case PPC_31_ANDC:
 		case PPC_31_OR:
+		case PPC_31_ORC:
 		case PPC_31_XOR:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -1098,7 +1191,10 @@ X(to_be_translated)
 				goto bad;
 			}
 			switch (xo) {
+			case PPC_31_AND:  ic->f = instr(and); break;
+			case PPC_31_ANDC: ic->f = instr(andc); break;
 			case PPC_31_OR:   ic->f = instr(or); break;
+			case PPC_31_ORC:  ic->f = instr(orc); break;
 			case PPC_31_XOR:  ic->f = instr(xor); break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);

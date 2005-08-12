@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.56 2005-08-09 06:01:36 debug Exp $
+ *  $Id: memory_rw.c,v 1.57 2005-08-12 21:57:02 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -454,7 +454,7 @@ have_paddr:
 				/*  This allows for example OS kernels to probe
 				    memory a few KBs past the end of memory,
 				    without giving too many warnings.  */
-				if (!quiet_mode && paddr >=
+				if (!quiet_mode && !no_exceptions && paddr >=
 				    mem->physical_max + 0x40000) {
 					fatal("[ memory_rw(): writeflag=%i ",
 					    writeflag);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.15 2005-08-12 20:20:28 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.16 2005-08-12 21:57:02 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -83,11 +83,11 @@ X(bclr)
 	ctr_ok = (bo >> 2) & 1;
 	tmp = cpu->cd.ppc.ctr;
 	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
-	if (cpu->machine->show_trace_tree)
-		cpu_functioncall_trace_return(cpu);
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
 	if (ctr_ok && cond_ok) {
+		if (cpu->machine->show_trace_tree)
+			cpu_functioncall_trace_return(cpu);
 		cpu->pc = addr & ~3;
 		/*  Find the new physical page and update pointers:  */
 		ppc_pc_to_pointers(cpu);
@@ -277,6 +277,29 @@ X(bl_samepage_trace)
 
 
 /*
+ *  cmpd:  Compare Doubleword
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = ptr to rb
+ *  arg[2] = bf
+ */
+X(cmpd)
+{
+	int64_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
+	int bf = ic->arg[2], c;
+	if (tmp < tmp2)
+		c = 8;
+	else if (tmp > tmp2)
+		c = 4;
+	else
+		c = 2;
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
+
+
+/*
  *  cmpdi:  Compare Doubleword immediate
  *
  *  arg[0] = ptr to ra
@@ -287,14 +310,35 @@ X(cmpdi)
 {
 	int64_t tmp = reg(ic->arg[0]), imm = (int32_t)ic->arg[1];
 	int bf = ic->arg[2], c;
-
 	if (tmp < imm)
 		c = 8;
 	else if (tmp > imm)
 		c = 4;
 	else
 		c = 2;
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
 
+
+/*
+ *  cmpw:  Compare Word
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = ptr to rb
+ *  arg[2] = bf
+ */
+X(cmpw)
+{
+	int32_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
+	int bf = ic->arg[2], c;
+	if (tmp < tmp2)
+		c = 8;
+	else if (tmp > tmp2)
+		c = 4;
+	else
+		c = 2;
 	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
@@ -312,17 +356,55 @@ X(cmpwi)
 {
 	int32_t tmp = reg(ic->arg[0]), imm = ic->arg[1];
 	int bf = ic->arg[2], c;
-
 	if (tmp < imm)
 		c = 8;
 	else if (tmp > imm)
 		c = 4;
 	else
 		c = 2;
-
 	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
+
+
+/*
+ *  rlwinm:  R
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to ra
+ *  arg[2] = copy of the instruction word
+ */
+X(rlwinm)
+{
+	MODE_uint_t tmp = reg(ic->arg[0]), ra = 0;
+	uint32_t iword = ic->arg[2];
+	int sh, mb, me, rc;
+
+	sh = (iword >> 11) & 31;
+	mb = (iword >> 6) & 31;
+	me = (iword >> 1) & 31;   
+	rc = iword & 1;
+
+	/*  TODO: Fix this, its performance is awful:  */
+	while (sh-- != 0) {
+		int b = (tmp >> 31) & 1;
+		tmp = (tmp << 1) | b;
+	}
+	for (;;) {
+		uint64_t mask;
+		mask = (uint64_t)1 << (31-mb);
+		ra |= (tmp & mask);
+		if (mb == me)
+			break;
+		mb ++;
+		if (mb == 32)
+			mb = 0;
+	}
+
+	reg(ic->arg[1]) = ra;
+	if (rc)
+		update_cr0(cpu, ra);
 }
 
 
@@ -353,6 +435,28 @@ X(crxor)
 X(mflr)
 {
 	reg(ic->arg[0]) = cpu->cd.ppc.lr;
+}
+
+
+/*
+ *  mtlr:  Move to Link Register
+ *
+ *  arg[0] = pointer to source register
+ */
+X(mtlr)
+{
+	cpu->cd.ppc.lr = reg(ic->arg[0]);
+}
+
+
+/*
+ *  mfcr:  Move From Condition Register
+ *
+ *  arg[0] = pointer to destination register
+ */
+X(mfcr)
+{
+	reg(ic->arg[0]) = cpu->cd.ppc.cr;
 }
 
 
@@ -827,9 +931,33 @@ X(to_be_translated)
 		}
 		break;
 
+	case PPC_HI6_RLWINM:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		ic->f = instr(rlwinm);
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+		ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[2] = (uint32_t)iword;
+		break;
+
 	case PPC_HI6_31:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+
+/*		case PPC_31_CMPL:  (unsigned) */
+		case PPC_31_CMP:
+			bf = (iword >> 23) & 7;
+			l_bit = (iword >> 21) & 1;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			if (l_bit)
+				ic->f = instr(cmpd);
+			else
+				ic->f = instr(cmpw);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			ic->arg[2] = bf;
+			break;
 
 		case PPC_31_MFSPR:
 			rt = (iword >> 21) & 31;
@@ -841,6 +969,24 @@ X(to_be_translated)
 			default:fatal("UNIMPLEMENTED spr %i\n", spr);
 				goto bad;
 			}
+			break;
+
+		case PPC_31_MTSPR:
+			rs = (iword >> 21) & 31;
+			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			switch (spr) {
+			case 8:	ic->f = instr(mtlr);
+				break;
+			default:fatal("UNIMPLEMENTED spr %i\n", spr);
+				goto bad;
+			}
+			break;
+
+		case PPC_31_MFCR:
+			rt = (iword >> 21) & 31;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			ic->f = instr(mfcr);
 			break;
 
 		case PPC_31_MFMSR:

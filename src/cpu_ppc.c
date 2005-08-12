@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.81 2005-08-12 05:42:19 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.82 2005-08-12 21:57:02 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -209,7 +209,7 @@ void ppc_cpu_dumpinfo(struct cpu *cpu)
 /*
  *  reg_access_msr():
  */
-static void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
+void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
 {
 	if (valuep == NULL) {
 		fatal("reg_access_msr(): NULL\n");
@@ -1072,7 +1072,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_MTSPR:
 			rs = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
-			debug("mtspr\tspr%i,r%i", spr, rs);
+			switch (spr) {
+			case 8:	debug("mtlr\tr%i", rs);
+				break;
+			default:debug("mtspr\tspr%i,r%i", spr, rs);
+			}
 			break;
 		case PPC_31_SYNC:
 			debug("%s", power? "dcs" : "sync");
@@ -1190,7 +1194,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
  *
  *  Sets the top 4 bits of the CR register.
  */
-static void update_cr0(struct cpu *cpu, uint64_t value)
+void update_cr0(struct cpu *cpu, uint64_t value)
 {
 	int c;
 

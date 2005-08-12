@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.509 2005-08-12 19:14:58 debug Exp $
+ *  $Id: machine.c,v 1.510 2005-08-12 19:20:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3130,7 +3130,7 @@ Why is this here? TODO
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-#if 1
+#if 0
 				i = dev_pckbc_init(machine, mem, 0x1f320000,
 				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
 				    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.23 2005-08-12 19:14:59 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.24 2005-08-12 19:20:33 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -47,7 +47,7 @@
 #define	FAKE_GBE_FB_ADDRESS	0x38000000
 
 #define	GBE_DEBUG
-#define debug fatal
+/*  #define debug fatal  */
 
 #define	GBE_DEFAULT_XRES		640
 #define	GBE_DEFAULT_YRES		480

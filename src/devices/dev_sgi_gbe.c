@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.24 2005-08-12 19:20:33 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.25 2005-08-13 08:25:48 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -48,6 +48,8 @@
 
 #define	GBE_DEBUG
 /*  #define debug fatal  */
+
+#define MTE_TEST
 
 #define	GBE_DEFAULT_XRES		640
 #define	GBE_DEFAULT_YRES		480
@@ -93,9 +95,10 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 	uint64_t old_fb_offset = 0;
 	int tweaked = 1;
 
-/*
+#ifdef MTE_TEST
 return;
-*/
+#endif
+
 	/*  debug("[ sgi_gbe: dev_sgi_gbe_tick() ]\n");  */
 
 	tiletable = (d->frm_control & 0xfffffe00);

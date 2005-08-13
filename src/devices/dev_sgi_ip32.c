@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.28 2005-08-12 19:14:59 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.29 2005-08-13 08:25:48 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -1115,7 +1115,7 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 	case 0x1778:
 		break;
 
-#if 0
+#if 1
 case 0x2074:
 {
 /*  This seems to have to do with graphical output:

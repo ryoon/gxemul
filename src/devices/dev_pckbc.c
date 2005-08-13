@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.46 2005-08-12 19:14:59 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.47 2005-08-13 08:25:48 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -48,8 +48,8 @@
 #include "kbdreg.h"
 
 
-/*  #define PCKBC_DEBUG  */
-/*  #define debug fatal  */
+#define PCKBC_DEBUG
+#define debug fatal
 
 
 #define	MAX_8042_QUEUELEN	256
@@ -308,7 +308,7 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 		/*  Cause receive interrupt, if there's something in the
 		    receive buffer: (Otherwise deassert the interrupt.)  */
 		if (d->head[port_nr] != d->tail[port_nr] && ints_enabled) {
-			debug("[ pckbc: interrupt ]\n");
+			debug("[ pckbc: interrupt port %i ]\n", port_nr);
 			cpu_interrupt(cpu, port_nr==0? d->keyboard_irqnr
 			    : d->mouse_irqnr);
 		} else {

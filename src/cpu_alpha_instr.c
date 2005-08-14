@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.39 2005-08-10 15:38:46 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.40 2005-08-14 23:44:22 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -625,8 +625,9 @@ X(to_be_translated)
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)
 	    / sizeof(struct alpha_instr_call);
-	addr = cpu->pc & ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	addr += (low_pc << 2);
+	addr = cpu->pc & ~((ALPHA_IC_ENTRIES_PER_PAGE-1) <<
+	    ALPHA_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << ALPHA_INSTR_ALIGNMENT_SHIFT);
 	addr &= ~0x3;
 	cpu->pc = addr;
 

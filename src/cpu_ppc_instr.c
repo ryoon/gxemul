@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.27 2005-08-14 15:07:23 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.28 2005-08-14 23:44:22 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1025,8 +1025,9 @@ X(to_be_translated)
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
 	    / sizeof(struct ppc_instr_call);
-	addr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	addr += (low_pc << 2);
+	addr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1)
+	    << PPC_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
 	addr &= ~0x3;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.1 2005-08-07 23:36:50 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.2 2005-08-14 23:44:23 debug Exp $
  */
 
 #include "misc.h"
@@ -37,10 +37,13 @@
 struct cpu_family;
 
 #define	IA64_N_IC_ARGS			3
+#define	IA64_INSTR_ALIGNMENT_SHIFT	4
 #define	IA64_IC_ENTRIES_SHIFT		8
 #define	IA64_IC_ENTRIES_PER_PAGE	(1 << IA64_IC_ENTRIES_SHIFT)
-#define	IA64_PC_TO_IC_ENTRY(a)		(((a)>>4)&(IA64_IC_ENTRIES_PER_PAGE-1))
-#define	IA64_ADDR_TO_PAGENR(a)		((a) >> (IA64_IC_ENTRIES_SHIFT+2))
+#define	IA64_PC_TO_IC_ENTRY(a)		(((a)>>IA64_INSTR_ALIGNMENT_SHIFT) \
+					& (IA64_IC_ENTRIES_PER_PAGE-1))
+#define	IA64_ADDR_TO_PAGENR(a)		((a) >> (IA64_IC_ENTRIES_SHIFT \
+					+ IA64_INSTR_ALIGNMENT_SHIFT))
 
 /*  TODO  */
 struct ia64_instr_call {

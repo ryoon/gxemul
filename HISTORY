@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.901 2005-08-14 19:36:52 debug Exp $
+$Id: HISTORY,v 1.902 2005-08-14 23:44:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2184,3 +2184,7 @@ Changelog for GXemul:
 		compiler; ccc sometimes outputs code which loads from an
 		address _before_ checking whether the pointer was NULL or not.
 		(I'm not sure how to handle this problem.)
+20050815	Removing all of the old x86 instruction execution code; adding
+		a new (dummy) dyntrans module for x86.
+		Taking the first steps to extend the dyntrans system to support
+		variable-length instructions.

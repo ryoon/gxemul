@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.25 2005-08-06 20:25:28 debug Exp $
+ *  $Id: cpu_arm.h,v 1.26 2005-08-14 23:44:23 debug Exp $
  */
 
 #include "misc.h"
@@ -58,10 +58,13 @@ struct cpu_family;
 	"tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn" }
 
 #define	ARM_N_IC_ARGS			3
+#define	ARM_INSTR_ALIGNMENT_SHIFT	2
 #define	ARM_IC_ENTRIES_SHIFT		10
 #define	ARM_IC_ENTRIES_PER_PAGE		(1 << ARM_IC_ENTRIES_SHIFT)
-#define	ARM_PC_TO_IC_ENTRY(a)		(((a)>>2) & (ARM_IC_ENTRIES_PER_PAGE-1))
-#define	ARM_ADDR_TO_PAGENR(a)		((a) >> (ARM_IC_ENTRIES_SHIFT+2))
+#define	ARM_PC_TO_IC_ENTRY(a)		(((a)>>ARM_INSTR_ALIGNMENT_SHIFT) \
+					& (ARM_IC_ENTRIES_PER_PAGE-1))
+#define	ARM_ADDR_TO_PAGENR(a)		((a) >> (ARM_IC_ENTRIES_SHIFT \
+					+ ARM_INSTR_ALIGNMENT_SHIFT))
 
 struct arm_instr_call {
 	void	(*f)(struct cpu *, struct arm_instr_call *);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.31 2005-05-29 19:21:05 debug Exp $
+ *  $Id: cpu_x86.h,v 1.32 2005-08-14 23:44:23 debug Exp $
  */
 
 #include "misc.h"
@@ -94,6 +94,37 @@ struct x86_model {
 	{ 0, NULL }							\
 	}
 
+#define	X86_N_IC_ARGS			3
+#define	X86_INSTR_ALIGNMENT_SHIFT	0
+#define	X86_IC_ENTRIES_SHIFT		12
+#define	X86_IC_ENTRIES_PER_PAGE		(1 << X86_IC_ENTRIES_SHIFT)
+#define	X86_PC_TO_IC_ENTRY(a)		((a) & (X86_IC_ENTRIES_PER_PAGE-1))
+#define	X86_ADDR_TO_PAGENR(a)		((a) >> X86_IC_ENTRIES_SHIFT)
+
+struct x86_instr_call {
+	void	(*f)(struct cpu *, struct x86_instr_call *);
+	size_t	arg[X86_N_IC_ARGS];
+};
+
+/*  Translation cache struct for each physical page:  */
+struct x86_tc_physpage {
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	uint64_t	physaddr;
+	int		flags;
+	struct x86_instr_call ics[X86_IC_ENTRIES_PER_PAGE + 1];
+};
+
+#define	X86_N_VPH_ENTRIES		1048576
+
+#define	X86_MAX_VPH_TLB_ENTRIES		256
+struct x86_vpg_tlb_entry {
+	int		valid;
+	int		writeflag;
+	int64_t		timestamp;
+	unsigned char	*host_page;
+	uint64_t	vaddr_page;
+	uint64_t	paddr_page;
+};
 
 struct descriptor_cache {
 	int		valid;
@@ -146,6 +177,33 @@ struct x86_cpu {
 
 	/*  MSRs:  */
 	uint64_t	efer;
+
+
+	/*
+	 *  Instruction translation cache:
+	 */
+
+	/*  cur_ic_page is a pointer to an array of X86_IC_ENTRIES_PER_PAGE
+	    instruction call entries. next_ic points to the next such
+	    call to be executed.  */
+	struct x86_tc_physpage  *cur_physpage;
+	struct x86_instr_call   *cur_ic_page;
+	struct x86_instr_call   *next_ic;
+
+
+	/*
+	 *  Virtual -> physical -> host address translation:
+	 *
+	 *  host_load and host_store point to arrays of X86_N_VPH_ENTRIES
+	 *  pointers (to host pages); phys_addr points to an array of
+	 *  X86_N_VPH_ENTRIES uint32_t.
+	 */
+
+	struct x86_vpg_tlb_entry        vph_tlb_entry[X86_MAX_VPH_TLB_ENTRIES];
+	unsigned char                   *host_load[X86_N_VPH_ENTRIES];
+	unsigned char                   *host_store[X86_N_VPH_ENTRIES];
+	uint32_t                        phys_addr[X86_N_VPH_ENTRIES];
+	struct x86_tc_physpage          *phys_page[X86_N_VPH_ENTRIES];
 };
 
 

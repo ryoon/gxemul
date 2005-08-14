@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.1 2005-08-11 09:14:12 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.2 2005-08-14 23:44:23 debug Exp $
  */
 
 #include "misc.h"
@@ -40,10 +40,13 @@ struct cpu_family;
 #define	N_M68K_AREGS		8
 
 #define	M68K_N_IC_ARGS			3
+#define	M68K_INSTR_ALIGNMENT_SHIFT	1
 #define	M68K_IC_ENTRIES_SHIFT		11
 #define	M68K_IC_ENTRIES_PER_PAGE	(1 << M68K_IC_ENTRIES_SHIFT)
-#define	M68K_PC_TO_IC_ENTRY(a)		(((a)>>1)&(M68K_IC_ENTRIES_PER_PAGE-1))
-#define	M68K_ADDR_TO_PAGENR(a)		((a) >> (M68K_IC_ENTRIES_SHIFT+2))
+#define	M68K_PC_TO_IC_ENTRY(a)		(((a)>>M68K_INSTR_ALIGNMENT_SHIFT) \
+					& (M68K_IC_ENTRIES_PER_PAGE-1))
+#define	M68K_ADDR_TO_PAGENR(a)		((a) >> (M68K_IC_ENTRIES_SHIFT \
+					+ M68K_INSTR_ALIGNMENT_SHIFT))
 
 struct m68k_instr_call {
 	void	(*f)(struct cpu *, struct m68k_instr_call *);

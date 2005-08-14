@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.2 2005-08-14 11:14:38 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.3 2005-08-14 23:44:22 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -64,7 +64,8 @@ int m68k_cpu_family_init(struct cpu_family *fp)
 #include "memory.h"
 #include "symbol.h"
 
-#define DYNTRANS_32
+#define	DYNTRANS_32
+#define	DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 #include "tmp_m68k_head.c"
 
 

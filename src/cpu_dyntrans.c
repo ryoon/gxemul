@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.27 2005-08-14 13:55:03 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.28 2005-08-14 23:44:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -64,9 +64,23 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		/*
 		 *  Single-step:
 		 */
-		struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic ++;
+		struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic
+#ifndef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+		    ++
+#endif
+		    ;
 		if (cpu->machine->instruction_trace) {
-			unsigned char instr[4];
+#ifdef DYNTRANS_X86
+			unsigned char instr[17];
+			cpu->cd.x86.cursegment = X86_S_CS;
+			cpu->cd.x86.seg_override = 0;
+#else
+#ifdef DYNTRANS_M68K
+			unsigned char instr[16];	/*  TODO: 16?  */
+#else
+			unsigned char instr[4];		/*  General case...  */
+#endif
+#endif
 			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
 				fatal("XXX_cpu_run_instr(): could not read "
@@ -105,8 +119,11 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		for (;;) {
 			struct DYNTRANS_IC *ic;
 
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic; ic->f(cpu, ic);
+#else
 #define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
-
+#endif
 			I; I; I; I; I;   I; I; I; I; I;
 			I; I; I; I; I;   I; I; I; I; I;
 			I; I; I; I; I;   I; I; I; I; I;
@@ -144,8 +161,9 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
 #else
-		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->pc += (low_pc << 2);
+		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 #endif
 	} else if (low_pc == DYNTRANS_IC_ENTRIES_PER_PAGE) {
 		/*  Switch to next page:  */
@@ -154,8 +172,10 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		cpu->cd.arm.r[ARM_PC] += (ARM_IC_ENTRIES_PER_PAGE << 2);
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
 #else
-		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->pc += (DYNTRANS_IC_ENTRIES_PER_PAGE << 2);
+		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (DYNTRANS_IC_ENTRIES_PER_PAGE <<
+		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 #endif
 	} else {
 		/*  debug("debug: Outside a page (This is actually ok)\n");  */
@@ -205,7 +225,12 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 	 *  than were passed in register.
 	 */
 	for (x=0; x<n_args_to_print; x++) {
-		int64_t d = cpu->cd.DYNTRANS_ARCH.
+		int64_t d;
+#ifdef DYNTRANS_X86
+		d = 0;		/*  TODO  */
+#else
+		/*  Args in registers:  */
+		d = cpu->cd.DYNTRANS_ARCH.
 #ifdef DYNTRANS_ALPHA
 		    r[ALPHA_A0
 #endif
@@ -225,7 +250,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		    gpr[3
 #endif
 		    + x];
-
+#endif
 		symbol = get_symbol_name(&cpu->machine->symbol_context, d, &ot);
 
 		if (d > -256 && d < 256)
@@ -355,7 +380,9 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	/*
 	 *  TODO: virtual to physical address translation
 	 */
-	physaddr = cached_pc & ~(((DYNTRANS_IC_ENTRIES_PER_PAGE-1) << 2) | 3);
+	physaddr = cached_pc & ~( ((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+	    DYNTRANS_INSTR_ALIGNMENT_SHIFT) |
+	    ((1 << DYNTRANS_INSTR_ALIGNMENT_SHIFT)-1) );
 
 	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
 		cpu_create_or_reset_tc(cpu);

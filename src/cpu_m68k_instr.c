@@ -25,13 +25,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k_instr.c,v 1.2 2005-08-14 11:14:38 debug Exp $
+ *  $Id: cpu_m68k_instr.c,v 1.3 2005-08-14 23:44:22 debug Exp $
  *
  *  Motorola 68K instructions.
  *
- *  Individual functions should keep track of cpu->n_translated_instrs.
- *  (If no instruction was executed, then it should be decreased. If, say, 4
- *  instructions were combined into one function and executed, then it should
+ *  Individual functions should keep track of cpu->n_translated_instrs. Since
+ *  M68K uses variable length instructions, cpu->cd.m68k.next_ic must also be
+ *  increased by the number of "instruction slots" that were executed. (I.e.
+ *  if an instruction occupying 6 bytes was executed, then next_ic should be
+ *  increased by 3.)
+ *
+ *  (n_translated_instrs is automatically increased by 1 for each function
+ *  call. If no instruction was executed, then it should be decreased. If, say,
+ *  4 instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
 
@@ -41,38 +47,7 @@
  */
 X(nop)
 {
-}
-
-
-/*
- *  b:  Branch (to a different translated page)
- *
- *  arg[0] = relative offset (as an int32_t)
- */
-X(b)
-{
-	uint64_t low_pc;
-
-	/*  Calculate new PC from this instruction + arg[0]  */
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.m68k.cur_ic_page) / sizeof(struct m68k_instr_call);
-	cpu->pc &= ~((M68K_IC_ENTRIES_PER_PAGE-1) << 1);
-	cpu->pc += (low_pc << 1);
-	cpu->pc += (int32_t)ic->arg[0];
-
-	/*  Find the new physical page and update the translation pointers:  */
-	m68k_pc_to_pointers(cpu);
-}
-
-
-/*
- *  b_samepage:  Branch (to within the same translated page)
- *
- *  arg[0] = pointer to new m68k_instr_call
- */
-X(b_samepage)
-{
-	cpu->cd.m68k.next_ic = (struct m68k_instr_call *) ic->arg[0];
+	cpu->cd.x86.next_ic ++;
 }
 
 
@@ -138,8 +113,9 @@ X(to_be_translated)
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.m68k.cur_ic_page)
 	    / sizeof(struct m68k_instr_call);
-	addr = cpu->pc & ~((M68K_IC_ENTRIES_PER_PAGE-1) << 1);
-	addr += (low_pc << 1);
+	addr = cpu->pc & ~((M68K_IC_ENTRIES_PER_PAGE-1) <<
+	    M68K_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << M68K_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
 	addr &= ~1;
 

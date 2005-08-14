@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64_instr.c,v 1.2 2005-08-09 19:05:49 debug Exp $
+ *  $Id: cpu_ia64_instr.c,v 1.3 2005-08-14 23:44:22 debug Exp $
  *
  *  IA64 instructions.
  *
@@ -103,8 +103,9 @@ X(to_be_translated)
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.ia64.cur_ic_page)
 	    / sizeof(struct ia64_instr_call);
-	addr = cpu->pc & ~((IA64_IC_ENTRIES_PER_PAGE-1) << 4);
-	addr += (low_pc << 4);
+	addr = cpu->pc & ~((IA64_IC_ENTRIES_PER_PAGE-1)
+	    << IA64_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << IA64_INSTR_ALIGNMENT_SHIFT);
 	addr &= ~0xf;
 	cpu->pc = addr;
 

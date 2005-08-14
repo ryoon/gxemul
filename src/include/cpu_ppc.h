@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.28 2005-08-11 15:39:39 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.29 2005-08-14 23:44:23 debug Exp $
  */
 
 #include "misc.h"
@@ -74,10 +74,13 @@ struct ppc_cpu_type_def {
 
 
 #define	PPC_N_IC_ARGS			3
+#define	PPC_INSTR_ALIGNMENT_SHIFT	2
 #define	PPC_IC_ENTRIES_SHIFT		10
 #define	PPC_IC_ENTRIES_PER_PAGE		(1 << PPC_IC_ENTRIES_SHIFT)
-#define	PPC_PC_TO_IC_ENTRY(a)		(((a)>>2) & (PPC_IC_ENTRIES_PER_PAGE-1))
-#define	PPC_ADDR_TO_PAGENR(a)		((a) >> (PPC_IC_ENTRIES_SHIFT+2))
+#define	PPC_PC_TO_IC_ENTRY(a)		(((a)>>PPC_INSTR_ALIGNMENT_SHIFT) \
+					& (PPC_IC_ENTRIES_PER_PAGE-1))
+#define	PPC_ADDR_TO_PAGENR(a)		((a) >> (PPC_IC_ENTRIES_SHIFT \
+					+ PPC_INSTR_ALIGNMENT_SHIFT))
 
 struct ppc_instr_call {
 	void	(*f)(struct cpu *, struct ppc_instr_call *);

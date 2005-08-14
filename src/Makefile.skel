@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.75 2005-08-11 20:29:29 debug Exp $
+#  $Id: Makefile.skel,v 1.76 2005-08-14 23:44:22 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -130,9 +130,18 @@ tmp_ppc_tail.c:
 
 ###############################################################################
 
-cpu_x86.o: cpu_x86.c memory_x86.c
+cpu_x86.o: cpu_x86.c cpu_x86_instr.c cpu_dyntrans.c memory_rw.c \
+	tmp_x86_head.c tmp_x86_tail.c
 
 memory_x86.c: memory_rw.c
+
+tmp_x86_head.c:
+	cd tools; make generate_head; cd ..
+	tools/generate_head x86 x86 > tmp_x86_head.c
+
+tmp_x86_tail.c:
+	cd tools; make generate_tail; cd ..
+	tools/generate_tail x86 x86 > tmp_x86_tail.c
 
 
 ###############################################################################

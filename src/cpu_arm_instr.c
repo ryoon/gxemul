@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.49 2005-08-10 15:38:46 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.50 2005-08-14 23:44:22 debug Exp $
  *
  *  ARM instructions.
  *
@@ -865,8 +865,9 @@ X(to_be_translated)
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
 	    / sizeof(struct arm_instr_call);
-	addr = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	addr += (low_pc << 2);
+	addr = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+	    ARM_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = addr;
 	addr &= ~0x3;
 

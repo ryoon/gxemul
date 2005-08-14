@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.21 2005-08-14 11:33:17 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.22 2005-08-14 23:44:23 debug Exp $
  */
 
 #include "misc.h"
@@ -57,10 +57,13 @@ struct cpu_family;
 
 
 #define	ALPHA_N_IC_ARGS			3
+#define	ALPHA_INSTR_ALIGNMENT_SHIFT	2
 #define	ALPHA_IC_ENTRIES_SHIFT		11
 #define	ALPHA_IC_ENTRIES_PER_PAGE	(1 << ALPHA_IC_ENTRIES_SHIFT)
-#define	ALPHA_PC_TO_IC_ENTRY(a)		(((a)>>2)&(ALPHA_IC_ENTRIES_PER_PAGE-1))
-#define	ALPHA_ADDR_TO_PAGENR(a)		((a) >> (ALPHA_IC_ENTRIES_SHIFT+2))
+#define	ALPHA_PC_TO_IC_ENTRY(a)		(((a)>>ALPHA_INSTR_ALIGNMENT_SHIFT) \
+					& (ALPHA_IC_ENTRIES_PER_PAGE-1))
+#define	ALPHA_ADDR_TO_PAGENR(a)		((a) >> (ALPHA_IC_ENTRIES_SHIFT \
+					+ ALPHA_INSTR_ALIGNMENT_SHIFT))
 
 struct alpha_instr_call {
 	void	(*f)(struct cpu *, struct alpha_instr_call *);

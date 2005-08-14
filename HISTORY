@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.899 2005-08-14 10:28:12 debug Exp $
+$Id: HISTORY,v 1.900 2005-08-14 15:47:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2178,3 +2178,5 @@ Changelog for GXemul:
 		host names, in addition to numeric IPv4 addresses.
 		Re-adding more PPC instructions.
 20050814	Continuing to port back more PPC instructions.
+		Found and fixed the cache/device write-update bug for 32-bit
+		MIPS bintrans. :-)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.26 2005-07-30 18:11:20 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.27 2005-08-14 15:47:36 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -704,16 +704,13 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	p_paddr = tbl1->paddr_entry[b];
 	tbl1->bintrans_chunks[b] = NULL;
 	/*  printf("B:  p_r=%p p_w=%p\n", p_r,p_w);  */
+	cpu->cd.mips.host_load_orig[index] = NULL;
+	cpu->cd.mips.host_store_orig[index] = NULL;
 	if (p_r != NULL || p_paddr != 0) {
 		/*  printf("Found a mapping, "
 		    "vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
 		tbl1->haddr_entry[b*2] = NULL;
 		tbl1->haddr_entry[b*2+1] = NULL;
-		if (cpu->cd.mips.host_store ==
-		    cpu->cd.mips.host_store_orig) {
-			cpu->cd.mips.host_load[index] = NULL;
-			cpu->cd.mips.host_store[index] = NULL;
-		}
 		tbl1->paddr_entry[b] = 0;
 		tbl1->refcount --;
 		if (tbl1->refcount == 0) {

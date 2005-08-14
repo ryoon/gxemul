@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.176 2005-08-10 15:38:45 debug Exp $
+ *  $Id: bintrans.c,v 1.177 2005-08-14 15:47:36 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -285,7 +285,7 @@ void bintrans_restart(struct cpu *cpu)
 	cpu->mem->translation_code_chunk_space_head = 0;
 	cpu->mem->n_quick_jumps = 0;
 
-	/*  debug("bintrans: Starting over!\n");  */
+	debug("[ bintrans: Starting over! ]\n");
 	clear_all_chunks_from_all_tables(cpu);
 }
 

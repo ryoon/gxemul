@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.23 2005-08-14 12:01:40 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.24 2005-08-14 12:22:46 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -550,7 +550,7 @@ X(cmplwi)
 
 
 /*
- *  rlwinm:  R
+ *  rlwinm:
  *
  *  arg[0] = ptr to rs
  *  arg[1] = ptr to ra
@@ -587,6 +587,35 @@ X(rlwinm)
 	if (rc)
 		update_cr0(cpu, ra);
 }
+
+
+/*
+ *  srawi:
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to ra
+ *  arg[2] = sh (shift amount)
+ */
+X(srawi)
+{
+	uint32_t tmp = reg(ic->arg[0]);
+	int i = 0, j = 0, sh = ic->arg[2];
+
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	if (tmp & 0x80000000)
+		i = 1;
+	while (sh-- > 0) {
+		if (tmp & 1)
+			j ++;
+		tmp >>= 1;
+		if (tmp & 0x40000000)
+			tmp |= 0x80000000;
+	}
+	if (i && j>0)
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+	reg(ic->arg[1]) = (int64_t)(int32_t)tmp;
+}
+X(srawi_dot) { instr(srawi)(cpu,ic); update_cr0(cpu, reg(ic->arg[1])); }
 
 
 /*
@@ -728,18 +757,40 @@ X(neg_dot) {	reg(ic->arg[1]) = ~reg(ic->arg[0]) + 1;
 
 
 /*
- *  mulhwu, divwu:
+ *  mullw, mulhw[u], divw[u]:
  *
  *  arg[0] = pointer to source register ra
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register rt
  */
+X(mullw)
+{
+	int32_t sum = (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]);
+	reg(ic->arg[2]) = (int32_t)sum;
+}
+X(mulhw)
+{
+	int64_t sum;
+	sum = (int64_t)(int32_t)reg(ic->arg[0])
+	    * (int64_t)(int32_t)reg(ic->arg[1]);
+	reg(ic->arg[2]) = sum >> 32;
+}
 X(mulhwu)
 {
 	uint64_t sum;
 	sum = (uint64_t)(uint32_t)reg(ic->arg[0])
 	    * (uint64_t)(uint32_t)reg(ic->arg[1]);
 	reg(ic->arg[2]) = sum >> 32;
+}
+X(divw)
+{
+	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	int32_t sum;
+	if (b == 0)
+		sum = 0;
+	else
+		sum = a / b;
+	reg(ic->arg[2]) = (uint32_t)sum;
 }
 X(divwu)
 {
@@ -911,7 +962,7 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr,
+	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
 	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 	void (*rc_f)(struct cpu *, struct ppc_instr_call *);
@@ -1340,6 +1391,20 @@ X(to_be_translated)
 			ic->f = instr(mtcrf);
 			break;
 
+		case PPC_31_SRAWI:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			sh = (iword >> 11) & 31;
+			rc = iword & 1;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[2] = sh;
+			if (rc)
+				ic->f = instr(srawi_dot);
+			else
+				ic->f = instr(srawi);
+			break;
+
 		case PPC_31_SYNC:
 		case PPC_31_EIEIO:
 			/*  TODO  */
@@ -1387,7 +1452,10 @@ X(to_be_translated)
 				ic->f = rc_f;
 			break;
 
+		case PPC_31_MULLW:
+		case PPC_31_MULHW:
 		case PPC_31_MULHWU:
+		case PPC_31_DIVW:
 		case PPC_31_DIVWU:
 		case PPC_31_ADD:
 		case PPC_31_ADDE:
@@ -1407,7 +1475,10 @@ X(to_be_translated)
 				goto bad;
 			}
 			switch (xo) {
+			case PPC_31_MULLW:  ic->f = instr(mullw); break;
+			case PPC_31_MULHW:  ic->f = instr(mulhw); break;
 			case PPC_31_MULHWU: ic->f = instr(mulhwu); break;
+			case PPC_31_DIVW:   ic->f = instr(divw); n64=1; break;
 			case PPC_31_DIVWU:  ic->f = instr(divwu); n64=1; break;
 			case PPC_31_ADD:    ic->f = instr(add); break;
 			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;

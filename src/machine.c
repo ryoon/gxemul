@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.512 2005-08-14 12:01:41 debug Exp $
+ *  $Id: machine.c,v 1.513 2005-08-14 12:22:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4079,16 +4079,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		device_add(machine, "bebox");
 
-		/*  Serial, used by NetBSD:  */
 		machine->main_console_handle = (size_t)
 		    device_add(machine, "ns16550 irq=0 addr=0x800003f8 name2=tty0");
-
-		/*  Serial, used by Linux:  */
 		device_add(machine, "ns16550 irq=0 addr=0x800002f8 name2=tty1 in_use=0");
 
-		/*  This is used by Linux too:  */
-		dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,
-		    machine->machine_name);
+		if (machine->use_x11)
+			dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,
+			    machine->machine_name);
 
 		store_32bit_word(cpu, 0x3010,
 		    machine->physical_ram_in_mb * 1048576);
@@ -4115,7 +4112,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 12, 20);  /* next */
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 16, 1); /* console */
-		store_buf(cpu, cpu->cd.ppc.gpr[6] + 20, "com", 4);
+		store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
+		    machine->use_x11? "vga" : "com", 4);
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 24, 0x3f8);/* addr */
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 28, 9600);/* speed */
 

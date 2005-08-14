@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.224 2005-08-12 21:57:02 debug Exp $
+ *  $Id: emul.c,v 1.225 2005-08-14 19:35:54 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1445,9 +1445,9 @@ void emul_run(struct emul **emuls, int n_emuls)
 	}
 
 	/*  TODO: Generalize:  */
-	if (e->machines[0]->show_trace_tree)
-		cpu_functioncall_trace(e->machines[0]->cpus[0],
-		    e->machines[0]->cpus[0]->pc);
+	if (emuls[0]->machines[0]->show_trace_tree)
+		cpu_functioncall_trace(emuls[0]->machines[0]->cpus[0],
+		    emuls[0]->machines[0]->cpus[0]->pc);
 
 	/*
 	 *  MAIN LOOP:

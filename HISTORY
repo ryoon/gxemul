@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.900 2005-08-14 15:47:35 debug Exp $
+$Id: HISTORY,v 1.901 2005-08-14 19:36:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2180,3 +2180,7 @@ Changelog for GXemul:
 20050814	Continuing to port back more PPC instructions.
 		Found and fixed the cache/device write-update bug for 32-bit
 		MIPS bintrans. :-)
+		Triggered a really weird and annoying bug in Compaq's C
+		compiler; ccc sometimes outputs code which loads from an
+		address _before_ checking whether the pointer was NULL or not.
+		(I'm not sure how to handle this problem.)

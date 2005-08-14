@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.4 2005-08-14 15:59:09 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.5 2005-08-14 19:35:54 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -164,6 +164,14 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 
 #ifndef LS_B
 	if (addr & (LS_SIZE-1)) {
+		fatal("PPC LOAD/STORE misalignment: TODO\n");
+		exit(1);
+
+/*
+ *  TODO:
+ *  Removing the fatal() call above causes WEIRD BUGS with compaq's cc! :(
+ */
+
 		LS_GENERIC_N(cpu, ic);
 		return;
 	}
@@ -182,14 +190,14 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 		    (int8_t)
 #endif
 		    page[addr];
-#endif
+#endif	/*  LS_B  */
 #ifdef LS_H
 		reg(ic->arg[0]) =
 #ifndef LS_ZERO
 		    (int16_t)
 #endif
 		    ((page[addr] << 8) + page[addr+1]);
-#endif
+#endif	/*  LS_H  */
 #ifdef LS_W
 		reg(ic->arg[0]) =
 #ifndef LS_ZERO
@@ -197,7 +205,7 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif
 		    ((page[addr] << 24) + (page[addr+1] << 16) +
 		    (page[addr+2] << 8) + page[addr+3]);
-#endif
+#endif	/*  LS_W  */
 #ifdef LS_D
 		reg(ic->arg[0]) =
 		    ((uint64_t)page[addr+0] << 56) +
@@ -206,7 +214,7 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 		    ((uint64_t)page[addr+3] << 32) +
 		    (page[addr+4] << 24) + (page[addr+5] << 16) +
 		    (page[addr+6] << 8) + page[addr+7];
-#endif
+#endif	/*  LS_D  */
 
 #else	/*  !LS_LOAD  */
 

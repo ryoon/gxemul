@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.25 2005-08-14 13:55:03 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.26 2005-08-14 14:06:57 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -722,12 +722,22 @@ X(mulli)
 
 
 /*
- *  And, or, xor, etc.
+ *  Shifts, and, or, xor, etc.
  *
  *  arg[0] = pointer to source register rs
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register ra
  */
+X(slw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
+		    << (reg(ic->arg[1]) & 63); }
+X(slw_dot) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
+		    << (reg(ic->arg[1]) & 63);
+		update_cr0(cpu, reg(ic->arg[2])); }
+X(sraw) {	reg(ic->arg[2]) = (int64_t)reg(ic->arg[0])
+		    >> (reg(ic->arg[1]) & 63); }
+X(sraw_dot) {	reg(ic->arg[2]) = (int64_t)reg(ic->arg[0])
+		    >> (reg(ic->arg[1]) & 63);
+		update_cr0(cpu, reg(ic->arg[2])); }
 X(and) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
 X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
 		update_cr0(cpu, reg(ic->arg[2])); }
@@ -1445,6 +1455,12 @@ X(to_be_translated)
 				ic->f = instr(neg);
 			break;
 
+		case PPC_31_LBZX:
+		case PPC_31_LBZUX:
+		case PPC_31_LHZX:
+		case PPC_31_LHZUX:
+		case PPC_31_LWZX:
+		case PPC_31_LWZUX:
 		case PPC_31_STBX:
 		case PPC_31_STBUX:
 		case PPC_31_STHX:
@@ -1464,6 +1480,12 @@ X(to_be_translated)
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			load = 0; zero = 1; size = 0; update = 0;
 			switch (xo) {
+			case PPC_31_LBZX:  load = 1; break;
+			case PPC_31_LBZUX: load = update = 1; break;
+			case PPC_31_LHZX:  size = 1; load = 1; break;
+			case PPC_31_LHZUX: size = 1; load = update = 1; break;
+			case PPC_31_LWZX:  size = 2; load = 1; break;
+			case PPC_31_LWZUX: size = 2; load = update = 1; break;
 			case PPC_31_STBX:  break;
 			case PPC_31_STBUX: update = 1; break;
 			case PPC_31_STHX:  size = 1; break;
@@ -1486,6 +1508,8 @@ X(to_be_translated)
 			}
 			break;
 
+		case PPC_31_SLW:
+		case PPC_31_SRAW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
 		case PPC_31_OR:
@@ -1497,6 +1521,10 @@ X(to_be_translated)
 			rc = iword & 1;
 			rc_f = NULL;
 			switch (xo) {
+			case PPC_31_SLW:  ic->f = instr(slw);
+					  rc_f  = instr(slw_dot); break;
+			case PPC_31_SRAW: ic->f = instr(sraw);
+					  rc_f  = instr(sraw_dot); break;
 			case PPC_31_AND:  ic->f = instr(and);
 					  rc_f  = instr(and_dot); break;
 			case PPC_31_ANDC: ic->f = instr(andc);

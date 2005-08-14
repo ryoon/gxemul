@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.24 2005-08-14 12:22:46 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.25 2005-08-14 13:55:03 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -818,6 +818,26 @@ X(add)
 
 
 /*
+ *  addc:  Add carrying.
+ *
+ *  arg[0] = pointer to source register ra
+ *  arg[1] = pointer to source register rb
+ *  arg[2] = pointer to destination register rt
+ */
+X(addc)
+{
+	/*  TODO: this only works in 32-bit mode  */
+	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
+	uint64_t tmp2 = tmp;
+	cpu->cd.ppc.xer &= PPC_XER_CA;
+	tmp += (uint32_t)reg(ic->arg[1]);
+	if ((tmp >> 32) == (tmp2 >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+	reg(ic->arg[2]) = (uint32_t)tmp;
+}
+
+
+/*
  *  adde:  Add extended.
  *
  *  arg[0] = pointer to source register ra
@@ -1163,9 +1183,11 @@ X(to_be_translated)
 			fatal("TODO: ra=0 && update?\n");
 			goto bad;
 		}
-
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
-		ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		if (ra == 0)
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
+		else
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[2] = (ssize_t)imm;
 		break;
 
@@ -1423,6 +1445,47 @@ X(to_be_translated)
 				ic->f = instr(neg);
 			break;
 
+		case PPC_31_STBX:
+		case PPC_31_STBUX:
+		case PPC_31_STHX:
+		case PPC_31_STHUX:
+		case PPC_31_STWX:
+		case PPC_31_STWUX:
+		case PPC_31_STDX:
+		case PPC_31_STDUX:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			if (ra == 0)
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
+			else
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			load = 0; zero = 1; size = 0; update = 0;
+			switch (xo) {
+			case PPC_31_STBX:  break;
+			case PPC_31_STBUX: update = 1; break;
+			case PPC_31_STHX:  size = 1; break;
+			case PPC_31_STHUX: size = 1; update = 1; break;
+			case PPC_31_STWX:  size = 2; break;
+			case PPC_31_STWUX: size = 2; update = 1; break;
+			case PPC_31_STDX:  size = 3; break;
+			case PPC_31_STDUX: size = 3; update = 1; break;
+			}
+			ic->f =
+#ifdef MODE32
+			    ppc32_loadstore_indexed
+#else
+			    ppc_loadstore_indexed
+#endif
+			    [size + 4*zero + 8*load + 16*update];
+			if (ra == 0 && update) {
+				fatal("TODO: ra=0 && update?\n");
+				goto bad;
+			}
+			break;
+
 		case PPC_31_AND:
 		case PPC_31_ANDC:
 		case PPC_31_OR:
@@ -1458,6 +1521,7 @@ X(to_be_translated)
 		case PPC_31_DIVW:
 		case PPC_31_DIVWU:
 		case PPC_31_ADD:
+		case PPC_31_ADDC:
 		case PPC_31_ADDE:
 		case PPC_31_SUBF:
 		case PPC_31_SUBFE:
@@ -1481,6 +1545,7 @@ X(to_be_translated)
 			case PPC_31_DIVW:   ic->f = instr(divw); n64=1; break;
 			case PPC_31_DIVWU:  ic->f = instr(divwu); n64=1; break;
 			case PPC_31_ADD:    ic->f = instr(add); break;
+			case PPC_31_ADDC:   ic->f = instr(addc); n64=1; break;
 			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
 			case PPC_31_SUBFE:  ic->f = instr(subfe); n64=1; break;

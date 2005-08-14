@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.2 2005-08-11 21:22:31 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.3 2005-08-14 13:55:03 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -34,7 +34,9 @@
  *
  *  arg[0] = pointer to the register to load to or store from
  *  arg[1] = pointer to the base register
+ *
  *  arg[2] = offset (as an int32_t)
+ *	     (or, for Indexed load/stores: pointer to index register)
  */
 
 
@@ -42,7 +44,12 @@
 void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 {
 #ifdef MODE32
-	uint32_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	uint32_t addr = reg(ic->arg[1]) +
+#ifdef LS_INDEXED
+	    reg(ic->arg[2]);
+#else
+	    (int32_t)ic->arg[2];
+#endif
 	unsigned char data[LS_SIZE];
 
 #ifdef LS_LOAD
@@ -128,8 +135,12 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 {
 #ifdef MODE32
 	uint32_t addr = reg(ic->arg[1])
+#ifdef LS_INDEXED
+	    + reg(ic->arg[2])
+#else
 #ifndef LS_IGNOREOFS
-	    + (int32_t)ic->arg[2];
+	    + (int32_t)ic->arg[2]
+#endif
 #endif
 	    ;
 

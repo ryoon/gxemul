@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.83 2005-08-14 10:28:13 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.84 2005-08-14 13:55:03 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -825,6 +825,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_STHUX:
 		case PPC_31_STWX:
 		case PPC_31_STWUX:
+		case PPC_31_STDX:
+		case PPC_31_STDUX:
 			/*  rs for stores, rt for loads, actually  */
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -850,6 +852,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_STWUX:
 				mnem = power? "stux" : "stwux";
 				break;
+			case PPC_31_STDX:  mnem = "stdx"; break;
+			case PPC_31_STDUX: mnem = "stdux"; break;
 			}
 			debug("%s\tr%i,r%i,r%i", mnem, rs, ra, rb);
 			break;

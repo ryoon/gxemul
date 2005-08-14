@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.26 2005-08-11 09:14:11 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.27 2005-08-14 13:55:03 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -805,7 +805,11 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		 */
 		single_step_breakpoint = 0;
 		ic->f(cpu, ic);
-		ic->f = instr(to_be_translated);
+		ic->f =
+#ifdef DYNTRANS_DUALMODE_32
+		    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+		    instr(to_be_translated);
 	} else
 		ic->f(cpu, ic);
 

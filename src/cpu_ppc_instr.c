@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.21 2005-08-14 11:14:38 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.22 2005-08-14 11:43:14 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -389,6 +389,29 @@ X(cmpd)
 
 
 /*
+ *  cmpld:  Compare Doubleword, unsigned
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = ptr to rb
+ *  arg[2] = bf
+ */
+X(cmpld)
+{
+	uint64_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
+	int bf = ic->arg[2], c;
+	if (tmp < tmp2)
+		c = 8;
+	else if (tmp > tmp2)
+		c = 4;
+	else
+		c = 2;
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
+
+
+/*
  *  cmpdi:  Compare Doubleword immediate
  *
  *  arg[0] = ptr to ra
@@ -444,6 +467,29 @@ X(cmpldi)
 X(cmpw)
 {
 	int32_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
+	int bf = ic->arg[2], c;
+	if (tmp < tmp2)
+		c = 8;
+	else if (tmp > tmp2)
+		c = 4;
+	else
+		c = 2;
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
+
+
+/*
+ *  cmplw:  Compare Word, unsigned
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = ptr to rb
+ *  arg[2] = bf
+ */
+X(cmplw)
+{
+	uint32_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
 	int bf = ic->arg[2], c;
 	if (tmp < tmp2)
 		c = 8;
@@ -1193,16 +1239,23 @@ X(to_be_translated)
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
 
-/*		case PPC_31_CMPL:  (unsigned) */
+		case PPC_31_CMPL:
 		case PPC_31_CMP:
 			bf = (iword >> 23) & 7;
 			l_bit = (iword >> 21) & 1;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
-			if (l_bit)
-				ic->f = instr(cmpd);
-			else
-				ic->f = instr(cmpw);
+			if (xo == PPC_31_CMPL) {
+				if (l_bit)
+					ic->f = instr(cmpld);
+				else
+					ic->f = instr(cmplw);
+			} else {
+				if (l_bit)
+					ic->f = instr(cmpd);
+				else
+					ic->f = instr(cmpw);
+			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[2] = bf;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.26 2005-08-14 14:06:57 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.27 2005-08-14 15:07:23 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -744,6 +744,9 @@ X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
 X(andc) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1])); }
 X(andc_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1]));
 		update_cr0(cpu, reg(ic->arg[2])); }
+X(nor) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
+X(nor_dot) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1]));
+		update_cr0(cpu, reg(ic->arg[2])); }
 X(or) {		reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 X(or_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]);
 		update_cr0(cpu, reg(ic->arg[2])); }
@@ -848,7 +851,7 @@ X(addc)
 
 
 /*
- *  adde:  Add extended.
+ *  adde:  Add extended, etc.
  *
  *  arg[0] = pointer to source register ra
  *  arg[1] = pointer to source register rb
@@ -859,7 +862,6 @@ X(adde)
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-
 	cpu->cd.ppc.xer &= PPC_XER_CA;
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if (old_ca)
@@ -867,6 +869,18 @@ X(adde)
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 
+	reg(ic->arg[2]) = (uint32_t)tmp;
+}
+X(addze)
+{
+	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
+	uint64_t tmp2 = tmp;
+	cpu->cd.ppc.xer &= PPC_XER_CA;
+	if (old_ca)
+		tmp ++;
+	if ((tmp >> 32) == (tmp2 >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 
@@ -891,7 +905,18 @@ X(subfe)
 		tmp ++;
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-
+	reg(ic->arg[2]) = (uint32_t)tmp;
+}
+X(subfze)
+{
+	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
+	uint64_t tmp2 = tmp;
+	cpu->cd.ppc.xer &= PPC_XER_CA;
+	if (old_ca)
+		tmp ++;
+	if ((tmp >> 32) == (tmp2 >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 
@@ -1512,6 +1537,7 @@ X(to_be_translated)
 		case PPC_31_SRAW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
+		case PPC_31_NOR:
 		case PPC_31_OR:
 		case PPC_31_ORC:
 		case PPC_31_XOR:
@@ -1529,6 +1555,8 @@ X(to_be_translated)
 					  rc_f  = instr(and_dot); break;
 			case PPC_31_ANDC: ic->f = instr(andc);
 					  rc_f  = instr(andc_dot); break;
+			case PPC_31_NOR:  ic->f = instr(nor);
+					  rc_f  = instr(nor_dot); break;
 			case PPC_31_OR:   ic->f = instr(or);
 					  rc_f  = instr(or_dot); break;
 			case PPC_31_ORC:  ic->f = instr(orc);
@@ -1551,8 +1579,10 @@ X(to_be_translated)
 		case PPC_31_ADD:
 		case PPC_31_ADDC:
 		case PPC_31_ADDE:
+		case PPC_31_ADDZE:
 		case PPC_31_SUBF:
 		case PPC_31_SUBFE:
+		case PPC_31_SUBFZE:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -1575,8 +1605,10 @@ X(to_be_translated)
 			case PPC_31_ADD:    ic->f = instr(add); break;
 			case PPC_31_ADDC:   ic->f = instr(addc); n64=1; break;
 			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;
+			case PPC_31_ADDZE:  ic->f = instr(addze); n64=1; break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
 			case PPC_31_SUBFE:  ic->f = instr(subfe); n64=1; break;
+			case PPC_31_SUBFZE: ic->f = instr(subfze); n64=1;break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);

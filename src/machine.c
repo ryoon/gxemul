@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.511 2005-08-13 08:25:45 debug Exp $
+ *  $Id: machine.c,v 1.512 2005-08-14 12:01:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4233,8 +4233,6 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		cpu->cd.alpha.r[ALPHA_A2] = 0;
 		cpu->cd.alpha.r[ALPHA_A3] = 0;
 		cpu->cd.alpha.r[ALPHA_A4] = 0;
-
-		cpu->cd.alpha.r[ALPHA_SP] = 0xfffffc0000017ff0ULL;
 
 		if (machine->prom_emulation) {
 			struct rpb rpb;

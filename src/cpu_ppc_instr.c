@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.22 2005-08-14 11:43:14 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.23 2005-08-14 12:01:40 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -728,7 +728,7 @@ X(neg_dot) {	reg(ic->arg[1]) = ~reg(ic->arg[0]) + 1;
 
 
 /*
- *  mulhwu:  Multiply High Word Unsigned.
+ *  mulhwu, divwu:
  *
  *  arg[0] = pointer to source register ra
  *  arg[1] = pointer to source register rb
@@ -740,6 +740,16 @@ X(mulhwu)
 	sum = (uint64_t)(uint32_t)reg(ic->arg[0])
 	    * (uint64_t)(uint32_t)reg(ic->arg[1]);
 	reg(ic->arg[2]) = sum >> 32;
+}
+X(divwu)
+{
+	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	uint32_t sum;
+	if (b == 0)
+		sum = 0;
+	else
+		sum = a / b;
+	reg(ic->arg[2]) = sum;
 }
 
 
@@ -1378,6 +1388,7 @@ X(to_be_translated)
 			break;
 
 		case PPC_31_MULHWU:
+		case PPC_31_DIVWU:
 		case PPC_31_ADD:
 		case PPC_31_ADDE:
 		case PPC_31_SUBF:
@@ -1397,6 +1408,7 @@ X(to_be_translated)
 			}
 			switch (xo) {
 			case PPC_31_MULHWU: ic->f = instr(mulhwu); break;
+			case PPC_31_DIVWU:  ic->f = instr(divwu); n64=1; break;
 			case PPC_31_ADD:    ic->f = instr(add); break;
 			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k_instr.c,v 1.1 2005-08-11 16:11:33 debug Exp $
+ *  $Id: cpu_m68k_instr.c,v 1.2 2005-08-14 11:14:38 debug Exp $
  *
  *  Motorola 68K instructions.
  *
@@ -128,11 +128,11 @@ void m68k_combine_instructions(struct cpu *cpu, struct m68k_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc, tmp_addr;
+	uint32_t addr, low_pc;
 	uint16_t iword;
 	unsigned char *page;
 	unsigned char ib[2];
-	int main_opcode, rt, ra, aa_bit, lk_bit;
+	int main_opcode;
 	void (*samepage_function)(struct cpu *, struct m68k_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */

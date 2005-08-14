@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.1 2005-08-07 23:36:48 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.2 2005-08-14 11:14:38 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -139,7 +139,7 @@ void ia64_cpu_list_available_types(void)
 void ia64_cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
-	int i, cpunr = 0;
+	int cpunr = 0;
 
 	/*  CPU number:  */
 
@@ -243,11 +243,8 @@ int ia64_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 int ia64_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
         int running, uint64_t dumpaddr, int bintrans)
 {
-	uint32_t iw;
-	uint64_t offset, tmp;
-	int opcode, ra, rb, func, rc, imm, floating, rbrc = 0, indir = 0;
-	char *symbol, *mnem = NULL;
-	char palcode_name[30];
+	uint64_t offset;
+	char *symbol;
 
 	if (running)
 		dumpaddr = cpu->pc;

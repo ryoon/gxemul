@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.20 2005-08-14 10:44:48 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.21 2005-08-14 11:14:38 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -164,7 +164,8 @@ X(addic_dot)
  */
 X(bclr)
 {
-	int bo = ic->arg[0], bi = ic->arg[1], bh = ic->arg[2], ctr_ok, cond_ok;
+	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	int ctr_ok, cond_ok;
 	MODE_uint_t tmp, addr = cpu->cd.ppc.lr;
 	if (!(bo & 4))
 		cpu->cd.ppc.ctr --;
@@ -1303,6 +1304,7 @@ X(to_be_translated)
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
 			rc = iword & 1;
+			rc_f = NULL;
 			switch (xo) {
 			case PPC_31_AND:  ic->f = instr(and);
 					  rc_f  = instr(and_dot); break;

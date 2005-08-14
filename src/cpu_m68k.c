@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.1 2005-08-11 09:14:11 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.2 2005-08-14 11:14:38 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -79,8 +79,6 @@ int m68k_cpu_family_init(struct cpu_family *fp)
 int m68k_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	int i;
-
 	if (strcasecmp(cpu_type_name, "68020") != 0)
 		return 0;
 
@@ -137,7 +135,7 @@ void m68k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
-	int i, x = cpu->cpu_id;
+	int x = cpu->cpu_id;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */

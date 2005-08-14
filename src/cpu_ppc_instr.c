@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.19 2005-08-14 10:28:13 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.20 2005-08-14 10:44:48 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -102,7 +102,7 @@ X(addic)
 	if ((tmp2 >> 32) != (tmp >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 
-	reg(ic->arg[2]) = tmp;
+	reg(ic->arg[2]) = (uint32_t)tmp2;
 }
 
 
@@ -126,7 +126,7 @@ X(subfic)
 	if ((tmp2 >> 32) != (tmp >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 
-	reg(ic->arg[2]) = tmp;
+	reg(ic->arg[2]) = (uint32_t)tmp2;
 }
 
 
@@ -140,18 +140,18 @@ X(subfic)
 X(addic_dot)
 {
 	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
-	uint32_t tmp = reg(ic->arg[0]);
+	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
 
 	tmp2 += (int32_t)ic->arg[1];
 
 	/*  NOTE: CA is never cleared, just set.  */
 	/*  TODO: Is this correct?  */
-	if ((tmp2 >> 32) != 0)
+	if ((tmp2 >> 32) != (tmp >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 
-	reg(ic->arg[2]) = tmp;
-	update_cr0(cpu, tmp);
+	reg(ic->arg[2]) = (uint32_t)tmp2;
+	update_cr0(cpu, tmp2);
 }
 
 

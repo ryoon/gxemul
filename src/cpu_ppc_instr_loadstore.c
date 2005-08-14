@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.3 2005-08-14 13:55:03 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.4 2005-08-14 15:59:09 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -51,6 +51,13 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 	    (int32_t)ic->arg[2];
 #endif
 	unsigned char data[LS_SIZE];
+
+#ifndef LS_B
+	if (addr & (LS_SIZE-1)) {
+		fatal("PPC LOAD/STORE misalignment: TODO\n");
+		exit(1);
+	}
+#endif
 
 #ifdef LS_LOAD
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
@@ -157,8 +164,8 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 
 #ifndef LS_B
 	if (addr & (LS_SIZE-1)) {
-		fatal("PPC LOAD/STORE misalignment: TODO\n");
-		exit(1);
+		LS_GENERIC_N(cpu, ic);
+		return;
 	}
 #endif
 

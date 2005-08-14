@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.898 2005-08-12 21:57:00 debug Exp $
+$Id: HISTORY,v 1.899 2005-08-14 10:28:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2177,3 +2177,4 @@ Changelog for GXemul:
 20050812	The configure file option "add_remote" now accepts symbolic
 		host names, in addition to numeric IPv4 addresses.
 		Re-adding more PPC instructions.
+20050814	Continuing to port back more PPC instructions.

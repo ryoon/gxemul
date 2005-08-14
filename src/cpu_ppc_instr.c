@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.18 2005-08-12 23:10:03 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.19 2005-08-14 10:28:13 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -411,6 +411,29 @@ X(cmpdi)
 
 
 /*
+ *  cmpldi:  Compare Doubleword immediate, logical
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = int32_t imm
+ *  arg[2] = bf
+ */
+X(cmpldi)
+{
+	uint64_t tmp = reg(ic->arg[0]), imm = (uint32_t)ic->arg[1];
+	int bf = ic->arg[2], c;
+	if (tmp < imm)
+		c = 8;
+	else if (tmp > imm)
+		c = 4;
+	else
+		c = 2;
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
+
+
+/*
  *  cmpw:  Compare Word
  *
  *  arg[0] = ptr to ra
@@ -443,6 +466,29 @@ X(cmpw)
 X(cmpwi)
 {
 	int32_t tmp = reg(ic->arg[0]), imm = ic->arg[1];
+	int bf = ic->arg[2], c;
+	if (tmp < imm)
+		c = 8;
+	else if (tmp > imm)
+		c = 4;
+	else
+		c = 2;
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+}
+
+
+/*
+ *  cmplwi:  Compare Word immediate, logical
+ *
+ *  arg[0] = ptr to ra
+ *  arg[1] = int32_t imm
+ *  arg[2] = bf
+ */
+X(cmplwi)
+{
+	uint32_t tmp = reg(ic->arg[0]), imm = ic->arg[1];
 	int bf = ic->arg[2], c;
 	if (tmp < imm)
 		c = 8;
@@ -516,25 +562,29 @@ X(crxor)
 
 
 /*
- *  mflr:  Move from Link Register
+ *  mflr, etc:  Move from Link Register etc.
  *
  *  arg[0] = pointer to destination register
  */
-X(mflr)
-{
-	reg(ic->arg[0]) = cpu->cd.ppc.lr;
-}
+X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
+/*  TODO: Check privilege level for mfsprg*  */
+X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
+X(mfsprg1) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg1; }
+X(mfsprg2) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg2; }
+X(mfsprg3) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg3; }
 
 
 /*
- *  mtlr:  Move to Link Register
+ *  mtlr etc.:  Move to Link Register (or other special register)
  *
  *  arg[0] = pointer to source register
  */
-X(mtlr)
-{
-	cpu->cd.ppc.lr = reg(ic->arg[0]);
-}
+X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
+/*  TODO: Check privilege level for mtsprg*  */
+X(mtsprg0) {	cpu->cd.ppc.sprg0 = reg(ic->arg[0]); }
+X(mtsprg1) {	cpu->cd.ppc.sprg1 = reg(ic->arg[0]); }
+X(mtsprg2) {	cpu->cd.ppc.sprg2 = reg(ic->arg[0]); }
+X(mtsprg3) {	cpu->cd.ppc.sprg3 = reg(ic->arg[0]); }
 
 
 /*
@@ -602,26 +652,32 @@ X(mulli)
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register ra
  */
-X(and)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
-}
-X(andc)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1]));
-}
-X(or)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]);
-}
-X(orc)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1]));
-}
-X(xor)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]);
-}
+X(and) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
+X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
+		update_cr0(cpu, reg(ic->arg[2])); }
+X(andc) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1])); }
+X(andc_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1]));
+		update_cr0(cpu, reg(ic->arg[2])); }
+X(or) {		reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
+X(or_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]);
+		update_cr0(cpu, reg(ic->arg[2])); }
+X(orc) {	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1])); }
+X(orc_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1]));
+		update_cr0(cpu, reg(ic->arg[2])); }
+X(xor) {	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
+X(xor_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]);
+		update_cr0(cpu, reg(ic->arg[2])); }
+
+
+/*
+ *  neg:
+ *
+ *  arg[0] = pointer to source register ra
+ *  arg[1] = pointer to destination register rt
+ */
+X(neg) {	reg(ic->arg[1]) = ~reg(ic->arg[0]) + 1; }
+X(neg_dot) {	reg(ic->arg[1]) = ~reg(ic->arg[0]) + 1;
+		update_cr0(cpu, reg(ic->arg[1])); }
 
 
 /*
@@ -654,15 +710,51 @@ X(add)
 
 
 /*
- *  subf:  Subf.
+ *  adde:  Add extended.
  *
  *  arg[0] = pointer to source register ra
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register rt
  */
-X(subf)
+X(adde)
 {
-	reg(ic->arg[2]) = ~reg(ic->arg[0]) + reg(ic->arg[1]) + 1;
+	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
+	uint64_t tmp2 = tmp;
+
+	cpu->cd.ppc.xer &= PPC_XER_CA;
+	tmp += (uint32_t)reg(ic->arg[1]);
+	if (old_ca)
+		tmp ++;
+	if ((tmp >> 32) == (tmp2 >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+
+	reg(ic->arg[2]) = (uint32_t)tmp;
+}
+
+
+/*
+ *  subf:  Subf, etc.
+ *
+ *  arg[0] = pointer to source register ra
+ *  arg[1] = pointer to source register rb
+ *  arg[2] = pointer to destination register rt
+ */
+X(subf) {	reg(ic->arg[2]) = ~reg(ic->arg[0]) + reg(ic->arg[1]) + 1; }
+X(subfe)
+{
+	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
+	uint64_t tmp2 = tmp;
+
+	cpu->cd.ppc.xer &= PPC_XER_CA;
+	tmp += (uint32_t)reg(ic->arg[1]);
+	if (old_ca)
+		tmp ++;
+	if ((tmp >> 32) == (tmp2 >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+
+	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 
 
@@ -763,8 +855,9 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr,
-	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit;
+	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
+	void (*rc_f)(struct cpu *, struct ppc_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
@@ -836,18 +929,18 @@ X(to_be_translated)
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 		break;
 
-/*	case PPC_HI6_CMPLI:  */
+	case PPC_HI6_CMPLI:
 	case PPC_HI6_CMPI:
 		bf = (iword >> 23) & 7;
 		l_bit = (iword >> 21) & 1;
 		ra = (iword >> 16) & 31;
 		if (main_opcode == PPC_HI6_CMPLI) {
-/*			imm = iword & 0xffff;
+			imm = iword & 0xffff;
 			if (l_bit)
 				ic->f = instr(cmpldi);
 			else
 				ic->f = instr(cmplwi);
-*/		} else {
+		} else {
 			imm = (int16_t)(iword & 0xffff);
 			if (l_bit)
 				ic->f = instr(cmpdi);
@@ -861,7 +954,7 @@ X(to_be_translated)
 
 	case PPC_HI6_ADDIC:
 	case PPC_HI6_ADDIC_DOT:
-		if (!cpu->is_32bit) {
+		if (cpu->cd.ppc.bits == 64) {
 			fatal("addic for 64-bit: TODO\n");
 			goto bad;
 		}
@@ -1119,8 +1212,11 @@ X(to_be_translated)
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			switch (spr) {
-			case 8:	ic->f = instr(mflr);
-				break;
+			case 8:	  ic->f = instr(mflr); break;
+			case 272: ic->f = instr(mfsprg0); break;
+			case 273: ic->f = instr(mfsprg1); break;
+			case 274: ic->f = instr(mfsprg2); break;
+			case 275: ic->f = instr(mfsprg3); break;
 			default:fatal("UNIMPLEMENTED spr %i\n", spr);
 				goto bad;
 			}
@@ -1131,8 +1227,11 @@ X(to_be_translated)
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			switch (spr) {
-			case 8:	ic->f = instr(mtlr);
-				break;
+			case 8:	  ic->f = instr(mtlr); break;
+			case 272: ic->f = instr(mtsprg0); break;
+			case 273: ic->f = instr(mtsprg1); break;
+			case 274: ic->f = instr(mtsprg2); break;
+			case 275: ic->f = instr(mtsprg3); break;
 			default:fatal("UNIMPLEMENTED spr %i\n", spr);
 				goto bad;
 			}
@@ -1177,6 +1276,24 @@ X(to_be_translated)
 			ic->f = instr(mtcrf);
 			break;
 
+		case PPC_31_SYNC:
+		case PPC_31_EIEIO:
+			/*  TODO  */
+			ic->f = instr(nop);
+			break;
+
+		case PPC_31_NEG:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rc = iword & 1;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			if (rc)
+				ic->f = instr(neg_dot);
+			else
+				ic->f = instr(neg);
+			break;
+
 		case PPC_31_AND:
 		case PPC_31_ANDC:
 		case PPC_31_OR:
@@ -1186,25 +1303,30 @@ X(to_be_translated)
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
 			rc = iword & 1;
-			if (rc) {
-				fatal("RC bit not yet implemented\n");
-				goto bad;
-			}
 			switch (xo) {
-			case PPC_31_AND:  ic->f = instr(and); break;
-			case PPC_31_ANDC: ic->f = instr(andc); break;
-			case PPC_31_OR:   ic->f = instr(or); break;
-			case PPC_31_ORC:  ic->f = instr(orc); break;
-			case PPC_31_XOR:  ic->f = instr(xor); break;
+			case PPC_31_AND:  ic->f = instr(and);
+					  rc_f  = instr(and_dot); break;
+			case PPC_31_ANDC: ic->f = instr(andc);
+					  rc_f  = instr(andc_dot); break;
+			case PPC_31_OR:   ic->f = instr(or);
+					  rc_f  = instr(or_dot); break;
+			case PPC_31_ORC:  ic->f = instr(orc);
+					  rc_f  = instr(orc_dot); break;
+			case PPC_31_XOR:  ic->f = instr(xor);
+					  rc_f  = instr(xor_dot); break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			if (rc)
+				ic->f = rc_f;
 			break;
 
 		case PPC_31_MULHWU:
 		case PPC_31_ADD:
+		case PPC_31_ADDE:
 		case PPC_31_SUBF:
+		case PPC_31_SUBFE:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -1221,11 +1343,17 @@ X(to_be_translated)
 			switch (xo) {
 			case PPC_31_MULHWU: ic->f = instr(mulhwu); break;
 			case PPC_31_ADD:    ic->f = instr(add); break;
+			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
+			case PPC_31_SUBFE:  ic->f = instr(subfe); n64=1; break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			if (cpu->cd.ppc.bits == 64 && n64) {
+				fatal("Not yet for 64-bit mode\n");
+				goto bad;
+			}
 			break;
 
 		default:goto bad;

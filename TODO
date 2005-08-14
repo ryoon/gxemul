@@ -1,4 +1,4 @@
-$Id: TODO,v 1.161 2005-08-11 20:29:28 debug Exp $
+$Id: TODO,v 1.162 2005-08-14 10:28:12 debug Exp $
 
 ===============================================================================
 
@@ -175,8 +175,11 @@ Low priority stuff:
 		o)  Less interesting platforms (newsmips, mipsco, wgrisc, etc)
 
 	File/disk handling:
-		o)  Read function argument count and types from binaries? (ELF?)
 		o)  Better handling of tape files
+
+	Debugger:
+		o)  Read function argument count and types from binaries? (ELF?)
+		o)  Demangle C++ names.
 
 	Userland ABI emulation:
 		o)  see src/useremul.c

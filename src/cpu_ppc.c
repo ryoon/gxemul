@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.82 2005-08-12 21:57:02 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.83 2005-08-14 10:28:13 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -975,8 +975,12 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			switch (spr) {
-			case 8:	debug("mflr\tr%i", rt);
-				break;
+			case 8:	   debug("mflr\tr%i", rt); break;
+			case 272:  debug("mfsprg\t0,r%i", rt); break;
+			case 273:  debug("mfsprg\t1,r%i", rt); break;
+			case 274:  debug("mfsprg\t2,r%i", rt); break;
+			case 275:  debug("mfsprg\t3,r%i", rt); break;
+			case 1008: debug("mfdbsr\tr%i", rt); break;
 			default:debug("mfspr\tr%i,spr%i", rt, spr);
 			}
 			break;
@@ -1073,8 +1077,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rs = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			switch (spr) {
-			case 8:	debug("mtlr\tr%i", rs);
-				break;
+			case 8:	   debug("mtlr\tr%i", rs); break;
+			case 272:  debug("mtsprg\t0,r%i", rs); break;
+			case 273:  debug("mtsprg\t1,r%i", rs); break;
+			case 274:  debug("mtsprg\t2,r%i", rs); break;
+			case 275:  debug("mtsprg\t3,r%i", rs); break;
 			default:debug("mtspr\tspr%i,r%i", spr, rs);
 			}
 			break;

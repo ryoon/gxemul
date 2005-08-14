@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.84 2005-08-12 05:43:16 debug Exp $
+$Id: guestoses.html,v 1.85 2005-08-14 15:46:56 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -168,10 +168,10 @@ For an ftp install, substitute steps 2 and 3 above with these:
 </ol>
 
 <p>If you want to use a graphical framebuffer during the install, you can
-add <b><tt>-X</tt></b> to the command line, and choose <tt>rcons</tt>
+add <b><tt>-X -Y2</tt></b> to the command line, and choose <tt>rcons</tt>
 instead of <tt>vt100</tt> when prompted with which terminal type to use.
-If you want to use X, but think that the default framebuffer window is too 
-large, try adding <tt>-Y2</tt> to the command line as well.
+(By just using <tt><b>-X</b></tt>, you will get a full-size framebuffer
+window.)
 
 <p>When the installation is finished, the following command should start
 NetBSD from the harddisk image:<pre>

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.162 2005-08-14 10:28:12 debug Exp $
+$Id: TODO,v 1.163 2005-08-14 15:50:58 debug Exp $
 
 ===============================================================================
 
@@ -6,18 +6,12 @@ High priority stuff:
 
 
 MIPS bintrans:
-
-	x)  FIX THE CACHE/DEVICE BUG FOR 32-BIT EMULATION! This was caused
-	    by switching from a 2-level to a 1-level page table system for
-	    bintranslated code...
-
 	x)  call/return address cache?
 
 	x)  i386: movn etc, slt[u] for 64-bit mode, 64-bit shifts etc
 
 
 dyntrans:
-
 	x)  memory write protection for ARM, but NOT for Alpha (because
 		it has the IMB instruction... hm)
 
@@ -28,8 +22,6 @@ dyntrans:
 
 	x)  opcode statistics support?
 		TODO: is instr_call statistics enough?
-
-	x)  support for multiple word lengths (everything except alpha/arm)
 
 	x)  support for archs that allow transparent unaligned load/stores
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.4 2005-08-15 06:27:35 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.5 2005-08-15 06:33:21 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -263,9 +263,12 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	print_two(ib, &len);
 
 	if (ib[0] == 0x48) {
-		if (ib[1] >= 0x48 && ib[1] <= 0x4f) {
+		if (ib[1] >= 0x40 && ib[1] <= 0x47) {
 			print_spaces(len);
-			debug("bkpt\t#%i\n", ib[1] & 15);
+			debug("swap\td%i\n", ib[1] & 7);
+		} else if (ib[1] >= 0x48 && ib[1] <= 0x4f) {
+			print_spaces(len);
+			debug("bkpt\t#%i\n", ib[1] & 7);
 		} else {
 			print_spaces(len);
 			debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
@@ -290,6 +293,9 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		} else if (ib[1] >= 0x58 && ib[1] <= 0x5f) {
 			print_spaces(len);
 			debug("unlk\t%%%s\n", m68k_aname[ib[1] & 7]);
+		} else if (ib[1] == 0x70) {
+			print_spaces(len);
+			debug("reset\n");
 		} else if (ib[1] == 0x71) {
 			print_spaces(len);
 			debug("nop\n");
@@ -297,6 +303,13 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			print_two(ib, &len);
 			print_spaces(len);
 			debug("stop\t#0x%04x\n", ((ib[2] << 8) + ib[3]));
+		} else if (ib[1] == 0x73) {
+			print_spaces(len);
+			debug("rte\n");
+		} else if (ib[1] == 0x74) {
+			print_two(ib, &len);
+			print_spaces(len);
+			debug("rtd\t#0x%04x\n", ((ib[2] << 8) + ib[3]));
 		} else if (ib[1] == 0x75) {
 			print_spaces(len);
 			debug("rts\n");

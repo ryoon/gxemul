@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.3 2005-08-14 23:44:22 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.4 2005-08-15 06:27:35 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -67,6 +67,9 @@ int m68k_cpu_family_init(struct cpu_family *fp)
 #define	DYNTRANS_32
 #define	DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 #include "tmp_m68k_head.c"
+
+
+static char *m68k_aname[] = { "a0", "a1", "a2", "a3", "a4", "a5", "fp", "a7" };
 
 
 /*
@@ -218,6 +221,13 @@ int m68k_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 }
 
 
+/*  Helper functions:  */
+void print_two(unsigned char *instr, int *len)
+{ debug(" %02x%02x", instr[*len], instr[*len+1]); (*len) += 2; }
+void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
+    i++) debug(" "); }
+
+
 /*
  *  m68k_cpu_disassemble_instr():
  *
@@ -230,10 +240,11 @@ int m68k_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *  register contents) will not be shown, and addr will be used instead of
  *  cpu->pc for relative addresses.
  */
-int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	uint64_t offset;
+	int len = 0;
 	char *symbol;
 
 	if (running)
@@ -247,11 +258,58 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	debug("0x%08x:", (int)dumpaddr);
+	debug("0x%08x: ", (int)dumpaddr);
 
-	debug("\tTODO\n");
+	print_two(ib, &len);
 
-	return 2;
+	if (ib[0] == 0x48) {
+		if (ib[1] >= 0x48 && ib[1] <= 0x4f) {
+			print_spaces(len);
+			debug("bkpt\t#%i\n", ib[1] & 15);
+		} else {
+			print_spaces(len);
+			debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
+		}
+	} else if (ib[0] == 0x4a) {
+		if (ib[1] == 0xfc) {
+			print_spaces(len);
+			debug("illegal\n");
+		} else {
+			print_spaces(len);
+			debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
+		}
+	} else if (ib[0] == 0x4e) {
+		if (ib[1] >= 0x40 && ib[1] <= 0x4f) {
+			print_spaces(len);
+			debug("trap\t#%i\n", ib[1] & 15);
+		} else if (ib[1] >= 0x50 && ib[1] <= 0x57) {
+			print_two(ib, &len);
+			print_spaces(len);
+			debug("linkw\t%%%s,#%i\n", m68k_aname[ib[1] & 7],
+			    ((ib[2] << 8) + ib[3]));
+		} else if (ib[1] >= 0x58 && ib[1] <= 0x5f) {
+			print_spaces(len);
+			debug("unlk\t%%%s\n", m68k_aname[ib[1] & 7]);
+		} else if (ib[1] == 0x71) {
+			print_spaces(len);
+			debug("nop\n");
+		} else if (ib[1] == 0x72) {
+			print_two(ib, &len);
+			print_spaces(len);
+			debug("stop\t#0x%04x\n", ((ib[2] << 8) + ib[3]));
+		} else if (ib[1] == 0x75) {
+			print_spaces(len);
+			debug("rts\n");
+		} else {
+			print_spaces(len);
+			debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
+		}
+	} else {
+		print_spaces(len);
+		debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
+	}
+
+	return len;
 }
 
 

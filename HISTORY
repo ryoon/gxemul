@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.902 2005-08-14 23:44:21 debug Exp $
+$Id: HISTORY,v 1.903 2005-08-15 07:01:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2188,3 +2188,4 @@ Changelog for GXemul:
 		a new (dummy) dyntrans module for x86.
 		Taking the first steps to extend the dyntrans system to support
 		variable-length instructions.
+		Slowly preparing for the next release.

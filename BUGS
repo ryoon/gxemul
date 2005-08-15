@@ -1,12 +1,7 @@
-$Id: BUGS,v 1.35 2005-08-06 22:04:57 debug Exp $
+$Id: BUGS,v 1.36 2005-08-15 07:01:55 debug Exp $
 
   x)  An unknown math coprocessor bug. (Ultrix' dxclock sometimes looks
       weird.)
-
-  x)  The current (1-level) page table system for the MIPS bintrans
-      backend doesn't work very well with caches/devices when emulating
-      R2K/3K. (Easily shown by running something with a framebuffer,
-      for example.)
 
   x)  Enabling cache emulation (./configure --enable-caches) triggers bugs.
 
@@ -19,11 +14,11 @@ $Id: BUGS,v 1.35 2005-08-06 22:04:57 debug Exp $
       that gives weight to this theory is that the serial driver in Linux is
       still being developed.)  But this is just a guess.
 
-  o)  hardware device ticks are done at cycle specific intervals, not
+  o)  Hardware device ticks are done at cycle specific intervals, not
       instruction intervals, so sometimes a fraction of a cycle can be
       "lost".
 
-  o)  running Linux/DECstation 2.4.26 with no scsi disks attached causes
+  o)  Running Linux/DECstation 2.4.26 with no scsi disks attached causes
       a warning message to be printed by Linux.
 
   o)  UDP packets that are too large are not handled well by the Lance device.
@@ -32,7 +27,7 @@ $Id: BUGS,v 1.35 2005-08-06 22:04:57 debug Exp $
       how to solve this; the code works on both little-endian (Alpha) and
       big-endian (UltraSPARC) X-servers...)
 
-  o)  bintranslated 64-bit stuff checks to see if the top 32 bits are
+  o)  Binary-translated 64-bit stuff checks to see if the top 32 bits are
       all zeroes or all ones, and then uses 32-bit tables and such. This
       is a bug. It should check the top 33 bits, not 32. (Alpha only, already
       fixed for i386?)

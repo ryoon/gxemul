@@ -1,4 +1,4 @@
-$Id: TODO,v 1.163 2005-08-14 15:50:58 debug Exp $
+$Id: TODO,v 1.164 2005-08-15 07:01:55 debug Exp $
 
 ===============================================================================
 
@@ -40,8 +40,7 @@ dyntrans:
 	x)  Alpha: hahaha, zapnot and inserts/extracts don't
 	    compile into very nice code :-|  fix this
 
-	x)  PPC: convert instructions to dyntrans, allow for both 64-bit
-	    and 32-bit operating modes!
+	x)  64-bit virtual memory translation tables (PPC, etc)
 
 	x)  x86: convert to dyntrans. LOTS of stuff to consider.
 

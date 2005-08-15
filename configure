@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.153 2005-08-14 23:44:22 debug Exp $
+#  $Id: configure,v 1.154 2005-08-15 06:53:57 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -132,7 +132,11 @@ if [ z"$*" != z ]; then
 
 			printf "\nGeneral options:\n\n"
 
-			echo "  --disable-x        don't include X11 support"
+			echo "  --disable-bintrans  configure without the" \
+			    "old binary translation subsystem,"
+			echo "                      even if the host" \
+			    "supports it"
+			echo "  --disable-x         don't include X11 support"
 
 			printf "\nDevelopment (debug) options:\n\n"
 
@@ -140,8 +144,6 @@ if [ z"$*" != z ]; then
 			    "(for hunting down 32-bit bugs)"
 			echo "  --tracenull        enable" \
 			    "TRACE_NULL_CRASHES (for bug hunting)"
-			echo "  --disable-bintrans configure without" \
-			    "bintrans, even if the host supports it"
 			printf "  --enable-caches    enable cache emulation"
 			printf " (BUGGY)\n"
 			echo "  --enable-delays    enable instruction" \
@@ -198,10 +200,10 @@ if [ z"$*" != z ]; then
 
 			echo "  --enable-mips16    enable MIPS16 support"
 
-			printf "\nPretty much all of these options are only"
+			printf "\n(Pretty much all of these options are only"
 			printf " meaningful during the development of\nthe"
 			printf " emulator, and should not be used when "
-			printf "compiling a stable version.\n"
+			printf "compiling a stable version.)\n"
 			exit
 		else
 			echo "Invalid option: $a"

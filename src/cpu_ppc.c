@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.84 2005-08-14 13:55:03 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.85 2005-08-15 05:59:53 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -787,16 +787,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = (iword >> 21) & 31;
 			debug("mfcr\tr%i", rt);
 			break;
-		case PPC_31_DCBST:
-		case PPC_31_ICBI:
-			ra = (iword >> 16) & 31;
-			rb = (iword >> 11) & 31;
-			switch (xo) {
-			case PPC_31_DCBST:  mnem = "dcbst"; break;
-			case PPC_31_ICBI:   mnem = "icbi"; break;
-			}
-			debug("%s\tr%i,r%i", mnem, ra, rb);
-			break;
 		case PPC_31_MFMSR:
 			rt = (iword >> 21) & 31;
 			debug("mfmsr\tr%i", rt);
@@ -1013,6 +1003,33 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			mnem = power? "cntlz" : "cntlzw";
 			debug("%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
 			break;
+		case PPC_31_CLF:	/*  POWER only  */
+		case PPC_31_CLI:	/*  POWER only  */
+		case PPC_31_DCLST:	/*  POWER only  */
+		case PPC_31_DCBF:	/*  PowerPC only  */
+		case PPC_31_DCBI:	/*  PowerPC only  */
+		case PPC_31_DCBST:	/*  PowerPC only  */
+		case PPC_31_DCBTST:	/*  PowerPC only  */
+		case PPC_31_DCBT:	/*  PowerPC only  */
+		case PPC_31_ICBI:	/*  PowerPC only  */
+		case PPC_31_DCBZ:	/*  POWER/PowerPC  */
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			switch (xo) {
+			case PPC_31_CLF:   mnem = "clf"; break;
+			case PPC_31_CLI:   mnem = "cli"; break;
+			case PPC_31_DCLST: mnem = "dclst"; break;
+			case PPC_31_DCBF:  mnem = "dcbf"; break;
+			case PPC_31_DCBI:  mnem = "dcbi"; break;
+			case PPC_31_DCBST: mnem = "dcbst"; break;
+			case PPC_31_DCBTST:mnem = "dcbtst"; break;
+			case PPC_31_DCBT:  mnem = "dcbt"; break;
+			case PPC_31_ICBI:  mnem = "icbi"; break;
+			case PPC_31_DCBZ:  mnem = power ?
+					   "dclz" : "dcbz"; break;
+			}
+			debug("%s\tr%i,r%i", mnem, ra, rb);
+			break;
 		case PPC_31_SLW:
 		case PPC_31_SRAW:
 		case PPC_31_SRW:
@@ -1105,6 +1122,23 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 			debug("%s\tr%i,r%i,%i", mnem, rs, ra, nb);
 			break;
+		case PPC_31_LHBRX:
+		case PPC_31_LWBRX:
+		case PPC_31_STHBRX:
+		case PPC_31_STWBRX:
+			rt = (iword >> 21) & 31;	/*  stores use rs  */
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			switch (xo) {
+			case PPC_31_LHBRX:  mnem = "lhbrx"; break;
+			case PPC_31_LWBRX:  mnem = power?
+					    "lbrx" : "lwbrx"; break;
+			case PPC_31_STHBRX: mnem = "sthbrx"; break;
+			case PPC_31_STWBRX: mnem = power?
+					    "stbrx" : "stwbrx"; break;
+			}
+			debug("%s\tr%i,r%i,r%i", mnem, rt, ra, rb);
+			break;
 		case PPC_31_SRAWI:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -1148,6 +1182,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_LHAU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
+	case PPC_HI6_LMW:
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
 	case PPC_HI6_STH:

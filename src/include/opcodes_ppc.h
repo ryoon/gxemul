@@ -28,11 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.27 2005-08-14 13:55:04 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.28 2005-08-15 05:59:54 debug Exp $
  *
  *
- *  PPC and POWER opcodes.
- *
+ *  PPC and POWER opcodes. These are gathered from various sources.
  *  Note: The define uses the PPC name, not the POWER name, when they differ.
  */
 
@@ -90,8 +89,10 @@
 #define	  PPC_31_ANDC		  60
 #define	  PPC_31_MULHW		  75
 #define	  PPC_31_MFMSR		  83
+#define	  PPC_31_DCBF		  86
 #define	  PPC_31_LBZX		  87
 #define	  PPC_31_NEG		  104
+#define	  PPC_31_CLF		  118
 #define	  PPC_31_LBZUX		  119
 #define	  PPC_31_NOR		  124
 #define	  PPC_31_SUBFE		  136
@@ -108,8 +109,10 @@
 #define	  PPC_31_STBX		  215
 #define	  PPC_31_MULLW		  235
 #define	  PPC_31_MTSRIN		  242
+#define	  PPC_31_DCBTST		  246
 #define	  PPC_31_STBUX		  247
 #define	  PPC_31_ADD		  266
+#define	  PPC_31_DCBT		  278
 #define	  PPC_31_LHZX		  279
 #define	  PPC_31_TLBIE		  306
 #define	  PPC_31_LHZUX		  311
@@ -123,27 +126,34 @@
 #define	  PPC_31_DCCCI		  454
 #define	  PPC_31_DIVWU		  459
 #define	  PPC_31_MTSPR		  467
+#define	  PPC_31_DCBI		  470
 #define	  PPC_31_NAND		  476
 #define	  PPC_31_DIVW		  491
+#define	  PPC_31_CLI		  502
 #define	  PPC_31_SUBFCO		  520
 #define	  PPC_31_ADDCO		  522
+#define	  PPC_31_LWBRX		  534
 #define	  PPC_31_SRW		  536
 #define	  PPC_31_SUBFO		  552
 #define	  PPC_31_TLBSYNC	  566
 #define	  PPC_31_LSWI		  597
 #define	  PPC_31_SYNC		  598
 #define	  PPC_31_NEGO		  616
+#define	  PPC_31_DCLST		  630
 #define	  PPC_31_SUBFEO		  648
 #define	  PPC_31_ADDEO		  650
 #define	  PPC_31_MFSRIN		  659
+#define	  PPC_31_STWBRX		  662
 #define	  PPC_31_SUBFZEO	  712
 #define	  PPC_31_ADDZEO		  714
 #define	  PPC_31_STSWI		  725
 #define	  PPC_31_MULLWO		  747
 #define	  PPC_31_ADDO		  778
+#define	  PPC_31_LHBRX		  790
 #define	  PPC_31_SRAW		  792
 #define	  PPC_31_SRAWI		  824
 #define	  PPC_31_EIEIO		  854
+#define	  PPC_31_STHBRX		  918
 #define	  PPC_31_EXTSH		  922
 #define	  PPC_31_EXTSB		  954
 #define	  PPC_31_ICCCI		  966
@@ -151,6 +161,7 @@
 #define	  PPC_31_ICBI		  982
 #define	  PPC_31_EXTSW		  986
 #define	  PPC_31_DIVWO		  1003
+#define	  PPC_31_DCBZ		  1014
 #define	PPC_HI6_LWZ		0x20
 #define	PPC_HI6_LWZU		0x21
 #define	PPC_HI6_LBZ		0x22

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.165 2005-08-16 05:37:08 debug Exp $
+$Id: TODO,v 1.166 2005-08-16 05:44:33 debug Exp $
 
 ===============================================================================
 
@@ -7,9 +7,6 @@ High priority stuff:
 
 MIPS bintrans:
 	x)  call/return address cache?
-
-	x)  i386: movn etc, slt[u] for 64-bit mode, 64-bit shifts etc
-
 
 dyntrans:
 	x)  memory write protection for ARM, but NOT for Alpha (because
@@ -51,7 +48,12 @@ dyntrans:
 
 ===============================================================================
 
-Low priority stuff:
+Lower priority, but still important:
+
+	Redesign the entire "mainbus" concept:
+		o)  Easily configurable interrupt routing in SMP systems.
+		o)  Specific clock/bus speeds, cpu speeds etc.
+		o)  Synchronization over network?
 
 	Caches / memory hierarchies: (this is mostly MIPS-specific)
 		o)  MIPS coproc.c: bits in config registers should reflect
@@ -79,6 +81,8 @@ Low priority stuff:
 		o)  many other issues: see src/net.c
 
 	MIPS CPU emulation:
+		o)  i386 bintrans backend: movn etc, slt[u] for
+			64-bit mode, 64-bit shifts etc
 		o)  Instructions:
 			o)  All ISAs:
 				o)  Floating point exception handling, and

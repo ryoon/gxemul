@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.26 2005-08-16 05:37:12 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.27 2005-08-16 20:17:32 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -49,7 +49,7 @@
 #define	GBE_DEBUG
 /*  #define debug fatal  */
 
-/* #define MTE_TEST */
+#define MTE_TEST
 
 #define	GBE_DEFAULT_XRES		640
 #define	GBE_DEFAULT_YRES		480
@@ -399,12 +399,16 @@ void dev_sgi_gbe_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct sgi_gbe_data));
+
+	/*  640x480 for Linux:  */
 	d->xres = GBE_DEFAULT_XRES;
 	d->yres = GBE_DEFAULT_YRES;
 	d->bitdepth = 8;
-#if 0
 	d->control = 0x20aa000;		/*  or 0x00000001?  */
-#endif
+
+	/*  1280x1024 for booting the O2's PROM:  */
+	d->xres = 1280; d->yres = 1024;
+
 	d->fb_data = dev_fb_init(machine, mem, FAKE_GBE_FB_ADDRESS,
 	    VFB_GENERIC, d->xres, d->yres, d->xres, d->yres, 8, "SGI GBE");
 	set_grayscale_palette(d->fb_data, 256);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.29 2005-08-13 08:25:48 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.30 2005-08-16 20:17:32 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -1040,10 +1040,11 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr)
  *  TODO: Run the O2's prom and try to figure out what it really does.
  */
 /*  #define debug fatal  */
+/*  #define MTE_DEBUG  */
 #define	ZERO_CHUNK_LEN		4096
 
 struct sgi_mte_data {
-	uint64_t	reg[DEV_SGI_MTE_LENGTH / sizeof(uint64_t)];
+	uint32_t	reg[DEV_SGI_MTE_LENGTH / sizeof(uint32_t)];
 };
 
 /*
@@ -1060,13 +1061,27 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
-	regnr = relative_addr / sizeof(uint64_t);
+	regnr = relative_addr / sizeof(uint32_t);
 
 	/*  Treat all registers as read/write, by default.  */
+	if (len != 4) {
+		if (writeflag == MEM_WRITE) {
+			d->reg[regnr] = idata >> 32;
+			d->reg[regnr+1] = idata;
+		} else
+			odata = ((uint64_t)d->reg[regnr] << 32) + d->reg[regnr+1];
+	}
+
 	if (writeflag == MEM_WRITE)
 		d->reg[regnr] = idata;
 	else
 		odata = d->reg[regnr];
+
+#ifdef MTE_DEBUG
+	if (writeflag == MEM_WRITE && relative_addr >= 0x2000 && relative_addr < 0x3000)
+		fatal("[ MTE: 0x%08x: 0x%016llx ]\n", (int)relative_addr,
+		    (long long)idata);
+#endif
 
 	/*
 	 *  I've not found any docs about this 'mte' device at all, so this is
@@ -1115,34 +1130,98 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 	case 0x1778:
 		break;
 
-#if 1
-case 0x2074:
-{
-/*  This seems to have to do with graphical output:
-    0x000000000xxx0yyy  where x is usually 0..1279 and y is 0..1023?  */
-/*  Gaaah...  */
-	int x = (idata >> 16) & 0xfff;
-	int y = idata & 0xfff;
-	int addr;
-unsigned char buf[3];
-	printf("x = %i, y = %i\n", x, y);
-buf[0] = buf[1] = buf[2] = random() | 0x80;
-addr = (x/2 + (y/2)*640) * 3;
-if (x < 640 && y < 480)
-cpu->memory_rw(cpu, cpu->mem, 0x38000000 + addr,
- buf, 3, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+	case 0x21f8:
+		{
+			uint32_t op = d->reg[0x2060 / sizeof(uint32_t)];
+			uint32_t color = d->reg[0x20d0 / sizeof(uint32_t)]&255;
+			uint32_t x1 = (d->reg[0x2070 / sizeof(uint32_t)]
+			    >> 16) & 0xfff;
+			uint32_t y1 = d->reg[0x2070 / sizeof(uint32_t)]& 0xfff;
+			uint32_t x2 = (d->reg[0x2074 / sizeof(uint32_t)]
+			    >> 16) & 0xfff;
+			uint32_t y2 = d->reg[0x2074 / sizeof(uint32_t)]& 0xfff;
+			int x,y;
 
-}
-break;
-#endif
+			op >>= 24;
+
+			switch (op) {
+			case 1:	/*  Unknown. Used after drawing bitmaps?  */
+				break;
+			case 3:	/*  Fill:  */
+				if (x2 < x1) {
+					int tmp = x1; x1 = x2; x2 = tmp;
+				}
+				if (y2 < y1) {
+					int tmp = y1; y1 = y2; y2 = tmp;
+				}
+				for (y=y1; y<=y2; y++) {
+					unsigned char buf[1280];
+					int length = x2-x1+1;
+					int addr = (x1 + y*1280);
+					if (length < 1)
+						length = 1;
+					memset(buf, color, length);
+					if (x1 < 1280 && y < 1024)
+						cpu->memory_rw(cpu, cpu->mem,
+						    0x38000000 + addr, buf,
+						    length, MEM_WRITE,
+						    NO_EXCEPTIONS | PHYSICAL);
+				}
+				break;
+
+			default:fatal("\n--- MTE OP %i color 0x%02x: %i,%i - %i,%i\n\n",
+				    op, color, x1,y1, x2,y2);
+			}
+		}
+		break;
+
+	case 0x29f0:
+		/*  Pixel output:  */
+		{
+			uint32_t data = d->reg[0x20c4 / sizeof(uint32_t)];
+			uint32_t color = d->reg[0x20d0 / sizeof(uint32_t)]&255;
+			uint32_t x1 = (d->reg[0x2070 / sizeof(uint32_t)]
+			    >> 16) & 0xfff;
+			uint32_t y1 = d->reg[0x2070 / sizeof(uint32_t)]& 0xfff;
+			uint32_t x2 = (d->reg[0x2074 / sizeof(uint32_t)]
+			    >> 16) & 0xfff;
+			uint32_t y2 = d->reg[0x2074 / sizeof(uint32_t)]& 0xfff;
+			int x,y;
+			if (x2 < x1) {
+				int tmp = x1; x1 = x2; x2 = tmp;
+			}
+			if (y2 < y1) {
+				int tmp = y1; y1 = y2; y2 = tmp;
+			}
+			if (x2-x1 <= 15)
+				data <<= 16;
+			x=x1; y=y1;
+			while (x <= x2 && y <= y2) {
+				unsigned char buf = color;
+				int addr = x + y*1280;
+				int bit_set = data & 0x80000000UL;
+				data <<= 1;
+				if (x < 1280 && y < 1024 && bit_set)
+					cpu->memory_rw(cpu, cpu->mem,
+					    0x38000000 + addr, &buf,1,MEM_WRITE,
+					    NO_EXCEPTIONS | PHYSICAL);
+				x++;
+				if (x > x2) {
+					x = x1;
+					y++;
+				}
+			}
+		}
+		break;
+
 
 	/*  Operations:  */
 	case 0x3800:
 		if (writeflag == MEM_WRITE) {
 			switch (idata) {
 			case 0x11:		/*  zerofill  */
-				first_addr = d->reg[0x3030 / sizeof(uint64_t)];
-				last_addr  = d->reg[0x3038 / sizeof(uint64_t)];
+				first_addr = d->reg[0x3030 / sizeof(uint32_t)];
+				last_addr  = d->reg[0x3038 / sizeof(uint32_t)];
 				zerobuflen = last_addr - first_addr + 1;
 				debug("[ sgi_mte: zerofill: first = 0x%016llx, last = 0x%016llx, length = 0x%llx ]\n",
 				    (long long)first_addr, (long long)last_addr, (long long)zerobuflen);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.515 2005-08-16 09:16:26 debug Exp $
+ *  $Id: machine.c,v 1.516 2005-08-16 20:17:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3130,12 +3130,14 @@ Why is this here? TODO
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-#if 0
-				i = dev_pckbc_init(machine, mem, 0x1f320000,
-				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-				    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
-							/*  keyb+mouse (mace irq numbers)  */
-#endif
+				/*  TODO: Once this works, it should be enabled
+				    always, not just when using X!  */
+				if (machine->use_x11) {
+					i = dev_pckbc_init(machine, mem, 0x1f320000,
+					    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
+					    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
+						/*  keyb+mouse (mace irq numbers)  */
+				}
 
 				net_generate_unique_mac(machine, macaddr);
 				eaddr_string = malloc(ETHERNET_STRING_MAXLEN);

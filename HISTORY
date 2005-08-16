@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.905 2005-08-16 09:16:24 debug Exp $
+$Id: HISTORY,v 1.906 2005-08-16 20:17:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2191,3 +2191,9 @@ Changelog for GXemul:
 		Slowly preparing for the next release.
 20050816	Adding a dummy SPARC cpu module.
 		Minor updates (documentation etc) for the release.
+
+==============  RELEASE 0.3.5  ==============
+
+20050816	Some success in decoding the way the SGI O2 PROM draws graphics
+		during bootup; lines/rectangles and bitmaps work, enough to
+		show the bootlogo etc. :-)

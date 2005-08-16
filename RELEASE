@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.139 2005-08-15 07:01:55 debug Exp $
+$Id: RELEASE,v 1.140 2005-08-16 05:36:59 debug Exp $
 
 Working on what will be 0.3.5.
 
@@ -52,13 +52,16 @@ smaller than an instruction. What this means is that pipe-line stalls,
 penalties caused by branch-prediction misses or cache misses, and other
 micro-architectural effects are not simulated.)
 
-User-visible changes between release 0.3.4 and 0.3.5 can be summarized as 
-follows:
+The user-visible changes between release 0.3.4 and 0.3.5 are minor, and
+can be summarized as follows:
 
 	o)  Updates to the (old) binary translation subsystem, resulting
 	    in minor speed improvements.
 
-	o)  Some bugfixes related to 64-bit MIPS emulation.
+	o)  64-bit MIPS dmult/dmultu has been fixed.
+
+	o)  slt* instructions for 64-bit MIPS were incorrectly implemented
+	    in the i386 backend. This has been fixed.
 
 There have been many other bug fixes and updates, most of which are not 
 visible.
@@ -75,7 +78,6 @@ Files included in this release are:
   doc                         Documentation.
   experiments                 Experimental code. (Usually not needed.)
   src                         Source code.
-  tests                       Regression tests.
 
 To build the emulator, run the ./configure script, and then run make.
 

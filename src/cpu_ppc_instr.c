@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.28 2005-08-14 23:44:22 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.29 2005-08-16 21:41:57 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -619,16 +619,34 @@ X(srawi_dot) { instr(srawi)(cpu,ic); update_cr0(cpu, reg(ic->arg[1])); }
 
 
 /*
- *  crxor:  Condition Register XOR
+ *  crand, crxor etc:  Condition Register operations
  *
  *  arg[0] = copy of the instruction word
  */
+X(crand)
+{
+	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
+	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
+	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
+	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
+	cpu->cd.ppc.cr &= ~(1 << (31-bt));
+	if (ba & bb)
+		cpu->cd.ppc.cr |= (1 << (31-bt));
+}
+X(cror)
+{
+	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
+	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
+	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
+	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
+	cpu->cd.ppc.cr &= ~(1 << (31-bt));
+	if (ba | bb)
+		cpu->cd.ppc.cr |= (1 << (31-bt));
+}
 X(crxor)
 {
-	uint32_t iword = ic->arg[0];
-	int bt = (iword >> 21) & 31;
-	int ba = (iword >> 16) & 31;
-	int bb = (iword >> 11) & 31;
+	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
+	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
 	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
 	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
 	cpu->cd.ppc.cr &= ~(1 << (31-bt));
@@ -656,11 +674,15 @@ X(mfsprg3) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg3; }
  *  arg[0] = pointer to source register
  */
 X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
-/*  TODO: Check privilege level for mtsprg*  */
+/*  TODO: Check privilege level for these:  */
 X(mtsprg0) {	cpu->cd.ppc.sprg0 = reg(ic->arg[0]); }
 X(mtsprg1) {	cpu->cd.ppc.sprg1 = reg(ic->arg[0]); }
 X(mtsprg2) {	cpu->cd.ppc.sprg2 = reg(ic->arg[0]); }
 X(mtsprg3) {	cpu->cd.ppc.sprg3 = reg(ic->arg[0]); }
+X(mtibatu) {	cpu->cd.ppc.ibat_u[ic->arg[1]] = reg(ic->arg[0]); }
+X(mtibatl) {	cpu->cd.ppc.ibat_l[ic->arg[1]] = reg(ic->arg[0]); }
+X(mtdbatu) {	cpu->cd.ppc.dbat_u[ic->arg[1]] = reg(ic->arg[0]); }
+X(mtdbatl) {	cpu->cd.ppc.dbat_l[ic->arg[1]] = reg(ic->arg[0]); }
 
 
 /*
@@ -730,14 +752,18 @@ X(mulli)
  */
 X(slw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    << (reg(ic->arg[1]) & 63); }
-X(slw_dot) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
-		    << (reg(ic->arg[1]) & 63);
-		update_cr0(cpu, reg(ic->arg[2])); }
-X(sraw) {	reg(ic->arg[2]) = (int64_t)reg(ic->arg[0])
+X(slw_dot) {	instr(slw)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+X(sraw) {	reg(ic->arg[2]) =
+#ifdef MODE32
+		    (int32_t)
+#else
+		    (int64_t)
+#endif
+		reg(ic->arg[0]) >> (reg(ic->arg[1]) & 63); }
+X(sraw_dot) {	instr(sraw)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+X(srw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    >> (reg(ic->arg[1]) & 63); }
-X(sraw_dot) {	reg(ic->arg[2]) = (int64_t)reg(ic->arg[0])
-		    >> (reg(ic->arg[1]) & 63);
-		update_cr0(cpu, reg(ic->arg[2])); }
+X(srw_dot) {	instr(srw)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(and) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
 X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
 		update_cr0(cpu, reg(ic->arg[2])); }
@@ -893,6 +919,17 @@ X(addze)
  *  arg[2] = pointer to destination register rt
  */
 X(subf) {	reg(ic->arg[2]) = ~reg(ic->arg[0]) + reg(ic->arg[1]) + 1; }
+X(subf_dot) {	instr(subf)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+X(subfc)
+{
+	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
+	uint64_t tmp2 = tmp;
+	cpu->cd.ppc.xer &= PPC_XER_CA;
+	tmp += (uint32_t)reg(ic->arg[1]) + 1;
+	if ((tmp >> 32) == (tmp2 >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+	reg(ic->arg[2]) = (uint32_t)tmp;
+}
 X(subfe)
 {
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
@@ -1336,8 +1373,14 @@ X(to_be_translated)
 			ic->f = instr(nop);
 			break;
 
+		case PPC_19_CRAND:
+		case PPC_19_CROR:
 		case PPC_19_CRXOR:
-			ic->f = instr(crxor);
+			switch (xo) {
+			case PPC_19_CRAND: ic->f = instr(crand); break;
+			case PPC_19_CROR:  ic->f = instr(cror); break;
+			case PPC_19_CRXOR: ic->f = instr(crxor); break;
+			}
 			ic->arg[0] = iword;
 			break;
 
@@ -1405,8 +1448,23 @@ X(to_be_translated)
 			case 273: ic->f = instr(mtsprg1); break;
 			case 274: ic->f = instr(mtsprg2); break;
 			case 275: ic->f = instr(mtsprg3); break;
-			default:fatal("UNIMPLEMENTED spr %i\n", spr);
-				goto bad;
+			default:if (spr >= 528 && spr < 544) {
+					if (spr & 1) {
+						if (spr & 16)
+							ic->f = instr(mtdbatl);
+						else
+							ic->f = instr(mtibatl);
+					} else {
+						if (spr & 16)
+							ic->f = instr(mtdbatu);
+						else
+							ic->f = instr(mtibatu);
+					}
+					ic->arg[1] = (spr >> 1) & 3;
+				} else {
+					fatal("UNIMPLEMENTED spr %i\n", spr);
+					goto bad;
+				}
 			}
 			break;
 
@@ -1465,6 +1523,8 @@ X(to_be_translated)
 
 		case PPC_31_SYNC:
 		case PPC_31_EIEIO:
+		case PPC_31_DCBST:
+		case PPC_31_ICBI:
 			/*  TODO  */
 			ic->f = instr(nop);
 			break;
@@ -1536,6 +1596,7 @@ X(to_be_translated)
 
 		case PPC_31_SLW:
 		case PPC_31_SRAW:
+		case PPC_31_SRW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
 		case PPC_31_NOR:
@@ -1552,6 +1613,8 @@ X(to_be_translated)
 					  rc_f  = instr(slw_dot); break;
 			case PPC_31_SRAW: ic->f = instr(sraw);
 					  rc_f  = instr(sraw_dot); break;
+			case PPC_31_SRW:  ic->f = instr(srw);
+					  rc_f  = instr(srw_dot); break;
 			case PPC_31_AND:  ic->f = instr(and);
 					  rc_f  = instr(and_dot); break;
 			case PPC_31_ANDC: ic->f = instr(andc);
@@ -1582,6 +1645,7 @@ X(to_be_translated)
 		case PPC_31_ADDE:
 		case PPC_31_ADDZE:
 		case PPC_31_SUBF:
+		case PPC_31_SUBFC:
 		case PPC_31_SUBFE:
 		case PPC_31_SUBFZE:
 			rt = (iword >> 21) & 31;
@@ -1589,10 +1653,6 @@ X(to_be_translated)
 			rb = (iword >> 11) & 31;
 			oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
-			if (rc) {
-				fatal("RC bit not yet implemented\n");
-				goto bad;
-			}
 			if (oe_bit) {
 				fatal("oe_bit not yet implemented\n");
 				goto bad;
@@ -1608,8 +1668,18 @@ X(to_be_translated)
 			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;
 			case PPC_31_ADDZE:  ic->f = instr(addze); n64=1; break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
+			case PPC_31_SUBFC:  ic->f = instr(subfc); n64=1; break;
 			case PPC_31_SUBFE:  ic->f = instr(subfe); n64=1; break;
 			case PPC_31_SUBFZE: ic->f = instr(subfze); n64=1;break;
+			}
+			if (rc) {
+				switch (xo) {
+				case PPC_31_SUBF:
+					ic->f = instr(subf_dot);
+					break;
+				default:fatal("RC bit not yet implemented\n");
+					goto bad;
+				}
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);

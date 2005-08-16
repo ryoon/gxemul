@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.906 2005-08-16 20:17:30 debug Exp $
+$Id: HISTORY,v 1.907 2005-08-16 21:41:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2197,3 +2197,4 @@ Changelog for GXemul:
 20050816	Some success in decoding the way the SGI O2 PROM draws graphics
 		during bootup; lines/rectangles and bitmaps work, enough to
 		show the bootlogo etc. :-)
+		Adding more PPC instructions, and (dummy) BAT registers.

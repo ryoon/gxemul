@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.27 2005-08-14 15:47:36 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.28 2005-08-16 21:41:57 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -434,7 +434,7 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 
 		/*  Hm. Enable coprocessors 0 and 1 even if we're not just
 		    emulating userland? TODO: Think about this.  */
-		if (cpu->machine->prom_emulation)
+		/*  if (cpu->machine->prom_emulation)  */
 			c->reg[COP0_STATUS] |=
 			    ((uint32_t)0x3 << STATUS_CU_SHIFT);
 
@@ -2609,9 +2609,12 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MFCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMFCz << 21)))) {
 		if (unassemble_only) {
-			debug("%s%i\t%s,%s",
-			    copz==COPz_DMFCz? "dmfc" : "mfc", cpnr,
-			    regnames[rt], cop0_names[rd]);
+			debug("%s%i\t%s,", copz==COPz_DMFCz? "dmfc" : "mfc",
+			    cpnr, regnames[rt]);
+			if (cpnr == 0)
+				debug("%s", cop0_names[rd]);
+			else
+				debug("cpreg%i", rd);
 			if (function & 7)
 				debug(",%i", (int)(function & 7));
 			debug("\n");
@@ -2632,9 +2635,12 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MTCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMTCz << 21)))) {
 		if (unassemble_only) {
-			debug("%s%i\t%s,%s",
-			    copz==COPz_DMTCz? "dmtc" : "mtc", cpnr,
-			    regnames[rt], cop0_names[rd]);
+			debug("%s%i\t%s,", copz==COPz_DMTCz? "dmtc" : "mtc",
+			    cpnr, regnames[rt]);
+			if (cpnr == 0)
+				debug("%s", cop0_names[rd]);
+			else
+				debug("cpreg%i", rd);
 			if (function & 7)
 				debug(",%i", (int)(function & 7));
 			debug("\n");

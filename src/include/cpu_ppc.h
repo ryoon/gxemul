@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.29 2005-08-14 23:44:23 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.30 2005-08-16 21:41:58 debug Exp $
  */
 
 #include "misc.h"
@@ -141,6 +141,12 @@ struct ppc_cpu {
 	uint64_t	sprg3;		/*  Special Purpose Register G3  */
 	uint32_t	pvr;		/*  Processor Version Register  */
 	uint32_t	pir;		/*  Processor ID  */
+
+	/*  TODO: 64-bit BATs?  */
+	uint32_t	ibat_u[4];
+	uint32_t	ibat_l[4];
+	uint32_t	dbat_u[4];
+	uint32_t	dbat_l[4];
 
 
 	/*

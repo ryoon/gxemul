@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.85 2005-08-15 05:59:53 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.86 2005-08-16 21:41:57 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -236,7 +236,7 @@ void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
  *  Dump cpu registers in a relatively readable format.
  *
  *  gprs: set to non-zero to dump GPRs and some special-purpose registers.
- *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
+ *  coprocs: if bit i is set, then we should dump registers from coproc i.
  */
 void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
@@ -308,7 +308,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    x, (int)cpu->cd.ppc.dec, (int)cpu->cd.ppc.hdec);
 	}
 
-	if (coprocs) {
+	if (coprocs & 1) {
 		debug("cpu%i: fpscr = 0x%08x\n", x, (int)cpu->cd.ppc.fpscr);
 
 		/*  TODO: show floating-point values :-)  */
@@ -323,6 +323,17 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i % 2) == 1)
 				debug("\n");
 		}
+	}
+
+	if (coprocs & 2) {
+		for (i=0; i<4; i++)
+			debug("cpu%i:  ibat%iu = 0x%08x  ibat%il = 0x%08x\n",
+			    x, i, cpu->cd.ppc.ibat_u[i],
+			    i, cpu->cd.ppc.ibat_l[i]);
+		for (i=0; i<4; i++)
+			debug("cpu%i:  dbat%iu = 0x%08x  dbat%il = 0x%08x\n",
+			    x, i, cpu->cd.ppc.dbat_u[i],
+			    i, cpu->cd.ppc.dbat_l[i]);
 	}
 }
 
@@ -1103,6 +1114,22 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 273:  debug("mtsprg\t1,r%i", rs); break;
 			case 274:  debug("mtsprg\t2,r%i", rs); break;
 			case 275:  debug("mtsprg\t3,r%i", rs); break;
+			case 528:  debug("mtibatu\t0,r%i", rs); break;
+			case 529:  debug("mtibatl\t0,r%i", rs); break;
+			case 530:  debug("mtibatu\t1,r%i", rs); break;
+			case 531:  debug("mtibatl\t1,r%i", rs); break;
+			case 532:  debug("mtibatu\t2,r%i", rs); break;
+			case 533:  debug("mtibatl\t2,r%i", rs); break;
+			case 534:  debug("mtibatu\t3,r%i", rs); break;
+			case 535:  debug("mtibatl\t3,r%i", rs); break;
+			case 536:  debug("mtdbatu\t0,r%i", rs); break;
+			case 537:  debug("mtdbatl\t0,r%i", rs); break;
+			case 538:  debug("mtdbatu\t1,r%i", rs); break;
+			case 539:  debug("mtdbatl\t1,r%i", rs); break;
+			case 540:  debug("mtdbatu\t2,r%i", rs); break;
+			case 541:  debug("mtdbatl\t2,r%i", rs); break;
+			case 542:  debug("mtdbatu\t3,r%i", rs); break;
+			case 543:  debug("mtdbatl\t3,r%i", rs); break;
 			default:debug("mtspr\tspr%i,r%i", spr, rs);
 			}
 			break;

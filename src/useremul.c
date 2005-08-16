@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.61 2005-08-16 05:37:10 debug Exp $
+ *  $Id: useremul.c,v 1.62 2005-08-16 06:49:26 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -146,7 +146,7 @@ void useremul__freebsd_setup(struct cpu *cpu, int argc, char **host_argv)
 		cpu->cd.alpha.r[ALPHA_A3] = 0;
 
 		/*  What is a good stack pointer? TODO  */
-		cpu->cd.alpha.r[ALPHA_SP] = 0x120000000 +
+		cpu->cd.alpha.r[ALPHA_SP] = 0x120000000ULL +
 		    1048576 * cpu->machine->physical_ram_in_mb - 1024;
 		break;
 	default:

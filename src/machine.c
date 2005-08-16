@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.513 2005-08-14 12:22:46 debug Exp $
+ *  $Id: machine.c,v 1.514 2005-08-16 05:37:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3130,7 +3130,7 @@ Why is this here? TODO
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-#if 1
+#if 0
 				i = dev_pckbc_init(machine, mem, 0x1f320000,
 				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
 				    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
@@ -4180,6 +4180,31 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "\"Bare\" SPARC machine";
 		break;
 
+	case MACHINE_TESTSPARC:
+		machine->machine_name = "SPARC test machine";
+
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
+
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testsparc generic");
+
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
+		break;
+
 	case MACHINE_ULTRA1:
 		/*
 		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
@@ -4775,10 +4800,9 @@ void machine_default_cputype(struct machine *m)
 
 	/*  SPARC:  */
 	case MACHINE_BARESPARC:
-		m->cpu_name = strdup("SPARCV9");
-		break;
+	case MACHINE_TESTSPARC:
 	case MACHINE_ULTRA1:
-		m->cpu_name = strdup("SPARCV9");
+		m->cpu_name = strdup("SPARCv9");
 		break;
 
 	/*  Alpha:  */
@@ -5086,6 +5110,14 @@ void machine_init(void)
 	me->aliases[0] = "walnut";
 	me->aliases[1] = "evbppc";
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Test-machine for SPARC:  */
+	me = machine_entry_new("Test-machine for SPARC", ARCH_SPARC,
+	    MACHINE_TESTSPARC, 1, 0);
+	me->aliases[0] = "testsparc";
+	if (cpu_family_ptr_by_number(ARCH_SPARC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

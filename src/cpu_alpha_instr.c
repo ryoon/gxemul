@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.40 2005-08-14 23:44:22 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.41 2005-08-16 05:37:09 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -420,7 +420,8 @@ X(blt_samepage)
 
 
 /*
- *  bge_samepage:  Branch (to within the same translated page) if Greater or Equal
+ *  bge_samepage:  Branch (to within the same translated page)
+ *		   if Greater or Equal
  *
  *  arg[0] = pointer to new alpha_instr_call
  *  arg[1] = pointer to int64_t register

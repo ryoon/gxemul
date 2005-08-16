@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.50 2005-08-14 23:44:22 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.51 2005-08-16 05:37:10 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1038,7 +1038,8 @@ X(to_be_translated)
 	case 0x6:	/*  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register  */
 	case 0x7:
 		p_bit = main_opcode & 1;
-		ic->f = load_store_instr[((iword >> 16) & 0x3f0) + condition_code];
+		ic->f = load_store_instr[((iword >> 16) & 0x3f0)
+		    + condition_code];
 		imm = iword & 0xfff;
 		if (!u_bit)
 			imm = (int32_t)0-imm;

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.76 2005-08-14 23:44:22 debug Exp $
+#  $Id: Makefile.skel,v 1.77 2005-08-16 05:37:09 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -9,8 +9,7 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 OBJS=console.o cpu.o debugger.o diskimage.o emul.o emul_parse.o file.o \
 	machine.o main.o misc.o memory.o device.o net.o symbol.o useremul.o \
 	x11.o cpu_mips.o cpu_mips_coproc.o memory_fast_v2h.o bintrans.o \
-	$(CPU_ARCHS) cpu_x86.o \
-	arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o yamon.o
+	$(CPU_ARCHS) arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o yamon.o
 
 
 all: do_src do_devices
@@ -126,6 +125,20 @@ tmp_ppc_head.c:
 tmp_ppc_tail.c:
 	cd tools; make generate_tail; cd ..
 	tools/generate_tail ppc PPC > tmp_ppc_tail.c
+
+
+###############################################################################
+
+cpu_sparc.o: cpu_sparc.c cpu_sparc_instr.c cpu_dyntrans.c memory_rw.c \
+	tmp_sparc_head.c tmp_sparc_tail.c
+
+tmp_sparc_head.c:
+	cd tools; make generate_head; cd ..
+	tools/generate_head sparc SPARC > tmp_sparc_head.c
+
+tmp_sparc_tail.c:
+	cd tools; make generate_tail; cd ..
+	tools/generate_tail sparc SPARC > tmp_sparc_tail.c
 
 
 ###############################################################################

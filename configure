@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.154 2005-08-15 06:53:57 debug Exp $
+#  $Id: configure,v 1.155 2005-08-16 05:37:08 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -71,6 +71,7 @@ else
 	ENABLEM68K=YES
 	ENABLEMIPS=YES
 	ENABLEPPC=YES
+	ENABLESPARC=YES
 	ENABLEX86=YES
 fi
 
@@ -115,6 +116,10 @@ if [ z"$*" != z ]; then
 			ENABLEPPC=NO
 		else if [ z$a = z--enable-ppc ]; then
 			ENABLEPPC=YES
+		else if [ z$a = z--disable-sparc ]; then
+			ENABLESPARC=NO
+		else if [ z$a = z--enable-sparc ]; then
+			ENABLESPARC=YES
 		else if [ z$a = z--disable-x86 ]; then
 			ENABLEX86=NO
 		else if [ z$a = z--enable-x86 ]; then
@@ -191,6 +196,13 @@ if [ z"$*" != z ]; then
 			fi
 			printf "POWER/PPC CPU emulation\n"
 
+			if [ z$ENABLESPARC = zYES ]; then
+				printf "  --disable-sparc    disable "
+			else
+				printf "  --enable-sparc     enable "
+			fi
+			printf "SPARC CPU emulation\n"
+
 			if [ z$ENABLEX86 = zYES ]; then
 				printf "  --disable-x86      disable "
 			else
@@ -210,8 +222,8 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -274,6 +286,10 @@ fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_ppc.o"
+fi
+if [ z$ENABLESPARC = zYES ]; then
+	printf "#define ENABLE_SPARC\n" >> config.h
+	CPU_ARCHS="$CPU_ARCHS cpu_sparc.o"
 fi
 if [ z$ENABLEX86 = zYES ]; then
 	printf "#define ENABLE_X86\n" >> config.h

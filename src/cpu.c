@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.315 2005-08-12 18:34:00 debug Exp $
+ *  $Id: cpu.c,v 1.316 2005-08-16 05:37:09 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -667,6 +667,10 @@ void cpu_init(void)
 
 #ifdef ENABLE_PPC
 	add_cpu_family(ppc_cpu_family_init, ARCH_PPC);
+#endif
+
+#ifdef ENABLE_SPARC
+	add_cpu_family(sparc_cpu_family_init, ARCH_SPARC);
 #endif
 
 #ifdef ENABLE_X86

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.42 2005-08-11 09:14:12 debug Exp $
+ *  $Id: cpu.h,v 1.43 2005-08-16 05:37:13 debug Exp $
  *
  *  See cpu.c.
  */
@@ -47,6 +47,7 @@
 #include "cpu_m68k.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
+#include "cpu_sparc.h"
 #include "cpu_x86.h"
 
 struct cpu;
@@ -167,6 +168,7 @@ struct cpu {
 		struct m68k_cpu    m68k;
 		struct mips_cpu    mips;
 		struct ppc_cpu     ppc;
+		struct sparc_cpu   sparc;
 		struct x86_cpu     x86;
 	} cd;
 };

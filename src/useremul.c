@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.60 2005-08-10 05:29:31 debug Exp $
+ *  $Id: useremul.c,v 1.61 2005-08-16 05:37:10 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -580,7 +580,7 @@ int64_t useremul_fstat(struct cpu *cpu, int64_t *errnop,
 		store_32bit_word(cpu, arg1 + 12, sb.st_uid);
 		store_32bit_word(cpu, arg1 + 16, sb.st_gid);
 		store_32bit_word(cpu, arg1 + 20, sb.st_rdev);
-
+#if 0
 		store_64bit_word(cpu, arg1 + 24, sb.st_atimespec.tv_sec);
 		store_64bit_word(cpu, arg1 + 32, sb.st_atimespec.tv_nsec);
 		store_64bit_word(cpu, arg1 + 40, sb.st_mtimespec.tv_sec);
@@ -593,7 +593,7 @@ int64_t useremul_fstat(struct cpu *cpu, int64_t *errnop,
 		store_64bit_word(cpu, arg1 + 88, sb.st_blksize);
 		store_64bit_word(cpu, arg1 + 92, sb.st_flags);
 		store_64bit_word(cpu, arg1 + 96, sb.st_gen);
-
+#endif
 	}
 	return res;
 }

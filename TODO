@@ -1,4 +1,4 @@
-$Id: TODO,v 1.164 2005-08-15 07:01:55 debug Exp $
+$Id: TODO,v 1.165 2005-08-16 05:37:08 debug Exp $
 
 ===============================================================================
 
@@ -24,6 +24,10 @@ dyntrans:
 		TODO: is instr_call statistics enough?
 
 	x)  support for archs that allow transparent unaligned load/stores
+
+	x)  SMP: detect when an instruction such as ll/sc or cas is used,
+	    and "synchronize" approximately the number of executed instructions
+	    (or cycles) across all CPUs.
 
 	x)  support for variable-length instructions (x86, m68k, ...)
 		Perhaps:  don't increase the next_ic between every
@@ -74,17 +78,6 @@ Low priority stuff:
 		    NICs in machines connect to different networks.
 		o)  many other issues: see src/net.c
 
-	CPU emulation:
-		o)  Binary translation:
-			+)  use an Intermediate Representation!
-			+)  recursive translation?
-			+)  basic blocks instead of one-instruction? :)
-			+)  on Alpha: don't assume pca56-like byte load/store?
-			+)  write backends for UltraSparc and MIPS
-			+)  see src/bintrans.c for more info
-		o)  Dynamic-but-not-binary translation?
-		o)  All the non-MIPS modes need a bit of work.
-
 	MIPS CPU emulation:
 		o)  Instructions:
 			o)  All ISAs:
@@ -127,43 +120,6 @@ Low priority stuff:
 				x)  SGI's specs on NUMA address space
 			+)  Ultrix?  NetBSD doesn't do SMP on MIPS yet :-(
 			+)  Own experiments with ycx2.
-
-	Emulation of specific machines and devices:
-		o)  Use same clock for all emulations and machines.
-		o)  Clean up the device stuff (registering of devices etc)
-		o)  Various SCSI and IDE controllers
-		o)  PS/2-style keyboard controller (for several machines)
-		o)  Generic busses;
-			x)  PCI:  i/o and interrupts
-			x)  QBus-22 (DECsystem 5500, 5400?)
-		o)  DECstations (pmax):
-			x)  ioasic
-			x)  framebuffers:
-				+)  better cursor support, overlays?,
-				+)  2D/3D acceleration, PX[G]
-			x)  status words / control words, make this more
-				portable/cleaner
-			x)  scsi controller(s): sii, DMA for asc
-			x)  serial controllers: ssc, scc (and more work on dc?)
-			x)  nvram on decstation 5000/125:  when using X11,
-				set console=g or similar
-			x)  DECstation 5840? "xbi-based SMP"
-		o)  SGI and ARC machines (sgimips, arc):
-			x)  IP32 ("O2"): (Lots of stuff)
-				+)  mec (ethernet)
-				+)  pci
-				+)  ahc (scsi)
-				+)  ps2 kbd
-				+)  memory controller
-				+)  framebuffer/graphics
-				+)  caches
-			x)  more ARCBIOS stuff
-			x)  Memory/interrupt controllers
-			x)  IP30 (Linux with graphics support?)
-			x)  SMP / NUMA?  (SGI and various ARC machines)
-		o)  Playstation 2:
-			Hardware:  OHCI usb controller, keyboard, ...
-		o)  Less interesting platforms (newsmips, mipsco, wgrisc, etc)
 
 	File/disk handling:
 		o)  Better handling of tape files

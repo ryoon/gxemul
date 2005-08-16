@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.904 2005-08-16 05:37:08 debug Exp $
+$Id: HISTORY,v 1.905 2005-08-16 09:16:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2190,3 +2190,4 @@ Changelog for GXemul:
 		variable-length instructions.
 		Slowly preparing for the next release.
 20050816	Adding a dummy SPARC cpu module.
+		Minor updates (documentation etc) for the release.

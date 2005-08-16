@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.86 2005-08-16 06:49:25 debug Exp $
+$Id: guestoses.html,v 1.87 2005-08-16 09:16:25 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -423,7 +423,7 @@ image, from an emulated DECstation 3MAX machine:
 	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e3max -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
+	<b>gxemul -e3max -A -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
 
 </pre>
   <li>Log in as root (on the emulated 3MAX machine), and execute the
@@ -494,13 +494,13 @@ image, from an emulated DECstation 3MAX machine:
 
 </pre>
   <li>Download the generic kernel and the 2.0.2 ISO image:<pre>
-	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
-	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso</a>
 
-</pre>(You may want to choose a mirror closer to you, if .se is slow.)
+</pre>
   <p>
   <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
+	<b>gxemul -e 3max -A -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
 
 </pre>and execute the following commands as <tt>root</tt>:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
@@ -521,9 +521,9 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 	<b>gxemul -e malta -d nbsd_malta.img netbsd-MALTA.gz</b>
 </pre>
 
-<p>Note 1: NetBSD detects a very fast CPU although the emulation isn't 
-really that fast, so delays take very long. Even on a multi-GHz host, you 
-will need a lot of patience.
+<p>Note 1: NetBSD detects a very fast CPU although the emulation isn't
+really that fast, so emulated delays are very slow. Even on a multi-GHz
+host, you will need a lot of patience.
 
 <p>Note 2: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
 (MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
@@ -582,7 +582,7 @@ time consuming, but necessary:
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img</b>
+	<b>gxemul -e 3max -A -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
 	inside the emulator:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
@@ -614,13 +614,13 @@ reboot</b>
 	NetBSD/sgimips distribution sets:<br>(NOTE: This
 	takes quite some time, even if you have a fast network connection.)
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>cd /tftpboot; ftp -i ftp.se.netbsd.org</b>
+<b>cd /tftpboot; ftp -i ftp.uk.netbsd.org</b>
 (log in as anonymous...)
 <b>cd /pub/NetBSD/NetBSD-2.0.2/sgimips/binary/sets
 mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz
 quit
 sh
-for a in *.tgz; do echo $a; tar zxfp $a; done
+for a in *.tgz; do echo $a; tar zxfp $a; rm -f $a; done
 echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
 echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
 dd if=/dev/zero of=swap bs=1024 count=32768
@@ -692,8 +692,8 @@ halt</b>
 	<b>mount -v 10.0.0.2:/tftpboot /mnt</b>
 	<b>cd /mnt/dev; ./MAKEDEV all; cd /; umount /mnt</b>
 	<b>halt</b>
-</pre>Then log in as <tt>root</tt> on the server machine and type
-	<tt><b>reboot</b></tt>.
+</pre>Then, once the client machine has halted, log in as <tt>root</tt>
+	on the server machine and type <tt><b>reboot</b></tt>.
   <p>
   <li>Once everything has been set up correctly, change
 	<tt>netbsd-INSTALL32_IP3x.gz</tt> in <tt>config_client</tt> to
@@ -776,12 +776,12 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
 
-  <li>Execute the following commands:<pre>
-	<b>mv ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/simpleroot28.fs.gz .</b>
-	<b>gunzip simpleroot28.fs.gz</b>
-	<b>chmod +w simpleroot28.fs</b>		&lt;--- make sure
-
-</pre>
+  <li>Execute the following commands:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>mv ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/simpleroot28.fs.gz .
+gunzip simpleroot28.fs.gz
+chmod +w simpleroot28.fs</b>		&lt;--- make sure
+</pre></td></tr></table>
   <li>You now need to make an ISO image of the entire directory you downloaded.
 	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
 	already have <tt>mkisofs</tt> installed on your system, you need
@@ -790,7 +790,7 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
   <li>Start the emulator with all three (!) disk images:<pre>
-	<b>gxemul -e 3max -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+	<b>gxemul -e 3max -A -M64 -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
 
 </pre>
 	(If you add <tt>-X</tt>, you will run with the graphical
@@ -825,28 +825,28 @@ common sense and imagination to modify them as you see fit.
 	password! The first time you boot up OpenBSD after the install, you
 	need to go into single user mode and run <b>passwd root</b> to set
 	the root password, or you will not be able to log in at all!<pre>
-	<b>gxemul -e 3max -d obsd_pmax.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
+	<b>gxemul -e 3max -A -d obsd_pmax.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
 </pre>
 While you are at it, you might want to extract the X11 install sets
 as well, as the installer seems to ignore them too. (Perhaps due to a bug
 in the installer, perhaps because of the way I used mkisofs.)
 <p>
 Execute the following commands in the emulator:
-<pre>
-	<b>fsck /dev/rz0a</b>
-	<b>mount /</b>
-	<b>passwd root</b>
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>fsck /dev/rz0a
+mount /
+passwd root
 
-	<b>cd /; mount -t cd9660 /dev/rz2c /mnt; sh</b>
-	<b>for a in /mnt/[xX]*; do tar zxvf $a; done</b>
-	<b>ln -s /usr/X11R6/bin/Xcfbpmax /usr/X11R6/bin/X</b>
-	<b>ln -s /dev/fb0 /dev/mouse</b>
-	<b>echo /usr/X11R6/lib >> /etc/ld.so.conf</b>
-	<b>ldconfig</b>
+cd /; mount -t cd9660 /dev/rz2c /mnt; sh
+for a in /mnt/[xX]*; do tar zxvf $a; done
+ln -s /usr/X11R6/bin/Xcfbpmax /usr/X11R6/bin/X
+ln -s /dev/fb0 /dev/mouse
+echo /usr/X11R6/lib &gt;&gt; /etc/ld.so.conf
+ldconfig
 
-	<b>sync</b>
-	<b>halt</b>
-</pre>
+sync
+halt</b>
+</pre></td></tr></table>
 </ol>
 
 <p>
@@ -920,7 +920,7 @@ instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -X -e pica -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
+	<b>gxemul -e pica -X -A -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
@@ -970,7 +970,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	(On FreeBSD and similar systems, it is called <tt>/dev/cd0c</tt>.
 	Replace that with the name of your CDROM drive, or the name of a
 	.iso image file.) Then, start the emulator like this:<pre>
-        <b>gxemul -X -M64 -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+        <b>gxemul -X -A -M64 -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
 </pre>
   <li>Once the first stage of the installation is done (restoring the root
@@ -978,7 +978,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	new rootdisk, to continue the installation process.
 	This is done by removing the bootflag ('<tt>b</tt>') from the second
 	diskimage argument:<pre>
-        <b>gxemul -X -M64 -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+        <b>gxemul -X -A -M64 -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
 </ol>
@@ -986,7 +986,7 @@ The following instructions should let you install Ultrix onto a disk image:
 <p>
 When the installation is completed, the following command should start  
 Ultrix from the harddisk image:<pre>
-        <b>gxemul -X -M64 -e 3max -j vmunix -d rootdisk.img</b>
+        <b>gxemul -X -A -M64 -e 3max -j vmunix -d rootdisk.img</b>
 </pre>
 
 <p>Ultrix mostly seems to work with dynamic binary translation (which can
@@ -1149,7 +1149,7 @@ onto a harddisk image:
 <ol>
   <li>Create an empty harddisk image, which will be the root disk
 	that Debian installs itself onto:<pre>
-	<b>dd if=/dev/zero of=debian.img bs=1024 count=1 seek=2000000</b>
+	<b>dd if=/dev/zero of=debian.img bs=1024 count=1 seek=3000000</b>
 
 </pre>
   <li>Download an install kernel:<pre>
@@ -1436,7 +1436,7 @@ client. Performing this setup is quite time consuming, but necessary:
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img</b>
+	<b>gxemul -e 3max -A -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
 	inside the emulator:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>

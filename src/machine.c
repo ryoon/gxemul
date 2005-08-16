@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.514 2005-08-16 05:37:10 debug Exp $
+ *  $Id: machine.c,v 1.515 2005-08-16 09:16:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3912,7 +3912,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
 			{
 				uint64_t env = cpu->cd.mips.gpr[MIPS_GPR_A2];
-				uint64_t tmpptr = (int32_t)(uint32_t)0x9fc01c00;
+				uint64_t tmpptr = 0xffffffff9fc01c00ULL;
 				char tmps[50];
 
 				snprintf(tmps, sizeof(tmps), "0x%08x",

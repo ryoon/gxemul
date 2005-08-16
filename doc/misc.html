@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.49 2005-08-08 20:19:30 debug Exp $
+$Id: misc.html,v 1.50 2005-08-16 05:15:24 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -310,11 +310,13 @@ count.)
 <a name="userland"></a>
 <h3>Running userland binaries:</h3>
 
-There is some skeleton code for running userland programs as well. This
+<font color="#ff0000">Note: This does not really work yet.</font>
+
+<p>There is some skeleton code for running userland programs as well. This
 will not emulate any particular machine, but instead try to translate
-syscalls from e.g. NetBSD/pmax into the host's OS' syscalls. (Right now,
-this is just a proof-of-concept, to show that it would work; there's lots
-of work left to do to make it actually run useful programs.)
+syscalls from e.g. NetBSD/pmax into the host's OS' syscalls. Right now,
+this is just a proof-of-concept, to show that it could work; there's lots
+of work left to do to make it actually run useful programs.
 
 <p>
 
@@ -345,6 +347,7 @@ of work left to do to make it actually run useful programs.)
 	tab.csbnet.se
 </pre>
 
+<!--
   <p>
   <li><b>NetBSD/powerpc:</b>
 	<br>
@@ -368,6 +371,7 @@ of work left to do to make it actually run useful programs.)
 	Hello, world!
 
 </pre>
+-->
 
 </ul>
 

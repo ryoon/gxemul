@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.60 2005-08-10 15:51:08 debug Exp $
+$Id: intro.html,v 1.61 2005-08-16 05:15:24 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -253,20 +253,18 @@ stalls or out-of-order execution). Still, instruction-level accuracy seems
 to be enough to be able to run complete guest operating systems inside the
 emulator.
 
-<p>
-Caches are by default not emulated. In some cases, the existance of caches
-is "faked" to let operating systems think that they are there. (There is
-some old code for R2000/R3000 caches, but it has probably suffered from
-bitrot by now.)
+<p>Caches are by default not emulated. In some cases, the existance of
+caches is "faked" to let operating systems think that they are there.
+(There is some old code for R2000/R3000 caches, but it has probably
+suffered from bitrot by now.)
 
-<p>
-The emulator is <i>not</i> timing-accurate. It can be run in a 
-"deterministic" mode, <tt><b>-D</b></tt>. The meaning of deterministic is 
-simply that running two emulations with the same settings will result in 
-identical runs. Obviously, this requires that no user interaction is 
-taking place, and that clock speeds are fixed with the <tt><b>-I</b></tt> 
-option. (Deterministic in this case does <i>not</i> mean that the emulation
-will be identical to some actual real-world machine.)
+<p>The emulator is <i>not</i> timing-accurate. It can be run in a
+"deterministic" mode, <tt><b>-D</b></tt>. The meaning of deterministic is
+simply that running two emulations with the same settings will result in
+identical runs. Obviously, this requires that no user interaction is
+taking place, and that clock speeds are fixed with the <tt><b>-I</b></tt>
+option. (Deterministic in this case does <i>not</i> mean that the
+emulation will be identical to some actual real-world machine.)
 
 
 

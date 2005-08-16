@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.61 2005-08-08 10:25:59 debug Exp $
+$Id: technical.html,v 1.62 2005-08-16 05:15:24 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -94,7 +94,7 @@ is being emulated. (One of my main goals with GXemul is to experiment with
 different kinds of emulation, so these might change in the future.)
 
 <ul>
-  <li><b>MIPS</b><br>
+  <li><b>MIPS:</b><br>
 	There are two emulation modes. The most important one is an
 	implementation of a <i>dynamic binary translator</i>.
 	(Compared to real binary translators, though, GXemul's bintrans
@@ -105,18 +105,13 @@ different kinds of emulation, so these might change in the future.)
 	works. It can be forcefully used by using the <tt>-B</tt> command
 	line option.)
   <p>
-  <li><b>Alpha, ARM, POWER/PPC</b><br>
+  <li><b>All other modes:</b><br>
 	These are under development, using a new dynamic translation
 	system. This system does not use host-specific backends.
 	Speed is slower than real binary translation, but faster than
 	traditional interpretation, and with some tricks it will hopefully
-	still give reasonable speed. These modes don't really work yet.
-  <p>
-  <li><b>x86</b><br>
-	The x86 mode is a hack just to see if the emulator can handle
-	ISAs such as the x86. It simply reads one instruction at a time
-	from emulated memory, and executes it. This is as slow as it gets.
-	Not very interesting. This mode doesn't really work yet.
+	still give reasonable speed. These modes don't really work yet,
+	and are not enabled by default in the stable release.
 </ul>
 
 

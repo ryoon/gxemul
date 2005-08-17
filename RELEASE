@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.140 2005-08-16 05:36:59 debug Exp $
+$Id: RELEASE,v 1.141 2005-08-17 18:58:44 debug Exp $
 
-Working on what will be 0.3.5.
+Working on post-0.3.5.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.5
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
 ================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -52,19 +52,9 @@ smaller than an instruction. What this means is that pipe-line stalls,
 penalties caused by branch-prediction misses or cache misses, and other
 micro-architectural effects are not simulated.)
 
-The user-visible changes between release 0.3.4 and 0.3.5 are minor, and
-can be summarized as follows:
+Changes between 0.3.5 and 0.3.X:
 
-	o)  Updates to the (old) binary translation subsystem, resulting
-	    in minor speed improvements.
-
-	o)  64-bit MIPS dmult/dmultu has been fixed.
-
-	o)  slt* instructions for 64-bit MIPS were incorrectly implemented
-	    in the i386 backend. This has been fixed.
-
-There have been many other bug fixes and updates, most of which are not 
-visible.
+	o)  ...
 
 Files included in this release are:
 

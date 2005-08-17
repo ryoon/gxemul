@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.77 2005-08-16 05:37:09 debug Exp $
+#  $Id: Makefile.skel,v 1.78 2005-08-17 18:19:04 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -109,8 +109,8 @@ memory_mips.c: memory_rw.c memory_mips_v2p.c
 
 ###############################################################################
 
-cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_ppc_head.c tmp_ppc_tail.c
+cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_ppc.c \
+	memory_rw.c tmp_ppc_head.c tmp_ppc_tail.c
 
 cpu_ppc_instr.c: tmp_ppc_loadstore.c
 

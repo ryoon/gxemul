@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.29 2005-08-16 21:41:57 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.30 2005-08-17 18:19:04 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -550,6 +550,59 @@ X(cmplwi)
 
 
 /*
+ *  mtsr:  Move To Segment Register
+ *
+ *  arg[0] = segment register nr (0..15)
+ *  arg[1] = ptr to rt
+ */
+X(mtsr)
+{
+	/*  TODO: This only works for 32-bit mode  */
+	cpu->cd.ppc.sr[ic->arg[0]] = reg(ic->arg[1]);
+}
+
+
+/*
+ *  mtsrin:  Move To Segment Register Indirect
+ *
+ *  arg[0] = ptr to rb
+ *  arg[1] = ptr to rt
+ */
+X(mtsrin)
+{
+	/*  TODO: This only works for 32-bit mode  */
+	uint32_t sr_num = reg(ic->arg[0]) >> 28;
+	cpu->cd.ppc.sr[sr_num] = reg(ic->arg[1]);
+}
+
+
+/*
+ *  rldicr:
+ *
+ *  arg[0] = copy of the instruction word
+ */
+X(rldicr)
+{
+	int rs = (ic->arg[0] >> 21) & 31;
+	int ra = (ic->arg[0] >> 16) & 31;
+	int sh = ((ic->arg[0] >> 11) & 31) | ((ic->arg[0] & 2) << 4);
+	int me = ((ic->arg[0] >> 6) & 31) | (ic->arg[0] & 0x20);
+	int rc = ic->arg[0] & 1;
+	uint64_t tmp = cpu->cd.ppc.gpr[rs];
+	/*  TODO: Fix this, its performance is awful:  */
+	while (sh-- != 0) {
+		int b = (tmp >> 63) & 1;
+		tmp = (tmp << 1) | b;
+	}
+	while (me++ < 63)
+		tmp &= ~((uint64_t)1 << (63-me));
+	cpu->cd.ppc.gpr[ra] = tmp;
+	if (rc)
+		update_cr0(cpu, tmp);
+}
+
+
+/*
  *  rlwinm:
  *
  *  arg[0] = ptr to rs
@@ -661,6 +714,7 @@ X(crxor)
  *  arg[0] = pointer to destination register
  */
 X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
+X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
 /*  TODO: Check privilege level for mfsprg*  */
 X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
 X(mfsprg1) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg1; }
@@ -674,7 +728,9 @@ X(mfsprg3) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg3; }
  *  arg[0] = pointer to source register
  */
 X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
+X(mtctr) {	cpu->cd.ppc.ctr = reg(ic->arg[0]); }
 /*  TODO: Check privilege level for these:  */
+X(mtsdr1) {	cpu->cd.ppc.sdr1 = reg(ic->arg[0]); }
 X(mtsprg0) {	cpu->cd.ppc.sprg0 = reg(ic->arg[0]); }
 X(mtsprg1) {	cpu->cd.ppc.sprg1 = reg(ic->arg[0]); }
 X(mtsprg2) {	cpu->cd.ppc.sprg2 = reg(ic->arg[0]); }
@@ -1397,6 +1453,23 @@ X(to_be_translated)
 		ic->arg[2] = (uint32_t)iword;
 		break;
 
+	case PPC_HI6_30:
+		xo = (iword >> 2) & 7;
+		switch (xo) {
+
+		case PPC_30_RLDICR:
+			ic->f = instr(rldicr);
+			ic->arg[0] = iword;
+			if (cpu->cd.ppc.bits == 32) {
+				fatal("TODO: rldicr in 32-bit mode?\n");
+				goto bad;
+			}
+			break;
+
+		default:goto bad;
+		}
+		break;
+
 	case PPC_HI6_31:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
@@ -1429,6 +1502,7 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			switch (spr) {
 			case 8:	  ic->f = instr(mflr); break;
+			case 9:	  ic->f = instr(mfctr); break;
 			case 272: ic->f = instr(mfsprg0); break;
 			case 273: ic->f = instr(mfsprg1); break;
 			case 274: ic->f = instr(mfsprg2); break;
@@ -1444,6 +1518,8 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			switch (spr) {
 			case 8:	  ic->f = instr(mtlr); break;
+			case 9:	  ic->f = instr(mtctr); break;
+			case 25:  ic->f = instr(mtsdr1); break;
 			case 272: ic->f = instr(mtsprg0); break;
 			case 273: ic->f = instr(mtsprg1); break;
 			case 274: ic->f = instr(mtsprg2); break;
@@ -1507,6 +1583,30 @@ X(to_be_translated)
 			ic->f = instr(mtcrf);
 			break;
 
+/*		case PPC_31_MFSRIN:  */
+		case PPC_31_MTSRIN:
+			rt = (iword >> 21) & 31;
+			rb = (iword >> 11) & 31;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			ic->f = instr(mtsrin);
+			if (cpu->cd.ppc.bits == 64) {
+				fatal("Not yet for 64-bit mode\n");
+				goto bad;
+			}
+			break;
+
+		case PPC_31_MTSR:
+			rt = (iword >> 21) & 31;
+			ic->arg[0] = (iword >> 16) & 15;
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			ic->f = instr(mtsr);
+			if (cpu->cd.ppc.bits == 64) {
+				fatal("Not yet for 64-bit mode\n");
+				goto bad;
+			}
+			break;
+
 		case PPC_31_SRAWI:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -1522,6 +1622,7 @@ X(to_be_translated)
 			break;
 
 		case PPC_31_SYNC:
+		case PPC_31_TLBSYNC:
 		case PPC_31_EIEIO:
 		case PPC_31_DCBST:
 		case PPC_31_ICBI:

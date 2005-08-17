@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.86 2005-08-16 21:41:57 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.87 2005-08-17 18:19:04 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -115,6 +115,8 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.ppc.bits        = cpu->cd.ppc.cpu_type.bits;
 
 	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
+
+	cpu->translate_address = ppc_translate_address;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -326,6 +328,8 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	}
 
 	if (coprocs & 2) {
+		debug("cpu%i:  sdr1 = 0x%llx\n", x,
+		    (long long)cpu->cd.ppc.sdr1);
 		for (i=0; i<4; i++)
 			debug("cpu%i:  ibat%iu = 0x%08x  ibat%il = 0x%08x\n",
 			    x, i, cpu->cd.ppc.ibat_u[i],
@@ -887,9 +891,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
 			break;
 		case PPC_31_MTSR:
-			/*  Move to segment register (?)  */
-			/*  TODO  */
-			debug("mtsr\tTODO");
+			/*  Move to segment register  */
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 15;	/*  actually: sr  */
+			debug("mtsr\t%i,r%i", ra, rt);
 			break;
 		case PPC_31_MTSRIN:
 		case PPC_31_MFSRIN:
@@ -981,6 +986,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			switch (spr) {
 			case 8:	   debug("mflr\tr%i", rt); break;
+			case 9:	   debug("mfctr\tr%i", rt); break;
 			case 272:  debug("mfsprg\t0,r%i", rt); break;
 			case 273:  debug("mfsprg\t1,r%i", rt); break;
 			case 274:  debug("mfsprg\t2,r%i", rt); break;
@@ -1110,6 +1116,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			switch (spr) {
 			case 8:	   debug("mtlr\tr%i", rs); break;
+			case 9:	   debug("mtctr\tr%i", rs); break;
 			case 272:  debug("mtsprg\t0,r%i", rs); break;
 			case 273:  debug("mtsprg\t1,r%i", rs); break;
 			case 274:  debug("mtsprg\t2,r%i", rs); break;
@@ -1293,6 +1300,9 @@ void update_cr0(struct cpu *cpu, uint64_t value)
 	cpu->cd.ppc.cr &= ~((uint32_t)0xf << 28);
 	cpu->cd.ppc.cr |= ((uint32_t)c << 28);
 }
+
+
+#include "memory_ppc.c"
 
 
 #include "tmp_ppc_tail.c"

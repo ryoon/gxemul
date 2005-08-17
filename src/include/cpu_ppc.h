@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.30 2005-08-16 21:41:58 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.31 2005-08-17 18:19:05 debug Exp $
  */
 
 #include "misc.h"
@@ -130,6 +130,7 @@ struct ppc_cpu {
 	uint32_t	tbu;		/*  Time Base Upper  */
 	uint32_t	dec;		/*  Decrementer  */
 	uint32_t	hdec;		/*  Hypervisor Decrementer  */
+	uint64_t	sdr1;		/*  Storage Descriptor Register  */
 	uint64_t	ssr0;		/*  Machine status save/restore
 					    register 0  */
 	uint64_t	ssr1;		/*  Machine status save/restore
@@ -141,6 +142,9 @@ struct ppc_cpu {
 	uint64_t	sprg3;		/*  Special Purpose Register G3  */
 	uint32_t	pvr;		/*  Processor Version Register  */
 	uint32_t	pir;		/*  Processor ID  */
+
+	/*  TODO: 64-bit SRs? (Segment registers)  */
+	uint32_t	sr[16];
 
 	/*  TODO: 64-bit BATs?  */
 	uint32_t	ibat_u[4];
@@ -212,5 +216,8 @@ int ppc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int ppc_cpu_family_init(struct cpu_family *);
 
+/*  memory_ppc.c:  */
+int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
 
 #endif	/*  CPU_PPC_H  */

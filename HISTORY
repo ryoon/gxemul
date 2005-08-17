@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.908 2005-08-17 09:24:22 debug Exp $
+$Id: HISTORY,v 1.909 2005-08-17 18:19:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2200,3 +2200,4 @@ Changelog for GXemul:
 		Adding more PPC instructions, and (dummy) BAT registers.
 20050817	Updating the pckbc to support scancode type 3 keyboards
 		(required in order to interact with the SGI O2 PROM).
+		Adding more PPC instructions.

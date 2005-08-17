@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.48 2005-08-16 06:49:27 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.49 2005-08-17 09:24:23 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -51,6 +51,8 @@
 /*  #define PCKBC_DEBUG  */
 /*  #define debug fatal  */
 
+extern volatile int single_step;
+
 
 #define	MAX_8042_QUEUELEN	256
 
@@ -65,7 +67,7 @@
 
 #define	PS2	100
 
-#define	PCKBC_TICKSHIFT		14
+#define	PCKBC_TICKSHIFT		15
 
 struct pckbc_data {
 	int		console_handle;
@@ -83,6 +85,7 @@ struct pckbc_data {
 	int		tx_int_enable;
 
 	int		keyscanning_enabled;
+	int		translation_table;
 	int		state;
 	int		cmdbyte;
 	int		output_byte;
@@ -96,8 +99,10 @@ struct pckbc_data {
 #define	STATE_LDCMDBYTE			1
 #define	STATE_RDCMDBYTE			2
 #define	STATE_WAITING_FOR_TRANSLTABLE	3
-#define	STATE_LDOUTPUT			4
-#define	STATE_RDOUTPUT			5
+#define	STATE_WAITING_FOR_F3		4
+#define	STATE_WAITING_FOR_FC		5
+#define	STATE_LDOUTPUT			6
+#define	STATE_RDOUTPUT			7
 
 
 /*
@@ -132,6 +137,139 @@ int pckbc_get_code(struct pckbc_data *d, int port)
 
 
 /*
+ *  ascii_to_scancodes_type3():
+ *
+ *  Conversion from ASCII codes to default (US) keyboard scancodes.
+ *  (See http://www.computer-engineering.org/ps2keyboard/scancodes3.html)
+ */
+static void ascii_to_pc_scancodes_type3(int a, struct pckbc_data *d)
+{
+	int old_head;
+	int p = 0;	/*  port  */
+	int shift = 0, ctrl = 0;
+
+	if (a >= 'A' && a <= 'Z') { a += 32; shift = 1; }
+	if ((a >= 1 && a <= 26) && (a!='\n' && a!='\t' && a!='\b' && a!='\r'))
+		{ a += 96; ctrl = 1; }
+	if (a=='!')  {	a = '1'; shift = 1; }
+	if (a=='@')  {	a = '2'; shift = 1; }
+	if (a=='#')  {	a = '3'; shift = 1; }
+	if (a=='$')  {	a = '4'; shift = 1; }
+	if (a=='%')  {	a = '5'; shift = 1; }
+	if (a=='^')  {	a = '6'; shift = 1; }
+	if (a=='&')  {	a = '7'; shift = 1; }
+	if (a=='*')  {	a = '8'; shift = 1; }
+	if (a=='(')  {	a = '9'; shift = 1; }
+	if (a==')')  {	a = '0'; shift = 1; }
+	if (a=='_')  {	a = '-'; shift = 1; }
+	if (a=='+')  {	a = '='; shift = 1; }
+	if (a=='{')  {	a = '['; shift = 1; }
+	if (a=='}')  {	a = ']'; shift = 1; }
+	if (a==':')  {	a = ';'; shift = 1; }
+	if (a=='"')  {	a = '\''; shift = 1; }
+	if (a=='|')  {	a = '\\'; shift = 1; }
+	if (a=='<')  {	a = ','; shift = 1; }
+	if (a=='>')  {	a = '.'; shift = 1; }
+	if (a=='?')  {	a = '/'; shift = 1; }
+
+	if (shift)
+		pckbc_add_code(d, 0x12, p);
+	if (ctrl)
+		pckbc_add_code(d, 0x11, p);
+
+	/*
+	 *  Note: The ugly hack used to add release codes for all of these
+	 *  keys is as follows:  we remember how much of the kbd buf that
+	 *  is in use here, before we add any scancode. After we've added
+	 *  one or more scancodes (ie an optional shift + another key)
+	 *  then we add 0xf0 + the last scancode _if_ the kbd buf was altered.
+	 */
+
+	old_head = d->head[p];
+
+	if (a==27)	pckbc_add_code(d, 0x08, p);
+
+	if (a=='1')	pckbc_add_code(d, 0x16, p);
+	if (a=='2')	pckbc_add_code(d, 0x1e, p);
+	if (a=='3')	pckbc_add_code(d, 0x26, p);
+	if (a=='4')	pckbc_add_code(d, 0x25, p);
+	if (a=='5')	pckbc_add_code(d, 0x2e, p);
+	if (a=='6')	pckbc_add_code(d, 0x36, p);
+	if (a=='7')	pckbc_add_code(d, 0x3d, p);
+	if (a=='8')	pckbc_add_code(d, 0x3e, p);
+	if (a=='9')	pckbc_add_code(d, 0x46, p);
+	if (a=='0')	pckbc_add_code(d, 0x45, p);
+	if (a=='-')	pckbc_add_code(d, 0x4e, p);
+	if (a=='=')	pckbc_add_code(d, 0x55, p);
+
+	if (a=='\b')	pckbc_add_code(d, 0x29, p);
+
+	if (a=='\t')	pckbc_add_code(d, 0x0d, p);
+	if (a=='q')	pckbc_add_code(d, 0x15, p);
+	if (a=='w')	pckbc_add_code(d, 0x1d, p);
+	if (a=='e')	pckbc_add_code(d, 0x24, p);
+	if (a=='r')	pckbc_add_code(d, 0x2d, p);
+	if (a=='t')	pckbc_add_code(d, 0x2c, p);
+	if (a=='y')	pckbc_add_code(d, 0x35, p);
+	if (a=='u')	pckbc_add_code(d, 0x3c, p);
+	if (a=='i')	pckbc_add_code(d, 0x43, p);
+	if (a=='o')	pckbc_add_code(d, 0x44, p);
+	if (a=='p')	pckbc_add_code(d, 0x4d, p);
+
+	if (a=='[')	pckbc_add_code(d, 0x54, p);
+	if (a==']')	pckbc_add_code(d, 0x5b, p);
+
+	if (a=='\n' || a=='\r')	pckbc_add_code(d, 0x5a, p);
+
+	if (a=='a')	pckbc_add_code(d, 0x1c, p);
+	if (a=='s')	pckbc_add_code(d, 0x1b, p);
+	if (a=='d')	pckbc_add_code(d, 0x23, p);
+	if (a=='f')	pckbc_add_code(d, 0x2b, p);
+	if (a=='g')	pckbc_add_code(d, 0x34, p);
+	if (a=='h')	pckbc_add_code(d, 0x33, p);
+	if (a=='j')	pckbc_add_code(d, 0x3b, p);
+	if (a=='k')	pckbc_add_code(d, 0x42, p);
+	if (a=='l')	pckbc_add_code(d, 0x4b, p);
+
+	if (a==';')	pckbc_add_code(d, 0x4c, p);
+	if (a=='\'')	pckbc_add_code(d, 0x52, p);
+/*	if (a=='~')	pckbc_add_code(d, 0x29, p);  ?  */
+	if (a=='\\')	pckbc_add_code(d, 0x5c, p);
+
+	if (a=='z')	pckbc_add_code(d, 0x1a, p);
+	if (a=='x')	pckbc_add_code(d, 0x22, p);
+	if (a=='c')	pckbc_add_code(d, 0x21, p);
+	if (a=='v')	pckbc_add_code(d, 0x2a, p);
+	if (a=='b')	pckbc_add_code(d, 0x32, p);
+	if (a=='n')	pckbc_add_code(d, 0x31, p);
+	if (a=='m')	pckbc_add_code(d, 0x3a, p);
+
+	if (a==',')	pckbc_add_code(d, 0x41, p);
+	if (a=='.')	pckbc_add_code(d, 0x49, p);
+	if (a=='/')	pckbc_add_code(d, 0x4a, p);
+
+	if (a==' ')	pckbc_add_code(d, 0x29, p);
+
+	/*  Add release code, if a key was pressed:  */
+	if (d->head[p] != old_head) {
+		int code = d->key_queue[p][d->head[p]];
+		pckbc_add_code(d, 0xf0, p);
+		pckbc_add_code(d, code, p);
+	}
+
+	/*  Release shift and ctrl:  */
+	if (shift) {
+		pckbc_add_code(d, 0xf0, p);
+		pckbc_add_code(d, 0x12, p);
+	}
+	if (ctrl) {
+		pckbc_add_code(d, 0xf0, p);
+		pckbc_add_code(d, 0x11, p);
+	}
+}
+
+
+/*
  *  ascii_to_scancodes():
  *
  *  Conversion from ASCII codes to default (US) keyboard scancodes.
@@ -143,9 +281,40 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 	int p = 0;	/*  port  */
 	int shift = 0, ctrl = 0;
 
+	if (d->translation_table == 3) {
+		ascii_to_pc_scancodes_type3(a, d);
+		return;
+	}
+
+	if (d->translation_table != 1) {
+		fatal("[ ascii_to_pc_scancodes: unimplemented type! ]\n");
+		return;
+	}
+
 	if (a >= 'A' && a <= 'Z') { a += 32; shift = 1; }
 	if ((a >= 1 && a <= 26) && (a!='\n' && a!='\t' && a!='\b' && a!='\r'))
 		{ a += 96; ctrl = 1; }
+
+	if (a=='!')  {	a = '1'; shift = 1; }
+	if (a=='@')  {	a = '2'; shift = 1; }
+	if (a=='#')  {	a = '3'; shift = 1; }
+	if (a=='$')  {	a = '4'; shift = 1; }
+	if (a=='%')  {	a = '5'; shift = 1; }
+	if (a=='^')  {	a = '6'; shift = 1; }
+	if (a=='&')  {	a = '7'; shift = 1; }
+	if (a=='*')  {	a = '8'; shift = 1; }
+	if (a=='(')  {	a = '9'; shift = 1; }
+	if (a==')')  {	a = '0'; shift = 1; }
+	if (a=='_')  {	a = '-'; shift = 1; }
+	if (a=='+')  {	a = '='; shift = 1; }
+	if (a=='{')  {	a = '['; shift = 1; }
+	if (a=='}')  {	a = ']'; shift = 1; }
+	if (a==':')  {	a = ';'; shift = 1; }
+	if (a=='"')  {	a = '\''; shift = 1; }
+	if (a=='|')  {	a = '\\'; shift = 1; }
+	if (a=='<')  {	a = ','; shift = 1; }
+	if (a=='>')  {	a = '.'; shift = 1; }
+	if (a=='?')  {	a = '/'; shift = 1; }
 
 	if (shift)
 		pckbc_add_code(d, 0x2a, p);
@@ -199,12 +368,6 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 			pckbc_add_code(d, 0x09, p); }
 	if (a=='(')  {	pckbc_add_code(d, 0x2a, p);
 			pckbc_add_code(d, 0x0a, p); }
-	if (a==')')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x0b, p); }
-	if (a=='_')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x0c, p); }
-	if (a=='+')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x0d, p); }
 
 	if (a=='\b')	pckbc_add_code(d, 0x0e, p);
 
@@ -221,11 +384,7 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 	if (a=='p')	pckbc_add_code(d, 0x19, p);
 
 	if (a=='[')	pckbc_add_code(d, 0x1a, p);
-	if (a=='{')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x1a, p); }
 	if (a==']')	pckbc_add_code(d, 0x1b, p);
-	if (a=='}')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x1b, p); }
 
 	if (a=='\n' || a=='\r')	pckbc_add_code(d, 0x1c, p);
 
@@ -240,16 +399,9 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 	if (a=='l')	pckbc_add_code(d, 0x26, p);
 
 	if (a==';')	pckbc_add_code(d, 0x27, p);
-	if (a==':')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x27, p); }
 	if (a=='\'')	pckbc_add_code(d, 0x28, p);
-	if (a=='"')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x28, p); }
 	if (a=='~')	pckbc_add_code(d, 0x29, p);
-
 	if (a=='\\')	pckbc_add_code(d, 0x2b, p);
-	if (a=='|')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x2b, p); }
 
 	if (a=='z')	pckbc_add_code(d, 0x2c, p);
 	if (a=='x')	pckbc_add_code(d, 0x2d, p);
@@ -260,14 +412,8 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 	if (a=='m')	pckbc_add_code(d, 0x32, p);
 
 	if (a==',')	pckbc_add_code(d, 0x33, p);
-	if (a=='<')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x33, p); }
 	if (a=='.')	pckbc_add_code(d, 0x34, p);
-	if (a=='>')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x34, p); }
 	if (a=='/')	pckbc_add_code(d, 0x35, p);
-	if (a=='?')  {	pckbc_add_code(d, 0x2a, p);
-			pckbc_add_code(d, 0x35, p); }
 
 	if (a==' ')	pckbc_add_code(d, 0x39, p);
 
@@ -332,8 +478,31 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		cmd = d->reg[PS2_TXBUF];
 
 	if (d->state == STATE_WAITING_FOR_TRANSLTABLE) {
-		debug("[ pckbc: switching to translation table 0x%02x ]\n",
-		    cmd);
+		debug("[ pckbc: (port %i) switching to translation table "
+		    "0x%02x ]\n", port_nr, cmd);
+		switch (cmd) {
+		case 1:
+		case 3:	d->translation_table = cmd;
+			break;
+		default:fatal("[ pckbc: (port %i) translation table "
+		    "0x%02x is NOT YET IMPLEMENTED ]\n", port_nr, cmd);
+		}
+		pckbc_add_code(d, KBR_ACK, port_nr);
+		d->state = STATE_NORMAL;
+		return;
+	}
+
+	if (d->state == STATE_WAITING_FOR_F3) {
+		debug("[ pckbc: (port %i) received '0xf3' data: "
+		    "0x%02x ]\n", port_nr, cmd);
+		pckbc_add_code(d, KBR_ACK, port_nr);
+		d->state = STATE_NORMAL;
+		return;
+	}
+
+	if (d->state == STATE_WAITING_FOR_FC) {
+		debug("[ pckbc: (port %i) received '0xfc' data: "
+		    "0x%02x ]\n", port_nr, cmd);
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		d->state = STATE_NORMAL;
 		return;
@@ -362,12 +531,24 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 	case KBC_SETDEFAULT:
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		break;
+	case 0xf3:
+		pckbc_add_code(d, KBR_ACK, port_nr);
+		d->state = STATE_WAITING_FOR_F3;
+		break;
+	case 0xfa:	/*  Just ack?  */
+		pckbc_add_code(d, KBR_ACK, port_nr);
+		break;
+	case 0xfc:
+		pckbc_add_code(d, KBR_ACK, port_nr);
+		d->state = STATE_WAITING_FOR_FC;
+		break;
 	case KBC_RESET:
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		pckbc_add_code(d, KBR_RSTDONE, port_nr);
 		break;
 	default:
-		fatal("[ pckbc: UNIMPLEMENTED 8048 command 0x%02x ]\n", cmd);
+		fatal("[ pckbc: (port %i) UNIMPLEMENTED 8048 command"
+		    " 0x%02x ]\n", port_nr, cmd);
 	}
 }
 
@@ -550,11 +731,6 @@ if (x&1)
 	 *  8242 (PS2):
 	 */
 
-/*
- *  BIG TODO: The following should be rewritten to use dev_pckbc_command()
- *  etc, like the 8042 code above does.
- */
-
 	case PS2 + PS2_TXBUF:
 		if (writeflag==MEM_READ) {
 			odata = random() & 0xff;
@@ -565,66 +741,8 @@ if (x&1)
 			    "0x%llx ]\n", port_nr, (long long)idata);
 
 			/*  Handle keyboard commands:  */
-			switch (idata) {
-			/*  These are incorrect, the second byte of
-			    commands should be treated better:  */
-			case 0x00:	/*  second byte of 0xed,
-					    SGI-IP32's prom  */
-				pckbc_add_code(d, 0x03, port_nr);/*  ack  (?) */
-				break;
-			case 0x14:	/*  second byte of 0xfc,
-					    SGI-IP32's prom  */
-			case 0x28:	/*  second byte of 0xf3,
-					    SGI-IP32's prom  */
-			case 0x76:	/*  third byte of 0xfc,
-					    SGI-IP32's prom  */
-			case 0x03:	/*  second byte of
-					    ATKBD_CMD_GSCANSET (?)  */
-			case 0x04:
-				pckbc_add_code(d, 0x03, port_nr);/*  ?  */
-				break;
-
-			/*  Command bytes:  */
-			case 0xf0:	/*  ATKBD_CMD_GSCANSET (?)  */
-				pckbc_add_code(d, 0x03, port_nr);/*  ?  */
-				break;
-			case 0xf2:	/*  Get keyboard ID  */
-				/*  The keyboard should generate 2
-				    status bytes.  */
-				pckbc_add_code(d, 0xab, port_nr);
-				pckbc_add_code(d, 0x83, port_nr);
-				break;
-			case 0xed:	/*  "ATKBD_CMD_SETLEDS",
-					    takes 1 byte arg  */
-			case 0xf3:	/*  "PSMOUSE_CMD_SETRATE",
-					    takes 1 byte arg  */
-			case 0xf4:	/*  "ATKBD_CMD_ENABLE" (or
-					    PSMOUSE_CMD_ENABLE), no args  */
-			case 0xf5:	/*  "ATKBD_CMD_RESET_DIS" (keyboard,
-					    according to Linux sources)  */
-			case 0xf6:	/*  "PSMOUSE_CMD_RESET_DIS" (mouse,
-					    according to Linux sources)  */
-				/*  TODO: what does this do?  */
-				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
-				break;
-			case 0xfa:	/*  "ATKBD_CMD_SETALL_MBR" (linux)  */
-				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
-				break;
-			case 0xfc:	/*  ?  */
-				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
-				break;
-			case 0xff:	/*  Keyboard reset  */
-				/*  The keyboard should generate 2
-				    status bytes.  */
-				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
-				pckbc_add_code(d, 0xaa, port_nr);
-					/*  battery ok (?)  */
-				break;
-			default:
-				debug("[ pckbc: UNIMPLEMENTED keyboard command"
-				    " 0x%02x (port %i) ]\n", (int)idata,
-				    port_nr);
-			}
+			d->reg[PS2_TXBUF] = idata;
+			dev_pckbc_command(d, port_nr);
 		}
 		break;
 
@@ -689,6 +807,12 @@ if (x&1)
 		}
 	}
 
+	/*  SGI?  */
+	if (len == 8)
+		odata |= (odata << 8) | (odata << 16) | (odata << 24) |
+		    (odata << 32) | (odata << 40) | (odata << 48) |
+		    (odata << 56);
+
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
@@ -725,14 +849,15 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 		len = DEV_PCKBC_LENGTH + 0x60;
 	}
 
-	d->type           = type;
-	d->keyboard_irqnr = keyboard_irqnr;
-	d->mouse_irqnr    = mouse_irqnr;
-	d->in_use         = in_use;
-	d->pc_style_flag  = pc_style_flag;
-	d->console_handle = console_start_slave_inputonly(machine, "pckbc");
-	d->rx_int_enable  = 1;
-	d->output_byte    = 0x02;	/*  A20 enable on PCs  */
+	d->type              = type;
+	d->keyboard_irqnr    = keyboard_irqnr;
+	d->mouse_irqnr       = mouse_irqnr;
+	d->in_use            = in_use;
+	d->pc_style_flag     = pc_style_flag;
+	d->console_handle    = console_start_slave_inputonly(machine, "pckbc");
+	d->translation_table = 1;
+	d->rx_int_enable     = 1;
+	d->output_byte       = 0x02;	/*  A20 enable on PCs  */
 
 	memory_device_register(mem, "pckbc", baseaddr,
 	    len, dev_pckbc_access, d, MEM_DEFAULT, NULL);

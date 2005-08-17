@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.516 2005-08-16 20:17:31 debug Exp $
+ *  $Id: machine.c,v 1.517 2005-08-17 09:24:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3160,11 +3160,10 @@ Why is this here? TODO
 				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr=0x1f398000 addr_mult=0x100 in_use=%i name2=tty1",
 				    (1<<26) + MACE_PERIPH_SERIAL, 0);
 				device_add(machine, tmpstr);
-#if 0
+
 				if (machine->use_x11)
 					machine->main_console_handle = i;
 				else
-#endif
 					machine->main_console_handle = j;
 
 				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
@@ -4308,6 +4307,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		switch (machine->machine_subtype) {
 		case ST_DEC_3000_300:
 			machine->machine_name = "DEC 3000/300";
+			machine->main_console_handle =
+			    dev_zs_init(machine, mem, 0x1b0200000ULL,
+			    0, 4, "serial zs");	/*  serial? netbsd?  */
 			break;
 		default:fatal("Unimplemented Alpha machine type %i\n",
 			    machine->machine_subtype);

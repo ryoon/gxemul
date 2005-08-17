@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.49 2005-08-14 12:01:40 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.50 2005-08-17 09:21:12 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -116,7 +116,7 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 		cpu->cd.alpha.vph_table0[i] = cpu->cd.alpha.vph_table0_kernel[i]
 		    = cpu->cd.alpha.vph_default_page;
 
-	cpu->cd.alpha.r[ALPHA_SP] = 0xfffffc0000017ff0ULL;
+	cpu->cd.alpha.r[ALPHA_SP] = 0xfffffc000000ff00ULL;
 
 	return 1;
 }

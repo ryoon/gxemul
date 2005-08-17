@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.57 2005-08-12 20:20:28 debug Exp $
+ *  $Id: cpu_arm.c,v 1.58 2005-08-17 23:42:53 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -315,14 +315,51 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x2:
 	case 0x3:
 		/*
-		 *  See (1):
-		 *  xxxx000a aaaSnnnn ddddcccc ctttmmmm  Register form
-		 *  xxxx001a aaaSnnnn ddddrrrr bbbbbbbb  Immediate form
+		 *  Special cases first:
+		 *
+		 *  Multiplication:
+		 *  xxxx0000 00ASdddd nnnnssss 1001mmmm  (Rd, Rm, Rs [,Rn])
+		 *
+		 *  Long multiplication:
+		 *  xxxx0000 1UAShhhh llllssss 1001mmmm  (Rl,Rh,Rm,Rs)
 		 */
+		if ((iw & 0x0fc000f0) == 0x00000090) {
+			int a_bit = (iw >> 21) & 1;
+			debug("%s%s%s\t", a_bit? "mla" : "mul",
+			    condition, s_bit? "s" : "");
+			debug("%s,", arm_regname[r16]);
+			debug("%s,", arm_regname[iw & 15]);
+			debug("%s", arm_regname[r8]);
+			if (a_bit)
+				debug(",%s", arm_regname[r12]);
+			debug("\n");
+			break;
+		}
+		if ((iw & 0x0f8000f0) == 0x00800090) {
+			int u_bit = (iw >> 22) & 1;
+			int a_bit = (iw >> 21) & 1;
+			debug("%s%sl%s%s\t", u_bit? "s" : "u",
+			    a_bit? "mla" : "mul", condition, s_bit? "s" : "");
+			debug("%s,", arm_regname[r12]);
+			debug("%s,", arm_regname[r16]);
+			debug("%s,", arm_regname[iw & 15]);
+			debug("%s\n", arm_regname[r8]);
+			break;
+		}
+
+		/*  Other special cases:  */
 		if (iw & 0x80 && !(main_opcode & 2) && iw & 0x10) {
 			debug("UNIMPLEMENTED reg (c!=0), t odd\n");
 			break;
 		}
+
+		/*
+		 *  Generic Data Processing Instructions:
+		 *
+		 *  See (1):
+		 *  xxxx000a aaaSnnnn ddddcccc ctttmmmm  Register form
+		 *  xxxx001a aaaSnnnn ddddrrrr bbbbbbbb  Immediate form
+		 */
 
 		debug("%s%s%s\t", arm_dpiname[secondary_opcode],
 		    condition, s_bit? "s" : "");

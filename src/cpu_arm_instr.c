@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.51 2005-08-16 05:37:10 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.52 2005-08-17 23:42:53 debug Exp $
  *
  *  ARM instructions.
  *
@@ -129,6 +129,41 @@
 		arm_instr_ ## n , arm_instr_nop };
 
 #define cond_instr(n)	( arm_cond_instr_ ## n  [condition_code] )
+
+
+/*****************************************************************************/
+
+
+uint32_t R(struct cpu *cpu, uint32_t iword)
+{
+	int t = (iword >> 4) & 7;
+	int c = (iword >> 7) & 31;
+	int rm = iword & 15;
+	uint32_t tmp = cpu->cd.arm.r[rm];
+	if (rm == ARM_PC) {
+		fatal("TODO: R(PC)\n");
+		exit(1);
+	}
+	switch (t) {
+	case 0:	/*  lsl #c  (c = 0..31)  */
+		tmp <<= c;
+		break;
+	case 1:	/*  lsl Rc  */
+		tmp = (uint64_t)tmp << (cpu->cd.arm.r[c >> 1] & 255);
+		break;
+	case 2:	/*  lsr #c  (c = 1..32)  */
+		if (c == 0)
+			c = 32;
+		tmp = (uint64_t)tmp >> c;
+		break;
+	case 3:	/*  lsr Rc  */
+		tmp = (uint64_t)tmp >> (cpu->cd.arm.r[c >> 1] & 255);
+		break;
+	default:fatal("unimplemented t\n");
+		exit(1);
+	}
+	return tmp;
+}
 
 
 /*****************************************************************************/
@@ -293,9 +328,37 @@ Y(bl_samepage_trace)
 
 
 /*
+ *  mull: Long multiplication
+ *
+ *  arg[0] = copy of instruction word
+ */
+X(mull)
+{
+	/*  xxxx0000 1UAShhhh llllssss 1001mmmm  */
+	uint32_t iw = ic->arg[0];
+	int u_bit = (iw >> 22) & 1, a_bit = (iw >> 21) & 1;
+	uint64_t tmp = cpu->cd.arm.r[iw & 15];
+	if (u_bit) {
+		fatal("mull: u bit\n");
+		exit(1);
+	}
+	tmp *= cpu->cd.arm.r[(iw >> 8) & 15];
+	if (a_bit) {
+		cpu->cd.arm.r[(iw >> 16) & 15] += (tmp >> 32);
+		cpu->cd.arm.r[(iw >> 12) & 15] += tmp;
+	} else {
+		cpu->cd.arm.r[(iw >> 16) & 15] = (tmp >> 32);
+		cpu->cd.arm.r[(iw >> 12) & 15] = tmp;
+	}
+}
+Y(mull)
+
+
+/*
  *  mov_pc:  "mov pc,reg"
  *
- *  arg[0] = pointer to uint32_t in host memory of source register
+ *  arg[0] = ignored
+ *  arg[1] = pointer to uint32_t in host memory of source register
  */
 X(mov_pc)
 {
@@ -303,7 +366,7 @@ X(mov_pc)
 	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
 
 	/*  Update the PC register:  */
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = *((uint32_t *)ic->arg[0]);
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = *((uint32_t *)ic->arg[1]);
 
 	/*
 	 *  Is this a return to code within the same page? Then there is no
@@ -361,6 +424,19 @@ X(mov_regreg)
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]);
 }
 Y(mov_regreg)
+
+
+/*
+ *  mov_regform:  Generic mov, register form.
+ *
+ *  arg[0] = pointer to uint32_t in host memory of destination register
+ *  arg[1] = copy of instruction word
+ */
+X(mov_regform)
+{
+	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[1]);
+}
+Y(mov_regform)
 
 
 /*
@@ -620,11 +696,8 @@ Y(bdt_store)
  */
 X(cmps)
 {
-	uint32_t a, b, c;
+	uint32_t a = *((uint32_t *)ic->arg[0]), b = ic->arg[1], c;
 	int v, n;
-	a = *((uint32_t *)ic->arg[0]);
-	b = ic->arg[1];
-
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
 	c = a - b;
@@ -647,44 +720,109 @@ X(cmps)
 Y(cmps)
 
 
+/*
+ *  cmps_regform:  cmps, register form
+ *
+ *  arg[0] = pointer to uint32_t in host memory
+ *  arg[1] = copy of instruction word
+ */
+X(cmps_regform)
+{
+	uint32_t a = *((uint32_t *)ic->arg[0]), b = R(cpu, ic->arg[1]), c;
+	int v, n;
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	c = a - b;
+	if (a > b)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)c < 0) {
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+		n = 1;
+	} else
+		n = 0;
+	if ((int32_t)a >= (int32_t)b)
+		v = n;
+	else
+		v = !n;
+	if (v)
+		cpu->cd.arm.flags |= ARM_FLAG_V;
+}
+Y(cmps_regform)
+
+
 #include "cpu_arm_instr_cmps.c"
 
 
 /*
- *  sub:  Subtract an immediate value from a 32-bit word, and store the
- *        result in a 32-bit word.
+ *  add, sub etc:
  *
  *  arg[0] = pointer to destination uint32_t in host memory
  *  arg[1] = pointer to source uint32_t in host memory
- *  arg[2] = 32-bit value
+ *  arg[2] = 32-bit value    or   copy of instruction word (for register form)
  */
-X(sub)
-{
+X(and) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) & ic->arg[2];
+}
+Y(and)
+X(and_regform) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
+	    & R(cpu, ic->arg[2]);
+}
+Y(and_regform)
+X(eor) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) ^ ic->arg[2];
+}
+Y(eor)
+X(eor_regform) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
+	    ^ R(cpu, ic->arg[2]);
+}
+Y(eor_regform)
+X(sub) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) - ic->arg[2];
 }
 Y(sub)
-X(sub_self)
-{
-	*((uint32_t *)ic->arg[0]) -= ic->arg[2];
+X(sub_regform) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
+	    - R(cpu, ic->arg[2]);
 }
-Y(sub_self)
-
-
-/*
- *  add:  Add an immediate value to a 32-bit word, and store the
- *        result in a 32-bit word.
- *
- *  arg[0] = pointer to destination uint32_t in host memory
- *  arg[1] = pointer to source uint32_t in host memory
- *  arg[2] = 32-bit value
- */
-X(add)
-{
+Y(sub_regform)
+X(rsb) {
+	*((uint32_t *)ic->arg[0]) = ic->arg[2] - *((uint32_t *)ic->arg[1]);
+}
+Y(rsb)
+X(rsb_regform) {
+	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[2]) -
+	    *((uint32_t *)ic->arg[1]);
+}
+Y(rsb_regform)
+X(add) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) + ic->arg[2];
 }
 Y(add)
-X(add_self)
-{
+X(add_regform) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
+	    + R(cpu, ic->arg[2]);
+}
+Y(add_regform)
+X(orr) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) | ic->arg[2];
+}
+Y(orr)
+X(orr_regform) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
+	    | R(cpu, ic->arg[2]);
+}
+Y(orr_regform)
+
+/*  Special cases:  */
+X(sub_self) {
+	*((uint32_t *)ic->arg[0]) -= ic->arg[2];
+}
+Y(sub_self)
+X(add_self) {
 	*((uint32_t *)ic->arg[0]) += ic->arg[2];
 }
 Y(add_self)
@@ -858,8 +996,8 @@ X(to_be_translated)
 	uint32_t addr, low_pc, iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
-	int condition_code, main_opcode, secondary_opcode, s_bit, r16, r12, r8;
-	int p_bit, u_bit, b_bit, w_bit, l_bit;
+	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
+	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -910,9 +1048,12 @@ X(to_be_translated)
 	b_bit = (iword >> 22) & 1;
 	w_bit = (iword >> 21) & 1;
 	s_bit = l_bit = (iword >> 20) & 1;
-	r16 = (iword >> 16) & 15;
-	r12 = (iword >> 12) & 15;
-	r8 = (iword >> 8) & 15;
+	rn    = (iword >> 16) & 15;
+	rd    = (iword >> 12) & 15;
+	r8    = (iword >> 8) & 15;
+	c     = (iword >> 7) & 31;
+	t     = (iword >> 4) & 7;
+	rm    = iword & 15;
 
 	if (condition_code == 0xf) {
 		fatal("TODO: ARM condition code 0x%x\n",
@@ -931,102 +1072,164 @@ X(to_be_translated)
 	case 0x1:
 	case 0x2:
 	case 0x3:
-		if ((main_opcode & 2) == 0) {
-			if ((iword & 0x0ffffff0) == 0x01a0f000) {
-				/*  Hardcoded: mov pc, rX  */
-				if ((iword & 15) == ARM_PC) {
-					fatal("mov pc,pc?\n");
-					goto bad;
-				}
-				ic->f = cond_instr(mov_pc);
-				ic->arg[0] = (size_t)
-				    (&cpu->cd.arm.r[iword & 15]);
-				if ((iword & 15) == ARM_LR &&
-				    cpu->machine->show_trace_tree)
-					ic->f = cond_instr(ret_trace);
-			} else if ((iword & 0x0fff0ff0) == 0x01a00000) {
-				/*  Hardcoded: mov reg,reg  */
-				if ((iword & 15) == ARM_PC) {
-					fatal("mov reg,pc?\n");
-					goto bad;
-				}
-				ic->f = cond_instr(mov_regreg);
-				ic->arg[0] = (size_t)
-				    (&cpu->cd.arm.r[r12]);
-				ic->arg[1] = (size_t)
-				    (&cpu->cd.arm.r[iword & 15]);
-			} else {
-				fatal("REGISTER FORM! TODO\n");
-				goto bad;
-			}
+		/*  Check special cases first:  */
+		if ((iword & 0x0f8000f0) == 0x00800090) {
+			/*  Long multiplication:  */
+			ic->f = cond_instr(mull);
+			ic->arg[0] = iword;
 			break;
 		}
-		imm = iword & 0xff;
-		r8 <<= 1;
-		while (r8-- > 0)
-			imm = (imm >> 1) | ((imm & 1) << 31);
+
+		if (iword & 0x80 && !(main_opcode & 2) && iword & 0x10) {
+			fatal("reg form blah blah\n");
+			goto bad;
+		}
+
+		/*
+		 *  Generic Data Processing Instructions:
+		 */
+		if ((main_opcode & 2) == 0)
+			regform = 1;
+		else
+			regform = 0;
+
+		if (!regform) {
+			imm = iword & 0xff;
+			r8 <<= 1;
+			while (r8-- > 0)
+				imm = (imm >> 1) | ((imm & 1) << 31);
+		}
+
 		switch (secondary_opcode) {
+		case 0x0:				/*  AND  */
+		case 0x1:				/*  EOR  */
 		case 0x2:				/*  SUB  */
+		case 0x3:				/*  RSB  */
 		case 0x4:				/*  ADD  */
+		case 0xc:				/*  ORR  */
 			if (s_bit) {
 				fatal("add/sub s_bit: TODO\n");
 				goto bad;
 			}
-			if (r12 == ARM_PC || r16 == ARM_PC) {
+			if (rd == ARM_PC || rn == ARM_PC) {
 				fatal("add/sub: PC\n");
 				goto bad;
 			}
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
+			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rn]);
+			if (regform)
+				ic->arg[2] = iword;
+			else
+				ic->arg[2] = imm;
 			switch (secondary_opcode) {
+			case 0x0:
+				if (regform)
+					ic->f = cond_instr(and_regform);
+				else
+					ic->f = cond_instr(and);
+				break;
+			case 0x1:
+				if (regform)
+					ic->f = cond_instr(eor_regform);
+				else
+					ic->f = cond_instr(eor);
+				break;
 			case 0x2:
-				ic->f = cond_instr(sub);
-				if (r12 == r16) {
-					ic->f = cond_instr(sub_self);
-					if (imm == 1 && r12 != ARM_PC)
-						ic->f = arm_sub_self_1[r12];
-					if (imm == 4 && r12 != ARM_PC)
-						ic->f = arm_sub_self_4[r12];
+				if (regform) {
+					ic->f = cond_instr(sub_regform);
+				} else {
+					ic->f = cond_instr(sub);
+					if (rd == rn) {
+						ic->f = cond_instr(sub_self);
+						if (imm == 1 && rd != ARM_PC)
+							ic->f = arm_sub_self_1[rd];
+						if (imm == 4 && rd != ARM_PC)
+							ic->f = arm_sub_self_4[rd];
+					}
 				}
+				break;
+			case 0x3:
+				if (regform)
+					ic->f = cond_instr(rsb_regform);
+				else
+					ic->f = cond_instr(rsb);
 				break;
 			case 0x4:
-				ic->f = cond_instr(add);
-				if (r12 == r16) {
-					ic->f = cond_instr(add_self);
-					if (imm == 1 && r12 != ARM_PC)
-						ic->f = arm_add_self_1[r12];
-					if (imm == 4 && r12 != ARM_PC)
-						ic->f = arm_add_self_4[r12];
+				if (regform) {
+					ic->f = cond_instr(add_regform);
+				} else {
+					ic->f = cond_instr(add);
+					if (rd == rn) {
+						ic->f = cond_instr(add_self);
+						if (imm == 1 && rd != ARM_PC)
+							ic->f = arm_add_self_1[rd];
+						if (imm == 4 && rd != ARM_PC)
+							ic->f = arm_add_self_4[rd];
+					}
 				}
 				break;
+			case 0xc:
+				if (regform)
+					ic->f = cond_instr(orr_regform);
+				else
+					ic->f = cond_instr(orr);
+				break;
 			}
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
-			ic->arg[1] = (size_t)(&cpu->cd.arm.r[r16]);
-			ic->arg[2] = imm;
 			break;
 		case 0xa:				/*  CMP  */
 			if (!s_bit) {
 				fatal("cmp !s_bit: TODO\n");
 				goto bad;
 			}
-			ic->f = cond_instr(cmps);
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
-			ic->arg[1] = imm;
-			if (imm == 0 && r16 != ARM_PC)
-				ic->f = arm_cmps_0[r16];
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+			if (regform) {
+				ic->arg[1] = iword;
+				ic->f = cond_instr(cmps_regform);
+			} else {
+				ic->arg[1] = imm;
+				ic->f = cond_instr(cmps);
+				if (imm == 0 && rn != ARM_PC)
+					ic->f = arm_cmps_0[rn];
+			}
 			break;
 		case 0xd:				/*  MOV  */
 			if (s_bit) {
 				fatal("mov s_bit: TODO\n");
 				goto bad;
 			}
-			if (r12 == ARM_PC) {
-				fatal("TODO: mov used as branch\n");
-				goto bad;
+			if (regform) {
+				ic->f = cond_instr(mov_regform);
+				ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
+				ic->arg[1] = iword;
+				if (t == 0 && c == 0) {
+					ic->f = cond_instr(mov_regreg);
+					ic->arg[1] = (size_t)
+					    (&cpu->cd.arm.r[rm]);
+					if (rd == ARM_PC)
+						ic->f = cond_instr(mov_pc);
+					if (rm == ARM_LR &&
+					    cpu->machine->show_trace_tree)
+						ic->f = cond_instr(ret_trace);
+				} else if (rd == ARM_PC) {
+					fatal("mov pc, but too complex\n");
+				}
+				if (rm == ARM_PC) {
+					fatal("mov pc,pc?\n");
+					goto bad;
+				}
 			} else {
-				ic->f = cond_instr(mov);
-				ic->arg[0] = (size_t)(&cpu->cd.arm.r[r12]);
-				ic->arg[1] = imm;
-				if (imm == 0)
-					ic->f = cond_instr(clear);
+				/*  Immediate:  */
+				if (rd == ARM_PC) {
+					fatal("TODO: mov used as branch\n");
+					goto bad;
+				} else {
+					ic->f = cond_instr(mov);
+					ic->arg[0] = (size_t)
+					    (&cpu->cd.arm.r[rd]);
+					ic->arg[1] = imm;
+					if (imm == 0)
+						ic->f = cond_instr(clear);
+				}
 			}
 			break;
 		default:goto bad;
@@ -1045,9 +1248,9 @@ X(to_be_translated)
 			imm = (int32_t)0-imm;
 		if (main_opcode < 6) {
 			/*  Immediate:  */
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
 			ic->arg[1] = (size_t)(imm);
-			ic->arg[2] = (size_t)(&cpu->cd.arm.r[r12]);
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
 		}
 		if (main_opcode == 4 && b_bit) {
 			/*  Post-index, immediate:  */
@@ -1057,7 +1260,7 @@ X(to_be_translated)
 				fatal("load/store: T-bit\n");
 				goto bad;
 			}
-			if (r16 == ARM_PC) {
+			if (rn == ARM_PC) {
 				fatal("load/store writeback PC: error\n");
 				goto bad;
 			}
@@ -1065,11 +1268,11 @@ X(to_be_translated)
 			/*  Pre-index, immediate:  */
 			/*  ldr(b) Rd,[Rn,#imm]  */
 			if (l_bit) {
-				if (r12 == ARM_PC) {
+				if (rd == ARM_PC) {
 					fatal("WARNING: ldr to pc register?\n");
 					goto bad;
 				}
-				if (r16 == ARM_PC) {
+				if (rn == ARM_PC) {
 					if (w_bit) {
 						fatal("w bit load etc\n");
 						goto bad;
@@ -1079,11 +1282,11 @@ X(to_be_translated)
 					    cond_instr(load_word_imm_pcrel);
 				}
 			} else {
-				if (r12 == ARM_PC) {
+				if (rd == ARM_PC) {
 					fatal("TODO: store pc\n");
 					goto bad;
 				}
-				if (r16 == ARM_PC) {
+				if (rn == ARM_PC) {
 					fatal("TODO: store pc rel\n");
 					goto bad;
 				}
@@ -1100,9 +1303,9 @@ X(to_be_translated)
 			ic->f = cond_instr(bdt_load);
 		else
 			ic->f = cond_instr(bdt_store);
-		ic->arg[0] = (size_t)(&cpu->cd.arm.r[r16]);
+		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
 		ic->arg[1] = (size_t)iword;
-		if (r16 == ARM_PC) {
+		if (rn == ARM_PC) {
 			fatal("TODO: bdt with PC as base\n");
 			goto bad;
 		}

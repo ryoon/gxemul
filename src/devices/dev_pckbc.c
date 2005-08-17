@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.49 2005-08-17 09:24:23 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.50 2005-08-17 09:30:23 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -50,8 +50,6 @@
 
 /*  #define PCKBC_DEBUG  */
 /*  #define debug fatal  */
-
-extern volatile int single_step;
 
 
 #define	MAX_8042_QUEUELEN	256

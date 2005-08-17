@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.30 2005-08-16 20:17:32 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.31 2005-08-17 09:30:23 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -1037,7 +1037,7 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr)
  *  memory. Used by (at least) the SGI O2 PROM.
  *
  *  Actually, it seems to be used for graphics output as well. (?)
- *  TODO: Run the O2's prom and try to figure out what it really does.
+ *  The O2's PROM uses it to output graphics.
  */
 /*  #define debug fatal  */
 /*  #define MTE_DEBUG  */
@@ -1130,6 +1130,19 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 	case 0x1778:
 		break;
 
+	/*  Graphics stuff? No warning:  */
+	case 0x2018:
+	case 0x2060:
+	case 0x2070:
+	case 0x2074:
+	case 0x20c0:
+	case 0x20c4:
+	case 0x20d0:
+	case 0x21b0:
+	case 0x21b8:
+		break;
+
+	/*  Perform graphics operation:  */
 	case 0x21f8:
 		{
 			uint32_t op = d->reg[0x2060 / sizeof(uint32_t)];

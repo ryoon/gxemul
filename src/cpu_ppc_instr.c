@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.30 2005-08-17 18:19:04 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.31 2005-08-17 18:53:55 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -178,6 +178,37 @@ X(bclr)
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace_return(cpu);
 		cpu->pc = addr & ~3;
+		/*  Find the new physical page and update pointers:  */
+		ppc_pc_to_pointers(cpu);
+	}
+}
+X(bclr_l)
+{
+	uint64_t low_pc;
+	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	int ctr_ok, cond_ok;
+	MODE_uint_t tmp, addr = cpu->cd.ppc.lr;
+	if (!(bo & 4))
+		cpu->cd.ppc.ctr --;
+	ctr_ok = (bo >> 2) & 1;
+	tmp = cpu->cd.ppc.ctr;
+	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+
+	/*  Calculate return PC:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->pc += (low_pc << 2);
+	cpu->cd.ppc.lr = cpu->pc;
+
+	if (ctr_ok && cond_ok) {
+		if (cpu->machine->show_trace_tree)
+			cpu_functioncall_trace_return(cpu);
+		cpu->pc = addr & ~3;
+		if (cpu->machine->show_trace_tree)
+			cpu_functioncall_trace(cpu, cpu->pc);
 		/*  Find the new physical page and update pointers:  */
 		ppc_pc_to_pointers(cpu);
 	}
@@ -563,11 +594,17 @@ X(mtsr)
 
 
 /*
- *  mtsrin:  Move To Segment Register Indirect
+ *  mfsrin, mtsrin:  Move From/To Segment Register Indirect
  *
  *  arg[0] = ptr to rb
  *  arg[1] = ptr to rt
  */
+X(mfsrin)
+{
+	/*  TODO: This only works for 32-bit mode  */
+	uint32_t sr_num = reg(ic->arg[0]) >> 28;
+	reg(ic->arg[1]) = cpu->cd.ppc.sr[sr_num];
+}
 X(mtsrin)
 {
 	/*  TODO: This only works for 32-bit mode  */
@@ -716,10 +753,15 @@ X(crxor)
 X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
 X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
 /*  TODO: Check privilege level for mfsprg*  */
+X(mfsdr1) {	reg(ic->arg[0]) = cpu->cd.ppc.sdr1; }
 X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
 X(mfsprg1) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg1; }
 X(mfsprg2) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg2; }
 X(mfsprg3) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg3; }
+X(mfibatu) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_u[ic->arg[1]]; }
+X(mfibatl) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_l[ic->arg[1]]; }
+X(mfdbatu) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_u[ic->arg[1]]; }
+X(mfdbatl) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_l[ic->arg[1]]; }
 
 
 /*
@@ -1414,11 +1456,10 @@ X(to_be_translated)
 			bi = (iword >> 16) & 31;
 			bh = (iword >> 11) & 3;
 			lk_bit = iword & 1;
-			if (lk_bit) {
-				fatal("TODO: bclr with l_bit set\n");
-				goto bad;
-			}
-			ic->f = instr(bclr);
+			if (lk_bit)
+				ic->f = instr(bclr_l);
+			else
+				ic->f = instr(bclr);
 			ic->arg[0] = bo;
 			ic->arg[1] = bi;
 			ic->arg[2] = bh;
@@ -1503,12 +1544,28 @@ X(to_be_translated)
 			switch (spr) {
 			case 8:	  ic->f = instr(mflr); break;
 			case 9:	  ic->f = instr(mfctr); break;
+			case 25:  ic->f = instr(mfsdr1); break;
 			case 272: ic->f = instr(mfsprg0); break;
 			case 273: ic->f = instr(mfsprg1); break;
 			case 274: ic->f = instr(mfsprg2); break;
 			case 275: ic->f = instr(mfsprg3); break;
-			default:fatal("UNIMPLEMENTED spr %i\n", spr);
-				goto bad;
+			default:if (spr >= 528 && spr < 544) {
+					if (spr & 1) {
+						if (spr & 16)
+							ic->f = instr(mfdbatl);
+						else
+							ic->f = instr(mfibatl);
+					} else {
+						if (spr & 16)
+							ic->f = instr(mfdbatu);
+						else
+							ic->f = instr(mfibatu);
+					}
+					ic->arg[1] = (spr >> 1) & 3;
+				} else {
+					fatal("UNIMPLEMENTED spr %i\n", spr);
+					goto bad;
+				}
 			}
 			break;
 
@@ -1583,13 +1640,16 @@ X(to_be_translated)
 			ic->f = instr(mtcrf);
 			break;
 
-/*		case PPC_31_MFSRIN:  */
+		case PPC_31_MFSRIN:
 		case PPC_31_MTSRIN:
 			rt = (iword >> 21) & 31;
 			rb = (iword >> 11) & 31;
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rt]);
-			ic->f = instr(mtsrin);
+			switch (xo) {
+			case PPC_31_MFSRIN: ic->f = instr(mfsrin); break;
+			case PPC_31_MTSRIN: ic->f = instr(mtsrin); break;
+			}
 			if (cpu->cd.ppc.bits == 64) {
 				fatal("Not yet for 64-bit mode\n");
 				goto bad;

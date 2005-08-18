@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.13 2005-08-16 05:37:10 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.14 2005-08-18 09:14:17 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -35,33 +35,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef ENABLE_SPARC
-
-
-#include "cpu_sparc.h"
-
-
-/*
- *  sparc_cpu_family_init():
- *
- *  Bogus function.
- */
-int sparc_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
-
-
-#else	/*  ENABLE_SPARC  */
-
-
 #include "cpu.h"
-#include "cpu_sparc.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
@@ -285,5 +262,3 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 #include "tmp_sparc_tail.c"
 
-
-#endif	/*  ENABLE_SPARC  */

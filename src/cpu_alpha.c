@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.50 2005-08-17 09:21:12 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.51 2005-08-18 09:14:16 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -40,32 +40,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef	ENABLE_ALPHA
-
-
-#include "cpu_alpha.h"
-
-
-/*
- *  alpha_cpu_family_init():
- *
- *  Bogus, when ENABLE_ALPHA isn't defined.
- */
-int alpha_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
-
-
-#else	/*  ENABLE_ALPHA  */
-
-
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
 
 #define	DYNTRANS_8K
@@ -690,5 +668,3 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 #include "tmp_alpha_tail.c"
 
-
-#endif	/*  ENABLE_ALPHA  */

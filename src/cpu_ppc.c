@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.87 2005-08-17 18:19:04 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.88 2005-08-18 09:14:17 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -35,33 +35,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef ENABLE_PPC
-
-
-#include "cpu_ppc.h"
-
-
-/*
- *  ppc_cpu_family_init():
- *
- *  Bogus function.
- */
-int ppc_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
-
-
-#else	/*  ENABLE_PPC  */
-
-
 #include "cpu.h"
-#include "cpu_ppc.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "opcodes_ppc.h"
 #include "symbol.h"
 
@@ -1307,5 +1284,3 @@ void update_cr0(struct cpu *cpu, uint64_t value)
 
 #include "tmp_ppc_tail.c"
 
-
-#endif	/*  ENABLE_PPC  */

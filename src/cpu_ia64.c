@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.2 2005-08-14 11:14:38 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.3 2005-08-18 09:14:17 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -37,32 +37,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef	ENABLE_IA64
-
-
-#include "cpu_ia64.h"
-
-
-/*
- *  ia64_cpu_family_init():
- *
- *  Bogus, when ENABLE_IA64 isn't defined.
- */
-int ia64_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
-
-
-#else	/*  ENABLE_IA64  */
-
-
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
 
 #include "tmp_ia64_head.c"
@@ -269,5 +247,3 @@ debug("TODO\n");
 
 #include "tmp_ia64_tail.c"
 
-
-#endif	/*  ENABLE_IA64  */

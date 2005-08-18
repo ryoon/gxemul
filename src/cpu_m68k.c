@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.5 2005-08-15 06:33:21 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.6 2005-08-18 09:14:17 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -35,33 +35,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef ENABLE_M68K
-
-
-#include "cpu_m68k.h"
-
-
-/*
- *  m68k_cpu_family_init():
- *
- *  Bogus function.
- */
-int m68k_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
-
-
-#else	/*  ENABLE_M68K  */
-
-
 #include "cpu.h"
-#include "cpu_m68k.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
 
 #define	DYNTRANS_32
@@ -328,5 +305,3 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 #include "tmp_m68k_tail.c"
 
-
-#endif	/*  ENABLE_M68K  */

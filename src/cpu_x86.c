@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.169 2005-08-14 23:44:22 debug Exp $
+ *  $Id: cpu_x86.c,v 1.170 2005-08-18 09:14:17 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -47,26 +47,11 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef	ENABLE_X86
-
-
-#include "cpu_x86.h"
-
-/*  (Bogus, when ENABLE_X86 isn't defined.)  */
-int x86_cpu_family_init(struct cpu_family *fp) { return 0; }
-
-
-#else	/*  ENABLE_X86  */
-
-
 #include "cpu.h"
-#include "cpu_x86.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
@@ -3152,5 +3137,3 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 
 #include "tmp_x86_tail.c"
 
-
-#endif	/*  ENABLE_X86  */

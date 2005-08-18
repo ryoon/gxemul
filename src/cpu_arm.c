@@ -25,13 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.58 2005-08-17 23:42:53 debug Exp $
+ *  $Id: cpu_arm.c,v 1.59 2005-08-18 09:14:17 debug Exp $
  *
  *  ARM CPU emulation.
  *
- *  Sources of information refered to in cpu_arm*.c:
+ *  A good source of quick info on ARM instruction encoding:
  *
- *	(1)  http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html
+ *	http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html
+ *
+ *  (All "xxxx0101..." and similar strings in this file are from that URL.)
  */
 
 #include <stdio.h>
@@ -39,33 +41,10 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "misc.h"
-
-
-#ifndef	ENABLE_ARM
-
-
-#include "cpu_arm.h"
-
-
-/*
- *  arm_cpu_family_init():
- *
- *  Bogus, when ENABLE_ARM isn't defined.
- */
-int arm_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
-
-
-#else	/*  ENABLE_ARM  */
-
-
 #include "cpu.h"
-#include "cpu_arm.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
 
 #define DYNTRANS_32
@@ -316,12 +295,11 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x3:
 		/*
 		 *  Special cases first:
-		 *
+		 */
+
+		/*
 		 *  Multiplication:
 		 *  xxxx0000 00ASdddd nnnnssss 1001mmmm  (Rd, Rm, Rs [,Rn])
-		 *
-		 *  Long multiplication:
-		 *  xxxx0000 1UAShhhh llllssss 1001mmmm  (Rl,Rh,Rm,Rs)
 		 */
 		if ((iw & 0x0fc000f0) == 0x00000090) {
 			int a_bit = (iw >> 21) & 1;
@@ -335,6 +313,11 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("\n");
 			break;
 		}
+
+		/*
+		 *  Long multiplication:
+		 *  xxxx0000 1UAShhhh llllssss 1001mmmm  (Rl,Rh,Rm,Rs)
+		 */
 		if ((iw & 0x0f8000f0) == 0x00800090) {
 			int u_bit = (iw >> 22) & 1;
 			int a_bit = (iw >> 21) & 1;
@@ -347,6 +330,37 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			break;
 		}
 
+		/*
+		 *  xxxx0001 0s10aaaa 11110000 0000mmmm  MSR  Regform
+		 *  xxxx0011 0s10aaaa 1111rrrr bbbbbbbb  MSR  Immform
+		 *  xxxx0001 0s001111 dddd0000 00000000  MRS
+		 */
+		if ((iw & 0x0fb0fff0) == 0x0120f000) {
+			debug("msr%s\tTODO Regform...", condition);
+			debug("\n");
+			break;
+		}
+		if ((iw & 0x0fb0f000) == 0x0320f000) {
+			debug("msr%s\tTODO Immform...", condition);
+			debug("\n");
+			break;
+		}
+		if ((iw & 0x0fbf0fff) == 0x010f0000) {
+			debug("mrs%s\t", condition);
+			debug("%s,CPSR\n", arm_regname[r12]);
+			break;
+		}
+
+		/*
+		 *  xxxx0001 0B00nnnn dddd0000 1001mmmm    SWP Rd,Rm,[Rn]
+		 */
+		if ((iw & 0x0fb00ff0) == 0x01000090) {
+			debug("swap%s\t", condition);
+			debug("%s,%s,[%s]\n", arm_regname[r12],
+			    arm_regname[iw & 15], arm_regname[r16]);
+			break;
+		}
+
 		/*  Other special cases:  */
 		if (iw & 0x80 && !(main_opcode & 2) && iw & 0x10) {
 			debug("UNIMPLEMENTED reg (c!=0), t odd\n");
@@ -356,7 +370,6 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		/*
 		 *  Generic Data Processing Instructions:
 		 *
-		 *  See (1):
 		 *  xxxx000a aaaSnnnn ddddcccc ctttmmmm  Register form
 		 *  xxxx001a aaaSnnnn ddddrrrr bbbbbbbb  Immediate form
 		 */
@@ -413,7 +426,6 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x6:
 	case 0x7:
 		/*
-		 *  See (1):
 		 *  xxxx010P UBWLnnnn ddddoooo oooooooo  Immediate form
 		 *  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register form
 		 */
@@ -443,7 +455,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 	case 0x8:				/*  Block Data Transfer  */
 	case 0x9:
-		/*  See (1):  xxxx100P USWLnnnn llllllll llllllll  */
+		/*  xxxx100P USWLnnnn llllllll llllllll  */
 		p_bit = main_opcode & 1;
 		s_bit = b_bit;
 		debug("%s%s", l_bit? "ldm" : "stm", condition);
@@ -489,7 +501,6 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 	case 0xe:				/*  CDP (Coprocessor Op)  */
 		/*				    or MRC/MCR!
-		 *  According to (1):
 		 *  xxxx1110 oooonnnn ddddpppp qqq0mmmm		CDP
 		 *  xxxx1110 oooLNNNN ddddpppp qqq1MMMM		MRC/MCR
 		 */
@@ -526,5 +537,3 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 #include "tmp_arm_tail.c"
 
-
-#endif	/*  ENABLE_ARM  */

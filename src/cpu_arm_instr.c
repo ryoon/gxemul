@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.53 2005-08-18 00:10:10 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.54 2005-08-18 09:14:17 debug Exp $
  *
  *  ARM instructions.
  *
@@ -829,6 +829,32 @@ X(orr_regform) {
 }
 Y(orr_regform)
 
+/*  Same as above, but set flags:  */
+X(subs) {
+	uint32_t a = *((uint32_t *)ic->arg[1]), b = ic->arg[2], c;
+	int v, n;
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	c = a - b;
+	if (a > b)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)c < 0) {
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+		n = 1;
+	} else
+		n = 0;
+	if ((int32_t)a >= (int32_t)b)
+		v = n;
+	else
+		v = !n;
+	if (v)
+		cpu->cd.arm.flags |= ARM_FLAG_V;
+	*((uint32_t *)ic->arg[0]) = c;
+}
+Y(subs)
+
 /*  Special cases:  */
 X(sub_self) {
 	*((uint32_t *)ic->arg[0]) -= ic->arg[2];
@@ -1010,7 +1036,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
 	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t;
-	int rn_pc_ok;
+	int rn_pc_ok, s_bit_ok;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -1120,17 +1146,13 @@ X(to_be_translated)
 		case 0x3:				/*  RSB  */
 		case 0x4:				/*  ADD  */
 		case 0xc:				/*  ORR  */
-			if (s_bit) {
-				fatal("add/sub s_bit: TODO\n");
-				goto bad;
-			}
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rn]);
 			if (regform)
 				ic->arg[2] = iword;
 			else
 				ic->arg[2] = imm;
-			rn_pc_ok = 0;
+			rn_pc_ok = s_bit_ok = 0;
 			switch (secondary_opcode) {
 			case 0x0:
 				if (regform)
@@ -1148,13 +1170,25 @@ X(to_be_translated)
 				if (regform) {
 					ic->f = cond_instr(sub_regform);
 				} else {
-					ic->f = cond_instr(sub);
-					if (rd == rn) {
-						ic->f = cond_instr(sub_self);
-						if (imm == 1 && rd != ARM_PC)
-							ic->f = arm_sub_self_1[rd];
-						if (imm == 4 && rd != ARM_PC)
-							ic->f = arm_sub_self_4[rd];
+					if (s_bit) {
+						ic->f = cond_instr(subs);
+						s_bit_ok = 1;
+					} else {
+						ic->f = cond_instr(sub);
+						if (rd == rn) {
+							ic->f =
+							   cond_instr(sub_self);
+							if (imm == 1 &&
+							    rd != ARM_PC)
+								ic->f =
+								  arm_sub_self_1
+								  [rd];
+							if (imm == 4 &&
+							    rd != ARM_PC)
+								ic->f =
+								  arm_sub_self_4
+								  [rd];
+						}
 					}
 				}
 				break;
@@ -1176,9 +1210,11 @@ X(to_be_translated)
 					if (rd == rn && rd != ARM_PC) {
 						ic->f = cond_instr(add_self);
 						if (imm == 1 && rd != ARM_PC)
-							ic->f = arm_add_self_1[rd];
+							ic->f =
+							     arm_add_self_1[rd];
 						if (imm == 4 && rd != ARM_PC)
-							ic->f = arm_add_self_4[rd];
+							ic->f =
+							    arm_add_self_4[rd];
 					}
 				}
 				break;
@@ -1188,6 +1224,10 @@ X(to_be_translated)
 				else
 					ic->f = cond_instr(orr);
 				break;
+			}
+			if (s_bit && !s_bit_ok) {
+				fatal("add/sub etc s_bit: TODO\n");
+				goto bad;
 			}
 			if (rd == ARM_PC) {
 				fatal("regform: rd = PC\n");

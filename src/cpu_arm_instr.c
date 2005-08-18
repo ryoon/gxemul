@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.52 2005-08-17 23:42:53 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.53 2005-08-18 00:10:10 debug Exp $
  *
  *  ARM instructions.
  *
@@ -479,6 +479,18 @@ Y(clear)
 #undef A__U
 #undef A__NAME__general
 #undef A__NAME
+
+
+/*  See X(add) below. This is a special case for add Rd,pc,imm  */
+X(add_pc) {
+	uint32_t low_pc;
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	*((uint32_t *)ic->arg[0]) = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[2];
+}
+Y(add_pc)
 
 
 /*
@@ -998,6 +1010,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
 	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t;
+	int rn_pc_ok;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -1111,16 +1124,13 @@ X(to_be_translated)
 				fatal("add/sub s_bit: TODO\n");
 				goto bad;
 			}
-			if (rd == ARM_PC || rn == ARM_PC) {
-				fatal("add/sub: PC\n");
-				goto bad;
-			}
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rn]);
 			if (regform)
 				ic->arg[2] = iword;
 			else
 				ic->arg[2] = imm;
+			rn_pc_ok = 0;
 			switch (secondary_opcode) {
 			case 0x0:
 				if (regform)
@@ -1159,7 +1169,11 @@ X(to_be_translated)
 					ic->f = cond_instr(add_regform);
 				} else {
 					ic->f = cond_instr(add);
-					if (rd == rn) {
+					if (rn == ARM_PC) {
+						ic->f = cond_instr(add_pc);
+						rn_pc_ok = 1;
+					}
+					if (rd == rn && rd != ARM_PC) {
 						ic->f = cond_instr(add_self);
 						if (imm == 1 && rd != ARM_PC)
 							ic->f = arm_add_self_1[rd];
@@ -1174,6 +1188,14 @@ X(to_be_translated)
 				else
 					ic->f = cond_instr(orr);
 				break;
+			}
+			if (rd == ARM_PC) {
+				fatal("regform: rd = PC\n");
+				goto bad;
+			}
+			if (rn == ARM_PC && !rn_pc_ok) {
+				fatal("regform: rn = PC\n");
+				goto bad;
 			}
 			break;
 		case 0xa:				/*  CMP  */
@@ -1252,9 +1274,9 @@ X(to_be_translated)
 			ic->arg[1] = (size_t)(imm);
 			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
 		}
-		if (main_opcode == 4 && b_bit) {
+		if (main_opcode == 4) {
 			/*  Post-index, immediate:  */
-			if (imm == 1 && !w_bit && l_bit)
+			if (imm == 1 && !w_bit && l_bit && b_bit)
 				ic->f = instr(store_w0_byte_u1_p0_imm_fixinc1);
 			if (w_bit) {
 				fatal("load/store: T-bit\n");

@@ -28,13 +28,34 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.26 2005-08-14 23:44:23 debug Exp $
+ *  $Id: cpu_arm.h,v 1.27 2005-08-18 11:52:42 debug Exp $
  */
 
 #include "misc.h"
 
+#include "armreg.h"
 
 struct cpu_family;
+
+/*  ARM CPU types:  */
+struct arm_cpu_type_def {
+	char		*name;
+	uint32_t	cpu_id;
+	int		flags;
+	int		icache_shift;
+	int		iway;
+	int		dcache_shift;
+	int		dway;
+};
+
+/*  Flags:  */
+#define	ARM_NO_MMU		1
+
+#define	ARM_CPU_TYPE_DEFS					      { \
+	{ "ARM620",	CPU_ID_ARM620,	0, 12, 2, 12, 2 },		\
+	{ "SA110",	CPU_ID_SA110,	0, 12, 2, 12, 2 },		\
+	{ "SA1110",	CPU_ID_SA1110,	0, 12, 2, 12, 2 },		\
+	{ NULL, 0, 0, 0,0, 0,0 } }
 
 #define	ARM_SL			10
 #define	ARM_FP			11
@@ -117,6 +138,7 @@ struct arm_cpu {
 	/*
 	 *  Misc.:
 	 */
+	struct arm_cpu_type_def	cpu_type;
 	uint32_t		flags;
 
 

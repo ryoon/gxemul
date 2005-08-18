@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.54 2005-08-18 09:14:17 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.55 2005-08-18 11:52:41 debug Exp $
  *
  *  ARM instructions.
  *
@@ -352,6 +352,19 @@ X(mull)
 	}
 }
 Y(mull)
+
+
+/*
+ *  get_cpu_id:
+ *
+ *  arg[0] = pointer to destination register
+ */
+X(get_cpu_id)
+{
+	/*  TODO  */
+	*((uint32_t *)ic->arg[0]) = CPU_ID_SA110;
+}
+Y(get_cpu_id)
 
 
 /*
@@ -828,6 +841,15 @@ X(orr_regform) {
 	    | R(cpu, ic->arg[2]);
 }
 Y(orr_regform)
+X(bic) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) & ~ic->arg[2];
+}
+Y(bic)
+X(bic_regform) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
+	    & ~R(cpu, ic->arg[2]);
+}
+Y(bic_regform)
 
 /*  Same as above, but set flags:  */
 X(subs) {
@@ -1146,6 +1168,7 @@ X(to_be_translated)
 		case 0x3:				/*  RSB  */
 		case 0x4:				/*  ADD  */
 		case 0xc:				/*  ORR  */
+		case 0xe:				/*  BIC  */
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rn]);
 			if (regform)
@@ -1224,6 +1247,12 @@ X(to_be_translated)
 				else
 					ic->f = cond_instr(orr);
 				break;
+			case 0xe:
+				if (regform)
+					ic->f = cond_instr(bic_regform);
+				else
+					ic->f = cond_instr(bic);
+				break;
 			}
 			if (s_bit && !s_bit_ok) {
 				fatal("add/sub etc s_bit: TODO\n");
@@ -1269,7 +1298,7 @@ X(to_be_translated)
 					    (&cpu->cd.arm.r[rm]);
 					if (rd == ARM_PC)
 						ic->f = cond_instr(mov_pc);
-					if (rm == ARM_LR &&
+					if (rd == ARM_PC && rm == ARM_LR &&
 					    cpu->machine->show_trace_tree)
 						ic->f = cond_instr(ret_trace);
 				} else if (rd == ARM_PC) {
@@ -1413,6 +1442,16 @@ X(to_be_translated)
 			}
 		}
 		break;
+
+	case 0xe:
+		if ((iword & 0x0fff0fff) == 0x0e100f10) {
+			/*  Get CPU id into register.  */
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
+			ic->f = cond_instr(get_cpu_id);
+			break;
+		}
+		/*  Unimplemented stuff:  */
+		goto bad;
 
 	default:goto bad;
 	}

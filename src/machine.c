@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.517 2005-08-17 09:24:23 debug Exp $
+ *  $Id: machine.c,v 1.518 2005-08-18 11:52:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4357,6 +4357,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 8,
 		    0xeafffffe);
 		break;
+
+	case MACHINE_CATS:
+		machine->machine_name = "CATS evaluation board";
+		break;
 #endif	/*  ENABLE_ARM  */
 
 #ifdef ENABLE_IA64
@@ -4606,6 +4610,9 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_BEBOX:
 			m->physical_ram_in_mb = 64;
 			break;
+		case MACHINE_CATS:
+			m->physical_ram_in_mb = 64;
+			break;
 		case MACHINE_X86:
 			if (m->machine_subtype == MACHINE_X86_XT)
 				m->physical_ram_in_mb = 1;
@@ -4819,7 +4826,10 @@ void machine_default_cputype(struct machine *m)
 	/*  ARM:  */
 	case MACHINE_BAREARM:
 	case MACHINE_TESTARM:
-		m->cpu_name = strdup("ARM");
+		m->cpu_name = strdup("SA1110");
+		break;
+	case MACHINE_CATS:
+		m->cpu_name = strdup("SA110");
 		break;
 
 	/*  IA64:  */
@@ -5466,6 +5476,14 @@ void machine_init(void)
 	me = machine_entry_new("Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
 	me->aliases[0] = "cobalt";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  CATS (ARM) evaluation board:  */
+	me = machine_entry_new("CATS evaluation board (ARM)", ARCH_ARM,
+	    MACHINE_CATS, 1, 0);
+	me->aliases[0] = "cats";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

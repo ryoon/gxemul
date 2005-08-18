@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.59 2005-08-18 09:14:17 debug Exp $
+ *  $Id: cpu_arm.c,v 1.60 2005-08-18 11:52:41 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -70,7 +70,19 @@ static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
 int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
-	if (strcmp(cpu_type_name, "ARM") != 0)
+	int any_cache = 0, i, found;
+	struct arm_cpu_type_def cpu_type_defs[] = ARM_CPU_TYPE_DEFS;
+
+	/*  Scan the list for this cpu type:  */
+	i = 0; found = -1;
+	while (i >= 0 && cpu_type_defs[i].name != NULL) {
+		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
+			found = i;
+			break;
+		}
+		i++;
+	}
+	if (found == -1)
 		return 0;
 
 	cpu->memory_rw = arm_memory_rw;
@@ -79,13 +91,26 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	    arm_invalidate_translation_caches_paddr;
 	cpu->invalidate_code_translation_caches =
 	    arm_invalidate_code_translation_caches;
-	cpu->is_32bit = 1;
+
+	cpu->cd.arm.cpu_type    = cpu_type_defs[found];
+	cpu->name               = cpu->cd.arm.cpu_type.name;
+	cpu->is_32bit           = 1;
 
 	cpu->cd.arm.flags = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
 
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
+		if (cpu->cd.arm.cpu_type.icache_shift != 0)
+			any_cache = 1;
+		if (cpu->cd.arm.cpu_type.dcache_shift != 0)
+			any_cache = 1;
+		if (any_cache) {
+			debug(" (I+D = %i+%i KB",
+			    (int)(1 << (cpu->cd.arm.cpu_type.icache_shift-10)),
+			    (int)(1 << (cpu->cd.arm.cpu_type.dcache_shift-10)));
+			debug(")");
+		}
 	}
 
 	return 1;
@@ -97,8 +122,10 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
  */
 void arm_cpu_dumpinfo(struct cpu *cpu)
 {
-	/*  TODO  */
-	debug("\n");
+	struct arm_cpu_type_def *ct = &cpu->cd.arm.cpu_type;
+
+	debug(" (I+D = %i+%i KB)\n",
+	    (1 << ct->icache_shift) / 1024, (1 << ct->dcache_shift) / 1024);
 }
 
 
@@ -109,9 +136,18 @@ void arm_cpu_dumpinfo(struct cpu *cpu)
  */
 void arm_cpu_list_available_types(void)
 {
-	/*  TODO  */
+	int i, j;
+	struct arm_cpu_type_def tdefs[] = ARM_CPU_TYPE_DEFS;
 
-	debug("ARM\n");
+	i = 0;
+	while (tdefs[i].name != NULL) {
+		debug("%s", tdefs[i].name);
+		for (j=10 - strlen(tdefs[i].name); j>0; j--)
+			debug(" ");
+		i++;
+		if ((i % 6) == 0 || tdefs[i].name == NULL)
+			debug("\n");
+	}
 }
 
 

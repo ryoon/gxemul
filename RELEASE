@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.141 2005-08-17 18:58:44 debug Exp $
+$Id: RELEASE,v 1.142 2005-08-18 11:52:41 debug Exp $
 
 Working on post-0.3.5.
 
@@ -138,6 +138,8 @@ them like this is in order:
     arcbios_other.h is Copyright (c) 1996 M. Warner Losh.
 
     This product includes software developed by Marc Horowitz.
+
+    This product includes software developed by Brini.
 
 Also, src/include/alpha_rpb.h requires the following:
 

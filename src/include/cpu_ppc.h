@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.31 2005-08-17 18:19:05 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.32 2005-08-18 11:52:42 debug Exp $
  */
 
 #include "misc.h"
@@ -67,7 +67,7 @@ struct ppc_cpu_type_def {
 	{ "G4e", 32, 0, 15, 8, 15, 8, 18, 8, 1 },		\
 	{ "PPC970", 64, 0, 16, 1, 15, 2, 19, 1, 1 },		\
 	{ NULL, 0, 0, 0,0, 0,0, 0,0, 0 }			\
-	};
+	}
 
 #define	PPC_NGPRS		32
 #define	PPC_NFPRS		32
@@ -111,7 +111,6 @@ struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
 
 	uint64_t	of_emul_addr;
-	uint64_t	pc_last;
 
 	int		mode;		/*  MODE_PPC or MODE_POWER  */
 	int		bits;		/*  32 or 64  */

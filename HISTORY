@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.910 2005-08-17 23:42:52 debug Exp $
+$Id: HISTORY,v 1.911 2005-08-18 11:52:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2202,3 +2202,5 @@ Changelog for GXemul:
 		(required in order to interact with the SGI O2 PROM).
 		Adding more PPC instructions.
 20050818	Adding more ARM instructions; general register forms.
+		Importing armreg.h from NetBSD (ARM cpu ids). Adding a (dummy)
+		CATS machine mode (using SA110 as the default CPU).

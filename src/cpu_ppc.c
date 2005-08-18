@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.88 2005-08-18 09:14:17 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.89 2005-08-18 20:18:41 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -43,7 +43,7 @@
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
-#define DYNTRANS_32
+/*  #define DYNTRANS_32  */
 #include "tmp_ppc_head.c"
 
 
@@ -76,11 +76,6 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		return 0;
 
 	cpu->memory_rw = ppc_memory_rw;
-	cpu->update_translation_table = ppc_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
-	    ppc_invalidate_translation_caches_paddr;
-	cpu->invalidate_code_translation_caches =
-	    ppc_invalidate_code_translation_caches;
 
 	cpu->cd.ppc.cpu_type    = cpu_type_defs[found];
 	cpu->name               = cpu->cd.ppc.cpu_type.name;
@@ -92,6 +87,20 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.ppc.bits        = cpu->cd.ppc.cpu_type.bits;
 
 	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
+
+	if (cpu->is_32bit) {
+		cpu->update_translation_table = ppc32_update_translation_table;
+		cpu->invalidate_translation_caches_paddr =
+		    ppc32_invalidate_translation_caches_paddr;
+		cpu->invalidate_code_translation_caches =
+		    ppc32_invalidate_code_translation_caches;
+	} else {
+		cpu->update_translation_table = ppc_update_translation_table;
+		cpu->invalidate_translation_caches_paddr =
+		    ppc_invalidate_translation_caches_paddr;
+		cpu->invalidate_code_translation_caches =
+		    ppc_invalidate_code_translation_caches;
+	}
 
 	cpu->translate_address = ppc_translate_address;
 

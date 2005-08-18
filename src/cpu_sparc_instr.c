@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.1 2005-08-16 05:37:10 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.2 2005-08-18 20:18:41 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -56,7 +56,7 @@ X(end_of_page)
 	    SPARC_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	sparc_pc_to_pointers(cpu);
+	DYNTRANS_PC_TO_POINTERS(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;

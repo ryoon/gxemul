@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.911 2005-08-18 11:52:40 debug Exp $
+$Id: HISTORY,v 1.912 2005-08-18 20:18:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2204,3 +2204,4 @@ Changelog for GXemul:
 20050818	Adding more ARM instructions; general register forms.
 		Importing armreg.h from NetBSD (ARM cpu ids). Adding a (dummy)
 		CATS machine mode (using SA110 as the default CPU).
+		Continuing on general dyntrans related stuff.

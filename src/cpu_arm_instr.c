@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.56 2005-08-18 16:18:28 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.57 2005-08-18 20:18:41 debug Exp $
  *
  *  ARM instructions.
  *
@@ -392,7 +392,7 @@ Y(mull)
 X(get_cpu_id)
 {
 	/*  TODO  */
-	*((uint32_t *)ic->arg[0]) = CPU_ID_SA110;
+	reg(ic->arg[0]) = CPU_ID_SA110;
 }
 Y(get_cpu_id)
 
@@ -409,7 +409,7 @@ X(mov_pc)
 	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
 
 	/*  Update the PC register:  */
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = *((uint32_t *)ic->arg[1]);
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = reg(ic->arg[1]);
 
 	/*
 	 *  Is this a return to code within the same page? Then there is no
@@ -464,7 +464,7 @@ Y(ret_trace)
  */
 X(mov_regreg)
 {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]);
+	reg(ic->arg[0]) = reg(ic->arg[1]);
 }
 Y(mov_regreg)
 
@@ -477,7 +477,7 @@ Y(mov_regreg)
  */
 X(mov_regform)
 {
-	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[1], 0);
+	reg(ic->arg[0]) = R(cpu, ic->arg[1], 0);
 }
 Y(mov_regform)
 
@@ -490,7 +490,7 @@ Y(mov_regform)
  */
 X(mov)
 {
-	*((uint32_t *)ic->arg[0]) = ic->arg[1];
+	reg(ic->arg[0]) = ic->arg[1];
 }
 Y(mov)
 
@@ -502,7 +502,7 @@ Y(mov)
  */
 X(clear)
 {
-	*((uint32_t *)ic->arg[0]) = 0;
+	reg(ic->arg[0]) = 0;
 }
 Y(clear)
 
@@ -531,7 +531,7 @@ X(add_pc) {
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
-	*((uint32_t *)ic->arg[0]) = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[2];
+	reg(ic->arg[0]) = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[2];
 }
 Y(add_pc)
 
@@ -561,7 +561,7 @@ X(load_byte_imm_pcrel)
 		fatal("load failed: TODO\n");
 		exit(1);
 	}
-	*((uint32_t *)ic->arg[2]) = data[0];
+	reg(ic->arg[2]) = data[0];
 }
 Y(load_byte_imm_pcrel)
 
@@ -592,7 +592,7 @@ X(load_word_imm_pcrel)
 		exit(1);
 	}
 	/*  TODO: Big endian  */
-	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
+	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
 	    (data[2] << 16) + (data[3] << 24);
 }
 Y(load_word_imm_pcrel)
@@ -751,7 +751,7 @@ Y(bdt_store)
  */
 X(cmps)
 {
-	uint32_t a = *((uint32_t *)ic->arg[0]), b = ic->arg[1], c;
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -783,7 +783,7 @@ Y(cmps)
  */
 X(cmns)
 {
-	uint32_t a = *((uint32_t *)ic->arg[0]), b = ic->arg[1], c;
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -815,7 +815,7 @@ Y(cmns)
  */
 X(cmps_regform)
 {
-	uint32_t a = *((uint32_t *)ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
+	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -847,7 +847,7 @@ Y(cmps_regform)
  */
 X(cmns_regform)
 {
-	uint32_t a = *((uint32_t *)ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
+	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -882,91 +882,83 @@ Y(cmns_regform)
  *  arg[2] = 32-bit value    or   copy of instruction word (for register form)
  */
 X(and) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) & ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2];
 }
 Y(and)
 X(and_regform) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    & R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic->arg[2], 0);
 }
 Y(and_regform)
 X(eor) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) ^ ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2];
 }
 Y(eor)
 X(eor_regform) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    ^ R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic->arg[2], 0);
 }
 Y(eor_regform)
 X(sub) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) - ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2];
 }
 Y(sub)
 X(sub_regform) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    - R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) - R(cpu, ic->arg[2], 0);
 }
 Y(sub_regform)
 X(rsb) {
-	*((uint32_t *)ic->arg[0]) = ic->arg[2] - *((uint32_t *)ic->arg[1]);
+	reg(ic->arg[0]) = ic->arg[2] - reg(ic->arg[1]);
 }
 Y(rsb)
 X(rsb_regform) {
-	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[2], 0) -
-	    *((uint32_t *)ic->arg[1]);
+	reg(ic->arg[0]) = R(cpu, ic->arg[2], 0) - reg(ic->arg[1]);
 }
 Y(rsb_regform)
 X(add) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) + ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2];
 }
 Y(add)
 X(add_regform) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    + R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) + R(cpu, ic->arg[2], 0);
 }
 Y(add_regform)
 X(orr) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) | ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2];
 }
 Y(orr)
 X(orr_regform) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    | R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) | R(cpu, ic->arg[2], 0);
 }
 Y(orr_regform)
 X(bic) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) & ~ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) & ~ic->arg[2];
 }
 Y(bic)
 X(bic_regform) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    & ~R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) & ~R(cpu, ic->arg[2], 0);
 }
 Y(bic_regform)
 
 /*  Same as above, but set flags:  */
 X(ands) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) & ic->arg[2];
+	reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2];
 	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
-	if (*((uint32_t *)ic->arg[0]) == 0)
+	if (reg(ic->arg[0]) == 0)
 		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if (*((uint32_t *)ic->arg[0]) & 0x80000000)
+	if (reg(ic->arg[0]) & 0x80000000)
 		cpu->cd.arm.flags |= ARM_FLAG_N;
 }
 Y(ands)
 X(ands_regform) {
-	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    & R(cpu, ic->arg[2], 1);
+	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic->arg[2], 1);
 	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
-	if (*((uint32_t *)ic->arg[0]) == 0)
+	if (reg(ic->arg[0]) == 0)
 		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if (*((uint32_t *)ic->arg[0]) & 0x80000000)
+	if (reg(ic->arg[0]) & 0x80000000)
 		cpu->cd.arm.flags |= ARM_FLAG_N;
 }
 Y(ands_regform)
 X(subs) {
-	uint32_t a = *((uint32_t *)ic->arg[1]), b = ic->arg[2], c;
+	uint32_t a = reg(ic->arg[1]), b = ic->arg[2], c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -986,11 +978,11 @@ X(subs) {
 		v = !n;
 	if (v)
 		cpu->cd.arm.flags |= ARM_FLAG_V;
-	*((uint32_t *)ic->arg[0]) = c;
+	reg(ic->arg[0]) = c;
 }
 Y(subs)
 X(adds) {
-	uint32_t a = *((uint32_t *)ic->arg[1]), b = ic->arg[2], c;
+	uint32_t a = reg(ic->arg[1]), b = ic->arg[2], c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -1010,17 +1002,17 @@ X(adds) {
 		v = !n;
 	if (v)
 		cpu->cd.arm.flags |= ARM_FLAG_V;
-	*((uint32_t *)ic->arg[0]) = c;
+	reg(ic->arg[0]) = c;
 }
 Y(adds)
 
 /*  Special cases:  */
 X(sub_self) {
-	*((uint32_t *)ic->arg[0]) -= ic->arg[2];
+	reg(ic->arg[0]) -= ic->arg[2];
 }
 Y(sub_self)
 X(add_self) {
-	*((uint32_t *)ic->arg[0]) += ic->arg[2];
+	reg(ic->arg[0]) += ic->arg[2];
 }
 Y(add_self)
 

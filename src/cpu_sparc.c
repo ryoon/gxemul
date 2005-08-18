@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.14 2005-08-18 09:14:17 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.15 2005-08-18 20:18:41 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -42,7 +42,7 @@
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
-#define DYNTRANS_32
+/*  #define DYNTRANS_32  */
 #include "tmp_sparc_head.c"
 
 

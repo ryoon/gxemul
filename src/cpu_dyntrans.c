@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.29 2005-08-16 05:37:10 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.30 2005-08-18 20:18:41 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -336,7 +336,7 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
  */
 void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 {
-#ifdef DYNTRANS_32
+#ifdef MODE32
 	uint32_t
 #else
 	uint64_t
@@ -346,7 +346,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	uint32_t *physpage_entryp;
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
-#ifdef DYNTRANS_32
+#ifdef MODE32
 	int index;
 	cached_pc = cpu->pc;
 	index = cached_pc >> 12;
@@ -375,7 +375,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #ifdef DYNTRANS_IA64
 	fatal("IA64 todo\n");
 #else
-#error Neither alpha, ia64, nor 32-bit?
+	fatal("Neither alpha, ia64, nor 32-bit?\n");
 #endif
 #endif
 #endif
@@ -425,7 +425,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 		    + physpage_ofs);
 	}
 
-#ifdef DYNTRANS_32
+#ifdef MODE32
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL)
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = ppp;
 #endif
@@ -456,14 +456,14 @@ have_it:
  *  Invalidate one translation entry (based on virtual address).
  */
 void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
-#ifdef DYNTRANS_32
+#ifdef MODE32
 	uint32_t
 #else
 	uint64_t
 #endif
 	vaddr_page)
 {
-#ifdef DYNTRANS_1LEVEL
+#ifdef MODE32
 	uint32_t index = vaddr_page >> 12;
 	cpu->cd.DYNTRANS_ARCH.host_load[index] = NULL;
 	cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
@@ -512,7 +512,7 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 #ifdef DYNTRANS_IA64
 	fatal("IA64: blah blah TODO\n");
 #else
-#error Not yet for non-1-level, non-Alpha, non-ia64
+	fatal("Not yet for non-1-level, non-Alpha, non-ia64\n");
 #endif	/*  !DYNTRANS_IA64  */
 #endif	/*  !DYNTRANS_ALPHA  */
 #endif
@@ -529,7 +529,7 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
 {
 	int r;
-#ifdef DYNTRANS_32
+#ifdef MODE32
 	uint32_t
 #else
 	uint64_t
@@ -565,7 +565,7 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
 void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu)
 {
 	int r;
-#ifdef DYNTRANS_32
+#ifdef MODE32
 	uint32_t
 #else
 	uint64_t
@@ -576,7 +576,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu)
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			vaddr_page = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
 			    .vaddr_page & ~(DYNTRANS_PAGESIZE-1);
-#ifdef DYNTRANS_1LEVEL
+#ifdef MODE32
 {
 	uint32_t index = vaddr_page >> 12;
 	cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
@@ -601,7 +601,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu)
 #ifdef DYNTRANS_IA64
 	fatal("IA64: blah yo yo TODO\n");
 #else
-#error Not yet for non-Alpha, non-1Level, non-ia64
+	fatal("Not yet for non-1-level, non-Alpha, non-ia64\n");
 #endif	/*  !DYNTRANS_IA64  */
 #endif	/*  !DYNTRANS_ALPHA  */
 }
@@ -633,18 +633,18 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	    " p=0x%llx\n", (long long)vaddr_page, host_page, writeflag,
 	    (long long)paddr_page);  */
 #else
-#ifdef DYNTRANS_32
+#ifdef MODE32
 	uint32_t index;
 	vaddr_page &= 0xffffffffULL;
 	paddr_page &= 0xffffffffULL;
 	/*  fatal("update_translation_table(): v=0x%x, h=%p w=%i"
 	    " p=0x%x\n", (int)vaddr_page, host_page, writeflag,
 	    (int)paddr_page);  */
-#else	/*  !DYNTRANS_32  */
+#else	/*  !MODE32  */
 #ifdef DYNTRANS_IA64
 	fatal("IA64 update todo\n");
 #else
-#error	Neither 32-bit, IA64, nor Alpha?
+	fatal("Neither 32-bit, IA64, nor Alpha?\n");
 #endif
 #endif
 #endif
@@ -722,7 +722,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		vph_p->phys_addr[b] = paddr_page;
 		vph_p->phys_page[b] = NULL;
 #else
-#ifdef DYNTRANS_32
+#ifdef MODE32
 		index = vaddr_page >> 12;
 		cpu->cd.DYNTRANS_ARCH.host_load[index] = host_page;
 		cpu->cd.DYNTRANS_ARCH.host_store[index] =
@@ -759,7 +759,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			vph_p->phys_addr[b] = paddr_page;
 		}
 #else
-#ifdef DYNTRANS_32
+#ifdef MODE32
 		index = vaddr_page >> 12;
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[found].timestamp =
 		    highest + 1;
@@ -854,7 +854,7 @@ bad:	/*
 	fatal("to_be_translated(): TODO: unimplemented instruction");
 
 	if (cpu->machine->instruction_trace)
-#ifdef DYNTRANS_32
+#ifdef MODE32
 		fatal(" at 0x%x\n", (int)cpu->pc);
 #else
 		fatal(" at 0x%llx\n", (long long)cpu->pc);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.31 2005-08-17 18:53:55 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.32 2005-08-18 20:18:41 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -179,7 +179,7 @@ X(bclr)
 			cpu_functioncall_trace_return(cpu);
 		cpu->pc = addr & ~3;
 		/*  Find the new physical page and update pointers:  */
-		ppc_pc_to_pointers(cpu);
+		DYNTRANS_PC_TO_POINTERS(cpu);
 	}
 }
 X(bclr_l)
@@ -210,7 +210,7 @@ X(bclr_l)
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace(cpu, cpu->pc);
 		/*  Find the new physical page and update pointers:  */
-		ppc_pc_to_pointers(cpu);
+		DYNTRANS_PC_TO_POINTERS(cpu);
 	}
 }
 
@@ -232,7 +232,7 @@ X(b)
 	cpu->pc += (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	ppc_pc_to_pointers(cpu);
+	DYNTRANS_PC_TO_POINTERS(cpu);
 }
 
 
@@ -318,7 +318,7 @@ X(bl)
 	cpu->pc += (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	ppc_pc_to_pointers(cpu);
+	DYNTRANS_PC_TO_POINTERS(cpu);
 }
 
 
@@ -347,7 +347,7 @@ X(bl_trace)
 	cpu_functioncall_trace(cpu, cpu->pc);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	ppc_pc_to_pointers(cpu);
+	DYNTRANS_PC_TO_POINTERS(cpu);
 }
 
 
@@ -1106,7 +1106,7 @@ X(end_of_page)
 	cpu->pc += (PPC_IC_ENTRIES_PER_PAGE << 2);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	ppc_pc_to_pointers(cpu);
+	DYNTRANS_PC_TO_POINTERS(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.170 2005-08-18 09:14:17 debug Exp $
+ *  $Id: cpu_x86.c,v 1.171 2005-08-18 20:18:41 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -55,7 +55,7 @@
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
-#define	DYNTRANS_32
+/*  #define DYNTRANS_32  */
 #define	DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 #include "tmp_x86_head.c"
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.912 2005-08-18 20:18:40 debug Exp $
+$Id: HISTORY,v 1.913 2005-08-18 23:51:53 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2205,3 +2205,5 @@ Changelog for GXemul:
 		Importing armreg.h from NetBSD (ARM cpu ids). Adding a (dummy)
 		CATS machine mode (using SA110 as the default CPU).
 		Continuing on general dyntrans related stuff.
+20050819	Register forms for ARM load/stores. Gaah! The Compaq C Compiler
+		bug is triggered for ARM loads as well :-(

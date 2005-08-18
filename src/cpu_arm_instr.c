@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.57 2005-08-18 20:18:41 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.58 2005-08-18 23:51:55 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1493,17 +1493,15 @@ X(to_be_translated)
 		ic->f = load_store_instr[((iword >> 16) & 0x3f0)
 		    + condition_code];
 		imm = iword & 0xfff;
-		if (!u_bit)
-			imm = (int32_t)0-imm;
-		if (main_opcode < 6) {
-			/*  Immediate:  */
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+		ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
+		if (main_opcode < 6)
 			ic->arg[1] = (size_t)(imm);
-			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
-		}
+		else
+			ic->arg[1] = iword;
 		if (main_opcode == 4) {
 			/*  Post-index, immediate:  */
-			if (imm == 1 && !w_bit && l_bit && b_bit)
+			if (imm == 1 && u_bit && !w_bit && l_bit && b_bit)
 				ic->f = instr(store_w0_byte_u1_p0_imm_fixinc1);
 			if (w_bit) {
 				fatal("load/store: T-bit\n");
@@ -1526,6 +1524,8 @@ X(to_be_translated)
 						fatal("w bit load etc\n");
 						goto bad;
 					}
+					if (!u_bit)
+						ic->arg[1] = (size_t)(-imm);
 					ic->f = b_bit?
 					    cond_instr(load_byte_imm_pcrel) :
 					    cond_instr(load_word_imm_pcrel);
@@ -1540,8 +1540,8 @@ X(to_be_translated)
 					goto bad;
 				}
 			}
-		} else {
-			fatal("Specific Load/store TODO\n");
+		} else if ((iword & 0x0e000010) == 0x06000010) {
+			fatal("Not a Load/store TODO\n");
 			goto bad;
 		}
 		break;

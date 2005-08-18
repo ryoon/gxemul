@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.60 2005-08-18 11:52:41 debug Exp $
+ *  $Id: cpu_arm.c,v 1.61 2005-08-18 23:51:55 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -475,7 +475,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		if (!p_bit && w_bit)
 			debug("t");
 		debug("\t%s,[%s", arm_regname[r12], arm_regname[r16]);
-		if (main_opcode < 6) {
+		if ((iw & 0x0e000000) == 0x04000000) {
 			/*  Immediate form:  */
 			uint32_t imm = iw & 0xfff;
 			if (!p_bit)
@@ -484,8 +484,37 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				debug(",#%s%i", u_bit? "" : "-", imm);
 			if (p_bit)
 				debug("]");
+		} else if ((iw & 0x0e000010) == 0x06000000) {
+			/*  Register form:  */
+			uint32_t imm = iw & 0xfff;
+			if (!p_bit)
+				debug("]");
+			if (imm != 0)
+				debug(",%s%s", u_bit? "" : "-",
+				    arm_regname[iw & 15]);
+			if ((iw & 0xff0) != 0x000) {
+				int c = (iw >> 7) & 31;
+				int t = (iw >> 4) & 7;
+				switch (t) {
+				case 0:	if (c != 0)
+						debug(", lsl #%i", c);
+					break;
+				case 2:	debug(", lsr #%i", c? c : 32);
+					break;
+				case 4:	debug(", asr #%i", c? c : 32);
+					break;
+				case 6:	if (c != 0)
+						debug(", ror #%i", c);
+					else
+						debug(", rrx");
+					break;
+				}
+			}
+			if (p_bit)
+				debug("]");
 		} else {
-			debug(" TODO: REG-form]");
+			debug("UNKNOWN\n");
+			break;
 		}
 		debug("%s\n", (p_bit && w_bit)? "!" : "");
 		break;

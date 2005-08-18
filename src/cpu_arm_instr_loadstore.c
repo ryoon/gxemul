@@ -25,20 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.7 2005-08-16 05:37:10 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.8 2005-08-18 23:51:55 debug Exp $
  *
  *
  *  TODO: Native load/store if the endianness is the same as the host's
  *	  (and check for alignment?)
  */
-
-#ifdef A__REG
-void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic) { }
-void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
-{fatal("TODO: blah...\n");}
-
-
-#else	/*  !A__REG  */
 
 
 void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
@@ -58,9 +50,13 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	    -
 #endif
 #ifdef A__FIXINC
-	    A__FIXINC;
+	    A__FIXINC
 #else
-	    ic->arg[1];
+#ifdef A__REG
+	    R(cpu, ic->arg[1], 0)
+#else
+	    ic->arg[1]
+#endif
 #endif
 #endif
 	    ;
@@ -124,7 +120,11 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #ifdef A__FIXINC
 	    A__FIXINC
 #else
+#ifdef A__REG
+	    R(cpu, ic->arg[1], 0)
+#else
 	    ic->arg[1]
+#endif
 #endif
 #endif
 	    ;
@@ -180,7 +180,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	}
 }
-#endif
+
 
 #ifndef A__NOCONDITIONS
 void A__NAME__eq(struct cpu *cpu, struct arm_instr_call *ic)

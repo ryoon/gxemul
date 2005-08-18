@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.55 2005-08-18 11:52:41 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.56 2005-08-18 16:18:28 debug Exp $
  *
  *  ARM instructions.
  *
@@ -133,12 +133,14 @@
 
 /*****************************************************************************/
 
-
-uint32_t R(struct cpu *cpu, uint32_t iword)
+/*
+ *  update_c is set if the C flag should be updated with the last shifted/
+ *  rotated bit.
+ */
+uint32_t R(struct cpu *cpu, uint32_t iword, int update_c)
 {
-	int t = (iword >> 4) & 7;
-	int c = (iword >> 7) & 31;
-	int rm = iword & 15;
+	int t = (iword >> 4) & 7, c = (iword >> 7) & 31;
+	int rm = iword & 15, lastbit = 0;
 	uint32_t tmp = cpu->cd.arm.r[rm];
 	if (rm == ARM_PC) {
 		fatal("TODO: R(PC)\n");
@@ -146,21 +148,49 @@ uint32_t R(struct cpu *cpu, uint32_t iword)
 	}
 	switch (t) {
 	case 0:	/*  lsl #c  (c = 0..31)  */
+		if (update_c) {
+			if (c == 0)
+				update_c = 0;
+			else
+				lastbit = (tmp << (c-1)) & 0x80000000;
+		}
 		tmp <<= c;
 		break;
 	case 1:	/*  lsl Rc  */
-		tmp = (uint64_t)tmp << (cpu->cd.arm.r[c >> 1] & 255);
+		c = cpu->cd.arm.r[c >> 1] & 255;
+		if (update_c) {
+			if (c == 0)
+				update_c = 0;
+			else
+				lastbit = ((uint64_t)tmp << (c-1)) & 0x80000000;
+		}
+		tmp = (uint64_t)tmp << c;
 		break;
 	case 2:	/*  lsr #c  (c = 1..32)  */
 		if (c == 0)
 			c = 32;
+		if (update_c) {
+			lastbit = ((uint64_t)tmp >> (c-1)) & 1;
+		}
 		tmp = (uint64_t)tmp >> c;
 		break;
 	case 3:	/*  lsr Rc  */
-		tmp = (uint64_t)tmp >> (cpu->cd.arm.r[c >> 1] & 255);
+		c = cpu->cd.arm.r[c >> 1] & 255;
+		if (update_c) {
+			if (c == 0)
+				update_c = 0;
+			else
+				lastbit = ((uint64_t)tmp >> (c-1)) & 1;
+		}
+		tmp = (uint64_t)tmp >> c;
 		break;
 	default:fatal("unimplemented t\n");
 		exit(1);
+	}
+	if (update_c) {
+		cpu->cd.arm.flags &= ~ARM_FLAG_C;
+		if (lastbit)
+			cpu->cd.arm.flags |= ARM_FLAG_C;
 	}
 	return tmp;
 }
@@ -447,7 +477,7 @@ Y(mov_regreg)
  */
 X(mov_regform)
 {
-	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[1]);
+	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[1], 0);
 }
 Y(mov_regform)
 
@@ -746,6 +776,38 @@ Y(cmps)
 
 
 /*
+ *  cmns:  Compare a 32-bit register to a 32-bit value. (Addition.)
+ *
+ *  arg[0] = pointer to uint32_t in host memory
+ *  arg[1] = 32-bit value
+ */
+X(cmns)
+{
+	uint32_t a = *((uint32_t *)ic->arg[0]), b = ic->arg[1], c;
+	int v, n;
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	c = a + b;
+	if (c < a)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)c < 0) {
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+		n = 1;
+	} else
+		n = 0;
+	if ((int32_t)a >= (int32_t)b)
+		v = n;
+	else
+		v = !n;
+	if (v)
+		cpu->cd.arm.flags |= ARM_FLAG_V;
+}
+Y(cmns)
+
+
+/*
  *  cmps_regform:  cmps, register form
  *
  *  arg[0] = pointer to uint32_t in host memory
@@ -753,7 +815,7 @@ Y(cmps)
  */
 X(cmps_regform)
 {
-	uint32_t a = *((uint32_t *)ic->arg[0]), b = R(cpu, ic->arg[1]), c;
+	uint32_t a = *((uint32_t *)ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -777,6 +839,38 @@ X(cmps_regform)
 Y(cmps_regform)
 
 
+/*
+ *  cmns_regform:  cmns, register form
+ *
+ *  arg[0] = pointer to uint32_t in host memory
+ *  arg[1] = copy of instruction word
+ */
+X(cmns_regform)
+{
+	uint32_t a = *((uint32_t *)ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
+	int v, n;
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	c = a + b;
+	if (c < a)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)c < 0) {
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+		n = 1;
+	} else
+		n = 0;
+	if ((int32_t)a >= (int32_t)b)
+		v = n;
+	else
+		v = !n;
+	if (v)
+		cpu->cd.arm.flags |= ARM_FLAG_V;
+}
+Y(cmns_regform)
+
+
 #include "cpu_arm_instr_cmps.c"
 
 
@@ -793,7 +887,7 @@ X(and) {
 Y(and)
 X(and_regform) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    & R(cpu, ic->arg[2]);
+	    & R(cpu, ic->arg[2], 0);
 }
 Y(and_regform)
 X(eor) {
@@ -802,7 +896,7 @@ X(eor) {
 Y(eor)
 X(eor_regform) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    ^ R(cpu, ic->arg[2]);
+	    ^ R(cpu, ic->arg[2], 0);
 }
 Y(eor_regform)
 X(sub) {
@@ -811,7 +905,7 @@ X(sub) {
 Y(sub)
 X(sub_regform) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    - R(cpu, ic->arg[2]);
+	    - R(cpu, ic->arg[2], 0);
 }
 Y(sub_regform)
 X(rsb) {
@@ -819,7 +913,7 @@ X(rsb) {
 }
 Y(rsb)
 X(rsb_regform) {
-	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[2]) -
+	*((uint32_t *)ic->arg[0]) = R(cpu, ic->arg[2], 0) -
 	    *((uint32_t *)ic->arg[1]);
 }
 Y(rsb_regform)
@@ -829,7 +923,7 @@ X(add) {
 Y(add)
 X(add_regform) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    + R(cpu, ic->arg[2]);
+	    + R(cpu, ic->arg[2], 0);
 }
 Y(add_regform)
 X(orr) {
@@ -838,7 +932,7 @@ X(orr) {
 Y(orr)
 X(orr_regform) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    | R(cpu, ic->arg[2]);
+	    | R(cpu, ic->arg[2], 0);
 }
 Y(orr_regform)
 X(bic) {
@@ -847,11 +941,30 @@ X(bic) {
 Y(bic)
 X(bic_regform) {
 	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
-	    & ~R(cpu, ic->arg[2]);
+	    & ~R(cpu, ic->arg[2], 0);
 }
 Y(bic_regform)
 
 /*  Same as above, but set flags:  */
+X(ands) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1]) & ic->arg[2];
+	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (*((uint32_t *)ic->arg[0]) == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if (*((uint32_t *)ic->arg[0]) & 0x80000000)
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+}
+Y(ands)
+X(ands_regform) {
+	*((uint32_t *)ic->arg[0]) = *((uint32_t *)ic->arg[1])
+	    & R(cpu, ic->arg[2], 1);
+	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (*((uint32_t *)ic->arg[0]) == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if (*((uint32_t *)ic->arg[0]) & 0x80000000)
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+}
+Y(ands_regform)
 X(subs) {
 	uint32_t a = *((uint32_t *)ic->arg[1]), b = ic->arg[2], c;
 	int v, n;
@@ -876,6 +989,30 @@ X(subs) {
 	*((uint32_t *)ic->arg[0]) = c;
 }
 Y(subs)
+X(adds) {
+	uint32_t a = *((uint32_t *)ic->arg[1]), b = ic->arg[2], c;
+	int v, n;
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	c = a + b;
+	if (c < a)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)c < 0) {
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+		n = 1;
+	} else
+		n = 0;
+	if ((int32_t)a >= (int32_t)b)
+		v = n;
+	else
+		v = !n;
+	if (v)
+		cpu->cd.arm.flags |= ARM_FLAG_V;
+	*((uint32_t *)ic->arg[0]) = c;
+}
+Y(adds)
 
 /*  Special cases:  */
 X(sub_self) {
@@ -1178,10 +1315,20 @@ X(to_be_translated)
 			rn_pc_ok = s_bit_ok = 0;
 			switch (secondary_opcode) {
 			case 0x0:
-				if (regform)
-					ic->f = cond_instr(and_regform);
-				else
-					ic->f = cond_instr(and);
+				if (regform) {
+					if (s_bit) {
+						ic->f =
+						    cond_instr(ands_regform);
+						s_bit_ok = 1;
+					} else
+						ic->f = cond_instr(and_regform);
+				} else {
+					if (s_bit) {
+						ic->f = cond_instr(ands);
+						s_bit_ok = 1;
+					} else
+						ic->f = cond_instr(and);
+				}
 				break;
 			case 0x1:
 				if (regform)
@@ -1225,19 +1372,24 @@ X(to_be_translated)
 				if (regform) {
 					ic->f = cond_instr(add_regform);
 				} else {
-					ic->f = cond_instr(add);
-					if (rn == ARM_PC) {
-						ic->f = cond_instr(add_pc);
-						rn_pc_ok = 1;
-					}
-					if (rd == rn && rd != ARM_PC) {
-						ic->f = cond_instr(add_self);
+					if (s_bit) {
+						ic->f = cond_instr(adds);
+						s_bit_ok = 1;
+					} else {
+						ic->f = cond_instr(add);
+						if (rn == ARM_PC) {
+							ic->f = cond_instr(add_pc);
+								rn_pc_ok = 1;
+						}
+						if (rd == rn && rd != ARM_PC) {
+							ic->f = cond_instr(add_self);
 						if (imm == 1 && rd != ARM_PC)
 							ic->f =
 							     arm_add_self_1[rd];
-						if (imm == 4 && rd != ARM_PC)
-							ic->f =
-							    arm_add_self_4[rd];
+							if (imm == 4 && rd != ARM_PC)
+								ic->f =
+								    arm_add_self_4[rd];
+						}
 					}
 				}
 				break;
@@ -1281,6 +1433,20 @@ X(to_be_translated)
 				ic->f = cond_instr(cmps);
 				if (imm == 0 && rn != ARM_PC)
 					ic->f = arm_cmps_0[rn];
+			}
+			break;
+		case 0xb:				/*  CMN  */
+			if (!s_bit) {
+				fatal("cmn !s_bit: TODO\n");
+				goto bad;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+			if (regform) {
+				ic->arg[1] = iword;
+				ic->f = cond_instr(cmns_regform);
+			} else {
+				ic->arg[1] = imm;
+				ic->f = cond_instr(cmns);
 			}
 			break;
 		case 0xd:				/*  MOV  */

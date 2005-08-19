@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.27 2005-08-18 11:52:42 debug Exp $
+ *  $Id: cpu_arm.h,v 1.28 2005-08-19 10:50:49 debug Exp $
  */
 
 #include "misc.h"
@@ -157,6 +157,8 @@ struct arm_cpu {
 	uint32_t		svc_r13_r14[2];
 	uint32_t		abt_r13_r14[2];
 	uint32_t		und_r13_r14[2];
+
+	uint32_t		tmp_pc;		/*  Used for load/stores  */
 
 
 	/*

@@ -25,14 +25,25 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.9 2005-08-19 00:06:46 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.10 2005-08-19 10:50:48 debug Exp $
  *
  *
- *  TODO: Native load/store if the endianness is the same as the host's
- *	  (and check for alignment?)
+ *  TODO:
+ *
+ *	o)  Native load/store if the endianness is the same as the host's
+ *	    (and check for alignment?)
+ *
+ *	o)  All load/store variants with the PC register are not really
+ *	    valid. (E.g. a byte load into the PC register. What should that
+ *	    accomplish?)
  */
 
 
+/*
+ *  General load/store, by using memory_rw(). If at all possible, memory_rw()
+ *  then inserts the page into the translation array, so that the fast
+ *  load/store routine below can be used for further accesses.
+ */
 void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 {
 #ifdef A__B
@@ -108,6 +119,10 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 }
 
+
+/*
+ *  Fast load/store, if the page is in the translation array.
+ */
 void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 {
 	uint32_t addr = *((uint32_t *)ic->arg[0])
@@ -182,7 +197,65 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 }
 
 
+/*
+ *  Special case when loading or storing the ARM's PC register, or when
+ *  the PC register is used as the base address register.
+ *
+ *	o)  Loads into the PC register cause a branch.
+ *	    (If an exception occured during the load, then the pc register
+ *	    should already point to the exception handler; in that case, we
+ *	    simply recalculate the pointers a second time and no harm is
+ *	    done.)
+ *
+ *	o)  Stores store the PC of the current instruction + 8.
+ *	    The solution I have choosen is to calculate this value and
+ *	    place it into a temporary variable, which is then used for
+ *	    the store.
+ */
+void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
+{
+#ifdef A__L
+	/*  Load:  */
+	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]) ||
+	    ic->arg[0] == (size_t)(&cpu->cd.arm.tmp_pc)) {
+		/*  tmp_pc = current PC + 8:  */
+		uint32_t low_pc, tmp;
+		low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
+		    sizeof(struct arm_instr_call);
+		tmp = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+		    ARM_INSTR_ALIGNMENT_SHIFT);
+		tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+		cpu->cd.arm.tmp_pc = tmp + 8;
+		ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
+	}
+	A__NAME(cpu, ic);
+	if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC])) {
+		cpu->pc = cpu->cd.arm.r[ARM_PC];
+		arm_pc_to_pointers(cpu);
+	}
+#else
+	/*  Store:  */
+	uint32_t low_pc, tmp;
+	/*  Calculate tmp from this instruction's PC + 8  */
+	low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
+	    sizeof(struct arm_instr_call);
+	tmp = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+	    ARM_INSTR_ALIGNMENT_SHIFT);
+	tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.tmp_pc = tmp + 8;
+	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]) ||
+	    ic->arg[0] == (size_t)(&cpu->cd.arm.tmp_pc))
+		ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
+	if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC]) ||
+	    ic->arg[2] == (size_t)(&cpu->cd.arm.tmp_pc))
+		ic->arg[2] = (size_t)(&cpu->cd.arm.tmp_pc);
+	A__NAME(cpu, ic);
+#endif
+}
+
+
 #ifndef A__NOCONDITIONS
+/*  Load/stores with all registers except the PC register:  */
 void A__NAME__eq(struct cpu *cpu, struct arm_instr_call *ic)
 { if (cpu->cd.arm.flags & ARM_FLAG_Z) A__NAME(cpu, ic); }
 void A__NAME__ne(struct cpu *cpu, struct arm_instr_call *ic)
@@ -220,4 +293,44 @@ void A__NAME__le(struct cpu *cpu, struct arm_instr_call *ic)
 { if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=
 ((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) ||
 (cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+
+
+/*  Load/stores with the PC register:  */
+void A__NAME_PC__eq(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (cpu->cd.arm.flags & ARM_FLAG_Z) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__ne(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (!(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__cs(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (cpu->cd.arm.flags & ARM_FLAG_C) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__cc(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (!(cpu->cd.arm.flags & ARM_FLAG_C)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__mi(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (cpu->cd.arm.flags & ARM_FLAG_N) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__pl(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (!(cpu->cd.arm.flags & ARM_FLAG_N)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__vs(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (cpu->cd.arm.flags & ARM_FLAG_V) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__vc(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (!(cpu->cd.arm.flags & ARM_FLAG_V)) A__NAME_PC(cpu, ic); }
+
+void A__NAME_PC__hi(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (cpu->cd.arm.flags & ARM_FLAG_C &&
+!(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__ls(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (cpu->cd.arm.flags & ARM_FLAG_Z &&
+!(cpu->cd.arm.flags & ARM_FLAG_C)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__ge(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==
+((cpu->cd.arm.flags & ARM_FLAG_V)?1:0)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__lt(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=
+((cpu->cd.arm.flags & ARM_FLAG_V)?1:0)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__gt(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==
+((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) &&
+!(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+void A__NAME_PC__le(struct cpu *cpu, struct arm_instr_call *ic)
+{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=
+((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) ||
+(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
 #endif

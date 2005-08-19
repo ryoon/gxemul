@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.914 2005-08-19 09:27:22 debug Exp $
+$Id: HISTORY,v 1.915 2005-08-19 10:50:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2207,3 +2207,5 @@ Changelog for GXemul:
 		Continuing on general dyntrans related stuff.
 20050819	Register forms for ARM load/stores. Gaah! The Compaq C Compiler
 		bug is triggered for ARM loads as well, not just PPC :-(
+		Adding full support for ARM PC-relative load/stores, and load/
+		stores where the PC register is the destination register.

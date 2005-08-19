@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.60 2005-08-19 09:43:34 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.61 2005-08-19 10:50:48 debug Exp $
  *
  *  ARM instructions.
  *
@@ -214,6 +214,16 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
  */
 X(nop)
 {
+}
+
+
+/*
+ *  invalid:
+ */
+X(invalid)
+{
+	fatal("invalid ARM instruction?\n");
+	exit(1);
 }
 
 
@@ -551,70 +561,6 @@ X(add_pc) {
 	reg(ic->arg[0]) = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[2];
 }
 Y(add_pc)
-
-
-/*
- *  load_byte_imm_pcrel:
- *	Like load_byte_imm, but the source address is the PC register.
- *	Before loading, we have to synchronize the PC register and add 8.
- *
- *  arg[0] = pointer to ARM_PC  (not used here)
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to store the value
- */
-X(load_byte_imm_pcrel)
-{
-	uint32_t low_pc, addr;
-	unsigned char data[1];
-
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
-	    << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	reg(ic->arg[2]) = data[0];
-}
-Y(load_byte_imm_pcrel)
-
-
-/*
- *  load_word_imm_pcrel:
- *	Like load_word_imm, but the source address is the PC register.
- *	Before loading, we have to synchronize the PC register and add 8.
- *
- *  arg[0] = pointer to ARM_PC  (not used here)
- *  arg[1] = 32-bit offset
- *  arg[2] = pointer to uint32_t in host memory where to store the value
- */
-X(load_word_imm_pcrel)
-{
-	uint32_t low_pc, addr;
-	unsigned char data[sizeof(uint32_t)];
-
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
-	    << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
-	}
-	/*  TODO: Big endian  */
-	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
-	    (data[2] << 16) + (data[3] << 24);
-}
-Y(load_word_imm_pcrel)
 
 
 /*
@@ -1512,8 +1458,12 @@ X(to_be_translated)
 	case 0x6:	/*  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register  */
 	case 0x7:
 		p_bit = main_opcode & 1;
-		ic->f = load_store_instr[((iword >> 16) & 0x3f0)
-		    + condition_code];
+		if (rd == ARM_PC || rn == ARM_PC)
+			ic->f = load_store_instr_pc[((iword >> 16) & 0x3f0)
+			    + condition_code];
+		else
+			ic->f = load_store_instr[((iword >> 16) & 0x3f0)
+			    + condition_code];
 		imm = iword & 0xfff;
 		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
 		ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
@@ -1532,35 +1482,6 @@ X(to_be_translated)
 			if (rn == ARM_PC) {
 				fatal("load/store writeback PC: error\n");
 				goto bad;
-			}
-		} else if (main_opcode == 5) {
-			/*  Pre-index, immediate:  */
-			/*  ldr(b) Rd,[Rn,#imm]  */
-			if (l_bit) {
-				if (rd == ARM_PC) {
-					fatal("WARNING: ldr to pc register?\n");
-					goto bad;
-				}
-				if (rn == ARM_PC) {
-					if (w_bit) {
-						fatal("w bit load etc\n");
-						goto bad;
-					}
-					if (!u_bit)
-						ic->arg[1] = (size_t)(-imm);
-					ic->f = b_bit?
-					    cond_instr(load_byte_imm_pcrel) :
-					    cond_instr(load_word_imm_pcrel);
-				}
-			} else {
-				if (rd == ARM_PC) {
-					fatal("TODO: store pc\n");
-					goto bad;
-				}
-				if (rn == ARM_PC) {
-					fatal("TODO: store pc rel\n");
-					goto bad;
-				}
 			}
 		} else if ((iword & 0x0e000010) == 0x06000010) {
 			fatal("Not a Load/store TODO\n");

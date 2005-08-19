@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.916 2005-08-19 21:49:37 debug Exp $
+$Id: HISTORY,v 1.917 2005-08-19 22:59:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2210,3 +2210,5 @@ Changelog for GXemul:
 		Adding full support for ARM PC-relative load/stores, and load/
 		stores where the PC register is the destination register.
 		Adding support for ARM a.out binaries.
+20050820	Continuing to add more ARM instructions, and correcting some
+		bugs.

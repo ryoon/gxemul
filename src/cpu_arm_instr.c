@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.61 2005-08-19 10:50:48 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.62 2005-08-19 22:59:29 debug Exp $
  *
  *  ARM instructions.
  *
@@ -613,6 +613,8 @@ X(bdt_load)
 			if (i == ARM_PC) {
 				cpu->cd.arm.r[ARM_PC] &= ~3;
 				cpu->pc = cpu->cd.arm.r[ARM_PC];
+				if (cpu->machine->show_trace_tree)
+					cpu_functioncall_trace_return(cpu);
 				/*  TODO: There is no need to update the
 				    pointers if this is a return to the
 				    same page!  */
@@ -706,134 +708,6 @@ X(bdt_store)
 		*np = addr;
 }
 Y(bdt_store)
-
-
-/*
- *  cmps:  Compare a 32-bit register to a 32-bit value. (Subtraction.)
- *
- *  arg[0] = pointer to uint32_t in host memory
- *  arg[1] = 32-bit value
- */
-X(cmps)
-{
-	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c;
-	int v, n;
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	c = a - b;
-	if (a > b)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	if (c == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)c < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-		n = 1;
-	} else
-		n = 0;
-	if ((int32_t)a >= (int32_t)b)
-		v = n;
-	else
-		v = !n;
-	if (v)
-		cpu->cd.arm.flags |= ARM_FLAG_V;
-}
-Y(cmps)
-
-
-/*
- *  cmns:  Compare a 32-bit register to a 32-bit value. (Addition.)
- *
- *  arg[0] = pointer to uint32_t in host memory
- *  arg[1] = 32-bit value
- */
-X(cmns)
-{
-	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c;
-	int v, n;
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	c = a + b;
-	if (c < a)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	if (c == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)c < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-		n = 1;
-	} else
-		n = 0;
-	if ((int32_t)a >= (int32_t)b)
-		v = n;
-	else
-		v = !n;
-	if (v)
-		cpu->cd.arm.flags |= ARM_FLAG_V;
-}
-Y(cmns)
-
-
-/*
- *  cmps_regform:  cmps, register form
- *
- *  arg[0] = pointer to uint32_t in host memory
- *  arg[1] = copy of instruction word
- */
-X(cmps_regform)
-{
-	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic, ic->arg[1], 0), c;
-	int v, n;
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	c = a - b;
-	if (a > b)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	if (c == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)c < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-		n = 1;
-	} else
-		n = 0;
-	if ((int32_t)a >= (int32_t)b)
-		v = n;
-	else
-		v = !n;
-	if (v)
-		cpu->cd.arm.flags |= ARM_FLAG_V;
-}
-Y(cmps_regform)
-
-
-/*
- *  cmns_regform:  cmns, register form
- *
- *  arg[0] = pointer to uint32_t in host memory
- *  arg[1] = copy of instruction word
- */
-X(cmns_regform)
-{
-	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic, ic->arg[1], 0), c;
-	int v, n;
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	c = a + b;
-	if (c < a)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	if (c == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)c < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-		n = 1;
-	} else
-		n = 0;
-	if ((int32_t)a >= (int32_t)b)
-		v = n;
-	else
-		v = !n;
-	if (v)
-		cpu->cd.arm.flags |= ARM_FLAG_V;
-}
-Y(cmns_regform)
 
 
 #include "cpu_arm_instr_cmps.c"
@@ -1383,34 +1257,42 @@ X(to_be_translated)
 				goto bad;
 			}
 			break;
-		case 0xa:				/*  CMP  */
+		case 0x8:				/*  TSTS  */
+		case 0x9:				/*  TEQS  */
+		case 0xa:				/*  CMPS  */
+		case 0xb:				/*  CMNS  */
 			if (!s_bit) {
 				fatal("cmp !s_bit: TODO\n");
 				goto bad;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
-			if (regform) {
-				ic->arg[1] = iword;
-				ic->f = cond_instr(cmps_regform);
-			} else {
-				ic->arg[1] = imm;
-				ic->f = cond_instr(cmps);
-				if (imm == 0 && rn != ARM_PC)
-					ic->f = arm_cmps_0[rn];
-			}
-			break;
-		case 0xb:				/*  CMN  */
-			if (!s_bit) {
-				fatal("cmn !s_bit: TODO\n");
+			if (rn == ARM_PC) {
+				fatal("cmp pc: TODO\n");
 				goto bad;
 			}
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
 			if (regform) {
 				ic->arg[1] = iword;
-				ic->f = cond_instr(cmns_regform);
+				switch (secondary_opcode) {
+				case 0x08:
+					ic->f = cond_instr(tsts_regform); break;
+				case 0x09:
+					ic->f = cond_instr(teqs_regform); break;
+				case 0x0a:
+					ic->f = cond_instr(cmps_regform); break;
+				case 0x0b:
+					ic->f = cond_instr(cmns_regform); break;
+				}
 			} else {
 				ic->arg[1] = imm;
-				ic->f = cond_instr(cmns);
+				switch (secondary_opcode) {
+				case 0x08: ic->f = cond_instr(tsts); break;
+				case 0x09: ic->f = cond_instr(teqs); break;
+				case 0x0a: ic->f = cond_instr(cmps); break;
+				case 0x0b: ic->f = cond_instr(cmns); break;
+				}
+				if (imm == 0 && secondary_opcode == 0xa &&
+				    condition_code == 0xe)
+					ic->f = arm_cmps_0[rn];
 			}
 			break;
 		case 0xd:				/*  MOV  */
@@ -1422,7 +1304,7 @@ X(to_be_translated)
 				ic->f = cond_instr(mov_regform);
 				ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 				ic->arg[1] = iword;
-				if (t == 0 && c == 0) {
+				if (t == 0 && c == 0 && rm != ARM_PC) {
 					ic->f = cond_instr(mov_regreg);
 					ic->arg[1] = (size_t)
 					    (&cpu->cd.arm.r[rm]);

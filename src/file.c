@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.105 2005-08-11 16:11:33 debug Exp $
+ *  $Id: file.c,v 1.106 2005-08-19 21:49:38 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1641,6 +1641,12 @@ void file_load(struct machine *machine, struct memory *mem,
 		/*  M68K a.out  */
 		file_load_aout(machine, mem, filename,
 		    AOUT_FLAG_VADDR_ZERO_HACK  /*  for OpenBSD/mac68k  */,
+		    entrypointp, arch, byte_orderp);
+		goto ret;
+	}
+	if (buf[0]==0x00 && buf[1]==0x8f && buf[2]==0x01 && buf[3]==0x0b) {
+		/*  ARM a.out  */
+		file_load_aout(machine, mem, filename, 0,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}

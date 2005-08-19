@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.915 2005-08-19 10:50:47 debug Exp $
+$Id: HISTORY,v 1.916 2005-08-19 21:49:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2209,3 +2209,4 @@ Changelog for GXemul:
 		bug is triggered for ARM loads as well, not just PPC :-(
 		Adding full support for ARM PC-relative load/stores, and load/
 		stores where the PC register is the destination register.
+		Adding support for ARM a.out binaries.

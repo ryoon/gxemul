@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.31 2005-08-17 09:30:23 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.32 2005-08-19 09:43:35 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -1063,13 +1063,17 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);
 
-	/*  Treat all registers as read/write, by default.  */
+	/*
+	 *  Treat all registers as read/write, by default.  Sometimes these
+	 *  are accessed as 32-bit words, sometimes as 64-bit words.
+	 */
 	if (len != 4) {
 		if (writeflag == MEM_WRITE) {
 			d->reg[regnr] = idata >> 32;
 			d->reg[regnr+1] = idata;
 		} else
-			odata = ((uint64_t)d->reg[regnr] << 32) + d->reg[regnr+1];
+			odata = ((uint64_t)d->reg[regnr] << 32) +
+			    d->reg[regnr+1];
 	}
 
 	if (writeflag == MEM_WRITE)
@@ -1078,7 +1082,8 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 		odata = d->reg[regnr];
 
 #ifdef MTE_DEBUG
-	if (writeflag == MEM_WRITE && relative_addr >= 0x2000 && relative_addr < 0x3000)
+	if (writeflag == MEM_WRITE && relative_addr >= 0x2000 &&
+	    relative_addr < 0x3000)
 		fatal("[ MTE: 0x%08x: 0x%016llx ]\n", (int)relative_addr,
 		    (long long)idata);
 #endif
@@ -1088,18 +1093,19 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 	 *  just a guess. The mte seems to be used for copying and zeroing
 	 *  chunks of memory.
 	 *
-	 *  [ sgi_mte: unimplemented write to address 0x3030, data=0x00000000003da000 ]  <-- first address
-	 *  [ sgi_mte: unimplemented write to address 0x3038, data=0x00000000003f9fff ]  <-- last address
-	 *  [ sgi_mte: unimplemented write to address 0x3018, data=0x0000000000000000 ]  <-- what to fill?
-	 *  [ sgi_mte: unimplemented write to address 0x3008, data=0x00000000ffffffff ]  <-- ?
-	 *  [ sgi_mte: unimplemented write to address 0x3800, data=0x0000000000000011 ]  <-- operation (0x11 = zerofill)
+	 *   write to 0x3030, data=0x00000000003da000 ]  <-- first address
+	 *   write to 0x3038, data=0x00000000003f9fff ]  <-- last address
+	 *   write to 0x3018, data=0x0000000000000000 ]  <-- what to fill?
+	 *   write to 0x3008, data=0x00000000ffffffff ]  <-- ?
+	 *   write to 0x3800, data=0x0000000000000011 ]  <-- operation
+	 *						     (0x11 = zerofill)
 	 *
-	 *  [ sgi_mte: unimplemented write to address 0x1700, data=0x80001ea080001ea1 ]  <-- also containing the address to fill (?)
-	 *  [ sgi_mte: unimplemented write to address 0x1708, data=0x80001ea280001ea3 ]
-	 *  [ sgi_mte: unimplemented write to address 0x1710, data=0x80001ea480001ea5 ]
+	 *   write to 0x1700, data=0x80001ea080001ea1  <-- also containing the
+	 *   write to 0x1708, data=0x80001ea280001ea3      address to fill (?)
+	 *   write to 0x1710, data=0x80001ea480001ea5
 	 *  ...
-	 *  [ sgi_mte: unimplemented write to address 0x1770, data=0x80001e9c80001e9d ]
-	 *  [ sgi_mte: unimplemented write to address 0x1778, data=0x80001e9e80001e9f ]
+	 *   write to 0x1770, data=0x80001e9c80001e9d
+	 *   write to 0x1778, data=0x80001e9e80001e9f
 	 */
 	switch (relative_addr) {
 
@@ -1153,7 +1159,7 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 			uint32_t x2 = (d->reg[0x2074 / sizeof(uint32_t)]
 			    >> 16) & 0xfff;
 			uint32_t y2 = d->reg[0x2074 / sizeof(uint32_t)]& 0xfff;
-			int x,y;
+			int y;
 
 			op >>= 24;
 
@@ -1182,8 +1188,8 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 				}
 				break;
 
-			default:fatal("\n--- MTE OP %i color 0x%02x: %i,%i - %i,%i\n\n",
-				    op, color, x1,y1, x2,y2);
+			default:fatal("\n--- MTE OP %i color 0x%02x: %i,%i - "
+				    "%i,%i\n\n", op, color, x1,y1, x2,y2);
 			}
 		}
 		break;
@@ -1236,10 +1242,13 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 				first_addr = d->reg[0x3030 / sizeof(uint32_t)];
 				last_addr  = d->reg[0x3038 / sizeof(uint32_t)];
 				zerobuflen = last_addr - first_addr + 1;
-				debug("[ sgi_mte: zerofill: first = 0x%016llx, last = 0x%016llx, length = 0x%llx ]\n",
-				    (long long)first_addr, (long long)last_addr, (long long)zerobuflen);
+				debug("[ sgi_mte: zerofill: first = 0x%016llx,"
+				    " last = 0x%016llx, length = 0x%llx ]\n",
+				    (long long)first_addr, (long long)
+				    last_addr, (long long)zerobuflen);
 
-				/*  TODO:  is there a better way to implement this?  */
+				/*  TODO:  is there a better way to
+				           implement this?  */
 				memset(zerobuf, 0, sizeof(zerobuf));
 				fill_addr = first_addr;
 				while (zerobuflen != 0) {
@@ -1256,15 +1265,19 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 
 				break;
 			default:
-				fatal("[ sgi_mte: UNKNOWN operation 0x%x ]\n", idata);
+				fatal("[ sgi_mte: UNKNOWN operation "
+				    "0x%x ]\n", idata);
 			}
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ sgi_mte: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+			debug("[ sgi_mte: unimplemented write to "
+			    "address 0x%llx, data=0x%016llx ]\n",
+			    (long long)relative_addr, (long long)idata);
 		else
-			debug("[ sgi_mte: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+			debug("[ sgi_mte: unimplemented read from address"
+			    " 0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.59 2005-08-19 00:06:46 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.60 2005-08-19 09:43:34 debug Exp $
  *
  *  ARM instructions.
  *
@@ -147,8 +147,9 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		/*  Calculate tmp from this instruction's PC + 8  */
 		uint32_t low_pc = ((size_t)ic - (size_t)
 		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-		tmp &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-		tmp += (low_pc << 2);
+		tmp &= ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+		    ARM_INSTR_ALIGNMENT_SHIFT);
+		tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 		tmp += 8;
 	}
 	if ((t & 1) && (c >> 1) == ARM_PC) {
@@ -228,8 +229,9 @@ X(b)
 	/*  Calculate new PC from this instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.r[ARM_PC] += (int32_t)ic->arg[0];
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
@@ -264,8 +266,8 @@ X(bl)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	lr += (low_pc << 2);
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Link:  */
 	cpu->cd.arm.r[ARM_LR] = lr;
@@ -292,8 +294,8 @@ X(bl_trace)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	lr += (low_pc << 2);
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Link:  */
 	cpu->cd.arm.r[ARM_LR] = lr;
@@ -322,8 +324,8 @@ X(bl_samepage)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	lr += (low_pc << 2);
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Link:  */
 	cpu->cd.arm.r[ARM_LR] = lr;
@@ -347,8 +349,8 @@ X(bl_samepage_trace)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	lr += (low_pc << 2);
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Link:  */
 	cpu->cd.arm.r[ARM_LR] = lr;
@@ -359,8 +361,9 @@ X(bl_samepage_trace)
 	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	tmp_pc = cpu->cd.arm.r[ARM_PC];
-	tmp_pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	tmp_pc += (low_pc << 2);
+	tmp_pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	tmp_pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu_functioncall_trace(cpu, tmp_pc);
 }
 Y(bl_samepage_trace)
@@ -415,7 +418,9 @@ Y(get_cpu_id)
 X(mov_pc)
 {
 	uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
-	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT) |
+	    ((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Update the PC register:  */
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = reg(ic->arg[1]);
@@ -426,7 +431,7 @@ X(mov_pc)
 	 */
 	if ((old_pc & ~mask_within_page) == (cpu->pc & ~mask_within_page)) {
 		cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
-		    ((cpu->pc & mask_within_page) >> 2);
+		    ((cpu->pc & mask_within_page) >> ARM_INSTR_ALIGNMENT_SHIFT);
 	} else {
 		/*  Find the new physical page and update pointers:  */
 		arm_pc_to_pointers(cpu);
@@ -443,7 +448,9 @@ Y(mov_pc)
 X(ret_trace)
 {
 	uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
-	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT) |
+	    ((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Update the PC register:  */
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = cpu->cd.arm.r[ARM_LR];
@@ -456,7 +463,7 @@ X(ret_trace)
 	 */
 	if ((old_pc & ~mask_within_page) == (cpu->pc & ~mask_within_page)) {
 		cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
-		    ((cpu->pc & mask_within_page) >> 2);
+		    ((cpu->pc & mask_within_page) >> ARM_INSTR_ALIGNMENT_SHIFT);
 	} else {
 		/*  Find the new physical page and update pointers:  */
 		arm_pc_to_pointers(cpu);
@@ -538,8 +545,9 @@ X(add_pc) {
 	uint32_t low_pc;
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+	    ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	reg(ic->arg[0]) = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[2];
 }
 Y(add_pc)
@@ -561,8 +569,9 @@ X(load_byte_imm_pcrel)
 
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
@@ -591,8 +600,9 @@ X(load_word_imm_pcrel)
 
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	addr = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[1];
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
@@ -1134,7 +1144,8 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 	uint32_t addr)
 {
 	int n_back;
-	n_back = (addr >> 2) & (ARM_IC_ENTRIES_PER_PAGE-1);
+	n_back = (addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
 	if (n_back >= 1) {
 		/*  Double "mov":  */
@@ -1607,7 +1618,8 @@ X(to_be_translated)
 				ic->f = samepage_function;
 				ic->arg[0] = (size_t) (
 				    cpu->cd.arm.cur_ic_page +
-				    ((new_pc & mask_within_page) >> 2));
+				    ((new_pc & mask_within_page) >>
+				    ARM_INSTR_ALIGNMENT_SHIFT));
 			}
 		}
 		break;

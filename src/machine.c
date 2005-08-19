@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.518 2005-08-18 11:52:41 debug Exp $
+ *  $Id: machine.c,v 1.519 2005-08-19 09:43:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3130,15 +3130,6 @@ Why is this here? TODO
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-				/*  TODO: Once this works, it should be enabled
-				    always, not just when using X!  */
-				if (machine->use_x11) {
-					i = dev_pckbc_init(machine, mem, 0x1f320000,
-					    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-					    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
-						/*  keyb+mouse (mace irq numbers)  */
-				}
-
 				net_generate_unique_mac(machine, macaddr);
 				eaddr_string = malloc(ETHERNET_STRING_MAXLEN);
 				if (eaddr_string == NULL) {
@@ -3161,10 +3152,17 @@ Why is this here? TODO
 				    (1<<26) + MACE_PERIPH_SERIAL, 0);
 				device_add(machine, tmpstr);
 
-				if (machine->use_x11)
+				machine->main_console_handle = j;
+
+				/*  TODO: Once this works, it should be enabled
+				    always, not just when using X!  */
+				if (machine->use_x11) {
+					i = dev_pckbc_init(machine, mem, 0x1f320000,
+					    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
+					    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
+						/*  keyb+mouse (mace irq numbers)  */
 					machine->main_console_handle = i;
-				else
-					machine->main_console_handle = j;
+				}
 
 				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
 				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "zs console");

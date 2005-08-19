@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.62 2005-08-19 22:59:29 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.63 2005-08-19 23:40:28 debug Exp $
  *
  *  ARM instructions.
  *
@@ -194,7 +194,25 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		}
 		tmp = (uint64_t)tmp >> c;
 		break;
-	default:fatal("R: unimplemented t\n");
+	case 4:	/*  asr #c  (c = 1..32)  */
+		if (c == 0)
+			c = 32;
+		if (update_c) {
+			lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
+		}
+		tmp = (int64_t)(int32_t)tmp >> c;
+		break;
+	case 5:	/*  asr Rc  */
+		c = cpu->cd.arm.r[c >> 1] & 255;
+		if (update_c) {
+			if (c == 0)
+				update_c = 0;
+			else
+				lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
+		}
+		tmp = (int64_t)(int32_t)tmp >> c;
+		break;
+	default:fatal("R: unimplemented t=%i\n", t);
 		exit(1);
 	}
 	if (update_c) {
@@ -485,26 +503,12 @@ Y(ret_trace)
 /*
  *  mov_regreg:
  *
- *  arg[0] = pointer to uint32_t in host memory of destination register
- *  arg[1] = pointer to uint32_t in host memory of source register
+ *  arg[0] = ptr to destination register
+ *  arg[1] = ptr to source register, or copy of instruction word
  */
-X(mov_regreg)
-{
-	reg(ic->arg[0]) = reg(ic->arg[1]);
-}
+X(mov_regreg) { reg(ic->arg[0]) = reg(ic->arg[1]); }
 Y(mov_regreg)
-
-
-/*
- *  mov_regform:  Generic mov, register form.
- *
- *  arg[0] = pointer to uint32_t in host memory of destination register
- *  arg[1] = copy of instruction word
- */
-X(mov_regform)
-{
-	reg(ic->arg[0]) = R(cpu, ic, ic->arg[1], 0);
-}
+X(mov_regform) { reg(ic->arg[0]) = R(cpu, ic, ic->arg[1], 0); }
 Y(mov_regform)
 
 
@@ -720,62 +724,38 @@ Y(bdt_store)
  *  arg[1] = pointer to source uint32_t in host memory
  *  arg[2] = 32-bit value    or   copy of instruction word (for register form)
  */
-X(and) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2];
-}
+X(and) { reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2]; }
 Y(and)
-X(and_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic, ic->arg[2], 0);
-}
+X(and_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic, ic->arg[2], 0);}
 Y(and_regform)
-X(eor) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2];
-}
+X(eor) { reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2]; }
 Y(eor)
-X(eor_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic, ic->arg[2], 0);
-}
+X(eor_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic, ic->arg[2], 0);}
 Y(eor_regform)
-X(sub) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2];
-}
+X(sub) { reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2]; }
 Y(sub)
-X(sub_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) - R(cpu, ic, ic->arg[2], 0);
-}
+X(sub_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) - R(cpu, ic, ic->arg[2], 0);}
 Y(sub_regform)
-X(rsb) {
-	reg(ic->arg[0]) = ic->arg[2] - reg(ic->arg[1]);
-}
+X(rsb) { reg(ic->arg[0]) = ic->arg[2] - reg(ic->arg[1]); }
 Y(rsb)
-X(rsb_regform) {
-	reg(ic->arg[0]) = R(cpu, ic, ic->arg[2], 0) - reg(ic->arg[1]);
-}
+X(rsb_regform) { reg(ic->arg[0]) = R(cpu, ic, ic->arg[2], 0) - reg(ic->arg[1]);}
 Y(rsb_regform)
-X(add) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2];
-}
+X(add) { reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2]; }
 Y(add)
-X(add_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) + R(cpu, ic, ic->arg[2], 0);
-}
+X(add_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) + R(cpu, ic, ic->arg[2],0); }
 Y(add_regform)
-X(orr) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2];
-}
+X(orr) { reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2]; }
 Y(orr)
-X(orr_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) | R(cpu, ic, ic->arg[2], 0);
-}
+X(orr_regform) {reg(ic->arg[0]) = reg(ic->arg[1]) | R(cpu, ic, ic->arg[2], 0);}
 Y(orr_regform)
-X(bic) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & ~ic->arg[2];
-}
+X(bic) { reg(ic->arg[0]) = reg(ic->arg[1]) & ~ic->arg[2]; }
 Y(bic)
-X(bic_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & ~R(cpu, ic, ic->arg[2], 0);
-}
+X(bic_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) & ~R(cpu, ic, ic->arg[2],0);}
 Y(bic_regform)
+X(mvn) { reg(ic->arg[0]) = ~ic->arg[2]; }
+Y(mvn)
+X(mvn_regform) { reg(ic->arg[0]) = ~R(cpu, ic, ic->arg[2], 0); }
+Y(mvn_regform)
 
 /*  Same as above, but set flags:  */
 X(ands) {
@@ -820,6 +800,30 @@ X(subs) {
 	reg(ic->arg[0]) = c;
 }
 Y(subs)
+X(subs_regform) {
+	uint32_t a = reg(ic->arg[1]), b = R(cpu, ic, ic->arg[2], 0), c;
+	int v, n;
+	cpu->cd.arm.flags &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	c = a - b;
+	if (a > b)
+		cpu->cd.arm.flags |= ARM_FLAG_C;
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if ((int32_t)c < 0) {
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+		n = 1;
+	} else
+		n = 0;
+	if ((int32_t)a >= (int32_t)b)
+		v = n;
+	else
+		v = !n;
+	if (v)
+		cpu->cd.arm.flags |= ARM_FLAG_V;
+	reg(ic->arg[0]) = c;
+}
+Y(subs_regform)
 X(adds) {
 	uint32_t a = reg(ic->arg[1]), b = ic->arg[2], c;
 	int v, n;
@@ -1138,6 +1142,7 @@ X(to_be_translated)
 		case 0x4:				/*  ADD  */
 		case 0xc:				/*  ORR  */
 		case 0xe:				/*  BIC  */
+		case 0xf:				/*  MVN  */
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rn]);
 
@@ -1176,7 +1181,13 @@ X(to_be_translated)
 				break;
 			case 0x2:
 				if (regform) {
-					ic->f = cond_instr(sub_regform);
+					if (s_bit) {
+						ic->f =
+						    cond_instr(subs_regform);
+						s_bit_ok = 1;
+					} else {
+						ic->f = cond_instr(sub_regform);
+					}
 				} else {
 					if (s_bit) {
 						ic->f = cond_instr(subs);
@@ -1242,6 +1253,12 @@ X(to_be_translated)
 					ic->f = cond_instr(bic_regform);
 				else
 					ic->f = cond_instr(bic);
+				break;
+			case 0xf:
+				if (regform)
+					ic->f = cond_instr(mvn_regform);
+				else
+					ic->f = cond_instr(mvn);
 				break;
 			}
 			if (s_bit && !s_bit_ok) {

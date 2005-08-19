@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.61 2005-08-18 23:51:55 debug Exp $
+ *  $Id: cpu_arm.c,v 1.62 2005-08-19 11:23:30 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -486,10 +486,9 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				debug("]");
 		} else if ((iw & 0x0e000010) == 0x06000000) {
 			/*  Register form:  */
-			uint32_t imm = iw & 0xfff;
 			if (!p_bit)
 				debug("]");
-			if (imm != 0)
+			if ((iw & 0xfff) != 0)
 				debug(",%s%s", u_bit? "" : "-",
 				    arm_regname[iw & 15]);
 			if ((iw & 0xff0) != 0x000) {
@@ -516,7 +515,19 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("UNKNOWN\n");
 			break;
 		}
-		debug("%s\n", (p_bit && w_bit)? "!" : "");
+		debug("%s", (p_bit && w_bit)? "!" : "");
+		if ((iw & 0x0f000000) == 0x05000000 && r16 == ARM_PC) {
+			uint32_t imm = iw & 0xfff;
+			uint32_t addr = dumpaddr + 8 +
+			    (u_bit? imm : -imm);
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
+			    addr, &offset);
+			if (symbol != NULL)
+				debug(" \t<%s>", symbol);
+			else
+				debug(" \t<0x%08x>", addr);
+		}
+		debug("\n");
 		break;
 	case 0x8:				/*  Block Data Transfer  */
 	case 0x9:
@@ -556,7 +567,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    tmp, &offset);
 		if (symbol != NULL)
-			debug("\t\t<%s>", symbol);
+			debug(" \t<%s>", symbol);
 		debug("\n");
 		break;
 	case 0xc:				/*  Coprocessor  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.8 2005-08-18 23:51:55 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.9 2005-08-19 00:06:46 debug Exp $
  *
  *
  *  TODO: Native load/store if the endianness is the same as the host's
@@ -53,7 +53,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	    A__FIXINC
 #else
 #ifdef A__REG
-	    R(cpu, ic->arg[1], 0)
+	    R(cpu, ic, ic->arg[1], 0)
 #else
 	    ic->arg[1]
 #endif
@@ -121,7 +121,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	    A__FIXINC
 #else
 #ifdef A__REG
-	    R(cpu, ic->arg[1], 0)
+	    R(cpu, ic, ic->arg[1], 0)
 #else
 	    ic->arg[1]
 #endif

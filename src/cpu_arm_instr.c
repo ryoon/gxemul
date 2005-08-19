@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.58 2005-08-18 23:51:55 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.59 2005-08-19 00:06:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -137,13 +137,22 @@
  *  update_c is set if the C flag should be updated with the last shifted/
  *  rotated bit.
  */
-uint32_t R(struct cpu *cpu, uint32_t iword, int update_c)
+uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
+	uint32_t iword, int update_c)
 {
 	int t = (iword >> 4) & 7, c = (iword >> 7) & 31;
 	int rm = iword & 15, lastbit = 0;
 	uint32_t tmp = cpu->cd.arm.r[rm];
 	if (rm == ARM_PC) {
-		fatal("TODO: R(PC)\n");
+		/*  Calculate tmp from this instruction's PC + 8  */
+		uint32_t low_pc = ((size_t)ic - (size_t)
+		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+		tmp &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+		tmp += (low_pc << 2);
+		tmp += 8;
+	}
+	if ((t & 1) && (c >> 1) == ARM_PC) {
+		fatal("TODO: R: rc = PC\n");
 		exit(1);
 	}
 	switch (t) {
@@ -184,7 +193,7 @@ uint32_t R(struct cpu *cpu, uint32_t iword, int update_c)
 		}
 		tmp = (uint64_t)tmp >> c;
 		break;
-	default:fatal("unimplemented t\n");
+	default:fatal("R: unimplemented t\n");
 		exit(1);
 	}
 	if (update_c) {
@@ -477,7 +486,7 @@ Y(mov_regreg)
  */
 X(mov_regform)
 {
-	reg(ic->arg[0]) = R(cpu, ic->arg[1], 0);
+	reg(ic->arg[0]) = R(cpu, ic, ic->arg[1], 0);
 }
 Y(mov_regform)
 
@@ -815,7 +824,7 @@ Y(cmns)
  */
 X(cmps_regform)
 {
-	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
+	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic, ic->arg[1], 0), c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -847,7 +856,7 @@ Y(cmps_regform)
  */
 X(cmns_regform)
 {
-	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic->arg[1], 0), c;
+	uint32_t a = reg(ic->arg[0]), b = R(cpu, ic, ic->arg[1], 0), c;
 	int v, n;
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -886,7 +895,7 @@ X(and) {
 }
 Y(and)
 X(and_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic, ic->arg[2], 0);
 }
 Y(and_regform)
 X(eor) {
@@ -894,7 +903,7 @@ X(eor) {
 }
 Y(eor)
 X(eor_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic, ic->arg[2], 0);
 }
 Y(eor_regform)
 X(sub) {
@@ -902,7 +911,7 @@ X(sub) {
 }
 Y(sub)
 X(sub_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) - R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) - R(cpu, ic, ic->arg[2], 0);
 }
 Y(sub_regform)
 X(rsb) {
@@ -910,7 +919,7 @@ X(rsb) {
 }
 Y(rsb)
 X(rsb_regform) {
-	reg(ic->arg[0]) = R(cpu, ic->arg[2], 0) - reg(ic->arg[1]);
+	reg(ic->arg[0]) = R(cpu, ic, ic->arg[2], 0) - reg(ic->arg[1]);
 }
 Y(rsb_regform)
 X(add) {
@@ -918,7 +927,7 @@ X(add) {
 }
 Y(add)
 X(add_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) + R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) + R(cpu, ic, ic->arg[2], 0);
 }
 Y(add_regform)
 X(orr) {
@@ -926,7 +935,7 @@ X(orr) {
 }
 Y(orr)
 X(orr_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) | R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) | R(cpu, ic, ic->arg[2], 0);
 }
 Y(orr_regform)
 X(bic) {
@@ -934,7 +943,7 @@ X(bic) {
 }
 Y(bic)
 X(bic_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & ~R(cpu, ic->arg[2], 0);
+	reg(ic->arg[0]) = reg(ic->arg[1]) & ~R(cpu, ic, ic->arg[2], 0);
 }
 Y(bic_regform)
 
@@ -949,7 +958,7 @@ X(ands) {
 }
 Y(ands)
 X(ands_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic->arg[2], 1);
+	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic, ic->arg[2], 1);
 	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
 	if (reg(ic->arg[0]) == 0)
 		cpu->cd.arm.flags |= ARM_FLAG_Z;
@@ -1300,6 +1309,12 @@ X(to_be_translated)
 		case 0xe:				/*  BIC  */
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rn]);
+
+/*
+ *  TODO: Most of these cannot handle when Rx = ARM_PC!
+ */
+
+
 			if (regform)
 				ic->arg[2] = iword;
 			else
@@ -1461,10 +1476,6 @@ X(to_be_translated)
 						ic->f = cond_instr(ret_trace);
 				} else if (rd == ARM_PC) {
 					fatal("mov pc, but too complex\n");
-				}
-				if (rm == ARM_PC) {
-					fatal("mov pc,pc?\n");
-					goto bad;
 				}
 			} else {
 				/*  Immediate:  */

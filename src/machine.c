@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.519 2005-08-19 09:43:34 debug Exp $
+ *  $Id: machine.c,v 1.520 2005-08-20 12:47:05 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -66,6 +66,9 @@
 
 /*  For Alpha emulation:  */
 #include "alpha_rpb.h"
+
+/*  For CATS emulation:  */
+#include "cyclone_boot.h"
 
 /*  For SGI and ARC emulation:  */
 #include "sgi_arcbios.h"
@@ -4244,22 +4247,22 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 
 	case MACHINE_ALPHA:
-		/*  TODO:  Most of these... They are used by NetBSD/alpha:  */
-		/*  a0 = First free Page Frame Number  */
-		/*  a1 = PFN of current Level 1 page table  */
-		/*  a2 = Bootinfo magic  */
-		/*  a3 = Bootinfo pointer  */
-		/*  a4 = Bootinfo version  */
-		cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
-		cpu->cd.alpha.r[ALPHA_A1] = 0;
-		cpu->cd.alpha.r[ALPHA_A2] = 0;
-		cpu->cd.alpha.r[ALPHA_A3] = 0;
-		cpu->cd.alpha.r[ALPHA_A4] = 0;
-
 		if (machine->prom_emulation) {
 			struct rpb rpb;
 			struct crb crb;
 			struct ctb ctb;
+
+			/*  TODO:  Most of these... They are used by NetBSD/alpha:  */
+			/*  a0 = First free Page Frame Number  */
+			/*  a1 = PFN of current Level 1 page table  */
+			/*  a2 = Bootinfo magic  */
+			/*  a3 = Bootinfo pointer  */
+			/*  a4 = Bootinfo version  */
+			cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
+			cpu->cd.alpha.r[ALPHA_A1] = 0;
+			cpu->cd.alpha.r[ALPHA_A2] = 0;
+			cpu->cd.alpha.r[ALPHA_A3] = 0;
+			cpu->cd.alpha.r[ALPHA_A4] = 0;
 
 			/*  HWRPB: Hardware Restart Parameter Block  */
 			memset(&rpb, 0, sizeof(struct rpb));
@@ -4358,6 +4361,40 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 	case MACHINE_CATS:
 		machine->machine_name = "CATS evaluation board";
+		if (machine->prom_emulation) {
+			struct ebsaboot ebsaboot;
+
+			cpu->cd.arm.r[0] = machine->physical_ram_in_mb * 
+			    1048576 - 0x1000;
+
+			memset(&ebsaboot, 0, sizeof(struct ebsaboot));
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_magic), BT_MAGIC_NUMBER_CATS);
+			/*  TODO: bt_vargp  */
+			/*  TODO: bt_pargp  */
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_args), cpu->cd.arm.r[0]
+			    + sizeof(struct ebsaboot));
+			/*  TODO: bt_l1  */
+			/*  memstart = 0  */
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_memend),
+			    machine->physical_ram_in_mb * 1048576);
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_memavail), 8 * 1048576);
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_fclk), 233 * 1000000);
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_pciclk), 66 * 1000000);
+			/*  TODO: bt_vers  */
+			/*  TODO: bt_features  */
+
+			store_buf(cpu, cpu->cd.arm.r[0],
+			    (char *)&ebsaboot, sizeof(struct ebsaboot));
+			store_string(cpu, cpu->cd.arm.r[0] +
+			    sizeof(struct ebsaboot),
+			    machine->boot_string_argument);
+		}
 		break;
 #endif	/*  ENABLE_ARM  */
 

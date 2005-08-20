@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.29 2005-08-09 17:18:22 debug Exp $
+ *  $Id: symbol.c,v 1.30 2005-08-20 12:47:05 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -242,6 +242,12 @@ void add_symbol_name(struct symbol_context *sc,
 			n_args = 2;
 		if (strcmp(name, "strcpy") == 0)
 			n_args = 2;
+		if (strcmp(name, "strncpy") == 0)
+			n_args = 3;
+		if (strcmp(name, "strlcpy") == 0)
+			n_args = 3;
+		if (strcmp(name, "strlcat") == 0)
+			n_args = 3;
 		if (strcmp(name, "strncmp") == 0)
 			n_args = 3;
 		if (strcmp(name, "memset") == 0)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.32 2005-08-18 20:18:41 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.33 2005-08-20 20:03:24 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -397,6 +397,27 @@ X(bl_samepage_trace)
 
 
 /*
+ *  cntlzw:  Count leading zeroes.
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to ra
+ */
+X(cntlzw)
+{
+	uint32_t tmp = reg(ic->arg[0]);
+	int n = 0, i;
+	for (i=0; i<32; i++) {
+		if (!(tmp & 0x80000000))
+			n++;
+		else
+			break;
+		tmp <<= 1;
+	}
+	reg(ic->arg[1]) = n;
+}
+
+
+/*
  *  cmpd:  Compare Doubleword
  *
  *  arg[0] = ptr to ra
@@ -672,7 +693,46 @@ X(rlwinm)
 		if (mb == 32)
 			mb = 0;
 	}
+	reg(ic->arg[1]) = ra;
+	if (rc)
+		update_cr0(cpu, ra);
+}
 
+
+/*
+ *  rlwimi:
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to ra
+ *  arg[2] = copy of the instruction word
+ */
+X(rlwimi)
+{
+	MODE_uint_t tmp = reg(ic->arg[0]), ra = reg(ic->arg[1]);
+	uint32_t iword = ic->arg[2];
+	int sh, mb, me, rc;
+
+	sh = (iword >> 11) & 31;
+	mb = (iword >> 6) & 31;
+	me = (iword >> 1) & 31;   
+	rc = iword & 1;
+
+	/*  TODO: Fix this, its performance is awful:  */
+	while (sh-- != 0) {
+		int b = (tmp >> 31) & 1;
+		tmp = (tmp << 1) | b;
+	}
+	for (;;) {
+		uint64_t mask;
+		mask = (uint64_t)1 << (31-mb);
+		ra &= ~mask;
+		ra |= (tmp & mask);
+		if (mb == me)
+			break;
+		mb ++;
+		if (mb == 32)
+			mb = 0;
+	}
 	reg(ic->arg[1]) = ra;
 	if (rc)
 		update_cr0(cpu, ra);
@@ -1099,6 +1159,77 @@ X(xori)
 /*****************************************************************************/
 
 
+/*
+ *  byte_fill_loop:
+ *
+ *  A byte-fill loop. Fills at most one page at a time. If the page was not
+ *  in the host_store table, then the original sequence (beginning with
+ *  cmpwi crX,rY,0) is executed instead.
+ *
+ *  L:  cmpwi   crX,rY,0		ic[0]
+ *      stb     rW,0(rZ)		ic[1]
+ *      subi    rY,rY,1			ic[2]
+ *      addi    rZ,rZ,1			ic[3]
+ *      bc      12,4*X+1,L		ic[4]
+ */
+X(byte_fill_loop)
+{
+	unsigned int x = ic[0].arg[2], n, ofs, maxlen, c;
+	uint64_t *y = (uint64_t *)ic[0].arg[0];
+	uint64_t *z = (uint64_t *)ic[1].arg[1];
+	uint64_t *w = (uint64_t *)ic[1].arg[0];
+	unsigned char *page;
+#ifdef MODE32
+	uint32_t addr = reg(z);
+#else
+	uint64_t addr = reg(z);
+	fatal("byte_fill_loop: not for 64-bit mode yet\n");
+	exit(1);
+#endif
+	/*  TODO: This only work with 32-bit addressing:  */
+	page = cpu->cd.ppc.host_store[addr >> 12];
+	if (page == NULL) {
+		instr(cmpwi)(cpu, ic);
+		return;
+	}
+
+	n = reg(y) + 1; ofs = addr & 0xfff; maxlen = 0x1000 - ofs;
+	if (n > maxlen)
+		n = maxlen;
+
+	/*  fatal("FILL A: x=%i n=%i ofs=0x%x y=0x%x z=0x%x w=0x%x\n", x,
+	    n, ofs, (int)reg(y), (int)reg(z), (int)reg(w));  */
+
+	memset(page + ofs, *w, n);
+
+	reg(z) = addr + n;
+	reg(y) -= n;
+
+	if ((int32_t)reg(y) + 1 < 0)
+		c = 8;
+	else if ((int32_t)reg(y) + 1 > 0)
+		c = 4;
+	else
+		c = 2;
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*x));
+	cpu->cd.ppc.cr |= (c << (28 - 4*x));
+
+	/*  NOTE: 5*n-1  */
+	cpu->n_translated_instrs += (5 * n - 1);
+	if ((int32_t)reg(y) > 0)
+		cpu->cd.ppc.next_ic --;
+	else
+		cpu->cd.ppc.next_ic += 4;
+
+	/*  fatal("FILL B: x=%i n=%i ofs=0x%x y=0x%x z=0x%x w=0x%x\n", x, n,
+	    ofs, (int)reg(y), (int)reg(z), (int)reg(w));  */
+}
+
+
+/*****************************************************************************/
+
+
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
@@ -1125,10 +1256,35 @@ void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct ppc_instr_call *ic,
 	uint32_t addr)
 {
 	int n_back;
-	n_back = (addr >> 2) & (PPC_IC_ENTRIES_PER_PAGE-1);
+	n_back = (addr >> PPC_INSTR_ALIGNMENT_SHIFT)
+	    & (PPC_IC_ENTRIES_PER_PAGE-1);
 
-	if (n_back >= 1) {
-		/*  TODO  */
+	if (n_back >= 4) {
+		/*
+		 *  L:  cmpwi   crX,rY,0		ic[-4]
+		 *      stb     rW,0(rZ)		ic[-3]
+		 *      subi    rY,rY,1			ic[-2]
+		 *      addi    rZ,rZ,1			ic[-1]
+		 *      bc      12,4*X+1,L		ic[0]
+		 */
+		if (ic[-4].f == instr(cmpwi) &&
+		    ic[-4].arg[0] == ic[-2].arg[0] && ic[-4].arg[1] == 0 &&
+
+		    ic[-3].f == instr(stb_0) &&
+		    ic[-3].arg[1] == ic[-1].arg[0] && ic[-3].arg[2] == 0 &&
+
+		    ic[-2].f == instr(addi) &&
+		    ic[-2].arg[0] == ic[-2].arg[2] && ic[-2].arg[1] == -1 &&
+
+		    ic[-1].f == instr(addi) &&
+		    ic[-1].arg[0] == ic[-1].arg[2] && ic[-1].arg[1] ==  1 &&
+
+		    ic[0].f == instr(bc_samepage) &&
+		    ic[0].arg[0] == (size_t)&ic[-4] &&
+		    ic[0].arg[1] == 12 && ic[0].arg[2] == 4*ic[-4].arg[2] + 1) {
+			ic[-4].f = instr(byte_fill_loop);
+			combined;
+		}
 	}
 
 	/*  TODO: Combine forward as well  */
@@ -1485,10 +1641,14 @@ X(to_be_translated)
 		}
 		break;
 
+	case PPC_HI6_RLWIMI:
 	case PPC_HI6_RLWINM:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
-		ic->f = instr(rlwinm);
+		if (main_opcode == PPC_HI6_RLWIMI)
+			ic->f = instr(rlwimi);
+		else
+			ic->f = instr(rlwinm);
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 		ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[2] = (uint32_t)iword;
@@ -1535,6 +1695,19 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[2] = bf;
+			break;
+
+		case PPC_31_CNTLZW:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rc = iword & 1;
+			if (rc) {
+				fatal("TODO: rc\n");
+				goto bad;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->f = instr(cntlzw);
 			break;
 
 		case PPC_31_MFSPR:

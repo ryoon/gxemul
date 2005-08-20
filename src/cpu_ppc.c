@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.89 2005-08-18 20:18:41 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.90 2005-08-20 20:03:24 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1004,7 +1004,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			ra = (iword >> 16) & 31;
 			rc = iword & 1;
 			mnem = power? "cntlz" : "cntlzw";
-			debug("%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
+			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
 			break;
 		case PPC_31_CLF:	/*  POWER only  */
 		case PPC_31_CLI:	/*  POWER only  */

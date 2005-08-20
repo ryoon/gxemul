@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.63 2005-08-19 23:40:28 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.64 2005-08-20 20:03:24 debug Exp $
  *
  *  ARM instructions.
  *
@@ -898,17 +898,17 @@ X(fill_loop_test)
 	unsigned char *page;
 
 	addr = *((uint32_t *)ic[1].arg[0]);
-	n = cpu->cd.arm.r[2] + 1;
-	ofs = addr & 0xfff;
-	maxlen = 4096 - ofs;
-	if (n > maxlen)
-		n = maxlen;
-
 	page = cpu->cd.arm.host_store[addr >> 12];
 	if (page == NULL) {
 		arm_cmps_0[2](cpu, ic);
 		return;
 	}
+
+	n = cpu->cd.arm.r[2] + 1;
+	ofs = addr & 0xfff;
+	maxlen = 4096 - ofs;
+	if (n > maxlen)
+		n = maxlen;
 
 	/*  printf("x = %x, n = %i\n", *((uint32_t *)ic[1].arg[2]), n);  */
 	memset(page + ofs, *((uint32_t *)ic[1].arg[2]), n);

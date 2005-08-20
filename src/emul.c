@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.225 2005-08-14 19:35:54 debug Exp $
+ *  $Id: emul.c,v 1.226 2005-08-20 20:55:21 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1138,6 +1138,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			    spec/x458.html for more info.  */
 			cpu->cd.ppc.gpr[2] = toc;
 			/*  TODO  */
+			if (cpu->cd.ppc.bits == 32)
+				cpu->pc &= 0xffffffffULL;
 			break;
 
 		case ARCH_ALPHA:

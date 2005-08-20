@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.520 2005-08-20 12:47:05 debug Exp $
+ *  $Id: machine.c,v 1.521 2005-08-20 21:33:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4312,6 +4312,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			    dev_zs_init(machine, mem, 0x1b0200000ULL,
 			    0, 4, "serial zs");	/*  serial? netbsd?  */
 			break;
+		case ST_EB164:
+			machine->machine_name = "EB164";
+			break;
 		default:fatal("Unimplemented Alpha machine type %i\n",
 			    machine->machine_subtype);
 			exit(1);
@@ -5588,11 +5591,14 @@ void machine_init(void)
 	}
 
 	/*  Alpha:  */
-	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 1);
+	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 2);
 	me->aliases[0] = "alpha";
 	me->subtype[0] = machine_entry_subtype_new(
 	    "DEC 3000/300", ST_DEC_3000_300, 1);
 	me->subtype[0]->aliases[0] = "3000/300";
+	me->subtype[1] = machine_entry_subtype_new(
+	    "EB164", ST_EB164, 1);
+	me->subtype[1]->aliases[0] = "eb164";
 	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.33 2005-08-20 20:03:24 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.34 2005-08-21 08:49:24 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -166,6 +166,7 @@ X(bclr)
 {
 	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	int ctr_ok, cond_ok;
+	uint64_t old_pc = cpu->pc;
 	MODE_uint_t tmp, addr = cpu->cd.ppc.lr;
 	if (!(bo & 4))
 		cpu->cd.ppc.ctr --;
@@ -175,16 +176,28 @@ X(bclr)
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
 	if (ctr_ok && cond_ok) {
+		uint64_t mask_within_page =
+		    ((PPC_IC_ENTRIES_PER_PAGE-1) << PPC_INSTR_ALIGNMENT_SHIFT)
+		    | ((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		cpu->pc = addr & ~((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		/*  TODO: trace in separate (duplicate) function?  */
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace_return(cpu);
-		cpu->pc = addr & ~3;
-		/*  Find the new physical page and update pointers:  */
-		DYNTRANS_PC_TO_POINTERS(cpu);
+		if ((old_pc  & ~mask_within_page) ==
+		    (cpu->pc & ~mask_within_page)) {
+			cpu->cd.ppc.next_ic =
+			    cpu->cd.ppc.cur_ic_page +
+			    ((cpu->pc & mask_within_page) >>
+			    PPC_INSTR_ALIGNMENT_SHIFT);
+		} else {
+			/*  Find the new physical page and update pointers:  */
+			DYNTRANS_PC_TO_POINTERS(cpu);
+		}
 	}
 }
 X(bclr_l)
 {
-	uint64_t low_pc;
+	uint64_t low_pc, old_pc = cpu->pc;
 	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	int ctr_ok, cond_ok;
 	MODE_uint_t tmp, addr = cpu->cd.ppc.lr;
@@ -204,13 +217,25 @@ X(bclr_l)
 	cpu->cd.ppc.lr = cpu->pc;
 
 	if (ctr_ok && cond_ok) {
+		uint64_t mask_within_page =
+		    ((PPC_IC_ENTRIES_PER_PAGE-1) << PPC_INSTR_ALIGNMENT_SHIFT)
+		    | ((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		cpu->pc = addr & ~((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		/*  TODO: trace in separate (duplicate) function?  */
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace_return(cpu);
-		cpu->pc = addr & ~3;
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace(cpu, cpu->pc);
-		/*  Find the new physical page and update pointers:  */
-		DYNTRANS_PC_TO_POINTERS(cpu);
+		if ((old_pc  & ~mask_within_page) ==
+		    (cpu->pc & ~mask_within_page)) {
+			cpu->cd.ppc.next_ic =
+			    cpu->cd.ppc.cur_ic_page +
+			    ((cpu->pc & mask_within_page) >>
+			    PPC_INSTR_ALIGNMENT_SHIFT);
+		} else {
+			/*  Find the new physical page and update pointers:  */
+			DYNTRANS_PC_TO_POINTERS(cpu);
+		}
 	}
 }
 

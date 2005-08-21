@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.66 2005-08-21 10:52:41 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.67 2005-08-21 21:09:31 debug Exp $
  *
  *  ARM instructions.
  *
@@ -398,6 +398,44 @@ Y(bl_samepage_trace)
 
 
 /*
+ *  mul: Multiplication
+ *
+ *  arg[0] = ptr to rd
+ *  arg[1] = ptr to rm
+ *  arg[2] = ptr to rs
+ */
+X(mul)
+{
+	reg(ic->arg[0]) = reg(ic->arg[1]) * reg(ic->arg[2]);
+}
+Y(mul)
+
+
+/*
+ *  mla: Multiplication with addition
+ *
+ *  arg[0] = copy of instruction word
+ */
+X(mla)
+{
+	/*  xxxx0000 00ASdddd nnnnssss 1001mmmm (Rd,Rm,Rs[,Rn])  */
+	uint32_t iw = ic->arg[0];
+	int rd = (iw >> 16) & 15, rn = (iw >> 12) & 15,
+	    rs = (iw >> 8) & 15,  rm = iw & 15;
+	cpu->cd.arm.r[rd] = cpu->cd.arm.r[rm] * cpu->cd.arm.r[rs]
+	    + cpu->cd.arm.r[rn];
+	if (iw & 0x00100000) {
+		cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+		if (cpu->cd.arm.r[rd] == 0)
+			cpu->cd.arm.flags |= ARM_FLAG_Z;
+		if (cpu->cd.arm.r[rd] & 0x80000000)
+			cpu->cd.arm.flags |= ARM_FLAG_N;
+	}
+}
+Y(mla)
+
+
+/*
  *  mull: Long multiplication
  *
  *  arg[0] = copy of instruction word
@@ -431,6 +469,20 @@ Y(mull)
  */
 X(get_cpu_id) { reg(ic->arg[0]) = cpu->cd.arm.cpu_type.cpu_id; }
 Y(get_cpu_id)
+
+
+/*
+ *  mcr_15_cr13:
+ *
+ *  arg[0] = pointer to rd
+ */
+X(mcr_15_cr13) {
+	if (reg(ic->arg[0]) != 0) {
+		fatal("TODO: mcr_15_cr13\n");
+		exit(1);
+	}
+}
+Y(mcr_15_cr13)
 
 
 /*
@@ -792,6 +844,24 @@ X(ands_regform) {
 		cpu->cd.arm.flags |= ARM_FLAG_N;
 }
 Y(ands_regform)
+X(eors) {
+	reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2];
+	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (reg(ic->arg[0]) == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if (reg(ic->arg[0]) & 0x80000000)
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+}
+Y(eors)
+X(eors_regform) {
+	reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic, ic->arg[2], 1);
+	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (reg(ic->arg[0]) == 0)
+		cpu->cd.arm.flags |= ARM_FLAG_Z;
+	if (reg(ic->arg[0]) & 0x80000000)
+		cpu->cd.arm.flags |= ARM_FLAG_N;
+}
+Y(eors_regform)
 X(subs) {
 	uint32_t a = reg(ic->arg[1]), b = ic->arg[2], c;
 	int v, n;
@@ -1123,6 +1193,26 @@ X(to_be_translated)
 	case 0x2:
 	case 0x3:
 		/*  Check special cases first:  */
+		if ((iword & 0x0fc000f0) == 0x00000090) {
+			/*
+			 *  Multiplication:
+			 *  xxxx0000 00ASdddd nnnnssss 1001mmmm (Rd,Rm,Rs[,Rn])
+			 */
+			if (iword & 0x00200000) {
+				ic->f = cond_instr(mla);
+				ic->arg[0] = iword;
+			} else {
+				if (s_bit) {
+					fatal("s_bit\n");
+					goto bad;
+				}
+				ic->f = cond_instr(mul);
+				ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
+				ic->arg[1] = (size_t)(&cpu->cd.arm.r[rm]);
+				ic->arg[2] = (size_t)(&cpu->cd.arm.r[r8]);
+			}
+			break;
+		}
 		if ((iword & 0x0f8000f0) == 0x00800090) {
 			/*  Long multiplication:  */
 			ic->f = cond_instr(mull);
@@ -1222,10 +1312,20 @@ X(to_be_translated)
 				}
 				break;
 			case 0x1:
-				if (regform)
-					ic->f = cond_instr(eor_regform);
-				else
-					ic->f = cond_instr(eor);
+				if (regform) {
+					if (s_bit) {
+						ic->f =
+						    cond_instr(eors_regform);
+						s_bit_ok = 1;
+					} else
+						ic->f = cond_instr(eor_regform);
+				} else {
+					if (s_bit) {
+						ic->f = cond_instr(eors);
+						s_bit_ok = 1;
+					} else
+						ic->f = cond_instr(eor);
+				}
 				break;
 			case 0x2:
 				if (regform) {
@@ -1497,6 +1597,15 @@ X(to_be_translated)
 			/*  Get CPU id into register.  */
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			ic->f = cond_instr(get_cpu_id);
+			break;
+		}
+		if ((iword & 0x0fff0fff) == 0x0e0d0f10) {
+			/*
+			 *  NetBSD/hpcarm uses this to "Disable PID virtual
+			 *  address mapping", if rd contains zero.
+			 */
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
+			ic->f = cond_instr(mcr_15_cr13);
 			break;
 		}
 		/*  Unimplemented stuff:  */

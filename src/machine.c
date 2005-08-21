@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.521 2005-08-20 21:33:49 debug Exp $
+ *  $Id: machine.c,v 1.522 2005-08-21 21:09:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4399,6 +4399,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			    machine->boot_string_argument);
 		}
 		break;
+
+	case MACHINE_HPCARM:
+		machine->machine_name = "HPCarm";
+		/*  TODO  */
+		break;
 #endif	/*  ENABLE_ARM  */
 
 #ifdef ENABLE_IA64
@@ -4864,6 +4869,7 @@ void machine_default_cputype(struct machine *m)
 	/*  ARM:  */
 	case MACHINE_BAREARM:
 	case MACHINE_TESTARM:
+	case MACHINE_HPCARM:
 		m->cpu_name = strdup("SA1110");
 		break;
 	case MACHINE_CATS:
@@ -5366,6 +5372,21 @@ void machine_init(void)
 	    "NEC MobilePro 880", MACHINE_HPCMIPS_NEC_MOBILEPRO_880, 1);
 	me->subtype[7]->aliases[0] = "mobilepro880";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  HPCarm:  */
+	me = machine_entry_new("Handheld ARM (HPCarm)",
+	    ARCH_ARM, MACHINE_HPCARM, 1, 2);
+	me->aliases[0] = "hpcarm";
+	me->subtype[0] = machine_entry_subtype_new(
+	    "Ipaq", MACHINE_HPCARM_IPAQ, 1);
+	me->subtype[0]->aliases[0] = "ipaq";
+	me->subtype[1] = machine_entry_subtype_new(
+	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
+	me->subtype[1]->aliases[0] = "jornada720";
+
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

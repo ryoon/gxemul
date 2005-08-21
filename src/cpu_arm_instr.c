@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.65 2005-08-21 10:11:13 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.66 2005-08-21 10:52:41 debug Exp $
  *
  *  ARM instructions.
  *
@@ -429,11 +429,7 @@ Y(mull)
  *
  *  arg[0] = pointer to destination register
  */
-X(get_cpu_id)
-{
-	/*  TODO  */
-	reg(ic->arg[0]) = CPU_ID_SA110;
-}
+X(get_cpu_id) { reg(ic->arg[0]) = cpu->cd.arm.cpu_type.cpu_id; }
 Y(get_cpu_id)
 
 
@@ -517,23 +513,12 @@ Y(mov_regform)
  *
  *  arg[0] = pointer to uint32_t in host memory
  *  arg[1] = 32-bit value
- */
-X(mov)
-{
-	reg(ic->arg[0]) = ic->arg[1];
-}
-Y(mov)
-
-
-/*
- *  clear:  Set a 32-bit register to 0. (A "mov" to fixed value zero.)
  *
- *  arg[0] = pointer to uint32_t in host memory
+ *  (clear is a special case.)
  */
-X(clear)
-{
-	reg(ic->arg[0]) = 0;
-}
+X(mov) { reg(ic->arg[0]) = ic->arg[1]; }
+Y(mov)
+X(clear) { reg(ic->arg[0]) = 0; }
 Y(clear)
 
 
@@ -545,6 +530,11 @@ Y(clear)
  */
 X(msr)
 {
+	/*
+	 *  TODO:  When switching between modes, copy to/from mirrored
+	 *	   register sets!
+	 */
+
 	cpu->cd.arm.flags &= ~ic->arg[1];
 	cpu->cd.arm.flags |= (reg(ic->arg[0]) & ic->arg[1]);
 }

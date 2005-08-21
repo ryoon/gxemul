@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.33 2005-08-18 20:18:42 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.34 2005-08-21 09:34:20 debug Exp $
  */
 
 #include "misc.h"
@@ -139,6 +139,7 @@ struct ppc_cpu {
 	uint64_t	sprg1;		/*  Special Purpose Register G1  */
 	uint64_t	sprg2;		/*  Special Purpose Register G2  */
 	uint64_t	sprg3;		/*  Special Purpose Register G3  */
+	uint64_t	dbsr;		/*  Debug Status Register  */
 	uint32_t	pvr;		/*  Processor Version Register  */
 	uint32_t	pir;		/*  Processor ID  */
 

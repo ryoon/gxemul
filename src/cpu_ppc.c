@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.90 2005-08-20 20:03:24 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.91 2005-08-21 09:34:19 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1123,6 +1123,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 541:  debug("mtdbatl\t2,r%i", rs); break;
 			case 542:  debug("mtdbatu\t3,r%i", rs); break;
 			case 543:  debug("mtdbatl\t3,r%i", rs); break;
+			case 1008: debug("mtdbsr\tr%i", rs); break;
 			default:debug("mtspr\tspr%i,r%i", spr, rs);
 			}
 			break;

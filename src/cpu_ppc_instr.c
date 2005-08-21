@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.34 2005-08-21 08:49:24 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.35 2005-08-21 09:34:19 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -212,9 +212,8 @@ X(bclr_l)
 	/*  Calculate return PC:  */
 	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (low_pc << 2);
-	cpu->cd.ppc.lr = cpu->pc;
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
 
 	if (ctr_ok && cond_ok) {
 		uint64_t mask_within_page =
@@ -224,6 +223,76 @@ X(bclr_l)
 		/*  TODO: trace in separate (duplicate) function?  */
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace_return(cpu);
+		if (cpu->machine->show_trace_tree)
+			cpu_functioncall_trace(cpu, cpu->pc);
+		if ((old_pc  & ~mask_within_page) ==
+		    (cpu->pc & ~mask_within_page)) {
+			cpu->cd.ppc.next_ic =
+			    cpu->cd.ppc.cur_ic_page +
+			    ((cpu->pc & mask_within_page) >>
+			    PPC_INSTR_ALIGNMENT_SHIFT);
+		} else {
+			/*  Find the new physical page and update pointers:  */
+			DYNTRANS_PC_TO_POINTERS(cpu);
+		}
+	}
+}
+
+
+/*
+ *  bcctr:  Branch Conditional to Count register
+ *
+ *  arg[0] = bo
+ *  arg[1] = bi
+ *  arg[2] = bh
+ */
+X(bcctr)
+{
+	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	uint64_t old_pc = cpu->pc;
+	MODE_uint_t addr = cpu->cd.ppc.ctr;
+	int cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+	if (cond_ok) {
+		uint64_t mask_within_page =
+		    ((PPC_IC_ENTRIES_PER_PAGE-1) << PPC_INSTR_ALIGNMENT_SHIFT)
+		    | ((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		cpu->pc = addr & ~((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		/*  TODO: trace in separate (duplicate) function?  */
+		if (cpu->machine->show_trace_tree)
+			cpu_functioncall_trace_return(cpu);
+		if ((old_pc  & ~mask_within_page) ==
+		    (cpu->pc & ~mask_within_page)) {
+			cpu->cd.ppc.next_ic =
+			    cpu->cd.ppc.cur_ic_page +
+			    ((cpu->pc & mask_within_page) >>
+			    PPC_INSTR_ALIGNMENT_SHIFT);
+		} else {
+			/*  Find the new physical page and update pointers:  */
+			DYNTRANS_PC_TO_POINTERS(cpu);
+		}
+	}
+}
+X(bcctr_l)
+{
+	uint64_t low_pc, old_pc = cpu->pc;
+	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	MODE_uint_t addr = cpu->cd.ppc.ctr;
+	int cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+
+	/*  Calculate return PC:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
+
+	if (cond_ok) {
+		uint64_t mask_within_page =
+		    ((PPC_IC_ENTRIES_PER_PAGE-1) << PPC_INSTR_ALIGNMENT_SHIFT)
+		    | ((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		cpu->pc = addr & ~((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
+		/*  TODO: trace in separate (duplicate) function?  */
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace(cpu, cpu->pc);
 		if ((old_pc  & ~mask_within_page) ==
@@ -794,6 +863,20 @@ X(srawi_dot) { instr(srawi)(cpu,ic); update_cr0(cpu, reg(ic->arg[1])); }
 
 
 /*
+ *  mcrf:  Move inside condition register
+ *
+ *  arg[0] = bf,  arg[1] = bfa
+ */
+X(mcrf)
+{
+	int bf = ic->arg[0], bfa = ic->arg[1];
+	uint32_t tmp = (cpu->cd.ppc.cr >> (28 - bfa*4)) & 0xf;
+	cpu->cd.ppc.cr &= ~(0xf << (28 - bf*4));
+	cpu->cd.ppc.cr |= (tmp << (28 - bf*4));
+}
+
+
+/*
  *  crand, crxor etc:  Condition Register operations
  *
  *  arg[0] = copy of the instruction word
@@ -839,6 +922,7 @@ X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
 X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
 /*  TODO: Check privilege level for mfsprg*  */
 X(mfsdr1) {	reg(ic->arg[0]) = cpu->cd.ppc.sdr1; }
+X(mfdbsr) {	reg(ic->arg[0]) = cpu->cd.ppc.dbsr; }
 X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
 X(mfsprg1) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg1; }
 X(mfsprg2) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg2; }
@@ -858,6 +942,7 @@ X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
 X(mtctr) {	cpu->cd.ppc.ctr = reg(ic->arg[0]); }
 /*  TODO: Check privilege level for these:  */
 X(mtsdr1) {	cpu->cd.ppc.sdr1 = reg(ic->arg[0]); }
+X(mtdbsr) {	cpu->cd.ppc.dbsr = reg(ic->arg[0]); }
 X(mtsprg0) {	cpu->cd.ppc.sprg0 = reg(ic->arg[0]); }
 X(mtsprg1) {	cpu->cd.ppc.sprg1 = reg(ic->arg[0]); }
 X(mtsprg2) {	cpu->cd.ppc.sprg2 = reg(ic->arg[0]); }
@@ -949,6 +1034,9 @@ X(srw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 X(srw_dot) {	instr(srw)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(and) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
 X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
+		update_cr0(cpu, reg(ic->arg[2])); }
+X(nand) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) & reg(ic->arg[1])); }
+X(nand_dot) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) & reg(ic->arg[1]));
 		update_cr0(cpu, reg(ic->arg[2])); }
 X(andc) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1])); }
 X(andc_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1]));
@@ -1334,7 +1422,8 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
-	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0;
+	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0,
+	    bfa;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 	void (*rc_f)(struct cpu *, struct ppc_instr_call *);
 
@@ -1633,14 +1722,22 @@ X(to_be_translated)
 		switch (xo) {
 
 		case PPC_19_BCLR:
+		case PPC_19_BCCTR:
 			bo = (iword >> 21) & 31;
 			bi = (iword >> 16) & 31;
 			bh = (iword >> 11) & 3;
 			lk_bit = iword & 1;
-			if (lk_bit)
-				ic->f = instr(bclr_l);
-			else
-				ic->f = instr(bclr);
+			if (xo == PPC_19_BCLR) {
+				if (lk_bit)
+					ic->f = instr(bclr_l);
+				else
+					ic->f = instr(bclr);
+			} else {
+				if (lk_bit)
+					ic->f = instr(bcctr_l);
+				else
+					ic->f = instr(bcctr);
+			}
 			ic->arg[0] = bo;
 			ic->arg[1] = bi;
 			ic->arg[2] = bh;
@@ -1649,6 +1746,14 @@ X(to_be_translated)
 		case PPC_19_ISYNC:
 			/*  TODO  */
 			ic->f = instr(nop);
+			break;
+
+		case PPC_19_MCRF:
+			bf = (iword >> 23) & 7;
+			bfa = (iword >> 18) & 7;
+			ic->arg[0] = bf;
+			ic->arg[1] = bfa;
+			ic->f = instr(mcrf);
 			break;
 
 		case PPC_19_CRAND:
@@ -1747,6 +1852,7 @@ X(to_be_translated)
 			case 273: ic->f = instr(mfsprg1); break;
 			case 274: ic->f = instr(mfsprg2); break;
 			case 275: ic->f = instr(mfsprg3); break;
+			case 1008:ic->f = instr(mfdbsr); break;
 			default:if (spr >= 528 && spr < 544) {
 					if (spr & 1) {
 						if (spr & 16)
@@ -1779,6 +1885,7 @@ X(to_be_translated)
 			case 273: ic->f = instr(mtsprg1); break;
 			case 274: ic->f = instr(mtsprg2); break;
 			case 275: ic->f = instr(mtsprg3); break;
+			case 1008:ic->f = instr(mtdbsr); break;
 			default:if (spr >= 528 && spr < 544) {
 					if (spr & 1) {
 						if (spr & 16)
@@ -1957,6 +2064,7 @@ X(to_be_translated)
 		case PPC_31_SRAW:
 		case PPC_31_SRW:
 		case PPC_31_AND:
+		case PPC_31_NAND:
 		case PPC_31_ANDC:
 		case PPC_31_NOR:
 		case PPC_31_OR:
@@ -1976,6 +2084,8 @@ X(to_be_translated)
 					  rc_f  = instr(srw_dot); break;
 			case PPC_31_AND:  ic->f = instr(and);
 					  rc_f  = instr(and_dot); break;
+			case PPC_31_NAND: ic->f = instr(nand);
+					  rc_f  = instr(nand_dot); break;
 			case PPC_31_ANDC: ic->f = instr(andc);
 					  rc_f  = instr(andc_dot); break;
 			case PPC_31_NOR:  ic->f = instr(nor);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.62 2005-08-19 11:23:30 debug Exp $
+ *  $Id: cpu_arm.c,v 1.63 2005-08-21 10:11:13 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -372,8 +372,16 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx0001 0s001111 dddd0000 00000000  MRS
 		 */
 		if ((iw & 0x0fb0fff0) == 0x0120f000) {
-			debug("msr%s\tTODO Regform...", condition);
-			debug("\n");
+			int a = (iw >> 16) & 15;
+			debug("msr%s\t%s", condition, (iw&0x400000)? "S":"C");
+			debug("PSR_");
+			switch (a) {
+			case 1:	debug("ctl"); break;
+			case 8:	debug("flg"); break;
+			case 9:	debug("all"); break;
+			default:debug(" UNIMPLEMENTED ");
+			}
+			debug(",%s\n", arm_regname[iw & 15]);
 			break;
 		}
 		if ((iw & 0x0fb0f000) == 0x0320f000) {
@@ -383,7 +391,8 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		}
 		if ((iw & 0x0fbf0fff) == 0x010f0000) {
 			debug("mrs%s\t", condition);
-			debug("%s,CPSR\n", arm_regname[r12]);
+			debug("%s,%sPSR\n", arm_regname[r12],
+			    (iw&0x400000)? "S":"C");
 			break;
 		}
 
@@ -391,7 +400,8 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx0001 0B00nnnn dddd0000 1001mmmm    SWP Rd,Rm,[Rn]
 		 */
 		if ((iw & 0x0fb00ff0) == 0x01000090) {
-			debug("swap%s\t", condition);
+			/*  TODO: is swpb the right mnemonic for byte swap?  */
+			debug("swp%s%s\t", (iw&0x400000)? "b":"", condition);
 			debug("%s,%s,[%s]\n", arm_regname[r12],
 			    arm_regname[iw & 15], arm_regname[r16]);
 			break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.64 2005-08-20 20:03:24 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.65 2005-08-21 10:11:13 debug Exp $
  *
  *  ARM instructions.
  *
@@ -537,6 +537,32 @@ X(clear)
 Y(clear)
 
 
+/*
+ *  msr: Move to status/flag register from a normal register.
+ *
+ *  arg[0] = pointer to rm
+ *  arg[1] = mask
+ */
+X(msr)
+{
+	cpu->cd.arm.flags &= ~ic->arg[1];
+	cpu->cd.arm.flags |= (reg(ic->arg[0]) & ic->arg[1]);
+}
+Y(msr)
+
+
+/*
+ *  mrs: Move from status/flag register to a normal register.
+ *
+ *  arg[0] = pointer to rd
+ */
+X(mrs)
+{
+	reg(ic->arg[0]) = cpu->cd.arm.flags;
+}
+Y(mrs)
+
+
 #include "tmp_arm_include.c"
 
 
@@ -1026,7 +1052,7 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint32_t addr, low_pc, iword, imm;
+	uint32_t addr, low_pc, iword, imm = 0;
 	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
@@ -1111,6 +1137,38 @@ X(to_be_translated)
 			/*  Long multiplication:  */
 			ic->f = cond_instr(mull);
 			ic->arg[0] = iword;
+			break;
+		}
+		if ((iword & 0x0fb0fff0) == 0x0120f000) {
+			/*  msr: move to [C|S]PSR from a register:  */
+			if (rm == ARM_PC) {
+				fatal("msr PC?\n");
+				goto bad;
+			}
+			ic->f = cond_instr(msr);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+			switch ((iword >> 16) & 15) {
+			case 1:	ic->arg[1] = 0x000000ff; break;
+			case 8:	ic->arg[1] = 0xff000000; break;
+			case 9:	ic->arg[1] = 0xff0000ff; break;
+			default:fatal("unimpl a\n");
+				goto bad;
+			}
+			break;
+		}
+		if ((iword & 0x0fb0f000) == 0x0320f000) {
+			/*  msr: immediate form  */
+			fatal("msr: immediate form: TODO\n");
+			goto bad;
+		}
+		if ((iword & 0x0fff0fff) == 0x010f0000) {
+			/*  mrs: move from CPSR to a register:  */
+			if (rd == ARM_PC) {
+				fatal("mrs PC?\n");
+				goto bad;
+			}
+			ic->f = cond_instr(mrs);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			break;
 		}
 

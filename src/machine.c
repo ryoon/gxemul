@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.522 2005-08-21 21:09:31 debug Exp $
+ *  $Id: machine.c,v 1.523 2005-08-22 07:02:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4404,6 +4404,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "HPCarm";
 		/*  TODO  */
 		break;
+
+	case MACHINE_ZAURUS:
+		machine->machine_name = "Zaurus";
+		/*  TODO  */
+		break;
 #endif	/*  ENABLE_ARM  */
 
 #ifdef ENABLE_IA64
@@ -4875,6 +4880,9 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_CATS:
 		m->cpu_name = strdup("SA110");
 		break;
+	case MACHINE_ZAURUS:
+		m->cpu_name = strdup("PXA210");
+		break;
 
 	/*  IA64:  */
 	case MACHINE_BAREIA64:
@@ -5148,6 +5156,14 @@ void machine_init(void)
 	 *  entries will appear in normal order when listed.  :-)
 	 */
 
+	/*  Zaurus:  */
+	me = machine_entry_new("Zaurus (ARM)",
+	    ARCH_ARM, MACHINE_ZAURUS, 1, 0);
+	me->aliases[0] = "zaurus";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  X86 machine:  */
 	me = machine_entry_new("x86-based PC", ARCH_X86,
 	    MACHINE_X86, 2, 2);
@@ -5385,7 +5401,6 @@ void machine_init(void)
 	me->subtype[1] = machine_entry_subtype_new(
 	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
 	me->subtype[1]->aliases[0] = "jornada720";
-
 	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

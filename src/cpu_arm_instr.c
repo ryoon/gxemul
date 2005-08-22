@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.68 2005-08-22 05:11:52 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.69 2005-08-22 07:02:41 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1139,6 +1139,32 @@ X(to_be_translated)
 			 */
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			ic->f = cond_instr(mcr_15_cr13);
+			break;
+		}
+		/*
+		 *  NetBSD/hpcarm OpenBSD/arm uses these to flush caches etc.
+		 *
+		 *  TODO
+		 */
+		if ((iword & 0x0fffffff) == 0x0e070f9a ||
+		    (iword & 0x0fffffff) == 0x0e070f3a ||
+		    (iword & 0x0fffffff) == 0x0e070f15 ||
+		    (iword & 0x0fffffff) == 0x0e070f36 ||
+		    (iword & 0x0fffffff) == 0x0e070f3a ||
+		    (iword & 0x0fffffff) == 0x0e120f10 ||
+		    (iword & 0x0fffffff) == 0x0e112f10 ||
+		    (iword & 0x0fffffff) == 0x0e020f10 ||
+		    (iword & 0x0fffffff) == 0x0e080f17 ||
+		    (iword & 0x0fffffff) == 0x0e030f10 ||
+		    (iword & 0x0fffffff) == 0x0e110f10 ||
+		    (iword & 0x0fffffff) == 0x0e010f10 ||
+		    (iword & 0x0fffffff) == 0x0e070f9a ||
+		    /*  Zaurus:  */
+		    (iword & 0x0fffffff) == 0x0e104f30 ||
+		    (iword & 0x0fffffff) == 0x0e013f30 ||
+		    (iword & 0x0fffffff) == 0x0e080f16 ||
+		    (iword & 0x0fffffff) == 0x0e113f30) {
+			ic->f = instr(nop);
 			break;
 		}
 		/*  Unimplemented stuff:  */

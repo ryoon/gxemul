@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.922 2005-08-22 05:11:52 debug Exp $
+$Id: HISTORY,v 1.923 2005-08-22 07:02:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2213,6 +2213,6 @@ Changelog for GXemul:
 20050820	Continuing to add more ARM instructions, and correcting some
 		bugs. Continuing on CATS emulation.
 		More work on the PPC stuff.
-20050821	Minor PPC and ARM updates.
+20050821	Minor PPC and ARM updates. Adding more machine types.
 20050822	All ARM "data processing instructions" are now generated
 		automatically.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.67 2005-08-21 21:09:31 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.68 2005-08-22 05:11:52 debug Exp $
  *
  *  ARM instructions.
  *
@@ -229,18 +229,11 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 
 /*
  *  nop:  Do nothing.
+ *  invalid:  Invalid instructions end up here.
  */
-X(nop)
-{
-}
-
-
-/*
- *  invalid:
- */
-X(invalid)
-{
-	fatal("invalid ARM instruction?\n");
+X(nop) { }
+X(invalid) {
+ 	fatal("invalid ARM instruction?\n");
 	exit(1);
 }
 
@@ -472,7 +465,7 @@ Y(get_cpu_id)
 
 
 /*
- *  mcr_15_cr13:
+ *  mcr_15_cr13:  See comment below.
  *
  *  arg[0] = pointer to rd
  */
@@ -483,37 +476,6 @@ X(mcr_15_cr13) {
 	}
 }
 Y(mcr_15_cr13)
-
-
-/*
- *  mov_pc:  "mov pc,reg"
- *
- *  arg[0] = ignored
- *  arg[1] = pointer to uint32_t in host memory of source register
- */
-X(mov_pc)
-{
-	uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
-	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1)
-	    << ARM_INSTR_ALIGNMENT_SHIFT) |
-	    ((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
-
-	/*  Update the PC register:  */
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = reg(ic->arg[1]);
-
-	/*
-	 *  Is this a return to code within the same page? Then there is no
-	 *  need to update all pointers, just next_ic.
-	 */
-	if ((old_pc & ~mask_within_page) == (cpu->pc & ~mask_within_page)) {
-		cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
-		    ((cpu->pc & mask_within_page) >> ARM_INSTR_ALIGNMENT_SHIFT);
-	} else {
-		/*  Find the new physical page and update pointers:  */
-		arm_pc_to_pointers(cpu);
-	}
-}
-Y(mov_pc)
 
 
 /*
@@ -546,32 +508,6 @@ X(ret_trace)
 	}
 }
 Y(ret_trace)
-
-
-/*
- *  mov_regreg:
- *
- *  arg[0] = ptr to destination register
- *  arg[1] = ptr to source register, or copy of instruction word
- */
-X(mov_regreg) { reg(ic->arg[0]) = reg(ic->arg[1]); }
-Y(mov_regreg)
-X(mov_regform) { reg(ic->arg[0]) = R(cpu, ic, ic->arg[1], 0); }
-Y(mov_regform)
-
-
-/*
- *  mov:  Set a 32-bit register to a 32-bit value.
- *
- *  arg[0] = pointer to uint32_t in host memory
- *  arg[1] = 32-bit value
- *
- *  (clear is a special case.)
- */
-X(mov) { reg(ic->arg[0]) = ic->arg[1]; }
-Y(mov)
-X(clear) { reg(ic->arg[0]) = 0; }
-Y(clear)
 
 
 /*
@@ -608,6 +544,13 @@ Y(mrs)
 #include "tmp_arm_include.c"
 
 
+extern void (*arm_dpi_instr[2 * 2 * 2 * 16 * 16])(struct cpu *,
+	struct arm_instr_call *);
+X(cmps);
+X(sub);
+
+
+
 #define A__NAME arm_instr_store_w0_byte_u1_p0_imm_fixinc1
 #define A__NAME__general arm_instr_store_w0_byte_u1_p0_imm_fixinc1__general
 #define A__B
@@ -620,19 +563,6 @@ Y(mrs)
 #undef A__U
 #undef A__NAME__general
 #undef A__NAME
-
-
-/*  See X(add) below. This is a special case for add Rd,pc,imm  */
-X(add_pc) {
-	uint32_t low_pc;
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
-	    ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-	reg(ic->arg[0]) = cpu->cd.arm.r[ARM_PC] + 8 + ic->arg[2];
-}
-Y(add_pc)
 
 
 /*
@@ -782,173 +712,6 @@ X(bdt_store)
 Y(bdt_store)
 
 
-#include "cpu_arm_instr_cmps.c"
-
-
-/*
- *  add, sub etc:
- *
- *  arg[0] = pointer to destination uint32_t in host memory
- *  arg[1] = pointer to source uint32_t in host memory
- *  arg[2] = 32-bit value    or   copy of instruction word (for register form)
- */
-X(and) { reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2]; }
-Y(and)
-X(and_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic, ic->arg[2], 0);}
-Y(and_regform)
-X(eor) { reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2]; }
-Y(eor)
-X(eor_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic, ic->arg[2], 0);}
-Y(eor_regform)
-X(sub) { reg(ic->arg[0]) = reg(ic->arg[1]) - ic->arg[2]; }
-Y(sub)
-X(sub_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) - R(cpu, ic, ic->arg[2], 0);}
-Y(sub_regform)
-X(rsb) { reg(ic->arg[0]) = ic->arg[2] - reg(ic->arg[1]); }
-Y(rsb)
-X(rsb_regform) { reg(ic->arg[0]) = R(cpu, ic, ic->arg[2], 0) - reg(ic->arg[1]);}
-Y(rsb_regform)
-X(add) { reg(ic->arg[0]) = reg(ic->arg[1]) + ic->arg[2]; }
-Y(add)
-X(add_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) + R(cpu, ic, ic->arg[2],0); }
-Y(add_regform)
-X(orr) { reg(ic->arg[0]) = reg(ic->arg[1]) | ic->arg[2]; }
-Y(orr)
-X(orr_regform) {reg(ic->arg[0]) = reg(ic->arg[1]) | R(cpu, ic, ic->arg[2], 0);}
-Y(orr_regform)
-X(bic) { reg(ic->arg[0]) = reg(ic->arg[1]) & ~ic->arg[2]; }
-Y(bic)
-X(bic_regform) { reg(ic->arg[0]) = reg(ic->arg[1]) & ~R(cpu, ic, ic->arg[2],0);}
-Y(bic_regform)
-X(mvn) { reg(ic->arg[0]) = ~ic->arg[2]; }
-Y(mvn)
-X(mvn_regform) { reg(ic->arg[0]) = ~R(cpu, ic, ic->arg[2], 0); }
-Y(mvn_regform)
-
-/*  Same as above, but set flags:  */
-X(ands) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & ic->arg[2];
-	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
-	if (reg(ic->arg[0]) == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if (reg(ic->arg[0]) & 0x80000000)
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-}
-Y(ands)
-X(ands_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) & R(cpu, ic, ic->arg[2], 1);
-	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
-	if (reg(ic->arg[0]) == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if (reg(ic->arg[0]) & 0x80000000)
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-}
-Y(ands_regform)
-X(eors) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) ^ ic->arg[2];
-	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
-	if (reg(ic->arg[0]) == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if (reg(ic->arg[0]) & 0x80000000)
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-}
-Y(eors)
-X(eors_regform) {
-	reg(ic->arg[0]) = reg(ic->arg[1]) ^ R(cpu, ic, ic->arg[2], 1);
-	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
-	if (reg(ic->arg[0]) == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if (reg(ic->arg[0]) & 0x80000000)
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-}
-Y(eors_regform)
-X(subs) {
-	uint32_t a = reg(ic->arg[1]), b = ic->arg[2], c;
-	int v, n;
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	c = a - b;
-	if (a > b)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	if (c == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)c < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-		n = 1;
-	} else
-		n = 0;
-	if ((int32_t)a >= (int32_t)b)
-		v = n;
-	else
-		v = !n;
-	if (v)
-		cpu->cd.arm.flags |= ARM_FLAG_V;
-	reg(ic->arg[0]) = c;
-}
-Y(subs)
-X(subs_regform) {
-	uint32_t a = reg(ic->arg[1]), b = R(cpu, ic, ic->arg[2], 0), c;
-	int v, n;
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	c = a - b;
-	if (a > b)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	if (c == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)c < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-		n = 1;
-	} else
-		n = 0;
-	if ((int32_t)a >= (int32_t)b)
-		v = n;
-	else
-		v = !n;
-	if (v)
-		cpu->cd.arm.flags |= ARM_FLAG_V;
-	reg(ic->arg[0]) = c;
-}
-Y(subs_regform)
-X(adds) {
-	uint32_t a = reg(ic->arg[1]), b = ic->arg[2], c;
-	int v, n;
-	cpu->cd.arm.flags &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	c = a + b;
-	if (c < a)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
-	if (c == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
-	if ((int32_t)c < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
-		n = 1;
-	} else
-		n = 0;
-	if ((int32_t)a >= (int32_t)b)
-		v = n;
-	else
-		v = !n;
-	if (v)
-		cpu->cd.arm.flags |= ARM_FLAG_V;
-	reg(ic->arg[0]) = c;
-}
-Y(adds)
-
-/*  Special cases:  */
-X(sub_self) {
-	reg(ic->arg[0]) -= ic->arg[2];
-}
-Y(sub_self)
-X(add_self) {
-	reg(ic->arg[0]) += ic->arg[2];
-}
-Y(add_self)
-
-
-#include "tmp_arm_include_self.c"
-
-
 /*****************************************************************************/
 
 
@@ -971,40 +734,41 @@ X(mov_2)
  *
  *  A byte-fill loop. Fills at most one page at a time. If the page was not
  *  in the host_store table, then the original sequence (beginning with
- *  cmps r2,#0) is executed instead.
+ *  cmps rZ,#0) is executed instead.
  *
- *  Z:cmps r2,#0		ic[0]
- *    strb rX,[rY],#1		ic[1]
- *    sub  r2,r2,#1		ic[2]
- *    bgt  Z			ic[3]
+ *  L: cmps rZ,#0		ic[0]
+ *     strb rX,[rY],#1		ic[1]
+ *     sub  rZ,rZ,#1		ic[2]
+ *     bgt  L			ic[3]
  */
 X(fill_loop_test)
 {
 	uint32_t addr, a, n, ofs, maxlen;
+	uint32_t *rzp = (uint32_t *)(size_t)ic[0].arg[0];
 	unsigned char *page;
 
-	addr = *((uint32_t *)ic[1].arg[0]);
+	addr = reg(ic[1].arg[0]);
 	page = cpu->cd.arm.host_store[addr >> 12];
 	if (page == NULL) {
-		arm_cmps_0[2](cpu, ic);
+		instr(cmps)(cpu, ic);
 		return;
 	}
 
-	n = cpu->cd.arm.r[2] + 1;
+	n = reg(rzp) + 1;
 	ofs = addr & 0xfff;
 	maxlen = 4096 - ofs;
 	if (n > maxlen)
 		n = maxlen;
 
-	/*  printf("x = %x, n = %i\n", *((uint32_t *)ic[1].arg[2]), n);  */
-	memset(page + ofs, *((uint32_t *)ic[1].arg[2]), n);
+	/*  printf("x = %x, n = %i\n", reg(ic[1].arg[2]), n);  */
+	memset(page + ofs, reg(ic[1].arg[2]), n);
 
-	*((uint32_t *)ic[1].arg[0]) = addr + n;
+	reg(ic[1].arg[0]) = addr + n;
 
-	cpu->cd.arm.r[2] -= n;
+	reg(rzp) -= n;
 	cpu->n_translated_instrs += (4 * n);
 
-	a = cpu->cd.arm.r[2];
+	a = reg(rzp);
 
 	cpu->cd.arm.flags &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
@@ -1057,37 +821,14 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 	n_back = (addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
-	if (n_back >= 1) {
-		/*  Double "mov":  */
-		if (ic[-1].f == instr(mov) || ic[-1].f == instr(clear)) {
-			if (ic[-1].f == instr(mov) && ic[0].f == instr(mov)) {
-				ic[-1].f = instr(mov_2);
-				combined;
-			}
-			if (ic[-1].f == instr(clear) && ic[0].f == instr(mov)) {
-				ic[-1].f = instr(mov_2);
-				ic[-1].arg[1] = 0;
-				combined;
-			}
-			if (ic[-1].f == instr(mov) && ic[0].f == instr(clear)) {
-				ic[-1].f = instr(mov_2);
-				ic[0].arg[1] = 0;
-				combined;
-			}
-			if (ic[-1].f == instr(clear) && ic[0].f==instr(clear)) {
-				ic[-1].f = instr(mov_2);
-				ic[-1].arg[1] = 0;
-				ic[0].arg[1] = 0;
-				combined;
-			}
-		}
-	}
-
 	if (n_back >= 3) {
-		if (ic[-3].f == arm_cmps_0[2] &&
+		if (ic[-3].f == instr(cmps) &&
+		    ic[-3].arg[0] == ic[-1].arg[0] &&
+		    ic[-3].arg[1] == 0 &&
 		    ic[-2].f == instr(store_w0_byte_u1_p0_imm) &&
 		    ic[-2].arg[1] == 1 &&
-		    ic[-1].f == arm_sub_self_1[2] &&
+		    ic[-1].f == instr(sub) &&
+		    ic[-1].arg[0] == ic[-1].arg[2] && ic[-1].arg[1] == 1 &&
 		    ic[ 0].f == instr(b_samepage__gt) &&
 		    ic[ 0].arg[0] == (size_t)&ic[-3]) {
 			ic[-3].f = instr(fill_loop_test);
@@ -1117,7 +858,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
 	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t;
-	int rn_pc_ok, s_bit_ok;
+	int any_pc_reg;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -1257,6 +998,13 @@ X(to_be_translated)
 			goto bad;
 		}
 
+		/*  "mov pc,lr" with trace enabled:  */
+		if ((iword & 0x0fffffff) == 0x01a0f00e &&
+		    cpu->machine->show_trace_tree) {
+			ic->f = cond_instr(ret_trace);
+			break;
+		}
+
 		/*
 		 *  Generic Data Processing Instructions:
 		 */
@@ -1270,234 +1018,19 @@ X(to_be_translated)
 			r8 <<= 1;
 			while (r8-- > 0)
 				imm = (imm >> 1) | ((imm & 1) << 31);
-		}
+			ic->arg[1] = imm;
+		} else
+			ic->arg[1] = iword;
 
-		switch (secondary_opcode) {
-		case 0x0:				/*  AND  */
-		case 0x1:				/*  EOR  */
-		case 0x2:				/*  SUB  */
-		case 0x3:				/*  RSB  */
-		case 0x4:				/*  ADD  */
-		case 0xc:				/*  ORR  */
-		case 0xe:				/*  BIC  */
-		case 0xf:				/*  MVN  */
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
-			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rn]);
+		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+		ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
+		any_pc_reg = 0;
+		if (rn == ARM_PC || rd == ARM_PC)
+			any_pc_reg = 1;
 
-/*
- *  TODO: Most of these cannot handle when Rx = ARM_PC!
- */
-
-
-			if (regform)
-				ic->arg[2] = iword;
-			else
-				ic->arg[2] = imm;
-			rn_pc_ok = s_bit_ok = 0;
-			switch (secondary_opcode) {
-			case 0x0:
-				if (regform) {
-					if (s_bit) {
-						ic->f =
-						    cond_instr(ands_regform);
-						s_bit_ok = 1;
-					} else
-						ic->f = cond_instr(and_regform);
-				} else {
-					if (s_bit) {
-						ic->f = cond_instr(ands);
-						s_bit_ok = 1;
-					} else
-						ic->f = cond_instr(and);
-				}
-				break;
-			case 0x1:
-				if (regform) {
-					if (s_bit) {
-						ic->f =
-						    cond_instr(eors_regform);
-						s_bit_ok = 1;
-					} else
-						ic->f = cond_instr(eor_regform);
-				} else {
-					if (s_bit) {
-						ic->f = cond_instr(eors);
-						s_bit_ok = 1;
-					} else
-						ic->f = cond_instr(eor);
-				}
-				break;
-			case 0x2:
-				if (regform) {
-					if (s_bit) {
-						ic->f =
-						    cond_instr(subs_regform);
-						s_bit_ok = 1;
-					} else {
-						ic->f = cond_instr(sub_regform);
-					}
-				} else {
-					if (s_bit) {
-						ic->f = cond_instr(subs);
-						s_bit_ok = 1;
-					} else {
-						ic->f = cond_instr(sub);
-						if (rd == rn) {
-							ic->f =
-							   cond_instr(sub_self);
-							if (imm == 1 &&
-							    rd != ARM_PC)
-								ic->f =
-								  arm_sub_self_1
-								  [rd];
-							if (imm == 4 &&
-							    rd != ARM_PC)
-								ic->f =
-								  arm_sub_self_4
-								  [rd];
-						}
-					}
-				}
-				break;
-			case 0x3:
-				if (regform)
-					ic->f = cond_instr(rsb_regform);
-				else
-					ic->f = cond_instr(rsb);
-				break;
-			case 0x4:
-				if (regform) {
-					ic->f = cond_instr(add_regform);
-				} else {
-					if (s_bit) {
-						ic->f = cond_instr(adds);
-						s_bit_ok = 1;
-					} else {
-						ic->f = cond_instr(add);
-						if (rn == ARM_PC) {
-							ic->f = cond_instr(add_pc);
-								rn_pc_ok = 1;
-						}
-						if (rd == rn && rd != ARM_PC) {
-							ic->f = cond_instr(add_self);
-						if (imm == 1 && rd != ARM_PC)
-							ic->f =
-							     arm_add_self_1[rd];
-							if (imm == 4 && rd != ARM_PC)
-								ic->f =
-								    arm_add_self_4[rd];
-						}
-					}
-				}
-				break;
-			case 0xc:
-				if (regform)
-					ic->f = cond_instr(orr_regform);
-				else
-					ic->f = cond_instr(orr);
-				break;
-			case 0xe:
-				if (regform)
-					ic->f = cond_instr(bic_regform);
-				else
-					ic->f = cond_instr(bic);
-				break;
-			case 0xf:
-				if (regform)
-					ic->f = cond_instr(mvn_regform);
-				else
-					ic->f = cond_instr(mvn);
-				break;
-			}
-			if (s_bit && !s_bit_ok) {
-				fatal("add/sub etc s_bit: TODO\n");
-				goto bad;
-			}
-			if (rd == ARM_PC) {
-				fatal("regform: rd = PC\n");
-				goto bad;
-			}
-			if (rn == ARM_PC && !rn_pc_ok) {
-				fatal("regform: rn = PC\n");
-				goto bad;
-			}
-			break;
-		case 0x8:				/*  TSTS  */
-		case 0x9:				/*  TEQS  */
-		case 0xa:				/*  CMPS  */
-		case 0xb:				/*  CMNS  */
-			if (!s_bit) {
-				fatal("cmp !s_bit: TODO\n");
-				goto bad;
-			}
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
-			if (rn == ARM_PC) {
-				fatal("cmp pc: TODO\n");
-				goto bad;
-			}
-			if (regform) {
-				ic->arg[1] = iword;
-				switch (secondary_opcode) {
-				case 0x08:
-					ic->f = cond_instr(tsts_regform); break;
-				case 0x09:
-					ic->f = cond_instr(teqs_regform); break;
-				case 0x0a:
-					ic->f = cond_instr(cmps_regform); break;
-				case 0x0b:
-					ic->f = cond_instr(cmns_regform); break;
-				}
-			} else {
-				ic->arg[1] = imm;
-				switch (secondary_opcode) {
-				case 0x08: ic->f = cond_instr(tsts); break;
-				case 0x09: ic->f = cond_instr(teqs); break;
-				case 0x0a: ic->f = cond_instr(cmps); break;
-				case 0x0b: ic->f = cond_instr(cmns); break;
-				}
-				if (imm == 0 && secondary_opcode == 0xa &&
-				    condition_code == 0xe)
-					ic->f = arm_cmps_0[rn];
-			}
-			break;
-		case 0xd:				/*  MOV  */
-			if (s_bit) {
-				fatal("mov s_bit: TODO\n");
-				goto bad;
-			}
-			if (regform) {
-				ic->f = cond_instr(mov_regform);
-				ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
-				ic->arg[1] = iword;
-				if (t == 0 && c == 0 && rm != ARM_PC) {
-					ic->f = cond_instr(mov_regreg);
-					ic->arg[1] = (size_t)
-					    (&cpu->cd.arm.r[rm]);
-					if (rd == ARM_PC)
-						ic->f = cond_instr(mov_pc);
-					if (rd == ARM_PC && rm == ARM_LR &&
-					    cpu->machine->show_trace_tree)
-						ic->f = cond_instr(ret_trace);
-				} else if (rd == ARM_PC) {
-					fatal("mov pc, but too complex\n");
-				}
-			} else {
-				/*  Immediate:  */
-				if (rd == ARM_PC) {
-					fatal("TODO: mov used as branch\n");
-					goto bad;
-				} else {
-					ic->f = cond_instr(mov);
-					ic->arg[0] = (size_t)
-					    (&cpu->cd.arm.r[rd]);
-					ic->arg[1] = imm;
-					if (imm == 0)
-						ic->f = cond_instr(clear);
-				}
-			}
-			break;
-		default:goto bad;
-		}
+		ic->f = arm_dpi_instr[condition_code +
+		    16 * secondary_opcode + (s_bit? 256 : 0) +
+		    (any_pc_reg? 512 : 0) + (regform? 1024 : 0)];
 		break;
 
 	case 0x4:	/*  Load and store...  */

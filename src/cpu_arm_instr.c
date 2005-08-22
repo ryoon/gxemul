@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.69 2005-08-22 07:02:41 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.70 2005-08-22 21:43:13 debug Exp $
  *
  *  ARM instructions.
  *
@@ -539,6 +539,18 @@ X(mrs)
 	reg(ic->arg[0]) = cpu->cd.arm.flags;
 }
 Y(mrs)
+
+
+/*
+ *  swi_useremul: Syscall.
+ *
+ *  arg[0] = swi number
+ */
+X(swi_useremul)
+{
+	useremul_syscall(cpu, ic->arg[0]);
+}
+Y(swi_useremul)
 
 
 #include "tmp_arm_include.c"
@@ -1169,6 +1181,21 @@ X(to_be_translated)
 		}
 		/*  Unimplemented stuff:  */
 		goto bad;
+
+	case 0xf:
+		if ((iword & 0x00f00000) == 0x00a00000) {
+			ic->arg[0] = iword & 0x00ffffff;
+			if (cpu->machine->userland_emul != NULL)
+				ic->f = cond_instr(swi_useremul);
+			else {
+				fatal("swi in non-useremul mode: TODO\n");
+				goto bad;
+			}
+		} else {
+			fatal("swi, not 0xaXXXXX: TODO\n");
+			goto bad;
+		}
+		break;
 
 	default:goto bad;
 	}

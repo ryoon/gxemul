@@ -25,15 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.62 2005-08-16 06:49:26 debug Exp $
+ *  $Id: useremul.c,v 1.63 2005-08-22 21:43:14 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
  *  TODO:
  *
- *	NetBSD/pmax:
- *		environment passing
- *		more syscalls
+ *	environment passing for most emulation modes
+ *
+ *	implement more syscalls
  *
  *	32-bit vs 64-bit problems? MIPS n32, o32, n64?
  *
@@ -230,6 +230,10 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 			store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
 			cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 		}
+		break;
+
+	case ARCH_ALPHA:
+		debug("useremul__netbsd_setup(): ALPHA: TODO\n");
 		break;
 
 	case ARCH_ARM:
@@ -828,6 +832,18 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		arg3 = cpu->cd.ppc.gpr[6];
 		/*  TODO:  More arguments? Stack arguments?  */
 		break;
+
+	case ARCH_ARM:
+		sysnr = code & 0xfffff;
+		arg0 = cpu->cd.arm.r[0];
+		arg1 = cpu->cd.arm.r[1];
+		arg2 = cpu->cd.arm.r[2];
+		arg3 = cpu->cd.arm.r[3];
+		/*  TODO:  More arguments? Stack arguments?  */
+		break;
+
+	default:fatal("netbsd syscall for this arch: TODO\n");
+		exit(1);
 	}
 
 	/*
@@ -1729,10 +1745,13 @@ void useremul_init(void)
 	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000",
 	    useremul__netbsd, useremul__netbsd_setup);
 
-	add_useremul("NetBSD/arm", ARCH_ARM, "ARM",
+	add_useremul("NetBSD/arm", ARCH_ARM, "SA1110",
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("NetBSD/amd64", ARCH_X86, "AMD64",
+	    useremul__netbsd, useremul__netbsd_setup);
+
+	add_useremul("NetBSD/alpha", ARCH_ALPHA, "Alpha",
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.523 2005-08-22 07:02:41 debug Exp $
+ *  $Id: machine.c,v 1.524 2005-08-22 21:43:13 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4403,6 +4403,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_HPCARM:
 		machine->machine_name = "HPCarm";
 		/*  TODO  */
+		cpu->cd.arm.r[ARM_SP] = 0x8000;
 		break;
 
 	case MACHINE_ZAURUS:

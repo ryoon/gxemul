@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.29 2005-08-22 07:02:42 debug Exp $
+ *  $Id: cpu_arm.h,v 1.30 2005-08-24 00:17:43 debug Exp $
  */
 
 #include "misc.h"
@@ -142,8 +142,9 @@ struct arm_cpu {
 	 *  Misc.:
 	 */
 	struct arm_cpu_type_def	cpu_type;
-	uint32_t		flags;
+	uint32_t		cpsr;
 
+	/*  TODO: spsr  */
 
 	/*
 	 *  General Purpose Registers (including the program counter):
@@ -162,6 +163,12 @@ struct arm_cpu {
 	uint32_t		und_r13_r14[2];
 
 	uint32_t		tmp_pc;		/*  Used for load/stores  */
+
+	/*  System Control Coprocessor registers:  */
+	uint32_t		control;
+	uint32_t		ttb;		/*  Translation Table Base  */
+	uint32_t		fsr;		/*  Fault Status Register  */
+	uint32_t		far;		/*  Fault Address Register  */
 
 
 	/*
@@ -191,6 +198,23 @@ struct arm_cpu {
 	struct arm_tc_physpage		*phys_page[ARM_N_VPH_ENTRIES];
 };
 
+
+/*  System Control Coprocessor, control bits:  */
+#define	ARM_CONTROL_MMU		0x0001
+#define	ARM_CONTROL_ALIGN	0x0002
+#define	ARM_CONTROL_CACHE	0x0004
+#define	ARM_CONTROL_WBUFFER	0x0008
+#define	ARM_CONTROL_PROG32	0x0010
+#define	ARM_CONTROL_DATA32	0x0020
+#define	ARM_CONTROL_BIG		0x0080
+#define	ARM_CONTROL_S		0x0100
+#define	ARM_CONTROL_R		0x0200
+#define	ARM_CONTROL_F		0x0400
+#define	ARM_CONTROL_Z		0x0800
+#define	ARM_CONTROL_ICACHE	0x1000
+#define	ARM_CONTROL_V		0x2000
+#define	ARM_CONTROL_RR		0x4000
+#define	ARM_CONTROL_L4		0x8000
 
 /*  cpu_arm.c:  */
 void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,

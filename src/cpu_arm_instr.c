@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.70 2005-08-22 21:43:13 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.71 2005-08-24 00:17:42 debug Exp $
  *
  *  ARM instructions.
  *
@@ -55,67 +55,67 @@
 
 #define Y(n) void arm_instr_ ## n ## __eq(struct cpu *cpu,		\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.flags & ARM_FLAG_Z)				\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_Z)				\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __ne(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (!(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+	{  if (!(cpu->cd.arm.cpsr & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __cs(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.flags & ARM_FLAG_C)				\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_C)				\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __cc(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (!(cpu->cd.arm.flags & ARM_FLAG_C))			\
+	{  if (!(cpu->cd.arm.cpsr & ARM_FLAG_C))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __mi(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.flags & ARM_FLAG_N)				\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_N)				\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __pl(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (!(cpu->cd.arm.flags & ARM_FLAG_N))			\
+	{  if (!(cpu->cd.arm.cpsr & ARM_FLAG_N))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __vs(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.flags & ARM_FLAG_V)				\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_V)				\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __vc(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (!(cpu->cd.arm.flags & ARM_FLAG_V))			\
+	{  if (!(cpu->cd.arm.cpsr & ARM_FLAG_V))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __hi(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.flags & ARM_FLAG_C &&			\
-		!(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_C &&			\
+		!(cpu->cd.arm.cpsr & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __ls(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.flags & ARM_FLAG_Z &&			\
-		!(cpu->cd.arm.flags & ARM_FLAG_C))			\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_Z &&			\
+		!(cpu->cd.arm.cpsr & ARM_FLAG_C))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __ge(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==		\
-		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0))			\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==		\
+		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __lt(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=		\
-		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0))			\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=		\
+		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __gt(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==		\
-		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) &&		\
-		!(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==		\
+		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) &&		\
+		!(cpu->cd.arm.cpsr & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __le(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=		\
-		((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) ||		\
-		(cpu->cd.arm.flags & ARM_FLAG_Z))			\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=		\
+		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) ||		\
+		(cpu->cd.arm.cpsr & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void (*arm_cond_instr_ ## n  [16])(struct cpu *,		\
 			struct arm_instr_call *) = {			\
@@ -216,9 +216,9 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		exit(1);
 	}
 	if (update_c) {
-		cpu->cd.arm.flags &= ~ARM_FLAG_C;
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_C;
 		if (lastbit)
-			cpu->cd.arm.flags |= ARM_FLAG_C;
+			cpu->cd.arm.cpsr |= ARM_FLAG_C;
 	}
 	return tmp;
 }
@@ -418,11 +418,11 @@ X(mla)
 	cpu->cd.arm.r[rd] = cpu->cd.arm.r[rm] * cpu->cd.arm.r[rs]
 	    + cpu->cd.arm.r[rn];
 	if (iw & 0x00100000) {
-		cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+		cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
 		if (cpu->cd.arm.r[rd] == 0)
-			cpu->cd.arm.flags |= ARM_FLAG_Z;
+			cpu->cd.arm.cpsr |= ARM_FLAG_Z;
 		if (cpu->cd.arm.r[rd] & 0x80000000)
-			cpu->cd.arm.flags |= ARM_FLAG_N;
+			cpu->cd.arm.cpsr |= ARM_FLAG_N;
 	}
 }
 Y(mla)
@@ -453,29 +453,6 @@ X(mull)
 	}
 }
 Y(mull)
-
-
-/*
- *  get_cpu_id:
- *
- *  arg[0] = pointer to destination register
- */
-X(get_cpu_id) { reg(ic->arg[0]) = cpu->cd.arm.cpu_type.cpu_id; }
-Y(get_cpu_id)
-
-
-/*
- *  mcr_15_cr13:  See comment below.
- *
- *  arg[0] = pointer to rd
- */
-X(mcr_15_cr13) {
-	if (reg(ic->arg[0]) != 0) {
-		fatal("TODO: mcr_15_cr13\n");
-		exit(1);
-	}
-}
-Y(mcr_15_cr13)
 
 
 /*
@@ -523,8 +500,8 @@ X(msr)
 	 *	   register sets!
 	 */
 
-	cpu->cd.arm.flags &= ~ic->arg[1];
-	cpu->cd.arm.flags |= (reg(ic->arg[0]) & ic->arg[1]);
+	cpu->cd.arm.cpsr &= ~ic->arg[1];
+	cpu->cd.arm.cpsr |= (reg(ic->arg[0]) & ic->arg[1]);
 }
 Y(msr)
 
@@ -536,9 +513,39 @@ Y(msr)
  */
 X(mrs)
 {
-	reg(ic->arg[0]) = cpu->cd.arm.flags;
+	reg(ic->arg[0]) = cpu->cd.arm.cpsr;
 }
 Y(mrs)
+
+
+/*
+ *  mcr_mrc:  Coprocessor move
+ *  cdp:      Coprocessor operation
+ *
+ *  arg[0] = copy of the instruction word
+ */
+X(mcr_mrc) {
+	uint32_t low_pc;
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
+	arm_mcr_mrc(cpu, ic->arg[0]);
+}
+Y(mcr_mrc)
+X(cdp) {
+	uint32_t low_pc;
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
+	arm_cdp(cpu, ic->arg[0]);
+}
+Y(cdp)
 
 
 /*
@@ -782,14 +789,14 @@ X(fill_loop_test)
 
 	a = reg(rzp);
 
-	cpu->cd.arm.flags &=
+	cpu->cd.arm.cpsr &=
 	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
 	if (a != 0)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
 	else
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
 	if ((int32_t)a < 0)
-		cpu->cd.arm.flags |= ARM_FLAG_N;
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
 
 	cpu->n_translated_instrs --;
 
@@ -1138,49 +1145,16 @@ X(to_be_translated)
 		break;
 
 	case 0xe:
-		if ((iword & 0x0fff0fff) == 0x0e100f10) {
-			/*  Get CPU id into register.  */
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
-			ic->f = cond_instr(get_cpu_id);
-			break;
+		if (iword & 0x10) {
+			/*  xxxx1110 oooLNNNN ddddpppp qqq1MMMM  MCR/MRC  */
+			ic->arg[0] = iword;
+			ic->f = cond_instr(mcr_mrc);
+		} else {
+			/*  xxxx1110 oooonnnn ddddpppp qqq0mmmm  CDP  */
+			ic->arg[0] = iword;
+			ic->f = cond_instr(cdp);
 		}
-		if ((iword & 0x0fff0fff) == 0x0e0d0f10) {
-			/*
-			 *  NetBSD/hpcarm uses this to "Disable PID virtual
-			 *  address mapping", if rd contains zero.
-			 */
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
-			ic->f = cond_instr(mcr_15_cr13);
-			break;
-		}
-		/*
-		 *  NetBSD/hpcarm OpenBSD/arm uses these to flush caches etc.
-		 *
-		 *  TODO
-		 */
-		if ((iword & 0x0fffffff) == 0x0e070f9a ||
-		    (iword & 0x0fffffff) == 0x0e070f3a ||
-		    (iword & 0x0fffffff) == 0x0e070f15 ||
-		    (iword & 0x0fffffff) == 0x0e070f36 ||
-		    (iword & 0x0fffffff) == 0x0e070f3a ||
-		    (iword & 0x0fffffff) == 0x0e120f10 ||
-		    (iword & 0x0fffffff) == 0x0e112f10 ||
-		    (iword & 0x0fffffff) == 0x0e020f10 ||
-		    (iword & 0x0fffffff) == 0x0e080f17 ||
-		    (iword & 0x0fffffff) == 0x0e030f10 ||
-		    (iword & 0x0fffffff) == 0x0e110f10 ||
-		    (iword & 0x0fffffff) == 0x0e010f10 ||
-		    (iword & 0x0fffffff) == 0x0e070f9a ||
-		    /*  Zaurus:  */
-		    (iword & 0x0fffffff) == 0x0e104f30 ||
-		    (iword & 0x0fffffff) == 0x0e013f30 ||
-		    (iword & 0x0fffffff) == 0x0e080f16 ||
-		    (iword & 0x0fffffff) == 0x0e113f30) {
-			ic->f = instr(nop);
-			break;
-		}
-		/*  Unimplemented stuff:  */
-		goto bad;
+		break;
 
 	case 0xf:
 		if ((iword & 0x00f00000) == 0x00a00000) {

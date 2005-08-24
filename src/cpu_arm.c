@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.63 2005-08-21 10:11:13 debug Exp $
+ *  $Id: cpu_arm.c,v 1.64 2005-08-24 00:17:42 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -96,7 +96,9 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->name               = cpu->cd.arm.cpu_type.name;
 	cpu->is_32bit           = 1;
 
-	cpu->cd.arm.flags = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
+	cpu->cd.arm.cpsr = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
+	cpu->cd.arm.control = ARM_CONTROL_PROG32 | ARM_CONTROL_DATA32
+	    | ARM_CONTROL_CACHE | ARM_CONTROL_ICACHE | ARM_CONTROL_ALIGN;
 
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
@@ -190,27 +192,25 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
-	int mode = cpu->cd.arm.flags & ARM_FLAG_MODE;
+	int mode = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
 	int i, x = cpu->cpu_id;
 
 	if (gprs) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->cd.arm.r[ARM_PC], &offset);
-		debug("cpu%i:  flags = ", x);
+		debug("cpu%i:  cpsr = ", x);
 		debug("%s%s%s%s%s%s",
-		    (cpu->cd.arm.flags & ARM_FLAG_N)? "N" : "n",
-		    (cpu->cd.arm.flags & ARM_FLAG_Z)? "Z" : "z",
-		    (cpu->cd.arm.flags & ARM_FLAG_C)? "C" : "c",
-		    (cpu->cd.arm.flags & ARM_FLAG_V)? "V" : "v",
-		    (cpu->cd.arm.flags & ARM_FLAG_I)? "I" : "i",
-		    (cpu->cd.arm.flags & ARM_FLAG_F)? "F" : "f");
+		    (cpu->cd.arm.cpsr & ARM_FLAG_N)? "N" : "n",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_Z)? "Z" : "z",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_C)? "C" : "c",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_V)? "V" : "v",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_I)? "I" : "i",
+		    (cpu->cd.arm.cpsr & ARM_FLAG_F)? "F" : "f");
 		if (mode < ARM_MODE_USR32)
 			debug("   pc =  0x%07x",
 			    (int)(cpu->cd.arm.r[ARM_PC] & 0x03ffffff));
 		else
 			debug("   pc = 0x%08x", (int)cpu->cd.arm.r[ARM_PC]);
-
-		/*  TODO: Flags  */
 
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
@@ -223,6 +223,41 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i % 4) == 3)
 				debug("\n");
 		}
+	}
+
+	if (coprocs) {
+		debug("cpu%i:  control = 0x%08x\n", x, cpu->cd.arm.control);
+		debug("cpu%i:      MMU:               %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_MMU? "enabled" : "disabled");
+		debug("cpu%i:      alignment checks:  %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_ALIGN? "enabled" : "disabled");
+		debug("cpu%i:      [data] cache:      %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_CACHE? "enabled" : "disabled");
+		debug("cpu%i:      instruction cache: %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_ICACHE? "enabled" : "disabled");
+		debug("cpu%i:      write buffer:      %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_WBUFFER? "enabled" : "disabled");
+		debug("cpu%i:      prog32:            %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_PROG32? "yes" : "no (using prog26)");
+		debug("cpu%i:      data32:            %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_DATA32? "yes" : "no (using data26)");
+		debug("cpu%i:      endianness:        %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_BIG? "big endian" : "little endian");
+		debug("cpu%i:      high vectors:      %s\n",
+		    cpu->cd.arm.control &
+		    ARM_CONTROL_V? "yes (0xffff0000)" : "no");
+
+		debug("cpu%i:  ttb = 0x%08x\n", x, cpu->cd.arm.ttb);
+		debug("cpu%i:  fsr = 0x%08x  far = 0x%08x\n", x,
+		    cpu->cd.arm.fsr, cpu->cd.arm.far);
 	}
 }
 
@@ -619,6 +654,139 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	return sizeof(uint32_t);
 }
+
+
+/*
+ *  arm_mcr_mrc_15():
+ *
+ *  The system control coprocessor.
+ */
+void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+	int crn, int crm, int rd)
+{
+	uint32_t old_control;
+
+	/*  Some sanity checks:  */
+	if (opcode1 != 0) {
+		fatal("arm_mcr_mrc_15: opcode1 = %i, should be 0\n", opcode1);
+		exit(1);
+	}
+	if (rd == ARM_PC) {
+		fatal("arm_mcr_mrc_15: rd = PC\n");
+		exit(1);
+	}
+
+	switch (crn) {
+
+	case 0:	/*  Main ID register:  */
+		if (opcode2 != 0)
+			fatal("[ arm_mcr_mrc_15: TODO: cr0, opcode2=%i ]\n",
+			    opcode2);
+		if (l_bit)
+			cpu->cd.arm.r[rd] = cpu->cd.arm.cpu_type.cpu_id;
+		else
+			fatal("[ arm_mcr_mrc_15: attempt to write to cr0? ]\n");
+		break;
+
+	case 1:	/*  Control Register:  */
+		if (l_bit) {
+			cpu->cd.arm.r[rd] = cpu->cd.arm.control;
+			return;
+		}
+		/*
+		 *  Write to control:  Check each bit individually:
+		 */
+		old_control = cpu->cd.arm.control;
+		cpu->cd.arm.control = cpu->cd.arm.r[rd];
+		if ((old_control & ARM_CONTROL_MMU) !=
+		    (cpu->cd.arm.control & ARM_CONTROL_MMU))
+			debug("[ %s the MMU ]\n", cpu->cd.arm.control &
+			    ARM_CONTROL_MMU? "enabling" : "disabling");
+		/*  TODO  */
+		break;
+
+	case 2:	/*  Translation Table Base register:  */
+		if (l_bit)
+			cpu->cd.arm.r[rd] = cpu->cd.arm.ttb & 0xffffc000;
+		else
+			cpu->cd.arm.ttb = cpu->cd.arm.r[rd] & 0xffffc000;
+		break;
+
+	case 5:	/*  Fault Status Register:  */
+		if (l_bit)
+			cpu->cd.arm.r[rd] = cpu->cd.arm.fsr & 0xff;
+		else
+			cpu->cd.arm.fsr = cpu->cd.arm.r[rd] & 0xff;
+		break;
+
+	case 6:	/*  Fault Address Register:  */
+		if (l_bit)
+			cpu->cd.arm.r[rd] = cpu->cd.arm.far;
+		else
+			cpu->cd.arm.far = cpu->cd.arm.r[rd];
+		break;
+
+	case 7:	/*  Cache functions:  */
+		if (l_bit)
+			fatal("[ arm_mcr_mrc_15: attempt to read cr7? ]\n");
+		fatal("[ arm_mcr_mrc_15: cache op: TODO ]\n");
+		break;
+
+	default:fatal("arm_mcr_mrc_15: unimplemented crn = %i\n", crn);
+		fatal("(opcode1=%i opcode2=%i crm=%i rd=%i l=%i)\n",
+		    opcode1, opcode2, crm, rd, l_bit);
+		exit(1);
+	}
+}
+
+
+/*****************************************************************************/
+
+
+/*
+ *  arm_mcr_mrc():
+ *
+ *  Coprocessor register move.
+ *
+ *  The program counter should be synched before calling this function (to
+ *  make debug output with the correct PC value possible).
+ */
+void arm_mcr_mrc(struct cpu *cpu, uint32_t iword)
+{
+	int opcode1 = (iword >> 21) & 7;
+	int l_bit = (iword >> 20) & 1;
+	int crn = (iword >> 16) & 15;
+	int rd = (iword >> 12) & 15;
+	int cp_num = (iword >> 8) & 15;
+	int opcode2 = (iword >> 5) & 7;
+	int crm = iword & 15;
+
+	switch (cp_num) {
+	case 15:arm_mcr_mrc_15(cpu, opcode1, opcode2, l_bit, crn, crm, rd);
+		break;
+	default:fatal("arm_mcr_mrc: pc=0x%08x, iword=0x%08x: "
+		    "cp_num=%i\n", (int)cpu->pc, iword, cp_num);
+		exit(1);
+	}
+}
+
+
+/*
+ *  arm_cdp():
+ *
+ *  Coprocessor operations.
+ *
+ *  The program counter should be synched before calling this function (to
+ *  make debug output with the correct PC value possible).
+ */
+void arm_cdp(struct cpu *cpu, uint32_t iword)
+{
+	fatal("arm_cdp: pc=0x%08x, iword=0x%08x\n", (int)cpu->pc, iword);
+	exit(1);
+}
+
+
+/*****************************************************************************/
 
 
 #include "tmp_arm_tail.c"

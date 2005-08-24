@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.1 2005-08-22 05:11:53 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.2 2005-08-24 00:17:42 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -121,13 +121,13 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	c64 = a + b;
 #endif
 #if defined(A__ADC)
-	c64 = a + b + (cpu->cd.arm.flags & ARM_FLAG_C? 1 : 0);
+	c64 = a + b + (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0);
 #endif
 #if defined(A__SBC)
-	c64 = a - b - (1 - (cpu->cd.arm.flags & ARM_FLAG_C? 1 : 0));
+	c64 = a - b - (1 - (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0));
 #endif
 #if defined(A__RSC)
-	c64 = b - a - (1 - (cpu->cd.arm.flags & ARM_FLAG_C? 1 : 0));
+	c64 = b - a - (1 - (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0));
 #endif
 #if defined(A__ORR)
 	c64 = a | b;
@@ -171,7 +171,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	 */
 #ifdef A__S
 	c32 = c64;
-	cpu->cd.arm.flags &= ~(ARM_FLAG_Z | ARM_FLAG_N
+	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSC) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
 	    | ARM_FLAG_V | ARM_FLAG_C
@@ -180,15 +180,15 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSC) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
 	if (c32 != c64)
-		cpu->cd.arm.flags |= ARM_FLAG_C;
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
 #endif
 	if (c32 == 0)
-		cpu->cd.arm.flags |= ARM_FLAG_Z;
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
 
 	{
 		int n;
 			if ((int32_t)c32 < 0) {
-		cpu->cd.arm.flags |= ARM_FLAG_N;
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
 			n = 1;
 		} else
 			n = 0;
@@ -202,7 +202,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 			else
 				v = !n;
 			if (v)
-				cpu->cd.arm.flags |= ARM_FLAG_V;
+				cpu->cd.arm.cpsr |= ARM_FLAG_V;
 		}
 #endif
 	}
@@ -210,40 +210,40 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 }
 
 void A__NAME__eq(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.flags & ARM_FLAG_Z) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z) A__NAME(cpu, ic); }
 void A__NAME__ne(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
 void A__NAME__cs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.flags & ARM_FLAG_C) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_C) A__NAME(cpu, ic); }
 void A__NAME__cc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.flags & ARM_FLAG_C)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
 void A__NAME__mi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.flags & ARM_FLAG_N) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_N) A__NAME(cpu, ic); }
 void A__NAME__pl(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.flags & ARM_FLAG_N)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_N)) A__NAME(cpu, ic); }
 void A__NAME__vs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.flags & ARM_FLAG_V) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_V) A__NAME(cpu, ic); }
 void A__NAME__vc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.flags & ARM_FLAG_V)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_V)) A__NAME(cpu, ic); }
 
 void A__NAME__hi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.flags & ARM_FLAG_C &&
-!(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_C &&
+!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
 void A__NAME__ls(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.flags & ARM_FLAG_Z &&
-!(cpu->cd.arm.flags & ARM_FLAG_C)) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z &&
+!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
 void A__NAME__ge(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.flags & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
+((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
 void A__NAME__lt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.flags & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
+((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
 void A__NAME__gt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) &&
-!(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
+((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) &&
+!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
 void A__NAME__le(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.flags & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.flags & ARM_FLAG_V)?1:0) ||
-(cpu->cd.arm.flags & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
+((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) ||
+(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.166 2005-08-16 05:44:33 debug Exp $
+$Id: TODO,v 1.167 2005-08-24 00:17:41 debug Exp $
 
 ===============================================================================
 
@@ -8,9 +8,16 @@ High priority stuff:
 MIPS bintrans:
 	x)  call/return address cache?
 
+ARM and PPC:
+	x)  more instructions
+
+	x)  coprocessors, MMUs, interrupts, ...
+
 dyntrans:
 	x)  memory write protection for ARM, but NOT for Alpha (because
 		it has the IMB instruction... hm)
+		No: better is to have write protection (or code invalidation)
+		for all archs.
 
 	x)  call/return address cache
 
@@ -19,32 +26,43 @@ dyntrans:
 
 	x)  opcode statistics support?
 		TODO: is instr_call statistics enough?
+		TODO: a command line option to turn off instruction
+			combinations (for debugging)
 
 	x)  support for archs that allow transparent unaligned load/stores
+		(ppc, x86 etc)
 
 	x)  SMP: detect when an instruction such as ll/sc or cas is used,
 	    and "synchronize" approximately the number of executed instructions
 	    (or cycles) across all CPUs.
 
 	x)  support for variable-length instructions (x86, m68k, ...)
-		Perhaps:  don't increase the next_ic between every
-		instruction, but let each instruction's handler do
-		that for itself.
+		Solution:  don't increase the next_ic between every
+			instruction, but let each instruction's handler do
+			that for itself.
 		Problem: what about instructions crossing a (virtual)
 			page boundary? They cannot be translated once
 			and for all :( and must be interpreted slowly!
 
-	x)  support for THUMB or MIPS16  (arm, mips)
+	x)  support for THUMB, MIPS16, userland SH  (arm, mips, sh)
 
 	x)  support for Delay slots!  (mips, sparc, hppa)
 
 	x)  Alpha: hahaha, zapnot and inserts/extracts don't
 	    compile into very nice code :-|  fix this
+		Solution: if short assembly language snippets can be
+		compiled on the current host, then compile such snippets
+		for alpha_instr_zapnot etc.
 
-	x)  64-bit virtual memory translation tables (PPC, etc)
+	x)  64-bit virtual memory translation tables (PPC, Alpha, MIPS,
+	    HPPA, sh, amd64, etc)
 
 	x)  x86: convert to dyntrans. LOTS of stuff to consider.
 
+userland emulation:
+	x)  Lots of stuff.
+
+	x)  Dynamic linking? Hm.
 
 ===============================================================================
 

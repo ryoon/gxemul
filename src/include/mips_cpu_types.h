@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.8 2005-06-30 15:36:53 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.9 2005-08-24 10:18:22 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -104,9 +104,9 @@
 	{ "5Kc",	0x100+MIPS_5Kc, 1,	0,	EXC64, MMU64,  64,	48, 4,15,5,2,15,5,2, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
 	{ "BCM4710",	0x000240,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "BCM4712",	0x000290,   0x07,       0,	EXC32, MMU32,  32,      32, 2,13,4,1,12,4,1, 0, 0, 0 }, /*  2ways I, 2ways D  */ \
-	{ "AU1000",	0x000301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "AU1500",	0x010301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "AU1100",	0x020301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "AU1000",	0x000301,   0x00,       0,	EXC32, MMU32,  32,      32, 2,14,5,2,14,5,2, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "AU1500",	0x010301,   0x00,       0,	EXC32, MMU32,  32,      32, 2,14,5,2,14,5,2, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "AU1100",	0x020301,   0x00,       0,	EXC32, MMU32,  32,      32, 2,14,5,2,14,5,2, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "SB1",	0x000401,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "SR7100",	0x000504,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "Allegrex",	0x000000,   0x00,	0,	EXC32, MMU32,   2,       4, 1,14,6,2,14,6,2, 0, 0, 0 }, \

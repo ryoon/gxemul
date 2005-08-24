@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.66 2005-08-24 12:34:00 debug Exp $
+ *  $Id: cpu_arm.c,v 1.67 2005-08-24 14:33:21 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -440,6 +440,48 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("swp%s%s\t", (iw&0x400000)? "b":"", condition);
 			debug("%s,%s,[%s]\n", arm_regname[r12],
 			    arm_regname[iw & 15], arm_regname[r16]);
+			break;
+		}
+
+		/*
+		 *  xxxx000P U1WLnnnn ddddHHHH 1SH1LLLL load/store rd,imm(rn)
+		 */
+		if ((iw & 0x0e000090) == 0x00000090) {
+			int imm = ((iw >> 4) & 0xf0) | (iw & 0xf);
+			int regform = !(iw & 0x00400000);
+			p_bit = main_opcode & 1;
+			/*
+			 *  TODO: detect some illegal variants:
+			 *  signed store,  or  unsigned byte load/store
+			 */
+			debug("%sr%s", iw & 0x00100000? "ld" : "st",
+			    condition);
+			if (iw & 0x40)
+				debug("s");	/*  signed  */
+			if (iw & 0x20)
+				debug("h");	/*  half-word  */
+			else
+				debug("b");	/*  byte  */
+			debug("\t%s,[%s", arm_regname[r12], arm_regname[r16]);
+			if (p_bit) {
+				/*  Pre-index:  */
+				if (regform)
+					debug(",%s%s", u_bit? "" : "-",
+					    arm_regname[iw & 15]);
+				else {
+					if (imm != 0)
+						debug(",%s%i", u_bit? "" : "-",
+						    imm);
+				}
+				debug("]%s\n", w_bit? "!" : "");
+			} else {
+				/*  Post-index:  */
+				debug("],%s", u_bit? "" : "-");
+				if (regform)
+					debug("%s\n", arm_regname[iw & 15]);
+				else
+					debug("%i\n", imm);
+			}
 			break;
 		}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.525 2005-08-24 12:34:00 debug Exp $
+ *  $Id: machine.c,v 1.526 2005-08-24 14:33:21 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4408,14 +4408,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 	case MACHINE_ZAURUS:
 		machine->machine_name = "Zaurus";
+		device_add(machine, "ns16550 irq=0 addr=0xd400000 addr_mult=4");
 		/*  TODO  */
 		break;
 
 	case MACHINE_NETWINDER:
 		machine->machine_name = "Netwinder";
-
 		device_add(machine, "ns16550 irq=0 addr=0xd2003f8");
-
 		break;
 #endif	/*  ENABLE_ARM  */
 

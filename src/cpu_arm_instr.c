@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.71 2005-08-24 00:17:42 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.72 2005-08-24 14:33:21 debug Exp $
  *
  *  ARM instructions.
  *
@@ -439,14 +439,17 @@ X(mull)
 	uint32_t iw = ic->arg[0];
 	int u_bit = (iw >> 22) & 1, a_bit = (iw >> 21) & 1;
 	uint64_t tmp = cpu->cd.arm.r[iw & 15];
-	if (u_bit) {
-		fatal("mull: u bit\n");
-		exit(1);
-	}
-	tmp *= cpu->cd.arm.r[(iw >> 8) & 15];
+	if (u_bit)
+		tmp = (int64_t)(int32_t)tmp
+		    * (int64_t)(int32_t)cpu->cd.arm.r[(iw >> 8) & 15];
+	else
+		tmp *= (uint64_t)cpu->cd.arm.r[(iw >> 8) & 15];
 	if (a_bit) {
-		cpu->cd.arm.r[(iw >> 16) & 15] += (tmp >> 32);
-		cpu->cd.arm.r[(iw >> 12) & 15] += tmp;
+		uint64_t x = ((uint64_t)cpu->cd.arm.r[(iw >> 16) & 15] << 32)
+		    | cpu->cd.arm.r[(iw >> 12) & 15];
+		x += tmp;
+		cpu->cd.arm.r[(iw >> 16) & 15] = (x >> 32);
+		cpu->cd.arm.r[(iw >> 12) & 15] = x;
 	} else {
 		cpu->cd.arm.r[(iw >> 16) & 15] = (tmp >> 32);
 		cpu->cd.arm.r[(iw >> 12) & 15] = tmp;
@@ -560,28 +563,24 @@ X(swi_useremul)
 Y(swi_useremul)
 
 
-#include "tmp_arm_include.c"
+extern void (*arm_load_store_instr[1024])(struct cpu *,
+	struct arm_instr_call *);
+X(store_w0_byte_u1_p0_imm);
 
+extern void (*arm_load_store_instr_pc[1024])(struct cpu *,
+	struct arm_instr_call *);
+
+extern void (*arm_load_store_instr_3[2048])(struct cpu *,
+	struct arm_instr_call *);
+
+extern void (*arm_load_store_instr_3_pc[2048])(struct cpu *,
+	struct arm_instr_call *);
 
 extern void (*arm_dpi_instr[2 * 2 * 2 * 16 * 16])(struct cpu *,
 	struct arm_instr_call *);
 X(cmps);
 X(sub);
 
-
-
-#define A__NAME arm_instr_store_w0_byte_u1_p0_imm_fixinc1
-#define A__NAME__general arm_instr_store_w0_byte_u1_p0_imm_fixinc1__general
-#define A__B
-#define A__U
-#define	A__NOCONDITIONS
-#define A__FIXINC	1
-#include "cpu_arm_instr_loadstore.c"
-#undef A__NOCONDITIONS
-#undef A__B
-#undef A__U
-#undef A__NAME__general
-#undef A__NAME
 
 
 /*
@@ -1011,6 +1010,34 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			break;
 		}
+		if ((iword & 0x0e000090) == 0x00000090) {
+			int imm = ((iword >> 4) & 0xf0) | (iword & 0xf);
+			int regform = !(iword & 0x00400000);
+			p_bit = main_opcode & 1;
+			if (rd == ARM_PC || rn == ARM_PC)
+				ic->f = arm_load_store_instr_3_pc[
+				    condition_code + (l_bit? 16 : 0)
+				    + (iword & 0x40? 32 : 0)
+				    + (w_bit? 64 : 0)
+				    + (iword & 0x20? 128 : 0)
+				    + (u_bit? 256 : 0) + (p_bit? 512 : 0)
+				    + (regform? 1024 : 0)];
+			else
+				ic->f = arm_load_store_instr_3[
+				    condition_code + (l_bit? 16 : 0)
+				    + (iword & 0x40? 32 : 0)
+				    + (w_bit? 64 : 0)
+				    + (iword & 0x20? 128 : 0)
+				    + (u_bit? 256 : 0) + (p_bit? 512 : 0)
+				    + (regform? 1024 : 0)];
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
+			if (regform)
+				ic->arg[1] = iword & 0xf;
+			else
+				ic->arg[1] = (size_t)(imm);
+			break;
+		}
 
 		if (iword & 0x80 && !(main_opcode & 2) && iword & 0x10) {
 			fatal("reg form blah blah\n");
@@ -1056,13 +1083,12 @@ X(to_be_translated)
 	case 0x5:	/*  xxxx010P UBWLnnnn ddddoooo oooooooo  Immediate  */
 	case 0x6:	/*  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register  */
 	case 0x7:
-		p_bit = main_opcode & 1;
 		if (rd == ARM_PC || rn == ARM_PC)
-			ic->f = load_store_instr_pc[((iword >> 16) & 0x3f0)
-			    + condition_code];
+			ic->f = arm_load_store_instr_pc[((iword >> 16)
+			    & 0x3f0) + condition_code];
 		else
-			ic->f = load_store_instr[((iword >> 16) & 0x3f0)
-			    + condition_code];
+			ic->f = arm_load_store_instr[((iword >> 16) &
+			    0x3f0) + condition_code];
 		imm = iword & 0xfff;
 		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
 		ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
@@ -1072,14 +1098,8 @@ X(to_be_translated)
 			ic->arg[1] = iword;
 		if (main_opcode == 4) {
 			/*  Post-index, immediate:  */
-			if (imm == 1 && u_bit && !w_bit && l_bit && b_bit)
-				ic->f = instr(store_w0_byte_u1_p0_imm_fixinc1);
 			if (w_bit) {
 				fatal("load/store: T-bit\n");
-				goto bad;
-			}
-			if (rn == ARM_PC) {
-				fatal("load/store writeback PC: error\n");
 				goto bad;
 			}
 		} else if ((iword & 0x0e000010) == 0x06000010) {

@@ -25,13 +25,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.11 2005-08-24 00:17:42 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.12 2005-08-24 14:33:21 debug Exp $
  *
  *
  *  TODO:
  *
+ *	o)  Big-endian ARM loads/stores.
+ *
+ *	o)  Alignment checks!
+ *
  *	o)  Native load/store if the endianness is the same as the host's
- *	    (and check for alignment?)
  *
  *	o)  All load/store variants with the PC register are not really
  *	    valid. (E.g. a byte load into the PC register. What should that
@@ -49,7 +52,11 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #ifdef A__B
 	unsigned char data[1];
 #else
+#ifdef A__H
+	unsigned char data[2];
+#else
 	unsigned char data[4];
+#endif
 #endif
 	uint32_t addr;
 
@@ -73,25 +80,44 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	    ;
 
 #ifdef A__L
+	/*  Load:  */
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_READ, CACHE_DATA)) {
 		fatal("load failed: TODO\n");
 		exit(1);
 	}
 #ifdef A__B
-	*((uint32_t *)ic->arg[2]) = data[0];
+	*((uint32_t *)ic->arg[2]) =
+#ifdef A__SIGNED
+	    (int8_t)
+#endif
+	    data[0];
+#else
+#ifdef A__H
+	*((uint32_t *)ic->arg[2]) =
+#ifdef A__SIGNED
+	    (int16_t)
+#endif
+	    (data[0] + (data[1] << 8));
 #else
 	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
 	    (data[2] << 16) + (data[3] << 24);
 #endif
+#endif
 #else
+	/*  Store:  */
 #ifdef A__B
 	data[0] = *((uint32_t *)ic->arg[2]);
+#else
+#ifdef A__H
+	data[0] = (*((uint32_t *)ic->arg[2]));
+	data[1] = (*((uint32_t *)ic->arg[2])) >> 8;
 #else
 	data[0] = (*((uint32_t *)ic->arg[2]));
 	data[1] = (*((uint32_t *)ic->arg[2])) >> 8;
 	data[2] = (*((uint32_t *)ic->arg[2])) >> 16;
 	data[3] = (*((uint32_t *)ic->arg[2])) >> 24;
+#endif
 #endif
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, CACHE_DATA)) {
@@ -174,7 +200,19 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 
 #ifdef A__L
 #ifdef A__B
-		*((uint32_t *)ic->arg[2]) = page[addr & 4095];
+		*((uint32_t *)ic->arg[2]) =
+#ifdef A__SIGNED
+		    (int8_t)
+#endif
+		    page[addr & 4095];
+#else
+#ifdef A__H
+		addr &= 4095;
+		*((uint32_t *)ic->arg[2]) =
+#ifdef A__SIGNED
+		    (int16_t)
+#endif
+		    (page[addr] + (page[addr + 1] << 8));
 #else
 		addr &= 4095;
 		*((uint32_t *)ic->arg[2]) = page[addr] +
@@ -182,15 +220,22 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		    (page[addr + 2] << 16) +
 		    (page[addr + 3] << 24);
 #endif
+#endif
 #else
 #ifdef A__B
 		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
+#else
+#ifdef A__H
+		addr &= 4095;
+		page[addr] = *((uint32_t *)ic->arg[2]);
+		page[addr+1] = (*((uint32_t *)ic->arg[2])) >> 8;
 #else
 		addr &= 4095;
 		page[addr] = *((uint32_t *)ic->arg[2]);
 		page[addr+1] = (*((uint32_t *)ic->arg[2])) >> 8;
 		page[addr+2] = (*((uint32_t *)ic->arg[2])) >> 16;
 		page[addr+3] = (*((uint32_t *)ic->arg[2])) >> 24;
+#endif
 #endif
 #endif
 	}

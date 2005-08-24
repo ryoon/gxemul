@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.524 2005-08-22 21:43:13 debug Exp $
+ *  $Id: machine.c,v 1.525 2005-08-24 12:34:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4410,6 +4410,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "Zaurus";
 		/*  TODO  */
 		break;
+
+	case MACHINE_NETWINDER:
+		machine->machine_name = "Netwinder";
+
+		device_add(machine, "ns16550 irq=0 addr=0xd2003f8");
+
+		break;
 #endif	/*  ENABLE_ARM  */
 
 #ifdef ENABLE_IA64
@@ -4879,6 +4886,7 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("SA1110");
 		break;
 	case MACHINE_CATS:
+	case MACHINE_NETWINDER:
 		m->cpu_name = strdup("SA110");
 		break;
 	case MACHINE_ZAURUS:
@@ -5318,6 +5326,12 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Netwinder:  */
+	me = machine_entry_new("Netwinder", ARCH_ARM, MACHINE_NETWINDER, 1, 0);
+	me->aliases[0] = "netwinder";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 	/*  NetGear:  */
 	me = machine_entry_new("NetGear WG602", ARCH_MIPS,
 	    MACHINE_NETGEAR, 2, 0);

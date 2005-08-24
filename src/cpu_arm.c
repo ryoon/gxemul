@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.65 2005-08-24 12:19:35 debug Exp $
+ *  $Id: cpu_arm.c,v 1.66 2005-08-24 12:34:00 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -227,31 +227,31 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 	if (coprocs) {
 		debug("cpu%i:  control = 0x%08x\n", x, cpu->cd.arm.control);
-		debug("cpu%i:      MMU:               %s\n",
+		debug("cpu%i:      MMU:               %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_MMU? "enabled" : "disabled");
-		debug("cpu%i:      alignment checks:  %s\n",
+		debug("cpu%i:      alignment checks:  %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_ALIGN? "enabled" : "disabled");
-		debug("cpu%i:      [data] cache:      %s\n",
+		debug("cpu%i:      [data] cache:      %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_CACHE? "enabled" : "disabled");
-		debug("cpu%i:      instruction cache: %s\n",
+		debug("cpu%i:      instruction cache: %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_ICACHE? "enabled" : "disabled");
-		debug("cpu%i:      write buffer:      %s\n",
+		debug("cpu%i:      write buffer:      %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_WBUFFER? "enabled" : "disabled");
-		debug("cpu%i:      prog32:            %s\n",
+		debug("cpu%i:      prog32:            %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_PROG32? "yes" : "no (using prog26)");
-		debug("cpu%i:      data32:            %s\n",
+		debug("cpu%i:      data32:            %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_DATA32? "yes" : "no (using data26)");
-		debug("cpu%i:      endianness:        %s\n",
+		debug("cpu%i:      endianness:        %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_BIG? "big endian" : "little endian");
-		debug("cpu%i:      high vectors:      %s\n",
+		debug("cpu%i:      high vectors:      %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_V? "yes (0xffff0000)" : "no");
 

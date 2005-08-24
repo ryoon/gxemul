@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.72 2005-08-24 14:33:21 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.73 2005-08-24 14:51:24 debug Exp $
  *
  *  ARM instructions.
  *
@@ -974,6 +974,10 @@ X(to_be_translated)
 		}
 		if ((iword & 0x0f8000f0) == 0x00800090) {
 			/*  Long multiplication:  */
+			if (s_bit) {
+				fatal("TODO: sbit mull\n");
+				goto bad;
+			}
 			ic->f = cond_instr(mull);
 			ic->arg[0] = iword;
 			break;

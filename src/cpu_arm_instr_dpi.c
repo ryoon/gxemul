@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.2 2005-08-24 00:17:42 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.3 2005-08-24 12:19:35 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -74,7 +74,11 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSC) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
+#ifdef A__S
 	uint64_t
+#else
+	uint32_t
+#endif
 #else
 	uint32_t
 #endif

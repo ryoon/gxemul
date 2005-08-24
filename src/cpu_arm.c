@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.64 2005-08-24 00:17:42 debug Exp $
+ *  $Id: cpu_arm.c,v 1.65 2005-08-24 12:19:35 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -255,7 +255,8 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_V? "yes (0xffff0000)" : "no");
 
-		debug("cpu%i:  ttb = 0x%08x\n", x, cpu->cd.arm.ttb);
+		debug("cpu%i:  ttb = 0x%08x  dacr = 0x%08x\n", x,
+		    cpu->cd.arm.ttb, cpu->cd.arm.dacr);
 		debug("cpu%i:  fsr = 0x%08x  far = 0x%08x\n", x,
 		    cpu->cd.arm.fsr, cpu->cd.arm.far);
 	}
@@ -712,6 +713,13 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			cpu->cd.arm.ttb = cpu->cd.arm.r[rd] & 0xffffc000;
 		break;
 
+	case 3:	/*  Domain Access Control Register:  */
+		if (l_bit)
+			cpu->cd.arm.r[rd] = cpu->cd.arm.dacr;
+		else
+			cpu->cd.arm.dacr = cpu->cd.arm.r[rd];
+		break;
+
 	case 5:	/*  Fault Status Register:  */
 		if (l_bit)
 			cpu->cd.arm.r[rd] = cpu->cd.arm.fsr & 0xff;
@@ -727,9 +735,19 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		break;
 
 	case 7:	/*  Cache functions:  */
-		if (l_bit)
+		if (l_bit) {
 			fatal("[ arm_mcr_mrc_15: attempt to read cr7? ]\n");
+			return;
+		}
 		fatal("[ arm_mcr_mrc_15: cache op: TODO ]\n");
+		break;
+
+	case 8:	/*  TLB functions:  */
+		if (l_bit) {
+			fatal("[ arm_mcr_mrc_15: attempt to read cr8? ]\n");
+			return;
+		}
+		fatal("[ arm_mcr_mrc_15: TLB op: TODO ]\n");
 		break;
 
 	default:fatal("arm_mcr_mrc_15: unimplemented crn = %i\n", crn);

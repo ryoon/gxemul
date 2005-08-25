@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.70 2005-08-25 12:12:04 debug Exp $
+ *  $Id: cpu_arm.c,v 1.71 2005-08-25 17:32:19 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -93,6 +93,8 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->invalidate_code_translation_caches =
 	    arm_invalidate_code_translation_caches;
 
+	cpu->translate_address = arm_translate_address;
+
 	cpu->cd.arm.cpu_type    = cpu_type_defs[found];
 	cpu->name               = cpu->cd.arm.cpu_type.name;
 	cpu->is_32bit           = 1;
@@ -114,6 +116,38 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 			    (int)(1 << (cpu->cd.arm.cpu_type.dcache_shift-10)));
 			debug(")");
 		}
+	}
+
+	if (cpu->machine->userland_emul == NULL) {
+		/*  Set up initial page tables:  */
+		unsigned char nothing[16384];
+		unsigned int i, j;
+		cpu->cd.arm.control |= ARM_CONTROL_MMU;
+		cpu->cd.arm.ttb = 0x4000;
+		memset(nothing, 0, sizeof(nothing));
+		cpu->memory_rw(cpu, cpu->mem, cpu->cd.arm.ttb, nothing,
+		    sizeof(nothing), MEM_WRITE, PHYSICAL | NO_EXCEPTIONS);
+		for (i=0; i<256; i++)
+			for (j=0x0; j<=0xf; j++) {
+				unsigned char descr[4];
+				uint32_t addr = cpu->cd.arm.ttb +
+				    (((j << 28) + (i << 20)) >> 18);
+				uint32_t d = 1048576*i | 2;
+				if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+					descr[0] = d;
+					descr[1] = d >> 8;
+					descr[2] = d >> 16;
+					descr[3] = d >> 24;
+				} else {
+					descr[3] = d;
+					descr[2] = d >> 8;
+					descr[1] = d >> 16;
+					descr[0] = d >> 24;
+				}
+				cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
+				    sizeof(descr), MEM_WRITE, PHYSICAL |
+				    NO_EXCEPTIONS);
+			}
 	}
 
 	return 1;
@@ -816,7 +850,7 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			fatal("[ arm_mcr_mrc_15: attempt to read cr7? ]\n");
 			return;
 		}
-		debug("[ arm_mcr_mrc_15: cache op: TODO ]\n");
+		/*  debug("[ arm_mcr_mrc_15: cache op: TODO ]\n");  */
 		break;
 
 	case 8:	/*  TLB functions:  */

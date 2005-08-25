@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.35 2005-07-19 10:48:07 debug Exp $
+ *  $Id: memory.h,v 1.36 2005-08-25 17:32:21 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -159,10 +159,6 @@ int translate_address_mmu10k(struct cpu *cpu, uint64_t vaddr,
 int translate_address_mmu4100(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags);
-
-/*  X86 stuff:  */
-int translate_address_x86(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 
 

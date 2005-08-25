@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.31 2005-08-24 12:19:36 debug Exp $
+ *  $Id: cpu_arm.h,v 1.32 2005-08-25 17:32:21 debug Exp $
  */
 
 #include "misc.h"
@@ -226,5 +226,8 @@ int arm_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int arm_cpu_family_init(struct cpu_family *);
 
+/*  memory_arm.c:  */
+int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
 
 #endif	/*  CPU_ARM_H  */

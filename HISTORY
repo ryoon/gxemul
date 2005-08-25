@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.928 2005-08-25 11:49:55 debug Exp $
+$Id: HISTORY,v 1.929 2005-08-25 17:32:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2222,3 +2222,4 @@ Changelog for GXemul:
 		OpenBSD/zaurus and NetBSD/netwinder now print some boot
 		messages. :)
 		Adding a dummy SH (Hitachi SuperH) cpu family.
+		Beginning to add some ARM virtual address translation.

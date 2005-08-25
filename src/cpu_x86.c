@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.171 2005-08-18 20:18:41 debug Exp $
+ *  $Id: cpu_x86.c,v 1.172 2005-08-25 17:32:19 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -113,7 +113,7 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.x86.idtr = 0;
 	cpu->cd.x86.idtr_limit = 0x3ff;
 
-	cpu->translate_address = translate_address_x86;
+	cpu->translate_address = x86_translate_address;
 
 	cpu->cd.x86.rflags = 0x0002;
 	if (cpu->cd.x86.model.model_number == X86_MODEL_8086)
@@ -3130,7 +3130,7 @@ cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
 }
 
 
-#define	TRANSLATE_ADDRESS       translate_address_x86
+#define	TRANSLATE_ADDRESS       x86_translate_address
 #include "memory_x86.c"
 #undef TRANSLATE_ADDRESS
 

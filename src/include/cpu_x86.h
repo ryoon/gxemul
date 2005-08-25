@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.32 2005-08-14 23:44:23 debug Exp $
+ *  $Id: cpu_x86.h,v 1.33 2005-08-25 17:32:21 debug Exp $
  */
 
 #include "misc.h"
@@ -329,5 +329,8 @@ int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int x86_cpu_family_init(struct cpu_family *);
 
+/*  memory_x86.c:  */
+int x86_translate_address(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
 
 #endif	/*  CPU_X86_H  */

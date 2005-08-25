@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.4 2005-02-18 07:11:56 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.5 2005-08-25 19:26:29 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -447,8 +447,11 @@ bugs are triggered.  */
 	 *  We are here if for example userland code tried to access
 	 *  kernel memory.
 	 */
-
-	/*  TLB refill  */
+	tlb_refill = 0;
+	if (writeflag == MEM_WRITE)
+		exccode = EXCEPTION_ADES;
+	else
+		exccode = EXCEPTION_ADEL;
 
 exception:
 	if (no_exceptions)

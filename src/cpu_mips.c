@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.61 2005-08-07 19:12:12 debug Exp $
+ *  $Id: cpu_mips.c,v 1.62 2005-08-25 19:26:29 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2193,6 +2193,11 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		 *
 		 *  2)  Fallback to reading from memory the usual way.
 		 */
+		if (cached_pc & 3) {
+			mips_cpu_exception(cpu, EXCEPTION_ADEL,
+			    0, cached_pc, 0, 0, 0, 0);
+			return 0;
+		}
 		if (cpu->cd.mips.pc_last_host_4k_page != NULL &&
 		    (cached_pc & ~0xfff) == cpu->cd.mips.pc_last_virtual_page) {
 			/*  NOTE: This only works on the host if offset is

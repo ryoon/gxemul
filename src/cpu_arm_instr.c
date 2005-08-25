@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.75 2005-08-25 00:19:07 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.76 2005-08-25 10:40:43 debug Exp $
  *
  *  ARM instructions.
  *
@@ -233,7 +233,15 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
  */
 X(nop) { }
 X(invalid) {
- 	fatal("invalid ARM instruction?\n");
+	uint32_t low_pc;
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
+
+ 	fatal("invalid ARM instruction? pc=0x%08x\n", (int)cpu->pc);
 	exit(1);
 }
 
@@ -275,6 +283,26 @@ Y(b_samepage)
 
 
 /*
+ *  bx:  Branch, potentially exchanging Thumb/ARM encoding
+ *
+ *  arg[0] = ptr to rm
+ */
+X(bx)
+{
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = reg(ic->arg[0]);
+	if (cpu->pc & 1) {
+		fatal("thumb: TODO\n");
+		exit(1);
+	}
+	cpu->pc &= ~3;
+
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
+}
+Y(bx)
+
+
+/*
  *  bl:  Branch and Link (to a different translated page)
  *
  *  arg[0] = relative address
@@ -300,6 +328,38 @@ X(bl)
 	arm_pc_to_pointers(cpu);
 }
 Y(bl)
+
+
+/*
+ *  blx:  Branch and Link, potentially exchanging Thumb/ARM encoding
+ *
+ *  arg[0] = ptr to rm
+ */
+X(blx)
+{
+	uint32_t lr, low_pc;
+
+	/*  Figure out what the return (link) address will be:  */
+	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	lr = cpu->cd.arm.r[ARM_PC];
+	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
+	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+
+	/*  Link:  */
+	cpu->cd.arm.r[ARM_LR] = lr;
+
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = reg(ic->arg[0]);
+	if (cpu->pc & 1) {
+		fatal("thumb: TODO\n");
+		exit(1);
+	}
+	cpu->pc &= ~3;
+
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
+}
+Y(blx)
 
 
 /*
@@ -983,6 +1043,15 @@ X(to_be_translated)
 			ic->arg[0] = iword;
 			break;
 		}
+		if ((iword & 0x0ff000d0) == 0x01200010) {
+			/*  bx or blx  */
+			if (iword & 0x20)
+				ic->f = cond_instr(blx);
+			else
+				ic->f = cond_instr(bx);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+                        break;
+                }
 		if ((iword & 0x0fb0fff0) == 0x0120f000) {
 			/*  msr: move to [C|S]PSR from a register:  */
 			if (rm == ARM_PC) {

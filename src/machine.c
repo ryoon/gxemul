@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.526 2005-08-24 14:33:21 debug Exp $
+ *  $Id: machine.c,v 1.527 2005-08-25 10:40:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4415,6 +4415,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 	case MACHINE_NETWINDER:
 		machine->machine_name = "Netwinder";
 		device_add(machine, "ns16550 irq=0 addr=0xd2003f8");
+		/* machine->main_console_handle = */
+		dev_pckbc_init(machine, mem, 0xd200060, PCKBC_8042,
+		    1, 12, 0, 1);
 		break;
 #endif	/*  ENABLE_ARM  */
 
@@ -4667,6 +4670,12 @@ void machine_memsize_fix(struct machine *m)
 			break;
 		case MACHINE_CATS:
 			m->physical_ram_in_mb = 64;
+			break;
+		case MACHINE_ZAURUS:
+			m->physical_ram_in_mb = 64;
+			break;
+		case MACHINE_NETWINDER:
+			m->physical_ram_in_mb = 16;
 			break;
 		case MACHINE_X86:
 			if (m->machine_subtype == MACHINE_X86_XT)

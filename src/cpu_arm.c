@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.68 2005-08-25 00:04:42 debug Exp $
+ *  $Id: cpu_arm.c,v 1.69 2005-08-25 10:40:43 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -399,6 +399,16 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("%s,", arm_regname[r16]);
 			debug("%s,", arm_regname[iw & 15]);
 			debug("%s\n", arm_regname[r8]);
+			break;
+		}
+
+		/*
+		 *  xxxx0001 0010.... ........ 00L1mmmm  bx/blx rm
+		 */
+		if ((iw & 0x0ff000d0) == 0x01200010) {
+			int l_bit = iw & 0x20;
+			debug("b%sx%s\t%s\n", l_bit? "l" : "", condition,
+			    arm_regname[iw & 15]);
 			break;
 		}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.527 2005-08-25 10:40:43 debug Exp $
+ *  $Id: machine.c,v 1.528 2005-08-25 11:49:56 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4176,6 +4176,38 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 #endif	/*  ENABLE_PPC  */
 
+#ifdef ENABLE_SH
+	case MACHINE_BARESH:
+		/*  A bare SH machine, with no devices.  */
+		machine->machine_name = "\"Bare\" SH machine";
+		break;
+
+	case MACHINE_TESTSH:
+		machine->machine_name = "SH test machine";
+
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
+
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testsh generic");
+
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
+		break;
+#endif	/*  ENABLE_SH  */
+
 #ifdef ENABLE_SPARC
 	case MACHINE_BARESPARC:
 		/*  A bare SPARC machine, with no devices.  */
@@ -4873,6 +4905,12 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("PPC750");
 		break;
 
+	/*  SH:  */
+	case MACHINE_BARESH:
+	case MACHINE_TESTSH:
+		m->cpu_name = strdup("SH");
+		break;
+
 	/*  SPARC:  */
 	case MACHINE_BARESPARC:
 	case MACHINE_TESTSPARC:
@@ -5212,6 +5250,14 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for SH:  */
+	me = machine_entry_new("Test-machine for SH", ARCH_SH,
+	    MACHINE_TESTSH, 1, 0);
+	me->aliases[0] = "testsh";
+	if (cpu_family_ptr_by_number(ARCH_SH) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Test-machine for PPC:  */
 	me = machine_entry_new("Test-machine for PPC", ARCH_PPC,
 	    MACHINE_TESTPPC, 1, 0);
@@ -5441,6 +5487,14 @@ void machine_init(void)
 	    MACHINE_BARESPARC, 1, 0);
 	me->aliases[0] = "baresparc";
 	if (cpu_family_ptr_by_number(ARCH_SPARC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" SH machine:  */
+	me = machine_entry_new("Generic \"bare\" SH machine", ARCH_SH,
+	    MACHINE_BARESH, 1, 0);
+	me->aliases[0] = "baresh";
+	if (cpu_family_ptr_by_number(ARCH_SH) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

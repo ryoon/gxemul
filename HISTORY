@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.927 2005-08-25 00:19:18 debug Exp $
+$Id: HISTORY,v 1.928 2005-08-25 11:49:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2219,4 +2219,6 @@ Changelog for GXemul:
 20050824	Beginning the work on the ARM system control coprocessor.
 		Adding support for ARM halfword load/stores, and signed loads.
 20050825	Fixing an important bug related to the ARM condition codes.
-		OpenBSD/zaurus now prints some boot messages. :)
+		OpenBSD/zaurus and NetBSD/netwinder now print some boot
+		messages. :)
+		Adding a dummy SH (Hitachi SuperH) cpu family.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.226 2005-08-20 20:55:21 debug Exp $
+ *  $Id: emul.c,v 1.227 2005-08-25 11:49:56 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1120,6 +1120,23 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		cpu->pc = entrypoint;
 
 		switch (m->arch) {
+
+		case ARCH_ALPHA:
+			/*  For position-independant code:  */
+			cpu->cd.alpha.r[ALPHA_T12] = cpu->pc;
+			break;
+
+		case ARCH_ARM:
+			cpu->pc &= 0xfffffffc;
+			cpu->cd.arm.r[ARM_PC] = cpu->pc;
+			break;
+
+		case ARCH_IA64:
+			break;
+
+		case ARCH_M68K:
+			break;
+
 		case ARCH_MIPS:
 			if ((cpu->pc >> 32) == 0
 			    && (cpu->pc & 0x80000000ULL))
@@ -1142,23 +1159,10 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				cpu->pc &= 0xffffffffULL;
 			break;
 
-		case ARCH_ALPHA:
-			/*  For position-independant code:  */
-			cpu->cd.alpha.r[ALPHA_T12] = cpu->pc;
+		case ARCH_SH:
 			break;
 
 		case ARCH_SPARC:
-			break;
-
-		case ARCH_IA64:
-			break;
-
-		case ARCH_M68K:
-			break;
-
-		case ARCH_ARM:
-			cpu->pc &= 0xfffffffc;
-			cpu->cd.arm.r[ARM_PC] = cpu->pc;
 			break;
 
 		case ARCH_X86:
@@ -1245,6 +1249,12 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 	debug("starting cpu%i at ", m->bootstrap_cpu);
 	switch (m->arch) {
+
+	case ARCH_ARM:
+		/*  ARM cpus aren't 64-bit:  */
+		debug("0x%08x", (int)entrypoint);
+		break;
+
 	case ARCH_MIPS:
 		if (cpu->is_32bit) {
 			debug("0x%08x", (int)m->cpus[
@@ -1261,20 +1271,19 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				    cpu->cd.mips.gpr[MIPS_GPR_GP]);
 		}
 		break;
+
 	case ARCH_PPC:
 		if (cpu->cd.ppc.bits == 32)
 			debug("0x%08x", (int)entrypoint);
 		else
 			debug("0x%016llx", (long long)entrypoint);
 		break;
-	case ARCH_ARM:
-		/*  ARM cpus aren't 64-bit:  */
-		debug("0x%08x", (int)entrypoint);
-		break;
+
 	case ARCH_X86:
 		debug("0x%04x:0x%llx", cpu->cd.x86.s[X86_S_CS],
 		    (long long)cpu->pc);
 		break;
+
 	default:
 		debug("0x%016llx", (long long)cpu->pc);
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.106 2005-08-19 21:49:38 debug Exp $
+ *  $Id: file.c,v 1.107 2005-08-25 11:49:56 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1077,6 +1077,24 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			ok = 1;
 		}
 		break;
+	case ARCH_ARM:
+		switch (emachine) {
+		case EM_ARM:
+			ok = 1;
+		}
+		break;
+	case ARCH_IA64:
+		switch (emachine) {
+		case EM_IA_64:
+			ok = 1;
+		}
+		break;
+	case ARCH_M68K:
+		switch (emachine) {
+		case EM_68K:
+			ok = 1;
+		}
+		break;
 	case ARCH_MIPS:
 		switch (emachine) {
 		case EM_MIPS:
@@ -1088,6 +1106,12 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		switch (emachine) {
 		case EM_PPC:
 		case EM_PPC64:
+			ok = 1;
+		}
+		break;
+	case ARCH_SH:
+		switch (emachine) {
+		case EM_SH:
 			ok = 1;
 		}
 		break;
@@ -1109,24 +1133,6 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			*tocp = 2;
 			ok = 1;
 			break;
-		}
-		break;
-	case ARCH_ARM:
-		switch (emachine) {
-		case EM_ARM:
-			ok = 1;
-		}
-		break;
-	case ARCH_IA64:
-		switch (emachine) {
-		case EM_IA_64:
-			ok = 1;
-		}
-		break;
-	case ARCH_M68K:
-		switch (emachine) {
-		case EM_68K:
-			ok = 1;
 		}
 		break;
 	default:
@@ -1160,8 +1166,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	 *  TODO:  Find out what e_flag actually contains.
 	 *  TODO 2: This only sets mips16 for cpu 0. Yuck. Fix this!
 	 */
-
-	if (((eflags >> 24) & 0xff) == 0x24) {
+	if (arch == ARCH_MIPS && ((eflags >> 24) & 0xff) == 0x24) {
 		debug("MIPS16 encoding (e_flags = 0x%08x)\n", eflags);
 #ifdef ENABLE_MIPS16
 		m->cpus[0]->cd.mips.mips16 = 1;
@@ -1170,7 +1175,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		    "(or use the --mips16 configure option)\n");
 		exit(1);
 #endif
-	} else if (eentry & 0x3) {
+	} else if (arch == ARCH_MIPS && (eentry & 0x3)) {
 		debug("MIPS16 encoding (eentry not 32-bit aligned)\n");
 #ifdef ENABLE_MIPS16
 		m->cpus[0]->cd.mips.mips16 = 1;
@@ -1179,6 +1184,15 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		    "(or use the --mips16 configure option)\n");
 		exit(1);
 #endif
+	}
+
+	/*
+	 *  SH64: 32-bit instruction encoding?  TODO
+	 */
+	if (arch == ARCH_SH && (eentry & 1)) {
+		debug("SH64: 32-bit instruction encoding\n");
+		m->cpus[0]->cd.sh.compact = 0;
+		m->cpus[0]->cd.sh.bits = 64;
 	}
 
 	/*  Read the program headers:  */

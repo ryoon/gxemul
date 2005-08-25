@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.929 2005-08-25 17:32:18 debug Exp $
+$Id: HISTORY,v 1.930 2005-08-25 19:26:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2223,3 +2223,7 @@ Changelog for GXemul:
 		messages. :)
 		Adding a dummy SH (Hitachi SuperH) cpu family.
 		Beginning to add some ARM virtual address translation.
+		MIPS bugfixes: unaligned PC now cause an ADEL exception (at
+		least for non-bintrans execution), and ADEL/ADES (not
+		TLBL/TLBS) are used if userland tries to access kernel space.
+		(Thanks to Joshua Wise for making me aware of these bugs.)

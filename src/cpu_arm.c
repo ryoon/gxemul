@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.69 2005-08-25 10:40:43 debug Exp $
+ *  $Id: cpu_arm.c,v 1.70 2005-08-25 12:12:04 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -33,7 +33,8 @@
  *
  *	http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html
  *
- *  (All "xxxx0101..." and similar strings in this file are from that URL.)
+ *  (Most "xxxx0101..." and similar strings in this file are from that URL,
+ *  or from the ARM manual.)
  */
 
 #include <stdio.h>
@@ -755,10 +756,33 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		    (cpu->cd.arm.control & ARM_CONTROL_MMU))
 			debug("[ %s the MMU ]\n", cpu->cd.arm.control &
 			    ARM_CONTROL_MMU? "enabling" : "disabling");
-		/*  TODO  */
+		if ((old_control & ARM_CONTROL_ALIGN) !=
+		    (cpu->cd.arm.control & ARM_CONTROL_ALIGN))
+			debug("[ %s alignment checks ]\n", cpu->cd.arm.control &
+			    ARM_CONTROL_ALIGN? "enabling" : "disabling");
+		if ((old_control & ARM_CONTROL_CACHE) !=
+		    (cpu->cd.arm.control & ARM_CONTROL_CACHE))
+			debug("[ %s the [data] cache ]\n", cpu->cd.arm.control &
+			    ARM_CONTROL_CACHE? "enabling" : "disabling");
+		if ((old_control & ARM_CONTROL_WBUFFER) !=
+		    (cpu->cd.arm.control & ARM_CONTROL_WBUFFER))
+			debug("[ %s the write buffer ]\n", cpu->cd.arm.control &
+			    ARM_CONTROL_WBUFFER? "enabling" : "disabling");
+		if ((old_control & ARM_CONTROL_BIG) !=
+		    (cpu->cd.arm.control & ARM_CONTROL_BIG)) {
+			fatal("ERROR: Trying to switch endianness. Not "
+			    "supported yet.\n");
+			exit(1);
+		}
+		if ((old_control & ARM_CONTROL_ICACHE) !=
+		    (cpu->cd.arm.control & ARM_CONTROL_ICACHE))
+			debug("[ %s the icache ]\n", cpu->cd.arm.control &
+			    ARM_CONTROL_ICACHE? "enabling" : "disabling");
+		/*  TODO: More bits.  */
 		break;
 
 	case 2:	/*  Translation Table Base register:  */
+		/*  NOTE: 16 KB aligned.  */
 		if (l_bit)
 			cpu->cd.arm.r[rd] = cpu->cd.arm.ttb & 0xffffc000;
 		else
@@ -773,6 +797,7 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		break;
 
 	case 5:	/*  Fault Status Register:  */
+		/*  Note: Only the lowest 8 bits are defined.  */
 		if (l_bit)
 			cpu->cd.arm.r[rd] = cpu->cd.arm.fsr & 0xff;
 		else

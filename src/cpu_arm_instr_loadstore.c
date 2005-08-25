@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.12 2005-08-24 14:33:21 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.13 2005-08-25 00:04:42 debug Exp $
  *
  *
  *  TODO:
@@ -322,7 +322,7 @@ void A__NAME__hi(struct cpu *cpu, struct arm_instr_call *ic)
 { if (cpu->cd.arm.cpsr & ARM_FLAG_C &&
 !(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
 void A__NAME__ls(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z &&
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||
 !(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
 void A__NAME__ge(struct cpu *cpu, struct arm_instr_call *ic)
 { if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
@@ -362,7 +362,7 @@ void A__NAME_PC__hi(struct cpu *cpu, struct arm_instr_call *ic)
 { if (cpu->cd.arm.cpsr & ARM_FLAG_C &&
 !(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__ls(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z &&
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||
 !(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__ge(struct cpu *cpu, struct arm_instr_call *ic)
 { if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==

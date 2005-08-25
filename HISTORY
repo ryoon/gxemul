@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.925 2005-08-24 14:33:20 debug Exp $
+$Id: HISTORY,v 1.926 2005-08-25 00:04:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2218,3 +2218,6 @@ Changelog for GXemul:
 		automatically.
 20050824	Beginning the work on the ARM system control coprocessor.
 		Adding support for ARM halfword load/stores, and signed loads.
+20050825	Fixing an important bug related to the ARM condition codes.
+		OpenBSD/zaurus now prints some boot messages (if some initial
+		delay code is skipped).

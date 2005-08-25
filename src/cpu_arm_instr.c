@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.73 2005-08-24 14:51:24 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.74 2005-08-25 00:04:42 debug Exp $
  *
  *  ARM instructions.
  *
@@ -92,7 +92,7 @@
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __ls(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.cpsr & ARM_FLAG_Z &&			\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||			\
 		!(cpu->cd.arm.cpsr & ARM_FLAG_C))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __ge(struct cpu *cpu,			\

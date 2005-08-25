@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.67 2005-08-24 14:33:21 debug Exp $
+ *  $Id: cpu_arm.c,v 1.68 2005-08-25 00:04:42 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -781,7 +781,7 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			fatal("[ arm_mcr_mrc_15: attempt to read cr7? ]\n");
 			return;
 		}
-		fatal("[ arm_mcr_mrc_15: cache op: TODO ]\n");
+		debug("[ arm_mcr_mrc_15: cache op: TODO ]\n");
 		break;
 
 	case 8:	/*  TLB functions:  */

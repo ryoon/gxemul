@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.3 2005-08-24 12:19:35 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.4 2005-08-25 00:04:42 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -115,10 +115,10 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if defined(A__EOR) || defined(A__TEQ)
 	c64 = a ^ b;
 #endif
-#if defined(A__SUB) || defined(A__CMP)
+#if defined(A__SUB)
 	c64 = a - b;
 #endif
-#if defined(A__RSB)
+#if defined(A__RSB) || defined(A__CMP)
 	c64 = b - a;
 #endif
 #if defined(A__ADD) || defined(A__CMN)
@@ -177,12 +177,12 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	c32 = c64;
 	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
- || defined(A__RSC) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
+ || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
 	    | ARM_FLAG_V | ARM_FLAG_C
 #endif
 	    );
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
- || defined(A__RSC) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
+ || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
 	if (c32 != c64)
 		cpu->cd.arm.cpsr |= ARM_FLAG_C;
 #endif
@@ -191,17 +191,36 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 
 	{
 		int n;
-			if ((int32_t)c32 < 0) {
-		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+		if ((int32_t)c32 < 0) {
+			cpu->cd.arm.cpsr |= ARM_FLAG_N;
 			n = 1;
 		} else
 			n = 0;
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
- || defined(A__RSC) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
+ || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
 		{
 			int v;
 			/*  TODO: This is only correct for CMP and SUB! Fix!  */
+#if defined(A__CMP) || defined(A__SUB)
 			if ((int32_t)a >= (int32_t)b)
+#else
+#if defined(A__ADD)
+			/*  TODO  */
+			if (1)
+#else
+#if defined(A__CMN)
+			if ((int32_t)a >= (int32_t)(-b))
+#else
+#if defined(A__RSB)
+			if ((int32_t)b >= (int32_t)a)
+#else
+			fatal("BLAH! not yet\n");
+			exit(1);
+			if (0)
+#endif
+#endif
+#endif
+#endif
 				v = n;
 			else
 				v = !n;
@@ -234,7 +253,7 @@ void A__NAME__hi(struct cpu *cpu, struct arm_instr_call *ic)
 { if (cpu->cd.arm.cpsr & ARM_FLAG_C &&
 !(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
 void A__NAME__ls(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z &&
+{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||
 !(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
 void A__NAME__ge(struct cpu *cpu, struct arm_instr_call *ic)
 { if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==

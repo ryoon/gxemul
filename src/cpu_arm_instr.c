@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.74 2005-08-25 00:04:42 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.75 2005-08-25 00:19:07 debug Exp $
  *
  *  ARM instructions.
  *
@@ -966,7 +966,8 @@ X(to_be_translated)
 					goto bad;
 				}
 				ic->f = cond_instr(mul);
-				ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
+				/*  NOTE: rn means rd in this case:  */
+				ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
 				ic->arg[1] = (size_t)(&cpu->cd.arm.r[rm]);
 				ic->arg[2] = (size_t)(&cpu->cd.arm.r[r8]);
 			}

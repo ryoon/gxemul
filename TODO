@@ -1,4 +1,4 @@
-$Id: TODO,v 1.167 2005-08-24 00:17:41 debug Exp $
+$Id: TODO,v 1.168 2005-08-27 23:38:42 debug Exp $
 
 ===============================================================================
 
@@ -58,6 +58,8 @@ dyntrans:
 	    HPPA, sh, amd64, etc)
 
 	x)  x86: convert to dyntrans. LOTS of stuff to consider.
+
+	x)  88k? i960? vax? pc532? 6502? 6800? etc
 
 userland emulation:
 	x)  Lots of stuff.

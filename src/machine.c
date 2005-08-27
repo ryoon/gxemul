@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.531 2005-08-27 17:29:06 debug Exp $
+ *  $Id: machine.c,v 1.532 2005-08-27 23:09:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4472,7 +4472,19 @@ Not yet.
 		machine->machine_name = "Digital DNARD (\"Shark\")";
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
-			    machine->physical_ram_in_mb * 1048576 - 32768);
+			    machine->physical_ram_in_mb * 1048576 - 65536);
+		}
+		break;
+
+	case MACHINE_IQ80321:
+		/*
+		 *  Intel IQ80321. See http://sources.redhat.com/ecos/docs-latest/redboot/iq80321.html
+		 *  for more details about the memory map.
+		 */
+		machine->machine_name = "Intel IQ80321 (ARM)";
+		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		if (machine->prom_emulation) {
+			arm_setup_initial_translation_table(cpu, 0x8000);
 		}
 		break;
 #endif	/*  ENABLE_ARM  */
@@ -4956,6 +4968,7 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_BAREARM:
 	case MACHINE_TESTARM:
 	case MACHINE_HPCARM:
+	case MACHINE_IQ80321:
 		m->cpu_name = strdup("SA1110");
 		break;
 	case MACHINE_CATS:
@@ -5450,6 +5463,14 @@ void machine_init(void)
 	    MACHINE_MACPPC_G5, 1);
 	me->subtype[1]->aliases[0] = "g5";
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Intel IQ80321 (ARM):  */
+	me = machine_entry_new("Intel IQ80321 (ARM)", ARCH_ARM,
+	    MACHINE_IQ80321, 1, 0);
+	me->aliases[0] = "iq80321";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

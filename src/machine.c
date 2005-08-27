@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.530 2005-08-27 15:56:29 debug Exp $
+ *  $Id: machine.c,v 1.531 2005-08-27 17:29:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2061,67 +2061,67 @@ void machine_setup(struct machine *machine)
 		 */
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 
-		/*  DECstation PROM stuff:  (TODO: endianness)  */
-		for (i=0; i<100; i++)
-			store_32bit_word(cpu, DEC_PROM_CALLBACK_STRUCT + i*4,
-			    DEC_PROM_EMULATION + i*8);
+		if (machine->prom_emulation) {
+			/*  DECstation PROM stuff:  (TODO: endianness)  */
+			for (i=0; i<100; i++)
+				store_32bit_word(cpu, DEC_PROM_CALLBACK_STRUCT + i*4,
+				    DEC_PROM_EMULATION + i*8);
 
-		/*  Fill PROM with dummy return instructions:  (TODO: make this nicer)  */
-		for (i=0; i<100; i++) {
-			store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
-			    0x03e00008);	/*  return  */
-			store_32bit_word(cpu, DEC_PROM_EMULATION + i*8 + 4,
-			    0x00000000);	/*  nop  */
-		}
+			/*  Fill PROM with dummy return instructions:  (TODO: make this nicer)  */
+			for (i=0; i<100; i++) {
+				store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
+				    0x03e00008);	/*  return  */
+				store_32bit_word(cpu, DEC_PROM_EMULATION + i*8 + 4,
+				    0x00000000);	/*  nop  */
+			}
 
-		/*
-		 *  According to dec_prom.h from NetBSD:
-		 *
-		 *  "Programs loaded by the new PROMs pass the following arguments:
-		 *	a0	argc
-		 *	a1	argv
-		 *	a2	DEC_PROM_MAGIC
-		 *	a3	The callback vector defined below"
-		 *
-		 *  So we try to emulate a PROM, even though no such thing has been
-		 *  loaded.
-		 */
+			/*
+			 *  According to dec_prom.h from NetBSD:
+			 *
+			 *  "Programs loaded by the new PROMs pass the following arguments:
+			 *	a0	argc
+			 *	a1	argv
+			 *	a2	DEC_PROM_MAGIC
+			 *	a3	The callback vector defined below"
+			 *
+			 *  So we try to emulate a PROM, even though no such thing has been
+			 *  loaded.
+			 */
 
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = 3;
-		cpu->cd.mips.gpr[MIPS_GPR_A1] = DEC_PROM_INITIAL_ARGV;
-		cpu->cd.mips.gpr[MIPS_GPR_A2] = DEC_PROM_MAGIC;
-		cpu->cd.mips.gpr[MIPS_GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
+			cpu->cd.mips.gpr[MIPS_GPR_A0] = 3;
+			cpu->cd.mips.gpr[MIPS_GPR_A1] = DEC_PROM_INITIAL_ARGV;
+			cpu->cd.mips.gpr[MIPS_GPR_A2] = DEC_PROM_MAGIC;
+			cpu->cd.mips.gpr[MIPS_GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
 
-		store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x10,
-		    BOOTINFO_MAGIC);
-		store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x14,
-		    BOOTINFO_ADDR);
+			store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x10,
+			    BOOTINFO_MAGIC);
+			store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x14,
+			    BOOTINFO_ADDR);
 
-		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV,
-		    (DEC_PROM_INITIAL_ARGV + 0x10));
-		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+4,
-		    (DEC_PROM_INITIAL_ARGV + 0x70));
-		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+8,
-		    (DEC_PROM_INITIAL_ARGV + 0xe0));
-		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+12, 0);
+			store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV,
+			    (DEC_PROM_INITIAL_ARGV + 0x10));
+			store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+4,
+			    (DEC_PROM_INITIAL_ARGV + 0x70));
+			store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+8,
+			    (DEC_PROM_INITIAL_ARGV + 0xe0));
+			store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+12, 0);
 
-		/*
-		 *  NetBSD and Ultrix expect the boot args to be like this:
-		 *
-		 *	"boot" "bootdev" [args?]
-		 *
-		 *  where bootdev is supposed to be "rz(0,0,0)netbsd" for
-		 *  3100/2100 (although that crashes Ultrix :-/), and
-		 *  "5/rz0a/netbsd" for all others.  The number '5' is the
-		 *  slot number of the boot device.
-		 *
-		 *  'rz' for disks, 'tz' for tapes.
-		 *
-		 *  TODO:  Make this nicer.
-		 */
-		{
+			/*
+			 *  NetBSD and Ultrix expect the boot args to be like this:
+			 *
+			 *	"boot" "bootdev" [args?]
+			 *
+			 *  where bootdev is supposed to be "rz(0,0,0)netbsd" for
+			 *  3100/2100 (although that crashes Ultrix :-/), and
+			 *  "5/rz0a/netbsd" for all others.  The number '5' is the
+			 *  slot number of the boot device.
+			 *
+			 *  'rz' for disks, 'tz' for tapes.
+			 *
+			 *  TODO:  Make this nicer.
+			 */
+			{
 			char bootpath[200];
-
 #if 0
 			if (machine->machine_subtype == MACHINE_DEC_PMAX_3100)
 				strlcpy(bootpath, "rz(0,0,0)", sizeof(bootpath));
@@ -2143,129 +2143,130 @@ void machine_setup(struct machine *machine)
 			}
 
 			init_bootpath = bootpath;
-		}
+			}
 
-		bootarg = malloc(BOOTARG_BUFLEN);
-		if (bootarg == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		strlcpy(bootarg, init_bootpath, BOOTARG_BUFLEN);
-		if (strlcat(bootarg, machine->boot_kernel_filename,
-		    BOOTARG_BUFLEN) > BOOTARG_BUFLEN) {
-			fprintf(stderr, "bootarg truncated?\n");
-			exit(1);
-		}
-
-		bootstr = "boot";
-
-		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x10, bootstr);
-		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, bootarg);
-		store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
-		    machine->boot_string_argument);
-
-		/*  Decrease the nr of args, if there are no args :-)  */
-		if (machine->boot_string_argument == NULL ||
-		    machine->boot_string_argument[0] == '\0')
-			cpu->cd.mips.gpr[MIPS_GPR_A0] --;
-
-		if (machine->boot_string_argument[0] != '\0') {
-			strlcat(bootarg, " ", BOOTARG_BUFLEN);
-			if (strlcat(bootarg, machine->boot_string_argument,
-			    BOOTARG_BUFLEN) >= BOOTARG_BUFLEN) {
-				fprintf(stderr, "bootstr truncated?\n");
+			bootarg = malloc(BOOTARG_BUFLEN);
+			if (bootarg == NULL) {
+				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
+			strlcpy(bootarg, init_bootpath, BOOTARG_BUFLEN);
+			if (strlcat(bootarg, machine->boot_kernel_filename,
+			    BOOTARG_BUFLEN) > BOOTARG_BUFLEN) {
+				fprintf(stderr, "bootarg truncated?\n");
+				exit(1);
+			}
+
+			bootstr = "boot";
+
+			store_string(cpu, DEC_PROM_INITIAL_ARGV+0x10, bootstr);
+			store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, bootarg);
+			store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
+			    machine->boot_string_argument);
+
+			/*  Decrease the nr of args, if there are no args :-)  */
+			if (machine->boot_string_argument == NULL ||
+			    machine->boot_string_argument[0] == '\0')
+				cpu->cd.mips.gpr[MIPS_GPR_A0] --;
+
+			if (machine->boot_string_argument[0] != '\0') {
+				strlcat(bootarg, " ", BOOTARG_BUFLEN);
+				if (strlcat(bootarg, machine->boot_string_argument,
+				    BOOTARG_BUFLEN) >= BOOTARG_BUFLEN) {
+					fprintf(stderr, "bootstr truncated?\n");
+					exit(1);
+				}
+			}
+
+			xx.a.common.next = (char *)&xx.b - (char *)&xx;
+			xx.a.common.type = BTINFO_MAGIC;
+			xx.a.magic = BOOTINFO_MAGIC;
+
+			xx.b.common.next = (char *)&xx.c - (char *)&xx.b;
+			xx.b.common.type = BTINFO_BOOTPATH;
+			strlcpy(xx.b.bootpath, bootstr, sizeof(xx.b.bootpath));
+
+			xx.c.common.next = 0;
+			xx.c.common.type = BTINFO_SYMTAB;
+			xx.c.nsym = 0;
+			xx.c.ssym = 0;
+			xx.c.esym = machine->file_loaded_end_addr;
+
+			store_buf(cpu, BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
+
+			/*
+			 *  The system's memmap:  (memmap is a global variable, in
+			 *  dec_prom.h)
+			 */
+			store_32bit_word_in_host(cpu,
+			    (unsigned char *)&memmap.pagesize, 4096);
+			{
+				unsigned int i;
+				for (i=0; i<sizeof(memmap.bitmap); i++)
+					memmap.bitmap[i] = ((int)i * 4096*8 <
+					    1048576*machine->physical_ram_in_mb)?
+					    0xff : 0x00;
+			}
+			store_buf(cpu, DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
+
+			/*  Environment variables:  */
+			addr = DEC_PROM_STRINGS;
+
+			if (machine->use_x11 && machine->n_gfx_cards > 0)
+				/*  (0,3)  Keyboard and Framebuffer  */
+				add_environment_string(cpu, framebuffer_console_name, &addr);
+			else
+				/*  Serial console  */
+				add_environment_string(cpu, serial_console_name, &addr);
+
+			/*
+			 *  The KN5800 (SMP system) uses a CCA (console communications
+			 *  area):  (See VAX 6000 documentation for details.)
+			 */
+			{
+				char tmps[300];
+				snprintf(tmps, sizeof(tmps), "cca=%x",
+				    (int)(DEC_DECCCA_BASEADDR + 0xa0000000ULL));
+				add_environment_string(cpu, tmps, &addr);
+			}
+
+			/*  These are needed for Sprite to boot:  */
+			{
+				char tmps[500];
+
+				snprintf(tmps, sizeof(tmps), "boot=%s", bootarg);
+				tmps[sizeof(tmps)-1] = '\0';
+				add_environment_string(cpu, tmps, &addr);
+
+				snprintf(tmps, sizeof(tmps), "bitmap=0x%x", (uint32_t)((
+				    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
+				    & 0xffffffffULL));
+				tmps[sizeof(tmps)-1] = '\0';
+				add_environment_string(cpu, tmps, &addr);
+
+				snprintf(tmps, sizeof(tmps), "bitmaplen=0x%x",
+				    machine->physical_ram_in_mb * 1048576 / 4096 / 8);
+				tmps[sizeof(tmps)-1] = '\0';
+				add_environment_string(cpu, tmps, &addr);
+			}
+
+			add_environment_string(cpu, "scsiid0=7", &addr);
+			add_environment_string(cpu, "bootmode=a", &addr);
+			add_environment_string(cpu, "testaction=q", &addr);
+			add_environment_string(cpu, "haltaction=h", &addr);
+			add_environment_string(cpu, "more=24", &addr);
+
+			/*  Used in at least Ultrix on the 5100:  */
+			add_environment_string(cpu, "scsiid=7", &addr);
+			add_environment_string(cpu, "baud0=9600", &addr);
+			add_environment_string(cpu, "baud1=9600", &addr);
+			add_environment_string(cpu, "baud2=9600", &addr);
+			add_environment_string(cpu, "baud3=9600", &addr);
+			add_environment_string(cpu, "iooption=0x1", &addr);
+
+			/*  The end:  */
+			add_environment_string(cpu, "", &addr);
 		}
-
-		xx.a.common.next = (char *)&xx.b - (char *)&xx;
-		xx.a.common.type = BTINFO_MAGIC;
-		xx.a.magic = BOOTINFO_MAGIC;
-
-		xx.b.common.next = (char *)&xx.c - (char *)&xx.b;
-		xx.b.common.type = BTINFO_BOOTPATH;
-		strlcpy(xx.b.bootpath, bootstr, sizeof(xx.b.bootpath));
-
-		xx.c.common.next = 0;
-		xx.c.common.type = BTINFO_SYMTAB;
-		xx.c.nsym = 0;
-		xx.c.ssym = 0;
-		xx.c.esym = machine->file_loaded_end_addr;
-
-		store_buf(cpu, BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
-
-		/*
-		 *  The system's memmap:  (memmap is a global variable, in
-		 *  dec_prom.h)
-		 */
-		store_32bit_word_in_host(cpu,
-		    (unsigned char *)&memmap.pagesize, 4096);
-		{
-			unsigned int i;
-			for (i=0; i<sizeof(memmap.bitmap); i++)
-				memmap.bitmap[i] = ((int)i * 4096*8 <
-				    1048576*machine->physical_ram_in_mb)?
-				    0xff : 0x00;
-		}
-		store_buf(cpu, DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
-
-		/*  Environment variables:  */
-		addr = DEC_PROM_STRINGS;
-
-		if (machine->use_x11 && machine->n_gfx_cards > 0)
-			/*  (0,3)  Keyboard and Framebuffer  */
-			add_environment_string(cpu, framebuffer_console_name, &addr);
-		else
-			/*  Serial console  */
-			add_environment_string(cpu, serial_console_name, &addr);
-
-		/*
-		 *  The KN5800 (SMP system) uses a CCA (console communications
-		 *  area):  (See VAX 6000 documentation for details.)
-		 */
-		{
-			char tmps[300];
-			snprintf(tmps, sizeof(tmps), "cca=%x",
-			    (int)(DEC_DECCCA_BASEADDR + 0xa0000000ULL));
-			add_environment_string(cpu, tmps, &addr);
-		}
-
-		/*  These are needed for Sprite to boot:  */
-		{
-			char tmps[500];
-
-			snprintf(tmps, sizeof(tmps), "boot=%s", bootarg);
-			tmps[sizeof(tmps)-1] = '\0';
-			add_environment_string(cpu, tmps, &addr);
-
-			snprintf(tmps, sizeof(tmps), "bitmap=0x%x", (uint32_t)((
-			    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
-			    & 0xffffffffULL));
-			tmps[sizeof(tmps)-1] = '\0';
-			add_environment_string(cpu, tmps, &addr);
-
-			snprintf(tmps, sizeof(tmps), "bitmaplen=0x%x",
-			    machine->physical_ram_in_mb * 1048576 / 4096 / 8);
-			tmps[sizeof(tmps)-1] = '\0';
-			add_environment_string(cpu, tmps, &addr);
-		}
-
-		add_environment_string(cpu, "scsiid0=7", &addr);
-		add_environment_string(cpu, "bootmode=a", &addr);
-		add_environment_string(cpu, "testaction=q", &addr);
-		add_environment_string(cpu, "haltaction=h", &addr);
-		add_environment_string(cpu, "more=24", &addr);
-
-		/*  Used in at least Ultrix on the 5100:  */
-		add_environment_string(cpu, "scsiid=7", &addr);
-		add_environment_string(cpu, "baud0=9600", &addr);
-		add_environment_string(cpu, "baud1=9600", &addr);
-		add_environment_string(cpu, "baud2=9600", &addr);
-		add_environment_string(cpu, "baud3=9600", &addr);
-		add_environment_string(cpu, "iooption=0x1", &addr);
-
-		/*  The end:  */
-		add_environment_string(cpu, "", &addr);
 
 		break;
 
@@ -2321,19 +2322,21 @@ void machine_setup(struct machine *machine)
 		bus_pci_add(machine, pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
 		/*  bus_pci_add(machine, pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);  */
 
-		/*
-		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
-		 *  it really wants is the end of memory + 0x80000000.
-		 *
-		 *  The bootstring is stored 512 bytes before the end of
-		 *  physical ram.
-		 */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] =
-		    machine->physical_ram_in_mb * 1048576 + 0xffffffff80000000ULL;
-		bootstr = "root=/dev/hda1 ro";
-		/*  bootstr = "nfsroot=/usr/cobalt/";  */
-		/*  TODO: bootarg, and/or automagic boot device detection  */
-		store_string(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0] - 512, bootstr);
+		if (machine->prom_emulation) {
+			/*
+			 *  NetBSD/cobalt expects memsize in a0, but it seems that what
+			 *  it really wants is the end of memory + 0x80000000.
+			 *
+			 *  The bootstring is stored 512 bytes before the end of
+			 *  physical ram.
+			 */
+			cpu->cd.mips.gpr[MIPS_GPR_A0] =
+			    machine->physical_ram_in_mb * 1048576 + 0xffffffff80000000ULL;
+			bootstr = "root=/dev/hda1 ro";
+			/*  bootstr = "nfsroot=/usr/cobalt/";  */
+			/*  TODO: bootarg, and/or automagic boot device detection  */
+			store_string(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0] - 512, bootstr);
+		}
 		break;
 
 	case MACHINE_HPCMIPS:
@@ -2612,69 +2615,71 @@ void machine_setup(struct machine *machine)
 			machine->main_console_handle =
 			    machine->md_int.vr41xx_data->kiu_console_handle;
 
-		/*  NetBSD/hpcmips and possibly others expects the following:  */
+		if (machine->prom_emulation) {
+			/*  NetBSD/hpcmips and possibly others expects the following:  */
 
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;	/*  argc  */
-		cpu->cd.mips.gpr[MIPS_GPR_A1] = machine->physical_ram_in_mb * 1048576
-		    + 0xffffffff80000000ULL - 512;	/*  argv  */
-		cpu->cd.mips.gpr[MIPS_GPR_A2] = machine->physical_ram_in_mb * 1048576
-		    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
+			cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;	/*  argc  */
+			cpu->cd.mips.gpr[MIPS_GPR_A1] = machine->physical_ram_in_mb * 1048576
+			    + 0xffffffff80000000ULL - 512;	/*  argv  */
+			cpu->cd.mips.gpr[MIPS_GPR_A2] = machine->physical_ram_in_mb * 1048576
+			    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
-		bootstr = machine->boot_kernel_filename;
-		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16);
-		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-		store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
+			bootstr = machine->boot_kernel_filename;
+			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16);
+			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
+			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
 
-		/*  Special case for the Agenda VR3:  */
-		if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
-			const int tmplen = 1000;
-			char *tmp = malloc(tmplen);
+			/*  Special case for the Agenda VR3:  */
+			if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
+				const int tmplen = 1000;
+				char *tmp = malloc(tmplen);
 
-			cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;	/*  argc  */
+				cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;	/*  argc  */
 
-			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
-			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
+				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
+				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
 
-			snprintf(tmp, tmplen, "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
-			    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0");
-			tmp[tmplen-1] = '\0';
+				snprintf(tmp, tmplen, "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
+				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0");
+				tmp[tmplen-1] = '\0';
 
-			if (!machine->use_x11)
-				snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " console=ttyS0,115200");
-			tmp[tmplen-1] = '\0';
+				if (!machine->use_x11)
+					snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " console=ttyS0,115200");
+				tmp[tmplen-1] = '\0';
 
-			if (machine->boot_string_argument[0])
-				snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " %s", machine->boot_string_argument);
-			tmp[tmplen-1] = '\0';
+				if (machine->boot_string_argument[0])
+					snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " %s", machine->boot_string_argument);
+				tmp[tmplen-1] = '\0';
 
-			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64, tmp);
+				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64, tmp);
 
-			bootarg = tmp;
-		} else if (machine->boot_string_argument[0]) {
-			cpu->cd.mips.gpr[MIPS_GPR_A0] ++;	/*  argc  */
+				bootarg = tmp;
+			} else if (machine->boot_string_argument[0]) {
+				cpu->cd.mips.gpr[MIPS_GPR_A0] ++;	/*  argc  */
 
-			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
-			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
+				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
+				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
 
-			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
-			    machine->boot_string_argument);
+				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
+				    machine->boot_string_argument);
 
-			bootarg = machine->boot_string_argument;
+				bootarg = machine->boot_string_argument;
+			}
+
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpcmips_fb_addr);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpcmips_fb_xsize_mem * (((hpcmips_fb_bits-1)|7)+1) / 8);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpcmips_fb_xsize);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpcmips_fb_ysize);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpcmips_fb_encoding);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
+
+			/*  printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
+			    printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);  */
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
+			store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 		}
-
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpcmips_fb_addr);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpcmips_fb_xsize_mem * (((hpcmips_fb_bits-1)|7)+1) / 8);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpcmips_fb_xsize);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpcmips_fb_ysize);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpcmips_fb_encoding);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
-
-		/*  printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
-		    printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);  */
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
-		store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
 		if (hpcmips_fb_addr != 0) {
 			dev_fb_init(machine, mem, hpcmips_fb_addr, VFB_HPCMIPS,
@@ -2719,23 +2724,27 @@ void machine_setup(struct machine *machine)
 
 		machine->md_interrupt = ps2_interrupt;
 
-		add_symbol_name(&machine->symbol_context,
-		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0, 0);
-		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
-		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
-
 		/*  Set the Harddisk controller present flag, if either
 		    disk 0 or 1 is present:  */
 		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-			store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
+			if (machine->prom_emulation)
+				store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
 			dev_ps2_spd_init(machine, mem, 0x14000000);
 		}
 
-		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
-		{
+		if (machine->prom_emulation) {
 			int tmplen = 1000;
 			char *tmp = malloc(tmplen);
+			time_t timet;
+			struct tm *tm_ptr;
+
+			add_symbol_name(&machine->symbol_context,
+			    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0, 0);
+			store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
+			store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
+
+			store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
 			if (tmp == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
@@ -2750,27 +2759,23 @@ void machine_setup(struct machine *machine)
 
 			bootstr = tmp;
 			store_string(cpu, PLAYSTATION2_OPTARGS, bootstr);
-		}
 
-		/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
-		{
-			time_t timet;
-			struct tm *tmp;
+			/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
 
 			/*  RTC data given by the BIOS:  */
 			timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
-			tmp = gmtime(&timet);
+			tm_ptr = gmtime(&timet);
 			/*  TODO:  are these 0- or 1-based?  */
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
-		}
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tm_ptr->tm_sec));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tm_ptr->tm_min));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tm_ptr->tm_hour));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tm_ptr->tm_mday));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tm_ptr->tm_mon + 1));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tm_ptr->tm_year - 100));
 
-		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
-		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 2);
+			/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
+			store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 2);
+		}
 
 		break;
 
@@ -3526,217 +3531,214 @@ Not yet.
 		 *  point.
 		 */
 
-		if (machine->prom_emulation)
-			arcbios_init(machine, arc_wordlen == sizeof(uint64_t),
+		if (machine->prom_emulation) {
+			arcbios_init(machine, arc_wordlen == sizeof(uint64_t), 
 			    sgi_ram_offset);
-		else
-			goto no_arc_prom_emulation;	/*  TODO: ugly  */
 
-		/*
-		 *  TODO: How to build the component tree intermixed with
-		 *  the rest of device initialization?
-		 */
+			/*
+			 *  TODO: How to build the component tree intermixed with
+			 *  the rest of device initialization?
+			 */
 
-		/*
-		 *  Boot string in ARC format:
-		 *
-		 *  TODO: How about floppies? multi()disk()fdisk()
-		 *        Is tftp() good for netbooting?
-		 */
-		init_bootpath = malloc(500);
-		if (init_bootpath == NULL) {
-			fprintf(stderr, "out of mem, bootpath\n");
-			exit(1);
-		}
-		init_bootpath[0] = '\0';
+			/*
+			 *  Boot string in ARC format:
+			 *
+			 *  TODO: How about floppies? multi()disk()fdisk()
+			 *        Is tftp() good for netbooting?
+			 */
+			init_bootpath = malloc(500);
+			if (init_bootpath == NULL) {
+				fprintf(stderr, "out of mem, bootpath\n");
+				exit(1);
+			}
+			init_bootpath[0] = '\0';
 
-		if (bootdev_id < 0 || machine->force_netboot) {
-			snprintf(init_bootpath, 400, "tftp()");
-		} else {
-			/*  TODO: Make this nicer.  */
-			if (machine->machine_type == MACHINE_SGI) {
-				if (machine->machine_subtype == 30)
-					strlcat(init_bootpath, "xio(0)pci(15)",
-					    MACHINE_NAME_MAXBUF);
-				if (machine->machine_subtype == 32)
-					strlcat(init_bootpath, "pci(0)",
-					    MACHINE_NAME_MAXBUF);
+			if (bootdev_id < 0 || machine->force_netboot) {
+				snprintf(init_bootpath, 400, "tftp()");
+			} else {
+				/*  TODO: Make this nicer.  */
+				if (machine->machine_type == MACHINE_SGI) {
+					if (machine->machine_subtype == 30)
+						strlcat(init_bootpath, "xio(0)pci(15)",
+						    MACHINE_NAME_MAXBUF);
+					if (machine->machine_subtype == 32)
+						strlcat(init_bootpath, "pci(0)",
+						    MACHINE_NAME_MAXBUF);
+				}
+
+				if (diskimage_is_a_cdrom(machine, bootdev_id,
+				    bootdev_type))
+					snprintf(init_bootpath + strlen(init_bootpath),
+					    400,"scsi(0)cdrom(%i)fdisk(0)", bootdev_id);
+				else
+					snprintf(init_bootpath + strlen(init_bootpath),
+					    400,"scsi(0)disk(%i)rdisk(0)partition(1)",
+					    bootdev_id);
 			}
 
-			if (diskimage_is_a_cdrom(machine, bootdev_id,
-			    bootdev_type))
-				snprintf(init_bootpath + strlen(init_bootpath),
-				    400,"scsi(0)cdrom(%i)fdisk(0)", bootdev_id);
-			else
-				snprintf(init_bootpath + strlen(init_bootpath),
-				    400,"scsi(0)disk(%i)rdisk(0)partition(1)",
-				    bootdev_id);
-		}
+			if (machine->machine_type == MACHINE_ARC)
+				strlcat(init_bootpath, "\\", MACHINE_NAME_MAXBUF);
 
-		if (machine->machine_type == MACHINE_ARC)
-			strlcat(init_bootpath, "\\", MACHINE_NAME_MAXBUF);
+			bootstr = malloc(BOOTSTR_BUFLEN);
+			if (bootstr == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			strlcpy(bootstr, init_bootpath, BOOTSTR_BUFLEN);
+			if (strlcat(bootstr, machine->boot_kernel_filename,
+			    BOOTSTR_BUFLEN) >= BOOTSTR_BUFLEN) {
+				fprintf(stderr, "boot string too long?\n");
+				exit(1);
+			}
 
-		bootstr = malloc(BOOTSTR_BUFLEN);
-		if (bootstr == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		strlcpy(bootstr, init_bootpath, BOOTSTR_BUFLEN);
-		if (strlcat(bootstr, machine->boot_kernel_filename,
-		    BOOTSTR_BUFLEN) >= BOOTSTR_BUFLEN) {
-			fprintf(stderr, "boot string too long?\n");
-			exit(1);
-		}
+			/*  Boot args., eg "-a"  */
+			bootarg = machine->boot_string_argument;
 
-		/*  Boot args., eg "-a"  */
-		bootarg = machine->boot_string_argument;
+			/*  argc, argv, envp in a0, a1, a2:  */
+			cpu->cd.mips.gpr[MIPS_GPR_A0] = 0;	/*  note: argc is increased later  */
 
-		/*  argc, argv, envp in a0, a1, a2:  */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = 0;	/*  note: argc is increased later  */
+			/*  TODO:  not needed?  */
+			cpu->cd.mips.gpr[MIPS_GPR_SP] = (int64_t)(int32_t)
+			    (machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080);
 
-		/*  TODO:  not needed?  */
-		cpu->cd.mips.gpr[MIPS_GPR_SP] = (int64_t)(int32_t)
-		    (machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080);
+			/*  Set up argc/argv:  */
+			addr = ARC_ENV_STRINGS;
+			addr2 = ARC_ARGV_START;
+			cpu->cd.mips.gpr[MIPS_GPR_A1] = addr2;
 
-		/*  Set up argc/argv:  */
-		addr = ARC_ENV_STRINGS;
-		addr2 = ARC_ARGV_START;
-		cpu->cd.mips.gpr[MIPS_GPR_A1] = addr2;
-
-		/*  bootstr:  */
-		store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-		add_environment_string(cpu, bootstr, &addr);
-		cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
-
-		/*  bootarg:  */
-		if (bootarg[0] != '\0') {
+			/*  bootstr:  */
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, bootarg, &addr);
+			add_environment_string(cpu, bootstr, &addr);
 			cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
-		}
 
-		cpu->cd.mips.gpr[MIPS_GPR_A2] = addr2;
-
-		/*
-		 *  Add environment variables.  For each variable, add it
-		 *  as a string using add_environment_string(), and add a
-		 *  pointer to it to the ARC_ENV_POINTERS array.
-		 */
-		if (machine->use_x11) {
-			if (machine->machine_type == MACHINE_ARC) {
+			/*  bootarg:  */
+			if (bootarg[0] != '\0') {
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "CONSOLEIN=multi()key()keyboard()console()", &addr);
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "CONSOLEOUT=multi()video()monitor()console()", &addr);
-			} else {
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "ConsoleIn=keyboard()", &addr);
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "ConsoleOut=video()", &addr);
-
-				/*  g for graphical mode. G for graphical mode
-				    with SGI logo visible on Irix?  */
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "console=g", &addr);
+				add_environment_string(cpu, bootarg, &addr);
+				cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
 			}
-		} else {
-			if (machine->machine_type == MACHINE_ARC) {
-				/*  TODO: serial console for ARC?  */
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "CONSOLEIN=multi()serial(0)", &addr);
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "CONSOLEOUT=multi()serial(0)", &addr);
+
+			cpu->cd.mips.gpr[MIPS_GPR_A2] = addr2;
+
+			/*
+			 *  Add environment variables.  For each variable, add it
+			 *  as a string using add_environment_string(), and add a
+			 *  pointer to it to the ARC_ENV_POINTERS array.
+			 */
+			if (machine->use_x11) {
+				if (machine->machine_type == MACHINE_ARC) {
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "CONSOLEIN=multi()key()keyboard()console()", &addr);
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "CONSOLEOUT=multi()video()monitor()console()", &addr);
+				} else {
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "ConsoleIn=keyboard()", &addr);
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "ConsoleOut=video()", &addr);
+
+					/*  g for graphical mode. G for graphical mode
+					    with SGI logo visible on Irix?  */
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "console=g", &addr);
+				}
 			} else {
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "ConsoleIn=serial(0)", &addr);
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "ConsoleOut=serial(0)", &addr);
+				if (machine->machine_type == MACHINE_ARC) {
+					/*  TODO: serial console for ARC?  */
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "CONSOLEIN=multi()serial(0)", &addr);
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "CONSOLEOUT=multi()serial(0)", &addr);
+				} else {
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "ConsoleIn=serial(0)", &addr);
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "ConsoleOut=serial(0)", &addr);
 
-				/*  'd' or 'd2' in Irix, 'ttyS0' in Linux?  */
-				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "console=d", &addr);		/*  d2 = serial?  */
+					/*  'd' or 'd2' in Irix, 'ttyS0' in Linux?  */
+					store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+					add_environment_string(cpu, "console=d", &addr);		/*  d2 = serial?  */
+				}
 			}
+
+			if (machine->machine_type == MACHINE_SGI) {
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "AutoLoad=No", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "diskless=0", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "volume=80", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "sgilogo=y", &addr);
+
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "monitor=h", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "TimeZone=GMT", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "nogfxkbd=1", &addr);
+
+				/*  TODO: 'xio(0)pci(15)scsi(0)disk(1)rdisk(0)partition(0)' on IP30 at least  */
+
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "SystemPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(8)", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "OSLoadPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(0)", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "OSLoadFilename=/unix", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "OSLoader=sash", &addr);
+
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "rbaud=9600", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "rebound=y", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "crt_option=1", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
+
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "keybd=US", &addr);
+
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "cpufreq=3", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "dbaud=9600", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, eaddr_string, &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "verbose=istrue", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "showconfig=istrue", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "diagmode=v", &addr);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "kernname=unix", &addr);
+			} else {
+				char *tmp;
+				size_t mlen = strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2;
+				tmp = malloc(mlen);
+				snprintf(tmp, mlen, "OSLOADOPTIONS=%s", bootarg);
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, tmp, &addr);
+
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "OSLOADPARTITION=scsi(0)cdrom(6)fdisk(0);scsi(0)disk(0)rdisk(0)partition(1)", &addr);
+
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "SYSTEMPARTITION=scsi(0)cdrom(6)fdisk(0);scsi(0)disk(0)rdisk(0)partition(1)", &addr);
+			}
+
+			/*  End the environment strings with an empty zero-terminated
+			    string, and the envp array with a NULL pointer.  */
+			add_environment_string(cpu, "", &addr);	/*  the end  */
+			store_pointer_and_advance(cpu, &addr2,
+			    0, arc_wordlen==sizeof(uint64_t));
+
+			/*  Return address:  (0x20 = ReturnFromMain())  */
+			cpu->cd.mips.gpr[MIPS_GPR_RA] = ARC_FIRMWARE_ENTRIES + 0x20;
 		}
-
-		if (machine->machine_type == MACHINE_SGI) {
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "AutoLoad=No", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "diskless=0", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "volume=80", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "sgilogo=y", &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "monitor=h", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "TimeZone=GMT", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "nogfxkbd=1", &addr);
-
-			/*  TODO: 'xio(0)pci(15)scsi(0)disk(1)rdisk(0)partition(0)' on IP30 at least  */
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "SystemPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(8)", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLoadPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(0)", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLoadFilename=/unix", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLoader=sash", &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "rbaud=9600", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "rebound=y", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "crt_option=1", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "keybd=US", &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "cpufreq=3", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "dbaud=9600", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, eaddr_string, &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "verbose=istrue", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "showconfig=istrue", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "diagmode=v", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "kernname=unix", &addr);
-		} else {
-			char *tmp;
-			size_t mlen = strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2;
-			tmp = malloc(mlen);
-			snprintf(tmp, mlen, "OSLOADOPTIONS=%s", bootarg);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, tmp, &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLOADPARTITION=scsi(0)cdrom(6)fdisk(0);scsi(0)disk(0)rdisk(0)partition(1)", &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "SYSTEMPARTITION=scsi(0)cdrom(6)fdisk(0);scsi(0)disk(0)rdisk(0)partition(1)", &addr);
-		}
-
-		/*  End the environment strings with an empty zero-terminated
-		    string, and the envp array with a NULL pointer.  */
-		add_environment_string(cpu, "", &addr);	/*  the end  */
-		store_pointer_and_advance(cpu, &addr2,
-		    0, arc_wordlen==sizeof(uint64_t));
-
-no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
-
-		/*  Return address:  (0x20 = ReturnFromMain())  */
-		cpu->cd.mips.gpr[MIPS_GPR_RA] = ARC_FIRMWARE_ENTRIES + 0x20;
 
 		break;
 
@@ -3767,20 +3769,20 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		device_add(machine, "random addr=0x1017fffc len=4");
 
-		/*
-		 *  TODO:  A Linux kernel wants "memsize" from somewhere... I
-		 *  haven't found any docs on how it is used though.
-		 */
+		if (machine->prom_emulation) {
+			/*
+			 *  TODO:  A Linux kernel wants "memsize" from somewhere... I
+			 *  haven't found any docs on how it is used though.
+			 */
+			cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;
+			cpu->cd.mips.gpr[MIPS_GPR_A1] = 0xa0001000ULL;
+			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A1],
+			    0xa0002000ULL);
+			store_string(cpu, 0xa0002000ULL, "something=somethingelse");
 
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;
-		cpu->cd.mips.gpr[MIPS_GPR_A1] = 0xa0001000ULL;
-		store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A1],
-		    0xa0002000ULL);
-		store_string(cpu, 0xa0002000ULL, "something=somethingelse");
-
-		cpu->cd.mips.gpr[MIPS_GPR_A2] = 0xa0003000ULL;
-		store_string(cpu, 0xa0002000ULL, "hello=world\n");
-
+			cpu->cd.mips.gpr[MIPS_GPR_A2] = 0xa0003000ULL;
+			store_string(cpu, 0xa0002000ULL, "hello=world\n");
+		}
 		break;
 
 	case MACHINE_NETGEAR:
@@ -3822,8 +3824,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "Sony NeWS (NET WORK STATION)";
 
-		/*  This is just a test.  TODO  */
-		{
+		if (machine->prom_emulation) {
+			/*  This is just a test.  TODO  */
 			int i;
 			for (i=0; i<32; i++)
 				cpu->cd.mips.gpr[i] =
@@ -4089,40 +4091,39 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,
 			    machine->machine_name);
 
-		store_32bit_word(cpu, 0x3010,
-		    machine->physical_ram_in_mb * 1048576);
+		if (machine->prom_emulation) {
+			store_32bit_word(cpu, 0x3010, machine->physical_ram_in_mb * 1048576);
 
-		/*  TODO: List of stuff, see http://www.beatjapan.org/
-		    mirror/www.be.com/aboutbe/benewsletter/
-		    Issue27.html#Cookbook  for the details.  */
-		store_32bit_word(cpu, 0x301c, 0);
+			/*  TODO: List of stuff, see http://www.beatjapan.org/
+			    mirror/www.be.com/aboutbe/benewsletter/
+			    Issue27.html#Cookbook  for the details.  */
+			store_32bit_word(cpu, 0x301c, 0);
 
-		/*  NetBSD/bebox: r3 = startkernel, r4 = endkernel,
-		    r5 = args, r6 = ptr to bootinfo?  */
-		cpu->cd.ppc.gpr[3] = 0x3100;
-		cpu->cd.ppc.gpr[4] = 0x200000;
-		cpu->cd.ppc.gpr[5] = 0x2000;
-		store_string(cpu, cpu->cd.ppc.gpr[5], "-a");
-		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576
-		    - 0x100;
+			/*  NetBSD/bebox: r3 = startkernel, r4 = endkernel,
+			    r5 = args, r6 = ptr to bootinfo?  */
+			cpu->cd.ppc.gpr[3] = 0x3100;
+			cpu->cd.ppc.gpr[4] = 0x200000;
+			cpu->cd.ppc.gpr[5] = 0x2000;
+			store_string(cpu, cpu->cd.ppc.gpr[5], "-a");
+			cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576 - 0x100;
 
-		/*  See NetBSD's bebox/include/bootinfo.h for details  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 0, 12);  /*  next  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 4, 0);  /*  mem  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 8,
-		    machine->physical_ram_in_mb * 1048576);
+			/*  See NetBSD's bebox/include/bootinfo.h for details  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 0, 12);  /*  next  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 4, 0);  /*  mem  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 8,
+			    machine->physical_ram_in_mb * 1048576);
 
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 12, 20);  /* next */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 16, 1); /* console */
-		store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
-		    machine->use_x11? "vga" : "com", 4);
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 24, 0x3f8);/* addr */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 28, 9600);/* speed */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 12, 20);  /* next */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 16, 1); /* console */
+			store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
+			    machine->use_x11? "vga" : "com", 4);
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 24, 0x3f8);/* addr */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 28, 9600);/* speed */
 
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 32, 0);  /*  next  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 36, 2);  /*  clock */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 40, 100);
-
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 32, 0);  /*  next  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 36, 2);  /*  clock */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 40, 100);
+		}
 		break;
 
 	case MACHINE_PREP:
@@ -4131,21 +4132,19 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
 
-		{
+		if (machine->prom_emulation) {
 			int i;
 			for (i=0; i<32; i++)
 				cpu->cd.ppc.gpr[i] =
 				    0x12340000 + (i << 8) + 0x55;
+
+			/*  Linux on PReP has 0xdeadc0de at address 0? (See
+			    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/113568.html)  */
+			store_32bit_word(cpu, 0, 0xdeadc0de);
+
+			/*  r6 should point to "residual data"?  */
+			cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576 - 0x1000;
 		}
-
-		/*  Linux on PReP has 0xdeadc0de at address 0? (See
-		    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/113568.html)  */
-		store_32bit_word(cpu, 0, 0xdeadc0de);
-
-		/*  r6 should point to "residual data"?  */
-		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576
-		    - 0x1000;
-
 		break;
 
 	case MACHINE_MACPPC:
@@ -4155,9 +4154,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 */
 		machine->machine_name = "Macintosh (PPC)";
 
-		/*  r5 = OpenFirmware entry point  */
-		cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;
-
+		if (machine->prom_emulation) {
+			/*  r5 = OpenFirmware entry point  */
+			cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;
+		}
 		break;
 
 	case MACHINE_DB64360:
@@ -4166,7 +4166,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		machine->main_console_handle = (size_t)device_add(machine, "ns16550 irq=0 addr=0x1d000020");
 
-		{
+		if (machine->prom_emulation) {
 			int i;
 			for (i=0; i<32; i++)
 				cpu->cd.ppc.gpr[i] =
@@ -4437,11 +4437,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 	case MACHINE_HPCARM:
 		machine->machine_name = "HPCarm";
-		/*  TODO  */
+		dev_ram_init(mem, 0xc0000000, 0x10000000, DEV_RAM_MIRROR, 0x0);
+
+		/*  TODO: Different models  */
+
 		cpu->cd.arm.r[ARM_SP] = 0x8000;
 		if (machine->prom_emulation) {
-			arm_setup_initial_translation_table(cpu,
-			    machine->physical_ram_in_mb * 1048576 - 32768);
+			cpu->cd.arm.r[0] = 1;
 		}
 		break;
 
@@ -4463,6 +4465,14 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		    1, 12, 0, 1);
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);
+		}
+		break;
+
+	case MACHINE_SHARK:
+		machine->machine_name = "Digital DNARD (\"Shark\")";
+		if (machine->prom_emulation) {
+			arm_setup_initial_translation_table(cpu,
+			    machine->physical_ram_in_mb * 1048576 - 32768);
 		}
 		break;
 #endif	/*  ENABLE_ARM  */
@@ -4720,6 +4730,9 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_ZAURUS:
 			m->physical_ram_in_mb = 64;
 			break;
+		case MACHINE_HPCARM:
+			m->physical_ram_in_mb = 32;
+			break;
 		case MACHINE_NETWINDER:
 			m->physical_ram_in_mb = 16;
 			break;
@@ -4947,6 +4960,7 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_CATS:
 	case MACHINE_NETWINDER:
+	case MACHINE_SHARK:
 		m->cpu_name = strdup("SA110");
 		break;
 	case MACHINE_ZAURUS:
@@ -5400,6 +5414,7 @@ void machine_init(void)
 	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
+
 	/*  NetGear:  */
 	me = machine_entry_new("NetGear WG602", ARCH_MIPS,
 	    MACHINE_NETGEAR, 2, 0);
@@ -5478,8 +5493,8 @@ void machine_init(void)
 	me = machine_entry_new("Handheld ARM (HPCarm)",
 	    ARCH_ARM, MACHINE_HPCARM, 1, 2);
 	me->aliases[0] = "hpcarm";
-	me->subtype[0] = machine_entry_subtype_new(
-	    "Ipaq", MACHINE_HPCARM_IPAQ, 1);
+	me->subtype[0] = machine_entry_subtype_new("Ipaq",
+	    MACHINE_HPCARM_IPAQ, 1);
 	me->subtype[0]->aliases[0] = "ipaq";
 	me->subtype[1] = machine_entry_subtype_new(
 	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
@@ -5574,6 +5589,15 @@ void machine_init(void)
 	    MACHINE_EVBMIPS_PB1000, 1);
 	me->subtype[2]->aliases[0] = "pb1000";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Digital DNARD ("Shark"):  */
+	me = machine_entry_new("Digital DNARD (\"Shark\")", ARCH_ARM,
+	    MACHINE_SHARK, 2, 0);
+	me->aliases[0] = "shark";
+	me->aliases[1] = "dnard";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.76 2005-08-25 10:40:43 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.77 2005-08-27 17:29:06 debug Exp $
  *
  *  ARM instructions.
  *
@@ -618,7 +618,24 @@ Y(cdp)
  */
 X(swi_useremul)
 {
+	/*  Synchronize the program counter:  */
+	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	old_pc = cpu->pc = cpu->cd.arm.r[ARM_PC];
+
 	useremul_syscall(cpu, ic->arg[0]);
+
+	if (!cpu->running) {
+		cpu->running_translated = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.arm.next_ic = &nothing_call;
+	} else if (cpu->pc != old_pc) {
+		/*  PC was changed by the SWI call. Find the new physical
+		    page and update the translation pointers:  */
+		arm_pc_to_pointers(cpu);
+	}
 }
 Y(swi_useremul)
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.63 2005-08-22 21:43:14 debug Exp $
+ *  $Id: useremul.c,v 1.64 2005-08-27 17:29:06 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -1203,6 +1203,17 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 
 
 	switch (cpu->machine->arch) {
+	case ARCH_ARM:
+		/*  NetBSD/arm return values:  */
+		cpu->cd.arm.r[0] = result_low;
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_C;
+		if (error_flag) {
+			cpu->cd.arm.cpsr |= ARM_FLAG_C;
+			cpu->cd.arm.r[0] = error_code;
+		}
+		if (result_high_set)
+			cpu->cd.arm.r[1] = result_high;
+		break;
 	case ARCH_MIPS:
 		/*
 		 *  NetBSD/mips return values:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.41 2005-08-16 05:37:09 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.42 2005-08-27 17:29:06 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -51,13 +51,13 @@ X(nop)
  */
 X(call_pal)
 {
-	uint64_t low_pc;
-
 	/*  Synchronize PC first:  */
-	low_pc = ((size_t)ic - (size_t)
+	uint64_t old_pc, low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
-	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (low_pc << 2) + 4;
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) <<
+	    ALPHA_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ALPHA_INSTR_ALIGNMENT_SHIFT);
+	old_pc = cpu->pc;
 
 	alpha_palcode(cpu, ic->arg[0]);
 
@@ -65,8 +65,8 @@ X(call_pal)
 		cpu->running_translated = 0;
 		cpu->n_translated_instrs --;
 		cpu->cd.alpha.next_ic = &nothing_call;
-	} else {
-		/*  PC might have been changed by the palcode call.  */
+	} else if (cpu->pc != old_pc) {
+		/*  The PC value was changed by the palcode call.  */
 		/*  Find the new physical page and update the translation
 		    pointers:  */
 		alpha_pc_to_pointers(cpu);
@@ -83,12 +83,15 @@ X(call_pal)
 X(jsr)
 {
 	uint64_t old_pc = cpu->pc, low_pc;
-	uint64_t mask_within_page = ((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+	uint64_t mask_within_page = ((ALPHA_IC_ENTRIES_PER_PAGE-1)
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT) |
+	    ((1 << ALPHA_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
-	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (low_pc << 2) + 4;
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1)
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ALPHA_INSTR_ALIGNMENT_SHIFT) + 4;
 
 	*((int64_t *)ic->arg[0]) = cpu->pc;
 	cpu->pc = *((int64_t *)ic->arg[1]);
@@ -128,7 +131,9 @@ X(jsr_trace)
 X(jsr_0)
 {
 	uint64_t old_pc = cpu->pc;
-	uint64_t mask_within_page = ((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+	uint64_t mask_within_page = ((ALPHA_IC_ENTRIES_PER_PAGE-1)
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT)
+	    | ((1 << ALPHA_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	cpu->pc = *((int64_t *)ic->arg[1]);
 
@@ -170,8 +175,9 @@ X(br)
 	/*  Calculate new PC from this instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
-	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (low_pc << 2);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1)
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ALPHA_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
@@ -192,8 +198,9 @@ X(br_return)
 	/*  Calculate new PC from this instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
-	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (low_pc << 2);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1)
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ALPHA_INSTR_ALIGNMENT_SHIFT);
 
 	/*  ... but first, save away the return address:  */
 	*((int64_t *)ic->arg[1]) = cpu->pc + 4;
@@ -333,8 +340,9 @@ X(br_return_samepage)
 
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.alpha.cur_ic_page) / sizeof(struct alpha_instr_call);
-	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (low_pc << 2);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1)
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << ALPHA_INSTR_ALIGNMENT_SHIFT);
 	*((int64_t *)ic->arg[1]) = cpu->pc + 4;
 
 	cpu->cd.alpha.next_ic = (struct alpha_instr_call *) ic->arg[0];
@@ -570,8 +578,10 @@ X(rdcc)
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
-	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->pc += (ALPHA_IC_ENTRIES_PER_PAGE << 2);
+	cpu->pc &= ~((ALPHA_IC_ENTRIES_PER_PAGE-1)
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (ALPHA_IC_ENTRIES_PER_PAGE
+	    << ALPHA_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Find the new physical page and update the translation pointers:  */
 	alpha_pc_to_pointers(cpu);

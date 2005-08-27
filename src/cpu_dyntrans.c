@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.31 2005-08-25 11:49:56 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.32 2005-08-27 15:56:29 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -527,28 +527,24 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 /*
  *  XXX_invalidate_translation_caches_paddr():
  *
- *  Invalidate all entries matching a specific physical address.
+ *  Invalidate all entries matching a specific physical address. (Or, if
+ *  paddr is set to MAGIC_INVALIDATE_ALL, then all translation entries are
+ *  invalidated.)
  */
 void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
 {
-	int r;
+	int r, all = (paddr == MAGIC_INVALIDATE_ALL);
 #ifdef MODE32
 	uint32_t
 #else
 	uint64_t
 #endif
-	    paddr_page = paddr &
-#ifdef DYNTRANS_8K
-	    ~0x1fff
-#else
-	    ~0xfff
-#endif
-	    ;
+	    paddr_page = paddr & ~(DYNTRANS_PAGESIZE - 1);
 
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid &&
-		    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
-		    paddr_page) {
+		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
+		    paddr_page || all)) {
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
 			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page);
 			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid = 0;

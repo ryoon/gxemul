@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.71 2005-08-25 17:32:19 debug Exp $
+ *  $Id: cpu_arm.c,v 1.72 2005-08-27 15:56:29 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -118,39 +118,50 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		}
 	}
 
-	if (cpu->machine->userland_emul == NULL) {
-		/*  Set up initial page tables:  */
-		unsigned char nothing[16384];
-		unsigned int i, j;
-		cpu->cd.arm.control |= ARM_CONTROL_MMU;
-		cpu->cd.arm.ttb = 0x4000;
-		memset(nothing, 0, sizeof(nothing));
-		cpu->memory_rw(cpu, cpu->mem, cpu->cd.arm.ttb, nothing,
-		    sizeof(nothing), MEM_WRITE, PHYSICAL | NO_EXCEPTIONS);
-		for (i=0; i<256; i++)
-			for (j=0x0; j<=0xf; j++) {
-				unsigned char descr[4];
-				uint32_t addr = cpu->cd.arm.ttb +
-				    (((j << 28) + (i << 20)) >> 18);
-				uint32_t d = 1048576*i | 2;
-				if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-					descr[0] = d;
-					descr[1] = d >> 8;
-					descr[2] = d >> 16;
-					descr[3] = d >> 24;
-				} else {
-					descr[3] = d;
-					descr[2] = d >> 8;
-					descr[1] = d >> 16;
-					descr[0] = d >> 24;
-				}
-				cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
-				    sizeof(descr), MEM_WRITE, PHYSICAL |
-				    NO_EXCEPTIONS);
-			}
+	return 1;
+}
+
+
+/*
+ *  arm_setup_initial_translation_table():
+ *
+ *  When booting kernels (such as OpenBSD or NetBSD) directly, it is assumed
+ *  that the MMU is already enabled by the boot-loader. This function tries
+ *  to emulate that.
+ */
+void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
+{
+	unsigned char nothing[16384];
+	unsigned int i, j;
+
+	if (cpu->machine->userland_emul != NULL) {
+		fatal("arm_setup_initial_translation_table(): should not "
+		    "be called for userland emulation!\n");
+		exit(1);
 	}
 
-	return 1;
+	cpu->cd.arm.control |= ARM_CONTROL_MMU;
+	cpu->cd.arm.ttb = ttb_addr;
+	memset(nothing, 0, sizeof(nothing));
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.arm.ttb, nothing,
+	    sizeof(nothing), MEM_WRITE, PHYSICAL | NO_EXCEPTIONS);
+	for (i=0; i<256; i++)
+		for (j=0x0; j<=0xf; j++) {
+			unsigned char descr[4];
+			uint32_t addr = cpu->cd.arm.ttb +
+			    (((j << 28) + (i << 20)) >> 18);
+			uint32_t d = 1048576*i | 2;
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				descr[0] = d;       descr[1] = d >> 8;
+				descr[2] = d >> 16; descr[3] = d >> 24;
+			} else {
+				descr[3] = d;       descr[2] = d >> 8;
+				descr[1] = d >> 16; descr[0] = d >> 24;
+			}
+			cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
+			    sizeof(descr), MEM_WRITE, PHYSICAL |
+			    NO_EXCEPTIONS);
+		}
 }
 
 
@@ -859,8 +870,28 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			return;
 		}
 		fatal("[ arm_mcr_mrc_15: TLB op: TODO ]\n");
+		/*  TODO:  */
+		cpu->invalidate_translation_caches_paddr(cpu,
+		    MAGIC_INVALIDATE_ALL);
 		break;
 
+	case 13:/*  Process ID Register:  */
+		if (opcode2 != 0)
+			fatal("[ arm_mcr_mrc_15: PID access, but opcode2 "
+			    "= %i? (should be 0) ]\n", opcode2);
+		if (crm != 0)
+			fatal("[ arm_mcr_mrc_15: PID access, but crm "
+			    "= %i? (should be 0) ]\n", crm);
+		if (l_bit)
+			cpu->cd.arm.r[rd] = cpu->cd.arm.pid;
+		else
+			cpu->cd.arm.pid = cpu->cd.arm.r[rd];
+		if (cpu->cd.arm.pid != 0) {
+			fatal("ARM TODO: pid!=0. Fast Context Switch"
+			    " Extension not implemented yet\n");
+			exit(1);
+		}
+		break;
 	default:fatal("arm_mcr_mrc_15: unimplemented crn = %i\n", crn);
 		fatal("(opcode1=%i opcode2=%i crm=%i rd=%i l=%i)\n",
 		    opcode1, opcode2, crm, rd, l_bit);

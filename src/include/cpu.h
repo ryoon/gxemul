@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.44 2005-08-25 11:49:57 debug Exp $
+ *  $Id: cpu.h,v 1.45 2005-08-27 15:56:31 debug Exp $
  *
  *  See cpu.c.
  */
@@ -200,6 +200,9 @@ void cpu_list_available_types(void);
 void cpu_show_cycles(struct machine *machine, int forced);
 struct cpu_family *cpu_family_ptr_by_number(int arch);
 void cpu_init(void);
+
+
+#define	MAGIC_INVALIDATE_ALL	0xf09a7c7109ae0051ULL
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

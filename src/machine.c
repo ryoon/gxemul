@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.529 2005-08-25 17:32:19 debug Exp $
+ *  $Id: machine.c,v 1.530 2005-08-27 15:56:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4429,6 +4429,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			store_string(cpu, cpu->cd.arm.r[0] +
 			    sizeof(struct ebsaboot),
 			    machine->boot_string_argument);
+
+			arm_setup_initial_translation_table(cpu,
+			    machine->physical_ram_in_mb * 1048576 - 32768);
 		}
 		break;
 
@@ -4436,6 +4439,10 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		machine->machine_name = "HPCarm";
 		/*  TODO  */
 		cpu->cd.arm.r[ARM_SP] = 0x8000;
+		if (machine->prom_emulation) {
+			arm_setup_initial_translation_table(cpu,
+			    machine->physical_ram_in_mb * 1048576 - 32768);
+		}
 		break;
 
 	case MACHINE_ZAURUS:
@@ -4443,6 +4450,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
 		/*  TODO  */
+		if (machine->prom_emulation) {
+			arm_setup_initial_translation_table(cpu, 0x4000);
+		}
 		break;
 
 	case MACHINE_NETWINDER:
@@ -4451,6 +4461,9 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		/* machine->main_console_handle = */
 		dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 		    1, 12, 0, 1);
+		if (machine->prom_emulation) {
+			arm_setup_initial_translation_table(cpu, 0x4000);
+		}
 		break;
 #endif	/*  ENABLE_ARM  */
 

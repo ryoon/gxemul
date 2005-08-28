@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.933 2005-08-27 23:38:41 debug Exp $
+$Id: HISTORY,v 1.934 2005-08-28 20:16:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2229,3 +2229,6 @@ Changelog for GXemul:
 		(Thanks to Joshua Wise for making me aware of these bugs.)
 20050827	More work on the ARM emulation, and various other updates.
 20050828	More ARM updates.
+		Finally taking the time to work on translation invalidation
+		(i.e. invalidating translated code mappings when memory is
+		written to). Hopefully this doesn't break anything.

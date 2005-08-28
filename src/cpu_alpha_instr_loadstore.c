@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.9 2005-08-08 20:19:43 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.10 2005-08-28 20:16:23 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -190,7 +190,11 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 		struct alpha_vph_page *vph_p;
 		unsigned char *page;
 		vph_p = cpu->cd.alpha.vph_table0[a];
+#ifdef LS_LOAD
 		page = vph_p->host_load[b];
+#else
+		page = vph_p->host_store[b];
+#endif
 		if (page != NULL) {
 #ifdef LS_LOAD
 #ifdef HOST_BIG_ENDIAN
@@ -281,7 +285,11 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 		struct alpha_vph_page *vph_p;
 		unsigned char *page;
 		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+#ifdef LS_LOAD
 		page = vph_p->host_load[b];
+#else
+		page = vph_p->host_store[b];
+#endif
 		if (page != NULL) {
 #ifdef LS_LOAD
 #ifdef HOST_BIG_ENDIAN

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.45 2005-08-27 15:56:31 debug Exp $
+ *  $Id: cpu.h,v 1.46 2005-08-28 20:16:24 debug Exp $
  *
  *  See cpu.c.
  */
@@ -138,13 +138,15 @@ struct cpu {
 			    uint64_t vaddr_page, unsigned char *host_page,
 			    int writeflag, uint64_t paddr_page);
 	void		(*invalidate_translation_caches_paddr)(struct cpu *,
-			    uint64_t paddr);
-	void		(*invalidate_code_translation_caches)(struct cpu *);
+			    uint64_t paddr, int flags);
+	void		(*invalidate_code_translation)(struct cpu *,
+			    uint64_t paddr, int flags);
 	void		(*useremul_syscall)(struct cpu *cpu, uint32_t code);
 
 	uint64_t	pc;
 
 #ifdef TRACE_NULL_CRASHES
+	/*  TODO: remove this, it's MIPS only  */
 	int		trace_null_index;
 	uint64_t	trace_null_addr[TRACE_NULL_N_ENTRIES];
 #endif  
@@ -202,7 +204,10 @@ struct cpu_family *cpu_family_ptr_by_number(int arch);
 void cpu_init(void);
 
 
-#define	MAGIC_INVALIDATE_ALL	0xf09a7c7109ae0051ULL
+#define	JUST_MARK_AS_NON_WRITABLE	1
+#define	INVALIDATE_ALL			2
+#define	INVALIDATE_PADDR		4
+#define	INVALIDATE_VADDR		8
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

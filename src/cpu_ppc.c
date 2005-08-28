@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.91 2005-08-21 09:34:19 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.92 2005-08-28 20:16:23 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -92,14 +92,14 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		cpu->update_translation_table = ppc32_update_translation_table;
 		cpu->invalidate_translation_caches_paddr =
 		    ppc32_invalidate_translation_caches_paddr;
-		cpu->invalidate_code_translation_caches =
-		    ppc32_invalidate_code_translation_caches;
+		cpu->invalidate_code_translation =
+		    ppc32_invalidate_code_translation;
 	} else {
 		cpu->update_translation_table = ppc_update_translation_table;
 		cpu->invalidate_translation_caches_paddr =
 		    ppc_invalidate_translation_caches_paddr;
-		cpu->invalidate_code_translation_caches =
-		    ppc_invalidate_code_translation_caches;
+		cpu->invalidate_code_translation =
+		    ppc_invalidate_code_translation;
 	}
 
 	cpu->translate_address = ppc_translate_address;

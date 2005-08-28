@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.72 2005-08-27 15:56:29 debug Exp $
+ *  $Id: cpu_arm.c,v 1.73 2005-08-28 20:16:23 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -90,9 +90,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->update_translation_table = arm_update_translation_table;
 	cpu->invalidate_translation_caches_paddr =
 	    arm_invalidate_translation_caches_paddr;
-	cpu->invalidate_code_translation_caches =
-	    arm_invalidate_code_translation_caches;
-
+	cpu->invalidate_code_translation = arm_invalidate_code_translation;
 	cpu->translate_address = arm_translate_address;
 
 	cpu->cd.arm.cpu_type    = cpu_type_defs[found];
@@ -872,7 +870,7 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		fatal("[ arm_mcr_mrc_15: TLB op: TODO ]\n");
 		/*  TODO:  */
 		cpu->invalidate_translation_caches_paddr(cpu,
-		    MAGIC_INVALIDATE_ALL);
+		    0, INVALIDATE_ALL);
 		break;
 
 	case 13:/*  Process ID Register:  */

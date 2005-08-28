@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.59 2005-08-20 12:47:05 debug Exp $
+ *  $Id: memory_rw.c,v 1.60 2005-08-28 20:16:23 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -569,6 +569,10 @@ have_paddr:
 		    writeflag == MEM_WRITE? 1 : 0,
 #endif
 		    paddr & ~offset_mask);
+
+	if (writeflag == MEM_WRITE &&
+	    cpu->invalidate_code_translation != NULL)
+		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);
 
 	if (writeflag == MEM_WRITE) {
 		/*  Ugly optimization, but it works:  */

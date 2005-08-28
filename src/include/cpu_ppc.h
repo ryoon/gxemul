@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.34 2005-08-21 09:34:20 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.35 2005-08-28 20:16:24 debug Exp $
  */
 
 #include "misc.h"
@@ -212,10 +212,10 @@ void ppc_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void ppc32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void ppc_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
-void ppc32_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
-void ppc_invalidate_code_translation_caches(struct cpu *cpu);
-void ppc32_invalidate_code_translation_caches(struct cpu *cpu);
+void ppc_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t, int);
+void ppc32_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t, int);
+void ppc_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+void ppc32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 int ppc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int ppc_cpu_family_init(struct cpu_family *);

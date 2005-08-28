@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.175 2005-08-14 15:47:36 debug Exp $
+ *  $Id: memory.c,v 1.176 2005-08-28 20:16:23 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -294,7 +294,8 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 				for (s=0; s<mem->dev_length[i];
 				    s+=cpu->machine->arch_pagesize)
 					cpu->invalidate_translation_caches_paddr
-					    (cpu, mem->dev_baseaddr[i] + s);
+					    (cpu, mem->dev_baseaddr[i] + s,
+					    JUST_MARK_AS_NON_WRITABLE);
 			}
 
 			if (cpu->machine->arch == ARCH_MIPS) {

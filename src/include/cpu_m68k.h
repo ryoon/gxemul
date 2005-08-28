@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.2 2005-08-14 23:44:23 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.3 2005-08-28 20:16:24 debug Exp $
  */
 
 #include "misc.h"
@@ -115,8 +115,8 @@ struct m68k_cpu {
 /*  cpu_m68k.c:  */
 void m68k_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void m68k_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
-void m68k_invalidate_code_translation_caches(struct cpu *cpu);
+void m68k_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t, int);
+void m68k_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 int m68k_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int m68k_cpu_family_init(struct cpu_family *);

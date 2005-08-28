@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.317 2005-08-25 11:49:56 debug Exp $
+ *  $Id: cpu.c,v 1.318 2005-08-28 20:16:23 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -307,8 +307,8 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 	 *  There might be other translation pointers that still point to
 	 *  within the translation_cache region. Let's invalidate those too:
 	 */
-	if (cpu->invalidate_code_translation_caches != NULL)
-		cpu->invalidate_code_translation_caches(cpu);
+	if (cpu->invalidate_code_translation != NULL)
+		cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
 }
 
 

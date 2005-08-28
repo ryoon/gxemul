@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.3 2005-08-18 09:14:17 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.4 2005-08-28 20:16:23 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -64,8 +64,7 @@ int ia64_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->update_translation_table = ia64_update_translation_table;
 	cpu->invalidate_translation_caches_paddr =
 	    ia64_invalidate_translation_caches_paddr;
-	cpu->invalidate_code_translation_caches =
-	    ia64_invalidate_code_translation_caches;
+	cpu->invalidate_code_translation = ia64_invalidate_code_translation;
 	cpu->is_32bit = 0;
 
 	/*  Only show name and caches etc for CPU nr 0:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.32 2005-08-27 15:56:29 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.33 2005-08-28 20:16:23 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -310,7 +310,6 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 	ppp->physaddr = physaddr;
 
 	/*  TODO: Is this faster than copying an entire template page?  */
-
 	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
 		ppp->ics[i].f =
 #ifdef DYNTRANS_DUALMODE_32
@@ -344,8 +343,9 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #else
 	uint64_t
 #endif
-	    cached_pc, physaddr, physpage_ofs;
-	int pagenr, table_index;
+	    cached_pc, vaddr, physaddr;
+	uint32_t physpage_ofs;
+	int ok, pagenr, table_index;
 	uint32_t *physpage_entryp;
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
@@ -354,8 +354,10 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	cached_pc = cpu->pc;
 	index = cached_pc >> 12;
 	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
-	if (ppp != NULL)
+	if (ppp != NULL) {
+		physaddr = cpu->cd.DYNTRANS_ARCH.phys_addr[index];
 		goto have_it;
+	}
 #else
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
@@ -371,6 +373,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 		vph_p = cpu->cd.alpha.vph_table0[a];
 	if (vph_p != cpu->cd.alpha.vph_default_page) {
 		ppp = vph_p->phys_page[b];
+		physaddr = vph_p->phys_addr[b];
 		if (ppp != NULL)
 			goto have_it;
 	}
@@ -383,12 +386,48 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #endif
 #endif
 
-	/*
-	 *  TODO: virtual to physical address translation
-	 */
-	physaddr = cached_pc & ~( ((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+	vaddr = cached_pc & ~( ((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 	    DYNTRANS_INSTR_ALIGNMENT_SHIFT) |
 	    ((1 << DYNTRANS_INSTR_ALIGNMENT_SHIFT)-1) );
+
+	/*  Virtual to physical address translation:  */
+	ok = 0;
+#ifdef MODE32
+	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL) {
+		physaddr = cpu->cd.DYNTRANS_ARCH.phys_addr[index];
+		ok = 1;
+	}
+#else
+#ifdef DYNTRANS_ALPHA
+	if (vph_p->host_load[b] != NULL) {
+		physaddr = vph_p->phys_addr[b];
+		ok = 1;
+	}
+#else
+#ifdef DYNTRANS_IA64
+	fatal("IA64 todo\n");
+#else
+	fatal("Neither alpha, ia64, nor 32-bit?\n");
+#endif
+#endif
+#endif
+
+	if (!ok) {
+		uint64_t paddr;
+		if (cpu->translate_address != NULL)
+			ok = cpu->translate_address(cpu, vaddr, &paddr,
+			    FLAG_NOEXCEPTIONS | FLAG_INSTR);
+		else {
+			paddr = vaddr;
+			ok = 1;
+		}
+		if (!ok) {
+			fatal("TODO: instruction vaddr=>paddr translation"
+			    " failed. vaddr=0x%llx\n", (long long)vaddr);
+			exit(1);
+		}
+		physaddr = paddr;
+	}
 
 	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
 		cpu_create_or_reset_tc(cpu);
@@ -438,6 +477,9 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 		vph_p->phys_page[b] = ppp;
 #endif
 
+	cpu->invalidate_translation_caches_paddr(cpu, physaddr,
+	    JUST_MARK_AS_NON_WRITABLE);
+
 have_it:
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
@@ -457,6 +499,10 @@ have_it:
  *  XXX_invalidate_tlb_entry():
  *
  *  Invalidate one translation entry (based on virtual address).
+ *
+ *  If the JUST_MARK_AS_NON_WRITABLE flag is set, then the translation entry
+ *  is just downgraded to non-writable (ie the host store page is set to
+ *  NULL). Otherwise, the entire translation is removed.
  */
 void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 #ifdef MODE32
@@ -464,14 +510,21 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 #else
 	uint64_t
 #endif
-	vaddr_page)
+	vaddr_page, int flags)
 {
 #ifdef MODE32
 	uint32_t index = vaddr_page >> 12;
-	cpu->cd.DYNTRANS_ARCH.host_load[index] = NULL;
-	cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
-	cpu->cd.DYNTRANS_ARCH.phys_addr[index] = 0;
-	cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+
+	if (flags & JUST_MARK_AS_NON_WRITABLE) {
+		/*  printf("JUST MARKING NON-W: vaddr 0x%08x\n",
+		    (int)vaddr_page);  */
+		cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
+	} else {
+		cpu->cd.DYNTRANS_ARCH.host_load[index] = NULL;
+		cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
+		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = 0;
+		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+	}
 #else
 	/*  2-level:  */
 #ifdef DYNTRANS_ALPHA
@@ -492,6 +545,10 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 		exit(1);
 	}
 
+	if (flags & JUST_MARK_AS_NON_WRITABLE) {
+		vph_p->host_store[b] = NULL;
+		return;
+	}
 	vph_p->host_load[b] = NULL;
 	vph_p->host_store[b] = NULL;
 	vph_p->phys_addr[b] = 0;
@@ -528,12 +585,12 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
  *  XXX_invalidate_translation_caches_paddr():
  *
  *  Invalidate all entries matching a specific physical address. (Or, if
- *  paddr is set to MAGIC_INVALIDATE_ALL, then all translation entries are
+ *  the INVALIDATE_ALL flag is set, then all translation entries are
  *  invalidated.)
  */
-void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
+void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr, int flags)
 {
-	int r, all = (paddr == MAGIC_INVALIDATE_ALL);
+	int r;
 #ifdef MODE32
 	uint32_t
 #else
@@ -544,10 +601,16 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid &&
 		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
-		    paddr_page || all)) {
+		    paddr_page || flags & INVALIDATE_ALL)) {
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
-			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page);
-			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid = 0;
+			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page,
+			    flags);
+			if (flags & JUST_MARK_AS_NON_WRITABLE)
+				cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
+				    .writeflag = 0;
+			else
+				cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
+				    .valid = 0;
 		}
 	}
 }
@@ -557,54 +620,109 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr)
 
 #ifdef DYNTRANS_INVALIDATE_TC_CODE
 /*
- *  XXX_invalidate_code_translation_caches():
+ *  XXX_invalidate_code_translation():
  *
- *  Invalidate all entries matching a specific virtual address.
+ *  Invalidate code translations for a specific physical address, a specific
+ *  virtual address, or for all entries in the cache.
  */
-void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu)
+void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 {
 	int r;
-#ifdef MODE32
+#ifdef MODE_32
 	uint32_t
 #else
 	uint64_t
 #endif
-	    vaddr_page;
+	    vaddr_page, paddr_page;
 
+	addr &= ~(DYNTRANS_PAGESIZE-1);
+
+	/*  printf("DYNTRANS_INVALIDATE_TC_CODE addr=0x%08x flags=%i\n",
+	    (int)addr, flags);  */
+
+	if (flags & INVALIDATE_PADDR) {
+		int pagenr, table_index;
+		uint32_t physpage_ofs, *physpage_entryp;
+		struct DYNTRANS_TC_PHYSPAGE *ppp;
+
+		pagenr = DYNTRANS_ADDR_TO_PAGENR(addr);
+		table_index = PAGENR_TO_TABLE_INDEX(pagenr);
+
+		physpage_entryp = &(((uint32_t *)cpu->
+		    translation_cache)[table_index]);
+		physpage_ofs = *physpage_entryp;
+		ppp = NULL;
+
+		/*  Traverse the physical page chain:  */
+		while (physpage_ofs != 0) {
+			ppp = (struct DYNTRANS_TC_PHYSPAGE *)
+			    (cpu->translation_cache + physpage_ofs);
+			/*  If we found the page in the cache,
+			    then we're done:  */
+			if (ppp->physaddr == addr)
+				break;
+			/*  Try the next page in the chain:  */
+			physpage_ofs = ppp->next_ofs;
+		}
+
+		/*  If the page was found, then we should invalidate all
+		    code translations:  */
+		if (ppp != NULL) {
+			/*  TODO: Is this faster than copying an entire
+			    template page?  */
+			int i;
+			for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
+				ppp->ics[i].f =
+#ifdef DYNTRANS_DUALMODE_32
+				    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+				    instr(to_be_translated);
+		}
+	}
+
+	/*  Invalidate entries in the VPH table:  */
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			vaddr_page = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
 			    .vaddr_page & ~(DYNTRANS_PAGESIZE-1);
-#ifdef MODE32
-{
-	uint32_t index = vaddr_page >> 12;
-	cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
-}
-#else
-{
-	/*  2-level:  */
-#ifdef DYNTRANS_ALPHA
-	struct alpha_vph_page *vph_p;
-	uint32_t a, b;
-	int kernel = 0;
+			paddr_page = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
+			    .paddr_page & ~(DYNTRANS_PAGESIZE-1);
 
-	a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-	b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-	if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-		kernel = 1;
-	} else
-		vph_p = cpu->cd.alpha.vph_table0[a];
-	vph_p->phys_page[b] = NULL;
+			if (flags & INVALIDATE_ALL ||
+			    (flags & INVALIDATE_PADDR && paddr_page == addr) ||
+			    (flags & INVALIDATE_VADDR && vaddr_page == addr)) {
+#ifdef MODE32
+				uint32_t index = vaddr_page >> 12;
+				cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+#else
+				/*  2-level:  */
+#ifdef DYNTRANS_ALPHA
+				struct alpha_vph_page *vph_p;
+				uint32_t a, b;
+				int kernel = 0;
+
+				a = (vaddr_page >> ALPHA_LEVEL0_SHIFT)
+				    & (ALPHA_LEVEL0 - 1);
+				b = (vaddr_page >> ALPHA_LEVEL1_SHIFT)
+				    & (ALPHA_LEVEL1 - 1);
+				if ((vaddr_page >> ALPHA_TOPSHIFT) ==
+				    ALPHA_TOP_KERNEL) {
+					vph_p = cpu->cd.alpha.
+					    vph_table0_kernel[a];
+					kernel = 1;
+				} else
+					vph_p = cpu->cd.alpha.vph_table0[a];
+				vph_p->phys_page[b] = NULL;
 #else	/*  !DYNTRANS_ALPHA  */
 #ifdef DYNTRANS_IA64
-	fatal("IA64: blah yo yo TODO\n");
+				fatal("IA64: blah yo yo TODO\n");
 #else
-	fatal("Not yet for non-1-level, non-Alpha, non-ia64\n");
+				fatal("Not yet for non-1-level, non-Alpha, "
+				    "non-ia64\n");
 #endif	/*  !DYNTRANS_IA64  */
 #endif	/*  !DYNTRANS_ALPHA  */
-}
 #endif
+			}
 		}
 	}
 }
@@ -674,7 +792,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			/*  This one has to be invalidated first:  */
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
-			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page);
+			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page,
+			    0);
 		}
 
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid = 1;
@@ -727,7 +846,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		cpu->cd.DYNTRANS_ARCH.host_store[index] =
 		    writeflag? host_page : NULL;
 		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = paddr_page;
-		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;;
+		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
 #endif	/*  32  */
 #endif	/*  !ALPHA  */
 	} else {
@@ -737,6 +856,12 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		 *	Writeflag = 1:  Make sure the page is writable.
 		 *	Writeflag = -1: Downgrade to readonly.
 		 */
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[found].timestamp =
+		    highest + 1;
+		if (writeflag == 1)
+			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 1;
+		if (writeflag == -1)
+			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 0;
 #ifdef DYNTRANS_ALPHA
 		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
 		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
@@ -745,7 +870,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			kernel = 1;
 		} else
 			vph_p = cpu->cd.alpha.vph_table0[a];
-		cpu->cd.alpha.vph_tlb_entry[found].timestamp = highest + 1;
+		vph_p->phys_page[b] = NULL;
 		if (vph_p->phys_addr[b] == paddr_page) {
 			if (writeflag == 1)
 				vph_p->host_store[b] = host_page;
@@ -760,8 +885,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #else
 #ifdef MODE32
 		index = vaddr_page >> 12;
-		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[found].timestamp =
-		    highest + 1;
+		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
 		if (cpu->cd.DYNTRANS_ARCH.phys_addr[index] == paddr_page) {
 			if (writeflag == 1)
 				cpu->cd.DYNTRANS_ARCH.host_store[index] =
@@ -781,6 +905,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 }
 #endif	/*  DYNTRANS_UPDATE_TRANSLATION_TABLE  */
 
+
+/*****************************************************************************/
 
 
 #ifdef DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -807,6 +933,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 #endif	/*  DYNTRANS_TO_BE_TRANSLATED_HEAD  */
 
+
+/*****************************************************************************/
 
 
 #ifdef DYNTRANS_TO_BE_TRANSLATED_TAIL

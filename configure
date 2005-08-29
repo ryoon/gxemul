@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.159 2005-08-25 17:32:18 debug Exp $
+#  $Id: configure,v 1.160 2005-08-29 14:38:25 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -279,11 +279,13 @@ fi
 if [ z$ENABLEALPHA = zYES ]; then
 	printf "#define ENABLE_ALPHA\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_alpha.o cpu_alpha_palcode.o"
+	CPU_TOOLS="$CPU_TOOLS generate_alpha_misc"
 fi
 if [ z$ENABLEARM = zYES ]; then
 	printf "#define ENABLE_ARM\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_arm.o memory_arm.o tmp_arm_dpi.o"
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_loadstore.o"
+	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_dpi"
 fi
 if [ z$ENABLEIA64 = zYES ]; then
 	printf "#define ENABLE_IA64\n" >> config.h
@@ -299,6 +301,7 @@ fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_ppc.o"
+	CPU_TOOLS="$CPU_TOOLS generate_ppc_loadstore"
 fi
 if [ z$ENABLESH = zYES ]; then
 	printf "#define ENABLE_SH\n" >> config.h
@@ -1194,12 +1197,13 @@ echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "CPU_ARCHS=$CPU_ARCHS" >> _Makefile.header
+echo "CPU_TOOLS=$CPU_TOOLS" >> _Makefile.header
 echo "" >> _Makefile.header
 
 
 #  Create the Makefiles:
 
-for a in . src src/devices src/devices/fonts; do
+for a in . src src/cpus src/devices src/devices/fonts; do
 	echo "creating $a/Makefile"
 	touch $a/Makefile
 	cat _Makefile.header > $a/Makefile

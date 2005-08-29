@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.82 2005-08-25 17:32:19 debug Exp $
+#  $Id: Makefile.skel,v 1.83 2005-08-29 14:38:26 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -8,11 +8,13 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
 OBJS=console.o cpu.o debugger.o diskimage.o emul.o emul_parse.o file.o \
 	machine.o main.o misc.o memory.o device.o net.o symbol.o useremul.o \
-	x11.o cpu_mips.o cpu_mips_coproc.o memory_fast_v2h.o bintrans.o \
-	$(CPU_ARCHS) arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o yamon.o
+	x11.o arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o yamon.o
 
 
-all: do_src do_devices
+all: do_src do_cpus do_devices
+
+do_cpus:
+	cd cpus; $(MAKE); cd ..
 
 do_devices:
 	cd devices; $(MAKE); cd ..
@@ -22,160 +24,13 @@ do_src: $(OBJS)
 $(OBJS): Makefile
 
 
-#  Old bintrans:
-
-bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
-
-
-###############################################################################
-
-cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_alpha_head.c tmp_alpha_tail.c
-
-cpu_alpha_instr.c: cpu_alpha_instr_alu.c tmp_alpha_misc.c
-
-tmp_alpha_misc.c: cpu_alpha_instr_loadstore.c
-	cd tools; make generate_alpha_misc; cd ..
-	tools/generate_alpha_misc > tmp_alpha_misc.c
-
-tmp_alpha_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head alpha Alpha > tmp_alpha_head.c
-
-tmp_alpha_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail alpha Alpha > tmp_alpha_tail.c
-
-
-###############################################################################
-
-cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c memory_rw.c \
-	memory_arm.c tmp_arm_head.c tmp_arm_tail.c
-
-tmp_arm_loadstore.c: cpu_arm_instr_loadstore.c
-	cd tools; make generate_arm_loadstore; cd ..
-	tools/generate_arm_loadstore > tmp_arm_loadstore.c
-
-tmp_arm_dpi.c:
-	cd tools; make generate_arm_dpi; cd ..
-	tools/generate_arm_dpi > tmp_arm_dpi.c
-
-tmp_arm_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head arm ARM > tmp_arm_head.c
-
-tmp_arm_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail arm ARM > tmp_arm_tail.c
-
-
-###############################################################################
-
-cpu_ia64.o: cpu_ia64.c cpu_ia64_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_ia64_head.c tmp_ia64_tail.c
-
-tmp_ia64_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head ia64 IA64 > tmp_ia64_head.c
-
-tmp_ia64_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail ia64 IA64 > tmp_ia64_tail.c
-
-
-###############################################################################
-
-cpu_m68k.o: cpu_m68k.c cpu_m68k_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_m68k_head.c tmp_m68k_tail.c
-
-tmp_m68k_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head m68k M68K > tmp_m68k_head.c
-
-tmp_m68k_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail m68k M68K > tmp_m68k_tail.c
-
-
-###############################################################################
-
-cpu_mips.o: cpu_mips.c cpu_mips16.c cpu_dyntrans.c memory_mips.c
-
-memory_mips.c: memory_rw.c memory_mips_v2p.c
-
-
-###############################################################################
-
-cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_ppc.c \
-	memory_rw.c tmp_ppc_head.c tmp_ppc_tail.c
-
-cpu_ppc_instr.c: tmp_ppc_loadstore.c
-
-tmp_ppc_loadstore.c: cpu_ppc_instr_loadstore.c
-	cd tools; make generate_ppc_loadstore; cd ..
-	tools/generate_ppc_loadstore > tmp_ppc_loadstore.c
-
-tmp_ppc_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head ppc PPC > tmp_ppc_head.c
-
-tmp_ppc_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail ppc PPC > tmp_ppc_tail.c
-
-
-###############################################################################
-
-cpu_sh.o: cpu_sh.c cpu_sh_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_sh_head.c tmp_sh_tail.c
-
-tmp_sh_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head sh SH > tmp_sh_head.c
-
-tmp_sh_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail sh SH > tmp_sh_tail.c
-
-
-###############################################################################
-
-cpu_sparc.o: cpu_sparc.c cpu_sparc_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_sparc_head.c tmp_sparc_tail.c
-
-tmp_sparc_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head sparc SPARC > tmp_sparc_head.c
-
-tmp_sparc_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail sparc SPARC > tmp_sparc_tail.c
-
-
-###############################################################################
-
-cpu_x86.o: cpu_x86.c cpu_x86_instr.c cpu_dyntrans.c memory_rw.c \
-	tmp_x86_head.c tmp_x86_tail.c
-
-memory_x86.c: memory_rw.c
-
-tmp_x86_head.c:
-	cd tools; make generate_head; cd ..
-	tools/generate_head x86 x86 > tmp_x86_head.c
-
-tmp_x86_tail.c:
-	cd tools; make generate_tail; cd ..
-	tools/generate_tail x86 x86 > tmp_x86_tail.c
-
-
-###############################################################################
-
 clean:
 	rm -f $(OBJS) *core tmp_*.c
-	cd tools; $(MAKE) clean; cd ..
+	cd cpus; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 
 clean_all: clean
+	cd cpus; $(MAKE) clean_all; cd ..
 	cd devices; $(MAKE) clean_all; cd ..
 	rm -f Makefile
 

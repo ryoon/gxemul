@@ -1,25 +1,38 @@
-$Id: TODO,v 1.168 2005-08-27 23:38:42 debug Exp $
+$Id: TODO,v 1.169 2005-08-29 14:38:25 debug Exp $
 
 ===============================================================================
 
 High priority stuff:
 
 
-MIPS bintrans:
+Old MIPS bintrans:
 	x)  call/return address cache?
 
-ARM and PPC:
-	x)  more instructions
+	x)  Turn the MIPS cpu family stuff into dyntrans.
 
-	x)  coprocessors, MMUs, interrupts, ...
+Hm...
+			Instruction			Word		Delay
+	Arch.:		length:				size:		slot:
+	------		-------				-----		-----
+	Alpha		32-bit				64		no
+	ARM		32-bit, 16-bit (Thumb)		32		no
+	HPPA		32-bit				64/32		yes
+	i960		32-bit + variable		32		?
+	IA64		128-bit				64		no
+	M68K		16-bit + variable		32		no
+	M88K		?				32 (?)		?
+	MIPS		32-bit, 16-bit (MIPS16)		64/32		yes
+	PC532		?				32 (?)		?
+	POWER/PPC	32-bit				64/32		no
+	SH		32-bit, 16-bit (SHcompact)	64/32		yes(*)
+	SPARC		32-bit				64/32		yes
+	x86		8-bit + variable		64/32/16	no
+	VAX		8-bit + variable		32		no
+
+	(*) Delay slot in SHcompact?
 
 dyntrans:
-	x)  memory write protection for ARM, but NOT for Alpha (because
-		it has the IMB instruction... hm)
-		No: better is to have write protection (or code invalidation)
-		for all archs.
-
-	x)  call/return address cache
+	x)  call/return address cache?
 
 	x)  instr_call sequence analysis support? (Useful for
 		handtuning combinations.)
@@ -29,14 +42,19 @@ dyntrans:
 		TODO: a command line option to turn off instruction
 			combinations (for debugging)
 
-	x)  support for archs that allow transparent unaligned load/stores
-		(ppc, x86 etc)
+	x)  load/stores:
+		o)  support for archs that allow transparent
+		    unaligned load/stores (ppc, x86 etc)
+		o)  alignment checks ==> exceptions
+		o)  native byte order ==> faster loads, etc.
+
+	x)  actual cache emulation
 
 	x)  SMP: detect when an instruction such as ll/sc or cas is used,
 	    and "synchronize" approximately the number of executed instructions
 	    (or cycles) across all CPUs.
 
-	x)  support for variable-length instructions (x86, m68k, ...)
+	x)  support for variable-length instructions (x86, m68k, i960, ...)
 		Solution:  don't increase the next_ic between every
 			instruction, but let each instruction's handler do
 			that for itself.
@@ -46,7 +64,7 @@ dyntrans:
 
 	x)  support for THUMB, MIPS16, userland SH  (arm, mips, sh)
 
-	x)  support for Delay slots!  (mips, sparc, hppa)
+	x)  support for Delay slots!  (mips, sparc, hppa, SHcompact?)
 
 	x)  Alpha: hahaha, zapnot and inserts/extracts don't
 	    compile into very nice code :-|  fix this

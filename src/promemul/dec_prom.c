@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.60 2005-06-26 11:36:28 debug Exp $
+ *  $Id: dec_prom.c,v 1.1 2005-08-29 14:46:34 debug Exp $
  *
  *  DECstation PROM emulation.
  */

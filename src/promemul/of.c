@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.6 2005-04-19 00:02:00 debug Exp $
+ *  $Id: of.c,v 1.1 2005-08-29 14:46:34 debug Exp $
  *
  *  OpenFirmware emulation.
  */

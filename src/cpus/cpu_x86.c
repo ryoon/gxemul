@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_x86.c,v 1.2 2005-08-29 14:46:32 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -2511,7 +2511,7 @@ static void x86_cpuid(struct cpu *cpu)
 /*
  *  x86_push():
  */
-static int x86_push(struct cpu *cpu, uint64_t value, int mode)
+int x86_push(struct cpu *cpu, uint64_t value, int mode)
 {
 	int res = 1, oldseg;
 	int ssize = cpu->cd.x86.descr_cache[X86_S_SS].default_op_size;
@@ -2551,7 +2551,7 @@ ssize = mode;
 /*
  *  x86_pop():
  */
-static int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
+int x86_pop(struct cpu *cpu, uint64_t *valuep, int mode)
 {
 	int res = 1, oldseg;
 	int ssize = cpu->cd.x86.descr_cache[X86_S_SS].default_op_size;
@@ -2796,7 +2796,7 @@ int_jump:
 /*
  *  x86_calc_flags():
  */
-static void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
+void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
 	int op)
 {
 	uint64_t c=0, mask;
@@ -2914,7 +2914,7 @@ static void x86_calc_flags(struct cpu *cpu, uint64_t a, uint64_t b, int mode,
  *
  *  Returns 0 or 1 (false or true) depending on flag bits.
  */
-static int x86_condition(struct cpu *cpu, int op)
+int x86_condition(struct cpu *cpu, int op)
 {
 	int success = 0;
 
@@ -2959,7 +2959,7 @@ static int x86_condition(struct cpu *cpu, int op)
 /*
  *  x86_shiftrotate():
  */
-static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
+void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
 	int n, int mode)
 {
 	uint64_t op1 = *op1p;
@@ -3037,7 +3037,7 @@ static void x86_shiftrotate(struct cpu *cpu, uint64_t *op1p, int op,
  *
  *  This function reads or writes the MSRs (Model Specific Registers).
  */
-static void x86_msr(struct cpu *cpu, int writeflag)
+void x86_msr(struct cpu *cpu, int writeflag)
 {
 	uint32_t regnr = cpu->cd.x86.r[X86_R_CX] & 0xffffffff;
 	uint64_t odata=0, idata = (cpu->cd.x86.r[X86_R_AX] & 0xffffffff) +
@@ -3076,7 +3076,7 @@ static void x86_msr(struct cpu *cpu, int writeflag)
  *  Returns 1 if an interrupt happened, 0 otherwise (for example if the
  *  in-service bit of an interrupt was already set).
  */
-static int cause_interrupt(struct cpu *cpu)
+int cause_interrupt(struct cpu *cpu)
 {
 	int i, irq_nr = -1;
 

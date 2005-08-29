@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.98 2005-06-26 11:36:28 debug Exp $
+ *  $Id: pc_bios.c,v 1.1 2005-08-29 14:46:34 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *

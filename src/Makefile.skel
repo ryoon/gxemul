@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.83 2005-08-29 14:38:26 debug Exp $
+#  $Id: Makefile.skel,v 1.84 2005-08-29 14:46:31 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -8,10 +8,9 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
 OBJS=console.o cpu.o debugger.o diskimage.o emul.o emul_parse.o file.o \
 	machine.o main.o misc.o memory.o device.o net.o symbol.o useremul.o \
-	x11.o arcbios.o dec_prom.o ps2_bios.o of.o pc_bios.o yamon.o
+	x11.o
 
-
-all: do_src do_cpus do_devices
+all: do_src do_cpus do_devices do_promemul
 
 do_cpus:
 	cd cpus; $(MAKE); cd ..
@@ -19,18 +18,22 @@ do_cpus:
 do_devices:
 	cd devices; $(MAKE); cd ..
 
+do_promemul:
+	cd promemul; $(MAKE); cd ..
+
 do_src: $(OBJS)
 
 $(OBJS): Makefile
-
 
 clean:
 	rm -f $(OBJS) *core tmp_*.c
 	cd cpus; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
+	cd promemul; $(MAKE) clean; cd ..
 
 clean_all: clean
 	cd cpus; $(MAKE) clean_all; cd ..
 	cd devices; $(MAKE) clean_all; cd ..
+	cd promemul; $(MAKE) clean_all; cd ..
 	rm -f Makefile
 

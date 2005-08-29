@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.935 2005-08-29 14:38:25 debug Exp $
+$Id: HISTORY,v 1.936 2005-08-29 14:46:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2233,3 +2233,4 @@ Changelog for GXemul:
 		(i.e. invalidating translated code mappings when memory is
 		written to). Hopefully this doesn't break anything.
 20050829	Moving CPU related files from src/ to a new subdir, src/cpus/.
+		Moving PROM emulation stuff from src/ to src/promemul/.

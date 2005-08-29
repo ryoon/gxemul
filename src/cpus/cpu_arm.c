@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.2 2005-08-29 15:22:44 debug Exp $
+ *  $Id: cpu_arm.c,v 1.3 2005-08-29 23:39:52 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -149,6 +149,9 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
 			uint32_t addr = cpu->cd.arm.ttb +
 			    (((j << 28) + (i << 20)) >> 18);
 			uint32_t d = 1048576*i | 2;
+/*
+d = 1048576 * (i + (j==12? 10 : j)*256) | 2;
+*/
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 				descr[0] = d;       descr[1] = d >> 8;
 				descr[2] = d >> 16; descr[3] = d >> 24;
@@ -903,7 +906,8 @@ void arm_mcr_mrc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			fatal("[ arm_mcr_mrc_15: attempt to read cr8? ]\n");
 			return;
 		}
-		fatal("[ arm_mcr_mrc_15: TLB op: TODO ]\n");
+		fatal("[ arm_mcr_mrc_15: TLB: op2=%i crm=%i rd=0x%08x ]\n",
+		    opcode2, crm, cpu->cd.arm.r[rd]);
 		/*  TODO:  */
 		cpu->invalidate_translation_caches_paddr(cpu,
 		    0, INVALIDATE_ALL);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_arm.c,v 1.2 2005-08-29 15:22:44 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -658,16 +658,52 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			break;
 		}
 		debug("%s", (p_bit && w_bit)? "!" : "");
-		if ((iw & 0x0f000000) == 0x05000000 && r16 == ARM_PC) {
+		if ((iw & 0x0f000000) == 0x05000000 &&
+		    (r16 == ARM_PC || running)) {
+			unsigned char tmpw[4];
 			uint32_t imm = iw & 0xfff;
-			uint32_t addr = dumpaddr + 8 +
-			    (u_bit? imm : -imm);
+			uint32_t addr = (u_bit? imm : -imm);
+			if (r16 == ARM_PC)
+				addr += dumpaddr + 8;
+			else
+				addr += cpu->cd.arm.r[r16];
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    addr, &offset);
 			if (symbol != NULL)
-				debug(" \t<%s>", symbol);
+				debug(" \t<%s", symbol);
 			else
-				debug(" \t<0x%08x>", addr);
+				debug(" \t<0x%08x", addr);
+			if ((l_bit && cpu->memory_rw(cpu, cpu->mem, addr, tmpw,
+			    b_bit? 1 : sizeof(tmpw), MEM_READ, NO_EXCEPTIONS))
+			    || (!l_bit && running)) {
+				if (l_bit) {
+					if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+						addr = tmpw[0] + (tmpw[1] << 8) +
+						    (tmpw[2] << 16) + (tmpw[3] << 24);
+					else
+						addr = tmpw[3] + (tmpw[2] << 8) +
+						    (tmpw[1] << 16) + (tmpw[0] << 24);
+				} else {
+					tmpw[0] = addr = cpu->cd.arm.r[r12];
+					if (r12 == ARM_PC)
+						addr += 8;
+				}
+				debug(": ");
+				if (b_bit)
+					debug("%i", tmpw[0]);
+				else {
+					symbol = get_symbol_name(&cpu->machine->
+					    symbol_context, addr, &offset);
+					if (symbol != NULL)
+						debug("%s", symbol);
+					else if ((int32_t)addr > -256 &&
+						    (int32_t)addr < 256)
+						debug("%i", addr);
+					else
+						debug("0x%x", addr);
+				}
+			}
+			debug(">");
 		}
 		debug("\n");
 		break;

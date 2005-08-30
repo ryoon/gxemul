@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.532 2005-08-27 23:09:49 debug Exp $
+ *  $Id: machine.c,v 1.533 2005-08-30 00:57:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4483,6 +4483,7 @@ Not yet.
 		 */
 		machine->machine_name = "Intel IQ80321 (ARM)";
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x8000);
 		}

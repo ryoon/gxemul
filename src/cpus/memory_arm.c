@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.2 2005-08-30 00:38:44 debug Exp $
+ *  $Id: memory_arm.c,v 1.3 2005-08-30 00:57:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -57,14 +57,11 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
-		if (vaddr & 0x80000000)
-			*return_addr = vaddr & 0x0fffffff;
-		else
-			*return_addr = vaddr;
+		*return_addr = vaddr;
 		return 2;
 	}
 
-	addr = cpu->cd.arm.ttb + ((vaddr & 0xfff00000) >> 18);
+	addr = cpu->cd.arm.ttb + ((vaddr & 0xfff00000ULL) >> 18);
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
 	    sizeof(descr), MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
 		fatal("arm_translate_address(): huh?\n");
@@ -110,10 +107,6 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 		case 3:	/*  1KB page:  */
 			*return_addr = (d & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
-		default:fatal("TODO: course second level descriptor for vaddr"
-			    " 0x%08x is of type %i (not yet implemented)\n",
-			    vaddr, d2 & 3);
-			exit(1);
 		}
 		/*  TODO: access rights etc.  */
 		return 2;

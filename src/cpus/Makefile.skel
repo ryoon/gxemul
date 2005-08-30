@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.1 2005-08-29 14:36:41 debug Exp $
+#  $Id: Makefile.skel,v 1.2 2005-08-30 00:38:44 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -51,7 +51,7 @@ cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c ../memory_rw.c \
 tmp_arm_loadstore.c: cpu_arm_instr_loadstore.c
 	./generate_arm_loadstore > tmp_arm_loadstore.c
 
-tmp_arm_dpi.c:
+tmp_arm_dpi.c: cpu_arm_instr_dpi.c
 	./generate_arm_dpi > tmp_arm_dpi.c
 
 tmp_arm_head.c:

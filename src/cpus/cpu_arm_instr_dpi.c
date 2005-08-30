@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.2 2005-08-30 00:38:44 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -196,23 +196,22 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 			n = 1;
 		} else
 			n = 0;
+		/*  Calculate the Overflow bit:  */
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
 		{
 			int v;
-			/*  TODO: This is only correct for CMP and SUB! Fix!  */
 #if defined(A__CMP) || defined(A__SUB)
 			if ((int32_t)a >= (int32_t)b)
-#else
-#if defined(A__ADD)
-			/*  TODO  */
-			if (1)
 #else
 #if defined(A__CMN)
 			if ((int32_t)a >= (int32_t)(-b))
 #else
 #if defined(A__RSB)
 			if ((int32_t)b >= (int32_t)a)
+#else
+#if defined(A__ADD)
+			if (0)
 #else
 			fatal("BLAH! not yet\n");
 			exit(1);
@@ -224,6 +223,15 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 				v = n;
 			else
 				v = !n;
+
+#if defined(A__ADD)
+			if (((int32_t)a >= 0 && (int32_t)c32 < 0) ||
+			    ((int32_t)a < 0 && (int32_t)c32 >= 0))
+				v = 1;
+			else
+				v = 0;
+#endif
+
 			if (v)
 				cpu->cd.arm.cpsr |= ARM_FLAG_V;
 		}

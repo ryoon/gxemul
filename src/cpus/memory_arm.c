@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: memory_arm.c,v 1.2 2005-08-30 00:38:44 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,7 +52,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
 	unsigned char descr[4];
-	uint32_t addr, d, d2, ptba;
+	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba;
 	int instr = flags & FLAG_INSTR;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 
@@ -132,7 +132,8 @@ exception_return:
 	if (no_exceptions)
 		return 0;
 
-	fatal("TODO: arm memory fault: vaddr=%08x\n", vaddr);
+	fatal("TODO: arm memory fault: vaddr=%08x d=0x%08x d2=0x%08x\n",
+	    vaddr, d, d2);
 	exit(1);
 	return 0;
 }

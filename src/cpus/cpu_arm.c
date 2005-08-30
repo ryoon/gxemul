@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.3 2005-08-29 23:39:52 debug Exp $
+ *  $Id: cpu_arm.c,v 1.4 2005-08-30 21:47:43 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -148,9 +148,9 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
 			unsigned char descr[4];
 			uint32_t addr = cpu->cd.arm.ttb +
 			    (((j << 28) + (i << 20)) >> 18);
-			uint32_t d = 1048576*i | 2;
+			uint32_t d = (1048576*i) | 2;
 /*
-d = 1048576 * (i + (j==12? 10 : j)*256) | 2;
+d = (1048576 * (i + (j==12? 10 : j)*256)) | 2;
 */
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 				descr[0] = d;       descr[1] = d >> 8;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.937 2005-08-29 15:22:43 debug Exp $
+$Id: HISTORY,v 1.938 2005-08-30 21:47:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2235,3 +2235,4 @@ Changelog for GXemul:
 20050829	Moving CPU related files from src/ to a new subdir, src/cpus/.
 		Moving PROM emulation stuff from src/ to src/promemul/.
 		Better debug instruction trace for ARM loads and stores.
+20050830	Various ARM updates (correcting CMP flag calculation, etc).

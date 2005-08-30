@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.2 2005-08-30 00:38:44 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.3 2005-08-30 21:47:43 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -115,10 +115,10 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if defined(A__EOR) || defined(A__TEQ)
 	c64 = a ^ b;
 #endif
-#if defined(A__SUB)
+#if defined(A__SUB) || defined(A__CMP)
 	c64 = a - b;
 #endif
-#if defined(A__RSB) || defined(A__CMP)
+#if defined(A__RSB)
 	c64 = b - a;
 #endif
 #if defined(A__ADD) || defined(A__CMN)
@@ -170,6 +170,17 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 
+
+#if defined(A__CMN)
+	b = -b;
+#endif
+#if defined(A__RSB)
+	{
+		uint32_t tmp = a; a = b; b = tmp;
+	}
+#endif
+
+
 	/*
 	 *  Status flag update (if the S-bit is set):
 	 */
@@ -181,11 +192,22 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	    | ARM_FLAG_V | ARM_FLAG_C
 #endif
 	    );
-#if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
- || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
+
+#if defined(A__CMP) || defined(A__CMN) || defined(A__RSB) || defined(A__SUB)
+	if ((uint32_t)a >= (uint32_t)b)
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+#else
+#if defined(A__ADC) || defined(A__ADD)
 	if (c32 != c64)
 		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+#else
+#if defined(A__RSC) || defined(A__SBC)
+	fatal("TODO: C flag\n");
+	exit(1);
 #endif
+#endif
+#endif
+
 	if (c32 == 0)
 		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
 
@@ -200,36 +222,24 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
 		{
-			int v;
-#if defined(A__CMP) || defined(A__SUB)
-			if ((int32_t)a >= (int32_t)b)
-#else
-#if defined(A__CMN)
-			if ((int32_t)a >= (int32_t)(-b))
-#else
-#if defined(A__RSB)
-			if ((int32_t)b >= (int32_t)a)
-#else
+			int v = 0;
 #if defined(A__ADD)
-			if (0)
-#else
-			fatal("BLAH! not yet\n");
-			exit(1);
-			if (0)
-#endif
-#endif
-#endif
-#endif
-				v = n;
-			else
-				v = !n;
-
-#if defined(A__ADD)
-			if (((int32_t)a >= 0 && (int32_t)c32 < 0) ||
-			    ((int32_t)a < 0 && (int32_t)c32 >= 0))
+			if (((int32_t)a >= 0 && (int32_t)b >= 0 &&
+			    (int32_t)c32 < 0) ||
+			    ((int32_t)a < 0 && (int32_t)b < 0 &&
+			    (int32_t)c32 >= 0))
 				v = 1;
-			else
-				v = 0;
+#else
+#if defined(A__SUB) || defined(A__RSB) || defined(A__CMP) || defined(A__CMN)
+			if (((int32_t)a >= 0 && (int32_t)b < 0 &&
+			    (int32_t)c32 < 0) ||
+			    ((int32_t)a < 0 && (int32_t)b >= 0 &&
+			    (int32_t)c32 >= 0))
+				v = 1;
+#else
+			fatal("NO\n");
+			exit(1);
+#endif
 #endif
 
 			if (v)

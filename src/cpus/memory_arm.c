@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.3 2005-08-30 00:57:53 debug Exp $
+ *  $Id: memory_arm.c,v 1.4 2005-08-30 21:47:43 debug Exp $
  */
 
 #include <stdio.h>
@@ -53,7 +53,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 {
 	unsigned char descr[4];
 	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba;
-	int instr = flags & FLAG_INSTR;
+	int instr = flags & FLAG_INSTR, d2_in_use = 0;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
@@ -95,17 +95,18 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 		else
 			d2 = descr[3] + (descr[2] << 8) + (descr[1] << 16)
 			    + (descr[0] << 24);
+		d2_in_use = 1;
 
 		switch (d2 & 3) {
 		case 0:	goto exception_return;
 		case 1:	/*  16KB page:  */
-			*return_addr = (d & 0xffff0000) | (vaddr & 0x0000ffff);
+			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
 		case 2:	/*  4KB page:  */
-			*return_addr = (d & 0xfffff000) | (vaddr & 0x00000fff);
+			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */
-			*return_addr = (d & 0xfffffc00) | (vaddr & 0x000003ff);
+			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
 		}
 		/*  TODO: access rights etc.  */
@@ -125,8 +126,10 @@ exception_return:
 	if (no_exceptions)
 		return 0;
 
-	fatal("TODO: arm memory fault: vaddr=%08x d=0x%08x d2=0x%08x\n",
-	    vaddr, d, d2);
+	fatal("TODO: arm memory fault: vaddr=%08x d=0x%08x", vaddr, d);
+	if (d2_in_use)
+		fatal(" d2=0x%08x", d2);
+	fatal("\n");
 	exit(1);
 	return 0;
 }

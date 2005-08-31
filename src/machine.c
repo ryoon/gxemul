@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.533 2005-08-30 00:57:52 debug Exp $
+ *  $Id: machine.c,v 1.534 2005-08-31 01:13:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4164,7 +4164,8 @@ Not yet.
 		/*  For playing with PMON2000 for PPC:  */
 		machine->machine_name = "DB64360";
 
-		machine->main_console_handle = (size_t)device_add(machine, "ns16550 irq=0 addr=0x1d000020");
+		machine->main_console_handle = (size_t)device_add(machine,
+		    "ns16550 irq=0 addr=0x1d000020 addr_mult=4");
 
 		if (machine->prom_emulation) {
 			int i;

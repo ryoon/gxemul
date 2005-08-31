@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.1 2005-08-29 14:46:34 debug Exp $
+ *  $Id: of.c,v 1.2 2005-08-31 01:13:56 debug Exp $
  *
  *  OpenFirmware emulation.
+ *
+ *  Development notes: Care must be taken so that the code in here works
+ *  with (at least) POWER/PowerPC, ARM, and SPARC.
  */
 
 #include <stdio.h>
@@ -37,7 +40,6 @@
 
 #include "console.h"
 #include "cpu.h"
-#include "cpu_ppc.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"

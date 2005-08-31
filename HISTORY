@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.939 2005-08-31 00:34:42 debug Exp $
+$Id: HISTORY,v 1.940 2005-08-31 01:13:53 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2236,4 +2236,4 @@ Changelog for GXemul:
 		Moving PROM emulation stuff from src/ to src/promemul/.
 		Better debug instruction trace for ARM loads and stores.
 20050830	Various ARM updates (correcting CMP flag calculation, etc).
-20050831	PPC instruction updates.
+20050831	PPC instruction updates. (Flag fixes, etc.)

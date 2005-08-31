@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.2 2005-08-31 00:34:43 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.3 2005-08-31 01:13:55 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1157,11 +1157,15 @@ X(adde)
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if (old_ca)
 		tmp ++;
+
+fatal("TODO: adde Carry bit MAY be wrong\n");
+
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
+X(adde_dot) { instr(adde)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(addze)
 {
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
@@ -1170,10 +1174,14 @@ X(addze)
 	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
+
+fatal("TODO: addze Carry MAY be wrong\n");
+
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
+X(addze_dot) { instr(addze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 
 
 /*
@@ -1195,20 +1203,13 @@ X(subfc)
 X(subfc_dot) {	instr(subfc)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfe)
 {
-	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
-	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
-	uint64_t tmp2 = tmp;
-
+	int old_ca = (cpu->cd.ppc.xer & PPC_XER_CA)? 1 : 0;
 	cpu->cd.ppc.xer &= ~PPC_XER_CA;
-	tmp += (uint32_t)reg(ic->arg[1]);
-	if (old_ca)
-		tmp ++;
-
-fatal("TODO: subfe Carry bit is wrong\n");
-
-	if ((tmp >> 32) == (tmp2 >> 32))
+	/*  TODO: Is this CA calculation correct?  Or should the +-1
+	    stuff be on the left side of this comparision?  */
+	if (reg(ic->arg[1]) >= reg(ic->arg[0]))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-	reg(ic->arg[2]) = (uint32_t)tmp;
+	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]) - 1 + old_ca;
 }
 X(subfe_dot) {	instr(subfe)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfze)
@@ -1230,16 +1231,14 @@ X(subfze_dot) {	instr(subfze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 
 
 /*
- *  ori:  OR immediate.
+ *  ori, xori etc.:
  *
  *  arg[0] = pointer to source uint64_t
  *  arg[1] = immediate value (uint32_t or larger)
  *  arg[2] = pointer to destination uint64_t
  */
-X(ori)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) | (uint32_t)ic->arg[1];
-}
+X(ori)  { reg(ic->arg[2]) = reg(ic->arg[0]) | (uint32_t)ic->arg[1]; }
+X(xori) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1]; }
 
 
 /*
@@ -1250,19 +1249,6 @@ X(ori)
 X(user_syscall)
 {
 	useremul_syscall(cpu, ic->arg[0]);
-}
-
-
-/*
- *  xori:  XOR immediate.
- *
- *  arg[0] = pointer to source uint64_t
- *  arg[1] = immediate value (uint32_t or larger)
- *  arg[2] = pointer to destination uint64_t
- */
-X(xori)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1];
 }
 
 
@@ -2144,6 +2130,10 @@ X(to_be_translated)
 			}
 			if (rc) {
 				switch (xo) {
+				case PPC_31_ADDE:
+					ic->f = instr(adde_dot); break;
+				case PPC_31_ADDZE:
+					ic->f = instr(addze_dot); break;
 				case PPC_31_SUBF:
 					ic->f = instr(subf_dot); break;
 				case PPC_31_SUBFC:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.4 2005-08-31 01:32:23 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.5 2005-08-31 02:46:51 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -911,6 +911,8 @@ X(crxor)
  */
 X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
 X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
+X(mftb) {	reg(ic->arg[0]) = cpu->cd.ppc.tbl; }
+X(mftbu) {	reg(ic->arg[0]) = cpu->cd.ppc.tbu; }
 /*  TODO: Check privilege level for mfsprg*  */
 X(mfsdr1) {	reg(ic->arg[0]) = cpu->cd.ppc.sdr1; }
 X(mfdbsr) {	reg(ic->arg[0]) = cpu->cd.ppc.dbsr; }
@@ -1237,6 +1239,15 @@ X(subfze_dot) {	instr(subfze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
  */
 X(ori)  { reg(ic->arg[2]) = reg(ic->arg[0]) | (uint32_t)ic->arg[1]; }
 X(xori) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1]; }
+
+
+/*
+ *  tlbie:  TLB invalidate
+ */
+X(tlbie)
+{
+	cpu->invalidate_translation_caches_paddr(cpu, 0, INVALIDATE_ALL);
+}
 
 
 /*
@@ -1978,6 +1989,23 @@ X(to_be_translated)
 		case PPC_31_ICBI:
 			/*  TODO  */
 			ic->f = instr(nop);
+			break;
+
+		case PPC_31_TLBIE:
+			/*  TODO  */
+			ic->f = instr(tlbie);
+			break;
+
+		case PPC_31_MFTB:
+			rt = (iword >> 21) & 31;
+			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
+			switch (spr) {
+			case 268: ic->f = instr(mftb); break;
+			case 269: ic->f = instr(mftbu); break;
+			default:fatal("mftb spr=%i?\n", spr);
+				goto bad;
+			}
 			break;
 
 		case PPC_31_NEG:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.534 2005-08-31 01:13:54 debug Exp $
+ *  $Id: machine.c,v 1.535 2005-08-31 02:46:50 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4086,6 +4086,9 @@ Not yet.
 		machine->main_console_handle = (size_t)
 		    device_add(machine, "ns16550 irq=0 addr=0x800003f8 name2=tty0");
 		device_add(machine, "ns16550 irq=0 addr=0x800002f8 name2=tty1 in_use=0");
+
+		dev_pckbc_init(machine, mem, 0x80000060, PCKBC_8042,
+		    1, 12, machine->use_x11, 1);
 
 		if (machine->use_x11)
 			dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,

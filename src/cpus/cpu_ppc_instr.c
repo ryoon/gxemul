@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.6 2005-08-31 20:03:38 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.7 2005-08-31 21:55:23 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1132,9 +1132,9 @@ X(addc)
 	/*  TODO: this only works in 32-bit mode  */
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+/*	cpu->cd.ppc.xer &= ~PPC_XER_CA;  */
 	tmp += (uint32_t)reg(ic->arg[1]);
-	if ((tmp >> 32) == (tmp2 >> 32))
+	if ((tmp >> 32) != (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
@@ -1156,12 +1156,8 @@ X(adde)
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if (old_ca)
 		tmp ++;
-
-/*fatal("TODO: adde Carry bit MAY be wrong\n");
-*/
-	if ((tmp >> 32) == (tmp2 >> 32))
+	if ((tmp >> 32) != (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 X(adde_dot) { instr(adde)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
@@ -1173,10 +1169,7 @@ X(addze)
 	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
-
-/*fatal("TODO: addze Carry MAY be wrong\n");
-*/
-	if ((tmp >> 32) == (tmp2 >> 32))
+	if ((tmp >> 32) != (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
@@ -1205,7 +1198,7 @@ X(subfe)
 	int old_ca = (cpu->cd.ppc.xer & PPC_XER_CA)? 1 : 0;
 	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	if (reg(ic->arg[1]) == reg(ic->arg[0])) {
-		if (!old_ca)
+		if (old_ca)
 			cpu->cd.ppc.xer |= PPC_XER_CA;
 	} else if (reg(ic->arg[1]) >= reg(ic->arg[0]))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
@@ -1229,7 +1222,7 @@ X(subfze)
 
 fatal("TODO: subfze Carry bit is wrong\n");
 
-	if ((tmp >> 32) == (tmp2 >> 32))
+	if ((tmp >> 32) != (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }

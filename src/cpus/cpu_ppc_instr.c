@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.2 2005-08-31 00:34:43 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -115,18 +115,11 @@ X(addic)
  */
 X(subfic)
 {
-	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
-	uint64_t tmp = (int32_t)(~reg(ic->arg[0]));
-	uint64_t tmp2 = tmp;
-
-	tmp2 += (int32_t)ic->arg[1] + 1;
-
-	/*  NOTE: CA is never cleared, just set. TODO: Is this right?  */
-	/*  TODO: Is this correct?  */
-	if ((tmp2 >> 32) != (tmp >> 32))
+	MODE_uint_t tmp = (int64_t)(int32_t)ic->arg[1];
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	if (tmp >= reg(ic->arg[0]))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-
-	reg(ic->arg[2]) = (uint32_t)tmp2;
+	reg(ic->arg[2]) = tmp - reg(ic->arg[0]);
 }
 
 
@@ -927,6 +920,7 @@ X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
 X(mfsprg1) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg1; }
 X(mfsprg2) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg2; }
 X(mfsprg3) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg3; }
+X(mfpvr) {	reg(ic->arg[0]) = cpu->cd.ppc.pvr; }
 X(mfibatu) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_u[ic->arg[1]]; }
 X(mfibatl) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_l[ic->arg[1]]; }
 X(mfdbatu) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_u[ic->arg[1]]; }
@@ -1139,7 +1133,7 @@ X(addc)
 	/*  TODO: this only works in 32-bit mode  */
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= PPC_XER_CA;
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
@@ -1159,7 +1153,7 @@ X(adde)
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= PPC_XER_CA;
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if (old_ca)
 		tmp ++;
@@ -1173,7 +1167,7 @@ X(addze)
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= PPC_XER_CA;
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
 	if ((tmp >> 32) == (tmp2 >> 32))
@@ -1189,44 +1183,50 @@ X(addze)
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register rt
  */
-X(subf) {	reg(ic->arg[2]) = ~reg(ic->arg[0]) + reg(ic->arg[1]) + 1; }
+X(subf) {	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]); }
 X(subf_dot) {	instr(subf)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfc)
 {
-	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
-	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= PPC_XER_CA;
-	tmp += (uint32_t)reg(ic->arg[1]) + 1;
-	if ((tmp >> 32) == (tmp2 >> 32))
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	if (reg(ic->arg[1]) >= reg(ic->arg[0]))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-	reg(ic->arg[2]) = (uint32_t)tmp;
+	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]);
 }
+X(subfc_dot) {	instr(subfc)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfe)
 {
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
 	uint64_t tmp2 = tmp;
 
-	cpu->cd.ppc.xer &= PPC_XER_CA;
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if (old_ca)
 		tmp ++;
+
+fatal("TODO: subfe Carry bit is wrong\n");
+
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
+X(subfe_dot) {	instr(subfe)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfze)
 {
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= PPC_XER_CA;
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
+
+fatal("TODO: subfze Carry bit is wrong\n");
+
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
+X(subfze_dot) {	instr(subfze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 
 
 /*
@@ -1852,6 +1852,7 @@ X(to_be_translated)
 			case 273: ic->f = instr(mfsprg1); break;
 			case 274: ic->f = instr(mfsprg2); break;
 			case 275: ic->f = instr(mfsprg3); break;
+			case 287: ic->f = instr(mfpvr); break;
 			case 1008:ic->f = instr(mfdbsr); break;
 			default:if (spr >= 528 && spr < 544) {
 					if (spr & 1) {
@@ -2137,15 +2138,20 @@ X(to_be_translated)
 			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;
 			case PPC_31_ADDZE:  ic->f = instr(addze); n64=1; break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
-			case PPC_31_SUBFC:  ic->f = instr(subfc); n64=1; break;
+			case PPC_31_SUBFC:  ic->f = instr(subfc); break;
 			case PPC_31_SUBFE:  ic->f = instr(subfe); n64=1; break;
 			case PPC_31_SUBFZE: ic->f = instr(subfze); n64=1;break;
 			}
 			if (rc) {
 				switch (xo) {
 				case PPC_31_SUBF:
-					ic->f = instr(subf_dot);
-					break;
+					ic->f = instr(subf_dot); break;
+				case PPC_31_SUBFC:
+					ic->f = instr(subfc_dot); break;
+				case PPC_31_SUBFE:
+					ic->f = instr(subfe_dot); break;
+				case PPC_31_SUBFZE:
+					ic->f = instr(subfze_dot); break;
 				default:fatal("RC bit not yet implemented\n");
 					goto bad;
 				}

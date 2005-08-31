@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.2 2005-08-31 00:34:43 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.3 2005-08-31 20:03:38 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -651,6 +651,15 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			bf = (iword >> 23) & 7;
 			bfa = (iword >> 18) & 7;
 			debug("mcrf\tcr%i,cr%i", bf, bfa);
+			break;
+		case PPC_19_RFI:
+			debug("rfi");
+			break;
+		case PPC_19_RFID:
+			debug("rfid");
+			break;
+		case PPC_19_RFSVC:
+			debug("rfsvc%s", power?"":"\t(INVALID for PowerPC)");
 			break;
 		case PPC_19_BCLR:
 		case PPC_19_BCCTR:

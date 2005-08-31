@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.28 2005-08-15 05:59:54 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.29 2005-08-31 20:03:39 debug Exp $
  *
  *
  *  PPC and POWER opcodes. These are gathered from various sources.
@@ -50,7 +50,10 @@
 #define	PPC_HI6_19		0x13
 #define	  PPC_19_MCRF		  0
 #define	  PPC_19_BCLR		  16
+#define	  PPC_19_RFID		  18
 #define	  PPC_19_CRNOR		  33
+#define	  PPC_19_RFI		  50
+#define	  PPC_19_RFSVC		  82
 #define	  PPC_19_CRANDC		  129
 #define	  PPC_19_ISYNC		  150
 #define	  PPC_19_CRXOR		  193

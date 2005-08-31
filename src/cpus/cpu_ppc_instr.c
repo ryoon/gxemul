@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.5 2005-08-31 02:46:51 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.6 2005-08-31 20:03:38 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1055,9 +1055,8 @@ X(xor_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]);
  *  arg[0] = pointer to source register ra
  *  arg[1] = pointer to destination register rt
  */
-X(neg) {	reg(ic->arg[1]) = ~reg(ic->arg[0]) + 1; }
-X(neg_dot) {	reg(ic->arg[1]) = ~reg(ic->arg[0]) + 1;
-		update_cr0(cpu, reg(ic->arg[1])); }
+X(neg) {	reg(ic->arg[1]) = -reg(ic->arg[0]); }
+X(neg_dot) {	instr(neg)(cpu,ic); update_cr0(cpu, reg(ic->arg[1])); }
 
 
 /*
@@ -1158,8 +1157,8 @@ X(adde)
 	if (old_ca)
 		tmp ++;
 
-fatal("TODO: adde Carry bit MAY be wrong\n");
-
+/*fatal("TODO: adde Carry bit MAY be wrong\n");
+*/
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 
@@ -1175,8 +1174,8 @@ X(addze)
 	if (old_ca)
 		tmp ++;
 
-fatal("TODO: addze Carry MAY be wrong\n");
-
+/*fatal("TODO: addze Carry MAY be wrong\n");
+*/
 	if ((tmp >> 32) == (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
@@ -1205,11 +1204,18 @@ X(subfe)
 {
 	int old_ca = (cpu->cd.ppc.xer & PPC_XER_CA)? 1 : 0;
 	cpu->cd.ppc.xer &= ~PPC_XER_CA;
-	/*  TODO: Is this CA calculation correct?  Or should the +-1
-	    stuff be on the left side of this comparision?  */
-	if (reg(ic->arg[1]) >= reg(ic->arg[0]))
+	if (reg(ic->arg[1]) == reg(ic->arg[0])) {
+		if (!old_ca)
+			cpu->cd.ppc.xer |= PPC_XER_CA;
+	} else if (reg(ic->arg[1]) >= reg(ic->arg[0]))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]) - 1 + old_ca;
+
+	/*
+	 *  TODO: The register value calculation should be correct,
+	 *  but the CA bit calculation above is probably not.
+	 */
+
+	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]) - (old_ca? 0 : 1);
 }
 X(subfe_dot) {	instr(subfe)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfze)

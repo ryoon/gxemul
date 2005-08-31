@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.3 2005-08-31 01:13:55 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.4 2005-08-31 01:32:23 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -484,7 +484,7 @@ X(bl_samepage_trace)
 
 
 /*
- *  cntlzw:  Count leading zeroes.
+ *  cntlzw:  Count leading zeroes (32-bit word).
  *
  *  arg[0] = ptr to rs
  *  arg[1] = ptr to ra
@@ -492,15 +492,13 @@ X(bl_samepage_trace)
 X(cntlzw)
 {
 	uint32_t tmp = reg(ic->arg[0]);
-	int n = 0, i;
+	int i;
 	for (i=0; i<32; i++) {
-		if (!(tmp & 0x80000000))
-			n++;
-		else
+		if (tmp & 0x80000000)
 			break;
 		tmp <<= 1;
 	}
-	reg(ic->arg[1]) = n;
+	reg(ic->arg[1]) = i;
 }
 
 

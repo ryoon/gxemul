@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.4 2005-09-01 11:21:05 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.5 2005-09-01 12:40:21 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -288,6 +288,8 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		}
 
 		/*  Other special registers:  */
+		debug("cpu%i: srr0 = 0x%016llx  srr1 = 0x%016llx\n", x,
+		    (long long)cpu->cd.ppc.srr0, (long long)cpu->cd.ppc.srr1);
 		reg_access_msr(cpu, &tmp, 0);
 		debug("cpu%i: msr = 0x%016llx  ", x, (long long)tmp);
 		debug("tb  = 0x%08x%08x\n",

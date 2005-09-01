@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.9 2005-09-01 11:21:05 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.10 2005-09-01 12:40:21 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -952,6 +952,23 @@ X(mtdbatl) {	cpu->cd.ppc.dbat_l[ic->arg[1]] = reg(ic->arg[0]); }
 
 
 /*
+ *  rfi:  Return from Interrupt
+ */
+X(rfi)
+{
+	uint64_t tmp;
+
+	reg_access_msr(cpu, &tmp, 0);
+	tmp &= ~0xffff;
+	tmp |= (cpu->cd.ppc.srr1 & 0xffff);
+	reg_access_msr(cpu, &tmp, 1);
+
+	cpu->pc = cpu->cd.ppc.srr0;
+	DYNTRANS_PC_TO_POINTERS(cpu);
+}
+
+
+/*
  *  mfcr:  Move From Condition Register
  *
  *  arg[0] = pointer to destination register
@@ -1753,6 +1770,10 @@ X(to_be_translated)
 		case PPC_19_ISYNC:
 			/*  TODO  */
 			ic->f = instr(nop);
+			break;
+
+		case PPC_19_RFI:
+			ic->f = instr(rfi);
 			break;
 
 		case PPC_19_MCRF:

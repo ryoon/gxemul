@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.8 2005-09-01 10:55:17 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.9 2005-09-01 11:21:05 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -914,6 +914,8 @@ X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
 X(mftb) {	reg(ic->arg[0]) = cpu->cd.ppc.tbl; }
 X(mftbu) {	reg(ic->arg[0]) = cpu->cd.ppc.tbu; }
 /*  TODO: Check privilege level for mfsprg*  */
+X(mfsrr0) {	reg(ic->arg[0]) = cpu->cd.ppc.srr0; }
+X(mfsrr1) {	reg(ic->arg[0]) = cpu->cd.ppc.srr1; }
 X(mfsdr1) {	reg(ic->arg[0]) = cpu->cd.ppc.sdr1; }
 X(mfdbsr) {	reg(ic->arg[0]) = cpu->cd.ppc.dbsr; }
 X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
@@ -935,6 +937,8 @@ X(mfdbatl) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_l[ic->arg[1]]; }
 X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
 X(mtctr) {	cpu->cd.ppc.ctr = reg(ic->arg[0]); }
 /*  TODO: Check privilege level for these:  */
+X(mtsrr0) {	cpu->cd.ppc.srr0 = reg(ic->arg[0]); }
+X(mtsrr1) {	cpu->cd.ppc.srr1 = reg(ic->arg[0]); }
 X(mtsdr1) {	cpu->cd.ppc.sdr1 = reg(ic->arg[0]); }
 X(mtdbsr) {	cpu->cd.ppc.dbsr = reg(ic->arg[0]); }
 X(mtsprg0) {	cpu->cd.ppc.sprg0 = reg(ic->arg[0]); }
@@ -1851,6 +1855,8 @@ X(to_be_translated)
 			case 8:	  ic->f = instr(mflr); break;
 			case 9:	  ic->f = instr(mfctr); break;
 			case 25:  ic->f = instr(mfsdr1); break;
+			case 26:  ic->f = instr(mfsrr0); break;
+			case 27:  ic->f = instr(mfsrr1); break;
 			case 272: ic->f = instr(mfsprg0); break;
 			case 273: ic->f = instr(mfsprg1); break;
 			case 274: ic->f = instr(mfsprg2); break;
@@ -1885,6 +1891,8 @@ X(to_be_translated)
 			case 8:	  ic->f = instr(mtlr); break;
 			case 9:	  ic->f = instr(mtctr); break;
 			case 25:  ic->f = instr(mtsdr1); break;
+			case 26:  ic->f = instr(mtsrr0); break;
+			case 27:  ic->f = instr(mtsrr1); break;
 			case 272: ic->f = instr(mtsprg0); break;
 			case 273: ic->f = instr(mtsprg1); break;
 			case 274: ic->f = instr(mtsprg2); break;

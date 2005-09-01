@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.3 2005-08-31 20:03:38 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.4 2005-09-01 11:21:05 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -982,6 +982,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			switch (spr) {
 			case 8:	   debug("mflr\tr%i", rt); break;
 			case 9:	   debug("mfctr\tr%i", rt); break;
+			case 26:   debug("mfsrr0\tr%i", rt); break;
+			case 27:   debug("mfsrr1\tr%i", rt); break;
 			case 272:  debug("mfsprg\t0,r%i", rt); break;
 			case 273:  debug("mfsprg\t1,r%i", rt); break;
 			case 274:  debug("mfsprg\t2,r%i", rt); break;
@@ -1113,6 +1115,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			switch (spr) {
 			case 8:	   debug("mtlr\tr%i", rs); break;
 			case 9:	   debug("mtctr\tr%i", rs); break;
+			case 26:   debug("mtsrr0\tr%i", rs); break;
+			case 27:   debug("mtsrr1\tr%i", rs); break;
 			case 272:  debug("mtsprg\t0,r%i", rs); break;
 			case 273:  debug("mtsprg\t1,r%i", rs); break;
 			case 274:  debug("mtsprg\t2,r%i", rs); break;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.35 2005-08-28 20:16:24 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.36 2005-09-01 11:21:06 debug Exp $
  */
 
 #include "misc.h"
@@ -130,6 +130,8 @@ struct ppc_cpu {
 	uint32_t	dec;		/*  Decrementer  */
 	uint32_t	hdec;		/*  Hypervisor Decrementer  */
 	uint64_t	sdr1;		/*  Storage Descriptor Register  */
+	uint64_t	srr0;		/*  Supervisor save/restore 0  */
+	uint64_t	srr1;		/*  Supervisor save/restore 1  */
 	uint64_t	ssr0;		/*  Machine status save/restore
 					    register 0  */
 	uint64_t	ssr1;		/*  Machine status save/restore

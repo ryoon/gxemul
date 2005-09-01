@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: generate_head.c,v 1.2 2005-09-01 10:42:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
 	    "%s_tc_allocate_default_page\n", a);
 	printf("#define DYNTRANS_TC_PHYSPAGE %s_tc_physpage\n", a);
 	printf("#define DYNTRANS_PC_TO_POINTERS %s_pc_to_pointers\n", a);
+	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC %s_pc_to_pointers_generic\n", a);
 	printf("#define COMBINE_INSTRUCTIONS %s_combine_instructions\n", a);
 	printf("#define DISASSEMBLE %s_cpu_disassemble_instr\n", a);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: generate_tail.c,v 1.2 2005-09-01 10:42:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -106,8 +106,10 @@ int main(int argc, char *argv[])
 	printf("#undef MEMORY_RW\n\n");
 
 	printf("#define DYNTRANS_PC_TO_POINTERS_FUNC %s_pc_to_pointers\n", a);
+	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC %s_pc_to_pointers_generic\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_PC_TO_POINTERS_FUNC\n\n");
+	printf("#undef DYNTRANS_PC_TO_POINTERS_GENERIC\n\n");
 
 
 	printf("#define COMBINE_INSTRUCTIONS %s_combine_instructions\n", a);
@@ -159,10 +161,12 @@ int main(int argc, char *argv[])
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_UPDATE_TRANSLATION_TABLE\n\n");
 	printf("#define DYNTRANS_PC_TO_POINTERS_FUNC %s32_pc_to_pointers\n", a);
+	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC %s32_pc_to_pointers_generic\n", a);
 	printf("#undef DYNTRANS_PC_TO_POINTERS\n"
 	    "#define DYNTRANS_PC_TO_POINTERS %s32_pc_to_pointers\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_PC_TO_POINTERS_FUNC\n\n");
+	printf("#undef DYNTRANS_PC_TO_POINTERS_GENERIC\n\n");
 	printf("#include \"cpu_%s_instr.c\"\n", a);
 
 	printf("#endif /*  DYNTRANS_DUALMODE_32  */\n\n");

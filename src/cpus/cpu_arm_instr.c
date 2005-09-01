@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.2 2005-09-01 10:42:23 debug Exp $
  *
  *  ARM instructions.
  *
@@ -835,13 +835,17 @@ X(mov_2)
  *     strb rX,[rY],#1		ic[1]
  *     sub  rZ,rZ,#1		ic[2]
  *     bgt  L			ic[3]
+ *
+ *  A maximum of 4 pages are filled before returning.
  */
 X(fill_loop_test)
 {
+	int max_pages_left = 4;
 	uint32_t addr, a, n, ofs, maxlen;
 	uint32_t *rzp = (uint32_t *)(size_t)ic[0].arg[0];
 	unsigned char *page;
 
+restart_loop:
 	addr = reg(ic[1].arg[0]);
 	page = cpu->cd.arm.host_store[addr >> 12];
 	if (page == NULL) {
@@ -874,12 +878,16 @@ X(fill_loop_test)
 	if ((int32_t)a < 0)
 		cpu->cd.arm.cpsr |= ARM_FLAG_N;
 
+	if (max_pages_left-- > 0 &&
+	    (int32_t)a > 0)
+		goto restart_loop;
+
 	cpu->n_translated_instrs --;
 
 	if ((int32_t)a > 0)
-		cpu->cd.arm.next_ic --;
+		cpu->cd.arm.next_ic = ic;
 	else
-		cpu->cd.arm.next_ic += 3;
+		cpu->cd.arm.next_ic = &ic[4];
 }
 
 
@@ -889,8 +897,10 @@ X(fill_loop_test)
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (ARM_IC_ENTRIES_PER_PAGE << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (ARM_IC_ENTRIES_PER_PAGE
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	/*  Find the new physical page and update the translation pointers:  */

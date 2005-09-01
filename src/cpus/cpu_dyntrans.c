@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.2 2005-09-01 10:42:23 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -327,16 +327,11 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 
 #ifdef DYNTRANS_PC_TO_POINTERS_FUNC
 /*
- *  XXX_pc_to_pointers():
+ *  XXX_pc_to_pointers_generic():
  *
- *  This function uses the current program counter (a virtual address) to
- *  find out which physical translation page to use, and then sets the current
- *  translation page pointers to that page.
- *
- *  If there was no translation page for that physical page, then an empty
- *  one is created.
+ *  Generic case. See DYNTRANS_PC_TO_POINTERS_FUNC below.
  */
-void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
+void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 {
 #ifdef MODE32
 	uint32_t
@@ -353,11 +348,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	int index;
 	cached_pc = cpu->pc;
 	index = cached_pc >> 12;
-	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
-	if (ppp != NULL) {
-		physaddr = cpu->cd.DYNTRANS_ARCH.phys_addr[index];
-		goto have_it;
-	}
 #else
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
@@ -371,12 +361,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 		kernel = 1;
 	} else
 		vph_p = cpu->cd.alpha.vph_table0[a];
-	if (vph_p != cpu->cd.alpha.vph_default_page) {
-		ppp = vph_p->phys_page[b];
-		physaddr = vph_p->phys_addr[b];
-		if (ppp != NULL)
-			goto have_it;
-	}
 #else
 #ifdef DYNTRANS_IA64
 	fatal("IA64 todo\n");
@@ -480,6 +464,78 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	cpu->invalidate_translation_caches_paddr(cpu, physaddr,
 	    JUST_MARK_AS_NON_WRITABLE);
 
+	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;
+	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
+	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
+	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
+
+	/*  printf("cached_pc=0x%016llx  pagenr=%lli  table_index=%lli, "
+	    "physpage_ofs=0x%016llx\n", (long long)cached_pc, (long long)pagenr,
+	    (long long)table_index, (long long)physpage_ofs);  */
+}
+
+
+/*
+ *  XXX_pc_to_pointers():
+ *
+ *  This function uses the current program counter (a virtual address) to
+ *  find out which physical translation page to use, and then sets the current
+ *  translation page pointers to that page.
+ *
+ *  If there was no translation page for that physical page, then an empty
+ *  one is created.
+ *
+ *  NOTE: This is the quick lookup version. See
+ *  DYNTRANS_PC_TO_POINTERS_GENERIC above for the generic case.
+ */
+void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
+{
+#ifdef MODE32
+	uint32_t
+#else
+	uint64_t
+#endif
+	    cached_pc;
+	struct DYNTRANS_TC_PHYSPAGE *ppp;
+
+#ifdef MODE32
+	int index;
+	cached_pc = cpu->pc;
+	index = cached_pc >> 12;
+	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
+	if (ppp != NULL)
+		goto have_it;
+#else
+#ifdef DYNTRANS_ALPHA
+	uint32_t a, b;
+	int kernel = 0;
+	struct alpha_vph_page *vph_p;
+	cached_pc = cpu->pc;
+	a = (cached_pc >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
+	b = (cached_pc >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
+	if ((cached_pc >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
+		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
+		kernel = 1;
+	} else
+		vph_p = cpu->cd.alpha.vph_table0[a];
+	if (vph_p != cpu->cd.alpha.vph_default_page) {
+		ppp = vph_p->phys_page[b];
+		if (ppp != NULL)
+			goto have_it;
+	}
+#else
+#ifdef DYNTRANS_IA64
+	fatal("IA64 todo\n");
+#else
+	fatal("Neither alpha, ia64, nor 32-bit?\n");
+#endif
+#endif
+#endif
+
+	DYNTRANS_PC_TO_POINTERS_GENERIC(cpu);
+	return;
+
+	/*  Quick return path:  */
 have_it:
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];

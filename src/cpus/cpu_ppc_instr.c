@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.7 2005-08-31 21:55:23 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.8 2005-09-01 10:55:17 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1281,18 +1281,22 @@ X(user_syscall)
  */
 X(byte_fill_loop)
 {
+	int max_pages_left = 5;
 	unsigned int x = ic[0].arg[2], n, ofs, maxlen, c;
 	uint64_t *y = (uint64_t *)ic[0].arg[0];
 	uint64_t *z = (uint64_t *)ic[1].arg[1];
 	uint64_t *w = (uint64_t *)ic[1].arg[0];
 	unsigned char *page;
 #ifdef MODE32
-	uint32_t addr = reg(z);
+	uint32_t addr;
 #else
-	uint64_t addr = reg(z);
+	uint64_t addr;
 	fatal("byte_fill_loop: not for 64-bit mode yet\n");
 	exit(1);
 #endif
+
+restart_loop:
+	addr = reg(z);
 	/*  TODO: This only work with 32-bit addressing:  */
 	page = cpu->cd.ppc.host_store[addr >> 12];
 	if (page == NULL) {
@@ -1322,12 +1326,17 @@ X(byte_fill_loop)
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*x));
 	cpu->cd.ppc.cr |= (c << (28 - 4*x));
 
-	/*  NOTE: 5*n-1  */
-	cpu->n_translated_instrs += (5 * n - 1);
+	cpu->n_translated_instrs += (5 * n);
+
+	if (max_pages_left-- > 0 &&
+	    (int32_t)reg(y) > 0)
+		goto restart_loop;
+
+	cpu->n_translated_instrs --;
 	if ((int32_t)reg(y) > 0)
-		cpu->cd.ppc.next_ic --;
+		cpu->cd.ppc.next_ic = ic;
 	else
-		cpu->cd.ppc.next_ic += 4;
+		cpu->cd.ppc.next_ic = &ic[5];
 
 	/*  fatal("FILL B: x=%i n=%i ofs=0x%x y=0x%x z=0x%x w=0x%x\n", x, n,
 	    ofs, (int)reg(y), (int)reg(z), (int)reg(w));  */

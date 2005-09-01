@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.2 2005-08-31 01:13:56 debug Exp $
+ *  $Id: of.c,v 1.3 2005-09-01 13:27:13 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -92,7 +92,7 @@ static void readstr(struct cpu *cpu, uint64_t addr, char *strbuf,
  */
 int of_emul(struct cpu *cpu)
 {
-	int i, nargs, nret, ofs, handle;
+	int i, nargs, nret, ofs, handle, retval;
 	char service[50];
 	char arg[N_MAX_ARGS][ARG_MAX_LEN];
 	char tmpstr[ARG_MAX_LEN];
@@ -100,7 +100,7 @@ int of_emul(struct cpu *cpu)
 	uint64_t buf, buflen;
 
 	/*
-	 *  r3 points to "prom_args":
+	 *  The first argument register points to "prom_args":
 	 *
 	 *	char *service;		(probably 32 bit)
 	 *	int nargs;
@@ -108,7 +108,17 @@ int of_emul(struct cpu *cpu)
 	 *	char *args[10];
 	 */
 
-	base = cpu->cd.ppc.gpr[3];
+	switch (cpu->machine->arch) {
+	case ARCH_ARM:
+		base = cpu->cd.arm.r[0];
+		break;
+	case ARCH_PPC:
+		base = cpu->cd.ppc.gpr[3];
+		break;
+	default:
+		fatal("of_emul(): TODO: unimplemented arch\n");
+		exit(1);
+	}
 
 	/*  TODO: how about 64-bit OpenFirmware?  */
 	ptr   = load_32bit_word(cpu, base);
@@ -142,7 +152,7 @@ int of_emul(struct cpu *cpu)
 	debug(") ]\n");
 
 	/*  Return value:  */
-	cpu->cd.ppc.gpr[3] = 0;
+	retval = 0;
 
 	/*  Note: base + ofs points to the first return slot.  */
 
@@ -161,7 +171,7 @@ int of_emul(struct cpu *cpu)
 			/*  Device not found.  */
 			fatal("[ of: finddevice(\"%s\"): not yet"
 			    " implemented ]\n", arg[0]);
-			cpu->cd.ppc.gpr[3] = -1;
+			retval = -1;
 		}
 	} else if (strcmp(service, "getprop") == 0) {
 		handle = load_32bit_word(cpu, base + 12 + 4*0);
@@ -193,7 +203,7 @@ int of_emul(struct cpu *cpu)
 			} else {
 				fatal("[ of: getprop(%i,\"%s\"): not yet"
 				    " implemented ]\n", (int)handle, arg[1]);
-				cpu->cd.ppc.gpr[3] = -1;
+				retval = -1;
 			}
 			break;
 		case HANDLE_CHOSEN:
@@ -215,13 +225,13 @@ int of_emul(struct cpu *cpu)
 			} else {
 				fatal("[ of: getprop(%i,\"%s\"): not yet"
 				    " implemented ]\n", (int)handle, arg[1]);
-				cpu->cd.ppc.gpr[3] = -1;
+				retval = -1;
 			}
 			break;
 		default:
 			fatal("[ of: getprop(%i,\"%s\"): not yet"
 			    " implemented ]\n", (int)handle, arg[1]);
-			cpu->cd.ppc.gpr[3] = -1;
+			retval = -1;
 		}
 	} else if (strcmp(service, "instance-to-package") == 0) {
 		/*  TODO: a package handle  */
@@ -239,6 +249,18 @@ int of_emul(struct cpu *cpu)
 		fatal("[ of_emul(): unimplemented service \"%s\" ]\n", service);
 		cpu->running = 0;
 		cpu->dead = 1;
+	}
+
+	switch (cpu->machine->arch) {
+	case ARCH_ARM:
+		cpu->cd.arm.r[0] = retval;
+		break;
+	case ARCH_PPC:
+		cpu->cd.ppc.gpr[3] = retval;
+		break;
+	default:
+		fatal("of_emul(): TODO: unimplemented arch (Retval)\n");
+		exit(1);
 	}
 
 	return 1;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.5 2005-09-01 12:40:21 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.6 2005-09-01 13:27:11 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -36,6 +36,7 @@
 #include <ctype.h>
 
 #include "cpu.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -81,7 +82,6 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->name               = cpu->cd.ppc.cpu_type.name;
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
 	cpu->cd.ppc.mode        = MODE_PPC;	/*  TODO  */
-	cpu->cd.ppc.of_emul_addr = 0xff000000;	/*  TODO  */
 
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits        = cpu->cd.ppc.cpu_type.bits;
@@ -132,6 +132,16 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Some default stack pointer value.  TODO: move this?  */
 	cpu->cd.ppc.gpr[1] = machine->physical_ram_in_mb * 1048576 - 4096;
+
+	/*
+	 *  NOTE/TODO: Ugly hack for OpenFirmware emulation:
+	 */
+	if (cpu->machine->prom_emulation) {
+		cpu->cd.ppc.of_emul_addr = 0xfff00000;
+		dev_ram_init(cpu->mem, cpu->cd.ppc.of_emul_addr,
+		    0x1000, DEV_RAM_RAM, 0x0);
+		store_32bit_word(cpu, cpu->cd.ppc.of_emul_addr, 0x44ee0002);
+	}
 
 	return 1;
 }

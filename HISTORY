@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.941 2005-09-01 10:42:22 debug Exp $
+$Id: HISTORY,v 1.942 2005-09-01 13:27:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2237,4 +2237,5 @@ Changelog for GXemul:
 		Better debug instruction trace for ARM loads and stores.
 20050830	Various ARM updates (correcting CMP flag calculation, etc).
 20050831	PPC instruction updates. (Flag fixes, etc.)
-20050901	Various minor updates.
+20050901	Various minor PPC and ARM instruction emulation updates.
+		Minor OpenFirmware emulation updates.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.34 2005-08-28 20:16:24 debug Exp $
+ *  $Id: cpu_arm.h,v 1.35 2005-09-01 13:27:13 debug Exp $
  */
 
 #include "misc.h"
@@ -143,6 +143,7 @@ struct arm_cpu {
 	 */
 	struct arm_cpu_type_def	cpu_type;
 	uint32_t		cpsr;
+	uint32_t		of_emul_addr;
 
 	/*  TODO: spsr  */
 

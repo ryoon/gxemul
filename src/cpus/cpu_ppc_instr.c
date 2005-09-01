@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.10 2005-09-01 12:40:21 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.11 2005-09-01 13:27:11 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1281,6 +1281,19 @@ X(user_syscall)
 }
 
 
+/*
+ *  openfirmware:
+ */
+X(openfirmware)
+{
+	of_emul(cpu);
+	cpu->pc = cpu->cd.ppc.lr;
+	if (cpu->machine->show_trace_tree)
+		cpu_functioncall_trace_return(cpu);
+	DYNTRANS_PC_TO_POINTERS(cpu);
+}
+
+
 #include "tmp_ppc_loadstore.c"
 
 
@@ -1697,6 +1710,11 @@ X(to_be_translated)
 		if (cpu->machine->userland_emul != NULL)
 			ic->f = instr(user_syscall);
 		else {
+			/*  Special case/magic hack for OpenFirmware emul:  */
+			if (iword == 0x44ee0002) {
+				ic->f = instr(openfirmware);
+				break;
+			}
 			fatal("PPC non-userland SYSCALL: TODO\n");
 			goto bad;
 		}

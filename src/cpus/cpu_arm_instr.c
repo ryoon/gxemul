@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.2 2005-09-01 10:42:23 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.3 2005-09-01 13:27:11 debug Exp $
  *
  *  ARM instructions.
  *
@@ -609,6 +609,19 @@ X(cdp) {
 	arm_cdp(cpu, ic->arg[0]);
 }
 Y(cdp)
+
+
+/*
+ *  openfirmware:
+ */
+X(openfirmware)
+{
+	of_emul(cpu);
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = cpu->cd.arm.r[ARM_LR];
+	if (cpu->machine->show_trace_tree)
+		cpu_functioncall_trace_return(cpu);
+	arm_pc_to_pointers(cpu);
+}
 
 
 /*
@@ -1278,7 +1291,11 @@ X(to_be_translated)
 		break;
 
 	case 0xf:
-		if ((iword & 0x00f00000) == 0x00a00000) {
+		/*  SWI:  */
+		if (iword == 0xef8c64be) {
+			/*  Hack for openfirmware prom emulation:  */
+			ic->f = instr(openfirmware);
+		} else if ((iword & 0x00f00000) == 0x00a00000) {
 			ic->arg[0] = iword & 0x00ffffff;
 			if (cpu->machine->userland_emul != NULL)
 				ic->f = cond_instr(swi_useremul);

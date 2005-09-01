@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.535 2005-08-31 02:46:50 debug Exp $
+ *  $Id: machine.c,v 1.536 2005-09-01 13:27:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -459,7 +459,7 @@ int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 {
 	unsigned char data[4];
-	if ((addr >> 32) == 0)
+	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
 	data[0] = (data32 >> 24) & 255;
 	data[1] = (data32 >> 16) & 255;
@@ -484,7 +484,7 @@ int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
 {
 	unsigned char data[2];
-	if ((addr >> 32) == 0)
+	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
 	data[0] = (data16 >> 8) & 255;
 	data[1] = (data16) & 255;
@@ -505,7 +505,7 @@ void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
 	int psize = 1024;	/*  1024 256 64 16 4 1  */
 
-	if ((addr >> 32) == 0)
+	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
 
 	while (len != 0) {
@@ -558,7 +558,7 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[4];
 
-	if ((addr >> 32) == 0)
+	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
 	cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
@@ -582,7 +582,7 @@ uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[2];
 
-	if ((addr >> 32) == 0)
+	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
 	cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
@@ -4158,7 +4158,10 @@ Not yet.
 		machine->machine_name = "Macintosh (PPC)";
 
 		if (machine->prom_emulation) {
-			/*  r5 = OpenFirmware entry point  */
+			/*
+			 *  r5 = OpenFirmware entry point.  NOTE: See
+			 *  cpu_ppc.c for the rest of this semi-ugly hack.
+			 */
 			cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;
 		}
 		break;
@@ -4477,6 +4480,12 @@ Not yet.
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
 			    machine->physical_ram_in_mb * 1048576 - 65536);
+
+			/*
+			 *  r0 = OpenFirmware entry point.  NOTE: See
+			 *  cpu_arm.c for the rest of this semi-ugly hack.
+			 */
+			cpu->cd.arm.r[0] = cpu->cd.arm.of_emul_addr;
 		}
 		break;
 

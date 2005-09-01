@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.4 2005-08-30 21:47:43 debug Exp $
+ *  $Id: cpu_arm.c,v 1.5 2005-09-01 13:27:11 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -114,6 +114,15 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 			    (int)(1 << (cpu->cd.arm.cpu_type.dcache_shift-10)));
 			debug(")");
 		}
+	}
+
+	/*
+	 *  NOTE/TODO: Ugly hack for OpenFirmware emulation:
+	 */
+	if (cpu->machine->prom_emulation) {
+		cpu->cd.arm.of_emul_addr = cpu->machine->physical_ram_in_mb
+		    * 1048576 - 8;
+		store_32bit_word(cpu, cpu->cd.arm.of_emul_addr, 0xef8c64be);
 	}
 
 	return 1;

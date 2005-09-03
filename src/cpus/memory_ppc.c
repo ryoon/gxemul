@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.1 2005-08-29 14:36:42 debug Exp $
+ *  $Id: memory_ppc.c,v 1.2 2005-09-03 21:40:34 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -45,15 +45,43 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
 	int instr = flags & FLAG_INSTR;
+
+	if (cpu->cd.ppc.bits == 32)
+		vaddr &= 0xffffffff;
+
 	if ((instr && !(cpu->cd.ppc.msr & PPC_MSR_IR)) ||
 	    (!instr && !(cpu->cd.ppc.msr & PPC_MSR_DR))) {
 		*return_addr = vaddr;
 		return 2;
 	}
 
+	/*  TODO: This is not really correct.  */
+
 	if (cpu->cd.ppc.sdr1 == 0) {
-		fatal("ppc_translate_address(): vaddr = 0x%016llx\n",
-		    (long long)vaddr);
+		/*  Try the BATs:  */
+		int i;
+		/*  TODO: This is just a quick (incorrect) hack:  */
+		for (i=0; i<4; i++) {
+			uint32_t p = 0, v = vaddr & 0xf0000000;
+			int match = 0;
+			if (instr && (cpu->cd.ppc.ibat_u[i]&0xf0000000) == v) {
+				match = 1;
+				p = cpu->cd.ppc.ibat_l[i] & 0xf0000000;
+			}
+			/*  Linux/BeBox seems to use data bats for
+			    instructions?  */
+			if (!match && (cpu->cd.ppc.dbat_u[i]&0xf0000000) == v) {
+				match = 1;
+				p = cpu->cd.ppc.dbat_l[i] & 0xf0000000;
+			}
+			if (match) {
+				*return_addr = (vaddr & 0x0fffffff) | p;
+				return 2;
+			}
+		}
+
+		fatal("ppc_translate_address(): vaddr = 0x%016llx, no ",
+		    "BAT hit?\n", (long long)vaddr);
 		*return_addr = vaddr;
 		return 2;
 	}

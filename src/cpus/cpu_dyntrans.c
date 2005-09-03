@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.2 2005-09-01 10:42:23 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.3 2005-09-03 21:40:33 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -42,7 +42,7 @@
  */
 int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 {
-#ifdef DYNTRANS_ARM
+#ifdef MODE32
 	uint32_t cached_pc;
 #else
 	uint64_t cached_pc;
@@ -365,7 +365,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef DYNTRANS_IA64
 	fatal("IA64 todo\n");
 #else
-	fatal("Neither alpha, ia64, nor 32-bit?\n");
+	fatal("Neither alpha, ia64, nor 32-bit? 3\n");
+	{ char *p = 0; exit(*p); }
 #endif
 #endif
 #endif
@@ -391,7 +392,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef DYNTRANS_IA64
 	fatal("IA64 todo\n");
 #else
-	fatal("Neither alpha, ia64, nor 32-bit?\n");
+	fatal("Neither alpha, ia64, nor 32-bit? 4\n");
+	{ char *p = 0; exit(*p); }
 #endif
 #endif
 #endif
@@ -527,7 +529,8 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #ifdef DYNTRANS_IA64
 	fatal("IA64 todo\n");
 #else
-	fatal("Neither alpha, ia64, nor 32-bit?\n");
+	fatal("Neither alpha, ia64, nor 32-bit? 1\n");
+	{ char *p = 0; exit(*p); }
 #endif
 #endif
 #endif
@@ -817,7 +820,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #ifdef DYNTRANS_IA64
 	fatal("IA64 update todo\n");
 #else
-	fatal("Neither 32-bit, IA64, nor Alpha?\n");
+	fatal("Neither 32-bit, IA64, nor Alpha? 2\n");
+	{ char *p = 0; exit(*p); }
 #endif
 #endif
 #endif

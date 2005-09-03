@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.540 2005-09-03 11:44:02 debug Exp $
+ *  $Id: machine.c,v 1.541 2005-09-03 21:40:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4136,11 +4136,6 @@ Not yet.
 		machine->machine_name = "PowerPC Reference Platform";
 
 		if (machine->prom_emulation) {
-			int i;
-			for (i=0; i<32; i++)
-				cpu->cd.ppc.gpr[i] =
-				    0x12340000 + (i << 8) + 0x55;
-
 			/*  Linux on PReP has 0xdeadc0de at address 0? (See
 			    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/113568.html)  */
 			store_32bit_word(cpu, 0, 0xdeadc0de);
@@ -4162,6 +4157,10 @@ Not yet.
 			 *  r5 = OpenFirmware entry point.  NOTE: See
 			 *  cpu_ppc.c for the rest of this semi-ugly hack.
 			 */
+			dev_ram_init(cpu->mem, cpu->cd.ppc.of_emul_addr,
+			    0x1000, DEV_RAM_RAM, 0x0);
+			store_32bit_word(cpu, cpu->cd.ppc.of_emul_addr,
+			    0x44ee0002);
 			cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;
 		}
 		break;

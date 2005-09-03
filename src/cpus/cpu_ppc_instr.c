@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.11 2005-09-01 13:27:11 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.12 2005-09-03 21:40:34 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -34,6 +34,10 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+#define DOT(n) X(n ## _dot) { instr(n)(cpu,ic); \
+	update_cr0(cpu, reg(ic->arg[1])); }
 
 
 /*
@@ -850,7 +854,7 @@ X(srawi)
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[1]) = (int64_t)(int32_t)tmp;
 }
-X(srawi_dot) { instr(srawi)(cpu,ic); update_cr0(cpu, reg(ic->arg[1])); }
+DOT(srawi)
 
 
 /*
@@ -1027,15 +1031,102 @@ X(mulli)
 
 
 /*
+ *  Load/Store Multiple:
+ *
+ *  arg[0] = rs  (or rt for loads)  NOTE: not a pointer
+ *  arg[1] = ptr to ra
+ *  arg[2] = int32_t immediate offset
+ */
+X(lmw) {
+	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	unsigned char d[4];
+	int n_err = 0, rs = ic->arg[0];
+
+	while (rs <= 31) {
+		if (cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d),
+		    MEM_READ, CACHE_DATA) != MEMORY_ACCESS_OK)
+			n_err ++;
+
+		if (cpu->byte_order == EMUL_BIG_ENDIAN)
+			cpu->cd.ppc.gpr[rs] = (d[0] << 24) + (d[1] << 16)
+			    + (d[2] << 8) + d[3];
+		else
+			cpu->cd.ppc.gpr[rs] = (d[3] << 24) + (d[2] << 16)
+			    + (d[1] << 8) + d[0];
+
+		if (n_err > 0) {
+			fatal("TODO: lmw: exception\n");
+			exit(1);
+		}
+
+		rs ++;
+		addr += sizeof(uint32_t);
+	}
+}
+X(stmw) {
+	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	uint32_t tmp;
+	unsigned char d[4];
+	int n_err = 0, rs = ic->arg[0];
+
+	while (rs <= 31) {
+		tmp = cpu->cd.ppc.gpr[rs];
+		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+			d[3] = tmp; d[2] = tmp >> 8;
+			d[1] = tmp >> 16; d[0] = tmp >> 24;
+		} else {
+			d[0] = tmp; d[1] = tmp >> 8;
+			d[2] = tmp >> 16; d[3] = tmp >> 24;
+		}
+		if (cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d),
+		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK)
+			n_err ++;
+
+		if (n_err > 0) {
+			fatal("TODO: stmw: exception\n");
+			exit(1);
+		}
+
+		rs ++;
+		addr += sizeof(uint32_t);
+	}
+}
+
+
+/*
  *  Shifts, and, or, xor, etc.
  *
  *  arg[0] = pointer to source register rs
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register ra
  */
+X(extsb) {
+#ifdef MODE32
+	reg(ic->arg[2]) = (int32_t)(int8_t)reg(ic->arg[0]);
+#else
+	reg(ic->arg[2]) = (int64_t)(int8_t)reg(ic->arg[0]);
+#endif
+}
+DOT(extsb)
+X(extsh) {
+#ifdef MODE32
+	reg(ic->arg[2]) = (int32_t)(int16_t)reg(ic->arg[0]);
+#else
+	reg(ic->arg[2]) = (int64_t)(int16_t)reg(ic->arg[0]);
+#endif
+}
+DOT(extsh)
+X(extsw) {
+#ifdef MODE32
+	fatal("TODO: extsw: invalid instruction\n"); exit(1);
+#else
+	reg(ic->arg[2]) = (int64_t)(int32_t)reg(ic->arg[0]);
+#endif
+}
+DOT(extsw)
 X(slw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    << (reg(ic->arg[1]) & 63); }
-X(slw_dot) {	instr(slw)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT(slw)
 X(sraw) {	reg(ic->arg[2]) =
 #ifdef MODE32
 		    (int32_t)
@@ -1043,10 +1134,10 @@ X(sraw) {	reg(ic->arg[2]) =
 		    (int64_t)
 #endif
 		reg(ic->arg[0]) >> (reg(ic->arg[1]) & 63); }
-X(sraw_dot) {	instr(sraw)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT(sraw)
 X(srw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    >> (reg(ic->arg[1]) & 63); }
-X(srw_dot) {	instr(srw)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT(srw)
 X(and) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
 X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
 		update_cr0(cpu, reg(ic->arg[2])); }
@@ -1830,6 +1921,27 @@ X(to_be_translated)
 		ic->arg[2] = (uint32_t)iword;
 		break;
 
+	case PPC_HI6_LMW:
+	case PPC_HI6_STMW:
+		/*  NOTE: Loads use rt, not rs.  */
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		ic->arg[0] = rs;
+		if (ra == 0)
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
+		else
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[2] = (int32_t)(int16_t)iword;
+		switch (main_opcode) {
+		case PPC_HI6_LMW:
+			ic->f = instr(lmw);
+			break;
+		case PPC_HI6_STMW:
+			ic->f = instr(stmw);
+			break;
+		}
+		break;
+
 	case PPC_HI6_30:
 		xo = (iword >> 2) & 7;
 		switch (xo) {
@@ -2128,6 +2240,9 @@ X(to_be_translated)
 			}
 			break;
 
+		case PPC_31_EXTSB:
+		case PPC_31_EXTSH:
+		case PPC_31_EXTSW:
 		case PPC_31_SLW:
 		case PPC_31_SRAW:
 		case PPC_31_SRW:
@@ -2144,6 +2259,12 @@ X(to_be_translated)
 			rc = iword & 1;
 			rc_f = NULL;
 			switch (xo) {
+			case PPC_31_EXTSB:ic->f = instr(extsb);
+					  rc_f  = instr(extsb_dot); break;
+			case PPC_31_EXTSH:ic->f = instr(extsh);
+					  rc_f  = instr(extsh_dot); break;
+			case PPC_31_EXTSW:ic->f = instr(extsw);
+					  rc_f  = instr(extsw_dot); break;
 			case PPC_31_SLW:  ic->f = instr(slw);
 					  rc_f  = instr(slw_dot); break;
 			case PPC_31_SRAW: ic->f = instr(sraw);

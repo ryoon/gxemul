@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.6 2005-09-01 13:27:11 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.7 2005-09-03 21:40:33 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -136,12 +136,8 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*
 	 *  NOTE/TODO: Ugly hack for OpenFirmware emulation:
 	 */
-	if (cpu->machine->prom_emulation) {
+	if (cpu->machine->prom_emulation)
 		cpu->cd.ppc.of_emul_addr = 0xfff00000;
-		dev_ram_init(cpu->mem, cpu->cd.ppc.of_emul_addr,
-		    0x1000, DEV_RAM_RAM, 0x0);
-		store_32bit_word(cpu, cpu->cd.ppc.of_emul_addr, 0x44ee0002);
-	}
 
 	return 1;
 }

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.943 2005-09-03 02:40:24 debug Exp $
+$Id: HISTORY,v 1.944 2005-09-03 21:40:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2241,3 +2241,4 @@ Changelog for GXemul:
 		Minor OpenFirmware emulation updates.
 20050903	Adding support for adding arbitrary ARM coprocessors (with
 		the i80321 I/O coprocessor as a first test).
+		Various other ARM and PPC updates.

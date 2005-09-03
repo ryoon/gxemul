@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.3 2005-09-01 13:27:11 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.4 2005-09-03 03:52:10 debug Exp $
  *
  *  ARM instructions.
  *
@@ -656,6 +656,7 @@ Y(swi_useremul)
 extern void (*arm_load_store_instr[1024])(struct cpu *,
 	struct arm_instr_call *);
 X(store_w0_byte_u1_p0_imm);
+X(store_w0_word_u1_p0_imm);
 
 extern void (*arm_load_store_instr_pc[1024])(struct cpu *,
 	struct arm_instr_call *);
@@ -670,6 +671,7 @@ extern void (*arm_dpi_instr[2 * 2 * 2 * 16 * 16])(struct cpu *,
 	struct arm_instr_call *);
 X(cmps);
 X(sub);
+X(subs);
 
 
 
@@ -891,8 +893,7 @@ restart_loop:
 	if ((int32_t)a < 0)
 		cpu->cd.arm.cpsr |= ARM_FLAG_N;
 
-	if (max_pages_left-- > 0 &&
-	    (int32_t)a > 0)
+	if (max_pages_left-- > 0 && (int32_t)a > 0)
 		goto restart_loop;
 
 	cpu->n_translated_instrs --;
@@ -901,6 +902,85 @@ restart_loop:
 		cpu->cd.arm.next_ic = ic;
 	else
 		cpu->cd.arm.next_ic = &ic[4];
+}
+
+
+/*
+ *  fill_loop_test2:
+ *
+ *  A word-fill loop. Fills at most one page at a time. If the page was not
+ *  in the host_store table, then the original sequence (beginning with
+ *  cmps rZ,#0) is executed instead.
+ *
+ *	L: str     rX,[rY],#4		ic[0]
+ *	   subs    rZ,rZ,#4		ic[1]
+ *	   bgt     L			ic[2]
+ *
+ *  A maximum of 5 pages are filled before returning.
+ */
+X(fill_loop_test2)
+{
+	int max_pages_left = 5;
+	unsigned char x1,x2,x3,x4;
+	uint32_t addr, a, n, x, ofs, maxlen;
+	uint32_t *rzp = (uint32_t *)(size_t)ic[1].arg[0];
+	unsigned char *page;
+
+	x = reg(ic[0].arg[2]);
+	x1 = x; x2 = x >> 8; x3 = x >> 16; x4 = x >> 24;
+	if (x1 != x2 || x1 != x3 || x1 != x4) {
+		instr(store_w0_word_u1_p0_imm)(cpu, ic);
+		return;
+	}
+
+restart_loop:
+	addr = reg(ic[0].arg[0]);
+	page = cpu->cd.arm.host_store[addr >> 12];
+	if (page == NULL || (addr & 3) != 0) {
+		instr(store_w0_word_u1_p0_imm)(cpu, ic);
+		return;
+	}
+
+	/*  printf("addr = 0x%08x, page = %p\n", addr, page);
+	    printf("*rzp = 0x%08x\n", reg(rzp));  */
+
+	n = reg(rzp) / 4;
+	if (n == 0)
+		n++;
+	/*  n = nr of _words_  */
+	ofs = addr & 0xfff;
+	maxlen = 4096 - ofs;
+	if (n*4 > maxlen)
+		n = maxlen / 4;
+
+	/*  printf("x = %x, n = %i\n", x1, n);  */
+	memset(page + ofs, x1, n * 4);
+
+	reg(ic[0].arg[0]) = addr + n * 4;
+
+	reg(rzp) -= (n * 4);
+	cpu->n_translated_instrs += (3 * n);
+
+	a = reg(rzp);
+
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (a != 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+	else
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+	if ((int32_t)a < 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+
+	if (max_pages_left-- > 0 && (int32_t)a > 0)
+		goto restart_loop;
+
+	cpu->n_translated_instrs --;
+
+	if ((int32_t)a > 0)
+		cpu->cd.arm.next_ic = ic;
+	else
+		cpu->cd.arm.next_ic = &ic[3];
 }
 
 
@@ -938,6 +1018,18 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 	int n_back;
 	n_back = (addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 2) {
+		if (ic[-2].f == instr(store_w0_word_u1_p0_imm) &&
+		    ic[-2].arg[1] == 4 &&
+		    ic[-1].f == instr(subs) &&
+		    ic[-1].arg[0] == ic[-1].arg[2] && ic[-1].arg[1] == 4 &&
+		    ic[ 0].f == instr(b_samepage__gt) &&
+		    ic[ 0].arg[0] == (size_t)&ic[-2]) {
+			ic[-2].f = instr(fill_loop_test2);
+			combined;
+		}
+	}
 
 	if (n_back >= 3) {
 		if (ic[-3].f == instr(cmps) &&

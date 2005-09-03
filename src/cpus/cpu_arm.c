@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.6 2005-09-03 02:40:27 debug Exp $
+ *  $Id: cpu_arm.c,v 1.7 2005-09-03 03:52:10 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -42,6 +42,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "arm_cpu_types.h"
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"

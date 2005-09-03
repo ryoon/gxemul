@@ -28,12 +28,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.36 2005-09-03 02:40:28 debug Exp $
+ *  $Id: cpu_arm.h,v 1.37 2005-09-03 03:52:11 debug Exp $
  */
 
 #include "misc.h"
 
-#include "armreg.h"
 
 struct cpu_family;
 
@@ -48,17 +47,6 @@ struct arm_cpu_type_def {
 	int		dway;
 };
 
-/*  Flags:  */
-#define	ARM_NO_MMU		1
-#define	ARM_DUAL_ENDIAN		2
-
-#define	ARM_CPU_TYPE_DEFS					      {	 \
-	{ "ARM610",	CPU_ID_ARM610,	ARM_DUAL_ENDIAN, 12, 1,  0, 1 }, \
-	{ "ARM620",	CPU_ID_ARM620,	ARM_DUAL_ENDIAN, 12, 1,  0, 1 }, \
-	{ "SA110",	CPU_ID_SA110,	0,		 14, 1, 14, 1 }, \
-	{ "SA1110",	CPU_ID_SA1110,	0,		 14, 1, 14, 1 }, \
-	{ "PXA210",	CPU_ID_PXA210,	0,		 16, 1,  0, 1 }, \
-	{ NULL, 0, 0, 0,0, 0,0 } }
 
 #define	ARM_SL			10
 #define	ARM_FP			11

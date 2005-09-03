@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arm_cpu_types.h,v 1.1 2005-09-03 03:52:11 debug Exp $
+ *  $Id: arm_cpu_types.h,v 1.2 2005-09-03 11:44:04 debug Exp $
  */
 
 /*  See cpu_arm.h for struct arm_cpu_type_def.  */
@@ -45,7 +45,8 @@
 	{ "SA110",	CPU_ID_SA110,	0,		 14, 1, 14, 1 }, \
 	{ "SA1110",	CPU_ID_SA1110,	0,		 14, 1, 14, 1 }, \
 	{ "PXA210",	CPU_ID_PXA210,	0,		 16, 1,  0, 1 }, \
-	{ "XSCALE600",	CPU_ID_80321_600,0,		 14, 1, 14, 1 }, \
+	{ "80200",	CPU_ID_80200,	0,		 14, 1, 14, 1 }, \
+	{ "XSCALE600",	CPU_ID_80321_600_B0,0,		 14, 1, 14, 1 }, \
 	{ NULL, 0, 0, 0,0, 0,0 } }
 
 

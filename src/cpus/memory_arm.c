@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.4 2005-08-30 21:47:43 debug Exp $
+ *  $Id: memory_arm.c,v 1.5 2005-09-03 11:44:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -57,7 +57,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
-		*return_addr = vaddr;
+		*return_addr = vaddr & 0xffffffff;
 		return 2;
 	}
 

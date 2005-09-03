@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.8 2005-09-03 04:31:16 debug Exp $
+ *  $Id: cpu_arm.c,v 1.9 2005-09-03 11:44:03 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -524,6 +524,11 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			 *  TODO: detect some illegal variants:
 			 *  signed store,  or  unsigned byte load/store
 			 */
+			if (!l_bit && (iw & 0xd0) == 0xd0 && (r12 & 1)) {
+				debug("TODO: r12 odd, not load/store\n");
+				break;
+			}
+			/*  Semi-generic case:  */
 			debug("%sr%s", iw & 0x00100000? "ld" : "st",
 			    condition);
 			if (!l_bit && (iw & 0xd0) == 0xd0) {

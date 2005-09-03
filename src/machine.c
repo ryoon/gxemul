@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.539 2005-09-03 04:06:16 debug Exp $
+ *  $Id: machine.c,v 1.540 2005-09-03 11:44:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4456,9 +4456,9 @@ Not yet.
 
 		/*  TODO: Different models  */
 
-		cpu->cd.arm.r[ARM_SP] = 0x8000;
 		if (machine->prom_emulation) {
 			cpu->cd.arm.r[0] = 1;
+			cpu->cd.arm.r[ARM_SP] = 0xc000c000;
 		}
 		break;
 
@@ -4505,6 +4505,7 @@ Not yet.
 		machine->machine_name = "Intel IQ80321 (ARM)";
 		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
 		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
+		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		if (machine->prom_emulation) {
@@ -5003,9 +5004,9 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_BAREARM:
 	case MACHINE_TESTARM:
 	case MACHINE_HPCARM:
-	case MACHINE_IQ80321:
 		m->cpu_name = strdup("SA1110");
 		break;
+	case MACHINE_IQ80321:
 	case MACHINE_IYONIX:
 		m->cpu_name = strdup("XSCALE600");
 		break;

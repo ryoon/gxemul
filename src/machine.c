@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.538 2005-09-03 03:52:09 debug Exp $
+ *  $Id: machine.c,v 1.539 2005-09-03 04:06:16 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4503,6 +4503,8 @@ Not yet.
 		 *  for more details about the memory map.
 		 */
 		machine->machine_name = "Intel IQ80321 (ARM)";
+		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
+		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		if (machine->prom_emulation) {
@@ -4513,6 +4515,7 @@ Not yet.
 	case MACHINE_IYONIX:
 		machine->machine_name = "Iyonix";
 		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
+		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
 			    machine->physical_ram_in_mb * 1048576 - 65536);

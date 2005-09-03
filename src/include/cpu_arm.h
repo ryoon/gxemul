@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.37 2005-09-03 03:52:11 debug Exp $
+ *  $Id: cpu_arm.h,v 1.38 2005-09-03 04:06:18 debug Exp $
  */
 
 #include "misc.h"
@@ -222,9 +222,11 @@ int arm_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 int arm_cpu_family_init(struct cpu_family *);
 
 /*  cpu_arm_coproc.c:  */
+void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+	int crn, int crm, int rd);
 void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
-void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
 
 /*  memory_arm.c:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.2 2005-09-03 03:52:10 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.3 2005-09-03 04:06:18 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -198,6 +198,8 @@ void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd)
 {
 	switch (crm) {
+	case 0:	fatal("[ 80321: crm 0: TODO ]\n");
+		break;
 	case 1:	fatal("[ 80321: crm 1: TODO ]\n");
 		switch (crn) {
 		case 0:	/*  tmr0:  */
@@ -217,6 +219,25 @@ void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		break;
 	default:fatal("arm_coproc_i80321: unimplemented opcode1=%i opcode2=%i"
 		    " crn=%i crm=%i rd=%i l=%i)\n", opcode1, opcode2,
+		    crn, crm, rd, l_bit);
+		exit(1);
+	}
+}
+
+
+/*
+ *  arm_coproc_i80321_14():
+ *
+ *  Intel 80321 coprocessor 14.
+ */
+void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+	int crn, int crm, int rd)
+{
+	switch (crm) {
+	case 0:	fatal("[ 80321_14: crm 0: TODO ]\n");
+		break;
+	default:fatal("arm_coproc_i80321_14: unimplemented opcode1=%i opcode2="
+		    "%i crn=%i crm=%i rd=%i l=%i)\n", opcode1, opcode2,
 		    crn, crm, rd, l_bit);
 		exit(1);
 	}

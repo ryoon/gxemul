@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_sh.c,v 1.2 2005-09-03 02:26:32 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -69,7 +69,7 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	    sh_invalidate_translation_caches_paddr;
 	cpu->invalidate_code_translation = sh_invalidate_code_translation;
 
-	cpu->byte_order = EMUL_BIG_ENDIAN;
+	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	cpu->is_32bit = 1;
 	cpu->cd.sh.bits = 32;
 	cpu->cd.sh.compact = 1;
@@ -118,7 +118,7 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	char *symbol;
 	uint64_t offset, tmp;
 	int i, x = cpu->cpu_id;
-	int bits32 = 0;
+	int bits32 = cpu->cd.sh.bits == 32;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */

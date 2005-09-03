@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.35 2005-09-01 13:27:13 debug Exp $
+ *  $Id: cpu_arm.h,v 1.36 2005-09-03 02:40:28 debug Exp $
  */
 
 #include "misc.h"
@@ -147,6 +147,10 @@ struct arm_cpu {
 
 	/*  TODO: spsr  */
 
+	void			(*coproc[16])(struct cpu *, int opcode1,
+				    int opcode2, int l_bit, int crn, int crm,
+				    int rd);
+
 	/*
 	 *  General Purpose Registers (including the program counter):
 	 *
@@ -228,6 +232,12 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr);
 int arm_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int arm_cpu_family_init(struct cpu_family *);
+
+/*  cpu_arm_coproc.c:  */
+void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+	int crn, int crm, int rd);
+void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+	int crn, int crm, int rd);
 
 /*  memory_arm.c:  */
 int arm_translate_address(struct cpu *cpu, uint64_t vaddr,

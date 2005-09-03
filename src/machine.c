@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.536 2005-09-01 13:27:10 debug Exp $
+ *  $Id: machine.c,v 1.537 2005-09-03 02:40:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3786,12 +3786,12 @@ Not yet.
 		break;
 
 	case MACHINE_NETGEAR:
-		machine->machine_name = "NetGear WG602";
+		machine->machine_name = "NetGear WG602v1";
 
 		if (machine->use_x11)
 			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
 		if (machine->physical_ram_in_mb != 16)
-			fprintf(stderr, "WARNING! Real NetGear WG602 boxes have exactly 16 MB RAM. Continuing anyway.\n");
+			fprintf(stderr, "WARNING! Real NetGear WG602v1 boxes have exactly 16 MB RAM. Continuing anyway.\n");
 
 		/*
 		 *  Lots of info about the IDT 79RC 32334
@@ -4213,6 +4213,14 @@ Not yet.
 		device_add(machine, tmpstr);
 
 		break;
+
+	case MACHINE_HPCSH:
+		/*  Handheld SH-based machines:  */
+		machine->machine_name = "HPCsh";
+
+		/*  TODO  */
+
+		break;
 #endif	/*  ENABLE_SH  */
 
 #ifdef ENABLE_SPARC
@@ -4499,6 +4507,15 @@ Not yet.
 		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x8000);
+		}
+		break;
+
+	case MACHINE_IYONIX:
+		machine->machine_name = "Iyonix";
+		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
+		if (machine->prom_emulation) {
+			arm_setup_initial_translation_table(cpu,
+			    machine->physical_ram_in_mb * 1048576 - 65536);
 		}
 		break;
 #endif	/*  ENABLE_ARM  */
@@ -4961,6 +4978,7 @@ void machine_default_cputype(struct machine *m)
 	/*  SH:  */
 	case MACHINE_BARESH:
 	case MACHINE_TESTSH:
+	case MACHINE_HPCSH:
 		m->cpu_name = strdup("SH");
 		break;
 
@@ -4983,6 +5001,7 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_TESTARM:
 	case MACHINE_HPCARM:
 	case MACHINE_IQ80321:
+	case MACHINE_IYONIX:
 		m->cpu_name = strdup("SA1110");
 		break;
 	case MACHINE_CATS:
@@ -5443,10 +5462,10 @@ void machine_init(void)
 	}
 
 	/*  NetGear:  */
-	me = machine_entry_new("NetGear WG602", ARCH_MIPS,
+	me = machine_entry_new("NetGear WG602v1", ARCH_MIPS,
 	    MACHINE_NETGEAR, 2, 0);
 	me->aliases[0] = "netgear";
-	me->aliases[1] = "wg602";
+	me->aliases[1] = "wg602v1";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
@@ -5480,11 +5499,33 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Iyonix:  */
+	me = machine_entry_new("Iyonix", ARCH_ARM,
+	    MACHINE_IYONIX, 1, 0);
+	me->aliases[0] = "iyonix";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Intel IQ80321 (ARM):  */
 	me = machine_entry_new("Intel IQ80321 (ARM)", ARCH_ARM,
 	    MACHINE_IQ80321, 1, 0);
 	me->aliases[0] = "iq80321";
 	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  HPCarm:  */
+	me = machine_entry_new("Handheld SH (HPCsh)",
+	    ARCH_SH, MACHINE_HPCSH, 1, 2);
+	me->aliases[0] = "hpcarm";
+	me->subtype[0] = machine_entry_subtype_new("Jornada 680",
+	    MACHINE_HPCSH_JORNADA680, 1);
+	me->subtype[0]->aliases[0] = "jornada680";
+	me->subtype[1] = machine_entry_subtype_new(
+	    "Jornada 690", MACHINE_HPCSH_JORNADA690, 1);
+	me->subtype[1]->aliases[0] = "jornada690";
+	if (cpu_family_ptr_by_number(ARCH_SH) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

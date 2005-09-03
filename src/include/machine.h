@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.74 2005-08-27 23:09:50 debug Exp $
+ *  $Id: machine.h,v 1.75 2005-09-03 02:40:28 debug Exp $
  */
 
 #include <sys/types.h>
@@ -289,6 +289,7 @@ struct machine {
 #define	MACHINE_NETWINDER	6005
 #define	MACHINE_SHARK		6006
 #define	MACHINE_IQ80321		6007
+#define	MACHINE_IYONIX		6008
 
 /*  IA64:  */
 #define	MACHINE_BAREIA64	7000
@@ -301,6 +302,7 @@ struct machine {
 /*  SH:  */
 #define	MACHINE_BARESH		9000
 #define	MACHINE_TESTSH		9001
+#define	MACHINE_HPCSH		9002
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0
@@ -337,6 +339,10 @@ struct machine {
 /*  HPCarm:  */
 #define	MACHINE_HPCARM_IPAQ			1
 #define	MACHINE_HPCARM_JORNADA720		2
+
+/*  HPCsh:  */
+#define	MACHINE_HPCSH_JORNADA680		1
+#define	MACHINE_HPCSH_JORNADA690		2
 
 /*  Playstation 2:  */
 #define	PLAYSTATION2_BDA	0xffffffffa0001000ULL

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.4 2005-09-03 03:52:10 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.5 2005-09-03 04:31:16 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1127,6 +1127,12 @@ X(to_be_translated)
 	rm    = iword & 15;
 
 	if (condition_code == 0xf) {
+		if ((iword & 0xfc70f000) == 0xf450f000) {
+			/*  Preload:  TODO.  Treat as NOP for now.  */
+			ic->f = instr(nop);
+			goto okay;
+		}
+
 		fatal("TODO: ARM condition code 0x%x\n",
 		    condition_code);
 		goto bad;
@@ -1404,6 +1410,7 @@ X(to_be_translated)
 	default:goto bad;
 	}
 
+okay:
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
 #include "cpu_dyntrans.c" 

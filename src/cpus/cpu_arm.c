@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.7 2005-09-03 03:52:10 debug Exp $
+ *  $Id: cpu_arm.c,v 1.8 2005-09-03 04:31:16 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -526,12 +526,16 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			 */
 			debug("%sr%s", iw & 0x00100000? "ld" : "st",
 			    condition);
-			if (iw & 0x40)
-				debug("s");	/*  signed  */
-			if (iw & 0x20)
-				debug("h");	/*  half-word  */
-			else
-				debug("b");	/*  byte  */
+			if (!l_bit && (iw & 0xd0) == 0xd0) {
+				debug("d");		/*  Double-register  */
+			} else {
+				if (iw & 0x40)
+					debug("s");	/*  signed  */
+				if (iw & 0x20)
+					debug("h");	/*  half-word  */
+				else
+					debug("b");	/*  byte  */
+			}
 			debug("\t%s,[%s", arm_regname[r12], arm_regname[r16]);
 			if (p_bit) {
 				/*  Pre-index:  */
@@ -540,17 +544,18 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 					    arm_regname[iw & 15]);
 				else {
 					if (imm != 0)
-						debug(",%s%i", u_bit? "" : "-",
+						debug(",#%s%i", u_bit? "" : "-",
 						    imm);
 				}
 				debug("]%s\n", w_bit? "!" : "");
 			} else {
 				/*  Post-index:  */
-				debug("],%s", u_bit? "" : "-");
+				debug("],");
 				if (regform)
-					debug("%s\n", arm_regname[iw & 15]);
+					debug("%s%s\n", u_bit? "" : "-",
+					    arm_regname[iw & 15]);
 				else
-					debug("%i\n", imm);
+					debug("#%s%i\n", u_bit? "" : "-", imm);
 			}
 			break;
 		}
@@ -619,6 +624,13 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x5:
 	case 0x6:
 	case 0x7:
+		/*  Special case first:  */
+		if ((iw & 0xfc70f000) == 0xf450f000) {
+			/*  Preload:  */
+			debug("pld\t[%s]\n", arm_regname[r16]);
+			break;
+		}
+
 		/*
 		 *  xxxx010P UBWLnnnn ddddoooo oooooooo  Immediate form
 		 *  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register form

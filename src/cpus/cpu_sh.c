@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.5 2005-09-04 13:06:11 debug Exp $
+ *  $Id: cpu_sh.c,v 1.6 2005-09-04 14:38:17 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -273,6 +273,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("bsrf\tr%i\n", r8);
 		else if (lo4 == 0x4)
 			debug("mov.b\tr%i,@(r0,r%i)\n", r4, r8);
+		else if (lo4 == 0x5)
+			debug("mov.w\tr%i,@(r0,r%i)\n", r4, r8);
 		else if (lo4 == 0x6)
 			debug("mov.l\tr%i,@(r0,r%i)\n", r4, r8);
 		else if (lo4 == 0x7)
@@ -287,6 +289,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("rts\n");
 		else if (lo4 == 0xc)
 			debug("mov.b\t@(r0,r%i),r%i\n", r4, r8);
+		else if (lo4 == 0xd)
+			debug("mov.w\t@(r0,r%i),r%i\n", r4, r8);
 		else if (lo4 == 0xe)
 			debug("mov.l\t@(r0,r%i),r%i\n", r4, r8);
 		else if (lo8 == 0x12)
@@ -320,10 +324,14 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	case 0x2:
 		if (lo4 == 0x0)
 			debug("mov.b\tr%i,@r%i\n", r4, r8);
+		else if (lo4 == 0x1)
+			debug("mov.w\tr%i,@r%i\n", r4, r8);
 		else if (lo4 == 0x2)
 			debug("mov.l\tr%i,@r%i\n", r4, r8);
 		else if (lo4 == 0x4)
 			debug("mov.b\tr%i,@-r%i\n", r4, r8);
+		else if (lo4 == 0x5)
+			debug("mov.w\tr%i,@-r%i\n", r4, r8);
 		else if (lo4 == 0x6)
 			debug("mov.l\tr%i,@-r%i\n", r4, r8);
 		else if (lo4 == 0x7)
@@ -517,10 +525,24 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		debug("%s\t0x%x\n", hi4==0xa? "bra":"bsr", (int)addr);
 		break;
 	case 0xc:
-		if (r8 == 0x9)
+		if (r8 == 0x3)
+			debug("trapa\t#%i\n", (uint8_t)lo8);
+		else if (r8 == 0x8)
+			debug("tst\t#%i,r0\n", (uint8_t)lo8);
+		else if (r8 == 0x9)
 			debug("and\t#%i,r0\n", (uint8_t)lo8);
+		else if (r8 == 0xa)
+			debug("xor\t#%i,r0\n", (uint8_t)lo8);
+		else if (r8 == 0xb)
+			debug("or\t#%i,r0\n", (uint8_t)lo8);
+		else if (r8 == 0xc)
+			debug("tst.b\t#%i,@(r0,gbr)\n", (uint8_t)lo8);
 		else if (r8 == 0xd)
 			debug("and.b\t#%i,@(r0,gbr)\n", (uint8_t)lo8);
+		else if (r8 == 0xe)
+			debug("xor.b\t#%i,@(r0,gbr)\n", (uint8_t)lo8);
+		else if (r8 == 0xf)
+			debug("or.b\t#%i,@(r0,gbr)\n", (uint8_t)lo8);
 		else
 			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, r8);
 		break;

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.52 2005-09-04 13:48:18 debug Exp $
+$Id: misc.html,v 1.53 2005-09-04 14:00:25 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -533,9 +533,9 @@ manually.
 In other words: don't expect this to work out-of-the-box with GXemul right 
 now. It might work once I've added correct cache emulation.</font>
 
-<p>The command line, once correct cache emulation has been implemented, 
-would be something like <tt>gxemul -XQeo2 0xbfc00000:prom.bin</tt>,
-where <tt>prom.bin</tt> is a raw binary copy of the PROM.
+<p>The command line used to start the emulator, once correct cache
+emulation has been implemented, would be something like <tt>gxemul -XQeo2
+0xbfc00000:prom.bin</tt>.
 
 <p>The same caution applies when dealing with SGI PROMs as with
 DECstation PROMs: GXemul doesn't really emulate the hardware, it only

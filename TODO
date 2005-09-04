@@ -1,4 +1,4 @@
-$Id: TODO,v 1.170 2005-08-29 14:55:42 debug Exp $
+$Id: TODO,v 1.171 2005-09-04 14:03:49 debug Exp $
 
 ===============================================================================
 
@@ -108,12 +108,10 @@ Lower priority, but still important:
 	Debugger:
 		o)  Read function argument count and types from binaries? (ELF?)
 		o)  Demangle C++ names.
+		o)  see src/debugger.c for more stuff
 
 	Userland ABI emulation:
 		o)  see src/useremul.c
-
-	Terminal based interactive debugger:
-		o)  see src/debugger.c
 
 	Terminal/console stuff:
 		o)  allow emulated serial ports to be connected to the outside

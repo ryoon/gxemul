@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.944 2005-09-03 21:40:31 debug Exp $
+$Id: HISTORY,v 1.945 2005-09-04 01:03:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2242,3 +2242,4 @@ Changelog for GXemul:
 20050903	Adding support for adding arbitrary ARM coprocessors (with
 		the i80321 I/O coprocessor as a first test).
 		Various other ARM and PPC updates.
+20050904	Adding some SHcompact disassembly routines.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.3 2005-09-03 21:40:33 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.4 2005-09-04 01:03:12 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -49,6 +49,11 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 #endif
 	int low_pc, n_instrs;
 
+#ifdef DYNTRANS_DUALMODE_32
+	if (cpu->is_32bit)
+		DYNTRANS_PC_TO_POINTERS32(cpu);
+	else
+#endif
 	DYNTRANS_PC_TO_POINTERS(cpu);
 
 #ifdef DYNTRANS_ARM

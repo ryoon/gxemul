@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.2 2005-09-03 02:26:32 debug Exp $
+ *  $Id: cpu_sh.c,v 1.3 2005-09-04 01:03:12 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -208,13 +208,17 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 /*
  *  sh_cpu_disassemble_instr_compact():
+ *
+ *  SHcompact instruction disassembly. The top 4 bits of each 16-bit
+ *  instruction word is used as the main opcode. For most instructions, the
+ *  lowest 4 or 8 bits then select sub-opcode.
  */
 int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	uint64_t offset, addr;
 	uint16_t iword;
-	int hi6;
+	int hi4, lo4, lo8, r8, r4;
 	char *symbol, *mnem = "ERROR";
 
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
@@ -222,13 +226,262 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	else
 		iword = (instr[1] << 8) + instr[0];
 
-	debug(": %04x\t", iword);
+	debug(":  %04x \t", iword);
+	hi4 = iword >> 12; lo4 = iword & 15; lo8 = iword & 255;
+	r8 = (iword >> 8) & 15; r4 = (iword >> 4) & 15;
 
 	/*
 	 *  Decode the instruction:
 	 */
 
-	debug("TODO\n");
+	switch (hi4) {
+	case 0x0:
+		if (lo8 == 0x02)
+			debug("stc\tsr,r%i\n", r8);
+		else if (lo8 == 0x03)
+			debug("bsrf\tr%i\n", r8);
+		else if (lo4 == 0x4)
+			debug("mov.b\tr%i,@(r0,r%i)\n", r4, r8);
+		else if (lo4 == 0x6)
+			debug("mov.l\tr%i,@(r0,r%i)\n", r4, r8);
+		else if (lo4 == 0x7)
+			debug("mul.l\tr%i,r%i\n", r4, r8);
+		else if (iword == 0x0008)
+			debug("clrt\n");
+		else if (iword == 0x0009)
+			debug("nop\n");
+		else if (lo8 == 0x0a)
+			debug("sts\tmach,r%i\n", r8);
+		else if (iword == 0x000b)
+			debug("rts\n");
+		else if (lo4 == 0xc)
+			debug("mov.b\t@(r0,r%i),r%i\n", r4, r8);
+		else if (lo4 == 0xe)
+			debug("mov.l\t@(r0,r%i),r%i\n", r4, r8);
+		else if (lo8 == 0x12)
+			debug("stc\tgbr,r%i\n", r8);
+		else if (iword == 0x0018)
+			debug("sett\n");
+		else if (lo8 == 0x1a)
+			debug("sts\tmacl,r%i\n", r8);
+		else if (lo8 == 0x23)
+			debug("braf\tr%i\n", r8);
+		else if (iword == 0x0028)
+			debug("clrmac\n");
+		else if (lo8 == 0x29)
+			debug("movt\tr%i\n", r8);
+		else if (iword == 0x003b)
+			debug("brk\n");
+		else if (iword == 0x0048)
+			debug("clrs\n");
+		else if (iword == 0x0058)
+			debug("sets\n");
+		else if (lo8 == 0x83)
+			debug("pref\t@r%i\n", r8);
+		else
+			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
+		break;
+	case 0x1:
+		debug("mov.l\tr%i,@(%i,r%i)\n", r4, lo4 * 4, r8);
+		break;
+	case 0x2:
+		if (lo4 == 0x0)
+			debug("mov.b\tr%i,@r%i\n", r4, r8);
+		else if (lo4 == 0x2)
+			debug("mov.l\tr%i,@r%i\n", r4, r8);
+		else if (lo4 == 0x4)
+			debug("mov.b\tr%i,@-r%i\n", r4, r8);
+		else if (lo4 == 0x6)
+			debug("mov.l\tr%i,@-r%i\n", r4, r8);
+		else if (lo4 == 0x8)
+			debug("tst\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x9)
+			debug("and\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xa)
+			debug("xor\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xb)
+			debug("or\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xd)
+			debug("xtrct\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xe)
+			debug("mulu.w\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xf)
+			debug("muls.w\tr%i,r%i\n", r4, r8);
+		else
+			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
+		break;
+	case 0x3:
+		if (lo4 == 0x0)
+			debug("cmp/eq\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x2)
+			debug("cmp/hs\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x3)
+			debug("cmp/ge\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x5)
+			debug("dmulu.l\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x6)
+			debug("cmp/hi\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x7)
+			debug("cmp/gt\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x8)
+			debug("sub\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xa)
+			debug("subc\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xb)
+			debug("subv\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xc)
+			debug("add\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xe)
+			debug("addc\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xf)
+			debug("addv\tr%i,r%i\n", r4, r8);
+		else
+			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
+		break;
+	case 0x4:
+		if (lo8 == 0x00)
+			debug("shll\tr%i\n", r8);
+		else if (lo8 == 0x01)
+			debug("shlr\tr%i\n", r8);
+		else if (lo8 == 0x04)
+			debug("rotl\tr%i\n", r8);
+		else if (lo8 == 0x05)
+			debug("rotr\tr%i\n", r8);
+		else if (lo8 == 0x06)
+			debug("lds.l\t@r%i+,mach\n", r8);
+		else if (lo8 == 0x08)
+			debug("shll2\tr%i\n", r8);
+		else if (lo8 == 0x09)
+			debug("shlr2\tr%i\n", r8);
+		else if (lo8 == 0x0a)
+			debug("lds\tr%i,mach\n", r8);
+		else if (lo8 == 0x0b)
+			debug("jsr\t@r%i\n", r8);
+		else if (lo4 == 0xc)
+			debug("shad\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xd)
+			debug("shld\tr%i,r%i\n", r4, r8);
+		else if (lo8 == 0x0e)
+			debug("ldc\tr%i,sr\n", r8);
+		else if (lo8 == 0x11)
+			debug("cmp/pz\tr%i\n", r8);
+		else if (lo8 == 0x15)
+			debug("cmp/pl\tr%i\n", r8);
+		else if (lo8 == 0x16)
+			debug("lds.l\t@r%i+,macl\n", r8);
+		else if (lo8 == 0x18)
+			debug("shll8\tr%i\n", r8);
+		else if (lo8 == 0x19)
+			debug("shlr8\tr%i\n", r8);
+		else if (lo8 == 0x1a)
+			debug("lds\tr%i,macl\n", r8);
+		else if (lo8 == 0x1b)
+			debug("tas.b\t@r%i\n", r8);
+		else if (lo8 == 0x1e)
+			debug("ldc\tr%i,gbr\n", r8);
+		else if (lo8 == 0x20)
+			debug("shal\tr%i\n", r8);
+		else if (lo8 == 0x21)
+			debug("shar\tr%i\n", r8);
+		else if (lo8 == 0x22)
+			debug("sts.l\tpr,@-r%i\n", r8);
+		else if (lo8 == 0x24)
+			debug("rotcl\tr%i\n", r8);
+		else if (lo8 == 0x25)
+			debug("rotcr\tr%i\n", r8);
+		else if (lo8 == 0x26)
+			debug("lds.l\t@r%i+,pr\n", r8);
+		else if (lo8 == 0x28)
+			debug("shll16\tr%i\n", r8);
+		else if (lo8 == 0x29)
+			debug("shlr16\tr%i\n", r8);
+		else if (lo8 == 0x2a)
+			debug("lds\tr%i,pr\n", r8);
+		else if (lo8 == 0x2b)
+			debug("jmp\t@r%i\n", r8);
+		else if (lo8 == 0x56)
+			debug("lds.l\t@r%i+,fpul\n", r8);
+		else if (lo8 == 0x5a)
+			debug("lds\tr%i,fpul\n", r8);
+		else if (lo8 == 0x6a)
+			debug("lds\tr%i,fpscr\n", r8);
+		else
+			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
+		break;
+	case 0x5:
+		debug("mov.l\t@(%i,r%i),r%i\n", lo4 * 4, r4, r8);
+		break;
+	case 0x6:
+		if (lo4 == 0x0)
+			debug("mov.b\t@r%i,r%i\n", r4, r8);
+		else if (lo4 == 0x2)
+			debug("mov.l\t@r%i,r%i\n", r4, r8);
+		else if (lo4 == 0x3)
+			debug("mov\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x4)
+			debug("mov.b\t@r%i+,r%i\n", r4, r8);
+		else if (lo4 == 0x6)
+			debug("mov.l\t@r%i+,r%i\n", r4, r8);
+		else if (lo4 == 0x7)
+			debug("not\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x8)
+			debug("swap.b\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x9)
+			debug("swap.w\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xa)
+			debug("negc\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xb)
+			debug("neg\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xc)
+			debug("extu.b\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xe)
+			debug("exts.b\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xf)
+			debug("exts.w\tr%i,r%i\n", r4, r8);
+		else
+			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
+		break;
+	case 0x7:
+		debug("add\t#%i,r%i\n", (int8_t)lo8, r8);
+		break;
+	case 0x8:
+		if (r8 == 0x8)
+			debug("cmp/eq\t#%i,r0\n", (int8_t)lo8);
+		else if (r8 == 0x9 || r8 == 0xb || r8 == 0xd || r8 == 0xf) {
+			addr = (int8_t)lo8;
+			addr = dumpaddr + 4 + (addr << 1);
+			debug("b%s%s\t0x%x\n",
+			    (r8 == 0x9 || r8 == 0xd)? "t" : "f",
+			    (r8 == 0x9 || r8 == 0xb)? "" : "/s", (int)addr);
+		} else
+			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, r8);
+		break;
+	case 0x9:
+	case 0xd:
+		addr = ((int8_t)lo8) * (hi4==9? 2 : 4);
+		addr += (dumpaddr & ~(hi4==9? 1 : 3)) + 4;
+		debug("mov.%s\t0x%x,r%i\n", hi4==9? "w":"l", (int)addr, r8);
+		break;
+	case 0xa:
+	case 0xb:
+		addr = (int32_t)(int16_t)((iword & 0xfff) << 4);
+		addr = ((int32_t)addr >> 3);
+		addr += dumpaddr + 4;
+		debug("%s\t0x%x\n", hi4==0xa? "bra":"bsr", (int)addr);
+		break;
+	case 0xc:
+		if (r8 == 0x9)
+			debug("and\t#%i,r0\n", (uint8_t)lo8);
+		else if (r8 == 0xd)
+			debug("and.b\t#%i,@(r0,gbr)\n", (uint8_t)lo8);
+		else
+			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, r8);
+		break;
+	case 0xe:
+		debug("mov\t#%i,r%i\n", (int8_t)lo8, r8);
+		break;
+	default:debug("UNIMPLEMENTED hi4=0x%x\n", hi4);
+	}
 
 	return sizeof(iword);
 }

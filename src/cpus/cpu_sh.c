@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.4 2005-09-04 02:49:11 debug Exp $
+ *  $Id: cpu_sh.c,v 1.5 2005-09-04 13:06:11 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -44,8 +44,7 @@
 #include "symbol.h"
 
 
-/*  #define	DYNTRANS_DUALMODE_32  */
-#define	DYNTRANS_32
+#define DYNTRANS_DUALMODE_32
 #include "tmp_sh_head.c"
 
 
@@ -64,17 +63,26 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		return 0;
 
 	cpu->memory_rw = sh_memory_rw;
-	cpu->update_translation_table = sh_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
-	    sh_invalidate_translation_caches_paddr;
-	cpu->invalidate_code_translation = sh_invalidate_code_translation;
 
+	/*  TODO: per CPU type?  */
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
-
-	/*  TODO:  */
 	cpu->is_32bit = 1;
 	cpu->cd.sh.bits = 32;
 	cpu->cd.sh.compact = 1;
+
+	if (cpu->is_32bit) {
+		cpu->update_translation_table = sh32_update_translation_table;
+		cpu->invalidate_translation_caches_paddr =
+		    sh32_invalidate_translation_caches_paddr;
+		cpu->invalidate_code_translation =
+		    sh32_invalidate_code_translation;
+	} else {
+		cpu->update_translation_table = sh_update_translation_table;
+		cpu->invalidate_translation_caches_paddr =
+		    sh_invalidate_translation_caches_paddr;
+		cpu->invalidate_code_translation =
+		    sh_invalidate_code_translation;
+	}
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.7 2005-09-03 21:40:33 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.8 2005-09-04 13:06:11 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -44,7 +44,6 @@
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
-/*  #define DYNTRANS_32  */
 #include "tmp_ppc_head.c"
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.9 2005-09-03 11:44:03 debug Exp $
+ *  $Id: cpu_arm.c,v 1.10 2005-09-04 13:06:10 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -710,12 +710,13 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			    b_bit? 1 : sizeof(tmpw), MEM_READ, NO_EXCEPTIONS))
 			    || (!l_bit && running)) {
 				if (l_bit) {
-					if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-						addr = tmpw[0] + (tmpw[1] << 8) +
-						    (tmpw[2] << 16) + (tmpw[3] << 24);
+					if (cpu->byte_order ==
+					    EMUL_LITTLE_ENDIAN)
+						addr = tmpw[0] +(tmpw[1] << 8) +
+						    (tmpw[2]<<16)+(tmpw[3]<<24);
 					else
-						addr = tmpw[3] + (tmpw[2] << 8) +
-						    (tmpw[1] << 16) + (tmpw[0] << 24);
+						addr = tmpw[3] + (tmpw[2]<<8) +
+						    (tmpw[1]<<16)+(tmpw[0]<<24);
 				} else {
 					tmpw[0] = addr = cpu->cd.arm.r[r12];
 					if (r12 == ARM_PC)

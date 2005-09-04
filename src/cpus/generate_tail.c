@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.3 2005-09-04 01:03:12 debug Exp $
+ *  $Id: generate_tail.c,v 1.4 2005-09-04 13:06:11 debug Exp $
  */
 
 #include <stdio.h>
@@ -106,7 +106,8 @@ int main(int argc, char *argv[])
 	printf("#undef MEMORY_RW\n\n");
 
 	printf("#define DYNTRANS_PC_TO_POINTERS_FUNC %s_pc_to_pointers\n", a);
-	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC %s_pc_to_pointers_generic\n", a);
+	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC "
+	    "%s_pc_to_pointers_generic\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_PC_TO_POINTERS_FUNC\n\n");
 	printf("#undef DYNTRANS_PC_TO_POINTERS_GENERIC\n\n");

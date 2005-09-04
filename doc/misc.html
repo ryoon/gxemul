@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.51 2005-09-04 13:37:22 debug Exp $
+$Id: misc.html,v 1.52 2005-09-04 13:48:18 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -543,9 +543,11 @@ DECstation PROMs: GXemul doesn't really emulate the hardware, it only
 it is emulating a real machine. ROM code is usually a <i>lot</i> more 
 picky about the details.
 
-<p>The graphics used in the O2 is (as far as I know) undocumented. I've
-reverse-engineered enough of it to let the PROM draw rectangles and
-bitmaps, but not much more. The SCSI is not implemented yet either.
+<p>The graphics used in the O2 is (as far as I know) undocumented. Combining
+some traces of info from how Linux/O2 draws to the screen with some
+reverse-engineering of my own, I've implemeneted enough of the controller to
+let the PROM draw rectangles and bitmaps, but not much more. The SCSI
+controller is not implemented yet either.
 
 
 

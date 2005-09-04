@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.2 2005-08-28 20:16:24 debug Exp $
+ *  $Id: cpu_sh.h,v 1.3 2005-09-04 02:49:12 debug Exp $
  */
 
 #include "misc.h"
@@ -75,8 +75,7 @@ struct sh_cpu {
 	int		bits;
 	int		compact;
 
-	/*  TODO  */
-	uint64_t	r[16];
+	uint64_t	r[64];
 
 
 	/*

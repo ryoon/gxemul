@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.3 2005-09-04 01:03:12 debug Exp $
+ *  $Id: cpu_sh.c,v 1.4 2005-09-04 02:49:11 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -70,6 +70,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->invalidate_code_translation = sh_invalidate_code_translation;
 
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
+	/*  TODO:  */
 	cpu->is_32bit = 1;
 	cpu->cd.sh.bits = 32;
 	cpu->cd.sh.compact = 1;
@@ -117,7 +119,7 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset, tmp;
-	int i, x = cpu->cpu_id;
+	int i, x = cpu->cpu_id, nregs = cpu->cd.sh.compact? 16 : 64;
 	int bits32 = cpu->cd.sh.bits == 32;
 
 	if (gprs) {
@@ -132,7 +134,28 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("%016llx", (long long)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		/*  TODO  */
+		if (bits32) {
+			/*  32-bit:  */
+			for (i=0; i<nregs; i++) {
+				if ((i % 4) == 0)
+					debug("cpu%i:", x);
+				debug(" r%02i = 0x%08x ", i,
+				    (int)cpu->cd.sh.r[i]);
+				if ((i % 4) == 3)
+					debug("\n");
+			}
+		} else {
+			/*  64-bit:  */
+			for (i=0; i<nregs; i++) {
+				int r = (i >> 1) + ((i & 1) << 4);
+				if ((i % 2) == 0)
+					debug("cpu%i:", x);
+				debug(" r%02i = 0x%016llx ", r,
+				    (long long)cpu->cd.sh.r[r]);
+				if ((i % 2) == 1)
+					debug("\n");
+			}
+		}
 	}
 }
 
@@ -262,6 +285,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("stc\tgbr,r%i\n", r8);
 		else if (iword == 0x0018)
 			debug("sett\n");
+		else if (iword == 0x0019)
+			debug("div0u\n");
 		else if (lo8 == 0x1a)
 			debug("sts\tmacl,r%i\n", r8);
 		else if (lo8 == 0x23)
@@ -293,6 +318,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("mov.b\tr%i,@-r%i\n", r4, r8);
 		else if (lo4 == 0x6)
 			debug("mov.l\tr%i,@-r%i\n", r4, r8);
+		else if (lo4 == 0x7)
+			debug("div0s\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0x8)
 			debug("tst\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0x9)
@@ -301,6 +328,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("xor\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xb)
 			debug("or\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xc)
+			debug("cmp/str\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xd)
 			debug("xtrct\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xe)
@@ -317,6 +346,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("cmp/hs\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0x3)
 			debug("cmp/ge\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0x4)
+			debug("div1\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0x5)
 			debug("dmulu.l\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0x6)
@@ -331,6 +362,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("subv\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xc)
 			debug("add\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xd)
+			debug("dmuls.l\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xe)
 			debug("addc\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xf)
@@ -363,6 +396,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("shld\tr%i,r%i\n", r4, r8);
 		else if (lo8 == 0x0e)
 			debug("ldc\tr%i,sr\n", r8);
+		else if (lo8 == 0x10)
+			debug("dt\tr%i\n", r8);
 		else if (lo8 == 0x11)
 			debug("cmp/pz\tr%i\n", r8);
 		else if (lo8 == 0x15)
@@ -414,6 +449,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	case 0x6:
 		if (lo4 == 0x0)
 			debug("mov.b\t@r%i,r%i\n", r4, r8);
+		else if (lo4 == 0x1)
+			debug("mov.w\t@r%i,r%i\n", r4, r8);
 		else if (lo4 == 0x2)
 			debug("mov.l\t@r%i,r%i\n", r4, r8);
 		else if (lo4 == 0x3)
@@ -434,6 +471,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("neg\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xc)
 			debug("extu.b\tr%i,r%i\n", r4, r8);
+		else if (lo4 == 0xd)
+			debug("extu.w\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xe)
 			debug("exts.b\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0xf)

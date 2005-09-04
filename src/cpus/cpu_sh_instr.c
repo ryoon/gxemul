@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.2 2005-09-04 02:49:11 debug Exp $
  *
  *  SH instructions.
  *
@@ -103,17 +103,23 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode;
+	int main_opcode, instr_size = 4;
 	void (*samepage_function)(struct cpu *, struct sh_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
-	low_pc = ((size_t)ic - (size_t)cpu->cd.sh.cur_ic_page)
-	    / sizeof(struct sh_instr_call);
-	addr = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1)
-	    << SH_INSTR_ALIGNMENT_SHIFT);
-	addr += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc = addr;
-	addr &= ~0x3;
+	if (cpu->cd.sh.compact) {
+		instr_size = 2;
+		fatal("Compact: TODO\n");
+		exit(1);
+	} else {
+		low_pc = ((size_t)ic - (size_t)cpu->cd.sh.cur_ic_page)
+		    / sizeof(struct sh_instr_call);
+		addr = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1)
+		    << SH_INSTR_ALIGNMENT_SHIFT);
+		addr += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc = addr;
+		addr &= ~0x3;
+	}
 
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.sh.host_load[addr >> 12];

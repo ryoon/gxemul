@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.163 2005-09-03 21:40:31 debug Exp $
+#  $Id: configure,v 1.164 2005-09-07 07:10:13 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -67,6 +67,8 @@ else
 	#  Development:
 	ENABLEALPHA=YES
 	ENABLEARM=YES
+	ENABLEHPPA=NO
+	ENABLEI960=NO
 	ENABLEIA64=NO
 	ENABLEM68K=NO
 	ENABLEMIPS=YES
@@ -101,6 +103,14 @@ if [ z"$*" != z ]; then
 			ENABLEARM=NO
 		else if [ z$a = z--enable-arm ]; then
 			ENABLEARM=YES
+		else if [ z$a = z--disable-hppa ]; then
+			ENABLEHPPA=NO
+		else if [ z$a = z--enable-hppa ]; then
+			ENABLEHPPA=YES
+		else if [ z$a = z--disable-i960 ]; then
+			ENABLEI960=NO
+		else if [ z$a = z--enable-i960 ]; then
+			ENABLEI960=YES
 		else if [ z$a = z--disable-ia64 ]; then
 			ENABLEIA64=NO
 		else if [ z$a = z--enable-ia64 ]; then
@@ -173,6 +183,20 @@ if [ z"$*" != z ]; then
 			fi
 			printf "ARM CPU emulation\n"
 
+			if [ z$ENABLEHPPA = zYES ]; then
+				printf "  --disable-hppa     disable "
+			else
+				printf "  --enable-hppa      enable "
+			fi
+			printf "HPPA CPU emulation\n"
+
+			if [ z$ENABLEI960 = zYES ]; then
+				printf "  --disable-i960     disable "
+			else
+				printf "  --enable-i960      enable "
+			fi
+			printf "i960 CPU emulation\n"
+
 			if [ z$ENABLEIA64 = zYES ]; then
 				printf "  --disable-ia64     disable "
 			else
@@ -234,8 +258,9 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi
 	done
 fi
 
@@ -286,6 +311,14 @@ if [ z$ENABLEARM = zYES ]; then
 	CPU_ARCHS="$CPU_ARCHS cpu_arm.o cpu_arm_coproc.o memory_arm.o "
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_loadstore.o"
 	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_dpi"
+fi
+if [ z$ENABLEHPPA = zYES ]; then
+	printf "#define ENABLE_HPPA\n" >> config.h
+	CPU_ARCHS="$CPU_ARCHS cpu_hppa.o"
+fi
+if [ z$ENABLEI960 = zYES ]; then
+	printf "#define ENABLE_I960\n" >> config.h
+	CPU_ARCHS="$CPU_ARCHS cpu_i960.o"
 fi
 if [ z$ENABLEIA64 = zYES ]; then
 	printf "#define ENABLE_IA64\n" >> config.h

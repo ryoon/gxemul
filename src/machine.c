@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.541 2005-09-03 21:40:32 debug Exp $
+ *  $Id: machine.c,v 1.542 2005-09-07 07:10:15 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4222,6 +4222,70 @@ Not yet.
 		break;
 #endif	/*  ENABLE_SH  */
 
+#ifdef ENABLE_HPPA
+	case MACHINE_BAREHPPA:
+		/*  A bare HPPA machine, with no devices.  */
+		machine->machine_name = "\"Bare\" HPPA machine";
+		break;
+
+	case MACHINE_TESTHPPA:
+		machine->machine_name = "HPPA test machine";
+
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
+
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testhppa generic");
+
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
+		break;
+#endif	/*  ENABLE_HPPA  */
+
+#ifdef ENABLE_I960
+	case MACHINE_BAREI960:
+		/*  A bare I960 machine, with no devices.  */
+		machine->machine_name = "\"Bare\" i960 machine";
+		break;
+
+	case MACHINE_TESTI960:
+		machine->machine_name = "i960 test machine";
+
+		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
+		    (long long)DEV_CONS_ADDRESS);
+		cons_data = device_add(machine, tmpstr);
+		machine->main_console_handle = cons_data->console_handle;
+
+		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
+
+		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
+		    640,480, 640,480, 24, "testi960 generic");
+
+		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+		    (long long)DEV_DISK_ADDRESS);
+		device_add(machine, tmpstr);
+
+		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
+		    (long long)DEV_ETHER_ADDRESS);
+		device_add(machine, tmpstr);
+
+		break;
+#endif	/*  ENABLE_I960  */
+
 #ifdef ENABLE_SPARC
 	case MACHINE_BARESPARC:
 		/*  A bare SPARC machine, with no devices.  */
@@ -4985,6 +5049,18 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("SH");
 		break;
 
+	/*  HPPA:  */
+	case MACHINE_BAREHPPA:
+	case MACHINE_TESTHPPA:
+		m->cpu_name = strdup("HPPA");
+		break;
+
+	/*  i960:  */
+	case MACHINE_BAREI960:
+	case MACHINE_TESTI960:
+		m->cpu_name = strdup("i960");
+		break;
+
 	/*  SPARC:  */
 	case MACHINE_BARESPARC:
 	case MACHINE_TESTSPARC:
@@ -5369,6 +5445,22 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for i960:  */
+	me = machine_entry_new("Test-machine for i960", ARCH_I960,
+	    MACHINE_TESTI960, 1, 0);
+	me->aliases[0] = "testi960";
+	if (cpu_family_ptr_by_number(ARCH_I960) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Test-machine for HPPA:  */
+	me = machine_entry_new("Test-machine for HPPA", ARCH_HPPA,
+	    MACHINE_TESTHPPA, 1, 0);
+	me->aliases[0] = "testhppa";
+	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Test-machine for ARM:  */
 	me = machine_entry_new("Test-machine for ARM", ARCH_ARM,
 	    MACHINE_TESTARM, 1, 0);
@@ -5637,6 +5729,22 @@ void machine_init(void)
 	    MACHINE_BAREIA64, 1, 0);
 	me->aliases[0] = "bareia64";
 	if (cpu_family_ptr_by_number(ARCH_IA64) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" i960 machine:  */
+	me = machine_entry_new("Generic \"bare\" i960 machine", ARCH_I960,
+	    MACHINE_BAREI960, 1, 0);
+	me->aliases[0] = "barei960";
+	if (cpu_family_ptr_by_number(ARCH_I960) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" HPPA machine:  */
+	me = machine_entry_new("Generic \"bare\" HPPA machine", ARCH_HPPA,
+	    MACHINE_BAREHPPA, 1, 0);
+	me->aliases[0] = "barehppa";
+	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

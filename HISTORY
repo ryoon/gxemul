@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.945 2005-09-04 01:03:09 debug Exp $
+$Id: HISTORY,v 1.946 2005-09-07 07:10:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2243,3 +2243,4 @@ Changelog for GXemul:
 		the i80321 I/O coprocessor as a first test).
 		Various other ARM and PPC updates.
 20050904	Adding some SHcompact disassembly routines.
+20050907	(Re)adding a dummy HPPA CPU module, and a dummy i960 module.

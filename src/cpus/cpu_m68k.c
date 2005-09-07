@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.2 2005-09-07 07:41:30 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -198,9 +198,9 @@ int m68k_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 
 /*  Helper functions:  */
-void print_two(unsigned char *instr, int *len)
+static void print_two(unsigned char *instr, int *len)
 { debug(" %02x%02x", instr[*len], instr[*len+1]); (*len) += 2; }
-void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
+static void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
     i++) debug(" "); }
 
 

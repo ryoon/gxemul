@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.243 2005-08-07 17:42:02 debug Exp $
+ *  $Id: main.c,v 1.244 2005-09-07 07:41:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -200,7 +200,7 @@ static void usage(int longusage)
 
 	printf("\nusage: %s [machine, other, and general options] [file "
 	    "[...]]\n", progname);
-	printf("   or  %s [general options] @configfile [...]\n", progname);
+	printf("   or  %s [general options] @configfile\n", progname);
 	printf("   or  %s [userland, other, and general options] file "
 	    "[args ...]\n", progname);
 

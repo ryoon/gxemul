@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.164 2005-09-07 07:10:13 debug Exp $
+#  $Id: configure,v 1.165 2005-09-07 07:41:27 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -95,6 +95,18 @@ if [ z"$*" != z ]; then
 			MIPS16=NO
 		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
+		else if [ z$a = z--enable-all ]; then
+			ENABLEALPHA=YES
+			ENABLEARM=YES
+			ENABLEHPPA=YES
+			ENABLEI960=YES
+			ENABLEIA64=YES
+			ENABLEM68K=YES
+			ENABLEMIPS=YES
+			ENABLEPPC=YES
+			ENABLESH=YES
+			ENABLESPARC=YES
+			ENABLEX86=YES
 		else if [ z$a = z--disable-alpha ]; then
 			ENABLEALPHA=NO
 		else if [ z$a = z--enable-alpha ]; then
@@ -168,6 +180,8 @@ if [ z"$*" != z ]; then
 			printf " (BUGGY)\n"
 			echo "  --enable-delays    enable instruction" \
 			    "latency/delay emulation"
+
+			printf "  --enable-all       enable everything\n"
 
 			if [ z$ENABLEALPHA = zYES ]; then
 				printf "  --disable-alpha    disable "
@@ -260,7 +274,7 @@ if [ z"$*" != z ]; then
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi
+		fi; fi; fi
 	done
 fi
 

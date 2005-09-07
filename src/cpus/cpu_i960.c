@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.c,v 1.1 2005-09-07 07:10:16 debug Exp $
+ *  $Id: cpu_i960.c,v 1.2 2005-09-07 07:41:30 debug Exp $
  *
  *  Intel i960 CPU emulation.
  */
@@ -195,10 +195,10 @@ int i960_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 
 /*  Helper functions:  */
-void print_four(unsigned char *instr, int *len)
+static void print_four(unsigned char *instr, int *len)
 { debug(" %02x%02x%02x%02x", instr[*len], instr[*len+1],
 	instr[*len+2], instr[*len+3]); (*len) += 4; }
-void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
+static void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
     i++) debug(" "); }
 
 

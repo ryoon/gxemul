@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.1 2005-08-29 14:55:42 debug Exp $
+$Id: README_DYNTRANS,v 1.2 2005-09-07 07:41:30 debug Exp $
 
 Dyntrans TODO:
 
@@ -69,5 +69,5 @@ Dyntrans TODO:
 
   x)  x86: convert to dyntrans. LOTS of stuff to consider.
 
-  x)  88k? i960? vax? pc532? 6502? 6800? etc
+  x)  88k? vax? pc532? 6502? 6800? etc
 

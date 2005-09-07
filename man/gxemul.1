@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.29 2005-08-10 15:51:09 debug Exp $
+.\" $Id: gxemul.1,v 1.30 2005-09-07 07:41:28 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -29,7 +29,7 @@
 .\" This is a minimal man page for GXemul. Process this file with
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd AUGUST 2005
+.Dd SEPTEMBER 2005
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -41,7 +41,7 @@
 .Op file Ar ...
 .Nm
 .Op general options
-.Op Ar @configfile ...
+.Ar @configfile
 .Nm
 .Op userland, other, and general options
 .Ar file Op Ar args ...
@@ -58,16 +58,20 @@ on a real machine.
 those modes has reached the completeness required to run unmodified
 operating systems.) 
 .Pp
-There are three ways to invoke the emulator. When emulating a 
-complete machine, settings can be entered directly on the command line, or
-they can be read from a configuration file. When emulating a userland 
-environment (syscall-only emulation, not emulating complete machines), 
-then the program name and its argument should be given on the command 
-line.
+There are three ways to invoke the emulator:
+.Pp
+1. When emulating a complete machine, configuration options can be entered
+directly on the command line.
+.Pp
+2. Options can be read from a configuration file.
+.Pp
+3. When emulating a userland environment (syscall-only emulation, not
+emulating complete machines), then the program name and its argument
+should be given on the command line. (This mode doesn't really work yet.)
 .Pp
 The easiest way to use the emulator is to supply settings directly on the 
 command line. The most important thing you need to supply is the
-file argument. This is the name of a binary file (an ELF, a.out, ECOFF,
+file argument. This is the name of a binary file (an ELF, a.out, COFF/ECOFF,
 SREC, or a raw binary image) which you wish to run in the emulator. This file
 might be an operating system kernel, or perhaps a ROM image file.
 .Pp
@@ -347,8 +351,8 @@ Userland (syscall-only) emulation doesn't really work yet.
 .Pp
 .Nm
 does not simulate individual pipe-line stages or penalties caused by
-branch-prediction misses or cache misses, so it cannot be used for 
-accurate performance measurement.
+branch-prediction misses or cache misses, so it cannot be used for
+accurate simulation of any actual real-world processor.
 .Pp
 .Nm
 is not timing-accurate.

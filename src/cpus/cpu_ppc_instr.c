@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.12 2005-09-03 21:40:34 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.13 2005-09-09 19:22:18 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -876,8 +876,7 @@ X(mcrf)
  *
  *  arg[0] = copy of the instruction word
  */
-X(crand)
-{
+X(crand) {
 	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
 	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
 	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
@@ -886,8 +885,25 @@ X(crand)
 	if (ba & bb)
 		cpu->cd.ppc.cr |= (1 << (31-bt));
 }
-X(cror)
-{
+X(crandc) {
+	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
+	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
+	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
+	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
+	cpu->cd.ppc.cr &= ~(1 << (31-bt));
+	if (!(ba & bb))
+		cpu->cd.ppc.cr |= (1 << (31-bt));
+}
+X(creqv) {
+	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
+	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
+	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
+	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
+	cpu->cd.ppc.cr &= ~(1 << (31-bt));
+	if (!(ba ^ bb))
+		cpu->cd.ppc.cr |= (1 << (31-bt));
+}
+X(cror) {
 	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
 	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
 	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
@@ -896,8 +912,7 @@ X(cror)
 	if (ba | bb)
 		cpu->cd.ppc.cr |= (1 << (31-bt));
 }
-X(crxor)
-{
+X(crxor) {
 	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
 	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
 	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
@@ -1894,12 +1909,16 @@ X(to_be_translated)
 			break;
 
 		case PPC_19_CRAND:
+		case PPC_19_CRANDC:
+		case PPC_19_CREQV:
 		case PPC_19_CROR:
 		case PPC_19_CRXOR:
 			switch (xo) {
-			case PPC_19_CRAND: ic->f = instr(crand); break;
-			case PPC_19_CROR:  ic->f = instr(cror); break;
-			case PPC_19_CRXOR: ic->f = instr(crxor); break;
+			case PPC_19_CRAND:  ic->f = instr(crand); break;
+			case PPC_19_CRANDC: ic->f = instr(crandc); break;
+			case PPC_19_CREQV:  ic->f = instr(creqv); break;
+			case PPC_19_CROR:   ic->f = instr(cror); break;
+			case PPC_19_CRXOR:  ic->f = instr(crxor); break;
 			}
 			ic->arg[0] = iword;
 			break;
@@ -2153,6 +2172,7 @@ X(to_be_translated)
 		case PPC_31_TLBSYNC:
 		case PPC_31_EIEIO:
 		case PPC_31_DCBST:
+		case PPC_31_DCBF:
 		case PPC_31_ICBI:
 			/*  TODO  */
 			ic->f = instr(nop);

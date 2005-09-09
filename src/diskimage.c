@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.95 2005-08-10 22:25:50 debug Exp $
+ *  $Id: diskimage.c,v 1.96 2005-09-09 19:22:17 debug Exp $
  *
  *  Disk image support.
  *
@@ -1505,14 +1505,15 @@ int diskimage_add(struct machine *machine, char *fname)
 	 *  Is this a tape, CD-ROM or a normal disk?
 	 *
 	 *  An intelligent guess, if no prefixes are used, would be that
-	 *  filenames ending with .iso are CD-ROM images.
+	 *  filenames ending with .iso or .cdr are CD-ROM images.
 	 */
 	if (prefix_t) {
 		d->is_a_tape = 1;
 	} else {
 		if (prefix_c ||
 		    ((strlen(d->fname) > 4 &&
-		    strcasecmp(d->fname + strlen(d->fname) - 4, ".iso") == 0)
+		    (strcasecmp(d->fname + strlen(d->fname) - 4, ".cdr") == 0 ||
+		    strcasecmp(d->fname + strlen(d->fname) - 4, ".iso") == 0))
 		    && !prefix_d)
 		   ) {
 			d->is_a_cdrom = 1;

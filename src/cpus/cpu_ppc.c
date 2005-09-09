@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.8 2005-09-04 13:06:11 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.9 2005-09-09 19:22:18 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -487,7 +487,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 {
 	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
 	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb, bt, ba, bb, fpreg;
-	int bfa;
+	int bfa, to;
 	uint64_t offset, addr;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
@@ -820,12 +820,27 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if (l_bit)
 				debug(",%i", l_bit);
 			break;
+		case PPC_31_TW:
+		case PPC_31_TD:
+			to = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			switch (xo) {
+			case PPC_31_TW: mnem = power? "t" : "tw"; break;
+			case PPC_31_TD: mnem = "td"; break;
+			}
+			debug("%s\t%i,r%i,r%i", mnem, to, ra, rb);
+			break;
+		case PPC_31_LWARX:
+		case PPC_31_LDARX:
 		case PPC_31_LBZX:
 		case PPC_31_LBZUX:
 		case PPC_31_LHZX:
 		case PPC_31_LHZUX:
 		case PPC_31_LWZX:
 		case PPC_31_LWZUX:
+		case PPC_31_STWCX_DOT:
+		case PPC_31_STDCX_DOT:
 		case PPC_31_STBX:
 		case PPC_31_STBUX:
 		case PPC_31_STHX:
@@ -839,6 +854,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
 			switch (xo) {
+			case PPC_31_LWARX: mnem = "lwarx"; break;
+			case PPC_31_LDARX: mnem = "ldarx"; break;
 			case PPC_31_LBZX:  mnem = "lbzx"; break;
 			case PPC_31_LBZUX: mnem = "lbzux"; break;
 			case PPC_31_LHZX:  mnem = "lhzx"; break;
@@ -849,6 +866,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_LWZUX:
 				mnem = power? "lux" : "lwzux";
 				break;
+			case PPC_31_STWCX_DOT: mnem = "stwcx."; break;
+			case PPC_31_STDCX_DOT: mnem = "stdcx."; break;
 			case PPC_31_STBX:  mnem = "stbx"; break;
 			case PPC_31_STBUX: mnem = "stbux"; break;
 			case PPC_31_STHX:  mnem = "sthx"; break;

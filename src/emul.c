@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.230 2005-09-07 07:10:15 debug Exp $
+ *  $Id: emul.c,v 1.231 2005-09-09 19:22:17 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -435,6 +435,70 @@ ret:
 
 
 /*
+ *  apple_load_bootblock():
+ *
+ *  Try to load a kernel from a disk image with an Apple Partition Table.
+ *
+ *  TODO: This function uses too many magic offsets and so on; it should be
+ *  cleaned up some day. See http://www.awprofessional.com/articles/
+ *	article.asp?p=376123&seqNum=3&rl=1  for some info on the Apple
+ *  partition format.
+ *
+ *  Returns 1 on success, 0 on failure.
+ */
+static int apple_load_bootblock(struct machine *m, struct cpu *cpu,
+	int disk_id, int disk_type, int *n_loadp, char ***load_namesp)
+{
+	unsigned char buf[0x8000];
+	int res, partnr, n_partitions = 0, n_hfs_partitions = 0;
+	uint64_t hfs_start, hfs_length;
+
+	res = diskimage_access(m, disk_id, disk_type, 0, 0x0, buf, sizeof(buf));
+	if (!res) {
+		fatal("apple_load_bootblock: couldn't read the disk "
+		    "image. Aborting.\n");
+		return 0;
+	}
+
+	partnr = 0;
+	do {
+		int start, length;
+		int ofs = 0x200 * (partnr + 1);
+		if (partnr == 0)
+			n_partitions = buf[ofs + 7];
+		start = (buf[ofs + 8] << 24) + (buf[ofs + 9] << 16) +
+		    (buf[ofs + 10] << 8) + buf[ofs + 11];
+		length = (buf[ofs + 12] << 24) + (buf[ofs + 13] << 16) +
+		    (buf[ofs + 14] << 8) + buf[ofs + 15];
+
+		debug("partition %i: '%s', type '%s', start %i, length %i\n",
+		    partnr, buf + ofs + 0x10, buf + ofs + 0x30,
+		    start, length);
+
+		if (strcmp(buf + ofs + 0x30, "Apple_HFS") == 0) {
+			n_hfs_partitions ++;
+			hfs_start = 512 * start;
+			hfs_length = 512 * length;
+		}
+
+		/*  Any more partitions?  */
+		partnr ++;
+	} while (partnr < n_partitions);
+
+	if (n_hfs_partitions == 0) {
+		fatal("Error: No HFS partition found! TODO\n");
+		return 0;
+	}
+	if (n_hfs_partitions >= 2) {
+		fatal("Error: Too many HFS partitions found! TODO\n");
+		return 0;
+	}
+
+	return 0;
+}
+
+
+/*
  *  load_bootblock():
  *
  *  For some emulation modes, it is possible to boot from a harddisk image by
@@ -623,6 +687,30 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 			    n_loadp, load_namesp);
 	}
 
+	if (retval != 0)
+		goto ret_ok;
+
+	/*  Apple parition table:  */
+	res = diskimage_access(m, boot_disk_id, boot_disk_type,
+	    0, 0x0, bootblock_buf, 0x800);
+	if (!res) {
+		fatal("Couldn't read the disk image. Aborting.\n");
+		return 0;
+	}
+	if (bootblock_buf[0x000] == 'E' && bootblock_buf[0x001] == 'R' &&
+	    bootblock_buf[0x200] == 'P' && bootblock_buf[0x201] == 'M') {
+		/*  We can't load a kernel if the name
+		    isn't specified.  */
+		if (cpu->machine->boot_kernel_filename == NULL ||
+		    cpu->machine->boot_kernel_filename[0] == '\0')
+			fatal("\nApple partition table, but no kernel "
+			    "specified? (Use the -j option.)\n");
+		else
+			retval = apple_load_bootblock(m, cpu, boot_disk_id,
+			    boot_disk_type, n_loadp, load_namesp);
+	}
+
+ret_ok:
 	free(bootblock_buf);
 	return retval;
 }

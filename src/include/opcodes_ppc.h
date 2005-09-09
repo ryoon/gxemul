@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.29 2005-08-31 20:03:39 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.30 2005-09-09 19:22:19 debug Exp $
  *
  *
  *  PPC and POWER opcodes. These are gathered from various sources.
@@ -77,10 +77,12 @@
 #define	  PPC_30_RLDICR		  0x1
 #define	PPC_HI6_31		0x1f
 #define	  PPC_31_CMP		  0
+#define	  PPC_31_TW		  4
 #define	  PPC_31_SUBFC		  8
 #define	  PPC_31_ADDC		  10
 #define	  PPC_31_MULHWU		  11
 #define	  PPC_31_MFCR		  19
+#define	  PPC_31_LWARX		  20
 #define	  PPC_31_LWZX		  23
 #define	  PPC_31_SLW		  24
 #define	  PPC_31_CNTLZW		  26
@@ -90,8 +92,10 @@
 #define	  PPC_31_DCBST		  54
 #define	  PPC_31_LWZUX		  55
 #define	  PPC_31_ANDC		  60
+#define	  PPC_31_TD		  68
 #define	  PPC_31_MULHW		  75
 #define	  PPC_31_MFMSR		  83
+#define	  PPC_31_LDARX		  84
 #define	  PPC_31_DCBF		  86
 #define	  PPC_31_LBZX		  87
 #define	  PPC_31_NEG		  104
@@ -103,12 +107,14 @@
 #define	  PPC_31_MTCRF		  144
 #define	  PPC_31_MTMSR		  146
 #define	  PPC_31_STDX		  149
+#define	  PPC_31_STWCX_DOT	  150
 #define	  PPC_31_STWX		  151
 #define	  PPC_31_STDUX		  181
 #define	  PPC_31_STWUX		  183
 #define	  PPC_31_SUBFZE		  200
 #define	  PPC_31_ADDZE		  202
 #define	  PPC_31_MTSR		  210
+#define	  PPC_31_STDCX_DOT	  214
 #define	  PPC_31_STBX		  215
 #define	  PPC_31_MULLW		  235
 #define	  PPC_31_MTSRIN		  242

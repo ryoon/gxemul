@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.6 2005-09-07 07:10:16 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.7 2005-09-09 19:22:18 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -381,7 +381,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	fatal("IA64 todo\n");
 #else
 	fatal("Neither alpha, ia64, nor 32-bit? 3\n");
-	{ char *p = 0; exit(*p); }
+	exit(1);
 #endif
 #endif
 #endif
@@ -408,7 +408,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	fatal("IA64 todo\n");
 #else
 	fatal("Neither alpha, ia64, nor 32-bit? 4\n");
-	{ char *p = 0; exit(*p); }
+	exit(1);
 #endif
 #endif
 #endif
@@ -545,7 +545,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	fatal("IA64 todo\n");
 #else
 	fatal("Neither alpha, ia64, nor 32-bit? 1\n");
-	{ char *p = 0; exit(*p); }
+	exit(1);
 #endif
 #endif
 #endif
@@ -836,7 +836,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	fatal("IA64 update todo\n");
 #else
 	fatal("Neither 32-bit, IA64, nor Alpha? 2\n");
-	{ char *p = 0; exit(*p); }
+	exit(1);
 #endif
 #endif
 #endif

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.108 2005-09-07 07:10:15 debug Exp $
+ *  $Id: file.c,v 1.109 2005-09-09 19:22:17 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -206,7 +206,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		len = fread(buf, 1, len, f);
 
 		/*  printf("fread len=%i vaddr=%x buf[0..]=%02x %02x %02x\n",
-		    len, (int)vaddr, buf[0], buf[1], buf[2]);  */
+		    (int)len, (int)vaddr, buf[0], buf[1], buf[2]);  */
 
 		if (len > 0) {
 			int len2 = 0;
@@ -293,6 +293,229 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 	fclose(f);
 
 	*entrypointp = (int32_t)entry;
+
+	if (encoding == ELFDATA2LSB)
+		*byte_orderp = EMUL_LITTLE_ENDIAN;
+	else
+		*byte_orderp = EMUL_BIG_ENDIAN;
+
+	n_executables_loaded ++;
+}
+
+
+/*
+ *  file_load_macho():
+ *
+ *  Loads a Mach-O binary image into the emulated memory. The entry point
+ *  is stored in the specified CPU's registers.
+ *
+ *  TODO:
+ *
+ *	o)  Almost everything.
+ *
+ *	o)  I haven't had time to look into whether Apple's open source
+ *	    license is BSD-compatible or not. Perhaps it would be possible
+ *	    to use a header file containing symbolic names, and not use
+ *	    hardcoded values.
+ */
+static void file_load_macho(struct machine *m, struct memory *mem,
+	char *filename, uint64_t *entrypointp, int arch, int *byte_orderp,
+	int is_64bit, int is_reversed)
+{
+	FILE *f;
+	uint64_t entry = 0;
+	int entry_set = 0;
+	int encoding = ELFDATA2MSB;
+	unsigned char buf[65536];
+	uint32_t cputype, cpusubtype, filetype, ncmds, sizeofcmds, flags;
+	uint64_t vmaddr, vmsize, fileoff, filesize;
+	int cmd_type, cmd_len, pos, i, flavor;
+	size_t len;
+
+	if (m->cpus[0]->byte_order == EMUL_BIG_ENDIAN)
+		encoding = ELFDATA2MSB;
+
+	f = fopen(filename, "r");
+	if (f == NULL) {
+		perror(filename);
+		exit(1);
+	}
+
+	if (is_64bit) {
+		fatal("TODO: 64-bit Mach-O. Not supported yet.\n");
+		exit(1);
+	}
+	if (is_reversed) {
+		fatal("TODO: Reversed-endianness. Not supported yet.\n");
+		exit(1);
+	}
+
+	len = fread(buf, 1, sizeof(buf), f);
+	if (len < 100) {
+		fatal("Bad Mach-O file?\n");
+		exit(1);
+	}
+
+	unencode(cputype,    &buf[4], uint32_t);
+	unencode(cpusubtype, &buf[8], uint32_t);
+	unencode(filetype,   &buf[12], uint32_t);
+	unencode(ncmds,      &buf[16], uint32_t);
+	unencode(sizeofcmds, &buf[20], uint32_t);
+	unencode(flags,      &buf[24], uint32_t);
+
+	/*  debug("cputype=0x%x cpusubtype=0x%x filetype=0x%x\n",
+	    cputype, cpusubtype, filetype);
+	    debug("ncmds=%i sizeofcmds=0x%08x flags=0x%08x\n",
+	    ncmds, sizeofcmds, flags);  */
+
+	/*
+	 *  Compare to "normal" values.
+	 *  NOTE/TODO: These were for a Darwin (Macintosh PPC) kernel.
+	 */
+	if (cputype != 0x12) {
+		fatal("Error: Unimplemented cputype 0x%x\n", cputype);
+		exit(1);
+	}
+	if (cpusubtype != 0) {
+		fatal("Error: Unimplemented cpusubtype 0x%x\n", cpusubtype);
+		exit(1);
+	}
+	/*  Filetype 2 means an executable image.  */
+	if (filetype != 2) {
+		fatal("Error: Unimplemented filetype 0x%x\n", filetype);
+		exit(1);
+	}
+	if (!(flags & 1)) {
+		fatal("Error: File has 'undefined references'. Cannot"
+		    " be executed.\n", flags);
+		exit(1);
+	}
+
+	/*  I've only encountered flags == 1 so far.  */
+	if (flags != 1) {
+		fatal("Error: Unimplemented flags 0x%x\n", flags);
+		exit(1);
+	}
+
+	/*
+	 *  Read all load commands:
+	 */
+	pos = is_64bit? 32 : 28;
+	cmd_type = 0;
+	do {
+		/*  Read command type and length:  */
+		unencode(cmd_type, &buf[pos], uint32_t);
+		unencode(cmd_len,  &buf[pos+4], uint32_t);
+
+#if 0
+		debug("cmd %i, len=%i\n", cmd_type, cmd_len);
+		for (i=8; i<cmd_len; i++) {
+			unsigned char ch = buf[pos+i];
+			if (ch >= ' ' && ch < 127)
+				debug("%c", ch);
+			else
+				debug(".");
+		}
+#endif
+		switch (cmd_type) {
+		case 1:	/*  LC_SEGMENT  */
+			debug("seg ");
+			for (i=0; i<16; i++) {
+				if (buf[pos + 8 + i] == 0)
+					break;
+				debug("%c", buf[pos + 8 + i]);
+			}
+			unencode(vmaddr,   &buf[pos+8+16+0], uint32_t);
+			unencode(vmsize,   &buf[pos+8+16+4], uint32_t);
+			unencode(fileoff,  &buf[pos+8+16+8], uint32_t);
+			unencode(filesize, &buf[pos+8+16+12], uint32_t);
+			debug(": vmaddr=0x%x size=0x%x fileoff=0x%x",
+			    (int)vmaddr, (int)vmsize, (int)fileoff);
+
+			if (filesize == 0) {
+				debug("\n");
+				break;
+			}
+
+			fseek(f, fileoff, SEEK_SET);
+
+			/*  Load data from the file:  */
+			while (filesize != 0) {
+				unsigned char buf[32768];
+				size_t len = filesize > sizeof(buf) ?
+				    sizeof(buf) : filesize;
+				len = fread(buf, 1, len, f);
+
+				/*  printf("fread len=%i vmaddr=%x buf[0..]="
+				    "%02x %02x %02x\n", (int)len, (int)vmaddr,
+				    buf[0], buf[1], buf[2]);  */
+
+				if (len > 0) {
+					int len2 = 0;
+					uint64_t vaddr1 = vmaddr &
+					    ((1 << BITS_PER_MEMBLOCK) - 1);
+					uint64_t vaddr2 = (vmaddr +
+					    len) & ((1 << BITS_PER_MEMBLOCK)-1);
+					if (vaddr2 < vaddr1) {
+						len2 = len - vaddr2;
+						m->cpus[0]->memory_rw(m->cpus[
+						    0], mem, vmaddr, &buf[0],
+						    len2, MEM_WRITE,
+						    NO_EXCEPTIONS);
+					}
+					m->cpus[0]->memory_rw(m->cpus[0], mem,
+					    vmaddr + len2, &buf[len2], len-len2,
+					    MEM_WRITE, NO_EXCEPTIONS);
+				} else {
+					fprintf(stderr, "error reading\n");
+					exit(1);
+				}
+
+				vmaddr += len;
+				filesize -= len;
+			}
+
+			debug("\n");
+			break;
+
+		case 2:	debug("symtable: TODO\n");
+			break;
+
+		case 5:	debug("unix thread context: ");
+			/*  See http://cvs.sf.net/viewcvs.py/hte/
+			    HT%20Editor/machostruc.h or similar for details
+			    on the thread struct.  */
+			unencode(flavor, &buf[pos+8], uint32_t);
+			if (flavor != 1) {
+				fatal("unimplemented flavor %i\n", flavor);
+				exit(1);
+			}
+
+			if (arch != ARCH_PPC) {
+				fatal("non-PPC arch? TODO\n");
+				exit(1);
+			}
+
+			unencode(entry, &buf[pos+16], uint32_t);
+			entry_set = 1;
+			debug("pc=0x%x\n", (int)entry);
+			break;
+
+		default:fatal("WARNING! Unimplemented load command %i!\n",
+			    cmd_type);
+		}
+
+		pos += cmd_len;
+	} while (pos < sizeofcmds && cmd_type != 0);
+
+	fclose(f);
+
+	if (!entry_set) {
+		fatal("No entry point? Aborting.\n");
+		exit(1);
+	}
+
+	*entrypointp = entry;
 
 	if (encoding == ELFDATA2LSB)
 		*byte_orderp = EMUL_LITTLE_ENDIAN;
@@ -1686,6 +1909,22 @@ void file_load(struct machine *machine, struct memory *mem,
 		/*  DEC OSF1 on MIPS:  */
 		file_load_aout(machine, mem, filename, AOUT_FLAG_DECOSF1,
 		    entrypointp, arch, byte_orderp);
+		goto ret;
+	}
+
+	/*
+	 *  Is it a Mach-O file?
+	 */
+	if (buf[0] == 0xfe && buf[1] == 0xed && buf[2] == 0xfa &&
+	    (buf[3] == 0xce || buf[3] == 0xcf)) {
+		file_load_macho(machine, mem, filename, entrypointp,
+		    arch, byte_orderp, buf[3] == 0xcf, 0);
+		goto ret;
+	}
+	if ((buf[0] == 0xce || buf[0] == 0xcf) && buf[1] == 0xfa &&
+	    buf[2] == 0xed && buf[3] == 0xfe) {
+		file_load_macho(machine, mem, filename, entrypointp,
+		    arch, byte_orderp, buf[0] == 0xcf, 1);
 		goto ret;
 	}
 

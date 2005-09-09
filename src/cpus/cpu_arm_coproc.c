@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.3 2005-09-03 04:06:18 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.4 2005-09-09 23:35:29 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -178,6 +178,11 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			exit(1);
 		}
 		break;
+
+	case 15:/*  IMPLEMENTATION DEPENDANT!  */
+		fatal("[ arm_coproc_15: TODO: IMPLEMENTATION DEPENDANT! ]\n");
+		break;
+
 	default:fatal("arm_coproc_15: unimplemented crn = %i\n", crn);
 		fatal("(opcode1=%i opcode2=%i crm=%i rd=%i l=%i)\n",
 		    opcode1, opcode2, crm, rd, l_bit);

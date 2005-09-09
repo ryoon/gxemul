@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.948 2005-09-09 23:24:39 debug Exp $
+$Id: HISTORY,v 1.949 2005-09-09 23:35:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2248,4 +2248,4 @@ Changelog for GXemul:
 20050909	Adding support for loading Mach-O (Darwin PPC) binaries.
 20050910	Fixing an ARM bug (Carry flag was incorrectly updated for some
 		data processing instructions); OpenBSD/cats and NetBSD/
-		netwinder now get all the way to printing the Copyright banner.
+		netwinder get quite a bit further now.

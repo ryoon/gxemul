@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.542 2005-09-07 07:10:15 debug Exp $
+ *  $Id: machine.c,v 1.543 2005-09-09 23:24:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4474,6 +4474,14 @@ Not yet.
 
 	case MACHINE_CATS:
 		machine->machine_name = "CATS evaluation board";
+
+		if (machine->use_x11) {
+			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
+			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
+			    0, 0, machine->use_x11, 0);  /*  TODO: irq numbers  */
+			machine->main_console_handle = j;
+		}
+
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
 
@@ -4494,7 +4502,7 @@ Not yet.
 			    &(ebsaboot.bt_memend),
 			    machine->physical_ram_in_mb * 1048576);
 			store_32bit_word_in_host(cpu, (unsigned char *)
-			    &(ebsaboot.bt_memavail), 8 * 1048576);
+			    &(ebsaboot.bt_memavail), 7 * 1048576);
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_fclk), 233 * 1000000);
 			store_32bit_word_in_host(cpu, (unsigned char *)

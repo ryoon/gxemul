@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.5 2005-09-03 04:31:16 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.6 2005-09-09 23:24:41 debug Exp $
  *
  *  ARM instructions.
  *
@@ -241,8 +241,12 @@ X(invalid) {
 	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
- 	fatal("invalid ARM instruction? pc=0x%08x\n", (int)cpu->pc);
-	exit(1);
+	fatal("Invalid ARM instruction: pc=0x%08x\n", (int)cpu->pc);
+
+	cpu->running = 0;
+	cpu->running_translated = 0;
+	cpu->n_translated_instrs --;
+	cpu->cd.arm.next_ic = &nothing_call;
 }
 
 

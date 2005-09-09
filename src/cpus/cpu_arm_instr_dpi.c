@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.3 2005-08-30 21:47:43 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.4 2005-09-09 23:24:41 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -88,7 +88,13 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    b =
 #ifdef A__REG
-	    R(cpu, ic, ic->arg[1], 1);
+	    R(cpu, ic, ic->arg[1],
+#ifdef A__S
+	    1
+#else
+	    0
+#endif
+	    );
 #else
 	    ic->arg[1];
 #endif

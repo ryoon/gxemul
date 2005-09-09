@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.5 2005-09-03 11:44:04 debug Exp $
+ *  $Id: memory_arm.c,v 1.6 2005-09-09 23:24:41 debug Exp $
  */
 
 #include <stdio.h>
@@ -130,7 +130,13 @@ exception_return:
 	if (d2_in_use)
 		fatal(" d2=0x%08x", d2);
 	fatal("\n");
+
+#if 0
+	fatal("TODO: using invalid() for now, but it's not correct\n");
+	arm_instr_invalid(cpu, cpu->cd.arm.next_ic);
+#else
 	exit(1);
+#endif
 	return 0;
 }
 

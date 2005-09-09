@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.10 2005-09-04 13:06:10 debug Exp $
+ *  $Id: cpu_arm.c,v 1.11 2005-09-09 23:24:41 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -621,6 +621,16 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				break;
 			case 7:	debug(", ror %s", arm_regname[c >> 1]);
 				break;
+			}
+
+			/*  mov pc,reg:  */
+			if (running && t == 0 && c == 0 && secondary_opcode
+			    == 0xd && r12 == ARM_PC && (iw&15)!=ARM_PC) {
+				symbol = get_symbol_name(&cpu->machine->
+				    symbol_context, cpu->cd.arm.r[iw & 15],
+				    &offset);
+				if (symbol != NULL)
+					debug(" \t<%s>", symbol);
 			}
 		}
 		debug("\n");

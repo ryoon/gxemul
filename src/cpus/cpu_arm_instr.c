@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.6 2005-09-09 23:24:41 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.7 2005-09-10 00:20:06 debug Exp $
  *
  *  ARM instructions.
  *
@@ -212,8 +212,26 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		}
 		tmp = (int64_t)(int32_t)tmp >> c;
 		break;
-	default:fatal("R: unimplemented t=%i\n", t);
-		exit(1);
+	case 6:	if (c == 0) {
+			fatal("TODO: rrx\n");
+			exit(1);
+		}
+		if (update_c)
+			lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
+		tmp = (uint64_t)(((uint64_t)tmp << 32) || tmp) >> c;
+		break;
+	case 7:	/*  ror Rc  */
+		c = cpu->cd.arm.r[c >> 1] & 255;
+		if (update_c) {
+			if (c == 0)
+				update_c = 0;
+			else
+				lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
+		}
+		/*  31 should be enough here, 255 is unnecessary.  */
+		c &= 31;
+		tmp = (uint64_t)(((uint64_t)tmp << 32) || tmp) >> c;
+		break;
 	}
 	if (update_c) {
 		cpu->cd.arm.cpsr &= ~ARM_FLAG_C;

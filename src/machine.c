@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.543 2005-09-09 23:24:40 debug Exp $
+ *  $Id: machine.c,v 1.544 2005-09-10 00:20:05 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4482,6 +4482,8 @@ Not yet.
 			machine->main_console_handle = j;
 		}
 
+		device_add(machine, "footbridge addr=0x42000000");
+
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
 
@@ -4549,6 +4551,7 @@ Not yet.
 		/* machine->main_console_handle = */
 		dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 		    1, 12, 0, 1);
+		device_add(machine, "footbridge addr=0x42000000");
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);
 		}

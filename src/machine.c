@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.544 2005-09-10 00:20:05 debug Exp $
+ *  $Id: machine.c,v 1.545 2005-09-10 22:18:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2625,9 +2625,10 @@ void machine_setup(struct machine *machine)
 			    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
 			bootstr = machine->boot_kernel_filename;
-			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16);
-			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
+			store_32bit_word(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512, 
+			    0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 16);
+			store_32bit_word(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
+			store_string(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
 
 			/*  Special case for the Agenda VR3:  */
 			if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
@@ -3429,7 +3430,8 @@ Why is this here? TODO
 
 #if 0
 Not yet.
-				dev_wdc_init(machine, mem, 0x900001f0ULL, 8+16 + 14, 0);
+				/*  irq = 8+16 + 14  */
+				device_add(machine, "wdc addr=0x900001f0, irq=38");
 #endif
 
 				break;
@@ -3496,8 +3498,9 @@ Not yet.
 				    0x900000070ULL, 2, MC146818_PC_CMOS, 1);
 
 #if 0
-				dev_wdc_init(machine, mem, 0x9000001f0ULL, 0, 0);
-				dev_wdc_init(machine, mem, 0x900000170ULL, 0, 2);
+				/*  TODO: irq, etc  */
+				device_add(machine, "wdc addr=0x9000001f0, irq=0");
+				device_add(machine, "wdc addr=0x900000170, irq=0");
 #endif
 				/*  PC kbd  */
 				j = dev_pckbc_init(machine, mem, 0x900000060ULL,
@@ -4696,11 +4699,17 @@ Not yet.
 
 		/*  IDE controllers:  */
 		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 1, DISKIMAGE_IDE))
-			dev_wdc_init(machine, mem, X86_IO_BASE + 0x1f0, 14, 0);
+		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+			    X86_IO_BASE + 0x1f0, 14);
+			device_add(machine, tmpstr);
+		}
 		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
-			dev_wdc_init(machine, mem, X86_IO_BASE + 0x170, 15, 2);
+		    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+			    X86_IO_BASE + 0x170, 15);
+			device_add(machine, tmpstr);
+		}
 
 		/*  Floppy controller at irq 6  */
 		snprintf(tmpstr, sizeof(tmpstr), "fdc addr=0x%llx irq=6",

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.176 2005-08-05 09:11:49 debug Exp $
+ *  $Id: devices.h,v 1.177 2005-09-10 22:18:57 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -598,11 +598,6 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	struct memory *mem, int cpumodel);
-
-/*  dev_wdc.c:  */
-#define	DEV_WDC_LENGTH			0x8
-int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_wdc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int base_drive);
 
 /*  dev_wdsc.c:  */
 #define	DEV_WDSC_NREGS			0x100		/*  8-bit register select  */

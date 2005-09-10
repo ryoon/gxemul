@@ -1,4 +1,4 @@
-/*  gxemul: $Id: wdcreg.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
+/*  gxemul: $Id: wdcreg.h,v 1.3 2005-09-10 22:18:57 debug Exp $  */
 /*	$NetBSD: wdcreg.h,v 1.25 2002/03/31 19:47:39 bouyer Exp $	*/
 
 #ifndef	WDCREG_H
@@ -138,6 +138,14 @@
 #define	WDCC_STANDBY		0xe2	/* set standby timer & enter standby */
 #define	WDCC_STANDBY_IMMED	0xe0	/* enter standby mode */
 #define	WDCC_CHECK_PWR		0xe5	/* check power mode */
+
+#define	WDCC_SEC_SET_PASSWORD	0xf1	/* set user or master password */
+#define	WDCC_SEC_UNLOCK		0xf2	/* authenticate */
+#define	WDCC_SEC_ERASE_PREPARE	0xf3	/* enable device erasing */
+#define	WDCC_SEC_ERASE_UNIT	0xf4	/* erase all user data */
+#define	WDCC_SEC_FREEZE_LOCK	0xf5	/* prevent password changes */
+#define	WDCC_SEC_DISABLE_PASSWORD 0xf6	/* disable lock mode */
+
 
 /*
  * Big Drive support

@@ -23,11 +23,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- *   
  *
- *  $Id: dev_wdc.c,v 1.37 2005-05-27 07:29:25 debug Exp $
- *  
- *  Standard IDE controller.
+ *
+ *  $Id: dev_wdc.c,v 1.38 2005-09-10 22:18:56 debug Exp $
+ *
+ *  Standard "wdc" IDE controller.
  */
 
 #include <stdio.h>
@@ -35,9 +35,8 @@
 #include <string.h>
 
 #include "console.h"
-#include "cop0.h"
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
@@ -45,23 +44,33 @@
 
 #include "wdcreg.h"
 
-
+#define	DEV_WDC_LENGTH		8
 #define	WDC_TICK_SHIFT		14
 #define	WDC_INBUF_SIZE		(512*257)
 
-/*  INT_DELAY=2 to be safe, 1 is faster but maybe buggy.  */
+/*
+ *  INT_DELAY=2 to be safe, 1 is faster but maybe buggy. 0 is fastest.
+ *
+ *  The only reason for this delay to exist is because (some versions of)
+ *  NetBSD for hpcmips have interrupt problems. These problems are not only
+ *  triggered inside the emulator, but also on real hardware. Using the
+ *  delay is an ugly (but working) work-around.
+ */
 #define	INT_DELAY		1
 
 extern int quiet_mode;
 
 /*  #define debug fatal  */
-/*  #define DATA_DEBUG  */
 
 struct wdc_data {
 	int		irq_nr;
 	int		base_drive;
+	int		data_debug;
 
-	int		delayed_interrupt;
+	/*  Cached values:  */
+	int		cyls[2];
+	int		heads[2];
+	int		sectors_per_track[2];
 
 	unsigned char	identify_struct[512];
 
@@ -69,6 +78,7 @@ struct wdc_data {
 	int		inbuf_head;
 	int		inbuf_tail;
 
+	int		delayed_interrupt;
 	int		write_in_progress;
 	int		write_count;
 	int64_t		write_offset;
@@ -144,13 +154,9 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
 static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
 	uint64_t total_size;
-	int cyls, heads, sectors_per_track;
 
 	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE);
-
-	diskimage_getchs(cpu->machine, d->drive + d->base_drive,
-	    DISKIMAGE_IDE, &cyls, &heads, &sectors_per_track);
 
 	memset(d->identify_struct, 0, sizeof(d->identify_struct));
 
@@ -161,16 +167,16 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	d->identify_struct[2 * 0 + 1] = 1 << 6;
 
 	/*  1: nr of cylinders  */
-	d->identify_struct[2 * 1 + 0] = (cyls >> 8);
-	d->identify_struct[2 * 1 + 1] = cyls & 255;
+	d->identify_struct[2 * 1 + 0] = (d->cyls[d->drive] >> 8);
+	d->identify_struct[2 * 1 + 1] = d->cyls[d->drive] & 255;
 
 	/*  3: nr of heads  */
-	d->identify_struct[2 * 3 + 0] = heads >> 8;
-	d->identify_struct[2 * 3 + 1] = heads;
+	d->identify_struct[2 * 3 + 0] = d->heads[d->drive] >> 8;
+	d->identify_struct[2 * 3 + 1] = d->heads[d->drive];
 
 	/*  6: sectors per track  */
-	d->identify_struct[2 * 6 + 0] = sectors_per_track >> 8;
-	d->identify_struct[2 * 6 + 1] = sectors_per_track;
+	d->identify_struct[2 * 6 + 0] = d->sectors_per_track[d->drive] >> 8;
+	d->identify_struct[2 * 6 + 1] = d->sectors_per_track[d->drive];
 
 	/*  10-19: Serial number  */
 	memcpy(&d->identify_struct[2 * 10], "S/N 1234-5678       ", 20);
@@ -203,32 +209,88 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 
 /*
+ *  wdc__read():
+ */
+void wdc__read(struct cpu *cpu, struct wdc_data *d)
+{
+	unsigned char buf[512];
+	int i, cyl = d->cyl_hi * 256+ d->cyl_lo;
+	int count = d->seccnt? d->seccnt : 256;
+	uint64_t offset = 512 * (d->sector - 1
+	    + d->head * d->sectors_per_track[d->drive] +
+	    d->heads[d->drive] * d->sectors_per_track[d->drive] * cyl);
+
+#if 0
+	/*  LBA:  */
+	if (d->lba)
+		offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8)
+		    + d->sector);
+	printf("WDC read from offset %lli\n", (long long)offset);
+#endif
+
+	while (count > 0) {
+		diskimage_access(cpu->machine, d->drive + d->base_drive,
+		    DISKIMAGE_IDE, 0, offset, buf, 512);
+		/*  TODO: result code  */
+		for (i=0; i<512; i++)
+			wdc_addtoinbuf(d, buf[i]);
+		offset += 512;
+		count --;
+	}
+
+	d->delayed_interrupt = INT_DELAY;
+}
+
+
+/*
+ *  wdc__write():
+ */
+void wdc__write(struct cpu *cpu, struct wdc_data *d)
+{
+	int cyl = d->cyl_hi * 256+ d->cyl_lo;
+	int count = d->seccnt? d->seccnt : 256;
+	uint64_t offset = 512 * (d->sector - 1
+	    + d->head * d->sectors_per_track[d->drive] +
+	    d->heads[d->drive] * d->sectors_per_track[d->drive] * cyl);
+#if 0
+	/*  LBA:  */
+	if (d->lba)
+		offset = 512 * (((d->head & 0xf) << 24) +
+		    (cyl << 8) + d->sector);
+	printf("WDC write to offset %lli\n", (long long)offset);
+#endif
+
+	d->write_in_progress = 1;
+	d->write_count = count;
+	d->write_offset = offset;
+
+	/*  TODO: result code?  */
+}
+
+
+/*
  *  status_byte():
+ *
+ *  Return a reasonable status byte corresponding to the controller's current
+ *  state.
  */
 static int status_byte(struct wdc_data *d, struct cpu *cpu)
 {
 	int odata = 0;
 
+	/*
+	 *  Modern versions of OpenBSD wants WDCS_DSC. (Thanks to Alexander
+	 *  Yurchenko for noticing this.)
+	 */
 	if (diskimage_exist(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE))
-		odata |= WDCS_DRDY;
+		odata |= WDCS_DRDY | WDCS_DSC;
 	if (d->inbuf_head != d->inbuf_tail)
 		odata |= WDCS_DRQ;
 	if (d->write_in_progress)
 		odata |= WDCS_DRQ;
 	if (d->error)
 		odata |= WDCS_ERR;
-
-#if 0
-	/*
-	 *  TODO:  Is this correct behaviour?
-	 *
-	 *  NetBSD/cobalt seems to want it, but Linux on MobilePro does not.
-	 */
-	if (!diskimage_exist(cpu->machine, d->drive + d->base_drive,
-	    DISKIMAGE_IDE))
-		odata = 0xff;
-#endif
 
 	return odata;
 }
@@ -272,7 +334,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 {
 	struct wdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int i, cyls, heads, sectors_per_track;
+	int i;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -292,19 +354,16 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				odata += (wdc_get_inbuf(d) << 24);
 			}
 
-#ifdef DATA_DEBUG
-			debug("[ wdc: read from DATA: 0x%04x ]\n", odata);
-#endif
-
+			if (d->data_debug)
+				debug("[ wdc: read from DATA: 0x%04x ]\n",
+				    (int)odata);
 			if (d->inbuf_tail != d->inbuf_head)
 				d->delayed_interrupt = INT_DELAY;
-
 		} else {
 			int inbuf_len;
-#ifdef DATA_DEBUG
-			debug("[ wdc: write to DATA (len=%i): 0x%08lx ]\n",
-			    (int)len, (long)idata);
-#endif
+			if (d->data_debug)
+				debug("[ wdc: write to DATA (len=%i): "
+				    "0x%08lx ]\n", (int)len, (long)idata);
 			if (!d->write_in_progress) {
 				fatal("[ wdc: write to DATA, but not "
 				    "expecting any? (len=%i): 0x%08lx ]\n",
@@ -331,8 +390,9 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 
 #if 0
 			if ((inbuf_len % (512 * d->write_count)) == 0) {
-#endif
+#else
 			if ((inbuf_len % 512) == 0) {
+#endif
 				int count = 1;	/*  d->write_count;  */
 				unsigned char *buf = malloc(count * 512);
 				if (buf == NULL) {
@@ -362,52 +422,53 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_error:	/*  1: error (r), precomp (w)  */
 		if (writeflag==MEM_READ) {
 			odata = d->error;
-			debug("[ wdc: read from ERROR: 0x%02x ]\n", odata);
+			debug("[ wdc: read from ERROR: 0x%02x ]\n",
+			    (int)odata);
 			/*  TODO:  is the error value cleared on read?  */
 			d->error = 0;
 		} else {
 			d->precomp = idata;
-			debug("[ wdc: write to PRECOMP: 0x%02x ]\n", idata);
+			debug("[ wdc: write to PRECOMP: 0x%02x ]\n",(int)idata);
 		}
 		break;
 
 	case wd_seccnt:	/*  2: sector count  */
 		if (writeflag==MEM_READ) {
 			odata = d->seccnt;
-			debug("[ wdc: read from SECCNT: 0x%02x ]\n", odata);
+			debug("[ wdc: read from SECCNT: 0x%02x ]\n",(int)odata);
 		} else {
 			d->seccnt = idata;
-			debug("[ wdc: write to SECCNT: 0x%02x ]\n", idata);
+			debug("[ wdc: write to SECCNT: 0x%02x ]\n", (int)idata);
 		}
 		break;
 
 	case wd_sector:	/*  3: first sector  */
 		if (writeflag==MEM_READ) {
 			odata = d->sector;
-			debug("[ wdc: read from SECTOR: 0x%02x ]\n", odata);
+			debug("[ wdc: read from SECTOR: 0x%02x ]\n",(int)odata);
 		} else {
 			d->sector = idata;
-			debug("[ wdc: write to SECTOR: 0x%02x ]\n", idata);
+			debug("[ wdc: write to SECTOR: 0x%02x ]\n", (int)idata);
 		}
 		break;
 
 	case wd_cyl_lo:	/*  4: cylinder low  */
 		if (writeflag==MEM_READ) {
 			odata = d->cyl_lo;
-			debug("[ wdc: read from CYL_LO: 0x%02x ]\n", odata);
+			debug("[ wdc: read from CYL_LO: 0x%02x ]\n",(int)odata);
 		} else {
 			d->cyl_lo = idata;
-			debug("[ wdc: write to CYL_LO: 0x%02x ]\n", idata);
+			debug("[ wdc: write to CYL_LO: 0x%02x ]\n", (int)idata);
 		}
 		break;
 
 	case wd_cyl_hi:	/*  5: cylinder low  */
 		if (writeflag==MEM_READ) {
 			odata = d->cyl_hi;
-			debug("[ wdc: read from CYL_HI: 0x%02x ]\n", odata);
+			debug("[ wdc: read from CYL_HI: 0x%02x ]\n",(int)odata);
 		} else {
 			d->cyl_hi = idata;
-			debug("[ wdc: write to CYL_HI: 0x%02x ]\n", idata);
+			debug("[ wdc: write to CYL_HI: 0x%02x ]\n", (int)idata);
 		}
 		break;
 
@@ -432,16 +493,13 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_command:	/*  7: command or status  */
 		if (writeflag==MEM_READ) {
 			odata = status_byte(d, cpu);
-#if 1
 			if (!quiet_mode)
 				debug("[ wdc: read from STATUS: 0x%02x ]\n",
-				    odata);
-#endif
-
+				    (int)odata);
 			cpu_interrupt_ack(cpu, d->irq_nr);
 			d->delayed_interrupt = 0;
 		} else {
-			debug("[ wdc: write to COMMAND: 0x%02x ]\n", idata);
+			debug("[ wdc: write to COMMAND: 0x%02x ]\n",(int)idata);
 			d->cur_command = idata;
 
 			/*  TODO:  Is this correct behaviour?  */
@@ -454,75 +512,25 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 
 			/*  Handle the command:  */
 			switch (d->cur_command) {
+
 			case WDCC_READ:
-				debug("[ wdc: READ from drive %i, head %i, "
-				    "cylinder %i, sector %i, nsecs %i ]\n",
-				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo,
-				    d->sector, d->seccnt);
-				/*  TODO:  HAHA! This should be removed
-				    quickly  */
-				diskimage_getchs(cpu->machine, d->drive +
-				    d->base_drive, DISKIMAGE_IDE, &cyls,
-				    &heads, &sectors_per_track);
-
-				{
-					unsigned char buf[512*256];
-					int cyl = d->cyl_hi * 256+ d->cyl_lo;
-					int count = d->seccnt? d->seccnt : 256;
-					uint64_t offset = 512 * (d->sector - 1
-					    + d->head * sectors_per_track +
-					    heads*sectors_per_track*cyl);
-
-#if 0
-/*  LBA:  */
-if (d->lba)
-	offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8) + d->sector);
-printf("WDC read from offset %lli\n", (long long)offset);
-#endif
-					diskimage_access(cpu->machine,
-					    d->drive + d->base_drive,
-					    DISKIMAGE_IDE, 0,
-					    offset, buf, 512 * count);
-					/*  TODO: result code  */
-					for (i=0; i<512 * count; i++)
-						wdc_addtoinbuf(d, buf[i]);
-				}
-				d->delayed_interrupt = INT_DELAY;
+				if (!quiet_mode)
+					debug("[ wdc: READ from drive %i, head"
+					    " %i, cyl %i, sector %i, nsecs %i "
+					    "]\n", d->drive, d->head,
+					    d->cyl_hi*256+d->cyl_lo, d->sector,
+					    d->seccnt);
+				wdc__read(cpu, d);
 				break;
+
 			case WDCC_WRITE:
-				debug("[ wdc: WRITE to drive %i, head %i, "
-				    "cylinder %i, sector %i, nsecs %i ]\n",
-				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo,
-				    d->sector, d->seccnt);
-				/*  TODO:  HAHA! This should be removed
-				    quickly  */
-				diskimage_getchs(cpu->machine, d->drive +
-				    d->base_drive, DISKIMAGE_IDE, &cyls,
-				    &heads, &sectors_per_track);
-				{
-					int cyl = d->cyl_hi * 256+ d->cyl_lo;
-					int count = d->seccnt? d->seccnt : 256;
-					uint64_t offset = 512 * (d->sector - 1
-					    + d->head * sectors_per_track +
-					    heads*sectors_per_track*cyl);
-
-#if 0
-/*  LBA:  */
-if (d->lba)
-	offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8) + d->sector);
-printf("WDC write to offset %lli\n", (long long)offset);
-#endif
-
-					d->write_in_progress = 1;
-					d->write_count = count;
-					d->write_offset = offset;
-
-					/*  TODO: result code  */
-				}
-/*  TODO: Really interrupt here?  */
-#if 0
-				d->delayed_interrupt = INT_DELAY;
-#endif
+				if (!quiet_mode)
+					debug("[ wdc: WRITE to drive %i, head"
+					    " %i, cyl %i, sector %i, nsecs %i"
+					    " ]\n", d->drive, d->head,
+					    d->cyl_hi*256+d->cyl_lo, d->sector,
+					    d->seccnt);
+				wdc__write(cpu, d);
 				break;
 
 			case WDCC_IDP:	/*  Initialize drive parameters  */
@@ -531,6 +539,7 @@ printf("WDC write to offset %lli\n", (long long)offset);
 				/*  TODO  */
 				d->delayed_interrupt = INT_DELAY;
 				break;
+
 			case SET_FEATURES:
 				fatal("[ wdc: SET_FEATURES drive %i (TODO), "
 				    "feature 0x%02x ]\n", d->drive, d->precomp);
@@ -547,10 +556,12 @@ printf("WDC write to offset %lli\n", (long long)offset);
 				/*  TODO: always interrupt?  */
 				d->delayed_interrupt = INT_DELAY;
 				break;
+
 			case WDCC_RECAL:
 				debug("[ wdc: RECAL drive %i ]\n", d->drive);
 				d->delayed_interrupt = INT_DELAY;
 				break;
+
 			case WDCC_IDENTIFY:
 				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
 				wdc_initialize_identify_struct(cpu, d);
@@ -564,22 +575,34 @@ printf("WDC write to offset %lli\n", (long long)offset);
 				}
 				d->delayed_interrupt = INT_DELAY;
 				break;
+
 			case WDCC_IDLE_IMMED:
 				debug("[ wdc: IDLE_IMMED drive %i ]\n",
 				    d->drive);
 				/*  TODO: interrupt here?  */
 				d->delayed_interrupt = INT_DELAY;
 				break;
+
+			/*  Unsupported commands, without warning:  */
+			case ATAPI_IDENTIFY_DEVICE:
+			case WDCC_SEC_SET_PASSWORD:
+			case WDCC_SEC_UNLOCK:
+			case WDCC_SEC_ERASE_PREPARE:
+			case WDCC_SEC_ERASE_UNIT:
+			case WDCC_SEC_FREEZE_LOCK:
+			case WDCC_SEC_DISABLE_PASSWORD:
+				d->error |= WDCE_ABRT;
+				break;
+
 			default:
 				/*  TODO  */
 				d->error |= WDCE_ABRT;
 
-				fatal("[ wdc: unknown command 0x%02x ("
-				    "drive %i, head %i, cylinder %i, sector %i,"
-				    " nsecs %i) ]\n", d->cur_command, d->drive,
-				    d->head, d->cyl_hi*256+d->cyl_lo,
+				fatal("[ wdc: WARNING! Unimplemented command "
+				    "0x%02x (drive %i, head %i, cyl %i, sector"
+				    " %i, nsecs %i) ]\n", d->cur_command,
+				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo,
 				    d->sector, d->seccnt);
-				exit(1);
 			}
 		}
 		break;
@@ -601,15 +624,13 @@ printf("WDC write to offset %lli\n", (long long)offset);
 
 
 /*
- *  dev_wdc_init():
- *
- *  base_drive should be 0 for the primary device, and 2 for the secondary.
+ *  devinit_wdc():
  */
-void dev_wdc_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int base_drive)
+int devinit_wdc(struct devinit *devinit)
 {
 	struct wdc_data *d;
 	uint64_t alt_status_addr;
+	int i;
 
 	d = malloc(sizeof(struct wdc_data));
 	if (d == NULL) {
@@ -617,21 +638,36 @@ void dev_wdc_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct wdc_data));
-	d->irq_nr     = irq_nr;
-	d->base_drive = base_drive;
+	d->irq_nr = devinit->irq_nr;
 
-	alt_status_addr = baseaddr + 0x206;
+	/*  base_drive = 0 for the primary controller, 2 for the secondary.  */
+	d->base_drive = 0;
+	if ((devinit->addr & 0xfff) == 0x170)
+		d->base_drive = 2;
+
+	alt_status_addr = devinit->addr + 0x206;
 
 	/*  Special hack for pcic/hpcmips:  TODO: Fix  */
-	if (baseaddr == 0x14000180)
+	if (devinit->addr == 0x14000180)
 		alt_status_addr = 0x14000386;
 
-	memory_device_register(mem, "wdc_altstatus", alt_status_addr, 2,
-	    dev_wdc_altstatus_access, d, MEM_DEFAULT, NULL);
-	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH,
-	    dev_wdc_access, d, MEM_DEFAULT, NULL);
+	/*  Get disk geometries:  */
+	for (i=0; i<2; i++)
+		if (diskimage_exist(devinit->machine, d->base_drive +i,
+		    DISKIMAGE_IDE))
+			diskimage_getchs(devinit->machine, d->base_drive + i,
+			    DISKIMAGE_IDE, &d->cyls[i], &d->heads[i],
+			    &d->sectors_per_track[i]);
 
-	machine_add_tickfunction(machine, dev_wdc_tick,
+	memory_device_register(devinit->machine->memory, "wdc_altstatus",
+	    alt_status_addr, 2, dev_wdc_altstatus_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_WDC_LENGTH, dev_wdc_access, d, MEM_DEFAULT,
+	    NULL);
+
+	machine_add_tickfunction(devinit->machine, dev_wdc_tick,
 	    d, WDC_TICK_SHIFT);
+
+	return 1;
 }
 

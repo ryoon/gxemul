@@ -1,5 +1,7 @@
 /* $NetBSD: rpb.h,v 1.39.18.1 2002/07/29 14:45:46 lukem Exp $ */
 
+#include "misc.h"
+
 /*
  * Copyright (c) 1994, 1995, 1996 Carnegie-Mellon University.
  * All rights reserved.

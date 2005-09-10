@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.15 2005-08-05 07:09:30 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.16 2005-09-10 22:18:56 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -39,11 +39,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_pci.h"
+#include "device.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
-#include "bus_pci.h"
 
 
 #define PCI_VENDOR_VIATECH                0x1106  /* VIA Technologies */
@@ -125,14 +126,15 @@ void pci_vt82c586_ide_init(struct machine *machine, struct memory *mem)
 	switch (machine->machine_type) {
 
 	case MACHINE_COBALT:
-		dev_wdc_init(machine, mem, 0x100001f0, 8 + 14, 0);	/*  primary  */
-		dev_wdc_init(machine, mem, 0x10000170, 8 + 15, 2);	/*  secondary */
+		/*  irq 14,15 (+8)  */
+		device_add(machine, "wdc addr=0x100001f0 irq=22");	/*  primary  */
+		device_add(machine, "wdc addr=0x10000170 irq=23");	/*  secondary */
 		break;
 
 	case MACHINE_EVBMIPS:
 		/*  TODO: Irqs...  */
-		dev_wdc_init(machine, mem, 0x180001f0, 8+14, 0);/*  primary  */
-		dev_wdc_init(machine, mem, 0x18000170, 8+15, 2);/*  secondary */
+		device_add(machine, "wdc addr=0x180001f0 irq=22");	/*  primary  */
+		device_add(machine, "wdc addr=0x18000170 irq=23");	/*  secondary */
 		break;
 
 	default:fatal("pci_vt82c586_ide_init(): unimplemented machine type\n");

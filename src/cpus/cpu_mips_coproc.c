@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.2 2005-09-11 10:37:37 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -440,6 +440,9 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 
 		if (!cpu->machine->prom_emulation)
 			c->reg[COP0_STATUS] |= STATUS_BEV;
+
+		/*  Default pagesize = 4 KB.  */
+		c->reg[COP0_PAGEMASK] = 0x1fff;
 
 		/*  Note: .rev may contain the company ID as well!  */
 		c->reg[COP0_PRID] =

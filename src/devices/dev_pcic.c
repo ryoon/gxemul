@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.11 2005-09-10 22:18:56 debug Exp $
+ *  $Id: dev_pcic.c,v 1.12 2005-09-11 10:37:38 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -131,7 +131,8 @@ int dev_pcic_cis_access(struct cpu *cpu, struct memory *mem,
 	if (relative_addr < sizeof(x))
 		odata = x[relative_addr];
 
-	debug("[ dev_pcic_cis_access: blah blah ]\n");
+	debug("[ dev_pcic_cis_access: blah blah: addr=0x%x ]\n",
+	    (int)relative_addr);
 }
 
 	if (writeflag == MEM_READ)

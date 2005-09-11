@@ -1,5 +1,6 @@
 /* $NetBSD: rpb.h,v 1.39.18.1 2002/07/29 14:45:46 lukem Exp $ */
 
+#include <sys/types.h>
 #include "misc.h"
 
 /*

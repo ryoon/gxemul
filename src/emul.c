@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.231 2005-09-09 19:22:17 debug Exp $
+ *  $Id: emul.c,v 1.232 2005-09-11 23:24:20 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -475,7 +475,7 @@ static int apple_load_bootblock(struct machine *m, struct cpu *cpu,
 		    partnr, buf + ofs + 0x10, buf + ofs + 0x30,
 		    start, length);
 
-		if (strcmp(buf + ofs + 0x30, "Apple_HFS") == 0) {
+		if (strcmp((char *)buf + ofs + 0x30, "Apple_HFS") == 0) {
 			n_hfs_partitions ++;
 			hfs_start = 512 * start;
 			hfs_length = 512 * length;

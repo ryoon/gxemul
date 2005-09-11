@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.165 2005-09-07 07:41:27 debug Exp $
+#  $Id: configure,v 1.166 2005-09-11 23:24:15 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1083,6 +1083,8 @@ rm -f _testoff.c _testoff
 
 
 #  Check for u_int8_t etc:
+#  These are needed because some header files in src/include/ use u_int*
+#  instead of uint*, and I don't have time to rewrite them all.
 printf "checking for u_int8_t... "
 printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
 int main(int argc, char *argv[]){printf(\"%%i\\\n\",
@@ -1104,8 +1106,32 @@ if [ ! -x _testuint ]; then
 	printf "typedef uint8_t u_int8_t;\n" >> config.h
 	printf "typedef uint16_t u_int16_t;\n" >> config.h
 	printf "typedef uint32_t u_int32_t;\n" >> config.h
-	printf "typedef uint64_t u_int64_t;\n" >> config.h
 	printf "uint8_t\n"
+else
+	printf "yes\n"
+fi
+rm -f _testuint.c _testuint
+
+printf "checking for u_int64_t... "
+printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
+int main(int argc, char *argv[]){printf(\"%%i\\\n\",
+ (int)sizeof(u_int64_t));return 0;}\n" > _testuint.c
+$CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
+if [ ! -x _testuint ]; then
+	rm -f _testuint*
+	printf "#include <stdio.h>\n#include <inttypes.h>
+	\n#include <sys/types.h>\nint main(int argc, char *argv[])
+	{printf(\"%%i\\\n\", (int)sizeof(uint64_t));return 0;}\n" > _testuint.c
+	$CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
+	if [ ! -x _testuint ]; then
+		printf "no\n\nERROR: No u_int64_t or uint64_t. Aborting\n"
+		#  TODO: Automagically detect using various combinations
+		#  of char, int, short, long etc.
+		exit
+	fi
+
+	printf "typedef uint64_t u_int64_t;\n" >> config.h
+	printf "uint64_t\n"
 else
 	printf "yes\n"
 fi

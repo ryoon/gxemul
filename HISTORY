@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.951 2005-09-10 22:24:33 debug Exp $
+$Id: HISTORY,v 1.952 2005-09-11 23:24:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2254,3 +2254,5 @@ Changelog for GXemul:
 		(Thanks to Alexander Yurchenko for the patches.)
 		Also doing some other minor updates to dev_wdc. (Some cleanup,
 		and finally converting to devinit, etc.)
+20050912	IRIX doesn't have u_int64_t by default (noticed by Andreas
+		<avr@gnulinux.nl>); configure updated to reflect this.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.38 2005-09-03 04:06:18 debug Exp $
+ *  $Id: cpu_arm.h,v 1.39 2005-09-12 21:39:10 debug Exp $
  */
 
 #include "misc.h"
@@ -96,8 +96,10 @@ struct arm_tc_physpage {
 #define	ARM_FLAG_Z	0x40000000	/*  Zero flag  */
 #define	ARM_FLAG_C	0x20000000	/*  Carry flag  */
 #define	ARM_FLAG_V	0x10000000	/*  Overflow flag  */
+#define	ARM_FLAG_Q	0x08000000	/*  DSP saturation overflow  */
 #define	ARM_FLAG_I	0x00000080	/*  Interrupt disable  */
 #define	ARM_FLAG_F	0x00000040	/*  Fast Interrupt disable  */
+#define	ARM_FLAG_T	0x00000020	/*  Thumb mode  */
 
 #define	ARM_FLAG_MODE	0x0000001f
 #define	ARM_MODE_USR26	      0x00
@@ -110,6 +112,22 @@ struct arm_tc_physpage {
 #define	ARM_MODE_SVC32	      0x13
 #define	ARM_MODE_ABT32	      0x17
 #define	ARM_MODE_UND32	      0x1b
+#define	ARM_MODE_SYS32	      0x1f
+
+#define ARM_EXCEPTION_TO_MODE	{	\
+	ARM_MODE_SVC32, ARM_MODE_UND32, ARM_MODE_SVC32, ARM_MODE_ABT32, \
+	ARM_MODE_ABT32, 0,              ARM_MODE_IRQ32, ARM_MODE_FIQ32 	}
+
+#define	N_ARM_EXCEPTIONS	8
+
+#define	ARM_EXCEPTION_RESET	0
+#define	ARM_EXCEPTION_UND	1
+#define	ARM_EXCEPTION_SWI	2
+#define	ARM_EXCEPTION_PREF_ABT	3
+#define	ARM_EXCEPTION_DATA_ABT	4
+/*  5 was address exception in 26-bit ARM  */
+#define	ARM_EXCEPTION_IRQ	6
+#define	ARM_EXCEPTION_FIQ	7
 
 
 #define	ARM_N_VPH_ENTRIES	1048576
@@ -130,10 +148,7 @@ struct arm_cpu {
 	 *  Misc.:
 	 */
 	struct arm_cpu_type_def	cpu_type;
-	uint32_t		cpsr;
 	uint32_t		of_emul_addr;
-
-	/*  TODO: spsr  */
 
 	void			(*coproc[16])(struct cpu *, int opcode1,
 				    int opcode2, int l_bit, int crn, int crm,
@@ -148,7 +163,8 @@ struct arm_cpu {
 	 */
 
 	uint32_t		r[N_ARM_REGS];
-	uint32_t		usr_r8_r14[7];
+
+	uint32_t		default_r8_r14[7];	/*  usr and sys  */
 	uint32_t		fiq_r8_r14[7];
 	uint32_t		irq_r13_r14[2];
 	uint32_t		svc_r13_r14[2];
@@ -157,7 +173,18 @@ struct arm_cpu {
 
 	uint32_t		tmp_pc;		/*  Used for load/stores  */
 
-	/*  System Control Coprocessor registers:  */
+	/*  Flag/status registers:  */
+	uint32_t		cpsr;
+	uint32_t		spsr_svc;
+	uint32_t		spsr_abt;
+	uint32_t		spsr_und;
+	uint32_t		spsr_irq;
+	uint32_t		spsr_fiq;
+
+
+	/*
+	 *  System Control Coprocessor registers:
+	 */
 	uint32_t		control;
 	uint32_t		ttb;		/*  Translation Table Base  */
 	uint32_t		dacr;		/*  Domain Access Control  */

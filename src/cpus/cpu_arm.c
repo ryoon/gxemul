@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.11 2005-09-09 23:24:41 debug Exp $
+ *  $Id: cpu_arm.c,v 1.12 2005-09-12 21:39:09 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -61,6 +61,9 @@ static char *arm_condition_string[16] = ARM_CONDITION_STRINGS;
 static char *arm_dpiname[16] = ARM_DPI_NAMES;
 static int arm_dpi_uses_d[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1 };
 static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
+
+/*  Forward reference:  */
+void arm_pc_to_pointers(struct cpu *cpu);
 
 
 /*
@@ -350,12 +353,117 @@ void arm_cpu_tlbdump(struct machine *m, int x, int rawflag)
 
 
 /*
+ *  arm_save_register_bank():
+ */
+void arm_save_register_bank(struct cpu *cpu)
+{
+	/*  Save away current registers:  */
+	switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
+	case ARM_MODE_USR32:
+	case ARM_MODE_SYS32:
+		memcpy(cpu->cd.arm.default_r8_r14,
+		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 7);
+		break;
+	case ARM_MODE_FIQ32:
+		memcpy(cpu->cd.arm.fiq_r8_r14,
+		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 7);
+		break;
+	case ARM_MODE_IRQ32:
+		memcpy(cpu->cd.arm.irq_r13_r14,
+		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		break;
+	case ARM_MODE_SVC32:
+		memcpy(cpu->cd.arm.svc_r13_r14,
+		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		break;
+	case ARM_MODE_ABT32:
+		memcpy(cpu->cd.arm.abt_r13_r14,
+		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		break;
+	case ARM_MODE_UND32:
+		memcpy(cpu->cd.arm.und_r13_r14,
+		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		break;
+	default:fatal("arm_save_register_bank: unimplemented mode %i\n",
+		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
+		exit(1);
+	}
+}
+
+
+/*
+ *  arm_load_register_bank():
+ */
+void arm_load_register_bank(struct cpu *cpu)
+{
+	/*  Load new registers:  */
+	switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
+	case ARM_MODE_USR32:
+	case ARM_MODE_SYS32:
+		memcpy(&cpu->cd.arm.r[8],
+		    cpu->cd.arm.default_r8_r14, sizeof(uint32_t) * 7);
+		break;
+	case ARM_MODE_FIQ32:
+		memcpy(&cpu->cd.arm.r[8], cpu->cd.arm.fiq_r8_r14,
+		    sizeof(uint32_t) * 7);
+		break;
+	case ARM_MODE_IRQ32:
+		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.irq_r13_r14,
+		    sizeof(uint32_t) * 2);
+		break;
+	case ARM_MODE_SVC32:
+		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.svc_r13_r14,
+		    sizeof(uint32_t) * 2);
+		break;
+	case ARM_MODE_ABT32:
+		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.abt_r13_r14,
+		    sizeof(uint32_t) * 2);
+		break;
+	case ARM_MODE_UND32:
+		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.und_r13_r14,
+		    sizeof(uint32_t) * 2);
+		break;
+	default:fatal("arm_load_register_bank: unimplemented mode %i\n",
+		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
+		exit(1);
+	}
+}
+
+
+/*
+ *  arm_exception():
+ */
+void arm_exception(struct cpu *cpu, int exception_nr)
+{
+	int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
+
+	if (exception_nr < 0 || exception_nr >= N_ARM_EXCEPTIONS) {
+		fatal("arm_exception(): exception_nr = %i\n", exception_nr);
+		exit(1);
+	}
+
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
+	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
+	arm_pc_to_pointers(cpu);
+
+	fatal("arm_exception(): %i\n", exception_nr);
+exit(1);
+
+	arm_save_register_bank(cpu);
+	cpu->cd.arm.cpsr &= ~ARM_FLAG_MODE;
+	cpu->cd.arm.cpsr |= arm_exception_to_mode[exception_nr];
+	arm_load_register_bank(cpu);
+}
+
+
+/*
  *  arm_cpu_interrupt():
  */
 int arm_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	fatal("arm_cpu_interrupt(): TODO\n");
-	return 0;
+	fatal("arm_cpu_interrupt(): 0x%llx\n", (int)irq_nr);
+	arm_exception(cpu, ARM_EXCEPTION_IRQ);
+	return 1;
 }
 
 

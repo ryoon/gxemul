@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.7 2005-09-10 00:20:06 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.8 2005-09-12 21:39:09 debug Exp $
  *
  *  ARM instructions.
  *
@@ -325,6 +325,28 @@ Y(bx)
 
 
 /*
+ *  bx_trace:  As bx, but with trace enabled, arg[0] = the link register.
+ *
+ *  arg[0] = ignored
+ */
+X(bx_trace)
+{
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = cpu->cd.arm.r[ARM_LR];
+	if (cpu->pc & 1) {
+		fatal("thumb: TODO\n");
+		exit(1);
+	}
+	cpu->pc &= ~3;
+
+	cpu_functioncall_trace_return(cpu);
+
+	/*  Find the new physical page and update the translation pointers:  */
+	arm_pc_to_pointers(cpu);
+}
+Y(bx_trace)
+
+
+/*
  *  bl:  Branch and Link (to a different translated page)
  *
  *  arg[0] = relative address
@@ -580,13 +602,20 @@ Y(ret_trace)
  */
 X(msr)
 {
-	/*
-	 *  TODO:  When switching between modes, copy to/from mirrored
-	 *	   register sets!
-	 */
+	uint32_t mask = ic->arg[1];
+	int switch_register_banks = (mask & ARM_FLAG_MODE) &&
+	    ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) !=
+	    (reg(ic->arg[0]) & ARM_FLAG_MODE));
+	uint32_t new_value = reg(ic->arg[0]);
 
-	cpu->cd.arm.cpsr &= ~ic->arg[1];
-	cpu->cd.arm.cpsr |= (reg(ic->arg[0]) & ic->arg[1]);
+	if (switch_register_banks)
+		arm_save_register_bank(cpu);
+
+	cpu->cd.arm.cpsr &= ~mask;
+	cpu->cd.arm.cpsr |= (new_value & mask);
+
+	if (switch_register_banks)
+		arm_load_register_bank(cpu);
 }
 Y(msr)
 
@@ -601,6 +630,27 @@ X(mrs)
 	reg(ic->arg[0]) = cpu->cd.arm.cpsr;
 }
 Y(mrs)
+
+
+/*
+ *  mrs: Move from status/flag register to a normal register.
+ *
+ *  arg[0] = pointer to rd
+ */
+X(mrs_spsr)
+{
+	switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
+	case ARM_MODE_FIQ32: reg(ic->arg[0]) = cpu->cd.arm.spsr_fiq; break;
+	case ARM_MODE_ABT32: reg(ic->arg[0]) = cpu->cd.arm.spsr_abt; break;
+	case ARM_MODE_UND32: reg(ic->arg[0]) = cpu->cd.arm.spsr_und; break;
+	case ARM_MODE_IRQ32: reg(ic->arg[0]) = cpu->cd.arm.spsr_irq; break;
+	case ARM_MODE_SVC32: reg(ic->arg[0]) = cpu->cd.arm.spsr_svc; break;
+	default:fatal("mrs_spsr: unimplemented mode %i\n",
+		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
+		exit(1);
+	}
+}
+Y(mrs_spsr)
 
 
 /*
@@ -1207,18 +1257,28 @@ X(to_be_translated)
 			/*  bx or blx  */
 			if (iword & 0x20)
 				ic->f = cond_instr(blx);
-			else
-				ic->f = cond_instr(bx);
+			else {
+				if (cpu->machine->show_trace_tree &&
+				    rm == ARM_LR)
+					ic->f = cond_instr(bx_trace);
+				else
+					ic->f = cond_instr(bx);
+			}
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
                         break;
                 }
 		if ((iword & 0x0fb0fff0) == 0x0120f000) {
-			/*  msr: move to [C|S]PSR from a register:  */
+			/*  msr: move to [S|C]PSR from a register:  */
 			if (rm == ARM_PC) {
 				fatal("msr PC?\n");
 				goto bad;
 			}
-			ic->f = cond_instr(msr);
+			if (iword & 0x00400000) {
+				/*  TODO: ic->f = cond_instr(msr_spsr);  */
+				fatal("TODO: spsr\n");
+				goto bad;
+			} else
+				ic->f = cond_instr(msr);
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
 			switch ((iword >> 16) & 15) {
 			case 1:	ic->arg[1] = 0x000000ff; break;
@@ -1234,13 +1294,16 @@ X(to_be_translated)
 			fatal("msr: immediate form: TODO\n");
 			goto bad;
 		}
-		if ((iword & 0x0fff0fff) == 0x010f0000) {
-			/*  mrs: move from CPSR to a register:  */
+		if ((iword & 0x0fbf0fff) == 0x010f0000) {
+			/*  mrs: move from CPSR/SPSR to a register:  */
 			if (rd == ARM_PC) {
 				fatal("mrs PC?\n");
 				goto bad;
 			}
-			ic->f = cond_instr(mrs);
+			if (iword & 0x00400000)
+				ic->f = cond_instr(mrs_spsr);
+			else
+				ic->f = cond_instr(mrs);
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
 			break;
 		}

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.952 2005-09-11 23:24:15 debug Exp $
+$Id: HISTORY,v 1.953 2005-09-12 21:39:08 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2256,3 +2256,5 @@ Changelog for GXemul:
 		and finally converting to devinit, etc.)
 20050912	IRIX doesn't have u_int64_t by default (noticed by Andreas
 		<avr@gnulinux.nl>); configure updated to reflect this.
+		Working on ARM register bank switching, CPSR vs SPSR issues,
+		and beginning the work on interrupt support.

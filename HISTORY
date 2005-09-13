@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.954 2005-09-12 21:50:14 debug Exp $
+$Id: HISTORY,v 1.955 2005-09-13 17:34:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2258,3 +2258,4 @@ Changelog for GXemul:
 		<avr@gnulinux.nl>); configure updated to reflect this.
 		Working on ARM register bank switching, CPSR vs SPSR issues,
 		and beginning the work on interrupt/exception support.
+20050913	Speeding up ARM load/store multiple a little.

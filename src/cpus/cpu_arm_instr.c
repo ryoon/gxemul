@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.8 2005-09-12 21:39:09 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.9 2005-09-13 17:34:07 debug Exp $
  *
  *  ARM instructions.
  *
@@ -140,9 +140,15 @@
 uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 	uint32_t iword, int update_c)
 {
-	int t = (iword >> 4) & 7, c = (iword >> 7) & 31;
-	int rm = iword & 15, lastbit = 0;
+	int rm = iword & 15, lastbit, t, c;
 	uint32_t tmp = cpu->cd.arm.r[rm];
+	if (!update_c && (iword & 0xff0)==0 && rm != ARM_PC)
+		return tmp;
+
+	t = (iword >> 4) & 7;
+	c = (iword >> 7) & 31;
+	lastbit = 0;
+
 	if (rm == ARM_PC) {
 		/*  Calculate tmp from this instruction's PC + 8  */
 		uint32_t low_pc = ((size_t)ic - (size_t)
@@ -563,9 +569,22 @@ Y(mull)
 
 
 /*
+ *  mov_reg_reg:  Move a register to another.
+ *
+ *  arg[0] = ptr to source register
+ *  arg[1] = ptr to destination register
+ */
+X(mov_reg_reg)
+{
+	reg(ic->arg[1]) = reg(ic->arg[0]);
+}
+Y(mov_reg_reg)
+
+
+/*
  *  ret_trace:  "mov pc,lr" with trace enabled
  *
- *  arg[0] = ignored  (similar to mov_pc above)
+ *  arg[0] = ignored
  */
 X(ret_trace)
 {
@@ -758,6 +777,7 @@ X(bdt_load)
 	unsigned char data[4];
 	uint32_t *np = (uint32_t *)ic->arg[0];
 	uint32_t addr = *np;
+	unsigned char *page;
 	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
 	int p_bit = iw & 0x01000000;
 	int u_bit = iw & 0x00800000;
@@ -770,15 +790,36 @@ X(bdt_load)
 		exit(1);
 	}
 
-	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1))
-		if ((iw >> i) & 1) {
-			/*  Load register i:  */
-			if (p_bit) {
-				if (u_bit)
-					addr += sizeof(uint32_t);
-				else
-					addr -= sizeof(uint32_t);
-			}
+	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1)) {
+		if (!((iw >> i) & 1)) {
+			/*  Skip register i:  */
+			continue;
+		}
+
+		if (p_bit) {
+			if (u_bit)
+				addr += sizeof(uint32_t);
+			else
+				addr -= sizeof(uint32_t);
+		}
+
+		page = cpu->cd.arm.host_load[addr >> 12];
+		if (page != NULL) {
+			uint32_t *p32 = (uint32_t *) page;
+			uint32_t value = p32[(addr & 0xfff) >> 2];
+			/*  Change byte order of value if
+			    host and emulated endianness differ:  */
+#ifdef HOST_LITTLE_ENDIAN
+			if (cpu->byte_order == EMUL_BIG_ENDIAN)
+#else
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+#endif
+				value = ((value & 0xff) << 24) |
+				    ((value & 0xff00) << 8) |
+				    ((value & 0xff0000) >> 8) |
+				    ((value & 0xff000000) >> 24);
+			cpu->cd.arm.r[i] = value;
+		} else {
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_READ, CACHE_DATA)) {
 				fatal("bdt: load failed: TODO\n");
@@ -793,26 +834,29 @@ X(bdt_load)
 				    (data[2] << 8) + (data[1] << 16)
 				    + (data[0] << 24);
 			}
-			/*  NOTE: Special case:  */
-			if (i == ARM_PC) {
-				cpu->cd.arm.r[ARM_PC] &= ~3;
-				cpu->pc = cpu->cd.arm.r[ARM_PC];
-				if (cpu->machine->show_trace_tree)
-					cpu_functioncall_trace_return(cpu);
-				/*  TODO: There is no need to update the
-				    pointers if this is a return to the
-				    same page!  */
-				/*  Find the new physical page and update the
-				    translation pointers:  */
-				arm_pc_to_pointers(cpu);
-			}
-			if (!p_bit) {
-				if (u_bit)
-					addr += sizeof(uint32_t);
-				else
-					addr -= sizeof(uint32_t);
-			}
 		}
+
+		/*  NOTE: Special case:  */
+		if (i == ARM_PC) {
+			cpu->cd.arm.r[ARM_PC] &= ~3;
+			cpu->pc = cpu->cd.arm.r[ARM_PC];
+			if (cpu->machine->show_trace_tree)
+				cpu_functioncall_trace_return(cpu);
+			/*  TODO: There is no need to update the
+			    pointers if this is a return to the
+			    same page!  */
+			/*  Find the new physical page and update the
+			    translation pointers:  */
+			arm_pc_to_pointers(cpu);
+		}
+
+		if (!p_bit) {
+			if (u_bit)
+				addr += sizeof(uint32_t);
+			else
+				addr -= sizeof(uint32_t);
+		}
+	}
 
 	if (w_bit)
 		*np = addr;
@@ -830,8 +874,9 @@ X(bdt_store)
 {
 	unsigned char data[4];
 	uint32_t *np = (uint32_t *)ic->arg[0];
-	uint32_t addr = *np;
+	uint32_t value, addr = *np;
 	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
+	unsigned char *page;
 	int p_bit = iw & 0x01000000;
 	int u_bit = iw & 0x00800000;
 	int s_bit = iw & 0x00400000;
@@ -852,18 +897,38 @@ X(bdt_store)
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
 	}
 
-	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1))
-		if ((iw >> i) & 1) {
-			/*  Store register i:  */
-			uint32_t value = cpu->cd.arm.r[i];
-			if (i == ARM_PC)
-				value += 12;	/*  TODO: 8 on some ARMs?  */
-			if (p_bit) {
-				if (u_bit)
-					addr += sizeof(uint32_t);
-				else
-					addr -= sizeof(uint32_t);
-			}
+	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1)) {
+		if (!((iw >> i) & 1)) {
+			/*  Skip register i:  */
+			continue;
+		}
+
+		value = cpu->cd.arm.r[i];
+		if (i == ARM_PC)
+			value += 12;	/*  TODO: 8 on some ARMs?  */
+		if (p_bit) {
+			if (u_bit)
+				addr += sizeof(uint32_t);
+			else
+				addr -= sizeof(uint32_t);
+		}
+
+		page = cpu->cd.arm.host_store[addr >> 12];
+		if (page != NULL) {
+			uint32_t *p32 = (uint32_t *) page;
+			/*  Change byte order of value if
+			    host and emulated endianness differ:  */
+#ifdef HOST_LITTLE_ENDIAN
+			if (cpu->byte_order == EMUL_BIG_ENDIAN)
+#else
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+#endif
+				value = ((value & 0xff) << 24) |
+				    ((value & 0xff00) << 8) |
+				    ((value & 0xff0000) >> 8) |
+				    ((value & 0xff000000) >> 24);
+			p32[(addr & 0xfff) >> 2] = value;
+		} else {
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 				data[0] = value;
 				data[1] = value >> 8;
@@ -880,13 +945,15 @@ X(bdt_store)
 				fatal("bdt: store failed: TODO\n");
 				exit(1);
 			}
-			if (!p_bit) {
-				if (u_bit)
-					addr += sizeof(uint32_t);
-				else
-					addr -= sizeof(uint32_t);
-			}
 		}
+
+		if (!p_bit) {
+			if (u_bit)
+				addr += sizeof(uint32_t);
+			else
+				addr -= sizeof(uint32_t);
+		}
+	}
 
 	if (w_bit)
 		*np = addr;
@@ -895,20 +962,6 @@ Y(bdt_store)
 
 
 /*****************************************************************************/
-
-
-/*
- *  mov_2:  Double "mov".
- *
- *  The current and the next arm_instr_call are treated as "mov"s.
- */
-X(mov_2)
-{
-	*((uint32_t *)ic[0].arg[0]) = ic[0].arg[1];
-	*((uint32_t *)ic[1].arg[0]) = ic[1].arg[1];
-	cpu->cd.arm.next_ic ++;
-	cpu->n_translated_instrs ++;
-}
 
 
 /*
@@ -1345,6 +1398,15 @@ X(to_be_translated)
 		if ((iword & 0x0fffffff) == 0x01a0f00e &&
 		    cpu->machine->show_trace_tree) {
 			ic->f = cond_instr(ret_trace);
+			break;
+		}
+
+		/*  "mov reg,reg":  */
+		if ((iword & 0x0fff0ff0) == 0x01a00000 &&
+		    (iword&15) != ARM_PC && rd != ARM_PC) {
+			ic->f = cond_instr(mov_reg_reg);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[iword & 15]);
+			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rd]);
 			break;
 		}
 

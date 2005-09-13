@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.143 2005-09-03 21:40:31 debug Exp $
+$Id: RELEASE,v 1.144 2005-09-13 20:56:44 debug Exp $
 
 Working on post-0.3.5.
 
@@ -140,6 +140,9 @@ them like this is in order:
     This product includes software developed by Marc Horowitz.
 
     This product includes software developed by Brini.
+
+    This product includes software developed by Mark Brinicombe
+    for the NetBSD Project.
 
 Also, src/include/alpha_rpb.h requires the following:
 

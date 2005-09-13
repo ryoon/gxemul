@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.109 2005-09-09 19:22:17 debug Exp $
+ *  $Id: file.c,v 1.110 2005-09-13 20:56:48 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1895,7 +1895,7 @@ void file_load(struct machine *machine, struct memory *mem,
 	}
 	if (buf[0]==0x00 && buf[1]==0x8f && buf[2]==0x01 && buf[3]==0x0b) {
 		/*  ARM a.out  */
-		file_load_aout(machine, mem, filename, 0,
+		file_load_aout(machine, mem, filename, AOUT_FLAG_FROM_BEGINNING,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}

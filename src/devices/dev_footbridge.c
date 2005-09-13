@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.2 2005-09-10 07:00:12 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.3 2005-09-13 20:56:53 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -42,12 +42,14 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "dc21285reg.h"
 
 #define	DEV_FOOTBRIDGE_LENGTH	0x1000		/*  TODO  */
 
 
 struct footbridge_data {
-	int		dummy;
+	uint32_t	irq_enable;
+	uint32_t	fiq_enable;
 };
 
 
@@ -66,17 +68,35 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 
-	case 0:	odata = 0x1011;  /*  DC21285_VENDOR_ID  */
+	case VENDOR_ID:
+		odata = 0x1011;  /*  DC21285_VENDOR_ID  */
 		break;
 
-	case 2:	odata = 0x1065;  /*  DC21285_DEVICE_ID  */
+	case DEVICE_ID:
+		odata = 0x1065;  /*  DC21285_DEVICE_ID  */
 		break;
 
-	case 8:	odata = 3;  /*  footbridge revision number  */
+	case REVISION:
+		odata = 3;  /*  footbridge revision number  */
 		break;
 
-	default:
-		if (writeflag==MEM_READ) {
+	case IRQ_ENABLE_SET:
+		if (writeflag == MEM_WRITE)
+			d->irq_enable |= idata;
+		break;
+
+	case IRQ_ENABLE_CLEAR:
+		if (writeflag == MEM_WRITE)
+			d->irq_enable &= ~idata;
+		break;
+
+	case TIMER_3_VALUE:
+	case TIMER_3_CLEAR:
+		/*  TODO  */
+		odata = 0;
+		break;
+
+	default:if (writeflag == MEM_READ) {
 			fatal("[ footbridge: read from 0x%x:",
 			    (int)relative_addr);
 			for (i=0; i<len; i++)

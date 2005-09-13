@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.9 2005-09-13 17:34:07 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.10 2005-09-13 20:56:51 debug Exp $
  *
  *  ARM instructions.
  *
@@ -218,13 +218,14 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		}
 		tmp = (int64_t)(int32_t)tmp >> c;
 		break;
-	case 6:	if (c == 0) {
+	case 6:	/*  ror 1..31  */
+		if (c == 0) {
 			fatal("TODO: rrx\n");
 			exit(1);
 		}
 		if (update_c)
 			lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
-		tmp = (uint64_t)(((uint64_t)tmp << 32) || tmp) >> c;
+		tmp = (uint64_t)(((uint64_t)tmp << 32) | tmp) >> c;
 		break;
 	case 7:	/*  ror Rc  */
 		c = cpu->cd.arm.r[c >> 1] & 255;
@@ -236,7 +237,7 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		}
 		/*  31 should be enough here, 255 is unnecessary.  */
 		c &= 31;
-		tmp = (uint64_t)(((uint64_t)tmp << 32) || tmp) >> c;
+		tmp = (uint64_t)(((uint64_t)tmp << 32) | tmp) >> c;
 		break;
 	}
 	if (update_c) {

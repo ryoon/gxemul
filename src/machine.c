@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.545 2005-09-10 22:18:54 debug Exp $
+ *  $Id: machine.c,v 1.546 2005-09-13 20:56:48 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4486,6 +4486,13 @@ Not yet.
 		}
 
 		device_add(machine, "footbridge addr=0x42000000");
+
+		/*  TODO: irq  */
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c000020");
+		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c0000a0");
+		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
+		/*  TODO: md interrupt  */
 
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;

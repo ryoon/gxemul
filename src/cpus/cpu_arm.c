@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.12 2005-09-12 21:39:09 debug Exp $
+ *  $Id: cpu_arm.c,v 1.13 2005-09-13 20:56:51 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -462,7 +462,7 @@ exit(1);
 int arm_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
 	fatal("arm_cpu_interrupt(): 0x%llx\n", (int)irq_nr);
-	arm_exception(cpu, ARM_EXCEPTION_IRQ);
+	/*  arm_exception(cpu, ARM_EXCEPTION_IRQ);  */
 	return 1;
 }
 

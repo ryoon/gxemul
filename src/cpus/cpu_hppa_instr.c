@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa_instr.c,v 1.1 2005-09-07 07:10:16 debug Exp $
+ *  $Id: cpu_hppa_instr.c,v 1.2 2005-09-17 17:14:27 debug Exp $
  *
  *  HPPA instructions.
  *
@@ -112,7 +112,7 @@ X(to_be_translated)
 	    << HPPA_INSTR_ALIGNMENT_SHIFT);
 	addr += (low_pc << HPPA_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
-	addr &= ~0x3;
+	addr &= ~((1 << HPPA_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.hppa.host_load[addr >> 12];

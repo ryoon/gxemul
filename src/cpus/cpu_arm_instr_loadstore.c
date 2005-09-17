@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.2 2005-09-17 17:14:27 debug Exp $
  *
  *
  *  TODO:
@@ -121,6 +121,9 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, CACHE_DATA)) {
+		/*  TODO:   !defined(A__P) && defined(A__W)  */
+		/*  T-bit: translations can cause failures even
+		    in system modes  */
 		fatal("store failed: TODO\n");
 		exit(1);
 	}

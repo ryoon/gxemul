@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.956 2005-09-13 20:56:44 debug Exp $
+$Id: HISTORY,v 1.957 2005-09-17 17:14:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2258,5 +2258,7 @@ Changelog for GXemul:
 		<avr@gnulinux.nl>); configure updated to reflect this.
 		Working on ARM register bank switching, CPSR vs SPSR issues,
 		and beginning the work on interrupt/exception support.
-20050913	Speeding up ARM load/store multiple a little.
-		Various other ARM updates.
+20050913	Various minor ARM updates (speeding up load/store multiple,
+		and fixing a ROR bug in R(); NetBSD/cats now boots as far as
+		OpenBSD/cats).
+20050917	Adding a dummy Atmel AVR (8-bit) cpu family skeleton.

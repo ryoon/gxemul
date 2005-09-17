@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.2 2005-09-17 17:14:27 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -113,7 +113,7 @@ X(to_be_translated)
 	    << SPARC_INSTR_ALIGNMENT_SHIFT);
 	addr += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
-	addr &= ~0x3;
+	addr &= ~((1 << SPARC_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.sparc.host_load[addr >> 12];

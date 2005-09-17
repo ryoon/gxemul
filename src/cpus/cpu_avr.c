@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.3 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_avr.c,v 1.1 2005-09-17 17:14:27 debug Exp $
  *
- *  Motorola 68K CPU emulation.
+ *  Atmel AVR (8-bit) CPU emulation.
  */
 
 #include <stdio.h>
@@ -44,31 +44,28 @@
 
 #define	DYNTRANS_32
 #define	DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-#include "tmp_m68k_head.c"
-
-
-static char *m68k_aname[] = { "a0", "a1", "a2", "a3", "a4", "a5", "fp", "a7" };
+#include "tmp_avr_head.c"
 
 
 /*
- *  m68k_cpu_new():
+ *  avr_cpu_new():
  *
- *  Create a new M68K cpu object.
+ *  Create a new AVR cpu object.
  *
- *  Returns 1 on success, 0 if there was no matching M68K processor with
+ *  Returns 1 on success, 0 if there was no matching AVR processor with
  *  this cpu_type_name.
  */
-int m68k_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
+int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	if (strcasecmp(cpu_type_name, "68020") != 0)
+	if (strcasecmp(cpu_type_name, "AVR") != 0)
 		return 0;
 
-	cpu->memory_rw = m68k_memory_rw;
-	cpu->update_translation_table = m68k_update_translation_table;
+	cpu->memory_rw = avr_memory_rw;
+	cpu->update_translation_table = avr_update_translation_table;
 	cpu->invalidate_translation_caches_paddr =
-	    m68k_invalidate_translation_caches_paddr;
-	cpu->invalidate_code_translation = m68k_invalidate_code_translation;
+	    avr_invalidate_translation_caches_paddr;
+	cpu->invalidate_code_translation = avr_invalidate_code_translation;
 	cpu->is_32bit = 1;
 
 	cpu->byte_order = EMUL_BIG_ENDIAN;
@@ -83,21 +80,21 @@ int m68k_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 
 /*
- *  m68k_cpu_list_available_types():
+ *  avr_cpu_list_available_types():
  *
- *  Print a list of available M68K CPU types.
+ *  Print a list of available AVR CPU types.
  */
-void m68k_cpu_list_available_types(void)
+void avr_cpu_list_available_types(void)
 {
-	debug("68020\n");
+	debug("AVR\n");
 	/*  TODO  */
 }
 
 
 /*
- *  m68k_cpu_dumpinfo():
+ *  avr_cpu_dumpinfo():
  */
-void m68k_cpu_dumpinfo(struct cpu *cpu)
+void avr_cpu_dumpinfo(struct cpu *cpu)
 {
 	/*  TODO  */
 	debug("\n");
@@ -105,14 +102,14 @@ void m68k_cpu_dumpinfo(struct cpu *cpu)
 
 
 /*
- *  m68k_cpu_register_dump():
+ *  avr_cpu_register_dump():
  *
  *  Dump cpu registers in a relatively readable format.
  *
  *  gprs: set to non-zero to dump GPRs and some special-purpose registers.
  *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
  */
-void m68k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
+void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
@@ -125,14 +122,16 @@ void m68k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i: pc  = 0x%08x", x, (int)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
+
+		/*  TODO: 32 gprs  */
 	}
 }
 
 
 /*
- *  m68k_cpu_register_match():
+ *  avr_cpu_register_match():
  */
-void m68k_cpu_register_match(struct machine *m, char *name,
+void avr_cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
 	int cpunr = 0;
@@ -153,18 +152,18 @@ void m68k_cpu_register_match(struct machine *m, char *name,
 
 
 /*
- *  m68k_cpu_show_full_statistics():
+ *  avr_cpu_show_full_statistics():
  *
  *  Show detailed statistics on opcode usage on each cpu.
  */
-void m68k_cpu_show_full_statistics(struct machine *m)
+void avr_cpu_show_full_statistics(struct machine *m)
 {
-	fatal("m68k_cpu_show_full_statistics(): TODO\n");
+	fatal("avr_cpu_show_full_statistics(): TODO\n");
 }
 
 
 /*
- *  m68k_cpu_tlbdump():
+ *  avr_cpu_tlbdump():
  *
  *  Called from the debugger to dump the TLB in a readable format.
  *  x is the cpu number to dump, or -1 to dump all CPUs.
@@ -172,28 +171,28 @@ void m68k_cpu_show_full_statistics(struct machine *m)
  *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
  *  just dumped.
  */
-void m68k_cpu_tlbdump(struct machine *m, int x, int rawflag)
+void avr_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-	fatal("m68k_cpu_tlbdump(): TODO\n");
+	fatal("avr_cpu_tlbdump(): TODO\n");
 }
 
 
 /*
- *  m68k_cpu_interrupt():
+ *  avr_cpu_interrupt():
  */
-int m68k_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
+int avr_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	fatal("m68k_cpu_interrupt(): TODO\n");
+	fatal("avr_cpu_interrupt(): TODO\n");
 	return 0;
 }
 
 
 /*
- *  m68k_cpu_interrupt_ack():
+ *  avr_cpu_interrupt_ack():
  */
-int m68k_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
+int avr_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	/*  fatal("m68k_cpu_interrupt_ack(): TODO\n");  */
+	/*  fatal("avr_cpu_interrupt_ack(): TODO\n");  */
 	return 0;
 }
 
@@ -206,10 +205,10 @@ static void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
 
 
 /*
- *  m68k_cpu_disassemble_instr():
+ *  avr_cpu_disassemble_instr():
  *
  *  Convert an instruction word into human readable format, for instruction
- *  tracing.
+ *  tracing and disassembly.
  *
  *  If running is 1, cpu->pc should be the address of the instruction.
  *
@@ -217,11 +216,11 @@ static void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
  *  register contents) will not be shown, and addr will be used instead of
  *  cpu->pc for relative addresses.
  */
-int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
+int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	uint64_t offset;
-	int len = 0;
+	int len = 0, addr, iw, rd, rr;
 	char *symbol;
 
 	if (running)
@@ -235,65 +234,31 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	debug("0x%08x: ", (int)dumpaddr);
+	/*  TODO: 22-bit PC  */
+	debug("0x%04x: ", (int)dumpaddr);
 
 	print_two(ib, &len);
+	iw = (ib[1] << 8) + ib[0];
 
-	if (ib[0] == 0x48) {
-		if (ib[1] >= 0x40 && ib[1] <= 0x47) {
-			print_spaces(len);
-			debug("swap\td%i\n", ib[1] & 7);
-		} else if (ib[1] >= 0x48 && ib[1] <= 0x4f) {
-			print_spaces(len);
-			debug("bkpt\t#%i\n", ib[1] & 7);
-		} else {
-			print_spaces(len);
-			debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
-		}
-	} else if (ib[0] == 0x4a) {
-		if (ib[1] == 0xfc) {
-			print_spaces(len);
-			debug("illegal\n");
-		} else {
-			print_spaces(len);
-			debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
-		}
-	} else if (ib[0] == 0x4e) {
-		if (ib[1] >= 0x40 && ib[1] <= 0x4f) {
-			print_spaces(len);
-			debug("trap\t#%i\n", ib[1] & 15);
-		} else if (ib[1] >= 0x50 && ib[1] <= 0x57) {
-			print_two(ib, &len);
-			print_spaces(len);
-			debug("linkw\t%%%s,#%i\n", m68k_aname[ib[1] & 7],
-			    ((ib[2] << 8) + ib[3]));
-		} else if (ib[1] >= 0x58 && ib[1] <= 0x5f) {
-			print_spaces(len);
-			debug("unlk\t%%%s\n", m68k_aname[ib[1] & 7]);
-		} else if (ib[1] == 0x70) {
-			print_spaces(len);
-			debug("reset\n");
-		} else if (ib[1] == 0x71) {
-			print_spaces(len);
-			debug("nop\n");
-		} else if (ib[1] == 0x72) {
-			print_two(ib, &len);
-			print_spaces(len);
-			debug("stop\t#0x%04x\n", ((ib[2] << 8) + ib[3]));
-		} else if (ib[1] == 0x73) {
-			print_spaces(len);
-			debug("rte\n");
-		} else if (ib[1] == 0x74) {
-			print_two(ib, &len);
-			print_spaces(len);
-			debug("rtd\t#0x%04x\n", ((ib[2] << 8) + ib[3]));
-		} else if (ib[1] == 0x75) {
-			print_spaces(len);
-			debug("rts\n");
-		} else {
-			print_spaces(len);
-			debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
-		}
+	if ((iw & 0xfc00) == 0x0c00) {
+		print_spaces(len);
+		rd = (iw & 0x1f0) >> 4;
+		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
+		debug("add\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xfc00) == 0x1c00) {
+		print_spaces(len);
+		rd = (iw & 0x1f0) >> 4;
+		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
+		debug("adc\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xfe0f) == 0x9200) {
+		print_two(ib, &len);
+		addr = (ib[3] << 8) + ib[2];
+		print_spaces(len);
+		debug("sts\t0x%x,r%i\n", addr, (iw & 0x1f0) >> 4);
+	} else if ((iw & 0xffef) == 0x9508) {
+		/*  ret and reti  */
+		print_spaces(len);
+		debug("ret%s\n", (iw & 0x10)? "i" : "");
 	} else {
 		print_spaces(len);
 		debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
@@ -303,5 +268,5 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 }
 
 
-#include "tmp_m68k_tail.c"
+#include "tmp_avr_tail.c"
 

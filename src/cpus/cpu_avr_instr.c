@@ -25,12 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k_instr.c,v 1.2 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.1 2005-09-17 17:14:27 debug Exp $
  *
- *  Motorola 68K instructions.
+ *  Atmel AVR (8-bit) instructions.
  *
  *  Individual functions should keep track of cpu->n_translated_instrs. Since
- *  M68K uses variable length instructions, cpu->cd.m68k.next_ic must also be
+ *  AVR uses variable length instructions, cpu->cd.avr.next_ic must also be
  *  increased by the number of "instruction slots" that were executed. (I.e.
  *  if an instruction occupying 6 bytes was executed, then next_ic should be
  *  increased by 3.)
@@ -47,7 +47,7 @@
  */
 X(nop)
 {
-	cpu->cd.m68k.next_ic ++;
+	cpu->cd.avr.next_ic ++;
 }
 
 
@@ -57,11 +57,11 @@ X(nop)
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
-	cpu->pc &= ~((M68K_IC_ENTRIES_PER_PAGE-1) << 1);
-	cpu->pc += (M68K_IC_ENTRIES_PER_PAGE << 1);
+	cpu->pc &= ~((AVR_IC_ENTRIES_PER_PAGE-1) << 1);
+	cpu->pc += (AVR_IC_ENTRIES_PER_PAGE << 1);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	m68k_pc_to_pointers(cpu);
+	avr_pc_to_pointers(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
@@ -72,15 +72,15 @@ X(end_of_page)
 
 
 /*
- *  m68k_combine_instructions():
+ *  avr_combine_instructions():
  *
  *  Combine two or more instructions, if possible, into a single function call.
  */
-void m68k_combine_instructions(struct cpu *cpu, struct m68k_instr_call *ic,
+void avr_combine_instructions(struct cpu *cpu, struct avr_instr_call *ic,
 	uint32_t addr)
 {
 	int n_back;
-	n_back = (addr >> 1) & (M68K_IC_ENTRIES_PER_PAGE-1);
+	n_back = (addr >> 1) & (AVR_IC_ENTRIES_PER_PAGE-1);
 
 	if (n_back >= 1) {
 		/*  TODO  */
@@ -94,9 +94,9 @@ void m68k_combine_instructions(struct cpu *cpu, struct m68k_instr_call *ic,
 
 
 /*
- *  m68k_instr_to_be_translated():
+ *  avr_instr_to_be_translated():
  *
- *  Translate an instruction word into an m68k_instr_call. ic is filled in with
+ *  Translate an instruction word into an avr_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
  *  there was a translation failure. The newly translated instruction is then
  *  executed.
@@ -108,19 +108,19 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[2];
 	int main_opcode;
-	void (*samepage_function)(struct cpu *, struct m68k_instr_call *);
+	void (*samepage_function)(struct cpu *, struct avr_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
-	low_pc = ((size_t)ic - (size_t)cpu->cd.m68k.cur_ic_page)
-	    / sizeof(struct m68k_instr_call);
-	addr = cpu->pc & ~((M68K_IC_ENTRIES_PER_PAGE-1) <<
-	    M68K_INSTR_ALIGNMENT_SHIFT);
-	addr += (low_pc << M68K_INSTR_ALIGNMENT_SHIFT);
+	low_pc = ((size_t)ic - (size_t)cpu->cd.avr.cur_ic_page)
+	    / sizeof(struct avr_instr_call);
+	addr = cpu->pc & ~((AVR_IC_ENTRIES_PER_PAGE-1) <<
+	    AVR_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << AVR_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
-	addr &= ~((1 << M68K_INSTR_ALIGNMENT_SHIFT) - 1);
+	addr &= ~((1 << AVR_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
-	page = cpu->cd.m68k.host_load[addr >> 12];
+	page = cpu->cd.avr.host_load[addr >> 12];
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
@@ -137,13 +137,13 @@ X(to_be_translated)
 
 	iword = *((uint16_t *)&ib[0]);
 
-#ifdef HOST_LITTLE_ENDIAN
+#ifdef HOST_BIG_ENDIAN
 	iword = ((iword & 0xff) << 8) |
 		((iword & 0xff00) >> 8);
 #endif
 
 
-	fatal("M68K: iword = 0x%04x\n", iword);
+	fatal("AVR: iword = 0x%04x\n", iword);
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.10 2005-09-13 20:56:51 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.11 2005-09-17 17:14:27 debug Exp $
  *
  *  ARM instructions.
  *
@@ -787,7 +787,7 @@ X(bdt_load)
 	int i;
 
 	if (s_bit) {
-		fatal("bdt: TODO: s-bit\n");
+		fatal("bdt_load: TODO: s-bit\n");
 		exit(1);
 	}
 
@@ -885,7 +885,7 @@ X(bdt_store)
 	int i;
 
 	if (s_bit) {
-		fatal("bdt: TODO: s-bit\n");
+		fatal("bdt_store: TODO: s-bit\n");
 		exit(1);
 	}
 
@@ -1204,7 +1204,7 @@ X(to_be_translated)
 	    ARM_INSTR_ALIGNMENT_SHIFT);
 	addr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = addr;
-	addr &= ~0x3;
+	addr &= ~((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.arm.host_load[addr >> 12];
@@ -1457,11 +1457,13 @@ X(to_be_translated)
 		else
 			ic->arg[1] = iword;
 		if (main_opcode == 4) {
+#if 0
 			/*  Post-index, immediate:  */
 			if (w_bit) {
 				fatal("load/store: T-bit\n");
 				goto bad;
 			}
+#endif
 		} else if ((iword & 0x0e000010) == 0x06000010) {
 			fatal("Not a Load/store TODO\n");
 			goto bad;

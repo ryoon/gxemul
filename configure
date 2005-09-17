@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.166 2005-09-11 23:24:15 debug Exp $
+#  $Id: configure,v 1.167 2005-09-17 17:14:25 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -67,6 +67,7 @@ else
 	#  Development:
 	ENABLEALPHA=YES
 	ENABLEARM=YES
+	ENABLEAVR=YES
 	ENABLEHPPA=NO
 	ENABLEI960=NO
 	ENABLEIA64=NO
@@ -98,6 +99,7 @@ if [ z"$*" != z ]; then
 		else if [ z$a = z--enable-all ]; then
 			ENABLEALPHA=YES
 			ENABLEARM=YES
+			ENABLEAVR=YES
 			ENABLEHPPA=YES
 			ENABLEI960=YES
 			ENABLEIA64=YES
@@ -115,6 +117,10 @@ if [ z"$*" != z ]; then
 			ENABLEARM=NO
 		else if [ z$a = z--enable-arm ]; then
 			ENABLEARM=YES
+		else if [ z$a = z--disable-avr ]; then
+			ENABLEAVR=NO
+		else if [ z$a = z--enable-avr ]; then
+			ENABLEAVR=YES
 		else if [ z$a = z--disable-hppa ]; then
 			ENABLEHPPA=NO
 		else if [ z$a = z--enable-hppa ]; then
@@ -197,6 +203,13 @@ if [ z"$*" != z ]; then
 			fi
 			printf "ARM CPU emulation\n"
 
+			if [ z$ENABLEAVR = zYES ]; then
+				printf "  --disable-avr      disable "
+			else
+				printf "  --enable-avr       enable "
+			fi
+			printf "AVR CPU emulation\n"
+
 			if [ z$ENABLEHPPA = zYES ]; then
 				printf "  --disable-hppa     disable "
 			else
@@ -274,7 +287,7 @@ if [ z"$*" != z ]; then
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi
+		fi; fi; fi; fi; fi
 	done
 fi
 
@@ -325,6 +338,10 @@ if [ z$ENABLEARM = zYES ]; then
 	CPU_ARCHS="$CPU_ARCHS cpu_arm.o cpu_arm_coproc.o memory_arm.o "
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_loadstore.o"
 	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_dpi"
+fi
+if [ z$ENABLEAVR = zYES ]; then
+	printf "#define ENABLE_AVR\n" >> config.h
+	CPU_ARCHS="$CPU_ARCHS cpu_avr.o"
 fi
 if [ z$ENABLEHPPA = zYES ]; then
 	printf "#define ENABLE_HPPA\n" >> config.h

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.232 2005-09-11 23:24:20 debug Exp $
+ *  $Id: emul.c,v 1.233 2005-09-17 17:14:26 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1219,6 +1219,10 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			cpu->cd.arm.r[ARM_PC] = cpu->pc;
 			break;
 
+		case ARCH_AVR:
+			cpu->pc &= 0xffff;
+			break;
+
 		case ARCH_HPPA:
 			break;
 
@@ -1350,6 +1354,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	case ARCH_ARM:
 		/*  ARM cpus aren't 64-bit:  */
 		debug("0x%08x", (int)entrypoint);
+		break;
+
+	case ARCH_AVR:
+		/*  Atmel AVR uses a 16-bit program counter:  */
+		debug("0x%04x", (int)entrypoint);
 		break;
 
 	case ARCH_MIPS:

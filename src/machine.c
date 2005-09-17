@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.546 2005-09-13 20:56:48 debug Exp $
+ *  $Id: machine.c,v 1.547 2005-09-17 17:14:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4608,6 +4608,13 @@ Not yet.
 		break;
 #endif	/*  ENABLE_ARM  */
 
+#ifdef ENABLE_AVR
+	case MACHINE_BAREAVR:
+		/*  A bare Atmel AVR machine, with no devices.  */
+		machine->machine_name = "\"Bare\" Atmel AVR machine";
+		break;
+#endif	/*  ENABLE_AVR  */
+
 #ifdef ENABLE_IA64
 	case MACHINE_BAREIA64:
 		machine->machine_name = "\"Bare\" IA64 machine";
@@ -5119,6 +5126,11 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_ZAURUS:
 		m->cpu_name = strdup("PXA210");
+		break;
+
+	/*  AVR:  */
+	case MACHINE_BAREAVR:
+		m->cpu_name = strdup("AVR");
 		break;
 
 	/*  IA64:  */
@@ -5772,6 +5784,14 @@ void machine_init(void)
 	    MACHINE_BAREHPPA, 1, 0);
 	me->aliases[0] = "barehppa";
 	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" Atmel AVR machine:  */
+	me = machine_entry_new("Generic \"bare\" Atmel AVR machine", ARCH_AVR,
+	    MACHINE_BAREAVR, 1, 0);
+	me->aliases[0] = "bareavr";
+	if (cpu_family_ptr_by_number(ARCH_AVR) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

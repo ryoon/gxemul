@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.2 2005-09-17 17:14:27 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -639,7 +639,7 @@ X(to_be_translated)
 	addr = cpu->pc & ~((ALPHA_IC_ENTRIES_PER_PAGE-1) <<
 	    ALPHA_INSTR_ALIGNMENT_SHIFT);
 	addr += (low_pc << ALPHA_INSTR_ALIGNMENT_SHIFT);
-	addr &= ~0x3;
+	addr &= ~((1 << ALPHA_INSTR_ALIGNMENT_SHIFT) - 1);
 	cpu->pc = addr;
 
 	/*  Read the instruction word from memory:  */

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.172 2005-09-10 07:04:26 debug Exp $
+$Id: TODO,v 1.173 2005-09-17 17:14:25 debug Exp $
 
 ===============================================================================
 
@@ -13,11 +13,6 @@ Old MIPS bintrans:
 
 
 Dyntrans:
-
-	x)  ARM dpi with just a plain register (no shift) as the last
-	    argument ==> optimize!
-
-	x)  ARM load/store multi optimize
 
 	x)  Lots of stuff: see src/cpus/README_DYNTRANS
 

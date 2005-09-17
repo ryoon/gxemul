@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.1 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.2 2005-09-17 21:55:20 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -42,12 +42,109 @@
  */
 
 
+/*****************************************************************************/
+
+
 /*
  *  nop:  Do nothing.
  */
 X(nop)
 {
-	cpu->cd.avr.next_ic ++;
+}
+
+
+/*
+ *  clX:  Clear an sreg bit.
+ */
+X(clc) { cpu->cd.avr.sreg &= ~AVR_SREG_C; }
+X(clz) { cpu->cd.avr.sreg &= ~AVR_SREG_Z; }
+X(cln) { cpu->cd.avr.sreg &= ~AVR_SREG_N; }
+X(clv) { cpu->cd.avr.sreg &= ~AVR_SREG_V; }
+X(cls) { cpu->cd.avr.sreg &= ~AVR_SREG_S; }
+X(clh) { cpu->cd.avr.sreg &= ~AVR_SREG_H; }
+X(clt) { cpu->cd.avr.sreg &= ~AVR_SREG_T; }
+X(cli) { cpu->cd.avr.sreg &= ~AVR_SREG_I; }
+
+
+/*
+ *  ldi:  Load immediate.
+ *
+ *  arg[0]: ptr to register
+ *  arg[1]: byte value
+ */
+X(ldi)
+{
+	*(uint8_t *)(ic->arg[0]) = ic->arg[1];
+}
+
+
+/*
+ *  mov:  Copy register.
+ *
+ *  arg[0]: ptr to rr
+ *  arg[1]: ptr to rd
+ */
+X(mov)
+{
+	*(uint8_t *)(ic->arg[1]) = *(uint8_t *)(ic->arg[0]);
+}
+
+
+/*
+ *  rjmp:  Relative jump.
+ *
+ *  arg[0]: relative offset
+ */
+X(rjmp)
+{
+	uint32_t low_pc;
+
+	/*  Calculate new PC from the next instruction + arg[0]  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.avr.cur_ic_page) /
+	    sizeof(struct avr_instr_call);
+	cpu->pc &= ~((AVR_IC_ENTRIES_PER_PAGE-1)
+	    << AVR_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << AVR_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (int32_t)ic->arg[0];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	avr_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  rjmp_samepage:  Relative jump (to within the same translated page).
+ *
+ *  arg[0] = pointer to new avr_instr_call
+ */
+X(rjmp_samepage)
+{
+	cpu->cd.avr.next_ic = (struct avr_instr_call *) ic->arg[0];
+}
+
+
+/*
+ *  seX:  Set an sreg bit.
+ */
+X(sec) { cpu->cd.avr.sreg |= AVR_SREG_C; }
+X(sez) { cpu->cd.avr.sreg |= AVR_SREG_Z; }
+X(sen) { cpu->cd.avr.sreg |= AVR_SREG_N; }
+X(sev) { cpu->cd.avr.sreg |= AVR_SREG_V; }
+X(ses) { cpu->cd.avr.sreg |= AVR_SREG_S; }
+X(seh) { cpu->cd.avr.sreg |= AVR_SREG_H; }
+X(set) { cpu->cd.avr.sreg |= AVR_SREG_T; }
+X(sei) { cpu->cd.avr.sreg |= AVR_SREG_I; }
+
+
+/*
+ *  swap:  Swap nibbles.
+ *
+ *  arg[0]: ptr to rd
+ */
+X(swap)
+{
+	uint8_t x = *(uint8_t *)(ic->arg[0]);
+	*(uint8_t *)(ic->arg[0]) = (x >> 4) | (x << 4);
 }
 
 
@@ -103,11 +200,10 @@ void avr_combine_instructions(struct cpu *cpu, struct avr_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint32_t addr, low_pc;
+	int addr, low_pc, rd, rr, main_opcode;
 	uint16_t iword;
 	unsigned char *page;
 	unsigned char ib[2];
-	int main_opcode;
 	void (*samepage_function)(struct cpu *, struct avr_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -118,6 +214,8 @@ X(to_be_translated)
 	addr += (low_pc << AVR_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
 	addr &= ~((1 << AVR_INSTR_ALIGNMENT_SHIFT) - 1);
+
+	addr &= cpu->cd.avr.pc_mask;
 
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.avr.host_load[addr >> 12];
@@ -143,9 +241,6 @@ X(to_be_translated)
 #endif
 
 
-	fatal("AVR: iword = 0x%04x\n", iword);
-
-
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
 #include "cpu_dyntrans.c"
 #undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -154,14 +249,92 @@ X(to_be_translated)
 	/*
 	 *  Translate the instruction:
 	 */
-
-
-/*  TODO  */
-
-
-	main_opcode = iword;
+	main_opcode = iword >> 12;
 
 	switch (main_opcode) {
+
+	case 0x0:
+		if (iword == 0x0000) {
+			ic->f = instr(nop);
+			break;
+		}
+		goto bad;
+
+	case 0x2:
+		if ((iword & 0xfc00) == 0x2c00) {
+			rd = (iword & 0x1f0) >> 4;
+			rr = ((iword & 0x200) >> 5) | (iword & 0xf);
+			ic->f = instr(mov);
+			ic->arg[0] = (size_t)(&cpu->cd.avr.r[rr]);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
+		goto bad;
+
+	case 0x9:
+		if ((iword & 0xfe0f) == 0x9402) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(swap);
+			ic->arg[0] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
+		if ((iword & 0xff8f) == 0x9408) {
+			switch ((iword >> 4) & 7) {
+			case 0: ic->f = instr(sec); break;
+			case 1: ic->f = instr(sez); break;
+			case 2: ic->f = instr(sen); break;
+			case 3: ic->f = instr(sev); break;
+			case 4: ic->f = instr(ses); break;
+			case 5: ic->f = instr(seh); break;
+			case 6: ic->f = instr(set); break;
+			case 7: ic->f = instr(sei); break;
+			}
+			break;
+		}
+		if ((iword & 0xff8f) == 0x9488) {
+			switch ((iword >> 4) & 7) {
+			case 0: ic->f = instr(clc); break;
+			case 1: ic->f = instr(clz); break;
+			case 2: ic->f = instr(cln); break;
+			case 3: ic->f = instr(clv); break;
+			case 4: ic->f = instr(cls); break;
+			case 5: ic->f = instr(clh); break;
+			case 6: ic->f = instr(clt); break;
+			case 7: ic->f = instr(cli); break;
+			}
+			break;
+		}
+		goto bad;
+
+	case 0xc:
+		ic->f = instr(rjmp);
+		samepage_function = instr(rjmp_samepage);
+		ic->arg[0] = (((int16_t)((iword & 0x0fff) << 4)) >> 3) + 2;
+		/*  Special case: branch within the same page:  */
+		{
+			uint32_t mask_within_page =
+			    ((AVR_IC_ENTRIES_PER_PAGE-1) <<
+			    AVR_INSTR_ALIGNMENT_SHIFT) |
+			    ((1 << AVR_INSTR_ALIGNMENT_SHIFT) - 1);
+			uint32_t old_pc = addr;
+			uint32_t new_pc = old_pc + (int32_t)ic->arg[0];
+			if ((old_pc & ~mask_within_page) ==
+			    (new_pc & ~mask_within_page)) {
+				ic->f = samepage_function;
+				ic->arg[0] = (size_t) (
+				    cpu->cd.avr.cur_ic_page +
+				    ((new_pc & mask_within_page) >>
+				    AVR_INSTR_ALIGNMENT_SHIFT));
+			}
+		}
+		break;
+
+	case 0xe:
+		rd = ((iword >> 4) & 0xf) + 16;
+		ic->f = instr(ldi);
+		ic->arg[0] = (size_t)(&cpu->cd.avr.r[rd]);
+		ic->arg[1] = ((iword >> 4) & 0xf0) | (iword & 0xf);
+		break;
 
 	default:goto bad;
 	}

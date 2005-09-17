@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.2 2005-09-17 17:35:30 debug Exp $
+ *  $Id: cpu_avr.h,v 1.3 2005-09-17 21:55:20 debug Exp $
  */
 
 #include "misc.h"
@@ -74,11 +74,28 @@ struct avr_vpg_tlb_entry {
 };
 
 
+#define SREG_NAMES	"cznvshti"
+
+#define	AVR_SREG_C		0x01	/*  Carry flag  */
+#define	AVR_SREG_Z		0x02	/*  Zero flag  */
+#define	AVR_SREG_N		0x04	/*  Negative flag  */
+#define	AVR_SREG_V		0x08	/*  Overflow flag  */
+#define	AVR_SREG_S		0x10	/*  Signed test  */
+#define	AVR_SREG_H		0x20	/*  Half carry flag  */
+#define	AVR_SREG_T		0x40	/*  Transfer bit  */
+#define	AVR_SREG_I		0x80	/*  Interrupt enable/disable  */
+
+
 struct avr_cpu {
+	uint32_t	pc_mask;
+
 	/*
 	 *  General Purpose Registers:
 	 */
 	uint8_t		r[N_AVR_REGS];
+
+	/*  Status register:  */
+	uint8_t		sreg;
 
 
 	/*

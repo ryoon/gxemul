@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.167 2005-09-17 17:14:25 debug Exp $
+#  $Id: configure,v 1.168 2005-09-17 21:55:18 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -208,7 +208,7 @@ if [ z"$*" != z ]; then
 			else
 				printf "  --enable-avr       enable "
 			fi
-			printf "AVR CPU emulation\n"
+			printf "Atmel AVR CPU emulation\n"
 
 			if [ z$ENABLEHPPA = zYES ]; then
 				printf "  --disable-hppa     disable "

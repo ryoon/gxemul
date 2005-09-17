@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.233 2005-09-17 17:14:26 debug Exp $
+ *  $Id: emul.c,v 1.234 2005-09-17 21:55:19 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1220,7 +1220,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			break;
 
 		case ARCH_AVR:
-			cpu->pc &= 0xffff;
+			cpu->pc &= 0xfffff;
+			if (cpu->pc & 1) {
+				fatal("AVR: lowest bit of pc set: TODO\n");
+				exit(1);
+			}
 			break;
 
 		case ARCH_HPPA:
@@ -1357,7 +1361,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		break;
 
 	case ARCH_AVR:
-		/*  Atmel AVR uses a 16-bit program counter:  */
+		/*  Atmel AVR uses a 16-bit or 22-bit program counter:  */
 		debug("0x%04x", (int)entrypoint);
 		break;
 

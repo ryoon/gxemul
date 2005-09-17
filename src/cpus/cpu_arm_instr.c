@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.11 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.12 2005-09-17 21:55:19 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1512,7 +1512,9 @@ X(to_be_translated)
 		/*  Special case: branch within the same page:  */
 		{
 			uint32_t mask_within_page =
-			    ((ARM_IC_ENTRIES_PER_PAGE-1) << 2) | 3;
+			    ((ARM_IC_ENTRIES_PER_PAGE-1) <<
+			    ARM_INSTR_ALIGNMENT_SHIFT) |
+			    ((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 			uint32_t old_pc = addr;
 			uint32_t new_pc = old_pc + (int32_t)ic->arg[0];
 			if ((old_pc & ~mask_within_page) ==

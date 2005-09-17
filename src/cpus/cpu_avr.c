@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.2 2005-09-17 17:35:29 debug Exp $
+ *  $Id: cpu_avr.c,v 1.3 2005-09-17 21:55:20 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -67,7 +67,9 @@ int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->invalidate_code_translation = avr_invalidate_code_translation;
 	cpu->is_32bit = 1;
 
-	cpu->byte_order = EMUL_BIG_ENDIAN;
+	cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
+	cpu->cd.avr.pc_mask = 0xffff;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -112,17 +114,31 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
-	int x = cpu->cpu_id;
+	int i, x = cpu->cpu_id;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
-		debug("cpu%i: pc  = 0x%08x", x, (int)cpu->pc);
+		debug("cpu%i: sreg = ", x);
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_I? 'I' : 'i');
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_T? 'T' : 't');
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_H? 'H' : 'h');
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_S? 'S' : 's');
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_V? 'V' : 'v');
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_N? 'N' : 'n');
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_Z? 'Z' : 'z');
+		debug("%c", cpu->cd.avr.sreg & AVR_SREG_C? 'C' : 'c');
+		debug("  pc = 0x%04x", x, (int)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		/*  TODO: 32 gprs  */
+		for (i=0; i<N_AVR_REGS; i++) {
+			if ((i % 4) == 0)
+			        debug("cpu%i:\t", x);
+		        debug("r%02i = 0x%02x", i, cpu->cd.avr.r[i]);
+			debug((i % 4) == 3? "\n" : "   ");
+		}
 	}
 }
 
@@ -136,16 +152,23 @@ void avr_cpu_register_match(struct machine *m, char *name,
 	int cpunr = 0;
 
 	/*  CPU number:  */
-
 	/*  TODO  */
 
-	/*  Register name:  */
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
 			m->cpus[cpunr]->pc = *valuep;
 		} else
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
+	} else if (name[0] == 'r' && isdigit((int)name[1])) {
+		int nr = atoi(name + 1);
+		if (nr >= 0 && nr < N_AVR_REGS) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.avr.r[nr] = *valuep;
+			else
+				*valuep = m->cpus[cpunr]->cd.avr.r[nr];
+			*match_register = 1;
+		}
 	}
 }
 
@@ -198,8 +221,8 @@ int avr_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 /*  Helper functions:  */
 static void print_two(unsigned char *instr, int *len)
-{ debug(" %02x%02x", instr[*len], instr[*len+1]); (*len) += 2; }
-static void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
+{ debug(" %02x %02x", instr[*len], instr[*len+1]); (*len) += 2; }
+static void print_spaces(int len) { int i; debug(" "); for (i=0; i<13-len/2*6;
     i++) debug(" "); }
 
 
@@ -219,8 +242,9 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	uint64_t offset;
-	int len = 0, addr, iw, rd, rr;
+	int len = 0, addr, iw, rd, rr, imm;
 	char *symbol;
+	char *sreg_names = SREG_NAMES;
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -233,15 +257,16 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	dumpaddr >>= 1;
-
 	/*  TODO: 22-bit PC  */
 	debug("0x%04x: ", (int)dumpaddr);
 
 	print_two(ib, &len);
 	iw = (ib[1] << 8) + ib[0];
 
-	if ((iw & 0xfc00) == 0x0c00) {
+	if ((iw & 0xffff) == 0x0000) {
+		print_spaces(len);
+		debug("nop\n");
+	} else if ((iw & 0xfc00) == 0x0c00) {
 		print_spaces(len);
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
@@ -251,23 +276,56 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
 		debug("adc\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xfc00) == 0x2c00) {
+		print_spaces(len);
+		rd = (iw & 0x1f0) >> 4;
+		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
+		debug("mov\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xfc0f) == 0x900f) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("%s\tr%i\n", iw & 0x200? "push" : "pop", rd);
 	} else if ((iw & 0xfe0f) == 0x9200) {
 		print_two(ib, &len);
 		addr = (ib[3] << 8) + ib[2];
 		print_spaces(len);
 		debug("sts\t0x%x,r%i\n", addr, (iw & 0x1f0) >> 4);
+	} else if ((iw & 0xfe0f) == 0x9402) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("swap\tr%i\n", rd);
+	} else if ((iw & 0xff0f) == 0x9408) {
+		print_spaces(len);
+		rd = (iw >> 4) & 7;
+		debug("%s%c\n", iw & 0x80? "cl" : "se", sreg_names[rd]);
 	} else if ((iw & 0xffef) == 0x9508) {
 		/*  ret and reti  */
 		print_spaces(len);
 		debug("ret%s\n", (iw & 0x10)? "i" : "");
-	} else if ((iw & 0xf000) == 0xc000) {
+	} else if ((iw & 0xffff) == 0x9588) {
+		print_spaces(len);
+		debug("sleep\n");
+	} else if ((iw & 0xffff) == 0x95a8) {
+		print_spaces(len);
+		debug("wdr\n");
+	} else if ((iw & 0xff00) == 0x9600) {
+		print_spaces(len);
+		imm = ((iw & 0xc0) >> 2) | (iw & 0xf);
+		rd = ((iw >> 4) & 3) * 2 + 24;
+		debug("adiw\tr%i:r%i,0x%x\n", rd, rd+1, imm);
+	} else if ((iw & 0xe000) == 0xc000) {
 		print_spaces(len);
 		addr = (int16_t)((iw & 0xfff) << 4);
-		addr = (addr >> 4) + dumpaddr + 1;
-		debug("rjmp\t0x%x\n", addr);
+		addr = (addr >> 3) + dumpaddr + 2;
+		debug("%s\t0x%x\n", iw & 0x1000? "rcall" : "rjmp", addr);
+	} else if ((iw & 0xf000) == 0xe000) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 0xf) + 16;
+		imm = ((iw >> 4) & 0xf0) | (iw & 0xf);
+		debug("ldi\tr%i,0x%x\n", rd, imm);
 	} else {
 		print_spaces(len);
-		debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);
+		debug("UNIMPLEMENTED 0x%04x\n", iw);
 	}
 
 	return len;

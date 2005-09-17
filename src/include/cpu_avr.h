@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.1 2005-09-17 17:14:44 debug Exp $
+ *  $Id: cpu_avr.h,v 1.2 2005-09-17 17:35:30 debug Exp $
  */
 
 #include "misc.h"
@@ -41,7 +41,7 @@ struct cpu_family;
 #define	AVR_N_IC_ARGS			3
 #define	AVR_INSTR_ALIGNMENT_SHIFT	1
 #define	AVR_IC_ENTRIES_SHIFT		11
-#define	AVR_IC_ENTRIES_PER_PAGE	(1 << AVR_IC_ENTRIES_SHIFT)
+#define	AVR_IC_ENTRIES_PER_PAGE		(1 << AVR_IC_ENTRIES_SHIFT)
 #define	AVR_PC_TO_IC_ENTRY(a)		(((a)>>AVR_INSTR_ALIGNMENT_SHIFT) \
 					& (AVR_IC_ENTRIES_PER_PAGE-1))
 #define	AVR_ADDR_TO_PAGENR(a)		((a) >> (AVR_IC_ENTRIES_SHIFT \

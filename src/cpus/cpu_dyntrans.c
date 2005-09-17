@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.8 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.9 2005-09-17 17:35:29 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -57,9 +57,9 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	DYNTRANS_PC_TO_POINTERS(cpu);
 
 #ifdef DYNTRANS_ARM
-	cached_pc = cpu->cd.arm.r[ARM_PC] & ~3;
+	cached_pc = cpu->cd.arm.r[ARM_PC];
 #else
-	cached_pc = cpu->pc & ~3;
+	cached_pc = cpu->pc;
 #endif
 
 	cpu->n_translated_instrs = 0;

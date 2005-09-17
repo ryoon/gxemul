@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.1 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_avr.c,v 1.2 2005-09-17 17:35:29 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -43,7 +43,6 @@
 
 
 #define	DYNTRANS_32
-#define	DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 #include "tmp_avr_head.c"
 
 
@@ -234,6 +233,8 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
+	dumpaddr >>= 1;
+
 	/*  TODO: 22-bit PC  */
 	debug("0x%04x: ", (int)dumpaddr);
 
@@ -259,6 +260,11 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		/*  ret and reti  */
 		print_spaces(len);
 		debug("ret%s\n", (iw & 0x10)? "i" : "");
+	} else if ((iw & 0xf000) == 0xc000) {
+		print_spaces(len);
+		addr = (int16_t)((iw & 0xfff) << 4);
+		addr = (addr >> 4) + dumpaddr + 1;
+		debug("rjmp\t0x%x\n", addr);
 	} else {
 		print_spaces(len);
 		debug("UNIMPLEMENTED 0x%02x%02x\n", ib[0], ib[1]);

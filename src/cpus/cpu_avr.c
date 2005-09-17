@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.3 2005-09-17 21:55:20 debug Exp $
+ *  $Id: cpu_avr.c,v 1.4 2005-09-17 22:34:52 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -140,6 +140,11 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug((i % 4) == 3? "\n" : "   ");
 		}
 	}
+
+	debug("cpu%i: nr of instructions: %lli\n", x,
+	    (long long)cpu->machine->ncycles);
+	debug("cpu%i: nr of cycles:       %lli\n", x,
+	    (long long)(cpu->machine->ncycles + cpu->cd.avr.extra_cycles));
 }
 
 
@@ -222,7 +227,7 @@ int avr_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 /*  Helper functions:  */
 static void print_two(unsigned char *instr, int *len)
 { debug(" %02x %02x", instr[*len], instr[*len+1]); (*len) += 2; }
-static void print_spaces(int len) { int i; debug(" "); for (i=0; i<13-len/2*6;
+static void print_spaces(int len) { int i; debug(" "); for (i=0; i<15-len/2*6;
     i++) debug(" "); }
 
 
@@ -276,11 +281,28 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
 		debug("adc\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xfc00) == 0x2000) {
+		print_spaces(len);
+		rd = (iw & 0x1f0) >> 4;
+		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
+		debug("and\tr%i,r%i\n", rd, rr);
 	} else if ((iw & 0xfc00) == 0x2c00) {
 		print_spaces(len);
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
 		debug("mov\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xfe0f) == 0x8000) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("ld\tr%i,Z\n", rd);
+	} else if ((iw & 0xfe0f) == 0x8008) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("ld\tr%i,Y\n", rd);
+	} else if ((iw & 0xfe0f) == 0x900c) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("ld\tr%i,X\n", rd);
 	} else if ((iw & 0xfc0f) == 0x900f) {
 		print_spaces(len);
 		rd = (iw >> 4) & 31;

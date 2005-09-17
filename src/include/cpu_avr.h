@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.3 2005-09-17 21:55:20 debug Exp $
+ *  $Id: cpu_avr.h,v 1.4 2005-09-17 22:34:53 debug Exp $
  */
 
 #include "misc.h"
@@ -38,7 +38,7 @@ struct cpu_family;
 
 #define	N_AVR_REGS		32
 
-#define	AVR_N_IC_ARGS			3
+#define	AVR_N_IC_ARGS			2
 #define	AVR_INSTR_ALIGNMENT_SHIFT	1
 #define	AVR_IC_ENTRIES_SHIFT		11
 #define	AVR_IC_ENTRIES_PER_PAGE		(1 << AVR_IC_ENTRIES_SHIFT)
@@ -96,6 +96,14 @@ struct avr_cpu {
 
 	/*  Status register:  */
 	uint8_t		sreg;
+
+	/*
+	 *  In order to keep an accurate cycle count, this variable should be
+	 *  increased for those instructions that take longer than 1 cycle to
+	 *  execute. The total number of executed cycles is extra_cycles PLUS
+	 *  the number of executed instructions.
+	 */
+	int64_t		extra_cycles;
 
 
 	/*

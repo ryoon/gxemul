@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.2 2005-09-17 21:55:20 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.3 2005-09-17 22:34:52 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -99,6 +99,8 @@ X(rjmp)
 {
 	uint32_t low_pc;
 
+	cpu->cd.avr.extra_cycles ++;
+
 	/*  Calculate new PC from the next instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.avr.cur_ic_page) /
 	    sizeof(struct avr_instr_call);
@@ -119,6 +121,7 @@ X(rjmp)
  */
 X(rjmp_samepage)
 {
+	cpu->cd.avr.extra_cycles ++;
 	cpu->cd.avr.next_ic = (struct avr_instr_call *) ic->arg[0];
 }
 

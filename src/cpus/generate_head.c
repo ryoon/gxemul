@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.3 2005-09-04 13:06:11 debug Exp $
+ *  $Id: generate_head.c,v 1.4 2005-09-17 22:34:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -134,8 +134,14 @@ int main(int argc, char *argv[])
 	printf("\tcpu->n_translated_instrs --;\n");
 	printf("\tcpu->cd.%s.next_ic --;\n", a);
 	printf("}\n\n");
-        printf("static struct %s_instr_call nothing_call = { "
-	    "instr(nothing), {0,0,0} };\n", a);
+
+	/*  TODO: solve this in a nicer way!  */
+	if (strcmp(a, "avr") == 0)
+	        printf("static struct %s_instr_call nothing_call = { "
+		    "instr(nothing), {0,0} };\n", a);
+	else
+	        printf("static struct %s_instr_call nothing_call = { "
+		    "instr(nothing), {0,0,0} };\n", a);
 
 	printf("\n");
 

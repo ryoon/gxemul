@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.958 2005-09-18 19:54:11 debug Exp $
+$Id: HISTORY,v 1.959 2005-09-18 23:49:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2263,3 +2263,4 @@ Changelog for GXemul:
 		OpenBSD/cats).
 20050917	Adding a dummy Atmel AVR (8-bit) cpu family skeleton.
 20050918	Various minor updates.
+20050919	Symbols are now loaded from Mach-O executables.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.112 2005-09-18 19:54:13 debug Exp $
+ *  $Id: file.c,v 1.113 2005-09-18 23:49:31 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -327,9 +327,11 @@ static void file_load_macho(struct machine *m, struct memory *mem,
 	int entry_set = 0;
 	int encoding = ELFDATA2MSB;
 	unsigned char buf[65536];
+	unsigned char *symbols, *strings;
 	uint32_t cputype, cpusubtype, filetype, ncmds, sizeofcmds, flags;
 	uint64_t vmaddr, vmsize, fileoff, filesize;
 	int cmd_type, cmd_len, pos, i, flavor;
+	int32_t symoff, nsyms, stroff, strsize;
 	size_t len;
 
 	if (m->cpus[0]->byte_order == EMUL_BIG_ENDIAN)
@@ -478,7 +480,48 @@ static void file_load_macho(struct machine *m, struct memory *mem,
 			debug("\n");
 			break;
 
-		case 2:	debug("symtable: TODO\n");
+		case 2:	/*  LC_SYMTAB  */
+			unencode(symoff,  &buf[pos+8], uint32_t);
+			unencode(nsyms,   &buf[pos+12], uint32_t);
+			unencode(stroff,  &buf[pos+16], uint32_t);
+			unencode(strsize, &buf[pos+20], uint32_t);
+			debug("symtable: %i symbols @ 0x%x (strings at "
+			    "0x%x)\n", nsyms, symoff, stroff);
+
+			symbols = malloc(12 * nsyms);
+			if (symbols == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			fseek(f, symoff, SEEK_SET);
+			fread(symbols, 1, 12 * nsyms, f);
+
+			strings = malloc(strsize);
+			if (strings == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			fseek(f, stroff, SEEK_SET);
+			fread(strings, 1, strsize, f);
+
+			for (i=0; i<nsyms; i++) {
+				unsigned char b[512];
+				int n_strx, n_type, n_sect, n_desc;
+				uint32_t n_value;
+				unencode(n_strx,  &symbols[i*12+0], int32_t);
+				unencode(n_type,  &symbols[i*12+4], uint8_t);
+				unencode(n_sect,  &symbols[i*12+5], uint8_t);
+				unencode(n_desc,  &symbols[i*12+6], int16_t);
+				unencode(n_value, &symbols[i*12+8], uint32_t);
+				/*  debug("%i: strx=%i type=%i sect=%i desc=%i"
+				    " value=0x%x\n", i, n_strx, n_type,
+				    n_sect, n_desc, n_value);  */
+				add_symbol_name(&m->symbol_context,
+				    n_value, 0, strings + n_strx, 0, -1);
+			}
+
+			free(symbols);
+			free(strings);
 			break;
 
 		case 5:	debug("unix thread context: ");
@@ -499,6 +542,18 @@ static void file_load_macho(struct machine *m, struct memory *mem,
 			unencode(entry, &buf[pos+16], uint32_t);
 			entry_set = 1;
 			debug("pc=0x%x\n", (int)entry);
+
+			for (i=1; i<40; i++) {
+				uint32_t x;
+				unencode(x, &buf[pos+16+i*4], uint32_t);
+				if (x != 0) {
+					fatal("Entry nr %i in the Mach-O"
+					    " thread struct is non-zero"
+					    " (0x%x). This is not supported"
+					    " yet. TODO\n", i, x);
+					exit(1);
+				}
+			}
 			break;
 
 		default:fatal("WARNING! Unimplemented load command %i!\n",

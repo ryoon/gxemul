@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.7 2005-09-17 17:14:27 debug Exp $
+ *  $Id: memory_arm.c,v 1.8 2005-09-18 19:54:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -123,13 +123,18 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	}
 
 exception_return:
+#if 0
 	if (no_exceptions)
 		return 0;
+#endif
 
 	fatal("TODO: arm memory fault: vaddr=%08x d=0x%08x", vaddr, d);
 	if (d2_in_use)
 		fatal(" d2=0x%08x", d2);
 	fatal("\n");
+
+if (no_exceptions)
+return 0;
 
 #if 0
 	arm_exception(cpu, ARM_EXCEPTION_DATA_ABT);

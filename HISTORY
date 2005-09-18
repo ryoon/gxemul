@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.957 2005-09-17 17:14:25 debug Exp $
+$Id: HISTORY,v 1.958 2005-09-18 19:54:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2262,3 +2262,4 @@ Changelog for GXemul:
 		and fixing a ROR bug in R(); NetBSD/cats now boots as far as
 		OpenBSD/cats).
 20050917	Adding a dummy Atmel AVR (8-bit) cpu family skeleton.
+20050918	Various minor updates.

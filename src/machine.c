@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.547 2005-09-17 17:14:26 debug Exp $
+ *  $Id: machine.c,v 1.548 2005-09-18 19:54:13 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -5654,7 +5654,7 @@ void machine_init(void)
 	/*  HPCarm:  */
 	me = machine_entry_new("Handheld SH (HPCsh)",
 	    ARCH_SH, MACHINE_HPCSH, 1, 2);
-	me->aliases[0] = "hpcarm";
+	me->aliases[0] = "hpcsh";
 	me->subtype[0] = machine_entry_subtype_new("Jornada 680",
 	    MACHINE_HPCSH_JORNADA680, 1);
 	me->subtype[0]->aliases[0] = "jornada680";

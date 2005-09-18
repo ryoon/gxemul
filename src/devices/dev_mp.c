@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.27 2005-06-11 20:51:41 debug Exp $
+ *  $Id: dev_mp.c,v 1.28 2005-09-18 19:54:15 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -219,6 +219,15 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		/*  Deassert the interrupt, if there are no pending IPIs:  */
 		if (d->n_pending_ipis[cpu->cpu_id] == 0)
 			cpu_interrupt_ack(d->cpus[cpu->cpu_id], MIPS_IPI_INT);
+		break;
+
+	case DEV_MP_NCYCLES:
+		/*
+		 *  Return approximately the number of cycles executed
+		 *  in this machine.  (This value is not updated for each
+		 *  instruction.)
+		 */
+		odata = cpu->machine->ncycles;
 		break;
 
 	default:

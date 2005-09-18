@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mp.h,v 1.6 2005-06-11 11:53:37 debug Exp $
+ *  $Id: mp.h,v 1.7 2005-09-18 19:54:16 debug Exp $
  *
  *  dev_mp definitions.
  */
@@ -50,5 +50,6 @@
 #define	    DEV_MP_IPI_ONE		    0x00a0
 #define	    DEV_MP_IPI_MANY		    0x00b0
 #define	    DEV_MP_IPI_READ		    0x00c0
+#define	    DEV_MP_NCYCLES		    0x00d0
 
 #endif	/*  MP_H  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arm_cpu_types.h,v 1.2 2005-09-03 11:44:04 debug Exp $
+ *  $Id: arm_cpu_types.h,v 1.3 2005-09-18 19:54:16 debug Exp $
  */
 
 /*  See cpu_arm.h for struct arm_cpu_type_def.  */
@@ -42,10 +42,9 @@
 #define	ARM_CPU_TYPE_DEFS					      {	 \
 	{ "ARM610",	CPU_ID_ARM610,	ARM_DUAL_ENDIAN, 12, 1,  0, 1 }, \
 	{ "ARM620",	CPU_ID_ARM620,	ARM_DUAL_ENDIAN, 12, 1,  0, 1 }, \
-	{ "SA110",	CPU_ID_SA110,	0,		 14, 1, 14, 1 }, \
+	{ "SA110",	CPU_ID_SA110 | 3, 0,		 14, 1, 14, 1 }, \
 	{ "SA1110",	CPU_ID_SA1110,	0,		 14, 1, 14, 1 }, \
 	{ "PXA210",	CPU_ID_PXA210,	0,		 16, 1,  0, 1 }, \
-	{ "80200",	CPU_ID_80200,	0,		 14, 1, 14, 1 }, \
 	{ "XSCALE600",	CPU_ID_80321_600_B0,0,		 14, 1, 14, 1 }, \
 	{ NULL, 0, 0, 0,0, 0,0 } }
 

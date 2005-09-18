@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.106 2005-08-14 11:14:38 debug Exp $
+ *  $Id: dev_fb.c,v 1.107 2005-09-18 19:54:15 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -291,51 +291,58 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 
 #ifdef WITH_X11
 #define macro_put_pixel() {	\
-			/*  Combine the color into an X11 long and display it:  */	\
-			/*  TODO:  construct color in a more portable way:  */		\
-			switch (d->fb_window->x11_screen_depth) {					\
-			case 24:							\
-				if (d->fb_window->fb_ximage->byte_order)		\
-					color = (b << 16) + (g << 8) + r;		\
-				else							\
-					color = (r << 16) + (g << 8) + b;		\
-				break;							\
-			case 16:							\
-				r >>= 3; g >>= 2; b >>= 3;				\
-				if (d->fb_window->fb_ximage->byte_order) {		\
-					/*  Big endian 16-bit X server:  */		\
-					static int first = 1;				\
-					if (first) {					\
-						fprintf(stderr, "\n*** Please report to the author whether 16-bit X11 colors are rendered correctly or not!\n\n"); \
-						first = 0;				\
-					}						\
-					color = (b << 11) + (g << 5) + r;		\
-				} else {						\
-					/*  Little endian (eg PC) X servers:  */	\
-					color = (r << 11) + (g << 5) + b;		\
-				}							\
-				break;							\
-			case 15:							\
-				r >>= 3; g >>= 3; b >>= 3;				\
-				if (d->fb_window->fb_ximage->byte_order) {		\
-					/*  Big endian 15-bit X server:  */		\
-					static int first = 1;				\
-					if (first) {					\
-						fprintf(stderr, "\n*** Please report to the author whether 15-bit X11 colors are rendered correctly or not!\n\n"); \
-						first = 0;				\
-					}						\
-					color = (b << 10) + (g << 5) + r;		\
-				} else {						\
-					/*  Little endian (eg PC) X servers:  */	\
-					color = (r << 10) + (g << 5) + b;		\
-				}							\
-				break;							\
-			default:							\
-				color = d->fb_window->x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel; \
-			}								\
-			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)		\
-				XPutPixel(d->fb_window->fb_ximage, x, y, color);	\
-		}
+	/*  Combine the color into an X11 long and display it:  */	\
+	/*  TODO:  construct color in a more portable way:  */		\
+	switch (d->fb_window->x11_screen_depth) {			\
+	case 24:							\
+		if (d->fb_window->fb_ximage->byte_order)		\
+			color = (b << 16) + (g << 8) + r;		\
+		else							\
+			color = (r << 16) + (g << 8) + b;		\
+		break;							\
+	case 16:							\
+		r >>= 3; g >>= 2; b >>= 3;				\
+		if (d->fb_window->fb_ximage->byte_order) {		\
+			/*  Big endian 16-bit X server:  */		\
+			static int first = 1;				\
+			if (first) {					\
+				fprintf(stderr, "\n*** Please report "	\
+				    "to the author whether 16-bit X11 "	\
+				    "colors are rendered correctly or "	\
+				    "not!\n\n");			\
+				first = 0;				\
+			}						\
+			color = (b << 11) + (g << 5) + r;		\
+		} else {						\
+			/*  Little endian (eg PC) X servers:  */	\
+			color = (r << 11) + (g << 5) + b;		\
+		}							\
+		break;							\
+	case 15:							\
+		r >>= 3; g >>= 3; b >>= 3;				\
+		if (d->fb_window->fb_ximage->byte_order) {		\
+			/*  Big endian 15-bit X server:  */		\
+			static int first = 1;				\
+			if (first) {					\
+				fprintf(stderr, "\n*** Please report "	\
+				    "to the author whether 15-bit X11 "	\
+				    "colors are rendered correctly or "	\
+				    "not!\n\n");			\
+				first = 0;				\
+			}						\
+			color = (b << 10) + (g << 5) + r;		\
+		} else {						\
+			/*  Little endian (eg PC) X servers:  */	\
+			color = (r << 10) + (g << 5) + b;		\
+		}							\
+		break;							\
+	default:							\
+		color = d->fb_window->x11_graycolor[15 * (r + g + b)	\
+		    / (255 * 3)].pixel;					\
+	}								\
+	if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)		\
+		XPutPixel(d->fb_window->fb_ximage, x, y, color);	\
+    }
 #else
 /*  If not WITH_X11:  */
 #define macro_put_pixel() { }
@@ -430,7 +437,8 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				case 16:
 					if (d->vfb_type == VFB_HPCMIPS) {
 						b = d->framebuffer[fb_addr] +
-						    (d->framebuffer[fb_addr+1] << 8);
+						    (d->framebuffer[fb_addr+1]
+						    << 8);
 
 						if (d->color32k) {
 							r = b >> 11;
@@ -451,10 +459,10 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 							b = b & 0x1f;
 						}
 					} else {
-						r = d->framebuffer[fb_addr] >> 3;
-						g = (d->framebuffer[fb_addr] << 5) +
-						    (d->framebuffer[fb_addr + 1] >> 5);
-						b = d->framebuffer[fb_addr + 1] & 0x1f;
+					    r = d->framebuffer[fb_addr] >> 3;
+					    g = (d->framebuffer[fb_addr] << 5) +
+					      (d->framebuffer[fb_addr + 1] >>5);
+					    b = d->framebuffer[fb_addr + 1]&31;
 					}
 
 					r *= 8;
@@ -692,20 +700,25 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		need_to_redraw_cursor = 1;
 
 	if (d->update_x2 != -1) {
-		if ( (d->update_x1 >= d->fb_window->OLD_cursor_x &&
-		      d->update_x1 < (d->fb_window->OLD_cursor_x + d->fb_window->OLD_cursor_xsize)) ||
+		if (((d->update_x1 >= d->fb_window->OLD_cursor_x &&
+		      d->update_x1 < (d->fb_window->OLD_cursor_x +
+		      d->fb_window->OLD_cursor_xsize)) ||
 		     (d->update_x2 >= d->fb_window->OLD_cursor_x &&
-		      d->update_x2 < (d->fb_window->OLD_cursor_x + d->fb_window->OLD_cursor_xsize)) ||
+		      d->update_x2 < (d->fb_window->OLD_cursor_x +
+		      d->fb_window->OLD_cursor_xsize)) ||
 		     (d->update_x1 <  d->fb_window->OLD_cursor_x &&
-		      d->update_x2 >= (d->fb_window->OLD_cursor_x + d->fb_window->OLD_cursor_xsize)) ) {
-			if ( (d->update_y1 >= d->fb_window->OLD_cursor_y &&
-			      d->update_y1 < (d->fb_window->OLD_cursor_y + d->fb_window->OLD_cursor_ysize)) ||
-			     (d->update_y2 >= d->fb_window->OLD_cursor_y &&
-			      d->update_y2 < (d->fb_window->OLD_cursor_y + d->fb_window->OLD_cursor_ysize)) ||
-			     (d->update_y1 <  d->fb_window->OLD_cursor_y &&
-			      d->update_y2 >= (d->fb_window->OLD_cursor_y + d->fb_window->OLD_cursor_ysize)) )
-				need_to_redraw_cursor = 1;
-		}
+		      d->update_x2 >= (d->fb_window->OLD_cursor_x +
+		      d->fb_window->OLD_cursor_xsize)) ) &&
+		   ( (d->update_y1 >= d->fb_window->OLD_cursor_y &&
+		      d->update_y1 < (d->fb_window->OLD_cursor_y +
+		      d->fb_window->OLD_cursor_ysize)) ||
+		     (d->update_y2 >= d->fb_window->OLD_cursor_y &&
+		      d->update_y2 < (d->fb_window->OLD_cursor_y +
+		      d->fb_window->OLD_cursor_ysize)) ||
+		     (d->update_y1 <  d->fb_window->OLD_cursor_y &&
+		      d->update_y2 >= (d->fb_window->OLD_cursor_y +
+		     d->fb_window->OLD_cursor_ysize)) ) )
+			need_to_redraw_cursor = 1;
 	}
 
 	if (need_to_redraw_cursor) {
@@ -719,7 +732,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
 			    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
 			    d->fb_window->OLD_cursor_xsize/d->vfb_scaledown + 1,
-			    d->fb_window->OLD_cursor_ysize/d->vfb_scaledown + 1);
+			    d->fb_window->OLD_cursor_ysize/d->vfb_scaledown +1);
 		}
 	}
 #endif
@@ -727,12 +740,16 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (d->update_x2 != -1) {
 		int y, addr, addr2, q = d->vfb_scaledown;
 
-		if (d->update_x1 >= d->visible_xsize)	d->update_x1 = d->visible_xsize - 1;
-		if (d->update_x2 >= d->visible_xsize)	d->update_x2 = d->visible_xsize - 1;
-		if (d->update_y1 >= d->visible_ysize)	d->update_y1 = d->visible_ysize - 1;
-		if (d->update_y2 >= d->visible_ysize)	d->update_y2 = d->visible_ysize - 1;
+		if (d->update_x1 >= d->visible_xsize)
+			d->update_x1 = d->visible_xsize - 1;
+		if (d->update_x2 >= d->visible_xsize)
+			d->update_x2 = d->visible_xsize - 1;
+		if (d->update_y1 >= d->visible_ysize)
+			d->update_y1 = d->visible_ysize - 1;
+		if (d->update_y2 >= d->visible_ysize)
+			d->update_y2 = d->visible_ysize - 1;
 
-		/*  Without these, we might miss the right most / bottom pixel:  */
+		/*  Without these, we might miss the rightmost/bottom pixel:  */
 		d->update_x2 += (q - 1);
 		d->update_y2 += (q - 1);
 
@@ -741,8 +758,10 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		d->update_y1 = d->update_y1 / q * q;
 		d->update_y2 = d->update_y2 / q * q;
 
-		addr  = d->update_y1 * d->bytes_per_line + d->update_x1 * d->bit_depth / 8;
-		addr2 = d->update_y1 * d->bytes_per_line + d->update_x2 * d->bit_depth / 8;
+		addr  = d->update_y1 * d->bytes_per_line +
+		    d->update_x1 * d->bit_depth / 8;
+		addr2 = d->update_y1 * d->bytes_per_line +
+		    d->update_x2 * d->bit_depth / 8;
 
 		for (y=d->update_y1; y<=d->update_y2; y+=q) {
 			update_framebuffer(d, addr, addr2 - addr);
@@ -751,9 +770,11 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		}
 
 #ifdef WITH_X11
-		XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window, d->fb_window->x11_fb_gc, d->fb_window->fb_ximage,
-		    d->update_x1/d->vfb_scaledown, d->update_y1/d->vfb_scaledown,
-		    d->update_x1/d->vfb_scaledown, d->update_y1/d->vfb_scaledown,
+		XPutImage(d->fb_window->x11_display, d->fb_window->
+		    x11_fb_window, d->fb_window->x11_fb_gc, d->fb_window->
+		    fb_ximage, d->update_x1/d->vfb_scaledown, d->update_y1/
+		    d->vfb_scaledown, d->update_x1/d->vfb_scaledown,
+		    d->update_y1/d->vfb_scaledown,
 		    (d->update_x2 - d->update_x1)/d->vfb_scaledown + 1,
 		    (d->update_y2 - d->update_y1)/d->vfb_scaledown + 1);
 
@@ -768,12 +789,15 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (need_to_redraw_cursor) {
 		/*  Paint new cursor:  */
 		if (d->fb_window->cursor_on) {
-			x11_redraw_cursor(cpu->machine, d->fb_window->fb_number);
+			x11_redraw_cursor(cpu->machine,
+			    d->fb_window->fb_number);
 			d->fb_window->OLD_cursor_on = d->fb_window->cursor_on;
 			d->fb_window->OLD_cursor_x = d->fb_window->cursor_x;
 			d->fb_window->OLD_cursor_y = d->fb_window->cursor_y;
-			d->fb_window->OLD_cursor_xsize = d->fb_window->cursor_xsize;
-			d->fb_window->OLD_cursor_ysize = d->fb_window->cursor_ysize;
+			d->fb_window->OLD_cursor_xsize = d->fb_window->
+			    cursor_xsize;
+			d->fb_window->OLD_cursor_ysize = d->fb_window->
+			    cursor_ysize;
 		}
 	}
 #endif

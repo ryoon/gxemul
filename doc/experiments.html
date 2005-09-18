@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.91 2005-09-04 13:45:12 debug Exp $
+$Id: experiments.html,v 1.92 2005-09-18 19:54:12 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -320,6 +320,13 @@ following experimental devices:
 		Hardware int 6 is deasserted when the IPI queue is empty.
 	    <br>Write: <b><tt>ipi_flush()</tt></b>.
 		Clears the IPI queue, discarding any pending IPIs.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x00d0</tt></td>
+	    <td align="left" valign="top">Read: <b><tt>ncycles()</tt></b>.
+		Returns approximately the number of cycles executed.
+		Note: this value is not updated for every instruction,
+		so it cannot be used for small measurements.</td>
 	  </tr>
 	</table>
     </td>

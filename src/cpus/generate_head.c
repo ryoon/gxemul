@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.4 2005-09-17 22:34:52 debug Exp $
+ *  $Id: generate_head.c,v 1.5 2005-09-18 19:54:14 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 char *uppercase(char *l)

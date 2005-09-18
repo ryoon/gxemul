@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_mips.c,v 1.2 2005-09-18 19:54:14 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3854,6 +3854,12 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (instruction_trace_cached)
 				debug("cop%i\t0x%08x => coprocessor unusable\n", cpnr, (int)imm);
 
+
+printf("YUCK! pc=0x%016llx tmp=%i status=0x%08x\n",
+(long long)cached_pc, tmp, (int)cp0->reg[COP0_STATUS]);
+single_step = 1;
+cpu->running = 0;
+return 0;
 			mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		} else {
 			/*

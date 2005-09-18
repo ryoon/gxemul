@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.4 2005-09-04 13:06:11 debug Exp $
+ *  $Id: generate_tail.c,v 1.5 2005-09-18 19:54:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -162,7 +162,8 @@ int main(int argc, char *argv[])
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_UPDATE_TRANSLATION_TABLE\n\n");
 	printf("#define DYNTRANS_PC_TO_POINTERS_FUNC %s32_pc_to_pointers\n", a);
-	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC %s32_pc_to_pointers_generic\n", a);
+	printf("#define DYNTRANS_PC_TO_POINTERS_GENERIC "
+	    "%s32_pc_to_pointers_generic\n", a);
 	printf("#undef DYNTRANS_PC_TO_POINTERS\n"
 	    "#define DYNTRANS_PC_TO_POINTERS %s32_pc_to_pointers\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
@@ -193,3 +194,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+

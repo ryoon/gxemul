@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.6 2005-01-18 06:22:58 debug Exp $
+ *  $Id: cop0.h,v 1.7 2005-09-18 19:54:16 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
@@ -85,7 +85,8 @@
 #define	COP0_PAGEMASK		5
 #define	   PAGEMASK_MASK	    0x01ffe000
 #define	   PAGEMASK_SHIFT	    13
-#define	   PAGEMASK_MASK_R4100	    0x0007f800		/*  TODO: At least VR4131, how about others?  */
+#define	   PAGEMASK_MASK_R4100	    0x0007f800	/*  TODO: At least VR4131,  */
+						/*  how about others?  */
 #define	   PAGEMASK_SHIFT_R4100	    11
 #define	COP0_WIRED		6
 #define	COP0_RESERV7		7

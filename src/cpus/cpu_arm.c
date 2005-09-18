@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.13 2005-09-13 20:56:51 debug Exp $
+ *  $Id: cpu_arm.c,v 1.14 2005-09-18 19:54:14 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -445,6 +445,12 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
 	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
 	arm_pc_to_pointers(cpu);
+
+/*
+ TODO: load the instruction word manually, and see if it contains only
+ zeroes. if so, then print a warning, because an all-zero instruction
+ is very unlikely to be the first instruction of an exception handler.
+ */
 
 	fatal("arm_exception(): %i\n", exception_nr);
 exit(1);

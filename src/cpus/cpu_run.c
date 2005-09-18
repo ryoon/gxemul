@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_run.c,v 1.2 2005-09-18 19:54:14 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
  *  be inlined from here.)
+ *
+ *  TODO: Rewrite/cleanup. This is too ugly.
  */
 
 #include "console.h"
@@ -39,7 +41,7 @@
 static int instrs_per_cycle(struct cpu *cpu) {
 #ifdef CPU_RUN_MIPS
 	return cpu->cd.mips.cpu_type.instrs_per_cycle;
-#else	/*  PPC or undefined  */
+#else
 	return 1;
 #endif
 }
@@ -212,17 +214,20 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 				machine->ticks_till_next[te] -= cpu0instrs;
 
 				if (machine->ticks_till_next[te] <= 0) {
-					while (machine->ticks_till_next[te] <= 0)
+					while (machine->ticks_till_next[te]
+					    <= 0)
 						machine->ticks_till_next[te] +=
-						    machine->ticks_reset_value[te];
-					machine->tick_func[te](cpus[0], machine->tick_extra[te]);
+						    machine->
+						    ticks_reset_value[te];
+					machine->tick_func[te](cpus[0],
+					    machine->tick_extra[te]);
 				}
 			}
 
 			/*  Any CPU dead?  */
 			for (i=0; i<ncpus; i++) {
-				if (cpus[i]->dead &&
-				    machine->exit_without_entering_debugger == 0)
+				if (cpus[i]->dead && machine->
+				    exit_without_entering_debugger == 0)
 					single_step = 1;
 			}
 

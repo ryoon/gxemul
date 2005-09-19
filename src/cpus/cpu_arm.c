@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.14 2005-09-18 19:54:14 debug Exp $
+ *  $Id: cpu_arm.c,v 1.15 2005-09-19 20:10:57 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -101,7 +101,11 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->name               = cpu->cd.arm.cpu_type.name;
 	cpu->is_32bit           = 1;
 
-	cpu->cd.arm.cpsr = ARM_FLAG_I | ARM_FLAG_F | ARM_MODE_USR32;
+	cpu->cd.arm.cpsr = ARM_FLAG_I | ARM_FLAG_F;
+	if (cpu->machine->prom_emulation)
+		cpu->cd.arm.cpsr |= ARM_MODE_SVC32;
+	else
+		cpu->cd.arm.cpsr |= ARM_MODE_USR32;
 	cpu->cd.arm.control = ARM_CONTROL_PROG32 | ARM_CONTROL_DATA32
 	    | ARM_CONTROL_CACHE | ARM_CONTROL_ICACHE | ARM_CONTROL_ALIGN;
 
@@ -176,8 +180,7 @@ d = (1048576 * (i + (j==12? 10 : j)*256)) | 2;
 				descr[1] = d >> 16; descr[0] = d >> 24;
 			}
 			cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
-			    sizeof(descr), MEM_WRITE, PHYSICAL |
-			    NO_EXCEPTIONS);
+			    sizeof(descr), MEM_WRITE, PHYSICAL | NO_EXCEPTIONS);
 		}
 }
 
@@ -436,11 +439,15 @@ void arm_load_register_bank(struct cpu *cpu)
 void arm_exception(struct cpu *cpu, int exception_nr)
 {
 	int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
+	uint32_t retaddr;
 
 	if (exception_nr < 0 || exception_nr >= N_ARM_EXCEPTIONS) {
 		fatal("arm_exception(): exception_nr = %i\n", exception_nr);
 		exit(1);
 	}
+
+	/*  TODO: This is different for different exceptions!  */
+	retaddr = cpu->pc + 8;
 
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
 	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
@@ -453,12 +460,43 @@ void arm_exception(struct cpu *cpu, int exception_nr)
  */
 
 	fatal("arm_exception(): %i\n", exception_nr);
-exit(1);
 
 	arm_save_register_bank(cpu);
+
+	switch (arm_exception_to_mode[exception_nr]) {
+	case ARM_MODE_SVC32:
+		cpu->cd.arm.spsr_svc = cpu->cd.arm.cpsr; break;
+	case ARM_MODE_ABT32:
+		cpu->cd.arm.spsr_abt = cpu->cd.arm.cpsr; break;
+	case ARM_MODE_UND32:
+		cpu->cd.arm.spsr_und = cpu->cd.arm.cpsr; break;
+	case ARM_MODE_IRQ32:
+		cpu->cd.arm.spsr_irq = cpu->cd.arm.cpsr; break;
+	case ARM_MODE_FIQ32:
+		cpu->cd.arm.spsr_fiq = cpu->cd.arm.cpsr; break;
+	default:fatal("arm_exception(): unimplemented exception nr\n");
+		exit(1);
+	}
+
+	/*
+	 *  Disable Thumb mode (because exception handlers always execute
+	 *  in ARM mode), set the exception mode, and disable interrupts:
+	 */
+	cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
+
 	cpu->cd.arm.cpsr &= ~ARM_FLAG_MODE;
 	cpu->cd.arm.cpsr |= arm_exception_to_mode[exception_nr];
+
+	cpu->cd.arm.cpsr |= ARM_FLAG_I;
+	if (exception_nr == ARM_EXCEPTION_RESET ||
+	    exception_nr == ARM_EXCEPTION_FIQ)
+		cpu->cd.arm.cpsr |= ARM_FLAG_F;
+
+	/*  Load the new register bank, if we switched:  */
 	arm_load_register_bank(cpu);
+
+	/*  Return address:  */
+	cpu->cd.arm.r[ARM_LR] = retaddr;
 }
 
 

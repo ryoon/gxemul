@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.2 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.3 2005-09-19 20:10:57 debug Exp $
  *
  *
  *  TODO:
@@ -58,7 +58,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	unsigned char data[4];
 #endif
 #endif
-	uint32_t addr;
+	uint32_t addr, low_pc;
 
 	addr = *((uint32_t *)ic->arg[0])
 #ifdef A__P
@@ -79,12 +79,19 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    ;
 
+	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.
+	    cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
+
 #ifdef A__L
 	/*  Load:  */
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_READ, CACHE_DATA)) {
 		fatal("load failed: TODO\n");
-		exit(1);
+		return;
 	}
 #ifdef A__B
 	*((uint32_t *)ic->arg[2]) =
@@ -125,7 +132,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 		/*  T-bit: translations can cause failures even
 		    in system modes  */
 		fatal("store failed: TODO\n");
-		exit(1);
+		return;
 	}
 #endif
 

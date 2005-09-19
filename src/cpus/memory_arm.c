@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.8 2005-09-18 19:54:14 debug Exp $
+ *  $Id: memory_arm.c,v 1.9 2005-09-19 20:10:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -36,6 +36,8 @@
 #include "cpu.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "armreg.h"
 
 
 /*
@@ -53,7 +55,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 {
 	unsigned char descr[4];
 	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba;
-	int instr = flags & FLAG_INSTR, d2_in_use = 0;
+	int instr = flags & FLAG_INSTR, d2_in_use = 0, d_in_use = 1;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
@@ -79,7 +81,8 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 
 	switch (d & 3) {
 
-	case 0:	goto exception_return;
+	case 0:	d_in_use = 0;
+		goto exception_return;
 
 	case 1:	/*  Course Pagetable:  */
 		ptba = d & 0xfffffc00;
@@ -123,24 +126,38 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	}
 
 exception_return:
-#if 0
 	if (no_exceptions)
 		return 0;
-#endif
 
-	fatal("TODO: arm memory fault: vaddr=%08x d=0x%08x", vaddr, d);
+	fatal("TODO: arm memory fault: vaddr=%08x ", vaddr);
+	if (d_in_use)
+		fatal(" d=0x%08x", d);
 	if (d2_in_use)
 		fatal(" d2=0x%08x", d2);
 	fatal("\n");
 
-if (no_exceptions)
-return 0;
+	cpu->cd.arm.far = vaddr;
+	cpu->cd.arm.fsr = 0;
 
-#if 0
+	if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32)
+		cpu->cd.arm.fsr |= FAULT_USER;
+
+	if (!d_in_use)
+		cpu->cd.arm.fsr |= FAULT_BUSTRNL1;
+	else if (!d2_in_use)
+		cpu->cd.arm.fsr |= FAULT_BUSTRNL2;
+	else {
+		/*
+		 *  TODO: More fsr stuff!
+		 *
+		 *  Alignment (FAULT_ALIGN_0, 1),
+		 *  translation (FAULT_TRANS_S, P),
+		 *  domain (FAULT_DOMAIN_S, P),
+		 *  and permision (FAULT_PERM_S, P).
+		 */
+	}
+
 	arm_exception(cpu, ARM_EXCEPTION_DATA_ABT);
-#else
-	exit(1);
-#endif
 	return 0;
 }
 

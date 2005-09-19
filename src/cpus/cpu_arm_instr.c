@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.12 2005-09-17 21:55:19 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.13 2005-09-19 20:10:57 debug Exp $
  *
  *  ARM instructions.
  *
@@ -638,6 +638,37 @@ X(msr)
 		arm_load_register_bank(cpu);
 }
 Y(msr)
+X(msr_spsr)
+{
+	uint32_t mask = ic->arg[1];
+	uint32_t new_value = reg(ic->arg[0]);
+	switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
+	case ARM_MODE_FIQ32:
+		cpu->cd.arm.spsr_fiq &= ~mask;
+		cpu->cd.arm.spsr_fiq |= (new_value & mask);
+		break;
+	case ARM_MODE_ABT32:
+		cpu->cd.arm.spsr_abt &= ~mask;
+		cpu->cd.arm.spsr_abt |= (new_value & mask);
+		break;
+	case ARM_MODE_UND32:
+		cpu->cd.arm.spsr_und &= ~mask;
+		cpu->cd.arm.spsr_und |= (new_value & mask);
+		break;
+	case ARM_MODE_IRQ32:
+		cpu->cd.arm.spsr_irq &= ~mask;
+		cpu->cd.arm.spsr_irq |= (new_value & mask);
+		break;
+	case ARM_MODE_SVC32:
+		cpu->cd.arm.spsr_svc &= ~mask;
+		cpu->cd.arm.spsr_svc |= (new_value & mask);
+		break;
+	default:fatal("msr_spsr: unimplemented mode %i\n",
+		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
+		exit(1);
+	}
+}
+Y(msr_spsr)
 
 
 /*
@@ -784,14 +815,24 @@ X(bdt_load)
 	int u_bit = iw & 0x00800000;
 	int s_bit = iw & 0x00400000;
 	int w_bit = iw & 0x00200000;
-	int i;
+	int i, return_flag = 0;
 
 	if (s_bit) {
-		fatal("bdt_load: TODO: s-bit\n");
-		exit(1);
+		/*  Load USR registers:  */
+		if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32) {
+			fatal("bdt_load: s-bit: in usermode?\n");
+			exit(1);
+		}
+
+		if (iw & 0x8000) {
+			s_bit = 0;
+			return_flag = 1;
+		}
 	}
 
 	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1)) {
+		uint32_t value;
+
 		if (!((iw >> i) & 1)) {
 			/*  Skip register i:  */
 			continue;
@@ -807,7 +848,7 @@ X(bdt_load)
 		page = cpu->cd.arm.host_load[addr >> 12];
 		if (page != NULL) {
 			uint32_t *p32 = (uint32_t *) page;
-			uint32_t value = p32[(addr & 0xfff) >> 2];
+			value = p32[(addr & 0xfff) >> 2];
 			/*  Change byte order of value if
 			    host and emulated endianness differ:  */
 #ifdef HOST_LITTLE_ENDIAN
@@ -819,7 +860,10 @@ X(bdt_load)
 				    ((value & 0xff00) << 8) |
 				    ((value & 0xff0000) >> 8) |
 				    ((value & 0xff000000) >> 24);
-			cpu->cd.arm.r[i] = value;
+			if (s_bit && i >= 8 && i <= 14)
+				cpu->cd.arm.default_r8_r14[i-8] = value;
+			else
+				cpu->cd.arm.r[i] = value;
 		} else {
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_READ, CACHE_DATA)) {
@@ -827,14 +871,19 @@ X(bdt_load)
 				exit(1);
 			}
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-				cpu->cd.arm.r[i] = data[0] +
+				value = data[0] +
 				    (data[1] << 8) + (data[2] << 16)
 				    + (data[3] << 24);
 			} else {
-				cpu->cd.arm.r[i] = data[3] +
+				value = data[3] +
 				    (data[2] << 8) + (data[1] << 16)
 				    + (data[0] << 24);
 			}
+
+			if (s_bit && i >= 8 && i <= 14)
+				cpu->cd.arm.default_r8_r14[i-8] = value;
+			else
+				cpu->cd.arm.r[i] = value;
 		}
 
 		/*  NOTE: Special case:  */
@@ -861,6 +910,38 @@ X(bdt_load)
 
 	if (w_bit)
 		*np = addr;
+
+	if (return_flag) {
+		uint32_t new_cpsr;
+		int switch_register_banks;
+
+		switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
+		case ARM_MODE_FIQ32:
+			new_cpsr = cpu->cd.arm.spsr_fiq; break;
+		case ARM_MODE_ABT32:
+			new_cpsr = cpu->cd.arm.spsr_abt; break;
+		case ARM_MODE_UND32:
+			new_cpsr = cpu->cd.arm.spsr_und; break;
+		case ARM_MODE_IRQ32:
+			new_cpsr = cpu->cd.arm.spsr_irq; break;
+		case ARM_MODE_SVC32:
+			new_cpsr = cpu->cd.arm.spsr_svc; break;
+		default:fatal("bdt_load: unimplemented mode %i\n",
+			    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
+			exit(1);
+		}
+
+		switch_register_banks = (cpu->cd.arm.cpsr & ARM_FLAG_MODE) !=
+		    (new_cpsr & ARM_FLAG_MODE);
+
+		if (switch_register_banks)
+			arm_save_register_bank(cpu);
+
+		cpu->cd.arm.cpsr = new_cpsr;
+
+		if (switch_register_banks)
+			arm_load_register_bank(cpu);
+	}
 }
 Y(bdt_load)
 
@@ -885,8 +966,11 @@ X(bdt_store)
 	int i;
 
 	if (s_bit) {
-		fatal("bdt_store: TODO: s-bit\n");
-		exit(1);
+		/*  Store USR registers:  */
+		if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32) {
+			fatal("bdt_store: s-bit: in usermode?\n");
+			exit(1);
+		}
 	}
 
 	if (iw & 0x8000) {
@@ -904,7 +988,11 @@ X(bdt_store)
 			continue;
 		}
 
-		value = cpu->cd.arm.r[i];
+		if (s_bit && i >= 8 && i <= 14)
+			value = cpu->cd.arm.default_r8_r14[i-8];
+		else
+			value = cpu->cd.arm.r[i];
+
 		if (i == ARM_PC)
 			value += 12;	/*  TODO: 8 on some ARMs?  */
 		if (p_bit) {
@@ -1327,11 +1415,9 @@ X(to_be_translated)
 				fatal("msr PC?\n");
 				goto bad;
 			}
-			if (iword & 0x00400000) {
-				/*  TODO: ic->f = cond_instr(msr_spsr);  */
-				fatal("TODO: spsr\n");
-				goto bad;
-			} else
+			if (iword & 0x00400000)
+				ic->f = cond_instr(msr_spsr);
+			else
 				ic->f = cond_instr(msr);
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
 			switch ((iword >> 16) & 15) {

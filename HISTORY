@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.959 2005-09-18 23:49:31 debug Exp $
+$Id: HISTORY,v 1.960 2005-09-19 20:10:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2264,3 +2264,4 @@ Changelog for GXemul:
 20050917	Adding a dummy Atmel AVR (8-bit) cpu family skeleton.
 20050918	Various minor updates.
 20050919	Symbols are now loaded from Mach-O executables.
+		Continuing the work on adding ARM exception support.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.113 2005-09-18 23:49:31 debug Exp $
+ *  $Id: file.c,v 1.114 2005-09-19 20:10:56 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -505,7 +505,6 @@ static void file_load_macho(struct machine *m, struct memory *mem,
 			fread(strings, 1, strsize, f);
 
 			for (i=0; i<nsyms; i++) {
-				unsigned char b[512];
 				int n_strx, n_type, n_sect, n_desc;
 				uint32_t n_value;
 				unencode(n_strx,  &symbols[i*12+0], int32_t);

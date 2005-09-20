@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.548 2005-09-18 19:54:13 debug Exp $
+ *  $Id: machine.c,v 1.549 2005-09-20 21:05:21 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -5117,7 +5117,7 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_IQ80321:
 	case MACHINE_IYONIX:
-		m->cpu_name = strdup("XSCALE600");
+		m->cpu_name = strdup("80321_600_B0");
 		break;
 	case MACHINE_CATS:
 	case MACHINE_NETWINDER:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.4 2005-09-09 23:24:41 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.5 2005-09-20 21:05:22 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -157,18 +157,41 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 #ifdef A__PC
 	if (ic->arg[2] == (size_t)&cpu->cd.arm.r[ARM_PC]) {
+#ifndef A__S
 		uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
 		uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1)
 		    << ARM_INSTR_ALIGNMENT_SHIFT) |
 		    ((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
+#endif
 		cpu->pc = reg(ic->arg[2]) = c64;
+#ifdef A__S
+		/*  Copy the right SPSR into CPSR:  */
+		arm_save_register_bank(cpu);
+		switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
+		case ARM_MODE_FIQ32:
+			cpu->cd.arm.cpsr = cpu->cd.arm.spsr_fiq; break;
+		case ARM_MODE_IRQ32:
+			cpu->cd.arm.cpsr = cpu->cd.arm.spsr_irq; break;
+		case ARM_MODE_SVC32:
+			cpu->cd.arm.cpsr = cpu->cd.arm.spsr_svc; break;
+		case ARM_MODE_ABT32:
+			cpu->cd.arm.cpsr = cpu->cd.arm.spsr_abt; break;
+		case ARM_MODE_UND32:
+			cpu->cd.arm.cpsr = cpu->cd.arm.spsr_und; break;
+		default:fatal("huh? weird mode in dpi s with pc\n");
+			exit(1);
+		}
+		arm_load_register_bank(cpu);
+#else
 		if ((old_pc & ~mask_within_page) ==
 		    (cpu->pc & ~mask_within_page)) {
 			cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
 			    ((cpu->pc & mask_within_page) >>
 			    ARM_INSTR_ALIGNMENT_SHIFT);
 		} else
+#endif
 			arm_pc_to_pointers(cpu);
+		return;
 	} else
 		reg(ic->arg[2]) = c64;
 #else

@@ -28,10 +28,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arm_cpu_types.h,v 1.3 2005-09-18 19:54:16 debug Exp $
+ *  $Id: arm_cpu_types.h,v 1.4 2005-09-20 21:05:23 debug Exp $
  */
 
 /*  See cpu_arm.h for struct arm_cpu_type_def.  */
+/*  See armreg.h for CPU_ID_xxx defines.  */
 
 /*  Flags:  */
 #define	ARM_NO_MMU		1
@@ -39,14 +40,69 @@
 
 #include "armreg.h"
 
-#define	ARM_CPU_TYPE_DEFS					      {	 \
-	{ "ARM610",	CPU_ID_ARM610,	ARM_DUAL_ENDIAN, 12, 1,  0, 1 }, \
-	{ "ARM620",	CPU_ID_ARM620,	ARM_DUAL_ENDIAN, 12, 1,  0, 1 }, \
-	{ "SA110",	CPU_ID_SA110 | 3, 0,		 14, 1, 14, 1 }, \
-	{ "SA1110",	CPU_ID_SA1110,	0,		 14, 1, 14, 1 }, \
-	{ "PXA210",	CPU_ID_PXA210,	0,		 16, 1,  0, 1 }, \
-	{ "XSCALE600",	CPU_ID_80321_600_B0,0,		 14, 1, 14, 1 }, \
-	{ NULL, 0, 0, 0,0, 0,0 } }
+/*
+ *  NOTE: Most of these are bogus!
+ */
 
+#define	ARM_CPU_TYPE_DEFS					      {	 \
+	{ "ARM3",	CPU_ID_ARM3,	ARM_DUAL_ENDIAN,12, 1,  0, 1 }, \
+	{ "ARM610",	CPU_ID_ARM600,	ARM_DUAL_ENDIAN,12, 1,  0, 1 }, \
+	{ "ARM610",	CPU_ID_ARM610,	ARM_DUAL_ENDIAN,12, 1,  0, 1 }, \
+	{ "ARM620",	CPU_ID_ARM620,	ARM_DUAL_ENDIAN,12, 1,  0, 1 }, \
+	\
+	{ "ARM700",	CPU_ID_ARM700,	0,		12, 1,  0, 1 }, \
+	{ "ARM710",	CPU_ID_ARM710,	0,		12, 1,  0, 1 }, \
+	{ "ARM710A",	CPU_ID_ARM710A,	0,		12, 1,  0, 1 }, \
+	{ "ARM720T",	CPU_ID_ARM720T,	0,		12, 1,  0, 1 }, \
+	{ "ARM740T4K",	CPU_ID_ARM740T4K,ARM_NO_MMU,	12, 1,  0, 1 }, \
+	{ "ARM740T8K",	CPU_ID_ARM740T8K,ARM_NO_MMU,	13, 1,  0, 1 }, \
+	{ "ARM7500",	CPU_ID_ARM7500,	0,		12, 1,  0, 1 }, \
+	{ "ARM7500FE",	CPU_ID_ARM7500FE,0,		12, 1,  0, 1 }, \
+	\
+	{ "ARM810",	CPU_ID_ARM810,	0,		12, 1,  0, 1 }, \
+	{ "ARM920T",	CPU_ID_ARM920T,	0,		12, 1,  0, 1 }, \
+	{ "ARM922T",	CPU_ID_ARM922T,	0,		12, 1,  0, 1 }, \
+	{ "ARM940T",	CPU_ID_ARM940T,	ARM_NO_MMU,	12, 1,  0, 1 }, \
+	\
+	{ "ARM946ES",	CPU_ID_ARM946ES,ARM_NO_MMU,	12, 1,  0, 1 }, \
+	{ "ARM966ES",	CPU_ID_ARM966ES,ARM_NO_MMU,	12, 1,  0, 1 }, \
+	{ "ARM966ESR1",	CPU_ID_ARM966ESR1,ARM_NO_MMU,	12, 1,  0, 1 }, \
+	\
+	{ "ARM1020E",	CPU_ID_ARM1020E,0,		12, 1,  0, 1 }, \
+	{ "ARM1022ES",	CPU_ID_ARM1022ES,0,		12, 1,  0, 1 }, \
+	{ "ARM1026EJS",	CPU_ID_ARM1026EJS,0,		12, 1,  0, 1 }, \
+	{ "ARM1136JS",	CPU_ID_ARM1136JS,0,		12, 1,  0, 1 }, \
+	{ "ARM1136JSR1",CPU_ID_ARM1136JSR1,0,		12, 1,  0, 1 }, \
+	\
+	{ "SA110",	CPU_ID_SA110 | 3, 0,		14, 1, 14, 1 }, \
+	{ "SA1100",	CPU_ID_SA1100,	0,		14, 1, 14, 1 }, \
+	{ "SA1110",	CPU_ID_SA1110,	0,		14, 1, 14, 1 }, \
+	\
+	{ "TI925T",	CPU_ID_TI925T,	0,		14, 1, 14, 1 }, \
+	{ "IXP1200",	CPU_ID_IXP1200,	0,		14, 1, 14, 1 }, \
+	{ "80200",	CPU_ID_80200,	0,		14, 1, 14, 1 }, \
+	\
+	{ "PXA210",	CPU_ID_PXA210,	0,		16, 1,  0, 1 }, \
+	{ "PXA210A",	CPU_ID_PXA210A,	0,		16, 1,  0, 1 }, \
+	{ "PXA210B",	CPU_ID_PXA210B,	0,		16, 1,  0, 1 }, \
+	{ "PXA210C",	CPU_ID_PXA210C,	0,		16, 1,  0, 1 }, \
+	{ "PXA250",	CPU_ID_PXA250,	0,		16, 1,  0, 1 }, \
+	{ "PXA250A",	CPU_ID_PXA250A,	0,		16, 1,  0, 1 }, \
+	{ "PXA250B",	CPU_ID_PXA250B,	0,		16, 1,  0, 1 }, \
+	{ "PXA250C",	CPU_ID_PXA250C,	0,		16, 1,  0, 1 }, \
+	{ "PXA27X",	CPU_ID_PXA27X,	0,		16, 1,  0, 1 }, \
+	\
+	{ "IXP425_255",	CPU_ID_IXP425_266,	0,	14, 1, 14, 1 }, \
+	{ "IXP425_400",	CPU_ID_IXP425_400,	0,	14, 1, 14, 1 }, \
+	{ "IXP425_533",	CPU_ID_IXP425_533,	0,	14, 1, 14, 1 }, \
+	\
+	{ "80219_400",	CPU_ID_80219_400,0,		14, 1, 14, 1 }, \
+	{ "80219_600",	CPU_ID_80219_600,0,		14, 1, 14, 1 }, \
+	{ "80321_400",	CPU_ID_80321_400,0,		14, 1, 14, 1 }, \
+	{ "80321_400_B0",CPU_ID_80321_400_B0,0,		14, 1, 14, 1 }, \
+	{ "80321_600",	CPU_ID_80321_600,0,		14, 1, 14, 1 }, \
+	{ "80321_600_B0",CPU_ID_80321_600_B0,0,		14, 1, 14, 1 }, \
+	\
+	{ NULL, 0, 0, 0,0, 0,0 } }
 
 #endif	/*  ARM_CPU_TYPES_H  */

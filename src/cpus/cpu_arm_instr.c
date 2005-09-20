@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.13 2005-09-19 20:10:57 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.14 2005-09-20 21:05:22 debug Exp $
  *
  *  ARM instructions.
  *
@@ -776,6 +776,23 @@ X(swi_useremul)
 Y(swi_useremul)
 
 
+/*
+ *  swi:  Software interrupt.
+ */
+X(swi)
+{
+	/*  Synchronize the program counter:  */
+	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	old_pc = cpu->pc = cpu->cd.arm.r[ARM_PC];
+
+	arm_exception(cpu, ARM_EXCEPTION_SWI);
+}
+Y(swi)
+
+
 extern void (*arm_load_store_instr[1024])(struct cpu *,
 	struct arm_instr_call *);
 X(store_w0_byte_u1_p0_imm);
@@ -808,7 +825,7 @@ X(bdt_load)
 {
 	unsigned char data[4];
 	uint32_t *np = (uint32_t *)ic->arg[0];
-	uint32_t addr = *np;
+	uint32_t addr = *np, low_pc;
 	unsigned char *page;
 	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
 	int p_bit = iw & 0x01000000;
@@ -816,6 +833,15 @@ X(bdt_load)
 	int s_bit = iw & 0x00400000;
 	int w_bit = iw & 0x00200000;
 	int i, return_flag = 0;
+
+	/*  Synchronize the program counter:  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+	    ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc <<
+	    ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	if (s_bit) {
 		/*  Load USR registers:  */
@@ -868,7 +894,7 @@ X(bdt_load)
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_READ, CACHE_DATA)) {
 				fatal("bdt: load failed: TODO\n");
-				exit(1);
+				return;
 			}
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 				value = data[0] +
@@ -956,7 +982,7 @@ X(bdt_store)
 {
 	unsigned char data[4];
 	uint32_t *np = (uint32_t *)ic->arg[0];
-	uint32_t value, addr = *np;
+	uint32_t low_pc, value, addr = *np;
 	uint32_t iw = ic->arg[1];  /*  xxxx100P USWLnnnn llllllll llllllll  */
 	unsigned char *page;
 	int p_bit = iw & 0x01000000;
@@ -973,14 +999,14 @@ X(bdt_store)
 		}
 	}
 
-	if (iw & 0x8000) {
-		/*  Synchronize the program counter:  */
-		uint32_t low_pc = ((size_t)ic - (size_t)
-		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-		cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
-		cpu->pc = cpu->cd.arm.r[ARM_PC];
-	}
+	/*  Synchronize the program counter:  */
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+	    ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc <<
+	    ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1)) {
 		if (!((iw >> i) & 1)) {
@@ -995,6 +1021,7 @@ X(bdt_store)
 
 		if (i == ARM_PC)
 			value += 12;	/*  TODO: 8 on some ARMs?  */
+
 		if (p_bit) {
 			if (u_bit)
 				addr += sizeof(uint32_t);
@@ -1032,7 +1059,7 @@ X(bdt_store)
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_WRITE, CACHE_DATA)) {
 				fatal("bdt: store failed: TODO\n");
-				exit(1);
+				return;
 			}
 		}
 
@@ -1628,20 +1655,19 @@ X(to_be_translated)
 
 	case 0xf:
 		/*  SWI:  */
+		/*  Default handler:  */
+		ic->f = cond_instr(swi);
 		if (iword == 0xef8c64be) {
 			/*  Hack for openfirmware prom emulation:  */
 			ic->f = instr(openfirmware);
-		} else if ((iword & 0x00f00000) == 0x00a00000) {
-			ic->arg[0] = iword & 0x00ffffff;
-			if (cpu->machine->userland_emul != NULL)
+		} else if (cpu->machine->userland_emul != NULL) {
+			if ((iword & 0x00f00000) == 0x00a00000) {
+				ic->arg[0] = iword & 0x00ffffff;
 				ic->f = cond_instr(swi_useremul);
-			else {
-				fatal("swi in non-useremul mode: TODO\n");
+			} else {
+				fatal("Bad userland SWI?\n");
 				goto bad;
 			}
-		} else {
-			fatal("swi, not 0xaXXXXX: TODO\n");
-			goto bad;
 		}
 		break;
 

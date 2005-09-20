@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.9 2005-09-17 17:35:29 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.10 2005-09-20 21:05:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -422,7 +422,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		uint64_t paddr;
 		if (cpu->translate_address != NULL)
 			ok = cpu->translate_address(cpu, vaddr, &paddr,
-			    FLAG_NOEXCEPTIONS | FLAG_INSTR);
+			    FLAG_INSTR);
 		else {
 			paddr = vaddr;
 			ok = 1;
@@ -430,8 +430,22 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		if (!ok) {
 			fatal("TODO: instruction vaddr=>paddr translation"
 			    " failed. vaddr=0x%llx\n", (long long)vaddr);
-			exit(1);
+fatal("!! cpu->pc=0x%llx arm_pc=0x%x\n", (long long)cpu->pc,
+cpu->cd.arm.r[ARM_PC]);
+			vaddr = cpu->pc;
+			ok = cpu->translate_address(cpu, vaddr, &paddr,
+			    FLAG_INSTR);
+printf("EXCEPTION HANDLER: vaddr = 0x%x ==> paddr = 0x%x\n",
+	(int)vaddr, (int)paddr);
+fatal("!? cpu->pc=0x%llx arm_pc=0x%x\n", (long long)cpu->pc,
+cpu->cd.arm.r[ARM_PC]);
+			if (!ok) {
+				fatal("FATAL: could not find physical"
+				    " address of the exception handler?");
+				exit(1);
+			}
 		}
+		cached_pc = cpu->pc;
 		physaddr = paddr;
 	}
 

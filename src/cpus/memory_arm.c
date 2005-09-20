@@ -25,13 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.9 2005-09-19 20:10:57 debug Exp $
+ *  $Id: memory_arm.c,v 1.10 2005-09-20 21:05:22 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #include "cpu.h"
 #include "memory.h"
@@ -142,6 +141,8 @@ exception_return:
 	if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32)
 		cpu->cd.arm.fsr |= FAULT_USER;
 
+cpu->cd.arm.fsr |= FAULT_TRANS_P;
+#if 0
 	if (!d_in_use)
 		cpu->cd.arm.fsr |= FAULT_BUSTRNL1;
 	else if (!d2_in_use)
@@ -156,6 +157,7 @@ exception_return:
 		 *  and permision (FAULT_PERM_S, P).
 		 */
 	}
+#endif
 
 	arm_exception(cpu, ARM_EXCEPTION_DATA_ABT);
 	return 0;

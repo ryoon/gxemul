@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.15 2005-09-19 20:10:57 debug Exp $
+ *  $Id: cpu_arm.c,v 1.16 2005-09-20 21:05:22 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -210,10 +210,10 @@ void arm_cpu_list_available_types(void)
 	i = 0;
 	while (tdefs[i].name != NULL) {
 		debug("%s", tdefs[i].name);
-		for (j=10 - strlen(tdefs[i].name); j>0; j--)
+		for (j=13 - strlen(tdefs[i].name); j>0; j--)
 			debug(" ");
 		i++;
-		if ((i % 6) == 0 || tdefs[i].name == NULL)
+		if ((i % 5) == 0 || tdefs[i].name == NULL)
 			debug("\n");
 	}
 }
@@ -446,18 +446,29 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 		exit(1);
 	}
 
-	/*  TODO: This is different for different exceptions!  */
-	retaddr = cpu->pc + 8;
+	retaddr = cpu->pc;
+
+	switch (exception_nr) {
+	case ARM_EXCEPTION_RESET:
+		cpu->running = 0;
+		fatal("TODO: reset\n");
+		exit(1);
+	case ARM_EXCEPTION_UND:
+	case ARM_EXCEPTION_SWI:
+	case ARM_EXCEPTION_PREF_ABT:
+	case ARM_EXCEPTION_IRQ:
+	case ARM_EXCEPTION_FIQ:
+		retaddr += 4;
+		break;
+	case ARM_EXCEPTION_DATA_ABT:
+		retaddr += 8;
+		break;
+
+	}
 
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
 	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
 	arm_pc_to_pointers(cpu);
-
-/*
- TODO: load the instruction word manually, and see if it contains only
- zeroes. if so, then print a warning, because an all-zero instruction
- is very unlikely to be the first instruction of an exception handler.
- */
 
 	fatal("arm_exception(): %i\n", exception_nr);
 

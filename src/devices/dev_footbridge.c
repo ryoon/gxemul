@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.4 2005-09-21 19:10:34 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.5 2005-09-21 21:23:50 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -56,14 +56,16 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 {
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
+	d->timer1_value += 100;
 {
-static int x = 0;
-x++;
-if (x > 2699 && random() & 1 && d->irq_enable & 0x10) {
-cpu_interrupt(cpu, 4);
-}
-else
-cpu_interrupt_ack(cpu, 4);
+	static int x = 0;
+	x++;
+	if (x > 2399 && d->timer_tick_countdown-- < 0 &&
+	    d->irq_enable & 0x10) {
+		cpu_interrupt(cpu, 4);
+	} else {
+		cpu_interrupt_ack(cpu, 4);
+	}
 }
 }
 
@@ -142,7 +144,22 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			d->fiq_enable &= ~idata;
 		break;
 
+	case TIMER_1_VALUE:
+		if (writeflag == MEM_READ)
+			odata = d->timer1_value;
+		else
+			d->timer1_value = idata;
+		break;
+
+	case TIMER_1_CONTROL:
+		if (writeflag == MEM_READ)
+			odata = d->timer1_control;
+		else
+			d->timer1_control = idata;
+		break;
+
 	case TIMER_1_CLEAR:
+		d->timer_tick_countdown = 2;
 		cpu_interrupt_ack(cpu, 4);
 		break;
 

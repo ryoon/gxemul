@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.177 2005-09-10 22:18:57 debug Exp $
+ *  $Id: devices.h,v 1.178 2005-09-21 19:10:35 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -242,6 +242,15 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
 	int xsize, int ysize, int bit_depth, char *name);
+
+/*  dev_footbridge:  */
+struct footbridge_data {
+	uint32_t        irq_status;
+	uint32_t        irq_enable;
+
+	uint32_t        fiq_status;
+	uint32_t        fiq_enable;
+}; 
 
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x1000

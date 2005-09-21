@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.10 2005-09-20 21:05:22 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.11 2005-09-21 19:10:33 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -48,6 +48,15 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	uint64_t cached_pc;
 #endif
 	int low_pc, n_instrs;
+
+	/*
+	 *  Interrupt assertion?
+ 	 */
+#ifdef DYNTRANS_ARM
+	if (cpu->cd.arm.irq_asserted &&
+	    !(cpu->cd.arm.cpsr & ARM_FLAG_I))
+		arm_exception(cpu, ARM_EXCEPTION_IRQ);
+#endif
 
 #ifdef DYNTRANS_DUALMODE_32
 	if (cpu->is_32bit)

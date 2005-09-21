@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.16 2005-09-20 21:05:22 debug Exp $
+ *  $Id: cpu_arm.c,v 1.17 2005-09-21 19:10:33 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -513,11 +513,24 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 /*
  *  arm_cpu_interrupt():
+ *
+ *  0..31 are used as interrupt numbers, 32 is used as a "re-assert" signal
+ *  to cpu->machine->md_interrupt().
  */
 int arm_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	fatal("arm_cpu_interrupt(): 0x%llx\n", (int)irq_nr);
-	/*  arm_exception(cpu, ARM_EXCEPTION_IRQ);  */
+	/*  fatal("arm_cpu_interrupt(): 0x%llx\n", (int)irq_nr);  */
+	if (irq_nr <= 32) {
+		if (cpu->machine->md_interrupt != NULL)
+			cpu->machine->md_interrupt(cpu->machine,
+			    cpu, irq_nr, 1);
+		else
+			fatal("arm_cpu_interrupt(): md_interrupt == NULL\n");
+	} else {
+		/*  Assert ARM IRQs:  */
+		cpu->cd.arm.irq_asserted = 1;
+	}
+
 	return 1;
 }
 
@@ -527,8 +540,18 @@ int arm_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  */
 int arm_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	/*  fatal("arm_cpu_interrupt_ack(): TODO\n");  */
-	return 0;
+	if (irq_nr <= 32) {
+		if (cpu->machine->md_interrupt != NULL)
+			cpu->machine->md_interrupt(cpu->machine,
+			    cpu, irq_nr, 0);
+		else
+			fatal("arm_cpu_interrupt_ack(): md_interrupt == NULL\n");
+	} else {
+		/*  De-assert ARM IRQs:  */
+		cpu->cd.arm.irq_asserted = 0;
+	}
+
+	return 1;
 }
 
 

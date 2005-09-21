@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.961 2005-09-20 21:05:20 debug Exp $
+$Id: HISTORY,v 1.962 2005-09-21 19:10:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2265,4 +2265,6 @@ Changelog for GXemul:
 20050918	Various minor updates.
 20050919	Symbols are now loaded from Mach-O executables.
 		Continuing the work on adding ARM exception support.
-20050920	Success! OpenBSD/cats and NetBSD/cats reach userland!
+20050920	More work on ARM stuff: OpenBSD/cats and NetBSD/cats reach
+		userland! :-)
+20050921	Some more progress on ARM interrupt specifics.

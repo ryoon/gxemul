@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.26 2005-08-05 07:50:37 debug Exp $
+ *  $Id: dev_gt.c,v 1.27 2005-09-21 19:10:34 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -134,10 +134,10 @@ cpu_interrupt_ack(cpu, d->irqnr);
 		 *  Ugly hack, which works for at least evbmips/Malta:
 		 */
 		asserted =
-		    (cpu->machine->md_int.isa_pic_data.pic1->irr &
-		    ~cpu->machine->md_int.isa_pic_data.pic1->ier) |
-		    ((cpu->machine->md_int.isa_pic_data.pic2->irr &
-		     ~cpu->machine->md_int.isa_pic_data.pic2->ier) << 8);
+		    (cpu->machine->isa_pic_data.pic1->irr &
+		    ~cpu->machine->isa_pic_data.pic1->ier) |
+		    ((cpu->machine->isa_pic_data.pic2->irr &
+		     ~cpu->machine->isa_pic_data.pic2->ier) << 8);
 		odata = 7;	/*  "Spurious interrupt" defaults to 7.  */
 		for (i=0; i<16; i++)
 			if ((asserted >> i) & 1) {

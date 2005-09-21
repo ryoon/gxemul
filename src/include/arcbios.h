@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.9 2005-05-23 12:21:46 debug Exp $
+ *  $Id: arcbios.h,v 1.10 2005-09-21 19:10:35 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -61,64 +61,6 @@ void arcbios_console_init(struct machine *machine,
 	uint64_t vram, uint64_t ctrlregs);
 void arcbios_init(struct machine *machine, int is64bit,
 	uint64_t sgi_ram_offset);
-
-
-#define	ARC_CONSOLE_MAX_X		80
-#define	ARC_CONSOLE_MAX_Y		25
-
-#define	ARC_MAX_ESC			16
-
-#define	MAX_OPEN_STRINGLEN		200
-#define	ARC_MAX_HANDLES			10
-
-#define	MAX_STRING_TO_COMPONENT		20
-#define	MAX_CONFIG_DATA			50
-
-struct machine_arcbios {
-	/*  General stuff:  */
-	int		arc_64bit;
-	int		wordlen;		/*  cached  */
-
-	/*  VGA Console I/O:  */
-	int		vgaconsole;		/*  1 or 0  */
-	uint64_t	console_vram;
-	uint64_t	console_ctrlregs;
-	char		escape_sequence[ARC_MAX_ESC+1];
-	int		in_escape_sequence;
-	int		console_maxx;
-	int		console_maxy;
-	int		console_curx;
-	int		console_cury;
-	int		console_reverse;
-	int		console_curcolor;
-
-	/*  File handles:  */
-	int		file_handle_in_use[ARC_MAX_HANDLES];
-	char		*file_handle_string[ARC_MAX_HANDLES];
-	uint64_t	current_seek_offset[ARC_MAX_HANDLES];
-
-	/*  Memory:  */
-	int		n_memdescriptors;
-	uint64_t	memdescriptor_base;
-
-	/*  Component tree:  */
-	uint64_t	next_component_address;
-	int		n_components;
-
-	char		*string_to_component[MAX_STRING_TO_COMPONENT];
-	uint64_t	string_to_component_value[MAX_STRING_TO_COMPONENT];
-	int		n_string_to_components;
-
-	/*  Configuration data:  */
-	int		n_configuration_data;
-	uint64_t	configuration_data_next_addr;
-	uint64_t	configuration_data_component[MAX_CONFIG_DATA];
-	int		configuration_data_len[MAX_CONFIG_DATA];
-	uint64_t	configuration_data_configdata[MAX_CONFIG_DATA];
-
-	/*  SCSI:  */
-	uint64_t	scsicontroller;		/*  component addr  */
-};
 
 
 /*  For internal use in arcbios.c:  */

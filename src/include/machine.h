@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.77 2005-09-17 17:14:28 debug Exp $
+ *  $Id: machine.h,v 1.78 2005-09-21 19:10:35 debug Exp $
  */
 
 #include <sys/types.h>
@@ -36,8 +36,9 @@
 
 #include "symbol.h"
 
-#include "arcbios.h"
+#include "machine_arc.h"
 #include "machine_x86.h"
+
 
 #define	MAX_BREAKPOINTS		8
 #define	BREAKPOINT_FLAG_R	1
@@ -55,6 +56,7 @@ struct kn230_csr;
 struct kn02_csr;
 struct dec_ioasic_data;
 struct ps2_data;
+struct footbridge_data;
 struct dec5800_data;
 struct au1x00_ic_data;
 struct malta_data;
@@ -192,6 +194,9 @@ struct machine {
 		struct machine_pc	pc;
 	} md;
 
+	/*  Bus-specific interrupt data:  */
+	struct isa_pic_data isa_pic_data;
+
 	/*  Machine-dependent interrupt specific structs:  */
 	union {
 		struct kn230_csr *kn230_csr;
@@ -203,7 +208,6 @@ struct machine {
 		struct vr41xx_data *vr41xx_data;       
 		struct jazz_data *jazz_data;
 		struct malta_data *malta_data;
-		struct isa_pic_data isa_pic_data;
 		struct sgi_ip20_data *sgi_ip20_data;
 		struct sgi_ip22_data *sgi_ip22_data;
 		struct sgi_ip30_data *sgi_ip30_data;
@@ -211,6 +215,7 @@ struct machine {
 			struct crime_data *crime_data;
 			struct mace_data *mace_data;
 		} ip32;
+		struct footbridge_data *footbridge_data;
 	} md_int;
 
 	/*  X11/framebuffer stuff:  */

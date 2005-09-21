@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.3 2005-09-13 20:56:53 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.4 2005-09-21 19:10:34 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -38,19 +38,34 @@
 
 #include "cpu.h"
 #include "device.h"
+#include "devices.h"	/*  for struct footbridge_data  */
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 #include "dc21285reg.h"
 
-#define	DEV_FOOTBRIDGE_LENGTH	0x1000		/*  TODO  */
+#define	DEV_FOOTBRIDGE_TICK_SHIFT	14
+#define	DEV_FOOTBRIDGE_LENGTH		0x1000		/*  TODO  */
 
 
-struct footbridge_data {
-	uint32_t	irq_enable;
-	uint32_t	fiq_enable;
-};
+/*
+ *  dev_footbridge_tick():
+ */
+void dev_footbridge_tick(struct cpu *cpu, void *extra)
+{
+	struct footbridge_data *d = (struct footbridge_data *) extra;
+
+{
+static int x = 0;
+x++;
+if (x > 2699 && random() & 1 && d->irq_enable & 0x10) {
+cpu_interrupt(cpu, 4);
+}
+else
+cpu_interrupt_ack(cpu, 4);
+}
+}
 
 
 /*
@@ -80,14 +95,55 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		odata = 3;  /*  footbridge revision number  */
 		break;
 
+	case IRQ_STATUS:
+		if (writeflag == MEM_READ)
+			odata = d->irq_status;
+		else {
+			fatal("[ WARNING: footbridge write to irq status? ]\n");
+			exit(1);
+			d->irq_status = idata;
+			cpu_interrupt(cpu, 32);
+		}
+		break;
+
 	case IRQ_ENABLE_SET:
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			d->irq_enable |= idata;
+			cpu_interrupt(cpu, 32);
+		} else
+			odata = d->irq_enable;
 		break;
 
 	case IRQ_ENABLE_CLEAR:
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			d->irq_enable &= ~idata;
+			cpu_interrupt(cpu, 32);
+		} else {
+			fatal("[ WARNING: footbridge read from "
+			    "ENABLE CLEAR? ]\n");
+			odata = d->irq_enable;
+		}
+		break;
+
+	case FIQ_STATUS:
+		if (writeflag == MEM_READ)
+			odata = d->fiq_status;
+		else
+			d->fiq_status = idata;
+		break;
+
+	case FIQ_ENABLE_SET:
+		if (writeflag == MEM_WRITE)
+			d->fiq_enable |= idata;
+		break;
+
+	case FIQ_ENABLE_CLEAR:
+		if (writeflag == MEM_WRITE)
+			d->fiq_enable &= ~idata;
+		break;
+
+	case TIMER_1_CLEAR:
+		cpu_interrupt_ack(cpu, 4);
 		break;
 
 	case TIMER_3_VALUE:
@@ -136,6 +192,10 @@ int devinit_footbridge(struct devinit *devinit)
 	    devinit->addr, DEV_FOOTBRIDGE_LENGTH,
 	    dev_footbridge_access, d, MEM_DEFAULT, NULL);
 
+	machine_add_tickfunction(devinit->machine,
+	    dev_footbridge_tick, d, DEV_FOOTBRIDGE_TICK_SHIFT);
+
+	devinit->return_ptr = d;
 	return 1;
 }
 

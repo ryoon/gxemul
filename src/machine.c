@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.549 2005-09-20 21:05:21 debug Exp $
+ *  $Id: machine.c,v 1.550 2005-09-21 19:10:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1308,36 +1308,36 @@ void malta_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 	if (irq_nr < 8) {
 		if (assrt)
-			m->md_int.isa_pic_data.pic1->irr |= mask;
+			m->isa_pic_data.pic1->irr |= mask;
 		else
-			m->md_int.isa_pic_data.pic1->irr &= ~mask;
+			m->isa_pic_data.pic1->irr &= ~mask;
 	} else if (irq_nr < 16) {
 		if (assrt)
-			m->md_int.isa_pic_data.pic2->irr |= mask;
+			m->isa_pic_data.pic2->irr |= mask;
 		else
-			m->md_int.isa_pic_data.pic2->irr &= ~mask;
+			m->isa_pic_data.pic2->irr &= ~mask;
 	}
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
 	/*  (TODO: don't hardcode this here)  */
-	if (m->md_int.isa_pic_data.pic2->irr &
-	    ~m->md_int.isa_pic_data.pic2->ier)
-		m->md_int.isa_pic_data.pic1->irr |= 0x04;
+	if (m->isa_pic_data.pic2->irr &
+	    ~m->isa_pic_data.pic2->ier)
+		m->isa_pic_data.pic1->irr |= 0x04;
 	else
-		m->md_int.isa_pic_data.pic1->irr &= ~0x04;
+		m->isa_pic_data.pic1->irr &= ~0x04;
 
 	/*  Now, PIC1:  */
-	if (m->md_int.isa_pic_data.pic1->irr &
-	    ~m->md_int.isa_pic_data.pic1->ier)
+	if (m->isa_pic_data.pic1->irr &
+	    ~m->isa_pic_data.pic1->ier)
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
 
 	/*  printf("MALTA: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
-	    "ier=0x%02x\n", m->md_int.isa_pic_data.pic1->irr,
-	    m->md_int.isa_pic_data.pic1->ier,
-	    m->md_int.isa_pic_data.pic2->irr,
-	    m->md_int.isa_pic_data.pic2->ier);  */
+	    "ier=0x%02x\n", m->isa_pic_data.pic1->irr,
+	    m->isa_pic_data.pic1->ier,
+	    m->isa_pic_data.pic2->irr,
+	    m->isa_pic_data.pic2->ier);  */
 }
 
 
@@ -1355,36 +1355,36 @@ void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	if (irq_nr < 8) {
 		if (assrt)
-			m->md_int.isa_pic_data.pic1->irr |= mask;
+			m->isa_pic_data.pic1->irr |= mask;
 		else
-			m->md_int.isa_pic_data.pic1->irr &= ~mask;
+			m->isa_pic_data.pic1->irr &= ~mask;
 	} else if (irq_nr < 16) {
 		if (assrt)
-			m->md_int.isa_pic_data.pic2->irr |= mask;
+			m->isa_pic_data.pic2->irr |= mask;
 		else
-			m->md_int.isa_pic_data.pic2->irr &= ~mask;
+			m->isa_pic_data.pic2->irr &= ~mask;
 	}
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
 	/*  (TODO: don't hardcode this here)  */
-	if (m->md_int.isa_pic_data.pic2->irr &
-	    ~m->md_int.isa_pic_data.pic2->ier)
-		m->md_int.isa_pic_data.pic1->irr |= 0x04;
+	if (m->isa_pic_data.pic2->irr &
+	    ~m->isa_pic_data.pic2->ier)
+		m->isa_pic_data.pic1->irr |= 0x04;
 	else
-		m->md_int.isa_pic_data.pic1->irr &= ~0x04;
+		m->isa_pic_data.pic1->irr &= ~0x04;
 
 	/*  Now, PIC1:  */
-	if (m->md_int.isa_pic_data.pic1->irr &
-	    ~m->md_int.isa_pic_data.pic1->ier)
+	if (m->isa_pic_data.pic1->irr &
+	    ~m->isa_pic_data.pic1->ier)
 		cpu_interrupt(cpu, 6);
 	else
 		cpu_interrupt_ack(cpu, 6);
 
 	/*  printf("COBALT: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
-	    "ier=0x%02x\n", m->md_int.isa_pic_data.pic1->irr,
-	    m->md_int.isa_pic_data.pic1->ier,
-	    m->md_int.isa_pic_data.pic2->irr,
-	    m->md_int.isa_pic_data.pic2->ier);  */
+	    "ier=0x%02x\n", m->isa_pic_data.pic1->irr,
+	    m->isa_pic_data.pic1->ier,
+	    m->isa_pic_data.pic2->irr,
+	    m->isa_pic_data.pic2->ier);  */
 }
 
 
@@ -1428,6 +1428,27 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		cpu->cd.x86.interrupt_asserted = 1;
 	else
 		cpu->cd.x86.interrupt_asserted = 0;
+}
+
+
+/*
+ *  Footbridge interrupts:
+ */
+void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
+	int assrt)
+{
+	uint32_t mask = 1 << irq_nr;
+	if (irq_nr < 32) {
+		if (assrt)
+			m->md_int.footbridge_data->irq_status |= mask;
+		else
+			m->md_int.footbridge_data->irq_status &= ~mask;
+	}
+	if (m->md_int.footbridge_data->irq_status &
+	    m->md_int.footbridge_data->irq_enable)
+		cpu_interrupt(cpu, 33);
+	else
+		cpu_interrupt_ack(cpu, 33);
 }
 
 
@@ -2289,9 +2310,9 @@ void machine_setup(struct machine *machine)
 
 		/*  ISA interrupt controllers:  */
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x10000020");
-		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
+		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x100000a0");
-		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
+		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 		machine->md_interrupt = cobalt_interrupt;
 
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
@@ -3857,9 +3878,9 @@ Not yet.
 
 			/*  ISA interrupt controllers:  */
 			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x18000020");
-			machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
+			machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x180000a0");
-			machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
+			machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 			machine->md_interrupt = malta_interrupt;
 
 			dev_mc146818_init(machine, mem, 0x18000070, 8 + 8, MC146818_PC_CMOS, 1);
@@ -4485,13 +4506,15 @@ Not yet.
 			machine->main_console_handle = j;
 		}
 
-		device_add(machine, "footbridge addr=0x42000000");
+		machine->md_int.footbridge_data =
+		    device_add(machine, "footbridge addr=0x42000000");
+		machine->md_interrupt = footbridge_interrupt;
 
 		/*  TODO: irq  */
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c000020");
-		machine->md_int.isa_pic_data.pic1 = device_add(machine, tmpstr);
+		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c0000a0");
-		machine->md_int.isa_pic_data.pic2 = device_add(machine, tmpstr);
+		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 		/*  TODO: md interrupt  */
 
 		if (machine->prom_emulation) {
@@ -4557,11 +4580,16 @@ Not yet.
 
 	case MACHINE_NETWINDER:
 		machine->machine_name = "Netwinder";
+
+		machine->md_int.footbridge_data =
+		    device_add(machine, "footbridge addr=0x42000000");
+		machine->md_interrupt = footbridge_interrupt;
+
 		device_add(machine, "ns16550 irq=0 addr=0x7c0003f8");
 		/* machine->main_console_handle = */
 		dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 		    1, 12, 0, 1);
-		device_add(machine, "footbridge addr=0x42000000");
+
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);
 		}

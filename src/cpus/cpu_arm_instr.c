@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.14 2005-09-20 21:05:22 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.15 2005-09-21 20:52:31 debug Exp $
  *
  *  ARM instructions.
  *
@@ -782,11 +782,11 @@ Y(swi_useremul)
 X(swi)
 {
 	/*  Synchronize the program counter:  */
-	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
+	uint32_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
-	old_pc = cpu->pc = cpu->cd.arm.r[ARM_PC];
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	arm_exception(cpu, ARM_EXCEPTION_SWI);
 }

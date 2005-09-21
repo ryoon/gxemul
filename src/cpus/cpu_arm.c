@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.17 2005-09-21 19:10:33 debug Exp $
+ *  $Id: cpu_arm.c,v 1.18 2005-09-21 20:52:31 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -102,12 +102,16 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->is_32bit           = 1;
 
 	cpu->cd.arm.cpsr = ARM_FLAG_I | ARM_FLAG_F;
-	if (cpu->machine->prom_emulation)
-		cpu->cd.arm.cpsr |= ARM_MODE_SVC32;
-	else
-		cpu->cd.arm.cpsr |= ARM_MODE_USR32;
 	cpu->cd.arm.control = ARM_CONTROL_PROG32 | ARM_CONTROL_DATA32
 	    | ARM_CONTROL_CACHE | ARM_CONTROL_ICACHE | ARM_CONTROL_ALIGN;
+
+	if (cpu->machine->prom_emulation) {
+		cpu->cd.arm.cpsr |= ARM_MODE_SVC32;
+		cpu->cd.arm.control |= ARM_CONTROL_S;
+	} else {
+		cpu->cd.arm.cpsr |= ARM_MODE_USR32;
+		cpu->cd.arm.control |= ARM_CONTROL_S | ARM_CONTROL_R;
+	}
 
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
@@ -159,7 +163,9 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
 	}
 
 	cpu->cd.arm.control |= ARM_CONTROL_MMU;
+	cpu->cd.arm.dacr |= 0x00000003;
 	cpu->cd.arm.ttb = ttb_addr;
+
 	memset(nothing, 0, sizeof(nothing));
 	cpu->memory_rw(cpu, cpu->mem, cpu->cd.arm.ttb, nothing,
 	    sizeof(nothing), MEM_WRITE, PHYSICAL | NO_EXCEPTIONS);
@@ -168,7 +174,7 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
 			unsigned char descr[4];
 			uint32_t addr = cpu->cd.arm.ttb +
 			    (((j << 28) + (i << 20)) >> 18);
-			uint32_t d = (1048576*i) | 2;
+			uint32_t d = (1048576*i) | 0xc02;
 /*
 d = (1048576 * (i + (j==12? 10 : j)*256)) | 2;
 */
@@ -466,10 +472,6 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 	}
 
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
-	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
-	arm_pc_to_pointers(cpu);
-
 	fatal("arm_exception(): %i\n", exception_nr);
 
 	arm_save_register_bank(cpu);
@@ -506,8 +508,12 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	/*  Load the new register bank, if we switched:  */
 	arm_load_register_bank(cpu);
 
-	/*  Return address:  */
+	/*  Set the return address and new PC:  */
 	cpu->cd.arm.r[ARM_LR] = retaddr;
+
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
+	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
+	arm_pc_to_pointers(cpu);
 }
 
 

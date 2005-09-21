@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.10 2005-09-20 21:05:22 debug Exp $
+ *  $Id: memory_arm.c,v 1.11 2005-09-21 20:52:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -37,6 +37,46 @@
 #include "misc.h"
 
 #include "armreg.h"
+
+
+/*
+ *  arm_check_access():
+ *
+ *  Helper function.  Returns 0 for no access, 1 for read-only, and 2 for
+ *  read/write.
+ */
+static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
+{
+	int s, r;
+
+	switch (dav) {
+	case 0:	/*  No access at all.  */
+		return 0;
+	case 1:	/*  Normal access check.  */
+		break;
+	case 2:	fatal("arm_check_access(): 1 shouldn't be used\n");
+		exit(1);
+	case 3:	/*  Anything is allowed.  */
+		return 2;
+	}
+
+	switch (ap) {
+	case 0:	s = (cpu->cd.arm.control & ARM_CONTROL_S)? 1 : 0;
+		r = (cpu->cd.arm.control & ARM_CONTROL_R)? 2 : 0;
+		switch (s + r) {
+		case 0:	return 0;
+		case 1:	return user? 0 : 1;
+		case 2:	return 1;
+		}
+		fatal("arm_check_access: UNPREDICTABLE s+r value!\n");
+		return 0;
+	case 1:	return user? 0 : 2;
+	case 2:	return user? 1 : 2;
+	}
+
+	/*  "case 3":  */
+	return 2;
+}
 
 
 /*
@@ -56,6 +96,9 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba;
 	int instr = flags & FLAG_INSTR, d2_in_use = 0, d_in_use = 1;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
+	int user = (cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32;
+	int domain, dav, ap = 0, access = 0;
+	int fs = 2;		/*  fault status (2 = terminal exception)  */
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
 		*return_addr = vaddr & 0xffffffff;
@@ -78,9 +121,14 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	/*  fatal("vaddr=0x%08x ttb=0x%08x addr=0x%08x d=0x%08x\n",
 	    vaddr, cpu->cd.arm.ttb, addr, d);  */
 
+	/*  Get the domain from the descriptor, and the Domain Access Value:  */
+	domain = (d >> 5) & 15;
+	dav = (cpu->cd.arm.dacr >> (domain * 2)) & 3;
+
 	switch (d & 3) {
 
 	case 0:	d_in_use = 0;
+		fs = FAULT_TRANS_S;
 		goto exception_return;
 
 	case 1:	/*  Course Pagetable:  */
@@ -100,24 +148,49 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 		d2_in_use = 1;
 
 		switch (d2 & 3) {
-		case 0:	goto exception_return;
+		case 0:	fs = FAULT_TRANS_P;
+			goto exception_return;
 		case 1:	/*  16KB page:  */
+			ap = (d2 >> 4) & 255;
+			switch (vaddr & 0x0000c000) {
+			case 0x4000:	ap >>= 2; break;
+			case 0x8000:	ap >>= 4; break;
+			case 0xc000:	ap >>= 6; break;
+			}
+			ap &= 3;
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
 		case 2:	/*  4KB page:  */
+			ap = (d2 >> 4) & 3;
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */
+			ap = (d2 >> 4) & 3;
 			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
 		}
-		/*  TODO: access rights etc.  */
-		return 2;
+		if (dav == 0) {
+			fs = FAULT_DOMAIN_P;
+			goto exception_return;
+		}
+		access = arm_check_access(cpu, ap, dav, user);
+		if (access)
+			return access;
+		fs = FAULT_PERM_P;
+		goto exception_return;
 
 	case 2:	/*  Section descriptor:  */
 		*return_addr = (d & 0xfff00000) | (vaddr & 0x000fffff);
-		/*  TODO: access rights etc.  */
-		return 2;
+		if (dav == 0) {
+			fs = FAULT_DOMAIN_S;
+			goto exception_return;
+		}
+		ap = (d2 >> 10) & 3;
+		access = arm_check_access(cpu, ap, dav, user);
+		if (access)
+			return access;
+		fs = FAULT_PERM_S;
+		goto exception_return;
 
 	default:fatal("TODO: descriptor for vaddr 0x%08x: 0x%08x ("
 		    "unimplemented type %i)\n", vaddr, d, d&3);
@@ -128,7 +201,9 @@ exception_return:
 	if (no_exceptions)
 		return 0;
 
-	fatal("TODO: arm memory fault: vaddr=%08x ", vaddr);
+	fatal("TODO: arm memory fault: vaddr=%08x (domain=%i dav=%i ap=%i "
+	    "access=%i)", vaddr, domain, dav, ap, access);
+
 	if (d_in_use)
 		fatal(" d=0x%08x", d);
 	if (d2_in_use)
@@ -138,26 +213,10 @@ exception_return:
 	cpu->cd.arm.far = vaddr;
 	cpu->cd.arm.fsr = 0;
 
-	if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32)
-		cpu->cd.arm.fsr |= FAULT_USER;
+	if (d_in_use)
+		cpu->cd.arm.fsr |= (domain << 4);
 
-cpu->cd.arm.fsr |= FAULT_TRANS_P;
-#if 0
-	if (!d_in_use)
-		cpu->cd.arm.fsr |= FAULT_BUSTRNL1;
-	else if (!d2_in_use)
-		cpu->cd.arm.fsr |= FAULT_BUSTRNL2;
-	else {
-		/*
-		 *  TODO: More fsr stuff!
-		 *
-		 *  Alignment (FAULT_ALIGN_0, 1),
-		 *  translation (FAULT_TRANS_S, P),
-		 *  domain (FAULT_DOMAIN_S, P),
-		 *  and permision (FAULT_PERM_S, P).
-		 */
-	}
-#endif
+	cpu->cd.arm.fsr |= fs;
 
 	arm_exception(cpu, ARM_EXCEPTION_DATA_ABT);
 	return 0;

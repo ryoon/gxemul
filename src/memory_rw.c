@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.63 2005-09-04 02:49:10 debug Exp $
+ *  $Id: memory_rw.c,v 1.64 2005-09-22 09:06:59 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -211,6 +211,9 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		    (no_exceptions? FLAG_NOEXCEPTIONS : 0)
 #ifdef MEM_X86
 		    + (cache_flags & NO_SEGMENTATION)
+#endif
+#ifdef MEM_ARM
+		    + (cache_flags & MEMORY_USER_ACCESS)
 #endif
 		    + (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
 		/*  If the translation caused an exception, or was invalid in

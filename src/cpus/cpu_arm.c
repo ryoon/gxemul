@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.18 2005-09-21 20:52:31 debug Exp $
+ *  $Id: cpu_arm.c,v 1.19 2005-09-22 09:06:59 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -698,8 +698,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx0001 0B00nnnn dddd0000 1001mmmm    SWP Rd,Rm,[Rn]
 		 */
 		if ((iw & 0x0fb00ff0) == 0x01000090) {
-			/*  TODO: is swpb the right mnemonic for byte swap?  */
-			debug("swp%s%s\t", (iw&0x400000)? "b":"", condition);
+			debug("swp%s%s\t", condition, (iw&0x400000)? "b":"");
 			debug("%s,%s,[%s]\n", arm_regname[r12],
 			    arm_regname[iw & 15], arm_regname[r16]);
 			break;

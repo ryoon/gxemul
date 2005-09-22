@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.36 2005-08-25 17:32:21 debug Exp $
+ *  $Id: memory.h,v 1.37 2005-09-22 09:07:00 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -126,6 +126,7 @@ struct memory {
 #define	NO_EXCEPTIONS			16
 #define	PHYSICAL			32
 #define	NO_SEGMENTATION			64	/*  for X86  */
+#define	MEMORY_USER_ACCESS		128	/*  for ARM, at least  */
 
 
 /*  memory.c:  */

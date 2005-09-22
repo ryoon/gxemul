@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.15 2005-09-21 20:52:31 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.16 2005-09-22 09:06:59 debug Exp $
  *
  *  ARM instructions.
  *
@@ -758,7 +758,7 @@ X(swi_useremul)
 	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	old_pc = cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	useremul_syscall(cpu, ic->arg[0]);
@@ -785,12 +785,74 @@ X(swi)
 	uint32_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	arm_exception(cpu, ARM_EXCEPTION_SWI);
 }
 Y(swi)
+
+
+/*
+ *  swp, swpb:  Swap (word or byte).
+ *
+ *  arg[0] = ptr to rd
+ *  arg[1] = ptr to rm
+ *  arg[2] = ptr to rn
+ */
+X(swp)
+{
+	uint32_t addr = reg(ic->arg[2]), data, data2;
+	unsigned char d[4];
+	/*  Synchronize the program counter:  */
+	uint32_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d), MEM_READ,
+	    CACHE_DATA)) {
+		fatal("swp: load failed\n");
+		return;
+	}
+	data = d[0] + (d[1] << 8) + (d[2] << 16) + (d[3] << 24);
+	data2 = reg(ic->arg[1]);
+	d[0] = data2; d[1] = data2 >> 8; d[2] = data2 >> 16; d[3] = data2 >> 24;
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d), MEM_WRITE,
+	    CACHE_DATA)) {
+		fatal("swp: store failed\n");
+		return;
+	}
+	reg(ic->arg[0]) = data;
+}
+Y(swp)
+X(swpb)
+{
+	uint32_t addr = reg(ic->arg[2]), data;
+	unsigned char d[1];
+	/*  Synchronize the program counter:  */
+	uint32_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d), MEM_READ,
+	    CACHE_DATA)) {
+		fatal("swp: load failed\n");
+		return;
+	}
+	data = d[0];
+	d[0] = reg(ic->arg[1]);
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d), MEM_WRITE,
+	    CACHE_DATA)) {
+		fatal("swp: store failed\n");
+		return;
+	}
+	reg(ic->arg[0]) = data;
+}
+Y(swpb)
 
 
 extern void (*arm_load_store_instr[1024])(struct cpu *,
@@ -839,8 +901,7 @@ X(bdt_load)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
 	    ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc <<
-	    ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	if (s_bit) {
@@ -893,7 +954,7 @@ X(bdt_load)
 		} else {
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_READ, CACHE_DATA)) {
-				fatal("bdt: load failed: TODO\n");
+				fatal("bdt: load failed: iw = 0x%08x\n", iw);
 				return;
 			}
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
@@ -910,20 +971,6 @@ X(bdt_load)
 				cpu->cd.arm.default_r8_r14[i-8] = value;
 			else
 				cpu->cd.arm.r[i] = value;
-		}
-
-		/*  NOTE: Special case:  */
-		if (i == ARM_PC) {
-			cpu->cd.arm.r[ARM_PC] &= ~3;
-			cpu->pc = cpu->cd.arm.r[ARM_PC];
-			if (cpu->machine->show_trace_tree)
-				cpu_functioncall_trace_return(cpu);
-			/*  TODO: There is no need to update the
-			    pointers if this is a return to the
-			    same page!  */
-			/*  Find the new physical page and update the
-			    translation pointers:  */
-			arm_pc_to_pointers(cpu);
 		}
 
 		if (!p_bit) {
@@ -968,6 +1015,20 @@ X(bdt_load)
 		if (switch_register_banks)
 			arm_load_register_bank(cpu);
 	}
+
+	/*  NOTE: Special case: Loading the PC  */
+	if (iw & 0x8000) {
+		cpu->cd.arm.r[ARM_PC] &= ~3;
+		cpu->pc = cpu->cd.arm.r[ARM_PC];
+		if (cpu->machine->show_trace_tree)
+			cpu_functioncall_trace_return(cpu);
+		/*  TODO: There is no need to update the
+		    pointers if this is a return to the
+		    same page!  */
+		/*  Find the new physical page and update the
+		    translation pointers:  */
+		arm_pc_to_pointers(cpu);
+	}
 }
 Y(bdt_load)
 
@@ -1004,8 +1065,7 @@ X(bdt_store)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
 	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
 	    ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc <<
-	    ARM_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1)) {
@@ -1436,6 +1496,16 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
                         break;
                 }
+		if ((iword & 0x0fb00ff0) == 0x1000090) {
+			if (iword & 0x00400000)
+				ic->f = cond_instr(swpb);
+			else
+				ic->f = cond_instr(swp);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rd]);
+			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rm]);
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rn]);
+			break;
+		}
 		if ((iword & 0x0fb0fff0) == 0x0120f000) {
 			/*  msr: move to [S|C]PSR from a register:  */
 			if (rm == ARM_PC) {

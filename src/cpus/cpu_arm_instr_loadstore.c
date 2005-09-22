@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.3 2005-09-19 20:10:57 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.4 2005-09-22 09:06:59 debug Exp $
  *
  *
  *  TODO:
@@ -49,6 +49,11 @@
  */
 void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 {
+#if !defined(A__P) && defined(A__W)
+	const int memory_rw_flags = CACHE_DATA | MEMORY_USER_ACCESS;
+#else
+	const int memory_rw_flags = CACHE_DATA;
+#endif
 #ifdef A__B
 	unsigned char data[1];
 #else
@@ -59,23 +64,20 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 	uint32_t addr, low_pc;
-
-	addr = *((uint32_t *)ic->arg[0])
-#ifdef A__P
-#ifdef A__U
-	    +
-#else
+	uint32_t offset =
+#ifndef A__U
 	    -
 #endif
-#ifdef A__FIXINC
-	    A__FIXINC
-#else
 #ifdef A__REG
 	    R(cpu, ic, ic->arg[1], 0)
 #else
 	    ic->arg[1]
 #endif
-#endif
+	    ;
+
+	addr = *((uint32_t *)ic->arg[0])
+#ifdef A__P
+	    + offset
 #endif
 	    ;
 
@@ -89,7 +91,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #ifdef A__L
 	/*  Load:  */
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_DATA)) {
+	    MEM_READ, memory_rw_flags)) {
 		fatal("load failed: TODO\n");
 		return;
 	}
@@ -127,10 +129,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
-	    MEM_WRITE, CACHE_DATA)) {
-		/*  TODO:   !defined(A__P) && defined(A__W)  */
-		/*  T-bit: translations can cause failures even
-		    in system modes  */
+	    MEM_WRITE, memory_rw_flags)) {
 		fatal("store failed: TODO\n");
 		return;
 	}
@@ -141,17 +140,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	*((uint32_t *)ic->arg[0]) = addr;
 #endif
 #else	/*  post-index writeback  */
-	*((uint32_t *)ic->arg[0]) = addr
-#ifdef A__U
-	    +
-#else
-	    -
-#endif
-#ifdef A__FIXINC
-	    A__FIXINC;
-#else
-	    ic->arg[1];
-#endif
+	*((uint32_t *)ic->arg[0]) = addr + offset;
 #endif
 }
 
@@ -161,22 +150,23 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
  */
 void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 {
-	uint32_t addr = *((uint32_t *)ic->arg[0])
-#ifdef A__P
-#ifdef A__U
-	    +
+#if !defined(A__P) && defined(A__W)
+	/*  T-bit: userland access. Use the general routine for that.  */
+	A__NAME__general(cpu, ic);
 #else
+	uint32_t offset =
+#ifndef A__U
 	    -
 #endif
-#ifdef A__FIXINC
-	    A__FIXINC
-#else
 #ifdef A__REG
 	    R(cpu, ic, ic->arg[1], 0)
 #else
 	    ic->arg[1]
 #endif
-#endif
+	    ;
+	uint32_t addr = *((uint32_t *)ic->arg[0])
+#ifdef A__P
+	    + offset
 #endif
 	    ;
 	unsigned char *page = cpu->cd.arm.
@@ -195,17 +185,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		*((uint32_t *)ic->arg[0]) = addr;
 #endif
 #else	/*  post-index writeback  */
-		*((uint32_t *)ic->arg[0]) = addr
-#ifdef A__U
-		    +
-#else
-		    -
-#endif
-#ifdef A__FIXINC
-		    A__FIXINC;
-#else
-		    ic->arg[1];
-#endif
+		*((uint32_t *)ic->arg[0]) = addr + offset;
 #endif
 
 #ifdef A__L
@@ -249,6 +229,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 	}
+#endif	/*  not T-bit  */
 }
 
 

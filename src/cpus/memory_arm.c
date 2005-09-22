@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.11 2005-09-21 20:52:31 debug Exp $
+ *  $Id: memory_arm.c,v 1.12 2005-09-22 09:07:00 debug Exp $
  */
 
 #include <stdio.h>
@@ -95,6 +95,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 	unsigned char descr[4];
 	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba;
 	int instr = flags & FLAG_INSTR, d2_in_use = 0, d_in_use = 1;
+	int useraccess = flags & MEMORY_USER_ACCESS;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int user = (cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32;
 	int domain, dav, ap = 0, access = 0;
@@ -104,6 +105,9 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 		*return_addr = vaddr & 0xffffffff;
 		return 2;
 	}
+
+	if (useraccess)
+		user = 1;
 
 	addr = cpu->cd.arm.ttb + ((vaddr & 0xfff00000ULL) >> 18);
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
@@ -161,7 +165,13 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
 		case 2:	/*  4KB page:  */
-			ap = (d2 >> 4) & 3;
+			ap = (d2 >> 4) & 255;
+			switch (vaddr & 0x0000c000) {
+			case 0x4000:	ap >>= 2; break;
+			case 0x8000:	ap >>= 4; break;
+			case 0xc000:	ap >>= 6; break;
+			}
+			ap &= 3;
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */
@@ -185,7 +195,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 			fs = FAULT_DOMAIN_S;
 			goto exception_return;
 		}
-		ap = (d2 >> 10) & 3;
+		ap = (d >> 10) & 3;
 		access = arm_check_access(cpu, ap, dav, user);
 		if (access)
 			return access;
@@ -211,12 +221,7 @@ exception_return:
 	fatal("\n");
 
 	cpu->cd.arm.far = vaddr;
-	cpu->cd.arm.fsr = 0;
-
-	if (d_in_use)
-		cpu->cd.arm.fsr |= (domain << 4);
-
-	cpu->cd.arm.fsr |= fs;
+	cpu->cd.arm.fsr = (domain << 4) | fs;
 
 	arm_exception(cpu, ARM_EXCEPTION_DATA_ABT);
 	return 0;

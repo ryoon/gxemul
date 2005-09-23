@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.550 2005-09-21 19:10:32 debug Exp $
+ *  $Id: machine.c,v 1.551 2005-09-23 11:47:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4517,6 +4517,9 @@ Not yet.
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 		/*  TODO: md interrupt  */
 
+		device_add(machine, "ns16550 irq=0 addr=0x7c0003f8 name2=com0 in_use=0");
+		device_add(machine, "ns16550 irq=0 addr=0x7c0002f8 name2=com1 in_use=0");
+
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
 
@@ -4539,7 +4542,7 @@ Not yet.
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_memavail), 7 * 1048576);
 			store_32bit_word_in_host(cpu, (unsigned char *)
-			    &(ebsaboot.bt_fclk), 233 * 1000000);
+			    &(ebsaboot.bt_fclk), 133 * 1000000);
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_pciclk), 66 * 1000000);
 			/*  TODO: bt_vers  */

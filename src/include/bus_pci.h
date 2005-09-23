@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.12 2005-03-18 23:20:52 debug Exp $
+ *  $Id: bus_pci.h,v 1.13 2005-09-23 11:47:02 debug Exp $
  */
 
 #include "misc.h"
@@ -73,6 +73,10 @@ struct pci_data *bus_pci_init(int irq_nr);
  *  Individual devices:
  */
 
+/*  ali_m1543:  */
+uint32_t pci_ali_m1543_rr(int reg);
+void pci_ali_m1543_init(struct machine *, struct memory *mem);
+
 /*  ahc:  */
 uint32_t pci_ahc_rr(int reg);
 void pci_ahc_init(struct machine *, struct memory *mem);
@@ -84,6 +88,10 @@ void pci_dec21030_init(struct machine *, struct memory *mem);
 /*  dec21143:  */
 uint32_t pci_dec21143_rr(int reg);
 void pci_dec21143_init(struct machine *, struct memory *mem);
+
+/*  symphony_83c553:  */
+uint32_t pci_symphony_83c553_rr(int reg);
+void pci_symphony_83c553_init(struct machine *, struct memory *mem);
 
 /*  vt82c586:  */
 uint32_t pci_vt82c586_isa_rr(int reg);

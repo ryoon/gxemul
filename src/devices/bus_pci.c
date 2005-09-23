@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.10 2005-03-18 23:20:52 debug Exp $
+ *  $Id: bus_pci.c,v 1.11 2005-09-23 11:47:01 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -42,6 +42,8 @@
 #include "misc.h"
 
 #include "bus_pci.h"
+
+/*  #define debug fatal  */
 
 
 /*

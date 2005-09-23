@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.5 2005-09-21 21:23:50 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.6 2005-09-23 11:47:01 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"	/*  for struct footbridge_data  */
@@ -71,13 +72,61 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 
 
 /*
+ *  dev_footbridge_pci_cfg_access():
+ */
+int dev_footbridge_pci_cfg_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct footbridge_data *d = extra;
+	uint64_t idata = 0, odata = 0;
+	int bus, device, function, regnr, res;
+	uint64_t pci_word;
+
+	idata = memory_readmax64(cpu, data, len);
+
+	bus      = (relative_addr >> 16) & 0xff;
+	device   = (relative_addr >> 11) & 0x1f;
+	function = (relative_addr >> 8) & 0x7;
+	regnr    = relative_addr & 0xff;
+
+	debug("[ footbridge_pci_cfg: %s bus %i, device %i, function "
+	    "%i, register %i ]\n", writeflag == MEM_READ? "read from"
+	    : "write to", bus, device, function, regnr);
+
+	if (d->pcibus == NULL) {
+		fatal("dev_footbridge_pci_cfg_access(): no PCI bus?\n");
+		return 0;
+	}
+
+	pci_word = relative_addr & 0x00ffffff;
+
+	res = bus_pci_access(cpu, mem, BUS_PCI_ADDR,
+	    &pci_word, MEM_WRITE, d->pcibus);
+	if (writeflag == MEM_READ) {
+		res = bus_pci_access(cpu, mem, BUS_PCI_DATA,
+		    &pci_word, MEM_READ, d->pcibus);
+		odata = pci_word;
+	} else {
+		pci_word = idata;
+		res = bus_pci_access(cpu, mem, BUS_PCI_DATA,
+		    &pci_word, MEM_WRITE, d->pcibus);
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
  *  dev_footbridge_access():
  */
 int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	int i;
 	struct footbridge_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
@@ -170,17 +219,11 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	default:if (writeflag == MEM_READ) {
-			fatal("[ footbridge: read from 0x%x:",
+			fatal("[ footbridge: read from 0x%x ]\n",
 			    (int)relative_addr);
-			for (i=0; i<len; i++)
-				fatal(" %02x", data[i]);
-			fatal(" (len=%i) ]\n", len);
 		} else {
-			fatal("[ footbridge: write to 0x%x:",
-			    (int)relative_addr);
-			for (i=0; i<len; i++)
-				fatal(" %02x", data[i]);
-			fatal(" (len=%i) ]\n", len);
+			fatal("[ footbridge: write to 0x%x: 0x%llx ]\n",
+			    (int)relative_addr, (long long)idata);
 		}
 	}
 
@@ -197,6 +240,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 int devinit_footbridge(struct devinit *devinit)
 {
 	struct footbridge_data *d;
+	uint64_t pci_cfg_addr = 0x7b000000;
 
 	d = malloc(sizeof(struct footbridge_data));
 	if (d == NULL) {
@@ -208,6 +252,27 @@ int devinit_footbridge(struct devinit *devinit)
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_FOOTBRIDGE_LENGTH,
 	    dev_footbridge_access, d, MEM_DEFAULT, NULL);
+
+	d->pcibus = bus_pci_init(devinit->irq_nr);
+
+	switch (devinit->machine->machine_type) {
+	case MACHINE_CATS:
+		bus_pci_add(devinit->machine, d->pcibus,
+		    devinit->machine->memory, 0xc0, 7, 0,
+		    pci_ali_m1543_init, pci_ali_m1543_rr);
+		break;
+	case MACHINE_NETWINDER:
+		bus_pci_add(devinit->machine, d->pcibus,
+		    devinit->machine->memory, 0xc0, 7, 0,
+		    pci_symphony_83c553_init, pci_symphony_83c553_rr);
+		break;
+	default:fatal("footbridge: unimplemented machine type.\n");
+		exit(1);
+	}
+
+	memory_device_register(devinit->machine->memory,
+	    "footbridge_pci_cfg", pci_cfg_addr, 0x1000000,
+	    dev_footbridge_pci_cfg_access, d, MEM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine,
 	    dev_footbridge_tick, d, DEV_FOOTBRIDGE_TICK_SHIFT);

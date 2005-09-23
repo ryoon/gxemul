@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.9 2005-08-24 10:18:22 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.10 2005-09-23 10:36:03 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -79,10 +79,10 @@
 	{ "R4300",	MIPS_R4300, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
 	{ "R4100",	MIPS_R4100, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
 	{ "VR4102",	MIPS_R4100, 0x40,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,12,0,0,10,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4181",	MIPS_R4100, 0x50,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,12,0,0,12,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4121",	MIPS_R4100, 0x60,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,0,0,13,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4122",	MIPS_R4100, 0x70,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,0,0,14,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
-	{ "VR4131",	MIPS_R4100, 0x80,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,0,0,14,0,0, 0, 0, 0 }, /*  TODO: Bogus?  */ \
+	{ "VR4181",	MIPS_R4100, 0x50,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,4,0,13,4,0, 0, 0, 0 }, \
+	{ "VR4121",	MIPS_R4100, 0x60,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,4,0,13,4,0, 0, 0, 0 }, \
+	{ "VR4122",	MIPS_R4100, 0x70,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,15,5,0,14,4,0, 0, 0, 0 }, \
+	{ "VR4131",	MIPS_R4100, 0x80,	NOFPU,	EXC4K, MMU4K,	3,	32, 2,14,5,0,14,5,0, 0, 0, 0 }, \
 	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,14,4,1,14,4,1,20, 6, 1 }, \
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, \
 	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \

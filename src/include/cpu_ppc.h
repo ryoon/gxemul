@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.36 2005-09-01 11:21:06 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.37 2005-09-24 21:15:13 debug Exp $
  */
 
 #include "misc.h"
@@ -42,6 +42,7 @@ struct cpu_family;
 /*  PPC CPU types:  */
 struct ppc_cpu_type_def { 
 	char		*name;
+	int		pvr;
 	int		bits;
 	int		flags;
 	int		icache_shift;
@@ -59,14 +60,14 @@ struct ppc_cpu_type_def {
 #define	PPC_NOFP		1
 /*  TODO: Most of these just bogus  */
 
-#define PPC_CPU_TYPE_DEFS	{				\
-	{ "PPC405GP", 32, PPC_NOFP, 15, 2, 15, 2, 20, 1, 0 },	\
-	{ "PPC603e", 32, 0, 14, 4, 14, 4, 0, 0, 0 },		\
-	{ "MPC7400", 32, 0, 15, 2, 15, 2, 19, 1, 1 },		\
-	{ "PPC750", 32, 0, 15, 2, 15, 2, 20, 1, 0 },		\
-	{ "G4e", 32, 0, 15, 8, 15, 8, 18, 8, 1 },		\
-	{ "PPC970", 64, 0, 16, 1, 15, 2, 19, 1, 1 },		\
-	{ NULL, 0, 0, 0,0, 0,0, 0,0, 0 }			\
+#define PPC_CPU_TYPE_DEFS	{					\
+	{ "PPC405GP",	0,          32, PPC_NOFP, 15, 2, 15, 2, 20, 1, 0 }, \
+	{ "PPC603e",	0,          32, 0, 14, 4, 14, 4, 0, 0, 0 },	\
+	{ "MPC7400",	0x000c0000, 32, 0, 15, 2, 15, 2, 19, 1, 1 },	\
+	{ "PPC750",	0x00084202, 32, 0, 15, 2, 15, 2, 20, 1, 0 },	\
+	{ "G4e",	0,          32, 0, 15, 8, 15, 8, 18, 8, 1 },	\
+	{ "PPC970",	0x00390000, 64, 0, 16, 1, 15, 2, 19, 1, 1 },	\
+	{ NULL,		0,          0, 0, 0,0, 0,0, 0,0, 0 }		\
 	}
 
 #define	PPC_NGPRS		32

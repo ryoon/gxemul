@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.552 2005-09-24 13:21:55 debug Exp $
+ *  $Id: machine.c,v 1.553 2005-09-24 21:15:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -5111,7 +5111,7 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_MACPPC:
 		switch (m->machine_subtype) {
 		case MACHINE_MACPPC_G4:
-			m->cpu_name = strdup("G4e");
+			m->cpu_name = strdup("PPC750");
 			break;
 		case MACHINE_MACPPC_G5:
 			m->cpu_name = strdup("PPC970");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.10 2005-09-09 20:07:47 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.11 2005-09-24 21:15:12 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -83,7 +83,8 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.ppc.mode        = MODE_PPC;	/*  TODO  */
 
 	/*  Current operating mode:  */
-	cpu->cd.ppc.bits        = cpu->cd.ppc.cpu_type.bits;
+	cpu->cd.ppc.bits = cpu->cd.ppc.cpu_type.bits;
+	cpu->cd.ppc.pvr = cpu->cd.ppc.cpu_type.pvr;
 
 	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
 
@@ -1030,7 +1031,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 274:  debug("mfsprg\t2,r%i", rt); break;
 			case 275:  debug("mfsprg\t3,r%i", rt); break;
 			case 287:  debug("mfpvr\tr%i", rt); break;
+			/*  TODO: 1008 = hid0?  */
 			case 1008: debug("mfdbsr\tr%i", rt); break;
+			case 1009: debug("mfhid1\tr%i", rt); break;
+			case 1017: debug("mfl2cr\tr%i", rt); break;
+			case 1018: debug("mfl3cr\tr%i", rt); break;
 			default:debug("mfspr\tr%i,spr%i", rt, spr);
 			}
 			break;
@@ -1374,6 +1379,24 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 		}
 		debug(">");
+		break;
+	case PPC_HI6_63:
+		xo = (iword >> 1) & 1023;
+		switch (xo) {
+		case PPC_63_FMR:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			switch (xo) {
+			case PPC_63_FMR:
+				debug("fmr%s\tf%i,f%i", rc? "." : "", rt, rb);
+				break;
+			}
+			break;
+		default:
+			debug("unimplemented hi6_31, xo = 0x%x", xo);
+		}
 		break;
 	default:
 		/*  TODO  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.14 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.15 2005-09-24 21:15:12 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -691,6 +691,18 @@ X(cmplwi)
 
 
 /*
+ *  fmr:  Floating-point Move
+ *
+ *  arg[0] = ptr to frb
+ *  arg[1] = ptr to frt
+ */
+X(fmr)
+{
+	*(uint64_t *)ic->arg[1] = *(uint64_t *)ic->arg[0];
+}
+
+
+/*
  *  mtsr:  Move To Segment Register
  *
  *  arg[0] = segment register nr (0..15)
@@ -937,6 +949,8 @@ X(mfsrr0) {	reg(ic->arg[0]) = cpu->cd.ppc.srr0; }
 X(mfsrr1) {	reg(ic->arg[0]) = cpu->cd.ppc.srr1; }
 X(mfsdr1) {	reg(ic->arg[0]) = cpu->cd.ppc.sdr1; }
 X(mfdbsr) {	reg(ic->arg[0]) = cpu->cd.ppc.dbsr; }
+X(mfhid1) {	reg(ic->arg[0]) = 0;  /*  TODO  */ }
+X(mfl2cr) {	reg(ic->arg[0]) = 0;  /*  TODO  */ }
 X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
 X(mfsprg1) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg1; }
 X(mfsprg2) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg2; }
@@ -2033,6 +2047,8 @@ X(to_be_translated)
 			case 275: ic->f = instr(mfsprg3); break;
 			case 287: ic->f = instr(mfpvr); break;
 			case 1008:ic->f = instr(mfdbsr); break;
+			case 1009:ic->f = instr(mfhid1); break;
+			case 1017:ic->f = instr(mfl2cr); break;
 			default:if (spr >= 528 && spr < 544) {
 					if (spr & 1) {
 						if (spr & 16)
@@ -2375,6 +2391,29 @@ X(to_be_translated)
 				fatal("Not yet for 64-bit mode\n");
 				goto bad;
 			}
+			break;
+
+		default:goto bad;
+		}
+		break;
+
+	case PPC_HI6_63:
+		xo = (iword >> 1) & 1023;
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		rb = (iword >> 11) & 31;
+		rc = iword & 1;
+
+		switch (xo) {
+
+		case PPC_63_FMR:
+			if (rc) {
+				fatal("FMR with rc-bit: TODO\n");
+				goto bad;
+			}
+			ic->f = instr(fmr);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rb]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[rt]);
 			break;
 
 		default:goto bad;

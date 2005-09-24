@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.965 2005-09-24 13:21:54 debug Exp $
+$Id: HISTORY,v 1.966 2005-09-24 21:15:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2273,3 +2273,4 @@ Changelog for GXemul:
 		Adding a dummy Acer Labs M1543 PCI-ISA bridge (for CATS) and a
 		dummy Symphony Labs 83C553 bridge (for Netwinder), usable by 
 		dev_footbridge.
+20050924	Minor PPC progress.

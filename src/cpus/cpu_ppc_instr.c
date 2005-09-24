@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.15 2005-09-24 21:15:12 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.16 2005-09-24 23:44:18 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -691,6 +691,37 @@ X(cmplwi)
 
 
 /*
+ *  dcbz:  Data-Cache Block Zero
+ *
+ *  arg[0] = ptr to ra (or zero)
+ *  arg[1] = ptr to rb
+ */
+X(dcbz)
+{
+	MODE_uint_t addr = reg(ic->arg[0]) + reg(ic->arg[1]);
+	unsigned char cacheline[128];
+	int cacheline_size = 1 << cpu->cd.ppc.cpu_type.dlinesize;
+	int cleared = 0;
+
+	addr &= ~(cacheline_size - 1);
+	memset(cacheline, 0, sizeof(cacheline));
+
+	while (cleared < cacheline_size) {
+		int to_clear = cacheline_size < sizeof(cacheline)?
+		    cacheline_size : sizeof(cacheline);
+		if (cpu->memory_rw(cpu, cpu->mem, addr, cacheline, to_clear,
+		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK) {
+			fatal("dcbz: error: TODO\n");
+			exit(1);
+		}
+
+		cleared += to_clear;
+		addr += to_clear;
+	}
+}
+
+
+/*
  *  fmr:  Floating-point Move
  *
  *  arg[0] = ptr to frb
@@ -699,6 +730,112 @@ X(cmplwi)
 X(fmr)
 {
 	*(uint64_t *)ic->arg[1] = *(uint64_t *)ic->arg[0];
+}
+
+
+/*
+ *  lfd:  Floating-point Load
+ */
+X(lfd)
+{
+	fatal("[ TODO: lfd ]\n");
+}
+
+
+/*
+ *  llsc: Load-linked and store conditional
+ *
+ *  arg[0] = copy of the instruction word.
+ */
+X(llsc)
+{
+	int iw = ic->arg[0], len = 4, load = 0, xo = (iw >> 1) & 1023;
+	int i, rc = iw & 1, rt, ra, rb;
+	uint64_t addr = 0, value;
+	unsigned char d[8];
+
+	switch (xo) {
+	case PPC_31_LDARX:
+		len = 8;
+	case PPC_31_LWARX:
+		load = 1;
+		break;
+	case PPC_31_STDCX_DOT:
+		len = 8;
+	case PPC_31_STWCX_DOT:
+		break;
+	}
+
+	rt = (iw >> 21) & 31;
+	ra = (iw >> 16) & 31;
+	rb = (iw >> 11) & 31;
+
+	if (ra != 0)
+		addr = cpu->cd.ppc.gpr[ra];
+	addr += cpu->cd.ppc.gpr[rb];
+
+	if (load) {
+		if (rc) {
+			fatal("ll: rc-bit set?\n");
+			exit(1);
+		}
+		if (cpu->memory_rw(cpu, cpu->mem, addr, d, len,
+		    MEM_READ, CACHE_DATA) != MEMORY_ACCESS_OK) {
+			fatal("ll: error: TODO\n");
+			exit(1);
+		}
+
+		value = 0;
+		for (i=0; i<len; i++) {
+			value <<= 8;
+			if (cpu->byte_order == EMUL_BIG_ENDIAN)
+				value |= d[i];
+			else
+				value |= d[len - 1 - i];
+		}
+
+		cpu->cd.ppc.gpr[rt] = value;
+		cpu->cd.ppc.ll_addr = addr;
+		cpu->cd.ppc.ll_bit = 1;
+	} else {
+		int old_so = cpu->cd.ppc.xer & PPC_XER_SO;
+		if (!rc) {
+			fatal("sc: rc-bit not set?\n");
+			exit(1);
+		}
+
+		value = cpu->cd.ppc.gpr[rt];
+
+		/*  "If the store is performed, bits 0-2 of Condition
+		    Register Field 0 are set to 0b001, otherwise, they are
+		    set to 0b000. The SO bit of the XER is copied to to bit
+		    4 of Condition Register Field 0.  */
+		if (!cpu->cd.ppc.ll_bit || cpu->cd.ppc.ll_addr != addr) {
+			cpu->cd.ppc.cr &= 0x0fffffff;
+			if (old_so)
+				cpu->cd.ppc.cr |= 0x10000000;
+			return;
+		}
+
+		for (i=0; i<len; i++) {
+			if (cpu->byte_order == EMUL_BIG_ENDIAN)
+				d[len - 1 - i] = value >> (8*i);
+			else
+				d[i] = value >> (8*i);
+		}
+
+		if (cpu->memory_rw(cpu, cpu->mem, addr, d, len,
+		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK) {
+			fatal("sc: error: TODO\n");
+			exit(1);
+		}
+
+		cpu->cd.ppc.cr &= 0x0fffffff;
+		cpu->cd.ppc.cr |= 0x20000000;	/*  success!  */
+		if (old_so)
+			cpu->cd.ppc.cr |= 0x10000000;
+		cpu->cd.ppc.ll_bit = 0;
+	}
 }
 
 
@@ -1255,10 +1392,8 @@ X(divwu)
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register rt
  */
-X(add)
-{
-	reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]);
-}
+X(add)     { reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
+X(add_dot) { instr(add)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 
 
 /*
@@ -1302,6 +1437,20 @@ X(adde)
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 X(adde_dot) { instr(adde)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+X(addme)
+{
+	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
+	uint64_t tmp2 = tmp;
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	if (old_ca)
+		tmp ++;
+	tmp += 0xffffffffULL;
+	if ((tmp >> 32) != (tmp2 >> 32))
+		cpu->cd.ppc.xer |= PPC_XER_CA;
+	reg(ic->arg[2]) = (uint32_t)tmp;
+}
+X(addme_dot) { instr(addme)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(addze)
 {
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
@@ -2188,10 +2337,23 @@ X(to_be_translated)
 		case PPC_31_TLBSYNC:
 		case PPC_31_EIEIO:
 		case PPC_31_DCBST:
+		case PPC_31_DCBTST:
 		case PPC_31_DCBF:
+		case PPC_31_DCBT:
 		case PPC_31_ICBI:
 			/*  TODO  */
 			ic->f = instr(nop);
+			break;
+
+		case PPC_31_DCBZ:
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			if (ra == 0)
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.zero);
+			else
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			ic->f = instr(dcbz);
 			break;
 
 		case PPC_31_TLBIE:
@@ -2221,6 +2383,14 @@ X(to_be_translated)
 				ic->f = instr(neg_dot);
 			else
 				ic->f = instr(neg);
+			break;
+
+		case PPC_31_LWARX:
+		case PPC_31_LDARX:
+		case PPC_31_STWCX_DOT:
+		case PPC_31_STDCX_DOT:
+			ic->arg[0] = iword;
+			ic->f = instr(llsc);
 			break;
 
 		case PPC_31_LBZX:
@@ -2337,6 +2507,7 @@ X(to_be_translated)
 		case PPC_31_ADD:
 		case PPC_31_ADDC:
 		case PPC_31_ADDE:
+		case PPC_31_ADDME:
 		case PPC_31_ADDZE:
 		case PPC_31_SUBF:
 		case PPC_31_SUBFC:
@@ -2360,6 +2531,7 @@ X(to_be_translated)
 			case PPC_31_ADD:    ic->f = instr(add); break;
 			case PPC_31_ADDC:   ic->f = instr(addc); n64=1; break;
 			case PPC_31_ADDE:   ic->f = instr(adde); n64=1; break;
+			case PPC_31_ADDME:  ic->f = instr(addme); n64=1; break;
 			case PPC_31_ADDZE:  ic->f = instr(addze); n64=1; break;
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
 			case PPC_31_SUBFC:  ic->f = instr(subfc); break;
@@ -2368,8 +2540,12 @@ X(to_be_translated)
 			}
 			if (rc) {
 				switch (xo) {
+				case PPC_31_ADD:
+					ic->f = instr(add_dot); break;
 				case PPC_31_ADDE:
 					ic->f = instr(adde_dot); break;
+				case PPC_31_ADDME:
+					ic->f = instr(addme_dot); break;
 				case PPC_31_ADDZE:
 					ic->f = instr(addze_dot); break;
 				case PPC_31_SUBF:
@@ -2395,6 +2571,11 @@ X(to_be_translated)
 
 		default:goto bad;
 		}
+		break;
+
+	case PPC_HI6_LFD:
+		/*  TODO  */
+		ic->f = instr(lfd);
 		break;
 
 	case PPC_HI6_63:

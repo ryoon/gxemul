@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.11 2005-09-24 21:15:12 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.12 2005-09-24 23:44:18 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -488,7 +488,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 {
 	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
 	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb, bt, ba, bb, fpreg;
-	int bfa, to, load, wlen;
+	int bfa, to, load, wlen, no_rb = 0;
 	uint64_t offset, addr;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
@@ -948,6 +948,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_ADDCO:
 		case PPC_31_ADDE:
 		case PPC_31_ADDEO:
+		case PPC_31_ADDME:
+		case PPC_31_ADDMEO:
 		case PPC_31_ADD:
 		case PPC_31_ADDO:
 		case PPC_31_MULHW:
@@ -980,6 +982,14 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_ADDEO:
 				mnem = power? "aeo" : "addeo";
 				break;
+			case PPC_31_ADDME:
+				mnem = power? "ame" : "addme";
+				no_rb = 1;
+				break;
+			case PPC_31_ADDMEO:
+				mnem = power? "ameo" : "addmeo";
+				no_rb = 1;
+				break;
 			case PPC_31_ADD:
 				mnem = power? "cax" : "add";
 				break;
@@ -1010,13 +1020,16 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			case PPC_31_SUBFZE:
 				mnem = power? "sfze" : "subfze";
+				no_rb = 1;
 				break;
 			case PPC_31_SUBFZEO:
 				mnem = power? "sfzeo" : "subfzeo";
+				no_rb = 1;
 				break;
 			}
-			debug("%s%s\tr%i,r%i,r%i", mnem, rc? "." : "",
-			    rt, ra, rb);
+			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
+			if (!no_rb)
+				debug(",r%i", rb);
 			break;
 		case PPC_31_MFSPR:
 			rt = (iword >> 21) & 31;

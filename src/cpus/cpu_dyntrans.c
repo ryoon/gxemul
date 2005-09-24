@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.11 2005-09-21 19:10:33 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.12 2005-09-24 23:44:18 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -319,6 +319,7 @@ static void instr(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #ifdef DYNTRANS_DUALMODE_32
 static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
+static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #endif
 /*
  *  XXX_tc_allocate_default_page():
@@ -346,7 +347,11 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 #endif
 		    instr(to_be_translated);
 
-	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE].f = instr(end_of_page);
+	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE].f =
+#ifdef DYNTRANS_DUALMODE_32
+	    cpu->is_32bit? instr32(end_of_page) :
+#endif
+	    instr(end_of_page);
 
 	cpu->translation_cache_cur_ofs += sizeof(struct DYNTRANS_TC_PHYSPAGE);
 }
@@ -573,6 +578,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	fatal("IA64 todo\n");
 #else
 	fatal("Neither alpha, ia64, nor 32-bit? 1\n");
+	{ char *p = (char *) 0; *p = 0; }
 	exit(1);
 #endif
 #endif

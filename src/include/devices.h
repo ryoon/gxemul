@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.180 2005-09-23 11:47:02 debug Exp $
+ *  $Id: devices.h,v 1.181 2005-09-24 13:21:59 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -251,6 +251,12 @@ struct footbridge_data {
 
 	uint32_t	timer1_value;
 	uint32_t	timer1_control;
+
+	uint32_t	timer2_value;
+	uint32_t	timer2_control;
+
+	uint32_t	timer3_value;
+	uint32_t	timer3_control;
 
 	uint32_t        irq_status;
 	uint32_t        irq_enable;

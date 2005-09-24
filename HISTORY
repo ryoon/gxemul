@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.964 2005-09-23 11:46:58 debug Exp $
+$Id: HISTORY,v 1.965 2005-09-24 13:21:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2269,7 +2269,7 @@ Changelog for GXemul:
 		userland! :-)
 20050921	Some more progress on ARM interrupt specifics.
 20050923	Fixing linesize for VR4121 (patch by Yurchenko). Also fixing
-		linesizes/cachesizes for some other CPUs.
-		Adding an Acer Labs M1543 PCI-ISA bridge (for CATS) and a
-		Symphony Labs 83C553 bridge (for Netwinder), usable by 
+		linesizes/cachesizes for some other VR4xxx.
+		Adding a dummy Acer Labs M1543 PCI-ISA bridge (for CATS) and a
+		dummy Symphony Labs 83C553 bridge (for Netwinder), usable by 
 		dev_footbridge.

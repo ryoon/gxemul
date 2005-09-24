@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.16 2005-09-10 22:18:56 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.17 2005-09-24 13:21:58 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -127,14 +127,14 @@ void pci_vt82c586_ide_init(struct machine *machine, struct memory *mem)
 
 	case MACHINE_COBALT:
 		/*  irq 14,15 (+8)  */
-		device_add(machine, "wdc addr=0x100001f0 irq=22");	/*  primary  */
-		device_add(machine, "wdc addr=0x10000170 irq=23");	/*  secondary */
+		device_add(machine, "wdc addr=0x100001f0 irq=22");/* primary  */
+		device_add(machine, "wdc addr=0x10000170 irq=23");/* secondary*/
 		break;
 
 	case MACHINE_EVBMIPS:
 		/*  TODO: Irqs...  */
-		device_add(machine, "wdc addr=0x180001f0 irq=22");	/*  primary  */
-		device_add(machine, "wdc addr=0x18000170 irq=23");	/*  secondary */
+		device_add(machine, "wdc addr=0x180001f0 irq=22");/* primary  */
+		device_add(machine, "wdc addr=0x18000170 irq=23");/* secondary*/
 		break;
 
 	default:fatal("pci_vt82c586_ide_init(): unimplemented machine type\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.19 2005-09-22 09:06:59 debug Exp $
+ *  $Id: cpu_arm.c,v 1.20 2005-09-24 13:21:57 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -551,7 +551,8 @@ int arm_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 			cpu->machine->md_interrupt(cpu->machine,
 			    cpu, irq_nr, 0);
 		else
-			fatal("arm_cpu_interrupt_ack(): md_interrupt == NULL\n");
+			fatal("arm_cpu_interrupt_ack(): "
+			    "md_interrupt == NULL\n");
 	} else {
 		/*  De-assert ARM IRQs:  */
 		cpu->cd.arm.irq_asserted = 0;

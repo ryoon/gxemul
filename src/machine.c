@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.551 2005-09-23 11:47:00 debug Exp $
+ *  $Id: machine.c,v 1.552 2005-09-24 13:21:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4520,6 +4520,20 @@ Not yet.
 		device_add(machine, "ns16550 irq=0 addr=0x7c0003f8 name2=com0 in_use=0");
 		device_add(machine, "ns16550 irq=0 addr=0x7c0002f8 name2=com1 in_use=0");
 
+		/*  IDE controllers:  */
+		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+			    0x7c0001f0ULL, 14);
+			device_add(machine, tmpstr);
+		}
+		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+			    0x7c000170ULL, 15);
+			device_add(machine, tmpstr);
+		}
+
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
 
@@ -4588,7 +4602,8 @@ Not yet.
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
 
-		device_add(machine, "ns16550 irq=0 addr=0x7c0003f8");
+		device_add(machine, "ns16550 irq=0 addr=0x7c0003f8 name2=com0");
+		device_add(machine, "ns16550 irq=0 addr=0x7c0002f8 name2=com1");
 		/* machine->main_console_handle = */
 		dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 		    1, 12, 0, 1);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.553 2005-09-24 21:15:10 debug Exp $
+ *  $Id: machine.c,v 1.554 2005-09-26 00:08:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4177,6 +4177,38 @@ Not yet.
 		machine->machine_name = "Macintosh (PPC)";
 
 		if (machine->prom_emulation) {
+			uint64_t b = 8 * 1048576, a = b - 0x800;
+			int i;
+			/*
+			 *  r3 = pointer to boot_args (for the Mach kernel).
+			 *  See http://darwinsource.opendarwin.org/10.3/
+			 *  BootX-59/bootx.tproj/include.subproj/boot_args.h
+			 *  for more info.
+			 */
+			cpu->cd.ppc.gpr[3] = a;
+			store_16bit_word(cpu, a + 0x0000, 1);	/*  revision  */
+			store_16bit_word(cpu, a + 0x0002, 2);	/*  version  */
+			store_buf(cpu, a + 0x0004, machine->boot_string_argument, 256);
+			/*  26 dram banks; "long base; long size"  */
+			store_32bit_word(cpu, a + 0x0104, 0);	/*  base  */
+			store_32bit_word(cpu, a + 0x0108, machine->physical_ram_in_mb
+			    * 256);		/*  size (in pages)  */
+			for (i=8; i<26*8; i+= 4)
+				store_32bit_word(cpu, a + 0x0104 + i, 0);
+			a += (0x104 + 26 * 8);
+			/*  Video info:  */
+			store_32bit_word(cpu, a+0, 0xdd000000);	/*  video base  */
+			store_32bit_word(cpu, a+4, 0);		/*  display code (?)  */
+			store_32bit_word(cpu, a+8, 800);	/*  bytes per pixel row  */
+			store_32bit_word(cpu, a+12, 800);	/*  width  */
+			store_32bit_word(cpu, a+16, 600);	/*  height  */
+			store_32bit_word(cpu, a+20, 8);		/*  pixel depth  */
+			a += 24;
+			store_32bit_word(cpu, a+0, 0);		/*  gestalt number (TODO)  */
+			store_32bit_word(cpu, a+4, 0);		/*  device tree pointer (TODO)  */
+			store_32bit_word(cpu, a+8, 0);		/*  device tree length  */
+			store_32bit_word(cpu, a+12, b);		/*  last address of kernel data area  */
+
 			/*
 			 *  r5 = OpenFirmware entry point.  NOTE: See
 			 *  cpu_ppc.c for the rest of this semi-ugly hack.

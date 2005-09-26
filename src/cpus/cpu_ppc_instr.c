@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.16 2005-09-24 23:44:18 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.17 2005-09-26 00:08:03 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -734,15 +734,6 @@ X(fmr)
 
 
 /*
- *  lfd:  Floating-point Load
- */
-X(lfd)
-{
-	fatal("[ TODO: lfd ]\n");
-}
-
-
-/*
  *  llsc: Load-linked and store conditional
  *
  *  arg[0] = copy of the instruction word.
@@ -814,6 +805,7 @@ X(llsc)
 			cpu->cd.ppc.cr &= 0x0fffffff;
 			if (old_so)
 				cpu->cd.ppc.cr |= 0x10000000;
+			cpu->cd.ppc.ll_bit = 0;
 			return;
 		}
 
@@ -834,7 +826,10 @@ X(llsc)
 		cpu->cd.ppc.cr |= 0x20000000;	/*  success!  */
 		if (old_so)
 			cpu->cd.ppc.cr |= 0x10000000;
-		cpu->cd.ppc.ll_bit = 0;
+
+		/*  Clear _all_ CPUs' ll_bits:  */
+		for (i=0; i<cpu->machine->ncpus; i++)
+			cpu->machine->cpus[i]->cd.ppc.ll_bit = 0;
 	}
 }
 
@@ -1408,7 +1403,7 @@ X(addc)
 	/*  TODO: this only works in 32-bit mode  */
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-/*	cpu->cd.ppc.xer &= ~PPC_XER_CA;  */
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if ((tmp >> 32) != (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
@@ -1425,6 +1420,7 @@ X(addc)
  */
 X(adde)
 {
+	/*  TODO: this only works in 32-bit mode  */
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
@@ -1439,6 +1435,7 @@ X(adde)
 X(adde_dot) { instr(adde)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(addme)
 {
+	/*  TODO: this only works in 32-bit mode  */
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
@@ -1453,6 +1450,7 @@ X(addme)
 X(addme_dot) { instr(addme)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(addze)
 {
+	/*  TODO: this only works in 32-bit mode  */
 	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
@@ -1509,9 +1507,6 @@ X(subfze)
 	cpu->cd.ppc.xer &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
-
-fatal("TODO: subfze Carry bit is wrong\n");
-
 	if ((tmp >> 32) != (tmp2 >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
@@ -1729,7 +1724,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
 	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0,
-	    bfa;
+	    bfa, fp;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 	void (*rc_f)(struct cpu *, struct ppc_instr_call *);
 
@@ -1894,6 +1889,7 @@ X(to_be_translated)
 	case PPC_HI6_LHZU:
 	case PPC_HI6_LWZ:
 	case PPC_HI6_LWZU:
+	case PPC_HI6_LFD:
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
 	case PPC_HI6_STH:
@@ -1903,7 +1899,7 @@ X(to_be_translated)
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
-		load = 0; zero = 1; size = 0; update = 0;
+		load = 0; zero = 1; size = 0; update = 0; fp = 0;
 		switch (main_opcode) {
 		case PPC_HI6_LBZ:  load = 1; break;
 		case PPC_HI6_LBZU: load = 1; update = 1; break;
@@ -1911,6 +1907,7 @@ X(to_be_translated)
 		case PPC_HI6_LHZU: load = 1; size = 1; update = 1; break;
 		case PPC_HI6_LWZ:  load = 1; size = 2; break;
 		case PPC_HI6_LWZU: load = 1; size = 2; update = 1; break;
+		case PPC_HI6_LFD:  load = 1; size = 3; fp = 1; break;
 		case PPC_HI6_STB:  break;
 		case PPC_HI6_STBU: update = 1; break;
 		case PPC_HI6_STH:  size = 1; break;
@@ -1918,19 +1915,35 @@ X(to_be_translated)
 		case PPC_HI6_STW:  size = 2; break;
 		case PPC_HI6_STWU: size = 2; update = 1; break;
 		}
-		ic->f =
+		if (fp) {
+			/*  Floating point:  */
+			if (load && size == 3) {
+				fatal("TODO: ld is INCORRECT!\n");
+				ic->f = instr(nop);
+			} else {
+				/*  TODO  */
+				fatal("TODO: fdgasgd\n");
+				goto bad;
+			}
+		} else {
+			/*  Integer load/store:  */
+			ic->f =
 #ifdef MODE32
-		    ppc32_loadstore
+			    ppc32_loadstore
 #else
-		    ppc_loadstore
+			    ppc_loadstore
 #endif
-		    [size + 4*zero + 8*load + (imm==0? 16 : 0) + 32*update];
-
+			    [size + 4*zero + 8*load + (imm==0? 16 : 0)
+			    + 32*update];
+		}
 		if (ra == 0 && update) {
 			fatal("TODO: ra=0 && update?\n");
 			goto bad;
 		}
-		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+		if (fp)
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rs]);
+		else
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 		if (ra == 0)
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
 		else
@@ -2571,11 +2584,6 @@ X(to_be_translated)
 
 		default:goto bad;
 		}
-		break;
-
-	case PPC_HI6_LFD:
-		/*  TODO  */
-		ic->f = instr(lfd);
 		break;
 
 	case PPC_HI6_63:

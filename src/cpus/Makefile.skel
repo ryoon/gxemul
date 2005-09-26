@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.6 2005-09-19 20:10:57 debug Exp $
+#  $Id: Makefile.skel,v 1.7 2005-09-26 00:08:03 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -33,7 +33,7 @@ cpu_alpha.o: cpu_alpha.c cpu_alpha_instr.c cpu_dyntrans.c ../memory_rw.c \
 
 cpu_alpha_instr.c: cpu_alpha_instr_alu.c tmp_alpha_misc.c
 
-tmp_alpha_misc.c: cpu_alpha_instr_loadstore.c
+tmp_alpha_misc.c: cpu_alpha_instr_loadstore.c generate_alpha_misc
 	./generate_alpha_misc > tmp_alpha_misc.c
 
 tmp_alpha_head.c:
@@ -48,7 +48,7 @@ tmp_alpha_tail.c:
 cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_arm_head.c tmp_arm_tail.c
 
-tmp_arm_loadstore.c: cpu_arm_instr_loadstore.c
+tmp_arm_loadstore.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
 	./generate_arm_loadstore > tmp_arm_loadstore.c
 
 tmp_arm_dpi.c: cpu_arm_instr_dpi.c
@@ -135,7 +135,7 @@ cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_ppc.c \
 
 cpu_ppc_instr.c: tmp_ppc_loadstore.c
 
-tmp_ppc_loadstore.c: cpu_ppc_instr_loadstore.c
+tmp_ppc_loadstore.c: cpu_ppc_instr_loadstore.c generate_ppc_loadstore
 	./generate_ppc_loadstore > tmp_ppc_loadstore.c
 
 tmp_ppc_head.c:

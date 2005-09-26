@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.31 2005-09-23 11:46:45 debug Exp $
+ *  $Id: symbol.c,v 1.32 2005-09-26 00:08:02 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -228,10 +228,6 @@ void add_symbol_name(struct symbol_context *sc,
 	}
 
 	if (name[0] == '\0')
-		return;
-
-	/*  Hm... is this really good?  */
-	if (addr == 0)
 		return;
 
 	/*  TODO: Maybe this should be optional?  */

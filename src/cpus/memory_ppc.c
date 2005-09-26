@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.2 2005-09-03 21:40:34 debug Exp $
+ *  $Id: memory_ppc.c,v 1.3 2005-09-26 00:40:15 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -86,14 +86,14 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		return 2;
 	}
 
-	fatal("sdr1 = 0x%llx\n", (long long)cpu->cd.ppc.sdr1);
-
-
 	/*  Return failure:  */
 	if (flags & FLAG_NOEXCEPTIONS)
 		return 0;
 
 	/*  TODO: Cause exception.  */
+	fatal("TODO: exception! sdr1 = 0x%llx\n", (long long)cpu->cd.ppc.sdr1);
+	*return_addr = vaddr;
+	return 2;
 
 	return 0;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.554 2005-09-26 00:08:02 debug Exp $
+ *  $Id: machine.c,v 1.555 2005-09-27 01:00:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4197,17 +4197,20 @@ Not yet.
 				store_32bit_word(cpu, a + 0x0104 + i, 0);
 			a += (0x104 + 26 * 8);
 			/*  Video info:  */
-			store_32bit_word(cpu, a+0, 0xdd000000);	/*  video base  */
+			store_32bit_word(cpu, a+0, 0xd0000000);	/*  video base  */
 			store_32bit_word(cpu, a+4, 0);		/*  display code (?)  */
 			store_32bit_word(cpu, a+8, 800);	/*  bytes per pixel row  */
 			store_32bit_word(cpu, a+12, 800);	/*  width  */
 			store_32bit_word(cpu, a+16, 600);	/*  height  */
 			store_32bit_word(cpu, a+20, 8);		/*  pixel depth  */
 			a += 24;
-			store_32bit_word(cpu, a+0, 0);		/*  gestalt number (TODO)  */
+			store_32bit_word(cpu, a+0, 127);	/*  gestalt number (TODO)  */
 			store_32bit_word(cpu, a+4, 0);		/*  device tree pointer (TODO)  */
 			store_32bit_word(cpu, a+8, 0);		/*  device tree length  */
 			store_32bit_word(cpu, a+12, b);		/*  last address of kernel data area  */
+
+			/*  r4 = "MOSX" (0x4D4F5358)  */
+			cpu->cd.ppc.gpr[4] = 0x4D4F5358;
 
 			/*
 			 *  r5 = OpenFirmware entry point.  NOTE: See

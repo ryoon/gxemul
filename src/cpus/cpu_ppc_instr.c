@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.17 2005-09-26 00:08:03 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.18 2005-09-27 01:00:36 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -89,23 +89,19 @@ X(andi_dot)
 /*
  *  addic:  Add immediate, Carry.
  *
- *  arg[0] = pointer to source uint64_t
+ *  arg[0] = pointer to source register
  *  arg[1] = immediate value (int32_t or larger)
- *  arg[2] = pointer to destination uint64_t
+ *  arg[2] = pointer to destination register
  */
 X(addic)
 {
 	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
-	uint64_t tmp = (int32_t)reg(ic->arg[0]);
+	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-
-	tmp2 += (int32_t)ic->arg[1];
-
-	/*  NOTE: CA is never cleared, just set.  */
-	/*  TODO: Is this correct?  */
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	tmp2 += (uint32_t)ic->arg[1];
 	if ((tmp2 >> 32) != (tmp >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-
 	reg(ic->arg[2]) = (uint32_t)tmp2;
 }
 
@@ -139,16 +135,12 @@ X(addic_dot)
 	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-
-	tmp2 += (int32_t)ic->arg[1];
-
-	/*  NOTE: CA is never cleared, just set.  */
-	/*  TODO: Is this correct?  */
+	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	tmp2 += (uint32_t)ic->arg[1];
 	if ((tmp2 >> 32) != (tmp >> 32))
 		cpu->cd.ppc.xer |= PPC_XER_CA;
-
 	reg(ic->arg[2]) = (uint32_t)tmp2;
-	update_cr0(cpu, tmp2);
+	update_cr0(cpu, (uint32_t)tmp2);
 }
 
 
@@ -452,8 +444,8 @@ X(bl_samepage)
 	uint32_t low_pc;
 
 	/*  Calculate LR:  */
-	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call) + 1;
 	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
 	cpu->cd.ppc.lr += (low_pc << 2);
 

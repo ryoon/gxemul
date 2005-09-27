@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.28 2005-05-25 06:40:19 debug Exp $
+ *  $Id: diskimage.h,v 1.29 2005-09-27 23:55:46 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -116,9 +116,11 @@ int diskimage_scsicommand(struct cpu *cpu, int id, int type,
 	struct scsi_transfer *);
 int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 	off_t offset, unsigned char *buf, size_t len);
-int diskimage_exist(struct machine *machine, int scsi_id, int type);
+int diskimage_exist(struct machine *machine, int id, int type);
 int diskimage_bootdev(struct machine *machine, int *typep);
 int diskimage_add(struct machine *machine, char *fname);
+int diskimage_getname(struct machine *machine, int id, int type,
+	char *buf, size_t bufsize);
 int diskimage_is_a_cdrom(struct machine *machine, int id, int type);
 int diskimage_is_a_tape(struct machine *machine, int id, int type);
 void diskimage_dump_info(struct machine *machine);

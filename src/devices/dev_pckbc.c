@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.50 2005-08-17 09:30:23 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.51 2005-09-27 23:55:44 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -74,6 +74,7 @@ struct pckbc_data {
 	int		reg[DEV_PCKBC_LENGTH];
 	int		keyboard_irqnr;
 	int		mouse_irqnr;
+	int		currently_asserted[2];
 	int		type;
 	int		pc_style_flag;
 
@@ -455,9 +456,12 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 			debug("[ pckbc: interrupt port %i ]\n", port_nr);
 			cpu_interrupt(cpu, port_nr==0? d->keyboard_irqnr
 			    : d->mouse_irqnr);
+			d->currently_asserted[port_nr] = 1;
 		} else {
-			cpu_interrupt_ack(cpu, port_nr==0? d->keyboard_irqnr
-			    : d->mouse_irqnr);
+			if (d->currently_asserted[port_nr])
+				cpu_interrupt_ack(cpu, port_nr==0?
+				    d->keyboard_irqnr : d->mouse_irqnr);
+			d->currently_asserted[port_nr] = 0;
 		}
 	}
 }

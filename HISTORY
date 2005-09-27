@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.969 2005-09-27 23:18:29 debug Exp $
+$Id: HISTORY,v 1.970 2005-09-27 23:55:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2278,3 +2278,4 @@ Changelog for GXemul:
 20050926	PPC progress (fixing some bugs etc); Darwin's kernel gets
 		slightly further than before.
 20050928	Minor footbridge/ISA/pciide updates.
+		Various other minor updates and fixes.

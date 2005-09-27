@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.38 2005-09-10 22:18:56 debug Exp $
+ *  $Id: dev_wdc.c,v 1.39 2005-09-27 23:55:44 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -154,6 +154,7 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
 static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
 	uint64_t total_size;
+	char namebuf[40];
 
 	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE);
@@ -185,9 +186,19 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	memcpy(&d->identify_struct[2 * 23], "VER 1.0 ", 8);
 
 	/*  27-46: Model number  */
-	memcpy(&d->identify_struct[2 * 27],
-	    "Fake GXemul IDE disk                    ", 40);
-	/*  TODO:  Use the diskimage's filename instead?  */
+	if (diskimage_getname(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE, namebuf, sizeof(namebuf))) {
+		int i;
+		for (i=0; i<sizeof(namebuf); i++)
+			if (namebuf[i] == 0) {
+				for (; i<sizeof(namebuf); i++)
+					namebuf[i] = ' ';
+				break;
+			}
+		memcpy(&d->identify_struct[2 * 27], namebuf, 40);
+	} else
+		memcpy(&d->identify_struct[2 * 27],
+		    "Fake GXemul IDE disk                    ", 40);
 
 	/*  47: max sectors per multitransfer  */
 	d->identify_struct[2 * 47 + 0] = 0x80;

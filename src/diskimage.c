@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.97 2005-09-27 23:18:30 debug Exp $
+ *  $Id: diskimage.c,v 1.98 2005-09-27 23:55:43 debug Exp $
  *
  *  Disk image support.
  *
@@ -478,6 +478,7 @@ static int diskimage__internal_access(struct diskimage *d, int writeflag,
 int diskimage_scsicommand(struct cpu *cpu, int id, int type,
 	struct scsi_transfer *xferp)
 {
+	char namebuf[16];
 	int retlen, i;
 	uint64_t size;
 	int64_t ofs;
@@ -588,10 +589,22 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x04;  /*  ACKREQQ  */
 		xferp->data_in[7] = 0x60;  /*  WBus32, WBus16  */
 
-		/*  These must be padded with spaces:  */
-		memcpy(xferp->data_in+8,  "FAKE    ", 8);
-		memcpy(xferp->data_in+16, "DISK            ", 16);
-		memcpy(xferp->data_in+32, "V0.0", 4);
+		/*  These are padded with spaces:  */
+
+		memcpy(xferp->data_in+8,  "EMULATED", 8);
+		if (diskimage_getname(cpu->machine, id,
+		    type, namebuf, sizeof(namebuf))) {
+			int i;
+			for (i=0; i<sizeof(namebuf); i++)
+				if (namebuf[i] == 0) {
+					for (; i<sizeof(namebuf); i++)
+						namebuf[i] = ' ';
+					break;
+				}
+			memcpy(xferp->data_in+16, namebuf, 16);
+		} else
+			memcpy(xferp->data_in+16, "DISK            ", 16);
+		memcpy(xferp->data_in+32, "0000", 4);
 
 		/*
 		 *  Some Ultrix kernels want specific responses from
@@ -1669,6 +1682,35 @@ int diskimage_bootdev(struct machine *machine, int *typep)
 	}
 
 	return -1;
+}
+
+
+/*
+ *  diskimage_getname():
+ *
+ *  Returns 1 if a valid disk image name was returned, 0 otherwise.
+ */
+int diskimage_getname(struct machine *machine, int id, int type,
+	char *buf, size_t bufsize)
+{
+	struct diskimage *d = machine->first_diskimage;
+
+	if (buf == NULL)
+		return 0;
+
+	while (d != NULL) {
+		if (d->type == type && d->id == id) {
+			char *p = strrchr(d->fname, '/');
+			if (p == NULL)
+				p = d->fname;
+			else
+				p ++;
+			snprintf(buf, bufsize, "%s", p);
+			return 1;
+		}
+		d = d->next;
+	}
+	return 0;
 }
 
 

@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_symphony_83c553.c,v 1.1 2005-09-23 11:47:01 debug Exp $
+ *  $Id: pci_symphony_83c553.c,v 1.2 2005-09-27 23:18:32 debug Exp $
  *
+ *  Symphony Labs 82C105 PCIIDE controller.
  *  Symphony Labs 83C553 PCI->ISA bridge.
  *
- *  TODO:  This more or less just a dummy device, so far.
+ *  TODO:  These are just dummy devices, so far.
  */
 
 #include <stdio.h>
@@ -45,7 +46,40 @@
 
 
 #define PCI_VENDOR_SYMPHONY		0x10ad
+#define	PCI_PRODUCT_SYMPHONY_82C105	0x0105
 #define PCI_PRODUCT_SYMPHONY_83C553	0x0565
+
+
+/*
+ *  pci_symphony_82c105_rr():
+ */
+uint32_t pci_symphony_82c105_rr(int reg)
+{
+	switch (reg) {
+	case 0x00:
+		return PCI_VENDOR_SYMPHONY +
+		    (PCI_PRODUCT_SYMPHONY_82C105 << 16);
+	case 0x04:
+		return 0xffffffff;	/*  ???  */
+	case 0x08:
+		/*  Revision  */
+		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+		    PCI_SUBCLASS_MASS_STORAGE_IDE, 0) + 0x05;
+	case 0x40:
+		/*  APO_IDECONF: channel 0 and 1 enabled  */
+		return 0x00000003;
+	default:
+		return 0;
+	}
+}
+
+
+/*
+ *  pci_symphony_82c105_init():
+ */
+void pci_symphony_82c105_init(struct machine *machine, struct memory *mem)
+{
+}
 
 
 /*
@@ -78,4 +112,5 @@ uint32_t pci_symphony_83c553_rr(int reg)
 void pci_symphony_83c553_init(struct machine *machine, struct memory *mem)
 {
 }
+
 

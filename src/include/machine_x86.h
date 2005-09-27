@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_x86.h,v 1.7 2005-05-20 09:17:32 debug Exp $
+ *  $Id: machine_x86.h,v 1.8 2005-09-27 23:18:33 debug Exp $
  */
 
 #include "misc.h"
@@ -74,8 +74,6 @@ struct machine_pc {
 	int	kbd_buf_tail;
 
 	struct pc_bios_disk *first_disk;
-	struct pic8259_data *pic1;
-	struct pic8259_data *pic2;
 };
 
 

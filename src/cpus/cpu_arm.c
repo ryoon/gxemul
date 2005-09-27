@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.20 2005-09-24 13:21:57 debug Exp $
+ *  $Id: cpu_arm.c,v 1.21 2005-09-27 23:18:31 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -472,7 +472,7 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 	}
 
-	fatal("arm_exception(): %i\n", exception_nr);
+	debug("[ arm_exception(): %i ]\n", exception_nr);
 
 	arm_save_register_bank(cpu);
 
@@ -520,13 +520,15 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 /*
  *  arm_cpu_interrupt():
  *
- *  0..31 are used as interrupt numbers, 32 is used as a "re-assert" signal
- *  to cpu->machine->md_interrupt().
+ *  0..31 are used as footbridge interrupt numbers, 32..47 = ISA,
+ *  64 is used as a "re-assert" signal to cpu->machine->md_interrupt().
+ *
+ *  TODO: don't hardcode to footbridge!
  */
 int arm_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
 	/*  fatal("arm_cpu_interrupt(): 0x%llx\n", (int)irq_nr);  */
-	if (irq_nr <= 32) {
+	if (irq_nr <= 64) {
 		if (cpu->machine->md_interrupt != NULL)
 			cpu->machine->md_interrupt(cpu->machine,
 			    cpu, irq_nr, 1);
@@ -546,7 +548,7 @@ int arm_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  */
 int arm_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	if (irq_nr <= 32) {
+	if (irq_nr <= 64) {
 		if (cpu->machine->md_interrupt != NULL)
 			cpu->machine->md_interrupt(cpu->machine,
 			    cpu, irq_nr, 0);

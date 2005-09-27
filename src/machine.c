@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.555 2005-09-27 01:00:34 debug Exp $
+ *  $Id: machine.c,v 1.556 2005-09-27 23:18:30 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1399,32 +1399,32 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	if (irq_nr < 8) {
 		if (assrt)
-			m->md.pc.pic1->irr |= mask;
+			m->isa_pic_data.pic1->irr |= mask;
 		else
-			m->md.pc.pic1->irr &= ~mask;
+			m->isa_pic_data.pic1->irr &= ~mask;
 	} else if (irq_nr < 16) {
-		if (m->md.pc.pic2 == NULL) {
+		if (m->isa_pic_data.pic2 == NULL) {
 			fatal("x86_pc_interrupt(): pic2 used (irq_nr = %i), "
 			    "but we are emulating an XT?\n", irq_nr);
 			return;
 		}
 		if (assrt)
-			m->md.pc.pic2->irr |= mask;
+			m->isa_pic_data.pic2->irr |= mask;
 		else
-			m->md.pc.pic2->irr &= ~mask;
+			m->isa_pic_data.pic2->irr &= ~mask;
 	}
 
-	if (m->md.pc.pic2 != NULL) {
+	if (m->isa_pic_data.pic2 != NULL) {
 		/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
 		/*  (TODO: don't hardcode this here)  */
-		if (m->md.pc.pic2->irr & ~m->md.pc.pic2->ier)
-			m->md.pc.pic1->irr |= 0x04;
+		if (m->isa_pic_data.pic2->irr & ~m->isa_pic_data.pic2->ier)
+			m->isa_pic_data.pic1->irr |= 0x04;
 		else
-			m->md.pc.pic1->irr &= ~0x04;
+			m->isa_pic_data.pic1->irr &= ~0x04;
 	}
 
 	/*  Now, PIC1:  */
-	if (m->md.pc.pic1->irr & ~m->md.pc.pic1->ier)
+	if (m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
 		cpu->cd.x86.interrupt_asserted = 1;
 	else
 		cpu->cd.x86.interrupt_asserted = 0;
@@ -1433,22 +1433,62 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 /*
  *  Footbridge interrupts:
+ *
+ *  0..31  = footbridge interrupt
+ *  32..47 = ISA
+ *  64     = reassert
  */
 void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	int assrt)
 {
-	uint32_t mask = 1 << irq_nr;
+	uint32_t mask = 1 << (irq_nr & 31);
+	int old_isa_assert, new_isa_assert;
+
+	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
+
+	if (irq_nr >= 32 && irq_nr < 32 + 8) {
+		int mask = 1 << (irq_nr & 7);
+		if (assrt)
+			m->isa_pic_data.pic1->irr |= mask;
+		else
+			m->isa_pic_data.pic1->irr &= ~mask;
+	} else if (irq_nr >= 32+8 && irq_nr < 32+16) {
+		int mask = 1 << (irq_nr & 7);
+		if (assrt)
+			m->isa_pic_data.pic2->irr |= mask;
+		else
+			m->isa_pic_data.pic2->irr &= ~mask;
+	}
+
+	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+	/*  (TODO: don't hardcode this here)  */
+	if (m->isa_pic_data.pic2->irr & ~m->isa_pic_data.pic2->ier)
+		m->isa_pic_data.pic1->irr |= 0x04;
+	else
+		m->isa_pic_data.pic1->irr &= ~0x04;
+
+	/*  Now, PIC1:  */
+	new_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
+	if (old_isa_assert != new_isa_assert) {
+		if (new_isa_assert)
+			cpu_interrupt(cpu, 0x12);
+		else
+			cpu_interrupt_ack(cpu, 0x12);
+		return;
+	}
+
 	if (irq_nr < 32) {
 		if (assrt)
 			m->md_int.footbridge_data->irq_status |= mask;
 		else
 			m->md_int.footbridge_data->irq_status &= ~mask;
 	}
+
 	if (m->md_int.footbridge_data->irq_status &
 	    m->md_int.footbridge_data->irq_enable)
-		cpu_interrupt(cpu, 33);
+		cpu_interrupt(cpu, 65);
 	else
-		cpu_interrupt_ack(cpu, 33);
+		cpu_interrupt_ack(cpu, 65);
 }
 
 
@@ -1508,10 +1548,10 @@ void machine_setup(struct machine *machine)
 	char *init_bootpath;
 
 	/*  PCI stuff:  */
-	struct pci_data *pci_data;
+	struct pci_data *pci_data = NULL;
 
 	/*  Framebuffer stuff:  */
-	struct vfb_data *fb;
+	struct vfb_data *fb = NULL;
 
 	/*  Abreviation:  :-)  */
 	struct cpu *cpu = machine->cpus[machine->bootstrap_cpu];
@@ -4537,7 +4577,7 @@ Not yet.
 		if (machine->use_x11) {
 			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
 			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
-			    0, 0, machine->use_x11, 0);  /*  TODO: irq numbers  */
+			    32 + 1, 32 + 12, machine->use_x11, 0);
 			machine->main_console_handle = j;
 		}
 
@@ -4545,27 +4585,25 @@ Not yet.
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
 
-		/*  TODO: irq  */
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c0000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-		/*  TODO: md interrupt  */
 
-		device_add(machine, "ns16550 irq=0 addr=0x7c0003f8 name2=com0 in_use=0");
-		device_add(machine, "ns16550 irq=0 addr=0x7c0002f8 name2=com1 in_use=0");
+		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0 in_use=0");
+		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1 in_use=0");
 
 		/*  IDE controllers:  */
 		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    0x7c0001f0ULL, 14);
+			    0x7c0001f0ULL, 32 + 14);
 			device_add(machine, tmpstr);
 		}
 		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
 			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    0x7c000170ULL, 15);
+			    0x7c000170ULL, 32 + 15);
 			device_add(machine, tmpstr);
 		}
 
@@ -4637,11 +4675,30 @@ Not yet.
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
 
-		device_add(machine, "ns16550 irq=0 addr=0x7c0003f8 name2=com0");
-		device_add(machine, "ns16550 irq=0 addr=0x7c0002f8 name2=com1");
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c000020");
+		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c0000a0");
+		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
+
+		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0");
+		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1");
 		/* machine->main_console_handle = */
 		dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
-		    1, 12, 0, 1);
+		    32 + 1, 32 + 12, 0, 1);
+
+		/*  IDE controllers:  */
+		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+			    0x7c0001f0ULL, 32 + 14);
+			device_add(machine, tmpstr);
+		}
+		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+			    0x7c000170ULL, 32 + 15);
+			device_add(machine, tmpstr);
+		}
 
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);
@@ -4772,11 +4829,11 @@ Not yet.
 		/*  Interrupt controllers:  */
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=16 addr=0x%llx",
 		    (long long)(X86_IO_BASE + 0x20));
-		machine->md.pc.pic1 = device_add(machine, tmpstr);
+		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		if (machine->machine_subtype != MACHINE_X86_XT) {
 			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=16 addr=0x%llx irq=2",
 			    (long long)(X86_IO_BASE + 0xa0));
-			machine->md.pc.pic2 = device_add(machine, tmpstr);
+			machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 		}
 
 		machine->md_interrupt = x86_pc_interrupt;

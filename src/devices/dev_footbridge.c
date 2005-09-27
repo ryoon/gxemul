@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.7 2005-09-24 13:21:58 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.8 2005-09-27 23:18:32 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -154,14 +154,14 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			fatal("[ WARNING: footbridge write to irq status? ]\n");
 			exit(1);
 			d->irq_status = idata;
-			cpu_interrupt(cpu, 32);
+			cpu_interrupt(cpu, 64);
 		}
 		break;
 
 	case IRQ_ENABLE_SET:
 		if (writeflag == MEM_WRITE) {
 			d->irq_enable |= idata;
-			cpu_interrupt(cpu, 32);
+			cpu_interrupt(cpu, 64);
 		} else
 			odata = d->irq_enable;
 		break;
@@ -169,7 +169,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	case IRQ_ENABLE_CLEAR:
 		if (writeflag == MEM_WRITE) {
 			d->irq_enable &= ~idata;
-			cpu_interrupt(cpu, 32);
+			cpu_interrupt(cpu, 64);
 		} else {
 			fatal("[ WARNING: footbridge read from "
 			    "ENABLE CLEAR? ]\n");
@@ -271,8 +271,11 @@ int devinit_footbridge(struct devinit *devinit)
 		break;
 	case MACHINE_NETWINDER:
 		bus_pci_add(devinit->machine, d->pcibus,
-		    devinit->machine->memory, 0xc0, 7, 0,
+		    devinit->machine->memory, 0xc0, 11, 0,
 		    pci_symphony_83c553_init, pci_symphony_83c553_rr);
+		bus_pci_add(devinit->machine, d->pcibus,
+		    devinit->machine->memory, 0xc0, 11, 1,
+		    pci_symphony_82c105_init, pci_symphony_82c105_rr);
 		break;
 	default:fatal("footbridge: unimplemented machine type.\n");
 		exit(1);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.11 2005-09-23 11:47:01 debug Exp $
+ *  $Id: bus_pci.c,v 1.12 2005-09-27 23:18:32 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -154,6 +154,11 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	uint32_t (*read_register)(int reg))
 {
 	struct pci_device *new_device;
+
+	if (pci_data == NULL) {
+		fatal("bus_pci_add(): pci_data == NULL!\n");
+		exit(1);
+	}
 
 	/*  Make sure this bus/device/function number isn't already in use:  */
 	new_device = pci_data->first_device;

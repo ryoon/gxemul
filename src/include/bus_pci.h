@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.13 2005-09-23 11:47:02 debug Exp $
+ *  $Id: bus_pci.h,v 1.14 2005-09-27 23:18:33 debug Exp $
  */
 
 #include "misc.h"
@@ -90,6 +90,8 @@ uint32_t pci_dec21143_rr(int reg);
 void pci_dec21143_init(struct machine *, struct memory *mem);
 
 /*  symphony_83c553:  */
+uint32_t pci_symphony_82c105_rr(int reg);
+void pci_symphony_82c105_init(struct machine *, struct memory *mem);
 uint32_t pci_symphony_83c553_rr(int reg);
 void pci_symphony_83c553_init(struct machine *, struct memory *mem);
 

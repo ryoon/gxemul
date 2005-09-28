@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.77 2005-07-15 07:34:06 debug Exp $
+ *  $Id: dev_vga.c,v 1.78 2005-09-28 11:24:20 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -382,6 +382,8 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 	base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
 	    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
 
+printf("base = %i\n", base);
+
 	if (!machine->use_x11)
 		vga_update_textmode(machine, d, base, start, end);
 
@@ -725,6 +727,7 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 		d->update_y1 = 0;
 		d->update_y2 = d->max_y - 1;
 		d->modified = 1;
+d->charcells[random() & 2047] = random();
 		break;
 	case VGA_CRTC_CURSOR_LOCATION_HIGH:		/*  0x0e  */
 	case VGA_CRTC_CURSOR_LOCATION_LOW:		/*  0x0f  */

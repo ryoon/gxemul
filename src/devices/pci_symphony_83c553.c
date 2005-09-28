@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_symphony_83c553.c,v 1.2 2005-09-27 23:18:32 debug Exp $
+ *  $Id: pci_symphony_83c553.c,v 1.3 2005-09-28 11:24:20 debug Exp $
  *
  *  Symphony Labs 82C105 PCIIDE controller.
  *  Symphony Labs 83C553 PCI->ISA bridge.
@@ -111,6 +111,20 @@ uint32_t pci_symphony_83c553_rr(int reg)
  */
 void pci_symphony_83c553_init(struct machine *machine, struct memory *mem)
 {
-}
+	/*
+	 *  TODO: The check for machine type shouldn't be here?
+	 */
 
+	switch (machine->machine_type) {
+
+	case MACHINE_NETWINDER:
+		/*  TODO: Irqs...  */
+		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
+		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
+		break;
+
+	default:fatal("pci_vt82c586_ide_init(): unimplemented machine type\n");
+		exit(1);
+	}
+}
 

@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.3 2005-09-10 00:57:10 debug Exp $
+$Id: README_DYNTRANS,v 1.4 2005-09-28 11:24:19 debug Exp $
 
 Dyntrans TODO:
 
@@ -9,6 +9,7 @@ Dyntrans TODO:
 	------		-------				-----		-----
 	Alpha		32-bit				64		no
 	ARM		32-bit, 16-bit (Thumb)		32		no
+	Atmel AVR	16-bit				8		no
 	HPPA		32-bit				64/32		yes
 	i960		32-bit + variable		32		?
 	IA64		128-bit				64		no

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.14 2005-09-27 23:18:33 debug Exp $
+ *  $Id: bus_pci.h,v 1.15 2005-09-28 11:24:21 debug Exp $
  */
 
 #include "misc.h"
@@ -76,6 +76,8 @@ struct pci_data *bus_pci_init(int irq_nr);
 /*  ali_m1543:  */
 uint32_t pci_ali_m1543_rr(int reg);
 void pci_ali_m1543_init(struct machine *, struct memory *mem);
+uint32_t pci_ali_m5229_rr(int reg);
+void pci_ali_m5229_init(struct machine *, struct memory *mem);
 
 /*  ahc:  */
 uint32_t pci_ahc_rr(int reg);

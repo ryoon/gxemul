@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ali_m1543.c,v 1.1 2005-09-23 11:47:01 debug Exp $
+ *  $Id: pci_ali_m1543.c,v 1.2 2005-09-28 11:24:20 debug Exp $
  *
+ *  Acer Labs M5229 PCIIDE (UDMA) controller.
  *  Acer Labs M1543 PCI->ISA bridge.
  *
- *  TODO:  This more or less just a dummy device, so far.
+ *  TODO: These are just dummies.
  */
 
 #include <stdio.h>
@@ -46,6 +47,9 @@
 
 #define PCI_VENDOR_ALI			0x10b9
 #define PCI_PRODUCT_ALI_M1543		0x1533	/*  NOTE: not 1543  */
+#define	PCI_PRODUCT_ALI_M5229		0x5229
+
+
 
 
 /*
@@ -76,5 +80,47 @@ uint32_t pci_ali_m1543_rr(int reg)
  */
 void pci_ali_m1543_init(struct machine *machine, struct memory *mem)
 {
+}
+
+
+/*
+ *  pci_ali_m5229_rr():
+ */
+uint32_t pci_ali_m5229_rr(int reg)
+{
+	switch (reg) {
+	case 0x00:
+		return PCI_VENDOR_ALI + (PCI_PRODUCT_ALI_M5229 << 16);
+	case 0x04:
+		return 0xffffffff;	/*  ???  */
+	case 0x08:
+		/*  Possibly not correct:  */
+		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+		    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1;
+	default:
+		return 0;
+	}
+}
+
+
+/*
+ *  pci_ali_m5229_init():
+ */
+void pci_ali_m5229_init(struct machine *machine, struct memory *mem)
+{
+	/*
+	 *  TODO: The check for machine type shouldn't be here?
+	 */
+
+	switch (machine->machine_type) {
+
+	case MACHINE_CATS:
+		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
+		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
+		break;
+
+	default:fatal("pci_ali_m5229_init(): unimplemented machine type\n");
+		exit(1);
+	}
 }
 

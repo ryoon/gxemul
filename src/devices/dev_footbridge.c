@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.8 2005-09-27 23:18:32 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.9 2005-09-28 11:24:20 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -268,6 +268,9 @@ int devinit_footbridge(struct devinit *devinit)
 		bus_pci_add(devinit->machine, d->pcibus,
 		    devinit->machine->memory, 0xc0, 7, 0,
 		    pci_ali_m1543_init, pci_ali_m1543_rr);
+		bus_pci_add(devinit->machine, d->pcibus,
+		    devinit->machine->memory, 0xc0, 16, 0,
+		    pci_ali_m5229_init, pci_ali_m5229_rr);
 		break;
 	case MACHINE_NETWINDER:
 		bus_pci_add(devinit->machine, d->pcibus,

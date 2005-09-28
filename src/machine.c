@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.556 2005-09-27 23:18:30 debug Exp $
+ *  $Id: machine.c,v 1.557 2005-09-28 11:24:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4593,20 +4593,6 @@ Not yet.
 		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0 in_use=0");
 		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1 in_use=0");
 
-		/*  IDE controllers:  */
-		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    0x7c0001f0ULL, 32 + 14);
-			device_add(machine, tmpstr);
-		}
-		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    0x7c000170ULL, 32 + 15);
-			device_add(machine, tmpstr);
-		}
-
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
 
@@ -4685,20 +4671,6 @@ Not yet.
 		/* machine->main_console_handle = */
 		dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 		    32 + 1, 32 + 12, 0, 1);
-
-		/*  IDE controllers:  */
-		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    0x7c0001f0ULL, 32 + 14);
-			device_add(machine, tmpstr);
-		}
-		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    0x7c000170ULL, 32 + 15);
-			device_add(machine, tmpstr);
-		}
 
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);

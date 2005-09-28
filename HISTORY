@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.970 2005-09-27 23:55:42 debug Exp $
+$Id: HISTORY,v 1.971 2005-09-28 11:50:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2277,5 +2277,5 @@ Changelog for GXemul:
 20050925	More PPC progress.
 20050926	PPC progress (fixing some bugs etc); Darwin's kernel gets
 		slightly further than before.
-20050928	Minor footbridge/ISA/pciide updates.
-		Various other minor updates and fixes.
+20050928	Various updates: footbridge/ISA/pciide stuff, and finally
+		fixing the VGA text scroll-by-changing-the-base-offset bug.

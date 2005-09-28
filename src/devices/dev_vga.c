@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.78 2005-09-28 11:24:20 debug Exp $
+ *  $Id: dev_vga.c,v 1.79 2005-09-28 11:50:26 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -382,8 +382,6 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 	base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
 	    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
 
-printf("base = %i\n", base);
-
 	if (!machine->use_x11)
 		vga_update_textmode(machine, d, base, start, end);
 
@@ -473,20 +471,31 @@ static void vga_update_cursor(struct machine *machine, struct vga_data *d)
 void dev_vga_tick(struct cpu *cpu, void *extra)
 {
 	struct vga_data *d = extra;
-	uint64_t low = (uint64_t)-1, high;
+	int64_t low = -1, high;
 
 	vga_update_cursor(cpu->machine, d);
 
 	/*  TODO: text vs graphics tick?  */
 	memory_device_dyntrans_access(cpu, cpu->mem, extra, &low, &high);
 
-	if ((int64_t)low != -1) {
+	if (low != -1) {
+		int base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
+		    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
+		int new_u_y1, new_u_y2;
 		debug("[ dev_vga_tick: bintrans access, %llx .. %llx ]\n",
 		    (long long)low, (long long)high);
+		low -= base;
+		high -= base;
 		d->update_x1 = 0;
 		d->update_x2 = d->max_x - 1;
-		d->update_y1 = (low/2) / d->max_x;
-		d->update_y2 = ((high/2) / d->max_x) + 1;
+		new_u_y1 = (low/2) / d->max_x;
+		new_u_y2 = ((high/2) / d->max_x) + 1;
+		if (new_u_y1 < d->update_y1)
+			d->update_y1 = new_u_y1;
+		if (new_u_y2 > d->update_y2)
+			d->update_y2 = new_u_y2;
+		if (d->update_y2 < 0)
+			d->update_y2 = 0;
 		if (d->update_y2 >= d->max_y)
 			d->update_y2 = d->max_y - 1;
 		d->modified = 1;
@@ -727,7 +736,6 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 		d->update_y1 = 0;
 		d->update_y2 = d->max_y - 1;
 		d->modified = 1;
-d->charcells[random() & 2047] = random();
 		break;
 	case VGA_CRTC_CURSOR_LOCATION_HIGH:		/*  0x0e  */
 	case VGA_CRTC_CURSOR_LOCATION_LOW:		/*  0x0f  */

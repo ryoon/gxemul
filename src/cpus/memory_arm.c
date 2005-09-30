@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.13 2005-09-30 14:07:46 debug Exp $
+ *  $Id: memory_arm.c,v 1.14 2005-09-30 15:53:59 debug Exp $
  */
 
 #include <stdio.h>
@@ -165,13 +165,12 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
 		case 2:	/*  4KB page:  */
-			ap = (d2 >> 4) & 255;
-			switch (vaddr & 0x0000c000) {
-			case 0x4000:	ap >>= 2; break;
-			case 0x8000:	ap >>= 4; break;
-			case 0xc000:	ap >>= 6; break;
+			switch (vaddr & 0x00000c00) {
+			case 0x000: ap = (d2 >> 4) & 3; break;
+			case 0x400: ap = (d2 >> 6) & 3; break;
+			case 0x800: ap = (d2 >> 8) & 3; break;
+			case 0xc00: ap = (d2 >> 10) & 3; break;
 			}
-			ap &= 3;
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */

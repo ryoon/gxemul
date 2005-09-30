@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.4 2005-09-22 09:06:59 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.5 2005-09-30 15:53:59 debug Exp $
  *
  *
  *  TODO:
@@ -252,8 +252,9 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 {
 #ifdef A__L
 	/*  Load:  */
-	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]) ||
-	    ic->arg[0] == (size_t)(&cpu->cd.arm.tmp_pc)) {
+	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
+		ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
+	if (ic->arg[0] == (size_t)(&cpu->cd.arm.tmp_pc)) {
 		/*  tmp_pc = current PC + 8:  */
 		uint32_t low_pc, tmp;
 		low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
@@ -262,7 +263,6 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 		    ARM_INSTR_ALIGNMENT_SHIFT);
 		tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 		cpu->cd.arm.tmp_pc = tmp + 8;
-		ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
 	}
 	A__NAME(cpu, ic);
 	if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC])) {
@@ -279,11 +279,9 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 	    ARM_INSTR_ALIGNMENT_SHIFT);
 	tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.tmp_pc = tmp + 8;
-	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]) ||
-	    ic->arg[0] == (size_t)(&cpu->cd.arm.tmp_pc))
+	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
 		ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
-	if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC]) ||
-	    ic->arg[2] == (size_t)(&cpu->cd.arm.tmp_pc))
+	if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
 		ic->arg[2] = (size_t)(&cpu->cd.arm.tmp_pc);
 	A__NAME(cpu, ic);
 #endif

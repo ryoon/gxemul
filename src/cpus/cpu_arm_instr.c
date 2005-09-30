@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.17 2005-09-30 14:07:46 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.18 2005-09-30 15:53:59 debug Exp $
  *
  *  ARM instructions.
  *
@@ -665,6 +665,15 @@ X(msr_spsr)
 		break;
 	default:fatal("msr_spsr: unimplemented mode %i\n",
 		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
+{
+	/*  Synchronize the program counter:  */
+	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
+	old_pc = cpu->pc = cpu->cd.arm.r[ARM_PC];
+printf("msr_spsr: old pc = 0x%08x\n", old_pc);
+}
 		exit(1);
 	}
 }
@@ -696,6 +705,8 @@ X(mrs_spsr)
 	case ARM_MODE_UND32: reg(ic->arg[0]) = cpu->cd.arm.spsr_und; break;
 	case ARM_MODE_IRQ32: reg(ic->arg[0]) = cpu->cd.arm.spsr_irq; break;
 	case ARM_MODE_SVC32: reg(ic->arg[0]) = cpu->cd.arm.spsr_svc; break;
+	case ARM_MODE_USR32:
+	case ARM_MODE_SYS32: reg(ic->arg[0]) = 0; break;
 	default:fatal("mrs_spsr: unimplemented mode %i\n",
 		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
 		exit(1);
@@ -1462,7 +1473,7 @@ X(to_be_translated)
 				ic->arg[0] = iword;
 			} else {
 				if (s_bit) {
-					fatal("s_bit\n");
+					fatal("mul s_bit: not yet\n");
 					goto bad;
 				}
 				ic->f = cond_instr(mul);

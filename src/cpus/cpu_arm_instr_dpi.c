@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.5 2005-09-20 21:05:22 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.6 2005-09-30 15:53:59 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -200,9 +200,6 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 
 
-#if defined(A__CMN)
-	b = -b;
-#endif
 #if defined(A__RSB)
 	{
 		uint32_t tmp = a; a = b; b = tmp;
@@ -222,11 +219,11 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    );
 
-#if defined(A__CMP) || defined(A__CMN) || defined(A__RSB) || defined(A__SUB)
+#if defined(A__CMP) || defined(A__RSB) || defined(A__SUB)
 	if ((uint32_t)a >= (uint32_t)b)
 		cpu->cd.arm.cpsr |= ARM_FLAG_C;
 #else
-#if defined(A__ADC) || defined(A__ADD)
+#if defined(A__ADC) || defined(A__ADD) || defined(A__CMN)
 	if (c32 != c64)
 		cpu->cd.arm.cpsr |= ARM_FLAG_C;
 #else
@@ -240,42 +237,36 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	if (c32 == 0)
 		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
 
-	{
-		int n;
-		if ((int32_t)c32 < 0) {
-			cpu->cd.arm.cpsr |= ARM_FLAG_N;
-			n = 1;
-		} else
-			n = 0;
-		/*  Calculate the Overflow bit:  */
+	if ((int32_t)c32 < 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+
+	/*  Calculate the Overflow bit:  */
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
-		{
-			int v = 0;
-#if defined(A__ADD)
-			if (((int32_t)a >= 0 && (int32_t)b >= 0 &&
-			    (int32_t)c32 < 0) ||
-			    ((int32_t)a < 0 && (int32_t)b < 0 &&
-			    (int32_t)c32 >= 0))
-				v = 1;
+	{
+		int v = 0;
+#if defined(A__ADD) || defined(A__CMN)
+		if (((int32_t)a >= 0 && (int32_t)b >= 0 &&
+		    (int32_t)c32 < 0) ||
+		    ((int32_t)a < 0 && (int32_t)b < 0 &&
+		    (int32_t)c32 >= 0))
+			v = 1;
 #else
-#if defined(A__SUB) || defined(A__RSB) || defined(A__CMP) || defined(A__CMN)
-			if (((int32_t)a >= 0 && (int32_t)b < 0 &&
-			    (int32_t)c32 < 0) ||
-			    ((int32_t)a < 0 && (int32_t)b >= 0 &&
-			    (int32_t)c32 >= 0))
-				v = 1;
+#if defined(A__SUB) || defined(A__RSB) || defined(A__CMP)
+		if (((int32_t)a >= 0 && (int32_t)b < 0 &&
+		    (int32_t)c32 < 0) ||
+		    ((int32_t)a < 0 && (int32_t)b >= 0 &&
+		    (int32_t)c32 >= 0))
+			v = 1;
 #else
-			fatal("NO\n");
-			exit(1);
+		fatal("NO\n");
+		exit(1);
 #endif
 #endif
-
-			if (v)
-				cpu->cd.arm.cpsr |= ARM_FLAG_V;
-		}
-#endif
+		if (v)
+			cpu->cd.arm.cpsr |= ARM_FLAG_V;
 	}
+#endif
 #endif	/*  A__S  */
 }
 

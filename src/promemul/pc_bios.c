@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.1 2005-08-29 14:46:34 debug Exp $
+ *  $Id: pc_bios.c,v 1.2 2005-09-30 14:17:04 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -467,7 +467,7 @@ static int pc_bios_int8(struct cpu *cpu)
 	    &tmpbyte, 1, MEM_READ, CACHE_NONE | PHYSICAL);
 
 	/*  EOI the interrupt.  */
-	cpu->machine->md.pc.pic1->isr &= ~0x01;
+	cpu->machine->isa_pic_data.pic1->isr &= ~0x01;
 
 	/*  "Call" INT 0x1C:  */
 	/*  TODO: how about non-real-mode?  */
@@ -559,7 +559,7 @@ static void pc_bios_int9(struct cpu *cpu)
 	cpu->machine->md.pc.kbd_buf_tail %= PC_BIOS_KBD_BUF_SIZE;
 
 	/*  EOI the interrupt.  */
-	cpu->machine->md.pc.pic1->isr &= ~0x02;
+	cpu->machine->isa_pic_data.pic1->isr &= ~0x02;
 }
 
 
@@ -1496,15 +1496,15 @@ void pc_bios_init(struct cpu *cpu)
 		return;
 	}
 
-	if (cpu->machine->md.pc.pic1 == NULL) {
+	if (cpu->machine->isa_pic_data.pic1 == NULL) {
 		fatal("ERROR: No interrupt controller?\n");
 		exit(1);
 	} else
-		cpu->machine->md.pc.pic1->irq_base = 0x08;
+		cpu->machine->isa_pic_data.pic1->irq_base = 0x08;
 
 	/*  pic2 can be NULL when emulating an original XT:  */
-	if (cpu->machine->md.pc.pic2 != NULL)
-		cpu->machine->md.pc.pic2->irq_base = 0x70;
+	if (cpu->machine->isa_pic_data.pic2 != NULL)
+		cpu->machine->isa_pic_data.pic2->irq_base = 0x70;
 
 	/*  Disk Base Table (11 or 12 bytes?) at F000h:EFC7:  */
 	cpu->cd.x86.cursegment = X86_S_FS;

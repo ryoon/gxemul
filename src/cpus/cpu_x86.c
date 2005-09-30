@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.2 2005-08-29 14:46:32 debug Exp $
+ *  $Id: cpu_x86.c,v 1.3 2005-09-30 14:17:03 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -251,13 +251,15 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (int)cpu->cd.x86.idtr_limit, (long long)cpu->cd.x86.
 		    ldtr_base, (int)cpu->cd.x86.ldtr_limit);
 		debug("cpu%i:  pic1: irr=0x%02x ier=0x%02x isr=0x%02x "
-		    "base=0x%02x\n", x, cpu->machine->md.pc.pic1->irr,
-		    cpu->machine->md.pc.pic1->ier,cpu->machine->md.pc.pic1->isr,
-		    cpu->machine->md.pc.pic1->irq_base);
+		    "base=0x%02x\n", x, cpu->machine->isa_pic_data.pic1->irr,
+		    cpu->machine->isa_pic_data.pic1->ier,
+		    cpu->machine->isa_pic_data.pic1->isr,
+		    cpu->machine->isa_pic_data.pic1->irq_base);
 		debug("cpu%i:  pic2: irr=0x%02x ier=0x%02x isr=0x%02x "
-		    "base=0x%02x\n", x, cpu->machine->md.pc.pic2->irr,
-		    cpu->machine->md.pc.pic2->ier,cpu->machine->md.pc.pic2->isr,
-		    cpu->machine->md.pc.pic2->irq_base);
+		    "base=0x%02x\n", x, cpu->machine->isa_pic_data.pic2->irr,
+		    cpu->machine->isa_pic_data.pic2->ier,
+		    cpu->machine->isa_pic_data.pic2->isr,
+		    cpu->machine->isa_pic_data.pic2->irq_base);
 	} else if (PROTECTED_MODE) {
 		/*  Protected mode:  */
 		debug("cpu%i:  cs=0x%04x  ds=0x%04x  es=0x%04x  "
@@ -3081,15 +3083,15 @@ int cause_interrupt(struct cpu *cpu)
 	int i, irq_nr = -1;
 
 	for (i=0; i<8; i++) {
-		if (cpu->machine->md.pc.pic1->irr &
-		    (~cpu->machine->md.pc.pic1->ier) & (1 << i))
+		if (cpu->machine->isa_pic_data.pic1->irr &
+		    (~cpu->machine->isa_pic_data.pic1->ier) & (1 << i))
 			irq_nr = i;
 	}
 
 	if (irq_nr == 2) {
 		for (i=0; i<8; i++) {
-			if (cpu->machine->md.pc.pic2->irr &
-			    (~cpu->machine->md.pc.pic2->ier) & (1 << i))
+			if (cpu->machine->isa_pic_data.pic2->irr &
+			    (~cpu->machine->isa_pic_data.pic2->ier) & (1 << i))
 				irq_nr = 8+i;
 		}
 	}
@@ -3105,21 +3107,22 @@ int cause_interrupt(struct cpu *cpu)
 
 #if 0
 printf("cause1: %i (irr1=%02x ier1=%02x, irr2=%02x ier2=%02x\n", irq_nr,
-cpu->machine->md.pc.pic1->irr, cpu->machine->md.pc.pic1->ier,
-cpu->machine->md.pc.pic2->irr, cpu->machine->md.pc.pic2->ier);
+cpu->machine->isa_pic_data.pic1->irr, cpu->machine->isa_pic_data.pic1->ier,
+cpu->machine->isa_pic_data.pic2->irr, cpu->machine->isa_pic_data.pic2->ier);
 #endif
 
 	/*  Set the in-service bit, and calculate actual INT nr:  */
 	if (irq_nr < 8) {
-		if (cpu->machine->md.pc.pic1->isr & (1 << irq_nr))
+		if (cpu->machine->isa_pic_data.pic1->isr & (1 << irq_nr))
 			return 0;
-		cpu->machine->md.pc.pic1->isr |= (1 << irq_nr);
-		irq_nr = cpu->machine->md.pc.pic1->irq_base + irq_nr;
+		cpu->machine->isa_pic_data.pic1->isr |= (1 << irq_nr);
+		irq_nr = cpu->machine->isa_pic_data.pic1->irq_base + irq_nr;
 	} else {
-		if (cpu->machine->md.pc.pic2->isr & (1 << (irq_nr & 7)))
+		if (cpu->machine->isa_pic_data.pic2->isr & (1 << (irq_nr & 7)))
 			return 0;
-		cpu->machine->md.pc.pic2->isr |= (1 << (irq_nr&7));
-		irq_nr = cpu->machine->md.pc.pic2->irq_base + (irq_nr & 7);
+		cpu->machine->isa_pic_data.pic2->isr |= (1 << (irq_nr&7));
+		irq_nr = cpu->machine->isa_pic_data.pic2->irq_base +
+		    (irq_nr & 7);
 	}
 
 /*  printf("cause2: %i\n", irq_nr);  */

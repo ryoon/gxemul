@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.971 2005-09-28 11:50:25 debug Exp $
+$Id: HISTORY,v 1.972 2005-09-30 13:32:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2279,3 +2279,5 @@ Changelog for GXemul:
 		slightly further than before.
 20050928	Various updates: footbridge/ISA/pciide stuff, and finally
 		fixing the VGA text scroll-by-changing-the-base-offset bug.
+20050930	Adding a dummy S3 ViRGE pci card for CATS emulation, which
+		both NetBSD and OpenBSD detects as VGA.

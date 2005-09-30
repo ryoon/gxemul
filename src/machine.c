@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.557 2005-09-28 11:24:18 debug Exp $
+ *  $Id: machine.c,v 1.558 2005-09-30 13:33:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4574,13 +4574,6 @@ Not yet.
 	case MACHINE_CATS:
 		machine->machine_name = "CATS evaluation board";
 
-		if (machine->use_x11) {
-			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
-			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
-			    32 + 1, 32 + 12, machine->use_x11, 0);
-			machine->main_console_handle = j;
-		}
-
 		machine->md_int.footbridge_data =
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
@@ -4589,6 +4582,17 @@ Not yet.
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c0000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
+
+		device_add(machine, "pccmos addr=0x7c000070");
+
+		if (machine->use_x11) {
+			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
+			    mem, 0xc0, 8, 0, pci_s3_virge_init, pci_s3_virge_rr);
+			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
+			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
+			    32 + 1, 32 + 12, machine->use_x11, 0);
+			machine->main_console_handle = j;
+		}
 
 		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0 in_use=0");
 		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1 in_use=0");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.9 2005-09-28 11:24:20 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.10 2005-09-30 13:33:01 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -162,8 +162,12 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			d->irq_enable |= idata;
 			cpu_interrupt(cpu, 64);
-		} else
+		} else {
+			fatal("[ WARNING: footbridge read from "
+			    "ENABLE SET? ]\n");
+			exit(1);
 			odata = d->irq_enable;
+		}
 		break;
 
 	case IRQ_ENABLE_CLEAR:
@@ -173,6 +177,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			fatal("[ WARNING: footbridge read from "
 			    "ENABLE CLEAR? ]\n");
+			exit(1);
 			odata = d->irq_enable;
 		}
 		break;

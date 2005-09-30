@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.79 2005-09-28 11:50:26 debug Exp $
+ *  $Id: dev_vga.c,v 1.80 2005-09-30 14:07:47 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -58,8 +58,6 @@
 #define	MAX_RETRACE_SCANLINES	420
 #define	N_IS1_READ_THRESHOLD	50
 
-#define	VGA_MEM_MAXY		60
-#define	VGA_MEM_ALLOCY		60
 #define	GFX_ADDR_WINDOW		0x18000
 
 #define	VGA_FB_ADDR	0x1c00000000ULL
@@ -1143,7 +1141,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	uint64_t videomem_base, uint64_t control_base, char *name)
 {
 	struct vga_data *d;
-	int i, x,y, tmpi;
+	int i, tmpi;
 	size_t allocsize;
 
 	d = malloc(sizeof(struct vga_data));
@@ -1163,11 +1161,11 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->pixel_repy     = 1;
 	d->cur_mode       = MODE_CHARCELL;
 	d->crtc_reg[0xff] = 0x03;
-	d->charcells_size = d->max_x * VGA_MEM_MAXY * 2;
+	d->charcells_size = 0x8000;
 	d->gfx_mem_size   = 1;	/*  Nothing, as we start in text mode  */
 
-	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
-	allocsize = ((d->charcells_size - 1) | 0xfff) + 1;
+	/*  Allocate in full pages, to make it possible to use bintrans:  */
+	allocsize = ((d->charcells_size-1) | (machine->arch_pagesize-1)) + 1;
 	d->charcells = malloc(d->charcells_size);
 	d->charcells_outputed = malloc(d->charcells_size);
 	d->gfx_mem = malloc(d->gfx_mem_size);
@@ -1177,13 +1175,9 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 
-	for (y=0; y<VGA_MEM_MAXY; y++) {
-		for (x=0; x<d->max_x; x++) {
-			char ch = ' ';
-			i = (x + d->max_x * y) * 2;
-			d->charcells[i] = ch;
-			d->charcells[i+1] = 0x07;  /*  Default color  */
-		}
+	for (i=0; i<d->charcells_size; i+=2) {
+		d->charcells[i] = ' ';
+		d->charcells[i+1] = 0x07;  /*  Default color  */
 	}
 
 	memset(d->charcells_outputed, 0, d->charcells_size);

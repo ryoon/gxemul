@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.10 2005-09-30 13:33:01 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.11 2005-09-30 14:07:46 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -57,14 +57,14 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 {
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
-	d->timer1_value += 100;
-	d->timer3_value += 100;
+	d->timer1_value += 300;
+	d->timer3_value += 300;
 {
-	static int x = 0;
+	static long int x = 0;
 	x++;
-	if (x > 2399 && d->timer_tick_countdown-- < 0 &&
-	    d->irq_enable & 0x10) {
+	if (x > 2699 && d->timer_tick_countdown-- < 0) {
 		cpu_interrupt(cpu, 4);
+		d->timer_tick_countdown = 3;
 	} else {
 		cpu_interrupt_ack(cpu, 4);
 	}
@@ -200,7 +200,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case TIMER_1_VALUE:
-		d->timer1_value += 100;
+		d->timer1_value += 50;
 		if (writeflag == MEM_READ)
 			odata = d->timer1_value;
 		else
@@ -215,12 +215,12 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case TIMER_1_CLEAR:
-		d->timer_tick_countdown = 2;
+		d->timer_tick_countdown = 3;
 		cpu_interrupt_ack(cpu, 4);
 		break;
 
 	case TIMER_3_VALUE:
-		d->timer3_value += 100;
+		d->timer3_value += 50;
 		if (writeflag == MEM_READ)
 			odata = d->timer3_value;
 		else

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.12 2005-09-22 09:07:00 debug Exp $
+ *  $Id: memory_arm.c,v 1.13 2005-09-30 14:07:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -211,14 +211,14 @@ exception_return:
 	if (no_exceptions)
 		return 0;
 
-	fatal("TODO: arm memory fault: vaddr=%08x (domain=%i dav=%i ap=%i "
-	    "access=%i)", vaddr, domain, dav, ap, access);
+	fatal("{ arm memory fault: vaddr=%08x domain=%i dav=%i ap=%i "
+	    "access=%i", vaddr, domain, dav, ap, access);
 
 	if (d_in_use)
 		fatal(" d=0x%08x", d);
 	if (d2_in_use)
 		fatal(" d2=0x%08x", d2);
-	fatal("\n");
+	fatal(" }\n");
 
 	cpu->cd.arm.far = vaddr;
 	cpu->cd.arm.fsr = (domain << 4) | fs;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.16 2005-09-22 09:06:59 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.17 2005-09-30 14:07:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -955,6 +955,7 @@ X(bdt_load)
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_READ, CACHE_DATA)) {
 				fatal("bdt: load failed: iw = 0x%08x\n", iw);
+exit(1);
 				return;
 			}
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.21 2005-09-27 23:18:31 debug Exp $
+ *  $Id: cpu_arm.c,v 1.22 2005-09-30 14:07:46 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -445,6 +445,7 @@ void arm_load_register_bank(struct cpu *cpu)
 void arm_exception(struct cpu *cpu, int exception_nr)
 {
 	int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
+	int oldmode, newmode;
 	uint32_t retaddr;
 
 	if (exception_nr < 0 || exception_nr >= N_ARM_EXCEPTIONS) {
@@ -469,7 +470,6 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	case ARM_EXCEPTION_DATA_ABT:
 		retaddr += 8;
 		break;
-
 	}
 
 	debug("[ arm_exception(): %i ]\n", exception_nr);
@@ -497,8 +497,16 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	 */
 	cpu->cd.arm.cpsr &= ~ARM_FLAG_T;
 
+	oldmode = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
+
 	cpu->cd.arm.cpsr &= ~ARM_FLAG_MODE;
 	cpu->cd.arm.cpsr |= arm_exception_to_mode[exception_nr];
+
+	newmode = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
+	if (oldmode == newmode) {
+		fatal("Exception caused no mode change? TODO\n");
+		exit(1);
+	}
 
 	cpu->cd.arm.cpsr |= ARM_FLAG_I;
 	if (exception_nr == ARM_EXCEPTION_RESET ||

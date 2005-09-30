@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.14 2005-09-30 15:53:59 debug Exp $
+ *  $Id: memory_arm.c,v 1.15 2005-09-30 23:55:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -210,7 +210,7 @@ exception_return:
 	if (no_exceptions)
 		return 0;
 
-	fatal("{ arm memory fault: vaddr=%08x domain=%i dav=%i ap=%i "
+	fatal("{ arm memory fault: vaddr=0x%08x domain=%i dav=%i ap=%i "
 	    "access=%i", vaddr, domain, dav, ap, access);
 
 	if (d_in_use)

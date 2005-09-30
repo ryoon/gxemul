@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.12 2005-09-30 15:53:59 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.13 2005-09-30 23:55:57 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
- *  TODO.
+ *  TODO: Most things.
  */
 
 #include <stdio.h>
@@ -57,18 +57,58 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 {
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
-	d->timer1_value += 300;
-	d->timer3_value += 300;
-{
-	static long int x = 0;
-	x++;
-	if (x > 2699 && d->timer_tick_countdown-- < 0) {
+	d->timer1_value += 500;
+	d->timer3_value += 500;
+	d->timer1_value &= 0xffff;
+	d->timer3_value &= 0xffff;
+
+	if (d->timer1_control & TIMER_MODE_PERIODIC &&
+	    d->timer1_control & TIMER_ENABLE &&
+	    d->timer_tick_countdown-- < 0) {
 		cpu_interrupt(cpu, 4);
-		d->timer_tick_countdown = 4;
-	} else {
-		cpu_interrupt_ack(cpu, 4);
+		d->timer_tick_countdown = 2;
 	}
 }
+
+
+/*
+ *  dev_footbridge_isa_access():
+ */
+int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct footbridge_data *d = extra;
+	uint64_t idata = 0, odata = 0;
+	int x;
+
+	idata = memory_readmax64(cpu, data, len);
+
+	if (writeflag == MEM_WRITE)
+		fatal("[ footbridge_isa: WARNING/TODO: write! ]\n");
+
+	/*  NetBSD seems to want 0x20 + x, where x is the highest leveled
+	    ISA interrupt which is currently triggered.  */
+
+	for (x=0; x<16; x++) {
+		if (x == 2)
+			continue;
+		if (x < 8 && (cpu->machine->isa_pic_data.pic1->irr &
+		    ~cpu->machine->isa_pic_data.pic1->ier &
+		    (1 << x)))
+			break;
+		if (x >= 8 && (cpu->machine->isa_pic_data.pic2->irr &
+		    ~cpu->machine->isa_pic_data.pic2->ier &
+		    (1 << (x&7))))
+			break;
+	}
+
+	odata = 0x20 + (x & 15);
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
 }
 
 
@@ -200,7 +240,8 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case TIMER_1_VALUE:
-		d->timer1_value += 50;
+		d->timer1_value += 100;
+		d->timer1_value &= 0xffff;
 		if (writeflag == MEM_READ)
 			odata = d->timer1_value;
 		else
@@ -215,12 +256,13 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case TIMER_1_CLEAR:
-		d->timer_tick_countdown = 4;
+		d->timer_tick_countdown = 2;
 		cpu_interrupt_ack(cpu, 4);
 		break;
 
 	case TIMER_3_VALUE:
-		d->timer3_value += 50;
+		d->timer3_value += 100;
+		d->timer3_value &= 0xffff;
 		if (writeflag == MEM_READ)
 			odata = d->timer3_value;
 		else
@@ -228,7 +270,6 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case TIMER_3_CLEAR:
-		d->timer3_value = 0;
 		break;
 
 	default:if (writeflag == MEM_READ) {
@@ -265,6 +306,9 @@ int devinit_footbridge(struct devinit *devinit)
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_FOOTBRIDGE_LENGTH,
 	    dev_footbridge_access, d, MEM_DEFAULT, NULL);
+
+	memory_device_register(devinit->machine->memory, "footbridge_isa",
+	    0x79000000, 8, dev_footbridge_isa_access, d, MEM_DEFAULT, NULL);
 
 	d->pcibus = bus_pci_init(devinit->irq_nr);
 

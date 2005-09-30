@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.558 2005-09-30 13:33:00 debug Exp $
+ *  $Id: machine.c,v 1.559 2005-09-30 23:55:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1435,7 +1435,7 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
  *  Footbridge interrupts:
  *
  *  0..31  = footbridge interrupt
- *  32..47 = ISA
+ *  32..47 = ISA (connected to IRQ_IN_L2 on CATS, L3 on Netwinder)
  *  64     = reassert
  */
 void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
@@ -1443,6 +1443,7 @@ void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 {
 	uint32_t mask = 1 << (irq_nr & 31);
 	int old_isa_assert, new_isa_assert;
+	int isa_int = m->machine_type == MACHINE_CATS? 10 : 11;
 
 	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 
@@ -1471,9 +1472,9 @@ void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	new_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 	if (old_isa_assert != new_isa_assert) {
 		if (new_isa_assert)
-			cpu_interrupt(cpu, 0x12);
+			cpu_interrupt(cpu, isa_int);
 		else
-			cpu_interrupt_ack(cpu, 0x12);
+			cpu_interrupt_ack(cpu, isa_int);
 		return;
 	}
 
@@ -4619,7 +4620,7 @@ Not yet.
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_memavail), 7 * 1048576);
 			store_32bit_word_in_host(cpu, (unsigned char *)
-			    &(ebsaboot.bt_fclk), 133 * 1000000);
+			    &(ebsaboot.bt_fclk), 50 * 1000000);
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_pciclk), 66 * 1000000);
 			/*  TODO: bt_vers  */

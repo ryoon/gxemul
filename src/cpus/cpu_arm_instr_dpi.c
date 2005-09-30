@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.6 2005-09-30 15:53:59 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.7 2005-09-30 23:55:55 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -112,6 +112,10 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 
+#if defined(A__RSB) || defined(A__RSC)
+	{ uint32_t tmp = a; a = b; b = tmp; }
+#endif
+
 	/*
 	 *  Perform the operation:
 	 */
@@ -121,11 +125,8 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if defined(A__EOR) || defined(A__TEQ)
 	c64 = a ^ b;
 #endif
-#if defined(A__SUB) || defined(A__CMP)
+#if defined(A__SUB) || defined(A__CMP) || defined(A__RSB)
 	c64 = a - b;
-#endif
-#if defined(A__RSB)
-	c64 = b - a;
 #endif
 #if defined(A__ADD) || defined(A__CMN)
 	c64 = a + b;
@@ -133,11 +134,8 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if defined(A__ADC)
 	c64 = a + b + (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0);
 #endif
-#if defined(A__SBC)
+#if defined(A__SBC) || defined(A__RSC)
 	c64 = a - b - (1 - (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0));
-#endif
-#if defined(A__RSC)
-	c64 = b - a - (1 - (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0));
 #endif
 #if defined(A__ORR)
 	c64 = a | b;
@@ -197,13 +195,6 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	reg(ic->arg[2]) = c64;
 #endif
-#endif
-
-
-#if defined(A__RSB)
-	{
-		uint32_t tmp = a; a = b; b = tmp;
-	}
 #endif
 
 

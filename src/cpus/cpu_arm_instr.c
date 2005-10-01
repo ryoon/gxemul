@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.18 2005-09-30 15:53:59 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.19 2005-10-01 00:22:11 debug Exp $
  *
  *  ARM instructions.
  *
@@ -906,6 +906,7 @@ X(bdt_load)
 	int s_bit = iw & 0x00400000;
 	int w_bit = iw & 0x00200000;
 	int i, return_flag = 0;
+	uint32_t new_values[16];
 
 	/*  Synchronize the program counter:  */
 	low_pc = ((size_t)ic - (size_t)
@@ -958,15 +959,10 @@ X(bdt_load)
 				    ((value & 0xff00) << 8) |
 				    ((value & 0xff0000) >> 8) |
 				    ((value & 0xff000000) >> 24);
-			if (s_bit && i >= 8 && i <= 14)
-				cpu->cd.arm.default_r8_r14[i-8] = value;
-			else
-				cpu->cd.arm.r[i] = value;
 		} else {
 			if (!cpu->memory_rw(cpu, cpu->mem, addr, data,
 			    sizeof(data), MEM_READ, CACHE_DATA)) {
 				fatal("bdt: load failed: iw = 0x%08x\n", iw);
-exit(1);
 				return;
 			}
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
@@ -978,12 +974,9 @@ exit(1);
 				    (data[2] << 8) + (data[1] << 16)
 				    + (data[0] << 24);
 			}
-
-			if (s_bit && i >= 8 && i <= 14)
-				cpu->cd.arm.default_r8_r14[i-8] = value;
-			else
-				cpu->cd.arm.r[i] = value;
 		}
+
+		new_values[i] = value;
 
 		if (!p_bit) {
 			if (u_bit)
@@ -991,6 +984,18 @@ exit(1);
 			else
 				addr -= sizeof(uint32_t);
 		}
+	}
+
+	for (i=(u_bit? 0 : 15); i>=0 && i<=15; i+=(u_bit? 1 : -1)) {
+		if (!((iw >> i) & 1)) {
+			/*  Skip register i:  */
+			continue;
+		}
+
+		if (s_bit && i >= 8 && i <= 14)
+			cpu->cd.arm.default_r8_r14[i-8] = new_values[i];
+		else
+			cpu->cd.arm.r[i] = new_values[i];
 	}
 
 	if (w_bit)

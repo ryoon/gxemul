@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.13 2005-09-30 23:55:57 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.14 2005-10-01 00:22:12 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "bus_pci.h"
+#include "console.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"	/*  for struct footbridge_data  */
@@ -78,7 +79,7 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct footbridge_data *d = extra;
+	/*  struct footbridge_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;
 	int x;
 
@@ -185,6 +186,20 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 
 	case REVISION:
 		odata = 3;  /*  footbridge revision number  */
+		break;
+
+	case UART_DATA:
+		if (writeflag == MEM_WRITE)
+			console_putchar(d->console_handle, idata);
+		break;
+
+	case UART_RX_STAT:
+		/*  TODO  */
+		odata = 0;
+		break;
+
+	case UART_FLAGS:
+		odata = UART_TX_EMPTY;
 		break;
 
 	case IRQ_STATUS:
@@ -309,6 +324,9 @@ int devinit_footbridge(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, "footbridge_isa",
 	    0x79000000, 8, dev_footbridge_isa_access, d, MEM_DEFAULT, NULL);
+
+	/*  For the "fcom" console:  */
+	d->console_handle = console_start_slave(devinit->machine, "fcom");
 
 	d->pcibus = bus_pci_init(devinit->irq_nr);
 

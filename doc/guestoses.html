@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.88 2005-09-04 14:09:18 debug Exp $
+$Id: guestoses.html,v 1.89 2005-10-01 17:50:10 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -67,6 +67,7 @@ you might find the following information interesting:
 <ul>
   <li><a href="#mach">Mach/PMAX</a>
   <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
+  <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder</a>
 </ul>
 
 
@@ -476,8 +477,7 @@ in GXemul on an emulated Malta evaluation board (with a 5Kc or 4Kc CPU).
 
 <p>It is tricky to install, because there is (as far as I know) no INSTALL
 kernel. One way to install the NetBSD/evbmips distribution onto a disk
-image is to install the files is to do it using another (emulated)
-machine.
+image is to install the files using another (emulated) machine.
 
 <p>
 The following instructions will let you install NetBSD/evbmips onto a disk 
@@ -1572,6 +1572,75 @@ normally, but at least a few basic things will work.
 By the way, the emulator performs so poorly, that you will have time to 
 fetch several cups of coffee for each of the steps above.</font>
 
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdnetwinderinstall"></a>
+<h3>NetBSD/netwinder:</h3>
+
+<a href="http://www.netbsd.org/Ports/netwinder/">NetBSD/netwinder</a>
+could possibly run in GXemul. <font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
+
+<p>It is tricky to install, because there is (as far as I know) no INSTALL
+kernel. One way to install the NetBSD/netwinder distribution onto a disk
+image is to install the files using another (emulated) machine.
+
+<p>
+The following instructions will let you install the NetBSD/netwinder
+distribution onto a disk image, from an emulated DECstation 3MAX machine:
+
+<p>
+<ol>
+  <li>Install NetBSD/pmax 2.0.2 according to instructions
+	<a href="#netbsdinstall">further up on this page</a>.
+  <p>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_netwinder.img bs=1024 count=1 seek=999000</b>
+
+</pre>
+  <li>Download the generic kernel and the 2.0.2 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/netwinder/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/netwinder/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/netwindercd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/netwindercd.iso</a>
+
+</pre>
+  <p>
+  <li>Start NetBSD/pmax like this:<pre>
+	<b>gxemul -e 3max -A -d nbsd_pmax.img -d nbsd_netwinder.img -d netwinder.iso</b>
+
+</pre>and execute the following commands as <tt>root</tt>:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>newfs /dev/sd1c
+mount /dev/cd0c /mnt
+mkdir /mnt2; mount /dev/sd1c /mnt2
+cd /mnt2; sh
+for a in /mnt/netwinder/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
+exit
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES >> rc.conf
+echo "/dev/wd0c / ffs rw 1 1" > fstab
+cd /; umount /mnt; umount /mnt2; halt</b>
+</pre></td></tr></table>
+</ol>
+
+<p>You should now be able to boot NetBSD/evbmips using this command:<pre>
+	<b>gxemul -E netwinder -d nbsd_netwinder.img netbsd-GENERIC.gz</b>
+</pre>
+
+<p>Note: The installation instructions above create a filesystem
+<i>without</i> a disklabel, so there is only one ffs partition and no
+swap. You will need to enter the following things when booting with the
+generic kernel:<pre>
+	root device (default wd0a): <b>wd0c</b>
+	dump device (default wd0b): <b>none</b>
+	file system (default generic):    <i>(just press enter)</i>
+	init path (default /sbin/init):   <i>(just press enter)</i>
+</pre>
 
 
 

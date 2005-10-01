@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.973 2005-09-30 23:55:53 debug Exp $
+$Id: HISTORY,v 1.974 2005-10-01 17:50:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2282,3 +2282,5 @@ Changelog for GXemul:
 20050930	Adding a dummy S3 ViRGE pci card for CATS emulation, which
 		both NetBSD and OpenBSD detects as VGA.
 		Continuing on Footbridge (timers, ISA interrupt stuff).
+20051001	Continuing... there are still bugs, probably interrupt-
+		related.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.559 2005-09-30 23:55:54 debug Exp $
+ *  $Id: machine.c,v 1.560 2005-10-01 17:50:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4579,9 +4579,9 @@ Not yet.
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
 
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c000020");
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c0000a0");
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 
 		device_add(machine, "pccmos addr=0x7c000070");
@@ -4666,9 +4666,9 @@ Not yet.
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
 
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c000020");
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=0 addr=0x7c0000a0");
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 
 		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0");

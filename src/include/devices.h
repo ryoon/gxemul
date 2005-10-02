@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.182 2005-10-01 00:22:14 debug Exp $
+ *  $Id: devices.h,v 1.183 2005-10-02 03:49:01 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -248,16 +248,11 @@ struct footbridge_data {
 	struct pci_data *pcibus;
 
 	int		console_handle;
-	int		timer_tick_countdown;
 
-	uint32_t	timer1_value;
-	uint32_t	timer1_control;
-
-	uint32_t	timer2_value;
-	uint32_t	timer2_control;
-
-	uint32_t	timer3_value;
-	uint32_t	timer3_control;
+	int		timer_tick_countdown[4];
+	uint32_t	timer_load[4];
+	uint32_t	timer_value[4];
+	uint32_t	timer_control[4];
 
 	uint32_t        irq_status;
 	uint32_t        irq_enable;

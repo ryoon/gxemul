@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.15 2005-10-01 17:50:13 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.16 2005-10-02 03:49:00 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -53,21 +53,40 @@
 
 /*
  *  dev_footbridge_tick():
+ *
+ *  The 4 footbridge timers should decrease every now and then, and cause
+ *  interrupts. Periodic interrupts restart as soon as they are acknowledged,
+ *  non-periodic interrupts need to be "reloaded" to restart.
  */
 void dev_footbridge_tick(struct cpu *cpu, void *extra)
 {
+	int i;
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
-	d->timer1_value += 500;
-	d->timer3_value += 500;
-	d->timer1_value &= 0xffff;
-	d->timer3_value &= 0xffff;
+	for (i=0; i<4; i++) {
+		int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
+		if (d->timer_control[i] & TIMER_FCLK_16)
+			amount >>= 4;
+		else if (d->timer_control[i] & TIMER_FCLK_256)
+			amount >>= 8;
 
-	if (d->timer1_control & TIMER_MODE_PERIODIC &&
-	    d->timer1_control & TIMER_ENABLE &&
-	    d->timer_tick_countdown-- < 0) {
-		cpu_interrupt(cpu, 4);
-		d->timer_tick_countdown = 3;
+		if (d->timer_tick_countdown[i] >= 0) {
+			if (d->timer_value[i] > amount)
+				d->timer_value[i] -= amount;
+			else if (d->timer_value[i] > 0)
+				d->timer_value[i] = 0;
+
+			if (d->timer_value[i] == 0) {
+				if (d->timer_tick_countdown[i] > 0) {
+					d->timer_tick_countdown[i] --;
+					continue;
+				}
+
+				if (d->timer_control[i] & TIMER_ENABLE)
+					cpu_interrupt(cpu, IRQ_TIMER_1 + i);
+				d->timer_tick_countdown[i] = -1;
+			}
+		}
 	}
 }
 
@@ -102,6 +121,10 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 		    ~cpu->machine->isa_pic_data.pic2->ier &
 		    (1 << (x&7))))
 			break;
+	}
+
+	if (x == 16) {
+		printf("_ SPORADIC but INVALID ISA interrupt _\n");
 	}
 
 	odata = 0x20 + (x & 15);
@@ -171,8 +194,14 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 {
 	struct footbridge_data *d = extra;
 	uint64_t idata = 0, odata = 0;
+	int timer_nr = 0;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	if (relative_addr >= TIMER_1_LOAD && relative_addr <= TIMER_4_CLEAR) {
+		timer_nr = (relative_addr >> 5) & 3;
+		relative_addr &= ~0x060;
+	}
 
 	switch (relative_addr) {
 
@@ -254,37 +283,49 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			d->fiq_enable &= ~idata;
 		break;
 
-	case TIMER_1_VALUE:
-		d->timer1_value += 100;
-		d->timer1_value &= 0xffff;
+	case TIMER_1_LOAD:
 		if (writeflag == MEM_READ)
-			odata = d->timer1_value;
-		else
-			d->timer1_value = idata;
+			odata = d->timer_load[timer_nr];
+		else {
+			d->timer_value[timer_nr] =
+			    d->timer_load[timer_nr] = idata & TIMER_MAX_VAL;
+			fatal("[ footbridge: timer %i, value = %i ]\n",
+			    timer_nr, (int)d->timer_value[timer_nr]);
+			d->timer_tick_countdown[timer_nr] = 1;
+			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
+		}
+		break;
+
+	case TIMER_1_VALUE:
+		if (writeflag == MEM_READ) {
+			dev_footbridge_tick(cpu, d);
+			odata = d->timer_value[timer_nr];
+		} else
+			d->timer_value[timer_nr] = idata & TIMER_MAX_VAL;
 		break;
 
 	case TIMER_1_CONTROL:
 		if (writeflag == MEM_READ)
-			odata = d->timer1_control;
-		else
-			d->timer1_control = idata;
+			odata = d->timer_control[timer_nr];
+		else {
+			d->timer_control[timer_nr] = idata;
+			if (idata & TIMER_FCLK_16 &&
+			    idata & TIMER_FCLK_256) {
+				fatal("TODO: footbridge timer: "
+				    "both 16 and 256?\n");
+				exit(1);
+			}
+			d->timer_tick_countdown[timer_nr] = 1;
+			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
+		}
 		break;
 
 	case TIMER_1_CLEAR:
-		d->timer_tick_countdown = 3;
-		cpu_interrupt_ack(cpu, 4);
-		break;
-
-	case TIMER_3_VALUE:
-		d->timer3_value += 100;
-		d->timer3_value &= 0xffff;
-		if (writeflag == MEM_READ)
-			odata = d->timer3_value;
-		else
-			d->timer3_value = idata;
-		break;
-
-	case TIMER_3_CLEAR:
+		if (d->timer_control[timer_nr] & TIMER_MODE_PERIODIC) {
+			d->timer_value[timer_nr] = d->timer_load[timer_nr];
+			d->timer_tick_countdown[timer_nr] = 1;
+		}
+		cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		break;
 
 	default:if (writeflag == MEM_READ) {
@@ -310,6 +351,7 @@ int devinit_footbridge(struct devinit *devinit)
 {
 	struct footbridge_data *d;
 	uint64_t pci_cfg_addr = 0x7b000000;
+	int i;
 
 	d = malloc(sizeof(struct footbridge_data));
 	if (d == NULL) {
@@ -327,6 +369,11 @@ int devinit_footbridge(struct devinit *devinit)
 
 	/*  For the "fcom" console:  */
 	d->console_handle = console_start_slave(devinit->machine, "fcom");
+
+	for (i=0; i<4; i++) {
+		d->timer_control[i] = TIMER_MODE_PERIODIC;
+		d->timer_load[i] = TIMER_MAX_VAL;
+	}
 
 	d->pcibus = bus_pci_init(devinit->irq_nr);
 

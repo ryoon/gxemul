@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.7 2005-09-30 23:55:55 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.8 2005-10-02 03:48:59 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -219,8 +219,16 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		cpu->cd.arm.cpsr |= ARM_FLAG_C;
 #else
 #if defined(A__RSC) || defined(A__SBC)
-	fatal("TODO: C flag\n");
-	exit(1);
+	{
+		uint32_t low_pc;
+		low_pc = ((size_t)ic - (size_t)
+		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
+		a = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1)
+		    << ARM_INSTR_ALIGNMENT_SHIFT);
+		a += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 8;
+		fatal("TODO: C flag: pc = 0x%08x\n", a);
+		exit(1);
+	}
 #endif
 #endif
 #endif

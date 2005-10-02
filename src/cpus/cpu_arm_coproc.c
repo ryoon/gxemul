@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.6 2005-09-30 15:53:59 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.7 2005-10-02 03:48:59 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -154,7 +154,7 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			fatal("[ arm_coproc_15: attempt to read cr8? ]\n");
 			return;
 		}
-		fatal("[ arm_coproc_15: TLB: op2=%i crm=%i rd=0x%08x ]\n",
+		debug("[ arm_coproc_15: TLB: op2=%i crm=%i rd=0x%08x ]\n",
 		    opcode2, crm, cpu->cd.arm.r[rd]);
 		/*  TODO:  */
 		cpu->invalidate_translation_caches_paddr(cpu,

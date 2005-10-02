@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.560 2005-10-01 17:50:11 debug Exp $
+ *  $Id: machine.c,v 1.561 2005-10-02 03:48:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4673,9 +4673,15 @@ Not yet.
 
 		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0");
 		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1");
-		/* machine->main_console_handle = */
-		dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
-		    32 + 1, 32 + 12, 0, 1);
+
+		if (machine->use_x11) {
+			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
+			    mem, 0xc0, 8, 0, pci_s3_virge_init, pci_s3_virge_rr);
+			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
+			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
+			    32 + 1, 32 + 12, machine->use_x11, 0);
+			machine->main_console_handle = j;
+		}
 
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);

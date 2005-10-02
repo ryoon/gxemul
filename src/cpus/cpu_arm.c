@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.23 2005-09-30 23:55:55 debug Exp $
+ *  $Id: cpu_arm.c,v 1.24 2005-10-02 03:48:59 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -297,7 +297,71 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		}
 	}
 
-	if (coprocs) {
+	if (coprocs & 1) {
+		int m = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
+		debug("cpu%i:  cpsr = 0x%08x (", x, cpu->cd.arm.cpsr);
+		switch (m) {
+		case ARM_MODE_USR32:
+			debug("USR32)\n"); break;
+		case ARM_MODE_SYS32:
+			debug("SYS32)\n"); break;
+		case ARM_MODE_FIQ32:
+			debug("FIQ32)\n"); break;
+		case ARM_MODE_IRQ32:
+			debug("IRQ32)\n"); break;
+		case ARM_MODE_SVC32:
+			debug("SVC32)\n"); break;
+		case ARM_MODE_ABT32:
+			debug("ABT32)\n"); break;
+		case ARM_MODE_UND32:
+			debug("UND32)\n"); break;
+		default:debug("unimplemented)\n");
+		}
+
+		if (m != ARM_MODE_USR32 && m != ARM_MODE_SYS32) {
+			debug("cpu%i:  usr r8..r14 =", x);
+			for (i=0; i<7; i++)
+				debug(" %08x", cpu->cd.arm.default_r8_r14[i]);
+			debug("\n");
+		}
+
+		if (m != ARM_MODE_FIQ32) {
+			debug("cpu%i:  fiq r8..r14 =", x);
+			for (i=0; i<7; i++)
+				debug(" %08x", cpu->cd.arm.fiq_r8_r14[i]);
+			debug("\n");
+		}
+
+		if (m != ARM_MODE_IRQ32) {
+			debug("cpu%i:  irq r13..r14 =", x);
+			for (i=0; i<2; i++)
+				debug(" %08x", cpu->cd.arm.irq_r13_r14[i]);
+			debug("\n");
+		}
+
+		if (m != ARM_MODE_SVC32) {
+			debug("cpu%i:  svc r13..r14 =", x);
+			for (i=0; i<2; i++)
+				debug(" %08x", cpu->cd.arm.svc_r13_r14[i]);
+			debug("\n");
+		}
+
+		if (m != ARM_MODE_ABT32) {
+			debug("cpu%i:  abt r13..r14 =", x);
+			for (i=0; i<2; i++)
+				debug(" %08x", cpu->cd.arm.abt_r13_r14[i]);
+			debug("\n");
+		}
+
+		if (m != ARM_MODE_UND32) {
+			debug("cpu%i:  und r13..r14 =", x);
+			for (i=0; i<2; i++)
+				debug(" %08x", cpu->cd.arm.und_r13_r14[i]);
+			debug("\n");
+		}
+	}
+
+	if (coprocs & 2) {
 		debug("cpu%i:  control = 0x%08x\n", x, cpu->cd.arm.control);
 		debug("cpu%i:      MMU:               %s\n", x,
 		    cpu->cd.arm.control &

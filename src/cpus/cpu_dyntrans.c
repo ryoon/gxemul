@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.12 2005-09-24 23:44:18 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.13 2005-10-02 03:48:59 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -49,21 +49,24 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 #endif
 	int low_pc, n_instrs;
 
-	/*
-	 *  Interrupt assertion?
- 	 */
-#ifdef DYNTRANS_ARM
-	if (cpu->cd.arm.irq_asserted &&
-	    !(cpu->cd.arm.cpsr & ARM_FLAG_I))
-		arm_exception(cpu, ARM_EXCEPTION_IRQ);
-#endif
-
 #ifdef DYNTRANS_DUALMODE_32
 	if (cpu->is_32bit)
 		DYNTRANS_PC_TO_POINTERS32(cpu);
 	else
 #endif
 	DYNTRANS_PC_TO_POINTERS(cpu);
+
+	/*
+	 *  Interrupt assertion?  (This is _below_ the initial PC to pointer
+	 *  conversion; if the conversion caused an exception of some kind
+	 *  then interrupts are probably disabled, and the exception will get
+	 *  priority over device interrupts.)
+ 	 */
+#ifdef DYNTRANS_ARM
+	if (cpu->cd.arm.irq_asserted &&
+	    !(cpu->cd.arm.cpsr & ARM_FLAG_I))
+		arm_exception(cpu, ARM_EXCEPTION_IRQ);
+#endif
 
 #ifdef DYNTRANS_ARM
 	cached_pc = cpu->cd.arm.r[ARM_PC];

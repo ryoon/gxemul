@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.24 2005-10-02 03:48:59 debug Exp $
+ *  $Id: cpu_arm.c,v 1.25 2005-10-03 19:08:15 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -446,6 +446,10 @@ void arm_save_register_bank(struct cpu *cpu)
 		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
 		break;
 	case ARM_MODE_SVC32:
+if ((cpu->cd.arm.r[13] & 0xffff0000) == 0xffff0000) {
+	fatal("NEJ! pc=0x%08x\n", (int)cpu->pc);
+	exit(1);
+}
 		memcpy(cpu->cd.arm.svc_r13_r14,
 		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
 		break;

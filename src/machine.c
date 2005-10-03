@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.562 2005-10-03 01:07:40 debug Exp $
+ *  $Id: machine.c,v 1.563 2005-10-03 19:08:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4601,19 +4601,23 @@ Not yet.
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
 
-			cpu->cd.arm.r[0] = machine->physical_ram_in_mb * 
-			    1048576 - 0x1000;
+			cpu->cd.arm.r[0] = /* machine->physical_ram_in_mb */
+			    7 * 1048576 - 0x1000;
 
 			memset(&ebsaboot, 0, sizeof(struct ebsaboot));
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_magic), BT_MAGIC_NUMBER_CATS);
-			/*  TODO: bt_vargp  */
-			/*  TODO: bt_pargp  */
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_vargp), 0);
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_pargp), 0);
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_args), cpu->cd.arm.r[0]
 			    + sizeof(struct ebsaboot));
-			/*  TODO: bt_l1  */
-			/*  memstart = 0  */
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_l1), 7 * 1048576 - 32768);
+			store_32bit_word_in_host(cpu, (unsigned char *)
+			    &(ebsaboot.bt_memstart), 0);
 			store_32bit_word_in_host(cpu, (unsigned char *)
 			    &(ebsaboot.bt_memend),
 			    machine->physical_ram_in_mb * 1048576);
@@ -4633,7 +4637,7 @@ Not yet.
 			    machine->boot_string_argument);
 
 			arm_setup_initial_translation_table(cpu,
-			    machine->physical_ram_in_mb * 1048576 - 32768);
+			    7 * 1048576 - 32768);
 		}
 		break;
 

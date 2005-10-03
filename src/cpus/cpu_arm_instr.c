@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.19 2005-10-01 00:22:11 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.20 2005-10-03 19:08:15 debug Exp $
  *
  *  ARM instructions.
  *
@@ -142,7 +142,8 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 {
 	int rm = iword & 15, lastbit, t, c;
 	uint32_t tmp = cpu->cd.arm.r[rm];
-	if (!update_c && (iword & 0xff0)==0 && rm != ARM_PC)
+
+	if ((iword & 0xff0)==0 && rm != ARM_PC)
 		return tmp;
 
 	t = (iword >> 4) & 7;
@@ -158,10 +159,15 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 		tmp += 8;
 	}
+
+	if ((iword & 0xff0)==0 && rm == ARM_PC)
+		return tmp;
+
 	if ((t & 1) && (c >> 1) == ARM_PC) {
 		fatal("TODO: R: rc = PC\n");
 		exit(1);
 	}
+
 	switch (t) {
 	case 0:	/*  lsl #c  (c = 0..31)  */
 		if (update_c) {

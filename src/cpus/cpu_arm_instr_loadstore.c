@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.5 2005-09-30 15:53:59 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.6 2005-10-03 19:08:15 debug Exp $
  *
  *
  *  TODO:
@@ -63,10 +63,9 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	unsigned char data[4];
 #endif
 #endif
-	uint32_t addr, low_pc;
-	uint32_t offset =
+	uint32_t addr, low_pc, offset =
 #ifndef A__U
-	    -
+	    0 -
 #endif
 #ifdef A__REG
 	    R(cpu, ic, ic->arg[1], 0)

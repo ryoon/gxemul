@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.17 2005-10-01 17:50:12 debug Exp $
+ *  $Id: memory_arm.c,v 1.18 2005-10-03 19:08:15 debug Exp $
  */
 
 #include <stdio.h>
@@ -37,6 +37,11 @@
 #include "misc.h"
 
 #include "armreg.h"
+
+
+extern int single_step;
+void arm_instr_nothing(struct cpu *cpu, struct arm_instr_call *);
+struct arm_instr_call nothing_call= { arm_instr_nothing, {0,0,0} };
 
 
 /*
@@ -89,16 +94,17 @@ static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
  *	1  Success, the page is readable only
  *	2  Success, the page is read/write
  */
-int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
+int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	uint64_t *return_addr, int flags)
 {
 	unsigned char descr[4];
+	uint32_t vaddr = vaddr64;
 	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba;
 	int instr = flags & FLAG_INSTR, d2_in_use = 0, d_in_use = 1;
 	int useraccess = flags & MEMORY_USER_ACCESS;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int user = (cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32;
-	int domain, dav, ap = 0, access = 0;
+	int domain, dav, ap0,ap1,ap2,ap3, ap = 0, access = 0;
 	int fs = 2;		/*  fault status (2 = terminal exception)  */
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
@@ -165,15 +171,25 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
 		case 2:	/*  4KB page:  */
+			ap3 = ap = (d2 >> 10) & 3;
+			ap2 = ap = (d2 >>  8) & 3;
+			ap1 = ap = (d2 >>  6) & 3;
+			ap0 = ap = (d2 >>  4) & 3;
 			switch (vaddr & 0x00000c00) {
-			case 0x000: ap = (d2 >> 4) & 3; break;
-			case 0x400: ap = (d2 >> 6) & 3; break;
-			case 0x800: ap = (d2 >> 8) & 3; break;
-			case 0xc00: ap = (d2 >> 10) & 3; break;
+			case 0x000: ap = ap0; break;
+			case 0x400: ap = ap1; break;
+			case 0x800: ap = ap2; break;
+			case 0xc00: ap = ap3; break;
 			}
+			if (ap0 != ap1 || ap0 != ap2 || ap0 != ap3)
+				fatal("WARNING: vaddr = 0x%08x, small page, but"
+				    " different access permissions for the sub"
+				    "pages! This is not really implemented "
+				    "yet.\n", (int)vaddr);
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */
+			fatal("WARNING: 1 KB page! Not really implemented yet.\n");
 			ap = (d2 >> 4) & 3;
 			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
@@ -212,6 +228,14 @@ exception_return:
 
 	fatal("{ arm memory fault: vaddr=0x%08x domain=%i dav=%i ap=%i "
 	    "access=%i user=%i", (int)vaddr, domain, dav, ap, access, user);
+
+if ((vaddr & 0xffff0000) == 0xf1b00000) {
+	fatal("sadg, pc=0x%08x\n", (int)cpu->pc);
+	single_step = 1;
+        cpu->running_translated = 0;
+        cpu->n_translated_instrs --;
+        cpu->cd.arm.next_ic = &nothing_call;
+}
 
 	if (d_in_use)
 		fatal(" d=0x%08x", d);

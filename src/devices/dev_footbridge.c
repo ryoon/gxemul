@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.17 2005-10-03 01:07:45 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.18 2005-10-03 19:08:16 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -64,7 +64,7 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
-		int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
+		int amount = 1 << (DEV_FOOTBRIDGE_TICK_SHIFT - 2);
 		if (d->timer_control[i] & TIMER_FCLK_16)
 			amount >>= 4;
 		else if (d->timer_control[i] & TIMER_FCLK_256)
@@ -73,7 +73,7 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 		if (d->timer_tick_countdown[i] >= 0) {
 			if (d->timer_value[i] > amount)
 				d->timer_value[i] -= amount;
-			else if (d->timer_value[i] > 0)
+			else
 				d->timer_value[i] = 0;
 
 			if (d->timer_value[i] == 0) {
@@ -124,7 +124,7 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 	}
 
 	if (x == 16) {
-		printf("_ SPORADIC but INVALID ISA interrupt _\n");
+		printf("_\n_ SPORADIC but INVALID ISA interrupt _\n_\n");
 	}
 
 	odata = 0x20 + (x & 15);
@@ -154,6 +154,12 @@ int dev_footbridge_pci_cfg_access(struct cpu *cpu, struct memory *mem,
 	device   = (relative_addr >> 11) & 0x1f;
 	function = (relative_addr >> 8) & 0x7;
 	regnr    = relative_addr & 0xff;
+
+	if (bus == 255) {
+		fatal("[ footbridge DEBUG ERROR: bus 255 unlikely,"
+		    " pc (might not be updated) = 0x%08x ]\n", (int)cpu->pc);
+		exit(1);
+	}
 
 	debug("[ footbridge_pci_cfg: %s bus %i, device %i, function "
 	    "%i, register %i ]\n", writeflag == MEM_READ? "read from"
@@ -315,7 +321,11 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 				    "both 16 and 256?\n");
 				exit(1);
 			}
-			d->timer_tick_countdown[timer_nr] = 1;
+			if (idata & TIMER_ENABLE) {
+				d->timer_value[timer_nr] =
+				    d->timer_load[timer_nr];
+				d->timer_tick_countdown[timer_nr] = 1;
+			}
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}
 		break;

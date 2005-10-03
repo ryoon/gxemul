@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.561 2005-10-02 03:48:58 debug Exp $
+ *  $Id: machine.c,v 1.562 2005-10-03 01:07:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4676,7 +4676,7 @@ Not yet.
 
 		if (machine->use_x11) {
 			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-			    mem, 0xc0, 8, 0, pci_s3_virge_init, pci_s3_virge_rr);
+			    mem, 0xc0, 8, 0, pci_igsfb_init, pci_igsfb_rr);
 			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
 			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 			    32 + 1, 32 + 12, machine->use_x11, 0);

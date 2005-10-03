@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.16 2005-10-02 03:49:00 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.17 2005-10-03 01:07:45 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -63,7 +63,7 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 	int i;
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
-	for (i=0; i<4; i++) {
+	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
 		int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
 		if (d->timer_control[i] & TIMER_FCLK_16)
 			amount >>= 4;
@@ -199,7 +199,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	if (relative_addr >= TIMER_1_LOAD && relative_addr <= TIMER_4_CLEAR) {
-		timer_nr = (relative_addr >> 5) & 3;
+		timer_nr = (relative_addr >> 5) & (N_FOOTBRIDGE_TIMERS - 1);
 		relative_addr &= ~0x060;
 	}
 
@@ -289,8 +289,8 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		else {
 			d->timer_value[timer_nr] =
 			    d->timer_load[timer_nr] = idata & TIMER_MAX_VAL;
-			fatal("[ footbridge: timer %i, value = %i ]\n",
-			    timer_nr, (int)d->timer_value[timer_nr]);
+			debug("[ footbridge: timer %i (1-based), value %i ]\n",
+			    timer_nr + 1, (int)d->timer_value[timer_nr]);
 			d->timer_tick_countdown[timer_nr] = 1;
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.6 2005-10-03 19:08:15 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.7 2005-10-04 04:11:13 debug Exp $
  *
  *
  *  TODO:
@@ -233,32 +233,31 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 
 
 /*
- *  Special case when loading or storing the ARM's PC register, or when
- *  the PC register is used as the base address register.
+ *  Special case when loading or storing the ARM's PC register, or when the PC
+ *  register is used as the base address register.
  *
- *	o)  Loads into the PC register cause a branch.
- *	    (If an exception occured during the load, then the pc register
- *	    should already point to the exception handler; in that case, we
- *	    simply recalculate the pointers a second time and no harm is
- *	    done.)
+ *  o)	Loads into the PC register cause a branch. If an exception occured
+ *	during the load, then the PC register should already point to the
+ *	exception handler, in which case we simply recalculate the pointers a
+ *	second time (no harm is done by doing that).
  *
- *	o)  Stores store the PC of the current instruction + 8.
- *	    The solution I have choosen is to calculate this value and
- *	    place it into a temporary variable, which is then used for
- *	    the store.
+ *	TODO: A tiny performance optimization would be to separate the two
+ *	cases: a load where arg[0] = PC, and the case where arg[2] = PC.
+ *
+ *  o)	Stores store "PC of the current instruction + 8". The solution I have
+ *	choosen is to calculate this value and place it into a temporary
+ *	variable (tmp_pc), which is then used for the store.
  */
 void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 {
 #ifdef A__L
 	/*  Load:  */
-	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
-		ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
 	if (ic->arg[0] == (size_t)(&cpu->cd.arm.tmp_pc)) {
 		/*  tmp_pc = current PC + 8:  */
 		uint32_t low_pc, tmp;
 		low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
 		    sizeof(struct arm_instr_call);
-		tmp = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+		tmp = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
 		    ARM_INSTR_ALIGNMENT_SHIFT);
 		tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 		cpu->cd.arm.tmp_pc = tmp + 8;
@@ -274,14 +273,10 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 	/*  Calculate tmp from this instruction's PC + 8  */
 	low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
 	    sizeof(struct arm_instr_call);
-	tmp = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+	tmp = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
 	    ARM_INSTR_ALIGNMENT_SHIFT);
 	tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.tmp_pc = tmp + 8;
-	if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
-		ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
-	if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
-		ic->arg[2] = (size_t)(&cpu->cd.arm.tmp_pc);
 	A__NAME(cpu, ic);
 #endif
 }

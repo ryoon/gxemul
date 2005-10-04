@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.977 2005-10-04 01:15:59 debug Exp $
+$Id: HISTORY,v 1.978 2005-10-04 04:11:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2286,3 +2286,4 @@ Changelog for GXemul:
 		related.
 20051002	More work on the Footbridge (interrupt stuff).
 20051003	Various minor updates. (Trying to find the bug(s).)
+20051004	Continuing on the ARM stuff.

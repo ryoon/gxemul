@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.25 2005-10-03 19:08:15 debug Exp $
+ *  $Id: cpu_arm.c,v 1.26 2005-10-04 04:11:13 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -442,24 +442,24 @@ void arm_save_register_bank(struct cpu *cpu)
 		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 7);
 		break;
 	case ARM_MODE_IRQ32:
-		memcpy(cpu->cd.arm.irq_r13_r14,
-		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		cpu->cd.arm.irq_r13_r14[0] = cpu->cd.arm.r[13];
+		cpu->cd.arm.irq_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
 	case ARM_MODE_SVC32:
 if ((cpu->cd.arm.r[13] & 0xffff0000) == 0xffff0000) {
 	fatal("NEJ! pc=0x%08x\n", (int)cpu->pc);
 	exit(1);
 }
-		memcpy(cpu->cd.arm.svc_r13_r14,
-		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		cpu->cd.arm.svc_r13_r14[0] = cpu->cd.arm.r[13];
+		cpu->cd.arm.svc_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
 	case ARM_MODE_ABT32:
-		memcpy(cpu->cd.arm.abt_r13_r14,
-		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		cpu->cd.arm.abt_r13_r14[0] = cpu->cd.arm.r[13];
+		cpu->cd.arm.abt_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
 	case ARM_MODE_UND32:
-		memcpy(cpu->cd.arm.und_r13_r14,
-		    &cpu->cd.arm.r[13], sizeof(uint32_t) * 2);
+		cpu->cd.arm.und_r13_r14[0] = cpu->cd.arm.r[13];
+		cpu->cd.arm.und_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
 	default:fatal("arm_save_register_bank: unimplemented mode %i\n",
 		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
@@ -485,20 +485,20 @@ void arm_load_register_bank(struct cpu *cpu)
 		    sizeof(uint32_t) * 7);
 		break;
 	case ARM_MODE_IRQ32:
-		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.irq_r13_r14,
-		    sizeof(uint32_t) * 2);
+		cpu->cd.arm.r[13] = cpu->cd.arm.irq_r13_r14[0];
+		cpu->cd.arm.r[14] = cpu->cd.arm.irq_r13_r14[1];
 		break;
 	case ARM_MODE_SVC32:
-		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.svc_r13_r14,
-		    sizeof(uint32_t) * 2);
+		cpu->cd.arm.r[13] = cpu->cd.arm.svc_r13_r14[0];
+		cpu->cd.arm.r[14] = cpu->cd.arm.svc_r13_r14[1];
 		break;
 	case ARM_MODE_ABT32:
-		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.abt_r13_r14,
-		    sizeof(uint32_t) * 2);
+		cpu->cd.arm.r[13] = cpu->cd.arm.abt_r13_r14[0];
+		cpu->cd.arm.r[14] = cpu->cd.arm.abt_r13_r14[1];
 		break;
 	case ARM_MODE_UND32:
-		memcpy(&cpu->cd.arm.r[13], cpu->cd.arm.und_r13_r14,
-		    sizeof(uint32_t) * 2);
+		cpu->cd.arm.r[13] = cpu->cd.arm.und_r13_r14[0];
+		cpu->cd.arm.r[14] = cpu->cd.arm.und_r13_r14[1];
 		break;
 	default:fatal("arm_load_register_bank: unimplemented mode %i\n",
 		    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
@@ -745,7 +745,8 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx0011 0s10aaaa 1111rrrr bbbbbbbb  MSR  Immform
 		 *  xxxx0001 0s001111 dddd0000 00000000  MRS
 		 */
-		if ((iw & 0x0fb0fff0) == 0x0120f000) {
+		if ((iw & 0x0fb0fff0) == 0x0120f000 ||
+		    (iw & 0x0fb0f000) == 0x0320f000) {
 			int a = (iw >> 16) & 15;
 			debug("msr%s\t%s", condition, (iw&0x400000)? "S":"C");
 			debug("PSR_");
@@ -753,14 +754,16 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			case 1:	debug("ctl"); break;
 			case 8:	debug("flg"); break;
 			case 9:	debug("all"); break;
-			default:debug(" UNIMPLEMENTED ");
+			default:debug(" UNIMPLEMENTED (a=%i)", a);
 			}
-			debug(",%s\n", arm_regname[iw & 15]);
-			break;
-		}
-		if ((iw & 0x0fb0f000) == 0x0320f000) {
-			debug("msr%s\tTODO Immform...", condition);
-			debug("\n");
+			if (iw & 0x02000000) {
+				int r = (iw >> 7) & 30;
+				uint32_t b = iw & 0xff;
+				while (r-- > 0)
+					b = (b >> 1) | ((b & 1) << 31);
+				debug(",#0x%x\n", b);
+			} else
+				debug(",%s\n", arm_regname[iw & 15]);
 			break;
 		}
 		if ((iw & 0x0fbf0fff) == 0x010f0000) {

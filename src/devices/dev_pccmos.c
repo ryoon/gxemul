@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.3 2005-05-20 08:59:58 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.4 2005-10-04 04:11:14 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
- *  This is mostly bogus.
+ *  The main point of this device is to be a "PC style wrapper" for accessing
+ *  the MC146818 (the RTC). In most other respects, this device is bogus, and
+ *  just acts as a 256-byte RAM device.
  */
 
 #include <stdio.h>
@@ -63,29 +65,37 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 {
 	struct pccmos_data *d = (struct pccmos_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	unsigned char b;
 
-	idata = memory_readmax64(cpu, data, len);
+	b = idata = memory_readmax64(cpu, data, len);
+
+	/*
+	 *  Accesses to CMOS register 0 .. 0xd are rerouted to the
+	 *  RTC; all other access are treated as CMOS RAM read/writes.
+	 */
 
 	switch (relative_addr) {
 	case 0:	if (writeflag == MEM_WRITE) {
 			d->select = idata;
-			if (idata <= 0x0d)
+			if (idata <= 0x0d) {
 				cpu->memory_rw(cpu, cpu->mem,
-				    PCCMOS_MC146818_FAKE_ADDR, data, 1,
+				    PCCMOS_MC146818_FAKE_ADDR, &b, 1,
 				    MEM_WRITE, PHYSICAL);
+			}
 		} else
 			odata = d->select;
 		break;
 	case 1:	if (d->select <= 0x0d) {
-			if (writeflag == MEM_WRITE)
+			if (writeflag == MEM_WRITE) {
 				cpu->memory_rw(cpu, cpu->mem,
-				    PCCMOS_MC146818_FAKE_ADDR + 1, data, 1,
+				    PCCMOS_MC146818_FAKE_ADDR + 1, &b, 1,
 				    MEM_WRITE, PHYSICAL);
-			else
+			} else {
 				cpu->memory_rw(cpu, cpu->mem,
-				    PCCMOS_MC146818_FAKE_ADDR + 1, data, 1,
+				    PCCMOS_MC146818_FAKE_ADDR + 1, &b, 1,
 				    MEM_READ, PHYSICAL);
-			return 1;
+				odata = b;
+			}
 		} else {
 			if (writeflag == MEM_WRITE)
 				d->ram[d->select] = idata;
@@ -116,6 +126,7 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 int devinit_pccmos(struct devinit *devinit)
 {
 	struct pccmos_data *d = malloc(sizeof(struct pccmos_data));
+	int irq_nr;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -127,9 +138,23 @@ int devinit_pccmos(struct devinit *devinit)
 	    devinit->addr, DEV_PCCMOS_LENGTH, dev_pccmos_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 
+	/*
+	 *  Different machines use different IRQ schemes.
+	 */
+	switch (devinit->machine->machine_type) {
+	case MACHINE_CATS:
+		irq_nr = 32 + 8;
+		break;
+	case MACHINE_X86:
+		irq_nr = 16;	/*  "No" irq  */
+		break;
+	default:fatal("devinit_pccmos(): unimplemented machine type"
+		    " %i\n", devinit->machine->machine_type);
+		exit(1);
+	}
+
 	dev_mc146818_init(devinit->machine, devinit->machine->memory,
-	    PCCMOS_MC146818_FAKE_ADDR, 16  /*  NOTE/TODO: No irq  */,
-	    MC146818_PC_CMOS, 1);
+	    PCCMOS_MC146818_FAKE_ADDR, irq_nr, MC146818_PC_CMOS, 1);
 
 	return 1;
 }

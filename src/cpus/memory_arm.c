@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.18 2005-10-03 19:08:15 debug Exp $
+ *  $Id: memory_arm.c,v 1.19 2005-10-04 04:11:13 debug Exp $
  */
 
 #include <stdio.h>
@@ -181,7 +181,8 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 			case 0x800: ap = ap2; break;
 			case 0xc00: ap = ap3; break;
 			}
-			if (ap0 != ap1 || ap0 != ap2 || ap0 != ap3)
+			if ((ap0 != ap1 || ap0 != ap2 || ap0 != ap3) &&
+			    !no_exceptions)
 				fatal("WARNING: vaddr = 0x%08x, small page, but"
 				    " different access permissions for the sub"
 				    "pages! This is not really implemented "

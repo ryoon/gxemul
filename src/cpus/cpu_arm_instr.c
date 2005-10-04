@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.20 2005-10-03 19:08:15 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.21 2005-10-04 04:11:13 debug Exp $
  *
  *  ARM instructions.
  *
@@ -621,18 +621,22 @@ Y(ret_trace)
 
 
 /*
- *  msr: Move to status/flag register from a normal register.
+ *  msr: Move to status register from a normal register or immediate value.
  *
- *  arg[0] = pointer to rm
+ *  arg[0] = immediate value
  *  arg[1] = mask
+ *  arg[2] = pointer to rm
+ *
+ *  msr_imm and msr_imm_sprs use arg[1] and arg[0].
+ *  msr and msr_sprs use arg[1] and arg[2].
  */
-X(msr)
+X(msr_imm)
 {
 	uint32_t mask = ic->arg[1];
 	int switch_register_banks = (mask & ARM_FLAG_MODE) &&
 	    ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) !=
-	    (reg(ic->arg[0]) & ARM_FLAG_MODE));
-	uint32_t new_value = reg(ic->arg[0]);
+	    (ic->arg[0] & ARM_FLAG_MODE));
+	uint32_t new_value = ic->arg[0];
 
 	if (switch_register_banks)
 		arm_save_register_bank(cpu);
@@ -643,11 +647,17 @@ X(msr)
 	if (switch_register_banks)
 		arm_load_register_bank(cpu);
 }
+Y(msr_imm)
+X(msr)
+{
+	ic->arg[0] = reg(ic->arg[2]);
+	instr(msr_imm)(cpu, ic);
+}
 Y(msr)
-X(msr_spsr)
+X(msr_imm_spsr)
 {
 	uint32_t mask = ic->arg[1];
-	uint32_t new_value = reg(ic->arg[0]);
+	uint32_t new_value = ic->arg[0];
 	switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
 	case ARM_MODE_FIQ32:
 		cpu->cd.arm.spsr_fiq &= ~mask;
@@ -682,6 +692,12 @@ printf("msr_spsr: old pc = 0x%08x\n", old_pc);
 }
 		exit(1);
 	}
+}
+Y(msr_imm_spsr)
+X(msr_spsr)
+{
+	ic->arg[0] = reg(ic->arg[2]);
+	instr(msr_imm_spsr)(cpu, ic);
 }
 Y(msr_spsr)
 
@@ -1529,30 +1545,38 @@ X(to_be_translated)
 			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rn]);
 			break;
 		}
-		if ((iword & 0x0fb0fff0) == 0x0120f000) {
-			/*  msr: move to [S|C]PSR from a register:  */
+		if ((iword & 0x0fb0fff0) == 0x0120f000 ||
+		    (iword & 0x0fb0f000) == 0x0320f000) {
+			/*  msr: move to [S|C]PSR from a register or
+			    immediate value  */
 			if (rm == ARM_PC) {
 				fatal("msr PC?\n");
 				goto bad;
 			}
-			if (iword & 0x00400000)
-				ic->f = cond_instr(msr_spsr);
-			else
-				ic->f = cond_instr(msr);
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+			if (iword & 0x02000000) {
+				if (iword & 0x00400000)
+					ic->f = cond_instr(msr_imm_spsr);
+				else
+					ic->f = cond_instr(msr_imm);
+			} else {
+				if (iword & 0x00400000)
+					ic->f = cond_instr(msr_spsr);
+				else
+					ic->f = cond_instr(msr);
+			}
+			imm = iword & 0xff;
+			while (r8-- > 0)
+				imm = (imm >> 2) | ((imm & 3) << 30);
+			ic->arg[0] = imm;
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rm]);
 			switch ((iword >> 16) & 15) {
 			case 1:	ic->arg[1] = 0x000000ff; break;
 			case 8:	ic->arg[1] = 0xff000000; break;
 			case 9:	ic->arg[1] = 0xff0000ff; break;
-			default:fatal("unimpl a\n");
+			default:fatal("unimpl a: msr regform\n");
 				goto bad;
 			}
 			break;
-		}
-		if ((iword & 0x0fb0f000) == 0x0320f000) {
-			/*  msr: immediate form  */
-			fatal("msr: immediate form: TODO\n");
-			goto bad;
 		}
 		if ((iword & 0x0fbf0fff) == 0x010f0000) {
 			/*  mrs: move from CPSR/SPSR to a register:  */
@@ -1571,7 +1595,9 @@ X(to_be_translated)
 			int imm = ((iword >> 4) & 0xf0) | (iword & 0xf);
 			int regform = !(iword & 0x00400000);
 			p_bit = main_opcode & 1;
-			if (rd == ARM_PC || rn == ARM_PC)
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
+			if (rd == ARM_PC || rn == ARM_PC) {
 				ic->f = arm_load_store_instr_3_pc[
 				    condition_code + (l_bit? 16 : 0)
 				    + (iword & 0x40? 32 : 0)
@@ -1579,7 +1605,12 @@ X(to_be_translated)
 				    + (iword & 0x20? 128 : 0)
 				    + (u_bit? 256 : 0) + (p_bit? 512 : 0)
 				    + (regform? 1024 : 0)];
-			else
+				if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
+					ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
+				if (!l_bit)
+					if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
+						ic->arg[2] = (size_t)(&cpu->cd.arm.tmp_pc);
+			} else
 				ic->f = arm_load_store_instr_3[
 				    condition_code + (l_bit? 16 : 0)
 				    + (iword & 0x40? 32 : 0)
@@ -1587,8 +1618,6 @@ X(to_be_translated)
 				    + (iword & 0x20? 128 : 0)
 				    + (u_bit? 256 : 0) + (p_bit? 512 : 0)
 				    + (regform? 1024 : 0)];
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
-			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
 			if (regform)
 				ic->arg[1] = iword & 0xf;
 			else
@@ -1627,9 +1656,8 @@ X(to_be_translated)
 
 		if (!regform) {
 			imm = iword & 0xff;
-			r8 <<= 1;
 			while (r8-- > 0)
-				imm = (imm >> 1) | ((imm & 1) << 31);
+				imm = (imm >> 2) | ((imm & 3) << 30);
 			ic->arg[1] = imm;
 		} else
 			ic->arg[1] = iword;
@@ -1649,28 +1677,25 @@ X(to_be_translated)
 	case 0x5:	/*  xxxx010P UBWLnnnn ddddoooo oooooooo  Immediate  */
 	case 0x6:	/*  xxxx011P UBWLnnnn ddddcccc ctt0mmmm  Register  */
 	case 0x7:
-		if (rd == ARM_PC || rn == ARM_PC)
+		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+		ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
+		if (rd == ARM_PC || rn == ARM_PC) {
 			ic->f = arm_load_store_instr_pc[((iword >> 16)
 			    & 0x3f0) + condition_code];
-		else
+			if (ic->arg[0] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
+				ic->arg[0] = (size_t)(&cpu->cd.arm.tmp_pc);
+			if (!l_bit)
+				if (ic->arg[2] == (size_t)(&cpu->cd.arm.r[ARM_PC]))
+					ic->arg[2] = (size_t)(&cpu->cd.arm.tmp_pc);
+		} else
 			ic->f = arm_load_store_instr[((iword >> 16) &
 			    0x3f0) + condition_code];
 		imm = iword & 0xfff;
-		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
-		ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
 		if (main_opcode < 6)
 			ic->arg[1] = (size_t)(imm);
 		else
 			ic->arg[1] = iword;
-		if (main_opcode == 4) {
-#if 0
-			/*  Post-index, immediate:  */
-			if (w_bit) {
-				fatal("load/store: T-bit\n");
-				goto bad;
-			}
-#endif
-		} else if ((iword & 0x0e000010) == 0x06000010) {
+		if ((iword & 0x0e000010) == 0x06000010) {
 			fatal("Not a Load/store TODO\n");
 			goto bad;
 		}

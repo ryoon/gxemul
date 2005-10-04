@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.8 2005-10-02 03:48:59 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.9 2005-10-04 04:44:16 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -99,6 +99,28 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	    ic->arg[1];
 #endif
 
+
+#if defined(A__MOV) || defined(A__MVN) || defined(A__TST) || defined(A__TEQ) \
+ || defined(A__AND) || defined(A__BIC) || defined(A__EOR) || defined(A__ORR)
+#if !defined(A__REG) && defined(A__S)
+	/*
+	 *  TODO: This is not 100% correct, but should work with "recommended"
+	 *  ARM code: Immediate values larger than 255 are encoded with
+	 *  rotation. If the S-bit is set, then the carry bit is set to the
+	 *  highest bit of the operand.
+	 *
+	 *  TODO 2: Perhaps this check should be moved out from here, and into
+	 *  cpu_arm_instr.c. (More correct, and higher performance.)
+	 */
+	if (b > 255) {
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_C;
+		if (b & 0x80000000)
+			cpu->cd.arm.cpsr |= ARM_FLAG_C;
+	}
+#endif
+#endif
+
+
 #if !defined(A__MOV) && !defined(A__MVN)
 #ifdef A__PC
 	if (ic->arg[0] == (size_t)&cpu->cd.arm.r[ARM_PC]) {
@@ -111,6 +133,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	}
 #endif
 #endif
+
 
 #if defined(A__RSB) || defined(A__RSC)
 	{ uint32_t tmp = a; a = b; b = tmp; }
@@ -149,6 +172,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if defined(A__MVN)
 	c64 = ~b;
 #endif
+
 
 #if defined(A__CMP) || defined(A__CMN) || defined(A__TST) || defined(A__TEQ)
 	/*  No write to rd for compare/test.  */
@@ -268,6 +292,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif	/*  A__S  */
 }
+
 
 void A__NAME__eq(struct cpu *cpu, struct arm_instr_call *ic)
 { if (cpu->cd.arm.cpsr & ARM_FLAG_Z) A__NAME(cpu, ic); }

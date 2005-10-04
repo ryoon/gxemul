@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.21 2005-10-04 04:11:13 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.22 2005-10-04 04:44:16 debug Exp $
  *
  *  ARM instructions.
  *
@@ -87,33 +87,33 @@
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __hi(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.cpsr & ARM_FLAG_C &&			\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_C &&				\
 		!(cpu->cd.arm.cpsr & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __ls(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||			\
+	{  if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||				\
 		!(cpu->cd.arm.cpsr & ARM_FLAG_C))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __ge(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==		\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==			\
 		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __lt(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=		\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=			\
 		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __gt(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==		\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==			\
 		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) &&		\
 		!(cpu->cd.arm.cpsr & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
 	void arm_instr_ ## n ## __le(struct cpu *cpu,			\
 			struct arm_instr_call *ic)			\
-	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=		\
+	{  if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=			\
 		((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) ||		\
 		(cpu->cd.arm.cpsr & ARM_FLAG_Z))			\
 		arm_instr_ ## n (cpu, ic);		}		\
@@ -180,6 +180,8 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		break;
 	case 1:	/*  lsl Rc  */
 		c = cpu->cd.arm.r[c >> 1] & 255;
+		if (c >= 32)
+			c = 33;
 		if (update_c) {
 			if (c == 0)
 				update_c = 0;
@@ -198,6 +200,8 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		break;
 	case 3:	/*  lsr Rc  */
 		c = cpu->cd.arm.r[c >> 1] & 255;
+		if (c >= 32)
+			c = 33;
 		if (update_c) {
 			if (c == 0)
 				update_c = 0;
@@ -216,6 +220,8 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		break;
 	case 5:	/*  asr Rc  */
 		c = cpu->cd.arm.r[c >> 1] & 255;
+		if (c >= 32)
+			c = 33;
 		if (update_c) {
 			if (c == 0)
 				update_c = 0;
@@ -238,11 +244,14 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 		if (update_c) {
 			if (c == 0)
 				update_c = 0;
-			else
-				lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
+			else {
+				c &= 31;
+				if (c == 0)
+					lastbit = tmp & 0x80000000;
+				else
+					lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
+			}
 		}
-		/*  31 should be enough here, 255 is unnecessary.  */
-		c &= 31;
 		tmp = (uint64_t)(((uint64_t)tmp << 32) | tmp) >> c;
 		break;
 	}

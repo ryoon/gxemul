@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.15 2005-10-04 01:16:03 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.16 2005-10-05 21:17:32 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -376,7 +376,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #else
 	uint64_t
 #endif
-	    cached_pc, vaddr, physaddr;
+	    cached_pc, physaddr;
 	uint32_t physpage_ofs;
 	int ok, pagenr, table_index;
 	uint32_t *physpage_entryp;
@@ -409,10 +409,6 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #endif
 #endif
 
-	vaddr = cached_pc & ~( ((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
-	    DYNTRANS_INSTR_ALIGNMENT_SHIFT) |
-	    ((1 << DYNTRANS_INSTR_ALIGNMENT_SHIFT)-1) );
-
 	/*  Virtual to physical address translation:  */
 	ok = 0;
 #ifdef MODE32
@@ -439,22 +435,21 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	if (!ok) {
 		uint64_t paddr;
 		if (cpu->translate_address != NULL)
-			ok = cpu->translate_address(cpu, vaddr, &paddr,
-			    FLAG_INSTR);
+			ok = cpu->translate_address(cpu, cached_pc,
+			    &paddr, FLAG_INSTR);
 		else {
-			paddr = vaddr;
+			paddr = cached_pc;
 			ok = 1;
 		}
 		if (!ok) {
 			fatal("TODO: instruction vaddr=>paddr translation"
-			    " failed. vaddr=0x%llx\n", (long long)vaddr);
+			    " failed. vaddr=0x%llx\n", (long long)cached_pc);
 fatal("!! cpu->pc=0x%llx arm_pc=0x%x\n", (long long)cpu->pc,
 cpu->cd.arm.r[ARM_PC]);
-			vaddr = cpu->pc;
-			ok = cpu->translate_address(cpu, vaddr, &paddr,
+			ok = cpu->translate_address(cpu, cpu->pc, &paddr,
 			    FLAG_INSTR);
 printf("EXCEPTION HANDLER: vaddr = 0x%x ==> paddr = 0x%x\n",
-	(int)vaddr, (int)paddr);
+	(int)cpu->pc, (int)paddr);
 fatal("!? cpu->pc=0x%llx arm_pc=0x%x\n", (long long)cpu->pc,
 cpu->cd.arm.r[ARM_PC]);
 			if (!ok) {

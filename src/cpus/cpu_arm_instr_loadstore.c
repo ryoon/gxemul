@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.7 2005-10-04 04:11:13 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.8 2005-10-05 21:17:32 debug Exp $
  *
  *
- *  TODO:
+ *  TODO:  Many things...
  *
  *	o)  Big-endian ARM loads/stores.
  *
@@ -36,9 +36,18 @@
  *
  *	o)  Native load/store if the endianness is the same as the host's
  *
+ *	o)  "Base Updated Abort Model", which updates the base register
+ *	    even if the memory access failed.
+ *
+ *	o)  Some ARM implementations use pc+8, some use pc+12 for stores?
+ *
  *	o)  All load/store variants with the PC register are not really
  *	    valid. (E.g. a byte load into the PC register. What should that
  *	    accomplish?)
+ *
+ *	o)  Perhaps an optimization for the case when offset = 0, because
+ *	    that's quite common, and also when the Reg expression is just
+ *	    a simple, non-rotated register (0..14).
  */
 
 
@@ -65,18 +74,12 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	uint32_t addr, low_pc, offset =
 #ifndef A__U
-	    0 -
+	    -
 #endif
 #ifdef A__REG
 	    R(cpu, ic, ic->arg[1], 0)
 #else
 	    ic->arg[1]
-#endif
-	    ;
-
-	addr = *((uint32_t *)ic->arg[0])
-#ifdef A__P
-	    + offset
 #endif
 	    ;
 
@@ -87,59 +90,65 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
+	addr = reg(ic->arg[0])
+#ifdef A__P
+	    + offset
+#endif
+	    ;
+
 #ifdef A__L
 	/*  Load:  */
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_READ, memory_rw_flags)) {
-		fatal("load failed: TODO\n");
+		/*  load failed, an exception was generated  */
 		return;
 	}
 #ifdef A__B
-	*((uint32_t *)ic->arg[2]) =
+	reg(ic->arg[2]) =
 #ifdef A__SIGNED
-	    (int8_t)
+	    (int32_t)(int8_t)
 #endif
 	    data[0];
 #else
 #ifdef A__H
-	*((uint32_t *)ic->arg[2]) =
+	reg(ic->arg[2]) =
 #ifdef A__SIGNED
-	    (int16_t)
+	    (int32_t)(int16_t)
 #endif
 	    (data[0] + (data[1] << 8));
 #else
-	*((uint32_t *)ic->arg[2]) = data[0] + (data[1] << 8) +
+	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
 	    (data[2] << 16) + (data[3] << 24);
 #endif
 #endif
 #else
 	/*  Store:  */
 #ifdef A__B
-	data[0] = *((uint32_t *)ic->arg[2]);
+	data[0] = reg(ic->arg[2]);
 #else
 #ifdef A__H
-	data[0] = (*((uint32_t *)ic->arg[2]));
-	data[1] = (*((uint32_t *)ic->arg[2])) >> 8;
+	data[0] = reg(ic->arg[2]);
+	data[1] = reg(ic->arg[2]) >> 8;
 #else
-	data[0] = (*((uint32_t *)ic->arg[2]));
-	data[1] = (*((uint32_t *)ic->arg[2])) >> 8;
-	data[2] = (*((uint32_t *)ic->arg[2])) >> 16;
-	data[3] = (*((uint32_t *)ic->arg[2])) >> 24;
+	data[0] = reg(ic->arg[2]);
+	data[1] = reg(ic->arg[2]) >> 8;
+	data[2] = reg(ic->arg[2]) >> 16;
+	data[3] = reg(ic->arg[2]) >> 24;
 #endif
 #endif
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, memory_rw_flags)) {
-		fatal("store failed: TODO\n");
+		/*  store failed, an exception was generated  */
 		return;
 	}
 #endif
 
 #ifdef A__P
 #ifdef A__W
-	*((uint32_t *)ic->arg[0]) = addr;
+	reg(ic->arg[0]) = addr;
 #endif
 #else	/*  post-index writeback  */
-	*((uint32_t *)ic->arg[0]) = addr + offset;
+	reg(ic->arg[0]) = addr + offset;
 #endif
 }
 
@@ -163,7 +172,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	    ic->arg[1]
 #endif
 	    ;
-	uint32_t addr = *((uint32_t *)ic->arg[0])
+	uint32_t addr = reg(ic->arg[0])
 #ifdef A__P
 	    + offset
 #endif
@@ -179,53 +188,51 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	if (page == NULL) {
 	        A__NAME__general(cpu, ic);
 	} else {
-#ifdef A__P
-#ifdef A__W
-		*((uint32_t *)ic->arg[0]) = addr;
-#endif
-#else	/*  post-index writeback  */
-		*((uint32_t *)ic->arg[0]) = addr + offset;
-#endif
-
 #ifdef A__L
 #ifdef A__B
-		*((uint32_t *)ic->arg[2]) =
+		reg(ic->arg[2]) =
 #ifdef A__SIGNED
-		    (int8_t)
+		    (int32_t)(int8_t)
 #endif
-		    page[addr & 4095];
+		    page[addr & 0xfff];
 #else
 #ifdef A__H
-		addr &= 4095;
-		*((uint32_t *)ic->arg[2]) =
+		reg(ic->arg[2]) =
 #ifdef A__SIGNED
-		    (int16_t)
+		    (int32_t)(int16_t)
 #endif
-		    (page[addr] + (page[addr + 1] << 8));
+		    (page[addr & 0xfff] + (page[(addr & 0xfff) + 1] << 8));
 #else
-		addr &= 4095;
-		*((uint32_t *)ic->arg[2]) = page[addr] +
-		    (page[addr + 1] << 8) +
-		    (page[addr + 2] << 16) +
-		    (page[addr + 3] << 24);
+		reg(ic->arg[2]) = page[addr & 0xfff] +
+		    (page[(addr & 0xfff) + 1] << 8) +
+		    (page[(addr & 0xfff) + 2] << 16) +
+		    (page[(addr & 0xfff) + 3] << 24);
 #endif
 #endif
 #else
 #ifdef A__B
-		page[addr & 4095] = *((uint32_t *)ic->arg[2]);
+		page[addr & 0xfff] = reg(ic->arg[2]);
 #else
 #ifdef A__H
-		addr &= 4095;
-		page[addr] = *((uint32_t *)ic->arg[2]);
-		page[addr+1] = (*((uint32_t *)ic->arg[2])) >> 8;
+		page[addr & 0xfff] = reg(ic->arg[2]);
+		page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
 #else
-		addr &= 4095;
-		page[addr] = *((uint32_t *)ic->arg[2]);
-		page[addr+1] = (*((uint32_t *)ic->arg[2])) >> 8;
-		page[addr+2] = (*((uint32_t *)ic->arg[2])) >> 16;
-		page[addr+3] = (*((uint32_t *)ic->arg[2])) >> 24;
+		page[addr & 0xfff] = reg(ic->arg[2]);
+		page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
+		page[(addr & 0xfff)+2] = reg(ic->arg[2]) >> 16;
+		page[(addr & 0xfff)+3] = reg(ic->arg[2]) >> 24;
 #endif
 #endif
+#endif
+
+		/*  Index Write-back:  */
+#ifdef A__P
+#ifdef A__W
+		reg(ic->arg[0]) = addr;
+#endif
+#else
+		/*  post-index writeback  */
+		reg(ic->arg[0]) = addr + offset;
 #endif
 	}
 #endif	/*  not T-bit  */
@@ -244,7 +251,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
  *	TODO: A tiny performance optimization would be to separate the two
  *	cases: a load where arg[0] = PC, and the case where arg[2] = PC.
  *
- *  o)	Stores store "PC of the current instruction + 8". The solution I have
+ *  o)	Stores store "PC of the current instruction + 12". The solution I have
  *	choosen is to calculate this value and place it into a temporary
  *	variable (tmp_pc), which is then used for the store.
  */
@@ -270,13 +277,13 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	/*  Store:  */
 	uint32_t low_pc, tmp;
-	/*  Calculate tmp from this instruction's PC + 8  */
+	/*  Calculate tmp from this instruction's PC + 12  */
 	low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
 	    sizeof(struct arm_instr_call);
 	tmp = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
 	    ARM_INSTR_ALIGNMENT_SHIFT);
 	tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.tmp_pc = tmp + 8;
+	cpu->cd.arm.tmp_pc = tmp + 12;
 	A__NAME(cpu, ic);
 #endif
 }

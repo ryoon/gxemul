@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.26 2005-10-04 04:11:13 debug Exp $
+ *  $Id: cpu_arm.c,v 1.27 2005-10-05 21:17:32 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -523,24 +523,42 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 	retaddr = cpu->pc;
 
+	debug("[ arm_exception(): ");
+
 	switch (exception_nr) {
 	case ARM_EXCEPTION_RESET:
 		cpu->running = 0;
-		fatal("TODO: reset\n");
+		fatal("RESET: TODO");
 		exit(1);
 	case ARM_EXCEPTION_UND:
+		debug("UNDEFINED");
+		retaddr += 4;
+		break;
 	case ARM_EXCEPTION_SWI:
+		debug("SWI");
+		retaddr += 4;
+		break;
 	case ARM_EXCEPTION_PREF_ABT:
+		debug("PREFETCH ABORT, far=0x%08x fsr=0x%02x",
+		    cpu->cd.arm.far, cpu->cd.arm.fsr);
+		retaddr += 4;
+		break;
 	case ARM_EXCEPTION_IRQ:
+		debug("IRQ");
+		retaddr += 4;
+		break;
 	case ARM_EXCEPTION_FIQ:
+		debug("FIQ");
 		retaddr += 4;
 		break;
 	case ARM_EXCEPTION_DATA_ABT:
+		debug("DATA ABORT, far=0x%08x fsr=0x%02x",
+		    cpu->cd.arm.far, cpu->cd.arm.fsr);
 		retaddr += 8;
 		break;
 	}
 
-	debug("[ arm_exception(): %i ]\n", exception_nr);
+	debug(" ]\n");
 
 	arm_save_register_bank(cpu);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.19 2005-10-05 20:00:26 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.20 2005-10-05 21:17:32 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -44,6 +44,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
 
 #include "dc21285reg.h"
 
@@ -64,28 +65,28 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
-		int amount = 1 << (DEV_FOOTBRIDGE_TICK_SHIFT - 3);
+		int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
 		if (d->timer_control[i] & TIMER_FCLK_16)
 			amount >>= 4;
 		else if (d->timer_control[i] & TIMER_FCLK_256)
 			amount >>= 8;
 
-		if (d->timer_tick_countdown[i] >= 0) {
-			if (d->timer_value[i] > amount)
-				d->timer_value[i] -= amount;
-			else
-				d->timer_value[i] = 0;
+		if (d->timer_tick_countdown[i] == 0)
+			continue;
 
-			if (d->timer_value[i] == 0) {
-				if (d->timer_tick_countdown[i] > 0) {
-					d->timer_tick_countdown[i] --;
-					continue;
-				}
+		if (d->timer_value[i] > amount)
+			d->timer_value[i] -= amount;
+		else
+			d->timer_value[i] = 0;
 
-				if (d->timer_control[i] & TIMER_ENABLE)
-					cpu_interrupt(cpu, IRQ_TIMER_1 + i);
-				d->timer_tick_countdown[i] = -1;
-			}
+		if (d->timer_value[i] == 0) {
+			d->timer_tick_countdown[i] --;
+			if (d->timer_tick_countdown[i] > 0)
+				continue;
+
+			if (d->timer_control[i] & TIMER_ENABLE)
+				cpu_interrupt(cpu, IRQ_TIMER_1 + i);
+			d->timer_tick_countdown[i] = 0;
 		}
 	}
 }
@@ -123,9 +124,8 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 			break;
 	}
 
-	if (x == 16) {
-		printf("_\n_ SPORADIC but INVALID ISA interrupt _\n_\n");
-	}
+	if (x == 16)
+		fatal("_\n_  SPORADIC but INVALID ISA interrupt\n_\n");
 
 	odata = 0x20 + (x & 15);
 
@@ -243,8 +243,15 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		else {
 			fatal("[ WARNING: footbridge write to irq status? ]\n");
 			exit(1);
-			d->irq_status = idata;
-			cpu_interrupt(cpu, 64);
+		}
+		break;
+
+	case IRQ_RAW_STATUS:
+		if (writeflag == MEM_READ)
+			odata = d->irq_status;
+		else {
+			fatal("[ footbridge write to irq_raw_status ]\n");
+			exit(1);
 		}
 		break;
 
@@ -274,9 +281,20 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 
 	case FIQ_STATUS:
 		if (writeflag == MEM_READ)
+			odata = d->fiq_status & d->fiq_enable;
+		else {
+			fatal("[ WARNING: footbridge write to fiq status? ]\n");
+			exit(1);
+		}
+		break;
+
+	case FIQ_RAW_STATUS:
+		if (writeflag == MEM_READ)
 			odata = d->fiq_status;
-		else
-			d->fiq_status = idata;
+		else {
+			fatal("[ footbridge write to fiq_raw_status ]\n");
+			exit(1);
+		}
 		break;
 
 	case FIQ_ENABLE_SET:
@@ -297,7 +315,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			    d->timer_load[timer_nr] = idata & TIMER_MAX_VAL;
 			debug("[ footbridge: timer %i (1-based), value %i ]\n",
 			    timer_nr + 1, (int)d->timer_value[timer_nr]);
-			d->timer_tick_countdown[timer_nr] = 0;
+			d->timer_tick_countdown[timer_nr] = 1;
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}
 		break;
@@ -324,7 +342,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			if (idata & TIMER_ENABLE) {
 				d->timer_value[timer_nr] =
 				    d->timer_load[timer_nr];
-				d->timer_tick_countdown[timer_nr] = 0;
+				d->timer_tick_countdown[timer_nr] = 1;
 			}
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}
@@ -333,7 +351,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	case TIMER_1_CLEAR:
 		if (d->timer_control[timer_nr] & TIMER_MODE_PERIODIC) {
 			d->timer_value[timer_nr] = d->timer_load[timer_nr];
-			d->timer_tick_countdown[timer_nr] = 0;
+			d->timer_tick_countdown[timer_nr] = 1;
 		}
 		cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		break;

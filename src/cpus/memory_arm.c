@@ -25,7 +25,24 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.19 2005-10-04 04:11:13 debug Exp $
+ *  $Id: memory_arm.c,v 1.20 2005-10-05 21:17:32 debug Exp $
+ *
+ *
+ *  TODO/NOTE: There are probably two solutions to the subpage access
+ *  permission problem:
+ *
+ *  a) the obvious (almost trivial) solution is to decrease the native page
+ *     size from 4 KB to 1 KB. That would ruin the rest of the translation
+ *     system though. (It would be infeasible to hold the entire address
+ *     space in 1-level tables.)
+ *
+ *  b) to return something else than just 0, 1, or 2 from arm_memory_rw().
+ *     Perhaps |4, which would indicate that the vaddr => paddr conversion
+ *     was done, but that it should not be entered into the cache. This could
+ *     also be used in combination with the B and C bits (which are currently
+ *     ignored).
+ *
+ *  b would probably be the best solution.
  */
 
 #include <stdio.h>
@@ -135,6 +152,18 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	domain = (d >> 5) & 15;
 	dav = (cpu->cd.arm.dacr >> (domain * 2)) & 3;
 
+if (vaddr == 0 && !no_exceptions) {
+static int x = 0;
+x++;
+if (x > 1) {
+	fatal("\nNULL, pc=0x%08x\n", (int)cpu->pc);
+	single_step = 1;
+        cpu->running_translated = 0;
+        cpu->n_translated_instrs --;
+        cpu->cd.arm.next_ic = &nothing_call;
+	return 0;
+}}
+
 	switch (d & 3) {
 
 	case 0:	d_in_use = 0;
@@ -171,15 +200,15 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
 		case 2:	/*  4KB page:  */
-			ap3 = ap = (d2 >> 10) & 3;
-			ap2 = ap = (d2 >>  8) & 3;
-			ap1 = ap = (d2 >>  6) & 3;
-			ap0 = ap = (d2 >>  4) & 3;
+			ap3 = (d2 >> 10) & 3;
+			ap2 = (d2 >>  8) & 3;
+			ap1 = (d2 >>  6) & 3;
+			ap0 = (d2 >>  4) & 3;
 			switch (vaddr & 0x00000c00) {
 			case 0x000: ap = ap0; break;
 			case 0x400: ap = ap1; break;
 			case 0x800: ap = ap2; break;
-			case 0xc00: ap = ap3; break;
+			default:    ap = ap3;
 			}
 			if ((ap0 != ap1 || ap0 != ap2 || ap0 != ap3) &&
 			    !no_exceptions)
@@ -229,14 +258,6 @@ exception_return:
 
 	fatal("{ arm memory fault: vaddr=0x%08x domain=%i dav=%i ap=%i "
 	    "access=%i user=%i", (int)vaddr, domain, dav, ap, access, user);
-
-if ((vaddr & 0xffff0000) == 0xf1b00000) {
-	fatal("sadg, pc=0x%08x\n", (int)cpu->pc);
-	single_step = 1;
-        cpu->running_translated = 0;
-        cpu->n_translated_instrs --;
-        cpu->cd.arm.next_ic = &nothing_call;
-}
 
 	if (d_in_use)
 		fatal(" d=0x%08x", d);

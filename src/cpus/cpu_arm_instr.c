@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.22 2005-10-04 04:44:16 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.23 2005-10-05 20:00:27 debug Exp $
  *
  *  ARM instructions.
  *
@@ -249,10 +249,12 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 				if (c == 0)
 					lastbit = tmp & 0x80000000;
 				else
-					lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
+					lastbit = ((int64_t)(int32_t)tmp
+					    >> (c-1)) & 1;
+				tmp = (uint64_t)(((uint64_t)tmp << 32)
+				    | tmp) >> c;
 			}
 		}
-		tmp = (uint64_t)(((uint64_t)tmp << 32) | tmp) >> c;
 		break;
 	}
 	if (update_c) {

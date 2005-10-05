@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.7 2005-10-02 03:48:59 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.8 2005-10-05 20:00:27 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -115,8 +115,13 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		/*  NOTE: 16 KB aligned.  */
 		if (l_bit)
 			cpu->cd.arm.r[rd] = cpu->cd.arm.ttb & 0xffffc000;
-		else
-			cpu->cd.arm.ttb = cpu->cd.arm.r[rd] & 0xffffc000;
+		else {
+			cpu->cd.arm.ttb = cpu->cd.arm.r[rd];
+			if (cpu->cd.arm.ttb & 0x3fff)
+				fatal("[ WARNING! low bits of new TTB non-"
+				    "zero? 0x%08x ]\n", cpu->cd.arm.ttb);
+			cpu->cd.arm.ttb &= 0xffffc000;
+		}
 		break;
 
 	case 3:	/*  Domain Access Control Register:  */
@@ -147,6 +152,7 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			return;
 		}
 		/*  debug("[ arm_coproc_15: cache op: TODO ]\n");  */
+		/*  TODO:  */
 		break;
 
 	case 8:	/*  TLB functions:  */

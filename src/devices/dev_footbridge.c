@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.18 2005-10-03 19:08:16 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.19 2005-10-05 20:00:26 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -64,7 +64,7 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
-		int amount = 1 << (DEV_FOOTBRIDGE_TICK_SHIFT - 2);
+		int amount = 1 << (DEV_FOOTBRIDGE_TICK_SHIFT - 3);
 		if (d->timer_control[i] & TIMER_FCLK_16)
 			amount >>= 4;
 		else if (d->timer_control[i] & TIMER_FCLK_256)
@@ -137,9 +137,9 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_footbridge_pci_cfg_access():
+ *  dev_footbridge_pci_access():
  */
-int dev_footbridge_pci_cfg_access(struct cpu *cpu, struct memory *mem,
+int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
@@ -161,12 +161,12 @@ int dev_footbridge_pci_cfg_access(struct cpu *cpu, struct memory *mem,
 		exit(1);
 	}
 
-	debug("[ footbridge_pci_cfg: %s bus %i, device %i, function "
+	debug("[ footbridge_pci: %s bus %i, device %i, function "
 	    "%i, register %i ]\n", writeflag == MEM_READ? "read from"
 	    : "write to", bus, device, function, regnr);
 
 	if (d->pcibus == NULL) {
-		fatal("dev_footbridge_pci_cfg_access(): no PCI bus?\n");
+		fatal("dev_footbridge_pci_access(): no PCI bus?\n");
 		return 0;
 	}
 
@@ -239,7 +239,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 
 	case IRQ_STATUS:
 		if (writeflag == MEM_READ)
-			odata = d->irq_status;
+			odata = d->irq_status & d->irq_enable;
 		else {
 			fatal("[ WARNING: footbridge write to irq status? ]\n");
 			exit(1);
@@ -297,7 +297,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			    d->timer_load[timer_nr] = idata & TIMER_MAX_VAL;
 			debug("[ footbridge: timer %i (1-based), value %i ]\n",
 			    timer_nr + 1, (int)d->timer_value[timer_nr]);
-			d->timer_tick_countdown[timer_nr] = 1;
+			d->timer_tick_countdown[timer_nr] = 0;
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}
 		break;
@@ -324,7 +324,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			if (idata & TIMER_ENABLE) {
 				d->timer_value[timer_nr] =
 				    d->timer_load[timer_nr];
-				d->timer_tick_countdown[timer_nr] = 1;
+				d->timer_tick_countdown[timer_nr] = 0;
 			}
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}
@@ -333,7 +333,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	case TIMER_1_CLEAR:
 		if (d->timer_control[timer_nr] & TIMER_MODE_PERIODIC) {
 			d->timer_value[timer_nr] = d->timer_load[timer_nr];
-			d->timer_tick_countdown[timer_nr] = 1;
+			d->timer_tick_countdown[timer_nr] = 0;
 		}
 		cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		break;
@@ -360,7 +360,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 int devinit_footbridge(struct devinit *devinit)
 {
 	struct footbridge_data *d;
-	uint64_t pci_cfg_addr = 0x7b000000;
+	uint64_t pci_addr = 0x7b000000;
 	int i;
 
 	d = malloc(sizeof(struct footbridge_data));
@@ -409,8 +409,8 @@ int devinit_footbridge(struct devinit *devinit)
 	}
 
 	memory_device_register(devinit->machine->memory,
-	    "footbridge_pci_cfg", pci_cfg_addr, 0x1000000,
-	    dev_footbridge_pci_cfg_access, d, MEM_DEFAULT, NULL);
+	    "footbridge_pci", pci_addr, 0x1000000,
+	    dev_footbridge_pci_access, d, MEM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine,
 	    dev_footbridge_tick, d, DEV_FOOTBRIDGE_TICK_SHIFT);

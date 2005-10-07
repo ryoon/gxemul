@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.981 2005-10-07 15:09:58 debug Exp $
+$Id: HISTORY,v 1.982 2005-10-07 22:45:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2295,4 +2295,5 @@ Changelog for GXemul:
 		may not happen to be usermode registers).
 		NetBSD/cats and OpenBSD/cats seem to install fine now :-)
 		except for a minor bug at the end of the OpenBSD/cats install.
-		Updating the documentation, etc.
+		Updating the documentation, preparing for the next release.
+20051008	Continuing with release testing and cleanup.

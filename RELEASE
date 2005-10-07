@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.147 2005-10-07 16:25:07 debug Exp $
+$Id: RELEASE,v 1.148 2005-10-07 22:45:32 debug Exp $
 
 Working on what will become 0.3.6.
 
@@ -11,13 +11,12 @@ Copyright (C) 2003-2005  Anders Gavare.
 
 
 GXemul is an experimental instruction-level machine emulator. Several
-emulation modes are available. For some modes, processors and surrounding
+emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 The processor architecture best emulated by GXemul is MIPS, but other
-architectures are also partially emulated. (The emulation of ARM
-processors is probably the most complete, apart from MIPS emulation.)
+architectures are also partially emulated.
 
 I have verified that the following "guest" operating systems can run inside
 the emulator:
@@ -43,12 +42,12 @@ the emulator:
 ARM-based machine.)
 
 Some of these guest operating systems are easier to install and run than
-others. The best supported mode is the DECstation 5000/200 emulation mode, with
-NetBSD/pmax as the guest operating system.
+others. The best supported mode is the DECstation 5000/200 emulation mode,
+with NetBSD/pmax as the guest operating system.
 
-A couple of other emulation modes exist. Some of these modes are almost working
-well enough to run complete guest operating systems, but most are just
-skeletons. The modes that work are listed in the documentation.
+A couple of other emulation modes exist. Some of these modes are almost
+working well enough to run complete guest operating systems, but most are
+just skeletons. The modes that work are listed in the documentation.
 
 The emulator can also be used in other experiments; it does not have to run
 entire guest operating systems. (However, GXemul does not simulate things
@@ -58,13 +57,17 @@ micro-architectural effects are not simulated.)
 
 The most imporant user-visible change between release 0.3.5 and 0.3.6 is:
 
-    o)  The experimental ARM emulation mode is now working well enough
+   (X)  The experimental ARM emulation mode is now working well enough
         to install NetBSD/cats and OpenBSD/cats onto harddisk images.
 
-        (A bug is triggered at the end of the OpenBSD/cats installation,
-        so the MAKEDEV script must be run manually before booting for the
-        first time, and I have not had time to do any performance
-        optimizations yet, so the ARM emulation mode is not very fast.)
+There are two minor issues with the ARM emulation:
+
+   1) A bug is triggered at the end of the OpenBSD/cats installation,
+      so the MAKEDEV script must be run manually before booting for
+      the first time.
+
+   2) I have not had time to do any performance optimizations yet, so
+      the ARM emulation mode is not very fast.
 
 There have also been lots of other small changes, too small to mention here.
 
@@ -168,7 +171,6 @@ Also, src/include/alpha_rpb.h requires the following:
     notice and this permission notice appear in all copies of the
     software, derivative works or modified versions, and any portions
     thereof, and that both notices appear in supporting documentation.
-
 
 See individual files for license details, if you plan to redistribute GXemul
 or reuse code.

@@ -1,4 +1,4 @@
-$Id: README,v 1.82 2005-10-07 15:09:59 debug Exp $
+$Id: README,v 1.83 2005-10-07 22:45:32 debug Exp $
 
 Working on what will become 0.3.6.
 
@@ -14,13 +14,12 @@ Overview
 --------
 
 GXemul is an experimental instruction-level machine emulator. Several
-emulation modes are available. For some modes, processors and surrounding
+emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 The processor architecture best emulated by GXemul is MIPS, but other
-architectures are also partially emulated. (The emulation of ARM
-processors is probably the most complete, apart from MIPS emulation.)
+architectures are also partially emulated.
 
 
 Quick start

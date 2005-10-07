@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.3 2005-09-19 20:10:57 debug Exp $
+ *  $Id: cpu_mips.c,v 1.4 2005-10-07 23:13:51 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1990,7 +1990,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  registers are sign-extended:   (Slow, but might be useful
 	 *  to detect bugs that have to do with sign-extension.)
 	 */
-	if (cpu->is_32bit)
+	if (cpu->is_32bit) {
 		int warning = 0;
 		uint64_t x;
 

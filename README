@@ -1,10 +1,10 @@
-$Id: README,v 1.83 2005-10-07 22:45:32 debug Exp $
+$Id: README,v 1.84 2005-10-07 23:13:50 debug Exp $
 
-Working on what will become 0.3.6.
+Working on post-0.3.6.
 
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.3.6
+Gavare's eXperimental Emulator   --   GXemul 0.3.X
 ==================================================
 
 Copyright (C) 2003-2005  Anders Gavare.

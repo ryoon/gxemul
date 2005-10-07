@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.170 2005-10-07 15:09:59 debug Exp $
+#  $Id: configure,v 1.171 2005-10-07 23:13:50 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -496,15 +496,15 @@ if [ z"$CC" = z ]; then
 	fi
 	rm -f _testprog
 
-	#  Try ccc (FreeBSD/Alpha):
-	printf "#!/bin/sh\nccc _testprog.c -o _testprog >" > _test.sh
-	printf " /dev/null 2> /dev/null\n" >> _test.sh
-	chmod 755 _test.sh
-	./_test.sh > /dev/null 2> /dev/null
-	if [ -x _testprog ]; then
-		CC="ccc"
-	fi
-	rm -f _testprog
+#	#  Try ccc (FreeBSD/Alpha):
+#	printf "#!/bin/sh\nccc _testprog.c -o _testprog >" > _test.sh
+#	printf " /dev/null 2> /dev/null\n" >> _test.sh
+#	chmod 755 _test.sh
+#	./_test.sh > /dev/null 2> /dev/null
+#	if [ -x _testprog ]; then
+#		CC="ccc"
+#	fi
+#	rm -f _testprog
 
 	rm -f _test.sh
 fi

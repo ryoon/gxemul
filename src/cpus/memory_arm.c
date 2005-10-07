@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.22 2005-10-07 15:10:01 debug Exp $
+ *  $Id: memory_arm.c,v 1.23 2005-10-07 15:19:48 debug Exp $
  *
  *
  *  TODO/NOTE: There are probably two solutions to the subpage access
@@ -54,7 +54,6 @@
 #include "misc.h"
 
 #include "armreg.h"
-
 
 extern int quiet_mode;
 
@@ -198,12 +197,14 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 			case 0x800: ap = ap2; break;
 			default:    ap = ap3;
 			}
+#if 0
 			if ((ap0 != ap1 || ap0 != ap2 || ap0 != ap3) &&
 			    !no_exceptions)
 				fatal("WARNING: vaddr = 0x%08x, small page, but"
 				    " different access permissions for the sub"
 				    "pages! This is not really implemented "
 				    "yet.\n", (int)vaddr);
+#endif
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */

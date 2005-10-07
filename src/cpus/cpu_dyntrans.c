@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.17 2005-10-07 15:10:01 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.18 2005-10-07 15:19:48 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -437,16 +437,20 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			ok = 1;
 		}
 		if (!ok) {
+/*
 			fatal("TODO: instruction vaddr=>paddr translation"
 			    " failed. vaddr=0x%llx\n", (long long)cached_pc);
 fatal("!! cpu->pc=0x%llx arm_pc=0x%x\n", (long long)cpu->pc,
 cpu->cd.arm.r[ARM_PC]);
+*/
 			ok = cpu->translate_address(cpu, cpu->pc, &paddr,
 			    FLAG_INSTR);
+/*
 printf("EXCEPTION HANDLER: vaddr = 0x%x ==> paddr = 0x%x\n",
 	(int)cpu->pc, (int)paddr);
 fatal("!? cpu->pc=0x%llx arm_pc=0x%x\n", (long long)cpu->pc,
 cpu->cd.arm.r[ARM_PC]);
+*/
 			if (!ok) {
 				fatal("FATAL: could not find physical"
 				    " address of the exception handler?");

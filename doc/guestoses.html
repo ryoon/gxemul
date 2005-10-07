@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.90 2005-10-07 15:09:59 debug Exp $
+$Id: guestoses.html,v 1.91 2005-10-07 15:44:03 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -57,6 +57,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdcatsinstall">NetBSD/cats</a>
   <li><a href="#openbsdinstall">OpenBSD/pmax</a>
   <li><a href="#openbsdarcinstall">OpenBSD/arc</a>
+  <li><a href="#openbsdcatsinstall">OpenBSD/cats</a>
   <li><a href="#ultrixinstall">Ultrix/RISC</a>
   <li><a href="#sprite">Sprite for DECstation</a>
   <li><a href="#declinux">Debian GNU/Linux for DECstation</a>
@@ -745,6 +746,10 @@ It is possible to install and run
 <a href="http://www.netbsd.org/Ports/cats/">NetBSD/cats</a> in GXemul.
 
 <p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20051007-netbsd-cats-installed.png"><img src="20051007-netbsd-cats-installed_small.png"></a>
+
+<p>
 To install NetBSD/cats onto a disk image, follow these instructions:
 
 <p>
@@ -983,6 +988,84 @@ boot from the harddisk image:
 	<b>gxemul -X -e pica -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
 
 </pre>
+
+
+
+
+
+
+
+
+<p><br>
+<a name="openbsdcatsinstall"></a>
+<h3>OpenBSD/cats:</h3>
+
+It is possible to install and run
+<a href="http://www.openbsd.org/cats.html">OpenBSD/cats</a>
+in GXemul.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20051007-openbsd-cats-installed.png"><img src="20051007-openbsd-cats-installed_small.png"></a>
+
+<p>To install OpenBSD/cats onto an emulated harddisk image,
+follow these instructions:
+
+<p>
+<ol>
+  <li>Create an empty harddisk image, which will be the root disk
+	that OpenBSD installs itself onto:<pre>
+	<b>dd if=/dev/zero of=obsd_cats.img bs=1024 count=1 seek=1900000</b>
+
+</pre>
+  <li>Download the entire cats directory from the ftp server:<pre>
+	<b>wget -np -l 0 -r <a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/">ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/</a></b>
+
+</pre>
+
+  <li>You now need to make an ISO image of the entire directory you downloaded.
+	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
+	already have <tt>mkisofs</tt> installed on your system, you need
+	to install it in order to do this.)<pre>
+	<b>mkisofs -allow-lowercase -o openbsd_cats_3.7.iso ftp.openbsd.org/pub/OpenBSD/3.7/cats</b>
+
+</pre>
+  <li>Start the emulator using this command line:<pre>
+	<b>gxemul -X -E cats -d obsd_cats.img -d openbsd_cats_3.7.iso  \
+	    ftp.openbsd.org/pub/OpenBSD/3.7/cats/bsd.rd</b>
+
+</pre>
+	and proceed like you would do if you were installing OpenBSD
+	on a real CATS. (Install onto wd0, don't configure the network,
+	choose to install distribution sets from <i>disk</i> wd1 (i.e.
+	not CDROM) partition a, path '/'.)
+</ol>
+
+<p><b>NOTE (<font color="#f00000">2005-10-07</font>):</b> The ARM
+emulation mode is very new, I haven't had time to find and fix all bugs
+yet. During install, it seems that the MAKEDEV script dumps core. Before
+you can boot OpenBSD/cats for the first time, you need to manually run the
+MAKEDEV script: <pre>
+	<b>gxemul -X -E cats -d obsd_cats.img ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd</b>
+	(press s, for Shell)
+	mount /dev/wd0a /mnt; cd mnt/dev
+	sh MAKEDEV all
+	sh MAKEDEV wd
+	cd /; umount mnt; halt
+</pre>
+Hopefully this isn't a serious bug.
+
+<p>
+Once the install has finished, the following command should let you 
+boot from the harddisk image:
+<p>
+<pre>
+	<b>gxemul -X -E cats -d obsd_cats.img ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd</b>
+
+</pre>
+
+<p>When asked about which drive to boot from, enter <tt>wd0</tt>.
+
+
 
 
 
@@ -1692,64 +1775,6 @@ generic kernel:<pre>
 
 
 
-
-
-
-
-<p><br>
-<a name="openbsdcatsinstall"></a>
-<h3>OpenBSD/cats:</h3>
-
-It is possible to install and run
-<a href="http://www.openbsd.org/cats.html">OpenBSD/cats</a>
-in GXemul.
-
-<p>To install OpenBSD/cats onto an emulated harddisk image,
-follow these instructions:
-
-<p>
-<ol>
-  <li>Create an empty harddisk image, which will be the root disk
-	that OpenBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=obsd_cats.img bs=1024 count=1 seek=1900000</b>
-
-</pre>
-  <li>Download the entire cats directory from the ftp server:<pre>
-	<b>wget -np -l 0 -r <a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/">ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/</a></b>
-
-</pre>
-
-  <li>You now need to make an ISO image of the entire directory you downloaded.
-	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
-	already have <tt>mkisofs</tt> installed on your system, you need
-	to install it in order to do this.)<pre>
-	<b>mkisofs -allow-lowercase -o openbsd_cats_3.7.iso ftp.openbsd.org/pub/OpenBSD/3.7/cats</b>
-
-</pre>
-  <li>Start the emulator using this command line:<pre>
-	<b>gxemul -X -E cats -d obsd_cats.img -d openbsd_cats_3.7.iso  \
-	    ftp.openbsd.org/pub/OpenBSD/3.7/cats/bsd.rd</b>
-
-</pre>
-	and proceed like you would do if you were installing OpenBSD
-	on a real CATS. (Install onto wd0, don't configure the network,
-	choose to install distribution sets from <i>disk</i> wd1 (i.e.
-	not CDROM) partition a, path '/'.)
-</ol>
-
-<p>
-Once the install has finished, the following command should let you 
-boot from the harddisk image:
-<p>
-<pre>
-	<b>gxemul -X -E cats -d obsd_cats.img ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd</b>
-
-</pre>
-
-<p>When asked about which drive to boot from, enter <tt>wd0</tt>.
-
-
-<p>TODO: MAKEDEV bug?  mount /dev/wd0a /mnt; cd mnt/dev; sh MAKEDEV all; sh MAKEDEV wd; cd /; umount mnt; halt
 
 
 

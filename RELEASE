@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.145 2005-10-07 15:09:59 debug Exp $
+$Id: RELEASE,v 1.146 2005-10-07 15:44:02 debug Exp $
 
 Working on what will become 0.3.6.
 
@@ -63,7 +63,8 @@ The most imporant user-visible change between 0.3.5 and 0.3.6 is:
 
         (A bug is triggered at the end of the OpenBSD/cats installation,
         so the MAKEDEV script must be run manually before booting the
-        first time.)
+        first time, and I have not had time to do any performance
+        optimizations yet, so the ARM emulation mode is not very fast.)
 
 There have also been lots of other small changes, too small to mention here.
 

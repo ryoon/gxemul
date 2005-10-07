@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.21 2005-10-07 10:26:04 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.22 2005-10-07 15:10:02 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -379,7 +379,6 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			fatal("[ footbridge: write to 0x%x: 0x%llx ]\n",
 			    (int)relative_addr, (long long)idata);
 		}
-		exit(1);
 	}
 
 	if (writeflag == MEM_READ)

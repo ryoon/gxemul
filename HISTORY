@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.980 2005-10-07 10:26:01 debug Exp $
+$Id: HISTORY,v 1.981 2005-10-07 15:09:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2288,4 +2288,11 @@ Changelog for GXemul:
 20051003	Various minor updates. (Trying to find the bug(s).)
 20051004	Continuing on the ARM stuff.
 20051005	More ARM-related fixes.
-20051007	Continuing... found and fixed 1 ARM memory bug.
+20051007	FINALLY! Found and fixed 2 ARM bugs: 1 memory related, and the
+		other was because of an error in the ARM manual (load multiple
+		with the S-bit set should _NOT_ load usermode registers, as the
+		manual says, but it should load saved registers, which may or
+		may not happen to be usermode registers).
+		NetBSD/cats and OpenBSD/cats seem to install fine now :-)
+		except for a minor bug at the end of the OpenBSD/cats install.
+		Updating the documentation, etc.

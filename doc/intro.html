@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.62 2005-09-07 08:47:48 debug Exp $
+$Id: intro.html,v 1.63 2005-10-07 15:10:00 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -64,16 +64,14 @@ SUCH DAMAGE.
 <a name="overview"></a>
 <h3>Overview:</h3>
 
-GXemul is an experimental instruction-level machine emulator. It can be
-used to run binary code for MIPS-based machines, regardless of host
-platform. Several emulation modes are available. For some modes,
-processors and surrounding hardware components are emulated well enough to
-let unmodified operating systems run as if they were running on a real
-machine.
+GXemul is an experimental instruction-level machine emulator. Several
+emulation modes are available. For some modes, processors and surrounding
+hardware components are emulated well enough to let unmodified operating
+systems (e.g. NetBSD) run as if they were running on a real machine.
 
-<p>(Non-MIPS emulation modes are also under development, but so far none
-of those modes has reached the completeness required to run unmodified
-operating systems.)
+<p>The processor architecture best emulated by GXemul is MIPS, but other
+architectures are also partially emulated. (The emulation of ARM
+processors is probably the most complete, apart from MIPS emulation.)
 
 <p>Devices and CPUs are not simulated with 100% accuracy. They are only
 ``faked'' well enough to make operating systems (e.g. NetBSD) run without
@@ -232,6 +230,11 @@ This gives higher total performance than interpreting one instruction at a
 time and executing it. (If you wish to disable bintrans, add <b>-B</b> to
 the command line.)
 
+<h4>ARM:</h4>
+
+The ARM CPU emulation is good enough to run NetBSD/cats and OpenBSD/cats
+(almost bugfree :-), but it is not as tested or fine-tuned as the MIPS
+emulation.
 
 <h4>Other CPU types:</h4>
 
@@ -279,25 +282,34 @@ are emulated well enough to run at least one "guest OS":
 
 <p>
 <ul>
-  <li><b>DECstation 5000/200</b>&nbsp;&nbsp;("3max")
+  <li><b><u>MIPS</u></b>
+  <ul>
+    <li><b>DECstation 5000/200</b>&nbsp;&nbsp;("3max")
 	<br>Serial controller (including keyboard and mouse), ethernet,
 	SCSI, and graphical framebuffers.
-  <p>
-  <li><b>Acer Pica-61</b>&nbsp;&nbsp;(an ARC machine)
+    <p>
+    <li><b>Acer Pica-61</b>&nbsp;&nbsp;(an ARC machine)
 	<br>Serial controller, "VGA" text console, and SCSI.
-  <p>
-  <li><b>NEC MobilePro 770, 780, 800, and 880</b>&nbsp;&nbsp;(HPCmips machines)
+    <p>
+    <li><b>NEC MobilePro 770, 780, 800, and 880</b>&nbsp;&nbsp;(HPCmips machines)
 	<br>Framebuffer, keyboard, and a PCMCIA IDE controller.
-  <p>
-  <li><b>Cobalt</b>
+    <p>
+    <li><b>Cobalt</b>
 	<br>Serial controller and PCI IDE.
-  <p>
-  <li><b>Malta (evbmips)</b>
+    <p>
+    <li><b>Malta (evbmips)</b>
 	<br>Serial controller and PCI IDE.
-  <p>
-  <li><b>SGI O2 ("IP32")</b>
+    <p>
+    <li><b>SGI O2 ("IP32")</b>
 	<br>Serial controller and ethernet.&nbsp;&nbsp;<small>(Enough for
 	root-on-nfs, but not for disk boot.)</small>
+  </ul>
+  <p>
+  <li><b><u>ARM</u></b>
+  <ul>
+    <li><b>CATS</b>
+	<br>VGA and PCI IDE.
+  </ul>
 </ul>
 
 <p>There is code in GXemul for emulation of many other machine types; the
@@ -427,6 +439,22 @@ interacted with similar to a real machine.
 	  <td></td>
 	  <td><a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a>
 		<br>5Kc (and 4Kc) Malta<br>evaluation boards</td>
+	  <td></td>
+	</tr>
+
+	<tr><td height="10"></td></tr>
+
+	<tr>
+	  <td></td>
+	  <td align="center"><a href="20051007-netbsd-cats-installed.png"><img src="20051007-netbsd-cats-installed_small.png"></a></td>
+	  <td></td>
+	  <td><a href="http://www.netbsd.org/Ports/cats/">NetBSD/cats</a>
+		<br>CATS</td>
+	  <td></td>
+	  <td align="center"><a href="20051007-openbsd-cats-installed.png"><img src="20051007-openbsd-cats-installed_small.png"></a></td>
+	  <td></td>
+	  <td><a href="http://www.openbsd.org/cats.html">OpenBSD/cats</a>
+		<br>CATS</td>
 	  <td></td>
 	</tr>
 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.89 2005-10-01 17:50:10 debug Exp $
+$Id: guestoses.html,v 1.90 2005-10-07 15:09:59 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -54,6 +54,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips</a>
+  <li><a href="#netbsdcatsinstall">NetBSD/cats</a>
   <li><a href="#openbsdinstall">OpenBSD/pmax</a>
   <li><a href="#openbsdarcinstall">OpenBSD/arc</a>
   <li><a href="#ultrixinstall">Ultrix/RISC</a>
@@ -200,7 +201,7 @@ and log in as <tt>root</tt> and type <tt>startx</tt> to start X windows.
 <a name="netbsdarcinstall"></a>
 <h3>NetBSD/arc:</h3>
 
-It is possible to run <a
+It is possible to install and run <a
 href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>
 on an emulated Acer PICA-61 in the emulator.
 
@@ -736,6 +737,52 @@ to IPv4.
 
 
 
+<p><br>
+<a name="netbsdcatsinstall"></a>
+<h3>NetBSD/cats:</h3>
+
+It is possible to install and run
+<a href="http://www.netbsd.org/Ports/cats/">NetBSD/cats</a> in GXemul.
+
+<p>
+To install NetBSD/cats onto a disk image, follow these instructions:
+
+<p>
+<ol start="1">
+  <li>Create an empty harddisk image, which will be the root disk
+	that you will install NetBSD/hpcmips onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=1990000</b>
+
+</pre>
+  <li>Download the NetBSD/cats 2.0.2 ISO image and generic + install kernels:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/catscd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/catscd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
+
+</pre>
+  <p>
+  <li>Start the installation like this:<pre>
+	<b>gxemul -X -E cats -d nbsd_cats.img -d catscd.iso netbsd.aout-INSTALL.gz</b>
+
+</pre>
+	and proceed like you would do if you were installing NetBSD on a real
+	CATS from CDROM. (Install onto wd0, and choose wd1c (not cd0c) as the
+	CDROM device to install from.)
+</ol>
+
+<p>
+If everything worked, NetBSD should now be installed on the disk image.
+Use the following command line to boot the emulated CATS machine:<pre>
+	<b>gxemul -X -E cats -d nbsd_cats.img netbsd.aout-GENERIC.gz</b>
+
+</pre>
+
+
+
+
+
+
+
 
 <p><br>
 <a name="openbsdinstall"></a>
@@ -882,8 +929,8 @@ enter <b><tt>rcons</tt></b> if you are using the graphical framebuffer,
 <a name="openbsdarcinstall"></a>
 <h3>OpenBSD/arc:</h3>
 
-It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
-emulator.
+It is possible to install and run OpenBSD/arc on an emulated Acer PICA-61 
+in the emulator.
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -1644,6 +1691,65 @@ generic kernel:<pre>
 
 
 
+
+
+
+
+
+<p><br>
+<a name="openbsdcatsinstall"></a>
+<h3>OpenBSD/cats:</h3>
+
+It is possible to install and run
+<a href="http://www.openbsd.org/cats.html">OpenBSD/cats</a>
+in GXemul.
+
+<p>To install OpenBSD/cats onto an emulated harddisk image,
+follow these instructions:
+
+<p>
+<ol>
+  <li>Create an empty harddisk image, which will be the root disk
+	that OpenBSD installs itself onto:<pre>
+	<b>dd if=/dev/zero of=obsd_cats.img bs=1024 count=1 seek=1900000</b>
+
+</pre>
+  <li>Download the entire cats directory from the ftp server:<pre>
+	<b>wget -np -l 0 -r <a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/">ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/</a></b>
+
+</pre>
+
+  <li>You now need to make an ISO image of the entire directory you downloaded.
+	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
+	already have <tt>mkisofs</tt> installed on your system, you need
+	to install it in order to do this.)<pre>
+	<b>mkisofs -allow-lowercase -o openbsd_cats_3.7.iso ftp.openbsd.org/pub/OpenBSD/3.7/cats</b>
+
+</pre>
+  <li>Start the emulator using this command line:<pre>
+	<b>gxemul -X -E cats -d obsd_cats.img -d openbsd_cats_3.7.iso  \
+	    ftp.openbsd.org/pub/OpenBSD/3.7/cats/bsd.rd</b>
+
+</pre>
+	and proceed like you would do if you were installing OpenBSD
+	on a real CATS. (Install onto wd0, don't configure the network,
+	choose to install distribution sets from <i>disk</i> wd1 (i.e.
+	not CDROM) partition a, path '/'.)
+</ol>
+
+<p>
+Once the install has finished, the following command should let you 
+boot from the harddisk image:
+<p>
+<pre>
+	<b>gxemul -X -E cats -d obsd_cats.img ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd</b>
+
+</pre>
+
+<p>When asked about which drive to boot from, enter <tt>wd0</tt>.
+
+
+<p>TODO: MAKEDEV bug?  mount /dev/wd0a /mnt; cd mnt/dev; sh MAKEDEV all; sh MAKEDEV wd; cd /; umount mnt; halt
 
 
 

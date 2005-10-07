@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.16 2005-10-05 21:17:32 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.17 2005-10-07 15:10:01 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -63,16 +63,11 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	 *  priority over device interrupts.)
  	 */
 #ifdef DYNTRANS_ARM
-	if (cpu->cd.arm.irq_asserted &&
-	    !(cpu->cd.arm.cpsr & ARM_FLAG_I))
+	if (cpu->cd.arm.irq_asserted && !(cpu->cd.arm.cpsr & ARM_FLAG_I))
 		arm_exception(cpu, ARM_EXCEPTION_IRQ);
 #endif
 
-#ifdef DYNTRANS_ARM
-	cached_pc = cpu->cd.arm.r[ARM_PC];
-#else
 	cached_pc = cpu->pc;
-#endif
 
 	cpu->n_translated_instrs = 0;
 	cpu->running_translated = 1;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.21 2005-10-07 10:26:04 debug Exp $
+ *  $Id: memory_arm.c,v 1.22 2005-10-07 15:10:01 debug Exp $
  *
  *
  *  TODO/NOTE: There are probably two solutions to the subpage access
@@ -56,9 +56,7 @@
 #include "armreg.h"
 
 
-extern int single_step;
-void arm_instr_nothing(struct cpu *cpu, struct arm_instr_call *);
-struct arm_instr_call nothing_call= { arm_instr_nothing, {0,0,0} };
+extern int quiet_mode;
 
 
 /*
@@ -153,18 +151,6 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	domain = (d >> 5) & 15;
 	dav = (cpu->cd.arm.dacr >> (domain * 2)) & 3;
 
-if (vaddr == 0 && !no_exceptions) {
-static int x = 0;
-x++;
-if (x > 1) {
-	fatal("\nNULL, pc=0x%08x\n", (int)cpu->pc);
-	single_step = 1;
-        cpu->running_translated = 0;
-        cpu->n_translated_instrs --;
-        cpu->cd.arm.next_ic = &nothing_call;
-	return 0;
-}}
-
 	switch (d & 3) {
 
 	case 0:	d_in_use = 0;
@@ -258,14 +244,16 @@ exception_return:
 	if (no_exceptions)
 		return 0;
 
-	fatal("{ arm memory fault: vaddr=0x%08x domain=%i dav=%i ap=%i "
-	    "access=%i user=%i", (int)vaddr, domain, dav, ap, access, user);
-
-	if (d_in_use)
-		fatal(" d=0x%08x", d);
-	if (d2_in_use)
-		fatal(" d2=0x%08x", d2);
-	fatal(" }\n");
+	if (!quiet_mode) {
+		fatal("{ arm memory fault: vaddr=0x%08x domain=%i dav=%i ap=%i "
+		    "access=%i user=%i", (int)vaddr, domain, dav, ap,
+		    access, user);
+		if (d_in_use)
+			fatal(" d=0x%08x", d);
+		if (d2_in_use)
+			fatal(" d2=0x%08x", d2);
+		fatal(" }\n");
+	}
 
 	if (instr)
 		arm_exception(cpu, ARM_EXCEPTION_PREF_ABT);

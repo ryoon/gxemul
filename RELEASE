@@ -1,24 +1,23 @@
-$Id: RELEASE,v 1.144 2005-09-13 20:56:44 debug Exp $
+$Id: RELEASE,v 1.145 2005-10-07 15:09:59 debug Exp $
 
-Working on post-0.3.5.
+Working on what will become 0.3.6.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.6
 ================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
 
-GXemul is an experimental instruction-level machine emulator. It can be used to
-run binary code for MIPS-based machines, regardless of host platform. Several
+GXemul is an experimental instruction-level machine emulator. Several
 emulation modes are available. For some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-(Non-MIPS emulation modes are also under development, but so far none of those
-modes has reached the completeness required to run unmodified operating
-systems.) 
+The processor architecture best emulated by GXemul is MIPS, but other
+architectures are also partially emulated. (The emulation of ARM
+processors is probably the most complete, apart from MIPS emulation.)
 
 I have verified that the following "guest" operating systems can run inside
 the emulator:
@@ -37,6 +36,11 @@ the emulator:
     NetBSD/cobalt 2.0.2                Cobalt
     NetBSD/evbmips 2.0.2               Malta 5Kc/4Kc evaluation board
     NetBSD/sgimips 2.0.2               SGI O2 ("IP32")
+    NetBSD/cats 2.0.2                  CATS (ARM)
+    OpenBSD/cats 3.7                   CATS (ARM)
+
+(Most of these are MIPS-based machines, except the CATS, which is an 
+ARM-based machine.)
 
 Some of these guest operating systems are easier to install and run than
 others. The best supported mode is the DECstation 5000/200 emulation mode, with
@@ -52,9 +56,16 @@ smaller than an instruction. What this means is that pipe-line stalls,
 penalties caused by branch-prediction misses or cache misses, and other
 micro-architectural effects are not simulated.)
 
-Changes between 0.3.5 and 0.3.X:
+The most imporant user-visible change between 0.3.5 and 0.3.6 is:
 
-	o)  ...
+    o)  The experimental ARM emulation mode is now working well enough
+        to install NetBSD/cats and OpenBSD/cats onto harddisk images.
+
+        (A bug is triggered at the end of the OpenBSD/cats installation,
+        so the MAKEDEV script must be run manually before booting the
+        first time.)
+
+There have also been lots of other small changes, too small to mention here.
 
 Files included in this release are:
 

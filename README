@@ -1,10 +1,10 @@
-$Id: README,v 1.81 2005-08-17 18:58:44 debug Exp $
+$Id: README,v 1.82 2005-10-07 15:09:59 debug Exp $
 
-Working on post-0.3.5.
+Working on what will become 0.3.6.
 
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.3.X
+Gavare's eXperimental Emulator   --   GXemul 0.3.6
 ==================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -13,15 +13,14 @@ Copyright (C) 2003-2005  Anders Gavare.
 Overview
 --------
 
-GXemul is an experimental instruction-level machine emulator. It can be used to
-run binary code for MIPS-based machines, regardless of host platform. Several
+GXemul is an experimental instruction-level machine emulator. Several
 emulation modes are available. For some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-(Non-MIPS emulation modes are also under development, but so far none of those
-modes has reached the completeness required to run unmodified operating
-systems.)
+The processor architecture best emulated by GXemul is MIPS, but other
+architectures are also partially emulated. (The emulation of ARM
+processors is probably the most complete, apart from MIPS emulation.)
 
 
 Quick start

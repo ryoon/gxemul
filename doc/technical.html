@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.62 2005-08-16 05:15:24 debug Exp $
+$Id: technical.html,v 1.63 2005-10-07 15:10:00 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -64,7 +64,7 @@ SUCH DAMAGE.
 <a name="speed"></a>
 <h3>Speed and emulation modes</h3>
 
-So, how fast is GXemul? There is no good answer to this. There is 
+So, how fast is GXemul? There is no short answer to this. There is 
 especially no answer to the question <b>What is the slowdown factor?</b>, 
 because the host architecture and emulated architecture can usually not be 
 compared just like that.
@@ -89,6 +89,8 @@ with the emulator. Typical examples would be "How long does it take to
 install NetBSD?", or "How long does it take to compile XYZ inside NetBSD 
 in the emulator?".
 
+<p>So, how fast is it? :-)&nbsp;&nbsp;&nbsp;Answer: it varies.
+
 <p>The emulation technique used varies depending on which processor type 
 is being emulated. (One of my main goals with GXemul is to experiment with 
 different kinds of emulation, so these might change in the future.)
@@ -106,12 +108,12 @@ different kinds of emulation, so these might change in the future.)
 	line option.)
   <p>
   <li><b>All other modes:</b><br>
-	These are under development, using a new dynamic translation
-	system. This system does not use host-specific backends.
-	Speed is slower than real binary translation, but faster than
-	traditional interpretation, and with some tricks it will hopefully
-	still give reasonable speed. These modes don't really work yet,
-	and are not enabled by default in the stable release.
+	These use a kind of dynamic translation system. (This system does
+	not use host-specific backends, so it is not "recompilation" or
+	anything like that.) Speed is slower than real binary translation,
+	but faster than traditional interpretation, and with some tricks
+	it will hopefully still give reasonable speed. ARM emulation uses
+	this kind of translation, for example.
 </ul>
 
 

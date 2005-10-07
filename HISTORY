@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.979 2005-10-05 21:17:31 debug Exp $
+$Id: HISTORY,v 1.980 2005-10-07 10:26:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2288,3 +2288,4 @@ Changelog for GXemul:
 20051003	Various minor updates. (Trying to find the bug(s).)
 20051004	Continuing on the ARM stuff.
 20051005	More ARM-related fixes.
+20051007	Continuing... found and fixed 1 ARM memory bug.

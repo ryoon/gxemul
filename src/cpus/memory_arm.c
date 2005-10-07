@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.20 2005-10-05 21:17:32 debug Exp $
+ *  $Id: memory_arm.c,v 1.21 2005-10-07 10:26:04 debug Exp $
  *
  *
  *  TODO/NOTE: There are probably two solutions to the subpage access
@@ -115,9 +115,10 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	uint64_t *return_addr, int flags)
 {
 	unsigned char descr[4];
-	uint32_t vaddr = vaddr64;
-	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba;
-	int instr = flags & FLAG_INSTR, d2_in_use = 0, d_in_use = 1;
+	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba, vaddr = vaddr64;
+	int d2_in_use = 0, d_in_use = 1;
+	int instr = flags & FLAG_INSTR;
+	int writeflag = (flags & FLAG_WRITEFLAG)? 1 : 0;
 	int useraccess = flags & MEMORY_USER_ACCESS;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int user = (cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32;
@@ -125,7 +126,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	int fs = 2;		/*  fault status (2 = terminal exception)  */
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
-		*return_addr = vaddr & 0xffffffff;
+		*return_addr = vaddr;
 		return 2;
 	}
 
@@ -167,6 +168,7 @@ if (x > 1) {
 	switch (d & 3) {
 
 	case 0:	d_in_use = 0;
+		domain = 0;
 		fs = FAULT_TRANS_S;
 		goto exception_return;
 
@@ -219,7 +221,7 @@ if (x > 1) {
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */
-			fatal("WARNING: 1 KB page! Not really implemented yet.\n");
+			fatal("WARNING: 1 KB page! Not implemented yet.\n");
 			ap = (d2 >> 4) & 3;
 			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
@@ -229,7 +231,7 @@ if (x > 1) {
 			goto exception_return;
 		}
 		access = arm_check_access(cpu, ap, dav, user);
-		if (access)
+		if (access > writeflag)
 			return access;
 		fs = FAULT_PERM_P;
 		goto exception_return;
@@ -242,7 +244,7 @@ if (x > 1) {
 		}
 		ap = (d >> 10) & 3;
 		access = arm_check_access(cpu, ap, dav, user);
-		if (access)
+		if (access > writeflag)
 			return access;
 		fs = FAULT_PERM_S;
 		goto exception_return;
@@ -265,10 +267,14 @@ exception_return:
 		fatal(" d2=0x%08x", d2);
 	fatal(" }\n");
 
-	cpu->cd.arm.far = vaddr;
-	cpu->cd.arm.fsr = (domain << 4) | fs;
+	if (instr)
+		arm_exception(cpu, ARM_EXCEPTION_PREF_ABT);
+	else {
+		cpu->cd.arm.far = vaddr;
+		cpu->cd.arm.fsr = (domain << 4) | fs;
+		arm_exception(cpu, ARM_EXCEPTION_DATA_ABT);
+	}
 
-	arm_exception(cpu, ARM_EXCEPTION_DATA_ABT);
 	return 0;
 }
 

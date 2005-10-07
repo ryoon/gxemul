@@ -25,11 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.20 2005-10-05 21:17:32 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.21 2005-10-07 10:26:04 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
- *  TODO: Most things.
+ *  TODO: Most things. For example:
+ *
+ *	o)  Add actual support for the fcom serial port.
+ *	o)  FIQs.
+ *	o)  Lots of other things.
  */
 
 #include <stdio.h>
@@ -49,7 +53,7 @@
 #include "dc21285reg.h"
 
 #define	DEV_FOOTBRIDGE_TICK_SHIFT	14
-#define	DEV_FOOTBRIDGE_LENGTH		0x1000		/*  TODO  */
+#define	DEV_FOOTBRIDGE_LENGTH		0x400
 
 
 /*
@@ -94,6 +98,9 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_footbridge_isa_access():
+ *
+ *  NetBSD seems to read 0x79000000 to find out which ISA interrupt occurred,
+ *  a quicker way than dealing with legacy 0x20/0xa0 ISA ports.
  */
 int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -108,8 +115,10 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE)
 		fatal("[ footbridge_isa: WARNING/TODO: write! ]\n");
 
-	/*  NetBSD seems to want 0x20 + x, where x is the highest leveled
-	    ISA interrupt which is currently triggered.  */
+	/*
+	 *  NetBSD seems to want a value of 0x20 + x, where x is the highest
+	 *  priority ISA interrupt which is currently asserted and not masked.
+	 */
 
 	for (x=0; x<16; x++) {
 		if (x == 2)
@@ -138,6 +147,11 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_footbridge_pci_access():
+ *
+ *  The Footbridge PCI configuration space is not implemented as "address +
+ *  data port" pair, but instead a 24-bit (16 MB) chunk of physical memory
+ *  decodes as the address. This function translates that into bus_pci_access
+ *  calls.
  */
 int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -193,6 +207,8 @@ int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_footbridge_access():
+ *
+ *  The DC21285 registers.
  */
 int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -363,6 +379,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			fatal("[ footbridge: write to 0x%x: 0x%llx ]\n",
 			    (int)relative_addr, (long long)idata);
 		}
+		exit(1);
 	}
 
 	if (writeflag == MEM_READ)
@@ -388,23 +405,22 @@ int devinit_footbridge(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct footbridge_data));
 
+	/*  DC21285 register access:  */
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_FOOTBRIDGE_LENGTH,
 	    dev_footbridge_access, d, MEM_DEFAULT, NULL);
 
+	/*  ISA interrupt status word:  */
 	memory_device_register(devinit->machine->memory, "footbridge_isa",
 	    0x79000000, 8, dev_footbridge_isa_access, d, MEM_DEFAULT, NULL);
 
-	/*  For the "fcom" console:  */
+	/*  The "fcom" console:  */
 	d->console_handle = console_start_slave(devinit->machine, "fcom");
 
-	for (i=0; i<4; i++) {
-		d->timer_control[i] = TIMER_MODE_PERIODIC;
-		d->timer_load[i] = TIMER_MAX_VAL;
-	}
-
+	/*  A PCI bus:  */
 	d->pcibus = bus_pci_init(devinit->irq_nr);
 
+	/*  ... with some default devices for known machine types:  */
 	switch (devinit->machine->machine_type) {
 	case MACHINE_CATS:
 		bus_pci_add(devinit->machine, d->pcibus,
@@ -426,10 +442,16 @@ int devinit_footbridge(struct devinit *devinit)
 		exit(1);
 	}
 
+	/*  PCI configuration space:  */
 	memory_device_register(devinit->machine->memory,
 	    "footbridge_pci", pci_addr, 0x1000000,
 	    dev_footbridge_pci_access, d, MEM_DEFAULT, NULL);
 
+	/*  Timer ticks:  */
+	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
+		d->timer_control[i] = TIMER_MODE_PERIODIC;
+		d->timer_load[i] = TIMER_MAX_VAL;
+	}
 	machine_add_tickfunction(devinit->machine,
 	    dev_footbridge_tick, d, DEV_FOOTBRIDGE_TICK_SHIFT);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.23 2005-10-05 20:00:27 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.24 2005-10-07 10:26:03 debug Exp $
  *
  *  ARM instructions.
  *
@@ -696,7 +696,8 @@ X(msr_imm_spsr)
 	/*  Synchronize the program counter:  */
 	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	old_pc = cpu->pc = cpu->cd.arm.r[ARM_PC];
 printf("msr_spsr: old pc = 0x%08x\n", old_pc);
@@ -801,7 +802,8 @@ X(swi_useremul)
 	/*  Synchronize the program counter:  */
 	uint32_t old_pc, low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	old_pc = cpu->pc = cpu->cd.arm.r[ARM_PC];
 
@@ -828,7 +830,8 @@ X(swi)
 	/*  Synchronize the program counter:  */
 	uint32_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
@@ -851,7 +854,8 @@ X(swp)
 	/*  Synchronize the program counter:  */
 	uint32_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
@@ -878,7 +882,8 @@ X(swpb)
 	/*  Synchronize the program counter:  */
 	uint32_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	    << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
@@ -1130,7 +1135,7 @@ X(bdt_store)
 			value = cpu->cd.arm.r[i];
 
 		if (i == ARM_PC)
-			value += 12;	/*  TODO: 8 on some ARMs?  */
+			value += 12;	/*  NOTE/TODO: 8 on some ARMs  */
 
 		if (p_bit) {
 			if (u_bit)

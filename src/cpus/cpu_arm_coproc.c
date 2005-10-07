@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.8 2005-10-05 20:00:27 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.9 2005-10-07 10:26:03 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -122,6 +122,7 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 				    "zero? 0x%08x ]\n", cpu->cd.arm.ttb);
 			cpu->cd.arm.ttb &= 0xffffc000;
 		}
+cpu->invalidate_translation_caches_paddr(cpu, 0, INVALIDATE_ALL);
 		break;
 
 	case 3:	/*  Domain Access Control Register:  */
@@ -129,6 +130,7 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			cpu->cd.arm.r[rd] = cpu->cd.arm.dacr;
 		else
 			cpu->cd.arm.dacr = cpu->cd.arm.r[rd];
+cpu->invalidate_translation_caches_paddr(cpu, 0, INVALIDATE_ALL);
 		break;
 
 	case 5:	/*  Fault Status Register:  */
@@ -153,6 +155,7 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		}
 		/*  debug("[ arm_coproc_15: cache op: TODO ]\n");  */
 		/*  TODO:  */
+cpu->invalidate_translation_caches_paddr(cpu, 0, INVALIDATE_ALL);
 		break;
 
 	case 8:	/*  TLB functions:  */

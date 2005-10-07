@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.563 2005-10-03 19:08:14 debug Exp $
+ *  $Id: machine.c,v 1.564 2005-10-07 10:26:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1435,7 +1435,7 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
  *  Footbridge interrupts:
  *
  *  0..31  = footbridge interrupt
- *  32..47 = ISA (connected to IRQ_IN_L2 on CATS, L3 on Netwinder)
+ *  32..47 = ISA (connected to IRQ_IN_L2 on CATS, L3 on NetWinder)
  *  64     = reassert
  */
 void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
@@ -1448,17 +1448,17 @@ void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 
 	if (irq_nr >= 32 && irq_nr < 32 + 8) {
-		int mask = 1 << (irq_nr & 7);
+		int mm = 1 << (irq_nr & 7);
 		if (assrt)
-			m->isa_pic_data.pic1->irr |= mask;
+			m->isa_pic_data.pic1->irr |= mm;
 		else
-			m->isa_pic_data.pic1->irr &= ~mask;
+			m->isa_pic_data.pic1->irr &= ~mm;
 	} else if (irq_nr >= 32+8 && irq_nr < 32+16) {
-		int mask = 1 << (irq_nr & 7);
+		int mm = 1 << (irq_nr & 7);
 		if (assrt)
-			m->isa_pic_data.pic2->irr |= mask;
+			m->isa_pic_data.pic2->irr |= mm;
 		else
-			m->isa_pic_data.pic2->irr &= ~mask;
+			m->isa_pic_data.pic2->irr &= ~mm;
 	}
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
@@ -4575,6 +4575,10 @@ Not yet.
 	case MACHINE_CATS:
 		machine->machine_name = "CATS evaluation board";
 
+		if (machine->physical_ram_in_mb > 256)
+			fprintf(stderr, "WARNING! Real CATS machines cannot"
+			    " have more than 256 MB RAM. Continuing anyway.\n");
+
 		machine->md_int.footbridge_data =
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
@@ -4664,7 +4668,11 @@ Not yet.
 		break;
 
 	case MACHINE_NETWINDER:
-		machine->machine_name = "Netwinder";
+		machine->machine_name = "NetWinder";
+
+		if (machine->physical_ram_in_mb > 256)
+			fprintf(stderr, "WARNING! Real NetWinders cannot"
+			    " have more than 256 MB RAM. Continuing anyway.\n");
 
 		machine->md_int.footbridge_data =
 		    device_add(machine, "footbridge addr=0x42000000");
@@ -5715,8 +5723,8 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
-	/*  Netwinder:  */
-	me = machine_entry_new("Netwinder", ARCH_ARM, MACHINE_NETWINDER, 1, 0);
+	/*  NetWinder:  */
+	me = machine_entry_new("NetWinder", ARCH_ARM, MACHINE_NETWINDER, 1, 0);
 	me->aliases[0] = "netwinder";
 	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.27 2005-10-05 21:17:32 debug Exp $
+ *  $Id: cpu_arm.c,v 1.28 2005-10-07 10:26:03 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -539,8 +539,7 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 		retaddr += 4;
 		break;
 	case ARM_EXCEPTION_PREF_ABT:
-		debug("PREFETCH ABORT, far=0x%08x fsr=0x%02x",
-		    cpu->cd.arm.far, cpu->cd.arm.fsr);
+		debug("PREFETCH ABORT");
 		retaddr += 4;
 		break;
 	case ARM_EXCEPTION_IRQ:

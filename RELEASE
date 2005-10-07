@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.146 2005-10-07 15:44:02 debug Exp $
+$Id: RELEASE,v 1.147 2005-10-07 16:25:07 debug Exp $
 
 Working on what will become 0.3.6.
 
@@ -56,13 +56,13 @@ smaller than an instruction. What this means is that pipe-line stalls,
 penalties caused by branch-prediction misses or cache misses, and other
 micro-architectural effects are not simulated.)
 
-The most imporant user-visible change between 0.3.5 and 0.3.6 is:
+The most imporant user-visible change between release 0.3.5 and 0.3.6 is:
 
     o)  The experimental ARM emulation mode is now working well enough
         to install NetBSD/cats and OpenBSD/cats onto harddisk images.
 
         (A bug is triggered at the end of the OpenBSD/cats installation,
-        so the MAKEDEV script must be run manually before booting the
+        so the MAKEDEV script must be run manually before booting for the
         first time, and I have not had time to do any performance
         optimizations yet, so the ARM emulation mode is not very fast.)
 

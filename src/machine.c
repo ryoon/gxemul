@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.564 2005-10-07 10:26:02 debug Exp $
+ *  $Id: machine.c,v 1.565 2005-10-07 22:10:50 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4582,6 +4582,9 @@ Not yet.
 		machine->md_int.footbridge_data =
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
+
+		/*  NetBSD and OpenBSD clean their caches here:  */
+		dev_ram_init(mem, 0x50000000, 0x4000, DEV_RAM_RAM, 0);
 
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);

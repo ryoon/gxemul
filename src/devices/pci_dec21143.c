@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21143.c,v 1.8 2005-02-26 18:00:38 debug Exp $
+ *  $Id: pci_dec21143.c,v 1.9 2005-10-07 22:10:52 debug Exp $
  *
  *  DEC 21143 PCI ethernet.
  *
@@ -59,7 +59,8 @@ uint32_t pci_dec21143_rr(int reg)
 		return 0xffffffff;
 	case 0x08:
 		/*  Revision 4.1  */
-		return PCI_CLASS_CODE(PCI_CLASS_NETWORK, PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x41;
+		return PCI_CLASS_CODE(PCI_CLASS_NETWORK,
+		    PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x41;
 	case 0x10:
 		/*  1ca00000, I/O space  (I have no idea about these...)  */
 		return 0x9ca00001;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.25 2005-10-07 15:10:01 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.26 2005-10-07 22:10:51 debug Exp $
  *
  *  ARM instructions.
  *
@@ -556,15 +556,23 @@ X(mla)
 	    rs = (iw >> 8) & 15,  rm = iw & 15;
 	cpu->cd.arm.r[rd] = cpu->cd.arm.r[rm] * cpu->cd.arm.r[rs]
 	    + cpu->cd.arm.r[rn];
-	if (iw & 0x00100000) {
-		cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
-		if (cpu->cd.arm.r[rd] == 0)
-			cpu->cd.arm.cpsr |= ARM_FLAG_Z;
-		if (cpu->cd.arm.r[rd] & 0x80000000)
-			cpu->cd.arm.cpsr |= ARM_FLAG_N;
-	}
 }
 Y(mla)
+X(mlas)
+{
+	/*  xxxx0000 00ASdddd nnnnssss 1001mmmm (Rd,Rm,Rs[,Rn])  */
+	uint32_t iw = ic->arg[0];
+	int rd = (iw >> 16) & 15, rn = (iw >> 12) & 15,
+	    rs = (iw >> 8) & 15,  rm = iw & 15;
+	cpu->cd.arm.r[rd] = cpu->cd.arm.r[rm] * cpu->cd.arm.r[rs]
+	    + cpu->cd.arm.r[rn];
+	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (cpu->cd.arm.r[rd] == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+	if (cpu->cd.arm.r[rd] & 0x80000000)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+}
+Y(mlas)
 
 
 /*
@@ -1178,14 +1186,27 @@ X(bdt_store)
 	int u_bit = iw & 0x00800000;
 	int s_bit = iw & 0x00400000;
 	int w_bit = iw & 0x00200000;
-	int i;
+	int i, saved_mode = 0;
 
 	if (s_bit) {
-		/*  Store USR registers:  */
-		if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32) {
-			fatal("[ bdt_store: s-bit: in usermode? ]\n");
-			s_bit = 0;
+		/*  Store USR (or saved) registers:  */
+		uint32_t spsr;
+		switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
+		case ARM_MODE_FIQ32:
+			spsr = cpu->cd.arm.spsr_fiq; break;
+		case ARM_MODE_ABT32:
+			spsr = cpu->cd.arm.spsr_abt; break;
+		case ARM_MODE_UND32:
+			spsr = cpu->cd.arm.spsr_und; break;
+		case ARM_MODE_IRQ32:
+			spsr = cpu->cd.arm.spsr_irq; break;
+		case ARM_MODE_SVC32:
+			spsr = cpu->cd.arm.spsr_svc; break;
+		default:fatal("bdt_store: unimplemented mode %i\n",
+			    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
+			exit(1);
 		}
+		saved_mode = spsr & ARM_FLAG_MODE;
 	}
 
 	/*  Synchronize the program counter:  */
@@ -1202,10 +1223,37 @@ X(bdt_store)
 			continue;
 		}
 
-		if (s_bit && i >= 8 && i <= 14)
-			value = cpu->cd.arm.default_r8_r14[i-8];
-		else
-			value = cpu->cd.arm.r[i];
+		value = cpu->cd.arm.r[i];
+
+		if (s_bit) {
+			switch (saved_mode) {
+			case ARM_MODE_FIQ32:
+				if (i >= 8 && i <= 14)
+					value = cpu->cd.arm.fiq_r8_r14[i-8];
+				break;
+			case ARM_MODE_ABT32:
+				if (i >= 13 && i <= 14)
+					value = cpu->cd.arm.abt_r13_r14[i-13];
+				break;
+			case ARM_MODE_UND32:
+				if (i >= 13 && i <= 14)
+					value = cpu->cd.arm.und_r13_r14[i-13];
+				break;
+			case ARM_MODE_IRQ32:
+				if (i >= 13 && i <= 14)
+					value = cpu->cd.arm.irq_r13_r14[i-13];
+				break;
+			case ARM_MODE_SVC32:
+				if (i >= 13 && i <= 14)
+					value = cpu->cd.arm.svc_r13_r14[i-13];
+				break;
+			case ARM_MODE_USR32:
+			case ARM_MODE_SYS32:
+				if (i >= 8 && i <= 14)
+					value = cpu->cd.arm.default_r8_r14[i-8];
+				break;
+			}
+		}
 
 		if (i == ARM_PC)
 			value += 12;	/*  NOTE/TODO: 8 on some ARMs  */
@@ -1500,7 +1548,7 @@ X(to_be_translated)
 	int any_pc_reg;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
-	/*  Figure out the (virtual) address of the instruction:  */
+	/*  Figure out the address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.cur_ic_page)
 	    / sizeof(struct arm_instr_call);
 	addr = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
@@ -1511,7 +1559,6 @@ X(to_be_translated)
 
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.arm.host_load[addr >> 12];
-
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
 		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
@@ -1529,9 +1576,6 @@ X(to_be_translated)
 		iword = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
 	else
 		iword = ib[3] + (ib[2]<<8) + (ib[1]<<16) + (ib[0]<<24);
-
-	/*  fatal("{ ARM translating pc=0x%08x iword=0x%08x }\n",
-	    addr, iword);  */
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -1585,7 +1629,10 @@ X(to_be_translated)
 			 *  xxxx0000 00ASdddd nnnnssss 1001mmmm (Rd,Rm,Rs[,Rn])
 			 */
 			if (iword & 0x00200000) {
-				ic->f = cond_instr(mla);
+				if (s_bit)
+					ic->f = cond_instr(mlas);
+				else
+					ic->f = cond_instr(mla);
 				ic->arg[0] = iword;
 			} else {
 				if (s_bit)
@@ -1743,13 +1790,14 @@ X(to_be_translated)
 		else
 			regform = 0;
 
-		if (!regform) {
+		if (regform)
+			ic->arg[1] = iword;
+		else {
 			imm = iword & 0xff;
 			while (r8-- > 0)
 				imm = (imm >> 2) | ((imm & 3) << 30);
 			ic->arg[1] = imm;
-		} else
-			ic->arg[1] = iword;
+		}
 
 		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
 		ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);

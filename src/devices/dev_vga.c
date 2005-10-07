@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.80 2005-09-30 14:07:47 debug Exp $
+ *  $Id: dev_vga.c,v 1.81 2005-10-07 22:10:52 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -474,7 +474,8 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 	vga_update_cursor(cpu->machine, d);
 
 	/*  TODO: text vs graphics tick?  */
-	memory_device_dyntrans_access(cpu, cpu->mem, extra, &low, &high);
+	memory_device_dyntrans_access(cpu, cpu->mem, extra,
+	    (uint64_t *) &low, (uint64_t *) &high);
 
 	if (low != -1) {
 		int base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)

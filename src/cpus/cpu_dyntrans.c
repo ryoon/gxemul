@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.18 2005-10-07 15:19:48 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.19 2005-10-07 22:10:51 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -690,9 +690,17 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 /*
  *  XXX_invalidate_translation_caches_paddr():
  *
- *  Invalidate all entries matching a specific physical address. (Or, if
- *  the INVALIDATE_ALL flag is set, then all translation entries are
- *  invalidated.)
+ *  Invalidate all entries matching a specific physical address, a specific
+ *  virtual address, or ALL entries.
+ *
+ *  flags should be one of
+ *	INVALIDATE_PADDR  INVALIDATE_VADDR  or  INVALIDATE_ALL
+ *
+ *  In the case when all translations are invalidated, paddr doesn't need
+ *  to be supplied.
+ *
+ *  NOTE/TODO: Poorly choosen name for this function, as it can
+ *             invalidate based on virtual address as well.
  */
 void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr, int flags)
 {
@@ -702,12 +710,15 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr, int flags)
 #else
 	uint64_t
 #endif
-	    paddr_page = paddr & ~(DYNTRANS_PAGESIZE - 1);
+	    addr_page = paddr & ~(DYNTRANS_PAGESIZE - 1);
 
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid &&
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid && (
 		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
-		    paddr_page || flags & INVALIDATE_ALL)) {
+		    addr_page && flags & INVALIDATE_PADDR) ||
+		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page ==
+		    addr_page && flags & INVALIDATE_VADDR) ||
+		    flags & INVALIDATE_ALL) ) {
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
 			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page,
 			    flags);

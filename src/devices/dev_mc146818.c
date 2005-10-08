@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.72 2005-08-02 07:56:37 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.73 2005-10-08 22:54:02 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -54,7 +54,7 @@
 
 #define	to_bcd(x)	( ((x)/10) * 16 + ((x)%10) )
 
-/*  #define MC146818_DEBUG  */
+#define MC146818_DEBUG
 
 #define	TICK_SHIFT	14
 
@@ -303,8 +303,9 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Different ways of accessing the registers:  */
 	switch (d->access_style) {
+	case MC146818_CATS:
 	case MC146818_PC_CMOS:
-		if (relative_addr == 0x70 || relative_addr == 0x00) {
+		if ((relative_addr & 1) == 0x00) {
 			if (writeflag == MEM_WRITE) {
 				d->last_addr = data[0];
 				return 1;
@@ -312,12 +313,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 				data[0] = d->last_addr;
 				return 1;
 			}
-		} else if (relative_addr == 0x71 || relative_addr == 0x01)
+		} else
 			relative_addr = d->last_addr * 4;
-		else {
-			fatal("[ mc146818: not accessed as an "
-			    "MC146818_PC_CMOS device! ]\n");
-		}
 		break;
 	case MC146818_ARC_NEC:
 		if (relative_addr == 0x01) {
@@ -630,6 +627,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 
 	dev_len = DEV_MC146818_LENGTH;
 	switch (access_style) {
+	case MC146818_CATS:
 	case MC146818_PC_CMOS:
 		dev_len = 2;
 		break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.565 2005-10-07 22:10:50 debug Exp $
+ *  $Id: machine.c,v 1.566 2005-10-08 22:53:59 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4591,7 +4591,7 @@ Not yet.
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 
-		device_add(machine, "pccmos addr=0x7c000070");
+		device_add(machine, "pccmos addr=0x7c000072");
 
 		if (machine->use_x11) {
 			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,

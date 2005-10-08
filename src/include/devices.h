@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.184 2005-10-03 01:07:48 debug Exp $
+ *  $Id: devices.h,v 1.185 2005-10-08 22:54:04 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -374,6 +374,7 @@ struct malta_data {
 #define	MC146818_ARC_NEC	2
 #define	MC146818_ARC_JAZZ	3
 #define	MC146818_SGI		4
+#define	MC146818_CATS		5
 /*  see mc146818reg.h for more info  */
 void dev_mc146818_tick(struct cpu *cpu, void *);
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.983 2005-10-08 01:09:49 debug Exp $
+$Id: HISTORY,v 1.984 2005-10-08 22:53:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2302,3 +2302,4 @@ Changelog for GXemul:
 
 20051008	The bug was not because of faulty ARM documentation after all,
 		but it was related to those parts of the code.
+		Fixing the RTC (dev_mc146818) to work with CATS.

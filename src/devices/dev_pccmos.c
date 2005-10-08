@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.4 2005-10-04 04:11:14 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.5 2005-10-08 22:54:02 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -126,7 +126,7 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 int devinit_pccmos(struct devinit *devinit)
 {
 	struct pccmos_data *d = malloc(sizeof(struct pccmos_data));
-	int irq_nr;
+	int irq_nr, type = MC146818_PC_CMOS;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -144,6 +144,7 @@ int devinit_pccmos(struct devinit *devinit)
 	switch (devinit->machine->machine_type) {
 	case MACHINE_CATS:
 		irq_nr = 32 + 8;
+		type = MC146818_CATS;
 		break;
 	case MACHINE_X86:
 		irq_nr = 16;	/*  "No" irq  */
@@ -154,7 +155,7 @@ int devinit_pccmos(struct devinit *devinit)
 	}
 
 	dev_mc146818_init(devinit->machine, devinit->machine->memory,
-	    PCCMOS_MC146818_FAKE_ADDR, irq_nr, MC146818_PC_CMOS, 1);
+	    PCCMOS_MC146818_FAKE_ADDR, irq_nr, type, 1);
 
 	return 1;
 }

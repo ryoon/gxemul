@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.7 2005-09-26 00:08:03 debug Exp $
+#  $Id: Makefile.skel,v 1.8 2005-10-08 22:54:01 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -36,10 +36,10 @@ cpu_alpha_instr.c: cpu_alpha_instr_alu.c tmp_alpha_misc.c
 tmp_alpha_misc.c: cpu_alpha_instr_loadstore.c generate_alpha_misc
 	./generate_alpha_misc > tmp_alpha_misc.c
 
-tmp_alpha_head.c:
+tmp_alpha_head.c: generate_head
 	./generate_head alpha Alpha > tmp_alpha_head.c
 
-tmp_alpha_tail.c:
+tmp_alpha_tail.c: generate_tail
 	./generate_tail alpha Alpha > tmp_alpha_tail.c
 
 
@@ -51,13 +51,16 @@ cpu_arm.o: cpu_arm.c cpu_arm_instr.c cpu_dyntrans.c ../memory_rw.c \
 tmp_arm_loadstore.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
 	./generate_arm_loadstore > tmp_arm_loadstore.c
 
-tmp_arm_dpi.c: cpu_arm_instr_dpi.c
+tmp_arm_dpi.c: cpu_arm_instr_dpi.c generate_arm_dpi
 	./generate_arm_dpi > tmp_arm_dpi.c
 
-tmp_arm_head.c:
+tmp_arm_r.c: generate_arm_r
+	./generate_arm_r > tmp_arm_r.c
+
+tmp_arm_head.c: generate_head
 	./generate_head arm ARM > tmp_arm_head.c
 
-tmp_arm_tail.c:
+tmp_arm_tail.c: generate_tail
 	./generate_tail arm ARM > tmp_arm_tail.c
 
 
@@ -66,10 +69,10 @@ tmp_arm_tail.c:
 cpu_avr.o: cpu_avr.c cpu_avr_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_avr_head.c tmp_avr_tail.c
 
-tmp_avr_head.c:
+tmp_avr_head.c: generate_head
 	./generate_head avr AVR > tmp_avr_head.c
 
-tmp_avr_tail.c:
+tmp_avr_tail.c: generate_tail
 	./generate_tail avr AVR > tmp_avr_tail.c
 
 
@@ -78,10 +81,10 @@ tmp_avr_tail.c:
 cpu_hppa.o: cpu_hppa.c cpu_hppa_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_hppa_head.c tmp_hppa_tail.c
 
-tmp_hppa_head.c:
+tmp_hppa_head.c: generate_head
 	./generate_head hppa HPPA > tmp_hppa_head.c
 
-tmp_hppa_tail.c:
+tmp_hppa_tail.c: generate_tail
 	./generate_tail hppa HPPA > tmp_hppa_tail.c
 
 
@@ -90,10 +93,10 @@ tmp_hppa_tail.c:
 cpu_i960.o: cpu_i960.c cpu_i960_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_i960_head.c tmp_i960_tail.c
 
-tmp_i960_head.c:
+tmp_i960_head.c: generate_head
 	./generate_head i960 i960 > tmp_i960_head.c
 
-tmp_i960_tail.c:
+tmp_i960_tail.c: generate_tail
 	./generate_tail i960 i960 > tmp_i960_tail.c
 
 
@@ -102,10 +105,10 @@ tmp_i960_tail.c:
 cpu_ia64.o: cpu_ia64.c cpu_ia64_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_ia64_head.c tmp_ia64_tail.c
 
-tmp_ia64_head.c:
+tmp_ia64_head.c: generate_head
 	./generate_head ia64 IA64 > tmp_ia64_head.c
 
-tmp_ia64_tail.c:
+tmp_ia64_tail.c: generate_tail
 	./generate_tail ia64 IA64 > tmp_ia64_tail.c
 
 
@@ -114,10 +117,10 @@ tmp_ia64_tail.c:
 cpu_m68k.o: cpu_m68k.c cpu_m68k_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_m68k_head.c tmp_m68k_tail.c
 
-tmp_m68k_head.c:
+tmp_m68k_head.c: generate_head
 	./generate_head m68k M68K > tmp_m68k_head.c
 
-tmp_m68k_tail.c:
+tmp_m68k_tail.c: generate_tail
 	./generate_tail m68k M68K > tmp_m68k_tail.c
 
 
@@ -138,10 +141,10 @@ cpu_ppc_instr.c: tmp_ppc_loadstore.c
 tmp_ppc_loadstore.c: cpu_ppc_instr_loadstore.c generate_ppc_loadstore
 	./generate_ppc_loadstore > tmp_ppc_loadstore.c
 
-tmp_ppc_head.c:
+tmp_ppc_head.c: generate_head
 	./generate_head ppc PPC > tmp_ppc_head.c
 
-tmp_ppc_tail.c:
+tmp_ppc_tail.c: generate_tail
 	./generate_tail ppc PPC > tmp_ppc_tail.c
 
 
@@ -150,10 +153,10 @@ tmp_ppc_tail.c:
 cpu_sh.o: cpu_sh.c cpu_sh_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_sh_head.c tmp_sh_tail.c
 
-tmp_sh_head.c:
+tmp_sh_head.c: generate_head
 	./generate_head sh SH > tmp_sh_head.c
 
-tmp_sh_tail.c:
+tmp_sh_tail.c: generate_tail
 	./generate_tail sh SH > tmp_sh_tail.c
 
 
@@ -162,10 +165,10 @@ tmp_sh_tail.c:
 cpu_sparc.o: cpu_sparc.c cpu_sparc_instr.c cpu_dyntrans.c ../memory_rw.c \
 	tmp_sparc_head.c tmp_sparc_tail.c
 
-tmp_sparc_head.c:
+tmp_sparc_head.c: generate_head
 	./generate_head sparc SPARC > tmp_sparc_head.c
 
-tmp_sparc_tail.c:
+tmp_sparc_tail.c: generate_tail
 	./generate_tail sparc SPARC > tmp_sparc_tail.c
 
 
@@ -176,10 +179,10 @@ cpu_x86.o: cpu_x86.c cpu_x86_instr.c cpu_dyntrans.c ../memory_rw.c \
 
 memory_x86.c: ../memory_rw.c
 
-tmp_x86_head.c:
+tmp_x86_head.c: generate_head
 	./generate_head x86 x86 > tmp_x86_head.c
 
-tmp_x86_tail.c:
+tmp_x86_tail.c: generate_tail
 	./generate_tail x86 x86 > tmp_x86_tail.c
 
 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.91 2005-10-07 15:44:03 debug Exp $
+$Id: guestoses.html,v 1.92 2005-10-08 22:53:58 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -775,12 +775,13 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 	CDROM device to install from.)
 </ol>
 
-<p>
-If everything worked, NetBSD should now be installed on the disk image.
+<p>If everything worked, NetBSD should now be installed on the disk image.
 Use the following command line to boot the emulated CATS machine:<pre>
 	<b>gxemul -X -E cats -d nbsd_cats.img netbsd.aout-GENERIC.gz</b>
 
 </pre>
+
+<p>When asked about the root device, enter <tt>wd0</tt>.
 
 
 
@@ -1040,30 +1041,19 @@ follow these instructions:
 	not CDROM) partition a, path '/'.)
 </ol>
 
-<p><b>NOTE (<font color="#f00000">2005-10-07</font>):</b> The ARM
-emulation mode is very new, I haven't had time to find and fix all bugs
-yet. During install, it seems that the MAKEDEV script dumps core. Before
-you can boot OpenBSD/cats for the first time, you need to manually run the
-MAKEDEV script: <pre>
-	<b>gxemul -X -E cats -d obsd_cats.img ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd</b>
-	(press s, for Shell)
-	mount /dev/wd0a /mnt; cd mnt/dev
-	sh MAKEDEV all
-	sh MAKEDEV wd
-	cd /; umount mnt; halt
-</pre>
-Hopefully this isn't a serious bug.
+<p><b>NOTE:</b> Make sure that you <tt>sync</tt> and <tt>reboot</tt>
+correctly, or the <tt>/dev</tt> nodes may not have been written correctly
+to disk.
 
-<p>
-Once the install has finished, the following command should let you 
+<p>Once the install has finished, the following command should let you 
 boot from the harddisk image:
-<p>
-<pre>
+
+<p><pre>
 	<b>gxemul -X -E cats -d obsd_cats.img ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd</b>
 
 </pre>
 
-<p>When asked about which drive to boot from, enter <tt>wd0</tt>.
+<p>When asked about the root device, enter <tt>wd0</tt>.
 
 
 

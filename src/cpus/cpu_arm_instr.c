@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.26 2005-10-07 22:10:51 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.27 2005-10-08 01:09:51 debug Exp $
  *
  *  ARM instructions.
  *
@@ -962,7 +962,7 @@ X(bdt_load)
 	int u_bit = iw & 0x00800000;
 	int s_bit = iw & 0x00400000;
 	int w_bit = iw & 0x00200000;
-	int i, return_flag = 0, saved_mode = 0;
+	int i, return_flag = 0;
 	uint32_t new_values[16];
 
 	/*  Synchronize the program counter:  */
@@ -974,32 +974,14 @@ X(bdt_load)
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	if (s_bit) {
-		/*  Load USR registers:  */
+		/*  Load to USR registers:  */
 		if ((cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32) {
 			fatal("[ bdt_load: s-bit: in usermode? ]\n");
 			s_bit = 0;
-		} else if (iw & 0x8000) {
+		}
+		if (iw & 0x8000) {
 			s_bit = 0;
 			return_flag = 1;
-		} else {
-			/*  Which saved mode to restore to:  */
-			uint32_t spsr;
-			switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
-			case ARM_MODE_FIQ32:
-				spsr = cpu->cd.arm.spsr_fiq; break;
-			case ARM_MODE_ABT32:
-				spsr = cpu->cd.arm.spsr_abt; break;
-			case ARM_MODE_UND32:
-				spsr = cpu->cd.arm.spsr_und; break;
-			case ARM_MODE_IRQ32:
-				spsr = cpu->cd.arm.spsr_irq; break;
-			case ARM_MODE_SVC32:
-				spsr = cpu->cd.arm.spsr_svc; break;
-			default:fatal("bdt_load (1): unimplemented mode %i\n",
-				    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
-				exit(1);
-			}
-			saved_mode = spsr & ARM_FLAG_MODE;
 		}
 	}
 
@@ -1069,46 +1051,24 @@ X(bdt_load)
 		if (!s_bit) {
 			cpu->cd.arm.r[i] = new_values[i];
 		} else {
-			switch (saved_mode) {
+			switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
 			case ARM_MODE_USR32:
 			case ARM_MODE_SYS32:
+				cpu->cd.arm.r[i] = new_values[i];
+				break;
+			case ARM_MODE_FIQ32:
 				if (i >= 8 && i <= 14)
 					cpu->cd.arm.default_r8_r14[i-8] =
 					    new_values[i];
 				else
 					cpu->cd.arm.r[i] = new_values[i];
 				break;
-			case ARM_MODE_FIQ32:
-				if (i >= 8 && i <= 14)
-					cpu->cd.arm.fiq_r8_r14[i-8] =
-					    new_values[i];
-				else
-					cpu->cd.arm.r[i] = new_values[i];
-				break;
+			case ARM_MODE_SVC32:
+			case ARM_MODE_ABT32:
+			case ARM_MODE_UND32:
 			case ARM_MODE_IRQ32:
 				if (i >= 13 && i <= 14)
-					cpu->cd.arm.irq_r13_r14[i-13] =
-					    new_values[i];
-				else
-					cpu->cd.arm.r[i] = new_values[i];
-				break;
-			case ARM_MODE_SVC32:
-				if (i >= 13 && i <= 14)
-					cpu->cd.arm.svc_r13_r14[i-13] =
-					    new_values[i];
-				else
-					cpu->cd.arm.r[i] = new_values[i];
-				break;
-			case ARM_MODE_ABT32:
-				if (i >= 13 && i <= 14)
-					cpu->cd.arm.abt_r13_r14[i-13] =
-					    new_values[i];
-				else
-					cpu->cd.arm.r[i] = new_values[i];
-				break;
-			case ARM_MODE_UND32:
-				if (i >= 13 && i <= 14)
-					cpu->cd.arm.und_r13_r14[i-13] =
+					cpu->cd.arm.default_r8_r14[i-8] =
 					    new_values[i];
 				else
 					cpu->cd.arm.r[i] = new_values[i];
@@ -1186,28 +1146,7 @@ X(bdt_store)
 	int u_bit = iw & 0x00800000;
 	int s_bit = iw & 0x00400000;
 	int w_bit = iw & 0x00200000;
-	int i, saved_mode = 0;
-
-	if (s_bit) {
-		/*  Store USR (or saved) registers:  */
-		uint32_t spsr;
-		switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
-		case ARM_MODE_FIQ32:
-			spsr = cpu->cd.arm.spsr_fiq; break;
-		case ARM_MODE_ABT32:
-			spsr = cpu->cd.arm.spsr_abt; break;
-		case ARM_MODE_UND32:
-			spsr = cpu->cd.arm.spsr_und; break;
-		case ARM_MODE_IRQ32:
-			spsr = cpu->cd.arm.spsr_irq; break;
-		case ARM_MODE_SVC32:
-			spsr = cpu->cd.arm.spsr_svc; break;
-		default:fatal("bdt_store: unimplemented mode %i\n",
-			    cpu->cd.arm.cpsr & ARM_FLAG_MODE);
-			exit(1);
-		}
-		saved_mode = spsr & ARM_FLAG_MODE;
-	}
+	int i;
 
 	/*  Synchronize the program counter:  */
 	low_pc = ((size_t)ic - (size_t)
@@ -1226,31 +1165,20 @@ X(bdt_store)
 		value = cpu->cd.arm.r[i];
 
 		if (s_bit) {
-			switch (saved_mode) {
+			switch (cpu->cd.arm.cpsr & ARM_FLAG_MODE) {
 			case ARM_MODE_FIQ32:
 				if (i >= 8 && i <= 14)
-					value = cpu->cd.arm.fiq_r8_r14[i-8];
+					value = cpu->cd.arm.default_r8_r14[i-8];
 				break;
 			case ARM_MODE_ABT32:
-				if (i >= 13 && i <= 14)
-					value = cpu->cd.arm.abt_r13_r14[i-13];
-				break;
 			case ARM_MODE_UND32:
-				if (i >= 13 && i <= 14)
-					value = cpu->cd.arm.und_r13_r14[i-13];
-				break;
 			case ARM_MODE_IRQ32:
-				if (i >= 13 && i <= 14)
-					value = cpu->cd.arm.irq_r13_r14[i-13];
-				break;
 			case ARM_MODE_SVC32:
 				if (i >= 13 && i <= 14)
-					value = cpu->cd.arm.svc_r13_r14[i-13];
+					value = cpu->cd.arm.default_r8_r14[i-8];
 				break;
 			case ARM_MODE_USR32:
 			case ARM_MODE_SYS32:
-				if (i >= 8 && i <= 14)
-					value = cpu->cd.arm.default_r8_r14[i-8];
 				break;
 			}
 		}

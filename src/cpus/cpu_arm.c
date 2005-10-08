@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.28 2005-10-07 10:26:03 debug Exp $
+ *  $Id: cpu_arm.c,v 1.29 2005-10-08 01:09:51 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -442,22 +442,26 @@ void arm_save_register_bank(struct cpu *cpu)
 		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 7);
 		break;
 	case ARM_MODE_IRQ32:
+		memcpy(cpu->cd.arm.default_r8_r14,
+		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 5);
 		cpu->cd.arm.irq_r13_r14[0] = cpu->cd.arm.r[13];
 		cpu->cd.arm.irq_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
 	case ARM_MODE_SVC32:
-if ((cpu->cd.arm.r[13] & 0xffff0000) == 0xffff0000) {
-	fatal("NEJ! pc=0x%08x\n", (int)cpu->pc);
-	exit(1);
-}
+		memcpy(cpu->cd.arm.default_r8_r14,
+		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 5);
 		cpu->cd.arm.svc_r13_r14[0] = cpu->cd.arm.r[13];
 		cpu->cd.arm.svc_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
 	case ARM_MODE_ABT32:
+		memcpy(cpu->cd.arm.default_r8_r14,
+		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 5);
 		cpu->cd.arm.abt_r13_r14[0] = cpu->cd.arm.r[13];
 		cpu->cd.arm.abt_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
 	case ARM_MODE_UND32:
+		memcpy(cpu->cd.arm.default_r8_r14,
+		    &cpu->cd.arm.r[8], sizeof(uint32_t) * 5);
 		cpu->cd.arm.und_r13_r14[0] = cpu->cd.arm.r[13];
 		cpu->cd.arm.und_r13_r14[1] = cpu->cd.arm.r[14];
 		break;
@@ -485,18 +489,26 @@ void arm_load_register_bank(struct cpu *cpu)
 		    sizeof(uint32_t) * 7);
 		break;
 	case ARM_MODE_IRQ32:
+		memcpy(&cpu->cd.arm.r[8],
+		    cpu->cd.arm.default_r8_r14, sizeof(uint32_t) * 5);
 		cpu->cd.arm.r[13] = cpu->cd.arm.irq_r13_r14[0];
 		cpu->cd.arm.r[14] = cpu->cd.arm.irq_r13_r14[1];
 		break;
 	case ARM_MODE_SVC32:
+		memcpy(&cpu->cd.arm.r[8],
+		    cpu->cd.arm.default_r8_r14, sizeof(uint32_t) * 5);
 		cpu->cd.arm.r[13] = cpu->cd.arm.svc_r13_r14[0];
 		cpu->cd.arm.r[14] = cpu->cd.arm.svc_r13_r14[1];
 		break;
 	case ARM_MODE_ABT32:
+		memcpy(&cpu->cd.arm.r[8],
+		    cpu->cd.arm.default_r8_r14, sizeof(uint32_t) * 5);
 		cpu->cd.arm.r[13] = cpu->cd.arm.abt_r13_r14[0];
 		cpu->cd.arm.r[14] = cpu->cd.arm.abt_r13_r14[1];
 		break;
 	case ARM_MODE_UND32:
+		memcpy(&cpu->cd.arm.r[8],
+		    cpu->cd.arm.default_r8_r14, sizeof(uint32_t) * 5);
 		cpu->cd.arm.r[13] = cpu->cd.arm.und_r13_r14[0];
 		cpu->cd.arm.r[14] = cpu->cd.arm.und_r13_r14[1];
 		break;

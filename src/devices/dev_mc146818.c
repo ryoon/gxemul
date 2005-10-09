@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.74 2005-10-09 21:32:08 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.75 2005-10-09 22:21:31 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
- *  (DS1687 as used in some SGI machines is similar to MC146818.)
+ *  (DS1687 as used in some other machines is also similar to the MC146818.)
  *
  *  This device contains Date/time, the machine's ethernet address (on
  *  DECstation 3100), and can cause periodic (hardware) interrupts.
@@ -54,7 +54,7 @@
 
 #define	to_bcd(x)	( ((x)/10) * 16 + ((x)%10) )
 
-#define MC146818_DEBUG
+/*  #define MC146818_DEBUG  */
 
 #define	TICK_SHIFT	14
 
@@ -222,6 +222,9 @@ static void mc146818_update_time(struct mc_data *d)
 	d->reg[4 * MC_MONTH] = tmp->tm_mon + 1;
 	d->reg[4 * MC_YEAR]  = tmp->tm_year;
 
+	/*
+	 *  Special hacks for emulating the behaviour of various machines:
+	 */
 	switch (d->access_style) {
 	case MC146818_ARC_NEC:
 		d->reg[4 * MC_YEAR] += (0x18 - 104);
@@ -250,10 +253,8 @@ static void mc146818_update_time(struct mc_data *d)
 			  (d->reg[4 * MC_YEAR] - 30 + 40)
 			: (d->reg[4 * MC_YEAR] - 40)
 		      );
-
 		/*  Century:  */
 		d->reg[72 * 4] = 19 + (tmp->tm_year / 100);
-
 		break;
 	case MC146818_DEC:
 		/*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.567 2005-10-09 21:32:06 debug Exp $
+ *  $Id: machine.c,v 1.568 2005-10-09 22:21:28 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4575,6 +4575,9 @@ Not yet.
 	case MACHINE_CATS:
 		machine->machine_name = "CATS evaluation board";
 
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 50000000;
+
 		if (machine->physical_ram_in_mb > 256)
 			fprintf(stderr, "WARNING! Real CATS machines cannot"
 			    " have more than 256 MB RAM. Continuing anyway.\n");
@@ -4594,7 +4597,7 @@ Not yet.
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 
-		device_add(machine, "pccmos addr=0x7c000072");
+		device_add(machine, "pccmos addr=0x7c000070");
 
 		if (machine->use_x11) {
 			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,

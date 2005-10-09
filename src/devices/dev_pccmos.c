@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.6 2005-10-09 21:32:08 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.7 2005-10-09 22:21:31 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -74,8 +74,8 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 	 *  RTC; all other access are treated as CMOS RAM read/writes.
 	 */
 
-	switch (relative_addr) {
-	case 0:	if (writeflag == MEM_WRITE) {
+	if ((relative_addr & 1) == 0) {
+		if (writeflag == MEM_WRITE) {
 			d->select = idata;
 			if (idata <= 0x0d) {
 				cpu->memory_rw(cpu, cpu->mem,
@@ -84,8 +84,8 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 			}
 		} else
 			odata = d->select;
-		break;
-	case 1:	if (d->select <= 0x0d) {
+	} else {
+		if (d->select <= 0x0d) {
 			if (writeflag == MEM_WRITE) {
 				cpu->memory_rw(cpu, cpu->mem,
 				    PCCMOS_MC146818_FAKE_ADDR + 1, &b, 1,
@@ -102,15 +102,6 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 			else
 				odata = d->ram[d->select];
 		}
-		break;
-	default:
-		if (writeflag == MEM_WRITE) {
-			fatal("[ pccmos: unimplemented write to address 0x%x"
-			    " data=0x%02x ]\n", (int)relative_addr, (int)idata);
-		} else {
-			fatal("[ pccmos: unimplemented read from address 0x%x "
-			    "]\n", (int)relative_addr);
-		}
 	}
 
 	if (writeflag == MEM_READ)
@@ -126,17 +117,13 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 int devinit_pccmos(struct devinit *devinit)
 {
 	struct pccmos_data *d = malloc(sizeof(struct pccmos_data));
-	int irq_nr, type = MC146818_PC_CMOS;
+	int irq_nr, type = MC146818_PC_CMOS, len = DEV_PCCMOS_LENGTH;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pccmos_data));
-
-	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_PCCMOS_LENGTH, dev_pccmos_access, (void *)d,
-	    MEM_DEFAULT, NULL);
 
 	/*
 	 *  Different machines use different IRQ schemes.
@@ -146,6 +133,7 @@ int devinit_pccmos(struct devinit *devinit)
 		irq_nr = 32 + 8;
 		type = MC146818_CATS;
 		d->ram[0x48] = 20;		/*  century  */
+		len = DEV_PCCMOS_LENGTH * 2;
 		break;
 	case MACHINE_X86:
 		irq_nr = 16;	/*  "No" irq  */
@@ -154,6 +142,10 @@ int devinit_pccmos(struct devinit *devinit)
 		    " %i\n", devinit->machine->machine_type);
 		exit(1);
 	}
+
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, len, dev_pccmos_access, (void *)d,
+	    MEM_DEFAULT, NULL);
 
 	dev_mc146818_init(devinit->machine, devinit->machine->memory,
 	    PCCMOS_MC146818_FAKE_ADDR, irq_nr, type, 1);

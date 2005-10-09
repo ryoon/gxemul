@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.27 2005-10-08 01:09:51 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.28 2005-10-09 21:32:07 debug Exp $
  *
  *  ARM instructions.
  *
@@ -133,6 +133,7 @@
 
 /*****************************************************************************/
 
+#if 0
 /*
  *  update_c is set if the C flag should be updated with the last shifted/
  *  rotated bit.
@@ -264,7 +265,7 @@ uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
 	}
 	return tmp;
 }
-
+#endif
 
 /*****************************************************************************/
 
@@ -936,6 +937,8 @@ extern void (*arm_load_store_instr_3[2048])(struct cpu *,
 
 extern void (*arm_load_store_instr_3_pc[2048])(struct cpu *,
 	struct arm_instr_call *);
+
+extern uint32_t (*arm_r[8192])(struct cpu *, struct arm_instr_call *);
 
 extern void (*arm_dpi_instr[2 * 2 * 2 * 16 * 16])(struct cpu *,
 	struct arm_instr_call *);
@@ -1683,7 +1686,7 @@ X(to_be_translated)
 				    + (u_bit? 256 : 0) + (p_bit? 512 : 0)
 				    + (regform? 1024 : 0)];
 			if (regform)
-				ic->arg[1] = iword & 0xf;
+				ic->arg[1] = (size_t)(void *)arm_r[iword & 0xf];
 			else
 				ic->arg[1] = imm;
 			break;
@@ -1718,9 +1721,19 @@ X(to_be_translated)
 		else
 			regform = 0;
 
-		if (regform)
-			ic->arg[1] = iword;
-		else {
+		if (regform) {
+			/*  0x1000 signifies Carry bit update on rotation,
+			    which is not necessary for add,adc,sub,sbc,
+			    rsb,rsc,cmp, or cmn, because they update the
+			    Carry bit manually anyway.  */
+			int q = 0x1000;
+			if (s_bit == 0)
+				q = 0;
+			if ((secondary_opcode >= 2 && secondary_opcode <= 7)
+			    || secondary_opcode==0xa || secondary_opcode==0xb)
+				q = 0;
+			ic->arg[1] = (size_t)(void *)arm_r[(iword & 0xfff) + q];
+		} else {
 			imm = iword & 0xff;
 			while (r8-- > 0)
 				imm = (imm >> 2) | ((imm & 3) << 30);
@@ -1759,7 +1772,7 @@ X(to_be_translated)
 		if (main_opcode < 6)
 			ic->arg[1] = imm;
 		else
-			ic->arg[1] = iword;
+			ic->arg[1] = (size_t)(void *)arm_r[iword & 0xfff];
 		if ((iword & 0x0e000010) == 0x06000010) {
 			fatal("Not a Load/store TODO\n");
 			goto bad;

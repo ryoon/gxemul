@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.984 2005-10-08 22:53:56 debug Exp $
+$Id: HISTORY,v 1.985 2005-10-09 21:32:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2303,3 +2303,7 @@ Changelog for GXemul:
 20051008	The bug was not because of faulty ARM documentation after all,
 		but it was related to those parts of the code.
 		Fixing the RTC (dev_mc146818) to work with CATS.
+20051009	Rewriting the R() function; now there are 8192 automatically
+		generated smaller functions doing the same thing, but hopefully
+		faster.
+		Adding a dummy dev_lpt.

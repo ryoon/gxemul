@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.8 2005-10-08 22:54:01 debug Exp $
+#  $Id: Makefile.skel,v 1.9 2005-10-09 21:32:07 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -54,8 +54,41 @@ tmp_arm_loadstore.c: cpu_arm_instr_loadstore.c generate_arm_loadstore
 tmp_arm_dpi.c: cpu_arm_instr_dpi.c generate_arm_dpi
 	./generate_arm_dpi > tmp_arm_dpi.c
 
+tmp_arm_r0.c: generate_arm_r
+	./generate_arm_r 0x000 0x0ff > tmp_arm_r0.c
+tmp_arm_r1.c: generate_arm_r
+	./generate_arm_r 0x100 0x1ff > tmp_arm_r1.c
+tmp_arm_r2.c: generate_arm_r
+	./generate_arm_r 0x200 0x2ff > tmp_arm_r2.c
+tmp_arm_r3.c: generate_arm_r
+	./generate_arm_r 0x300 0x3ff > tmp_arm_r3.c
+tmp_arm_r4.c: generate_arm_r
+	./generate_arm_r 0x400 0x4ff > tmp_arm_r4.c
+tmp_arm_r5.c: generate_arm_r
+	./generate_arm_r 0x500 0x5ff > tmp_arm_r5.c
+tmp_arm_r6.c: generate_arm_r
+	./generate_arm_r 0x600 0x6ff > tmp_arm_r6.c
+tmp_arm_r7.c: generate_arm_r
+	./generate_arm_r 0x700 0x7ff > tmp_arm_r7.c
+tmp_arm_r8.c: generate_arm_r
+	./generate_arm_r 0x800 0x8ff > tmp_arm_r8.c
+tmp_arm_r9.c: generate_arm_r
+	./generate_arm_r 0x900 0x9ff > tmp_arm_r9.c
+tmp_arm_ra.c: generate_arm_r
+	./generate_arm_r 0xa00 0xaff > tmp_arm_ra.c
+tmp_arm_rb.c: generate_arm_r
+	./generate_arm_r 0xb00 0xbff > tmp_arm_rb.c
+tmp_arm_rc.c: generate_arm_r
+	./generate_arm_r 0xc00 0xcff > tmp_arm_rc.c
+tmp_arm_rd.c: generate_arm_r
+	./generate_arm_r 0xd00 0xdff > tmp_arm_rd.c
+tmp_arm_re.c: generate_arm_r
+	./generate_arm_r 0xe00 0xeff > tmp_arm_re.c
+tmp_arm_rf.c: generate_arm_r
+	./generate_arm_r 0xf00 0xfff > tmp_arm_rf.c
+
 tmp_arm_r.c: generate_arm_r
-	./generate_arm_r > tmp_arm_r.c
+	./generate_arm_r 0 0 > tmp_arm_r.c
 
 tmp_arm_head.c: generate_head
 	./generate_head arm ARM > tmp_arm_head.c

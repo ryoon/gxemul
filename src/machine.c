@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.566 2005-10-08 22:53:59 debug Exp $
+ *  $Id: machine.c,v 1.567 2005-10-09 21:32:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4586,6 +4586,9 @@ Not yet.
 		/*  NetBSD and OpenBSD clean their caches here:  */
 		dev_ram_init(mem, 0x50000000, 0x4000, DEV_RAM_RAM, 0);
 
+		/*  Interrupt ack space?  */
+		dev_ram_init(mem, 0x80000000, 0x1000, DEV_RAM_RAM, 0);
+
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
@@ -4604,6 +4607,8 @@ Not yet.
 
 		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0 in_use=0");
 		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1 in_use=0");
+
+		device_add(machine, "lpt irq=39 addr=0x7c000378 name2=lpt in_use=0");
 
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;

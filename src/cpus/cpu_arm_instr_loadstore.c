@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.8 2005-10-05 21:17:32 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.9 2005-10-09 21:32:07 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -63,6 +63,10 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	const int memory_rw_flags = CACHE_DATA;
 #endif
+#ifdef A__REG
+	uint32_t (*reg_func)(struct cpu *, struct arm_instr_call *)
+	    = (void *)(size_t)ic->arg[1];
+#endif
 #ifdef A__B
 	unsigned char data[1];
 #else
@@ -77,11 +81,10 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	    -
 #endif
 #ifdef A__REG
-	    R(cpu, ic, ic->arg[1], 0)
+	    reg_func(cpu, ic);
 #else
-	    ic->arg[1]
+	    ic->arg[1];
 #endif
-	    ;
 
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.
 	    cur_ic_page) / sizeof(struct arm_instr_call);
@@ -162,16 +165,19 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	/*  T-bit: userland access. Use the general routine for that.  */
 	A__NAME__general(cpu, ic);
 #else
+#ifdef A__REG
+	uint32_t (*reg_func)(struct cpu *, struct arm_instr_call *)
+	    = (void *)(size_t)ic->arg[1];
+#endif
 	uint32_t offset =
 #ifndef A__U
 	    -
 #endif
 #ifdef A__REG
-	    R(cpu, ic, ic->arg[1], 0)
+	    reg_func(cpu, ic);
 #else
-	    ic->arg[1]
+	    ic->arg[1];
 #endif
-	    ;
 	uint32_t addr = reg(ic->arg[0])
 #ifdef A__P
 	    + offset

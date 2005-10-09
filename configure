@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.171 2005-10-07 23:13:50 debug Exp $
+#  $Id: configure,v 1.172 2005-10-09 21:32:05 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -337,8 +337,17 @@ fi
 if [ z$ENABLEARM = zYES ]; then
 	printf "#define ENABLE_ARM\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_arm.o cpu_arm_coproc.o memory_arm.o "
-	CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_loadstore.o"
-	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_dpi"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_dpi.o tmp_arm_loadstore.o tmp_arm_r.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_r0.o tmp_arm_r1.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_r2.o tmp_arm_r3.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_r4.o tmp_arm_r5.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_r6.o tmp_arm_r7.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_r8.o tmp_arm_r9.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_ra.o tmp_arm_rb.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_rc.o tmp_arm_rd.o"
+	CPU_ARCHS="$CPU_ARCHS tmp_arm_re.o tmp_arm_rf.o"
+	CPU_TOOLS="$CPU_TOOLS generate_arm_dpi generate_arm_r"
+	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore"
 fi
 if [ z$ENABLEAVR = zYES ]; then
 	printf "#define ENABLE_AVR\n" >> config.h

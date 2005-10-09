@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.9 2005-10-04 04:44:16 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.10 2005-10-09 21:32:07 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -64,11 +64,16 @@
 
 /*
  *  arg[0] = pointer to rn
- *  arg[1] = int32_t immediate value   OR copy of the instruction word (regform)
+ *  arg[1] = int32_t immediate value   OR  ptr to a reg_func() function
  *  arg[2] = pointer to rd
  */
 void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 {
+#ifdef A__REG
+	uint32_t (*reg_func)(struct cpu *, struct arm_instr_call *)
+	    = (void *)(size_t)ic->arg[1];
+#endif
+
 #ifdef A__S
 	uint32_t c32;
 #endif
@@ -88,13 +93,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    b =
 #ifdef A__REG
-	    R(cpu, ic, ic->arg[1],
-#ifdef A__S
-	    1
-#else
-	    0
-#endif
-	    );
+	    reg_func(cpu, ic);
 #else
 	    ic->arg[1];
 #endif

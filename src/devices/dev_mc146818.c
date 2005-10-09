@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.73 2005-10-08 22:54:02 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.74 2005-10-09 21:32:08 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -225,6 +225,9 @@ static void mc146818_update_time(struct mc_data *d)
 	switch (d->access_style) {
 	case MC146818_ARC_NEC:
 		d->reg[4 * MC_YEAR] += (0x18 - 104);
+		break;
+	case MC146818_CATS:
+		d->reg[4 * MC_YEAR] %= 100;
 		break;
 	case MC146818_SGI:
 		/*

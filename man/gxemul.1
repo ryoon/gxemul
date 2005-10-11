@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.33 2005-10-07 22:45:34 debug Exp $
+.\" $Id: gxemul.1,v 1.34 2005-10-11 03:53:58 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -121,11 +121,14 @@ Other options:
 .It Fl A
 Disable load/store alignment checks in some cases. This might give a small
 increase in performance, but the emulator will not run correctly if the 
-emulated code actually tries to do unaligned loads or stores.
+emulated code actually tries to do unaligned loads or stores. (This option 
+is only meaningful when emulating MIPS CPUs, when the host architecture is 
+Alpha or i386, and binary translation is enabled.)
 .It Fl B
 Disable dynamic binary translation. By default, bintrans
 will be turned on if the host+target architecture combination is 
-supported.
+supported. Currently, the only supported target architecture for bintrans 
+is MIPS, and the supported host architectures are Alpha and i386.
 .It Fl C Ar x
 Try to emulate a specific CPU type,
 .Ar "x".
@@ -209,10 +212,10 @@ Set nr of CPUs (for SMP experiments).
 Force a "netboot" (tftp instead of disk), even when a disk image is
 present (for DECstation, SGI, and ARC emulation).
 .It Fl o Ar arg
-Set the boot argument (for DEC, ARC, or SGI emulation).
+Set the boot argument (mostly useful for DEC, ARC, or SGI emulation).
 Default
 .Ar arg
-for DEC is "-a", for ARC "-aN".
+for DEC is "-a", for ARC/SGI it is "-aN", and for CATS it is "-A".
 .It Fl p Ar pc
 Add a breakpoint. (Remember to use the "0x" prefix for hex.)
 .It Fl Q
@@ -345,6 +348,10 @@ The binary translation subsystem is really terrible, but it is less
 terrible than running without it.
 .Pp
 Userland (syscall-only) emulation doesn't really work yet.
+.Pp
+Emulation of MIPS CPUs is done differently from other emulation modes; the 
+documentation sometimes only reflect the way things work with MIPS 
+emulation, and it is incorrect when applied to e.g. ARM emulation.
 .Pp
 .Nm
 does not simulate individual pipe-line stages or penalties caused by

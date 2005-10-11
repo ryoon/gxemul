@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.151 2005-10-11 03:53:57 debug Exp $
+$Id: RELEASE,v 1.152 2005-10-11 05:10:48 debug Exp $
 
-Working on post-0.3.6.
+Working on post-0.3.6.1.
 
-------------------------------------------------------------------------------
+-------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.6.1
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.6.X
 ==================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -57,14 +57,19 @@ micro-architectural effects are not simulated.)
 
 The most imporant user-visible change between release 0.3.5 and 0.3.6 is:
 
-   (O)  The experimental ARM emulation mode is now working well enough
+    x)  The experimental ARM emulation mode is now working well enough
         to install NetBSD/cats and OpenBSD/cats onto harddisk images.
 
 There have also been lots of other small changes, too small to mention here.
 
-(The 0.3.6.1 release fixes some minor (but important) bugs regarding ARM 
-emulation, and increases performance by approximately a factor 2. In all 
-other ways, 0.3.6.1 is like 0.3.6.)
+The 0.3.6.1 release fixes some issues related to ARM emulation:
+
+    x)  The emulator can now be compiled inside NetBSD/cats or OpenBSD/cats,
+        inside the emulator itself. (In 0.3.6, some bugs prevented this.)
+
+    x)  Performance increase:  A non-scientific but realistic test, measuring
+        the real-world time it takes to do a full NetBSD/cats installation,
+        seems to indicate that 0.3.6.1 can be twice as fast as 0.3.6 was.
 
 Files included in this release are:
 

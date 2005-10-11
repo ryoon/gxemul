@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.988 2005-10-11 03:53:57 debug Exp $
+$Id: HISTORY,v 1.989 2005-10-11 05:10:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2311,8 +2311,8 @@ Changelog for GXemul:
 20051010	Small hack to not update virtual translation tables if memory
 		accesses are done with the NO_EXCEPTION flag; a time reduction
 		of almost a factor 2 for a full NetBSD/cats install. :-)
-20051011	Passing -A as the default boot arg for CATS (works fine with
-		NetBSD and OpenBSD).
+20051011        Passing -A as the default boot arg for CATS (works fine with
+                OpenBSD/cats).
 
 ==============  RELEASE 0.3.6.1  ==============
 

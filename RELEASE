@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.149 2005-10-07 23:13:50 debug Exp $
+$Id: RELEASE,v 1.150 2005-10-11 03:31:26 debug Exp $
 
 Working on post-0.3.6.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
-================================================================
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.6.1
+==================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -60,16 +60,11 @@ The most imporant user-visible change between release 0.3.5 and 0.3.6 is:
    (X)  The experimental ARM emulation mode is now working well enough
         to install NetBSD/cats and OpenBSD/cats onto harddisk images.
 
-There are two minor issues with the ARM emulation:
-
-   1) A bug is triggered at the end of the OpenBSD/cats installation,
-      so the MAKEDEV script must be run manually before booting for
-      the first time.
-
-   2) I have not had time to do any performance optimizations yet, so
-      the ARM emulation mode is not very fast.
-
 There have also been lots of other small changes, too small to mention here.
+
+(The 0.3.6.1 release fixes some minor (but important) bugs regarding ARM 
+emulation, and increases performance by approximately a factor 2. In all 
+other ways, 0.3.6.1 is like 0.3.6.)
 
 Files included in this release are:
 

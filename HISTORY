@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.986 2005-10-10 18:43:35 debug Exp $
+$Id: HISTORY,v 1.987 2005-10-11 03:31:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2305,8 +2305,11 @@ Changelog for GXemul:
 		Fixing the RTC (dev_mc146818) to work with CATS.
 20051009	Rewriting the R() function; now there are 8192 automatically
 		generated smaller functions doing the same thing, but hopefully
-		faster.
+		faster. This also fixes some bugs which were triggered when
+		trying to compile GXemul inside itself. :-)
 		Adding a dummy dev_lpt.
-20051010	Small hack to not update virtual translation tables if memroy
+20051010	Small hack to not update virtual translation tables if memory
 		accesses are done with the NO_EXCEPTION flag; a time reduction
 		of almost a factor 2 for a full NetBSD/cats install. :-)
+20051011	Passing -A as the default boot arg for CATS (works fine with
+		NetBSD and OpenBSD).

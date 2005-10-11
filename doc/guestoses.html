@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.92 2005-10-08 22:53:58 debug Exp $
+$Id: guestoses.html,v 1.93 2005-10-11 03:31:26 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -767,7 +767,7 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -X -E cats -d nbsd_cats.img -d catscd.iso netbsd.aout-INSTALL.gz</b>
+	<b>gxemul -XEcats -d nbsd_cats.img -d catscd.iso netbsd.aout-INSTALL.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -777,12 +777,9 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 
 <p>If everything worked, NetBSD should now be installed on the disk image.
 Use the following command line to boot the emulated CATS machine:<pre>
-	<b>gxemul -X -E cats -d nbsd_cats.img netbsd.aout-GENERIC.gz</b>
+	<b>gxemul -XEcats -d nbsd_cats.img netbsd.aout-GENERIC.gz</b>
 
 </pre>
-
-<p>When asked about the root device, enter <tt>wd0</tt>.
-
 
 
 
@@ -1020,6 +1017,8 @@ follow these instructions:
 </pre>
   <li>Download the entire cats directory from the ftp server:<pre>
 	<b>wget -np -l 0 -r <a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/">ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/</a></b>
+	<b>cp ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd .</b>
+	<b>cp ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd.rd .</b>
 
 </pre>
 
@@ -1031,31 +1030,27 @@ follow these instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -X -E cats -d obsd_cats.img -d openbsd_cats_3.7.iso  \
-	    ftp.openbsd.org/pub/OpenBSD/3.7/cats/bsd.rd</b>
+	<b>gxemul -XEcats -d obsd_cats.img -d openbsd_cats_3.7.iso bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
-	on a real CATS. (Install onto wd0, don't configure the network,
-	choose to install distribution sets from <i>disk</i> wd1 (i.e.
-	not CDROM) partition a, path '/'.)
+	on a real CATS. (Install onto <tt>wd0</tt>, don't configure the
+	network, choose to install distribution sets from <i>disk</i>
+	<tt>wd1</tt> (i.e. not CDROM) partition '<tt>a</tt>',
+	relative path '<tt>/</tt>'.)
 </ol>
 
 <p><b>NOTE:</b> Make sure that you <tt>sync</tt> and <tt>reboot</tt>
-correctly, or the <tt>/dev</tt> nodes may not have been written correctly
-to disk.
+correctly once the installation is finished, or the <tt>/dev</tt> nodes 
+may not have been written correctly to disk.
 
 <p>Once the install has finished, the following command should let you 
 boot from the harddisk image:
 
 <p><pre>
-	<b>gxemul -X -E cats -d obsd_cats.img ftp.openbsd.org/pub/OpenBSD/3.7/arc/bsd</b>
+	<b>gxemul -XEcats -d obsd_cats.img bsd</b>
 
 </pre>
-
-<p>When asked about the root device, enter <tt>wd0</tt>.
-
-
 
 
 

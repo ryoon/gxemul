@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ali_m1543.c,v 1.2 2005-09-28 11:24:20 debug Exp $
+ *  $Id: pci_ali_m1543.c,v 1.3 2005-10-11 03:31:29 debug Exp $
  *
  *  Acer Labs M5229 PCIIDE (UDMA) controller.
  *  Acer Labs M1543 PCI->ISA bridge.
@@ -116,7 +116,8 @@ void pci_ali_m5229_init(struct machine *machine, struct memory *mem)
 
 	case MACHINE_CATS:
 		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
-		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
+		/*  The secondary channel is disabled. TODO: fix this.  */
+		/*  device_add(machine, "wdc addr=0x7c000170 irq=47");  */
 		break;
 
 	default:fatal("pci_ali_m5229_init(): unimplemented machine type\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.568 2005-10-09 22:21:28 debug Exp $
+ *  $Id: machine.c,v 1.569 2005-10-11 03:31:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1568,6 +1568,9 @@ void machine_setup(struct machine *machine)
 		switch (machine->machine_type) {
 		case MACHINE_ARC:
 			machine->boot_string_argument = "-aN";
+			break;
+		case MACHINE_CATS:
+			machine->boot_string_argument = "-A";
 			break;
 		case MACHINE_DEC:
 			machine->boot_string_argument = "-a";
@@ -4615,6 +4618,8 @@ Not yet.
 
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
+			char bs[300];
+			int boot_id = bootdev_id >= 0? bootdev_id : 0;
 
 			cpu->cd.arm.r[0] = /* machine->physical_ram_in_mb */
 			    7 * 1048576 - 0x1000;
@@ -4647,9 +4652,14 @@ Not yet.
 
 			store_buf(cpu, cpu->cd.arm.r[0],
 			    (char *)&ebsaboot, sizeof(struct ebsaboot));
-			store_string(cpu, cpu->cd.arm.r[0] +
-			    sizeof(struct ebsaboot),
+
+			snprintf(bs, sizeof(bs), "(hd%i)%s%s%s",
+			    boot_id, machine->boot_kernel_filename,
+			    (machine->boot_string_argument[0])? " " : "",
 			    machine->boot_string_argument);
+
+			store_string(cpu, cpu->cd.arm.r[0] +
+			    sizeof(struct ebsaboot), bs);
 
 			arm_setup_initial_translation_table(cpu,
 			    7 * 1048576 - 32768);

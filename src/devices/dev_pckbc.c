@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.51 2005-09-27 23:55:44 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.52 2005-10-12 19:51:51 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -314,6 +314,7 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 	if (a=='<')  {	a = ','; shift = 1; }
 	if (a=='>')  {	a = '.'; shift = 1; }
 	if (a=='?')  {	a = '/'; shift = 1; }
+	if (a=='~')  {	a = '`'; shift = 1; }
 
 	if (shift)
 		pckbc_add_code(d, 0x2a, p);
@@ -399,7 +400,7 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 
 	if (a==';')	pckbc_add_code(d, 0x27, p);
 	if (a=='\'')	pckbc_add_code(d, 0x28, p);
-	if (a=='~')	pckbc_add_code(d, 0x29, p);
+	if (a=='`')	pckbc_add_code(d, 0x29, p);
 	if (a=='\\')	pckbc_add_code(d, 0x2b, p);
 
 	if (a=='z')	pckbc_add_code(d, 0x2c, p);

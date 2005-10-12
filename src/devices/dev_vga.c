@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.82 2005-10-12 15:10:50 debug Exp $
+ *  $Id: dev_vga.c,v 1.83 2005-10-12 19:51:51 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -923,6 +923,10 @@ static void vga_graphcontr_reg_write(struct machine *machine,
 static void vga_attribute_reg_write(struct machine *machine, struct vga_data *d,
 	int regnr, int idata)
 {
+	/*  0-15 are palette registers: TODO  */
+	if (regnr >= 0 && regnr <= 0xf)
+		return;
+
 	switch (regnr) {
 	default:fatal("[ vga_attribute_reg_write: select %i ]\n", regnr);
 		/*  cpu->running = 0;  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.29 2005-10-11 03:31:28 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.30 2005-10-12 19:51:51 debug Exp $
  *
  *  ARM instructions.
  *
@@ -831,6 +831,14 @@ X(bdt_load)
 	int w_bit = iw & 0x00200000;
 	int i, return_flag = 0;
 	uint32_t new_values[16];
+
+#if 0
+{
+static FILE *f = NULL;
+if (f == NULL) f = fopen("asdg", "w");
+fprintf(f, "0x%08x\n", iw);
+}
+#endif
 
 	/*  Synchronize the program counter:  */
 	low_pc = ((size_t)ic - (size_t)

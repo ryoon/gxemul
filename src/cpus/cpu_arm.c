@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.29 2005-10-08 01:09:51 debug Exp $
+ *  $Id: cpu_arm.c,v 1.30 2005-10-12 23:26:10 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -109,8 +109,8 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		cpu->cd.arm.cpsr |= ARM_MODE_SVC32;
 		cpu->cd.arm.control |= ARM_CONTROL_S;
 	} else {
-		cpu->cd.arm.cpsr |= ARM_MODE_USR32;
-		cpu->cd.arm.control |= ARM_CONTROL_S | ARM_CONTROL_R;
+		cpu->cd.arm.cpsr |= ARM_MODE_SVC32;
+		cpu->cd.arm.control |= ARM_CONTROL_R;
 	}
 
 	/*  Only show name and caches etc for CPU nr 0:  */
@@ -175,9 +175,7 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
 			uint32_t addr = cpu->cd.arm.ttb +
 			    (((j << 28) + (i << 20)) >> 18);
 			uint32_t d = (1048576*i) | 0xc02;
-/*
-d = (1048576 * (i + (j==12? 10 : j)*256)) | 2;
-*/
+
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 				descr[0] = d;       descr[1] = d >> 8;
 				descr[2] = d >> 16; descr[3] = d >> 24;

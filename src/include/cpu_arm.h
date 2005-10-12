@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.44 2005-10-10 18:43:37 debug Exp $
+ *  $Id: cpu_arm.h,v 1.45 2005-10-12 16:21:31 debug Exp $
  */
 
 #include "misc.h"
@@ -191,6 +191,10 @@ struct arm_cpu {
 	uint32_t		fsr;		/*  Fault Status Register  */
 	uint32_t		far;		/*  Fault Address Register  */
 	uint32_t		pid;		/*  Process Id Register  */
+
+	/*  For caching the host address of the L1 translation table:  */
+	unsigned char		*translation_table;
+	uint32_t		last_ttb;
 
 
 	/*

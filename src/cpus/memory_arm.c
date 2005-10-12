@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.23 2005-10-07 15:19:48 debug Exp $
+ *  $Id: memory_arm.c,v 1.24 2005-10-12 16:21:25 debug Exp $
  *
  *
  *  TODO/NOTE: There are probably two solutions to the subpage access
@@ -112,7 +112,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	uint64_t *return_addr, int flags)
 {
 	unsigned char descr[4];
-	uint32_t addr, d, d2 = (uint32_t)(int32_t)-1, ptba, vaddr = vaddr64;
+	uint32_t addr, d=0, d2 = (uint32_t)(int32_t)-1, ptba, vaddr = vaddr64;
 	int d2_in_use = 0, d_in_use = 1;
 	int instr = flags & FLAG_INSTR;
 	int writeflag = (flags & FLAG_WRITEFLAG)? 1 : 0;
@@ -130,21 +130,30 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	if (useraccess)
 		user = 1;
 
-	addr = cpu->cd.arm.ttb + ((vaddr & 0xfff00000ULL) >> 18);
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
-	    sizeof(descr), MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
-		fatal("arm_translate_address(): huh?\n");
-		exit(1);
-	}
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-		d = descr[0] + (descr[1] << 8) + (descr[2] << 16)
-		    + (descr[3] << 24);
-	else
-		d = descr[3] + (descr[2] << 8) + (descr[1] << 16)
-		    + (descr[0] << 24);
+	addr = ((vaddr & 0xfff00000ULL) >> 18);
 
-	/*  fatal("vaddr=0x%08x ttb=0x%08x addr=0x%08x d=0x%08x\n",
-	    vaddr, cpu->cd.arm.ttb, addr, d);  */
+	if (cpu->cd.arm.translation_table == NULL ||
+	    cpu->cd.arm.ttb != cpu->cd.arm.last_ttb) {
+		uint32_t ofs;
+		cpu->cd.arm.translation_table = memory_paddr_to_hostaddr(
+		    cpu->mem, cpu->cd.arm.ttb, 0);
+		if (cpu->cd.arm.translation_table != NULL) {
+			ofs = cpu->cd.arm.ttb & ((1 << BITS_PER_MEMBLOCK) - 1);
+			cpu->cd.arm.translation_table += ofs;
+		}
+		cpu->cd.arm.last_ttb = cpu->cd.arm.ttb;
+	}
+
+	if (cpu->cd.arm.translation_table != NULL) {
+		d = *(uint32_t *)(cpu->cd.arm.translation_table + addr);
+#ifdef HOST_LITTLE_ENDIAN
+		if (cpu->byte_order == EMUL_BIG_ENDIAN)
+#else
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+#endif
+			d = ((d & 0xff) << 24) | ((d & 0xff00) << 8) |
+			    ((d & 0xff0000) >> 8) | ((d & 0xff000000) >> 24);
+	}
 
 	/*  Get the domain from the descriptor, and the Domain Access Value:  */
 	domain = (d >> 5) & 15;

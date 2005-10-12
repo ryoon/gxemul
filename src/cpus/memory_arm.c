@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.24 2005-10-12 16:21:25 debug Exp $
+ *  $Id: memory_arm.c,v 1.25 2005-10-12 23:03:59 debug Exp $
  *
  *
  *  TODO/NOTE: There are probably two solutions to the subpage access
@@ -136,7 +136,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	    cpu->cd.arm.ttb != cpu->cd.arm.last_ttb) {
 		uint32_t ofs;
 		cpu->cd.arm.translation_table = memory_paddr_to_hostaddr(
-		    cpu->mem, cpu->cd.arm.ttb, 0);
+		    cpu->mem, cpu->cd.arm.ttb & 0x0fffffff, 0);
 		if (cpu->cd.arm.translation_table != NULL) {
 			ofs = cpu->cd.arm.ttb & ((1 << BITS_PER_MEMBLOCK) - 1);
 			cpu->cd.arm.translation_table += ofs;

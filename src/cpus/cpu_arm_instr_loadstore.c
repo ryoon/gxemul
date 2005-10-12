@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.9 2005-10-09 21:32:07 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.10 2005-10-12 23:03:59 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -51,6 +51,11 @@
  */
 
 
+#if defined(A__SIGNED) && defined(A__H) && !defined(A__L)
+#define A__STRD
+#endif
+
+
 /*
  *  General load/store, by using memory_rw(). If at all possible, memory_rw()
  *  then inserts the page into the translation array, so that the fast
@@ -63,10 +68,15 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	const int memory_rw_flags = CACHE_DATA;
 #endif
+
 #ifdef A__REG
 	uint32_t (*reg_func)(struct cpu *, struct arm_instr_call *)
 	    = (void *)(size_t)ic->arg[1];
 #endif
+
+#ifdef A__STRD
+	unsigned char data[8];
+#else
 #ifdef A__B
 	unsigned char data[1];
 #else
@@ -76,6 +86,8 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	unsigned char data[4];
 #endif
 #endif
+#endif
+
 	uint32_t addr, low_pc, offset =
 #ifndef A__U
 	    -
@@ -126,17 +138,19 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #else
 	/*  Store:  */
-#ifdef A__B
 	data[0] = reg(ic->arg[2]);
-#else
-#ifdef A__H
-	data[0] = reg(ic->arg[2]);
+#ifndef A__B
 	data[1] = reg(ic->arg[2]) >> 8;
-#else
-	data[0] = reg(ic->arg[2]);
+#if !defined(A__H) || defined(A__STRD)
 	data[1] = reg(ic->arg[2]) >> 8;
 	data[2] = reg(ic->arg[2]) >> 16;
 	data[3] = reg(ic->arg[2]) >> 24;
+#ifdef A__STRD
+	data[4] = reg(ic->arg[2] + 4);
+	data[5] = reg(ic->arg[2] + 4) >> 8;
+	data[6] = reg(ic->arg[2] + 4) >> 16;
+	data[7] = reg(ic->arg[2] + 4) >> 24;
+#endif
 #endif
 #endif
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
@@ -163,6 +177,10 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 {
 #if !defined(A__P) && defined(A__W)
 	/*  T-bit: userland access. Use the general routine for that.  */
+	A__NAME__general(cpu, ic);
+#else
+#ifdef A__STRD
+	/*  Chicken out, let's do this unoptimized for now:  */
 	A__NAME__general(cpu, ic);
 #else
 #ifdef A__REG
@@ -241,6 +259,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		reg(ic->arg[0]) = addr + offset;
 #endif
 	}
+#endif	/*  not STRD  */
 #endif	/*  not T-bit  */
 }
 
@@ -374,4 +393,9 @@ void A__NAME_PC__le(struct cpu *cpu, struct arm_instr_call *ic)
 { if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
 ((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) ||
 (cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+#endif
+
+
+#ifdef A__STRD
+#undef A__STRD
 #endif

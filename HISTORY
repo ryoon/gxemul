@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.990 2005-10-12 15:10:49 debug Exp $
+$Id: HISTORY,v 1.991 2005-10-12 23:03:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2319,3 +2319,4 @@ Changelog for GXemul:
 20051012	Fixing the VGA cursor offset bug, and speeding up framebuffer
 		redraws if character cells contain the same thing as during
 		the last redraw.
+20051013	Adding a slow strd ARM instruction hack.

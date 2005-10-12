@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_loadstore.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: generate_arm_loadstore.c,v 1.2 2005-10-12 23:03:59 debug Exp $
  */
 
 #include <stdio.h>
@@ -180,8 +180,9 @@ int main(int argc, char *argv[])
 		    for (l=0; l<=1; l++) {
 			if (s==0 && h==0)
 				continue;
-			if (s==1 && l==0)
+			if (l==0 && s==1 && h==0)
 				continue;
+			/*  l=0, s=1, h=1 means STRD  */
 
 			printf("#define A__NAME__general arm_instr_%s_"
 			    "%s_%s_%s_%s_%s_%s__general\n",
@@ -257,7 +258,7 @@ int main(int argc, char *argv[])
 				printf("\tarm_instr_nop");
 			else if (s==0 && h==0)
 				printf("\tarm_instr_invalid");
-			else if (s==1 && l==0)
+			else if (l==0 && s==1 && h==0)
 				printf("\tarm_instr_invalid");
 			else
 				printf("\tarm_instr_%s_%s_%s_%s_%s_%s_%s%s%s",
@@ -292,7 +293,7 @@ int main(int argc, char *argv[])
 				printf("\tarm_instr_nop");
 			else if (s==0 && h==0)
 				printf("\tarm_instr_invalid");
-			else if (s==1 && l==0)
+			else if (l==0 && s==1 && h==0)
 				printf("\tarm_instr_invalid");
 			else
 				printf("\tarm_instr_%s_%s_%s_%s_%s_%s_"

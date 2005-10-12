@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.569 2005-10-11 03:31:27 debug Exp $
+ *  $Id: machine.c,v 1.570 2005-10-12 23:04:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4745,7 +4745,6 @@ Not yet.
 		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x8000);
 		}

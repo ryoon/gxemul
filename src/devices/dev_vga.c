@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.81 2005-10-07 22:10:52 debug Exp $
+ *  $Id: dev_vga.c,v 1.82 2005-10-12 15:10:50 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -92,7 +92,8 @@ struct vga_data {
 	unsigned char	*font;
 	size_t		charcells_size;
 	unsigned char	*charcells;		/*  2 bytes per char  */
-	unsigned char	*charcells_outputed;
+	unsigned char	*charcells_outputed;	/*  text  */
+	unsigned char	*charcells_drawn;	/*  framebuffer  */
 
 	/*  Graphics:  */
 	int		graphics_mode;
@@ -144,19 +145,37 @@ struct vga_data {
 
 
 /*
+ *  recalc_cursor_position():
+ *
+ *  Should be called whenever the cursor location _or_ the display
+ *  base has been changed.
+ */
+static void recalc_cursor_position(struct vga_data *d)
+{
+	int base = (d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
+	    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW];
+	int ofs = d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_HIGH] * 256 +
+	    d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_LOW];
+	ofs -= base;
+	d->cursor_x = ofs % d->max_x;
+	d->cursor_y = ofs / d->max_x;
+}
+
+
+/*
  *  register_reset():
  *
  *  Resets many registers to sane values.
  */
 static void register_reset(struct vga_data *d)
 {
-	/*  Home cursor:  */
-	d->cursor_x = d->cursor_y = 0;
+	/*  Home cursor and start at the top:  */
 	d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_HIGH] =
 	    d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_LOW] = 0;
-
 	d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] =
 	    d->crtc_reg[VGA_CRTC_START_ADDR_LOW] = 0;
+
+	recalc_cursor_position(d);
 
 	/*  Reset cursor scanline stuff:  */
 	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] = d->font_height - 4;
@@ -385,6 +404,14 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 
 	for (i=start; i<=end; i+=2) {
 		unsigned char ch = d->charcells[i + base];
+
+		if (d->charcells_drawn[i] == ch &&
+		    d->charcells_drawn[i+1] == d->charcells[i+base+1])
+			continue;
+
+		d->charcells_drawn[i] = ch;
+		d->charcells_drawn[i+1] = d->charcells[i + base + 1];
+
 		fg = d->charcells[i+base + 1] & 15;
 		bg = (d->charcells[i+base + 1] >> 4) & 7;
 
@@ -722,7 +749,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 	int regnr, int idata)
 {
-	int ofs, grayscale;
+	int grayscale;
 
 	switch (regnr) {
 	case VGA_CRTC_CURSOR_SCANLINE_START:		/*  0x0a  */
@@ -735,13 +762,11 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 		d->update_y1 = 0;
 		d->update_y2 = d->max_y - 1;
 		d->modified = 1;
+		recalc_cursor_position(d);
 		break;
 	case VGA_CRTC_CURSOR_LOCATION_HIGH:		/*  0x0e  */
 	case VGA_CRTC_CURSOR_LOCATION_LOW:		/*  0x0f  */
-		ofs = d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_HIGH] * 256 +
-		    d->crtc_reg[VGA_CRTC_CURSOR_LOCATION_LOW];
-		d->cursor_x = ofs % d->max_x;
-		d->cursor_y = ofs / d->max_x;
+		recalc_cursor_position(d);
 		break;
 	case 0xff:
 		grayscale = 0;
@@ -840,6 +865,7 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 
 		/*  Clear screen and reset the palette:  */
 		memset(d->charcells_outputed, 0, d->charcells_size);
+		memset(d->charcells_drawn, 0, d->charcells_size);
 		memset(d->gfx_mem, 0, d->gfx_mem_size);
 		d->update_x1 = 0;
 		d->update_x2 = d->max_x - 1;
@@ -1142,7 +1168,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	uint64_t videomem_base, uint64_t control_base, char *name)
 {
 	struct vga_data *d;
-	int i, tmpi;
+	int i;
 	size_t allocsize;
 
 	d = malloc(sizeof(struct vga_data));
@@ -1169,16 +1195,21 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	allocsize = ((d->charcells_size-1) | (machine->arch_pagesize-1)) + 1;
 	d->charcells = malloc(d->charcells_size);
 	d->charcells_outputed = malloc(d->charcells_size);
+	d->charcells_drawn = malloc(d->charcells_size);
 	d->gfx_mem = malloc(d->gfx_mem_size);
 	if (d->charcells == NULL || d->charcells_outputed == NULL ||
-	    d->gfx_mem == NULL) {
+	    d->charcells_drawn == NULL || d->gfx_mem == NULL) {
 		fprintf(stderr, "out of memory in dev_vga_init()\n");
 		exit(1);
 	}
 
+	memset(d->charcells_drawn, 0, d->charcells_size);
+
 	for (i=0; i<d->charcells_size; i+=2) {
 		d->charcells[i] = ' ';
 		d->charcells[i+1] = 0x07;  /*  Default color  */
+		d->charcells_drawn[i] = ' ';
+		d->charcells_drawn[i+1] = 0x07;
 	}
 
 	memset(d->charcells_outputed, 0, d->charcells_size);
@@ -1221,10 +1252,8 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	machine_add_tickfunction(machine, dev_vga_tick, d, VGA_TICK_SHIFT);
 
-	vga_update_cursor(machine, d);
-
-	tmpi = d->cursor_y * d->max_x + d->cursor_x;
-
 	register_reset(d);
+
+	vga_update_cursor(machine, d);
 }
 

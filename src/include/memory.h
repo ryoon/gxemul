@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.37 2005-09-22 09:07:00 debug Exp $
+ *  $Id: memory.h,v 1.38 2005-10-17 21:18:02 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -169,8 +169,10 @@ int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
 
 int userland_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache);
-#define	MEMORY_ACCESS_FAILED	0
-#define	MEMORY_ACCESS_OK	1
+#define	MEMORY_ACCESS_FAILED		0
+#define	MEMORY_ACCESS_OK		1
+#define	MEMORY_ACCESS_OK_WRITE		2
+#define	MEMORY_NOT_FULL_PAGE		256
 
 void memory_device_dyntrans_access(struct cpu *, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high);

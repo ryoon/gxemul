@@ -25,24 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.25 2005-10-12 23:03:59 debug Exp $
+ *  $Id: memory_arm.c,v 1.26 2005-10-17 21:18:01 debug Exp $
  *
  *
- *  TODO/NOTE: There are probably two solutions to the subpage access
- *  permission problem:
- *
- *  a) the obvious (almost trivial) solution is to decrease the native page
- *     size from 4 KB to 1 KB. That would ruin the rest of the translation
- *     system though. (It would be infeasible to hold the entire address
- *     space in 1-level tables.)
- *
- *  b) to return something else than just 0, 1, or 2 from arm_memory_rw().
- *     Perhaps |4, which would indicate that the vaddr => paddr conversion
- *     was done, but that it should not be entered into the cache. This could
- *     also be used in combination with the B and C bits (which are currently
- *     ignored).
- *
- *  b would probably be the best solution.
+ *  TODO/NOTE:  The B and/or C bits could also cause the return value to
+ *  be MEMORY_NOT_FULL_PAGE, to make sure it doesn't get entered into the
+ *  translation arrays. TODO: Find out if this is a good thing to do.
  */
 
 #include <stdio.h>
@@ -107,6 +95,9 @@ static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
  *	0  Failure
  *	1  Success, the page is readable only
  *	2  Success, the page is read/write
+ *
+ *  If this is a 1KB page access, then the return value is ORed with
+ *  MEMORY_NOT_FULL_PAGE.
  */
 int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	uint64_t *return_addr, int flags)
@@ -121,6 +112,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	int user = (cpu->cd.arm.cpsr & ARM_FLAG_MODE) == ARM_MODE_USR32;
 	int domain, dav, ap0,ap1,ap2,ap3, ap = 0, access = 0;
 	int fs = 2;		/*  fault status (2 = terminal exception)  */
+	int subpage = 0;
 
 	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
 		*return_addr = vaddr;
@@ -206,18 +198,12 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 			case 0x800: ap = ap2; break;
 			default:    ap = ap3;
 			}
-#if 0
-			if ((ap0 != ap1 || ap0 != ap2 || ap0 != ap3) &&
-			    !no_exceptions)
-				fatal("WARNING: vaddr = 0x%08x, small page, but"
-				    " different access permissions for the sub"
-				    "pages! This is not really implemented "
-				    "yet.\n", (int)vaddr);
-#endif
+			if (ap0 != ap1 || ap0 != ap2 || ap0 != ap3)
+				subpage = 1;
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
 		case 3:	/*  1KB page:  */
-			fatal("WARNING: 1 KB page! Not implemented yet.\n");
+			subpage = 1;
 			ap = (d2 >> 4) & 3;
 			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
@@ -228,7 +214,7 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 		}
 		access = arm_check_access(cpu, ap, dav, user);
 		if (access > writeflag)
-			return access;
+			return access | (subpage? MEMORY_NOT_FULL_PAGE : 0);
 		fs = FAULT_PERM_P;
 		goto exception_return;
 

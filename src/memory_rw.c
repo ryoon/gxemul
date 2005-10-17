@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.67 2005-10-17 05:32:17 debug Exp $
+ *  $Id: memory_rw.c,v 1.68 2005-10-17 21:18:00 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -565,6 +565,7 @@ have_paddr:
 	if (cpu->update_translation_table != NULL && !bintrans_device_danger
 #ifdef MEM_ARM
 	    && !(cache_flags & MEMORY_USER_ACCESS)
+	    && !(ok & MEMORY_NOT_FULL_PAGE)
 #endif
 	    && !no_exceptions)
 		cpu->update_translation_table(cpu, vaddr & ~offset_mask,

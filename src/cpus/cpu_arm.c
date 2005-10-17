@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.31 2005-10-17 05:32:18 debug Exp $
+ *  $Id: cpu_arm.c,v 1.32 2005-10-17 21:18:01 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -842,6 +842,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx000P U1WLnnnn ddddHHHH 1SH1LLLL load/store rd,imm(rn)
 		 */
 		if ((iw & 0x0e000090) == 0x00000090) {
+			char *op = "st";
 			int imm = ((iw >> 4) & 0xf0) | (iw & 0xf);
 			int regform = !(iw & 0x00400000);
 			p_bit = main_opcode & 1;
@@ -854,8 +855,11 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				break;
 			}
 			/*  Semi-generic case:  */
-			debug("%sr%s", iw & 0x00100000? "ld" : "st",
-			    condition);
+			if (iw & 0x00100000)
+				op = "ld";
+			if (!l_bit && (iw & 0xd0) == 0xd0)
+				op = iw & 0x20? "st" : "ld";
+			debug("%sr%s", op, condition);
 			if (!l_bit && (iw & 0xd0) == 0xd0) {
 				debug("d");		/*  Double-register  */
 			} else {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.14 2005-05-23 14:22:02 debug Exp $
+ *  $Id: dev_ram.c,v 1.15 2005-10-17 21:18:01 debug Exp $
  *  
  *  A generic RAM (memory) device.  Can also be used to mirror/alias another
  *  part of RAM.
@@ -37,7 +37,6 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#include "console.h"
 #include "cpu.h"
 #include "devices.h"
 #include "memory.h"

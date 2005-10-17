@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.1 2005-10-17 05:32:20 debug Exp $
+ *  $Id: dev_i80321.c,v 1.2 2005-10-17 21:18:01 debug Exp $
  *
  *  i80321.  TODO: This is just a dummy so far.
  */
@@ -75,12 +75,13 @@ int dev_i80321_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 
+#if 0
 	case VERDE_MCU_BASE + MCU_SDBR:
 	case VERDE_MCU_BASE + MCU_SBR0:
 	case VERDE_MCU_BASE + MCU_SBR1:
 		/*  No warning for these.  */
 		break;
-
+#endif
 	default:if (writeflag == MEM_READ) {
 			fatal("[ i80321: read from 0x%x ]\n",
 			    (int)relative_addr);
@@ -103,7 +104,8 @@ int dev_i80321_access(struct cpu *cpu, struct memory *mem,
 int devinit_i80321(struct devinit *devinit)
 {
 	struct i80321_data *d = malloc(sizeof(struct i80321_data));
-	uint32_t memsize = devinit->machine->physical_ram_in_mb, base;
+	uint32_t memsize = devinit->machine->physical_ram_in_mb * 1048576;
+	uint32_t base;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -111,9 +113,9 @@ int devinit_i80321(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct i80321_data));
 
-	d->mcu_reg[MCU_SDBR / sizeof(uint32_t)] = base = 0x00000000;
-	d->mcu_reg[MCU_SBR0 / sizeof(uint32_t)] = (base+memsize) / (32*1048576);
-	d->mcu_reg[MCU_SBR1 / sizeof(uint32_t)] = (base+memsize) / (32*1048576);
+	d->mcu_reg[MCU_SDBR / sizeof(uint32_t)] = base = 0xa0000000;
+	d->mcu_reg[MCU_SBR0 / sizeof(uint32_t)] = (base+memsize) >> 25;
+	d->mcu_reg[MCU_SBR1 / sizeof(uint32_t)] = (base+memsize) >> 25;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_I80321_LENGTH,

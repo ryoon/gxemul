@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.10 2005-10-12 23:03:59 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.11 2005-10-17 21:18:01 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -210,7 +210,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	    [addr >> 12];
 
 	if (page == NULL) {
-	        A__NAME__general(cpu, ic);
+		A__NAME__general(cpu, ic);
 	} else {
 #ifdef A__L
 #ifdef A__B

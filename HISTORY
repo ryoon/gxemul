@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.992 2005-10-17 05:32:15 debug Exp $
+$Id: HISTORY,v 1.993 2005-10-17 21:17:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2320,4 +2320,7 @@ Changelog for GXemul:
 		redraws if character cells contain the same thing as during
 		the last redraw.
 20051013	Adding a slow strd ARM instruction hack.
-20051017	Adding a dummy i80321 Verde controller (for XScale emulation).
+20051017	Minor updates: Adding a dummy i80321 Verde controller (for
+		XScale emulation), fixing the disassembly of the ARM "ldrd"
+		instruction, adding "support" for less-than-4KB pages for ARM
+		(by not adding them to translation tables).

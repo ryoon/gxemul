@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.571 2005-10-17 05:32:17 debug Exp $
+ *  $Id: machine.c,v 1.572 2005-10-17 21:18:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4753,8 +4753,9 @@ Not yet.
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 
-		/*  0xe0000000 = cache flush region  */
+		/*  0xe0000000 and 0xff000000 = cache flush regions  */
 		dev_ram_init(mem, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
+		dev_ram_init(mem, 0xff000000, 0x100000, DEV_RAM_RAM, 0x0);
 
 		device_add(machine, "i80321 addr=0xffffe000");
 

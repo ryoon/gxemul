@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_loadstore.c,v 1.2 2005-10-12 23:03:59 debug Exp $
+ *  $Id: generate_arm_loadstore.c,v 1.3 2005-10-17 22:20:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
 	printf("#include <stdio.h>\n#include <stdlib.h>\n"
 	    "#include \"cpu.h\"\n"
+	    "#include \"machine.h\"\n"
 	    "#include \"memory.h\"\n"
 	    "#include \"misc.h\"\n"
 	    "#define reg(x) (*((uint32_t *)(x)))\n");

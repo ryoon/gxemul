@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.45 2005-10-12 16:21:31 debug Exp $
+ *  $Id: cpu_arm.h,v 1.46 2005-10-17 05:32:20 debug Exp $
  */
 
 #include "misc.h"
@@ -249,12 +249,14 @@ struct arm_cpu {
 #define	ARM_CONTROL_L4		0x8000
 
 /*  cpu_arm.c:  */
+void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr);
+void arm_translation_table_set_l1(struct cpu *cpu, uint32_t vaddr,
+	uint32_t paddr);
 void arm_exception(struct cpu *, int);
 void arm_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void arm_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t, int);
 void arm_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
-void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr);
 void arm_load_register_bank(struct cpu *cpu);
 void arm_save_register_bank(struct cpu *cpu);
 int arm_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,

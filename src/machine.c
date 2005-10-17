@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.570 2005-10-12 23:04:07 debug Exp $
+ *  $Id: machine.c,v 1.571 2005-10-17 05:32:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2889,6 +2889,10 @@ void machine_setup(struct machine *machine)
 		if (machine->machine_type == MACHINE_SGI) {
 			/*  TODO:  Other SGI machine types?  */
 			switch (machine->machine_subtype) {
+			case 10:
+				strlcat(machine->machine_name, " (4D/25)", MACHINE_NAME_MAXBUF);
+				/*  TODO  */
+				break;
 			case 12:
 				strlcat(machine->machine_name,
 				    " (Iris Indigo IP12)", MACHINE_NAME_MAXBUF);
@@ -4744,9 +4748,22 @@ Not yet.
 		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
 		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
+
+		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+
+		/*  0xe0000000 = cache flush region  */
+		dev_ram_init(mem, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
+
+		device_add(machine, "i80321 addr=0xffffe000");
+
 		if (machine->prom_emulation) {
-			arm_setup_initial_translation_table(cpu, 0x8000);
+			arm_setup_initial_translation_table(cpu, 0x4000);
+			arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
+			arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
+			arm_translation_table_set_l1(cpu, 0xe0000000, 0xe0000000);
+			arm_translation_table_set_l1(cpu, 0xf0000000, 0xf0000000);
 		}
 		break;
 

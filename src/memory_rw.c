@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.66 2005-10-12 16:21:22 debug Exp $
+ *  $Id: memory_rw.c,v 1.67 2005-10-17 05:32:17 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -370,9 +370,11 @@ have_paddr:
 				if (res == 0)
 					res = -1;
 
+#ifdef MEM_MIPS
 				cpu->cd.mips.instruction_delay +=
 				    ( (abs(res) - 1) *
 				     cpu->cd.mips.cpu_type.instrs_per_cycle );
+#endif
 #endif
 
 #ifndef MEM_X86

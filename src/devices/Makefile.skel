@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.93 2005-10-09 21:32:08 debug Exp $
+#  $Id: Makefile.skel,v 1.94 2005-10-17 05:32:20 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -28,7 +28,7 @@ OBJS=lk201.o \
 	dev_vr41xx.o dev_au1x00.o \
 	dev_malta_lcd.o \
 	dev_lpt.o \
-	dev_pmppc.o dev_bebox.o dev_footbridge.o \
+	dev_pmppc.o dev_bebox.o dev_footbridge.o dev_i80321.o \
 	bus_pci.o pci_dec21030.o pci_dec21143.o pci_vt82c586.o \
 	pci_ahc.o pci_ali_m1543.o pci_igsfb.o pci_s3_virge.o \
 	pci_symphony_83c553.o

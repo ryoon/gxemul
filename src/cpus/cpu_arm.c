@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.32 2005-10-17 21:18:01 debug Exp $
+ *  $Id: cpu_arm.c,v 1.33 2005-10-17 22:02:21 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -203,6 +203,34 @@ void arm_translation_table_set_l1(struct cpu *cpu, uint32_t vaddr,
 			uint32_t addr = cpu->cd.arm.ttb +
 			    (((j << 28) + (i << 20)) >> 18);
 			uint32_t d = ((phigh << 28) + 1048576*i) | 0xc02;
+
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				descr[0] = d;       descr[1] = d >> 8;
+				descr[2] = d >> 16; descr[3] = d >> 24;
+			} else {
+				descr[3] = d;       descr[2] = d >> 8;
+				descr[1] = d >> 16; descr[0] = d >> 24;
+			}
+			cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
+			    sizeof(descr), MEM_WRITE, PHYSICAL | NO_EXCEPTIONS);
+		}
+}
+
+
+/*
+ *  arm_translation_table_set_l1_b():
+ */
+void arm_translation_table_set_l1_b(struct cpu *cpu, uint32_t vaddr,
+	uint32_t paddr)
+{
+	unsigned int i, j, vhigh = vaddr >> 24, phigh = paddr >> 24;
+
+	for (i=0; i<16; i++)
+		for (j=vhigh; j<=vhigh; j++) {
+			unsigned char descr[4];
+			uint32_t addr = cpu->cd.arm.ttb +
+			    (((j << 24) + (i << 20)) >> 18);
+			uint32_t d = ((phigh << 24) + 1048576*i) | 0xc02;
 
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 				descr[0] = d;       descr[1] = d >> 8;

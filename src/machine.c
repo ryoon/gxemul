@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.572 2005-10-17 21:18:00 debug Exp $
+ *  $Id: machine.c,v 1.573 2005-10-17 22:02:19 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4772,9 +4772,21 @@ Not yet.
 		machine->machine_name = "Iyonix";
 		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
 		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
+
+		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
+
+		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
+		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+
+		device_add(machine, "i80321 addr=0xffffe000");
+
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
 			    machine->physical_ram_in_mb * 1048576 - 65536);
+			arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
+			arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
+			arm_translation_table_set_l1_b(cpu, 0xff000000, 0xff000000);
 		}
 		break;
 #endif	/*  ENABLE_ARM  */

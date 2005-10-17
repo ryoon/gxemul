@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.2 2005-10-17 21:18:01 debug Exp $
+ *  $Id: dev_i80321.c,v 1.3 2005-10-17 22:26:24 debug Exp $
  *
  *  i80321.  TODO: This is just a dummy so far.
  */
@@ -34,8 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bus_pci.h"
-#include "console.h"
 #include "cpu.h"
 #include "device.h"
 #include "machine.h"
@@ -61,6 +59,7 @@ int dev_i80321_access(struct cpu *cpu, struct memory *mem,
 {
 	struct i80321_data *d = extra;
 	uint64_t idata = 0, odata = 0;
+	char *n = NULL;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -75,19 +74,31 @@ int dev_i80321_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 
-#if 0
 	case VERDE_MCU_BASE + MCU_SDBR:
-	case VERDE_MCU_BASE + MCU_SBR0:
-	case VERDE_MCU_BASE + MCU_SBR1:
-		/*  No warning for these.  */
+		n = "MCU_SDBR";
 		break;
-#endif
+	case VERDE_MCU_BASE + MCU_SBR0:
+		n = "MCU_SBR0";
+		break;
+	case VERDE_MCU_BASE + MCU_SBR1:
+		n = "MCU_SBR1";
+		break;
+
 	default:if (writeflag == MEM_READ) {
 			fatal("[ i80321: read from 0x%x ]\n",
 			    (int)relative_addr);
 		} else {
 			fatal("[ i80321: write to 0x%x: 0x%llx ]\n",
 			    (int)relative_addr, (long long)idata);
+		}
+	}
+
+	if (n != NULL) {
+		if (writeflag == MEM_READ) {
+			debug("[ i80321: read from %s ]\n", n);
+		} else {
+			debug("[ i80321: write to %s: 0x%llx ]\n",
+			    n, (long long)idata);
 		}
 	}
 

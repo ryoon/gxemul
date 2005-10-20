@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.15 2005-10-17 21:18:01 debug Exp $
+ *  $Id: dev_ram.c,v 1.16 2005-10-20 22:49:07 debug Exp $
  *  
- *  A generic RAM (memory) device.  Can also be used to mirror/alias another
+ *  A generic RAM (memory) device. Can also be used to mirror/alias another
  *  part of RAM.
  */
 
@@ -39,6 +39,7 @@
 
 #include "cpu.h"
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -48,6 +49,9 @@
 struct ram_data {
 	int		mode;
 	uint64_t	otheraddress;
+
+	/*  If mode = DEV_RAM_MIRROR:  */
+	uint64_t	offset;
 
 	/*  If mode = DEV_RAM_RAM:  */
 	unsigned char	*data;
@@ -101,7 +105,7 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_ram_init():
  */
-void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length,
+void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	int mode, uint64_t otheraddress)
 {
 	struct ram_data *d;
@@ -119,6 +123,12 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length,
 
 	switch (d->mode) {
 	case DEV_RAM_MIRROR:
+		d->offset = baseaddr - otheraddress;
+		memory_device_register(machine->memory, "ram [mirror]",
+		    baseaddr, length, dev_ram_access, d, MEM_DEFAULT
+		    | MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK
+		    | MEM_EMULATED_RAM | MEM_READING_HAS_NO_SIDE_EFFECTS,
+		    &d->offset);
 		break;
 	case DEV_RAM_RAM:
 		/*
@@ -127,6 +137,8 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length,
 		 *  can be slow for large chunks of memory.
 		 */
 		d->length = length;
+		/*  Round up to emulated page size:  */
+		length = ((length - 1) | (machine->arch_pagesize - 1)) + 1;
 		d->data = (unsigned char *) mmap(NULL, length,
 		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		if (d->data == NULL) {
@@ -137,15 +149,14 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length,
 			}
 			memset(d->data, 0, length);
 		}
+		memory_device_register(machine->memory, "ram", baseaddr,
+		    d->length, dev_ram_access, d, MEM_DEFAULT | MEM_DYNTRANS_OK
+		    | MEM_DYNTRANS_WRITE_OK
+		    | MEM_READING_HAS_NO_SIDE_EFFECTS, d->data);
 		break;
 	default:
 		fatal("dev_ram_access(): unknown mode %i\n", d->mode);
 		exit(1);
 	}
-
-	memory_device_register(mem, d->mode == DEV_RAM_MIRROR?
-	    "ram [mirror]" : "ram", baseaddr, length,
-	    dev_ram_access, d, MEM_DEFAULT | MEM_READING_HAS_NO_SIDE_EFFECTS,
-	    NULL);
 }
 

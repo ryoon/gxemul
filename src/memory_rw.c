@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.68 2005-10-17 21:18:00 debug Exp $
+ *  $Id: memory_rw.c,v 1.69 2005-10-20 22:49:07 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -332,6 +332,7 @@ have_paddr:
 				if (cpu->update_translation_table != NULL &&
 				    mem->dev_flags[i] & MEM_DYNTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
+					unsigned char *host_addr;
 
 					if (writeflag) {
 						if (paddr < mem->
@@ -352,10 +353,27 @@ have_paddr:
 					    MEM_DYNTRANS_WRITE_OK))
 						wf = 0;
 
+					if (mem->dev_flags[i] &
+					    MEM_EMULATED_RAM) {
+						/*  MEM_WRITE to force the page
+						    to be allocated, if it
+						    wasn't already  */
+						uint64_t *pp =
+						    mem->dev_dyntrans_data[i];
+						uint64_t p = orig_paddr - *pp;
+						host_addr =
+						    memory_paddr_to_hostaddr(
+						    mem, p, MEM_WRITE)
+						    + (p & ~offset_mask
+						    & ((1 <<
+						    BITS_PER_MEMBLOCK) - 1));
+					} else {
+						host_addr =
+						    mem->dev_dyntrans_data[i] +
+						    (paddr & ~offset_mask);
+					}
 					cpu->update_translation_table(cpu,
-					    vaddr & ~offset_mask,
-					    mem->dev_dyntrans_data[i] +
-					    (paddr & ~offset_mask),
+					    vaddr & ~offset_mask, host_addr,
 					    wf, orig_paddr & ~offset_mask);
 				}
 

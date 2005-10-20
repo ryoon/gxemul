@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.185 2005-10-08 22:54:04 debug Exp $
+ *  $Id: devices.h,v 1.186 2005-10-20 22:49:08 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -190,7 +190,7 @@ void dev_decxmi_init(struct memory *mem, uint64_t baseaddr);
 						/*  turbochannel rom,         */
 						/*  otherwise size = 4MB      */
 #define	VFB_GENERIC		0
-#define	VFB_HPCMIPS		1
+#define	VFB_HPC			1
 #define	VFB_DEC_VFB01		2
 #define	VFB_DEC_VFB02		3
 #define	VFB_DEC_MAXINE		4
@@ -456,20 +456,27 @@ struct px_data {
 #define	DEV_PX_TYPE_PXGPLUS		2
 #define	DEV_PX_TYPE_PXGPLUSTURBO	3
 #define	DEV_PX_LENGTH			0x3c0000
-int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_px_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int px_type, int irq_nr);
+int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+void dev_px_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
+	int px_type, int irq_nr);
 
 /*  dev_ram.c:  */
 #define	DEV_RAM_RAM		0
 #define	DEV_RAM_MIRROR		1
-int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length, int mode, uint64_t otheraddr);
+int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
+	int mode, uint64_t otheraddr);
 
 /*  dev_scc.c:  */
 #define	DEV_SCC_LENGTH			0x1000
-int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len, int tx);
-void *dev_scc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
+int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr,
+	size_t dma_len, int tx);
+void *dev_scc_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
 
 /*  dev_sfb.c:  */
 #define	DEV_SFB_LENGTH		0x400000

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.19 2005-04-05 20:33:08 debug Exp $
+ *  $Id: pci_ahc.c,v 1.20 2005-10-20 22:49:07 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -277,7 +277,7 @@ void pci_ahc_init(struct machine *machine, struct memory *mem)
 
 	/*  OpenBSD/sgi snapshots sometime between 2005-03-11 and
 	    2005-04-04 changed to using 0x1a000000:  */
-	dev_ram_init(mem, 0x1a000000, 0x2000000, DEV_RAM_MIRROR,
+	dev_ram_init(machine, 0x1a000000, 0x2000000, DEV_RAM_MIRROR,
 	    0x18000000);
 }
 

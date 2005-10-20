@@ -25,14 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.107 2005-09-18 19:54:15 debug Exp $
+ *  $Id: dev_fb.c,v 1.108 2005-10-20 22:49:07 debug Exp $
  *  
  *  Generic framebuffer device.
  *
  *	DECstation VFB01 monochrome framebuffer, 1024x864
  *	DECstation VFB02 8-bit color framebuffer, 1024x864
  *	DECstation Maxine, 1024x768 8-bit color
- *	HPCmips framebuffer
+ *	HPC (mips, arm, ..) framebuffer
  *	Playstation 2 (24-bit color)
  *	generic (any resolution, several bit depths possible)
  *
@@ -388,8 +388,8 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				c = d->framebuffer[fb_addr >> 3];
 				fb_addr &= 7;
 
-				/*  HPCmips is reverse:  */
-				if (d->vfb_type == VFB_HPCMIPS)
+				/*  HPC is reverse:  */
+				if (d->vfb_type == VFB_HPC)
 					fb_addr = 8 - d->bit_depth - fb_addr;
 
 				c = (c >> fb_addr) & ((1<<d->bit_depth) - 1);
@@ -435,7 +435,7 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 					break;
 				/*  TODO: copy to the scaledown code below  */
 				case 16:
-					if (d->vfb_type == VFB_HPCMIPS) {
+					if (d->vfb_type == VFB_HPC) {
 						b = d->framebuffer[fb_addr] +
 						    (d->framebuffer[fb_addr+1]
 						    << 8);
@@ -521,8 +521,8 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				c = d->framebuffer[fb_addr >> 3];
 				fb_addr &= 7;
 
-				/*  HPCmips is reverse:  */
-				if (d->vfb_type == VFB_HPCMIPS)
+				/*  HPC is reverse:  */
+				if (d->vfb_type == VFB_HPC)
 					fb_addr = 8 - d->bit_depth - fb_addr;
 
 				c = (c >> fb_addr) & ((1<<d->bit_depth) - 1);
@@ -936,7 +936,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
  *
  *  VFB_DEC_VFB01, _VFB02, and VFB_DEC_MAXINE are DECstation specific.
  *
- *  If type is VFB_HPCMIPS, then color encoding differs from the generic case.
+ *  If type is VFB_HPC, then color encoding differs from the generic case.
  *
  *  If bit_depth = -15 (note the minus sign), then a special hack is used for
  *  the Playstation Portable's 5-bit R, 5-bit G, 5-bit B.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.573 2005-10-17 22:02:19 debug Exp $
+ *  $Id: machine.c,v 1.574 2005-10-20 22:49:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1528,12 +1528,17 @@ void machine_setup(struct machine *machine)
 		struct btinfo_symtab c;
 	} xx;
 	struct hpc_bootinfo hpc_bootinfo;
-	uint64_t hpcmips_fb_addr = 0;
-	int hpcmips_fb_bits = 0, hpcmips_fb_encoding = 0;
-	int hpcmips_fb_xsize = 0;
-	int hpcmips_fb_ysize = 0;
-	int hpcmips_fb_xsize_mem = 0;
-	int hpcmips_fb_ysize_mem = 0;
+	int hpc_platid_flags = 0, hpc_platid_cpu_submodel = 0,
+	    hpc_platid_cpu_model = 0, hpc_platid_cpu_series = 0,
+	    hpc_platid_cpu_arch = 0,
+	    hpc_platid_submodel = 0, hpc_platid_model = 0,
+	    hpc_platid_series = 0, hpc_platid_vendor = 0;
+	uint64_t hpc_fb_addr = 0;
+	int hpc_fb_bits = 0, hpc_fb_encoding = 0;
+	int hpc_fb_xsize = 0;
+	int hpc_fb_ysize = 0;
+	int hpc_fb_xsize_mem = 0;
+	int hpc_fb_ysize_mem = 0;
 
 	/*  ARCBIOS stuff:  */
 	uint64_t sgi_ram_offset = 0;
@@ -2124,7 +2129,7 @@ void machine_setup(struct machine *machine)
 		 *  0x20000000, but OSF/1 seems to use 0xbe...... as if it was
 		 *  0x1e......, so we need this hack:
 		 */
-		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 
 		if (machine->prom_emulation) {
 			/*  DECstation PROM stuff:  (TODO: endianness)  */
@@ -2407,20 +2412,6 @@ void machine_setup(struct machine *machine)
 	case MACHINE_HPCMIPS:
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
-		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
-		/*
-		#define PLATID_FLAGS_SHIFT              0
-		#define PLATID_CPU_SUBMODEL_SHIFT       8
-		#define PLATID_CPU_MODEL_SHIFT          14
-		#define PLATID_CPU_SERIES_SHIFT         20
-		#define PLATID_CPU_ARCH_SHIFT           26
-
-		#define PLATID_SUBMODEL_SHIFT           0
-		#define PLATID_MODEL_SHIFT              8
-		#define PLATID_SERIES_SHIFT             16
-		#define PLATID_VENDOR_SHIFT             22
-		*/
-
 		/*
 		NOTE: See http://forums.projectmayo.com/viewtopic.php?topic=2743&forum=23
 		for info on framebuffer addresses.
@@ -2430,13 +2421,13 @@ void machine_setup(struct machine *machine)
 		case MACHINE_HPCMIPS_CASIO_BE300:
 			/*  166MHz VR4131  */
 			machine->machine_name = "Casio Cassiopeia BE-300";
-			hpcmips_fb_addr = 0x0a200000;
-			hpcmips_fb_xsize = 240;
-			hpcmips_fb_ysize = 320;
-			hpcmips_fb_xsize_mem = 256;
-			hpcmips_fb_ysize_mem = 320;
-			hpcmips_fb_bits = 15;
-			hpcmips_fb_encoding = BIFB_D16_0000;
+			hpc_fb_addr = 0x0a200000;
+			hpc_fb_xsize = 240;
+			hpc_fb_ysize = 320;
+			hpc_fb_xsize_mem = 256;
+			hpc_fb_ysize_mem = 320;
+			hpc_fb_bits = 15;
+			hpc_fb_encoding = BIFB_D16_0000;
 
 			/*  TODO: irq?  */
 			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
@@ -2462,13 +2453,13 @@ void machine_setup(struct machine *machine)
 		case MACHINE_HPCMIPS_CASIO_E105:
 			/*  131MHz VR4121  */
 			machine->machine_name = "Casio Cassiopeia E-105";
-			hpcmips_fb_addr = 0x0a200000;	/*  TODO?  */
-			hpcmips_fb_xsize = 240;
-			hpcmips_fb_ysize = 320;
-			hpcmips_fb_xsize_mem = 256;
-			hpcmips_fb_ysize_mem = 320;
-			hpcmips_fb_bits = 16;
-			hpcmips_fb_encoding = BIFB_D16_0000;
+			hpc_fb_addr = 0x0a200000;	/*  TODO?  */
+			hpc_fb_xsize = 240;
+			hpc_fb_ysize = 320;
+			hpc_fb_xsize_mem = 256;
+			hpc_fb_ysize_mem = 320;
+			hpc_fb_bits = 16;
+			hpc_fb_encoding = BIFB_D16_0000;
 
 			/*  TODO: irq?  */
 			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
@@ -2494,13 +2485,13 @@ void machine_setup(struct machine *machine)
 			/*  131 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 770";
 			/*  TODO:  */
-			hpcmips_fb_addr = 0xa000000;
-			hpcmips_fb_xsize = 640;
-			hpcmips_fb_ysize = 240;
-			hpcmips_fb_xsize_mem = 800;
-			hpcmips_fb_ysize_mem = 240;
-			hpcmips_fb_bits = 16;
-			hpcmips_fb_encoding = BIFB_D16_0000;
+			hpc_fb_addr = 0xa000000;
+			hpc_fb_xsize = 640;
+			hpc_fb_ysize = 240;
+			hpc_fb_xsize_mem = 800;
+			hpc_fb_ysize_mem = 240;
+			hpc_fb_bits = 16;
+			hpc_fb_encoding = BIFB_D16_0000;
 
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
@@ -2522,13 +2513,13 @@ void machine_setup(struct machine *machine)
 			/*  166 (or 168) MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 780";
 			/*  TODO:  */
-			hpcmips_fb_addr = 0xa180100;
-			hpcmips_fb_xsize = 640;
-			hpcmips_fb_ysize = 240;
-			hpcmips_fb_xsize_mem = 640;
-			hpcmips_fb_ysize_mem = 240;
-			hpcmips_fb_bits = 16;
-			hpcmips_fb_encoding = BIFB_D16_0000;
+			hpc_fb_addr = 0xa180100;
+			hpc_fb_xsize = 640;
+			hpc_fb_ysize = 240;
+			hpc_fb_xsize_mem = 640;
+			hpc_fb_ysize_mem = 240;
+			hpc_fb_bits = 16;
+			hpc_fb_encoding = BIFB_D16_0000;
 
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
@@ -2550,13 +2541,13 @@ void machine_setup(struct machine *machine)
 			/*  131 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 800";
 			/*  TODO:  */
-			hpcmips_fb_addr = 0xa000000;
-			hpcmips_fb_xsize = 800;
-			hpcmips_fb_ysize = 600;
-			hpcmips_fb_xsize_mem = 800;
-			hpcmips_fb_ysize_mem = 600;
-			hpcmips_fb_bits = 16;
-			hpcmips_fb_encoding = BIFB_D16_0000;
+			hpc_fb_addr = 0xa000000;
+			hpc_fb_xsize = 800;
+			hpc_fb_ysize = 600;
+			hpc_fb_xsize_mem = 800;
+			hpc_fb_ysize_mem = 600;
+			hpc_fb_bits = 16;
+			hpc_fb_encoding = BIFB_D16_0000;
 
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
@@ -2578,13 +2569,13 @@ void machine_setup(struct machine *machine)
 			/*  168 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 880";
 			/*  TODO:  */
-			hpcmips_fb_addr = 0xa0ea600;
-			hpcmips_fb_xsize = 800;
-			hpcmips_fb_ysize = 600;
-			hpcmips_fb_xsize_mem = 800;
-			hpcmips_fb_ysize_mem = 600;
-			hpcmips_fb_bits = 16;
-			hpcmips_fb_encoding = BIFB_D16_0000;
+			hpc_fb_addr = 0xa0ea600;
+			hpc_fb_xsize = 800;
+			hpc_fb_ysize = 600;
+			hpc_fb_xsize_mem = 800;
+			hpc_fb_ysize_mem = 600;
+			hpc_fb_bits = 16;
+			hpc_fb_encoding = BIFB_D16_0000;
 
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
@@ -2606,13 +2597,13 @@ void machine_setup(struct machine *machine)
 			/*  66 MHz VR4181  */
 			machine->machine_name = "Agenda VR3";
 			/*  TODO:  */
-			hpcmips_fb_addr = 0x1000;
-			hpcmips_fb_xsize = 160;
-			hpcmips_fb_ysize = 240;
-			hpcmips_fb_xsize_mem = 160;
-			hpcmips_fb_ysize_mem = 240;
-			hpcmips_fb_bits = 4;
-			hpcmips_fb_encoding = BIFB_D4_M2L_F;
+			hpc_fb_addr = 0x1000;
+			hpc_fb_xsize = 160;
+			hpc_fb_ysize = 240;
+			hpc_fb_xsize_mem = 160;
+			hpc_fb_ysize_mem = 240;
+			hpc_fb_bits = 4;
+			hpc_fb_encoding = BIFB_D4_M2L_F;
 
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4181);
 			machine->md_interrupt = vr41xx_interrupt;
@@ -2641,19 +2632,19 @@ void machine_setup(struct machine *machine)
 			    + (0)		/*   0: submodel 0="VR3" */
 			    );
 
-			dev_ram_init(mem, 0x0f000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
+			dev_ram_init(machine, 0x0f000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
 			break;
 		case MACHINE_HPCMIPS_IBM_WORKPAD_Z50:
 			/*  131 MHz VR4121  */
 			machine->machine_name = "IBM Workpad Z50";
 			/*  TODO:  */
-			hpcmips_fb_addr = 0xa000000;
-			hpcmips_fb_xsize = 640;
-			hpcmips_fb_ysize = 480;
-			hpcmips_fb_xsize_mem = 640;
-			hpcmips_fb_ysize_mem = 480;
-			hpcmips_fb_bits = 16;
-			hpcmips_fb_encoding = BIFB_D16_0000;
+			hpc_fb_addr = 0xa000000;
+			hpc_fb_xsize = 640;
+			hpc_fb_ysize = 480;
+			hpc_fb_xsize_mem = 640;
+			hpc_fb_ysize_mem = 480;
+			hpc_fb_bits = 16;
+			hpc_fb_encoding = BIFB_D16_0000;
 
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
@@ -2734,11 +2725,11 @@ void machine_setup(struct machine *machine)
 
 			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpcmips_fb_addr);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpcmips_fb_xsize_mem * (((hpcmips_fb_bits-1)|7)+1) / 8);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpcmips_fb_xsize);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpcmips_fb_ysize);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpcmips_fb_encoding);
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpc_fb_addr);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpc_fb_xsize_mem * (((hpc_fb_bits-1)|7)+1) / 8);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpc_fb_xsize);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpc_fb_ysize);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpc_fb_encoding);
 			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
 
 			/*  printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
@@ -2747,15 +2738,15 @@ void machine_setup(struct machine *machine)
 			store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 		}
 
-		if (hpcmips_fb_addr != 0) {
-			dev_fb_init(machine, mem, hpcmips_fb_addr, VFB_HPCMIPS,
-			    hpcmips_fb_xsize, hpcmips_fb_ysize,
-			    hpcmips_fb_xsize_mem, hpcmips_fb_ysize_mem,
-			    hpcmips_fb_bits, "HPCmips");
+		if (hpc_fb_addr != 0) {
+			dev_fb_init(machine, mem, hpc_fb_addr, VFB_HPC,
+			    hpc_fb_xsize, hpc_fb_ysize,
+			    hpc_fb_xsize_mem, hpc_fb_ysize_mem,
+			    hpc_fb_bits, "HPC");
 
 			/*  NetBSD/hpcmips uses framebuffer at physical
 			    address 0x8.......:  */
-			dev_ram_init(mem, 0x80000000, 0x20000000,
+			dev_ram_init(machine, 0x80000000, 0x20000000,
 			    DEV_RAM_MIRROR, 0x0);
 		}
 
@@ -2784,7 +2775,7 @@ void machine_setup(struct machine *machine)
 		machine->md_int.ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
 		device_add(machine, "ps2_gs addr=0x12000000");
 		device_add(machine, "ps2_ether addr=0x14001000");
-		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
+		dev_ram_init(machine, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
 		/*  irq = 8 + 32 + 1 (SBUS/USB)  */
 		device_add(machine, "ohci addr=0x1f801600 irq=41");
 
@@ -2871,14 +2862,14 @@ void machine_setup(struct machine *machine)
 			/*  Special cases for IP20,22,24,26 memory offset:  */
 			if (machine->machine_subtype == 20 || machine->machine_subtype == 22 ||
 			    machine->machine_subtype == 24 || machine->machine_subtype == 26) {
-				dev_ram_init(mem, 0x00000000, 0x10000, DEV_RAM_MIRROR, sgi_ram_offset);
-				dev_ram_init(mem, 0x00050000, sgi_ram_offset-0x50000, DEV_RAM_MIRROR, sgi_ram_offset + 0x50000);
+				dev_ram_init(machine, 0x00000000, 0x10000, DEV_RAM_MIRROR, sgi_ram_offset);
+				dev_ram_init(machine, 0x00050000, sgi_ram_offset-0x50000, DEV_RAM_MIRROR, sgi_ram_offset + 0x50000);
 			}
 
 			/*  Special cases for IP28,30 memory offset:  */
 			if (machine->machine_subtype == 28 || machine->machine_subtype == 30) {
 				/*  TODO: length below should maybe not be 128MB?  */
-				dev_ram_init(mem, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
+				dev_ram_init(machine, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
 			}
 		} else {
 			cpu->byte_order = EMUL_LITTLE_ENDIAN;
@@ -2994,7 +2985,7 @@ void machine_setup(struct machine *machine)
 
 /*
 Why is this here? TODO
-				dev_ram_init(mem, 0x88000000ULL,
+				dev_ram_init(machine, 0x88000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x08000000);
 */
 				machine->md_interrupt = sgi_ip22_interrupt;
@@ -3121,10 +3112,10 @@ Why is this here? TODO
 				machine->md_int.sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
 				machine->md_interrupt = sgi_ip30_interrupt;
 
-				dev_ram_init(mem,    0xa0000000ULL,
+				dev_ram_init(machine,    0xa0000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 
-				dev_ram_init(mem,    0x80000000ULL,
+				dev_ram_init(machine,    0x80000000ULL,
 				    32 * 1048576, DEV_RAM_RAM, 0x00000000);
 
 				/*
@@ -3156,13 +3147,13 @@ Why is this here? TODO
 				    " (O2)", MACHINE_NAME_MAXBUF);
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
-				dev_ram_init(mem, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
-				dev_ram_init(mem, 0x10000000ULL,           256, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x11ffff00ULL,           256, DEV_RAM_MIRROR, 0x01ffff00);
-				dev_ram_init(mem, 0x12000000ULL,           256, DEV_RAM_MIRROR, 0x02000000);
-				dev_ram_init(mem, 0x17ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
-				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
+				dev_ram_init(machine, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
+				dev_ram_init(machine, 0x10000000ULL,           256, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(machine, 0x11ffff00ULL,           256, DEV_RAM_MIRROR, 0x01ffff00);
+				dev_ram_init(machine, 0x12000000ULL,           256, DEV_RAM_MIRROR, 0x02000000);
+				dev_ram_init(machine, 0x17ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
+				dev_ram_init(machine, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(machine, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 
 				machine->md_int.ip32.crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
@@ -3473,7 +3464,7 @@ Why is this here? TODO
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
 					/*  PROM mirror?  */
-					dev_ram_init(mem, 0xfff00000, 0x100000,
+					dev_ram_init(machine, 0xfff00000, 0x100000,
 					    DEV_RAM_MIRROR, 0x1fc00000);
 
 					/*  VXL. TODO  */
@@ -4046,7 +4037,7 @@ Not yet.
 			    "------------------------------------------\n");
 
 		/*  480 x 272 pixels framebuffer (512 bytes per line)  */
-		fb = dev_fb_init(machine, mem, 0x04000000, VFB_HPCMIPS,
+		fb = dev_fb_init(machine, mem, 0x04000000, VFB_HPC,
 		    480,272, 512,1088, -15, "Playstation Portable");
 
 		/*
@@ -4264,7 +4255,7 @@ Not yet.
 			 *  r5 = OpenFirmware entry point.  NOTE: See
 			 *  cpu_ppc.c for the rest of this semi-ugly hack.
 			 */
-			dev_ram_init(cpu->mem, cpu->cd.ppc.of_emul_addr,
+			dev_ram_init(machine, cpu->cd.ppc.of_emul_addr,
 			    0x1000, DEV_RAM_RAM, 0x0);
 			store_32bit_word(cpu, cpu->cd.ppc.of_emul_addr,
 			    0x44ee0002);
@@ -4594,10 +4585,10 @@ Not yet.
 		machine->md_interrupt = footbridge_interrupt;
 
 		/*  NetBSD and OpenBSD clean their caches here:  */
-		dev_ram_init(mem, 0x50000000, 0x4000, DEV_RAM_RAM, 0);
+		dev_ram_init(machine, 0x50000000, 0x4000, DEV_RAM_RAM, 0);
 
 		/*  Interrupt ack space?  */
-		dev_ram_init(mem, 0x80000000, 0x1000, DEV_RAM_RAM, 0);
+		dev_ram_init(machine, 0x80000000, 0x1000, DEV_RAM_RAM, 0);
 
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
@@ -4671,20 +4662,122 @@ Not yet.
 		break;
 
 	case MACHINE_HPCARM:
-		machine->machine_name = "HPCarm";
-		dev_ram_init(mem, 0xc0000000, 0x10000000, DEV_RAM_MIRROR, 0x0);
+		cpu->byte_order = EMUL_LITTLE_ENDIAN;
+		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
+		switch (machine->machine_subtype) {
+		case MACHINE_HPCARM_IPAQ:
+			/*  SA-1110 206MHz  */
+			machine->machine_name = "Compaq iPAQ H3600";
+			hpc_fb_addr = 0x48200000;	/*  TODO  */
+			hpc_fb_xsize = 240;
+			hpc_fb_ysize = 320;
+			hpc_fb_xsize_mem = 256;
+			hpc_fb_ysize_mem = 320;
+			hpc_fb_bits = 15;
+			hpc_fb_encoding = BIFB_D16_0000;
+			hpc_platid_cpu_submodel = 0;
+			hpc_platid_cpu_model = 2;	/*  SA-1110  */
+			hpc_platid_cpu_series = 1;	/*  StrongARM  */
+			hpc_platid_cpu_arch = 3;	/*  ARM  */
+			hpc_platid_submodel = 1;	/*  H3600  */
+			hpc_platid_model = 2;		/*  H36xx  */
+			hpc_platid_series = 4;		/*  IPAQ  */
+			hpc_platid_vendor = 7;		/*  Compaq  */
+			break;
+		case MACHINE_HPCARM_JORNADA720:
+			/*  SA-1110 206MHz  */
+			machine->machine_name = "Jornada 720";
+			hpc_fb_addr = 0x48200000;
+			hpc_fb_xsize = 640;
+			hpc_fb_ysize = 240;
+			hpc_fb_xsize_mem = 640;
+			hpc_fb_ysize_mem = 240;
+			hpc_fb_bits = 16;
+			hpc_fb_encoding = BIFB_D16_0000;
+			hpc_platid_cpu_submodel = 0;
+			hpc_platid_cpu_model = 2;	/*  SA-1110  */
+			hpc_platid_cpu_series = 1;	/*  StrongARM  */
+			hpc_platid_cpu_arch = 3;	/*  ARM  */
+			hpc_platid_submodel = 1;	/*  720  */
+			hpc_platid_model = 2;		/*  7xx  */
+			hpc_platid_series = 2;		/*  Jornada  */
+			hpc_platid_vendor = 11;		/*  HP  */
+			break;
+		default:
+			printf("Unimplemented hpcarm machine number.\n");
+			exit(1);
+		}
 
-		/*  TODO: Different models  */
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+		      (hpc_platid_cpu_arch << 26) + (hpc_platid_cpu_series << 20)
+		    + (hpc_platid_cpu_model << 14) + (hpc_platid_cpu_submodel <<  8)
+		    + hpc_platid_flags);
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+		      (hpc_platid_vendor << 22) + (hpc_platid_series << 16)
+		    + (hpc_platid_model <<  8) + hpc_platid_submodel);
 
 		if (machine->prom_emulation) {
-			cpu->cd.arm.r[0] = 1;
-			cpu->cd.arm.r[ARM_SP] = 0xc000c000;
+			/*  NetBSD/hpcarm and possibly others expects the following:  */
+
+			cpu->cd.arm.r[0] = 1;	/*  argc  */
+			cpu->cd.arm.r[1] = machine->physical_ram_in_mb * 1048576 - 512;	/*  argv  */
+			cpu->cd.arm.r[2] = machine->physical_ram_in_mb * 1048576 - 256;	/*  ptr to hpc_bootinfo  */
+
+			bootstr = machine->boot_kernel_filename;
+			store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512,
+			    machine->physical_ram_in_mb * 1048576 - 512 + 16);
+			store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
+			store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
+
+			if (machine->boot_string_argument[0]) {
+				cpu->cd.arm.r[0] ++;	/*  argc  */
+
+				store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 4, machine->physical_ram_in_mb * 1048576 - 512 + 64);
+				store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
+
+				store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 64,
+				    machine->boot_string_argument);
+
+				bootarg = machine->boot_string_argument;
+			}
+
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, hpc_fb_addr);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpc_fb_xsize_mem * (((hpc_fb_bits-1)|7)+1) / 8);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpc_fb_xsize);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpc_fb_ysize);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpc_fb_encoding);
+			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse,
+			    machine->use_x11? BI_CNUSE_BUILTIN : BI_CNUSE_SERIAL);
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
+			store_buf(cpu, machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
+
+			/*
+			 *  TODO: ugly hack, only works with small NetBSD
+			 *        kernels!
+			 */
+			cpu->cd.arm.r[ARM_SP] = 0xc02c0000;
+		}
+
+		/*  Physical RAM at 0xc0000000:  */
+		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+
+		/*  Cache flush region:  */
+		dev_ram_init(machine, 0xe0000000, 0x10000, DEV_RAM_RAM, 0x0);
+
+		if (hpc_fb_addr != 0) {
+			dev_fb_init(machine, mem, hpc_fb_addr, VFB_HPC,
+			    hpc_fb_xsize, hpc_fb_ysize,
+			    hpc_fb_xsize_mem, hpc_fb_ysize_mem,
+			    hpc_fb_bits, machine->machine_name);
 		}
 		break;
 
 	case MACHINE_ZAURUS:
 		machine->machine_name = "Zaurus";
-		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 		device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
 		/*  TODO  */
 		if (machine->prom_emulation) {
@@ -4750,12 +4843,12 @@ Not yet.
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
-		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 
 		/*  0xe0000000 and 0xff000000 = cache flush regions  */
-		dev_ram_init(mem, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
-		dev_ram_init(mem, 0xff000000, 0x100000, DEV_RAM_RAM, 0x0);
+		dev_ram_init(machine, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
+		dev_ram_init(machine, 0xff000000, 0x100000, DEV_RAM_RAM, 0x0);
 
 		device_add(machine, "i80321 addr=0xffffe000");
 
@@ -4776,8 +4869,8 @@ Not yet.
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
-		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(mem, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 
 		device_add(machine, "i80321 addr=0xffffe000");
 

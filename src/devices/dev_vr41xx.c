@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.30 2005-08-05 09:11:48 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.31 2005-10-20 22:49:07 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -569,7 +569,7 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 		break;
 	case 4181:
 		baseaddr = 0xa000000;
-		dev_ram_init(mem, 0xb000000, 0x1000000, DEV_RAM_MIRROR,
+		dev_ram_init(machine, 0xb000000, 0x1000000, DEV_RAM_MIRROR,
 		    0xa000000);
 		break;
 	case 4122:
@@ -607,7 +607,8 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 
 	/*  Some machines (?) use ISA space at 0x15000000 instead of
 	    0x14000000, eg IBM WorkPad Z50.  */
-	dev_ram_init(mem, 0x15000000, 0x1000000, DEV_RAM_MIRROR, 0x14000000);
+	dev_ram_init(machine, 0x15000000, 0x1000000, DEV_RAM_MIRROR,
+	    0x14000000);
 
 	return d;
 }

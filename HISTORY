@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.993 2005-10-17 21:17:59 debug Exp $
+$Id: HISTORY,v 1.994 2005-10-20 22:49:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2324,3 +2324,7 @@ Changelog for GXemul:
 		XScale emulation), fixing the disassembly of the ARM "ldrd"
 		instruction, adding "support" for less-than-4KB pages for ARM
 		(by not adding them to translation tables).
+20051020	Continuing on some HPCarm stuff. A NetBSD/hpcarm kernel prints
+		some boot messages on an emulated Jornada 720.
+		Making dev_ram work better with dyntrans (speeds up some things
+		quite a bit).

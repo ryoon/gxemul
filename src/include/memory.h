@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.38 2005-10-17 21:18:02 debug Exp $
+ *  $Id: memory.h,v 1.39 2005-10-20 22:49:08 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -194,6 +194,7 @@ void memory_device_remove(struct memory *mem, int i);
 #define	MEM_DYNTRANS_OK				1
 #define	MEM_DYNTRANS_WRITE_OK			2
 #define	MEM_READING_HAS_NO_SIDE_EFFECTS		4
+#define	MEM_EMULATED_RAM			8
 
 
 #endif	/*  MEMORY_H  */

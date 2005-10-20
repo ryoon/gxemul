@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.574 2005-10-20 22:49:06 debug Exp $
+ *  $Id: machine.c,v 1.575 2005-10-20 23:02:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2436,18 +2436,14 @@ void machine_setup(struct machine *machine)
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (6 <<  8)		/*  6 = VR4131  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (3 << 22)		/*  22: vendor  3=casio */
-			    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
-			    + (2 <<  8)		/*   8: model   2=EXXX*/
-			    + (3)		/*   0: submodel 3=E500 */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 6;	/*  VR4131  */
+			hpc_platid_vendor = 3;		/*  Casio  */
+			hpc_platid_series = 1;		/*  CASSIOPEIAE  */
+			hpc_platid_model = 2;		/*  EXXX  */
+			hpc_platid_submodel = 3;	/*  E500  */
 			/*  TODO: Don't use model number for E500, it's a BE300!  */
 			break;
 		case MACHINE_HPCMIPS_CASIO_E105:
@@ -2468,23 +2464,18 @@ void machine_setup(struct machine *machine)
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (3 <<  8)		/*  3 = VR4121  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (3 << 22)		/*  22: vendor  3=casio */
-			    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
-			    + (2 <<  8)		/*   8: model   2=EXXX*/
-			    + (2)		/*   0: submodel 2=E105  */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
+			hpc_platid_vendor = 3;		/*  Casio  */
+			hpc_platid_series = 1;		/*  CASSIOPEIAE  */
+			hpc_platid_model = 2;		/*  EXXX  */
+			hpc_platid_submodel = 2;	/*  E105  */
 			break;
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
 			/*  131 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 770";
-			/*  TODO:  */
 			hpc_fb_addr = 0xa000000;
 			hpc_fb_xsize = 640;
 			hpc_fb_ysize = 240;
@@ -2496,23 +2487,18 @@ void machine_setup(struct machine *machine)
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (3 <<  8)		/*  3 = VR4121  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (1 << 22)		/*  22: vendor  1=NEC  */
-			    + (2 << 16)		/*  16: series  2="NEC MCR" */
-			    + (2 <<  8)		/*   8: model   2="MCR 5XX" */
-			    + (4)		/*   0: submodel 4="MCR 520A" */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
+			hpc_platid_vendor = 1;		/*  NEC  */
+			hpc_platid_series = 2;		/*  NEC MCR  */
+			hpc_platid_model = 2;		/*  MCR 5XX  */
+			hpc_platid_submodel = 4;	/*  MCR 520A  */
 			break;
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
 			/*  166 (or 168) MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 780";
-			/*  TODO:  */
 			hpc_fb_addr = 0xa180100;
 			hpc_fb_xsize = 640;
 			hpc_fb_ysize = 240;
@@ -2524,23 +2510,18 @@ void machine_setup(struct machine *machine)
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (3 <<  8)		/*  3 = VR4121  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (1 << 22)		/*  22: vendor  1=NEC  */
-			    + (2 << 16)		/*  16: series  2="NEC MCR" */
-			    + (2 <<  8)		/*   8: model   2="MCR 5XX" */
-			    + (8)		/*   0: submodel 8="MCR 530A" */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
+			hpc_platid_vendor = 1;		/*  NEC  */
+			hpc_platid_series = 2;		/*  NEC MCR  */
+			hpc_platid_model = 2;		/*  MCR 5XX  */
+			hpc_platid_submodel = 8;	/*  MCR 530A  */
 			break;
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
 			/*  131 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 800";
-			/*  TODO:  */
 			hpc_fb_addr = 0xa000000;
 			hpc_fb_xsize = 800;
 			hpc_fb_ysize = 600;
@@ -2552,23 +2533,18 @@ void machine_setup(struct machine *machine)
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (3 <<  8)		/*  3 = VR4121  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (1 << 22)		/*  22: vendor  1=NEC  */
-			    + (2 << 16)		/*  16: series  2="NEC MCR" */
-			    + (3 <<  8)		/*   8: model   3="MCR 7XX" */
-			    + (2)		/*   0: submodel 2="MCR 700A" */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
+			hpc_platid_vendor = 1;		/*  NEC  */
+			hpc_platid_series = 2;		/*  NEC MCR  */
+			hpc_platid_model = 3;		/*  MCR 7XX  */
+			hpc_platid_submodel = 2;	/*  MCR 700A  */
 			break;
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_880:
 			/*  168 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 880";
-			/*  TODO:  */
 			hpc_fb_addr = 0xa0ea600;
 			hpc_fb_xsize = 800;
 			hpc_fb_ysize = 600;
@@ -2580,18 +2556,14 @@ void machine_setup(struct machine *machine)
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (3 <<  8)		/*  3 = VR4121  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (1 << 22)		/*  22: vendor  1=NEC  */
-			    + (2 << 16)		/*  16: series  2="NEC MCR" */
-			    + (3 <<  8)		/*   8: model   3="MCR 7XX" */
-			    + (4)		/*   0: submodel 4="MCR 730A" */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
+			hpc_platid_vendor = 1;		/*  NEC  */
+			hpc_platid_series = 2;		/*  NEC MCR  */
+			hpc_platid_model = 3;		/*  MCR 7XX  */
+			hpc_platid_submodel = 4;	/*  MCR 730A  */
 			break;
 		case MACHINE_HPCMIPS_AGENDA_VR3:
 			/*  66 MHz VR4181  */
@@ -2619,18 +2591,14 @@ void machine_setup(struct machine *machine)
 					machine->main_console_handle = x;
 			}
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (4 <<  8)		/*  4 = VR4181  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (15 << 22)	/*  22: vendor  15=Agenda  */
-			    + (1 << 16)		/*  16: series  2=VR */
-			    + (1 <<  8)		/*   8: model   1=VR3  */
-			    + (0)		/*   0: submodel 0="VR3" */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 4;	/*  VR4181  */
+			hpc_platid_vendor = 15;		/*  Agenda  */
+			hpc_platid_series = 1;		/*  VR  */
+			hpc_platid_model = 1;		/*  VR3  */
+			hpc_platid_submodel = 0;	/*  -  */
 
 			dev_ram_init(machine, 0x0f000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
 			break;
@@ -2649,23 +2617,27 @@ void machine_setup(struct machine *machine)
 			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-			      (1 << 26)		/*  1 = MIPS  */
-			    + (1 << 20)		/*  1 = VR  */
-			    + (1 << 14)		/*  1 = VR41XX  */
-			    + (3 <<  8)		/*  3 = VR4121  */
-			    );
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-			      (9 << 22)		/*  22: vendor  9=IBM  */
-			    + (1 << 16)		/*  16: series  1=WorkPad */
-			    + (1 <<  8)		/*   8: model   1=Z50  */
-			    + (0)		/*   0: submodel 0 */
-			    );
+			hpc_platid_cpu_arch = 1;	/*  MIPS  */
+			hpc_platid_cpu_series = 1;	/*  VR  */
+			hpc_platid_cpu_model = 1;	/*  VR41XX  */
+			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
+			hpc_platid_vendor = 9;		/*  IBM  */
+			hpc_platid_series = 1;		/*  WorkPad  */
+			hpc_platid_model = 1;		/*  Z50  */
+			hpc_platid_submodel = 0;	/*  0  */
 			break;
 		default:
 			printf("Unimplemented hpcmips machine number.\n");
 			exit(1);
 		}
+
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+		      (hpc_platid_cpu_arch << 26) + (hpc_platid_cpu_series << 20)
+		    + (hpc_platid_cpu_model << 14) + (hpc_platid_cpu_submodel <<  8)
+		    + hpc_platid_flags);
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+		      (hpc_platid_vendor << 22) + (hpc_platid_series << 16)
+		    + (hpc_platid_model <<  8) + hpc_platid_submodel);
 
 		if (machine->use_x11)
 			machine->main_console_handle =
@@ -2742,7 +2714,7 @@ void machine_setup(struct machine *machine)
 			dev_fb_init(machine, mem, hpc_fb_addr, VFB_HPC,
 			    hpc_fb_xsize, hpc_fb_ysize,
 			    hpc_fb_xsize_mem, hpc_fb_ysize_mem,
-			    hpc_fb_bits, "HPC");
+			    hpc_fb_bits, machine->machine_name);
 
 			/*  NetBSD/hpcmips uses framebuffer at physical
 			    address 0x8.......:  */
@@ -4675,14 +4647,14 @@ Not yet.
 			hpc_fb_ysize_mem = 320;
 			hpc_fb_bits = 15;
 			hpc_fb_encoding = BIFB_D16_0000;
-			hpc_platid_cpu_submodel = 0;
-			hpc_platid_cpu_model = 2;	/*  SA-1110  */
-			hpc_platid_cpu_series = 1;	/*  StrongARM  */
 			hpc_platid_cpu_arch = 3;	/*  ARM  */
-			hpc_platid_submodel = 1;	/*  H3600  */
-			hpc_platid_model = 2;		/*  H36xx  */
-			hpc_platid_series = 4;		/*  IPAQ  */
+			hpc_platid_cpu_series = 1;	/*  StrongARM  */
+			hpc_platid_cpu_model = 2;	/*  SA-1110  */
+			hpc_platid_cpu_submodel = 0;
 			hpc_platid_vendor = 7;		/*  Compaq  */
+			hpc_platid_series = 4;		/*  IPAQ  */
+			hpc_platid_model = 2;		/*  H36xx  */
+			hpc_platid_submodel = 1;	/*  H3600  */
 			break;
 		case MACHINE_HPCARM_JORNADA720:
 			/*  SA-1110 206MHz  */
@@ -4694,14 +4666,14 @@ Not yet.
 			hpc_fb_ysize_mem = 240;
 			hpc_fb_bits = 16;
 			hpc_fb_encoding = BIFB_D16_0000;
-			hpc_platid_cpu_submodel = 0;
-			hpc_platid_cpu_model = 2;	/*  SA-1110  */
-			hpc_platid_cpu_series = 1;	/*  StrongARM  */
 			hpc_platid_cpu_arch = 3;	/*  ARM  */
-			hpc_platid_submodel = 1;	/*  720  */
-			hpc_platid_model = 2;		/*  7xx  */
-			hpc_platid_series = 2;		/*  Jornada  */
+			hpc_platid_cpu_series = 1;	/*  StrongARM  */
+			hpc_platid_cpu_model = 2;	/*  SA-1110  */
+			hpc_platid_cpu_submodel = 0;
 			hpc_platid_vendor = 11;		/*  HP  */
+			hpc_platid_series = 2;		/*  Jornada  */
+			hpc_platid_model = 2;		/*  7xx  */
+			hpc_platid_submodel = 1;	/*  720  */
 			break;
 		default:
 			printf("Unimplemented hpcarm machine number.\n");

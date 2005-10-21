@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.16 2005-10-20 22:49:07 debug Exp $
+ *  $Id: dev_ram.c,v 1.17 2005-10-21 14:42:07 debug Exp $
  *  
  *  A generic RAM (memory) device. Can also be used to mirror/alias another
  *  part of RAM.
@@ -104,11 +104,16 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_ram_init():
+ *
+ *  Initializes a RAM or mirror device. Things get a bit complicated because
+ *  of dyntrans (i.e. mirrored memory ranges should be entered into the
+ *  translation arrays just as normal memory and other devices are).
  */
 void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	int mode, uint64_t otheraddress)
 {
 	struct ram_data *d;
+	int flags = MEM_DEFAULT;
 
 	d = malloc(sizeof(struct ram_data));
 	if (d == NULL) {
@@ -122,14 +127,27 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	d->otheraddress = otheraddress;
 
 	switch (d->mode) {
+
 	case DEV_RAM_MIRROR:
+		/*
+		 *  Calculate the amount that the mirror memory is offset from
+		 *  the real (physical) memory. This is used in src/memory_rw.c
+		 *  with dyntrans accesses if MEM_EMULATED_RAM is set.
+		 */
 		d->offset = baseaddr - otheraddress;
+
+		/*  Aligned memory? Then it works with dyntrans.  */
+		if ((baseaddr & (machine->arch_pagesize - 1)) == 0 &&
+		    (otheraddress & (machine->arch_pagesize - 1)) == 0 &&
+		    (length & (machine->arch_pagesize - 1)) == 0)
+			flags |= MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK;
+
 		memory_device_register(machine->memory, "ram [mirror]",
-		    baseaddr, length, dev_ram_access, d, MEM_DEFAULT
-		    | MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK
+		    baseaddr, length, dev_ram_access, d, flags
 		    | MEM_EMULATED_RAM | MEM_READING_HAS_NO_SIDE_EFFECTS,
 		    &d->offset);
 		break;
+
 	case DEV_RAM_RAM:
 		/*
 		 *  Allocate zero-filled RAM using mmap(). If mmap() failed,
@@ -137,8 +155,6 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 		 *  can be slow for large chunks of memory.
 		 */
 		d->length = length;
-		/*  Round up to emulated page size:  */
-		length = ((length - 1) | (machine->arch_pagesize - 1)) + 1;
 		d->data = (unsigned char *) mmap(NULL, length,
 		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		if (d->data == NULL) {
@@ -149,11 +165,17 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 			}
 			memset(d->data, 0, length);
 		}
+
+		/*  Aligned memory? Then it works with dyntrans.  */
+		if ((baseaddr & (machine->arch_pagesize - 1)) == 0 &&
+		    (length & (machine->arch_pagesize - 1)) == 0)
+			flags |= MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK;
+
 		memory_device_register(machine->memory, "ram", baseaddr,
-		    d->length, dev_ram_access, d, MEM_DEFAULT | MEM_DYNTRANS_OK
-		    | MEM_DYNTRANS_WRITE_OK
+		    d->length, dev_ram_access, d, flags
 		    | MEM_READING_HAS_NO_SIDE_EFFECTS, d->data);
 		break;
+
 	default:
 		fatal("dev_ram_access(): unknown mode %i\n", d->mode);
 		exit(1);

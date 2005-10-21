@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.69 2005-10-20 22:49:07 debug Exp $
+ *  $Id: memory_rw.c,v 1.70 2005-10-21 14:42:06 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -358,7 +358,7 @@ have_paddr:
 						/*  MEM_WRITE to force the page
 						    to be allocated, if it
 						    wasn't already  */
-						uint64_t *pp =
+						uint64_t *pp = (uint64_t *)
 						    mem->dev_dyntrans_data[i];
 						uint64_t p = orig_paddr - *pp;
 						host_addr =

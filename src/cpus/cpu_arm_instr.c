@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.30 2005-10-12 19:51:51 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.31 2005-10-21 15:19:25 debug Exp $
  *
  *  ARM instructions.
  *
@@ -835,8 +835,8 @@ X(bdt_load)
 #if 0
 {
 static FILE *f = NULL;
-if (f == NULL) f = fopen("asdg", "w");
-fprintf(f, "0x%08x\n", iw);
+if (f == NULL) f = fopen("bdt_load.txt", "w");
+fprintf(f, "0x%08x\n", iw & 0x0fffffff);
 }
 #endif
 
@@ -1023,6 +1023,14 @@ X(bdt_store)
 	int w_bit = iw & 0x00200000;
 	int i;
 
+#if 0
+{
+static FILE *f = NULL;
+if (f == NULL) f = fopen("bdt_store.txt", "w");
+fprintf(f, "0x%08x\n", iw & 0x0fffffff);
+}
+#endif
+
 	/*  Synchronize the program counter:  */
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
@@ -1114,6 +1122,10 @@ X(bdt_store)
 		*np = addr;
 }
 Y(bdt_store)
+
+
+/*  Various load/store multiple instructions:  */
+#include "tmp_arm_multi.c"
 
 
 /*****************************************************************************/
@@ -1348,7 +1360,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
 	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t;
-	int any_pc_reg;
+	int any_pc_reg, i;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the address of the instruction:  */
@@ -1653,12 +1665,24 @@ X(to_be_translated)
 
 	case 0x8:	/*  Multiple load/store...  (Block data transfer)  */
 	case 0x9:	/*  xxxx100P USWLnnnn llllllll llllllll  */
+		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
+		ic->arg[1] = (size_t)iword;
+		/*  Generic case:  */
 		if (l_bit)
 			ic->f = cond_instr(bdt_load);
 		else
 			ic->f = cond_instr(bdt_store);
-		ic->arg[0] = (size_t)(&cpu->cd.arm.r[rn]);
-		ic->arg[1] = (size_t)iword;
+#if 1
+		/*  Check for availability of optimized implementation:  */
+		i = 0;
+		while (multi_opcode[i]) {
+			if ((iword & 0x0fffffff) == multi_opcode[i]) {
+				ic->f = multi_opcode_f[i*16 + condition_code];
+				break;
+			}
+			i ++;
+		}
+#endif
 		if (rn == ARM_PC) {
 			fatal("TODO: bdt with PC as base\n");
 			goto bad;

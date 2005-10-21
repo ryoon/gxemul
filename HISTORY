@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.994 2005-10-20 22:49:05 debug Exp $
+$Id: HISTORY,v 1.995 2005-10-21 15:19:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2328,3 +2328,5 @@ Changelog for GXemul:
 		some boot messages on an emulated Jornada 720.
 		Making dev_ram work better with dyntrans (speeds up some things
 		quite a bit).
+20051021	Automatically generating some of the most common ARM load/store
+		multiple instructions.

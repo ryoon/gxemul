@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.172 2005-10-09 21:32:05 debug Exp $
+#  $Id: configure,v 1.173 2005-10-21 15:19:24 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -347,7 +347,7 @@ if [ z$ENABLEARM = zYES ]; then
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_rc.o tmp_arm_rd.o"
 	CPU_ARCHS="$CPU_ARCHS tmp_arm_re.o tmp_arm_rf.o"
 	CPU_TOOLS="$CPU_TOOLS generate_arm_dpi generate_arm_r"
-	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore"
+	CPU_TOOLS="$CPU_TOOLS generate_arm_loadstore generate_arm_multi"
 fi
 if [ z$ENABLEAVR = zYES ]; then
 	printf "#define ENABLE_AVR\n" >> config.h

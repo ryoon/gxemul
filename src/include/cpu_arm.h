@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.48 2005-10-22 09:38:47 debug Exp $
+ *  $Id: cpu_arm.h,v 1.49 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -85,10 +85,10 @@ struct arm_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct arm_tc_physpage {
+	struct arm_instr_call ics[ARM_IC_ENTRIES_PER_PAGE + 1];
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	uint32_t	physaddr;
 	int		flags;
-	struct arm_instr_call ics[ARM_IC_ENTRIES_PER_PAGE + 1];
 };
 
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.4 2005-09-04 13:06:11 debug Exp $
+ *  $Id: cpu_sh.h,v 1.5 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -53,10 +53,10 @@ struct sh_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct sh_tc_physpage {
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint64_t	physaddr;
-	int		flags;
 	struct sh_instr_call ics[SH_IC_ENTRIES_PER_PAGE + 1];
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	int		flags;
+	uint64_t	physaddr;
 };
 
 #define	SH_N_VPH_ENTRIES		1048576

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.20 2005-10-22 09:38:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.21 2005-10-22 12:22:13 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -71,6 +71,9 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 
 	cpu->n_translated_instrs = 0;
 	cpu->running_translated = 1;
+
+	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 
 	if (single_step || cpu->machine->instruction_trace) {
 		/*
@@ -451,8 +454,24 @@ cpu->cd.arm.r[ARM_PC]);
 			}
 		}
 		cached_pc = cpu->pc;
+#ifdef MODE32
+		index = cached_pc >> 12;
+#endif
 		physaddr = paddr;
 	}
+
+
+#ifdef DYNTRANS_ARM
+/* urk  TODO generalize  */
+if (cpu->cd.DYNTRANS_ARCH.host_load[index] == NULL) {
+	unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
+	    physaddr, MEM_WRITE);
+	host_page += (physaddr & ((1 << BITS_PER_MEMBLOCK) - 1) & ~0xfff);
+	arm_update_translation_table(cpu, cached_pc & ~0xfff,
+	    host_page, 0, physaddr & ~0xfff);
+}
+#endif
+
 
 	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
 		cpu_create_or_reset_tc(cpu);
@@ -505,8 +524,9 @@ cpu->cd.arm.r[ARM_PC]);
 	cpu->invalidate_translation_caches_paddr(cpu, physaddr,
 	    JUST_MARK_AS_NON_WRITABLE);
 
-	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;
+/*	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;  */
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
+
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
 
@@ -580,7 +600,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 
 	/*  Quick return path:  */
 have_it:
-	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;
+/*	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;  */
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);

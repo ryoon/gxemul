@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.1 2005-09-07 07:10:17 debug Exp $
+ *  $Id: cpu_i960.h,v 1.2 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -56,10 +56,10 @@ struct i960_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct i960_tc_physpage {
+	struct i960_instr_call ics[I960_IC_ENTRIES_PER_PAGE + 1];
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	uint32_t	physaddr;
 	int		flags;
-	struct i960_instr_call ics[I960_IC_ENTRIES_PER_PAGE + 1];
 };
 
 

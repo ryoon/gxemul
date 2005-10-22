@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.10 2005-10-09 21:32:07 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.11 2005-10-22 12:22:13 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -211,7 +211,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 			    ARM_INSTR_ALIGNMENT_SHIFT);
 		} else
 #endif
-			arm_pc_to_pointers(cpu);
+			quick_pc_to_pointers(cpu);
 		return;
 	} else
 		reg(ic->arg[2]) = c64;

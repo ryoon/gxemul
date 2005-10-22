@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.4 2005-09-17 22:34:53 debug Exp $
+ *  $Id: cpu_avr.h,v 1.5 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -54,10 +54,10 @@ struct avr_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct avr_tc_physpage {
+	struct avr_instr_call ics[AVR_IC_ENTRIES_PER_PAGE + 1];
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	uint32_t	physaddr;
 	int		flags;
-	struct avr_instr_call ics[AVR_IC_ENTRIES_PER_PAGE + 1];
 };
 
 

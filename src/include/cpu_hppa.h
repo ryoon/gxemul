@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.h,v 1.5 2005-09-07 07:10:17 debug Exp $
+ *  $Id: cpu_hppa.h,v 1.6 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -53,10 +53,10 @@ struct hppa_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct hppa_tc_physpage {
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint64_t	physaddr;
-	int		flags;
 	struct hppa_instr_call ics[HPPA_IC_ENTRIES_PER_PAGE + 1];
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	int		flags;
+	uint64_t	physaddr;
 };
 
 #define	HPPA_N_VPH_ENTRIES		1048576

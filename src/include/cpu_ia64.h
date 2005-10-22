@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.3 2005-08-28 20:16:24 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.4 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -53,10 +53,10 @@ struct ia64_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct ia64_tc_physpage {
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint32_t	physaddr;
-	int		flags;
 	struct ia64_instr_call ics[IA64_IC_ENTRIES_PER_PAGE + 1];
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	int		flags;
+	uint64_t	physaddr;
 };
 
 

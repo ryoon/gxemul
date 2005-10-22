@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.12 2005-10-17 22:20:25 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.13 2005-10-22 12:22:13 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -299,7 +299,7 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 		cpu->pc = cpu->cd.arm.r[ARM_PC];
 		if (cpu->machine->show_trace_tree)
 			cpu_functioncall_trace(cpu, cpu->pc);
-		arm_pc_to_pointers(cpu);
+		quick_pc_to_pointers(cpu);
 	}
 #else
 	/*  Store:  */

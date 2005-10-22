@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.32 2005-10-22 09:38:46 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.33 2005-10-22 12:22:13 debug Exp $
  *
  *  ARM instructions.
  *
@@ -35,6 +35,8 @@
  *  be increased by 3.)
  */
 
+
+#include "arm_quick_pc_to_pointers.h"
 
 /*  #define GATHER_BDT_STATISTICS  */
 
@@ -242,7 +244,7 @@ X(b)
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 Y(b)
 
@@ -274,7 +276,7 @@ X(bx)
 	cpu->pc &= ~3;
 
 	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 Y(bx)
 
@@ -296,7 +298,7 @@ X(bx_trace)
 	cpu_functioncall_trace_return(cpu);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 Y(bx_trace)
 
@@ -324,7 +326,7 @@ X(bl)
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr - 4 + (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 Y(bl)
 
@@ -356,7 +358,7 @@ X(blx)
 	cpu->pc &= ~3;
 
 	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 Y(blx)
 
@@ -386,7 +388,7 @@ X(bl_trace)
 	cpu_functioncall_trace(cpu, cpu->pc);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 Y(bl_trace)
 
@@ -575,7 +577,7 @@ X(ret_trace)
 		    ((cpu->pc & mask_within_page) >> ARM_INSTR_ALIGNMENT_SHIFT);
 	} else {
 		/*  Find the new physical page and update pointers:  */
-		arm_pc_to_pointers(cpu);
+		quick_pc_to_pointers(cpu);
 	}
 }
 Y(ret_trace)
@@ -738,7 +740,7 @@ X(openfirmware)
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = cpu->cd.arm.r[ARM_LR];
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -766,7 +768,7 @@ X(swi_useremul)
 	} else if (cpu->pc != old_pc) {
 		/*  PC was changed by the SWI call. Find the new physical
 		    page and update the translation pointers:  */
-		arm_pc_to_pointers(cpu);
+		quick_pc_to_pointers(cpu);
 	}
 }
 Y(swi_useremul)
@@ -1061,7 +1063,7 @@ X(bdt_load)
 		    same page!  */
 		/*  Find the new physical page and update the
 		    translation pointers:  */
-		arm_pc_to_pointers(cpu);
+		quick_pc_to_pointers(cpu);
 	}
 }
 Y(bdt_load)
@@ -1349,7 +1351,7 @@ X(end_of_page)
 	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
@@ -1444,7 +1446,7 @@ X(to_be_translated)
 		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
 			fatal("to_be_translated(): "
 			    "read failed: TODO\n");
-			goto bad;
+			return;
 		}
 	}
 

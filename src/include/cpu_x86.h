@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.33 2005-08-25 17:32:21 debug Exp $
+ *  $Id: cpu_x86.h,v 1.34 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -108,10 +108,10 @@ struct x86_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct x86_tc_physpage {
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint64_t	physaddr;
-	int		flags;
 	struct x86_instr_call ics[X86_IC_ENTRIES_PER_PAGE + 1];
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	int		flags;
+	uint64_t	physaddr;
 };
 
 #define	X86_N_VPH_ENTRIES		1048576

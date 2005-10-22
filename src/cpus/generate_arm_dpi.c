@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_dpi.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: generate_arm_dpi.c,v 1.2 2005-10-22 12:22:13 debug Exp $
  */
 
 #include <stdio.h>
@@ -65,14 +65,12 @@ int main(int argc, char *argv[])
 	printf("#include <stdio.h>\n#include <stdlib.h>\n"
 	    "#include \"cpu.h\"\n"
 	    "#include \"misc.h\"\n"
+	    "#include \"arm_quick_pc_to_pointers.h\"\n"
 	    "#define reg(x) (*((uint32_t *)(x)))\n");
 	printf("extern void arm_instr_nop(struct cpu *, "
 	    "struct arm_instr_call *);\n");
 	printf("extern void arm_instr_invalid(struct cpu *, "
 	    "struct arm_instr_call *);\n");
-	printf("extern uint32_t R(struct cpu *, struct arm_instr_call *, "
-	    "uint32_t, int);\n");
-	printf("extern void arm_pc_to_pointers(struct cpu *);\n");
 
 	for (reg=0; reg<=1; reg++)
 	  for (pc=0; pc<=1; pc++)

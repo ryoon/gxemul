@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.9 2005-08-28 20:16:24 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.10 2005-10-22 12:22:14 debug Exp $
  */
 
 #include "misc.h"
@@ -53,10 +53,10 @@ struct sparc_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct sparc_tc_physpage {
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint64_t	physaddr;
-	int		flags;
 	struct sparc_instr_call ics[SPARC_IC_ENTRIES_PER_PAGE + 1];
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	int		flags;
+	uint64_t	physaddr;
 };
 
 #define	SPARC_N_VPH_ENTRIES		1048576

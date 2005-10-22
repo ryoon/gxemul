@@ -1,4 +1,4 @@
-$Id: TODO,v 1.173 2005-09-17 17:14:25 debug Exp $
+$Id: TODO,v 1.174 2005-10-22 09:38:02 debug Exp $
 
 ===============================================================================
 
@@ -14,7 +14,15 @@ Old MIPS bintrans:
 
 Dyntrans:
 
-	x)  Lots of stuff: see src/cpus/README_DYNTRANS
+	x)  Separate data and instruction translations?
+
+	x)  Inline the quick case of pc_to_pointers?
+
+	x)  Call/return hints...
+
+	x)  More 64-bit stuff.
+
+	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 
 
 Userland emulation:

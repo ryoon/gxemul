@@ -1,5 +1,6 @@
 #ifndef ARM_QUICK_PC_TO_POINTERS_H
 #define ARM_QUICK_PC_TO_POINTERS_H
+void arm_pc_to_pointers_generic(struct cpu *);
 #define	quick_pc_to_pointers(cpu) {					\
         uint32_t pc = cpu->cd.arm.r[ARM_PC];				\
         struct arm_tc_physpage *ppp;					\

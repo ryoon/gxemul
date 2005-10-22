@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.177 2005-10-20 22:49:06 debug Exp $
+ *  $Id: memory.c,v 1.178 2005-10-22 17:24:19 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -290,12 +290,13 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 			/*  Invalidate any pages of this device that might
 			    be in the dyntrans load/store cache, by marking
 			    the pages read-only.  */
-			if (cpu->invalidate_translation_caches_paddr != NULL) {
+			if (cpu->invalidate_translation_caches != NULL) {
 				for (s=0; s<mem->dev_length[i];
 				    s+=cpu->machine->arch_pagesize)
-					cpu->invalidate_translation_caches_paddr
+					cpu->invalidate_translation_caches
 					    (cpu, mem->dev_baseaddr[i] + s,
-					    JUST_MARK_AS_NON_WRITABLE);
+					    JUST_MARK_AS_NON_WRITABLE
+					    | INVALIDATE_PADDR);
 			}
 
 			if (cpu->machine->arch == ARCH_MIPS) {
@@ -417,7 +418,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		exit(1);
 	}
 
-	if ((size_t)dyntrans_data & 7) {
+	if (!(flags & MEM_EMULATED_RAM) && (size_t)dyntrans_data & 7) {
 		fprintf(stderr, "memory_device_register():"
 		    " dyntrans_data not aligned correctly (%p)\n",
 		    dyntrans_data);

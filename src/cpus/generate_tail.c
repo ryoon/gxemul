@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.5 2005-09-18 19:54:14 debug Exp $
+ *  $Id: generate_tail.c,v 1.6 2005-10-22 17:24:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -84,10 +84,10 @@ int main(int argc, char *argv[])
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_INVAL_ENTRY\n\n");
 
-	printf("#define DYNTRANS_INVALIDATE_TC_PADDR "
-	    "%s_invalidate_translation_caches_paddr\n", a);
+	printf("#define DYNTRANS_INVALIDATE_TC "
+	    "%s_invalidate_translation_caches\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_INVALIDATE_TC_PADDR\n\n");
+	printf("#undef DYNTRANS_INVALIDATE_TC\n\n");
 
 	printf("#define DYNTRANS_INVALIDATE_TC_CODE "
 	    "%s_invalidate_code_translation\n", a);
@@ -149,10 +149,10 @@ int main(int argc, char *argv[])
 	    "%s32_invalidate_tlb_entry\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_INVAL_ENTRY\n\n");
-	printf("#define DYNTRANS_INVALIDATE_TC_PADDR "
-	    "%s32_invalidate_translation_caches_paddr\n", a);
+	printf("#define DYNTRANS_INVALIDATE_TC "
+	    "%s32_invalidate_translation_caches\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_INVALIDATE_TC_PADDR\n\n");
+	printf("#undef DYNTRANS_INVALIDATE_TC\n\n");
 	printf("#define DYNTRANS_INVALIDATE_TC_CODE "
 	    "%s32_invalidate_code_translation\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");

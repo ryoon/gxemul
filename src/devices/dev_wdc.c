@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.40 2005-10-17 22:27:57 debug Exp $
+ *  $Id: dev_wdc.c,v 1.41 2005-10-22 17:24:22 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -45,7 +45,8 @@
 
 #define	DEV_WDC_LENGTH		8
 #define	WDC_TICK_SHIFT		14
-#define	WDC_INBUF_SIZE		(512*257)
+#define	WDC_MAX_SECTORS		128
+#define	WDC_INBUF_SIZE		(512*(WDC_MAX_SECTORS+1))
 
 /*
  *  INT_DELAY=2 to be safe, 1 is faster but maybe buggy. 0 is fastest.
@@ -123,7 +124,8 @@ static void wdc_addtoinbuf(struct wdc_data *d, int c)
 
 	d->inbuf_head = (d->inbuf_head + 1) % WDC_INBUF_SIZE;
 	if (d->inbuf_head == d->inbuf_tail)
-		fatal("[ wdc_addtoinbuf(): WARNING! wdc inbuf overrun ]\n");
+		fatal("[ wdc_addtoinbuf(): WARNING! wdc inbuf overrun!"
+		    " Increase WDC_MAX_SECTORS. ]\n");
 }
 
 
@@ -316,7 +318,8 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 	struct wdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+/*	idata = memory_readmax64(cpu, data, len);  */
+idata = data[0];
 
 	/*  Same as the normal status byte?  */
 	odata = status_byte(d, cpu);
@@ -329,7 +332,8 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 		    (int)idata);
 
 	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
+/*		memory_writemax64(cpu, data, len, odata); */
+data[0] = odata;
 
 	return 1;
 }
@@ -346,7 +350,10 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (relative_addr == wd_data)
+		idata = memory_readmax64(cpu, data, len);
+	else
+		idata = data[0];
 
 	switch (relative_addr) {
 
@@ -367,7 +374,12 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			if (d->data_debug)
 				debug("[ wdc: read from DATA: 0x%04x ]\n",
 				    (int)odata);
+#if 0
 			if (d->inbuf_tail != d->inbuf_head)
+#else
+			if (d->inbuf_tail != d->inbuf_head &&
+			    ((d->inbuf_tail - d->inbuf_head) % 512) == 0)
+#endif
 				d->delayed_interrupt = INT_DELAY;
 		} else {
 			int inbuf_len;
@@ -404,11 +416,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			if ((inbuf_len % 512) == 0) {
 #endif
 				int count = 1;	/*  d->write_count;  */
-				unsigned char *buf = malloc(count * 512);
-				if (buf == NULL) {
-					fprintf(stderr, "out of memory\n");
-					exit(1);
-				}
+				unsigned char buf[512 * count];
 
 				for (i=0; i<512 * count; i++)
 					buf[i] = wdc_get_inbuf(d);
@@ -416,7 +424,6 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				diskimage_access(cpu->machine,
 				    d->drive + d->base_drive, DISKIMAGE_IDE, 1,
 				    d->write_offset, buf, 512 * count);
-				free(buf);
 
 				d->write_count --;
 				d->write_offset += 512;
@@ -626,8 +633,15 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			    (int)relative_addr, (int)idata);
 	}
 
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
+	if (cpu->machine->machine_type != MACHINE_HPCMIPS)
+		dev_wdc_tick(cpu, extra);
+
+	if (writeflag == MEM_READ) {
+		if (relative_addr == wd_data)
+			memory_writemax64(cpu, data, len, odata);
+		else
+			data[0] = odata;
+	}
 
 	return 1;
 }
@@ -640,7 +654,7 @@ int devinit_wdc(struct devinit *devinit)
 {
 	struct wdc_data *d;
 	uint64_t alt_status_addr;
-	int i;
+	int i, tick_shift = WDC_TICK_SHIFT;
 
 	d = malloc(sizeof(struct wdc_data));
 	if (d == NULL) {
@@ -675,8 +689,11 @@ int devinit_wdc(struct devinit *devinit)
 	    devinit->addr, DEV_WDC_LENGTH, dev_wdc_access, d, MEM_DEFAULT,
 	    NULL);
 
+	if (devinit->machine->machine_type != MACHINE_HPCMIPS)
+		tick_shift += 2;
+
 	machine_add_tickfunction(devinit->machine, dev_wdc_tick,
-	    d, WDC_TICK_SHIFT);
+	    d, tick_shift);
 
 	return 1;
 }

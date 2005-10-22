@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.83 2005-10-12 19:51:51 debug Exp $
+ *  $Id: dev_vga.c,v 1.84 2005-10-22 17:24:21 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -53,7 +53,7 @@
 
 
 /*  For bintranslated videomem -> framebuffer updates:  */
-#define	VGA_TICK_SHIFT		16
+#define	VGA_TICK_SHIFT		19
 
 #define	MAX_RETRACE_SCANLINES	420
 #define	N_IS1_READ_THRESHOLD	50
@@ -1230,12 +1230,6 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 		d->fb_max_y *= d->font_height;
 	}
 
-	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    d->fb_max_x, d->fb_max_y, d->fb_max_x, d->fb_max_y, 24, "VGA");
-	d->fb_size = d->fb_max_x * d->fb_max_y * 3;
-
-	reset_palette(d, 0);
-
 	/*  MEM_DYNTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not
 	    with Windows NT yet. Why? */
 	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
@@ -1246,6 +1240,12 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	    MEM_READING_HAS_NO_SIDE_EFFECTS, d->gfx_mem);
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
+
+	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
+	    d->fb_max_x, d->fb_max_y, d->fb_max_x, d->fb_max_y, 24, "VGA");
+	d->fb_size = d->fb_max_x * d->fb_max_y * 3;
+
+	reset_palette(d, 0);
 
 	/*  This will force an initial redraw/resynch:  */
 	d->update_x1 = 0;

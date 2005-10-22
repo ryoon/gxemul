@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.48 2005-09-17 17:14:28 debug Exp $
+ *  $Id: cpu.h,v 1.49 2005-10-22 17:24:22 debug Exp $
  *
  *  See cpu.c.
  */
@@ -107,7 +107,7 @@ struct cpu_family {
 #define	TRANSLATIONS			1
 #define	COMBINATIONS			2
 
-#define	DYNTRANS_CACHE_SIZE		(16*1048576)
+#define	DYNTRANS_CACHE_SIZE		(20*1048576)
 #define	DYNTRANS_CACHE_MARGIN		300000
 
 #define	N_BASE_TABLE_ENTRIES		32768
@@ -140,7 +140,7 @@ struct cpu {
 	void		(*update_translation_table)(struct cpu *,
 			    uint64_t vaddr_page, unsigned char *host_page,
 			    int writeflag, uint64_t paddr_page);
-	void		(*invalidate_translation_caches_paddr)(struct cpu *,
+	void		(*invalidate_translation_caches)(struct cpu *,
 			    uint64_t paddr, int flags);
 	void		(*invalidate_code_translation)(struct cpu *,
 			    uint64_t paddr, int flags);
@@ -214,6 +214,8 @@ void cpu_init(void);
 #define	INVALIDATE_ALL			2
 #define	INVALIDATE_PADDR		4
 #define	INVALIDATE_VADDR		8
+
+#define	TLB_CODE			0x02
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

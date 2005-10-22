@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.2 2005-10-22 17:24:21 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -62,8 +62,8 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->memory_rw = sparc_memory_rw;
 	cpu->update_translation_table = sparc_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
-	    sparc_invalidate_translation_caches_paddr;
+	cpu->invalidate_translation_caches =
+	    sparc_invalidate_translation_caches;
 	cpu->invalidate_code_translation =
 	    sparc_invalidate_code_translation;
 

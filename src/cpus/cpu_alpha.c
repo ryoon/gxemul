@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.2 2005-10-22 17:24:20 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -71,8 +71,8 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	cpu->memory_rw = alpha_memory_rw;
 	cpu->update_translation_table = alpha_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
-	    alpha_invalidate_translation_caches_paddr;
+	cpu->invalidate_translation_caches =
+	    alpha_invalidate_translation_caches;
 	cpu->invalidate_code_translation = alpha_invalidate_code_translation;
 	cpu->is_32bit = 0;
 

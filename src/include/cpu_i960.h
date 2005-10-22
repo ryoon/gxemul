@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.2 2005-10-22 12:22:14 debug Exp $
+ *  $Id: cpu_i960.h,v 1.3 2005-10-22 17:24:22 debug Exp $
  */
 
 #include "misc.h"
@@ -115,7 +115,7 @@ struct i960_cpu {
 /*  cpu_i960.c:  */
 void i960_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void i960_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t, int);
+void i960_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void i960_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 int i960_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);

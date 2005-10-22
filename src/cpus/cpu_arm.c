@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.33 2005-10-17 22:02:21 debug Exp $
+ *  $Id: cpu_arm.c,v 1.34 2005-10-22 17:24:20 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -62,8 +62,8 @@ static char *arm_dpiname[16] = ARM_DPI_NAMES;
 static int arm_dpi_uses_d[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1 };
 static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
 
-/*  Forward reference:  */
-void arm_pc_to_pointers(struct cpu *cpu);
+/*  For quick_pc_to_pointers():  */
+#include "arm_quick_pc_to_pointers.h"
 
 
 /*
@@ -92,8 +92,8 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	cpu->memory_rw = arm_memory_rw;
 	cpu->update_translation_table = arm_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
-	    arm_invalidate_translation_caches_paddr;
+	cpu->invalidate_translation_caches =
+	    arm_invalidate_translation_caches;
 	cpu->invalidate_code_translation = arm_invalidate_code_translation;
 	cpu->translate_address = arm_translate_address;
 
@@ -589,41 +589,46 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 	retaddr = cpu->pc;
 
-	debug("[ arm_exception(): ");
+	if (!quiet_mode) {
+		debug("[ arm_exception(): ");
+		switch (exception_nr) {
+		case ARM_EXCEPTION_RESET:
+			fatal("RESET: TODO");
+			break;
+		case ARM_EXCEPTION_UND:
+			debug("UNDEFINED");
+			break;
+		case ARM_EXCEPTION_SWI:
+			debug("SWI");
+			break;
+		case ARM_EXCEPTION_PREF_ABT:
+			debug("PREFETCH ABORT");
+			break;
+		case ARM_EXCEPTION_IRQ:
+			debug("IRQ");
+			break;
+		case ARM_EXCEPTION_FIQ:
+			debug("FIQ");
+			break;
+		case ARM_EXCEPTION_DATA_ABT:
+			debug("DATA ABORT, far=0x%08x fsr=0x%02x",
+			    cpu->cd.arm.far, cpu->cd.arm.fsr);
+			break;
+		}
+		debug(" ]\n");
+	}
 
 	switch (exception_nr) {
 	case ARM_EXCEPTION_RESET:
 		cpu->running = 0;
-		fatal("RESET: TODO");
+		fatal("ARM RESET: TODO");
 		exit(1);
-	case ARM_EXCEPTION_UND:
-		debug("UNDEFINED");
-		retaddr += 4;
-		break;
-	case ARM_EXCEPTION_SWI:
-		debug("SWI");
-		retaddr += 4;
-		break;
-	case ARM_EXCEPTION_PREF_ABT:
-		debug("PREFETCH ABORT");
-		retaddr += 4;
-		break;
-	case ARM_EXCEPTION_IRQ:
-		debug("IRQ");
-		retaddr += 4;
-		break;
-	case ARM_EXCEPTION_FIQ:
-		debug("FIQ");
-		retaddr += 4;
-		break;
 	case ARM_EXCEPTION_DATA_ABT:
-		debug("DATA ABORT, far=0x%08x fsr=0x%02x",
-		    cpu->cd.arm.far, cpu->cd.arm.fsr);
-		retaddr += 8;
+		retaddr += 4;
 		break;
 	}
 
-	debug(" ]\n");
+	retaddr += 4;
 
 	arm_save_register_bank(cpu);
 
@@ -672,7 +677,7 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
 	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
-	arm_pc_to_pointers(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.18 2005-09-27 01:00:36 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.19 2005-10-22 17:24:21 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1522,7 +1522,7 @@ X(xori) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1]; }
  */
 X(tlbie)
 {
-	cpu->invalidate_translation_caches_paddr(cpu, 0, INVALIDATE_ALL);
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
 

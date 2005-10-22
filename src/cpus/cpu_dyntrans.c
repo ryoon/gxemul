@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.21 2005-10-22 12:22:13 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.22 2005-10-22 17:24:20 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -460,18 +460,19 @@ cpu->cd.arm.r[ARM_PC]);
 		physaddr = paddr;
 	}
 
-
-#ifdef DYNTRANS_ARM
-/* urk  TODO generalize  */
-if (cpu->cd.DYNTRANS_ARCH.host_load[index] == NULL) {
-	unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
-	    physaddr, MEM_WRITE);
-	host_page += (physaddr & ((1 << BITS_PER_MEMBLOCK) - 1) & ~0xfff);
-	arm_update_translation_table(cpu, cached_pc & ~0xfff,
-	    host_page, 0, physaddr & ~0xfff);
-}
+#ifdef MODE32
+	if (cpu->cd.DYNTRANS_ARCH.host_load[index] == NULL) {
+		unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
+		    physaddr, MEM_READ);
+		if (host_page != NULL) {
+			int q = cpu->machine->arch_pagesize - 1;
+			host_page += (physaddr &
+			    ((1 << BITS_PER_MEMBLOCK) - 1) & ~q);
+			cpu->update_translation_table(cpu, cached_pc & ~q,
+			    host_page, TLB_CODE, physaddr & ~q);
+		}
+	}
 #endif
-
 
 	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
 		cpu_create_or_reset_tc(cpu);
@@ -521,8 +522,8 @@ if (cpu->cd.DYNTRANS_ARCH.host_load[index] == NULL) {
 		vph_p->phys_page[b] = ppp;
 #endif
 
-	cpu->invalidate_translation_caches_paddr(cpu, physaddr,
-	    JUST_MARK_AS_NON_WRITABLE);
+	cpu->invalidate_translation_caches(cpu, physaddr,
+	    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
 
 /*	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;  */
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
@@ -623,7 +624,7 @@ have_it:
  *  is just downgraded to non-writable (ie the host store page is set to
  *  NULL). Otherwise, the entire translation is removed.
  */
-void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
+static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 #ifdef MODE32
 	uint32_t
 #else
@@ -699,9 +700,9 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 #endif
 
 
-#ifdef DYNTRANS_INVALIDATE_TC_PADDR
+#ifdef DYNTRANS_INVALIDATE_TC
 /*
- *  XXX_invalidate_translation_caches_paddr():
+ *  XXX_invalidate_translation_caches():
  *
  *  Invalidate all entries matching a specific physical address, a specific
  *  virtual address, or ALL entries.
@@ -712,10 +713,11 @@ void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
  *  In the case when all translations are invalidated, paddr doesn't need
  *  to be supplied.
  *
- *  NOTE/TODO: Poorly choosen name for this function, as it can
- *             invalidate based on virtual address as well.
+ *  NOTE/TODO: When invalidating a virtual address, it is only cleared from
+ *             the quick translation array, not from the linear
+ *             vph_tlb_entry[] array.  Hopefully this is enough anyway.
  */
-void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr, int flags)
+void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t paddr, int flags)
 {
 	int r;
 #ifdef MODE32
@@ -725,12 +727,16 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr, int flags)
 #endif
 	    addr_page = paddr & ~(DYNTRANS_PAGESIZE - 1);
 
+	/*  Quick case for virtual addresses: see note above.  */
+	if (flags & INVALIDATE_VADDR) {
+		DYNTRANS_INVALIDATE_TLB_ENTRY(cpu, addr_page, flags);
+		return;
+	}
+
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid && (
 		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
 		    addr_page && flags & INVALIDATE_PADDR) ||
-		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page ==
-		    addr_page && flags & INVALIDATE_VADDR) ||
 		    flags & INVALIDATE_ALL) ) {
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
 			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page,
@@ -744,7 +750,7 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr, int flags)
 		}
 	}
 }
-#endif	/*  DYNTRANS_INVALIDATE_TC_PADDR  */
+#endif	/*  DYNTRANS_INVALIDATE_TC  */
 
 
 
@@ -758,7 +764,7 @@ void DYNTRANS_INVALIDATE_TC_PADDR(struct cpu *cpu, uint64_t paddr, int flags)
 void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 {
 	int r;
-#ifdef MODE_32
+#ifdef MODE32
 	uint32_t
 #else
 	uint64_t
@@ -870,7 +876,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
 	int64_t lowest, highest = -1;
-	int found, r, lowest_index;
+	int found, r, lowest_index, start, end;
 
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
@@ -897,10 +903,16 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #endif
 #endif
 
+	start = 0; end = DYNTRANS_MAX_VPH_TLB_ENTRIES / 2;
+	if (writeflag & TLB_CODE) {
+		writeflag &= ~TLB_CODE;
+		start = end; end = DYNTRANS_MAX_VPH_TLB_ENTRIES;
+	}
+
 	/*  Scan the current TLB entries:  */
-	found = -1; lowest_index = 0;
+	found = -1; lowest_index = start;
 	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
-	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
+	for (r=start; r<end; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp < lowest) {
 			lowest = cpu->cd.DYNTRANS_ARCH.
 			    vph_tlb_entry[r].timestamp;

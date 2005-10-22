@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.4 2005-10-07 23:13:51 debug Exp $
+ *  $Id: cpu_mips.c,v 1.5 2005-10-22 17:24:20 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -158,7 +158,7 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = INITIAL_STACK_POINTER;
 	cpu->update_translation_table = mips_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
+	cpu->invalidate_translation_caches =
 	    mips_invalidate_translation_caches_paddr;
 
 	if (cpu->cd.mips.cpu_type.isa_level <= 2 ||

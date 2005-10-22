@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.3 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.4 2005-10-22 17:24:20 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -66,8 +66,8 @@ int m68k_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->memory_rw = m68k_memory_rw;
 	cpu->update_translation_table = m68k_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
-	    m68k_invalidate_translation_caches_paddr;
+	cpu->invalidate_translation_caches =
+	    m68k_invalidate_translation_caches;
 	cpu->invalidate_code_translation = m68k_invalidate_code_translation;
 	cpu->is_32bit = 1;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.c,v 1.2 2005-09-07 07:41:30 debug Exp $
+ *  $Id: cpu_i960.c,v 1.3 2005-10-22 17:24:20 debug Exp $
  *
  *  Intel i960 CPU emulation.
  */
@@ -62,8 +62,8 @@ int i960_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->memory_rw = i960_memory_rw;
 	cpu->update_translation_table = i960_update_translation_table;
-	cpu->invalidate_translation_caches_paddr =
-	    i960_invalidate_translation_caches_paddr;
+	cpu->invalidate_translation_caches =
+	    i960_invalidate_translation_caches;
 	cpu->invalidate_code_translation = i960_invalidate_code_translation;
 	cpu->is_32bit = 1;
 

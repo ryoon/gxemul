@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.995 2005-10-21 15:19:24 debug Exp $
+$Id: HISTORY,v 1.996 2005-10-22 09:38:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2330,3 +2330,4 @@ Changelog for GXemul:
 		quite a bit).
 20051021	Automatically generating some of the most common ARM load/store
 		multiple instructions.
+20051022	Better statistics gathering for the ARM load/store multiple.

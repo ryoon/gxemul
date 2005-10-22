@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.1 2005-10-21 15:19:25 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.2 2005-10-22 09:38:46 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -125,26 +125,46 @@ void generate_opcode(uint32_t opcode)
 	printf("page != NULL) {\n");
 
 	printf("\t\tuint32_t *p = (uint32_t *) (page + addr);\n");
-	x = 0;
-	for (i=(u?0:15); i>=0 && i<=15; i+=(u?1:-1)) {
-		if (!(opcode & (1 << i)))
-			continue;
 
-		if (load && w && i == r) {
-			/*  Skip the load if we're using writeback.  */
-		} else if (load)
-			printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n", i, x);
-		else {
-			printf("\t\tp[%i] = cpu->cd.arm.r[%i]", x, i);
-			if (i == 15)
-				printf(" + 12");
-			printf(";\n");
-		}
+	if (u) {
+		x = 0;
+		for (i=0; i<=15; i++) {
+			if (!(opcode & (1 << i)))
+				continue;
 
-		if (u)
+			if (load && w && i == r) {
+				/*  Skip the load if we're using writeback.  */
+			} else if (load)
+				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n", i, x);
+			else {
+				printf("\t\tp[%i] = cpu->cd.arm.r[%i]", x, i);
+				if (i == 15)
+					printf(" + 12");
+				printf(";\n");
+			}
+
 			x ++;
-		else
-			x --;
+		}
+	} else {
+		/*  Decrementing, but do it incrementing anyway:  */
+		x = -n_regs;
+		for (i=0; i<=15; i++) {
+			if (!(opcode & (1 << i)))
+				continue;
+
+			x ++;
+
+			if (load && w && i == r) {
+				/*  Skip the load if we're using writeback.  */
+			} else if (load)
+				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n", i, x);
+			else {
+				printf("\t\tp[%i] = cpu->cd.arm.r[%i]", x, i);
+				if (i == 15)
+					printf(" + 12");
+				printf(";\n");
+			}
+		}
 	}
 
 	if (w)
@@ -156,8 +176,8 @@ void generate_opcode(uint32_t opcode)
 		    "\t\tarm_pc_to_pointers(cpu);\n");
 	}
 
-	printf("\t} else {\n");
-	printf("\t\tinstr(bdt_%s)(cpu, ic);\n\t}\n", load? "load" : "store");
+	printf("\t} else\n");
+	printf("\t\tinstr(bdt_%s)(cpu, ic);\n", load? "load" : "store");
 
 	printf("}\nY(multi_0x%08x)\n", opcode);
 }
@@ -165,7 +185,7 @@ void generate_opcode(uint32_t opcode)
 
 int main(int argc, char *argv[])
 {
-	int i;
+	int i, j;
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s opcode [..]\n", argv[0]);
@@ -174,34 +194,115 @@ int main(int argc, char *argv[])
 
 	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
 
+	/*  Generate the opcode functions:  */
 	for (i=1; i<argc; i++)
 		generate_opcode(strtol(argv[i], NULL, 0));
 
-	printf("\nuint32_t multi_opcode[%i] = {\n", argc);
-	for (i=1; i<argc; i++)
-		printf("\t0x%08lx,\n", strtol(argv[i], NULL, 0));
-	printf("0 };\n");
+	/*
+	 *  xxxx100P USWLnnnn llllllll llllllll
+	 *           ^  ^ ^ ^        ^  ^ ^ ^	(0x00950154)
+	 *
+	 *  The marked bits are used to select which lookup table to use.
+	 */
 
-	printf("\nvoid (*multi_opcode_f[%i])(struct cpu *,"
-	    " struct arm_instr_call *) = {\n", (argc-1)*16);
-	for (i=1; i<argc; i++) {
-		int n = strtol(argv[i], NULL, 0);
-		printf("arm_instr_multi_0x%08x__eq,", n);
-		printf("arm_instr_multi_0x%08x__ne,", n);
-		printf("arm_instr_multi_0x%08x__cs,", n);
-		printf("arm_instr_multi_0x%08x__cc,", n);
-		printf("arm_instr_multi_0x%08x__mi,", n);
-		printf("arm_instr_multi_0x%08x__pl,", n);
-		printf("arm_instr_multi_0x%08x__vs,", n);
-		printf("arm_instr_multi_0x%08x__vc,", n);
-		printf("arm_instr_multi_0x%08x__hi,", n);
-		printf("arm_instr_multi_0x%08x__ls,", n);
-		printf("arm_instr_multi_0x%08x__ge,", n);
-		printf("arm_instr_multi_0x%08x__lt,", n);
-		printf("arm_instr_multi_0x%08x__gt,", n);
-		printf("arm_instr_multi_0x%08x__le,", n);
-		printf("arm_instr_multi_0x%08x,", n);
-		printf("arm_instr_nop%s", i<argc-1? "," : "");
+	/*  Generate 256 small lookup tables:  */
+	for (j=0; j<256; j++) {
+		int n = 0, zz, zz0;
+		for (i=1; i<argc; i++) {
+			zz = strtol(argv[i], NULL, 0);
+			zz = ((zz & 0x00800000) >> 16)
+			    |((zz & 0x00100000) >> 14)
+			    |((zz & 0x00040000) >> 13)
+			    |((zz & 0x00010000) >> 12)
+			    |((zz & 0x00000100) >>  5)
+			    |((zz & 0x00000040) >>  4)
+			    |((zz & 0x00000010) >>  3)
+			    |((zz & 0x00000004) >>  2);
+			if (zz == j)
+				n++;
+		}
+		printf("\nuint32_t multi_opcode_%i[%i] = {\n", j, n+1);
+		for (i=1; i<argc; i++) {
+			zz = zz0 = strtol(argv[i], NULL, 0);
+			zz = ((zz & 0x00800000) >> 16)
+			    |((zz & 0x00100000) >> 14)
+			    |((zz & 0x00040000) >> 13)
+			    |((zz & 0x00010000) >> 12)
+			    |((zz & 0x00000100) >>  5)
+			    |((zz & 0x00000040) >>  4)
+			    |((zz & 0x00000010) >>  3)
+			    |((zz & 0x00000004) >>  2);
+			if (zz == j)
+				printf("\t0x%08x,\n", zz0);
+		}
+		printf("0 };\n");
+	}
+
+	/*  Generate 256 tables with function pointers:  */
+	for (j=0; j<256; j++) {
+		int n = 0, zz, zz0;
+		for (i=1; i<argc; i++) {
+			zz = strtol(argv[i], NULL, 0);
+			zz = ((zz & 0x00800000) >> 16)
+			    |((zz & 0x00100000) >> 14)
+			    |((zz & 0x00040000) >> 13)
+			    |((zz & 0x00010000) >> 12)
+			    |((zz & 0x00000100) >>  5)
+			    |((zz & 0x00000040) >>  4)
+			    |((zz & 0x00000010) >>  3)
+			    |((zz & 0x00000004) >>  2);
+			if (zz == j)
+				n++;
+		}
+		printf("void (*multi_opcode_f_%i[%i])(struct cpu *,"
+		    " struct arm_instr_call *) = {\n", j, n*16);
+		for (i=1; i<argc; i++) {
+			zz = zz0 = strtol(argv[i], NULL, 0);
+			zz = ((zz & 0x00800000) >> 16)
+			    |((zz & 0x00100000) >> 14)
+			    |((zz & 0x00040000) >> 13)
+			    |((zz & 0x00010000) >> 12)
+			    |((zz & 0x00000100) >>  5)
+			    |((zz & 0x00000040) >>  4)
+			    |((zz & 0x00000010) >>  3)
+			    |((zz & 0x00000004) >>  2);
+			if (zz == j) {
+				printf("\tarm_instr_multi_0x%08x__eq,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__ne,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__cs,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__cc,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__mi,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__pl,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__vs,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__vc,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__hi,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__ls,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__ge,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__lt,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__gt,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x__le,\n", zz0);
+				printf("\tarm_instr_multi_0x%08x,\n", zz0);
+				printf("\tarm_instr_nop,\n");
+			}
+		}
+		printf("};\n");
+	}
+
+
+	printf("\nuint32_t *multi_opcode[256] = {\n");
+	for (i=0; i<256; i++) {
+		printf(" multi_opcode_%i,", i);
+		if ((i % 4) == 0)
+			printf("\n");
+	}
+	printf("};\n");
+
+	printf("\nvoid (**multi_opcode_f[256])(struct cpu *,"
+	    " struct arm_instr_call *) = {\n");
+	for (i=0; i<256; i++) {
+		printf(" multi_opcode_f_%i,", i);
+		if ((i % 4) == 0)
+			printf("\n");
 	}
 	printf("};\n");
 

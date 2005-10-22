@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.19 2005-10-07 22:10:51 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.20 2005-10-22 09:38:46 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -144,15 +144,8 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			I; I; I; I; I;   I; I; I; I; I;
 
 			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
 
-			I; I; I; I; I;   I; I; I; I; I;
-			I; I; I; I; I;   I; I; I; I; I;
-
-			n_instrs += 120;
+			n_instrs += 60;
 
 			if (!cpu->running_translated ||
 			    n_instrs + cpu->n_translated_instrs >= 16384)

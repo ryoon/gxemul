@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.31 2005-10-21 15:19:25 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.32 2005-10-22 09:38:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -34,6 +34,72 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+/*  #define GATHER_BDT_STATISTICS  */
+
+
+#ifdef GATHER_BDT_STATISTICS
+/*
+ *  update_bdt_statistics():
+ *
+ *  Gathers statistics about load/store multiple instructions.
+ *
+ *  NOTE/TODO: Perhaps it would be more memory efficient to swap the high
+ *  and low parts of the instruction word, so that the lllllll bits become
+ *  the high bits; this would cause fewer host pages to be used. Anyway, the
+ *  current implementation works on hosts with lots of RAM.
+ *
+ *  The resulting file, bdt_statistics.txt, should then be processed like
+ *  this to give a new cpu_arm_multi.txt:
+ *
+ *  uniq -c bdt_statistics.txt|sort -nr|head -256|cut -f 2 > cpu_arm_multi.txt
+ */
+static void update_bdt_statistics(uint32_t iw)
+{
+	static FILE *f = NULL;
+	static long long *counts;
+	static char *counts_used;
+	static long long n = 0;
+
+	if (f == NULL) {
+		size_t s = (1 << 24) * sizeof(long long);
+		f = fopen("bdt_statistics.txt", "w");
+		if (f == NULL) {
+			fprintf(stderr, "update_bdt_statistics(): :-(\n");
+			exit(1);
+		}
+		counts = zeroed_alloc(s);
+		counts_used = zeroed_alloc(65536);
+	}
+
+	/*  Drop the s-bit: xxxx100P USWLnnnn llllllll llllllll  */
+	iw = ((iw & 0x01800000) >> 1) | (iw & 0x003fffff);
+
+	counts_used[iw & 0xffff] = 1;
+	counts[iw] ++;
+
+	n ++;
+	if ((n % 500000) == 0) {
+		int i;
+		long long j;
+		fatal("[ update_bdt_statistics(): n = %lli ]\n", (long long) n);
+		fseek(f, 0, SEEK_SET);
+		for (i=0; i<0x1000000; i++)
+			if (counts_used[i & 0xffff] && counts[i] != 0) {
+				/*  Recreate the opcode:  */
+				uint32_t opcode = ((i & 0x00c00000) << 1)
+				    | (i & 0x003fffff) | 0x08000000;
+				for (j=0; j<counts[i]; j++)
+					fprintf(f, "0x%08x\n", opcode);
+			}
+		fflush(f);
+	}
+}
+#endif
+
+
+/*****************************************************************************/
 
 
 /*
@@ -832,12 +898,9 @@ X(bdt_load)
 	int i, return_flag = 0;
 	uint32_t new_values[16];
 
-#if 0
-{
-static FILE *f = NULL;
-if (f == NULL) f = fopen("bdt_load.txt", "w");
-fprintf(f, "0x%08x\n", iw & 0x0fffffff);
-}
+#ifdef GATHER_BDT_STATISTICS
+	if (!s_bit)
+		update_bdt_statistics(iw);
 #endif
 
 	/*  Synchronize the program counter:  */
@@ -1023,12 +1086,9 @@ X(bdt_store)
 	int w_bit = iw & 0x00200000;
 	int i;
 
-#if 0
-{
-static FILE *f = NULL;
-if (f == NULL) f = fopen("bdt_store.txt", "w");
-fprintf(f, "0x%08x\n", iw & 0x0fffffff);
-}
+#ifdef GATHER_BDT_STATISTICS
+	if (!s_bit)
+		update_bdt_statistics(iw);
 #endif
 
 	/*  Synchronize the program counter:  */
@@ -1307,6 +1367,7 @@ X(end_of_page)
 void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 	uint32_t addr)
 {
+#if 0
 	int n_back;
 	n_back = (addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
@@ -1339,6 +1400,7 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 	}
 
 	/*  TODO: Combine forward as well  */
+#endif
 }
 
 
@@ -1359,8 +1421,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
-	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t;
-	int any_pc_reg, i;
+	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t, any_pc_reg;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the address of the instruction:  */
@@ -1672,16 +1733,33 @@ X(to_be_translated)
 			ic->f = cond_instr(bdt_load);
 		else
 			ic->f = cond_instr(bdt_store);
-#if 1
-		/*  Check for availability of optimized implementation:  */
-		i = 0;
-		while (multi_opcode[i]) {
-			if ((iword & 0x0fffffff) == multi_opcode[i]) {
-				ic->f = multi_opcode_f[i*16 + condition_code];
+#ifndef GATHER_BDT_STATISTICS
+{
+		/*
+		 *  Check for availability of optimized implementation:
+		 *  xxxx100P USWLnnnn llllllll llllllll
+		 *           ^  ^ ^ ^        ^  ^ ^ ^   (0x00950154)
+		 *  These bits are used to select which list to scan, and then
+		 *  the list is scanned linearly.
+		 */
+		int i = 0, j = iword;
+		j = ((j & 0x00800000) >> 16)
+		   |((j & 0x00100000) >> 14)
+		   |((j & 0x00040000) >> 13)
+		   |((j & 0x00010000) >> 12)
+		   |((j & 0x00000100) >>  5)
+		   |((j & 0x00000040) >>  4)
+		   |((j & 0x00000010) >>  3)
+		   |((j & 0x00000004) >>  2);
+		while (multi_opcode[j][i] != 0) {
+			if ((iword & 0x0fffffff) == multi_opcode[j][i]) {
+				ic->f = multi_opcode_f[j]
+				    [i*16 + condition_code];
 				break;
 			}
 			i ++;
 		}
+}
 #endif
 		if (rn == ARM_PC) {
 			fatal("TODO: bdt with PC as base\n");

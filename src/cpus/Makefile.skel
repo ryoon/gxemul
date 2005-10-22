@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.10 2005-10-21 15:19:25 debug Exp $
+#  $Id: Makefile.skel,v 1.11 2005-10-22 09:38:46 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -227,7 +227,7 @@ tmp_x86_tail.c: generate_tail
 ###############################################################################
 
 clean:
-	rm -f $(OBJS) $(TOOLS) *core tmp_*.c *.gmon
+	rm -f $(OBJS) $(TOOLS) *core tmp_*.c *.gmon experiment_arm_multi
 
 clean_all: clean
 	rm -f Makefile

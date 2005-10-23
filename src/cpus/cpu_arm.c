@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.34 2005-10-22 17:24:20 debug Exp $
+ *  $Id: cpu_arm.c,v 1.35 2005-10-23 14:24:13 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -163,6 +163,7 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
 	}
 
 	cpu->cd.arm.control |= ARM_CONTROL_MMU;
+	cpu->translate_address = arm_translate_address_mmu;
 	cpu->cd.arm.dacr |= 0x00000003;
 	cpu->cd.arm.ttb = ttb_addr;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.26 2005-10-17 21:18:01 debug Exp $
+ *  $Id: memory_arm.c,v 1.27 2005-10-23 14:24:13 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -44,6 +44,19 @@
 #include "armreg.h"
 
 extern int quiet_mode;
+
+
+/*
+ *  arm_translate_address():
+ *
+ *  Address translation with the MMU disabled.
+ */
+int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
+	uint64_t *return_addr, int flags)
+{
+	*return_addr = vaddr64 & 0xffffffff;
+	return 2;
+}
 
 
 /*
@@ -87,7 +100,7 @@ static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
 
 
 /*
- *  arm_translate_address():
+ *  arm_translate_address_mmu():
  *
  *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
  *
@@ -99,12 +112,11 @@ static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
  *  If this is a 1KB page access, then the return value is ORed with
  *  MEMORY_NOT_FULL_PAGE.
  */
-int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
+int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 	uint64_t *return_addr, int flags)
 {
-	unsigned char descr[4];
+	unsigned char *q;
 	uint32_t addr, d=0, d2 = (uint32_t)(int32_t)-1, ptba, vaddr = vaddr64;
-	int d2_in_use = 0, d_in_use = 1;
 	int instr = flags & FLAG_INSTR;
 	int writeflag = (flags & FLAG_WRITEFLAG)? 1 : 0;
 	int useraccess = flags & MEMORY_USER_ACCESS;
@@ -113,11 +125,6 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 	int domain, dav, ap0,ap1,ap2,ap3, ap = 0, access = 0;
 	int fs = 2;		/*  fault status (2 = terminal exception)  */
 	int subpage = 0;
-
-	if (!(cpu->cd.arm.control & ARM_CONTROL_MMU)) {
-		*return_addr = vaddr;
-		return 2;
-	}
 
 	if (useraccess)
 		user = 1;
@@ -153,26 +160,31 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 
 	switch (d & 3) {
 
-	case 0:	d_in_use = 0;
-		domain = 0;
+	case 0:	domain = 0;
 		fs = FAULT_TRANS_S;
 		goto exception_return;
 
 	case 1:	/*  Course Pagetable:  */
+		if (dav == 0) {
+			fs = FAULT_DOMAIN_P;
+			goto exception_return;
+		}
 		ptba = d & 0xfffffc00;
 		addr = ptba + ((vaddr & 0x000ff000) >> 10);
-		if (!cpu->memory_rw(cpu, cpu->mem, addr, &descr[0],
-		    sizeof(descr), MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
-			fatal("arm_translate_address(): huh 2?\n");
+
+		q = memory_paddr_to_hostaddr(cpu->mem, addr & 0x0fffffff, 0);
+		if (q == NULL) {
+			printf("arm memory blah blah adfh asfg asdgasdg\n");
 			exit(1);
 		}
+		d2 = *(uint32_t *)(q + (addr & ((1 << BITS_PER_MEMBLOCK) - 1)));
+#ifdef HOST_LITTLE_ENDIAN
+		if (cpu->byte_order == EMUL_BIG_ENDIAN)
+#else
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-			d2 = descr[0] + (descr[1] << 8) + (descr[2] << 16)
-			    + (descr[3] << 24);
-		else
-			d2 = descr[3] + (descr[2] << 8) + (descr[1] << 16)
-			    + (descr[0] << 24);
-		d2_in_use = 1;
+#endif
+			d2 = ((d2 & 0xff) << 24) | ((d2 & 0xff00) << 8) |
+			     ((d2 & 0xff0000) >> 8) | ((d2 & 0xff000000) >> 24);
 
 		switch (d2 & 3) {
 		case 0:	fs = FAULT_TRANS_P;
@@ -208,10 +220,6 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
 		}
-		if (dav == 0) {
-			fs = FAULT_DOMAIN_P;
-			goto exception_return;
-		}
 		access = arm_check_access(cpu, ap, dav, user);
 		if (access > writeflag)
 			return access | (subpage? MEMORY_NOT_FULL_PAGE : 0);
@@ -219,11 +227,11 @@ int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
 		goto exception_return;
 
 	case 2:	/*  Section descriptor:  */
-		*return_addr = (d & 0xfff00000) | (vaddr & 0x000fffff);
 		if (dav == 0) {
 			fs = FAULT_DOMAIN_S;
 			goto exception_return;
 		}
+		*return_addr = (d & 0xfff00000) | (vaddr & 0x000fffff);
 		ap = (d >> 10) & 3;
 		access = arm_check_access(cpu, ap, dav, user);
 		if (access > writeflag)
@@ -244,11 +252,7 @@ exception_return:
 		fatal("{ arm memory fault: vaddr=0x%08x domain=%i dav=%i ap=%i "
 		    "access=%i user=%i", (int)vaddr, domain, dav, ap,
 		    access, user);
-		if (d_in_use)
-			fatal(" d=0x%08x", d);
-		if (d2_in_use)
-			fatal(" d2=0x%08x", d2);
-		fatal(" }\n");
+		fatal(" d=0x%08x d2=0x%08x }\n", d, d2);
 	}
 
 	if (instr)

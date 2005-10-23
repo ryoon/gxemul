@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.178 2005-10-22 17:24:19 debug Exp $
+ *  $Id: memory.c,v 1.179 2005-10-23 14:24:10 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -402,6 +402,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 
 	mem->dev_name[mem->n_mmapped_devices] = strdup(device_name);
 	mem->dev_baseaddr[mem->n_mmapped_devices] = baseaddr;
+	mem->dev_endaddr[mem->n_mmapped_devices] = baseaddr + len;
 	mem->dev_length[mem->n_mmapped_devices] = len;
 	mem->dev_flags[mem->n_mmapped_devices] = flags;
 	mem->dev_dyntrans_data[mem->n_mmapped_devices] = dyntrans_data;

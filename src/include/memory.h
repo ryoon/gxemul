@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.39 2005-10-20 22:49:08 debug Exp $
+ *  $Id: memory.h,v 1.40 2005-10-23 14:24:15 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -64,6 +64,7 @@ struct memory {
 
 	const char	*dev_name[MAX_DEVICES];
 	uint64_t	dev_baseaddr[MAX_DEVICES];
+	uint64_t	dev_endaddr[MAX_DEVICES];	/*  after the end!  */
 	uint64_t	dev_length[MAX_DEVICES];
 	int		dev_flags[MAX_DEVICES];
 	void		*dev_extra[MAX_DEVICES];

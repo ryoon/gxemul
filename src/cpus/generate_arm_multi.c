@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.3 2005-10-22 12:22:14 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.4 2005-10-23 14:24:13 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -39,6 +39,23 @@
 #include "misc.h"
 
 
+/*
+ *  generate_opcode():
+ *
+ *  Given an ARM load/store multiple opcode, produce equivalent "hardcoded"
+ *  C code which emulates the opcode.
+ *
+ *  TODO:
+ *
+ *	o)  On 64-bit hosts, load/store two registers at a time. This
+ *	    feature depends both on the alignment of the base register,
+ *	    and the specific set of registers being loaded/stored.
+ *
+ *	o)  Alignment checks. (Optional?)
+ *
+ *	o)  For accesses that cross page boundaries, use two pages using
+ *	    the fast method instead of calling the generic function?
+ */
 void generate_opcode(uint32_t opcode)
 {
 	int p, u, s, w, load, r, n_regs, i, x;
@@ -58,6 +75,8 @@ void generate_opcode(uint32_t opcode)
 	for (i=0; i<16; i++)
 		if (opcode & (1 << i))
 			n_regs ++;
+
+	/*  TODO: Check for register pairs, for 64-bit load/stores  */
 
 	if (n_regs == 0) {
 		fprintf(stderr, "opcode 0x%08x has no registers set\n", opcode);
@@ -79,15 +98,12 @@ void generate_opcode(uint32_t opcode)
 	printf("\tuint32_t addr = cpu->cd.arm.r[%i];\n", r);
 
 	if (!load && opcode & 0x8000) {
-		/*  Sync the PC:  */
-		printf("\tuint32_t low_pc = ((size_t)ic - (size_t)\n\t"
+		printf("\tuint32_t tmp_pc = ((size_t)ic - (size_t)\n\t"
 		    "    cpu->cd.arm.cur_ic_page) / sizeof(struct "
 		    "arm_instr_call);\n"
-		    "\tcpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)"
-		    "\n\t    << ARM_INSTR_ALIGNMENT_SHIFT);\n"
-		    "\tcpu->cd.arm.r[ARM_PC] += (low_pc << "
-		    "ARM_INSTR_ALIGNMENT_SHIFT);\n"
-		    "\tcpu->pc = cpu->cd.arm.r[ARM_PC];\n");
+		    "\ttmp_pc = ((cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1)"
+		    "\n\t    << ARM_INSTR_ALIGNMENT_SHIFT)))\n"
+		    "\t    + (tmp_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 12;\n");
 	}
 
 	printf("\tunsigned char *page;\n");
@@ -132,10 +148,10 @@ void generate_opcode(uint32_t opcode)
 			} else if (load)
 				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n", i, x);
 			else {
-				printf("\t\tp[%i] = cpu->cd.arm.r[%i]", x, i);
 				if (i == 15)
-					printf(" + 12");
-				printf(";\n");
+					printf("\t\tp[%i] = tmp_pc;\n", x);
+				else
+					printf("\t\tp[%i] = cpu->cd.arm.r[%i];\n", x, i);
 			}
 
 			x ++;
@@ -154,10 +170,10 @@ void generate_opcode(uint32_t opcode)
 			} else if (load)
 				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n", i, x);
 			else {
-				printf("\t\tp[%i] = cpu->cd.arm.r[%i]", x, i);
 				if (i == 15)
-					printf(" + 12");
-				printf(";\n");
+					printf("\t\tp[%i] = tmp_pc;\n", x);
+				else
+					printf("\t\tp[%i] = cpu->cd.arm.r[%i];\n", x, i);
 			}
 		}
 	}
@@ -178,9 +194,25 @@ void generate_opcode(uint32_t opcode)
 }
 
 
+/*
+ *  main():
+ *
+ *  Normal ARM code seems to only use about a few hundred of the 1^24 possible
+ *  load/store multiple instructions. (I'm not counting the s-bit now.)
+ *  Instead of having a linear array of 100s of entries, we can select a list
+ *  to scan based on a few bits (*), and those lists will be shorter.
+ *
+ *  (*)  By running experiment_arm_multi.c on statistics gathered from running
+ *       NetBSD/cats, it seems that choosing the following 8 bits results in
+ *       the shortest linear lists:
+ *
+ *		  xxxx100P USWLnnnn llllllll llllllll
+ *		           ^  ^ ^ ^        ^  ^ ^ ^	(0x00950154)
+ */
 int main(int argc, char *argv[])
 {
 	int i, j;
+	int n_used[256];
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s opcode [..]\n", argv[0]);
@@ -192,13 +224,6 @@ int main(int argc, char *argv[])
 	/*  Generate the opcode functions:  */
 	for (i=1; i<argc; i++)
 		generate_opcode(strtol(argv[i], NULL, 0));
-
-	/*
-	 *  xxxx100P USWLnnnn llllllll llllllll
-	 *           ^  ^ ^ ^        ^  ^ ^ ^	(0x00950154)
-	 *
-	 *  The marked bits are used to select which lookup table to use.
-	 */
 
 	/*  Generate 256 small lookup tables:  */
 	for (j=0; j<256; j++) {
@@ -249,6 +274,9 @@ int main(int argc, char *argv[])
 			if (zz == j)
 				n++;
 		}
+		n_used[j] = n;
+		if (n == 0)
+			continue;
 		printf("void (*multi_opcode_f_%i[%i])(struct cpu *,"
 		    " struct arm_instr_call *) = {\n", j, n*16);
 		for (i=1; i<argc; i++) {
@@ -295,7 +323,10 @@ int main(int argc, char *argv[])
 	printf("\nvoid (**multi_opcode_f[256])(struct cpu *,"
 	    " struct arm_instr_call *) = {\n");
 	for (i=0; i<256; i++) {
-		printf(" multi_opcode_f_%i,", i);
+		if (n_used[i] > 0)
+			printf(" multi_opcode_f_%i,", i);
+		else
+			printf(" NULL,");
 		if ((i % 4) == 0)
 			printf("\n");
 	}

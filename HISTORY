@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.998 2005-10-22 17:24:18 debug Exp $
+$Id: HISTORY,v 1.999 2005-10-23 14:24:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2332,3 +2332,4 @@ Changelog for GXemul:
 		multiple instructions.
 20051022	Better statistics gathering for the ARM load/store multiple.
 		Various other dyntrans and device updates.
+20051023	Various minor updates.

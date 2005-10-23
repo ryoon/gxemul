@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.71 2005-10-22 17:24:19 debug Exp $
+ *  $Id: memory_rw.c,v 1.72 2005-10-23 14:24:10 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -310,8 +310,7 @@ have_paddr:
 		 */
 		for (i=0; i<mem->n_mmapped_devices; i++)
 			if (paddr >= (mem->dev_baseaddr[i] & ~offset_mask) &&
-			    paddr <= ((mem->dev_baseaddr[i] +
-			    mem->dev_length[i] - 1) | offset_mask)) {
+			    paddr <= ((mem->dev_endaddr[i]-1) | offset_mask)) {
 				bintrans_device_danger = 1;
 				break;
 			}
@@ -321,7 +320,7 @@ have_paddr:
 		/*  Scan through all devices:  */
 		do {
 			if (paddr >= mem->dev_baseaddr[i] &&
-			    paddr < mem->dev_baseaddr[i] + mem->dev_length[i]) {
+			    paddr < mem->dev_endaddr[i]) {
 				/*  Found a device, let's access it:  */
 				mem->last_accessed_device = i;
 

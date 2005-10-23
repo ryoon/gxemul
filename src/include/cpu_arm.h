@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.50 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu_arm.h,v 1.51 2005-10-23 14:24:15 debug Exp $
  */
 
 #include "misc.h"
@@ -275,6 +275,8 @@ void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 
 /*  memory_arm.c:  */
 int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 
 #endif	/*  CPU_ARM_H  */

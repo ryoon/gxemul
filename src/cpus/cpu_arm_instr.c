@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.33 2005-10-22 12:22:13 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.34 2005-10-23 14:24:13 debug Exp $
  *
  *  ARM instructions.
  *
@@ -119,6 +119,10 @@ static void update_bdt_statistics(uint32_t iw)
  *  condition code. (The NV condition code is not included, and the AL code
  *  uses the main foo function.)  Y also defines an array with pointers to
  *  all of these functions.
+ *
+ *  If the compiler is good enough (i.e. allows long enough code sequences
+ *  to be inlined), then the Y functions will be compiled as full (inlined)
+ *  functions, otherwise they will simply call the X function.
  */
 
 #define Y(n) void arm_instr_ ## n ## __eq(struct cpu *cpu,		\

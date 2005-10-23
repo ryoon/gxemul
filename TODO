@@ -1,4 +1,4 @@
-$Id: TODO,v 1.174 2005-10-22 09:38:02 debug Exp $
+$Id: TODO,v 1.175 2005-10-23 14:24:09 debug Exp $
 
 ===============================================================================
 
@@ -16,7 +16,7 @@ Dyntrans:
 
 	x)  Separate data and instruction translations?
 
-	x)  Inline the quick case of pc_to_pointers?
+	x)  Generalize the inline quick_pc_to_pointers?
 
 	x)  Call/return hints...
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.41 2005-10-22 17:24:22 debug Exp $
+ *  $Id: dev_wdc.c,v 1.42 2005-10-23 14:24:14 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -45,7 +45,7 @@
 
 #define	DEV_WDC_LENGTH		8
 #define	WDC_TICK_SHIFT		14
-#define	WDC_MAX_SECTORS		128
+#define	WDC_MAX_SECTORS		512
 #define	WDC_INBUF_SIZE		(512*(WDC_MAX_SECTORS+1))
 
 /*
@@ -225,7 +225,8 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
  */
 void wdc__read(struct cpu *cpu, struct wdc_data *d)
 {
-	unsigned char buf[512];
+	const int max_sectors_per_chunk = 64;
+	unsigned char buf[512 * max_sectors_per_chunk];
 	int i, cyl = d->cyl_hi * 256+ d->cyl_lo;
 	int count = d->seccnt? d->seccnt : 256;
 	uint64_t offset = 512 * (d->sector - 1
@@ -241,13 +242,27 @@ void wdc__read(struct cpu *cpu, struct wdc_data *d)
 #endif
 
 	while (count > 0) {
-		diskimage_access(cpu->machine, d->drive + d->base_drive,
-		    DISKIMAGE_IDE, 0, offset, buf, 512);
-		/*  TODO: result code  */
-		for (i=0; i<512; i++)
-			wdc_addtoinbuf(d, buf[i]);
-		offset += 512;
-		count --;
+		int to_read = count > max_sectors_per_chunk?
+		    max_sectors_per_chunk : count;
+
+		/*  TODO: result code from the read?  */
+
+		if (d->inbuf_head + 512 * to_read <= WDC_INBUF_SIZE) {
+			diskimage_access(cpu->machine, d->drive + d->base_drive,
+			    DISKIMAGE_IDE, 0, offset,
+			    d->inbuf + d->inbuf_head, 512 * to_read);
+			d->inbuf_head += 512 * to_read;
+			if (d->inbuf_head == WDC_INBUF_SIZE)
+				d->inbuf_head = 0;
+		} else {
+			diskimage_access(cpu->machine, d->drive + d->base_drive,
+			    DISKIMAGE_IDE, 0, offset, buf, 512 * to_read);
+			for (i=0; i<512 * to_read; i++)
+				wdc_addtoinbuf(d, buf[i]);
+		}
+
+		offset += 512 * to_read;
+		count -= to_read;
 	}
 
 	d->delayed_interrupt = INT_DELAY;
@@ -350,15 +365,17 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i;
 
-	if (relative_addr == wd_data)
-		idata = memory_readmax64(cpu, data, len);
-	else
-		idata = data[0];
+	if (writeflag == MEM_WRITE) {
+		if (relative_addr == wd_data)
+			idata = memory_readmax64(cpu, data, len);
+		else
+			idata = data[0];
+	}
 
 	switch (relative_addr) {
 
 	case wd_data:	/*  0: data  */
-		if (writeflag==MEM_READ) {
+		if (writeflag == MEM_READ) {
 			odata = 0;
 
 			/*  TODO: This is hardcoded for little-endian?  */

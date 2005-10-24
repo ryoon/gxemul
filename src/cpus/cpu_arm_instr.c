@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.34 2005-10-23 14:24:13 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.35 2005-10-24 18:54:26 debug Exp $
  *
  *  ARM instructions.
  *
@@ -557,6 +557,7 @@ Y(mov_reg_reg)
 
 /*
  *  ret_trace:  "mov pc,lr" with trace enabled
+ *  ret:  "mov pc,lr" without trace enabled
  *
  *  arg[0] = ignored
  */
@@ -585,6 +586,12 @@ X(ret_trace)
 	}
 }
 Y(ret_trace)
+X(ret)
+{
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = cpu->cd.arm.r[ARM_LR];
+	quick_pc_to_pointers(cpu);
+}
+Y(ret)
 
 
 /*
@@ -1342,6 +1349,125 @@ restart_loop:
 }
 
 
+/*
+ *  netbsd_memset:
+ *
+ *  The core of a NetBSD/arm memset.
+ *
+ *  f01bc420:  e25XX080     subs    rX,rX,#0x80
+ *  f01bc424:  a8ac000c     stmgeia ip!,{r2,r3}   (16 of these)
+ *  ..
+ *  f01bc464:  caffffed     bgt     0xf01bc420      <memset+0x38>
+ */
+X(netbsd_memset)
+{
+	unsigned char *page;
+	uint32_t addr;
+
+	do {
+		addr = cpu->cd.arm.r[ARM_IP];
+
+		instr(subs)(cpu, ic);
+
+		if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
+		    ((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) {
+			cpu->n_translated_instrs += 16;
+			/*  Skip the store multiples:  */
+			cpu->cd.arm.next_ic = &ic[17];
+			return;
+		}
+
+		/*  Crossing a page boundary? Then continue non-combined.  */
+		if ((addr & 0xfff) + 128 > 0x1000)
+			return;
+
+		/*  R2/R3 non-zero? Not allowed here.  */
+		if (cpu->cd.arm.r[2] != 0 || cpu->cd.arm.r[3] != 0)
+			return;
+
+		/*  printf("addr = 0x%08x\n", addr);  */
+
+		page = cpu->cd.arm.host_store[addr >> 12];
+		/*  No page translation? Continue non-combined.  */
+		if (page == NULL)
+			return;
+
+		/*  Clear:  */
+		memset(page + (addr & 0xfff), 0, 128);
+		cpu->cd.arm.r[ARM_IP] = addr + 128;
+		cpu->n_translated_instrs += 16;
+
+		/*  Branch back if greater:  */
+		cpu->n_translated_instrs += 1;
+	} while (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
+	    ((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) &&
+	    !(cpu->cd.arm.cpsr & ARM_FLAG_Z));
+
+	/*  Continue at the instruction after the bgt:  */
+	cpu->cd.arm.next_ic = &ic[18];
+}
+
+
+/*
+ *  netbsd_memcpy:
+ *
+ *  The core of a NetBSD/arm memcpy.
+ *
+f01bc530:  e8b15018     ldmia   r1!,{r3,r4,ip,lr}
+f01bc534:  e8a05018     stmia   r0!,{r3,r4,ip,lr}
+f01bc538:  e8b15018     ldmia   r1!,{r3,r4,ip,lr}
+f01bc53c:  e8a05018     stmia   r0!,{r3,r4,ip,lr}
+f01bc540:  e2522020     subs    r2,r2,#0x20
+f01bc544:  aafffff9     bge     0xf01bc530
+ */
+X(netbsd_memcpy)
+{
+	unsigned char *page_0, *page_1;
+	uint32_t addr_r0, addr_r1;
+
+	do {
+		addr_r0 = cpu->cd.arm.r[0];
+		addr_r1 = cpu->cd.arm.r[1];
+
+		/*  printf("addr_r0 = %08x  r1 = %08x\n", addr_r0, addr_r1);  */
+
+		/*  Crossing a page boundary? Then continue non-combined.  */
+		if ((addr_r0 & 0xfff) + 32 > 0x1000 ||
+		    (addr_r1 & 0xfff) + 32 > 0x1000) {
+			instr(multi_0x08b15018)(cpu, ic);
+			return;
+		}
+
+		page_0 = cpu->cd.arm.host_store[addr_r0 >> 12];
+		page_1 = cpu->cd.arm.host_store[addr_r1 >> 12];
+
+		/*  No page translations? Continue non-combined.  */
+		if (page_0 == NULL || page_1 == NULL) {
+			instr(multi_0x08b15018)(cpu, ic);
+			return;
+		}
+
+		memcpy(page_0 + (addr_r0 & 0xfff),
+		    page_1 + (addr_r1 & 0xfff), 32);
+		cpu->cd.arm.r[0] = addr_r0 + 32;
+		cpu->cd.arm.r[1] = addr_r1 + 32;
+
+		cpu->n_translated_instrs += 4;
+
+		instr(subs)(cpu, ic + 4);
+		cpu->n_translated_instrs ++;
+
+		/*  Loop while greater or equal:  */
+		cpu->n_translated_instrs ++;
+	} while (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
+	    ((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0));
+
+	/*  Continue at the instruction after the bge:  */
+	cpu->cd.arm.next_ic = &ic[6];
+	cpu->n_translated_instrs --;
+}
+
+
 /*****************************************************************************/
 
 
@@ -1366,16 +1492,67 @@ X(end_of_page)
 
 
 /*
- *  arm_combine_instructions():
+ *  arm_combine_netbsd_memset():
  *
- *  Combine two or more instructions, if possible, into a single function call.
+ *  Check for the core of a NetBSD/arm memset; large memsets use a sequence
+ *  of 16 store-multiple instructions, each storing 2 registers at a time.
  */
-void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
-	uint32_t addr)
+void arm_combine_netbsd_memset(struct cpu *cpu, struct arm_instr_call *ic,
+	int low_addr)
 {
-#if 0
-	int n_back;
-	n_back = (addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 17) {
+		int i;
+		for (i=-16; i<=-1; i++)
+			if (ic[i].f != instr(multi_0x08ac000c__ge))
+				return;
+		if (ic[-17].f == instr(subs) &&
+		    ic[-17].arg[0]==ic[-17].arg[2] && ic[-17].arg[1] == 128 &&
+		    ic[ 0].f == instr(b_samepage__gt) &&
+		    ic[ 0].arg[0] == (size_t)&ic[-17]) {
+			ic[-17].f = instr(netbsd_memset);
+			combined;
+		}
+	}
+}
+
+
+/*
+ *  arm_combine_netbsd_memcpy():
+ *
+ *  Check for the core of a NetBSD/arm memcpy; large memcpys use a
+ *  sequence of ldmia instructions.
+ */
+void arm_combine_netbsd_memcpy(struct cpu *cpu, struct arm_instr_call *ic,
+	int low_addr)
+{
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 5) {
+		if (ic[-5].f==instr(multi_0x08b15018) &&
+		    ic[-4].f==instr(multi_0x08a05018) &&
+		    ic[-3].f==instr(multi_0x08b15018) &&
+		    ic[-2].f==instr(multi_0x08a05018) &&
+		    ic[-1].f == instr(subs) &&
+		    ic[-1].arg[0]==ic[-1].arg[2] && ic[-1].arg[1] == 0x20 &&
+		    ic[ 0].f == instr(b_samepage__ge) &&
+		    ic[ 0].arg[0] == (size_t)&ic[-5]) {
+			ic[-5].f = instr(netbsd_memcpy);
+			combined;
+		}
+	}
+}
+
+
+/*
+ *  arm_combine_test2():
+ */
+void arm_combine_test2(struct cpu *cpu, struct arm_instr_call *ic, int low_addr)
+{
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
 	if (n_back >= 2) {
@@ -1386,9 +1563,15 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 		    ic[ 0].f == instr(b_samepage__gt) &&
 		    ic[ 0].arg[0] == (size_t)&ic[-2]) {
 			ic[-2].f = instr(fill_loop_test2);
+printf("YO test2\n");
 			combined;
 		}
 	}
+}
+
+
+#if 0
+	/*  TODO: This is another test hack.  */
 
 	if (n_back >= 3) {
 		if (ic[-3].f == instr(cmps) &&
@@ -1404,10 +1587,8 @@ void arm_combine_instructions(struct cpu *cpu, struct arm_instr_call *ic,
 			combined;
 		}
 	}
-
 	/*  TODO: Combine forward as well  */
 #endif
-}
 
 
 /*****************************************************************************/
@@ -1648,10 +1829,12 @@ X(to_be_translated)
 			goto bad;
 		}
 
-		/*  "mov pc,lr" with trace enabled:  */
-		if ((iword & 0x0fffffff) == 0x01a0f00e &&
-		    cpu->machine->show_trace_tree) {
-			ic->f = cond_instr(ret_trace);
+		/*  "mov pc,lr":  */
+		if ((iword & 0x0fffffff) == 0x01a0f00e) {
+			if (cpu->machine->show_trace_tree)
+				ic->f = cond_instr(ret_trace);
+			else
+				ic->f = cond_instr(ret);
 			break;
 		}
 
@@ -1778,6 +1961,14 @@ X(to_be_translated)
 		if (main_opcode == 0x0a) {
 			ic->f = cond_instr(b);
 			samepage_function = cond_instr(b_samepage);
+			/*  if (iword == 0xcafffffc)
+				cpu->combination_check = arm_combine_test2;  */
+			if (iword == 0xcaffffed)
+				cpu->combination_check =
+				    arm_combine_netbsd_memset;
+			if (iword == 0xaafffff9)
+				cpu->combination_check =
+				    arm_combine_netbsd_memcpy;
 		} else {
 			if (cpu->machine->show_trace_tree) {
 				ic->f = cond_instr(bl_trace);

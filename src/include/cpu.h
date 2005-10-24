@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.49 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu.h,v 1.50 2005-10-24 18:54:28 debug Exp $
  *
  *  See cpu.c.
  */
@@ -163,6 +163,8 @@ struct cpu {
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
+	void		(*combination_check)(struct cpu *,
+			    struct arm_instr_call *, int low_addr);
 
 	/*
 	 *  CPU-family dependent:

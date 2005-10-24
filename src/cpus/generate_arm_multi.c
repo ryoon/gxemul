@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.4 2005-10-23 14:24:13 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.5 2005-10-24 18:54:26 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -101,7 +101,8 @@ void generate_opcode(uint32_t opcode)
 		printf("\tuint32_t tmp_pc = ((size_t)ic - (size_t)\n\t"
 		    "    cpu->cd.arm.cur_ic_page) / sizeof(struct "
 		    "arm_instr_call);\n"
-		    "\ttmp_pc = ((cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1)"
+		    "\ttmp_pc = ((cpu->cd.arm.r[ARM_PC] & "
+		    "~((ARM_IC_ENTRIES_PER_PAGE-1)"
 		    "\n\t    << ARM_INSTR_ALIGNMENT_SHIFT)))\n"
 		    "\t    + (tmp_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 12;\n");
 	}

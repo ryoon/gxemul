@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.999 2005-10-23 14:24:09 debug Exp $
+$Id: HISTORY,v 1.1000 2005-10-24 18:54:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2333,3 +2333,6 @@ Changelog for GXemul:
 20051022	Better statistics gathering for the ARM load/store multiple.
 		Various other dyntrans and device updates.
 20051023	Various minor updates.
+20051024	Continuing; minor device and dyntrans fine-tuning. Adding the
+		first "reasonable" instruction combination hacks for ARM (the
+		cores of NetBSD/cats' memset and memcpy).

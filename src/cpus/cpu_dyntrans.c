@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.22 2005-10-22 17:24:20 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.23 2005-10-24 18:54:26 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -465,7 +465,7 @@ cpu->cd.arm.r[ARM_PC]);
 		unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
 		    physaddr, MEM_READ);
 		if (host_page != NULL) {
-			int q = cpu->machine->arch_pagesize - 1;
+			int q = DYNTRANS_PAGESIZE - 1;
 			host_page += (physaddr &
 			    ((1 << BITS_PER_MEMBLOCK) - 1) & ~q);
 			cpu->update_translation_table(cpu, cached_pc & ~q,
@@ -779,7 +779,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 	if (flags & INVALIDATE_PADDR) {
 		int pagenr, table_index;
 		uint32_t physpage_ofs, *physpage_entryp;
-		struct DYNTRANS_TC_PHYSPAGE *ppp;
+		struct DYNTRANS_TC_PHYSPAGE *ppp, *prev_ppp;
 
 		pagenr = DYNTRANS_ADDR_TO_PAGENR(addr);
 		table_index = PAGENR_TO_TABLE_INDEX(pagenr);
@@ -787,10 +787,11 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 		physpage_entryp = &(((uint32_t *)cpu->
 		    translation_cache)[table_index]);
 		physpage_ofs = *physpage_entryp;
-		ppp = NULL;
+		prev_ppp = ppp = NULL;
 
 		/*  Traverse the physical page chain:  */
 		while (physpage_ofs != 0) {
+			prev_ppp = ppp;
 			ppp = (struct DYNTRANS_TC_PHYSPAGE *)
 			    (cpu->translation_cache + physpage_ofs);
 			/*  If we found the page in the cache,
@@ -801,8 +802,31 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 			physpage_ofs = ppp->next_ofs;
 		}
 
-		/*  If the page was found, then we should invalidate all
-		    code translations:  */
+		if (physpage_ofs == 0)
+			ppp = NULL;
+
+#if 1
+		/*
+		 *  "Bypass" the page, removing it from the code cache.
+		 *
+		 *  NOTE/TODO: This gives _TERRIBLE_ performance with self-
+		 *  modifying code, or when a single page is used for both
+		 *  code and (writable) data.
+		 */
+		if (ppp != NULL) {
+			if (prev_ppp != NULL)
+				prev_ppp->next_ofs = ppp->next_ofs;
+			else
+				*physpage_entryp = ppp->next_ofs;
+		}
+#else
+		/*
+		 *  Instead of removing the page from the code cache, each
+		 *  entry can be set to "to_be_translated". This is slow in
+		 *  the general case, but in the case of self-modifying code,
+		 *  it might be faster since we don't risk wasting cache
+		 *  memory as quickly (which would force unnecessary Restarts).
+		 */
 		if (ppp != NULL) {
 			/*  TODO: Is this faster than copying an entire
 			    template page?  */
@@ -814,6 +838,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 #endif
 				    instr(to_be_translated);
 		}
+#endif
 	}
 
 	/*  Invalidate entries in the VPH table:  */
@@ -1102,8 +1127,12 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *  Note: Single-stepping or instruction tracing doesn't work with
 	 *  instruction combination.
 	 */
-	if (!single_step && !cpu->machine->instruction_trace)
-		COMBINE_INSTRUCTIONS(cpu, ic, addr);
+	if (!single_step && !cpu->machine->instruction_trace) {
+		if (cpu->combination_check != NULL)
+			cpu->combination_check(cpu, ic,
+			    addr & (DYNTRANS_PAGESIZE - 1));
+		cpu->combination_check = NULL;
+	}
 
 	/*  ... and finally execute the translated instruction:  */
 	if (single_step_breakpoint) {

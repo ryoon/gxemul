@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.42 2005-10-23 14:24:14 debug Exp $
+ *  $Id: dev_wdc.c,v 1.43 2005-10-24 18:54:27 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -49,12 +49,12 @@
 #define	WDC_INBUF_SIZE		(512*(WDC_MAX_SECTORS+1))
 
 /*
- *  INT_DELAY=2 to be safe, 1 is faster but maybe buggy. 0 is fastest.
+ *  INT_DELAY: This is an old hack which only exists because (some versions of)
+ *  NetBSD for hpcmips have interrupt problems. These problems are probably not
+ *  specific to GXemul, but are also triggered on real hardware.
  *
- *  The only reason for this delay to exist is because (some versions of)
- *  NetBSD for hpcmips have interrupt problems. These problems are not only
- *  triggered inside the emulator, but also on real hardware. Using the
- *  delay is an ugly (but working) work-around.
+ *  See the following URL for more info:
+ *  http://mail-index.netbsd.org/port-hpcmips/2004/12/30/0003.html
  */
 #define	INT_DELAY		1
 
@@ -434,13 +434,20 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 #endif
 				int count = 1;	/*  d->write_count;  */
 				unsigned char buf[512 * count];
+				unsigned char *b = buf;
 
-				for (i=0; i<512 * count; i++)
-					buf[i] = wdc_get_inbuf(d);
+				if (d->inbuf_tail+512*count <= WDC_INBUF_SIZE) {
+					b = d->inbuf + d->inbuf_tail;
+					d->inbuf_tail = (d->inbuf_tail + 512
+					    * count) % WDC_INBUF_SIZE;
+				} else {
+					for (i=0; i<512 * count; i++)
+						buf[i] = wdc_get_inbuf(d);
+				}
 
 				diskimage_access(cpu->machine,
 				    d->drive + d->base_drive, DISKIMAGE_IDE, 1,
-				    d->write_offset, buf, 512 * count);
+				    d->write_offset, b, 512 * count);
 
 				d->write_count --;
 				d->write_offset += 512;

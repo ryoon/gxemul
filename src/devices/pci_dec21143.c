@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21143.c,v 1.9 2005-10-07 22:10:52 debug Exp $
+ *  $Id: pci_dec21143.c,v 1.10 2005-10-25 06:49:08 debug Exp $
  *
- *  DEC 21143 PCI ethernet.
+ *  DEC 21143 ("Tulip") PCI ethernet.
  *
  *  TODO:  This is just a dummy device, so far.
  */
@@ -41,10 +41,81 @@
 #include "misc.h"
 
 #include "bus_pci.h"
+#include "tulipreg.h"
 
+
+#define debug fatal
 
 #define PCI_VENDOR_DEC          0x1011 /* Digital Equipment */
 #define PCI_PRODUCT_DEC_21142   0x0019 /* DECchip 21142/21143 10/100 Ethernet */
+
+
+struct dec21143_data {
+	int	dummy;
+};
+
+
+/*
+ *  dev_dec21143_access():
+ *
+ *  Memory access.
+ */
+int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct dec21143_data *d = extra;
+	uint64_t idata = 0, odata = 0;
+
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
+	switch (relative_addr) {
+
+	default:if (writeflag == MEM_READ)
+			debug("[ dec_21143: read from 0x%02x ]\n",
+			    (int)relative_addr);
+		else
+			debug("[ dec_21143: write to  0x%02x: 0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
+ *  dev_dec21143_io_access():
+ *
+ *  I/O port access.
+ */
+int dev_dec21143_io_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct dec21143_data *d = extra;
+	uint64_t idata = 0, odata = 0;
+
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
+	switch (relative_addr) {
+	default:if (writeflag == MEM_READ)
+			debug("[ dec_21143_io: read from 0x%02x ]\n",
+			    (int)relative_addr);
+		else
+			debug("[ dec_21143_io: write to  0x%02x: 0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
 
 
 /*
@@ -63,12 +134,15 @@ uint32_t pci_dec21143_rr(int reg)
 		    PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x41;
 	case 0x10:
 		/*  1ca00000, I/O space  (I have no idea about these...)  */
-		return 0x9ca00001;
+		return 0x00200001;  /*  CATS  */
+		return 0x9ca00001;  /*  cobalt  */
 	case 0x14:
 		/*  1ca10000, mem space  (I have no idea about these...)  */
-		return 0x9ca10000;
+		return 0x00210000;	/*  CATS  */
+		return 0x9ca10000;	/*  cobalt  */
 	case 0x3c:
-		return 0x00000100;	/*  interrupt pin A  */
+		return 0x00000800;
+/*	cobalt	return 0x00000100;	  interrupt pin A  */
 	default:
 		return 0;
 	}
@@ -80,5 +154,18 @@ uint32_t pci_dec21143_rr(int reg)
  */
 void pci_dec21143_init(struct machine *machine, struct memory *mem)
 {
+	struct dec21143_data *d;
+	d = malloc(sizeof(struct dec21143_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct dec21143_data));
+
+	/*  TODO: This only works for CATS.  */
+	memory_device_register(mem, "dec21143", 0x80200000,
+	    0x10000, dev_dec21143_io_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "dec21143", 0x80210000,
+	    0x10000, dev_dec21143_access, d, MEM_DEFAULT, NULL);
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1000 2005-10-24 18:54:24 debug Exp $
+$Id: HISTORY,v 1.1001 2005-10-25 06:48:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2336,3 +2336,8 @@ Changelog for GXemul:
 20051024	Continuing; minor device and dyntrans fine-tuning. Adding the
 		first "reasonable" instruction combination hacks for ARM (the
 		cores of NetBSD/cats' memset and memcpy).
+20051025	Fixing a dyntrans-related bug in dev_vga. Also changing the
+		dyntrans low/high access notification to only be updated on
+		writes, not reads. Hopefully it will be enough. (dev_vga in
+		charcell mode now seems to work correctly with both reads and
+		writes.)

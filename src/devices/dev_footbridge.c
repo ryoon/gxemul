@@ -25,15 +25,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.23 2005-10-23 14:24:14 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.24 2005-10-25 06:48:57 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
  *  TODO: Most things. For example:
  *
+ *	o)  Fix the timer TODO (see below).
+ *
  *	o)  Add actual support for the fcom serial port.
+ *
  *	o)  FIQs.
- *	o)  Lots of other things.
+ *
+ *	o)  ..
  */
 
 #include <stdio.h>
@@ -338,6 +342,13 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 
 	case TIMER_1_VALUE:
 		if (writeflag == MEM_READ) {
+			/*
+			 *  TODO: This is INCORRECT! but speeds up NetBSD
+			 *  and OpenBSD boot sequences. A better solution
+			 *  would be to only call dev_footbridge_tick() if
+			 *  the timer is polled "very often" (such as during
+			 *  bootup), but not during normal operation.
+			 */
 			dev_footbridge_tick(cpu, d);
 			odata = d->timer_value[timer_nr];
 		} else
@@ -425,6 +436,9 @@ int devinit_footbridge(struct devinit *devinit)
 		bus_pci_add(devinit->machine, d->pcibus,
 		    devinit->machine->memory, 0xc0, 7, 0,
 		    pci_ali_m1543_init, pci_ali_m1543_rr);
+		bus_pci_add(devinit->machine, d->pcibus,
+		    devinit->machine->memory, 0xc0, 10, 0,
+		    pci_dec21143_init, pci_dec21143_rr);
 		bus_pci_add(devinit->machine, d->pcibus,
 		    devinit->machine->memory, 0xc0, 16, 0,
 		    pci_ali_m5229_init, pci_ali_m5229_rr);

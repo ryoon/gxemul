@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.23 2005-10-24 18:54:26 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.24 2005-10-25 06:49:07 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -349,6 +349,10 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 	    instr(end_of_page);
 
 	cpu->translation_cache_cur_ofs += sizeof(struct DYNTRANS_TC_PHYSPAGE);
+
+	cpu->translation_cache_cur_ofs --;
+	cpu->translation_cache_cur_ofs |= 63;
+	cpu->translation_cache_cur_ofs ++;
 }
 #endif	/*  DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE  */
 

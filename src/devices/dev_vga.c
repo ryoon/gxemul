@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.84 2005-10-22 17:24:21 debug Exp $
+ *  $Id: dev_vga.c,v 1.85 2005-10-25 06:36:59 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -52,7 +52,7 @@
 #include "fonts/font8x16.c"
 
 
-/*  For bintranslated videomem -> framebuffer updates:  */
+/*  For videomem -> framebuffer updates:  */
 #define	VGA_TICK_SHIFT		19
 
 #define	MAX_RETRACE_SCANLINES	420
@@ -178,8 +178,8 @@ static void register_reset(struct vga_data *d)
 	recalc_cursor_position(d);
 
 	/*  Reset cursor scanline stuff:  */
-	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] = d->font_height - 4;
-	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END] = d->font_height - 2;
+	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_START] = d->font_height - 2;
+	d->crtc_reg[VGA_CRTC_CURSOR_SCANLINE_END] = d->font_height - 1;
 
 	d->sequencer_reg[VGA_SEQ_MAP_MASK] = 0x0f;
 	d->graphcontr_reg[VGA_GRAPHCONTR_MASK] = 0xff;
@@ -508,7 +508,7 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 		int base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
 		    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
 		int new_u_y1, new_u_y2;
-		debug("[ dev_vga_tick: bintrans access, %llx .. %llx ]\n",
+		debug("[ dev_vga_tick: dyntrans access, %llx .. %llx ]\n",
 		    (long long)low, (long long)high);
 		low -= base;
 		high -= base;
@@ -520,8 +520,8 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 			d->update_y1 = new_u_y1;
 		if (new_u_y2 > d->update_y2)
 			d->update_y2 = new_u_y2;
-		if (d->update_y2 < 0)
-			d->update_y2 = 0;
+		if (d->update_y1 < 0)
+			d->update_y1 = 0;
 		if (d->update_y2 >= d->max_y)
 			d->update_y2 = d->max_y - 1;
 		d->modified = 1;
@@ -682,7 +682,8 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	uint64_t idata = 0, odata = 0;
 	int i, x, y, x2, y2, r, base;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
 	    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
@@ -692,7 +693,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	y2 = (r+len-1) / (d->max_x * 2);
 	x2 = ((r+len-1)/2) % d->max_x;
 
-	if (relative_addr < d->charcells_size) {
+	if (relative_addr + len - 1 < d->charcells_size) {
 		if (writeflag == MEM_WRITE) {
 			for (i=0; i<len; i++) {
 				int old = d->charcells[relative_addr + i];
@@ -1230,11 +1231,10 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 		d->fb_max_y *= d->font_height;
 	}
 
-	/*  MEM_DYNTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not
-	    with Windows NT yet. Why? */
 	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
 	    allocsize, dev_vga_access, d, MEM_DYNTRANS_OK |
-	    MEM_READING_HAS_NO_SIDE_EFFECTS, d->charcells);
+	    MEM_DYNTRANS_WRITE_OK | MEM_READING_HAS_NO_SIDE_EFFECTS,
+	    d->charcells);
 	memory_device_register(mem, "vga_gfx", videomem_base, GFX_ADDR_WINDOW,
 	    dev_vga_graphics_access, d, MEM_DEFAULT |
 	    MEM_READING_HAS_NO_SIDE_EFFECTS, d->gfx_mem);

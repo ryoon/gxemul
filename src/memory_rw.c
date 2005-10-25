@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.72 2005-10-23 14:24:10 debug Exp $
+ *  $Id: memory_rw.c,v 1.73 2005-10-25 06:37:00 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -333,7 +333,11 @@ have_paddr:
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 					unsigned char *host_addr;
 
-					if (writeflag) {
+					if (!(mem->dev_flags[i] &
+					    MEM_DYNTRANS_WRITE_OK))
+						wf = 0;
+
+					if (writeflag && wf) {
 						if (paddr < mem->
 						    dev_dyntrans_write_low[i])
 							mem->
@@ -347,10 +351,6 @@ have_paddr:
 							    [i] = paddr |
 							    offset_mask;
 					}
-
-					if (!(mem->dev_flags[i] &
-					    MEM_DYNTRANS_WRITE_OK))
-						wf = 0;
 
 					if (mem->dev_flags[i] &
 					    MEM_EMULATED_RAM) {

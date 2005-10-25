@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.18 2005-10-22 10:58:43 debug Exp $
+ *  $Id: dev_ram.c,v 1.19 2005-10-25 15:51:04 debug Exp $
  *  
  *  A generic RAM (memory) device. Can also be used to mirror/alias another
  *  part of RAM.
@@ -113,7 +113,7 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	int mode, uint64_t otheraddress)
 {
 	struct ram_data *d;
-	int flags = MEM_DEFAULT;
+	int flags = MEM_DEFAULT, points_to_ram = 1;
 
 	d = malloc(sizeof(struct ram_data));
 	if (d == NULL) {
@@ -122,6 +122,11 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	}
 
 	memset(d, 0, sizeof(struct ram_data));
+
+	if (mode & DEV_RAM_MIGHT_POINT_TO_DEVICES) {
+		mode &= ~DEV_RAM_MIGHT_POINT_TO_DEVICES;
+		points_to_ram = 0;
+	}
 
 	d->mode         = mode;
 	d->otheraddress = otheraddress;
@@ -136,16 +141,17 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 		 */
 		d->offset = baseaddr - otheraddress;
 
-		/*  Aligned memory? Then it works with dyntrans.  */
-		if ((baseaddr & (machine->arch_pagesize - 1)) == 0 &&
+		/*  Aligned RAM? Then it works with dyntrans.  */
+		if (points_to_ram &&
+		    (baseaddr & (machine->arch_pagesize-1)) == 0 &&
 		    (otheraddress & (machine->arch_pagesize - 1)) == 0 &&
 		    (length & (machine->arch_pagesize - 1)) == 0)
-			flags |= MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK;
+			flags |= MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK
+			    | MEM_EMULATED_RAM;
 
 		memory_device_register(machine->memory, "ram [mirror]",
 		    baseaddr, length, dev_ram_access, d, flags
-		    | MEM_EMULATED_RAM | MEM_READING_HAS_NO_SIDE_EFFECTS,
-		    (void *) &d->offset);
+		    | MEM_READING_HAS_NO_SIDE_EFFECTS, (void *) &d->offset);
 		break;
 
 	case DEV_RAM_RAM:

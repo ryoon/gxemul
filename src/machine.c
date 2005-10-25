@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.575 2005-10-20 23:02:34 debug Exp $
+ *  $Id: machine.c,v 1.576 2005-10-25 15:51:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2126,10 +2126,11 @@ void machine_setup(struct machine *machine)
 
 		/*
 		 *  Most OSes on DECstation use physical addresses below
-		 *  0x20000000, but OSF/1 seems to use 0xbe...... as if it was
-		 *  0x1e......, so we need this hack:
+		 *  0x20000000, but both OSF/1 and Sprite use 0xbe...... as if
+		 *  it was 0x1e......, so we need this hack:
 		 */
-		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000,
+		    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x0);
 
 		if (machine->prom_emulation) {
 			/*  DECstation PROM stuff:  (TODO: endianness)  */
@@ -2600,7 +2601,8 @@ void machine_setup(struct machine *machine)
 			hpc_platid_model = 1;		/*  VR3  */
 			hpc_platid_submodel = 0;	/*  -  */
 
-			dev_ram_init(machine, 0x0f000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
+			dev_ram_init(machine, 0x0f000000, 0x01000000,
+			    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x0);
 			break;
 		case MACHINE_HPCMIPS_IBM_WORKPAD_Z50:
 			/*  131 MHz VR4121  */
@@ -2719,7 +2721,7 @@ void machine_setup(struct machine *machine)
 			/*  NetBSD/hpcmips uses framebuffer at physical
 			    address 0x8.......:  */
 			dev_ram_init(machine, 0x80000000, 0x20000000,
-			    DEV_RAM_MIRROR, 0x0);
+			    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x0);
 		}
 
 		break;
@@ -2834,14 +2836,16 @@ void machine_setup(struct machine *machine)
 			/*  Special cases for IP20,22,24,26 memory offset:  */
 			if (machine->machine_subtype == 20 || machine->machine_subtype == 22 ||
 			    machine->machine_subtype == 24 || machine->machine_subtype == 26) {
-				dev_ram_init(machine, 0x00000000, 0x10000, DEV_RAM_MIRROR, sgi_ram_offset);
-				dev_ram_init(machine, 0x00050000, sgi_ram_offset-0x50000, DEV_RAM_MIRROR, sgi_ram_offset + 0x50000);
+				dev_ram_init(machine, 0x00000000, 0x10000, DEV_RAM_MIRROR
+				    | DEV_RAM_MIGHT_POINT_TO_DEVICES, sgi_ram_offset);
+				dev_ram_init(machine, 0x00050000, sgi_ram_offset-0x50000,
+				    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, sgi_ram_offset + 0x50000);
 			}
 
 			/*  Special cases for IP28,30 memory offset:  */
 			if (machine->machine_subtype == 28 || machine->machine_subtype == 30) {
 				/*  TODO: length below should maybe not be 128MB?  */
-				dev_ram_init(machine, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
+				dev_ram_init(machine, 0x00000000, 128*1048576, DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, sgi_ram_offset);
 			}
 		} else {
 			cpu->byte_order = EMUL_LITTLE_ENDIAN;
@@ -3085,7 +3089,9 @@ Why is this here? TODO
 				machine->md_interrupt = sgi_ip30_interrupt;
 
 				dev_ram_init(machine,    0xa0000000ULL,
-				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				    128 * 1048576, DEV_RAM_MIRROR
+				    | DEV_RAM_MIGHT_POINT_TO_DEVICES,
+				    0x00000000);
 
 				dev_ram_init(machine,    0x80000000ULL,
 				    32 * 1048576, DEV_RAM_RAM, 0x00000000);
@@ -3437,7 +3443,7 @@ Why is this here? TODO
 				case MACHINE_ARC_JAZZ_MAGNUM:
 					/*  PROM mirror?  */
 					dev_ram_init(machine, 0xfff00000, 0x100000,
-					    DEV_RAM_MIRROR, 0x1fc00000);
+					    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x1fc00000);
 
 					/*  VXL. TODO  */
 					/*  control at 0x60100000?  */
@@ -4734,7 +4740,8 @@ Not yet.
 		}
 
 		/*  Physical RAM at 0xc0000000:  */
-		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xc0000000, 0x20000000,
+		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
 
 		/*  Cache flush region:  */
 		dev_ram_init(machine, 0xe0000000, 0x10000, DEV_RAM_RAM, 0x0);
@@ -4749,7 +4756,8 @@ Not yet.
 
 	case MACHINE_ZAURUS:
 		machine->machine_name = "Zaurus";
-		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000,
+		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
 		device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
 		/*  TODO  */
 		if (machine->prom_emulation) {
@@ -4815,8 +4823,10 @@ Not yet.
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
-		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000,
+		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xc0000000, 0x20000000,
+		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
 
 		/*  0xe0000000 and 0xff000000 = cache flush regions  */
 		dev_ram_init(machine, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
@@ -4841,8 +4851,10 @@ Not yet.
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
-		dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xa0000000, 0x20000000,
+		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xc0000000, 0x20000000,
+		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
 
 		device_add(machine, "i80321 addr=0xffffe000");
 

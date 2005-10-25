@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.179 2005-10-23 14:24:10 debug Exp $
+ *  $Id: memory.c,v 1.180 2005-10-25 15:51:02 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -419,7 +419,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		exit(1);
 	}
 
-	if (!(flags & MEM_EMULATED_RAM) && (size_t)dyntrans_data & 7) {
+	if ((size_t)dyntrans_data & (sizeof(void *) - 1)) {
 		fprintf(stderr, "memory_device_register():"
 		    " dyntrans_data not aligned correctly (%p)\n",
 		    dyntrans_data);

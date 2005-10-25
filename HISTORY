@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1001 2005-10-25 06:48:56 debug Exp $
+$Id: HISTORY,v 1.1002 2005-10-25 15:51:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2341,3 +2341,7 @@ Changelog for GXemul:
 		writes, not reads. Hopefully it will be enough. (dev_vga in
 		charcell mode now seems to work correctly with both reads and
 		writes.)
+		Experimenting with gathering dyntrans statistics (which parts
+		of emulated RAM that are actually executed), and adding
+		instruction combination hacks for cache cleaning and a part of
+		NetBSD's scanc() function.

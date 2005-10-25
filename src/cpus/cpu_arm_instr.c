@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.36 2005-10-25 08:53:21 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.37 2005-10-25 15:51:03 debug Exp $
  *
  *  ARM instructions.
  *
@@ -879,6 +879,9 @@ extern void (*arm_load_store_instr[1024])(struct cpu *,
 	struct arm_instr_call *);
 X(store_w0_byte_u1_p0_imm);
 X(store_w0_word_u1_p0_imm);
+X(load_w0_word_u1_p0_imm);
+X(load_w0_byte_u1_p1_imm);
+X(load_w0_byte_u1_p1_reg);
 
 extern void (*arm_load_store_instr_pc[1024])(struct cpu *,
 	struct arm_instr_call *);
@@ -895,6 +898,7 @@ extern void (*arm_dpi_instr[2 * 2 * 2 * 16 * 16])(struct cpu *,
 	struct arm_instr_call *);
 X(cmps);
 X(sub);
+X(add);
 X(subs);
 
 
@@ -1421,12 +1425,12 @@ X(netbsd_memset)
  *
  *  The core of a NetBSD/arm memcpy.
  *
-f01bc530:  e8b15018     ldmia   r1!,{r3,r4,ip,lr}
-f01bc534:  e8a05018     stmia   r0!,{r3,r4,ip,lr}
-f01bc538:  e8b15018     ldmia   r1!,{r3,r4,ip,lr}
-f01bc53c:  e8a05018     stmia   r0!,{r3,r4,ip,lr}
-f01bc540:  e2522020     subs    r2,r2,#0x20
-f01bc544:  aafffff9     bge     0xf01bc530
+ *  f01bc530:  e8b15018     ldmia   r1!,{r3,r4,ip,lr}
+ *  f01bc534:  e8a05018     stmia   r0!,{r3,r4,ip,lr}
+ *  f01bc538:  e8b15018     ldmia   r1!,{r3,r4,ip,lr}
+ *  f01bc53c:  e8a05018     stmia   r0!,{r3,r4,ip,lr}
+ *  f01bc540:  e2522020     subs    r2,r2,#0x20
+ *  f01bc544:  aafffff9     bge     0xf01bc530
  */
 X(netbsd_memcpy)
 {
@@ -1473,6 +1477,82 @@ X(netbsd_memcpy)
 	/*  Continue at the instruction after the bge:  */
 	cpu->cd.arm.next_ic = &ic[6];
 	cpu->n_translated_instrs --;
+}
+
+
+/*
+ *  netbsd_cacheclean:
+ *
+ *  The core of a NetBSD/arm cache clean routine, variant 1:
+ *
+ *  f015f88c:  e4902020     ldr     r2,[r0],#32
+ *  f015f890:  e2511020     subs    r1,r1,#0x20
+ *  f015f894:  1afffffc     bne     0xf015f88c
+ *  f015f898:  ee070f9a     mcr     15,0,r0,cr7,cr10,4
+ */
+X(netbsd_cacheclean)
+{
+	uint32_t r1 = cpu->cd.arm.r[1];
+	cpu->n_translated_instrs += ((r1 >> 5) * 3);
+	cpu->cd.arm.next_ic = &ic[4];
+}
+
+
+/*
+ *  netbsd_cacheclean:
+ *
+ *  The core of a NetBSD/arm cache clean routine, variant 2:
+ *
+ *  f015f93c:  ee070f3a     mcr     15,0,r0,cr7,cr10,1
+ *  f015f940:  ee070f36     mcr     15,0,r0,cr7,cr6,1
+ *  f015f944:  e2800020     add     r0,r0,#0x20
+ *  f015f948:  e2511020     subs    r1,r1,#0x20
+ *  f015f94c:  8afffffa     bhi     0xf015f93c
+ *  f015f950:  ee070f9a     mcr     15,0,r0,cr7,cr10,4
+ */
+X(netbsd_cacheclean_2)
+{
+	uint32_t r1 = cpu->cd.arm.r[1];
+	cpu->n_translated_instrs += ((r1 >> 5) * 5);
+	cpu->cd.arm.next_ic = &ic[6];
+}
+
+
+/*
+ *  netbsd_scanc:
+ *
+ *  f01bccbc:  e5d13000     ldrb    r3,[r1]
+ *  f01bccc0:  e7d23003     ldrb    r3,[r2,r3]
+ *  f01bccc4:  e113000c     tsts    r3,ip
+ */
+X(netbsd_scanc)
+{
+	unsigned char *page = cpu->cd.arm.host_load[cpu->cd.arm.r[1] >> 12];
+	uint32_t t;
+
+	if (page == NULL) {
+		instr(load_w0_byte_u1_p1_imm)(cpu, ic);
+		return;
+	}
+
+	t = page[cpu->cd.arm.r[1] & 0xfff];
+	t += cpu->cd.arm.r[2];
+	page = cpu->cd.arm.host_load[t >> 12];
+
+	if (page == NULL) {
+		instr(load_w0_byte_u1_p1_imm)(cpu, ic);
+		return;
+	}
+
+	cpu->cd.arm.r[3] = page[t & 0xfff];
+
+	t = cpu->cd.arm.r[3] & cpu->cd.arm.r[ARM_IP];
+	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (t == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+
+	cpu->n_translated_instrs += 2;
+	cpu->cd.arm.next_ic = &ic[3];
 }
 
 
@@ -1549,6 +1629,65 @@ void arm_combine_netbsd_memcpy(struct cpu *cpu, struct arm_instr_call *ic,
 		    ic[ 0].f == instr(b_samepage__ge) &&
 		    ic[ 0].arg[0] == (size_t)&ic[-5]) {
 			ic[-5].f = instr(netbsd_memcpy);
+			combined;
+		}
+	}
+}
+
+
+/*
+ *  arm_combine_netbsd_cacheclean():
+ *
+ *  Check for the core of a NetBSD/arm cache clean. (There are two variants.)
+ */
+void arm_combine_netbsd_cacheclean(struct cpu *cpu, struct arm_instr_call *ic,
+	int low_addr)
+{
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 3) {
+		if (ic[-3].f==instr(load_w0_word_u1_p0_imm) &&
+		    ic[-2].f == instr(subs) &&
+		    ic[-2].arg[0]==ic[-2].arg[2] && ic[-2].arg[1] == 0x20 &&
+		    ic[-1].f == instr(b_samepage__ne) &&
+		    ic[-1].arg[0] == (size_t)&ic[-3]) {
+			ic[-3].f = instr(netbsd_cacheclean);
+			combined;
+		}
+	}
+#if 0
+	if (n_back >= 5) {
+		if (ic[-5].f == instr(mcr_mrc) && ic[-5].arg[0] == 0xee070f3a &&
+		    ic[-4].f == instr(mcr_mrc) && ic[-4].arg[0] == 0xee070f36 &&
+		    ic[-3].f == instr(add) &&
+		    ic[-3].arg[0]==ic[-3].arg[2] && ic[-3].arg[1] == 0x20 &&
+		    ic[-2].f == instr(subs) &&
+		    ic[-2].arg[0]==ic[-2].arg[2] && ic[-2].arg[1] == 0x20 &&
+		    ic[-1].f == instr(b_samepage__hi) &&
+		    ic[-1].arg[0] == (size_t)&ic[-5]) {
+			ic[-5].f = instr(netbsd_cacheclean_2);
+			combined;
+printf("YO\n");
+		}
+	}
+#endif
+}
+
+
+/*
+ *  arm_combine_netbsd_scanc():
+ */
+void arm_combine_netbsd_scanc(struct cpu *cpu, struct arm_instr_call *ic,
+	int low_addr)
+{
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 2) {
+		if (ic[-2].f == instr(load_w0_byte_u1_p1_imm) &&
+		    ic[-1].f == instr(load_w0_byte_u1_p1_reg)) {
+			ic[-2].f = instr(netbsd_scanc);
 			combined;
 		}
 	}
@@ -1935,6 +2074,9 @@ X(to_be_translated)
 		ic->f = arm_dpi_instr[condition_code +
 		    16 * secondary_opcode + (s_bit? 256 : 0) +
 		    (any_pc_reg? 512 : 0) + (regform? 1024 : 0)];
+
+		if (iword == 0xe113000c)
+			cpu->combination_check = arm_combine_netbsd_scanc;
 		break;
 
 	case 0x4:	/*  Load and store...  */
@@ -2070,6 +2212,8 @@ X(to_be_translated)
 			ic->arg[0] = iword;
 			ic->f = cond_instr(cdp);
 		}
+		if (iword == 0xee070f9a)
+			cpu->combination_check = arm_combine_netbsd_cacheclean;
 		break;
 
 	case 0xf:

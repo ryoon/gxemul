@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.186 2005-10-20 22:49:08 debug Exp $
+ *  $Id: devices.h,v 1.187 2005-10-25 15:51:05 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -462,8 +462,9 @@ void dev_px_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	int px_type, int irq_nr);
 
 /*  dev_ram.c:  */
-#define	DEV_RAM_RAM		0
-#define	DEV_RAM_MIRROR		1
+#define	DEV_RAM_RAM				0
+#define	DEV_RAM_MIRROR				1
+#define	DEV_RAM_MIGHT_POINT_TO_DEVICES		0x10
 int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *);
 void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
@@ -480,13 +481,18 @@ void *dev_scc_init(struct machine *machine, struct memory *mem,
 
 /*  dev_sfb.c:  */
 #define	DEV_SFB_LENGTH		0x400000
-int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sfb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data);
+int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+void dev_sfb_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, struct vfb_data *vfb_data);
 
 /*  dev_sgi_gbe.c:  */
 #define	DEV_SGI_GBE_LENGTH		0x1000000
-int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_gbe_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
+int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
+	void *);
+void dev_sgi_gbe_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr);
 
 /*  dev_sgi_ip20.c:  */
 #define	DEV_SGI_IP20_LENGTH		0x40

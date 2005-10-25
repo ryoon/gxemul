@@ -25,13 +25,81 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.24 2005-10-25 06:49:07 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.25 2005-10-25 15:51:03 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
 
 
 #ifdef	DYNTRANS_CPU_RUN_INSTR
+static void gather_statistics(struct cpu *cpu)
+{
+	uint64_t a;
+	int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - (size_t)
+	    cpu->cd.DYNTRANS_ARCH.cur_ic_page) / sizeof(struct DYNTRANS_IC);
+	if (low_pc < 0 || low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE)
+		return;
+
+#if 1
+	/*  Use the physical address:  */
+	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+	a = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
+#else
+	/*  Use the PC (virtual address):  */
+	a = cpu->pc;
+#endif
+
+	a &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+	    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+	a += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
+
+	/*
+	 *  TODO: Everything below this line should be cleaned up :-)
+	 */
+a &= 0x03ffffff;
+{
+	static long long *array = NULL;
+	static char *array_16kpage_in_use = NULL;
+	static int n = 0;
+	a >>= DYNTRANS_INSTR_ALIGNMENT_SHIFT;
+	if (array == NULL)
+		array = zeroed_alloc(sizeof(long long) * 16384*1024);
+	if (array_16kpage_in_use == NULL)
+		array_16kpage_in_use = zeroed_alloc(sizeof(char) * 1024);
+	a &= (16384*1024-1);
+	array[a] ++;
+	array_16kpage_in_use[a / 16384] = 1;
+	n++;
+	if (n == 0) {
+		FILE *f = fopen("statistics.out", "w");
+		int i, j;
+		printf("Saving statistics... "); fflush(stdout);
+		for (i=0; i<1024; i++)
+			if (array_16kpage_in_use[i]) {
+				for (j=0; j<16384; j++)
+					if (array[i*16384 + j] > 0)
+						fprintf(f, "%lli\t0x%016llx\n",
+						    (long long)array[i*16384+j],
+						    (long long)((i*16384+j) <<
+				DYNTRANS_INSTR_ALIGNMENT_SHIFT));
+			}
+		fclose(f);
+		printf("n=0x%08x\n", n);
+	}
+}
+}
+
+
+#define S		gather_statistics(cpu)
+
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic; ic->f(cpu, ic);
+#else
+#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
+#endif
+
+
 /*
  *  XXX_cpu_run_instr():
  *
@@ -125,20 +193,34 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			    ~(COMBINATIONS | TRANSLATIONS);
 		}
 
+		if (show_opcode_statistics)
+			S;
+
 		/*  Execute just one instruction:  */
 		ic->f(cpu, ic);
 		n_instrs = 1;
+	} else if (show_opcode_statistics) {
+		/*  Gather statistics while executing multiple instructions:  */
+		n_instrs = 0;
+		for (;;) {
+			struct DYNTRANS_IC *ic;
+
+			S; I; S; I; S; I; S; I; S; I; S; I;
+			S; I; S; I; S; I; S; I; S; I; S; I;
+			S; I; S; I; S; I; S; I; S; I; S; I;
+			S; I; S; I; S; I; S; I; S; I; S; I;
+
+			n_instrs += 24;
+
+			if (!cpu->running_translated ||
+			    n_instrs + cpu->n_translated_instrs >= 16384)
+				break;
+		}
 	} else {
 		/*  Execute multiple instructions:  */
 		n_instrs = 0;
 		for (;;) {
 			struct DYNTRANS_IC *ic;
-
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic; ic->f(cpu, ic);
-#else
-#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
-#endif
 
 			I; I; I; I; I;   I; I; I; I; I;
 			I; I; I; I; I;   I; I; I; I; I;

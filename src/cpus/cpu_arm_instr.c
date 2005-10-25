@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.35 2005-10-24 18:54:26 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.36 2005-10-25 08:53:21 debug Exp $
  *
  *  ARM instructions.
  *
@@ -455,6 +455,9 @@ X(bl_samepage_trace)
 Y(bl_samepage_trace)
 
 
+#include "cpu_arm_instr_misc.c"
+
+
 /*
  *  mul: Multiplication
  *
@@ -469,7 +472,8 @@ X(mul)
 Y(mul)
 X(muls)
 {
-	uint32_t result = reg(ic->arg[1]) * reg(ic->arg[2]);
+	uint32_t result;
+	result = reg(ic->arg[1]) * reg(ic->arg[2]);
 	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
 	if (result == 0)
 		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
@@ -489,8 +493,9 @@ X(mla)
 {
 	/*  xxxx0000 00ASdddd nnnnssss 1001mmmm (Rd,Rm,Rs[,Rn])  */
 	uint32_t iw = ic->arg[0];
-	int rd = (iw >> 16) & 15, rn = (iw >> 12) & 15,
-	    rs = (iw >> 8) & 15,  rm = iw & 15;
+	int rd, rs, rn, rm;
+	rd = (iw >> 16) & 15; rn = (iw >> 12) & 15,
+	rs = (iw >> 8) & 15;  rm = iw & 15;
 	cpu->cd.arm.r[rd] = cpu->cd.arm.r[rm] * cpu->cd.arm.r[rs]
 	    + cpu->cd.arm.r[rn];
 }
@@ -499,8 +504,9 @@ X(mlas)
 {
 	/*  xxxx0000 00ASdddd nnnnssss 1001mmmm (Rd,Rm,Rs[,Rn])  */
 	uint32_t iw = ic->arg[0];
-	int rd = (iw >> 16) & 15, rn = (iw >> 12) & 15,
-	    rs = (iw >> 8) & 15,  rm = iw & 15;
+	int rd, rs, rn, rm;
+	rd = (iw >> 16) & 15; rn = (iw >> 12) & 15,
+	rs = (iw >> 8) & 15;  rm = iw & 15;
 	cpu->cd.arm.r[rd] = cpu->cd.arm.r[rm] * cpu->cd.arm.r[rs]
 	    + cpu->cd.arm.r[rn];
 	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
@@ -520,9 +526,10 @@ Y(mlas)
 X(mull)
 {
 	/*  xxxx0000 1UAShhhh llllssss 1001mmmm  */
-	uint32_t iw = ic->arg[0];
-	int u_bit = (iw >> 22) & 1, a_bit = (iw >> 21) & 1;
-	uint64_t tmp = cpu->cd.arm.r[iw & 15];
+	uint32_t iw; uint64_t tmp; int u_bit, a_bit;
+	iw = ic->arg[0];
+	u_bit = (iw >> 22) & 1; a_bit = (iw >> 21) & 1;
+	tmp = cpu->cd.arm.r[iw & 15];
 	if (u_bit)
 		tmp = (int64_t)(int32_t)tmp
 		    * (int64_t)(int32_t)cpu->cd.arm.r[(iw >> 8) & 15];
@@ -563,8 +570,9 @@ Y(mov_reg_reg)
  */
 X(ret_trace)
 {
-	uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
-	uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1)
+	uint32_t old_pc, mask_within_page;
+	old_pc = cpu->cd.arm.r[ARM_PC];
+	mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1)
 	    << ARM_INSTR_ALIGNMENT_SHIFT) |
 	    ((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 
@@ -1847,6 +1855,50 @@ X(to_be_translated)
 			break;
 		}
 
+		/*  "mov reg,#0":  */
+		if ((iword & 0x0fff0fff) == 0x03a03000 && rd != ARM_PC) {
+			switch (rd) {
+			case  0: ic->f = cond_instr(clear_r0); break;
+			case  1: ic->f = cond_instr(clear_r1); break;
+			case  2: ic->f = cond_instr(clear_r2); break;
+			case  3: ic->f = cond_instr(clear_r3); break;
+			case  4: ic->f = cond_instr(clear_r4); break;
+			case  5: ic->f = cond_instr(clear_r5); break;
+			case  6: ic->f = cond_instr(clear_r6); break;
+			case  7: ic->f = cond_instr(clear_r7); break;
+			case  8: ic->f = cond_instr(clear_r8); break;
+			case  9: ic->f = cond_instr(clear_r9); break;
+			case 10: ic->f = cond_instr(clear_r10); break;
+			case 11: ic->f = cond_instr(clear_r11); break;
+			case 12: ic->f = cond_instr(clear_r12); break;
+			case 13: ic->f = cond_instr(clear_r13); break;
+			case 14: ic->f = cond_instr(clear_r14); break;
+			}
+			break;
+		}
+
+		/*  "mov reg,#1":  */
+		if ((iword & 0x0fff0fff) == 0x03a03001 && rd != ARM_PC) {
+			switch (rd) {
+			case  0: ic->f = cond_instr(mov1_r0); break;
+			case  1: ic->f = cond_instr(mov1_r1); break;
+			case  2: ic->f = cond_instr(mov1_r2); break;
+			case  3: ic->f = cond_instr(mov1_r3); break;
+			case  4: ic->f = cond_instr(mov1_r4); break;
+			case  5: ic->f = cond_instr(mov1_r5); break;
+			case  6: ic->f = cond_instr(mov1_r6); break;
+			case  7: ic->f = cond_instr(mov1_r7); break;
+			case  8: ic->f = cond_instr(mov1_r8); break;
+			case  9: ic->f = cond_instr(mov1_r9); break;
+			case 10: ic->f = cond_instr(mov1_r10); break;
+			case 11: ic->f = cond_instr(mov1_r11); break;
+			case 12: ic->f = cond_instr(mov1_r12); break;
+			case 13: ic->f = cond_instr(mov1_r13); break;
+			case 14: ic->f = cond_instr(mov1_r14); break;
+			}
+			break;
+		}
+
 		/*
 		 *  Generic Data Processing Instructions:
 		 */
@@ -1923,32 +1975,32 @@ X(to_be_translated)
 		else
 			ic->f = cond_instr(bdt_store);
 #ifndef GATHER_BDT_STATISTICS
-{
 		/*
 		 *  Check for availability of optimized implementation:
 		 *  xxxx100P USWLnnnn llllllll llllllll
 		 *           ^  ^ ^ ^        ^  ^ ^ ^   (0x00950154)
 		 *  These bits are used to select which list to scan, and then
 		 *  the list is scanned linearly.
+		 *
+		 *  The optimized functions do not support show_trace_tree,
+		 *  but it's ok to use the unoptimized version in that case.
 		 */
-		int i = 0, j = iword;
-		j = ((j & 0x00800000) >> 16)
-		   |((j & 0x00100000) >> 14)
-		   |((j & 0x00040000) >> 13)
-		   |((j & 0x00010000) >> 12)
-		   |((j & 0x00000100) >>  5)
-		   |((j & 0x00000040) >>  4)
-		   |((j & 0x00000010) >>  3)
-		   |((j & 0x00000004) >>  2);
-		while (multi_opcode[j][i] != 0) {
-			if ((iword & 0x0fffffff) == multi_opcode[j][i]) {
-				ic->f = multi_opcode_f[j]
-				    [i*16 + condition_code];
-				break;
+		if (!cpu->machine->show_trace_tree) {
+			int i = 0, j = iword;
+			j = ((j & 0x00800000) >> 16) | ((j & 0x00100000) >> 14)
+			  | ((j & 0x00040000) >> 13) | ((j & 0x00010000) >> 12)
+			  | ((j & 0x00000100) >>  5) | ((j & 0x00000040) >>  4)
+			  | ((j & 0x00000010) >>  3) | ((j & 0x00000004) >>  2);
+			while (multi_opcode[j][i] != 0) {
+				if ((iword & 0x0fffffff) ==
+				    multi_opcode[j][i]) {
+					ic->f = multi_opcode_f[j]
+					    [i*16 + condition_code];
+					break;
+				}
+				i ++;
 			}
-			i ++;
 		}
-}
 #endif
 		if (rn == ARM_PC) {
 			fatal("TODO: bdt with PC as base\n");

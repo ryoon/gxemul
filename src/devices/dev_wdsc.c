@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.26 2005-10-17 22:27:57 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.27 2005-10-26 14:37:05 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -316,7 +316,8 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 	struct wdsc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*
 	 *  All registers on the WDSC seem to be accessed by writing the

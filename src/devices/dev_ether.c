@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.7 2005-08-04 10:53:25 debug Exp $
+ *  $Id: dev_ether.c,v 1.8 2005-10-26 14:37:03 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -112,7 +112,8 @@ int dev_ether_access(struct cpu *cpu, struct memory *mem,
 	unsigned char *incoming_ptr;
 	int incoming_len;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0x0000:

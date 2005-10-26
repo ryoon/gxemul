@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.1 2005-10-09 21:32:08 debug Exp $
+ *  $Id: dev_lpt.c,v 1.2 2005-10-26 14:37:04 debug Exp $
  *
  *  LPT (parallel printer) controller.
  *
@@ -80,7 +80,8 @@ int dev_lpt_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata=0;
 	struct lpt_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 

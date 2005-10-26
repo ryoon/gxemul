@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.43 2005-07-27 06:57:34 debug Exp $
+ *  $Id: dev_le.c,v 1.44 2005-10-26 14:37:04 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -658,7 +658,8 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	int i, retval = 1;
 	struct le_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 #ifdef LE_DEBUG
 	if (writeflag == MEM_WRITE) {

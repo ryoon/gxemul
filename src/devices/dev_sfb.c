@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sfb.c,v 1.6 2005-02-18 07:22:30 debug Exp $
+ *  $Id: dev_sfb.c,v 1.7 2005-10-26 14:37:04 debug Exp $
  *  
  *  SFB TURBOchannel framebuffer.
  *
@@ -73,7 +73,8 @@ int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	uint64_t idata = 0, odata = 0;
 	struct sfb_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	if (writeflag==MEM_READ) {
 		odata = d->reg[(relative_addr >> 2) & (N_SFB_REGS - 1)];

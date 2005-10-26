@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.7 2005-10-09 22:21:31 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.8 2005-10-26 14:37:04 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -65,9 +65,10 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 {
 	struct pccmos_data *d = (struct pccmos_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	unsigned char b;
+	unsigned char b = 0;
 
-	b = idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		b = idata = memory_readmax64(cpu, data, len);
 
 	/*
 	 *  Accesses to CMOS register 0 .. 0xd are rerouted to the

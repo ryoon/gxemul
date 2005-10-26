@@ -25,13 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.32 2005-09-26 00:08:02 debug Exp $
+ *  $Id: symbol.c,v 1.33 2005-10-26 14:37:02 debug Exp $
  *
  *  Address to symbol translation routines.
  *
- *  This module is (probably) independant from the rest of the emulator.
- *  symbol_init() must be called before any other function in this
- *  file is used.
+ *  This module is (probably) independent from the rest of the emulator.
+ *  symbol_init() must be called before any other function in this file is used.
  */
 
 #include <stdio.h>

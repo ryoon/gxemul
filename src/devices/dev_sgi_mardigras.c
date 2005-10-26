@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.18 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.19 2005-10-26 14:37:04 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -220,7 +220,8 @@ int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem,
 	struct sgi_mardigras_data *d = extra;
 	int i;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  Accessing the microcode_ram works like ordinary ram:  */
 	if (relative_addr >= MICROCODE_START &&

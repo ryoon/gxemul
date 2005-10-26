@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.28 2005-07-19 10:48:06 debug Exp $
+ *  $Id: dev_px.c,v 1.29 2005-10-26 14:37:04 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -567,7 +567,8 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	struct px_data *d = extra;
 	int i;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	if (relative_addr < 0x0c0000) {
 		/*

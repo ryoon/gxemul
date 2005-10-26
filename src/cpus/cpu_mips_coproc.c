@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.2 2005-09-11 10:37:37 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.3 2005-10-26 14:37:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -93,7 +93,7 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 	/*  Default values:  */
 	c->reg[COP0_CONFIG] =
 	      (   0 << 31)	/*  config1 present  */
-	    | (0x00 << 16)	/*  implementation dependant  */
+	    | (0x00 << 16)	/*  implementation dependent  */
 	    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
 				/*  endian mode  */
 	    | (   2 << 13)	/*  0 = MIPS32,

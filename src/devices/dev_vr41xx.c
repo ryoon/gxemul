@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.31 2005-10-20 22:49:07 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.32 2005-10-26 14:37:04 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -398,7 +398,9 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 	int regnr;
 	int revision = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint64_t);
 
 	/*  KIU ("Keyboard Interface Unit") is handled separately.  */

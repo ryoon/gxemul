@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmppc.c,v 1.2 2005-02-15 06:25:34 debug Exp $
+ *  $Id: dev_pmppc.c,v 1.3 2005-10-26 14:37:04 debug Exp $
  *  
  *  PM/PPC devices.
  *
@@ -63,7 +63,8 @@ int dev_pmppc_board_access(struct cpu *cpu, struct memory *mem,
 	struct pmppc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	relative_addr += PMPPC_CONFIG0;
 

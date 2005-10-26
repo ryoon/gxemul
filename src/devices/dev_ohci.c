@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.4 2005-04-11 22:58:46 debug Exp $
+ *  $Id: dev_ohci.c,v 1.5 2005-10-26 14:37:04 debug Exp $
  *  
  *  USB OHCI (Open Host Controller Interface).
  *
@@ -70,7 +70,8 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	char *name = NULL;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case OHCI_REVISION:

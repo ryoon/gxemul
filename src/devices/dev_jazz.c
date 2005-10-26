@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.18 2005-04-04 21:50:04 debug Exp $
+ *  $Id: dev_jazz.c,v 1.19 2005-10-26 14:37:04 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -169,7 +169,9 @@ int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
@@ -304,7 +306,9 @@ int dev_jazz_led_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
@@ -347,8 +351,8 @@ int dev_jazz_access_a0(struct cpu *cpu, struct memory *mem,
 	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
-	odata = 0;
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0:
@@ -400,8 +404,8 @@ int dev_jazz_access_20(struct cpu *cpu, struct memory *mem,
 	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
-	odata = 0;
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0:
@@ -455,7 +459,8 @@ int dev_jazz_access_jazzio(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i, v;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0:

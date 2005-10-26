@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn210.c,v 1.11 2005-02-24 15:38:34 debug Exp $
+ *  $Id: dev_kn210.c,v 1.12 2005-10-26 14:37:04 debug Exp $
  *  
  *  DECsystem 5400 (KN210) stuff
  */
@@ -56,7 +56,8 @@ int dev_kn210_access(struct cpu *cpu, struct memory *mem,
 {
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	default:

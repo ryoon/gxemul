@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.12 2005-09-11 10:37:38 debug Exp $
+ *  $Id: dev_pcic.c,v 1.13 2005-10-26 14:37:04 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -153,7 +153,8 @@ int dev_pcic_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int controller_nr, socket_nr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	controller_nr = d->regnr & 0x80? 1 : 0;
 	socket_nr = d->regnr & 0x40? 1 : 0;

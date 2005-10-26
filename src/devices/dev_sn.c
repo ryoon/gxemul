@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.11 2005-06-26 11:43:48 debug Exp $
+ *  $Id: dev_sn.c,v 1.12 2005-10-26 14:37:04 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -68,7 +68,9 @@ int dev_sn_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint32_t);
 
 	if (regnr < SONIC_NREGS) {

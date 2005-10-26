@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.12 2005-02-22 20:18:30 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.13 2005-10-26 14:37:03 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -61,7 +61,8 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 	uint32_t csr;
 	int regnr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	regnr = (relative_addr - IOASIC_SLOT_1_START) / 0x10;
 	if (relative_addr < 0x80000 && (relative_addr & 0xf) != 0)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.23 2005-04-11 22:55:42 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.24 2005-10-26 14:37:04 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -98,7 +98,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 	struct ps2_data *d = extra;
 	int timer_nr = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	if (relative_addr >= 0x8000 && relative_addr < 0x8000 + DMAC_REGSIZE) {
 		regnr = (relative_addr - 0x8000) / 16;

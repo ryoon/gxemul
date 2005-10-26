@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.43 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.44 2005-10-26 14:37:04 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -73,7 +73,8 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 	struct turbochannel_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	relative_addr += d->rom_skip;
 

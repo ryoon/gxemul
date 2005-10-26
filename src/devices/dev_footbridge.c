@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.25 2005-10-25 15:51:04 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.26 2005-10-26 14:37:04 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -58,6 +58,7 @@
 
 #define	DEV_FOOTBRIDGE_TICK_SHIFT	14
 #define	DEV_FOOTBRIDGE_LENGTH		0x400
+#define	TIMER_POLL_THRESHOLD		15
 
 
 /*
@@ -71,6 +72,9 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 {
 	int i;
 	struct footbridge_data *d = (struct footbridge_data *) extra;
+
+	if (!d->timer_being_read)
+		d->timer_poll_mode = 0;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
 		int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
@@ -114,10 +118,10 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int x;
 
-	idata = memory_readmax64(cpu, data, len);
-
-	if (writeflag == MEM_WRITE)
+	if (writeflag == MEM_WRITE) {
+		idata = memory_readmax64(cpu, data, len);
 		fatal("[ footbridge_isa: WARNING/TODO: write! ]\n");
+	}
 
 	/*
 	 *  NetBSD seems to want a value of 0x20 + x, where x is the highest
@@ -166,7 +170,8 @@ int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 	int bus, device, function, regnr, res;
 	uint64_t pci_word;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	bus      = (relative_addr >> 16) & 0xff;
 	device   = (relative_addr >> 11) & 0x1f;
@@ -222,7 +227,8 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int timer_nr = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	if (relative_addr >= TIMER_1_LOAD && relative_addr <= TIMER_4_CLEAR) {
 		timer_nr = (relative_addr >> 5) & (N_FOOTBRIDGE_TIMERS - 1);
@@ -349,8 +355,12 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			 *  the timer is polled "very often" (such as during
 			 *  bootup), but not during normal operation.
 			 */
-			dev_footbridge_tick(cpu, d);
+			d->timer_being_read = 1;
+			d->timer_poll_mode ++;
+			if (d->timer_poll_mode > TIMER_POLL_THRESHOLD)
+				dev_footbridge_tick(cpu, d);
 			odata = d->timer_value[timer_nr];
+			d->timer_being_read = 0;
 		} else
 			d->timer_value[timer_nr] = idata & TIMER_MAX_VAL;
 		break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.27 2005-08-16 20:17:32 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.28 2005-10-26 14:37:04 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -205,7 +205,8 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem,
 	struct sgi_gbe_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 #ifdef GBE_DEBUG
 	if (writeflag == MEM_WRITE)

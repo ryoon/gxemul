@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.18 2005-07-15 07:34:06 debug Exp $
+ *  $Id: dev_kn02.c,v 1.19 2005-10-26 14:37:04 debug Exp $
  *  
  *  KN02 stuff ("3MAX", DECstation type 2).  See include/dec_kn02.h for more
  *  details.
@@ -53,7 +53,8 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 	struct kn02_csr *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0:

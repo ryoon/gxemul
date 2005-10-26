@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.122 2005-08-11 09:43:40 debug Exp $
+ *  $Id: debugger.c,v 1.123 2005-10-26 14:37:01 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -180,7 +180,7 @@ void debugger_activate(int x)
  *  Some examples:
  *
  *	"0x7fff1234"		==> numeric value (hex, in this case)
- *	"pc", "r5", "hi", "t4"	==> register (CPU dependant)
+ *	"pc", "r5", "hi", "t4"	==> register (CPU dependent)
  *	"memcpy+64"		==> symbol (plus offset)
  *
  *  Register names can be preceeded by "x:" where x is the CPU number. (CPU

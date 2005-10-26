@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.5 2005-10-24 18:54:26 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.6 2005-10-26 14:37:03 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -128,10 +128,12 @@ void generate_opcode(uint32_t opcode)
 			printf("addr <= 0x%x && ", 0x1000 - 4*n_regs);
 		break;
 	case 2:	/*  pre-decrement  */
-		printf("addr >= 0x%x && ", 4*n_regs);
+		if (n_regs > 1)
+			printf("addr >= 0x%x && ", 4*(n_regs-1));
 		break;
 	case 3:	/*  pre-increment  */
-		printf("addr <= 0x%x && ", 0xffc - 4*n_regs);
+		if (n_regs > 1)
+			printf("addr <= 0x%x && ", 0x1000 - 4*n_regs);
 		break;
 	}
 	printf("page != NULL) {\n");

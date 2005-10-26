@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_m700_fb.c,v 1.12 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_m700_fb.c,v 1.13 2005-10-26 14:37:04 debug Exp $
  *  
  *  Olivetti M700 framebuffer.
  *
@@ -75,7 +75,8 @@ int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
 	struct m700_fb_data *d = (struct m700_fb_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  Palette:  */
 	if (relative_addr >= 0x800 && relative_addr <= 0xff8) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.321 2005-10-03 01:07:40 debug Exp $
+ *  $Id: cpu.c,v 1.322 2005-10-26 14:37:01 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -181,8 +181,8 @@ int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
  *
  *  Dump cpu registers in a relatively readable format.
  *
- *  gprs: set to non-zero to dump GPRs. (CPU dependant.)
- *  coprocs: set bit 0..x to dump registers in coproc 0..x. (CPU dependant.)
+ *  gprs: set to non-zero to dump GPRs. (CPU dependent.)
+ *  coprocs: set bit 0..x to dump registers in coproc 0..x. (CPU dependent.)
  */
 void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs)
@@ -336,7 +336,7 @@ int cpu_run(struct emul *emul, struct machine *m)
  *  cpu_dumpinfo():
  *
  *  Dumps info about a CPU using debug(). "cpu0: CPUNAME, running" (or similar)
- *  is outputed, and it is up to CPU dependant code to complete the line.
+ *  is outputed, and it is up to CPU dependent code to complete the line.
  */
 void cpu_dumpinfo(struct machine *m, struct cpu *cpu)
 {

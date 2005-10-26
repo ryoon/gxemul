@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.37 2005-10-25 15:51:03 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.38 2005-10-26 14:37:02 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1499,7 +1499,7 @@ X(netbsd_cacheclean)
 
 
 /*
- *  netbsd_cacheclean:
+ *  netbsd_cacheclean2:
  *
  *  The core of a NetBSD/arm cache clean routine, variant 2:
  *
@@ -1508,13 +1508,11 @@ X(netbsd_cacheclean)
  *  f015f944:  e2800020     add     r0,r0,#0x20
  *  f015f948:  e2511020     subs    r1,r1,#0x20
  *  f015f94c:  8afffffa     bhi     0xf015f93c
- *  f015f950:  ee070f9a     mcr     15,0,r0,cr7,cr10,4
  */
-X(netbsd_cacheclean_2)
+X(netbsd_cacheclean2)
 {
-	uint32_t r1 = cpu->cd.arm.r[1];
-	cpu->n_translated_instrs += ((r1 >> 5) * 5);
-	cpu->cd.arm.next_ic = &ic[6];
+	cpu->n_translated_instrs += ((cpu->cd.arm.r[1] >> 5) * 5) - 1;
+	cpu->cd.arm.next_ic = &ic[5];
 }
 
 
@@ -1656,22 +1654,31 @@ void arm_combine_netbsd_cacheclean(struct cpu *cpu, struct arm_instr_call *ic,
 			combined;
 		}
 	}
-#if 0
-	if (n_back >= 5) {
-		if (ic[-5].f == instr(mcr_mrc) && ic[-5].arg[0] == 0xee070f3a &&
-		    ic[-4].f == instr(mcr_mrc) && ic[-4].arg[0] == 0xee070f36 &&
-		    ic[-3].f == instr(add) &&
-		    ic[-3].arg[0]==ic[-3].arg[2] && ic[-3].arg[1] == 0x20 &&
-		    ic[-2].f == instr(subs) &&
+}
+
+
+/*
+ *  arm_combine_netbsd_cacheclean2():
+ *
+ *  Check for the core of a NetBSD/arm cache clean. (Second variant.)
+ */
+void arm_combine_netbsd_cacheclean2(struct cpu *cpu, struct arm_instr_call *ic,
+	int low_addr)
+{
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 4) {
+		if (ic[-4].f == instr(mcr_mrc) && ic[-4].arg[0] == 0xee070f3a &&
+		    ic[-3].f == instr(mcr_mrc) && ic[-3].arg[0] == 0xee070f36 &&
+		    ic[-2].f == instr(add) &&
 		    ic[-2].arg[0]==ic[-2].arg[2] && ic[-2].arg[1] == 0x20 &&
-		    ic[-1].f == instr(b_samepage__hi) &&
-		    ic[-1].arg[0] == (size_t)&ic[-5]) {
-			ic[-5].f = instr(netbsd_cacheclean_2);
+		    ic[-1].f == instr(subs) &&
+		    ic[-1].arg[0]==ic[-1].arg[2] && ic[-1].arg[1] == 0x20) {
+			ic[-4].f = instr(netbsd_cacheclean2);
 			combined;
-printf("YO\n");
 		}
 	}
-#endif
 }
 
 
@@ -2200,6 +2207,12 @@ X(to_be_translated)
 				    ARM_INSTR_ALIGNMENT_SHIFT));
 			}
 		}
+
+#if 0
+		/*  Hm. This doesn't really increase performance.  */
+		if (iword == 0x8afffffa)
+			cpu->combination_check = arm_combine_netbsd_cacheclean2;
+#endif
 		break;
 
 	case 0xe:

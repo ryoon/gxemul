@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.13 2005-02-11 09:53:48 debug Exp $
+ *  $Id: dev_sii.c,v 1.14 2005-10-26 14:37:04 debug Exp $
  *  
  *  SII SCSI controller, used in some DECstation systems.
  *
@@ -194,7 +194,10 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem,
 	}
 
 	dev_sii_tick(cpu, extra);
-	idata = memory_readmax64(cpu, data, len);
+
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / 2;
 	odata = d->regs[regnr];
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.3 2005-10-17 22:26:24 debug Exp $
+ *  $Id: dev_i80321.c,v 1.4 2005-10-26 14:37:04 debug Exp $
  *
  *  i80321.  TODO: This is just a dummy so far.
  */
@@ -61,7 +61,8 @@ int dev_i80321_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	char *n = NULL;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	if (relative_addr >= VERDE_MCU_BASE &&
 	    relative_addr <  VERDE_MCU_BASE + VERDE_MCU_SIZE) {

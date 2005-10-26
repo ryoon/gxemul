@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.41 2005-09-30 13:33:01 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.42 2005-10-26 14:37:04 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -114,7 +114,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	int i;
 	struct ns_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  The NS16550 should be accessed using byte read/writes:  */
 	if (len != 1)

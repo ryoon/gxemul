@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.5 2005-10-22 17:24:20 debug Exp $
+ *  $Id: cpu_mips.c,v 1.6 2005-10-26 14:37:02 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1468,7 +1468,7 @@ int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  *  Acknowledge an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
  *  interrupt.  Interrupts 0..1 are ignored (software interrupts).
  *
- *  If irq_nr is >= 8, then it is machine dependant, and md_interrupt() is
+ *  If irq_nr is >= 8, then it is machine dependent, and md_interrupt() is
  *  called.
  */
 int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.59 2005-02-22 12:15:29 debug Exp $
+ *  $Id: dev_bt459.c,v 1.60 2005-10-26 14:37:03 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -357,7 +357,8 @@ int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem,
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 #ifdef BT459_DEBUG
 	fatal("[ bt459: IRQ ack ]\n");

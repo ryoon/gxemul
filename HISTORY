@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1002 2005-10-25 15:51:01 debug Exp $
+$Id: HISTORY,v 1.1003 2005-10-26 14:37:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2345,3 +2345,7 @@ Changelog for GXemul:
 		of emulated RAM that are actually executed), and adding
 		instruction combination hacks for cache cleaning and a part of
 		NetBSD's scanc() function.
+20051026	Adding a bitmap for ARM emulation which indicates if a page is
+		(specifically) user accessible; loads and stores with the t-
+		flag set can now use the translation arrays, which results in
+		a measurable speedup.

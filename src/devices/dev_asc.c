@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.74 2005-07-27 06:57:34 debug Exp $
+ *  $Id: dev_asc.c,v 1.75 2005-10-26 14:37:03 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -826,8 +826,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	int n_messagebytes = 0;
 	uint64_t idata = 0, odata = 0;
 
-
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 #if 0
 	/*  Debug stuff useful when trying to make dev_asc compatible

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.43 2005-10-24 18:54:27 debug Exp $
+ *  $Id: dev_wdc.c,v 1.44 2005-10-26 14:37:05 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -333,8 +333,7 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 	struct wdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-/*	idata = memory_readmax64(cpu, data, len);  */
-idata = data[0];
+	idata = data[0];
 
 	/*  Same as the normal status byte?  */
 	odata = status_byte(d, cpu);
@@ -347,8 +346,7 @@ idata = data[0];
 		    (int)idata);
 
 	if (writeflag == MEM_READ)
-/*		memory_writemax64(cpu, data, len, odata); */
-data[0] = odata;
+		data[0] = odata;
 
 	return 1;
 }

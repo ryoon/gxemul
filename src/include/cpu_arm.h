@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.51 2005-10-23 14:24:15 debug Exp $
+ *  $Id: cpu_arm.h,v 1.52 2005-10-26 14:37:06 debug Exp $
  */
 
 #include "misc.h"
@@ -228,6 +228,8 @@ struct arm_cpu {
 	unsigned char			*host_store[ARM_N_VPH_ENTRIES];
 	uint32_t			phys_addr[ARM_N_VPH_ENTRIES];
 	struct arm_tc_physpage		*phys_page[ARM_N_VPH_ENTRIES];
+
+	unsigned char			is_userpage[ARM_N_VPH_ENTRIES/8];
 };
 
 

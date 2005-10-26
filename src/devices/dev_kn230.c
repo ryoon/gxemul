@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.11 2005-02-26 16:53:32 debug Exp $
+ *  $Id: dev_kn230.c,v 1.12 2005-10-26 14:37:04 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -54,7 +54,8 @@ int dev_kn230_access(struct cpu *cpu, struct memory *mem,
 	struct kn230_csr *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0:

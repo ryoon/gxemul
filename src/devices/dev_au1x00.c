@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.12 2005-06-21 17:35:38 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.13 2005-10-26 14:37:03 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -75,7 +75,8 @@ int dev_au1x00_ic_access(struct cpu *cpu, struct memory *mem,
 	struct au1x00_ic_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  TODO  */
 
@@ -196,7 +197,8 @@ int dev_au1x00_uart_access(struct cpu *cpu, struct memory *mem,
 	struct au1x00_uart_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case UART_RXDATA:		/*  0x00  */
@@ -269,7 +271,8 @@ int dev_au1x00_pc_access(struct cpu *cpu, struct memory *mem,
 	struct au1x00_pc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	if (writeflag == MEM_READ)
 		odata = d->reg[relative_addr / sizeof(uint32_t)];

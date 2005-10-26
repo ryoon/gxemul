@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.24 2005-03-18 23:20:52 debug Exp $
+ *  $Id: dev_rd94.c,v 1.25 2005-10-26 14:37:04 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -90,7 +90,9 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {

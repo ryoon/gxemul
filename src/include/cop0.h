@@ -28,13 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.7 2005-09-18 19:54:16 debug Exp $
+ *  $Id: cop0.h,v 1.8 2005-10-26 14:37:06 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
 
 
-/*  TODO:  Coproc registers are actually CPU dependant, so an R4000
+/*  TODO:  Coproc registers are actually CPU dependent, so an R4000
 	has other bits/registers than an R3000...
     TODO 2: CPUs like the R10000 are probably even a bit more different.  */
 

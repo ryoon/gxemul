@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.4 2005-05-21 07:41:11 debug Exp $
+ *  $Id: dev_8253.c,v 1.5 2005-10-26 14:37:03 debug Exp $
  *  
  *  8253/8254 Programmable Interval Timer.
  *
@@ -75,7 +75,8 @@ int dev_8253_access(struct cpu *cpu, struct memory *mem,
 	struct pit8253_data *d = (struct pit8253_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  TODO: ack somewhere else  */
 	cpu_interrupt_ack(cpu, d->irq_nr);

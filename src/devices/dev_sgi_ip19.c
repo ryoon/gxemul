@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.13 2005-02-25 06:14:30 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.14 2005-10-26 14:37:04 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -59,7 +59,9 @@ int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {

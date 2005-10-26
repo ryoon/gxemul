@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.13 2005-10-22 12:22:13 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.14 2005-10-26 14:37:02 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -35,6 +35,8 @@
  *	o)  Alignment checks!
  *
  *	o)  Native load/store if the endianness is the same as the host's
+ *	    (only implemented for little endian, so far, and it assumes that
+ *	    alignment is correct!)
  *
  *	o)  "Base Updated Abort Model", which updates the base register
  *	    even if the memory access failed.
@@ -175,10 +177,6 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
  */
 void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 {
-#if !defined(A__P) && defined(A__W)
-	/*  T-bit: userland access. Use the general routine for that.  */
-	A__NAME__general(cpu, ic);
-#else
 #ifdef A__STRD
 	/*  Chicken out, let's do this unoptimized for now:  */
 	A__NAME__general(cpu, ic);
@@ -209,6 +207,20 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    [addr >> 12];
 
+
+#if !defined(A__P) && defined(A__W)
+	/*
+	 *  T-bit: userland access: check the corresponding bit in the
+	 *  is_userpage array. If it is set, then we're ok. Otherwise: use the
+	 *  generic function.
+	 */
+	unsigned char x = cpu->cd.arm.is_userpage[addr >> 15];
+	if (!(x & (1 << ((addr >> 12) & 7))))
+		A__NAME__general(cpu, ic);
+	else
+#endif
+
+
 	if (page == NULL) {
 		A__NAME__general(cpu, ic);
 	} else {
@@ -227,10 +239,14 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 		    (page[addr & 0xfff] + (page[(addr & 0xfff) + 1] << 8));
 #else
+#ifdef HOST_LITTLE_ENDIAN
+		reg(ic->arg[2]) = *(uint32_t *)(page + (addr & 0xffc));
+#else
 		reg(ic->arg[2]) = page[addr & 0xfff] +
 		    (page[(addr & 0xfff) + 1] << 8) +
 		    (page[(addr & 0xfff) + 2] << 16) +
 		    (page[(addr & 0xfff) + 3] << 24);
+#endif
 #endif
 #endif
 #else
@@ -241,10 +257,14 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		page[addr & 0xfff] = reg(ic->arg[2]);
 		page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
 #else
+#ifdef HOST_LITTLE_ENDIAN
+		*(uint32_t *)(page + (addr & 0xffc)) = reg(ic->arg[2]);
+#else
 		page[addr & 0xfff] = reg(ic->arg[2]);
 		page[(addr & 0xfff)+1] = reg(ic->arg[2]) >> 8;
 		page[(addr & 0xfff)+2] = reg(ic->arg[2]) >> 16;
 		page[(addr & 0xfff)+3] = reg(ic->arg[2]) >> 24;
+#endif
 #endif
 #endif
 #endif
@@ -260,7 +280,6 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	}
 #endif	/*  not STRD  */
-#endif	/*  not T-bit  */
 }
 
 

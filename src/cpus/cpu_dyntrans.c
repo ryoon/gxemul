@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.25 2005-10-25 15:51:03 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.26 2005-10-26 14:37:02 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -71,7 +71,7 @@ a &= 0x03ffffff;
 	array[a] ++;
 	array_16kpage_in_use[a / 16384] = 1;
 	n++;
-	if (n == 0) {
+	if ((n & 0x3fffffff) == 0) {
 		FILE *f = fopen("statistics.out", "w");
 		int i, j;
 		printf("Saving statistics... "); fflush(stdout);
@@ -721,6 +721,10 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 #ifdef MODE32
 	uint32_t index = vaddr_page >> 12;
 
+#ifdef DYNTRANS_ARM
+	cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]&=~(1<<(index&7));
+#endif
+
 	if (flags & JUST_MARK_AS_NON_WRITABLE) {
 		/*  printf("JUST MARKING NON-W: vaddr 0x%08x\n",
 		    (int)vaddr_page);  */
@@ -987,7 +991,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
 	int64_t lowest, highest = -1;
-	int found, r, lowest_index, start, end;
+	int found, r, lowest_index, start, end, useraccess = 0;
 
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
@@ -1013,6 +1017,11 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #endif
 #endif
 #endif
+
+	if (writeflag & MEMORY_USER_ACCESS) {
+		writeflag &= ~MEMORY_USER_ACCESS;
+		useraccess = 1;
+	}
 
 	start = 0; end = DYNTRANS_MAX_VPH_TLB_ENTRIES / 2;
 	if (writeflag & TLB_CODE) {
@@ -1101,6 +1110,11 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		    writeflag? host_page : NULL;
 		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = paddr_page;
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+#ifdef DYNTRANS_ARM
+		if (useraccess)
+			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]
+			    |= 1 << (index & 7);
+#endif
 #endif	/*  32  */
 #endif	/*  !ALPHA  */
 	} else {
@@ -1140,6 +1154,12 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #ifdef MODE32
 		index = vaddr_page >> 12;
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+#ifdef DYNTRANS_ARM
+		cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]&=~(1<<(index&7));
+		if (useraccess)
+			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]
+			    |= 1 << (index & 7);
+#endif
 		if (cpu->cd.DYNTRANS_ARCH.phys_addr[index] == paddr_page) {
 			if (writeflag == 1)
 				cpu->cd.DYNTRANS_ARCH.host_store[index] =

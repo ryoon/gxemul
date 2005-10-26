@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.28 2005-09-18 19:54:15 debug Exp $
+ *  $Id: dev_mp.c,v 1.29 2005-10-26 14:37:04 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -70,7 +70,8 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	int i, which_cpu;
 	uint64_t idata = 0, odata = 0;
 
-        idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+	        idata = memory_readmax64(cpu, data, len);
 
 	/*
 	 *  NOTE: It is up to the user of this device to read or write

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.32 2005-08-19 09:43:35 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.33 2005-10-26 14:37:04 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -114,7 +114,8 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	struct crime_data *d = extra;
 	uint64_t idata;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*
 	 *  Set crime version/revision:
@@ -344,7 +345,9 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata=0;
 	int regnr, res = 1;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint32_t);
 
 	/*  Read from/write to the macepci:  */
@@ -775,7 +778,9 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / sizeof(uint64_t);
 
 	/*  Treat most registers as read/write, by default.  */

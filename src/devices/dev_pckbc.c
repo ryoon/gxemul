@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.52 2005-10-12 19:51:51 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.53 2005-10-26 14:37:04 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -567,7 +567,8 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 	int i, port_nr = 0;
 	struct pckbc_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 #ifdef PCKBC_DEBUG
 	if (writeflag == MEM_WRITE)

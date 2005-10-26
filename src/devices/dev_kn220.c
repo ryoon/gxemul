@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn220.c,v 1.3 2005-02-21 07:01:08 debug Exp $
+ *  $Id: dev_kn220.c,v 1.4 2005-10-26 14:37:04 debug Exp $
  *  
  *  DEC KN220 (DECsystem 5500) devices.
  *
@@ -67,7 +67,8 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
 	    (struct dec5500_ioboard_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 #ifdef IOBOARD_DEBUG
 	if (writeflag == MEM_WRITE)

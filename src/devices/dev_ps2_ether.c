@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ether.c,v 1.2 2005-04-15 21:39:56 debug Exp $
+ *  $Id: dev_ps2_ether.c,v 1.3 2005-10-26 14:37:04 debug Exp $
  *  
  *  Playstation 2 ethernet (smap and emac3).
  *
@@ -60,7 +60,8 @@ int dev_ps2_ether_access(struct cpu *cpu, struct memory *mem,
 	/*  struct ps2_ether_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0x105c:

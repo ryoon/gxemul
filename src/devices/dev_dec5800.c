@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.15 2005-02-22 06:26:10 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.16 2005-10-26 14:37:03 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -80,7 +80,8 @@ int dev_dec5800_vectors_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	struct dec5800_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	if (writeflag == MEM_READ) {
 		/*  TODO  */
@@ -113,7 +114,8 @@ int dev_dec5800_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	struct dec5800_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  Lowest 4 bits of csr contain cpu id:  */
 	d->csr = (d->csr & ~0xf) | (cpu->cpu_id & 0xf);
@@ -200,7 +202,8 @@ int dev_decbi_access(struct cpu *cpu, struct memory *mem,
 	int node_nr;
 	struct decbi_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	relative_addr += BI_NODESIZE;	/*  HACK  */
 
@@ -316,7 +319,8 @@ int dev_deccca_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	/*  struct deccca_data *d = extra;  */
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 6:
@@ -400,7 +404,8 @@ int dev_decxmi_access(struct cpu *cpu, struct memory *mem,
 	int node_nr;
 	struct decxmi_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	node_nr = relative_addr / XMI_NODESIZE;
 	relative_addr &= (XMI_NODESIZE - 1);

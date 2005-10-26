@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.16 2005-02-26 11:40:28 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.17 2005-10-26 14:37:04 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -95,7 +95,9 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
 	int i, regnr;
 	struct gs_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
 	regnr = relative_addr / 16;
 	if (relative_addr & 0xf) {
 		debug("[ gs unaligned access, addr 0x%x ]\n",

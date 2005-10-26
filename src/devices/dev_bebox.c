@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.3 2005-02-23 22:08:19 debug Exp $
+ *  $Id: dev_bebox.c,v 1.4 2005-10-26 14:37:03 debug Exp $
  *
  *  Emulation of BeBox motherboard registers. See the following URL for more
  *  information:
@@ -64,7 +64,8 @@ int dev_bebox_access(struct cpu *cpu, struct memory *mem,
 	struct bebox_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0x3f0:

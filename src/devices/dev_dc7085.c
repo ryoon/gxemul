@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.49 2005-02-22 20:18:30 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.50 2005-10-26 14:37:03 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -172,7 +172,8 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
 	int i;
 	struct dc_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  Always clear:  */
 	d->regs.dc_csr &= ~CSR_CLR;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.64 2005-08-27 17:29:06 debug Exp $
+ *  $Id: useremul.c,v 1.65 2005-10-26 14:37:02 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -847,8 +847,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 	}
 
 	/*
-	 *  NOTE: The following code should not be CPU arch dependant!
-	 *  (TODO)
+	 *  NOTE/TODO: The following code should not be CPU arch dependent!
 	 */
 
 	switch (sysnr) {

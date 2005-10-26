@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.234 2005-09-17 21:55:19 debug Exp $
+ *  $Id: emul.c,v 1.235 2005-10-26 14:37:02 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -650,7 +650,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 
 	/*
 	 *  Try reading a kernel manually from the disk. The code here
-	 *  does not rely on machine-dependant boot blocks etc.
+	 *  does not rely on machine-dependent boot blocks etc.
 	 */
 	/*  ISO9660: (0x800 bytes at 0x8000)  */
 	bootblock_buf = malloc(0x800);
@@ -1210,7 +1210,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		switch (m->arch) {
 
 		case ARCH_ALPHA:
-			/*  For position-independant code:  */
+			/*  For position-independent code:  */
 			cpu->cd.alpha.r[ALPHA_T12] = cpu->pc;
 			break;
 

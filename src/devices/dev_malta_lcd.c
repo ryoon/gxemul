@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta_lcd.c,v 1.2 2005-07-30 20:01:57 debug Exp $
+ *  $Id: dev_malta_lcd.c,v 1.3 2005-10-26 14:37:04 debug Exp $
  *
  *  Malta (evbmips) LCD thingy. Mostly a dummy device.
  */
@@ -88,7 +88,8 @@ int dev_malta_lcd_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0x18:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.14 2005-08-05 09:08:20 debug Exp $
+ *  $Id: dev_8259.c,v 1.15 2005-10-26 14:37:03 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -62,7 +62,8 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 #ifdef DEV_8259_DEBUG
 	if (writeflag == MEM_READ)

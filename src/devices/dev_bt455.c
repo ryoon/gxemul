@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt455.c,v 1.7 2005-02-22 12:15:29 debug Exp $
+ *  $Id: dev_bt455.c,v 1.8 2005-10-26 14:37:03 debug Exp $
  *  
  *  Brooktree 455, used by TURBOchannel graphics cards.
  *
@@ -68,7 +68,8 @@ int dev_bt455_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i, modified;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  Read from/write to the bt455:  */
 	switch (relative_addr) {

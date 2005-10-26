@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.27 2005-02-25 06:14:30 debug Exp $
+ *  $Id: dev_scc.c,v 1.28 2005-10-26 14:37:04 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -301,7 +301,8 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem,
 	int port;
 	int ultrix_mode = 0;
 
-	idata = memory_readmax64(cpu, data, len);
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
 	/*  relative_addr /= d->addrmul;  */
 		/*  See SGI comment below instead.  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.6 2005-10-25 15:51:03 debug Exp $
+ *  $Id: generate_head.c,v 1.7 2005-10-27 14:01:13 debug Exp $
  */
 
 #include <stdio.h>
@@ -113,10 +113,8 @@ int main(int argc, char *argv[])
 	    "#define instr32(n) %s32_instr_ ## n\n\n", a);
 	printf("#endif\n\n");
 
-	printf("/*  This is for marking a physical page as containing "
-	    "translated or\n    combined instructions, respectively:  */\n");
-	printf("#define translated (cpu->cd.%s.cur_physpage->flags "
-	    "|= TRANSLATIONS)\n", a);
+	printf("/*  This is for marking a physical page as containing"
+	    "\n    combined instructions:  */\n");
 	printf("#define combined (cpu->cd.%s.cur_physpage->flags "
 	    "|= COMBINATIONS)\n", a);
 

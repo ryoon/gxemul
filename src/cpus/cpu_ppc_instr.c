@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.19 2005-10-22 17:24:21 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.20 2005-10-27 14:01:13 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -781,7 +781,7 @@ X(llsc)
 		cpu->cd.ppc.ll_addr = addr;
 		cpu->cd.ppc.ll_bit = 1;
 	} else {
-		int old_so = cpu->cd.ppc.xer & PPC_XER_SO;
+		uint32_t old_so = cpu->cd.ppc.xer & PPC_XER_SO;
 		if (!rc) {
 			fatal("sc: rc-bit not set?\n");
 			exit(1);

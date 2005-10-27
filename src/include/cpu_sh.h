@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.6 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu_sh.h,v 1.7 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -99,10 +99,12 @@ struct sh_cpu {
 	 */
 
 	struct sh_vpg_tlb_entry  vph_tlb_entry[SH_MAX_VPH_TLB_ENTRIES];
-	unsigned char		    *host_load[SH_N_VPH_ENTRIES]; 
-	unsigned char		    *host_store[SH_N_VPH_ENTRIES];
-	uint32_t		    phys_addr[SH_N_VPH_ENTRIES]; 
+	unsigned char		 *host_load[SH_N_VPH_ENTRIES]; 
+	unsigned char		 *host_store[SH_N_VPH_ENTRIES];
+	uint32_t		 phys_addr[SH_N_VPH_ENTRIES]; 
 	struct sh_tc_physpage    *phys_page[SH_N_VPH_ENTRIES];
+
+	uint32_t		 phystranslation[SH_N_VPH_ENTRIES/32];
 };
 
 

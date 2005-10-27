@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.85 2005-10-25 06:36:59 debug Exp $
+ *  $Id: dev_vga.c,v 1.86 2005-10-27 14:01:14 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -1019,7 +1019,7 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 				d->palette_read_index = idata;
 				d->palette_read_subindex = 0;
 			} else {
-				fatal("[ dev_vga: WARNING: Read from "
+				debug("[ dev_vga: WARNING: Read from "
 				    "VGA_DAC_ADDR_READ? TODO ]\n");
 				/*  TODO  */
 			}
@@ -1144,10 +1144,10 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 
 		default:
 			if (writeflag==MEM_READ) {
-				fatal("[ vga_ctrl: read from 0x%08lx ]\n",
+				debug("[ vga_ctrl: read from 0x%08lx ]\n",
 				    (long)relative_addr);
 			} else {
-				fatal("[ vga_ctrl: write to  0x%08lx: 0x%08x"
+				debug("[ vga_ctrl: write to  0x%08lx: 0x%08x"
 				    " ]\n", (long)relative_addr, (int)idata);
 			}
 		}

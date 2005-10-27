@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.26 2005-10-26 14:37:02 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.27 2005-10-27 14:01:13 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -462,7 +462,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef MODE32
 	int index;
 	cached_pc = cpu->pc;
-	index = cached_pc >> 12;
+	index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 #else
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
@@ -541,7 +541,7 @@ cpu->cd.arm.r[ARM_PC]);
 		}
 		cached_pc = cpu->pc;
 #ifdef MODE32
-		index = cached_pc >> 12;
+		index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 #endif
 		physaddr = paddr;
 	}
@@ -560,8 +560,10 @@ cpu->cd.arm.r[ARM_PC]);
 	}
 #endif
 
-	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE)
+	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE) {
+		fatal("[ dyntrans: resetting the translation cache ]\n");
 		cpu_create_or_reset_tc(cpu);
+	}
 
 	pagenr = DYNTRANS_ADDR_TO_PAGENR(physaddr);
 	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
@@ -649,7 +651,7 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #ifdef MODE32
 	int index;
 	cached_pc = cpu->pc;
-	index = cached_pc >> 12;
+	index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
 	if (ppp != NULL)
 		goto have_it;
@@ -719,10 +721,10 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 	vaddr_page, int flags)
 {
 #ifdef MODE32
-	uint32_t index = vaddr_page >> 12;
+	uint32_t index = DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 
 #ifdef DYNTRANS_ARM
-	cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]&=~(1<<(index&7));
+	cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3] &= ~(1 << (index & 7));
 #endif
 
 	if (flags & JUST_MARK_AS_NON_WRITABLE) {
@@ -734,6 +736,7 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 		cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
 		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = 0;
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+		cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[index] = 0;
 	}
 #else
 	/*  2-level:  */
@@ -872,6 +875,18 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 		struct DYNTRANS_TC_PHYSPAGE *ppp, *prev_ppp;
 
 		pagenr = DYNTRANS_ADDR_TO_PAGENR(addr);
+
+#ifdef MODE32
+		/*  If this page isn't marked as having any translations,
+		    then return immediately.  */
+		if (!(cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5]
+		    & 1 << (pagenr & 31)))
+			return;
+		/*  Remove the mark:  */
+		cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5] &=
+		    ~ (1 << (pagenr & 31));
+#endif
+
 		table_index = PAGENR_TO_TABLE_INDEX(pagenr);
 
 		physpage_entryp = &(((uint32_t *)cpu->
@@ -931,8 +946,9 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 #endif
 	}
 
-	/*  Invalidate entries in the VPH table:  */
-	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
+	/*  Invalidate entries (NOTE: only code entries) in the VPH table:  */
+	for (r = DYNTRANS_MAX_VPH_TLB_ENTRIES/2;
+	     r < DYNTRANS_MAX_VPH_TLB_ENTRIES; r ++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			vaddr_page = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
 			    .vaddr_page & ~(DYNTRANS_PAGESIZE-1);
@@ -943,8 +959,13 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 			    (flags & INVALIDATE_PADDR && paddr_page == addr) ||
 			    (flags & INVALIDATE_VADDR && vaddr_page == addr)) {
 #ifdef MODE32
-				uint32_t index = vaddr_page >> 12;
+				uint32_t index =
+				    DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 				cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+				/*  Remove the mark:  */
+				index = DYNTRANS_ADDR_TO_PAGENR(paddr_page);
+				cpu->cd.DYNTRANS_ARCH.phystranslation[
+				    index >> 5] &= ~ (1 << (index & 31));
 #else
 				/*  2-level:  */
 #ifdef DYNTRANS_ALPHA
@@ -1024,14 +1045,31 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 
 	start = 0; end = DYNTRANS_MAX_VPH_TLB_ENTRIES / 2;
+#if 1
+	/*  Half of the TLB used for data, half for code:  */
 	if (writeflag & TLB_CODE) {
 		writeflag &= ~TLB_CODE;
 		start = end; end = DYNTRANS_MAX_VPH_TLB_ENTRIES;
 	}
+#else
+	/*  Data and code entries are mixed.  */
+	end = DYNTRANS_MAX_VPH_TLB_ENTRIES;
+#endif
 
 	/*  Scan the current TLB entries:  */
 	found = -1; lowest_index = start;
 	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
+
+#ifdef MODE32
+	/*  NOTE: vaddr_to_tlbindex is one more than the index, so that
+	    0 becomes -1, which means a miss.  */
+	found = cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[
+	    DYNTRANS_ADDR_TO_PAGENR(vaddr_page)] - 1;
+	if (found < 0)
+		lowest_index = (random() % (end-start)) + start;
+	if (0)
+#endif
+
 	for (r=start; r<end; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp < lowest) {
 			lowest = cpu->cd.DYNTRANS_ARCH.
@@ -1104,12 +1142,13 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		vph_p->phys_page[b] = NULL;
 #else
 #ifdef MODE32
-		index = vaddr_page >> 12;
+		index = DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 		cpu->cd.DYNTRANS_ARCH.host_load[index] = host_page;
 		cpu->cd.DYNTRANS_ARCH.host_store[index] =
 		    writeflag? host_page : NULL;
 		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = paddr_page;
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+		cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[index] = r + 1;
 #ifdef DYNTRANS_ARM
 		if (useraccess)
 			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]
@@ -1124,8 +1163,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		 *	Writeflag = 1:  Make sure the page is writable.
 		 *	Writeflag = -1: Downgrade to readonly.
 		 */
-		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[found].timestamp =
-		    highest + 1;
+		r = found;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp = highest + 1;
 		if (writeflag == 1)
 			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 1;
 		if (writeflag == -1)
@@ -1152,7 +1191,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		}
 #else
 #ifdef MODE32
-		index = vaddr_page >> 12;
+		index = DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
 #ifdef DYNTRANS_ARM
 		cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]&=~(1<<(index&7));
@@ -1223,8 +1262,20 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #ifdef DYNTRANS_TO_BE_TRANSLATED_TAIL
 	/*
 	 *  If we end up here, then an instruction was translated.
+	 *  Mark the page as containing a translation.
+	 *
+	 *  (Special case for 32-bit mode: set the corresponding bit in the
+	 *  phystranslation[] array.)
 	 */
-	translated;
+#ifdef MODE32
+	if (!(cpu->cd.DYNTRANS_ARCH.cur_physpage->flags & TRANSLATIONS)) {
+		uint32_t index = DYNTRANS_ADDR_TO_PAGENR(addr);
+		cpu->cd.DYNTRANS_ARCH.phystranslation[index >> 5] |=
+		    (1 << (index & 31));
+	}
+#endif
+	cpu->cd.DYNTRANS_ARCH.cur_physpage->flags |= TRANSLATIONS;
+
 
 	/*
 	 *  Now it is time to check for combinations of instructions that can
@@ -1234,7 +1285,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *  instruction combination.
 	 */
 	if (!single_step && !cpu->machine->instruction_trace) {
-		if (cpu->combination_check != NULL)
+		if (cpu->combination_check != NULL &&
+		    cpu->machine->speed_tricks)
 			cpu->combination_check(cpu, ic,
 			    addr & (DYNTRANS_PAGESIZE - 1));
 		cpu->combination_check = NULL;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.33 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.34 2005-10-27 14:01:14 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -110,9 +110,9 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	int i;
 	struct crime_data *d = extra;
-	uint64_t idata;
+	uint64_t idata = 0;
+	int i;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -120,14 +120,12 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	/*
 	 *  Set crime version/revision:
 	 *
-	 *  This might not be the most elegant or correct solution,
-	 *  but it seems that the IP32 PROM likes 0x11 for machines
-	 *  without graphics, and 0xa1 for machines with graphics.
+	 *  This might not be the most elegant or correct solution, but it
+	 *  seems that the IP32 PROM likes 0x11 for machines without graphics,
+	 *  and 0xa1 for machines with graphics.
 	 *
-	 *  NetBSD 2.0 complains about "unknown" crime for 0x11,
-	 *  but I guess that's something one has to live with.
-	 *
-	 *  (TODO?)
+	 *  NetBSD 2.0 complains about "unknown" crime for 0x11, but I guess
+	 *  that's something one has to live with.  (TODO?)
 	 */
 	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00;
 	d->reg[7] = d->use_fb? 0xa1 : 0x11;

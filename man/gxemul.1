@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.34 2005-10-11 03:53:58 debug Exp $
+.\" $Id: gxemul.1,v 1.35 2005-10-27 14:01:11 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -54,6 +54,17 @@ systems (e.g. NetBSD) run as if they were running on a real machine.
 .Pp
 The processor architecture best emulated by GXemul is MIPS, but other
 architectures are also partially emulated.
+.Pp
+MIPS processors are emulated either using a simple type of binary 
+translator (on Alpha and i386 hosts), or using traditional slow 
+interpretation (all other hosts, including amd64 machines running in 
+64-bit mode).
+.Pp
+Non-MIPS processors (e.g. ARM) are emulated using a newer dynamic 
+translation system (called dyntrans in the rest of this man page);
+dyntrans does not require any host-specific code, so it should work on any 
+platform. Performance is somewhere between binary translation and 
+traditional interpretation.
 .Pp
 There are three ways to invoke the emulator:
 .Pp
@@ -187,7 +198,9 @@ This disables automatic clock adjustments, which is otherwise turned on.)
 .It Fl i
 Display each instruction as it is being executed.
 .It Fl J
-Disable some speed tricks.
+Disable some speed tricks. For MIPS emulation, these are mostly 
+timing-related. For non-MIPS emulation (i.e. those modes using dyntrans), 
+this flag disables the use of "instruction combinations".
 .It Fl j Ar n
 Set the name of the kernel to
 .Ar "n".
@@ -293,7 +306,9 @@ Force the single-step debugger to be entered at the end of a simulation.
 .It Fl q
 Quiet mode; this suppresses startup messages.
 .It Fl s
-Show opcode usage statistics after the simulation.
+For MIPS emulation: Show opcode usage statistics after the simulation.
+For non-MIPS emulation (i.e. using dyntrans): Save statistics to a file at 
+regular intervals of which physical addresses that were executed.
 .It Fl V
 Start up in the single-step debugger, paused.
 .It Fl v

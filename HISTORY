@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1003 2005-10-26 14:37:00 debug Exp $
+$Id: HISTORY,v 1.1004 2005-10-27 14:01:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2349,3 +2349,10 @@ Changelog for GXemul:
 		(specifically) user accessible; loads and stores with the t-
 		flag set can now use the translation arrays, which results in
 		a measurable speedup.
+20051027	Dyntrans updates; adding an extra bitmap array for 32-bit
+		emulation modes, speeding up the check whether a physical page
+		has any code translations or not (O(n) -> O(1)). Doing a
+		similar reduction of O(n) to O(1) by avoiding the scan through
+		the translation entries on a translation update (32-bit mode
+		only).
+		Various other minor hacks.

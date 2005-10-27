@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.3 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu_i960.h,v 1.4 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -109,6 +109,8 @@ struct i960_cpu {
 	unsigned char			*host_store[I960_N_VPH_ENTRIES];
 	uint32_t			phys_addr[I960_N_VPH_ENTRIES];
 	struct i960_tc_physpage		*phys_page[I960_N_VPH_ENTRIES];
+
+	uint32_t			phystranslation[I960_N_VPH_ENTRIES/32];
 };
 
 

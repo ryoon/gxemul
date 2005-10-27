@@ -1,5 +1,9 @@
-/*  GXemul: $Id: tulipreg.h,v 1.2 2005-10-27 06:59:25 debug Exp $  */
+/*  GXemul: $Id: tulipreg.h,v 1.3 2005-10-27 14:01:15 debug Exp $  */
 /*  $NetBSD: tulipreg.h,v 1.31 2005/06/23 23:51:42 rpaulo Exp $  */
+
+#ifndef __volatile
+#define __volatile
+#endif
 
 /*-
  * Copyright (c) 1999, 2000 The NetBSD Foundation, Inc.

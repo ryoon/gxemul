@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.6 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu_avr.h,v 1.7 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -131,6 +131,8 @@ struct avr_cpu {
 	unsigned char			*host_store[AVR_N_VPH_ENTRIES];
 	uint32_t			phys_addr[AVR_N_VPH_ENTRIES];
 	struct avr_tc_physpage		*phys_page[AVR_N_VPH_ENTRIES];
+
+	uint32_t			phystranslation[AVR_N_VPH_ENTRIES/32];
 };
 
 

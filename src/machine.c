@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.576 2005-10-25 15:51:02 debug Exp $
+ *  $Id: machine.c,v 1.577 2005-10-27 14:01:12 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4741,7 +4741,7 @@ Not yet.
 
 		/*  Physical RAM at 0xc0000000:  */
 		dev_ram_init(machine, 0xc0000000, 0x20000000,
-		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		    DEV_RAM_MIRROR, 0x0);
 
 		/*  Cache flush region:  */
 		dev_ram_init(machine, 0xe0000000, 0x10000, DEV_RAM_RAM, 0x0);
@@ -4757,7 +4757,7 @@ Not yet.
 	case MACHINE_ZAURUS:
 		machine->machine_name = "Zaurus";
 		dev_ram_init(machine, 0xa0000000, 0x20000000,
-		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		    DEV_RAM_MIRROR, 0x0);
 		device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
 		/*  TODO  */
 		if (machine->prom_emulation) {
@@ -4824,9 +4824,9 @@ Not yet.
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 		dev_ram_init(machine, 0xa0000000, 0x20000000,
-		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		    DEV_RAM_MIRROR, 0x0);
 		dev_ram_init(machine, 0xc0000000, 0x20000000,
-		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		    DEV_RAM_MIRROR, 0x0);
 
 		/*  0xe0000000 and 0xff000000 = cache flush regions  */
 		dev_ram_init(machine, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
@@ -4852,9 +4852,9 @@ Not yet.
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 		dev_ram_init(machine, 0xa0000000, 0x20000000,
-		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		    DEV_RAM_MIRROR, 0x0);
 		dev_ram_init(machine, 0xc0000000, 0x20000000,
-		    DEV_RAM_MIGHT_POINT_TO_DEVICES | DEV_RAM_MIRROR, 0x0);
+		    DEV_RAM_MIRROR, 0x0);
 
 		device_add(machine, "i80321 addr=0xffffe000");
 

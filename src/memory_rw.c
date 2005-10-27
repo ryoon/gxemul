@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.74 2005-10-26 14:37:02 debug Exp $
+ *  $Id: memory_rw.c,v 1.75 2005-10-27 14:01:12 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -569,6 +569,14 @@ have_paddr:
 
 	/*
 	 *  Uncached access:
+	 *
+	 *  1)  Translate the physical address to a host address.
+	 *
+	 *  2)  Insert this virtual->physical->host translation into the
+	 *      fast translation arrays (using update_translation_table()).
+	 *
+	 *  3)  If this was a Write, then invalidate any code translations
+	 *      in that page.
 	 */
 	memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 	if (memblock == NULL) {
@@ -602,6 +610,7 @@ have_paddr:
 #endif
 		    paddr & ~offset_mask);
 
+	/*  Invalidate code translations for the page we are writing to.  */
 	if (writeflag == MEM_WRITE &&
 	    cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);

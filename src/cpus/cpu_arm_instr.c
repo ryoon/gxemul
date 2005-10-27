@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.38 2005-10-26 14:37:02 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.39 2005-10-27 14:01:13 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2123,7 +2123,7 @@ X(to_be_translated)
 			ic->f = cond_instr(bdt_load);
 		else
 			ic->f = cond_instr(bdt_store);
-#ifndef GATHER_BDT_STATISTICS
+#if defined(HOST_LITTLE_ENDIAN) && !defined(GATHER_BDT_STATISTICS)
 		/*
 		 *  Check for availability of optimized implementation:
 		 *  xxxx100P USWLnnnn llllllll llllllll

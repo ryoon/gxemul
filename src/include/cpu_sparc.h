@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.11 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.12 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -101,6 +101,8 @@ struct sparc_cpu {
 	unsigned char		    *host_store[SPARC_N_VPH_ENTRIES];
 	uint32_t		    phys_addr[SPARC_N_VPH_ENTRIES]; 
 	struct sparc_tc_physpage    *phys_page[SPARC_N_VPH_ENTRIES];
+
+	uint32_t		    phystranslation[SPARC_N_VPH_ENTRIES/32];
 };
 
 

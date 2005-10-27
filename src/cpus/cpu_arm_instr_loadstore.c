@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.14 2005-10-26 14:37:02 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.15 2005-10-27 14:01:13 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -78,14 +78,22 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 
 #ifdef A__STRD
 	unsigned char data[8];
+	const int datalen = 8;
 #else
 #ifdef A__B
 	unsigned char data[1];
+	const int datalen = 1;
 #else
 #ifdef A__H
 	unsigned char data[2];
+	const int datalen = 2;
+#else
+	const int datalen = 4;
+#ifdef HOST_LITTLE_ENDIAN
+	unsigned char *data = (unsigned char *) ic->arg[2];
 #else
 	unsigned char data[4];
+#endif
 #endif
 #endif
 #endif
@@ -115,7 +123,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 
 #ifdef A__L
 	/*  Load:  */
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, datalen,
 	    MEM_READ, memory_rw_flags)) {
 		/*  load failed, an exception was generated  */
 		return;
@@ -134,12 +142,22 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    (data[0] + (data[1] << 8));
 #else
+#ifdef HOST_LITTLE_ENDIAN
+	/*  Nothing.  */
+#else
 	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
 	    (data[2] << 16) + (data[3] << 24);
 #endif
 #endif
+#endif
 #else
 	/*  Store:  */
+#if !defined(A__B) && !defined(A__H) && defined(HOST_LITTLE_ENDIAN)
+#ifdef A__STRD
+	*(uint32_t *)data = reg(ic->arg[2]);
+	*(uint32_t *)(data + 4) = reg(ic->arg[2] + 4);
+#endif
+#else
 	data[0] = reg(ic->arg[2]);
 #ifndef A__B
 	data[1] = reg(ic->arg[2]) >> 8;
@@ -155,7 +173,8 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 #endif
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
+#endif
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, datalen,
 	    MEM_WRITE, memory_rw_flags)) {
 		/*  store failed, an exception was generated  */
 		return;

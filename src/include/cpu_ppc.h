@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.40 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.41 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -187,6 +187,9 @@ struct ppc_cpu {
 	unsigned char			*host_store[PPC_N_VPH_ENTRIES];
 	uint32_t			phys_addr[PPC_N_VPH_ENTRIES]; 
 	struct ppc_tc_physpage		*phys_page[PPC_N_VPH_ENTRIES];
+
+	uint32_t			phystranslation[PPC_N_VPH_ENTRIES/32];
+	int16_t				vaddr_to_tlbindex[PPC_N_VPH_ENTRIES];
 };
 
 
@@ -211,7 +214,7 @@ struct ppc_cpu {
 #define	PPC_MSR_LE	(1)		/*  Little-Endian Mode  */
 
 /*  XER bits:  */
-#define	PPC_XER_SO	(1 << 31)	/*  Summary Overflow  */
+#define	PPC_XER_SO	(1UL << 31)	/*  Summary Overflow  */
 #define	PPC_XER_OV	(1 << 30)	/*  Overflow  */
 #define	PPC_XER_CA	(1 << 29)	/*  Carry  */
 

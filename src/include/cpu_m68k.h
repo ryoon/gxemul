@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.5 2005-10-22 17:24:22 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.6 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -109,6 +109,8 @@ struct m68k_cpu {
 	unsigned char			*host_store[M68K_N_VPH_ENTRIES];
 	uint32_t			phys_addr[M68K_N_VPH_ENTRIES];
 	struct m68k_tc_physpage		*phys_page[M68K_N_VPH_ENTRIES];
+
+	uint32_t			phystranslation[M68K_N_VPH_ENTRIES/32];
 };
 
 

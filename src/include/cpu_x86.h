@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.34 2005-10-22 12:22:14 debug Exp $
+ *  $Id: cpu_x86.h,v 1.35 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -204,6 +204,8 @@ struct x86_cpu {
 	unsigned char                   *host_store[X86_N_VPH_ENTRIES];
 	uint32_t                        phys_addr[X86_N_VPH_ENTRIES];
 	struct x86_tc_physpage          *phys_page[X86_N_VPH_ENTRIES];
+
+	uint32_t			phystranslation[X86_N_VPH_ENTRIES/32];
 };
 
 

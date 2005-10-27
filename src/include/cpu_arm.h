@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.52 2005-10-26 14:37:06 debug Exp $
+ *  $Id: cpu_arm.h,v 1.53 2005-10-27 14:01:15 debug Exp $
  */
 
 #include "misc.h"
@@ -132,7 +132,7 @@ struct arm_tc_physpage {
 
 #define	ARM_N_VPH_ENTRIES	1048576
 
-#define	ARM_MAX_VPH_TLB_ENTRIES		64
+#define	ARM_MAX_VPH_TLB_ENTRIES		128
 struct arm_vpg_tlb_entry {
 	int		valid;
 	int		writeflag;
@@ -229,6 +229,10 @@ struct arm_cpu {
 	uint32_t			phys_addr[ARM_N_VPH_ENTRIES];
 	struct arm_tc_physpage		*phys_page[ARM_N_VPH_ENTRIES];
 
+	uint32_t			phystranslation[ARM_N_VPH_ENTRIES/32];
+	int16_t				vaddr_to_tlbindex[ARM_N_VPH_ENTRIES];
+
+	/*  ARM specific: */
 	unsigned char			is_userpage[ARM_N_VPH_ENTRIES/8];
 };
 

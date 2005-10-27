@@ -1,4 +1,4 @@
-/*  GXemul: $Id: tulipreg.h,v 1.1 2005-10-25 06:49:08 debug Exp $  */
+/*  GXemul: $Id: tulipreg.h,v 1.2 2005-10-27 06:59:25 debug Exp $  */
 /*  $NetBSD: tulipreg.h,v 1.31 2005/06/23 23:51:42 rpaulo Exp $  */
 
 /*-
@@ -151,7 +151,7 @@
  *	  	- External 10BaseT PHY or 10/100 MII.
  *
  * Some of the clone chips have different registers, and some have
- * different bits in the same registers.  These will be denoted by
+ * different bits in the same registers. These will be denoted by
  * PMAC, PNICII, PNIC, DM, WINB, ADM and AX in the register/bit names.
  */
 
@@ -272,7 +272,7 @@ struct tulip_desc {
  *
  * A Setup Packet must always be 192 bytes long.  The Tulip can store
  * 16 MAC addresses.  If not all 16 are specified in Perfect Filtering
- * or Inverse Filtering mode, then unused entries should duplicate
+ * or Inverse Filtering mode,  then unused entries should duplicate
  * one of the valid entries.
  */
 #define	TDCTL_Tx_FT_PERFECT	0
@@ -1094,7 +1094,7 @@ struct tulip_desc {
 
 
 /*
- * Macronix 98713, 98713A, 98715, 98715A, 98715AEC, 98725 and
+ * Macronix 98713, 98713A, 98715, 98715A, 98715AEC, 98725, and
  * Lite-On 82C115 registers.
  */
 

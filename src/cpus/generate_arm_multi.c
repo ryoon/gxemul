@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.6 2005-10-26 14:37:03 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.7 2005-10-29 07:17:44 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -95,6 +95,7 @@ void generate_opcode(uint32_t opcode)
 
 	printf("\nX(multi_0x%08x) {\n", opcode);
 
+	printf("\tunsigned char *page;\n");
 	printf("\tuint32_t addr = cpu->cd.arm.r[%i];\n", r);
 
 	if (!load && opcode & 0x8000) {
@@ -106,8 +107,6 @@ void generate_opcode(uint32_t opcode)
 		    "\n\t    << ARM_INSTR_ALIGNMENT_SHIFT)))\n"
 		    "\t    + (tmp_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 12;\n");
 	}
-
-	printf("\tunsigned char *page;\n");
 
 	if (p)
 		printf("\taddr %s 4;\n", u? "+=" : "-=");

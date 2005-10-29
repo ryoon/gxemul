@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1004 2005-10-27 14:01:10 debug Exp $
+$Id: HISTORY,v 1.1005 2005-10-29 07:17:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2356,3 +2356,7 @@ Changelog for GXemul:
 		the translation entries on a translation update (32-bit mode
 		only).
 		Various other minor hacks.
+20051029	Quick release, without any testing at all.
+
+==============  RELEASE 0.3.6.2  ==============
+

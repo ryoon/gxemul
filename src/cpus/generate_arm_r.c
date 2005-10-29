@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_r.c,v 1.1 2005-10-09 21:32:07 debug Exp $
+ *  $Id: generate_arm_r.c,v 1.2 2005-10-29 07:28:16 debug Exp $
  *
  *  Generate functions for computing "reg" operands.
  */
@@ -358,13 +358,13 @@ void f(int s, int func, int only_name)
 			    (int)(1 << (c-1)));
 			printf(" return x >> %i; }\n", c);
 		} else {
-			printf("uint64_t x=");
+			printf("{ uint64_t x=");
 			if (pc)
 				printf("tmp");
 			else
 				printf("cpu->cd.arm.r[%i]",rm);
 			printf("; x |= (x << 32); ");
-			printf("return x >> %i;\n", c);
+			printf("return x >> %i; }\n", c);
 		}
 		break;
 

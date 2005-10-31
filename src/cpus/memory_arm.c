@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.27 2005-10-23 14:24:13 debug Exp $
+ *  $Id: memory_arm.c,v 1.28 2005-10-31 16:09:55 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -131,6 +131,7 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 
 	addr = ((vaddr & 0xfff00000ULL) >> 18);
 
+cpu->cd.arm.translation_table = NULL;
 	if (cpu->cd.arm.translation_table == NULL ||
 	    cpu->cd.arm.ttb != cpu->cd.arm.last_ttb) {
 		uint32_t ofs;
@@ -199,6 +200,15 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 			ap &= 3;
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
+		case 3:	{
+				static int first = 1;
+				if (first) {
+					fatal("[ WARNING! ARM course second "
+					    "level page table seems to contain"
+					    " tiny pages; treating as 4K ]\n");
+					first = 0;
+				}
+			}
 		case 2:	/*  4KB page:  */
 			ap3 = (d2 >> 10) & 3;
 			ap2 = (d2 >>  8) & 3;
@@ -210,15 +220,20 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 			case 0x800: ap = ap2; break;
 			default:    ap = ap3;
 			}
+			/*  Ugly hack: (TODO)  */
+			if ((d2 & 3) == 3)
+				ap = ap0;
 			if (ap0 != ap1 || ap0 != ap2 || ap0 != ap3)
 				subpage = 1;
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
+#if 0
 		case 3:	/*  1KB page:  */
 			subpage = 1;
 			ap = (d2 >> 4) & 3;
 			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
 			break;
+#endif
 		}
 		access = arm_check_access(cpu, ap, dav, user);
 		if (access > writeflag)

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1005 2005-10-29 07:17:42 debug Exp $
+$Id: HISTORY,v 1.1006 2005-10-31 16:09:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2360,3 +2360,6 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.3.6.2  ==============
 
+20051031	Adding disassembly support for more ARM instructions (clz,
+		smul* etc), and adding a hack to support "new tiny" pages
+		for StrongARM.

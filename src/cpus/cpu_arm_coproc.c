@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.13 2005-10-26 14:37:02 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.14 2005-10-31 16:09:55 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -172,6 +172,10 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		else
 			cpu->invalidate_translation_caches(cpu,
 			    cpu->cd.arm.r[rd], INVALIDATE_VADDR);
+		break;
+
+	case 9:	/*  Cache lockdown:  */
+		/*  TODO  */
 		break;
 
 	case 13:/*  Process ID Register:  */

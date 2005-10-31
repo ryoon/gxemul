@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.39 2005-10-27 14:01:13 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.40 2005-10-31 16:09:55 debug Exp $
  *
  *  ARM instructions.
  *
@@ -456,6 +456,36 @@ Y(bl_samepage_trace)
 
 
 #include "cpu_arm_instr_misc.c"
+
+
+/*
+ *  clz: Count leading zeroes.
+ *
+ *  arg[0] = ptr to rm
+ *  arg[1] = ptr to rd
+ */
+X(clz)
+{
+	uint32_t rm = reg(ic->arg[0]);
+	int i = 32, n = 0, j;
+	while (i>0) {
+		if (rm & 0xff000000) {
+			for (j=0; j<8; j++) {
+				if (rm & 0x80000000)
+					break;
+				n ++;
+				rm <<= 1;
+			}
+			break;
+		} else {
+			rm <<= 8;
+			i -= 8;
+			n += 8;
+		}
+	}
+	reg(ic->arg[1]) = n;
+}
+Y(clz)
 
 
 /*
@@ -1896,6 +1926,32 @@ X(to_be_translated)
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rm]);
 			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rn]);
 			break;
+		}
+		if ((iword & 0x0fff0ff0) == 0x016f0f10) {
+			ic->f = cond_instr(clz);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rd]);
+			break;
+		}
+		if ((iword & 0x0ff00090) == 0x01000080) {
+			/*  TODO: smlaXX  */
+			goto bad;
+		}
+		if ((iword & 0x0ff00090) == 0x01400080) {
+			/*  TODO: smlalY  */
+			goto bad;
+		}
+		if ((iword & 0x0ff000b0) == 0x01200080) {
+			/*  TODO: smlawY  */
+			goto bad;
+		}
+		if ((iword & 0x0ff0f090) == 0x01600080) {
+			/*  TODO: smulXY  */
+			goto bad;
+		}
+		if ((iword & 0x0ff0f0b0) == 0x012000a0) {
+			/*  TODO: smulwY  */
+			goto bad;
 		}
 		if ((iword & 0x0fb0fff0) == 0x0120f000 ||
 		    (iword & 0x0fb0f000) == 0x0320f000) {

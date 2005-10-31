@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.35 2005-10-23 14:24:13 debug Exp $
+ *  $Id: cpu_arm.c,v 1.36 2005-10-31 16:09:55 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -869,6 +869,64 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("swp%s%s\t", condition, (iw&0x400000)? "b":"");
 			debug("%s,%s,[%s]\n", arm_regname[r12],
 			    arm_regname[iw & 15], arm_regname[r16]);
+			break;
+		}
+
+		/*
+		 *  xxxx0001 01101111 dddd1111 0001mmmm    CLZ Rd,Rm
+		 */
+		if ((iw & 0x0fff0ff0) == 0x016f0f10) {
+			debug("clz%s\t", condition);
+			debug("%s,%s\n", arm_regname[r12], arm_regname[iw&15]);
+			break;
+		}
+
+		/*
+		 *  xxxx0001 0000dddd nnnnssss 1yx0mmmm  SMLAxy Rd,Rm,Rs,Rn
+		 *  xxxx0001 0100dddd DDDDssss 1yx0mmmm  SMLALxy RdL,RdH,Rm,Rs
+		 *  xxxx0001 0010dddd nnnnssss 1y00mmmm  SMLAWy Rd,Rm,Rs,Rn
+		 *  xxxx0001 0110dddd 0000ssss 1yx0mmmm  SMULxy Rd,Rm,Rs
+		 *  xxxx0001 0010dddd 0000ssss 1y10mmmm  SMULWy Rd,Rm,Rs
+		 */
+		if ((iw & 0x0ff00090) == 0x01000080) {
+			debug("smla%s%s%s\t",
+			    iw & 0x20? "t" : "b", iw & 0x40? "t" : "b",
+			    condition);
+			debug("%s,%s,%s,%s\n", arm_regname[r16],
+			    arm_regname[iw&15], arm_regname[r8],
+			    arm_regname[r12]);
+			break;
+		}
+		if ((iw & 0x0ff00090) == 0x01400080) {
+			debug("smlal%s%s%s\t",
+			    iw & 0x20? "t" : "b", iw & 0x40? "t" : "b",
+			    condition);
+			debug("%s,%s,%s,%s\n", arm_regname[r12],
+			    arm_regname[r16], arm_regname[iw&15],
+			    arm_regname[r8]);
+			break;
+		}
+		if ((iw & 0x0ff000b0) == 0x01200080) {
+			debug("smlaw%s%s\t", iw & 0x40? "t" : "b",
+			    condition);
+			debug("%s,%s,%s,%s\n", arm_regname[r16],
+			    arm_regname[iw&15], arm_regname[r8],
+			    arm_regname[r12]);
+			break;
+		}
+		if ((iw & 0x0ff0f090) == 0x01600080) {
+			debug("smul%s%s%s\t",
+			    iw & 0x20? "t" : "b", iw & 0x40? "t" : "b",
+			    condition);
+			debug("%s,%s,%s\n", arm_regname[r16],
+			    arm_regname[iw&15], arm_regname[r8]);
+			break;
+		}
+		if ((iw & 0x0ff0f0b0) == 0x012000a0) {
+			debug("smulw%s%s\t", iw & 0x40? "t" : "b",
+			    condition);
+			debug("%s,%s,%s\n", arm_regname[r16],
+			    arm_regname[iw&15], arm_regname[r8]);
 			break;
 		}
 

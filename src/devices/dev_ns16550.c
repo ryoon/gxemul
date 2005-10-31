@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.42 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.43 2005-10-31 16:10:23 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -117,10 +117,12 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+#if 0
 	/*  The NS16550 should be accessed using byte read/writes:  */
 	if (len != 1)
 		fatal("[ ns16550 (%s): len=%i, idata=0x%16llx! ]\n",
 		    d->name, len, (long long)idata);
+#endif
 
 	/*
 	 *  Always ready to transmit:

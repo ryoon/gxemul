@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.577 2005-10-27 14:01:12 debug Exp $
+ *  $Id: machine.c,v 1.578 2005-11-01 07:05:38 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4573,6 +4573,8 @@ Not yet.
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 
+		device_add(machine, "8253 irq=32 addr=0x7c000040 in_use=0");
+
 		device_add(machine, "pccmos addr=0x7c000070");
 
 		if (machine->use_x11) {
@@ -4758,7 +4760,15 @@ Not yet.
 		machine->machine_name = "Zaurus";
 		dev_ram_init(machine, 0xa0000000, 0x20000000,
 		    DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xc0000000, 0x20000000,
+		    DEV_RAM_MIRROR, 0x0);
+
+		/*  TODO: replace this with the correct device  */
+		dev_ram_init(machine, 0x40d00000, 0x1000, DEV_RAM_RAM, 0);
+
 		device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
+		device_add(machine, "ns16550 irq=0 addr=0xfd400000 addr_mult=4");
+
 		/*  TODO  */
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);
@@ -4849,11 +4859,15 @@ Not yet.
 		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
+		device_add(machine, "ns16550 irq=0 addr=0x900003f8");
+		device_add(machine, "ns16550 irq=0 addr=0x900002f8");
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 		dev_ram_init(machine, 0xa0000000, 0x20000000,
 		    DEV_RAM_MIRROR, 0x0);
 		dev_ram_init(machine, 0xc0000000, 0x20000000,
+		    DEV_RAM_MIRROR, 0x0);
+		dev_ram_init(machine, 0xf0000000, 0x08000000,
 		    DEV_RAM_MIRROR, 0x0);
 
 		device_add(machine, "i80321 addr=0xffffe000");
@@ -4961,7 +4975,7 @@ Not yet.
 		machine->md_interrupt = x86_pc_interrupt;
 
 		/*  Timer:  */
-		snprintf(tmpstr, sizeof(tmpstr), "8253 addr=0x%llx irq=0",
+		snprintf(tmpstr, sizeof(tmpstr), "8253 addr=0x%llx irq=0 in_use=1",
 		    (long long)(X86_IO_BASE + 0x40));
 		device_add(machine, tmpstr);
 

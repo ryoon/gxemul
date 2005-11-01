@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.235 2005-10-26 14:37:02 debug Exp $
+ *  $Id: emul.c,v 1.236 2005-11-01 07:05:38 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1351,6 +1351,15 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	if ((m->machine_type == MACHINE_ARC ||
 	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		add_arc_components(m);
+
+
+#if 0
+if (m->machine_type == MACHINE_IQ80321) {
+	store_32bit_word(cpu, 0xc0200000, 0);
+	store_32bit_word(cpu, 0xc0200004, 0xd0000000);
+}
+#endif
+
 
 	debug("starting cpu%i at ", m->bootstrap_cpu);
 	switch (m->arch) {

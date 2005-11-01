@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.5 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_8253.c,v 1.6 2005-11-01 07:05:52 debug Exp $
  *  
  *  8253/8254 Programmable Interval Timer.
  *
@@ -51,6 +51,7 @@
 
 struct pit8253_data {
 	int		irq_nr;
+	int		in_use;
 	int		counter_select;
 };
 
@@ -61,6 +62,10 @@ struct pit8253_data {
 void dev_8253_tick(struct cpu *cpu, void *extra)
 {
 	struct pit8253_data *d = (struct pit8253_data *) extra;
+
+	if (!d->in_use)
+		return;
+
 	cpu_interrupt(cpu, d->irq_nr);
 }
 
@@ -78,6 +83,8 @@ int dev_8253_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+	d->in_use = 1;
+
 	/*  TODO: ack somewhere else  */
 	cpu_interrupt_ack(cpu, d->irq_nr);
 
@@ -87,8 +94,8 @@ int dev_8253_access(struct cpu *cpu, struct memory *mem,
 			/*  TODO  */
 		} else {
 			/*  TODO  */
-			odata = 1;
-odata = random();
+			/*  odata = 1;  */
+			odata = random();
 		}
 		break;
 	case 0x03:
@@ -129,6 +136,7 @@ int devinit_8253(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct pit8253_data));
 	d->irq_nr = devinit->irq_nr;
+	d->in_use = devinit->in_use;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_8253_LENGTH, dev_8253_access, (void *)d,

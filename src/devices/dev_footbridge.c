@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.26 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.27 2005-11-01 07:05:52 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -141,10 +141,16 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 			break;
 	}
 
+#if 0
+	/*  Super-ugly hack for Linux: (TODO: solve nicely)  */
+	odata = x & 15;
+	cpu_interrupt_ack(cpu, 32 + x);
+#else
+	/*  Normal code, works with *BSD:  */
 	if (x == 16)
 		fatal("_\n_  SPORADIC but INVALID ISA interrupt\n_\n");
-
 	odata = 0x20 + (x & 15);
+#endif
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.36 2005-10-31 16:09:55 debug Exp $
+ *  $Id: cpu_arm.c,v 1.37 2005-11-01 07:06:14 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -661,8 +661,8 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 	newmode = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
 	if (oldmode == newmode) {
-		fatal("Exception caused no mode change? TODO\n");
-		exit(1);
+		fatal("[ WARNING! Exception caused no mode change? ]\n");
+		/*  exit(1);  */
 	}
 
 	cpu->cd.arm.cpsr |= ARM_FLAG_I;

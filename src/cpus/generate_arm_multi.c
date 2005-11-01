@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.7 2005-10-29 07:17:44 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.8 2005-11-01 22:07:34 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -148,12 +148,14 @@ void generate_opcode(uint32_t opcode)
 			if (load && w && i == r) {
 				/*  Skip the load if we're using writeback.  */
 			} else if (load)
-				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n", i, x);
+				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n",
+				    i, x);
 			else {
 				if (i == 15)
 					printf("\t\tp[%i] = tmp_pc;\n", x);
 				else
-					printf("\t\tp[%i] = cpu->cd.arm.r[%i];\n", x, i);
+					printf("\t\tp[%i] = cpu->cd.arm.r"
+					    "[%i];\n", x, i);
 			}
 
 			x ++;
@@ -170,12 +172,14 @@ void generate_opcode(uint32_t opcode)
 			if (load && w && i == r) {
 				/*  Skip the load if we're using writeback.  */
 			} else if (load)
-				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n", i, x);
+				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n",
+				    i, x);
 			else {
 				if (i == 15)
 					printf("\t\tp[%i] = tmp_pc;\n", x);
 				else
-					printf("\t\tp[%i] = cpu->cd.arm.r[%i];\n", x, i);
+					printf("\t\tp[%i] = "
+					    "cpu->cd.arm.r[%i];\n", x, i);
 			}
 		}
 	}

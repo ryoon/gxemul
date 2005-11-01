@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.28 2005-10-31 16:09:55 debug Exp $
+ *  $Id: memory_arm.c,v 1.29 2005-11-01 07:06:04 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -209,6 +209,7 @@ cpu->cd.arm.translation_table = NULL;
 					first = 0;
 				}
 			}
+			subpage = 1;
 		case 2:	/*  4KB page:  */
 			ap3 = (d2 >> 10) & 3;
 			ap2 = (d2 >>  8) & 3;

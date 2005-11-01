@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.11 2005-10-22 12:22:13 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.12 2005-11-01 22:07:00 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -157,7 +157,8 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	c64 = a + b + (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0);
 #endif
 #if defined(A__SBC) || defined(A__RSC)
-	c64 = a - b - (1 - (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0));
+	b += (cpu->cd.arm.cpsr & ARM_FLAG_C? 0 : 1);
+	c64 = a - b;
 #endif
 #if defined(A__ORR)
 	c64 = a | b;
@@ -233,26 +234,14 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    );
 
-#if defined(A__CMP) || defined(A__RSB) || defined(A__SUB)
+#if defined(A__CMP) || defined(A__RSB) || defined(A__SUB) || \
+    defined(A__RSC) || defined(A__SBC)
 	if ((uint32_t)a >= (uint32_t)b)
 		cpu->cd.arm.cpsr |= ARM_FLAG_C;
 #else
 #if defined(A__ADC) || defined(A__ADD) || defined(A__CMN)
 	if (c32 != c64)
 		cpu->cd.arm.cpsr |= ARM_FLAG_C;
-#else
-#if defined(A__RSC) || defined(A__SBC)
-	{
-		uint32_t low_pc;
-		low_pc = ((size_t)ic - (size_t)
-		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-		a = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1)
-		    << ARM_INSTR_ALIGNMENT_SHIFT);
-		a += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 8;
-		fatal("TODO: C flag: pc = 0x%08x\n", a);
-		exit(1);
-	}
-#endif
 #endif
 #endif
 
@@ -274,15 +263,13 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		    (int32_t)c32 >= 0))
 			v = 1;
 #else
-#if defined(A__SUB) || defined(A__RSB) || defined(A__CMP)
+#if defined(A__SUB) || defined(A__RSB) || defined(A__CMP) || \
+    defined(A__RSC) || defined(A__SBC)
 		if (((int32_t)a >= 0 && (int32_t)b < 0 &&
 		    (int32_t)c32 < 0) ||
 		    ((int32_t)a < 0 && (int32_t)b >= 0 &&
 		    (int32_t)c32 >= 0))
 			v = 1;
-#else
-		fatal("NO\n");
-		exit(1);
 #endif
 #endif
 		if (v)

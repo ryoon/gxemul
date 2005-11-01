@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.15 2005-10-27 14:01:13 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.16 2005-11-01 22:07:00 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -233,8 +233,8 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	 *  is_userpage array. If it is set, then we're ok. Otherwise: use the
 	 *  generic function.
 	 */
-	unsigned char x = cpu->cd.arm.is_userpage[addr >> 15];
-	if (!(x & (1 << ((addr >> 12) & 7))))
+	uint32_t x = cpu->cd.arm.is_userpage[addr >> 17];
+	if (!(x & (1 << ((addr >> 12) & 31))))
 		A__NAME__general(cpu, ic);
 	else
 #endif

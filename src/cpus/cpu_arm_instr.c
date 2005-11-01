@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.40 2005-10-31 16:09:55 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.41 2005-11-01 22:07:00 debug Exp $
  *
  *  ARM instructions.
  *
@@ -236,16 +236,8 @@ X(invalid) {
  */
 X(b)
 {
-	uint32_t low_pc;
-
-	/*  Calculate new PC from this instruction + arg[0]  */
-	low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
-	    << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (int32_t)ic->arg[0];
-	cpu->pc = cpu->cd.arm.r[ARM_PC];
+	uint32_t pc = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[1];
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = pc + (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
 	quick_pc_to_pointers(cpu);
@@ -314,20 +306,11 @@ Y(bx_trace)
  */
 X(bl)
 {
-	uint32_t lr, low_pc;
-
-	/*  Figure out what the return (link) address will be:  */
-	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-	/*  Link:  */
-	cpu->cd.arm.r[ARM_LR] = lr;
+	uint32_t pc = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[1];
+	cpu->cd.arm.r[ARM_LR] = pc + 4;
 
 	/*  Calculate new PC from this instruction + arg[0]  */
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr - 4 + (int32_t)ic->arg[0];
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = pc + (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
 	quick_pc_to_pointers(cpu);
@@ -342,18 +325,8 @@ Y(bl)
  */
 X(blx)
 {
-	uint32_t lr, low_pc;
-
-	/*  Figure out what the return (link) address will be:  */
-	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-	/*  Link:  */
+	uint32_t lr = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[2];
 	cpu->cd.arm.r[ARM_LR] = lr;
-
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = reg(ic->arg[0]);
 	if (cpu->pc & 1) {
 		fatal("thumb: TODO\n");
@@ -374,20 +347,11 @@ Y(blx)
  */
 X(bl_trace)
 {
-	uint32_t lr, low_pc;
-
-	/*  Figure out what the return (link) address will be:  */
-	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-	/*  Link:  */
-	cpu->cd.arm.r[ARM_LR] = lr;
+	uint32_t pc = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[1];
+	cpu->cd.arm.r[ARM_LR] = pc + 4;
 
 	/*  Calculate new PC from this instruction + arg[0]  */
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = lr - 4 + (int32_t)ic->arg[0];
+	cpu->pc = cpu->cd.arm.r[ARM_PC] = pc + (int32_t)ic->arg[0];
 
 	cpu_functioncall_trace(cpu, cpu->pc);
 
@@ -404,19 +368,8 @@ Y(bl_trace)
  */
 X(bl_samepage)
 {
-	uint32_t lr, low_pc;
-
-	/*  Figure out what the return (link) address will be:  */
-	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-	/*  Link:  */
+	uint32_t lr = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[2];
 	cpu->cd.arm.r[ARM_LR] = lr;
-
-	/*  Branch:  */
 	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 }
 Y(bl_samepage)
@@ -429,28 +382,14 @@ Y(bl_samepage)
  */
 X(bl_samepage_trace)
 {
-	uint32_t tmp_pc, lr, low_pc;
+	uint32_t lr = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[2];
 
-	/*  Figure out what the return (link) address will be:  */
-	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	lr = cpu->cd.arm.r[ARM_PC];
-	lr &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
-	lr += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-
-	/*  Link:  */
+	/*  Link and branch:  */
 	cpu->cd.arm.r[ARM_LR] = lr;
-
-	/*  Branch:  */
 	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 
-	low_pc = ((size_t)cpu->cd.arm.next_ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	tmp_pc = cpu->cd.arm.r[ARM_PC];
-	tmp_pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
-	    << ARM_INSTR_ALIGNMENT_SHIFT);
-	tmp_pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu_functioncall_trace(cpu, tmp_pc);
+	/*  ... and show trace:  */
+	cpu_functioncall_trace(cpu, lr - 4);
 }
 Y(bl_samepage_trace)
 
@@ -558,7 +497,7 @@ X(mull)
 	/*  xxxx0000 1UAShhhh llllssss 1001mmmm  */
 	uint32_t iw; uint64_t tmp; int u_bit, a_bit;
 	iw = ic->arg[0];
-	u_bit = (iw >> 22) & 1; a_bit = (iw >> 21) & 1;
+	u_bit = iw & 0x00400000; a_bit = iw & 0x00200000;
 	tmp = cpu->cd.arm.r[iw & 15];
 	if (u_bit)
 		tmp = (int64_t)(int32_t)tmp
@@ -1778,6 +1717,78 @@ printf("YO test2\n");
 /*****************************************************************************/
 
 
+static void arm_switch_clear(struct arm_instr_call *ic, int rd,
+	int condition_code)
+{
+	switch (rd) {
+	case  0: ic->f = cond_instr(clear_r0); break;
+	case  1: ic->f = cond_instr(clear_r1); break;
+	case  2: ic->f = cond_instr(clear_r2); break;
+	case  3: ic->f = cond_instr(clear_r3); break;
+	case  4: ic->f = cond_instr(clear_r4); break;
+	case  5: ic->f = cond_instr(clear_r5); break;
+	case  6: ic->f = cond_instr(clear_r6); break;
+	case  7: ic->f = cond_instr(clear_r7); break;
+	case  8: ic->f = cond_instr(clear_r8); break;
+	case  9: ic->f = cond_instr(clear_r9); break;
+	case 10: ic->f = cond_instr(clear_r10); break;
+	case 11: ic->f = cond_instr(clear_r11); break;
+	case 12: ic->f = cond_instr(clear_r12); break;
+	case 13: ic->f = cond_instr(clear_r13); break;
+	case 14: ic->f = cond_instr(clear_r14); break;
+	}
+}
+
+
+static void arm_switch_mov1(struct arm_instr_call *ic, int rd,
+	int condition_code)
+{
+	switch (rd) {
+	case  0: ic->f = cond_instr(mov1_r0); break;
+	case  1: ic->f = cond_instr(mov1_r1); break;
+	case  2: ic->f = cond_instr(mov1_r2); break;
+	case  3: ic->f = cond_instr(mov1_r3); break;
+	case  4: ic->f = cond_instr(mov1_r4); break;
+	case  5: ic->f = cond_instr(mov1_r5); break;
+	case  6: ic->f = cond_instr(mov1_r6); break;
+	case  7: ic->f = cond_instr(mov1_r7); break;
+	case  8: ic->f = cond_instr(mov1_r8); break;
+	case  9: ic->f = cond_instr(mov1_r9); break;
+	case 10: ic->f = cond_instr(mov1_r10); break;
+	case 11: ic->f = cond_instr(mov1_r11); break;
+	case 12: ic->f = cond_instr(mov1_r12); break;
+	case 13: ic->f = cond_instr(mov1_r13); break;
+	case 14: ic->f = cond_instr(mov1_r14); break;
+	}
+}
+
+
+static void arm_switch_teqs0(struct arm_instr_call *ic, int rn,
+	int condition_code)
+{
+	switch (rn) {
+	case  0: ic->f = cond_instr(teqs0_r0); break;
+	case  1: ic->f = cond_instr(teqs0_r1); break;
+	case  2: ic->f = cond_instr(teqs0_r2); break;
+	case  3: ic->f = cond_instr(teqs0_r3); break;
+	case  4: ic->f = cond_instr(teqs0_r4); break;
+	case  5: ic->f = cond_instr(teqs0_r5); break;
+	case  6: ic->f = cond_instr(teqs0_r6); break;
+	case  7: ic->f = cond_instr(teqs0_r7); break;
+	case  8: ic->f = cond_instr(teqs0_r8); break;
+	case  9: ic->f = cond_instr(teqs0_r9); break;
+	case 10: ic->f = cond_instr(teqs0_r10); break;
+	case 11: ic->f = cond_instr(teqs0_r11); break;
+	case 12: ic->f = cond_instr(teqs0_r12); break;
+	case 13: ic->f = cond_instr(teqs0_r13); break;
+	case 14: ic->f = cond_instr(teqs0_r14); break;
+	}
+}
+
+
+/*****************************************************************************/
+
+
 /*
  *  arm_instr_to_be_translated():
  *
@@ -1792,7 +1803,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
-	int p_bit, u_bit, b_bit, w_bit, l_bit, regform, rm, c, t, any_pc_reg;
+	int p_bit, u_bit, w_bit, l_bit, regform, rm, c, t, any_pc_reg;
 	void (*samepage_function)(struct cpu *, struct arm_instr_call *);
 
 	/*  Figure out the address of the instruction:  */
@@ -1835,10 +1846,9 @@ X(to_be_translated)
 	condition_code = iword >> 28;
 	main_opcode = (iword >> 24) & 15;
 	secondary_opcode = (iword >> 21) & 15;
-	u_bit = (iword >> 23) & 1;
-	b_bit = (iword >> 22) & 1;
-	w_bit = (iword >> 21) & 1;
-	s_bit = l_bit = (iword >> 20) & 1;
+	u_bit = iword & 0x00800000;
+	w_bit = iword & 0x00200000;
+	s_bit = l_bit = iword & 0x00100000;
 	rn    = (iword >> 16) & 15;
 	rd    = (iword >> 12) & 15;
 	r8    = (iword >> 8) & 15;
@@ -2052,52 +2062,26 @@ X(to_be_translated)
 		if ((iword & 0x0fff0ff0) == 0x01a00000 &&
 		    (iword&15) != ARM_PC && rd != ARM_PC) {
 			ic->f = cond_instr(mov_reg_reg);
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[iword & 15]);
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rd]);
 			break;
 		}
 
 		/*  "mov reg,#0":  */
 		if ((iword & 0x0fff0fff) == 0x03a03000 && rd != ARM_PC) {
-			switch (rd) {
-			case  0: ic->f = cond_instr(clear_r0); break;
-			case  1: ic->f = cond_instr(clear_r1); break;
-			case  2: ic->f = cond_instr(clear_r2); break;
-			case  3: ic->f = cond_instr(clear_r3); break;
-			case  4: ic->f = cond_instr(clear_r4); break;
-			case  5: ic->f = cond_instr(clear_r5); break;
-			case  6: ic->f = cond_instr(clear_r6); break;
-			case  7: ic->f = cond_instr(clear_r7); break;
-			case  8: ic->f = cond_instr(clear_r8); break;
-			case  9: ic->f = cond_instr(clear_r9); break;
-			case 10: ic->f = cond_instr(clear_r10); break;
-			case 11: ic->f = cond_instr(clear_r11); break;
-			case 12: ic->f = cond_instr(clear_r12); break;
-			case 13: ic->f = cond_instr(clear_r13); break;
-			case 14: ic->f = cond_instr(clear_r14); break;
-			}
+			arm_switch_clear(ic, rd, condition_code);
 			break;
 		}
 
 		/*  "mov reg,#1":  */
 		if ((iword & 0x0fff0fff) == 0x03a03001 && rd != ARM_PC) {
-			switch (rd) {
-			case  0: ic->f = cond_instr(mov1_r0); break;
-			case  1: ic->f = cond_instr(mov1_r1); break;
-			case  2: ic->f = cond_instr(mov1_r2); break;
-			case  3: ic->f = cond_instr(mov1_r3); break;
-			case  4: ic->f = cond_instr(mov1_r4); break;
-			case  5: ic->f = cond_instr(mov1_r5); break;
-			case  6: ic->f = cond_instr(mov1_r6); break;
-			case  7: ic->f = cond_instr(mov1_r7); break;
-			case  8: ic->f = cond_instr(mov1_r8); break;
-			case  9: ic->f = cond_instr(mov1_r9); break;
-			case 10: ic->f = cond_instr(mov1_r10); break;
-			case 11: ic->f = cond_instr(mov1_r11); break;
-			case 12: ic->f = cond_instr(mov1_r12); break;
-			case 13: ic->f = cond_instr(mov1_r13); break;
-			case 14: ic->f = cond_instr(mov1_r14); break;
-			}
+			arm_switch_mov1(ic, rd, condition_code);
+			break;
+		}
+
+		/*  "teqs reg,#0":  */
+		if ((iword & 0x0ff0ffff) == 0x03300000 && rn != ARM_PC) {
+			arm_switch_teqs0(ic, rn, condition_code);
 			break;
 		}
 
@@ -2168,6 +2152,48 @@ X(to_be_translated)
 			fatal("Not a Load/store TODO\n");
 			goto bad;
 		}
+		/*  Special case: pc-relative load within the same page:  */
+		if (rn == ARM_PC && rd != ARM_PC && main_opcode < 6) {
+			int ofs = (addr & 0xfff) + 8, max = 0xffc;
+			int b_bit = iword & 0x00400000;
+			if (b_bit)
+				max = 0xfff;
+			if (u_bit)
+				ofs += (iword & 0xfff);
+			else
+				ofs -= (iword & 0xfff);
+			/*  NOTE/TODO: This assumes 4KB pages,
+			    it will not work with 1KB pages.  */
+			if (ofs >= 0 && ofs <= max) {
+				unsigned char *p;
+				unsigned char c[4];
+				int len = b_bit? 1 : 4;
+				uint32_t x, a = (addr & 0xfffff000) | ofs;
+				/*  ic->f = cond_instr(mov);  */
+				ic->f = arm_dpi_instr[condition_code + 16*0xd];
+				ic->arg[2] = (size_t)(&cpu->cd.arm.r[rd]);
+				p = cpu->cd.arm.host_load[a >> 12];
+				if (p != NULL) {
+					memcpy(c, p + (a & 0xfff), len);
+				} else {
+					if (!cpu->memory_rw(cpu, cpu->mem, a,
+					    c, len, MEM_READ, CACHE_DATA)) {
+						fatal("to_be_translated(): "
+						    "read failed X: TODO\n");
+						goto bad;
+					}
+				}
+				if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+					x = c[0] + (c[1]<<8) +
+					    (c[2]<<16) + (c[3]<<24);
+				else
+					x = c[3] + (c[2]<<8) +
+					    (c[1]<<16) + (c[0]<<24);
+				if (b_bit)
+					x = c[0];
+				ic->arg[1] = x;
+			}
+		}
 		break;
 
 	case 0x8:	/*  Multiple load/store...  (Block data transfer)  */
@@ -2236,6 +2262,11 @@ X(to_be_translated)
 				samepage_function = cond_instr(bl_samepage);
 			}
 		}
+
+		/*  arg 1 = offset of current instruction  */
+		/*  arg 2 = offset of the following instruction  */
+		ic->arg[1] = addr & 0xffc;
+		ic->arg[2] = (addr & 0xffc) + 4;
 
 		ic->arg[0] = (iword & 0x00ffffff) << 2;
 		/*  Sign-extend:  */

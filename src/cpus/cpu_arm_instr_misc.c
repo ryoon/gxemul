@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_misc.c,v 1.1 2005-10-25 08:53:21 debug Exp $
+ *  $Id: cpu_arm_instr_misc.c,v 1.2 2005-11-01 22:07:00 debug Exp $
  *
  *  Misc ARM instructions. Included from cpu_arm_instr.c.
  */
@@ -69,4 +69,37 @@ X(mov1_r11) { cpu->cd.arm.r[11] = 1; } Y(mov1_r11)
 X(mov1_r12) { cpu->cd.arm.r[12] = 1; } Y(mov1_r12)
 X(mov1_r13) { cpu->cd.arm.r[13] = 1; } Y(mov1_r13)
 X(mov1_r14) { cpu->cd.arm.r[14] = 1; } Y(mov1_r14)
+
+
+/*
+ *  teqs0_rX: Compare a register to zero. (Optimization hack.)
+ */
+#define TEQS(n) X(teqs0_r ## n)  {					\
+	if (cpu->cd.arm.r[n] == 0) {					\
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;				\
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_N;			\
+	} else {							\
+		cpu->cd.arm.cpsr &= ~ARM_FLAG_Z;			\
+		if (cpu->cd.arm.r[n] & 0x80000000)			\
+			cpu->cd.arm.cpsr |= ARM_FLAG_N;			\
+		else							\
+			cpu->cd.arm.cpsr &= ~ARM_FLAG_N;		\
+	}								\
+} Y(teqs0_r ## n)
+
+TEQS(0)
+TEQS(1)
+TEQS(2)
+TEQS(3)
+TEQS(4)
+TEQS(5)
+TEQS(6)
+TEQS(7)
+TEQS(8)
+TEQS(9)
+TEQS(10)
+TEQS(11)
+TEQS(12)
+TEQS(13)
+TEQS(14)
 

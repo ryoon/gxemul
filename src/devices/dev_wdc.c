@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.44 2005-10-26 14:37:05 debug Exp $
+ *  $Id: dev_wdc.c,v 1.45 2005-11-01 22:07:51 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -55,6 +55,8 @@
  *
  *  See the following URL for more info:
  *  http://mail-index.netbsd.org/port-hpcmips/2004/12/30/0003.html
+ *
+ *  NetBSD/malta also bugs out if wdc interrupts come too quickly. Hm.
  */
 #define	INT_DELAY		1
 
@@ -72,9 +74,7 @@ struct wdc_data {
 	int		heads[2];
 	int		sectors_per_track[2];
 
-	unsigned char	identify_struct[512];
-
-	unsigned char	inbuf[WDC_INBUF_SIZE];
+	unsigned char	*inbuf;
 	int		inbuf_head;
 	int		inbuf_tail;
 
@@ -94,6 +94,8 @@ struct wdc_data {
 	int		drive;
 	int		head;
 	int		cur_command;
+
+	unsigned char	identify_struct[512];
 };
 
 
@@ -150,7 +152,7 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
 
 
 /*
- *  wdc_initialize_identify_struct(d):
+ *  wdc_initialize_identify_struct():
  */
 static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
@@ -169,8 +171,8 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	d->identify_struct[2 * 0 + 1] = 1 << 6;
 
 	/*  1: nr of cylinders  */
-	d->identify_struct[2 * 1 + 0] = (d->cyls[d->drive] >> 8);
-	d->identify_struct[2 * 1 + 1] = d->cyls[d->drive] & 255;
+	d->identify_struct[2 * 1 + 0] = d->cyls[d->drive] >> 8;
+	d->identify_struct[2 * 1 + 1] = d->cyls[d->drive];
 
 	/*  3: nr of heads  */
 	d->identify_struct[2 * 3 + 0] = d->heads[d->drive] >> 8;
@@ -203,7 +205,20 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 	/*  47: max sectors per multitransfer  */
 	d->identify_struct[2 * 47 + 0] = 0x80;
-	d->identify_struct[2 * 47 + 1] = 1;	/*  1 or 16?  */
+	d->identify_struct[2 * 47 + 1] = 128;	/*  Max nr of sectors  */
+
+	/*  49: capabilities:  */
+	/*  (0x200 = LBA, 0x100 = DMA support.)  */
+	d->identify_struct[2 * 49 + 0] = 0;
+	d->identify_struct[2 * 49 + 1] = 0;
+
+	/*  51: PIO timing mode.  */
+	d->identify_struct[2 * 51 + 0] = 0x00;	/*  ?  */
+	d->identify_struct[2 * 51 + 1] = 0x00;
+
+	/*  53: 0x02 = fields 64-70 valid, 0x01 = fields 54-58 valid  */
+	d->identify_struct[2 * 53 + 0] = 0x00;
+	d->identify_struct[2 * 53 + 1] = 0x02;
 
 	/*  57-58: current capacity in sectors  */
 	d->identify_struct[2 * 57 + 0] = ((total_size / 512) >> 24) % 255;
@@ -211,12 +226,21 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	d->identify_struct[2 * 58 + 0] = ((total_size / 512) >> 8) % 255;
 	d->identify_struct[2 * 58 + 1] = (total_size / 512) & 255;
 
-	/*  60-61: total nr of addresable sectors  */
+	/*  60-61: total nr of addressable sectors  */
 	d->identify_struct[2 * 60 + 0] = ((total_size / 512) >> 24) % 255;
 	d->identify_struct[2 * 60 + 1] = ((total_size / 512) >> 16) % 255;
 	d->identify_struct[2 * 61 + 0] = ((total_size / 512) >> 8) % 255;
 	d->identify_struct[2 * 61 + 1] = (total_size / 512) & 255;
 
+	/*  64: Advanced PIO mode support. 0x02 = mode4, 0x01 = mode3  */
+	d->identify_struct[2 * 64 + 0] = 0x00;
+	d->identify_struct[2 * 64 + 1] = 0x01;
+
+	/*  67, 68: PIO timing  */
+	d->identify_struct[2 * 67 + 0] = 0;
+	d->identify_struct[2 * 67 + 1] = 120;
+	d->identify_struct[2 * 68 + 0] = 0;
+	d->identify_struct[2 * 68 + 1] = 120;
 }
 
 
@@ -287,7 +311,7 @@ void wdc__write(struct cpu *cpu, struct wdc_data *d)
 	printf("WDC write to offset %lli\n", (long long)offset);
 #endif
 
-	d->write_in_progress = 1;
+	d->write_in_progress = d->cur_command;
 	d->write_count = count;
 	d->write_offset = offset;
 
@@ -425,12 +449,13 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			while (inbuf_len < 0)
 				inbuf_len += WDC_INBUF_SIZE;
 
-#if 0
-			if ((inbuf_len % (512 * d->write_count)) == 0) {
-#else
-			if ((inbuf_len % 512) == 0) {
-#endif
-				int count = 1;	/*  d->write_count;  */
+			if (( d->write_in_progress == WDCC_WRITEMULTI &&
+			    inbuf_len % (512 * d->write_count) == 0)
+			    ||
+			    ( d->write_in_progress == WDCC_WRITE &&
+			    inbuf_len % 512 == 0) ) {
+				int count = (d->write_in_progress ==
+				    WDCC_WRITEMULTI)? d->write_count : 1;
 				unsigned char buf[512 * count];
 				unsigned char *b = buf;
 
@@ -447,8 +472,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				    d->drive + d->base_drive, DISKIMAGE_IDE, 1,
 				    d->write_offset, b, 512 * count);
 
-				d->write_count --;
-				d->write_offset += 512;
+				d->write_count -= count;
+				d->write_offset += 512 * count;
 
 				d->delayed_interrupt = INT_DELAY;
 
@@ -553,6 +578,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			switch (d->cur_command) {
 
 			case WDCC_READ:
+			case WDCC_READMULTI:
 				if (!quiet_mode)
 					debug("[ wdc: READ from drive %i, head"
 					    " %i, cyl %i, sector %i, nsecs %i "
@@ -563,6 +589,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				break;
 
 			case WDCC_WRITE:
+			case WDCC_WRITEMULTI:
 				if (!quiet_mode)
 					debug("[ wdc: WRITE to drive %i, head"
 					    " %i, cyl %i, sector %i, nsecs %i"
@@ -580,12 +607,12 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				break;
 
 			case SET_FEATURES:
-				fatal("[ wdc: SET_FEATURES drive %i (TODO), "
+				debug("[ wdc: SET_FEATURES drive %i (TODO), "
 				    "feature 0x%02x ]\n", d->drive, d->precomp);
 				/*  TODO  */
 				switch (d->precomp) {
 				case WDSF_SET_MODE:
-					fatal("[ wdc: WDSF_SET_MODE drive %i, "
+					debug("[ wdc: WDSF_SET_MODE drive %i, "
 					    "pio/dma flags 0x%02x ]\n",
 					    d->drive, d->seccnt);
 					break;
@@ -618,6 +645,12 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			case WDCC_IDLE_IMMED:
 				debug("[ wdc: IDLE_IMMED drive %i ]\n",
 				    d->drive);
+				/*  TODO: interrupt here?  */
+				d->delayed_interrupt = INT_DELAY;
+				break;
+
+			case WDCC_SETMULTI:
+				debug("[ wdc: SETMULTI drive %i ]\n", d->drive);
 				/*  TODO: interrupt here?  */
 				d->delayed_interrupt = INT_DELAY;
 				break;
@@ -655,7 +688,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			    (int)relative_addr, (int)idata);
 	}
 
-	if (cpu->machine->machine_type != MACHINE_HPCMIPS)
+	if (cpu->machine->machine_type != MACHINE_HPCMIPS &&
+	    cpu->machine->machine_type != MACHINE_EVBMIPS)
 		dev_wdc_tick(cpu, extra);
 
 	if (writeflag == MEM_READ) {
@@ -686,6 +720,8 @@ int devinit_wdc(struct devinit *devinit)
 	memset(d, 0, sizeof(struct wdc_data));
 	d->irq_nr = devinit->irq_nr;
 
+	d->inbuf = zeroed_alloc(WDC_INBUF_SIZE);
+
 	/*  base_drive = 0 for the primary controller, 2 for the secondary.  */
 	d->base_drive = 0;
 	if ((devinit->addr & 0xfff) == 0x170)
@@ -711,7 +747,8 @@ int devinit_wdc(struct devinit *devinit)
 	    devinit->addr, DEV_WDC_LENGTH, dev_wdc_access, d, MEM_DEFAULT,
 	    NULL);
 
-	if (devinit->machine->machine_type != MACHINE_HPCMIPS)
+	if (devinit->machine->machine_type != MACHINE_HPCMIPS &&
+	    devinit->machine->machine_type != MACHINE_EVBMIPS)
 		tick_shift += 2;
 
 	machine_add_tickfunction(devinit->machine, dev_wdc_tick,

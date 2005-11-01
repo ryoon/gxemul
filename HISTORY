@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1006 2005-10-31 16:09:56 debug Exp $
+$Id: HISTORY,v 1.1007 2005-11-01 22:06:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2363,3 +2363,8 @@ Changelog for GXemul:
 20051031	Adding disassembly support for more ARM instructions (clz,
 		smul* etc), and adding a hack to support "new tiny" pages
 		for StrongARM.
+20051101	Minor documentation updates (NetBSD 2.0.2 -> 2.1, and OpenBSD
+		3.7 -> 3.8, and lots of testing).
+		Changing from 1-sector PIO mode 0 transfers to 128-sector PIO
+		mode 3 (in dev_wdc).
+		Various minor ARM dyntrans updates.

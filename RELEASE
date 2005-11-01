@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.154 2005-10-29 07:33:43 debug Exp $
+$Id: RELEASE,v 1.155 2005-11-01 22:06:42 debug Exp $
 
 Working on post-0.3.6.2.
 
@@ -23,7 +23,7 @@ the emulator:
 
     Guest operating system             Emulated machine
     ----------------------             ----------------
-    NetBSD/pmax 2.0.2 (and 1.6.2)      DECstation 5000/200
+    NetBSD/pmax 2.1 (and 1.6.2)        DECstation 5000/200
     OpenBSD/pmax 2.8-BETA              DECstation 5000/200
     Ultrix 4.2-4.5                     DECstation 5000/200
     Sprite demo harddisk image         DECstation 5000/200
@@ -31,12 +31,12 @@ the emulator:
     Redhat Linux 7.1 for mips          DECstation 5000/200
     NetBSD/arc 1.6.2                   Acer PICA-61
     OpenBSD/arc 2.3                    Acer PICA-61
-    NetBSD/hpcmips 2.0.2               NEC MobilePro 770, 780, 800, 880
-    NetBSD/cobalt 2.0.2                Cobalt
-    NetBSD/evbmips 2.0.2               Malta 5Kc/4Kc evaluation board
-    NetBSD/sgimips 2.0.2               SGI O2 ("IP32")
-    NetBSD/cats 2.0.2                  CATS (ARM)
-    OpenBSD/cats 3.7                   CATS (ARM)
+    NetBSD/hpcmips 2.1                 NEC MobilePro 770, 780, 800, 880
+    NetBSD/cobalt 2.1                  Cobalt
+    NetBSD/evbmips 2.1                 Malta 5Kc/4Kc evaluation board
+    NetBSD/sgimips 2.1                 SGI O2 ("IP32")
+    NetBSD/cats 2.1                    CATS (ARM)
+    OpenBSD/cats 3.8                   CATS (ARM)
 
 (Most of these are MIPS-based machines, except the CATS, which is an 
 ARM-based machine.)

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.96 2005-10-22 17:24:19 debug Exp $
+$Id: guestoses.html,v 1.97 2005-11-01 22:06:44 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -129,7 +129,7 @@ steps:
   <li>Download a NetBSD CD-ROM iso image:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
 	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/pmaxcd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/pmaxcd.iso</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
@@ -147,7 +147,7 @@ For an ftp install, substitute steps 2 and 3 above with these:
   <li>Download a NetBSD pmax INSTALL kernel:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
@@ -181,7 +181,7 @@ NetBSD from the harddisk image:<pre>
 	<b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>
 
-<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0.2
+<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.x
 doesn't work with X out-of-the-box on pmax. It seems that this has to do
 with NetBSD switching console system to "WSCONS" somewhere between 1.6.2
 and 2.0. For now, if you want X, then try NetBSD 1.6.2.
@@ -350,10 +350,10 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 	<b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
 
 </pre>
-  <li>Download the NetBSD/hpcmips 2.0.2 ISO image, and a generic kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/hpcmipscd.iso">hpcmipscd.iso</a>
+  <li>Download the NetBSD/hpcmips 2.1 ISO image, and a generic kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/hpcmipscd.iso">hpcmipscd.iso</a>
 
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
 
 </pre>
   <p>
@@ -416,13 +416,13 @@ image, from an emulated DECstation 3MAX machine:
 	<b>dd if=/dev/zero of=nbsd_cobalt.img bs=1024 count=1 seek=1999000</b>
 
 </pre>
-  <li>Download the generic kernel for Cobalt and the 2.0.2 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/cobaltcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/cobaltcd.iso</a>
+  <li>Download the generic kernel for Cobalt and the 2.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/cobaltcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/cobaltcd.iso</a>
 
 </pre>
   <p>
-  <li>Install NetBSD/pmax 2.0.2 according to instructions
+  <li>Install NetBSD/pmax 2.1 according to instructions
 	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
@@ -487,7 +487,7 @@ image, from an emulated DECstation 3MAX machine:
 
 <p>
 <ol>
-  <li>Install NetBSD/pmax 2.0.2 according to instructions
+  <li>Install NetBSD/pmax 2.1 according to instructions
 	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Create an empty harddisk image, which will be the disk image
@@ -495,9 +495,9 @@ image, from an emulated DECstation 3MAX machine:
 	<b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=999000</b>
 
 </pre>
-  <li>Download the generic kernel and the 2.0.2 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/evbmips-mipselcd.iso</a>
+  <li>Download the generic kernel and the 2.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbmips-mipselcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbmips-mipselcd.iso</a>
 
 </pre>
   <p>
@@ -529,7 +529,7 @@ host, you will need a lot of patience.
 
 <p>Note 2: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
 (MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
-2.0.2, however, there will be little or no difference in functionality, as
+2.1, however, there will be little or no difference in functionality, as
 NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs. The only difference 
 it makes in practice is that GXemul's binary translation subsystem might 
 run a bit faster (because there are some optimizations for 32-bit 
@@ -565,9 +565,9 @@ emulate the AHC PCI SCSI controller in the O2. (I have mailed Adaptec
 several times, asking for documentation, but never received any reply.)
 NetBSD can still run in the emulator, as long as it doesn't use SCSI.
 
-<p>For a simple test with the 2.0.2 ramdisk (install) kernel, try 
+<p>For a simple test with the 2.1 ramdisk (install) kernel, try 
 dowloading<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>and run&nbsp;&nbsp;<b><tt>gxemul -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
 
@@ -579,7 +579,7 @@ time consuming, but necessary:
 <ol>
   <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
 	This needs to have a 750 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>.
+	<a href="#netbsdinstall">Install NetBSD/pmax 2.1 from CDROM</a>.
 	(Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
@@ -618,7 +618,7 @@ reboot</b>
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>cd /tftpboot; ftp -i ftp.uk.netbsd.org</b>
 (log in as anonymous...)
-<b>cd /pub/NetBSD/NetBSD-2.0.2/sgimips/binary/sets
+<b>cd /pub/NetBSD/NetBSD-2.1/sgimips/binary/sets
 mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz
 quit
 sh
@@ -629,8 +629,8 @@ dd if=/dev/zero of=swap bs=1024 count=32768
 halt</b>
 </pre></td></tr></table>
   <li>Download the NetBSD/sgimips GENERIC and INSTALL kernels:<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.0.2/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>
   <li>Create a configuration file called <tt>config_client</tt>:
@@ -759,10 +759,10 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=1990000</b>
 
 </pre>
-  <li>Download the NetBSD/cats 2.0.2 ISO image and generic + install kernels:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/catscd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/catscd.iso</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
+  <li>Download the NetBSD/cats 2.1 ISO image and generic + install kernels:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
 
 </pre>
   <p>
@@ -1017,9 +1017,9 @@ follow these instructions:
 
 </pre>
   <li>Download the entire cats directory from the ftp server:<pre>
-	<b>wget -np -l 0 -r <a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/">ftp://ftp.openbsd.org/pub/OpenBSD/3.7/cats/</a></b>
-	<b>cp ftp.openbsd.org/pub/OpenBSD/3.7/cats/bsd .</b>
-	<b>cp ftp.openbsd.org/pub/OpenBSD/3.7/cats/bsd.rd .</b>
+	<b>wget -np -l 0 -r <a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.8/cats/">ftp://ftp.openbsd.org/pub/OpenBSD/3.8/cats/</a></b>
+	<b>cp ftp.openbsd.org/pub/OpenBSD/3.8/cats/bsd .</b>
+	<b>cp ftp.openbsd.org/pub/OpenBSD/3.8/cats/bsd.rd .</b>
 
 </pre>
 
@@ -1027,18 +1027,17 @@ follow these instructions:
 	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
 	already have <tt>mkisofs</tt> installed on your system, you need
 	to install it in order to do this.)<pre>
-	<b>mkisofs -allow-lowercase -o openbsd_cats_3.7.iso ftp.openbsd.org/pub/OpenBSD/3.7/cats</b>
+	<b>mkisofs -allow-lowercase -o openbsd_cats_3.7.iso ftp.openbsd.org/pub/OpenBSD/</b>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -XEcats -d obsd_cats.img -d openbsd_cats_3.7.iso bsd.rd</b>
+	<b>gxemul -XEcats -d obsd_cats.img -d openbsd_cats_3.8.iso bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
 	on a real CATS. (Install onto <tt>wd0</tt>, don't configure the
 	network, choose to install distribution sets from <i>disk</i>
-	<tt>wd1</tt> (i.e. not CDROM) partition '<tt>a</tt>',
-	relative path '<tt>/</tt>'.)
+	<tt>wd1</tt> (i.e. not CDROM) partition '<tt>a</tt>'.)
 </ol>
 
 <p><b>NOTE:</b> Make sure that you <tt>sync</tt> and <tt>reboot</tt>
@@ -1546,7 +1545,7 @@ client. Performing this setup is quite time consuming, but necessary:
 <ol>
   <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
 	This needs to have a 800 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdinstall">Install NetBSD/pmax 2.0.2 from CDROM</a>.
+	<a href="#netbsdinstall">Install NetBSD/pmax 2.1 from CDROM</a>.
 	(Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
@@ -1712,7 +1711,7 @@ distribution onto a disk image, from an emulated DECstation 3MAX machine:
 
 <p>
 <ol>
-  <li>Install NetBSD/pmax 2.0.2 according to instructions
+  <li>Install NetBSD/pmax 2.1 according to instructions
 	<a href="#netbsdinstall">further up on this page</a>.
   <p>
   <li>Create an empty harddisk image, which will be the disk image
@@ -1720,9 +1719,9 @@ distribution onto a disk image, from an emulated DECstation 3MAX machine:
 	<b>dd if=/dev/zero of=nbsd_netwinder.img bs=1024 count=1 seek=999000</b>
 
 </pre>
-  <li>Download the generic kernel and the 2.0.2 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/netwinder/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0.2/netwinder/binary/kernel/netbsd-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/netwindercd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0.2/netwindercd.iso</a>
+  <li>Download the generic kernel and the 2.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/netwindercd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/netwindercd.iso</a>
 
 </pre>
   <p>

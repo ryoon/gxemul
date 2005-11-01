@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.53 2005-10-27 14:01:15 debug Exp $
+ *  $Id: cpu_arm.h,v 1.54 2005-11-01 22:07:08 debug Exp $
  */
 
 #include "misc.h"
@@ -233,7 +233,7 @@ struct arm_cpu {
 	int16_t				vaddr_to_tlbindex[ARM_N_VPH_ENTRIES];
 
 	/*  ARM specific: */
-	unsigned char			is_userpage[ARM_N_VPH_ENTRIES/8];
+	uint32_t			is_userpage[ARM_N_VPH_ENTRIES/32];
 };
 
 

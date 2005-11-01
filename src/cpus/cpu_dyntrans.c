@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.27 2005-10-27 14:01:13 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.28 2005-11-01 22:07:18 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -613,7 +613,6 @@ cpu->cd.arm.r[ARM_PC]);
 	cpu->invalidate_translation_caches(cpu, physaddr,
 	    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
 
-/*	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;  */
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
@@ -689,7 +688,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 
 	/*  Quick return path:  */
 have_it:
-/*	cpu->cd.DYNTRANS_ARCH.cur_physpage = ppp;  */
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
@@ -724,7 +722,7 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 	uint32_t index = DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 
 #ifdef DYNTRANS_ARM
-	cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3] &= ~(1 << (index & 7));
+	cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 5] &= ~(1 << (index & 31));
 #endif
 
 	if (flags & JUST_MARK_AS_NON_WRITABLE) {
@@ -1151,8 +1149,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[index] = r + 1;
 #ifdef DYNTRANS_ARM
 		if (useraccess)
-			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]
-			    |= 1 << (index & 7);
+			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 5]
+			    |= 1 << (index & 31);
 #endif
 #endif	/*  32  */
 #endif	/*  !ALPHA  */
@@ -1194,10 +1192,10 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		index = DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
 #ifdef DYNTRANS_ARM
-		cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]&=~(1<<(index&7));
+		cpu->cd.DYNTRANS_ARCH.is_userpage[index>>5] &= ~(1<<(index&31));
 		if (useraccess)
-			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 3]
-			    |= 1 << (index & 7);
+			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 5]
+			    |= 1 << (index & 31);
 #endif
 		if (cpu->cd.DYNTRANS_ARCH.phys_addr[index] == paddr_page) {
 			if (writeflag == 1)

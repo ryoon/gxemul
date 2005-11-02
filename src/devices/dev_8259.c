@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.15 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_8259.c,v 1.16 2005-11-02 20:04:11 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -205,9 +205,12 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				/*  Slave attachment. TODO  */
 				d->init_state = 3;
 			} else if (d->init_state == 3) {
-				if (idata & 0x02)
-					fatal("[ 8259: WARNING! Bit 1 i"
+				if (idata & 0x02) {
+					/*  Should not be set in PCs, but
+					    on CATS, for example, it is set.  */
+					debug("[ 8259: WARNING! Bit 1 i"
 					    "n Init Cmd 4 is set! ]\n");
+				}
 				if (!(idata & 0x01))
 					fatal("[ 8259: WARNING! Bit 0 "
 					    "in Init Cmd 4 is not"

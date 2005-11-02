@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.41 2005-11-01 22:07:00 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.42 2005-11-02 20:05:56 debug Exp $
  *
  *  ARM instructions.
  *
@@ -767,14 +767,9 @@ Y(swi_useremul)
  */
 X(swi)
 {
-	/*  Synchronize the program counter:  */
-	uint32_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
-	    << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc = cpu->cd.arm.r[ARM_PC];
-
+	/*  Synchronize the program counter first:  */
+	cpu->pc = cpu->cd.arm.r[ARM_PC] =
+	    (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[0];
 	arm_exception(cpu, ARM_EXCEPTION_SWI);
 }
 Y(swi)
@@ -846,8 +841,10 @@ Y(swpb)
 
 extern void (*arm_load_store_instr[1024])(struct cpu *,
 	struct arm_instr_call *);
+X(store_w1_word_u1_p0_imm);
 X(store_w0_byte_u1_p0_imm);
 X(store_w0_word_u1_p0_imm);
+X(load_w1_word_u1_p0_imm);
 X(load_w0_word_u1_p0_imm);
 X(load_w0_byte_u1_p1_imm);
 X(load_w0_byte_u1_p1_reg);
@@ -862,6 +859,7 @@ extern void (*arm_load_store_instr_3_pc[2048])(struct cpu *,
 	struct arm_instr_call *);
 
 extern uint32_t (*arm_r[8192])(struct cpu *, struct arm_instr_call *);
+extern void arm_r_r3_t0_c0(void);
 
 extern void (*arm_dpi_instr[2 * 2 * 2 * 16 * 16])(struct cpu *,
 	struct arm_instr_call *);
@@ -1463,6 +1461,8 @@ X(netbsd_cacheclean)
 {
 	uint32_t r1 = cpu->cd.arm.r[1];
 	cpu->n_translated_instrs += ((r1 >> 5) * 3);
+	cpu->cd.arm.r[0] += r1;
+	cpu->cd.arm.r[1] = 0;
 	cpu->cd.arm.next_ic = &ic[4];
 }
 
@@ -1487,6 +1487,8 @@ X(netbsd_cacheclean2)
 
 /*
  *  netbsd_scanc:
+ *
+ *	NOTE/TODO:  This implementation is buggy!  (Unknown why.)
  *
  *  f01bccbc:  e5d13000     ldrb    r3,[r1]
  *  f01bccc0:  e7d23003     ldrb    r3,[r2,r3]
@@ -1520,6 +1522,76 @@ X(netbsd_scanc)
 
 	cpu->n_translated_instrs += 2;
 	cpu->cd.arm.next_ic = &ic[3];
+}
+
+
+/*
+ *  netbsd_copyin:
+ *
+ *  e4b0a004     ldrt    sl,[r0],#4
+ *  e4b0b004     ldrt    fp,[r0],#4
+ *  e4b06004     ldrt    r6,[r0],#4
+ *  e4b07004     ldrt    r7,[r0],#4
+ *  e4b08004     ldrt    r8,[r0],#4
+ *  e4b09004     ldrt    r9,[r0],#4
+ */
+X(netbsd_copyin)
+{
+	uint32_t r0 = cpu->cd.arm.r[0], ofs = (r0 & 0xffc), index = r0 >> 12;
+	unsigned char *p = cpu->cd.arm.host_load[index];
+	uint32_t *p32 = (uint32_t *) p, *q32;
+	int ok = cpu->cd.arm.is_userpage[index >> 5] & (1 << (index & 31));
+
+	if (ofs > 0x1000 - 6*4 || !ok || p == NULL) {
+		instr(load_w1_word_u1_p0_imm)(cpu, ic);
+		return;
+	}
+	q32 = &cpu->cd.arm.r[6];
+	ofs >>= 2;
+	q32[0] = p32[ofs+2];
+	q32[1] = p32[ofs+3];
+	q32[2] = p32[ofs+4];
+	q32[3] = p32[ofs+5];
+	q32[4] = p32[ofs+0];
+	q32[5] = p32[ofs+1];
+	cpu->cd.arm.r[0] = r0 + 24;
+	cpu->n_translated_instrs += 5;
+	cpu->cd.arm.next_ic = &ic[6];
+}
+
+
+/*
+ *  netbsd_copyout:
+ *
+ *  e4a18004     strt    r8,[r1],#4
+ *  e4a19004     strt    r9,[r1],#4
+ *  e4a1a004     strt    sl,[r1],#4
+ *  e4a1b004     strt    fp,[r1],#4
+ *  e4a16004     strt    r6,[r1],#4
+ *  e4a17004     strt    r7,[r1],#4
+ */
+X(netbsd_copyout)
+{
+	uint32_t r1 = cpu->cd.arm.r[1], ofs = (r1 & 0xffc), index = r1 >> 12;
+	unsigned char *p = cpu->cd.arm.host_store[index];
+	uint32_t *p32 = (uint32_t *) p, *q32;
+	int ok = cpu->cd.arm.is_userpage[index >> 5] & (1 << (index & 31));
+
+	if (ofs > 0x1000 - 6*4 || !ok || p == NULL) {
+		instr(store_w1_word_u1_p0_imm)(cpu, ic);
+		return;
+	}
+	q32 = &cpu->cd.arm.r[6];
+	ofs >>= 2;
+	p32[ofs  ] = q32[2];
+	p32[ofs+1] = q32[3];
+	p32[ofs+2] = q32[4];
+	p32[ofs+3] = q32[5];
+	p32[ofs+4] = q32[0];
+	p32[ofs+5] = q32[1];
+	cpu->cd.arm.r[1] = r1 + 24;
+	cpu->n_translated_instrs += 5;
+	cpu->cd.arm.next_ic = &ic[6];
 }
 
 
@@ -1660,12 +1732,80 @@ void arm_combine_netbsd_scanc(struct cpu *cpu, struct arm_instr_call *ic,
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
+return;
+
 	if (n_back >= 2) {
 		if (ic[-2].f == instr(load_w0_byte_u1_p1_imm) &&
-		    ic[-1].f == instr(load_w0_byte_u1_p1_reg)) {
+		    ic[-2].arg[0] == (size_t)(&cpu->cd.arm.r[1]) &&
+		    ic[-2].arg[1] == 0 &&
+		    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[3]) &&
+		    ic[-1].f == instr(load_w0_byte_u1_p1_reg) &&
+		    ic[-1].arg[0] == (size_t)(&cpu->cd.arm.r[2]) &&
+		    ic[-1].arg[1] == (size_t)arm_r_r3_t0_c0 &&
+		    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[3])) {
 			ic[-2].f = instr(netbsd_scanc);
 			combined;
 		}
+	}
+}
+
+
+/*
+ *  arm_combine_netbsd_copyin():
+ */
+void arm_combine_netbsd_copyin(struct cpu *cpu, struct arm_instr_call *ic,
+	int low_addr)
+{
+	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back < 5)
+		return;
+
+	for (i=-5; i<0; i++) {
+		if (ic[i].f != instr(load_w1_word_u1_p0_imm) ||
+		    ic[i].arg[0] != (size_t)(&cpu->cd.arm.r[0]) ||
+		    ic[i].arg[1] != 4)
+			return;
+	}
+
+	if (ic[-5].arg[2] == (size_t)(&cpu->cd.arm.r[10]) &&
+	    ic[-4].arg[2] == (size_t)(&cpu->cd.arm.r[11]) &&
+	    ic[-3].arg[2] == (size_t)(&cpu->cd.arm.r[6]) &&
+	    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[7]) &&
+	    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[8])) {
+		ic[-5].f = instr(netbsd_copyin);
+		combined;
+	}
+}
+
+
+/*
+ *  arm_combine_netbsd_copyout():
+ */
+void arm_combine_netbsd_copyout(struct cpu *cpu, struct arm_instr_call *ic,
+	int low_addr)
+{
+	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back < 5)
+		return;
+
+	for (i=-5; i<0; i++) {
+		if (ic[i].f != instr(store_w1_word_u1_p0_imm) ||
+		    ic[i].arg[0] != (size_t)(&cpu->cd.arm.r[1]) ||
+		    ic[i].arg[1] != 4)
+			return;
+	}
+
+	if (ic[-5].arg[2] == (size_t)(&cpu->cd.arm.r[8]) &&
+	    ic[-4].arg[2] == (size_t)(&cpu->cd.arm.r[9]) &&
+	    ic[-3].arg[2] == (size_t)(&cpu->cd.arm.r[10]) &&
+	    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[11]) &&
+	    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[6])) {
+		ic[-5].f = instr(netbsd_copyout);
+		combined;
 	}
 }
 
@@ -2194,6 +2334,10 @@ X(to_be_translated)
 				ic->arg[1] = x;
 			}
 		}
+		if (iword == 0xe4b09004)
+			cpu->combination_check = arm_combine_netbsd_copyin;
+		if (iword == 0xe4a17004)
+			cpu->combination_check = arm_combine_netbsd_copyout;
 		break;
 
 	case 0x8:	/*  Multiple load/store...  (Block data transfer)  */
@@ -2295,7 +2439,7 @@ X(to_be_translated)
 			}
 		}
 
-#if 0
+#if 1
 		/*  Hm. This doesn't really increase performance.  */
 		if (iword == 0x8afffffa)
 			cpu->combination_check = arm_combine_netbsd_cacheclean2;
@@ -2320,6 +2464,7 @@ X(to_be_translated)
 		/*  SWI:  */
 		/*  Default handler:  */
 		ic->f = cond_instr(swi);
+		ic->arg[0] = addr & 0xfff;
 		if (iword == 0xef8c64be) {
 			/*  Hack for openfirmware prom emulation:  */
 			ic->f = instr(openfirmware);

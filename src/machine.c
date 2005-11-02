@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.578 2005-11-01 07:05:38 debug Exp $
+ *  $Id: machine.c,v 1.579 2005-11-02 20:05:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4628,8 +4628,8 @@ Not yet.
 			store_buf(cpu, cpu->cd.arm.r[0],
 			    (char *)&ebsaboot, sizeof(struct ebsaboot));
 
-			snprintf(bs, sizeof(bs), "(hd%i)%s%s%s",
-			    boot_id, machine->boot_kernel_filename,
+			snprintf(bs, sizeof(bs), "(hd%i)%s root=/dev/wd%i%s%s",
+			    boot_id, machine->boot_kernel_filename, boot_id,
 			    (machine->boot_string_argument[0])? " " : "",
 			    machine->boot_string_argument);
 

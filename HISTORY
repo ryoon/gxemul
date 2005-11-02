@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1007 2005-11-01 22:06:42 debug Exp $
+$Id: HISTORY,v 1.1008 2005-11-02 20:05:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2367,4 +2367,14 @@ Changelog for GXemul:
 		3.7 -> 3.8, and lots of testing).
 		Changing from 1-sector PIO mode 0 transfers to 128-sector PIO
 		mode 3 (in dev_wdc).
-		Various minor ARM dyntrans updates.
+		Various minor ARM dyntrans updates (pc-relative loads from
+		within the same page as the instruction are now treated as
+		constant "mov").
+20051102	Re-enabling instruction combinations (they were accidentally
+		disabled).
+		Dyntrans TLB entries are now overwritten using a round-robin
+		scheme instead of randomly. This increases performance.
+		Fixing a typo in file.c (thanks to Chuan-Hua Chang for
+		noticing it).
+		Experimenting with adding ATAPI support to dev_wdc (to make
+		emulated *BSD detect cdroms as cdroms, not harddisks).

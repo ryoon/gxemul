@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.27 2005-11-01 07:05:52 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.28 2005-11-02 20:04:11 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -58,7 +58,7 @@
 
 #define	DEV_FOOTBRIDGE_TICK_SHIFT	14
 #define	DEV_FOOTBRIDGE_LENGTH		0x400
-#define	TIMER_POLL_THRESHOLD		15
+#define	TIMER_POLL_THRESHOLD		10
 
 
 /*
@@ -355,16 +355,18 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	case TIMER_1_VALUE:
 		if (writeflag == MEM_READ) {
 			/*
-			 *  TODO: This is INCORRECT! but speeds up NetBSD
-			 *  and OpenBSD boot sequences. A better solution
-			 *  would be to only call dev_footbridge_tick() if
-			 *  the timer is polled "very often" (such as during
-			 *  bootup), but not during normal operation.
+			 *  TODO: This is INCORRECT but speeds up NetBSD
+			 *  and OpenBSD boot sequences: if the timer is polled
+			 *  "very often" (such as during bootup), then this
+			 *  causes the timers to expire quickly.
 			 */
 			d->timer_being_read = 1;
 			d->timer_poll_mode ++;
-			if (d->timer_poll_mode > TIMER_POLL_THRESHOLD)
+			if (d->timer_poll_mode >= TIMER_POLL_THRESHOLD) {
+				d->timer_poll_mode = TIMER_POLL_THRESHOLD;
 				dev_footbridge_tick(cpu, d);
+				dev_footbridge_tick(cpu, d);
+			}
 			odata = d->timer_value[timer_nr];
 			d->timer_being_read = 0;
 		} else

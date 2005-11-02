@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.244 2005-09-07 07:41:29 debug Exp $
+ *  $Id: main.c,v 1.245 2005-11-02 20:05:40 debug Exp $
  */
 
 #include <stdio.h>
@@ -646,7 +646,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		exit(1);
 	}
 
-	if (m->bintrans_enable) {
+	if (m->bintrans_enable && m->arch == ARCH_MIPS) {
 		m->speed_tricks = 0;
 		/*  TODO: Print a warning about this?  */
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.45 2005-11-01 22:07:51 debug Exp $
+ *  $Id: dev_wdc.c,v 1.46 2005-11-02 20:03:53 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -63,6 +63,7 @@
 extern int quiet_mode;
 
 /*  #define debug fatal  */
+/*  #define EXPERIMENTAL_ATAPI  */
 
 struct wdc_data {
 	int		irq_nr;
@@ -95,8 +96,13 @@ struct wdc_data {
 	int		head;
 	int		cur_command;
 
+	int		atapi_cmd_in_progress;
+
 	unsigned char	identify_struct[512];
 };
+
+
+#define COMMAND_RESET	0x100
 
 
 /*
@@ -157,6 +163,7 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
 static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
 	uint64_t total_size;
+	int flags;
 	char namebuf[40];
 
 	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive,
@@ -167,8 +174,13 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	/*  Offsets are in 16-bit WORDS!  High byte, then low.  */
 
 	/*  0: general flags  */
-	d->identify_struct[2 * 0 + 0] = 0;
-	d->identify_struct[2 * 0 + 1] = 1 << 6;
+	flags = 1 << 6;	/*  Fixed  */
+	if (diskimage_is_a_cdrom(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE)) {
+		flags = 0x8580;		/*  ATAPI, CDROM, removable  */
+	}
+	d->identify_struct[2 * 0 + 0] = flags >> 8;
+	d->identify_struct[2 * 0 + 1] = flags;
 
 	/*  1: nr of cylinders  */
 	d->identify_struct[2 * 1 + 0] = d->cyls[d->drive] >> 8;
@@ -183,10 +195,10 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	d->identify_struct[2 * 6 + 1] = d->sectors_per_track[d->drive];
 
 	/*  10-19: Serial number  */
-	memcpy(&d->identify_struct[2 * 10], "S/N 1234-5678       ", 20);
+	memcpy(&d->identify_struct[2 * 10], "#0                  ", 20);
 
 	/*  23-26: Firmware version  */
-	memcpy(&d->identify_struct[2 * 23], "VER 1.0 ", 8);
+	memcpy(&d->identify_struct[2 * 23], "1.0     ", 8);
 
 	/*  27-46: Model number  */
 	if (diskimage_getname(cpu->machine, d->drive + d->base_drive,
@@ -234,7 +246,7 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 	/*  64: Advanced PIO mode support. 0x02 = mode4, 0x01 = mode3  */
 	d->identify_struct[2 * 64 + 0] = 0x00;
-	d->identify_struct[2 * 64 + 1] = 0x01;
+	d->identify_struct[2 * 64 + 1] = 0x03;
 
 	/*  67, 68: PIO timing  */
 	d->identify_struct[2 * 67 + 0] = 0;
@@ -338,7 +350,7 @@ static int status_byte(struct wdc_data *d, struct cpu *cpu)
 		odata |= WDCS_DRDY | WDCS_DSC;
 	if (d->inbuf_head != d->inbuf_tail)
 		odata |= WDCS_DRQ;
-	if (d->write_in_progress)
+	if (d->write_in_progress)  /* || d->atapi_cmd_in_progress) */
 		odata |= WDCS_DRQ;
 	if (d->error)
 		odata |= WDCS_ERR;
@@ -365,9 +377,12 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag==MEM_READ)
 		debug("[ wdc: read from ALTSTATUS: 0x%02x ]\n",
 		    (int)odata);
-	else
+	else {
 		debug("[ wdc: write to ALT. CTRL: 0x%02x ]\n",
 		    (int)idata);
+		if (idata & WDCTL_4BIT)
+			d->cur_command = COMMAND_RESET;
+	}
 
 	if (writeflag == MEM_READ)
 		data[0] = odata;
@@ -519,6 +534,12 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_cyl_lo:	/*  4: cylinder low  */
 		if (writeflag==MEM_READ) {
 			odata = d->cyl_lo;
+#ifdef EXPERIMENTAL_ATAPI
+			if (d->cur_command == COMMAND_RESET &&
+			    diskimage_is_a_cdrom(cpu->machine,
+			    d->drive + d->base_drive, DISKIMAGE_IDE))
+				odata = 0x14;
+#endif
 			debug("[ wdc: read from CYL_LO: 0x%02x ]\n",(int)odata);
 		} else {
 			d->cyl_lo = idata;
@@ -529,6 +550,12 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_cyl_hi:	/*  5: cylinder low  */
 		if (writeflag==MEM_READ) {
 			odata = d->cyl_hi;
+#ifdef EXPERIMENTAL_ATAPI
+			if (d->cur_command == COMMAND_RESET &&
+			    diskimage_is_a_cdrom(cpu->machine,
+			    d->drive + d->base_drive, DISKIMAGE_IDE))
+				odata = 0xeb;
+#endif
 			debug("[ wdc: read from CYL_HI: 0x%02x ]\n",(int)odata);
 		} else {
 			d->cyl_hi = idata;
@@ -629,6 +656,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				break;
 
 			case WDCC_IDENTIFY:
+			case ATAPI_IDENTIFY_DEVICE:
 				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
 				wdc_initialize_identify_struct(cpu, d);
 				/*  The IDENTIFY data block is sent out
@@ -655,8 +683,22 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				d->delayed_interrupt = INT_DELAY;
 				break;
 
+			case ATAPI_SOFT_RESET:
+				debug("[ wdc: ATAPI_SOFT_RESET drive %i ]\n",
+				    d->drive);
+				/*  TODO: interrupt here?  */
+				d->delayed_interrupt = INT_DELAY;
+				break;
+
+			case ATAPI_PKT_CMD:
+				fatal("[ wdc: ATAPI_PKT_CMD drive %i ]\n",
+				    d->drive);
+				/*  TODO: interrupt here?  */
+				/*  d->delayed_interrupt = INT_DELAY;  */
+				d->atapi_cmd_in_progress = 1;
+				break;
+
 			/*  Unsupported commands, without warning:  */
-			case ATAPI_IDENTIFY_DEVICE:
 			case WDCC_SEC_SET_PASSWORD:
 			case WDCC_SEC_UNLOCK:
 			case WDCC_SEC_ERASE_PREPARE:

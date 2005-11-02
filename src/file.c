@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.116 2005-09-30 14:07:45 debug Exp $
+ *  $Id: file.c,v 1.117 2005-11-02 20:05:26 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1767,7 +1767,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			} else {
 				sym32 = symbols_sym32[i];
 				unencode(st_name, &sym32.st_name,  Elf32_Word);
-				unencode(st_info, &sym64.st_info,  Elf_Byte);
+				unencode(st_info, &sym32.st_info,  Elf_Byte);
 				unencode(addr,    &sym32.st_value, Elf32_Word);
 				unencode(size,    &sym32.st_size, Elf32_Word);
 			}

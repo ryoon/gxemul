@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.28 2005-11-01 22:07:18 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.29 2005-11-02 20:04:29 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1059,12 +1059,21 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
 
 #ifdef MODE32
-	/*  NOTE: vaddr_to_tlbindex is one more than the index, so that
-	    0 becomes -1, which means a miss.  */
+	/*
+	 *  NOTE 1: vaddr_to_tlbindex is one more than the index, so that
+	 *          0 becomes -1, which means a miss.
+	 *
+	 *  NOTE 2: When a miss occurs, instead of scanning the entire tlb
+	 *          for the entry with the lowest time stamp, just choosing
+	 *          one at random will work as well.
+	 */
 	found = cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[
 	    DYNTRANS_ADDR_TO_PAGENR(vaddr_page)] - 1;
-	if (found < 0)
-		lowest_index = (random() % (end-start)) + start;
+	if (found < 0) {
+		static unsigned int x = 0;
+		lowest_index = (x % (end-start)) + start;
+		x ++;
+	}
 	if (0)
 #endif
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.4 2005-10-27 14:01:13 debug Exp $
+ *  $Id: memory_ppc.c,v 1.5 2005-11-05 13:39:40 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -96,6 +96,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	*return_addr = vaddr;
 	return 2;
 #else
+	*return_addr = vaddr;
 	return 0;
 #endif
 }

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.35 2005-10-27 14:01:15 debug Exp $
+ *  $Id: cpu_x86.h,v 1.36 2005-11-05 13:39:41 debug Exp $
  */
 
 #include "misc.h"
@@ -206,6 +206,7 @@ struct x86_cpu {
 	struct x86_tc_physpage          *phys_page[X86_N_VPH_ENTRIES];
 
 	uint32_t			phystranslation[X86_N_VPH_ENTRIES/32];
+	int16_t				vaddr_to_tlbindex[X86_N_VPH_ENTRIES];
 };
 
 
@@ -329,7 +330,16 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 int x86_interrupt(struct cpu *cpu, int nr, int errcode);
 int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
+void x86_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+        unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void x8632_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+        unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void x86_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
+void x8632_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
+void x86_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+void x8632_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 int x86_cpu_family_init(struct cpu_family *);
+
 
 /*  memory_x86.c:  */
 int x86_translate_address(struct cpu *cpu, uint64_t vaddr,

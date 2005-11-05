@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.3 2005-09-30 14:17:03 debug Exp $
+ *  $Id: cpu_x86.c,v 1.4 2005-11-05 13:39:39 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -95,6 +95,8 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->cd.x86.model = models[i];
 
+	cpu->translate_address = x86_translate_address;
+
 	/*  Initial startup is in 16-bit real mode:  */
 	cpu->pc = 0xfff0;
 
@@ -109,15 +111,31 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.x86.descr_cache[X86_S_CS].writable = 1;
 	cpu->cd.x86.descr_cache[X86_S_CS].granularity = 0;
 	cpu->cd.x86.s[X86_S_CS] = 0xf000;
+	cpu->cd.x86.cursegment = X86_S_CS;
 
 	cpu->cd.x86.idtr = 0;
 	cpu->cd.x86.idtr_limit = 0x3ff;
 
-	cpu->translate_address = x86_translate_address;
-
 	cpu->cd.x86.rflags = 0x0002;
 	if (cpu->cd.x86.model.model_number == X86_MODEL_8086)
 		cpu->cd.x86.rflags |= 0xf000;
+
+	cpu->is_32bit = (cpu->cd.x86.model.model_number < X86_MODEL_AMD64)?
+	    1 : 0;
+
+	if (cpu->is_32bit) {
+		cpu->update_translation_table = x8632_update_translation_table;
+		cpu->invalidate_translation_caches =
+		    x8632_invalidate_translation_caches;
+		cpu->invalidate_code_translation =
+		    x8632_invalidate_code_translation;
+	} else {
+		cpu->update_translation_table = x86_update_translation_table;
+		cpu->invalidate_translation_caches =
+		    x86_invalidate_translation_caches;
+		cpu->invalidate_code_translation =
+		    x86_invalidate_code_translation;
+	}
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {

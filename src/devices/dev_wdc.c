@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.46 2005-11-02 20:03:53 debug Exp $
+ *  $Id: dev_wdc.c,v 1.47 2005-11-05 13:39:41 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -62,8 +62,8 @@
 
 extern int quiet_mode;
 
-/*  #define debug fatal  */
-/*  #define EXPERIMENTAL_ATAPI  */
+/* #define debug fatal */
+/* #define EXPERIMENTAL_ATAPI */
 
 struct wdc_data {
 	int		irq_nr;
@@ -341,20 +341,24 @@ static int status_byte(struct wdc_data *d, struct cpu *cpu)
 {
 	int odata = 0;
 
-	/*
-	 *  Modern versions of OpenBSD wants WDCS_DSC. (Thanks to Alexander
-	 *  Yurchenko for noticing this.)
-	 */
-	if (diskimage_exist(cpu->machine, d->drive + d->base_drive,
-	    DISKIMAGE_IDE))
-		odata |= WDCS_DRDY | WDCS_DSC;
-	if (d->inbuf_head != d->inbuf_tail)
-		odata |= WDCS_DRQ;
-	if (d->write_in_progress)  /* || d->atapi_cmd_in_progress) */
-		odata |= WDCS_DRQ;
-	if (d->error)
-		odata |= WDCS_ERR;
-
+	if (d->atapi_cmd_in_progress) {
+		printf("Yo\n");
+		odata |= PHASE_CMDOUT;
+	} else {
+		/*
+		 *  Modern versions of OpenBSD wants WDCS_DSC. (Thanks to
+		 *  Alexander Yurchenko for noticing this.)
+		 */
+		if (diskimage_exist(cpu->machine, d->drive + d->base_drive,
+		    DISKIMAGE_IDE))
+			odata |= WDCS_DRDY | WDCS_DSC;
+		if (d->inbuf_head != d->inbuf_tail)
+			odata |= WDCS_DRQ;
+		if (d->write_in_progress)
+			odata |= WDCS_DRQ;
+		if (d->error)
+			odata |= WDCS_ERR;
+	}
 	return odata;
 }
 
@@ -592,6 +596,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n",(int)idata);
 			d->cur_command = idata;
+			d->atapi_cmd_in_progress = 0;
 
 			/*  TODO:  Is this correct behaviour?  */
 			if (!diskimage_exist(cpu->machine,

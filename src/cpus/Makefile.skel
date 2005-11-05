@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.12 2005-11-01 22:07:00 debug Exp $
+#  $Id: Makefile.skel,v 1.13 2005-11-05 13:39:39 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -213,9 +213,7 @@ tmp_sparc_tail.c: generate_tail
 ###############################################################################
 
 cpu_x86.o: cpu_x86.c cpu_x86_instr.c cpu_dyntrans.c ../memory_rw.c \
-	tmp_x86_head.c tmp_x86_tail.c
-
-memory_x86.c: ../memory_rw.c
+	memory_x86.c tmp_x86_head.c tmp_x86_tail.c
 
 tmp_x86_head.c: generate_head
 	./generate_head x86 x86 > tmp_x86_head.c

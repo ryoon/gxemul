@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.2 2005-09-30 14:17:04 debug Exp $
+ *  $Id: pc_bios.c,v 1.3 2005-11-05 13:39:42 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1484,6 +1484,7 @@ void pc_bios_init(struct cpu *cpu)
 {
 	char t[81];
 	int x, y, nboxlines, i, any_disk = 0, disknr, tmp;
+	int old_cursegment = cpu->cd.x86.cursegment;
 	int boot_id, boot_type, bios_boot_id = 0, nfloppies = 0, nhds = 0;
 
 	/*  Go to real mode:  */
@@ -1781,6 +1782,8 @@ void pc_bios_init(struct cpu *cpu)
 	cpu->pc = 0x7c00;
 
 	cpu->machine->md.pc.initialized = 1;
+
+	cpu->cd.x86.cursegment = old_cursegment;
 }
 
 

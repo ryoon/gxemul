@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.98 2005-11-02 20:05:14 debug Exp $
+$Id: guestoses.html,v 1.99 2005-11-05 17:56:44 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -771,8 +771,7 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
-	CATS from CDROM. (Install onto wd0, and choose wd1c (not cd0c) as the
-	CDROM device to install from.)
+	CATS from CDROM.
 </ol>
 
 <p>If everything worked, NetBSD should now be installed on the disk image.
@@ -1029,7 +1028,7 @@ follow these instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -XEcats -d obsd_cats.img -d openbsd_cats_3.8.iso bsd.rd</b>
+	<b>gxemul -XEcats -d obsd_cats.img -d d:openbsd_cats_3.8.iso bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD

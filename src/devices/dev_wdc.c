@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.47 2005-11-05 13:39:41 debug Exp $
+ *  $Id: dev_wdc.c,v 1.48 2005-11-05 17:56:47 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -62,8 +62,8 @@
 
 extern int quiet_mode;
 
-/* #define debug fatal */
-/* #define EXPERIMENTAL_ATAPI */
+/*  #define debug fatal  */
+#define EXPERIMENTAL_ATAPI
 
 struct wdc_data {
 	int		irq_nr;
@@ -97,6 +97,10 @@ struct wdc_data {
 	int		cur_command;
 
 	int		atapi_cmd_in_progress;
+	int		atapi_phase;
+	struct scsi_transfer *atapi_st;
+	int		atapi_len;
+	int		atapi_received;
 
 	unsigned char	identify_struct[512];
 };
@@ -163,11 +167,14 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
 static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
 	uint64_t total_size;
-	int flags;
+	int flags, cdrom = 0;
 	char namebuf[40];
 
 	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE);
+	if (diskimage_is_a_cdrom(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE))
+		cdrom = 1;
 
 	memset(d->identify_struct, 0, sizeof(d->identify_struct));
 
@@ -175,10 +182,8 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 	/*  0: general flags  */
 	flags = 1 << 6;	/*  Fixed  */
-	if (diskimage_is_a_cdrom(cpu->machine, d->drive + d->base_drive,
-	    DISKIMAGE_IDE)) {
+	if (cdrom)
 		flags = 0x8580;		/*  ATAPI, CDROM, removable  */
-	}
 	d->identify_struct[2 * 0 + 0] = flags >> 8;
 	d->identify_struct[2 * 0 + 1] = flags;
 
@@ -217,7 +222,7 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 	/*  47: max sectors per multitransfer  */
 	d->identify_struct[2 * 47 + 0] = 0x80;
-	d->identify_struct[2 * 47 + 1] = 128;	/*  Max nr of sectors  */
+	d->identify_struct[2 * 47 + 1] = 128;
 
 	/*  49: capabilities:  */
 	/*  (0x200 = LBA, 0x100 = DMA support.)  */
@@ -341,24 +346,24 @@ static int status_byte(struct wdc_data *d, struct cpu *cpu)
 {
 	int odata = 0;
 
-	if (d->atapi_cmd_in_progress) {
-		printf("Yo\n");
-		odata |= PHASE_CMDOUT;
-	} else {
-		/*
-		 *  Modern versions of OpenBSD wants WDCS_DSC. (Thanks to
-		 *  Alexander Yurchenko for noticing this.)
-		 */
-		if (diskimage_exist(cpu->machine, d->drive + d->base_drive,
-		    DISKIMAGE_IDE))
-			odata |= WDCS_DRDY | WDCS_DSC;
-		if (d->inbuf_head != d->inbuf_tail)
-			odata |= WDCS_DRQ;
-		if (d->write_in_progress)
-			odata |= WDCS_DRQ;
-		if (d->error)
-			odata |= WDCS_ERR;
+	/*
+	 *  Modern versions of OpenBSD wants WDCS_DSC. (Thanks to
+	 *  Alexander Yurchenko for noticing this.)
+	 */
+	if (diskimage_exist(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE))
+		odata |= WDCS_DRDY | WDCS_DSC;
+	if (d->inbuf_head != d->inbuf_tail)
+		odata |= WDCS_DRQ;
+	if (d->write_in_progress)
+		odata |= WDCS_DRQ;
+	if (d->error)
+		odata |= WDCS_ERR;
+
+	if (d->atapi_cmd_in_progress && (d->atapi_phase & WDCS_DRQ)) {
+		odata |= WDCS_DRQ;
 	}
+
 	return odata;
 }
 
@@ -409,8 +414,11 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE) {
 		if (relative_addr == wd_data)
 			idata = memory_readmax64(cpu, data, len);
-		else
+		else {
+			if (len != 1)
+				fatal("[ wdc: WARNING! non-8-bit access! ]\n");
 			idata = data[0];
+		}
 	}
 
 	switch (relative_addr) {
@@ -429,22 +437,60 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				odata += (wdc_get_inbuf(d) << 24);
 			}
 
-			if (d->data_debug)
-				debug("[ wdc: read from DATA: 0x%04x ]\n",
-				    (int)odata);
+			if (d->data_debug) {
+				char *s = "0x%04llx ]\n";
+				if (len == 1)
+					s = "0x%02llx ]\n";
+				if (len == 4)
+					s = "0x%08llx ]\n";
+				if (len == 8)
+					s = "0x%016llx ]\n";
+				debug("[ wdc: read from DATA: ");
+				debug(s, (long long)odata);
+			}
+
+			if (d->atapi_cmd_in_progress) {
+				d->atapi_len -= len;
+				d->atapi_received += len;
+				if (d->atapi_len == 0) {
+					if (d->atapi_received < d->atapi_st->
+					    data_in_len) {
+						d->atapi_phase = PHASE_DATAIN;
+						d->atapi_len = d->atapi_st->
+						    data_in_len -
+						    d->atapi_received;
+						if (d->atapi_len > 32768)
+							d->atapi_len = 0;
+					} else
+						d->atapi_phase =
+						    PHASE_COMPLETED;
+					d->delayed_interrupt = INT_DELAY;
+				}
+			} else {
 #if 0
-			if (d->inbuf_tail != d->inbuf_head)
+				if (d->inbuf_tail != d->inbuf_head)
 #else
-			if (d->inbuf_tail != d->inbuf_head &&
-			    ((d->inbuf_tail - d->inbuf_head) % 512) == 0)
+				if (d->inbuf_tail != d->inbuf_head &&
+				    ((d->inbuf_tail - d->inbuf_head) % 512)
+				    == 0)
 #endif
-				d->delayed_interrupt = INT_DELAY;
+					d->delayed_interrupt = INT_DELAY;
+			}
 		} else {
 			int inbuf_len;
-			if (d->data_debug)
-				debug("[ wdc: write to DATA (len=%i): "
-				    "0x%08lx ]\n", (int)len, (long)idata);
-			if (!d->write_in_progress) {
+			if (d->data_debug) {
+				char *s = "0x%04llx ]\n";
+				if (len == 1)
+					s = "0x%02llx ]\n";
+				if (len == 4)
+					s = "0x%08llx ]\n";
+				if (len == 8)
+					s = "0x%016llx ]\n";
+				debug("[ wdc: write to DATA: ");
+				debug(s, (long long)idata);
+			}
+			if (!d->write_in_progress &&
+			    !d->atapi_cmd_in_progress) {
 				fatal("[ wdc: write to DATA, but not "
 				    "expecting any? (len=%i): 0x%08lx ]\n",
 				    (int)len, (long)idata);
@@ -467,6 +513,65 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			inbuf_len = d->inbuf_head - d->inbuf_tail;
 			while (inbuf_len < 0)
 				inbuf_len += WDC_INBUF_SIZE;
+
+			if (d->atapi_cmd_in_progress && inbuf_len == 12) {
+				unsigned char *scsi_cmd = malloc(12);
+				int x = 0, res;
+
+				if (d->atapi_st != NULL)
+					scsi_transfer_free(d->atapi_st);
+				d->atapi_st = scsi_transfer_alloc();
+
+				debug("[ wdc: ATAPI command ]\n");
+
+				while (inbuf_len > 0) {
+					scsi_cmd[x++] = wdc_get_inbuf(d);
+					inbuf_len --;
+				}
+
+				d->atapi_st->cmd = scsi_cmd;
+				d->atapi_st->cmd_len = 12;
+
+				if (scsi_cmd[0] == SCSIBLOCKCMD_READ_CAPACITY
+				    || scsi_cmd[0] == SCSICMD_READ_10)
+					d->atapi_st->cmd_len = 10;
+
+				res = diskimage_scsicommand(cpu,
+				    d->drive + d->base_drive, DISKIMAGE_IDE,
+				    d->atapi_st);
+
+				if (res == 0) {
+					fatal("WDC: ATAPI scsi error?\n");
+					exit(1);
+				}
+
+				d->atapi_len = 0;
+				d->atapi_received = 0;
+
+				if (res == 1) {
+					if (d->atapi_st->data_in != NULL) {
+						int i;
+						d->atapi_phase = PHASE_DATAIN;
+						d->atapi_len = d->atapi_st->
+						    data_in_len;
+						for (i=0; i<d->atapi_len; i++)
+							wdc_addtoinbuf(d,
+							    d->atapi_st->
+							    data_in[i]);
+						if (d->atapi_len > 32768)
+							d->atapi_len = 32768;
+					} else {
+						d->atapi_phase =
+						    PHASE_COMPLETED;
+					}
+				} else {
+					fatal("wdc atapi Dataout? TODO\n");
+					d->atapi_phase = PHASE_DATAOUT;
+					exit(1);
+				}
+
+				d->delayed_interrupt = INT_DELAY;
+			}
 
 			if (( d->write_in_progress == WDCC_WRITEMULTI &&
 			    inbuf_len % (512 * d->write_count) == 0)
@@ -503,7 +608,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case wd_error:	/*  1: error (r), precomp (w)  */
-		if (writeflag==MEM_READ) {
+		if (writeflag == MEM_READ) {
 			odata = d->error;
 			debug("[ wdc: read from ERROR: 0x%02x ]\n",
 			    (int)odata);
@@ -515,9 +620,14 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		}
 		break;
 
-	case wd_seccnt:	/*  2: sector count  */
-		if (writeflag==MEM_READ) {
+	case wd_seccnt:	/*  2: sector count (or "ireason" for ATAPI)  */
+		if (writeflag == MEM_READ) {
 			odata = d->seccnt;
+#ifdef EXPERIMENTAL_ATAPI
+			if (d->atapi_cmd_in_progress) {
+				odata = d->atapi_phase & (WDCI_CMD | WDCI_IN);
+			}
+#endif
 			debug("[ wdc: read from SECCNT: 0x%02x ]\n",(int)odata);
 		} else {
 			d->seccnt = idata;
@@ -526,7 +636,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case wd_sector:	/*  3: first sector  */
-		if (writeflag==MEM_READ) {
+		if (writeflag == MEM_READ) {
 			odata = d->sector;
 			debug("[ wdc: read from SECTOR: 0x%02x ]\n",(int)odata);
 		} else {
@@ -536,13 +646,19 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case wd_cyl_lo:	/*  4: cylinder low  */
-		if (writeflag==MEM_READ) {
+		if (writeflag == MEM_READ) {
 			odata = d->cyl_lo;
 #ifdef EXPERIMENTAL_ATAPI
 			if (d->cur_command == COMMAND_RESET &&
 			    diskimage_is_a_cdrom(cpu->machine,
 			    d->drive + d->base_drive, DISKIMAGE_IDE))
 				odata = 0x14;
+			if (d->atapi_cmd_in_progress) {
+				int x = d->atapi_len;
+				if (x > 32768)
+					x = 32768;
+				odata = x & 255;
+			}
 #endif
 			debug("[ wdc: read from CYL_LO: 0x%02x ]\n",(int)odata);
 		} else {
@@ -551,14 +667,20 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		}
 		break;
 
-	case wd_cyl_hi:	/*  5: cylinder low  */
-		if (writeflag==MEM_READ) {
+	case wd_cyl_hi:	/*  5: cylinder high  */
+		if (writeflag == MEM_READ) {
 			odata = d->cyl_hi;
 #ifdef EXPERIMENTAL_ATAPI
 			if (d->cur_command == COMMAND_RESET &&
 			    diskimage_is_a_cdrom(cpu->machine,
 			    d->drive + d->base_drive, DISKIMAGE_IDE))
 				odata = 0xeb;
+			if (d->atapi_cmd_in_progress) {
+				int x = d->atapi_len;
+				if (x > 32768)
+					x = 32768;
+				odata = (x >> 8) & 255;
+			}
 #endif
 			debug("[ wdc: read from CYL_HI: 0x%02x ]\n",(int)odata);
 		} else {
@@ -696,11 +818,12 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				break;
 
 			case ATAPI_PKT_CMD:
-				fatal("[ wdc: ATAPI_PKT_CMD drive %i ]\n",
+				debug("[ wdc: ATAPI_PKT_CMD drive %i ]\n",
 				    d->drive);
 				/*  TODO: interrupt here?  */
 				/*  d->delayed_interrupt = INT_DELAY;  */
 				d->atapi_cmd_in_progress = 1;
+				d->atapi_phase = PHASE_CMDOUT;
 				break;
 
 			/*  Unsupported commands, without warning:  */
@@ -766,6 +889,8 @@ int devinit_wdc(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct wdc_data));
 	d->irq_nr = devinit->irq_nr;
+
+	d->data_debug = 1;
 
 	d->inbuf = zeroed_alloc(WDC_INBUF_SIZE);
 

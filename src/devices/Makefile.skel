@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.94 2005-10-17 05:32:20 debug Exp $
+#  $Id: Makefile.skel,v 1.95 2005-11-05 17:56:47 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -37,9 +37,9 @@ OBJS=lk201.o \
 
 all:
 	cd fonts; $(MAKE); cd ..
-	make font8x8.c font8x10.c font8x16.c
-	make objs
-	make autodev.o
+	$(MAKE) font8x8.c font8x10.c font8x16.c
+	$(MAKE) objs
+	$(MAKE) autodev.o
 
 autodev.c: $(OBJS)
 	./makeautodev.sh

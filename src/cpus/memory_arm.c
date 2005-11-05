@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.29 2005-11-01 07:06:04 debug Exp $
+ *  $Id: memory_arm.c,v 1.30 2005-11-05 17:56:46 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -131,7 +131,6 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 
 	addr = ((vaddr & 0xfff00000ULL) >> 18);
 
-cpu->cd.arm.translation_table = NULL;
 	if (cpu->cd.arm.translation_table == NULL ||
 	    cpu->cd.arm.ttb != cpu->cd.arm.last_ttb) {
 		uint32_t ofs;

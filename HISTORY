@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1009 2005-11-05 13:39:38 debug Exp $
+$Id: HISTORY,v 1.1010 2005-11-05 17:56:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2379,3 +2379,5 @@ Changelog for GXemul:
 		Experimenting with adding ATAPI support to dev_wdc (to make
 		emulated *BSD detect cdroms as cdroms, not harddisks).
 20051104	Various minor updates.
+20051105	Continuing on the ATAPI emulation. Seems to work well enough
+		for a NetBSD/cats installation, but not OpenBSD/cats.

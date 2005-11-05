@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.42 2005-11-02 20:05:56 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.43 2005-11-05 17:56:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1627,6 +1627,7 @@ X(end_of_page)
 void arm_combine_netbsd_memset(struct cpu *cpu, struct arm_instr_call *ic,
 	int low_addr)
 {
+#ifdef HOST_LITTLE_ENDIAN
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1643,6 +1644,7 @@ void arm_combine_netbsd_memset(struct cpu *cpu, struct arm_instr_call *ic,
 			combined;
 		}
 	}
+#endif
 }
 
 
@@ -1655,6 +1657,7 @@ void arm_combine_netbsd_memset(struct cpu *cpu, struct arm_instr_call *ic,
 void arm_combine_netbsd_memcpy(struct cpu *cpu, struct arm_instr_call *ic,
 	int low_addr)
 {
+#ifdef HOST_LITTLE_ENDIAN
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1671,6 +1674,7 @@ void arm_combine_netbsd_memcpy(struct cpu *cpu, struct arm_instr_call *ic,
 			combined;
 		}
 	}
+#endif
 }
 
 
@@ -1756,6 +1760,7 @@ return;
 void arm_combine_netbsd_copyin(struct cpu *cpu, struct arm_instr_call *ic,
 	int low_addr)
 {
+#ifdef HOST_LITTLE_ENDIAN
 	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1777,6 +1782,7 @@ void arm_combine_netbsd_copyin(struct cpu *cpu, struct arm_instr_call *ic,
 		ic[-5].f = instr(netbsd_copyin);
 		combined;
 	}
+#endif
 }
 
 
@@ -1786,6 +1792,7 @@ void arm_combine_netbsd_copyin(struct cpu *cpu, struct arm_instr_call *ic,
 void arm_combine_netbsd_copyout(struct cpu *cpu, struct arm_instr_call *ic,
 	int low_addr)
 {
+#ifdef HOST_LITTLE_ENDIAN
 	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1807,6 +1814,7 @@ void arm_combine_netbsd_copyout(struct cpu *cpu, struct arm_instr_call *ic,
 		ic[-5].f = instr(netbsd_copyout);
 		combined;
 	}
+#endif
 }
 
 

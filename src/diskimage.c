@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.98 2005-09-27 23:55:43 debug Exp $
+ *  $Id: diskimage.c,v 1.99 2005-11-05 17:56:45 debug Exp $
  *
  *  Disk image support.
  *
@@ -53,7 +53,8 @@
 #include "misc.h"
 
 
-extern int quiet_mode;
+/*  #define debug fatal  */
+
 extern int single_step;
 
 static char *diskimage_types[] = DISKIMAGE_TYPES;
@@ -591,7 +592,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  These are padded with spaces:  */
 
-		memcpy(xferp->data_in+8,  "EMULATED", 8);
+		memcpy(xferp->data_in+8,  "GXemul  ", 8);
 		if (diskimage_getname(cpu->machine, id,
 		    type, namebuf, sizeof(namebuf))) {
 			int i;
@@ -604,7 +605,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			memcpy(xferp->data_in+16, namebuf, 16);
 		} else
 			memcpy(xferp->data_in+16, "DISK            ", 16);
-		memcpy(xferp->data_in+32, "0000", 4);
+		memcpy(xferp->data_in+32, "0   ", 4);
 
 		/*
 		 *  Some Ultrix kernels want specific responses from
@@ -623,7 +624,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		if (d->is_a_cdrom) {
 			xferp->data_in[0] = 0x05;  /*  0x05 = CD-ROM  */
 			xferp->data_in[1] = 0x80;  /*  0x80 = removable  */
-			memcpy(xferp->data_in+16, "CD-ROM          ", 16);
+			/*  memcpy(xferp->data_in+16, "CD-ROM          ", 16);*/
 
 			if (machine->machine_type == MACHINE_DEC) {
 				/*  SONY, CD-ROM:  */
@@ -636,7 +637,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				memcpy(xferp->data_in+16,
 				    "RRD42   (C) DEC ", 16);
 				memcpy(xferp->data_in+32, "4.5d", 4);
-			} else {
+			} else if (machine->machine_type == MACHINE_ARC) {
 				/*  NEC, CD-ROM:  */
 				memcpy(xferp->data_in+8, "NEC     ", 8);
 				memcpy(xferp->data_in+16,
@@ -1282,6 +1283,14 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		break;
 
 	case 0x1e:
+		debug("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+
+		/*  TODO  */
+
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
+	case 0x5a:
 		debug("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 
 		/*  TODO  */

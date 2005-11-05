@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.48 2005-11-05 17:56:47 debug Exp $
+ *  $Id: dev_wdc.c,v 1.49 2005-11-05 21:59:02 debug Exp $
  *
  *  Standard "wdc" IDE controller.
+ *
+ *  TODO: Clean up the ATAPI code, and all the other TODOs.
  */
 
 #include <stdio.h>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.43 2005-11-05 17:56:46 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.44 2005-11-05 21:59:01 debug Exp $
  *
  *  ARM instructions.
  *
@@ -773,6 +773,19 @@ X(swi)
 	arm_exception(cpu, ARM_EXCEPTION_SWI);
 }
 Y(swi)
+
+
+/*
+ *  und:  Undefined instruction.
+ */
+X(und)
+{
+	/*  Synchronize the program counter first:  */
+	cpu->pc = cpu->cd.arm.r[ARM_PC] =
+	    (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[0];
+	arm_exception(cpu, ARM_EXCEPTION_UND);
+}
+Y(und)
 
 
 /*
@@ -2452,6 +2465,15 @@ X(to_be_translated)
 		if (iword == 0x8afffffa)
 			cpu->combination_check = arm_combine_netbsd_cacheclean2;
 #endif
+		break;
+
+	case 0xc:
+	case 0xd:
+		/*
+		 *  TODO: LDC/STC
+		 */
+		ic->f = cond_instr(und);
+		ic->arg[0] = addr & 0xfff;
 		break;
 
 	case 0xe:

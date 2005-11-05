@@ -25,19 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.28 2005-11-02 20:04:11 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.29 2005-11-05 21:59:02 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
- *  TODO: Most things. For example:
- *
- *	o)  Fix the timer TODO (see below).
- *
+ *  TODO:
  *	o)  Add actual support for the fcom serial port.
- *
  *	o)  FIQs.
- *
- *	o)  ..
  */
 
 #include <stdio.h>
@@ -107,8 +101,9 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_footbridge_isa_access():
  *
- *  NetBSD seems to read 0x79000000 to find out which ISA interrupt occurred,
- *  a quicker way than dealing with legacy 0x20/0xa0 ISA ports.
+ *  Reading the byte at 0x79000000 is a quicker way to figure out which ISA
+ *  interrupt has occurred (and acknowledging it at the same time), than
+ *  dealing with the legacy 0x20/0xa0 ISA ports.
  */
 int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -123,34 +118,14 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 		fatal("[ footbridge_isa: WARNING/TODO: write! ]\n");
 	}
 
-	/*
-	 *  NetBSD seems to want a value of 0x20 + x, where x is the highest
-	 *  priority ISA interrupt which is currently asserted and not masked.
-	 */
+	x = cpu->machine->isa_pic_data.last_int;
+	if (x == 0)
+		cpu_interrupt_ack(cpu, 32 + x);
 
-	for (x=0; x<16; x++) {
-		if (x == 2)
-			continue;
-		if (x < 8 && (cpu->machine->isa_pic_data.pic1->irr &
-		    ~cpu->machine->isa_pic_data.pic1->ier &
-		    (1 << x)))
-			break;
-		if (x >= 8 && (cpu->machine->isa_pic_data.pic2->irr &
-		    ~cpu->machine->isa_pic_data.pic2->ier &
-		    (1 << (x&7))))
-			break;
-	}
-
-#if 0
-	/*  Super-ugly hack for Linux: (TODO: solve nicely)  */
-	odata = x & 15;
-	cpu_interrupt_ack(cpu, 32 + x);
-#else
-	/*  Normal code, works with *BSD:  */
-	if (x == 16)
-		fatal("_\n_  SPORADIC but INVALID ISA interrupt\n_\n");
-	odata = 0x20 + (x & 15);
-#endif
+	if (x < 8)
+		odata = cpu->machine->isa_pic_data.pic1->irq_base + x;
+	else
+		odata = cpu->machine->isa_pic_data.pic2->irq_base + x - 8;
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -355,7 +330,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 	case TIMER_1_VALUE:
 		if (writeflag == MEM_READ) {
 			/*
-			 *  TODO: This is INCORRECT but speeds up NetBSD
+			 *  NOTE/TODO: This is INCORRECT but speeds up NetBSD
 			 *  and OpenBSD boot sequences: if the timer is polled
 			 *  "very often" (such as during bootup), then this
 			 *  causes the timers to expire quickly.
@@ -364,6 +339,7 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 			d->timer_poll_mode ++;
 			if (d->timer_poll_mode >= TIMER_POLL_THRESHOLD) {
 				d->timer_poll_mode = TIMER_POLL_THRESHOLD;
+				dev_footbridge_tick(cpu, d);
 				dev_footbridge_tick(cpu, d);
 				dev_footbridge_tick(cpu, d);
 			}
@@ -438,7 +414,7 @@ int devinit_footbridge(struct devinit *devinit)
 	    devinit->addr, DEV_FOOTBRIDGE_LENGTH,
 	    dev_footbridge_access, d, MEM_DEFAULT, NULL);
 
-	/*  ISA interrupt status word:  */
+	/*  ISA interrupt status/acknowledgement:  */
 	memory_device_register(devinit->machine->memory, "footbridge_isa",
 	    0x79000000, 8, dev_footbridge_isa_access, d, MEM_DEFAULT, NULL);
 

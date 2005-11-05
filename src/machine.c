@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.579 2005-11-02 20:05:39 debug Exp $
+ *  $Id: machine.c,v 1.580 2005-11-05 21:59:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1471,9 +1471,23 @@ void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	/*  Now, PIC1:  */
 	new_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 	if (old_isa_assert != new_isa_assert) {
-		if (new_isa_assert)
+		if (new_isa_assert) {
+			int x;
+			for (x=0; x<16; x++) {
+				if (x == 2)
+				        continue;
+				if (x < 8 && (cpu->machine->isa_pic_data.pic1->irr &
+				    ~cpu->machine->isa_pic_data.pic1->ier &
+				    (1 << x)))
+				        break;
+				if (x >= 8 && (cpu->machine->isa_pic_data.pic2->irr &
+				    ~cpu->machine->isa_pic_data.pic2->ier &
+				    (1 << (x&7))))
+				        break;
+			}
+			cpu->machine->isa_pic_data.last_int = x;
 			cpu_interrupt(cpu, isa_int);
-		else
+		} else
 			cpu_interrupt_ack(cpu, isa_int);
 		return;
 	}

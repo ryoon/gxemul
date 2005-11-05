@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.37 2005-11-01 07:06:14 debug Exp $
+ *  $Id: cpu_arm.c,v 1.38 2005-11-05 21:59:01 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -61,6 +61,9 @@ static char *arm_condition_string[16] = ARM_CONDITION_STRINGS;
 static char *arm_dpiname[16] = ARM_DPI_NAMES;
 static int arm_dpi_uses_d[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1 };
 static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
+
+static int arm_exception_to_mode[N_ARM_EXCEPTIONS] =
+	ARM_EXCEPTION_TO_MODE;
 
 /*  For quick_pc_to_pointers():  */
 #include "arm_quick_pc_to_pointers.h"
@@ -579,7 +582,6 @@ void arm_load_register_bank(struct cpu *cpu)
  */
 void arm_exception(struct cpu *cpu, int exception_nr)
 {
-	int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
 	int oldmode, newmode;
 	uint32_t retaddr;
 
@@ -1279,9 +1281,10 @@ void arm_mcr_mrc(struct cpu *cpu, uint32_t iword)
 		cpu->cd.arm.coproc[cp_num](cpu, opcode1, opcode2, l_bit,
 		    crn, crm, rd);
 	else {
-		fatal("arm_mcr_mrc: pc=0x%08x, iword=0x%08x: "
-		    "cp_num=%i\n", (int)cpu->pc, iword, cp_num);
-		exit(1);
+		fatal("[ arm_mcr_mrc: pc=0x%08x, iword=0x%08x: "
+		    "cp_num=%i ]\n", (int)cpu->pc, iword, cp_num);
+		arm_exception(cpu, ARM_EXCEPTION_UND);
+		/*  exit(1);  */
 	}
 }
 
@@ -1296,8 +1299,9 @@ void arm_mcr_mrc(struct cpu *cpu, uint32_t iword)
  */
 void arm_cdp(struct cpu *cpu, uint32_t iword)
 {
-	fatal("arm_cdp: pc=0x%08x, iword=0x%08x\n", (int)cpu->pc, iword);
-	exit(1);
+	fatal("[ arm_cdp: pc=0x%08x, iword=0x%08x ]\n", (int)cpu->pc, iword);
+	arm_exception(cpu, ARM_EXCEPTION_UND);
+	/*  exit(1);  */
 }
 
 

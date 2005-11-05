@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.8 2005-11-01 22:07:34 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.9 2005-11-05 23:04:28 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -93,7 +93,8 @@ void generate_opcode(uint32_t opcode)
 		exit(1);
 	}
 
-	printf("\nX(multi_0x%08x) {\n", opcode);
+	printf("\nvoid arm_instr_multi_0x%08x(struct cpu *cpu,"
+	    " struct arm_instr_call *ic) {\n", opcode);
 
 	printf("\tunsigned char *page;\n");
 	printf("\tuint32_t addr = cpu->cd.arm.r[%i];\n", r);
@@ -225,7 +226,21 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
+	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n"
+	    "#include <stdio.h>\n"
+	    "#include <stdlib.h>\n"
+	    "#include \"cpu.h\"\n"
+	    "#include \"misc.h\"\n"
+	    "#include \"arm_tmphead_1.h\"\n"
+	    "\n#define instr(x) arm_instr_ ## x\n");
+	printf("extern void arm_instr_nop(struct cpu *, "
+	    "struct arm_instr_call *);\n");
+	printf("extern void arm_pc_to_pointers(struct cpu *);\n");
+	printf("extern void arm_instr_bdt_load(struct cpu *, "
+	    "struct arm_instr_call *);\n");
+	printf("extern void arm_instr_bdt_store(struct cpu *, "
+	    "struct arm_instr_call *);\n");
+	printf("\n\n");
 
 	/*  Generate the opcode functions:  */
 	for (i=1; i<argc; i++)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.44 2005-11-05 21:59:01 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.45 2005-11-05 23:04:28 debug Exp $
  *
  *  ARM instructions.
  *
@@ -392,9 +392,6 @@ X(bl_samepage_trace)
 	cpu_functioncall_trace(cpu, lr - 4);
 }
 Y(bl_samepage_trace)
-
-
-#include "cpu_arm_instr_misc.c"
 
 
 /*
@@ -882,6 +879,8 @@ X(add);
 X(subs);
 
 
+#include "cpu_arm_instr_misc.c"
+
 
 /*
  *  bdt_load:  Block Data Transfer, Load
@@ -1190,7 +1189,11 @@ Y(bdt_store)
 
 
 /*  Various load/store multiple instructions:  */
-#include "tmp_arm_multi.c"
+uint32_t *multi_opcode[256];
+void (**multi_opcode_f[256])(struct cpu *, struct arm_instr_call *);
+X(multi_0x08b15018);
+X(multi_0x08ac000c__ge);
+X(multi_0x08a05018);
 
 
 /*****************************************************************************/
@@ -1637,10 +1640,10 @@ X(end_of_page)
  *  Check for the core of a NetBSD/arm memset; large memsets use a sequence
  *  of 16 store-multiple instructions, each storing 2 registers at a time.
  */
-void arm_combine_netbsd_memset(struct cpu *cpu, struct arm_instr_call *ic,
-	int low_addr)
+void arm_combine_netbsd_memset(struct cpu *cpu, void *v, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
+	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1667,10 +1670,10 @@ void arm_combine_netbsd_memset(struct cpu *cpu, struct arm_instr_call *ic,
  *  Check for the core of a NetBSD/arm memcpy; large memcpys use a
  *  sequence of ldmia instructions.
  */
-void arm_combine_netbsd_memcpy(struct cpu *cpu, struct arm_instr_call *ic,
-	int low_addr)
+void arm_combine_netbsd_memcpy(struct cpu *cpu, void *v, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
+	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1696,9 +1699,9 @@ void arm_combine_netbsd_memcpy(struct cpu *cpu, struct arm_instr_call *ic,
  *
  *  Check for the core of a NetBSD/arm cache clean. (There are two variants.)
  */
-void arm_combine_netbsd_cacheclean(struct cpu *cpu, struct arm_instr_call *ic,
-	int low_addr)
+void arm_combine_netbsd_cacheclean(struct cpu *cpu, void *v, int low_addr)
 {
+	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1720,9 +1723,9 @@ void arm_combine_netbsd_cacheclean(struct cpu *cpu, struct arm_instr_call *ic,
  *
  *  Check for the core of a NetBSD/arm cache clean. (Second variant.)
  */
-void arm_combine_netbsd_cacheclean2(struct cpu *cpu, struct arm_instr_call *ic,
-	int low_addr)
+void arm_combine_netbsd_cacheclean2(struct cpu *cpu, void *v, int low_addr)
 {
+	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1743,9 +1746,9 @@ void arm_combine_netbsd_cacheclean2(struct cpu *cpu, struct arm_instr_call *ic,
 /*
  *  arm_combine_netbsd_scanc():
  */
-void arm_combine_netbsd_scanc(struct cpu *cpu, struct arm_instr_call *ic,
-	int low_addr)
+void arm_combine_netbsd_scanc(struct cpu *cpu, void *v, int low_addr)
 {
+	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1770,10 +1773,10 @@ return;
 /*
  *  arm_combine_netbsd_copyin():
  */
-void arm_combine_netbsd_copyin(struct cpu *cpu, struct arm_instr_call *ic,
-	int low_addr)
+void arm_combine_netbsd_copyin(struct cpu *cpu, void *v, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
+	struct arm_instr_call *ic = v;
 	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1802,10 +1805,10 @@ void arm_combine_netbsd_copyin(struct cpu *cpu, struct arm_instr_call *ic,
 /*
  *  arm_combine_netbsd_copyout():
  */
-void arm_combine_netbsd_copyout(struct cpu *cpu, struct arm_instr_call *ic,
-	int low_addr)
+void arm_combine_netbsd_copyout(struct cpu *cpu, void *v, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
+	struct arm_instr_call *ic = v;
 	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1834,8 +1837,9 @@ void arm_combine_netbsd_copyout(struct cpu *cpu, struct arm_instr_call *ic,
 /*
  *  arm_combine_test2():
  */
-void arm_combine_test2(struct cpu *cpu, struct arm_instr_call *ic, int low_addr)
+void arm_combine_test2(struct cpu *cpu, void *v, int low_addr)
 {
+	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -1920,6 +1924,29 @@ static void arm_switch_mov1(struct arm_instr_call *ic, int rd,
 	case 12: ic->f = cond_instr(mov1_r12); break;
 	case 13: ic->f = cond_instr(mov1_r13); break;
 	case 14: ic->f = cond_instr(mov1_r14); break;
+	}
+}
+
+
+static void arm_switch_add1(struct arm_instr_call *ic, int rd,
+	int condition_code)
+{
+	switch (rd) {
+	case  0: ic->f = cond_instr(add1_r0); break;
+	case  1: ic->f = cond_instr(add1_r1); break;
+	case  2: ic->f = cond_instr(add1_r2); break;
+	case  3: ic->f = cond_instr(add1_r3); break;
+	case  4: ic->f = cond_instr(add1_r4); break;
+	case  5: ic->f = cond_instr(add1_r5); break;
+	case  6: ic->f = cond_instr(add1_r6); break;
+	case  7: ic->f = cond_instr(add1_r7); break;
+	case  8: ic->f = cond_instr(add1_r8); break;
+	case  9: ic->f = cond_instr(add1_r9); break;
+	case 10: ic->f = cond_instr(add1_r10); break;
+	case 11: ic->f = cond_instr(add1_r11); break;
+	case 12: ic->f = cond_instr(add1_r12); break;
+	case 13: ic->f = cond_instr(add1_r13); break;
+	case 14: ic->f = cond_instr(add1_r14); break;
 	}
 }
 
@@ -2229,14 +2256,21 @@ X(to_be_translated)
 		}
 
 		/*  "mov reg,#0":  */
-		if ((iword & 0x0fff0fff) == 0x03a03000 && rd != ARM_PC) {
+		if ((iword & 0x0fff0fff) == 0x03a00000 && rd != ARM_PC) {
 			arm_switch_clear(ic, rd, condition_code);
 			break;
 		}
 
 		/*  "mov reg,#1":  */
-		if ((iword & 0x0fff0fff) == 0x03a03001 && rd != ARM_PC) {
+		if ((iword & 0x0fff0fff) == 0x03a00001 && rd != ARM_PC) {
 			arm_switch_mov1(ic, rd, condition_code);
+			break;
+		}
+
+		/*  "add reg,reg,#1":  */
+		if ((iword & 0x0ff00fff) == 0x02800001 && rd != ARM_PC
+		    && rn == rd) {
+			arm_switch_add1(ic, rd, condition_code);
 			break;
 		}
 

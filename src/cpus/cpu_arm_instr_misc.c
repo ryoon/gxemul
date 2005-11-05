@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_misc.c,v 1.2 2005-11-01 22:07:00 debug Exp $
+ *  $Id: cpu_arm_instr_misc.c,v 1.3 2005-11-05 23:04:28 debug Exp $
  *
  *  Misc ARM instructions. Included from cpu_arm_instr.c.
  */
@@ -69,6 +69,26 @@ X(mov1_r11) { cpu->cd.arm.r[11] = 1; } Y(mov1_r11)
 X(mov1_r12) { cpu->cd.arm.r[12] = 1; } Y(mov1_r12)
 X(mov1_r13) { cpu->cd.arm.r[13] = 1; } Y(mov1_r13)
 X(mov1_r14) { cpu->cd.arm.r[14] = 1; } Y(mov1_r14)
+
+
+/*
+ *  add1_rX: Add #1 to a register. (Optimization hack.)
+ */
+X(add1_r0)  { cpu->cd.arm.r[ 0] ++; } Y(add1_r0)
+X(add1_r1)  { cpu->cd.arm.r[ 1] ++; } Y(add1_r1)
+X(add1_r2)  { cpu->cd.arm.r[ 2] ++; } Y(add1_r2)
+X(add1_r3)  { cpu->cd.arm.r[ 3] ++; } Y(add1_r3)
+X(add1_r4)  { cpu->cd.arm.r[ 4] ++; } Y(add1_r4)
+X(add1_r5)  { cpu->cd.arm.r[ 5] ++; } Y(add1_r5)
+X(add1_r6)  { cpu->cd.arm.r[ 6] ++; } Y(add1_r6)
+X(add1_r7)  { cpu->cd.arm.r[ 7] ++; } Y(add1_r7)
+X(add1_r8)  { cpu->cd.arm.r[ 8] ++; } Y(add1_r8)
+X(add1_r9)  { cpu->cd.arm.r[ 9] ++; } Y(add1_r9)
+X(add1_r10) { cpu->cd.arm.r[10] ++; } Y(add1_r10)
+X(add1_r11) { cpu->cd.arm.r[11] ++; } Y(add1_r11)
+X(add1_r12) { cpu->cd.arm.r[12] ++; } Y(add1_r12)
+X(add1_r13) { cpu->cd.arm.r[13] ++; } Y(add1_r13)
+X(add1_r14) { cpu->cd.arm.r[14] ++; } Y(add1_r14)
 
 
 /*

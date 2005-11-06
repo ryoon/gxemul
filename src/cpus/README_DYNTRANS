@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.4 2005-09-28 11:24:19 debug Exp $
+$Id: README_DYNTRANS,v 1.5 2005-11-06 22:51:17 debug Exp $
 
 Dyntrans TODO:
 
@@ -10,12 +10,14 @@ Dyntrans TODO:
 	Alpha		32-bit				64		no
 	ARM		32-bit, 16-bit (Thumb)		32		no
 	Atmel AVR	16-bit				8		no
+	F-CPU		?				?		?
 	HPPA		32-bit				64/32		yes
 	i960		32-bit + variable		32		?
 	IA64		128-bit				64		no
 	M68K		16-bit + variable		32		no
 	M88K		?				32 (?)		?
 	MIPS		32-bit, 16-bit (MIPS16)		64/32		yes
+	OpenRISC	?				?		?
 	PC532		?				32 (?)		?
 	POWER/PPC	32-bit				64/32		no
 	SH		32-bit, 16-bit (SHcompact)	64/32		yes(*)

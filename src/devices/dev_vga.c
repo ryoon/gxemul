@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.87 2005-11-06 21:15:57 debug Exp $
+ *  $Id: dev_vga.c,v 1.88 2005-11-06 22:40:57 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -53,7 +53,7 @@
 
 
 /*  For videomem -> framebuffer updates:  */
-#define	VGA_TICK_SHIFT		19
+#define	VGA_TICK_SHIFT		18
 
 #define	MAX_RETRACE_SCANLINES	420
 #define	N_IS1_READ_THRESHOLD	50

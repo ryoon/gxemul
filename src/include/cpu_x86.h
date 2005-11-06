@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.36 2005-11-05 13:39:41 debug Exp $
+ *  $Id: cpu_x86.h,v 1.37 2005-11-06 22:41:13 debug Exp $
  */
 
 #include "misc.h"
@@ -103,6 +103,7 @@ struct x86_model {
 
 struct x86_instr_call {
 	void	(*f)(struct cpu *, struct x86_instr_call *);
+	int	len;
 	size_t	arg[X86_N_IC_ARGS];
 };
 

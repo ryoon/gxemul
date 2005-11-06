@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.6 2005-10-27 14:01:15 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.7 2005-11-06 22:41:13 debug Exp $
  */
 
 #include "misc.h"
@@ -50,6 +50,7 @@ struct cpu_family;
 
 struct m68k_instr_call {
 	void	(*f)(struct cpu *, struct m68k_instr_call *);
+	int	len;
 	size_t	arg[M68K_N_IC_ARGS];
 };
 
@@ -111,6 +112,7 @@ struct m68k_cpu {
 	struct m68k_tc_physpage		*phys_page[M68K_N_VPH_ENTRIES];
 
 	uint32_t			phystranslation[M68K_N_VPH_ENTRIES/32];
+	int16_t				vaddr_to_tlbindex[M68K_N_VPH_ENTRIES];
 };
 
 

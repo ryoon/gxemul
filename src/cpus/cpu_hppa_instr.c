@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa_instr.c,v 1.2 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_hppa_instr.c,v 1.3 2005-11-06 22:41:12 debug Exp $
  *
  *  HPPA instructions.
  *
@@ -66,29 +66,6 @@ X(end_of_page)
 
 
 /*
- *  hppa_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct hppa_instr_call *ic,
-	uint32_t addr)
-{
-	int n_back;
-	n_back = (addr >> HPPA_INSTR_ALIGNMENT_SHIFT)
-	    & (HPPA_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 1) {
-		/*  TODO  */
-	}
-
-	/*  TODO: Combine forward as well  */
-}
-
-
-/*****************************************************************************/
-
-
-/*
  *  hppa_instr_to_be_translated():
  *
  *  Translate an instruction word into an hppa_instr_call. ic is filled in with
@@ -98,12 +75,12 @@ void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct hppa_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc, tmp_addr;
+	uint64_t addr, low_pc;
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode;
-	void (*samepage_function)(struct cpu *, struct hppa_instr_call *);
+	/* void (*samepage_function)(struct cpu *, struct hppa_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.hppa.cur_ic_page)

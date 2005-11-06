@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.20 2005-10-27 14:01:13 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.21 2005-11-06 22:41:12 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1556,86 +1556,6 @@ X(openfirmware)
 /*****************************************************************************/
 
 
-/*
- *  byte_fill_loop:
- *
- *  A byte-fill loop. Fills at most one page at a time. If the page was not
- *  in the host_store table, then the original sequence (beginning with
- *  cmpwi crX,rY,0) is executed instead.
- *
- *  L:  cmpwi   crX,rY,0		ic[0]
- *      stb     rW,0(rZ)		ic[1]
- *      subi    rY,rY,1			ic[2]
- *      addi    rZ,rZ,1			ic[3]
- *      bc      12,4*X+1,L		ic[4]
- */
-X(byte_fill_loop)
-{
-	int max_pages_left = 5;
-	unsigned int x = ic[0].arg[2], n, ofs, maxlen, c;
-	uint64_t *y = (uint64_t *)ic[0].arg[0];
-	uint64_t *z = (uint64_t *)ic[1].arg[1];
-	uint64_t *w = (uint64_t *)ic[1].arg[0];
-	unsigned char *page;
-#ifdef MODE32
-	uint32_t addr;
-#else
-	uint64_t addr;
-	fatal("byte_fill_loop: not for 64-bit mode yet\n");
-	exit(1);
-#endif
-
-restart_loop:
-	addr = reg(z);
-	/*  TODO: This only work with 32-bit addressing:  */
-	page = cpu->cd.ppc.host_store[addr >> 12];
-	if (page == NULL) {
-		instr(cmpwi)(cpu, ic);
-		return;
-	}
-
-	n = reg(y) + 1; ofs = addr & 0xfff; maxlen = 0x1000 - ofs;
-	if (n > maxlen)
-		n = maxlen;
-
-	/*  fatal("FILL A: x=%i n=%i ofs=0x%x y=0x%x z=0x%x w=0x%x\n", x,
-	    n, ofs, (int)reg(y), (int)reg(z), (int)reg(w));  */
-
-	memset(page + ofs, *w, n);
-
-	reg(z) = addr + n;
-	reg(y) -= n;
-
-	if ((int32_t)reg(y) + 1 < 0)
-		c = 8;
-	else if ((int32_t)reg(y) + 1 > 0)
-		c = 4;
-	else
-		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*x));
-	cpu->cd.ppc.cr |= (c << (28 - 4*x));
-
-	cpu->n_translated_instrs += (5 * n);
-
-	if (max_pages_left-- > 0 &&
-	    (int32_t)reg(y) > 0)
-		goto restart_loop;
-
-	cpu->n_translated_instrs --;
-	if ((int32_t)reg(y) > 0)
-		cpu->cd.ppc.next_ic = ic;
-	else
-		cpu->cd.ppc.next_ic = &ic[5];
-
-	/*  fatal("FILL B: x=%i n=%i ofs=0x%x y=0x%x z=0x%x w=0x%x\n", x, n,
-	    ofs, (int)reg(y), (int)reg(z), (int)reg(w));  */
-}
-
-
-/*****************************************************************************/
-
-
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
@@ -1647,53 +1567,6 @@ X(end_of_page)
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
-}
-
-
-/*****************************************************************************/
-
-
-/*
- *  ppc_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct ppc_instr_call *ic,
-	uint32_t addr)
-{
-	int n_back;
-	n_back = (addr >> PPC_INSTR_ALIGNMENT_SHIFT)
-	    & (PPC_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 4) {
-		/*
-		 *  L:  cmpwi   crX,rY,0		ic[-4]
-		 *      stb     rW,0(rZ)		ic[-3]
-		 *      subi    rY,rY,1			ic[-2]
-		 *      addi    rZ,rZ,1			ic[-1]
-		 *      bc      12,4*X+1,L		ic[0]
-		 */
-		if (ic[-4].f == instr(cmpwi) &&
-		    ic[-4].arg[0] == ic[-2].arg[0] && ic[-4].arg[1] == 0 &&
-
-		    ic[-3].f == instr(stb_0) &&
-		    ic[-3].arg[1] == ic[-1].arg[0] && ic[-3].arg[2] == 0 &&
-
-		    ic[-2].f == instr(addi) &&
-		    ic[-2].arg[0] == ic[-2].arg[2] && ic[-2].arg[1] == -1 &&
-
-		    ic[-1].f == instr(addi) &&
-		    ic[-1].arg[0] == ic[-1].arg[2] && ic[-1].arg[1] ==  1 &&
-
-		    ic[0].f == instr(bc_samepage) &&
-		    ic[0].arg[0] == (size_t)&ic[-4] &&
-		    ic[0].arg[1] == 12 && ic[0].arg[2] == 4*ic[-4].arg[2] + 1) {
-			ic[-4].f = instr(byte_fill_loop);
-			combined;
-		}
-	}
-
-	/*  TODO: Combine forward as well  */
 }
 
 

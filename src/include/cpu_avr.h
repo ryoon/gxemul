@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.7 2005-10-27 14:01:15 debug Exp $
+ *  $Id: cpu_avr.h,v 1.8 2005-11-06 22:41:13 debug Exp $
  */
 
 #include "misc.h"
@@ -49,6 +49,7 @@ struct cpu_family;
 
 struct avr_instr_call {
 	void	(*f)(struct cpu *, struct avr_instr_call *);
+	int	len;
 	size_t	arg[AVR_N_IC_ARGS];
 };
 
@@ -133,6 +134,7 @@ struct avr_cpu {
 	struct avr_tc_physpage		*phys_page[AVR_N_VPH_ENTRIES];
 
 	uint32_t			phystranslation[AVR_N_VPH_ENTRIES/32];
+	int16_t				vaddr_to_tlbindex[AVR_N_VPH_ENTRIES];
 };
 
 

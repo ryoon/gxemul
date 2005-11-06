@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1012 2005-11-06 21:15:54 debug Exp $
+$Id: HISTORY,v 1.1013 2005-11-06 22:41:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2385,3 +2385,4 @@ Changelog for GXemul:
 20051106	Modifying the -Y command line option to allow scaleup with
 		certain graphic controllers (only dev_vga so far), not just
 		scaledown.
+		Some minor dyntrans cleanups.

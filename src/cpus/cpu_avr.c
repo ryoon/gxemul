@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.5 2005-10-22 17:24:20 debug Exp $
+ *  $Id: cpu_avr.c,v 1.6 2005-11-06 22:41:11 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -43,6 +43,7 @@
 
 
 #define	DYNTRANS_32
+#define	DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 #include "tmp_avr_head.c"
 
 

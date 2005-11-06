@@ -25,16 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.3 2005-09-17 22:34:52 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.4 2005-11-06 22:41:12 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
- *  Individual functions should keep track of cpu->n_translated_instrs. Since
- *  AVR uses variable length instructions, cpu->cd.avr.next_ic must also be
- *  increased by the number of "instruction slots" that were executed. (I.e.
- *  if an instruction occupying 6 bytes was executed, then next_ic should be
- *  increased by 3.)
- *
+ *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (n_translated_instrs is automatically increased by 1 for each function
  *  call. If no instruction was executed, then it should be decreased. If, say,
  *  4 instructions were combined into one function and executed, then it should

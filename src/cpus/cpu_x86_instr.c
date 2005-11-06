@@ -25,16 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.2 2005-11-06 22:41:12 debug Exp $
  *
  *  x86/amd64 instructions.
  *
- *  Individual functions should keep track of cpu->n_translated_instrs. Since
- *  x86 uses variable length instructions, cpu->cd.x86.next_ic must also be
- *  increased by the number of "instruction slots" that were executed. (I.e.
- *  if an instruction occupying 5 bytes was executed, then next_ic should be
- *  increased by 5.)
- *
+ *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (n_translated_instrs is automatically increased by 1 for each function
  *  call. If no instruction was executed, then it should be decreased. If, say, 
  *  4 instructions were combined into one function and executed, then it should 
@@ -47,7 +42,6 @@
  */
 X(nop)
 {
-	cpu->cd.x86.next_ic ++;
 }
 
 
@@ -65,28 +59,6 @@ X(end_of_page)
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
-}
-
-
-/*****************************************************************************/
-
-
-/*
- *  x86_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct x86_instr_call *ic,
-	uint64_t addr)
-{
-	int n_back;
-	n_back = addr & (X86_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 1) {
-		/*  TODO  */
-	}
-
-	/*  TODO: Combine forward as well  */
 }
 
 

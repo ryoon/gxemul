@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.4 2005-10-27 14:01:15 debug Exp $
+ *  $Id: cpu_i960.h,v 1.5 2005-11-06 22:41:13 debug Exp $
  */
 
 #include "misc.h"
@@ -51,6 +51,7 @@ struct cpu_family;
 
 struct i960_instr_call {
 	void	(*f)(struct cpu *, struct i960_instr_call *);
+	int	len;
 	size_t	arg[I960_N_IC_ARGS];
 };
 
@@ -111,6 +112,7 @@ struct i960_cpu {
 	struct i960_tc_physpage		*phys_page[I960_N_VPH_ENTRIES];
 
 	uint32_t			phystranslation[I960_N_VPH_ENTRIES/32];
+	int16_t				vaddr_to_tlbindex[I960_N_VPH_ENTRIES];
 };
 
 

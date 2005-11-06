@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.29 2005-11-02 20:04:29 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.30 2005-11-06 22:41:12 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -94,7 +94,9 @@ a &= 0x03ffffff;
 #define S		gather_statistics(cpu)
 
 #ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic; ic->f(cpu, ic);
+#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic;		\
+			cpu->cd.DYNTRANS_ARCH.next_ic += ic->len;	\
+			ic->f(cpu, ic);
 #else
 #define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
 #endif

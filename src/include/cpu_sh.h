@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.7 2005-10-27 14:01:15 debug Exp $
+ *  $Id: cpu_sh.h,v 1.8 2005-11-06 22:41:13 debug Exp $
  */
 
 #include "misc.h"
@@ -105,6 +105,7 @@ struct sh_cpu {
 	struct sh_tc_physpage    *phys_page[SH_N_VPH_ENTRIES];
 
 	uint32_t		 phystranslation[SH_N_VPH_ENTRIES/32];
+	int16_t			 vaddr_to_tlbindex[SH_N_VPH_ENTRIES];
 };
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.7 2005-10-27 14:01:13 debug Exp $
+ *  $Id: generate_head.c,v 1.8 2005-11-06 22:41:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -138,10 +138,16 @@ int main(int argc, char *argv[])
 	/*  TODO: solve this in a nicer way!  */
 	if (strcmp(a, "avr") == 0)
 	        printf("static struct %s_instr_call nothing_call = { "
-		    "instr(nothing), {0,0} };\n", a);
-	else
+		    "instr(nothing), 0, {0,0} };\n", a);
+	else {
+		printf("#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH\n");
+	        printf("static struct %s_instr_call nothing_call = { "
+		    "instr(nothing), 0, {0,0,0} };\n", a);
+		printf("#else\n");
 	        printf("static struct %s_instr_call nothing_call = { "
 		    "instr(nothing), {0,0,0} };\n", a);
+		printf("#endif\n");
+	}
 
 	printf("\n");
 

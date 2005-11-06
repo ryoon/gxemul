@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.2 2005-09-04 02:49:11 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.3 2005-11-06 22:41:12 debug Exp $
  *
  *  SH instructions.
  *
@@ -67,29 +67,6 @@ X(end_of_page)
 
 
 /*
- *  sh_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct sh_instr_call *ic,
-	uint32_t addr)
-{
-	int n_back;
-	n_back = (addr >> SH_INSTR_ALIGNMENT_SHIFT)
-	    & (SH_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 1) {
-		/*  TODO  */
-	}
-
-	/*  TODO: Combine forward as well  */
-}
-
-
-/*****************************************************************************/
-
-
-/*
  *  sh_instr_to_be_translated():
  *
  *  Translate an instruction word into an sh_instr_call. ic is filled in with
@@ -99,12 +76,12 @@ void COMBINE_INSTRUCTIONS(struct cpu *cpu, struct sh_instr_call *ic,
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc, tmp_addr;
+	uint64_t addr, low_pc;
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, instr_size = 4;
-	void (*samepage_function)(struct cpu *, struct sh_instr_call *);
+	/* void (*samepage_function)(struct cpu *, struct sh_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	if (cpu->cd.sh.compact) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.2 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.3 2005-11-06 22:41:11 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -588,27 +588,6 @@ X(end_of_page)
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
-}
-
-
-/*****************************************************************************/
-
-
-/*
- *  alpha_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void alpha_combine_instructions(struct cpu *cpu, struct alpha_instr_call *ic,
-	uint64_t addr)
-{
-	int n_back;
-	n_back = (addr >> 2) & (ALPHA_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 1) {
-	}
-
-	/*  TODO: Combine forward as well  */
 }
 
 

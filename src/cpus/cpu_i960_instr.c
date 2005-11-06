@@ -25,16 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960_instr.c,v 1.1 2005-09-07 07:10:16 debug Exp $
+ *  $Id: cpu_i960_instr.c,v 1.2 2005-11-06 22:41:12 debug Exp $
  *
  *  Intel i960 instructions.
  *
- *  Individual functions should keep track of cpu->n_translated_instrs. Since
- *  i960 uses variable length instructions, cpu->cd.i960.next_ic must also be
- *  increased by the number of "instruction slots" that were executed. (I.e.
- *  if an instruction occupying 6 bytes was executed, then next_ic should be
- *  increased by 3.)
- *
+ *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (n_translated_instrs is automatically increased by 1 for each function
  *  call. If no instruction was executed, then it should be decreased. If, say,
  *  4 instructions were combined into one function and executed, then it should
@@ -47,7 +42,6 @@
  */
 X(nop)
 {
-	cpu->cd.i960.next_ic ++;
 }
 
 
@@ -72,28 +66,6 @@ X(end_of_page)
 
 
 /*
- *  i960_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void i960_combine_instructions(struct cpu *cpu, struct i960_instr_call *ic,
-	uint32_t addr)
-{
-	int n_back;
-	n_back = (addr >> 1) & (I960_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 1) {
-		/*  TODO  */
-	}
-
-	/*  TODO: Combine forward as well  */
-}
-
-
-/*****************************************************************************/
-
-
-/*
  *  i960_instr_to_be_translated():
  *
  *  Translate an instruction word into an i960_instr_call. ic is filled in with
@@ -108,7 +80,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode;
-	void (*samepage_function)(struct cpu *, struct i960_instr_call *);
+	/* void (*samepage_function)(struct cpu *, struct i960_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.i960.cur_ic_page)

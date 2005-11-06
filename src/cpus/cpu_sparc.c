@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.2 2005-10-22 17:24:21 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.3 2005-11-06 22:41:12 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -112,8 +112,8 @@ void sparc_cpu_dumpinfo(struct cpu *cpu)
 void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
-	uint64_t offset, tmp;
-	int i, x = cpu->cpu_id;
+	uint64_t offset;
+	int x = cpu->cpu_id;
 	int bits32 = 0;
 
 	if (gprs) {
@@ -217,10 +217,10 @@ int sparc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	uint64_t offset, addr;
+	uint64_t offset;
 	uint32_t iword;
 	int hi6;
-	char *symbol, *mnem = "ERROR";
+	char *symbol;
 
 	if (running)
 		dumpaddr = cpu->pc;

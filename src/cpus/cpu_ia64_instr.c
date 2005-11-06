@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64_instr.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_ia64_instr.c,v 1.2 2005-11-06 22:41:12 debug Exp $
  *
  *  IA64 instructions.
  *
@@ -58,27 +58,6 @@ X(end_of_page)
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
-}
-
-
-/*****************************************************************************/
-
-
-/*
- *  ia64_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void ia64_combine_instructions(struct cpu *cpu, struct ia64_instr_call *ic,
-	uint64_t addr)
-{
-	int n_back;
-	n_back = (addr >> 4) & (IA64_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 1) {
-	}
-
-	/*  TODO: Combine forward as well  */
 }
 
 

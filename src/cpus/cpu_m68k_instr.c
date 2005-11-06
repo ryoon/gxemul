@@ -25,16 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k_instr.c,v 1.2 2005-09-17 17:14:27 debug Exp $
+ *  $Id: cpu_m68k_instr.c,v 1.3 2005-11-06 22:41:12 debug Exp $
  *
  *  Motorola 68K instructions.
  *
- *  Individual functions should keep track of cpu->n_translated_instrs. Since
- *  M68K uses variable length instructions, cpu->cd.m68k.next_ic must also be
- *  increased by the number of "instruction slots" that were executed. (I.e.
- *  if an instruction occupying 6 bytes was executed, then next_ic should be
- *  increased by 3.)
- *
+ *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (n_translated_instrs is automatically increased by 1 for each function
  *  call. If no instruction was executed, then it should be decreased. If, say,
  *  4 instructions were combined into one function and executed, then it should
@@ -47,7 +42,6 @@
  */
 X(nop)
 {
-	cpu->cd.m68k.next_ic ++;
 }
 
 
@@ -72,28 +66,6 @@ X(end_of_page)
 
 
 /*
- *  m68k_combine_instructions():
- *
- *  Combine two or more instructions, if possible, into a single function call.
- */
-void m68k_combine_instructions(struct cpu *cpu, struct m68k_instr_call *ic,
-	uint32_t addr)
-{
-	int n_back;
-	n_back = (addr >> 1) & (M68K_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 1) {
-		/*  TODO  */
-	}
-
-	/*  TODO: Combine forward as well  */
-}
-
-
-/*****************************************************************************/
-
-
-/*
  *  m68k_instr_to_be_translated():
  *
  *  Translate an instruction word into an m68k_instr_call. ic is filled in with
@@ -108,7 +80,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[2];
 	int main_opcode;
-	void (*samepage_function)(struct cpu *, struct m68k_instr_call *);
+	/* void (*samepage_function)(struct cpu *, struct m68k_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.m68k.cur_ic_page)

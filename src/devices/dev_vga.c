@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.86 2005-10-27 14:01:14 debug Exp $
+ *  $Id: dev_vga.c,v 1.87 2005-11-06 21:15:57 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -777,7 +777,8 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 		case 0x01:
 			d->cur_mode = MODE_CHARCELL;
 			d->max_x = 40; d->max_y = 25;
-			d->pixel_repx = 2; d->pixel_repy = 1;
+			d->pixel_repx = machine->x11_scaleup * 2;
+			d->pixel_repy = machine->x11_scaleup;
 			d->font_width = 8;
 			d->font_height = 16;
 			d->font = font8x16;
@@ -787,7 +788,7 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 		case 0x03:
 			d->cur_mode = MODE_CHARCELL;
 			d->max_x = 80; d->max_y = 25;
-			d->pixel_repx = d->pixel_repy = 1;
+			d->pixel_repx = d->pixel_repy = machine->x11_scaleup;
 			d->font_width = 8;
 			d->font_height = 16;
 			d->font = font8x16;
@@ -797,8 +798,8 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 			d->max_x = 160;	d->max_y = 200;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
-			d->pixel_repx = 4;
-			d->pixel_repy = 2;
+			d->pixel_repx = 4 * machine->x11_scaleup;
+			d->pixel_repy = 2 * machine->x11_scaleup;
 			break;
 		case 0x09:
 		case 0x0d:
@@ -806,36 +807,38 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 			d->max_x = 320;	d->max_y = 200;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
-			d->pixel_repx = d->pixel_repy = 2;
+			d->pixel_repx = d->pixel_repy =
+			    2 * machine->x11_scaleup;
 			break;
 		case 0x0e:
 			d->cur_mode = MODE_GRAPHICS;
 			d->max_x = 640;	d->max_y = 200;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
-			d->pixel_repx = 1;
-			d->pixel_repy = 2;
+			d->pixel_repx = machine->x11_scaleup;
+			d->pixel_repy = machine->x11_scaleup * 2;
 			break;
 		case 0x10:
 			d->cur_mode = MODE_GRAPHICS;
 			d->max_x = 640; d->max_y = 350;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
-			d->pixel_repx = d->pixel_repy = 1;
+			d->pixel_repx = d->pixel_repy = machine->x11_scaleup;
 			break;
 		case 0x12:
 			d->cur_mode = MODE_GRAPHICS;
 			d->max_x = 640; d->max_y = 480;
 			d->graphics_mode = GRAPHICS_MODE_4BIT;
 			d->bits_per_pixel = 4;
-			d->pixel_repx = d->pixel_repy = 1;
+			d->pixel_repx = d->pixel_repy = machine->x11_scaleup;
 			break;
 		case 0x13:
 			d->cur_mode = MODE_GRAPHICS;
 			d->max_x = 320;	d->max_y = 200;
 			d->graphics_mode = GRAPHICS_MODE_8BIT;
 			d->bits_per_pixel = 8;
-			d->pixel_repx = d->pixel_repy = 2;
+			d->pixel_repx = d->pixel_repy =
+			    2 * machine->x11_scaleup;
 			break;
 		default:
 			fatal("TODO! video mode change hack (mode 0x%02x)\n",
@@ -1189,12 +1192,11 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->control_base   = control_base;
 	d->max_x          = 80;
 	d->max_y          = 25;
-	d->pixel_repx     = 1;
-	d->pixel_repy     = 1;
 	d->cur_mode       = MODE_CHARCELL;
 	d->crtc_reg[0xff] = 0x03;
 	d->charcells_size = 0x8000;
 	d->gfx_mem_size   = 1;	/*  Nothing, as we start in text mode  */
+	d->pixel_repx = d->pixel_repy = machine->x11_scaleup;
 
 	/*  Allocate in full pages, to make it possible to use bintrans:  */
 	allocsize = ((d->charcells_size-1) | (machine->arch_pagesize-1)) + 1;

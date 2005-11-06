@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.34 2005-11-02 20:05:15 debug Exp $
+ *  $Id: emul_parse.c,v 1.35 2005-11-06 21:15:55 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -619,6 +619,10 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		else {
 			m->x11_scaledown = atoi(cur_machine_x11_scaledown);
 			if (m->x11_scaledown < 0) {
+				m->x11_scaleup = 0 - m->x11_scaledown;
+				m->x11_scaledown = 1;
+			}
+			if (m->x11_scaledown < 1) {
 				fprintf(stderr, "Invalid scaledown value"
 				    " (%i)\n", m->x11_scaledown);
 				exit(1);

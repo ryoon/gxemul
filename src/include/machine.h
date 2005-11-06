@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.79 2005-11-05 21:59:03 debug Exp $
+ *  $Id: machine.h,v 1.80 2005-11-06 21:15:58 debug Exp $
  */
 
 #include <sys/types.h>
@@ -222,6 +222,7 @@ struct machine {
 	/*  X11/framebuffer stuff:  */
 	int	use_x11;
 	int	x11_scaledown;
+	int	x11_scaleup;
 	int	x11_n_display_names;
 	char	**x11_display_names;
 	int	x11_current_display_name_nr;	/*  updated by x11.c  */

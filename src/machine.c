@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.580 2005-11-05 21:59:00 debug Exp $
+ *  $Id: machine.c,v 1.581 2005-11-06 21:15:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -165,6 +165,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->boot_string_argument = NULL;
 	m->automatic_clock_adjustment = 1;
 	m->x11_scaledown = 1;
+	m->x11_scaleup = 1;
 	m->n_gfx_cards = 1;
 	m->dbe_on_nonexistant_memaccess = 1;
 	m->show_symbolic_register_names = 1;
@@ -5511,6 +5512,8 @@ void machine_dumpinfo(struct machine *m)
 		debug("Using X11");
 		if (m->x11_scaledown > 1)
 			debug(", scaledown %i", m->x11_scaledown);
+		if (m->x11_scaleup > 1)
+			debug(", scaleup %i", m->x11_scaleup);
 		if (m->x11_n_display_names > 0) {
 			for (i=0; i<m->x11_n_display_names; i++) {
 				debug(i? ", " : " (");

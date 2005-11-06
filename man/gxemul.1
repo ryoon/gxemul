@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.36 2005-11-03 08:59:38 debug Exp $
+.\" $Id: gxemul.1,v 1.37 2005-11-06 21:15:55 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -257,7 +257,17 @@ Scale down framebuffer windows by
 .Ar n
 x
 .Ar n
-times.
+times. This option is useful when emulating a very large framebuffer, and 
+the actual display is of lower resolution. If
+.Ar n
+is negative, then there will be no scaledown, but emulation of certain 
+graphic controllers will be scaled up
+by
+.Ar -n
+times instead. E.g. Using
+.Ar -2
+with VGA text mode emulation will result in 80x25 character cells rendered 
+in a 1280x800 window, instead of the normal resolution of 640x400.
 .It Fl y Ar x
 Set max_random_cycles_per_chunk to
 .Ar x

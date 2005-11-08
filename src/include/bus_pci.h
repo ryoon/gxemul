@@ -1,5 +1,5 @@
-#ifndef	PCI_BUS_H
-#define	PCI_BUS_H
+#ifndef	BUS_PCI_H
+#define	BUS_PCI_H
 
 /*
  *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.18 2005-11-08 11:01:48 debug Exp $
+ *  $Id: bus_pci.h,v 1.19 2005-11-08 12:03:27 debug Exp $
  */
 
 #include "misc.h"
@@ -82,4 +82,4 @@ struct pci_data *bus_pci_init(int irq_nr);
 	}
 
 
-#endif	/*  PCI_BUS_H  */
+#endif	/*  BUS_PCI_H  */

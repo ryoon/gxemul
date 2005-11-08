@@ -1,5 +1,5 @@
-#ifndef	CPU_TYPES_H
-#define	CPU_TYPES_H
+#ifndef	MIPS_CPU_TYPES_H
+#define	MIPS_CPU_TYPES_H
 
 /*
  *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.10 2005-09-23 10:36:03 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.11 2005-11-08 12:03:27 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -112,4 +112,4 @@
 	{ "Allegrex",	0x000000,   0x00,	0,	EXC32, MMU32,   2,       4, 1,14,6,2,14,6,2, 0, 0, 0 }, \
 	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
 
-#endif	/*  CPU_TYPES_H  */
+#endif	/*  MIPS_CPU_TYPES_H  */

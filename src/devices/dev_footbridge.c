@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.29 2005-11-05 21:59:02 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.30 2005-11-08 11:01:46 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -177,15 +177,15 @@ int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 	pci_word = relative_addr & 0x00ffffff;
 
 	res = bus_pci_access(cpu, mem, BUS_PCI_ADDR,
-	    &pci_word, MEM_WRITE, d->pcibus);
+	    &pci_word, sizeof(uint32_t), MEM_WRITE, d->pcibus);
 	if (writeflag == MEM_READ) {
 		res = bus_pci_access(cpu, mem, BUS_PCI_DATA,
-		    &pci_word, MEM_READ, d->pcibus);
+		    &pci_word, len, MEM_READ, d->pcibus);
 		odata = pci_word;
 	} else {
 		pci_word = idata;
 		res = bus_pci_access(cpu, mem, BUS_PCI_DATA,
-		    &pci_word, MEM_WRITE, d->pcibus);
+		    &pci_word, len, MEM_WRITE, d->pcibus);
 	}
 
 	if (writeflag == MEM_READ)
@@ -428,22 +428,17 @@ int devinit_footbridge(struct devinit *devinit)
 	switch (devinit->machine->machine_type) {
 	case MACHINE_CATS:
 		bus_pci_add(devinit->machine, d->pcibus,
-		    devinit->machine->memory, 0xc0, 7, 0,
-		    pci_ali_m1543_init, pci_ali_m1543_rr);
+		    devinit->machine->memory, 0xc0, 7, 0, "ali_m1543");
 		/*  bus_pci_add(devinit->machine, d->pcibus,
-		    devinit->machine->memory, 0xc0, 10, 0,
-		    pci_dec21143_init, pci_dec21143_rr);  */
+		    devinit->machine->memory, 0xc0, 10, 0, "dec21143");  */
 		bus_pci_add(devinit->machine, d->pcibus,
-		    devinit->machine->memory, 0xc0, 16, 0,
-		    pci_ali_m5229_init, pci_ali_m5229_rr);
+		    devinit->machine->memory, 0xc0, 16, 0, "ali_m5229");
 		break;
 	case MACHINE_NETWINDER:
 		bus_pci_add(devinit->machine, d->pcibus,
-		    devinit->machine->memory, 0xc0, 11, 0,
-		    pci_symphony_83c553_init, pci_symphony_83c553_rr);
+		    devinit->machine->memory, 0xc0, 11, 0, "symphony_83c553");
 		bus_pci_add(devinit->machine, d->pcibus,
-		    devinit->machine->memory, 0xc0, 11, 1,
-		    pci_symphony_82c105_init, pci_symphony_82c105_rr);
+		    devinit->machine->memory, 0xc0, 11, 1, "symphony_82c105");
 		break;
 	default:fatal("footbridge: unimplemented machine type.\n");
 		exit(1);

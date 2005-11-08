@@ -28,21 +28,21 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.17 2005-10-03 01:07:48 debug Exp $
+ *  $Id: bus_pci.h,v 1.18 2005-11-08 11:01:48 debug Exp $
  */
 
 #include "misc.h"
+#include "pcireg.h"
 
 struct machine;
 struct memory;
 
+#define	PCI_CFG_MEM_SIZE	0x80		/*  TODO  */
+
 struct pci_device {
-	int		bus, device, function;
-
-	void		(*init)(struct machine *, struct memory *mem);
-	uint32_t	(*read_register)(int reg);
-
-	struct pci_device *next;
+	struct pci_device	*next;
+	int			bus, device, function;
+	unsigned char		cfg_mem[PCI_CFG_MEM_SIZE];
 };
 
 struct pci_data {
@@ -57,59 +57,29 @@ struct pci_data {
 #define	BUS_PCI_DATA	0xcfc
 
 
-#include "pcireg.h"
-
-
 /*  bus_pci.c:  */
-int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, uint64_t *data, int writeflag, struct pci_data *pci_data);
-void bus_pci_add(struct machine *machine, struct pci_data *pci_data, struct memory *mem,
-	int bus, int device, int function,
-	void (*init)(struct machine *, struct memory *),
-	uint32_t (*read_register)(int reg));
+int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	uint64_t *data, int len, int writeflag, struct pci_data *pci_data);
+void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
+	struct memory *mem, int bus, int device, int function,
+	char *name);
 struct pci_data *bus_pci_init(int irq_nr);
 
 
-/*
- *  Individual devices:
- */
+#define	PCIINIT(name)	void pciinit_ ## name(struct machine *machine,	\
+	struct memory *mem, struct pci_device *pd)
 
-/*  ali_m1543:  */
-uint32_t pci_ali_m1543_rr(int reg);
-void pci_ali_m1543_init(struct machine *, struct memory *mem);
-uint32_t pci_ali_m5229_rr(int reg);
-void pci_ali_m5229_init(struct machine *, struct memory *mem);
-
-/*  ahc:  */
-uint32_t pci_ahc_rr(int reg);
-void pci_ahc_init(struct machine *, struct memory *mem);
-
-/*  dec21030:  */
-uint32_t pci_dec21030_rr(int reg);
-void pci_dec21030_init(struct machine *, struct memory *mem);
-
-/*  dec21143:  */
-uint32_t pci_dec21143_rr(int reg);
-void pci_dec21143_init(struct machine *, struct memory *mem);
-
-/*  igsfb:  */
-uint32_t pci_igsfb_rr(int reg);
-void pci_igsfb_init(struct machine *, struct memory *mem);
-
-/*  s3_virge:  */
-uint32_t pci_s3_virge_rr(int reg);
-void pci_s3_virge_init(struct machine *, struct memory *mem);
-
-/*  symphony_83c553:  */
-uint32_t pci_symphony_82c105_rr(int reg);
-void pci_symphony_82c105_init(struct machine *, struct memory *mem);
-uint32_t pci_symphony_83c553_rr(int reg);
-void pci_symphony_83c553_init(struct machine *, struct memory *mem);
-
-/*  vt82c586:  */
-uint32_t pci_vt82c586_isa_rr(int reg);
-void pci_vt82c586_isa_init(struct machine *, struct memory *mem);
-uint32_t pci_vt82c586_ide_rr(int reg);
-void pci_vt82c586_ide_init(struct machine *, struct memory *mem);
+/*  Store little-endian config data in the pci_data struct:  */
+#define PCI_SET_DATA(ofs,value)	{					\
+	if ((ofs) >= PCI_CFG_MEM_SIZE) {				\
+		fatal("PCI_SET_DATA(): ofs too high (%i)\n", (ofs));	\
+		exit(1);						\
+	}								\
+	pd->cfg_mem[(ofs)]     = (value) & 255;				\
+	pd->cfg_mem[(ofs) + 1] = ((value) >> 8) & 255;			\
+	pd->cfg_mem[(ofs) + 2] = ((value) >> 16) & 255;			\
+	pd->cfg_mem[(ofs) + 3] = ((value) >> 24) & 255;			\
+	}
 
 
 #endif	/*  PCI_BUS_H  */

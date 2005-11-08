@@ -1,4 +1,4 @@
-/*  gxemul: $Id: pcireg.h,v 1.4 2005-03-05 12:34:03 debug Exp $  */
+/*  gxemul: $Id: pcireg.h,v 1.5 2005-11-08 11:01:48 debug Exp $  */
 /*	$NetBSD: pcireg.h,v 1.37 2002/03/22 20:03:20 drochner Exp $	*/
 
 #ifndef _DEV_PCI_PCIREG_H_
@@ -72,7 +72,7 @@ typedef u_int16_t pci_product_id_t;
 
 #define PCI_ID_CODE(vid,pid)					\
 	((((vid) & PCI_VENDOR_MASK) << PCI_VENDOR_SHIFT) |	\
-	 (((pid) & PCI_PRODUCT_MASK) << PCI_PRODUCT_SHIFT))	\
+	 (((pid) & PCI_PRODUCT_MASK) << PCI_PRODUCT_SHIFT))
 
 /*
  * Command and status register.
@@ -85,7 +85,7 @@ typedef u_int16_t pci_product_id_t;
 
 #define PCI_COMMAND_STATUS_CODE(cmd,stat)			\
 	((((cmd) & PCI_COMMAND_MASK) >> PCI_COMMAND_SHIFT) |	\
-	 (((stat) & PCI_STATUS_MASK) >> PCI_STATUS_SHIFT))	\
+	 (((stat) & PCI_STATUS_MASK) >> PCI_STATUS_SHIFT))
 
 #define	PCI_COMMAND_IO_ENABLE			0x00000001
 #define	PCI_COMMAND_MEM_ENABLE			0x00000002

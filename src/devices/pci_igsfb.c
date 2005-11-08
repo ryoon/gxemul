@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_igsfb.c,v 1.1 2005-10-03 01:08:09 debug Exp $
+ *  $Id: pci_igsfb.c,v 1.2 2005-11-08 11:01:46 debug Exp $
  *
  *  Integraphics Systems "igsfb" Framebuffer (graphics) card.
  *
@@ -46,33 +46,16 @@
 #define	PCI_VENDOR_INTEGRAPHICS		0x10ea
 
 
-/*
- *  pci_igsfb_rr():
- */
-uint32_t pci_igsfb_rr(int reg)
+PCIINIT(igsfb)
 {
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_INTEGRAPHICS + (0x2010 << 16);
-	case 0x04:
-		return 0xffffffff;
-	case 0x08:
-		/*  VGA, revision 0x01  */
-		return PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
-		    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x01;
-	case 0x10:
-		/*  ?  */
-		return 0xb0000000;
-	default:
-		return 0;
-	}
-}
+	PCI_SET_DATA(PCI_ID_REG,
+	    PCI_ID_CODE(PCI_VENDOR_INTEGRAPHICS, 0x2010));
 
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
+	    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x01);
 
-/*
- *  pci_igsfb_init():
- */
-void pci_igsfb_init(struct machine *machine, struct memory *mem)
-{
+	/*  TODO  */
+	PCI_SET_DATA(0x10, 0xb0000000);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.34 2005-10-27 14:01:14 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.35 2005-11-08 11:01:46 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -372,11 +372,10 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {
 			res = bus_pci_access(cpu, mem, relative_addr,
-			    &idata, writeflag, d->pci_data);
+			    &idata, len, writeflag, d->pci_data);
 		} else {
 			res = bus_pci_access(cpu, mem, relative_addr,
-			    &odata, writeflag, d->pci_data);
-			/*  odata = 0;  */
+			    &odata, len, writeflag, d->pci_data);
 		}
 		break;
 	default:

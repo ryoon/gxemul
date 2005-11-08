@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_s3_virge.c,v 1.1 2005-09-30 13:33:01 debug Exp $
+ *  $Id: pci_s3_virge.c,v 1.2 2005-11-08 11:01:46 debug Exp $
  *
  *  S3 ViRGE graphics.
  *
@@ -47,30 +47,14 @@
 #define PCI_PRODUCT_S3_VIRGE		0x5631
 #define	PCI_PRODUCT_S3_VIRGE_DX		0x8a01
 
-/*
- *  pci_s3_virge_rr():
- */
-uint32_t pci_s3_virge_rr(int reg)
-{
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_S3 + (PCI_PRODUCT_S3_VIRGE_DX << 16);
-	case 0x04:
-		return 0xffffffff;
-	case 0x08:
-		/*  VGA, revision 0x01  */
-		return PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
-		    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x01;
-	default:
-		return 0;
-	}
-}
 
-
-/*
- *  pci_s3_virge_init():
- */
-void pci_s3_virge_init(struct machine *machine, struct memory *mem)
+PCIINIT(s3_virge)
 {
+	PCI_SET_DATA(PCI_ID_REG,
+	    PCI_ID_CODE(PCI_VENDOR_S3, PCI_PRODUCT_S3_VIRGE_DX));
+
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
+	    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x01);
 }
 

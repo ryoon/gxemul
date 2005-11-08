@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21143.c,v 1.10 2005-10-25 06:49:08 debug Exp $
+ *  $Id: pci_dec21143.c,v 1.11 2005-11-08 11:01:46 debug Exp $
  *
  *  DEC 21143 ("Tulip") PCI ethernet.
  *
@@ -149,10 +149,7 @@ uint32_t pci_dec21143_rr(int reg)
 }
 
 
-/*
- *  pci_dec21143_init():
- */
-void pci_dec21143_init(struct machine *machine, struct memory *mem)
+PCIINIT(dec21143)
 {
 	struct dec21143_data *d;
 	d = malloc(sizeof(struct dec21143_data));

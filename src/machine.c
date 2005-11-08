@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.581 2005-11-06 21:15:55 debug Exp $
+ *  $Id: machine.c,v 1.582 2005-11-08 11:01:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2402,11 +2402,11 @@ void machine_setup(struct machine *machine)
 		 *  The PCI controller interrupts at ISA interrupt 9.
 		 */
 		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 8 + 9, 11);
-		/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
-		bus_pci_add(machine, pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
-		bus_pci_add(machine, pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
-		bus_pci_add(machine, pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
-		/*  bus_pci_add(machine, pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);  */
+		/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, "dec21143");  */
+		bus_pci_add(machine, pci_data, mem, 0,  8, 0, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
+		bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
+		bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
+		/*  bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");  */
 
 		if (machine->prom_emulation) {
 			/*
@@ -3238,7 +3238,7 @@ Why is this here? TODO
 				 */
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
-				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
+				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, "ne2000");  TODO  */
 
 				/*  TODO: make this nicer  */
 				if (diskimage_exist(machine, 0, DISKIMAGE_SCSI) ||
@@ -3249,10 +3249,10 @@ Why is this here? TODO
 				    diskimage_exist(machine, 5, DISKIMAGE_SCSI) ||
 				    diskimage_exist(machine, 6, DISKIMAGE_SCSI) ||
 				    diskimage_exist(machine, 7, DISKIMAGE_SCSI))
-					bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
+					bus_pci_add(machine, pci_data, mem, 0, 1, 0, "ahc");
 
 				/*  TODO: second ahc  */
-				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
+				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, "ahc");  */
 
 				break;
 			case 35:
@@ -3334,7 +3334,7 @@ Why is this here? TODO
 				case MACHINE_ARC_NEC_RD94:
 				case MACHINE_ARC_NEC_R94:
 					/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
-					bus_pci_add(machine, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
+					bus_pci_add(machine, pci_data, mem, 0, 3, 0, "dec21030");	/*  tga graphics  */
 					break;
 				case MACHINE_ARC_NEC_R96:
 					dev_fb_init(machine, mem, 0x100e00000ULL,
@@ -3928,8 +3928,8 @@ Not yet.
 
 			/*  TODO: Haha, this is bogus. Just a cut&paste
 			    from the Cobalt emulation above.  */
-			bus_pci_add(machine, pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
-			bus_pci_add(machine, pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
+			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
+			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
 
 			device_add(machine, "malta_lcd addr=0x1f000400");
 			break;
@@ -4594,7 +4594,7 @@ Not yet.
 
 		if (machine->use_x11) {
 			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-			    mem, 0xc0, 8, 0, pci_s3_virge_init, pci_s3_virge_rr);
+			    mem, 0xc0, 8, 0, "s3_virge");
 			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
 			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 			    32 + 1, 32 + 12, machine->use_x11, 0);
@@ -4811,7 +4811,7 @@ Not yet.
 
 		if (machine->use_x11) {
 			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-			    mem, 0xc0, 8, 0, pci_igsfb_init, pci_igsfb_rr);
+			    mem, 0xc0, 8, 0, "igsfb");
 			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
 			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 			    32 + 1, 32 + 12, machine->use_x11, 0);

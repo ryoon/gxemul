@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: autodev_head.c,v 1.4 2005-02-22 19:08:59 debug Exp $
+ *  $Id: autodev_head.c,v 1.5 2005-11-08 11:01:46 debug Exp $
  *
  *  Automatically register all devices from the devices/ subdir.
  *
@@ -36,5 +36,6 @@
 
 #include "stdio.h"
 
+#include "bus_pci.h"
 #include "device.h"
 

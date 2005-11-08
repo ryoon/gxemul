@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.18 2005-09-27 23:18:32 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.19 2005-11-08 11:01:46 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -81,14 +81,6 @@ uint32_t pci_vt82c586_isa_rr(int reg)
 
 
 /*
- *  pci_vt82c586_isa_init():
- */
-void pci_vt82c586_isa_init(struct machine *machine, struct memory *mem)
-{
-}
-
-
-/*
  *  pci_vt82c586_ide_rr():
  */
 uint32_t pci_vt82c586_ide_rr(int reg)
@@ -114,10 +106,12 @@ uint32_t pci_vt82c586_ide_rr(int reg)
 }
 
 
-/*
- *  pci_vt82c586_ide_init():
- */
-void pci_vt82c586_ide_init(struct machine *machine, struct memory *mem)
+PCIINIT(vt82c586_isa)
+{
+}
+
+
+PCIINIT(vt82c586_ide)
 {
 	/*
 	 *  TODO: The check for machine type shouldn't be here?

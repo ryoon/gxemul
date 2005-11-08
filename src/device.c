@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.16 2005-08-10 22:25:50 debug Exp $
+ *  $Id: device.c,v 1.17 2005-11-08 11:01:45 debug Exp $
  *
  *  Device registry framework.
  */
@@ -42,6 +42,9 @@ static struct device_entry *device_entries = NULL;
 static int device_entries_sorted = 0;
 static int n_device_entries = 0;
 static int device_exit_on_error = 1;
+
+static struct pci_entry *pci_entries = NULL;
+static int n_pci_entries = 0;
 
 
 /*
@@ -101,6 +104,51 @@ int device_register(char *name, int (*initf)(struct devinit *))
 	device_entries_sorted = 0;
 	n_device_entries ++;
 	return 1;
+}
+
+
+/*
+ *  pci_register():
+ *
+ *  Registers a pci device. The pci device is added to the pci_entries array.
+ *
+ *  Return value is 1 if the pci device was registered. If it was not
+ *  added, this function does not return.
+ */
+int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
+	struct pci_device *))
+{
+	pci_entries = realloc(pci_entries, sizeof(struct pci_entry)
+	    * (n_pci_entries + 1));
+	if (pci_entries == NULL) {
+		fprintf(stderr, "pci_register(): out of memory\n");
+		exit(1);
+	}
+
+	memset(&pci_entries[n_pci_entries], 0, sizeof(struct pci_entry));
+
+	pci_entries[n_pci_entries].name = strdup(name);
+	pci_entries[n_pci_entries].initf = initf;
+	n_pci_entries ++;
+	return 1;
+}
+
+
+/*
+ *  pci_lookup_initf():
+ *
+ *  Find a pci device init function by scanning the pci_entries array.
+ *
+ *  Return value is a function pointer, or NULL if the name was not found.
+ */
+void (*pci_lookup_initf(char *name))(struct machine *machine,
+	struct memory *mem, struct pci_device *pd)
+{
+	int i;
+	for (i=0; i<n_pci_entries; i++)
+		if (strcmp(name, pci_entries[i].name) == 0)
+			return pci_entries[i].initf;
+	return NULL;
 }
 
 

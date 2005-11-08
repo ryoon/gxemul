@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1013 2005-11-06 22:41:10 debug Exp $
+$Id: HISTORY,v 1.1014 2005-11-08 11:01:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2386,3 +2386,7 @@ Changelog for GXemul:
 		certain graphic controllers (only dev_vga so far), not just
 		scaledown.
 		Some minor dyntrans cleanups.
+20051107	Beginning a cleanup up the PCI subsystem (removing the
+		read_register hack, etc).
+20051108	Continuing the cleanup; splitting up some pci devices into a
+		normal autodev device and some separate pci glue code.

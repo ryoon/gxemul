@@ -28,12 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.9 2005-08-05 09:11:49 debug Exp $
+ *  $Id: device.h,v 1.10 2005-11-08 11:01:48 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
 
 #include "misc.h"
+#include "bus_pci.h"
 
 struct machine;
 
@@ -56,6 +57,12 @@ struct device_entry {
 	int		(*initf)(struct devinit *);
 };
 
+struct pci_entry {
+	char		*name;
+	void		(*initf)(struct machine *, struct memory *,
+			    struct pci_device *);
+};
+
 /*  autodev.c: (built automatically in the devices/ directory):  */
 void autodev_init(void);
 
@@ -68,5 +75,9 @@ void device_dumplist(void);
 void device_set_exit_on_error(int exit_on_error);
 void device_init(void);
 
+int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
+	struct pci_device *));
+void (*pci_lookup_initf(char *name))(struct machine *machine,
+	struct memory *mem, struct pci_device *pd);
 
-#endif	/*  CONSOLE_H  */
+#endif	/*  DEVICE_H  */

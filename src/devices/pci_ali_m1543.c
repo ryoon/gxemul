@@ -25,12 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ali_m1543.c,v 1.3 2005-10-11 03:31:29 debug Exp $
+ *  $Id: pci_ali_m1543.c,v 1.4 2005-11-08 11:01:46 debug Exp $
  *
- *  Acer Labs M5229 PCIIDE (UDMA) controller.
+ *  Acer Labs M5229 PCI-IDE (UDMA) controller.
  *  Acer Labs M1543 PCI->ISA bridge.
- *
- *  TODO: These are just dummies.
  */
 
 #include <stdio.h>
@@ -39,7 +37,6 @@
 
 #include "bus_pci.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -50,64 +47,46 @@
 #define	PCI_PRODUCT_ALI_M5229		0x5229
 
 
-
-
-/*
- *  pci_ali_m1543_rr():
- */
-uint32_t pci_ali_m1543_rr(int reg)
+PCIINIT(ali_m1543)
 {
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_ALI + (PCI_PRODUCT_ALI_M1543 << 16);
-	case 0x04:
-		return 0xffffffff;	/*  ???  */
-	case 0x08:
-		/*  Revision  */
-		return PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
-		    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0xc3;
-	case 0x0c:
-		/*  Bit 7 of Header-type byte ==> multi-function device  */
-		return 0x00800000;
-	default:
-		return 0;
-	}
+	PCI_SET_DATA(PCI_ID_REG,
+	    PCI_ID_CODE(PCI_VENDOR_ALI, PCI_PRODUCT_ALI_M1543));
+
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0xc3);
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
 }
 
 
-/*
- *  pci_ali_m1543_init():
- */
-void pci_ali_m1543_init(struct machine *machine, struct memory *mem)
+PCIINIT(ali_m5229)
 {
-}
+	PCI_SET_DATA(PCI_ID_REG,
+	    PCI_ID_CODE(PCI_VENDOR_ALI, PCI_PRODUCT_ALI_M5229));
+
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1);
+
+#if 0
+/*  TODO:  */
+case 0x10:
+	return 0x000001f1;
+case 0x14:
+	return 0x000003f7;
+case 0x18:
+	return 0x00000171;
+case 0x1c:
+	return 0x00000377;
+case 60:
+	return 0x8e;	/*  ISA int 14  */
+case 61:
+	return 0x04;
+#endif
 
 
-/*
- *  pci_ali_m5229_rr():
- */
-uint32_t pci_ali_m5229_rr(int reg)
-{
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_ALI + (PCI_PRODUCT_ALI_M5229 << 16);
-	case 0x04:
-		return 0xffffffff;	/*  ???  */
-	case 0x08:
-		/*  Possibly not correct:  */
-		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
-		    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1;
-	default:
-		return 0;
-	}
-}
-
-
-/*
- *  pci_ali_m5229_init():
- */
-void pci_ali_m5229_init(struct machine *machine, struct memory *mem)
-{
 	/*
 	 *  TODO: The check for machine type shouldn't be here?
 	 */
@@ -120,7 +99,7 @@ void pci_ali_m5229_init(struct machine *machine, struct memory *mem)
 		/*  device_add(machine, "wdc addr=0x7c000170 irq=47");  */
 		break;
 
-	default:fatal("pci_ali_m5229_init(): unimplemented machine type\n");
+	default:fatal("ali_m5229: unimplemented machine type\n");
 		exit(1);
 	}
 }

@@ -25,25 +25,93 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.12 2005-09-27 23:18:32 debug Exp $
+ *  $Id: bus_pci.c,v 1.13 2005-11-08 11:01:46 debug Exp $
  *  
- *  This is a generic PCI bus device, used by even lower level devices.
- *  For example, the "gt" device used in Cobalt machines contains a PCI
- *  device.
- *
- *  TODO:  This more or less just a dummy bus device, so far.
+ *  Generic PCI bus framework. It is not a normal "device", but is used by
+ *  individual PCI controllers and devices.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "device.h"
 #include "memory.h"
 #include "misc.h"
 
 #include "bus_pci.h"
 
+
 /*  #define debug fatal  */
+
+
+/*
+ *  bus_pci_data_access():
+ */
+void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
+	uint64_t *data, int len, int writeflag, struct pci_data *pci_data)
+{
+	struct pci_device *dev, *found = NULL;
+	int bus, device, function, registernr;
+
+	if (writeflag == MEM_WRITE) {
+		debug("[ bus_pci: write to PCI DATA: data = "
+		    "0x%016llx ]\n", (long long)*data);
+		if (*data == 0xffffffffULL)
+			pci_data->last_was_write_ffffffff = 1;
+	} else {
+		/*  Get the bus, device, and function numbers from
+		    the address:  */
+		bus        = (pci_data->pci_addr >> 16) & 0xff;
+		device     = (pci_data->pci_addr >> 11) & 0x1f;
+		function   = (pci_data->pci_addr >> 8)  & 0x7;
+		registernr = (pci_data->pci_addr)       & 0xff;
+
+		/*  Scan through the list of pci_device entries.  */
+		dev = pci_data->first_device;
+		while (dev != NULL && found == NULL) {
+			if (dev->bus == bus &&
+			    dev->function == function &&
+			    dev->device == device)
+				found = dev;
+			dev = dev->next;
+		}
+
+		if (found == NULL) {
+			if ((pci_data->pci_addr & 0xff) == 0)
+				*data = 0xffffffff;
+			else
+				*data = 0;
+			return;
+		}
+
+		*data = 0;
+
+		if (pci_data->last_was_write_ffffffff &&
+		    registernr >= 0x10 && registernr <= 0x24) {
+			/*  TODO:  real length!!!  */
+			*data = 0x00400000 - 1;
+		} else if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
+			/*  Read data as little-endian:  */
+			*data = found->cfg_mem[registernr];
+			if (len > 1)
+				*data |= (found->cfg_mem[registernr+1] << 8);
+			if (len > 2)
+				*data |= (found->cfg_mem[registernr+2] << 16);
+			if (len > 3)
+				*data |= (found->cfg_mem[registernr+3] << 24);
+			if (len > 4)
+				fatal("TODO: more than 32-bit PCI access?\n");
+		}
+
+		pci_data->last_was_write_ffffffff = 0;
+
+		debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx "
+		    "(bus %i, device %i, function %i, register "
+		    "0x%02x): 0x%08lx ]\n", (long)pci_data->pci_addr,
+		    bus, device, function, registernr, (long)*data);
+	}
+}
 
 
 /*
@@ -56,15 +124,13 @@
  *  Returns 1 if ok, 0 on error.
  */
 int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	uint64_t *data, int writeflag, struct pci_data *pci_data)
+	uint64_t *data, int len, int writeflag, struct pci_data *pci_data)
 {
-	struct pci_device *dev, *found;
-	int bus, device, function, registernr;
-
 	if (writeflag == MEM_READ)
 		*data = 0;
 
 	switch (relative_addr) {
+
 	case BUS_PCI_ADDR:
 		if (writeflag == MEM_WRITE) {
 			debug("[ bus_pci: write to  PCI ADDR: data = 0x%016llx"
@@ -76,66 +142,20 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			*data = pci_data->pci_addr;
 		}
 		break;
+
 	case BUS_PCI_DATA:
-		if (writeflag == MEM_WRITE) {
-			debug("[ bus_pci: write to PCI DATA: data = "
-			    "0x%016llx ]\n", (long long)*data);
-			if (*data == 0xffffffffULL)
-				pci_data->last_was_write_ffffffff = 1;
-		} else {
-			/*  Get the bus, device, and function numbers from
-			    the address:  */
-			bus        = (pci_data->pci_addr >> 16) & 0xff;
-			device     = (pci_data->pci_addr >> 11) & 0x1f;
-			function   = (pci_data->pci_addr >> 8)  & 0x7;
-			registernr = (pci_data->pci_addr)       & 0xff;
-
-			/*  Scan through the list of pci_device entries.  */
-			dev = pci_data->first_device;
-			found = NULL;
-
-			while (dev != NULL && found == NULL) {
-				if (dev->bus == bus &&
-				    dev->function == function &&
-				    dev->device == device)
-					found = dev;
-				dev = dev->next;
-			}
-
-			if (found == NULL) {
-				if ((pci_data->pci_addr & 0xff) == 0)
-					*data = 0xffffffff;
-				else
-					*data = 0;
-				return 1;
-			}
-
-			*data = 0;
-
-			if (pci_data->last_was_write_ffffffff &&
-			    registernr >= 0x10 && registernr <= 0x24) {
-				/*  TODO:  real length!!!  */
-				*data = 0x00400000 - 1;
-			} else if (found->read_register != NULL)
-				*data = found->read_register(registernr);
-
-			pci_data->last_was_write_ffffffff = 0;
-
-			debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx "
-			    "(bus %i, device %i, function %i, register "
-			    "0x%02x): 0x%08lx ]\n", (long)pci_data->pci_addr,
-			    bus, device, function, registernr, (long)*data);
-		}
-
+		bus_pci_data_access(cpu, mem, data, len, writeflag, pci_data);
 		break;
+
 	default:
-		if (writeflag==MEM_READ) {
+		if (writeflag == MEM_READ) {
 			debug("[ bus_pci: read from unimplemented addr "
 			    "0x%x ]\n", (int)relative_addr);
 			*data = 0;
 		} else {
 			debug("[ bus_pci: write to unimplemented addr "
-			    "0x%x:", (int)relative_addr);
+			    "0x%x: 0x%llx ]\n", (int)relative_addr,
+			    (long long)data);
 		}
 	}
 
@@ -150,49 +170,57 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
  */
 void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	struct memory *mem, int bus, int device, int function,
-	void (*init)(struct machine *, struct memory *),
-	uint32_t (*read_register)(int reg))
+	char *name)
 {
-	struct pci_device *new_device;
+	struct pci_device *pd;
+	void (*init)(struct machine *, struct memory *, struct pci_device *);
 
 	if (pci_data == NULL) {
 		fatal("bus_pci_add(): pci_data == NULL!\n");
 		exit(1);
 	}
 
+	/*  Find the PCI device:  */
+	init = pci_lookup_initf(name);
+
 	/*  Make sure this bus/device/function number isn't already in use:  */
-	new_device = pci_data->first_device;
-	while (new_device != NULL) {
-		if (new_device->bus == bus &&
-		    new_device->device == device &&
-		    new_device->function == function) {
+	pd = pci_data->first_device;
+	while (pd != NULL) {
+		if (pd->bus == bus && pd->device == device &&
+		    pd->function == function) {
 			fatal("bus_pci_add(): (bus %i, device %i, function"
 			    " %i) already in use\n", bus, device, function);
-			return;
+			exit(1);
 		}
-		new_device = new_device->next;
+		pd = pd->next;
 	}
 
-	new_device = malloc(sizeof(struct pci_device));
-	if (new_device == NULL) {
+	pd = malloc(sizeof(struct pci_device));
+	if (pd == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
-	memset(new_device, 0, sizeof(struct pci_device));
-	new_device->bus           = bus;
-	new_device->device        = device;
-	new_device->function      = function;
-	new_device->init          = init;
-	new_device->read_register = read_register;
+	memset(pd, 0, sizeof(struct pci_device));
 
 	/*  Add the new device first in the PCI bus' chain:  */
-	new_device->next = pci_data->first_device;
-	pci_data->first_device = new_device;
+	pd->next = pci_data->first_device;
+	pci_data->first_device = pd;
+
+	pd->bus      = bus;
+	pd->device   = device;
+	pd->function = function;
+
+	/*  Initialize some default values:  */
+	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0xffffffffULL);	/*  TODO  */
+
+	if (init == NULL) {
+		fatal("No init function for PCI device \"%s\"?\n", name);
+		exit(1);
+	}
 
 	/*  Call the PCI device' init function:  */
-	if (init != NULL)
-		init(machine, mem);
+	init(machine, mem, pd);
 }
 
 

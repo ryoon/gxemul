@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.95 2005-11-05 17:56:47 debug Exp $
+#  $Id: Makefile.skel,v 1.96 2005-11-08 11:01:46 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -20,7 +20,7 @@ OBJS=lk201.o \
 	dev_kn01.o dev_kn02.o dev_kn210.o dev_kn220.o dev_kn230.o \
 	dev_dec5800.o \
 	dev_dec_ioasic.o dev_turbochannel.o \
-	dev_sii.o dev_asc.o dev_wdsc.o dev_wdc.o \
+	dev_sii.o dev_asc.o dev_wdsc.o dev_wdc.o dev_ahc.o \
 	dev_le.o dev_sn.o \
 	dev_ps2_stuff.o dev_ps2_gs.o dev_ps2_gif.o \
 	dev_ps2_spd.o dev_ps2_ether.o \
@@ -41,7 +41,7 @@ all:
 	$(MAKE) objs
 	$(MAKE) autodev.o
 
-autodev.c: $(OBJS)
+autodev.c: $(OBJS) autodev_head.c autodev_middle.c autodev_tail.c
 	./makeautodev.sh
 
 objs: $(OBJS)

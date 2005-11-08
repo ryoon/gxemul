@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.28 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_gt.c,v 1.29 2005-11-08 11:01:46 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -151,10 +151,10 @@ cpu_interrupt_ack(cpu, d->irqnr);
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {
 			bus_pci_access(cpu, mem, relative_addr, &idata,
-			    writeflag, d->pci_data);
+			    len, writeflag, d->pci_data);
 		} else {
 			bus_pci_access(cpu, mem, relative_addr, &odata,
-			    writeflag, d->pci_data);
+			    len, writeflag, d->pci_data);
 		}
 		break;
 	default:
@@ -254,9 +254,8 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64011
 	 *  System Controller, rev 1
 	 */
-	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0, pci_gt_init,
-	    d->type == PCI_PRODUCT_GALILEO_GT64011?
-	    pci_gt_rr_011 : pci_gt_rr_120);
+	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0,
+	    d->type == PCI_PRODUCT_GALILEO_GT64011? "gt64011" : "gt64120");
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH,
 	    dev_gt_access, d, MEM_DEFAULT, NULL);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.16 2005-07-12 08:49:13 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.17 2005-11-08 11:01:46 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -268,10 +268,7 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 }
 
 
-/*
- *  pci_dec21030_init():
- */
-void pci_dec21030_init(struct machine *machine, struct memory *mem)
+PCIINIT(dec21030)
 {
 	struct dec21030_data *d;
 

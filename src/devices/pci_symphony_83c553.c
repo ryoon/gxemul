@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_symphony_83c553.c,v 1.4 2005-09-30 23:55:57 debug Exp $
+ *  $Id: pci_symphony_83c553.c,v 1.5 2005-11-08 11:01:46 debug Exp $
  *
  *  Symphony Labs 82C105 PCIIDE controller.
  *  Symphony Labs 83C553 PCI->ISA bridge.
@@ -75,29 +75,6 @@ uint32_t pci_symphony_82c105_rr(int reg)
 
 
 /*
- *  pci_symphony_82c105_init():
- */
-void pci_symphony_82c105_init(struct machine *machine, struct memory *mem)
-{
-	/*
-	 *  TODO: The check for machine type shouldn't be here?
-	 */
-
-	switch (machine->machine_type) {
-
-	case MACHINE_NETWINDER:
-		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
-		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
-		break;
-
-	default:fatal("pci_symphony_82c105_init(): unimplemented machine "
-		    "type %i\n", machine->machine_type);
-		exit(1);
-	}
-}
-
-
-/*
  *  pci_symphony_83c553_rr():
  */
 uint32_t pci_symphony_83c553_rr(int reg)
@@ -121,10 +98,27 @@ uint32_t pci_symphony_83c553_rr(int reg)
 }
 
 
-/*
- *  pci_symphony_83c553_init():
- */
-void pci_symphony_83c553_init(struct machine *machine, struct memory *mem)
+PCIINIT(symphony_82c105)
+{
+	/*
+	 *  TODO: The check for machine type shouldn't be here?
+	 */
+
+	switch (machine->machine_type) {
+
+	case MACHINE_NETWINDER:
+		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
+		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
+		break;
+
+	default:fatal("pci_symphony_82c105_init(): unimplemented machine "
+		    "type %i\n", machine->machine_type);
+		exit(1);
+	}
+}
+
+
+PCIINIT(symphony_83c553)
 {
 }
 

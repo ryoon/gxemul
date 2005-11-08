@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.14 2005-11-08 11:44:38 debug Exp $
+ *  $Id: bus_pci.c,v 1.15 2005-11-08 11:57:25 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -49,6 +49,8 @@
 
 /*
  *  bus_pci_data_access():
+ *
+ *  Reads from and writes to the PCI configuration registers of a device.
  */
 void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	uint64_t *data, int len, int writeflag, struct pci_data *pci_data)
@@ -61,61 +63,61 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		    "0x%016llx ]\n", (long long)*data);
 		if (*data == 0xffffffffULL)
 			pci_data->last_was_write_ffffffff = 1;
-	} else {
-		/*  Get the bus, device, and function numbers from
-		    the address:  */
-		bus        = (pci_data->pci_addr >> 16) & 0xff;
-		device     = (pci_data->pci_addr >> 11) & 0x1f;
-		function   = (pci_data->pci_addr >> 8)  & 0x7;
-		registernr = (pci_data->pci_addr)       & 0xff;
-
-		/*  Scan through the list of pci_device entries.  */
-		dev = pci_data->first_device;
-		while (dev != NULL && found == NULL) {
-			if (dev->bus == bus &&
-			    dev->function == function &&
-			    dev->device == device)
-				found = dev;
-			dev = dev->next;
-		}
-
-		if (found == NULL) {
-			if ((pci_data->pci_addr & 0xff) == 0)
-				*data = 0xffffffff;
-			else
-				*data = 0;
-			return;
-		}
-
-		*data = 0;
-
-		if (pci_data->last_was_write_ffffffff &&
-		    registernr >= PCI_MAPREG_START &&
-		    registernr <= PCI_MAPREG_END - 4) {
-			/*
-			 *  TODO:  real length!!!
-			 */
-			*data = 0x00400000 - 1;
-		} else if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
-			/*  Read data as little-endian:  */
-			*data = found->cfg_mem[registernr];
-			if (len > 1)
-				*data |= (found->cfg_mem[registernr+1] << 8);
-			if (len > 2)
-				*data |= (found->cfg_mem[registernr+2] << 16);
-			if (len > 3)
-				*data |= (found->cfg_mem[registernr+3] << 24);
-			if (len > 4)
-				fatal("TODO: more than 32-bit PCI access?\n");
-		}
-
-		pci_data->last_was_write_ffffffff = 0;
-
-		debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx "
-		    "(bus %i, device %i, function %i, register "
-		    "0x%02x): 0x%08lx ]\n", (long)pci_data->pci_addr,
-		    bus, device, function, registernr, (long)*data);
+		return;
 	}
+
+	/*  Get the bus, device, and function numbers from the address:  */
+	bus        = (pci_data->pci_addr >> 16) & 0xff;
+	device     = (pci_data->pci_addr >> 11) & 0x1f;
+	function   = (pci_data->pci_addr >> 8)  & 0x7;
+	registernr = (pci_data->pci_addr)       & 0xff;
+
+	/*  Scan through the list of pci_device entries.  */
+	dev = pci_data->first_device;
+	while (dev != NULL && found == NULL) {
+		if (dev->bus == bus && dev->function == function &&
+		    dev->device == device)
+			found = dev;
+		dev = dev->next;
+	}
+
+	if (found == NULL) {
+		if ((pci_data->pci_addr & 0xff) == 0)
+			*data = 0xffffffff;
+		else
+			*data = 0;
+		return;
+	}
+
+	*data = 0;
+
+	if (pci_data->last_was_write_ffffffff &&
+	    registernr >= PCI_MAPREG_START &&
+	    registernr <= PCI_MAPREG_END - 4) {
+		/*
+		 *  TODO:  real length!!!
+		 */
+fatal("READING LENGTH!\n");
+		*data = 0x00400000 - 1;
+	} else if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
+		/*  Read data as little-endian:  */
+		*data = found->cfg_mem[registernr];
+		if (len > 1)
+			*data |= (found->cfg_mem[registernr+1] << 8);
+		if (len > 2)
+			*data |= (found->cfg_mem[registernr+2] << 16);
+		if (len > 3)
+			*data |= (found->cfg_mem[registernr+3] << 24);
+		if (len > 4)
+			fatal("TODO: more than 32-bit PCI access?\n");
+	}
+
+	pci_data->last_was_write_ffffffff = 0;
+
+	debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx (bus %i, device "
+	    "%i, function %i, register 0x%02x): 0x%08lx ]\n",
+	    (long)pci_data->pci_addr, bus, device, function, registernr,
+	    (long)*data);
 }
 
 

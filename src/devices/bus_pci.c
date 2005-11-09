@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.18 2005-11-09 08:28:26 debug Exp $
+ *  $Id: bus_pci.c,v 1.19 2005-11-09 09:16:42 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -655,7 +655,7 @@ PCIINIT(symphony_82c105)
 
 PCIINIT(dec21143)
 {
-	uint64_t base = 0;
+	uint64_t base = 0, base2 = 0;
 	int irq = 0;
 	char tmpstr[200];
 
@@ -671,8 +671,9 @@ PCIINIT(dec21143)
 
 	switch (machine->machine_type) {
 	case MACHINE_CATS:
-		base = 0x00200000;
+		base = 0x7c010000;
 		/*  Works with at least NetBSD and OpenBSD:  */
+		base2 = 0x00010000;
 		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x08080101);
 		irq = 18;
 		break;
@@ -686,14 +687,14 @@ PCIINIT(dec21143)
 		exit(1);
 	}
 
-	PCI_SET_DATA(PCI_MAPREG_START,        base + 1);
-	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base + 0x10000);
+	PCI_SET_DATA(PCI_MAPREG_START,        base2 + 1);
+	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base2 + 0x10000);
 
 	PCI_SET_DATA_SIZE(PCI_MAPREG_START,        0x100 - 1);
 	PCI_SET_DATA_SIZE(PCI_MAPREG_START + 0x04, 0x100 - 1);
 
 	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx irq=%i",
-	    (long long)(base + 0x80000000ULL), irq);
+	    (long long)base, irq);
 	device_add(machine, tmpstr);
 }
 

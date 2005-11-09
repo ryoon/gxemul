@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.2 2005-11-09 08:28:27 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.3 2005-11-09 09:16:42 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "device.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -54,8 +55,6 @@ struct dec21143_data {
 
 /*
  *  dev_dec21143_access():
- *
- *  Memory access.
  */
 int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -85,37 +84,6 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_dec21143_io_access():
- *
- *  I/O port access.
- */
-int dev_dec21143_io_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
-{
-	/*  struct dec21143_data *d = extra;  */
-	uint64_t idata = 0, odata = 0;
-
-	if (writeflag == MEM_WRITE)
-		idata = memory_readmax64(cpu, data, len);
-
-	switch (relative_addr) {
-	default:if (writeflag == MEM_READ)
-			debug("[ dec21143_io: read from 0x%02x ]\n",
-			    (int)relative_addr);
-		else
-			debug("[ dec21143_io: write to  0x%02x: 0x%02x ]\n",
-			    (int)relative_addr, (int)idata);
-	}
-
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
-
-	return 1;
-}
-
-
-/*
  *  devinit_dec21143():
  */
 int devinit_dec21143(struct devinit *devinit)
@@ -132,14 +100,20 @@ int devinit_dec21143(struct devinit *devinit)
 
 	snprintf(name2, sizeof(name2), "%s [i/o]", devinit->name);
 
-	/*  TODO: Don't hardcode the 0x10000 offset.  */
-
 	memory_device_register(devinit->machine->memory, name2, devinit->addr,
-	    0x100, dev_dec21143_io_access, d, MEM_DEFAULT, NULL);
+	    0x100, dev_dec21143_access, d, MEM_DEFAULT, NULL);
 
-	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr + 0x10000, 0x100, dev_dec21143_access, d,
-	    MEM_DEFAULT, NULL);
+	/*
+	 *  TODO: don't hardcode this! NetBSD/cats uses mem accesses at
+	 *  0x80020000, OpenBSD/cats uses i/o at 0x7c010000.
+	 */
+	if (devinit->machine->machine_type != MACHINE_CATS) {
+		fatal("TODO: dec21143 for non-cats\n");
+		exit(1);
+	}
+
+	dev_ram_init(devinit->machine, devinit->addr + 0x04010000, 0x100,
+	    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, devinit->addr);
 
 	return 1;
 }

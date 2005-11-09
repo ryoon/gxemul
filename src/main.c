@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.246 2005-11-06 21:15:56 debug Exp $
+ *  $Id: main.c,v 1.247 2005-11-09 07:17:40 debug Exp $
  */
 
 #include <stdio.h>
@@ -600,7 +600,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	if ((m->instruction_trace || m->register_dump || m->show_trace_tree)
 	    && m->bintrans_enable) {
-		fprintf(stderr, "Implicitly turning off bintrans.\n");
+		if (m->arch == ARCH_MIPS)
+			fprintf(stderr, "Implicitly turning off bintrans.\n");
 		m->bintrans_enable = 0;
 	}
 

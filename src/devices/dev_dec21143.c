@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.1 2005-11-09 06:35:45 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.2 2005-11-09 08:28:27 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -132,13 +132,13 @@ int devinit_dec21143(struct devinit *devinit)
 
 	snprintf(name2, sizeof(name2), "%s [i/o]", devinit->name);
 
-	/*  TODO: Don't hardcode the 0x10000 size and offset.  */
+	/*  TODO: Don't hardcode the 0x10000 offset.  */
 
 	memory_device_register(devinit->machine->memory, name2, devinit->addr,
-	    0x10000, dev_dec21143_io_access, d, MEM_DEFAULT, NULL);
+	    0x100, dev_dec21143_io_access, d, MEM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr + 0x10000, 0x10000, dev_dec21143_access, d,
+	    devinit->addr + 0x10000, 0x100, dev_dec21143_access, d,
 	    MEM_DEFAULT, NULL);
 
 	return 1;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.17 2005-11-09 07:41:04 debug Exp $
+ *  $Id: bus_pci.c,v 1.18 2005-11-09 08:28:26 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -58,14 +58,7 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	struct pci_device *dev, *found = NULL;
 	int bus, device, function, registernr;
 	unsigned char *cfg_base;
-
-	if (writeflag == MEM_WRITE) {
-		debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n",
-		    (long long)*data);
-		if (*data == 0xffffffffULL)
-			pci_data->last_was_write_ffffffff = 1;
-		return;
-	}
+	uint64_t x;
 
 	/*  Get the bus, device, and function numbers from the address:  */
 	bus        = (pci_data->pci_addr >> 16) & 0xff;
@@ -97,18 +90,41 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		cfg_base = found->cfg_mem;
 
 	/*  Read data as little-endian:  */
-	*data = 0;
+	x = 0;
 	if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
-		*data = cfg_base[registernr];
+		x = cfg_base[registernr];
 		if (len > 1)
-			*data |= (cfg_base[registernr+1] << 8);
+			x |= (cfg_base[registernr+1] << 8);
 		if (len > 2)
-			*data |= (cfg_base[registernr+2] << 16);
+			x |= (cfg_base[registernr+2] << 16);
 		if (len > 3)
-			*data |= (cfg_base[registernr+3] << 24);
+			x |= ((uint64_t)cfg_base[registernr+3] << 24);
 		if (len > 4)
 			fatal("TODO: more than 32-bit PCI access?\n");
 	}
+
+	/*  Register write:  */
+	if (writeflag == MEM_WRITE) {
+		debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n",
+		    (long long)*data);
+		if (*data == 0xffffffffULL && registernr >= PCI_MAPREG_START
+		    && registernr <= PCI_MAPREG_END - 4) {
+			pci_data->last_was_write_ffffffff = 1;
+			return;
+		}
+		/*  Writes are not really supported yet:  */
+		if (*data != x) {
+			fatal("[ bus_pci: write to PCI DATA: data = 0x%08llx"
+			    " differs from current value 0x%08llx; NOT YET"
+			    " SUPPORTED. bus %i, device %i, function %i, "
+			    " register 0x%02x ]\n", (long long)*data,
+			    (long long)x, bus, device, function, registernr);
+		}
+		return;
+	}
+
+	/*  Register read:  */
+	*data = x;
 
 	pci_data->last_was_write_ffffffff = 0;
 
@@ -228,7 +244,7 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	 *         The size registers should also be set up on a per-device
 	 *         basis.
 	 */
-	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0xffffffffULL);
+	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0x00ffffffULL);
 	for (ofs = PCI_MAPREG_START; ofs < PCI_MAPREG_END; ofs += 4)
 		PCI_SET_DATA_SIZE(ofs, 0x00400000 - 1);
 
@@ -363,35 +379,24 @@ PCIINIT(ali_m5229)
 	    PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1);
 
+	PCI_SET_DATA(0x50, 0x01000000);
+
 #if 0
 /*  TODO:  */
-case 0x10:
-	return 0x000001f1;
-case 0x14:
-	return 0x000003f7;
-case 0x18:
-	return 0x00000171;
-case 0x1c:
-	return 0x00000377;
-case 60:
-	return 0x8e;	/*  ISA int 14  */
-case 61:
-	return 0x04;
+case 0x10:	return 0x000001f1;
+case 0x14:	return 0x000003f7;
+case 0x18:	return 0x00000171;
+case 0x1c:	return 0x00000377;
+case 60:	return 0x8e;	/*  ISA int 14  */
+case 61:	return 0x04;
 #endif
 
-
-	/*
-	 *  TODO: The check for machine type shouldn't be here?
-	 */
-
 	switch (machine->machine_type) {
-
 	case MACHINE_CATS:
 		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
 		/*  The secondary channel is disabled. TODO: fix this.  */
 		/*  device_add(machine, "wdc addr=0x7c000170 irq=47");  */
 		break;
-
 	default:fatal("ali_m5229: unimplemented machine type\n");
 		exit(1);
 	}
@@ -526,18 +531,12 @@ PCIINIT(i82371ab_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
-	/*
-	 *  TODO: The check for machine type shouldn't be here?
-	 */
-
 	switch (machine->machine_type) {
-
 	case MACHINE_EVBMIPS:
 		/*  TODO: Irqs...  */
 		device_add(machine, "wdc addr=0x180001f0 irq=22");/* primary  */
 		device_add(machine, "wdc addr=0x18000170 irq=23");/* secondary*/
 		break;
-
 	default:fatal("i82371ab_ide: unimplemented machine type\n");
 		exit(1);
 	}
@@ -586,24 +585,12 @@ PCIINIT(vt82c586_ide)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	/*
-	 *  TODO: The check for machine type shouldn't be here?
-	 */
-
 	switch (machine->machine_type) {
-
 	case MACHINE_COBALT:
 		/*  irq 14,15 (+8)  */
 		device_add(machine, "wdc addr=0x100001f0 irq=22");/* primary  */
 		device_add(machine, "wdc addr=0x10000170 irq=23");/* secondary*/
 		break;
-
-	case MACHINE_EVBMIPS:
-		/*  TODO: Irqs...  */
-		device_add(machine, "wdc addr=0x180001f0 irq=22");/* primary  */
-		device_add(machine, "wdc addr=0x18000170 irq=23");/* secondary*/
-		break;
-
 	default:fatal("vt82c586_ide: unimplemented machine type\n");
 		exit(1);
 	}
@@ -646,17 +633,11 @@ PCIINIT(symphony_82c105)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	/*
-	 *  TODO: The check for machine type shouldn't be here?
-	 */
-
 	switch (machine->machine_type) {
-
 	case MACHINE_NETWINDER:
 		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
 		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
 		break;
-
 	default:fatal("symphony_82c105: unimplemented machine "
 		    "type %i\n", machine->machine_type);
 		exit(1);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.19 2005-11-08 12:03:27 debug Exp $
+ *  $Id: bus_pci.h,v 1.20 2005-11-09 07:41:05 debug Exp $
  */
 
 #include "misc.h"
@@ -43,6 +43,7 @@ struct pci_device {
 	struct pci_device	*next;
 	int			bus, device, function;
 	unsigned char		cfg_mem[PCI_CFG_MEM_SIZE];
+	unsigned char		cfg_mem_size[PCI_CFG_MEM_SIZE];
 };
 
 struct pci_data {
@@ -61,15 +62,17 @@ struct pci_data {
 int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	uint64_t *data, int len, int writeflag, struct pci_data *pci_data);
 void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
-	struct memory *mem, int bus, int device, int function,
-	char *name);
+	struct memory *mem, int bus, int device, int function, char *name);
 struct pci_data *bus_pci_init(int irq_nr);
 
 
 #define	PCIINIT(name)	void pciinit_ ## name(struct machine *machine,	\
 	struct memory *mem, struct pci_device *pd)
 
-/*  Store little-endian config data in the pci_data struct:  */
+/*
+ *  Store little-endian config data in the pci_data struct's cfg_mem[]
+ *  or cfg_mem_size[], respectively.
+ */
 #define PCI_SET_DATA(ofs,value)	{					\
 	if ((ofs) >= PCI_CFG_MEM_SIZE) {				\
 		fatal("PCI_SET_DATA(): ofs too high (%i)\n", (ofs));	\
@@ -79,6 +82,16 @@ struct pci_data *bus_pci_init(int irq_nr);
 	pd->cfg_mem[(ofs) + 1] = ((value) >> 8) & 255;			\
 	pd->cfg_mem[(ofs) + 2] = ((value) >> 16) & 255;			\
 	pd->cfg_mem[(ofs) + 3] = ((value) >> 24) & 255;			\
+	}
+#define PCI_SET_DATA_SIZE(ofs,value)	{				\
+	if ((ofs) >= PCI_CFG_MEM_SIZE) {				\
+		fatal("PCI_SET_DATA_SIZE(): ofs too high (%i)\n", (ofs));\
+		exit(1);						\
+	}								\
+	pd->cfg_mem_size[(ofs)]     = (value) & 255;			\
+	pd->cfg_mem_size[(ofs) + 1] = ((value) >> 8) & 255;		\
+	pd->cfg_mem_size[(ofs) + 2] = ((value) >> 16) & 255;		\
+	pd->cfg_mem_size[(ofs) + 3] = ((value) >> 24) & 255;		\
 	}
 
 

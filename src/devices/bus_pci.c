@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.16 2005-11-09 06:35:45 debug Exp $
+ *  $Id: bus_pci.c,v 1.17 2005-11-09 07:41:04 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -57,10 +57,11 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 {
 	struct pci_device *dev, *found = NULL;
 	int bus, device, function, registernr;
+	unsigned char *cfg_base;
 
 	if (writeflag == MEM_WRITE) {
-		debug("[ bus_pci: write to PCI DATA: data = "
-		    "0x%016llx ]\n", (long long)*data);
+		debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n",
+		    (long long)*data);
 		if (*data == 0xffffffffULL)
 			pci_data->last_was_write_ffffffff = 1;
 		return;
@@ -89,27 +90,22 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		return;
 	}
 
-	*data = 0;
-
 	if (pci_data->last_was_write_ffffffff &&
-	    registernr >= PCI_MAPREG_START &&
-	    registernr <= PCI_MAPREG_END - 4) {
-		/*
-		 *  TODO:  real length!!!
-		 */
+	    registernr >= PCI_MAPREG_START && registernr <= PCI_MAPREG_END - 4)
+		cfg_base = found->cfg_mem_size;
+	else
+		cfg_base = found->cfg_mem;
 
-fatal("[ PCI: READING LENGTH! TODO ]\n");
-
-		*data = 0x00400000 - 1;
-	} else if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
-		/*  Read data as little-endian:  */
-		*data = found->cfg_mem[registernr];
+	/*  Read data as little-endian:  */
+	*data = 0;
+	if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
+		*data = cfg_base[registernr];
 		if (len > 1)
-			*data |= (found->cfg_mem[registernr+1] << 8);
+			*data |= (cfg_base[registernr+1] << 8);
 		if (len > 2)
-			*data |= (found->cfg_mem[registernr+2] << 16);
+			*data |= (cfg_base[registernr+2] << 16);
 		if (len > 3)
-			*data |= (found->cfg_mem[registernr+3] << 24);
+			*data |= (cfg_base[registernr+3] << 24);
 		if (len > 4)
 			fatal("TODO: more than 32-bit PCI access?\n");
 	}
@@ -145,6 +141,9 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			debug("[ bus_pci: write to  PCI ADDR: data = 0x%016llx"
 			    " ]\n", (long long)*data);
 			pci_data->pci_addr = *data;
+			if (pci_data->pci_addr & 1)
+				fatal("[ bus_pci: WARNING! pci type 0 not"
+				    " yet implemented! ]\n");
 		} else {
 			debug("[ bus_pci: read from PCI ADDR (data = "
 			    "0x%016llx) ]\n", (long long)pci_data->pci_addr);
@@ -182,6 +181,7 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	char *name)
 {
 	struct pci_device *pd;
+	int ofs;
 	void (*init)(struct machine *, struct memory *, struct pci_device *);
 
 	if (pci_data == NULL) {
@@ -220,8 +220,17 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	pd->device   = device;
 	pd->function = function;
 
-	/*  Initialize some default values:  */
-	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0xffffffffULL);	/*  TODO  */
+	/*
+	 *  Initialize with some default values:
+	 *
+	 *  TODO:  The command status register is best to set up per device,
+	 *         just enabling all bits like this is not really good.
+	 *         The size registers should also be set up on a per-device
+	 *         basis.
+	 */
+	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0xffffffffULL);
+	for (ofs = PCI_MAPREG_START; ofs < PCI_MAPREG_END; ofs += 4)
+		PCI_SET_DATA_SIZE(ofs, 0x00400000 - 1);
 
 	if (init == NULL) {
 		fatal("No init function for PCI device \"%s\"?\n", name);
@@ -666,6 +675,7 @@ PCIINIT(symphony_82c105)
 PCIINIT(dec21143)
 {
 	uint64_t base = 0;
+	int irq = 0;
 	char tmpstr[200];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
@@ -681,24 +691,28 @@ PCIINIT(dec21143)
 	switch (machine->machine_type) {
 	case MACHINE_CATS:
 		base = 0x00200000;
-		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000800);
+		/*  Works with at least NetBSD and OpenBSD:  */
+		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x08080101);
+		irq = 18;
 		break;
 	case MACHINE_COBALT:
 		base = 0x9ca00000;
 		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000100);
+		/*  TODO: IRQ  */
 		break;
 	default:fatal("dec21143 in non-implemented machine type %i\n",
 		    machine->machine_type);
 		exit(1);
 	}
 
-	PCI_SET_DATA(PCI_MAPREG_START + 0x00, base + 1);
-	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base + 0x00010000);
+	PCI_SET_DATA(PCI_MAPREG_START,        base + 1);
+	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base + 0x10000);
 
-	/*  TODO: IRQ  */
+	PCI_SET_DATA_SIZE(PCI_MAPREG_START,        0x100 - 1);
+	PCI_SET_DATA_SIZE(PCI_MAPREG_START + 0x04, 0x100 - 1);
 
-	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx",
-	    (long long)(base + 0x80000000ULL));
+	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx irq=%i",
+	    (long long)(base + 0x80000000ULL), irq);
 	device_add(machine, tmpstr);
 }
 

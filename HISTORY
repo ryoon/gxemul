@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1014 2005-11-08 11:01:43 debug Exp $
+$Id: HISTORY,v 1.1015 2005-11-09 06:35:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2390,3 +2390,7 @@ Changelog for GXemul:
 		read_register hack, etc).
 20051108	Continuing the cleanup; splitting up some pci devices into a
 		normal autodev device and some separate pci glue code.
+20051109	Continuing on the PCI bus stuff; all old pci_*.c have been
+		incorporated into normal devices and/or rewritten as glue code
+		only, adding a dummy Intel 82371AB PIIX4 for Malta (not really
+		tested yet), and working on the DEC 21143 NIC.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.29 2005-11-08 11:01:46 debug Exp $
+ *  $Id: dev_gt.c,v 1.30 2005-11-09 06:35:45 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -53,9 +53,8 @@
 
 /*  #define debug fatal  */
 
-#define PCI_VENDOR_GALILEO           0x11ab    /* Galileo Technology */
-#define PCI_PRODUCT_GALILEO_GT64011  0x4146    /* GT-64011 System Controller */
-#define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /* GT-64120 */
+#define PCI_PRODUCT_GALILEO_GT64011  0x4146    /*  GT-64011  */
+#define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /*  GT-64120  */
 
 struct gt_data {
 	int	irqnr;
@@ -173,46 +172,6 @@ cpu_interrupt_ack(cpu, d->irqnr);
 		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
-}
-
-
-/*
- *  pci_gt_rr_011():
- */
-static uint32_t pci_gt_rr_011(int reg)
-{
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_GALILEO + (PCI_PRODUCT_GALILEO_GT64011 << 16);
-	case 0x08:
-		return 0x06000001;	/*  Revision 1  */
-	default:
-		return 0;
-	}
-}
-
-
-/*
- *  pci_gt_rr_120():
- */
-static uint32_t pci_gt_rr_120(int reg)
-{
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_GALILEO + (PCI_PRODUCT_GALILEO_GT64120 << 16);
-	case 0x08:
-		return 0x06000002;	/*  Revision 2?  */
-	default:
-		return 0;
-	}
-}
-
-
-/*
- *  pci_gt_init():
- */
-void pci_gt_init(struct machine *machine, struct memory *mem)
-{
 }
 
 

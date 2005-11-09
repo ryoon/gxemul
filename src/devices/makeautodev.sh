@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautodev.sh,v 1.4 2005-11-08 11:44:38 debug Exp $
+#  $Id: makeautodev.sh,v 1.5 2005-11-09 06:35:45 debug Exp $
 
 
 printf "Generating autodev.c... "
@@ -47,7 +47,7 @@ for a in dev_*.o; do
 done
 
 printf "3"
-for a in bus_pci.c pci_*.c; do
+for a in bus_pci.c; do
 	B=`grep PCIINIT $a`
 	if [ z"$B" != z ]; then
 		C=`grep PCIINIT $a | cut -d \( -f 2|cut -d \) -f 1`
@@ -70,7 +70,7 @@ for a in dev_*.o; do
 done
 
 printf "1"
-for a in bus_pci.c pci_*.c; do
+for a in bus_pci.c; do
 	B=`grep PCIINIT $a`
 	if [ z"$B" != z ]; then
 		C=`grep PCIINIT $a | cut -d \( -f 2|cut -d \) -f 1`

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.17 2005-11-08 11:01:45 debug Exp $
+ *  $Id: device.c,v 1.18 2005-11-09 06:35:44 debug Exp $
  *
  *  Device registry framework.
  */
@@ -145,6 +145,12 @@ void (*pci_lookup_initf(char *name))(struct machine *machine,
 	struct memory *mem, struct pci_device *pd)
 {
 	int i;
+
+	if (name == NULL) {
+		fprintf(stderr, "pci_lookup_initf(): name = NULL\n");
+		exit(1);
+	}
+
 	for (i=0; i<n_pci_entries; i++)
 		if (strcmp(name, pci_entries[i].name) == 0)
 			return pci_entries[i].initf;
@@ -163,7 +169,7 @@ void (*pci_lookup_initf(char *name))(struct machine *machine,
  */
 struct device_entry *device_lookup(char *name)
 {
-	int i, step, r, do_return = 0;
+	int hi, lo;
 
 	if (name == NULL) {
 		fprintf(stderr, "device_lookup(): NULL ptr\n");
@@ -176,47 +182,29 @@ struct device_entry *device_lookup(char *name)
 	if (n_device_entries == 0)
 		return NULL;
 
-	i = n_device_entries / 2;
-	step = i/2 + 1;
+	lo = 0; hi = n_device_entries - 1;
 
-	for (;;) {
-		if (i < 0)
-			i = 0;
-		if (i >= n_device_entries)
-			i = n_device_entries - 1;
+	while (lo <= hi) {
+		int r, i = (lo + hi) / 2;
 
-		/*  printf("device_lookup(): i=%i step=%i\n", i, step);
+		/*  printf("device_lookup(): i=%i (lo=%i hi=%i)\n", i, lo, hi);
 		    printf("  name='%s', '%s'\n", name,
 		    device_entries[i].name);  */
 
 		r = strcmp(name, device_entries[i].name);
-
-		if (r < 0) {
-			/*  Go left:  */
-			i -= step;
-			if (step == 0)
-				i --;
-		} else if (r > 0) {
-			/*  Go right:  */
-			i += step;
-			if (step == 0)
-				i ++;
-		} else {
+		if (r == 0) {
 			/*  Found it!  */
 			return &device_entries[i];
 		}
 
-		if (do_return)
-			return NULL;
-
-		if (step == 0)
-			do_return = 1;
-
-		if (step & 1)
-			step = (step/2) + 1;
-		else
-			step /= 2;
+		/*  Try left or right half:  */
+		if (r < 0)
+			hi = i - 1;
+		if (r > 0)
+			lo = i + 1;
 	}
+
+	return NULL;
 }
 
 

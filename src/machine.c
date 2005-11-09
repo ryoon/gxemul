@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.583 2005-11-08 11:44:37 debug Exp $
+ *  $Id: machine.c,v 1.584 2005-11-09 06:35:44 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2403,7 +2403,7 @@ void machine_setup(struct machine *machine)
 		 */
 		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 8 + 9, 11);
 		/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, "dec21143");  */
-		bus_pci_add(machine, pci_data, mem, 0,  8, 0, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
+		/*  bus_pci_add(machine, pci_data, mem, 0,  8, 0, "symbios_860");   PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 		bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
 		bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
 		/*  bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");  */
@@ -3928,9 +3928,15 @@ Not yet.
 
 			/*  TODO: Haha, this is bogus. Just a cut&paste
 			    from the Cobalt emulation above.  */
+#if 1
+			/*  New, not really tested yet:  */
+			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "i82371ab_isa");
+			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "i82371ab_ide");
+#else
+			/*  Old, works ok with NetBSD:  */
 			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
 			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
-
+#endif
 			device_add(machine, "malta_lcd addr=0x1f000400");
 			break;
 		case MACHINE_EVBMIPS_PB1000:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.15 2005-11-08 11:57:25 debug Exp $
+ *  $Id: bus_pci.c,v 1.16 2005-11-09 06:35:45 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -97,7 +97,9 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		/*
 		 *  TODO:  real length!!!
 		 */
-fatal("READING LENGTH!\n");
+
+fatal("[ PCI: READING LENGTH! TODO ]\n");
+
 		*data = 0x00400000 - 1;
 	} else if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
 		/*  Read data as little-endian:  */
@@ -443,4 +445,311 @@ PCIINIT(ahc)
 	    0x18000000);
 }
 
+
+
+/*
+ *  Galileo Technology GT-64xxx PCI controller.
+ *
+ *	GT-64011	Used in Cobalt machines.
+ *	GT-64120	Used in evbmips machines (Malta).
+ *
+ *  NOTE: This works in the opposite way compared to other devices; the PCI
+ *  device is added from the normal device instead of the other way around.
+ */
+
+#define PCI_VENDOR_GALILEO           0x11ab    /* Galileo Technology */
+#define PCI_PRODUCT_GALILEO_GT64011  0x4146    /* GT-64011 System Controller */
+#define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /* GT-64120 */
+
+PCIINIT(gt64011)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_GALILEO,
+	    PCI_PRODUCT_GALILEO_GT64011));
+
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x01);	/*  Revision 1  */
+}
+
+PCIINIT(gt64120)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_GALILEO,
+	    PCI_PRODUCT_GALILEO_GT64120));
+
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x02);	/*  Revision 2?  */
+}
+
+
+
+/*
+ *  Intel 82371AB PIIX4 PCI-ISA bridge and IDE controller
+ */
+
+#define	PCI_VENDOR_INTEL		0x8086
+#define	PCI_PRODUCT_INTEL_82371AB_ISA	0x7110
+#define	PCI_PRODUCT_INTEL_82371AB_IDE	0x7111
+
+PCIINIT(i82371ab_isa)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
+	    PCI_PRODUCT_INTEL_82371AB_ISA));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x01);	/*  Rev 1  */
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
+}
+
+PCIINIT(i82371ab_ide)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
+	    PCI_PRODUCT_INTEL_82371AB_IDE));
+
+	/*  Possibly not correct:  */
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x01);
+
+	/*  PIIX_IDETIM (see NetBSD's pciide_piix_reg.h)  */
+	/*  channel 0 and 1 enabled as IDE  */
+	PCI_SET_DATA(0x40, 0x80008000);
+
+	/*
+	 *  TODO: The check for machine type shouldn't be here?
+	 */
+
+	switch (machine->machine_type) {
+
+	case MACHINE_EVBMIPS:
+		/*  TODO: Irqs...  */
+		device_add(machine, "wdc addr=0x180001f0 irq=22");/* primary  */
+		device_add(machine, "wdc addr=0x18000170 irq=23");/* secondary*/
+		break;
+
+	default:fatal("i82371ab_ide: unimplemented machine type\n");
+		exit(1);
+	}
+}
+
+
+
+/*
+ *  VIATECH VT82C586 devices:
+ *
+ *	vt82c586_isa	PCI->ISA bridge
+ *	vt82c586_ide	IDE controller
+ *
+ *  TODO:  This more or less just a dummy device, so far.
+ */
+
+#define PCI_VENDOR_VIATECH                0x1106  /* VIA Technologies */
+#define PCI_PRODUCT_VIATECH_VT82C586_IDE  0x1571  /* VT82C586 (Apollo VP)
+					             IDE Controller */
+#define PCI_PRODUCT_VIATECH_VT82C586_ISA  0x0586  /* VT82C586 (Apollo VP)
+						     PCI-ISA Bridge */
+
+PCIINIT(vt82c586_isa)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_VIATECH,
+	    PCI_PRODUCT_VIATECH_VT82C586_ISA));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x39);   /*  Revision 37 or 39  */
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
+}
+
+PCIINIT(vt82c586_ide)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_VIATECH,
+	    PCI_PRODUCT_VIATECH_VT82C586_IDE));
+
+	/*  Possibly not correct:  */
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x01);
+
+	/*  APO_IDECONF  */
+	/*  channel 0 and 1 enabled  */
+	PCI_SET_DATA(0x40, 0x00000003);
+
+	/*
+	 *  TODO: The check for machine type shouldn't be here?
+	 */
+
+	switch (machine->machine_type) {
+
+	case MACHINE_COBALT:
+		/*  irq 14,15 (+8)  */
+		device_add(machine, "wdc addr=0x100001f0 irq=22");/* primary  */
+		device_add(machine, "wdc addr=0x10000170 irq=23");/* secondary*/
+		break;
+
+	case MACHINE_EVBMIPS:
+		/*  TODO: Irqs...  */
+		device_add(machine, "wdc addr=0x180001f0 irq=22");/* primary  */
+		device_add(machine, "wdc addr=0x18000170 irq=23");/* secondary*/
+		break;
+
+	default:fatal("vt82c586_ide: unimplemented machine type\n");
+		exit(1);
+	}
+}
+
+
+
+/*
+ *  Symphony Labs 83C553 PCI->ISA bridge.
+ *  Symphony Labs 82C105 PCIIDE controller.
+ */
+
+#define PCI_VENDOR_SYMPHONY		0x10ad
+#define PCI_PRODUCT_SYMPHONY_83C553	0x0565
+#define	PCI_PRODUCT_SYMPHONY_82C105	0x0105
+
+PCIINIT(symphony_83c553)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_SYMPHONY,
+	    PCI_PRODUCT_SYMPHONY_83C553));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x10);
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
+}
+
+PCIINIT(symphony_82c105)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_SYMPHONY,
+	    PCI_PRODUCT_SYMPHONY_82C105));
+
+	/*  Possibly not correct:  */
+	PCI_SET_DATA(PCI_CLASS_REG,
+	    PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x05);
+
+	/*  APO_IDECONF  */
+	/*  channel 0 and 1 enabled  */
+	PCI_SET_DATA(0x40, 0x00000003);
+
+	/*
+	 *  TODO: The check for machine type shouldn't be here?
+	 */
+
+	switch (machine->machine_type) {
+
+	case MACHINE_NETWINDER:
+		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
+		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
+		break;
+
+	default:fatal("symphony_82c105: unimplemented machine "
+		    "type %i\n", machine->machine_type);
+		exit(1);
+	}
+}
+
+
+
+/*
+ *  DEC 21143 ("Tulip") PCI ethernet.
+ */
+
+#define PCI_VENDOR_DEC          0x1011 /* Digital Equipment */
+#define PCI_PRODUCT_DEC_21142   0x0019 /* DECchip 21142/21143 10/100 Ethernet */
+
+PCIINIT(dec21143)
+{
+	uint64_t base = 0;
+	char tmpstr[200];
+
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
+	    PCI_PRODUCT_DEC_21142));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_NETWORK,
+	    PCI_SUBCLASS_NETWORK_ETHERNET, 0x00) + 0x41);
+
+	/*
+	 *  Experimental:
+	 */
+
+	switch (machine->machine_type) {
+	case MACHINE_CATS:
+		base = 0x00200000;
+		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000800);
+		break;
+	case MACHINE_COBALT:
+		base = 0x9ca00000;
+		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000100);
+		break;
+	default:fatal("dec21143 in non-implemented machine type %i\n",
+		    machine->machine_type);
+		exit(1);
+	}
+
+	PCI_SET_DATA(PCI_MAPREG_START + 0x00, base + 1);
+	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base + 0x00010000);
+
+	/*  TODO: IRQ  */
+
+	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx",
+	    (long long)(base + 0x80000000ULL));
+	device_add(machine, tmpstr);
+}
+
+
+
+/*
+ *  DEC 21030 "tga" graphics.
+ */
+
+#define PCI_PRODUCT_DEC_21030  0x0004          /*  DECchip 21030 ("TGA")  */
+
+PCIINIT(dec21030)
+{
+	uint64_t base = 0;
+	char tmpstr[200];
+
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
+	    PCI_PRODUCT_DEC_21030));
+
+	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0x02800087);  /*  TODO  */
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
+	    PCI_SUBCLASS_DISPLAY_VGA, 0x00) + 0x03);
+
+	/*
+	 *  See http://mail-index.netbsd.org/port-arc/2001/08/13/0000.html
+	 *  for more info.
+	 */
+
+	PCI_SET_DATA(PCI_BHLC_REG, 0x0000ff00);
+
+	/*  8 = prefetchable  */
+	PCI_SET_DATA(0x10, 0x00000008);
+	PCI_SET_DATA(0x30, 0x08000001);
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000100);	/*  interrupt pin A?  */
+
+	/*
+	 *  Experimental:
+	 */
+
+	switch (machine->machine_type) {
+	case MACHINE_ARC:
+		base = 0x100000000ULL;
+		break;
+	default:fatal("dec21030 in non-implemented machine type %i\n",
+		    machine->machine_type);
+		exit(1);
+	}
+
+	snprintf(tmpstr, sizeof(tmpstr), "dec21030 addr=0x%llx",
+	    (long long)(base));
+	device_add(machine, tmpstr);
+}
 

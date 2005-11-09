@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.17 2005-11-08 11:01:46 debug Exp $
+ *  $Id: dev_dec21030.c,v 1.1 2005-11-09 06:35:45 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -53,10 +53,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "device.h"
+#include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
-#include "bus_pci.h"
+
 #include "tgareg.h"
 
 #define	MAX_XSIZE	2048
@@ -74,8 +76,6 @@ int dec21030_default_ysize = 768;
 #define	FRAMEBUFFER_PADDR	0x4000000000ULL
 #define	FRAMEBUFFER_BASE	0x201000
 
-#define PCI_VENDOR_DEC         0x1011          /*  Digital Equipment  */
-#define PCI_PRODUCT_DEC_21030  0x0004          /*  DECchip 21030 ("TGA")  */
 
 struct dec21030_data {
 	int		graphics_mode;
@@ -84,39 +84,6 @@ struct dec21030_data {
 	uint32_t	color;
 	struct vfb_data *vfb_data;
 };
-
-
-/*
- *  pci_dec21030_rr():
- *
- *  See http://mail-index.netbsd.org/port-arc/2001/08/13/0000.html
- *  for more info.
- */
-uint32_t pci_dec21030_rr(int reg)
-{
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_DEC + (PCI_PRODUCT_DEC_21030 << 16);
-	case 0x04:
-		return 0x02800087;
-	case 0x08:
-		return 0x03800003;
-		/*  return
-		PCI_CLASS_CODE(PCI_CLASS_DISPLAY, PCI_SUBCLASS_DISPLAY_VGA, 0)
-		+ 0x03;  */
-	case 0x0c:
-		return 0x0000ff00;
-	case 0x10:
-		/*  address  (8=prefetchable)  */
-		return 0x00000000 + 8;
-	case 0x30:
-		return 0x08000001;
-	case 0x3c:
-		return 0x00000100;	/*  interrupt pin ?  */
-	default:
-		return 0;
-	}
-}
 
 
 /*
@@ -268,7 +235,10 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 }
 
 
-PCIINIT(dec21030)
+/*
+ *  devinit_dec21030():
+ */
+int devinit_dec21030(struct devinit *devinit)
 {
 	struct dec21030_data *d;
 
@@ -279,17 +249,19 @@ PCIINIT(dec21030)
 	}
 	memset(d, 0, sizeof(struct dec21030_data));
 
-	/*  TODO:  this address is based on what NetBSD/arc uses...
-	    fix this  */
-	memory_device_register(mem, "dec21030", 0x100000000ULL,
-	    128*1048576, dev_dec21030_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, 128*1048576, dev_dec21030_access, d,
+	    MEM_DEFAULT, NULL);
 
 	/*
 	 *  TODO:  I have no idea about how/where this framebuffer should
 	 *  be in relation to the pci device
 	 */
-	d->vfb_data = dev_fb_init(machine, mem, FRAMEBUFFER_PADDR, VFB_GENERIC,
+	d->vfb_data = dev_fb_init(devinit->machine, devinit->machine->memory,
+	    FRAMEBUFFER_PADDR, VFB_GENERIC,
 	    dec21030_default_xsize, dec21030_default_ysize,
 	    dec21030_default_xsize, dec21030_default_ysize, 8, "TGA");
+
+	return 1;
 }
 

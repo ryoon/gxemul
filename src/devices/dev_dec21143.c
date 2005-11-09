@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21143.c,v 1.11 2005-11-08 11:01:46 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.1 2005-11-09 06:35:45 debug Exp $
  *
- *  DEC 21143 ("Tulip") PCI ethernet.
+ *  DEC 21143 ("Tulip") ethernet.
  *
  *  TODO:  This is just a dummy device, so far.
  */
@@ -36,18 +36,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "devices.h"
+#include "device.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
-#include "bus_pci.h"
 #include "tulipreg.h"
 
 
 #define debug fatal
-
-#define PCI_VENDOR_DEC          0x1011 /* Digital Equipment */
-#define PCI_PRODUCT_DEC_21142   0x0019 /* DECchip 21142/21143 10/100 Ethernet */
 
 
 struct dec21143_data {
@@ -64,7 +61,7 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct dec21143_data *d = extra;
+	/*  struct dec21143_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -73,10 +70,10 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 
 	default:if (writeflag == MEM_READ)
-			debug("[ dec_21143: read from 0x%02x ]\n",
+			debug("[ dec21143: read from 0x%02x ]\n",
 			    (int)relative_addr);
 		else
-			debug("[ dec_21143: write to  0x%02x: 0x%02x ]\n",
+			debug("[ dec21143: write to  0x%02x: 0x%02x ]\n",
 			    (int)relative_addr, (int)idata);
 	}
 
@@ -96,7 +93,7 @@ int dev_dec21143_io_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct dec21143_data *d = extra;
+	/*  struct dec21143_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -104,10 +101,10 @@ int dev_dec21143_io_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 	default:if (writeflag == MEM_READ)
-			debug("[ dec_21143_io: read from 0x%02x ]\n",
+			debug("[ dec21143_io: read from 0x%02x ]\n",
 			    (int)relative_addr);
 		else
-			debug("[ dec_21143_io: write to  0x%02x: 0x%02x ]\n",
+			debug("[ dec21143_io: write to  0x%02x: 0x%02x ]\n",
 			    (int)relative_addr, (int)idata);
 	}
 
@@ -119,39 +116,13 @@ int dev_dec21143_io_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  pci_dec21143_rr():
+ *  devinit_dec21143():
  */
-uint32_t pci_dec21143_rr(int reg)
-{
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_DEC + (PCI_PRODUCT_DEC_21142 << 16);
-	case 0x04:
-		return 0xffffffff;
-	case 0x08:
-		/*  Revision 4.1  */
-		return PCI_CLASS_CODE(PCI_CLASS_NETWORK,
-		    PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x41;
-	case 0x10:
-		/*  1ca00000, I/O space  (I have no idea about these...)  */
-		return 0x00200001;  /*  CATS  */
-		return 0x9ca00001;  /*  cobalt  */
-	case 0x14:
-		/*  1ca10000, mem space  (I have no idea about these...)  */
-		return 0x00210000;	/*  CATS  */
-		return 0x9ca10000;	/*  cobalt  */
-	case 0x3c:
-		return 0x00000800;
-/*	cobalt	return 0x00000100;	  interrupt pin A  */
-	default:
-		return 0;
-	}
-}
-
-
-PCIINIT(dec21143)
+int devinit_dec21143(struct devinit *devinit)
 {
 	struct dec21143_data *d;
+	char name2[100];
+
 	d = malloc(sizeof(struct dec21143_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -159,10 +130,17 @@ PCIINIT(dec21143)
 	}
 	memset(d, 0, sizeof(struct dec21143_data));
 
-	/*  TODO: This only works for CATS.  */
-	memory_device_register(mem, "dec21143", 0x80200000,
+	snprintf(name2, sizeof(name2), "%s [i/o]", devinit->name);
+
+	/*  TODO: Don't hardcode the 0x10000 size and offset.  */
+
+	memory_device_register(devinit->machine->memory, name2, devinit->addr,
 	    0x10000, dev_dec21143_io_access, d, MEM_DEFAULT, NULL);
-	memory_device_register(mem, "dec21143", 0x80210000,
-	    0x10000, dev_dec21143_access, d, MEM_DEFAULT, NULL);
+
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr + 0x10000, 0x10000, dev_dec21143_access, d,
+	    MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

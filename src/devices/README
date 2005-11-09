@@ -1,4 +1,4 @@
-$Id: README,v 1.4 2005-11-08 11:01:46 debug Exp $
+$Id: README,v 1.5 2005-11-09 06:35:45 debug Exp $
 
 dev_*:
 	Devices. (Please read 'Emulation of hardware devices' in
@@ -6,16 +6,11 @@ dev_*:
 
 	Example: dev_wdc, the IDE/ATA[PI] harddisk controller.
 
-pci_*:
-	PCI devices. These are not necessarily normal devices, but rather
-	"glue code" which identifies devices as PCI devices.
-
-	Example: pci_ali_m1543, contains glue for ali_m1532 and ali_m5229,
-	the first being a PCI-ISA bridge, and the second an IDE controller.
-	(The m5229 uses the dev_wdc device.)
-
-bus_*:
-	Bus framework.
+bus_pci.c:
+	PCI bus framework, and some glue code for PCI devices.
+	Example of glue code would be PCI-IDE controllers, which are
+	implemented using dev_wdc plus some PCI configuration registers,
+	which identifies the specific controller (fake, but it works).
 
 other files:
 	Misc. stuff.

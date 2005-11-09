@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.97 2005-11-08 11:44:38 debug Exp $
+#  $Id: Makefile.skel,v 1.98 2005-11-09 06:35:45 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -13,6 +13,7 @@ OBJS=lk201.o \
 	dev_dc7085.o dev_ssc.o dev_scc.o dev_ns16550.o dev_8250.o dev_zs.o \
 	dev_fb.o dev_colorplanemask.o dev_px.o dev_sfb.o dev_pmagja.o \
 	dev_bt459.o dev_bt455.o dev_bt431.o \
+	dev_dec21030.o \
 	dev_vga.o dev_pckbc.o dev_8253.o dev_8259.o dev_pccmos.o \
 	dev_rd94.o dev_jazz.o dev_m700_fb.o dev_fdc.o \
 	dev_sgi_ip19.o dev_sgi_ip20.o dev_sgi_ip22.o dev_sgi_ip30.o \
@@ -21,7 +22,7 @@ OBJS=lk201.o \
 	dev_dec5800.o \
 	dev_dec_ioasic.o dev_turbochannel.o \
 	dev_sii.o dev_asc.o dev_wdsc.o dev_wdc.o dev_ahc.o \
-	dev_le.o dev_sn.o \
+	dev_le.o dev_sn.o dev_dec21143.o \
 	dev_ps2_stuff.o dev_ps2_gs.o dev_ps2_gif.o \
 	dev_ps2_spd.o dev_ps2_ether.o \
 	dev_ohci.o dev_pcic.o \
@@ -29,8 +30,7 @@ OBJS=lk201.o \
 	dev_malta_lcd.o \
 	dev_lpt.o \
 	dev_pmppc.o dev_bebox.o dev_footbridge.o dev_i80321.o \
-	bus_pci.o pci_dec21030.o pci_dec21143.o pci_vt82c586.o \
-	pci_symphony_83c553.o
+	bus_pci.o
 
 #	dev_malta.o
 

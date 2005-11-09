@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1016 2005-11-09 08:28:26 debug Exp $
+$Id: HISTORY,v 1.1017 2005-11-09 17:14:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2393,5 +2393,7 @@ Changelog for GXemul:
 20051109	Continuing on the PCI bus stuff; all old pci_*.c have been
 		incorporated into normal devices and/or rewritten as glue code
 		only, adding a dummy Intel 82371AB PIIX4 for Malta (not really
-		tested yet), and working on the DEC 21143 NIC.
+		tested yet).
 		Minor pckbc fix so that Linux doesn't complain.
+		Working on the DEC 21143 NIC (ethernet mac rom stuff mostly).
+		Various other minor fixes.

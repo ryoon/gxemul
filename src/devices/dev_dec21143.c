@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.3 2005-11-09 09:16:42 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.4 2005-11-09 17:14:21 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -41,16 +41,122 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "net.h"
 
 #include "tulipreg.h"
 
 
 #define debug fatal
 
+#define	N_REGS		32
+#define	ROM_WIDTH	6
 
 struct dec21143_data {
-	int	dummy;
+	uint32_t	reg[N_REGS];
+
+	uint8_t		mac[6];
+	uint16_t	rom[1 << ROM_WIDTH];
+
+	int		srom_curbit;
+	int		srom_command;
+	int		srom_command_has_started;
+	int		rom_addr;
 };
+
+
+/*
+ *  srom_access():
+ *
+ *  This function handles reads from the Ethernet Address ROM. This is not a
+ *  100% correct implementation, as it was reverse-engineered from OpenBSD
+ *  sources; it seems to work with OpenBSD, NetBSD, and Linux.
+ *
+ *  Each transfer (if I understood this correctly) is of the following format:
+ *
+ *	1xx yyyyyy zzzzzzzzzzzzzzzz
+ *
+ *  where 1xx    = operation (6 means a Read),
+ *        yyyyyy = ROM address
+ *        zz...z = data
+ *
+ *  y and z are _both_ read and written to at the same time; this enables the
+ *  operating system to sense the number of bits in y (when reading, all y bits
+ *  are 1 except the last one).
+ */
+static void srom_access(struct cpu *cpu, struct dec21143_data *d,
+	uint32_t oldreg, uint32_t idata)
+{
+	int obit, ibit;
+
+	/*  debug("CSR9 WRITE! 0x%08x\n", (int)idata);  */
+
+	/*  New selection? Then reset internal state.  */
+	if (idata & MIIROM_SR && !(oldreg & MIIROM_SR)) {
+		d->srom_curbit = 0;
+		d->srom_command = 0;
+		d->srom_command_has_started = 0;
+		d->rom_addr = 0;
+	}
+
+	/*  Only care about data during clock cycles:  */
+	if (!(idata & MIIROM_SROMSK))
+		return;
+
+	obit = 0;
+	ibit = idata & MIIROM_SROMDI? 1 : 0;
+	/*  debug("CLOCK CYCLE! (bit %i): ", d->srom_curbit);  */
+
+	/*
+	 *  Linux sends more zeroes before starting the actual command, than
+	 *  OpenBSD and NetBSD. Hopefully this is correct. (I'm just guessing
+	 *  that all commands should start with a 1, perhaps that's not really
+	 *  the case.)
+	 */
+	if (!ibit && !d->srom_command_has_started)
+		return;
+
+	if (d->srom_curbit < 3) {
+		d->srom_command_has_started = 1;
+		d->srom_command <<= 1;
+		d->srom_command |= ibit;
+		/*  debug("command input '%i'\n", ibit);  */
+	} else {
+		switch (d->srom_command) {
+		case 6:	if (d->srom_curbit < ROM_WIDTH + 3) {
+				obit = d->srom_curbit < ROM_WIDTH + 2;
+				d->rom_addr <<= 1;
+				d->rom_addr |= ibit;
+			} else {
+				if (d->srom_curbit == ROM_WIDTH + 3)
+					debug("[ dec21143: ROM read from offset"
+					    " 0x%03x: 0x%04x ]\n", d->rom_addr,
+					    d->rom[d->rom_addr]);
+				obit = d->rom[d->rom_addr] & (0x8000 >>
+				    (d->srom_curbit - ROM_WIDTH - 3))? 1 : 0;
+			}
+			break;
+		default:fatal("[ dec21243: unimplemented EEPROM "
+			    "command %i ]\n", d->srom_command);
+		}
+		d->reg[CSR_MIIROM / 8] &= ~MIIROM_SROMDO;
+		if (obit)
+			d->reg[CSR_MIIROM / 8] |= MIIROM_SROMDO;
+		/*  debug("input '%i', output '%i'\n", ibit, obit);  */
+	}
+
+	d->srom_curbit ++;
+
+	/*
+	 *  Done command + addr + data? Then restart. (At least NetBSD does
+	 *  sequential reads without turning selection off and then on.)
+	 */
+	if (d->srom_curbit >= 3 + ROM_WIDTH + 16) {
+		d->srom_curbit = 0;
+		d->srom_command = 0;
+		d->srom_command_has_started = 0;
+		d->rom_addr = 0;
+	}
+}
 
 
 /*
@@ -60,20 +166,41 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	/*  struct dec21143_data *d = extra;  */
+	struct dec21143_data *d = extra;
 	uint64_t idata = 0, odata = 0;
+	uint32_t oldreg = 0;
+	int regnr = relative_addr >> 3;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+	if ((relative_addr & 3) == 0 && regnr < N_REGS) {
+		if (writeflag == MEM_READ)
+			odata = d->reg[regnr];
+		else {
+			oldreg = d->reg[regnr];
+			d->reg[regnr] = idata;
+		}
+	} else
+		fatal("[ dec21143: WARNING! unaligned access (0x%x) ]\n",
+		    (int)relative_addr);
+
 	switch (relative_addr) {
 
+	case CSR_BUSMODE:	/*  csr0  */
+		break;
+
+	case CSR_MIIROM:	/*  csr9  */
+		if (writeflag == MEM_WRITE)
+			srom_access(cpu, d, oldreg, idata);
+		break;
+
 	default:if (writeflag == MEM_READ)
-			debug("[ dec21143: read from 0x%02x ]\n",
+			fatal("[ dec21143: read from unimplemented 0x%02x ]\n",
 			    (int)relative_addr);
 		else
-			debug("[ dec21143: write to  0x%02x: 0x%02x ]\n",
-			    (int)relative_addr, (int)idata);
+			fatal("[ dec21143: write to unimplemented 0x%02x: "
+			    "0x%02x ]\n", (int)relative_addr, (int)idata);
 	}
 
 	if (writeflag == MEM_READ)
@@ -98,10 +225,22 @@ int devinit_dec21143(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct dec21143_data));
 
-	snprintf(name2, sizeof(name2), "%s [i/o]", devinit->name);
+	net_generate_unique_mac(devinit->machine, d->mac);
 
-	memory_device_register(devinit->machine->memory, name2, devinit->addr,
-	    0x100, dev_dec21143_access, d, MEM_DEFAULT, NULL);
+	/*  Version (= 1) and Chip count (= 1):  */
+	d->rom[TULIP_ROM_SROM_FORMAT_VERION / 2] = 0x101;
+
+	/*  MAC:  */
+	d->rom[10] = (d->mac[1] << 8) + d->mac[0];
+	d->rom[11] = (d->mac[3] << 8) + d->mac[2];
+	d->rom[12] = (d->mac[5] << 8) + d->mac[4];
+
+	snprintf(name2, sizeof(name2), "%s [%02x:%02x:%02x:%02x:%02x:%02x]",
+	    devinit->name, d->mac[0], d->mac[1], d->mac[2], d->mac[3],
+	    d->mac[4], d->mac[5]);
+
+	memory_device_register(devinit->machine->memory, name2,
+	    devinit->addr, 0x100, dev_dec21143_access, d, MEM_DEFAULT, NULL);
 
 	/*
 	 *  TODO: don't hardcode this! NetBSD/cats uses mem accesses at

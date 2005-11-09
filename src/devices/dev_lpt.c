@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.2 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_lpt.c,v 1.3 2005-11-09 17:14:21 debug Exp $
  *
  *  LPT (parallel printer) controller.
  *
@@ -44,9 +44,9 @@
 #include "misc.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
-#define	TICK_SHIFT		15
+#define	TICK_SHIFT		18
 #define	DEV_LPT_LENGTH		3
 
 struct lpt_data {
@@ -87,8 +87,13 @@ int dev_lpt_access(struct cpu *cpu, struct memory *mem,
 
 	case 0:	if (writeflag == MEM_READ)
 			odata = d->data;
-		else
+		else {
+			console_putchar(d->console_handle, idata);
 			d->data = idata;
+		}
+		break;
+
+	case 1:	odata = 0xd8;	/*  TODO: symbolic  */
 		break;
 
 	default:

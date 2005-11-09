@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.19 2005-11-09 09:16:42 debug Exp $
+ *  $Id: bus_pci.c,v 1.20 2005-11-09 17:14:21 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -379,7 +379,10 @@ PCIINIT(ali_m5229)
 	    PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1);
 
+	/*  TODO:  */
 	PCI_SET_DATA(0x50, 0x01000000);
+	PCI_SET_DATA(0x54, 0x00000044);
+	PCI_SET_DATA(0x58, 0x31310000);
 
 #if 0
 /*  TODO:  */

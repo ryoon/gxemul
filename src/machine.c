@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.584 2005-11-09 06:35:44 debug Exp $
+ *  $Id: machine.c,v 1.585 2005-11-09 17:14:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4582,6 +4582,17 @@ Not yet.
 		machine->md_int.footbridge_data =
 		    device_add(machine, "footbridge addr=0x42000000");
 		machine->md_interrupt = footbridge_interrupt;
+
+		/*
+		 *  DC21285_ROM_BASE (0x41000000): "reboot" code. Works
+		 *  with NetBSD.
+		 */
+		dev_ram_init(machine, 0x41000000, 12, DEV_RAM_RAM, 0);
+		store_32bit_word(cpu, 0x41000008ULL, 0xef8c64ebUL);
+
+		/*  OpenBSD reboot needs 0xf??????? to be mapped to phys.:  */
+		dev_ram_init(machine, 0xf0000000, 0x1000000,
+		    DEV_RAM_MIRROR, 0x0);
 
 		/*  NetBSD and OpenBSD clean their caches here:  */
 		dev_ram_init(machine, 0x50000000, 0x4000, DEV_RAM_RAM, 0);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.44 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_le.c,v 1.45 2005-11-09 17:14:21 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -800,14 +800,6 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 
 	/*  ROM (including the MAC address):  */
 	net_generate_unique_mac(machine, &d->rom[0]);
-
-	/*
-	 *  NOTE:  According to the Lance documentation, the low order bit of
-	 *  a physical MAC address should be clear.  However, NetBSD and
-	 *  Linux drop packets if the _first_ byte's lowest bit is not zero.
-	 */
-	d->rom[0] &= ~1;
-	d->rom[5] &= ~1;
 
 	/*  Copies of the MAC address and a test pattern:  */
 	d->rom[10] = d->rom[21] = d->rom[5];

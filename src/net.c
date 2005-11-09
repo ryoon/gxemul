@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.80 2005-08-12 05:49:46 debug Exp $
+ *  $Id: net.c,v 1.81 2005-11-09 17:14:18 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -171,6 +171,11 @@ void net_generate_unique_mac(struct machine *machine, unsigned char *macbuf)
 	macbuf[3] = 0;
 	macbuf[4] = 0;
 	macbuf[5] = machine->serial_nr << 4;
+
+	if (macbuf[0] & 1 || macbuf[5] & 1) {
+		fatal("Internal error in net_generate_unique_mac().\n");
+		exit(1);
+	}
 
 	/*  TODO: Remember the mac addresses somewhere?  */
 	machine->nr_of_nics ++;

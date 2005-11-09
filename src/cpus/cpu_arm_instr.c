@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.46 2005-11-09 09:26:56 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.47 2005-11-09 17:14:20 debug Exp $
  *
  *  ARM instructions.
  *
@@ -722,11 +722,24 @@ Y(cdp)
  */
 X(openfirmware)
 {
+	/*  TODO: sync pc?  */
 	of_emul(cpu);
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = cpu->cd.arm.r[ARM_LR];
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);
 	quick_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  reboot:
+ */
+X(reboot)
+{
+	cpu->running = 0;
+	cpu->running_translated = 0;
+	cpu->n_translated_instrs --;
+	cpu->cd.arm.next_ic = &nothing_call;
 }
 
 
@@ -1505,8 +1518,6 @@ X(netbsd_cacheclean2)
 /*
  *  netbsd_scanc:
  *
- *	NOTE/TODO:  This implementation is buggy!  (Unknown why.)
- *
  *  f01bccbc:  e5d13000     ldrb    r3,[r1]
  *  f01bccc0:  e7d23003     ldrb    r3,[r2,r3]
  *  f01bccc4:  e113000c     tsts    r3,ip
@@ -1752,8 +1763,6 @@ void arm_combine_netbsd_scanc(struct cpu *cpu, void *v, int low_addr)
 	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
-
-return;
 
 	if (n_back >= 2) {
 		if (ic[-2].f == instr(load_w0_byte_u1_p1_imm) &&
@@ -2533,7 +2542,10 @@ X(to_be_translated)
 		/*  Default handler:  */
 		ic->f = cond_instr(swi);
 		ic->arg[0] = addr & 0xfff;
-		if (iword == 0xef8c64be) {
+		if (iword == 0xef8c64eb) {
+			/*  Hack for rebooting a machine:  */
+			ic->f = instr(reboot);
+		} else if (iword == 0xef8c64be) {
 			/*  Hack for openfirmware prom emulation:  */
 			ic->f = instr(openfirmware);
 		} else if (cpu->machine->userland_emul != NULL) {

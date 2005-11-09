@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.53 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.54 2005-11-09 08:25:25 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -708,6 +708,9 @@ if (x&1)
 			case 0xaa:	/*  keyboard self-test  */
 				pckbc_add_code(d, 0x55, port_nr);
 				break;
+			case 0xab:	/*  keyboard interface self-test  */
+				pckbc_add_code(d, 0x00, port_nr);
+				break;
 			case 0xad:
 				d->cmdbyte |= KC8_KDISABLE;
 				break;
@@ -719,6 +722,10 @@ if (x&1)
 				break;
 			case 0xd1:
 				d->state = STATE_LDOUTPUT;
+				break;
+			case 0xd3:	/*  write to auxiliary device
+					    output buffer  */
+				debug("[ pckbc: CONTROL 0xd3, TODO ]\n");
 				break;
 			case 0xd4:	/*  write to auxiliary port  */
 				debug("[ pckbc: CONTROL 0xd4, TODO ]\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.45 2005-11-05 23:04:28 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.46 2005-11-09 09:26:56 debug Exp $
  *
  *  ARM instructions.
  *
@@ -236,8 +236,9 @@ X(invalid) {
  */
 X(b)
 {
-	uint32_t pc = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[1];
-	cpu->pc = cpu->cd.arm.r[ARM_PC] = pc + (int32_t)ic->arg[0];
+	cpu->cd.arm.r[ARM_PC] &= 0xfffff000;
+	cpu->cd.arm.r[ARM_PC] += (int32_t)ic->arg[0];
+	cpu->pc = cpu->cd.arm.r[ARM_PC];
 
 	/*  Find the new physical page and update the translation pointers:  */
 	quick_pc_to_pointers(cpu);
@@ -2491,6 +2492,9 @@ X(to_be_translated)
 				    cpu->cd.arm.cur_ic_page +
 				    ((new_pc & mask_within_page) >>
 				    ARM_INSTR_ALIGNMENT_SHIFT));
+			} else if (main_opcode == 0x0a) {
+				/*  Special hack for a plain "b":  */
+				ic->arg[0] += ic->arg[1];
 			}
 		}
 

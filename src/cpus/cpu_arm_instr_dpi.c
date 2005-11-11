@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.12 2005-11-01 22:07:00 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.13 2005-11-11 07:31:31 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -87,17 +87,21 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	uint32_t
 #endif
-	    c64,
-#if !defined(A__MOV) && !defined(A__MVN)
-	    a = reg(ic->arg[0]),
-#endif
 	    b =
 #ifdef A__REG
-	    reg_func(cpu, ic);
+	    reg_func(cpu, ic)
 #else
-	    ic->arg[1];
+#ifdef A__REGSHORT
+	    reg(ic->arg[1])
+#else
+	    ic->arg[1]
 #endif
-
+#endif
+	    , c64
+#if !defined(A__MOV) && !defined(A__MVN)
+	    , a = reg(ic->arg[0])
+#endif
+	    ;
 
 #if defined(A__MOV) || defined(A__MVN) || defined(A__TST) || defined(A__TEQ) \
  || defined(A__AND) || defined(A__BIC) || defined(A__EOR) || defined(A__ORR)

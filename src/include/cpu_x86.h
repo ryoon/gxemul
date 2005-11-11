@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.37 2005-11-06 22:41:13 debug Exp $
+ *  $Id: cpu_x86.h,v 1.38 2005-11-11 07:31:33 debug Exp $
  */
 
 #include "misc.h"
@@ -119,10 +119,10 @@ struct x86_tc_physpage {
 
 #define	X86_MAX_VPH_TLB_ENTRIES		256
 struct x86_vpg_tlb_entry {
-	int		valid;
-	int		writeflag;
-	int64_t		timestamp;
+	uint8_t		valid;
+	uint8_t		writeflag;
 	unsigned char	*host_page;
+	int64_t		timestamp;
 	uint64_t	vaddr_page;
 	uint64_t	paddr_page;
 };
@@ -207,7 +207,7 @@ struct x86_cpu {
 	struct x86_tc_physpage          *phys_page[X86_N_VPH_ENTRIES];
 
 	uint32_t			phystranslation[X86_N_VPH_ENTRIES/32];
-	int16_t				vaddr_to_tlbindex[X86_N_VPH_ENTRIES];
+	uint8_t				vaddr_to_tlbindex[X86_N_VPH_ENTRIES];
 };
 
 

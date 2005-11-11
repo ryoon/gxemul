@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.3 2005-10-26 14:37:03 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.4 2005-11-11 07:31:31 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -798,13 +798,14 @@ void mips_invalidate_translation_caches_paddr(struct cpu *cpu,
 				int psize = 12;
 				int or_pmask = 0x1fff;
 				int phys_shift = 12;
+				int tmp_pmask = cpu->cd.mips.coproc[0]->
+				    tlbs[i].mask | or_pmask;
 
 				if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
 					or_pmask = 0x7ff;
 					phys_shift = 10;
 				}
-				switch (cpu->cd.mips.coproc[0]->
-				    tlbs[i].mask | or_pmask) {
+				switch (tmp_pmask) {
 				case 0x000007ff:	psize = 10; break;
 				case 0x00001fff:	psize = 12; break;
 				case 0x00007fff:	psize = 14; break;
@@ -816,7 +817,8 @@ void mips_invalidate_translation_caches_paddr(struct cpu *cpu,
 				case 0x07ffffff:	psize = 26; break;
 				default:
 					printf("invalidate_translation_caches"
-					    "_paddr(): bad pagemask?\n");
+					    "_paddr(): bad pagemask: 0x%x\n",
+					    (int)tmp_pmask);
 				}
 				tlb_paddr0 = (cpu->cd.mips.coproc[0]->tlbs[i].
 				    lo0 & ENTRYLO_PFN_MASK)>>ENTRYLO_PFN_SHIFT;

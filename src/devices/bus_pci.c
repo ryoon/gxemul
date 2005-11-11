@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.20 2005-11-09 17:14:21 debug Exp $
+ *  $Id: bus_pci.c,v 1.21 2005-11-11 07:31:32 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -179,7 +179,7 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		} else {
 			debug("[ bus_pci: write to unimplemented addr "
 			    "0x%x: 0x%llx ]\n", (int)relative_addr,
-			    (long long)data);
+			    (long long)*data);
 		}
 	}
 
@@ -681,9 +681,10 @@ PCIINIT(dec21143)
 		irq = 18;
 		break;
 	case MACHINE_COBALT:
-		base = 0x9ca00000;
-		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000100);
+		/*  NetBSD/cobalt:  */
+		base = 0x10010000;
 		/*  TODO: IRQ  */
+		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000100);
 		break;
 	default:fatal("dec21143 in non-implemented machine type %i\n",
 		    machine->machine_type);

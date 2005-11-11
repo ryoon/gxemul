@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1017 2005-11-09 17:14:17 debug Exp $
+$Id: HISTORY,v 1.1018 2005-11-11 07:32:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2397,3 +2397,7 @@ Changelog for GXemul:
 		Minor pckbc fix so that Linux doesn't complain.
 		Working on the DEC 21143 NIC (ethernet mac rom stuff mostly).
 		Various other minor fixes.
+20051110	Some more ARM dyntrans fine-tuning (e.g. some instruction
+		combinations (cmps followed by conditional branch within the
+		same page) and special cases for DPIs with regform when the
+		shifter isn't used).

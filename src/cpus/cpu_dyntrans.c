@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.30 2005-11-06 22:41:12 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.31 2005-11-11 07:31:31 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -40,7 +40,7 @@ static void gather_statistics(struct cpu *cpu)
 	if (low_pc < 0 || low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE)
 		return;
 
-#if 1
+#if 0
 	/*  Use the physical address:  */
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
@@ -826,6 +826,18 @@ void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t paddr, int flags)
 		return;
 	}
 
+	if (flags & INVALIDATE_ALL) {
+		for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
+			if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
+				DYNTRANS_INVALIDATE_TLB_ENTRY(cpu, cpu->cd.
+				    DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page,
+				    0);
+				cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid=0;
+			}
+		}
+		return;
+	}
+
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid && (
 		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
@@ -1011,7 +1023,9 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
+#ifndef MODE32
 	int64_t lowest, highest = -1;
+#endif
 	int found, r, lowest_index, start, end, useraccess = 0;
 
 #ifdef DYNTRANS_ALPHA
@@ -1057,8 +1071,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #endif
 
 	/*  Scan the current TLB entries:  */
-	found = -1; lowest_index = start;
-	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
+	lowest_index = start;
 
 #ifdef MODE32
 	/*
@@ -1069,16 +1082,16 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *          for the entry with the lowest time stamp, just choosing
 	 *          one at random will work as well.
 	 */
-	found = cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[
+	found = (int)cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[
 	    DYNTRANS_ADDR_TO_PAGENR(vaddr_page)] - 1;
 	if (found < 0) {
 		static unsigned int x = 0;
 		lowest_index = (x % (end-start)) + start;
 		x ++;
 	}
-	if (0)
-#endif
-
+#else
+	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
+	found = -1;
 	for (r=start; r<end; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp < lowest) {
 			lowest = cpu->cd.DYNTRANS_ARCH.
@@ -1095,6 +1108,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			break;
 		}
 	}
+#endif
 
 	if (found < 0) {
 		/*  Create the new TLB entry, overwriting the oldest one:  */
@@ -1110,8 +1124,11 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].host_page = host_page;
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page = paddr_page;
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page = vaddr_page;
-		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = writeflag;
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag =
+		    writeflag & MEM_WRITE;
+#ifndef MODE32
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp = highest + 1;
+#endif
 
 		/*  Add the new translation to the table:  */
 #ifdef DYNTRANS_ALPHA
@@ -1170,13 +1187,15 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		 *  The translation was already in the TLB.
 		 *	Writeflag = 0:  Do nothing.
 		 *	Writeflag = 1:  Make sure the page is writable.
-		 *	Writeflag = -1: Downgrade to readonly.
+		 *	Writeflag = MEM_DOWNGRADE: Downgrade to readonly.
 		 */
 		r = found;
+#ifndef MODE32
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp = highest + 1;
-		if (writeflag == 1)
+#endif
+		if (writeflag & MEM_WRITE)
 			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 1;
-		if (writeflag == -1)
+		if (writeflag & MEM_DOWNGRADE)
 			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 0;
 #ifdef DYNTRANS_ALPHA
 		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
@@ -1188,9 +1207,9 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			vph_p = cpu->cd.alpha.vph_table0[a];
 		vph_p->phys_page[b] = NULL;
 		if (vph_p->phys_addr[b] == paddr_page) {
-			if (writeflag == 1)
+			if (writeflag & MEM_WRITE)
 				vph_p->host_store[b] = host_page;
-			if (writeflag == -1)
+			if (writeflag & MEM_DOWNGRADE)
 				vph_p->host_store[b] = NULL;
 		} else {
 			/*  Change the entire physical/host mapping:  */
@@ -1209,10 +1228,10 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			    |= 1 << (index & 31);
 #endif
 		if (cpu->cd.DYNTRANS_ARCH.phys_addr[index] == paddr_page) {
-			if (writeflag == 1)
+			if (writeflag & MEM_WRITE)
 				cpu->cd.DYNTRANS_ARCH.host_store[index] =
 				    host_page;
-			if (writeflag == -1)
+			if (writeflag & MEM_DOWNGRADE)
 				cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
 		} else {
 			/*  Change the entire physical/host mapping:  */

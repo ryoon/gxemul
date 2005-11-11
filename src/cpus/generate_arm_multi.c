@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.9 2005-11-05 23:04:28 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.10 2005-11-11 07:31:32 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *  The main idea is to first check whether a load/store would be possible
@@ -191,7 +191,7 @@ void generate_opcode(uint32_t opcode)
 
 	if (load && opcode & 0x8000) {
 		printf("\t\tcpu->pc = cpu->cd.arm.r[15];\n"
-		    "\t\tarm_pc_to_pointers(cpu);\n");
+		    "\t\tquick_pc_to_pointers(cpu);\n");
 	}
 
 	printf("\t} else\n");
@@ -231,11 +231,11 @@ int main(int argc, char *argv[])
 	    "#include <stdlib.h>\n"
 	    "#include \"cpu.h\"\n"
 	    "#include \"misc.h\"\n"
+	    "#include \"arm_quick_pc_to_pointers.h\"\n"
 	    "#include \"arm_tmphead_1.h\"\n"
 	    "\n#define instr(x) arm_instr_ ## x\n");
 	printf("extern void arm_instr_nop(struct cpu *, "
 	    "struct arm_instr_call *);\n");
-	printf("extern void arm_pc_to_pointers(struct cpu *);\n");
 	printf("extern void arm_instr_bdt_load(struct cpu *, "
 	    "struct arm_instr_call *);\n");
 	printf("extern void arm_instr_bdt_store(struct cpu *, "

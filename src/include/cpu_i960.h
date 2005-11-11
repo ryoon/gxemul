@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.5 2005-11-06 22:41:13 debug Exp $
+ *  $Id: cpu_i960.h,v 1.6 2005-11-11 07:31:33 debug Exp $
  */
 
 #include "misc.h"
@@ -68,12 +68,11 @@ struct i960_tc_physpage {
 
 #define	I960_MAX_VPH_TLB_ENTRIES		256
 struct i960_vpg_tlb_entry {
-	int		valid;
-	int		writeflag;
-	int64_t		timestamp;
-	unsigned char	*host_page;
+	unsigned char	valid;
+	unsigned char	writeflag;
 	uint32_t	vaddr_page;
 	uint32_t	paddr_page;
+	unsigned char	*host_page;
 };
 
 
@@ -112,7 +111,7 @@ struct i960_cpu {
 	struct i960_tc_physpage		*phys_page[I960_N_VPH_ENTRIES];
 
 	uint32_t			phystranslation[I960_N_VPH_ENTRIES/32];
-	int16_t				vaddr_to_tlbindex[I960_N_VPH_ENTRIES];
+	uint8_t				vaddr_to_tlbindex[I960_N_VPH_ENTRIES];
 };
 
 

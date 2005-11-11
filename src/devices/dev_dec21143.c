@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.4 2005-11-09 17:14:21 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.5 2005-11-11 07:31:32 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -46,7 +46,7 @@
 #include "tulipreg.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
 #define	N_REGS		32
 #define	ROM_WIDTH	6
@@ -246,13 +246,18 @@ int devinit_dec21143(struct devinit *devinit)
 	 *  TODO: don't hardcode this! NetBSD/cats uses mem accesses at
 	 *  0x80020000, OpenBSD/cats uses i/o at 0x7c010000.
 	 */
-	if (devinit->machine->machine_type != MACHINE_CATS) {
-		fatal("TODO: dec21143 for non-cats\n");
+	switch (devinit->machine->machine_type) {
+	case MACHINE_CATS:
+		dev_ram_init(devinit->machine, devinit->addr + 0x04010000,
+		    0x100, DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES,
+		    devinit->addr);
+		break;
+	case MACHINE_COBALT:
+		break;
+	default:fatal("TODO: dec21143 for this machine type is not"
+		    " yet implemented\n");
 		exit(1);
 	}
-
-	dev_ram_init(devinit->machine, devinit->addr + 0x04010000, 0x100,
-	    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, devinit->addr);
 
 	return 1;
 }

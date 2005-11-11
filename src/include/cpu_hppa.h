@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.h,v 1.9 2005-11-06 22:41:13 debug Exp $
+ *  $Id: cpu_hppa.h,v 1.10 2005-11-11 07:31:33 debug Exp $
  */
 
 #include "misc.h"
@@ -63,12 +63,12 @@ struct hppa_tc_physpage {
 
 #define	HPPA_MAX_VPH_TLB_ENTRIES		256
 struct hppa_vpg_tlb_entry {
-	int		valid;
-	int		writeflag;
+	unsigned char	valid;
+	unsigned char	writeflag;
 	int64_t		timestamp;
-	unsigned char	*host_page;
 	uint64_t	vaddr_page;
 	uint64_t	paddr_page;
+	unsigned char	*host_page;
 };
 
 struct hppa_cpu {
@@ -104,7 +104,7 @@ struct hppa_cpu {
 	struct hppa_tc_physpage    *phys_page[HPPA_N_VPH_ENTRIES];
 
 	uint32_t		   phystranslation[HPPA_N_VPH_ENTRIES/32];
-	int16_t			   vaddr_to_tlbindex[HPPA_N_VPH_ENTRIES];
+	uint8_t			   vaddr_to_tlbindex[HPPA_N_VPH_ENTRIES];
 };
 
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.7 2005-11-06 22:41:13 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.8 2005-11-11 07:31:33 debug Exp $
  */
 
 #include "misc.h"
@@ -67,12 +67,11 @@ struct m68k_tc_physpage {
 
 #define	M68K_MAX_VPH_TLB_ENTRIES		256
 struct m68k_vpg_tlb_entry {
-	int		valid;
-	int		writeflag;
-	int64_t		timestamp;
-	unsigned char	*host_page;
+	uint8_t		valid;
+	uint8_t		writeflag;
 	uint32_t	vaddr_page;
 	uint32_t	paddr_page;
+	unsigned char	*host_page;
 };
 
 

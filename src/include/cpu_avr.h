@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.8 2005-11-06 22:41:13 debug Exp $
+ *  $Id: cpu_avr.h,v 1.9 2005-11-11 07:31:33 debug Exp $
  */
 
 #include "misc.h"
@@ -66,12 +66,11 @@ struct avr_tc_physpage {
 
 #define	AVR_MAX_VPH_TLB_ENTRIES		256
 struct avr_vpg_tlb_entry {
-	int		valid;
-	int		writeflag;
-	int64_t		timestamp;
-	unsigned char	*host_page;
+	unsigned char	valid;
+	unsigned char	writeflag;
 	uint32_t	vaddr_page;
 	uint32_t	paddr_page;
+	unsigned char	*host_page;
 };
 
 
@@ -134,7 +133,7 @@ struct avr_cpu {
 	struct avr_tc_physpage		*phys_page[AVR_N_VPH_ENTRIES];
 
 	uint32_t			phystranslation[AVR_N_VPH_ENTRIES/32];
-	int16_t				vaddr_to_tlbindex[AVR_N_VPH_ENTRIES];
+	uint8_t				vaddr_to_tlbindex[AVR_N_VPH_ENTRIES];
 };
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_dpi.c,v 1.2 2005-10-22 12:22:13 debug Exp $
+ *  $Id: generate_arm_dpi.c,v 1.3 2005-11-11 07:31:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,27 +72,36 @@ int main(int argc, char *argv[])
 	printf("extern void arm_instr_invalid(struct cpu *, "
 	    "struct arm_instr_call *);\n");
 
-	for (reg=0; reg<=1; reg++)
+	for (reg=0; reg<=2; reg++)
 	  for (pc=0; pc<=1; pc++)
 	    for (s=0; s<=1; s++)
 	      for (a=0; a<16; a++) {
 		if (a >= 8 && a <= 11 && s == 0)
 			continue;
+		if (reg == 2 && pc)
+			continue;
 		printf("#define A__NAME arm_instr_%s%s%s%s\n",
-		    op[a], s? "s" : "", pc? "_pc" : "", reg? "_reg" : "");
+		    op[a], s? "s" : "", pc? "_pc" : "", reg?
+		    (reg==2? "_regshort" : "_reg") : "");
 
 		for (c=0; c<14; c++)
 			printf("#define A__NAME__%s arm_instr_%s%s%s%s__%s\n",
 			    cond[c], op[a], s? "s" : "", pc? "_pc" : "",
-			    reg? "_reg" : "", cond[c]);
+			    reg? (reg==2? "_regshort" : "_reg") : "", cond[c]);
 		if (s)	printf("#define A__S\n");
-		if (reg)printf("#define A__REG\n");
+		switch (reg) {
+		case 1:	printf("#define A__REG\n"); break;
+		case 2:	printf("#define A__REGSHORT\n"); break;
+		}
 		if (pc)	printf("#define A__PC\n");
 		printf("#define A__%s\n", uppercase(op[a]));
 		printf("#include \"cpu_arm_instr_dpi.c\"\n");
 		printf("#undef A__%s\n", uppercase(op[a]));
 		if (s)	printf("#undef A__S\n");
-		if (reg)printf("#undef A__REG\n");
+		switch (reg) {
+		case 1:	printf("#undef A__REG\n"); break;
+		case 2:	printf("#undef A__REGSHORT\n"); break;
+		}
 		if (pc)	printf("#undef A__PC\n");
 		for (c=0; c<14; c++)
 			printf("#undef A__NAME__%s\n", cond[c]);
@@ -118,6 +127,28 @@ int main(int argc, char *argv[])
 				    c!=14? "__" : "", cond[c]);
 			n++;
 			if (n != 2 * 2 * 2 * 16 * 16)
+				printf(",");
+			printf("\n");
+		  }
+
+	printf("};\n\n");
+
+	printf("\n\tvoid (*arm_dpi_instr_regshort[2 * 16 * 16])(struct cpu *,\n"
+	    "\t\tstruct arm_instr_call *) = {\n");
+	n = 0;
+	for (s=0; s<=1; s++)
+	    for (a=0; a<16; a++)
+		for (c=0; c<16; c++) {
+			if (c == 15)
+				printf("\tarm_instr_nop");
+			else if (a >= 8 && a <= 11 && s == 0)
+				printf("\tarm_instr_invalid");
+			else
+				printf("\tarm_instr_%s%s_regshort%s%s",
+				    op[a], s? "s" : "",
+				    c!=14? "__" : "", cond[c]);
+			n++;
+			if (n != 2 * 16 * 16)
 				printf(",");
 			printf("\n");
 		  }

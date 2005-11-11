@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.40 2005-10-23 14:24:15 debug Exp $
+ *  $Id: memory.h,v 1.41 2005-11-11 07:31:33 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -114,21 +114,6 @@ struct memory {
 #define	BITS_PER_MEMBLOCK	20
 #define	MAX_BITS		40
 
-#define	MEM_READ			0
-#define	MEM_WRITE			1
-
-
-#define	CACHE_DATA			0
-#define	CACHE_INSTRUCTION		1
-#define	CACHE_NONE			2
-
-#define	CACHE_FLAGS_MASK		0x3
-
-#define	NO_EXCEPTIONS			16
-#define	PHYSICAL			32
-#define	NO_SEGMENTATION			64	/*  for X86  */
-#define	MEMORY_USER_ACCESS		128	/*  for ARM, at least  */
-
 
 /*  memory.c:  */
 uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len);
@@ -164,6 +149,31 @@ int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 
 
+/*
+ *  Bit flags:
+ */
+#define	MEM_READ			0
+#define	MEM_WRITE			1
+#define	MEM_DOWNGRADE			128
+
+#define	CACHE_DATA			0
+#define	CACHE_INSTRUCTION		1
+#define	CACHE_NONE			2
+
+#define	CACHE_FLAGS_MASK		0x3
+
+#define	NO_EXCEPTIONS			16
+#define	PHYSICAL			32
+#define	NO_SEGMENTATION			64	/*  for X86  */
+#define	MEMORY_USER_ACCESS		128	/*  for ARM, at least  */
+
+/*  Dyntrans flags:  */
+#define	MEM_DEFAULT				0
+#define	MEM_DYNTRANS_OK				1
+#define	MEM_DYNTRANS_WRITE_OK			2
+#define	MEM_READING_HAS_NO_SIDE_EFFECTS		4
+#define	MEM_EMULATED_RAM			8
+
 #define FLAG_WRITEFLAG          1
 #define FLAG_NOEXCEPTIONS       2
 #define FLAG_INSTR              4
@@ -189,13 +199,5 @@ void memory_device_register(struct memory *mem, const char *,
 	    struct memory *,uint64_t,unsigned char *,size_t,int,void *),
 	void *extra, int flags, unsigned char *dyntrans_data);
 void memory_device_remove(struct memory *mem, int i);
-
-/*  Bit flags:  */
-#define	MEM_DEFAULT				0
-#define	MEM_DYNTRANS_OK				1
-#define	MEM_DYNTRANS_WRITE_OK			2
-#define	MEM_READING_HAS_NO_SIDE_EFFECTS		4
-#define	MEM_EMULATED_RAM			8
-
 
 #endif	/*  MEMORY_H  */

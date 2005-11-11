@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.585 2005-11-09 17:14:18 debug Exp $
+ *  $Id: machine.c,v 1.586 2005-11-11 07:31:30 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2402,7 +2402,7 @@ void machine_setup(struct machine *machine)
 		 *  The PCI controller interrupts at ISA interrupt 9.
 		 */
 		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 8 + 9, 11);
-		/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, "dec21143");  */
+		bus_pci_add(machine, pci_data, mem, 0,  7, 0, "dec21143");
 		/*  bus_pci_add(machine, pci_data, mem, 0,  8, 0, "symbios_860");   PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 		bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
 		bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
@@ -3923,20 +3923,12 @@ Not yet.
 
 			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x name2=tty2", MALTA_CBUSUART);
 			device_add(machine, tmpstr);
-			/*  TODO: Irqs  */
+
 			pci_data = dev_gt_init(machine, mem, 0x1be00000, 8+9, 8+9, 120);
 
-			/*  TODO: Haha, this is bogus. Just a cut&paste
-			    from the Cobalt emulation above.  */
-#if 1
-			/*  New, not really tested yet:  */
 			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "i82371ab_isa");
 			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "i82371ab_ide");
-#else
-			/*  Old, works ok with NetBSD:  */
-			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
-			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
-#endif
+
 			device_add(machine, "malta_lcd addr=0x1f000400");
 			break;
 		case MACHINE_EVBMIPS_PB1000:

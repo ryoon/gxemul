@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.123 2005-10-26 14:37:01 debug Exp $
+ *  $Id: debugger.c,v 1.124 2005-11-11 07:31:30 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1378,7 +1378,7 @@ static void debugger_cmd_tlbdump(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 {
-	int i, toggle = 1;
+	int toggle = 1;
 	int previous_mode = old_show_trace_tree;
 
 	if (cmd_line[0] != '\0') {
@@ -1422,11 +1422,6 @@ static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 	if (m->bintrans_enable && old_show_trace_tree)
 		printf("NOTE: the trace tree functionality doesn't "
 		    "work very well with bintrans!\n");
-
-	/*  Clear translations:  */
-	for (i=0; i<m->ncpus; i++)
-		if (m->cpus[i]->translation_cache != NULL)
-			cpu_create_or_reset_tc(m->cpus[i]);
 }
 
 
@@ -2105,6 +2100,14 @@ void debugger(void)
 		debugger_n_steps_left_before_interaction --;
 		return;
 	}
+
+	/*
+	 *  Clear all dyntrans translations, because otherwise things would
+	 *  become to complex to keep in sync.
+	 */
+	for (i=0; i<debugger_machine->ncpus; i++)
+		if (debugger_machine->cpus[i]->translation_cache != NULL)
+			cpu_create_or_reset_tc(debugger_machine->cpus[i]);
 
 	exit_debugger = 0;
 

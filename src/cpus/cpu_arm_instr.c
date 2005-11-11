@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.47 2005-11-09 17:14:20 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.48 2005-11-11 07:31:31 debug Exp $
  *
  *  ARM instructions.
  *
@@ -383,6 +383,7 @@ Y(bl_samepage)
  */
 X(bl_samepage_trace)
 {
+	uint32_t pc = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[1];
 	uint32_t lr = (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[2];
 
 	/*  Link and branch:  */
@@ -390,7 +391,7 @@ X(bl_samepage_trace)
 	cpu->cd.arm.next_ic = (struct arm_instr_call *) ic->arg[0];
 
 	/*  ... and show trace:  */
-	cpu_functioncall_trace(cpu, lr - 4);
+	cpu_functioncall_trace(cpu, pc);
 }
 Y(bl_samepage_trace)
 
@@ -527,6 +528,20 @@ X(mov_reg_reg)
 	reg(ic->arg[1]) = reg(ic->arg[0]);
 }
 Y(mov_reg_reg)
+
+
+/*
+ *  mov_reg_pc:  Move the PC register to a normal register.
+ *
+ *  arg[0] = offset compared to start of current page + 8
+ *  arg[1] = ptr to destination register
+ */
+X(mov_reg_pc)
+{
+	reg(ic->arg[1]) =
+	    (cpu->cd.arm.r[ARM_PC] & 0xfffff000) + ic->arg[0];
+}
+Y(mov_reg_pc)
 
 
 /*
@@ -868,10 +883,12 @@ extern void (*arm_load_store_instr[1024])(struct cpu *,
 X(store_w1_word_u1_p0_imm);
 X(store_w0_byte_u1_p0_imm);
 X(store_w0_word_u1_p0_imm);
+X(store_w0_word_u1_p1_imm);
 X(load_w1_word_u1_p0_imm);
 X(load_w0_word_u1_p0_imm);
 X(load_w0_byte_u1_p1_imm);
 X(load_w0_byte_u1_p1_reg);
+X(load_w1_byte_u1_p1_imm);
 
 extern void (*arm_load_store_instr_pc[1024])(struct cpu *,
 	struct arm_instr_call *);
@@ -887,10 +904,15 @@ extern void arm_r_r3_t0_c0(void);
 
 extern void (*arm_dpi_instr[2 * 2 * 2 * 16 * 16])(struct cpu *,
 	struct arm_instr_call *);
+extern void (*arm_dpi_instr_regshort[2 * 16 * 16])(struct cpu *,
+	struct arm_instr_call *);
 X(cmps);
+X(teqs);
 X(sub);
 X(add);
 X(subs);
+X(eor_regshort);
+X(cmps_regshort);
 
 
 #include "cpu_arm_instr_misc.c"
@@ -1214,151 +1236,6 @@ X(multi_0x08a05018);
 
 
 /*
- *  fill_loop_test:
- *
- *  A byte-fill loop. Fills at most one page at a time. If the page was not
- *  in the host_store table, then the original sequence (beginning with
- *  cmps rZ,#0) is executed instead.
- *
- *  L: cmps rZ,#0		ic[0]
- *     strb rX,[rY],#1		ic[1]
- *     sub  rZ,rZ,#1		ic[2]
- *     bgt  L			ic[3]
- *
- *  A maximum of 4 pages are filled before returning.
- */
-X(fill_loop_test)
-{
-	int max_pages_left = 4;
-	uint32_t addr, a, n, ofs, maxlen;
-	uint32_t *rzp = (uint32_t *)(size_t)ic[0].arg[0];
-	unsigned char *page;
-
-restart_loop:
-	addr = reg(ic[1].arg[0]);
-	page = cpu->cd.arm.host_store[addr >> 12];
-	if (page == NULL) {
-		instr(cmps)(cpu, ic);
-		return;
-	}
-
-	n = reg(rzp) + 1;
-	ofs = addr & 0xfff;
-	maxlen = 4096 - ofs;
-	if (n > maxlen)
-		n = maxlen;
-
-	/*  printf("x = %x, n = %i\n", reg(ic[1].arg[2]), n);  */
-	memset(page + ofs, reg(ic[1].arg[2]), n);
-
-	reg(ic[1].arg[0]) = addr + n;
-
-	reg(rzp) -= n;
-	cpu->n_translated_instrs += (4 * n);
-
-	a = reg(rzp);
-
-	cpu->cd.arm.cpsr &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	if (a != 0)
-		cpu->cd.arm.cpsr |= ARM_FLAG_C;
-	else
-		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
-	if ((int32_t)a < 0)
-		cpu->cd.arm.cpsr |= ARM_FLAG_N;
-
-	if (max_pages_left-- > 0 && (int32_t)a > 0)
-		goto restart_loop;
-
-	cpu->n_translated_instrs --;
-
-	if ((int32_t)a > 0)
-		cpu->cd.arm.next_ic = ic;
-	else
-		cpu->cd.arm.next_ic = &ic[4];
-}
-
-
-/*
- *  fill_loop_test2:
- *
- *  A word-fill loop. Fills at most one page at a time. If the page was not
- *  in the host_store table, then the original sequence (beginning with
- *  cmps rZ,#0) is executed instead.
- *
- *	L: str     rX,[rY],#4		ic[0]
- *	   subs    rZ,rZ,#4		ic[1]
- *	   bgt     L			ic[2]
- *
- *  A maximum of 5 pages are filled before returning.
- */
-X(fill_loop_test2)
-{
-	int max_pages_left = 5;
-	unsigned char x1,x2,x3,x4;
-	uint32_t addr, a, n, x, ofs, maxlen;
-	uint32_t *rzp = (uint32_t *)(size_t)ic[1].arg[0];
-	unsigned char *page;
-
-	x = reg(ic[0].arg[2]);
-	x1 = x; x2 = x >> 8; x3 = x >> 16; x4 = x >> 24;
-	if (x1 != x2 || x1 != x3 || x1 != x4) {
-		instr(store_w0_word_u1_p0_imm)(cpu, ic);
-		return;
-	}
-
-restart_loop:
-	addr = reg(ic[0].arg[0]);
-	page = cpu->cd.arm.host_store[addr >> 12];
-	if (page == NULL || (addr & 3) != 0) {
-		instr(store_w0_word_u1_p0_imm)(cpu, ic);
-		return;
-	}
-
-	/*  printf("addr = 0x%08x, page = %p\n", addr, page);
-	    printf("*rzp = 0x%08x\n", reg(rzp));  */
-
-	n = reg(rzp) / 4;
-	if (n == 0)
-		n++;
-	/*  n = nr of _words_  */
-	ofs = addr & 0xfff;
-	maxlen = 4096 - ofs;
-	if (n*4 > maxlen)
-		n = maxlen / 4;
-
-	/*  printf("x = %x, n = %i\n", x1, n);  */
-	memset(page + ofs, x1, n * 4);
-
-	reg(ic[0].arg[0]) = addr + n * 4;
-
-	reg(rzp) -= (n * 4);
-	cpu->n_translated_instrs += (3 * n);
-
-	a = reg(rzp);
-
-	cpu->cd.arm.cpsr &=
-	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
-	if (a != 0)
-		cpu->cd.arm.cpsr |= ARM_FLAG_C;
-	else
-		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
-	if ((int32_t)a < 0)
-		cpu->cd.arm.cpsr |= ARM_FLAG_N;
-
-	if (max_pages_left-- > 0 && (int32_t)a > 0)
-		goto restart_loop;
-
-	cpu->n_translated_instrs --;
-
-	if ((int32_t)a > 0)
-		cpu->cd.arm.next_ic = ic;
-	else
-		cpu->cd.arm.next_ic = &ic[3];
-}
-
-
-/*
  *  netbsd_memset:
  *
  *  The core of a NetBSD/arm memset.
@@ -1553,6 +1430,63 @@ X(netbsd_scanc)
 }
 
 
+#if 0
+/*
+ *  strlen:
+ *
+ *  S: e5f03001   ldrb  rY,[rX,#1]!
+ *     e3530000   cmps  rY,#0
+ *     1afffffc   bne   S
+ */
+X(strlen)
+{
+	unsigned int n_loops = 0;
+	uint32_t rY, rX = reg(ic[0].arg[0]);
+	unsigned char *p;
+
+	do {
+		rX ++;
+		p = cpu->cd.arm.host_load[rX >> 12];
+		if (p == NULL) {
+			cpu->n_translated_instrs += (n_loops * 3);
+			instr(load_w1_byte_u1_p1_imm)(cpu, ic);
+			return;
+		}
+
+		rY = reg(ic[0].arg[2]) = p[rX & 0xfff];	/*  load  */
+		reg(ic[0].arg[0]) = rX;			/*  writeback  */
+		n_loops ++;
+
+		/*  Compare rY to zero:  */
+		cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V);
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+		if (rY == 0)
+			cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+	} while (rY != 0);
+
+	cpu->n_translated_instrs += (n_loops * 3) - 1;
+	cpu->cd.arm.next_ic = &ic[3];
+}
+#endif
+
+
+/*
+ *  xchg:
+ *
+ *  e0210000     eor     r0,r1,r0
+ *  e0201001     eor     r1,r0,r1
+ *  e0210000     eor     r0,r1,r0
+ */
+X(xchg)
+{
+	uint32_t tmp = cpu->cd.arm.r[0];
+	cpu->n_translated_instrs += 2;
+	cpu->cd.arm.next_ic = &ic[3];
+	cpu->cd.arm.r[0] = cpu->cd.arm.r[1];
+	cpu->cd.arm.r[1] = tmp;
+}
+
+
 /*
  *  netbsd_copyin:
  *
@@ -1620,6 +1554,244 @@ X(netbsd_copyout)
 	cpu->cd.arm.r[1] = r1 + 24;
 	cpu->n_translated_instrs += 5;
 	cpu->cd.arm.next_ic = &ic[6];
+}
+
+
+/*
+ *  cmps followed by beq (inside the same page):
+ */
+X(cmps_beq_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if ((uint32_t)a >= (uint32_t)b)
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+	if (c == 0) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+		cpu->cd.arm.next_ic = (struct arm_instr_call *) ic[1].arg[0];
+	} else {
+		cpu->cd.arm.next_ic = &ic[2];
+		if (c & 0x80000000)
+			cpu->cd.arm.cpsr |= ARM_FLAG_N;
+	}
+}
+
+
+/*
+ *  cmps followed by bne (inside the same page):
+ */
+X(cmps_bne_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if ((uint32_t)a >= (uint32_t)b)
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+	if (c == 0) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+		cpu->cd.arm.next_ic = &ic[2];
+	} else {
+		if (c & 0x80000000)
+			cpu->cd.arm.cpsr |= ARM_FLAG_N;
+		cpu->cd.arm.next_ic = (struct arm_instr_call *) ic[1].arg[0];
+	}
+}
+
+
+/*
+ *  cmps followed by bcc (inside the same page):
+ */
+X(cmps_bcc_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (c & 0x80000000)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+	else if (c == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if (a >= b) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+		cpu->cd.arm.next_ic = &ic[2];
+	} else
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+}
+
+
+/*
+ *  cmps (reg) followed by bcc (inside the same page):
+ */
+X(cmps_reg_bcc_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]), c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (c & 0x80000000)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+	else if (c == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if (a >= b) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+		cpu->cd.arm.next_ic = &ic[2];
+	} else
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+}
+
+
+/*
+ *  cmps followed by bhi (inside the same page):
+ */
+X(cmps_bhi_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (c & 0x80000000)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+	else if (c == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z | ARM_FLAG_C;
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if (a > b) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+	} else
+		cpu->cd.arm.next_ic = &ic[2];
+}
+
+
+/*
+ *  cmps (reg) followed by bhi (inside the same page):
+ */
+X(cmps_reg_bhi_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]), c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if (c & 0x80000000)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+	else if (c == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z | ARM_FLAG_C;
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if (a > b) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+	} else
+		cpu->cd.arm.next_ic = &ic[2];
+}
+
+
+/*
+ *  cmps followed by bgt (inside the same page):
+ */
+X(cmps_bgt_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if ((uint32_t)a >= (uint32_t)b)
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+	if (c & 0x80000000)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+	else if (c == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if ((int32_t)a > (int32_t)b)
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+	else
+		cpu->cd.arm.next_ic = &ic[2];
+}
+
+
+/*
+ *  cmps followed by ble (inside the same page):
+ */
+X(cmps_ble_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a - b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &=
+	    ~(ARM_FLAG_Z | ARM_FLAG_N | ARM_FLAG_V | ARM_FLAG_C);
+	if ((uint32_t)a >= (uint32_t)b)
+		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+	if (c & 0x80000000)
+		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+	else if (c == 0)
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+	if (((int32_t)a >= 0 && (int32_t)b < 0 && (int32_t)c < 0) ||
+	    ((int32_t)a < 0 && (int32_t)b >= 0 && (int32_t)c >= 0))
+		cpu->cd.arm.cpsr |= ARM_FLAG_V;
+	if ((int32_t)a <= (int32_t)b)
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+	else
+		cpu->cd.arm.next_ic = &ic[2];
+}
+
+
+/*
+ *  teqs followed by beq (inside the same page):
+ *  (arg[1] must not have its highest bit set))
+ */
+X(teqs_lo_beq_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a ^ b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (c == 0) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+	} else
+		cpu->cd.arm.next_ic = &ic[2];
+}
+
+
+/*
+ *  teqs followed by bne (inside the same page):
+ *  (arg[1] must not have its highest bit set))
+ */
+X(teqs_lo_bne_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a ^ b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N);
+	if (c == 0) {
+		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+		cpu->cd.arm.next_ic = &ic[2];
+	} else
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
 }
 
 
@@ -1780,6 +1952,57 @@ void arm_combine_netbsd_scanc(struct cpu *cpu, void *v, int low_addr)
 }
 
 
+#if 0
+/*
+ *  arm_combine_strlen():
+ */
+void arm_combine_strlen(struct cpu *cpu, void *v, int low_addr)
+{
+	struct arm_instr_call *ic = v;
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back < 2)
+		return;
+
+	if (ic[-2].f == instr(load_w1_byte_u1_p1_imm) &&
+	    ic[-2].arg[1] == 1 &&
+	    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[3]) &&
+	    ic[-1].f == instr(cmps) &&
+	    ic[-1].arg[0] == (size_t)(&cpu->cd.arm.r[3]) &&
+	    ic[-1].arg[1] == 0) {
+		ic[-2].f = instr(strlen);
+		combined;
+	}
+}
+#endif
+
+
+/*
+ *  arm_combine_xchg():
+ */
+void arm_combine_xchg(struct cpu *cpu, void *v, int low_addr)
+{
+	struct arm_instr_call *ic = v;
+	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
+	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+
+	if (n_back >= 2) {
+		if (ic[-2].f == instr(eor_regshort) &&
+		    ic[-2].arg[0] == (size_t)(&cpu->cd.arm.r[1]) &&
+		    ic[-2].arg[1] == (size_t)(&cpu->cd.arm.r[0]) &&
+		    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[0]) &&
+		    ic[-1].f == instr(eor_regshort) &&
+		    ic[-1].arg[0] == (size_t)(&cpu->cd.arm.r[0]) &&
+		    ic[-1].arg[1] == (size_t)(&cpu->cd.arm.r[1]) &&
+		    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[1])) {
+			ic[-2].f = instr(xchg);
+			combined;
+		}
+	}
+}
+
+
 /*
  *  arm_combine_netbsd_copyin():
  */
@@ -1845,48 +2068,76 @@ void arm_combine_netbsd_copyout(struct cpu *cpu, void *v, int low_addr)
 
 
 /*
- *  arm_combine_test2():
+ *  arm_combine_cmps_b():
  */
-void arm_combine_test2(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_cmps_b(struct cpu *cpu, void *v, int low_addr)
 {
 	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
-
-	if (n_back >= 2) {
-		if (ic[-2].f == instr(store_w0_word_u1_p0_imm) &&
-		    ic[-2].arg[1] == 4 &&
-		    ic[-1].f == instr(subs) &&
-		    ic[-1].arg[0] == ic[-1].arg[2] && ic[-1].arg[1] == 4 &&
-		    ic[ 0].f == instr(b_samepage__gt) &&
-		    ic[ 0].arg[0] == (size_t)&ic[-2]) {
-			ic[-2].f = instr(fill_loop_test2);
-printf("YO test2\n");
+	if (n_back < 1)
+		return;
+	if (ic[0].f == instr(b_samepage__eq)) {
+		if (ic[-1].f == instr(cmps)) {
+			ic[-1].f = instr(cmps_beq_samepage);
 			combined;
 		}
+		if (ic[-1].f == instr(teqs) &&
+		    !(ic[-1].arg[1] & 0x80000000)) {
+			ic[-1].f = instr(teqs_lo_beq_samepage);
+			combined;
+		}
+		return;
+	}
+	if (ic[0].f == instr(b_samepage__ne)) {
+		if (ic[-1].f == instr(cmps)) {
+			ic[-1].f = instr(cmps_bne_samepage);
+			combined;
+		}
+		if (ic[-1].f == instr(teqs) &&
+		    !(ic[-1].arg[1] & 0x80000000)) {
+			ic[-1].f = instr(teqs_lo_bne_samepage);
+			combined;
+		}
+		return;
+	}
+	if (ic[0].f == instr(b_samepage__cc)) {
+		if (ic[-1].f == instr(cmps)) {
+			ic[-1].f = instr(cmps_bcc_samepage);
+			combined;
+		}
+		if (ic[-1].f == instr(cmps_regshort)) {
+			ic[-1].f = instr(cmps_reg_bcc_samepage);
+			combined;
+		}
+		return;
+	}
+	if (ic[0].f == instr(b_samepage__hi)) {
+		if (ic[-1].f == instr(cmps)) {
+			ic[-1].f = instr(cmps_bhi_samepage);
+			combined;
+		}
+		if (ic[-1].f == instr(cmps_regshort)) {
+			ic[-1].f = instr(cmps_reg_bhi_samepage);
+			combined;
+		}
+		return;
+	}
+	if (ic[0].f == instr(b_samepage__gt)) {
+		if (ic[-1].f == instr(cmps)) {
+			ic[-1].f = instr(cmps_bgt_samepage);
+			combined;
+		}
+		return;
+	}
+	if (ic[0].f == instr(b_samepage__le)) {
+		if (ic[-1].f == instr(cmps)) {
+			ic[-1].f = instr(cmps_ble_samepage);
+			combined;
+		}
+		return;
 	}
 }
-
-
-#if 0
-	/*  TODO: This is another test hack.  */
-
-	if (n_back >= 3) {
-		if (ic[-3].f == instr(cmps) &&
-		    ic[-3].arg[0] == ic[-1].arg[0] &&
-		    ic[-3].arg[1] == 0 &&
-		    ic[-2].f == instr(store_w0_byte_u1_p0_imm) &&
-		    ic[-2].arg[1] == 1 &&
-		    ic[-1].f == instr(sub) &&
-		    ic[-1].arg[0] == ic[-1].arg[2] && ic[-1].arg[1] == 1 &&
-		    ic[ 0].f == instr(b_samepage__gt) &&
-		    ic[ 0].arg[0] == (size_t)&ic[-3]) {
-			ic[-3].f = instr(fill_loop_test);
-			combined;
-		}
-	}
-	/*  TODO: Combine forward as well  */
-#endif
 
 
 /*****************************************************************************/
@@ -1957,29 +2208,6 @@ static void arm_switch_add1(struct arm_instr_call *ic, int rd,
 	case 12: ic->f = cond_instr(add1_r12); break;
 	case 13: ic->f = cond_instr(add1_r13); break;
 	case 14: ic->f = cond_instr(add1_r14); break;
-	}
-}
-
-
-static void arm_switch_teqs0(struct arm_instr_call *ic, int rn,
-	int condition_code)
-{
-	switch (rn) {
-	case  0: ic->f = cond_instr(teqs0_r0); break;
-	case  1: ic->f = cond_instr(teqs0_r1); break;
-	case  2: ic->f = cond_instr(teqs0_r2); break;
-	case  3: ic->f = cond_instr(teqs0_r3); break;
-	case  4: ic->f = cond_instr(teqs0_r4); break;
-	case  5: ic->f = cond_instr(teqs0_r5); break;
-	case  6: ic->f = cond_instr(teqs0_r6); break;
-	case  7: ic->f = cond_instr(teqs0_r7); break;
-	case  8: ic->f = cond_instr(teqs0_r8); break;
-	case  9: ic->f = cond_instr(teqs0_r9); break;
-	case 10: ic->f = cond_instr(teqs0_r10); break;
-	case 11: ic->f = cond_instr(teqs0_r11); break;
-	case 12: ic->f = cond_instr(teqs0_r12); break;
-	case 13: ic->f = cond_instr(teqs0_r13); break;
-	case 14: ic->f = cond_instr(teqs0_r14); break;
 	}
 }
 
@@ -2256,11 +2484,15 @@ X(to_be_translated)
 			break;
 		}
 
-		/*  "mov reg,reg":  */
-		if ((iword & 0x0fff0ff0) == 0x01a00000 &&
-		    (iword&15) != ARM_PC && rd != ARM_PC) {
-			ic->f = cond_instr(mov_reg_reg);
-			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+		/*  "mov reg,reg" or "mov reg,pc":  */
+		if ((iword & 0x0fff0ff0) == 0x01a00000 && rd != ARM_PC) {
+			if (rm != ARM_PC) {
+				ic->f = cond_instr(mov_reg_reg);
+				ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+			} else {
+				ic->f = cond_instr(mov_reg_pc);
+				ic->arg[0] = (addr & 0xfff) + 8;
+			}
 			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rd]);
 			break;
 		}
@@ -2281,12 +2513,6 @@ X(to_be_translated)
 		if ((iword & 0x0ff00fff) == 0x02800001 && rd != ARM_PC
 		    && rn == rd) {
 			arm_switch_add1(ic, rd, condition_code);
-			break;
-		}
-
-		/*  "teqs reg,#0":  */
-		if ((iword & 0x0ff0ffff) == 0x03300000 && rn != ARM_PC) {
-			arm_switch_teqs0(ic, rn, condition_code);
 			break;
 		}
 
@@ -2323,10 +2549,17 @@ X(to_be_translated)
 		if (rn == ARM_PC || rd == ARM_PC)
 			any_pc_reg = 1;
 
-		ic->f = arm_dpi_instr[condition_code +
-		    16 * secondary_opcode + (s_bit? 256 : 0) +
-		    (any_pc_reg? 512 : 0) + (regform? 1024 : 0)];
+		if (!any_pc_reg && regform && (iword & 0xfff) < ARM_PC) {
+			ic->arg[1] = (size_t)(&cpu->cd.arm.r[rm]);
+			ic->f = arm_dpi_instr_regshort[condition_code +
+			    16 * secondary_opcode + (s_bit? 256 : 0)];
+		} else
+			ic->f = arm_dpi_instr[condition_code +
+			    16 * secondary_opcode + (s_bit? 256 : 0) +
+			    (any_pc_reg? 512 : 0) + (regform? 1024 : 0)];
 
+		if (iword == 0xe0210000)
+			cpu->combination_check = arm_combine_xchg;
 		if (iword == 0xe113000c)
 			cpu->combination_check = arm_combine_netbsd_scanc;
 		break;
@@ -2507,8 +2740,16 @@ X(to_be_translated)
 			}
 		}
 
+		if (main_opcode == 0xa && (condition_code <= 1
+		    || condition_code == 3 || condition_code == 8
+		    || condition_code == 12 || condition_code == 13))
+			cpu->combination_check = arm_combine_cmps_b;
+#if 0
+		if (iword == 0x1afffffc)
+			cpu->combination_check = arm_combine_strlen;
+#endif
 #if 1
-		/*  Hm. This doesn't really increase performance.  */
+		/*  Hm. Does this really increase performance?  */
 		if (iword == 0x8afffffa)
 			cpu->combination_check = arm_combine_netbsd_cacheclean2;
 #endif

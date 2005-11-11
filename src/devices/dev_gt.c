@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.31 2005-11-11 19:01:27 debug Exp $
+ *  $Id: dev_gt.c,v 1.32 2005-11-11 19:13:33 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -83,7 +83,7 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i, asserted;
+	int i;
 	struct gt_data *d = extra;
 
 	if (writeflag == MEM_WRITE)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.21 2005-11-11 07:31:32 debug Exp $
+ *  $Id: bus_pci.c,v 1.22 2005-11-11 19:13:33 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -496,6 +496,12 @@ PCIINIT(gt64120)
 	PCI_SET_DATA(PCI_CLASS_REG,
 	    PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
 	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x02);	/*  Revision 2?  */
+
+	switch (machine->machine_type) {
+	case MACHINE_EVBMIPS:
+		PCI_SET_DATA(PCI_MAPREG_START + 0x10, 0x1be00000);
+		break;
+	}
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.6 2005-10-26 14:37:02 debug Exp $
+ *  $Id: cpu_mips.c,v 1.7 2005-11-11 13:22:10 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1929,7 +1929,6 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 		}
 	}
-
 
 	/*
 	 *  ROM emulation:  (0xbfcXXXXX or 0x9fcXXXXX)

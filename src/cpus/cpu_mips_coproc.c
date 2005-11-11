@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.4 2005-11-11 07:31:31 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.5 2005-11-11 13:22:10 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -414,11 +414,7 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 
 	if (coproc_nr == 0) {
 		c->nr_of_tlbs = cpu->cd.mips.cpu_type.nr_of_tlb_entries;
-		c->tlbs = malloc(c->nr_of_tlbs * sizeof(struct mips_tlb));
-		if (c->tlbs == NULL) {
-			fprintf(stderr, "mips_coproc_new(): out of memory\n");
-			exit(1);
-		}
+		c->tlbs = zeroed_alloc(c->nr_of_tlbs * sizeof(struct mips_tlb));
 
 		/*
 		 *  Start with nothing in the status register. This makes sure

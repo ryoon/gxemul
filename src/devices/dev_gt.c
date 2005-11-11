@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.30 2005-11-09 06:35:45 debug Exp $
+ *  $Id: dev_gt.c,v 1.31 2005-11-11 19:01:27 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -116,34 +116,23 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			return 1;
 		} else {
 			odata = 0xffffffffULL;
-			/*  ???  interrupt something...  */
+			/*
+			 *  ???  interrupt something...
+			 *
+			 *  TODO: Remove this hack when things have stabilized.
+			 */
+			odata = 0x00000100;
+			/*  netbsd/cobalt cobalt/machdep.c:cpu_intr()  */
 
-/*
- *  TODO: Remove this hack when things have stabilized.
- */
-odata = 0x00000100;	/*  netbsd/cobalt cobalt/machdep.c:cpu_intr()  */
-
-cpu_interrupt_ack(cpu, d->irqnr);
+			cpu_interrupt_ack(cpu, d->irqnr);
 
 			debug("[ gt: read from 0xc18 (0x%08x) ]\n", (int)odata);
 		}
 		break;
 
 	case 0xc34:	/*  GT_PCI0_INTR_ACK  */
-		/*
-		 *  Ugly hack, which works for at least evbmips/Malta:
-		 */
-		asserted =
-		    (cpu->machine->isa_pic_data.pic1->irr &
-		    ~cpu->machine->isa_pic_data.pic1->ier) |
-		    ((cpu->machine->isa_pic_data.pic2->irr &
-		     ~cpu->machine->isa_pic_data.pic2->ier) << 8);
-		odata = 7;	/*  "Spurious interrupt" defaults to 7.  */
-		for (i=0; i<16; i++)
-			if ((asserted >> i) & 1) {
-				odata = i;
-				break;
-			}
+		odata = cpu->machine->isa_pic_data.last_int;
+		cpu_interrupt_ack(cpu, 8 + odata);
 		break;
 
 	case 0xcf8:	/*  PCI ADDR  */
@@ -157,7 +146,7 @@ cpu_interrupt_ack(cpu, d->irqnr);
 		}
 		break;
 	default:
-		if (writeflag==MEM_READ) {
+		if (writeflag == MEM_READ) {
 			debug("[ gt: read from addr 0x%x ]\n",
 			    (int)relative_addr);
 		} else {

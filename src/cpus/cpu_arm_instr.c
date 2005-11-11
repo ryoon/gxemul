@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.49 2005-11-11 13:23:15 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.50 2005-11-11 19:01:26 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2314,10 +2314,10 @@ X(to_be_translated)
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.arm.host_load[addr >> 12];
 	if (page != NULL) {
-		/*  fatal("TRANSLATION HIT!\n");  */
+		/*  fatal("TRANSLATION HIT! 0x%08x\n", addr);  */
 		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
 	} else {
-		/*  fatal("TRANSLATION MISS!\n");  */
+		/*  fatal("TRANSLATION MISS! 0x%08x\n", addr);  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &ib[0],
 		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
 			fatal("to_be_translated(): "

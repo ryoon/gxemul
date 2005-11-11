@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1019 2005-11-11 13:23:14 debug Exp $
+$Id: HISTORY,v 1.1020 2005-11-11 19:01:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2404,3 +2404,5 @@ Changelog for GXemul:
 20051111	ARM dyntrans updates: O(n)->O(1) for just-mark-as-non-
 		writable in the generic pc_to_pointers function, and some other
 		minor hacks.
+		Merging Cobalt and evbmips (Malta) ISA interrupt handling,
+		and some minor fixes to allow Linux to accept harddisk irqs.

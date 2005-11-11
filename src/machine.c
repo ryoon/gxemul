@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.586 2005-11-11 07:31:30 debug Exp $
+ *  $Id: machine.c,v 1.587 2005-11-11 19:01:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1294,62 +1294,17 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 
 
 /*
- *  Malta (evbmips) interrupts:
- *
- *  ISA interrupts.
- *  (irq_nr = 16+8 can be used to just reassert/deassert interrupts.)
- */
-void malta_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
-	int assrt)
-{
-	int mask;
-
-	irq_nr -= 8;
-	mask = 1 << (irq_nr & 7);
-
-	if (irq_nr < 8) {
-		if (assrt)
-			m->isa_pic_data.pic1->irr |= mask;
-		else
-			m->isa_pic_data.pic1->irr &= ~mask;
-	} else if (irq_nr < 16) {
-		if (assrt)
-			m->isa_pic_data.pic2->irr |= mask;
-		else
-			m->isa_pic_data.pic2->irr &= ~mask;
-	}
-
-	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
-	/*  (TODO: don't hardcode this here)  */
-	if (m->isa_pic_data.pic2->irr &
-	    ~m->isa_pic_data.pic2->ier)
-		m->isa_pic_data.pic1->irr |= 0x04;
-	else
-		m->isa_pic_data.pic1->irr &= ~0x04;
-
-	/*  Now, PIC1:  */
-	if (m->isa_pic_data.pic1->irr &
-	    ~m->isa_pic_data.pic1->ier)
-		cpu_interrupt(cpu, 2);
-	else
-		cpu_interrupt_ack(cpu, 2);
-
-	/*  printf("MALTA: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
-	    "ier=0x%02x\n", m->isa_pic_data.pic1->irr,
-	    m->isa_pic_data.pic1->ier,
-	    m->isa_pic_data.pic2->irr,
-	    m->isa_pic_data.pic2->ier);  */
-}
-
-
-/*
- *  Cobalt interrupts:
+ *  Cobalt and evbmips (Malta) interrupts:
  *
  *  (irq_nr = 8 + 16 can be used to just reassert/deassert interrupts.)
  */
 void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
-	int mask;
+	int mask, x;
+	int old_isa_assert, new_isa_assert;
+	int isa_int = m->machine_type == MACHINE_COBALT? 6 : 2;
+
+	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 
 	irq_nr -= 8;
 	mask = 1 << (irq_nr & 7);
@@ -1368,23 +1323,35 @@ void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
 	/*  (TODO: don't hardcode this here)  */
-	if (m->isa_pic_data.pic2->irr &
-	    ~m->isa_pic_data.pic2->ier)
+	if (m->isa_pic_data.pic2->irr & ~m->isa_pic_data.pic2->ier)
 		m->isa_pic_data.pic1->irr |= 0x04;
 	else
 		m->isa_pic_data.pic1->irr &= ~0x04;
 
 	/*  Now, PIC1:  */
-	if (m->isa_pic_data.pic1->irr &
-	    ~m->isa_pic_data.pic1->ier)
-		cpu_interrupt(cpu, 6);
-	else
-		cpu_interrupt_ack(cpu, 6);
+	new_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
+	if (old_isa_assert != new_isa_assert) {
+		for (x=0; x<16; x++) {
+			if (x == 2)
+			        continue;
+			if (x < 8 && (m->isa_pic_data.pic1->irr &
+			    ~m->isa_pic_data.pic1->ier & (1 << x)))
+			        break;
+			if (x >= 8 && (m->isa_pic_data.pic2->irr &
+			    ~m->isa_pic_data.pic2->ier & (1 << (x&7))))
+			        break;
+		}
+		m->isa_pic_data.last_int = x;
+	}
 
-	/*  printf("COBALT: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
+	if (m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
+		cpu_interrupt(cpu, isa_int);
+	else
+		cpu_interrupt_ack(cpu, isa_int);
+
+	/*  printf("COBALT/MALTA: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
 	    "ier=0x%02x\n", m->isa_pic_data.pic1->irr,
-	    m->isa_pic_data.pic1->ier,
-	    m->isa_pic_data.pic2->irr,
+	    m->isa_pic_data.pic1->ier, m->isa_pic_data.pic2->irr,
 	    m->isa_pic_data.pic2->ier);  */
 }
 
@@ -1477,16 +1444,14 @@ void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 			for (x=0; x<16; x++) {
 				if (x == 2)
 				        continue;
-				if (x < 8 && (cpu->machine->isa_pic_data.pic1->irr &
-				    ~cpu->machine->isa_pic_data.pic1->ier &
-				    (1 << x)))
+				if (x < 8 && (m->isa_pic_data.pic1->irr &
+				    ~m->isa_pic_data.pic1->ier & (1 << x)))
 				        break;
-				if (x >= 8 && (cpu->machine->isa_pic_data.pic2->irr &
-				    ~cpu->machine->isa_pic_data.pic2->ier &
-				    (1 << (x&7))))
+				if (x >= 8 && (m->isa_pic_data.pic2->irr &
+				    ~m->isa_pic_data.pic2->ier & (1 << (x&7))))
 				        break;
 			}
-			cpu->machine->isa_pic_data.last_int = x;
+			m->isa_pic_data.last_int = x;
 			cpu_interrupt(cpu, isa_int);
 		} else
 			cpu_interrupt_ack(cpu, isa_int);
@@ -3913,7 +3878,7 @@ Not yet.
 			machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x180000a0");
 			machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-			machine->md_interrupt = malta_interrupt;
+			machine->md_interrupt = cobalt_interrupt;
 
 			dev_mc146818_init(machine, mem, 0x18000070, 8 + 8, MC146818_PC_CMOS, 1);
 

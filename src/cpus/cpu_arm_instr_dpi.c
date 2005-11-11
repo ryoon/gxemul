@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.13 2005-11-11 07:31:31 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.14 2005-11-11 13:23:16 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -116,9 +116,9 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	 *  cpu_arm_instr.c. (More correct, and higher performance.)
 	 */
 	if (b > 255) {
-		cpu->cd.arm.cpsr &= ~ARM_FLAG_C;
+		cpu->cd.arm.flags &= ~ARM_F_C;
 		if (b & 0x80000000)
-			cpu->cd.arm.cpsr |= ARM_FLAG_C;
+			cpu->cd.arm.flags |= ARM_F_C;
 	}
 #endif
 #endif
@@ -158,10 +158,10 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	c64 = a + b;
 #endif
 #if defined(A__ADC)
-	c64 = a + b + (cpu->cd.arm.cpsr & ARM_FLAG_C? 1 : 0);
+	c64 = a + b + (cpu->cd.arm.flags & ARM_F_C? 1 : 0);
 #endif
 #if defined(A__SBC) || defined(A__RSC)
-	b += (cpu->cd.arm.cpsr & ARM_FLAG_C? 0 : 1);
+	b += (cpu->cd.arm.flags & ARM_F_C? 0 : 1);
 	c64 = a - b;
 #endif
 #if defined(A__ORR)
@@ -207,6 +207,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		default:fatal("huh? weird mode in dpi s with pc\n");
 			exit(1);
 		}
+		cpu->cd.arm.flags = cpu->cd.arm.cpsr >> 28;
 		arm_load_register_bank(cpu);
 #else
 		if ((old_pc & ~mask_within_page) ==
@@ -231,29 +232,29 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	 */
 #ifdef A__S
 	c32 = c64;
-	cpu->cd.arm.cpsr &= ~(ARM_FLAG_Z | ARM_FLAG_N
+	cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
-	    | ARM_FLAG_V | ARM_FLAG_C
+	    | ARM_F_V | ARM_F_C
 #endif
 	    );
 
 #if defined(A__CMP) || defined(A__RSB) || defined(A__SUB) || \
     defined(A__RSC) || defined(A__SBC)
 	if ((uint32_t)a >= (uint32_t)b)
-		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+		cpu->cd.arm.flags |= ARM_F_C;
 #else
 #if defined(A__ADC) || defined(A__ADD) || defined(A__CMN)
 	if (c32 != c64)
-		cpu->cd.arm.cpsr |= ARM_FLAG_C;
+		cpu->cd.arm.flags |= ARM_F_C;
 #endif
 #endif
 
 	if (c32 == 0)
-		cpu->cd.arm.cpsr |= ARM_FLAG_Z;
+		cpu->cd.arm.flags |= ARM_F_Z;
 
 	if ((int32_t)c32 < 0)
-		cpu->cd.arm.cpsr |= ARM_FLAG_N;
+		cpu->cd.arm.flags |= ARM_F_N;
 
 	/*  Calculate the Overflow bit:  */
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
@@ -277,7 +278,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 #endif
 		if (v)
-			cpu->cd.arm.cpsr |= ARM_FLAG_V;
+			cpu->cd.arm.flags |= ARM_F_V;
 	}
 #endif
 #endif	/*  A__S  */
@@ -285,40 +286,39 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 
 
 void A__NAME__eq(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_Z) A__NAME(cpu, ic); }
 void A__NAME__ne(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_Z)) A__NAME(cpu, ic); }
 void A__NAME__cs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_C) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_C) A__NAME(cpu, ic); }
 void A__NAME__cc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_C)) A__NAME(cpu, ic); }
 void A__NAME__mi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_N) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_N) A__NAME(cpu, ic); }
 void A__NAME__pl(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_N)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_N)) A__NAME(cpu, ic); }
 void A__NAME__vs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_V) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_V) A__NAME(cpu, ic); }
 void A__NAME__vc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_V)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_V)) A__NAME(cpu, ic); }
+
+#ifndef BLAHURG
+#define BLAHURG
+extern uint8_t condition_hi[16];
+extern uint8_t condition_ge[16];
+extern uint8_t condition_gt[16];
+#endif
 
 void A__NAME__hi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_C &&
-!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (condition_hi[cpu->cd.arm.flags]) A__NAME(cpu, ic); }
 void A__NAME__ls(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||
-!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
+{ if (!condition_hi[cpu->cd.arm.flags]) A__NAME(cpu, ic); }
 void A__NAME__ge(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
+{ if (condition_ge[cpu->cd.arm.flags]) A__NAME(cpu, ic); }
 void A__NAME__lt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
+{ if (!condition_ge[cpu->cd.arm.flags]) A__NAME(cpu, ic); }
 void A__NAME__gt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) &&
-!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (condition_gt[cpu->cd.arm.flags]) A__NAME(cpu, ic); }
 void A__NAME__le(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) ||
-(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (!condition_gt[cpu->cd.arm.flags]) A__NAME(cpu, ic); }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1018 2005-11-11 07:32:30 debug Exp $
+$Id: HISTORY,v 1.1019 2005-11-11 13:23:14 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2401,3 +2401,6 @@ Changelog for GXemul:
 		combinations (cmps followed by conditional branch within the
 		same page) and special cases for DPIs with regform when the
 		shifter isn't used).
+20051111	ARM dyntrans updates: O(n)->O(1) for just-mark-as-non-
+		writable in the generic pc_to_pointers function, and some other
+		minor hacks.

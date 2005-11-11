@@ -25,101 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_r.c,v 1.2 2005-10-29 07:28:16 debug Exp $
+ *  $Id: generate_arm_r.c,v 1.3 2005-11-11 13:23:16 debug Exp $
  *
  *  Generate functions for computing "reg" operands.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-
-
-#if 0
-/*
- *  update_c is set if the C flag should be updated with the last shifted/
- *  rotated bit.
- */
-uint32_t R(struct cpu *cpu, struct arm_instr_call *ic,
-	uint32_t iword, int update_c)
-{
-	int rm = iword & 15, lastbit, t, c;
-	uint32_t tmp = cpu->cd.arm.r[rm];
-
-	case 2:	/*  lsr #c  (c = 1..32)  */
-		if (c == 0)
-			c = 32;
-		if (update_c) {
-			lastbit = ((uint64_t)tmp >> (c-1)) & 1;
-		}
-		tmp = (uint64_t)tmp >> c;
-		break;
-	case 3:	/*  lsr Rc  */
-		c = cpu->cd.arm.r[c >> 1] & 255;
-		if (c >= 32)
-			c = 33;
-		if (update_c) {
-			if (c == 0)
-				update_c = 0;
-			else
-				lastbit = ((uint64_t)tmp >> (c-1)) & 1;
-		}
-		tmp = (uint64_t)tmp >> c;
-		break;
-	case 4:	/*  asr #c  (c = 1..32)  */
-		if (c == 0)
-			c = 32;
-		if (update_c) {
-			lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
-		}
-		tmp = (int64_t)(int32_t)tmp >> c;
-		break;
-	case 5:	/*  asr Rc  */
-		c = cpu->cd.arm.r[c >> 1] & 255;
-		if (c >= 32)
-			c = 33;
-		if (update_c) {
-			if (c == 0)
-				update_c = 0;
-			else
-				lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
-		}
-		tmp = (int64_t)(int32_t)tmp >> c;
-		break;
-	case 6:	/*  ror 1..31  */
-		if (c == 0) {
-			fatal("TODO: rrx\n");
-			exit(1);
-		}
-		if (update_c)
-			lastbit = ((int64_t)(int32_t)tmp >> (c-1)) & 1;
-		tmp = (uint64_t)(((uint64_t)tmp << 32) | tmp) >> c;
-		break;
-	case 7:	/*  ror Rc  */
-		c = cpu->cd.arm.r[c >> 1] & 255;
-		if (update_c) {
-			if (c == 0)
-				update_c = 0;
-			else {
-				c &= 31;
-				if (c == 0)
-					lastbit = tmp & 0x80000000;
-				else
-					lastbit = ((int64_t)(int32_t)tmp
-					    >> (c-1)) & 1;
-				tmp = (uint64_t)(((uint64_t)tmp << 32)
-				    | tmp) >> c;
-			}
-		}
-		break;
-	}
-	if (update_c) {
-		cpu->cd.arm.cpsr &= ~ARM_FLAG_C;
-		if (lastbit)
-			cpu->cd.arm.cpsr |= ARM_FLAG_C;
-	}
-	return tmp;
-}
-#endif
 
 
 void sync_pc(void)
@@ -163,9 +75,9 @@ void f(int s, int func, int only_name)
 				printf("cpu->cd.arm.r[%i]", rm);
 			printf(";\n");
 			if (c != 0) {
-				printf("cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+				printf("cpu->cd.arm.flags &= ~ARM_F_C;\n");
 				printf("if (x & 0x%x)\n"
-				    "\tcpu->cd.arm.cpsr |= ARM_FLAG_C;\n",
+				    "\tcpu->cd.arm.flags |= ARM_F_C;\n",
 				    (int)(0x80000000 >> (c-1)));
 				printf("x <<= %i;\n", c);
 			}
@@ -191,11 +103,11 @@ void f(int s, int func, int only_name)
 			printf(";\n");
 			printf("  uint32_t y = cpu->cd.arm.r[%i] & 255;\n", rc);
 			printf("  if (y != 0) {\n");
-			printf("    cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+			printf("    cpu->cd.arm.flags &= ~ARM_F_C;\n");
 			printf("    if (y >= 32) return 0;\n");
 			printf("    x <<= (y - 1);\n");
 			printf("    if (x & 0x80000000)\n"
-			    "\tcpu->cd.arm.cpsr |= ARM_FLAG_C;\n");
+			    "\tcpu->cd.arm.flags |= ARM_F_C;\n");
 			printf("    x <<= 1;\n");
 			printf(" }\n");
 			printf(" return x; }\n");
@@ -223,9 +135,9 @@ void f(int s, int func, int only_name)
 			printf(";\n");
 			if (c == 0)
 				c = 32;
-			printf("cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+			printf("cpu->cd.arm.flags &= ~ARM_F_C;\n");
 			printf("if (x & 0x%x)\n"
-			    "\tcpu->cd.arm.cpsr |= ARM_FLAG_C;\n",
+			    "\tcpu->cd.arm.flags |= ARM_F_C;\n",
 			    (int)(1 << (c-1)));
 			if (c == 32)
 				printf("x = 0;\n");
@@ -254,11 +166,11 @@ void f(int s, int func, int only_name)
 				printf("cpu->cd.arm.r[%i]", rm);
 			printf(",y=cpu->cd.arm.r[%i]&255;\n", rc);
 			printf("if(y==0) return x;\n");
-			printf("cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+			printf("cpu->cd.arm.flags &= ~ARM_F_C;\n");
 			printf("if(y>31) y=32;\n");
 			printf("y--; x >>= y;\n");
 			printf("if (x & 1) "
-			    "cpu->cd.arm.cpsr |= ARM_FLAG_C;\n");
+			    "cpu->cd.arm.flags |= ARM_F_C;\n");
 			printf(" return x >> 1; }\n");
 		} else {
 			printf("{ uint32_t y=cpu->cd.arm.r[%i]&255;\n", rc);
@@ -284,9 +196,9 @@ void f(int s, int func, int only_name)
 			printf(";\n");
 			if (c == 0)
 				c = 32;
-			printf("cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+			printf("cpu->cd.arm.flags &= ~ARM_F_C;\n");
 			printf("if (x & 0x%x)\n"
-			    "\tcpu->cd.arm.cpsr |= ARM_FLAG_C;\n",
+			    "\tcpu->cd.arm.flags |= ARM_F_C;\n",
 			    (int)(1 << (c-1)));
 			if (c == 32)
 				printf("x = (x<0)? 0xffffffff : 0;\n");
@@ -321,11 +233,11 @@ void f(int s, int func, int only_name)
 				printf("cpu->cd.arm.r[%i]", rm);
 			printf(",y=cpu->cd.arm.r[%i]&255;\n", rc);
 			printf("if(y==0) return x;\n");
-			printf("cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+			printf("cpu->cd.arm.flags &= ~ARM_F_C;\n");
 			printf("if(y>31) y=31;\n");
 			printf("y--; x >>= y;\n");
 			printf("if (x & 1) "
-			    "cpu->cd.arm.cpsr |= ARM_FLAG_C;\n");
+			    "cpu->cd.arm.flags |= ARM_F_C;\n");
 			printf(" return (int32_t)x >> 1; }\n");
 		} else {
 			printf("{ int32_t y=cpu->cd.arm.r[%i]&255;\n", rc);
@@ -352,9 +264,9 @@ void f(int s, int func, int only_name)
 			else
 				printf("cpu->cd.arm.r[%i]", rm);
 			printf("; x |= (x << 32);\n");
-			printf("cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+			printf("cpu->cd.arm.flags &= ~ARM_F_C;\n");
 			printf("if (x & 0x%x)\n"
-			    "\tcpu->cd.arm.cpsr |= ARM_FLAG_C;\n",
+			    "\tcpu->cd.arm.flags |= ARM_F_C;\n",
 			    (int)(1 << (c-1)));
 			printf(" return x >> %i; }\n", c);
 		} else {
@@ -378,9 +290,9 @@ void f(int s, int func, int only_name)
 			printf("; int y=cpu->cd.arm.r[%i]&255;\n", rc);
 			printf("if(y==0) return x;\n");
 			printf("y --; y &= 31; x >>= y;\n");
-			printf("cpu->cd.arm.cpsr &= ~ARM_FLAG_C;\n");
+			printf("cpu->cd.arm.flags &= ~ARM_F_C;\n");
 			printf("if (x & 1) "
-			    "cpu->cd.arm.cpsr |= ARM_FLAG_C;\n");
+			    "cpu->cd.arm.flags |= ARM_F_C;\n");
 			printf(" return x >> 1; }\n");
 		} else {
 			printf("{ int y=cpu->cd.arm.r[%i]&31;\n", rc);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.38 2005-11-05 21:59:01 debug Exp $
+ *  $Id: cpu_arm.c,v 1.39 2005-11-11 13:23:15 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -142,6 +142,8 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		    * 1048576 - 8;
 		store_32bit_word(cpu, cpu->cd.arm.of_emul_addr, 0xef8c64be);
 	}
+
+	cpu->cd.arm.flags = cpu->cd.arm.cpsr >> 28;
 
 	return 1;
 }
@@ -324,6 +326,9 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	uint64_t offset;
 	int mode = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
 	int i, x = cpu->cpu_id;
+
+	cpu->cd.arm.cpsr &= 0x0fffffff;
+	cpu->cd.arm.cpsr |= (cpu->cd.arm.flags << 28);
 
 	if (gprs) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
@@ -634,6 +639,9 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	retaddr += 4;
 
 	arm_save_register_bank(cpu);
+
+	cpu->cd.arm.cpsr &= 0x0fffffff;
+	cpu->cd.arm.cpsr |= (cpu->cd.arm.flags << 28);
 
 	switch (arm_exception_to_mode[exception_nr]) {
 	case ARM_MODE_SVC32:

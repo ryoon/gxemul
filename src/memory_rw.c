@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.76 2005-10-31 16:10:06 debug Exp $
+ *  $Id: memory_rw.c,v 1.77 2005-11-11 13:23:15 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -602,18 +602,16 @@ have_paddr:
 #ifndef MEM_MIPS
 		    (cache == CACHE_INSTRUCTION? TLB_CODE : 0) |
 #endif
-#if 0
+#if !defined(MEM_MIPS) && !defined(MEM_USERLAND)
 		    (cache == CACHE_INSTRUCTION?
-			(writeflag == MEM_WRITE? 1 : 0)
-			: ok - 1),
+			(writeflag == MEM_WRITE? 1 : 0) : ok - 1),
 #else
 		    (writeflag == MEM_WRITE? 1 : 0),
 #endif
 		    paddr & ~offset_mask);
 
 	/*  Invalidate code translations for the page we are writing to.  */
-	if (writeflag == MEM_WRITE &&
-	    cpu->invalidate_code_translation != NULL)
+	if (writeflag == MEM_WRITE && cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);
 
 	if (writeflag == MEM_WRITE) {

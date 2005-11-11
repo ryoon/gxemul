@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.1 2005-08-29 14:36:42 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.2 2005-11-11 13:23:16 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -325,8 +325,7 @@ bugs are triggered.  */
 				case 0x07fffff:	pageshift = 22; break;
 				case 0x1ffffff:	pageshift = 24; break;
 				case 0x7ffffff:	pageshift = 26; break;
-				default:
-					fatal("pmask=%08x\n", i, pmask);
+				default:fatal("pmask=%08x\n", pmask);
 					exit(1);
 				}
 

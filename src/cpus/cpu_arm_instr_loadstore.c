@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.17 2005-11-02 20:04:58 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.18 2005-11-11 13:23:16 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -357,82 +357,82 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 #ifndef A__NOCONDITIONS
 /*  Load/stores with all registers except the PC register:  */
 void A__NAME__eq(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_Z) A__NAME(cpu, ic); }
 void A__NAME__ne(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_Z)) A__NAME(cpu, ic); }
 void A__NAME__cs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_C) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_C) A__NAME(cpu, ic); }
 void A__NAME__cc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_C)) A__NAME(cpu, ic); }
 void A__NAME__mi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_N) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_N) A__NAME(cpu, ic); }
 void A__NAME__pl(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_N)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_N)) A__NAME(cpu, ic); }
 void A__NAME__vs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_V) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_V) A__NAME(cpu, ic); }
 void A__NAME__vc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_V)) A__NAME(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_V)) A__NAME(cpu, ic); }
 
 void A__NAME__hi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_C &&
-!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_C &&
+!(cpu->cd.arm.flags & ARM_F_Z)) A__NAME(cpu, ic); }
 void A__NAME__ls(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||
-!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_Z ||
+!(cpu->cd.arm.flags & ARM_F_C)) A__NAME(cpu, ic); }
 void A__NAME__ge(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) ==
+((cpu->cd.arm.flags & ARM_F_V)?1:0)) A__NAME(cpu, ic); }
 void A__NAME__lt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) !=
+((cpu->cd.arm.flags & ARM_F_V)?1:0)) A__NAME(cpu, ic); }
 void A__NAME__gt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) &&
-!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) ==
+((cpu->cd.arm.flags & ARM_F_V)?1:0) &&
+!(cpu->cd.arm.flags & ARM_F_Z)) A__NAME(cpu, ic); }
 void A__NAME__le(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) ||
-(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) !=
+((cpu->cd.arm.flags & ARM_F_V)?1:0) ||
+(cpu->cd.arm.flags & ARM_F_Z)) A__NAME(cpu, ic); }
 
 
 /*  Load/stores with the PC register:  */
 void A__NAME_PC__eq(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z) A__NAME_PC(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_Z) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__ne(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_Z)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__cs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_C) A__NAME_PC(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_C) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__cc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME_PC(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_C)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__mi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_N) A__NAME_PC(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_N) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__pl(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_N)) A__NAME_PC(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_N)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__vs(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_V) A__NAME_PC(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_V) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__vc(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (!(cpu->cd.arm.cpsr & ARM_FLAG_V)) A__NAME_PC(cpu, ic); }
+{ if (!(cpu->cd.arm.flags & ARM_F_V)) A__NAME_PC(cpu, ic); }
 
 void A__NAME_PC__hi(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_C &&
-!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_C &&
+!(cpu->cd.arm.flags & ARM_F_Z)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__ls(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (cpu->cd.arm.cpsr & ARM_FLAG_Z ||
-!(cpu->cd.arm.cpsr & ARM_FLAG_C)) A__NAME_PC(cpu, ic); }
+{ if (cpu->cd.arm.flags & ARM_F_Z ||
+!(cpu->cd.arm.flags & ARM_F_C)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__ge(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME_PC(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) ==
+((cpu->cd.arm.flags & ARM_F_V)?1:0)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__lt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0)) A__NAME_PC(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) !=
+((cpu->cd.arm.flags & ARM_F_V)?1:0)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__gt(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) ==
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) &&
-!(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) ==
+((cpu->cd.arm.flags & ARM_F_V)?1:0) &&
+!(cpu->cd.arm.flags & ARM_F_Z)) A__NAME_PC(cpu, ic); }
 void A__NAME_PC__le(struct cpu *cpu, struct arm_instr_call *ic)
-{ if (((cpu->cd.arm.cpsr & ARM_FLAG_N)?1:0) !=
-((cpu->cd.arm.cpsr & ARM_FLAG_V)?1:0) ||
-(cpu->cd.arm.cpsr & ARM_FLAG_Z)) A__NAME_PC(cpu, ic); }
+{ if (((cpu->cd.arm.flags & ARM_F_N)?1:0) !=
+((cpu->cd.arm.flags & ARM_F_V)?1:0) ||
+(cpu->cd.arm.flags & ARM_F_Z)) A__NAME_PC(cpu, ic); }
 #endif
 
 

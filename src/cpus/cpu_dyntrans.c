@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.31 2005-11-11 07:31:31 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.32 2005-11-11 13:23:16 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -612,6 +612,13 @@ cpu->cd.arm.r[ARM_PC]);
 		vph_p->phys_page[b] = ppp;
 #endif
 
+#ifdef MODE32
+	/*  Small optimization: only mark the physical page as non-writable
+	    if it did not contain translations. (Because if it does contain
+	    translations, it is already non-writable.)  */
+	if (!cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5] &
+	    (1 << (pagenr & 31)))
+#endif
 	cpu->invalidate_translation_caches(cpu, physaddr,
 	    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
 
@@ -820,13 +827,17 @@ void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t paddr, int flags)
 #endif
 	    addr_page = paddr & ~(DYNTRANS_PAGESIZE - 1);
 
+	/*  fatal("invalidate(): ");  */
+
 	/*  Quick case for virtual addresses: see note above.  */
 	if (flags & INVALIDATE_VADDR) {
+		/*  fatal("vaddr 0x%08x\n", (int)addr_page);  */
 		DYNTRANS_INVALIDATE_TLB_ENTRY(cpu, addr_page, flags);
 		return;
 	}
 
 	if (flags & INVALIDATE_ALL) {
+		/*  fatal("all\n");  */
 		for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 			if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 				DYNTRANS_INVALIDATE_TLB_ENTRY(cpu, cpu->cd.
@@ -837,6 +848,8 @@ void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t paddr, int flags)
 		}
 		return;
 	}
+
+	/*  fatal("paddr 0x%08x\n", (int)addr_page);  */
 
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid && (

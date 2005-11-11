@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.55 2005-11-11 07:31:33 debug Exp $
+ *  $Id: cpu_arm.h,v 1.56 2005-11-11 13:23:17 debug Exp $
  */
 
 #include "misc.h"
@@ -91,6 +91,11 @@ struct arm_tc_physpage {
 	int		flags;
 };
 
+
+#define	ARM_F_N		8	/*  Same as ARM_FLAG_*, but        */
+#define	ARM_F_Z		4	/*  for the 'flags' field instead  */
+#define	ARM_F_C		2	/*  of cpsr.                       */
+#define	ARM_F_V		1
 
 #define	ARM_FLAG_N	0x80000000	/*  Negative flag  */
 #define	ARM_FLAG_Z	0x40000000	/*  Zero flag  */
@@ -172,7 +177,14 @@ struct arm_cpu {
 
 	uint32_t		tmp_pc;		/*  Used for load/stores  */
 
-	/*  Flag/status registers:  */
+	/*
+	 *  Flag/status registers:
+	 *
+	 *  NOTE: 'flags' just contains the 4 flag bits. When cpsr is read,
+	 *  the flags should be copied from 'flags', and when cpsr is written
+	 *  to, 'flags' should be updated as well.
+	 */
+	size_t			flags;
 	uint32_t		cpsr;
 	uint32_t		spsr_svc;
 	uint32_t		spsr_abt;

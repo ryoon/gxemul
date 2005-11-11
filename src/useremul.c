@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.65 2005-10-26 14:37:02 debug Exp $
+ *  $Id: useremul.c,v 1.66 2005-11-11 13:23:15 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -1212,6 +1212,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		}
 		if (result_high_set)
 			cpu->cd.arm.r[1] = result_high;
+		cpu->cd.arm.flags = cpu->cd.arm.cpsr >> 28;
 		break;
 	case ARCH_MIPS:
 		/*

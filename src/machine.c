@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.587 2005-11-11 19:01:25 debug Exp $
+ *  $Id: machine.c,v 1.588 2005-11-12 13:06:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4566,17 +4566,14 @@ Not yet.
 
 		device_add(machine, "pccmos addr=0x7c000070");
 
-		if (machine->use_x11) {
-			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-			    mem, 0xc0, 8, 0, "s3_virge");
-			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
-			    32 + 1, 32 + 12, machine->use_x11, 0);
-			machine->main_console_handle = j;
-		}
+		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
+		    mem, 0xc0, 8, 0, "s3_virge");
+		j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
+		    32 + 1, 32 + 12, 1, 0);
+		machine->main_console_handle = j;
 
 		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0 in_use=0");
 		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1 in_use=0");
-
 		device_add(machine, "lpt irq=39 addr=0x7c000378 name2=lpt in_use=0");
 
 		if (machine->prom_emulation) {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: vga.h,v 1.5 2005-05-27 14:11:58 debug Exp $
+ *  $Id: vga.h,v 1.6 2005-11-12 11:34:31 debug Exp $
  *
  *  VGA register definitions, used by src/devices/dev_vga.c.
  */
@@ -68,6 +68,14 @@
 
 #define	VGA_GRAPHCONTR_ADDR		0xE	/*  R/W  */
 #define	VGA_GRAPHCONTR_DATA		0xF	/*  R/W  */
+#define	   VGA_GRAPHCONTR_SETRESET	   0
+#define	   VGA_GRAPHCONTR_ENABLE	   1
+#define	   VGA_GRAPHCONTR_COLORCMP	   2
+#define	   VGA_GRAPHCONTR_DATAROTATE	   3
+#define	   VGA_GRAPHCONTR_READMAPSELECT	   4
+#define	   VGA_GRAPHCONTR_GRAPHICSMODE	   5
+#define	   VGA_GRAPHCONTR_MISC		   6
+#define	   VGA_GRAPHCONTR_COLORDONTCARE	   7
 #define	   VGA_GRAPHCONTR_MASK		   8
 
 #define	VGA_CRTC_ADDR			0x14	/*  R/W  */

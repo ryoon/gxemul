@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.6 2005-11-12 10:57:31 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.7 2005-11-12 11:34:30 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -263,6 +263,15 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			/*  Recalculate interrupt assertion.  */
 			dev_dec21143_tick(cpu, extra);
+		}
+		break;
+
+	case CSR_OPMODE:	/*  csr6:  */
+		if (writeflag == MEM_WRITE) {
+			if (idata != 0) {
+				fatal("[ dec21143: UNIMPLEMENTED OPMODE bits"
+				    ": 0x%08x ]\n", (int)idata);
+			}
 		}
 		break;
 

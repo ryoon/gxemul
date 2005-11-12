@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.88 2005-11-06 22:40:57 debug Exp $
+ *  $Id: dev_vga.c,v 1.89 2005-11-12 11:34:30 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -894,7 +894,10 @@ static void vga_sequencer_reg_write(struct machine *machine, struct vga_data *d,
 	int regnr, int idata)
 {
 	switch (regnr) {
-	case VGA_SEQ_MAP_MASK:		/*  0x02  */
+	case VGA_SEQ_RESET:
+	case VGA_SEQ_MAP_MASK:
+	case VGA_SEQ_SEQUENCER_MEMORY_MODE:
+		debug("[ vga_sequencer_reg_write: select %i: TODO ]\n", regnr);
 		break;
 	default:fatal("[ vga_sequencer_reg_write: select %i ]\n", regnr);
 		/*  cpu->running = 0;  */
@@ -911,7 +914,11 @@ static void vga_graphcontr_reg_write(struct machine *machine,
 	struct vga_data *d, int regnr, int idata)
 {
 	switch (regnr) {
-	case VGA_GRAPHCONTR_MASK:		/*  0x08  */
+	case VGA_GRAPHCONTR_READMAPSELECT:
+	case VGA_GRAPHCONTR_GRAPHICSMODE:
+	case VGA_GRAPHCONTR_MISC:
+	case VGA_GRAPHCONTR_MASK:
+		debug("[ vga_graphcontr_reg_write: select %i: TODO ]\n", regnr);
 		break;
 	default:fatal("[ vga_graphcontr_reg_write: select %i ]\n", regnr);
 		/*  cpu->running = 0;  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.23 2005-11-12 10:57:31 debug Exp $
+ *  $Id: bus_pci.c,v 1.24 2005-11-12 11:34:30 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -114,7 +114,7 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		}
 		/*  Writes are not really supported yet:  */
 		if (*data != x) {
-			fatal("[ bus_pci: write to PCI DATA: data = 0x%08llx"
+			debug("[ bus_pci: write to PCI DATA: data = 0x%08llx"
 			    " differs from current value 0x%08llx; NOT YET"
 			    " SUPPORTED. bus %i, device %i, function %i, "
 			    " register 0x%02x ]\n", (long long)*data,
@@ -157,9 +157,11 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			debug("[ bus_pci: write to  PCI ADDR: data = 0x%016llx"
 			    " ]\n", (long long)*data);
 			pci_data->pci_addr = *data;
-			if (pci_data->pci_addr & 1)
+			/*  Linux seems to use type 0 even when it does
+			    type 1 detection. Hm. This is commented for now.  */
+			/*  if (pci_data->pci_addr & 1)
 				fatal("[ bus_pci: WARNING! pci type 0 not"
-				    " yet implemented! ]\n");
+				    " yet implemented! ]\n");  */
 		} else {
 			debug("[ bus_pci: read from PCI ADDR (data = "
 			    "0x%016llx) ]\n", (long long)pci_data->pci_addr);

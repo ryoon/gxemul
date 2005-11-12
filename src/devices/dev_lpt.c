@@ -25,11 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.3 2005-11-09 17:14:21 debug Exp $
+ *  $Id: dev_lpt.c,v 1.4 2005-11-12 11:34:30 debug Exp $
  *
  *  LPT (parallel printer) controller.
- *
- *  TODO: This is just a dummy.
  */
 
 #include <stdio.h>
@@ -42,6 +40,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "lptreg.h"
 
 
 /*  #define debug fatal  */
@@ -56,6 +56,7 @@ struct lpt_data {
 	int		console_handle;
 
 	unsigned char	data;
+	unsigned char	control;
 };
 
 
@@ -85,26 +86,29 @@ int dev_lpt_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 
-	case 0:	if (writeflag == MEM_READ)
+	case LPT_DATA:
+		if (writeflag == MEM_READ)
 			odata = d->data;
-		else {
-			console_putchar(d->console_handle, idata);
+		else
 			d->data = idata;
-		}
 		break;
 
-	case 1:	odata = 0xd8;	/*  TODO: symbolic  */
+	case LPT_STATUS:
+		odata = LPS_NBSY | LPS_NACK | LPS_SELECT | LPS_NERR;
 		break;
 
-	default:
-		if (writeflag == MEM_READ) {
-			debug("[ lpt (%s): read from %i: UNIMPLEMENTED ]\n",
-			    d->name, (int)relative_addr);
-		} else {
-			debug("[ lpt (%s): write to %i, data = 0x%llx: "
-			    "UNIMPLEMENTED ]\n", d->name, (int)relative_addr,
-			    (long long)idata);
+	case LPT_CONTROL:
+		if (writeflag == MEM_WRITE) {
+			if (idata != d->control) {
+				if (idata & LPC_STROBE) {
+					/*  data strobe  */
+					console_putchar(d->console_handle,
+					    d->data);
+				}
+			}
+			d->control = idata;
 		}
+		break;
 	}
 
 	if (writeflag == MEM_READ)

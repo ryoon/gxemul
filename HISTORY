@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1021 2005-11-12 10:57:29 debug Exp $
+$Id: HISTORY,v 1.1022 2005-11-12 11:34:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2406,4 +2406,4 @@ Changelog for GXemul:
 		minor hacks.
 		Merging Cobalt and evbmips (Malta) ISA interrupt handling,
 		and some minor fixes to allow Linux to accept harddisk irqs.
-20051112	Minor updates (pckbc, dec21143, etc.).
+20051112	Minor device updates (pckbc, dec21143, lpt, ...).

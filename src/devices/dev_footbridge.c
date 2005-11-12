@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.31 2005-11-09 06:35:45 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.32 2005-11-12 11:34:30 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -226,8 +226,23 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		odata = 0x1065;  /*  DC21285_DEVICE_ID  */
 		break;
 
+	case 0x04:
+	case 0x0c:
+	case 0x10:
+	case 0x14:
+	case 0x18:
+		/*  TODO. Written to by Linux.  */
+		break;
+
 	case REVISION:
 		odata = 3;  /*  footbridge revision number  */
+		break;
+
+	case PCI_ADDRESS_EXTENSION:
+		/*  TODO: Written to by Linux.  */
+		if (writeflag == MEM_WRITE && idata != 0)
+			fatal("[ footbridge: TODO: write to PCI_ADDRESS_"
+			    "EXTENSION: 0x%llx ]\n", (long long)idata);
 		break;
 
 	case UART_DATA:

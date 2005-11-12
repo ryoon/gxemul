@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1023 2005-11-12 13:06:51 debug Exp $
+$Id: HISTORY,v 1.1024 2005-11-12 23:41:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2409,3 +2409,4 @@ Changelog for GXemul:
 20051112	Minor device updates (pckbc, dec21143, lpt, ...), most
 		importantly fixing the ALI M1543/M5229 so that harddisk irqs
 		work with Linux/CATS.
+20051113	Some more generalizations to the PCI subsystem.

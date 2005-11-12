@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.588 2005-11-12 13:06:52 debug Exp $
+ *  $Id: machine.c,v 1.589 2005-11-12 23:41:38 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3891,6 +3891,16 @@ Not yet.
 
 			pci_data = dev_gt_init(machine, mem, 0x1be00000, 8+9, 8+9, 120);
 
+			if (machine->use_x11) {
+				if (strlen(machine->boot_string_argument) < 3)
+					fatal("WARNING: remember to use  -o 'console=tty0'  "
+					    "if you are emulating Linux. (Not needed for NetBSD.)\n");
+				bus_pci_add(machine, pci_data, mem, 0xc0, 8, 0, "s3_virge");
+				j = dev_pckbc_init(machine, mem, 0x18000060, PCKBC_8042,
+				    8 + 1, 8 + 12, 1, 0);
+				machine->main_console_handle = j;
+			}
+
 			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "i82371ab_isa");
 			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "i82371ab_ide");
 
@@ -3910,11 +3920,6 @@ Not yet.
 		}
 
 		if (machine->prom_emulation) {
-			/*  This is just a test.  TODO  */
-			for (i=0; i<32; i++)
-				cpu->cd.mips.gpr[i] =
-				    0x01230000 + (i << 8) + 0x55;
-
 			/*  NetBSD/evbmips wants these: (at least for Malta)  */
 
 			/*  a0 = argc  */

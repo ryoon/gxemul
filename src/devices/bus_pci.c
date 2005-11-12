@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.25 2005-11-12 13:06:55 debug Exp $
+ *  $Id: bus_pci.c,v 1.26 2005-11-12 23:41:39 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -234,6 +234,8 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	pd->next = pci_data->first_device;
 	pci_data->first_device = pd;
 
+	pd->pcibus   = pci_data;
+	pd->name     = strdup(name);
 	pd->bus      = bus;
 	pd->device   = device;
 	pd->function = function;
@@ -266,7 +268,8 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
  *  This doesn't register a device, but instead returns a pointer to a struct
  *  which should be passed to bus_pci_access() when accessing the PCI bus.
  */
-struct pci_data *bus_pci_init(int irq_nr)
+struct pci_data *bus_pci_init(int irq_nr, uint64_t portbase, uint64_t membase,
+	int irqbase)
 {
 	struct pci_data *d;
 
@@ -276,7 +279,10 @@ struct pci_data *bus_pci_init(int irq_nr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pci_data));
-	d->irq_nr = irq_nr;
+	d->irq_nr   = irq_nr;
+	d->portbase = portbase;
+	d->membase  = membase;
+	d->irqbase  = irqbase;
 
 	return d;
 }
@@ -338,14 +344,8 @@ PCIINIT(s3_virge)
 	    PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
 	    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x01);
 
-	if (machine->machine_type != MACHINE_CATS) {
-		fatal("TODO: s3 virge in non-CATS\n");
-		exit(1);
-	}
-
-	/*  TODO: CATS specific:  */
-	dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0,
-	    machine->machine_name);
+	dev_vga_init(machine, mem, pd->pcibus->membase + 0xa0000,
+	    pd->pcibus->portbase + 0x3c0, machine->machine_name);
 }
 
 
@@ -377,21 +377,20 @@ PCIINIT(ali_m1543)
 
 PCIINIT(ali_m5229)
 {
+	char tmpstr[300];
+
 	PCI_SET_DATA(PCI_ID_REG,
 	    PCI_ID_CODE(PCI_VENDOR_ALI, PCI_PRODUCT_ALI_M5229));
 
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1);
 
-	switch (machine->machine_type) {
-	case MACHINE_CATS:
-		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
-		/*  The secondary channel is disabled. TODO: fix this.  */
-		/*  device_add(machine, "wdc addr=0x7c000170 irq=47");  */
-		break;
-	default:fatal("ali_m5229: unimplemented machine type\n");
-		exit(1);
-	}
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+	    (long long)(pd->pcibus->portbase + 0x1f0),
+	    pd->pcibus->irqbase + 14);
+	device_add(machine, tmpstr);
+
+	/*  The secondary channel is disabled. TODO: fix this.  */
 }
 
 
@@ -515,6 +514,8 @@ PCIINIT(i82371ab_isa)
 
 PCIINIT(i82371ab_ide)
 {
+	char tmpstr[100];
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_82371AB_IDE));
 
@@ -526,15 +527,15 @@ PCIINIT(i82371ab_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
-	switch (machine->machine_type) {
-	case MACHINE_EVBMIPS:
-		/*  TODO: Irqs...  */
-		device_add(machine, "wdc addr=0x180001f0 irq=22");/* primary  */
-		device_add(machine, "wdc addr=0x18000170 irq=23");/* secondary*/
-		break;
-	default:fatal("i82371ab_ide: unimplemented machine type\n");
-		exit(1);
-	}
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+	    (long long)(pd->pcibus->portbase + 0x1f0),
+	    pd->pcibus->irqbase + 14);
+	device_add(machine, tmpstr);
+
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+	    (long long)(pd->pcibus->portbase + 0x170),
+	    pd->pcibus->irqbase + 15);
+	device_add(machine, tmpstr);
 }
 
 
@@ -568,6 +569,8 @@ PCIINIT(vt82c586_isa)
 
 PCIINIT(vt82c586_ide)
 {
+	char tmpstr[100];
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_VIATECH,
 	    PCI_PRODUCT_VIATECH_VT82C586_IDE));
 
@@ -579,15 +582,15 @@ PCIINIT(vt82c586_ide)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	switch (machine->machine_type) {
-	case MACHINE_COBALT:
-		/*  irq 14,15 (+8)  */
-		device_add(machine, "wdc addr=0x100001f0 irq=22");/* primary  */
-		device_add(machine, "wdc addr=0x10000170 irq=23");/* secondary*/
-		break;
-	default:fatal("vt82c586_ide: unimplemented machine type\n");
-		exit(1);
-	}
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+	    (long long)(pd->pcibus->portbase + 0x1f0),
+	    pd->pcibus->irqbase + 14);
+	device_add(machine, tmpstr);
+
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+	    (long long)(pd->pcibus->portbase + 0x170),
+	    pd->pcibus->irqbase + 15);
+	device_add(machine, tmpstr);
 }
 
 
@@ -615,6 +618,8 @@ PCIINIT(symphony_83c553)
 
 PCIINIT(symphony_82c105)
 {
+	char tmpstr[100];
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_SYMPHONY,
 	    PCI_PRODUCT_SYMPHONY_82C105));
 
@@ -626,15 +631,15 @@ PCIINIT(symphony_82c105)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	switch (machine->machine_type) {
-	case MACHINE_NETWINDER:
-		device_add(machine, "wdc addr=0x7c0001f0 irq=46");/* primary  */
-		device_add(machine, "wdc addr=0x7c000170 irq=47");/* secondary*/
-		break;
-	default:fatal("symphony_82c105: unimplemented machine "
-		    "type %i\n", machine->machine_type);
-		exit(1);
-	}
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+	    (long long)(pd->pcibus->portbase + 0x1f0),
+	    pd->pcibus->irqbase + 14);
+	device_add(machine, tmpstr);
+
+	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+	    (long long)(pd->pcibus->portbase + 0x170),
+	    pd->pcibus->irqbase + 15);
+	device_add(machine, tmpstr);
 }
 
 

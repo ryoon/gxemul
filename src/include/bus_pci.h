@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.20 2005-11-09 07:41:05 debug Exp $
+ *  $Id: bus_pci.h,v 1.21 2005-11-12 23:41:40 debug Exp $
  */
 
 #include "misc.h"
@@ -37,21 +37,34 @@
 struct machine;
 struct memory;
 
-#define	PCI_CFG_MEM_SIZE	0x80		/*  TODO  */
-
-struct pci_device {
-	struct pci_device	*next;
-	int			bus, device, function;
-	unsigned char		cfg_mem[PCI_CFG_MEM_SIZE];
-	unsigned char		cfg_mem_size[PCI_CFG_MEM_SIZE];
-};
+struct pci_device;
 
 struct pci_data {
+	/*  IRQ nr of the controller itself.  */
 	int		irq_nr;
+
+	/*  Default I/O port, memory, and irq bases:  */
+	uint64_t	portbase;
+	uint64_t	membase;
+	int		irqbase;
+
+	/*  Current addr/data access:  */
 	uint32_t	pci_addr;
 	int		last_was_write_ffffffff;
 
 	struct pci_device *first_device;
+};
+
+
+#define	PCI_CFG_MEM_SIZE	0x80		/*  TODO  */
+
+struct pci_device {
+	struct pci_device	*next;
+	struct pci_data		*pcibus;
+	char			*name;
+	int			bus, device, function;
+	unsigned char		cfg_mem[PCI_CFG_MEM_SIZE];
+	unsigned char		cfg_mem_size[PCI_CFG_MEM_SIZE];
 };
 
 #define	BUS_PCI_ADDR	0xcf8
@@ -63,7 +76,8 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	uint64_t *data, int len, int writeflag, struct pci_data *pci_data);
 void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	struct memory *mem, int bus, int device, int function, char *name);
-struct pci_data *bus_pci_init(int irq_nr);
+struct pci_data *bus_pci_init(int irq_nr, uint64_t portbase, uint64_t membase,
+	int irqbase);
 
 
 #define	PCIINIT(name)	void pciinit_ ## name(struct machine *machine,	\

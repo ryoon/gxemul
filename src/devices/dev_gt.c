@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.32 2005-11-11 19:13:33 debug Exp $
+ *  $Id: dev_gt.c,v 1.33 2005-11-12 23:41:39 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -175,6 +175,8 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, int pciirq, int type)
 {
 	struct gt_data *d;
+	uint64_t portbase = 0, membase = 0;
+	int irqbase;
 
 	d = malloc(sizeof(struct gt_data));
 	if (d == NULL) {
@@ -184,18 +186,27 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct gt_data));
 	d->irqnr    = irq_nr;
 	d->pciirq   = pciirq;
-	d->pci_data = bus_pci_init(pciirq);
 
 	switch (type) {
 	case 11:
+		/*  Cobalt:  */
 		d->type = PCI_PRODUCT_GALILEO_GT64011;
+		portbase = 0x10000000ULL;
+		membase = 0x10010000ULL;	/*  TODO  */
+		irqbase = 8;
 		break;
 	case 120:
+		/*  EVBMIPS (Malta):  */
 		d->type = PCI_PRODUCT_GALILEO_GT64120;
+		portbase = 0x18000000ULL;
+		membase = 0x10000000ULL;
+		irqbase = 8;
 		break;
 	default:fatal("dev_gt_init(): type must be 11 or 120.\n");
 		exit(1);
 	}
+
+	d->pci_data = bus_pci_init(pciirq, portbase, membase, irqbase);
 
 	/*
 	 *  According to NetBSD/cobalt:

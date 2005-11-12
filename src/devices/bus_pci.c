@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.22 2005-11-11 19:13:33 debug Exp $
+ *  $Id: bus_pci.c,v 1.23 2005-11-12 10:57:31 debug Exp $
  *  
  *  Generic PCI bus framework. It is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -367,7 +367,7 @@ PCIINIT(ali_m1543)
 	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0xc3);
 
 	PCI_SET_DATA(PCI_BHLC_REG,
-	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 
 PCIINIT(ali_m5229)
@@ -383,6 +383,7 @@ PCIINIT(ali_m5229)
 	PCI_SET_DATA(0x50, 0x01000000);
 	PCI_SET_DATA(0x54, 0x00000044);
 	PCI_SET_DATA(0x58, 0x31310000);
+
 
 #if 0
 /*  TODO:  */
@@ -523,7 +524,7 @@ PCIINIT(i82371ab_isa)
 	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x01);	/*  Rev 1  */
 
 	PCI_SET_DATA(PCI_BHLC_REG,
-	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 
 PCIINIT(i82371ab_ide)
@@ -577,7 +578,7 @@ PCIINIT(vt82c586_isa)
 	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x39);   /*  Revision 37 or 39  */
 
 	PCI_SET_DATA(PCI_BHLC_REG,
-	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 
 PCIINIT(vt82c586_ide)
@@ -625,7 +626,7 @@ PCIINIT(symphony_83c553)
 	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x10);
 
 	PCI_SET_DATA(PCI_BHLC_REG,
-	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0,0));
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 
 PCIINIT(symphony_82c105)
@@ -673,6 +674,8 @@ PCIINIT(dec21143)
 
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_NETWORK,
 	    PCI_SUBCLASS_NETWORK_ETHERNET, 0x00) + 0x41);
+
+	PCI_SET_DATA(PCI_BHLC_REG, PCI_BHLC_CODE(0,0,0, 0x40,0));
 
 	/*
 	 *  Experimental:

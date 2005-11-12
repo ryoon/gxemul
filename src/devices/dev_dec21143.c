@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.5 2005-11-11 07:31:32 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.6 2005-11-12 10:57:31 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
@@ -48,20 +49,44 @@
 
 /*  #define debug fatal  */
 
-#define	N_REGS		32
-#define	ROM_WIDTH	6
+#define	DEC21143_TICK_SHIFT		16
+
+#define	N_REGS			32
+#define	ROM_WIDTH		6
 
 struct dec21143_data {
+	int		irq_nr;
+	int		irq_asserted;
+
 	uint32_t	reg[N_REGS];
 
 	uint8_t		mac[6];
 	uint16_t	rom[1 << ROM_WIDTH];
 
 	int		srom_curbit;
-	int		srom_command;
-	int		srom_command_has_started;
+	int		srom_opcode;
+	int		srom_opcode_has_started;
 	int		rom_addr;
 };
+
+
+/*
+ *  dev_dec21143_tick():
+ */
+void dev_dec21143_tick(struct cpu *cpu, void *extra)
+{
+	struct dec21143_data *d = extra;
+	int asserted;
+
+	asserted = d->reg[CSR_STATUS / 8] & d->reg[CSR_INTEN / 8];
+	if (asserted != d->irq_asserted) {
+		d->irq_asserted = asserted;
+		if (asserted)
+			cpu_interrupt(cpu, d->irq_nr);
+		else
+			cpu_interrupt_ack(cpu, d->irq_nr);
+	}
+}
 
 
 /*
@@ -93,8 +118,8 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 	/*  New selection? Then reset internal state.  */
 	if (idata & MIIROM_SR && !(oldreg & MIIROM_SR)) {
 		d->srom_curbit = 0;
-		d->srom_command = 0;
-		d->srom_command_has_started = 0;
+		d->srom_opcode = 0;
+		d->srom_opcode_has_started = 0;
 		d->rom_addr = 0;
 	}
 
@@ -107,22 +132,23 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 	/*  debug("CLOCK CYCLE! (bit %i): ", d->srom_curbit);  */
 
 	/*
-	 *  Linux sends more zeroes before starting the actual command, than
+	 *  Linux sends more zeroes before starting the actual opcode, than
 	 *  OpenBSD and NetBSD. Hopefully this is correct. (I'm just guessing
-	 *  that all commands should start with a 1, perhaps that's not really
+	 *  that all opcodes should start with a 1, perhaps that's not really
 	 *  the case.)
 	 */
-	if (!ibit && !d->srom_command_has_started)
+	if (!ibit && !d->srom_opcode_has_started)
 		return;
 
 	if (d->srom_curbit < 3) {
-		d->srom_command_has_started = 1;
-		d->srom_command <<= 1;
-		d->srom_command |= ibit;
-		/*  debug("command input '%i'\n", ibit);  */
+		d->srom_opcode_has_started = 1;
+		d->srom_opcode <<= 1;
+		d->srom_opcode |= ibit;
+		/*  debug("opcode input '%i'\n", ibit);  */
 	} else {
-		switch (d->srom_command) {
-		case 6:	if (d->srom_curbit < ROM_WIDTH + 3) {
+		switch (d->srom_opcode) {
+		case TULIP_SROM_OPC_READ:
+			if (d->srom_curbit < ROM_WIDTH + 3) {
 				obit = d->srom_curbit < ROM_WIDTH + 2;
 				d->rom_addr <<= 1;
 				d->rom_addr |= ibit;
@@ -135,8 +161,8 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 				    (d->srom_curbit - ROM_WIDTH - 3))? 1 : 0;
 			}
 			break;
-		default:fatal("[ dec21243: unimplemented EEPROM "
-			    "command %i ]\n", d->srom_command);
+		default:fatal("[ dec21243: unimplemented SROM/EEPROM "
+			    "opcode %i ]\n", d->srom_opcode);
 		}
 		d->reg[CSR_MIIROM / 8] &= ~MIIROM_SROMDO;
 		if (obit)
@@ -147,13 +173,13 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 	d->srom_curbit ++;
 
 	/*
-	 *  Done command + addr + data? Then restart. (At least NetBSD does
+	 *  Done opcode + addr + data? Then restart. (At least NetBSD does
 	 *  sequential reads without turning selection off and then on.)
 	 */
 	if (d->srom_curbit >= 3 + ROM_WIDTH + 16) {
 		d->srom_curbit = 0;
-		d->srom_command = 0;
-		d->srom_command_has_started = 0;
+		d->srom_opcode = 0;
+		d->srom_opcode_has_started = 0;
 		d->rom_addr = 0;
 	}
 }
@@ -179,7 +205,12 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 			odata = d->reg[regnr];
 		else {
 			oldreg = d->reg[regnr];
-			d->reg[regnr] = idata;
+			switch (regnr) {
+			case CSR_STATUS:	/*  Zero-on-write  */
+				d->reg[regnr] &= ~idata;
+				break;
+			default:d->reg[regnr] = idata;
+			}
 		}
 	} else
 		fatal("[ dec21143: WARNING! unaligned access (0x%x) ]\n",
@@ -188,6 +219,56 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 
 	case CSR_BUSMODE:	/*  csr0  */
+		if (writeflag == MEM_WRITE) {
+			/*  Software reset takes effect immediately.  */
+			if (idata & BUSMODE_SWR) {
+				idata &= ~BUSMODE_SWR;
+				d->reg[regnr] = idata;
+			}
+		}
+		break;
+
+	case CSR_TXPOLL:	/*  csr1  */
+		if (writeflag == MEM_WRITE) {
+			if (idata & ~TXPOLL_TPD)
+				fatal("[ dec21143: UNIMPLEMENTED txpoll"
+				    " bits: 0x%08x ]\n", (int)idata);
+		}
+		dev_dec21143_tick(cpu, extra);
+		break;
+
+	case CSR_RXPOLL:	/*  csr2  */
+		if (writeflag == MEM_WRITE) {
+			if (idata & ~RXPOLL_RPD)
+				fatal("[ dec21143: UNIMPLEMENTED rxpoll"
+				    " bits: 0x%08x ]\n", (int)idata);
+		}
+		dev_dec21143_tick(cpu, extra);
+		break;
+
+	case CSR_RXLIST:	/*  csr3  */
+		if (writeflag == MEM_WRITE)
+			debug("[ dec21143: setting RXLIST to 0x%x ]\n",
+			    (int)idata);
+		break;
+
+	case CSR_TXLIST:	/*  csr4  */
+		if (writeflag == MEM_WRITE)
+			debug("[ dec21143: setting TXLIST to 0x%x ]\n",
+			    (int)idata);
+		break;
+
+	case CSR_STATUS:	/*  csr5  */
+	case CSR_INTEN:		/*  csr7  */
+		if (writeflag == MEM_WRITE) {
+			/*  Recalculate interrupt assertion.  */
+			dev_dec21143_tick(cpu, extra);
+		}
+		break;
+
+	case CSR_MISSED:	/*  csr8  */
+		/*  Missed frames counter.  */
+		odata = 0;
 		break;
 
 	case CSR_MIIROM:	/*  csr9  */
@@ -225,6 +306,7 @@ int devinit_dec21143(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct dec21143_data));
 
+	d->irq_nr = devinit->irq_nr;
 	net_generate_unique_mac(devinit->machine, d->mac);
 
 	/*  Version (= 1) and Chip count (= 1):  */
@@ -241,6 +323,9 @@ int devinit_dec21143(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, name2,
 	    devinit->addr, 0x100, dev_dec21143_access, d, MEM_DEFAULT, NULL);
+
+	machine_add_tickfunction(devinit->machine,
+	    dev_dec21143_tick, d, DEC21143_TICK_SHIFT);
 
 	/*
 	 *  TODO: don't hardcode this! NetBSD/cats uses mem accesses at

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.54 2005-11-09 08:25:25 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.55 2005-11-12 10:57:31 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -100,8 +100,10 @@ struct pckbc_data {
 #define	STATE_WAITING_FOR_TRANSLTABLE	3
 #define	STATE_WAITING_FOR_F3		4
 #define	STATE_WAITING_FOR_FC		5
-#define	STATE_LDOUTPUT			6
-#define	STATE_RDOUTPUT			7
+#define	STATE_WAITING_FOR_AUX		6
+#define	STATE_WAITING_FOR_AUX_OUT	7
+#define	STATE_LDOUTPUT			8
+#define	STATE_RDOUTPUT			9
 
 
 /*
@@ -269,12 +271,14 @@ static void ascii_to_pc_scancodes_type3(int a, struct pckbc_data *d)
 
 
 /*
- *  ascii_to_scancodes():
+ *  ascii_to_scancodes_type2():
  *
  *  Conversion from ASCII codes to default (US) keyboard scancodes.
  *  (See http://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html)
+ *
+ *  NOTE/TODO: This seems to be type 2, not type 1.
  */
-static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
+static void ascii_to_pc_scancodes_type2(int a, struct pckbc_data *d)
 {
 	int old_head;
 	int p = 0;	/*  port  */
@@ -285,7 +289,7 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 		return;
 	}
 
-	if (d->translation_table != 1) {
+	if (d->translation_table != 2) {
 		fatal("[ ascii_to_pc_scancodes: unimplemented type! ]\n");
 		return;
 	}
@@ -440,7 +444,7 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 	if (d->in_use && console_charavail(d->console_handle)) {
 		ch = console_readchar(d->console_handle);
 		if (ch >= 0)
-			ascii_to_pc_scancodes(ch, d);
+			ascii_to_pc_scancodes_type2(ch, d);
 	}
 
 	ints_enabled = d->rx_int_enable;
@@ -484,7 +488,7 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		debug("[ pckbc: (port %i) switching to translation table "
 		    "0x%02x ]\n", port_nr, cmd);
 		switch (cmd) {
-		case 1:
+		case 2:
 		case 3:	d->translation_table = cmd;
 			break;
 		default:fatal("[ pckbc: (port %i) translation table "
@@ -507,6 +511,24 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		debug("[ pckbc: (port %i) received '0xfc' data: "
 		    "0x%02x ]\n", port_nr, cmd);
 		pckbc_add_code(d, KBR_ACK, port_nr);
+		d->state = STATE_NORMAL;
+		return;
+	}
+
+	if (d->state == STATE_WAITING_FOR_AUX) {
+		debug("[ pckbc: (port %i) received aux data: "
+		    "0x%02x ]\n", port_nr, cmd);
+		/*  Echo back.  */
+		pckbc_add_code(d, cmd, port_nr);
+		d->state = STATE_NORMAL;
+		return;
+	}
+
+	if (d->state == STATE_WAITING_FOR_AUX_OUT) {
+		debug("[ pckbc: (port %i) received aux out data: "
+		    "0x%02x ]\n", port_nr, cmd);
+		/*  Echo back.  */
+		pckbc_add_code(d, cmd, port_nr);
 		d->state = STATE_NORMAL;
 		return;
 	}
@@ -726,9 +748,11 @@ if (x&1)
 			case 0xd3:	/*  write to auxiliary device
 					    output buffer  */
 				debug("[ pckbc: CONTROL 0xd3, TODO ]\n");
+				d->state = STATE_WAITING_FOR_AUX_OUT;
 				break;
 			case 0xd4:	/*  write to auxiliary port  */
 				debug("[ pckbc: CONTROL 0xd4, TODO ]\n");
+				d->state = STATE_WAITING_FOR_AUX;
 				break;
 			default:
 				fatal("[ pckbc: unknown CONTROL 0x%x ]\n",
@@ -818,7 +842,7 @@ if (x&1)
 		}
 	}
 
-	/*  SGI?  */
+	/*  SGI? TODO: fix  */
 	if (len == 8)
 		odata |= (odata << 8) | (odata << 16) | (odata << 24) |
 		    (odata << 32) | (odata << 40) | (odata << 48) |
@@ -866,7 +890,7 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	d->in_use            = in_use;
 	d->pc_style_flag     = pc_style_flag;
 	d->console_handle    = console_start_slave_inputonly(machine, "pckbc");
-	d->translation_table = 1;
+	d->translation_table = 2;
 	d->rx_int_enable     = 1;
 	d->output_byte       = 0x02;	/*  A20 enable on PCs  */
 

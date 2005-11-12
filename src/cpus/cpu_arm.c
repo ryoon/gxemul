@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.39 2005-11-11 13:23:15 debug Exp $
+ *  $Id: cpu_arm.c,v 1.40 2005-11-12 10:57:30 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -669,9 +669,17 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	cpu->cd.arm.cpsr &= ~ARM_FLAG_MODE;
 	cpu->cd.arm.cpsr |= arm_exception_to_mode[exception_nr];
 
+	/*
+	 *  Usually, an exception should change modes (so that saved status
+	 *  bits don't get lost). However, Linux on ARM seems to use floating
+	 *  point instructions in the kernel (!), and it emulates those using
+	 *  its own fp emulation code. This leads to a situation where we
+	 *  sometimes change from SVC32 to SVC32.
+	 */
 	newmode = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
-	if (oldmode == newmode) {
-		fatal("[ WARNING! Exception caused no mode change? ]\n");
+	if (oldmode == newmode && oldmode != ARM_MODE_SVC32) {
+		fatal("[ WARNING! Exception caused no mode change? "
+		    "mode 0x%02x ]\n", newmode);
 		/*  exit(1);  */
 	}
 

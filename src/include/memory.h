@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.42 2005-11-13 00:14:11 debug Exp $
+ *  $Id: memory.h,v 1.43 2005-11-13 02:26:45 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -40,7 +40,7 @@
 
 
 #define	DEFAULT_RAM_IN_MB		32
-#define	MAX_DEVICES			28
+#define	MAX_DEVICES			26
 
 #define	DEVICE_STATE_TYPE_INT		1
 #define	DEVICE_STATE_TYPE_UINT64_T	2

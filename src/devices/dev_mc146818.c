@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.76 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.77 2005-11-13 12:28:38 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -373,23 +373,24 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	 *  Linux on at least sgimips and evbmips (Malta) wants the UIP bit
 	 *  in REGA to be updated once a second.
 	 */
-	timet = time(NULL);
-	tmp = gmtime(&timet);
-	d->reg[MC_REGC * 4] &= ~MC_REGC_UF;
+	if (relative_addr == MC_REGA*4 || relative_addr == MC_REGC*4) {
+		timet = time(NULL);
+		tmp = gmtime(&timet);
+		d->reg[MC_REGC * 4] &= ~MC_REGC_UF;
+		if (tmp->tm_sec != d->previous_second) {
+			d->reg[MC_REGA * 4] |= MC_REGA_UIP;
 
-	if (tmp->tm_sec != d->previous_second) {
-		d->reg[MC_REGA * 4] &= ~MC_REGA_UIP;
+			d->reg[MC_REGC * 4] |= MC_REGC_UF;
+			d->reg[MC_REGC * 4] |= MC_REGC_IRQF;
+			d->previous_second = tmp->tm_sec;
 
-		d->reg[MC_REGC * 4] |= MC_REGC_UF;
-		d->reg[MC_REGC * 4] |= MC_REGC_IRQF;
-		d->previous_second = tmp->tm_sec;
-
-		/*  For some reason, some Linux/DECstation KN04 kernels want
-		    the PF (periodic flag) bit set, even though interrupts
-		    are not enabled?  */
-		d->reg[MC_REGC * 4] |= MC_REGC_PF;
-	} else
-		d->reg[MC_REGA * 4] |= MC_REGA_UIP;
+			/*  For some reason, some Linux/DECstation KN04
+			    kernels want the PF (periodic flag) bit set,
+			    even though interrupts are not enabled?  */
+			d->reg[MC_REGC * 4] |= MC_REGC_PF;
+		} else
+			d->reg[MC_REGA * 4] &= ~MC_REGA_UIP;
+	}
 
 	/*  RTC data is in either BCD format or binary:  */
 	if (d->use_bcd)
@@ -524,14 +525,14 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 			mc146818_update_time(d);
 			break;
+		case 4 * MC_REGA:
+			break;
 		case 4 * MC_REGC:	/*  Interrupt ack.  */
 			/*  NOTE: Acking is done below, _after_ the
 			    register has been read.  */
 			break;
-		default:
-			debug("[ mc146818: read from relative_addr = "
+		default:debug("[ mc146818: read from relative_addr = "
 			    "%04x ]\n", (int)relative_addr);
-			;
 		}
 
 		data[0] = d->reg[relative_addr];

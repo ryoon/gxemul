@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.117 2005-11-02 20:05:26 debug Exp $
+ *  $Id: file.c,v 1.118 2005-11-13 22:34:21 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1392,6 +1392,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		}
 		break;
 	case ARCH_MIPS:
+	case ARCH_NEWMIPS:
 		switch (emachine) {
 		case EM_MIPS:
 		case EM_MIPS_RS3_LE:
@@ -1462,7 +1463,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	 *  TODO:  Find out what e_flag actually contains.
 	 *  TODO 2: This only sets mips16 for cpu 0. Yuck. Fix this!
 	 */
-	if (arch == ARCH_MIPS && ((eflags >> 24) & 0xff) == 0x24) {
+	if ((arch == ARCH_MIPS || arch == ARCH_NEWMIPS)
+	    && ((eflags >> 24) & 0xff) == 0x24) {
 		debug("MIPS16 encoding (e_flags = 0x%08x)\n", eflags);
 #ifdef ENABLE_MIPS16
 		m->cpus[0]->cd.mips.mips16 = 1;
@@ -1471,7 +1473,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		    "(or use the --mips16 configure option)\n");
 		exit(1);
 #endif
-	} else if (arch == ARCH_MIPS && (eentry & 0x3)) {
+	} else if ((arch == ARCH_MIPS || arch == ARCH_NEWMIPS)
+		    && (eentry & 0x3)) {
 		debug("MIPS16 encoding (eentry not 32-bit aligned)\n");
 #ifdef ENABLE_MIPS16
 		m->cpus[0]->cd.mips.mips16 = 1;

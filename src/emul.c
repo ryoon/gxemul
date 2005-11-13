@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.236 2005-11-01 07:05:38 debug Exp $
+ *  $Id: emul.c,v 1.237 2005-11-13 22:34:21 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1240,8 +1240,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			break;
 
 		case ARCH_MIPS:
-			if ((cpu->pc >> 32) == 0
-			    && (cpu->pc & 0x80000000ULL))
+			if ((cpu->pc >> 32) == 0 && (cpu->pc & 0x80000000ULL))
 				cpu->pc |= 0xffffffff00000000ULL;
 
 			cpu->cd.mips.gpr[MIPS_GPR_GP] = gp;

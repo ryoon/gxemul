@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.56 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.57 2005-11-13 22:34:24 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -492,7 +492,8 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		case 3:	d->translation_table = cmd;
 			break;
 		default:fatal("[ pckbc: (port %i) translation table "
-		    "0x%02x is NOT YET IMPLEMENTED ]\n", port_nr, cmd);
+			    "0x%02x is NOT YET IMPLEMENTED ]\n",
+			    port_nr, cmd);
 		}
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		d->state = STATE_NORMAL;
@@ -756,7 +757,7 @@ if (x&1)
 				break;
 			default:
 				fatal("[ pckbc: unknown CONTROL 0x%x ]\n",
-				    idata);
+				    (int)idata);
 				d->state = STATE_NORMAL;
 			}
 		}

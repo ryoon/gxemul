@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.176 2005-11-05 23:04:27 debug Exp $
+#  $Id: configure,v 1.177 2005-11-13 22:34:21 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -74,6 +74,7 @@ else
 	ENABLEIA64=NO
 	ENABLEM68K=NO
 	ENABLEMIPS=YES
+	ENABLENEWMIPS=YES
 	ENABLEPPC=YES
 	ENABLESH=NO
 	ENABLESPARC=NO
@@ -106,6 +107,7 @@ if [ z"$*" != z ]; then
 			ENABLEIA64=YES
 			ENABLEM68K=YES
 			ENABLEMIPS=YES
+			ENABLENEWMIPS=YES
 			ENABLEPPC=YES
 			ENABLESH=YES
 			ENABLESPARC=YES
@@ -142,6 +144,10 @@ if [ z"$*" != z ]; then
 			ENABLEMIPS=NO
 		else if [ z$a = z--enable-mips ]; then
 			ENABLEMIPS=YES
+		else if [ z$a = z--disable-newmips ]; then
+			ENABLENEWMIPS=NO
+		else if [ z$a = z--enable-newmips ]; then
+			ENABLENEWMIPS=YES
 		else if [ z$a = z--disable-ppc ]; then
 			ENABLEPPC=NO
 		else if [ z$a = z--enable-ppc ]; then
@@ -246,6 +252,13 @@ if [ z"$*" != z ]; then
 			fi
 			printf "MIPS CPU emulation\n"
 
+			if [ z$ENABLENEWMIPS = zYES ]; then
+				printf "  --disable-newmips  disable "
+			else
+				printf "  --enable-newmips   enable "
+			fi
+			printf "(New, dyntrans) MIPS CPU emulation\n"
+
 			if [ z$ENABLEPPC = zYES ]; then
 				printf "  --disable-ppc      disable "
 			else
@@ -288,7 +301,7 @@ if [ z"$*" != z ]; then
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -371,6 +384,10 @@ if [ z$ENABLEM68K = zYES ]; then
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
+fi
+if [ z$ENABLENEWMIPS = zYES ]; then
+	printf "#define ENABLE_NEWMIPS\n" >> config.h
+	CPU_ARCHS="$CPU_ARCHS cpu_newmips.o"
 fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.5 2005-11-13 22:34:22 debug Exp $
+ *  $Id: cpu_newmips.c,v 1.1 2005-11-13 22:34:22 debug Exp $
  *
- *  HP PA-RISC CPU emulation.
+ *  MIPS CPU emulation.
  *
  *  TODO
  */
@@ -45,45 +45,45 @@
 
 
 #define DYNTRANS_DUALMODE_32
-#include "tmp_hppa_head.c"
+#include "tmp_newmips_head.c"
 
 
 /*
- *  hppa_cpu_new():
+ *  newmips_cpu_new():
  *
- *  Create a new HPPA cpu object.
+ *  Create a new NEWMIPS cpu object.
  *
- *  Returns 1 on success, 0 if there was no matching HPPA processor with
+ *  Returns 1 on success, 0 if there was no matching NEWMIPS processor with
  *  this cpu_type_name.
  */
-int hppa_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
+int newmips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	if (strcasecmp(cpu_type_name, "HPPA") != 0)
+	if (strcasecmp(cpu_type_name, "NEWMIPS") != 0)
 		return 0;
 
-	cpu->memory_rw = hppa_memory_rw;
+	cpu->memory_rw = newmips_memory_rw;
 
 	/*  TODO: per CPU type?  */
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	cpu->is_32bit = 1;
-	cpu->cd.hppa.bits = 32;
+	cpu->cd.newmips.bits = 32;
 
 	if (cpu->is_32bit) {
-		cpu->update_translation_table = hppa32_update_translation_table;
+		cpu->update_translation_table = newmips32_update_translation_table;
 		cpu->invalidate_translation_caches =
-		    hppa32_invalidate_translation_caches;
+		    newmips32_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
-		    hppa32_invalidate_code_translation;
+		    newmips32_invalidate_code_translation;
 	} else {
-		cpu->update_translation_table = hppa_update_translation_table;
+		cpu->update_translation_table = newmips_update_translation_table;
 		cpu->invalidate_translation_caches =
-		    hppa_invalidate_translation_caches;
+		    newmips_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
-		    hppa_invalidate_code_translation;
+		    newmips_invalidate_code_translation;
 	}
 
-	/*  Only hppaow name and caches etc for CPU nr 0 (in SMP machines):  */
+	/*  Only newmipsow name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
@@ -93,21 +93,21 @@ int hppa_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 
 /*
- *  hppa_cpu_list_available_types():
+ *  newmips_cpu_list_available_types():
  *
- *  Print a list of available HPPA CPU types.
+ *  Print a list of available NEWMIPS CPU types.
  */
-void hppa_cpu_list_available_types(void)
+void newmips_cpu_list_available_types(void)
 {
-	debug("HPPA\n");
+	debug("NEWMIPS\n");
 	/*  TODO  */
 }
 
 
 /*
- *  hppa_cpu_dumpinfo():
+ *  newmips_cpu_dumpinfo():
  */
-void hppa_cpu_dumpinfo(struct cpu *cpu)
+void newmips_cpu_dumpinfo(struct cpu *cpu)
 {
 	debug("\n");
 	/*  TODO  */
@@ -115,19 +115,19 @@ void hppa_cpu_dumpinfo(struct cpu *cpu)
 
 
 /*
- *  hppa_cpu_register_dump():
+ *  newmips_cpu_register_dump():
  *
  *  Dump cpu registers in a relatively readable format.
  *
  *  gprs: set to non-zero to dump GPRs and some special-purpose registers.
  *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
  */
-void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
+void newmips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
 	int i, x = cpu->cpu_id, nregs = 32;
-	int bits32 = cpu->cd.hppa.bits == 32;
+	int bits32 = cpu->cd.newmips.bits == 32;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
@@ -147,7 +147,7 @@ void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if ((i % 4) == 0)
 					debug("cpu%i:", x);
 				debug(" r%02i = 0x%08x ", i,
-				    (int)cpu->cd.hppa.r[i]);
+				    (int)cpu->cd.newmips.r[i]);
 				if ((i % 4) == 3)
 					debug("\n");
 			}
@@ -158,7 +158,7 @@ void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if ((i % 2) == 0)
 					debug("cpu%i:", x);
 				debug(" r%02i = 0x%016llx ", r,
-				    (long long)cpu->cd.hppa.r[r]);
+				    (long long)cpu->cd.newmips.r[r]);
 				if ((i % 2) == 1)
 					debug("\n");
 			}
@@ -168,9 +168,9 @@ void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 
 /*
- *  hppa_cpu_register_match():
+ *  newmips_cpu_register_match():
  */
-void hppa_cpu_register_match(struct machine *m, char *name,
+void newmips_cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
 	int cpunr = 0;
@@ -191,38 +191,38 @@ void hppa_cpu_register_match(struct machine *m, char *name,
 
 
 /*
- *  hppa_cpu_interrupt():
+ *  newmips_cpu_interrupt():
  */
-int hppa_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
+int newmips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	fatal("hppa_cpu_interrupt(): TODO\n");
+	fatal("newmips_cpu_interrupt(): TODO\n");
 	return 0;
 }
 
 
 /*
- *  hppa_cpu_interrupt_ack():
+ *  newmips_cpu_interrupt_ack():
  */
-int hppa_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
+int newmips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	/*  fatal("hppa_cpu_interrupt_ack(): TODO\n");  */
+	/*  fatal("newmips_cpu_interrupt_ack(): TODO\n");  */
 	return 0;
 }
 
 
 /*
- *  hppa_cpu_disassemble_instr():
+ *  newmips_cpu_disassemble_instr():
  *
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->pc hppaould be the address of the instruction.
+ *  If running is 1, cpu->pc newmipsould be the address of the instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
- *  register contents) will not be hppaown, and addr will be used instead of
+ *  register contents) will not be newmipsown, and addr will be used instead of
  *  cpu->pc for relative addresses.
  */
-int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+int newmips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	uint64_t offset;
@@ -240,7 +240,7 @@ int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	if (cpu->cd.hppa.bits == 32)
+	if (cpu->cd.newmips.bits == 32)
 		debug("%08x", (int)dumpaddr);
 	else
 		debug("%016llx", (long long)dumpaddr);
@@ -264,5 +264,5 @@ int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 }
 
 
-#include "tmp_hppa_tail.c"
+#include "tmp_newmips_tail.c"
 

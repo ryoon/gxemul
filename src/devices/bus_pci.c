@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.27 2005-11-13 00:53:57 debug Exp $
+ *  $Id: bus_pci.c,v 1.28 2005-11-13 22:34:24 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -661,6 +661,8 @@ PCIINIT(dec21143)
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
 	    PCI_PRODUCT_DEC_21142));
 
+	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0x02000017);
+
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_NETWORK,
 	    PCI_SUBCLASS_NETWORK_ETHERNET, 0x00) + 0x41);
 
@@ -675,7 +677,7 @@ PCIINIT(dec21143)
 		base = 0x7c010000;
 		/*  Works with at least NetBSD and OpenBSD:  */
 		base2 = 0x00010000;
-		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x08080101);
+		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140101);
 		irq = 18;
 		break;
 	case MACHINE_COBALT:

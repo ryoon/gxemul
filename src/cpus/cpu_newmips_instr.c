@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa_instr.c,v 1.4 2005-11-13 22:34:22 debug Exp $
+ *  $Id: cpu_newmips_instr.c,v 1.1 2005-11-13 22:34:22 debug Exp $
  *
- *  HPPA instructions.
+ *  NEWMIPS instructions.
  *
  *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (If no instruction was executed, then it should be decreased. If, say, 4
@@ -50,9 +50,9 @@ X(nop)
 X(end_of_page)
 {
 	/*  Update the PC:  (offset 0, but on the next page)  */
-	cpu->pc &= ~((HPPA_IC_ENTRIES_PER_PAGE-1) <<
-	    HPPA_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (HPPA_IC_ENTRIES_PER_PAGE << HPPA_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc &= ~((NEWMIPS_IC_ENTRIES_PER_PAGE-1) <<
+	    NEWMIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (NEWMIPS_IC_ENTRIES_PER_PAGE << NEWMIPS_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Find the new physical page and update the translation pointers:  */
 	DYNTRANS_PC_TO_POINTERS(cpu);
@@ -66,9 +66,9 @@ X(end_of_page)
 
 
 /*
- *  hppa_instr_to_be_translated():
+ *  newmips_instr_to_be_translated():
  *
- *  Translate an instruction word into an hppa_instr_call. ic is filled in with
+ *  Translate an instruction word into an newmips_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
  *  there was a translation failure. The newly translated instruction is then
  *  executed.
@@ -80,19 +80,19 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode;
-	/* void (*samepage_function)(struct cpu *, struct hppa_instr_call *);*/
+	/* void (*samepage_function)(struct cpu *, struct newmips_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
-	low_pc = ((size_t)ic - (size_t)cpu->cd.hppa.cur_ic_page)
-	    / sizeof(struct hppa_instr_call);
-	addr = cpu->pc & ~((HPPA_IC_ENTRIES_PER_PAGE-1)
-	    << HPPA_INSTR_ALIGNMENT_SHIFT);
-	addr += (low_pc << HPPA_INSTR_ALIGNMENT_SHIFT);
+	low_pc = ((size_t)ic - (size_t)cpu->cd.newmips.cur_ic_page)
+	    / sizeof(struct newmips_instr_call);
+	addr = cpu->pc & ~((NEWMIPS_IC_ENTRIES_PER_PAGE-1)
+	    << NEWMIPS_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << NEWMIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
-	addr &= ~((1 << HPPA_INSTR_ALIGNMENT_SHIFT) - 1);
+	addr &= ~((1 << NEWMIPS_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
-	page = cpu->cd.hppa.host_load[addr >> 12];
+	page = cpu->cd.newmips.host_load[addr >> 12];
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

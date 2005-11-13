@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1025 2005-11-13 02:21:58 debug Exp $
+$Id: HISTORY,v 1.1026 2005-11-13 22:34:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2414,3 +2414,4 @@ Changelog for GXemul:
 		enables OpenBSD to use partition 'a' (as needed by the OpenBSD
 		installer), and Windows NT's installer to get a bit further.
 		Also fixing dev_wdc to allow Linux to detect ATAPI CDROMs.
+		Continuing on the DEC 21143.

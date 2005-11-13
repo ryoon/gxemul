@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.8 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.9 2005-11-13 22:34:24 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
- *  TODO:  This is just a dummy device, so far.
+ *  TODO: Lots of stuff.
+ *
+ *	o)  Endianness for descriptors...
  */
 
 #include <stdio.h>
@@ -60,6 +62,9 @@ struct dec21143_data {
 
 	uint32_t	reg[N_REGS];
 
+	uint64_t	cur_rx_addr;
+	uint64_t	cur_tx_addr;
+
 	uint8_t		mac[6];
 	uint16_t	rom[1 << ROM_WIDTH];
 
@@ -71,6 +76,141 @@ struct dec21143_data {
 
 
 /*
+ *  dec21143_rx():
+ */
+int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
+{
+	uint64_t addr = d->cur_rx_addr;
+	unsigned char descr[16];
+	uint32_t rdes0, rdes1, rdes2, rdes3;
+
+return 0;
+
+	/*  fatal("{ dec21143_rx: base = 0x%08x }\n", (int)addr);  */
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t),
+	    MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
+		fatal("[ dec21143_tx: memory_rw failed! ]\n");
+		return 0;
+	}
+
+	rdes0 = descr[0] + (descr[1]<<8) + (descr[2]<<16) + (descr[3]<<24);
+
+	/*  Only process packets owned by the 21143:  */
+	if (!(rdes0 & TDSTAT_OWN))
+		return 0;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr + sizeof(uint32_t), descr +
+	    sizeof(uint32_t), sizeof(uint32_t) * 3, MEM_READ, PHYSICAL |
+	    NO_EXCEPTIONS)) {
+		fatal("[ dec21143_tx: memory_rw failed! ]\n");
+		return 0;
+	}
+
+	rdes1 = descr[4] + (descr[5]<<8) + (descr[6]<<16) + (descr[7]<<24);
+	rdes2 = descr[8] + (descr[9]<<8) + (descr[10]<<16) + (descr[11]<<24);
+	rdes3 = descr[12] + (descr[13]<<8) + (descr[14]<<16) + (descr[15]<<24);
+
+	fatal("{ RX %08x %08x %08x %08x }\n", rdes0, rdes1, rdes2, rdes3);
+
+	return 1;
+}
+
+
+/*
+ *  dec21143_tx():
+ */
+int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
+{
+	uint64_t addr = d->cur_tx_addr, bufaddr;
+	unsigned char descr[16];
+	uint32_t tdes0, tdes1, tdes2, tdes3;
+	int bufsize, buf1_size, buf2_size;
+
+	/*  fatal("{ dec21143_tx: base = 0x%08x }\n", (int)addr);  */
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t),
+	    MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
+		fatal("[ dec21143_tx: memory_rw failed! ]\n");
+		return 0;
+	}
+
+	tdes0 = descr[0] + (descr[1]<<8) + (descr[2]<<16) + (descr[3]<<24);
+
+	/*  Only process packets owned by the 21143:  */
+	if (!(tdes0 & TDSTAT_OWN)) {
+		d->reg[CSR_STATUS/8] |= STATUS_TU;
+		return 0;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr + sizeof(uint32_t), descr +
+	    sizeof(uint32_t), sizeof(uint32_t) * 3, MEM_READ, PHYSICAL |
+	    NO_EXCEPTIONS)) {
+		fatal("[ dec21143_tx: memory_rw failed! ]\n");
+		return 0;
+	}
+
+	tdes1 = descr[4] + (descr[5]<<8) + (descr[6]<<16) + (descr[7]<<24);
+	tdes2 = descr[8] + (descr[9]<<8) + (descr[10]<<16) + (descr[11]<<24);
+	tdes3 = descr[12] + (descr[13]<<8) + (descr[14]<<16) + (descr[15]<<24);
+
+	buf1_size = tdes1 & TDCTL_SIZE1;
+	buf2_size = (tdes1 & TDCTL_SIZE2) >> TDCTL_SIZE2_SHIFT;
+	bufaddr = buf1_size? tdes2 : tdes3;
+	bufsize = buf1_size? buf1_size : buf2_size;
+
+	d->reg[CSR_STATUS/8] &= ~STATUS_TS;
+
+	if (tdes1 & TDCTL_ER)
+		d->cur_tx_addr = d->reg[CSR_TXLIST/8];
+	else {
+		if (tdes1 & TDCTL_CH)
+			d->cur_tx_addr = tdes3;
+		else
+			d->cur_tx_addr += 4 * sizeof(uint32_t);
+	}
+
+	fatal("{ TX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
+	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize, (int)bufaddr);
+
+	if (tdes1 & TDCTL_Tx_SET) {
+		/*  Setup Packet  */
+		fatal("{ TX: setup packet }\n");
+		if (tdes1 & TDCTL_Tx_IC)
+			d->reg[CSR_STATUS/8] |= STATUS_TI;
+#if 0
+		tdes0 = 0x7fffffff; tdes1 = 0xffffffff;
+		tdes2 = 0xffffffff; tdes3 = 0xffffffff;
+#else
+		tdes0 = 0x00000000;
+#endif
+	} else {
+		/*  Data Packet  */
+		fatal("{ TX: data packet: TODO }\n");
+		exit(1);
+	}
+
+	/*  Descriptor writeback:  */
+	descr[ 0] = tdes0;       descr[ 1] = tdes0 >> 8;
+	descr[ 2] = tdes0 >> 16; descr[ 3] = tdes0 >> 24;
+	descr[ 4] = tdes1;       descr[ 5] = tdes1 >> 8;
+	descr[ 6] = tdes1 >> 16; descr[ 7] = tdes1 >> 24;
+	descr[ 8] = tdes2;       descr[ 9] = tdes2 >> 8;
+	descr[10] = tdes2 >> 16; descr[11] = tdes2 >> 24;
+	descr[12] = tdes3;       descr[13] = tdes3 >> 8;
+	descr[14] = tdes3 >> 16; descr[15] = tdes3 >> 24;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t) * 4,
+	    MEM_WRITE, PHYSICAL | NO_EXCEPTIONS)) {
+		fatal("[ dec21143_tx: memory_rw failed! ]\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+
+/*
  *  dev_dec21143_tick():
  */
 void dev_dec21143_tick(struct cpu *cpu, void *extra)
@@ -78,7 +218,22 @@ void dev_dec21143_tick(struct cpu *cpu, void *extra)
 	struct dec21143_data *d = extra;
 	int asserted;
 
-	asserted = d->reg[CSR_STATUS / 8] & d->reg[CSR_INTEN / 8];
+	if (d->reg[CSR_OPMODE / 8] & OPMODE_SR)
+		while (dec21143_rx(cpu, d))
+			;
+
+	if (d->reg[CSR_OPMODE / 8] & OPMODE_ST)
+		while (dec21143_tx(cpu, d))
+			;
+
+	/*  Normal and Abnormal interrupt summary:  */
+	d->reg[CSR_STATUS / 8] &= ~(STATUS_NIS | STATUS_AIS);
+	if (d->reg[CSR_STATUS / 8] & 0x00004845)
+		d->reg[CSR_STATUS / 8] |= STATUS_NIS;
+	if (d->reg[CSR_STATUS / 8] & 0x0c0037ba)
+		d->reg[CSR_STATUS / 8] |= STATUS_AIS;
+
+	asserted = d->reg[CSR_STATUS / 8] & d->reg[CSR_INTEN / 8] & 0x0c01ffff;
 	if (asserted != d->irq_asserted) {
 		d->irq_asserted = asserted;
 		if (asserted)
@@ -186,6 +341,26 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 
 
 /*
+ *  dec21143_reset():
+ *
+ *  Set the 21143 registers to reasonable values (according to the 21143
+ *  manual).
+ */
+static void dec21143_reset(struct cpu *cpu, struct dec21143_data *d)
+{
+	memset(d->reg, 0, sizeof(uint32_t) * N_REGS);
+
+	d->reg[CSR_BUSMODE / 8] = 0xfe000000;	/*  csr0   */
+	d->reg[CSR_MIIROM  / 8] = 0xfff483ff;	/*  csr9   */
+	d->reg[CSR_SIACONN / 8] = 0xffff0000;	/*  csr13  */
+	d->reg[CSR_SIATXRX / 8] = 0xffffffff;	/*  csr14  */
+	d->reg[CSR_SIAGEN  / 8] = 0x8ff00000;	/*  csr15  */
+
+	d->cur_rx_addr = d->cur_tx_addr = 0;
+}
+
+
+/*
  *  dev_dec21143_access():
  */
 int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
@@ -200,14 +375,16 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
-	if ((relative_addr & 3) == 0 && regnr < N_REGS) {
-		if (writeflag == MEM_READ)
+	if ((relative_addr & 7) == 0 && regnr < N_REGS) {
+		if (writeflag == MEM_READ) {
 			odata = d->reg[regnr];
-		else {
+		} else {
 			oldreg = d->reg[regnr];
 			switch (regnr) {
-			case CSR_STATUS:	/*  Zero-on-write  */
-				d->reg[regnr] &= ~idata;
+			case CSR_STATUS / 8:	/*  Zero-on-write  */
+				d->reg[regnr] &= ~(idata & 0x0c01ffff);
+				break;
+			case CSR_MISSED / 8:	/*  Read only  */
 				break;
 			default:d->reg[regnr] = idata;
 			}
@@ -222,40 +399,40 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			/*  Software reset takes effect immediately.  */
 			if (idata & BUSMODE_SWR) {
+				dec21143_reset(cpu, d);
 				idata &= ~BUSMODE_SWR;
-				d->reg[regnr] = idata;
 			}
 		}
 		break;
 
 	case CSR_TXPOLL:	/*  csr1  */
-		if (writeflag == MEM_WRITE) {
-			if (idata & ~TXPOLL_TPD)
-				fatal("[ dec21143: UNIMPLEMENTED txpoll"
-				    " bits: 0x%08x ]\n", (int)idata);
-		}
+		if (writeflag == MEM_READ)
+			fatal("[ dec21143: UNIMPLEMENTED READ from "
+			    "txpoll ]\n");
 		dev_dec21143_tick(cpu, extra);
 		break;
 
 	case CSR_RXPOLL:	/*  csr2  */
-		if (writeflag == MEM_WRITE) {
-			if (idata & ~RXPOLL_RPD)
-				fatal("[ dec21143: UNIMPLEMENTED rxpoll"
-				    " bits: 0x%08x ]\n", (int)idata);
-		}
+		if (writeflag == MEM_READ)
+			fatal("[ dec21143: UNIMPLEMENTED READ from "
+			    "rxpoll ]\n");
 		dev_dec21143_tick(cpu, extra);
 		break;
 
 	case CSR_RXLIST:	/*  csr3  */
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			debug("[ dec21143: setting RXLIST to 0x%x ]\n",
 			    (int)idata);
+			d->cur_rx_addr = idata;
+		}
 		break;
 
 	case CSR_TXLIST:	/*  csr4  */
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			debug("[ dec21143: setting TXLIST to 0x%x ]\n",
 			    (int)idata);
+			d->cur_tx_addr = idata;
+		}
 		break;
 
 	case CSR_STATUS:	/*  csr5  */
@@ -268,16 +445,25 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 
 	case CSR_OPMODE:	/*  csr6:  */
 		if (writeflag == MEM_WRITE) {
+			if (idata & 0x02000000) {
+				/*  A must-be-one bit.  */
+				idata &= ~0x02000000;
+			}
+			if (idata & OPMODE_ST)
+				idata &= ~OPMODE_ST;
+			if (idata & OPMODE_SR)
+				idata &= ~OPMODE_SR;
+			if (idata & OPMODE_SF)
+				idata &= ~OPMODE_SF;
 			if (idata != 0) {
 				fatal("[ dec21143: UNIMPLEMENTED OPMODE bits"
 				    ": 0x%08x ]\n", (int)idata);
 			}
+			dev_dec21143_tick(cpu, extra);
 		}
 		break;
 
 	case CSR_MISSED:	/*  csr8  */
-		/*  Missed frames counter.  */
-		odata = 0;
 		break;
 
 	case CSR_MIIROM:	/*  csr9  */
@@ -325,6 +511,8 @@ int devinit_dec21143(struct devinit *devinit)
 	d->rom[10] = (d->mac[1] << 8) + d->mac[0];
 	d->rom[11] = (d->mac[3] << 8) + d->mac[2];
 	d->rom[12] = (d->mac[5] << 8) + d->mac[4];
+
+	dec21143_reset(devinit->machine->cpus[0], d);
 
 	snprintf(name2, sizeof(name2), "%s [%02x:%02x:%02x:%02x:%02x:%02x]",
 	    devinit->name, d->mac[0], d->mac[1], d->mac[2], d->mac[3],

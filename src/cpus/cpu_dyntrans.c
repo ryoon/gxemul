@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.32 2005-11-11 13:23:16 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.33 2005-11-13 22:34:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -353,6 +353,9 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 #endif
 #ifdef DYNTRANS_MIPS
 		    gpr[MIPS_GPR_A0
+#endif
+#ifdef DYNTRANS_NEWMIPS
+		    r[0		/*  TODO  */
 #endif
 #ifdef DYNTRANS_PPC
 		    gpr[3

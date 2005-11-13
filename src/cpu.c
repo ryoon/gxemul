@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.322 2005-10-26 14:37:01 debug Exp $
+ *  $Id: cpu.c,v 1.323 2005-11-13 22:34:21 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -677,6 +677,10 @@ void cpu_init(void)
 
 #ifdef ENABLE_MIPS
 	add_cpu_family(mips_cpu_family_init, ARCH_MIPS);
+#endif
+
+#ifdef ENABLE_NEWMIPS
+	add_cpu_family(newmips_cpu_family_init, ARCH_NEWMIPS);
 #endif
 
 #ifdef ENABLE_PPC

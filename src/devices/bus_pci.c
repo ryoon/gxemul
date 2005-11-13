@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.26 2005-11-12 23:41:39 debug Exp $
+ *  $Id: bus_pci.c,v 1.27 2005-11-13 00:53:57 debug Exp $
  *  
- *  Generic PCI bus framework. It is not a normal "device", but is used by
+ *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
  */
 
@@ -55,7 +55,7 @@
 void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	uint64_t *data, int len, int writeflag, struct pci_data *pci_data)
 {
-	struct pci_device *dev, *found = NULL;
+	struct pci_device *dev;
 	int bus, device, function, registernr;
 	unsigned char *cfg_base;
 	uint64_t x;
@@ -68,14 +68,14 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Scan through the list of pci_device entries.  */
 	dev = pci_data->first_device;
-	while (dev != NULL && found == NULL) {
+	while (dev != NULL) {
 		if (dev->bus == bus && dev->function == function &&
 		    dev->device == device)
-			found = dev;
+			break;
 		dev = dev->next;
 	}
 
-	if (found == NULL) {
+	if (dev == NULL) {
 		if ((pci_data->pci_addr & 0xff) == 0)
 			*data = 0xffffffff;
 		else
@@ -85,9 +85,9 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 
 	if (pci_data->last_was_write_ffffffff &&
 	    registernr >= PCI_MAPREG_START && registernr <= PCI_MAPREG_END - 4)
-		cfg_base = found->cfg_mem_size;
+		cfg_base = dev->cfg_mem_size;
 	else
-		cfg_base = found->cfg_mem;
+		cfg_base = dev->cfg_mem;
 
 	/*  Read data as little-endian:  */
 	x = 0;
@@ -116,9 +116,10 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		if (*data != x) {
 			debug("[ bus_pci: write to PCI DATA: data = 0x%08llx"
 			    " differs from current value 0x%08llx; NOT YET"
-			    " SUPPORTED. bus %i, device %i, function %i, "
+			    " SUPPORTED. bus %i, device %i, function %i (%s)"
 			    " register 0x%02x ]\n", (long long)*data,
-			    (long long)x, bus, device, function, registernr);
+			    (long long)x, bus, device, function, dev->name,
+			    registernr);
 		}
 		return;
 	}
@@ -129,9 +130,9 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	pci_data->last_was_write_ffffffff = 0;
 
 	debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx (bus %i, device "
-	    "%i, function %i, register 0x%02x): 0x%08lx ]\n",
-	    (long)pci_data->pci_addr, bus, device, function, registernr,
-	    (long)*data);
+	    "%i, function %i (%s) register 0x%02x): 0x%08lx ]\n", (long)
+	    pci_data->pci_addr, bus, device, function, registernr,
+	    dev->name, (long)*data);
 }
 
 

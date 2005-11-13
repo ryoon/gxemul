@@ -1,11 +1,11 @@
-$Id: README,v 1.87 2005-10-29 07:33:43 debug Exp $
+$Id: README,v 1.88 2005-11-13 00:53:44 debug Exp $
 
-Working on post-0.3.6.2.
+I'm working on what will be 0.3.7.
 
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.3.6.2
-====================================================
+Gavare's eXperimental Emulator   --   GXemul 0.3.X
+==================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -19,7 +19,7 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 The processor architecture best emulated by GXemul is MIPS, but other
-architectures are also partially emulated.
+architectures, such as ARM, are also partially emulated.
 
 
 Quick start

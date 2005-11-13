@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.155 2005-11-01 22:06:42 debug Exp $
+$Id: RELEASE,v 1.156 2005-11-13 00:53:44 debug Exp $
 
-Working on post-0.3.6.2.
+I'm working on what will be 0.3.7.
 
 -------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.6.2
-==================================================================
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
+================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -16,10 +16,11 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 The processor architecture best emulated by GXemul is MIPS, but other
-architectures are also partially emulated.
+architectures, such as ARM, are also partially emulated.
 
 I have verified that the following "guest" operating systems can run inside
-the emulator:
+the emulator. Instructions on how to install and run these can be found in
+the documentation.
 
     Guest operating system             Emulated machine
     ----------------------             ----------------
@@ -38,32 +39,24 @@ the emulator:
     NetBSD/cats 2.1                    CATS (ARM)
     OpenBSD/cats 3.8                   CATS (ARM)
 
-(Most of these are MIPS-based machines, except the CATS, which is an 
-ARM-based machine.)
-
 Some of these guest operating systems are easier to install and run than
 others. The best supported mode is the DECstation 5000/200 emulation mode,
 with NetBSD/pmax as the guest operating system.
 
-A couple of other emulation modes exist. Some of these modes are almost
-working well enough to run complete guest operating systems, but most are
-just skeletons. The modes that work are listed in the documentation.
+(A couple of other emulation modes exist, but most of those are just
+"skeletons" and don't actually do anything.)
 
 The emulator can also be used in other experiments; it does not have to run
-entire guest operating systems. (However, GXemul does not simulate things
+entire guest operating systems. However, GXemul does not simulate things
 smaller than an instruction. What this means is that pipe-line stalls,
 penalties caused by branch-prediction misses or cache misses, and other
-micro-architectural effects are not simulated.)
+micro-architectural effects are not simulated.
 
-The most imporant user-visible change between release 0.3.5 and 0.3.6 is:
+The most imporant user-visible change between release 0.3.6.2 and 0.3.7 are:
 
-    x)  The experimental ARM emulation mode is now working well enough
-        to install NetBSD/cats and OpenBSD/cats onto harddisk images.
+    x)  ...
 
 There have also been lots of other small changes, too small to mention here.
-
-The 0.3.6.1 and 0.3.6.2 releases contain bugfixes and some performance 
-hacks.
 
 Files included in this release are:
 

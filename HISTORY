@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1024 2005-11-12 23:41:37 debug Exp $
+$Id: HISTORY,v 1.1025 2005-11-13 02:21:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2409,4 +2409,8 @@ Changelog for GXemul:
 20051112	Minor device updates (pckbc, dec21143, lpt, ...), most
 		importantly fixing the ALI M1543/M5229 so that harddisk irqs
 		work with Linux/CATS.
-20051113	Some more generalizations to the PCI subsystem.
+20051113	Some more generalizations of the PCI subsystem.
+		Finally took the time to add a hack for SCSI CDROM TOCs; this
+		enables OpenBSD to use partition 'a' (as needed by the OpenBSD
+		installer), and Windows NT's installer to get a bit further.
+		Also fixing dev_wdc to allow Linux to detect ATAPI CDROMs.

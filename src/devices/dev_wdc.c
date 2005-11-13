@@ -25,11 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.50 2005-11-13 00:14:10 debug Exp $
+ *  $Id: dev_wdc.c,v 1.51 2005-11-13 02:22:00 debug Exp $
  *
  *  Standard "wdc" IDE controller.
- *
- *  TODO: Clean up the ATAPI code, and all the other TODOs.
  */
 
 #include <stdio.h>
@@ -65,7 +63,6 @@
 extern int quiet_mode;
 
 /*  #define debug fatal  */
-#define EXPERIMENTAL_ATAPI
 
 struct wdc_data {
 	int		irq_nr;
@@ -347,11 +344,6 @@ void wdc__write(struct cpu *cpu, struct wdc_data *d)
 static int status_byte(struct wdc_data *d, struct cpu *cpu)
 {
 	int odata = 0;
-
-	/*
-	 *  Modern versions of OpenBSD wants WDCS_DSC. (Thanks to
-	 *  Alexander Yurchenko for noticing this.)
-	 */
 	if (diskimage_exist(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE))
 		odata |= WDCS_DRDY | WDCS_DSC;
@@ -361,11 +353,9 @@ static int status_byte(struct wdc_data *d, struct cpu *cpu)
 		odata |= WDCS_DRQ;
 	if (d->error)
 		odata |= WDCS_ERR;
-
 	if (d->atapi_cmd_in_progress && (d->atapi_phase & WDCS_DRQ)) {
 		odata |= WDCS_DRQ;
 	}
-
 	return odata;
 }
 
@@ -382,7 +372,7 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 
 	idata = data[0];
 
-	/*  Same as the normal status byte?  */
+	/*  Same as the normal status byte:  */
 	odata = status_byte(d, cpu);
 
 	if (writeflag==MEM_READ)
@@ -399,6 +389,143 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 		data[0] = odata;
 
 	return 1;
+}
+
+
+/*
+ *  wdc_command():
+ */
+void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
+{
+	int i;
+
+	d->cur_command = idata;
+	d->atapi_cmd_in_progress = 0;
+	d->error = 0;
+
+	/*
+	 *  Disk images that do not exist return an ABORT error.  This also
+	 *  happens with CDROM images with the WDCC_IDENTIFY command; CDROM
+	 *  images must be detected with ATAPI_IDENTIFY_DEVICE instead.
+	 *
+	 *  TODO:  Is this correct/good behaviour?
+	 */
+	if (!diskimage_exist(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE)) {
+		d->error |= WDCE_ABRT;
+		d->delayed_interrupt = INT_DELAY;
+		return;
+	}
+	if (diskimage_is_a_cdrom(cpu->machine, d->drive + d->base_drive,
+	    DISKIMAGE_IDE) && d->cur_command == WDCC_IDENTIFY) {
+		d->error |= WDCE_ABRT;
+		d->delayed_interrupt = INT_DELAY;
+		return;
+	}
+
+	/*  Handle the command:  */
+	switch (d->cur_command) {
+
+	case WDCC_READ:
+	case WDCC_READMULTI:
+		if (!quiet_mode)
+			debug("[ wdc: READ from drive %i, head %i, cyl %i, "
+			    "sector %i, nsecs %i ]\n", d->drive, d->head,
+			    d->cyl_hi*256+d->cyl_lo, d->sector, d->seccnt);
+		wdc__read(cpu, d);
+		break;
+
+	case WDCC_WRITE:
+	case WDCC_WRITEMULTI:
+		if (!quiet_mode)
+			debug("[ wdc: WRITE to drive %i, head %i, cyl %i, "
+			    "sector %i, nsecs %i ]\n", d->drive, d->head,
+			    d->cyl_hi*256+d->cyl_lo, d->sector, d->seccnt);
+		wdc__write(cpu, d);
+		break;
+
+	case WDCC_IDP:	/*  Initialize drive parameters  */
+		debug("[ wdc: IDP drive %i (TODO) ]\n", d->drive);
+		/*  TODO  */
+		d->delayed_interrupt = INT_DELAY;
+		break;
+
+	case SET_FEATURES:
+		debug("[ wdc: SET_FEATURES drive %i (TODO), feature 0x%02x ]\n",
+		    d->drive, d->precomp);
+		/*  TODO  */
+		switch (d->precomp) {
+		case WDSF_SET_MODE:
+			debug("[ wdc: WDSF_SET_MODE drive %i, pio/dma flags "
+			    "0x%02x ]\n", d->drive, d->seccnt);
+			break;
+		default:d->error |= WDCE_ABRT;
+		}
+		/*  TODO: always interrupt?  */
+		d->delayed_interrupt = INT_DELAY;
+		break;
+
+	case WDCC_RECAL:
+		debug("[ wdc: RECAL drive %i ]\n", d->drive);
+		d->delayed_interrupt = INT_DELAY;
+		break;
+
+	case WDCC_IDENTIFY:
+	case ATAPI_IDENTIFY_DEVICE:
+		debug("[ wdc: %sIDENTIFY drive %i ]\n", d->cur_command ==
+		    ATAPI_IDENTIFY_DEVICE? "ATAPI " : "", d->drive);
+		wdc_initialize_identify_struct(cpu, d);
+		/*  The IDENTIFY data is sent out in low/high byte order:  */
+		for (i=0; i<sizeof(d->identify_struct); i+=2) {
+			wdc_addtoinbuf(d, d->identify_struct[i+1]);
+			wdc_addtoinbuf(d, d->identify_struct[i+0]);
+		}
+		d->delayed_interrupt = INT_DELAY;
+		break;
+
+	case WDCC_IDLE_IMMED:
+		debug("[ wdc: IDLE_IMMED drive %i ]\n", d->drive);
+		/*  TODO: interrupt here?  */
+		d->delayed_interrupt = INT_DELAY;
+		break;
+
+	case WDCC_SETMULTI:
+		debug("[ wdc: SETMULTI drive %i ]\n", d->drive);
+		/*  TODO: interrupt here?  */
+		d->delayed_interrupt = INT_DELAY;
+		break;
+
+	case ATAPI_SOFT_RESET:
+		debug("[ wdc: ATAPI_SOFT_RESET drive %i ]\n", d->drive);
+		/*  TODO: interrupt here?  */
+		d->delayed_interrupt = INT_DELAY;
+		break;
+
+	case ATAPI_PKT_CMD:
+		debug("[ wdc: ATAPI_PKT_CMD drive %i ]\n", d->drive);
+		/*  TODO: interrupt here?  */
+		/*  d->delayed_interrupt = INT_DELAY;  */
+		d->atapi_cmd_in_progress = 1;
+		d->atapi_phase = PHASE_CMDOUT;
+		break;
+
+	/*  Unsupported commands, without warning:  */
+	case WDCC_SEC_SET_PASSWORD:
+	case WDCC_SEC_UNLOCK:
+	case WDCC_SEC_ERASE_PREPARE:
+	case WDCC_SEC_ERASE_UNIT:
+	case WDCC_SEC_FREEZE_LOCK:
+	case WDCC_SEC_DISABLE_PASSWORD:
+		d->error |= WDCE_ABRT;
+		break;
+
+	default:/*  TODO  */
+		d->error |= WDCE_ABRT;
+		fatal("[ wdc: WARNING! Unimplemented command 0x%02x (drive %i,"
+		    " head %i, cyl %i, sector %i, nsecs %i) ]\n",
+		    d->cur_command, d->drive, d->head, d->cyl_hi*256+d->cyl_lo,
+		    d->sector, d->seccnt);
+	}
 }
 
 
@@ -535,7 +662,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				d->atapi_st->cmd_len = 12;
 
 				if (scsi_cmd[0] == SCSIBLOCKCMD_READ_CAPACITY
-				    || scsi_cmd[0] == SCSICMD_READ_10)
+				    || scsi_cmd[0] == SCSICMD_READ_10
+				    || scsi_cmd[0] == SCSICMD_MODE_SENSE10)
 					d->atapi_st->cmd_len = 10;
 
 				res = diskimage_scsicommand(cpu,
@@ -625,11 +753,9 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_seccnt:	/*  2: sector count (or "ireason" for ATAPI)  */
 		if (writeflag == MEM_READ) {
 			odata = d->seccnt;
-#ifdef EXPERIMENTAL_ATAPI
 			if (d->atapi_cmd_in_progress) {
 				odata = d->atapi_phase & (WDCI_CMD | WDCI_IN);
 			}
-#endif
 			debug("[ wdc: read from SECCNT: 0x%02x ]\n",(int)odata);
 		} else {
 			d->seccnt = idata;
@@ -650,7 +776,6 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_cyl_lo:	/*  4: cylinder low  */
 		if (writeflag == MEM_READ) {
 			odata = d->cyl_lo;
-#ifdef EXPERIMENTAL_ATAPI
 			if (d->cur_command == COMMAND_RESET &&
 			    diskimage_is_a_cdrom(cpu->machine,
 			    d->drive + d->base_drive, DISKIMAGE_IDE))
@@ -661,7 +786,6 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 					x = 32768;
 				odata = x & 255;
 			}
-#endif
 			debug("[ wdc: read from CYL_LO: 0x%02x ]\n",(int)odata);
 		} else {
 			d->cyl_lo = idata;
@@ -672,7 +796,6 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_cyl_hi:	/*  5: cylinder high  */
 		if (writeflag == MEM_READ) {
 			odata = d->cyl_hi;
-#ifdef EXPERIMENTAL_ATAPI
 			if (d->cur_command == COMMAND_RESET &&
 			    diskimage_is_a_cdrom(cpu->machine,
 			    d->drive + d->base_drive, DISKIMAGE_IDE))
@@ -683,7 +806,6 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 					x = 32768;
 				odata = (x >> 8) & 255;
 			}
-#endif
 			debug("[ wdc: read from CYL_HI: 0x%02x ]\n",(int)odata);
 		} else {
 			d->cyl_hi = idata;
@@ -719,135 +841,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			d->delayed_interrupt = 0;
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n",(int)idata);
-			d->cur_command = idata;
-			d->atapi_cmd_in_progress = 0;
-
-			/*  TODO:  Is this correct behaviour?  */
-			if (!diskimage_exist(cpu->machine,
-			    d->drive + d->base_drive, DISKIMAGE_IDE)) {
-				d->error |= WDCE_ABRT;
-				d->delayed_interrupt = INT_DELAY;
-				break;
-			}
-
-			/*  Handle the command:  */
-			switch (d->cur_command) {
-
-			case WDCC_READ:
-			case WDCC_READMULTI:
-				if (!quiet_mode)
-					debug("[ wdc: READ from drive %i, head"
-					    " %i, cyl %i, sector %i, nsecs %i "
-					    "]\n", d->drive, d->head,
-					    d->cyl_hi*256+d->cyl_lo, d->sector,
-					    d->seccnt);
-				wdc__read(cpu, d);
-				break;
-
-			case WDCC_WRITE:
-			case WDCC_WRITEMULTI:
-				if (!quiet_mode)
-					debug("[ wdc: WRITE to drive %i, head"
-					    " %i, cyl %i, sector %i, nsecs %i"
-					    " ]\n", d->drive, d->head,
-					    d->cyl_hi*256+d->cyl_lo, d->sector,
-					    d->seccnt);
-				wdc__write(cpu, d);
-				break;
-
-			case WDCC_IDP:	/*  Initialize drive parameters  */
-				debug("[ wdc: IDP drive %i (TODO) ]\n",
-				    d->drive);
-				/*  TODO  */
-				d->delayed_interrupt = INT_DELAY;
-				break;
-
-			case SET_FEATURES:
-				debug("[ wdc: SET_FEATURES drive %i (TODO), "
-				    "feature 0x%02x ]\n", d->drive, d->precomp);
-				/*  TODO  */
-				switch (d->precomp) {
-				case WDSF_SET_MODE:
-					debug("[ wdc: WDSF_SET_MODE drive %i, "
-					    "pio/dma flags 0x%02x ]\n",
-					    d->drive, d->seccnt);
-					break;
-				default:
-					d->error |= WDCE_ABRT;
-				}
-				/*  TODO: always interrupt?  */
-				d->delayed_interrupt = INT_DELAY;
-				break;
-
-			case WDCC_RECAL:
-				debug("[ wdc: RECAL drive %i ]\n", d->drive);
-				d->delayed_interrupt = INT_DELAY;
-				break;
-
-			case WDCC_IDENTIFY:
-			case ATAPI_IDENTIFY_DEVICE:
-				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
-				wdc_initialize_identify_struct(cpu, d);
-				/*  The IDENTIFY data block is sent out
-				    in low/high byte order:  */
-				for (i=0; i<sizeof(d->identify_struct); i+=2) {
-					wdc_addtoinbuf(d, d->identify_struct
-					    [i+1]);
-					wdc_addtoinbuf(d, d->identify_struct
-					    [i+0]);
-				}
-				d->delayed_interrupt = INT_DELAY;
-				break;
-
-			case WDCC_IDLE_IMMED:
-				debug("[ wdc: IDLE_IMMED drive %i ]\n",
-				    d->drive);
-				/*  TODO: interrupt here?  */
-				d->delayed_interrupt = INT_DELAY;
-				break;
-
-			case WDCC_SETMULTI:
-				debug("[ wdc: SETMULTI drive %i ]\n", d->drive);
-				/*  TODO: interrupt here?  */
-				d->delayed_interrupt = INT_DELAY;
-				break;
-
-			case ATAPI_SOFT_RESET:
-				debug("[ wdc: ATAPI_SOFT_RESET drive %i ]\n",
-				    d->drive);
-				/*  TODO: interrupt here?  */
-				d->delayed_interrupt = INT_DELAY;
-				break;
-
-			case ATAPI_PKT_CMD:
-				debug("[ wdc: ATAPI_PKT_CMD drive %i ]\n",
-				    d->drive);
-				/*  TODO: interrupt here?  */
-				/*  d->delayed_interrupt = INT_DELAY;  */
-				d->atapi_cmd_in_progress = 1;
-				d->atapi_phase = PHASE_CMDOUT;
-				break;
-
-			/*  Unsupported commands, without warning:  */
-			case WDCC_SEC_SET_PASSWORD:
-			case WDCC_SEC_UNLOCK:
-			case WDCC_SEC_ERASE_PREPARE:
-			case WDCC_SEC_ERASE_UNIT:
-			case WDCC_SEC_FREEZE_LOCK:
-			case WDCC_SEC_DISABLE_PASSWORD:
-				d->error |= WDCE_ABRT;
-				break;
-
-			default:
-				/*  TODO  */
-				d->error |= WDCE_ABRT;
-
-				fatal("[ wdc: WARNING! Unimplemented command "
-				    "0x%02x (drive %i, head %i, cyl %i, sector"
-				    " %i, nsecs %i) ]\n", d->cur_command,
-				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo,
-				    d->sector, d->seccnt);
-			}
+			wdc_command(cpu, d, idata);
 		}
 		break;
 

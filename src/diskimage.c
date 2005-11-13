@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.99 2005-11-05 17:56:45 debug Exp $
+ *  $Id: diskimage.c,v 1.100 2005-11-13 02:21:59 debug Exp $
  *
  *  Disk image support.
  *
@@ -480,7 +480,7 @@ int diskimage_scsicommand(struct cpu *cpu, int id, int type,
 	struct scsi_transfer *xferp)
 {
 	char namebuf[16];
-	int retlen, i;
+	int retlen, i, q;
 	uint64_t size;
 	int64_t ofs;
 	int pagecode;
@@ -707,13 +707,17 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		break;
 
 	case SCSICMD_MODE_SENSE:
+	case SCSICMD_MODE_SENSE10:	
 		debug("MODE_SENSE");
-
-		if (xferp->cmd_len != 6)
-			fatal(" (unimplemented mode_sense len=%i)",
+		q = 4; retlen = xferp->cmd[4];
+		switch (xferp->cmd_len) {
+		case 6:	break;
+		case 10:q = 8;
+			retlen = xferp->cmd[7] * 256 + xferp->cmd[8];
+			break;
+		default:fatal(" (unimplemented mode_sense len=%i)",
 			    xferp->cmd_len);
-
-		retlen = xferp->cmd[4];
+		}
 
 		/*
 		 *  NOTE/TODO: This code doesn't handle too short retlens
@@ -748,15 +752,15 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[3] = 8 * 1;	/*  block descriptor
 						    length: 1 page (?)  */
 
-		/*  TODO: update this when implementing 10-byte commands:  */
-		xferp->data_in[4] = 0x00;	/*  density code  */
-		xferp->data_in[5] = 0;		/*  nr of blocks, high  */
-		xferp->data_in[6] = 0;		/*  nr of blocks, mid  */
-		xferp->data_in[7] = 0;		/*  nr of blocks, low */
-		xferp->data_in[8] = 0x00;	/*  reserved  */
-		xferp->data_in[9] = (d->logical_block_size >> 16) & 255;
-		xferp->data_in[10] = (d->logical_block_size >> 8) & 255;
-		xferp->data_in[11] = d->logical_block_size & 255;
+		xferp->data_in[q+0] = 0x00;	/*  density code  */
+		xferp->data_in[q+1] = 0;	/*  nr of blocks, high  */
+		xferp->data_in[q+2] = 0;	/*  nr of blocks, mid  */
+		xferp->data_in[q+3] = 0;	/*  nr of blocks, low */
+		xferp->data_in[q+4] = 0x00;	/*  reserved  */
+		xferp->data_in[q+5] = (d->logical_block_size >> 16) & 255;
+		xferp->data_in[q+6] = (d->logical_block_size >> 8) & 255;
+		xferp->data_in[q+7] = d->logical_block_size & 255;
+		q += 8;
 
 		diskimage__return_default_status_and_message(xferp);
 
@@ -768,54 +772,54 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			/*  TODO: Nothing here?  */
 			break;
 		case 1:		/*  read-write error recovery page  */
-			xferp->data_in[12 + 0] = pagecode;
-			xferp->data_in[12 + 1] = 10;
+			xferp->data_in[q + 0] = pagecode;
+			xferp->data_in[q + 1] = 10;
 			break;
 		case 3:		/*  format device page  */
-			xferp->data_in[12 + 0] = pagecode;
-			xferp->data_in[12 + 1] = 22;
+			xferp->data_in[q + 0] = pagecode;
+			xferp->data_in[q + 1] = 22;
 
 			/*  10,11 = sectors per track  */
-			xferp->data_in[12 + 10] = 0;
-			xferp->data_in[12 + 11] = d->sectors_per_track;
+			xferp->data_in[q + 10] = 0;
+			xferp->data_in[q + 11] = d->sectors_per_track;
 
 			/*  12,13 = physical sector size  */
-			xferp->data_in[12 + 12] =
+			xferp->data_in[q + 12] =
 			    (d->logical_block_size >> 8) & 255;
-			xferp->data_in[12 + 13] = d->logical_block_size & 255;
+			xferp->data_in[q + 13] = d->logical_block_size & 255;
 			break;
 		case 4:		/*  rigid disk geometry page  */
-			xferp->data_in[12 + 0] = pagecode;
-			xferp->data_in[12 + 1] = 22;
-			xferp->data_in[12 + 2] = (d->ncyls >> 16) & 255;
-			xferp->data_in[12 + 3] = (d->ncyls >> 8) & 255;
-			xferp->data_in[12 + 4] = d->ncyls & 255;
-			xferp->data_in[12 + 5] = d->heads;
+			xferp->data_in[q + 0] = pagecode;
+			xferp->data_in[q + 1] = 22;
+			xferp->data_in[q + 2] = (d->ncyls >> 16) & 255;
+			xferp->data_in[q + 3] = (d->ncyls >> 8) & 255;
+			xferp->data_in[q + 4] = d->ncyls & 255;
+			xferp->data_in[q + 5] = d->heads;
 
-			xferp->data_in[12 + 20] = (d->rpms >> 8) & 255;
-			xferp->data_in[12 + 21] = d->rpms & 255;
+			xferp->data_in[q + 20] = (d->rpms >> 8) & 255;
+			xferp->data_in[q + 21] = d->rpms & 255;
 			break;
 		case 5:		/*  flexible disk page  */
-			xferp->data_in[12 + 0] = pagecode;
-			xferp->data_in[12 + 1] = 0x1e;
+			xferp->data_in[q + 0] = pagecode;
+			xferp->data_in[q + 1] = 0x1e;
 
 			/*  2,3 = transfer rate  */
-			xferp->data_in[12 + 2] = ((5000) >> 8) & 255;
-			xferp->data_in[12 + 3] = (5000) & 255;
+			xferp->data_in[q + 2] = ((5000) >> 8) & 255;
+			xferp->data_in[q + 3] = (5000) & 255;
 
-			xferp->data_in[12 + 4] = d->heads;
-			xferp->data_in[12 + 5] = d->sectors_per_track;
+			xferp->data_in[q + 4] = d->heads;
+			xferp->data_in[q + 5] = d->sectors_per_track;
 
 			/*  6,7 = data bytes per sector  */
-			xferp->data_in[12 + 6] = (d->logical_block_size >> 8)
+			xferp->data_in[q + 6] = (d->logical_block_size >> 8)
 			    & 255;
-			xferp->data_in[12 + 7] = d->logical_block_size & 255;
+			xferp->data_in[q + 7] = d->logical_block_size & 255;
 
-			xferp->data_in[12 + 8] = (d->ncyls >> 8) & 255;
-			xferp->data_in[12 + 9] = d->ncyls & 255;
+			xferp->data_in[q + 8] = (d->ncyls >> 8) & 255;
+			xferp->data_in[q + 9] = d->ncyls & 255;
 
-			xferp->data_in[12 + 28] = (d->rpms >> 8) & 255;
-			xferp->data_in[12 + 29] = d->rpms & 255;
+			xferp->data_in[q + 28] = (d->rpms >> 8) & 255;
+			xferp->data_in[q + 29] = d->rpms & 255;
 			break;
 		default:
 			fatal("[ MODE_SENSE for page %i is not yet "
@@ -1229,7 +1233,18 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		scsi_transfer_allocbuf(&xferp->data_in_len,
 		    &xferp->data_in, retlen, 1);
 
-		/*  TODO  */
+		xferp->data_in[0] = 0;
+		xferp->data_in[1] = 10;
+		xferp->data_in[2] = 0;		/*  First track.  */
+		xferp->data_in[3] = 0;		/*  Last track.  */
+
+		/*  Track 0 data:  */
+		xferp->data_in[4] = 0x00;	/*  Reserved.  */
+		xferp->data_in[5] = 0x04;	/*  ADR + CTRL:
+						    Data, not audio  */
+		xferp->data_in[6] = 0x00;	/*  Track nr  */
+		xferp->data_in[7] = 0x00;	/*  Reserved  */
+		/*  8..11 = absolute CDROM address  */
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -1282,18 +1297,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		diskimage__return_default_status_and_message(xferp);
 		break;
 
-	case 0x1e:
-		debug("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
-
-		/*  TODO  */
-
-		diskimage__return_default_status_and_message(xferp);
-		break;
-
-	case 0x5a:
-		debug("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
-
-		/*  TODO  */
+	case SCSICMD_PREVENT_ALLOW_REMOVE:
+		debug("[ SCSI 0x%02x Prevent/allow medium removal: "
+		    "TODO ]\n", xferp->cmd[0]);
 
 		diskimage__return_default_status_and_message(xferp);
 		break;

@@ -1,4 +1,8 @@
-$Id: BUGS,v 1.36 2005-08-15 07:01:55 debug Exp $
+$Id: BUGS,v 1.37 2005-11-13 12:34:02 debug Exp $
+
+Hm. This file is pretty old. Some of these are still valid, though.
+
+===================================================================
 
   x)  An unknown math coprocessor bug. (Ultrix' dxclock sometimes looks
       weird.)

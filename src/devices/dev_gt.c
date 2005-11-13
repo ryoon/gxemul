@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.33 2005-11-12 23:41:39 debug Exp $
+ *  $Id: dev_gt.c,v 1.34 2005-11-13 00:14:09 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -217,7 +217,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	    d->type == PCI_PRODUCT_GALILEO_GT64011? "gt64011" : "gt64120");
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH,
-	    dev_gt_access, d, MEM_DEFAULT, NULL);
+	    dev_gt_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_gt_tick, d, TICK_SHIFT);
 
 	return d->pci_data;

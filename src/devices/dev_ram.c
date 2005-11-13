@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.19 2005-10-25 15:51:04 debug Exp $
+ *  $Id: dev_ram.c,v 1.20 2005-11-13 00:14:09 debug Exp $
  *  
  *  A generic RAM (memory) device. Can also be used to mirror/alias another
  *  part of RAM.
@@ -113,7 +113,7 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 	int mode, uint64_t otheraddress)
 {
 	struct ram_data *d;
-	int flags = MEM_DEFAULT, points_to_ram = 1;
+	int flags = DM_DEFAULT, points_to_ram = 1;
 
 	d = malloc(sizeof(struct ram_data));
 	if (d == NULL) {
@@ -137,7 +137,7 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 		/*
 		 *  Calculate the amount that the mirror memory is offset from
 		 *  the real (physical) memory. This is used in src/memory_rw.c
-		 *  with dyntrans accesses if MEM_EMULATED_RAM is set.
+		 *  with dyntrans accesses if DM_EMULATED_RAM is set.
 		 */
 		d->offset = baseaddr - otheraddress;
 
@@ -146,12 +146,12 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 		    (baseaddr & (machine->arch_pagesize-1)) == 0 &&
 		    (otheraddress & (machine->arch_pagesize - 1)) == 0 &&
 		    (length & (machine->arch_pagesize - 1)) == 0)
-			flags |= MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK
-			    | MEM_EMULATED_RAM;
+			flags |= DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK
+			    | DM_EMULATED_RAM;
 
 		memory_device_register(machine->memory, "ram [mirror]",
 		    baseaddr, length, dev_ram_access, d, flags
-		    | MEM_READING_HAS_NO_SIDE_EFFECTS, (void *) &d->offset);
+		    | DM_READS_HAVE_NO_SIDE_EFFECTS, (void *) &d->offset);
 		break;
 
 	case DEV_RAM_RAM:
@@ -175,11 +175,11 @@ void dev_ram_init(struct machine *machine, uint64_t baseaddr, uint64_t length,
 		/*  Aligned memory? Then it works with dyntrans.  */
 		if ((baseaddr & (machine->arch_pagesize - 1)) == 0 &&
 		    (length & (machine->arch_pagesize - 1)) == 0)
-			flags |= MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK;
+			flags |= DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK;
 
 		memory_device_register(machine->memory, "ram", baseaddr,
 		    d->length, dev_ram_access, d, flags
-		    | MEM_READING_HAS_NO_SIDE_EFFECTS, d->data);
+		    | DM_READS_HAVE_NO_SIDE_EFFECTS, d->data);
 		break;
 
 	default:

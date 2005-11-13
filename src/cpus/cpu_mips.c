@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.7 2005-11-11 13:22:10 debug Exp $
+ *  $Id: cpu_mips.c,v 1.8 2005-11-13 00:14:07 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4147,7 +4147,9 @@ void mips_cpu_list_available_types(void)
 }
 
 
-CPU_FAMILY_INIT(mips,"MIPS")
+/*  NOTE: _OLD_ family init. TODO: remove all this  */
+
+CPU_OLD_FAMILY_INIT(mips,"MIPS")
 
 
 #endif	/*  ENABLE_MIPS  */

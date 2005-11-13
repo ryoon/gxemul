@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.4 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_i80321.c,v 1.5 2005-11-13 00:14:09 debug Exp $
  *
  *  i80321.  TODO: This is just a dummy so far.
  */
@@ -131,7 +131,7 @@ int devinit_i80321(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_I80321_LENGTH,
-	    dev_i80321_access, d, MEM_DEFAULT, NULL);
+	    dev_i80321_access, d, DM_DEFAULT, NULL);
 
 	return 1;
 }

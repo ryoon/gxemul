@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.75 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_asc.c,v 1.76 2005-11-13 00:14:08 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -1279,16 +1279,16 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 	memory_device_register(mem, "asc", baseaddr,
 	    mode == DEV_ASC_PICA?
 		DEV_ASC_PICA_LENGTH : DEV_ASC_DEC_LENGTH,
-	    dev_asc_access, d, MEM_DEFAULT, NULL);
+	    dev_asc_access, d, DM_DEFAULT, NULL);
 
 	if (mode == DEV_ASC_DEC) {
 		memory_device_register(mem, "asc_dma_address_reg",
 		    baseaddr + 0x40000, 4096, dev_asc_address_reg_access, d,
-		    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK,
+		    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK,
 		    (unsigned char *)&d->dma_address_reg_memory[0]);
 		memory_device_register(mem, "asc_dma", baseaddr + 0x80000,
 		    ASC_DMA_SIZE, dev_asc_dma_access, d,
-		    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK, d->dma);
+		    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK, d->dma);
 	}
 
 	machine_add_tickfunction(machine, dev_asc_tick, d, ASC_TICK_SHIFT);

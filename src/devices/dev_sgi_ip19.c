@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.14 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.15 2005-11-13 00:14:09 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -127,7 +127,7 @@ int devinit_sgi_ip19(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_SGI_IP19_LENGTH,
-	    dev_sgi_ip19_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sgi_ip19_access, (void *)d, DM_DEFAULT, NULL);
 
 	return 1;
 }

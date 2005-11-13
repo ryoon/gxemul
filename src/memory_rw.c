@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.77 2005-11-11 13:23:15 debug Exp $
+ *  $Id: memory_rw.c,v 1.78 2005-11-13 00:14:06 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -48,7 +48,7 @@
  *			a placeholder for data when reading from memory
  *	len		the length of the 'data' buffer
  *	writeflag	set to MEM_READ or MEM_WRITE
- *	cache_flags	CACHE_{NONE,DATA,INSTRUCTION} | other flags
+ *	misc_flags	CACHE_{NONE,DATA,INSTRUCTION} | other flags
  *
  *  If the address indicates access to a memory mapped device, that device'
  *  read/write access function is called.
@@ -66,7 +66,7 @@
  *  (MEMORY_ACCESS_FAILED is 0.)
  */
 int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
-	unsigned char *data, size_t len, int writeflag, int cache_flags)
+	unsigned char *data, size_t len, int writeflag, int misc_flags)
 {
 #ifdef MEM_ALPHA
 	const int offset_mask = 0x1fff;
@@ -85,24 +85,24 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 	int bintrans_device_danger = 0;
 
-	no_exceptions = cache_flags & NO_EXCEPTIONS;
-	cache = cache_flags & CACHE_FLAGS_MASK;
+	no_exceptions = misc_flags & NO_EXCEPTIONS;
+	cache = misc_flags & CACHE_FLAGS_MASK;
 
 #ifdef MEM_X86
 	/*  Real-mode wrap-around:  */
-	if (REAL_MODE && !(cache_flags & PHYSICAL)) {
+	if (REAL_MODE && !(misc_flags & PHYSICAL)) {
 		if ((vaddr & 0xffff) + len > 0x10000) {
 			/*  Do one byte at a time:  */
 			int res = 0, i;
 			for (i=0; i<len; i++)
 				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
-				    writeflag, cache_flags);
+				    writeflag, misc_flags);
 			return res;
 		}
 	}
 
 	/*  Crossing a page boundary? Then do one byte at a time:  */
-	if ((vaddr & 0xfff) + len > 0x1000 && !(cache_flags & PHYSICAL)
+	if ((vaddr & 0xfff) + len > 0x1000 && !(misc_flags & PHYSICAL)
 	    && cpu->cd.x86.cr[0] & X86_CR0_PG) {
 		/*  For WRITES: Read ALL BYTES FIRST and write them back!!!
 		    Then do a write of all the new bytes. This is to make sure
@@ -113,17 +113,17 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 			unsigned char tmp;
 			for (i=0; i<len; i++) {
 				res = MEMORY_RW(cpu, mem, vaddr+i, &tmp, 1,
-				    MEM_READ, cache_flags);
+				    MEM_READ, misc_flags);
 				if (!res)
 					return 0;
 				res = MEMORY_RW(cpu, mem, vaddr+i, &tmp, 1,
-				    MEM_WRITE, cache_flags);
+				    MEM_WRITE, misc_flags);
 				if (!res)
 					return 0;
 			}
 			for (i=0; i<len; i++) {
 				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
-				    MEM_WRITE, cache_flags);
+				    MEM_WRITE, misc_flags);
 				if (!res)
 					return 0;
 			}
@@ -131,7 +131,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 			for (i=0; i<len; i++) {
 				/*  Do one byte at a time:  */
 				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
-				    writeflag, cache_flags);
+				    writeflag, misc_flags);
 				if (!res) {
 					if (cache == CACHE_INSTRUCTION) {
 						fatal("FAILED instruction "
@@ -184,7 +184,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 #endif	/*  MEM_MIPS  */
 
-	if (cache_flags & PHYSICAL || cpu->translate_address == NULL) {
+	if (misc_flags & PHYSICAL || cpu->translate_address == NULL) {
 		paddr = vaddr;
 
 #ifdef MEM_ALPHA
@@ -210,10 +210,10 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		    (writeflag? FLAG_WRITEFLAG : 0) +
 		    (no_exceptions? FLAG_NOEXCEPTIONS : 0)
 #ifdef MEM_X86
-		    + (cache_flags & NO_SEGMENTATION)
+		    + (misc_flags & NO_SEGMENTATION)
 #endif
 #ifdef MEM_ARM
-		    + (cache_flags & MEMORY_USER_ACCESS)
+		    + (misc_flags & MEMORY_USER_ACCESS)
 #endif
 		    + (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
 		/*  If the translation caused an exception, or was invalid in
@@ -226,7 +226,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 #ifdef MEM_X86
 	/*  DOS debugging :-)  */
-	if (!quiet_mode && !(cache_flags & PHYSICAL)) {
+	if (!quiet_mode && !(misc_flags & PHYSICAL)) {
 		if (paddr >= 0x400 && paddr <= 0x4ff)
 			debug("{ PC BIOS DATA AREA: %s 0x%x }\n", writeflag ==
 			    MEM_WRITE? "writing to" : "reading from",
@@ -330,12 +330,12 @@ have_paddr:
 
 				if (cpu->update_translation_table != NULL &&
 				    !(ok & MEMORY_NOT_FULL_PAGE) &&
-				    mem->dev_flags[i] & MEM_DYNTRANS_OK) {
+				    mem->dev_flags[i] & DM_DYNTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 					unsigned char *host_addr;
 
 					if (!(mem->dev_flags[i] &
-					    MEM_DYNTRANS_WRITE_OK))
+					    DM_DYNTRANS_WRITE_OK))
 						wf = 0;
 
 					if (writeflag && wf) {
@@ -354,7 +354,7 @@ have_paddr:
 					}
 
 					if (mem->dev_flags[i] &
-					    MEM_EMULATED_RAM) {
+					    DM_EMULATED_RAM) {
 						/*  MEM_WRITE to force the page
 						    to be allocated, if it
 						    wasn't already  */
@@ -379,7 +379,7 @@ have_paddr:
 
 				res = 0;
 				if (!no_exceptions || (mem->dev_flags[i] &
-				    MEM_READING_HAS_NO_SIDE_EFFECTS))
+				    DM_READS_HAVE_NO_SIDE_EFFECTS))
 					res = mem->dev_f[i](cpu, mem, paddr,
 					    data, len, writeflag,
 					    mem->dev_extra[i]);
@@ -430,7 +430,7 @@ have_paddr:
 	switch (cpu->cd.mips.cpu_type.mmu_model) {
 	case MMU3K:
 		/*  if not uncached addess  (TODO: generalize this)  */
-		if (!(cache_flags & PHYSICAL) && cache != CACHE_NONE &&
+		if (!(misc_flags & PHYSICAL) && cache != CACHE_NONE &&
 		    !((vaddr & 0xffffffffULL) >= 0xa0000000ULL &&
 		      (vaddr & 0xffffffffULL) <= 0xbfffffffULL)) {
 			if (memory_cache_R3000(cpu, cache, paddr,
@@ -590,7 +590,7 @@ have_paddr:
 
 	if (cpu->update_translation_table != NULL && !bintrans_device_danger
 #ifndef MEM_MIPS
-/*	    && !(cache_flags & MEMORY_USER_ACCESS)  */
+/*	    && !(misc_flags & MEMORY_USER_ACCESS)  */
 #ifndef MEM_USERLAND
 	    && !(ok & MEMORY_NOT_FULL_PAGE)
 #endif
@@ -598,7 +598,7 @@ have_paddr:
 	    && !no_exceptions)
 		cpu->update_translation_table(cpu, vaddr & ~offset_mask,
 		    memblock + (offset & ~offset_mask),
-		    (cache_flags & MEMORY_USER_ACCESS) |
+		    (misc_flags & MEMORY_USER_ACCESS) |
 #ifndef MEM_MIPS
 		    (cache == CACHE_INSTRUCTION? TLB_CODE : 0) |
 #endif

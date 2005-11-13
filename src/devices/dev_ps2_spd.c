@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_spd.c,v 1.12 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_ps2_spd.c,v 1.13 2005-11-13 00:14:09 debug Exp $
  *  
  *  Playstation 2 "SPD" harddisk controller.
  *
@@ -114,7 +114,7 @@ void dev_ps2_spd_init(struct machine *machine, struct memory *mem,
 	d->wdcaddr = baseaddr + DEV_PS2_SPD_LENGTH;
 
 	memory_device_register(mem, "ps2_spd", baseaddr, DEV_PS2_SPD_LENGTH,
-	    dev_ps2_spd_access, d, MEM_DEFAULT, NULL);
+	    dev_ps2_spd_access, d, DM_DEFAULT, NULL);
 
 	/*  Register a generic wdc device at a bogus address:  */
 	/*  (irq 8 + 32 + 0 means SBUS/PCMCIA)  */

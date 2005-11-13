@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.75 2005-10-09 22:21:31 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.76 2005-11-13 00:14:09 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -627,7 +627,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 
 	if (access_style == MC146818_ARC_JAZZ)
 		memory_device_register(mem, "mc146818_jazz", 0x90000070ULL,
-		    1, dev_mc146818_jazz_access, d, MEM_DEFAULT, NULL);
+		    1, dev_mc146818_jazz_access, d, DM_DEFAULT, NULL);
 
 	dev_len = DEV_MC146818_LENGTH;
 	switch (access_style) {
@@ -641,7 +641,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "mc146818", baseaddr,
 	    dev_len * addrdiv, dev_mc146818_access,
-	    d, MEM_DEFAULT, NULL);
+	    d, DM_DEFAULT, NULL);
 
 	mc146818_update_time(d);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.43 2005-10-31 16:10:23 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.44 2005-11-13 00:14:09 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -358,7 +358,7 @@ int devinit_ns16550(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, name, devinit->addr,
 	    DEV_NS16550_LENGTH * d->addrmult, dev_ns16550_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine,
 	    dev_ns16550_tick, d, TICK_SHIFT);
 

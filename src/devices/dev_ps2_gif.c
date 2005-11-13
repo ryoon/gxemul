@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.29 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.30 2005-11-13 00:14:09 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -412,7 +412,7 @@ int devinit_ps2_gif(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_PS2_GIF_LENGTH, dev_ps2_gif_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	return 1;
 }

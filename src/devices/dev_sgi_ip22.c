@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.25 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.26 2005-11-13 00:14:09 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -436,17 +436,17 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct machine *machine,
 	d->guiness_flag = guiness_flag;
 
 	memory_device_register(mem, "sgi_ip22", baseaddr, DEV_SGI_IP22_LENGTH,
-	    dev_sgi_ip22_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sgi_ip22_access, (void *)d, DM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip22_sysid", 0x1fbd9858, 0x8,
-	    dev_sgi_ip22_sysid_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sgi_ip22_sysid_access, (void *)d, DM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip22_imc", IP22_IMC_BASE,
 	    DEV_SGI_IP22_IMC_LENGTH, dev_sgi_ip22_imc_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip22_unknown", 0x1fa01000, 0x10,
-	    dev_sgi_ip22_unknown_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sgi_ip22_unknown_access, (void *)d, DM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip22_unknown2", IP22_UNKNOWN2_BASE,
 	    DEV_SGI_IP22_UNKNOWN2_LENGTH, dev_sgi_ip22_unknown2_access,
-	    (void *)d, MEM_DEFAULT, NULL);
+	    (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_sgi_ip22_tick, d,
 	    SGI_IP22_TICK_SHIFT);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.19 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_jazz.c,v 1.20 2005-11-13 00:14:09 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -520,22 +520,22 @@ int devinit_jazz(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, "jazz",
 	    devinit->addr, DEV_JAZZ_LENGTH,
-	    dev_jazz_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_jazz_access, (void *)d, DM_DEFAULT, NULL);
 
 	/*  At least for Magnum and Pica-61:  */
 	memory_device_register(devinit->machine->memory, "jazz_led",
 	    0x08000f000ULL, 4, dev_jazz_led_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, "jazz_isa_20",
-	    0x90000020ULL, 2, dev_jazz_access_20, (void *)d, MEM_DEFAULT, NULL);
+	    0x90000020ULL, 2, dev_jazz_access_20, (void *)d, DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, "jazz_isa_a0",
-	    0x900000a0ULL, 2, dev_jazz_access_a0, (void *)d, MEM_DEFAULT, NULL);
+	    0x900000a0ULL, 2, dev_jazz_access_a0, (void *)d, DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, "pica_jazzio",
 	    0xf0000000ULL, 4, dev_jazz_access_jazzio, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_jazz_tick,
 	    d, DEV_JAZZ_TICKSHIFT);

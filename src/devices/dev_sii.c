@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.14 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sii.c,v 1.15 2005-11-13 00:14:10 debug Exp $
  *  
  *  SII SCSI controller, used in some DECstation systems.
  *
@@ -465,7 +465,7 @@ void dev_sii_init(struct machine *machine, struct memory *mem,
 	d->regs = (uint16_t *) &d->siiregs;
 
 	memory_device_register(mem, "sii", baseaddr, DEV_SII_LENGTH,
-	    dev_sii_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sii_access, (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_sii_tick, d, SII_TICK_SHIFT);
 }

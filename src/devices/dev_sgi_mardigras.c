@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.19 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.20 2005-11-13 00:14:10 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -320,7 +320,7 @@ int devinit_sgi_mardigras(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_SGI_MARDIGRAS_LENGTH, dev_sgi_mardigras_access,
-	    d, MEM_DEFAULT, NULL);
+	    d, DM_DEFAULT, NULL);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.16 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.17 2005-11-13 00:14:09 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -236,6 +236,6 @@ void dev_pmagja_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "pmagja", baseaddr + PMAGJA_FIRSTOFFSET,
 	    DEV_PMAGJA_LENGTH - PMAGJA_FIRSTOFFSET, dev_pmagja_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 }
 

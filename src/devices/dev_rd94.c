@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.27 2005-11-12 23:41:39 debug Exp $
+ *  $Id: dev_rd94.c,v 1.28 2005-11-13 00:14:09 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -217,7 +217,7 @@ int devinit_rd94(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_RD94_LENGTH,
-	    dev_rd94_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_rd94_access, (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_rd94_tick,
 	    d, RD94_TICK_SHIFT);

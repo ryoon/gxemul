@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt431.c,v 1.9 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_bt431.c,v 1.10 2005-11-13 00:14:08 debug Exp $
  *  
  *  Brooktree 431, used by TURBOchannel graphics cards.
  *
@@ -216,6 +216,6 @@ void dev_bt431_init(struct memory *mem, uint64_t baseaddr,
 	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
 
 	memory_device_register(mem, "bt431", baseaddr, DEV_BT431_LENGTH,
-	    dev_bt431_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_bt431_access, (void *)d, DM_DEFAULT, NULL);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.16 2005-11-02 20:04:11 debug Exp $
+ *  $Id: dev_8259.c,v 1.17 2005-11-13 00:14:08 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -282,7 +282,7 @@ int devinit_8259(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, name2,
 	    devinit->addr, DEV_8259_LENGTH, dev_8259_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	devinit->return_ptr = d;
 	return 1;

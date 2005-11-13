@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.7 2005-11-12 11:34:30 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.8 2005-11-13 00:14:08 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -331,7 +331,7 @@ int devinit_dec21143(struct devinit *devinit)
 	    d->mac[4], d->mac[5]);
 
 	memory_device_register(devinit->machine->memory, name2,
-	    devinit->addr, 0x100, dev_dec21143_access, d, MEM_DEFAULT, NULL);
+	    devinit->addr, 0x100, dev_dec21143_access, d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine,
 	    dev_dec21143_tick, d, DEC21143_TICK_SHIFT);

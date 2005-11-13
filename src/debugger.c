@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.124 2005-11-11 07:31:30 debug Exp $
+ *  $Id: debugger.c,v 1.125 2005-11-13 00:14:06 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -556,9 +556,9 @@ static void debugger_cmd_device(struct machine *m, char *cmd_line)
 			    (long long)mem->dev_length[i]);
 			if (mem->dev_flags[i]) {
 				printf(" (");
-				if (mem->dev_flags[i] & MEM_DYNTRANS_OK)
+				if (mem->dev_flags[i] & DM_DYNTRANS_OK)
 					printf("DYNTRANS R");
-				if (mem->dev_flags[i] & MEM_DYNTRANS_WRITE_OK)
+				if (mem->dev_flags[i] & DM_DYNTRANS_WRITE_OK)
 					printf("+W");
 				printf(")");
 			}

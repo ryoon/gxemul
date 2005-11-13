@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.63 2005-10-07 15:10:00 debug Exp $
+$Id: technical.html,v 1.64 2005-11-13 00:14:05 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -374,7 +374,7 @@ actually compile and run.)
         
 	        memory_device_register(devinit->machine->memory, devinit->name,
 	            devinit->addr, DEV_FOO_LENGTH,
-	            dev_foo_access, (void *)d, MEM_DEFAULT, NULL);
+	            dev_foo_access, (void *)d, DM_DEFAULT, NULL);
         
 		/*  This should only be here if the device
 		    has a tick function:  */

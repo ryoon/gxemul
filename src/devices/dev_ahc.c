@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ahc.c,v 1.1 2005-11-08 11:01:46 debug Exp $
+ *  $Id: dev_ahc.c,v 1.2 2005-11-13 00:14:08 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -214,7 +214,7 @@ int devinit_ahc(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_AHC_LENGTH, dev_ahc_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn220.c,v 1.4 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_kn220.c,v 1.5 2005-11-13 00:14:09 debug Exp $
  *  
  *  DEC KN220 (DECsystem 5500) devices.
  *
@@ -165,7 +165,7 @@ void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	d->irq_nr = irq_nr;
 
 	memory_device_register(mem, "sgec", baseaddr, DEV_SGEC_LENGTH,
-	    dev_sgec_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sgec_access, (void *)d, DM_DEFAULT, NULL);
 }
 
 
@@ -185,7 +185,7 @@ struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu,
 
 	memory_device_register(mem, "dec5500_ioboard", baseaddr,
 	    DEV_DEC5500_IOBOARD_LENGTH, dev_dec5500_ioboard_access,
-	    (void *)d, MEM_DEFAULT, NULL);
+	    (void *)d, DM_DEFAULT, NULL);
 
 	return d;
 }

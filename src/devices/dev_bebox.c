@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.4 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_bebox.c,v 1.5 2005-11-13 00:14:08 debug Exp $
  *
  *  Emulation of BeBox motherboard registers. See the following URL for more
  *  information:
@@ -113,7 +113,7 @@ int devinit_bebox(struct devinit *devinit)
 	memset(d, 0, sizeof(struct bebox_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    0x7ffff000, 0x500, dev_bebox_access, d, MEM_DEFAULT, NULL);
+	    0x7ffff000, 0x500, dev_bebox_access, d, DM_DEFAULT, NULL);
 
 	return 1;
 }

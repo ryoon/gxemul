@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sfb.c,v 1.7 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sfb.c,v 1.8 2005-11-13 00:14:09 debug Exp $
  *  
  *  SFB TURBOchannel framebuffer.
  *
@@ -114,6 +114,6 @@ void dev_sfb_init(struct machine *machine, struct memory *mem,
 	d->reg[(SFB_VVERTICAL - SFB_ASIC_OFFSET) / 4]   = SFB_YSIZE;
 
 	memory_device_register(mem, "sfb", baseaddr, SFB_REG_SIZE,
-	    dev_sfb_access, d, MEM_DEFAULT, NULL);
+	    dev_sfb_access, d, DM_DEFAULT, NULL);
 }
 

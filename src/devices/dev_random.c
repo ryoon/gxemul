@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_random.c,v 1.1 2005-02-25 06:14:30 debug Exp $
+ *  $Id: dev_random.c,v 1.2 2005-11-13 00:14:09 debug Exp $
  *  
  *  A simple device which returns random data for all reads, and discards all
  *  writes.
@@ -67,7 +67,7 @@ int devinit_random(struct devinit *devinit)
 {
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr, devinit->len,
-	    dev_random_access, NULL, MEM_DEFAULT, NULL);
+	    dev_random_access, NULL, DM_DEFAULT, NULL);
 
 	return 1;
 }

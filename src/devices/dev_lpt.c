@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.4 2005-11-12 11:34:30 debug Exp $
+ *  $Id: dev_lpt.c,v 1.5 2005-11-13 00:14:09 debug Exp $
  *
  *  LPT (parallel printer) controller.
  */
@@ -152,7 +152,7 @@ int devinit_lpt(struct devinit *devinit)
 		snprintf(name, nlen, "%s", devinit->name);
 
 	memory_device_register(devinit->machine->memory, name, devinit->addr,
-	    DEV_LPT_LENGTH, dev_lpt_access, d, MEM_DEFAULT, NULL);
+	    DEV_LPT_LENGTH, dev_lpt_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_lpt_tick, d, TICK_SHIFT);
 
 	/*

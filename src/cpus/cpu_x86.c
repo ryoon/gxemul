@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.4 2005-11-05 13:39:39 debug Exp $
+ *  $Id: cpu_x86.c,v 1.5 2005-11-13 00:14:07 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -458,32 +458,6 @@ void x86_cpu_register_match(struct machine *m, char *name,
 		*mr = 1;
 		return;
 	}
-}
-
-
-/*
- *  x86_cpu_show_full_statistics():
- *
- *  Show detailed statistics on opcode usage on each cpu.
- */
-void x86_cpu_show_full_statistics(struct machine *m)
-{
-	fatal("x86_cpu_show_full_statistics(): TODO\n");
-}
-
-
-/*
- *  x86_cpu_tlbdump():
- *
- *  Called from the debugger to dump the TLB in a readable format.
- *  x is the cpu number to dump, or -1 to dump all CPUs.
- *
- *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
- *  just dumped.
- */
-void x86_cpu_tlbdump(struct machine *m, int x, int rawflag)
-{
-	fatal("ppc_cpu_tlbdump(): TODO\n");
 }
 
 

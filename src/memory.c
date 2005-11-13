@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.180 2005-10-25 15:51:02 debug Exp $
+ *  $Id: memory.c,v 1.181 2005-11-13 00:14:06 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -388,15 +388,15 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	debug("device %2i at 0x%010llx: %s",
 	    mem->n_mmapped_devices, (long long)baseaddr, device_name);
 
-	if (flags & (MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK)
+	if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
 	    && (baseaddr & mem->dev_dyntrans_alignment) != 0) {
 		fatal("\nWARNING: Device dyntrans access, but unaligned"
 		    " baseaddr 0x%llx.\n", (long long)baseaddr);
 	}
 
-	if (flags & (MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK)) {
+	if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
 		debug(" (dyntrans %s)",
-		    (flags & MEM_DYNTRANS_WRITE_OK)? "R/W" : "R");
+		    (flags & DM_DYNTRANS_WRITE_OK)? "R/W" : "R");
 	}
 	debug("\n");
 
@@ -412,8 +412,8 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		exit(1);
 	}
 
-	if (flags & (MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK)
-	    && !(flags & MEM_EMULATED_RAM) && dyntrans_data == NULL) {
+	if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
+	    && !(flags & DM_EMULATED_RAM) && dyntrans_data == NULL) {
 		fatal("\nERROR: Device dyntrans access, but dyntrans_data"
 		    " = NULL!\n");
 		exit(1);

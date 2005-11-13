@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.13 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_fdc.c,v 1.14 2005-11-13 00:14:09 debug Exp $
  *  
  *  PC-style floppy controller.
  *
@@ -110,7 +110,7 @@ int devinit_fdc(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_FDC_LENGTH, dev_fdc_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	return 1;
 }

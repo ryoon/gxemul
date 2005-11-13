@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt455.c,v 1.8 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_bt455.c,v 1.9 2005-11-13 00:14:08 debug Exp $
  *  
  *  Brooktree 455, used by TURBOchannel graphics cards.
  *
@@ -184,6 +184,6 @@ void dev_bt455_init(struct memory *mem, uint64_t baseaddr,
 	d->rgb_palette  = vfb_data->rgb_palette;
 
 	memory_device_register(mem, "bt455", baseaddr, DEV_BT455_LENGTH,
-	    dev_bt455_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_bt455_access, (void *)d, DM_DEFAULT, NULL);
 }
 

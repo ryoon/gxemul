@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.29 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_mp.c,v 1.30 2005-11-13 00:14:09 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -272,7 +272,7 @@ int devinit_mp(struct devinit *devinit)
 	memset(d->ipi, 0, sizeof(int *) * n);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_MP_LENGTH, dev_mp_access, d, MEM_DEFAULT, NULL);
+	    devinit->addr, DEV_MP_LENGTH, dev_mp_access, d, DM_DEFAULT, NULL);
 
 	return 1;
 }

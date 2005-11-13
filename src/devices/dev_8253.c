@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.6 2005-11-01 07:05:52 debug Exp $
+ *  $Id: dev_8253.c,v 1.7 2005-11-13 00:14:08 debug Exp $
  *  
  *  8253/8254 Programmable Interval Timer.
  *
@@ -140,7 +140,7 @@ int devinit_8253(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_8253_LENGTH, dev_8253_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_8253_tick,
 	    d, TICK_SHIFT);

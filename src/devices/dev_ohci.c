@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.5 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_ohci.c,v 1.6 2005-11-13 00:14:09 debug Exp $
  *  
  *  USB OHCI (Open Host Controller Interface).
  *
@@ -168,7 +168,7 @@ int devinit_ohci(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr,
-	    DEV_OHCI_LENGTH, dev_ohci_access, d, MEM_DEFAULT, NULL);
+	    DEV_OHCI_LENGTH, dev_ohci_access, d, DM_DEFAULT, NULL);
 
 	return 1;
 }

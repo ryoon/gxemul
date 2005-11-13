@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.19 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_kn02.c,v 1.20 2005-11-13 00:14:09 debug Exp $
  *  
  *  KN02 stuff ("3MAX", DECstation type 2).  See include/dec_kn02.h for more
  *  details.
@@ -113,7 +113,7 @@ struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem,
 	memset(d, 0, sizeof(struct kn02_csr));
 
 	memory_device_register(mem, "kn02", baseaddr, DEV_KN02_LENGTH,
-	    dev_kn02_access, d, MEM_DYNTRANS_OK, &d->csr[0]);
+	    dev_kn02_access, d, DM_DYNTRANS_OK, &d->csr[0]);
 
 	return d;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.33 2005-11-12 23:41:39 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.34 2005-11-13 00:14:09 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -427,11 +427,11 @@ int devinit_footbridge(struct devinit *devinit)
 	/*  DC21285 register access:  */
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_FOOTBRIDGE_LENGTH,
-	    dev_footbridge_access, d, MEM_DEFAULT, NULL);
+	    dev_footbridge_access, d, DM_DEFAULT, NULL);
 
 	/*  ISA interrupt status/acknowledgement:  */
 	memory_device_register(devinit->machine->memory, "footbridge_isa",
-	    0x79000000, 8, dev_footbridge_isa_access, d, MEM_DEFAULT, NULL);
+	    0x79000000, 8, dev_footbridge_isa_access, d, DM_DEFAULT, NULL);
 
 	/*  The "fcom" console:  */
 	d->console_handle = console_start_slave(devinit->machine, "fcom");
@@ -463,7 +463,7 @@ int devinit_footbridge(struct devinit *devinit)
 	/*  PCI configuration space:  */
 	memory_device_register(devinit->machine->memory,
 	    "footbridge_pci", pci_addr, 0x1000000,
-	    dev_footbridge_pci_access, d, MEM_DEFAULT, NULL);
+	    dev_footbridge_pci_access, d, DM_DEFAULT, NULL);
 
 	/*  Timer ticks:  */
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {

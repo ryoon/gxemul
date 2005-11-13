@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.89 2005-11-12 11:34:30 debug Exp $
+ *  $Id: dev_vga.c,v 1.90 2005-11-13 00:14:10 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -1241,14 +1241,14 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	}
 
 	memory_device_register(mem, "vga_charcells", videomem_base + 0x18000,
-	    allocsize, dev_vga_access, d, MEM_DYNTRANS_OK |
-	    MEM_DYNTRANS_WRITE_OK | MEM_READING_HAS_NO_SIDE_EFFECTS,
+	    allocsize, dev_vga_access, d, DM_DYNTRANS_OK |
+	    DM_DYNTRANS_WRITE_OK | DM_READS_HAVE_NO_SIDE_EFFECTS,
 	    d->charcells);
 	memory_device_register(mem, "vga_gfx", videomem_base, GFX_ADDR_WINDOW,
-	    dev_vga_graphics_access, d, MEM_DEFAULT |
-	    MEM_READING_HAS_NO_SIDE_EFFECTS, d->gfx_mem);
+	    dev_vga_graphics_access, d, DM_DEFAULT |
+	    DM_READS_HAVE_NO_SIDE_EFFECTS, d->gfx_mem);
 	memory_device_register(mem, "vga_ctrl", control_base,
-	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
+	    32, dev_vga_ctrl_access, d, DM_DEFAULT, NULL);
 
 	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
 	    d->fb_max_x, d->fb_max_y, d->fb_max_x, d->fb_max_y, 24, "VGA");

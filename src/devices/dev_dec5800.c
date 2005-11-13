@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.16 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.17 2005-11-13 00:14:08 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -171,10 +171,10 @@ struct dec5800_data *dev_dec5800_init(struct machine *machine,
 	memset(d, 0, sizeof(struct dec5800_data));
 
 	memory_device_register(mem, "dec5800", baseaddr,
-	    DEV_DEC5800_LENGTH, dev_dec5800_access, d, MEM_DEFAULT, NULL);
+	    DEV_DEC5800_LENGTH, dev_dec5800_access, d, DM_DEFAULT, NULL);
 	memory_device_register(mem, "dec5800_vectors",
 	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access,
-	    d, MEM_DEFAULT, NULL);
+	    d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_dec5800_tick, d, 14);
 
 	return d;
@@ -293,7 +293,7 @@ void dev_decbi_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct decbi_data));
 
 	memory_device_register(mem, "decbi", baseaddr + 0x2000,
-	    DEV_DECBI_LENGTH - 0x2000, dev_decbi_access, d, MEM_DEFAULT, NULL);
+	    DEV_DECBI_LENGTH - 0x2000, dev_decbi_access, d, DM_DEFAULT, NULL);
 }
 
 
@@ -375,7 +375,7 @@ void dev_deccca_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct deccca_data));
 
 	memory_device_register(mem, "deccca", baseaddr, DEV_DECCCA_LENGTH,
-	    dev_deccca_access, d, MEM_DEFAULT, NULL);
+	    dev_deccca_access, d, DM_DEFAULT, NULL);
 }
 
 
@@ -493,6 +493,6 @@ void dev_decxmi_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct decxmi_data));
 
 	memory_device_register(mem, "decxmi", baseaddr, DEV_DECXMI_LENGTH,
-	    dev_decxmi_access, d, MEM_DEFAULT, NULL);
+	    dev_decxmi_access, d, DM_DEFAULT, NULL);
 }
 

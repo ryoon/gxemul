@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.45 2005-11-09 17:14:21 debug Exp $
+ *  $Id: dev_le.c,v 1.46 2005-11-13 00:14:09 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -817,8 +817,8 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "le_sram", baseaddr,
 	    SRAM_SIZE, dev_le_sram_access, (void *)d,
-	    MEM_DYNTRANS_OK | MEM_DYNTRANS_WRITE_OK
-	    | MEM_READING_HAS_NO_SIDE_EFFECTS, d->sram);
+	    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK
+	    | DM_READS_HAVE_NO_SIDE_EFFECTS, d->sram);
 
 	name2 = malloc(nlen);
 	if (name2 == NULL) {
@@ -829,7 +829,7 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	    d->rom[0], d->rom[1], d->rom[2], d->rom[3], d->rom[4], d->rom[5]);
 
 	memory_device_register(mem, name2, baseaddr + 0x100000,
-	    len - 0x100000, dev_le_access, (void *)d, MEM_DEFAULT, NULL);
+	    len - 0x100000, dev_le_access, (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_le_tick, d, LE_TICK_SHIFT);
 

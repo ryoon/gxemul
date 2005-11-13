@@ -1,40 +1,25 @@
-$Id: TODO,v 1.175 2005-10-23 14:24:09 debug Exp $
+$Id: TODO,v 1.176 2005-11-13 00:14:05 debug Exp $
+
+NOTE: This TODO is hopefully out-of-date. I don't keep it updated.
 
 ===============================================================================
-
-High priority stuff:
-
 
 Old MIPS bintrans:
-
 	x)  call/return address cache?
-
 	x)  Turn the MIPS cpu family stuff into dyntrans.
 
-
 Dyntrans:
-
 	x)  Separate data and instruction translations?
-
 	x)  Generalize the inline quick_pc_to_pointers?
-
 	x)  Call/return hints...
-
 	x)  More 64-bit stuff.
-
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 
-
 Userland emulation:
-
 	x)  Lots of stuff.
-
 	x)  Dynamic linking? Hm.
 
-===============================================================================
-
-Lower priority, but still important:
-
+Misc:
 	Redesign the entire "mainbus" concept:
 		o)  Easily configurable interrupt routing in SMP systems.
 		o)  Specific clock/bus speeds, cpu speeds etc.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.32 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.33 2005-11-13 00:14:10 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -584,7 +584,7 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	}
 
 	memory_device_register(mem, "vr41xx", baseaddr, DEV_VR41XX_LENGTH,
-	    dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_vr41xx_access, (void *)d, DM_DEFAULT, NULL);
 
 	/*
 	 *  TODO: Find out which controllers are at which addresses on

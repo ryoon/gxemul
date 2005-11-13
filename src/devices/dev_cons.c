@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.27 2005-07-12 08:49:13 debug Exp $
+ *  $Id: dev_cons.c,v 1.28 2005-11-13 00:14:08 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -146,7 +146,7 @@ int devinit_cons(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, name3,
 	    devinit->addr, DEV_CONS_LENGTH, dev_cons_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_cons_tick,
 	    d, CONS_TICK_SHIFT);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.13 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_pcic.c,v 1.14 2005-11-13 00:14:09 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -230,12 +230,12 @@ int devinit_pcic(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_PCIC_LENGTH,
-	    dev_pcic_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_pcic_access, (void *)d, DM_DEFAULT, NULL);
 
 	/*  TODO: this shouldn't be hardcoded for hpcmips here!  */
 	memory_device_register(devinit->machine->memory, "pcic_cis",
 	    0x10070000, 0x1000, dev_pcic_cis_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	/*  TODO: find out a good way to specify the address, and the IRQ!  */
 	/*  IRQ 8 + 32 + 9  */

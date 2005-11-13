@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.12 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_kn230.c,v 1.13 2005-11-13 00:14:09 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -101,7 +101,7 @@ int devinit_kn230(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_KN230_LENGTH, dev_kn230_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	devinit->return_ptr = d;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.49 2005-11-05 21:59:02 debug Exp $
+ *  $Id: dev_wdc.c,v 1.50 2005-11-13 00:14:10 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  *
@@ -916,9 +916,9 @@ int devinit_wdc(struct devinit *devinit)
 			    &d->sectors_per_track[i]);
 
 	memory_device_register(devinit->machine->memory, "wdc_altstatus",
-	    alt_status_addr, 2, dev_wdc_altstatus_access, d, MEM_DEFAULT, NULL);
+	    alt_status_addr, 2, dev_wdc_altstatus_access, d, DM_DEFAULT, NULL);
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_WDC_LENGTH, dev_wdc_access, d, MEM_DEFAULT,
+	    devinit->addr, DEV_WDC_LENGTH, dev_wdc_access, d, DM_DEFAULT,
 	    NULL);
 
 	if (devinit->machine->machine_type != MACHINE_HPCMIPS &&

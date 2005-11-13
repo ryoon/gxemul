@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.36 2005-11-12 23:41:39 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.37 2005-11-13 00:14:10 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -241,7 +241,7 @@ struct crime_data *dev_crime_init(struct machine *machine, struct memory *mem,
 	d->use_fb = use_fb;
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH,
-	    dev_crime_access, d, MEM_DEFAULT, NULL);
+	    dev_crime_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_crime_tick, d, CRIME_TICKSHIFT);
 
 	return d;
@@ -323,7 +323,7 @@ struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr,
 	d->irqnr = irqnr;
 
 	memory_device_register(mem, "mace", baseaddr, DEV_MACE_LENGTH,
-	    dev_mace_access, d, MEM_DEFAULT, NULL);
+	    dev_mace_access, d, DM_DEFAULT, NULL);
 
 	return d;
 }
@@ -412,7 +412,7 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr,
 	d->pci_data = bus_pci_init(pciirq, 0, 0, 0);
 
 	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH,
-	    dev_macepci_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_macepci_access, (void *)d, DM_DEFAULT, NULL);
 
 	return d->pci_data;
 }
@@ -956,7 +956,7 @@ void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, name2, baseaddr,
 	    DEV_SGI_MEC_LENGTH, dev_sgi_mec_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_sgi_mec_tick, d, MEC_TICK_SHIFT);
 
@@ -1027,7 +1027,7 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr)
 
 	memory_device_register(mem, "sgi_ust", baseaddr,
 	    DEV_SGI_UST_LENGTH, dev_sgi_ust_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 }
 
 
@@ -1302,6 +1302,6 @@ void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct sgi_mte_data));
 
 	memory_device_register(mem, "sgi_mte", baseaddr, DEV_SGI_MTE_LENGTH,
-	    dev_sgi_mte_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sgi_mte_access, (void *)d, DM_DEFAULT, NULL);
 }
 

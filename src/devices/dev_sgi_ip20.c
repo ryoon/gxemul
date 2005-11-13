@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip20.c,v 1.11 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sgi_ip20.c,v 1.12 2005-11-13 00:14:09 debug Exp $
  *  
  *  SGI IP20 stuff.
  */
@@ -114,7 +114,7 @@ struct sgi_ip20_data *dev_sgi_ip20_init(struct cpu *cpu, struct memory *mem,
 	 */
 	memory_device_register(mem, "sgi_ip20_int", baseaddr,
 	    DEV_SGI_IP20_LENGTH, dev_sgi_ip20_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	return d;
 }

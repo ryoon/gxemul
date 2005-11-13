@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.13 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.14 2005-11-13 00:14:08 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -263,7 +263,7 @@ struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu,
 
 	memory_device_register(mem, "dec_ioasic", baseaddr,
 	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 	return d;
 }
 

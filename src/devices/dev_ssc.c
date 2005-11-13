@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.23 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_ssc.c,v 1.24 2005-11-13 00:14:10 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -264,7 +264,7 @@ void dev_ssc_init(struct machine *machine, struct memory *mem,
 	d->console_handle = console_start_slave(machine, "SSC");
 
 	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH,
-	    dev_ssc_access, d, MEM_DEFAULT, NULL);
+	    dev_ssc_access, d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_ssc_tick, d, 14);
 }

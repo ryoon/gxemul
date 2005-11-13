@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.7 2005-10-22 17:24:21 debug Exp $
+ *  $Id: cpu_sh.c,v 1.8 2005-11-13 00:14:07 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -188,32 +188,6 @@ void sh_cpu_register_match(struct machine *m, char *name,
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	}
-}
-
-
-/*
- *  sh_cpu_show_full_statistics():
- *
- *  Show detailed statistics on opcode usage on each cpu.
- */
-void sh_cpu_show_full_statistics(struct machine *m)
-{
-	fatal("sh_cpu_show_full_statistics(): TODO\n");
-}
-
-
-/*
- *  sh_cpu_tlbdump():
- *
- *  Called from the debugger to dump the TLB in a readable format.
- *  x is the cpu number to dump, or -1 to dump all CPUs.
- *
- *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
- *  just dumped.
- */
-void sh_cpu_tlbdump(struct machine *m, int x, int rawflag)
-{
-	fatal("sh_cpu_tlbdump(): TODO\n");
 }
 
 

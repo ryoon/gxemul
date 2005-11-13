@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.17 2005-10-26 14:37:03 debug Exp $
+ *  $Id: dev_8250.c,v 1.18 2005-11-13 00:14:08 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -157,7 +157,7 @@ int devinit_8250(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_8250_LENGTH * devinit->addr_mult,
-	    dev_8250_access, d, MEM_DEFAULT, NULL);
+	    dev_8250_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_8250_tick, d, 14);
 
 	return 1;

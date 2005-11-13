@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01.c,v 1.6 2005-02-11 09:53:48 debug Exp $
+ *  $Id: dev_kn01.c,v 1.7 2005-11-13 00:14:09 debug Exp $
  *  
  *  KN01 stuff ("PMAX", DECstation type 1); CSR (System Control Register)
  *  and VDAC.
@@ -253,7 +253,7 @@ void dev_vdac_init(struct memory *mem, uint64_t baseaddr,
 	d->color_fb_flag = color_fb_flag;
 
 	memory_device_register(mem, "vdac", baseaddr, DEV_VDAC_LENGTH,
-	    dev_vdac_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_vdac_access, (void *)d, DM_DEFAULT, NULL);
 }
 
 
@@ -275,6 +275,6 @@ void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb)
 	k->csr |= (color_fb? 0 : KN01_CSR_MONO);
 
 	memory_device_register(mem, "kn01_csr", baseaddr,
-	    DEV_KN01_CSR_LENGTH, dev_kn01_csr_access, k, MEM_DEFAULT, NULL);
+	    DEV_KN01_CSR_LENGTH, dev_kn01_csr_access, k, DM_DEFAULT, NULL);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.17 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.18 2005-11-13 00:14:09 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -162,7 +162,7 @@ int devinit_ps2_gs(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_PS2_GS_LENGTH, dev_ps2_gs_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.12 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_sn.c,v 1.13 2005-11-13 00:14:10 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -128,7 +128,7 @@ int devinit_sn(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, name2,
 	    devinit->addr, DEV_SN_LENGTH,
-	    dev_sn_access, (void *)d, MEM_DEFAULT, NULL);
+	    dev_sn_access, (void *)d, DM_DEFAULT, NULL);
 
 	net_add_nic(devinit->machine->emul->net, d, d->macaddr);
 

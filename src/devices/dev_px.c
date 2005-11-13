@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.29 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_px.c,v 1.30 2005-11-13 00:14:09 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -820,7 +820,7 @@ void dev_px_init(struct machine *machine, struct memory *mem,
 	}
 
 	memory_device_register(mem, "px", baseaddr, DEV_PX_LENGTH,
-	    dev_px_access, d, MEM_DEFAULT, NULL);
+	    dev_px_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_px_tick, d, 14);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn210.c,v 1.12 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_kn210.c,v 1.13 2005-11-13 00:14:09 debug Exp $
  *  
  *  DECsystem 5400 (KN210) stuff
  */
@@ -93,7 +93,7 @@ int devinit_kn210(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr, DEV_KN210_LENGTH,
-	    dev_kn210_access, d, MEM_DEFAULT, NULL);
+	    dev_kn210_access, d, DM_DEFAULT, NULL);
 
 	return 1;
 }

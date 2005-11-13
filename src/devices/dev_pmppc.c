@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmppc.c,v 1.3 2005-10-26 14:37:04 debug Exp $
+ *  $Id: dev_pmppc.c,v 1.4 2005-11-13 00:14:09 debug Exp $
  *  
  *  PM/PPC devices.
  *
@@ -153,6 +153,6 @@ void dev_pmppc_init(struct memory *mem)
 	d->config1 = 0;		/*  TODO  */
 
 	memory_device_register(mem, "pmppc_board",
-	    PMPPC_CONFIG0, 0x10, dev_pmppc_board_access, d, MEM_DEFAULT, NULL);
+	    PMPPC_CONFIG0, 0x10, dev_pmppc_board_access, d, DM_DEFAULT, NULL);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21030.c,v 1.1 2005-11-09 06:35:45 debug Exp $
+ *  $Id: dev_dec21030.c,v 1.2 2005-11-13 00:14:08 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -251,7 +251,7 @@ int devinit_dec21030(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, 128*1048576, dev_dec21030_access, d,
-	    MEM_DEFAULT, NULL);
+	    DM_DEFAULT, NULL);
 
 	/*
 	 *  TODO:  I have no idea about how/where this framebuffer should

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.13 2005-10-22 17:24:21 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.14 2005-11-13 00:14:07 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -422,32 +422,6 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 			*match_register = 1;
 		}
 	}
-}
-
-
-/*
- *  ppc_cpu_show_full_statistics():
- *
- *  Show detailed statistics on opcode usage on each cpu.
- */
-void ppc_cpu_show_full_statistics(struct machine *m)
-{
-	fatal("ppc_cpu_show_full_statistics(): TODO\n");
-}
-
-
-/*
- *  ppc_cpu_tlbdump():
- *
- *  Called from the debugger to dump the TLB in a readable format.
- *  x is the cpu number to dump, or -1 to dump all CPUs.
- *
- *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
- *  just dumped.
- */
-void ppc_cpu_tlbdump(struct machine *m, int x, int rawflag)
-{
-	fatal("ppc_cpu_tlbdump(): TODO\n");
 }
 
 

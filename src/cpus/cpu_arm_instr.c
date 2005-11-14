@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.50 2005-11-11 19:01:26 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.51 2005-11-14 23:53:00 debug Exp $
  *
  *  ARM instructions.
  *
@@ -985,6 +985,7 @@ extern void (*arm_dpi_instr_regshort[2 * 16 * 16])(struct cpu *,
 	struct arm_instr_call *);
 X(cmps);
 X(teqs);
+X(tsts);
 X(sub);
 X(add);
 X(subs);
@@ -1508,7 +1509,7 @@ X(netbsd_scanc)
 }
 
 
-#if 0
+#if 1
 /*
  *  strlen:
  *
@@ -1551,17 +1552,17 @@ X(strlen)
 /*
  *  xchg:
  *
- *  e0210000     eor     r0,r1,r0
- *  e0201001     eor     r1,r0,r1
- *  e0210000     eor     r0,r1,r0
+ *  e02YX00X     eor     rX,rY,rX
+ *  e02XY00Y     eor     rY,rX,rY
+ *  e02YX00X     eor     rX,rY,rX
  */
 X(xchg)
 {
-	uint32_t tmp = cpu->cd.arm.r[0];
+	uint32_t tmp = reg(ic[0].arg[0]);
 	cpu->n_translated_instrs += 2;
 	cpu->cd.arm.next_ic = &ic[3];
-	cpu->cd.arm.r[0] = cpu->cd.arm.r[1];
-	cpu->cd.arm.r[1] = tmp;
+	reg(ic[0].arg[0]) = reg(ic[1].arg[0]);
+	reg(ic[1].arg[0]) = tmp;
 }
 
 
@@ -1636,6 +1637,27 @@ X(netbsd_copyout)
 
 
 /*
+ *  cmps by 0, followed by beq (inside the same page):
+ */
+X(cmps0_beq_samepage)
+{
+	uint32_t a = reg(ic->arg[0]);
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N | ARM_F_V | ARM_F_C);
+	if (a == 0) {
+		cpu->cd.arm.flags |= ARM_F_Z | ARM_F_C;
+	} else {
+		/*  Semi-ugly hack which sets the negative-bit if a < 0:  */
+		cpu->cd.arm.flags |= ARM_F_C | ((a >> 28) & 8);
+	}
+	if (a == 0)
+		cpu->cd.arm.next_ic = (struct arm_instr_call *) ic[1].arg[0];
+	else
+		cpu->cd.arm.next_ic = &ic[2];
+}
+
+
+/*
  *  cmps followed by beq (inside the same page):
  */
 X(cmps_beq_samepage)
@@ -1656,6 +1678,27 @@ X(cmps_beq_samepage)
 		if (c & 0x80000000)
 			cpu->cd.arm.flags |= ARM_F_N;
 	}
+}
+
+
+/*
+ *  cmps by 0, followed by bne (inside the same page):
+ */
+X(cmps0_bne_samepage)
+{
+	uint32_t a = reg(ic->arg[0]);
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N | ARM_F_V | ARM_F_C);
+	if (a == 0) {
+		cpu->cd.arm.flags |= ARM_F_Z | ARM_F_C;
+	} else {
+		/*  Semi-ugly hack which sets the negative-bit if a < 0:  */
+		cpu->cd.arm.flags |= ARM_F_C | ((a >> 28) & 8);
+	}
+	if (a == 0)
+		cpu->cd.arm.next_ic = &ic[2];
+	else
+		cpu->cd.arm.next_ic = (struct arm_instr_call *) ic[1].arg[0];
 }
 
 
@@ -1831,9 +1874,8 @@ X(cmps_ble_samepage)
 
 /*
  *  teqs followed by beq (inside the same page):
- *  (arg[1] must not have its highest bit set))
  */
-X(teqs_lo_beq_samepage)
+X(teqs_beq_samepage)
 {
 	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a ^ b;
 	cpu->n_translated_instrs ++;
@@ -1842,24 +1884,69 @@ X(teqs_lo_beq_samepage)
 		cpu->cd.arm.flags |= ARM_F_Z;
 		cpu->cd.arm.next_ic = (struct arm_instr_call *)
 		    ic[1].arg[0];
-	} else
+	} else {
+		if (c & 0x80000000)
+			cpu->cd.arm.flags |= ARM_F_N;
+		cpu->cd.arm.next_ic = &ic[2];
+	}
+}
+
+
+/*
+ *  tsts followed by beq (inside the same page):
+ *  (arg[1] must not have its highest bit set))
+ */
+X(tsts_lo_beq_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a & b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_F_Z;
+	if (c == 0)
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+	else
 		cpu->cd.arm.next_ic = &ic[2];
 }
 
 
 /*
  *  teqs followed by bne (inside the same page):
- *  (arg[1] must not have its highest bit set))
  */
-X(teqs_lo_bne_samepage)
+X(teqs_bne_samepage)
 {
 	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a ^ b;
 	cpu->n_translated_instrs ++;
 	cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
 	if (c == 0) {
 		cpu->cd.arm.flags |= ARM_F_Z;
+	} else {
+		if (c & 0x80000000)
+			cpu->cd.arm.flags |= ARM_F_N;
+	}
+	if (c == 0)
 		cpu->cd.arm.next_ic = &ic[2];
-	} else
+	else
+		cpu->cd.arm.next_ic = (struct arm_instr_call *)
+		    ic[1].arg[0];
+}
+
+
+/*
+ *  tsts followed by bne (inside the same page):
+ *  (arg[1] must not have its highest bit set))
+ */
+X(tsts_lo_bne_samepage)
+{
+	uint32_t a = reg(ic->arg[0]), b = ic->arg[1], c = a & b;
+	cpu->n_translated_instrs ++;
+	cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N);
+	if (c == 0)
+		cpu->cd.arm.flags |= ARM_F_Z;
+	if (c == 0)
+		cpu->cd.arm.next_ic = &ic[2];
+	else
 		cpu->cd.arm.next_ic = (struct arm_instr_call *)
 		    ic[1].arg[0];
 }
@@ -2022,7 +2109,7 @@ void arm_combine_netbsd_scanc(struct cpu *cpu, void *v, int low_addr)
 }
 
 
-#if 0
+#if 1
 /*
  *  arm_combine_strlen():
  */
@@ -2056,19 +2143,20 @@ void arm_combine_xchg(struct cpu *cpu, void *v, int low_addr)
 	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
+	size_t a, b;
 
-	if (n_back >= 2) {
-		if (ic[-2].f == instr(eor_regshort) &&
-		    ic[-2].arg[0] == (size_t)(&cpu->cd.arm.r[1]) &&
-		    ic[-2].arg[1] == (size_t)(&cpu->cd.arm.r[0]) &&
-		    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[0]) &&
-		    ic[-1].f == instr(eor_regshort) &&
-		    ic[-1].arg[0] == (size_t)(&cpu->cd.arm.r[0]) &&
-		    ic[-1].arg[1] == (size_t)(&cpu->cd.arm.r[1]) &&
-		    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[1])) {
-			ic[-2].f = instr(xchg);
-			combined;
-		}
+	if (n_back < 2)
+		return;
+
+	a = ic[-2].arg[0]; b = ic[-1].arg[0];
+
+	if (ic[-2].f == instr(eor_regshort) &&
+	    ic[-1].f == instr(eor_regshort) &&
+	    ic[-2].arg[0] == a && ic[-2].arg[1] == b && ic[-2].arg[2] == b &&
+	    ic[-1].arg[0] == b && ic[-1].arg[1] == a && ic[-1].arg[2] == a &&
+	    ic[ 0].arg[0] == a && ic[ 0].arg[1] == b && ic[ 0].arg[2] == b) {
+		ic[-2].f = instr(xchg);
+		combined;
 	}
 }
 
@@ -2149,24 +2237,38 @@ void arm_combine_cmps_b(struct cpu *cpu, void *v, int low_addr)
 		return;
 	if (ic[0].f == instr(b_samepage__eq)) {
 		if (ic[-1].f == instr(cmps)) {
-			ic[-1].f = instr(cmps_beq_samepage);
+			if (ic[-1].arg[1] == 0)
+				ic[-1].f = instr(cmps0_beq_samepage);
+			else
+				ic[-1].f = instr(cmps_beq_samepage);
 			combined;
 		}
-		if (ic[-1].f == instr(teqs) &&
+		if (ic[-1].f == instr(tsts) &&
 		    !(ic[-1].arg[1] & 0x80000000)) {
-			ic[-1].f = instr(teqs_lo_beq_samepage);
+			ic[-1].f = instr(tsts_lo_beq_samepage);
+			combined;
+		}
+		if (ic[-1].f == instr(teqs)) {
+			ic[-1].f = instr(teqs_beq_samepage);
 			combined;
 		}
 		return;
 	}
 	if (ic[0].f == instr(b_samepage__ne)) {
 		if (ic[-1].f == instr(cmps)) {
-			ic[-1].f = instr(cmps_bne_samepage);
+			if (ic[-1].arg[1] == 0)
+				ic[-1].f = instr(cmps0_bne_samepage);
+			else
+				ic[-1].f = instr(cmps_bne_samepage);
 			combined;
 		}
-		if (ic[-1].f == instr(teqs) &&
+		if (ic[-1].f == instr(tsts) &&
 		    !(ic[-1].arg[1] & 0x80000000)) {
-			ic[-1].f = instr(teqs_lo_bne_samepage);
+			ic[-1].f = instr(tsts_lo_bne_samepage);
+			combined;
+		}
+		if (ic[-1].f == instr(teqs)) {
+			ic[-1].f = instr(teqs_bne_samepage);
 			combined;
 		}
 		return;
@@ -2409,6 +2511,10 @@ X(to_be_translated)
 			ic->arg[0] = iword;
 			break;
 		}
+		if ((iword & 0x0f900ff0) == 0x01000050) {
+			fatal("TODO: q{,d}{add,sub}\n");
+			goto bad;
+		}
 		if ((iword & 0x0ff000d0) == 0x01200010) {
 			/*  bx or blx  */
 			if (iword & 0x20)
@@ -2628,7 +2734,7 @@ X(to_be_translated)
 			    16 * secondary_opcode + (s_bit? 256 : 0) +
 			    (any_pc_reg? 512 : 0) + (regform? 1024 : 0)];
 
-		if (iword == 0xe0210000)
+		if (ic->f == instr(eor_regshort))
 			cpu->combination_check = arm_combine_xchg;
 		if (iword == 0xe113000c)
 			cpu->combination_check = arm_combine_netbsd_scanc;
@@ -2823,7 +2929,7 @@ X(to_be_translated)
 		    || condition_code == 3 || condition_code == 8
 		    || condition_code == 12 || condition_code == 13))
 			cpu->combination_check = arm_combine_cmps_b;
-#if 0
+#if 1
 		if (iword == 0x1afffffc)
 			cpu->combination_check = arm_combine_strlen;
 #endif
@@ -2837,7 +2943,19 @@ X(to_be_translated)
 	case 0xc:
 	case 0xd:
 		/*
+		 *  xxxx1100 0100nnnn ddddcccc oooommmm    MCRR c,op,Rd,Rn,CRm
+		 *  xxxx1100 0101nnnn ddddcccc oooommmm    MRRC c,op,Rd,Rn,CRm
+		 */
+		if ((iword & 0x0fe00000) == 0x0c400000) {
+			fatal("MCRR/MRRC: TODO\n");
+			goto bad;
+		}
+
+		/*
 		 *  TODO: LDC/STC
+		 *
+		 *  For now, treat as Undefined instructions. This causes e.g.
+		 *  Linux/ARM to emulate these instructions (floating point).
 		 */
 		ic->f = cond_instr(und);
 		ic->arg[0] = addr & 0xfff;

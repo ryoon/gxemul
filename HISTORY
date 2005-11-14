@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1026 2005-11-13 22:34:20 debug Exp $
+$Id: HISTORY,v 1.1027 2005-11-14 23:52:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2415,3 +2415,6 @@ Changelog for GXemul:
 		installer), and Windows NT's installer to get a bit further.
 		Also fixing dev_wdc to allow Linux to detect ATAPI CDROMs.
 		Continuing on the DEC 21143.
+20051114	Minor ARM dyntrans tweaks; ARM cmps+branch optimization when
+		comparing with 0, and generalizing the xchg instr. comb.
+		Adding disassembly of ARM mrrc/mcrr and q{,d}{add,sub}.

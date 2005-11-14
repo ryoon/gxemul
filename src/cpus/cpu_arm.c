@@ -25,16 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.41 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_arm.c,v 1.42 2005-11-14 23:53:00 debug Exp $
  *
  *  ARM CPU emulation.
+ *
  *
  *  A good source of quick info on ARM instruction encoding:
  *
  *	http://www.pinknoise.demon.co.uk/ARMinstrs/ARMinstrs.html
- *
- *  (Most "xxxx0101..." and similar strings in this file are from that URL,
- *  or from the ARM manual.)
  */
 
 #include <stdio.h>
@@ -804,10 +802,22 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			int a_bit = (iw >> 21) & 1;
 			debug("%s%sl%s%s\t", u_bit? "s" : "u",
 			    a_bit? "mla" : "mul", condition, s_bit? "s" : "");
-			debug("%s,", arm_regname[r12]);
-			debug("%s,", arm_regname[r16]);
-			debug("%s,", arm_regname[iw & 15]);
-			debug("%s\n", arm_regname[r8]);
+			debug("%s,%s,", arm_regname[r12], arm_regname[r16]);
+			debug("%s,%s\n", arm_regname[iw&15], arm_regname[r8]);
+			break;
+		}
+
+		/*
+		 *  xxxx0001 0000nnnn dddd0000 0101mmmm  qadd Rd,Rm,Rn
+		 *  xxxx0001 0010nnnn dddd0000 0101mmmm  qsub Rd,Rm,Rn
+		 *  xxxx0001 0100nnnn dddd0000 0101mmmm  qdadd Rd,Rm,Rn
+		 *  xxxx0001 0110nnnn dddd0000 0101mmmm  qdsub Rd,Rm,Rn
+		 */
+		if ((iw & 0x0f900ff0) == 0x01000050) {
+			debug("q%s%s%s\t", iw & 0x400000? "d" : "",
+			    iw & 0x200000? "sub" : "add", condition);
+			debug("%s,%s,%s\n", arm_regname[r12],
+			    arm_regname[iw&15], arm_regname[r16]);
 			break;
 		}
 
@@ -1207,6 +1217,18 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 	case 0xc:				/*  Coprocessor  */
 	case 0xd:				/*  LDC/STC  */
+		/*
+		 *  xxxx1100 0100nnnn ddddcccc oooommmm    MCRR c,op,Rd,Rn,CRm
+		 *  xxxx1100 0101nnnn ddddcccc oooommmm    MRRC c,op,Rd,Rn,CRm
+		 */
+		if ((iw & 0x0fe00000) == 0x0c400000) {
+			debug("%s%s\t", iw & 0x100000? "mrrc" : "mcrr",
+			    condition);
+			debug("%i,%i,%s,%s,cr%i\n", r8, (iw >> 4) & 15,
+			    arm_regname[r12], arm_regname[r16], iw & 15);
+			break;
+		}
+
 		/*  xxxx110P UNWLnnnn DDDDpppp oooooooo LDC/STC  */
 		debug("TODO: coprocessor LDC/STC\n");
 		break;

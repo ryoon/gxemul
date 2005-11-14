@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.99 2005-11-05 17:56:44 debug Exp $
+$Id: guestoses.html,v 1.100 2005-11-14 23:51:59 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -756,18 +756,17 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 <ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that you will install NetBSD/cats onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=1990000</b>
+	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
-  <li>Download the NetBSD/cats 2.1 ISO image and generic + install kernels:<pre>
+  <li>Download the NetBSD/cats 2.1 ISO image and the generic kernel:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso</a>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -XEcats -d nbsd_cats.img -d catscd.iso netbsd.aout-INSTALL.gz</b>
+	<b>gxemul -XEcats -d nbsd_cats.img -d bc:catscd.iso -j cats/binary/kernel/netbsd.aout-INSTALL.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -1024,17 +1023,16 @@ follow these instructions:
 	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
 	already have <tt>mkisofs</tt> installed on your system, you need
 	to install it in order to do this.)<pre>
-	<b>mkisofs -allow-lowercase -o openbsd_cats_3.7.iso ftp.openbsd.org/pub/OpenBSD/</b>
+	<b>mkisofs -allow-lowercase -o openbsd_cats_3.8.iso ftp.openbsd.org/pub/OpenBSD/</b>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -XEcats -d obsd_cats.img -d d:openbsd_cats_3.8.iso bsd.rd</b>
+	<b>gxemul -XEcats -d obsd_cats.img -d openbsd_cats_3.8.iso bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
 	on a real CATS. (Install onto <tt>wd0</tt>, don't configure the
-	network, choose to install distribution sets from <i>disk</i>
-	<tt>wd1</tt> (i.e. not CDROM) partition '<tt>a</tt>'.)
+	network.)
 </ol>
 
 <p><b>NOTE:</b> Make sure that you <tt>sync</tt> and <tt>reboot</tt>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.589 2005-11-12 23:41:38 debug Exp $
+ *  $Id: machine.c,v 1.590 2005-11-14 23:52:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4821,6 +4821,12 @@ Not yet.
 		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
 		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 		device_add(machine, "ns16550 irq=0 addr=0xfe800000");
+
+		/*  Used by "Redboot":  */
+		dev_ram_init(machine, 0xa800024, 4, DEV_RAM_RAM, 0);
+		store_32bit_word(cpu, 0xa800024, 0x7fff);
+		device_add(machine, "ns16550 irq=0 addr=0x0d800000 addr_mult=4");
+		device_add(machine, "ns16550 irq=0 addr=0x0d800020 addr_mult=4");
 
 		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 		dev_ram_init(machine, 0xa0000000, 0x20000000,

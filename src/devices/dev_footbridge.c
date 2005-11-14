@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.34 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.35 2005-11-14 23:51:57 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -52,7 +52,7 @@
 
 #define	DEV_FOOTBRIDGE_TICK_SHIFT	14
 #define	DEV_FOOTBRIDGE_LENGTH		0x400
-#define	TIMER_POLL_THRESHOLD		10
+#define	TIMER_POLL_THRESHOLD		15
 
 
 /*

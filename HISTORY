@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1027 2005-11-14 23:52:59 debug Exp $
+$Id: HISTORY,v 1.1028 2005-11-15 17:26:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2418,3 +2418,5 @@ Changelog for GXemul:
 20051114	Minor ARM dyntrans tweaks; ARM cmps+branch optimization when
 		comparing with 0, and generalizing the xchg instr. comb.
 		Adding disassembly of ARM mrrc/mcrr and q{,d}{add,sub}.
+20051115	Continuing on various PPC things (BATs, other address trans-
+		lation things, various loads/stores, BeBox emulation, etc.).

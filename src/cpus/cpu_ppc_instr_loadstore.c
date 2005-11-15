@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.2 2005-11-15 17:26:29 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -53,8 +53,9 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 	unsigned char data[LS_SIZE];
 
 #ifndef LS_B
-	if (addr & (LS_SIZE-1)) {
-		fatal("PPC LOAD/STORE misalignment: TODO\n");
+	if ((addr & 0xfff) + LS_SIZE-1 > 0xfff) {
+		fatal("PPC LOAD/STORE misalignment across page boundary: TODO"
+		    " (addr=0x%08x, LS_SIZE=%i)\n", (int)addr, LS_SIZE);
 		exit(1);
 	}
 #endif
@@ -74,10 +75,14 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif
 #ifdef LS_H
 	reg(ic->arg[0]) =
+#ifdef LS_BYTEREVERSE
+	    ((data[1] << 8) + data[0]);
+#else
 #ifndef LS_ZERO
 	    (int16_t)
 #endif
 	    ((data[0] << 8) + data[1]);
+#endif /*  !BYTEREVERSE  */
 #endif
 #ifdef LS_W
 	reg(ic->arg[0]) =
@@ -102,8 +107,13 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 	data[0] = reg(ic->arg[0]);
 #endif
 #ifdef LS_H
+#ifdef LS_BYTEREVERSE
+	data[0] = reg(ic->arg[0]);
+	data[1] = reg(ic->arg[0]) >> 8;
+#else
 	data[0] = reg(ic->arg[0]) >> 8;
 	data[1] = reg(ic->arg[0]);
+#endif
 #endif
 #ifdef LS_W
 	data[0] = reg(ic->arg[0]) >> 24;
@@ -164,14 +174,6 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 
 #ifndef LS_B
 	if (addr & (LS_SIZE-1)) {
-		fatal("PPC LOAD/STORE misalignment: TODO\n");
-		exit(1);
-
-/*
- *  TODO:
- *  Removing the fatal() call above causes WEIRD BUGS with compaq's cc! :(
- */
-
 		LS_GENERIC_N(cpu, ic);
 		return;
 	}
@@ -193,10 +195,14 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif	/*  LS_B  */
 #ifdef LS_H
 		reg(ic->arg[0]) =
+#ifdef LS_BYTEREVERSE
+		    ((page[addr+1] << 8) + page[addr]);
+#else
 #ifndef LS_ZERO
 		    (int16_t)
 #endif
 		    ((page[addr] << 8) + page[addr+1]);
+#endif /* !BYTEREVERSE */
 #endif	/*  LS_H  */
 #ifdef LS_W
 		reg(ic->arg[0]) =
@@ -223,8 +229,13 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 		page[addr] = reg(ic->arg[0]);
 #endif
 #ifdef LS_H
+#ifdef LS_BYTEREVERSE
+		page[addr]   = reg(ic->arg[0]);
+		page[addr+1] = reg(ic->arg[0]) >> 8;
+#else
 		page[addr]   = reg(ic->arg[0]) >> 8;
 		page[addr+1] = reg(ic->arg[0]);
+#endif /* !BYTEREVERSE */
 #endif
 #ifdef LS_W
 		page[addr]   = reg(ic->arg[0]) >> 24;

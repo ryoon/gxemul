@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.42 2005-11-11 07:31:33 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.43 2005-11-15 17:26:50 debug Exp $
  */
 
 #include "misc.h"
@@ -38,6 +38,8 @@ struct cpu_family;
 
 #define	MODE_PPC		0
 #define	MODE_POWER		1
+
+#define	PPC_MAX_BATS		4
 
 /*  PPC CPU types:  */
 struct ppc_cpu_type_def { 
@@ -60,11 +62,13 @@ struct ppc_cpu_type_def {
 };
 
 /*  Flags:  */
-#define	PPC_NOFP		1
+#define	PPC_601			1
+#define	PPC_NOFP		2
 /*  TODO: Most of these just bogus  */
 
 #define PPC_CPU_TYPE_DEFS	{					\
 	{ "PPC405GP",	0,          32, PPC_NOFP, 15,5,2, 15,5,2, 20,5,1, 0 }, \
+	{ "PPC601",	0,          32, PPC_601, 14,5,4, 14,5,4, 0,0,0, 0 },	\
 	{ "PPC603e",	0,          32, 0, 14,5,4, 14,5,4, 0,0,0, 0 },	\
 	{ "MPC7400",	0x000c0000, 32, 0, 15,5,2, 15,5,2, 19,5,1, 1 },	\
 	{ "PPC750",	0x00084202, 32, 0, 15,5,2, 15,5,2, 20,5,1, 0 },	\
@@ -118,6 +122,7 @@ struct ppc_cpu {
 
 	int		mode;		/*  MODE_PPC or MODE_POWER  */
 	int		bits;		/*  32 or 64  */
+	int		n_bats;		/*  usually PPC_MAX_BATS or 0  */
 
 	uint64_t	zero;		/*  A zero register  */
 
@@ -152,11 +157,10 @@ struct ppc_cpu {
 	/*  TODO: 64-bit SRs? (Segment registers)  */
 	uint32_t	sr[16];
 
-	/*  TODO: 64-bit BATs?  */
-	uint32_t	ibat_u[4];
-	uint32_t	ibat_l[4];
-	uint32_t	dbat_u[4];
-	uint32_t	dbat_l[4];
+	uint32_t	ibat_u[PPC_MAX_BATS];
+	uint32_t	ibat_l[PPC_MAX_BATS];
+	uint32_t	dbat_u[PPC_MAX_BATS];
+	uint32_t	dbat_l[PPC_MAX_BATS];
 
 	uint64_t	ll_addr;	/*  Load-linked / store-conditional  */
 	int		ll_bit;

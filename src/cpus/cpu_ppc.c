@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.14 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.15 2005-11-15 17:26:29 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -87,6 +87,7 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.ppc.pvr = cpu->cd.ppc.cpu_type.pvr;
 
 	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
+	cpu->cd.ppc.n_bats = cpu->is_32bit? PPC_MAX_BATS : 0;
 
 	if (cpu->is_32bit) {
 		cpu->update_translation_table = ppc32_update_translation_table;
@@ -689,22 +690,27 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("unimplemented hi6_19, xo = 0x%x", xo);
 		}
 		break;
+	case PPC_HI6_RLWNM:
 	case PPC_HI6_RLWIMI:
 	case PPC_HI6_RLWINM:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
-		sh = (iword >> 11) & 31;
+		sh = (iword >> 11) & 31;	/*  actually rb for rlwnm  */
 		mb = (iword >> 6) & 31;
 		me = (iword >> 1) & 31;
 		rc = iword & 1;
 		switch (hi6) {
+		case PPC_HI6_RLWNM:
+			mnem = power? "rlnm" : "rlwnm"; break;
 		case PPC_HI6_RLWIMI:
 			mnem = power? "rlimi" : "rlwimi"; break;
 		case PPC_HI6_RLWINM:
 			mnem = power? "rlinm" : "rlwinm"; break;
 		}
-		debug("%s%s\tr%i,r%i,%i,%i,%i",
-		    mnem, rc?".":"", ra, rs, sh, mb, me);
+		debug("%s%s\tr%i,r%i,%s%i,%i,%i",
+		    mnem, rc?".":"", ra, rs,
+		    hi6 == PPC_HI6_RLWNM? "r" : "",
+		    sh, mb, me);
 		break;
 	case PPC_HI6_ORI:
 	case PPC_HI6_ORIS:
@@ -810,10 +816,14 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_LDARX:
 		case PPC_31_LBZX:
 		case PPC_31_LBZUX:
+		case PPC_31_LHAX:
+		case PPC_31_LHAUX:
 		case PPC_31_LHZX:
 		case PPC_31_LHZUX:
 		case PPC_31_LWZX:
 		case PPC_31_LWZUX:
+		case PPC_31_LHBRX:
+		case PPC_31_LWBRX:
 		case PPC_31_STWCX_DOT:
 		case PPC_31_STDCX_DOT:
 		case PPC_31_STBX:
@@ -824,6 +834,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_STWUX:
 		case PPC_31_STDX:
 		case PPC_31_STDUX:
+		case PPC_31_STHBRX:
+		case PPC_31_STWBRX:
 			/*  rs for stores, rt for loads, actually  */
 			load = 0; wlen = 0;
 			rs = (iword >> 21) & 31;
@@ -834,6 +846,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_LDARX: wlen=8;load=1; mnem = "ldarx"; break;
 			case PPC_31_LBZX:  wlen=1;load=1; mnem = "lbzx"; break;
 			case PPC_31_LBZUX: wlen=1;load=1; mnem = "lbzux"; break;
+			case PPC_31_LHAX:  wlen=2;load=1; mnem = "lhax"; break;
+			case PPC_31_LHAUX: wlen=2;load=1; mnem = "lhaux"; break;
 			case PPC_31_LHZX:  wlen=2;load=1; mnem = "lhzx"; break;
 			case PPC_31_LHZUX: wlen=2;load=1; mnem = "lhzux"; break;
 			case PPC_31_LWZX:  wlen = 4; load = 1;
@@ -856,6 +870,12 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			case PPC_31_STDX:  wlen = 8; mnem = "stdx"; break;
 			case PPC_31_STDUX: wlen = 8; mnem = "stdux"; break;
+			case PPC_31_LHBRX:  wlen = 2; mnem = "lhbrx"; break;
+			case PPC_31_LWBRX:  wlen = 4; mnem = power?
+					    "lbrx" : "lwbrx"; break;
+			case PPC_31_STHBRX: wlen = 2; mnem = "sthbrx"; break;
+			case PPC_31_STWBRX: wlen = 4; mnem = power?
+					    "stbrx" : "stwbrx"; break;
 			}
 			debug("%s\tr%i,r%i,r%i", mnem, rs, ra, rb);
 			if (!running)
@@ -1011,6 +1031,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			switch (spr) {
 			case 8:	   debug("mflr\tr%i", rt); break;
 			case 9:	   debug("mfctr\tr%i", rt); break;
+			case 22:   debug("mfdec\tr%i", rt); break;
 			case 26:   debug("mfsrr0\tr%i", rt); break;
 			case 27:   debug("mfsrr1\tr%i", rt); break;
 			case 272:  debug("mfsprg\t0,r%i", rt); break;
@@ -1148,6 +1169,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			switch (spr) {
 			case 8:	   debug("mtlr\tr%i", rs); break;
 			case 9:	   debug("mtctr\tr%i", rs); break;
+			case 22:   debug("mtdec\tr%i", rs); break;
 			case 26:   debug("mtsrr0\tr%i", rs); break;
 			case 27:   debug("mtsrr1\tr%i", rs); break;
 			case 272:  debug("mtsprg\t0,r%i", rs); break;
@@ -1189,23 +1211,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				mnem = power? "stsi" : "stswi"; break;
 			}
 			debug("%s\tr%i,r%i,%i", mnem, rs, ra, nb);
-			break;
-		case PPC_31_LHBRX:
-		case PPC_31_LWBRX:
-		case PPC_31_STHBRX:
-		case PPC_31_STWBRX:
-			rt = (iword >> 21) & 31;	/*  stores use rs  */
-			ra = (iword >> 16) & 31;
-			rb = (iword >> 11) & 31;
-			switch (xo) {
-			case PPC_31_LHBRX:  mnem = "lhbrx"; break;
-			case PPC_31_LWBRX:  mnem = power?
-					    "lbrx" : "lwbrx"; break;
-			case PPC_31_STHBRX: mnem = "sthbrx"; break;
-			case PPC_31_STWBRX: mnem = power?
-					    "stbrx" : "stwbrx"; break;
-			}
-			debug("%s\tr%i,r%i,r%i", mnem, rt, ra, rb);
 			break;
 		case PPC_31_SRAWI:
 			rs = (iword >> 21) & 31;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_ppc_loadstore.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: generate_ppc_loadstore.c,v 1.2 2005-11-15 17:26:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -36,17 +36,9 @@ char *sizechar[4] = { "b", "h", "w", "d" };
 char *modes[2] = { "", "32" };
 
 
-int main(int argc, char *argv[])
+void do_it(int mode)
 {
-	int n, load, size, zero, ignoreofs, update, mode;
-
-	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
-
-	for (mode = 0; mode <= 1; mode ++) {
-	if (mode == 0)
-		printf("#ifndef MODE32\n");
-	else
-		printf("#ifdef MODE32\n");
+	int n, load, size, zero, ignoreofs, update;
 
 	n = 0;
 	for (update=0; update<=1; update++)
@@ -294,7 +286,65 @@ cont_x:
 
 	printf("};\n\n");
 
-	printf("#endif\n");
+	/*  Non-standard loads/stores:  */
+	printf("#define LS_BYTEREVERSE\n"
+	    "#define LS_INDEXED\n"
+
+	    "#define LS_SIZE 2\n"
+	    "#define LS_H\n"
+	    "#define LS_GENERIC_N ppc%s_generic_lhbrx\n"
+	    "#define LS_N ppc%s_instr_lhbrx\n"
+	    "#define LS_LOAD\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
+	    "#undef LS_LOAD\n"
+	    "#undef LS_N\n"
+	    "#undef LS_GENERIC_N\n"
+	    "#define LS_GENERIC_N ppc%s_generic_sthbrx\n"
+	    "#define LS_N ppc%s_instr_sthbrx\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
+	    "#undef LS_N\n"
+	    "#undef LS_GENERIC_N\n"
+	    "#undef LS_H\n"
+	    "#undef LS_SIZE\n"
+
+	    "#define LS_SIZE 4\n"
+	    "#define LS_W\n"
+	    "#define LS_GENERIC_N ppc%s_generic_lwbrx\n"
+	    "#define LS_N ppc%s_instr_lwbrx\n"
+	    "#define LS_LOAD\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
+	    "#undef LS_LOAD\n"
+	    "#undef LS_N\n"
+	    "#undef LS_GENERIC_N\n"
+	    "#define LS_GENERIC_N ppc%s_generic_stwbrx\n"
+	    "#define LS_N ppc%s_instr_stwbrx\n"
+	    "#include \"cpu_ppc_instr_loadstore.c\"\n"
+	    "#undef LS_N\n"
+	    "#undef LS_GENERIC_N\n"
+	    "#undef LS_W\n"
+	    "#undef LS_SIZE\n"
+
+	    "#undef LS_INDEXED\n"
+	    "#undef LS_BYTEREVERSE\n",
+	    modes[mode], modes[mode], modes[mode], modes[mode],
+	    modes[mode], modes[mode], modes[mode], modes[mode]);
+}
+
+int main(int argc, char *argv[])
+{
+	int mode;
+
+	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
+
+	for (mode = 0; mode <= 1; mode ++) {
+		if (mode == 0)
+			printf("#ifndef MODE32\n");
+		else
+			printf("#ifdef MODE32\n");
+
+		do_it(mode);
+
+		printf("#endif\n");
 	}
 
 	return 0;

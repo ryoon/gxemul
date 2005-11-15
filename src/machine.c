@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.590 2005-11-14 23:52:14 debug Exp $
+ *  $Id: machine.c,v 1.591 2005-11-15 17:26:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4106,17 +4106,31 @@ Not yet.
 		machine->machine_name = "BeBox";
 
 		device_add(machine, "bebox");
+		pci_data = dev_eagle_init(machine, mem,
+		    0 /*  isa irq base: TODO */,
+		    0 /*  pci irq: TODO */);
 
 		machine->main_console_handle = (size_t)
-		    device_add(machine, "ns16550 irq=0 addr=0x800003f8 name2=tty0");
-		device_add(machine, "ns16550 irq=0 addr=0x800002f8 name2=tty1 in_use=0");
+		    device_add(machine, "ns16550 irq=4 addr=0x800003f8 name2=tty0");
+		device_add(machine, "ns16550 irq=3 addr=0x800002f8 name2=tty1 in_use=0");
+		device_add(machine, "lpt irq=7 addr=0x80000378 name2=lpt in_use=0");
 
-		dev_pckbc_init(machine, mem, 0x80000060, PCKBC_8042,
+		j = dev_pckbc_init(machine, mem, 0x80000060, PCKBC_8042,
 		    1, 12, machine->use_x11, 1);
 
-		if (machine->use_x11)
+		if (machine->use_x11) {
 			dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,
 			    machine->machine_name);
+			machine->main_console_handle = j;
+		}
+
+		/*  IDE controllers:  */
+		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 1, DISKIMAGE_IDE))
+			device_add(machine, "wdc addr=0x800001f0 irq=14");
+		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
+			device_add(machine, "wdc addr=0x80000170 irq=15");
 
 		if (machine->prom_emulation) {
 			store_32bit_word(cpu, 0x3010, machine->physical_ram_in_mb * 1048576);

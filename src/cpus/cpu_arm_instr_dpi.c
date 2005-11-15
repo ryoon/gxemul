@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.14 2005-11-11 13:23:16 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.15 2005-11-15 17:26:29 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -116,9 +116,10 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	 *  cpu_arm_instr.c. (More correct, and higher performance.)
 	 */
 	if (b > 255) {
-		cpu->cd.arm.flags &= ~ARM_F_C;
 		if (b & 0x80000000)
 			cpu->cd.arm.flags |= ARM_F_C;
+		else
+			cpu->cd.arm.flags &= ~ARM_F_C;
 	}
 #endif
 #endif
@@ -204,8 +205,6 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 			cpu->cd.arm.cpsr = cpu->cd.arm.spsr_abt; break;
 		case ARM_MODE_UND32:
 			cpu->cd.arm.cpsr = cpu->cd.arm.spsr_und; break;
-		default:fatal("huh? weird mode in dpi s with pc\n");
-			exit(1);
 		}
 		cpu->cd.arm.flags = cpu->cd.arm.cpsr >> 28;
 		arm_load_register_bank(cpu);
@@ -232,12 +231,13 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	 */
 #ifdef A__S
 	c32 = c64;
-	cpu->cd.arm.flags &= ~(ARM_F_Z | ARM_F_N
+	cpu->cd.arm.flags
 #if defined(A__CMP) || defined(A__CMN) || defined(A__ADC) || defined(A__ADD) \
  || defined(A__RSB) || defined(A__RSC) || defined(A__SBC) || defined(A__SUB)
-	    | ARM_F_V | ARM_F_C
+	    = 0;
+#else
+	    &= ~(ARM_F_Z | ARM_F_N);
 #endif
-	    );
 
 #if defined(A__CMP) || defined(A__RSB) || defined(A__SUB) || \
     defined(A__RSC) || defined(A__SBC)

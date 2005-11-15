@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.51 2005-11-13 02:22:00 debug Exp $
+ *  $Id: dev_wdc.c,v 1.52 2005-11-15 17:26:49 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -556,14 +556,22 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ) {
 			odata = 0;
 
-			/*  TODO: This is hardcoded for little-endian?  */
-
 			odata += wdc_get_inbuf(d);
-			if (len >= 2)
-				odata += (wdc_get_inbuf(d) << 8);
-			if (len == 4) {
-				odata += (wdc_get_inbuf(d) << 16);
-				odata += (wdc_get_inbuf(d) << 24);
+
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				if (len >= 2)
+					odata += (wdc_get_inbuf(d) << 8);
+				if (len == 4) {
+					odata += (wdc_get_inbuf(d) << 16);
+					odata += (wdc_get_inbuf(d) << 24);
+				}
+			} else {
+				if (len >= 2)
+					odata = (odata << 8) + wdc_get_inbuf(d);
+				if (len == 4) {
+					odata = (odata << 8) + wdc_get_inbuf(d);
+					odata = (odata << 8) + wdc_get_inbuf(d);
+				}
 			}
 
 			if (d->data_debug) {
@@ -625,18 +633,36 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				    (int)len, (long)idata);
 			}
 
-			switch (len) {
-			case 4:	wdc_addtoinbuf(d, idata & 0xff);
-				wdc_addtoinbuf(d, (idata >> 8) & 0xff);
-				wdc_addtoinbuf(d, (idata >> 16) & 0xff);
-				wdc_addtoinbuf(d, (idata >> 24) & 0xff);
-				break;
-			case 2:	wdc_addtoinbuf(d, idata & 0xff);
-				wdc_addtoinbuf(d, (idata >> 8) & 0xff);
-				break;
-			case 1:	wdc_addtoinbuf(d, idata); break;
-			default:fatal("wdc: unimplemented write len %i\n", len);
-				exit(1);
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+				switch (len) {
+				case 4:	wdc_addtoinbuf(d, idata & 0xff);
+					wdc_addtoinbuf(d, (idata >> 8) & 0xff);
+					wdc_addtoinbuf(d, (idata >> 16) & 0xff);
+					wdc_addtoinbuf(d, (idata >> 24) & 0xff);
+					break;
+				case 2:	wdc_addtoinbuf(d, idata & 0xff);
+					wdc_addtoinbuf(d, (idata >> 8) & 0xff);
+					break;
+				case 1:	wdc_addtoinbuf(d, idata); break;
+				default:fatal("wdc: unimplemented write "
+					    "len %i\n", len);
+					exit(1);
+				}
+			} else {
+				switch (len) {
+				case 4:	wdc_addtoinbuf(d, (idata >> 24) & 0xff);
+					wdc_addtoinbuf(d, (idata >> 16) & 0xff);
+					wdc_addtoinbuf(d, (idata >> 8) & 0xff);
+					wdc_addtoinbuf(d, idata & 0xff);
+					break;
+				case 2:	wdc_addtoinbuf(d, (idata >> 8) & 0xff);
+					wdc_addtoinbuf(d, idata & 0xff);
+					break;
+				case 1:	wdc_addtoinbuf(d, idata); break;
+				default:fatal("wdc: unimplemented write "
+					    "len %i\n", len);
+					exit(1);
+				}
 			}
 
 			inbuf_len = d->inbuf_head - d->inbuf_tail;

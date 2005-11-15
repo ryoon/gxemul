@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.28 2005-11-13 22:34:24 debug Exp $
+ *  $Id: bus_pci.c,v 1.29 2005-11-15 17:26:49 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
+ *
+ *  See NetBSD's pcidevs.h for more PCI vendor and device identifiers.
  */
 
 #include <stdio.h>
@@ -131,8 +133,8 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 
 	debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx (bus %i, device "
 	    "%i, function %i (%s) register 0x%02x): 0x%08lx ]\n", (long)
-	    pci_data->pci_addr, bus, device, function, registernr,
-	    dev->name, (long)*data);
+	    pci_data->pci_addr, bus, device, function, dev->name,
+	    registernr, (long)*data);
 }
 
 
@@ -174,8 +176,7 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		bus_pci_data_access(cpu, mem, data, len, writeflag, pci_data);
 		break;
 
-	default:
-		if (writeflag == MEM_READ) {
+	default:if (writeflag == MEM_READ) {
 			debug("[ bus_pci: read from unimplemented addr "
 			    "0x%x ]\n", (int)relative_addr);
 			*data = 0;
@@ -495,11 +496,13 @@ PCIINIT(gt64120)
 
 /*
  *  Intel 82371AB PIIX4 PCI-ISA bridge and IDE controller
+ *  and 82378ZB System I/O controller.
  */
 
 #define	PCI_VENDOR_INTEL		0x8086
 #define	PCI_PRODUCT_INTEL_82371AB_ISA	0x7110
 #define	PCI_PRODUCT_INTEL_82371AB_IDE	0x7111
+#define	PCI_PRODUCT_INTEL_SIO		0x0484
 
 PCIINIT(i82371ab_isa)
 {
@@ -508,6 +511,18 @@ PCIINIT(i82371ab_isa)
 
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
 	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x01);	/*  Rev 1  */
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+}
+
+PCIINIT(i82378zb)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
+	    PCI_PRODUCT_INTEL_SIO));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x43);
 
 	PCI_SET_DATA(PCI_BHLC_REG,
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
@@ -751,5 +766,25 @@ PCIINIT(dec21030)
 	snprintf(tmpstr, sizeof(tmpstr), "dec21030 addr=0x%llx",
 	    (long long)(base));
 	device_add(machine, tmpstr);
+}
+
+
+/*
+ *  Motorola MPC105 "Eagle" Host Bridge
+ */
+
+#define	PCI_VENDOR_MOT			0x1057
+#define	PCI_PRODUCT_MOT_MPC105		0x0001
+
+PCIINIT(eagle)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_MOT,
+	    PCI_PRODUCT_MOT_MPC105));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x24);
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 

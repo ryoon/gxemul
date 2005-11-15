@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.21 2005-11-06 22:41:12 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.22 2005-11-15 17:26:29 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -36,8 +36,10 @@
  */
 
 
-#define DOT(n) X(n ## _dot) { instr(n)(cpu,ic); \
+#define DOT1(n) X(n ## _dot) { instr(n)(cpu,ic); \
 	update_cr0(cpu, reg(ic->arg[1])); }
+#define DOT2(n) X(n ## _dot) { instr(n)(cpu,ic); \
+	update_cr0(cpu, reg(ic->arg[2])); }
 
 
 /*
@@ -886,6 +888,46 @@ X(rldicr)
 
 
 /*
+ *  rlwnm:
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to ra
+ *  arg[2] = copy of the instruction word
+ */
+X(rlwnm)
+{
+	MODE_uint_t tmp = reg(ic->arg[0]), ra = 0;
+	uint32_t iword = ic->arg[2];
+	int sh, mb, me, rc;
+
+	sh = (iword >> 11) & 31;
+	sh = cpu->cd.ppc.gpr[sh] & 0x1f;
+	mb = (iword >> 6) & 31;
+	me = (iword >> 1) & 31;   
+	rc = iword & 1;
+
+	/*  TODO: Fix this, its performance is awful:  */
+	while (sh-- != 0) {
+		int b = (tmp >> 31) & 1;
+		tmp = (tmp << 1) | b;
+	}
+	for (;;) {
+		uint64_t mask;
+		mask = (uint64_t)1 << (31-mb);
+		ra |= (tmp & mask);
+		if (mb == me)
+			break;
+		mb ++;
+		if (mb == 32)
+			mb = 0;
+	}
+	reg(ic->arg[1]) = ra;
+	if (rc)
+		update_cr0(cpu, ra);
+}
+
+
+/*
  *  rlwinm:
  *
  *  arg[0] = ptr to rs
@@ -990,7 +1032,7 @@ X(srawi)
 		cpu->cd.ppc.xer |= PPC_XER_CA;
 	reg(ic->arg[1]) = (int64_t)(int32_t)tmp;
 }
-DOT(srawi)
+DOT1(srawi)
 
 
 /*
@@ -1066,7 +1108,10 @@ X(crxor) {
  */
 X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
 X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
-X(mftb) {	reg(ic->arg[0]) = cpu->cd.ppc.tbl; }
+X(mfdec) {	reg(ic->arg[0]) = cpu->cd.ppc.dec; }
+X(mftb) {	if (++cpu->cd.ppc.tbl == 0)
+			cpu->cd.ppc.tbu ++;
+		reg(ic->arg[0]) = cpu->cd.ppc.tbl; }
 X(mftbu) {	reg(ic->arg[0]) = cpu->cd.ppc.tbu; }
 /*  TODO: Check privilege level for mfsprg*  */
 X(mfsrr0) {	reg(ic->arg[0]) = cpu->cd.ppc.srr0; }
@@ -1094,6 +1139,7 @@ X(mfdbatl) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_l[ic->arg[1]]; }
 X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
 X(mtctr) {	cpu->cd.ppc.ctr = reg(ic->arg[0]); }
 /*  TODO: Check privilege level for these:  */
+X(mtdec) {	cpu->cd.ppc.dec = reg(ic->arg[0]); }
 X(mtsrr0) {	cpu->cd.ppc.srr0 = reg(ic->arg[0]); }
 X(mtsrr1) {	cpu->cd.ppc.srr1 = reg(ic->arg[0]); }
 X(mtsdr1) {	cpu->cd.ppc.sdr1 = reg(ic->arg[0]); }
@@ -1260,7 +1306,7 @@ X(extsb) {
 	reg(ic->arg[2]) = (int64_t)(int8_t)reg(ic->arg[0]);
 #endif
 }
-DOT(extsb)
+DOT2(extsb)
 X(extsh) {
 #ifdef MODE32
 	reg(ic->arg[2]) = (int32_t)(int16_t)reg(ic->arg[0]);
@@ -1268,7 +1314,7 @@ X(extsh) {
 	reg(ic->arg[2]) = (int64_t)(int16_t)reg(ic->arg[0]);
 #endif
 }
-DOT(extsh)
+DOT2(extsh)
 X(extsw) {
 #ifdef MODE32
 	fatal("TODO: extsw: invalid instruction\n"); exit(1);
@@ -1276,10 +1322,10 @@ X(extsw) {
 	reg(ic->arg[2]) = (int64_t)(int32_t)reg(ic->arg[0]);
 #endif
 }
-DOT(extsw)
+DOT2(extsw)
 X(slw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    << (reg(ic->arg[1]) & 63); }
-DOT(slw)
+DOT2(slw)
 X(sraw) {	reg(ic->arg[2]) =
 #ifdef MODE32
 		    (int32_t)
@@ -1287,10 +1333,10 @@ X(sraw) {	reg(ic->arg[2]) =
 		    (int64_t)
 #endif
 		reg(ic->arg[0]) >> (reg(ic->arg[1]) & 63); }
-DOT(sraw)
+DOT2(sraw)
 X(srw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    >> (reg(ic->arg[1]) & 63); }
-DOT(srw)
+DOT2(srw)
 X(and) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
 X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
 		update_cr0(cpu, reg(ic->arg[2])); }
@@ -1589,7 +1635,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
 	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0,
-	    bfa, fp;
+	    bfa, fp, byterev;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 	void (*rc_f)(struct cpu *, struct ppc_instr_call *);
 
@@ -1752,6 +1798,8 @@ X(to_be_translated)
 	case PPC_HI6_LBZU:
 	case PPC_HI6_LHZ:
 	case PPC_HI6_LHZU:
+	case PPC_HI6_LHA:
+	case PPC_HI6_LHAU:
 	case PPC_HI6_LWZ:
 	case PPC_HI6_LWZU:
 	case PPC_HI6_LFD:
@@ -1766,13 +1814,15 @@ X(to_be_translated)
 		imm = (int16_t)(iword & 0xffff);
 		load = 0; zero = 1; size = 0; update = 0; fp = 0;
 		switch (main_opcode) {
-		case PPC_HI6_LBZ:  load = 1; break;
-		case PPC_HI6_LBZU: load = 1; update = 1; break;
-		case PPC_HI6_LHZ:  load = 1; size = 1; break;
-		case PPC_HI6_LHZU: load = 1; size = 1; update = 1; break;
-		case PPC_HI6_LWZ:  load = 1; size = 2; break;
-		case PPC_HI6_LWZU: load = 1; size = 2; update = 1; break;
-		case PPC_HI6_LFD:  load = 1; size = 3; fp = 1; break;
+		case PPC_HI6_LBZ:  load=1; break;
+		case PPC_HI6_LBZU: load=1; update=1; break;
+		case PPC_HI6_LHA:  load=1; size=1; zero=0; break;
+		case PPC_HI6_LHAU: load=1; size=1; zero=0; update=1; break;
+		case PPC_HI6_LHZ:  load=1; size=1; break;
+		case PPC_HI6_LHZU: load=1; size=1; update = 1; break;
+		case PPC_HI6_LWZ:  load=1; size=2; break;
+		case PPC_HI6_LWZU: load=1; size=2; update = 1; break;
+		case PPC_HI6_LFD:  load=1; size=3; fp = 1; break;
 		case PPC_HI6_STB:  break;
 		case PPC_HI6_STBU: update = 1; break;
 		case PPC_HI6_STH:  size = 1; break;
@@ -1968,14 +2018,16 @@ X(to_be_translated)
 		}
 		break;
 
+	case PPC_HI6_RLWNM:
 	case PPC_HI6_RLWIMI:
 	case PPC_HI6_RLWINM:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
-		if (main_opcode == PPC_HI6_RLWIMI)
-			ic->f = instr(rlwimi);
-		else
-			ic->f = instr(rlwinm);
+		switch (main_opcode) {
+		case PPC_HI6_RLWNM:  ic->f = instr(rlwnm); break;
+		case PPC_HI6_RLWIMI: ic->f = instr(rlwimi); break;
+		case PPC_HI6_RLWINM: ic->f = instr(rlwinm); break;
+		}
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 		ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[2] = (uint32_t)iword;
@@ -2065,6 +2117,7 @@ X(to_be_translated)
 			switch (spr) {
 			case 8:	  ic->f = instr(mflr); break;
 			case 9:	  ic->f = instr(mfctr); break;
+			case 22:  ic->f = instr(mfdec); break;
 			case 25:  ic->f = instr(mfsdr1); break;
 			case 26:  ic->f = instr(mfsrr0); break;
 			case 27:  ic->f = instr(mfsrr1); break;
@@ -2103,6 +2156,7 @@ X(to_be_translated)
 			switch (spr) {
 			case 8:	  ic->f = instr(mtlr); break;
 			case 9:	  ic->f = instr(mtctr); break;
+			case 22:  ic->f = instr(mtdec); break;
 			case 25:  ic->f = instr(mtsdr1); break;
 			case 26:  ic->f = instr(mtsrr0); break;
 			case 27:  ic->f = instr(mtsrr1); break;
@@ -2273,10 +2327,14 @@ X(to_be_translated)
 
 		case PPC_31_LBZX:
 		case PPC_31_LBZUX:
+		case PPC_31_LHAX:
+		case PPC_31_LHAUX:
 		case PPC_31_LHZX:
 		case PPC_31_LHZUX:
 		case PPC_31_LWZX:
 		case PPC_31_LWZUX:
+		case PPC_31_LHBRX:
+		case PPC_31_LWBRX:
 		case PPC_31_STBX:
 		case PPC_31_STBUX:
 		case PPC_31_STHX:
@@ -2285,6 +2343,8 @@ X(to_be_translated)
 		case PPC_31_STWUX:
 		case PPC_31_STDX:
 		case PPC_31_STDUX:
+		case PPC_31_STHBRX:
+		case PPC_31_STWBRX:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -2294,14 +2354,20 @@ X(to_be_translated)
 			else
 				ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rb]);
-			load = 0; zero = 1; size = 0; update = 0;
+			load = 0; zero = 1; size = 0; update = 0; byterev = 0;
 			switch (xo) {
 			case PPC_31_LBZX:  load = 1; break;
-			case PPC_31_LBZUX: load = update = 1; break;
-			case PPC_31_LHZX:  size = 1; load = 1; break;
-			case PPC_31_LHZUX: size = 1; load = update = 1; break;
-			case PPC_31_LWZX:  size = 2; load = 1; break;
-			case PPC_31_LWZUX: size = 2; load = update = 1; break;
+			case PPC_31_LBZUX: load=update=1; break;
+			case PPC_31_LHAX:  size=1; load=1; zero=0; break;
+			case PPC_31_LHAUX: size=1; load=update=1; zero=0; break;
+			case PPC_31_LHZX:  size=1; load=1; break;
+			case PPC_31_LHZUX: size=1; load=update = 1; break;
+			case PPC_31_LWZX:  size=2; load=1; break;
+			case PPC_31_LWZUX: size=2; load=update = 1; break;
+			case PPC_31_LHBRX: size=2; load=1; byterev=1;
+					   ic->f = instr(lhbrx); break;
+			case PPC_31_LWBRX: size = 4; load = 1; byterev=1;
+					   ic->f = instr(lwbrx); break;
 			case PPC_31_STBX:  break;
 			case PPC_31_STBUX: update = 1; break;
 			case PPC_31_STHX:  size = 1; break;
@@ -2310,14 +2376,20 @@ X(to_be_translated)
 			case PPC_31_STWUX: size = 2; update = 1; break;
 			case PPC_31_STDX:  size = 3; break;
 			case PPC_31_STDUX: size = 3; update = 1; break;
+			case PPC_31_STHBRX:size = 2; byterev = 1;
+					   ic->f = instr(sthbrx); break;
+			case PPC_31_STWBRX:size = 4; byterev = 1;
+					   ic->f = instr(stwbrx); break;
 			}
-			ic->f =
+			if (!byterev) {
+				ic->f =
 #ifdef MODE32
-			    ppc32_loadstore_indexed
+				    ppc32_loadstore_indexed
 #else
-			    ppc_loadstore_indexed
+				    ppc_loadstore_indexed
 #endif
-			    [size + 4*zero + 8*load + 16*update];
+				    [size + 4*zero + 8*load + 16*update];
+			}
 			if (ra == 0 && update) {
 				fatal("TODO: ra=0 && update?\n");
 				goto bad;

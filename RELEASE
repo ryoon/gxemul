@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.156 2005-11-13 00:53:44 debug Exp $
+$Id: RELEASE,v 1.157 2005-11-15 17:26:27 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -145,6 +145,8 @@ them like this is in order:
 
     This product includes software developed by Mark Brinicombe
     for the NetBSD Project.
+
+    This product includes software developed by TooLs GmbH.
 
 Also, src/include/alpha_rpb.h requires the following:
 

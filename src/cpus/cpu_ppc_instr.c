@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.22 2005-11-15 17:26:29 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.23 2005-11-15 22:41:05 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -319,6 +319,11 @@ X(b)
 	/*  Find the new physical page and update the translation pointers:  */
 	DYNTRANS_PC_TO_POINTERS(cpu);
 }
+X(ba)
+{
+	cpu->pc = (int32_t)ic->arg[0];
+	DYNTRANS_PC_TO_POINTERS(cpu);
+}
 
 
 /*
@@ -405,6 +410,15 @@ X(bl)
 	/*  Find the new physical page and update the translation pointers:  */
 	DYNTRANS_PC_TO_POINTERS(cpu);
 }
+X(bla)
+{
+	uint32_t low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->pc = (int32_t)ic->arg[0];
+	DYNTRANS_PC_TO_POINTERS(cpu);
+}
 
 
 /*
@@ -432,6 +446,16 @@ X(bl_trace)
 	cpu_functioncall_trace(cpu, cpu->pc);
 
 	/*  Find the new physical page and update the translation pointers:  */
+	DYNTRANS_PC_TO_POINTERS(cpu);
+}
+X(bla_trace)
+{
+	uint32_t low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->pc = (int32_t)ic->arg[0];
+	cpu_functioncall_trace(cpu, cpu->pc);
 	DYNTRANS_PC_TO_POINTERS(cpu);
 }
 
@@ -1106,6 +1130,7 @@ X(crxor) {
  *
  *  arg[0] = pointer to destination register
  */
+X(mfxer) {	reg(ic->arg[0]) = cpu->cd.ppc.xer; }
 X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
 X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
 X(mfdec) {	reg(ic->arg[0]) = cpu->cd.ppc.dec; }
@@ -1136,6 +1161,7 @@ X(mfdbatl) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_l[ic->arg[1]]; }
  *
  *  arg[0] = pointer to source register
  */
+X(mtxer) {	cpu->cd.ppc.xer = reg(ic->arg[0]); }
 X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
 X(mtctr) {	cpu->cd.ppc.ctr = reg(ic->arg[0]); }
 /*  TODO: Check privilege level for these:  */
@@ -1920,10 +1946,6 @@ X(to_be_translated)
 	case PPC_HI6_B:
 		aa_bit = (iword & 2) >> 1;
 		lk_bit = iword & 1;
-		if (aa_bit) {
-			fatal("aa_bit: NOT YET\n");
-			goto bad;
-		}
 		tmp_addr = (int64_t)(int32_t)((iword & 0x03fffffc) << 6);
 		tmp_addr = (int64_t)tmp_addr >> 6;
 		if (lk_bit) {
@@ -1953,6 +1975,18 @@ X(to_be_translated)
 				    cpu->cd.ppc.cur_ic_page +
 				    ((new_pc & mask_within_page) >> 2));
 			}
+		}
+		if (aa_bit) {
+			if (lk_bit) {
+				if (cpu->machine->show_trace_tree) {
+					ic->f = instr(bla_trace);
+				} else {
+					ic->f = instr(bla);
+				}
+			} else {
+				ic->f = instr(ba);
+			}
+			ic->arg[0] = (ssize_t)tmp_addr;
 		}
 		break;
 
@@ -2115,6 +2149,7 @@ X(to_be_translated)
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			switch (spr) {
+			case 1:	  ic->f = instr(mfxer); break;
 			case 8:	  ic->f = instr(mflr); break;
 			case 9:	  ic->f = instr(mfctr); break;
 			case 22:  ic->f = instr(mfdec); break;
@@ -2154,6 +2189,7 @@ X(to_be_translated)
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			switch (spr) {
+			case 1:	  ic->f = instr(mtxer); break;
 			case 8:	  ic->f = instr(mtlr); break;
 			case 9:	  ic->f = instr(mtctr); break;
 			case 22:  ic->f = instr(mtdec); break;

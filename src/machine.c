@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.592 2005-11-15 19:00:09 debug Exp $
+ *  $Id: machine.c,v 1.593 2005-11-15 20:18:28 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4109,6 +4109,8 @@ Not yet.
 		pci_data = dev_eagle_init(machine, mem,
 		    0 /*  isa irq base: TODO */,
 		    0 /*  pci irq: TODO */);
+
+		device_add(machine, "8253 irq=0 addr=0x80000040 in_use=0");
 
 		machine->main_console_handle = (size_t)
 		    device_add(machine, "ns16550 irq=4 addr=0x800003f8 name2=tty0");

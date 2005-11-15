@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.591 2005-11-15 17:26:27 debug Exp $
+ *  $Id: machine.c,v 1.592 2005-11-15 19:00:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4133,7 +4133,11 @@ Not yet.
 			device_add(machine, "wdc addr=0x80000170 irq=15");
 
 		if (machine->prom_emulation) {
+			/*  According to the docs, and also used by NetBSD:  */
 			store_32bit_word(cpu, 0x3010, machine->physical_ram_in_mb * 1048576);
+
+			/*  Used by Linux:  */
+			store_32bit_word(cpu, 0x32f8, machine->physical_ram_in_mb * 1048576);
 
 			/*  TODO: List of stuff, see http://www.beatjapan.org/
 			    mirror/www.be.com/aboutbe/benewsletter/
@@ -4143,7 +4147,7 @@ Not yet.
 			/*  NetBSD/bebox: r3 = startkernel, r4 = endkernel,
 			    r5 = args, r6 = ptr to bootinfo?  */
 			cpu->cd.ppc.gpr[3] = 0x3100;
-			cpu->cd.ppc.gpr[4] = 0x200000;
+			cpu->cd.ppc.gpr[4] = 0x400000;
 			cpu->cd.ppc.gpr[5] = 0x2000;
 			store_string(cpu, cpu->cd.ppc.gpr[5], "-a");
 			cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576 - 0x100;

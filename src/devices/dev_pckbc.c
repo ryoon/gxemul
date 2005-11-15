@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.57 2005-11-13 22:34:24 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.58 2005-11-15 19:00:10 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -664,7 +664,7 @@ if (x&1)
 				}
 			}
 			/*  debug("[ pckbc: read from DATA: 0x%02x ]\n",
-			    odata);  */
+			    (int)odata);  */
 		} else {
 			debug("[ pckbc: write to DATA:");
 			for (i=0; i<len; i++)

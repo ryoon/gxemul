@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1028 2005-11-15 17:26:26 debug Exp $
+$Id: HISTORY,v 1.1029 2005-11-16 07:51:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2420,3 +2420,6 @@ Changelog for GXemul:
 		Adding disassembly of ARM mrrc/mcrr and q{,d}{add,sub}.
 20051115	Continuing on various PPC things (BATs, other address trans-
 		lation things, various loads/stores, BeBox emulation, etc.).
+		Beginning to work on PPC interrupt/exception support.
+20051116	Factoring out some code which initializes legacy ISA devices
+		from those machines that use them (bus_isa).

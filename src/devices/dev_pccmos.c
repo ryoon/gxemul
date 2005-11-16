@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.9 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.10 2005-11-16 07:51:54 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -131,13 +131,21 @@ int devinit_pccmos(struct devinit *devinit)
 	 */
 	switch (devinit->machine->machine_type) {
 	case MACHINE_CATS:
+	case MACHINE_NETWINDER:
 		irq_nr = 32 + 8;
 		type = MC146818_CATS;
 		d->ram[0x48] = 20;		/*  century  */
 		len = DEV_PCCMOS_LENGTH * 2;
 		break;
+	case MACHINE_EVBMIPS:
+		/*  Malta etc.  */
+		irq_nr = 8 + 8;
+		break;
 	case MACHINE_X86:
 		irq_nr = 16;	/*  "No" irq  */
+		break;
+	case MACHINE_BEBOX:
+		irq_nr = 64;	/*  "No" irq  */
 		break;
 	default:fatal("devinit_pccmos(): unimplemented machine type"
 		    " %i\n", devinit->machine->machine_type);

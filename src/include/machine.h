@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.81 2005-11-13 22:34:25 debug Exp $
+ *  $Id: machine.h,v 1.82 2005-11-16 07:51:56 debug Exp $
  */
 
 #include <sys/types.h>
@@ -71,6 +71,7 @@ struct isa_pic_data {
 	struct pic8259_data	*pic1;
 	struct pic8259_data	*pic2;
 	int			last_int;
+	int			native_irq;
 };
 
 
@@ -217,6 +218,7 @@ struct machine {
 			struct mace_data *mace_data;
 		} ip32;
 		struct footbridge_data *footbridge_data;
+		struct bebox_data *bebox_data;
 	} md_int;
 
 	/*  X11/framebuffer stuff:  */

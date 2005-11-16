@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.10 2005-11-08 11:01:48 debug Exp $
+ *  $Id: device.h,v 1.11 2005-11-16 07:51:56 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
@@ -75,6 +75,19 @@ void device_dumplist(void);
 void device_set_exit_on_error(int exit_on_error);
 void device_init(void);
 
+/*  ISA stuff:  (TODO: move somewhere else?)  */
+void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
+	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase,
+	int reassert_irq);
+/*  ISA bus flags:  */
+#define	BUS_ISA_IDE0			1
+#define	BUS_ISA_IDE1			2
+#define	BUS_ISA_VGA			4
+#define	BUS_ISA_VGA_FORCE		8
+#define	BUS_ISA_PCKBC_FORCE_USE		16
+#define	BUS_ISA_PCKBC_NONPCSTYLE	32
+
+/*  PCI stuff:  (TODO: move somewhere else?)  */
 int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
 	struct pci_device *));
 void (*pci_lookup_initf(char *name))(struct machine *machine,

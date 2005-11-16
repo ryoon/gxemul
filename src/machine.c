@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.593 2005-11-15 20:18:28 debug Exp $
+ *  $Id: machine.c,v 1.594 2005-11-16 07:51:53 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1302,7 +1302,6 @@ void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	int mask, x;
 	int old_isa_assert, new_isa_assert;
-	int isa_int = m->machine_type == MACHINE_COBALT? 6 : 2;
 
 	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 
@@ -1345,9 +1344,9 @@ void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 	}
 
 	if (m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
-		cpu_interrupt(cpu, isa_int);
+		cpu_interrupt(cpu, m->isa_pic_data.native_irq);
 	else
-		cpu_interrupt_ack(cpu, isa_int);
+		cpu_interrupt_ack(cpu, m->isa_pic_data.native_irq);
 
 	/*  printf("COBALT/MALTA: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
 	    "ier=0x%02x\n", m->isa_pic_data.pic1->irr,
@@ -1400,18 +1399,18 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 
 /*
- *  Footbridge interrupts:
+ *  "Generic" ISA interrupt management, 32 native interrupts, 16 ISA
+ *  interrupts.  So far: Footbridge (CATS, NetWinder) and BeBox.
  *
  *  0..31  = footbridge interrupt
- *  32..47 = ISA (connected to IRQ_IN_L2 on CATS, L3 on NetWinder)
+ *  32..47 = ISA interrupts
  *  64     = reassert
  */
-void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
+void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	int assrt)
 {
 	uint32_t mask = 1 << (irq_nr & 31);
 	int old_isa_assert, new_isa_assert;
-	int isa_int = m->machine_type == MACHINE_CATS? 10 : 11;
 
 	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 
@@ -1452,24 +1451,47 @@ void footbridge_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 				        break;
 			}
 			m->isa_pic_data.last_int = x;
-			cpu_interrupt(cpu, isa_int);
+			cpu_interrupt(cpu, m->isa_pic_data.native_irq);
 		} else
-			cpu_interrupt_ack(cpu, isa_int);
+			cpu_interrupt_ack(cpu, m->isa_pic_data.native_irq);
 		return;
 	}
 
-	if (irq_nr < 32) {
-		if (assrt)
-			m->md_int.footbridge_data->irq_status |= mask;
+	switch (m->machine_type) {
+	case MACHINE_CATS:
+	case MACHINE_NETWINDER:
+		if (irq_nr < 32) {
+			if (assrt)
+				m->md_int.footbridge_data->irq_status |= mask;
+			else
+				m->md_int.footbridge_data->irq_status &= ~mask;
+		}
+		if (m->md_int.footbridge_data->irq_status &
+		    m->md_int.footbridge_data->irq_enable)
+			cpu_interrupt(cpu, 65);
 		else
-			m->md_int.footbridge_data->irq_status &= ~mask;
+			cpu_interrupt_ack(cpu, 65);
+		break;
+	case MACHINE_BEBOX:
+		if (irq_nr < 32) {
+			if (assrt)
+				m->md_int.bebox_data->int_status |= mask;
+			else
+				m->md_int.bebox_data->int_status &= ~mask;
+		}
+		if (m->md_int.bebox_data->int_status &
+		    m->md_int.bebox_data->cpu0_int_mask)
+			cpu_interrupt(m->cpus[0], 65);
+		else
+			cpu_interrupt_ack(m->cpus[0], 65);
+		if (m->ncpus > 1 &&
+		    m->md_int.bebox_data->int_status &
+		    m->md_int.bebox_data->cpu1_int_mask)
+			cpu_interrupt(m->cpus[1], 65);
+		else
+			cpu_interrupt_ack(m->cpus[1], 65);
+		break;
 	}
-
-	if (m->md_int.footbridge_data->irq_status &
-	    m->md_int.footbridge_data->irq_enable)
-		cpu_interrupt(cpu, 65);
-	else
-		cpu_interrupt_ack(cpu, 65);
 }
 
 
@@ -2344,11 +2366,14 @@ void machine_setup(struct machine *machine)
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x100000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 		machine->md_interrupt = cobalt_interrupt;
+		machine->isa_pic_data.native_irq = 6;
 
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
 
 		machine->main_console_handle = (size_t)
 		    device_add(machine, "ns16550 irq=5 addr=0x1c800000 name2=tty0 in_use=1");
+
+		/*  TODO: bus_isa() ?  */
 
 #if 0
 		device_add(machine, "ns16550 irq=0 addr=0x1f000010 name2=tty1 in_use=0");
@@ -3873,19 +3898,10 @@ Not yet.
 				cpu->byte_order = EMUL_BIG_ENDIAN;
 			}
 
-			/*  ISA interrupt controllers:  */
-			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x18000020");
-			machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x180000a0");
-			machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
 			machine->md_interrupt = cobalt_interrupt;
+			machine->isa_pic_data.native_irq = 2;
 
-			dev_mc146818_init(machine, mem, 0x18000070, 8 + 8, MC146818_PC_CMOS, 1);
-
-			machine->main_console_handle = (size_t)
-			    device_add(machine, "ns16550 irq=12 addr=0x180003f8 name2=tty0");
-			device_add(machine, "ns16550 irq=11 addr=0x180002f8 name2=tty1");
-
+			bus_isa(machine, 0, 0x18000000, 0x10000000, 8, 0);
 			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x name2=tty2", MALTA_CBUSUART);
 			device_add(machine, tmpstr);
 
@@ -3896,9 +3912,6 @@ Not yet.
 					fatal("WARNING: remember to use  -o 'console=tty0'  "
 					    "if you are emulating Linux. (Not needed for NetBSD.)\n");
 				bus_pci_add(machine, pci_data, mem, 0xc0, 8, 0, "s3_virge");
-				j = dev_pckbc_init(machine, mem, 0x18000060, PCKBC_8042,
-				    8 + 1, 8 + 12, 1, 0);
-				machine->main_console_handle = j;
 			}
 
 			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "i82371ab_isa");
@@ -4105,34 +4118,14 @@ Not yet.
 		 */
 		machine->machine_name = "BeBox";
 
-		device_add(machine, "bebox");
+		machine->md_int.bebox_data = device_add(machine, "bebox");
+		machine->isa_pic_data.native_irq = 5;
+
 		pci_data = dev_eagle_init(machine, mem,
-		    0 /*  isa irq base: TODO */,
-		    0 /*  pci irq: TODO */);
+		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
-		device_add(machine, "8253 irq=0 addr=0x80000040 in_use=0");
-
-		machine->main_console_handle = (size_t)
-		    device_add(machine, "ns16550 irq=4 addr=0x800003f8 name2=tty0");
-		device_add(machine, "ns16550 irq=3 addr=0x800002f8 name2=tty1 in_use=0");
-		device_add(machine, "lpt irq=7 addr=0x80000378 name2=lpt in_use=0");
-
-		j = dev_pckbc_init(machine, mem, 0x80000060, PCKBC_8042,
-		    1, 12, machine->use_x11, 1);
-
-		if (machine->use_x11) {
-			dev_vga_init(machine, mem, 0xc00a0000ULL, 0x800003c0ULL,
-			    machine->machine_name);
-			machine->main_console_handle = j;
-		}
-
-		/*  IDE controllers:  */
-		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 1, DISKIMAGE_IDE))
-			device_add(machine, "wdc addr=0x800001f0 irq=14");
-		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
-			device_add(machine, "wdc addr=0x80000170 irq=15");
+		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_VGA,
+		    0x80000000, 0xc0000000, 32, 64);
 
 		if (machine->prom_emulation) {
 			/*  According to the docs, and also used by NetBSD:  */
@@ -4563,7 +4556,8 @@ Not yet.
 
 		machine->md_int.footbridge_data =
 		    device_add(machine, "footbridge addr=0x42000000");
-		machine->md_interrupt = footbridge_interrupt;
+		machine->md_interrupt = isa32_interrupt;
+		machine->isa_pic_data.native_irq = 10;
 
 		/*
 		 *  DC21285_ROM_BASE (0x41000000): "reboot" code. Works
@@ -4582,24 +4576,11 @@ Not yet.
 		/*  Interrupt ack space?  */
 		dev_ram_init(machine, 0x80000000, 0x1000, DEV_RAM_RAM, 0);
 
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
-		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
-		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-
-		device_add(machine, "8253 irq=32 addr=0x7c000040 in_use=0");
-
-		device_add(machine, "pccmos addr=0x7c000070");
+		bus_isa(machine, BUS_ISA_PCKBC_FORCE_USE | BUS_ISA_PCKBC_NONPCSTYLE,
+		    0x7c000000, 0x80000000, 32, 64);
 
 		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
 		    mem, 0xc0, 8, 0, "s3_virge");
-		j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
-		    32 + 1, 32 + 12, 1, 0);
-		machine->main_console_handle = j;
-
-		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0 in_use=0");
-		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1 in_use=0");
-		device_add(machine, "lpt irq=39 addr=0x7c000378 name2=lpt in_use=0");
 
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
@@ -4794,8 +4775,11 @@ Not yet.
 
 		machine->md_int.footbridge_data =
 		    device_add(machine, "footbridge addr=0x42000000");
-		machine->md_interrupt = footbridge_interrupt;
+		machine->md_interrupt = isa32_interrupt;
+		machine->isa_pic_data.native_irq = 11;
 
+		bus_isa(machine, 0, 0x7c000000, 0x80000000, 32, 64);
+#if 0
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
@@ -4804,13 +4788,14 @@ Not yet.
 		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0");
 		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1");
 
-		if (machine->use_x11) {
-			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-			    mem, 0xc0, 8, 0, "igsfb");
 			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
 			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
 			    32 + 1, 32 + 12, machine->use_x11, 0);
 			machine->main_console_handle = j;
+#endif
+		if (machine->use_x11) {
+			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
+			    mem, 0xc0, 8, 0, "igsfb");
 		}
 
 		if (machine->prom_emulation) {

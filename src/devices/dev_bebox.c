@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.5 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_bebox.c,v 1.6 2005-11-16 07:51:29 debug Exp $
  *
  *  Emulation of BeBox motherboard registers. See the following URL for more
  *  information:
@@ -39,19 +39,10 @@
 
 #include "cpu.h"
 #include "device.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-
-
-struct bebox_data {
-	/*  The 5 motherboard registers:  */
-	uint32_t	cpu0_intmask;
-	uint32_t	cpu1_intmask;
-	uint32_t	int_source;
-	uint32_t	xpi;
-	uint32_t	resets;
-};
 
 
 /*
@@ -68,6 +59,28 @@ int dev_bebox_access(struct cpu *cpu, struct memory *mem,
 		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
+	case 0x0f0:
+		if (writeflag == MEM_READ)
+			odata = d->cpu0_int_mask;
+		else
+			d->cpu0_int_mask = idata;
+		break;
+
+	case 0x1f0:
+		if (writeflag == MEM_READ)
+			odata = d->cpu1_int_mask;
+		else
+			d->cpu1_int_mask = idata;
+		break;
+
+	case 0x2f0:
+		if (writeflag == MEM_READ)
+			odata = d->int_status;
+		else
+			d->int_status = idata;
+		break;
+
 	case 0x3f0:
 		if (writeflag == MEM_READ) {
 			odata = d->xpi;

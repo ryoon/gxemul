@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.189 2005-11-15 17:26:50 debug Exp $
+ *  $Id: devices.h,v 1.190 2005-11-16 07:51:28 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -104,6 +104,17 @@ struct au1x00_ic_data {
 
 int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct au1x00_ic_data *dev_au1x00_init(struct machine *machine, struct memory *mem);
+
+/*  dev_bebox.c:  */
+struct bebox_data {
+	/*  The 5 motherboard registers:  */  
+	uint32_t	cpu0_int_mask;
+	uint32_t	cpu1_int_mask;
+	uint32_t	int_status;
+	uint32_t	xpi;
+	uint32_t	resets;
+};
+
 
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.15 2005-11-15 17:26:29 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.16 2005-11-16 07:50:55 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -428,11 +428,26 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 
 /*
  *  ppc_cpu_interrupt():
+ *
+ *  0..31 are used as BeBox interrupt numbers, 32..47 = ISA,
+ *  64 is used as a "re-assert" signal to cpu->machine->md_interrupt().
+ *
+ *  TODO: don't hardcode to BeBox!
  */
 int ppc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	fatal("ppc_cpu_interrupt(): TODO\n");
-	return 0;
+	/*  fatal("ppc_cpu_interrupt(): 0x%llx\n", (int)irq_nr);  */
+	if (irq_nr <= 64) {
+		if (cpu->machine->md_interrupt != NULL)
+			cpu->machine->md_interrupt(
+			    cpu->machine, cpu, irq_nr, 1);
+		else
+			fatal("ppc_cpu_interrupt(): md_interrupt == NULL\n");
+	} else {
+		/*  Assert PPC IRQ:  */
+		cpu->cd.ppc.irq_asserted = 1;
+	}
+	return 1;
 }
 
 
@@ -441,8 +456,15 @@ int ppc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  */
 int ppc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	/*  fatal("ppc_cpu_interrupt_ack(): TODO\n");  */
-	return 0;
+	if (irq_nr <= 64) {
+		if (cpu->machine->md_interrupt != NULL)
+			cpu->machine->md_interrupt(cpu->machine,
+			    cpu, irq_nr, 0);
+	} else {
+		/*  De-assert PPC IRQ:  */
+		cpu->cd.ppc.irq_asserted = 0;
+	}
+	return 1;
 }
 
 

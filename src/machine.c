@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.594 2005-11-16 07:51:53 debug Exp $
+ *  $Id: machine.c,v 1.595 2005-11-16 08:55:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3901,7 +3901,8 @@ Not yet.
 			machine->md_interrupt = cobalt_interrupt;
 			machine->isa_pic_data.native_irq = 2;
 
-			bus_isa(machine, 0, 0x18000000, 0x10000000, 8, 0);
+			bus_isa(machine, 0, 0x18000000, 0x10000000, 8, 24);
+
 			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x name2=tty2", MALTA_CBUSUART);
 			device_add(machine, tmpstr);
 

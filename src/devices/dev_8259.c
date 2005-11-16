@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.18 2005-11-16 07:51:54 debug Exp $
+ *  $Id: dev_8259.c,v 1.19 2005-11-16 08:55:55 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -171,7 +171,7 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				odata = 0x00;
 				for (i=0; i<8; i++)
 					if ((d->irr >> i) & 1) {
-						odata = i;
+						odata = 0x80 | i;
 						break;
 					}
 				break;

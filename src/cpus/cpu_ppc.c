@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.16 2005-11-16 07:50:55 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.17 2005-11-16 21:15:17 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -45,6 +45,10 @@
 
 #define	DYNTRANS_DUALMODE_32
 #include "tmp_ppc_head.c"
+
+
+void ppc_pc_to_pointers(struct cpu *);
+void ppc32_pc_to_pointers(struct cpu *);
 
 
 /*
@@ -222,6 +226,32 @@ void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
 
 	if (!writeflag)
 		*valuep = cpu->cd.ppc.msr;
+}
+
+
+/*
+ *  ppc_exception():
+ */
+void ppc_exception(struct cpu *cpu, int exception_nr)
+{
+	/*  Save PC and MSR:  */
+	cpu->cd.ppc.srr0 = cpu->pc;
+	cpu->cd.ppc.srr1 = cpu->cd.ppc.msr;
+
+printf("[ PPC Exception 0x%x; pc=0x%llx ]\n", exception_nr, (long long)cpu->pc);
+
+	/*  Disable External Interrupts, Recoverable Interrupt Mode,
+	    and go to Supervisor mode  */
+	cpu->cd.ppc.msr &= ~(PPC_MSR_EE | PPC_MSR_RI | PPC_MSR_PR);
+
+	cpu->pc = exception_nr * 0x100;
+	if (cpu->cd.ppc.msr & PPC_MSR_IP)
+		cpu->pc += 0xfff00000;
+
+	if (cpu->is_32bit)
+		ppc32_pc_to_pointers(cpu);
+	else
+		ppc_pc_to_pointers(cpu);
 }
 
 
@@ -436,7 +466,7 @@ void ppc_cpu_register_match(struct machine *m, char *name,
  */
 int ppc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	/*  fatal("ppc_cpu_interrupt(): 0x%llx\n", (int)irq_nr);  */
+	/*  fatal("ppc_cpu_interrupt(): 0x%x\n", (int)irq_nr);  */
 	if (irq_nr <= 64) {
 		if (cpu->machine->md_interrupt != NULL)
 			cpu->machine->md_interrupt(
@@ -951,14 +981,17 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case PPC_31_MTSRIN:
 		case PPC_31_MFSRIN:
+		case PPC_31_MFSR:
 			/*  Move to/from segment register indirect  */
 			rt = (iword >> 21) & 31;
 			rb = (iword >> 11) & 31;
 			switch (xo) {
 			case PPC_31_MTSRIN:  mnem = "mtsrin"; break;
 			case PPC_31_MFSRIN:  mnem = "mfsrin"; break;
+			case PPC_31_MFSR:  mnem = "mfsr"; break;
 			}
-			debug("%s\tr%i,r%i", mnem, rt, rb);
+			debug("%s\tr%i,%s%i", mnem, rt,
+			    xo == PPC_31_MFSR? "sr" : "r", rb);
 			break;
 		case PPC_31_ADDC:
 		case PPC_31_ADDCO:

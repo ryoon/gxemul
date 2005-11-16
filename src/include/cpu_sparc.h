@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.14 2005-11-11 07:31:33 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.15 2005-11-16 21:15:19 debug Exp $
  */
 
 #include "misc.h"
@@ -87,6 +87,8 @@ struct sparc_cpu {
 	struct sparc_instr_call	*cur_ic_page;
 	struct sparc_instr_call	*next_ic;
 
+	void			(*combination_check)(struct cpu *,
+				    struct sparc_instr_call *, int low_addr);
 
 	/*
 	 *  Virtual -> physical -> host address translation:

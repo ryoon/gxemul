@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.23 2005-11-15 22:41:05 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.24 2005-11-16 21:15:17 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -877,6 +877,11 @@ X(mfsrin)
 	uint32_t sr_num = reg(ic->arg[0]) >> 28;
 	reg(ic->arg[1]) = cpu->cd.ppc.sr[sr_num];
 }
+X(mfsr)
+{
+	/*  TODO: This only works for 32-bit mode  */
+	reg(ic->arg[1]) = cpu->cd.ppc.sr[ic->arg[0]];
+}
 X(mtsrin)
 {
 	/*  TODO: This only works for 32-bit mode  */
@@ -1154,6 +1159,8 @@ X(mfibatu) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_u[ic->arg[1]]; }
 X(mfibatl) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_l[ic->arg[1]]; }
 X(mfdbatu) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_u[ic->arg[1]]; }
 X(mfdbatl) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_l[ic->arg[1]]; }
+X(mfmmcr0) {	reg(ic->arg[0]) = 0; }
+X(mfmmcr1) {	reg(ic->arg[0]) = 0; }
 
 
 /*
@@ -1174,6 +1181,8 @@ X(mtsprg0) {	cpu->cd.ppc.sprg0 = reg(ic->arg[0]); }
 X(mtsprg1) {	cpu->cd.ppc.sprg1 = reg(ic->arg[0]); }
 X(mtsprg2) {	cpu->cd.ppc.sprg2 = reg(ic->arg[0]); }
 X(mtsprg3) {	cpu->cd.ppc.sprg3 = reg(ic->arg[0]); }
+X(mtmmcr0) {	 }
+X(mtmmcr1) {	 }
 X(mtibatu) {	cpu->cd.ppc.ibat_u[ic->arg[1]] = reg(ic->arg[0]); }
 X(mtibatl) {	cpu->cd.ppc.ibat_l[ic->arg[1]] = reg(ic->arg[0]); }
 X(mtdbatu) {	cpu->cd.ppc.dbat_u[ic->arg[1]] = reg(ic->arg[0]); }
@@ -1265,12 +1274,20 @@ X(mulli)
 X(lmw) {
 	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
 	unsigned char d[4];
-	int n_err = 0, rs = ic->arg[0];
+	int rs = ic->arg[0];
+
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
+	    / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1)
+	    << PPC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 
 	while (rs <= 31) {
 		if (cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d),
-		    MEM_READ, CACHE_DATA) != MEMORY_ACCESS_OK)
-			n_err ++;
+		    MEM_READ, CACHE_DATA) != MEMORY_ACCESS_OK) {
+			/*  exception  */
+			return;
+		}
 
 		if (cpu->byte_order == EMUL_BIG_ENDIAN)
 			cpu->cd.ppc.gpr[rs] = (d[0] << 24) + (d[1] << 16)
@@ -1278,11 +1295,6 @@ X(lmw) {
 		else
 			cpu->cd.ppc.gpr[rs] = (d[3] << 24) + (d[2] << 16)
 			    + (d[1] << 8) + d[0];
-
-		if (n_err > 0) {
-			fatal("TODO: lmw: exception\n");
-			exit(1);
-		}
 
 		rs ++;
 		addr += sizeof(uint32_t);
@@ -1292,7 +1304,13 @@ X(stmw) {
 	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
 	uint32_t tmp;
 	unsigned char d[4];
-	int n_err = 0, rs = ic->arg[0];
+	int rs = ic->arg[0];
+
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
+	    / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1)
+	    << PPC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 
 	while (rs <= 31) {
 		tmp = cpu->cd.ppc.gpr[rs];
@@ -1304,12 +1322,9 @@ X(stmw) {
 			d[2] = tmp >> 16; d[3] = tmp >> 24;
 		}
 		if (cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d),
-		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK)
-			n_err ++;
-
-		if (n_err > 0) {
-			fatal("TODO: stmw: exception\n");
-			exit(1);
+		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK) {
+			/*  exception  */
+			return;
 		}
 
 		rs ++;
@@ -2161,6 +2176,8 @@ X(to_be_translated)
 			case 274: ic->f = instr(mfsprg2); break;
 			case 275: ic->f = instr(mfsprg3); break;
 			case 287: ic->f = instr(mfpvr); break;
+			case 952: ic->f = instr(mfmmcr0); break;
+			case 953: ic->f = instr(mfmmcr1); break;
 			case 1008:ic->f = instr(mfdbsr); break;
 			case 1009:ic->f = instr(mfhid1); break;
 			case 1017:ic->f = instr(mfl2cr); break;
@@ -2200,6 +2217,8 @@ X(to_be_translated)
 			case 273: ic->f = instr(mtsprg1); break;
 			case 274: ic->f = instr(mtsprg2); break;
 			case 275: ic->f = instr(mtsprg3); break;
+			case 952: ic->f = instr(mtmmcr0); break;
+			case 953: ic->f = instr(mtmmcr1); break;
 			case 1008:ic->f = instr(mtdbsr); break;
 			default:if (spr >= 528 && spr < 544) {
 					if (spr & 1) {
@@ -2260,13 +2279,18 @@ X(to_be_translated)
 			ic->f = instr(mtcrf);
 			break;
 
+		case PPC_31_MFSR:
 		case PPC_31_MFSRIN:
 		case PPC_31_MTSRIN:
 			rt = (iword >> 21) & 31;
 			rb = (iword >> 11) & 31;
-			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			if (xo == PPC_31_MFSR)
+				ic->arg[0] = rb;
+			else
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			switch (xo) {
+			case PPC_31_MFSR:   ic->f = instr(mfsr); break;
 			case PPC_31_MFSRIN: ic->f = instr(mfsrin); break;
 			case PPC_31_MTSRIN: ic->f = instr(mtsrin); break;
 			}

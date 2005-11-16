@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.38 2005-11-11 07:31:33 debug Exp $
+ *  $Id: cpu_x86.h,v 1.39 2005-11-16 21:15:19 debug Exp $
  */
 
 #include "misc.h"
@@ -191,6 +191,8 @@ struct x86_cpu {
 	struct x86_instr_call   *cur_ic_page;
 	struct x86_instr_call   *next_ic;
 
+	void			(*combination_check)(struct cpu *,
+				    struct x86_instr_call *, int low_addr);
 
 	/*
 	 *  Virtual -> physical -> host address translation:

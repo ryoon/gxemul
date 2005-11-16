@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.52 2005-11-15 17:26:29 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.53 2005-11-16 21:15:02 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2019,10 +2019,10 @@ X(end_of_page)
  *  Check for the core of a NetBSD/arm memset; large memsets use a sequence
  *  of 16 store-multiple instructions, each storing 2 registers at a time.
  */
-void arm_combine_netbsd_memset(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_netbsd_memset(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -2049,10 +2049,10 @@ void arm_combine_netbsd_memset(struct cpu *cpu, void *v, int low_addr)
  *  Check for the core of a NetBSD/arm memcpy; large memcpys use a
  *  sequence of ldmia instructions.
  */
-void arm_combine_netbsd_memcpy(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_netbsd_memcpy(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -2078,9 +2078,9 @@ void arm_combine_netbsd_memcpy(struct cpu *cpu, void *v, int low_addr)
  *
  *  Check for the core of a NetBSD/arm cache clean. (There are two variants.)
  */
-void arm_combine_netbsd_cacheclean(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_netbsd_cacheclean(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -2102,9 +2102,9 @@ void arm_combine_netbsd_cacheclean(struct cpu *cpu, void *v, int low_addr)
  *
  *  Check for the core of a NetBSD/arm cache clean. (Second variant.)
  */
-void arm_combine_netbsd_cacheclean2(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_netbsd_cacheclean2(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -2125,24 +2125,25 @@ void arm_combine_netbsd_cacheclean2(struct cpu *cpu, void *v, int low_addr)
 /*
  *  arm_combine_netbsd_scanc():
  */
-void arm_combine_netbsd_scanc(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_netbsd_scanc(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
-	if (n_back >= 2) {
-		if (ic[-2].f == instr(load_w0_byte_u1_p1_imm) &&
-		    ic[-2].arg[0] == (size_t)(&cpu->cd.arm.r[1]) &&
-		    ic[-2].arg[1] == 0 &&
-		    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[3]) &&
-		    ic[-1].f == instr(load_w0_byte_u1_p1_reg) &&
-		    ic[-1].arg[0] == (size_t)(&cpu->cd.arm.r[2]) &&
-		    ic[-1].arg[1] == (size_t)arm_r_r3_t0_c0 &&
-		    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[3])) {
-			ic[-2].f = instr(netbsd_scanc);
-			combined;
-		}
+	if (n_back < 2)
+		return;
+
+	if (ic[-2].f == instr(load_w0_byte_u1_p1_imm) &&
+	    ic[-2].arg[0] == (size_t)(&cpu->cd.arm.r[1]) &&
+	    ic[-2].arg[1] == 0 &&
+	    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[3]) &&
+	    ic[-1].f == instr(load_w0_byte_u1_p1_reg) &&
+	    ic[-1].arg[0] == (size_t)(&cpu->cd.arm.r[2]) &&
+	    ic[-1].arg[1] == (size_t)arm_r_r3_t0_c0 &&
+	    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[3])) {
+		ic[-2].f = instr(netbsd_scanc);
+		combined;
 	}
 }
 
@@ -2151,9 +2152,9 @@ void arm_combine_netbsd_scanc(struct cpu *cpu, void *v, int low_addr)
 /*
  *  arm_combine_strlen():
  */
-void arm_combine_strlen(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_strlen(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -2176,9 +2177,9 @@ void arm_combine_strlen(struct cpu *cpu, void *v, int low_addr)
 /*
  *  arm_combine_xchg():
  */
-void arm_combine_xchg(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_xchg(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 	size_t a, b;
@@ -2202,10 +2203,10 @@ void arm_combine_xchg(struct cpu *cpu, void *v, int low_addr)
 /*
  *  arm_combine_netbsd_copyin():
  */
-void arm_combine_netbsd_copyin(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_netbsd_copyin(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
-	struct arm_instr_call *ic = v;
 	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -2234,10 +2235,10 @@ void arm_combine_netbsd_copyin(struct cpu *cpu, void *v, int low_addr)
 /*
  *  arm_combine_netbsd_copyout():
  */
-void arm_combine_netbsd_copyout(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_netbsd_copyout(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
 #ifdef HOST_LITTLE_ENDIAN
-	struct arm_instr_call *ic = v;
 	int i, n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 
@@ -2266,9 +2267,9 @@ void arm_combine_netbsd_copyout(struct cpu *cpu, void *v, int low_addr)
 /*
  *  arm_combine_cmps_b():
  */
-void arm_combine_cmps_b(struct cpu *cpu, void *v, int low_addr)
+void arm_combine_cmps_b(struct cpu *cpu,
+	struct arm_instr_call *ic, int low_addr)
 {
-	struct arm_instr_call *ic = v;
 	int n_back = (low_addr >> ARM_INSTR_ALIGNMENT_SHIFT)
 	    & (ARM_IC_ENTRIES_PER_PAGE-1);
 	if (n_back < 1)
@@ -2791,9 +2792,10 @@ X(to_be_translated)
 			    (any_pc_reg? 512 : 0) + (regform? 1024 : 0)];
 
 		if (ic->f == instr(eor_regshort))
-			cpu->combination_check = arm_combine_xchg;
+			cpu->cd.arm.combination_check = arm_combine_xchg;
 		if (iword == 0xe113000c)
-			cpu->combination_check = arm_combine_netbsd_scanc;
+			cpu->cd.arm.combination_check =
+			    arm_combine_netbsd_scanc;
 		break;
 
 	case 0x4:	/*  Load and store...  */
@@ -2865,9 +2867,11 @@ X(to_be_translated)
 			}
 		}
 		if (iword == 0xe4b09004)
-			cpu->combination_check = arm_combine_netbsd_copyin;
+			cpu->cd.arm.combination_check =
+			    arm_combine_netbsd_copyin;
 		if (iword == 0xe4a17004)
-			cpu->combination_check = arm_combine_netbsd_copyout;
+			cpu->cd.arm.combination_check =
+			    arm_combine_netbsd_copyout;
 		break;
 
 	case 0x8:	/*  Multiple load/store...  (Block data transfer)  */
@@ -2918,13 +2922,11 @@ X(to_be_translated)
 		if (main_opcode == 0x0a) {
 			ic->f = cond_instr(b);
 			samepage_function = cond_instr(b_samepage);
-			/*  if (iword == 0xcafffffc)
-				cpu->combination_check = arm_combine_test2;  */
 			if (iword == 0xcaffffed)
-				cpu->combination_check =
+				cpu->cd.arm.combination_check =
 				    arm_combine_netbsd_memset;
 			if (iword == 0xaafffff9)
-				cpu->combination_check =
+				cpu->cd.arm.combination_check =
 				    arm_combine_netbsd_memcpy;
 		} else {
 			if (cpu->machine->show_trace_tree) {
@@ -2984,16 +2986,15 @@ X(to_be_translated)
 		if (main_opcode == 0xa && (condition_code <= 1
 		    || condition_code == 3 || condition_code == 8
 		    || condition_code == 12 || condition_code == 13))
-			cpu->combination_check = arm_combine_cmps_b;
-#if 1
+			cpu->cd.arm.combination_check = arm_combine_cmps_b;
+
 		if (iword == 0x1afffffc)
-			cpu->combination_check = arm_combine_strlen;
-#endif
-#if 1
+			cpu->cd.arm.combination_check = arm_combine_strlen;
+
 		/*  Hm. Does this really increase performance?  */
 		if (iword == 0x8afffffa)
-			cpu->combination_check = arm_combine_netbsd_cacheclean2;
-#endif
+			cpu->cd.arm.combination_check =
+			    arm_combine_netbsd_cacheclean2;
 		break;
 
 	case 0xc:
@@ -3028,7 +3029,8 @@ X(to_be_translated)
 			ic->f = cond_instr(cdp);
 		}
 		if (iword == 0xee070f9a)
-			cpu->combination_check = arm_combine_netbsd_cacheclean;
+			cpu->cd.arm.combination_check =
+			    arm_combine_netbsd_cacheclean;
 		break;
 
 	case 0xf:

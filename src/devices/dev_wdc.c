@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.52 2005-11-15 17:26:49 debug Exp $
+ *  $Id: dev_wdc.c,v 1.53 2005-11-16 21:15:18 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -881,7 +881,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	}
 
 	if (cpu->machine->machine_type != MACHINE_HPCMIPS &&
-	    cpu->machine->machine_type != MACHINE_EVBMIPS)
+	    cpu->machine->machine_type != MACHINE_EVBMIPS &&
+	    cpu->machine->machine_type != MACHINE_BEBOX)
 		dev_wdc_tick(cpu, extra);
 
 	if (writeflag == MEM_READ) {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.h,v 1.11 2005-11-13 22:34:25 debug Exp $
+ *  $Id: cpu_hppa.h,v 1.12 2005-11-16 21:15:19 debug Exp $
  */
 
 #include "misc.h"
@@ -88,6 +88,8 @@ struct hppa_cpu {
 	struct hppa_instr_call	*cur_ic_page;
 	struct hppa_instr_call	*next_ic;
 
+	void			(*combination_check)(struct cpu *,
+				    struct hppa_instr_call *, int low_addr);
 
 	/*
 	 *  Virtual -> physical -> host address translation:

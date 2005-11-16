@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.6 2005-11-16 07:51:29 debug Exp $
+ *  $Id: dev_bebox.c,v 1.7 2005-11-16 21:15:18 debug Exp $
  *
  *  Emulation of BeBox motherboard registers. See the following URL for more
  *  information:
@@ -46,6 +46,23 @@
 
 
 /*
+ *  check_cpu_masks():
+ *
+ *  BeBox interrupt enable bits are not allowed to be present in
+ *  both CPUs at the same time.
+ */
+static void check_cpu_masks(struct cpu *cpu, struct bebox_data *d)
+{
+	d->cpu0_int_mask &= 0x7fffffff;
+	d->cpu1_int_mask &= 0x7fffffff;
+	if ((d->cpu0_int_mask | d->cpu1_int_mask) !=
+	    (d->cpu0_int_mask ^ d->cpu1_int_mask))
+		fatal("check_cpu_masks(): BeBox cpu int masks"
+		    " collide!\n");
+}
+
+
+/*
  *  dev_bebox_access():
  */
 int dev_bebox_access(struct cpu *cpu, struct memory *mem,
@@ -63,22 +80,37 @@ int dev_bebox_access(struct cpu *cpu, struct memory *mem,
 	case 0x0f0:
 		if (writeflag == MEM_READ)
 			odata = d->cpu0_int_mask;
-		else
-			d->cpu0_int_mask = idata;
+		else {
+			if (idata & 0x80000000)
+				d->cpu0_int_mask |= idata;
+			else
+				d->cpu0_int_mask &= ~idata;
+			check_cpu_masks(cpu, d);
+		}
 		break;
 
 	case 0x1f0:
 		if (writeflag == MEM_READ)
 			odata = d->cpu1_int_mask;
-		else
-			d->cpu1_int_mask = idata;
+		else {
+			if (idata & 0x80000000)
+				d->cpu1_int_mask |= idata;
+			else
+				d->cpu1_int_mask &= ~idata;
+			check_cpu_masks(cpu, d);
+		}
 		break;
 
 	case 0x2f0:
 		if (writeflag == MEM_READ)
 			odata = d->int_status;
-		else
-			d->int_status = idata;
+		else {
+			if (idata & 0x80000000)
+				d->int_status |= idata;
+			else
+				d->int_status &= ~idata;
+			d->int_status &= 0x7fffffff;
+		}
 		break;
 
 	case 0x3f0:
@@ -127,6 +159,8 @@ int devinit_bebox(struct devinit *devinit)
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    0x7ffff000, 0x500, dev_bebox_access, d, DM_DEFAULT, NULL);
+
+	devinit->return_ptr = d;
 
 	return 1;
 }

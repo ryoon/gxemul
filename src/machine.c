@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.595 2005-11-16 08:55:54 debug Exp $
+ *  $Id: machine.c,v 1.596 2005-11-16 21:15:16 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4121,6 +4121,7 @@ Not yet.
 
 		machine->md_int.bebox_data = device_add(machine, "bebox");
 		machine->isa_pic_data.native_irq = 5;
+		machine->md_interrupt = isa32_interrupt;
 
 		pci_data = dev_eagle_init(machine, mem,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);

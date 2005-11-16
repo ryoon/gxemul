@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.1 2005-08-29 14:46:34 debug Exp $
+ *  $Id: arcbios.c,v 1.2 2005-11-16 21:15:20 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -1592,7 +1592,7 @@ int arcbios_emul(struct cpu *cpu)
 			    nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;
 		} else {
 			int handle = cpu->cd.mips.gpr[MIPS_GPR_A0];
-			int disk_type;
+			int disk_type = 0;
 			int disk_id = arcbios_handle_to_disk_id_and_type(
 			    machine, handle, &disk_type);
 			uint64_t partition_offset = 0;
@@ -1664,7 +1664,7 @@ int arcbios_emul(struct cpu *cpu)
 			 *  TODO: this is just a test
 			 */
 			int handle = cpu->cd.mips.gpr[MIPS_GPR_A0];
-			int disk_type;
+			int disk_type = 0;
 			int disk_id = arcbios_handle_to_disk_id_and_type(
 			    machine, handle, &disk_type);
 			uint64_t partition_offset = 0;

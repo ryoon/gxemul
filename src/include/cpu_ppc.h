@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.45 2005-11-16 07:51:55 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.46 2005-11-16 21:15:19 debug Exp $
  */
 
 #include "misc.h"
@@ -69,7 +69,7 @@ struct ppc_cpu_type_def {
 #define PPC_CPU_TYPE_DEFS	{					\
 	{ "PPC405GP",	0,          32, PPC_NOFP, 15,5,2, 15,5,2, 20,5,1, 0 }, \
 	{ "PPC601",	0,          32, PPC_601, 14,5,4, 14,5,4, 0,0,0, 0 },	\
-	{ "PPC603e",	0x00070000, 32, 0, 14,5,4, 14,5,4, 0,0,0, 0 },	\
+	{ "PPC603e",	0x00060000, 32, 0, 14,5,4, 14,5,4, 0,0,0, 0 },	\
 	{ "MPC7400",	0x000c0000, 32, 0, 15,5,2, 15,5,2, 19,5,1, 1 },	\
 	{ "PPC750",	0x00084202, 32, 0, 15,5,2, 15,5,2, 20,5,1, 0 },	\
 	{ "G4e",	0,          32, 0, 15,5,8, 15,5,8, 18,5,8, 1 },	\
@@ -179,6 +179,8 @@ struct ppc_cpu {
 	struct ppc_instr_call	*cur_ic_page;
 	struct ppc_instr_call	*next_ic;
 
+	void			(*combination_check)(struct cpu *,
+				    struct ppc_instr_call *, int low_addr);
 
 	/*
 	 *  Virtual -> physical -> host address translation:
@@ -206,18 +208,22 @@ struct ppc_cpu {
 /*  bits 59..17  are reserved  */
 #define	PPC_MSR_ILE	(1 << 16)	/*  Interrupt Little-Endian Mode  */
 #define	PPC_MSR_EE	(1 << 15)	/*  External Interrupt Enable  */
-#define	PPC_MSR_PR	(1 << 14)	/*  Problem State  */
+#define	PPC_MSR_PR	(1 << 14)	/*  Problem/Privilege State  */
 #define	PPC_MSR_FP	(1 << 13)	/*  Floating-Point Available  */
 #define	PPC_MSR_ME	(1 << 12)	/*  Machine Check Interrupt Enable  */
 #define	PPC_MSR_FE0	(1 << 11)	/*  Floating-Point Exception Mode 0  */
 #define	PPC_MSR_SE	(1 << 10)	/*  Single-Step Trace Enable  */
 #define	PPC_MSR_BE	(1 << 9)	/*  Branch Trace Enable  */
 #define	PPC_MSR_FE1	(1 << 8)	/*  Floating-Point Exception Mode 1  */
+#define	PPC_MSR_IP	(1 << 6)	/*  Vector Table at 0xfff00000  */
 #define	PPC_MSR_IR	(1 << 5)	/*  Instruction Relocate  */
 #define	PPC_MSR_DR	(1 << 4)	/*  Data Relocate  */
 #define	PPC_MSR_PMM	(1 << 2)	/*  Performance Monitor Mark  */
 #define	PPC_MSR_RI	(1 << 1)	/*  Recoverable Interrupt  */
 #define	PPC_MSR_LE	(1)		/*  Little-Endian Mode  */
+
+/*  Exceptions:  */
+#define	PPC_EXCEPTION_EI	0x5	/*  External interrupt  */
 
 /*  XER bits:  */
 #define	PPC_XER_SO	(1UL << 31)	/*  Summary Overflow  */
@@ -226,6 +232,7 @@ struct ppc_cpu {
 
 
 /*  cpu_ppc.c:  */
+void ppc_exception(struct cpu *cpu, int exception_nr);
 void ppc_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void ppc32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,

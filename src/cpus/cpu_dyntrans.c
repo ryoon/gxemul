@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.33 2005-11-13 22:34:22 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.34 2005-11-16 21:15:17 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -135,6 +135,10 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 #ifdef DYNTRANS_ARM
 	if (cpu->cd.arm.irq_asserted && !(cpu->cd.arm.cpsr & ARM_FLAG_I))
 		arm_exception(cpu, ARM_EXCEPTION_IRQ);
+#endif
+#ifdef DYNTRANS_PPC
+	if (cpu->cd.ppc.irq_asserted && cpu->cd.ppc.msr & PPC_MSR_EE)
+		ppc_exception(cpu, PPC_EXCEPTION_EI);
 #endif
 
 	cached_pc = cpu->pc;
@@ -458,7 +462,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #else
 	uint64_t
 #endif
-	    cached_pc, physaddr;
+	    cached_pc, physaddr = 0;
 	uint32_t physpage_ofs;
 	int ok, pagenr, table_index;
 	uint32_t *physpage_entryp;
@@ -689,7 +693,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	fatal("IA64 todo\n");
 #else
 	fatal("Neither alpha, ia64, nor 32-bit? 1\n");
-	{ char *p = (char *) 0; *p = 0; }
 	exit(1);
 #endif
 #endif
@@ -699,7 +702,9 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	return;
 
 	/*  Quick return path:  */
+#if defined(MODE32) || defined(DYNTRANS_ALPHA)
 have_it:
+#endif
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
@@ -1329,11 +1334,11 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *  instruction combination.
 	 */
 	if (!single_step && !cpu->machine->instruction_trace) {
-		if (cpu->combination_check != NULL &&
+		if (cpu->cd.DYNTRANS_ARCH.combination_check != NULL &&
 		    cpu->machine->speed_tricks)
-			cpu->combination_check(cpu, ic,
+			cpu->cd.DYNTRANS_ARCH.combination_check(cpu, ic,
 			    addr & (DYNTRANS_PAGESIZE - 1));
-		cpu->combination_check = NULL;
+		cpu->cd.DYNTRANS_ARCH.combination_check = NULL;
 	}
 
 	/*  ... and finally execute the translated instruction:  */

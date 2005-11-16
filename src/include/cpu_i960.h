@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.6 2005-11-11 07:31:33 debug Exp $
+ *  $Id: cpu_i960.h,v 1.7 2005-11-16 21:15:19 debug Exp $
  */
 
 #include "misc.h"
@@ -95,6 +95,8 @@ struct i960_cpu {
 	struct i960_instr_call	*cur_ic_page;
 	struct i960_instr_call	*next_ic;
 
+	void			(*combination_check)(struct cpu *,
+				    struct i960_instr_call *, int low_addr);
 
 	/*
 	 *  Virtual -> physical -> host address translation:

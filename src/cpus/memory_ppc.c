@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.6 2005-11-15 17:26:29 debug Exp $
+ *  $Id: memory_ppc.c,v 1.7 2005-11-16 21:15:17 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -39,7 +39,7 @@
  *
  *  BAT translation. Returns -1 if there was no BAT hit, >= 0 for a hit.
  */
-int ppc_bat(struct cpu *cpu, uint64_t vaddr, int64_t *return_addr, int flags)
+int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags)
 {
 	int i, n = cpu->cd.ppc.n_bats * 2;
 
@@ -90,7 +90,7 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, int64_t *return_addr, int flags)
 
 
 static int get_upper_and_lower_pte(struct cpu *cpu, uint64_t pteg_select,
-	uint32_t *upper_pte, uint32_t *lower_pte)
+	uint32_t *upper_pte, uint32_t *lower_pte, uint32_t vsid, int api)
 {
 	int i;
 	uint32_t upper, lower;
@@ -100,8 +100,10 @@ static int get_upper_and_lower_pte(struct cpu *cpu, uint64_t pteg_select,
 		    &d[0], 8, MEM_READ, PHYSICAL | NO_EXCEPTIONS);
 		upper = (d[0]<<24)+(d[1]<<16)+(d[2]<<8)+d[3];
 		lower = (d[4]<<24)+(d[5]<<16)+(d[6]<<8)+d[7];
-		/*  Valid?  */
-		if (upper & 0x80000000) {
+
+		/*  Valid PTE, and correct api and vsid?  */
+		if (upper & 0x80000000 && (upper & 0x3f) == api &&
+		    ((upper >> 7) & 0x00ffffff) == vsid) {
 			*upper_pte = upper; *lower_pte = lower;
 			return 1;
 		}
@@ -124,6 +126,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
 	int instr = flags & FLAG_INSTR, res;
+	int writeflag = flags & FLAG_WRITEFLAG;
 	uint64_t sdr1 = cpu->cd.ppc.sdr1, htaborg;
 
 	if (cpu->cd.ppc.bits == 32)
@@ -154,7 +157,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	/*  fatal("{ vaddr = 0x%llx }\n", (long long)vaddr);  */
 
 	if (cpu->cd.ppc.bits == 32) {
-		int srn = (vaddr >> 28) & 15;
+		int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & 0x3f;
 		uint32_t vsid = cpu->cd.ppc.sr[srn] & 0x00ffffff;
 		uint32_t hash1, hash2, pteg_select, tmp;
 		uint32_t upper_pte, lower_pte;
@@ -167,19 +170,23 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		pteg_select |= ((hash1 & 0x3ff) << 6);
 		pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
 		res = get_upper_and_lower_pte(cpu, pteg_select,
-		    &upper_pte, &lower_pte);
+		    &upper_pte, &lower_pte, vsid, api);
 		if (res == 0) {
 			tmp = (hash2 >> 10) & (sdr1 & 0x1ff);
 			pteg_select = htaborg & 0xfe000000;
 			pteg_select |= ((hash2 & 0x3ff) << 6);
 			pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
 			res = get_upper_and_lower_pte(cpu, pteg_select,
-			    &upper_pte, &lower_pte);
+			    &upper_pte, &lower_pte, vsid, api);
 		}
 		if (res) {
 			*return_addr = (lower_pte & 0xfffff000)|(vaddr & 0xfff);
-			/*  fatal("{ paddr = 0x%08x }\n", (int)*return_addr); */
-			/*  TODO: permission bits  */
+
+			if ((lower_pte & 3) != 2) {
+				fatal("PPC TODO: permission bits: %x\n",
+				    lower_pte);
+				exit(1);
+			}
 			return 2;
 		}
 	} else {
@@ -194,8 +201,12 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	if (flags & FLAG_NOEXCEPTIONS)
 		return 0;
 
-	/*  TODO: Cause exception.  */
-	fatal("TODO: exception! sdr1 = 0x%llx\n", (long long)cpu->cd.ppc.sdr1);
-	exit(1);
+	/*  Cause an exception:  */
+	fatal("TODO: exception! sdr1=0x%llx vaddr=0x%llx pc=0x%llx\n",
+	    (long long)cpu->cd.ppc.sdr1, (long long)vaddr, (long long)cpu->pc);
+
+	ppc_exception(cpu, instr? 0x1000 : (writeflag? 0x1100 : 0x1200));
+
+	return 0;
 }
 

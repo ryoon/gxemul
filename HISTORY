@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1029 2005-11-16 07:51:52 debug Exp $
+$Id: HISTORY,v 1.1030 2005-11-16 21:15:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2423,3 +2423,4 @@ Changelog for GXemul:
 		Beginning to work on PPC interrupt/exception support.
 20051116	Factoring out some code which initializes legacy ISA devices
 		from those machines that use them (bus_isa).
+		Continuing on PPC interrupt/exception support.

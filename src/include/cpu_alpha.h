@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.26 2005-11-11 07:31:33 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.27 2005-11-16 21:15:19 debug Exp $
  */
 
 #include "misc.h"
@@ -139,6 +139,8 @@ struct alpha_cpu {
 	struct alpha_instr_call	*cur_ic_page;
 	struct alpha_instr_call	*next_ic;
 
+	void			(*combination_check)(struct cpu *,
+				    struct alpha_instr_call *, int low_addr);
 
 	/*
 	 *  Virtual -> physical -> host address translation:

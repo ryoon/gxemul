@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.19 2005-11-16 08:55:55 debug Exp $
+ *  $Id: dev_8259.c,v 1.20 2005-11-16 21:15:18 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -120,21 +120,9 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				/*  Recalculate interrupt assertions:  */
 				cpu_interrupt(cpu, d->irq_nr);
 				break;
-			case 0x21:	/*  Specific EOI  */
-			case 0x22:
-			case 0x23:
-			case 0x24:
-			case 0x25:
-			case 0x26:
-			case 0x27:
-			case 0x60:
-			case 0x61:
-			case 0x62:
-			case 0x63:
-			case 0x64:
-			case 0x65:
-			case 0x66:
-			case 0x67:	/*  Specific EOI  */
+			case 0x21 ... 0x27:	/*  Specific EOI  */
+			case 0x60 ... 0x67:
+			case 0xe0 ... 0xe7:
 				d->irr &= ~(1 << (idata & 7));
 				d->isr &= ~(1 << (idata & 7));
 				/*  Recalculate interrupt assertions:  */
@@ -143,19 +131,12 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 			case 0x68:	/*  Set Special Mask Mode  */
 				/*  TODO  */
 				break;
-			case 0xc0:
-			case 0xc1:
-			case 0xc2:
-			case 0xc3:
-			case 0xc4:
-			case 0xc5:
-			case 0xc6:
-			case 0xc7:	/*  Set IRQ Priority Order  */
+			case 0xc0 ... 0xc7:
+				/*  Set IRQ Priority Order  */
 				/*  TODO  */
 				break;
-			default:
-				fatal("[ 8259: unimplemented command 0x%02x"
-				    " ]\n", idata);
+			default:fatal("[ 8259: unimplemented command 0x%02x"
+				    " ]\n", (int)idata);
 				cpu->running = 0;
 			}
 		} else {

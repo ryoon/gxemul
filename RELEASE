@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.158 2005-11-16 08:55:53 debug Exp $
+$Id: RELEASE,v 1.159 2005-11-16 21:15:15 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -52,15 +52,18 @@ smaller than an instruction. What this means is that pipe-line stalls,
 penalties caused by branch-prediction misses or cache misses, and other
 micro-architectural effects are not simulated.
 
-The user-visible change between release 0.3.6.2 and 0.3.7 are:
+User-visible change between release 0.3.6.2 and 0.3.7 include:
 
-    x)  ...
+    O)	...
 
-Internal changes include:
+    O)	CD-ROM images are now detected by guest operating systems (at least
+	NetBSD, OpenBSD, and Linux) as ATAPI CD-ROMs, not as IDE harddisks.
+
+Internal (code related) changes include:
 
     o)  cleanup of the PCI and ISA bus frameworks
-
-    o)  some more ARM dyntrans optimizations
+    o)  PowerPC dyntrans updates
+    o)  ARM dyntrans optimizations
 
 There have also been lots of other small changes, too small to mention here.
 

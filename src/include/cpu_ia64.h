@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.6 2005-11-11 07:31:33 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.7 2005-11-16 21:15:19 debug Exp $
  */
 
 #include "misc.h"
@@ -107,6 +107,8 @@ struct ia64_cpu {
 	struct ia64_instr_call	*cur_ic_page;
 	struct ia64_instr_call	*next_ic;
 
+	void			(*combination_check)(struct cpu *,
+				    struct ia64_instr_call *, int low_addr);
 
 	/*
 	 *  Virtual -> physical -> host address translation:

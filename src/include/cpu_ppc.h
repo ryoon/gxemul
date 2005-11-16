@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.46 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.47 2005-11-16 23:26:40 debug Exp $
  */
 
 #include "misc.h"
@@ -155,6 +155,7 @@ struct ppc_cpu {
 	uint64_t	dbsr;		/*  Debug Status Register  */
 	uint32_t	pvr;		/*  Processor Version Register  */
 	uint32_t	pir;		/*  Processor ID  */
+	uint64_t	pid;		/*  Process ID  */
 
 	/*  TODO: 64-bit SRs? (Segment registers)  */
 	uint32_t	sr[16];

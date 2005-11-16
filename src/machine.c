@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.596 2005-11-16 21:15:16 debug Exp $
+ *  $Id: machine.c,v 1.597 2005-11-16 23:26:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4081,6 +4081,11 @@ Not yet.
 		 */
 		machine->machine_name = "Walnut evaluation board";
 
+		/*  "OpenBIOS" entrypoint (?):  */
+		dev_ram_init(machine, 0xfffe0b50, 8, DEV_RAM_RAM, 0);
+		store_32bit_word(cpu, 0xfffe0b50, 0xfffe0b54);
+		store_32bit_word(cpu, 0xfffe0b54, 0x4e800020);  /*  blr  */
+
 		break;
 
 	case MACHINE_PMPPC:
@@ -4174,13 +4179,38 @@ Not yet.
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
 
+		machine->main_console_handle = (size_t)device_add(machine,
+		    "ns16550 irq=0 addr=0x800003f8 name2=tty0");
+
 		if (machine->prom_emulation) {
 			/*  Linux on PReP has 0xdeadc0de at address 0? (See
 			    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/113568.html)  */
 			store_32bit_word(cpu, 0, 0xdeadc0de);
 
-			/*  r6 should point to "residual data"?  */
-			cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576 - 0x1000;
+			/*
+			 *  r6 should point to bootinfo.
+			 *  (See NetBSD's prep/include/bootinfo.h for details.)
+			 */
+			cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576 - 0x8000;
+
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 0, 12);  /*  next  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 4, 2);  /*  type: clock  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 8, 1000000);
+
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+12, 20);  /*  next  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+16, 1);  /*  type: console  */
+			store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
+			    machine->use_x11? "vga" : "com", 4);
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+24, 0x3f8);  /*  addr  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+28, 9600);  /*  speed  */
+
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+32, 0);  /*  next  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+36, 0);  /*  type: residual  */
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+40,	/*  addr of data  */
+			    cpu->cd.ppc.gpr[6] + 0x100);
+
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100, 0x200);  /*  TODO: residual  */
+			store_buf(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM", 4);
 		}
 		break;
 
@@ -4965,66 +4995,13 @@ Not yet.
 		else
 			machine->machine_name = "Generic x86 PC";
 
-		/*  Interrupt controllers:  */
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=16 addr=0x%llx",
-		    (long long)(X86_IO_BASE + 0x20));
-		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-		if (machine->machine_subtype != MACHINE_X86_XT) {
-			snprintf(tmpstr, sizeof(tmpstr), "8259 irq=16 addr=0x%llx irq=2",
-			    (long long)(X86_IO_BASE + 0xa0));
-			machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-		}
-
 		machine->md_interrupt = x86_pc_interrupt;
 
-		/*  Timer:  */
-		snprintf(tmpstr, sizeof(tmpstr), "8253 addr=0x%llx irq=0 in_use=1",
-		    (long long)(X86_IO_BASE + 0x40));
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "pccmos addr=0x%llx",
-		    (long long)(X86_IO_BASE + 0x70));
-		device_add(machine, tmpstr);
-
-		/*  TODO: IRQ when emulating a PC XT?  */
-
-		/*  IDE controllers:  */
-		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    X86_IO_BASE + 0x1f0, 14);
-			device_add(machine, tmpstr);
-		}
-		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-			snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-			    X86_IO_BASE + 0x170, 15);
-			device_add(machine, tmpstr);
-		}
-
-		/*  Floppy controller at irq 6  */
-		snprintf(tmpstr, sizeof(tmpstr), "fdc addr=0x%llx irq=6",
-		    (long long)(X86_IO_BASE + 0x3f0));
-		device_add(machine, tmpstr);
-
-		/*  TODO: sound blaster (eventually) at irq 7?  */
-
-		/*  TODO: parallel port  */
-
-		/*  Serial ports:  (TODO: 8250 for PC XT?)  */
-
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%llx name2=com1 in_use=0",
-		    (long long)X86_IO_BASE + 0x3f8);
-		device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=3 addr=0x%llx name2=com2 in_use=0",
-		    (long long)X86_IO_BASE + 0x2f8);
-		device_add(machine, tmpstr);
-
-		/*  VGA + keyboard:  */
-		dev_vga_init(machine, mem, 0xa0000ULL, X86_IO_BASE + 0x3c0,
-		    "Generic x86 PC");
-		machine->main_console_handle = dev_pckbc_init(machine,
-		    mem, X86_IO_BASE + 0x60, PCKBC_8042, 1, 12, 1, 1);
+		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1 | BUS_ISA_VGA |
+		    BUS_ISA_PCKBC_FORCE_USE |
+		    (machine->machine_subtype == MACHINE_X86_XT?
+		    BUS_ISA_NO_SECOND_PIC : 0) | BUS_ISA_FDC,
+		    X86_IO_BASE, 0x00000000, 0, 16);
 
 		if (machine->prom_emulation)
 			pc_bios_init(cpu);
@@ -5698,8 +5675,9 @@ void machine_init(void)
 	me->aliases[0] = "pc";
 	me->aliases[1] = "x86";
 	me->subtype[0] = machine_entry_subtype_new("Generic PC",
-	    MACHINE_X86_GENERIC, 1);
-	me->subtype[0]->aliases[0] = "generic";
+	    MACHINE_X86_GENERIC, 2);
+	me->subtype[0]->aliases[0] = "pc";
+	me->subtype[0]->aliases[1] = "generic";
 	me->subtype[1] = machine_entry_subtype_new("PC XT", MACHINE_X86_XT, 1);
 	me->subtype[1]->aliases[0] = "xt";
 	if (cpu_family_ptr_by_number(ARCH_X86) != NULL) {

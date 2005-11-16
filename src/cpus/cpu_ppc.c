@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.17 2005-11-16 21:15:17 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.18 2005-11-16 23:26:39 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1094,6 +1094,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 274:  debug("mfsprg\t2,r%i", rt); break;
 			case 275:  debug("mfsprg\t3,r%i", rt); break;
 			case 287:  debug("mfpvr\tr%i", rt); break;
+			case 945:  debug("mfpid\tr%i", rt); break;
 			/*  TODO: 1008 = hid0?  */
 			case 1008: debug("mfdbsr\tr%i", rt); break;
 			case 1009: debug("mfhid1\tr%i", rt); break;
@@ -1101,6 +1102,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 1018: debug("mfl3cr\tr%i", rt); break;
 			default:debug("mfspr\tr%i,spr%i", rt, spr);
 			}
+			break;
+		case PPC_31_TLBIA:
+			debug("tlbia");
 			break;
 		case PPC_31_TLBIE:
 			/*  TODO: what is ra? The IBM online docs didn't say  */
@@ -1247,6 +1251,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 541:  debug("mtdbatl\t2,r%i", rs); break;
 			case 542:  debug("mtdbatu\t3,r%i", rs); break;
 			case 543:  debug("mtdbatl\t3,r%i", rs); break;
+			case 945:  debug("mtpid\tr%i", rs); break;
 			case 1008: debug("mtdbsr\tr%i", rs); break;
 			default:debug("mtspr\tspr%i,r%i", spr, rs);
 			}

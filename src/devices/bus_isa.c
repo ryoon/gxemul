@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.1 2005-11-16 07:51:54 debug Exp $
+ *  $Id: bus_isa.c,v 1.2 2005-11-16 23:26:39 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -62,9 +62,13 @@ void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
 	    reassert_irq, (long long)(isa_portbase + 0x20));
 	machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%i addr=0x%llx",
-	    reassert_irq, (long long)(isa_portbase + 0xa0));
-	machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
+	if (bus_isa_flags & BUS_ISA_NO_SECOND_PIC)
+		bus_isa_flags &= ~BUS_ISA_NO_SECOND_PIC;
+	else {
+		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%i addr=0x%llx",
+		    reassert_irq, (long long)(isa_portbase + 0xa0));
+		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
+	}
 
 	snprintf(tmpstr, sizeof(tmpstr), "8253 irq=%i addr=0x%llx in_use=0",
 	    isa_irqbase + 0, (long long)(isa_portbase + 0x40));
@@ -103,6 +107,13 @@ void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
 		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
 			device_add(machine, tmpstr);
+	}
+
+	if (bus_isa_flags & BUS_ISA_FDC) {
+		bus_isa_flags &= ~BUS_ISA_FDC;
+		snprintf(tmpstr, sizeof(tmpstr), "fdc irq=%i addr=0x%llx",
+		    isa_irqbase + 6, (long long)(isa_portbase + 0x3f0));
+		device_add(machine, tmpstr);
 	}
 
 	if (bus_isa_flags & BUS_ISA_VGA) {

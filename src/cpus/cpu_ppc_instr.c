@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.24 2005-11-16 21:15:17 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.25 2005-11-16 23:26:39 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1161,6 +1161,7 @@ X(mfdbatu) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_u[ic->arg[1]]; }
 X(mfdbatl) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_l[ic->arg[1]]; }
 X(mfmmcr0) {	reg(ic->arg[0]) = 0; }
 X(mfmmcr1) {	reg(ic->arg[0]) = 0; }
+X(mfpid) {	reg(ic->arg[0]) = cpu->cd.ppc.pid; }
 
 
 /*
@@ -1187,6 +1188,7 @@ X(mtibatu) {	cpu->cd.ppc.ibat_u[ic->arg[1]] = reg(ic->arg[0]); }
 X(mtibatl) {	cpu->cd.ppc.ibat_l[ic->arg[1]] = reg(ic->arg[0]); }
 X(mtdbatu) {	cpu->cd.ppc.dbat_u[ic->arg[1]] = reg(ic->arg[0]); }
 X(mtdbatl) {	cpu->cd.ppc.dbat_l[ic->arg[1]] = reg(ic->arg[0]); }
+X(mtpid) {	cpu->cd.ppc.pid = reg(ic->arg[0]); }
 
 
 /*
@@ -1329,6 +1331,80 @@ X(stmw) {
 
 		rs ++;
 		addr += sizeof(uint32_t);
+	}
+}
+
+
+/*
+ *  Load/store string:
+ *
+ *  arg[0] = rs   (well, rt for lswi)
+ *  arg[1] = ptr to ra (or ptr to zero)
+ *  arg[2] = nb
+ */
+X(lswi)
+{
+	MODE_uint_t addr = reg(ic->arg[1]);
+	int rt = ic->arg[0], nb = ic->arg[2];
+	unsigned char d;
+	int sub = 0;
+
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
+	    / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1)
+	    << PPC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
+
+	while (nb > 0) {
+		if (cpu->memory_rw(cpu, cpu->mem, addr, &d, 1,
+		    MEM_READ, CACHE_DATA) != MEMORY_ACCESS_OK) {
+			/*  exception  */
+			return;
+		}
+
+		if (cpu->cd.ppc.mode == MODE_POWER && sub == 0)
+			cpu->cd.ppc.gpr[rt] = 0;
+		cpu->cd.ppc.gpr[rt] &= ~(0xff << (24-8*sub));
+		cpu->cd.ppc.gpr[rt] |= (d << (24-8*sub));
+		sub ++;
+		if (sub == 4) {
+			rt = (rt + 1) & 31;
+			sub = 0;
+		}
+		addr ++;
+		nb --;
+	}
+}
+X(stswi)
+{
+	MODE_uint_t addr = reg(ic->arg[1]);
+	int rs = ic->arg[0], nb = ic->arg[2];
+	uint32_t cur = cpu->cd.ppc.gpr[rs];
+	unsigned char d;
+	int sub = 0;
+
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
+	    / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1)
+	    << PPC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
+
+	while (nb > 0) {
+		d = cur >> 24;
+		if (cpu->memory_rw(cpu, cpu->mem, addr, &d, 1,
+		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK) {
+			/*  exception  */
+			return;
+		}
+		cur <<= 8;
+		sub ++;
+		if (sub == 4) {
+			rs = (rs + 1) & 31;
+			sub = 0;
+			cur = cpu->cd.ppc.gpr[rs];
+		}
+		addr ++;
+		nb --;
 	}
 }
 
@@ -1676,7 +1752,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
 	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0,
-	    bfa, fp, byterev;
+	    bfa, fp, byterev, nb;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 	void (*rc_f)(struct cpu *, struct ppc_instr_call *);
 
@@ -2176,6 +2252,7 @@ X(to_be_translated)
 			case 274: ic->f = instr(mfsprg2); break;
 			case 275: ic->f = instr(mfsprg3); break;
 			case 287: ic->f = instr(mfpvr); break;
+			case 945: ic->f = instr(mfpid); break;
 			case 952: ic->f = instr(mfmmcr0); break;
 			case 953: ic->f = instr(mfmmcr1); break;
 			case 1008:ic->f = instr(mfdbsr); break;
@@ -2217,9 +2294,12 @@ X(to_be_translated)
 			case 273: ic->f = instr(mtsprg1); break;
 			case 274: ic->f = instr(mtsprg2); break;
 			case 275: ic->f = instr(mtsprg3); break;
+			case 945: ic->f = instr(mtpid); break;
 			case 952: ic->f = instr(mtmmcr0); break;
 			case 953: ic->f = instr(mtmmcr1); break;
 			case 1008:ic->f = instr(mtdbsr); break;
+			case 1018:ic->f = instr(nop); break;
+			case 1019:ic->f = instr(nop); break;
 			default:if (spr >= 528 && spr < 544) {
 					if (spr & 1) {
 						if (spr & 16)
@@ -2348,6 +2428,7 @@ X(to_be_translated)
 			ic->f = instr(dcbz);
 			break;
 
+		case PPC_31_TLBIA:
 		case PPC_31_TLBIE:
 			/*  TODO  */
 			ic->f = instr(tlbie);
@@ -2383,6 +2464,28 @@ X(to_be_translated)
 		case PPC_31_STDCX_DOT:
 			ic->arg[0] = iword;
 			ic->f = instr(llsc);
+			break;
+
+		case PPC_31_LSWI:
+		case PPC_31_STSWI:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			nb = (iword >> 11) & 31;
+			ic->arg[0] = rs;
+			if (ra == 0)
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
+			else
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[2] = nb == 0? 32 : nb;
+			switch (xo) {
+			case PPC_31_LSWI:  ic->f = instr(lswi); break;
+			case PPC_31_STSWI: ic->f = instr(stswi); break;
+			}
+			break;
+
+		case 0x1c3:
+			fatal("[ mtdcr: TODO ]\n");
+			ic->f = instr(nop);
 			break;
 
 		case PPC_31_LBZX:

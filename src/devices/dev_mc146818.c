@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.78 2005-11-17 08:35:28 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.79 2005-11-17 13:53:42 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -354,6 +354,10 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		 *  should be ignored. It works _almost_ as DEC, if offsets are
 		 *  divided by 0x40.
 		 */
+		break;
+	case MC146818_PMPPC:
+		relative_addr *= 4;
+		break;
 	default:
 		;
 	}
@@ -594,6 +598,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	switch (access_style) {
 	case MC146818_SGI:
 	case MC146818_PC_CMOS:
+	case MC146818_PMPPC:
 		d->use_bcd = 1;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.598 2005-11-17 08:35:25 debug Exp $
+ *  $Id: machine.c,v 1.599 2005-11-17 13:53:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1294,11 +1294,11 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 
 
 /*
- *  Cobalt and evbmips (Malta) interrupts:
+ *  Interrupt function for Cobalt, evbmips (Malta), and Algor.
  *
  *  (irq_nr = 8 + 16 can be used to just reassert/deassert interrupts.)
  */
-void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
+void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	int mask, x;
 	int old_isa_assert, new_isa_assert;
@@ -1347,11 +1347,6 @@ void cobalt_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		cpu_interrupt(cpu, m->isa_pic_data.native_irq);
 	else
 		cpu_interrupt_ack(cpu, m->isa_pic_data.native_irq);
-
-	/*  printf("COBALT/MALTA: pic1.irr=0x%02x ier=0x%02x pic2.irr=0x%02x "
-	    "ier=0x%02x\n", m->isa_pic_data.pic1->irr,
-	    m->isa_pic_data.pic1->ier, m->isa_pic_data.pic2->irr,
-	    m->isa_pic_data.pic2->ier);  */
 }
 
 
@@ -2365,7 +2360,7 @@ void machine_setup(struct machine *machine)
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x100000a0");
 		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-		machine->md_interrupt = cobalt_interrupt;
+		machine->md_interrupt = isa8_interrupt;
 		machine->isa_pic_data.native_irq = 6;
 
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
@@ -3898,7 +3893,7 @@ Not yet.
 				cpu->byte_order = EMUL_BIG_ENDIAN;
 			}
 
-			machine->md_interrupt = cobalt_interrupt;
+			machine->md_interrupt = isa8_interrupt;
 			machine->isa_pic_data.native_irq = 2;
 
 			bus_isa(machine, 0, 0x18000000, 0x10000000, 8, 24);
@@ -4034,6 +4029,48 @@ Not yet.
 		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0xfff0;
 
 		break;
+
+	case MACHINE_ALGOR:
+		machine->machine_name = "\"Algor\" evaluation board";
+
+		machine->md_interrupt = isa8_interrupt;
+		machine->isa_pic_data.native_irq = 6;
+
+		bus_isa(machine, 0, 0x1d000000, 0xc0000000, 8, 24);
+
+		if (machine->prom_emulation) {
+			/*  NetBSD/algor wants these:  */
+
+			/*  a0 = argc  */
+			cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
+
+			/*  a1 = argv  */
+			cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
+			store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
+			store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
+			store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
+
+			bootstr = strdup(machine->boot_kernel_filename);
+			bootarg = strdup(machine->boot_string_argument);
+			store_string(cpu, (int32_t)0x9fc01040, bootstr);
+			store_string(cpu, (int32_t)0x9fc01200, bootarg);
+
+			/*  a2 = (yamon_env_var *)envp  */
+			cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
+			{
+				char tmps[50];
+
+				store_32bit_word(cpu, (int32_t)0x9fc01800, 0x9fc01900);
+				store_32bit_word(cpu, (int32_t)0x9fc01804, 0x9fc01a00);
+				store_32bit_word(cpu, (int32_t)0x9fc01808, 0);
+
+				snprintf(tmps, sizeof(tmps), "memsize=0x%08x",
+				    machine->physical_ram_in_mb * 1048576);
+				store_string(cpu, (int)0x9fc01900, tmps);
+				store_string(cpu, (int)0x9fc01a00, "ethaddr=10:20:30:30:20:10");
+			}
+		}
+		break;
 #endif	/*  ENABLE_MIPS  */
 
 #ifdef ENABLE_PPC
@@ -4095,6 +4132,11 @@ Not yet.
 		machine->machine_name = "Artesyn's PM/PPC board";
 
 		dev_pmppc_init(mem);
+
+		dev_mc146818_init(machine, mem, 0x7ff00000, 0, MC146818_PMPPC, 1);
+
+		pci_data = dev_cpc700_init(machine, mem);
+		bus_pci_add(machine, pci_data, mem, 0, 8, 0, "dec21143");
 
 		/*  com0 = 0xff600300, com1 = 0xff600400  */
 
@@ -5286,6 +5328,9 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_PSP:
 		m->cpu_name = strdup("Allegrex");
 		break;
+	case MACHINE_ALGOR:
+		m->cpu_name = strdup("RM5200");
+		break;
 
 	/*  PowerPC:  */
 	case MACHINE_BAREPPC:
@@ -6245,6 +6290,13 @@ void machine_init(void)
 	    "EB164", ST_EB164, 1);
 	me->subtype[1]->aliases[0] = "eb164";
 	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Algor evaluation board:  */
+	me = machine_entry_new("Algor", ARCH_MIPS, MACHINE_ALGOR, 1, 0);
+	me->aliases[0] = "algor";
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 }

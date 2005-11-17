@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.34 2005-11-16 21:15:17 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.35 2005-11-17 13:53:41 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -704,7 +704,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	/*  Quick return path:  */
 #if defined(MODE32) || defined(DYNTRANS_ALPHA)
 have_it:
-#endif
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
@@ -712,6 +711,7 @@ have_it:
 	/*  printf("cached_pc=0x%016llx  pagenr=%lli  table_index=%lli, "
 	    "physpage_ofs=0x%016llx\n", (long long)cached_pc, (long long)pagenr,
 	    (long long)table_index, (long long)physpage_ofs);  */
+#endif
 }
 #endif	/*  DYNTRANS_PC_TO_POINTERS_FUNC  */
 

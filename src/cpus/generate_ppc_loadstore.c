@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_ppc_loadstore.c,v 1.2 2005-11-15 17:26:29 debug Exp $
+ *  $Id: generate_ppc_loadstore.c,v 1.3 2005-11-17 13:53:41 debug Exp $
  */
 
 #include <stdio.h>
@@ -49,8 +49,6 @@ void do_it(int mode)
 			if (!zero && !load)
 				continue;
 			if (load && !zero && size == 3)
-				continue;
-			if (mode && size == 3)
 				continue;
 
 			switch (size) {
@@ -135,8 +133,6 @@ void do_it(int mode)
 				continue;
 			if (load && !zero && size == 3)
 				continue;
-			if (mode && size == 3)
-				continue;
 
 			switch (size) {
 			case 0:	printf("#define LS_B\n"); break;
@@ -220,8 +216,7 @@ void do_it(int mode)
 		    for (size=0; size<4; size++) {
 			printf("\tppc%s_instr_", modes[mode]);
 
-			if ((load && !zero && size == 3)
-			    || (mode && size == 3)) {
+			if (load && !zero && size == 3) {
 				printf("invalid");
 				goto cont;
 			}

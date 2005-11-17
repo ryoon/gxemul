@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.2 2005-11-15 17:26:29 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.3 2005-11-17 13:53:41 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -52,6 +52,13 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif
 	unsigned char data[LS_SIZE];
 
+	/*  Synchronize the PC:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
+	    / sizeof(struct ppc_instr_call);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1)
+	    << PPC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
+
 #ifndef LS_B
 	if ((addr & 0xfff) + LS_SIZE-1 > 0xfff) {
 		fatal("PPC LOAD/STORE misalignment across page boundary: TODO"
@@ -63,8 +70,8 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #ifdef LS_LOAD
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_READ, CACHE_DATA)) {
-		fatal("load failed: TODO\n");
-		exit(1);
+		/*  Exception.  */
+		return;
 	}
 #ifdef LS_B
 	reg(ic->arg[0]) =
@@ -133,8 +140,8 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, CACHE_DATA)) {
-		fatal("store failed: TODO\n");
-		exit(1);
+		/*  Exception.  */
+		return;
 	}
 #endif
 

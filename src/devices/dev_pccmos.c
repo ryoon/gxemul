@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.11 2005-11-17 08:35:28 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.12 2005-11-17 13:53:42 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -136,6 +136,10 @@ int devinit_pccmos(struct devinit *devinit)
 		type = MC146818_CATS;
 		d->ram[0x48] = 20;		/*  century  */
 		len = DEV_PCCMOS_LENGTH * 2;
+		break;
+	case MACHINE_ALGOR:
+		irq_nr = 8 + 8;
+		type = MC146818_ALGOR;
 		break;
 	case MACHINE_EVBMIPS:
 		/*  Malta etc.  */

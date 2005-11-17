@@ -1,4 +1,4 @@
-/*  GXemul: $Id: bat.h,v 1.1 2005-11-15 17:26:50 debug Exp $  */
+/*  GXemul: $Id: bat.h,v 1.2 2005-11-17 13:53:43 debug Exp $  */
 /*	$NetBSD: bat.h,v 1.5 2003/03/14 06:21:19 matt Exp $	*/
 
 #ifndef	_POWERPC_OEA_BAT_H_
@@ -71,11 +71,13 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if 0
 #ifndef _LOCORE
 struct bat {
 	register_t batu;
 	register_t batl;
 };
+#endif
 #endif
 
 /* Lower BAT bits (all but PowerPC 601): */

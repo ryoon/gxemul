@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.9 2005-11-13 22:34:24 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.10 2005-11-17 13:53:42 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -534,11 +534,6 @@ int devinit_dec21143(struct devinit *devinit)
 		    0x100, DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES,
 		    devinit->addr);
 		break;
-	case MACHINE_COBALT:
-		break;
-	default:fatal("TODO: dec21143 for this machine type is not"
-		    " yet implemented\n");
-		exit(1);
 	}
 
 	return 1;

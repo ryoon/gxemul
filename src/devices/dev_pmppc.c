@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmppc.c,v 1.4 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_pmppc.c,v 1.5 2005-11-17 13:53:42 debug Exp $
  *  
  *  PM/PPC devices.
  *
@@ -135,7 +135,7 @@ void dev_pmppc_init(struct memory *mem)
 	 *  config0:
 	 *	bit 7		Is monarch (?).
 	 *	bit 5		Has ethernet.
-	 *	bit 4		Has RTC.
+	 *	bit 4		1 = No RTC.
 	 *	bits 3..2	Flash size (00 = 256 MB, 01 = 128 MB,
 	 *			10 = 64 MB, 11 = 32 MB).
 	 *	bits 1..0	Flash width (00 = 64, 01 = 32, 10 = 16, 11 = 0).
@@ -149,8 +149,20 @@ void dev_pmppc_init(struct memory *mem)
 	 *	bits 1..0	Bus frequency: 00 = 66.66 MHz, 01 = 83.33 MHz,
 	 *			10 = 100.00 MHz, 11 = reserved?
 	 */
-	d->config0 = 0x30;
-	d->config1 = 0;		/*  TODO  */
+	d->config0 = 0x20;
+	d->config1 = 0;
+
+	if (mem->physical_max == 32*1048576) {
+	} else if (mem->physical_max == 64*1048576) {
+		d->config1 |= 0x01;
+	} else if (mem->physical_max == 128*1048576) {
+		d->config1 |= 0x10;
+	} else if (mem->physical_max == 256*1048576) {
+		d->config1 |= 0x11;
+	} else {
+		fatal("A PM/PPC can have 32, 64, 128, or 256 MB RAM.\n");
+		exit(1);
+	}
 
 	memory_device_register(mem, "pmppc_board",
 	    PMPPC_CONFIG0, 0x10, dev_pmppc_board_access, d, DM_DEFAULT, NULL);

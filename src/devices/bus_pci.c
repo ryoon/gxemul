@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.29 2005-11-15 17:26:49 debug Exp $
+ *  $Id: bus_pci.c,v 1.30 2005-11-17 13:53:42 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -557,6 +557,27 @@ PCIINIT(i82371ab_ide)
 
 
 /*
+ *  Heuricon PCI host bridge for PM/PPC.
+ */
+
+#define	PCI_VENDOR_HEURICON		0x1223
+#define	PCI_PRODUCT_HEURICON_PMPPC	0x000e
+
+PCIINIT(heuricon_pmppc)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_HEURICON,
+	    PCI_PRODUCT_HEURICON_PMPPC));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x00);   /*  Revision?  */
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+}
+
+
+
+/*
  *  VIATECH VT82C586 devices:
  *
  *	vt82c586_isa	PCI->ISA bridge
@@ -692,19 +713,24 @@ PCIINIT(dec21143)
 		base = 0x7c010000;
 		/*  Works with at least NetBSD and OpenBSD:  */
 		base2 = 0x00010000;
-		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140101);
 		irq = 18;
 		break;
 	case MACHINE_COBALT:
 		/*  NetBSD/cobalt:  */
 		base = 0x10010000;
 		/*  TODO: IRQ  */
-		PCI_SET_DATA(PCI_INTERRUPT_REG, 0x00000100);
 		break;
-	default:fatal("dec21143 in non-implemented machine type %i\n",
+	case MACHINE_PMPPC:
+		/*  NetBSD/pmppc:  */
+		base = 0xf8010000;
+		base2 = 0xf8000000;
+		/*  TODO: IRQ  */
+		break;
+	default:fatal("!\n! dec21143 in non-implemented machine type %i\n!\n",
 		    machine->machine_type);
-		exit(1);
 	}
+
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140101);
 
 	PCI_SET_DATA(PCI_MAPREG_START,        base2 + 1);
 	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base2 + 0x10000);

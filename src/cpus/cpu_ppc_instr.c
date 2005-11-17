@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.25 2005-11-16 23:26:39 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.26 2005-11-17 13:53:41 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -55,7 +55,7 @@ X(nop)
  */
 X(invalid)
 {
-	fatal("INTERNAL ERROR\n");
+	fatal("PPC: invalid(): INTERNAL ERROR\n");
 	exit(1);
 }
 
@@ -936,10 +936,8 @@ X(rlwnm)
 	rc = iword & 1;
 
 	/*  TODO: Fix this, its performance is awful:  */
-	while (sh-- != 0) {
-		int b = (tmp >> 31) & 1;
-		tmp = (tmp << 1) | b;
-	}
+	while (sh-- != 0)
+		tmp = (tmp << 1) | ((tmp >> 31) & 1);
 	for (;;) {
 		uint64_t mask;
 		mask = (uint64_t)1 << (31-mb);
@@ -965,8 +963,9 @@ X(rlwnm)
  */
 X(rlwinm)
 {
-	MODE_uint_t tmp = reg(ic->arg[0]), ra = 0;
+	uint32_t tmp = reg(ic->arg[0]), ra;
 	uint32_t iword = ic->arg[2];
+	uint32_t mask = 0;
 	int sh, mb, me, rc;
 
 	sh = (iword >> 11) & 31;
@@ -975,21 +974,15 @@ X(rlwinm)
 	rc = iword & 1;
 
 	/*  TODO: Fix this, its performance is awful:  */
-	while (sh-- != 0) {
-		int b = (tmp >> 31) & 1;
-		tmp = (tmp << 1) | b;
-	}
+	while (sh-- != 0)
+		tmp = (tmp << 1) | ((tmp >> 31) & 1);
 	for (;;) {
-		uint64_t mask;
-		mask = (uint64_t)1 << (31-mb);
-		ra |= (tmp & mask);
+		mask |= ((uint32_t)0x80000000 >> mb);
 		if (mb == me)
 			break;
-		mb ++;
-		if (mb == 32)
-			mb = 0;
+		mb ++; mb &= 31;
 	}
-	reg(ic->arg[1]) = ra;
+	ra = reg(ic->arg[1]) = tmp & mask;
 	if (rc)
 		update_cr0(cpu, ra);
 }
@@ -1926,6 +1919,7 @@ X(to_be_translated)
 	case PPC_HI6_STHU:
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
+	case PPC_HI6_STFD:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
@@ -1946,28 +1940,16 @@ X(to_be_translated)
 		case PPC_HI6_STHU: size = 1; update = 1; break;
 		case PPC_HI6_STW:  size = 2; break;
 		case PPC_HI6_STWU: size = 2; update = 1; break;
+		case PPC_HI6_STFD: size=3; fp = 1; break;
 		}
-		if (fp) {
-			/*  Floating point:  */
-			if (load && size == 3) {
-				fatal("TODO: ld is INCORRECT!\n");
-				ic->f = instr(nop);
-			} else {
-				/*  TODO  */
-				fatal("TODO: fdgasgd\n");
-				goto bad;
-			}
-		} else {
-			/*  Integer load/store:  */
-			ic->f =
+		ic->f =
 #ifdef MODE32
-			    ppc32_loadstore
+		    ppc32_loadstore
 #else
-			    ppc_loadstore
+		    ppc_loadstore
 #endif
-			    [size + 4*zero + 8*load + (imm==0? 16 : 0)
-			    + 32*update];
-		}
+		    [size + 4*zero + 8*load + (imm==0? 16 : 0)
+		    + 32*update];
 		if (ra == 0 && update) {
 			fatal("TODO: ra=0 && update?\n");
 			goto bad;

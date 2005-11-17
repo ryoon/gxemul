@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.30 2005-11-17 13:53:42 debug Exp $
+ *  $Id: bus_pci.c,v 1.31 2005-11-17 22:50:18 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -77,6 +77,7 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		dev = dev->next;
 	}
 
+	/*  No device? Then return emptiness.  */
 	if (dev == NULL) {
 		if ((pci_data->pci_addr & 0xff) == 0)
 			*data = 0xffffffff;
@@ -85,6 +86,7 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		return;
 	}
 
+	/*  Return normal config data, or length data?  */
 	if (pci_data->last_was_write_ffffffff &&
 	    registernr >= PCI_MAPREG_START && registernr <= PCI_MAPREG_END - 4)
 		cfg_base = dev->cfg_mem_size;

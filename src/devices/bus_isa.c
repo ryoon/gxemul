@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.2 2005-11-16 23:26:39 debug Exp $
+ *  $Id: bus_isa.c,v 1.3 2005-11-17 22:01:57 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -42,11 +42,29 @@
 #include "misc.h"
 
 
-/*  #define debug fatal  */
-
-
 /*
  *  bus_isa():
+ *
+ *  Flags are zero or more of the following, ORed together:
+ *
+ *  BUS_ISA_IDE0		Include wdc0.
+ *  BUS_ISA_IDE1		Include wdc1.
+ *  BUS_ISA_FDC			Include a floppy controller. (Dummy.)
+ *  BUS_ISA_VGA			Include old-style (non-PCI) VGA. (*1)
+ *  BUS_ISA_VGA_FORCE		Include VGA even when running without X11. (*2)
+ *  BUS_ISA_PCKBC_FORCE_USE	Always assume keyboard console, not serial. (*3)
+ *  BUS_ISA_PCKBC_NONPCSTYLE	Don't set the pc-style flag for the keyboard.
+ *  BUS_ISA_NO_SECOND_PIC	Only useful for 8086 XT (pre-AT) emulation. :-)
+ *
+ *  (*1) For machines with a PCI bus, this flag should not be used. Instead, a
+ *       PCI VGA card should be added to the PCI bus.
+ *
+ *  (*2) For machines where it is easy to select VGA vs serial console during
+ *       boot, this flag should not be used. Machines that "always" boot up
+ *       in VGA console mode should have it set.
+ *
+ *  (*3) Similar to *2 above; machines that always boot up with VGA console
+ *       should have this flag set, so that the keyboard is always used.
  */
 void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
 	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.5 2005-11-11 13:22:10 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.6 2005-11-17 08:35:49 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1015,6 +1015,7 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_WIRED)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_BADVADDR)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT) {
+#if 0
 		/*
 		 *  This speeds up delay-loops that just read the count
 		 *  register until it has reached a certain value. (Only for
@@ -1035,7 +1036,7 @@ void coproc_register_read(struct cpu *cpu,
 			cp->reg[COP0_COUNT] = (int64_t)
 			    (int32_t)(cp->reg[COP0_COUNT] + increase);
 		}
-
+#endif
 		unimpl = 0;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI)	unimpl = 0;

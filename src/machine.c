@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.597 2005-11-16 23:26:37 debug Exp $
+ *  $Id: machine.c,v 1.598 2005-11-17 08:35:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -5028,8 +5028,9 @@ Not yet.
 		debug(" (%.2f MHz)", (float)machine->emulated_hz / 1000000);
 	debug("\n");
 
+	/*  Default fake speed: 5 MHz  */
 	if (machine->emulated_hz < 1)
-		machine->emulated_hz = 1000000;
+		machine->emulated_hz = 5000000;
 
 	if (bootstr != NULL) {
 		debug("bootstring%s: %s", (bootarg!=NULL &&

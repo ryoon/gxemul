@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.77 2005-11-13 12:28:38 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.78 2005-11-17 08:35:28 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -76,6 +76,8 @@ struct mc_data {
 	int	irq_nr;
 
 	int	previous_second;
+	int	n_seconds_elapsed;
+	int	uip_threshold;
 
 	int	interrupt_every_x_cycles;
 	int	cycles_left_until_interrupt;
@@ -132,9 +134,6 @@ static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 void dev_mc146818_tick(struct cpu *cpu, void *extra)
 {
 	struct mc_data *d = extra;
-
-	if (d == NULL)
-		return;
 
 	recalc_interrupt_cycle(cpu, d);
 
@@ -226,6 +225,9 @@ static void mc146818_update_time(struct mc_data *d)
 	 *  Special hacks for emulating the behaviour of various machines:
 	 */
 	switch (d->access_style) {
+	case MC146818_ALGOR:
+		d->reg[4 * MC_YEAR] += 80;
+		break;
 	case MC146818_ARC_NEC:
 		d->reg[4 * MC_YEAR] += (0x18 - 104);
 		break;
@@ -307,6 +309,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Different ways of accessing the registers:  */
 	switch (d->access_style) {
+	case MC146818_ALGOR:
 	case MC146818_CATS:
 	case MC146818_PC_CMOS:
 		if ((relative_addr & 1) == 0x00) {
@@ -378,11 +381,16 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		tmp = gmtime(&timet);
 		d->reg[MC_REGC * 4] &= ~MC_REGC_UF;
 		if (tmp->tm_sec != d->previous_second) {
+			d->n_seconds_elapsed ++;
+			d->previous_second = tmp->tm_sec;
+		}
+		if (d->n_seconds_elapsed > d->uip_threshold) {
+			d->n_seconds_elapsed = 0;
+
 			d->reg[MC_REGA * 4] |= MC_REGA_UIP;
 
 			d->reg[MC_REGC * 4] |= MC_REGC_UF;
 			d->reg[MC_REGC * 4] |= MC_REGC_IRQF;
-			d->previous_second = tmp->tm_sec;
 
 			/*  For some reason, some Linux/DECstation KN04
 			    kernels want the PF (periodic flag) bit set,
@@ -440,8 +448,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			case MC_RATE_8_Hz:	d->interrupt_hz = 8;	break;
 			case MC_RATE_4_Hz:	d->interrupt_hz = 4;	break;
 			case MC_RATE_2_Hz:	d->interrupt_hz = 2;	break;
-			default:
-				/*  debug("[ mc146818: unimplemented "
+			default:/*  debug("[ mc146818: unimplemented "
 				    "MC_REGA RS: %i ]\n",
 				    data[0] & MC_REGA_RSMASK);  */
 				;
@@ -583,10 +590,12 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	d->access_style  = access_style;
 	d->addrdiv       = addrdiv;
 
-	/*  Only SGIs and PCs use BCD format (?)  */
 	d->use_bcd = 0;
-	if (access_style == MC146818_SGI || access_style == MC146818_PC_CMOS)
+	switch (access_style) {
+	case MC146818_SGI:
+	case MC146818_PC_CMOS:
 		d->use_bcd = 1;
+	}
 
 	if (access_style == MC146818_DEC) {
 	/*  Station Ethernet Address, on DECstation 3100:  */
@@ -625,6 +634,17 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 		/*  Battery valid, for DECstations  */
 		d->reg[0xf8] = 1;
 	}
+
+	/*
+	 *  uip_threshold should ideally be 1, but when Linux polls the UIP bit
+	 *  it looses speed. This hack gives Linux the impression that the cpu
+	 *  is uip_threshold times faster than the slow clock it would
+	 *  otherwise detect.
+	 *
+	 *  TODO:  Find out if this messes up Sprite emulation; if so, then
+	 *         this hack has to be removed.
+	 */
+	d->uip_threshold = 5;
 
 	if (access_style == MC146818_ARC_JAZZ)
 		memory_device_register(mem, "mc146818_jazz", 0x90000070ULL,

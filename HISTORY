@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1030 2005-11-16 21:15:15 debug Exp $
+$Id: HISTORY,v 1.1031 2005-11-17 08:35:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2424,3 +2424,6 @@ Changelog for GXemul:
 20051116	Factoring out some code which initializes legacy ISA devices
 		from those machines that use them (bus_isa).
 		Continuing on PPC interrupt/exception support.
+20051117	Minor Malta fixes: RTC year offset = 80, disabling a speed hack
+		which caused NetBSD to detect a too fast cpu, and adding a new
+		hack to make Linux detect a faster cpu.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.83 2005-11-17 13:53:43 debug Exp $
+ *  $Id: machine.h,v 1.84 2005-11-17 21:25:43 debug Exp $
  */
 
 #include <sys/types.h>
@@ -387,6 +387,10 @@ struct machine {
 #define	MACHINE_ARC_NEC_R98		6
 #define	MACHINE_ARC_JAZZ_M700		7
 #define	MACHINE_ARC_NEC_R96		8
+
+/*  Algor:  */
+#define	MACHINE_ALGOR_P4032		4
+#define	MACHINE_ALGOR_P5064		5
 
 /*  EVBMIPS:  */
 #define	MACHINE_EVBMIPS_MALTA		1

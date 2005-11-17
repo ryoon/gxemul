@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1032 2005-11-17 13:53:39 debug Exp $
+$Id: HISTORY,v 1.1033 2005-11-17 21:25:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2428,5 +2428,5 @@ Changelog for GXemul:
 		which caused NetBSD to detect a too fast cpu, and adding a new
 		hack to make Linux detect a faster cpu.
 		Continuing on PPC emulation (Artesyn PM/PPC stuff mostly).
-		Adding an Algor emulation skeleton; implementing some of the
-		basics.
+		Adding an Algor emulation skeleton (P4032 and P5064);
+		implementing some of the basics.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.599 2005-11-17 13:53:40 debug Exp $
+ *  $Id: machine.c,v 1.600 2005-11-17 21:25:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4031,10 +4031,21 @@ Not yet.
 		break;
 
 	case MACHINE_ALGOR:
-		machine->machine_name = "\"Algor\" evaluation board";
+		switch (machine->machine_subtype) {
+		case MACHINE_ALGOR_P4032:
+			machine->machine_name = "\"Algor\" P4032";
+			break;
+		case MACHINE_ALGOR_P5064:
+			machine->machine_name = "\"Algor\" P5064";
+			break;
+		default:fatal("Unimplemented Algor machine.\n");
+			exit(1);
+		}
 
 		machine->md_interrupt = isa8_interrupt;
 		machine->isa_pic_data.native_irq = 6;
+
+		/*  TODO: correct isa irq? 6 is just a bogus guess  */
 
 		bus_isa(machine, 0, 0x1d000000, 0xc0000000, 8, 24);
 
@@ -6294,8 +6305,14 @@ void machine_init(void)
 	}
 
 	/*  Algor evaluation board:  */
-	me = machine_entry_new("Algor", ARCH_MIPS, MACHINE_ALGOR, 1, 0);
+	me = machine_entry_new("Algor", ARCH_MIPS, MACHINE_ALGOR, 1, 2);
 	me->aliases[0] = "algor";
+	me->subtype[0] = machine_entry_subtype_new("P4032",
+	    MACHINE_ALGOR_P4032, 1);
+	me->subtype[0]->aliases[0] = "p4032";
+	me->subtype[1] = machine_entry_subtype_new("P5064",
+	    MACHINE_ALGOR_P5064, 1);
+	me->subtype[1]->aliases[0] = "p5064";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

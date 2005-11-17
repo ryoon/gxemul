@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_newmips.c,v 1.1 2005-11-13 22:34:22 debug Exp $
+ *  $Id: cpu_newmips.c,v 1.2 2005-11-17 21:26:06 debug Exp $
  *
  *  MIPS CPU emulation.
  *
@@ -56,8 +56,8 @@
  *  Returns 1 on success, 0 if there was no matching NEWMIPS processor with
  *  this cpu_type_name.
  */
-int newmips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
-	int cpu_id, char *cpu_type_name)
+int newmips_cpu_new(struct cpu *cpu, struct memory *mem,
+	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
 	if (strcasecmp(cpu_type_name, "NEWMIPS") != 0)
 		return 0;
@@ -70,20 +70,22 @@ int newmips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine
 	cpu->cd.newmips.bits = 32;
 
 	if (cpu->is_32bit) {
-		cpu->update_translation_table = newmips32_update_translation_table;
+		cpu->update_translation_table =
+		    newmips32_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    newmips32_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
 		    newmips32_invalidate_code_translation;
 	} else {
-		cpu->update_translation_table = newmips_update_translation_table;
+		cpu->update_translation_table =
+		    newmips_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    newmips_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
 		    newmips_invalidate_code_translation;
 	}
 
-	/*  Only newmipsow name and caches etc for CPU nr 0 (in SMP machines):  */
+	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
@@ -216,10 +218,10 @@ int newmips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->pc newmipsould be the address of the instruction.
+ *  If running is 1, cpu->pc should be the address of the instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
- *  register contents) will not be newmipsown, and addr will be used instead of
+ *  register contents) will not be shown, and addr will be used instead of
  *  cpu->pc for relative addresses.
  */
 int newmips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,

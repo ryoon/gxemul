@@ -25,13 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.8 2005-11-17 13:53:41 debug Exp $
+ *  $Id: memory_ppc.c,v 1.9 2005-11-17 21:26:06 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
 
 
-#include "bat.h"
+#include "ppc_bat.h"
 
 
 /*
@@ -41,7 +41,7 @@
  */
 int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags)
 {
-	int i, n = cpu->cd.ppc.n_bats * 2;
+	int i;
 
 	/*
 	 *  TODO: Differentiate user mode vs supervisor mode access!
@@ -56,11 +56,10 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags)
 		exit(1);
 	}
 
-	for (i=0; i<n; i++) {
-		uint32_t ux = i&1?
-		    cpu->cd.ppc.dbat_u[i >> 1] : cpu->cd.ppc.ibat_u[i >> 1];
-		uint32_t lx = i&1?
-		    cpu->cd.ppc.dbat_l[i >> 1] : cpu->cd.ppc.ibat_l[i >> 1];
+	for (i=0; i<8; i++) {
+		int regnr = SPR_IBAT0U + i * 2;
+		uint32_t ux = cpu->cd.ppc.spr[regnr];
+		uint32_t lx = cpu->cd.ppc.spr[regnr + 1];
 		uint32_t phys = lx & BAT_RPN, ebs = ux & BAT_EPI;
 		uint32_t mask = ((ux & BAT_BL) << 15) | 0x1ffff;
 		int pp = lx & BAT_PP;
@@ -74,7 +73,7 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags)
 			continue;
 
 		/*  Instruction BAT, but not instruction lookup? Then skip.  */
-		if ((i&1) == 0 && !(flags & FLAG_INSTR))
+		if (i < 4 && !(flags & FLAG_INSTR))
 			continue;
 
 		*return_addr = (vaddr & mask) | (phys & ~mask);
@@ -127,7 +126,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 {
 	int instr = flags & FLAG_INSTR, res;
 	int writeflag = flags & FLAG_WRITEFLAG;
-	uint64_t sdr1 = cpu->cd.ppc.sdr1, htaborg;
+	uint64_t sdr1 = cpu->cd.ppc.spr[SPR_SDR1], htaborg;
 
 	if (cpu->cd.ppc.bits == 32)
 		vaddr &= 0xffffffff;
@@ -139,7 +138,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	}
 
 	/*  Try the BATs:  */
-	if (cpu->cd.ppc.n_bats > 0) {
+	if (cpu->cd.ppc.bits == 32) {
 		res = ppc_bat(cpu, vaddr, return_addr, flags);
 		if (res >= 0)
 			return res;
@@ -202,8 +201,8 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		return 0;
 
 	/*  Cause an exception:  */
-	fatal("TODO: exception! sdr1=0x%llx vaddr=0x%llx pc=0x%llx\n",
-	    (long long)cpu->cd.ppc.sdr1, (long long)vaddr, (long long)cpu->pc);
+	fatal("TODO: exception! vaddr=0x%llx pc=0x%llx\n",
+	    (long long)vaddr, (long long)cpu->pc);
 
 	ppc_exception(cpu, instr? 0x10 : (writeflag? 0x11 : 0x12));
 

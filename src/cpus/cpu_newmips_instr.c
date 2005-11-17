@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_newmips_instr.c,v 1.1 2005-11-13 22:34:22 debug Exp $
+ *  $Id: cpu_newmips_instr.c,v 1.2 2005-11-17 21:26:06 debug Exp $
  *
  *  NEWMIPS instructions.
  *
@@ -52,7 +52,8 @@ X(end_of_page)
 	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->pc &= ~((NEWMIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    NEWMIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (NEWMIPS_IC_ENTRIES_PER_PAGE << NEWMIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (NEWMIPS_IC_ENTRIES_PER_PAGE <<
+	    NEWMIPS_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Find the new physical page and update the translation pointers:  */
 	DYNTRANS_PC_TO_POINTERS(cpu);
@@ -68,9 +69,9 @@ X(end_of_page)
 /*
  *  newmips_instr_to_be_translated():
  *
- *  Translate an instruction word into an newmips_instr_call. ic is filled in with
- *  valid data for the translated instruction, or a "nothing" instruction if
- *  there was a translation failure. The newly translated instruction is then
+ *  Translate an instruction word into an newmips_instr_call. ic is filled in
+ *  with valid data for the translated instruction, or a "nothing" instruction
+ *  if there was a translation failure. The newly translated instruction is then
  *  executed.
  */
 X(to_be_translated)
@@ -80,7 +81,8 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode;
-	/* void (*samepage_function)(struct cpu *, struct newmips_instr_call *);*/
+	/* void (*samepage_function)(struct cpu *,
+	   struct newmips_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.newmips.cur_ic_page)

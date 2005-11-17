@@ -1,4 +1,4 @@
-/*  GXemul: $Id: bat.h,v 1.2 2005-11-17 13:53:43 debug Exp $  */
+/*  GXemul: $Id: ppc_bat.h,v 1.1 2005-11-17 21:26:07 debug Exp $  */
 /*	$NetBSD: bat.h,v 1.5 2003/03/14 06:21:19 matt Exp $	*/
 
 #ifndef	_POWERPC_OEA_BAT_H_

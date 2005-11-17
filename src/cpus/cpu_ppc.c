@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.18 2005-11-16 23:26:39 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.19 2005-11-17 21:26:06 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -41,6 +41,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "opcodes_ppc.h"
+#include "ppc_spr.h"
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
@@ -88,10 +89,9 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits = cpu->cd.ppc.cpu_type.bits;
-	cpu->cd.ppc.pvr = cpu->cd.ppc.cpu_type.pvr;
+	cpu->cd.ppc.spr[SPR_PVR] = cpu->cd.ppc.cpu_type.pvr;
 
 	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
-	cpu->cd.ppc.n_bats = cpu->is_32bit? PPC_MAX_BATS : 0;
 
 	if (cpu->is_32bit) {
 		cpu->update_translation_table = ppc32_update_translation_table;
@@ -133,7 +133,7 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		}
 	}
 
-	cpu->cd.ppc.pir = cpu_id;
+	cpu->cd.ppc.spr[SPR_PIR] = cpu_id;
 
 	/*  Some default stack pointer value.  TODO: move this?  */
 	cpu->cd.ppc.gpr[1] = machine->physical_ram_in_mb * 1048576 - 4096;
@@ -235,8 +235,8 @@ void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
 void ppc_exception(struct cpu *cpu, int exception_nr)
 {
 	/*  Save PC and MSR:  */
-	cpu->cd.ppc.srr0 = cpu->pc;
-	cpu->cd.ppc.srr1 = cpu->cd.ppc.msr;
+	cpu->cd.ppc.spr[SPR_SRR0] = cpu->pc;
+	cpu->cd.ppc.spr[SPR_SRR1] = cpu->cd.ppc.msr;
 
 printf("[ PPC Exception 0x%x; pc=0x%llx ]\n", exception_nr, (long long)cpu->pc);
 
@@ -284,22 +284,22 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i: lr  = 0x", x);
 		if (bits32)
-			debug("%08x", (int)cpu->cd.ppc.lr);
+			debug("%08x", (int)cpu->cd.ppc.spr[SPR_LR]);
 		else
-			debug("%016llx", (long long)cpu->cd.ppc.lr);
+			debug("%016llx", (long long)cpu->cd.ppc.spr[SPR_LR]);
 		debug("  cr  = 0x%08x\n", (int)cpu->cd.ppc.cr);
 
 		debug("cpu%i: ctr = 0x", x);
 		if (bits32)
-			debug("%08x", (int)cpu->cd.ppc.ctr);
+			debug("%08x", (int)cpu->cd.ppc.spr[SPR_CTR]);
 		else
-			debug("%016llx", (long long)cpu->cd.ppc.ctr);
+			debug("%016llx", (long long)cpu->cd.ppc.spr[SPR_CTR]);
 
 		debug("  xer = 0x", x);
 		if (bits32)
-			debug("%08x\n", (int)cpu->cd.ppc.xer);
+			debug("%08x\n", (int)cpu->cd.ppc.spr[SPR_XER]);
 		else
-			debug("%016llx\n", (long long)cpu->cd.ppc.xer);
+			debug("%016llx\n", (long long)cpu->cd.ppc.spr[SPR_XER]);
 
 		if (bits32) {
 			/*  32-bit:  */
@@ -326,13 +326,15 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		/*  Other special registers:  */
 		debug("cpu%i: srr0 = 0x%016llx  srr1 = 0x%016llx\n", x,
-		    (long long)cpu->cd.ppc.srr0, (long long)cpu->cd.ppc.srr1);
+		    (long long)cpu->cd.ppc.spr[SPR_SRR0],
+		    (long long)cpu->cd.ppc.spr[SPR_SRR1]);
 		reg_access_msr(cpu, &tmp, 0);
 		debug("cpu%i: msr = 0x%016llx  ", x, (long long)tmp);
-		debug("tb  = 0x%08x%08x\n",
-		    (int)cpu->cd.ppc.tbu, (int)cpu->cd.ppc.tbl);
+		debug("tb  = 0x%08x%08x\n", (int)cpu->cd.ppc.spr[SPR_TBU],
+		    (int)cpu->cd.ppc.spr[SPR_TBL]);
 		debug("cpu%i: dec = 0x%08x  hdec = 0x%08x\n",
-		    x, (int)cpu->cd.ppc.dec, (int)cpu->cd.ppc.hdec);
+		    x, (int)cpu->cd.ppc.spr[SPR_DEC],
+		    (int)cpu->cd.ppc.spr[SPR_HDEC]);
 	}
 
 	if (coprocs & 1) {
@@ -354,15 +356,15 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 	if (coprocs & 2) {
 		debug("cpu%i:  sdr1 = 0x%llx\n", x,
-		    (long long)cpu->cd.ppc.sdr1);
+		    (long long)cpu->cd.ppc.spr[SPR_SDR1]);
 		for (i=0; i<4; i++)
 			debug("cpu%i:  ibat%iu = 0x%08x  ibat%il = 0x%08x\n",
-			    x, i, cpu->cd.ppc.ibat_u[i],
-			    i, cpu->cd.ppc.ibat_l[i]);
+			    x, i, cpu->cd.ppc.spr[SPR_IBAT0U + i*2],
+			    i, cpu->cd.ppc.spr[SPR_IBAT0U + i*2 + 1]);
 		for (i=0; i<4; i++)
 			debug("cpu%i:  dbat%iu = 0x%08x  dbat%il = 0x%08x\n",
-			    x, i, cpu->cd.ppc.dbat_u[i],
-			    i, cpu->cd.ppc.dbat_l[i]);
+			    x, i, cpu->cd.ppc.spr[SPR_DBAT0U + i*2],
+			    i, cpu->cd.ppc.spr[SPR_DBAT0U + i*2 + 1]);
 	}
 }
 
@@ -394,9 +396,9 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 		*match_register = 1;
 	} else if (strcasecmp(name, "lr") == 0) {
 		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.lr = *valuep;
+			m->cpus[cpunr]->cd.ppc.spr[SPR_LR] = *valuep;
 		else
-			*valuep = m->cpus[cpunr]->cd.ppc.lr;
+			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_LR];
 		*match_register = 1;
 	} else if (strcasecmp(name, "cr") == 0) {
 		if (writeflag)
@@ -406,21 +408,21 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 		*match_register = 1;
 	} else if (strcasecmp(name, "dec") == 0) {
 		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.dec = *valuep;
+			m->cpus[cpunr]->cd.ppc.spr[SPR_DEC] = *valuep;
 		else
-			*valuep = m->cpus[cpunr]->cd.ppc.dec;
+			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_DEC];
 		*match_register = 1;
 	} else if (strcasecmp(name, "hdec") == 0) {
 		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.hdec = *valuep;
+			m->cpus[cpunr]->cd.ppc.spr[SPR_HDEC] = *valuep;
 		else
-			*valuep = m->cpus[cpunr]->cd.ppc.hdec;
+			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_HDEC];
 		*match_register = 1;
 	} else if (strcasecmp(name, "ctr") == 0) {
 		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.ctr = *valuep;
+			m->cpus[cpunr]->cd.ppc.spr[SPR_CTR] = *valuep;
 		else
-			*valuep = m->cpus[cpunr]->cd.ppc.ctr;
+			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_CTR];
 		*match_register = 1;
 	} else if (name[0] == 'r' && isdigit((int)name[1])) {
 		int nr = atoi(name + 1);
@@ -433,9 +435,9 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 		}
 	} else if (strcasecmp(name, "xer") == 0) {
 		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.xer = *valuep;
+			m->cpus[cpunr]->cd.ppc.spr[SPR_XER] = *valuep;
 		else
-			*valuep = m->cpus[cpunr]->cd.ppc.xer;
+			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_XER];
 		*match_register = 1;
 	} else if (strcasecmp(name, "fpscr") == 0) {
 		if (writeflag)
@@ -1461,6 +1463,49 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 
 /*
+ *  debug_spr_usage():
+ *
+ *  Helper function. To speed up overall development speed of the emulator,
+ *  all SPR accesses are allowed. This function causes unknown/unimplemented
+ *  SPRs to give a warning.
+ */
+static void debug_spr_usage(uint64_t pc, int spr)
+{
+	static uint32_t spr_used[1024 / sizeof(uint32_t)];
+	static int initialized = 0;
+
+	if (!initialized) {
+		memset(spr_used, 0, sizeof(spr_used));
+		initialized = 1;
+	}
+
+	spr &= 1023;
+	if (spr_used[spr >> 2] & (1 << (spr & 3)))
+		return;
+
+	switch (spr) {
+	/*  Known/implemented SPRs:  */
+	case SPR_XER:
+	case SPR_LR:
+	case SPR_CTR:
+	case SPR_DEC:
+	case SPR_SDR1:
+	case SPR_SPRG0:
+	case SPR_PVR:
+	case SPR_DBSR:
+		break;
+	default:if (spr >= SPR_IBAT0U && spr <= SPR_DBAT3L) {
+			break;
+		} else
+			fatal("[ using UNIMPLEMENTED spr %i (hex 0x%x), pc = "
+			    "0x%llx ]\n", spr, spr, (long long)pc);
+	}
+
+	spr_used[spr >> 2] |= (1 << (spr & 3));
+}
+
+
+/*
  *  update_cr0():
  *
  *  Sets the top 4 bits of the CR register.
@@ -1486,7 +1531,7 @@ void update_cr0(struct cpu *cpu, uint64_t value)
 	}
 
 	/*  SO bit, copied from XER:  */
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 
 	cpu->cd.ppc.cr &= ~((uint32_t)0xf << 28);
 	cpu->cd.ppc.cr |= ((uint32_t)c << 28);

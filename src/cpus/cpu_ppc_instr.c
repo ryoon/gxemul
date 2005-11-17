@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.26 2005-11-17 13:53:41 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.27 2005-11-17 21:26:06 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -100,10 +100,10 @@ X(addic)
 	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	tmp2 += (uint32_t)ic->arg[1];
 	if ((tmp2 >> 32) != (tmp >> 32))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp2;
 }
 
@@ -118,9 +118,9 @@ X(addic)
 X(subfic)
 {
 	MODE_uint_t tmp = (int64_t)(int32_t)ic->arg[1];
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (tmp >= reg(ic->arg[0]))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = tmp - reg(ic->arg[0]);
 }
 
@@ -137,10 +137,10 @@ X(addic_dot)
 	/*  TODO/NOTE: Only for 32-bit mode, so far!  */
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	tmp2 += (uint32_t)ic->arg[1];
 	if ((tmp2 >> 32) != (tmp >> 32))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp2;
 	update_cr0(cpu, (uint32_t)tmp2);
 }
@@ -158,11 +158,11 @@ X(bclr)
 	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	int ctr_ok, cond_ok;
 	uint64_t old_pc = cpu->pc;
-	MODE_uint_t tmp, addr = cpu->cd.ppc.lr;
+	MODE_uint_t tmp, addr = cpu->cd.ppc.spr[SPR_LR];
 	if (!(bo & 4))
-		cpu->cd.ppc.ctr --;
+		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
-	tmp = cpu->cd.ppc.ctr;
+	tmp = cpu->cd.ppc.spr[SPR_CTR];
 	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
@@ -191,11 +191,11 @@ X(bclr_l)
 	uint64_t low_pc, old_pc = cpu->pc;
 	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	int ctr_ok, cond_ok;
-	MODE_uint_t tmp, addr = cpu->cd.ppc.lr;
+	MODE_uint_t tmp, addr = cpu->cd.ppc.spr[SPR_LR];
 	if (!(bo & 4))
-		cpu->cd.ppc.ctr --;
+		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
-	tmp = cpu->cd.ppc.ctr;
+	tmp = cpu->cd.ppc.spr[SPR_CTR];
 	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
@@ -203,8 +203,8 @@ X(bclr_l)
 	/*  Calculate return PC:  */
 	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 
 	if (ctr_ok && cond_ok) {
 		uint64_t mask_within_page =
@@ -241,7 +241,7 @@ X(bcctr)
 {
 	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	uint64_t old_pc = cpu->pc;
-	MODE_uint_t addr = cpu->cd.ppc.ctr;
+	MODE_uint_t addr = cpu->cd.ppc.spr[SPR_CTR];
 	int cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
 	if (cond_ok) {
@@ -268,15 +268,15 @@ X(bcctr_l)
 {
 	uint64_t low_pc, old_pc = cpu->pc;
 	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
-	MODE_uint_t addr = cpu->cd.ppc.ctr;
+	MODE_uint_t addr = cpu->cd.ppc.spr[SPR_CTR];
 	int cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
 
 	/*  Calculate return PC:  */
 	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 
 	if (cond_ok) {
 		uint64_t mask_within_page =
@@ -338,9 +338,9 @@ X(bc)
 	MODE_uint_t tmp;
 	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1];
 	if (!(bo & 4))
-		cpu->cd.ppc.ctr --;
+		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
-	tmp = cpu->cd.ppc.ctr;
+	tmp = cpu->cd.ppc.spr[SPR_CTR];
 	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) ==
@@ -373,9 +373,9 @@ X(bc_samepage)
 	MODE_uint_t tmp;
 	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1];
 	if (!(bo & 4))
-		cpu->cd.ppc.ctr --;
+		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
-	tmp = cpu->cd.ppc.ctr;
+	tmp = cpu->cd.ppc.spr[SPR_CTR];
 	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) ==
@@ -397,8 +397,8 @@ X(bl)
 	/*  Calculate LR:  */
 	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 
 	/*  Calculate new PC from this instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)
@@ -414,8 +414,8 @@ X(bla)
 {
 	uint32_t low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 	cpu->pc = (int32_t)ic->arg[0];
 	DYNTRANS_PC_TO_POINTERS(cpu);
 }
@@ -433,8 +433,8 @@ X(bl_trace)
 	/*  Calculate LR:  */
 	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 
 	/*  Calculate new PC from this instruction + arg[0]  */
 	low_pc = ((size_t)ic - (size_t)
@@ -452,8 +452,8 @@ X(bla_trace)
 {
 	uint32_t low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 	cpu->pc = (int32_t)ic->arg[0];
 	cpu_functioncall_trace(cpu, cpu->pc);
 	DYNTRANS_PC_TO_POINTERS(cpu);
@@ -472,8 +472,8 @@ X(bl_samepage)
 	/*  Calculate LR:  */
 	low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call) + 1;
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 
 	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
 }
@@ -491,8 +491,8 @@ X(bl_samepage_trace)
 	/*  Calculate LR:  */
 	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->cd.ppc.lr = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
-	cpu->cd.ppc.lr += (low_pc << 2);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
 
 	cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
 
@@ -541,7 +541,8 @@ X(cmpd)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -564,7 +565,8 @@ X(cmpld)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -587,7 +589,8 @@ X(cmpdi)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -610,7 +613,8 @@ X(cmpldi)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -633,7 +637,8 @@ X(cmpw)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -656,7 +661,8 @@ X(cmplw)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -679,7 +685,8 @@ X(cmpwi)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -702,7 +709,8 @@ X(cmplwi)
 		c = 4;
 	else
 		c = 2;
-	c |= ((cpu->cd.ppc.xer >> 31) & 1);  /*  SO bit, copied from XER  */
+	/*  SO bit, copied from XER  */
+	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
 	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
 	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 }
@@ -807,7 +815,7 @@ X(llsc)
 		cpu->cd.ppc.ll_addr = addr;
 		cpu->cd.ppc.ll_bit = 1;
 	} else {
-		uint32_t old_so = cpu->cd.ppc.xer & PPC_XER_SO;
+		uint32_t old_so = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_SO;
 		if (!rc) {
 			fatal("sc: rc-bit not set?\n");
 			exit(1);
@@ -1040,7 +1048,7 @@ X(srawi)
 	uint32_t tmp = reg(ic->arg[0]);
 	int i = 0, j = 0, sh = ic->arg[2];
 
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (tmp & 0x80000000)
 		i = 1;
 	while (sh-- > 0) {
@@ -1051,7 +1059,7 @@ X(srawi)
 			tmp |= 0x80000000;
 	}
 	if (i && j>0)
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[1]) = (int64_t)(int32_t)tmp;
 }
 DOT1(srawi)
@@ -1124,64 +1132,33 @@ X(crxor) {
 
 
 /*
- *  mflr, etc:  Move from Link Register etc.
+ *  mfspr: Move from SPR
  *
  *  arg[0] = pointer to destination register
+ *  arg[1] = pointer to source SPR
  */
-X(mfxer) {	reg(ic->arg[0]) = cpu->cd.ppc.xer; }
-X(mflr) {	reg(ic->arg[0]) = cpu->cd.ppc.lr; }
-X(mfctr) {	reg(ic->arg[0]) = cpu->cd.ppc.ctr; }
-X(mfdec) {	reg(ic->arg[0]) = cpu->cd.ppc.dec; }
-X(mftb) {	if (++cpu->cd.ppc.tbl == 0)
-			cpu->cd.ppc.tbu ++;
-		reg(ic->arg[0]) = cpu->cd.ppc.tbl; }
-X(mftbu) {	reg(ic->arg[0]) = cpu->cd.ppc.tbu; }
-/*  TODO: Check privilege level for mfsprg*  */
-X(mfsrr0) {	reg(ic->arg[0]) = cpu->cd.ppc.srr0; }
-X(mfsrr1) {	reg(ic->arg[0]) = cpu->cd.ppc.srr1; }
-X(mfsdr1) {	reg(ic->arg[0]) = cpu->cd.ppc.sdr1; }
-X(mfdbsr) {	reg(ic->arg[0]) = cpu->cd.ppc.dbsr; }
-X(mfhid1) {	reg(ic->arg[0]) = 0;  /*  TODO  */ }
-X(mfl2cr) {	reg(ic->arg[0]) = 0;  /*  TODO  */ }
-X(mfsprg0) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg0; }
-X(mfsprg1) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg1; }
-X(mfsprg2) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg2; }
-X(mfsprg3) {	reg(ic->arg[0]) = cpu->cd.ppc.sprg3; }
-X(mfpvr) {	reg(ic->arg[0]) = cpu->cd.ppc.pvr; }
-X(mfibatu) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_u[ic->arg[1]]; }
-X(mfibatl) {	reg(ic->arg[0]) = cpu->cd.ppc.ibat_l[ic->arg[1]]; }
-X(mfdbatu) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_u[ic->arg[1]]; }
-X(mfdbatl) {	reg(ic->arg[0]) = cpu->cd.ppc.dbat_l[ic->arg[1]]; }
-X(mfmmcr0) {	reg(ic->arg[0]) = 0; }
-X(mfmmcr1) {	reg(ic->arg[0]) = 0; }
-X(mfpid) {	reg(ic->arg[0]) = cpu->cd.ppc.pid; }
+X(mfspr) {
+	reg(ic->arg[0]) = reg(ic->arg[1]);
+}
+X(mftb) {
+	if (++cpu->cd.ppc.spr[SPR_TBL] == 0)
+		cpu->cd.ppc.spr[SPR_TBU] ++;
+	reg(ic->arg[0]) = cpu->cd.ppc.spr[SPR_TBL];
+}
+X(mftbu) {
+	reg(ic->arg[0]) = cpu->cd.ppc.spr[SPR_TBU];
+}
 
 
 /*
- *  mtlr etc.:  Move to Link Register (or other special register)
+ *  mtspr: Move to SPR.
  *
  *  arg[0] = pointer to source register
+ *  arg[1] = pointer to the SPR
  */
-X(mtxer) {	cpu->cd.ppc.xer = reg(ic->arg[0]); }
-X(mtlr) {	cpu->cd.ppc.lr = reg(ic->arg[0]); }
-X(mtctr) {	cpu->cd.ppc.ctr = reg(ic->arg[0]); }
-/*  TODO: Check privilege level for these:  */
-X(mtdec) {	cpu->cd.ppc.dec = reg(ic->arg[0]); }
-X(mtsrr0) {	cpu->cd.ppc.srr0 = reg(ic->arg[0]); }
-X(mtsrr1) {	cpu->cd.ppc.srr1 = reg(ic->arg[0]); }
-X(mtsdr1) {	cpu->cd.ppc.sdr1 = reg(ic->arg[0]); }
-X(mtdbsr) {	cpu->cd.ppc.dbsr = reg(ic->arg[0]); }
-X(mtsprg0) {	cpu->cd.ppc.sprg0 = reg(ic->arg[0]); }
-X(mtsprg1) {	cpu->cd.ppc.sprg1 = reg(ic->arg[0]); }
-X(mtsprg2) {	cpu->cd.ppc.sprg2 = reg(ic->arg[0]); }
-X(mtsprg3) {	cpu->cd.ppc.sprg3 = reg(ic->arg[0]); }
-X(mtmmcr0) {	 }
-X(mtmmcr1) {	 }
-X(mtibatu) {	cpu->cd.ppc.ibat_u[ic->arg[1]] = reg(ic->arg[0]); }
-X(mtibatl) {	cpu->cd.ppc.ibat_l[ic->arg[1]] = reg(ic->arg[0]); }
-X(mtdbatu) {	cpu->cd.ppc.dbat_u[ic->arg[1]] = reg(ic->arg[0]); }
-X(mtdbatl) {	cpu->cd.ppc.dbat_l[ic->arg[1]] = reg(ic->arg[0]); }
-X(mtpid) {	cpu->cd.ppc.pid = reg(ic->arg[0]); }
+X(mtspr) {
+	reg(ic->arg[1]) = reg(ic->arg[0]);
+}
 
 
 /*
@@ -1193,10 +1170,10 @@ X(rfi)
 
 	reg_access_msr(cpu, &tmp, 0);
 	tmp &= ~0xffff;
-	tmp |= (cpu->cd.ppc.srr1 & 0xffff);
+	tmp |= (cpu->cd.ppc.spr[SPR_SRR1] & 0xffff);
 	reg_access_msr(cpu, &tmp, 1);
 
-	cpu->pc = cpu->cd.ppc.srr0;
+	cpu->pc = cpu->cd.ppc.spr[SPR_SRR0];
 	DYNTRANS_PC_TO_POINTERS(cpu);
 }
 
@@ -1551,10 +1528,10 @@ X(addc)
 	/*  TODO: this only works in 32-bit mode  */
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if ((tmp >> 32) != (tmp2 >> 32))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 
@@ -1569,44 +1546,44 @@ X(addc)
 X(adde)
 {
 	/*  TODO: this only works in 32-bit mode  */
-	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	tmp += (uint32_t)reg(ic->arg[1]);
 	if (old_ca)
 		tmp ++;
 	if ((tmp >> 32) != (tmp2 >> 32))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 X(adde_dot) { instr(adde)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(addme)
 {
 	/*  TODO: this only works in 32-bit mode  */
-	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
 	tmp += 0xffffffffULL;
 	if ((tmp >> 32) != (tmp2 >> 32))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 X(addme_dot) { instr(addme)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(addze)
 {
 	/*  TODO: this only works in 32-bit mode  */
-	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)reg(ic->arg[0]);
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
 	if ((tmp >> 32) != (tmp2 >> 32))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 X(addze_dot) { instr(addze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
@@ -1623,21 +1600,21 @@ X(subf) {	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]); }
 X(subf_dot) {	instr(subf)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfc)
 {
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (reg(ic->arg[1]) >= reg(ic->arg[0]))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]);
 }
 X(subfc_dot) {	instr(subfc)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfe)
 {
-	int old_ca = (cpu->cd.ppc.xer & PPC_XER_CA)? 1 : 0;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	int old_ca = (cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA)? 1 : 0;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (reg(ic->arg[1]) == reg(ic->arg[0])) {
 		if (old_ca)
-			cpu->cd.ppc.xer |= PPC_XER_CA;
+			cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	} else if (reg(ic->arg[1]) >= reg(ic->arg[0]))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 
 	/*
 	 *  TODO: The register value calculation should be correct,
@@ -1649,14 +1626,14 @@ X(subfe)
 X(subfe_dot) {	instr(subfe)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfze)
 {
-	int old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
 	uint64_t tmp2 = tmp;
-	cpu->cd.ppc.xer &= ~PPC_XER_CA;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
 	if ((tmp >> 32) != (tmp2 >> 32))
-		cpu->cd.ppc.xer |= PPC_XER_CA;
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
 X(subfze_dot) {	instr(subfze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
@@ -1699,7 +1676,7 @@ X(user_syscall)
 X(openfirmware)
 {
 	of_emul(cpu);
-	cpu->pc = cpu->cd.ppc.lr;
+	cpu->pc = cpu->cd.ppc.spr[SPR_LR];
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);
 	DYNTRANS_PC_TO_POINTERS(cpu);
@@ -2220,86 +2197,19 @@ X(to_be_translated)
 		case PPC_31_MFSPR:
 			rt = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			debug_spr_usage(cpu->pc, spr);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
-			switch (spr) {
-			case 1:	  ic->f = instr(mfxer); break;
-			case 8:	  ic->f = instr(mflr); break;
-			case 9:	  ic->f = instr(mfctr); break;
-			case 22:  ic->f = instr(mfdec); break;
-			case 25:  ic->f = instr(mfsdr1); break;
-			case 26:  ic->f = instr(mfsrr0); break;
-			case 27:  ic->f = instr(mfsrr1); break;
-			case 272: ic->f = instr(mfsprg0); break;
-			case 273: ic->f = instr(mfsprg1); break;
-			case 274: ic->f = instr(mfsprg2); break;
-			case 275: ic->f = instr(mfsprg3); break;
-			case 287: ic->f = instr(mfpvr); break;
-			case 945: ic->f = instr(mfpid); break;
-			case 952: ic->f = instr(mfmmcr0); break;
-			case 953: ic->f = instr(mfmmcr1); break;
-			case 1008:ic->f = instr(mfdbsr); break;
-			case 1009:ic->f = instr(mfhid1); break;
-			case 1017:ic->f = instr(mfl2cr); break;
-			default:if (spr >= 528 && spr < 544) {
-					if (spr & 1) {
-						if (spr & 16)
-							ic->f = instr(mfdbatl);
-						else
-							ic->f = instr(mfibatl);
-					} else {
-						if (spr & 16)
-							ic->f = instr(mfdbatu);
-						else
-							ic->f = instr(mfibatu);
-					}
-					ic->arg[1] = (spr >> 1) & 3;
-				} else {
-					fatal("UNIMPLEMENTED spr %i\n", spr);
-					goto bad;
-				}
-			}
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.spr[spr]);
+			ic->f = instr(mfspr);
 			break;
 
 		case PPC_31_MTSPR:
 			rs = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			debug_spr_usage(cpu->pc, spr);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
-			switch (spr) {
-			case 1:	  ic->f = instr(mtxer); break;
-			case 8:	  ic->f = instr(mtlr); break;
-			case 9:	  ic->f = instr(mtctr); break;
-			case 22:  ic->f = instr(mtdec); break;
-			case 25:  ic->f = instr(mtsdr1); break;
-			case 26:  ic->f = instr(mtsrr0); break;
-			case 27:  ic->f = instr(mtsrr1); break;
-			case 272: ic->f = instr(mtsprg0); break;
-			case 273: ic->f = instr(mtsprg1); break;
-			case 274: ic->f = instr(mtsprg2); break;
-			case 275: ic->f = instr(mtsprg3); break;
-			case 945: ic->f = instr(mtpid); break;
-			case 952: ic->f = instr(mtmmcr0); break;
-			case 953: ic->f = instr(mtmmcr1); break;
-			case 1008:ic->f = instr(mtdbsr); break;
-			case 1018:ic->f = instr(nop); break;
-			case 1019:ic->f = instr(nop); break;
-			default:if (spr >= 528 && spr < 544) {
-					if (spr & 1) {
-						if (spr & 16)
-							ic->f = instr(mtdbatl);
-						else
-							ic->f = instr(mtibatl);
-					} else {
-						if (spr & 16)
-							ic->f = instr(mtdbatu);
-						else
-							ic->f = instr(mtibatu);
-					}
-					ic->arg[1] = (spr >> 1) & 3;
-				} else {
-					fatal("UNIMPLEMENTED spr %i\n", spr);
-					goto bad;
-				}
-			}
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.spr[spr]);
+			ic->f = instr(mtspr);
 			break;
 
 		case PPC_31_MFCR:

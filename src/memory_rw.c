@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.78 2005-11-13 00:14:06 debug Exp $
+ *  $Id: memory_rw.c,v 1.79 2005-11-17 21:26:05 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -462,15 +462,11 @@ have_paddr:
 		{
 			if (paddr >= mem->physical_max) {
 				char *symbol;
-				uint64_t old_pc;
 				uint64_t offset;
-
 #ifdef MEM_MIPS
-				old_pc = cpu->cd.mips.pc_last;
+				uint64_t old_pc = cpu->cd.mips.pc_last;
 #else
-				/*  Default instruction size on most
-				    RISC archs is 32 bits:  */
-				old_pc = cpu->pc - sizeof(uint32_t);
+				uint64_t old_pc = cpu->pc;
 #endif
 
 				/*  This allows for example OS kernels to probe

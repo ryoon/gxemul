@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.47 2005-11-16 23:26:40 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.48 2005-11-17 21:26:07 debug Exp $
  */
 
 #include "misc.h"
@@ -38,8 +38,6 @@ struct cpu_family;
 
 #define	MODE_PPC		0
 #define	MODE_POWER		1
-
-#define	PPC_MAX_BATS		4
 
 /*  PPC CPU types:  */
 struct ppc_cpu_type_def { 
@@ -69,7 +67,9 @@ struct ppc_cpu_type_def {
 #define PPC_CPU_TYPE_DEFS	{					\
 	{ "PPC405GP",	0,          32, PPC_NOFP, 15,5,2, 15,5,2, 20,5,1, 0 }, \
 	{ "PPC601",	0,          32, PPC_601, 14,5,4, 14,5,4, 0,0,0, 0 },	\
+	{ "PPC603",	0x00030000, 32, 0, 14,5,4, 14,5,4, 0,0,0, 0 },	\
 	{ "PPC603e",	0x00060000, 32, 0, 14,5,4, 14,5,4, 0,0,0, 0 },	\
+	{ "PPC604",	0x00040000, 32, 0, 14,5,4, 14,5,4, 0,0,0, 0 },	\
 	{ "MPC7400",	0x000c0000, 32, 0, 15,5,2, 15,5,2, 19,5,1, 1 },	\
 	{ "PPC750",	0x00084202, 32, 0, 15,5,2, 15,5,2, 20,5,1, 0 },	\
 	{ "G4e",	0,          32, 0, 15,5,8, 15,5,8, 18,5,8, 1 },	\
@@ -122,7 +122,6 @@ struct ppc_cpu {
 
 	int		mode;		/*  MODE_PPC or MODE_POWER  */
 	int		bits;		/*  32 or 64  */
-	int		n_bats;		/*  usually PPC_MAX_BATS or 0  */
 
 	int		irq_asserted;	/*  Checked periodically.  */
 
@@ -130,40 +129,12 @@ struct ppc_cpu {
 
 	uint32_t	cr;		/*  Condition Register  */
 	uint32_t	fpscr;		/*  FP Status and Control Register  */
-	uint64_t	lr;		/*  Link Register  */
-	uint64_t	ctr;		/*  Count Register  */
 	uint64_t	gpr[PPC_NGPRS];	/*  General Purpose Registers  */
-	uint64_t	xer;		/*  FP Exception Register  */
 	uint64_t	fpr[PPC_NFPRS];	/*  Floating-Point Registers  */
 
-	uint32_t	tbl;		/*  Time Base Lower  */
-	uint32_t	tbu;		/*  Time Base Upper  */
-	uint32_t	dec;		/*  Decrementer  */
-	uint32_t	hdec;		/*  Hypervisor Decrementer  */
-	uint64_t	sdr1;		/*  Storage Descriptor Register  */
-	uint64_t	srr0;		/*  Supervisor save/restore 0  */
-	uint64_t	srr1;		/*  Supervisor save/restore 1  */
-	uint64_t	ssr0;		/*  Machine status save/restore
-					    register 0  */
-	uint64_t	ssr1;		/*  Machine status save/restore
-					    register 1  */
 	uint64_t	msr;		/*  Machine state register  */
-	uint64_t	sprg0;		/*  Special Purpose Register G0  */
-	uint64_t	sprg1;		/*  Special Purpose Register G1  */
-	uint64_t	sprg2;		/*  Special Purpose Register G2  */
-	uint64_t	sprg3;		/*  Special Purpose Register G3  */
-	uint64_t	dbsr;		/*  Debug Status Register  */
-	uint32_t	pvr;		/*  Processor Version Register  */
-	uint32_t	pir;		/*  Processor ID  */
-	uint64_t	pid;		/*  Process ID  */
-
-	/*  TODO: 64-bit SRs? (Segment registers)  */
-	uint32_t	sr[16];
-
-	uint32_t	ibat_u[PPC_MAX_BATS];
-	uint32_t	ibat_l[PPC_MAX_BATS];
-	uint32_t	dbat_u[PPC_MAX_BATS];
-	uint32_t	dbat_l[PPC_MAX_BATS];
+	uint32_t	sr[16];		/*  Segment registers.  */
+	uint64_t	spr[1024];
 
 	uint64_t	ll_addr;	/*  Load-linked / store-conditional  */
 	int		ll_bit;

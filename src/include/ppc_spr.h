@@ -1,5 +1,5 @@
 /*
- *  GXemul: $Id: ppc_spr.h,v 1.1 2005-11-17 21:26:07 debug Exp $
+ *  GXemul: $Id: ppc_spr.h,v 1.2 2005-11-17 22:50:34 debug Exp $
  *
  *  The NetBSD file ($NetBSD: spr.h,v 1.35 2005/01/20 21:26:49 matt Exp $)
  *  has no explicit Copyright notice, but the initial message in the NetBSD CVS
@@ -109,14 +109,14 @@
 #define MPC745X_P(v)		  ((v & 0xFFF8) == 0x8000)
 #define	  MPC7410		  0x800c
 #define	  MPC8245		  0x8081
-#define	SPR_HSPRG0		0x130
-#define	SPR_HSPRG1		0x131
-#define	SPR_HDEC		0x136
-#define	SPR_HIOR		0x137
-#define	SPR_RMOR		0x138
-#define	SPR_HRMOR		0x139
-#define	SPR_HSRR0		0x13a
-#define	SPR_HSRR1		0x13b
+#define SPR_HSPRG0		0x130
+#define SPR_HSPRG1		0x131
+#define SPR_HDEC		0x136
+#define SPR_HIOR		0x137
+#define SPR_RMOR		0x138
+#define SPR_HRMOR		0x139
+#define SPR_HSRR0		0x13a
+#define SPR_HSRR1		0x13b
 
 #define	SPR_IBAT0U		0x210	/* .68 Instruction BAT Reg 0 Upper */
 #define	SPR_IBAT0L		0x211	/* .6. Instruction BAT Reg 0 Lower */

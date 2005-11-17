@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1033 2005-11-17 21:25:47 debug Exp $
+$Id: HISTORY,v 1.1034 2005-11-17 22:50:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2427,6 +2427,9 @@ Changelog for GXemul:
 20051117	Minor Malta fixes: RTC year offset = 80, disabling a speed hack
 		which caused NetBSD to detect a too fast cpu, and adding a new
 		hack to make Linux detect a faster cpu.
-		Continuing on PPC emulation (Artesyn PM/PPC stuff mostly).
+		Continuing on the Artesyn PM/PPC emulation mode.
 		Adding an Algor emulation skeleton (P4032 and P5064);
 		implementing some of the basics.
+		Continuing on PPC emulation in general; usage of unimplemented
+		SPRs is now easier to track, continuing on memory/exception
+		related issues, etc.

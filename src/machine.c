@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.600 2005-11-17 21:25:46 debug Exp $
+ *  $Id: machine.c,v 1.601 2005-11-17 22:50:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4144,15 +4144,15 @@ Not yet.
 
 		dev_pmppc_init(mem);
 
-		dev_mc146818_init(machine, mem, 0x7ff00000, 0, MC146818_PMPPC, 1);
+		dev_mc146818_init(machine, mem, 0x7ff00000, 25, MC146818_PMPPC, 1);
 
 		pci_data = dev_cpc700_init(machine, mem);
 		bus_pci_add(machine, pci_data, mem, 0, 8, 0, "dec21143");
 
 		/*  com0 = 0xff600300, com1 = 0xff600400  */
-
-		machine->main_console_handle = (size_t)device_add(machine, "ns16550 irq=0 addr=0xff600300 name2=tty0");
-		device_add(machine, "ns16550 irq=0 addr=0xff600400 in_use=0 name2=tty1");
+		machine->main_console_handle = (size_t)device_add(machine,
+		    "ns16550 irq=3 addr=0xff600300 name2=tty0");
+		device_add(machine, "ns16550 irq=4 addr=0xff600400 in_use=0 name2=tty1");
 
 		break;
 
@@ -5371,7 +5371,7 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_PREP:
 		/*  For NetBSD/prep. TODO  */
-		m->cpu_name = strdup("PPC603e");
+		m->cpu_name = strdup("PPC603");
 		break;
 	case MACHINE_MACPPC:
 		switch (m->machine_subtype) {

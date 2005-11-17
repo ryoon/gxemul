@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.34 2005-08-29 14:46:30 debug Exp $
+#  $Id: Makefile.skel,v 1.35 2005-11-17 22:50:31 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -33,4 +33,4 @@ clean_all: clean
 	cd experiments; $(MAKE) clean_all; cd ..
 	rm -f config.h Makefile src/Makefile src/cpus/Makefile
 	rm -f src/devices/Makefile src/devices/fonts/Makefile
-	rm -f src/promemul/Makefile
+	rm -f src/promemul/Makefile src/include/Makefile

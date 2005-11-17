@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.19 2005-11-17 21:26:06 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.20 2005-11-17 22:50:33 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -42,6 +42,7 @@
 #include "misc.h"
 #include "opcodes_ppc.h"
 #include "ppc_spr.h"
+#include "ppc_spr_strings.h"
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
@@ -936,6 +937,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			addr = (ra==0? 0 : cpu->cd.ppc.gpr[ra]) +
 			    cpu->cd.ppc.gpr[rb];
+			if (cpu->cd.ppc.bits == 32)
+				addr &= 0xffffffff;
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    addr, &offset);
 			if (symbol != NULL)
@@ -1086,24 +1089,22 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			switch (spr) {
+			/*  Some very common ones:  */
 			case 8:	   debug("mflr\tr%i", rt); break;
 			case 9:	   debug("mfctr\tr%i", rt); break;
-			case 22:   debug("mfdec\tr%i", rt); break;
-			case 26:   debug("mfsrr0\tr%i", rt); break;
-			case 27:   debug("mfsrr1\tr%i", rt); break;
-			case 272:  debug("mfsprg\t0,r%i", rt); break;
-			case 273:  debug("mfsprg\t1,r%i", rt); break;
-			case 274:  debug("mfsprg\t2,r%i", rt); break;
-			case 275:  debug("mfsprg\t3,r%i", rt); break;
-			case 287:  debug("mfpvr\tr%i", rt); break;
-			case 945:  debug("mfpid\tr%i", rt); break;
-			/*  TODO: 1008 = hid0?  */
-			case 1008: debug("mfdbsr\tr%i", rt); break;
-			case 1009: debug("mfhid1\tr%i", rt); break;
-			case 1017: debug("mfl2cr\tr%i", rt); break;
-			case 1018: debug("mfl3cr\tr%i", rt); break;
 			default:debug("mfspr\tr%i,spr%i", rt, spr);
 			}
+			debug("\t<%s", ppc_spr_names[spr] == NULL?
+			    "UNKNOWN" : ppc_spr_names[spr]);
+			if (running) {
+				if (cpu->cd.ppc.bits == 32)
+					debug(": 0x%x", (int)
+					    cpu->cd.ppc.spr[spr]);
+				else
+					debug(": 0x%llx", (long long)
+					    cpu->cd.ppc.spr[spr]);
+			}
+			debug(">");
 			break;
 		case PPC_31_TLBIA:
 			debug("tlbia");
@@ -1228,35 +1229,22 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rs = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			switch (spr) {
+			/*  Some very common ones:  */
 			case 8:	   debug("mtlr\tr%i", rs); break;
 			case 9:	   debug("mtctr\tr%i", rs); break;
-			case 22:   debug("mtdec\tr%i", rs); break;
-			case 26:   debug("mtsrr0\tr%i", rs); break;
-			case 27:   debug("mtsrr1\tr%i", rs); break;
-			case 272:  debug("mtsprg\t0,r%i", rs); break;
-			case 273:  debug("mtsprg\t1,r%i", rs); break;
-			case 274:  debug("mtsprg\t2,r%i", rs); break;
-			case 275:  debug("mtsprg\t3,r%i", rs); break;
-			case 528:  debug("mtibatu\t0,r%i", rs); break;
-			case 529:  debug("mtibatl\t0,r%i", rs); break;
-			case 530:  debug("mtibatu\t1,r%i", rs); break;
-			case 531:  debug("mtibatl\t1,r%i", rs); break;
-			case 532:  debug("mtibatu\t2,r%i", rs); break;
-			case 533:  debug("mtibatl\t2,r%i", rs); break;
-			case 534:  debug("mtibatu\t3,r%i", rs); break;
-			case 535:  debug("mtibatl\t3,r%i", rs); break;
-			case 536:  debug("mtdbatu\t0,r%i", rs); break;
-			case 537:  debug("mtdbatl\t0,r%i", rs); break;
-			case 538:  debug("mtdbatu\t1,r%i", rs); break;
-			case 539:  debug("mtdbatl\t1,r%i", rs); break;
-			case 540:  debug("mtdbatu\t2,r%i", rs); break;
-			case 541:  debug("mtdbatl\t2,r%i", rs); break;
-			case 542:  debug("mtdbatu\t3,r%i", rs); break;
-			case 543:  debug("mtdbatl\t3,r%i", rs); break;
-			case 945:  debug("mtpid\tr%i", rs); break;
-			case 1008: debug("mtdbsr\tr%i", rs); break;
 			default:debug("mtspr\tspr%i,r%i", spr, rs);
 			}
+			debug("\t<%s", ppc_spr_names[spr] == NULL?
+			    "UNKNOWN" : ppc_spr_names[spr]);
+			if (running) {
+				if (cpu->cd.ppc.bits == 32)
+					debug(": 0x%x", (int)
+					    cpu->cd.ppc.gpr[rs]);
+				else
+					debug(": 0x%llx", (long long)
+					    cpu->cd.ppc.gpr[rs]);
+			}
+			debug(">");
 			break;
 		case PPC_31_SYNC:
 			debug("%s", power? "dcs" : "sync");
@@ -1371,6 +1359,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (!running)
 			break;
 		addr = (ra==0? 0 : cpu->cd.ppc.gpr[ra]) + imm;
+		if (cpu->cd.ppc.bits == 32)
+			addr &= 0xffffffff;
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    addr, &offset);
 		if (symbol != NULL)
@@ -1490,15 +1480,24 @@ static void debug_spr_usage(uint64_t pc, int spr)
 	case SPR_CTR:
 	case SPR_DEC:
 	case SPR_SDR1:
+	case SPR_SRR0:
+	case SPR_SRR1:
 	case SPR_SPRG0:
 	case SPR_PVR:
+	case SPR_DMISS:
+	case SPR_DCMP:
+	case SPR_HASH1:
+	case SPR_HASH2:
+	case SPR_IMISS:
+	case SPR_ICMP:
 	case SPR_DBSR:
 		break;
 	default:if (spr >= SPR_IBAT0U && spr <= SPR_DBAT3L) {
 			break;
 		} else
-			fatal("[ using UNIMPLEMENTED spr %i (hex 0x%x), pc = "
-			    "0x%llx ]\n", spr, spr, (long long)pc);
+			fatal("[ using UNIMPLEMENTED spr %i (%s), pc = "
+			    "0x%llx ]\n", spr, ppc_spr_names[spr] == NULL?
+			    "UNKNOWN" : ppc_spr_names[spr], (long long)pc);
 	}
 
 	spr_used[spr >> 2] |= (1 << (spr & 3));

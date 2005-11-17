@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.9 2005-11-17 21:26:06 debug Exp $
+ *  $Id: memory_ppc.c,v 1.10 2005-11-17 22:50:33 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -89,7 +89,7 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags)
 
 
 static int get_upper_and_lower_pte(struct cpu *cpu, uint64_t pteg_select,
-	uint32_t *upper_pte, uint32_t *lower_pte, uint32_t vsid, int api)
+	uint32_t *upper_pte, uint32_t *lower_pte, uint32_t cmp)
 {
 	int i;
 	uint32_t upper, lower;
@@ -101,8 +101,7 @@ static int get_upper_and_lower_pte(struct cpu *cpu, uint64_t pteg_select,
 		lower = (d[4]<<24)+(d[5]<<16)+(d[6]<<8)+d[7];
 
 		/*  Valid PTE, and correct api and vsid?  */
-		if (upper & 0x80000000 && (upper & 0x3f) == api &&
-		    ((upper >> 7) & 0x00ffffff) == vsid) {
+		if (upper == cmp) {
 			*upper_pte = upper; *lower_pte = lower;
 			return 1;
 		}
@@ -159,7 +158,10 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & 0x3f;
 		uint32_t vsid = cpu->cd.ppc.sr[srn] & 0x00ffffff;
 		uint32_t hash1, hash2, pteg_select, tmp;
-		uint32_t upper_pte, lower_pte;
+		uint32_t upper_pte, lower_pte, cmp;
+
+		cmp = cpu->cd.ppc.spr[instr? SPR_ICMP : SPR_DCMP] =
+		    0x80000000 | api | (vsid<<7);
 
 		htaborg = sdr1 & 0xffff0000UL;
 		hash1 = (vsid & 0x7ffff) ^ ((vaddr >> 12) & 0xffff);
@@ -168,15 +170,17 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		pteg_select = htaborg & 0xfe000000;
 		pteg_select |= ((hash1 & 0x3ff) << 6);
 		pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
+		cpu->cd.ppc.spr[SPR_HASH1] = pteg_select;
 		res = get_upper_and_lower_pte(cpu, pteg_select,
-		    &upper_pte, &lower_pte, vsid, api);
+		    &upper_pte, &lower_pte, cmp);
 		if (res == 0) {
 			tmp = (hash2 >> 10) & (sdr1 & 0x1ff);
 			pteg_select = htaborg & 0xfe000000;
 			pteg_select |= ((hash2 & 0x3ff) << 6);
 			pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
+			cpu->cd.ppc.spr[SPR_HASH2] = pteg_select;
 			res = get_upper_and_lower_pte(cpu, pteg_select,
-			    &upper_pte, &lower_pte, vsid, api);
+			    &upper_pte, &lower_pte, cmp);
 		}
 		if (res) {
 			*return_addr = (lower_pte & 0xfffff000)|(vaddr & 0xfff);
@@ -201,8 +205,10 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		return 0;
 
 	/*  Cause an exception:  */
-	fatal("TODO: exception! vaddr=0x%llx pc=0x%llx\n",
+	fatal("[ memory_ppc: exception! vaddr=0x%llx pc=0x%llx ]\n",
 	    (long long)vaddr, (long long)cpu->pc);
+
+	cpu->cd.ppc.spr[instr? SPR_IMISS : SPR_DMISS] = vaddr;
 
 	ppc_exception(cpu, instr? 0x10 : (writeflag? 0x11 : 0x12));
 

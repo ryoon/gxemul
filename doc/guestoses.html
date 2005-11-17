@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.101 2005-11-16 21:14:47 debug Exp $
+$Id: guestoses.html,v 1.102 2005-11-17 08:45:11 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -523,19 +523,19 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 	<b>gxemul -e malta -d nbsd_malta.img netbsd-MALTA.gz</b>
 </pre>
 
-<p>Note 1: NetBSD detects a very fast CPU although the emulation isn't
-really that fast, so emulated delays are very slow. Even on a multi-GHz
-host, you will need a lot of patience.
-
-<p>Note 2: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
+<p>NOTE: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
 (MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
 2.1, however, there will be little or no difference in functionality, as
-NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs. The only difference 
-it makes in practice is that GXemul's binary translation subsystem might 
-run a bit faster (because there are some optimizations for 32-bit 
-emulation that don't work with 64-bit emulation).
+NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs. There are two things
+that differ:<ol>
+  <li>GXemul's binary translation subsystem might run a bit faster
+	in 32-bit mode (because there are some optimizations that don't
+	work with 64-bit emulation)
+  <li>4Kc only has 16 TLB entries, whereas 5Kc has 48. This makes 4Kc
+	slower.
+</ol>
 
-<p>Note 3: The installation instructions above create a filesystem
+<p>The installation instructions above create a filesystem
 <i>without</i> a disklabel, so there is only one ffs partition and no
 swap. You will need to enter the following things when booting with the
 generic kernel:<pre>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.12 2005-11-18 04:02:00 debug Exp $
+ *  $Id: memory_ppc.c,v 1.13 2005-11-18 06:58:35 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -239,7 +239,7 @@ exception:
 	msr |= PPC_MSR_TGPR;
 	reg_access_msr(cpu, &msr, 1);
 
-	ppc_exception(cpu, instr? 0x10 : (writeflag? 0x11 : 0x12));
+	ppc_exception(cpu, instr? 0x10 : (writeflag? 0x12 : 0x11));
 
 	return 0;
 }

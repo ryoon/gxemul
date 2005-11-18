@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.29 2005-11-18 04:02:00 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.30 2005-11-18 06:58:35 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1190,6 +1190,13 @@ X(crxor) {
 X(mfspr) {
 	reg(ic->arg[0]) = reg(ic->arg[1]);
 }
+X(mfspr_pmc1) {
+	/*
+	 *  TODO: This is a temporary hack to make NetBSD/ppc detect
+	 *  a 10.0 MHz CPU.
+	 */
+	reg(ic->arg[0]) = 1000000;
+}
 X(mftb) {
 	if (++cpu->cd.ppc.spr[SPR_TBL] == 0)
 		cpu->cd.ppc.spr[SPR_TBU] ++;
@@ -1282,7 +1289,7 @@ X(mtcrf)
  */
 X(mulli)
 {
-	reg(ic->arg[2]) = (uint32_t)(reg(ic->arg[0]) * ic->arg[1]);
+	reg(ic->arg[2]) = (uint32_t)(reg(ic->arg[0]) * (int32_t)ic->arg[1]);
 }
 
 
@@ -1324,7 +1331,6 @@ X(lmw) {
 }
 X(stmw) {
 	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
-	uint32_t tmp;
 	unsigned char d[4];
 	int rs = ic->arg[0];
 
@@ -1335,7 +1341,7 @@ X(stmw) {
 	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 
 	while (rs <= 31) {
-		tmp = cpu->cd.ppc.gpr[rs];
+		uint32_t tmp = cpu->cd.ppc.gpr[rs];
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			d[3] = tmp; d[2] = tmp >> 8;
 			d[1] = tmp >> 16; d[0] = tmp >> 24;
@@ -1725,6 +1731,18 @@ X(tlbie)
 
 
 /*
+ *  sc: Syscall.
+ */
+X(sc)
+{
+	/*  Synchronize the PC (pointing to _after_ this instruction)  */
+	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[1];
+
+	ppc_exception(cpu, 0xc);
+}
+
+
+/*
  *  user_syscall:  Userland syscall.
  *
  *  arg[0] = syscall "level" (usually 0)
@@ -2047,6 +2065,7 @@ X(to_be_translated)
 
 	case PPC_HI6_SC:
 		ic->arg[0] = (iword >> 5) & 0x7f;
+		ic->arg[1] = (addr & 0xfff) + 4;
 		if (cpu->machine->userland_emul != NULL)
 			ic->f = instr(user_syscall);
 		else {
@@ -2055,8 +2074,7 @@ X(to_be_translated)
 				ic->f = instr(openfirmware);
 				break;
 			}
-			fatal("PPC non-userland SYSCALL: TODO\n");
-			goto bad;
+			ic->f = instr(sc);
 		}
 		break;
 
@@ -2267,7 +2285,10 @@ X(to_be_translated)
 			debug_spr_usage(cpu->pc, spr);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.spr[spr]);
-			ic->f = instr(mfspr);
+			switch (spr) {
+			case SPR_PMC1:	ic->f = instr(mfspr_pmc1); break;
+			default:	ic->f = instr(mfspr);
+			}
 			break;
 
 		case PPC_31_MTSPR:

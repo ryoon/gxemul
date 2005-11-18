@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.11 2005-11-18 02:14:54 debug Exp $
+ *  $Id: memory_ppc.c,v 1.12 2005-11-18 04:02:00 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -209,6 +209,12 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 				default:res = 2;
 				}
 			}
+			/*  Write-protect if change-bit isn't set:  */
+			if (!(lower_pte & 0x80) && res == 2)
+				res = writeflag? 0 : 1;
+			/*  Guarded?  */
+			if (lower_pte & 0x8)
+				res = 0;
 		}
 		if (res > 0)
 			return res;

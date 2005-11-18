@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.28 2005-11-18 02:14:53 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.29 2005-11-18 04:02:00 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -907,38 +907,44 @@ X(llsc)
 /*
  *  mtsr:  Move To Segment Register
  *
- *  arg[0] = segment register nr (0..15)
+ *  arg[0] = sr number, or for indirect mode: ptr to rb
  *  arg[1] = ptr to rt
  */
 X(mtsr)
 {
 	/*  TODO: This only works for 32-bit mode  */
 	cpu->cd.ppc.sr[ic->arg[0]] = reg(ic->arg[1]);
-}
 
-
-/*
- *  mfsrin, mtsrin:  Move From/To Segment Register Indirect
- *
- *  arg[0] = ptr to rb
- *  arg[1] = ptr to rt
- */
-X(mfsrin)
-{
-	/*  TODO: This only works for 32-bit mode  */
-	uint32_t sr_num = reg(ic->arg[0]) >> 28;
-	reg(ic->arg[1]) = cpu->cd.ppc.sr[sr_num];
-}
-X(mfsr)
-{
-	/*  TODO: This only works for 32-bit mode  */
-	reg(ic->arg[1]) = cpu->cd.ppc.sr[ic->arg[0]];
+/* urk */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 X(mtsrin)
 {
 	/*  TODO: This only works for 32-bit mode  */
 	uint32_t sr_num = reg(ic->arg[0]) >> 28;
 	cpu->cd.ppc.sr[sr_num] = reg(ic->arg[1]);
+
+/* urk */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+}
+
+
+/*
+ *  mfsrin, mtsrin:  Move From/To Segment Register Indirect
+ *
+ *  arg[0] = sr number, or for indirect mode: ptr to rb
+ *  arg[1] = ptr to rt
+ */
+X(mfsr)
+{
+	/*  TODO: This only works for 32-bit mode  */
+	reg(ic->arg[1]) = cpu->cd.ppc.sr[ic->arg[0]];
+}
+X(mfsrin)
+{
+	/*  TODO: This only works for 32-bit mode  */
+	uint32_t sr_num = reg(ic->arg[0]) >> 28;
+	reg(ic->arg[1]) = cpu->cd.ppc.sr[sr_num];
 }
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1035 2005-11-18 02:14:52 debug Exp $
+$Id: HISTORY,v 1.1036 2005-11-18 20:46:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2434,4 +2434,4 @@ Changelog for GXemul:
 		SPRs is now easier to track, continuing on memory/exception
 		related issues, etc.
 20051118	More work on PPC emulation (tgpr0..3, exception handling,
-		memory stuff, etc.).
+		memory stuff, syscalls, etc.).

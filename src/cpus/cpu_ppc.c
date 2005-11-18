@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.22 2005-11-18 04:02:00 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.23 2005-11-18 20:46:08 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -250,8 +250,12 @@ void ppc_exception(struct cpu *cpu, int exception_nr)
 {
 	/*  Save PC and MSR:  */
 	cpu->cd.ppc.spr[SPR_SRR0] = cpu->pc;
-	cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0xffff)
-	    | (cpu->cd.ppc.cr & 0xf0000000);
+
+	if (exception_nr == 0xc)
+		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0x87c0ffff);
+	else
+		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0xffff)
+		    | (cpu->cd.ppc.cr & 0xf0000000);
 
 	fatal("[ PPC Exception 0x%x; pc=0x%llx ]\n", exception_nr,
 	    (long long)cpu->pc);
@@ -375,12 +379,12 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (long long)cpu->cd.ppc.spr[SPR_SDR1]);
 		for (i=0; i<4; i++)
 			debug("cpu%i:  ibat%iu = 0x%08x  ibat%il = 0x%08x\n",
-			    x, i, cpu->cd.ppc.spr[SPR_IBAT0U + i*2],
-			    i, cpu->cd.ppc.spr[SPR_IBAT0U + i*2 + 1]);
+			    x, i, (int)cpu->cd.ppc.spr[SPR_IBAT0U + i*2],
+			    i, (int)cpu->cd.ppc.spr[SPR_IBAT0U + i*2 + 1]);
 		for (i=0; i<4; i++)
 			debug("cpu%i:  dbat%iu = 0x%08x  dbat%il = 0x%08x\n",
-			    x, i, cpu->cd.ppc.spr[SPR_DBAT0U + i*2],
-			    i, cpu->cd.ppc.spr[SPR_DBAT0U + i*2 + 1]);
+			    x, i, (int)cpu->cd.ppc.spr[SPR_DBAT0U + i*2],
+			    i, (int)cpu->cd.ppc.spr[SPR_DBAT0U + i*2 + 1]);
 	}
 }
 
@@ -994,24 +998,26 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
 			break;
 		case PPC_31_MTSR:
-			/*  Move to segment register  */
+		case PPC_31_MFSR:
+			/*  Move to/from segment register  */
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 15;	/*  actually: sr  */
-			debug("mtsr\t%i,r%i", ra, rt);
+			switch (xo) {
+			case PPC_31_MTSR:  mnem = "mtsr"; break;
+			case PPC_31_MFSR:  mnem = "mfsr"; break;
+			}
+			debug("%s\tr%i,%i", mnem, rt, ra);
 			break;
 		case PPC_31_MTSRIN:
 		case PPC_31_MFSRIN:
-		case PPC_31_MFSR:
 			/*  Move to/from segment register indirect  */
 			rt = (iword >> 21) & 31;
 			rb = (iword >> 11) & 31;
 			switch (xo) {
 			case PPC_31_MTSRIN:  mnem = "mtsrin"; break;
 			case PPC_31_MFSRIN:  mnem = "mfsrin"; break;
-			case PPC_31_MFSR:  mnem = "mfsr"; break;
 			}
-			debug("%s\tr%i,%s%i", mnem, rt,
-			    xo == PPC_31_MFSR? "sr" : "r", rb);
+			debug("%s\tr%i,r%i", mnem, rt, rb);
 			break;
 		case PPC_31_ADDC:
 		case PPC_31_ADDCO:
@@ -1129,8 +1135,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("tlbia");
 			break;
 		case PPC_31_TLBLD:
+		case PPC_31_TLBLI:
 			rb = (iword >> 11) & 31;
-			debug("tlbld\tr%i", rb);
+			debug("tlbl%s\tr%i", xo == PPC_31_TLBLD? "d" : "i", rb);
 			break;
 		case PPC_31_TLBIE:
 			/*  TODO: what is ra? The IBM online docs didn't say  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.13 2005-11-18 06:58:35 debug Exp $
+ *  $Id: memory_ppc.c,v 1.14 2005-11-18 20:46:08 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -40,7 +40,7 @@
  *  BAT translation. Returns -1 if there was no BAT hit, >= 0 for a hit.
  */
 int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
-	int msr_pr)
+	int user)
 {
 	int i;
 
@@ -64,11 +64,13 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 		/*  Instruction BAT, but not instruction lookup? Then skip.  */
 		if (i < 4 && !(flags & FLAG_INSTR))
 			continue;
+		if (i >= 4 && (flags & FLAG_INSTR))
+			continue;
 
 		/*  Not valid in either supervisor or user mode?  */
-		if (msr_pr && !(ux & BAT_Vu))
+		if (user && !(ux & BAT_Vu))
 			continue;
-		if (!msr_pr && !(ux & BAT_Vs))
+		if (!user && !(ux & BAT_Vs))
 			continue;
 
 		/*  Virtual address mismatch? Then skip.  */
@@ -89,12 +91,22 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 }
 
 
-static int get_upper_and_lower_pte(struct cpu *cpu, uint64_t pteg_select,
-	uint32_t *upper_pte, uint32_t *lower_pte, uint32_t cmp)
+/*
+ *  get_pte_low():
+ *
+ *  Scan a PTE group for a cmp (compare) value.
+ *
+ *  Returns 1 if the value was found, and *lowp is set to the low PTE word.
+ *
+ *  Returns 0 if no match was found.
+ */
+static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
+	uint32_t *lowp, uint32_t cmp)
 {
 	int i;
-	uint32_t upper, lower;
+	uint32_t upper;
 	unsigned char d[8];
+
 	for (i=0; i<8; i++) {
 		cpu->memory_rw(cpu, cpu->mem, pteg_select + i*8,
 		    &d[0], 8, MEM_READ, PHYSICAL | NO_EXCEPTIONS);
@@ -102,11 +114,11 @@ static int get_upper_and_lower_pte(struct cpu *cpu, uint64_t pteg_select,
 
 		/*  Valid PTE, and correct api and vsid?  */
 		if (upper == cmp) {
-			lower = (d[4]<<24)+(d[5]<<16)+(d[6]<<8)+d[7];
-			*upper_pte = upper; *lower_pte = lower;
+			*lowp = ((d[4]<<24)+(d[5]<<16)+(d[6]<<8)+d[7]);
 			return 1;
 		}
 	}
+
 	return 0;
 }
 
@@ -124,12 +136,14 @@ static int get_upper_and_lower_pte(struct cpu *cpu, uint64_t pteg_select,
 int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
-	int instr = flags & FLAG_INSTR, res, user;
-	int writeflag = flags & FLAG_WRITEFLAG;
+	int instr = flags & FLAG_INSTR, res = 0, match, user, access = 0;
+	int writeflag = flags & FLAG_WRITEFLAG? 1 : 0;
 	uint64_t sdr1 = cpu->cd.ppc.spr[SPR_SDR1], htaborg, msr;
+	uint32_t hash1, hash2, pteg_select, tmp;
+	uint32_t lower_pte, cmp;
 
 	reg_access_msr(cpu, &msr, 0);
-	user = msr & PPC_MSR_PR;
+	user = msr & PPC_MSR_PR? 1 : 0;
 
 	if (cpu->cd.ppc.bits == 32)
 		vaddr &= 0xffffffff;
@@ -144,17 +158,8 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		res = ppc_bat(cpu, vaddr, return_addr, flags, user);
 		if (res > 0)
 			return res;
-		if (res == 0) {
-			fatal("TODO: BAT exception\n");
-			/*  goto exception;  */
-			exit(1);
-		}
-	}
-
-	/*  Hm... translation base 0 seems very unlikely.  */
-	if (sdr1 == 0) {
-		*return_addr = vaddr;
-		return 2;
+		if (res == 0)
+			fatal("[ TODO: BAT exception ]\n");
 	}
 
 	/*
@@ -165,12 +170,11 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	if (cpu->cd.ppc.bits == 32) {
 		int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & 0x3f;
 		uint32_t vsid = cpu->cd.ppc.sr[srn] & 0x00ffffff;
-		uint32_t hash1, hash2, pteg_select, tmp;
-		uint32_t upper_pte, lower_pte, cmp;
 
 		htaborg = sdr1 & 0xffff0000UL;
+
+		/*  Primary hash:  */
 		hash1 = (vsid & 0x7ffff) ^ ((vaddr >> 12) & 0xffff);
-		hash2 = hash1 ^ 0x7ffff;
 		tmp = (hash1 >> 10) & (sdr1 & 0x1ff);
 		pteg_select = htaborg & 0xfe000000;
 		pteg_select |= ((hash1 & 0x3ff) << 6);
@@ -178,21 +182,36 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		cpu->cd.ppc.spr[SPR_HASH1] = pteg_select;
 		cmp = cpu->cd.ppc.spr[instr? SPR_ICMP : SPR_DCMP] =
 		    0x80000000 | api | (vsid<<7);
-		res = get_upper_and_lower_pte(cpu, pteg_select,
-		    &upper_pte, &lower_pte, cmp);
-		if (res == 0) {
-			tmp = (hash2 >> 10) & (sdr1 & 0x1ff);
-			pteg_select = htaborg & 0xfe000000;
-			pteg_select |= ((hash2 & 0x3ff) << 6);
-			pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
-			cpu->cd.ppc.spr[SPR_HASH2] = pteg_select;
+		match = get_pte_low(cpu, pteg_select, &lower_pte, cmp);
+
+		/*  Secondary hash:  */
+		hash2 = hash1 ^ 0x7ffff;
+		tmp = (hash2 >> 10) & (sdr1 & 0x1ff);
+		pteg_select = htaborg & 0xfe000000;
+		pteg_select |= ((hash2 & 0x3ff) << 6);
+		pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
+		cpu->cd.ppc.spr[SPR_HASH2] = pteg_select;
+		if (!match) {
 			cmp |= 0x40;
-			res = get_upper_and_lower_pte(cpu, pteg_select,
-			    &upper_pte, &lower_pte, cmp);
+			match = get_pte_low(cpu, pteg_select, &lower_pte, cmp);
 		}
-		if (res) {
-			int access = lower_pte & 3, res = 0;
+
+		res = 0;
+
+		while (match) {
+			access = lower_pte & 3;
 			*return_addr = (lower_pte & 0xfffff000)|(vaddr & 0xfff);
+
+			if (lower_pte & 0x80) {
+				res = 2;
+				break;
+			}
+
+			if (lower_pte & 0x100) {
+				res = 1;
+				break;
+			}
+
 			if (user) {
 				switch (access) {
 				case 1:
@@ -209,12 +228,29 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 				default:res = 2;
 				}
 			}
+
+#if 0
 			/*  Write-protect if change-bit isn't set:  */
 			if (!(lower_pte & 0x80) && res == 2)
 				res = writeflag? 0 : 1;
+#endif
+
 			/*  Guarded?  */
-			if (lower_pte & 0x8)
+			if (lower_pte & 0x8) {
+				fatal("guarded page: TODO\n");
 				res = 0;
+			}
+#if 0
+			/*  User protected segment?  */
+			if (user && !(cpu->cd.ppc.sr[srn] & 0x20000000)) {
+				fatal("user protected? TODO\n");
+				res = 0;
+			}
+			/*  Non-executable?  */
+			if (instr && !(cpu->cd.ppc.sr[srn] & 0x10000000))
+				res = 0;
+#endif
+			break;
 		}
 		if (res > 0)
 			return res;
@@ -225,14 +261,15 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		exit(1);
 	}
 
-exception:
 	/*  Return failure:  */
 	if (flags & FLAG_NOEXCEPTIONS)
 		return 0;
 
 	/*  Cause an exception:  */
-	fatal("[ memory_ppc: exception! vaddr=0x%llx pc=0x%llx ]\n",
-	    (long long)vaddr, (long long)cpu->pc);
+	fatal("[ memory_ppc: exception! vaddr=0x%llx pc=0x%llx "
+	    "instr=%i user=%i wf=%i pte_lo=%08x ]\n",
+	    (long long)vaddr, (long long)cpu->pc, instr, user,
+	    writeflag, lower_pte);
 
 	cpu->cd.ppc.spr[instr? SPR_IMISS : SPR_DMISS] = vaddr;
 

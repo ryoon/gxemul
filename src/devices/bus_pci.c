@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.31 2005-11-17 22:50:18 debug Exp $
+ *  $Id: bus_pci.c,v 1.32 2005-11-18 02:14:42 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -159,7 +159,7 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	case BUS_PCI_ADDR:
 		if (writeflag == MEM_WRITE) {
-			debug("[ bus_pci: write to  PCI ADDR: data = 0x%016llx"
+			debug("[ bus_pci: write to PCI ADDR: data = 0x%016llx"
 			    " ]\n", (long long)*data);
 			pci_data->pci_addr = *data;
 			/*  Linux seems to use type 0 even when it does

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.20 2005-11-17 22:50:33 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.21 2005-11-18 02:14:53 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -211,13 +211,26 @@ void ppc_cpu_dumpinfo(struct cpu *cpu)
  */
 void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
 {
+	uint64_t old = cpu->cd.ppc.msr;
+
 	if (valuep == NULL) {
 		fatal("reg_access_msr(): NULL\n");
 		return;
 	}
 
-	if (writeflag)
+	if (writeflag) {
 		cpu->cd.ppc.msr = *valuep;
+
+		/*  Switching between temporary and real gpr 0..3?  */
+		if ((old & PPC_MSR_TGPR) != (cpu->cd.ppc.msr & PPC_MSR_TGPR)) {
+			int i;
+			for (i=0; i<PPC_N_TGPRS; i++) {
+				uint64_t t = cpu->cd.ppc.gpr[i];
+				cpu->cd.ppc.gpr[i] = cpu->cd.ppc.tgpr[i];
+				cpu->cd.ppc.tgpr[i] = t;
+			}
+		}
+	}
 
 	/*  TODO: Is the little-endian bit writable?  */
 
@@ -1016,6 +1029,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_SUBFCO:
 		case PPC_31_SUBFE:
 		case PPC_31_SUBFEO:
+		case PPC_31_SUBFME:
+		case PPC_31_SUBFMEO:
 		case PPC_31_SUBFZE:
 		case PPC_31_SUBFZEO:
 			rt = (iword >> 21) & 31;
@@ -1061,17 +1076,17 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_SUBF:   mnem = "subf"; break;
 			case PPC_31_SUBFO:  mnem = "subfo"; break;
 			case PPC_31_SUBFC:
-				mnem = power? "sf" : "subfc";
-				break;
+				mnem = power? "sf" : "subfc"; break;
 			case PPC_31_SUBFCO:
-				mnem = power? "sfo" : "subfco";
-				break;
+				mnem = power? "sfo" : "subfco"; break;
 			case PPC_31_SUBFE:
-				mnem = power? "sfe" : "subfe";
-				break;
+				mnem = power? "sfe" : "subfe"; break;
 			case PPC_31_SUBFEO:
-				mnem = power? "sfeo" : "subfeo";
-				break;
+				mnem = power? "sfeo" : "subfeo"; break;
+			case PPC_31_SUBFME:
+				mnem = power? "sfme" : "subfme"; break;
+			case PPC_31_SUBFMEO:
+				mnem = power? "sfmeo" : "subfmeo"; break;
 			case PPC_31_SUBFZE:
 				mnem = power? "sfze" : "subfze";
 				no_rb = 1;
@@ -1094,8 +1109,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 9:	   debug("mfctr\tr%i", rt); break;
 			default:debug("mfspr\tr%i,spr%i", rt, spr);
 			}
-			debug("\t<%s", ppc_spr_names[spr] == NULL?
-			    "UNKNOWN" : ppc_spr_names[spr]);
+			if (spr == 8 || spr == 9)
+				debug("\t");
+			debug("\t<%s%s", running? "read from " : "",
+			    ppc_spr_names[spr]==NULL? "?" : ppc_spr_names[spr]);
 			if (running) {
 				if (cpu->cd.ppc.bits == 32)
 					debug(": 0x%x", (int)
@@ -1108,6 +1125,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case PPC_31_TLBIA:
 			debug("tlbia");
+			break;
+		case PPC_31_TLBLD:
+			rb = (iword >> 11) & 31;
+			debug("tlbld\tr%i", rb);
 			break;
 		case PPC_31_TLBIE:
 			/*  TODO: what is ra? The IBM online docs didn't say  */
@@ -1234,8 +1255,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 9:	   debug("mtctr\tr%i", rs); break;
 			default:debug("mtspr\tspr%i,r%i", spr, rs);
 			}
-			debug("\t<%s", ppc_spr_names[spr] == NULL?
-			    "UNKNOWN" : ppc_spr_names[spr]);
+			if (spr == 8 || spr == 9)
+				debug("\t");
+			debug("\t<%s%s", running? "write to " : "",
+			    ppc_spr_names[spr]==NULL? "?" : ppc_spr_names[spr]);
 			if (running) {
 				if (cpu->cd.ppc.bits == 32)
 					debug(": 0x%x", (int)
@@ -1483,6 +1506,9 @@ static void debug_spr_usage(uint64_t pc, int spr)
 	case SPR_SRR0:
 	case SPR_SRR1:
 	case SPR_SPRG0:
+	case SPR_SPRG1:
+	case SPR_SPRG2:
+	case SPR_SPRG3:
 	case SPR_PVR:
 	case SPR_DMISS:
 	case SPR_DCMP:

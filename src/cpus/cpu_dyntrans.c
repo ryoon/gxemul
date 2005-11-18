@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.35 2005-11-17 13:53:41 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.36 2005-11-18 02:14:53 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -528,12 +528,9 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			ok = 1;
 		}
 		if (!ok) {
-/*
 			fatal("TODO: instruction vaddr=>paddr translation"
 			    " failed. vaddr=0x%llx\n", (long long)cached_pc);
-fatal("!! cpu->pc=0x%llx arm_pc=0x%x\n", (long long)cpu->pc,
-cpu->cd.arm.r[ARM_PC]);
-*/
+			fatal("!! cpu->pc=0x%llx\n", (long long)cpu->pc);
 			ok = cpu->translate_address(cpu, cpu->pc, &paddr,
 			    FLAG_INSTR);
 /*

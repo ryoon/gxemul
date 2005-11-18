@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.48 2005-11-17 21:26:07 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.49 2005-11-18 02:14:54 debug Exp $
  */
 
 #include "misc.h"
@@ -79,7 +79,7 @@ struct ppc_cpu_type_def {
 
 #define	PPC_NGPRS		32
 #define	PPC_NFPRS		32
-
+#define	PPC_N_TGPRS		4
 
 #define	PPC_N_IC_ARGS			3
 #define	PPC_INSTR_ALIGNMENT_SHIFT	2
@@ -133,6 +133,8 @@ struct ppc_cpu {
 	uint64_t	fpr[PPC_NFPRS];	/*  Floating-Point Registers  */
 
 	uint64_t	msr;		/*  Machine state register  */
+	uint64_t	tgpr[PPC_N_TGPRS];	/*  Temporary gpr 0..3  */
+
 	uint32_t	sr[16];		/*  Segment registers.  */
 	uint64_t	spr[1024];
 
@@ -178,6 +180,7 @@ struct ppc_cpu {
 /*  bits 62..61 are reserved  */
 #define	PPC_MSR_HV	(1ULL << 60)	/*  Hypervisor  */
 /*  bits 59..17  are reserved  */
+#define	PPC_MSR_TGPR	(1 << 17)	/*  Temporary gpr0..3  */
 #define	PPC_MSR_ILE	(1 << 16)	/*  Interrupt Little-Endian Mode  */
 #define	PPC_MSR_EE	(1 << 15)	/*  External Interrupt Enable  */
 #define	PPC_MSR_PR	(1 << 14)	/*  Problem/Privilege State  */

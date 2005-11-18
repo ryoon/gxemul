@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.27 2005-11-17 21:26:06 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.28 2005-11-18 02:14:53 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -348,6 +348,28 @@ X(bc)
 	if (ctr_ok && cond_ok)
 		instr(b)(cpu,ic);
 }
+X(bcl)
+{
+	MODE_uint_t tmp;
+	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1], low_pc;
+
+	/*  Calculate LR:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
+
+	if (!(bo & 4))
+		cpu->cd.ppc.spr[SPR_CTR] --;
+	ctr_ok = (bo >> 2) & 1;
+	tmp = cpu->cd.ppc.spr[SPR_CTR];
+	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) ==
+	    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
+	if (ctr_ok && cond_ok)
+		instr(b)(cpu,ic);
+}
 
 
 /*
@@ -372,6 +394,28 @@ X(bc_samepage)
 {
 	MODE_uint_t tmp;
 	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1];
+	if (!(bo & 4))
+		cpu->cd.ppc.spr[SPR_CTR] --;
+	ctr_ok = (bo >> 2) & 1;
+	tmp = cpu->cd.ppc.spr[SPR_CTR];
+	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
+	cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) ==
+	    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
+	if (ctr_ok && cond_ok)
+		instr(b_samepage)(cpu,ic);
+}
+X(bcl_samepage)
+{
+	MODE_uint_t tmp;
+	int ctr_ok, cond_ok, bi = ic->arg[2], bo = ic->arg[1], low_pc;
+
+	/*  Calculate LR:  */
+	low_pc = ((size_t)cpu->cd.ppc.next_ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->cd.ppc.spr[SPR_LR] = cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2);
+	cpu->cd.ppc.spr[SPR_LR] += (low_pc << 2);
+
 	if (!(bo & 4))
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
@@ -1624,6 +1668,21 @@ X(subfe)
 	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]) - (old_ca? 0 : 1);
 }
 X(subfe_dot) {	instr(subfe)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+X(subfme)
+{
+	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
+	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
+	uint64_t tmp2 = tmp;
+	uint64_t tmpm1 = 0xffffffffULL;
+	tmp += tmpm1;
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
+	if (old_ca)
+		tmp ++;
+	if ((tmp >> 32) != (tmp2 >> 32))
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
+	reg(ic->arg[2]) = (uint32_t)tmp;
+}
+X(subfme_dot) {	instr(subfme)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
 X(subfze)
 {
 	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
@@ -1745,9 +1804,10 @@ X(to_be_translated)
 		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, ib,
 		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
-			fatal("to_be_translated(): "
+			fatal("PPC to_be_translated(): "
 			    "read failed: TODO\n");
-			goto bad;
+			exit(1);
+			/*  goto bad;  */
 		}
 	}
 
@@ -1948,16 +2008,17 @@ X(to_be_translated)
 		bo = (iword >> 21) & 31;
 		bi = (iword >> 16) & 31;
 		tmp_addr = (int64_t)(int16_t)(iword & 0xfffc);
-		if (lk_bit) {
-			fatal("lk_bit: NOT YET\n");
-			goto bad;
-		}
 		if (aa_bit) {
 			fatal("aa_bit: NOT YET\n");
 			goto bad;
 		}
-		ic->f = instr(bc);
-		samepage_function = instr(bc_samepage);
+		if (lk_bit) {
+			ic->f = instr(bcl);
+			samepage_function = instr(bcl_samepage);
+		} else {
+			ic->f = instr(bc);
+			samepage_function = instr(bc_samepage);
+		}
 		ic->arg[0] = (ssize_t)tmp_addr;
 		ic->arg[1] = bo;
 		ic->arg[2] = bi;
@@ -2322,7 +2383,8 @@ X(to_be_translated)
 
 		case PPC_31_TLBIA:
 		case PPC_31_TLBIE:
-			/*  TODO  */
+		case PPC_31_TLBLD:
+			/*  TODO: These are bogus.  */
 			ic->f = instr(tlbie);
 			break;
 
@@ -2517,6 +2579,7 @@ X(to_be_translated)
 		case PPC_31_SUBF:
 		case PPC_31_SUBFC:
 		case PPC_31_SUBFE:
+		case PPC_31_SUBFME:
 		case PPC_31_SUBFZE:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -2541,6 +2604,7 @@ X(to_be_translated)
 			case PPC_31_SUBF:   ic->f = instr(subf); break;
 			case PPC_31_SUBFC:  ic->f = instr(subfc); break;
 			case PPC_31_SUBFE:  ic->f = instr(subfe); n64=1; break;
+			case PPC_31_SUBFME: ic->f = instr(subfme); n64=1; break;
 			case PPC_31_SUBFZE: ic->f = instr(subfze); n64=1;break;
 			}
 			if (rc) {
@@ -2559,6 +2623,8 @@ X(to_be_translated)
 					ic->f = instr(subfc_dot); break;
 				case PPC_31_SUBFE:
 					ic->f = instr(subfe_dot); break;
+				case PPC_31_SUBFME:
+					ic->f = instr(subfme_dot); break;
 				case PPC_31_SUBFZE:
 					ic->f = instr(subfze_dot); break;
 				default:fatal("RC bit not yet implemented\n");

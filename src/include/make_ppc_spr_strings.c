@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: make_ppc_spr_strings.c,v 1.1 2005-11-17 22:50:34 debug Exp $
+ *  $Id: make_ppc_spr_strings.c,v 1.2 2005-11-18 02:14:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -36,7 +36,7 @@
 int main(int argc, char *argv[])
 {
 	char *names[1024];
-	int i;
+	unsigned int i;
 
 	memset(names, 0, sizeof(names));
 

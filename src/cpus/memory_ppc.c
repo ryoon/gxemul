@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.15 2005-11-19 21:41:09 debug Exp $
+ *  $Id: memory_ppc.c,v 1.16 2005-11-19 22:23:46 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -235,11 +235,14 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 				res = writeflag? 0 : 1;
 #endif
 
+#if 0
 			/*  Guarded?  */
 			if (lower_pte & 0x8) {
 				fatal("guarded page: TODO\n");
 				res = 0;
 			}
+#endif
+
 #if 0
 			/*  User protected segment?  */
 			if (user && !(cpu->cd.ppc.sr[srn] & 0x20000000)) {

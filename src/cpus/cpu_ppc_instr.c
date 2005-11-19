@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.31 2005-11-18 20:46:08 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.32 2005-11-19 22:23:46 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -36,6 +36,8 @@
  */
 
 
+#define DOT0(n) X(n ## _dot) { instr(n)(cpu,ic); \
+	update_cr0(cpu, reg(ic->arg[0])); }
 #define DOT1(n) X(n ## _dot) { instr(n)(cpu,ic); \
 	update_cr0(cpu, reg(ic->arg[1])); }
 #define DOT2(n) X(n ## _dot) { instr(n)(cpu,ic); \
@@ -975,73 +977,42 @@ X(rldicr)
 /*
  *  rlwnm:
  *
- *  arg[0] = ptr to rs
- *  arg[1] = ptr to ra
+ *  arg[0] = ptr to ra
+ *  arg[1] = mask
  *  arg[2] = copy of the instruction word
  */
 X(rlwnm)
 {
-	MODE_uint_t tmp = reg(ic->arg[0]), ra = 0;
-	uint32_t iword = ic->arg[2];
-	int sh, mb, me, rc;
-
-	sh = (iword >> 11) & 31;
-	sh = cpu->cd.ppc.gpr[sh] & 0x1f;
-	mb = (iword >> 6) & 31;
-	me = (iword >> 1) & 31;   
-	rc = iword & 1;
-
-	/*  TODO: Fix this, its performance is awful:  */
-	while (sh-- != 0)
-		tmp = (tmp << 1) | ((tmp >> 31) & 1);
-	for (;;) {
-		uint64_t mask;
-		mask = (uint64_t)1 << (31-mb);
-		ra |= (tmp & mask);
-		if (mb == me)
-			break;
-		mb ++;
-		if (mb == 32)
-			mb = 0;
-	}
-	reg(ic->arg[1]) = ra;
-	if (rc)
-		update_cr0(cpu, ra);
+	uint32_t tmp, iword = ic->arg[2];
+	int rs = (iword >> 21) & 31;
+	int rb = (iword >> 11) & 31;
+	int sh = cpu->cd.ppc.gpr[rb] & 0x1f;
+	tmp = (uint32_t)cpu->cd.ppc.gpr[rs];
+	tmp = (tmp << sh) | (tmp >> (32-sh));
+	tmp &= (uint32_t)ic->arg[1];
+	reg(ic->arg[0]) = tmp;
 }
+DOT0(rlwnm)
 
 
 /*
  *  rlwinm:
  *
- *  arg[0] = ptr to rs
- *  arg[1] = ptr to ra
+ *  arg[0] = ptr to ra
+ *  arg[1] = mask
  *  arg[2] = copy of the instruction word
  */
 X(rlwinm)
 {
-	uint32_t tmp = reg(ic->arg[0]), ra;
-	uint32_t iword = ic->arg[2];
-	uint32_t mask = 0;
-	int sh, mb, me, rc;
-
-	sh = (iword >> 11) & 31;
-	mb = (iword >> 6) & 31;
-	me = (iword >> 1) & 31;   
-	rc = iword & 1;
-
-	/*  TODO: Fix this, its performance is awful:  */
-	while (sh-- != 0)
-		tmp = (tmp << 1) | ((tmp >> 31) & 1);
-	for (;;) {
-		mask |= ((uint32_t)0x80000000 >> mb);
-		if (mb == me)
-			break;
-		mb ++; mb &= 31;
-	}
-	ra = reg(ic->arg[1]) = tmp & mask;
-	if (rc)
-		update_cr0(cpu, ra);
+	uint32_t tmp, iword = ic->arg[2];
+	int rs = (iword >> 21) & 31;
+	int sh = (iword >> 11) & 31;
+	tmp = (uint32_t)cpu->cd.ppc.gpr[rs];
+	tmp = (tmp << sh) | (tmp >> (32-sh));
+	tmp &= (uint32_t)ic->arg[1];
+	reg(ic->arg[0]) = tmp;
 }
+DOT0(rlwinm)
 
 
 /*
@@ -1820,12 +1791,12 @@ X(end_of_page)
 X(to_be_translated)
 {
 	uint64_t addr, low_pc, tmp_addr;
-	uint32_t iword;
+	uint32_t iword, mask;
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
 	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0,
-	    bfa, fp, byterev, nb;
+	    bfa, fp, byterev, nb, mb, me;
 	void (*samepage_function)(struct cpu *, struct ppc_instr_call *);
 	void (*rc_f)(struct cpu *, struct ppc_instr_call *);
 
@@ -2208,15 +2179,33 @@ X(to_be_translated)
 		break;
 
 	case PPC_HI6_RLWNM:
-	case PPC_HI6_RLWIMI:
 	case PPC_HI6_RLWINM:
+		ra = (iword >> 16) & 31;
+		mb = (iword >> 6) & 31;
+		me = (iword >> 1) & 31;   
+		rc = iword & 1;
+		mask = 0;
+		for (;;) {
+			mask |= ((uint32_t)0x80000000 >> mb);
+			if (mb == me)
+				break;
+			mb ++; mb &= 31;
+		}
+		switch (main_opcode) {
+		case PPC_HI6_RLWNM:
+			ic->f = rc? instr(rlwnm_dot) : instr(rlwnm); break;
+		case PPC_HI6_RLWINM:
+			ic->f = rc? instr(rlwinm_dot) : instr(rlwinm); break;
+		}
+		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+		ic->arg[1] = mask;
+		ic->arg[2] = (uint32_t)iword;
+		break;
+
+	case PPC_HI6_RLWIMI:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
-		switch (main_opcode) {
-		case PPC_HI6_RLWNM:  ic->f = instr(rlwnm); break;
-		case PPC_HI6_RLWIMI: ic->f = instr(rlwimi); break;
-		case PPC_HI6_RLWINM: ic->f = instr(rlwinm); break;
-		}
+		ic->f = instr(rlwimi);
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 		ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[2] = (uint32_t)iword;

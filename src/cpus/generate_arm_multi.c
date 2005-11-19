@@ -25,9 +25,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.10 2005-11-11 07:31:32 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.11 2005-11-19 18:53:07 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
+ *
  *  The main idea is to first check whether a load/store would be possible
  *  without going outside a page, and if so, use the host_load or _store
  *  arrays for quick access to emulated RAM. Otherwise, fall back to using
@@ -103,8 +104,7 @@ void generate_opcode(uint32_t opcode)
 		printf("\tuint32_t tmp_pc = ((size_t)ic - (size_t)\n\t"
 		    "    cpu->cd.arm.cur_ic_page) / sizeof(struct "
 		    "arm_instr_call);\n"
-		    "\ttmp_pc = ((cpu->cd.arm.r[ARM_PC] & "
-		    "~((ARM_IC_ENTRIES_PER_PAGE-1)"
+		    "\ttmp_pc = ((cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1)"
 		    "\n\t    << ARM_INSTR_ALIGNMENT_SHIFT)))\n"
 		    "\t    + (tmp_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 12;\n");
 	}
@@ -148,10 +148,13 @@ void generate_opcode(uint32_t opcode)
 
 			if (load && w && i == r) {
 				/*  Skip the load if we're using writeback.  */
-			} else if (load)
-				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n",
-				    i, x);
-			else {
+			} else if (load) {
+				if (i == 15)
+					printf("\t\tcpu->pc = p[%i];\n", x);
+				else
+					printf("\t\tcpu->cd.arm.r[%i] = "
+					    "p[%i];\n", i, x);
+			} else {
 				if (i == 15)
 					printf("\t\tp[%i] = tmp_pc;\n", x);
 				else
@@ -172,10 +175,13 @@ void generate_opcode(uint32_t opcode)
 
 			if (load && w && i == r) {
 				/*  Skip the load if we're using writeback.  */
-			} else if (load)
-				printf("\t\tcpu->cd.arm.r[%i] = p[%i];\n",
-				    i, x);
-			else {
+			} else if (load) {
+				if (i == 15)
+					printf("\t\tcpu->pc = p[%i];\n", x);
+				else
+					printf("\t\tcpu->cd.arm.r[%i] = "
+					    "p[%i];\n", i, x);
+			} else {
 				if (i == 15)
 					printf("\t\tp[%i] = tmp_pc;\n", x);
 				else
@@ -190,8 +196,7 @@ void generate_opcode(uint32_t opcode)
 		    r, u? "+=" : "-=", 4*n_regs);
 
 	if (load && opcode & 0x8000) {
-		printf("\t\tcpu->pc = cpu->cd.arm.r[15];\n"
-		    "\t\tquick_pc_to_pointers(cpu);\n");
+		printf("\t\tquick_pc_to_pointers(cpu);\n");
 	}
 
 	printf("\t} else\n");

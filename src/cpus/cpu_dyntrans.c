@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.37 2005-11-18 02:19:34 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.38 2005-11-19 18:53:07 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -253,27 +253,15 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page) / sizeof(struct DYNTRANS_IC);
 
 	if (low_pc >= 0 && low_pc < DYNTRANS_IC_ENTRIES_PER_PAGE) {
-#ifdef DYNTRANS_ARM
-		cpu->cd.arm.r[ARM_PC] &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1)<<2);
-		cpu->cd.arm.r[ARM_PC] += (low_pc << 2);
-		cpu->pc = cpu->cd.arm.r[ARM_PC];
-#else
 		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT);
-#endif
 	} else if (low_pc == DYNTRANS_IC_ENTRIES_PER_PAGE) {
 		/*  Switch to next page:  */
-#ifdef DYNTRANS_ARM
-		cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << 2);
-		cpu->cd.arm.r[ARM_PC] += (ARM_IC_ENTRIES_PER_PAGE << 2);
-		cpu->pc = cpu->cd.arm.r[ARM_PC];
-#else
 		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (DYNTRANS_IC_ENTRIES_PER_PAGE <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
-#endif
 	} else {
 		/*  debug("debug: Outside a page (This is actually ok)\n");  */
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.43 2005-11-16 21:15:02 debug Exp $
+ *  $Id: cpu_arm.c,v 1.44 2005-11-19 18:53:07 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -60,8 +60,7 @@ static char *arm_dpiname[16] = ARM_DPI_NAMES;
 static int arm_dpi_uses_d[16] = { 1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1 };
 static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
 
-static int arm_exception_to_mode[N_ARM_EXCEPTIONS] =
-	ARM_EXCEPTION_TO_MODE;
+static int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
 
 /*  For quick_pc_to_pointers():  */
 #include "arm_quick_pc_to_pointers.h"
@@ -330,7 +329,7 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 	if (gprs) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->cd.arm.r[ARM_PC], &offset);
+		    cpu->pc, &offset);
 		debug("cpu%i:  cpsr = ", x);
 		debug("%s%s%s%s%s%s",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_N)? "N" : "n",
@@ -340,10 +339,9 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (cpu->cd.arm.cpsr & ARM_FLAG_I)? "I" : "i",
 		    (cpu->cd.arm.cpsr & ARM_FLAG_F)? "F" : "f");
 		if (mode < ARM_MODE_USR32)
-			debug("   pc =  0x%07x",
-			    (int)(cpu->cd.arm.r[ARM_PC] & 0x03ffffff));
+			debug("   pc =  0x%07x", (int)(cpu->pc & 0x03ffffff));
 		else
-			debug("   pc = 0x%08x", (int)cpu->cd.arm.r[ARM_PC]);
+			debug("   pc = 0x%08x", (int)cpu->pc);
 
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
@@ -651,10 +649,14 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	newmode = cpu->cd.arm.cpsr & ARM_FLAG_MODE;
 	if (oldmode == newmode && oldmode != ARM_MODE_SVC32) {
 		fatal("[ WARNING! Exception caused no mode change? "
-		    "mode 0x%02x ]\n", newmode);
+		    "mode 0x%02x (pc=0x%x) ]\n", newmode, (int)cpu->pc);
 		/*  exit(1);  */
 	}
-
+#if 0
+if (oldmode==0x10 && newmode ==0x17 && cpu->pc == 0x1644f0)
+single_step = 1;
+/* 00008554 */
+#endif
 	cpu->cd.arm.cpsr |= ARM_FLAG_I;
 	if (exception_nr == ARM_EXCEPTION_RESET ||
 	    exception_nr == ARM_EXCEPTION_FIQ)
@@ -663,9 +665,15 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	/*  Load the new register bank, if we switched:  */
 	arm_load_register_bank(cpu);
 
-	/*  Set the return address and new PC:  */
+	/*
+	 *  Set the return address and new PC.
+	 *
+	 *  NOTE: r[ARM_PC] is also set; see cpu_arm_instr_loadstore.c for
+	 *  details. (If an exception occurs during a load into the pc
+	 *  register, the code in that file assumes that the r[ARM_PC]
+	 *  was changed to the address of the exception handler.)
+	 */
 	cpu->cd.arm.r[ARM_LR] = retaddr;
-
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
 	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
 	quick_pc_to_pointers(cpu);
@@ -1153,7 +1161,7 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				} else {
 					tmpw[0] = addr = cpu->cd.arm.r[r12];
 					if (r12 == ARM_PC)
-						addr += 8;
+						addr = cpu->pc + 8;
 				}
 				debug(": ");
 				if (b_bit)

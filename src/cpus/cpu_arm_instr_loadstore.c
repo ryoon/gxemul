@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.18 2005-11-11 13:23:16 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.19 2005-11-19 18:53:07 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -110,10 +110,9 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 
 	low_pc = ((size_t)ic - (size_t)cpu->cd.arm.
 	    cur_ic_page) / sizeof(struct arm_instr_call);
-	cpu->cd.arm.r[ARM_PC] &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
+	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1)
 	    << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.arm.r[ARM_PC] += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc = cpu->cd.arm.r[ARM_PC];
+	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
 	addr = reg(ic->arg[0])
 #ifdef A__P
@@ -327,7 +326,7 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 		uint32_t low_pc, tmp;
 		low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
 		    sizeof(struct arm_instr_call);
-		tmp = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+		tmp = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
 		    ARM_INSTR_ALIGNMENT_SHIFT);
 		tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 		cpu->cd.arm.tmp_pc = tmp + 8;
@@ -345,7 +344,7 @@ void A__NAME_PC(struct cpu *cpu, struct arm_instr_call *ic)
 	/*  Calculate tmp from this instruction's PC + 12  */
 	low_pc = ((size_t)ic - (size_t) cpu->cd.arm.cur_ic_page) /
 	    sizeof(struct arm_instr_call);
-	tmp = cpu->cd.arm.r[ARM_PC] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
+	tmp = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<
 	    ARM_INSTR_ALIGNMENT_SHIFT);
 	tmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.arm.tmp_pc = tmp + 12;

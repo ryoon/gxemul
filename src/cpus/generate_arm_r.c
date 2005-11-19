@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_r.c,v 1.3 2005-11-11 13:23:16 debug Exp $
+ *  $Id: generate_arm_r.c,v 1.4 2005-11-19 18:53:07 debug Exp $
  *
  *  Generate functions for computing "reg" operands.
  */
@@ -38,7 +38,7 @@ void sync_pc(void)
 {
 	printf("\tuint32_t tmp, low_pc = ((size_t)ic - (size_t)\n"
 	    "\t    cpu->cd.arm.cur_ic_page)/sizeof(struct arm_instr_call);\n");
-	printf("\ttmp = cpu->cd.arm.r[15] & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<\n"
+	printf("\ttmp = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1) <<\n"
 	    "\t    ARM_INSTR_ALIGNMENT_SHIFT);\n");
 	printf("\ttmp += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 8;\n");
 }

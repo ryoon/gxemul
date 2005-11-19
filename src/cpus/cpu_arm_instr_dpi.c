@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.15 2005-11-15 17:26:29 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.16 2005-11-19 18:53:07 debug Exp $
  *
  *
  *  ARM Data Processing Instructions
@@ -69,6 +69,14 @@
  */
 void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 {
+#if defined(A__RSB) || defined(A__RSC)
+#define VAR_A  b
+#define VAR_B  a
+#else
+#define VAR_A  a
+#define VAR_B  b
+#endif
+
 #ifdef A__REG
 	uint32_t (*reg_func)(struct cpu *, struct arm_instr_call *)
 	    = (void *)(size_t)ic->arg[1];
@@ -87,7 +95,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #else
 	uint32_t
 #endif
-	    b =
+	    VAR_B =
 #ifdef A__REG
 	    reg_func(cpu, ic)
 #else
@@ -99,7 +107,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    , c64
 #if !defined(A__MOV) && !defined(A__MVN)
-	    , a = reg(ic->arg[0])
+	    , VAR_A = reg(ic->arg[0])
 #endif
 	    ;
 
@@ -115,8 +123,8 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	 *  TODO 2: Perhaps this check should be moved out from here, and into
 	 *  cpu_arm_instr.c. (More correct, and higher performance.)
 	 */
-	if (b > 255) {
-		if (b & 0x80000000)
+	if (VAR_B > 255) {
+		if (VAR_B & 0x80000000)
 			cpu->cd.arm.flags |= ARM_F_C;
 		else
 			cpu->cd.arm.flags &= ~ARM_F_C;
@@ -128,19 +136,13 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #if !defined(A__MOV) && !defined(A__MVN)
 #ifdef A__PC
 	if (ic->arg[0] == (size_t)&cpu->cd.arm.r[ARM_PC]) {
-		uint32_t low_pc;
-		low_pc = ((size_t)ic - (size_t)
+		uint32_t low_pc = ((size_t)ic - (size_t)
 		    cpu->cd.arm.cur_ic_page) / sizeof(struct arm_instr_call);
-		a = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1)
+		VAR_A = cpu->pc & ~((ARM_IC_ENTRIES_PER_PAGE-1)
 		    << ARM_INSTR_ALIGNMENT_SHIFT);
-		a += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 8;
+		VAR_A += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT) + 8;
 	}
 #endif
-#endif
-
-
-#if defined(A__RSB) || defined(A__RSC)
-	{ uint32_t tmp = a; a = b; b = tmp; }
 #endif
 
 	/*
@@ -185,12 +187,12 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 #ifdef A__PC
 	if (ic->arg[2] == (size_t)&cpu->cd.arm.r[ARM_PC]) {
 #ifndef A__S
-		uint32_t old_pc = cpu->cd.arm.r[ARM_PC];
+		uint32_t old_pc = cpu->pc;
 		uint32_t mask_within_page = ((ARM_IC_ENTRIES_PER_PAGE-1)
 		    << ARM_INSTR_ALIGNMENT_SHIFT) |
 		    ((1 << ARM_INSTR_ALIGNMENT_SHIFT) - 1);
 #endif
-		cpu->pc = reg(ic->arg[2]) = c64;
+		cpu->pc = (uint32_t)c64;
 #ifdef A__S
 		/*  Copy the right SPSR into CPSR:  */
 		arm_save_register_bank(cpu);
@@ -210,7 +212,7 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 		arm_load_register_bank(cpu);
 #else
 		if ((old_pc & ~mask_within_page) ==
-		    (cpu->pc & ~mask_within_page)) {
+		    ((uint32_t)cpu->pc & ~mask_within_page)) {
 			cpu->cd.arm.next_ic = cpu->cd.arm.cur_ic_page +
 			    ((cpu->pc & mask_within_page) >>
 			    ARM_INSTR_ALIGNMENT_SHIFT);
@@ -282,6 +284,9 @@ void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 	}
 #endif
 #endif	/*  A__S  */
+
+#undef VAR_A
+#undef VAR_B
 }
 
 

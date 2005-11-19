@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.237 2005-11-13 22:34:21 debug Exp $
+ *  $Id: emul.c,v 1.238 2005-11-19 18:53:06 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -112,11 +112,14 @@ static void add_dump_points(struct machine *m)
 		 *  were automatically converted into the correct address.
 		 */
 
-		if ((dp >> 32) == 0 && ((dp >> 31) & 1))
-			dp |= 0xffffffff00000000ULL;
+		if (m->arch == ARCH_MIPS) {
+			if ((dp >> 32) == 0 && ((dp >> 31) & 1))
+				dp |= 0xffffffff00000000ULL;
+		}
+
 		m->breakpoint_addr[i] = dp;
 
-		debug("breakpoint %i: 0x%016llx", i, (long long)dp);
+		debug("breakpoint %i: 0x%llx", i, (long long)dp);
 		if (string_flag)
 			debug(" (%s)", m->breakpoint_string[i]);
 		debug("\n");
@@ -1215,8 +1218,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			break;
 
 		case ARCH_ARM:
+			if (cpu->pc & 3) {
+				fatal("ARM: lowest bits of pc set: TODO\n");
+				exit(1);
+			}
 			cpu->pc &= 0xfffffffc;
-			cpu->cd.arm.r[ARM_PC] = cpu->pc;
 			break;
 
 		case ARCH_AVR:

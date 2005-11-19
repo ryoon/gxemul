@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1036 2005-11-18 20:46:07 debug Exp $
+$Id: HISTORY,v 1.1037 2005-11-19 18:53:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2435,3 +2435,5 @@ Changelog for GXemul:
 		related issues, etc.
 20051118	More work on PPC emulation (tgpr0..3, exception handling,
 		memory stuff, syscalls, etc.).
+20051119	Changing the ARM dyntrans code to mostly use cpu->pc, and not
+		necessarily use arm reg 15. Seems to work.

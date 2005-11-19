@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.12 2005-11-17 13:53:42 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.13 2005-11-19 21:01:02 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -150,6 +150,7 @@ int devinit_pccmos(struct devinit *devinit)
 		irq_nr = 16;	/*  "No" irq  */
 		break;
 	case MACHINE_BEBOX:
+	case MACHINE_PREP:
 		irq_nr = 64;	/*  "No" irq  */
 		break;
 	default:fatal("devinit_pccmos(): unimplemented machine type"

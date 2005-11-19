@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.23 2005-11-18 20:46:08 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.24 2005-11-19 21:01:01 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1437,7 +1437,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			int i;
 			for (i=0; i<wlen; i++)
 				tdata |= (cpu->cd.ppc.gpr[rs] &
-				    ((uint64_t)0xff << i));
+				    ((uint64_t)0xff << (i*8)));
 			debug(": ");
 			if (wlen >= 4) {
 				symbol = get_symbol_name(&cpu->machine->
@@ -1445,8 +1445,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				if (symbol != NULL)
 					debug("%s", symbol);
 				else
-					debug("0x%llx",
-					    (long long)tdata);
+					debug("0x%llx", (long long)tdata);
 			} else {
 				if (tdata > -256 && tdata < 256)
 					debug("%i", (int)tdata);

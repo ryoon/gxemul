@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.1 2005-11-15 17:26:49 debug Exp $
+ *  $Id: dev_eagle.c,v 1.2 2005-11-19 21:01:02 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  *
@@ -103,6 +103,10 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 		portbase = 0x80000000ULL;
 		membase = 0xc0000000ULL;
 		break;
+	case MACHINE_PREP:
+		portbase = 0x80000000ULL;
+		membase = 0xc0000000ULL;	/*  TODO  */
+		break;
 	default:fatal("dev_eagle_init(): unimplemented machine type\n");
 		exit(1);
 	}
@@ -117,6 +121,9 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	switch (machine->machine_type) {
 	case MACHINE_BEBOX:
 		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "i82378zb");
+		break;
+	case MACHINE_PREP:
+		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "ibmisa");
 		break;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.32 2005-11-18 02:14:42 debug Exp $
+ *  $Id: bus_pci.c,v 1.33 2005-11-19 21:01:02 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -559,6 +559,27 @@ PCIINIT(i82371ab_ide)
 
 
 /*
+ *  IBM ISA bridge (used by at least one PReP machine).
+ */
+
+#define	PCI_VENDOR_IBM			0x1014
+#define	PCI_PRODUCT_IBM_ISABRIDGE	0x000a
+
+PCIINIT(ibmisa)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_IBM,
+	    PCI_PRODUCT_IBM_ISABRIDGE));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x02);
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+}
+
+
+
+/*
  *  Heuricon PCI host bridge for PM/PPC.
  */
 
@@ -693,7 +714,8 @@ PCIINIT(symphony_82c105)
 PCIINIT(dec21143)
 {
 	uint64_t base = 0, base2 = 0;
-	int irq = 0;
+	int irq = 0;		/*  TODO  */
+	int int_line = 1;	/*  TODO  */
 	char tmpstr[200];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
@@ -728,11 +750,17 @@ PCIINIT(dec21143)
 		base2 = 0xf8000000;
 		/*  TODO: IRQ  */
 		break;
+	case MACHINE_PREP:
+		/*  NetBSD/prep:  */
+		base = 0xc0010000;
+		base2 = 0x00000000;
+		int_line = 0xa;
+		break;
 	default:fatal("!\n! dec21143 in non-implemented machine type %i\n!\n",
 		    machine->machine_type);
 	}
 
-	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140101);
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140100 | int_line);
 
 	PCI_SET_DATA(PCI_MAPREG_START,        base2 + 1);
 	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base2 + 0x10000);
@@ -799,6 +827,8 @@ PCIINIT(dec21030)
 
 /*
  *  Motorola MPC105 "Eagle" Host Bridge
+ *
+ *  Used in at least PReP ("IBM PPS Model 7248 (E)") and BeBox.
  */
 
 #define	PCI_VENDOR_MOT			0x1057

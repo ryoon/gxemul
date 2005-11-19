@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1037 2005-11-19 18:53:04 debug Exp $
+$Id: HISTORY,v 1.1038 2005-11-19 21:00:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2437,3 +2437,4 @@ Changelog for GXemul:
 		memory stuff, syscalls, etc.).
 20051119	Changing the ARM dyntrans code to mostly use cpu->pc, and not
 		necessarily use arm reg 15. Seems to work.
+		Various PPC updates; the continuing on PReP emulation mode.

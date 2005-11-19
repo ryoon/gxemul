@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.601 2005-11-17 22:50:32 debug Exp $
+ *  $Id: machine.c,v 1.602 2005-11-19 21:00:59 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4162,12 +4162,8 @@ Not yet.
 		 */
 		machine->machine_name = "Motorola Sandpoint";
 
-		{
-			int i;
-			for (i=0; i<32; i++)
-				cpu->cd.ppc.gpr[i] =
-				    0x12340000 + (i << 8) + 0x55;
-		}
+		/*  r4 should point to first free byte after the loaded kernel:  */
+		cpu->cd.ppc.gpr[4] = 6 * 1048576;
 
 		break;
 
@@ -4232,13 +4228,23 @@ Not yet.
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
 
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "ns16550 irq=0 addr=0x800003f8 name2=tty0");
+		pci_data = dev_eagle_init(machine, mem,
+		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
+
+		bus_isa(machine, BUS_ISA_IDE0, 0x80000000, 0xc0000000, 32, 64);
+
+		bus_pci_add(machine, pci_data, mem, 0, 13, 0, "dec21143");
+
+		if (machine->use_x11)
+			bus_pci_add(machine, pci_data, mem, 0, 14, 0, "s3_virge");
 
 		if (machine->prom_emulation) {
 			/*  Linux on PReP has 0xdeadc0de at address 0? (See
 			    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/113568.html)  */
 			store_32bit_word(cpu, 0, 0xdeadc0de);
+
+			/*  r4 should point to first free byte after the loaded kernel:  */
+			cpu->cd.ppc.gpr[4] = 6 * 1048576;
 
 			/*
 			 *  r6 should point to bootinfo.
@@ -4263,7 +4269,9 @@ Not yet.
 			    cpu->cd.ppc.gpr[6] + 0x100);
 
 			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100, 0x200);  /*  TODO: residual  */
-			store_buf(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM", 4);
+			store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM PPS Model 7248 (E)");
+
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100+0x1f8, machine->physical_ram_in_mb * 1048576);  /*  memsize  */
 		}
 		break;
 
@@ -5171,14 +5179,9 @@ void machine_memsize_fix(struct machine *m)
 			}
 			break;
 		case MACHINE_ALPHA:
-			m->physical_ram_in_mb = 64;
-			break;
 		case MACHINE_BEBOX:
-			m->physical_ram_in_mb = 64;
-			break;
+		case MACHINE_PREP:
 		case MACHINE_CATS:
-			m->physical_ram_in_mb = 64;
-			break;
 		case MACHINE_ZAURUS:
 			m->physical_ram_in_mb = 64;
 			break;
@@ -5370,8 +5373,8 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("PPC603e");
 		break;
 	case MACHINE_PREP:
-		/*  For NetBSD/prep. TODO  */
-		m->cpu_name = strdup("PPC603");
+		/*  For NetBSD/prep. TODO: Differs between models!  */
+		m->cpu_name = strdup("PPC604");
 		break;
 	case MACHINE_MACPPC:
 		switch (m->machine_subtype) {

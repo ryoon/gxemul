@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.13 2005-11-19 21:01:02 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.14 2005-11-20 11:28:45 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -66,6 +66,7 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 	struct pccmos_data *d = (struct pccmos_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	unsigned char b = 0;
+	int r = 1;
 
 	if (writeflag == MEM_WRITE)
 		b = idata = memory_readmax64(cpu, data, len);
@@ -79,7 +80,7 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			d->select = idata;
 			if (idata <= 0x0d) {
-				cpu->memory_rw(cpu, cpu->mem,
+				r = cpu->memory_rw(cpu, cpu->mem,
 				    PCCMOS_MC146818_FAKE_ADDR, &b, 1,
 				    MEM_WRITE, PHYSICAL);
 			}
@@ -88,11 +89,11 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 	} else {
 		if (d->select <= 0x0d) {
 			if (writeflag == MEM_WRITE) {
-				cpu->memory_rw(cpu, cpu->mem,
+				r = cpu->memory_rw(cpu, cpu->mem,
 				    PCCMOS_MC146818_FAKE_ADDR + 1, &b, 1,
 				    MEM_WRITE, PHYSICAL);
 			} else {
-				cpu->memory_rw(cpu, cpu->mem,
+				r = cpu->memory_rw(cpu, cpu->mem,
 				    PCCMOS_MC146818_FAKE_ADDR + 1, &b, 1,
 				    MEM_READ, PHYSICAL);
 				odata = b;
@@ -104,6 +105,9 @@ int dev_pccmos_access(struct cpu *cpu, struct memory *mem,
 				odata = d->ram[d->select];
 		}
 	}
+
+	if (r == 0)
+		fatal("[ pccmos: memory_rw() error! ]\n");
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

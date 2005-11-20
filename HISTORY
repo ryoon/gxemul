@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1039 2005-11-19 22:24:05 debug Exp $
+$Id: HISTORY,v 1.1040 2005-11-20 11:28:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2438,3 +2438,5 @@ Changelog for GXemul:
 20051119	Changing the ARM dyntrans code to mostly use cpu->pc, and not
 		necessarily use arm reg 15. Seems to work.
 		Various PPC updates; continuing on the PReP emulation mode.
+20051120	Adding a workaround/hack to dev_mc146818 to allow NetBSD/prep
+		to detect the clock.

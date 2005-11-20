@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.79 2005-11-17 13:53:42 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.80 2005-11-20 11:28:45 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -53,6 +53,7 @@
 
 
 #define	to_bcd(x)	( ((x)/10) * 16 + ((x)%10) )
+#define	from_bcd(x)	( ((x)>>4) * 10 + ((x)&15) )
 
 /*  #define MC146818_DEBUG  */
 
@@ -81,7 +82,22 @@ struct mc_data {
 
 	int	interrupt_every_x_cycles;
 	int	cycles_left_until_interrupt;
+
+	int	ugly_netbsd_prep_hack_done;
+	int	ugly_netbsd_prep_hack_sec;
 };
+
+
+/*
+ *  Ugly hack to fool NetBSD/prep to accept the clock.  (See mcclock_isa_match
+ *  in NetBSD's arch/prep/isa/mcclock_isa.c for details.)
+ */
+#define	NETBSD_HACK_INIT		0
+#define	NETBSD_HACK_FIRST_1		1
+#define	NETBSD_HACK_FIRST_2		2
+#define	NETBSD_HACK_SECOND_1		3
+#define	NETBSD_HACK_SECOND_2		4
+#define	NETBSD_HACK_DONE		5
 
 
 /*
@@ -367,7 +383,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		fatal("[ mc146818: write to addr=0x%04x (len %i): ",
 		    (int)relative_addr, (int)len);
 		for (i=0; i<len; i++)
-			fatal("%02x ", data[i]);
+			fatal("0x%02x ", data[i]);
 		fatal("]\n");
 	}
 #endif
@@ -518,6 +534,24 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		case 0x15:
 			break;
 		case 4 * MC_SEC:
+			if (d->ugly_netbsd_prep_hack_done < NETBSD_HACK_DONE) {
+				d->ugly_netbsd_prep_hack_done ++;
+				switch (d->ugly_netbsd_prep_hack_done) {
+				case NETBSD_HACK_FIRST_1:
+					d->ugly_netbsd_prep_hack_sec =
+					    from_bcd(d->reg[relative_addr]);
+					break;
+				case NETBSD_HACK_FIRST_2:
+					d->reg[relative_addr] = to_bcd(
+					    d->ugly_netbsd_prep_hack_sec);
+					break;
+				case NETBSD_HACK_SECOND_1:
+				case NETBSD_HACK_SECOND_2:
+					d->reg[relative_addr] = to_bcd((1 +
+					    d->ugly_netbsd_prep_hack_sec) % 60);
+					break;
+				}
+			}
 		case 4 * MC_MIN:
 		case 4 * MC_HOUR:
 		case 4 * MC_DOW:
@@ -534,7 +568,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			if (d->reg[MC_REGB * 4] & MC_REGB_SET)
 				break;
 
-			mc146818_update_time(d);
+			if (d->ugly_netbsd_prep_hack_done >= NETBSD_HACK_DONE)
+				mc146818_update_time(d);
 			break;
 		case 4 * MC_REGA:
 			break;
@@ -561,7 +596,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		fatal("[ mc146818: read from addr=0x%04x (len %i): ",
 		    (int)relative_addr, (int)len);
 		for (i=0; i<len; i++)
-			fatal("%02x ", data[i]);
+			fatal("0x%02x ", data[i]);
 		fatal("]\n");
 	}
 #endif
@@ -600,6 +635,12 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	case MC146818_PC_CMOS:
 	case MC146818_PMPPC:
 		d->use_bcd = 1;
+	}
+
+	if (machine->machine_type != MACHINE_PREP) {
+		/*  NetBSD/prep has a really ugly clock detection code;
+		    all other machines/OSes don't need this.  */
+		d->ugly_netbsd_prep_hack_done = NETBSD_HACK_DONE;
 	}
 
 	if (access_style == MC146818_DEC) {

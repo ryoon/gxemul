@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.51 2005-11-21 00:43:07 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.52 2005-11-21 11:10:12 debug Exp $
  */
 
 #include "misc.h"
@@ -124,8 +124,8 @@ struct ppc_cpu {
 	int		mode;		/*  MODE_PPC or MODE_POWER  */
 	int		bits;		/*  32 or 64  */
 
-	int		irq_asserted;	/*  Checked periodically.  */
-
+	int		irq_asserted;	/*  External Interrupt flag  */
+	int		dec_intr_pending;/* Decrementer interrupt pending  */
 	uint64_t	zero;		/*  A zero register  */
 
 	uint32_t	cr;		/*  Condition Register  */
@@ -134,7 +134,7 @@ struct ppc_cpu {
 	uint64_t	fpr[PPC_NFPRS];	/*  Floating-Point Registers  */
 
 	uint64_t	msr;		/*  Machine state register  */
-	uint64_t	tgpr[PPC_N_TGPRS];	/*  Temporary gpr 0..3  */
+	uint64_t	tgpr[PPC_N_TGPRS];/*Temporary gpr 0..3  */
 
 	uint32_t	sr[16];		/*  Segment registers.  */
 	uint64_t	spr[1024];
@@ -200,7 +200,11 @@ struct ppc_cpu {
 #define	PPC_MSR_LE	(1)		/*  Little-Endian Mode  */
 
 /*  Exceptions:  */
+#define	PPC_EXCEPTION_DSI	0x3	/*  Data Storage Interrupt  */
+#define	PPC_EXCEPTION_ISI	0x4	/*  Instruction Storage Interrupt  */
 #define	PPC_EXCEPTION_EI	0x5	/*  External interrupt  */
+#define	PPC_EXCEPTION_DEC	0x9	/*  Decrementer  */
+#define	PPC_EXCEPTION_SC	0xc	/*  Syscall  */
 
 /*  XER bits:  */
 #define	PPC_XER_SO	(1UL << 31)	/*  Summary Overflow  */

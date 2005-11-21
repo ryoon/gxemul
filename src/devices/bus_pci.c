@@ -25,12 +25,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.34 2005-11-21 09:17:26 debug Exp $
+ *  $Id: bus_pci.c,v 1.35 2005-11-21 11:10:11 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
  *
  *  See NetBSD's pcidevs.h for more PCI vendor and device identifiers.
+ *
+ *  TODO:
+ *	x) Allow guest OSes to do runtime address fixups.
+ *	x) Generalize the PCI and legacy ISA interrupt routing stuff.
  */
 
 #include <stdio.h>

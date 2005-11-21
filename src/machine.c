@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.603 2005-11-21 09:17:25 debug Exp $
+ *  $Id: machine.c,v 1.604 2005-11-21 11:10:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4272,7 +4272,7 @@ Not yet.
 
 			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 0, 12);  /*  next  */
 			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 4, 2);  /*  type: clock  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 8, 1000000);
+			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 8, 5000000);
 
 			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+12, 20);  /*  next  */
 			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+16, 1);  /*  type: console  */

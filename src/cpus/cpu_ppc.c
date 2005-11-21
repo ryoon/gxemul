@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.25 2005-11-21 00:43:35 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.26 2005-11-21 11:10:10 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -209,7 +209,8 @@ void ppc_cpu_dumpinfo(struct cpu *cpu)
 /*
  *  reg_access_msr():
  */
-void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
+void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag,
+	int check_for_interrupts)
 {
 	uint64_t old = cpu->cd.ppc.msr;
 
@@ -240,6 +241,14 @@ void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
 
 	if (!writeflag)
 		*valuep = cpu->cd.ppc.msr;
+
+	if (check_for_interrupts && cpu->cd.ppc.msr & PPC_MSR_EE) {
+		if (cpu->cd.ppc.dec_intr_pending) {
+			ppc_exception(cpu, PPC_EXCEPTION_DEC);
+			cpu->cd.ppc.dec_intr_pending = 0;
+		} else if (cpu->cd.ppc.irq_asserted)
+			ppc_exception(cpu, PPC_EXCEPTION_EI);
+	}
 }
 
 
@@ -348,7 +357,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("cpu%i: srr0 = 0x%016llx  srr1 = 0x%016llx\n", x,
 		    (long long)cpu->cd.ppc.spr[SPR_SRR0],
 		    (long long)cpu->cd.ppc.spr[SPR_SRR1]);
-		reg_access_msr(cpu, &tmp, 0);
+		reg_access_msr(cpu, &tmp, 0, 0);
 		debug("cpu%i: msr = 0x%016llx  ", x, (long long)tmp);
 		debug("tb  = 0x%08x%08x\n", (int)cpu->cd.ppc.spr[SPR_TBU],
 		    (int)cpu->cd.ppc.spr[SPR_TBL]);

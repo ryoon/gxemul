@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.4 2005-11-21 09:17:26 debug Exp $
+ *  $Id: bus_isa.c,v 1.5 2005-11-21 11:10:11 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -72,10 +72,16 @@ void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
 	int reassert_irq)
 {
 	char tmpstr[300];
+	int wdc0_irq = 14, wdc1_irq = 15;
 	int tmp_handle, kbd_in_use;
 
 	kbd_in_use = ((bus_isa_flags & BUS_ISA_PCKBC_FORCE_USE) ||
 	    (machine->use_x11))? 1 : 0;
+
+	if (machine->machine_type == MACHINE_PREP) {
+		/*  PReP with obio controller has both WDCs on irq 13!  */
+		wdc0_irq = wdc1_irq = 13;
+	}
 
 	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%i addr=0x%llx",
 	    reassert_irq, (long long)(isa_portbase + 0x20));
@@ -113,7 +119,7 @@ void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
 	if (bus_isa_flags & BUS_ISA_IDE0) {
 		bus_isa_flags &= ~BUS_ISA_IDE0;
 		snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%i addr=0x%llx",
-		    isa_irqbase + 14, (long long)(isa_portbase + 0x1f0));
+		    isa_irqbase + wdc0_irq, (long long)(isa_portbase + 0x1f0));
 		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 1, DISKIMAGE_IDE))
 			device_add(machine, tmpstr);
@@ -122,7 +128,7 @@ void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
 	if (bus_isa_flags & BUS_ISA_IDE1) {
 		bus_isa_flags &= ~BUS_ISA_IDE1;
 		snprintf(tmpstr, sizeof(tmpstr), "wdc irq=%i addr=0x%llx",
-		    isa_irqbase + 15, (long long)(isa_portbase + 0x170));
+		    isa_irqbase + wdc1_irq, (long long)(isa_portbase + 0x170));
 		if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
 		    diskimage_exist(machine, 3, DISKIMAGE_IDE))
 			device_add(machine, tmpstr);

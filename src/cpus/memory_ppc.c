@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.16 2005-11-19 22:23:46 debug Exp $
+ *  $Id: memory_ppc.c,v 1.17 2005-11-21 11:10:10 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -142,7 +142,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint32_t hash1, hash2, pteg_select, tmp;
 	uint32_t lower_pte, cmp;
 
-	reg_access_msr(cpu, &msr, 0);
+	reg_access_msr(cpu, &msr, 0, 0);
 	user = msr & PPC_MSR_PR? 1 : 0;
 
 	if (cpu->cd.ppc.bits == 32)
@@ -278,7 +278,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		cpu->cd.ppc.spr[instr? SPR_IMISS : SPR_DMISS] = vaddr;
 
 		msr |= PPC_MSR_TGPR;
-		reg_access_msr(cpu, &msr, 1);
+		reg_access_msr(cpu, &msr, 1, 0);
 
 		ppc_exception(cpu, instr? 0x10 : (writeflag? 0x12 : 0x11));
 	} else {
@@ -289,7 +289,8 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 			if (writeflag)
 				cpu->cd.ppc.spr[SPR_DSISR] |= DSISR_STORE;
 		}
-		ppc_exception(cpu, instr? 0x4 : 0x3);
+		ppc_exception(cpu, instr?
+		    PPC_EXCEPTION_ISI : PPC_EXCEPTION_DSI);
 	}
 
 	return 0;

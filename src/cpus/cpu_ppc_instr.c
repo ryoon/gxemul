@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.32 2005-11-19 22:23:46 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.33 2005-11-21 11:10:10 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1167,6 +1167,8 @@ X(mfspr_pmc1) {
 	reg(ic->arg[0]) = 1000000;
 }
 X(mftb) {
+	/*  NOTE/TODO: This increments the time base (slowly) if it
+	    is being polled.  */
 	if (++cpu->cd.ppc.spr[SPR_TBL] == 0)
 		cpu->cd.ppc.spr[SPR_TBU] ++;
 	reg(ic->arg[0]) = cpu->cd.ppc.spr[SPR_TBL];
@@ -1194,10 +1196,10 @@ X(rfi)
 {
 	uint64_t tmp;
 
-	reg_access_msr(cpu, &tmp, 0);
+	reg_access_msr(cpu, &tmp, 0, 0);
 	tmp &= ~0xffff;
 	tmp |= (cpu->cd.ppc.spr[SPR_SRR1] & 0xffff);
-	reg_access_msr(cpu, &tmp, 1);
+	reg_access_msr(cpu, &tmp, 1, 0);
 
 	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
@@ -1224,7 +1226,7 @@ X(mfcr)
  */
 X(mfmsr)
 {
-	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 0);
+	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 0, 0);
 }
 
 
@@ -1235,7 +1237,10 @@ X(mfmsr)
  */
 X(mtmsr)
 {
-	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 1);
+	/*  Synchronize the PC (pointing to _after_ this instruction)  */
+	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[1];
+
+	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 1, 1);
 }
 
 
@@ -1709,7 +1714,7 @@ X(sc)
 	/*  Synchronize the PC (pointing to _after_ this instruction)  */
 	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[1];
 
-	ppc_exception(cpu, 0xc);
+	ppc_exception(cpu, PPC_EXCEPTION_SC);
 }
 
 
@@ -2329,6 +2334,7 @@ X(to_be_translated)
 				goto bad;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			ic->arg[1] = (addr & 0xfff) + 4;
 			ic->f = instr(mtmsr);
 			break;
 

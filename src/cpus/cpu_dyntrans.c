@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.38 2005-11-19 18:53:07 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.39 2005-11-21 11:10:10 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -137,6 +137,10 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		arm_exception(cpu, ARM_EXCEPTION_IRQ);
 #endif
 #ifdef DYNTRANS_PPC
+	if (cpu->cd.ppc.dec_intr_pending && cpu->cd.ppc.msr & PPC_MSR_EE) {
+		ppc_exception(cpu, PPC_EXCEPTION_DEC);
+		cpu->cd.ppc.dec_intr_pending = 0;
+	}
 	if (cpu->cd.ppc.irq_asserted && cpu->cd.ppc.msr & PPC_MSR_EE)
 		ppc_exception(cpu, PPC_EXCEPTION_EI);
 #endif
@@ -244,14 +248,11 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		}
 	}
 
+	n_instrs += cpu->n_translated_instrs;
 
-	/*
-	 *  Update the program counter and return the correct number of
-	 *  executed instructions:
-	 */
+	/*  Synchronize the program counter:  */
 	low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - (size_t)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page) / sizeof(struct DYNTRANS_IC);
-
 	if (low_pc >= 0 && low_pc < DYNTRANS_IC_ENTRIES_PER_PAGE) {
 		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
@@ -262,11 +263,25 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (DYNTRANS_IC_ENTRIES_PER_PAGE <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
-	} else {
-		/*  debug("debug: Outside a page (This is actually ok)\n");  */
 	}
 
-	return n_instrs + cpu->n_translated_instrs;
+#ifdef DYNTRANS_PPC
+	/*  Update the Decrementer and Time base registers:  */
+	{
+		uint32_t old = cpu->cd.ppc.spr[SPR_DEC];
+		cpu->cd.ppc.spr[SPR_DEC] = (uint32_t) (old - n_instrs);
+		if ((old >> 31) == 0 && (cpu->cd.ppc.spr[SPR_DEC] >> 31) == 1)
+			cpu->cd.ppc.dec_intr_pending = 1;
+
+		old = cpu->cd.ppc.spr[SPR_TBL];
+		cpu->cd.ppc.spr[SPR_TBL] += n_instrs;
+		if ((old >> 31) == 1 && (cpu->cd.ppc.spr[SPR_TBL] >> 31) == 0)
+			cpu->cd.ppc.spr[SPR_TBU] ++;
+	}
+#endif
+
+	/*  Return the nr of instructions executed:  */
+	return n_instrs;
 }
 #endif	/*  DYNTRANS_CPU_RUN_INSTR  */
 

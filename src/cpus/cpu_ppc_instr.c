@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.33 2005-11-21 11:10:10 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.34 2005-11-21 11:54:59 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -775,16 +775,20 @@ X(dcbz)
 	int cacheline_size = 1 << cpu->cd.ppc.cpu_type.dlinesize;
 	int cleared = 0;
 
+	/*  Synchronize the PC first:  */
+	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[2];
+
 	addr &= ~(cacheline_size - 1);
 	memset(cacheline, 0, sizeof(cacheline));
 
+	/*  TODO: Don't use memory_rw() unless it is necessary.  */
 	while (cleared < cacheline_size) {
 		int to_clear = cacheline_size < sizeof(cacheline)?
 		    cacheline_size : sizeof(cacheline);
 		if (cpu->memory_rw(cpu, cpu->mem, addr, cacheline, to_clear,
 		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK) {
-			fatal("dcbz: error: TODO\n");
-			exit(1);
+			/*  exception  */
+			return;
 		}
 
 		cleared += to_clear;
@@ -2399,20 +2403,19 @@ X(to_be_translated)
 				ic->f = instr(srawi);
 			break;
 
-		case PPC_31_SYNC:
 		case PPC_31_TLBSYNC:
-		case PPC_31_EIEIO:
 		case PPC_31_DCBST:
 		case PPC_31_DCBTST:
 		case PPC_31_DCBF:
 		case PPC_31_DCBT:
 		case PPC_31_ICBI:
 			/*  TODO  */
+			ic->f = instr(tlbie);
+			break;
+
+		case PPC_31_SYNC:
+		case PPC_31_EIEIO:
 			ic->f = instr(nop);
-
-/*  TODO: NO!  */
-ic->f = instr(tlbie);
-
 			break;
 
 		case PPC_31_DCBZ:
@@ -2423,6 +2426,7 @@ ic->f = instr(tlbie);
 			else
 				ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			ic->arg[2] = addr & 0xfff;
 			ic->f = instr(dcbz);
 			break;
 

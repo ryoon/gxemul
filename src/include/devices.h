@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.192 2005-11-17 13:53:43 debug Exp $
+ *  $Id: devices.h,v 1.193 2005-11-21 00:43:22 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -114,7 +114,6 @@ struct bebox_data {
 	uint32_t	xpi;
 	uint32_t	resets;
 };
-
 
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20
@@ -457,6 +456,11 @@ struct ps2_data *dev_ps2_stuff_init(struct machine *machine, struct memory *mem,
 #define	DEV_PMAGJA_LENGTH		0x3c0000
 int dev_pmagja_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_pmagja_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr);
+
+/*  dev_prep.c:  */
+struct prep_data {
+	uint32_t	int_status;
+};
 
 /*  dev_px.c:  */
 struct px_data {

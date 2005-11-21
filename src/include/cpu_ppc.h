@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.50 2005-11-19 21:01:03 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.51 2005-11-21 00:43:07 debug Exp $
  */
 
 #include "misc.h"
@@ -181,6 +181,7 @@ struct ppc_cpu {
 /*  bits 62..61 are reserved  */
 #define	PPC_MSR_HV	(1ULL << 60)	/*  Hypervisor  */
 /*  bits 59..17  are reserved  */
+#define	PPC_MSR_VEC	(1 << 25)	/*  Altivec Enable  */
 #define	PPC_MSR_TGPR	(1 << 17)	/*  Temporary gpr0..3  */
 #define	PPC_MSR_ILE	(1 << 16)	/*  Interrupt Little-Endian Mode  */
 #define	PPC_MSR_EE	(1 << 15)	/*  External Interrupt Enable  */

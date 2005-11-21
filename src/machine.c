@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.605 2005-11-21 11:54:58 debug Exp $
+ *  $Id: machine.c,v 1.606 2005-11-21 22:27:13 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4240,7 +4240,7 @@ Not yet.
 		 *  NetBSD/prep (http://www.netbsd.org/Ports/prep/)
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
-		machine->emulated_hz = 10000000;
+		machine->emulated_hz = 5000000;
 
 		machine->md_int.bebox_data = device_add(machine, "prep");
 		machine->isa_pic_data.native_irq = 0;

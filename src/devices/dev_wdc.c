@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.53 2005-11-16 21:15:18 debug Exp $
+ *  $Id: dev_wdc.c,v 1.54 2005-11-21 22:27:18 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -412,12 +412,16 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 	 */
 	if (!diskimage_exist(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE)) {
+		debug("[ wdc: command 0x%02x drive %i, but no disk image ]\n",
+		    d->cur_command, d->drive + d->base_drive);
 		d->error |= WDCE_ABRT;
 		d->delayed_interrupt = INT_DELAY;
 		return;
 	}
 	if (diskimage_is_a_cdrom(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE) && d->cur_command == WDCC_IDENTIFY) {
+		debug("[ wdc: IDENTIFY drive %i, but it is an ATAPI "
+		    "drive ]\n", d->drive + d->base_drive);
 		d->error |= WDCE_ABRT;
 		d->delayed_interrupt = INT_DELAY;
 		return;

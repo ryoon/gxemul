@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.26 2005-11-21 11:10:10 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.27 2005-11-21 22:27:16 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -266,8 +266,9 @@ void ppc_exception(struct cpu *cpu, int exception_nr)
 		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0xffff)
 		    | (cpu->cd.ppc.cr & 0xf0000000);
 
-	fatal("[ PPC Exception 0x%x; pc=0x%llx ]\n", exception_nr,
-	    (long long)cpu->pc);
+	if (!quiet_mode)
+		fatal("[ PPC Exception 0x%x; pc=0x%llx ]\n", exception_nr,
+		    (long long)cpu->pc);
 
 	/*  Disable External Interrupts, Recoverable Interrupt Mode,
 	    and go to Supervisor mode  */

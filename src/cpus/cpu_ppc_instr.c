@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.34 2005-11-21 11:54:59 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.35 2005-11-21 22:27:16 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1030,18 +1030,13 @@ X(rlwimi)
 {
 	MODE_uint_t tmp = reg(ic->arg[0]), ra = reg(ic->arg[1]);
 	uint32_t iword = ic->arg[2];
-	int sh, mb, me, rc;
+	int sh = (iword >> 11) & 31;
+	int mb = (iword >> 6) & 31;
+	int me = (iword >> 1) & 31;   
+	int rc = iword & 1;
 
-	sh = (iword >> 11) & 31;
-	mb = (iword >> 6) & 31;
-	me = (iword >> 1) & 31;   
-	rc = iword & 1;
+	tmp = (tmp << sh) | (tmp >> (32-sh));
 
-	/*  TODO: Fix this, its performance is awful:  */
-	while (sh-- != 0) {
-		int b = (tmp >> 31) & 1;
-		tmp = (tmp << 1) | b;
-	}
 	for (;;) {
 		uint64_t mask;
 		mask = (uint64_t)1 << (31-mb);
@@ -1205,8 +1200,6 @@ X(rfi)
 	tmp |= (cpu->cd.ppc.spr[SPR_SRR1] & 0xffff);
 	reg_access_msr(cpu, &tmp, 1, 0);
 
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-
 	cpu->pc = cpu->cd.ppc.spr[SPR_SRR0];
 	DYNTRANS_PC_TO_POINTERS(cpu);
 }
@@ -1289,7 +1282,7 @@ X(lmw) {
 	    / sizeof(struct ppc_instr_call);
 	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1)
 	    << PPC_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 
 	while (rs <= 31) {
 		if (cpu->memory_rw(cpu, cpu->mem, addr, d, sizeof(d),
@@ -1449,13 +1442,25 @@ DOT2(extsw)
 X(slw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    << (reg(ic->arg[1]) & 31); }
 DOT2(slw)
-X(sraw) {	reg(ic->arg[2]) =
-#ifdef MODE32
-		    (int32_t)
-#else
-		    (int64_t)
-#endif
-		reg(ic->arg[0]) >> (reg(ic->arg[1]) & 31); }
+X(sraw)
+{
+	uint32_t tmp = reg(ic->arg[0]);
+	int i = 0, j = 0, sh = reg(ic->arg[1]) & 31;
+
+	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
+	if (tmp & 0x80000000)
+		i = 1;
+	while (sh-- > 0) {
+		if (tmp & 1)
+			j ++;
+		tmp >>= 1;
+		if (tmp & 0x40000000)
+			tmp |= 0x80000000;
+	}
+	if (i && j>0)
+		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
+	reg(ic->arg[2]) = (int64_t)(int32_t)tmp;
+}
 DOT2(sraw)
 X(srw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    >> (reg(ic->arg[1]) & 31); }
@@ -1490,7 +1495,7 @@ X(xor_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]);
  *  arg[1] = pointer to destination register rt
  */
 X(neg) {	reg(ic->arg[1]) = -reg(ic->arg[0]); }
-X(neg_dot) {	instr(neg)(cpu,ic); update_cr0(cpu, reg(ic->arg[1])); }
+DOT1(neg)
 
 
 /*
@@ -1632,8 +1637,11 @@ X(addze_dot) { instr(addze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
  *  arg[1] = pointer to source register rb
  *  arg[2] = pointer to destination register rt
  */
-X(subf) {	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]); }
-X(subf_dot) {	instr(subf)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+X(subf)
+{
+	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]);
+}
+DOT2(subf)
 X(subfc)
 {
 	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
@@ -1641,7 +1649,7 @@ X(subfc)
 		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]);
 }
-X(subfc_dot) {	instr(subfc)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(subfc)
 X(subfe)
 {
 	int old_ca = (cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA)? 1 : 0;
@@ -1659,22 +1667,20 @@ X(subfe)
 
 	reg(ic->arg[2]) = reg(ic->arg[1]) - reg(ic->arg[0]) - (old_ca? 0 : 1);
 }
-X(subfe_dot) {	instr(subfe)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(subfe)
 X(subfme)
 {
 	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
 	uint64_t tmp = (uint32_t)(~reg(ic->arg[0]));
-	uint64_t tmp2 = tmp;
-	uint64_t tmpm1 = 0xffffffffULL;
-	tmp += tmpm1;
+	tmp += 0xffffffffULL;
 	cpu->cd.ppc.spr[SPR_XER] &= ~PPC_XER_CA;
 	if (old_ca)
 		tmp ++;
-	if ((tmp >> 32) != (tmp2 >> 32))
+	if ((tmp >> 32) != 0)
 		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
-X(subfme_dot) {	instr(subfme)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(subfme)
 X(subfze)
 {
 	int old_ca = cpu->cd.ppc.spr[SPR_XER] & PPC_XER_CA;
@@ -1687,7 +1693,7 @@ X(subfze)
 		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
-X(subfze_dot) {	instr(subfze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(subfze)
 
 
 /*
@@ -1918,7 +1924,7 @@ X(to_be_translated)
 		else
 			ic->f = instr(addic_dot);
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
-		ic->arg[1] = (ssize_t)imm;
+		ic->arg[1] = imm;
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);
 		break;
 
@@ -2068,14 +2074,11 @@ X(to_be_translated)
 		ic->arg[1] = (addr & 0xfff) + 4;
 		if (cpu->machine->userland_emul != NULL)
 			ic->f = instr(user_syscall);
-		else {
+		else if (iword == 0x44ee0002) {
 			/*  Special case/magic hack for OpenFirmware emul:  */
-			if (iword == 0x44ee0002) {
-				ic->f = instr(openfirmware);
-				break;
-			}
+			ic->f = instr(openfirmware);
+		} else
 			ic->f = instr(sc);
-		}
 		break;
 
 	case PPC_HI6_B:
@@ -2403,18 +2406,13 @@ X(to_be_translated)
 				ic->f = instr(srawi);
 			break;
 
-		case PPC_31_TLBSYNC:
+		case PPC_31_SYNC:
+		case PPC_31_EIEIO:
 		case PPC_31_DCBST:
 		case PPC_31_DCBTST:
 		case PPC_31_DCBF:
 		case PPC_31_DCBT:
 		case PPC_31_ICBI:
-			/*  TODO  */
-			ic->f = instr(tlbie);
-			break;
-
-		case PPC_31_SYNC:
-		case PPC_31_EIEIO:
 			ic->f = instr(nop);
 			break;
 
@@ -2432,6 +2430,7 @@ X(to_be_translated)
 
 		case PPC_31_TLBIA:
 		case PPC_31_TLBIE:
+		case PPC_31_TLBSYNC:
 			/*  TODO: These are bogus.  */
 			ic->f = instr(tlbie);
 			break;
@@ -2541,9 +2540,9 @@ X(to_be_translated)
 			case PPC_31_LHZUX: size=1; load=update = 1; break;
 			case PPC_31_LWZX:  size=2; load=1; break;
 			case PPC_31_LWZUX: size=2; load=update = 1; break;
-			case PPC_31_LHBRX: size=2; load=1; byterev=1;
+			case PPC_31_LHBRX: size=1; load=1; byterev=1;
 					   ic->f = instr(lhbrx); break;
-			case PPC_31_LWBRX: size = 4; load = 1; byterev=1;
+			case PPC_31_LWBRX: size =2; load = 1; byterev=1;
 					   ic->f = instr(lwbrx); break;
 			case PPC_31_STBX:  break;
 			case PPC_31_STBUX: update = 1; break;
@@ -2553,9 +2552,9 @@ X(to_be_translated)
 			case PPC_31_STWUX: size = 2; update = 1; break;
 			case PPC_31_STDX:  size = 3; break;
 			case PPC_31_STDUX: size = 3; update = 1; break;
-			case PPC_31_STHBRX:size = 2; byterev = 1;
+			case PPC_31_STHBRX:size = 1; byterev = 1;
 					   ic->f = instr(sthbrx); break;
-			case PPC_31_STWBRX:size = 4; byterev = 1;
+			case PPC_31_STWBRX:size = 2; byterev = 1;
 					   ic->f = instr(stwbrx); break;
 			}
 			if (!byterev) {

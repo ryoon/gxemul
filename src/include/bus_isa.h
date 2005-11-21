@@ -1,5 +1,5 @@
-#ifndef	DEVICE_H
-#define	DEVICE_H
+#ifndef	BUS_ISA_H
+#define	BUS_ISA_H
 
 /*
  *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
@@ -28,58 +28,25 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.13 2005-11-21 09:17:28 debug Exp $
+ *  $Id: bus_isa.h,v 1.1 2005-11-21 09:17:27 debug Exp $
  *
- *  Device registry.  (See device.c for more info.)
+ *  ISA bus.
  */
 
 #include "misc.h"
-#include "bus_pci.h"
 
-struct machine;
+void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
+	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase,
+	int reassert_irq);
 
-struct devinit {
-	struct machine	*machine;
-	char		*name;		/*  e.g. "cons"  */
-	char		*name2;		/*  e.g. "secondary serial port"  */
+/*  ISA bus flags:  */
+#define	BUS_ISA_IDE0			1
+#define	BUS_ISA_IDE1			2
+#define	BUS_ISA_FDC			4
+#define	BUS_ISA_VGA			8
+#define	BUS_ISA_VGA_FORCE		16
+#define	BUS_ISA_PCKBC_FORCE_USE		32
+#define	BUS_ISA_PCKBC_NONPCSTYLE	64
+#define	BUS_ISA_NO_SECOND_PIC		128
 
-	uint64_t	addr;		/*  Device base address  */
-	uint64_t	addr2;		/*  Secondary address (optional)  */
-	uint64_t	len;
-	int		irq_nr;
-	int		in_use;
-	int		addr_mult;
-
-	void		*return_ptr;
-};
-
-struct device_entry {
-	char		*name;
-	int		(*initf)(struct devinit *);
-};
-
-struct pci_entry {
-	char		*name;
-	void		(*initf)(struct machine *, struct memory *,
-			    struct pci_device *);
-};
-
-/*  autodev.c: (built automatically in the devices/ directory):  */
-void autodev_init(void);
-
-/*  device.c:  */
-int device_register(char *name, int (*initf)(struct devinit *));
-struct device_entry *device_lookup(char *name);
-int device_unregister(char *name);
-void *device_add(struct machine *machine, char *name_and_params);
-void device_dumplist(void);
-void device_set_exit_on_error(int exit_on_error);
-void device_init(void);
-
-/*  PCI stuff:  (TODO: move somewhere else?)  */
-int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
-	struct pci_device *));
-void (*pci_lookup_initf(char *name))(struct machine *machine,
-	struct memory *mem, struct pci_device *pd);
-
-#endif	/*  DEVICE_H  */
+#endif	/*  BUS_ISA_H  */

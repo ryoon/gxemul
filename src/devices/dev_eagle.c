@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.2 2005-11-19 21:01:02 debug Exp $
+ *  $Id: dev_eagle.c,v 1.3 2005-11-21 09:17:26 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  *
@@ -53,7 +53,7 @@ struct eagle_data {
 /*
  *  dev_eagle_access():
  *
- *  Passes accesses to port 0xcf8 and 0xcfc onto bus_pci.
+ *  Passes accesses to ISA ports 0xcf8 and 0xcfc onto bus_pci_access().
  */
 int dev_eagle_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -88,7 +88,10 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	int isa_irqbase, int pciirq)
 {
 	struct eagle_data *d;
-	uint64_t portbase = 0, membase = 0;
+	int pci_irqbase = 0;	/*  TODO  */
+	uint64_t pci_io_offset, pci_mem_offset;
+	uint64_t isa_portbase = 0, isa_membase = 0;
+	uint64_t pci_portbase = 0, pci_membase = 0;
 
 	d = malloc(sizeof(struct eagle_data));
 	if (d == NULL) {
@@ -98,24 +101,23 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct eagle_data));
 	d->pciirq = pciirq;
 
-	switch (machine->machine_type) {
-	case MACHINE_BEBOX:
-		portbase = 0x80000000ULL;
-		membase = 0xc0000000ULL;
-		break;
-	case MACHINE_PREP:
-		portbase = 0x80000000ULL;
-		membase = 0xc0000000ULL;	/*  TODO  */
-		break;
-	default:fatal("dev_eagle_init(): unimplemented machine type\n");
-		exit(1);
-	}
+	pci_io_offset  = 0x80000000ULL;
+	pci_mem_offset = 0xc0000000ULL;
+	pci_portbase   = 0x00000000ULL;
+	pci_membase    = 0x00000000ULL;
+	isa_portbase   = 0x80000000ULL;
+	isa_membase    = 0xc0000000ULL;
 
-	d->pci_data = bus_pci_init(pciirq, portbase, membase, isa_irqbase);
+	d->pci_data = bus_pci_init(pciirq,
+	    pci_io_offset, pci_mem_offset,
+	    pci_portbase, pci_membase, pci_irqbase,
+	    isa_portbase, isa_membase, isa_irqbase);
 
+	/*  Add the PCI glue for the controller itself:  */
 	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0, "eagle");
 
-	memory_device_register(mem, "eagle", portbase + BUS_PCI_ADDR,
+	/*  ADDR and DATA configuration ports in ISA space:  */
+	memory_device_register(mem, "eagle", isa_portbase + BUS_PCI_ADDR,
 	    8, dev_eagle_access, d, DM_DEFAULT, NULL);
 
 	switch (machine->machine_type) {
@@ -123,7 +125,7 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "i82378zb");
 		break;
 	case MACHINE_PREP:
-		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "ibmisa");
+		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "ibm_isa");
 		break;
 	}
 

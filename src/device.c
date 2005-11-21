@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.18 2005-11-09 06:35:44 debug Exp $
+ *  $Id: device.c,v 1.19 2005-11-21 09:17:25 debug Exp $
  *
  *  Device registry framework.
  */
@@ -321,6 +321,8 @@ void *device_add(struct machine *machine, char *name_and_params)
 
 		if (strncmp(s2, "addr=", 5) == 0) {
 			devinit.addr = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "addr2=", 6) == 0) {
+			devinit.addr2 = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "len=", 4) == 0) {
 			devinit.len = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "addr_mult=", 10) == 0) {

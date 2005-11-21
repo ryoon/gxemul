@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.33 2005-11-19 21:01:02 debug Exp $
+ *  $Id: bus_pci.c,v 1.34 2005-11-21 09:17:26 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -37,13 +37,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define BUS_PCI_C
+
+#include "bus_pci.h"
 #include "device.h"
 #include "devices.h"
+#include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
-#include "bus_pci.h"
+extern int verbose;
 
 
 /*  #define debug fatal  */
@@ -267,13 +271,76 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 
 
 /*
+ *  allocate_device_space():
+ *
+ *  Used by glue code (see below) to allocate space for a PCI device.
+ *
+ *  The returned values in portp and memp are the actual (emulated) addresses
+ *  that the device should use. (Normally only one of these is actually used.)
+ */
+static void allocate_device_space(struct pci_device *pd,
+	uint64_t portsize, uint64_t memsize,
+	uint64_t *portp, uint64_t *memp)
+{
+	uint64_t port, mem;
+
+	/*  Calculate an aligned starting port:  */
+	port = pd->pcibus->cur_pci_portbase;
+	if (portsize != 0) {
+		port = ((port - 1) | (portsize - 1)) + 1;
+		pd->pcibus->cur_pci_portbase = port;
+		PCI_SET_DATA(PCI_MAPREG_START, port | PCI_MAPREG_TYPE_IO);
+		PCI_SET_DATA_SIZE(PCI_MAPREG_START, portsize - 1);
+	}
+
+	/*  Calculate an aligned starting memory location:  */
+	mem = pd->pcibus->cur_pci_membase;
+	if (memsize != 0) {
+		mem = ((mem - 1) | (memsize - 1)) + 1;
+		pd->pcibus->cur_pci_membase = mem;
+		PCI_SET_DATA(PCI_MAPREG_START + 0x04, mem);
+		PCI_SET_DATA_SIZE(PCI_MAPREG_START + 0x04, memsize - 1);
+	}
+
+	*portp = port + pd->pcibus->pci_actual_io_offset;
+	*memp  = mem  + pd->pcibus->pci_actual_mem_offset;
+
+	if (verbose >= 2) {
+		debug("pci device '%s' at", pd->name);
+		if (portsize != 0)
+			debug(" port 0x%llx-0x%llx", (long long)pd->pcibus->
+			    cur_pci_portbase, (long long)(pd->pcibus->
+			    cur_pci_portbase + portsize - 1));
+		if (memsize != 0)
+			debug(" mem 0x%llx-0x%llx", (long long)pd->pcibus->
+			    cur_pci_membase, (long long)(pd->pcibus->
+			    cur_pci_membase + memsize - 1));
+		debug("\n");
+	}
+
+	pd->pcibus->cur_pci_portbase += portsize;
+	pd->pcibus->cur_pci_membase += memsize;
+}
+
+
+/*
  *  bus_pci_init():
  *
  *  This doesn't register a device, but instead returns a pointer to a struct
  *  which should be passed to bus_pci_access() when accessing the PCI bus.
+ *
+ *  irq_nr is the (optional) IRQ nr that this PCI bus interrupts at.
+ *
+ *  pci_portbase, pci_membase, and pci_irqbase are the port, memory, and
+ *  interrupt bases for PCI devices.
+ *
+ *  isa_portbase, isa_membase, and isa_irqbase are the port, memory, and
+ *  interrupt bases for legacy ISA devices.
  */
-struct pci_data *bus_pci_init(int irq_nr, uint64_t portbase, uint64_t membase,
-	int irqbase)
+struct pci_data *bus_pci_init(int irq_nr,
+	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
+	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
+	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase)
 {
 	struct pci_data *d;
 
@@ -283,10 +350,19 @@ struct pci_data *bus_pci_init(int irq_nr, uint64_t portbase, uint64_t membase,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pci_data));
-	d->irq_nr   = irq_nr;
-	d->portbase = portbase;
-	d->membase  = membase;
-	d->irqbase  = irqbase;
+	d->irq_nr                = irq_nr;
+	d->pci_actual_io_offset  = pci_actual_io_offset;
+	d->pci_actual_mem_offset = pci_actual_mem_offset;
+	d->pci_portbase          = pci_portbase;
+	d->pci_membase           = pci_membase;
+	d->pci_irqbase           = pci_irqbase;
+	d->isa_portbase          = isa_portbase;
+	d->isa_membase           = isa_membase;
+	d->isa_irqbase           = isa_irqbase;
+
+	/*  Assume that the first 64KB could be used by legacy ISA devices:  */
+	d->cur_pci_portbase = d->pci_portbase + 0x10000;
+	d->cur_pci_membase  = d->pci_membase + 0x10000;
 
 	return d;
 }
@@ -295,7 +371,7 @@ struct pci_data *bus_pci_init(int irq_nr, uint64_t portbase, uint64_t membase,
 
 /******************************************************************************
  *
- *  The following is glue code for PCI controllers and devices. The glue
+ *  The following is glue code for PCI controllers and devices. The glue code
  *  does the minimal stuff necessary to get an emulated OS to detect the
  *  device (i.e. set up PCI configuration registers), and then if necessary
  *  add a "normal" device.
@@ -348,8 +424,8 @@ PCIINIT(s3_virge)
 	    PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
 	    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x01);
 
-	dev_vga_init(machine, mem, pd->pcibus->membase + 0xa0000,
-	    pd->pcibus->portbase + 0x3c0, machine->machine_name);
+	dev_vga_init(machine, mem, pd->pcibus->isa_membase + 0xa0000,
+	    pd->pcibus->isa_portbase + 0x3c0, machine->machine_name);
 }
 
 
@@ -389,10 +465,13 @@ PCIINIT(ali_m5229)
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x60) + 0xc1);
 
-	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-	    (long long)(pd->pcibus->portbase + 0x1f0),
-	    pd->pcibus->irqbase + 14);
-	device_add(machine, tmpstr);
+	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->isa_irqbase + 14);
+		device_add(machine, tmpstr);
+	}
 
 	/*  The secondary channel is disabled. TODO: fix this.  */
 }
@@ -545,15 +624,21 @@ PCIINIT(i82371ab_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
-	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-	    (long long)(pd->pcibus->portbase + 0x1f0),
-	    pd->pcibus->irqbase + 14);
-	device_add(machine, tmpstr);
+	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->isa_irqbase + 14);
+		device_add(machine, tmpstr);
+	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-	    (long long)(pd->pcibus->portbase + 0x170),
-	    pd->pcibus->irqbase + 15);
-	device_add(machine, tmpstr);
+	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->isa_irqbase + 15);
+		device_add(machine, tmpstr);
+	}
 }
 
 
@@ -565,7 +650,7 @@ PCIINIT(i82371ab_ide)
 #define	PCI_VENDOR_IBM			0x1014
 #define	PCI_PRODUCT_IBM_ISABRIDGE	0x000a
 
-PCIINIT(ibmisa)
+PCIINIT(ibm_isa)
 {
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_IBM,
 	    PCI_PRODUCT_IBM_ISABRIDGE));
@@ -642,15 +727,21 @@ PCIINIT(vt82c586_ide)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-	    (long long)(pd->pcibus->portbase + 0x1f0),
-	    pd->pcibus->irqbase + 14);
-	device_add(machine, tmpstr);
+	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->isa_irqbase + 14);
+		device_add(machine, tmpstr);
+	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-	    (long long)(pd->pcibus->portbase + 0x170),
-	    pd->pcibus->irqbase + 15);
-	device_add(machine, tmpstr);
+	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->isa_irqbase + 15);
+		device_add(machine, tmpstr);
+	}
 }
 
 
@@ -691,15 +782,21 @@ PCIINIT(symphony_82c105)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
-	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-	    (long long)(pd->pcibus->portbase + 0x1f0),
-	    pd->pcibus->irqbase + 14);
-	device_add(machine, tmpstr);
+	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->isa_irqbase + 14);
+		device_add(machine, tmpstr);
+	}
 
-	snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-	    (long long)(pd->pcibus->portbase + 0x170),
-	    pd->pcibus->irqbase + 15);
-	device_add(machine, tmpstr);
+	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->isa_irqbase + 15);
+		device_add(machine, tmpstr);
+	}
 }
 
 
@@ -713,7 +810,7 @@ PCIINIT(symphony_82c105)
 
 PCIINIT(dec21143)
 {
-	uint64_t base = 0, base2 = 0;
+	uint64_t port, memaddr;
 	int irq = 0;		/*  TODO  */
 	int int_line = 1;	/*  TODO  */
 	char tmpstr[200];
@@ -728,48 +825,21 @@ PCIINIT(dec21143)
 
 	PCI_SET_DATA(PCI_BHLC_REG, PCI_BHLC_CODE(0,0,0, 0x40,0));
 
-	/*
-	 *  Experimental:
-	 */
-
 	switch (machine->machine_type) {
 	case MACHINE_CATS:
-		base = 0x7c010000;
-		/*  Works with at least NetBSD and OpenBSD:  */
-		base2 = 0x00010000;
 		irq = 18;
 		break;
-	case MACHINE_COBALT:
-		/*  NetBSD/cobalt:  */
-		base = 0x10010000;
-		/*  TODO: IRQ  */
-		break;
-	case MACHINE_PMPPC:
-		/*  NetBSD/pmppc:  */
-		base = 0xf8010000;
-		base2 = 0xf8000000;
-		/*  TODO: IRQ  */
-		break;
 	case MACHINE_PREP:
-		/*  NetBSD/prep:  */
-		base = 0xc0010000;
-		base2 = 0x00000000;
 		int_line = 0xa;
 		break;
-	default:fatal("!\n! dec21143 in non-implemented machine type %i\n!\n",
-		    machine->machine_type);
 	}
 
 	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140100 | int_line);
 
-	PCI_SET_DATA(PCI_MAPREG_START,        base2 + 1);
-	PCI_SET_DATA(PCI_MAPREG_START + 0x04, base2 + 0x10000);
+	allocate_device_space(pd, 0x100, 0x100, &port, &memaddr);
 
-	PCI_SET_DATA_SIZE(PCI_MAPREG_START,        0x100 - 1);
-	PCI_SET_DATA_SIZE(PCI_MAPREG_START + 0x04, 0x100 - 1);
-
-	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx irq=%i",
-	    (long long)base, irq);
+	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx addr2=0x%llx "
+	    "irq=%i", (long long)port, (long long)memaddr, irq);
 	device_add(machine, tmpstr);
 }
 
@@ -808,6 +878,8 @@ PCIINIT(dec21030)
 
 	/*
 	 *  Experimental:
+	 *
+	 *  TODO: Clean up.
 	 */
 
 	switch (machine->machine_type) {

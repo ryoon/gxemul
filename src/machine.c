@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.602 2005-11-19 21:00:59 debug Exp $
+ *  $Id: machine.c,v 1.603 2005-11-21 09:17:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -51,6 +51,7 @@
 #include <unistd.h>
 
 #include "arcbios.h"
+#include "bus_isa.h"
 #include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
@@ -1485,6 +1486,18 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 			cpu_interrupt(m->cpus[1], 65);
 		else
 			cpu_interrupt_ack(m->cpus[1], 65);
+		break;
+	case MACHINE_PREP:
+		if (irq_nr < 32) {
+			if (assrt)
+				m->md_int.prep_data->int_status |= mask;
+			else
+				m->md_int.prep_data->int_status &= ~mask;
+		}
+		if (m->md_int.prep_data->int_status)
+			cpu_interrupt(m->cpus[0], 65);
+		else
+			cpu_interrupt_ack(m->cpus[0], 65);
 		break;
 	}
 }
@@ -4228,10 +4241,15 @@ Not yet.
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
 
+		machine->md_int.bebox_data = device_add(machine, "prep");
+		machine->isa_pic_data.native_irq = 0;
+		machine->md_interrupt = isa32_interrupt;
+
 		pci_data = dev_eagle_init(machine, mem,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
-		bus_isa(machine, BUS_ISA_IDE0, 0x80000000, 0xc0000000, 32, 64);
+		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
+		    0x80000000, 0xc0000000, 32, 64);
 
 		bus_pci_add(machine, pci_data, mem, 0, 13, 0, "dec21143");
 
@@ -4269,7 +4287,8 @@ Not yet.
 			    cpu->cd.ppc.gpr[6] + 0x100);
 
 			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100, 0x200);  /*  TODO: residual  */
-			store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM PPS Model 7248 (E)");
+			/*  store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM PPS Model 7248 (E)");  */
+			store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM PPS Model 6050/6070 (E)");
 
 			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100+0x1f8, machine->physical_ram_in_mb * 1048576);  /*  memsize  */
 		}

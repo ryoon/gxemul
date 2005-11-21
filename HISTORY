@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1040 2005-11-20 11:28:43 debug Exp $
+$Id: HISTORY,v 1.1041 2005-11-21 09:17:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2440,3 +2440,4 @@ Changelog for GXemul:
 		Various PPC updates; continuing on the PReP emulation mode.
 20051120	Adding a workaround/hack to dev_mc146818 to allow NetBSD/prep
 		to detect the clock.
+20051121	More cleanup of the PCI bus (memory and I/O bases, etc).

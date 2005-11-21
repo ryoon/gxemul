@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.21 2005-11-12 23:41:40 debug Exp $
+ *  $Id: bus_pci.h,v 1.22 2005-11-21 09:17:28 debug Exp $
  */
 
 #include "misc.h"
@@ -39,24 +39,45 @@ struct memory;
 
 struct pci_device;
 
+#ifndef BUS_PCI_C
+struct pci_data;
+#else
+
 struct pci_data {
 	/*  IRQ nr of the controller itself.  */
 	int		irq_nr;
 
-	/*  Default I/O port, memory, and irq bases:  */
-	uint64_t	portbase;
-	uint64_t	membase;
-	int		irqbase;
+	/*
+	 *  Default I/O port, memory, and irq bases for PCI and legacy ISA
+	 *  devices, and the base address for actual (emulated) devices:
+	 *
+	 *  pci_portbase etc are what is stored in the device configuration
+	 *  registers. This address + pci_actual_{io,mem}_offset is where the
+	 *  emulated device should be registered.
+	 */
+	uint64_t	pci_actual_io_offset;
+	uint64_t	pci_actual_mem_offset;
 
-	/*  Current addr/data access:  */
+	uint64_t	pci_portbase;
+	uint64_t	pci_membase;
+	int		pci_irqbase;
+
+	uint64_t	isa_portbase;
+	uint64_t	isa_membase;
+	int		isa_irqbase;
+
+	/*  Current base when allocating space for PCI devices:  */
+	uint64_t	cur_pci_portbase;
+	uint64_t	cur_pci_membase;
+
+	/*  Current (indirect) addr/data access:  */
 	uint32_t	pci_addr;
 	int		last_was_write_ffffffff;
 
 	struct pci_device *first_device;
 };
 
-
-#define	PCI_CFG_MEM_SIZE	0x80		/*  TODO  */
+#define	PCI_CFG_MEM_SIZE	0x100
 
 struct pci_device {
 	struct pci_device	*next;
@@ -66,19 +87,6 @@ struct pci_device {
 	unsigned char		cfg_mem[PCI_CFG_MEM_SIZE];
 	unsigned char		cfg_mem_size[PCI_CFG_MEM_SIZE];
 };
-
-#define	BUS_PCI_ADDR	0xcf8
-#define	BUS_PCI_DATA	0xcfc
-
-
-/*  bus_pci.c:  */
-int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	uint64_t *data, int len, int writeflag, struct pci_data *pci_data);
-void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
-	struct memory *mem, int bus, int device, int function, char *name);
-struct pci_data *bus_pci_init(int irq_nr, uint64_t portbase, uint64_t membase,
-	int irqbase);
-
 
 #define	PCIINIT(name)	void pciinit_ ## name(struct machine *machine,	\
 	struct memory *mem, struct pci_device *pd)
@@ -107,6 +115,22 @@ struct pci_data *bus_pci_init(int irq_nr, uint64_t portbase, uint64_t membase,
 	pd->cfg_mem_size[(ofs) + 2] = ((value) >> 16) & 255;		\
 	pd->cfg_mem_size[(ofs) + 3] = ((value) >> 24) & 255;		\
 	}
+
+#endif
+
+#define	BUS_PCI_ADDR	0xcf8
+#define	BUS_PCI_DATA	0xcfc
+
+
+/*  bus_pci.c:  */
+int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	uint64_t *data, int len, int writeflag, struct pci_data *pci_data);
+void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
+	struct memory *mem, int bus, int device, int function, char *name);
+struct pci_data *bus_pci_init(int irq_nr,
+	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
+	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
+	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase);
 
 
 #endif	/*  BUS_PCI_H  */

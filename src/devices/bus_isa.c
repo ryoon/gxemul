@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.3 2005-11-17 22:01:57 debug Exp $
+ *  $Id: bus_isa.c,v 1.4 2005-11-21 09:17:26 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_isa.h"
 #include "device.h"
 #include "devices.h"
 #include "diskimage.h"

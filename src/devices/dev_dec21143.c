@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.10 2005-11-17 13:53:42 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.11 2005-11-21 09:17:26 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -525,16 +525,11 @@ int devinit_dec21143(struct devinit *devinit)
 	    dev_dec21143_tick, d, DEC21143_TICK_SHIFT);
 
 	/*
-	 *  TODO: don't hardcode this! NetBSD/cats uses mem accesses at
-	 *  0x80020000, OpenBSD/cats uses i/o at 0x7c010000.
+	 *  NetBSD/cats uses memory accesses, OpenBSD/cats uses I/O registers.
+	 *  Let's make a mirror from the memory range to the I/O range:
 	 */
-	switch (devinit->machine->machine_type) {
-	case MACHINE_CATS:
-		dev_ram_init(devinit->machine, devinit->addr + 0x04010000,
-		    0x100, DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES,
-		    devinit->addr);
-		break;
-	}
+	dev_ram_init(devinit->machine, devinit->addr2, 0x100, DEV_RAM_MIRROR
+	    | DEV_RAM_MIGHT_POINT_TO_DEVICES, devinit->addr);
 
 	return 1;
 }

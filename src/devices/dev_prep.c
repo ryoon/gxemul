@@ -1,6 +1,3 @@
-#ifndef	DEVICE_H
-#define	DEVICE_H
-
 /*
  *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
  *
@@ -26,60 +23,69 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
+ *   
  *
+ *  $Id: dev_prep.c,v 1.1 2005-11-21 09:17:26 debug Exp $
  *
- *  $Id: device.h,v 1.13 2005-11-21 09:17:28 debug Exp $
- *
- *  Device registry.  (See device.c for more info.)
+ *  PReP interrupt controller.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "cpu.h"
+#include "device.h"
+#include "devices.h"
+#include "machine.h"
+#include "memory.h"
 #include "misc.h"
-#include "bus_pci.h"
 
-struct machine;
 
-struct devinit {
-	struct machine	*machine;
-	char		*name;		/*  e.g. "cons"  */
-	char		*name2;		/*  e.g. "secondary serial port"  */
+/*
+ *  dev_prep_access():
+ */
+int dev_prep_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
+	void *extra)
+{
+	/*  struct prep_data *d = extra;  */
+	uint64_t idata = 0, odata = 0;
 
-	uint64_t	addr;		/*  Device base address  */
-	uint64_t	addr2;		/*  Secondary address (optional)  */
-	uint64_t	len;
-	int		irq_nr;
-	int		in_use;
-	int		addr_mult;
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
 
-	void		*return_ptr;
-};
+	if (writeflag == MEM_READ)
+		odata = cpu->machine->isa_pic_data.last_int;
+	else
+		fatal("[ prep: write to interrupt register? ]\n");
 
-struct device_entry {
-	char		*name;
-	int		(*initf)(struct devinit *);
-};
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
-struct pci_entry {
-	char		*name;
-	void		(*initf)(struct machine *, struct memory *,
-			    struct pci_device *);
-};
+	return 1;
+}
 
-/*  autodev.c: (built automatically in the devices/ directory):  */
-void autodev_init(void);
 
-/*  device.c:  */
-int device_register(char *name, int (*initf)(struct devinit *));
-struct device_entry *device_lookup(char *name);
-int device_unregister(char *name);
-void *device_add(struct machine *machine, char *name_and_params);
-void device_dumplist(void);
-void device_set_exit_on_error(int exit_on_error);
-void device_init(void);
+/*
+ *  devinit_prep():
+ */
+int devinit_prep(struct devinit *devinit)
+{
+	struct prep_data *d;
 
-/*  PCI stuff:  (TODO: move somewhere else?)  */
-int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
-	struct pci_device *));
-void (*pci_lookup_initf(char *name))(struct machine *machine,
-	struct memory *mem, struct pci_device *pd);
+	d = malloc(sizeof(struct prep_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct prep_data));
 
-#endif	/*  DEVICE_H  */
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    0xbffffff0, 1, dev_prep_access, d, DM_DEFAULT, NULL);
+
+	devinit->return_ptr = d;
+
+	return 1;
+}
+

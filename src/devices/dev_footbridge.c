@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.35 2005-11-14 23:51:57 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.36 2005-11-21 09:17:26 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -437,8 +437,16 @@ int devinit_footbridge(struct devinit *devinit)
 	d->console_handle = console_start_slave(devinit->machine, "fcom");
 
 	/*  A PCI bus:  */
-	d->pcibus = bus_pci_init(devinit->irq_nr,
-	    0x7c000000ULL, 0x80000000ULL, 32);
+	d->pcibus = bus_pci_init(
+	    devinit->irq_nr,	/*  PCI controller irq  */
+	    0x7c000000,		/*  PCI device io offset  */
+	    0x80000000,		/*  PCI device mem offset  */
+	    0x00000000,		/*  PCI port base  */
+	    0x00000000,		/*  PCI mem base  */
+	    0,			/*  PCI irq base: TODO  */
+	    0x7c000000,		/*  ISA port base  */
+	    0x80000000,		/*  ISA mem base  */
+	    32);		/*  ISA port base  */
 
 	/*  ... with some default devices for known machine types:  */
 	switch (devinit->machine->machine_type) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.1 2005-11-17 13:53:42 debug Exp $
+ *  $Id: dev_cpc700.c,v 1.2 2005-11-21 09:17:26 debug Exp $
  *  
  *  IBM CPC700 PCI controller.
  *
@@ -52,7 +52,7 @@ struct cpc700_data {
 /*
  *  dev_cpc700_access():
  *
- *  Passes accesses to port 0xcf8 and 0xcfc onto bus_pci.
+ *  Passes PCI indirect addr and data accesses onto bus_pci_access().
  */
 int dev_cpc700_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -95,9 +95,16 @@ struct pci_data *dev_cpc700_init(struct machine *machine, struct memory *mem)
 	}
 	memset(d, 0, sizeof(struct cpc700_data));
 
-	d->pci_data = bus_pci_init(0 /*  pciirq: TODO */,
-	    0 /* portbase: TODO */,  0 /* membase: TODO  */,
-	    0 /* irqbase: TODO  */);
+	d->pci_data = bus_pci_init(
+	    0		/*  pciirq: TODO  */,
+	    0,		/*  pci device io offset  */
+	    0,		/*  pci device mem offset  */
+	    0xf8000000	/*  PCI portbase  */,
+	    0		/*  PCI membase: TODO  */,
+	    0		/*  PCI irqbase: TODO  */,
+	    0		/*  ISA portbase: TODO  */,
+	    0		/*  ISA membase: TODO  */,
+	    0		/*  ISA irqbase: TODO  */);
 
 	switch (machine->machine_type) {
 	case MACHINE_PMPPC:

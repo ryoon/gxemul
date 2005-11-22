@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.19 2005-11-21 09:17:25 debug Exp $
+ *  $Id: device.c,v 1.20 2005-11-22 16:26:35 debug Exp $
  *
  *  Device registry framework.
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "device.h"
+#include "memory.h"
 #include "misc.h"
 
 
@@ -327,6 +328,16 @@ void *device_add(struct machine *machine, char *name_and_params)
 			devinit.len = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "addr_mult=", 10) == 0) {
 			devinit.addr_mult = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "pci_little_endian=", 18) == 0) {
+			devinit.pci_little_endian = mystrtoull(s3, NULL, 0);
+			switch (devinit.pci_little_endian) {
+			case 0:	break;
+			case 1:	devinit.pci_little_endian =
+				    MEM_PCI_LITTLE_ENDIAN;
+				break;
+			default:fatal("Bad pci_little_endian value.\n");
+				exit(1);
+			}
 		} else if (strncmp(s2, "irq=", 4) == 0) {
 			devinit.irq_nr = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "in_use=", 7) == 0) {

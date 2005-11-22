@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.4 2005-11-22 02:54:38 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.5 2005-11-22 16:26:37 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -99,18 +99,19 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #else  /* !LS_BYTEREVERSE  */
 #ifndef LS_ZERO
 	    (int32_t)
+#else
+	    (uint32_t)
 #endif
 	    ((data[0] << 24) + (data[1] << 16) +
 	    (data[2] << 8) + data[3]);
 #endif /* !LS_BYTEREVERSE */
 #endif
 #ifdef LS_D
-	reg(ic->arg[0]) =
-	    ((uint64_t)data[0] << 56) +
-	    ((uint64_t)data[1] << 48) +
-	    ((uint64_t)data[2] << 40) +
-	    ((uint64_t)data[3] << 32) +
-	    (data[4] << 24) + (data[5] << 16) + (data[6] << 8) + data[7];
+	(*(uint64_t *)(ic->arg[0])) =
+	    ((uint64_t)data[0] << 56) + ((uint64_t)data[1] << 48) +
+	    ((uint64_t)data[2] << 40) + ((uint64_t)data[3] << 32) +
+	    ((uint64_t)data[4] << 24) + (data[5] << 16) +
+	    (data[6] << 8) + data[7];
 #endif
 
 #else	/*  store:  */
@@ -141,14 +142,15 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif /* !LS_BYTEREVERSE */
 #endif
 #ifdef LS_D
-	data[0] = (uint64_t)reg(ic->arg[0]) >> 56;
-	data[1] = (uint64_t)reg(ic->arg[0]) >> 48;
-	data[2] = (uint64_t)reg(ic->arg[0]) >> 40;
-	data[3] = (uint64_t)reg(ic->arg[0]) >> 32;
-	data[4] = reg(ic->arg[0]) >> 24;
-	data[5] = reg(ic->arg[0]) >> 16;
-	data[6] = reg(ic->arg[0]) >> 8;
-	data[7] = reg(ic->arg[0]);
+	{ uint64_t x = *(uint64_t *)(ic->arg[0]);
+	data[0] = x >> 56;
+	data[1] = x >> 48;
+	data[2] = x >> 40;
+	data[3] = x >> 32;
+	data[4] = x >> 24;
+	data[5] = x >> 16;
+	data[6] = x >> 8;
+	data[7] = x; }
 #endif
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, sizeof(data),
 	    MEM_WRITE, CACHE_DATA)) {
@@ -231,18 +233,20 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #else  /*  !LS_BYTEREVERSE  */
 #ifndef LS_ZERO
 		    (int32_t)
+#else
+		    (uint32_t)
 #endif
 		    ((page[addr] << 24) + (page[addr+1] << 16) +
 		    (page[addr+2] << 8) + page[addr+3]);
 #endif  /*  !LS_BYTEREVERSE  */
 #endif	/*  LS_W  */
 #ifdef LS_D
-		reg(ic->arg[0]) =
+		(*(uint64_t *)(ic->arg[0])) =
 		    ((uint64_t)page[addr+0] << 56) +
 		    ((uint64_t)page[addr+1] << 48) +
 		    ((uint64_t)page[addr+2] << 40) +
 		    ((uint64_t)page[addr+3] << 32) +
-		    (page[addr+4] << 24) + (page[addr+5] << 16) +
+		    ((uint64_t)page[addr+4] << 24) + (page[addr+5] << 16) +
 		    (page[addr+6] << 8) + page[addr+7];
 #endif	/*  LS_D  */
 
@@ -275,14 +279,15 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif /* !LS_BYTEREVERSE  */
 #endif
 #ifdef LS_D
-		page[addr]   = (uint64_t)reg(ic->arg[0]) >> 56;
-		page[addr+1] = (uint64_t)reg(ic->arg[0]) >> 48;
-		page[addr+2] = (uint64_t)reg(ic->arg[0]) >> 40;
-		page[addr+3] = (uint64_t)reg(ic->arg[0]) >> 32;
-		page[addr+4] = reg(ic->arg[0]) >> 24;
-		page[addr+5] = reg(ic->arg[0]) >> 16;
-		page[addr+6] = reg(ic->arg[0]) >> 8;
-		page[addr+7] = reg(ic->arg[0]);
+		{ uint64_t x = *(uint64_t *)(ic->arg[0]);
+		page[addr]   = x >> 56;
+		page[addr+1] = x >> 48;
+		page[addr+2] = x >> 40;
+		page[addr+3] = x >> 32;
+		page[addr+4] = x >> 24;
+		page[addr+5] = x >> 16;
+		page[addr+6] = x >> 8;
+		page[addr+7] = x; }
 #endif
 #endif	/*  !LS_LOAD  */
 	}

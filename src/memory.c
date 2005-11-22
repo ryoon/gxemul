@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.181 2005-11-13 00:14:06 debug Exp $
+ *  $Id: memory.c,v 1.182 2005-11-22 16:26:36 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -59,11 +59,16 @@ extern volatile int single_step;
  */
 uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 {
-	int i;
+	int i, byte_order = cpu->byte_order;
 	uint64_t x = 0;
 
+	if (len & MEM_PCI_LITTLE_ENDIAN) {
+		len &= ~MEM_PCI_LITTLE_ENDIAN;
+		byte_order = EMUL_LITTLE_ENDIAN;
+	}
+
 	/*  Switch byte order for incoming data, if necessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+	if (byte_order == EMUL_BIG_ENDIAN)
 		for (i=0; i<len; i++) {
 			x <<= 8;
 			x |= buf[i];
@@ -89,9 +94,14 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
 	uint64_t data)
 {
-	int i;
+	int i, byte_order = cpu->byte_order;
 
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+	if (len & MEM_PCI_LITTLE_ENDIAN) {
+		len &= ~MEM_PCI_LITTLE_ENDIAN;
+		byte_order = EMUL_LITTLE_ENDIAN;
+	}
+
+	if (byte_order == EMUL_LITTLE_ENDIAN)
 		for (i=0; i<len; i++) {
 			buf[i] = data & 255;
 			data >>= 8;

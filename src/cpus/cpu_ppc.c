@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.28 2005-11-22 02:54:38 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.29 2005-11-22 16:26:36 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -395,6 +395,16 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("cpu%i:  dbat%iu = 0x%08x  dbat%il = 0x%08x\n",
 			    x, i, (int)cpu->cd.ppc.spr[SPR_DBAT0U + i*2],
 			    i, (int)cpu->cd.ppc.spr[SPR_DBAT0U + i*2 + 1]);
+	}
+
+	if (coprocs & 4) {
+		for (i=0; i<16; i++) {
+			if ((i & 1) == 0)
+				debug("cpu%i:", x);
+			debug("  sr%2i = 0x%08x", i, (int)cpu->cd.ppc.sr[i]);
+			if (i & 1)
+				debug("\n");
+		}
 	}
 }
 
@@ -1144,6 +1154,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_TLBIA:
 			debug("tlbia");
 			break;
+		case PPC_31_SLBIA:
+			debug("slbia");
+			break;
 		case PPC_31_TLBLD:
 		case PPC_31_TLBLI:
 			rb = (iword >> 11) & 31;
@@ -1467,20 +1480,78 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		break;
 	case PPC_HI6_63:
 		xo = (iword >> 1) & 1023;
-		switch (xo) {
-		case PPC_63_FMR:
+		/*  NOTE: Some floating point instructions only use the
+		    lowest 5 bits of xo, some use all 10 bits!  */
+		switch (xo & 31) {
+		case PPC_63_FDIV:
+		case PPC_63_FSUB:
+		case PPC_63_FADD:
+		case PPC_63_FMUL:
+		case PPC_63_FMADD:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
+			rs = (iword >>  6) & 31;	/*  actually frc  */
 			rc = iword & 1;
-			switch (xo) {
-			case PPC_63_FMR:
-				debug("fmr%s\tf%i,f%i", rc? "." : "", rt, rb);
+			switch (xo & 31) {
+			case PPC_63_FDIV:
+				mnem = power? "fd" : "fdiv"; break;
+			case PPC_63_FSUB:
+				mnem = power? "fs" : "fsub"; break;
+			case PPC_63_FADD:
+				mnem = power? "fa" : "fadd"; break;
+			case PPC_63_FMUL:
+				mnem = power? "fm" : "fmul"; break;
+			case PPC_63_FMADD:
+				mnem = power? "fma" : "fmadd"; break;
+			}
+			debug("%s%s\t", mnem, rc? "." : "");
+			switch (xo & 31) {
+			case PPC_63_FMUL:
+				debug("f%i,f%i,f%i", rt, ra, rs);
 				break;
+			case PPC_63_FMADD:
+				debug("f%i,f%i,f%i,f%i", rt, ra, rs, rb);
+				break;
+			default:debug("f%i,f%i,f%i", rt, ra, rb);
 			}
 			break;
-		default:
-			debug("unimplemented hi6_31, xo = 0x%x", xo);
+
+		default:switch (xo) {
+			case PPC_63_FRSP:
+			case PPC_63_FCTIWZ:
+			case PPC_63_FNEG:
+			case PPC_63_FMR:
+			case PPC_63_FNABS:
+			case PPC_63_FABS:
+				rt = (iword >> 21) & 31;
+				ra = (iword >> 16) & 31;
+				rb = (iword >> 11) & 31;
+				rc = iword & 1;
+				switch (xo) {
+				case PPC_63_FCTIWZ:
+					mnem = power? "fcirz" : "fctiwz"; break;
+				case PPC_63_FRSP:	mnem = "frsp"; break;
+				case PPC_63_FNEG:	mnem = "fneg"; break;
+				case PPC_63_FMR:	mnem = "fmr"; break;
+				case PPC_63_FNABS:	mnem = "fnabs"; break;
+				case PPC_63_FABS:	mnem = "fabs"; break;
+				}
+				debug("%s%s\t", mnem, rc? "." : "");
+				switch (xo) {
+				case PPC_63_FCTIWZ:
+				case PPC_63_FRSP:
+				case PPC_63_FNEG:
+				case PPC_63_FMR:
+				case PPC_63_FNABS:
+				case PPC_63_FABS:
+					debug("f%i,f%i", rt, rb);
+					break;
+				default:debug("f%i,f%i,f%i", rt, ra, rb);
+				}
+				break;
+			default:debug("unimplemented hi6_63, xo = 0x%x", xo);
+			}
 		}
 		break;
 	default:

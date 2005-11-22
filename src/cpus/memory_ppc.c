@@ -25,13 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.18 2005-11-21 11:54:59 debug Exp $
+ *  $Id: memory_ppc.c,v 1.19 2005-11-22 16:26:37 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
 
 
 #include "ppc_bat.h"
+#include "ppc_pte.h"
 
 
 /*
@@ -97,7 +98,6 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
  *  Scan a PTE group for a cmp (compare) value.
  *
  *  Returns 1 if the value was found, and *lowp is set to the low PTE word.
- *
  *  Returns 0 if no match was found.
  */
 static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
@@ -124,6 +124,88 @@ static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
 
 
 /*
+ *  ppc_vtp32():
+ *
+ *  Virtual to physical address translation (32-bit mode).
+ *
+ *  Returns 1 if a translation was found, 0 if none was found. However, finding
+ *  a translation does not mean that it should be returned; there can be
+ *  a permission violation. *resp is set to 0 for no access, 1 for read-only
+ *  access, or 2 for read/write access.
+ */
+static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_addr,
+	int *resp, uint64_t msr, int writeflag, int instr)
+{
+	int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & 0x3f, key, match;
+	int access;
+	uint32_t vsid = cpu->cd.ppc.sr[srn] & 0x00ffffff;
+	uint64_t sdr1 = cpu->cd.ppc.spr[SPR_SDR1], htaborg;
+	uint32_t hash1, hash2, pteg_select, tmp;
+	uint32_t lower_pte = 0, cmp;
+
+	htaborg = sdr1 & 0xffff0000UL;
+
+	/*  Primary hash:  */
+	hash1 = (vsid & 0x7ffff) ^ ((vaddr >> 12) & 0xffff);
+	tmp = (hash1 >> 10) & (sdr1 & 0x1ff);
+	pteg_select = htaborg & 0xfe000000;
+	pteg_select |= ((hash1 & 0x3ff) << 6);
+	pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
+	cpu->cd.ppc.spr[SPR_HASH1] = pteg_select;
+	cmp = cpu->cd.ppc.spr[instr? SPR_ICMP : SPR_DCMP] =
+	    PTE_VALID | api | (vsid << PTE_VSID_SHFT);
+	match = get_pte_low(cpu, pteg_select, &lower_pte, cmp);
+
+	/*  Secondary hash:  */
+	hash2 = hash1 ^ 0x7ffff;
+	tmp = (hash2 >> 10) & (sdr1 & 0x1ff);
+	pteg_select = htaborg & 0xfe000000;
+	pteg_select |= ((hash2 & 0x3ff) << 6);
+	pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
+	cpu->cd.ppc.spr[SPR_HASH2] = pteg_select;
+	if (!match) {
+		cmp |= PTE_HID;
+		match = get_pte_low(cpu, pteg_select, &lower_pte, cmp);
+	}
+
+	*resp = 0;
+
+	if (!match)
+		return 0;
+
+	/*  Non-executable, or Guarded page?  */
+	if (instr && cpu->cd.ppc.sr[srn] & SR_NOEXEC)
+		return 1;
+	if (instr && lower_pte & PTE_G)
+		return 1;
+
+	access = lower_pte & PTE_PP;
+	*return_addr = (lower_pte & PTE_RPGN) | (vaddr & ~PTE_RPGN);
+
+	key = (cpu->cd.ppc.sr[srn] & SR_PRKEY && msr & PPC_MSR_PR) ||
+	    (cpu->cd.ppc.sr[srn] & SR_SUKEY && !(msr & PPC_MSR_PR));
+
+	if (key) {
+		switch (access) {
+		case 1:
+		case 3:	*resp = writeflag? 0 : 1;
+			break;
+		case 2:	*resp = 2;
+			break;
+		}
+	} else {
+		switch (access) {
+		case 3:	*resp = writeflag? 0 : 1;
+			break;
+		default:*resp = 2;
+		}
+	}
+
+	return 1;
+}
+
+
+/*
  *  ppc_translate_address():
  *
  *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
@@ -136,11 +218,9 @@ static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
 int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
-	int instr = flags & FLAG_INSTR, res = 0, match, user, access = 0;
+	int instr = flags & FLAG_INSTR, res = 0, match, user;
 	int writeflag = flags & FLAG_WRITEFLAG? 1 : 0;
-	uint64_t sdr1 = cpu->cd.ppc.spr[SPR_SDR1], htaborg, msr;
-	uint32_t hash1, hash2, pteg_select, tmp;
-	uint32_t lower_pte, cmp;
+	uint64_t msr;
 
 	reg_access_msr(cpu, &msr, 0, 0);
 	user = msr & PPC_MSR_PR? 1 : 0;
@@ -153,129 +233,49 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		return 2;
 	}
 
+	if (cpu->cd.ppc.cpu_type.flags & PPC_601) {
+		fatal("ppc_translate_address(): TODO: 601\n");
+		exit(1);
+	}
+
 	/*  Try the BATs first:  */
 	if (cpu->cd.ppc.bits == 32) {
 		res = ppc_bat(cpu, vaddr, return_addr, flags, user);
 		if (res > 0)
 			return res;
-		if (res == 0)
+		if (res == 0) {
 			fatal("[ TODO: BAT exception ]\n");
+			exit(1);
+		}
 	}
 
-	/*
-	 *  Virtual page translation 
-	 */
-	/*  fatal("{ vaddr = 0x%llx }\n", (long long)vaddr);  */
-
+	/*  Virtual to physical translation:  */
 	if (cpu->cd.ppc.bits == 32) {
-		int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & 0x3f;
-		uint32_t vsid = cpu->cd.ppc.sr[srn] & 0x00ffffff;
-
-		htaborg = sdr1 & 0xffff0000UL;
-
-		/*  Primary hash:  */
-		hash1 = (vsid & 0x7ffff) ^ ((vaddr >> 12) & 0xffff);
-		tmp = (hash1 >> 10) & (sdr1 & 0x1ff);
-		pteg_select = htaborg & 0xfe000000;
-		pteg_select |= ((hash1 & 0x3ff) << 6);
-		pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
-		cpu->cd.ppc.spr[SPR_HASH1] = pteg_select;
-		cmp = cpu->cd.ppc.spr[instr? SPR_ICMP : SPR_DCMP] =
-		    0x80000000 | api | (vsid<<7);
-		match = get_pte_low(cpu, pteg_select, &lower_pte, cmp);
-
-		/*  Secondary hash:  */
-		hash2 = hash1 ^ 0x7ffff;
-		tmp = (hash2 >> 10) & (sdr1 & 0x1ff);
-		pteg_select = htaborg & 0xfe000000;
-		pteg_select |= ((hash2 & 0x3ff) << 6);
-		pteg_select |= (htaborg & 0x01ff0000) | (tmp << 16);
-		cpu->cd.ppc.spr[SPR_HASH2] = pteg_select;
-		if (!match) {
-			cmp |= 0x40;
-			match = get_pte_low(cpu, pteg_select, &lower_pte, cmp);
-		}
-
-		res = 0;
-
-		while (match) {
-			access = lower_pte & 3;
-			*return_addr = (lower_pte & 0xfffff000)|(vaddr & 0xfff);
-
-			if (lower_pte & 0x80) {
-				res = 2;
-				break;
-			}
-
-			if (lower_pte & 0x100) {
-				res = 1;
-				break;
-			}
-
-			if (user) {
-				switch (access) {
-				case 1:
-				case 3:	res = writeflag? 0 : 1;
-					break;
-				case 2:	res = 2;
-					break;
-				}
-			} else {
-				/*  Supervisor access:  */
-				switch (access) {
-				case 3:	res = writeflag? 0 : 1;
-					break;
-				default:res = 2;
-				}
-			}
-
-#if 0
-			/*  Write-protect if change-bit isn't set:  */
-			if (!(lower_pte & 0x80) && res == 2)
-				res = writeflag? 0 : 1;
-#endif
-
-#if 0
-			/*  Guarded?  */
-			if (lower_pte & 0x8) {
-				fatal("guarded page: TODO\n");
-				res = 0;
-			}
-#endif
-
-#if 1
-			/*  User protected segment?  */
-			if (user && !(cpu->cd.ppc.sr[srn] & 0x20000000)) {
-				fatal("user protected? TODO\n");
-				res = 0;
-			}
-#endif
-
-#if 0
-			/*  Non-executable?  */
-			if (instr && !(cpu->cd.ppc.sr[srn] & 0x10000000))
-				res = 0;
-#endif
-			break;
-		}
-		if (res > 0)
+		match = ppc_vtp32(cpu, vaddr, return_addr, &res, msr,
+		    writeflag, instr);
+		if (match && res > 0)
 			return res;
 	} else {
-		htaborg = sdr1 & 0xfffffffffffc0000ULL;
-
+		/*  htaborg = sdr1 & 0xfffffffffffc0000ULL;  */
 		fatal("TODO: ppc 64-bit translation\n");
 		exit(1);
 	}
 
-	/*  Return failure:  */
+
+	/*
+	 *  No match? Then cause an exception.
+	 *
+	 *  PPC603: cause a software TLB reload exception.
+	 *  All others: cause a DSI or ISI.
+	 */
+
 	if (flags & FLAG_NOEXCEPTIONS)
 		return 0;
 
-	/*  Cause an exception:  */
-	fatal("[ memory_ppc: exception! vaddr=0x%llx pc=0x%llx "
-	    "instr=%i user=%i wf=%i pte_lo=%08x ]\n",
-	    (long long)vaddr, (long long)cpu->pc, instr, user,
-	    writeflag, lower_pte);
+	if (!quiet_mode)
+		fatal("[ memory_ppc: exception! vaddr=0x%llx pc=0x%llx "
+		    "instr=%i user=%i wf=%i ]\n", (long long)vaddr,
+		    (long long)cpu->pc, instr, user, writeflag);
 
 	if (cpu->cd.ppc.cpu_type.flags & PPC_603) {
 		cpu->cd.ppc.spr[instr? SPR_IMISS : SPR_DMISS] = vaddr;

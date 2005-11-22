@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.36 2005-11-22 02:07:38 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.37 2005-11-22 16:26:37 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1510,6 +1510,7 @@ X(mullw)
 	int32_t sum = (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]);
 	reg(ic->arg[2]) = (int32_t)sum;
 }
+DOT2(mullw)
 X(mulhw)
 {
 	int64_t sum;
@@ -1517,6 +1518,7 @@ X(mulhw)
 	    * (int64_t)(int32_t)reg(ic->arg[1]);
 	reg(ic->arg[2]) = sum >> 32;
 }
+DOT2(mulhw)
 X(mulhwu)
 {
 	uint64_t sum;
@@ -1524,6 +1526,7 @@ X(mulhwu)
 	    * (uint64_t)(uint32_t)reg(ic->arg[1]);
 	reg(ic->arg[2]) = sum >> 32;
 }
+DOT2(mulhwu)
 X(divw)
 {
 	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
@@ -1534,6 +1537,7 @@ X(divw)
 		sum = a / b;
 	reg(ic->arg[2]) = (uint32_t)sum;
 }
+DOT2(divw)
 X(divwu)
 {
 	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
@@ -1544,6 +1548,7 @@ X(divwu)
 		sum = a / b;
 	reg(ic->arg[2]) = sum;
 }
+DOT2(divwu)
 
 
 /*
@@ -1765,8 +1770,8 @@ X(tlbli)
  */
 X(tlbld)
 {
-	MODE_uint_t vaddr = reg(ic->arg[0]);
-	MODE_uint_t paddr = cpu->cd.ppc.spr[SPR_RPA];
+	/*  MODE_uint_t vaddr = reg(ic->arg[0]);
+	    MODE_uint_t paddr = cpu->cd.ppc.spr[SPR_RPA];  */
 
 	/*  TODO?  */
 }
@@ -2676,6 +2681,16 @@ X(to_be_translated)
 					ic->f = instr(addme_dot); break;
 				case PPC_31_ADDZE:
 					ic->f = instr(addze_dot); break;
+				case PPC_31_DIVW:
+					ic->f = instr(divw_dot); break;
+				case PPC_31_DIVWU:
+					ic->f = instr(divwu_dot); break;
+				case PPC_31_MULLW:
+					ic->f = instr(mullw_dot); break;
+				case PPC_31_MULHW:
+					ic->f = instr(mulhw_dot); break;
+				case PPC_31_MULHWU:
+					ic->f = instr(mulhwu_dot); break;
 				case PPC_31_SUBF:
 					ic->f = instr(subf_dot); break;
 				case PPC_31_SUBFC:

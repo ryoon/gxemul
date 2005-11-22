@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.39 2005-11-21 11:10:10 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.40 2005-11-22 16:26:36 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -689,6 +689,9 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 			goto have_it;
 	}
 #else
+	/*  Temporary, to avoid a compiler warning:  */
+	cached_pc = 0;
+	ppp = NULL;
 #ifdef DYNTRANS_IA64
 	fatal("IA64 todo\n");
 #else

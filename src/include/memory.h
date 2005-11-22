@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.43 2005-11-13 02:26:45 debug Exp $
+ *  $Id: memory.h,v 1.44 2005-11-22 16:26:38 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -116,6 +116,7 @@ struct memory {
 
 
 /*  memory.c:  */
+#define	MEM_PCI_LITTLE_ENDIAN	128
 uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len);
 void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
 	uint64_t data);

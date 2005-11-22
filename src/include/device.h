@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.13 2005-11-21 09:17:28 debug Exp $
+ *  $Id: device.h,v 1.14 2005-11-22 16:26:38 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
@@ -49,6 +49,7 @@ struct devinit {
 	int		irq_nr;
 	int		in_use;
 	int		addr_mult;
+	int		pci_little_endian;
 
 	void		*return_ptr;
 };

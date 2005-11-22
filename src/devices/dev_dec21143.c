@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.11 2005-11-21 09:17:26 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.12 2005-11-22 16:26:38 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet.
  *
@@ -59,6 +59,8 @@
 struct dec21143_data {
 	int		irq_nr;
 	int		irq_asserted;
+
+	int		pci_little_endian;
 
 	uint32_t	reg[N_REGS];
 
@@ -373,7 +375,7 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	int regnr = relative_addr >> 3;
 
 	if (writeflag == MEM_WRITE)
-		idata = memory_readmax64(cpu, data, len);
+		idata = memory_readmax64(cpu, data, len | d->pci_little_endian);
 
 	if ((relative_addr & 7) == 0 && regnr < N_REGS) {
 		if (writeflag == MEM_READ) {
@@ -480,7 +482,7 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 	}
 
 	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
+		memory_writemax64(cpu, data, len | d->pci_little_endian, odata);
 
 	return 1;
 }
@@ -502,6 +504,8 @@ int devinit_dec21143(struct devinit *devinit)
 	memset(d, 0, sizeof(struct dec21143_data));
 
 	d->irq_nr = devinit->irq_nr;
+	d->pci_little_endian = devinit->pci_little_endian;
+
 	net_generate_unique_mac(devinit->machine, d->mac);
 
 	/*  Version (= 1) and Chip count (= 1):  */

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.159 2005-11-16 21:15:15 debug Exp $
+$Id: RELEASE,v 1.160 2005-11-22 16:26:34 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -56,14 +56,15 @@ User-visible change between release 0.3.6.2 and 0.3.7 include:
 
     O)	...
 
-    O)	CD-ROM images are now detected by guest operating systems (at least
-	NetBSD, OpenBSD, and Linux) as ATAPI CD-ROMs, not as IDE harddisks.
+    O)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
+	instead of IDE harddisks. It works for at least NetBSD, OpenBSD,
+	and Linux on CATS.
 
 Internal (code related) changes include:
 
-    o)  cleanup of the PCI and ISA bus frameworks
-    o)  PowerPC dyntrans updates
-    o)  ARM dyntrans optimizations
+    o)  Cleanup of the PCI and ISA bus frameworks.
+    o)  PowerPC dyntrans updates.
+    o)  ARM dyntrans optimizations.
 
 There have also been lots of other small changes, too small to mention here.
 

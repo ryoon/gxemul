@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1044 2005-11-22 02:54:37 debug Exp $
+$Id: HISTORY,v 1.1045 2005-11-22 16:26:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2445,3 +2445,7 @@ Changelog for GXemul:
 		WDCs on obio (on PReP) use irq 13, not 14/15).
 20051122	Continuing on the CPC700 controller (interrupts etc) for PMPPC,
 		and on PPC stuff in general.
+		Finally! After some bug fixes to the virtual to physical addr
+		translation, NetBSD/{prep,pmppc} 2.1 reach userland and are
+		stable enough to be interacted with.
+		More PCI updates; reverse-endian device access for PowerPC etc.

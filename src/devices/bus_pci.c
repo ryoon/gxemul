@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.36 2005-11-22 02:54:39 debug Exp $
+ *  $Id: bus_pci.c,v 1.37 2005-11-22 16:26:38 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -33,8 +33,13 @@
  *  See NetBSD's pcidevs.h for more PCI vendor and device identifiers.
  *
  *  TODO:
- *	x) Allow guest OSes to do runtime address fixups.
+ *
+ *	x) Allow guest OSes to do runtime address fixups (i.e. actually
+ *	   move a device from one address to another).
+ *
  *	x) Generalize the PCI and legacy ISA interrupt routing stuff.
+ *
+ *	x) Make sure that pci_little_endian is used correctly everywhere.
  */
 
 #include <stdio.h>
@@ -58,6 +63,18 @@ extern int verbose;
 /*  #define debug fatal  */
 
 
+static void reverse(uint64_t *p, int len)
+{
+	uint64_t x = *p, y = 0;
+	int i;
+	for (i=0; i<len; i++) {
+		y <<= 8;
+		y |= ((x >> (8*i)) & 0xff);
+	}
+	*p = y;
+}
+
+
 /*
  *  bus_pci_data_access():
  *
@@ -69,7 +86,10 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	struct pci_device *dev;
 	int bus, device, function, registernr;
 	unsigned char *cfg_base;
-	uint64_t x;
+	uint64_t x, idata = *data;
+
+	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+		reverse(&idata, len);
 
 	/*  Get the bus, device, and function numbers from the address:  */
 	bus        = (pci_data->pci_addr >> 16) & 0xff;
@@ -119,41 +139,27 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	/*  Register write:  */
 	if (writeflag == MEM_WRITE) {
 		debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n",
-		    (long long)*data);
-		if (*data == 0xffffffffULL && registernr >= PCI_MAPREG_START
+		    (long long)idata);
+		if (idata == 0xffffffffULL && registernr >= PCI_MAPREG_START
 		    && registernr <= PCI_MAPREG_END - 4) {
 			pci_data->last_was_write_ffffffff = 1;
 			return;
 		}
 		/*  Writes are not really supported yet:  */
-		if (*data != x) {
+		if (idata != x) {
 			debug("[ bus_pci: write to PCI DATA: data = 0x%08llx"
 			    " differs from current value 0x%08llx; NOT YET"
 			    " SUPPORTED. bus %i, device %i, function %i (%s)"
-			    " register 0x%02x ]\n", (long long)*data,
+			    " register 0x%02x ]\n", (long long)idata,
 			    (long long)x, bus, device, function, dev->name,
 			    registernr);
 		}
 		return;
 	}
 
-	/*
-	 *  Register read:
-	 *
-	 *  Big-endian systems (e.g. PowerPC) seem to access
-	 *  PCI config data using little-endian accesses.
-	 */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-		if (len != sizeof(uint32_t)) {
-			fatal("bus_pci_data_access(): non-32bit access in"
-			    " big-endian mode. TODO\n");
-			exit(1);
-		}
-		x = ((x >> 24) & 255)
-		    | ((x >> 8) & 0xff00)
-		    | ((x << 8) & 0xff0000)
-		    | ((x << 24) & 0xff000000);
-	}
+	/*  Register read:  */
+	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+		reverse(&x, len);
 	*data = x;
 
 	pci_data->last_was_write_ffffffff = 0;
@@ -311,6 +317,8 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
  *
  *  The returned values in portp and memp are the actual (emulated) addresses
  *  that the device should use. (Normally only one of these is actually used.)
+ *
+ *  TODO: PCI irqs?
  */
 static void allocate_device_space(struct pci_device *pd,
 	uint64_t portsize, uint64_t memsize,
@@ -366,7 +374,10 @@ static void allocate_device_space(struct pci_device *pd,
  *  irq_nr is the (optional) IRQ nr that this PCI bus interrupts at.
  *
  *  pci_portbase, pci_membase, and pci_irqbase are the port, memory, and
- *  interrupt bases for PCI devices.
+ *  interrupt bases for PCI devices (as found in the configuration registers).
+ *
+ *  pci_actual_io_offset and pci_actual_mem_offset are the offset from
+ *  the values in the configuration registers to the actual (emulated) device.
  *
  *  isa_portbase, isa_membase, and isa_irqbase are the port, memory, and
  *  interrupt bases for legacy ISA devices.
@@ -555,8 +566,10 @@ PCIINIT(ahc)
 	PCI_SET_DATA(0x38, 0x00000000);
 	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x08080109);	/*  interrupt pin A  */
 
-	/*  TODO:  this address is based on what NetBSD/sgimips uses
-	    on SGI IP32 (O2). Fix this.  */
+	/*
+	 *  TODO:  this address is based on what NetBSD/sgimips uses
+	 *  on SGI IP32 (O2). Fix this!
+	 */
 
 	device_add(machine, "ahc addr=0x18000000");
 
@@ -873,7 +886,8 @@ PCIINIT(dec21143)
 	allocate_device_space(pd, 0x100, 0x100, &port, &memaddr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "dec21143 addr=0x%llx addr2=0x%llx "
-	    "irq=%i", (long long)port, (long long)memaddr, irq);
+	    "irq=%i pci_little_endian=1", (long long)port, (long long)memaddr,
+	    irq);
 	device_add(machine, tmpstr);
 }
 
@@ -913,7 +927,7 @@ PCIINIT(dec21030)
 	/*
 	 *  Experimental:
 	 *
-	 *  TODO: Clean up.
+	 *  TODO: Base address, pci_little_endian, ...
 	 */
 
 	switch (machine->machine_type) {
@@ -934,7 +948,7 @@ PCIINIT(dec21030)
 /*
  *  Motorola MPC105 "Eagle" Host Bridge
  *
- *  Used in at least PReP ("IBM PPS Model 7248 (E)") and BeBox.
+ *  Used in at least PReP and BeBox.
  */
 
 #define	PCI_VENDOR_MOT			0x1057

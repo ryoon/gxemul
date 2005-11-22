@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.2 2005-11-22 17:52:58 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -79,7 +79,7 @@ static void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 	data_x += (data[1] << 8);
 #ifndef LS_W
 	data_x += (data[2] << 16);
-	data_x += (data[3] << 24);
+	data_x += ((uint64_t)data[3] << 24);
 #ifdef LS_L
 	data_x = (int64_t)(int32_t)data_x;
 #endif
@@ -204,7 +204,7 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 			data_x += (page[c+1] << 8);
 #ifndef LS_W
 			data_x += (page[c+2] << 16);
-			data_x += (page[c+3] << 24);
+			data_x += ((uint64_t)page[c+3] << 24);
 #ifndef LS_L
 			data_x += ((uint64_t)page[c+4] << 32);
 			data_x += ((uint64_t)page[c+5] << 40);
@@ -299,7 +299,7 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 			data_x += (page[c+1] << 8);
 #ifndef LS_W
 			data_x += (page[c+2] << 16);
-			data_x += (page[c+3] << 24);
+			data_x += ((uint64_t)page[c+3] << 24);
 #ifndef LS_L
 			data_x += ((uint64_t)page[c+4] << 32);
 			data_x += ((uint64_t)page[c+5] << 40);

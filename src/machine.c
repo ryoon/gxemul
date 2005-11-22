@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.608 2005-11-22 16:26:35 debug Exp $
+ *  $Id: machine.c,v 1.609 2005-11-22 17:52:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -5738,9 +5738,9 @@ void machine_list_available_types_and_cpus(void)
 	debug_indentation(-iadd);
 
 	debug("\nMost of the machine types are bogus too. Please read the "
-	    "GXemul\ndocumentation for information about which machine"
-	    " types that actually\nwork. Use the alias when selecting a "  
-	    "machine type or subtype, not the\nreal name.\n");
+	    "GXemul documentation\nfor information about which machine types "
+	    "that actually work. Use the alias\nwhen selecting a machine type "
+	    "or subtype, not the real name.\n");
 
 	debug("\n");
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.19 2005-11-22 16:26:37 debug Exp $
+ *  $Id: memory_ppc.c,v 1.20 2005-11-22 21:56:18 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -39,11 +39,12 @@
  *  ppc_bat():
  *
  *  BAT translation. Returns -1 if there was no BAT hit, >= 0 for a hit.
+ *  (0 for access denied, 1 for read-only, and 2 for read-write access allowed.)
  */
 int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 	int user)
 {
-	int i;
+	int i, pp, regnr;
 
 	if (cpu->cd.ppc.bits != 32) {
 		fatal("TODO: ppc_bat() for non-32-bit\n");
@@ -54,13 +55,13 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 		exit(1);
 	}
 
+	/*  4 instruction BATs, 4 data BATs...  */
 	for (i=0; i<8; i++) {
-		int regnr = SPR_IBAT0U + i * 2;
-		uint32_t ux = cpu->cd.ppc.spr[regnr];
-		uint32_t lx = cpu->cd.ppc.spr[regnr + 1];
-		uint32_t phys = lx & BAT_RPN, ebs = ux & BAT_EPI;
-		uint32_t mask = ((ux & BAT_BL) << 15) | 0x1ffff;
-		int pp = lx & BAT_PP;
+		regnr = SPR_IBAT0U + i * 2;
+		uint32_t upper = cpu->cd.ppc.spr[regnr];
+		uint32_t lower = cpu->cd.ppc.spr[regnr + 1];
+		uint32_t phys = lower & BAT_RPN, ebs = upper & BAT_EPI;
+		uint32_t mask = ((upper & BAT_BL) << 15) | 0x1ffff;
 
 		/*  Instruction BAT, but not instruction lookup? Then skip.  */
 		if (i < 4 && !(flags & FLAG_INSTR))
@@ -69,9 +70,9 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 			continue;
 
 		/*  Not valid in either supervisor or user mode?  */
-		if (user && !(ux & BAT_Vu))
+		if (user && !(upper & BAT_Vu))
 			continue;
-		if (!user && !(ux & BAT_Vs))
+		if (!user && !(upper & BAT_Vs))
 			continue;
 
 		/*  Virtual address mismatch? Then skip.  */
@@ -80,12 +81,16 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 
 		*return_addr = (vaddr & mask) | (phys & ~mask);
 
-		/*  pp happens to (almost) match our return values :-)  */
-		if (flags & FLAG_WRITEFLAG && pp != BAT_PP_RW)
+		pp = lower & BAT_PP;
+		switch (pp) {
+		case BAT_PP_NONE:
 			return 0;
-		if (pp == BAT_PP_RO)
-			pp = 1;
-		return pp;
+		case BAT_PP_RO_S:
+		case BAT_PP_RO:
+			return (flags & FLAG_WRITEFLAG)? 0 : 1;
+		default:/*  BAT_PP_RW:  */
+			return 2;
+		}
 	}
 
 	return -1;
@@ -136,8 +141,8 @@ static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
 static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_addr,
 	int *resp, uint64_t msr, int writeflag, int instr)
 {
-	int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & 0x3f, key, match;
-	int access;
+	int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & PTE_API;
+	int access, key, match;
 	uint32_t vsid = cpu->cd.ppc.sr[srn] & 0x00ffffff;
 	uint64_t sdr1 = cpu->cd.ppc.spr[SPR_SDR1], htaborg;
 	uint32_t hash1, hash2, pteg_select, tmp;

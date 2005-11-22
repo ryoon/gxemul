@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.29 2005-11-22 16:26:36 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.30 2005-11-22 21:56:18 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -41,6 +41,8 @@
 #include "memory.h"
 #include "misc.h"
 #include "opcodes_ppc.h"
+#include "ppc_bat.h"
+#include "ppc_pte.h"
 #include "ppc_spr.h"
 #include "ppc_spr_strings.h"
 #include "symbol.h"
@@ -387,23 +389,78 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (coprocs & 2) {
 		debug("cpu%i:  sdr1 = 0x%llx\n", x,
 		    (long long)cpu->cd.ppc.spr[SPR_SDR1]);
-		for (i=0; i<4; i++)
-			debug("cpu%i:  ibat%iu = 0x%08x  ibat%il = 0x%08x\n",
-			    x, i, (int)cpu->cd.ppc.spr[SPR_IBAT0U + i*2],
-			    i, (int)cpu->cd.ppc.spr[SPR_IBAT0U + i*2 + 1]);
-		for (i=0; i<4; i++)
-			debug("cpu%i:  dbat%iu = 0x%08x  dbat%il = 0x%08x\n",
-			    x, i, (int)cpu->cd.ppc.spr[SPR_DBAT0U + i*2],
-			    i, (int)cpu->cd.ppc.spr[SPR_DBAT0U + i*2 + 1]);
+		if (cpu->cd.ppc.cpu_type.flags & PPC_601)
+			debug("cpu%i:  PPC601-style, TODO!\n");
+		else {
+			for (i=0; i<8; i++) {
+				int spr = SPR_IBAT0U + i*2;
+				uint32_t upper = cpu->cd.ppc.spr[spr];
+				uint32_t lower = cpu->cd.ppc.spr[spr+1];
+				uint32_t len = (((upper & BAT_BL) << 15)
+				    | 0x1ffff) + 1;
+				debug("cpu%i:  %sbat%i: u=0x%08x l=0x%08x ",
+				    x, i<4? "i" : "d", i&3, upper, lower);
+				if (!(upper & BAT_V)) {
+					debug(" (not valid)\n");
+					continue;
+				}
+				if (len < 1048576)
+					debug(" (%i KB, ", len >> 10);
+				else
+					debug(" (%i MB, ", len >> 20);
+				if (upper & BAT_Vu)
+					debug("user, ");
+				if (upper & BAT_Vs)
+					debug("supervisor, ");
+				if (lower & (BAT_W | BAT_I | BAT_M | BAT_G))
+					debug("%s%s%s%s, ",
+					    lower & BAT_W? "W" : "",
+					    lower & BAT_I? "I" : "",
+					    lower & BAT_M? "M" : "",
+					    lower & BAT_G? "G" : "");
+				switch (lower & BAT_PP) {
+				case BAT_PP_NONE: debug("NO access"); break;
+				case BAT_PP_RO_S: debug("read-only, soft");
+					          break;
+				case BAT_PP_RO:   debug("read-only"); break;
+				case BAT_PP_RW:   debug("read/write"); break;
+				}
+				debug(")\n");
+			}
+		}
 	}
 
 	if (coprocs & 4) {
 		for (i=0; i<16; i++) {
-			if ((i & 1) == 0)
-				debug("cpu%i:", x);
-			debug("  sr%2i = 0x%08x", i, (int)cpu->cd.ppc.sr[i]);
-			if (i & 1)
-				debug("\n");
+			uint32_t s = cpu->cd.ppc.sr[i];
+			debug("cpu%i:", x);
+			debug("  sr%2i = 0x%08x", i, (int)s);
+			s &= (SR_TYPE | SR_SUKEY | SR_PRKEY | SR_NOEXEC);
+			if (s != 0) {
+				debug("  (");
+				if (s & SR_TYPE) {
+					debug("NON-memory type");
+					s &= ~SR_TYPE;
+					if (s != 0)
+						debug(", ");
+				}
+				if (s & SR_SUKEY) {
+					debug("supervisor-key");
+					s &= ~SR_SUKEY;
+					if (s != 0)
+						debug(", ");
+				}
+				if (s & SR_PRKEY) {
+					debug("user-key");
+					s &= ~SR_PRKEY;
+					if (s != 0)
+						debug(", ");
+				}
+				if (s & SR_NOEXEC)
+					debug("NOEXEC");
+				debug(")");
+			}
+			debug("\n");
 		}
 	}
 }

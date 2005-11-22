@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.193 2005-11-21 00:43:22 debug Exp $
+ *  $Id: devices.h,v 1.194 2005-11-22 02:07:40 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -161,7 +161,12 @@ void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr,
 	unsigned char *color_plane_mask);
 
 /*  dev_cpc700.c:  */
-struct pci_data *dev_cpc700_init(struct machine *machine, struct memory *mem);
+struct cpc700_data {
+	struct pci_data	*pci_data;
+	uint32_t	sr;	/*  Status register (interrupt)  */
+	uint32_t	er;	/*  Enable register  */
+};
+struct cpc700_data *dev_cpc700_init(struct machine *, struct memory *);
 
 /*  dev_dc7085.c:  */
 #define	DEV_DC7085_LENGTH		0x0000000000000080

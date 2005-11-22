@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.35 2005-11-21 22:27:16 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.36 2005-11-22 02:07:38 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1161,9 +1161,9 @@ X(mfspr) {
 X(mfspr_pmc1) {
 	/*
 	 *  TODO: This is a temporary hack to make NetBSD/ppc detect
-	 *  a 10.0 MHz CPU.
+	 *  a CPU of the correct (emulated) speed.
 	 */
-	reg(ic->arg[0]) = 1000000;
+	reg(ic->arg[0]) = cpu->machine->emulated_hz / 10;
 }
 X(mftb) {
 	/*  NOTE/TODO: This increments the time base (slowly) if it
@@ -1936,7 +1936,7 @@ X(to_be_translated)
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.zero);
 		else
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
-		ic->arg[1] = (ssize_t)(int16_t)(iword & 0xffff);
+		ic->arg[1] = (int16_t)(iword & 0xffff);
 		if (main_opcode == PPC_HI6_ADDIS)
 			ic->arg[1] <<= 16;
 		ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rt]);

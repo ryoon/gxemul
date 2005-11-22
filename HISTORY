@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1042 2005-11-21 11:10:08 debug Exp $
+$Id: HISTORY,v 1.1043 2005-11-22 02:07:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2443,3 +2443,4 @@ Changelog for GXemul:
 20051121	More cleanup of the PCI bus (memory and I/O bases, etc).
 		Continuing on various PPC things (decrementer and timebase,
 		WDCs on obio (on PReP) use irq 13, not 14/15).
+20051122	Continuing on the CPC700 controller (interrupts etc) for PMPPC.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.606 2005-11-21 22:27:13 debug Exp $
+ *  $Id: machine.c,v 1.607 2005-11-22 02:07:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1291,6 +1291,29 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 	/*  TODO: What _is_ request1?  */
 
 	/*  TODO: Controller 1  */
+}
+
+
+/*
+ *  CPC700 interrupt routine:
+ *
+ *  irq_nr should be 0..31. (32 means reassertion.)
+ */
+void cpc700_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
+{
+	if (irq_nr < 32) {
+		uint32_t mask = 1 << (irq_nr & 31);
+		if (assrt)
+			m->md_int.cpc700_data->sr |= mask;
+		else
+			m->md_int.cpc700_data->sr &= ~mask;
+	}
+
+	if ((m->md_int.cpc700_data->sr & m->md_int.cpc700_data->er) != 0)
+		cpu_interrupt(cpu, 65);
+	else
+		cpu_interrupt_ack(cpu, 65);
 }
 
 
@@ -4157,15 +4180,15 @@ Not yet.
 
 		dev_pmppc_init(mem);
 
-		dev_mc146818_init(machine, mem, 0x7ff00000, 25, MC146818_PMPPC, 1);
+		machine->md_int.cpc700_data = dev_cpc700_init(machine, mem);
+		machine->md_interrupt = cpc700_interrupt;
 
-		pci_data = dev_cpc700_init(machine, mem);
-		bus_pci_add(machine, pci_data, mem, 0, 8, 0, "dec21143");
+		/*  RTC at "ext int 5" = "int 25" in IBM jargon, int
+		    31-25 = 6 for the rest of us.  */
+		dev_mc146818_init(machine, mem, 0x7ff00000, 31-25, MC146818_PMPPC, 1);
 
-		/*  com0 = 0xff600300, com1 = 0xff600400  */
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "ns16550 irq=3 addr=0xff600300 name2=tty0");
-		device_add(machine, "ns16550 irq=4 addr=0xff600400 in_use=0 name2=tty1");
+		bus_pci_add(machine, machine->md_int.cpc700_data->pci_data,
+		    mem, 0, 8, 0, "dec21143");
 
 		break;
 
@@ -4240,7 +4263,7 @@ Not yet.
 		 *  NetBSD/prep (http://www.netbsd.org/Ports/prep/)
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
-		machine->emulated_hz = 5000000;
+		machine->emulated_hz = 10000000;
 
 		machine->md_int.bebox_data = device_add(machine, "prep");
 		machine->isa_pic_data.native_irq = 0;

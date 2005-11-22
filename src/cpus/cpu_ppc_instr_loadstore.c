@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.3 2005-11-17 13:53:41 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.4 2005-11-22 02:54:38 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -93,11 +93,16 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif
 #ifdef LS_W
 	reg(ic->arg[0]) =
+#ifdef LS_BYTEREVERSE
+	    ((data[3] << 24) + (data[2] << 16) +
+	    (data[1] << 8) + data[0]);
+#else  /* !LS_BYTEREVERSE  */
 #ifndef LS_ZERO
 	    (int32_t)
 #endif
 	    ((data[0] << 24) + (data[1] << 16) +
 	    (data[2] << 8) + data[3]);
+#endif /* !LS_BYTEREVERSE */
 #endif
 #ifdef LS_D
 	reg(ic->arg[0]) =
@@ -123,10 +128,17 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif
 #endif
 #ifdef LS_W
+#ifdef LS_BYTEREVERSE
+	data[0] = reg(ic->arg[0]);
+	data[1] = reg(ic->arg[0]) >> 8;
+	data[2] = reg(ic->arg[0]) >> 16;
+	data[3] = reg(ic->arg[0]) >> 24;
+#else
 	data[0] = reg(ic->arg[0]) >> 24;
 	data[1] = reg(ic->arg[0]) >> 16;
 	data[2] = reg(ic->arg[0]) >> 8;
 	data[3] = reg(ic->arg[0]);
+#endif /* !LS_BYTEREVERSE */
 #endif
 #ifdef LS_D
 	data[0] = (uint64_t)reg(ic->arg[0]) >> 56;
@@ -213,11 +225,16 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif	/*  LS_H  */
 #ifdef LS_W
 		reg(ic->arg[0]) =
+#ifdef LS_BYTEREVERSE
+		    ((page[addr+3] << 24) + (page[addr+2] << 16) +
+		    (page[addr+1] << 8) + page[addr]);
+#else  /*  !LS_BYTEREVERSE  */
 #ifndef LS_ZERO
 		    (int32_t)
 #endif
 		    ((page[addr] << 24) + (page[addr+1] << 16) +
 		    (page[addr+2] << 8) + page[addr+3]);
+#endif  /*  !LS_BYTEREVERSE  */
 #endif	/*  LS_W  */
 #ifdef LS_D
 		reg(ic->arg[0]) =
@@ -245,10 +262,17 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #endif /* !BYTEREVERSE */
 #endif
 #ifdef LS_W
+#ifdef LS_BYTEREVERSE
+		page[addr]   = reg(ic->arg[0]);
+		page[addr+1] = reg(ic->arg[0]) >> 8;
+		page[addr+2] = reg(ic->arg[0]) >> 16;
+		page[addr+3] = reg(ic->arg[0]) >> 24;
+#else
 		page[addr]   = reg(ic->arg[0]) >> 24;
 		page[addr+1] = reg(ic->arg[0]) >> 16;
 		page[addr+2] = reg(ic->arg[0]) >> 8;
 		page[addr+3] = reg(ic->arg[0]);
+#endif /* !LS_BYTEREVERSE  */
 #endif
 #ifdef LS_D
 		page[addr]   = (uint64_t)reg(ic->arg[0]) >> 56;

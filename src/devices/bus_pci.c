@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.35 2005-11-21 11:10:11 debug Exp $
+ *  $Id: bus_pci.c,v 1.36 2005-11-22 02:54:39 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -44,6 +44,7 @@
 #define BUS_PCI_C
 
 #include "bus_pci.h"
+#include "cpu.h"
 #include "device.h"
 #include "devices.h"
 #include "diskimage.h"
@@ -136,7 +137,23 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 		return;
 	}
 
-	/*  Register read:  */
+	/*
+	 *  Register read:
+	 *
+	 *  Big-endian systems (e.g. PowerPC) seem to access
+	 *  PCI config data using little-endian accesses.
+	 */
+	if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+		if (len != sizeof(uint32_t)) {
+			fatal("bus_pci_data_access(): non-32bit access in"
+			    " big-endian mode. TODO\n");
+			exit(1);
+		}
+		x = ((x >> 24) & 255)
+		    | ((x >> 8) & 0xff00)
+		    | ((x << 8) & 0xff0000)
+		    | ((x << 24) & 0xff000000);
+	}
 	*data = x;
 
 	pci_data->last_was_write_ffffffff = 0;
@@ -170,6 +187,19 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			debug("[ bus_pci: write to PCI ADDR: data = 0x%016llx"
 			    " ]\n", (long long)*data);
 			pci_data->pci_addr = *data;
+
+			/*
+			 *  Big-endian systems (e.g. PowerPC) seem to access
+			 *  PCI config data using little-endian accesses.
+			 */
+			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+				uint32_t t = pci_data->pci_addr;
+				pci_data->pci_addr = ((t >> 24) & 255)
+				    | ((t >> 8) & 0xff00)
+				    | ((t << 8) & 0xff0000)
+				    | ((t << 24) & 0xff000000);
+			}
+
 			/*  Linux seems to use type 0 even when it does
 			    type 1 detection. Hm. This is commented for now.  */
 			/*  if (pci_data->pci_addr & 1)

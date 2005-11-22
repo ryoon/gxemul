@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.27 2005-11-21 22:27:16 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.28 2005-11-22 02:54:38 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -260,11 +260,11 @@ void ppc_exception(struct cpu *cpu, int exception_nr)
 	/*  Save PC and MSR:  */
 	cpu->cd.ppc.spr[SPR_SRR0] = cpu->pc;
 
-	if (exception_nr == 0xc)
-		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0x87c0ffff);
-	else
+	if (exception_nr >= 0x10 && exception_nr <= 0x13)
 		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0xffff)
 		    | (cpu->cd.ppc.cr & 0xf0000000);
+	else
+		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0x87c0ffff);
 
 	if (!quiet_mode)
 		fatal("[ PPC Exception 0x%x; pc=0x%llx ]\n", exception_nr,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.40 2005-11-23 06:59:52 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.41 2005-11-23 18:16:41 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -833,8 +833,7 @@ X(mffs)
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
-	    + (low_pc << 2);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
 	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
 		ppc_exception(cpu, PPC_EXCEPTION_FPU);
 		return;
@@ -855,8 +854,7 @@ X(fmr)
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
-	    + (low_pc << 2);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
 	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
 		ppc_exception(cpu, PPC_EXCEPTION_FPU);
 		return;
@@ -881,8 +879,7 @@ X(fcmpu)
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
-	    + (low_pc << 2);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
 	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
 		ppc_exception(cpu, PPC_EXCEPTION_FPU);
 		return;
@@ -916,18 +913,36 @@ X(fcmpu)
  */
 X(frsp)
 {
+	struct ieee_float_value frb;
+	float fl = 0.0;
+	int c = 0;
+
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
-	    + (low_pc << 2);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
 	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
 		ppc_exception(cpu, PPC_EXCEPTION_FPU);
 		return;
 	}
 
-	/*  TODO. For now, just copy the value:  */
-	*(uint64_t *)ic->arg[1] = *(uint64_t *)ic->arg[0];
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &frb, IEEE_FMT_D);
+	if (frb.nan) {
+		c = 1;
+	} else {
+		fl = frb.f;
+		if (fl < 0.0)
+			c = 8;
+		else if (fl > 0.0)
+			c = 4;
+		else
+			c = 2;
+	}
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
+	(*(uint64_t *)ic->arg[1]) =
+	    ieee_store_float_value(fl, IEEE_FMT_D, frb.nan);
 }
 
 
@@ -945,8 +960,7 @@ X(fctiwz)
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
-	    + (low_pc << 2);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
 	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
 		ppc_exception(cpu, PPC_EXCEPTION_FPU);
 		return;
@@ -954,9 +968,9 @@ X(fctiwz)
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &frb, IEEE_FMT_D);
 	if (!frb.nan) {
-		if (frb.f >= 0x80000000ULL)
+		if (frb.f >= 2147483647.0)
 			res = 0x7fffffff;
-		else if (frb.f < -0x80000000ULL)
+		else if (frb.f <= -2147483648.0)
 			res = 0x80000000;
 		else
 			res = frb.f;
@@ -975,9 +989,9 @@ X(fctiwz)
 X(fmul)
 {
 	struct ieee_float_value fra;
-	struct ieee_float_value frb;
+	struct ieee_float_value frc;
 	double result = 0.0;
-	int nan = 0;
+	int c, nan = 0;
 
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
@@ -989,14 +1003,27 @@ X(fmul)
 		return;
 	}
 
-	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
-	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-	if (fra.nan || frb.nan) {
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[2], &frc, IEEE_FMT_D);
+	if (fra.nan || frc.nan)
 		nan = 1;
-	} else {
-		result = fra.f * frb.f;
+	else
+		result = fra.f * frc.f;
+	if (nan)
+		c = 1;
+	else {
+		if (result < 0.0)
+			c = 8;
+		else if (result > 0.0)
+			c = 4;
+		else
+			c = 2;
 	}
-	(*(uint64_t *)ic->arg[2]) =
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
+
+	(*(uint64_t *)ic->arg[0]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
 X(fmuls)
@@ -1036,11 +1063,10 @@ X(fmadd)
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[b], &frb, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[c], &frc, IEEE_FMT_D);
-	if (fra.nan || frb.nan || frc.nan) {
+	if (fra.nan || frb.nan || frc.nan)
 		nan = 1;
-	} else {
+	else
 		result = fra.f * frc.f + frb.f;
-	}
 	(*(uint64_t *)ic->arg[0]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
@@ -1072,13 +1098,17 @@ X(fadd)
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-	if (fra.nan || frb.nan) {
+	if (fra.nan || frb.nan)
 		nan = 1;
-	} else {
+	else
 		result = fra.f + frb.f;
-	}
 	(*(uint64_t *)ic->arg[2]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+}
+X(fadds)
+{
+	/*  TODO  */
+	instr(fadd)(cpu, ic);
 }
 X(fsub)
 {
@@ -1090,8 +1120,7 @@ X(fsub)
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
-	    + (low_pc << 2);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
 	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
 		ppc_exception(cpu, PPC_EXCEPTION_FPU);
 		return;
@@ -1099,13 +1128,17 @@ X(fsub)
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-	if (fra.nan || frb.nan) {
+	if (fra.nan || frb.nan)
 		nan = 1;
-	} else {
+	else
 		result = fra.f - frb.f;
-	}
 	(*(uint64_t *)ic->arg[2]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+}
+X(fsubs)
+{
+	/*  TODO  */
+	instr(fsub)(cpu, ic);
 }
 X(fdiv)
 {
@@ -1117,8 +1150,7 @@ X(fdiv)
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
-	    + (low_pc << 2);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
 	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
 		ppc_exception(cpu, PPC_EXCEPTION_FPU);
 		return;
@@ -1468,6 +1500,15 @@ X(cror) {
 	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
 	cpu->cd.ppc.cr &= ~(1 << (31-bt));
 	if (ba | bb)
+		cpu->cd.ppc.cr |= (1 << (31-bt));
+}
+X(crnor) {
+	uint32_t iword = ic->arg[0]; int bt = (iword >> 21) & 31;
+	int ba = (iword >> 16) & 31, bb = (iword >> 11) & 31;
+	ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
+	bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
+	cpu->cd.ppc.cr &= ~(1 << (31-bt));
+	if (!(ba | bb))
 		cpu->cd.ppc.cr |= (1 << (31-bt));
 }
 X(crxor) {
@@ -2649,12 +2690,14 @@ X(to_be_translated)
 		case PPC_19_CRANDC:
 		case PPC_19_CREQV:
 		case PPC_19_CROR:
+		case PPC_19_CRNOR:
 		case PPC_19_CRXOR:
 			switch (xo) {
 			case PPC_19_CRAND:  ic->f = instr(crand); break;
 			case PPC_19_CRANDC: ic->f = instr(crandc); break;
 			case PPC_19_CREQV:  ic->f = instr(creqv); break;
 			case PPC_19_CROR:   ic->f = instr(cror); break;
+			case PPC_19_CRNOR:  ic->f = instr(crnor); break;
 			case PPC_19_CRXOR:  ic->f = instr(crxor); break;
 			}
 			ic->arg[0] = iword;
@@ -3215,8 +3258,12 @@ X(to_be_translated)
 		    using only the lowest 5 bits, not all 10!  */
 		switch (xo & 31) {
 		case PPC_59_FDIVS:
+		case PPC_59_FSUBS:
+		case PPC_59_FADDS:
 			switch (xo & 31) {
 			case PPC_59_FDIVS: ic->f = instr(fdivs); break;
+			case PPC_59_FSUBS: ic->f = instr(fsubs); break;
+			case PPC_59_FADDS: ic->f = instr(fadds); break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[rb]);

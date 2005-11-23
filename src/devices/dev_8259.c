@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.21 2005-11-17 13:53:42 debug Exp $
+ *  $Id: dev_8259.c,v 1.22 2005-11-23 18:16:42 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -108,20 +108,25 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 				/*  Put Master in Buffered Mode  */
 				d->current_command = 0x0c;
 			} else if (idata == 0x20) {
+				int old_irr = d->irr;
 				/*  End Of Interrupt  */
 				/*  TODO: in buffered mode, is this an EOI 0? */
 				d->irr &= ~d->isr;
 				d->isr = 0;
-				/*  Recalculate interrupt assertions:  */
-				cpu_interrupt(cpu, d->irq_nr);
+				/*  Recalculate interrupt assertions,
+				    if necessary:  */
+				if ((old_irr & ~d->ier) != (d->irr & ~d->ier))
+					cpu_interrupt(cpu, d->irq_nr);
 			} else if ((idata >= 0x21 && idata <= 0x27) ||
 			    (idata >= 0x60 && idata <= 0x67) ||
 			    (idata >= 0xe0 && idata <= 0xe7)) {
 				/*  Specific EOI  */
+				int old_irr = d->irr;
 				d->irr &= ~(1 << (idata & 7));
 				d->isr &= ~(1 << (idata & 7));
-				/*  Recalculate interrupt assertions:  */
-				cpu_interrupt(cpu, d->irq_nr);
+				/*  Recalc. int assertions, if necessary:  */
+				if ((old_irr & ~d->ier) != (d->irr & ~d->ier))
+					cpu_interrupt(cpu, d->irq_nr);
 			} else if (idata == 0x68) {
 				/*  Set Special Mask Mode  */
 				/*  TODO  */
@@ -203,9 +208,13 @@ int dev_8259_access(struct cpu *cpu, struct memory *mem,
 		}
 
 		if (writeflag == MEM_WRITE) {
+			int old_ier = d->ier;
 			d->ier = idata;
-			/*  Recalculate interrupt assertions:  */
-			cpu_interrupt(cpu, d->irq_nr);
+
+			/*  Recalculate interrupt assertions,
+			    if necessary:  */
+			if ((d->irr & ~old_ier) != (d->irr & ~d->ier))
+				cpu_interrupt(cpu, d->irq_nr);
 		} else {
 			odata = d->ier;
 		}

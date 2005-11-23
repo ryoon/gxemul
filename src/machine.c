@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.609 2005-11-22 17:52:57 debug Exp $
+ *  $Id: machine.c,v 1.610 2005-11-23 18:16:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1419,11 +1419,12 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 /*
  *  "Generic" ISA interrupt management, 32 native interrupts, 16 ISA
- *  interrupts.  So far: Footbridge (CATS, NetWinder) and BeBox.
+ *  interrupts.  So far: Footbridge (CATS, NetWinder), BeBox, and PReP.
  *
  *  0..31  = footbridge interrupt
  *  32..47 = ISA interrupts
- *  64     = reassert
+ *  48     = ISA reassert
+ *  64     = reassert (non-ISA)
  */
 void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	int assrt)
@@ -1456,7 +1457,7 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 	/*  Now, PIC1:  */
 	new_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
-	if (old_isa_assert != new_isa_assert) {
+	if (old_isa_assert != new_isa_assert || irq_nr == 48) {
 		if (new_isa_assert) {
 			int x;
 			for (x=0; x<16; x++) {
@@ -1517,10 +1518,10 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 			else
 				m->md_int.prep_data->int_status &= ~mask;
 		}
-		if (m->md_int.prep_data->int_status)
-			cpu_interrupt(m->cpus[0], 65);
+		if (m->md_int.prep_data->int_status & 2)
+			cpu_interrupt(cpu, 65);
 		else
-			cpu_interrupt_ack(m->cpus[0], 65);
+			cpu_interrupt_ack(cpu, 65);
 		break;
 	}
 }
@@ -4218,7 +4219,7 @@ Not yet.
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_VGA,
-		    0x80000000, 0xc0000000, 32, 64);
+		    0x80000000, 0xc0000000, 32, 48);
 
 		if (machine->prom_emulation) {
 			/*  According to the docs, and also used by NetBSD:  */
@@ -4267,14 +4268,14 @@ Not yet.
 		machine->emulated_hz = 10000000;
 
 		machine->md_int.bebox_data = device_add(machine, "prep");
-		machine->isa_pic_data.native_irq = 0;
+		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
 		machine->md_interrupt = isa32_interrupt;
 
 		pci_data = dev_eagle_init(machine, mem,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
-		    0x80000000, 0xc0000000, 32, 64);
+		    0x80000000, 0xc0000000, 32, 48);
 
 		bus_pci_add(machine, pci_data, mem, 0, 13, 0, "dec21143");
 
@@ -4714,7 +4715,7 @@ Not yet.
 		dev_ram_init(machine, 0x80000000, 0x1000, DEV_RAM_RAM, 0);
 
 		bus_isa(machine, BUS_ISA_PCKBC_FORCE_USE | BUS_ISA_PCKBC_NONPCSTYLE,
-		    0x7c000000, 0x80000000, 32, 64);
+		    0x7c000000, 0x80000000, 32, 48);
 
 		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
 		    mem, 0xc0, 8, 0, "s3_virge");
@@ -4915,7 +4916,7 @@ Not yet.
 		machine->md_interrupt = isa32_interrupt;
 		machine->isa_pic_data.native_irq = 11;
 
-		bus_isa(machine, 0, 0x7c000000, 0x80000000, 32, 64);
+		bus_isa(machine, 0, 0x7c000000, 0x80000000, 32, 48);
 #if 0
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);

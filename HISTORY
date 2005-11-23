@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1048 2005-11-23 06:59:50 debug Exp $
+$Id: HISTORY,v 1.1049 2005-11-23 18:16:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2455,3 +2455,4 @@ Changelog for GXemul:
 		this for ns16550, and a warning message is now displayed if
 		multiple non-xterm consoles are active.
 		Adding some PPC floating point support, etc.
+		Interrupt related fixes.

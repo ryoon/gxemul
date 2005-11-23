@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.45 2005-11-23 02:17:01 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.46 2005-11-23 18:16:42 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -62,7 +62,7 @@ struct ns_data {
 
 	unsigned char	reg[DEV_NS16550_LENGTH];
 	unsigned char	fcr;		/*  FIFO control register  */
-
+	int		int_asserted;
 	int		dlab;		/*  Divisor Latch Access bit  */
 	int		divisor;
 
@@ -94,11 +94,15 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 	if (((d->reg[com_ier] & IER_ETXRDY) && (d->reg[com_iir] & IIR_TXRDY)) ||
 	    ((d->reg[com_ier] & IER_ERXRDY) && (d->reg[com_iir] & IIR_RXRDY))) {
 		d->reg[com_iir] &= ~IIR_NOPEND;
-		if (d->reg[com_mcr] & MCR_IENABLE)
+		if (d->reg[com_mcr] & MCR_IENABLE) {
 			cpu_interrupt(cpu, d->irqnr);
+			d->int_asserted = 1;
+		}
 	} else {
 		d->reg[com_iir] |= IIR_NOPEND;
-		cpu_interrupt_ack(cpu, d->irqnr);
+		if (d->int_asserted)
+			cpu_interrupt_ack(cpu, d->irqnr);
+		d->int_asserted = 0;
 	}
 }
 

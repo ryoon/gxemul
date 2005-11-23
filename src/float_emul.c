@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.c,v 1.3 2005-11-23 06:59:51 debug Exp $
+ *  $Id: float_emul.c,v 1.4 2005-11-23 18:16:39 debug Exp $
  *
  *  Floating point emulation routines.
  */
@@ -38,7 +38,7 @@
 #include "misc.h"
 
 
-/*  #define IEEE_DEBUG  */
+#define IEEE_DEBUG
 
 
 /*

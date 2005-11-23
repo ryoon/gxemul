@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.22 2005-11-21 09:17:28 debug Exp $
+ *  $Id: bus_pci.h,v 1.23 2005-11-23 23:31:37 debug Exp $
  */
 
 #include "misc.h"
@@ -96,20 +96,12 @@ struct pci_device {
  *  or cfg_mem_size[], respectively.
  */
 #define PCI_SET_DATA(ofs,value)	{					\
-	if ((ofs) >= PCI_CFG_MEM_SIZE) {				\
-		fatal("PCI_SET_DATA(): ofs too high (%i)\n", (ofs));	\
-		exit(1);						\
-	}								\
 	pd->cfg_mem[(ofs)]     = (value) & 255;				\
 	pd->cfg_mem[(ofs) + 1] = ((value) >> 8) & 255;			\
 	pd->cfg_mem[(ofs) + 2] = ((value) >> 16) & 255;			\
 	pd->cfg_mem[(ofs) + 3] = ((value) >> 24) & 255;			\
 	}
 #define PCI_SET_DATA_SIZE(ofs,value)	{				\
-	if ((ofs) >= PCI_CFG_MEM_SIZE) {				\
-		fatal("PCI_SET_DATA_SIZE(): ofs too high (%i)\n", (ofs));\
-		exit(1);						\
-	}								\
 	pd->cfg_mem_size[(ofs)]     = (value) & 255;			\
 	pd->cfg_mem_size[(ofs) + 1] = ((value) >> 8) & 255;		\
 	pd->cfg_mem_size[(ofs) + 2] = ((value) >> 16) & 255;		\

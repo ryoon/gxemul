@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.55 2005-11-23 22:03:34 debug Exp $
+ *  $Id: dev_wdc.c,v 1.56 2005-11-23 23:31:36 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -269,8 +269,9 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
  */
 void wdc__read(struct cpu *cpu, struct wdc_data *d)
 {
-	const int max_sectors_per_chunk = 64;
-	unsigned char buf[512 * max_sectors_per_chunk];
+#define MAX_SECTORS_PER_CHUNK	64
+	const int max_sectors_per_chunk = MAX_SECTORS_PER_CHUNK;
+	unsigned char buf[512 * MAX_SECTORS_PER_CHUNK];
 	int i, cyl = d->cyl_hi * 256+ d->cyl_lo;
 	int count = d->seccnt? d->seccnt : 256;
 	uint64_t offset = 512 * (d->sector - 1

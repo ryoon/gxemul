@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.33 2005-11-23 22:03:31 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.34 2005-11-23 23:31:36 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -232,6 +232,12 @@ void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag,
 				cpu->cd.ppc.gpr[i] = cpu->cd.ppc.tgpr[i];
 				cpu->cd.ppc.tgpr[i] = t;
 			}
+		}
+
+		if (cpu->cd.ppc.msr & PPC_MSR_IP) {
+			fatal("\n[ Reboot hack for NetBSD/prep. TODO: "
+			    "fix this. ]\n");
+			cpu->running = 0;
 		}
 	}
 

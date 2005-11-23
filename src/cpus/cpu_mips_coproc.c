@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.7 2005-11-23 00:40:48 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.8 2005-11-23 02:17:41 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1433,6 +1433,7 @@ static int mips_fmt_to_ieee_fmt[32] = {
 	IEEE_FMT_W, IEEE_FMT_L, /* PS (Paired Single) */ 0, 0,
 	0, 0, 0, 0,  0, 0, 0, 0  };
 
+/*  MIPS floating point types:  */
 #define	FMT_S		16
 #define	FMT_D		17
 #define	FMT_W		20
@@ -1449,8 +1450,7 @@ static int mips_fmt_to_ieee_fmt[32] = {
 #define	FPU_OP_C	8
 #define	FPU_OP_ABS	9
 #define	FPU_OP_NEG	10
-/*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W,
- RSQRT  */
+/*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W, RSQRT  */
 
 
 /*
@@ -1461,115 +1461,12 @@ static int mips_fmt_to_ieee_fmt[32] = {
 static void fpu_store_float_value(struct mips_coproc *cp, int fd,
 	double nf, int fmt, int nan)
 {
-	int n_frac = 0, n_exp = 0, signofs=0;
-	int i, exponent;
-	uint64_t r = 0, r2;
-	int64_t r3;
-
-	/*  n_frac and n_exp:  */
-	switch (fmt) {
-	case FMT_S:	n_frac = 23; n_exp = 8; signofs = 31; break;
-	case FMT_W:	n_frac = 31; n_exp = 0; signofs = 31; break;
-	case FMT_D:	n_frac = 52; n_exp = 11; signofs = 63; break;
-	case FMT_L:	n_frac = 63; n_exp = 0; signofs = 63; break;
-	default:
-		fatal("fpu_store_float_value(): unimplemented format"
-		    " %i\n", fmt);
-	}
-
-	if ((fmt == FMT_S || fmt == FMT_D) && nan)
-		goto store_nan;
-
-	/*  fraction:  */
-	switch (fmt) {
-	case FMT_W:
-	case FMT_L:
-		/*
-		 *  This causes an implicit conversion of double to integer.
-		 *  If nf < 0.0, then r2 will begin with a sequence of binary
-		 *  1's, which is ok.
-		 */
-		r3 = nf;
-		r2 = r3;
-		r |= r2;
-
-		if (fmt == FMT_W)
-			r &= 0xffffffffULL;
-		break;
-	case FMT_S:
-	case FMT_D:
-		/*  fatal("store f=%f ", nf);  */
-
-		/*  sign bit:  */
-		if (nf < 0.0) {
-			r |= ((uint64_t)1 << signofs);
-			nf = -nf;
-		}
-
-		/*
-		 *  How to convert back from double to exponent + fraction:
-		 *  We want fraction to be 1.xxx, that is
-		 *  1.0 <= fraction < 2.0
-		 *
-		 *  This method is very slow but should work:
-		 */
-		exponent = 0;
-		while (nf < 1.0 && exponent > -1023) {
-			nf *= 2.0;
-			exponent --;
-		}
-		while (nf >= 2.0 && exponent < 1023) {
-			nf /= 2.0;
-			exponent ++;
-		}
-
-		/*  Here:   1.0 <= nf < 2.0  */
-		/*  fatal(" nf=%f", nf);  */
-		nf -= 1.0;	/*  remove implicit first bit  */
-		for (i=n_frac-1; i>=0; i--) {
-			nf *= 2.0;
-			if (nf >= 1.0) {
-				r |= ((uint64_t)1 << i);
-				nf -= 1.0;
-			}
-			/*  printf("\n i=%2i r=%016llx\n", i, (long long)r);  */
-		}
-
-		/*  Insert the exponent into the resulting word:  */
-		/*  (First bias, then make sure it's within range)  */
-		exponent += (((uint64_t)1 << (n_exp-1)) - 1);
-		if (exponent < 0)
-			exponent = 0;
-		if (exponent >= ((int64_t)1 << n_exp))
-			exponent = ((int64_t)1 << n_exp) - 1;
-		r |= (uint64_t)exponent << n_frac;
-
-		/*  Special case for 0.0:  */
-		if (exponent == 0)
-			r = 0;
-
-		/*  fatal(" exp=%i, r = %016llx\n", exponent, (long long)r);  */
-
-		break;
-	default:
-		/*  TODO  */
-		fatal("fpu_store_float_value(): unimplemented format "
-		    "%i\n", fmt);
-	}
-
-store_nan:
-	if (nan) {
-		if (fmt == FMT_S)
-			r = 0x7fffffffULL;
-		else if (fmt == FMT_D)
-			r = 0x7fffffffffffffffULL;
-		else
-			r = 0x7fffffffULL;
-	}
+	int ieee_fmt = mips_fmt_to_ieee_fmt[fmt];
+	uint64_t r = ieee_store_float_value(nf, ieee_fmt, nan);
 
 	/*
-	 *  TODO:  this is for 32-bit mode. It has to be updated later
-	 *		for 64-bit coprocessor stuff.
+	 *  TODO: This is for 32-bit mode. It has to be updated later
+	 *        for 64-bit coprocessor functionality!
 	 */
 	if (fmt == FMT_D || fmt == FMT_L) {
 		cp->reg[fd] = r & 0xffffffffULL;
@@ -1591,12 +1488,11 @@ store_nan:
 /*
  *  fpu_op():
  *
- *  Perform a floating-point operation.  For those of fs and ft
- *  that are >= 0, those numbers are interpreted into local
- *  variables.
+ *  Perform a floating-point operation. For those of fs and ft that are >= 0,
+ *  those numbers are interpreted into local variables.
  *
- *  Only FPU_OP_C (compare) returns anything of interest, 1 for
- *  true, 0 for false.
+ *  Only FPU_OP_C (compare) returns anything of interest, 1 for true, 0 for
+ *  false.
  */
 static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 	int ft, int fs, int fd, int cond, int output_fmt)

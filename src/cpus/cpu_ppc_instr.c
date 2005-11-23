@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.38 2005-11-23 00:40:48 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.39 2005-11-23 02:17:41 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -34,6 +34,9 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+#include "float_emul.h"
 
 
 #define DOT0(n) X(n ## _dot) { instr(n)(cpu,ic); \
@@ -889,7 +892,24 @@ X(fadd)
 }
 X(fsub)
 {
-	fatal("{ fsub: TODO }\n");
+	struct ieee_float_value fra;
+	struct ieee_float_value frb;
+	double result = 0.0;
+	int nan = 0;
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
+
+	if (fra.nan || frb.nan) {
+		nan = 1;
+		fatal("{ fsub: NaN }\n");
+	} else {
+		result = fra.f - frb.f;
+		fatal("{ fsub: %f - %f = %f }\n", fra.f, frb.f, result);
+	}
+
+	(*(uint64_t *)ic->arg[2]) =
+	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
 X(fdiv)
 {
@@ -1554,26 +1574,19 @@ X(srw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    >> (reg(ic->arg[1]) & 31); }
 DOT2(srw)
 X(and) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
-X(and_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]);
-		update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(and)
 X(nand) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) & reg(ic->arg[1])); }
-X(nand_dot) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) & reg(ic->arg[1]));
-		update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(nand)
 X(andc) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1])); }
-X(andc_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1]));
-		update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(andc)
 X(nor) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
-X(nor_dot) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1]));
-		update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(nor)
 X(or) {		reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
-X(or_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]);
-		update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(or)
 X(orc) {	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1])); }
-X(orc_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1]));
-		update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(orc)
 X(xor) {	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
-X(xor_dot) {	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]);
-		update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(xor)
 
 
 /*
@@ -1647,7 +1660,7 @@ DOT2(divwu)
  *  arg[2] = pointer to destination register rt
  */
 X(add)     { reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
-X(add_dot) { instr(add)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(add)
 
 
 /*
@@ -1691,7 +1704,7 @@ X(adde)
 		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
-X(adde_dot) { instr(adde)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(adde)
 X(addme)
 {
 	/*  TODO: this only works in 32-bit mode  */
@@ -1706,7 +1719,7 @@ X(addme)
 		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
-X(addme_dot) { instr(addme)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(addme)
 X(addze)
 {
 	/*  TODO: this only works in 32-bit mode  */
@@ -1720,7 +1733,7 @@ X(addze)
 		cpu->cd.ppc.spr[SPR_XER] |= PPC_XER_CA;
 	reg(ic->arg[2]) = (uint32_t)tmp;
 }
-X(addze_dot) { instr(addze)(cpu,ic); update_cr0(cpu, reg(ic->arg[2])); }
+DOT2(addze)
 
 
 /*
@@ -2082,7 +2095,7 @@ X(to_be_translated)
 	case PPC_HI6_STFD:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
-		imm = (int16_t)(iword & 0xffff);
+		imm = (int16_t)iword;
 		load = 0; zero = 1; size = 0; update = 0; fp = 0;
 		switch (main_opcode) {
 		case PPC_HI6_LBZ:  load=1; break;

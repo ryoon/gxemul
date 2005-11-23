@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.h,v 1.1 2005-11-23 00:41:08 debug Exp $
+ *  $Id: float_emul.h,v 1.2 2005-11-23 02:17:43 debug Exp $
  *
  *  Floating point emulation. See src/float_emul.c for the details.
  */
@@ -48,6 +48,6 @@ struct ieee_float_value {
 
 void ieee_interpret_float_value(uint64_t x, struct ieee_float_value *fvp,
 	int fmt);
-void ieee_store_float_value(double nf, int fmt, int nan, uint64_t *resultp);
+uint64_t ieee_store_float_value(double nf, int fmt, int nan);
 
 #endif	/*  FLOAT_EMUL_H  */

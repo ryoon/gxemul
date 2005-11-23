@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.c,v 1.1 2005-11-23 00:40:47 debug Exp $
+ *  $Id: float_emul.c,v 1.2 2005-11-23 02:17:40 debug Exp $
  *
  *  Floating point emulation routines.
  */
@@ -79,8 +79,7 @@ void ieee_interpret_float_value(uint64_t x, struct ieee_float_value *fvp,
 		exponent = (x >> n_frac) & ((1 << n_exp) - 1);
 		exponent -= (1 << (n_exp-1)) - 1;
 		break;
-	default:
-		fatal("ieee_interpret_float_value(): unimplemented "
+	default:fatal("ieee_interpret_float_value(): unimplemented "
 		    "format %i\n", fmt);
 	}
 
@@ -135,8 +134,7 @@ void ieee_interpret_float_value(uint64_t x, struct ieee_float_value *fvp,
 		/*  Add implicit bit 0:  */
 		fraction = (fraction / 2.0) + 1.0;
 		break;
-	default:
-		fatal("ieee_interpret_float_value(): "
+	default:fatal("ieee_interpret_float_value(): "
 		    "unimplemented format %i\n", fmt);
 	}
 
@@ -183,9 +181,9 @@ no_reasonable_result:
 /*
  *  ieee_store_float_value():
  *
- *  Stores a float value (actually a double) in a specific format.
+ *  Generates a 64-bit IEEE-formated value in a specific format.
  */
-void ieee_store_float_value(double nf, int fmt, int nan, uint64_t *resultp)
+uint64_t ieee_store_float_value(double nf, int fmt, int nan)
 {
 	int n_frac = 0, n_exp = 0, signofs=0;
 	int i, exponent;
@@ -223,8 +221,9 @@ void ieee_store_float_value(double nf, int fmt, int nan, uint64_t *resultp)
 		break;
 	case IEEE_FMT_S:
 	case IEEE_FMT_D:
-		/*  fatal("store f=%f ", nf);  */
-
+#ifdef IEEE_DEBUG
+		fatal("{ ieee store f=%f ", nf);
+#endif
 		/*  sign bit:  */
 		if (nf < 0.0) {
 			r |= ((uint64_t)1 << signofs);
@@ -249,7 +248,9 @@ void ieee_store_float_value(double nf, int fmt, int nan, uint64_t *resultp)
 		}
 
 		/*  Here:   1.0 <= nf < 2.0  */
-		/*  fatal(" nf=%f", nf);  */
+#ifdef IEEE_DEBUG
+		fatal(" nf=%f", nf);
+#endif
 		nf -= 1.0;	/*  remove implicit first bit  */
 		for (i=n_frac-1; i>=0; i--) {
 			nf *= 2.0;
@@ -257,7 +258,6 @@ void ieee_store_float_value(double nf, int fmt, int nan, uint64_t *resultp)
 				r |= ((uint64_t)1 << i);
 				nf -= 1.0;
 			}
-			/*  printf("\n i=%2i r=%016llx\n", i, (long long)r);  */
 		}
 
 		/*  Insert the exponent into the resulting word:  */
@@ -273,13 +273,13 @@ void ieee_store_float_value(double nf, int fmt, int nan, uint64_t *resultp)
 		if (exponent == 0)
 			r = 0;
 
-		/*  fatal(" exp=%i, r = %016llx\n", exponent, (long long)r);  */
-
+#ifdef IEEE_DEBUG
+		fatal(" exp=%i, r = %016llx }\n", exponent, (long long)r);
+#endif
 		break;
-	default:
-		/*  TODO  */
-		fatal("ieee_store_float_value(): unimplemented format "
-		    "%i\n", fmt);
+	default:/*  TODO  */
+		fatal("ieee_store_float_value(): unimplemented format %i\n",
+		    fmt);
 	}
 
 store_nan:
@@ -295,7 +295,6 @@ store_nan:
 	if (fmt == IEEE_FMT_S || fmt == IEEE_FMT_W)
 		r &= 0xffffffff;
 
-	*resultp = r;
+	return r;
 }
-
 

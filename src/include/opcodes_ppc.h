@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.39 2005-11-23 00:40:49 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.40 2005-11-23 06:59:53 debug Exp $
  *
  *
  *  PPC and POWER opcodes. These are gathered from various sources.
@@ -156,6 +156,7 @@
 #define	  PPC_31_MFSR		  595
 #define	  PPC_31_LSWI		  597
 #define	  PPC_31_SYNC		  598
+#define	  PPC_31_LFDX		  599
 #define	  PPC_31_NEGO		  616
 #define	  PPC_31_DCLST		  630
 #define	  PPC_31_SUBFEO		  648
@@ -165,6 +166,7 @@
 #define	  PPC_31_SUBFZEO	  712
 #define	  PPC_31_ADDZEO		  714
 #define	  PPC_31_STSWI		  725
+#define	  PPC_31_STFDX		  727
 #define	  PPC_31_SUBFMEO	  744
 #define	  PPC_31_ADDMEO		  746
 #define	  PPC_31_MULLWO		  747
@@ -200,11 +202,15 @@
 #define	PPC_HI6_STHU		0x2d
 #define	PPC_HI6_LMW		0x2e
 #define	PPC_HI6_STMW		0x2f
+#define	PPC_HI6_LFS		0x30
 
 #define	PPC_HI6_LFD		0x32
 
+#define	PPC_HI6_STFS		0x34
+
 #define	PPC_HI6_STFD		0x36
 
+#define	PPC_HI6_LD		0x3a
 #define	PPC_HI6_59		0x3b
 #define	  PPC_59_FDIVS		  18
 #define	  PPC_59_FSUBS		  20
@@ -212,6 +218,7 @@
 #define	  PPC_59_FMULS		  25
 #define	  PPC_59_FMADDS		  29
 
+#define	PPC_HI6_STD		0x3e
 #define	PPC_HI6_63		0x3f
 #define	  PPC_63_FCMPU		  0
 #define	  PPC_63_FRSP		  12
@@ -225,5 +232,7 @@
 #define	  PPC_63_FMR		  72
 #define	  PPC_63_FNABS		  136
 #define	  PPC_63_FABS		  264
+#define	  PPC_63_MFFS		  583
+#define	  PPC_63_MTFSF		  711
 
 #endif	/*  OPCODES_PPC_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.5 2005-11-22 16:26:37 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.6 2005-11-23 06:59:52 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -55,8 +55,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 	/*  Synchronize the PC:  */
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
 	    / sizeof(struct ppc_instr_call);
-	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1)
-	    << PPC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc &= ~((PPC_IC_ENTRIES_PER_PAGE-1) << PPC_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 
 #ifndef LS_B

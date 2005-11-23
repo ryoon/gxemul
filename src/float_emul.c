@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.c,v 1.2 2005-11-23 02:17:40 debug Exp $
+ *  $Id: float_emul.c,v 1.3 2005-11-23 06:59:51 debug Exp $
  *
  *  Floating point emulation routines.
  */
@@ -38,7 +38,7 @@
 #include "misc.h"
 
 
-#define IEEE_DEBUG
+/*  #define IEEE_DEBUG  */
 
 
 /*
@@ -173,7 +173,7 @@ no_reasonable_result:
 	fvp->nan = nan;
 
 #ifdef IEEE_DEBUG
-	fatal("f = %f }\n", fvp->f);
+	fatal("f=%f }\n", fvp->f);
 #endif
 }
 

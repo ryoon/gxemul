@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.39 2005-11-23 02:17:41 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.40 2005-11-23 06:59:52 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -578,12 +578,12 @@ X(cntlzw)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = ptr to rb
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmpd)
 {
 	int64_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < tmp2)
 		c = 8;
 	else if (tmp > tmp2)
@@ -592,8 +592,8 @@ X(cmpd)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -602,12 +602,12 @@ X(cmpd)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = ptr to rb
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmpld)
 {
 	uint64_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < tmp2)
 		c = 8;
 	else if (tmp > tmp2)
@@ -616,8 +616,8 @@ X(cmpld)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -674,12 +674,12 @@ X(cmpldi)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = ptr to rb
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmpw)
 {
 	int32_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < tmp2)
 		c = 8;
 	else if (tmp > tmp2)
@@ -688,8 +688,8 @@ X(cmpw)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -698,12 +698,12 @@ X(cmpw)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = ptr to rb
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmplw)
 {
 	uint32_t tmp = reg(ic->arg[0]), tmp2 = reg(ic->arg[1]);
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < tmp2)
 		c = 8;
 	else if (tmp > tmp2)
@@ -712,8 +712,8 @@ X(cmplw)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -801,6 +801,50 @@ X(dcbz)
 
 
 /*
+ *  mtfsf:  Copy FPR into the FPSCR.
+ *
+ *  arg[0] = ptr to frb
+ *  arg[1] = mask
+ */
+X(mtfsf)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	cpu->cd.ppc.fpscr &= ~ic->arg[1];
+	cpu->cd.ppc.fpscr |= (ic->arg[1] & (*(uint64_t *)ic->arg[0]));
+}
+
+
+/*
+ *  mffs:  Copy FPSCR into a FPR.
+ *
+ *  arg[0] = ptr to frt
+ */
+X(mffs)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	(*(uint64_t *)ic->arg[0]) = cpu->cd.ppc.fpscr;
+}
+
+
+/*
  *  fmr:  Floating-point Move
  *
  *  arg[0] = ptr to frb
@@ -808,6 +852,16 @@ X(dcbz)
  */
 X(fmr)
 {
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
 	*(uint64_t *)ic->arg[1] = *(uint64_t *)ic->arg[0];
 }
 
@@ -815,13 +869,42 @@ X(fmr)
 /*
  *  fcmpu:  Floating-point Compare Unordered
  *
- *  arg[0] = bf
+ *  arg[0] = 28 - 4*bf  (bitfield shift)
  *  arg[1] = ptr to fra
  *  arg[2] = ptr to frb
  */
 X(fcmpu)
 {
-	fatal("{ fcmpu: TODO }\n");
+	struct ieee_float_value fra, frb;
+	int bf_shift = ic->arg[0], c = 0;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[2], &frb, IEEE_FMT_D);
+	if (fra.nan | frb.nan) {
+		c = 1;
+	} else {
+		if (fra.f < frb.f)
+			c = 8;
+		else if (fra.f > frb.f)
+			c = 4;
+		else
+			c = 2;
+	}
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= ((c&0xe) << bf_shift);
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
 }
 
 
@@ -833,7 +916,18 @@ X(fcmpu)
  */
 X(frsp)
 {
-	fatal("{ frsp: TODO }\n");
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	/*  TODO. For now, just copy the value:  */
+	*(uint64_t *)ic->arg[1] = *(uint64_t *)ic->arg[0];
 }
 
 
@@ -845,7 +939,29 @@ X(frsp)
  */
 X(fctiwz)
 {
-	fatal("{ fctiwz: TODO }\n");
+	struct ieee_float_value frb;
+	int32_t res = 0;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &frb, IEEE_FMT_D);
+	if (!frb.nan) {
+		if (frb.f >= 0x80000000ULL)
+			res = 0x7fffffff;
+		else if (frb.f < -0x80000000ULL)
+			res = 0x80000000;
+		else
+			res = frb.f;
+	}
+	*(uint64_t *)ic->arg[1] = (uint32_t)res;
 }
 
 
@@ -858,11 +974,35 @@ X(fctiwz)
  */
 X(fmul)
 {
-	fatal("{ fmul: TODO }\n");
+	struct ieee_float_value fra;
+	struct ieee_float_value frb;
+	double result = 0.0;
+	int nan = 0;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
+	if (fra.nan || frb.nan) {
+		nan = 1;
+	} else {
+		result = fra.f * frb.f;
+	}
+	(*(uint64_t *)ic->arg[2]) =
+	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
 X(fmuls)
 {
-	fatal("{ fmuls: TODO }\n");
+	/*  TODO  */
+	instr(fmul)(cpu, ic);
 }
 
 
@@ -875,7 +1015,34 @@ X(fmuls)
  */
 X(fmadd)
 {
-	fatal("{ fmadd: TODO }\n");
+	uint32_t iw = ic->arg[2];
+	int b = (iw >> 11) & 31, c = (iw >> 6) & 31;
+	struct ieee_float_value fra;
+	struct ieee_float_value frb;
+	struct ieee_float_value frc;
+	double result = 0.0;
+	int nan = 0;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(cpu->cd.ppc.fpr[b], &frb, IEEE_FMT_D);
+	ieee_interpret_float_value(cpu->cd.ppc.fpr[c], &frc, IEEE_FMT_D);
+	if (fra.nan || frb.nan || frc.nan) {
+		nan = 1;
+	} else {
+		result = fra.f * frc.f + frb.f;
+	}
+	(*(uint64_t *)ic->arg[0]) =
+	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
 
 
@@ -888,7 +1055,30 @@ X(fmadd)
  */
 X(fadd)
 {
-	fatal("{ fadd: TODO }\n");
+	struct ieee_float_value fra;
+	struct ieee_float_value frb;
+	double result = 0.0;
+	int nan = 0;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
+	if (fra.nan || frb.nan) {
+		nan = 1;
+	} else {
+		result = fra.f + frb.f;
+	}
+	(*(uint64_t *)ic->arg[2]) =
+	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
 X(fsub)
 {
@@ -897,23 +1087,57 @@ X(fsub)
 	double result = 0.0;
 	int nan = 0;
 
-	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
-	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-
-	if (fra.nan || frb.nan) {
-		nan = 1;
-		fatal("{ fsub: NaN }\n");
-	} else {
-		result = fra.f - frb.f;
-		fatal("{ fsub: %f - %f = %f }\n", fra.f, frb.f, result);
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
 	}
 
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
+	if (fra.nan || frb.nan) {
+		nan = 1;
+	} else {
+		result = fra.f - frb.f;
+	}
 	(*(uint64_t *)ic->arg[2]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
 X(fdiv)
 {
-	fatal("{ fdiv: TODO }\n");
+	struct ieee_float_value fra;
+	struct ieee_float_value frb;
+	double result = 0.0;
+	int nan = 0;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
+	if (fra.nan || frb.nan || frb.f == 0) {
+		nan = 1;
+	} else {
+		result = fra.f / frb.f;
+	}
+	(*(uint64_t *)ic->arg[2]) =
+	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+}
+X(fdivs)
+{
+	/*  TODO  */
+	instr(fdiv)(cpu, ic);
 }
 
 
@@ -1194,14 +1418,14 @@ DOT1(srawi)
 /*
  *  mcrf:  Move inside condition register
  *
- *  arg[0] = bf,  arg[1] = bfa
+ *  arg[0] = 28-4*bf,  arg[1] = 28-4*bfa
  */
 X(mcrf)
 {
-	int bf = ic->arg[0], bfa = ic->arg[1];
-	uint32_t tmp = (cpu->cd.ppc.cr >> (28 - bfa*4)) & 0xf;
-	cpu->cd.ppc.cr &= ~(0xf << (28 - bf*4));
-	cpu->cd.ppc.cr |= (tmp << (28 - bf*4));
+	int bf_shift = ic->arg[0], bfa_shift = ic->arg[1];
+	uint32_t tmp = (cpu->cd.ppc.cr >> bfa_shift) & 0xf;
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (tmp << bf_shift);
 }
 
 
@@ -1453,7 +1677,6 @@ X(lswi)
 {
 	MODE_uint_t addr = reg(ic->arg[1]);
 	int rt = ic->arg[0], nb = ic->arg[2];
-	unsigned char d;
 	int sub = 0;
 
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
@@ -1463,6 +1686,7 @@ X(lswi)
 	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 
 	while (nb > 0) {
+		unsigned char d;
 		if (cpu->memory_rw(cpu, cpu->mem, addr, &d, 1,
 		    MEM_READ, CACHE_DATA) != MEMORY_ACCESS_OK) {
 			/*  exception  */
@@ -1487,7 +1711,6 @@ X(stswi)
 	MODE_uint_t addr = reg(ic->arg[1]);
 	int rs = ic->arg[0], nb = ic->arg[2];
 	uint32_t cur = cpu->cd.ppc.gpr[rs];
-	unsigned char d;
 	int sub = 0;
 
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.ppc.cur_ic_page)
@@ -1497,7 +1720,7 @@ X(stswi)
 	cpu->pc += (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
 
 	while (nb > 0) {
-		d = cur >> 24;
+		unsigned char d = cur >> 24;
 		if (cpu->memory_rw(cpu, cpu->mem, addr, &d, 1,
 		    MEM_WRITE, CACHE_DATA) != MEMORY_ACCESS_OK) {
 			/*  exception  */
@@ -1813,6 +2036,147 @@ X(ori)  { reg(ic->arg[2]) = reg(ic->arg[0]) | (uint32_t)ic->arg[1]; }
 X(xori) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1]; }
 
 
+#include "tmp_ppc_loadstore.c"
+
+
+/*
+ *  lfs, stfs: Load/Store Floating-point Single precision
+ */
+X(lfs)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t old_pc, low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	old_pc = cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	/*  Perform a 32-bit load:  */
+#ifdef MODE32
+	ppc32_loadstore
+#else
+	ppc_loadstore
+#endif
+	    [2 + 4 + 8](cpu, ic);
+
+	if (old_pc == cpu->pc) {
+		/*  The load succeeded. Let's convert the value:  */
+		struct ieee_float_value val;
+		(*(uint64_t *)ic->arg[0]) &= 0xffffffff;
+		ieee_interpret_float_value(*(uint64_t *)ic->arg[0],
+		    &val, IEEE_FMT_S);
+		(*(uint64_t *)ic->arg[0]) =
+		    ieee_store_float_value(val.f, IEEE_FMT_D, val.nan);
+	}
+}
+X(lfd)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	/*  Perform a 64-bit load:  */
+#ifdef MODE32
+	ppc32_loadstore
+#else
+	ppc_loadstore
+#endif
+	    [3 + 4 + 8](cpu, ic);
+}
+X(lfdx)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+	/*  Perform a 64-bit load:  */
+#ifdef MODE32
+	ppc32_loadstore_indexed
+#else
+	ppc_loadstore_indexed
+#endif
+	    [3 + 4 + 8](cpu, ic);
+}
+X(stfs)
+{
+	uint64_t *old_arg0 = (void *)ic->arg[0];
+	struct ieee_float_value val;
+	uint64_t tmp_val;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*old_arg0, &val, IEEE_FMT_D);
+	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S, val.nan);
+
+	ic->arg[0] = (size_t)&tmp_val;
+
+	/*  Perform a 32-bit store:  */
+#ifdef MODE32
+	ppc32_loadstore
+#else
+	ppc_loadstore
+#endif
+	    [2 + 4](cpu, ic);
+
+	ic->arg[0] = (size_t)old_arg0;
+}
+X(stfd)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+	/*  Perform a 64-bit store:  */
+#ifdef MODE32
+	ppc32_loadstore
+#else
+	ppc_loadstore
+#endif
+	    [3 + 4](cpu, ic);
+}
+X(stfdx)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+	/*  Perform a 64-bit store:  */
+#ifdef MODE32
+	ppc32_loadstore_indexed
+#else
+	ppc_loadstore_indexed
+#endif
+	    [3 + 4](cpu, ic);
+}
+
+
 /*
  *  tlbie:  TLB invalidate
  */
@@ -1876,9 +2240,6 @@ X(tlbld)
 
 	/*  TODO?  */
 }
-
-
-#include "tmp_ppc_loadstore.c"
 
 
 /*****************************************************************************/
@@ -2086,6 +2447,7 @@ X(to_be_translated)
 	case PPC_HI6_LWZ:
 	case PPC_HI6_LWZU:
 	case PPC_HI6_LFD:
+	case PPC_HI6_LFS:
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
 	case PPC_HI6_STH:
@@ -2093,36 +2455,42 @@ X(to_be_translated)
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
 	case PPC_HI6_STFD:
+	case PPC_HI6_STFS:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)iword;
 		load = 0; zero = 1; size = 0; update = 0; fp = 0;
+		ic->f = NULL;
 		switch (main_opcode) {
 		case PPC_HI6_LBZ:  load=1; break;
 		case PPC_HI6_LBZU: load=1; update=1; break;
 		case PPC_HI6_LHA:  load=1; size=1; zero=0; break;
 		case PPC_HI6_LHAU: load=1; size=1; zero=0; update=1; break;
 		case PPC_HI6_LHZ:  load=1; size=1; break;
-		case PPC_HI6_LHZU: load=1; size=1; update = 1; break;
+		case PPC_HI6_LHZU: load=1; size=1; update=1; break;
 		case PPC_HI6_LWZ:  load=1; size=2; break;
-		case PPC_HI6_LWZU: load=1; size=2; update = 1; break;
-		case PPC_HI6_LFD:  load=1; size=3; fp = 1; break;
+		case PPC_HI6_LWZU: load=1; size=2; update=1; break;
+		case PPC_HI6_LFD:  load=1; size=3; fp=1;ic->f=instr(lfd);break;
+		case PPC_HI6_LFS:  load=1; size=2; fp=1;ic->f=instr(lfs);break;
 		case PPC_HI6_STB:  break;
-		case PPC_HI6_STBU: update = 1; break;
-		case PPC_HI6_STH:  size = 1; break;
-		case PPC_HI6_STHU: size = 1; update = 1; break;
-		case PPC_HI6_STW:  size = 2; break;
-		case PPC_HI6_STWU: size = 2; update = 1; break;
-		case PPC_HI6_STFD: size=3; fp = 1; break;
+		case PPC_HI6_STBU: update=1; break;
+		case PPC_HI6_STH:  size=1; break;
+		case PPC_HI6_STHU: size=1; update=1; break;
+		case PPC_HI6_STW:  size=2; break;
+		case PPC_HI6_STWU: size=2; update=1; break;
+		case PPC_HI6_STFD: size=3; fp=1; ic->f = instr(stfd); break;
+		case PPC_HI6_STFS: size=2; fp=1; ic->f = instr(stfs); break;
 		}
-		ic->f =
+		if (ic->f == NULL) {
+			ic->f =
 #ifdef MODE32
-		    ppc32_loadstore
+			    ppc32_loadstore
 #else
-		    ppc_loadstore
+			    ppc_loadstore
 #endif
-		    [size + 4*zero + 8*load + (imm==0? 16 : 0)
-		    + 32*update];
+			    [size + 4*zero + 8*load + (imm==0? 16 : 0)
+			    + 32*update];
+		}
 		if (ra == 0 && update) {
 			fatal("TODO: ra=0 && update?\n");
 			goto bad;
@@ -2272,8 +2640,8 @@ X(to_be_translated)
 		case PPC_19_MCRF:
 			bf = (iword >> 23) & 7;
 			bfa = (iword >> 18) & 7;
-			ic->arg[0] = bf;
-			ic->arg[1] = bfa;
+			ic->arg[0] = 28 - 4*bf;
+			ic->arg[1] = 28 - 4*bfa;
 			ic->f = instr(mcrf);
 			break;
 
@@ -2390,7 +2758,7 @@ X(to_be_translated)
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);
-			ic->arg[2] = bf;
+			ic->arg[2] = 28 - 4*bf;
 			break;
 
 		case PPC_31_CNTLZW:
@@ -2617,6 +2985,7 @@ X(to_be_translated)
 		case PPC_31_LWZUX:
 		case PPC_31_LHBRX:
 		case PPC_31_LWBRX:
+		case PPC_31_LFDX:
 		case PPC_31_STBX:
 		case PPC_31_STBUX:
 		case PPC_31_STHX:
@@ -2627,16 +2996,18 @@ X(to_be_translated)
 		case PPC_31_STDUX:
 		case PPC_31_STHBRX:
 		case PPC_31_STWBRX:
+		case PPC_31_STFDX:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
-			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			if (ra == 0)
 				ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
 			else
 				ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rb]);
-			load = 0; zero = 1; size = 0; update = 0; byterev = 0;
+			load = 0; zero = 1; size = 0; update = 0;
+			byterev = 0; fp = 0;
+			ic->f = NULL;
 			switch (xo) {
 			case PPC_31_LBZX:  load = 1; break;
 			case PPC_31_LBZUX: load=update=1; break;
@@ -2648,22 +3019,30 @@ X(to_be_translated)
 			case PPC_31_LWZUX: size=2; load=update = 1; break;
 			case PPC_31_LHBRX: size=1; load=1; byterev=1;
 					   ic->f = instr(lhbrx); break;
-			case PPC_31_LWBRX: size =2; load = 1; byterev=1;
+			case PPC_31_LWBRX: size=2; load=1; byterev=1;
 					   ic->f = instr(lwbrx); break;
+			case PPC_31_LFDX:  size=3; load=1; fp=1;
+					   ic->f = instr(lfdx); break;
 			case PPC_31_STBX:  break;
 			case PPC_31_STBUX: update = 1; break;
-			case PPC_31_STHX:  size = 1; break;
-			case PPC_31_STHUX: size = 1; update = 1; break;
-			case PPC_31_STWX:  size = 2; break;
-			case PPC_31_STWUX: size = 2; update = 1; break;
-			case PPC_31_STDX:  size = 3; break;
-			case PPC_31_STDUX: size = 3; update = 1; break;
-			case PPC_31_STHBRX:size = 1; byterev = 1;
+			case PPC_31_STHX:  size=1; break;
+			case PPC_31_STHUX: size=1; update = 1; break;
+			case PPC_31_STWX:  size=2; break;
+			case PPC_31_STWUX: size=2; update = 1; break;
+			case PPC_31_STDX:  size=3; break;
+			case PPC_31_STDUX: size=3; update = 1; break;
+			case PPC_31_STHBRX:size=1; byterev = 1;
 					   ic->f = instr(sthbrx); break;
-			case PPC_31_STWBRX:size = 2; byterev = 1;
+			case PPC_31_STWBRX:size=2; byterev = 1;
 					   ic->f = instr(stwbrx); break;
+			case PPC_31_STFDX: size=3; fp=1;
+					   ic->f = instr(stfdx); break;
 			}
-			if (!byterev) {
+			if (fp)
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rs]);
+			else
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
+			if (!byterev && ic->f == NULL) {
 				ic->f =
 #ifdef MODE32
 				    ppc32_loadstore_indexed
@@ -2835,6 +3214,14 @@ X(to_be_translated)
 		/*  NOTE: Some floating-point instructions are selected
 		    using only the lowest 5 bits, not all 10!  */
 		switch (xo & 31) {
+		case PPC_59_FDIVS:
+			switch (xo & 31) {
+			case PPC_59_FDIVS: ic->f = instr(fdivs); break;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[ra]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[rb]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+			break;
 		case PPC_59_FMULS:
 			ic->f = instr(fmuls);
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rt]);
@@ -2892,7 +3279,7 @@ X(to_be_translated)
 			switch (xo) {
 			case PPC_63_FCMPU:
 				ic->f = instr(fcmpu);
-				ic->arg[0] = rt >> 2;	/*  bf  */
+				ic->arg[0] = 28 - 4*(rt >> 2);
 				ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[ra]);
 				ic->arg[2] = (size_t)(&cpu->cd.ppc.fpr[rb]);
 				break;
@@ -2907,7 +3294,20 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rb]);
 				ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[rt]);
 				break;
-
+			case PPC_63_MFFS:
+				ic->f = instr(mffs);
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+				break;
+			case PPC_63_MTFSF:
+				ic->f = instr(mtfsf);
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rb]);
+				ic->arg[1] = 0;
+				for (bi=7; bi>=0; bi--) {
+					ic->arg[1] <<= 8;
+					if (iword & (1 << (17+bi)))
+						ic->arg[1] |= 0xf;
+				}
+				break;
 			default:goto bad;
 			}
 		}

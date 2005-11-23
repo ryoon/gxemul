@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.31 2005-11-23 00:40:48 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.32 2005-11-23 06:59:52 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -975,6 +975,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_LWZUX:
 		case PPC_31_LHBRX:
 		case PPC_31_LWBRX:
+		case PPC_31_LFDX:
 		case PPC_31_STWCX_DOT:
 		case PPC_31_STDCX_DOT:
 		case PPC_31_STBX:
@@ -987,8 +988,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_STDUX:
 		case PPC_31_STHBRX:
 		case PPC_31_STWBRX:
+		case PPC_31_STFDX:
 			/*  rs for stores, rt for loads, actually  */
-			load = 0; wlen = 0;
+			load = 0; wlen = 0; fpreg = 0;
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -1007,6 +1009,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_LWZUX: wlen = 4; load = 1;
 				mnem = power? "lux":"lwzux";
 				break;
+			case PPC_31_LFDX: fpreg = 1; wlen = 4; load = 1;
+				mnem = "lfdx"; break;
 			case PPC_31_STWCX_DOT: wlen=4; mnem = "stwcx."; break;
 			case PPC_31_STDCX_DOT: wlen=8; mnem = "stdcx."; break;
 			case PPC_31_STBX:  wlen=1; mnem = "stbx"; break;
@@ -1027,8 +1031,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_STHBRX: wlen = 2; mnem = "sthbrx"; break;
 			case PPC_31_STWBRX: wlen = 4; mnem = power?
 					    "stbrx" : "stwbrx"; break;
+			case PPC_31_STFDX: fpreg = 1; wlen = 4;
+				mnem = "stfdx"; break;
 			}
-			debug("%s\tr%i,r%i,r%i", mnem, rs, ra, rb);
+			debug("%s\t%s%i,r%i,r%i", mnem,
+			    fpreg? "f" : "r", rs, ra, rb);
 			if (!running)
 				break;
 			addr = (ra==0? 0 : cpu->cd.ppc.gpr[ra]) +
@@ -1041,7 +1048,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				debug(" \t<%s", symbol);
 			else
 				debug(" \t<0x%llx", (long long)addr);
-			if (wlen > 0) {
+			if (wlen > 0 && !fpreg /* && !reverse */) {
 				/*  TODO  */
 			}
 			debug(">");
@@ -1409,6 +1416,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("unimplemented hi6_31, xo = 0x%x", xo);
 		}
 		break;
+	case PPC_HI6_LD:
 	case PPC_HI6_LWZ:
 	case PPC_HI6_LWZU:
 	case PPC_HI6_LHZ:
@@ -1417,7 +1425,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_LHAU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
+	case PPC_HI6_LFD:
+	case PPC_HI6_LFS:
 	case PPC_HI6_LMW:
+	case PPC_HI6_STD:
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
 	case PPC_HI6_STH:
@@ -1425,8 +1436,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
 	case PPC_HI6_STMW:
-	case PPC_HI6_LFD:
 	case PPC_HI6_STFD:
+	case PPC_HI6_STFS:
 		/*  NOTE: Loads use rt, not rs, but are otherwise similar
 		    to stores  */
 		load = 0; wlen = 0;
@@ -1435,6 +1446,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = (int16_t)(iword & 0xffff);
 		fpreg = 0;
 		switch (hi6) {
+		case PPC_HI6_LD:  load=1; wlen = 8; mnem = "ld"; break;
 		case PPC_HI6_LWZ:  load=1; wlen = 4;
 			mnem = power? "l" : "lwz"; break;
 		case PPC_HI6_LWZU: load=1; wlen = 4;
@@ -1451,6 +1463,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			mnem = "lbz"; break;
 		case PPC_HI6_LBZU: load=1; wlen = 1;
 			mnem = "lbzu"; break;
+		case PPC_HI6_LFD:  load=1; fpreg=1; wlen=8; mnem = "lfd"; break;
+		case PPC_HI6_LFS:  load=1; fpreg=1; wlen=4; mnem = "lfs"; break;
+		case PPC_HI6_STD:  wlen=8; mnem = "std"; break;
 		case PPC_HI6_STW:  wlen=4; mnem = power? "st" : "stw"; break;
 		case PPC_HI6_STWU: wlen=4; mnem = power? "stu" : "stwu"; break;
 		case PPC_HI6_STH:  wlen=2; mnem = "sth"; break;
@@ -1459,8 +1474,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_HI6_STBU: wlen=1; mnem = "stbu"; break;
 		case PPC_HI6_LMW:  load=1; mnem = power? "lm" : "lmw"; break;
 		case PPC_HI6_STMW: mnem = power? "stm" : "stmw"; break;
-		case PPC_HI6_LFD:  load=1; fpreg = 1; mnem = "lfd"; break;
-		case PPC_HI6_STFD: fpreg = 1; mnem = "stfd"; break;
+		case PPC_HI6_STFD: fpreg=1; wlen=8; mnem = "stfd"; break;
+		case PPC_HI6_STFS: fpreg=1; wlen=4; mnem = "stfs"; break;
 		}
 		debug("%s\t", mnem);
 		if (fpreg)
@@ -1610,7 +1625,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			default:debug("f%i,f%i,f%i", rt, ra, rb);
 			}
 			break;
-		default:switch (xo) {
+		default:rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			switch (xo) {
 			case PPC_63_FCMPU:
 			case PPC_63_FRSP:
 			case PPC_63_FCTIWZ:
@@ -1618,10 +1637,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_63_FMR:
 			case PPC_63_FNABS:
 			case PPC_63_FABS:
-				rt = (iword >> 21) & 31;
-				ra = (iword >> 16) & 31;
-				rb = (iword >> 11) & 31;
-				rc = iword & 1;
 				switch (xo) {
 				case PPC_63_FCMPU:	mnem = "fcmpu"; break;
 				case PPC_63_FCTIWZ:
@@ -1647,6 +1662,13 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					break;
 				default:debug("f%i,f%i,f%i", rt, ra, rb);
 				}
+				break;
+			case PPC_63_MFFS:
+				debug("mffs%s\tf%i", rc?".":"", rt);
+				break;
+			case PPC_63_MTFSF:
+				ra = (iword >> 17) & 255;	/*  flm  */
+				debug("mtfsf%s\t0x%02x,f%i", rc?".":"", ra, rb);
 				break;
 			default:debug("unimplemented hi6_63, xo = 0x%x", xo);
 			}

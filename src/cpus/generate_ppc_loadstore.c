@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_ppc_loadstore.c,v 1.3 2005-11-17 13:53:41 debug Exp $
+ *  $Id: generate_ppc_loadstore.c,v 1.4 2005-11-23 06:59:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -253,8 +253,7 @@ cont:
 		    for (size=0; size<4; size++) {
 			printf("\tppc%s_instr_", modes[mode]);
 
-			if ((load && !zero && size == 3)
-			    || (mode && size == 3)) {
+			if (load && !zero && size == 3) {
 				printf("invalid");
 				goto cont_x;
 			}

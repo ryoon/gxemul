@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.53 2005-11-23 00:40:49 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.54 2005-11-23 06:59:53 debug Exp $
  */
 
 #include "misc.h"
@@ -200,10 +200,25 @@ struct ppc_cpu {
 #define	PPC_MSR_RI	(1 << 1)	/*  Recoverable Interrupt  */
 #define	PPC_MSR_LE	(1)		/*  Little-Endian Mode  */
 
+/*  Floating-point Status:  */
+#define	PPC_FPSCR_FX	(1 << 31)	/*  Exception summary  */
+#define	PPC_FPSCR_FEX	(1 << 30)	/*  Enabled Exception summary  */
+#define	PPC_FPSCR_VX	(1 << 29)	/*  Invalid Operation summary  */
+/*  .. TODO  */
+#define	PPC_FPSCR_VXNAN	(1 << 24)
+/*  .. TODO  */
+#define	PPC_FPSCR_FPCC	0x0000f000
+#define	PPC_FPSCR_FPCC_SHIFT	12
+#define	PPC_FPSCR_FL	(1 << 15)	/*  Less than  */
+#define	PPC_FPSCR_FG	(1 << 14)	/*  Greater than  */
+#define	PPC_FPSCR_FE	(1 << 13)	/*  Equal or Zero  */
+#define	PPC_FPSCR_FU	(1 << 12)	/*  Unordered or NaN  */
+
 /*  Exceptions:  */
 #define	PPC_EXCEPTION_DSI	0x3	/*  Data Storage Interrupt  */
 #define	PPC_EXCEPTION_ISI	0x4	/*  Instruction Storage Interrupt  */
 #define	PPC_EXCEPTION_EI	0x5	/*  External interrupt  */
+#define	PPC_EXCEPTION_FPU	0x8	/*  Floating-Point unavailable  */
 #define	PPC_EXCEPTION_DEC	0x9	/*  Decrementer  */
 #define	PPC_EXCEPTION_SC	0xc	/*  Syscall  */
 

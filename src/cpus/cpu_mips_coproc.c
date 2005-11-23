@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.6 2005-11-17 08:35:49 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.7 2005-11-23 00:40:48 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -40,6 +40,7 @@
 #include "cpu.h"
 #include "cpu_mips.h"
 #include "emul.h"
+#include "float_emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "mips_cpu_types.h"
@@ -1425,6 +1426,13 @@ void coproc_register_write(struct cpu *cpu,
  *
  *  TODO:  Move this to some other file?
  */
+static int mips_fmt_to_ieee_fmt[32] = {
+	0, 0, 0, 0,  0, 0, 0, 0,
+	0, 0, 0, 0,  0, 0, 0, 0,
+	IEEE_FMT_S, IEEE_FMT_D, 0, 0,
+	IEEE_FMT_W, IEEE_FMT_L, /* PS (Paired Single) */ 0, 0,
+	0, 0, 0, 0,  0, 0, 0, 0  };
+
 #define	FMT_S		16
 #define	FMT_D		17
 #define	FMT_W		20
@@ -1443,148 +1451,6 @@ void coproc_register_write(struct cpu *cpu,
 #define	FPU_OP_NEG	10
 /*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W,
  RSQRT  */
-
-
-struct internal_float_value {
-	double	f;
-	int	nan;
-};
-
-
-/*
- *  fpu_interpret_float_value():
- *
- *  Interprets a float value from binary IEEE format into an
- *  internal_float_value struct.
- */
-static void fpu_interpret_float_value(uint64_t reg,
-	struct internal_float_value *fvp, int fmt)
-{
-	int n_frac = 0, n_exp = 0;
-	int i, nan, sign = 0, exponent;
-	double fraction;
-
-	memset(fvp, 0, sizeof(struct internal_float_value));
-
-	/*  n_frac and n_exp:  */
-	switch (fmt) {
-	case FMT_S:	n_frac = 23; n_exp = 8; break;
-	case FMT_W:	n_frac = 31; n_exp = 0; break;
-	case FMT_D:	n_frac = 52; n_exp = 11; break;
-	case FMT_L:	n_frac = 63; n_exp = 0; break;
-	default:
-		fatal("fpu_interpret_float_value(): "
-		    "unimplemented format %i\n", fmt);
-	}
-
-	/*  exponent:  */
-	exponent = 0;
-	switch (fmt) {
-	case FMT_W:
-		reg &= 0xffffffffULL;
-	case FMT_L:
-		break;
-	case FMT_S:
-		reg &= 0xffffffffULL;
-	case FMT_D:
-		exponent = (reg >> n_frac) & ((1 << n_exp) - 1);
-		exponent -= (1 << (n_exp-1)) - 1;
-		break;
-	default:
-		fatal("fpu_interpret_float_value(): unimplemented "
-		    "format %i\n", fmt);
-	}
-
-	/*  nan:  */
-	nan = 0;
-	switch (fmt) {
-	case FMT_S:
-		if (reg == 0x7fffffffULL || reg == 0x7fbfffffULL)
-			nan = 1;
-		break;
-	case FMT_D:
-		if (reg == 0x7fffffffffffffffULL ||
-		    reg == 0x7ff7ffffffffffffULL)
-			nan = 1;
-		break;
-	}
-
-	if (nan) {
-		fvp->f = 1.0;
-		goto no_reasonable_result;
-	}
-
-	/*  fraction:  */
-	fraction = 0.0;
-	switch (fmt) {
-	case FMT_W:
-		{
-			int32_t r_int = reg;
-			fraction = r_int;
-		}
-		break;
-	case FMT_L:
-		{
-			int64_t r_int = reg;
-			fraction = r_int;
-		}
-		break;
-	case FMT_S:
-	case FMT_D:
-		/*  sign:  */
-		sign = (reg >> 31) & 1;
-		if (fmt == FMT_D)
-			sign = (reg >> 63) & 1;
-
-		fraction = 0.0;
-		for (i=0; i<n_frac; i++) {
-			int bit = (reg >> i) & 1;
-			fraction /= 2.0;
-			if (bit)
-				fraction += 1.0;
-		}
-		/*  Add implicit bit 0:  */
-		fraction = (fraction / 2.0) + 1.0;
-		break;
-	default:
-		fatal("fpu_interpret_float_value(): "
-		    "unimplemented format %i\n", fmt);
-	}
-
-	/*  form the value:  */
-	fvp->f = fraction;
-
-	/*  fatal("load  reg=%016llx sign=%i exponent=%i fraction=%f ",
-	    (long long)reg, sign, exponent, fraction);  */
-
-	/*  TODO: this is awful for exponents of large magnitude.  */
-	if (exponent > 0) {
-		/*
-		 *  NOTE / TODO:
-		 *
-		 *  This is an ulgy workaround on Alpha, where it seems that
-		 *  multiplying by 2, 1024 times causes a floating point
-		 *  exception. (Triggered by running for example NetBSD/pmax
-		 *  2.0 on an Alpha.)
-		 */
-		if (exponent == 1024)
-			exponent = 1023;
-
-		while (exponent-- > 0)
-			fvp->f *= 2.0;
-	} else if (exponent < 0) {
-		while (exponent++ < 0)
-			fvp->f /= 2.0;
-	}
-
-	if (sign)
-		fvp->f = -fvp->f;
-
-no_reasonable_result:
-	fvp->nan = nan;
-
-	/*  fatal("f = %f\n", fvp->f);  */
-}
 
 
 /*
@@ -1736,8 +1602,8 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 	int ft, int fs, int fd, int cond, int output_fmt)
 {
 	/*  Potentially two input registers, fs and ft  */
-	struct internal_float_value float_value[2];
-	int unordered, nan;
+	struct ieee_float_value float_value[2];
+	int unordered, nan, ieee_fmt = mips_fmt_to_ieee_fmt[fmt];
 	uint64_t fs_v = 0;
 	double nf;
 
@@ -1748,7 +1614,7 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 		if (fmt == FMT_D || fmt == FMT_L)
 			fs_v = (fs_v & 0xffffffffULL) +
 			    (cp->reg[(fs + 1) & 31] << 32);
-		fpu_interpret_float_value(fs_v, &float_value[0], fmt);
+		ieee_interpret_float_value(fs_v, &float_value[0], ieee_fmt);
 	}
 	if (ft >= 0) {
 		uint64_t v = cp->reg[ft];
@@ -1757,7 +1623,7 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 		if (fmt == FMT_D || fmt == FMT_L)
 			v = (v & 0xffffffffULL) +
 			    (cp->reg[(ft + 1) & 31] << 32);
-		fpu_interpret_float_value(v, &float_value[1], fmt);
+		ieee_interpret_float_value(v, &float_value[1], ieee_fmt);
 	}
 
 	switch (op) {

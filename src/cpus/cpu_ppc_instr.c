@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.37 2005-11-22 16:26:37 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.38 2005-11-23 00:40:48 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -806,6 +806,94 @@ X(dcbz)
 X(fmr)
 {
 	*(uint64_t *)ic->arg[1] = *(uint64_t *)ic->arg[0];
+}
+
+
+/*
+ *  fcmpu:  Floating-point Compare Unordered
+ *
+ *  arg[0] = bf
+ *  arg[1] = ptr to fra
+ *  arg[2] = ptr to frb
+ */
+X(fcmpu)
+{
+	fatal("{ fcmpu: TODO }\n");
+}
+
+
+/*
+ *  frsp:  Floating-point Round to Single Precision
+ *
+ *  arg[0] = ptr to frb
+ *  arg[1] = ptr to frt
+ */
+X(frsp)
+{
+	fatal("{ frsp: TODO }\n");
+}
+
+
+/*
+ *  fctiwz:  Floating-point Convert to Integer Word, Round to Zero
+ *
+ *  arg[0] = ptr to frb
+ *  arg[1] = ptr to frt
+ */
+X(fctiwz)
+{
+	fatal("{ fctiwz: TODO }\n");
+}
+
+
+/*
+ *  fmul:  Floating-point Multiply
+ *
+ *  arg[0] = ptr to frt
+ *  arg[1] = ptr to fra
+ *  arg[2] = ptr to frc
+ */
+X(fmul)
+{
+	fatal("{ fmul: TODO }\n");
+}
+X(fmuls)
+{
+	fatal("{ fmuls: TODO }\n");
+}
+
+
+/*
+ *  fmadd:  Floating-point Multiply and Add
+ *
+ *  arg[0] = ptr to frt
+ *  arg[1] = ptr to fra
+ *  arg[2] = copy of the instruction word
+ */
+X(fmadd)
+{
+	fatal("{ fmadd: TODO }\n");
+}
+
+
+/*
+ *  fadd, fsub, fdiv:  Various Floating-point operationgs
+ *
+ *  arg[0] = ptr to fra
+ *  arg[1] = ptr to frb
+ *  arg[2] = ptr to frt
+ */
+X(fadd)
+{
+	fatal("{ fadd: TODO }\n");
+}
+X(fsub)
+{
+	fatal("{ fsub: TODO }\n");
+}
+X(fdiv)
+{
+	fatal("{ fdiv: TODO }\n");
 }
 
 
@@ -2718,26 +2806,97 @@ X(to_be_translated)
 		}
 		break;
 
-	case PPC_HI6_63:
-		xo = (iword >> 1) & 1023;
+	case PPC_HI6_59:
+		xo = (iword >>  1) & 1023;
 		rt = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		rb = (iword >> 11) & 31;
+		rs = (iword >>  6) & 31;	/*  actually frc  */
 		rc = iword & 1;
 
-		switch (xo) {
+		if (rc) {
+			fatal("Floating point (59) with rc bit! TODO\n");
+			goto bad;
+		}
 
-		case PPC_63_FMR:
-			if (rc) {
-				fatal("FMR with rc-bit: TODO\n");
-				goto bad;
-			}
-			ic->f = instr(fmr);
-			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rb]);
-			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+		/*  NOTE: Some floating-point instructions are selected
+		    using only the lowest 5 bits, not all 10!  */
+		switch (xo & 31) {
+		case PPC_59_FMULS:
+			ic->f = instr(fmuls);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[ra]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.fpr[rs]); /* frc */
 			break;
+		default:/*  Use all 10 bits of xo:  */
+			switch (xo) {
+			default:goto bad;
+			}
+		}
+		break;
 
-		default:goto bad;
+	case PPC_HI6_63:
+		xo = (iword >>  1) & 1023;
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		rb = (iword >> 11) & 31;
+		rs = (iword >>  6) & 31;	/*  actually frc  */
+		rc = iword & 1;
+
+		if (rc) {
+			fatal("Floating point (63) with rc bit! TODO\n");
+			goto bad;
+		}
+
+		/*  NOTE: Some floating-point instructions are selected
+		    using only the lowest 5 bits, not all 10!  */
+		switch (xo & 31) {
+		case PPC_63_FDIV:
+		case PPC_63_FSUB:
+		case PPC_63_FADD:
+			switch (xo & 31) {
+			case PPC_63_FDIV: ic->f = instr(fdiv); break;
+			case PPC_63_FSUB: ic->f = instr(fsub); break;
+			case PPC_63_FADD: ic->f = instr(fadd); break;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[ra]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[rb]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+			break;
+		case PPC_63_FMUL:
+			ic->f = instr(fmul);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[ra]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.fpr[rs]); /* frc */
+			break;
+		case PPC_63_FMADD:
+			ic->f = instr(fmadd);
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[ra]);
+			ic->arg[2] = iword;
+			break;
+		default:/*  Use all 10 bits of xo:  */
+			switch (xo) {
+			case PPC_63_FCMPU:
+				ic->f = instr(fcmpu);
+				ic->arg[0] = rt >> 2;	/*  bf  */
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[ra]);
+				ic->arg[2] = (size_t)(&cpu->cd.ppc.fpr[rb]);
+				break;
+			case PPC_63_FRSP:
+			case PPC_63_FCTIWZ:
+			case PPC_63_FMR:
+				switch (xo) {
+				case PPC_63_FRSP:   ic->f = instr(frsp); break;
+				case PPC_63_FCTIWZ: ic->f = instr(fctiwz);break;
+				case PPC_63_FMR:    ic->f = instr(fmr); break;
+				}
+				ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rb]);
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[rt]);
+				break;
+
+			default:goto bad;
+			}
 		}
 		break;
 

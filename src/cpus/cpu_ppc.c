@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.30 2005-11-22 21:56:18 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.31 2005-11-23 00:40:48 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1535,6 +1535,43 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		debug(">");
 		break;
+	case PPC_HI6_59:
+		xo = (iword >> 1) & 1023;
+		/*  NOTE: Some floating point instructions only use the
+		    lowest 5 bits of xo, some use all 10 bits!  */
+		switch (xo & 31) {
+		case PPC_59_FDIVS:
+		case PPC_59_FSUBS:
+		case PPC_59_FADDS:
+		case PPC_59_FMULS:
+		case PPC_59_FMADDS:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rs = (iword >>  6) & 31;	/*  actually frc  */
+			rc = iword & 1;
+			switch (xo & 31) {
+			case PPC_59_FDIVS:	mnem = "fdivs"; break;
+			case PPC_59_FSUBS:	mnem = "fsubs"; break;
+			case PPC_59_FADDS:	mnem = "fadds"; break;
+			case PPC_59_FMULS:	mnem = "fmuls"; break;
+			case PPC_59_FMADDS:	mnem = "fmadds"; break;
+			}
+			debug("%s%s\t", mnem, rc? "." : "");
+			switch (xo & 31) {
+			case PPC_59_FMULS:
+				debug("f%i,f%i,f%i", rt, ra, rs);
+				break;
+			case PPC_59_FMADDS:
+				debug("f%i,f%i,f%i,f%i", rt, ra, rs, rb);
+				break;
+			default:debug("f%i,f%i,f%i", rt, ra, rb);
+			}
+			break;
+		default:/*  TODO: similar to hi6_63  */
+			debug("unimplemented hi6_59, xo = 0x%x", xo);
+		}
+		break;
 	case PPC_HI6_63:
 		xo = (iword >> 1) & 1023;
 		/*  NOTE: Some floating point instructions only use the
@@ -1573,8 +1610,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			default:debug("f%i,f%i,f%i", rt, ra, rb);
 			}
 			break;
-
 		default:switch (xo) {
+			case PPC_63_FCMPU:
 			case PPC_63_FRSP:
 			case PPC_63_FCTIWZ:
 			case PPC_63_FNEG:
@@ -1586,6 +1623,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				rb = (iword >> 11) & 31;
 				rc = iword & 1;
 				switch (xo) {
+				case PPC_63_FCMPU:	mnem = "fcmpu"; break;
 				case PPC_63_FCTIWZ:
 					mnem = power? "fcirz" : "fctiwz"; break;
 				case PPC_63_FRSP:	mnem = "frsp"; break;
@@ -1596,6 +1634,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				}
 				debug("%s%s\t", mnem, rc? "." : "");
 				switch (xo) {
+				case PPC_63_FCMPU:
+					debug("%i,f%i,f%i", rt >> 2, ra, rb);
+					break;
 				case PPC_63_FCTIWZ:
 				case PPC_63_FRSP:
 				case PPC_63_FNEG:

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1046 2005-11-23 00:40:46 debug Exp $
+$Id: HISTORY,v 1.1047 2005-11-23 02:17:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2451,3 +2451,6 @@ Changelog for GXemul:
 		More PCI updates; reverse-endian device access for PowerPC etc.
 20051123	Generalizing the IEEE floating point subsystem (moving it out
 		from src/cpus/cpu_mips_coproc.c into a new src/float_emul.c).
+		Input via slave xterms was sometimes not really working; fixing
+		this for ns16550, and a warning message is now displayed if
+		multiple non-xterm consoles are active.

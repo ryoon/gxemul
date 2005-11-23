@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.h,v 1.12 2005-02-06 15:15:04 debug Exp $
+ *  $Id: console.h,v 1.13 2005-11-23 02:17:02 debug Exp $
  *
  *  Console functions.  (See console.c for more info.)
  */
@@ -51,6 +51,8 @@ void console_get_framebuffer_mouse(int *x, int *y, int *fb_nr);
 void console_set_framebuffer_mouse(int x, int y, int fb_nr);
 void console_getmouse(int *x, int *y, int *buttons, int *fb_nr);
 void console_slave(char *arg);
+int console_are_slaves_allowed(void);
+void console_warn_if_slaves_are_needed(void);
 int console_start_slave(struct machine *machine, char *consolename);
 int console_start_slave_inputonly(struct machine *machine, char *consolename);
 void console_init_main(struct emul *);

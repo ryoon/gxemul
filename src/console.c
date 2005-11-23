@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.9 2005-06-26 11:36:27 debug Exp $
+ *  $Id: console.c,v 1.10 2005-11-23 02:17:00 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -771,6 +771,45 @@ void console_init_main(struct emul *emul)
 void console_allow_slaves(int allow)
 {
 	allow_slaves = allow;
+}
+
+
+/*
+ *  console_are_slaves_allowed():
+ *
+ *  Returns the value of allow_slaves.
+ */
+int console_are_slaves_allowed(void)
+{
+	return allow_slaves;
+}
+
+
+/*
+ *  console_warn_if_slaves_are_needed():
+ *
+ *  Prints a warning if slave xterms are needed (i.e. there is more than one
+ *  console handle in use), but they are not currently allowed.
+ */
+void console_warn_if_slaves_are_needed(void)
+{
+	int i, n = 0;
+	for (i=MAIN_CONSOLE+1; i<n_console_handles; i++)
+		if (console_handles[i].in_use &&
+		    !console_handles[i].using_xterm)
+			n ++;
+
+	if (!allow_slaves && n > 1) {
+		fatal("#\n#  WARNING! More than one console output is in use,"
+		    "\n#  but xterm slaves are not enabled. Behaviour will\n"
+		    "#  be undefined.  (Use -x to enable slave xterms.)\n#\n");
+		for (i=MAIN_CONSOLE+1; i<n_console_handles; i++)
+			if (console_handles[i].in_use &&
+			    !console_handles[i].using_xterm)
+				fatal("#  console handle %i: '%s'\n",
+				    i, console_handles[i].name);
+		fatal("#\n");
+	}
 }
 
 

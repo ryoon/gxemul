@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.32 2005-11-23 06:59:52 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.33 2005-11-23 22:03:31 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1596,6 +1596,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_63_FSUB:
 		case PPC_63_FADD:
 		case PPC_63_FMUL:
+		case PPC_63_FMSUB:
 		case PPC_63_FMADD:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
@@ -1611,6 +1612,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				mnem = power? "fa" : "fadd"; break;
 			case PPC_63_FMUL:
 				mnem = power? "fm" : "fmul"; break;
+			case PPC_63_FMSUB:
+				mnem = power? "fms" : "fmsub"; break;
 			case PPC_63_FMADD:
 				mnem = power? "fma" : "fmadd"; break;
 			}

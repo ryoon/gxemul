@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1049 2005-11-23 18:16:38 debug Exp $
+$Id: HISTORY,v 1.1050 2005-11-23 22:03:23 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2455,4 +2455,8 @@ Changelog for GXemul:
 		this for ns16550, and a warning message is now displayed if
 		multiple non-xterm consoles are active.
 		Adding some PPC floating point support, etc.
-		Interrupt related fixes.
+		Various interrupt related updates (dev_wdc, _ns16550, _8259,
+		and the isa32 common code in machine.c).
+		NetBSD/prep can now be installed! :-) (Well, with some manual
+		commands necessary before running sysinst.) Updating the
+		documentation and various other things to reflect this.

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.65 2005-11-03 08:59:25 debug Exp $
+$Id: intro.html,v 1.66 2005-11-23 22:03:24 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -70,17 +70,17 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 <p>The processor architecture best emulated by GXemul is MIPS, but other
-architectures are also partially emulated.
+architectures such as ARM and PowerPC are also partially emulated.
 
 <p>Devices and CPUs are not simulated with 100% accuracy. They are only
-``faked'' well enough to make operating systems (e.g. NetBSD) run without
+``faked'' well enough to allow guest operating systems run without
 complaining too much. Still, the emulator could be of interest for
 academic research and experiments, such as when learning how to write
 operating system code.
 
-<p>The emulator is written in C, does not depend on external libraries
+<p>The emulator is written in C, does not depend on third-party libraries
 (except X11, but that is optional), and should compile and run on most
-Unix-like systems. If it doesn't, then that is a bug.
+Unix-like systems.
 
 <p>The emulator contains code which tries to emulate the workings of CPUs
 and surrounding hardware found in real machines, but it does not contain
@@ -159,12 +159,9 @@ mail me a bug report.
 
 <p>The emulator's performance is highly dependent on both runtime settings
 and on compiler settings, so you might want to experiment with different
-CC and CFLAGS environment variable values. For example, on a modern PC,
-you could try the following:
-<p><pre>
-	$ <b>CFLAGS="-mcpu=pentium4 -O3" ./configure</b>
-	$ <b>make</b>
-</pre>
+CC and CFLAGS environment variable values. For example, on an AMD Athlon
+host, you might want to try setting <tt>CFLAGS</tt> to <tt>-march=athlon 
+-O3</tt> before running <tt>configure</tt>.
 
 
 
@@ -222,24 +219,26 @@ their original meaning in those xterm windows.
 Emulation of R4000, which is a 64-bit CPU, was my initial goal.
 R2000/R3000-like CPUs (32-bit), R1x000, and generic MIPS32/MIPS64-style
 CPUs are also emulated, and are hopefully almost as stable as the R4000 
-emulation.
+emulation. Several guest operating systems for MIPS can run inside
+the emulator.
 
-<p>I have written an experimental dynamic binary translation subsystem.
-This gives higher total performance than interpreting one instruction at a
-time and executing it. (If you wish to disable bintrans, add <b>-B</b> to
-the command line.)
+<p>(For MIPS emulation, I have written an experimental dynamic binary
+translation subsystem, for Alpha and i386 hosts. This gives higher total
+performance than interpreting one instruction at a time and executing it.
+If you wish to disable bintrans, add <b>-B</b> to the command line.)
 
 <h4>ARM:</h4>
 
-The ARM CPU emulation is good enough to run NetBSD/cats and OpenBSD/cats,
-but it is not as tested or fine-tuned as the MIPS emulation. (It also does
-not make use of binary translation/recompilation.)
+ARM emulation is good enough to run NetBSD/cats 2.1 and OpenBSD/cats 3.8,
+but it is not as tested or fine-tuned as the MIPS emulation mode.
 
-<h4>Other CPU types:</h4>
+<h4>PowerPC:</h4>
 
-Some other CPU architectures can also be partially emulated. These are not
-working well enough yet to run guest operating systems.
+PowerPC emulation is still in its beginning stages, but good enough
+to run NetBSD/prep 2.1.
 
+<p>Non-MIPS emulation modes use dynamic translation, but not recompilation 
+into native code. This makes it possible to run on any host platform.
 
 
 
@@ -268,6 +267,12 @@ taking place, and that clock speeds are fixed with the <tt><b>-I</b></tt>
 option. (Deterministic in this case does <i>not</i> mean that the
 emulation will be identical to some actual real-world machine.)
 
+<p><font color="#ff0000">(Oops/TODO: User interaction means <i>both</i>
+input to the emulated program/OS, and interacting with the emulator
+itself. Breaking into the debugger and then continuing execution may
+affect when/how interrupts occur.)</font>
+
+
 
 
 
@@ -288,11 +293,10 @@ are emulated well enough to run at least one "guest OS":
     <li><b>Acer Pica-61</b>&nbsp;&nbsp;(an ARC machine)
     <p>
     <li><b>NEC MobilePro 770, 780, 800, and 880</b>&nbsp;&nbsp;(HPCmips machines)
-	<br><small>(No mouse support yet, so running X windows is rather difficult.)</small>
     <p>
     <li><b>Cobalt</b>
     <p>
-    <li><b>Malta (evbmips)</b>
+    <li><b>Malta</b> (evbmips)
     <p>
     <li><b>SGI O2 ("IP32")</b>
 	<br><small>(Enough for root-on-nfs, but not for disk boot.)</small>
@@ -301,6 +305,11 @@ are emulated well enough to run at least one "guest OS":
   <li><b><u>ARM</u></b>
   <ul>
     <li><b>CATS</b>
+  </ul>
+  <p>
+  <li><b><u>PowerPC</u></b>
+  <ul>
+    <li><b>PReP (PowerPC Reference Platform)</b>
   </ul>
 </ul>
 
@@ -447,6 +456,17 @@ interacted with similar to a real machine.
 	  <td></td>
 	  <td><a href="http://www.openbsd.org/cats.html">OpenBSD/cats</a>
 		<br>CATS</td>
+	  <td></td>
+	</tr>
+
+	<tr><td height="10"></td></tr>
+
+	<tr>
+	  <td></td>
+	  <td align="center"><a href="20051123-netbsd-prep.png"><img src="20051123-netbsd-prep_small.png"></a></td>
+	  <td></td>
+	  <td><a href="http://www.netbsd.org/Ports/prep/">NetBSD/prep</a>
+		<br>PReP</td>
 	  <td></td>
 	</tr>
 

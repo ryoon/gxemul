@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.41 2005-11-23 18:16:41 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.42 2005-11-23 22:03:32 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -865,6 +865,30 @@ X(fmr)
 
 
 /*
+ *  fneg:  Floating-point Negate
+ *
+ *  arg[0] = ptr to frb
+ *  arg[1] = ptr to frt
+ */
+X(fneg)
+{
+	uint64_t v;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	v = *(uint64_t *)ic->arg[0];
+	*(uint64_t *)ic->arg[1] = v ^ 0x8000000000000000ULL;
+}
+
+
+/*
  *  fcmpu:  Floating-point Compare Unordered
  *
  *  arg[0] = 28 - 4*bf  (bitfield shift)
@@ -1048,7 +1072,7 @@ X(fmadd)
 	struct ieee_float_value frb;
 	struct ieee_float_value frc;
 	double result = 0.0;
-	int nan = 0;
+	int nan = 0, cc;
 
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
@@ -1067,6 +1091,73 @@ X(fmadd)
 		nan = 1;
 	else
 		result = fra.f * frc.f + frb.f;
+	if (nan)
+		cc = 1;
+	else {
+		if (result < 0.0)
+			cc = 8;
+		else if (result > 0.0)
+			cc = 4;
+		else
+			cc = 2;
+	}
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (cc << PPC_FPSCR_FPCC_SHIFT);
+
+	(*(uint64_t *)ic->arg[0]) =
+	    ieee_store_float_value(result, IEEE_FMT_D, nan);
+}
+
+
+/*
+ *  fmsub:  Floating-point Multiply and Sub
+ *
+ *  arg[0] = ptr to frt
+ *  arg[1] = ptr to fra
+ *  arg[2] = copy of the instruction word
+ */
+X(fmsub)
+{
+	uint32_t iw = ic->arg[2];
+	int b = (iw >> 11) & 31, c = (iw >> 6) & 31;
+	struct ieee_float_value fra;
+	struct ieee_float_value frb;
+	struct ieee_float_value frc;
+	double result = 0.0;
+	int nan = 0, cc;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
+	ieee_interpret_float_value(cpu->cd.ppc.fpr[b], &frb, IEEE_FMT_D);
+	ieee_interpret_float_value(cpu->cd.ppc.fpr[c], &frc, IEEE_FMT_D);
+	if (fra.nan || frb.nan || frc.nan)
+		nan = 1;
+	else
+		result = fra.f * frc.f - frb.f;
+	if (nan)
+		cc = 1;
+	else {
+		if (result < 0.0)
+			cc = 8;
+		else if (result > 0.0)
+			cc = 4;
+		else
+			cc = 2;
+	}
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (cc << PPC_FPSCR_FPCC_SHIFT);
+
 	(*(uint64_t *)ic->arg[0]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
@@ -1084,7 +1175,7 @@ X(fadd)
 	struct ieee_float_value fra;
 	struct ieee_float_value frb;
 	double result = 0.0;
-	int nan = 0;
+	int nan = 0, c;
 
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
@@ -1102,6 +1193,20 @@ X(fadd)
 		nan = 1;
 	else
 		result = fra.f + frb.f;
+	if (nan)
+		c = 1;
+	else {
+		if (result < 0.0)
+			c = 8;
+		else if (result > 0.0)
+			c = 4;
+		else
+			c = 2;
+	}
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
+
 	(*(uint64_t *)ic->arg[2]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
@@ -1115,7 +1220,7 @@ X(fsub)
 	struct ieee_float_value fra;
 	struct ieee_float_value frb;
 	double result = 0.0;
-	int nan = 0;
+	int nan = 0, c;
 
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
@@ -1132,6 +1237,20 @@ X(fsub)
 		nan = 1;
 	else
 		result = fra.f - frb.f;
+	if (nan)
+		c = 1;
+	else {
+		if (result < 0.0)
+			c = 8;
+		else if (result > 0.0)
+			c = 4;
+		else
+			c = 2;
+	}
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
+
 	(*(uint64_t *)ic->arg[2]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
@@ -1145,7 +1264,7 @@ X(fdiv)
 	struct ieee_float_value fra;
 	struct ieee_float_value frb;
 	double result = 0.0;
-	int nan = 0;
+	int nan = 0, c;
 
 	/*  Sync. PC in case of an exception:  */
 	uint64_t low_pc = ((size_t)ic - (size_t)
@@ -1158,11 +1277,24 @@ X(fdiv)
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
-	if (fra.nan || frb.nan || frb.f == 0) {
+	if (fra.nan || frb.nan || frb.f == 0)
 		nan = 1;
-	} else {
+	else
 		result = fra.f / frb.f;
+	if (nan)
+		c = 1;
+	else {
+		if (result < 0.0)
+			c = 8;
+		else if (result > 0.0)
+			c = 4;
+		else
+			c = 2;
 	}
+	/*  TODO: Signaling vs Quiet NaN  */
+	cpu->cd.ppc.fpscr &= ~(PPC_FPSCR_FPCC | PPC_FPSCR_VXNAN);
+	cpu->cd.ppc.fpscr |= (c << PPC_FPSCR_FPCC_SHIFT);
+
 	(*(uint64_t *)ic->arg[2]) =
 	    ieee_store_float_value(result, IEEE_FMT_D, nan);
 }
@@ -3316,8 +3448,12 @@ X(to_be_translated)
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[ra]);
 			ic->arg[2] = (size_t)(&cpu->cd.ppc.fpr[rs]); /* frc */
 			break;
+		case PPC_63_FMSUB:
 		case PPC_63_FMADD:
-			ic->f = instr(fmadd);
+			switch (xo & 31) {
+			case PPC_63_FMSUB: ic->f = instr(fmsub); break;
+			case PPC_63_FMADD: ic->f = instr(fmadd); break;
+			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rt]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.fpr[ra]);
 			ic->arg[2] = iword;
@@ -3332,10 +3468,12 @@ X(to_be_translated)
 				break;
 			case PPC_63_FRSP:
 			case PPC_63_FCTIWZ:
+			case PPC_63_FNEG:
 			case PPC_63_FMR:
 				switch (xo) {
 				case PPC_63_FRSP:   ic->f = instr(frsp); break;
 				case PPC_63_FCTIWZ: ic->f = instr(fctiwz);break;
+				case PPC_63_FNEG:   ic->f = instr(fneg); break;
 				case PPC_63_FMR:    ic->f = instr(fmr); break;
 				}
 				ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rb]);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.40 2005-11-23 06:59:53 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.41 2005-11-23 22:03:36 debug Exp $
  *
  *
  *  PPC and POWER opcodes. These are gathered from various sources.
@@ -227,6 +227,7 @@
 #define	  PPC_63_FSUB		  20
 #define	  PPC_63_FADD		  21
 #define	  PPC_63_FMUL		  25
+#define	  PPC_63_FMSUB		  28
 #define	  PPC_63_FMADD		  29
 #define	  PPC_63_FNEG		  40
 #define	  PPC_63_FMR		  72

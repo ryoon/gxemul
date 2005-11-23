@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.160 2005-11-22 16:26:34 debug Exp $
+$Id: RELEASE,v 1.161 2005-11-23 22:03:23 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -16,7 +16,7 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 The processor architecture best emulated by GXemul is MIPS, but other
-architectures, such as ARM, are also partially emulated.
+architectures, such as ARM and PowerPC, are also partially emulated.
 
 I have verified that the following "guest" operating systems can run inside
 the emulator. Instructions on how to install and run these can be found in
@@ -38,13 +38,11 @@ the documentation.
     NetBSD/sgimips 2.1                 SGI O2 ("IP32")
     NetBSD/cats 2.1                    CATS (ARM)
     OpenBSD/cats 3.8                   CATS (ARM)
+    NetBSD/prep 2.1                    PReP (PowerPC Reference Platform)
 
 Some of these guest operating systems are easier to install and run than
-others. The best supported mode is the DECstation 5000/200 emulation mode,
-with NetBSD/pmax as the guest operating system.
-
-(A couple of other emulation modes exist, but most of those are just
-"skeletons" and don't actually do anything.)
+others. The best supported guest operating systems are NetBSD/pmax and
+NetBSD/cats.
 
 The emulator can also be used in other experiments; it does not have to run
 entire guest operating systems. However, GXemul does not simulate things
@@ -54,7 +52,8 @@ micro-architectural effects are not simulated.
 
 User-visible change between release 0.3.6.2 and 0.3.7 include:
 
-    O)	...
+    O)	The experimental PowerPC emulation mode is now stable enough to
+	allow NetBSD/prep 2.1 to be installed inside the emulator.
 
     O)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
 	instead of IDE harddisks. It works for at least NetBSD, OpenBSD,

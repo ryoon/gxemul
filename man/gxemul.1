@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.38 2005-11-21 23:13:59 debug Exp $
+.\" $Id: gxemul.1,v 1.39 2005-11-23 22:03:25 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -50,17 +50,18 @@
 is an experimental instruction-level machine emulator. Several
 emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
-systems (e.g. NetBSD) run as if they were running on a real machine.
+systems (e.g. NetBSD) run inside the emulator as if they were running on a 
+real machine.
 .Pp
 The processor architecture best emulated by GXemul is MIPS, but other
-architectures are also partially emulated.
+architectures (ARM and PowerPC) are also partially emulated.
 .Pp
 MIPS processors are emulated either using a simple type of binary 
 translator (on Alpha and i386 hosts), or using traditional slow 
 interpretation (all other hosts, including amd64 machines running in 
 64-bit mode).
 .Pp
-Non-MIPS processors (e.g. ARM) are emulated using a newer dynamic 
+Non-MIPS processors are emulated using a newer dynamic 
 translation system (called dyntrans in the rest of this man page);
 dyntrans does not require any host-specific code, so it should work on any 
 platform. Performance is somewhere between binary translation and 

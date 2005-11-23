@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.54 2005-11-21 22:27:18 debug Exp $
+ *  $Id: dev_wdc.c,v 1.55 2005-11-23 22:03:34 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -79,6 +79,8 @@ struct wdc_data {
 	int		inbuf_tail;
 
 	int		delayed_interrupt;
+	int		int_asserted;
+
 	int		write_in_progress;
 	int		write_count;
 	int64_t		write_offset;
@@ -114,12 +116,14 @@ struct wdc_data {
 void dev_wdc_tick(struct cpu *cpu, void *extra)
 { 
 	struct wdc_data *d = extra;
+	int old_di = d->delayed_interrupt;
 
-	if (d->delayed_interrupt) {
+	if (d->delayed_interrupt)
 		d->delayed_interrupt --;
 
-		if (d->delayed_interrupt == 0)
-			cpu_interrupt(cpu, d->irq_nr);
+	if (old_di == 1 || d->int_asserted) {
+		cpu_interrupt(cpu, d->irq_nr);
+		d->int_asserted = 1;
 	}
 }
 
@@ -868,6 +872,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				debug("[ wdc: read from STATUS: 0x%02x ]\n",
 				    (int)odata);
 			cpu_interrupt_ack(cpu, d->irq_nr);
+			d->int_asserted = 0;
 			d->delayed_interrupt = 0;
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n",(int)idata);
@@ -948,7 +953,7 @@ int devinit_wdc(struct devinit *devinit)
 
 	if (devinit->machine->machine_type != MACHINE_HPCMIPS &&
 	    devinit->machine->machine_type != MACHINE_EVBMIPS)
-		tick_shift += 2;
+		tick_shift += 1;
 
 	machine_add_tickfunction(devinit->machine, dev_wdc_tick,
 	    d, tick_shift);

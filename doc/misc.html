@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.55 2005-11-24 12:32:10 debug Exp $
+$Id: misc.html,v 1.56 2005-11-24 13:05:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -52,6 +52,7 @@ SUCH DAMAGE.
 	developing firmware, using GXemul</a>
   <li><a href="#compilercontruct">Using GXemul in compiler contruction courses</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
+  <li><a href="#filexfer">Transfering files to/from the guest OS</a>
   <li><a href="#largeimages">How to extract large gzipped disk images</a>
   <li><a href="#userland">Running userland binaries</a>
   <li><a href="#promdump">Using a PROM dump from a real machine</a>
@@ -86,6 +87,8 @@ correctly. At the moment, the following NICs should work:
   <li><tt><b>le</b></tt>, Turbochannel Lance Ethernet, as used in
 	DECstation 5000/200 ("3max")
   <li><tt><b>mec</b></tt>, the SGI O2's ethernet controller
+  <li><tt><b>ether</b></tt>, the "fake" experimental ethernet device
+	(documented <a href="experiments.html#expdevices">here</a>)
 </ul>
 
 <p>The emulator acts as a NAT-like gateway/firewall; to the outside world
@@ -103,16 +106,14 @@ the internet, not the guest OS.
 
 Is this a good idea?  The answer is yes and no, depending on the level of
 detail you need in your simulations. If you are developing an operating
-system or operating system kernel of your own, and wish to target
-MIPS-like systems in general, then the answer might be yes, for
-experimental purposes.
+system or operating system kernel of your own, then the emulator can be a 
+complement to testing on real hardware.
 
-<p>Some examples of things that <i>don't</i> work, that you should keep in 
-mind:
+<p>Important things to keep in mind:
 
 <ul>
 	<li>Porting code to a specific machine mode, e.g. a Silicon Graphics
-	machine, using GXemul, will not necessarily cause the code to
+	machine, using GXemul, will not "magically" cause the code to
 	work on a real machine. Sometimes code works in GXemul which doesn't
 	work on real hardware, sometimes it's the other way around.
 
@@ -120,20 +121,28 @@ mind:
 	<li>GXemul contains bugs, and many things are not yet implemented.
 
 	<p>
-	<li>I have only implemented devices in GXemul to the degree that
-	NetBSD, OpenBSD, etc, don't complain too much. One way to say it
-	is that the device implementations are "lazy hacks", based on the
-	assumption that the emulated OS is already developed and bug-free.
-	They are not intended to be used for development of new OS code,
-	so if you do that, then be prepared for bugs and inconsitencies.
-
+	<li><b>Very important!</b> I have only implemented devices in GXemul
+	to the degree that NetBSD, OpenBSD, Linux, etc don't complain too much.
+	<p>
+	If you are developing a driver for a device which is emulated by
+	GXemul, and your driver does not seem to be working, then the
+	probability of a bug in GXemul's implementation of the device is
+	very much higher than that of a bug in your driver.
+	<p>
+	The device implementations in GXemul are based on the assumption
+	that the emulated OS is already developed and bug-free. They are
+	not primarily intended to be used for development of new device
+	driver code in operating systems, so if you do that, then be
+	prepared for bugs and inconsitencies.
 	<p>
 	<li>CPU details in GXemul are usually wrong. If your code depends
 	on, say, R10000 or MIPS64 specifics, chances are that GXemul will
-	not be sufficient. Again, this was done as "lazy hacks", and pretty
-	much assumes that the OS being emulated is already developed
-	and bug-free.
-
+	not be sufficient. One example is different revisions of ISAs;
+	64-bit MIPS instructions which should trigger an exception on a
+	real 32-bit MIPS processor usually execute anyway in GXemul. Another
+	example is if userland code tries to access kernel memory; in some
+	cases there is protection against this, but not in all cases (to get
+	higher performance).
 	<p>
 	<li>Caches. There is no cache emulation in GXemul right now. Caches
 	for R2000/R3000 are faked well enough to run NetBSD, Ultrix, etc
@@ -154,8 +163,8 @@ your code during development, but it should not be fully relied on.
 <h3>Using GXemul in compiler contruction courses:</h3>
 
 If you are learning how to write a compiler, and wish to target a 
-realistic target platform, then MIPS (as emulated by GXemul)
-might be a suitable choice.
+realistic target platform, then MIPS or ARM (as emulated by GXemul)
+might be suitable choices.
 
 <ul>
   <li><b>(+)</b>&nbsp;&nbsp;Your compiler needs to output real assembly
@@ -191,20 +200,20 @@ emulated DECstation machine, you would use a command line such as this:
 <pre>
 	$ <b>gxemul -e 3max -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
 </pre>
-<p>
-NOTE: For some emulation modes, such as the DECstation mode, you do 
-<i>not</i> have to specify the name of the kernel, if the disk image is 
-bootable!
-<p>
-It is possible to have more than one disk. For each -d argument, a disk
+
+<p>NOTE: For some emulation modes, such as the DECstation mode, you do 
+<i>not</i> actually have to specify the name of the kernel, if the disk 
+image is bootable!
+
+<p>It is possible to have more than one disk. For each -d argument, a disk
 image is added; the first will be SCSI target 0, the second will be target 1, and so on,
 unless you specify explicitly which ID number the devices should have.
 <pre>
 	$ <b>gxemul -e 3max -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
 </pre>
 Note: In the example above, disk2.raw will get scsi id 5.
-<p>
-If a filename has a 'c' prefix, or ends with ".iso", then it is assumed to be
+
+<p>If a filename has a 'c' prefix, or ends with ".iso", then it is assumed to be
 a CDROM device (this can be overridden with a 'd' prefix, to force a read/write disk).
 For example, the following command would start the emulator with two
 CDROM images, and one harddisk image:
@@ -272,6 +281,53 @@ There is another advantage to using symbolic links for tape filenames:
 every time a tape is rewound, it is reopened using the filename given
 on the command line. By changing what the symbolic name points to,
 you can "switch tapes" without quiting and restarting the emulator.
+
+
+
+
+
+
+<p><br>
+<a name="filexfer"></a>
+<h3>Transfering files to/from the guest OS:</h3>
+
+If the emulated machine supports networking (see
+<a href="#networking">above</a>), then transfering files via FTP is
+probably easiest.
+
+<p>There is another way of transfering files which works for any kind of 
+emulated machine which supports disks (either SCSI or IDE). Any file can 
+be supplied as a disk image. For example, consider the following:<pre>
+	$ <b>gxemul -XEcats -d nbsd_cats.img -d archive.tar.gz netbsd-GENERIC</b>
+</pre>
+This will start NetBSD/cats with <tt>nbsd_cats.img</tt> as IDE master on
+controller 0 (wd0), and <tt>archive.tar.gz</tt> as IDE slave on controller
+0 (wd1). From inside NetBSD, it is now possible to extract the files using 
+the following command:<pre>
+	(inside emulated NetBSD/cats)
+	# <b>tar zxvf /dev/wd1c</b>
+</pre>
+Don't worry if NetBSD complains about lack of disklabel; it doesn't
+matter. On some machines, NetBSD uses <tt>wd1d</tt> instead of 
+<tt>wd1c</tt> for the entire disk.
+There is also a minor problem: reading the end of the disk image. If you 
+experience problems untaring archives like this, then pad out the archive 
+first with some zeroes.
+
+<p>Transfering files <i>out</i> from the emulated operating system to the 
+host can be done the same way. First, prepare an empty archive file:<pre>
+	$ <b>dd if=/dev/zero of=newarchive.tar bs=1024 count=1 seek=10000</b>
+</pre>This example created a 10 MB empty file. Then, start the emulator
+like this:<pre>
+	$ <b>gxemul -XEcats -d nbsd_cats.img -d archive.tar netbsd-GENERIC</b>
+</pre>
+and transfer files by creating an archive directly onto the disk image:<pre>
+	(inside emulated NetBSD/cats)
+	# <b>tar cvf /dev/wd1c filenames</b>
+</pre>
+where filenames are the files or directories to transfer.
+
+
 
 
 

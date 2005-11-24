@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.12 2005-06-17 21:00:04 debug Exp $
+ *  $Id: net.h,v 1.13 2005-11-24 12:32:11 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -98,8 +98,8 @@ struct tcp_connection {
 /*****************************************************************************/
 
 
-#define	MAX_TCP_CONNECTIONS	60
-#define	MAX_UDP_CONNECTIONS	60
+#define	MAX_TCP_CONNECTIONS	100
+#define	MAX_UDP_CONNECTIONS	100
 
 struct net {
 	/*  The emul struct which this net belong to:  */

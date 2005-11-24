@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.43 2005-11-24 01:15:06 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.44 2005-11-24 01:31:54 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2424,11 +2424,23 @@ X(stfdx)
 
 
 /*
+ *  tlbia:  TLB invalidate all
+ */
+X(tlbia)
+{
+printf("tlbia\n");
+exit(1);
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+}
+
+
+/*
  *  tlbie:  TLB invalidate
  */
 X(tlbie)
 {
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	cpu->invalidate_translation_caches(cpu, reg(ic->arg[0]),
+	    INVALIDATE_VADDR);
 }
 
 
@@ -3158,9 +3170,21 @@ X(to_be_translated)
 			break;
 
 		case PPC_31_TLBIA:
-		case PPC_31_TLBIE:
+			ic->f = instr(tlbia);
+			break;
+
 		case PPC_31_TLBSYNC:
-			/*  TODO: These are bogus.  */
+			/*  According to IBM, "Ensures that a tlbie and
+			    tlbia instruction executed by one processor has
+			    completed on all other processors.", which in
+			    GXemul means a nop :-)  */
+			ic->f = instr(nop);
+			break;
+
+		case PPC_31_TLBIE:
+			/*  TODO: POWER also uses ra?  */
+			rb = (iword >> 11) & 31;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rb]);
 			ic->f = instr(tlbie);
 			break;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.34 2005-11-23 23:31:36 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.35 2005-11-24 01:15:06 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -982,6 +982,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_LHBRX:
 		case PPC_31_LWBRX:
 		case PPC_31_LFDX:
+		case PPC_31_LFSX:
 		case PPC_31_STWCX_DOT:
 		case PPC_31_STDCX_DOT:
 		case PPC_31_STBX:
@@ -995,6 +996,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_STHBRX:
 		case PPC_31_STWBRX:
 		case PPC_31_STFDX:
+		case PPC_31_STFSX:
 			/*  rs for stores, rt for loads, actually  */
 			load = 0; wlen = 0; fpreg = 0;
 			rs = (iword >> 21) & 31;
@@ -1015,8 +1017,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_LWZUX: wlen = 4; load = 1;
 				mnem = power? "lux":"lwzux";
 				break;
-			case PPC_31_LFDX: fpreg = 1; wlen = 4; load = 1;
+			case PPC_31_LFDX: fpreg = 1; wlen = 8; load = 1;
 				mnem = "lfdx"; break;
+			case PPC_31_LFSX: fpreg = 1; wlen = 4; load = 1;
+				mnem = "lfsx"; break;
 			case PPC_31_STWCX_DOT: wlen=4; mnem = "stwcx."; break;
 			case PPC_31_STDCX_DOT: wlen=8; mnem = "stdcx."; break;
 			case PPC_31_STBX:  wlen=1; mnem = "stbx"; break;
@@ -1037,8 +1041,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_STHBRX: wlen = 2; mnem = "sthbrx"; break;
 			case PPC_31_STWBRX: wlen = 4; mnem = power?
 					    "stbrx" : "stwbrx"; break;
-			case PPC_31_STFDX: fpreg = 1; wlen = 4;
+			case PPC_31_STFDX: fpreg = 1; wlen = 8;
 				mnem = "stfdx"; break;
+			case PPC_31_STFSX: fpreg = 1; wlen = 4;
+				mnem = "stfsx"; break;
 			}
 			debug("%s\t%s%i,r%i,r%i", mnem,
 			    fpreg? "f" : "r", rs, ra, rb);

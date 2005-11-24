@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.104 2005-11-23 22:03:24 debug Exp $
+$Id: guestoses.html,v 1.105 2005-11-24 01:15:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -810,7 +810,7 @@ It is possible to install and run
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-    <b>gxemul -xEprep -d nbsd_prep.img -d rdb:prepcd.iso -j prep/binary/kernel/netbsd-INSTALL.gz</b>
+    <b>gxemul -x -Eprep -d nbsd_prep.img -d rdb:prepcd.iso -j prep/binary/kernel/netbsd-INSTALL.gz</b>
 
 </pre>
   <p>
@@ -1133,7 +1133,7 @@ may not have been written correctly to disk.
 boot from the harddisk image:
 
 <p><pre>
-	<b>gxemul -XEcats -d obsd_cats.img bsd</b>
+	<b>gxemul -X -x -Ecats -d obsd_cats.img bsd</b>
 
 </pre>
 

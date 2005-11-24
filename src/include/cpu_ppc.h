@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.54 2005-11-23 06:59:53 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.55 2005-11-24 01:15:07 debug Exp $
  */
 
 #include "misc.h"
@@ -107,7 +107,7 @@ struct ppc_tc_physpage {
 
 #define	PPC_N_VPH_ENTRIES		1048576
 
-#define	PPC_MAX_VPH_TLB_ENTRIES		256
+#define	PPC_MAX_VPH_TLB_ENTRIES		128
 struct ppc_vpg_tlb_entry {
 	uint8_t		valid;
 	uint8_t		writeflag;

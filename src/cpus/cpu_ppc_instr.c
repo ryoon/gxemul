@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.42 2005-11-23 22:03:32 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.43 2005-11-24 01:15:06 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -155,12 +155,12 @@ X(addic_dot)
  *  bclr:  Branch Conditional to Link Register
  *
  *  arg[0] = bo
- *  arg[1] = bi
+ *  arg[1] = 31 - bi
  *  arg[2] = bh
  */
 X(bclr)
 {
-	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	int ctr_ok, cond_ok;
 	uint64_t old_pc = cpu->pc;
 	MODE_uint_t tmp, addr = cpu->cd.ppc.spr[SPR_LR];
@@ -170,7 +170,7 @@ X(bclr)
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
 	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
-	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> bi31m) & 1) );
 	if (ctr_ok && cond_ok) {
 		uint64_t mask_within_page =
 		    ((PPC_IC_ENTRIES_PER_PAGE-1) << PPC_INSTR_ALIGNMENT_SHIFT)
@@ -191,10 +191,15 @@ X(bclr)
 		}
 	}
 }
+X(bclr_20)
+{
+	cpu->pc = cpu->cd.ppc.spr[SPR_LR];
+	DYNTRANS_PC_TO_POINTERS(cpu);
+}
 X(bclr_l)
 {
 	uint64_t low_pc, old_pc = cpu->pc;
-	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	int ctr_ok, cond_ok;
 	MODE_uint_t tmp, addr = cpu->cd.ppc.spr[SPR_LR];
 	if (!(bo & 4))
@@ -203,7 +208,7 @@ X(bclr_l)
 	tmp = cpu->cd.ppc.spr[SPR_CTR];
 	ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 	cond_ok = (bo >> 4) & 1;
-	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> bi31m) & 1) );
 
 	/*  Calculate return PC:  */
 	low_pc = ((size_t)ic - (size_t)
@@ -239,16 +244,16 @@ X(bclr_l)
  *  bcctr:  Branch Conditional to Count register
  *
  *  arg[0] = bo
- *  arg[1] = bi
+ *  arg[1] = 31 - bi
  *  arg[2] = bh
  */
 X(bcctr)
 {
-	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	uint64_t old_pc = cpu->pc;
 	MODE_uint_t addr = cpu->cd.ppc.spr[SPR_CTR];
 	int cond_ok = (bo >> 4) & 1;
-	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> bi31m) & 1) );
 	if (cond_ok) {
 		uint64_t mask_within_page =
 		    ((PPC_IC_ENTRIES_PER_PAGE-1) << PPC_INSTR_ALIGNMENT_SHIFT)
@@ -272,10 +277,10 @@ X(bcctr)
 X(bcctr_l)
 {
 	uint64_t low_pc, old_pc = cpu->pc;
-	int bo = ic->arg[0], bi = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
 	MODE_uint_t addr = cpu->cd.ppc.spr[SPR_CTR];
 	int cond_ok = (bo >> 4) & 1;
-	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> bi31m) & 1) );
 
 	/*  Calculate return PC:  */
 	low_pc = ((size_t)ic - (size_t)
@@ -408,7 +413,15 @@ X(bc_samepage)
 	cond_ok |= ( ((bo >> 3) & 1) ==
 	    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
 	if (ctr_ok && cond_ok)
-		instr(b_samepage)(cpu,ic);
+		cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
+}
+X(bc_samepage_no_ctr)
+{
+	int cond_ok, bi = ic->arg[2], bo = ic->arg[1];
+	cond_ok = (bo >> 4) & 1;
+	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
+	if (cond_ok)
+		cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
 }
 X(bcl_samepage)
 {
@@ -430,7 +443,7 @@ X(bcl_samepage)
 	cond_ok |= ( ((bo >> 3) & 1) ==
 	    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
 	if (ctr_ok && cond_ok)
-		instr(b_samepage)(cpu,ic);
+		cpu->cd.ppc.next_ic = (struct ppc_instr_call *) ic->arg[0];
 }
 
 
@@ -626,12 +639,12 @@ X(cmpld)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = int32_t imm
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmpdi)
 {
 	int64_t tmp = reg(ic->arg[0]), imm = (int32_t)ic->arg[1];
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < imm)
 		c = 8;
 	else if (tmp > imm)
@@ -640,8 +653,8 @@ X(cmpdi)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -650,12 +663,12 @@ X(cmpdi)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = int32_t imm
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmpldi)
 {
 	uint64_t tmp = reg(ic->arg[0]), imm = (uint32_t)ic->arg[1];
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < imm)
 		c = 8;
 	else if (tmp > imm)
@@ -664,8 +677,8 @@ X(cmpldi)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -722,12 +735,12 @@ X(cmplw)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = int32_t imm
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmpwi)
 {
 	int32_t tmp = reg(ic->arg[0]), imm = ic->arg[1];
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < imm)
 		c = 8;
 	else if (tmp > imm)
@@ -736,8 +749,8 @@ X(cmpwi)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -746,12 +759,12 @@ X(cmpwi)
  *
  *  arg[0] = ptr to ra
  *  arg[1] = int32_t imm
- *  arg[2] = bf
+ *  arg[2] = 28 - 4*bf
  */
 X(cmplwi)
 {
 	uint32_t tmp = reg(ic->arg[0]), imm = ic->arg[1];
-	int bf = ic->arg[2], c;
+	int bf_shift = ic->arg[2], c;
 	if (tmp < imm)
 		c = 8;
 	else if (tmp > imm)
@@ -760,8 +773,8 @@ X(cmplwi)
 		c = 2;
 	/*  SO bit, copied from XER  */
 	c |= ((cpu->cd.ppc.spr[SPR_XER] >> 31) & 1);
-	cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
-	cpu->cd.ppc.cr |= (c << (28 - 4*bf));
+	cpu->cd.ppc.cr &= ~(0xf << bf_shift);
+	cpu->cd.ppc.cr |= (c << bf_shift);
 }
 
 
@@ -2245,6 +2258,36 @@ X(lfs)
 		    ieee_store_float_value(val.f, IEEE_FMT_D, val.nan);
 	}
 }
+X(lfsx)
+{
+	/*  Sync. PC in case of an exception:  */
+	uint64_t old_pc, low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	old_pc = cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2))
+	    + (low_pc << 2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	/*  Perform a 32-bit load:  */
+#ifdef MODE32
+	ppc32_loadstore_indexed
+#else
+	ppc_loadstore_indexed
+#endif
+	    [2 + 4 + 8](cpu, ic);
+
+	if (old_pc == cpu->pc) {
+		/*  The load succeeded. Let's convert the value:  */
+		struct ieee_float_value val;
+		(*(uint64_t *)ic->arg[0]) &= 0xffffffff;
+		ieee_interpret_float_value(*(uint64_t *)ic->arg[0],
+		    &val, IEEE_FMT_S);
+		(*(uint64_t *)ic->arg[0]) =
+		    ieee_store_float_value(val.f, IEEE_FMT_D, val.nan);
+	}
+}
 X(lfd)
 {
 	/*  Sync. PC in case of an exception:  */
@@ -2307,6 +2350,36 @@ X(stfs)
 	ppc32_loadstore
 #else
 	ppc_loadstore
+#endif
+	    [2 + 4](cpu, ic);
+
+	ic->arg[0] = (size_t)old_arg0;
+}
+X(stfsx)
+{
+	uint64_t *old_arg0 = (void *)ic->arg[0];
+	struct ieee_float_value val;
+	uint64_t tmp_val;
+
+	/*  Sync. PC in case of an exception:  */
+	uint64_t low_pc = ((size_t)ic - (size_t)
+	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
+	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) << 2)) + (low_pc<<2);
+	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);
+		return;
+	}
+
+	ieee_interpret_float_value(*old_arg0, &val, IEEE_FMT_D);
+	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S, val.nan);
+
+	ic->arg[0] = (size_t)&tmp_val;
+
+	/*  Perform a 32-bit store:  */
+#ifdef MODE32
+	ppc32_loadstore_indexed
+#else
+	ppc_loadstore_indexed
 #endif
 	    [2 + 4](cpu, ic);
 
@@ -2547,7 +2620,7 @@ X(to_be_translated)
 		}
 		ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[ra]);
 		ic->arg[1] = (ssize_t)imm;
-		ic->arg[2] = bf;
+		ic->arg[2] = 28 - 4 * bf;
 		break;
 
 	case PPC_HI6_ADDIC:
@@ -2694,7 +2767,10 @@ X(to_be_translated)
 			samepage_function = instr(bcl_samepage);
 		} else {
 			ic->f = instr(bc);
-			samepage_function = instr(bc_samepage);
+			if (bo & 4)
+				samepage_function = instr(bc_samepage_no_ctr);
+			else
+				samepage_function = instr(bc_samepage);
 		}
 		ic->arg[0] = (ssize_t)tmp_addr;
 		ic->arg[1] = bo;
@@ -2788,8 +2864,12 @@ X(to_be_translated)
 			if (xo == PPC_19_BCLR) {
 				if (lk_bit)
 					ic->f = instr(bclr_l);
-				else
+				else {
 					ic->f = instr(bclr);
+					if (!cpu->machine->show_trace_tree &&
+					    (bo & 0x14) == 0x14)
+						ic->f = instr(bclr_20);
+				}
 			} else {
 				if (lk_bit)
 					ic->f = instr(bcctr_l);
@@ -2797,7 +2877,7 @@ X(to_be_translated)
 					ic->f = instr(bcctr);
 			}
 			ic->arg[0] = bo;
-			ic->arg[1] = bi;
+			ic->arg[1] = 31 - bi;
 			ic->arg[2] = bh;
 			break;
 
@@ -3161,6 +3241,7 @@ X(to_be_translated)
 		case PPC_31_LHBRX:
 		case PPC_31_LWBRX:
 		case PPC_31_LFDX:
+		case PPC_31_LFSX:
 		case PPC_31_STBX:
 		case PPC_31_STBUX:
 		case PPC_31_STHX:
@@ -3172,6 +3253,7 @@ X(to_be_translated)
 		case PPC_31_STHBRX:
 		case PPC_31_STWBRX:
 		case PPC_31_STFDX:
+		case PPC_31_STFSX:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -3198,6 +3280,8 @@ X(to_be_translated)
 					   ic->f = instr(lwbrx); break;
 			case PPC_31_LFDX:  size=3; load=1; fp=1;
 					   ic->f = instr(lfdx); break;
+			case PPC_31_LFSX:  size=2; load=1; fp=1;
+					   ic->f = instr(lfsx); break;
 			case PPC_31_STBX:  break;
 			case PPC_31_STBUX: update = 1; break;
 			case PPC_31_STHX:  size=1; break;
@@ -3212,6 +3296,8 @@ X(to_be_translated)
 					   ic->f = instr(stwbrx); break;
 			case PPC_31_STFDX: size=3; fp=1;
 					   ic->f = instr(stfdx); break;
+			case PPC_31_STFSX: size=2; fp=1;
+					   ic->f = instr(stfsx); break;
 			}
 			if (fp)
 				ic->arg[0] = (size_t)(&cpu->cd.ppc.fpr[rs]);

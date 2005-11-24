@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: configfiles.html,v 1.14 2005-08-12 06:02:55 debug Exp $
+$Id: configfiles.html,v 1.15 2005-11-24 12:12:43 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -232,17 +232,19 @@ netbooting kernels.
 <a name="multihost"></a>
 <h3>Network across multiple hosts:</h3>
 
-<font color="#ff0000">2005-06-21: This a very new feature, so it might not 
-be totally stable yet.</font>
+<p>It is possible to add multiple <tt>machine</tt> entries into one
+configuration file. This will cause the emulator to try to run all those
+machines simultaneously. An alternative (and better) solution for doing
+this, which gives higher reliability (stability) and performance, is to
+have one configuration file per machine.
 
-<p>It is possible to add multiple <tt>machine</tt> entries into one 
-configuration file. This will cause the emulator to try to run all those 
-machines simultaneously. An alternative solution for doing this, which 
-gives higher reliability (stability) and performance, is to have one
-configuration file per machine.
-
-<p><table border="0"><tr><td width="40">&nbsp;</td><td><pre>
-<font color="#2020cf">!!gxemul</font>
+<p><table border="1" width="100%"><tr><td width="40">&nbsp;</td>
+<td><pre>
+<font color="#2020cf">!!gxemul
+!
+!  Configuration file for a
+!  "client" machine, netbooting
+!  of another machine.</font>
 
 <b>emul(</b>
     <b>net(</b>
@@ -250,13 +252,34 @@ configuration file per machine.
 	<b>add_remote(<font color="#ff003f">"localhost:15001"</font>)</b>
     <b>)</b>
     <b>machine(</b>
+	<b>name(<font color="#ff003f">"client machine"</font>)</b>
+	<b>serial_nr(1)</b>	<font color="#2020cf">!  10.0.0.1</font>
+
+	<b>type(<font color="#ff003f">"sgi"</font>)</b>
+	<b>subtype(<font color="#ff003f">"o2"</font>)</b>
+        <b>load(<font color="#ff003f">"netbsd-GENERIC32_IP3x.gz"</font>)</b>
+    <b>)</b>
+<b>)</b></pre></td><td width="20">&nbsp;</td><td><pre>
+<font color="#2020cf">!!gxemul
+!
+!  Configuration file for the
+!  "server" machine.</font>
+!
+
+<b>emul(</b>
+    <b>net(</b>
+	<b>local_port(15001)</b>
+	<b>add_remote(<font color="#ff003f">"localhost:15000"</font>)</b>
+    <b>)</b>
+    <b>machine(</b>
+	<b>name(<font color="#ff003f">"nfs server"</font>)</b>
+	<b>serial_nr(2)</b>	<font color="#2020cf">!  10.0.0.2</font>
+
         <b>type(<font color="#ff003f">"dec"</font>)</b>
         <b>subtype(<font color="#ff003f">"3max"</font>)</b>
-        <b>load(<font color="#ff003f">"netbsd-pmax-2.0-GENERIC"</font>)</b>
+        <b>disk(<font color="#ff003f">"nbsd_pmax.img"</font>)</b>
     <b>)</b>
-<b>)</b>
-</pre>
-</td></tr></table>
+<b>)</b></pre></td><td width="20">&nbsp;</td></tr></table>
 
 <p>This example creates a network using the default settings (10.0.0.0/8), 
 but it also allows the network to be connected to other emulator 
@@ -265,17 +288,18 @@ UDP port 15000 on the host is added to the network. All ethernet packets
 on the network are also sent out to all other connected machines (those 
 added with <tt>add_remote()</tt>).
 
-<p>As you can see in the example, this is a configuration file for running
-NetBSD/pmax 2.0, with a netbooting GENERIC kernel. (Netbooting because
-there is no disk image.) Another emulator instance (which must have 
-the same kind of <tt>net()</tt>, except that it listens to port 15001)  
-emulates the nfs server.
+<p>As you can see in the example, this is a configuration file for
+netbooting a NetBSD/sgimips diskless machine, with a NetBSD/pmax machine
+acting as the nfs server. Note that the nfs server has ports 15000 and 
+15001 reversed!
 
-<p>There is no error checking or security checking of any kind. All UDP 
-packets arriving at the input port are added to the emulated ethernet.
-<font color="#ff0000">This is not very good, and is the primary 
-reason why there needs to be some kind of rewrite before this 
-is to be considered stable.</font>
+<p>"<tt>localhost</tt>" can be changed to the Internet hostname of a 
+remote machine, to run the simulation across a physical network.
+
+<p><font color="#ff0000"><b>NOTE:</b> There is no error checking or
+security checking of any kind. All UDP packets arriving at the input port
+are added to the emulated ethernet. This is not very good of course; use 
+this feature at your own risk.</font>
 
 
 

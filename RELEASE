@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.161 2005-11-23 22:03:23 debug Exp $
+$Id: RELEASE,v 1.162 2005-11-24 12:12:42 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -52,8 +52,9 @@ micro-architectural effects are not simulated.
 
 User-visible change between release 0.3.6.2 and 0.3.7 include:
 
-    O)	The experimental PowerPC emulation mode is now stable enough to
-	allow NetBSD/prep 2.1 to be installed inside the emulator.
+    O)	The experimental PowerPC emulation mode is now working well enough
+	to allow NetBSD/prep 2.1 to be installed and run inside the emulator.
+	(It is not 100% stable, and it is not optimized for performance yet.)
 
     O)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
 	instead of IDE harddisks. It works for at least NetBSD, OpenBSD,
@@ -61,9 +62,12 @@ User-visible change between release 0.3.6.2 and 0.3.7 include:
 
 Internal (code related) changes include:
 
-    o)  Cleanup of the PCI and ISA bus frameworks.
-    o)  PowerPC dyntrans updates.
-    o)  ARM dyntrans optimizations.
+    o)  Cleanup of the PCI and ISA bus frameworks; in practice this means
+	that more code can be shared between different emulated machine
+	models.
+
+    o)  Dyntrans updates (PowerPC mostly, but also many performance related
+	updates for ARM).
 
 There have also been lots of other small changes, too small to mention here.
 

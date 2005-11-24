@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.81 2005-11-09 17:14:18 debug Exp $
+ *  $Id: net.c,v 1.82 2005-11-24 18:52:14 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -99,7 +99,7 @@
 #include "net.h"
 
 
-/*  #define debug fatal  */
+#define debug fatal
 
 
 #define	ADDR_IPV4	1

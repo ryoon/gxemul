@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.12 2005-11-22 16:26:38 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.13 2005-11-24 18:52:15 debug Exp $
  *
- *  DEC 21143 ("Tulip") ethernet.
+ *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
+ *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
+ *  reverse-engineering OpenBSD and NetBSD sources.
+ *
  *
  *  TODO: Lots of stuff.
  *
@@ -41,6 +44,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
+#include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -60,20 +64,33 @@ struct dec21143_data {
 	int		irq_nr;
 	int		irq_asserted;
 
+	/*  PCI:  */
 	int		pci_little_endian;
 
-	uint32_t	reg[N_REGS];
-
-	uint64_t	cur_rx_addr;
-	uint64_t	cur_tx_addr;
-
+	/*  Ethernet address, and a network which we are connected to:  */
 	uint8_t		mac[6];
-	uint16_t	rom[1 << ROM_WIDTH];
+	struct net	*net;
 
+	/*  ROM emulation:  */
+	uint16_t	rom[1 << ROM_WIDTH];
 	int		srom_curbit;
 	int		srom_opcode;
 	int		srom_opcode_has_started;
 	int		rom_addr;
+
+	/*  21143 registers:  */
+	uint32_t	reg[N_REGS];
+
+	/*  Internal (emulated) state:  */
+	uint64_t	cur_tx_addr;
+	unsigned char	*cur_tx_buf;
+	int		cur_tx_buf_len;
+	int		tx_idling;
+
+	uint64_t	cur_rx_addr;
+	unsigned char	*cur_rx_buf;
+	int		cur_rx_buf_len;
+	int		cur_rx_offset;
 };
 
 
@@ -82,13 +99,26 @@ struct dec21143_data {
  */
 int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 {
-	uint64_t addr = d->cur_rx_addr;
+	uint64_t addr = d->cur_rx_addr, bufaddr;
 	unsigned char descr[16];
 	uint32_t rdes0, rdes1, rdes2, rdes3;
+	int bufsize, buf1_size, buf2_size, i, writeback_len = 4, to_xfer;
 
-return 0;
+	/*  No current packet? Then check for new ones.  */
+	if (d->cur_rx_buf == NULL) {
+		/*  Nothing available? Then abort.  */
+		if (!net_ethernet_rx_avail(d->net, d))
+			return 0;
 
-	/*  fatal("{ dec21143_rx: base = 0x%08x }\n", (int)addr);  */
+		/*  Get the next packet into our buffer:  */
+		net_ethernet_rx(d->net, d, &d->cur_rx_buf,
+		    &d->cur_rx_buf_len);
+
+		d->cur_rx_offset = 0;
+	}
+
+	fatal("{ dec21143_rx: base = 0x%08x }\n", (int)addr);
+
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t),
 	    MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
@@ -98,9 +128,11 @@ return 0;
 
 	rdes0 = descr[0] + (descr[1]<<8) + (descr[2]<<16) + (descr[3]<<24);
 
-	/*  Only process packets owned by the 21143:  */
-	if (!(rdes0 & TDSTAT_OWN))
+	/*  Only use descriptors owned by the 21143:  */
+	if (!(rdes0 & TDSTAT_OWN)) {
+		d->reg[CSR_STATUS/8] |= STATUS_RU;
 		return 0;
+	}
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr + sizeof(uint32_t), descr +
 	    sizeof(uint32_t), sizeof(uint32_t) * 3, MEM_READ, PHYSICAL |
@@ -113,7 +145,82 @@ return 0;
 	rdes2 = descr[8] + (descr[9]<<8) + (descr[10]<<16) + (descr[11]<<24);
 	rdes3 = descr[12] + (descr[13]<<8) + (descr[14]<<16) + (descr[15]<<24);
 
-	fatal("{ RX %08x %08x %08x %08x }\n", rdes0, rdes1, rdes2, rdes3);
+	buf1_size = rdes1 & TDCTL_SIZE1;
+	buf2_size = (rdes1 & TDCTL_SIZE2) >> TDCTL_SIZE2_SHIFT;
+	bufaddr = buf1_size? rdes2 : rdes3;
+	bufsize = buf1_size? buf1_size : buf2_size;
+
+	d->reg[CSR_STATUS/8] &= ~STATUS_RS;
+
+	if (rdes1 & TDCTL_ER)
+		d->cur_rx_addr = d->reg[CSR_RXLIST / 8];
+	else {
+		if (rdes1 & TDCTL_CH)
+			d->cur_rx_addr = rdes3;
+		else
+			d->cur_rx_addr += 4 * sizeof(uint32_t);
+	}
+
+	fatal("{ RX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
+	    (long long)addr, rdes0, rdes1, rdes2, rdes3, bufsize, (int)bufaddr);
+
+	/*  Turn off all status bits, and give up ownership:  */
+	rdes0 = 0x00000000;
+
+	to_xfer = d->cur_rx_buf_len - d->cur_rx_offset;
+	if (to_xfer > bufsize)
+		to_xfer = bufsize;
+
+	/*  DMA bytes from the packet into emulated physical memory:  */
+	for (i=0; i<to_xfer; i++) {
+		cpu->memory_rw(cpu, cpu->mem, bufaddr + i,
+		    d->cur_rx_buf + d->cur_rx_offset + i, 1, MEM_WRITE,
+		    PHYSICAL | NO_EXCEPTIONS);
+		/*  fatal(" %02x", d->cur_rx_buf[d->cur_rx_offset + i]);  */
+	}
+
+	/*  Was this the first buffer in a frame? Then mark it as such.  */
+	if (d->cur_rx_offset == 0)
+		rdes0 |= TDSTAT_Rx_FS;
+
+	d->cur_rx_offset += to_xfer;
+
+	/*  Frame completed?  */
+	if (d->cur_rx_offset >= d->cur_rx_buf_len) {
+		rdes0 |= TDSTAT_Rx_LS;
+
+		/*  Frame len, which includes the size of a 4-byte CRC:  */
+		rdes0 |= ((d->cur_rx_buf_len + 4) << 16) & TDSTAT_Rx_FL;
+
+		/*  Too long frame?  */
+		if (d->cur_rx_buf_len > 1518)
+			rdes0 |= TDSTAT_Rx_TL;
+
+		/*  Cause a receiver interrupt:  */
+		d->reg[CSR_STATUS/8] |= STATUS_RI;
+
+		free(d->cur_rx_buf);
+		d->cur_rx_buf = NULL;
+		d->cur_rx_buf_len = 0;
+	}
+
+	/*  Descriptor writeback:  */
+	descr[ 0] = rdes0;       descr[ 1] = rdes0 >> 8;
+	descr[ 2] = rdes0 >> 16; descr[ 3] = rdes0 >> 24;
+	if (writeback_len > 1) {
+		descr[ 4] = rdes1;       descr[ 5] = rdes1 >> 8;
+		descr[ 6] = rdes1 >> 16; descr[ 7] = rdes1 >> 24;
+		descr[ 8] = rdes2;       descr[ 9] = rdes2 >> 8;
+		descr[10] = rdes2 >> 16; descr[11] = rdes2 >> 24;
+		descr[12] = rdes3;       descr[13] = rdes3 >> 8;
+		descr[14] = rdes3 >> 16; descr[15] = rdes3 >> 24;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t)
+	    * writeback_len, MEM_WRITE, PHYSICAL | NO_EXCEPTIONS)) {
+		fatal("[ dec21143_rx: memory_rw failed! ]\n");
+		return 0;
+	}
 
 	return 1;
 }
@@ -127,7 +234,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 	uint64_t addr = d->cur_tx_addr, bufaddr;
 	unsigned char descr[16];
 	uint32_t tdes0, tdes1, tdes2, tdes3;
-	int bufsize, buf1_size, buf2_size;
+	int bufsize, buf1_size, buf2_size, i, writeback_len = 4;
 
 	/*  fatal("{ dec21143_tx: base = 0x%08x }\n", (int)addr);  */
 
@@ -141,7 +248,10 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 
 	/*  Only process packets owned by the 21143:  */
 	if (!(tdes0 & TDSTAT_OWN)) {
-		d->reg[CSR_STATUS/8] |= STATUS_TU;
+		if (!d->tx_idling) {
+			d->reg[CSR_STATUS/8] |= STATUS_TU;
+			d->tx_idling = 1;
+		}
 		return 0;
 	}
 
@@ -164,7 +274,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 	d->reg[CSR_STATUS/8] &= ~STATUS_TS;
 
 	if (tdes1 & TDCTL_ER)
-		d->cur_tx_addr = d->reg[CSR_TXLIST/8];
+		d->cur_tx_addr = d->reg[CSR_TXLIST / 8];
 	else {
 		if (tdes1 & TDCTL_CH)
 			d->cur_tx_addr = tdes3;
@@ -175,35 +285,106 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 	fatal("{ TX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
 	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize, (int)bufaddr);
 
+	/*  Assume no error:  */
+	tdes0 &= ~ (TDSTAT_Tx_UF | TDSTAT_Tx_EC | TDSTAT_Tx_LC
+	    | TDSTAT_Tx_NC | TDSTAT_Tx_LO | TDSTAT_Tx_TO | TDSTAT_ES);
+
 	if (tdes1 & TDCTL_Tx_SET) {
-		/*  Setup Packet  */
+		/*
+		 *  Setup Packet.
+		 *
+		 *  TODO. For now, just ignore it, and pretend it worked.
+		 */
 		fatal("{ TX: setup packet }\n");
+		if (bufsize != 192)
+			fatal("[ dec21143: setup packet len = %i, should be"
+			    " 192! ]\n", (int)bufsize);
 		if (tdes1 & TDCTL_Tx_IC)
 			d->reg[CSR_STATUS/8] |= STATUS_TI;
-#if 0
+		/*  New descriptor values, according to the docs:  */
 		tdes0 = 0x7fffffff; tdes1 = 0xffffffff;
 		tdes2 = 0xffffffff; tdes3 = 0xffffffff;
-#else
-		tdes0 = 0x00000000;
-#endif
 	} else {
-		/*  Data Packet  */
-		fatal("{ TX: data packet: TODO }\n");
-		exit(1);
+		/*
+		 *  Data Packet.
+		 */
+		fatal("{ TX: data packet: ");
+		if (tdes1 & TDCTL_Tx_FS) {
+			/*  First segment. Let's allocate a new buffer:  */
+			fatal("new frame }\n");
+			d->cur_tx_buf = malloc(bufsize);
+			d->cur_tx_buf_len = 0;
+		} else {
+			/*  Not first segment. Increase the length of
+			    the current buffer:  */
+			fatal("continuing last frame }\n");
+			d->cur_tx_buf = realloc(d->cur_tx_buf,
+			    d->cur_tx_buf_len + bufsize);
+		}
+
+		if (d->cur_tx_buf == NULL) {
+			fatal("dec21143_tx(): out of memory\n");
+			exit(1);
+		}
+
+		/*  "DMA" data from emulated physical memory into the buf:  */
+		for (i=0; i<bufsize; i++) {
+			cpu->memory_rw(cpu, cpu->mem, bufaddr + i,
+			    d->cur_tx_buf + d->cur_tx_buf_len + i, 1, MEM_READ,
+			    PHYSICAL | NO_EXCEPTIONS);
+			/*  fatal(" %02x", d->cur_tx_buf[
+			    d->cur_tx_buf_len + i]);  */
+		}
+
+		d->cur_tx_buf_len += bufsize;
+
+		/*  Last segment? Then actually transmit it:  */
+		if (tdes1 & TDCTL_Tx_LS) {
+			fatal("{ TX: data frame complete. }\n");
+			if (d->net != NULL) {
+				net_ethernet_tx(d->net, d, d->cur_tx_buf,
+				    d->cur_tx_buf_len);
+			} else {
+				static int warn = 0;
+				if (!warn)
+					fatal("[ dec21143: WARNING! Not "
+					    "connected to a network! ]\n");
+				warn = 1;
+			}
+
+			free(d->cur_tx_buf);
+			d->cur_tx_buf = NULL;
+			d->cur_tx_buf_len = 0;
+
+			/*  We are done.  */
+			tdes0 &= ~TDSTAT_OWN;
+			writeback_len = 1;
+
+			/*  Interrupt, if Tx_IC is set:  */
+/*			if (tdes1 & TDCTL_Tx_IC)  */
+				d->reg[CSR_STATUS/8] |= STATUS_TI;
+		}
 	}
+
+	/*  Error summary:  */
+	if (tdes0 & (TDSTAT_Tx_UF | TDSTAT_Tx_EC | TDSTAT_Tx_LC
+	    | TDSTAT_Tx_NC | TDSTAT_Tx_LO | TDSTAT_Tx_TO))
+		tdes0 |= TDSTAT_ES;
 
 	/*  Descriptor writeback:  */
 	descr[ 0] = tdes0;       descr[ 1] = tdes0 >> 8;
 	descr[ 2] = tdes0 >> 16; descr[ 3] = tdes0 >> 24;
-	descr[ 4] = tdes1;       descr[ 5] = tdes1 >> 8;
-	descr[ 6] = tdes1 >> 16; descr[ 7] = tdes1 >> 24;
-	descr[ 8] = tdes2;       descr[ 9] = tdes2 >> 8;
-	descr[10] = tdes2 >> 16; descr[11] = tdes2 >> 24;
-	descr[12] = tdes3;       descr[13] = tdes3 >> 8;
-	descr[14] = tdes3 >> 16; descr[15] = tdes3 >> 24;
+	if (writeback_len > 1) {
+		descr[ 4] = tdes1;       descr[ 5] = tdes1 >> 8;
+		descr[ 6] = tdes1 >> 16; descr[ 7] = tdes1 >> 24;
+		descr[ 8] = tdes2;       descr[ 9] = tdes2 >> 8;
+		descr[10] = tdes2 >> 16; descr[11] = tdes2 >> 24;
+		descr[12] = tdes3;       descr[13] = tdes3 >> 8;
+		descr[14] = tdes3 >> 16; descr[15] = tdes3 >> 24;
+	}
 
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t) * 4,
-	    MEM_WRITE, PHYSICAL | NO_EXCEPTIONS)) {
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t)
+	    * writeback_len, MEM_WRITE, PHYSICAL | NO_EXCEPTIONS)) {
 		fatal("[ dec21143_tx: memory_rw failed! ]\n");
 		return 0;
 	}
@@ -236,13 +417,15 @@ void dev_dec21143_tick(struct cpu *cpu, void *extra)
 		d->reg[CSR_STATUS / 8] |= STATUS_AIS;
 
 	asserted = d->reg[CSR_STATUS / 8] & d->reg[CSR_INTEN / 8] & 0x0c01ffff;
-	if (asserted != d->irq_asserted) {
-		d->irq_asserted = asserted;
-		if (asserted)
-			cpu_interrupt(cpu, d->irq_nr);
-		else
+	if (asserted) {
+		cpu_interrupt(cpu, d->irq_nr);
+	} else {
+		if (d->irq_asserted)
 			cpu_interrupt_ack(cpu, d->irq_nr);
 	}
+
+	/*  Remember assertion flag:  */
+	d->irq_asserted = asserted;
 }
 
 
@@ -411,6 +594,7 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ)
 			fatal("[ dec21143: UNIMPLEMENTED READ from "
 			    "txpoll ]\n");
+		d->tx_idling = 0;
 		dev_dec21143_tick(cpu, extra);
 		break;
 
@@ -425,6 +609,10 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			debug("[ dec21143: setting RXLIST to 0x%x ]\n",
 			    (int)idata);
+			if (idata & 0x3)
+				fatal("[ dec21143: WARNING! RXLIST not aligned"
+				    "? (0x%llx) ]\n", (long long)idata);
+			idata &= ~0x3;
 			d->cur_rx_addr = idata;
 		}
 		break;
@@ -433,6 +621,10 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			debug("[ dec21143: setting TXLIST to 0x%x ]\n",
 			    (int)idata);
+			if (idata & 0x3)
+				fatal("[ dec21143: WARNING! TXLIST not aligned"
+				    "? (0x%llx) ]\n", (long long)idata);
+			idata &= ~0x3;
 			d->cur_tx_addr = idata;
 		}
 		break;
@@ -473,6 +665,11 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 			srom_access(cpu, d, oldreg, idata);
 		break;
 
+	case CSR_SIASTAT:	/*  csr12  */
+		/*  TODO  */
+		odata = 0xffffffff;
+		break;
+
 	default:if (writeflag == MEM_READ)
 			fatal("[ dec21143: read from unimplemented 0x%02x ]\n",
 			    (int)relative_addr);
@@ -507,6 +704,8 @@ int devinit_dec21143(struct devinit *devinit)
 	d->pci_little_endian = devinit->pci_little_endian;
 
 	net_generate_unique_mac(devinit->machine, d->mac);
+	net_add_nic(devinit->machine->emul->net, d, d->mac);
+	d->net = devinit->machine->emul->net;
 
 	/*  Version (= 1) and Chip count (= 1):  */
 	d->rom[TULIP_ROM_SROM_FORMAT_VERION / 2] = 0x101;

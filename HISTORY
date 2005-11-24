@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1051 2005-11-24 13:05:05 debug Exp $
+$Id: HISTORY,v 1.1052 2005-11-24 18:52:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2461,3 +2461,4 @@ Changelog for GXemul:
 		commands necessary before running sysinst.) Updating the
 		documentation and various other things to reflect this.
 20051124	Various minor documentation updates.
+		Continuing the work on the DEC 21143 NIC.

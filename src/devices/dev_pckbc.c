@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.59 2005-11-23 02:17:19 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.60 2005-11-25 04:25:26 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -713,6 +713,11 @@ if (x&1)
 			d->reg[relative_addr] = idata;
 
 			switch (idata) {
+			case 0x10:
+			case 0x11:
+				/*  TODO: For now, don't print warnings about
+				    these. NetBSD sends these.  */
+				break;
 			case K_RDCMDBYTE:
 				d->state = STATE_RDCMDBYTE;
 				break;

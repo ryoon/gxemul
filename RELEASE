@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.162 2005-11-24 12:12:42 debug Exp $
+$Id: RELEASE,v 1.163 2005-11-25 04:25:24 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -56,6 +56,10 @@ User-visible change between release 0.3.6.2 and 0.3.7 include:
 	to allow NetBSD/prep 2.1 to be installed and run inside the emulator.
 	(It is not 100% stable, and it is not optimized for performance yet.)
 
+    O)	I finally took the time to implement a DEC 21143 NIC; this brings
+	network connectivity to (at least) emulated OpenBSD/cats and
+	NetBSD/cats.
+
     O)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
 	instead of IDE harddisks. It works for at least NetBSD, OpenBSD,
 	and Linux on CATS.
@@ -64,12 +68,12 @@ Internal (code related) changes include:
 
     o)  Cleanup of the PCI and ISA bus frameworks; in practice this means
 	that more code can be shared between different emulated machine
-	models.
+	models than before.
 
     o)  Dyntrans updates (PowerPC mostly, but also many performance related
 	updates for ARM).
 
-There have also been lots of other small changes, too small to mention here.
+There have also been lots of other changes, too many and small to mention here.
 
 Files included in this release are:
 
@@ -160,6 +164,8 @@ them like this is in order:
     for the NetBSD Project.
 
     This product includes software developed by TooLs GmbH.
+
+    This product includes software developed by Manuel Bouyer.
 
 Also, src/include/alpha_rpb.h requires the following:
 

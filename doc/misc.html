@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.56 2005-11-24 13:05:06 debug Exp $
+$Id: misc.html,v 1.57 2005-11-25 04:25:25 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -84,11 +84,13 @@ apply:<pre>
 <p>The emulated machine must of course have a NIC which is emulated 
 correctly. At the moment, the following NICs should work:
 <ul>
+  <li><tt><b>ether</b></tt>, the "fake" experimental ethernet device
+	(documented <a href="experiments.html#expdevices">here</a>)
   <li><tt><b>le</b></tt>, Turbochannel Lance Ethernet, as used in
 	DECstation 5000/200 ("3max")
   <li><tt><b>mec</b></tt>, the SGI O2's ethernet controller
-  <li><tt><b>ether</b></tt>, the "fake" experimental ethernet device
-	(documented <a href="experiments.html#expdevices">here</a>)
+  <li><tt><b>dec21143</b></tt>, Digital's 21143 NIC (known as <tt>dc</tt>
+	in OpenBSD, or <tt>tlp</tt> in NetBSD)
 </ul>
 
 <p>The emulator acts as a NAT-like gateway/firewall; to the outside world

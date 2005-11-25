@@ -25,14 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.15 2005-11-25 03:38:01 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.16 2005-11-25 03:52:55 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
  *  reverse-engineering OpenBSD and NetBSD sources.
  *
  *
- *  TODO: Lots of stuff.
+ *  TODO:
  *
  *	o)  Endianness for descriptors...
  */
@@ -142,7 +142,7 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t),
 	    MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
-		fatal("[ dec21143_tx: memory_rw failed! ]\n");
+		fatal("[ dec21143_rx: memory_rw failed! ]\n");
 		return 0;
 	}
 
@@ -157,7 +157,7 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 	if (!cpu->memory_rw(cpu, cpu->mem, addr + sizeof(uint32_t), descr +
 	    sizeof(uint32_t), sizeof(uint32_t) * 3, MEM_READ, PHYSICAL |
 	    NO_EXCEPTIONS)) {
-		fatal("[ dec21143_tx: memory_rw failed! ]\n");
+		fatal("[ dec21143_rx: memory_rw failed! ]\n");
 		return 0;
 	}
 

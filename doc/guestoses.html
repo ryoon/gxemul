@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.105 2005-11-24 01:15:06 debug Exp $
+$Id: guestoses.html,v 1.106 2005-11-25 22:35:44 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -759,19 +759,25 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
-  <li>Download the NetBSD/cats 2.1 ISO image and the generic kernel:<pre>
+  <li>Download the NetBSD/cats 2.1 ISO image and the generic and install kernels:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso</a>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -XEcats -d nbsd_cats.img -d b:catscd.iso -j cats/binary/kernel/netbsd.aout-INSTALL.gz</b>
+	<b>gxemul -XEcats -d nbsd_cats.img -d catscd.iso netbsd.aout-INSTALL.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
 	CATS from CDROM.
 </ol>
+
+<p>Alternatively, to install from FTP, you can skip downloading the ISO,
+and start the install without <tt>-d catscd.iso</tt>. Suitable network 
+settings are IP 10.0.0.1, gateway/default route 10.0.0.254, netmask 
+255.0.0.0, nameserver 10.0.0.254.
 
 <p>If everything worked, NetBSD should now be installed on the disk image.
 Use the following command line to boot the emulated CATS machine:<pre>

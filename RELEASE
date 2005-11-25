@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.163 2005-11-25 04:25:24 debug Exp $
+$Id: RELEASE,v 1.164 2005-11-25 22:35:43 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -15,8 +15,15 @@ emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-The processor architecture best emulated by GXemul is MIPS, but other
-architectures, such as ARM and PowerPC, are also partially emulated.
+MIPS processors are emulated using either a simple binary translation
+layer ("recompilation"), which is used on Alpha and i386 hosts, or by
+traditional interpretation (very very slow, but works on any host platform).
+
+ARM and PowerPC processors are emulated using a newer dynamic translation
+system. Performance is somewhere between traditional interpretation and
+dynamic recompilation; however, the dynamic translation system used in
+GXemul does NOT require platform-specific back-end code. In plain English,
+this means that the dyntrans system works on any host platform.
 
 I have verified that the following "guest" operating systems can run inside
 the emulator. Instructions on how to install and run these can be found in
@@ -41,26 +48,28 @@ the documentation.
     NetBSD/prep 2.1                    PReP (PowerPC Reference Platform)
 
 Some of these guest operating systems are easier to install and run than
-others. The best supported guest operating systems are NetBSD/pmax and
-NetBSD/cats.
+others. The best supported guest operating systems are probably NetBSD/pmax,
+NetBSD/cats and OpenBSD/cats.
 
 The emulator can also be used in other experiments; it does not have to run
-entire guest operating systems. However, GXemul does not simulate things
-smaller than an instruction. What this means is that pipe-line stalls,
-penalties caused by branch-prediction misses or cache misses, and other
-micro-architectural effects are not simulated.
+entire guest operating systems. However, as GXemul is an instruction-level
+emulator, it does not simulate things smaller than an instruction. What this
+means is that pipe-line stalls, penalties caused by branch-prediction misses
+or cache misses, and other micro-architectural effects are not simulated.
 
 User-visible change between release 0.3.6.2 and 0.3.7 include:
 
-    O)	The experimental PowerPC emulation mode is now working well enough
+    o)	The experimental PowerPC emulation mode is now working well enough
 	to allow NetBSD/prep 2.1 to be installed and run inside the emulator.
-	(It is not 100% stable, and it is not optimized for performance yet.)
+	It is not 100% stable, and it is not optimized for performance yet,
+	but hopefully enough for many experiments.
 
-    O)	I finally took the time to implement a DEC 21143 NIC; this brings
-	network connectivity to (at least) emulated OpenBSD/cats and
-	NetBSD/cats.
+    o)	I finally took the time to implement a DEC 21143 NIC; this brings
+	network connectivity to NetBSD/cats. (The userland "NAT"-like
+	networking layer is still a bit buggy, and does not work with
+	everything. However, NetBSD/cats can now be installed via ftp.)
 
-    O)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
+    o)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
 	instead of IDE harddisks. It works for at least NetBSD, OpenBSD,
 	and Linux on CATS.
 
@@ -68,10 +77,11 @@ Internal (code related) changes include:
 
     o)  Cleanup of the PCI and ISA bus frameworks; in practice this means
 	that more code can be shared between different emulated machine
-	models than before.
+	models than before, and that adding new machine types will become
+	easier.
 
-    o)  Dyntrans updates (PowerPC mostly, but also many performance related
-	updates for ARM).
+    o)  Dyntrans updates; 32-bit PowerPC mostly, but also many performance
+	related updates for ARM.
 
 There have also been lots of other changes, too many and small to mention here.
 

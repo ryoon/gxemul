@@ -1,4 +1,4 @@
-$Id: README,v 1.89 2005-11-23 22:03:23 debug Exp $
+$Id: README,v 1.90 2005-11-25 22:35:43 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -18,8 +18,18 @@ emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-The processor architecture best emulated by GXemul is MIPS, but other
-architectures, such as ARM and PowerPC, are also partially emulated.
+MIPS processors are emulated using either a simple binary translation 
+layer ("recompilation"), which is used on Alpha and i386 hosts, or by 
+traditional interpretation (very very slow, but works on any host platform).
+
+ARM and PowerPC processors are emulated using a newer dynamic translation
+system. Performance is somewhere between traditional interpretation and
+dynamic recompilation; however, the dynamic translation system used in
+GXemul does NOT require platform-specific back-end code. In plain English,
+this means that the dyntrans system works on any host platform.
+
+(PowerPC emulation is still relatively new in 0.3.7, so dont't expect too 
+much from it.)
 
 
 Quick start

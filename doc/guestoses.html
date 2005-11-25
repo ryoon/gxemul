@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.107 2005-11-25 22:48:15 debug Exp $
+$Id: guestoses.html,v 1.108 2005-11-25 22:50:32 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1128,8 +1128,13 @@ follow these instructions:
 </pre>
 	and proceed like you would do if you were installing OpenBSD
 	on a real CATS. (Install onto <tt>wd0</tt>, don't configure the
-	network.)
+	network, install from CD.)
 </ol>
+
+<p>(Although it <i>is</i> possible to configure the network, IPv4 address 
+10.0.0.1, netmask 255.0.0.0, gateway/default route 10.0.0.254, and 
+nameserver 10.0.0.254, the userland NAT-like networking layer is not 
+stable enough yet to support a full install via ftp.)
 
 <p><b>NOTE:</b> Make sure that you <tt>sync</tt> and <tt>reboot</tt>
 correctly once the installation is finished, or the <tt>/dev</tt> nodes 

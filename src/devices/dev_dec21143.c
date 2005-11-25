@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.14 2005-11-25 02:34:23 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.15 2005-11-25 03:38:01 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -95,6 +95,7 @@ struct dec21143_data {
 	unsigned char	*cur_tx_buf;
 	int		cur_tx_buf_len;
 	int		tx_idling;
+	int		tx_idling_threshold;
 
 	/*  Internal RX state:  */
 	uint64_t	cur_rx_addr;
@@ -137,8 +138,7 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 		d->cur_rx_offset = 0;
 	}
 
-	fatal("{ dec21143_rx: base = 0x%08x }\n", (int)addr);
-
+	/*  fatal("{ dec21143_rx: base = 0x%08x }\n", (int)addr);  */
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t),
 	    MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
@@ -181,8 +181,9 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 			d->cur_rx_addr += 4 * sizeof(uint32_t);
 	}
 
-	fatal("{ RX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
-	    (long long)addr, rdes0, rdes1, rdes2, rdes3, bufsize, (int)bufaddr);
+	/*  fatal("{ RX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
+	    (long long)addr, rdes0, rdes1, rdes2, rdes3, bufsize,
+	    (int)bufaddr);  */
 
 	/*  Turn off all status bits, and give up ownership:  */
 	rdes0 = 0x00000000;
@@ -212,7 +213,7 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 		/*  Frame len, which includes the size of a 4-byte CRC:  */
 		rdes0 |= ((d->cur_rx_buf_len + 4) << 16) & TDSTAT_Rx_FL;
 
-		/*  Too long frame?  */
+		/*  Frame too long? (1518 is max ethernet frame length)  */
 		if (d->cur_rx_buf_len > 1518)
 			rdes0 |= TDSTAT_Rx_TL;
 
@@ -268,10 +269,11 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 
 	/*  Only process packets owned by the 21143:  */
 	if (!(tdes0 & TDSTAT_OWN)) {
-		if (!d->tx_idling) {
+		if (d->tx_idling > d->tx_idling_threshold) {
 			d->reg[CSR_STATUS/8] |= STATUS_TU;
-			d->tx_idling = 1;
-		}
+			d->tx_idling = 0;
+		} else
+			d->tx_idling ++;
 		return 0;
 	}
 
@@ -302,8 +304,9 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			d->cur_tx_addr += 4 * sizeof(uint32_t);
 	}
 
-	fatal("{ TX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
-	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize, (int)bufaddr);
+	/*  fatal("{ TX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
+	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize,
+	    (int)bufaddr); */
 
 	/*  Assume no error:  */
 	tdes0 &= ~ (TDSTAT_Tx_UF | TDSTAT_Tx_EC | TDSTAT_Tx_LC
@@ -315,7 +318,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 		 *
 		 *  TODO. For now, just ignore it, and pretend it worked.
 		 */
-		fatal("{ TX: setup packet }\n");
+		/*  fatal("{ TX: setup packet }\n");  */
 		if (bufsize != 192)
 			fatal("[ dec21143: setup packet len = %i, should be"
 			    " 192! ]\n", (int)bufsize);
@@ -328,16 +331,16 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 		/*
 		 *  Data Packet.
 		 */
-		fatal("{ TX: data packet: ");
+		/*  fatal("{ TX: data packet: ");  */
 		if (tdes1 & TDCTL_Tx_FS) {
 			/*  First segment. Let's allocate a new buffer:  */
-			fatal("new frame }\n");
+			/*  fatal("new frame }\n");  */
 			d->cur_tx_buf = malloc(bufsize);
 			d->cur_tx_buf_len = 0;
 		} else {
 			/*  Not first segment. Increase the length of
 			    the current buffer:  */
-			fatal("continuing last frame }\n");
+			/*  fatal("continuing last frame }\n");  */
 			d->cur_tx_buf = realloc(d->cur_tx_buf,
 			    d->cur_tx_buf_len + bufsize);
 		}
@@ -360,7 +363,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 
 		/*  Last segment? Then actually transmit it:  */
 		if (tdes1 & TDCTL_Tx_LS) {
-			fatal("{ TX: data frame complete. }\n");
+			/*  fatal("{ TX: data frame complete. }\n");  */
 			if (d->net != NULL) {
 				net_ethernet_tx(d->net, d, d->cur_tx_buf,
 				    d->cur_tx_buf_len);
@@ -421,12 +424,12 @@ void dev_dec21143_tick(struct cpu *cpu, void *extra)
 	struct dec21143_data *d = extra;
 	int asserted;
 
-	if (d->reg[CSR_OPMODE / 8] & OPMODE_SR)
-		while (dec21143_rx(cpu, d))
-			;
-
 	if (d->reg[CSR_OPMODE / 8] & OPMODE_ST)
 		while (dec21143_tx(cpu, d))
+			;
+
+	if (d->reg[CSR_OPMODE / 8] & OPMODE_SR)
+		while (dec21143_rx(cpu, d))
 			;
 
 	/*  Normal and Abnormal interrupt summary:  */
@@ -560,8 +563,9 @@ static void mii_access(struct cpu *cpu, struct dec21143_data *d,
 			ibit = 0;
 			d->mii_state = MII_STATE_D;
 			break;
-		default:fatal("[ mii_access(): UNIMPLEMENTED MII opcode %i ]\n",
-			    d->mii_opcode);
+		default:debug("[ mii_access(): UNIMPLEMENTED MII opcode "
+			    "%i (probably just a bug in GXemul's "
+			    "MII data stream handling) ]\n", d->mii_opcode);
 			d->mii_state = MII_STATE_RESET;
 		}
 		d->mii_bit ++;
@@ -577,7 +581,7 @@ static void mii_access(struct cpu *cpu, struct dec21143_data *d,
 			    d->mii_regaddr] | obit;
 			if (d->mii_bit >= 29) {
 				d->mii_state = MII_STATE_IDLE;
-				fatal("[ mii_access(): WRITE to phyaddr=0x%x "
+				debug("[ mii_access(): WRITE to phyaddr=0x%x "
 				    "regaddr=0x%x: 0x%04x ]\n", d->mii_phyaddr,
 				    d->mii_regaddr, tmp);
 			}
@@ -588,7 +592,7 @@ static void mii_access(struct cpu *cpu, struct dec21143_data *d,
 			tmp = d->mii_phy_reg[(d->mii_phyaddr << 5) +
 			    d->mii_regaddr];
 			if (d->mii_bit == 13)
-				fatal("[ mii_access(): READ phyaddr=0x%x "
+				debug("[ mii_access(): READ phyaddr=0x%x "
 				    "regaddr=0x%x: 0x%04x ]\n", d->mii_phyaddr,
 				    d->mii_regaddr, tmp);
 			ibit = tmp & (0x8000 >> (d->mii_bit - 13));
@@ -719,6 +723,12 @@ static void dec21143_reset(struct cpu *cpu, struct dec21143_data *d)
 {
 	int leaf;
 
+	if (d->cur_rx_buf != NULL)
+		free(d->cur_rx_buf);
+	if (d->cur_tx_buf != NULL)
+		free(d->cur_tx_buf);
+	d->cur_rx_buf = d->cur_tx_buf = NULL;
+
 	memset(d->reg, 0, sizeof(uint32_t) * N_REGS);
 	memset(d->srom, 0, sizeof(d->srom));
 	memset(d->mii_phy_reg, 0, sizeof(d->mii_phy_reg));
@@ -730,6 +740,7 @@ static void dec21143_reset(struct cpu *cpu, struct dec21143_data *d)
 	d->reg[CSR_SIATXRX / 8] = 0xffffffff;	/*  csr14  */
 	d->reg[CSR_SIAGEN  / 8] = 0x8ff00000;	/*  csr15  */
 
+	d->tx_idling_threshold = 10;
 	d->cur_rx_addr = d->cur_tx_addr = 0;
 
 	/*  Version (= 1) and Chip count (= 1):  */
@@ -820,7 +831,7 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ)
 			fatal("[ dec21143: UNIMPLEMENTED READ from "
 			    "txpoll ]\n");
-		d->tx_idling = 0;
+		d->tx_idling = d->tx_idling_threshold;
 		dev_dec21143_tick(cpu, extra);
 		break;
 
@@ -881,8 +892,12 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 				/*  Turned off RX? Then go to stopped state:  */
 				d->reg[CSR_STATUS/8] &= ~STATUS_RS;
 			}
-			if (idata & OPMODE_SF)
-				idata &= ~OPMODE_SF;
+			idata &= ~(OPMODE_HBD | OPMODE_SCR | OPMODE_PCS
+			    | OPMODE_PS | OPMODE_SF | OPMODE_TTM);
+			if (idata & OPMODE_PNIC_IT) {
+				idata &= ~OPMODE_PNIC_IT;
+				d->tx_idling = d->tx_idling_threshold;
+			}
 			if (idata != 0) {
 				fatal("[ dec21143: UNIMPLEMENTED OPMODE bits"
 				    ": 0x%08x ]\n", (int)idata);
@@ -908,9 +923,14 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		odata = SIASTAT_ANS_FLPGOOD;
 		break;
 
-	case CSR_SIATXRX:
+	case CSR_SIATXRX:	/*  csr14  */
 		/*  Auto-negotiation Enabled  */
 		odata = SIATXRX_ANE;
+		break;
+
+	case CSR_SIACONN:	/*  csr13  */
+	case CSR_SIAGEN:	/*  csr15  */
+		/*  Don't print warnings for these, for now.  */
 		break;
 
 	default:if (writeflag == MEM_READ)

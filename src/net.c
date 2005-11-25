@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.83 2005-11-25 02:34:22 debug Exp $
+ *  $Id: net.c,v 1.84 2005-11-25 03:38:00 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -99,7 +99,7 @@
 #include "net.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
 
 #define	ADDR_IPV4	1
@@ -2069,7 +2069,7 @@ void net_ethernet_tx(struct net *net, void *extra,
 
 	/*  ARP:  */
 	if (packet[12] == 0x08 && packet[13] == 0x06) {
-		if (len != 60)
+		if (len != 42 && len != 60)
 			fatal("[ net_ethernet_tx: WARNING! unusual "
 			    "ARP len (%i) ]\n", len);
 		net_arp(net, extra, packet + 14, len - 14, 0);

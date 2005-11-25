@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.164 2005-11-25 22:35:43 debug Exp $
+$Id: RELEASE,v 1.165 2005-11-25 22:48:14 debug Exp $
 
 I'm working on what will be 0.3.7.
 
 -------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.7
 ================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -62,7 +62,7 @@ User-visible change between release 0.3.6.2 and 0.3.7 include:
     o)	The experimental PowerPC emulation mode is now working well enough
 	to allow NetBSD/prep 2.1 to be installed and run inside the emulator.
 	It is not 100% stable, and it is not optimized for performance yet,
-	but hopefully enough for many experiments.
+	but hopefully enough for simple experiments.
 
     o)	I finally took the time to implement a DEC 21143 NIC; this brings
 	network connectivity to NetBSD/cats. (The userland "NAT"-like

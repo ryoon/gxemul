@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1053 2005-11-25 02:34:21 debug Exp $
+$Id: HISTORY,v 1.1054 2005-11-25 22:48:14 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2465,3 +2465,4 @@ Changelog for GXemul:
 20051125	LOTS of work on the 21143. Both OpenBSD and NetBSD work fine
 		with it now, except that OpenBSD sometimes gives a time-out
 		warning.
+		Minor documentation updates.

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.106 2005-11-25 22:35:44 debug Exp $
+$Id: guestoses.html,v 1.107 2005-11-25 22:48:15 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1834,7 +1834,11 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 </pre></td></tr></table>
 </ol>
 
-<p>You should now be able to boot NetBSD/evbmips using this command:<pre>
+<p>NetBSD/netwinder is now installed on the disk image. But actually 
+running it does <b>not work yet</b>. Sorry.
+
+<p>Something like the following command line would be used to start 
+NetBSD, if it worked:<pre>
 	<b>gxemul -E netwinder -d nbsd_netwinder.img netbsd-GENERIC.gz</b>
 </pre>
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.13 2005-11-24 18:52:15 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.14 2005-11-25 02:34:23 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -50,6 +50,7 @@
 #include "misc.h"
 #include "net.h"
 
+#include "mii.h"
 #include "tulipreg.h"
 
 
@@ -71,27 +72,46 @@ struct dec21143_data {
 	uint8_t		mac[6];
 	struct net	*net;
 
-	/*  ROM emulation:  */
-	uint16_t	rom[1 << ROM_WIDTH];
+	/*  SROM emulation:  */
+	uint8_t		srom[1 << (ROM_WIDTH + 1)];
 	int		srom_curbit;
 	int		srom_opcode;
 	int		srom_opcode_has_started;
-	int		rom_addr;
+	int		srom_addr;
+
+	/*  MII PHY emulation:  */
+	uint16_t	mii_phy_reg[MII_NPHY * 32];
+	int		mii_state;
+	int		mii_bit;
+	int		mii_opcode;
+	int		mii_phyaddr;
+	int		mii_regaddr;
 
 	/*  21143 registers:  */
 	uint32_t	reg[N_REGS];
 
-	/*  Internal (emulated) state:  */
+	/*  Internal TX state:  */
 	uint64_t	cur_tx_addr;
 	unsigned char	*cur_tx_buf;
 	int		cur_tx_buf_len;
 	int		tx_idling;
 
+	/*  Internal RX state:  */
 	uint64_t	cur_rx_addr;
 	unsigned char	*cur_rx_buf;
 	int		cur_rx_buf_len;
 	int		cur_rx_offset;
 };
+
+
+/*  Internal states during MII data stream decode:  */
+#define	MII_STATE_RESET				0
+#define	MII_STATE_START_WAIT			1
+#define	MII_STATE_READ_OP			2
+#define	MII_STATE_READ_PHYADDR_REGADDR		3
+#define	MII_STATE_A				4
+#define	MII_STATE_D				5
+#define	MII_STATE_IDLE				6
 
 
 /*
@@ -361,7 +381,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			writeback_len = 1;
 
 			/*  Interrupt, if Tx_IC is set:  */
-/*			if (tdes1 & TDCTL_Tx_IC)  */
+			if (tdes1 & TDCTL_Tx_IC)
 				d->reg[CSR_STATUS/8] |= STATUS_TI;
 		}
 	}
@@ -430,6 +450,169 @@ void dev_dec21143_tick(struct cpu *cpu, void *extra)
 
 
 /*
+ *  mii_access():
+ *
+ *  This function handles accesses to the MII. Data streams seem to be of the
+ *  following format:
+ *
+ *      vv---- starting delimiter
+ *  ... 01 xx yyyyy zzzzz a[a] dddddddddddddddd
+ *         ^---- I am starting with mii_bit = 0 here
+ *
+ *  where x = opcode (10 = read, 01 = write)
+ *        y = PHY address
+ *        z = register address
+ *        a = on Reads: ACK bit (returned, should be 0)
+ *            on Writes: _TWO_ dummy bits (10)
+ *        d = 16 bits of data (MSB first)
+ */
+static void mii_access(struct cpu *cpu, struct dec21143_data *d,
+	uint32_t oldreg, uint32_t idata)
+{
+	int obit, ibit = 0;
+	uint16_t tmp;
+
+	/*  Only care about data during clock cycles:  */
+	if (!(idata & MIIROM_MDC))
+		return;
+
+	if (idata & MIIROM_MDC && oldreg & MIIROM_MDC)
+		return;
+
+	/*  fatal("[ mii_access(): 0x%08x ]\n", (int)idata);  */
+
+	if (idata & MIIROM_BR) {
+		fatal("[ mii_access(): MIIROM_BR: TODO ]\n");
+		return;
+	}
+
+	obit = idata & MIIROM_MDO? 1 : 0;
+
+	if (d->mii_state >= MII_STATE_START_WAIT &&
+	    d->mii_state <= MII_STATE_READ_PHYADDR_REGADDR &&
+	    idata & MIIROM_MIIDIR)
+		fatal("[ mii_access(): bad dir? ]\n");
+
+	switch (d->mii_state) {
+
+	case MII_STATE_RESET:
+		/*  Wait for a starting delimiter (0 followed by 1).  */
+		if (obit)
+			return;
+		if (idata & MIIROM_MIIDIR)
+			return;
+		/*  fatal("[ mii_access(): got a 0 delimiter ]\n");  */
+		d->mii_state = MII_STATE_START_WAIT;
+		d->mii_opcode = 0;
+		d->mii_phyaddr = 0;
+		d->mii_regaddr = 0;
+		break;
+
+	case MII_STATE_START_WAIT:
+		/*  Wait for a starting delimiter (0 followed by 1).  */
+		if (!obit)
+			return;
+		if (idata & MIIROM_MIIDIR) {
+			d->mii_state = MII_STATE_RESET;
+			return;
+		}
+		/*  fatal("[ mii_access(): got a 1 delimiter ]\n");  */
+		d->mii_state = MII_STATE_READ_OP;
+		d->mii_bit = 0;
+		break;
+
+	case MII_STATE_READ_OP:
+		if (d->mii_bit == 0) {
+			d->mii_opcode = obit << 1;
+			/*  fatal("[ mii_access(): got first opcode bit "
+			    "(%i) ]\n", obit);  */
+		} else {
+			d->mii_opcode |= obit;
+			/*  fatal("[ mii_access(): got opcode = %i ]\n",
+			    d->mii_opcode);  */
+			d->mii_state = MII_STATE_READ_PHYADDR_REGADDR;
+		}
+		d->mii_bit ++;
+		break;
+
+	case MII_STATE_READ_PHYADDR_REGADDR:
+		/*  fatal("[ mii_access(): got phy/reg addr bit nr %i (%i)"
+		    " ]\n", d->mii_bit - 2, obit);  */
+		if (d->mii_bit <= 6)
+			d->mii_phyaddr |= obit << (6-d->mii_bit);
+		else
+			d->mii_regaddr |= obit << (11-d->mii_bit);
+		d->mii_bit ++;
+		if (d->mii_bit >= 12) {
+			/*  fatal("[ mii_access(): phyaddr=0x%x regaddr=0x"
+			    "%x ]\n", d->mii_phyaddr, d->mii_regaddr);  */
+			d->mii_state = MII_STATE_A;
+		}
+		break;
+
+	case MII_STATE_A:
+		switch (d->mii_opcode) {
+		case MII_COMMAND_WRITE:
+			if (d->mii_bit >= 13)
+				d->mii_state = MII_STATE_D;
+			break;
+		case MII_COMMAND_READ:
+			ibit = 0;
+			d->mii_state = MII_STATE_D;
+			break;
+		default:fatal("[ mii_access(): UNIMPLEMENTED MII opcode %i ]\n",
+			    d->mii_opcode);
+			d->mii_state = MII_STATE_RESET;
+		}
+		d->mii_bit ++;
+		break;
+
+	case MII_STATE_D:
+		switch (d->mii_opcode) {
+		case MII_COMMAND_WRITE:
+			if (idata & MIIROM_MIIDIR)
+				fatal("[ mii_access(): write: bad dir? ]\n");
+			obit = obit? (0x8000 >> (d->mii_bit - 14)) : 0;
+			tmp = d->mii_phy_reg[(d->mii_phyaddr << 5) +
+			    d->mii_regaddr] | obit;
+			if (d->mii_bit >= 29) {
+				d->mii_state = MII_STATE_IDLE;
+				fatal("[ mii_access(): WRITE to phyaddr=0x%x "
+				    "regaddr=0x%x: 0x%04x ]\n", d->mii_phyaddr,
+				    d->mii_regaddr, tmp);
+			}
+			break;
+		case MII_COMMAND_READ:
+			if (!(idata & MIIROM_MIIDIR))
+				break;
+			tmp = d->mii_phy_reg[(d->mii_phyaddr << 5) +
+			    d->mii_regaddr];
+			if (d->mii_bit == 13)
+				fatal("[ mii_access(): READ phyaddr=0x%x "
+				    "regaddr=0x%x: 0x%04x ]\n", d->mii_phyaddr,
+				    d->mii_regaddr, tmp);
+			ibit = tmp & (0x8000 >> (d->mii_bit - 13));
+			if (d->mii_bit >= 28)
+				d->mii_state = MII_STATE_IDLE;
+			break;
+		}
+		d->mii_bit ++;
+		break;
+
+	case MII_STATE_IDLE:
+		d->mii_bit ++;
+		if (d->mii_bit >= 31)
+			d->mii_state = MII_STATE_RESET;
+		break;
+	}
+
+	d->reg[CSR_MIIROM / 8] &= ~MIIROM_MDI;
+	if (ibit)
+		d->reg[CSR_MIIROM / 8] |= MIIROM_MDI;
+}
+
+
+/*
  *  srom_access():
  *
  *  This function handles reads from the Ethernet Address ROM. This is not a
@@ -460,7 +643,7 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 		d->srom_curbit = 0;
 		d->srom_opcode = 0;
 		d->srom_opcode_has_started = 0;
-		d->rom_addr = 0;
+		d->srom_addr = 0;
 	}
 
 	/*  Only care about data during clock cycles:  */
@@ -490,14 +673,16 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 		case TULIP_SROM_OPC_READ:
 			if (d->srom_curbit < ROM_WIDTH + 3) {
 				obit = d->srom_curbit < ROM_WIDTH + 2;
-				d->rom_addr <<= 1;
-				d->rom_addr |= ibit;
+				d->srom_addr <<= 1;
+				d->srom_addr |= ibit;
 			} else {
+				uint16_t romword = d->srom[d->srom_addr*2]
+				    + (d->srom[d->srom_addr*2+1] << 8);
 				if (d->srom_curbit == ROM_WIDTH + 3)
 					debug("[ dec21143: ROM read from offset"
-					    " 0x%03x: 0x%04x ]\n", d->rom_addr,
-					    d->rom[d->rom_addr]);
-				obit = d->rom[d->rom_addr] & (0x8000 >>
+					    " 0x%03x: 0x%04x ]\n",
+					    d->srom_addr, romword);
+				obit = romword & (0x8000 >>
 				    (d->srom_curbit - ROM_WIDTH - 3))? 1 : 0;
 			}
 			break;
@@ -520,7 +705,7 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 		d->srom_curbit = 0;
 		d->srom_opcode = 0;
 		d->srom_opcode_has_started = 0;
-		d->rom_addr = 0;
+		d->srom_addr = 0;
 	}
 }
 
@@ -528,13 +713,17 @@ static void srom_access(struct cpu *cpu, struct dec21143_data *d,
 /*
  *  dec21143_reset():
  *
- *  Set the 21143 registers to reasonable values (according to the 21143
- *  manual).
+ *  Set the 21143 registers, SROM, and MII data to reasonable values.
  */
 static void dec21143_reset(struct cpu *cpu, struct dec21143_data *d)
 {
-	memset(d->reg, 0, sizeof(uint32_t) * N_REGS);
+	int leaf;
 
+	memset(d->reg, 0, sizeof(uint32_t) * N_REGS);
+	memset(d->srom, 0, sizeof(d->srom));
+	memset(d->mii_phy_reg, 0, sizeof(d->mii_phy_reg));
+
+	/*  Register values at reset, according to the manual:  */
 	d->reg[CSR_BUSMODE / 8] = 0xfe000000;	/*  csr0   */
 	d->reg[CSR_MIIROM  / 8] = 0xfff483ff;	/*  csr9   */
 	d->reg[CSR_SIACONN / 8] = 0xffff0000;	/*  csr13  */
@@ -542,6 +731,43 @@ static void dec21143_reset(struct cpu *cpu, struct dec21143_data *d)
 	d->reg[CSR_SIAGEN  / 8] = 0x8ff00000;	/*  csr15  */
 
 	d->cur_rx_addr = d->cur_tx_addr = 0;
+
+	/*  Version (= 1) and Chip count (= 1):  */
+	d->srom[TULIP_ROM_SROM_FORMAT_VERION] = 1;
+	d->srom[TULIP_ROM_CHIP_COUNT] = 1;
+
+	/*  Set the MAC address:  */
+	memcpy(d->srom + TULIP_ROM_IEEE_NETWORK_ADDRESS, d->mac, 6);
+
+	leaf = 30;
+	d->srom[TULIP_ROM_CHIPn_DEVICE_NUMBER(0)] = 0;
+	d->srom[TULIP_ROM_CHIPn_INFO_LEAF_OFFSET(0)] = leaf & 255;
+	d->srom[TULIP_ROM_CHIPn_INFO_LEAF_OFFSET(0)+1] = leaf >> 8;
+
+	d->srom[leaf+TULIP_ROM_IL_SELECT_CONN_TYPE] = 0; /*  Not used?  */
+	d->srom[leaf+TULIP_ROM_IL_MEDIA_COUNT] = 2;
+	leaf += TULIP_ROM_IL_MEDIAn_BLOCK_BASE;
+
+	d->srom[leaf] = 7;	/*  descriptor length  */
+	d->srom[leaf+1] = TULIP_ROM_MB_21142_SIA;
+	d->srom[leaf+2] = TULIP_ROM_MB_MEDIA_100TX;
+	/*  here comes 4 bytes of GPIO control/data settings  */
+	leaf += d->srom[leaf];
+
+	d->srom[leaf] = 15;	/*  descriptor length  */
+	d->srom[leaf+1] = TULIP_ROM_MB_21142_MII;
+	d->srom[leaf+2] = 0;	/*  PHY nr  */
+	d->srom[leaf+3] = 0;	/*  len of select sequence  */
+	d->srom[leaf+4] = 0;	/*  len of reset sequence  */
+	/*  5,6, 7,8, 9,10, 11,12, 13,14 = unused by GXemul  */
+	leaf += d->srom[leaf];
+
+	/*  MII PHY initial state:  */
+	d->mii_state = MII_STATE_RESET;
+
+	/*  PHY #0:  */
+	d->mii_phy_reg[MII_BMSR] = BMSR_100TXFDX | BMSR_10TFDX |
+	    BMSR_ACOMP | BMSR_ANEG | BMSR_LINK;
 }
 
 
@@ -643,10 +869,18 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 				/*  A must-be-one bit.  */
 				idata &= ~0x02000000;
 			}
-			if (idata & OPMODE_ST)
+			if (idata & OPMODE_ST) {
 				idata &= ~OPMODE_ST;
-			if (idata & OPMODE_SR)
+			} else {
+				/*  Turned off TX? Then idle:  */
+				d->reg[CSR_STATUS/8] |= STATUS_TPS;
+			}
+			if (idata & OPMODE_SR) {
 				idata &= ~OPMODE_SR;
+			} else {
+				/*  Turned off RX? Then go to stopped state:  */
+				d->reg[CSR_STATUS/8] &= ~STATUS_RS;
+			}
 			if (idata & OPMODE_SF)
 				idata &= ~OPMODE_SF;
 			if (idata != 0) {
@@ -661,13 +895,22 @@ int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case CSR_MIIROM:	/*  csr9  */
-		if (writeflag == MEM_WRITE)
-			srom_access(cpu, d, oldreg, idata);
+		if (writeflag == MEM_WRITE) {
+			if (idata & MIIROM_MDC)
+				mii_access(cpu, d, oldreg, idata);
+			else
+				srom_access(cpu, d, oldreg, idata);
+		}
 		break;
 
 	case CSR_SIASTAT:	/*  csr12  */
-		/*  TODO  */
-		odata = 0xffffffff;
+		/*  Auto-negotiation status = Good.  */
+		odata = SIASTAT_ANS_FLPGOOD;
+		break;
+
+	case CSR_SIATXRX:
+		/*  Auto-negotiation Enabled  */
+		odata = SIATXRX_ANE;
 		break;
 
 	default:if (writeflag == MEM_READ)
@@ -706,14 +949,6 @@ int devinit_dec21143(struct devinit *devinit)
 	net_generate_unique_mac(devinit->machine, d->mac);
 	net_add_nic(devinit->machine->emul->net, d, d->mac);
 	d->net = devinit->machine->emul->net;
-
-	/*  Version (= 1) and Chip count (= 1):  */
-	d->rom[TULIP_ROM_SROM_FORMAT_VERION / 2] = 0x101;
-
-	/*  MAC:  */
-	d->rom[10] = (d->mac[1] << 8) + d->mac[0];
-	d->rom[11] = (d->mac[3] << 8) + d->mac[2];
-	d->rom[12] = (d->mac[5] << 8) + d->mac[4];
 
 	dec21143_reset(devinit->machine->cpus[0], d);
 

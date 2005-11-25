@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.82 2005-11-24 18:52:14 debug Exp $
+ *  $Id: net.c,v 1.83 2005-11-25 02:34:22 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1435,9 +1435,10 @@ static void net_arp(struct net *net, void *extra,
 			if (memcmp(packet+24, net->gateway_ipv4_addr, 4) != 0)
 				break;
 
-			lp = net_allocate_packet_link(net, extra, len + 14);
+			lp = net_allocate_packet_link(net, extra, 60 + 14);
 
 			/*  Copy the old packet first:  */
+			memset(lp->data, 0, 60 + 14);
 			memcpy(lp->data + 14, packet, len);
 
 			/*  Add ethernet ARP header:  */
@@ -1458,9 +1459,10 @@ static void net_arp(struct net *net, void *extra,
 
 			break;
 		case 3:		/*  Reverse Request  */
-			lp = net_allocate_packet_link(net, extra, len + 14);
+			lp = net_allocate_packet_link(net, extra, 60 + 14);
 
 			/*  Copy the old packet first:  */
+			memset(lp->data, 0, 60 + 14);
 			memcpy(lp->data + 14, packet, len);
 
 			/*  Add ethernet RARP header:  */

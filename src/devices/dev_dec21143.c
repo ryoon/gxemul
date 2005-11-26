@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.16 2005-11-25 03:52:55 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.17 2005-11-26 04:04:50 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -139,6 +139,7 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 	}
 
 	/*  fatal("{ dec21143_rx: base = 0x%08x }\n", (int)addr);  */
+	addr &= 0x7fffffff;
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t),
 	    MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
@@ -184,6 +185,7 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 	/*  fatal("{ RX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
 	    (long long)addr, rdes0, rdes1, rdes2, rdes3, bufsize,
 	    (int)bufaddr);  */
+	bufaddr &= 0x7fffffff;
 
 	/*  Turn off all status bits, and give up ownership:  */
 	rdes0 = 0x00000000;
@@ -257,7 +259,7 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 	uint32_t tdes0, tdes1, tdes2, tdes3;
 	int bufsize, buf1_size, buf2_size, i, writeback_len = 4;
 
-	/*  fatal("{ dec21143_tx: base = 0x%08x }\n", (int)addr);  */
+	addr &= 0x7fffffff;
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, descr, sizeof(uint32_t),
 	    MEM_READ, PHYSICAL | NO_EXCEPTIONS)) {
@@ -266,6 +268,9 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 	}
 
 	tdes0 = descr[0] + (descr[1]<<8) + (descr[2]<<16) + (descr[3]<<24);
+
+	/*  fatal("{ dec21143_tx: base=0x%08x, tdes0=0x%08x }\n",
+	    (int)addr, (int)tdes0);  */
 
 	/*  Only process packets owned by the 21143:  */
 	if (!(tdes0 & TDSTAT_OWN)) {
@@ -304,9 +309,10 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			d->cur_tx_addr += 4 * sizeof(uint32_t);
 	}
 
-	/*  fatal("{ TX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
+	debug("{ TX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
 	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize,
-	    (int)bufaddr); */
+	    (int)bufaddr);
+	bufaddr &= 0x7fffffff;
 
 	/*  Assume no error:  */
 	tdes0 &= ~ (TDSTAT_Tx_UF | TDSTAT_Tx_EC | TDSTAT_Tx_LC

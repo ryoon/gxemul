@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.40 2005-11-25 03:59:58 debug Exp $
+ *  $Id: bus_pci.c,v 1.41 2005-11-26 04:04:50 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -859,7 +859,7 @@ PCIINIT(dec21143)
 {
 	uint64_t port, memaddr;
 	int irq = 0;		/*  TODO  */
-	int int_line = 1;	/*  TODO  */
+	int pci_int_line = 0x101;
 	char tmpstr[200];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_DEC,
@@ -874,19 +874,27 @@ PCIINIT(dec21143)
 
 	switch (machine->machine_type) {
 	case MACHINE_CATS:
+		/*  CATS int 18 = PCI.  */
 		irq = 18;
-		int_line = 1;
+		pci_int_line = 0x101;
+		break;
+	case MACHINE_COBALT:
+		/*  On Cobalt, IRQ 7 = PCI.  */
+		irq = 8 + 7;
+		pci_int_line = 0x407;
 		break;
 	case MACHINE_PREP:
-		int_line = 0xa;
-		irq = 31 - int_line;
+		irq = 32 + 10;
+		pci_int_line = 0x20a;
 		break;
 	case MACHINE_PMPPC:
+		/*  TODO, not working yet  */
 		irq = 31 - 21;
+		pci_int_line = 0x201;
 		break;
 	}
 
-	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140100 | int_line);
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140000 | pci_int_line);
 
 	allocate_device_space(pd, 0x100, 0x100, &port, &memaddr);
 

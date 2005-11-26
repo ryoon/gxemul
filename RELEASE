@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.165 2005-11-25 22:48:14 debug Exp $
+$Id: RELEASE,v 1.166 2005-11-26 04:04:48 debug Exp $
 
 I'm working on what will be 0.3.7.
 
@@ -71,7 +71,7 @@ User-visible change between release 0.3.6.2 and 0.3.7 include:
 
     o)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
 	instead of IDE harddisks. It works for at least NetBSD, OpenBSD,
-	and Linux on CATS.
+	and Linux on CATS, and NetBSD on hpcmips.
 
 Internal (code related) changes include:
 

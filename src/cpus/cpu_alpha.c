@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.3 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.4 2005-11-26 05:46:51 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -487,14 +487,18 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		break;
 	case 0x16:
 		switch (func & 0x7ff) {
+		case 0x02f: mnem = "cvttq/c"; rbrc = 1; break;
 		case 0x080: mnem = "adds"; break;
 		case 0x081: mnem = "subs"; break;
 		case 0x082: mnem = "muls"; break;
-		case 0x083: mnem = "mult"; break;
+		case 0x083: mnem = "XXXx083"; break;
 		case 0x0a0: mnem = "addt"; break;
 		case 0x0a1: mnem = "subt"; break;
 		case 0x0a2: mnem = "mult"; break;
 		case 0x0a3: mnem = "divt"; break;
+		case 0x0a5: mnem = "cmpteq"; break;
+		case 0x0a6: mnem = "cmptlt"; break;
+		case 0x0a7: mnem = "cmptle"; break;
 		case 0x0be: mnem = "cvtqt"; rbrc = 1; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
@@ -509,6 +513,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x17:
 		switch (func & 0x7ff) {
 		case 0x020: mnem = "fabs"; rbrc = 1; break;
+		case 0x021: mnem = "fneg"; rbrc = 1; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}
@@ -592,6 +597,8 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("\t<%s>", symbol);
 		debug("\n");
 		break;
+	case 0x31:
+	case 0x35:
 	case 0x38:
 	case 0x39:
 	case 0x3a:
@@ -600,7 +607,10 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	case 0x3d:
 	case 0x3e:
 	case 0x3f:
+		floating = 0;
 		switch (opcode) {
+		case 0x31: mnem = "fbeq"; floating = 1; break;
+		case 0x35: mnem = "fbne"; floating = 1; break;
 		case 0x38: mnem = "blbc"; break;
 		case 0x39: mnem = "beq"; break;
 		case 0x3a: mnem = "blt"; break;
@@ -615,7 +625,11 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			tmp |= 0xffffffffffe00000ULL;
 		tmp <<= 2;
 		tmp += dumpaddr + sizeof(uint32_t);
-		debug("%s\t%s,", mnem, alpha_regname[ra]);
+		debug("%s\t", mnem);
+		if (floating)
+			debug("f%i,", ra);
+		else
+			debug("%s,", alpha_regname[ra]);
 		debug("0x%llx", (long long)tmp);
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    tmp, &offset);

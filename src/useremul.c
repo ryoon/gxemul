@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.66 2005-11-11 13:23:15 debug Exp $
+ *  $Id: useremul.c,v 1.67 2005-11-26 05:46:50 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -697,6 +697,10 @@ static void useremul__freebsd(struct cpu *cpu, uint32_t code)
 		break;
 
 	case 58:res = useremul_readlink(cpu, &err, arg0, arg1, arg2);
+		break;
+
+	case 73:/* munmap. TODO */
+		res = 1;
 		break;
 
 	case 117:res = useremul_getrusage(cpu, &err, arg0, arg1);

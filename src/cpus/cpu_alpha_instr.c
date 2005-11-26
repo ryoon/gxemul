@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.3 2005-11-06 22:41:11 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.4 2005-11-26 05:46:51 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -34,6 +34,9 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+#include "float_emul.h"
 
 
 /*
@@ -451,6 +454,146 @@ X(bgt_samepage)
 {
 	if (*((int64_t *)ic->arg[1]) > 0)
 		instr(br_samepage)(cpu, ic);
+}
+
+
+/*
+ *  cvttq/c:  Convert floating point to quad.
+ *
+ *  arg[0] = pointer to rc  (destination integer)
+ *  arg[2] = pointer to rb  (source float)
+ */
+X(cvttq_c)
+{
+	struct ieee_float_value fb;
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	reg(ic->arg[0]) = fb.nan? 0 : fb.f;
+}
+
+
+/*
+ *  cvtqt:  Convert quad to floating point.
+ *
+ *  arg[0] = pointer to rc  (destination float)
+ *  arg[2] = pointer to rb  (source quad integer)
+ */
+X(cvtqt)
+{
+	reg(ic->arg[0]) = ieee_store_float_value(reg(ic->arg[2]),
+	    IEEE_FMT_D, 0);
+}
+
+
+/*
+ *  fabs, fneg:  Floating point absolute value, or negation.
+ *
+ *  arg[0] = pointer to rc  (destination float)
+ *  arg[2] = pointer to rb  (source quad integer)
+ */
+X(fabs)
+{
+	reg(ic->arg[0]) = reg(ic->arg[2]) & 0x7fffffffffffffffULL;
+}
+X(fneg)
+{
+	reg(ic->arg[0]) = reg(ic->arg[2]) ^ 0x8000000000000000ULL;
+}
+
+
+/*
+ *  addt, subt, mult, divt:  Floating point arithmetic.
+ *
+ *  arg[0] = pointer to rc  (destination)
+ *  arg[1] = pointer to ra  (source)
+ *  arg[2] = pointer to rb  (source)
+ */
+X(addt)
+{
+	struct ieee_float_value fa, fb;
+	double res;
+	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	if (fa.nan | fb.nan)
+		res = 0.0;
+	else
+		res = fa.f + fb.f;
+	reg(ic->arg[0]) = ieee_store_float_value(res,
+	    IEEE_FMT_D, fa.nan | fb.nan);
+}
+X(subt)
+{
+	struct ieee_float_value fa, fb;
+	double res;
+	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	if (fa.nan | fb.nan)
+		res = 0.0;
+	else
+		res = fa.f - fb.f;
+	reg(ic->arg[0]) = ieee_store_float_value(res,
+	    IEEE_FMT_D, fa.nan | fb.nan);
+}
+X(mult)
+{
+	struct ieee_float_value fa, fb;
+	double res;
+	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	if (fa.nan | fb.nan)
+		res = 0.0;
+	else
+		res = fa.f * fb.f;
+	reg(ic->arg[0]) = ieee_store_float_value(res,
+	    IEEE_FMT_D, fa.nan | fb.nan);
+}
+X(divt)
+{
+	struct ieee_float_value fa, fb;
+	double res;
+	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	if (fa.nan | fb.nan || fb.f == 0)
+		res = 0.0;
+	else
+		res = fa.f / fb.f;
+	reg(ic->arg[0]) = ieee_store_float_value(res,
+	    IEEE_FMT_D, fa.nan | fb.nan || fb.f == 0);
+}
+X(cmpteq)
+{
+	struct ieee_float_value fa, fb;
+	int res = 0;
+	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	if (fa.nan | fb.nan)
+		res = 0;
+	else
+		res = fa.f == fb.f;
+	reg(ic->arg[0]) = res;
+}
+X(cmptlt)
+{
+	struct ieee_float_value fa, fb;
+	int res = 0;
+	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	if (fa.nan | fb.nan)
+		res = 0;
+	else
+		res = fa.f < fb.f;
+	reg(ic->arg[0]) = res;
+}
+X(cmptle)
+{
+	struct ieee_float_value fa, fb;
+	int res = 0;
+	ieee_interpret_float_value(reg(ic->arg[1]), &fa, IEEE_FMT_D);
+	ieee_interpret_float_value(reg(ic->arg[2]), &fb, IEEE_FMT_D);
+	if (fa.nan | fb.nan)
+		res = 0;
+	else
+		res = fa.f <= fb.f;
+	reg(ic->arg[0]) = res;
 }
 
 
@@ -957,6 +1100,15 @@ X(to_be_translated)
 		ic->arg[1] = (size_t) &cpu->cd.alpha.f[ra];
 		ic->arg[2] = (size_t) &cpu->cd.alpha.f[rb];
 		switch (func & 0x7ff) {
+		case 0x02f: ic->f = instr(cvttq_c); break;
+		case 0x0a0: ic->f = instr(addt); break;
+		case 0x0a1: ic->f = instr(subt); break;
+		case 0x0a2: ic->f = instr(mult); break;
+		case 0x0a3: ic->f = instr(divt); break;
+		case 0x0a5: ic->f = instr(cmpteq); break;
+		case 0x0a6: ic->f = instr(cmptlt); break;
+		case 0x0a7: ic->f = instr(cmptle); break;
+		case 0x0be: ic->f = instr(cvtqt); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;
@@ -972,13 +1124,14 @@ X(to_be_translated)
 		ic->arg[2] = (size_t) &cpu->cd.alpha.f[rb];
 		switch (func & 0x7ff) {
 		case 0x020:
-			/*  fclr:  */
+			/*  fabs (or fclr):  */
 			if (ra == 31 && rb == 31)
 				ic->f = instr(clear);
-			else {
-				/*  fabs:  */
-				goto bad;
-			}
+			else
+				ic->f = instr(fabs);
+			break;
+		case 0x021:
+			ic->f = instr(fneg);
 			break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
@@ -1029,18 +1182,21 @@ X(to_be_translated)
 			goto bad;
 		}
 		break;
-	case 0x30:						/*  BR  */
-	case 0x34:						/*  BSR  */
+	case 0x30:						/*  BR    */
+	case 0x31:						/*  FBEQ  */
+	case 0x34:						/*  BSR   */
+	case 0x35:						/*  FBNE  */
 	case 0x38:						/*  BLBC  */
-	case 0x39:						/*  BEQ  */
-	case 0x3a:						/*  BLT  */
-	case 0x3b:						/*  BLE  */
+	case 0x39:						/*  BEQ   */
+	case 0x3a:						/*  BLT   */
+	case 0x3b:						/*  BLE   */
 	case 0x3c:						/*  BLBS  */
-	case 0x3d:						/*  BNE  */
-	case 0x3e:						/*  BGE  */
-	case 0x3f:						/*  BGT  */
+	case 0x3d:						/*  BNE   */
+	case 0x3e:						/*  BGE   */
+	case 0x3f:						/*  BGT   */
 		/*  To avoid a GCC warning:  */
 		samepage_function = instr(nop);
+		fp = 0;
 		switch (opcode) {
 		case 0x30:
 		case 0x34:
@@ -1055,6 +1211,8 @@ X(to_be_translated)
 			ic->f = instr(blbc);
 			samepage_function = instr(blbc_samepage);
 			break;
+		case 0x31:
+			fp = 1;
 		case 0x39:
 			ic->f = instr(beq);
 			samepage_function = instr(beq_samepage);
@@ -1071,6 +1229,8 @@ X(to_be_translated)
 			ic->f = instr(blbs);
 			samepage_function = instr(blbs_samepage);
 			break;
+		case 0x35:
+			fp = 1;
 		case 0x3d:
 			ic->f = instr(bne);
 			samepage_function = instr(bne_samepage);
@@ -1084,7 +1244,10 @@ X(to_be_translated)
 			samepage_function = instr(bgt_samepage);
 			break;
 		}
-		ic->arg[1] = (size_t) &cpu->cd.alpha.r[ra];
+		if (fp)
+			ic->arg[1] = (size_t) &cpu->cd.alpha.f[ra];
+		else
+			ic->arg[1] = (size_t) &cpu->cd.alpha.r[ra];
 		ic->arg[0] = (iword & 0x001fffff) << 2;
 		/*  Sign-extend:  */
 		if (ic->arg[0] & 0x00400000)

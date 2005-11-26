@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.41 2005-11-26 04:04:50 debug Exp $
+ *  $Id: bus_pci.c,v 1.42 2005-11-26 05:46:53 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -443,9 +443,10 @@ PCIINIT(igsfb)
 	    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x01);
 
 	/*  TODO  */
-	PCI_SET_DATA(0x10, 0xb0000000);
+	PCI_SET_DATA(0x10, 0x08000000);
 
-	/*  TODO: This is just a dummy so far.  */
+	dev_vga_init(machine, mem, pd->pcibus->isa_membase + 0xa0000,
+	    0x88800000 + 0x3c0, machine->machine_name);
 }
 
 

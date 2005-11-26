@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.2 2005-11-26 05:46:52 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -104,7 +104,7 @@ void alpha_prom_call(struct cpu *cpu)
 
 	switch (cpu->cd.alpha.r[ALPHA_A0]) {
 	case 0x02:
-		/*  put string. a1 = channel, a2 = ptr to buf, a3 = len  */
+		/*  puts: a1 = channel, a2 = ptr to buf, a3 = len  */
 		for (addr = cpu->cd.alpha.r[ALPHA_A2];
 		     addr < cpu->cd.alpha.r[ALPHA_A2] +
 		     cpu->cd.alpha.r[ALPHA_A3]; addr ++) {
@@ -116,6 +116,7 @@ void alpha_prom_call(struct cpu *cpu)
 		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.r[ALPHA_A3];
 		break;
 	case 0x22:
+		/*  getenv  */
 		fatal("[ Alpha PALcode: GXemul PROM call 0x22: TODO ]\n");
 		break;
 	default:fatal("[ Alpha PALcode: GXemul PROM call, a0=0x%llx ]\n",

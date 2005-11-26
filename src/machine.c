@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.611 2005-11-23 23:31:34 debug Exp $
+ *  $Id: machine.c,v 1.612 2005-11-26 05:46:50 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2428,7 +2428,7 @@ void machine_setup(struct machine *machine)
 		/*  bus_pci_add(machine, pci_data, mem, 0,  8, 0, "symbios_860");   PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 		bus_pci_add(machine, pci_data, mem, 0,  9, 0, "vt82c586_isa");
 		bus_pci_add(machine, pci_data, mem, 0,  9, 1, "vt82c586_ide");
-		/*  bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");  */
+		bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
 
 		if (machine->prom_emulation) {
 			/*

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.194 2005-11-22 02:07:40 debug Exp $
+ *  $Id: devices.h,v 1.195 2005-11-27 06:17:00 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -211,12 +211,15 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 #define	DEV_FB_LENGTH		0x3c0000	/*  3c0000 to not colide with */
 						/*  turbochannel rom,         */
 						/*  otherwise size = 4MB      */
+/*  Type:  */
 #define	VFB_GENERIC		0
 #define	VFB_HPC			1
 #define	VFB_DEC_VFB01		2
 #define	VFB_DEC_VFB02		3
 #define	VFB_DEC_MAXINE		4
 #define	VFB_PLAYSTATION2	5
+/*  Extra flags:  */
+#define	VFB_REVERSE_START	0x10000
 struct vfb_data {
 	int		vfb_type;
 

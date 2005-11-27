@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.613 2005-11-27 03:47:27 debug Exp $
+ *  $Id: machine.c,v 1.614 2005-11-27 06:16:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4346,6 +4346,12 @@ Not yet.
 
 		machine->main_console_handle = dev_zs_init(machine,
 		    mem, 0xf0000000ULL, 0, 1, "zs console");
+
+		fb = dev_fb_init(machine, mem, 0xf1000000,
+		    VFB_GENERIC | VFB_REVERSE_START,
+		    800,600, 800,600, 8, "ofb");
+
+		device_add(machine, "hammerhead addr=0xf2800000");
 
 		if (machine->prom_emulation) {
 			uint64_t b = 8 * 1048576, a = b - 0x800;

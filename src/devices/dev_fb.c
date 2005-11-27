@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.110 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_fb.c,v 1.111 2005-11-27 06:16:59 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -153,15 +153,18 @@ void dev_fb_resize(struct vfb_data *d, int new_xsize, int new_ysize)
 	d->framebuffer = new_framebuffer;
 	d->framebuffer_size = size;
 
-	if (new_xsize > d->x11_xsize || new_ysize > d->x11_ysize) {
+	if (new_xsize > d->xsize || new_ysize > d->ysize) {
 		d->update_x1 = d->update_y1 = 0;
 		d->update_x2 = new_xsize - 1;
 		d->update_y2 = new_ysize - 1;
 	}
 
 	d->bytes_per_line = new_bytes_per_line;
-	d->x11_xsize = d->visible_xsize = new_xsize;
-	d->x11_ysize = d->visible_ysize = new_ysize;
+	d->xsize = d->visible_xsize = new_xsize;
+	d->ysize = d->visible_ysize = new_ysize;
+
+	d->x11_xsize = d->xsize / d->vfb_scaledown;
+	d->x11_ysize = d->ysize / d->vfb_scaledown;
 
 #ifdef WITH_X11
 	if (d->fb_window != NULL)
@@ -948,6 +951,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	struct vfb_data *d;
 	size_t size, nlen;
 	int flags;
+	int reverse_start = 0;
 	char title[400];
 	char *name2;
 
@@ -957,6 +961,11 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct vfb_data));
+
+	if (vfb_type & VFB_REVERSE_START) {
+		vfb_type &= ~VFB_REVERSE_START;
+		reverse_start = 1;
+	}
 
 	d->vfb_type = vfb_type;
 
@@ -1000,8 +1009,6 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 		d->ysize = ysize;  d->visible_ysize = d->ysize;
 		d->bit_depth = 24;
 		break;
-	default:
-		;
 	}
 
 	if (d->bit_depth == 2 || d->bit_depth == 4)
@@ -1022,14 +1029,21 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 
 	/*  Clear the framebuffer (all black pixels):  */
 	d->framebuffer_size = size;
-	memset(d->framebuffer, 0, size);
+	memset(d->framebuffer, reverse_start? 255 : 0, size);
 
 	d->x11_xsize = d->visible_xsize / d->vfb_scaledown;
 	d->x11_ysize = d->visible_ysize / d->vfb_scaledown;
 
-	d->update_x1 = d->update_y1 = 99999;
-	d->update_x2 = d->update_y2 = -1;
-
+	/*  Only "update" from the start if we need to fill with white.  */
+	/*  (The Ximage will be black from the start anyway.)  */
+	if (reverse_start) {
+		d->update_x1 = d->update_y1 = 0;
+		d->update_x2 = d->xsize - 1;
+		d->update_y2 = d->ysize - 1;
+	} else {
+		d->update_x1 = d->update_y1 = 99999;
+		d->update_x2 = d->update_y2 = -1;
+	}
 
 	/*  Don't set the title to include the size of the framebuffer for
 	    VGA, since then the resolution might change during runtime.  */

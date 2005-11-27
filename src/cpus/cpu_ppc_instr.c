@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.45 2005-11-27 03:47:28 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.46 2005-11-27 06:16:58 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2595,6 +2595,11 @@ X(to_be_translated)
 
 	switch (main_opcode) {
 
+	case 0x04:
+		fatal("[ TODO: ALTIVEC ]\n");
+		ic->f = instr(nop);
+		break;
+
 	case PPC_HI6_MULLI:
 		rt = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
@@ -3480,6 +3485,19 @@ X(to_be_translated)
 				fatal("Not yet for 64-bit mode\n");
 				goto bad;
 			}
+			break;
+
+		case PPC_31_LVX:
+			fatal("[ TODO: lvx ]\n");
+			ic->f = instr(nop);
+			break;
+		case PPC_31_STVX:
+			fatal("[ TODO: stvx ]\n");
+			ic->f = instr(nop);
+			break;
+		case PPC_31_STVXL:
+			fatal("[ TODO: stvxl ]\n");
+			ic->f = instr(nop);
 			break;
 
 		default:goto bad;

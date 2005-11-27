@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.4 2005-11-27 03:47:06 debug Exp $
+ *  $Id: of.c,v 1.5 2005-11-27 06:17:01 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -83,6 +83,45 @@ static void readstr(struct cpu *cpu, uint64_t addr, char *strbuf,
 }
 
 
+/*
+ *  find_device_handle():
+ *
+ *  name may consist of multiple names, separaed with slashes.
+ */
+static int find_device_handle(struct of_data *ofd, char *name)
+{
+	int handle = 0, cur_parent = 0;
+
+	for (;;) {
+		struct of_device *od = ofd->of_devices;
+		char tmp[200];
+		int i;
+
+		/*  fatal("find_device_handle(): '%s'\n", name);  */
+		while (name[0] == '/')
+			name++;
+		if (name[0] == '\0')
+			break;
+		snprintf(tmp, sizeof(tmp), "%s", name);
+		i = 0;
+		while (tmp[i] != '\0' && tmp[i] != '/')
+			i++;
+		tmp[i] = '\0';
+
+		OF_FIND(od, strcmp(od->name, tmp) == 0 &&
+		    od->parent == cur_parent);
+		if (od == NULL)
+			return 0;
+
+		handle = cur_parent = od->handle;
+		name += strlen(tmp);
+	}
+
+	/*  fatal("find_device_handle(): returning %i\n", handle);  */
+	return handle;
+}
+
+
 /*****************************************************************************/
 
 
@@ -126,10 +165,9 @@ OF_SERVICE(exit)
 
 OF_SERVICE(finddevice)
 {
-	struct of_device *od = cpu->machine->of_data->of_devices;
-	OF_FIND(od, strcmp(od->name, arg[0]) == 0);
-	store_32bit_word(cpu, base + retofs, od == NULL? 0 : od->handle);
-	return od == NULL? -1 : 0;
+	int h = find_device_handle(cpu->machine->of_data, arg[0]);
+	store_32bit_word(cpu, base + retofs, h);
+	return h>0? 0 : (strcmp(arg[0], "/")==0? 0 : -1);
 }
 
 
@@ -153,7 +191,8 @@ OF_SERVICE(getprop)
 	if (pr == NULL) {
 		fatal("[ of: WARNING: getprop: no property '%s' at handle"
 		    " %i (device '%s') ]\n", arg[1], handle, od->name);
-		exit(1);
+		/*  exit(1);  */
+		return -1;
 	}
 
 	if (pr->data == NULL) {
@@ -232,15 +271,15 @@ OF_SERVICE(interpret_2)
 	if (strcmp(arg[0], "#columns") == 0) {
 		store_32bit_word(cpu, base + retofs + 4, 80);
 	} else if (strcmp(arg[0], "#lines") == 0) {
-		store_32bit_word(cpu, base + retofs + 4, 25);
+		store_32bit_word(cpu, base + retofs + 4, 40);
 	} else if (strcmp(arg[0], "char-height") == 0) {
-		store_32bit_word(cpu, base + retofs + 4, 24);
+		store_32bit_word(cpu, base + retofs + 4, 15);
 	} else if (strcmp(arg[0], "char-width") == 0) {
 		store_32bit_word(cpu, base + retofs + 4, 10);
 	} else if (strcmp(arg[0], "line#") == 0) {
 		store_32bit_word(cpu, base + retofs + 4, 0);
 	} else if (strcmp(arg[0], "font-adr") == 0) {
-		store_32bit_word(cpu, base + retofs + 4, 0x60000000);
+		store_32bit_word(cpu, base + retofs + 4, 0);
 	} else {
 		fatal("[ of: interpret_2('%s'): TODO ]\n", arg[0]);
 		return -1;
@@ -292,6 +331,28 @@ OF_SERVICE(peer)
 }
 
 
+OF_SERVICE(read)
+{
+	int handle = OF_GET_ARG(0);
+	uint64_t ptr = OF_GET_ARG(1);
+	int len = OF_GET_ARG(2);
+	char ch = -1;
+
+	/*  TODO: check handle! This just reads chars from the console!  */
+	/*  TODO: This is blocking!  */
+
+	ch = console_readchar(cpu->machine->main_console_handle);
+	if (!cpu->memory_rw(cpu, cpu->mem, ptr, &ch, 1, MEM_WRITE,
+	    CACHE_DATA | NO_EXCEPTIONS)) {
+		fatal("[ of: read: memory_rw() error ]\n");
+		exit(1);
+	}
+
+	store_32bit_word(cpu, base + retofs, ch==-1? 0 : 1);
+	return ch==-1? -1 : 0;
+}
+
+
 OF_SERVICE(write)
 {
 	int handle = OF_GET_ARG(0);
@@ -299,8 +360,6 @@ OF_SERVICE(write)
 	int n_written = 0, i, len = OF_GET_ARG(2);
 
 	/*  TODO: check handle! This just dumps the data to the console!  */
-	if (handle != 2)
-		fatal("[ of: write: TODO: handle != 2 ]\n");
 
 	for (i=0; i<len; i++) {
 		unsigned char ch;
@@ -309,7 +368,8 @@ OF_SERVICE(write)
 			fatal("[ of: write: memory_rw() error ]\n");
 			exit(1);
 		}
-		console_putchar(cpu->machine->main_console_handle, ch);
+		if (ch != 7)
+			console_putchar(cpu->machine->main_console_handle, ch);
 		n_written ++;
 	}
 
@@ -349,7 +409,6 @@ static int of_get_unused_device_handle(struct of_data *of_data)
 static struct of_device *of_add_device(struct of_data *of_data, char *name,
 	char *parentname)
 {
-	struct of_device *parent;
 	struct of_device *od = malloc(sizeof(struct of_device));
 	if (od == NULL)
 		goto bad;
@@ -359,11 +418,8 @@ static struct of_device *of_add_device(struct of_data *of_data, char *name,
 	if (od->name == NULL)
 		goto bad;
 
-	parent = of_data->of_devices;
-	OF_FIND(parent, strcmp(parent->name, parentname) == 0);
-
 	od->handle = of_get_unused_device_handle(of_data);
-	od->parent = parent == NULL? 0 : parent->handle;
+	od->parent = find_device_handle(of_data, parentname);
 
 	od->next = of_data->of_devices;
 	of_data->of_devices = od;
@@ -386,8 +442,9 @@ static void of_add_prop(struct of_data *of_data, char *devname,
 	struct of_device_property *pr =
 	    malloc(sizeof(struct of_device_property));
 	struct of_device *od = of_data->of_devices;
+	int h = find_device_handle(of_data, devname);
 
-	OF_FIND(od, strcmp(od->name, devname) == 0);
+	OF_FIND(od, od->handle == h);
 	if (od == NULL) {
 		fatal("of_add_prop(): device '%s' not registered\n", devname);
 		exit(1);
@@ -460,11 +517,11 @@ static void of_dump_devices(struct of_data *ofd, int parent)
 			od = od->next;
 			continue;
 		}
-		debug("device '%s' (%i)\n", od->name, od->handle);
+		debug("\"%s\"\n", od->name, od->handle);
 		debug_indentation(iadd);
 		while (pr != NULL) {
-			debug("property '%s', %i bytes @ %p (host)\n",
-			    pr->name, pr->len, pr->data);
+			debug("(%s: %i bytes)\n", pr->name,
+			    pr->len, pr->data);
 			pr = pr->next;
 		}
 		of_dump_devices(ofd, od->handle);
@@ -570,55 +627,65 @@ struct of_data *of_emul_init(struct machine *machine)
 	memset(ofd, 0, sizeof(struct of_data));
 
 	/*  Devices:  */
-	devstdin  = of_add_device(ofd, "stdin", "/");
-	devstdout = of_add_device(ofd, "stdout", "/");
-	mmu       = of_add_device(ofd, "mmu", "/");
+	of_add_device(ofd, "io", "/");
+	devstdin  = of_add_device(ofd, "stdin", "/io");
+	devstdout = of_add_device(ofd, "stdout", "/io");
 
 	if (machine->use_x11) {
-		fatal("!\n!  TODO\n!\n");
-		of_add_prop_str(machine, ofd, "stdin", "name", "keyboard", 16);
-		of_add_prop_int32(machine, ofd, "stdin", "#columns", 80);
-		of_add_prop_str(machine, ofd, "stdout", "device_type",
+		fatal("!\n!  TODO: keyboard + framebuffer for MacPPC\n!\n");
+
+		of_add_prop_str(machine, ofd, "/io/stdin", "name",
+		    "keyboard", 16);
+		of_add_prop_str(machine, ofd, "/io", "name", "adb", 16);
+
+		of_add_prop_str(machine, ofd, "/io/stdout", "device_type",
 		    "display", 16);
-		of_add_prop_int32(machine, ofd, "stdout", "width", 800);
-		of_add_prop_int32(machine, ofd, "stdout", "height", 600);
-		of_add_prop_int32(machine, ofd, "stdout", "linebytes", 4096);
-		of_add_prop_int32(machine, ofd, "stdout", "depth", 24);
-		of_add_prop_int32(machine, ofd, "stdout", "address",
-		    0x50000000);
+		of_add_prop_int32(machine, ofd, "/io/stdout", "width", 800);
+		of_add_prop_int32(machine, ofd, "/io/stdout", "height", 600);
+		of_add_prop_int32(machine, ofd, "/io/stdout",
+		    "linebytes", 800 * 1);
+		of_add_prop_int32(machine, ofd, "/io/stdout", "depth", 8);
+		of_add_prop_int32(machine, ofd, "/io/stdout", "address",
+		    0xf1000000);
 	} else {
 		zs_assigned_addresses = malloc(12);
 		if (zs_assigned_addresses == NULL)
 			goto bad;
 		memset(zs_assigned_addresses, 0, 12);
-		of_add_prop_str(machine, ofd, "stdin", "name", "zs", 16);
-		of_add_prop_str(machine, ofd, "stdin", "device_type",
+		of_add_prop_str(machine, ofd, "/io/stdin", "name",
+		    "zs", 16);
+		of_add_prop_str(machine, ofd, "/io/stdin", "device_type",
 		    "serial", 16);
-		of_add_prop_int32(machine, ofd, "stdin", "reg", 0xf0000000);
-		of_add_prop(ofd, "stdin", "assigned-addresses",
+		of_add_prop_int32(machine, ofd, "/io/stdin", "reg",
+		    0xf0000000);
+		of_add_prop(ofd, "/io/stdin", "assigned-addresses",
 		    zs_assigned_addresses, 12);
 
-		of_add_prop_str(machine, ofd, "stdout", "device_type",
+		of_add_prop_str(machine, ofd, "/io/stdout", "device_type",
 		    "serial", 16);
 	}
 
-	of_add_device(ofd, "/chosen", "/");
-	of_add_device(ofd, "/memory", "/");
-
+	of_add_device(ofd, "cpus", "/");
 	for (i=0; i<machine->ncpus; i++) {
-		char tmp[100];
-		snprintf(tmp, sizeof(tmp), "/cpu%i", i);
-		of_add_device(ofd, tmp, "/");
+		char tmp[50];
+		snprintf(tmp, sizeof(tmp), "@%x", i);
+		of_add_device(ofd, tmp, "/cpus");
+		snprintf(tmp, sizeof(tmp), "/cpus/@%x", i);
 		of_add_prop_str(machine, ofd, tmp, "device_type", "cpu", 16);
 		of_add_prop_int32(machine, ofd, tmp, "timebase-frequency",
 		    machine->emulated_hz / 4);
+		of_add_prop_int32(machine, ofd, tmp, "reg", i);
 	}
 
+	mmu = of_add_device(ofd, "mmu", "/");
+	of_add_prop(ofd, "/mmu", "translations", NULL /* TODO */, 0);
+
+	of_add_device(ofd, "chosen", "/");
 	of_add_prop_int32(machine, ofd, "/chosen", "mmu", mmu->handle);
 	of_add_prop_int32(machine, ofd, "/chosen", "stdin", devstdin->handle);
 	of_add_prop_int32(machine, ofd, "/chosen", "stdout", devstdout->handle);
-	of_add_prop(ofd, "mmu", "translations", NULL /* TODO */, 0);
 
+	of_add_device(ofd, "memory", "/");
 	memory_reg = malloc(2 * sizeof(uint32_t));
 	memory_av = malloc(2 * sizeof(uint32_t));
 	if (memory_reg == NULL || memory_av == NULL)
@@ -648,6 +715,7 @@ struct of_data *of_emul_init(struct machine *machine)
 	of_add_service(ofd, "interpret", of__interpret_2, 1, 2);
 	of_add_service(ofd, "parent", of__parent, 1, 1);
 	of_add_service(ofd, "peer", of__peer, 1, 1);
+	of_add_service(ofd, "read", of__read, 3, 1);
 	of_add_service(ofd, "write", of__write, 3, 1);
 
 	if (verbose >= 2)

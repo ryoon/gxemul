@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.90 2005-11-13 00:14:10 debug Exp $
+ *  $Id: dev_vga.c,v 1.91 2005-11-27 03:47:39 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -137,6 +137,7 @@ struct vga_data {
 	int		cursor_y;
 
 	int		modified;
+	int		palette_modified;
 	int		update_x1;
 	int		update_y1;
 	int		update_x2;
@@ -207,7 +208,7 @@ static void reset_palette(struct vga_data *d, int grayscale)
 	for (i=16; i<256; i++)
 		d->fb->rgb_palette[i*3 + 0] = d->fb->rgb_palette[i*3 + 1] =
 		    d->fb->rgb_palette[i*3 + 2] = (i & 15) * 4;
-
+	d->palette_modified = 1;
 	i = 0;
 
 	if (grayscale) {
@@ -386,6 +387,11 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 	int font_width = d->font_width;
 	unsigned char *pal = d->fb->rgb_palette;
 
+	if (d->pixel_repx * font_width > 8*8) {
+		fatal("[ too large font ]\n");
+		return;
+	}
+
 	/*  Hm... I'm still using the old start..end code:  */
 	start = (d->max_x * y1 + x1) * 2;
 	end   = (d->max_x * y2 + x2) * 2;
@@ -405,7 +411,7 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 	for (i=start; i<=end; i+=2) {
 		unsigned char ch = d->charcells[i + base];
 
-		if (d->charcells_drawn[i] == ch &&
+		if (!d->palette_modified && d->charcells_drawn[i] == ch &&
 		    d->charcells_drawn[i+1] == d->charcells[i+base+1])
 			continue;
 
@@ -425,8 +431,12 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 
 		/*  Draw the character:  */
 		for (line = 0; line < font_size; line++) {
+			/*  hardcoded for max 8 scaleup... :-)  */
+			unsigned char rgb_line[3 * 8 * 8];
+			int iy;
+
 			for (subx = 0; subx < font_width; subx++) {
-				int ix, iy, color_index;
+				int ix, color_index;
 
 				if (d->use_palette_per_line) {
 					int sline = d->pixel_repy * (line+y);
@@ -443,19 +453,19 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 				else
 					color_index = bg;
 
-				for (iy=0; iy<d->pixel_repy; iy++)
-				    for (ix=0; ix<d->pixel_repx; ix++) {
-					int addr = (d->fb_max_x* (d->pixel_repy
-					    * (line+y) + iy) + (x+subx) *
-					    d->pixel_repx + ix) * 3;
+				for (ix=0; ix<d->pixel_repx; ix++)
+					memcpy(rgb_line + (subx*d->pixel_repx +
+					    ix) * 3, &pal[color_index * 3], 3);
+			}
 
-					if (addr >= d->fb_size)
-						continue;
-					dev_fb_access(machine->cpus[0],
-					    machine->memory, addr,
-					    &pal[color_index * 3], 3,
-					    MEM_WRITE, d->fb);
-				    }
+			for (iy=0; iy<d->pixel_repy; iy++) {
+				int addr = (d->fb_max_x * (d->pixel_repy *
+				    (line+y) + iy) + x * d->pixel_repx) * 3;
+				if (addr >= d->fb_size)
+					continue;
+				dev_fb_access(machine->cpus[0],
+				    machine->memory, addr, rgb_line,
+				    3 * font_width, MEM_WRITE, d->fb);
 			}
 		}
 	}
@@ -560,6 +570,7 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 			vga_update_graphics(cpu->machine, d, d->update_x1,
 			    d->update_y1, d->update_x2, d->update_y2);
 
+		d->palette_modified = 0;
 		d->modified = 0;
 		d->update_x1 = 999999;
 		d->update_x2 = -1;
@@ -1060,6 +1071,7 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 				    palette changed:  */
 				if (new != old) {
 					d->modified = 1;
+					d->palette_modified = 1;
 					d->update_x1 = d->update_y1 = 0;
 					d->update_x2 = d->max_x - 1;
 					d->update_y2 = d->max_y - 1;

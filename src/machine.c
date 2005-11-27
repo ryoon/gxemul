@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.612 2005-11-26 05:46:50 debug Exp $
+ *  $Id: machine.c,v 1.613 2005-11-27 03:47:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -63,6 +63,7 @@
 #include "misc.h"
 #include "mp.h"
 #include "net.h"
+#include "of.h"
 #include "symbol.h"
 
 /*  For Alpha emulation:  */
@@ -1524,6 +1525,16 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 			cpu_interrupt_ack(cpu, 65);
 		break;
 	}
+}
+
+
+/*
+ *  MacPPC bogus interrupt handler.
+ */
+void macppc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
+	int assrt)
+{
+	debug("[ macppc_interrupt() ]\n");
 }
 
 
@@ -4178,7 +4189,8 @@ Not yet.
 		 *  NetBSD/pmppc (http://www.netbsd.org/Ports/pmppc/)
 		 */
 		machine->machine_name = "Artesyn's PM/PPC board";
-		machine->emulated_hz = 10000000;
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 10000000;
 
 		dev_pmppc_init(mem);
 
@@ -4265,7 +4277,8 @@ Not yet.
 		 *  NetBSD/prep (http://www.netbsd.org/Ports/prep/)
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
-		machine->emulated_hz = 20000000;
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 20000000;
 
 		machine->md_int.bebox_data = device_add(machine, "prep");
 		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
@@ -4326,10 +4339,20 @@ Not yet.
 		 *  OpenBSD/macppc (http://www.openbsd.org/macppc.html)
 		 */
 		machine->machine_name = "Macintosh (PPC)";
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 20000000;
+
+		machine->md_interrupt = macppc_interrupt;
+
+		machine->main_console_handle = dev_zs_init(machine,
+		    mem, 0xf0000000ULL, 0, 1, "zs console");
 
 		if (machine->prom_emulation) {
 			uint64_t b = 8 * 1048576, a = b - 0x800;
 			int i;
+
+			of_emul_init(machine);
+
 			/*
 			 *  r3 = pointer to boot_args (for the Mach kernel).
 			 *  See http://darwinsource.opendarwin.org/10.3/
@@ -4946,6 +4969,8 @@ Not yet.
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
 			    machine->physical_ram_in_mb * 1048576 - 65536);
+
+			of_emul_init(machine);
 
 			/*
 			 *  r0 = OpenFirmware entry point.  NOTE: See

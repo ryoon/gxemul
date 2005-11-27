@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.17 2005-11-26 04:04:50 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.18 2005-11-27 03:47:39 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -135,6 +135,16 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 		net_ethernet_rx(d->net, d, &d->cur_rx_buf,
 		    &d->cur_rx_buf_len);
 
+		/*  Append a 4 byte CRC:  */
+		d->cur_rx_buf_len += 4;
+		d->cur_rx_buf = realloc(d->cur_rx_buf, d->cur_rx_buf_len);
+		if (d->cur_rx_buf == NULL) {
+			fatal("dec21143_rx(): out of memory\n");
+			exit(1);
+		}
+		/*  Well... the CRC is just zeros, for now.  */
+		memset(d->cur_rx_buf + d->cur_rx_buf_len - 4, 0, 4);
+
 		d->cur_rx_offset = 0;
 	}
 
@@ -182,9 +192,8 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 			d->cur_rx_addr += 4 * sizeof(uint32_t);
 	}
 
-	/*  fatal("{ RX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
-	    (long long)addr, rdes0, rdes1, rdes2, rdes3, bufsize,
-	    (int)bufaddr);  */
+	debug("{ RX (%llx): 0x%08x 0x%08x 0x%x 0x%x: buf %i bytes at 0x%x }\n",
+	    (long long)addr, rdes0, rdes1, rdes2, rdes3, bufsize, (int)bufaddr);
 	bufaddr &= 0x7fffffff;
 
 	/*  Turn off all status bits, and give up ownership:  */
@@ -212,8 +221,8 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 	if (d->cur_rx_offset >= d->cur_rx_buf_len) {
 		rdes0 |= TDSTAT_Rx_LS;
 
-		/*  Frame len, which includes the size of a 4-byte CRC:  */
-		rdes0 |= ((d->cur_rx_buf_len + 4) << 16) & TDSTAT_Rx_FL;
+		/*  Set the frame length:  */
+		rdes0 |= (d->cur_rx_buf_len << 16) & TDSTAT_Rx_FL;
 
 		/*  Frame too long? (1518 is max ethernet frame length)  */
 		if (d->cur_rx_buf_len > 1518)
@@ -309,9 +318,8 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			d->cur_tx_addr += 4 * sizeof(uint32_t);
 	}
 
-	debug("{ TX (%llx): %08x %08x %x %x: buf %i bytes at 0x%x }\n",
-	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize,
-	    (int)bufaddr);
+	fatal("{ TX (%llx): 0x%08x 0x%08x 0x%x 0x%x: buf %i bytes at 0x%x }\n",
+	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize, (int)bufaddr);
 	bufaddr &= 0x7fffffff;
 
 	/*  Assume no error:  */

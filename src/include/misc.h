@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.233 2005-06-20 05:52:49 debug Exp $
+ *  $Id: misc.h,v 1.234 2005-11-27 03:47:52 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -130,10 +130,6 @@ int mymkstemp(char *template);
 size_t mystrlcpy(char *dst, const char *src, size_t size);
 size_t mystrlcat(char *dst, const char *src, size_t size);
 #endif
-
-
-/*  of.c:  */
-int of_emul(struct cpu *cpu);
 
 
 /*  pc_bios.c:  */

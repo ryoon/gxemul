@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.36 2005-11-27 02:58:25 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.37 2005-11-27 03:47:28 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -660,6 +660,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	hi6 = iword >> 26;
 
 	switch (hi6) {
+	case 0x4:
+		debug("ALTIVEC TODO");
+		/*  vxor etc  */
+		break;
 	case PPC_HI6_MULLI:
 	case PPC_HI6_SUBFIC:
 		rt = (iword >> 21) & 31;
@@ -1428,6 +1432,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			}
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
+			break;
+		case PPC_31_STVX:
+			debug("stvx\tTODO: ALTIVEC");
 			break;
 		default:
 			debug("unimplemented hi6_31, xo = 0x%x", xo);

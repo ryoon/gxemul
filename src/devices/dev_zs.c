@@ -25,12 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.22 2005-11-13 00:14:10 debug Exp $
+ *  $Id: dev_zs.c,v 1.23 2005-11-27 03:47:39 debug Exp $
  *  
- *  Zilog serial controller, used by (at least) the SGI emulation mode.
+ *  Zilog serial controller.
  *
- *  TODO:  Implement this correctly.  The values in here are too
- *  hardcoded, and the controller should be able to handle 2 serial lines.
+ *  TODO:  IMPLEMENT THIS CORRECTLY!
  *
  *  Right now it only barely works with NetSBD/sgimips.
  */
@@ -51,11 +50,12 @@
 
 struct zs_data {
 	int		irq_nr;
+	int		irq_asserted;
+
 	int		console_handle;
 	int		addrmult;
 
 	int		reg_select;
-
 	int		tx_done;
 };
 
@@ -71,11 +71,18 @@ struct zs_data {
 void dev_zs_tick(struct cpu *cpu, void *extra)
 {
 	struct zs_data *d = (struct zs_data *) extra;
+	int asserted = 0;
 
 	if (console_charavail(d->console_handle) || d->tx_done)
+		asserted = 1;
+
+	if (asserted)
 		cpu_interrupt(cpu, d->irq_nr);
-	else
+
+	if (d->irq_asserted && !asserted)
 		cpu_interrupt_ack(cpu, d->irq_nr);
+
+	d->irq_asserted = asserted;
 }
 
 
@@ -100,6 +107,7 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*	relative_addr &= 7;  */
 
 	switch (relative_addr) {
+case 0:
 	case 3:
 		if (writeflag==MEM_READ) {
 			odata = ZSRR0_TX_READY;
@@ -127,6 +135,7 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			    (long)relative_addr, (int)idata);  */
 		}
 		break;
+case 0x10:
 	case 7:
 		if (writeflag==MEM_READ) {
 			if (console_charavail(d->console_handle))
@@ -218,7 +227,8 @@ int dev_zs_init(struct machine *machine, struct memory *mem,
 	d->addrmult = addrmult;
 	d->console_handle = console_start_slave(machine, name);
 
-	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
+	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult
+*2,
 	    dev_zs_access, d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_zs_tick, d, ZS_TICK_SHIFT);

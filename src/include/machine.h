@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.86 2005-11-22 02:07:40 debug Exp $
+ *  $Id: machine.h,v 1.87 2005-11-27 03:47:52 debug Exp $
  */
 
 #include <sys/types.h>
@@ -50,6 +50,7 @@ struct diskimage;
 struct emul;
 struct fb_window;
 struct memory;
+struct of_data;
 
 /*  Ugly:  */
 struct kn230_csr;
@@ -195,6 +196,9 @@ struct machine {
 		struct machine_arcbios	arc;
 		struct machine_pc	pc;
 	} md;
+
+	/*  OpenFirmware:  */
+	struct of_data *of_data;
 
 	/*  Bus-specific interrupt data:  */
 	struct isa_pic_data isa_pic_data;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.44 2005-11-24 01:31:54 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.45 2005-11-27 03:47:28 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2473,6 +2473,9 @@ X(user_syscall)
 X(openfirmware)
 {
 	of_emul(cpu);
+	if (cpu->running == 0) {
+		cpu->running_translated = 0;
+	}
 	cpu->pc = cpu->cd.ppc.spr[SPR_LR];
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);

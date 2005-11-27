@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.195 2005-11-27 06:17:00 debug Exp $
+ *  $Id: devices.h,v 1.196 2005-11-27 16:03:35 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -104,6 +104,10 @@ struct au1x00_ic_data {
 
 int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct au1x00_ic_data *dev_au1x00_init(struct machine *machine, struct memory *mem);
+
+/*  dev_bandit.c:  */
+struct pci_data *dev_bandit_init(struct machine *machine, struct memory *mem,
+	uint64_t addr, int irqbase, int pciirq);
 
 /*  dev_bebox.c:  */
 struct bebox_data {

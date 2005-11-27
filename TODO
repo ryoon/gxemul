@@ -1,6 +1,24 @@
-$Id: TODO,v 1.176 2005-11-13 00:14:05 debug Exp $
+$Id: TODO,v 1.177 2005-11-27 16:03:32 debug Exp $
 
 NOTE: This TODO is hopefully out-of-date. I don't keep it updated.
+
+bandit0 at mainbus0
+pci0 at bandit0 bus 0
+pci0: i/o space, memory space enabled
+pchb0 at pci0 dev 11 function 0
+pchb0: Apple Computer Bandit Host-PCI Bridge (rev. 0x03)
+ppb0 at pci0 dev 15 function 0: Digital Equipment DC21052 PCI-PCI Bridge 
+(rev. 0x01)
+pci1 at ppb0 bus 1
+pci1: i/o space, memory space enabled
+ofb0 at pci1 dev 2 function 0: Integrated Micro Solutions TwinTurbo 128M
+ofb0: 640 x 480, 8bpp
+wsdisplay0 at ofb0 kbdmux 1
+wsmux1: connecting to wsdisplay0
+obio0 at pci0 dev 16 function 0: addr 0xf3000000
+esp0 at obio0 offset 0x10000 irq 12: NCR53C94, 25MHz, SCSI ID 7
+scsibus0 at esp0: 8 targets, 8 luns per target
+
 
 ===============================================================================
 

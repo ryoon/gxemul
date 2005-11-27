@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1059 2005-11-27 06:16:56 debug Exp $
+$Id: HISTORY,v 1.1060 2005-11-27 16:03:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2475,3 +2475,4 @@ Changelog for GXemul:
 20051127	Working on OpenFirmware emulation; major cleanup/redesign.
 		Progress on MacPPC emulation: NetBSD detects two CPUs (when
 		running with -n 2), framebuffer output (for text) works.
+		Adding a (dummy) Bandit PCI controller for MacPPC.

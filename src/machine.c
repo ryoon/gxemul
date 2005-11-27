@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.615 2005-11-27 13:10:20 debug Exp $
+ *  $Id: machine.c,v 1.616 2005-11-27 16:03:33 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4344,12 +4344,18 @@ Not yet.
 
 		machine->md_interrupt = macppc_interrupt;
 
+		pci_data = dev_bandit_init(machine, mem, 0xe0000000,
+		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
+
+		bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
+		bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
+
 		machine->main_console_handle = dev_zs_init(machine,
 		    mem, 0xf0000000ULL, 0, 1, "zs console");
 
 		fb = dev_fb_init(machine, mem, 0xf1000000,
 		    VFB_GENERIC | VFB_REVERSE_START,
-		    800,600, 800,600, 8, "ofb");
+		    1024,768, 1024,768, 8, "ofb");
 
 		device_add(machine, "hammerhead addr=0xf2800000");
 
@@ -4357,7 +4363,7 @@ Not yet.
 			uint64_t b = 8 * 1048576, a = b - 0x800;
 			int i;
 
-			of_emul_init(machine, fb);
+			of_emul_init(machine, fb, 0xf1000000, 1024, 768);
 
 			/*
 			 *  r3 = pointer to boot_args (for the Mach kernel).
@@ -4985,11 +4991,15 @@ Not yet.
 	case MACHINE_SHARK:
 		machine->machine_name = "Digital DNARD (\"Shark\")";
 
+		bus_isa(machine, BUS_ISA_IDE0,
+		    0x08100000, 0xc0000000, 32, 48);
+
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
 			    machine->physical_ram_in_mb * 1048576 - 65536);
 
-			of_emul_init(machine, NULL);
+			/*  TODO: Framebuffer  */
+			of_emul_init(machine, NULL, 0xf1000000, 1024, 768);
 
 			/*
 			 *  r0 = OpenFirmware entry point.  NOTE: See

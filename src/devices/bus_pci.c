@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.42 2005-11-26 05:46:53 debug Exp $
+ *  $Id: bus_pci.c,v 1.43 2005-11-27 16:03:34 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -87,8 +87,15 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	int bus, device, function, registernr;
 	unsigned char *cfg_base;
 	uint64_t x, idata = *data;
+	int already_native_byteorder = 0;
 
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+	if (len & PCI_ALREADY_NATIVE_BYTEORDER) {
+		len &= ~PCI_ALREADY_NATIVE_BYTEORDER;
+		already_native_byteorder = 1;
+	}
+
+	if (cpu->byte_order == EMUL_BIG_ENDIAN &&
+	    !already_native_byteorder)
 		reverse(&idata, len);
 
 	/*  Get the bus, device, and function numbers from the address:  */
@@ -158,7 +165,8 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 	}
 
 	/*  Register read:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+	if (cpu->byte_order == EMUL_BIG_ENDIAN &&
+	    !already_native_byteorder)
 		reverse(&x, len);
 	*data = x;
 
@@ -183,8 +191,13 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	uint64_t *data, int len, int writeflag, struct pci_data *pci_data)
 {
+	int already_native_byteorder = 0;
+
 	if (writeflag == MEM_READ)
 		*data = 0;
+
+	if (len & PCI_ALREADY_NATIVE_BYTEORDER)
+		already_native_byteorder = 1;
 
 	switch (relative_addr) {
 
@@ -198,7 +211,8 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			 *  Big-endian systems (e.g. PowerPC) seem to access
 			 *  PCI config data using little-endian accesses.
 			 */
-			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+			if (cpu->byte_order == EMUL_BIG_ENDIAN &&
+			    !already_native_byteorder) {
 				uint32_t t = pci_data->pci_addr;
 				pci_data->pci_addr = ((t >> 24) & 255)
 				    | ((t >> 8) & 0xff00)
@@ -959,6 +973,7 @@ PCIINIT(dec21030)
 }
 
 
+
 /*
  *  Motorola MPC105 "Eagle" Host Bridge
  *
@@ -979,4 +994,45 @@ PCIINIT(eagle)
 	PCI_SET_DATA(PCI_BHLC_REG,
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
+
+
+
+/*
+ *  Bandit (MacPPC PCI controller)
+ */
+
+#define	PCI_VENDOR_APPLE		0x106b
+#define	PCI_PRODUCT_APPLE_BANDIT	0x0001
+
+PCIINIT(bandit)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_APPLE,
+	    PCI_PRODUCT_APPLE_BANDIT));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x03);
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+}
+
+
+
+/*
+ *  ATI graphics cards
+ */
+
+#define	PCI_VENDOR_ATI			0x1002
+#define	PCI_PRODUCT_ATI_RADEON_9200_2	0x5962
+
+PCIINIT(ati_radeon_9200_2)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_ATI,
+	    PCI_PRODUCT_ATI_RADEON_9200_2));
+
+	/*  TODO: other subclass?  */
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
+	    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x03);
+}
+
 

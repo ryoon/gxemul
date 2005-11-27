@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.23 2005-11-23 23:31:37 debug Exp $
+ *  $Id: bus_pci.h,v 1.24 2005-11-27 16:03:35 debug Exp $
  */
 
 #include "misc.h"
@@ -113,6 +113,8 @@ struct pci_device {
 #define	BUS_PCI_ADDR	0xcf8
 #define	BUS_PCI_DATA	0xcfc
 
+/*  Flags for bus_pci_access(). OR:ed into len.  */
+#define	PCI_ALREADY_NATIVE_BYTEORDER	0x100
 
 /*  bus_pci.c:  */
 int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1057 2005-11-26 05:46:49 debug Exp $
+$Id: HISTORY,v 1.1058 2005-11-27 03:47:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2471,3 +2471,5 @@ Changelog for GXemul:
 
 20051126	Cobalt and PReP now work with the 21143 NIC.
 		Continuing on Alpha dyntrans things.
+		Fixing some more left-shift-by-24 to unsigned.
+20051127	Working on OpenFirmare emulation; major cleanup/redesign.

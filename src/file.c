@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.119 2005-11-19 21:00:59 debug Exp $
+ *  $Id: file.c,v 1.120 2005-11-27 03:48:09 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -162,9 +162,9 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 	if (flags & AOUT_FLAG_DECOSF1) {
 		fread(&buf, 1, 32, f);
 		vaddr = buf[16] + (buf[17] << 8) +
-		    (buf[18] << 16) + (buf[19] << 24);
+		    (buf[18] << 16) + ((uint64_t)buf[19] << 24);
 		entry = buf[20] + (buf[21] << 8) +
-		    (buf[22] << 16) + (buf[23] << 24);
+		    (buf[22] << 16) + ((uint64_t)buf[23] << 24);
 		debug("OSF1 a.out, load address 0x%08lx, "
 		    "entry point 0x%08x\n", (long)vaddr, (long)entry);
 		symbsize = 0;
@@ -858,10 +858,10 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 					debug("%c", sym->name[i]);  */
 				v = sym->value[0] + (sym->value[1] << 8)
 				    + (sym->value[2] << 16)
-				    + (sym->value[3] << 24);
+				    + ((uint64_t)sym->value[3] << 24);
 				altname = sym->name[4] + (sym->name[5] << 8)
 				    + (sym->name[6] << 16)
-				    + (sym->name[3] << 24);
+				    + ((uint64_t)sym->name[3] << 24);
 				t = (sym->type[1] << 8) + sym->type[0];
 				/*  TODO: big endian COFF?  */
 				/*  debug("' value=0x%x type=0x%04x", v, t);  */
@@ -1092,8 +1092,8 @@ static void file_load_srec(struct machine *m, struct memory *mem,
 				    bytes[2];
 				break;
 			case 3:	data_start = 4;
-				vaddr = (bytes[0] << 24) + (bytes[1] << 16) +
-				    (bytes[2] << 8) + bytes[3];
+				vaddr = ((uint64_t)bytes[0] << 24) +
+				    (bytes[1] << 16) + (bytes[2]<<8) + bytes[3];
 			}
 			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr,
 			    &bytes[data_start], count - 1 - data_start,
@@ -1105,8 +1105,8 @@ static void file_load_srec(struct machine *m, struct memory *mem,
 		case 9:
 			/*  switch again, to get the entry point:  */
 			switch (buf[1]) {
-			case 7:	entry = (bytes[0] << 24) + (bytes[1] << 16) +
-				    (bytes[2] << 8) + bytes[3];
+			case 7:	entry = ((uint64_t)bytes[0] << 24) +
+				    (bytes[1] << 16) + (bytes[2]<<8) + bytes[3];
 				break;
 			case 8:	entry = (bytes[0] << 16) + (bytes[1] << 8) +
 				    bytes[2];

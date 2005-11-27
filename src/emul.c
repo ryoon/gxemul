@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.238 2005-11-19 18:53:06 debug Exp $
+ *  $Id: emul.c,v 1.239 2005-11-27 03:48:09 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -207,7 +207,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		fatal("WARNING: Root directory length mismatch?\n");
 
 	dirofs = (int64_t)(buf[0x8c] + (buf[0x8d] << 8) + (buf[0x8e] << 16) +
-	    (buf[0x8f] << 24)) * 2048;
+	    ((uint64_t)buf[0x8f] << 24)) * 2048;
 
 	/*  debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);  */
 
@@ -229,7 +229,8 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	p = NULL;
 	while (dp < dirbuf + dirlen) {
 		int i, nlen = dp[0];
-		int x = dp[2] + (dp[3] << 8) + (dp[4] << 16) + (dp[5] << 24);
+		int x = dp[2] + (dp[3] << 8) + (dp[4] << 16) +
+		    ((uint64_t)dp[5] << 24);
 		int y = dp[6] + (dp[7] << 8);
 		char direntry[65];
 
@@ -364,9 +365,9 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	}
 
 	fileofs = match_entry[2] + (match_entry[3] << 8) +
-	    (match_entry[4] << 16) + (match_entry[5] << 24);
+	    (match_entry[4] << 16) + ((uint64_t)match_entry[5] << 24);
 	filelen = match_entry[10] + (match_entry[11] << 8) +
-	    (match_entry[12] << 16) + (match_entry[13] << 24);
+	    (match_entry[12] << 16) + ((uint64_t)match_entry[13] << 24);
 	fileofs *= 2048;
 
 	/*  debug("filelen=%llx fileofs=%llx\n", (long long)filelen,
@@ -469,9 +470,9 @@ static int apple_load_bootblock(struct machine *m, struct cpu *cpu,
 		int ofs = 0x200 * (partnr + 1);
 		if (partnr == 0)
 			n_partitions = buf[ofs + 7];
-		start = (buf[ofs + 8] << 24) + (buf[ofs + 9] << 16) +
+		start = ((uint64_t)buf[ofs + 8] << 24) + (buf[ofs + 9] << 16) +
 		    (buf[ofs + 10] << 8) + buf[ofs + 11];
-		length = (buf[ofs + 12] << 24) + (buf[ofs + 13] << 16) +
+		length = ((uint64_t)buf[ofs+12] << 24) + (buf[ofs + 13] << 16) +
 		    (buf[ofs + 14] << 8) + buf[ofs + 15];
 
 		debug("partition %i: '%s', type '%s', start %i, length %i\n",
@@ -547,7 +548,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		    minibuf, sizeof(minibuf));
 
 		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
-		  + (minibuf[0x12] << 16) + (minibuf[0x13] << 24);
+		  + (minibuf[0x12] << 16) + ((uint64_t)minibuf[0x13] << 24);
 
 		/*  Convert loadaddr to uncached:  */
 		if ((bootblock_loadaddr & 0xf0000000ULL) != 0x80000000 &&
@@ -558,7 +559,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		bootblock_loadaddr |= 0xffffffffa0000000ULL;
 
 		bootblock_pc = minibuf[0x14] + (minibuf[0x15] << 8)
-		  + (minibuf[0x16] << 16) + (minibuf[0x17] << 24);
+		  + (minibuf[0x16] << 16) + ((uint64_t)minibuf[0x17] << 24);
 
 		bootblock_pc &= 0x0fffffffULL;
 		bootblock_pc |= 0xffffffffa0000000ULL;
@@ -579,10 +580,10 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 			}
 
 			n_blocks = minibuf[0] + (minibuf[1] << 8)
-			  + (minibuf[2] << 16) + (minibuf[3] << 24);
+			  + (minibuf[2] << 16) + ((uint64_t)minibuf[3] << 24);
 
-			bootblock_offset = (minibuf[4] + (minibuf[5] << 8)
-			  + (minibuf[6] << 16) + (minibuf[7] << 24)) * 512;
+			bootblock_offset = (minibuf[4] + (minibuf[5] << 8) +
+			  (minibuf[6]<<16) + ((uint64_t)minibuf[7]<<24)) * 512;
 
 			if (n_blocks < 1)
 				break;

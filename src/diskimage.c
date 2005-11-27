@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.102 2005-11-21 09:17:25 debug Exp $
+ *  $Id: diskimage.c,v 1.103 2005-11-27 03:48:09 debug Exp $
  *
  *  Disk image support.
  *
@@ -897,9 +897,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				 *  blocks to transfer. (NOTE: If the value is
 				 *  0, this means 0, not 65536. :-)
 				 */
-				ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3]
-				    << 16) + (xferp->cmd[4] << 8) +
-				    xferp->cmd[5];
+				ofs = ((uint64_t)xferp->cmd[2] << 24) +
+				    (xferp->cmd[3] << 16) + (xferp->cmd[4] << 8)
+				    + xferp->cmd[5];
 				retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
 			}
 
@@ -975,8 +975,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			 *  transfer. (NOTE: If the value is 0 this means 0,
 			 *  not 65536.)
 			 */
-			ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
-			      (xferp->cmd[4] << 8) + xferp->cmd[5];
+			ofs = ((uint64_t)xferp->cmd[2] << 24) +
+			    (xferp->cmd[3] << 16) + (xferp->cmd[4] << 8) +
+			    xferp->cmd[5];
 			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
 		}
 

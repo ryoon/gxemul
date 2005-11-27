@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.109 2005-11-26 04:04:49 debug Exp $
+$Id: guestoses.html,v 1.110 2005-11-27 03:29:49 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -819,9 +819,11 @@ It is possible to install and run
 
 </pre>
   <p>
-  <li>Installation is a bit unsmooth, probably due to bugs in GXemul.
+  <li>Installation is a bit unsmooth, possibly due to bugs in GXemul,
+	possibly due to bugs in NetBSD itself; others have been having
+	problems on real hardware: <a href="http://mail-index.NetBSD.org/port-prep/2005/11/25/0004.html">http://mail-index.NetBSD.org/port-prep/2005/11/25/0004.html</a>.
 	Creating an MBR slice and a disklabel with sysinst bugs out, so
-	some things have to be done manually.<p>
+	some things have to be done manually:<p>
 	At "<tt>(I)nstall, (S)hell, or (H)alt</tt>", choose
 		<tt><b><u>s</u></b></tt>.
 	<br><tt># <b><u>fdisk -u wd0</u></b></tt>

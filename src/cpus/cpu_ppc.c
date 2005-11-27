@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.39 2005-11-27 13:10:21 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.40 2005-11-27 19:28:09 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1441,6 +1441,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			}
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
+			break;
+		case 359:
+			debug("TODO: ALTIVEC 359");
 			break;
 		case PPC_31_LVX:
 			debug("lvx\tTODO: ALTIVEC");

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.104 2005-11-27 16:03:34 debug Exp $
+#  $Id: Makefile.skel,v 1.105 2005-11-27 19:28:10 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -8,7 +8,7 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 OBJS=lk201.o \
 	dev_ram.o dev_cons.o dev_mp.o dev_unreadable.o dev_zero.o \
 	dev_random.o dev_disk.o dev_ether.o \
-	dev_gt.o dev_eagle.o dev_cpc700.o dev_bandit.o \
+	dev_gt.o dev_eagle.o dev_cpc700.o dev_bandit.o dev_gc.o \
 	dev_mc146818.o \
 	dev_dc7085.o dev_ssc.o dev_scc.o dev_ns16550.o dev_8250.o dev_zs.o \
 	dev_fb.o dev_colorplanemask.o dev_px.o dev_sfb.o dev_pmagja.o \

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.196 2005-11-27 16:03:35 debug Exp $
+ *  $Id: devices.h,v 1.197 2005-11-27 19:28:11 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -292,6 +292,15 @@ struct footbridge_data {
 	uint32_t        fiq_status;
 	uint32_t        fiq_enable;
 }; 
+
+/*  dev_gc.c:  */
+struct gc_data {
+	uint32_t	status_hi;
+	uint32_t	status_lo;
+	uint32_t	enable_hi;
+	uint32_t	enable_lo;
+};
+struct gc_data *dev_gc_init(struct machine *, struct memory *, uint64_t addr);
 
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x1000

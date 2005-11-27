@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.616 2005-11-27 16:03:33 debug Exp $
+ *  $Id: machine.c,v 1.617 2005-11-27 19:28:08 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1529,12 +1529,36 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 
 /*
- *  MacPPC bogus interrupt handler.
+ *  MacPPC interrupt handler.
  */
 void macppc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	int assrt)
 {
-	debug("[ macppc_interrupt() ]\n");
+	uint32_t mask = 1 << (irq_nr & 31);
+	if (irq_nr < 32) {
+		if (assrt)
+			m->md_int.gc_data->status_lo |= mask;
+		else
+			m->md_int.gc_data->status_lo &= ~mask;
+	}
+	if (irq_nr >= 32 && irq_nr < 64) {
+		if (assrt)
+			m->md_int.gc_data->status_hi |= mask;
+		else
+			m->md_int.gc_data->status_hi &= ~mask;
+	}
+
+#if 0
+	printf("status = %08x %08x  enable = %08x %08x\n",
+	    m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
+	    m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);
+#endif
+
+	if (m->md_int.gc_data->status_lo & m->md_int.gc_data->enable_lo ||
+	    m->md_int.gc_data->status_hi & m->md_int.gc_data->enable_hi)
+		cpu_interrupt(m->cpus[0], 65);
+	else
+		cpu_interrupt_ack(m->cpus[0], 65);
 }
 
 
@@ -4340,18 +4364,19 @@ Not yet.
 		 */
 		machine->machine_name = "Macintosh (PPC)";
 		if (machine->emulated_hz == 0)
-			machine->emulated_hz = 20000000;
+			machine->emulated_hz = 40000000;
 
+		machine->md_int.gc_data = dev_gc_init(machine, mem, 0xf3000000);
 		machine->md_interrupt = macppc_interrupt;
 
 		pci_data = dev_bandit_init(machine, mem, 0xe0000000,
-		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
+		    64 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 		bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
 		bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
 
 		machine->main_console_handle = dev_zs_init(machine,
-		    mem, 0xf0000000ULL, 0, 1, "zs console");
+		    mem, 0xf0000000ULL, 1 /* IRQ: TODO */, 1, "zs");
 
 		fb = dev_fb_init(machine, mem, 0xf1000000,
 		    VFB_GENERIC | VFB_REVERSE_START,

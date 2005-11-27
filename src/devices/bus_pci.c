@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.43 2005-11-27 16:03:34 debug Exp $
+ *  $Id: bus_pci.c,v 1.44 2005-11-27 19:28:10 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -906,6 +906,11 @@ PCIINIT(dec21143)
 		/*  TODO, not working yet  */
 		irq = 31 - 21;
 		pci_int_line = 0x201;
+		break;
+	case MACHINE_MACPPC:
+		/*  TODO, not working yet  */
+		irq = 25;
+		pci_int_line = 0x101;
 		break;
 	}
 

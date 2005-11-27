@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.46 2005-11-27 06:16:58 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.47 2005-11-27 19:28:09 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -3487,6 +3487,10 @@ X(to_be_translated)
 			}
 			break;
 
+		case 359:
+			fatal("[ TODO: 359 ]\n");
+			ic->f = instr(nop);
+			break;
 		case PPC_31_LVX:
 			fatal("[ TODO: lvx ]\n");
 			ic->f = instr(nop);

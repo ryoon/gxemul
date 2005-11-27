@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.38 2005-11-27 06:16:58 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.39 2005-11-27 13:10:21 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -94,6 +94,15 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits = cpu->cd.ppc.cpu_type.bits;
 	cpu->cd.ppc.spr[SPR_PVR] = cpu->cd.ppc.cpu_type.pvr;
+
+	cpu->cd.ppc.spr[SPR_IBAT0U] = 0x00001ffc | BAT_Vs;
+	cpu->cd.ppc.spr[SPR_IBAT0L] = 0x00000000 | BAT_PP_RW;
+	cpu->cd.ppc.spr[SPR_IBAT3U] = 0xf0001ffc | BAT_Vs;
+	cpu->cd.ppc.spr[SPR_IBAT3L] = 0xf0000000 | BAT_PP_RW;
+	cpu->cd.ppc.spr[SPR_DBAT0U] = 0x00001ffc | BAT_Vs;
+	cpu->cd.ppc.spr[SPR_DBAT0L] = 0x00000000 | BAT_PP_RW;
+	cpu->cd.ppc.spr[SPR_DBAT3U] = 0xf0001ffc | BAT_Vs;
+	cpu->cd.ppc.spr[SPR_DBAT3L] = 0xf0000000 | BAT_PP_RW;
 
 	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
 

@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: of.h,v 1.1 2005-11-27 03:47:05 debug Exp $
+ *  $Id: of.h,v 1.2 2005-11-27 13:10:22 debug Exp $
  *
  *  OpenFirmware emulation. (See src/promemul/of.c for details.)
  */
@@ -36,6 +36,7 @@
 
 struct machine;
 struct cpu;
+struct vfb_data;
 
 #define	OF_N_MAX_ARGS		10
 #define	OF_ARG_MAX_LEN		4096
@@ -82,11 +83,14 @@ struct of_service {
 struct of_data {
 	struct of_device	*of_devices;
 	struct of_service	*of_services;
+
+	/*  For framebuffers:  */
+	struct vfb_data		*vfb_data;
 };
 
 #endif
 
-struct of_data *of_emul_init(struct machine *machine);
+struct of_data *of_emul_init(struct machine *machine, struct vfb_data *);
 int of_emul(struct cpu *cpu);
 
 #endif	/*  OF_H  */

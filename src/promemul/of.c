@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.5 2005-11-27 06:17:01 debug Exp $
+ *  $Id: of.c,v 1.6 2005-11-27 13:10:23 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -46,6 +46,7 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -136,6 +137,30 @@ OF_SERVICE(call_method_3_4)
 {
 	fatal("[ of: call_method_3_4('%s'): TODO ]\n", arg[0]);
 	return -1;
+}
+
+
+OF_SERVICE(call_method_5_2)
+{
+	if (strcmp(arg[0], "set-colors") == 0) {
+		/*  Used by OpenBSD/macppc:  */
+		struct vfb_data *v = cpu->machine->of_data->vfb_data;
+		int color = OF_GET_ARG(3);
+		uint64_t ptr = OF_GET_ARG(4);
+		unsigned char rgb[3];
+		cpu->memory_rw(cpu, cpu->mem, ptr, rgb, 3, MEM_READ,
+		    CACHE_DATA | NO_EXCEPTIONS);
+		if (v != NULL) {
+			memcpy(v->rgb_palette + 3 * color, rgb, 3);
+			v->update_x1 = v->update_y1 = 0;
+			v->update_x2 = v->xsize - 1;
+			v->update_y2 = v->ysize - 1;
+		}
+	} else {
+		fatal("[ of: call_method_5_2('%s'): TODO ]\n", arg[0]);
+		return -1;
+	}
+	return 0;
 }
 
 
@@ -614,7 +639,7 @@ static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
  *
  *  This function creates an OpenFirmware emulation instance.
  */
-struct of_data *of_emul_init(struct machine *machine)
+struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data)
 {
 	unsigned char *memory_reg, *memory_av;
 	unsigned char *zs_assigned_addresses;
@@ -625,6 +650,8 @@ struct of_data *of_emul_init(struct machine *machine)
 	if (ofd == NULL)
 		goto bad;
 	memset(ofd, 0, sizeof(struct of_data));
+
+	ofd->vfb_data = vfb_data;
 
 	/*  Devices:  */
 	of_add_device(ofd, "io", "/");
@@ -674,11 +701,15 @@ struct of_data *of_emul_init(struct machine *machine)
 		of_add_prop_str(machine, ofd, tmp, "device_type", "cpu", 16);
 		of_add_prop_int32(machine, ofd, tmp, "timebase-frequency",
 		    machine->emulated_hz / 4);
+		of_add_prop_int32(machine, ofd, tmp, "clock-frequency",
+		    machine->emulated_hz);
 		of_add_prop_int32(machine, ofd, tmp, "reg", i);
 	}
 
 	mmu = of_add_device(ofd, "mmu", "/");
-	of_add_prop(ofd, "/mmu", "translations", NULL /* TODO */, 0);
+
+	/*  TODO:  */
+	of_add_prop(ofd, "/mmu", "translations", NULL, 0);
 
 	of_add_device(ofd, "chosen", "/");
 	of_add_prop_int32(machine, ofd, "/chosen", "mmu", mmu->handle);
@@ -703,6 +734,7 @@ struct of_data *of_emul_init(struct machine *machine)
 	/*  Services:  */
 	of_add_service(ofd, "call-method", of__call_method_2_2, 2, 2);
 	of_add_service(ofd, "call-method", of__call_method_3_4, 3, 4);
+	of_add_service(ofd, "call-method", of__call_method_5_2, 5, 2);
 	of_add_service(ofd, "call-method", of__call_method_6_2, 6, 2);
 	of_add_service(ofd, "child", of__child, 1, 1);
 	of_add_service(ofd, "exit", of__exit, 0, 0);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.614 2005-11-27 06:16:57 debug Exp $
+ *  $Id: machine.c,v 1.615 2005-11-27 13:10:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4357,7 +4357,7 @@ Not yet.
 			uint64_t b = 8 * 1048576, a = b - 0x800;
 			int i;
 
-			of_emul_init(machine);
+			of_emul_init(machine, fb);
 
 			/*
 			 *  r3 = pointer to boot_args (for the Mach kernel).
@@ -4401,6 +4401,18 @@ Not yet.
 			store_32bit_word(cpu, cpu->cd.ppc.of_emul_addr,
 			    0x44ee0002);
 			cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;
+
+#if 0
+			/*  r6 = args  */
+			cpu->cd.ppc.gpr[1] -= 516;
+			cpu->cd.ppc.gpr[6] = cpu->cd.ppc.gpr[1] + 4;
+			store_string(cpu, cpu->cd.ppc.gpr[6],
+			    machine->boot_string_argument);
+			/*  should be something like '/controller/disk/bsd'  */
+
+			/*  r7 = length? TODO  */
+			cpu->cd.ppc.gpr[7] = 5;
+#endif
 		}
 		break;
 
@@ -4972,11 +4984,12 @@ Not yet.
 
 	case MACHINE_SHARK:
 		machine->machine_name = "Digital DNARD (\"Shark\")";
+
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
 			    machine->physical_ram_in_mb * 1048576 - 65536);
 
-			of_emul_init(machine);
+			of_emul_init(machine, NULL);
 
 			/*
 			 *  r0 = OpenFirmware entry point.  NOTE: See

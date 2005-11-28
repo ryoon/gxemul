@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.66 2005-11-23 22:03:24 debug Exp $
+$Id: intro.html,v 1.67 2005-11-28 06:59:32 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -53,7 +53,6 @@ SUCH DAMAGE.
   <li><a href="#cpus">Which CPU types does GXemul emulate?</a>
   <li><a href="#accuracy">Emulation accuracy</a>
   <li><a href="#emulmodes">Which machines does GXemul emulate?</a>
-  <li><a href="#guestos">Which guest OSes are possible to run in GXemul?</a>
 </ul>
 
 
@@ -341,151 +340,6 @@ href="experiments.html#expdevices">here</a>.
 
 
 
-
-
-
-<p><br>
-<a name="guestos"></a>
-<h3>Which guest OSes are possible to run in GXemul?</h3>
-
-This table lists the guest OSes that run well enough to be considered
-working in the emulator. They can boot from a harddisk image and be
-interacted with similar to a real machine.
-
-<p>
-<center><table border="0">
-	<tr>
-	  <td width="10"></td>
-	  <td align="center"><a href="20050317-example.png"><img src="20050317-example_small.png"></a></td>
-	  <td width="15"></td>
-	  <td><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>
-		<br>DECstation 5000/200</td>
-	  <td width="30"></td>
-	  <td align="center"><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
-	  <td width="15"></td>
-	  <td><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>
-		<br>Acer Pica-61</td>
-
-	</tr>
-
-	<tr><td height="10"></td></tr>
-
-	<tr>
-	  <td></td>
-	  <td align="center"><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>
-		<br>DECstation 5000/200</td>
-	  <td></td>
-	  <td align="center"><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
-	  <td></td>
-	  <td><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>
-		<br>Acer Pica-61</td>
-	</tr>
-
-	<tr><td height="10"></td></tr>
-
-	<tr>
-	  <td></td>
-	  <td align="center"><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
-	  <td></td>
-	  <td>Ultrix/RISC<br>DECstation 5000/200</td>
-	  <td></td>
-	  <td align="center"><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
-	  <td></td>
-	  <td><a href="http://www.debian.org/">Debian&nbsp;GNU/Linux</a>&nbsp;<super>*</super>
-		<br>DECstation 5000/200</td>
-	</tr>
-
-	<tr><td height="10"></td></tr>
-
-	<tr>
-	  <td></td>
-	  <td align="center"><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">Sprite</a>
-		<br>DECstation 5000/200</td>
-	  <td></td>
-	  <td align="center"><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
-	  <td></td>
-	  <td>Redhat&nbsp;Linux&nbsp;<super>*</super>
-		<br>DECstation 5000/200</td>
-	</tr>
-
-	<tr><td height="10"></td></tr>
-
-	<tr>
-	  <td></td>
-	  <td align="center"><a href="20050427-netbsd-hpcmips-2.png"><img src="20050427-netbsd-hpcmips-2_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>
-		<br>NEC MobilePro 770, 780, 800, 880</td>
-	  <td></td>
-	  <td align="center"><a href="20050413-netbsd-cobalt.png"><img src="20050413-netbsd-cobalt_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>
-		<br>Cobalt</td>
-	</tr>
-
-	<tr><td height="10"></td></tr>
-
-	<tr>
-	  <td></td>
-	  <td align="center"><a href="20050626-netbsd-sgimips-netboot.png"><img src="20050626-netbsd-sgimips-netboot_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
-		<br>SGI O2 ("IP32")</td>
-	  <td></td>
-	  <td align="center"><a href="20050622-netbsd-evbmips-malta.png"><img src="20050622-netbsd-evbmips-malta_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a>
-		<br>5Kc (and 4Kc) Malta<br>evaluation boards</td>
-	  <td></td>
-	</tr>
-
-	<tr><td height="10"></td></tr>
-
-	<tr>
-	  <td></td>
-	  <td align="center"><a href="20051007-netbsd-cats-installed.png"><img src="20051007-netbsd-cats-installed_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.netbsd.org/Ports/cats/">NetBSD/cats</a>
-		<br>CATS</td>
-	  <td></td>
-	  <td align="center"><a href="20051007-openbsd-cats-installed.png"><img src="20051007-openbsd-cats-installed_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.openbsd.org/cats.html">OpenBSD/cats</a>
-		<br>CATS</td>
-	  <td></td>
-	</tr>
-
-	<tr><td height="10"></td></tr>
-
-	<tr>
-	  <td></td>
-	  <td align="center"><a href="20051123-netbsd-prep.png"><img src="20051123-netbsd-prep_small.png"></a></td>
-	  <td></td>
-	  <td><a href="http://www.netbsd.org/Ports/prep/">NetBSD/prep</a>
-		<br>PReP</td>
-	  <td></td>
-	</tr>
-
-</table></center>
-
-
-<p><br>
-
-<super>*</super> Although Linux runs under DECstation emulation, the
-default 2.4.27 kernel in Debian GNU/Linux does not support keyboards on
-the 5000/200 (the specific DECstation model being emulated), so when the
-login prompt is reached you cannot interact with the system. Kaj-Michael
-Lang has compiled and made available a newer kernel from the current
-mips-linux development tree. You can find it here: <a
-href="http://home.tal.org/~milang/o2/kernels/">http://home.tal.org/~milang/o2/kernels</a>/<a
-href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
-This newer kernel supports keyboard input, but it does not have Debian's
-ethernet patches, so you will not be able to use keyboard/framebuffer
-<i>and</i> networking at the same time.
 
 
 </body>

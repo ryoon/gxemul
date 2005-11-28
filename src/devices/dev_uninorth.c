@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bandit.c,v 1.1 2005-11-27 16:03:34 debug Exp $
+ *  $Id: dev_uninorth.c,v 1.1 2005-11-28 07:00:34 debug Exp $
  *  
- *  Bandit PCI controller (as used by MacPPC).
+ *  Uni-North PCI controller (as used by MacPPC).
  */
 
 #include <stdio.h>
@@ -42,26 +42,27 @@
 #include "misc.h"
 
 
-struct bandit_data {
+struct uninorth_data {
 	int		pciirq;
 	struct pci_data	*pci_data;
 };
 
 
 /*
- *  dev_bandit_addr_access():
+ *  dev_uninorth_addr_access():
  */
-int dev_bandit_addr_access(struct cpu *cpu, struct memory *mem,
+int dev_uninorth_addr_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct bandit_data *d = extra;
+	struct uninorth_data *d = extra;
 	if (writeflag == MEM_WRITE) {
 		uint64_t idata = memory_readmax64(cpu, data, len
 		    | MEM_PCI_LITTLE_ENDIAN);
 		uint64_t x = 0;
+#if 1
 		int i;
-		/*  Convert Bandit PCI address into normal address:  */
+		/*  Convert Uninorth PCI address into normal address:  */
 		for (i=11; i<32; i++)
 			if (idata & (1 << i))
 				break;
@@ -69,6 +70,9 @@ int dev_bandit_addr_access(struct cpu *cpu, struct memory *mem,
 			x = i << 11;
 		/*  Copy function and register nr from idata:  */
 		x |= (idata & 0x7ff);
+#else
+		x = idata;
+#endif
 		bus_pci_access(cpu, mem, BUS_PCI_ADDR, &x,
 		    len | PCI_ALREADY_NATIVE_BYTEORDER, writeflag, d->pci_data);
 	} else {
@@ -76,20 +80,20 @@ int dev_bandit_addr_access(struct cpu *cpu, struct memory *mem,
 		bus_pci_access(cpu, mem, BUS_PCI_ADDR, &odata,
 		    len, writeflag, d->pci_data);
 		memory_writemax64(cpu, data, len, odata);
-		printf("TODO: read from bandit addr\n");
+		debug("[ TODO: read from uninorth addr ]\n");
 	}
 	return 1;
 }
 
 
 /*
- *  dev_bandit_data_access():
+ *  dev_uninorth_data_access():
  */
-int dev_bandit_data_access(struct cpu *cpu, struct memory *mem,
+int dev_uninorth_data_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct bandit_data *d = extra;
+	struct uninorth_data *d = extra;
 	if (writeflag == MEM_WRITE) {
 		uint64_t idata = memory_readmax64(cpu, data, len);
 		bus_pci_access(cpu, mem, BUS_PCI_DATA, &idata,
@@ -105,23 +109,23 @@ int dev_bandit_data_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_bandit_init():
+ *  dev_uninorth_init():
  */
-struct pci_data *dev_bandit_init(struct machine *machine, struct memory *mem,
+struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	uint64_t addr, int isa_irqbase, int pciirq)
 {
-	struct bandit_data *d;
+	struct uninorth_data *d;
 	int pci_irqbase = 0;	/*  TODO  */
 	uint64_t pci_io_offset, pci_mem_offset;
 	uint64_t isa_portbase = 0, isa_membase = 0;
 	uint64_t pci_portbase = 0, pci_membase = 0;
 
-	d = malloc(sizeof(struct bandit_data));
+	d = malloc(sizeof(struct uninorth_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct bandit_data));
+	memset(d, 0, sizeof(struct uninorth_data));
 	d->pciirq = pciirq;
 
 	pci_io_offset  = 0x00000000ULL;
@@ -138,13 +142,13 @@ struct pci_data *dev_bandit_init(struct machine *machine, struct memory *mem,
 	    isa_portbase, isa_membase, isa_irqbase);
 
 	/*  Add the PCI glue for the controller itself:  */
-	bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "bandit");
+	bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "uninorth");
 
 	/*  ADDR and DATA configuration ports:  */
-	memory_device_register(mem, "bandit_pci_addr", addr + 0x800000,
-	    4, dev_bandit_addr_access, d, DM_DEFAULT, NULL);
-	memory_device_register(mem, "bandit_pci_data", addr + 0xc00000,
-	    8, dev_bandit_data_access, d, DM_DEFAULT, NULL);
+	memory_device_register(mem, "uninorth_pci_addr", addr + 0x800000,
+	    4, dev_uninorth_addr_access, d, DM_DEFAULT, NULL);
+	memory_device_register(mem, "uninorth_pci_data", addr + 0xc00000,
+	    8, dev_uninorth_data_access, d, DM_DEFAULT, NULL);
 
 	return d->pci_data;
 }

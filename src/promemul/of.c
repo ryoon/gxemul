@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.7 2005-11-27 16:03:36 debug Exp $
+ *  $Id: of.c,v 1.8 2005-11-28 07:00:36 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -104,14 +104,16 @@ static void of_store_32bit_in_host(unsigned char *d, uint32_t x)
  */
 static int find_device_handle(struct of_data *ofd, char *name)
 {
-	int handle = 0, cur_parent = 0;
+	int handle = 1, cur_parent = 1;
+
+	if (name[0] == 0)
+		return 0;
 
 	for (;;) {
 		struct of_device *od = ofd->of_devices;
 		char tmp[200];
 		int i;
 
-		/*  fatal("find_device_handle(): '%s'\n", name);  */
 		while (name[0] == '/')
 			name++;
 		if (name[0] == '\0')
@@ -125,13 +127,12 @@ static int find_device_handle(struct of_data *ofd, char *name)
 		OF_FIND(od, strcmp(od->name, tmp) == 0 &&
 		    od->parent == cur_parent);
 		if (od == NULL)
-			return 0;
+			return -1;
 
 		handle = cur_parent = od->handle;
 		name += strlen(tmp);
 	}
 
-	/*  fatal("find_device_handle(): returning %i\n", handle);  */
 	return handle;
 }
 
@@ -212,7 +213,7 @@ OF_SERVICE(finddevice)
 {
 	int h = find_device_handle(cpu->machine->of_data, arg[0]);
 	store_32bit_word(cpu, base + retofs, h);
-	return h>0? 0 : (strcmp(arg[0], "/")==0? 0 : -1);
+	return h>0? 0 : -1;
 }
 
 
@@ -348,15 +349,19 @@ OF_SERVICE(peer)
 	struct of_device *od = cpu->machine->of_data->of_devices;
 	int handle = OF_GET_ARG(0), parent = 0, peer = 0, seen_self = 1;
 
-	if (handle != 0) {
-		OF_FIND(od, od->handle == handle);
-		if (od == NULL) {
-			fatal("[ of: peer(): can't find handle %i ]\n", handle);
-			exit(1);
-		}
-		parent = od->parent;
-		seen_self = 0;
+	if (handle == 0) {
+		/*  Return the handle of the root node (1):  */
+		store_32bit_word(cpu, base + retofs, 1);
+		return 0;
 	}
+
+	OF_FIND(od, od->handle == handle);
+	if (od == NULL) {
+		fatal("[ of: peer(): can't find handle %i ]\n", handle);
+		exit(1);
+	}
+	parent = od->parent;
+	seen_self = 0;
 
 	od = cpu->machine->of_data->of_devices;
 
@@ -378,9 +383,9 @@ OF_SERVICE(peer)
 
 OF_SERVICE(read)
 {
-	int handle = OF_GET_ARG(0);
+	/*  int handle = OF_GET_ARG(0);  */
 	uint64_t ptr = OF_GET_ARG(1);
-	int len = OF_GET_ARG(2);
+	/*  int len = OF_GET_ARG(2);  */
 	char ch = -1;
 
 	/*  TODO: check handle! This just reads chars from the console!  */
@@ -400,7 +405,7 @@ OF_SERVICE(read)
 
 OF_SERVICE(write)
 {
-	int handle = OF_GET_ARG(0);
+	/*  int handle = OF_GET_ARG(0);  */
 	uint64_t ptr = OF_GET_ARG(1);
 	int n_written = 0, i, len = OF_GET_ARG(2);
 
@@ -465,6 +470,11 @@ static struct of_device *of_add_device(struct of_data *of_data, char *name,
 
 	od->handle = of_get_unused_device_handle(of_data);
 	od->parent = find_device_handle(of_data, parentname);
+	if (od->parent < 0) {
+		fatal("of_add_device(): parent '%s' not found?\n",
+		    parentname);
+		exit(1);
+	}
 
 	od->next = of_data->of_devices;
 	of_data->of_devices = od;
@@ -482,7 +492,7 @@ bad:
  *  Adds a property to a device.
  */
 static void of_add_prop(struct of_data *of_data, char *devname,
-	char *propname, unsigned char *data, uint32_t len)
+	char *propname, unsigned char *data, uint32_t len, int flags)
 {
 	struct of_device_property *pr =
 	    malloc(sizeof(struct of_device_property));
@@ -504,6 +514,7 @@ static void of_add_prop(struct of_data *of_data, char *devname,
 		goto bad;
 	pr->data = data;
 	pr->len = len;
+	pr->flags = flags;
 
 	pr->next = od->properties;
 	od->properties = pr;
@@ -565,8 +576,12 @@ static void of_dump_devices(struct of_data *ofd, int parent)
 		debug("\"%s\"\n", od->name, od->handle);
 		debug_indentation(iadd);
 		while (pr != NULL) {
-			debug("(%s: %i bytes)\n", pr->name,
-			    pr->len, pr->data);
+			debug("(%s: ", pr->name);
+			if (pr->flags == OF_PROP_STRING)
+				debug("\"%s\"", pr->data);
+			else
+				debug("%i bytes", pr->len);
+			debug(")\n");
 			pr = pr->next;
 		}
 		of_dump_devices(ofd, od->handle);
@@ -631,7 +646,8 @@ static void of_add_prop_int32(struct of_data *ofd,
 		exit(1);
 	}
 	of_store_32bit_in_host(p, x);
-	of_add_prop(ofd, devname, propname, p, sizeof(int32_t));
+	of_add_prop(ofd, devname, propname, p, sizeof(int32_t),
+	    OF_PROP_INT);
 }
 
 
@@ -641,58 +657,69 @@ static void of_add_prop_int32(struct of_data *ofd,
  *  Helper function.
  */
 static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
-	char *devname, char *propname, char *data, int maxlen)
+	char *devname, char *propname, char *data)
 {
-	unsigned char *p = malloc(maxlen);
+	unsigned char *p = strdup(data);
 	if (p == NULL) {
 		fatal("of_add_prop_str(): out of memory\n");
 		exit(1);
 	}
-	memset(p, 0, maxlen);
-	snprintf(p, maxlen, "%s", data);
-	of_add_prop(ofd, devname, propname, p, maxlen);
+
+	of_add_prop(ofd, devname, propname, p, strlen(p) + 1,
+	    OF_PROP_STRING);
 }
 
 
 /*
- *  of_emul_init_bandit():
+ *  of_emul_init_uninorth():
  */
-static void of_emul_init_bandit(struct of_data *ofd, struct machine *machine)
+static void of_emul_init_uninorth(struct of_data *ofd, struct machine *machine)
 {
-	unsigned char *bandit_reg, *bandit_bus_range, *bandit_ranges;
+	unsigned char *uninorth_reg, *uninorth_bus_range, *uninorth_ranges;
+	char *n2 = "pci@e2000000", *n = "pci@e2000000";
 
-	of_add_device(ofd, "bandit", "/");
-	of_add_prop_str(machine, ofd, "/bandit", "name", "bandit", 16);
+	of_add_device(ofd, n2, "/");
+	of_add_prop_str(machine, ofd, n, "name", "pci");
+	of_add_prop_str(machine, ofd, n, "device_type", "pci");
+	of_add_prop_str(machine, ofd, n, "compatible", "uni-north");
 
-	bandit_reg = malloc(2 * sizeof(uint32_t));
-	bandit_bus_range = malloc(2 * sizeof(uint32_t));
-	bandit_ranges = malloc(6 * sizeof(uint32_t));
-	if (bandit_ranges == NULL || bandit_bus_range == NULL ||
-	    bandit_reg == NULL)
+	uninorth_reg = malloc(2 * sizeof(uint32_t));
+	uninorth_bus_range = malloc(2 * sizeof(uint32_t));
+	uninorth_ranges = malloc(12 * sizeof(uint32_t));
+	if (uninorth_ranges == NULL || uninorth_bus_range == NULL ||
+	    uninorth_reg == NULL)
 		goto bad;
 
-	of_store_32bit_in_host(bandit_reg + 0, 0xe0000000);
-	of_store_32bit_in_host(bandit_reg + 4, 0);	/*  not used?  */
-	of_add_prop(ofd, "/bandit", "reg", bandit_reg, 2*sizeof(uint32_t));
+	of_store_32bit_in_host(uninorth_reg + 0, 0xe2000000);
+	of_store_32bit_in_host(uninorth_reg + 4, 0);	/*  not used?  */
+	of_add_prop(ofd, n, "reg", uninorth_reg, 2*sizeof(uint32_t), 0);
 
-	of_store_32bit_in_host(bandit_bus_range + 0, 0);
-	of_store_32bit_in_host(bandit_bus_range + 4, 0);
-	of_add_prop(ofd, "/bandit", "bus-range", bandit_bus_range,
-	    2*sizeof(uint32_t));
+	of_store_32bit_in_host(uninorth_bus_range + 0, 0);
+	of_store_32bit_in_host(uninorth_bus_range + 4, 0);
+	of_add_prop(ofd, n, "bus-range", uninorth_bus_range,
+	    2*sizeof(uint32_t), 0);
 
-	of_store_32bit_in_host(bandit_ranges + 0, 0);
-	of_store_32bit_in_host(bandit_ranges + 4, 0);
-	of_store_32bit_in_host(bandit_ranges + 8, 0);
-	of_store_32bit_in_host(bandit_ranges + 12, 0);
-	of_store_32bit_in_host(bandit_ranges + 16, 0);
-	of_store_32bit_in_host(bandit_ranges + 20, 0);
-	of_add_prop(ofd, "/bandit", "ranges", bandit_ranges,
-	    6*sizeof(uint32_t));
+	/*  MEM:  */
+	of_store_32bit_in_host(uninorth_ranges + 0, 0x02000000);
+	of_store_32bit_in_host(uninorth_ranges + 4, 0);
+	of_store_32bit_in_host(uninorth_ranges + 8, 0);
+	of_store_32bit_in_host(uninorth_ranges + 12, 0xd0000000);
+	of_store_32bit_in_host(uninorth_ranges + 16, 0);
+	of_store_32bit_in_host(uninorth_ranges + 20, 0x04000000);
+	/*  IO:  */
+	of_store_32bit_in_host(uninorth_ranges + 24, 0x01000000);
+	of_store_32bit_in_host(uninorth_ranges + 28, 0);
+	of_store_32bit_in_host(uninorth_ranges + 32, 0);
+	of_store_32bit_in_host(uninorth_ranges + 36, 0xe2000000);
+	of_store_32bit_in_host(uninorth_ranges + 40, 0);
+	of_store_32bit_in_host(uninorth_ranges + 44, 0x01000000);
+	of_add_prop(ofd, n, "ranges", uninorth_ranges,
+	    12*sizeof(uint32_t), 0);
 
 	return;
 
 bad:
-	fatal("of_emul_init_bandit(): out of memory\n");
+	fatal("of_emul_init_uninorth(): out of memory\n");
 	exit(1);
 }
 
@@ -719,6 +746,10 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	ofd->vfb_data = vfb_data;
 
 	/*  Devices:  */
+
+	/*  Root = device 1  */
+	of_add_device(ofd, "", "");
+
 	of_add_device(ofd, "io", "/");
 	devstdin  = of_add_device(ofd, "stdin", "/io");
 	devstdout = of_add_device(ofd, "stdout", "/io");
@@ -727,11 +758,11 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		fatal("!\n!  TODO: keyboard + framebuffer for MacPPC\n!\n");
 
 		of_add_prop_str(machine, ofd, "/io/stdin", "name",
-		    "keyboard", 16);
-		of_add_prop_str(machine, ofd, "/io", "name", "adb", 16);
+		    "keyboard");
+		of_add_prop_str(machine, ofd, "/io", "name", "adb");
 
 		of_add_prop_str(machine, ofd, "/io/stdout", "device_type",
-		    "display", 16);
+		    "display");
 		of_add_prop_int32(ofd, "/io/stdout", "width", fb_xsize);
 		of_add_prop_int32(ofd, "/io/stdout", "height", fb_ysize);
 		of_add_prop_int32(ofd, "/io/stdout", "linebytes", fb_xsize * 1);
@@ -742,16 +773,15 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		if (zs_assigned_addresses == NULL)
 			goto bad;
 		memset(zs_assigned_addresses, 0, 12);
-		of_add_prop_str(machine, ofd, "/io/stdin", "name",
-		    "zs", 16);
+		of_add_prop_str(machine, ofd, "/io/stdin", "name", "zs");
 		of_add_prop_str(machine, ofd, "/io/stdin", "device_type",
-		    "serial", 16);
+		    "serial");
 		of_add_prop_int32(ofd, "/io/stdin", "reg", 0xf0000000);
 		of_add_prop(ofd, "/io/stdin", "assigned-addresses",
-		    zs_assigned_addresses, 12);
+		    zs_assigned_addresses, 12, 0);
 
 		of_add_prop_str(machine, ofd, "/io/stdout", "device_type",
-		    "serial", 16);
+		    "serial");
 	}
 
 	of_add_device(ofd, "cpus", "/");
@@ -760,7 +790,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		snprintf(tmp, sizeof(tmp), "@%x", i);
 		of_add_device(ofd, tmp, "/cpus");
 		snprintf(tmp, sizeof(tmp), "/cpus/@%x", i);
-		of_add_prop_str(machine, ofd, tmp, "device_type", "cpu", 16);
+		of_add_prop_str(machine, ofd, tmp, "device_type", "cpu");
 		of_add_prop_int32(ofd, tmp, "timebase-frequency",
 		    machine->emulated_hz / 4);
 		of_add_prop_int32(ofd, tmp, "clock-frequency",
@@ -771,7 +801,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	mmu = of_add_device(ofd, "mmu", "/");
 
 	/*  TODO:  */
-	of_add_prop(ofd, "/mmu", "translations", NULL, 0);
+	of_add_prop(ofd, "/mmu", "translations", NULL, 0, 0);
 
 	if (1) {
 		of_add_device(ofd, "isa", "/");
@@ -787,7 +817,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		of_store_32bit_in_host(isa_ranges + 16, 1);
 		of_store_32bit_in_host(isa_ranges + 20, 0xd0000000);
 
-		of_add_prop(ofd, "/isa", "ranges", isa_ranges, 32);
+		of_add_prop(ofd, "/isa", "ranges", isa_ranges, 32, 0);
 	}
 
 	of_add_device(ofd, "chosen", "/");
@@ -805,11 +835,11 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_store_32bit_in_host(memory_av + 0, 10 << 20);
 	of_store_32bit_in_host(memory_av + 4,
 	    (machine->physical_ram_in_mb - 10) << 20);
-	of_add_prop(ofd, "/memory", "reg", memory_reg, 2 * sizeof(uint32_t));
-	of_add_prop(ofd, "/memory", "available", memory_av, 2*sizeof(uint32_t));
-	of_add_prop_str(machine, ofd, "/memory","device_type","memory"/*?*/,16);
+	of_add_prop(ofd, "/memory", "reg", memory_reg, 2 * sizeof(uint32_t), 0);
+	of_add_prop(ofd, "/memory", "available", memory_av, 2*sizeof(uint32_t), 0);
+	of_add_prop_str(machine, ofd, "/memory","device_type","memory"/*?*/);
 
-	of_emul_init_bandit(ofd, machine);
+	of_emul_init_uninorth(ofd, machine);
 
 	/*  Services:  */
 	of_add_service(ofd, "call-method", of__call_method_2_2, 2, 2);

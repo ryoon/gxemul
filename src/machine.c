@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.617 2005-11-27 19:28:08 debug Exp $
+ *  $Id: machine.c,v 1.618 2005-11-28 07:00:33 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4369,7 +4369,7 @@ Not yet.
 		machine->md_int.gc_data = dev_gc_init(machine, mem, 0xf3000000);
 		machine->md_interrupt = macppc_interrupt;
 
-		pci_data = dev_bandit_init(machine, mem, 0xe0000000,
+		pci_data = dev_uninorth_init(machine, mem, 0xe2000000,
 		    64 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 		bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
@@ -4408,11 +4408,11 @@ Not yet.
 				store_32bit_word(cpu, a + 0x0104 + i, 0);
 			a += (0x104 + 26 * 8);
 			/*  Video info:  */
-			store_32bit_word(cpu, a+0, 0xd0000000);	/*  video base  */
+			store_32bit_word(cpu, a+0, 0xf1000000);	/*  video base  */
 			store_32bit_word(cpu, a+4, 0);		/*  display code (?)  */
-			store_32bit_word(cpu, a+8, 800);	/*  bytes per pixel row  */
-			store_32bit_word(cpu, a+12, 800);	/*  width  */
-			store_32bit_word(cpu, a+16, 600);	/*  height  */
+			store_32bit_word(cpu, a+8, 1024);	/*  bytes per pixel row  */
+			store_32bit_word(cpu, a+12, 1024);	/*  width  */
+			store_32bit_word(cpu, a+16, 768);	/*  height  */
 			store_32bit_word(cpu, a+20, 8);		/*  pixel depth  */
 			a += 24;
 			store_32bit_word(cpu, a+0, 127);	/*  gestalt number (TODO)  */

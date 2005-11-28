@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: of.h,v 1.3 2005-11-27 16:03:35 debug Exp $
+ *  $Id: of.h,v 1.4 2005-11-28 07:00:35 debug Exp $
  *
  *  OpenFirmware emulation. (See src/promemul/of.c for details.)
  */
@@ -44,9 +44,14 @@ struct vfb_data;
 struct of_device_property {
 	struct of_device_property *next;
 	char			*name;
+
 	unsigned char		*data;
 	uint32_t		len;
+	int			flags;
 };
+
+#define	OF_PROP_STRING		1
+#define	OF_PROP_INT		2
 
 struct of_device {
 	struct of_device	*next;

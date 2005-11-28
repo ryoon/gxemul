@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.44 2005-11-27 19:28:10 debug Exp $
+ *  $Id: bus_pci.c,v 1.45 2005-11-28 07:00:34 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -1003,19 +1003,19 @@ PCIINIT(eagle)
 
 
 /*
- *  Bandit (MacPPC PCI controller)
+ *  Uni-North (MacPPC PCI controller)
  */
 
 #define	PCI_VENDOR_APPLE		0x106b
-#define	PCI_PRODUCT_APPLE_BANDIT	0x0001
+#define	PCI_PRODUCT_APPLE_UNINORTH1	0x001e
 
-PCIINIT(bandit)
+PCIINIT(uninorth)
 {
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_APPLE,
-	    PCI_PRODUCT_APPLE_BANDIT));
+	    PCI_PRODUCT_APPLE_UNINORTH1));
 
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
-	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x03);
+	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0xff);
 
 	PCI_SET_DATA(PCI_BHLC_REG,
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));

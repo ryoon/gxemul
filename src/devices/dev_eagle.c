@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.5 2005-11-29 07:27:50 debug Exp $
+ *  $Id: dev_eagle.c,v 1.6 2005-11-29 07:40:49 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -51,7 +51,7 @@ struct eagle_data {
 /*
  *  dev_eagle_access():
  *
- *  Passes accesses to ISA ports 0xcf8 and 0xcfc onto bus_pci_access().
+ *  Passes accesses to ISA ports 0xcf8 and 0xcfc onto bus_pci.
  */
 int dev_eagle_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,

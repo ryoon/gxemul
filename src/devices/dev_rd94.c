@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.30 2005-11-29 07:27:50 debug Exp $
+ *  $Id: dev_rd94.c,v 1.31 2005-11-29 07:40:49 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -88,7 +88,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 {
 	struct rd94_data *d = (struct rd94_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int regnr;
+	int regnr, bus, dev, func, pcireg;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -96,6 +96,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+
 	case RD94_SYS_CONFIG:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ rd94: write to CONFIG: 0x%llx ]\n",
@@ -106,6 +107,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 			    (long long)odata);
 		}
 		break;
+
 	case RD94_SYS_INTSTAT1:		/*  LB (Local Bus ???)  */
 		if (writeflag == MEM_WRITE) {
 		} else {
@@ -120,6 +122,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 		debug("[ rd94: intstat1 ]\n");
 /*		cpu_interrupt_ack(cpu, 3); */
 		break;
+
 	case RD94_SYS_INTSTAT2:		/*  PCI/EISA  */
 		if (writeflag == MEM_WRITE) {
 		} else {
@@ -128,6 +131,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 		debug("[ rd94: intstat2 ]\n");
 /*		cpu_interrupt_ack(cpu, 4); */
 		break;
+
 	case RD94_SYS_INTSTAT3:		/*  IT (Interval Timer)  */
 		if (writeflag == MEM_WRITE) {
 		} else {
@@ -137,6 +141,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 		cpu_interrupt_ack(cpu, 5);
 		d->interval = d->interval_start;
 		break;
+
 	case RD94_SYS_INTSTAT4:		/*  IPI  */
 		if (writeflag == MEM_WRITE) {
 		} else {
@@ -145,6 +150,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 		fatal("[ rd94: intstat4 ]\n");
 		cpu_interrupt_ack(cpu, 6);
 		break;
+
 	case RD94_SYS_CPUID:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ rd94: write to CPUID: 0x%llx ]\n",
@@ -155,6 +161,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 			    (long long)odata);
 		}
 		break;
+
 	case RD94_SYS_EXT_IMASK:
 		if (writeflag == MEM_WRITE) {
 			d->intmask = idata;
@@ -162,6 +169,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 			odata = d->intmask;
 		}
 		break;
+
 	case RD94_SYS_IT_VALUE:
 		if (writeflag == MEM_WRITE) {
 			d->interval = d->interval_start = idata;
@@ -172,24 +180,18 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 			/*  TODO: or d->interval ?  */;
 		}
 		break;
+
 	case RD94_SYS_PCI_CONFADDR:
-	case RD94_SYS_PCI_CONFDATA:
-fatal("TODO: rd94 pci\n");
-#if 0
-		if (writeflag == MEM_WRITE) {
-			bus_pci_access(cpu, mem, relative_addr ==
-			    RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA,
-			    &idata, len, writeflag, d->pci_data);
-		} else {
-			bus_pci_access(cpu, mem, relative_addr ==
-			    RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA,
-			    &odata, len, writeflag, d->pci_data);
-		}
-#endif
-exit(1);
+		bus_pci_decompose_1(idata, &bus, &dev, &func, &pcireg);
+		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, pcireg);
 		break;
-	default:
-		if (writeflag == MEM_WRITE) {
+
+	case RD94_SYS_PCI_CONFDATA:
+		bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
+		    &odata : &idata, len, writeflag);
+		break;
+
+	default:if (writeflag == MEM_WRITE) {
 			fatal("[ rd94: unimplemented write to address 0x%x, "
 			    "data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.47 2005-11-29 07:27:50 debug Exp $
+ *  $Id: bus_pci.c,v 1.48 2005-11-29 07:40:48 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -321,7 +321,7 @@ static void allocate_device_space(struct pci_device *pd,
  *  bus_pci_init():
  *
  *  This doesn't register a device, but instead returns a pointer to a struct
- *  which should be passed to bus_pci_access() when accessing the PCI bus.
+ *  which should be passed to other bus_pci functions when accessing the bus.
  *
  *  irq_nr is the (optional) IRQ nr that this PCI bus interrupts at.
  *

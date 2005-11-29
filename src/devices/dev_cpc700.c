@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.4 2005-11-29 07:27:50 debug Exp $
+ *  $Id: dev_cpc700.c,v 1.5 2005-11-29 07:40:49 debug Exp $
  *  
  *  IBM CPC700 bridge; PCI and interrupt controller.
  */
@@ -48,7 +48,7 @@
 /*
  *  dev_cpc700_pci_access():
  *
- *  Passes PCI indirect addr and data accesses onto bus_pci_access().
+ *  Passes PCI indirect addr and data accesses onto bus_pci.
  */
 int dev_cpc700_pci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,

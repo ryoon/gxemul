@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.39 2005-11-29 07:27:50 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.40 2005-11-29 07:40:49 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -341,7 +341,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 {
 	struct macepci_data *d = (struct macepci_data *) extra;
 	uint64_t idata = 0, odata=0;
-	int regnr, res = 1;
+	int regnr, res = 1, bus, dev, func, pcireg;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -350,38 +350,38 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Read from/write to the macepci:  */
 	switch (relative_addr) {
+
 	case 0x00:	/*  Error address  */
 		if (writeflag == MEM_WRITE) {
 		} else {
 			odata = 0;
 		}
 		break;
+
 	case 0x04:	/*  Error flags  */
 		if (writeflag == MEM_WRITE) {
 		} else {
 			odata = 0x06;
 		}
 		break;
+
 	case 0x0c:	/*  Revision number  */
 		if (writeflag == MEM_WRITE) {
 		} else {
 			odata = 0x01;
 		}
 		break;
+
 	case 0xcf8:	/*  PCI ADDR  */
-	case 0xcfc:	/*  PCI DATA  */
-fatal("SGI ip32 PCI todo\n");
-exit(1);
-#if 0
-		if (writeflag == MEM_WRITE) {
-			res = bus_pci_access(cpu, mem, relative_addr,
-			    &idata, len, writeflag, d->pci_data);
-		} else {
-			res = bus_pci_access(cpu, mem, relative_addr,
-			    &odata, len, writeflag, d->pci_data);
-		}
-#endif
+		bus_pci_decompose_1(idata, &bus, &dev, &func, &pcireg);
+		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, pcireg);
 		break;
+
+	case 0xcfc:	/*  PCI DATA  */
+		bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
+		    &odata : &idata, len, writeflag);
+		break;
+
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ macepci: unimplemented write to address "

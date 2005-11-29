@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1063 2005-11-29 04:28:06 debug Exp $
+$Id: HISTORY,v 1.1064 2005-11-29 05:25:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2478,4 +2478,8 @@ Changelog for GXemul:
 		Adding quick-hack Bandit PCI controller and "gc" interrupt
 		controller for MacPPC.
 20051128	Changing from a Bandit to a Uni-North controller for macppc.
-		Continuing on OpenFirmware and MacPPC emulation in general.
+		Continuing on OpenFirmware and MacPPC emulation in general
+		(obio controller, and wdc attached to the obio seems to
+		work).
+20051129	More work on MacPPC emulation (adding a dummy ADB
+		controller).

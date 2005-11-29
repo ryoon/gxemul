@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.166 2005-11-26 04:04:48 debug Exp $
+$Id: RELEASE,v 1.167 2005-11-29 05:25:26 debug Exp $
 
-I'm working on what will be 0.3.7.
+I'm working on post-0.3.7.
 
 -------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.7
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
 ================================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -57,31 +57,9 @@ emulator, it does not simulate things smaller than an instruction. What this
 means is that pipe-line stalls, penalties caused by branch-prediction misses
 or cache misses, and other micro-architectural effects are not simulated.
 
-User-visible change between release 0.3.6.2 and 0.3.7 include:
+User-visible change between release 0.3.7 and 0.3.X include:
 
-    o)	The experimental PowerPC emulation mode is now working well enough
-	to allow NetBSD/prep 2.1 to be installed and run inside the emulator.
-	It is not 100% stable, and it is not optimized for performance yet,
-	but hopefully enough for simple experiments.
-
-    o)	I finally took the time to implement a DEC 21143 NIC; this brings
-	network connectivity to NetBSD/cats. (The userland "NAT"-like
-	networking layer is still a bit buggy, and does not work with
-	everything. However, NetBSD/cats can now be installed via ftp.)
-
-    o)	CD-ROM images can now in some cases be detected as ATAPI CD-ROMs
-	instead of IDE harddisks. It works for at least NetBSD, OpenBSD,
-	and Linux on CATS, and NetBSD on hpcmips.
-
-Internal (code related) changes include:
-
-    o)  Cleanup of the PCI and ISA bus frameworks; in practice this means
-	that more code can be shared between different emulated machine
-	models than before, and that adding new machine types will become
-	easier.
-
-    o)  Dyntrans updates; 32-bit PowerPC mostly, but also many performance
-	related updates for ARM.
+    o)	...
 
 There have also been lots of other changes, too many and small to mention here.
 
@@ -176,6 +154,8 @@ them like this is in order:
     This product includes software developed by TooLs GmbH.
 
     This product includes software developed by Manuel Bouyer.
+
+    This product includes software developed by the Alice Group.
 
 Also, src/include/alpha_rpb.h requires the following:
 

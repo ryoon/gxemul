@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.619 2005-11-29 04:28:08 debug Exp $
+ *  $Id: machine.c,v 1.620 2005-11-29 05:25:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4366,7 +4366,7 @@ Not yet.
 		if (machine->emulated_hz == 0)
 			machine->emulated_hz = 40000000;
 
-		machine->md_int.gc_data = dev_gc_init(machine, mem, 0xf3000000);
+		machine->md_int.gc_data = dev_gc_init(machine, mem, 0xf3000000, 64);
 		machine->md_interrupt = macppc_interrupt;
 
 		pci_data = dev_uninorth_init(machine, mem, 0xe2000000,
@@ -4385,11 +4385,15 @@ Not yet.
 
 		device_add(machine, "hammerhead addr=0xf2800000");
 
+		device_add(machine, "adb addr=0xf3016000 irq=18");
+
 		if (machine->prom_emulation) {
 			uint64_t b = 8 * 1048576, a = b - 0x800;
 			int i;
 
 			of_emul_init(machine, fb, 0xf1000000, 1024, 768);
+			of_emul_init_uninorth(machine);
+			of_emul_init_adb(machine);
 
 			/*
 			 *  r3 = pointer to boot_args (for the Mach kernel).
@@ -5026,6 +5030,7 @@ Not yet.
 
 			/*  TODO: Framebuffer  */
 			of_emul_init(machine, NULL, 0xf1000000, 1024, 768);
+			of_emul_init_isa(machine);
 
 			/*
 			 *  r0 = OpenFirmware entry point.  NOTE: See

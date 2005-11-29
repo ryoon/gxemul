@@ -1,10 +1,10 @@
-$Id: README,v 1.91 2005-11-25 22:48:14 debug Exp $
+$Id: README,v 1.92 2005-11-29 05:25:26 debug Exp $
 
-I'm working on what will be 0.3.7.
+I'm working on post-0.3.7.
 
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.3.7
+Gavare's eXperimental Emulator   --   GXemul 0.3.X
 ==================================================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -27,9 +27,6 @@ system. Performance is somewhere between traditional interpretation and
 dynamic recompilation; however, the dynamic translation system used in
 GXemul does NOT require platform-specific back-end code. In plain English,
 this means that the dyntrans system works on any host platform.
-
-(PowerPC emulation is still relatively new in 0.3.7, so dont't expect too 
-much from it.)
 
 
 Quick start

@@ -25,13 +25,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.9 2005-11-29 04:28:10 debug Exp $
+ *  $Id: of.c,v 1.10 2005-11-29 05:25:29 debug Exp $
  *
  *  OpenFirmware emulation.
  *
  *  NOTE: OpenFirmware is used on quite a variety of different hardware archs,
  *        at least POWER/PowerPC, ARM, and SPARC, so the code in this module
  *        must always remain architecture agnostic.
+ *
+ *  NOTE: Some things, e.g. 32-bit integers as returned by the "getprop"
+ *        service, are always fixed to big-endian. (According to the standard.)
  *
  *  TODO: o) 64-bit OpenFirmware?
  *        o) More devices...
@@ -480,8 +483,8 @@ static struct of_device *of_add_device(struct of_data *of_data, char *name,
 	od->handle = of_get_unused_device_handle(of_data);
 	od->parent = find_device_handle(of_data, parentname);
 	if (od->parent < 0) {
-		fatal("of_add_device(): parent '%s' not found?\n",
-		    parentname);
+		fatal("of_add_device(): adding '%s' to parent '%s' failed: "
+		    "parent not found!\n", name, parentname);
 		exit(1);
 	}
 
@@ -680,13 +683,84 @@ static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
 
 
 /*
+ *  of_emul_init_isa():
+ */
+void of_emul_init_isa(struct machine *machine)
+{
+	struct of_data *ofd = machine->of_data;
+	unsigned char *isa_ranges;
+
+	of_add_device(ofd, "isa", "/");
+	isa_ranges = malloc(32);
+	if (isa_ranges == NULL)
+		goto bad;
+	memset(isa_ranges, 0, 32);
+	/*  2 *: isa_phys_hi, isa_phys_lo, parent_phys_start, size  */
+	/*  MEM space:  */
+	of_store_32bit_in_host(isa_ranges + 0, 0);
+	of_store_32bit_in_host(isa_ranges + 4, 0xc0000000);
+	/*  I/O space: low bit if isa_phys_hi set  */
+	of_store_32bit_in_host(isa_ranges + 16, 1);
+	of_store_32bit_in_host(isa_ranges + 20, 0xd0000000);
+
+	of_add_prop(ofd, "/isa", "ranges", isa_ranges, 32, 0);
+
+	return;
+
+bad:
+	fatal("of_emul_init_isa(): out of memory\n");
+	exit(1);
+}
+
+
+/*
+ *  of_emul_init_adb():
+ */
+void of_emul_init_adb(struct machine *machine)
+{
+	struct of_data *ofd = machine->of_data;
+	unsigned char *adb_interrupts, *adb_reg;
+
+	adb_interrupts = malloc(4 * sizeof(uint32_t));
+	adb_reg = malloc(8 * sizeof(uint32_t));
+	if (adb_interrupts == NULL || adb_reg == NULL)
+		goto bad;
+
+	of_add_device(ofd, "adb", "/bandit/gc");
+	of_add_prop_str(machine, ofd, "/bandit/gc/adb", "name", "via-cuda");
+	of_store_32bit_in_host(adb_interrupts + 0, 25);
+	of_store_32bit_in_host(adb_interrupts + 4, 0);
+	of_store_32bit_in_host(adb_interrupts + 8, 0);
+	of_store_32bit_in_host(adb_interrupts + 12, 0);
+	of_add_prop(ofd, "/bandit/gc/adb", "interrupts", adb_interrupts,
+	    4*sizeof(uint32_t), 0);
+	of_store_32bit_in_host(adb_reg + 0, 0x16000);
+	of_store_32bit_in_host(adb_reg + 4, 0x2000);
+	of_store_32bit_in_host(adb_reg + 8, 0);
+	of_store_32bit_in_host(adb_reg + 12, 0);
+	of_store_32bit_in_host(adb_reg + 16, 0);
+	of_store_32bit_in_host(adb_reg + 20, 0);
+	of_store_32bit_in_host(adb_reg + 24, 0);
+	of_store_32bit_in_host(adb_reg + 28, 0);
+	of_add_prop(ofd, "/bandit/gc/adb", "reg", adb_reg,
+	    8*sizeof(uint32_t), 0);
+
+	return;
+
+bad:
+	fatal("of_emul_init_adb(): out of memory\n");
+	exit(1);
+}
+
+
+/*
  *  of_emul_init_uninorth():
  */
-static void of_emul_init_uninorth(struct of_data *ofd, struct machine *machine)
+void of_emul_init_uninorth(struct machine *machine)
 {
+	struct of_data *ofd = machine->of_data;
 	unsigned char *uninorth_reg, *uninorth_bus_range, *uninorth_ranges;
 	unsigned char *macio_aa, *ata_interrupts, *ata_reg;
-	unsigned char *adb_interrupts, *adb_reg;
 	struct of_device *ic;
 	char *n = "pci@e2000000";
 	char *macio = "mac-io";
@@ -702,12 +776,9 @@ static void of_emul_init_uninorth(struct of_data *ofd, struct machine *machine)
 	macio_aa = malloc(5 * sizeof(uint32_t));
 	ata_interrupts = malloc(6 * sizeof(uint32_t));
 	ata_reg = malloc(8 * sizeof(uint32_t));
-	adb_interrupts = malloc(4 * sizeof(uint32_t));
-	adb_reg = malloc(8 * sizeof(uint32_t));
 	if (uninorth_ranges == NULL || uninorth_bus_range == NULL ||
 	    uninorth_reg == NULL || macio_aa == NULL ||
-	    ata_interrupts == NULL || ata_reg == NULL ||
-	    adb_interrupts == NULL || adb_reg == NULL)
+	    ata_interrupts == NULL || ata_reg == NULL)
 		goto bad;
 
 	of_store_32bit_in_host(uninorth_reg + 0, 0xe2000000);
@@ -784,27 +855,6 @@ static void of_emul_init_uninorth(struct of_data *ofd, struct machine *machine)
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "name", "escc");
 #endif
 
-	if (1) {
-		of_add_device(ofd, "adb", "/bandit/gc");
-		of_add_prop_str(machine, ofd, "/bandit/gc/adb", "name", "via-cuda");
-		of_store_32bit_in_host(adb_interrupts + 0, 25);
-		of_store_32bit_in_host(adb_interrupts + 4, 0);
-		of_store_32bit_in_host(adb_interrupts + 8, 0);
-		of_store_32bit_in_host(adb_interrupts + 12, 0);
-		of_add_prop(ofd, "/bandit/gc/adb", "interrupts", adb_interrupts,
-		    4*sizeof(uint32_t), 0);
-		of_store_32bit_in_host(adb_reg + 0, 0x16000);
-		of_store_32bit_in_host(adb_reg + 4, 0x2000);
-		of_store_32bit_in_host(adb_reg + 8, 0);
-		of_store_32bit_in_host(adb_reg + 12, 0);
-		of_store_32bit_in_host(adb_reg + 16, 0);
-		of_store_32bit_in_host(adb_reg + 20, 0);
-		of_store_32bit_in_host(adb_reg + 24, 0);
-		of_store_32bit_in_host(adb_reg + 28, 0);
-		of_add_prop(ofd, "/bandit/gc/adb", "reg", adb_reg,
-		    8*sizeof(uint32_t), 0);
-	}
-
 	return;
 
 bad:
@@ -823,7 +873,6 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 {
 	unsigned char *memory_reg, *memory_av;
 	unsigned char *zs_assigned_addresses;
-	unsigned char *isa_ranges;
 	struct of_device *mmu, *devstdout, *devstdin;
 	struct of_data *ofd = malloc(sizeof(struct of_data));
 	int i;
@@ -892,23 +941,6 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	/*  TODO:  */
 	of_add_prop(ofd, "/mmu", "translations", NULL, 0, 0);
 
-	if (1) {
-		of_add_device(ofd, "isa", "/");
-		isa_ranges = malloc(32);
-		if (isa_ranges == NULL)
-			goto bad;
-		memset(isa_ranges, 0, 32);
-		/*  2 *: isa_phys_hi, isa_phys_lo, parent_phys_start, size  */
-		/*  MEM space:  */
-		of_store_32bit_in_host(isa_ranges + 0, 0);
-		of_store_32bit_in_host(isa_ranges + 4, 0xc0000000);
-		/*  I/O space: low bit if isa_phys_hi set  */
-		of_store_32bit_in_host(isa_ranges + 16, 1);
-		of_store_32bit_in_host(isa_ranges + 20, 0xd0000000);
-
-		of_add_prop(ofd, "/isa", "ranges", isa_ranges, 32, 0);
-	}
-
 	of_add_device(ofd, "chosen", "/");
 	of_add_prop_int32(ofd, "/chosen", "mmu", mmu->handle);
 	of_add_prop_int32(ofd, "/chosen", "stdin", devstdin->handle);
@@ -927,8 +959,6 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_add_prop(ofd, "/memory", "reg", memory_reg, 2 * sizeof(uint32_t), 0);
 	of_add_prop(ofd, "/memory", "available",memory_av,2*sizeof(uint32_t),0);
 	of_add_prop_str(machine, ofd, "/memory","device_type","memory"/*?*/);
-
-	of_emul_init_uninorth(ofd, machine);
 
 	/*  Services:  */
 	of_add_service(ofd, "call-method", of__call_method_2_2, 2, 2);

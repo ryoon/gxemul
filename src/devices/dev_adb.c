@@ -23,100 +23,71 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- *   
- *  $Id: dev_gc.c,v 1.3 2005-11-29 05:25:28 debug Exp $
- *  
- *  Grand Central Interrupt controller (used by MacPPC).
+ *
+ *
+ *  $Id: dev_adb.c,v 1.1 2005-11-29 05:25:28 debug Exp $
+ *
+ *  ADB (Apple peripherals) controller.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+#include "adb_viareg.h"
+
+
+#define debug fatal
+
+#define	TICK_SHIFT		17
+#define	DEV_ADB_LENGTH		0x2000
+
+struct adb_data {
+	int		irqnr;
+};
+
 
 /*
- *  dev_gc_access():
+ *  dev_adb_tick():
  */
-int dev_gc_access(struct cpu *cpu, struct memory *mem,
+void dev_adb_tick(struct cpu *cpu, void *extra)
+{
+	/*  struct adb_data *d = extra;  */
+
+	/*  TODO  */
+}
+
+
+/*
+ *  dev_adb_access():
+ */
+int dev_adb_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct gc_data *d = extra;
-	uint64_t idata = 0, odata = 0;
+	uint64_t idata = 0, odata=0;
+	struct adb_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+odata = random();
+
 	switch (relative_addr) {
 
-#if 0
-#define INT_STATE_REG_H  (interrupt_reg + 0x00)
-#define INT_ENABLE_REG_H (interrupt_reg + 0x04)
-#define INT_CLEAR_REG_H  (interrupt_reg + 0x08)
-#define INT_LEVEL_REG_H  (interrupt_reg + 0x0c)
-#define INT_STATE_REG_L  (interrupt_reg + 0x10)
-#define INT_ENABLE_REG_L (interrupt_reg + 0x14)
-#define INT_CLEAR_REG_L  (interrupt_reg + 0x18)
-#define INT_LEVEL_REG_L  (interrupt_reg + 0x1c)
-#endif
-
-	case 0x10:
-		if (writeflag == MEM_READ)
-			odata = d->status_hi;
-		break;
-
-	case 0x14:
-		if (writeflag == MEM_READ)
-			odata = d->enable_hi;
-		else {
-			d->enable_hi = idata;
-			cpu_interrupt(cpu, d->reassert_irq);
-		}
-		break;
-
-	case 0x18:
-		if (writeflag == MEM_WRITE) {
-			d->status_hi &= ~idata;
-			cpu_interrupt(cpu, d->reassert_irq);
-		}
-		break;
-
-	case 0x20:
-		if (writeflag == MEM_READ)
-			odata = d->status_lo;
-		break;
-
-	case 0x24:
-		if (writeflag == MEM_READ)
-			odata = d->enable_lo;
-		else {
-			d->enable_lo = idata;
-			cpu_interrupt(cpu, d->reassert_irq);
-		}
-		break;
-
-	case 0x28:
-		if (writeflag == MEM_WRITE) {
-			d->status_lo &= ~idata;
-			cpu_interrupt(cpu, d->reassert_irq);
-		}
-		break;
-
-	default:if (writeflag == MEM_WRITE) {
-			fatal("[ gc: unimplemented write to "
-			    "offset 0x%x: data=0x%x ]\n", (int)
-			    relative_addr, (int)idata);
-		} else {
-			fatal("[ gc: unimplemented read from "
-			    "offset 0x%x ]\n", (int)relative_addr);
-		}
+	default:if (writeflag == MEM_READ)
+			fatal("[ adb: READ from UNIMPLEMENTED 0x%x ]\n",
+			    (int)relative_addr);
+		else
+			fatal("[ adb: WRITE to UNIMPLEMENTED 0x%x: 0x%x ]\n",
+			    (int)relative_addr, (int)idata);
 	}
 
 	if (writeflag == MEM_READ)
@@ -127,24 +98,23 @@ int dev_gc_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_gc_init():
+ *  devinit_adb():
  */
-struct gc_data *dev_gc_init(struct machine *machine, struct memory *mem,
-	uint64_t addr, int reassert_irq)
+int devinit_adb(struct devinit *devinit)
 {
-	struct gc_data *d;
+	struct adb_data *d = malloc(sizeof(struct adb_data));
 
-	d = malloc(sizeof(struct gc_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct gc_data));
-	d->reassert_irq = reassert_irq;
+	memset(d, 0, sizeof(struct adb_data));
+	d->irqnr = devinit->irq_nr;
 
-	memory_device_register(mem, "gc", addr, 0x100,
-	    dev_gc_access, d, DM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_ADB_LENGTH, dev_adb_access, d, DM_DEFAULT, NULL);
+	machine_add_tickfunction(devinit->machine, dev_adb_tick, d, TICK_SHIFT);
 
-	return d;
+	return 1;
 }
 

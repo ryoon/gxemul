@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.46 2005-11-29 04:28:09 debug Exp $
+ *  $Id: bus_pci.c,v 1.47 2005-11-29 07:27:50 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -63,92 +63,85 @@ extern int verbose;
 /*  #define debug fatal  */
 
 
-static void reverse(uint64_t *p, int len)
+/*
+ *  bus_pci_decompose_1():
+ *
+ *  Helper function for decomposing Mechanism 1 tags.
+ */
+void bus_pci_decompose_1(uint32_t t, int *bus, int *dev, int *func, int *reg)
 {
-	uint64_t x = *p, y = 0;
-	int i;
-	for (i=0; i<len; i++) {
-		y <<= 8;
-		y |= ((x >> (8*i)) & 0xff);
-	}
-	*p = y;
+	*bus  = (t >> 16) & 0xff;
+	*dev  = (t >> 11) & 0x1f;
+	*func = (t >>  8) &  0x7;
+	*reg  =  t        & 0xff;
+
+	/*  Warn about unaligned register access:  */
+	if (t & 3)
+		fatal("[ bus_pci_decompose_1: WARNING: reg = 0x%02x ]\n",
+		    t & 0xff);
 }
 
 
 /*
  *  bus_pci_data_access():
  *
- *  Reads from and writes to the PCI configuration registers of a device.
+ *  Reads from or writes to the PCI configuration registers of a device.
  */
-void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
-	uint64_t *data, int len, int writeflag, struct pci_data *pci_data)
+void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
+	uint64_t *data, int len, int writeflag)
 {
 	struct pci_device *dev;
-	int bus, device, function, registernr;
 	unsigned char *cfg_base;
 	uint64_t x, idata = *data;
-	int already_native_byteorder = 0;
-
-	if (len & PCI_ALREADY_NATIVE_BYTEORDER) {
-		len &= ~PCI_ALREADY_NATIVE_BYTEORDER;
-		already_native_byteorder = 1;
-	}
-
-	if (cpu->byte_order == EMUL_BIG_ENDIAN &&
-	    !already_native_byteorder)
-		reverse(&idata, len);
-
-	/*  Get the bus, device, and function numbers from the address:  */
-	bus        = (pci_data->pci_addr >> 16) & 0xff;
-	device     = (pci_data->pci_addr >> 11) & 0x1f;
-	function   = (pci_data->pci_addr >> 8)  & 0x7;
-	registernr = (pci_data->pci_addr)       & 0xff;
+	int i;
 
 	/*  Scan through the list of pci_device entries.  */
 	dev = pci_data->first_device;
 	while (dev != NULL) {
-		if (dev->bus == bus && dev->function == function &&
-		    dev->device == device)
+		if (dev->bus      == pci_data->cur_bus &&
+		    dev->function == pci_data->cur_func &&
+		    dev->device   == pci_data->cur_device)
 			break;
 		dev = dev->next;
 	}
 
 	/*  No device? Then return emptiness.  */
 	if (dev == NULL) {
-		if ((pci_data->pci_addr & 0xff) == 0)
-			*data = 0xffffffff;
-		else
-			*data = 0;
+		if (writeflag == MEM_READ) {
+			if (pci_data->cur_reg == 0)
+				*data = -1;
+			else
+				*data = 0;
+		} else {
+			fatal("[ bus_pci_data_access(): write to non-existant"
+			    " device? ]\n");
+		}
 		return;
 	}
 
 	/*  Return normal config data, or length data?  */
 	if (pci_data->last_was_write_ffffffff &&
-	    registernr >= PCI_MAPREG_START && registernr <= PCI_MAPREG_END - 4)
+	    pci_data->cur_reg >= PCI_MAPREG_START &&
+	    pci_data->cur_reg <= PCI_MAPREG_END - 4)
 		cfg_base = dev->cfg_mem_size;
 	else
 		cfg_base = dev->cfg_mem;
 
 	/*  Read data as little-endian:  */
 	x = 0;
-	if (registernr + len - 1 < PCI_CFG_MEM_SIZE) {
-		x = cfg_base[registernr];
-		if (len > 1)
-			x |= (cfg_base[registernr+1] << 8);
-		if (len > 2)
-			x |= (cfg_base[registernr+2] << 16);
-		if (len > 3)
-			x |= ((uint64_t)cfg_base[registernr+3] << 24);
-		if (len > 4)
-			fatal("TODO: more than 32-bit PCI access?\n");
+	for (i=len-1; i>=0; i--) {
+		int ofs = pci_data->cur_reg + i;
+		x <<= 8;
+		x |= cfg_base[ofs & (PCI_CFG_MEM_SIZE - 1)];
 	}
 
 	/*  Register write:  */
 	if (writeflag == MEM_WRITE) {
 		debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n",
 		    (long long)idata);
-		if (idata == 0xffffffffULL && registernr >= PCI_MAPREG_START
-		    && registernr <= PCI_MAPREG_END - 4) {
+		if (idata == 0xffffffffULL &&
+		    pci_data->cur_reg >= PCI_MAPREG_START &&
+		    pci_data->cur_reg <= PCI_MAPREG_END - 4) {
 			pci_data->last_was_write_ffffffff = 1;
 			return;
 		}
@@ -158,96 +151,42 @@ void bus_pci_data_access(struct cpu *cpu, struct memory *mem,
 			    " differs from current value 0x%08llx; NOT YET"
 			    " SUPPORTED. bus %i, device %i, function %i (%s)"
 			    " register 0x%02x ]\n", (long long)idata,
-			    (long long)x, bus, device, function, dev->name,
-			    registernr);
+			    (long long)x, pci_data->cur_bus,
+			    pci_data->cur_device, pci_data->cur_func,
+			    dev->name, pci_data->cur_reg);
 		}
 		return;
 	}
 
 	/*  Register read:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN &&
-	    !already_native_byteorder)
-		reverse(&x, len);
 	*data = x;
 
 	pci_data->last_was_write_ffffffff = 0;
 
-	debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx (bus %i, device "
-	    "%i, function %i (%s) register 0x%02x): 0x%08lx ]\n", (long)
-	    pci_data->pci_addr, bus, device, function, dev->name,
-	    registernr, (long)*data);
+	debug("[ bus_pci: read from PCI DATA, bus %i, device "
+	    "%i, function %i (%s) register 0x%02x: 0x%08lx ]\n", (long)
+	    pci_data->cur_bus, pci_data->cur_device,
+	    pci_data->cur_func, dev->name, pci_data->cur_reg, (long)*data);
 }
 
 
 /*
- *  bus_pci_access():
+ *  bus_pci_setaddr():
  *
- *  relative_addr should be either BUS_PCI_ADDR or BUS_PCI_DATA. The uint64_t
- *  pointed to by data should contain the word to be written to the pci bus,
- *  or a placeholder for information read from the bus.
- *
- *  Returns 1 if ok, 0 on error.
+ *  Sets the address in preparation for a PCI register transfer.
  */
-int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	uint64_t *data, int len, int writeflag, struct pci_data *pci_data)
+void bus_pci_setaddr(struct cpu *cpu, struct pci_data *pci_data,
+	int bus, int device, int function, int reg)
 {
-	int already_native_byteorder = 0;
-
-	if (writeflag == MEM_READ)
-		*data = 0;
-
-	if (len & PCI_ALREADY_NATIVE_BYTEORDER)
-		already_native_byteorder = 1;
-
-	switch (relative_addr) {
-
-	case BUS_PCI_ADDR:
-		if (writeflag == MEM_WRITE) {
-			debug("[ bus_pci: write to PCI ADDR: data = 0x%016llx"
-			    " ]\n", (long long)*data);
-			pci_data->pci_addr = *data;
-
-			/*
-			 *  Big-endian systems (e.g. PowerPC) seem to access
-			 *  PCI config data using little-endian accesses.
-			 */
-			if (cpu->byte_order == EMUL_BIG_ENDIAN &&
-			    !already_native_byteorder) {
-				uint32_t t = pci_data->pci_addr;
-				pci_data->pci_addr = ((t >> 24) & 255)
-				    | ((t >> 8) & 0xff00)
-				    | ((t << 8) & 0xff0000)
-				    | ((t << 24) & 0xff000000);
-			}
-
-			/*  Linux seems to use type 0 even when it does
-			    type 1 detection. Hm. This is commented for now.  */
-			/*  if (pci_data->pci_addr & 1)
-				fatal("[ bus_pci: WARNING! pci type 0 not"
-				    " yet implemented! ]\n");  */
-		} else {
-			debug("[ bus_pci: read from PCI ADDR (data = "
-			    "0x%016llx) ]\n", (long long)pci_data->pci_addr);
-			*data = pci_data->pci_addr;
-		}
-		break;
-
-	case BUS_PCI_DATA:
-		bus_pci_data_access(cpu, mem, data, len, writeflag, pci_data);
-		break;
-
-	default:if (writeflag == MEM_READ) {
-			debug("[ bus_pci: read from unimplemented addr "
-			    "0x%x ]\n", (int)relative_addr);
-			*data = 0;
-		} else {
-			debug("[ bus_pci: write to unimplemented addr "
-			    "0x%x: 0x%llx ]\n", (int)relative_addr,
-			    (long long)*data);
-		}
+	if (cpu == NULL || pci_data == NULL) {
+		fatal("bus_pci_setaddr(): NULL ptr\n");
+		exit(1);
 	}
 
-	return 1;
+	pci_data->cur_bus = bus;
+	pci_data->cur_device = device;
+	pci_data->cur_func = function;
+	pci_data->cur_reg = reg;
 }
 
 
@@ -305,14 +244,13 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	/*
 	 *  Initialize with some default values:
 	 *
-	 *  TODO:  The command status register is best to set up per device,
-	 *         just enabling all bits like this is not really good.
-	 *         The size registers should also be set up on a per-device
-	 *         basis.
+	 *  TODO:  The command status register is best to set up per device.
+	 *  The size registers should also be set up on a per-device basis.
 	 */
-	PCI_SET_DATA(PCI_COMMAND_STATUS_REG, 0x00ffffffULL);
+	PCI_SET_DATA(PCI_COMMAND_STATUS_REG,
+	    PCI_COMMAND_IO_ENABLE | PCI_COMMAND_MEM_ENABLE);
 	for (ofs = PCI_MAPREG_START; ofs < PCI_MAPREG_END; ofs += 4)
-		PCI_SET_DATA_SIZE(ofs, 0x00400000 - 1);
+		PCI_SET_DATA_SIZE(ofs, 0x00100000 - 1);
 
 	if (init == NULL) {
 		fatal("No init function for PCI device \"%s\"?\n", name);
@@ -429,12 +367,12 @@ struct pci_data *bus_pci_init(int irq_nr,
 
 
 /******************************************************************************
- *
- *  The following is glue code for PCI controllers and devices. The glue code
- *  does the minimal stuff necessary to get an emulated OS to detect the
- *  device (i.e. set up PCI configuration registers), and then if necessary
- *  add a "normal" device.
- *
+ *                                                                            *
+ *  The following is glue code for PCI controllers and devices. The glue      *
+ *  code does the minimal stuff necessary to get an emulated OS to detect     *
+ *  the device (i.e. set up PCI configuration registers), and then if         *
+ *  necessary adds a "normal" device.                                         *
+ *                                                                            *
  ******************************************************************************/
 
 
@@ -1015,6 +953,8 @@ PCIINIT(eagle)
 
 PCIINIT(gc_obio)
 {
+	uint64_t port, memaddr;
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_APPLE,
 	    PCI_PRODUCT_APPLE_GC));
 
@@ -1024,10 +964,15 @@ PCIINIT(gc_obio)
 
 	PCI_SET_DATA(PCI_BHLC_REG,
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+
+	/*  TODO  */
+	allocate_device_space(pd, 0x10000, 0x10000, &port, &memaddr);
 }
 
 PCIINIT(uninorth)
 {
+	uint64_t port, memaddr;
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_APPLE,
 	    PCI_PRODUCT_APPLE_UNINORTH1));
 
@@ -1036,6 +981,9 @@ PCIINIT(uninorth)
 
 	PCI_SET_DATA(PCI_BHLC_REG,
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+
+	/*  TODO  */
+	allocate_device_space(pd, 0x10000, 0x10000, &port, &memaddr);
 }
 
 
@@ -1049,12 +997,16 @@ PCIINIT(uninorth)
 
 PCIINIT(ati_radeon_9200_2)
 {
+	uint64_t port, memaddr;
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_ATI,
 	    PCI_PRODUCT_ATI_RADEON_9200_2));
 
 	/*  TODO: other subclass?  */
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_DISPLAY,
 	    PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x03);
-}
 
+	/*  TODO  */
+	allocate_device_space(pd, 0x1000, 0x400000, &port, &memaddr);
+}
 

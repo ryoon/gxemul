@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_uninorth.c,v 1.1 2005-11-28 07:00:34 debug Exp $
+ *  $Id: dev_uninorth.c,v 1.2 2005-11-29 07:27:50 debug Exp $
  *  
  *  Uni-North PCI controller (as used by MacPPC).
  */
@@ -44,7 +44,9 @@
 
 struct uninorth_data {
 	int		pciirq;
+
 	struct pci_data	*pci_data;
+	uint64_t	cur_addr;
 };
 
 
@@ -56,32 +58,41 @@ int dev_uninorth_addr_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	struct uninorth_data *d = extra;
+
 	if (writeflag == MEM_WRITE) {
 		uint64_t idata = memory_readmax64(cpu, data, len
 		    | MEM_PCI_LITTLE_ENDIAN);
-		uint64_t x = 0;
-#if 1
-		int i;
-		/*  Convert Uninorth PCI address into normal address:  */
-		for (i=11; i<32; i++)
-			if (idata & (1 << i))
-				break;
-		if (i < 32)
-			x = i << 11;
-		/*  Copy function and register nr from idata:  */
-		x |= (idata & 0x7ff);
-#else
-		x = idata;
-#endif
-		bus_pci_access(cpu, mem, BUS_PCI_ADDR, &x,
-		    len | PCI_ALREADY_NATIVE_BYTEORDER, writeflag, d->pci_data);
+		int bus, dev, func, reg;
+
+		d->cur_addr = idata;
+		if (idata == 0)
+			return 0;
+
+		/*  Decompose the Uni-North tag:  */
+		if (idata & 1) {
+			idata &= ~1;
+			bus_pci_decompose_1(idata, &bus, &dev, &func, &reg);
+		} else {
+			bus = 0;
+			for (dev=11; dev<32; dev++)
+				if (idata & (1 << dev))
+					break;
+			if (dev == 32)
+				fatal("[ dev_uninorth_addr_access: no dev? "
+				    "idata=0x%08x ]\n", (int)idata);
+
+			func = (idata >> 8) & 7;
+			reg = idata & 0xff;
+		}
+
+		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
 	} else {
-		uint64_t odata;
-		bus_pci_access(cpu, mem, BUS_PCI_ADDR, &odata,
-		    len, writeflag, d->pci_data);
-		memory_writemax64(cpu, data, len, odata);
-		debug("[ TODO: read from uninorth addr ]\n");
+		/*  TODO: is returning the current address like this
+		    the correct behaviour?  */
+		memory_writemax64(cpu, data, len | MEM_PCI_LITTLE_ENDIAN,
+		    d->cur_addr);
 	}
+
 	return 1;
 }
 
@@ -94,16 +105,17 @@ int dev_uninorth_data_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	struct uninorth_data *d = extra;
-	if (writeflag == MEM_WRITE) {
-		uint64_t idata = memory_readmax64(cpu, data, len);
-		bus_pci_access(cpu, mem, BUS_PCI_DATA, &idata,
-		    len, writeflag, d->pci_data);
-	} else {
-		uint64_t odata;
-		bus_pci_access(cpu, mem, BUS_PCI_DATA, &odata,
-		    len, writeflag, d->pci_data);
-		memory_writemax64(cpu, data, len, odata);
-	}
+	uint64_t idata = 0, odata = 0;
+
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len|MEM_PCI_LITTLE_ENDIAN);
+
+	bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ? &odata :
+	    &idata, len, writeflag);
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len|MEM_PCI_LITTLE_ENDIAN, odata);
+
 	return 1;
 }
 

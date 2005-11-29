@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.84 2005-11-25 03:38:00 debug Exp $
+ *  $Id: net.c,v 1.85 2005-11-29 07:27:49 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -157,20 +157,13 @@ void net_generate_unique_mac(struct machine *machine, unsigned char *macbuf)
 	x = machine->serial_nr;
 	y = machine->nr_of_nics;
 
-	/*
-	 *  TODO: What is a good starting value? Something like this?
-	 *
-	 *  +-----------+-------------------+-------------+-------------+
-	 *  |  16 bits  |  16 bits machine  |  12 bits    |  4 bits of  |
-	 *  |  fixed    |  serial nr        |  NIC nr(*)  |  zeroes     |
-	 *  +-----------+-------------------+-------------+-------------+
-	 */
 	macbuf[0] = 0x10;
 	macbuf[1] = 0x20;
 	macbuf[2] = 0x30;
 	macbuf[3] = 0;
 	macbuf[4] = 0;
-	macbuf[5] = machine->serial_nr << 4;
+	/*  NOTE/TODO: This only allows 8 nics per machine!  */
+	macbuf[5] = (machine->serial_nr << 4) + (machine->nr_of_nics << 1);
 
 	if (macbuf[0] & 1 || macbuf[5] & 1) {
 		fatal("Internal error in net_generate_unique_mac().\n");

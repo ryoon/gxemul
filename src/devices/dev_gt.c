@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.35 2005-11-21 09:17:26 debug Exp $
+ *  $Id: dev_gt.c,v 1.36 2005-11-29 07:27:50 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -83,7 +83,7 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i;
+	int i, bus, dev, func, reg;
 	struct gt_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
@@ -136,15 +136,23 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	case 0xcf8:	/*  PCI ADDR  */
-	case 0xcfc:	/*  PCI DATA  */
-		if (writeflag == MEM_WRITE) {
-			bus_pci_access(cpu, mem, relative_addr, &idata,
-			    len, writeflag, d->pci_data);
-		} else {
-			bus_pci_access(cpu, mem, relative_addr, &odata,
-			    len, writeflag, d->pci_data);
+		if (cpu->byte_order != EMUL_LITTLE_ENDIAN) {
+			fatal("[ gt: TODO: big endian PCI access ]\n");
+			exit(1);
 		}
+		bus_pci_decompose_1(idata, &bus, &dev, &func, &reg);
+		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
 		break;
+
+	case 0xcfc:	/*  PCI DATA  */
+		if (cpu->byte_order != EMUL_LITTLE_ENDIAN) {
+			fatal("[ gt: TODO: big endian PCI access ]\n");
+			exit(1);
+		}
+		bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
+		    &odata : &idata, len, writeflag);
+		break;
+
 	default:
 		if (writeflag == MEM_READ) {
 			debug("[ gt: read from addr 0x%x ]\n",

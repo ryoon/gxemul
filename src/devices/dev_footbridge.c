@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.36 2005-11-21 09:17:26 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.37 2005-11-29 07:27:50 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -137,10 +137,9 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_footbridge_pci_access():
  *
- *  The Footbridge PCI configuration space is not implemented as "address +
- *  data port" pair, but instead a 24-bit (16 MB) chunk of physical memory
- *  decodes as the address. This function translates that into bus_pci_access
- *  calls.
+ *  The Footbridge PCI configuration space is implemented as a direct memory
+ *  space (i.e. not one port for addr and one port for data). This function
+ *  translates that into bus_pci calls.
  */
 int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -148,16 +147,14 @@ int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 {
 	struct footbridge_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int bus, device, function, regnr, res;
-	uint64_t pci_word;
+	int bus, dev, func, reg;
 
 	if (writeflag == MEM_WRITE)
-		idata = memory_readmax64(cpu, data, len);
+		idata = memory_readmax64(cpu, data, len|MEM_PCI_LITTLE_ENDIAN);
 
-	bus      = (relative_addr >> 16) & 0xff;
-	device   = (relative_addr >> 11) & 0x1f;
-	function = (relative_addr >> 8) & 0x7;
-	regnr    = relative_addr & 0xff;
+	/*  Decompose the (direct) address into its components:  */
+	bus_pci_decompose_1(relative_addr, &bus, &dev, &func, &reg);
+	bus_pci_setaddr(cpu, d->pcibus, bus, dev, func, reg);
 
 	if (bus == 255) {
 		fatal("[ footbridge DEBUG ERROR: bus 255 unlikely,"
@@ -165,31 +162,15 @@ int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
 		exit(1);
 	}
 
-	debug("[ footbridge_pci: %s bus %i, device %i, function "
-	    "%i, register %i ]\n", writeflag == MEM_READ? "read from"
-	    : "write to", bus, device, function, regnr);
+	debug("[ footbridge pci: %s bus %i, device %i, function %i, register "
+	    "%i ]\n", writeflag == MEM_READ? "read from" : "write to", bus,
+	    dev, func, reg);
 
-	if (d->pcibus == NULL) {
-		fatal("dev_footbridge_pci_access(): no PCI bus?\n");
-		return 0;
-	}
-
-	pci_word = relative_addr & 0x00ffffff;
-
-	res = bus_pci_access(cpu, mem, BUS_PCI_ADDR,
-	    &pci_word, sizeof(uint32_t), MEM_WRITE, d->pcibus);
-	if (writeflag == MEM_READ) {
-		res = bus_pci_access(cpu, mem, BUS_PCI_DATA,
-		    &pci_word, len, MEM_READ, d->pcibus);
-		odata = pci_word;
-	} else {
-		pci_word = idata;
-		res = bus_pci_access(cpu, mem, BUS_PCI_DATA,
-		    &pci_word, len, MEM_WRITE, d->pcibus);
-	}
+	bus_pci_data_access(cpu, d->pcibus, writeflag == MEM_READ?
+	    &odata : &idata, len, writeflag);
 
 	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
+		memory_writemax64(cpu, data, len|MEM_PCI_LITTLE_ENDIAN, odata);
 
 	return 1;
 }

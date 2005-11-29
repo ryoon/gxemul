@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.38 2005-11-21 09:17:27 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.39 2005-11-29 07:27:50 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -370,6 +370,9 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case 0xcf8:	/*  PCI ADDR  */
 	case 0xcfc:	/*  PCI DATA  */
+fatal("SGI ip32 PCI todo\n");
+exit(1);
+#if 0
 		if (writeflag == MEM_WRITE) {
 			res = bus_pci_access(cpu, mem, relative_addr,
 			    &idata, len, writeflag, d->pci_data);
@@ -377,6 +380,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 			res = bus_pci_access(cpu, mem, relative_addr,
 			    &odata, len, writeflag, d->pci_data);
 		}
+#endif
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {

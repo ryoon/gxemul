@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.1 2005-11-29 05:25:28 debug Exp $
+ *  $Id: dev_adb.c,v 1.2 2005-11-29 07:27:50 debug Exp $
  *
  *  ADB (Apple peripherals) controller.
  */
@@ -72,13 +72,11 @@ int dev_adb_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	uint64_t idata = 0, odata=0;
+	uint64_t idata = 0, odata = 0;
 	struct adb_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
-
-odata = random();
 
 	switch (relative_addr) {
 

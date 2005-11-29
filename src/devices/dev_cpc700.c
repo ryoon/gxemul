@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.3 2005-11-22 02:07:39 debug Exp $
+ *  $Id: dev_cpc700.c,v 1.4 2005-11-29 07:27:50 debug Exp $
  *  
  *  IBM CPC700 bridge; PCI and interrupt controller.
  */
@@ -55,22 +55,26 @@ int dev_cpc700_pci_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
+	int bus, dev, func, reg;
 	struct cpc700_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
-		idata = memory_readmax64(cpu, data, len);
+		idata = memory_readmax64(cpu, data, len|MEM_PCI_LITTLE_ENDIAN);
 
-	relative_addr += BUS_PCI_ADDR;
+	switch (relative_addr) {
+	case 0:	/*  Address:  */
+		bus_pci_decompose_1(idata, &bus, &dev, &func, &reg);
+		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
+		break;
 
-	if (writeflag == MEM_WRITE)
-		bus_pci_access(cpu, mem, relative_addr, &idata,
-		    len, writeflag, d->pci_data);
-	else
-		bus_pci_access(cpu, mem, relative_addr, &odata,
-		    len, writeflag, d->pci_data);
+	case 4:	/*  Data:  */
+		bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
+		    &odata : &idata, len, writeflag);
+		break;
+	}
 
 	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
+		memory_writemax64(cpu, data, len|MEM_PCI_LITTLE_ENDIAN, odata);
 
 	return 1;
 }

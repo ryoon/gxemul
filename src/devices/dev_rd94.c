@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.29 2005-11-21 09:17:27 debug Exp $
+ *  $Id: dev_rd94.c,v 1.30 2005-11-29 07:27:50 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -174,6 +174,8 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case RD94_SYS_PCI_CONFADDR:
 	case RD94_SYS_PCI_CONFDATA:
+fatal("TODO: rd94 pci\n");
+#if 0
 		if (writeflag == MEM_WRITE) {
 			bus_pci_access(cpu, mem, relative_addr ==
 			    RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA,
@@ -183,6 +185,8 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 			    RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA,
 			    &odata, len, writeflag, d->pci_data);
 		}
+#endif
+exit(1);
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {

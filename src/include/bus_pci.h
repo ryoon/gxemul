@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.24 2005-11-27 16:03:35 debug Exp $
+ *  $Id: bus_pci.h,v 1.25 2005-11-29 07:27:51 debug Exp $
  */
 
 #include "misc.h"
@@ -70,8 +70,8 @@ struct pci_data {
 	uint64_t	cur_pci_portbase;
 	uint64_t	cur_pci_membase;
 
-	/*  Current (indirect) addr/data access:  */
-	uint32_t	pci_addr;
+	/*  Current register access:  */
+	int		cur_bus, cur_device, cur_func, cur_reg;
 	int		last_was_write_ffffffff;
 
 	struct pci_device *first_device;
@@ -113,18 +113,25 @@ struct pci_device {
 #define	BUS_PCI_ADDR	0xcf8
 #define	BUS_PCI_DATA	0xcfc
 
-/*  Flags for bus_pci_access(). OR:ed into len.  */
-#define	PCI_ALREADY_NATIVE_BYTEORDER	0x100
 
-/*  bus_pci.c:  */
-int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	uint64_t *data, int len, int writeflag, struct pci_data *pci_data);
-void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
-	struct memory *mem, int bus, int device, int function, char *name);
+/*
+ *  bus_pci.c:
+ */
+
+/*  Run-time access:  */
+void bus_pci_decompose_1(uint32_t t, int *bus, int *dev, int *func, int *reg);
+void bus_pci_setaddr(struct cpu *cpu, struct pci_data *pci_data,
+	int bus, int device, int function, int reg);
+void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
+	uint64_t *data, int len, int writeflag);
+
+/*  Initialization:  */
 struct pci_data *bus_pci_init(int irq_nr,
 	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
 	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
 	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase);
+void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
+	struct memory *mem, int bus, int device, int function, char *name);
 
 
 #endif	/*  BUS_PCI_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.23 2005-11-27 03:47:39 debug Exp $
+ *  $Id: dev_zs.c,v 1.24 2005-11-29 09:32:58 debug Exp $
  *  
  *  Zilog serial controller.
  *
@@ -228,7 +228,7 @@ int dev_zs_init(struct machine *machine, struct memory *mem,
 	d->console_handle = console_start_slave(machine, name);
 
 	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult
-*2,
+*4,
 	    dev_zs_access, d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_zs_tick, d, ZS_TICK_SHIFT);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.621 2005-11-29 07:27:49 debug Exp $
+ *  $Id: machine.c,v 1.622 2005-11-29 09:32:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1548,7 +1548,7 @@ void macppc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 			m->md_int.gc_data->status_hi &= ~mask;
 	}
 
-#if 0
+#if 1
 	printf("status = %08x %08x  enable = %08x %08x\n",
 	    m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
 	    m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);
@@ -4374,10 +4374,12 @@ Not yet.
 
 		bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
 		bus_pci_add(machine, pci_data, mem, 0, 15, 0, "gc_obio");
-		bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
+
+		if (machine->use_x11)
+			bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
 
 		machine->main_console_handle = dev_zs_init(machine,
-		    mem, 0xf0000000ULL, 1 /* IRQ: TODO */, 1, "zs");
+		    mem, 0xf3013000ULL, 23, 1, "zs");
 
 		fb = dev_fb_init(machine, mem, 0xf1000000,
 		    VFB_GENERIC | VFB_REVERSE_START,
@@ -4393,6 +4395,7 @@ Not yet.
 
 			of_emul_init(machine, fb, 0xf1000000, 1024, 768);
 			of_emul_init_uninorth(machine);
+			of_emul_init_zs(machine);
 			/*  of_emul_init_adb(machine);  */
 
 			/*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.10 2005-11-29 05:25:29 debug Exp $
+ *  $Id: of.c,v 1.11 2005-11-29 09:32:59 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -754,6 +754,81 @@ bad:
 
 
 /*
+ *  of_emul_init_zs():
+ */
+void of_emul_init_zs(struct machine *machine)
+{
+	struct of_data *ofd = machine->of_data;
+	unsigned char *zs_interrupts, *zs_reg;
+
+	zs_reg = malloc(6 * sizeof(uint32_t));
+	if (zs_reg == NULL)
+		goto bad;
+
+	/*  The controller:  */
+	of_add_device(ofd, "zs", "/bandit/gc");
+	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "device_type", "serial");
+	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "name", "escc");
+	of_store_32bit_in_host(zs_reg + 0, 0x13000);
+	of_store_32bit_in_host(zs_reg + 4, 0x100);
+	of_store_32bit_in_host(zs_reg + 8, 0x100);
+	of_store_32bit_in_host(zs_reg + 12, 0x100);
+	of_store_32bit_in_host(zs_reg + 16, 0x200);
+	of_store_32bit_in_host(zs_reg + 20, 0x100);
+	of_add_prop(ofd, "/bandit/gc/zs", "reg", zs_reg, 6*sizeof(uint32_t), 0);
+
+	/*  Port 1:  */
+	zs_interrupts = malloc(3 * sizeof(uint32_t));
+	zs_reg = malloc(6 * sizeof(uint32_t));
+	if (zs_interrupts == NULL || zs_reg == NULL)
+		goto bad;
+
+	of_add_device(ofd, "zstty0", "/bandit/gc/zs");
+	of_store_32bit_in_host(zs_interrupts + 0, 16);
+	of_store_32bit_in_host(zs_interrupts + 4, 0);
+	of_store_32bit_in_host(zs_interrupts + 8, 0);
+	of_add_prop(ofd, "/bandit/gc/zs/zstty0", "interrupts", zs_interrupts,
+	    3*sizeof(uint32_t), 0);
+	of_store_32bit_in_host(zs_reg + 0, 0x13800);
+	of_store_32bit_in_host(zs_reg + 4, 0x100);
+	of_store_32bit_in_host(zs_reg + 8, 0x100);
+	of_store_32bit_in_host(zs_reg + 12, 0x100);
+	of_store_32bit_in_host(zs_reg + 16, 0x200);
+	of_store_32bit_in_host(zs_reg + 20, 0x100);
+	of_add_prop(ofd, "/bandit/gc/zs/zstty0",
+	    "reg", zs_reg, 6*sizeof(uint32_t), 0);
+
+	/*  Port 0:  */
+	zs_interrupts = malloc(3 * sizeof(uint32_t));
+	zs_reg = malloc(6 * sizeof(uint32_t));
+	if (zs_interrupts == NULL || zs_reg == NULL)
+		goto bad;
+
+	of_add_device(ofd, "zstty0", "/bandit/gc/zs");
+	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty0", "name", "ch-b");
+	of_store_32bit_in_host(zs_interrupts + 0, 15);
+	of_store_32bit_in_host(zs_interrupts + 4, 0);
+	of_store_32bit_in_host(zs_interrupts + 8, 0);
+	of_add_prop(ofd, "/bandit/gc/zs/zstty0", "interrupts", zs_interrupts,
+	    3*sizeof(uint32_t), 0);
+	of_store_32bit_in_host(zs_reg + 0, 0x13400);
+	of_store_32bit_in_host(zs_reg + 4, 0x100);
+	of_store_32bit_in_host(zs_reg + 8, 0x100);
+	of_store_32bit_in_host(zs_reg + 12, 0x100);
+	of_store_32bit_in_host(zs_reg + 16, 0x200);
+	of_store_32bit_in_host(zs_reg + 20, 0x100);
+	of_add_prop(ofd, "/bandit/gc/zs/zstty0",
+	    "reg", zs_reg, 6*sizeof(uint32_t), 0);
+
+	return;
+
+bad:
+	fatal("of_emul_init_zs(): out of memory\n");
+	exit(1);
+}
+
+
+/*
  *  of_emul_init_uninorth():
  */
 void of_emul_init_uninorth(struct machine *machine)
@@ -849,12 +924,6 @@ void of_emul_init_uninorth(struct machine *machine)
 		    "addr_mult=0x10");
 	}
 
-#if 0
-	of_add_device(ofd, "zs", "/bandit/gc");
-	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "device_type", "serial");
-	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "name", "escc");
-#endif
-
 	return;
 
 bad:
@@ -911,10 +980,10 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		if (zs_assigned_addresses == NULL)
 			goto bad;
 		memset(zs_assigned_addresses, 0, 12);
-		of_add_prop_str(machine, ofd, "/io/stdin", "name", "zs");
+		of_add_prop_str(machine, ofd, "/io/stdin", "name", "ch-a");
 		of_add_prop_str(machine, ofd, "/io/stdin", "device_type",
 		    "serial");
-		of_add_prop_int32(ofd, "/io/stdin", "reg", 0xf0000000);
+		of_add_prop_int32(ofd, "/io/stdin", "reg", 0xf3013000);
 		of_add_prop(ofd, "/io/stdin", "assigned-addresses",
 		    zs_assigned_addresses, 12, 0);
 

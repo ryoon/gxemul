@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.56 2005-11-23 23:31:36 debug Exp $
+ *  $Id: dev_wdc.c,v 1.57 2005-11-29 04:28:09 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -66,6 +66,7 @@ extern int quiet_mode;
 
 struct wdc_data {
 	int		irq_nr;
+	int		addr_mult;
 	int		base_drive;
 	int		data_debug;
 
@@ -549,6 +550,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 	int i;
 
+	relative_addr /= d->addr_mult;
+
 	if (writeflag == MEM_WRITE) {
 		if (relative_addr == wd_data)
 			idata = memory_readmax64(cpu, data, len);
@@ -921,8 +924,8 @@ int devinit_wdc(struct devinit *devinit)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct wdc_data));
-	d->irq_nr = devinit->irq_nr;
-
+	d->irq_nr     = devinit->irq_nr;
+	d->addr_mult  = devinit->addr_mult;
 	d->data_debug = 1;
 
 	d->inbuf = zeroed_alloc(WDC_INBUF_SIZE);
@@ -933,6 +936,10 @@ int devinit_wdc(struct devinit *devinit)
 		d->base_drive = 2;
 
 	alt_status_addr = devinit->addr + 0x206;
+
+	/*  Special hack for macppc:  */
+	if (devinit->machine->machine_type == MACHINE_MACPPC)
+		alt_status_addr = devinit->addr + 0x160;
 
 	/*  Special hack for pcic/hpcmips:  TODO: Fix  */
 	if (devinit->addr == 0x14000180)
@@ -949,8 +956,8 @@ int devinit_wdc(struct devinit *devinit)
 	memory_device_register(devinit->machine->memory, "wdc_altstatus",
 	    alt_status_addr, 2, dev_wdc_altstatus_access, d, DM_DEFAULT, NULL);
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_WDC_LENGTH, dev_wdc_access, d, DM_DEFAULT,
-	    NULL);
+	    devinit->addr, DEV_WDC_LENGTH * devinit->addr_mult, dev_wdc_access,
+	    d, DM_DEFAULT, NULL);
 
 	if (devinit->machine->machine_type != MACHINE_HPCMIPS &&
 	    devinit->machine->machine_type != MACHINE_EVBMIPS)

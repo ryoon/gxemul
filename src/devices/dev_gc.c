@@ -24,9 +24,9 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.1 2005-11-27 19:28:10 debug Exp $
+ *  $Id: dev_gc.c,v 1.2 2005-11-29 04:28:09 debug Exp $
  *  
- *  Interrupt controller used by MacPPC.
+ *  Grand Central Interrupt controller (used by MacPPC).
  */
 
 #include <stdio.h>
@@ -65,7 +65,6 @@ int dev_gc_access(struct cpu *cpu, struct memory *mem,
 #define INT_ENABLE_REG_L (interrupt_reg + 0x14)
 #define INT_CLEAR_REG_L  (interrupt_reg + 0x18)
 #define INT_LEVEL_REG_L  (interrupt_reg + 0x1c)
-
 #endif
 
 	case 0x10:

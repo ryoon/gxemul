@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.103 2005-11-27 03:48:09 debug Exp $
+ *  $Id: diskimage.c,v 1.104 2005-11-29 04:28:07 debug Exp $
  *
  *  Disk image support.
  *
@@ -1508,6 +1508,7 @@ int diskimage_add(struct machine *machine, char *fname)
 	    machine->machine_type == MACHINE_HPCMIPS ||
 	    machine->machine_type == MACHINE_BEBOX ||
 	    machine->machine_type == MACHINE_PREP ||
+	    machine->machine_type == MACHINE_MACPPC ||
 	    machine->machine_type == MACHINE_CATS ||
 	    machine->machine_type == MACHINE_NETWINDER ||
 	    machine->machine_type == MACHINE_PS2)

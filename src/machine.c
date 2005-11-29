@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.618 2005-11-28 07:00:33 debug Exp $
+ *  $Id: machine.c,v 1.619 2005-11-29 04:28:08 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1529,7 +1529,7 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 
 /*
- *  MacPPC interrupt handler.
+ *  Grand Central (MacPPC) interrupt handler.
  */
 void macppc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	int assrt)
@@ -4373,6 +4373,7 @@ Not yet.
 		    64 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
 		bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
+		bus_pci_add(machine, pci_data, mem, 0, 15, 0, "gc_obio");
 		bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
 
 		machine->main_console_handle = dev_zs_init(machine,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.8 2005-11-28 07:00:36 debug Exp $
+ *  $Id: of.c,v 1.9 2005-11-29 04:28:10 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -46,7 +46,9 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "device.h"
 #include "devices.h"
+#include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -331,6 +333,13 @@ OF_SERVICE(interpret_2)
 		return -1;
 	}
 	return 0;
+}
+
+
+OF_SERVICE(package_to_path)
+{
+	fatal("[ of: package-to-path: TODO ]\n");
+	return -1;
 }
 
 
@@ -676,9 +685,13 @@ static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
 static void of_emul_init_uninorth(struct of_data *ofd, struct machine *machine)
 {
 	unsigned char *uninorth_reg, *uninorth_bus_range, *uninorth_ranges;
-	char *n2 = "pci@e2000000", *n = "pci@e2000000";
+	unsigned char *macio_aa, *ata_interrupts, *ata_reg;
+	unsigned char *adb_interrupts, *adb_reg;
+	struct of_device *ic;
+	char *n = "pci@e2000000";
+	char *macio = "mac-io";
 
-	of_add_device(ofd, n2, "/");
+	of_add_device(ofd, n, "/");
 	of_add_prop_str(machine, ofd, n, "name", "pci");
 	of_add_prop_str(machine, ofd, n, "device_type", "pci");
 	of_add_prop_str(machine, ofd, n, "compatible", "uni-north");
@@ -686,8 +699,15 @@ static void of_emul_init_uninorth(struct of_data *ofd, struct machine *machine)
 	uninorth_reg = malloc(2 * sizeof(uint32_t));
 	uninorth_bus_range = malloc(2 * sizeof(uint32_t));
 	uninorth_ranges = malloc(12 * sizeof(uint32_t));
+	macio_aa = malloc(5 * sizeof(uint32_t));
+	ata_interrupts = malloc(6 * sizeof(uint32_t));
+	ata_reg = malloc(8 * sizeof(uint32_t));
+	adb_interrupts = malloc(4 * sizeof(uint32_t));
+	adb_reg = malloc(8 * sizeof(uint32_t));
 	if (uninorth_ranges == NULL || uninorth_bus_range == NULL ||
-	    uninorth_reg == NULL)
+	    uninorth_reg == NULL || macio_aa == NULL ||
+	    ata_interrupts == NULL || ata_reg == NULL ||
+	    adb_interrupts == NULL || adb_reg == NULL)
 		goto bad;
 
 	of_store_32bit_in_host(uninorth_reg + 0, 0xe2000000);
@@ -715,6 +735,75 @@ static void of_emul_init_uninorth(struct of_data *ofd, struct machine *machine)
 	of_store_32bit_in_host(uninorth_ranges + 44, 0x01000000);
 	of_add_prop(ofd, n, "ranges", uninorth_ranges,
 	    12*sizeof(uint32_t), 0);
+
+	ic = of_add_device(ofd, macio, "/");
+	memset(macio_aa, 0, 20);
+	of_store_32bit_in_host(macio_aa + 8, 0xf3000000);
+	of_add_prop(ofd, macio, "assigned-addresses", macio_aa,
+	    5*sizeof(uint32_t), 0);
+/*	of_add_prop(ofd, n, "assigned-addresses", macio_aa,
+	    5*sizeof(uint32_t), 0); */
+	of_add_prop_int32(ofd, "/chosen", "interrupt-controller", ic->handle);
+
+	of_add_device(ofd, "bandit", "/");
+	of_add_device(ofd, "gc", "/bandit");
+	of_add_prop(ofd, "/bandit/gc", "assigned-addresses", macio_aa,
+	    5*sizeof(uint32_t), 0);
+
+	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		of_add_device(ofd, "ata", "/bandit/gc");
+		of_add_prop_str(machine, ofd, "/bandit/gc/ata", "name", "ata");
+		of_add_prop_str(machine, ofd, "/bandit/gc/ata", "compatible",
+		    "heathrow-ata");
+		of_store_32bit_in_host(ata_interrupts + 0, 13);
+		of_store_32bit_in_host(ata_interrupts + 4, 0);
+		of_store_32bit_in_host(ata_interrupts + 8, 0);
+		of_store_32bit_in_host(ata_interrupts + 12, 0);
+		of_store_32bit_in_host(ata_interrupts + 16, 0);
+		of_store_32bit_in_host(ata_interrupts + 20, 0);
+		of_add_prop(ofd, "/bandit/gc/ata", "interrupts", ata_interrupts,
+		    6*sizeof(uint32_t), 0);
+		of_store_32bit_in_host(ata_reg + 0, 0x20000);
+		of_store_32bit_in_host(ata_reg + 4, 0);
+		of_store_32bit_in_host(ata_reg + 8, 0x21000);
+		of_store_32bit_in_host(ata_reg + 12, 0x22000);
+		of_store_32bit_in_host(ata_reg + 16, 0);
+		of_store_32bit_in_host(ata_reg + 20, 0);
+		of_store_32bit_in_host(ata_reg + 24, 0);
+		of_store_32bit_in_host(ata_reg + 28, 0);
+		of_add_prop(ofd, "/bandit/gc/ata", "reg", ata_reg,
+		    8*sizeof(uint32_t), 0);
+		device_add(machine, "wdc addr=0xf3020000 irq=21 "
+		    "addr_mult=0x10");
+	}
+
+#if 0
+	of_add_device(ofd, "zs", "/bandit/gc");
+	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "device_type", "serial");
+	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "name", "escc");
+#endif
+
+	if (1) {
+		of_add_device(ofd, "adb", "/bandit/gc");
+		of_add_prop_str(machine, ofd, "/bandit/gc/adb", "name", "via-cuda");
+		of_store_32bit_in_host(adb_interrupts + 0, 25);
+		of_store_32bit_in_host(adb_interrupts + 4, 0);
+		of_store_32bit_in_host(adb_interrupts + 8, 0);
+		of_store_32bit_in_host(adb_interrupts + 12, 0);
+		of_add_prop(ofd, "/bandit/gc/adb", "interrupts", adb_interrupts,
+		    4*sizeof(uint32_t), 0);
+		of_store_32bit_in_host(adb_reg + 0, 0x16000);
+		of_store_32bit_in_host(adb_reg + 4, 0x2000);
+		of_store_32bit_in_host(adb_reg + 8, 0);
+		of_store_32bit_in_host(adb_reg + 12, 0);
+		of_store_32bit_in_host(adb_reg + 16, 0);
+		of_store_32bit_in_host(adb_reg + 20, 0);
+		of_store_32bit_in_host(adb_reg + 24, 0);
+		of_store_32bit_in_host(adb_reg + 28, 0);
+		of_add_prop(ofd, "/bandit/gc/adb", "reg", adb_reg,
+		    8*sizeof(uint32_t), 0);
+	}
 
 	return;
 
@@ -836,7 +925,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	of_store_32bit_in_host(memory_av + 4,
 	    (machine->physical_ram_in_mb - 10) << 20);
 	of_add_prop(ofd, "/memory", "reg", memory_reg, 2 * sizeof(uint32_t), 0);
-	of_add_prop(ofd, "/memory", "available", memory_av, 2*sizeof(uint32_t), 0);
+	of_add_prop(ofd, "/memory", "available",memory_av,2*sizeof(uint32_t),0);
 	of_add_prop_str(machine, ofd, "/memory","device_type","memory"/*?*/);
 
 	of_emul_init_uninorth(ofd, machine);
@@ -856,6 +945,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 	    of__instance_to_package, 1, 1);
 	of_add_service(ofd, "interpret", of__interpret_1, 1, 1);
 	of_add_service(ofd, "interpret", of__interpret_2, 1, 2);
+	of_add_service(ofd, "package-to-path", of__package_to_path, 3, 1);
 	of_add_service(ofd, "parent", of__parent, 1, 1);
 	of_add_service(ofd, "peer", of__peer, 1, 1);
 	of_add_service(ofd, "read", of__read, 3, 1);

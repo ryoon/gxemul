@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.1 2005-11-30 16:23:08 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.2 2005-11-30 17:12:32 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -45,7 +45,19 @@ X(nop)
 
 
 /*
+ *  invalid_32_64:  Attempt to execute a 64-bit instruction on an
+ *                  emulated 32-bit processor.
+ */
+X(invalid_32_64)
+{
+	fatal("invalid_32_64: TODO\n");
+	exit(1);
+}
+
+
+/*
  *  beq:  Branch if equal
+ *  bne:  Branch if not equal
  *  b:  Branch (comparing a register to itself, always true)
  *
  *  arg[0] = pointer to rs
@@ -56,14 +68,10 @@ X(beq)
 {
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs == rt;
-
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
-
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-
 	if (x) {
 		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 		    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -75,26 +83,45 @@ X(beq_samepage)
 {
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs == rt;
-
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
-
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-
+	if (x)
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+}
+X(bne)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int x = rs != rt;
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+	if (x) {
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+		    MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (int32_t)ic->arg[2];
+		quick_pc_to_pointers(cpu);
+	}
+}
+X(bne_samepage)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int x = rs != rt;
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
 	if (x)
 		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
 }
 X(b)
 {
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
-
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (int32_t)ic->arg[2];
@@ -103,13 +130,52 @@ X(b)
 X(b_samepage)
 {
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
-
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-
 	cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+}
+
+
+/*
+ *  2-register + immediate:
+ *
+ *  arg[0] = pointer to rs
+ *  arg[1] = pointer to rt
+ *  arg[2] = uint32_t immediate value
+ */
+X(andi)
+{
+	reg(ic->arg[1]) = reg(ic->arg[0]) & (int32_t)ic->arg[2];
+}
+X(ori)
+{
+	reg(ic->arg[1]) = reg(ic->arg[0]) | (int32_t)ic->arg[2];
+}
+X(xori)
+{
+	reg(ic->arg[1]) = reg(ic->arg[0]) ^ (int32_t)ic->arg[2];
+}
+
+
+/*
+ *  3-register:
+ */
+X(slt)
+{
+#ifdef MODE32
+	reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) < (int32_t)reg(ic->arg[1]);
+#else
+	reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) < (int64_t)reg(ic->arg[1]);
+#endif
+}
+X(sltu)
+{
+#ifdef MODE32
+	reg(ic->arg[2]) = (uint32_t)reg(ic->arg[0]) < (uint32_t)reg(ic->arg[1]);
+#else
+	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) < (uint64_t)reg(ic->arg[1]);
+#endif
 }
 
 
@@ -121,6 +187,19 @@ X(b_samepage)
  *  arg[2] = (int32_t) immediate value
  */
 X(addiu)
+{
+	reg(ic->arg[1]) = reg(ic->arg[0]) + (int32_t)ic->arg[2];
+}
+
+
+/*
+ *  daddiu:  Add immediate (64-bit).
+ *
+ *  arg[0] = pointer to rs
+ *  arg[1] = pointer to rt
+ *  arg[2] = (int32_t) immediate value
+ */
+X(daddiu)
 {
 	reg(ic->arg[1]) = reg(ic->arg[0]) + (int32_t)ic->arg[2];
 }
@@ -220,7 +299,7 @@ X(to_be_translated)
 	uint32_t iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, rs;
+	int main_opcode, rt, rs, rd, s6, x64 = 0;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -271,11 +350,39 @@ X(to_be_translated)
 	main_opcode = iword >> 26;
 	rs = (iword >> 21) & 31;
 	rt = (iword >> 16) & 31;
+	rd = (iword >> 11) & 31;
 	imm = (int16_t)iword;
+	s6 = iword & 63;
 
 	switch (main_opcode) {
 
+	case HI6_SPECIAL:
+		switch (s6) {
+
+		case SPECIAL_SLT:
+		case SPECIAL_SLTU:
+			switch (s6) {
+			case SPECIAL_SLT:   ic->f = instr(slt); break;
+			case SPECIAL_SLTU:  ic->f = instr(sltu); break;
+			}
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+			if (rd == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			break;
+
+		case SPECIAL_SYNC:
+			ic->f = instr(nop);
+			break;
+
+		default:goto bad;
+		}
+		break;
+
 	case HI6_BEQ:
+	case HI6_BNE:
+		samepage_function = NULL;  /*  get rid of a compiler warning  */
 		switch (main_opcode) {
 		case HI6_BEQ:
 			ic->f = instr(beq);
@@ -286,6 +393,9 @@ X(to_be_translated)
 				samepage_function = instr(b_samepage);
 			}
 			break;
+		case HI6_BNE:
+			ic->f = instr(bne);
+			samepage_function = instr(bne_samepage);
 		}
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
@@ -303,10 +413,26 @@ X(to_be_translated)
 		break;
 
 	case HI6_ADDIU:
-		ic->f = instr(addiu);
+	case HI6_DADDIU:
+	case HI6_ANDI:
+	case HI6_ORI:
+	case HI6_XORI:
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
-		ic->arg[2] = (int16_t)iword;
+		if (main_opcode == HI6_ADDI ||
+		    main_opcode == HI6_ADDIU ||
+		    main_opcode == HI6_DADDI ||
+		    main_opcode == HI6_DADDIU)
+			ic->arg[2] = (int16_t)iword;
+		else
+			ic->arg[2] = (uint16_t)iword;
+		switch (main_opcode) {
+		case HI6_ADDIU:   ic->f = instr(addiu); break;
+		case HI6_DADDIU:  ic->f = instr(daddiu); x64 = 1; break;
+		case HI6_ANDI:    ic->f = instr(andi); break;
+		case HI6_ORI:     ic->f = instr(ori); break;
+		case HI6_XORI:    ic->f = instr(xori); break;
+		}
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 
@@ -324,6 +450,9 @@ X(to_be_translated)
 
 	default:goto bad;
 	}
+
+	if (x64)
+		ic->f = instr(invalid_32_64);
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

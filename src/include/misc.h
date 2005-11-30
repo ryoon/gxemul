@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.234 2005-11-27 03:47:52 debug Exp $
+ *  $Id: misc.h,v 1.235 2005-11-30 06:58:05 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -97,6 +97,15 @@ struct memory;
 #define EMUL_LITTLE_ENDIAN              0
 #define EMUL_BIG_ENDIAN                 1
 
+#ifdef HOST_LITTLE_ENDIAN
+#define	LE32_TO_HOST(x)	    (x)
+#define BE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | ((x) << 24) | \
+			     (((x) & 0xff0000) >> 8) | (((x) & 0xff00) << 8))
+#else
+#define LE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | ((x) << 24) | \
+			     (((x) & 0xff0000) >> 8) | (((x) & 0xff00) << 8))
+#define	BE32_TO_HOST(x)	    (x)
+#endif
 
 /*  Debug stuff:  */
 #define	DEBUG_BUFSIZE		1024

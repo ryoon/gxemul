@@ -1,3 +1,4 @@
+/*  $Id: arm_quick_pc_to_pointers.h,v 1.4 2005-11-30 06:58:04 debug Exp $  */
 #ifndef ARM_QUICK_PC_TO_POINTERS_H
 #define ARM_QUICK_PC_TO_POINTERS_H
 void arm_pc_to_pointers_generic(struct cpu *);

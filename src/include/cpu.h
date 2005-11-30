@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.54 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu.h,v 1.55 2005-11-30 06:58:05 debug Exp $
  *
  *  See cpu.c.
  */
@@ -216,6 +216,7 @@ void cpu_init(void);
 #define	INVALIDATE_ALL			2
 #define	INVALIDATE_PADDR		4
 #define	INVALIDATE_VADDR		8
+#define	INVALIDATE_VADDR_UPPER4		16	/*  useful for PPC emulation  */
 
 #define	TLB_CODE			0x02
 

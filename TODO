@@ -1,173 +1,182 @@
-$Id: TODO,v 1.177 2005-11-27 16:03:32 debug Exp $
+$Id: TODO,v 1.178 2005-11-30 06:58:03 debug Exp $
 
-NOTE: This TODO is hopefully out-of-date. I don't keep it updated.
+Hm. This file is in random order, and not all parts of it are up-to-date.
 
-bandit0 at mainbus0
-pci0 at bandit0 bus 0
-pci0: i/o space, memory space enabled
-pchb0 at pci0 dev 11 function 0
-pchb0: Apple Computer Bandit Host-PCI Bridge (rev. 0x03)
-ppb0 at pci0 dev 15 function 0: Digital Equipment DC21052 PCI-PCI Bridge 
-(rev. 0x01)
-pci1 at ppb0 bus 1
-pci1: i/o space, memory space enabled
-ofb0 at pci1 dev 2 function 0: Integrated Micro Solutions TwinTurbo 128M
-ofb0: 640 x 480, 8bpp
-wsdisplay0 at ofb0 kbdmux 1
-wsmux1: connecting to wsdisplay0
-obio0 at pci0 dev 16 function 0: addr 0xf3000000
-esp0 at obio0 offset 0x10000 irq 12: NCR53C94, 25MHz, SCSI ID 7
-scsibus0 at esp0: 8 targets, 8 luns per target
-
-
-===============================================================================
 
 Old MIPS bintrans:
 	x)  call/return address cache?
-	x)  Turn the MIPS cpu family stuff into dyntrans.
+
+Old MIPS -> dyntrans:
+	x)  Turn the MIPS cpu family stuff into dyntrans slowly,
+	    NOT newmips but use the existing base.
+
+MacPPC:
+	x)  adb controller; keyboard
+	x)  make OpenBSD/macppc work (PCI controller stuff)
+
+The Device subsystem:
+	x)  allow devices to be moved and/or changed in size (down to a
+	    minimum size, etc, or up to a max size)
+	x)  sort devices for binary search tree access?
+	x)  keep track of interrupts and busses?
+
+PCI:
+	x)  add support for address fixups
+	x)  generalize the interrupt routing stuff
+
+Network layer:
+	o)  Multiple networks per emulation, and let different
+	    NICs in machines connect to different networks.
+	o)  increase performance
+	o)  don't rely on NetBSD-ish usage
+	o)  many other issues: see src/net.c
+
+Redesign the entire "mainbus" concept:
+	o)  Easily configurable interrupt routing in SMP systems.
+	o)  Specific clock/bus speeds, cpu speeds etc.
+	o)  Synchronization over network? or at least in dyntrans within
+	    one emulated machine
+
+Floating point layer:
+	o)  make it common enough to be used by _all_ emulation modes
+	o)  x86?
 
 Dyntrans:
-	x)  Separate data and instruction translations?
 	x)  Generalize the inline quick_pc_to_pointers?
 	x)  Call/return hints...
-	x)  More 64-bit stuff.
+	x)  64-bit stuff: good generic virtual memory translation, and
+	    other structures. not all 64 bits need to be used (e.g. Alpha)
+	x)  PPC optimizations; instr combs
+	x)  Alpha
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 
+Dyntrans recompilation backend?
+	x)  think carefully about this
+
 Userland emulation:
-	x)  Lots of stuff.
+	x)  Lots of stuff; freebsd and netbsd (and linux?) syscalls.
 	x)  Dynamic linking? Hm.
 
-Misc:
-	Redesign the entire "mainbus" concept:
-		o)  Easily configurable interrupt routing in SMP systems.
-		o)  Specific clock/bus speeds, cpu speeds etc.
-		o)  Synchronization over network?
+Caches / memory hierarchies: (this is mostly MIPS-specific)
+	o)  MIPS coproc.c: bits in config registers should reflect
+	    correct cache sizes for _all_ CPU types. (currently only
+	    implemented for R4000, R1x000, and a few others)
+	o)  src/memory*.c: Implement correct cache emulation for
+	    all CPU types. (currently only R2000/R3000 is implemented)
+	    (per CPU, multiple levels should be possible,
+	    associativity etc!)
+	o)  R2000/R3000 isn't _100%_ correct, just almost correct :)
+	o)  Move the -S (fill mem with random) functionality into the
+	    memory.c subsystem, not machine.c or wherever it is now
+	o)  ECC stuff, simulation of memory errors?  (Machine dependant)
+	o)  More than 4GB of emulated RAM, when run on a 32-bit host?
+	    (using manual swap-out of blocks to disk, ugly)
+	o)  A global command line option should be used to turn
+	    cache emulation on or off. When off, caches should be
+	    faked like they are right now. When on, caches and
+	    memory latencies should be emulated as correctly as
+	    possible.
 
-	Caches / memory hierarchies: (this is mostly MIPS-specific)
-		o)  MIPS coproc.c: bits in config registers should reflect
-		    correct cache sizes for _all_ CPU types. (currently only
-		    implemented for R4000, R1x000, and a few others)
-		o)  src/memory*.c: Implement correct cache emulation for
-		    all CPU types. (currently only R2000/R3000 is implemented)
-		    (per CPU, multiple levels should be possible,
-		    associativity etc!)
-		o)  R2000/R3000 isn't _100%_ correct, just almost correct :)
-		o)  Move the -S (fill mem with random) functionality into the
-		    memory.c subsystem, not machine.c or wherever it is now
-		o)  ECC stuff, simulation of memory errors?  (Machine dependant)
-		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
-		    (using manual swap-out of blocks to disk, ugly)
-		o)  A global command line option should be used to turn
-		    cache emulation on or off. When off, caches should be
-		    faked like they are right now. When on, caches and
-		    memory latencies should be emulated as correctly as
-		    possible.
+MIPS CPU emulation:
+	o)  i386 bintrans backend: movn etc, slt[u] for
+		64-bit mode, 64-bit shifts etc
+	o)  Instructions:
+		o)  All ISAs:
+			o)  Floating point exception handling, and
+				add more instructions.
+			o)  Finish the MIPS16 translator, and test it!
+			o)  MIPS ISA I, II, III, IV
+			o)  MIPS V (SIMD vector stuff?)
+			o)  MDMX  (MIPS Digital Media Extension)
+			o)  MIPS 3D
+			o)  MIPS MT (Multi-thread stuff) (What's this?)
+		o)  Warn about mis-used bit fields (ie bits that
+		    should be all zeroes, warn about if they are not)!
+		    Both for coprocessor registers and for instruction
+		    opcodes.
+		o)  the special2 stuff is a mess right now
+		o)  warn and/or cause exceptions for unimplemented
+		    instructions (depending on CPU type)
+	o)  R2000/R3000:
+		x)  R3000 "tri-byte stores". (What's this?)
+	o)  R4000 and others:
+		x)  watchhi/watchlo exceptions, and other exception
+		    handling details
+	o)  R10000 and others:  (R12000, R14000 ?)
+		x)  memory space, exceptions, ...
+		x)  use cop0 framemask for tlb lookups
+		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
+	o)  Implement load delays?  Warnings on interlocks.
+	o)  Implement all coprocessor 0 bits / functions.
+		x)  coproc 0 selectors! (R4000 ?)
+	o)  R4300 (nintendo64, no mmu?), R5900 (playstation2, weird
+		TLB/cache? 128-bit GPRs, new instructions),
+		4K (note: NOT R4000), 5K (note: NOT R5000),
+		R6000 (ISA II), R8000
+	o)  Multi-cpu stuff:
+		+)  Interrupt routing (ie devices vs mainbus, or
+		    connect each device to a fixed cpu)
+		+)  SGI's NUMA architecture. Study
+			x)  Linux sources
+			x)  SGI's specs on NUMA address space
+		+)  Ultrix?  NetBSD doesn't do SMP on MIPS yet :-(
+		+)  Own experiments with ycx2.
 
-	Network layer:
-		o)  Multiple networks per emulation, and let different
-		    NICs in machines connect to different networks.
-		o)  many other issues: see src/net.c
+File/disk handling:
+	o)  Better handling of tape files
 
-	MIPS CPU emulation:
-		o)  i386 bintrans backend: movn etc, slt[u] for
-			64-bit mode, 64-bit shifts etc
-		o)  Instructions:
-			o)  All ISAs:
-				o)  Floating point exception handling, and
-					add more instructions.
-				o)  Finish the MIPS16 translator, and test it!
-				o)  MIPS ISA I, II, III, IV
-				o)  MIPS V (SIMD vector stuff?)
-				o)  MDMX  (MIPS Digital Media Extension)
-				o)  MIPS 3D
-				o)  MIPS MT (Multi-thread stuff) (What's this?)
-			o)  Warn about mis-used bit fields (ie bits that
-			    should be all zeroes, warn about if they are not)!
-			    Both for coprocessor registers and for instruction
-			    opcodes.
-			o)  the special2 stuff is a mess right now
-			o)  warn and/or cause exceptions for unimplemented
-			    instructions (depending on CPU type)
-		o)  R2000/R3000:
-			x)  R3000 "tri-byte stores". (What's this?)
-		o)  R4000 and others:
-			x)  watchhi/watchlo exceptions, and other exception
-			    handling details
-		o)  R10000 and others:  (R12000, R14000 ?)
-			x)  memory space, exceptions, ...
-			x)  use cop0 framemask for tlb lookups
-			    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
-		o)  Implement load delays?  Warnings on interlocks.
-		o)  Implement all coprocessor 0 bits / functions.
-			x)  coproc 0 selectors! (R4000 ?)
-		o)  R4300 (nintendo64, no mmu?), R5900 (playstation2, weird
-			TLB/cache? 128-bit GPRs, new instructions),
-			4K (note: NOT R4000), 5K (note: NOT R5000),
-			R6000 (ISA II), R8000
-		o)  Multi-cpu stuff:
-			+)  Interrupt routing (ie devices vs mainbus, or
-			    connect each device to a fixed cpu)
-			+)  SGI's NUMA architecture. Study
-				x)  Linux sources
-				x)  SGI's specs on NUMA address space
-			+)  Ultrix?  NetBSD doesn't do SMP on MIPS yet :-(
-			+)  Own experiments with ycx2.
+Debugger:
+	o)  Read function argument count and types from binaries? (ELF?)
+	o)  Demangle C++ names.
+	o)  see src/debugger.c for more
 
-	File/disk handling:
-		o)  Better handling of tape files
+Userland ABI emulation:
+	o)  see src/useremul.c
 
-	Debugger:
-		o)  Read function argument count and types from binaries? (ELF?)
-		o)  Demangle C++ names.
-		o)  see src/debugger.c for more stuff
+Terminal/console:
+	o)  allow emulated serial ports to be connected to the outside
+	    world in a more generic way, or even to other emulated
+	    machines(!)
 
-	Userland ABI emulation:
-		o)  see src/useremul.c
+Regression tests.  (Needs to be totally rewritten, the old framework
+	was removed because it was useless.)
 
-	Terminal/console stuff:
-		o)  allow emulated serial ports to be connected to the outside
-		    world in a more generic way, or even to other emulated
-		    machines(!)
+Save state of the whole emulated machine, to be able to load it back
+	in later?  (Memory, all device's states, all registers and
+	so on.  Like taking a snapshot. (SimOS seems to do this,
+	according to its website.))
 
-	Regression tests.  (Needs to be totally rewritten, the old framework
-		was removed because it was useless.)
+Better X-windows functionality:
+	o)  CLEAN UP the ugly event code
+	o)  Mouse clicks can be "missed" in the current system; this is
+	    not good. They should be put on a stack of some kind.
+	o)  More 2D and 3D framebuffer acceleration.
+	o)  Non-resizable windows?  Or choose scaledown depending
+		on size (and center the image, with a black border).
+	o)  Different scaledown on different windows?
+	o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
+	o)  Keyboard and mouse events:
+		x)  Do this for more machines than just DECstation
+		x)  more X11 cursor keycodes
+		x)  Keys like CTRL, ALT, SHIFT do not get through
+		    by themselves (these are necessary for example
+		    to change the font of an xterm in X in the
+		    emulator)
+	o)  Generalize the framebuffer stuff by moving _ALL_ X11
+		specific code to src/x11.c!
 
-	Save state of the whole emulated machine, to be able to load it back
-		in later?  (Memory, all device's states, all registers and
-		so on.  Like taking a snapshot. (SimOS seems to do this,
-		according to its website.))
-
-	Better X-windows functionality:
-		o)  CLEAN UP the ugly event code
-		o)  Mouse clicks can be "missed" in the current system; this is
-		    not good. They should be put on a stack of some kind.
-		o)  More 2D and 3D framebuffer acceleration.
-		o)  Non-resizable windows?  Or choose scaledown depending
-			on size (and center the image, with a black border).
-		o)  Different scaledown on different windows?
-		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
-		o)  Keyboard and mouse events:
-			x)  Do this for more machines than just DECstation
-			x)  more X11 cursor keycodes
-			x)  Keys like CTRL, ALT, SHIFT do not get through
-			    by themselves (these are necessary for example
-			    to change the font of an xterm in X in the
-			    emulator)
-		o)  Generalize the framebuffer stuff by moving _ALL_ X11
-			specific code to src/x11.c!
-
-	Statistics:  (this could be interesting)
-		o)  Save to file and show graphics. It should be possible to
-		    run gxemul after a simulation to just show the graphics,
-		    or convert to a .ppm or .tga or similar.
-		o)  memory accesses (to measure cache efficiency and
-			page coloring efficiency)
-		o)  nr of simultaneous ASIDs in use in the TLB, for MIPS
-		o)  percentage of time spent in different "states", such as
-		    running userland code, kernel code, or idling (for CPUs
-		    that have such an instruction, or whenever the PC is
-		    inside a specific idle-function (address range)).
-		    Possible additional state (for example on R3000): caches
-		    disabled.
-		o)  position of read/write on (SCSI) disks
+Statistics:  (this could be interesting)
+	o)  Save to file and show graphics. It should be possible to
+	    run gxemul after a simulation to just show the graphics,
+	    or convert to a .ppm or .tga or similar.
+	o)  memory accesses (to measure cache efficiency and
+		page coloring efficiency)
+	o)  nr of simultaneous ASIDs in use in the TLB, for MIPS
+	o)  percentage of time spent in different "states", such as
+	    running userland code, kernel code, or idling (for CPUs
+	    that have such an instruction, or whenever the PC is
+	    inside a specific idle-function (address range)).
+	    Possible additional state (for example on R3000): caches
+	    disabled.
+	o)  position of read/write on (SCSI) disks
 

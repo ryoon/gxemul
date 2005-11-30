@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.20 2005-11-22 21:56:18 debug Exp $
+ *  $Id: memory_ppc.c,v 1.21 2005-11-30 06:58:05 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -44,7 +44,12 @@
 int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 	int user)
 {
-	int i, pp, regnr;
+	int i, istart = 0, iend = 8, pp, regnr;
+
+	if (flags & FLAG_INSTR)
+		iend = 4;
+	else
+		istart = 4;
 
 	if (cpu->cd.ppc.bits != 32) {
 		fatal("TODO: ppc_bat() for non-32-bit\n");
@@ -55,19 +60,13 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 		exit(1);
 	}
 
-	/*  4 instruction BATs, 4 data BATs...  */
-	for (i=0; i<8; i++) {
+	/*  Scan either the 4 instruction BATs or the 4 data BATs:  */
+	for (i=istart; i<iend; i++) {
 		regnr = SPR_IBAT0U + i * 2;
 		uint32_t upper = cpu->cd.ppc.spr[regnr];
 		uint32_t lower = cpu->cd.ppc.spr[regnr + 1];
 		uint32_t phys = lower & BAT_RPN, ebs = upper & BAT_EPI;
 		uint32_t mask = ((upper & BAT_BL) << 15) | 0x1ffff;
-
-		/*  Instruction BAT, but not instruction lookup? Then skip.  */
-		if (i < 4 && !(flags & FLAG_INSTR))
-			continue;
-		if (i >= 4 && (flags & FLAG_INSTR))
-			continue;
 
 		/*  Not valid in either supervisor or user mode?  */
 		if (user && !(upper & BAT_Vu))
@@ -108,18 +107,20 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
 	uint32_t *lowp, uint32_t cmp)
 {
+	unsigned char *d = memory_paddr_to_hostaddr(cpu->mem, pteg_select, 1)
+	    + (pteg_select & ((1 << BITS_PER_MEMBLOCK) - 1));
 	int i;
-	uint32_t upper;
-	unsigned char d[8];
 
 	for (i=0; i<8; i++) {
-		cpu->memory_rw(cpu, cpu->mem, pteg_select + i*8,
-		    &d[0], 8, MEM_READ, PHYSICAL | NO_EXCEPTIONS);
-		upper = (d[0]<<24)+(d[1]<<16)+(d[2]<<8)+d[3];
+		uint32_t *ep = (uint32_t *) (d + (i << 3)), upper;
+		upper = *ep;
+		upper = BE32_TO_HOST(upper);
 
 		/*  Valid PTE, and correct api and vsid?  */
 		if (upper == cmp) {
-			*lowp = ((d[4]<<24)+(d[5]<<16)+(d[6]<<8)+d[7]);
+			uint32_t lo = ep[1];
+			lo = BE32_TO_HOST(lo);
+			*lowp = lo;
 			return 1;
 		}
 	}

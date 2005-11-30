@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.41 2005-11-23 22:03:31 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.42 2005-11-30 06:58:04 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -821,6 +821,10 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
  *  flags should be one of
  *	INVALIDATE_PADDR  INVALIDATE_VADDR  or  INVALIDATE_ALL
  *
+ *  In addition, for INVALIDATE_ALL, INVALIDATE_VADDR_UPPER4 may be set and
+ *  bit 31..28 of addr are used to select the virtual addresses to invalidate.
+ *  (This is useful for PowerPC emulation, when segment registers are updated.)
+ *
  *  In the case when all translations are invalidated, paddr doesn't need
  *  to be supplied.
  *
@@ -828,7 +832,7 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
  *             the quick translation array, not from the linear
  *             vph_tlb_entry[] array.  Hopefully this is enough anyway.
  */
-void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t paddr, int flags)
+void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t addr, int flags)
 {
 	int r;
 #ifdef MODE32
@@ -836,17 +840,34 @@ void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t paddr, int flags)
 #else
 	uint64_t
 #endif
-	    addr_page = paddr & ~(DYNTRANS_PAGESIZE - 1);
+	    addr_page = addr & ~(DYNTRANS_PAGESIZE - 1);
 
 	/*  fatal("invalidate(): ");  */
 
-	/*  Quick case for virtual addresses: see note above.  */
+	/*  Quick case for _one_ virtual addresses: see note above.  */
 	if (flags & INVALIDATE_VADDR) {
 		/*  fatal("vaddr 0x%08x\n", (int)addr_page);  */
 		DYNTRANS_INVALIDATE_TLB_ENTRY(cpu, addr_page, flags);
 		return;
 	}
 
+	/*  Invalidate everything:  */
+#ifdef DYNTRANS_PPC
+	if (flags & INVALIDATE_ALL && flags & INVALIDATE_VADDR_UPPER4) {
+		/*  fatal("all, upper4 (PowerPC segment)\n");  */
+		for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
+			if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid &&
+			    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page
+			    & 0xf0000000) == addr_page) {
+				DYNTRANS_INVALIDATE_TLB_ENTRY(cpu, cpu->cd.
+				    DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page,
+				    0);
+				cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid=0;
+			}
+		}
+		return;
+	}
+#endif
 	if (flags & INVALIDATE_ALL) {
 		/*  fatal("all\n");  */
 		for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
@@ -860,13 +881,16 @@ void DYNTRANS_INVALIDATE_TC(struct cpu *cpu, uint64_t paddr, int flags)
 		return;
 	}
 
-	/*  fatal("paddr 0x%08x\n", (int)addr_page);  */
+	/*  Invalidate a physical page:  */
+
+	if (!(flags & INVALIDATE_PADDR))
+		fatal("HUH? Invalidate: Not vaddr, all, or paddr?\n");
+
+	/*  fatal("addr 0x%08x\n", (int)addr_page);  */
 
 	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid && (
-		    (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page ==
-		    addr_page && flags & INVALIDATE_PADDR) ||
-		    flags & INVALIDATE_ALL) ) {
+		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid && addr_page
+		    == cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].paddr_page) {
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,
 			    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page,
 			    flags);

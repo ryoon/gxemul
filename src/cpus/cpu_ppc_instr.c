@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.48 2005-11-30 05:37:34 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.49 2005-11-30 06:58:04 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -38,6 +38,7 @@
 
 #include "float_emul.h"
 
+#include "ppc_quick_pc_to_pointers.h"
 
 #define DOT0(n) X(n ## _dot) { instr(n)(cpu,ic); \
 	update_cr0(cpu, reg(ic->arg[0])); }
@@ -195,14 +196,14 @@ X(bclr)
 			    PPC_INSTR_ALIGNMENT_SHIFT);
 		} else {
 			/*  Find the new physical page and update pointers:  */
-			DYNTRANS_PC_TO_POINTERS(cpu);
+			quick_pc_to_pointers(cpu);
 		}
 	}
 }
 X(bclr_20)
 {
 	cpu->pc = cpu->cd.ppc.spr[SPR_LR];
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 X(bclr_l)
 {
@@ -243,7 +244,7 @@ X(bclr_l)
 			    PPC_INSTR_ALIGNMENT_SHIFT);
 		} else {
 			/*  Find the new physical page and update pointers:  */
-			DYNTRANS_PC_TO_POINTERS(cpu);
+			quick_pc_to_pointers(cpu);
 		}
 	}
 }
@@ -279,7 +280,7 @@ X(bcctr)
 			    PPC_INSTR_ALIGNMENT_SHIFT);
 		} else {
 			/*  Find the new physical page and update pointers:  */
-			DYNTRANS_PC_TO_POINTERS(cpu);
+			quick_pc_to_pointers(cpu);
 		}
 	}
 }
@@ -314,7 +315,7 @@ X(bcctr_l)
 			    PPC_INSTR_ALIGNMENT_SHIFT);
 		} else {
 			/*  Find the new physical page and update pointers:  */
-			DYNTRANS_PC_TO_POINTERS(cpu);
+			quick_pc_to_pointers(cpu);
 		}
 	}
 }
@@ -331,12 +332,12 @@ X(b)
 	cpu->pc += (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 X(ba)
 {
 	cpu->pc = (int32_t)ic->arg[0];
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -471,7 +472,7 @@ X(bl)
 	cpu->pc += (int32_t)ic->arg[0];
 
 	/*  Find the new physical page and update the translation pointers:  */
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 X(bla)
 {
@@ -480,7 +481,7 @@ X(bla)
 	    << PPC_INSTR_ALIGNMENT_SHIFT)) + ic->arg[1];
 
 	cpu->pc = (int32_t)ic->arg[0];
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -503,7 +504,7 @@ X(bl_trace)
 	cpu_functioncall_trace(cpu, cpu->pc);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 X(bla_trace)
 {
@@ -513,7 +514,7 @@ X(bla_trace)
 
 	cpu->pc = (int32_t)ic->arg[0];
 	cpu_functioncall_trace(cpu, cpu->pc);
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -1456,25 +1457,32 @@ X(llsc)
 
 
 /*
- *  mtsr:  Move To Segment Register
+ *  mtsr, mtsrin:  Move To Segment Register [Indirect]
  *
  *  arg[0] = sr number, or for indirect mode: ptr to rb
  *  arg[1] = ptr to rt
+ *
+ *  TODO: These only work for 32-bit mode!
  */
 X(mtsr)
 {
-	/*  TODO: This only works for 32-bit mode  */
-	cpu->cd.ppc.sr[ic->arg[0]] = reg(ic->arg[1]);
+	int sr_num = ic->arg[0];
+	uint32_t old = cpu->cd.ppc.sr[sr_num];
+	cpu->cd.ppc.sr[sr_num] = reg(ic->arg[1]);
 
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	if (cpu->cd.ppc.sr[sr_num] != old)
+		cpu->invalidate_translation_caches(cpu, ic->arg[0] << 28,
+		    INVALIDATE_ALL | INVALIDATE_VADDR_UPPER4);
 }
 X(mtsrin)
 {
-	/*  TODO: This only works for 32-bit mode  */
-	uint32_t sr_num = reg(ic->arg[0]) >> 28;
+	int sr_num = reg(ic->arg[0]) >> 28;
+	uint32_t old = cpu->cd.ppc.sr[sr_num];
 	cpu->cd.ppc.sr[sr_num] = reg(ic->arg[1]);
 
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	if (cpu->cd.ppc.sr[sr_num] != old)
+		cpu->invalidate_translation_caches(cpu, sr_num << 28,
+		    INVALIDATE_ALL | INVALIDATE_VADDR_UPPER4);
 }
 
 
@@ -1772,7 +1780,7 @@ X(rfi)
 	reg_access_msr(cpu, &tmp, 1, 0);
 
 	cpu->pc = cpu->cd.ppc.spr[SPR_SRR0];
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -2044,6 +2052,7 @@ X(andc) {	reg(ic->arg[2]) = reg(ic->arg[0]) & (~reg(ic->arg[1])); }
 DOT2(andc)
 X(nor) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
 DOT2(nor)
+X(mr) {		reg(ic->arg[2]) = reg(ic->arg[1]); }
 X(or) {		reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 DOT2(or)
 X(orc) {	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1])); }
@@ -2539,7 +2548,7 @@ X(openfirmware)
 	cpu->pc = cpu->cd.ppc.spr[SPR_LR];
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -2548,6 +2557,7 @@ X(openfirmware)
  */
 X(tlbli)
 {
+	fatal("tlbli\n");
 }
 
 
@@ -2559,7 +2569,7 @@ X(tlbld)
 	/*  MODE_uint_t vaddr = reg(ic->arg[0]);
 	    MODE_uint_t paddr = cpu->cd.ppc.spr[SPR_RPA];  */
 
-	/*  TODO?  */
+	fatal("tlbld\n");
 }
 
 
@@ -2573,7 +2583,7 @@ X(end_of_page)
 	cpu->pc += (PPC_IC_ENTRIES_PER_PAGE << PPC_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
@@ -2630,16 +2640,7 @@ X(to_be_translated)
 	}
 
 	iword = *((uint32_t *)&ib[0]);
-
-#ifdef HOST_LITTLE_ENDIAN
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-#else
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-#endif
-		iword = ((iword & 0xff) << 24) |
-			((iword & 0xff00) << 8) |
-			((iword & 0xff0000) >> 8) |
-			((iword & 0xff000000) >> 24);
+	iword = BE32_TO_HOST(iword);
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -3472,7 +3473,8 @@ X(to_be_translated)
 					  rc_f  = instr(andc_dot); break;
 			case PPC_31_NOR:  ic->f = instr(nor);
 					  rc_f  = instr(nor_dot); break;
-			case PPC_31_OR:   ic->f = instr(or);
+			case PPC_31_OR:   ic->f = rs == rb? instr(mr)
+						: instr(or);
 					  rc_f  = instr(or_dot); break;
 			case PPC_31_ORC:  ic->f = instr(orc);
 					  rc_f  = instr(orc_dot); break;

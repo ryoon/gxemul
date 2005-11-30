@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.199 2005-11-29 05:25:29 debug Exp $
+ *  $Id: devices.h,v 1.200 2005-11-30 08:52:31 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -245,6 +245,8 @@ struct vfb_data {
 
 	/*  RGB palette for <= 8 bit modes:  (r,g,b bytes for each)  */
 	unsigned char	rgb_palette[256 * 3];
+
+	void (*redraw_func)(struct vfb_data *, int, int);
 
 	/*  These should always be in sync:  */
 	unsigned char	*framebuffer;

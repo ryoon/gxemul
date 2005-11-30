@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.107 2005-11-29 05:25:28 debug Exp $
+#  $Id: Makefile.skel,v 1.108 2005-11-30 08:52:30 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -47,6 +47,8 @@ objs: $(OBJS)
 $(OBJS): Makefile
 
 dev_vga.o: font8x8.c font8x16.c font8x10.c
+
+dev_fb.o: fb_include.c dev_fb.c
 
 font8x8.c:
 	cp -f fonts/font8x8.c .

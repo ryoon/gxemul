@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.59 2005-06-20 05:52:47 debug Exp $
+ *  $Id: x11.c,v 1.60 2005-11-30 08:52:29 debug Exp $
  *
  *  X11-related functions.
  */
@@ -67,6 +67,8 @@ void x11_check_event(struct emul **emuls, int n_emuls) { }
  *  x11_redraw_cursor():
  *
  *  Redraw a framebuffer's X11 cursor.
+ *
+ *  NOTE: It is up to the caller to call XFlush.
  */
 void x11_redraw_cursor(struct machine *m, int i)
 {
@@ -178,7 +180,6 @@ void x11_redraw_cursor(struct machine *m, int i)
 		    m->fb_windows[i]->cursor_xsize;
 		m->fb_windows[i]->OLD_cursor_ysize =
 		    m->fb_windows[i]->cursor_ysize;
-		XFlush(m->fb_windows[i]->x11_display);
 	}
 
 	/*  printf("n_colors_used = %i\n", n_colors_used);  */
@@ -187,7 +188,6 @@ void x11_redraw_cursor(struct machine *m, int i)
 		/*  Remove the old X11 host cursor:  */
 		XUndefineCursor(m->fb_windows[i]->x11_display,
 		    m->fb_windows[i]->x11_fb_window);
-		XFlush(m->fb_windows[i]->x11_display);
 		XFreeCursor(m->fb_windows[i]->x11_display,
 		    m->fb_windows[i]->host_cursor);
 		m->fb_windows[i]->host_cursor = 0;
@@ -231,7 +231,6 @@ void x11_redraw_cursor(struct machine *m, int i)
 			XDefineCursor(m->fb_windows[i]->x11_display,
 			    m->fb_windows[i]->x11_fb_window,
 			    m->fb_windows[i]->host_cursor);
-			XFlush(m->fb_windows[i]->x11_display);
 		}
 	}
 }

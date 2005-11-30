@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1066 2005-11-30 05:37:31 debug Exp $
+$Id: HISTORY,v 1.1067 2005-11-30 08:52:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2484,3 +2484,4 @@ Changelog for GXemul:
 		Continuing the PCI bus cleanup (endianness and tag composition)
 		and rewriting all PCI controllers' access functions.
 20051130	Various minor PPC dyntrans optimizations.
+		Manually inlining some parts of the framebuffer redraw routine.

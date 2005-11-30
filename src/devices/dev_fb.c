@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.111 2005-11-27 06:16:59 debug Exp $
+ *  $Id: dev_fb.c,v 1.112 2005-11-30 08:52:30 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -36,9 +36,6 @@
  *	Playstation 2 (24-bit color)
  *	generic (any resolution, several bit depths possible)
  *
- *
- *  TODO:  There is still a bug when redrawing the cursor. The underlying
- *         image is moved 1 pixel (?), or something like that.
  *
  *  TODO:  This should actually be independant of X11, but that
  *         might be too hard to do right now.
@@ -293,323 +290,96 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 
 
 #ifdef WITH_X11
-#define macro_put_pixel() {	\
-	/*  Combine the color into an X11 long and display it:  */	\
-	/*  TODO:  construct color in a more portable way:  */		\
-	switch (d->fb_window->x11_screen_depth) {			\
-	case 24:							\
-		if (d->fb_window->fb_ximage->byte_order)		\
-			color = (b << 16) + (g << 8) + r;		\
-		else							\
-			color = (r << 16) + (g << 8) + b;		\
-		break;							\
-	case 16:							\
-		r >>= 3; g >>= 2; b >>= 3;				\
-		if (d->fb_window->fb_ximage->byte_order) {		\
-			/*  Big endian 16-bit X server:  */		\
-			static int first = 1;				\
-			if (first) {					\
-				fprintf(stderr, "\n*** Please report "	\
-				    "to the author whether 16-bit X11 "	\
-				    "colors are rendered correctly or "	\
-				    "not!\n\n");			\
-				first = 0;				\
-			}						\
-			color = (b << 11) + (g << 5) + r;		\
-		} else {						\
-			/*  Little endian (eg PC) X servers:  */	\
-			color = (r << 11) + (g << 5) + b;		\
-		}							\
-		break;							\
-	case 15:							\
-		r >>= 3; g >>= 3; b >>= 3;				\
-		if (d->fb_window->fb_ximage->byte_order) {		\
-			/*  Big endian 15-bit X server:  */		\
-			static int first = 1;				\
-			if (first) {					\
-				fprintf(stderr, "\n*** Please report "	\
-				    "to the author whether 15-bit X11 "	\
-				    "colors are rendered correctly or "	\
-				    "not!\n\n");			\
-				first = 0;				\
-			}						\
-			color = (b << 10) + (g << 5) + r;		\
-		} else {						\
-			/*  Little endian (eg PC) X servers:  */	\
-			color = (r << 10) + (g << 5) + b;		\
-		}							\
-		break;							\
-	default:							\
-		color = d->fb_window->x11_graycolor[15 * (r + g + b)	\
-		    / (255 * 3)].pixel;					\
-	}								\
-	if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)		\
-		XPutPixel(d->fb_window->fb_ximage, x, y, color);	\
-    }
-#else
-/*  If not WITH_X11:  */
-#define macro_put_pixel() { }
-#endif
 
+#define	REDRAW	redraw_fallback
+#include "fb_include.c"
+#undef REDRAW
 
-/*
- *  update_framebuffer():
- *
- *  The framebuffer memory has been updated. This function tries to make
- *  sure that the XImage is also updated (1 or more pixels).
- */
-void update_framebuffer(struct vfb_data *d, int addr, int len)
-{
-	int x, y, pixel, npixels;
-	long color_r, color_g, color_b;
-#ifdef WITH_X11
-	long color;
-#endif
-	int scaledown = d->vfb_scaledown;
-	int scaledownXscaledown = 1;
+#define FB_24
+#define REDRAW	redraw_24
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_24
+#define FB_16
+#define REDRAW	redraw_16
+#include "fb_include.c"
+#undef FB_16
+#undef REDRAW
+#define FB_15
+#define REDRAW	redraw_15
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_15
 
-	if (scaledown == 1) {
-		/*  Which framebuffer pixel does addr correspond to?  */
-		pixel = addr * 8 / d->bit_depth;
-		y = pixel / d->xsize;
-		x = pixel % d->xsize;
+#define FB_BO
+#define FB_24
+#define REDRAW	redraw_24_bo
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_24
+#define FB_16
+#define REDRAW	redraw_16_bo
+#include "fb_include.c"
+#undef FB_16
+#undef REDRAW
+#define FB_15
+#define REDRAW	redraw_15_bo
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_15
+#undef FB_BO
 
-		/*  How many framebuffer pixels?  */
-		npixels = len * 8 / d->bit_depth;
-		if (npixels == 0)
-			npixels = 1;
+#define FB_SCALEDOWN
 
-		if (d->bit_depth < 8) {
-			for (pixel=0; pixel<npixels; pixel++) {
-				int fb_addr, c, r, g, b;
-				color_r = color_g = color_b = 0;
+#define	REDRAW	redraw_fallback_sd
+#include "fb_include.c"
+#undef REDRAW
 
-				fb_addr = (y * d->xsize + x) * d->bit_depth;
-				/*  fb_addr is now which _bit_ in
-				    the framebuffer  */
+#define FB_24
+#define REDRAW	redraw_24_sd
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_24
+#define FB_16
+#define REDRAW	redraw_16_sd
+#include "fb_include.c"
+#undef FB_16
+#undef REDRAW
+#define FB_15
+#define REDRAW	redraw_15_sd
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_15
 
-				c = d->framebuffer[fb_addr >> 3];
-				fb_addr &= 7;
+#define FB_BO
+#define FB_24
+#define REDRAW	redraw_24_bo_sd
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_24
+#define FB_16
+#define REDRAW	redraw_16_bo_sd
+#include "fb_include.c"
+#undef FB_16
+#undef REDRAW
+#define FB_15
+#define REDRAW	redraw_15_bo_sd
+#include "fb_include.c"
+#undef REDRAW
+#undef FB_15
+#undef FB_BO
 
-				/*  HPC is reverse:  */
-				if (d->vfb_type == VFB_HPC)
-					fb_addr = 8 - d->bit_depth - fb_addr;
+void (*redraw[2 * 4 * 2])(struct vfb_data *, int, int) = {
+	redraw_fallback, redraw_fallback,
+	redraw_15, redraw_15_bo,
+	redraw_16, redraw_16_bo,
+	redraw_24, redraw_24_bo,
+	redraw_fallback_sd, redraw_fallback_sd,
+	redraw_15_sd, redraw_15_bo_sd,
+	redraw_16_sd, redraw_16_bo_sd,
+	redraw_24_sd, redraw_24_bo_sd  };
 
-				c = (c >> fb_addr) & ((1<<d->bit_depth) - 1);
-				/*  c <<= (8 - d->bit_depth);  */
-
-				r = d->rgb_palette[c*3 + 0];
-				g = d->rgb_palette[c*3 + 1];
-				b = d->rgb_palette[c*3 + 2];
-
-				macro_put_pixel();
-				x++;
-			}
-		} else if (d->bit_depth == 8) {
-			for (pixel=0; pixel<npixels; pixel++) {
-				int fb_addr, c, r, g, b;
-				color_r = color_g = color_b = 0;
-
-				fb_addr = y * d->xsize + x;
-				/*  fb_addr is now which byte in framebuffer  */
-				c = d->framebuffer[fb_addr];
-				r = d->rgb_palette[c*3 + 0];
-				g = d->rgb_palette[c*3 + 1];
-				b = d->rgb_palette[c*3 + 2];
-
-				macro_put_pixel();
-				x++;
-			}
-		} else {	/*  d->bit_depth > 8  */
-			for (pixel=0; pixel<npixels; pixel++) {
-				int fb_addr, r, g, b;
-				color_r = color_g = color_b = 0;
-
-				fb_addr = (y * d->xsize + x) * d->bit_depth;
-				/*  fb_addr is now which byte in framebuffer  */
-
-				/*  > 8 bits color.  */
-				fb_addr >>= 3;
-				switch (d->bit_depth) {
-				case 24:
-					r = d->framebuffer[fb_addr];
-					g = d->framebuffer[fb_addr + 1];
-					b = d->framebuffer[fb_addr + 2];
-					break;
-				/*  TODO: copy to the scaledown code below  */
-				case 16:
-					if (d->vfb_type == VFB_HPC) {
-						b = d->framebuffer[fb_addr] +
-						    (d->framebuffer[fb_addr+1]
-						    << 8);
-
-						if (d->color32k) {
-							r = b >> 11;
-							g = b >> 5;
-							r = r & 31;
-							g = (g & 31) * 2;
-							b = b & 31;
-						} else if (d->psp_15bit) {
-							int tmp;
-							r = (b >> 10) & 0x1f;
-							g = (b >>  5) & 0x1f;
-							b = b & 0x1f;
-							g <<= 1;
-							tmp = r; r = b; b = tmp;
-						} else {
-							r = (b >> 11) & 0x1f;
-							g = (b >>  5) & 0x3f;
-							b = b & 0x1f;
-						}
-					} else {
-					    r = d->framebuffer[fb_addr] >> 3;
-					    g = (d->framebuffer[fb_addr] << 5) +
-					      (d->framebuffer[fb_addr + 1] >>5);
-					    b = d->framebuffer[fb_addr + 1]&31;
-					}
-
-					r *= 8;
-					g *= 4;
-					b *= 8;
-					break;
-				default:
-					r = g = b = random() & 255;
-				}
-
-				macro_put_pixel();
-				x++;
-			}
-		}
-
-		return;
-	}
-
-	/*  scaledown > 1:  */
-
-	scaledown = d->vfb_scaledown;
-	scaledownXscaledown = scaledown * scaledown;
-
-	/*  Which framebuffer pixel does addr correspond to?  */
-	pixel = addr * 8 / d->bit_depth;
-	y = pixel / d->xsize;
-	x = pixel % d->xsize;
-
-	/*  How many framebuffer pixels?  */
-	npixels = len * 8 / d->bit_depth;
-
-	/*  Which x11 pixel?  */
-	x /= scaledown;
-	y /= scaledown;
-
-	/*  How many x11 pixels:  */
-	npixels /= scaledown;
-	if (npixels == 0)
-		npixels = 1;
-
-	if (d->bit_depth < 8) {
-		for (pixel=0; pixel<npixels; pixel++) {
-			int subx, suby, r, g, b;
-			color_r = color_g = color_b = 0;
-			for (suby=0; suby<scaledown; suby++)
-			    for (subx=0; subx<scaledown; subx++) {
-				int fb_x, fb_y, fb_addr, c;
-
-				fb_x = x * scaledown + subx;
-				fb_y = y * scaledown + suby;
-				fb_addr = fb_y * d->xsize + fb_x;
-				fb_addr = fb_addr * d->bit_depth;
-				/*  fb_addr is now which _bit_ in
-				    the framebuffer  */
-
-				c = d->framebuffer[fb_addr >> 3];
-				fb_addr &= 7;
-
-				/*  HPC is reverse:  */
-				if (d->vfb_type == VFB_HPC)
-					fb_addr = 8 - d->bit_depth - fb_addr;
-
-				c = (c >> fb_addr) & ((1<<d->bit_depth) - 1);
-				/*  c <<= (8 - d->bit_depth);  */
-
-				r = d->rgb_palette[c*3 + 0];
-				g = d->rgb_palette[c*3 + 1];
-				b = d->rgb_palette[c*3 + 2];
-
-				color_r += r;
-				color_g += g;
-				color_b += b;
-			    }
-
-			r = color_r / scaledownXscaledown;
-			g = color_g / scaledownXscaledown;
-			b = color_b / scaledownXscaledown;
-			macro_put_pixel();
-			x++;
-		}
-	} else if (d->bit_depth == 8) {
-		for (pixel=0; pixel<npixels; pixel++) {
-			int subx, suby, r, g, b;
-			color_r = color_g = color_b = 0;
-			for (suby=0; suby<scaledown; suby++)
-			    for (subx=0; subx<scaledown; subx++) {
-				int fb_x, fb_y, fb_addr, c;
-
-				fb_x = x * scaledown + subx;
-				fb_y = y * scaledown + suby;
-				fb_addr = fb_y * d->xsize + fb_x;
-				/*  fb_addr is which _byte_ in framebuffer  */
-				c = d->framebuffer[fb_addr] * 3;
-				r = d->rgb_palette[c + 0];
-				g = d->rgb_palette[c + 1];
-				b = d->rgb_palette[c + 2];
-				color_r += r;
-				color_g += g;
-				color_b += b;
-			    }
-
-			r = color_r / scaledownXscaledown;
-			g = color_g / scaledownXscaledown;
-			b = color_b / scaledownXscaledown;
-			macro_put_pixel();
-			x++;
-		}
-	} else {
-		/*  Generic > 8 bit bit-depth:  */
-		for (pixel=0; pixel<npixels; pixel++) {
-			int subx, suby, r, g, b;
-			color_r = color_g = color_b = 0;
-			for (suby=0; suby<scaledown; suby++)
-			    for (subx=0; subx<scaledown; subx++) {
-				int fb_x, fb_y, fb_addr;
-
-				fb_x = x * scaledown + subx;
-				fb_y = y * scaledown + suby;
-				fb_addr = fb_y * d->xsize + fb_x;
-				fb_addr = (fb_addr * d->bit_depth) >> 3;
-				/*  fb_addr is which _byte_ in framebuffer  */
-
-				/*  > 8 bits color.  */
-				switch (d->bit_depth) {
-				case 24:
-					r = d->framebuffer[fb_addr];
-					g = d->framebuffer[fb_addr + 1];
-					b = d->framebuffer[fb_addr + 2];
-					break;
-				default:
-					r = g = b = random() & 255;
-				}
-				color_r += r;
-				color_g += g;
-				color_b += b;
-			    }
-			r = color_r / scaledownXscaledown;
-			g = color_g / scaledownXscaledown;
-			b = color_b / scaledownXscaledown;
-			macro_put_pixel();
-			x++;
-		}
-	}
-}
+#endif	/*  WITH_X11  */
 
 
 /*
@@ -766,13 +536,13 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		addr2 = d->update_y1 * d->bytes_per_line +
 		    d->update_x2 * d->bit_depth / 8;
 
+#ifdef WITH_X11
 		for (y=d->update_y1; y<=d->update_y2; y+=q) {
-			update_framebuffer(d, addr, addr2 - addr);
+			d->redraw_func(d, addr, addr2 - addr);
 			addr  += d->bytes_per_line * q;
 			addr2 += d->bytes_per_line * q;
 		}
 
-#ifdef WITH_X11
 		XPutImage(d->fb_window->x11_display, d->fb_window->
 		    x11_fb_window, d->fb_window->x11_fb_gc, d->fb_window->
 		    fb_ximage, d->update_x1/d->vfb_scaledown, d->update_y1/
@@ -801,6 +571,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			    cursor_xsize;
 			d->fb_window->OLD_cursor_ysize = d->fb_window->
 			    cursor_ysize;
+			need_to_flush_x11 = 1;
 		}
 	}
 #endif
@@ -1055,10 +826,21 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	title[sizeof(title)-1] = '\0';
 
 #ifdef WITH_X11
-	if (machine->use_x11)
+	if (machine->use_x11) {
+		int i = 0;
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
 		    title, machine->x11_scaledown, machine);
-	else
+		switch (d->fb_window->x11_screen_depth) {
+		case 15: i = 2; break;
+		case 16: i = 4; break;
+		case 24: i = 6; break;
+		}
+		if (d->fb_window->fb_ximage->byte_order)
+			i ++;
+		if (d->vfb_scaledown > 1)
+			i += 8;
+		d->redraw_func = redraw[i];
+	} else
 #endif
 		d->fb_window = NULL;
 

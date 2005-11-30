@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1065 2005-11-29 07:27:48 debug Exp $
+$Id: HISTORY,v 1.1066 2005-11-30 05:37:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2483,3 +2483,4 @@ Changelog for GXemul:
 20051129	More work on MacPPC emulation (adding a dummy ADB controller).
 		Continuing the PCI bus cleanup (endianness and tag composition)
 		and rewriting all PCI controllers' access functions.
+20051130	Various minor PPC dyntrans optimizations.

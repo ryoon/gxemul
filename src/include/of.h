@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: of.h,v 1.5 2005-11-29 05:25:29 debug Exp $
+ *  $Id: of.h,v 1.6 2005-11-30 05:01:52 debug Exp $
  *
  *  OpenFirmware emulation. (See src/promemul/of.c for details.)
  */
@@ -93,13 +93,18 @@ struct of_data {
 	struct vfb_data		*vfb_data;
 };
 
-#endif
+#endif	/*  OF_C  */
+
 
 struct of_data *of_emul_init(struct machine *machine, struct vfb_data *,
 	uint64_t fb_addr, int fb_xsize, int fb_ysize);
+
 void of_emul_init_uninorth(struct machine *);
 void of_emul_init_isa(struct machine *);
 void of_emul_init_adb(struct machine *);
+void of_emul_init_zs(struct machine *);
+
 int of_emul(struct cpu *cpu);
+
 
 #endif	/*  OF_H  */

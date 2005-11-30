@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.8 2005-11-23 02:17:41 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.9 2005-11-30 16:23:08 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -600,36 +600,37 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	if (writeflag == -1) {
 		/*  Forced downgrade to read-only:  */
 		tbl1->haddr_entry[b*2 + 1] = NULL;
-		if (cpu->cd.mips.host_store ==
+		if (cpu->cd.mips.host_OLD_store ==
 		    cpu->cd.mips.host_store_orig)
-			cpu->cd.mips.host_store[index] = NULL;
+			cpu->cd.mips.host_OLD_store[index] = NULL;
 	} else if (writeflag==0 && p_w != NULL && host_page != NULL) {
 		/*  Don't degrade a page from writable to readonly.  */
 	} else {
 		if (host_page != NULL) {
 			tbl1->haddr_entry[b*2] = host_page;
-			if (cpu->cd.mips.host_load ==
+			if (cpu->cd.mips.host_OLD_load ==
 			    cpu->cd.mips.host_load_orig)
-				cpu->cd.mips.host_load[index] = host_page;
+				cpu->cd.mips.host_OLD_load[index] = host_page;
 			if (writeflag) {
 				tbl1->haddr_entry[b*2+1] = host_page;
-				if (cpu->cd.mips.host_store ==
+				if (cpu->cd.mips.host_OLD_store ==
 				    cpu->cd.mips.host_store_orig)
-					cpu->cd.mips.host_store[index] =
+					cpu->cd.mips.host_OLD_store[index] =
 					    host_page;
 			} else {
 				tbl1->haddr_entry[b*2+1] = NULL;
-				if (cpu->cd.mips.host_store ==
+				if (cpu->cd.mips.host_OLD_store ==
 				    cpu->cd.mips.host_store_orig)
-					cpu->cd.mips.host_store[index] = NULL;
+					cpu->cd.mips.host_OLD_store[index] =
+					    NULL;
 			}
 		} else {
 			tbl1->haddr_entry[b*2] = NULL;
 			tbl1->haddr_entry[b*2+1] = NULL;
-			if (cpu->cd.mips.host_store ==
+			if (cpu->cd.mips.host_OLD_store ==
 			    cpu->cd.mips.host_store_orig) {
-				cpu->cd.mips.host_load[index] = NULL;
-				cpu->cd.mips.host_store[index] = NULL;
+				cpu->cd.mips.host_OLD_load[index] = NULL;
+				cpu->cd.mips.host_OLD_store[index] = NULL;
 			}
 		}
 		tbl1->paddr_entry[b] = paddr_page;
@@ -639,9 +640,9 @@ static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 
 
 /*
- *  mips_update_translation_table():
+ *  mips_OLD_update_translation_table():
  */
-void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+void mips_OLD_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
 	if (!cpu->machine->bintrans_enable)
@@ -748,11 +749,13 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 				tbl1->paddr_entry[b] = 0;
 				tbl1->bintrans_chunks[b] = NULL;
 
-				if (cpu->cd.mips.host_store ==
+				if (cpu->cd.mips.host_OLD_store ==
 				    cpu->cd.mips.host_store_orig) {
 					index = (a << 10) + b;
-					cpu->cd.mips.host_load[index] = NULL;
-					cpu->cd.mips.host_store[index] = NULL;
+					cpu->cd.mips.host_OLD_load[index] =
+					    NULL;
+					cpu->cd.mips.host_OLD_store[index] =
+					    NULL;
 				}
 			}
 		}
@@ -1321,8 +1324,8 @@ void coproc_register_write(struct cpu *cpu,
 					  vaddr_to_hostaddr_table0_cacheisol_d;
 
 					/*  1M-entry table:  */
-					cpu->cd.mips.host_load =
-					    cpu->cd.mips.host_store =
+					cpu->cd.mips.host_OLD_load =
+					    cpu->cd.mips.host_OLD_store =
 					    cpu->cd.mips.huge_r2k3k_cache_table;
 				} else {
 					/*  2-level table:  */
@@ -1334,9 +1337,9 @@ void coproc_register_write(struct cpu *cpu,
 					    vaddr_to_hostaddr_table0_user;  */
 
 					/*  1M-entry table:  */
-					cpu->cd.mips.host_load =
+					cpu->cd.mips.host_OLD_load =
 					    cpu->cd.mips.host_load_orig;
-					cpu->cd.mips.host_store =
+					cpu->cd.mips.host_OLD_store =
 					    cpu->cd.mips.host_store_orig;
 				}
 			}

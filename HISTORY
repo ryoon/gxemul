@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1067 2005-11-30 08:52:28 debug Exp $
+$Id: HISTORY,v 1.1068 2005-11-30 16:23:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2485,3 +2485,6 @@ Changelog for GXemul:
 		and rewriting all PCI controllers' access functions.
 20051130	Various minor PPC dyntrans optimizations.
 		Manually inlining some parts of the framebuffer redraw routine.
+		Slowly beginning the conversion of the old MIPS emulation into
+		dyntrans (but this will take quite some time to get right).
+		Generalizing quick_pc_to_pointers.

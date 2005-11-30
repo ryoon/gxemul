@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.49 2005-11-30 06:58:04 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.50 2005-11-30 16:23:08 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -38,7 +38,6 @@
 
 #include "float_emul.h"
 
-#include "ppc_quick_pc_to_pointers.h"
 
 #define DOT0(n) X(n ## _dot) { instr(n)(cpu,ic); \
 	update_cr0(cpu, reg(ic->arg[0])); }

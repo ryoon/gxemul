@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.57 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_arm.h,v 1.58 2005-11-30 16:23:10 debug Exp $
  */
 
 #include "misc.h"
@@ -69,9 +69,14 @@ struct arm_cpu_type_def {
 	"and", "eor", "sub", "rsb", "add", "adc", "sbc", "rsc",	\
 	"tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn" }
 
+#ifdef ONEKPAGE
+#define	ARM_IC_ENTRIES_SHIFT		8
+#else
+#define	ARM_IC_ENTRIES_SHIFT		10
+#endif
+
 #define	ARM_N_IC_ARGS			3
 #define	ARM_INSTR_ALIGNMENT_SHIFT	2
-#define	ARM_IC_ENTRIES_SHIFT		10
 #define	ARM_IC_ENTRIES_PER_PAGE		(1 << ARM_IC_ENTRIES_SHIFT)
 #define	ARM_PC_TO_IC_ENTRY(a)		(((a)>>ARM_INSTR_ALIGNMENT_SHIFT) \
 					& (ARM_IC_ENTRIES_PER_PAGE-1))

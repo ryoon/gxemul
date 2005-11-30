@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.622 2005-11-29 09:32:57 debug Exp $
+ *  $Id: machine.c,v 1.623 2005-11-30 16:23:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -5306,6 +5306,9 @@ void machine_memsize_fix(struct machine *m)
 			switch (m->machine_subtype) {
 			case MACHINE_DEC_PMAX_3100:
 				m->physical_ram_in_mb = 24;
+				break;
+			case MACHINE_DEC_3MAX_5000:
+				m->physical_ram_in_mb = 64;
 				break;
 			default:
 				m->physical_ram_in_mb = 32;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.42 2005-11-30 06:58:04 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.43 2005-11-30 16:23:08 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -178,9 +178,16 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
 				fatal("XXX_cpu_run_instr(): could not read "
 				    "the instruction\n");
-			} else
+			} else {
 				cpu_disassemble_instr(cpu->machine, cpu,
 				    instr, 1, 0, 0);
+#ifdef DYNTRANS_MIPS
+/*  TODO: generalize, not just MIPS  */
+				/*  Show the instruction in the delay slot,
+				    if any:  */
+				fatal("TODO: check for delay slot!\n");
+#endif
+			}
 		}
 
 		/*  When single-stepping, multiple instruction calls cannot
@@ -360,9 +367,6 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 #endif
 #ifdef DYNTRANS_MIPS
 		    gpr[MIPS_GPR_A0
-#endif
-#ifdef DYNTRANS_NEWMIPS
-		    r[0		/*  TODO  */
 #endif
 #ifdef DYNTRANS_PPC
 		    gpr[3
@@ -1345,7 +1349,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 */
 #ifdef MODE32
 	if (!(cpu->cd.DYNTRANS_ARCH.cur_physpage->flags & TRANSLATIONS)) {
-		uint32_t index = DYNTRANS_ADDR_TO_PAGENR(addr);
+		uint32_t index = DYNTRANS_ADDR_TO_PAGENR((uint32_t)addr);
 		cpu->cd.DYNTRANS_ARCH.phystranslation[index >> 5] |=
 		    (1 << (index & 31));
 	}

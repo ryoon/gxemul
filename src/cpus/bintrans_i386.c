@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.2 2005-11-30 16:23:08 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -64,8 +64,8 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_tabl0	(((size_t)&dummy_cpu.cd.mips.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
 #define ofs_chunks	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
 #define ofs_chunkbase	((size_t)&dummy_cpu.cd.mips.chunk_base_address - (size_t)&dummy_cpu)
-#define ofs_h_l		(((size_t)&dummy_cpu.cd.mips.host_load) - ((size_t)&dummy_cpu))
-#define ofs_h_s		(((size_t)&dummy_cpu.cd.mips.host_store) - ((size_t)&dummy_cpu))
+#define ofs_h_l		(((size_t)&dummy_cpu.cd.mips.host_OLD_load) - ((size_t)&dummy_cpu))
+#define ofs_h_s		(((size_t)&dummy_cpu.cd.mips.host_OLD_store) - ((size_t)&dummy_cpu))
 
 
 static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
@@ -1892,18 +1892,18 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 		*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0c;	/*  shr $12, %ebx   */
 
 		if (load) {
-			/*  ecx = cpu->cd.mips.host_load  */
+			/*  ecx = cpu->cd.mips.host_OLD_load  */
 			*a++ = 0x8b; *a++ = 0x8e; *a++ = ofs_h_l & 255;
 			*a++ = (ofs_h_l >> 8) & 255;
 			*a++ = (ofs_h_l >> 16) & 255; *a++ = (ofs_h_l >> 24) & 255;
 		} else {
-			/*  ecx = cpu->cd.mips.host_store  */
+			/*  ecx = cpu->cd.mips.host_OLD_store  */
 			*a++ = 0x8b; *a++ = 0x8e; *a++ = ofs_h_s & 255;
 			*a++ = (ofs_h_s >> 8) & 255;
 			*a++ = (ofs_h_s >> 16) & 255; *a++ = (ofs_h_s >> 24) & 255;
 		}
 
-		/*  ecx = host_load[a] (or host_store[a])  */
+		/*  ecx = host_OLD_load[a] (or host_OLD_store[a])  */
 		*a++ = 0x8b; *a++ = 0x0c; *a++ = 0x99;	/*  mov (%ecx,%ebx,4),%ecx  */
 
 		/*
@@ -2897,12 +2897,12 @@ static void bintrans_backend_init(void)
 	*p++ = 0x89; *p++ = 0xc3;		/*  mov %eax, %ebx  */
 	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0c;	/*  shr $12, %ebx   */
 
-	/*  ecx = cpu->cd.mips.host_load  */
+	/*  ecx = cpu->cd.mips.host_OLD_load  */
 	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_h_l & 255;
 	*p++ = (ofs_h_l >> 8) & 255;
 	*p++ = (ofs_h_l >> 16) & 255; *p++ = (ofs_h_l >> 24) & 255;
 
-	/*  ecx = host_load[a]  */
+	/*  ecx = host_OLD_load[a]  */
 	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x99;	/*  mov (%ecx,%ebx,4),%ecx  */
 
 	/*  ret  */
@@ -2931,12 +2931,12 @@ static void bintrans_backend_init(void)
 	*p++ = 0x89; *p++ = 0xc3;		/*  mov %eax, %ebx  */
 	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0c;	/*  shr $12, %ebx   */
 
-	/*  ecx = cpu->cd.mips.host_store  */
+	/*  ecx = cpu->cd.mips.host_OLD_store  */
 	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_h_s & 255;
 	*p++ = (ofs_h_s >> 8) & 255;
 	*p++ = (ofs_h_s >> 16) & 255; *p++ = (ofs_h_s >> 24) & 255;
 
-	/*  ecx = host_store[a]  */
+	/*  ecx = host_OLD_store[a]  */
 	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x99;	/*  mov (%ecx,%ebx,4),%ecx  */
 
 	/*  ret  */

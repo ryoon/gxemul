@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.8 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_mips.c,v 1.9 2005-11-30 16:23:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -98,6 +98,12 @@ static char *cop0_names[] = COP0_NAMES;
 #include "cpu_mips16.c"
 
 
+#ifdef EXPERIMENTAL_NEWMIPS
+#define DYNTRANS_DUALMODE_32
+#include "tmp_mips_head.c"
+#endif
+
+
 /*
  *  regname():
  *
@@ -157,7 +163,7 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->name               = cpu->cd.mips.cpu_type.name;
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = INITIAL_STACK_POINTER;
-	cpu->update_translation_table = mips_update_translation_table;
+	cpu->update_translation_table = mips_OLD_update_translation_table;
 	cpu->invalidate_translation_caches =
 	    mips_invalidate_translation_caches_paddr;
 
@@ -335,15 +341,110 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 			cpu->translate_address = translate_address_generic;
 	}
 
-/*  Testing:  */
-	cpu->cd.mips.host_load = zeroed_alloc(1048576 *
+	/*  Testing:  */
+	cpu->cd.mips.host_OLD_load = zeroed_alloc(1048576 *
 	    sizeof(unsigned char *));
-	cpu->cd.mips.host_store = zeroed_alloc(1048576 *
+	cpu->cd.mips.host_OLD_store = zeroed_alloc(1048576 *
 	    sizeof(unsigned char *));
-	cpu->cd.mips.host_load_orig = cpu->cd.mips.host_load;
-	cpu->cd.mips.host_store_orig = cpu->cd.mips.host_store;
+	cpu->cd.mips.host_load_orig = cpu->cd.mips.host_OLD_load;
+	cpu->cd.mips.host_store_orig = cpu->cd.mips.host_OLD_store;
 
 	return 1;
+}
+
+
+/*
+ *  mips_cpu_dumpinfo():
+ *
+ *  Debug dump of MIPS-specific CPU data for specific CPU.
+ */
+void mips_cpu_dumpinfo(struct cpu *cpu)
+{
+	int iadd = 4;
+	struct mips_cpu_type_def *ct = &cpu->cd.mips.cpu_type;
+
+	debug_indentation(iadd);
+
+	debug("\n%i-bit %s (MIPS",
+	    cpu->is_32bit? 32 : 64,
+	    cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE");
+
+	switch (ct->isa_level) {
+	case 1:	debug(" ISA I"); break;
+	case 2:	debug(" ISA II"); break;
+	case 3:	debug(" ISA III"); break;
+	case 4:	debug(" ISA IV"); break;
+	case 5:	debug(" ISA V"); break;
+	case 32:
+	case 64:debug("%i", ct->isa_level); break;
+	default:debug(" ISA level %i", ct->isa_level);
+	}
+
+	debug("), ");
+	if (ct->nr_of_tlb_entries)
+		debug("%i TLB entries", ct->nr_of_tlb_entries);
+	else
+		debug("no TLB");
+	debug("\n");
+
+	if (ct->picache) {
+		debug("L1 I-cache: %i KB", (1 << ct->picache) / 1024);
+		if (ct->pilinesize)
+			debug(", %i bytes per line", 1 << ct->pilinesize);
+		if (ct->piways > 1)
+			debug(", %i-way", ct->piways);
+		else
+			debug(", direct-mapped");
+		debug("\n");
+	}
+
+	if (ct->pdcache) {
+		debug("L1 D-cache: %i KB", (1 << ct->pdcache) / 1024);
+		if (ct->pdlinesize)
+			debug(", %i bytes per line", 1 << ct->pdlinesize);
+		if (ct->pdways > 1)
+			debug(", %i-way", ct->pdways);
+		else
+			debug(", direct-mapped");
+		debug("\n");
+	}
+
+	if (ct->scache) {
+		int kb = (1 << ct->scache) / 1024;
+		debug("L2 cache: %i %s",
+		    kb >= 1024? kb / 1024 : kb, kb >= 1024? "MB":"KB");
+		if (ct->slinesize)
+			debug(", %i bytes per line", 1 << ct->slinesize);
+		if (ct->sways > 1)
+			debug(", %i-way", ct->sways);
+		else
+			debug(", direct-mapped");
+		debug("\n");
+	}
+
+	debug_indentation(-iadd);
+}
+
+
+/*
+ *  mips_cpu_list_available_types():
+ *
+ *  Print a list of available MIPS CPU types.
+ */
+void mips_cpu_list_available_types(void)
+{
+	int i, j;
+	struct mips_cpu_type_def cpu_type_defs[] = MIPS_CPU_TYPE_DEFS;
+
+	i = 0;
+	while (cpu_type_defs[i].name != NULL) {
+		debug("%s", cpu_type_defs[i].name);
+		for (j=10 - strlen(cpu_type_defs[i].name); j>0; j--)
+			debug(" ");
+		i++;
+		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
+			debug("\n");
+	}
 }
 
 
@@ -418,176 +519,176 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
 	int i, j;
 
-	/*  Nicely formatted output:  */
-	if (!rawflag) {
+	/*  Raw output:  */
+	if (rawflag) {
 		for (i=0; i<m->ncpus; i++) {
-			int pageshift = 12;
-
 			if (x >= 0 && i != x)
 				continue;
 
-			if (m->cpus[i]->cd.mips.cpu_type.rev == MIPS_R4100)
-				pageshift = 10;
-
 			/*  Print index, random, and wired:  */
 			printf("cpu%i: (", i);
-			switch (m->cpus[i]->cd.mips.cpu_type.isa_level) {
-			case 1:
-			case 2:
-				printf("index=0x%x random=0x%x",
-				    (int) ((m->cpus[i]->cd.mips.coproc[0]->
-				    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
-				    >> R2K3K_INDEX_SHIFT),
-				    (int) ((m->cpus[i]->cd.mips.coproc[0]->
-				    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
-				    >> R2K3K_RANDOM_SHIFT));
-				break;
-			default:
-				printf("index=0x%x random=0x%x",
-				    (int) (m->cpus[i]->cd.mips.coproc[0]->
-				    reg[COP0_INDEX] & INDEX_MASK),
-				    (int) (m->cpus[i]->cd.mips.coproc[0]->
-				    reg[COP0_RANDOM] & RANDOM_MASK));
-				printf(" wired=0x%llx", (long long)
-				    m->cpus[i]->cd.mips.coproc[0]->
-				    reg[COP0_WIRED]);
-			}
+
+			if (m->cpus[i]->is_32bit)
+				printf("index=0x%08x random=0x%08x", (int)m->
+				    cpus[i]->cd.mips.coproc[0]->reg[COP0_INDEX],
+				    (int)m->cpus[i]->cd.mips.coproc[0]->reg
+				    [COP0_RANDOM]);
+			else
+				printf("index=0x%016llx random=0x%016llx",
+				    (long long)m->cpus[i]->cd.mips.coproc[0]->
+				    reg[COP0_INDEX], (long long)m->cpus[i]->
+				    cd.mips.coproc[0]->reg[COP0_RANDOM]);
+
+			if (m->cpus[i]->cd.mips.cpu_type.isa_level >= 3)
+				printf(" wired=0x%llx", (long long) m->cpus
+				    [i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
 
 			printf(")\n");
 
 			for (j=0; j<m->cpus[i]->cd.mips.cpu_type.
 			    nr_of_tlb_entries; j++) {
-				uint64_t hi,lo0,lo1,mask;
-				hi = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi;
-				lo0 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0;
-				lo1 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1;
-				mask = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask;
-
-				printf("%3i: ", j);
-				switch (m->cpus[i]->cd.mips.cpu_type.mmu_model) {
-				case MMU3K:
-					if (!(lo0 & R2K3K_ENTRYLO_V)) {
-						printf("(invalid)\n");
-						continue;
-					}
-					printf("vaddr=0x%08x ",
-					    (int) (hi&R2K3K_ENTRYHI_VPN_MASK));
-					if (lo0 & R2K3K_ENTRYLO_G)
-						printf("(global), ");
-					else
-						printf("(asid %02x),",
-						    (int) ((hi & R2K3K_ENTRYHI_ASID_MASK)
-						    >> R2K3K_ENTRYHI_ASID_SHIFT));
-					printf(" paddr=0x%08x ",
-					    (int) (lo0&R2K3K_ENTRYLO_PFN_MASK));
-					if (lo0 & R2K3K_ENTRYLO_N)
-						printf("N");
-					if (lo0 & R2K3K_ENTRYLO_D)
-						printf("D");
-					printf("\n");
-					break;
-				default:
-					switch (m->cpus[i]->cd.mips.cpu_type.mmu_model) {
-					case MMU10K:
-						printf("vaddr=0x%1x..%011llx ",
-						    (int) (hi >> 60),
-						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
-						break;
-					case MMU32:
-						printf("vaddr=0x%08x ", (int)(hi&ENTRYHI_VPN2_MASK));
-						break;
-					default:/*  R4000 etc.  */
-						printf("vaddr=0x%1x..%010llx ",
-						    (int) (hi >> 60),
-						    (long long) (hi&ENTRYHI_VPN2_MASK));
-					}
-					if (hi & TLB_G)
-						printf("(global): ");
-					else
-						printf("(asid %02x):",
-						    (int) (hi & ENTRYHI_ASID));
-
-					/*  TODO: Coherency bits  */
-
-					if (!(lo0 & ENTRYLO_V))
-						printf(" p0=(invalid)   ");
-					else
-						printf(" p0=0x%09llx ", (long long)
-						    (((lo0&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
-					printf(lo0 & ENTRYLO_D? "D" : " ");
-
-					if (!(lo1 & ENTRYLO_V))
-						printf(" p1=(invalid)   ");
-					else
-						printf(" p1=0x%09llx ", (long long)
-						    (((lo1&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
-					printf(lo1 & ENTRYLO_D? "D" : " ");
-					mask |= (1 << (pageshift+1)) - 1;
-					switch (mask) {
-					case 0x7ff:	printf(" (1KB)"); break;
-					case 0x1fff:	printf(" (4KB)"); break;
-					case 0x7fff:	printf(" (16KB)"); break;
-					case 0x1ffff:	printf(" (64KB)"); break;
-					case 0x7ffff:	printf(" (256KB)"); break;
-					case 0x1fffff:	printf(" (1MB)"); break;
-					case 0x7fffff:	printf(" (4MB)"); break;
-					case 0x1ffffff:	printf(" (16MB)"); break;
-					case 0x7ffffff:	printf(" (64MB)"); break;
-					default:
-						printf(" (mask=%08x?)", (int)mask);
-					}
-					printf("\n");
-				}
+				if (m->cpus[i]->cd.mips.cpu_type.mmu_model ==
+				    MMU3K)
+					printf("%3i: hi=0x%08x lo=0x%08x\n", j,
+					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
+					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0);
+				else if (m->cpus[i]->is_32bit)
+					printf("%3i: hi=0x%08x mask=0x%08x "
+					    "lo0=0x%08x lo1=0x%08x\n", j,
+					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
+					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
+					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
+					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
+				else
+					printf("%3i: hi=0x%016llx mask=0x%016llx "
+					    "lo0=0x%016llx lo1=0x%016llx\n", j,
+					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
+					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
+					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
+					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
 			}
 		}
-
 		return;
 	}
 
-	/*  Raw output:  */
+	/*  Nicely formatted output:  */
 	for (i=0; i<m->ncpus; i++) {
+		int pageshift = 12;
+
 		if (x >= 0 && i != x)
 			continue;
 
+		if (m->cpus[i]->cd.mips.cpu_type.rev == MIPS_R4100)
+			pageshift = 10;
+
 		/*  Print index, random, and wired:  */
 		printf("cpu%i: (", i);
-
-		if (m->cpus[i]->is_32bit)
-			printf("index=0x%08x random=0x%08x",
-			    (int)m->cpus[i]->cd.mips.coproc[0]->reg[COP0_INDEX],
-			    (int)m->cpus[i]->cd.mips.coproc[0]->reg[COP0_RANDOM]);
-		else
-			printf("index=0x%016llx random=0x%016llx", (long long)
-			    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_INDEX],
-			    (long long)m->cpus[i]->cd.mips.coproc[0]->reg
-			    [COP0_RANDOM]);
-
-		if (m->cpus[i]->cd.mips.cpu_type.isa_level >= 3)
+		switch (m->cpus[i]->cd.mips.cpu_type.isa_level) {
+		case 1:
+		case 2:	printf("index=0x%x random=0x%x",
+			    (int) ((m->cpus[i]->cd.mips.coproc[0]->
+			    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
+			    >> R2K3K_INDEX_SHIFT),
+			    (int) ((m->cpus[i]->cd.mips.coproc[0]->
+			    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
+			    >> R2K3K_RANDOM_SHIFT));
+			break;
+		default:printf("index=0x%x random=0x%x",
+			    (int) (m->cpus[i]->cd.mips.coproc[0]->
+			    reg[COP0_INDEX] & INDEX_MASK),
+			    (int) (m->cpus[i]->cd.mips.coproc[0]->
+			    reg[COP0_RANDOM] & RANDOM_MASK));
 			printf(" wired=0x%llx", (long long)
-			    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
+			    m->cpus[i]->cd.mips.coproc[0]->
+			    reg[COP0_WIRED]);
+		}
 
 		printf(")\n");
 
-		for (j=0; j<m->cpus[i]->cd.mips.cpu_type.nr_of_tlb_entries; j++) {
-			if (m->cpus[i]->cd.mips.cpu_type.mmu_model == MMU3K)
-				printf("%3i: hi=0x%08x lo=0x%08x\n",
-				    j,
-				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
-				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0);
-			else if (m->cpus[i]->is_32bit)
-				printf("%3i: hi=0x%08x mask=0x%08x "
-				    "lo0=0x%08x lo1=0x%08x\n", j,
-				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
-				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
-				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
-				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
-			else
-				printf("%3i: hi=0x%016llx mask=0x%016llx "
-				    "lo0=0x%016llx lo1=0x%016llx\n", j,
-				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
-				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
-				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
-				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
+		for (j=0; j<m->cpus[i]->cd.mips.cpu_type.
+		    nr_of_tlb_entries; j++) {
+			uint64_t hi,lo0,lo1,mask;
+			hi = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi;
+			lo0 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0;
+			lo1 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1;
+			mask = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask;
+
+			printf("%3i: ", j);
+			switch (m->cpus[i]->cd.mips.cpu_type.mmu_model) {
+			case MMU3K:
+				if (!(lo0 & R2K3K_ENTRYLO_V)) {
+					printf("(invalid)\n");
+					continue;
+				}
+				printf("vaddr=0x%08x ",
+				    (int) (hi&R2K3K_ENTRYHI_VPN_MASK));
+				if (lo0 & R2K3K_ENTRYLO_G)
+					printf("(global), ");
+				else
+					printf("(asid %02x),", (int) ((hi &
+					    R2K3K_ENTRYHI_ASID_MASK)
+					    >> R2K3K_ENTRYHI_ASID_SHIFT));
+				printf(" paddr=0x%08x ",
+				    (int) (lo0&R2K3K_ENTRYLO_PFN_MASK));
+				if (lo0 & R2K3K_ENTRYLO_N)
+					printf("N");
+				if (lo0 & R2K3K_ENTRYLO_D)
+					printf("D");
+				printf("\n");
+				break;
+			default:switch (m->cpus[i]->cd.mips.cpu_type.mmu_model){
+				case MMU10K:
+					printf("vaddr=0x%1x..%011llx ",
+					    (int) (hi >> 60), (long long)
+					    (hi&ENTRYHI_VPN2_MASK_R10K));
+					break;
+				case MMU32:
+					printf("vaddr=0x%08x ", (int)
+					    (hi&ENTRYHI_VPN2_MASK));
+					break;
+				default:/*  R4000 etc.  */
+					printf("vaddr=0x%1x..%010llx ",
+					    (int) (hi >> 60),
+					    (long long) (hi&ENTRYHI_VPN2_MASK));
+				}
+				if (hi & TLB_G)
+					printf("(global): ");
+				else
+					printf("(asid %02x):",
+					    (int) (hi & ENTRYHI_ASID));
+
+				/*  TODO: Coherency bits  */
+
+				if (!(lo0 & ENTRYLO_V))
+					printf(" p0=(invalid)   ");
+				else
+					printf(" p0=0x%09llx ", (long long)
+					    (((lo0&ENTRYLO_PFN_MASK) >>
+					    ENTRYLO_PFN_SHIFT) << pageshift));
+				printf(lo0 & ENTRYLO_D? "D" : " ");
+
+				if (!(lo1 & ENTRYLO_V))
+					printf(" p1=(invalid)   ");
+				else
+					printf(" p1=0x%09llx ", (long long)
+					    (((lo1&ENTRYLO_PFN_MASK) >>
+					    ENTRYLO_PFN_SHIFT) << pageshift));
+				printf(lo1 & ENTRYLO_D? "D" : " ");
+				mask |= (1 << (pageshift+1)) - 1;
+				switch (mask) {
+				case 0x7ff:	printf(" (1KB)"); break;
+				case 0x1fff:	printf(" (4KB)"); break;
+				case 0x7fff:	printf(" (16KB)"); break;
+				case 0x1ffff:	printf(" (64KB)"); break;
+				case 0x7ffff:	printf(" (256KB)"); break;
+				case 0x1fffff:	printf(" (1MB)"); break;
+				case 0x7fffff:	printf(" (4MB)"); break;
+				case 0x1ffffff:	printf(" (16MB)"); break;
+				case 0x7ffffff:	printf(" (64MB)"); break;
+				default:printf(" (mask=%08x?)", (int)mask);
+				}
+				printf("\n");
+			}
 		}
 	}
 }
@@ -977,17 +1078,21 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		if (imm >= 32768)
 			imm -= 65536;
 		addr = (dumpaddr + 4) + (imm << 2);
-		debug("%s\t", hi6_names[hi6]);
 
-		switch (hi6) {
-		case HI6_BEQ:
-		case HI6_BEQL:
-		case HI6_BNE:
-		case HI6_BNEL:
-			debug("%s,", regname(cpu->machine, rt));
+		if (hi6 == HI6_BEQ && rt == MIPS_GPR_ZERO &&
+		    rs == MIPS_GPR_ZERO)
+			debug("b\t");
+		else {
+			debug("%s\t", hi6_names[hi6]);
+			switch (hi6) {
+			case HI6_BEQ:
+			case HI6_BEQL:
+			case HI6_BNE:
+			case HI6_BNEL:
+				debug("%s,", regname(cpu->machine, rt));
+			}
+			debug("%s,", regname(cpu->machine, rs));
 		}
-
-		debug("%s,", regname(cpu->machine, rs));
 
 		if (cpu->is_32bit)
 			debug("0x%08x", (int)addr);
@@ -1426,6 +1531,8 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 }
 
 
+#ifndef EXPERIMENTAL_NEWMIPS
+
 #define DYNTRANS_FUNCTION_TRACE mips_cpu_functioncall_trace
 #define	DYNTRANS_MIPS
 #define	DYNTRANS_ARCH mips
@@ -1433,6 +1540,8 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 #undef DYNTRANS_MIPS
 #undef DYNTRANS_ARCH
 #undef DYNTRANS_FUNCTION_TRACE
+
+#endif
 
 
 /*
@@ -1764,8 +1873,9 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
 #include "memory_mips.c"
 
 
+#ifndef EXPERIMENTAL_NEWMIPS
 /*
- *  mips_cpu_run_instr():
+ *  mips_OLD_cpu_run_instr():
  *
  *  Execute one instruction on a cpu.
  *
@@ -1775,7 +1885,7 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
  *  Return value is the number of instructions executed during this call,
  *  0 if no instruction was executed.
  */
-int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
+int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->machine->instruction_trace;
@@ -4041,115 +4151,26 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  NOTREACHED  */
 }
+#endif	/*  !EXPERIMENTAL_NEWMIPS  */
 
 
-#define CPU_RUN		mips_cpu_run
+
+#ifdef EXPERIMENTAL_NEWMIPS
+
+#include "tmp_mips_tail.c"
+
+#else
+
+#define CPU_RUN		mips_OLD_cpu_run
 #define CPU_RUN_MIPS
-#define CPU_RINSTR	mips_cpu_run_instr
+#define CPU_RINSTR	mips_OLD_cpu_run_instr
 #include "cpu_run.c"
 #undef CPU_RINSTR
 #undef CPU_RUN_MIPS
 #undef CPU_RUN
-
-
-/*
- *  mips_cpu_dumpinfo():
- *
- *  Debug dump of MIPS-specific CPU data for specific CPU.
- */
-void mips_cpu_dumpinfo(struct cpu *cpu)
-{
-	int iadd = 4;
-	struct mips_cpu_type_def *ct = &cpu->cd.mips.cpu_type;
-
-	debug_indentation(iadd);
-
-	debug("\n%i-bit %s (MIPS",
-	    cpu->is_32bit? 32 : 64,
-	    cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE");
-
-	switch (ct->isa_level) {
-	case 1:	debug(" ISA I"); break;
-	case 2:	debug(" ISA II"); break;
-	case 3:	debug(" ISA III"); break;
-	case 4:	debug(" ISA IV"); break;
-	case 5:	debug(" ISA V"); break;
-	case 32:
-	case 64:debug("%i", ct->isa_level); break;
-	default:debug(" ISA level %i", ct->isa_level);
-	}
-
-	debug("), ");
-	if (ct->nr_of_tlb_entries)
-		debug("%i TLB entries", ct->nr_of_tlb_entries);
-	else
-		debug("no TLB");
-	debug("\n");
-
-	if (ct->picache) {
-		debug("L1 I-cache: %i KB", (1 << ct->picache) / 1024);
-		if (ct->pilinesize)
-			debug(", %i bytes per line", 1 << ct->pilinesize);
-		if (ct->piways > 1)
-			debug(", %i-way", ct->piways);
-		else
-			debug(", direct-mapped");
-		debug("\n");
-	}
-
-	if (ct->pdcache) {
-		debug("L1 D-cache: %i KB", (1 << ct->pdcache) / 1024);
-		if (ct->pdlinesize)
-			debug(", %i bytes per line", 1 << ct->pdlinesize);
-		if (ct->pdways > 1)
-			debug(", %i-way", ct->pdways);
-		else
-			debug(", direct-mapped");
-		debug("\n");
-	}
-
-	if (ct->scache) {
-		int kb = (1 << ct->scache) / 1024;
-		debug("L2 cache: %i %s",
-		    kb >= 1024? kb / 1024 : kb, kb >= 1024? "MB":"KB");
-		if (ct->slinesize)
-			debug(", %i bytes per line", 1 << ct->slinesize);
-		if (ct->sways > 1)
-			debug(", %i-way", ct->sways);
-		else
-			debug(", direct-mapped");
-		debug("\n");
-	}
-
-	debug_indentation(-iadd);
-}
-
-
-/*
- *  mips_cpu_list_available_types():
- *
- *  Print a list of available MIPS CPU types.
- */
-void mips_cpu_list_available_types(void)
-{
-	int i, j;
-	struct mips_cpu_type_def cpu_type_defs[] = MIPS_CPU_TYPE_DEFS;
-
-	i = 0;
-	while (cpu_type_defs[i].name != NULL) {
-		debug("%s", cpu_type_defs[i].name);
-		for (j=10 - strlen(cpu_type_defs[i].name); j>0; j--)
-			debug(" ");
-		i++;
-		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
-			debug("\n");
-	}
-}
-
-
-/*  NOTE: _OLD_ family init. TODO: remove all this  */
-
 CPU_OLD_FAMILY_INIT(mips,"MIPS")
+
+#endif
 
 
 #endif	/*  ENABLE_MIPS  */

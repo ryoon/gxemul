@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_loadstore.c,v 1.4 2005-10-22 12:22:14 debug Exp $
+ *  $Id: generate_arm_loadstore.c,v 1.5 2005-11-30 16:23:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,12 +44,14 @@ int main(int argc, char *argv[])
 	    "#include \"machine.h\"\n"
 	    "#include \"memory.h\"\n"
 	    "#include \"misc.h\"\n"
-	    "#include \"arm_quick_pc_to_pointers.h\"\n"
+	    "#define DYNTRANS_PC_TO_POINTERS arm_pc_to_pointers\n"
+	    "#include \"quick_pc_to_pointers.h\"\n"
 	    "#define reg(x) (*((uint32_t *)(x)))\n");
 	printf("extern void arm_instr_nop(struct cpu *, "
 	    "struct arm_instr_call *);\n");
 	printf("extern void arm_instr_invalid(struct cpu *, "
 	    "struct arm_instr_call *);\n");
+	printf("extern void arm_pc_to_pointers(struct cpu *);\n");
 
 	for (reg=0; reg<=1; reg++)
 	  for (p=0; p<=1; p++)

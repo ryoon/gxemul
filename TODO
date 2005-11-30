@@ -1,4 +1,4 @@
-$Id: TODO,v 1.178 2005-11-30 06:58:03 debug Exp $
+$Id: TODO,v 1.179 2005-11-30 16:23:05 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -25,10 +25,11 @@ PCI:
 	x)  generalize the interrupt routing stuff
 
 Network layer:
-	o)  Multiple networks per emulation, and let different
-	    NICs in machines connect to different networks.
+	o)  DHCP (for Debian and BSD installers :-)
 	o)  increase performance
 	o)  don't rely on NetBSD-ish usage
+	o)  Multiple networks per emulation, and let different
+	    NICs in machines connect to different networks.
 	o)  many other issues: see src/net.c
 
 Redesign the entire "mainbus" concept:
@@ -39,19 +40,17 @@ Redesign the entire "mainbus" concept:
 
 Floating point layer:
 	o)  make it common enough to be used by _all_ emulation modes
-	o)  x86?
+	o)  non-IEEE modes (i.e. x86)?
 
 Dyntrans:
-	x)  Generalize the inline quick_pc_to_pointers?
 	x)  Call/return hints...
 	x)  64-bit stuff: good generic virtual memory translation, and
 	    other structures. not all 64 bits need to be used (e.g. Alpha)
+	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
 	x)  PPC optimizations; instr combs
 	x)  Alpha
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
-
-Dyntrans recompilation backend?
-	x)  think carefully about this
+	x)  recompilation backend? think carefully about this
 
 Userland emulation:
 	x)  Lots of stuff; freebsd and netbsd (and linux?) syscalls.

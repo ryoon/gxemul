@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.11 2005-11-29 09:32:59 debug Exp $
+ *  $Id: of.c,v 1.12 2005-11-30 16:23:11 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -398,20 +398,22 @@ OF_SERVICE(read)
 	/*  int handle = OF_GET_ARG(0);  */
 	uint64_t ptr = OF_GET_ARG(1);
 	/*  int len = OF_GET_ARG(2);  */
-	char ch = -1;
+	int c;
+	unsigned char ch;
 
 	/*  TODO: check handle! This just reads chars from the console!  */
 	/*  TODO: This is blocking!  */
 
-	ch = console_readchar(cpu->machine->main_console_handle);
+	c = console_readchar(cpu->machine->main_console_handle);
+	ch = c;
 	if (!cpu->memory_rw(cpu, cpu->mem, ptr, &ch, 1, MEM_WRITE,
 	    CACHE_DATA | NO_EXCEPTIONS)) {
 		fatal("[ of: read: memory_rw() error ]\n");
 		exit(1);
 	}
 
-	store_32bit_word(cpu, base + retofs, ch==-1? 0 : 1);
-	return ch==-1? -1 : 0;
+	store_32bit_word(cpu, base + retofs, c == -1? 0 : 1);
+	return c == -1? -1 : 0;
 }
 
 
@@ -671,13 +673,13 @@ static void of_add_prop_int32(struct of_data *ofd,
 static void of_add_prop_str(struct machine *machine, struct of_data *ofd,
 	char *devname, char *propname, char *data)
 {
-	unsigned char *p = strdup(data);
+	char *p = strdup(data);
 	if (p == NULL) {
 		fatal("of_add_prop_str(): out of memory\n");
 		exit(1);
 	}
 
-	of_add_prop(ofd, devname, propname, p, strlen(p) + 1,
+	of_add_prop(ofd, devname, propname, (unsigned char *)p, strlen(p) + 1,
 	    OF_PROP_STRING);
 }
 

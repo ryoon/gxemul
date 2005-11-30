@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.180 2005-11-23 22:03:23 debug Exp $
+#  $Id: configure,v 1.181 2005-11-30 16:23:05 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -75,7 +75,7 @@ else
 	ENABLEIA64=NO
 	ENABLEM68K=NO
 	ENABLEMIPS=YES
-	ENABLENEWMIPS=NO
+	NEWMIPS=NO
 	ENABLEPPC=YES
 	ENABLESH=NO
 	ENABLESPARC=NO
@@ -108,7 +108,6 @@ if [ z"$*" != z ]; then
 			ENABLEIA64=YES
 			ENABLEM68K=YES
 			ENABLEMIPS=YES
-			ENABLENEWMIPS=YES
 			ENABLEPPC=YES
 			ENABLESH=YES
 			ENABLESPARC=YES
@@ -145,10 +144,6 @@ if [ z"$*" != z ]; then
 			ENABLEMIPS=NO
 		else if [ z$a = z--enable-mips ]; then
 			ENABLEMIPS=YES
-		else if [ z$a = z--disable-newmips ]; then
-			ENABLENEWMIPS=NO
-		else if [ z$a = z--enable-newmips ]; then
-			ENABLENEWMIPS=YES
 		else if [ z$a = z--disable-ppc ]; then
 			ENABLEPPC=NO
 		else if [ z$a = z--enable-ppc ]; then
@@ -173,6 +168,14 @@ if [ z"$*" != z ]; then
 			CACHES=NO
 		else if [ z$a = z--enable-caches ]; then
 			CACHES=YES
+		else if [ z$a = z--disable-newmips ]; then
+			NEWMIPS=NO
+		else if [ z$a = z--enable-newmips ]; then
+			NEWMIPS=YES
+		else if [ z$a = z--disable-1k-pages ]; then
+			ONEKPAGE=NO
+		else if [ z$a = z--enable-1k-pages ]; then
+			ONEKPAGE=YES
 		else if [ z$a = z--help ]; then
 			echo "usage: $0 [options]"
 
@@ -253,13 +256,6 @@ if [ z"$*" != z ]; then
 			fi
 			printf "MIPS CPU emulation\n"
 
-			if [ z$ENABLENEWMIPS = zYES ]; then
-				printf "  --disable-newmips  disable "
-			else
-				printf "  --enable-newmips   enable "
-			fi
-			printf "(New, dyntrans) MIPS CPU emulation\n"
-
 			if [ z$ENABLEPPC = zYES ]; then
 				printf "  --disable-ppc      disable "
 			else
@@ -289,6 +285,9 @@ if [ z"$*" != z ]; then
 			printf "x86 CPU emulation\n"
 
 			echo "  --enable-mips16    enable MIPS16 support"
+			echo "  --enable-newmips   use new MIPS dyntrans code"
+			#printf "  --enable-1k-pages  allow 1KB dyntrans pages"
+			#printf " (default: 4KB)\n"
 
 			printf "\n(Pretty much all of these options are only"
 			printf " meaningful during the development of\nthe"
@@ -302,7 +301,7 @@ if [ z"$*" != z ]; then
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -385,10 +384,10 @@ if [ z$ENABLEM68K = zYES ]; then
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
-fi
-if [ z$ENABLENEWMIPS = zYES ]; then
-	printf "#define ENABLE_NEWMIPS\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_newmips.o"
+	if [ z$NEWMIPS = zYES ]; then
+		echo 'Enabling the _EXPERIMENTAL_ MIPS dyntrans code.'
+		printf "#define EXPERIMENTAL_NEWMIPS\n" >> config.h
+	fi
 fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
@@ -421,6 +420,16 @@ if [ z$ALWAYS32 = zYES ]; then
 	echo 'Enabling ALWAYS_SIGNEXTEND_32. (NOTE:' \
 	    'This slows down everything.)'
 	printf "#define ALWAYS_SIGNEXTEND_32\n" >> config.h
+fi
+
+
+#  1KB page emulation:
+if [ z$ONEKPAGE = zYES ]; then
+	echo '1 KB pages: not yet.'
+	exit
+	echo 'Enabling 1 KB page dyntrans support. (NOTE:' \
+	    'This slows down everything.)'
+	printf "#define ONEKPAGE\n" >> config.h
 fi
 
 

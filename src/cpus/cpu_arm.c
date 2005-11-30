@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.45 2005-11-27 03:48:01 debug Exp $
+ *  $Id: cpu_arm.c,v 1.46 2005-11-30 16:23:08 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -64,7 +64,8 @@ static int arm_dpi_uses_n[16] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0 };
 static int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
 
 /*  For quick_pc_to_pointers():  */
-#include "arm_quick_pc_to_pointers.h"
+void arm_pc_to_pointers(struct cpu *cpu);
+#include "quick_pc_to_pointers.h"
 
 
 /*

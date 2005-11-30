@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.2 2005-11-30 16:23:08 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -170,8 +170,8 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_c0	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
 #define ofs_cb (((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu)
 
-#define ofs_h_l (((size_t)&dummy_cpu.cd.mips.host_load) - ((size_t)&dummy_cpu))
-#define ofs_h_s (((size_t)&dummy_cpu.cd.mips.host_store) - ((size_t)&dummy_cpu))
+#define ofs_h_l (((size_t)&dummy_cpu.cd.mips.host_OLD_load) - ((size_t)&dummy_cpu))
+#define ofs_h_s (((size_t)&dummy_cpu.cd.mips.host_OLD_store) - ((size_t)&dummy_cpu))
 
 
 static uint32_t bintrans_alpha_load_32bit[18] = {
@@ -179,8 +179,8 @@ static uint32_t bintrans_alpha_load_32bit[18] = {
 	0x209f0fff,	/*  lda     t3,4095				*/
 	0x48419682,	/*  srl     t1,0xc,t1	t1 = addr >> 12		*/
 	0x46240004,	/*  and     a1,t3,t3	t3 = addr & 4095	*/
-	0x40580642,	/*  s8addq  t1,t10,t1	&host_load[t1]		*/
-	0xa6620000,	/*  ldq     a3,0(t1)	a3 = host_load[t1]	*/
+	0x40580642,	/*  s8addq  t1,t10,t1	&host_OLD_load[t1]	*/
+	0xa6620000,	/*  ldq     a3,0(t1)	a3 = host_OLD_load[t1]	*/
 
 	/*  NULL? Then return failure at once.  */
 	0xe6600002,	/*  beq a3, return  */
@@ -201,8 +201,8 @@ static uint32_t bintrans_alpha_store_32bit[18] = {
 	0x209f0fff,	/*  lda     t3,4095				*/
 	0x48419682,	/*  srl     t1,0xc,t1	t1 = addr >> 12		*/
 	0x46240004,	/*  and     a1,t3,t3	t3 = addr & 4095	*/
-	0x404f0642,	/*  s8addq  t1,s6,t1	&host_store[t1]		*/
-	0xa6620000,	/*  ldq     a3,0(t1)	a3 = host_store[t1]	*/
+	0x404f0642,	/*  s8addq  t1,s6,t1	&host_OLD_store[t1]	*/
+	0xa6620000,	/*  ldq     a3,0(t1)	a3 = host_OLD_store[t1]	*/
 
 	/*  NULL? Then return failure at once.  */
 	/*  beq a3, return  */
@@ -2568,8 +2568,8 @@ static void bintrans_backend_init(void)
 	*p++ = 0xa5900000 | ofs_ra;	/*  ldq     s3,"gpr[ra]"(a0)  */
 	*p++ = 0xa5b00000 | ofs_t0;	/*  ldq     s4,"gpr[t0]"(a0)  */
 	*p++ = 0xa5d00000 | ofs_t1;	/*  ldq     s5,"gpr[t1]"(a0)  */
-	*p++ = 0xa5f00000 | ofs_h_s;	/*  ldq     s6,host_store(a0)  */
-	*p++ = 0xa7100000 | ofs_h_l;	/*  ldq     t10,host_load(a0)  */
+	*p++ = 0xa5f00000 | ofs_h_s;	/*  ldq     s6,host_OLD_store(a0)  */
+	*p++ = 0xa7100000 | ofs_h_l;	/*  ldq     t10,host_OLD_load(a0)  */
 	*p++ = 0xa7300000 | ofs_v0;	/*  ldq     t11,"gpr[v0]"(a0)  */
 
 	*p++ = 0x6b514000;		/*  jsr     ra,(a1),<back>  */

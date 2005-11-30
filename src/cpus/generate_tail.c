@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.6 2005-10-22 17:24:21 debug Exp $
+ *  $Id: generate_tail.c,v 1.7 2005-11-30 16:23:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
 	printf("#define MODE_uint_t uint32_t\n");
 	printf("#define MODE_int_t int32_t\n");
 	printf("#endif\n");
+	printf("#define COMBINE(n) %s_combine_ ## n\n", a);
+	printf("#include \"quick_pc_to_pointers.h\"\n");
 	printf("#include \"cpu_%s_instr.c\"\n\n", a);
 
 
@@ -169,6 +171,9 @@ int main(int argc, char *argv[])
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_PC_TO_POINTERS_FUNC\n\n");
 	printf("#undef DYNTRANS_PC_TO_POINTERS_GENERIC\n\n");
+	printf("#undef COMBINE\n");
+	printf("#define COMBINE(n) %s32_combine_ ## n\n", a);
+	printf("#include \"quick_pc_to_pointers.h\"\n");
 	printf("#include \"cpu_%s_instr.c\"\n", a);
 
 	printf("\n#undef DYNTRANS_PC_TO_POINTERS\n"

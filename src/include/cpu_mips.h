@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.21 2005-08-28 20:16:24 debug Exp $
+ *  $Id: cpu_mips.h,v 1.22 2005-11-30 16:23:10 debug Exp $
  */
 
 #include "misc.h"
@@ -165,6 +165,8 @@ struct mips_coproc {
 #define	N_SPECIAL		64
 #define	N_REGIMM		32
 
+/*******************************  OLD:  *****************************/
+
 /*  Number of "tiny" translation cache entries:  */
 #define	N_TRANSLATION_CACHE_INSTR	5
 #define	N_TRANSLATION_CACHE_DATA	5
@@ -196,6 +198,50 @@ struct r4000_cache_line {
 	char		dummy;
 };
 
+/********************************************************************/
+
+#ifdef ONEKPAGE
+#define	MIPS_IC_ENTRIES_SHIFT		8
+#else
+#define	MIPS_IC_ENTRIES_SHIFT		10
+#endif
+
+#define	MIPS_N_IC_ARGS			3
+#define	MIPS_INSTR_ALIGNMENT_SHIFT	2
+#define	MIPS_IC_ENTRIES_PER_PAGE	(1 << MIPS_IC_ENTRIES_SHIFT)
+#define	MIPS_PC_TO_IC_ENTRY(a)		(((a)>>MIPS_INSTR_ALIGNMENT_SHIFT) \
+					& (MIPS_IC_ENTRIES_PER_PAGE-1))
+#define	MIPS_ADDR_TO_PAGENR(a)		((a) >> (MIPS_IC_ENTRIES_SHIFT \
+					+ MIPS_INSTR_ALIGNMENT_SHIFT))
+
+struct mips_instr_call {
+	void	(*f)(struct cpu *, struct mips_instr_call *);
+	size_t	arg[MIPS_N_IC_ARGS];
+};
+
+/*  Translation cache struct for each physical page:  */
+struct mips_tc_physpage {
+	struct mips_instr_call ics[MIPS_IC_ENTRIES_PER_PAGE + 1];
+	uint32_t	next_ofs;	/*  or 0 for end of chain  */
+	int		flags;
+	uint64_t	physaddr;
+};
+
+#define	MIPS_N_VPH_ENTRIES		1048576
+
+#define	MIPS_MAX_VPH_TLB_ENTRIES	128
+struct mips_vpg_tlb_entry {
+	uint8_t		valid;
+	uint8_t		writeflag;
+	unsigned char	*host_page;
+	int64_t		timestamp;
+	uint64_t	vaddr_page;
+	uint64_t	paddr_page;
+};
+
+
+/*******************************  OLD:  *****************************/
+
 #define	BINTRANS_DONT_RUN_NEXT		0x1000000
 #define	BINTRANS_N_MASK			0x0ffffff
 
@@ -212,6 +258,8 @@ struct vth32_table {
 	struct vth32_table	*next_free;
 	int			refcount;
 };
+
+/********************************************************************/
 
 struct mips_cpu {
 	struct mips_cpu_type_def cpu_type;
@@ -286,8 +334,8 @@ struct mips_cpu {
 	struct vth32_table *next_free_vth_table;
 
 /*  Testing...  */
-	unsigned char	**host_load;
-	unsigned char	**host_store;
+	unsigned char	**host_OLD_load;
+	unsigned char	**host_OLD_store;
 	unsigned char	**host_load_orig;
 	unsigned char	**host_store_orig;
 	unsigned char	**huge_r2k3k_cache_table;
@@ -373,6 +421,40 @@ struct mips_cpu {
 
 	/*  Other stuff:  */
 	uint64_t	cop0_config_select1;
+
+
+	/*  NEW DYNTRANS:  */
+
+
+	/*
+	 *  Instruction translation cache:
+	 */
+	/*  cur_ic_page is a pointer to an array of MIPS_IC_ENTRIES_PER_PAGE
+	    instruction call entries. next_ic points to the next such
+	    call to be executed.  */
+	struct mips_tc_physpage	*cur_physpage;
+	struct mips_instr_call	*cur_ic_page;
+	struct mips_instr_call	*next_ic;
+
+	void			(*combination_check)(struct cpu *,
+				    struct mips_instr_call *, int low_addr);
+
+	/*
+	 *  Virtual -> physical -> host address translation:
+	 *
+	 *  host_load and host_store point to arrays of MIPS_N_VPH_ENTRIES
+	 *  pointers (to host pages); phys_addr points to an array of
+	 *  MIPS_N_VPH_ENTRIES uint32_t.
+	 */
+
+	struct mips_vpg_tlb_entry   vph_tlb_entry[MIPS_MAX_VPH_TLB_ENTRIES];
+	unsigned char		    *host_load[MIPS_N_VPH_ENTRIES]; 
+	unsigned char		    *host_store[MIPS_N_VPH_ENTRIES];
+	uint32_t		    phys_addr[MIPS_N_VPH_ENTRIES]; 
+	struct mips_tc_physpage     *phys_page[MIPS_N_VPH_ENTRIES];
+
+	uint32_t		    phystranslation[MIPS_N_VPH_ENTRIES/32];
+	uint8_t			    vaddr_to_tlbindex[MIPS_N_VPH_ENTRIES];
 };
 
 
@@ -402,7 +484,7 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
         uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
         int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
         int cachealgo0, int cachealgo1);
-void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+void mips_OLD_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
         unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void clear_all_chunks_from_all_tables(struct cpu *cpu);
 void mips_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t, int);
@@ -428,6 +510,13 @@ int mips_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 /*  mips16.c:  */
 int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr);
+
+
+/*  NEW DYNTRANS:  */
+void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void mips_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
+void mips_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 
 
 #endif	/*  CPU_MIPS_H  */

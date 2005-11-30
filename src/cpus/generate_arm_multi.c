@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.11 2005-11-19 18:53:07 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.12 2005-11-30 16:23:08 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *
@@ -236,9 +236,11 @@ int main(int argc, char *argv[])
 	    "#include <stdlib.h>\n"
 	    "#include \"cpu.h\"\n"
 	    "#include \"misc.h\"\n"
-	    "#include \"arm_quick_pc_to_pointers.h\"\n"
+	    "#define DYNTRANS_PC_TO_POINTERS arm_pc_to_pointers\n"
+	    "#include \"quick_pc_to_pointers.h\"\n"
 	    "#include \"arm_tmphead_1.h\"\n"
 	    "\n#define instr(x) arm_instr_ ## x\n");
+	printf("extern void arm_pc_to_pointers(struct cpu *);\n");
 	printf("extern void arm_instr_nop(struct cpu *, "
 	    "struct arm_instr_call *);\n");
 	printf("extern void arm_instr_bdt_load(struct cpu *, "

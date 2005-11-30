@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.55 2005-11-30 06:58:05 debug Exp $
+ *  $Id: cpu.h,v 1.56 2005-11-30 16:23:10 debug Exp $
  *
  *  See cpu.c.
  */
@@ -49,7 +49,6 @@
 #include "cpu_ia64.h"
 #include "cpu_m68k.h"
 #include "cpu_mips.h"
-#include "cpu_newmips.h"
 #include "cpu_ppc.h"
 #include "cpu_sh.h"
 #include "cpu_sparc.h"
@@ -177,7 +176,6 @@ struct cpu {
 		struct ia64_cpu    ia64;
 		struct m68k_cpu    m68k;
 		struct mips_cpu    mips;
-		struct newmips_cpu newmips;
 		struct ppc_cpu     ppc;
 		struct sh_cpu      sh;
 		struct sparc_cpu   sparc;
@@ -247,7 +245,7 @@ void cpu_init(void);
 	fp->register_match = n ## _cpu_register_match;			\
 	fp->disassemble_instr = n ## _cpu_disassemble_instr;		\
 	fp->register_dump = n ## _cpu_register_dump;			\
-	fp->run = n ## _cpu_run;					\
+	fp->run = n ## _OLD_cpu_run;					\
 	fp->dumpinfo = n ## _cpu_dumpinfo;				\
 	fp->show_full_statistics = n ## _cpu_show_full_statistics;	\
 	fp->tlbdump = n ## _cpu_tlbdump;				\

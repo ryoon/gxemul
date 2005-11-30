@@ -1,5 +1,5 @@
 /*
- *  $Id: fb_include.c,v 1.1 2005-11-30 08:52:30 debug Exp $
+ *  $Id: fb_include.c,v 1.2 2005-11-30 21:20:42 debug Exp $
  *
  *  Included from dev_fb.c.
  *
@@ -163,6 +163,7 @@ void REDRAW(struct vfb_data *d, int addr, int len)
 					}
 				} else {
 				    r = d->framebuffer[fb_addr] >> 3;
+/*  HUH? TODO:  */
 				    g = (d->framebuffer[fb_addr] << 5) +
 				      (d->framebuffer[fb_addr + 1] >>5);
 				    b = d->framebuffer[fb_addr + 1]&31;

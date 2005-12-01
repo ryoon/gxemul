@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.624 2005-12-01 23:42:15 debug Exp $
+ *  $Id: machine.c,v 1.625 2005-12-01 23:59:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4396,8 +4396,8 @@ Not yet.
 
 			of_emul_init(machine, fb, 0xf1000000, 1024, 768);
 			of_emul_init_uninorth(machine);
-			/*  of_emul_init_zs(machine);  */
-			of_emul_init_adb(machine);
+			of_emul_init_zs(machine);
+			/*  of_emul_init_adb(machine);  */
 
 			/*
 			 *  r3 = pointer to boot_args (for the Mach kernel).

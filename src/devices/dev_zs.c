@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.24 2005-11-29 09:32:58 debug Exp $
+ *  $Id: dev_zs.c,v 1.25 2005-12-01 23:59:07 debug Exp $
  *  
  *  Zilog serial controller.
  *
@@ -47,6 +47,8 @@
 
 
 #define	ZS_TICK_SHIFT		14
+
+#define debug fatal
 
 struct zs_data {
 	int		irq_nr;
@@ -99,6 +101,9 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+if (len != 1)
+fatal("len=%i\n", len);
+
 	relative_addr /= d->addrmult;
 
 	port_nr = relative_addr / 8;
@@ -108,6 +113,7 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	switch (relative_addr) {
 case 0:
+case 0x20:
 	case 3:
 		if (writeflag==MEM_READ) {
 			odata = ZSRR0_TX_READY;

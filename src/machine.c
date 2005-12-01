@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.623 2005-11-30 16:23:06 debug Exp $
+ *  $Id: machine.c,v 1.624 2005-12-01 23:42:15 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1529,9 +1529,11 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 
 
 /*
- *  Grand Central (MacPPC) interrupt handler.
+ *  Grand Central interrupt handler.
+ *
+ *  (Used by MacPPC.)
  */
-void macppc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
+void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 	int assrt)
 {
 	uint32_t mask = 1 << (irq_nr & 31);
@@ -4367,7 +4369,7 @@ Not yet.
 			machine->emulated_hz = 40000000;
 
 		machine->md_int.gc_data = dev_gc_init(machine, mem, 0xf3000000, 64);
-		machine->md_interrupt = macppc_interrupt;
+		machine->md_interrupt = gc_interrupt;
 
 		pci_data = dev_uninorth_init(machine, mem, 0xe2000000,
 		    64 /*  isa irq base */, 0 /*  pci irq: TODO */);
@@ -4382,12 +4384,11 @@ Not yet.
 		    mem, 0xf3013000ULL, 23, 1, "zs");
 
 		fb = dev_fb_init(machine, mem, 0xf1000000,
-		    VFB_GENERIC | VFB_REVERSE_START,
-		    1024,768, 1024,768, 8, "ofb");
+		    VFB_GENERIC | VFB_REVERSE_START, 1024,768, 1024,768, 8, "ofb");
 
 		device_add(machine, "hammerhead addr=0xf2800000");
 
-		device_add(machine, "adb addr=0xf3016000 irq=18");
+		device_add(machine, "adb addr=0xf3016000 irq=1");
 
 		if (machine->prom_emulation) {
 			uint64_t b = 8 * 1048576, a = b - 0x800;
@@ -4395,8 +4396,8 @@ Not yet.
 
 			of_emul_init(machine, fb, 0xf1000000, 1024, 768);
 			of_emul_init_uninorth(machine);
-			of_emul_init_zs(machine);
-			/*  of_emul_init_adb(machine);  */
+			/*  of_emul_init_zs(machine);  */
+			of_emul_init_adb(machine);
 
 			/*
 			 *  r3 = pointer to boot_args (for the Mach kernel).

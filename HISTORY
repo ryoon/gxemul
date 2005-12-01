@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1069 2005-12-01 11:20:46 debug Exp $
+$Id: HISTORY,v 1.1070 2005-12-01 23:42:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2490,3 +2490,4 @@ Changelog for GXemul:
 		Generalizing quick_pc_to_pointers.
 20051201	Documentation update (David Muse has made available a kernel
 		which simplifies Debian/DECstation installation).
+		Continuing on the ADB bus controller.

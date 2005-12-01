@@ -25,14 +25,21 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.3 2005-11-29 09:32:58 debug Exp $
+ *  $Id: dev_adb.c,v 1.4 2005-12-01 23:42:17 debug Exp $
  *
- *  ADB (Apple peripherals) controller.
+ *  ADB (Apple Desktop Bus) controller.
+ *
+ *  Based on intuition from reverse-engineering NetBSD/macppc source code,
+ *  so it probably only works with that OS.
+ *
+ *  The comment "OK" means that 100% of the functionality used by NetBSD/macppc
+ *  is covered.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "console.h"
 #include "cpu.h"
@@ -45,20 +52,47 @@
 
 
 #define debug fatal
+/*  #define ADB_DEBUG  */
+
 
 #define	TICK_SHIFT		17
 #define	DEV_ADB_LENGTH		0x2000
 
-#define	N_ADB_REGS		0x20
-#define	MAX_CMD			50
+#define	N_VIA_REGS		0x10
+#define	VIA_REG_SHIFT		9
+
+#define	MAX_BUF			100
+
+
+static char *via_regname[N_VIA_REGS] = {
+	"vBufB", "vBufA", "vDirB", "vDirA",
+	"vT1C",  "vT1CH", "vT1L",  "vT1LH",
+	"vT2C",  "vT2CH", "vSR",   "vACR",
+	"vPCR",  "vIFR",  "vIER",  "(unknown)" };
 
 struct adb_data {
-	int		irqnr;
-	uint8_t		reg[N_ADB_REGS];
+	int		irq_nr;
+	int		int_asserted;
 
-	int		cur_cmd_offset;
-	uint8_t		cmd_buf[MAX_CMD];
+	long long	transfer_nr;
+
+	uint8_t		reg[N_VIA_REGS];
+
+	int		cur_output_offset;
+	uint8_t		output_buf[MAX_BUF];
+
+	int		cur_input_offset;
+	int		cur_input_length;
+	uint8_t		input_buf[MAX_BUF];
+
+	int		dir;
+	int		int_enable;
+	int		ack;		/*  last ack state  */
+	int		tip;		/*  transfer in progress  */
 };
+
+#define	DIR_INPUT		0
+#define	DIR_OUTPUT		1
 
 #define	BUFB_nINTR		0x08
 #define	BUFB_ACK		0x10
@@ -74,9 +108,174 @@ struct adb_data {
  */
 void dev_adb_tick(struct cpu *cpu, void *extra)
 {
-	/*  struct adb_data *d = extra;  */
+	struct adb_data *d = extra;
+	int a;
 
-	/*  TODO  */
+	a = d->reg[vIFR >> VIA_REG_SHIFT] & IFR_ANY;
+	if (a == IFR_ANY && d->int_enable)
+		a = 1;
+
+	if (a)
+		cpu_interrupt(cpu, d->irq_nr);
+	else if (d->int_asserted)
+		cpu_interrupt_ack(cpu, d->irq_nr);
+
+	d->int_asserted = a;
+}
+
+
+/*
+ *  adb_reset():
+ *
+ *  Reset registers to default values.
+ */
+static void adb_reset(struct adb_data *d)
+{
+	memset(d->reg, 0, sizeof(d->reg));
+	d->reg[vBufB >> VIA_REG_SHIFT] = BUFB_nINTR | BUFB_nTIP;
+
+	d->cur_output_offset = 0;
+	memset(d->output_buf, 0, sizeof(d->output_buf));
+
+	d->dir = 0;
+	d->int_enable = 0;
+	d->ack = 0;
+	d->tip = 0;
+}
+
+
+/*
+ *  adb_process_cmd():
+ *
+ *  This function should be called whenever a complete ADB command has been
+ *  received.
+ */
+static void adb_process_cmd(struct cpu *cpu, struct adb_data *d)
+{
+	int i, reg, dev;
+
+	debug("[ adb: COMMAND:");
+	for (i=0; i<d->cur_output_offset; i++)
+		debug(" %02x", d->output_buf[i]);
+	debug(" ]\n");
+
+	if (d->cur_output_offset < 2) {
+		fatal("[ adb: WEIRD output length: %i ]\n",
+		    d->cur_output_offset);
+		exit(1);
+	}
+
+	switch (d->output_buf[0]) {
+	case 0:	/*  ADB commands:  */
+		if (d->output_buf[1] == 0x00) {
+			/*  Reset.  */
+			return;
+		}
+		if ((d->output_buf[1] & 0x0c) != 0x0c) {
+			fatal("[ adb: Not an ADBTALK command? ]\n");
+			exit(1);
+		}
+		reg = d->output_buf[1] & 3;
+		dev = d->output_buf[1] >> 4;
+		fatal("dev=%i reg=%i\n", dev, reg);
+		d->input_buf[0] = 0x00;
+		d->input_buf[1] = 0x00;
+		d->input_buf[2] = d->output_buf[1];
+		d->cur_input_length = 3;
+		break;
+
+	case 1:	/*  PRAM/RTC:  */
+		if (d->cur_output_offset == 3 &&
+		    d->output_buf[1] == 0x01 &&
+		    d->output_buf[2] == 0x01) {
+			/*  Autopoll:  */
+			d->input_buf[0] = 0x00;
+			d->input_buf[1] = 0x00;
+			d->input_buf[2] = d->output_buf[1];
+			d->cur_input_length = 3;
+		} else if (d->cur_output_offset == 2 &&
+		    d->output_buf[1] == 0x03) {
+			/*  Read RTC date/time:  */
+			struct timeval tv;
+			gettimeofday(&tv, NULL);
+			d->input_buf[0] = tv.tv_sec >> 24;
+			d->input_buf[1] = tv.tv_sec >> 16;
+			d->input_buf[2] = tv.tv_sec >>  8;
+			d->input_buf[3] = tv.tv_sec;
+			d->cur_input_length = 4;
+		} else if (d->cur_output_offset == 2 &&
+		    d->output_buf[1] == 0x11) {
+			/*  Reboot.  */
+			fatal("[ adb: reboot. TODO: make this nicer ]\n");
+			exit(1);
+		} else {
+			fatal("[ adb: UNIMPLEMENTED PRAM/RTC command ]\n");
+			exit(1);
+		}
+		break;
+
+	default:fatal("[ adb: UNKNOWN command type 0x%02x ]\n",
+		    d->output_buf[0]);
+		exit(1);
+	}
+
+	d->reg[vBufB >> VIA_REG_SHIFT] &= ~BUFB_nINTR;
+	d->reg[vIFR >> VIA_REG_SHIFT] |= IFR_ANY | IFR_SR;
+	d->reg[vSR >> VIA_REG_SHIFT] = 0x00;	/*  Dummy.  */
+}
+
+
+/*
+ *  adb_transfer():
+ *
+ *  This function should be called whenever a new transfer is started, a
+ *  transfer is finished, or when the next byte in a transfer should be
+ *  sent/received.
+ */
+static void adb_transfer(struct cpu *cpu, struct adb_data *d, int state_change)
+{
+	unsigned char c = 0x00;
+
+	if (state_change) {
+		if (d->tip == 0) {
+			debug("[ adb: transfer #%lli done ]\n",
+			    (long long)d->transfer_nr);
+			if (d->cur_output_offset > 0)
+				adb_process_cmd(cpu, d);
+			d->transfer_nr ++;
+			return;
+		}
+		debug("[ adb: starting transfer #%lli: %s ]\n", (long long)
+		    d->transfer_nr, d->dir == DIR_INPUT? "INPUT" : "OUTPUT");
+		d->cur_input_offset = d->cur_output_offset = 0;
+	}
+
+	debug("[ adb: transfer #%lli: ", (long long)d->transfer_nr);
+
+	switch (d->dir) {
+
+	case DIR_INPUT:
+		if (d->cur_input_offset >= d->cur_input_length)
+			fatal("[ adb: INPUT beyond end of data? ]\n");
+		else
+			c = d->input_buf[d->cur_input_offset ++];
+		debug("input 0x%02x", c);
+		d->reg[vSR >> VIA_REG_SHIFT] = c;
+		d->reg[vIFR >> VIA_REG_SHIFT] |= IFR_ANY | IFR_SR;
+		if (d->cur_input_offset >= d->cur_input_length)
+			d->reg[vBufB >> VIA_REG_SHIFT] |= BUFB_nINTR;
+		break;
+
+	case DIR_OUTPUT:
+		c = d->reg[vSR >> VIA_REG_SHIFT];
+		debug("output 0x%02x", c);
+		d->reg[vIFR >> VIA_REG_SHIFT] |= IFR_ANY | IFR_SR;
+		d->reg[vBufB >> VIA_REG_SHIFT] |= BUFB_nINTR;
+		d->output_buf[d->cur_output_offset ++] = c;
+		break;
+	}
+
+	debug(" ]\n");
 }
 
 
@@ -94,104 +293,112 @@ int dev_adb_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+#ifdef ADB_DEBUG
+	if ((relative_addr & ((1 << VIA_REG_SHIFT) - 1)) != 0)
+		fatal("[ adb: %s non-via register? offset 0x%x ]\n",
+		    writeflag == MEM_READ? "read from" : "write to",
+		    (int)relative_addr);
+	else if (writeflag == MEM_READ)
+		fatal("[ adb: read from %s: 0x%02x ]\n",
+		    via_regname[relative_addr >> VIA_REG_SHIFT],
+		    (int)d->reg[relative_addr >> VIA_REG_SHIFT]);
+	else
+		fatal("[ adb: write to %s: 0x%02x ]\n", via_regname[
+		    relative_addr >> VIA_REG_SHIFT], (int)idata);
+#endif
+
 	if (writeflag == MEM_READ)
-		odata = d->reg[relative_addr >> 8];
+		odata = d->reg[relative_addr >> VIA_REG_SHIFT];
 	else {
-		old = d->reg[relative_addr >> 8];
+		old = d->reg[relative_addr >> VIA_REG_SHIFT];
 		switch (relative_addr) {
 		case vIFR:
-			/*  Write 1s to clear:  */
-			d->reg[relative_addr >> 8] &= ~idata;
+			/*
+			 *  vIFR is write-ones-to-clear, and the highest bit
+			 *  (IFR_ANY) is set if any of the lower bits are set.
+			 */
+			d->reg[relative_addr >> VIA_REG_SHIFT] &= ~(idata|0x80);
+			if (d->reg[relative_addr >> VIA_REG_SHIFT] & 0x7f)
+				d->reg[relative_addr >> VIA_REG_SHIFT] |= 0x80;
 			break;
 		default:
-			d->reg[relative_addr >> 8] = idata;
+			d->reg[relative_addr >> VIA_REG_SHIFT] = idata;
 		}
 	}
 
-
-
-/*  TODO  */
-
-odata = random();
-
-
 	switch (relative_addr) {
 
-	case vBufB:	/*  Register B  */
+	case vBufB:
+		/*  OK  */
 		if (writeflag == MEM_WRITE) {
-			if (!(idata & BUFB_nTIP) &&
-			    old & BUFB_nTIP) {
-				/*  Begin transfer.  */
-				d->reg[vIFR >> 8] |= IFR_ANY;
-				d->reg[vIFR >> 8] |= IFR_SR;
-				d->reg[vBufB >> 8] |= BUFB_nINTR;
-				if (d->reg[vACR] & ACR_SR_OUT) {
-					fatal("[ adb: BEGIN TX 0x%02x ]\n",
-					    d->reg[vSR >> 8]);
-					d->cur_cmd_offset = 0;
-					d->cmd_buf[d->cur_cmd_offset++] =
-					    d->reg[vSR >> 8];
-				} else {
-					fatal("[ adb: BEGIN RX ]\n");
-				}
-			} else if (!(idata & BUFB_nTIP) &&
-			    (idata & BUFB_ACK) !=
-			    (old & BUFB_ACK)) {
-				/*  Ack.  */
-
-				if (d->reg[vACR] & ACR_SR_OUT) {
-					d->reg[vIFR >> 8] |= IFR_ANY;
-					d->reg[vIFR >> 8] |= IFR_SR;
-					d->reg[vBufB >> 8] |= BUFB_nINTR;
-					fatal("[ adb: TX 0x%02x ]\n",
-					    d->reg[vSR >> 8]);
-					d->cmd_buf[d->cur_cmd_offset++] =
-					    d->reg[vSR >> 8];
-					if (d->cmd_buf[0] == 0x00 &&
-					    d->cur_cmd_offset == 2) {
-						/*  Command done.  */
-						d->reg[vBufB >> 8] |= BUFB_nINTR;
-						d->reg[vSR >> 8] = 0;
-					}
-				} else {
-					d->reg[vIFR >> 8] |= IFR_ANY;
-					d->reg[vIFR >> 8] |= IFR_SR;
-					d->reg[vBufB >> 8] |= BUFB_nINTR;
-					d->reg[vSR >> 8] = 0;
-					fatal("[ adb: RX 0x%02x ]\n",
-					    d->reg[vSR >> 8]);
-				}
+			int old_tip = d->tip;
+			int old_ack = d->ack;
+			if (idata & BUFB_nINTR)
+				idata &= ~BUFB_nINTR;
+			d->ack = 0;
+			if (idata & BUFB_ACK) {
+				idata &= ~BUFB_ACK;
+				d->ack = 1;
 			}
+			d->tip = 1;
+			if (idata & BUFB_nTIP) {
+				idata &= ~BUFB_nTIP;
+				d->tip = 0;
+			}
+			if (idata != 0)
+				fatal("[ adb: WARNING! UNIMPLEMENTED bits in"
+				    " vBufB: 0x%02x ]\n", (int)idata);
+			if (old_tip != d->tip)
+				adb_transfer(cpu, d, 1);
+			else if (old_ack != d->ack)
+				adb_transfer(cpu, d, 0);
 		}
 		break;
 
-	case vDirB:	/*  Data direction  */
+	case vDirB:
 		break;
 
-	case vSR:	/*  Shift register  */
+	case vSR:
+		/*  Clear the SR interrupt flag, if set:  */
+		d->reg[vIFR >> VIA_REG_SHIFT] &= ~IFR_SR;
+		break;
+
+	case vACR:
+		/*  OK  */
 		if (writeflag == MEM_WRITE) {
-			fatal("[ adb: SR = 0x%02x ]\n", (int)idata);
-		} else {
-			d->reg[vIFR >> 8] &= ~IFR_SR;
+			if (idata & ACR_SR_OUT)
+				d->dir = DIR_OUTPUT;
+			else
+				d->dir = DIR_INPUT;
 		}
 		break;
 
-	case vACR:	/*  Aux control register  */
+	case vIFR:
+		/*  OK  */
 		break;
 
-	case vIFR:	/*  Interrupt flag  */
+	case vIER:
+		/*  OK  */
+		if (writeflag == MEM_WRITE) {
+			d->int_enable = idata & 0x80? 1 : 0;
+			if (idata != 0x04 && idata != 0x84)
+				fatal("[ adb: WARNING! vIER value 0x%x is"
+				    " UNKNOWN ]\n", (int)idata);
+		}
 		break;
 
-	case vIER:	/*  Interrupt enable  */
-		break;
-
-	default:if (writeflag == MEM_READ)
-			fatal("[ adb: READ from UNIMPLEMENTED 0x%x ]\n",
+	default:if ((relative_addr & ((1 << VIA_REG_SHIFT) - 1)) != 0)
+			fatal("[ adb: %s non-via register? offset 0x%x ]\n",
+			    writeflag == MEM_READ? "read from" : "write to",
 			    (int)relative_addr);
+		else if (writeflag == MEM_READ)
+			fatal("[ adb: READ from UNIMPLEMENTED %s ]\n",
+			    via_regname[relative_addr >> VIA_REG_SHIFT]);
 		else
-			fatal("[ adb: WRITE to UNIMPLEMENTED 0x%x: 0x%x ]\n",
-			    (int)relative_addr, (int)idata);
-exit(1);
+			fatal("[ adb: WRITE to UNIMPLEMENTED %s: 0x%x ]\n",
+			    via_regname[relative_addr >> VIA_REG_SHIFT],
+			    (int)idata);
+		exit(1);
 	}
 
 	if (writeflag == MEM_READ)
@@ -213,7 +420,9 @@ int devinit_adb(struct devinit *devinit)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct adb_data));
-	d->irqnr = devinit->irq_nr;
+	d->irq_nr = devinit->irq_nr;
+
+	adb_reset(d);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_ADB_LENGTH, dev_adb_access, d, DM_DEFAULT, NULL);

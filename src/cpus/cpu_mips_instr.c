@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.3 2005-12-01 11:20:56 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.4 2005-12-01 23:42:16 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -370,12 +370,16 @@ X(b_samepage_addiu)
 
 X(end_of_page)
 {
+	struct mips_instr_call self;
+
 	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (MIPS_IC_ENTRIES_PER_PAGE << MIPS_INSTR_ALIGNMENT_SHIFT);
 
+	/*  Simple jump to the next page (if we are lucky):  */
 	if (cpu->cd.mips.delay_slot == NOT_DELAYED) {
+
 		/*  Find the new physpage and update translation pointers:  */
 		quick_pc_to_pointers(cpu);
 
@@ -385,22 +389,32 @@ X(end_of_page)
 		return;
 	}
 
-	fatal("DELAY SLOT cross page boundary: A pc=0x%llx\n",
-	    (long long)cpu->pc);
+	/*  Tricky situation; the delay slot is on the next virtual page:  */
+	/*  fatal("[ end_of_page: delay slot across page boundary! ]\n");  */
 
-#error Hm. No. This needs more thought.
+	/*  to_be_translated will overwrite the current ic.  */
+	self = *ic;
 
-	/*  Move another TWO steps beyond the end of page.  */
-	instr(to_be_translated)(cpu, ic + 2);
-	cpu->cd.mips.delay_slot = NOT_DELAYED;
+	instr(to_be_translated)(cpu, ic);
 
-	fatal("DELAY SLOT cross page boundary: B pc=0x%llx\n",
-	    (long long)cpu->pc);
+	/*  The instruction in the delay slot has now executed.  */
+
+	/*  Find the physpage etc of the instruction in the delay slot
+	    (or, if there was an exception, the exception handler):  */
+	quick_pc_to_pointers(cpu);
+
+	/*  Restore the end_of_page instr call.  */
+	*ic = self;
+
+	/*  fatal("[ end_of_page: back from delay slot ]\n");  */
 }
 
 
 X(end_of_page2)
 {
+fatal("this should be removed: end of page2\n");
+exit(1);
+
 	/*  Update the PC:  (offset 4, but on the next page)  */
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -464,6 +478,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int main_opcode, rt, rs, rd, sa, s6, x64 = 0;
 	int in_crosspage_delayslot = 0;
+	int delay_slot_danger = 1;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -472,17 +487,8 @@ X(to_be_translated)
 
 	/*  Special case for branch with delayslot on the next page:  */
 	if (low_pc >= MIPS_IC_ENTRIES_PER_PAGE) {
-		switch (low_pc - MIPS_IC_ENTRIES_PER_PAGE) {
-		case 0:	fatal("HUH 0? SHOULD NOT HAPPEN!\n");
-			exit(1);
-		case 1:	fatal("HUH 1? SHOULD NOT HAPPEN!\n");
-			exit(1);
-		case 2:	break;
-		default:fatal("HUH !2? SHOULD NOT HAPPEN!\n");
-			exit(1);
-		}
-		fatal("TRANSLATING tmp delay-slot instruction\n");
-		low_pc -= 2;
+		/*  fatal("[ TEMPORARY delay-slot translation ]\n");  */
+		low_pc = 0;
 		in_crosspage_delayslot = 1;
 	}
 
@@ -514,6 +520,12 @@ X(to_be_translated)
 		iword = LE32_TO_HOST(iword);
 	else
 		iword = BE32_TO_HOST(iword);
+
+	/*  Is the instruction in the delay slot known to be safe?  */
+	if ((addr & 0xffc) < 0xffc) {
+		/*  TODO: check the instruction  */
+		/*  delay_slot_danger = 0;  */
+	}
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -646,6 +658,10 @@ X(to_be_translated)
 					ic->f = instr(jalr);
 				break;
 			}
+			if (in_crosspage_delayslot) {
+				fatal("[ WARNING: branch in delay slot? ]\n");
+				ic->f = instr(nop);
+			}
 			break;
 
 		case SPECIAL_SYNC:
@@ -679,12 +695,16 @@ X(to_be_translated)
 		    + (addr & 0xffc) + 4;
 		/*  Is the offset from the start of the current page still
 		    within the same page? Then use the samepage_function:  */
-		if ((uint32_t)ic->arg[2] < (MIPS_IC_ENTRIES_PER_PAGE
-		    << MIPS_INSTR_ALIGNMENT_SHIFT)) {
+		if ((uint32_t)ic->arg[2] < ((MIPS_IC_ENTRIES_PER_PAGE - 1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT) && (addr & 0xffc) < 0xffc) {
 			ic->arg[2] = (size_t) (cpu->cd.mips.cur_ic_page +
 			    ((ic->arg[2] >> MIPS_INSTR_ALIGNMENT_SHIFT)
 			    & (MIPS_IC_ENTRIES_PER_PAGE - 1)));
 			ic->f = samepage_function;
+		}
+		if (in_crosspage_delayslot) {
+			fatal("[ WARNING: branch in delay slot? ]\n");
+			ic->f = instr(nop);
 		}
 		break;
 
@@ -730,6 +750,8 @@ X(to_be_translated)
 	if (x64)
 		ic->f = instr(invalid_32_64);
 
+	if (in_crosspage_delayslot)
+		cpu->cd.mips.combination_check = NULL;
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
 #include "cpu_dyntrans.c" 

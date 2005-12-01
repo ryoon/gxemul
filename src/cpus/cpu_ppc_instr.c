@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.50 2005-11-30 16:23:08 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.51 2005-12-01 23:42:16 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -45,6 +45,20 @@
 	update_cr0(cpu, reg(ic->arg[1])); }
 #define DOT2(n) X(n ## _dot) { instr(n)(cpu,ic); \
 	update_cr0(cpu, reg(ic->arg[2])); }
+
+#ifndef CHECK_FOR_FPU_EXCEPTION
+#define CHECK_FOR_FPU_EXCEPTION { if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) { \
+		/*  Synchronize the PC, and cause an FPU exception:  */  \
+		uint64_t low_pc = ((size_t)ic -				 \
+		    (size_t)cpu->cd.ppc.cur_ic_page)			 \
+		    / sizeof(struct ppc_instr_call);			 \
+		cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<	 \
+		    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc <<		 \
+		    PPC_INSTR_ALIGNMENT_SHIFT);				 \
+		ppc_exception(cpu, PPC_EXCEPTION_FPU);			 \
+		return; } }
+#endif
+
 
 
 /*
@@ -843,16 +857,7 @@ X(dcbz)
  */
 X(mtfsf)
 {
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
-
+	CHECK_FOR_FPU_EXCEPTION;
 	cpu->cd.ppc.fpscr &= ~ic->arg[1];
 	cpu->cd.ppc.fpscr |= (ic->arg[1] & (*(uint64_t *)ic->arg[0]));
 }
@@ -865,16 +870,7 @@ X(mtfsf)
  */
 X(mffs)
 {
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
-
+	CHECK_FOR_FPU_EXCEPTION;
 	(*(uint64_t *)ic->arg[0]) = cpu->cd.ppc.fpscr;
 }
 
@@ -892,17 +888,7 @@ X(fmr)
 	 *  a) it can cause an FPU exception, and b) the move is always
 	 *  64-bit, even when running in 32-bit mode.
 	 */
-
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
-
+	CHECK_FOR_FPU_EXCEPTION;
 	*(uint64_t *)ic->arg[1] = *(uint64_t *)ic->arg[0];
 }
 
@@ -916,17 +902,7 @@ X(fmr)
 X(fneg)
 {
 	uint64_t v;
-
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
-
+	CHECK_FOR_FPU_EXCEPTION;
 	v = *(uint64_t *)ic->arg[0];
 	*(uint64_t *)ic->arg[1] = v ^ 0x8000000000000000ULL;
 }
@@ -944,15 +920,7 @@ X(fcmpu)
 	struct ieee_float_value fra, frb;
 	int bf_shift = ic->arg[0], c = 0;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[2], &frb, IEEE_FMT_D);
@@ -986,15 +954,7 @@ X(frsp)
 	float fl = 0.0;
 	int c = 0;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &frb, IEEE_FMT_D);
 	if (frb.nan) {
@@ -1027,15 +987,7 @@ X(fctiwz)
 	struct ieee_float_value frb;
 	int32_t res = 0;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &frb, IEEE_FMT_D);
 	if (!frb.nan) {
@@ -1064,15 +1016,7 @@ X(fmul)
 	double result = 0.0;
 	int c, nan = 0;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[2], &frc, IEEE_FMT_D);
@@ -1121,15 +1065,7 @@ X(fmadd)
 	double result = 0.0;
 	int nan = 0, cc;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[b], &frb, IEEE_FMT_D);
@@ -1174,15 +1110,7 @@ X(fmsub)
 	double result = 0.0;
 	int nan = 0, cc;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(cpu->cd.ppc.fpr[b], &frb, IEEE_FMT_D);
@@ -1224,15 +1152,7 @@ X(fadd)
 	double result = 0.0;
 	int nan = 0, c;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
@@ -1269,15 +1189,7 @@ X(fsub)
 	double result = 0.0;
 	int nan = 0, c;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
@@ -1314,15 +1226,7 @@ X(fdiv)
 	double result = 0.0;
 	int nan = 0, c;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[0], &fra, IEEE_FMT_D);
 	ieee_interpret_float_value(*(uint64_t *)ic->arg[1], &frb, IEEE_FMT_D);
@@ -2292,7 +2196,7 @@ X(xori) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[1]; }
  */
 X(lfs)
 {
-	/*  Sync. PC in case of an exception:  */
+	/*  Sync. PC in case of an exception, and remember it:  */
 	uint64_t old_pc, low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
 	old_pc = cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
@@ -2322,7 +2226,7 @@ X(lfs)
 }
 X(lfsx)
 {
-	/*  Sync. PC in case of an exception:  */
+	/*  Sync. PC in case of an exception, and remember it:  */
 	uint64_t old_pc, low_pc = ((size_t)ic - (size_t)
 	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
 	old_pc = cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
@@ -2352,15 +2256,7 @@ X(lfsx)
 }
 X(lfd)
 {
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	/*  Perform a 64-bit load:  */
 #ifdef MODE32
@@ -2372,15 +2268,8 @@ X(lfd)
 }
 X(lfdx)
 {
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
+
 	/*  Perform a 64-bit load:  */
 #ifdef MODE32
 	ppc32_loadstore_indexed
@@ -2395,15 +2284,7 @@ X(stfs)
 	struct ieee_float_value val;
 	uint64_t tmp_val;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*old_arg0, &val, IEEE_FMT_D);
 	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S, val.nan);
@@ -2426,15 +2307,7 @@ X(stfsx)
 	struct ieee_float_value val;
 	uint64_t tmp_val;
 
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
 
 	ieee_interpret_float_value(*old_arg0, &val, IEEE_FMT_D);
 	tmp_val = ieee_store_float_value(val.f, IEEE_FMT_S, val.nan);
@@ -2453,15 +2326,8 @@ X(stfsx)
 }
 X(stfd)
 {
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
+
 	/*  Perform a 64-bit store:  */
 #ifdef MODE32
 	ppc32_loadstore
@@ -2472,15 +2338,8 @@ X(stfd)
 }
 X(stfdx)
 {
-	/*  Sync. PC in case of an exception:  */
-	uint64_t low_pc = ((size_t)ic - (size_t)
-	    cpu->cd.ppc.cur_ic_page) / sizeof(struct ppc_instr_call);
-	cpu->pc = (cpu->pc & ~((PPC_IC_ENTRIES_PER_PAGE-1) <<
-	    PPC_INSTR_ALIGNMENT_SHIFT)) + (low_pc << PPC_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.ppc.msr & PPC_MSR_FP)) {
-		ppc_exception(cpu, PPC_EXCEPTION_FPU);
-		return;
-	}
+	CHECK_FOR_FPU_EXCEPTION;
+
 	/*  Perform a 64-bit store:  */
 #ifdef MODE32
 	ppc32_loadstore_indexed

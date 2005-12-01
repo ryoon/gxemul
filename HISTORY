@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1068 2005-11-30 16:23:05 debug Exp $
+$Id: HISTORY,v 1.1069 2005-12-01 11:20:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2488,3 +2488,5 @@ Changelog for GXemul:
 		Slowly beginning the conversion of the old MIPS emulation into
 		dyntrans (but this will take quite some time to get right).
 		Generalizing quick_pc_to_pointers.
+20051201	Documentation update (David Muse has made available a kernel
+		which simplifies Debian/DECstation installation).

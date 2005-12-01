@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.111 2005-12-01 11:20:47 debug Exp $
+$Id: guestoses.html,v 1.112 2005-12-01 11:41:54 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -70,6 +70,7 @@ you might find the following information interesting:
 <ul>
   <li><a href="#mach">Mach/PMAX</a>
   <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
+  <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder</a>
 </ul>
 
@@ -1333,15 +1334,15 @@ install ramdisk kernels for this purpose, they have problems:
 <ul>
   <li>Serial console output doesn't work too well in GXemul. There are
 	random oopses, which may be due to bugs in GXemul, but may
-	also be due to badly written serial controller code in Linux.
+	also be due to bugs in the serial controller code in Linux.
 	(The speed at which serial interrupts are generated can be
 	lowered with the <tt>-U</tt> command line option, but it only
 	reduces the risk, it doesn't take away the oopses completely.)
   <li>Old install kernels supported the graphical framebuffer on the
 	3max, but not the keyboard.
-  <li>For quite some time (perhaps not any longer, though, the MIPS
-	linux cvs tree had support for the keyboard, but it did
-	<i>not</i> include Debian's patches for networking.
+  <li>For quite some time, the MIPS linux cvs tree had support for the
+	keyboard, but it did <i>not</i> include Debian's patches for
+	networking. (Perhaps this has been fixed now, I don't know.)
 </ul>
 
 <p>David Muse has now made available a precompiled install kernel which
@@ -1570,8 +1571,8 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
 	will then see as /dev/sda1.
 	<p>On a Linux host, you could use a loopback mount, or similar. Otherwise,
 	I recommend you run fdisk and mke2fs and untar the archive from within
-	Debian/DECstation or Debian/CATS running inside the emulator.
-	Use your imagination.
+	Debian/DECstation or <a href="#debiancats">Debian/CATS</a> running
+	inside the emulator. Use your imagination.
 	<p>
 	In order to actually boot the system you need to modify /etc/fstab.
 	Change<pre>
@@ -1854,6 +1855,53 @@ normally, but at least a few basic things will work.
 By the way, the emulator performs so poorly, that you will have time to 
 fetch several cups of coffee for each of the steps above.</font>
 
+
+
+
+
+
+
+
+<p><br>
+<a name="debiancats"></a>
+<h3>Debian GNU/Linux for CATS:</h3>
+
+Debian GNU/Linux for CATS (ARM) could <i>theoretically</i> run in GXemul,
+however:
+
+<ul>
+  <li>The DEC 21143 NIC is not emulated well enough for Linux to accept it.
+  <li>Development of Debian for CATS seems to have died? The latest
+	install kernel is quite old.
+</ul>
+
+<p><font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
+
+<p>The following installation instructions would theoretically work:
+
+<p>
+<ol>
+  <li>Create an empty harddisk image, which will be the root disk
+	that Debian installs itself onto:<pre>
+	<b>dd if=/dev/zero of=debian_cats.img bs=1024 count=1 seek=3300000</b>
+
+</pre>
+  <li>Download the tftpboot install kernel:<pre>
+	<a href="http://ftp.debian.org/debian/dists/oldstable/main/disks-arm/current/cats/tftpboot.img">http://ftp.debian.org/debian/dists/oldstable/main/disks-arm/current/cats/tftpboot.img</a>
+
+</pre>
+  <li>Start the installation using the following command line:<pre>
+	<b>gxemul -XEcats -d debian_cats.img tftpboot.img</b>
+
+</pre>
+</ul>
+
+<p>It doesn't work, though, because the NIC isn't working well enough.
+
+<p>The only use of Debian/CATS in the emulator right now is as a way to
+manipulate Linux disk images, if you are on a non-Linux host. By choosing
+"Execute a shell" in the installer's menu, you can have access to tools such as
+fdisk and mke2fs, which are useful for creating Linux paritions on disk images.
 
 
 

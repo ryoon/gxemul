@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.9 2005-11-30 16:23:08 debug Exp $
+ *  $Id: cpu_mips.c,v 1.10 2005-12-01 11:20:56 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -100,6 +100,7 @@ static char *cop0_names[] = COP0_NAMES;
 
 #ifdef EXPERIMENTAL_NEWMIPS
 #define DYNTRANS_DUALMODE_32
+#define DYNTRANS_DELAYSLOT
 #include "tmp_mips_head.c"
 #endif
 

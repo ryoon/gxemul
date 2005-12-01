@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.22 2005-11-30 16:23:10 debug Exp $
+ *  $Id: cpu_mips.h,v 1.23 2005-12-01 11:20:57 debug Exp $
  */
 
 #include "misc.h"
@@ -157,9 +157,10 @@ struct mips_coproc {
 #define	MIPS_GPR_RA		31		/*  ra  */
 
 /*  Meaning of delay_slot:  */
-#define	NOT_DELAYED		0
-#define	DELAYED			1
-#define	TO_BE_DELAYED		2
+#define	NOT_DELAYED			0
+#define	DELAYED				1
+#define	TO_BE_DELAYED			2
+#define	EXCEPTION_IN_DELAY_SLOT		0x100
 
 #define	N_HI6			64
 #define	N_SPECIAL		64
@@ -221,7 +222,7 @@ struct mips_instr_call {
 
 /*  Translation cache struct for each physical page:  */
 struct mips_tc_physpage {
-	struct mips_instr_call ics[MIPS_IC_ENTRIES_PER_PAGE + 1];
+	struct mips_instr_call ics[MIPS_IC_ENTRIES_PER_PAGE + 3];
 	uint32_t	next_ofs;	/*  or 0 for end of chain  */
 	int		flags;
 	uint64_t	physaddr;

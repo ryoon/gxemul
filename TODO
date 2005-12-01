@@ -1,14 +1,10 @@
-$Id: TODO,v 1.179 2005-11-30 16:23:05 debug Exp $
+$Id: TODO,v 1.180 2005-12-01 11:20:55 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
-Old MIPS bintrans:
-	x)  call/return address cache?
-
-Old MIPS -> dyntrans:
-	x)  Turn the MIPS cpu family stuff into dyntrans slowly,
-	    NOT newmips but use the existing base.
+Old MIPS -> dyntrans
+	x)  Everything!
 
 MacPPC:
 	x)  adb controller; keyboard

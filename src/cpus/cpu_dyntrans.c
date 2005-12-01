@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.43 2005-11-30 16:23:08 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.44 2005-12-01 11:20:56 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -270,6 +270,13 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc += (DYNTRANS_IC_ENTRIES_PER_PAGE <<
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+	} else if (low_pc == DYNTRANS_IC_ENTRIES_PER_PAGE + 1) {
+		/*  Switch to next page and skip an instruction which was
+		    already executed (in a delay slot):  */
+		cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += ((DYNTRANS_IC_ENTRIES_PER_PAGE + 1) <<
+		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 	}
 
 #ifdef DYNTRANS_PPC
@@ -407,6 +414,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 
 
 #ifdef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
+
 /*  forward declaration of to_be_translated and end_of_page:  */
 static void instr(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
@@ -414,6 +422,14 @@ static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #endif
+
+#ifdef DYNTRANS_DELAYSLOT
+static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
+#ifdef DYNTRANS_DUALMODE_32
+static void instr32(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
+#endif
+#endif
+
 /*
  *  XXX_tc_allocate_default_page():
  *
@@ -440,11 +456,19 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 #endif
 		    instr(to_be_translated);
 
-	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE].f =
+	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].f =
 #ifdef DYNTRANS_DUALMODE_32
 	    cpu->is_32bit? instr32(end_of_page) :
 #endif
 	    instr(end_of_page);
+
+#ifdef DYNTRANS_DELAYSLOT
+	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 1].f =
+#ifdef DYNTRANS_DUALMODE_32
+	    cpu->is_32bit? instr32(end_of_page2) :
+#endif
+	    instr(end_of_page2);
+#endif
 
 	cpu->translation_cache_cur_ofs += sizeof(struct DYNTRANS_TC_PHYSPAGE);
 

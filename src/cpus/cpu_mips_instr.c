@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.2 2005-11-30 17:12:32 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.3 2005-12-01 11:20:56 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -66,18 +66,22 @@ X(invalid_32_64)
  */
 X(beq)
 {
+	MODE_uint_t old_pc = cpu->pc;
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs == rt;
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
-	cpu->cd.mips.delay_slot = NOT_DELAYED;
-	if (x) {
-		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
-		    MIPS_INSTR_ALIGNMENT_SHIFT);
-		cpu->pc += (int32_t)ic->arg[2];
-		quick_pc_to_pointers(cpu);
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
 	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
 }
 X(beq_samepage)
 {
@@ -86,24 +90,33 @@ X(beq_samepage)
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-	if (x)
-		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
 }
 X(bne)
 {
+	MODE_uint_t old_pc = cpu->pc;
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs != rt;
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
-	cpu->cd.mips.delay_slot = NOT_DELAYED;
-	if (x) {
-		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
-		    MIPS_INSTR_ALIGNMENT_SHIFT);
-		cpu->pc += (int32_t)ic->arg[2];
-		quick_pc_to_pointers(cpu);
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
 	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
 }
 X(bne_samepage)
 {
@@ -112,28 +125,116 @@ X(bne_samepage)
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-	if (x)
-		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
 }
 X(b)
 {
+	MODE_uint_t old_pc = cpu->pc;
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+		    MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc = old_pc + (int32_t)ic->arg[2];
+		quick_pc_to_pointers(cpu);
+	}
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
-	    MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (int32_t)ic->arg[2];
-	quick_pc_to_pointers(cpu);
 }
 X(b_samepage)
 {
 	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT))
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
-	cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+}
+
+
+/*
+ *  jr, jalr: Jump to a register [and link].
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to rd (for jalr)
+ *  arg[2] = (int32_t) relative offset of the next instruction
+ */
+X(jr)
+{
+	MODE_uint_t rs = reg(ic->arg[0]);
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = rs;
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+}
+X(jr_ra)
+{
+	MODE_uint_t rs = cpu->cd.mips.gpr[MIPS_GPR_RA];
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = rs;
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+}
+X(jr_ra_trace)
+{
+	MODE_uint_t rs = cpu->cd.mips.gpr[MIPS_GPR_RA];
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = rs;
+		cpu_functioncall_trace_return(cpu);
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+}
+X(jalr)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rd;
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	rd = cpu->pc & ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+	    MIPS_INSTR_ALIGNMENT_SHIFT);
+	rd += (int32_t)ic->arg[2];
+	reg(ic->arg[1]) = rd;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = rs;
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+}
+X(jalr_trace)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rd;
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	rd = cpu->pc & ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+	    MIPS_INSTR_ALIGNMENT_SHIFT);
+	rd += (int32_t)ic->arg[2];
+	reg(ic->arg[1]) = rd;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = rs;
+		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
 }
 
 
@@ -144,39 +245,70 @@ X(b_samepage)
  *  arg[1] = pointer to rt
  *  arg[2] = uint32_t immediate value
  */
-X(andi)
+X(andi) { reg(ic->arg[1]) = reg(ic->arg[0]) & (int32_t)ic->arg[2]; }
+X(ori)  { reg(ic->arg[1]) = reg(ic->arg[0]) | (int32_t)ic->arg[2]; }
+X(xori) { reg(ic->arg[1]) = reg(ic->arg[0]) ^ (int32_t)ic->arg[2]; }
+
+
+/*
+ *  2-register:
+ */
+X(mult)
 {
-	reg(ic->arg[1]) = reg(ic->arg[0]) & (int32_t)ic->arg[2];
+	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	int64_t res = (int64_t)a * (int64_t)b;
+	reg(&cpu->cd.mips.lo) = (int32_t)res;
+	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
 }
-X(ori)
+X(multu)
 {
-	reg(ic->arg[1]) = reg(ic->arg[0]) | (int32_t)ic->arg[2];
-}
-X(xori)
-{
-	reg(ic->arg[1]) = reg(ic->arg[0]) ^ (int32_t)ic->arg[2];
+	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	uint64_t res = (uint64_t)a * (uint64_t)b;
+	reg(&cpu->cd.mips.lo) = (int32_t)res;
+	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
 }
 
 
 /*
  *  3-register:
  */
-X(slt)
-{
+X(addu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) + reg(ic->arg[1])); }
+X(subu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) - reg(ic->arg[1])); }
+X(daddu){ reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
+X(dsubu){ reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
+X(slt) {
 #ifdef MODE32
 	reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) < (int32_t)reg(ic->arg[1]);
 #else
 	reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) < (int64_t)reg(ic->arg[1]);
 #endif
 }
-X(sltu)
-{
+X(sltu) {
 #ifdef MODE32
 	reg(ic->arg[2]) = (uint32_t)reg(ic->arg[0]) < (uint32_t)reg(ic->arg[1]);
 #else
 	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) < (uint64_t)reg(ic->arg[1]);
 #endif
 }
+X(or) { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
+X(xor) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
+X(nor) { reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
+X(sll) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << ic->arg[1]); }
+X(srl) { reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> ic->arg[1]); }
+X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
+
+
+/*
+ *  mfhi, mflo:  Move HI/LO into GPR rd.
+ *  mthi, mtlo:  Move GPR rs into HI/LO.
+ *
+ *  arg[0] = ptr to rs
+ *  arg[2] = ptr to rd
+ */
+X(mfhi) { reg(ic->arg[2]) = cpu->cd.mips.hi; }
+X(mflo) { reg(ic->arg[2]) = cpu->cd.mips.lo; }
+X(mthi) { cpu->cd.mips.hi = reg(ic->arg[0]); }
+X(mtlo) { cpu->cd.mips.lo = reg(ic->arg[0]); }
 
 
 /*
@@ -206,7 +338,7 @@ X(daddiu)
 
 
 /*
- *  set:  Set a register to an immediate value.
+ *  set:  Set a register to an immediate (signed) 32-bit value.
  *
  *  arg[0] = pointer to the register
  *  arg[1] = (int32_t) immediate value
@@ -243,17 +375,49 @@ X(end_of_page)
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (MIPS_IC_ENTRIES_PER_PAGE << MIPS_INSTR_ALIGNMENT_SHIFT);
 
-	if (cpu->cd.mips.delay_slot != NOT_DELAYED) {
-		fatal("DELAY SLOT cross page boundary: NOT implemented yet!"
-		    " pc=0x%llx\n", (long long)cpu->pc);
-		exit(1);
+	if (cpu->cd.mips.delay_slot == NOT_DELAYED) {
+		/*  Find the new physpage and update translation pointers:  */
+		quick_pc_to_pointers(cpu);
+
+		/*  end_of_page doesn't count as an executed instruction:  */
+		cpu->n_translated_instrs --;
+
+		return;
 	}
 
-	/*  Find the new physical page and update the translation pointers:  */
-	quick_pc_to_pointers(cpu);
+	fatal("DELAY SLOT cross page boundary: A pc=0x%llx\n",
+	    (long long)cpu->pc);
 
-	/*  end_of_page doesn't count as an executed instruction:  */
-	cpu->n_translated_instrs --;
+#error Hm. No. This needs more thought.
+
+	/*  Move another TWO steps beyond the end of page.  */
+	instr(to_be_translated)(cpu, ic + 2);
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+
+	fatal("DELAY SLOT cross page boundary: B pc=0x%llx\n",
+	    (long long)cpu->pc);
+}
+
+
+X(end_of_page2)
+{
+	/*  Update the PC:  (offset 4, but on the next page)  */
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+	    MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += ((MIPS_IC_ENTRIES_PER_PAGE+1) << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	if (cpu->cd.mips.delay_slot == NOT_DELAYED) {
+		/*  Find the new physpage and update translation pointers:  */
+		quick_pc_to_pointers(cpu);
+
+		/*  end_of_page doesn't count as an executed instruction:  */
+		cpu->n_translated_instrs --;
+
+		return;
+	}
+
+	fatal("DELAY SLOT in DELAY SLOT across a page boundary? HUH?\n");
+	exit(1);
 }
 
 
@@ -279,7 +443,6 @@ void COMBINE(b_addiu)(struct cpu *cpu, struct mips_instr_call *ic,
 
 	/*  TODO: other branches that are followed by addiu should be here  */
 }
-        
 
 
 /*****************************************************************************/
@@ -299,12 +462,30 @@ X(to_be_translated)
 	uint32_t iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, rs, rd, s6, x64 = 0;
+	int main_opcode, rt, rs, rd, sa, s6, x64 = 0;
+	int in_crosspage_delayslot = 0;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
 	    / sizeof(struct mips_instr_call);
+
+	/*  Special case for branch with delayslot on the next page:  */
+	if (low_pc >= MIPS_IC_ENTRIES_PER_PAGE) {
+		switch (low_pc - MIPS_IC_ENTRIES_PER_PAGE) {
+		case 0:	fatal("HUH 0? SHOULD NOT HAPPEN!\n");
+			exit(1);
+		case 1:	fatal("HUH 1? SHOULD NOT HAPPEN!\n");
+			exit(1);
+		case 2:	break;
+		default:fatal("HUH !2? SHOULD NOT HAPPEN!\n");
+			exit(1);
+		}
+		fatal("TRANSLATING tmp delay-slot instruction\n");
+		low_pc -= 2;
+		in_crosspage_delayslot = 1;
+	}
+
 	addr = cpu->pc & ~((MIPS_IC_ENTRIES_PER_PAGE-1)
 	    << MIPS_INSTR_ALIGNMENT_SHIFT);
 	addr += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -351,6 +532,7 @@ X(to_be_translated)
 	rs = (iword >> 21) & 31;
 	rt = (iword >> 16) & 31;
 	rd = (iword >> 11) & 31;
+	sa = (iword >>  6) & 31;
 	imm = (int16_t)iword;
 	s6 = iword & 63;
 
@@ -359,17 +541,111 @@ X(to_be_translated)
 	case HI6_SPECIAL:
 		switch (s6) {
 
+		case SPECIAL_SLL:
+		case SPECIAL_SRL:
+		case SPECIAL_SRA:
+			switch (s6) {
+			case SPECIAL_SLL:  ic->f = instr(sll); break;
+			case SPECIAL_SRL:  ic->f = instr(srl); break;
+			case SPECIAL_SRA:  ic->f = instr(sra); break;
+			}
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = sa;
+			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+			if (rd == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			break;
+
+		case SPECIAL_ADDU:
+		case SPECIAL_SUBU:
+		case SPECIAL_DADDU:
+		case SPECIAL_DSUBU:
 		case SPECIAL_SLT:
 		case SPECIAL_SLTU:
+		case SPECIAL_OR:
+		case SPECIAL_XOR:
+		case SPECIAL_NOR:
+		case SPECIAL_MFHI:
+		case SPECIAL_MFLO:
+		case SPECIAL_MTHI:
+		case SPECIAL_MTLO:
 			switch (s6) {
+			case SPECIAL_ADDU:  ic->f = instr(addu); break;
+			case SPECIAL_SUBU:  ic->f = instr(subu); break;
+			case SPECIAL_DADDU: ic->f = instr(daddu); x64=1; break;
+			case SPECIAL_DSUBU: ic->f = instr(dsubu); x64=1; break;
 			case SPECIAL_SLT:   ic->f = instr(slt); break;
 			case SPECIAL_SLTU:  ic->f = instr(sltu); break;
+			case SPECIAL_OR:    ic->f = instr(or); break;
+			case SPECIAL_XOR:   ic->f = instr(xor); break;
+			case SPECIAL_NOR:   ic->f = instr(nor); break;
+			case SPECIAL_MFHI:  ic->f = instr(mfhi); break;
+			case SPECIAL_MFLO:  ic->f = instr(mflo); break;
+			case SPECIAL_MTHI:  ic->f = instr(mthi); break;
+			case SPECIAL_MTLO:  ic->f = instr(mtlo); break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
 			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
-			if (rd == MIPS_GPR_ZERO)
-				ic->f = instr(nop);
+			switch (s6) {
+			case SPECIAL_MTHI:
+			case SPECIAL_MTLO:
+				/*  These instructions don't use rd.  */
+				break;
+			default:if (rd == MIPS_GPR_ZERO)
+					ic->f = instr(nop);
+			}
+			break;
+
+		case SPECIAL_MULT:
+		case SPECIAL_MULTU:
+			switch (s6) {
+			case SPECIAL_MULT : ic->f = instr(mult); break;
+			case SPECIAL_MULTU: ic->f = instr(multu); break;
+			}
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
+			/*  rd is ignored for most of these instructions,
+			    except for multiplication:  */
+			switch (s6) {
+			case SPECIAL_MULT:
+			case SPECIAL_MULTU:
+			case SPECIAL_DMULT:
+			case SPECIAL_DMULTU:
+				ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+				if (rd != MIPS_GPR_ZERO) {
+					fatal("TODO: mult with rd NON-zero\n");
+					goto bad;
+				}
+				break;
+			}
+			break;
+
+		case SPECIAL_JR:
+		case SPECIAL_JALR:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rd];
+			if (main_opcode == SPECIAL_JALR && rd == MIPS_GPR_ZERO)
+				main_opcode = SPECIAL_JR;
+			ic->arg[2] = (addr & 0xffc) + 4;
+			switch (main_opcode) {
+			case SPECIAL_JR:
+				if (rs == MIPS_GPR_RA) {
+					if (cpu->machine->show_trace_tree)
+						ic->f = instr(jr_ra_trace);
+					else
+						ic->f = instr(jr_ra);
+				} else {
+					ic->f = instr(jr);
+				}
+				break;
+			case SPECIAL_JALR:
+				if (cpu->machine->show_trace_tree)
+					ic->f = instr(jalr_trace);
+				else
+					ic->f = instr(jalr);
+				break;
+			}
 			break;
 
 		case SPECIAL_SYNC:

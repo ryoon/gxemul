@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.4 2005-12-01 23:42:17 debug Exp $
+ *  $Id: dev_adb.c,v 1.5 2005-12-01 23:45:24 debug Exp $
  *
  *  ADB (Apple Desktop Bus) controller.
  *
@@ -178,10 +178,14 @@ static void adb_process_cmd(struct cpu *cpu, struct adb_data *d)
 		reg = d->output_buf[1] & 3;
 		dev = d->output_buf[1] >> 4;
 		fatal("dev=%i reg=%i\n", dev, reg);
-		d->input_buf[0] = 0x00;
-		d->input_buf[1] = 0x00;
-		d->input_buf[2] = d->output_buf[1];
-		d->cur_input_length = 3;
+		switch (dev) {
+		case 2:	/*  Keyboard.  */
+			/*  TODO  */
+		default:d->input_buf[0] = 0x00;
+			d->input_buf[1] = 0x00;
+			d->input_buf[2] = d->output_buf[1];
+			d->cur_input_length = 3;
+		}
 		break;
 
 	case 1:	/*  PRAM/RTC:  */

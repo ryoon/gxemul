@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.12 2005-11-30 16:23:11 debug Exp $
+ *  $Id: of.c,v 1.13 2005-12-02 07:56:12 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -785,11 +785,12 @@ void of_emul_init_zs(struct machine *machine)
 	if (zs_interrupts == NULL || zs_reg == NULL)
 		goto bad;
 
-	of_add_device(ofd, "zstty0", "/bandit/gc/zs");
+	of_add_device(ofd, "zstty1", "/bandit/gc/zs");
+	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty1", "name", "ch-a");
 	of_store_32bit_in_host(zs_interrupts + 0, 16);
 	of_store_32bit_in_host(zs_interrupts + 4, 0);
 	of_store_32bit_in_host(zs_interrupts + 8, 0);
-	of_add_prop(ofd, "/bandit/gc/zs/zstty0", "interrupts", zs_interrupts,
+	of_add_prop(ofd, "/bandit/gc/zs/zstty1", "interrupts", zs_interrupts,
 	    3*sizeof(uint32_t), 0);
 	of_store_32bit_in_host(zs_reg + 0, 0x13800);
 	of_store_32bit_in_host(zs_reg + 4, 0x100);
@@ -797,7 +798,7 @@ void of_emul_init_zs(struct machine *machine)
 	of_store_32bit_in_host(zs_reg + 12, 0x100);
 	of_store_32bit_in_host(zs_reg + 16, 0x200);
 	of_store_32bit_in_host(zs_reg + 20, 0x100);
-	of_add_prop(ofd, "/bandit/gc/zs/zstty0",
+	of_add_prop(ofd, "/bandit/gc/zs/zstty1",
 	    "reg", zs_reg, 6*sizeof(uint32_t), 0);
 
 	/*  Port 0:  */
@@ -982,7 +983,7 @@ struct of_data *of_emul_init(struct machine *machine, struct vfb_data *vfb_data,
 		if (zs_assigned_addresses == NULL)
 			goto bad;
 		memset(zs_assigned_addresses, 0, 12);
-		of_add_prop_str(machine, ofd, "/io/stdin", "name", "ch-a");
+		of_add_prop_str(machine, ofd, "/io/stdin", "name", "ch-b");
 		of_add_prop_str(machine, ofd, "/io/stdin", "device_type",
 		    "serial");
 		of_add_prop_int32(ofd, "/io/stdin", "reg", 0xf3013000);

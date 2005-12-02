@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.26 2005-12-02 01:46:30 debug Exp $
+ *  $Id: dev_zs.c,v 1.27 2005-12-02 07:56:11 debug Exp $
  *  
  *  Zilog serial controller.
  *
@@ -151,17 +151,17 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 				    (int)odata);
 			/*  Ack interrupt status:  */
 			if (port_nr == 1 && d->reg_select[port_nr] == 3)
-				d->rr[port_nr][d->reg_select[port_nr]] = 0;
+				d->rr[1][3] = 0;
 			d->reg_select[port_nr] = 0;
 		} else {
 			if (d->reg_select[port_nr] == 0) {
 				d->reg_select[port_nr] = idata & 15;
 			} else {
+				d->wr[port_nr][d->reg_select[port_nr]] = idata;
 				switch (d->reg_select[port_nr]) {
-				default:debug("[ zs: write to UNIMPLEMENTED "
-					    "port %i reg %2i: 0x%02x ]\n",
-					    port_nr, d->reg_select[port_nr],
-					    (int)idata);
+				default:debug("[ zs: write to port %i reg %2i:"
+					    " 0x%02x ]\n", port_nr, d->
+					    reg_select[port_nr], (int)idata);
 				}
 				d->reg_select[port_nr] = 0;
 			}
@@ -175,9 +175,12 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			else
 				odata = 0;
 		} else {
-			console_putchar(d->console_handle[port_nr], idata&255);
+			idata &= 255;
+			if (idata != 0)
+				console_putchar(d->console_handle[port_nr],
+				    idata);
 			d->in_use[port_nr] = 1;
-			if (port_nr == 0)
+			if (port_nr == 0 && d->wr[port_nr][1] & ZSWR1_TIE)
 				d->rr[1][3] |= ZSRR3_IP_B_TX;
 			else
 				d->rr[1][3] |= ZSRR3_IP_A_TX;

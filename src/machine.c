@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.625 2005-12-01 23:59:06 debug Exp $
+ *  $Id: machine.c,v 1.626 2005-12-02 01:46:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2947,7 +2947,8 @@ void machine_setup(struct machine *machine)
 				strlcat(machine->machine_name,
 				    " (Everest IP19)", MACHINE_NAME_MAXBUF);
 				machine->main_console_handle =
-				    dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "serial zs");	/*  serial? netbsd?  */
+				    dev_zs_init(machine, mem, 0x1fbd9830, 0, 4,
+				    "zstty0", "zstty1");	/*  serial? netbsd?  */
 				dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
 
 				device_add(machine, "sgi_ip19 addr=0x18000000");
@@ -2990,11 +2991,11 @@ void machine_setup(struct machine *machine)
 
 				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "zs console");
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 4, "zstty0", "zstty1");
 
 				/*  This is the zsc0 reported by NetBSD:  TODO: irqs  */
-				machine->main_console_handle = dev_zs_init(machine, mem, 0x1fb80d10, 0, 1, "zsc0");	/*  zsc0  */
-				dev_zs_init(machine, mem, 0x1fb80d00, 0, 1, "zsc1");	/*  zsc1  */
+				machine->main_console_handle = dev_zs_init(machine, mem, 0x1fb80d10, 0, 4, "zstty0", "zstty1");	/*  zsc0  */
+				dev_zs_init(machine, mem, 0x1fb80d00, 0, 4, "zstty0", "zstty1");	/*  zsc1  */
 
 				/*  WDSC SCSI controller:  */
 				dev_wdsc_init(machine, mem, 0x1fb8011f, 0, 0);
@@ -3069,7 +3070,7 @@ Why is this here? TODO
 
 				/*  zsc0 serial console.  */
 				i = dev_zs_init(machine, mem, 0x1fbd9830,
-				    8 + 32 + 3 + 64*5, 1, "zsc0");
+				    8 + 32 + 3 + 64*5, 4, "zstty0", "zstty1");
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
 				j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
@@ -3129,7 +3130,7 @@ Why is this here? TODO
 				    MACHINE_NAME_MAXBUF);	/*  TODO  */
 				machine->main_console_handle =
 				    dev_zs_init(machine, mem, 0x1fbd9830,
-				    0, 1, "zs console");
+				    0, 4, "zstty0", "zstty1");
 				break;
 			case 27:
 				strlcat(machine->machine_name,
@@ -3140,7 +3141,7 @@ Why is this here? TODO
 
 				machine->main_console_handle =
 				    dev_zs_init(machine, mem, 0x1fbd9830,
-				    0, 1, "zs console");
+				    0, 4, "zstty0", "zstty1");
 				break;
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */
@@ -3286,7 +3287,7 @@ Why is this here? TODO
 				}
 
 				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "zs console");
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 4, "zstty0", "zstty1");
 
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
@@ -3321,7 +3322,7 @@ Why is this here? TODO
 
 				machine->main_console_handle =
 				    dev_zs_init(machine, mem, 0x1fbd9830,
-				    0, 1, "zs console");
+				    0, 4, "zstty0", "zstty1");
 				break;
 			case 53:
 				strlcat(machine->machine_name,
@@ -3947,8 +3948,8 @@ Not yet.
 				    0x01230000 + (i << 8) + 0x55;
 		}
 
-		machine->main_console_handle =
-		    dev_zs_init(machine, mem, 0x1e950000, 0, 1, "zs console");
+		machine->main_console_handle = dev_zs_init(machine, mem,
+		    0x1e950000, 0, 1, "zstty0", "zstty1");
 
 		break;
 
@@ -4381,7 +4382,7 @@ Not yet.
 			bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
 
 		machine->main_console_handle = dev_zs_init(machine,
-		    mem, 0xf3013000ULL, 23, 1, "zs");
+		    mem, 0xf3013000ULL, 8  /* 23?  */, 0x10, "zstty0", "zstty1");
 
 		fb = dev_fb_init(machine, mem, 0xf1000000,
 		    VFB_GENERIC | VFB_REVERSE_START, 1024,768, 1024,768, 8, "ofb");
@@ -4711,7 +4712,7 @@ Not yet.
 			machine->machine_name = "DEC 3000/300";
 			machine->main_console_handle =
 			    dev_zs_init(machine, mem, 0x1b0200000ULL,
-			    0, 4, "serial zs");	/*  serial? netbsd?  */
+			    0, 4, "zstty0", "zstty1");	/*  serial? netbsd?  */
 			break;
 		case ST_EB164:
 			machine->machine_name = "EB164";

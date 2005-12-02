@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1070 2005-12-01 23:42:13 debug Exp $
+$Id: HISTORY,v 1.1071 2005-12-02 01:46:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2491,3 +2491,4 @@ Changelog for GXemul:
 20051201	Documentation update (David Muse has made available a kernel
 		which simplifies Debian/DECstation installation).
 		Continuing on the ADB bus controller.
+		Beginning a rewrite of the Zilog serial controller (dev_zs).

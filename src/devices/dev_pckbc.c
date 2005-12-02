@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.60 2005-11-25 04:25:26 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.61 2005-12-02 01:46:30 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -883,7 +883,7 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct pckbc_data));
 
 	if (type == PCKBC_8242)
-		len = 0x40;
+		len = 0x18;
 
 	if (type == PCKBC_JAZZ) {
 		type = PCKBC_8042;

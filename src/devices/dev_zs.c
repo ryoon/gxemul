@@ -25,13 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.25 2005-12-01 23:59:07 debug Exp $
+ *  $Id: dev_zs.c,v 1.26 2005-12-02 01:46:30 debug Exp $
  *  
  *  Zilog serial controller.
  *
- *  TODO:  IMPLEMENT THIS CORRECTLY!
- *
- *  Right now it only barely works with NetSBD/sgimips.
+ *  Work in progress...
  */
 
 #include <stdio.h>
@@ -45,26 +43,44 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "z8530reg.h"
+
 
 #define	ZS_TICK_SHIFT		14
+#define	ZS_N_REGS		16
 
 #define debug fatal
 
 struct zs_data {
 	int		irq_nr;
 	int		irq_asserted;
-
-	int		console_handle;
 	int		addrmult;
 
-	int		reg_select;
-	int		tx_done;
+	/*  2 of everything, because there are two channels.  */
+	int		in_use[2];
+	int		console_handle[2];
+	int		reg_select[2];
+	uint8_t		rr[2][ZS_N_REGS];
+	uint8_t		wr[2][ZS_N_REGS];
 };
 
 
-/*  From NetBSD:  */
-#define	ZSRR0_RX_READY		1
-#define	ZSRR0_TX_READY		4
+/*
+ *  dev_zs_tick():
+ */
+static void check_incoming(struct cpu *cpu, struct zs_data *d)
+{
+	d->rr[0][0] &= ~ZSRR0_RX_READY;
+	d->rr[1][0] &= ~ZSRR0_RX_READY;
+	if (d->in_use[0] && console_charavail(d->console_handle[0])) {
+		d->rr[0][0] |= ZSRR0_RX_READY;
+		d->rr[1][3] |= ZSRR3_IP_B_RX;
+	}
+	if (d->in_use[1] && console_charavail(d->console_handle[1])) {
+		d->rr[1][0] |= ZSRR0_RX_READY;
+		d->rr[1][3] |= ZSRR3_IP_A_RX;
+	}
+}
 
 
 /*
@@ -75,8 +91,20 @@ void dev_zs_tick(struct cpu *cpu, void *extra)
 	struct zs_data *d = (struct zs_data *) extra;
 	int asserted = 0;
 
-	if (console_charavail(d->console_handle) || d->tx_done)
+	check_incoming(cpu, d);
+
+	if (d->rr[1][3] & ZSRR3_IP_B_RX && (d->wr[0][1]&0x18) != ZSWR1_RIE_NONE)
 		asserted = 1;
+	if (d->rr[1][3] & ZSRR3_IP_A_RX && (d->wr[1][1]&0x18) != ZSWR1_RIE_NONE)
+		asserted = 1;
+
+	if (d->rr[1][3] & ZSRR3_IP_B_TX && d->wr[0][1] & ZSWR1_TIE)
+		asserted = 1;
+	if (d->rr[1][3] & ZSRR3_IP_A_TX && d->wr[1][1] & ZSWR1_TIE)
+		asserted = 1;
+
+	if (!(d->wr[1][9] & ZSWR9_MASTER_IE))
+		asserted = 0;
 
 	if (asserted)
 		cpu_interrupt(cpu, d->irq_nr);
@@ -101,109 +129,60 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
-if (len != 1)
-fatal("len=%i\n", len);
+	/*  Both ports are always ready to transmit:  */
+	d->rr[0][0] |= ZSRR0_TX_READY | ZSRR0_DCD | ZSRR0_CTS;
+	d->rr[1][0] |= ZSRR0_TX_READY | ZSRR0_DCD | ZSRR0_CTS;
+
+	/*  Any available key strokes?  */
+	check_incoming(cpu, d);
 
 	relative_addr /= d->addrmult;
 
-	port_nr = relative_addr / 8;
-
-/*  TODO:  The zs controller has 2 ports...  */
-/*	relative_addr &= 7;  */
+	port_nr = relative_addr / 2;
+	relative_addr &= 1;
 
 	switch (relative_addr) {
-case 0:
-case 0x20:
-	case 3:
-		if (writeflag==MEM_READ) {
-			odata = ZSRR0_TX_READY;
-			if (console_charavail(d->console_handle))
-				odata |= ZSRR0_RX_READY;
-			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)odata);  */
+
+	case 0:	if (writeflag == MEM_READ) {
+			odata = d->rr[port_nr][d->reg_select[port_nr]];
+			if (d->reg_select[port_nr] != 0)
+				debug("[ zs: read from port %i reg %2i: 0x%02x"
+				    " ]\n", port_nr, d->reg_select[port_nr],
+				    (int)odata);
+			/*  Ack interrupt status:  */
+			if (port_nr == 1 && d->reg_select[port_nr] == 3)
+				d->rr[port_nr][d->reg_select[port_nr]] = 0;
+			d->reg_select[port_nr] = 0;
 		} else {
-			/*  Hm...  TODO  */
-			if (d->reg_select == 0) {
-				d->reg_select = idata;
+			if (d->reg_select[port_nr] == 0) {
+				d->reg_select[port_nr] = idata & 15;
 			} else {
-				switch (d->reg_select) {
-				case 8:	console_putchar(d->console_handle,
-					    idata & 255);
-					break;
-				default:
-					debug("[ zs: write to (unimplemented)"
-					    " register 0x%02x: 0x%08x ]\n",
-					    d->reg_select, (int)idata);
+				switch (d->reg_select[port_nr]) {
+				default:debug("[ zs: write to UNIMPLEMENTED "
+					    "port %i reg %2i: 0x%02x ]\n",
+					    port_nr, d->reg_select[port_nr],
+					    (int)idata);
 				}
-				d->reg_select = 0;
+				d->reg_select[port_nr] = 0;
 			}
-			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)idata);  */
 		}
 		break;
-case 0x10:
-	case 7:
-		if (writeflag==MEM_READ) {
-			if (console_charavail(d->console_handle))
-				odata = console_readchar(d->console_handle);
+
+	case 1:	if (writeflag == MEM_READ) {
+			if (console_charavail(d->console_handle[port_nr]))
+				odata = console_readchar(d->
+				    console_handle[port_nr]);
 			else
 				odata = 0;
-			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)odata);  */
 		} else {
-			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)idata);  */
-			console_putchar(d->console_handle, idata & 255);
-			d->tx_done = 1;
-		}
-		break;
-
-/*  hehe, perhaps 0xb and 0xf are the second channel :-)  */
-
-	case 0xb:
-		if (writeflag==MEM_READ) {
-			odata = 0;
-#if 0
-	/*  TODO: Weird. Linux needs 4 here, NetBSD wants 0.  */
-	odata = 4;
-#endif
-			if (d->tx_done)
-				odata |= 2;
-			if (console_charavail(d->console_handle))
-				odata |= 4;
-			d->tx_done = 0;
-			debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)odata);
-		} else {
-			debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)idata);
-		}
-		break;
-
-	/*  0xf is used by Linux:  */
-	case 0xf:
-		if (writeflag==MEM_READ) {
-			if (console_charavail(d->console_handle))
-				odata = console_readchar(d->console_handle);
+			console_putchar(d->console_handle[port_nr], idata&255);
+			d->in_use[port_nr] = 1;
+			if (port_nr == 0)
+				d->rr[1][3] |= ZSRR3_IP_B_TX;
 			else
-				odata = 0;
-			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)odata);  */
-		} else {
-			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)idata);  */
-			console_putchar(d->console_handle, idata & 255);
-			d->tx_done = 1;
+				d->rr[1][3] |= ZSRR3_IP_A_TX;
 		}
 		break;
-	default:
-		if (writeflag==MEM_READ) {
-			debug("[ zs: read from 0x%08lx ]\n",
-			    (long)relative_addr);
-		} else {
-			debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)idata);
-		}
 	}
 
 	if (writeflag == MEM_READ)
@@ -219,7 +198,8 @@ case 0x10:
  *  dev_zs_init():
  */
 int dev_zs_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int addrmult, char *name)
+	uint64_t baseaddr, int irq_nr, int addrmult, char *name_a,
+	char *name_b)
 {
 	struct zs_data *d;
 
@@ -231,14 +211,15 @@ int dev_zs_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct zs_data));
 	d->irq_nr   = irq_nr;
 	d->addrmult = addrmult;
-	d->console_handle = console_start_slave(machine, name);
 
-	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult
-*4,
+	d->console_handle[0] = console_start_slave(machine, name_a);
+	d->console_handle[1] = console_start_slave(machine, name_b);
+
+	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
 	    dev_zs_access, d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_zs_tick, d, ZS_TICK_SHIFT);
 
-	return d->console_handle;
+	return d->console_handle[0];
 }
 

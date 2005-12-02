@@ -1,4 +1,4 @@
-$Id: TODO,v 1.180 2005-12-01 11:20:55 debug Exp $
+$Id: TODO,v 1.181 2005-12-02 01:46:28 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,6 +7,7 @@ Old MIPS -> dyntrans
 	x)  Everything!
 
 MacPPC:
+	x)  dev_zs
 	x)  adb controller; keyboard
 	x)  make OpenBSD/macppc work (PCI controller stuff)
 

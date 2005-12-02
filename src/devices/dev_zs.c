@@ -25,11 +25,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.27 2005-12-02 07:56:11 debug Exp $
+ *  $Id: dev_zs.c,v 1.28 2005-12-02 08:59:21 debug Exp $
  *  
  *  Zilog serial controller.
  *
- *  Work in progress...
+ *  Features:
+ *	o)  Two channels, 0 = "channel B", 1 = "channel A".
+ *
+ *  This is a work in progress... TODOs include:
+ *	o)  Implement more of the register set
+ *	o)  Verify that it works with other guest OSes than NetBSD
+ *	o)  DMA!
  */
 
 #include <stdio.h>
@@ -53,6 +59,7 @@
 
 struct zs_data {
 	int		irq_nr;
+	int		dma_irq_nr;
 	int		irq_asserted;
 	int		addrmult;
 
@@ -106,11 +113,17 @@ void dev_zs_tick(struct cpu *cpu, void *extra)
 	if (!(d->wr[1][9] & ZSWR9_MASTER_IE))
 		asserted = 0;
 
-	if (asserted)
+	if (asserted) {
 		cpu_interrupt(cpu, d->irq_nr);
+		if (d->dma_irq_nr >= 0)
+			cpu_interrupt(cpu, d->dma_irq_nr);
+	}
 
-	if (d->irq_asserted && !asserted)
+	if (d->irq_asserted && !asserted) {
 		cpu_interrupt_ack(cpu, d->irq_nr);
+		if (d->dma_irq_nr >= 0)
+			cpu_interrupt_ack(cpu, d->dma_irq_nr);
+	}
 
 	d->irq_asserted = asserted;
 }
@@ -199,10 +212,14 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 /*
  *  dev_zs_init():
+ *
+ *  Use dma_irq_nr = -1 to disable DMA irqs.
+ *
+ *  TODO: Rewrite to devinit.
  */
 int dev_zs_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int addrmult, char *name_a,
-	char *name_b)
+	uint64_t baseaddr, int irq_nr, int dma_irq_nr,
+	int addrmult, char *name_b, char *name_a)
 {
 	struct zs_data *d;
 
@@ -212,11 +229,12 @@ int dev_zs_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct zs_data));
-	d->irq_nr   = irq_nr;
-	d->addrmult = addrmult;
+	d->irq_nr     = irq_nr;
+	d->dma_irq_nr = dma_irq_nr;
+	d->addrmult   = addrmult;
 
-	d->console_handle[0] = console_start_slave(machine, name_a);
-	d->console_handle[1] = console_start_slave(machine, name_b);
+	d->console_handle[0] = console_start_slave(machine, name_b);
+	d->console_handle[1] = console_start_slave(machine, name_a);
 
 	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
 	    dev_zs_access, d, DM_DEFAULT, NULL);

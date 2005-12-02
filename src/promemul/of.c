@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.13 2005-12-02 07:56:12 debug Exp $
+ *  $Id: of.c,v 1.14 2005-12-02 08:59:22 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -787,8 +787,8 @@ void of_emul_init_zs(struct machine *machine)
 
 	of_add_device(ofd, "zstty1", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty1", "name", "ch-a");
-	of_store_32bit_in_host(zs_interrupts + 0, 16);
-	of_store_32bit_in_host(zs_interrupts + 4, 0);
+	of_store_32bit_in_host(zs_interrupts + 0, 15);
+	of_store_32bit_in_host(zs_interrupts + 4, 16);
 	of_store_32bit_in_host(zs_interrupts + 8, 0);
 	of_add_prop(ofd, "/bandit/gc/zs/zstty1", "interrupts", zs_interrupts,
 	    3*sizeof(uint32_t), 0);
@@ -810,7 +810,7 @@ void of_emul_init_zs(struct machine *machine)
 	of_add_device(ofd, "zstty0", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty0", "name", "ch-b");
 	of_store_32bit_in_host(zs_interrupts + 0, 15);
-	of_store_32bit_in_host(zs_interrupts + 4, 0);
+	of_store_32bit_in_host(zs_interrupts + 4, 16);
 	of_store_32bit_in_host(zs_interrupts + 8, 0);
 	of_add_prop(ofd, "/bandit/gc/zs/zstty0", "interrupts", zs_interrupts,
 	    3*sizeof(uint32_t), 0);

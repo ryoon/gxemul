@@ -25,16 +25,29 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.18 2005-11-27 03:47:39 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.19 2005-12-02 22:40:22 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
  *  reverse-engineering OpenBSD and NetBSD sources.
  *
+ *  This device emulates several sub-components:
+ *
+ *	21143:	This is the actual ethernet controller.
+ *
+ *	MII:	The "physical" network interface.
+ *
+ *	SROM:	A ROM area containing setting such as which MAC address to
+ *		use, and info about the MII.
+ *
  *
  *  TODO:
- *
- *	o)  Endianness for descriptors...
+ *	o)  Handle _writes_ to MII registers.
+ *	o)  Make it work with Linux as a guest OS.
+ *	o)  Endianness for descriptors? If necessary.
+ *	o)  Actually handle the "Setup" packet.
+ *	o)  MAC filtering on incoming packets.
+ *	o)  Don't hardcode as many values.
  */
 
 #include <stdio.h>
@@ -117,6 +130,10 @@ struct dec21143_data {
 
 /*
  *  dec21143_rx():
+ *
+ *  Receive a packet. (If there is no current packet, then check for newly
+ *  arrived ones. If the current packet couldn't be fully transfered the
+ *  last time, then continue on that packet.)
  */
 int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 {
@@ -260,6 +277,9 @@ int dec21143_rx(struct cpu *cpu, struct dec21143_data *d)
 
 /*
  *  dec21143_tx():
+ *
+ *  Transmit a packet, if the guest OS has marked a descriptor as containing
+ *  data to transmit.
  */
 int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 {
@@ -635,7 +655,7 @@ static void mii_access(struct cpu *cpu, struct dec21143_data *d,
  *
  *  This function handles reads from the Ethernet Address ROM. This is not a
  *  100% correct implementation, as it was reverse-engineered from OpenBSD
- *  sources; it seems to work with OpenBSD, NetBSD, and Linux.
+ *  sources; it seems to work with OpenBSD, NetBSD, and Linux, though.
  *
  *  Each transfer (if I understood this correctly) is of the following format:
  *

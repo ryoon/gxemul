@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.29 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_scc.c,v 1.30 2005-12-02 22:40:17 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -40,6 +40,15 @@
  *		emulate the same lk201 behaviour as when using the dc device)
  *	DMA
  *	More correct interrupt support.
+ *
+ ******************************************************************************
+ *	 _____ ___  ____   ___  _ 
+ *	|_   _/ _ \|  _ \ / _ \| |
+ *	  | || | | | | | | | | | |
+ *	  | || |_| | |_| | |_| |_|
+ *	  |_| \___/|____/ \___/(_)
+ *
+ *	Since this is actually a Z8530, it should be merged with dev_z8530.c!
  */
 
 #include <stdio.h>

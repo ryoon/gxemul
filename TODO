@@ -1,4 +1,4 @@
-$Id: TODO,v 1.181 2005-12-02 01:46:28 debug Exp $
+$Id: TODO,v 1.182 2005-12-02 21:37:53 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -20,6 +20,10 @@ The Device subsystem:
 PCI:
 	x)  add support for address fixups
 	x)  generalize the interrupt routing stuff
+
+Sound:
+	x)  generic sound framework
+	x)  add one or more sound cards as devices
 
 Network layer:
 	o)  DHCP (for Debian and BSD installers :-)

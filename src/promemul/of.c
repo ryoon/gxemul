@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.14 2005-12-02 08:59:22 debug Exp $
+ *  $Id: of.c,v 1.15 2005-12-02 21:37:54 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -652,7 +652,7 @@ static void of_dump_all(struct of_data *ofd)
  *  Helper function.
  */
 static void of_add_prop_int32(struct of_data *ofd,
-	char *devname, char *propname, int32_t x)
+	char *devname, char *propname, uint32_t x)
 {
 	unsigned char *p = malloc(sizeof(int32_t));
 	if (p == NULL) {

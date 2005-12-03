@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.2 2005-12-03 11:43:31 debug Exp $
+ *  $Id: dev_z8530.c,v 1.3 2005-12-03 14:14:22 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -185,7 +185,7 @@ int dev_z8530_access(struct cpu *cpu, struct memory *mem,
 			if (idata != 0)
 				console_putchar(d->console_handle[port_nr],
 				    idata);
-			if (1 /*d->wr[port_nr][1] & ZSWR1_TIE */) {
+			if (1 /* d->wr[port_nr][1] & ZSWR1_TIE */) {
 				if (port_nr == 0)
 					d->rr[1][3] |= ZSRR3_IP_B_TX;
 				else

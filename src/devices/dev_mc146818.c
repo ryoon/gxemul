@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.80 2005-11-20 11:28:45 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.81 2005-12-03 11:18:12 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -690,7 +690,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	 *  TODO:  Find out if this messes up Sprite emulation; if so, then
 	 *         this hack has to be removed.
 	 */
-	d->uip_threshold = 5;
+	d->uip_threshold = 8;
 
 	if (access_style == MC146818_ARC_JAZZ)
 		memory_device_register(mem, "mc146818_jazz", 0x90000070ULL,

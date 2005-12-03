@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.629 2005-12-03 10:52:50 debug Exp $
+ *  $Id: machine.c,v 1.630 2005-12-03 11:18:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4125,7 +4125,7 @@ Not yet.
 				if (strlen(machine->boot_string_argument) < 3)
 					fatal("WARNING: remember to use  -o 'console=tty0'  "
 					    "if you are emulating Linux. (Not needed for NetBSD.)\n");
-				bus_pci_add(machine, pci_data, mem, 0xc0, 8, 0, "s3_virge");
+				bus_pci_add(machine, pci_data, mem, 0, 8, 0, "s3_virge");
 			}
 
 			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "i82371ab_isa");

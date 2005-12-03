@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.183 2005-12-03 00:38:02 debug Exp $
+ *  $Id: memory.c,v 1.184 2005-12-03 04:14:12 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -40,6 +40,9 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+extern int verbose;
 
 
 /*
@@ -362,21 +365,23 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		    device_name, i, mem->dev_name[i]);
 	}
 
-	/*  (40 bits of physical address is displayed)  */
-	debug("device %2i at 0x%010llx: %s",
-	    mem->n_mmapped_devices, (long long)baseaddr, device_name);
+	if (verbose >= 2) {
+		/*  (40 bits of physical address is displayed)  */
+		debug("device %2i at 0x%010llx: %s",
+		    mem->n_mmapped_devices, (long long)baseaddr, device_name);
 
-	if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
-	    && (baseaddr & mem->dev_dyntrans_alignment) != 0) {
-		fatal("\nWARNING: Device dyntrans access, but unaligned"
-		    " baseaddr 0x%llx.\n", (long long)baseaddr);
-	}
+		if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
+		    && (baseaddr & mem->dev_dyntrans_alignment) != 0) {
+			fatal("\nWARNING: Device dyntrans access, but unaligned"
+			    " baseaddr 0x%llx.\n", (long long)baseaddr);
+		}
 
-	if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
-		debug(" (dyntrans %s)",
-		    (flags & DM_DYNTRANS_WRITE_OK)? "R/W" : "R");
+		if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
+			debug(" (dyntrans %s)",
+			    (flags & DM_DYNTRANS_WRITE_OK)? "R/W" : "R");
+		}
+		debug("\n");
 	}
-	debug("\n");
 
 	mem->dev_name[mem->n_mmapped_devices] = strdup(device_name);
 	mem->dev_baseaddr[mem->n_mmapped_devices] = baseaddr;

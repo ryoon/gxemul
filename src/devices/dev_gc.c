@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.3 2005-11-29 05:25:28 debug Exp $
+ *  $Id: dev_gc.c,v 1.4 2005-12-03 04:14:14 debug Exp $
  *  
  *  Grand Central Interrupt controller (used by MacPPC).
  */
@@ -76,15 +76,19 @@ int dev_gc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ)
 			odata = d->enable_hi;
 		else {
+			uint32_t old_enable_hi = d->enable_hi;
 			d->enable_hi = idata;
-			cpu_interrupt(cpu, d->reassert_irq);
+			if (d->enable_hi != old_enable_hi)
+				cpu_interrupt(cpu, d->reassert_irq);
 		}
 		break;
 
 	case 0x18:
 		if (writeflag == MEM_WRITE) {
+			uint32_t old_status_hi = d->status_hi;
 			d->status_hi &= ~idata;
-			cpu_interrupt(cpu, d->reassert_irq);
+			if (d->status_hi != old_status_hi)
+				cpu_interrupt(cpu, d->reassert_irq);
 		}
 		break;
 
@@ -97,15 +101,19 @@ int dev_gc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ)
 			odata = d->enable_lo;
 		else {
+			uint32_t old_enable_lo = d->enable_lo;
 			d->enable_lo = idata;
-			cpu_interrupt(cpu, d->reassert_irq);
+			if (d->enable_lo != old_enable_lo)
+				cpu_interrupt(cpu, d->reassert_irq);
 		}
 		break;
 
 	case 0x28:
 		if (writeflag == MEM_WRITE) {
+			uint32_t old_status_lo = d->status_lo;
 			d->status_lo &= ~idata;
-			cpu_interrupt(cpu, d->reassert_irq);
+			if (d->status_lo != old_status_lo)
+				cpu_interrupt(cpu, d->reassert_irq);
 		}
 		break;
 

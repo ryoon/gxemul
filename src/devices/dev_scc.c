@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.30 2005-12-02 22:40:17 debug Exp $
+ *  $Id: dev_scc.c,v 1.31 2005-12-03 04:14:14 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -478,7 +478,7 @@ void *dev_scc_init(struct machine *machine, struct memory *mem,
 	d->scc_nr  = scc_nr;
 	d->use_fb  = use_fb;
 	d->addrmul = addrmul;
-	d->console_handle = console_start_slave(machine, "SCC");
+	d->console_handle = console_start_slave(machine, "SCC", 1);
 
 	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue,
 	    d->console_handle, d);

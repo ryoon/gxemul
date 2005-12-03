@@ -28,16 +28,27 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_isa.h,v 1.1 2005-11-21 09:17:27 debug Exp $
+ *  $Id: bus_isa.h,v 1.2 2005-12-03 04:14:15 debug Exp $
  *
  *  ISA bus.
  */
 
 #include "misc.h"
 
-void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
-	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase,
-	int reassert_irq);
+#ifdef BUS_ISA_C
+
+struct bus_isa_data {
+	int		isa_irqbase;
+	int		reassert_irq;
+	uint64_t	isa_portbase;
+	uint64_t	isa_membase;
+};
+
+#endif	/*  BUS_ISA_C  */
+
+struct bus_isa_data *bus_isa_init(struct machine *machine,
+	uint32_t bus_isa_flags, uint64_t isa_portbase, uint64_t isa_membase,
+	int isa_irqbase, int reassert_irq);
 
 /*  ISA bus flags:  */
 #define	BUS_ISA_IDE0			1

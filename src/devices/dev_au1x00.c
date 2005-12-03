@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.14 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.15 2005-12-03 04:14:14 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -52,6 +52,7 @@ struct au1x00_uart_data {
 	int		console_handle;
 	int		uart_nr;
 	int		irq_nr;
+	int		in_use;
 	uint32_t	int_enable;
 	uint32_t	modem_control;
 };
@@ -341,10 +342,15 @@ struct au1x00_ic_data *dev_au1x00_init(struct machine *machine,
 	d2->uart_nr = 2; d2->irq_nr = 2;
 	d3->uart_nr = 3; d3->irq_nr = 3;
 
-	d0->console_handle = console_start_slave(machine, "AU1x00 port 0");
-	d1->console_handle = console_start_slave(machine, "AU1x00 port 1");
-	d2->console_handle = console_start_slave(machine, "AU1x00 port 2");
-	d3->console_handle = console_start_slave(machine, "AU1x00 port 3");
+	/*  Only allow input on the first UART, by default:  */
+	d0->console_handle = console_start_slave(machine, "AU1x00 port 0", 1);
+	d1->console_handle = console_start_slave(machine, "AU1x00 port 1", 0);
+	d2->console_handle = console_start_slave(machine, "AU1x00 port 2", 0);
+	d3->console_handle = console_start_slave(machine, "AU1x00 port 3", 0);
+	d0->in_use = 1;
+	d1->in_use = 0;
+	d2->in_use = 0;
+	d3->in_use = 0;
 
 	d_pc->irq_nr = 14;
 

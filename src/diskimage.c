@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.104 2005-11-29 04:28:07 debug Exp $
+ *  $Id: diskimage.c,v 1.105 2005-12-03 04:14:11 debug Exp $
  *
  *  Disk image support.
  *
@@ -1779,7 +1779,7 @@ int diskimage_is_a_tape(struct machine *machine, int id, int type)
  */
 void diskimage_dump_info(struct machine *machine)
 {
-	int iadd=4;
+	int iadd = DEBUG_INDENTATION;
 	struct diskimage *d = machine->first_diskimage;
 
 	while (d != NULL) {

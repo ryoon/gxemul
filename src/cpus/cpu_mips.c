@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.10 2005-12-01 11:20:56 debug Exp $
+ *  $Id: cpu_mips.c,v 1.11 2005-12-03 04:14:13 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -361,7 +361,7 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
  */
 void mips_cpu_dumpinfo(struct cpu *cpu)
 {
-	int iadd = 4;
+	int iadd = DEBUG_INDENTATION;
 	struct mips_cpu_type_def *ct = &cpu->cd.mips.cpu_type;
 
 	debug_indentation(iadd);
@@ -456,7 +456,7 @@ void mips_cpu_list_available_types(void)
  */
 void mips_cpu_show_full_statistics(struct machine *m)
 {
-	int i, s1, s2, iadd = 4;
+	int i, s1, s2, iadd = DEBUG_INDENTATION;
 
 	if (m->bintrans_enable)
 		fatal("NOTE: Dynamic binary translation is used; this list"

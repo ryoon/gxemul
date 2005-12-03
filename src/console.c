@@ -25,14 +25,41 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.10 2005-11-23 02:17:00 debug Exp $
+ *  $Id: console.c,v 1.11 2005-12-03 04:14:11 debug Exp $
  *
  *  Generic console support functions.
  *
- *  This is used by individual device drivers, for example serial controllers,
- *  to attach stdin/stdout of the host system to a specific device.
+ *  This module is used by individual device drivers, for example serial
+ *  controllers, keyboards, or other devices which need to attach to the
+ *  emulator's real stdin/stdout.
  *
- *  NOTE: This stuff is non-reentrant.
+ *  The idea is that several input and output streams (console handles) are
+ *  allowed. As long as the number of input streams is <= 1, then everything
+ *  can be done in the emulator's default terminal window.
+ *
+ *  If the number of inputs is more than 1, it is necessary to open up slave
+ *  xterm windows for each input. (Otherwise the behaviour is undefined; i.e.
+ *  which of two emulated serial controllers would get keyboard input?)
+ *
+ *  (If the -x command line option is NOT used, then slaves are not opened up.
+ *  Instead, a warning message is printed, and behaviour is undefined.)
+ *
+ *  Note that console handles that _allow_ input but are not yet used for
+ *  output are not counted. This allows a machine to have, say, 2 serial ports
+ *  which can be used for both input and output, and it will still be possible
+ *  to run in the default terminal window as long as only one of those serial
+ *  ports is actually used.
+ *
+ *  xterms are opened up "on demand", when output is sent to them.
+ *
+ *  The MAIN console handle (fixed as handle nr 0) is the one used by the
+ *  default terminal window. A machine which registers a serial controller,
+ *  which should be used as the main was of communicating with guest operating
+ *  systems running on that machine, should set machine->main_console_handle
+ *  to the handle of the correct port on that controller.
+ *
+ *
+ *  NOTE: The code in this module is mostly non-reentrant.
  */
 
 #include <errno.h>
@@ -52,6 +79,7 @@
 
 
 extern char *progname;
+extern int verbose;
 
 
 static struct termios console_oldtermios;
@@ -82,8 +110,11 @@ static int allow_slaves = 0;
 
 struct console_handle {
 	int		in_use;
+	int		in_use_for_input;
 	int		using_xterm;
 	int		inputonly;
+	int		outputonly;
+	int		warning_printed;
 
 	char		*name;
 
@@ -143,15 +174,16 @@ void console_sigcont(int x)
 /*
  *  start_xterm():
  *
- *  When using X11, this routine tries to start up an xterm, with another
- *  copy of gxemul inside. The other gxemul copy is given arguments
- *  that will cause it to run console_slave().
+ *  When using X11 (well, when allow_slaves is set), this routine tries to
+ *  start up an xterm, with another copy of gxemul inside. The other gxemul
+ *  copy is given arguments that will cause it to run console_slave().
  */
 static void start_xterm(int handle)
 {
 	int filedes[2];
 	int filedesB[2];
 	int res;
+	size_t mlen;
 	char **a;
 	pid_t p;
 
@@ -183,7 +215,9 @@ static void start_xterm(int handle)
 	a[1] = "-geometry";
 	a[2] = "80x25";
 	a[3] = "-title";
-	a[4] = console_handles[handle].name;
+	mlen = strlen(console_handles[handle].name) + 30;
+	a[4] = malloc(mlen);
+	snprintf(a[4], mlen, "GXemul: %s", console_handles[handle].name);
 	a[5] = "-e";
 	a[6] = progname;
 	a[7] = malloc(80);
@@ -278,6 +312,9 @@ void console_makeavail(int handle, char ch)
  */
 static int console_stdin_avail(int handle)
 {
+	if (!console_handles[handle].in_use_for_input)
+		return 0;
+
 	if (!allow_slaves)
 		return d_avail(STDIN_FILENO);
 
@@ -358,6 +395,10 @@ int console_readchar(int handle)
 void console_putchar(int handle, int ch)
 {
 	char buf[1];
+
+	if (!console_handles[handle].in_use_for_input &&
+	    !console_handles[handle].outputonly)
+		console_change_inputability(handle, 1);
 
 	if (!allow_slaves) {
 		/*  stdout:  */
@@ -633,16 +674,22 @@ static struct console_handle *console_new_handle(char *name, int *handlep)
  *
  *  consolename should be something like "serial 0".
  *
+ *  If use_for_input is 1, input is allowed right from the start. (This
+ *  can be upgraded later from 0 to 1 using the console_change_inputability()
+ *  function.)
+ *
+ *  If use_for_input is CONSOLE_OUTPUT_ONLY, then this is an output-only stream.
+ *
  *  On success, an integer >= 0 is returned. This can then be used as a
  *  'handle' when writing to or reading from an emulated console.
  *
  *  On failure, -1 is returned.
  */
-int console_start_slave(struct machine *machine, char *consolename)
+int console_start_slave(struct machine *machine, char *consolename,
+	int use_for_input)
 {
-	int handle;
-	size_t mlen;
 	struct console_handle *chp;
+	int handle;
 
 	if (machine == NULL || consolename == NULL) {
 		printf("console_start_slave(): NULL ptr\n");
@@ -650,22 +697,15 @@ int console_start_slave(struct machine *machine, char *consolename)
 	}
 
 	chp = console_new_handle(consolename, &handle);
-
-	mlen = strlen(machine->name) + strlen(consolename) + 40;
-	chp->name = malloc(mlen);
-	if (chp->name == NULL) {
-		printf("out of memory\n");
-		exit(1);
+	chp->in_use_for_input = use_for_input;
+	if (use_for_input == CONSOLE_OUTPUT_ONLY) {
+		chp->outputonly = 1;
+		chp->in_use_for_input = 0;
 	}
-	snprintf(chp->name, mlen, "GXemul: '%s' %s",
-	    machine->name, consolename);
+	chp->name = strdup(consolename);
 
-#if 0
-	if (!machine->use_x11) {
-		return handle;
-	}
-#endif
-	chp->using_xterm = USING_XTERM_BUT_NOT_YET_OPEN;
+	if (allow_slaves)
+		chp->using_xterm = USING_XTERM_BUT_NOT_YET_OPEN;
 
 	return handle;
 }
@@ -683,11 +723,11 @@ int console_start_slave(struct machine *machine, char *consolename)
  *
  *  On failure, -1 is returned.
  */
-int console_start_slave_inputonly(struct machine *machine, char *consolename)
+int console_start_slave_inputonly(struct machine *machine, char *consolename,
+	int use_for_input)
 {
 	struct console_handle *chp;
 	int handle;
-	size_t mlen;
 
 	if (machine == NULL || consolename == NULL) {
 		printf("console_start_slave(): NULL ptr\n");
@@ -696,24 +736,56 @@ int console_start_slave_inputonly(struct machine *machine, char *consolename)
 
 	chp = console_new_handle(consolename, &handle);
 	chp->inputonly = 1;
-
-	mlen = strlen(machine->name) + strlen(consolename) + 40;
-	chp->name = malloc(mlen);
-	if (chp->name == NULL) {
-		printf("out of memory\n");
-		exit(1);
-	}
-	snprintf(chp->name, mlen, "GXemul: '%s' %s",
-	    machine->name, consolename);
+	chp->in_use_for_input = use_for_input;
+	chp->name = strdup(consolename);
 
 	return handle;
 }
 
 
 /*
+ *  console_change_inputability():
+ *
+ *  Sets whether or not a console handle can be used for input. Return value
+ *  is 1 if the change took place, 0 otherwise.
+ */
+int console_change_inputability(int handle, int inputability)
+{
+	int old;
+
+	if (handle < 0 || handle >= n_console_handles) {
+		fatal("console_change_inputability(): bad handle %i\n",
+		    handle);
+		exit(1);
+	}
+
+	old = console_handles[handle].in_use_for_input;
+	console_handles[handle].in_use_for_input = inputability;
+
+	if (inputability != 0) {
+		if (console_warn_if_slaves_are_needed(0)) {
+			console_handles[handle].in_use_for_input = old;
+			if (!console_handles[handle].warning_printed) {
+				fatal("%%\n%%  WARNING! Input to console ha"
+				    "ndle \"%s\" wasn't enabled,\n%%  because "
+				    "it", console_handles[handle].name);
+				fatal(" would interfere with other inputs,\n"
+				    "%%  and you did not use the -x command "
+				    "line option!\n%%\n");
+			}
+			console_handles[handle].warning_printed = 1;
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+
+/*
  *  console_init_main():
  *
- *  Put host's console into single-character (non-canonical) mode.
+ *  Puts the host's console into single-character (non-canonical) mode.
  */
 void console_init_main(struct emul *emul)
 {
@@ -763,6 +835,48 @@ void console_init_main(struct emul *emul)
 
 
 /*
+ *  console_debug_dump():
+ *
+ *  Dump debug info, if verbose >= 2.
+ */
+void console_debug_dump(struct machine *machine)
+{
+	int i, iadd = DEBUG_INDENTATION, listed_main = 0;
+
+	if (verbose < 2)
+		return;
+
+	debug("console slaves (xterms): %s\n", allow_slaves?
+	    "yes" : "no");
+
+	debug("console handles:\n");
+	debug_indentation(iadd);
+
+	for (i=0; i<n_console_handles; i++) {
+		if (!console_handles[i].in_use)
+			continue;
+		debug("%i: \"%s\"", i, console_handles[i].name);
+		if (console_handles[i].using_xterm)
+			debug(" [xterm]");
+		if (console_handles[i].inputonly)
+			debug(" [inputonly]");
+		if (console_handles[i].outputonly)
+			debug(" [outputonly]");
+		if (i == machine->main_console_handle) {
+			debug(" [MAIN CONSOLE]");
+			listed_main = 1;
+		}
+		debug("\n");
+	}
+
+	debug_indentation(-iadd);
+
+	if (!listed_main)
+		fatal("WARNING! no main console handle?\n");
+}
+
+
+/*
  *  console_allow_slaves():
  *
  *  This function tells the console subsystem whether or not to open up
@@ -788,28 +902,50 @@ int console_are_slaves_allowed(void)
 /*
  *  console_warn_if_slaves_are_needed():
  *
- *  Prints a warning if slave xterms are needed (i.e. there is more than one
- *  console handle in use), but they are not currently allowed.
+ *  Prints an error (during startup of the emulator) if slave xterms are needed
+ *  (i.e. there is more than one console handle in use which is used for
+ *  INPUT), but they are not currently allowed.
+ *
+ *  This function should be called during startup (with init = 1), and every
+ *  time a console handle changes/upgrades its in_use_for_input from 0 to 1.
+ *
+ *  If init is non-zero, this function doesn't return if there was a warning.
+ *
+ *  If init is zero, no warning is printed. 1 is returned if there were more
+ *  than one input, 0 otherwise.
  */
-void console_warn_if_slaves_are_needed(void)
+int console_warn_if_slaves_are_needed(int init)
 {
 	int i, n = 0;
+
+	if (allow_slaves)
+		return 0;
+
 	for (i=MAIN_CONSOLE+1; i<n_console_handles; i++)
 		if (console_handles[i].in_use &&
+		    console_handles[i].in_use_for_input &&
 		    !console_handles[i].using_xterm)
 			n ++;
 
-	if (!allow_slaves && n > 1) {
-		fatal("#\n#  WARNING! More than one console output is in use,"
-		    "\n#  but xterm slaves are not enabled. Behaviour will\n"
-		    "#  be undefined.  (Use -x to enable slave xterms.)\n#\n");
-		for (i=MAIN_CONSOLE+1; i<n_console_handles; i++)
-			if (console_handles[i].in_use &&
-			    !console_handles[i].using_xterm)
-				fatal("#  console handle %i: '%s'\n",
-				    i, console_handles[i].name);
-		fatal("#\n");
+	if (n > 1) {
+		if (init) {
+			fatal("#\n#  ERROR! More than one console input is "
+			    "in use,\n#  but xterm slaves are not enabled.\n"
+			    "#\n");
+			fatal("#  Use -x to enable slave xterms.)\n#\n");
+			for (i=MAIN_CONSOLE+1; i<n_console_handles; i++)
+				if (console_handles[i].in_use &&
+				    console_handles[i].in_use_for_input &&
+				    !console_handles[i].using_xterm)
+					fatal("#  console handle %i: '%s'\n",
+					    i, console_handles[i].name);
+			fatal("#\n");
+			exit(1);
+		}
+		return 1;
 	}
+
+	return 0;
 }
 
 
@@ -830,5 +966,7 @@ void console_init(void)
 		    " console 0: handle = %i\n", handle);
 		exit(1);
 	}
+
+	chp->in_use_for_input = 1;
 }
 

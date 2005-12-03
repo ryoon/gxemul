@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.6 2005-11-29 07:40:49 debug Exp $
+ *  $Id: dev_eagle.c,v 1.7 2005-12-03 04:14:14 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -111,7 +111,7 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	isa_membase    = 0xc0000000ULL;
 
 	/*  Create a PCI bus:  */
-	d->pci_data = bus_pci_init(pciirq,
+	d->pci_data = bus_pci_init(machine, pciirq,
 	    pci_io_offset, pci_mem_offset,
 	    pci_portbase, pci_membase, pci_irqbase,
 	    isa_portbase, isa_membase, isa_irqbase);

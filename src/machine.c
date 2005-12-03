@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.627 2005-12-02 08:59:19 debug Exp $
+ *  $Id: machine.c,v 1.628 2005-12-03 04:14:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -122,6 +122,7 @@ struct machine_entry {
 
 /*  See main.c:  */
 extern int quiet_mode;
+extern int verbose;
 
 
 /*  This is initialized by machine_init():  */
@@ -307,6 +308,138 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 	machine->tick_extra[n]        = extra;
 
 	machine->n_tick_entries ++;
+}
+
+
+/*
+ *  machine_bus_register():
+ *
+ *  Registers a bus in a machine.
+ */
+void machine_bus_register(struct machine *machine, char *busname,
+	void (*debug_dump)(void *), void *extra)
+{
+	struct machine_bus *tmp, *last = NULL, *new;
+
+	new = zeroed_alloc(sizeof(struct machine_bus));
+	new->name = strdup(busname);
+	new->debug_dump = debug_dump;
+	new->extra = extra;
+
+	/*  Register last in the bus list:  */
+	tmp = machine->first_bus;
+	while (tmp != NULL) {
+		last = tmp;
+		tmp = tmp->next;
+	}
+
+	if (last == NULL)
+		machine->first_bus = new;
+	else
+		last->next = new;
+
+	machine->n_busses ++;
+}
+
+
+/*
+ *  machine_dump_bus_info():
+ *
+ *  Dumps info about registered busses.
+ */
+void machine_dump_bus_info(struct machine *m)
+{
+	struct machine_bus *bus = m->first_bus;
+	int iadd = DEBUG_INDENTATION;
+
+	if (m->n_busses > 0)
+		debug("busses:\n");
+	debug_indentation(iadd);
+	while (bus != NULL) {
+		bus->debug_dump(bus->extra);
+		bus = bus->next;
+	}
+	debug_indentation(-iadd);
+}
+
+
+/*
+ *  machine_dumpinfo():
+ *
+ *  Dumps info about a machine in some kind of readable format. (Used by
+ *  the 'machine' debugger command.)
+ */
+void machine_dumpinfo(struct machine *m)
+{
+	int i;
+
+	debug("serial nr: %i", m->serial_nr);
+	if (m->nr_of_nics > 0)
+		debug("  (nr of nics: %i)", m->nr_of_nics);
+	debug("\n");
+
+	debug("memory: %i MB", m->physical_ram_in_mb);
+	if (m->memory_offset_in_mb != 0)
+		debug(" (offset by %i MB)", m->memory_offset_in_mb);
+	if (m->random_mem_contents)
+		debug(", randomized contents");
+	if (m->dbe_on_nonexistant_memaccess)
+		debug(", dbe_on_nonexistant_memaccess");
+	debug("\n");
+
+	if (m->single_step_on_bad_addr)
+		debug("single-step on bad addresses\n");
+
+	if (m->arch == ARCH_MIPS) {
+		if (m->bintrans_enable)
+			debug("bintrans enabled (%i MB cache)\n",
+			    (int) (m->bintrans_size / 1048576));
+		else
+			debug("bintrans disabled, other speedtricks %s\n",
+			    m->speed_tricks? "enabled" : "disabled");
+	}
+
+	debug("clock: ");
+	if (m->automatic_clock_adjustment)
+		debug("adjusted automatically");
+	else
+		debug("fixed at %i Hz", m->emulated_hz);
+	debug("\n");
+
+	if (!m->prom_emulation)
+		debug("PROM emulation disabled\n");
+
+	for (i=0; i<m->ncpus; i++)
+		cpu_dumpinfo(m, m->cpus[i]);
+
+	if (m->ncpus > 1)
+		debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);
+
+	if (m->slow_serial_interrupts_hack_for_linux)
+		debug("Using slow_serial_interrupts_hack_for_linux\n");
+
+	if (m->use_x11) {
+		debug("Using X11");
+		if (m->x11_scaledown > 1)
+			debug(", scaledown %i", m->x11_scaledown);
+		if (m->x11_scaleup > 1)
+			debug(", scaleup %i", m->x11_scaleup);
+		if (m->x11_n_display_names > 0) {
+			for (i=0; i<m->x11_n_display_names; i++) {
+				debug(i? ", " : " (");
+				debug("\"%s\"", m->x11_display_names[i]);
+			}
+			debug(")");
+		}
+		debug("\n");
+	}
+
+	machine_dump_bus_info(m);
+
+	diskimage_dump_info(m);
+
+	if (m->force_netboot)
+		debug("Forced netboot\n");
 }
 
 
@@ -1550,7 +1683,7 @@ void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 			m->md_int.gc_data->status_hi &= ~mask;
 	}
 
-#if 1
+#if 0
 	printf("status = %08x %08x  enable = %08x %08x\n",
 	    m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
 	    m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);
@@ -2446,7 +2579,7 @@ void machine_setup(struct machine *machine)
 		machine->main_console_handle = (size_t)
 		    device_add(machine, "ns16550 irq=5 addr=0x1c800000 name2=tty0 in_use=1");
 
-		/*  TODO: bus_isa() ?  */
+		/*  TODO: bus_isa_init() ?  */
 
 #if 0
 		device_add(machine, "ns16550 irq=0 addr=0x1f000010 name2=tty1 in_use=0");
@@ -2954,9 +3087,8 @@ void machine_setup(struct machine *machine)
 			case 19:
 				strlcat(machine->machine_name,
 				    " (Everest IP19)", MACHINE_NAME_MAXBUF);
-				machine->main_console_handle =
-				    dev_zs_init(machine, mem, 0x1fbd9830, 0, -1, 4,
-				    "zstty0", "zstty1");	/*  serial? netbsd?  */
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 				dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
 
 				device_add(machine, "sgi_ip19 addr=0x18000000");
@@ -2999,11 +3131,14 @@ void machine_setup(struct machine *machine)
 
 				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, -1, 4, "zstty0", "zstty1");
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 
 				/*  This is the zsc0 reported by NetBSD:  TODO: irqs  */
-				machine->main_console_handle = dev_zs_init(machine, mem, 0x1fb80d10, 0, -1, 4, "zstty0", "zstty1");	/*  zsc0  */
-				dev_zs_init(machine, mem, 0x1fb80d00, 0, -1, 4, "zstty0", "zstty1");	/*  zsc1  */
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fb80d10 irq=0 addr_mult=4");
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fb80d00 irq=0 addr_mult=4");
 
 				/*  WDSC SCSI controller:  */
 				dev_wdsc_init(machine, mem, 0x1fb8011f, 0, 0);
@@ -3076,9 +3211,9 @@ Why is this here? TODO
 				 *  interrupts, and 32..63 for local1.  + y*65 for "mappable".
 				 */
 
-				/*  zsc0 serial console.  */
-				i = dev_zs_init(machine, mem, 0x1fbd9830,
-				    8 + 32 + 3 + 64*5, -1, 4, "zstty0", "zstty1");
+				/*  zsc0 serial console. 8 + 32 + 3 + 64*5 = 43+64*5 = 363 */
+				i = (size_t)device_add(machine,
+				    "z8530 addr=0x1fbd9830 irq=363 addr_mult=4");
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
 				j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
@@ -3136,9 +3271,8 @@ Why is this here? TODO
 				strlcat(machine->machine_name,
 				    " (uknown SGI-IP26 ?)",
 				    MACHINE_NAME_MAXBUF);	/*  TODO  */
-				machine->main_console_handle =
-				    dev_zs_init(machine, mem, 0x1fbd9830,
-				    0, -1, 4, "zstty0", "zstty1");
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 				break;
 			case 27:
 				strlcat(machine->machine_name,
@@ -3147,9 +3281,8 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				/*  2 cpus per node  */
 
-				machine->main_console_handle =
-				    dev_zs_init(machine, mem, 0x1fbd9830,
-				    0, -1, 4, "zstty0", "zstty1");
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 				break;
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */
@@ -3296,7 +3429,8 @@ Why is this here? TODO
 				}
 
 				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, -1, 4, "zstty0", "zstty1");
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
@@ -3306,7 +3440,7 @@ Why is this here? TODO
 				 *	ahc1            at pci0 dev 2 function ?
 				 */
 
-				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
+				pci_data = dev_macepci_init(machine, mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, "ne2000");  TODO  */
 
 				/*  TODO: make this nicer  */
@@ -3329,9 +3463,8 @@ Why is this here? TODO
 				    " (Origin 3000)", MACHINE_NAME_MAXBUF);
 				/*  4 cpus per node  */
 
-				machine->main_console_handle =
-				    dev_zs_init(machine, mem, 0x1fbd9830,
-				    0, -1, 4, "zstty0", "zstty1");
+				machine->main_console_handle = (size_t)device_add(machine,
+				    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 				break;
 			case 53:
 				strlcat(machine->machine_name,
@@ -3958,9 +4091,8 @@ Not yet.
 				    0x01230000 + (i << 8) + 0x55;
 		}
 
-		machine->main_console_handle = dev_zs_init(machine, mem,
-		    0x1e950000, 0, -1, 1, "zstty0", "zstty1");
-
+		machine->main_console_handle = (size_t)device_add(machine,
+		    "z8530 addr=0x1e950000 irq=0 addr_mult=4");
 		break;
 
 	case MACHINE_EVBMIPS:
@@ -3982,7 +4114,7 @@ Not yet.
 			machine->md_interrupt = isa8_interrupt;
 			machine->isa_pic_data.native_irq = 2;
 
-			bus_isa(machine, 0, 0x18000000, 0x10000000, 8, 24);
+			bus_isa_init(machine, 0, 0x18000000, 0x10000000, 8, 24);
 
 			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x name2=tty2", MALTA_CBUSUART);
 			device_add(machine, tmpstr);
@@ -4133,7 +4265,7 @@ Not yet.
 
 		/*  TODO: correct isa irq? 6 is just a bogus guess  */
 
-		bus_isa(machine, 0, 0x1d000000, 0xc0000000, 8, 24);
+		bus_isa_init(machine, 0, 0x1d000000, 0xc0000000, 8, 24);
 
 		if (machine->prom_emulation) {
 			/*  NetBSD/algor wants these:  */
@@ -4270,7 +4402,7 @@ Not yet.
 		pci_data = dev_eagle_init(machine, mem,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
-		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_VGA,
+		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_VGA,
 		    0x80000000, 0xc0000000, 32, 48);
 
 		if (machine->prom_emulation) {
@@ -4328,7 +4460,7 @@ Not yet.
 		pci_data = dev_eagle_init(machine, mem,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
-		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
+		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
 		    0x80000000, 0xc0000000, 32, 48);
 
 		bus_pci_add(machine, pci_data, mem, 0, 13, 0, "dec21143");
@@ -4395,8 +4527,8 @@ Not yet.
 		if (machine->use_x11)
 			bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
 
-		machine->main_console_handle = dev_zs_init(machine,
-		    mem, 0xf3013000ULL, 8, 23, 0x10, "zstty0", "zstty1");
+		machine->main_console_handle = (size_t)device_add(machine,
+		    "z8530 addr=0xf3013000 irq=23 dma_irq=8 addr_mult=0x10");
 
 		fb = dev_fb_init(machine, mem, 0xf1000000,
 		    VFB_GENERIC | VFB_REVERSE_START, 1024,768, 1024,768, 8, "ofb");
@@ -4734,9 +4866,8 @@ Not yet.
 		switch (machine->machine_subtype) {
 		case ST_DEC_3000_300:
 			machine->machine_name = "DEC 3000/300";
-			machine->main_console_handle =
-			    dev_zs_init(machine, mem, 0x1b0200000ULL,
-			    0, -1, 4, "zstty0", "zstty1");	/*  serial? netbsd?  */
+			machine->main_console_handle = (size_t)device_add(machine,
+			    "z8530 addr=0x1b0200000 irq=0 addr_mult=4");
 			break;
 		case ST_EB164:
 			machine->machine_name = "EB164";
@@ -4823,7 +4954,7 @@ Not yet.
 		/*  Interrupt ack space?  */
 		dev_ram_init(machine, 0x80000000, 0x1000, DEV_RAM_RAM, 0);
 
-		bus_isa(machine, BUS_ISA_PCKBC_FORCE_USE | BUS_ISA_PCKBC_NONPCSTYLE,
+		bus_isa_init(machine, BUS_ISA_PCKBC_FORCE_USE | BUS_ISA_PCKBC_NONPCSTYLE,
 		    0x7c000000, 0x80000000, 32, 48);
 
 		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
@@ -5025,7 +5156,7 @@ Not yet.
 		machine->md_interrupt = isa32_interrupt;
 		machine->isa_pic_data.native_irq = 11;
 
-		bus_isa(machine, 0, 0x7c000000, 0x80000000, 32, 48);
+		bus_isa_init(machine, 0, 0x7c000000, 0x80000000, 32, 48);
 #if 0
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
 		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
@@ -5053,8 +5184,7 @@ Not yet.
 	case MACHINE_SHARK:
 		machine->machine_name = "Digital DNARD (\"Shark\")";
 
-		bus_isa(machine, BUS_ISA_IDE0,
-		    0x08100000, 0xc0000000, 32, 48);
+		bus_isa_init(machine, BUS_ISA_IDE0, 0x08100000, 0xc0000000, 32, 48);
 
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu,
@@ -5226,7 +5356,7 @@ Not yet.
 
 		machine->md_interrupt = x86_pc_interrupt;
 
-		bus_isa(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1 | BUS_ISA_VGA |
+		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1 | BUS_ISA_VGA |
 		    BUS_ISA_PCKBC_FORCE_USE |
 		    (machine->machine_subtype == MACHINE_X86_XT?
 		    BUS_ISA_NO_SECOND_PIC : 0) | BUS_ISA_FDC,
@@ -5268,6 +5398,9 @@ Not yet.
 			debug(" %s", bootarg);
 		debug("\n");
 	}
+
+	if (verbose >= 2)
+		machine_dump_bus_info(machine);
 
 	if (!stable)
 		fatal("!\n!  NOTE: This machine type is not implemented well"
@@ -5655,84 +5788,6 @@ void machine_default_cputype(struct machine *m)
 
 
 /*
- *  machine_dumpinfo():
- *
- *  Dumps info about a machine in some kind of readable format. (Used by
- *  the 'machine' debugger command.)
- */
-void machine_dumpinfo(struct machine *m)
-{
-	int i;
-
-	debug("serial nr: %i", m->serial_nr);
-	if (m->nr_of_nics > 0)
-		debug("  (nr of nics: %i)", m->nr_of_nics);
-	debug("\n");
-
-	debug("memory: %i MB", m->physical_ram_in_mb);
-	if (m->memory_offset_in_mb != 0)
-		debug(" (offset by %i MB)", m->memory_offset_in_mb);
-	if (m->random_mem_contents)
-		debug(", randomized contents");
-	if (m->dbe_on_nonexistant_memaccess)
-		debug(", dbe_on_nonexistant_memaccess");
-	debug("\n");
-
-	if (m->single_step_on_bad_addr)
-		debug("single-step on bad addresses\n");
-
-	if (m->arch == ARCH_MIPS) {
-		if (m->bintrans_enable)
-			debug("bintrans enabled (%i MB cache)\n",
-			    (int) (m->bintrans_size / 1048576));
-		else
-			debug("bintrans disabled, other speedtricks %s\n",
-			    m->speed_tricks? "enabled" : "disabled");
-	}
-
-	debug("clock: ");
-	if (m->automatic_clock_adjustment)
-		debug("adjusted automatically");
-	else
-		debug("fixed at %i Hz", m->emulated_hz);
-	debug("\n");
-
-	if (!m->prom_emulation)
-		debug("PROM emulation disabled\n");
-
-	for (i=0; i<m->ncpus; i++)
-		cpu_dumpinfo(m, m->cpus[i]);
-
-	if (m->ncpus > 1)
-		debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);
-
-	if (m->slow_serial_interrupts_hack_for_linux)
-		debug("Using slow_serial_interrupts_hack_for_linux\n");
-
-	if (m->use_x11) {
-		debug("Using X11");
-		if (m->x11_scaledown > 1)
-			debug(", scaledown %i", m->x11_scaledown);
-		if (m->x11_scaleup > 1)
-			debug(", scaleup %i", m->x11_scaleup);
-		if (m->x11_n_display_names > 0) {
-			for (i=0; i<m->x11_n_display_names; i++) {
-				debug(i? ", " : " (");
-				debug("\"%s\"", m->x11_display_names[i]);
-			}
-			debug(")");
-		}
-		debug("\n");
-	}
-
-	diskimage_dump_info(m);
-
-	if (m->force_netboot)
-		debug("Forced netboot\n");
-}
-
-
-/*
  *  machine_entry_new():
  *
  *  This function creates a new machine_entry struct, and fills it with some
@@ -5824,7 +5879,7 @@ static struct machine_entry_subtype *machine_entry_subtype_new(
 void machine_list_available_types_and_cpus(void)
 {
 	struct machine_entry *me;
-	int iadd = 8;
+	int iadd = DEBUG_INDENTATION * 2;
 
 	debug("Available CPU types:\n\n");
 
@@ -5844,7 +5899,7 @@ void machine_list_available_types_and_cpus(void)
 		fatal("No machines defined!\n");
 
 	while (me != NULL) {
-		int i, j, iadd = 4;
+		int i, j, iadd = DEBUG_INDENTATION;
 
 		debug("%s", me->name);
 		debug(" (");

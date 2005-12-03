@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.15 2005-12-02 21:37:54 debug Exp $
+ *  $Id: of.c,v 1.16 2005-12-03 04:14:17 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -578,7 +578,7 @@ bad:
  */
 static void of_dump_devices(struct of_data *ofd, int parent)
 {
-	int iadd = 4;
+	int iadd = DEBUG_INDENTATION;
 	struct of_device *od = ofd->of_devices;
 
 	while (od != NULL) {
@@ -612,7 +612,7 @@ static void of_dump_devices(struct of_data *ofd, int parent)
  */
 static void of_dump_all(struct of_data *ofd)
 {
-	int iadd = 4;
+	int iadd = DEBUG_INDENTATION;
 	struct of_service *os;
 
 	debug("openfirmware debug dump:\n");
@@ -772,7 +772,7 @@ void of_emul_init_zs(struct machine *machine)
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "device_type", "serial");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs", "name", "escc");
 	of_store_32bit_in_host(zs_reg + 0, 0x13000);
-	of_store_32bit_in_host(zs_reg + 4, 0x100);
+	of_store_32bit_in_host(zs_reg + 4, 0x40);
 	of_store_32bit_in_host(zs_reg + 8, 0x100);
 	of_store_32bit_in_host(zs_reg + 12, 0x100);
 	of_store_32bit_in_host(zs_reg + 16, 0x200);
@@ -787,8 +787,8 @@ void of_emul_init_zs(struct machine *machine)
 
 	of_add_device(ofd, "zstty1", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty1", "name", "ch-a");
-	of_store_32bit_in_host(zs_interrupts + 0, 15);
-	of_store_32bit_in_host(zs_interrupts + 4, 16);
+	of_store_32bit_in_host(zs_interrupts + 0, 16);
+	of_store_32bit_in_host(zs_interrupts + 4, 0);
 	of_store_32bit_in_host(zs_interrupts + 8, 0);
 	of_add_prop(ofd, "/bandit/gc/zs/zstty1", "interrupts", zs_interrupts,
 	    3*sizeof(uint32_t), 0);
@@ -810,7 +810,7 @@ void of_emul_init_zs(struct machine *machine)
 	of_add_device(ofd, "zstty0", "/bandit/gc/zs");
 	of_add_prop_str(machine, ofd, "/bandit/gc/zs/zstty0", "name", "ch-b");
 	of_store_32bit_in_host(zs_interrupts + 0, 15);
-	of_store_32bit_in_host(zs_interrupts + 4, 16);
+	of_store_32bit_in_host(zs_interrupts + 4, 0);
 	of_store_32bit_in_host(zs_interrupts + 8, 0);
 	of_add_prop(ofd, "/bandit/gc/zs/zstty0", "interrupts", zs_interrupts,
 	    3*sizeof(uint32_t), 0);

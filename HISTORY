@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1073 2005-12-03 00:38:03 debug Exp $
+$Id: HISTORY,v 1.1074 2005-12-03 04:14:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2496,5 +2496,8 @@ Changelog for GXemul:
 		to devinit style.
 		Reworking some of the input-only vs output-only vs input-output
 		details of src/console.c, better warning messages, and adding
-		a debug dump (visible with -vv).
+		a debug dump.
 		Removing the concept of "device state"; it wasn't really used.
+		Changing some debug output (-vv should now be used to show all
+		details about devices and busses; not shown during normal
+		startup anymore).

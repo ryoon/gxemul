@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.31 2005-11-29 07:40:49 debug Exp $
+ *  $Id: dev_rd94.c,v 1.32 2005-12-03 04:14:14 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -219,7 +219,8 @@ int devinit_rd94(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct rd94_data));
 	d->pciirq   = devinit->irq_nr;
-	d->pci_data = bus_pci_init(d->pciirq, 0,0, 0,0,0, 0,0,0);
+	d->pci_data = bus_pci_init(devinit->machine, d->pciirq,
+	    0,0, 0,0,0, 0,0,0);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_RD94_LENGTH,

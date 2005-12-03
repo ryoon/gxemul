@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.202 2005-12-02 08:59:21 debug Exp $
+ *  $Id: devices.h,v 1.203 2005-12-03 04:14:16 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -150,6 +150,7 @@ void dev_bt459_init(struct machine *machine, struct memory *mem,
 struct cons_data {
 	int	console_handle;
 	int	irq_nr;
+	int	in_use;
 };
 
 /*  dev_colorplanemask.c:  */
@@ -609,7 +610,7 @@ int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
 #define	DEV_MACEPCI_LENGTH		0x1000
 int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq);
+struct pci_data *dev_macepci_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int pciirq);
 #define	DEV_SGI_MEC_LENGTH		0x1000
 int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_mec_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, unsigned char *macaddr);
@@ -688,13 +689,6 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 #define	DEV_WDSC_LENGTH			0x10
 int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_wdsc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int controller_nr, int irq_nr);
-
-/*  dev_zs.c:  */
-#define	DEV_ZS_LENGTH			4
-int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	unsigned char *data, size_t len, int writeflag, void *);
-int dev_zs_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int dma_irq_nr, int addrmult, char *name_a, char *name_b);
 
 /*  lk201.c:  */
 struct lk201_data {

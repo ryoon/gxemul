@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.324 2005-11-30 16:23:06 debug Exp $
+ *  $Id: cpu.c,v 1.325 2005-12-03 04:14:11 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -358,7 +358,7 @@ void cpu_dumpinfo(struct machine *m, struct cpu *cpu)
 void cpu_list_available_types(void)
 {
 	struct cpu_family *fp;
-	int iadd = 4;
+	int iadd = DEBUG_INDENTATION;
 
 	fp = first_cpu_family;
 

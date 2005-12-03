@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.61 2005-12-02 01:46:30 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.62 2005-12-03 04:14:14 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -895,12 +895,12 @@ int dev_pckbc_init(struct machine *machine, struct memory *mem,
 	d->mouse_irqnr       = mouse_irqnr;
 	d->in_use            = in_use;
 	d->pc_style_flag     = pc_style_flag;
-	if (d->in_use)
-		d->console_handle =
-		    console_start_slave_inputonly(machine, "pckbc");
 	d->translation_table = 2;
 	d->rx_int_enable     = 1;
 	d->output_byte       = 0x02;	/*  A20 enable on PCs  */
+
+	d->console_handle = console_start_slave_inputonly(
+	    machine, "pckbc", d->in_use);
 
 	memory_device_register(mem, "pckbc", baseaddr,
 	    len, dev_pckbc_access, d, DM_DEFAULT, NULL);

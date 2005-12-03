@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.33 2005-11-13 00:14:10 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.34 2005-12-03 04:14:15 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -559,7 +559,8 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 
 	/*  TODO: VRC4173 has the KIU at offset 0x100?  */
 	d->kiu_offset = 0x180;
-	d->kiu_console_handle = console_start_slave_inputonly(machine, "kiu");
+	d->kiu_console_handle = console_start_slave_inputonly(
+	    machine, "kiu", 1);
 	d->kiu_irq_nr = VRIP_INTR_KIU;
 
 	switch (cpumodel) {

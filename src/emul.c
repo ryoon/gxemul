@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.239 2005-11-27 03:48:09 debug Exp $
+ *  $Id: emul.c,v 1.240 2005-12-03 04:14:11 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -152,7 +152,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	int *n_loadp, char ***load_namesp)
 {
 	char str[35];
-	int filenr, i, ofs, dirlen, res = 0, res2, iadd = 4;
+	int filenr, i, ofs, dirlen, res = 0, res2, iadd = DEBUG_INDENTATION;
 	int found_dir;
 	uint64_t dirofs;
 	uint64_t fileofs, filelen;
@@ -906,7 +906,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 {
 	struct emul *emul;
 	struct cpu *cpu;
-	int i, iadd=4;
+	int i, iadd = DEBUG_INDENTATION;
 	uint64_t memory_amount, entrypoint = 0, gp = 0, toc = 0;
 	int byte_order;
 
@@ -1064,6 +1064,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	}
 
 	diskimage_dump_info(m);
+	console_debug_dump(m);
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (n_load == 0) {
@@ -1425,7 +1426,7 @@ if (m->machine_type == MACHINE_IQ80321) {
  */
 void emul_dumpinfo(struct emul *e)
 {
-	int j, nm, iadd = 4;
+	int j, nm, iadd = DEBUG_INDENTATION;
 
 	if (e->net != NULL)
 		net_dumpinfo(e->net);
@@ -1454,7 +1455,7 @@ void emul_dumpinfo(struct emul *e)
  */
 void emul_simple_init(struct emul *emul)
 {
-	int iadd=4;
+	int iadd = DEBUG_INDENTATION;
 	struct machine *m;
 
 	if (emul->n_machines != 1) {
@@ -1491,7 +1492,7 @@ void emul_simple_init(struct emul *emul)
  */
 struct emul *emul_create_from_configfile(char *fname)
 {
-	int iadd = 4;
+	int iadd = DEBUG_INDENTATION;
 	struct emul *e = emul_new(fname);
 	FILE *f;
 	char buf[128];

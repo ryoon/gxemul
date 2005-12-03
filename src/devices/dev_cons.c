@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.28 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_cons.c,v 1.29 2005-12-03 04:14:14 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -142,7 +142,9 @@ int devinit_cons(struct devinit *devinit)
 		snprintf(name3, nlen, "%s", devinit->name);
 
 	d->irq_nr = devinit->irq_nr;
-	d->console_handle = console_start_slave(devinit->machine, name3);
+	d->in_use = devinit->in_use;
+	d->console_handle = console_start_slave(devinit->machine, name3,
+	    d->in_use);
 
 	memory_device_register(devinit->machine->memory, name3,
 	    devinit->addr, DEV_CONS_LENGTH, dev_cons_access, d,

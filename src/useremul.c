@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.67 2005-11-26 05:46:50 debug Exp $
+ *  $Id: useremul.c,v 1.68 2005-12-03 04:14:12 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -1716,7 +1716,7 @@ static void add_useremul(char *name, int arch, char *cpu_name,
 void useremul_list_emuls(void)
 {
 	struct syscall_emul *sep;
-	int iadd = 8;
+	int iadd = DEBUG_INDENTATION * 2;
 
 	sep = first_syscall_emul;
 

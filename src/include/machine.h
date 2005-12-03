@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.89 2005-11-30 16:23:10 debug Exp $
+ *  $Id: machine.h,v 1.90 2005-12-03 04:14:16 debug Exp $
  */
 
 #include <sys/types.h>
@@ -73,6 +73,16 @@ struct isa_pic_data {
 	struct pic8259_data	*pic2;
 	int			last_int;
 	int			native_irq;
+};
+
+
+struct machine_bus {
+	struct machine_bus *next;
+
+	char		*name;
+
+	void		(*debug_dump)(void *);
+	void		*extra;
 };
 
 
@@ -129,6 +139,10 @@ struct machine {
 	int	start_paused;
 	int	ncpus;
 	struct cpu **cpus;
+
+	/*  Registered busses:  */
+	struct machine_bus *first_bus;
+	int	n_busses;
 
 	/*  These are used by stuff in cpu.c, mostly:  */
 	int64_t ncycles;
@@ -455,6 +469,8 @@ void machine_setup(struct machine *);
 void machine_memsize_fix(struct machine *);
 void machine_default_cputype(struct machine *);
 void machine_dumpinfo(struct machine *);
+void machine_bus_register(struct machine *, char *busname,
+	void (*debug_dump)(void *), void *extra);
 void machine_list_available_types_and_cpus(void);
 void machine_init(void);
 

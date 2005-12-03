@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.126 2005-12-03 00:38:02 debug Exp $
+ *  $Id: debugger.c,v 1.127 2005-12-03 04:14:11 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -684,7 +684,7 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_emuls(struct machine *m, char *cmd_line)
 {
-	int i, iadd = 4;
+	int i, iadd = DEBUG_INDENTATION;
 
 	if (*cmd_line) {
 		printf("syntax: emuls\n");
@@ -843,7 +843,7 @@ static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
-	int iadd = 4;
+	int iadd = DEBUG_INDENTATION;
 
 	if (*cmd_line) {
 		printf("syntax: machine\n");

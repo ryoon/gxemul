@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.46 2005-11-23 18:16:42 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.47 2005-12-03 04:14:14 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -84,7 +84,7 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 	struct ns_data *d = extra;
 
 	d->reg[com_iir] &= ~IIR_RXRDY;
-	if (d->in_use && console_charavail(d->console_handle))
+	if (console_charavail(d->console_handle))
 		d->reg[com_iir] |= IIR_RXRDY;
 
 	/*
@@ -139,7 +139,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		d->reg[com_iir] |= ((d->fcr << 5) & 0xc0);
 
 	d->reg[com_lsr] &= ~LSR_RXRDY;
-	if (d->in_use && console_charavail(d->console_handle))
+	if (console_charavail(d->console_handle))
 		d->reg[com_lsr] |= LSR_RXRDY;
 
 	relative_addr /= d->addrmult;
@@ -166,19 +166,14 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 		/*  Read/write of data:  */
 		if (writeflag == MEM_WRITE) {
-			if (d->reg[com_mcr] & MCR_LOOPBACK) {
+			if (d->reg[com_mcr] & MCR_LOOPBACK)
 				console_makeavail(d->console_handle, idata);
-			} else {
+			else
 				console_putchar(d->console_handle, idata);
-				if (console_are_slaves_allowed())
-					d->in_use = 1;
-			}
 			d->reg[com_iir] |= IIR_TXRDY;
 		} else {
-			if (d->in_use)
-				odata = console_readchar(d->console_handle);
-			else
-				odata = 0;
+			int x = console_readchar(d->console_handle);
+			odata = x < 0? 0 : x;
 		}
 		dev_ns16550_tick(cpu, d);
 		break;
@@ -348,7 +343,7 @@ int devinit_ns16550(struct devinit *devinit)
 	d->stopbits	= "1";
 	d->name		= devinit->name2 != NULL? devinit->name2 : "";
 	d->console_handle =
-	    console_start_slave(devinit->machine, devinit->name);
+	    console_start_slave(devinit->machine, devinit->name, d->in_use);
 
 	nlen = strlen(devinit->name) + 10;
 	if (devinit->name2 != NULL)

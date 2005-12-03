@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.5 2005-11-21 11:10:11 debug Exp $
+ *  $Id: bus_isa.c,v 1.6 2005-12-03 04:14:14 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -34,6 +34,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define BUS_ISA_C
 
 #include "bus_isa.h"
 #include "device.h"
@@ -44,7 +46,24 @@
 
 
 /*
- *  bus_isa():
+ *  bus_isa_debug_dump():
+ */
+void bus_isa_debug_dump(void *extra)
+{
+	struct bus_isa_data *d = (struct bus_isa_data *) extra;
+
+	debug("isa:\n");
+	debug_indentation(DEBUG_INDENTATION);
+	debug("portbase:    0x%llx\n", (long long)d->isa_portbase);
+	debug("membase:     0x%llx\n", (long long)d->isa_membase);
+	debug("irqbase:     %i\n", (int)d->isa_irqbase);
+	debug("reasser_irq: %i\n", (int)d->reassert_irq);
+	debug_indentation(-DEBUG_INDENTATION);
+}
+
+
+/*
+ *  bus_isa_init():
  *
  *  Flags are zero or more of the following, ORed together:
  *
@@ -67,13 +86,21 @@
  *  (*3) Similar to *2 above; machines that always boot up with VGA console
  *       should have this flag set, so that the keyboard is always used.
  */
-void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
-	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase,
-	int reassert_irq)
+struct bus_isa_data *bus_isa_init(struct machine *machine,
+	uint32_t bus_isa_flags, uint64_t isa_portbase, uint64_t isa_membase,
+	int isa_irqbase, int reassert_irq)
 {
+	struct bus_isa_data *d = malloc(sizeof(struct bus_isa_data));
 	char tmpstr[300];
 	int wdc0_irq = 14, wdc1_irq = 15;
 	int tmp_handle, kbd_in_use;
+
+	memset(d, 0, sizeof(struct bus_isa_data));
+	d->isa_portbase = isa_portbase;
+	d->isa_membase  = isa_membase;
+	d->isa_irqbase  = isa_irqbase;
+	d->reassert_irq = reassert_irq;
+	machine_bus_register(machine, "isa", bus_isa_debug_dump, d);
 
 	kbd_in_use = ((bus_isa_flags & BUS_ISA_PCKBC_FORCE_USE) ||
 	    (machine->use_x11))? 1 : 0;
@@ -161,5 +188,7 @@ void bus_isa(struct machine *machine, uint32_t bus_isa_flags,
 	if (bus_isa_flags != 0)
 		fatal("WARNING! bus_isa(): unimplemented bus_isa_flags 0x%x\n",
 		    bus_isa_flags);
+
+	return d;
 }
 

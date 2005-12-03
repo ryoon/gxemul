@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.18 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_8250.c,v 1.19 2005-12-03 04:14:14 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -45,13 +45,13 @@
 
 
 struct dev_8250_data {
-	int		reg[8];
-
 	int		console_handle;
 	int		irq_enable;
 	int		irqnr;
-
+	int		in_use;
 	int		addrmult;
+
+	int		reg[8];
 
 	int		dlab;		/*  Divisor Latch Access bit  */
 	int		divisor;
@@ -61,6 +61,7 @@ struct dev_8250_data {
 };
 
 #define	DEV_8250_LENGTH		8
+#define	DEV_8250_TICKSHIFT	15
 
 
 /*
@@ -111,12 +112,11 @@ int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	relative_addr /= d->addrmult;
 
-	if (writeflag == MEM_WRITE && relative_addr == 0)
+	if (writeflag == MEM_WRITE && relative_addr == 0) {
 		console_putchar(d->console_handle, idata);
-	else
-	if (writeflag == MEM_READ && relative_addr == 5)
+	} else if (writeflag == MEM_READ && relative_addr == 5) {
 		odata = 64 + 32;
-	else {
+	} else {
 #if 0
 		if (writeflag == MEM_WRITE)
 			fatal("[ 8250: write addr=0x%02x idata = 0x%02x ]\n",
@@ -146,19 +146,22 @@ int devinit_8250(struct devinit *devinit)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct dev_8250_data));
-	d->irqnr = devinit->irq_nr;
+	d->irqnr    = devinit->irq_nr;
 	d->addrmult = devinit->addr_mult;
-	d->console_handle = console_start_slave(devinit->machine, "console");
-	d->dlab = 0;
+	d->in_use   = devinit->in_use;
+	d->dlab     = 0;
 	d->divisor  = 115200 / 9600;
 	d->databits = 8;
 	d->parity   = 'N';
 	d->stopbits = "1";
+	d->console_handle =
+	    console_start_slave(devinit->machine, "console", d->in_use);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_8250_LENGTH * devinit->addr_mult,
 	    dev_8250_access, d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(devinit->machine, dev_8250_tick, d, 14);
+	machine_add_tickfunction(devinit->machine, dev_8250_tick, d,
+	    DEV_8250_TICKSHIFT);
 
 	return 1;
 }

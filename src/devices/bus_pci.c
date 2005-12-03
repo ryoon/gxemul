@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.48 2005-11-29 07:40:48 debug Exp $
+ *  $Id: bus_pci.c,v 1.49 2005-12-03 04:14:14 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -318,6 +318,31 @@ static void allocate_device_space(struct pci_device *pd,
 
 
 /*
+ *  bus_pci_debug_dump():
+ */
+void bus_pci_debug_dump(void *extra)
+{
+	struct pci_data *d = (struct pci_data *) extra;
+	struct pci_device *pd;
+	int iadd = DEBUG_INDENTATION;
+
+	debug("pci:\n");
+	debug_indentation(iadd);
+
+	pd = d->first_device;
+	if (pd == NULL)
+		debug("no devices!\n");
+	while (pd != NULL) {
+		debug("bus %3i, dev %2i, func %i: %s\n",
+		    pd->bus, pd->device, pd->function, pd->name);
+		pd = pd->next;
+	}
+
+	debug_indentation(-iadd);
+}
+
+
+/*
  *  bus_pci_init():
  *
  *  This doesn't register a device, but instead returns a pointer to a struct
@@ -334,7 +359,7 @@ static void allocate_device_space(struct pci_device *pd,
  *  isa_portbase, isa_membase, and isa_irqbase are the port, memory, and
  *  interrupt bases for legacy ISA devices.
  */
-struct pci_data *bus_pci_init(int irq_nr,
+struct pci_data *bus_pci_init(struct machine *machine, int irq_nr,
 	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
 	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
 	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase)
@@ -356,6 +381,9 @@ struct pci_data *bus_pci_init(int irq_nr,
 	d->isa_portbase          = isa_portbase;
 	d->isa_membase           = isa_membase;
 	d->isa_irqbase           = isa_irqbase;
+
+	/*  Register the bus:  */
+	machine_bus_register(machine, "pci", bus_pci_debug_dump, d);
 
 	/*  Assume that the first 64KB could be used by legacy ISA devices:  */
 	d->cur_pci_portbase = d->pci_portbase + 0x10000;

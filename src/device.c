@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.20 2005-11-22 16:26:35 debug Exp $
+ *  $Id: device.c,v 1.21 2005-12-03 04:14:11 debug Exp $
  *
  *  Device registry framework.
  */
@@ -285,6 +285,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 	}
 	memcpy(devinit.name, name_and_params, len);
 	devinit.name[len] = '\0';
+	devinit.dma_irq_nr = -1;
 
 	p = device_lookup(devinit.name);
 	if (p == NULL) {
@@ -340,6 +341,8 @@ void *device_add(struct machine *machine, char *name_and_params)
 			}
 		} else if (strncmp(s2, "irq=", 4) == 0) {
 			devinit.irq_nr = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "dma_irq=", 8) == 0) {
+			devinit.dma_irq_nr = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "in_use=", 7) == 0) {
 			devinit.in_use = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "name2=", 6) == 0) {

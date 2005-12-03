@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.235 2005-11-30 06:58:05 debug Exp $
+ *  $Id: misc.h,v 1.236 2005-12-03 04:14:16 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -109,7 +109,7 @@ struct memory;
 
 /*  Debug stuff:  */
 #define	DEBUG_BUFSIZE		1024
-
+#define	DEBUG_INDENTATION	4
 #ifndef	DEFAULT_BINTRANS_SIZE_IN_MB
 #define	DEFAULT_BINTRANS_SIZE_IN_MB	16
 #endif

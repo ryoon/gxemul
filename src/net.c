@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.85 2005-11-29 07:27:49 debug Exp $
+ *  $Id: net.c,v 1.86 2005-12-03 04:14:12 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2251,7 +2251,7 @@ static void net_gateway_init(struct net *net)
  */
 void net_dumpinfo(struct net *net)
 {
-	int iadd = 4;
+	int iadd = DEBUG_INDENTATION;
 	struct remote_net *rnp;
 
 	debug("net: simulating ");

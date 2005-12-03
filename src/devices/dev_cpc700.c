@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cpc700.c,v 1.5 2005-11-29 07:40:49 debug Exp $
+ *  $Id: dev_cpc700.c,v 1.6 2005-12-03 04:14:14 debug Exp $
  *  
  *  IBM CPC700 bridge; PCI and interrupt controller.
  */
@@ -164,6 +164,7 @@ struct cpc700_data *dev_cpc700_init(struct machine *machine, struct memory *mem)
 
 	/*  Register a PCI bus:  */
 	d->pci_data = bus_pci_init(
+	    machine,
 	    0			/*  pciirq: TODO  */,
 	    0,			/*  pci device io offset  */
 	    0,			/*  pci device mem offset  */

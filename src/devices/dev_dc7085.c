@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.51 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.52 2005-12-03 04:14:14 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -316,7 +316,7 @@ int dev_dc7085_init(struct machine *machine, struct memory *mem,
 	d->regs.dc_csr = CSR_TRDY | CSR_MSE;
 	d->regs.dc_tcr = 0x00;
 
-	d->console_handle = console_start_slave(machine, "DC7085");
+	d->console_handle = console_start_slave(machine, "DC7085", 1);
 
 	lk201_init(&d->lk201, use_fb, add_to_rx_queue, d->console_handle, d);
 

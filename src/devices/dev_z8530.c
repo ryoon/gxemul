@@ -25,17 +25,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.28 2005-12-02 08:59:21 debug Exp $
+ *  $Id: dev_z8530.c,v 1.1 2005-12-03 04:14:15 debug Exp $
  *  
- *  Zilog serial controller.
+ *  Zilog "zs" serial controller (Z8530).
  *
  *  Features:
  *	o)  Two channels, 0 = "channel B", 1 = "channel A".
  *
  *  This is a work in progress... TODOs include:
- *	o)  Implement more of the register set
- *	o)  Verify that it works with other guest OSes than NetBSD
- *	o)  DMA!
+ *	o)  Implement more of the register set.
+ *	o)  Verify that it works with other guest OSes than NetBSD and OpenBSD.
+ *	o)  Implement DMA!
  */
 
 #include <stdio.h>
@@ -44,7 +44,7 @@
 
 #include "console.h"
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -52,19 +52,21 @@
 #include "z8530reg.h"
 
 
-#define	ZS_TICK_SHIFT		14
-#define	ZS_N_REGS		16
-
 #define debug fatal
 
-struct zs_data {
+#define	ZS_TICK_SHIFT		15
+#define	ZS_N_REGS		16
+#define	DEV_Z8530_LENGTH	4
+
+struct z8530_data {
 	int		irq_nr;
 	int		dma_irq_nr;
 	int		irq_asserted;
-	int		addrmult;
+
+	int		in_use;
+	int		addr_mult;
 
 	/*  2 of everything, because there are two channels.  */
-	int		in_use[2];
 	int		console_handle[2];
 	int		reg_select[2];
 	uint8_t		rr[2][ZS_N_REGS];
@@ -73,69 +75,64 @@ struct zs_data {
 
 
 /*
- *  dev_zs_tick():
+ *  check_incoming():
  */
-static void check_incoming(struct cpu *cpu, struct zs_data *d)
+static void check_incoming(struct cpu *cpu, struct z8530_data *d)
 {
-	d->rr[0][0] &= ~ZSRR0_RX_READY;
-	d->rr[1][0] &= ~ZSRR0_RX_READY;
-	if (d->in_use[0] && console_charavail(d->console_handle[0])) {
-		d->rr[0][0] |= ZSRR0_RX_READY;
+	if (console_charavail(d->console_handle[0])) {
 		d->rr[1][3] |= ZSRR3_IP_B_RX;
+		d->rr[0][0] |= ZSRR0_RX_READY;
 	}
-	if (d->in_use[1] && console_charavail(d->console_handle[1])) {
-		d->rr[1][0] |= ZSRR0_RX_READY;
+	if (console_charavail(d->console_handle[1])) {
 		d->rr[1][3] |= ZSRR3_IP_A_RX;
+		d->rr[1][0] |= ZSRR0_RX_READY;
 	}
 }
 
 
 /*
- *  dev_zs_tick():
+ *  dev_z8530_tick():
  */
-void dev_zs_tick(struct cpu *cpu, void *extra)
+void dev_z8530_tick(struct cpu *cpu, void *extra)
 {
-	struct zs_data *d = (struct zs_data *) extra;
+	struct z8530_data *d = (struct z8530_data *) extra;
 	int asserted = 0;
-
-	check_incoming(cpu, d);
-
-	if (d->rr[1][3] & ZSRR3_IP_B_RX && (d->wr[0][1]&0x18) != ZSWR1_RIE_NONE)
-		asserted = 1;
-	if (d->rr[1][3] & ZSRR3_IP_A_RX && (d->wr[1][1]&0x18) != ZSWR1_RIE_NONE)
-		asserted = 1;
 
 	if (d->rr[1][3] & ZSRR3_IP_B_TX && d->wr[0][1] & ZSWR1_TIE)
 		asserted = 1;
 	if (d->rr[1][3] & ZSRR3_IP_A_TX && d->wr[1][1] & ZSWR1_TIE)
 		asserted = 1;
 
+	d->rr[1][3] &= ~(ZSRR3_IP_B_RX | ZSRR3_IP_A_RX);
+	if (!asserted)
+		check_incoming(cpu, d);
+
+	if (d->rr[1][3] & ZSRR3_IP_B_RX && (d->wr[0][1]&0x18) != ZSWR1_RIE_NONE)
+		asserted = 1;
+	if (d->rr[1][3] & ZSRR3_IP_A_RX && (d->wr[1][1]&0x18) != ZSWR1_RIE_NONE)
+		asserted = 1;
+
 	if (!(d->wr[1][9] & ZSWR9_MASTER_IE))
 		asserted = 0;
 
-	if (asserted) {
+	if (asserted)
 		cpu_interrupt(cpu, d->irq_nr);
-		if (d->dma_irq_nr >= 0)
-			cpu_interrupt(cpu, d->dma_irq_nr);
-	}
 
-	if (d->irq_asserted && !asserted) {
+	if (d->irq_asserted && !asserted)
 		cpu_interrupt_ack(cpu, d->irq_nr);
-		if (d->dma_irq_nr >= 0)
-			cpu_interrupt_ack(cpu, d->dma_irq_nr);
-	}
 
 	d->irq_asserted = asserted;
 }
 
 
 /*
- *  dev_zs_access():
+ *  dev_z8530_access():
  */
-int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_z8530_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, 
+	void *extra)
 {
-	struct zs_data *d = extra;
+	struct z8530_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int port_nr;
 
@@ -146,25 +143,19 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	d->rr[0][0] |= ZSRR0_TX_READY | ZSRR0_DCD | ZSRR0_CTS;
 	d->rr[1][0] |= ZSRR0_TX_READY | ZSRR0_DCD | ZSRR0_CTS;
 
-	/*  Any available key strokes?  */
-	check_incoming(cpu, d);
-
-	relative_addr /= d->addrmult;
+	relative_addr /= d->addr_mult;
 
 	port_nr = relative_addr / 2;
 	relative_addr &= 1;
 
-	switch (relative_addr) {
-
-	case 0:	if (writeflag == MEM_READ) {
+	if (relative_addr == 0) {
+		/*  Register access:  */
+		if (writeflag == MEM_READ) {
 			odata = d->rr[port_nr][d->reg_select[port_nr]];
 			if (d->reg_select[port_nr] != 0)
-				debug("[ zs: read from port %i reg %2i: 0x%02x"
-				    " ]\n", port_nr, d->reg_select[port_nr],
-				    (int)odata);
-			/*  Ack interrupt status:  */
-			if (port_nr == 1 && d->reg_select[port_nr] == 3)
-				d->rr[1][3] = 0;
+				debug("[ z8530: read from port %i reg %2i: "
+				    "0x%02x ]\n", port_nr, d->reg_select[
+				    port_nr], (int)odata);
 			d->reg_select[port_nr] = 0;
 		} else {
 			if (d->reg_select[port_nr] == 0) {
@@ -172,75 +163,85 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			} else {
 				d->wr[port_nr][d->reg_select[port_nr]] = idata;
 				switch (d->reg_select[port_nr]) {
-				default:debug("[ zs: write to port %i reg %2i:"
-					    " 0x%02x ]\n", port_nr, d->
+				case 8:	/*  Interrupt ack:  */
+					if (idata == ZSWR0_CLR_INTR)
+						d->rr[1][3] = 0;
+					break;
+				default:debug("[ z8530: write to  port %i reg "
+					    "%2i: 0x%02x ]\n", port_nr, d->
 					    reg_select[port_nr], (int)idata);
 				}
 				d->reg_select[port_nr] = 0;
 			}
 		}
-		break;
-
-	case 1:	if (writeflag == MEM_READ) {
-			if (console_charavail(d->console_handle[port_nr]))
-				odata = console_readchar(d->
-				    console_handle[port_nr]);
-			else
-				odata = 0;
+	} else {
+		/*  Data access:  */
+		if (writeflag == MEM_READ) {
+			int x = console_readchar(d->console_handle[port_nr]);
+			d->rr[port_nr][0] &= ~ZSRR0_RX_READY;
+			odata = x < 0? 0 : x;
 		} else {
 			idata &= 255;
 			if (idata != 0)
 				console_putchar(d->console_handle[port_nr],
 				    idata);
-			d->in_use[port_nr] = 1;
-			if (port_nr == 0 && d->wr[port_nr][1] & ZSWR1_TIE)
-				d->rr[1][3] |= ZSRR3_IP_B_TX;
-			else
-				d->rr[1][3] |= ZSRR3_IP_A_TX;
+			if (1 /*d->wr[port_nr][1] & ZSWR1_TIE */) {
+				if (port_nr == 0)
+					d->rr[1][3] |= ZSRR3_IP_B_TX;
+				else
+					d->rr[1][3] |= ZSRR3_IP_A_TX;
+			}
 		}
-		break;
 	}
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
-	dev_zs_tick(cpu, extra);
+	dev_z8530_tick(cpu, extra);
 
 	return 1;
 }
 
 
 /*
- *  dev_zs_init():
- *
- *  Use dma_irq_nr = -1 to disable DMA irqs.
- *
- *  TODO: Rewrite to devinit.
+ *  devinit_z8530():
  */
-int dev_zs_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int dma_irq_nr,
-	int addrmult, char *name_b, char *name_a)
+int devinit_z8530(struct devinit *devinit)
 {
-	struct zs_data *d;
+	struct z8530_data *d = malloc(sizeof(struct z8530_data));
+	char tmp[100];
 
-	d = malloc(sizeof(struct zs_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct zs_data));
-	d->irq_nr     = irq_nr;
-	d->dma_irq_nr = dma_irq_nr;
-	d->addrmult   = addrmult;
+	memset(d, 0, sizeof(struct z8530_data));
+	d->irq_nr     = devinit->irq_nr;
+	d->dma_irq_nr = devinit->dma_irq_nr;
+	d->in_use     = devinit->in_use;
+	d->addr_mult  = devinit->addr_mult;
 
-	d->console_handle[0] = console_start_slave(machine, name_b);
-	d->console_handle[1] = console_start_slave(machine, name_a);
+	snprintf(tmp, sizeof(tmp), "%s [ch-b]", devinit->name);
+	d->console_handle[0] = console_start_slave(devinit->machine, tmp,
+	    d->in_use);
+	snprintf(tmp, sizeof(tmp), "%s [ch-a]", devinit->name);
+	d->console_handle[1] = console_start_slave(devinit->machine, tmp, 0);
 
-	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
-	    dev_zs_access, d, DM_DEFAULT, NULL);
+	if (devinit->name2 != NULL && devinit->name2[0])
+		snprintf(tmp, sizeof(tmp), "%s [%s]", devinit->name,
+		    devinit->name2);
+	else
+		snprintf(tmp, sizeof(tmp), "%s", devinit->name);
 
-	machine_add_tickfunction(machine, dev_zs_tick, d, ZS_TICK_SHIFT);
+	memory_device_register(devinit->machine->memory, tmp, devinit->addr,
+	    DEV_Z8530_LENGTH * d->addr_mult, dev_z8530_access, d, DM_DEFAULT,
+	    NULL);
 
-	return d->console_handle[0];
+	machine_add_tickfunction(devinit->machine, dev_z8530_tick, d,
+	    ZS_TICK_SHIFT);
+
+	devinit->return_ptr = (void *)(size_t) d->console_handle[0];
+
+	return 1;
 }
 

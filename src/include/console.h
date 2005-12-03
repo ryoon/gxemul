@@ -28,15 +28,17 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.h,v 1.13 2005-11-23 02:17:02 debug Exp $
+ *  $Id: console.h,v 1.14 2005-12-03 04:14:15 debug Exp $
  *
  *  Console functions.  (See console.c for more info.)
  */
 
 #include "misc.h"
 
-/*  Fixed console handle for the main console:  */
+/*  Fixed default console handle for the main console:  */
 #define	MAIN_CONSOLE		0
+
+#define	CONSOLE_OUTPUT_ONLY	-1
 
 void console_deinit(void);
 void console_sigcont(int x);
@@ -52,10 +54,13 @@ void console_set_framebuffer_mouse(int x, int y, int fb_nr);
 void console_getmouse(int *x, int *y, int *buttons, int *fb_nr);
 void console_slave(char *arg);
 int console_are_slaves_allowed(void);
-void console_warn_if_slaves_are_needed(void);
-int console_start_slave(struct machine *machine, char *consolename);
-int console_start_slave_inputonly(struct machine *machine, char *consolename);
+int console_warn_if_slaves_are_needed(int init);
+int console_start_slave(struct machine *, char *consolename, int use_for_input);
+int console_start_slave_inputonly(struct machine *, char *consolename,
+	int use_for_input);
+int console_change_inputability(int handle, int inputability);
 void console_init_main(struct emul *);
+void console_debug_dump(struct machine *);
 void console_allow_slaves(int);
 void console_init(void);
 

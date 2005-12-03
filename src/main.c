@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.249 2005-11-30 16:38:06 debug Exp $
+ *  $Id: main.c,v 1.250 2005-12-03 04:14:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -810,7 +810,7 @@ int main(int argc, char *argv[])
 	}
 
 	device_set_exit_on_error(0);
-	console_warn_if_slaves_are_needed();
+	console_warn_if_slaves_are_needed(1);
 
 	/*  Run all emulations:  */
 	emul_run(emuls, n_emuls);

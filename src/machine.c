@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.628 2005-12-03 04:14:11 debug Exp $
+ *  $Id: machine.c,v 1.629 2005-12-03 10:52:50 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4116,7 +4116,7 @@ Not yet.
 
 			bus_isa_init(machine, 0, 0x18000000, 0x10000000, 8, 24);
 
-			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x name2=tty2", MALTA_CBUSUART);
+			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=4 addr=0x%x name2=tty2 in_use=0", MALTA_CBUSUART);
 			device_add(machine, tmpstr);
 
 			pci_data = dev_gt_init(machine, mem, 0x1be00000, 8+9, 8+9, 120);

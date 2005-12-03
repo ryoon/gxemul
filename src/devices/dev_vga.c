@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.92 2005-12-03 04:14:15 debug Exp $
+ *  $Id: dev_vga.c,v 1.93 2005-12-03 10:52:52 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -1205,7 +1205,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct vga_data));
 
-	d->console_handle = console_start_slave(machine, "VGA",
+	d->console_handle = console_start_slave(machine, "vga",
 	    CONSOLE_OUTPUT_ONLY);
 
 	d->videomem_base  = videomem_base;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.6 2005-12-03 04:14:14 debug Exp $
+ *  $Id: bus_isa.c,v 1.7 2005-12-03 10:52:52 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -54,10 +54,10 @@ void bus_isa_debug_dump(void *extra)
 
 	debug("isa:\n");
 	debug_indentation(DEBUG_INDENTATION);
-	debug("portbase:    0x%llx\n", (long long)d->isa_portbase);
-	debug("membase:     0x%llx\n", (long long)d->isa_membase);
-	debug("irqbase:     %i\n", (int)d->isa_irqbase);
-	debug("reasser_irq: %i\n", (int)d->reassert_irq);
+	debug("portbase:     0x%llx\n", (long long)d->isa_portbase);
+	debug("membase:      0x%llx\n", (long long)d->isa_membase);
+	debug("irqbase:      %i\n", (int)d->isa_irqbase);
+	debug("reassert_irq: %i\n", (int)d->reassert_irq);
 	debug_indentation(-DEBUG_INDENTATION);
 }
 

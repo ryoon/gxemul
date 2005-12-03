@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.250 2005-12-03 04:14:12 debug Exp $
+ *  $Id: main.c,v 1.251 2005-12-03 10:52:51 debug Exp $
  */
 
 #include <stdio.h>
@@ -279,8 +279,8 @@ static void usage(int longusage)
 	printf("  -X        use X11\n");
 #endif /*  WITH_X11  */
 	printf("  -x        open up new xterms for emulated serial ports "
-	    "(default is on when\n            using configuration files, off"
-	    " otherwise)\n");
+	    "(default is on when\n            using configuration files or"
+	    " when X11 is used, off otherwise)\n");
 #ifdef WITH_X11
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
 #endif /*  WITH_X11  */
@@ -507,7 +507,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'X':
 			m->use_x11 = 1;
 			msopts = 1;
-			break;
+			/*  FALL-THROUGH  */
 		case 'x':
 			console_allow_slaves(1);
 			break;

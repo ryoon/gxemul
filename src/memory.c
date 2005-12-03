@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.182 2005-11-22 16:26:36 debug Exp $
+ *  $Id: memory.c,v 1.183 2005-12-03 00:38:02 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -36,17 +36,10 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#include "bintrans.h"
-#include "cop0.h"
 #include "cpu.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu_types.h"
 #include "misc.h"
-
-
-extern int quiet_mode;
-extern volatile int single_step;
 
 
 /*
@@ -194,7 +187,8 @@ struct memory *memory_new(uint64_t physical_max, int arch)
 /*
  *  memory_points_to_string():
  *
- *  Returns 1 if there's something string-like at addr, otherwise 0.
+ *  Returns 1 if there's something string-like in emulated memory at address
+ *  addr, otherwise 0.
  */
 int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 	int min_string_length)
@@ -223,8 +217,8 @@ int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 /*
  *  memory_conv_to_string():
  *
- *  Convert virtual memory contents to a string, placing it in a
- *  buffer provided by the caller.
+ *  Convert emulated memory contents to a string, placing it in a buffer
+ *  provided by the caller.
  */
 char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 	char *buf, int bufsize)
@@ -268,7 +262,7 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 /*
  *  memory_device_dyntrans_access():
  *
- *  Get the lowest and highest dyntrans (or bintrans) access since last time.
+ *  Get the lowest and highest dyntrans access since last time.
  */
 void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high)
@@ -332,32 +326,6 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 			return;
 		}
 	}
-}
-
-
-/*
- *  memory_device_register_statefunction():
- *
- *  TODO: Hm. This is semi-ugly. Should probably be rewritten/redesigned
- *  some day.
- */
-void memory_device_register_statefunction(
-	struct memory *mem, void *extra,
-	int (*dev_f_state)(struct cpu *,
-	    struct memory *, void *extra, int wf, int nr,
-	    int *type, char **namep, void **data, size_t *len))
-{
-	int i;
-
-	for (i=0; i<mem->n_mmapped_devices; i++)
-		if (mem->dev_extra[i] == extra) {
-			mem->dev_f_state[i] = dev_f_state;
-			return;
-		}
-
-	printf("memory_device_register_statefunction(): "
-	    "couldn't find the device\n");
-	exit(1);
 }
 
 
@@ -483,8 +451,6 @@ void memory_device_remove(struct memory *mem, int i)
 	    (MAX_DEVICES - i - 1));
 	memmove(&mem->dev_f[i], &mem->dev_f[i+1], sizeof(void *) *
 	    (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_f_state[i], &mem->dev_f_state[i+1], sizeof(void *) *
-	    (MAX_DEVICES - i - 1));
 	memmove(&mem->dev_dyntrans_data[i], &mem->dev_dyntrans_data[i+1],
 	    sizeof(void *) * (MAX_DEVICES - i - 1));
 	memmove(&mem->dev_dyntrans_write_low[i], &mem->dev_dyntrans_write_low
@@ -544,8 +510,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 		/*  Anonymous mmap() should return zero-filled memory,
 		    try malloc + memset if mmap failed.  */
 		table[entry] = (void *) mmap(NULL, alloclen,
-		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
-		    -1, 0);
+		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		if (table[entry] == NULL) {
 			table[entry] = malloc(alloclen);
 			if (table[entry] == NULL) {

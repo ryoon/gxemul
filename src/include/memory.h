@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.44 2005-11-22 16:26:38 debug Exp $
+ *  $Id: memory.h,v 1.45 2005-12-03 00:38:05 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -41,9 +41,6 @@
 
 #define	DEFAULT_RAM_IN_MB		32
 #define	MAX_DEVICES			26
-
-#define	DEVICE_STATE_TYPE_INT		1
-#define	DEVICE_STATE_TYPE_UINT64_T	2
 
 struct cpu;
 struct translation_page_entry;
@@ -70,9 +67,6 @@ struct memory {
 	void		*dev_extra[MAX_DEVICES];
 	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,
 			    uint64_t,unsigned char *,size_t,int,void *);
-	int		(*dev_f_state[MAX_DEVICES])(struct cpu *,
-			    struct memory *, void *extra, int wf, int nr,
-			    int *type, char **namep, void **data, size_t *len);
 	unsigned char	*dev_dyntrans_data[MAX_DEVICES];
 
 	uint64_t	dev_dyntrans_write_low[MAX_DEVICES];
@@ -185,12 +179,6 @@ int userland_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 void memory_device_dyntrans_access(struct cpu *, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high);
-
-void memory_device_register_statefunction(
-	struct memory *mem, void *extra,
-	int (*dev_f_state)(struct cpu *,
-	    struct memory *, void *extra, int wf, int nr,
-	    int *type, char **namep, void **data, size_t *len));
 
 void memory_device_register(struct memory *mem, const char *,
 	uint64_t baseaddr, uint64_t len, int (*f)(struct cpu *,

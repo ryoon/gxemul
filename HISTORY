@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1072 2005-12-02 09:11:19 debug Exp $
+$Id: HISTORY,v 1.1073 2005-12-03 00:38:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2492,3 +2492,9 @@ Changelog for GXemul:
 		which simplifies Debian/DECstation installation).
 		Continuing on the ADB bus controller.
 20051202	Beginning a rewrite of the Zilog serial controller (dev_zs).
+20051203	Continuing on the zs rewrite (now called dev_z8530); conversion
+		to devinit style.
+		Reworking some of the input-only vs output-only vs input-output
+		details of src/console.c, better warning messages, and adding
+		a debug dump (visible with -vv).
+		Removing the concept of "device state"; it wasn't really used.

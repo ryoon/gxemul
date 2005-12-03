@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.61 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_bt459.c,v 1.62 2005-12-03 00:38:01 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -98,68 +98,6 @@ struct bt459_data {
 	unsigned char	*rgb_palette;		/*  256 * 3 (r,g,b)  */
 	unsigned char	local_rgb_palette[256 * 3];
 };
-
-
-/*
- *  bt459_state():
- */
-int bt459_state(struct cpu *cpu, struct memory *mem, void *extra, int wf,
-	int nr, int *type, char **namep, void **data, size_t *len)
-{
-	struct bt459_data *d = (struct bt459_data *) extra;
-
-	switch (nr) {
-	case 0:	if (wf) {
-			memcpy(&d->cursor_on, *data, *len);
-		} else {
-			(*namep) = "cursor_on";
-			(*type) = DEVICE_STATE_TYPE_INT;
-			*len = sizeof(d->cursor_on);
-			*data = &d->cursor_on;
-		}
-		break;
-	case 1:	if (wf) {
-			memcpy(&d->cursor_x, *data, *len);
-		} else {
-			(*namep) = "cursor_x";
-			(*type) = DEVICE_STATE_TYPE_INT;
-			*len = sizeof(d->cursor_x);
-			*data = &d->cursor_x;
-		}
-		break;
-	case 2:	if (wf) {
-			memcpy(&d->cursor_y, *data, *len);
-		} else {
-			(*namep) = "cursor_y";
-			(*type) = DEVICE_STATE_TYPE_INT;
-			*len = sizeof(d->cursor_y);
-			*data = &d->cursor_y;
-		}
-		break;
-	case 3:	if (wf) {
-			memcpy(&d->cursor_xsize, *data, *len);
-		} else {
-			(*namep) = "cursor_xsize";
-			(*type) = DEVICE_STATE_TYPE_INT;
-			*len = sizeof(d->cursor_xsize);
-			*data = &d->cursor_xsize;
-		}
-		break;
-	case 4:	if (wf) {
-			memcpy(&d->cursor_ysize, *data, *len);
-		} else {
-			(*namep) = "cursor_ysize";
-			(*type) = DEVICE_STATE_TYPE_INT;
-			*len = sizeof(d->cursor_ysize);
-			*data = &d->cursor_ysize;
-		}
-		break;
-	default:
-		return 0;
-	}
-
-	return 1;
-}
 
 
 /*
@@ -656,7 +594,5 @@ void dev_bt459_init(struct machine *machine, struct memory *mem,
 		    dev_bt459_irq_access, (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_bt459_tick, d, BT459_TICK_SHIFT);
-
-	memory_device_register_statefunction(mem, d, bt459_state);
 }
 

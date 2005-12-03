@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.125 2005-11-13 00:14:06 debug Exp $
+ *  $Id: debugger.c,v 1.126 2005-12-03 00:38:02 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -474,7 +474,7 @@ static void debugger_cmd_continue(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_device(struct machine *m, char *cmd_line)
 {
-	int i, j;
+	int i;
 	struct memory *mem;
 	struct cpu *c;
 
@@ -507,44 +507,14 @@ static void debugger_cmd_device(struct machine *m, char *cmd_line)
 		device_dumplist();
 	} else if (strncmp(cmd_line, "add ", 4) == 0) {
 		device_add(m, cmd_line+4);
+	} else if (strcmp(cmd_line, "consoles") == 0) {
+		console_debug_dump(m);
 	} else if (strncmp(cmd_line, "remove ", 7) == 0) {
 		i = atoi(cmd_line + 7);
 		if (i==0 && cmd_line[7]!='0') {
 			printf("Weird device number. Use 'device list'.\n");
 		} else
 			memory_device_remove(m->memory, i);
-	} else if (strncmp(cmd_line, "state ", 6) == 0) {
-		i = atoi(cmd_line + 6);
-		if (i < 0 || i >= mem->n_mmapped_devices) {
-			printf("No devices with that id.\n");
-			return;
-		}
-
-		if (mem->dev_f_state[i] == NULL) {
-			printf("No state function has been implemented yet "
-			    "for that device type.\n");
-			return;
-		}
-
-		for (j=0; ; j++) {
-			int type;
-			char *name;
-			void *data;
-			size_t len;
-			int res = mem->dev_f_state[i](c, mem,
-			    mem->dev_extra[i], 0, j, &type, &name, &data, &len);
-			if (!res)
-				break;
-			printf("%2i:%30s = (", j, name);
-			switch (type) {
-			case DEVICE_STATE_TYPE_INT:
-				printf("int) %i", *((int *)data));
-				break;
-			default:
-				printf("unknown)");
-			}
-			printf("\n");
-		}
 	} else if (strcmp(cmd_line, "list") == 0) {
 		if (mem->n_mmapped_devices == 0)
 			printf("No memory-mapped devices in this machine.\n");
@@ -575,12 +545,11 @@ return_help:
 	printf("  add name_and_params    add a device to the current "
 	    "machine\n");
 	printf("  all                    list all registered devices\n");
+	printf("  consoles               list all slave consoles\n");
 	printf("  list                   list memory-mapped devices in the"
 	    " current machine\n");
 	printf("  remove x               remove device nr x from the "
 	    "current machine\n");
-	printf("  state x                show state of device nr x in"
-	    " the current machine\n");
 }
 
 

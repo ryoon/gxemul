@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.630 2005-12-03 11:18:10 debug Exp $
+ *  $Id: machine.c,v 1.631 2005-12-03 11:43:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3744,20 +3744,23 @@ Not yet.
 				strlcat(machine->machine_name, " (Deskstation Tyne)",
 				    MACHINE_NAME_MAXBUF);
 
+				/*  TODO: IRQs!  */
+				bus_isa_init(machine, 0, 0x900000000ULL,
+				    0x100000000ULL, 8, 24);
+#if 0
 				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x9000003f8 in_use=%i name2=tty0", machine->use_x11? 0 : 1);
 				i = (size_t)device_add(machine, tmpstr);
 				device_add(machine, "ns16550 irq=0 addr=0x9000002f8 in_use=0 name2=tty1");
+#endif
 				device_add(machine, "ns16550 irq=0 addr=0x9000003e8 in_use=0 name2=tty2");
 				device_add(machine, "ns16550 irq=0 addr=0x9000002e8 in_use=0 name2=tty3");
-
+#if 0
 				dev_mc146818_init(machine, mem,
 				    0x900000070ULL, 2, MC146818_PC_CMOS, 1);
-
-#if 0
 				/*  TODO: irq, etc  */
 				device_add(machine, "wdc addr=0x9000001f0, irq=0");
 				device_add(machine, "wdc addr=0x900000170, irq=0");
-#endif
+
 				/*  PC kbd  */
 				j = dev_pckbc_init(machine, mem, 0x900000060ULL,
 				    PCKBC_8042, 0, 0, machine->use_x11, 0);
@@ -3766,11 +3769,11 @@ Not yet.
 					machine->main_console_handle = j;
 				else
 					machine->main_console_handle = i;
+#endif
 
 				if (machine->use_x11) {
 					dev_vga_init(machine, mem, 0x1000a0000ULL,
 					    0x9000003c0ULL, machine->machine_name);
-
 					arcbios_console_init(machine,
 					    0x1000b8000ULL, 0x9000003c0ULL);
 				}

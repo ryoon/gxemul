@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.1 2005-12-03 04:14:15 debug Exp $
+ *  $Id: dev_z8530.c,v 1.2 2005-12-03 11:43:31 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -54,7 +54,7 @@
 
 #define debug fatal
 
-#define	ZS_TICK_SHIFT		15
+#define	ZS_TICK_SHIFT		14
 #define	ZS_N_REGS		16
 #define	DEV_Z8530_LENGTH	4
 

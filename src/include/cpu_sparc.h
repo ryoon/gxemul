@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.16 2005-12-03 22:32:59 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.17 2005-12-03 22:46:53 debug Exp $
  */
 
 #include "misc.h"
@@ -90,14 +90,14 @@ struct sparc_vpg_tlb_entry {
 	"addcc","andcc","orcc","xorcc","subcc","andncc","orncc","xnorcc",\
 	"addxcc","[25]","umulcc","smulcc","subxcc","[29]","udivcc","sdivcc",\
 	"taddcc","tsubcc","taddcctv","tsubcctv","mulscc","sll","srl","sra",\
-	"[40]","[41]","[42]","[43]", "[44]","[45]","[46]","[47]",	\
+	"[40]","[41]","[42]","[43]", "[44]","[45]","[46]","movre",	\
 	"[48]","[49]","[50]","[51]", "[52]","[53]","[54]","[55]",	\
 	"jmpl", "rett", "trap", "flush", "save", "restore", "[62]","[63]" }
 
 #define	N_LOADSTORE_TYPES	64
 #define	SPARC_LOADSTORE_NAMES {						\
 	"ld","ldub","lduh","ldd", "st","stb","sth","std",		\
-	"[8]","ldsb","ldsh","[11]", "[12]","ldstub","[14]","swap",	\
+	"[8]","ldsb","ldsh","ldx", "[12]","ldstub","stx","swap",	\
 	"lda","lduba","lduha","ldda", "sta","stba","stha","stda",	\
 	"[24]","ldsba","ldsha","[27]", "[28]","ldstuba","[30]","swapa",	\
 	"ldf","ldfsr","[34]","lddf", "stf","stfsr","stdfq","stdf",	\

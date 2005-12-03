@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.5 2005-12-03 22:32:58 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.6 2005-12-03 22:46:52 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -320,6 +320,12 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				no_rs1 = 1;
 			}
 			break;
+		case 4:	/*  sub  */
+			if (rd == rs1 && (iword & 0x3fff) == 0x2001) {
+				mnem = "dec";
+				no_rs1 = no_rs2 = 1;
+			}
+			break;
 		case 20:/*  subcc  */
 			if (rd == 0) {
 				mnem = "cmp";
@@ -340,6 +346,11 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 61:/*  restore  */
 			if (iword == 0x81e80000)
 				no_rs1 = no_rs2 = no_rd = 1;
+			break;
+		case 62:if (iword == 0x83f00000) {
+				mnem = "retry";
+				no_rs1 = no_rs2 = no_rd = 1;
+			}
 			break;
 		}
 		debug("%s\t", mnem);
@@ -369,10 +380,10 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if (siconst > 0)
 				debug("+");
 			if (siconst != 0)
-				debug("%i,", siconst);
+				debug("%i", siconst);
 		} else {
 			if (rs2 != 0)
-				debug("+%%%s,", sparc_regnames[rs2]);
+				debug("+%%%s", sparc_regnames[rs2]);
 		}
 		debug("]");
 		if (!(op2 & 4))

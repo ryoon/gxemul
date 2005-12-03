@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.45 2005-12-01 23:42:16 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.46 2005-12-03 22:32:58 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -382,7 +382,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		    r[2
 #endif
 #ifdef DYNTRANS_SPARC
-		    r_i[0
+		    r[24
 #endif
 		    + x];
 #endif

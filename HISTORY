@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1074 2005-12-03 04:14:09 debug Exp $
+$Id: HISTORY,v 1.1075 2005-12-03 22:32:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2501,3 +2501,4 @@ Changelog for GXemul:
 		Changing some debug output (-vv should now be used to show all
 		details about devices and busses; not shown during normal
 		startup anymore).
+		Beginning on some SPARC instruction disassembly support.

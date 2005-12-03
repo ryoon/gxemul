@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.4 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.5 2005-12-03 22:32:58 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -41,9 +41,16 @@
 #include "misc.h"
 #include "symbol.h"
 
+
 #define	DYNTRANS_DUALMODE_32
 /*  #define DYNTRANS_32  */
 #include "tmp_sparc_head.c"
+
+
+static char *sparc_regnames[N_SPARC_REG] = SPARC_REG_NAMES;
+static char *sparc_branch_names[N_SPARC_BRANCH_TYPES] = SPARC_BRANCH_NAMES;
+static char *sparc_alu_names[N_ALU_INSTR_TYPES] = SPARC_ALU_NAMES;
+static char *sparc_loadstore_names[N_LOADSTORE_TYPES] = SPARC_LOADSTORE_NAMES;
 
 
 /*
@@ -113,22 +120,45 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
 	uint64_t offset;
-	int x = cpu->cpu_id;
-	int bits32 = 0;
+	int i, x = cpu->cpu_id;
+	int bits32 = cpu->is_32bit;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
-		debug("cpu%i: pc  = 0x", x);
+		debug("cpu%i: pc = 0x", x);
 		if (bits32)
 			debug("%08x", (int)cpu->pc);
 		else
 			debug("%016llx", (long long)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		/*  TODO  */
+		if (bits32) {
+			for (i=0; i<N_SPARC_REG; i++) {
+				if ((i & 3) == 0)
+					debug("cpu%i: ", x);
+				debug("%s=", sparc_regnames[i]);
+				debug("0x%08x", (int) cpu->cd.sparc.r[i]);
+				if ((i % 3) < 3)
+					debug("  ");
+				else
+					debug("\n");
+			}
+		} else {
+			for (i=0; i<N_SPARC_REG; i++) {
+				if ((i & 1) == 0)
+					debug("cpu%i: ", x);
+				debug("%s = ", sparc_regnames[i]);
+				debug("0x%016llx", (long long)
+				    cpu->cd.sparc.r[i]);
+				if ((i % 1) < 1)
+					debug("  ");
+				else
+					debug("\n");
+			}
+		}
 	}
 }
 
@@ -191,10 +221,11 @@ int sparc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	uint64_t offset;
+	uint64_t offset, tmp;
 	uint32_t iword;
-	int hi6;
-	char *symbol;
+	int hi2, op2, rd, rs1, rs2, siconst, btype, tmps, no_rd = 0;
+	int asi, no_rs1 = 0, no_rs2 = 0, jmpl = 0;
+	char *symbol, *mnem;
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -207,26 +238,148 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-/*	if (cpu->cd.sparc.bits == 32)
+	if (cpu->is_32bit == 32)
 		debug("%08x", (int)dumpaddr);
 	else
-*/		debug("%016llx", (long long)dumpaddr);
+		debug("%016llx", (long long)dumpaddr);
 
-	iword = (instr[0] << 24) + (instr[1] << 16) + (instr[2] << 8)
-	    + instr[3];
+	iword = *(uint32_t *)&instr[0];
+	iword = BE32_TO_HOST(iword);
 
 	debug(": %08x\t", iword);
 
 	/*
 	 *  Decode the instruction:
+	 *
+	 *  http://www.cs.unm.edu/~maccabe/classes/341/labman/node9.html is a
+	 *  good quick description of SPARC instruction encoding.
 	 */
 
-	hi6 = iword >> 26;
+	hi2 = iword >> 30;
+	rd = (iword >> 25) & 31;
+	btype = rd & (N_SPARC_BRANCH_TYPES - 1);
+	rs1 = (iword >> 14) & 31;
+	asi = (iword >> 5) & 0xff;
+	rs2 = iword & 31;
+	siconst = (int16_t)((iword & 0x1fff) << 3) >> 3;
+	op2 = (hi2 == 0)? ((iword >> 22) & 7) : ((iword >> 19) & 0x3f);
 
-	switch (hi6) {
-	default:
-		/*  TODO  */
-		debug("unimplemented hi6 = 0x%02x", hi6);
+	switch (hi2) {
+
+	case 0:	switch (op2) {
+
+		case 0:	debug("illtrap\t0x%x", iword & 0x3fffff);
+			break;
+
+		case 2:	debug("%s", sparc_branch_names[btype]);
+			if (rd & 16)
+				debug(",a");
+			tmps = iword << 10;
+			tmps >>= 8;
+			tmp = (int64_t)(int32_t)tmps;
+			tmp += dumpaddr;
+			debug("\t0x%llx", (long long)tmp);
+			symbol = get_symbol_name(&cpu->machine->
+			    symbol_context, tmp, &offset);
+			if (symbol != NULL)
+				debug(" \t<%s>", symbol);
+			break;
+
+		case 4:	if (rd == 0) {
+				debug("nop");
+				break;
+			}
+			debug("sethi\t%%hi(0x%x),", (iword & 0x3fffff) << 10);
+			debug("%%%s", sparc_regnames[rd]);
+			break;
+
+		default:debug("UNIMPLEMENTED hi2=%i, op2=0x%x", hi2, op2);
+		}
+		break;
+
+	case 1:	tmp = (int32_t)iword << 2;
+		tmp += dumpaddr;
+		debug("call\t0x%llx", (long long)tmp);
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    tmp, &offset);
+		if (symbol != NULL)
+			debug(" \t<%s>", symbol);
+		break;
+
+	case 2:	mnem = sparc_alu_names[op2];
+		switch (op2) {
+		case 0:	/*  add  */
+			if (rd == rs1 && (iword & 0x3fff) == 0x2001) {
+				mnem = "inc";
+				no_rs1 = no_rs2 = 1;
+			}
+			break;
+		case 2:	/*  or  */
+			if (rs1 == 0) {
+				mnem = "mov";
+				no_rs1 = 1;
+			}
+			break;
+		case 20:/*  subcc  */
+			if (rd == 0) {
+				mnem = "cmp";
+				no_rd = 1;
+			}
+			break;
+		case 56:/*  jmpl  */
+			jmpl = 1;
+			if (iword == 0x81c7e008) {
+				mnem = "ret";
+				no_rs1 = no_rs2 = no_rd = 1;
+			}
+			if (iword == 0x81c3e008) {
+				mnem = "retl";
+				no_rs1 = no_rs2 = no_rd = 1;
+			}
+			break;
+		case 61:/*  restore  */
+			if (iword == 0x81e80000)
+				no_rs1 = no_rs2 = no_rd = 1;
+			break;
+		}
+		debug("%s\t", mnem);
+		if (!no_rs1)
+			debug("%%%s", sparc_regnames[rs1]);
+		if (!no_rs1 && !no_rs2) {
+			if (jmpl)
+				debug(",");
+			else
+				debug(",");
+		}
+		if (!no_rs2) {
+			if ((iword >> 13) & 1)
+				debug("%i", siconst);
+			else
+				debug("%%%s", sparc_regnames[rs2]);
+		}
+		if (!no_rd)
+			debug(",%%%s", sparc_regnames[rd]);
+		break;
+
+	case 3:	debug("%s\t", sparc_loadstore_names[op2]);
+		if (op2 & 4)
+			debug("%%%s,", sparc_regnames[rd]);
+		debug("[%%%s", sparc_regnames[rs1]);
+		if ((iword >> 13) & 1) {
+			if (siconst > 0)
+				debug("+");
+			if (siconst != 0)
+				debug("%i,", siconst);
+		} else {
+			if (rs2 != 0)
+				debug("+%%%s,", sparc_regnames[rs2]);
+		}
+		debug("]");
+		if (!(op2 & 4))
+			debug(",%%%s", sparc_regnames[rd]);
+		if (asi != 0)
+			debug(", asi=0x%02x", asi);
+		break;
 	}
 
 	debug("\n");

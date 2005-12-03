@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.15 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.16 2005-12-03 22:32:59 debug Exp $
  */
 
 #include "misc.h"
@@ -71,9 +71,43 @@ struct sparc_vpg_tlb_entry {
 	uint64_t	paddr_page;
 };
 
+#define	N_SPARC_REG		32
+#define	SPARC_REG_NAMES	{				\
+	"g0","g1","g2","g3","g4","g5","g6","g7",	\
+	"o0","o1","o2","o3","o4","o5","sp","o7",	\
+	"l0","l1","l2","l3","l4","l5","l6","l7",	\
+	"i0","i1","i2","i3","i4","i5","fp","i7" }
+
+#define	N_SPARC_BRANCH_TYPES	16
+#define	SPARC_BRANCH_NAMES {					\
+	"bn", "be", "ble", "bl", "bleu", "bcs", "bneg", "bvs",	\
+	"ba", "bne", "bg", "bge", "bgu", "bcc", "bpos", "bvc" }
+
+#define	N_ALU_INSTR_TYPES	64
+#define	SPARC_ALU_NAMES {						\
+	"add", "and", "or", "xor", "sub", "andn", "orn", "xnor",	\
+	"addx", "[9]", "umul", "smul", "subx", "[13]", "udiv", "sdiv",	\
+	"addcc","andcc","orcc","xorcc","subcc","andncc","orncc","xnorcc",\
+	"addxcc","[25]","umulcc","smulcc","subxcc","[29]","udivcc","sdivcc",\
+	"taddcc","tsubcc","taddcctv","tsubcctv","mulscc","sll","srl","sra",\
+	"[40]","[41]","[42]","[43]", "[44]","[45]","[46]","[47]",	\
+	"[48]","[49]","[50]","[51]", "[52]","[53]","[54]","[55]",	\
+	"jmpl", "rett", "trap", "flush", "save", "restore", "[62]","[63]" }
+
+#define	N_LOADSTORE_TYPES	64
+#define	SPARC_LOADSTORE_NAMES {						\
+	"ld","ldub","lduh","ldd", "st","stb","sth","std",		\
+	"[8]","ldsb","ldsh","[11]", "[12]","ldstub","[14]","swap",	\
+	"lda","lduba","lduha","ldda", "sta","stba","stha","stda",	\
+	"[24]","ldsba","ldsha","[27]", "[28]","ldstuba","[30]","swapa",	\
+	"ldf","ldfsr","[34]","lddf", "stf","stfsr","stdfq","stdf",	\
+	"[40]","[41]","[42]","[43]", "[44]","[45]","[46]","[47]",	\
+	"ldc","ldcsr","[50]","lddc", "stc","stcsr","scdfq","scdf" }
+
 struct sparc_cpu {
-	/*  TODO  */
-	uint64_t	r_i[8];
+
+	uint64_t	r[N_SPARC_REG];
+	uint64_t	zero;			/*  for dyntrans; ALWAYS zero */
 
 
 	/*

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.181 2005-11-30 16:23:05 debug Exp $
+#  $Id: configure,v 1.182 2005-12-04 06:01:39 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -78,7 +78,7 @@ else
 	NEWMIPS=NO
 	ENABLEPPC=YES
 	ENABLESH=NO
-	ENABLESPARC=NO
+	ENABLESPARC=YES
 	ENABLEX86=NO
 fi
 

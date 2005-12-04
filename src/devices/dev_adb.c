@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.5 2005-12-01 23:45:24 debug Exp $
+ *  $Id: dev_adb.c,v 1.6 2005-12-04 06:01:34 debug Exp $
  *
  *  ADB (Apple Desktop Bus) controller.
  *
@@ -34,6 +34,10 @@
  *
  *  The comment "OK" means that 100% of the functionality used by NetBSD/macppc
  *  is covered.
+ *
+ *  TODO:
+ *	o)  Clean up, don't hardcode values.
+ *	o)  Convert into a separate controller, bus, device architecture.
  */
 
 #include <stdio.h>
@@ -73,6 +77,8 @@ static char *via_regname[N_VIA_REGS] = {
 struct adb_data {
 	int		irq_nr;
 	int		int_asserted;
+
+	int		kbd_dev;
 
 	long long	transfer_nr;
 
@@ -131,6 +137,8 @@ void dev_adb_tick(struct cpu *cpu, void *extra)
  */
 static void adb_reset(struct adb_data *d)
 {
+	d->kbd_dev = 2;
+
 	memset(d->reg, 0, sizeof(d->reg));
 	d->reg[vBufB >> VIA_REG_SHIFT] = BUFB_nINTR | BUFB_nTIP;
 
@@ -166,25 +174,48 @@ static void adb_process_cmd(struct cpu *cpu, struct adb_data *d)
 	}
 
 	switch (d->output_buf[0]) {
+
 	case 0:	/*  ADB commands:  */
 		if (d->output_buf[1] == 0x00) {
 			/*  Reset.  */
 			return;
 		}
-		if ((d->output_buf[1] & 0x0c) != 0x0c) {
-			fatal("[ adb: Not an ADBTALK command? ]\n");
-			exit(1);
-		}
-		reg = d->output_buf[1] & 3;
-		dev = d->output_buf[1] >> 4;
-		fatal("dev=%i reg=%i\n", dev, reg);
-		switch (dev) {
-		case 2:	/*  Keyboard.  */
-			/*  TODO  */
-		default:d->input_buf[0] = 0x00;
+		if ((d->output_buf[1] & 0x0c) == 0x0c) {
+			/*  ADBTALK:  */
+			reg = d->output_buf[1] & 3;
+			dev = d->output_buf[1] >> 4;
+			fatal("dev=%i reg=%i\n", dev, reg);
+			/*  Default values: nothing here  */
+			d->input_buf[0] = 0x00;
 			d->input_buf[1] = 0x00;
 			d->input_buf[2] = d->output_buf[1];
 			d->cur_input_length = 3;
+			if (dev == d->kbd_dev) {
+				/*  Keyboard.  */
+				d->input_buf[0] = 0x01;
+				d->input_buf[1] = 0x01;
+				d->input_buf[2] = d->output_buf[1];
+				d->input_buf[3] = 0x01;
+				d->input_buf[4] = 0x01;
+				d->cur_input_length = 5;
+			}
+		} else if ((d->output_buf[1] & 0x0c) == 0x08) {
+			int new_dev_pos = d->output_buf[2] & 15;
+			/*  ADBLISTEN:  */
+			if ((d->output_buf[1] >> 4) != d->kbd_dev) {
+				fatal("[ adb: ADBLISTEN not to kbd ]\n");
+				exit(1);
+			}
+			if (d->output_buf[3] != 0xfe ||
+			    (d->output_buf[2] & 0xf0) != 0x60) {
+				fatal("[ adb: unknown ADBLISTEN ]\n");
+				exit(1);
+			}
+			/*  Move device.  */
+			d->kbd_dev = new_dev_pos;
+		} else {
+			fatal("[ adb: unknown ADB command? ]\n");
+			exit(1);
 		}
 		break;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.634 2005-12-04 06:01:32 debug Exp $
+ *  $Id: machine.c,v 1.635 2005-12-04 13:13:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -5426,8 +5426,10 @@ Not yet.
 
 	if (!stable)
 		fatal("!\n!  NOTE: This machine type is not implemented well"
-		    " enough yet to\n!  run any real-world code!\n"
-		    "!\n!  (At least, it hasn't been verified to do so.)\n!\n");
+		    " enough yet to run\n!  any real-world code!"
+		    " (At least, it hasn't been verified to do so.)\n!\n"
+		    "!  Please read the GXemul documentation for information"
+		    " about which\n!  machine types that actually work.\n!\n");
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.16 2005-12-03 04:14:17 debug Exp $
+ *  $Id: of.c,v 1.17 2005-12-04 13:13:49 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -887,6 +887,7 @@ void of_emul_init_uninorth(struct machine *machine)
 
 	ic = of_add_device(ofd, macio, "/");
 	memset(macio_aa, 0, 20);
+	of_store_32bit_in_host(macio_aa + 0, 15 << 11); /* pci tag */
 	of_store_32bit_in_host(macio_aa + 8, 0xf3000000);
 	of_add_prop(ofd, macio, "assigned-addresses", macio_aa,
 	    5*sizeof(uint32_t), 0);

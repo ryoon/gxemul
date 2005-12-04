@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.636 2005-12-04 14:25:47 debug Exp $
+ *  $Id: machine.c,v 1.637 2005-12-04 15:15:56 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4265,8 +4265,8 @@ Not yet.
 
 		machine->md_int.v3_data = dev_v3_init(machine, mem);
 		machine->md_interrupt = isa8_interrupt;
-		machine->isa_pic_data.native_irq = 6;
-		/*  TODO: correct isa irq? 6 is just a bogus guess  */
+		machine->isa_pic_data.native_irq = 2;
+		/*  Hm. ISA interrupts at 6, but "local" at 2!  */
 
 		bus_isa_init(machine, 0, 0x1d000000, 0x10000000, 8, 24);
 

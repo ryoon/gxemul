@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_v3.c,v 1.1 2005-12-04 14:25:48 debug Exp $
+ *  $Id: dev_v3.c,v 1.2 2005-12-04 15:15:57 debug Exp $
  *  
  *  V3 Semiconductor PCI controller.
  *
@@ -105,8 +105,15 @@ int dev_v3_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 
+	case 0x06:	/*  PCI stat  */
+		break;
+
+	case 0x08:	/*  Revision  */
+		odata = 4;
+		break;
+
 	case 0x18:	/*  PCI DMA base 1  */
-		odata = 0x13000000;
+		odata = 0x11000000;
 		break;
 
 	case 0x5e:	/*  LB MAP0  */
@@ -117,6 +124,14 @@ int dev_v3_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case 0x62:	/*  PCI mem base 1  */
+		odata = 0x1100;
+		break;
+
+	case 0x64:	/*  L2 BASE  */
+		odata = 1;	/*  pci i/o enable  */
+		break;
+
+	case 0x66:	/*  Map 2  */
 		odata = 0x1d00;
 		break;
 
@@ -156,9 +171,9 @@ struct v3_data *dev_v3_init(struct machine *machine, struct memory *mem)
 	    machine,
 	    0			/*  pciirq: TODO  */,
 	    0x1d000000,		/*  pci device io offset  */
-	    0x11000000,		/*  pci device mem offset  */
-	    0x00070000,		/*  PCI portbase: TODO  */
-	    0x00070000,		/*  PCI membase: TODO  */
+	    0x11000000,		/*  pci device mem offset: TODO  */
+	    0x00000000,		/*  PCI portbase: TODO  */
+	    0x00000000,		/*  PCI membase: TODO  */
 	    0x00000000,		/*  PCI irqbase: TODO  */
 	    0x1d000000,		/*  ISA portbase  */
 	    0x10000000,		/*  ISA membase  */

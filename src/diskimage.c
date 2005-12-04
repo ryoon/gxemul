@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.105 2005-12-03 04:14:11 debug Exp $
+ *  $Id: diskimage.c,v 1.106 2005-12-04 15:15:56 debug Exp $
  *
  *  Disk image support.
  *
@@ -1499,20 +1499,11 @@ int diskimage_add(struct machine *machine, char *fname)
 		d2->next = d;
 	}
 
-	d->type = DISKIMAGE_SCSI;
+	d->type = DISKIMAGE_IDE;
 
-	/*  Special cases: some machines usually have FLOPPY/IDE, not SCSI:  */
-	if (machine->arch == ARCH_X86 ||
-	    machine->machine_type == MACHINE_COBALT ||
-	    machine->machine_type == MACHINE_EVBMIPS ||
-	    machine->machine_type == MACHINE_HPCMIPS ||
-	    machine->machine_type == MACHINE_BEBOX ||
-	    machine->machine_type == MACHINE_PREP ||
-	    machine->machine_type == MACHINE_MACPPC ||
-	    machine->machine_type == MACHINE_CATS ||
-	    machine->machine_type == MACHINE_NETWINDER ||
-	    machine->machine_type == MACHINE_PS2)
-		d->type = DISKIMAGE_IDE;
+	if (machine->machine_type == MACHINE_DEC ||
+	    machine->machine_type == MACHINE_ARC)
+		d->type = DISKIMAGE_SCSI;
 
 	if (prefix_i + prefix_f + prefix_s > 1) {
 		fprintf(stderr, "Invalid disk image prefix(es). You can"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.50 2005-12-04 14:25:48 debug Exp $
+ *  $Id: bus_pci.c,v 1.51 2005-12-04 15:15:57 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -659,7 +659,7 @@ PCIINIT(piix3_ide)
 	char tmpstr[100];
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
-	    PCI_PRODUCT_INTEL_82371AB_IDE));
+	    PCI_PRODUCT_INTEL_82371SB_IDE));
 
 	/*  Possibly not correct:  */
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
@@ -910,6 +910,11 @@ PCIINIT(dec21143)
 		break;
 	case MACHINE_COBALT:
 		/*  On Cobalt, IRQ 7 = PCI.  */
+		irq = 8 + 7;
+		pci_int_line = 0x407;
+		break;
+	case MACHINE_ALGOR:
+		/*  TODO  */
 		irq = 8 + 7;
 		pci_int_line = 0x407;
 		break;

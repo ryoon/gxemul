@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.114 2005-12-03 22:32:56 debug Exp $
+$Id: guestoses.html,v 1.115 2005-12-04 13:14:01 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -57,7 +57,6 @@ SUCH DAMAGE.
   <li><a href="#netbsdcatsinstall">NetBSD/cats</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep</a>
   <li><a href="#openbsdinstall">OpenBSD/pmax</a>
-  <li><a href="#openbsdarcinstall">OpenBSD/arc</a>
   <li><a href="#openbsdcatsinstall">OpenBSD/cats</a>
   <li><a href="#ultrixinstall">Ultrix/RISC</a>
   <li><a href="#sprite">Sprite for DECstation</a>
@@ -70,6 +69,7 @@ you might find the following information interesting:
 <ul>
   <li><a href="#mach">Mach/PMAX</a>
   <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
+  <li><a href="#openbsdarcinstall">OpenBSD/arc</a>
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder</a>
 </ul>
@@ -1023,70 +1023,6 @@ enter <b><tt>rcons</tt></b> if you are using the graphical framebuffer,
 
 
 
-<p><br>
-<a name="openbsdarcinstall"></a>
-<h3>OpenBSD/arc:</h3>
-
-It is possible to install and run OpenBSD/arc on an emulated Acer PICA-61 
-in the emulator.
-
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a>
-
-<p>
-(You should be aware of the fact that OpenBSD for the ARC platform died at 
-release 2.3, so this will not give you an up-to-date OpenBSD system.
-See
-<a href="http://www.openbsd.org/arc.html">http://www.openbsd.org/arc.html</a>
-for more information.)
-
-<p>
-To install OpenBSD/arc onto an emulated harddisk image, follow these
-instructions:
-
-<p>
-<ol>
-  <li>Create an empty harddisk image, which will be the root disk
-	that OpenBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=obsd_arc.img bs=1024 count=1 seek=700000</b>
-
-</pre>
-  <li>Download the entire arc directory from the ftp server: (approx. 75 MB)<pre>
-	<b>wget -np -l 0 -r <a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</a></b>
-
-</pre>
-
-  <li>You now need to make an ISO image of the entire directory you downloaded.
-	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
-	already have <tt>mkisofs</tt> installed on your system, you need
-	to install it in order to do this.)<pre>
-	<b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
-
-</pre>
-  <li>Start the emulator using this command line:<pre>
-	<b>gxemul -e pica -X -A -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
-
-</pre>
-	and proceed like you would do if you were installing OpenBSD
-	on a real Acer PICA-61. (Answer 'no' when asked if you want to
-	configure networking, and then install from CD-ROM.)
-</ol>
-
-<p>
-Once the install has finished, the following command should let you 
-boot from the harddisk image:
-<p>
-<pre>
-	<b>gxemul -X -e pica -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
-
-</pre>
-
-
-
-
-
-
 
 
 <p><br>
@@ -1854,6 +1790,97 @@ boot) type:</font><pre>
 normally, but at least a few basic things will work.
 By the way, the emulator performs so poorly, that you will have time to 
 fetch several cups of coffee for each of the steps above.</font>
+
+
+
+
+
+
+
+
+
+<p><br>
+<a name="openbsdarcinstall"></a>
+<h3>OpenBSD/arc:</h3>
+
+It is (almost) possible to install and run OpenBSD/arc on an emulated Acer 
+PICA-61 in the emulator.
+
+<p><font color="#e00000">Earlier, I had this guest OS listed as
+officially working in the emulator, but for several reasons, it has 
+been moved down here to the "informative-but-not-really-working" 
+section.</font>
+
+<p>
+<ul>
+  <li>The last OpenBSD/arc release was 2.3. This means that it is very
+	old, it would not give a fair picture of what OpenBSD is (if you
+	are just looking to find out what it is like), and it is not
+	worth experimenting with it. See
+	<a href="http://www.openbsd.org/arc.html">http://www.openbsd.org/arc.html</a>
+	for more information.
+  <li>OpenBSD/arc was (if I understood things correctly) never really 
+	stable, even on real hardare. Problems with too small an interrupt
+	stack. Bugs are triggered in the emulator that have to do with
+	issues such as this.
+</ul>
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a>
+
+<p>
+<font color="#e00000">Currently, I don't test for every release whether
+or not OpenBSD/arc can be installed. Releases prior to 0.3.7
+(but probably <i>not</i> 0.3.7) should work. Anyway, here are the 
+old installation instructions:</font>
+
+<p>To install OpenBSD/arc onto an emulated harddisk image, follow these
+instructions:
+
+<p>
+<ol>
+  <li>Create an empty harddisk image, which will be the root disk
+	that OpenBSD installs itself onto:<pre>
+	<b>dd if=/dev/zero of=obsd_arc.img bs=1024 count=1 seek=700000</b>
+
+</pre>
+  <li>Download the entire arc directory from the ftp server: (approx. 75 MB)<pre>
+	<b>wget -np -l 0 -r <a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</a></b>
+
+</pre>
+
+  <li>You now need to make an ISO image of the entire directory you downloaded.
+	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
+	already have <tt>mkisofs</tt> installed on your system, you need
+	to install it in order to do this.)<pre>
+	<b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
+
+</pre>
+  <li>Start the emulator using this command line:<pre>
+	<b>gxemul -e pica -X -A -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
+
+</pre>
+	and proceed like you would do if you were installing OpenBSD
+	on a real Acer PICA-61. (Answer 'no' when asked if you want to
+	configure networking, and then install from CD-ROM.)
+</ol>
+
+<p>
+Once the install has finished, the following command should let you 
+boot from the harddisk image:
+<p>
+<pre>
+	<b>gxemul -X -e pica -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
+
+</pre>
+
+The system is very sensitive to (I think) kernel stack overflow, so it 
+crashes easily. If I remember correctly from mailing lists, this also 
+happened on real hardware.
+
+
+
 
 
 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.68 2005-12-01 23:42:14 debug Exp $
+$Id: intro.html,v 1.69 2005-12-04 13:14:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -45,16 +45,19 @@ SUCH DAMAGE.
 <h2>Introduction</h2>
 
 <p>
+<table border="0" width="99%"><tr><td valign="top" align="left">
 <ul>
   <li><a href="#overview">Overview</a>
   <li><a href="#free">Is GXemul Free software?</a>
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#run">How to run the emulator</a>
-  <li><a href="#cpus">Which CPU types does GXemul emulate?</a>
+  <li><a href="#cpus">Which processor architectures does GXemul emulate?</a>
   <li><a href="#accuracy">Emulation accuracy</a>
   <li><a href="#emulmodes">Which machines does GXemul emulate?</a>
 </ul>
-
+</td><td valign="center" align="center">
+<a href="20050317-example.png"><img src="20050317-example_small.png"></a>
+<p>NetBSD/pmax 1.6.2 with X11<br>running in GXemul</td></tr></table>
 
 
 
@@ -215,7 +218,7 @@ their original meaning in those xterm windows.
 
 <p><br>
 <a name="cpus"></a>
-<h3>Which CPU types does GXemul emulate?</h3>
+<h3>Which processor architectures does GXemul emulate?</h3>
 
 <h4>MIPS:</h4>
 
@@ -301,8 +304,7 @@ are emulated well enough to run at least one "guest OS":
     <p>
     <li><b>Malta</b> (evbmips)
     <p>
-    <li><b>SGI O2 ("IP32")</b>
-	<br><small>(Enough for root-on-nfs, but not for disk boot.)</small>
+    <li><b>SGI O2 ("IP32")</b> <font color="#0000e0">(<super>*</super>)</font>
   </ul>
   <p>
   <li><b><u>ARM</u></b>
@@ -315,6 +317,9 @@ are emulated well enough to run at least one "guest OS":
     <li><b>PReP (PowerPC Reference Platform)</b>
   </ul>
 </ul>
+
+<p><small><font color="#0000e0">(<super>*</super>)</font> =
+Enough for root-on-nfs, but not for disk boot.)</small>
 
 <p>There is code in GXemul for emulation of many other machine types; the
 degree to which these work range from almost being able to run a complete

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.122 2005-12-03 04:14:11 debug Exp $
+ *  $Id: file.c,v 1.123 2005-12-04 00:47:51 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -54,6 +54,10 @@
 #include "memory.h"
 #include "misc.h"
 #include "symbol.h"
+
+
+extern int quiet_mode;
+extern int verbose;
 
 
 /*  ELF machine types as strings: (same as exec_elf.h)  */
@@ -1896,7 +1900,7 @@ void file_load(struct machine *machine, struct memory *mem,
 	char *filename, uint64_t *entrypointp,
 	int arch, uint64_t *gpp, int *byte_orderp, uint64_t *tocp)
 {
-	int iadd = DEBUG_INDENTATION;
+	int iadd = DEBUG_INDENTATION, old_quiet_mode;
 	FILE *f;
 	unsigned char buf[12];
 	unsigned char buf2[2];
@@ -1922,8 +1926,12 @@ void file_load(struct machine *machine, struct memory *mem,
 	if (filename[0] == '@')
 		return;
 
-	debug("loading %s:\n", filename);
+	debug("loading %s%s\n", filename, verbose >= 2? ":" : "");
 	debug_indentation(iadd);
+
+	old_quiet_mode = quiet_mode;
+	if (verbose < 2)
+		quiet_mode = 1;
 
 	f = fopen(filename, "r");
 	if (f == NULL) {
@@ -2082,5 +2090,6 @@ void file_load(struct machine *machine, struct memory *mem,
 
 ret:
 	debug_indentation(-iadd);
+	quiet_mode = old_quiet_mode;
 }
 

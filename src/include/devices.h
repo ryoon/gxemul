@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.203 2005-12-03 04:14:16 debug Exp $
+ *  $Id: devices.h,v 1.204 2005-12-04 14:25:49 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -644,6 +644,13 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 /*  dev_uninorth.c:  */
 struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	uint64_t addr, int irqbase, int pciirq);
+
+/*  dev_v3.c:  */
+struct v3_data {
+	struct pci_data	*pci_data;
+	uint16_t	lb_map0;
+};
+struct v3_data *dev_v3_init(struct machine *, struct memory *);
 
 /*  dev_vga.c:  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,

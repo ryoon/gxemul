@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1079 2005-12-04 13:14:00 debug Exp $
+$Id: HISTORY,v 1.1080 2005-12-04 14:25:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2508,3 +2508,4 @@ Changelog for GXemul:
 		by NetBSD and OpenBSD).
 		Downgrading OpenBSD/arc as a guest OS from "working" to
 		"almost working" in the documentation.
+		Progress on Algor emulation ("v3" PCI controller).

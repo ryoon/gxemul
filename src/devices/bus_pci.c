@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.49 2005-12-03 04:14:14 debug Exp $
+ *  $Id: bus_pci.c,v 1.50 2005-12-04 14:25:48 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -604,16 +604,33 @@ PCIINIT(gt64120)
 
 
 /*
- *  Intel 82371AB PIIX4 PCI-ISA bridge and IDE controller
+ *  Intel 82371SB PIIX3 PCI-ISA bridge
+ *  Intel 82371AB PIIX4 PCI-ISA bridge
+ *  Intel 82371SB IDE controller
+ *  Intel 82371AB IDE controller
  *  and 82378ZB System I/O controller.
  */
 
 #define	PCI_VENDOR_INTEL		0x8086
+#define	PCI_PRODUCT_INTEL_82371SB_ISA	0x7000
+#define	PCI_PRODUCT_INTEL_82371SB_IDE	0x7010
 #define	PCI_PRODUCT_INTEL_82371AB_ISA	0x7110
 #define	PCI_PRODUCT_INTEL_82371AB_IDE	0x7111
 #define	PCI_PRODUCT_INTEL_SIO		0x0484
 
-PCIINIT(i82371ab_isa)
+PCIINIT(piix3_isa)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
+	    PCI_PRODUCT_INTEL_82371SB_ISA));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_ISA, 0) + 0x01);	/*  Rev 1  */
+
+	PCI_SET_DATA(PCI_BHLC_REG,
+	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+}
+
+PCIINIT(piix4_isa)
 {
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_82371AB_ISA));
@@ -637,7 +654,39 @@ PCIINIT(i82378zb)
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 
-PCIINIT(i82371ab_ide)
+PCIINIT(piix3_ide)
+{
+	char tmpstr[100];
+
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
+	    PCI_PRODUCT_INTEL_82371AB_IDE));
+
+	/*  Possibly not correct:  */
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x00);
+
+	/*  PIIX_IDETIM (see NetBSD's pciide_piix_reg.h)  */
+	/*  channel 0 and 1 enabled as IDE  */
+	PCI_SET_DATA(0x40, 0x80008000);
+
+	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->isa_irqbase + 14);
+		device_add(machine, tmpstr);
+	}
+
+	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->isa_irqbase + 15);
+		device_add(machine, tmpstr);
+	}
+}
+
+PCIINIT(piix4_ide)
 {
 	char tmpstr[100];
 

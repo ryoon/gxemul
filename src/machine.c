@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.635 2005-12-04 13:13:49 debug Exp $
+ *  $Id: machine.c,v 1.636 2005-12-04 14:25:47 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4131,8 +4131,8 @@ Not yet.
 				bus_pci_add(machine, pci_data, mem, 0, 8, 0, "s3_virge");
 			}
 
-			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "i82371ab_isa");
-			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "i82371ab_ide");
+			bus_pci_add(machine, pci_data, mem, 0,  9, 0, "piix4_isa");
+			bus_pci_add(machine, pci_data, mem, 0,  9, 1, "piix4_ide");
 
 			device_add(machine, "malta_lcd addr=0x1f000400");
 			break;
@@ -4263,12 +4263,15 @@ Not yet.
 			exit(1);
 		}
 
+		machine->md_int.v3_data = dev_v3_init(machine, mem);
 		machine->md_interrupt = isa8_interrupt;
 		machine->isa_pic_data.native_irq = 6;
-
 		/*  TODO: correct isa irq? 6 is just a bogus guess  */
 
-		bus_isa_init(machine, 0, 0x1d000000, 0xc0000000, 8, 24);
+		bus_isa_init(machine, 0, 0x1d000000, 0x10000000, 8, 24);
+
+		bus_pci_add(machine, machine->md_int.v3_data->pci_data,
+		    mem, 0, 0, 0, "dec21143");
 
 		if (machine->prom_emulation) {
 			/*  NetBSD/algor wants these:  */

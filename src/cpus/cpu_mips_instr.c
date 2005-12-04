@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.4 2005-12-01 23:42:16 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.5 2005-12-04 04:44:14 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -299,20 +299,16 @@ X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
 
 
 /*
- *  mfhi, mflo:  Move HI/LO into GPR rd.
- *  mthi, mtlo:  Move GPR rs into HI/LO.
+ *  mov:  Move one register into another.
  *
- *  arg[0] = ptr to rs
- *  arg[2] = ptr to rd
+ *  arg[0] = pointer to source
+ *  arg[2] = pointer to destination
  */
-X(mfhi) { reg(ic->arg[2]) = cpu->cd.mips.hi; }
-X(mflo) { reg(ic->arg[2]) = cpu->cd.mips.lo; }
-X(mthi) { cpu->cd.mips.hi = reg(ic->arg[0]); }
-X(mtlo) { cpu->cd.mips.lo = reg(ic->arg[0]); }
+X(mov)  { reg(ic->arg[2]) = reg(ic->arg[0]); }
 
 
 /*
- *  addiu:  Add immediate.
+ *  addiu:  Add immediate (32-bit).
  *
  *  arg[0] = pointer to rs
  *  arg[1] = pointer to rt
@@ -320,7 +316,8 @@ X(mtlo) { cpu->cd.mips.lo = reg(ic->arg[0]); }
  */
 X(addiu)
 {
-	reg(ic->arg[1]) = reg(ic->arg[0]) + (int32_t)ic->arg[2];
+	reg(ic->arg[1]) = (int32_t)
+	    ((int32_t)reg(ic->arg[0]) + (int32_t)ic->arg[2]);
 }
 
 
@@ -346,6 +343,61 @@ X(daddiu)
 X(set)
 {
 	reg(ic->arg[0]) = (int32_t)ic->arg[1];
+}
+
+
+/*
+ *  mfc0, dmfc0:  Move from Coprocessor 0.
+ *  mtc0, dmtc0:  Move to Coprocessor 0.
+ *  cfc1: Copy control word from Coprocessor 1.
+ *
+ *  arg[0] = pointer to GPR (rt)
+ *  arg[1] = coprocessor 0 register number | (select << 5)
+ *  arg[2] = relative addr of this instruction within the page
+ */
+X(mfc0)
+{
+	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
+	uint64_t tmp;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+	coproc_register_read(cpu, cpu->cd.mips.coproc[0], rd, &tmp, select);
+	reg(ic->arg[0]) = (int32_t)tmp;
+}
+X(mtc0)
+{
+	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
+	    (uint64_t *)ic->arg[0], 0, select);
+}
+X(dmfc0)
+{
+	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+	coproc_register_read(cpu, cpu->cd.mips.coproc[0], rd,
+	    (uint64_t *)ic->arg[0], select);
+}
+X(dmtc0)
+{
+	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
+	    (uint64_t *)ic->arg[0], 1, select);
+}
+X(cfc1)
+{
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+	reg(ic->arg[0]) = reg(ic->arg[1]);
 }
 
 
@@ -591,14 +643,29 @@ X(to_be_translated)
 			case SPECIAL_OR:    ic->f = instr(or); break;
 			case SPECIAL_XOR:   ic->f = instr(xor); break;
 			case SPECIAL_NOR:   ic->f = instr(nor); break;
-			case SPECIAL_MFHI:  ic->f = instr(mfhi); break;
-			case SPECIAL_MFLO:  ic->f = instr(mflo); break;
-			case SPECIAL_MTHI:  ic->f = instr(mthi); break;
-			case SPECIAL_MTLO:  ic->f = instr(mtlo); break;
+			case SPECIAL_MFHI:  ic->f = instr(mov); break;
+			case SPECIAL_MFLO:  ic->f = instr(mov); break;
+			case SPECIAL_MTHI:  ic->f = instr(mov); break;
+			case SPECIAL_MTLO:  ic->f = instr(mov); break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
 			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+			switch (s6) {
+			case SPECIAL_MFHI:
+				ic->arg[0] = (size_t)&cpu->cd.mips.hi;
+				break;
+			case SPECIAL_MFLO:
+				ic->arg[0] = (size_t)&cpu->cd.mips.lo;
+				break;
+			case SPECIAL_MTHI:
+				ic->arg[2] = (size_t)&cpu->cd.mips.hi;
+				break;
+			case SPECIAL_MTLO:
+				ic->arg[2] = (size_t)&cpu->cd.mips.lo;
+				break;
+			}
+			/*  rd==0 => nop:  */
 			switch (s6) {
 			case SPECIAL_MTHI:
 			case SPECIAL_MTLO:
@@ -742,6 +809,46 @@ X(to_be_translated)
 		ic->arg[1] = imm << 16;
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
+		break;
+
+	case HI6_COP0:
+		/*  rs contains the coprocessor opcode!  */
+		switch (rs) {
+		case COPz_MFCz:
+		case COPz_DMFCz:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = rd + ((iword & 7) << 5);
+			ic->arg[2] = addr & 0xffc;
+			ic->f = rs == COPz_MFCz? instr(mfc0) : instr(dmfc0);
+			if (rt == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			break;
+		case COPz_MTCz:
+		case COPz_DMTCz:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = rd + ((iword & 7) << 5);
+			ic->arg[2] = addr & 0xffc;
+			ic->f = rs == COPz_MTCz? instr(mtc0) : instr(dmtc0);
+			break;
+		default:fatal("UNIMPLEMENTED cop0 (rs = %i)\n", rs);
+			goto bad;
+		}
+		break;
+
+	case HI6_COP1:
+		/*  rs contains the coprocessor opcode!  */
+		switch (rs) {
+		case COPz_CFCz:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = (size_t)&cpu->cd.mips.coproc[1]->fcr[rd];
+			ic->arg[2] = addr & 0xffc;
+			ic->f = instr(cfc1);
+			if (rt == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			break;
+		default:fatal("UNIMPLEMENTED cop1 (rs = %i)\n", rs);
+			goto bad;
+		}
 		break;
 
 	default:goto bad;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1076 2005-12-04 02:40:00 debug Exp $
+$Id: HISTORY,v 1.1077 2005-12-04 04:44:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2503,3 +2503,4 @@ Changelog for GXemul:
 		startup anymore).
 		Beginning on some SPARC instruction disassembly support.
 20051204	Minor PPC updates (WALNUT skeleton stuff).
+		Continuing on the MIPS dyntrans rewrite.

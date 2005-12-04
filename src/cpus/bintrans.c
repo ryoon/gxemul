@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.2 2005-12-03 14:14:21 debug Exp $
+ *  $Id: bintrans.c,v 1.3 2005-12-04 03:55:29 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -1208,7 +1208,7 @@ void bintrans_init(struct machine *machine, struct memory *mem)
 		}
 	}
 
-	debug("bintrans: "BACKEND_NAME", %i MB translation cache at %p\n",
+	debug("OLD bintrans: "BACKEND_NAME", %i MB translation cache at %p\n",
 	    (int)(s/1048576), mem->translation_code_chunk_space);
 
 	/*

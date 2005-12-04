@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.7 2005-12-04 02:40:03 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.8 2005-12-04 03:12:07 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -234,7 +234,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	uint64_t offset, tmp;
 	uint32_t iword;
 	int hi2, op2, rd, rs1, rs2, siconst, btype, tmps, no_rd = 0;
-	int asi, no_rs1 = 0, no_rs2 = 0, jmpl = 0;
+	int asi, no_rs1 = 0, no_rs2 = 0, jmpl = 0, shift_x = 0;
 	char *symbol, *mnem;
 
 	if (running)
@@ -281,14 +281,28 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0:	debug("illtrap\t0x%x", iword & 0x3fffff);
 			break;
 
+		case 1:
 		case 2:	debug("%s", sparc_branch_names[btype]);
 			if (rd & 16)
 				debug(",a");
-			tmps = iword << 10;
-			tmps >>= 8;
+			tmps = iword;
+			if (op2 == 2) {
+				tmps <<= 10;
+				tmps >>= 8;
+				debug("\t");
+			} else {
+				int cc = (iword >> 20) & 3;
+				int p = (iword >> 19) & 1;
+				tmps <<= 13;
+				tmps >>= 11;
+				if (!p)
+					debug(",pn");
+				debug("\t%%%s,", cc==0 ? "icc" :
+				    (cc==2 ? "xcc" : "UNKNOWN"));
+			}
 			tmp = (int64_t)(int32_t)tmps;
 			tmp += dumpaddr;
-			debug("\t0x%llx", (long long)tmp);
+			debug("0x%llx", (long long)tmp);
 			symbol = get_symbol_name(&cpu->machine->
 			    symbol_context, tmp, &offset);
 			if (symbol != NULL)
@@ -342,6 +356,15 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				no_rd = 1;
 			}
 			break;
+		case 37:/*  sll  */
+		case 38:/*  srl  */
+		case 39:/*  sra  */
+			if (siconst & 0x1000) {
+				siconst &= 0x3f;
+				shift_x = 1;
+			} else
+				siconst &= 0x1f;
+			break;
 		case 56:/*  jmpl  */
 			jmpl = 1;
 			if (iword == 0x81c7e008) {
@@ -363,7 +386,10 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 			break;
 		}
-		debug("%s\t", mnem);
+		debug("%s", mnem);
+		if (shift_x)
+			debug("x");
+		debug("\t");
 		if (!no_rs1)
 			debug("%%%s", sparc_regnames[rs1]);
 		if (!no_rs1 && !no_rs2) {

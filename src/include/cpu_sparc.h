@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.17 2005-12-03 22:46:53 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.18 2005-12-04 03:12:08 debug Exp $
  */
 
 #include "misc.h"
@@ -79,9 +79,9 @@ struct sparc_vpg_tlb_entry {
 	"i0","i1","i2","i3","i4","i5","fp","i7" }
 
 #define	N_SPARC_BRANCH_TYPES	16
-#define	SPARC_BRANCH_NAMES {					\
-	"bn", "be", "ble", "bl", "bleu", "bcs", "bneg", "bvs",	\
-	"ba", "bne", "bg", "bge", "bgu", "bcc", "bpos", "bvc" }
+#define	SPARC_BRANCH_NAMES {						\
+	"bn", "be",  "ble", "bl",  "bleu", "bcs", "bneg", "bvs",	\
+	"b",  "bne", "bg",  "bge", "bgu",  "bcc", "bpos", "bvc"  }
 
 #define	N_ALU_INSTR_TYPES	64
 #define	SPARC_ALU_NAMES {						\

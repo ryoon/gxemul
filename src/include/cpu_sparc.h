@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.18 2005-12-04 03:12:08 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.19 2005-12-04 03:37:53 debug Exp $
  */
 
 #include "misc.h"
@@ -83,6 +83,10 @@ struct sparc_vpg_tlb_entry {
 	"bn", "be",  "ble", "bl",  "bleu", "bcs", "bneg", "bvs",	\
 	"b",  "bne", "bg",  "bge", "bgu",  "bcc", "bpos", "bvc"  }
 
+#define	N_SPARC_REGBRANCH_TYPES	8
+#define	SPARC_REGBRANCH_NAMES {						\
+	"br?","brz","brlez","brlz","br??","brnz", "brgz", "brgez"  }
+
 #define	N_ALU_INSTR_TYPES	64
 #define	SPARC_ALU_NAMES {						\
 	"add", "and", "or", "xor", "sub", "andn", "orn", "xnor",	\
@@ -99,10 +103,11 @@ struct sparc_vpg_tlb_entry {
 	"ld","ldub","lduh","ldd", "st","stb","sth","std",		\
 	"[8]","ldsb","ldsh","ldx", "[12]","ldstub","stx","swap",	\
 	"lda","lduba","lduha","ldda", "sta","stba","stha","stda",	\
-	"[24]","ldsba","ldsha","[27]", "[28]","ldstuba","[30]","swapa",	\
+	"[24]","ldsba","ldsha","ldxa", "[28]","ldstuba","stxa","swapa",	 \
 	"ldf","ldfsr","[34]","lddf", "stf","stfsr","stdfq","stdf",	\
 	"[40]","[41]","[42]","[43]", "[44]","[45]","[46]","[47]",	\
-	"ldc","ldcsr","[50]","lddc", "stc","stcsr","scdfq","scdf" }
+	"ldc","ldcsr","[50]","lddc", "stc","stcsr","scdfq","scdf",	\
+	"[56]","[57]","[58]","[59]", "[60]","[61]","casxa","[63]" }
 
 struct sparc_cpu {
 

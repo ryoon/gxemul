@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.8 2005-12-04 03:12:07 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.9 2005-12-04 03:37:52 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -48,6 +48,8 @@
 
 
 static char *sparc_regnames[N_SPARC_REG] = SPARC_REG_NAMES;
+static char *sparc_regbranch_names[N_SPARC_REGBRANCH_TYPES] =
+	SPARC_REGBRANCH_NAMES;
 static char *sparc_branch_names[N_SPARC_BRANCH_TYPES] = SPARC_BRANCH_NAMES;
 static char *sparc_alu_names[N_ALU_INSTR_TYPES] = SPARC_ALU_NAMES;
 static char *sparc_loadstore_names[N_LOADSTORE_TYPES] = SPARC_LOADSTORE_NAMES;
@@ -234,7 +236,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	uint64_t offset, tmp;
 	uint32_t iword;
 	int hi2, op2, rd, rs1, rs2, siconst, btype, tmps, no_rd = 0;
-	int asi, no_rs1 = 0, no_rs2 = 0, jmpl = 0, shift_x = 0;
+	int asi, no_rs1 = 0, no_rs2 = 0, jmpl = 0, shift_x = 0, cc, p;
 	char *symbol, *mnem;
 
 	if (running)
@@ -273,6 +275,8 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	rs2 = iword & 31;
 	siconst = (int16_t)((iword & 0x1fff) << 3) >> 3;
 	op2 = (hi2 == 0)? ((iword >> 22) & 7) : ((iword >> 19) & 0x3f);
+	cc = (iword >> 20) & 3;
+	p = (iword >> 19) & 1;
 
 	switch (hi2) {
 
@@ -282,23 +286,36 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 
 		case 1:
-		case 2:	debug("%s", sparc_branch_names[btype]);
+		case 2:
+		case 3:	if (op2 == 3)
+				debug("%s", sparc_regbranch_names[btype & 7]);
+			else
+				debug("%s", sparc_branch_names[btype]);
 			if (rd & 16)
 				debug(",a");
 			tmps = iword;
-			if (op2 == 2) {
-				tmps <<= 10;
-				tmps >>= 8;
-				debug("\t");
-			} else {
-				int cc = (iword >> 20) & 3;
-				int p = (iword >> 19) & 1;
-				tmps <<= 13;
+			switch (op2) {
+			case 1:	tmps <<= 13;
 				tmps >>= 11;
 				if (!p)
 					debug(",pn");
 				debug("\t%%%s,", cc==0 ? "icc" :
 				    (cc==2 ? "xcc" : "UNKNOWN"));
+				break;
+			case 2:	tmps <<= 10;
+				tmps >>= 8;
+				debug("\t");
+				break;
+			case 3:	if (btype & 8)
+					debug("(INVALID)");
+				if (!p)
+					debug(",pn");
+				debug("\t%%%s,", sparc_regnames[rs1]);
+				tmps = ((iword & 0x300000) >> 6)
+				    | (iword & 0x3fff);
+				tmps <<= 16;
+				tmps >>= 14;
+				break;
 			}
 			tmp = (int64_t)(int32_t)tmps;
 			tmp += dumpaddr;
@@ -365,6 +382,18 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			} else
 				siconst &= 0x1f;
 			break;
+		case 43:/*  ?  */
+			if (iword == 0x81580000) {
+				mnem = "flushw";
+				no_rs1 = no_rs2 = no_rd = 1;
+			}
+			break;
+		case 49:/*  ?  */
+			if (iword == 0x83880000) {
+				mnem = "restored";
+				no_rs1 = no_rs2 = no_rd = 1;
+			}
+			break;
 		case 56:/*  jmpl  */
 			jmpl = 1;
 			if (iword == 0x81c7e008) {
@@ -394,7 +423,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%%%s", sparc_regnames[rs1]);
 		if (!no_rs1 && !no_rs2) {
 			if (jmpl)
-				debug(",");
+				debug("+");
 			else
 				debug(",");
 		}
@@ -404,8 +433,10 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			else
 				debug("%%%s", sparc_regnames[rs2]);
 		}
+		if ((!no_rs1 || !no_rs2) && !no_rd)
+			debug(",");
 		if (!no_rd)
-			debug(",%%%s", sparc_regnames[rd]);
+			debug("%%%s", sparc_regnames[rd]);
 		break;
 
 	case 3:	debug("%s\t", sparc_loadstore_names[op2]);
@@ -422,10 +453,10 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				debug("+%%%s", sparc_regnames[rs2]);
 		}
 		debug("]");
+		if (asi != 0)
+			debug("(%i)", asi);
 		if (!(op2 & 4))
 			debug(",%%%s", sparc_regnames[rd]);
-		if (asi != 0)
-			debug(", asi=0x%02x", asi);
 		break;
 	}
 

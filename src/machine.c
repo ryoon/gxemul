@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.632 2005-12-03 22:32:57 debug Exp $
+ *  $Id: machine.c,v 1.633 2005-12-04 02:40:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4352,10 +4352,27 @@ Not yet.
 		 */
 		machine->machine_name = "Walnut evaluation board";
 
-		/*  "OpenBIOS" entrypoint (?):  */
-		dev_ram_init(machine, 0xfffe0b50, 8, DEV_RAM_RAM, 0);
+		machine->main_console_handle = (size_t)device_add(machine,
+		    "ns16550 irq=0 addr=0xef600300");
+
+		/*  OpenBIOS board config data:  */
+		dev_ram_init(machine, 0xfffe0b50, 64, DEV_RAM_RAM, 0);
 		store_32bit_word(cpu, 0xfffe0b50, 0xfffe0b54);
 		store_32bit_word(cpu, 0xfffe0b54, 0x4e800020);  /*  blr  */
+		store_32bit_word(cpu, 0xfffe0b74, machine->physical_ram_in_mb * 1048576);
+		store_32bit_word(cpu, 0xfffe0b84, machine->emulated_hz);
+		store_32bit_word(cpu, 0xfffe0b88, 33000000);
+		store_32bit_word(cpu, 0xfffe0b8c, 66000000);
+#if 0
+        unsigned char   usr_config_ver[4];
+        unsigned char   rom_sw_ver[30];
+        unsigned int    mem_size;
+        unsigned char   mac_address_local[6];
+        unsigned char   mac_address_pci[6];
+        unsigned int    processor_speed;
+        unsigned int    plb_speed;
+        unsigned int    pci_speed;
+#endif
 
 		break;
 

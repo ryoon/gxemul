@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.51 2005-12-01 23:42:16 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.52 2005-12-04 02:40:03 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1716,11 +1716,31 @@ X(mfmsr)
  */
 X(mtmsr)
 {
+	/*  TODO: check permission  */
+
 	/*  Synchronize the PC (pointing to _after_ this instruction)  */
 	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[1];
 
-	/*  TODO: check permission  */
 	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 1, 1);
+}
+
+
+/*
+ *  wrteei:  Write EE immediate  (on PPC405GP)
+ *
+ *  arg[0] = either 0 or 0x8000
+ */
+X(wrteei)
+{
+	/*  TODO: check permission  */
+	uint64_t x;
+
+	/*  Synchronize the PC (pointing to _after_ this instruction)  */
+	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[1];
+
+	reg_access_msr(cpu, &x, 0, 0);
+	x = (x & ~0x8000) | ic->arg[0];
+	reg_access_msr(cpu, &x, 1, 1);
 }
 
 
@@ -2355,8 +2375,7 @@ X(stfdx)
  */
 X(tlbia)
 {
-printf("tlbia\n");
-exit(1);
+	printf("[ tlbia ]\n");
 	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
@@ -2407,6 +2426,18 @@ X(openfirmware)
 	if (cpu->machine->show_trace_tree)
 		cpu_functioncall_trace_return(cpu);
 	quick_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  tlbsx_dot: TLB scan
+ */
+X(tlbsx_dot)
+{
+	/*  TODO  */
+	cpu->cd.ppc.cr &= ~(0xf0000000);
+	cpu->cd.ppc.cr |= 0x20000000;
+	cpu->cd.ppc.cr |= ((cpu->cd.ppc.spr[SPR_XER] >> 3) & 0x10000000);
 }
 
 
@@ -3150,6 +3181,11 @@ X(to_be_translated)
 			ic->f = instr(tlbli);
 			break;
 
+		case PPC_31_TLBSX_DOT:
+			/*  TODO  */
+			ic->f = instr(tlbsx_dot);
+			break;
+
 		case PPC_31_MFTB:
 			rt = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
@@ -3197,6 +3233,11 @@ X(to_be_translated)
 			case PPC_31_LSWI:  ic->f = instr(lswi); break;
 			case PPC_31_STSWI: ic->f = instr(stswi); break;
 			}
+			break;
+
+		case PPC_31_WRTEEI:
+			ic->arg[0] = iword & 0x8000;
+			ic->f = instr(wrteei);
 			break;
 
 		case 0x1c3:

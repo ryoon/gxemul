@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.56 2005-12-03 04:14:16 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.57 2005-12-04 02:40:04 debug Exp $
  */
 
 #include "misc.h"
@@ -63,10 +63,13 @@ struct ppc_cpu_type_def {
 #define	PPC_NOFP		1
 #define	PPC_601			2
 #define	PPC_603			4
+#define	PPC_NO_DEC		8	/*  No DEC (decrementer) SPR  */
+
 /*  TODO: Most of these just bogus  */
 
 #define PPC_CPU_TYPE_DEFS	{					\
-	{ "PPC405GP",	0,          32, PPC_NOFP, 15,5,2, 15,5,2, 20,5,1, 0 }, \
+	{ "PPC405GP",	0x40110000, 32, PPC_NOFP|PPC_NO_DEC,		\
+					13,5,2, 13,5,2, 0,5,1, 0 },	\
 	{ "PPC601",	0,          32, PPC_601, 14,5,4, 14,5,4, 0,0,0, 0 },\
 	{ "PPC603",	0x00030302, 32, PPC_603, 14,5,4, 14,5,4, 0,0,0, 0 },\
 	{ "PPC603e",	0x00060104, 32, PPC_603, 14,5,4, 14,5,4, 0,0,0, 0 },\

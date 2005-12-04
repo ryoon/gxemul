@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.46 2005-12-03 22:32:58 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.47 2005-12-04 02:40:03 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -284,9 +284,9 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	{
 		uint32_t old = cpu->cd.ppc.spr[SPR_DEC];
 		cpu->cd.ppc.spr[SPR_DEC] = (uint32_t) (old - n_instrs);
-		if ((old >> 31) == 0 && (cpu->cd.ppc.spr[SPR_DEC] >> 31) == 1)
+		if ((old >> 31) == 0 && (cpu->cd.ppc.spr[SPR_DEC] >> 31) == 1
+		    && !(cpu->cd.ppc.cpu_type.flags & PPC_NO_DEC))
 			cpu->cd.ppc.dec_intr_pending = 1;
-
 		old = cpu->cd.ppc.spr[SPR_TBL];
 		cpu->cd.ppc.spr[SPR_TBL] += n_instrs;
 		if ((old >> 31) == 1 && (cpu->cd.ppc.spr[SPR_TBL] >> 31) == 0)

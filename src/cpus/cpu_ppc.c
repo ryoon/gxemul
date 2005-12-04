@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.40 2005-11-27 19:28:09 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.41 2005-12-04 02:40:03 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -101,6 +101,8 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.ppc.spr[SPR_IBAT3L] = 0xf0000000 | BAT_PP_RW;
 	cpu->cd.ppc.spr[SPR_DBAT0U] = 0x00001ffc | BAT_Vs;
 	cpu->cd.ppc.spr[SPR_DBAT0L] = 0x00000000 | BAT_PP_RW;
+	cpu->cd.ppc.spr[SPR_DBAT2U] = 0xe0001ffc | BAT_Vs;
+	cpu->cd.ppc.spr[SPR_DBAT2L] = 0xe0000000 | BAT_PP_RW;
 	cpu->cd.ppc.spr[SPR_DBAT3U] = 0xf0001ffc | BAT_Vs;
 	cpu->cd.ppc.spr[SPR_DBAT3L] = 0xf0000000 | BAT_PP_RW;
 
@@ -1095,6 +1097,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
 			break;
+		case PPC_31_WRTEEI:
+			debug("wrteei\t%i", iword & 0x8000? 1 : 0);
+			break;
 		case PPC_31_ADDZE:
 		case PPC_31_ADDZEO:
 			rt = (iword >> 21) & 31;
@@ -1264,6 +1269,12 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				debug("tlbi\tr%i,r%i", ra, rb);
 			else
 				debug("tlbie\tr%i", rb);
+			break;
+		case PPC_31_TLBSX_DOT:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			debug("tlbsx.\tr%i,r%i,r%i", rs, ra, rb);
 			break;
 		case PPC_31_TLBSYNC:
 			debug("tlbsync");

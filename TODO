@@ -1,4 +1,4 @@
-$Id: TODO,v 1.182 2005-12-02 21:37:53 debug Exp $
+$Id: TODO,v 1.183 2005-12-04 02:40:01 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,7 +7,7 @@ Old MIPS -> dyntrans
 	x)  Everything!
 
 MacPPC:
-	x)  dev_zs
+	x)  dev_zs / interrupts?
 	x)  adb controller; keyboard
 	x)  make OpenBSD/macppc work (PCI controller stuff)
 
@@ -33,6 +33,10 @@ Network layer:
 	    NICs in machines connect to different networks.
 	o)  many other issues: see src/net.c
 
+Busses:
+	o)  TurboChannel  (dev -> bus)
+	o)  PCMCIA  (dev -> bus)
+
 Redesign the entire "mainbus" concept:
 	o)  Easily configurable interrupt routing in SMP systems.
 	o)  Specific clock/bus speeds, cpu speeds etc.
@@ -44,12 +48,13 @@ Floating point layer:
 	o)  non-IEEE modes (i.e. x86)?
 
 Dyntrans:
-	x)  Call/return hints...
+	x)  Call/return hints?
 	x)  64-bit stuff: good generic virtual memory translation, and
 	    other structures. not all 64 bits need to be used (e.g. Alpha)
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
 	x)  PPC optimizations; instr combs
 	x)  Alpha
+	x)  SPARC
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  recompilation backend? think carefully about this
 

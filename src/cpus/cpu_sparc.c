@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.6 2005-12-03 22:46:52 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.7 2005-12-04 02:40:03 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -139,9 +139,14 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<N_SPARC_REG; i++) {
 				if ((i & 3) == 0)
 					debug("cpu%i: ", x);
+				/*  Skip the zero register:  */
+				if (i==0) {
+					debug("               ");
+					continue;
+				}
 				debug("%s=", sparc_regnames[i]);
 				debug("0x%08x", (int) cpu->cd.sparc.r[i]);
-				if ((i % 3) < 3)
+				if ((i & 3) < 3)
 					debug("  ");
 				else
 					debug("\n");
@@ -150,10 +155,15 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<N_SPARC_REG; i++) {
 				if ((i & 1) == 0)
 					debug("cpu%i: ", x);
+				/*  Skip the zero register:  */
+				if (i==0) {
+					debug("                         ");
+					continue;
+				}
 				debug("%s = ", sparc_regnames[i]);
 				debug("0x%016llx", (long long)
 				    cpu->cd.sparc.r[i]);
-				if ((i % 1) < 1)
+				if ((i & 1) < 1)
 					debug("  ");
 				else
 					debug("\n");

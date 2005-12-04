@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1075 2005-12-03 22:32:55 debug Exp $
+$Id: HISTORY,v 1.1076 2005-12-04 02:40:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2502,3 +2502,4 @@ Changelog for GXemul:
 		details about devices and busses; not shown during normal
 		startup anymore).
 		Beginning on some SPARC instruction disassembly support.
+20051204	Minor PPC updates (WALNUT skeleton stuff).

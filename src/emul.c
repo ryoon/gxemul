@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.240 2005-12-03 04:14:11 debug Exp $
+ *  $Id: emul.c,v 1.241 2005-12-05 06:33:21 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -161,7 +161,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	char *p, *filename_orig;
 	char *filename = strdup(cpu->machine->boot_kernel_filename);
 	unsigned char *filebuf = NULL;
-	char *tmpfilename = NULL;
+	char *tmpfname = NULL;
 	char **new_array;
 	int tmpfile_handle;
 
@@ -380,10 +380,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		goto ret;
 	}
 
-	tmpfilename = strdup("/tmp/gxemul.XXXXXXXXXXXX");
-
-	debug("extracting %lli bytes into %s\n",
-	    (long long)filelen, tmpfilename);
+	tmpfname = strdup("/tmp/gxemul.XXXXXXXXXXXX");
 
 	res2 = diskimage_access(m, disk_id, disk_type, 0, fileofs, filebuf,
 	    filelen);
@@ -392,13 +389,15 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		goto ret;
 	}
 
-	tmpfile_handle = mkstemp(tmpfilename);
+	tmpfile_handle = mkstemp(tmpfname);
 	if (tmpfile_handle < 0) {
-		fatal("could not create %s\n", tmpfilename);
+		fatal("could not create %s\n", tmpfname);
 		exit(1);
 	}
 	write(tmpfile_handle, filebuf, filelen);
 	close(tmpfile_handle);
+
+	debug("extracted %lli bytes into %s\n", (long long)filelen, tmpfname);
 
 	/*  Add the temporary filename to the load_namesp array:  */
 	(*n_loadp)++;
@@ -413,11 +412,11 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	/*  This adds a Backspace char in front of the filename; this
 	    is a special hack which causes the file to be removed once
 	    it has been loaded.  */
-	tmpfilename = realloc(tmpfilename, strlen(tmpfilename) + 2);
-	memmove(tmpfilename + 1, tmpfilename, strlen(tmpfilename) + 1);
-	tmpfilename[0] = 8;
+	tmpfname = realloc(tmpfname, strlen(tmpfname) + 2);
+	memmove(tmpfname + 1, tmpfname, strlen(tmpfname) + 1);
+	tmpfname[0] = 8;
 
-	(*load_namesp)[*n_loadp - 1] = tmpfilename;
+	(*load_namesp)[*n_loadp - 1] = tmpfname;
 
 	res = 1;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.11 2005-12-03 04:14:11 debug Exp $
+ *  $Id: console.c,v 1.12 2005-12-05 05:50:44 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -42,7 +42,7 @@
  *  which of two emulated serial controllers would get keyboard input?)
  *
  *  (If the -x command line option is NOT used, then slaves are not opened up.
- *  Instead, a warning message is printed, and behaviour is undefined.)
+ *  Instead, a warning message is printed, and input is not allowed.)
  *
  *  Note that console handles that _allow_ input but are not yet used for
  *  output are not counted. This allows a machine to have, say, 2 serial ports
@@ -54,7 +54,7 @@
  *
  *  The MAIN console handle (fixed as handle nr 0) is the one used by the
  *  default terminal window. A machine which registers a serial controller,
- *  which should be used as the main was of communicating with guest operating
+ *  which should be used as the main way of communicating with guest operating
  *  systems running on that machine, should set machine->main_console_handle
  *  to the handle of the correct port on that controller.
  *
@@ -116,6 +116,7 @@ struct console_handle {
 	int		outputonly;
 	int		warning_printed;
 
+	char		*machine_name;
 	char		*name;
 
 	int		w_descriptor;
@@ -177,6 +178,8 @@ void console_sigcont(int x)
  *  When using X11 (well, when allow_slaves is set), this routine tries to
  *  start up an xterm, with another copy of gxemul inside. The other gxemul
  *  copy is given arguments that will cause it to run console_slave().
+ *
+ *  TODO: This is ugly and hardcoded. Clean it up.
  */
 static void start_xterm(int handle)
 {
@@ -205,7 +208,7 @@ static void start_xterm(int handle)
 	/*  NOTE/warning: Hardcoded max nr of args!  */
 	a = malloc(sizeof(char *) * 20);
 	if (a == NULL) {
-		fprintf(stderr, "console_start_slave(): out of memory\n");
+		fprintf(stderr, "start_xterm(): out of memory\n");
 		exit(1);
 	}
 
@@ -217,7 +220,9 @@ static void start_xterm(int handle)
 	a[3] = "-title";
 	mlen = strlen(console_handles[handle].name) + 30;
 	a[4] = malloc(mlen);
-	snprintf(a[4], mlen, "GXemul: %s", console_handles[handle].name);
+	snprintf(a[4], mlen, "GXemul: %s [%s]",
+	    console_handles[handle].machine_name,
+	    console_handles[handle].name);
 	a[5] = "-e";
 	a[6] = progname;
 	a[7] = malloc(80);
@@ -226,7 +231,7 @@ static void start_xterm(int handle)
 
 	p = fork();
 	if (p == -1) {
-		printf("[ console_start_slave(): ERROR while trying to "
+		printf("[ start_xterm(): ERROR while trying to "
 		    "fork(): %i ]\n", errno);
 		exit(1);
 	} else if (p == 0) {
@@ -235,11 +240,11 @@ static void start_xterm(int handle)
 
 		p = setsid();
 		if (p < 0)
-			printf("[ console_start_slave(): ERROR while trying "
+			printf("[ start_xterm(): ERROR while trying "
 			    "to do a setsid(): %i ]\n", errno);
 
 		res = execvp(a[0], a);
-		printf("[ console_start_slave(): ERROR while trying to "
+		printf("[ start_xterm(): ERROR while trying to "
 		    "execvp(\"");
 		while (a[0] != NULL) {
 			printf("%s", a[0]);
@@ -649,6 +654,7 @@ static struct console_handle *console_new_handle(char *name, int *handlep)
 	memset(chp, 0, sizeof(struct console_handle));
 
 	chp->in_use = 1;
+	chp->machine_name = "";
 	chp->name = strdup(name);
 	if (chp->name == NULL) {
 		printf("console_new_handle(): out of memory\n");
@@ -702,6 +708,7 @@ int console_start_slave(struct machine *machine, char *consolename,
 		chp->outputonly = 1;
 		chp->in_use_for_input = 0;
 	}
+	chp->machine_name = strdup(machine->name);
 	chp->name = strdup(consolename);
 
 	if (allow_slaves)
@@ -737,6 +744,7 @@ int console_start_slave_inputonly(struct machine *machine, char *consolename,
 	chp = console_new_handle(consolename, &handle);
 	chp->inputonly = 1;
 	chp->in_use_for_input = use_for_input;
+	chp->machine_name = strdup(machine->name);
 	chp->name = strdup(consolename);
 
 	return handle;

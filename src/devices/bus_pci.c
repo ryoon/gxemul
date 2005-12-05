@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.51 2005-12-04 15:15:57 debug Exp $
+ *  $Id: bus_pci.c,v 1.52 2005-12-05 05:50:46 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -317,26 +317,33 @@ static void allocate_device_space(struct pci_device *pd,
 }
 
 
+static void bus_pci_debug_dump__2(struct pci_device *pd)
+{
+	if (pd == NULL)
+		return;
+	bus_pci_debug_dump__2(pd->next);
+	debug("bus %3i, dev %2i, func %i: %s\n",
+	    pd->bus, pd->device, pd->function, pd->name);
+}
+
+
 /*
  *  bus_pci_debug_dump():
+ *
+ *  Lists the attached PCI devices (in reverse).
  */
 void bus_pci_debug_dump(void *extra)
 {
 	struct pci_data *d = (struct pci_data *) extra;
-	struct pci_device *pd;
 	int iadd = DEBUG_INDENTATION;
 
 	debug("pci:\n");
 	debug_indentation(iadd);
 
-	pd = d->first_device;
-	if (pd == NULL)
+	if (d->first_device == NULL)
 		debug("no devices!\n");
-	while (pd != NULL) {
-		debug("bus %3i, dev %2i, func %i: %s\n",
-		    pd->bus, pd->device, pd->function, pd->name);
-		pd = pd->next;
-	}
+	else
+		bus_pci_debug_dump__2(d->first_device);
 
 	debug_indentation(-iadd);
 }

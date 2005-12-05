@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.637 2005-12-04 15:15:56 debug Exp $
+ *  $Id: machine.c,v 1.638 2005-12-05 05:50:44 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -375,7 +375,7 @@ void machine_dumpinfo(struct machine *m)
 
 	debug("serial nr: %i", m->serial_nr);
 	if (m->nr_of_nics > 0)
-		debug("  (nr of nics: %i)", m->nr_of_nics);
+		debug("  (nr of NICs: %i)", m->nr_of_nics);
 	debug("\n");
 
 	debug("memory: %i MB", m->physical_ram_in_mb);

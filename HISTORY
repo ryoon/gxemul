@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1081 2005-12-05 06:33:20 debug Exp $
+$Id: HISTORY,v 1.1082 2005-12-09 05:34:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2510,3 +2510,6 @@ Changelog for GXemul:
 		"almost working" in the documentation.
 		Progress on Algor emulation ("v3" PCI controller).
 20051205	Minor updates.
+20051207	Sorting devices according to address; this reduces complexity
+		of device lookups from O(n) to O(log n) in memory_rw (but no
+		real performance increase (yet) in experiments).

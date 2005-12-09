@@ -1,15 +1,21 @@
-$Id: TODO,v 1.183 2005-12-04 02:40:01 debug Exp $
+$Id: TODO,v 1.184 2005-12-09 05:34:18 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
-Old MIPS -> dyntrans
-	x)  Everything!
-
-MacPPC:
-	x)  dev_zs / interrupts?
-	x)  adb controller; keyboard
-	x)  make OpenBSD/macppc work (PCI controller stuff)
+Dyntrans:
+	x)  Instr call statistics
+	x)  64-bit stuff: good generic virtual memory translation, and
+	    other structures. not all 64 bits need to be used (e.g. Alpha)
+	x)  Delay slots!
+	x)  Old MIPS -> dyntrans!
+	x)  Call/return hints?
+	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
+	x)  PPC optimizations; instr combs
+	x)  Alpha
+	x)  SPARC
+	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
+	x)  recompilation backend? think carefully about this
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
@@ -19,11 +25,16 @@ The Device subsystem:
 
 PCI:
 	x)  add support for address fixups
-	x)  generalize the interrupt routing stuff
+	x)  generalize the interrupt routing stuff (lines etc). this should
+	    be per machine? or per bus, that's better
 
-Sound:
-	x)  generic sound framework
-	x)  add one or more sound cards as devices
+ARM:
+	x)  emulate more full ARM systems (netbsd, freebsd, linux?, ...)
+
+MacPPC:
+	x)  dev_zs / interrupts?
+	x)  adb controller; keyboard
+	x)  make OpenBSD/macppc work (PCI controller stuff)
 
 Network layer:
 	o)  DHCP (for Debian and BSD installers :-)
@@ -34,33 +45,30 @@ Network layer:
 	o)  many other issues: see src/net.c
 
 Busses:
-	o)  TurboChannel  (dev -> bus)
-	o)  PCMCIA  (dev -> bus)
-
-Redesign the entire "mainbus" concept:
+	o)  Redesign the entire "mainbus" concept!
+	o)  Busses should be placed in a hierarchical tree!
 	o)  Easily configurable interrupt routing in SMP systems.
 	o)  Specific clock/bus speeds, cpu speeds etc.
 	o)  Synchronization over network? or at least in dyntrans within
 	    one emulated machine
+	o)  dev->bus: TurboChannel, PCMCIA, ADB?
+
+Machines:
+	o)  perhaps move into a new directory, src/machines/, with
+	    autodev-like functionality (one machine, or one machine family,
+	    per file)
 
 Floating point layer:
 	o)  make it common enough to be used by _all_ emulation modes
 	o)  non-IEEE modes (i.e. x86)?
 
-Dyntrans:
-	x)  Call/return hints?
-	x)  64-bit stuff: good generic virtual memory translation, and
-	    other structures. not all 64 bits need to be used (e.g. Alpha)
-	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
-	x)  PPC optimizations; instr combs
-	x)  Alpha
-	x)  SPARC
-	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
-	x)  recompilation backend? think carefully about this
-
 Userland emulation:
 	x)  Lots of stuff; freebsd and netbsd (and linux?) syscalls.
 	x)  Dynamic linking? Hm.
+
+Sound:
+	x)  generic sound framework
+	x)  add one or more sound cards as devices
 
 Caches / memory hierarchies: (this is mostly MIPS-specific)
 	o)  MIPS coproc.c: bits in config registers should reflect
@@ -127,12 +135,12 @@ MIPS CPU emulation:
 		+)  Ultrix?  NetBSD doesn't do SMP on MIPS yet :-(
 		+)  Own experiments with ycx2.
 
-File/disk handling:
+File/disk/symbol handling:
 	o)  Better handling of tape files
-
-Debugger:
 	o)  Read function argument count and types from binaries? (ELF?)
 	o)  Demangle C++ names.
+
+Debugger:
 	o)  see src/debugger.c for more
 
 Userland ABI emulation:
@@ -141,10 +149,7 @@ Userland ABI emulation:
 Terminal/console:
 	o)  allow emulated serial ports to be connected to the outside
 	    world in a more generic way, or even to other emulated
-	    machines(!)
-
-Regression tests.  (Needs to be totally rewritten, the old framework
-	was removed because it was useless.)
+	    machines(?)
 
 Save state of the whole emulated machine, to be able to load it back
 	in later?  (Memory, all device's states, all registers and

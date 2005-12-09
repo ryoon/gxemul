@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.80 2005-11-20 11:28:44 debug Exp $
+ *  $Id: memory_rw.c,v 1.81 2005-12-09 05:34:19 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -83,7 +83,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #ifdef MEM_MIPS
 	int bintrans_cached = cpu->machine->bintrans_enable;
 #endif
-	int bintrans_device_danger = 0;
+	int dyntrans_device_danger = 0;
 
 	no_exceptions = misc_flags & NO_EXCEPTIONS;
 	cache = misc_flags & CACHE_FLAGS_MASK;
@@ -267,13 +267,12 @@ have_paddr:
 	/*
 	 *  Memory mapped device?
 	 *
-	 *  TODO: this is utterly slow.
-	 *  TODO2: if paddr<base, but len enough, then we should write
-	 *  to a device to
+	 *  TODO: if paddr < base, but len enough, then the device should
+	 *  still be written to!
 	 */
 	if (paddr >= mem->mmap_dev_minaddr && paddr < mem->mmap_dev_maxaddr) {
 		uint64_t orig_paddr = paddr;
-		int i, start, res;
+		int i, start, end, res;
 
 		/*
 		 *  Really really slow, but unfortunately necessary. This is
@@ -283,24 +282,30 @@ have_paddr:
 		 *	b) offsets 0x124..0x777 are a device
 		 *
 		 *	1) a read is done from offset 0x100. the page is
-		 *	   added to the bintrans system as a "RAM" page
-		 *	2) a bintranslated read is done from offset 0x200,
+		 *	   added to the dyntrans system as a "RAM" page
+		 *	2) a dyntranslated read is done from offset 0x200,
 		 *	   which should access the device, but since the
 		 *	   entire page is added, it will access non-existant
 		 *	   RAM instead, without warning.
 		 *
-		 *  Setting bintrans_device_danger = 1 on accesses which are
+		 *  Setting dyntrans_device_danger = 1 on accesses which are
 		 *  on _any_ offset on pages that are device mapped avoids
 		 *  this problem, but it is probably not very fast.
+		 *
+		 *  TODO: Convert this into a quick (multi-level, 64-bit)
+		 *  address space lookup, to find dangerous pages.
 		 */
+#if 1
 		for (i=0; i<mem->n_mmapped_devices; i++)
 			if (paddr >= (mem->dev_baseaddr[i] & ~offset_mask) &&
 			    paddr <= ((mem->dev_endaddr[i]-1) | offset_mask)) {
-				bintrans_device_danger = 1;
+				dyntrans_device_danger = 1;
 				break;
 			}
+#endif
 
-		i = start = mem->last_accessed_device;
+		start = 0; end = mem->n_mmapped_devices - 1;
+		i = mem->last_accessed_device;
 
 		/*  Scan through all devices:  */
 		do {
@@ -400,10 +405,12 @@ have_paddr:
 				goto do_return_ok;
 			}
 
-			i ++;
-			if (i == mem->n_mmapped_devices)
-				i = 0;
-		} while (i != start);
+			if (paddr < mem->dev_baseaddr[i])
+				end = i - 1;
+			if (paddr >= mem->dev_endaddr[i])
+				start = i + 1;
+			i = (start + end) >> 1;
+		} while (start <= end);
 	}
 
 
@@ -569,7 +576,7 @@ have_paddr:
 
 	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
-	if (cpu->update_translation_table != NULL && !bintrans_device_danger
+	if (cpu->update_translation_table != NULL && !dyntrans_device_danger
 #ifndef MEM_MIPS
 /*	    && !(misc_flags & MEMORY_USER_ACCESS)  */
 #ifndef MEM_USERLAND

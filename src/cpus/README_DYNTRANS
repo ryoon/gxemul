@@ -1,16 +1,21 @@
-$Id: README_DYNTRANS,v 1.6 2005-11-24 01:15:06 debug Exp $
+$Id: README_DYNTRANS,v 1.7 2005-12-09 05:34:20 debug Exp $
 
 -------------------------------------------------------------------
 
 PPC optimizations TODO:
 
 	find high-level bottlenecks!
+
 	inline cr0 field calculation
-	inline pc to pointers calculation
-	load/store with r1 as base
-	multiple load/stores in a row
-	all forms of branches, similar optimizations as with ARM
-		(conditional, link etc)
+
+	load/store with r1 as base?
+
+	multiple load/stores in a row (especially with base = r1)
+
+	almost all branches are of the "general" form now, they don't
+		need to be.
+
+	combinations of compare + branch, similar to arm?
 
 -------------------------------------------------------------------
 
@@ -50,10 +55,9 @@ Dyntrans TODO:
 
   x)  opcode statistics support?
 		TODO: is instr_call statistics enough?
-		TODO: a command line option to turn off instruction
-			combinations (for debugging)
 
   x)  load/stores:
+		o)  perhaps refactor/reuse common load/store code?
 		o)  support for archs that allow transparent
 		    unaligned load/stores (ppc, x86 etc)
 		o)  alignment checks ==> exceptions

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.41 2005-12-04 02:40:03 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.42 2005-12-11 21:34:43 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -97,10 +97,14 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->cd.ppc.spr[SPR_IBAT0U] = 0x00001ffc | BAT_Vs;
 	cpu->cd.ppc.spr[SPR_IBAT0L] = 0x00000000 | BAT_PP_RW;
+	cpu->cd.ppc.spr[SPR_IBAT1U] = 0xc0001ffc | BAT_Vs;
+	cpu->cd.ppc.spr[SPR_IBAT1L] = 0x00000000 | BAT_PP_RW;
 	cpu->cd.ppc.spr[SPR_IBAT3U] = 0xf0001ffc | BAT_Vs;
 	cpu->cd.ppc.spr[SPR_IBAT3L] = 0xf0000000 | BAT_PP_RW;
 	cpu->cd.ppc.spr[SPR_DBAT0U] = 0x00001ffc | BAT_Vs;
 	cpu->cd.ppc.spr[SPR_DBAT0L] = 0x00000000 | BAT_PP_RW;
+	cpu->cd.ppc.spr[SPR_DBAT1U] = 0xc0001ffc | BAT_Vs;
+	cpu->cd.ppc.spr[SPR_DBAT1L] = 0x00000000 | BAT_PP_RW;
 	cpu->cd.ppc.spr[SPR_DBAT2U] = 0xe0001ffc | BAT_Vs;
 	cpu->cd.ppc.spr[SPR_DBAT2L] = 0xe0000000 | BAT_PP_RW;
 	cpu->cd.ppc.spr[SPR_DBAT3U] = 0xf0001ffc | BAT_Vs;

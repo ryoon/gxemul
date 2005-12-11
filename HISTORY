@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1083 2005-12-11 12:44:59 debug Exp $
+$Id: HISTORY,v 1.1084 2005-12-11 21:34:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2515,3 +2515,4 @@ Changelog for GXemul:
 		real performance increase (yet) in experiments).
 20051210	Beginning the work on native dyntrans backends (by making a
 		simple skeleton; so far only for Alpha hosts).
+20051211	Some very minor SPARC updates.

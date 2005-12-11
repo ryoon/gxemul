@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.252 2005-12-11 12:45:28 debug Exp $
+ *  $Id: main.c,v 1.253 2005-12-11 21:34:42 debug Exp $
  */
 
 #include <stdio.h>
@@ -222,8 +222,8 @@ static void usage(int longusage)
 	    " speed)\n");
 #if defined(BINTRANS) || defined(DYNTRANS_BACKEND)
 	printf("  -B        disable native translation backends. (translation"
-	    " is turned on\n            by default, if the host "
-	    "supports it)\n");
+	    " is turned on\n            by default, if it is supposed for "
+	    "the particular host)\n");
 #endif
 	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
 	    "list of types.)\n");

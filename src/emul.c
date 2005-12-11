@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.241 2005-12-05 06:33:21 debug Exp $
+ *  $Id: emul.c,v 1.242 2005-12-11 21:34:42 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1410,7 +1410,10 @@ if (m->machine_type == MACHINE_IQ80321) {
 		break;
 
 	default:
-		debug("0x%016llx", (long long)cpu->pc);
+		if (cpu->is_32bit)
+			debug("0x%08x", (int)cpu->pc);
+		else
+			debug("0x%016llx", (long long)cpu->pc);
 	}
 	debug("\n");
 

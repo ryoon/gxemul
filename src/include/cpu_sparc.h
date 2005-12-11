@@ -28,13 +28,35 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.19 2005-12-04 03:37:53 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.20 2005-12-11 21:34:45 debug Exp $
  */
 
 #include "misc.h"
 
 
 struct cpu_family;
+
+
+/*  SPARC CPU types:  */
+struct sparc_cpu_type_def { 
+	char		*name;
+	int		bits;
+	int		icache_shift;
+	int		ilinesize;
+	int		iway;
+	int		dcache_shift;
+	int		dlinesize;
+	int		dway;
+	int		l2cache_shift;
+	int		l2linesize;
+	int		l2way;
+};
+
+#define SPARC_CPU_TYPE_DEFS	{					\
+	{ "SPARCv7",	32, 14,5,4, 14,5,4, 0,0,0 },			\
+	{ "SPARCv9",	64, 14,5,4, 14,5,4, 0,0,0 },			\
+	{ NULL,		0,  0,0,0,  0,0,0,  0,0,0 }			\
+	}
 
 
 #define	SPARC_N_IC_ARGS			3
@@ -110,6 +132,7 @@ struct sparc_vpg_tlb_entry {
 	"[56]","[57]","[58]","[59]", "[60]","[61]","casxa","[63]" }
 
 struct sparc_cpu {
+	struct sparc_cpu_type_def cpu_type;
 
 	uint64_t	r[N_SPARC_REG];
 	uint64_t	zero;			/*  for dyntrans; ALWAYS zero */
@@ -153,6 +176,10 @@ void sparc_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void sparc_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void sparc_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+void sparc32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void sparc32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
+void sparc32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 int sparc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int sparc_cpu_family_init(struct cpu_family *);

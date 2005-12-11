@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.123 2005-12-04 00:47:51 debug Exp $
+ *  $Id: file.c,v 1.124 2005-12-11 21:34:42 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -131,6 +131,7 @@ struct ms_sym {
 #define	AOUT_FLAG_DECOSF1		1
 #define	AOUT_FLAG_FROM_BEGINNING	2
 #define	AOUT_FLAG_VADDR_ZERO_HACK	4
+#define	AOUT_FLAG_NO_SIZES		8
 /*
  *  file_load_aout():
  *
@@ -177,6 +178,12 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		textsize = ftello(f) - 512;
 		datasize = 0;
 		fseek(f, 512, SEEK_SET);
+	} else if (flags & AOUT_FLAG_NO_SIZES) {
+		fseek(f, 0, SEEK_END);
+		textsize = ftello(f) - 32;
+		datasize = 0;
+		vaddr = entry = 0;
+		fseek(f, 32, SEEK_SET);
 	} else {
 		len = fread(&aout_header, 1, sizeof(aout_header), f);
 		if (len != sizeof(aout_header)) {
@@ -1985,6 +1992,12 @@ void file_load(struct machine *machine, struct memory *mem,
 	if (buf[0]==0x00 && buf[1]==0x86 && buf[2]==0x01 && buf[3]==0x0b) {
 		/*  i386 a.out (old OpenBSD and NetBSD etc)  */
 		file_load_aout(machine, mem, filename, AOUT_FLAG_FROM_BEGINNING,
+		    entrypointp, arch, byte_orderp);
+		goto ret;
+	}
+	if (buf[0]==0x01 && buf[1]==0x03 && buf[2]==0x01 && buf[3]==0x07) {
+		/*  SPARC a.out (old 32-bit NetBSD etc)  */
+		file_load_aout(machine, mem, filename, AOUT_FLAG_NO_SIZES,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}

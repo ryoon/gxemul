@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.10 2005-12-05 05:50:45 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.11 2005-12-11 21:34:43 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -43,7 +43,6 @@
 
 
 #define	DYNTRANS_DUALMODE_32
-/*  #define DYNTRANS_32  */
 #include "tmp_sparc_head.c"
 
 
@@ -66,22 +65,64 @@ static char *sparc_loadstore_names[N_LOADSTORE_TYPES] = SPARC_LOADSTORE_NAMES;
 int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	if (strcasecmp(cpu_type_name, "SPARCv9") != 0)
+	int any_cache = 0;
+	int i = 0;
+	struct sparc_cpu_type_def cpu_type_defs[] = SPARC_CPU_TYPE_DEFS;
+
+	/*  Scan the cpu_type_defs list for this cpu type:  */
+	while (cpu_type_defs[i].name != NULL) {
+		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
+			break;
+		}
+		i++;
+	}
+	if (cpu_type_defs[i].name == NULL)
 		return 0;
 
 	cpu->memory_rw = sparc_memory_rw;
-	cpu->update_translation_table = sparc_update_translation_table;
-	cpu->invalidate_translation_caches =
-	    sparc_invalidate_translation_caches;
-	cpu->invalidate_code_translation =
-	    sparc_invalidate_code_translation;
 
-	cpu->byte_order = EMUL_BIG_ENDIAN;
-	cpu->is_32bit = 0;
+	cpu->cd.sparc.cpu_type = cpu_type_defs[i];
+	cpu->name              = cpu->cd.sparc.cpu_type.name;
+	cpu->byte_order        = EMUL_BIG_ENDIAN;
+	cpu->is_32bit = (cpu->cd.sparc.cpu_type.bits == 32)? 1 : 0;
+
+	if (cpu->is_32bit) {
+		cpu->update_translation_table =
+		    sparc32_update_translation_table;
+		cpu->invalidate_translation_caches =
+		    sparc32_invalidate_translation_caches;
+		cpu->invalidate_code_translation =
+		    sparc32_invalidate_code_translation;
+	} else {
+		cpu->update_translation_table = sparc_update_translation_table;
+		cpu->invalidate_translation_caches =
+		    sparc_invalidate_translation_caches;
+		cpu->invalidate_code_translation =
+		    sparc_invalidate_code_translation;
+	}
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
+
+		if (cpu->cd.sparc.cpu_type.icache_shift != 0)
+			any_cache = 1;
+		if (cpu->cd.sparc.cpu_type.dcache_shift != 0)
+			any_cache = 1;
+		if (cpu->cd.sparc.cpu_type.l2cache_shift != 0)
+			any_cache = 1;
+
+		if (any_cache) {
+			debug(" (I+D = %i+%i KB", (int)
+			    (1 << (cpu->cd.sparc.cpu_type.icache_shift-10)),
+			    (int)(1<<(cpu->cd.sparc.cpu_type.dcache_shift-10)));
+			if (cpu->cd.sparc.cpu_type.l2cache_shift != 0) {
+				debug(", L2 = %i KB",
+				    (int)(1 << (cpu->cd.sparc.cpu_type.
+				    l2cache_shift-10)));
+			}
+			debug(")");
+		}
 	}
 
 	return 1;
@@ -95,8 +136,18 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
  */
 void sparc_cpu_list_available_types(void)
 {
-	debug("SPARCv9\n");
-	/*  TODO  */
+	int i, j;
+	struct sparc_cpu_type_def tdefs[] = SPARC_CPU_TYPE_DEFS;
+
+	i = 0;
+	while (tdefs[i].name != NULL) {
+		debug("%s", tdefs[i].name);
+		for (j=10 - strlen(tdefs[i].name); j>0; j--)
+			debug(" ");
+		i++;
+		if ((i % 6) == 0 || tdefs[i].name == NULL)
+			debug("\n");
+	}
 }
 
 
@@ -105,8 +156,7 @@ void sparc_cpu_list_available_types(void)
  */
 void sparc_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug("\n");
-	/*  TODO  */
+	debug(", %i-bit\n", cpu->cd.sparc.cpu_type.bits);
 }
 
 
@@ -251,7 +301,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	if (cpu->is_32bit == 32)
+	if (cpu->is_32bit)
 		debug("%08x", (int)dumpaddr);
 	else
 		debug("%016llx", (long long)dumpaddr);

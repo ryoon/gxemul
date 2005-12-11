@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.56 2005-11-30 16:23:10 debug Exp $
+ *  $Id: cpu.h,v 1.57 2005-12-11 12:46:25 debug Exp $
  *
  *  See cpu.c.
  */
@@ -217,6 +217,28 @@ void cpu_init(void);
 #define	INVALIDATE_VADDR_UPPER4		16	/*  useful for PPC emulation  */
 
 #define	TLB_CODE			0x02
+
+
+#ifdef DYNTRANS_BACKEND
+
+struct dtb_fixup {
+	struct dtb_fixup *next;
+
+};
+
+struct translation_context {
+	/*  Current address of where to emit host instructions:  */
+	void			*p;
+
+	/*  Fixups needed after first translation pass:  */
+	struct dtb_fixup	*fixups;
+};
+
+void dtb_host_cacheinvalidate(void *p, size_t len);
+int dtb_function_prologue(struct translation_context *ctx, size_t *sizep);
+int dtb_function_epilogue(struct translation_context *ctx, size_t *sizep);
+
+#endif	/*  DYNTRANS_BACKEND  */
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

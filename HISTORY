@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1082 2005-12-09 05:34:18 debug Exp $
+$Id: HISTORY,v 1.1083 2005-12-11 12:44:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2513,3 +2513,5 @@ Changelog for GXemul:
 20051207	Sorting devices according to address; this reduces complexity
 		of device lookups from O(n) to O(log n) in memory_rw (but no
 		real performance increase (yet) in experiments).
+20051210	Beginning the work on native dyntrans backends (by making a
+		simple skeleton; so far only for Alpha hosts).

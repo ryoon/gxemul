@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.182 2005-12-04 06:01:39 debug Exp $
+#  $Id: configure,v 1.183 2005-12-11 12:44:59 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -67,6 +67,7 @@ if [ z"$X" = z0. ]; then
 	ENABLEPPC=YES
 else
 	#  Development:
+	DYNTRANSBACKEND=YES
 	ENABLEALPHA=YES
 	ENABLEARM=YES
 	ENABLEAVR=NO
@@ -112,6 +113,10 @@ if [ z"$*" != z ]; then
 			ENABLESH=YES
 			ENABLESPARC=YES
 			ENABLEX86=YES
+		else if [ z$a = z--disable-dyntransbackend ]; then
+			DYNTRANSBACKEND=NO
+		else if [ z$a = z--enable-dyntransbackend ]; then
+			DYNTRANSBACKEND=YES
 		else if [ z$a = z--disable-alpha ]; then
 			ENABLEALPHA=NO
 		else if [ z$a = z--enable-alpha ]; then
@@ -199,6 +204,13 @@ if [ z"$*" != z ]; then
 			    "latency/delay emulation"
 
 			printf "  --enable-all       enable everything\n"
+
+			if [ z$DYNTRANSBACKEND = zYES ]; then
+				printf "  --disable-dyntransbackend  disable "
+			else
+				printf "  --enable-dyntransbackend  enable"
+			fi
+			printf "dyntrans backend\n"
 
 			if [ z$ENABLEALPHA = zYES ]; then
 				printf "  --disable-alpha    disable "
@@ -301,7 +313,7 @@ if [ z"$*" != z ]; then
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -906,6 +918,23 @@ fi
 rm -f _testprog _testprog.error _testprog.stdout
 
 
+#  -g
+printf "checking whether -g can be used... "
+if [ z"$COMPAQCC" = zYES ]; then
+	printf "skipping\n"
+else
+	$CC $CFLAGS -g _testprog.c -o _testprog > _testprog.stdout 2>&1
+	cat _testprog.stdout >> _testprog.error
+	if [ -x _testprog ]; then
+		CFLAGS="-g $CFLAGS"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+fi
+rm -f _testprog _testprog.error _testprog.stdout
+
+
 #  -lrt for nanosleep?
 printf "checking whether -lrt is required for nanosleep... "
 printf "#include <time.h>\n#include <stdio.h>
@@ -1194,7 +1223,7 @@ rm -f _testuint.c _testuint
 
 ###############################################################################
 #
-#  Dynamic binary translation (BINTRANS):
+#  OLD binary translation (BINTRANS):
 #
 ###############################################################################
 
@@ -1219,8 +1248,8 @@ else
 		BINTRANS=YES
 	fi
 
-	#  x86:  (all machines ending in "86" are treated as i386)
-	if [ z"`uname -m|rev|cut -c1-2`" = z68 ]; then
+	#  x86:
+	if `uname -m|grep -q -v 64|grep -q 86`; then
 		printf "#define I386\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h
 		printf "i386\n"
@@ -1253,6 +1282,59 @@ else
 
 	if [ z$BINTRANS = zNO ]; then
 		printf "not supported yet on this arch\n"
+	fi
+fi
+
+
+###############################################################################
+#
+#  Dyntrans recompilation (native backend) support:
+#
+###############################################################################
+
+if [ z$DYNTRANSBACKEND = zYES ]; then
+	printf "checking for dyntrans backend... "
+	DBFOUND=NO
+
+	#  Alpha:
+	if [ z"`uname -m`" = zalpha ]; then
+		printf "#define DYNTRANS_BACKEND_ALPHA\n" >> config.h
+		printf "Alpha\n"
+		CPU_BACKENDS="$CPU_BACKENDS backend_alpha.o"
+		DBFOUND=YES
+	fi
+
+	#  AMD64:
+	#  TODO
+
+#	#  UltraSPARC:
+#	if [ z"`uname -m`" = zsun4u ]; then
+#		printf "#define DYNTRANS_BACKEND_SPARC64\n" >> config.h
+#		printf "UltraSPARC\n"
+#		CPU_BACKENDS="$CPU_BACKENDS backend_sparc.o"
+#		DBFOUND=YES
+#	fi
+#	if [ z"`uname -m`" = zsparc64 ]; then
+#		printf "#define DYNTRANS_BACKEND_SPARC64\n" >> config.h
+#		printf "UltraSPARC\n"
+#		CPU_BACKENDS="$CPU_BACKENDS backend_sparc.o"
+#		DBFOUND=YES
+#	fi
+
+	#  x86:
+	if `uname -m|grep -q -v 64|grep -q 86`; then
+		printf "#define DYNTRANS_BACKEND_I386\n" >> config.h
+		printf "i386\n"
+		CPU_BACKENDS="$CPU_BACKENDS backend_i386.o"
+		DBFOUND=YES
+	fi
+
+	if [ z$DBFOUND = zYES ]; then
+		printf "#define DYNTRANS_BACKEND\n" >> config.h
+	else
+		printf "not supported yet on this arch ("
+		printf `uname -m`
+		printf ")\n"
 	fi
 fi
 
@@ -1324,6 +1406,7 @@ echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "CPU_ARCHS=$CPU_ARCHS" >> _Makefile.header
+echo "CPU_BACKENDS=$CPU_BACKENDS" >> _Makefile.header
 echo "CPU_TOOLS=$CPU_TOOLS" >> _Makefile.header
 echo "" >> _Makefile.header
 

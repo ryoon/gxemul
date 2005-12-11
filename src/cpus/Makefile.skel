@@ -1,12 +1,13 @@
 #
-#  $Id: Makefile.skel,v 1.16 2005-11-30 16:23:08 debug Exp $
+#  $Id: Makefile.skel,v 1.17 2005-12-11 12:46:24 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 
-OBJS=cpu_mips.o cpu_mips_coproc.o bintrans.o memory_fast_v2h.o $(CPU_ARCHS)
+OBJS=cpu_mips.o cpu_mips_coproc.o bintrans.o memory_fast_v2h.o \
+	$(CPU_ARCHS) $(CPU_BACKENDS)
 TOOLS=generate_head generate_tail $(CPU_TOOLS)
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.251 2005-12-03 10:52:51 debug Exp $
+ *  $Id: main.c,v 1.252 2005-12-11 12:45:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -56,6 +56,7 @@ char **extra_argv;
 char *progname;
 
 int fully_deterministic = 0;
+int dyntrans_backend_enable = 1;
 
 
 /*****************************************************************************
@@ -219,8 +220,8 @@ static void usage(int longusage)
 	printf("\nOther options:\n");
 	printf("  -A        disable alignment checks in some cases (for higher"
 	    " speed)\n");
-#ifdef BINTRANS
-	printf("  -B        disable dynamic binary translation. (translation"
+#if defined(BINTRANS) || defined(DYNTRANS_BACKEND)
+	printf("  -B        disable native translation backends. (translation"
 	    " is turned on\n            by default, if the host "
 	    "supports it)\n");
 #endif
@@ -348,7 +349,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'B':
+			/*  Turns off both bintrans and dyntrans.  */
 			m->bintrans_enable = 0;
+			dyntrans_backend_enable = 0;
 			msopts = 1;
 			break;
 		case 'C':

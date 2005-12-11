@@ -1,10 +1,11 @@
-$Id: TODO,v 1.184 2005-12-09 05:34:18 debug Exp $
+$Id: TODO,v 1.185 2005-12-11 12:44:59 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Dyntrans:
 	x)  Instr call statistics
+	x)  "fake" skeleton backend
 	x)  64-bit stuff: good generic virtual memory translation, and
 	    other structures. not all 64 bits need to be used (e.g. Alpha)
 	x)  Delay slots!
@@ -14,8 +15,9 @@ Dyntrans:
 	x)  PPC optimizations; instr combs
 	x)  Alpha
 	x)  SPARC
+	x)  PPC (64-bit stuff)
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
-	x)  recompilation backend? think carefully about this
+	x)  true recompilation backend? think carefully about this
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
@@ -29,7 +31,8 @@ PCI:
 	    be per machine? or per bus, that's better
 
 ARM:
-	x)  emulate more full ARM systems (netbsd, freebsd, linux?, ...)
+	x)  emulate more full ARM systems (iq80321 for {net,free}bsd,
+	    zaurus for openbsd, ... and stuff for linux as well?)
 
 MacPPC:
 	x)  dev_zs / interrupts?

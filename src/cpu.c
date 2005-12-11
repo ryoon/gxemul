@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.325 2005-12-03 04:14:11 debug Exp $
+ *  $Id: cpu.c,v 1.326 2005-12-11 12:45:14 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <string.h>
 
 #include "cpu.h"
@@ -43,7 +44,7 @@
 
 extern int quiet_mode;
 extern int show_opcode_statistics;
-
+extern int dyntrans_backend_enable;
 
 static struct cpu_family *first_cpu_family = NULL;
 
@@ -294,9 +295,24 @@ void cpu_functioncall_trace_return(struct cpu *cpu)
  */
 void cpu_create_or_reset_tc(struct cpu *cpu)
 {
-	if (cpu->translation_cache == NULL)
-		cpu->translation_cache = zeroed_alloc(DYNTRANS_CACHE_SIZE + 
-		    DYNTRANS_CACHE_MARGIN);
+	size_t s = DYNTRANS_CACHE_SIZE + DYNTRANS_CACHE_MARGIN;
+
+	if (cpu->translation_cache == NULL) {
+#ifdef DYNTRANS_BACKEND
+		if (dyntrans_backend_enable) {
+			cpu->translation_cache = (unsigned char *) mmap(NULL,
+			    s, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON |
+			    MAP_PRIVATE, -1, 0);
+			if (cpu->translation_cache == NULL) {
+				dyntrans_backend_enable = 0;
+				fatal("%\n%  WARNING! Dyntrans backend disabled"
+				    ", because mmap() failed.\n%\n");
+			}
+		}
+#endif
+		if (cpu->translation_cache == NULL)
+			cpu->translation_cache = zeroed_alloc(s);
+	}
 
 	/*  Create an empty table at the beginning of the translation cache:  */
 	memset(cpu->translation_cache, 0, sizeof(uint32_t)

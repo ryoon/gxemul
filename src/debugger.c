@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.127 2005-12-03 04:14:11 debug Exp $
+ *  $Id: debugger.c,v 1.128 2005-12-11 12:45:28 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -35,6 +35,8 @@
  *	This entire module is very much non-reentrant. :-/
  *
  *	Add more functionality that already exists elsewhere in the emulator.
+ *
+ *	Call stack display?
  *
  *	More generic expression evaluator (for example + - * / between multiple
  *	terms), including _TAB COMPLETION_ of symbols and register names!

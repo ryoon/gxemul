@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.46 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_le.c,v 1.47 2005-12-11 16:45:58 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -47,6 +47,9 @@
  *
  *  TODO:  Error conditions (such as when there are not enough receive
  *	   buffers) are not emulated yet.
+ *
+ *	   (Old bug, but probably still valid:  "UDP packets that are too 
+ *	   large are not handled well by the Lance device.")
  */
 
 #include <stdio.h>

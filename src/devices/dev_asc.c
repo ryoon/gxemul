@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.76 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_asc.c,v 1.77 2005-12-11 16:45:58 debug Exp $
  *
- *  'asc' SCSI controller for some DECstation/DECsystem models, and
- *  for PICA-61.
+ *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
  *
  *  Supposed to support SCSI-1 and SCSI-2. I've not yet found any docs
  *  on NCR53C9X, so I'll try to implement this device from LSI53CF92A docs
@@ -50,6 +49,10 @@
  *  TODO:  This module needs a clean-up, and some testing to see that
  *         it works will all OSes that might use it (NetBSD, OpenBSD,
  *         Ultrix, Linux, Mach, OSF/1, Sprite, ...)
+ *
+ *	   Running Linux/DECstation 2.4.26 with no scsi disks attached causes
+ *	   a warning message to be printed by Linux. (Whether this is a bug,
+ *	   is is the way it works on real hardware, I don't know.)
  */
 
 #include <stdio.h>

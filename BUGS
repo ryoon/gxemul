@@ -1,13 +1,7 @@
-$Id: BUGS,v 1.37 2005-11-13 12:34:02 debug Exp $
+$Id: BUGS,v 1.38 2005-12-11 16:45:39 debug Exp $
 
-Hm. This file is pretty old. Some of these are still valid, though.
-
-===================================================================
-
-  x)  An unknown math coprocessor bug. (Ultrix' dxclock sometimes looks
-      weird.)
-
-  x)  Enabling cache emulation (./configure --enable-caches) triggers bugs.
+  x)  Floating point coprocessor stuff is buggy. Writing a new (portable)
+      framework for fp emulation is in the TODO.
 
   x)  Linux/DECstation (Debian) oopses extremely often unless -U is used
       at run-time. I'm not sure yet why it bugs out. With -U, the risk is
@@ -19,17 +13,7 @@ Hm. This file is pretty old. Some of these are still valid, though.
       still being developed.)  But this is just a guess.
 
   o)  Hardware device ticks are done at cycle specific intervals, not
-      instruction intervals, so sometimes a fraction of a cycle can be
-      "lost".
-
-  o)  Running Linux/DECstation 2.4.26 with no scsi disks attached causes
-      a warning message to be printed by Linux.
-
-  o)  UDP packets that are too large are not handled well by the Lance device.
-
-  o)  Colors in X11 framebuffers on MacOS X hosts are wrong. (I'm not sure
-      how to solve this; the code works on both little-endian (Alpha) and
-      big-endian (UltraSPARC) X-servers...)
+      instruction intervals, so sometimes a fraction of a cycle can be "lost".
 
   o)  Binary-translated 64-bit stuff checks to see if the top 32 bits are
       all zeroes or all ones, and then uses 32-bit tables and such. This
@@ -37,5 +21,7 @@ Hm. This file is pretty old. Some of these are still valid, though.
       fixed for i386?)
 
   o)  NetBSD/arc 2.0 uses the ASC controller in a way which GXemul cannot yet
-      handle. (NetBSD 1.6.2 works ok.)
+      handle. (NetBSD 1.6.2 works ok.) (Possibly a problem in NetBSD itself,
+      http://mail-index.netbsd.org/source-changes/2005/11/06/0024.html suggests
+      that.)
 

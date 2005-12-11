@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.183 2005-12-11 12:44:59 debug Exp $
+#  $Id: configure,v 1.184 2005-12-11 16:45:39 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -455,7 +455,7 @@ fi
 
 #  Cache emulation:
 if [ z$CACHES = zYES ]; then
-	echo 'Enabling Cache emulation. (EXPERIMENTAL)'
+	echo 'Enabling Cache emulation. (EXPERIMENTAL and BUGGY)'
 	printf "#define ENABLE_CACHE_EMULATION\n" >> config.h
 
 	if [ z$DELAYS != zYES ]; then

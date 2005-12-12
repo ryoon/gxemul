@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.185 2005-12-09 05:34:19 debug Exp $
+ *  $Id: memory.c,v 1.186 2005-12-12 06:00:57 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -405,12 +405,13 @@ void memory_device_register(struct memory *mem, const char *device_name,
 
 	for (i=0; i<mem->n_mmapped_devices; i++) {
 		if (dyntrans_data == mem->dev_dyntrans_data[i] &&
-		    mem->dev_flags[i] & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK) &&
-		    flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
+		    mem->dev_flags[i] & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
+		    && flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
 			fatal("ERROR: the data pointer used for dyntrans "
 			    "accesses must only be used once!\n");
-			fatal("(%p cannot be used by '%s'; already in use by '%s')\n",
-			    dyntrans_data, device_name, mem->dev_name[i]);
+			fatal("(%p cannot be used by '%s'; already in use by '"
+			    "%s')\n", dyntrans_data, device_name,
+			    mem->dev_name[i]);
 			exit(1);
 		}
 	}
@@ -427,8 +428,8 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
 	memmove(&mem->dev_endaddr[newi+1], &mem->dev_endaddr[newi],
 	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_length[newi+1], &mem->dev_length[newi], sizeof(uint64_t) *
-	    (MAX_DEVICES - newi - 1));
+	memmove(&mem->dev_length[newi+1], &mem->dev_length[newi],
+	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
 	memmove(&mem->dev_flags[newi+1], &mem->dev_flags[newi], sizeof(int) *
 	    (MAX_DEVICES - newi - 1));
 	memmove(&mem->dev_extra[newi+1], &mem->dev_extra[newi], sizeof(void *) *
@@ -437,10 +438,12 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	    (MAX_DEVICES - newi - 1));
 	memmove(&mem->dev_dyntrans_data[newi+1], &mem->dev_dyntrans_data[newi],
 	    sizeof(void *) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_dyntrans_write_low[newi+1], &mem->dev_dyntrans_write_low
-	    [newi], sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_dyntrans_write_high[newi+1], &mem->dev_dyntrans_write_high
-	    [newi], sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
+	memmove(&mem->dev_dyntrans_write_low[newi+1],
+	    &mem->dev_dyntrans_write_low[newi],
+	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
+	memmove(&mem->dev_dyntrans_write_high[newi+1],
+	    &mem->dev_dyntrans_write_high[newi],
+	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
 
 
 	mem->dev_name[newi] = strdup(device_name);

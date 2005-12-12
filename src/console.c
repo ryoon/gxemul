@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.12 2005-12-05 05:50:44 debug Exp $
+ *  $Id: console.c,v 1.13 2005-12-12 06:00:57 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -253,6 +253,9 @@ static void start_xterm(int handle)
 			a++;
 		}
 		printf("\"): %i ]\n", errno);
+		if (errno == ENOENT)
+			printf("[ Most probably you don't have xterm"
+			    " in your PATH. Try again. ]\n");
 		exit(1);
 	}
 

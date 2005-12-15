@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1084 2005-12-11 21:34:41 debug Exp $
+$Id: HISTORY,v 1.1085 2005-12-15 18:27:08 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2516,3 +2516,6 @@ Changelog for GXemul:
 20051210	Beginning the work on native dyntrans backends (by making a
 		simple skeleton; so far only for Alpha hosts).
 20051211	Some very minor SPARC updates.
+20051215	Fixing a bug in the MIPS mul (note: not mult) instruction,
+		so it also works with non-64-bit emulation. (Thanks to Alec
+		Voropay for noticing the problem.)

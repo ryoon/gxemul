@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64_instr.c,v 1.2 2005-11-06 22:41:12 debug Exp $
+ *  $Id: cpu_ia64_instr.c,v 1.3 2005-12-16 21:44:42 debug Exp $
  *
  *  IA64 instructions.
  *
@@ -75,6 +75,7 @@ X(end_of_page)
 X(to_be_translated)
 {
 	uint64_t addr, low_pc;
+	int simple = 0;
 	struct ia64_vph_page *vph_p;
 	unsigned char *page;
 	unsigned char ib[16];

@@ -1,9 +1,14 @@
-$Id: TODO,v 1.185 2005-12-11 12:44:59 debug Exp $
+$Id: TODO,v 1.186 2005-12-16 21:44:40 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Dyntrans:
+	x)  INVALIDATION should cause translations in _all_ cpus to be
+	    invalidated, e.g. on a write to a write-protected page
+	    (containing code)
+	x)  Think about sharing code between CPUs of the same
+	    arch/bitlength (the translation caches).
 	x)  Instr call statistics
 	x)  "fake" skeleton backend
 	x)  64-bit stuff: good generic virtual memory translation, and

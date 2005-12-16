@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.4 2005-11-06 22:41:12 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.5 2005-12-16 21:44:42 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -199,6 +199,7 @@ void avr_combine_instructions(struct cpu *cpu, struct avr_instr_call *ic,
 X(to_be_translated)
 {
 	int addr, low_pc, rd, rr, main_opcode;
+	int simple = 0;
 	uint16_t iword;
 	unsigned char *page;
 	unsigned char ib[2];

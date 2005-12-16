@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.47 2005-12-04 02:40:03 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.48 2005-12-16 21:44:42 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1385,6 +1385,122 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 #endif
 	cpu->cd.DYNTRANS_ARCH.cur_physpage->flags |= TRANSLATIONS;
+
+
+#ifdef DYNTRANS_BACKEND
+	/*
+	 *  "Empty"/simple native dyntrans backend stuff:
+	 *
+	 *  1) If no translation is currently being done, but the translated
+	 *     instruction was simple enough, then let's start making a new
+	 *     native translation block.
+	 *
+	 *  2) If a native translation block is currently being constructed,
+	 *     but this instruction wasn't simple enough, then end the block
+	 *     (without including this instruction).
+	 *
+	 *  3) If a native translation block is currently being constructed,
+	 *     and this is a simple instruction, then add it.
+	 */
+	if (simple && cpu->translation_context.p == NULL &&
+	    dyntrans_backend_enable) {
+		size_t s = 0;
+
+		if (cpu->translation_context.translation_buffer == NULL) {
+			cpu->translation_context.translation_buffer =
+			    zeroed_alloc(DTB_TRANSLATION_SIZE_MAX +
+			    DTB_TRANSLATION_SIZE_MARGIN);
+		}
+
+		cpu->translation_context.p =
+		    cpu->translation_context.translation_buffer;
+
+		cpu->translation_context.ic_page =
+		    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+		cpu->translation_context.start_instr_call_index =
+		    ((size_t)ic - (size_t)cpu->cd.DYNTRANS_ARCH.cur_ic_page)
+		    / (sizeof(*ic));
+
+		dtb_function_prologue(&cpu->translation_context, &s);
+		cpu->translation_context.p += s;
+		cpu->translation_context.n_simple = 0;
+	}
+
+	/*  If this is not a continuation of a simple translation, then
+	    stop now!  */
+	if (cpu->translation_context.ic_page != cpu->cd.DYNTRANS_ARCH.
+	    cur_ic_page || ic != &cpu->cd.DYNTRANS_ARCH.cur_ic_page[
+	    cpu->translation_context.start_instr_call_index +
+	    cpu->translation_context.n_simple])
+		simple = 0;
+
+	if (cpu->translation_context.p != NULL && !simple) {
+		size_t s = 0, total;
+
+		if (cpu->translation_context.n_simple > 1) {
+			dtb_generate_ptr_inc(cpu, &cpu->translation_context,
+			    &s, &cpu->cd.DYNTRANS_ARCH.next_ic,
+			    (cpu->translation_context.n_simple - 1) *
+			    sizeof(*(cpu->cd.DYNTRANS_ARCH.next_ic)));
+			cpu->translation_context.p += s;
+		}
+
+		dtb_function_epilogue(&cpu->translation_context, &s);
+		cpu->translation_context.p += s;
+
+		cpu_dtb_do_fixups(cpu);
+#if 0
+{
+int i;
+unsigned char *addr = cpu->translation_context.translation_buffer;
+printf("index = %i\n", cpu->translation_context.start_instr_call_index);
+quiet_mode = 0;
+for (i=0; i<4*32; i+=4)
+	alpha_cpu_disassemble_instr(cpu, (unsigned char *)addr + i,
+        0, i, 0);
+}
+#endif
+		total = (size_t)cpu->translation_context.p -
+		    (size_t)cpu->translation_context.translation_buffer;
+
+		/*  Copy the translated block to the translation cache:  */
+		/*  Align first:  */
+		cpu->translation_cache_cur_ofs --;
+		cpu->translation_cache_cur_ofs |= 31;
+		cpu->translation_cache_cur_ofs ++;
+
+		memcpy(cpu->translation_cache + cpu->translation_cache_cur_ofs,
+		    cpu->translation_context.translation_buffer, total);
+
+		/*  Set the ic pointer:  */
+		((struct DYNTRANS_IC *)cpu->translation_context.ic_page)
+		    [cpu->translation_context.start_instr_call_index].f =
+		    (void *)
+		    (cpu->translation_cache + cpu->translation_cache_cur_ofs);
+
+		/*  Align cur_ofs afterwards as well, just to be safe.  */
+		cpu->translation_cache_cur_ofs += total;
+		cpu->translation_cache_cur_ofs --;
+		cpu->translation_cache_cur_ofs |= 31;
+		cpu->translation_cache_cur_ofs ++;
+
+		/*  Set the "combined instruction" flag for this page:  */
+		cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+		    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+		cpu->cd.DYNTRANS_ARCH.cur_physpage->flags |= COMBINATIONS;
+
+		dtb_host_cacheinvalidate(0,0); /* p , size ... ); */
+
+		cpu->translation_context.p = NULL;
+	}
+	if (cpu->translation_context.p != NULL) {
+		size_t s = 0;
+		dtb_generate_fcall(cpu, &cpu->translation_context,
+		    &s, (size_t)ic->f, (size_t)ic);
+		cpu->translation_context.p += s;
+		cpu->translation_context.n_simple ++;
+	}
+#endif	/*  DYNTRANS_BACKEND  */
 
 
 	/*

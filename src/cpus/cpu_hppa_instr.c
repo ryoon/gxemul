@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa_instr.c,v 1.4 2005-11-13 22:34:22 debug Exp $
+ *  $Id: cpu_hppa_instr.c,v 1.5 2005-12-16 21:44:42 debug Exp $
  *
  *  HPPA instructions.
  *
@@ -80,6 +80,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode;
+	int simple = 0;
 	/* void (*samepage_function)(struct cpu *, struct hppa_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */

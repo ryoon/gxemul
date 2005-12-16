@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.52 2005-12-04 02:40:03 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.53 2005-12-16 21:44:42 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2496,6 +2496,7 @@ X(to_be_translated)
 	uint32_t iword, mask;
 	unsigned char *page;
 	unsigned char ib[4];
+	int simple = 0;
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
 	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0,
 	    bfa, fp, byterev, nb, mb, me;

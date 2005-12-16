@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.55 2005-11-30 16:23:08 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.56 2005-12-16 21:44:42 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2422,6 +2422,7 @@ static void arm_switch_add1(struct arm_instr_call *ic, int rd,
 X(to_be_translated)
 {
 	uint32_t addr, low_pc, iword, imm = 0;
+	int simple = 0;
 	unsigned char *page;
 	unsigned char ib[4];
 	int condition_code, main_opcode, secondary_opcode, s_bit, rn, rd, r8;
@@ -2700,12 +2701,14 @@ X(to_be_translated)
 		/*  "mov reg,#0":  */
 		if ((iword & 0x0fff0fff) == 0x03a00000 && rd != ARM_PC) {
 			arm_switch_clear(ic, rd, condition_code);
+simple = 1;
 			break;
 		}
 
 		/*  "mov reg,#1":  */
 		if ((iword & 0x0fff0fff) == 0x03a00001 && rd != ARM_PC) {
 			arm_switch_mov1(ic, rd, condition_code);
+simple = 1;
 			break;
 		}
 
@@ -2713,6 +2716,7 @@ X(to_be_translated)
 		if ((iword & 0x0ff00fff) == 0x02800001 && rd != ARM_PC
 		    && rn == rd) {
 			arm_switch_add1(ic, rd, condition_code);
+simple = 1;
 			break;
 		}
 

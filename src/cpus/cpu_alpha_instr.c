@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.4 2005-11-26 05:46:51 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.5 2005-12-16 21:44:42 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -754,6 +754,7 @@ X(to_be_translated)
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
 	int opcode, ra, rb, func, rc, imm, load, loadstore_type, fp, llsc;
+	int simple = 0;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.alpha.cur_ic_page)

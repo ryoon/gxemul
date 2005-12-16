@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.57 2005-12-11 12:46:25 debug Exp $
+ *  $Id: cpu.h,v 1.58 2005-12-16 21:44:44 debug Exp $
  *
  *  See cpu.c.
  */
@@ -107,11 +107,61 @@ struct cpu_family {
 #define	TRANSLATIONS			1
 #define	COMBINATIONS			2
 
-#define	DYNTRANS_CACHE_SIZE		(20*1048576)
+#define	DYNTRANS_CACHE_SIZE		(16*1048576)
 #define	DYNTRANS_CACHE_MARGIN		300000
 
 #define	N_BASE_TABLE_ENTRIES		32768
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
+
+
+#ifdef DYNTRANS_BACKEND
+
+/*  TODO: convert this into a fixed-size array? Might increase
+    performace.  */
+struct dtb_fixup {
+	struct dtb_fixup	*next;
+	int			type;	/*  Fixup type [optional]  */
+	void			*addr;	/*  Address of the instruction
+					    (in host memory)  */
+	size_t			data;	/*  Emulation data.  */
+};
+
+struct translation_context {
+	/*  Current address of where to emit host instructions:  */
+	/*  (NULL means no translation is currently being done.)  */
+	void			*p;
+
+	/*  index of the instr_call of the first translated instruction:  */
+	void			*ic_page;
+	int			start_instr_call_index;
+
+	/*  Fixups needed after first translation pass:  */
+	struct dtb_fixup	*fixups;
+
+	int			n_simple;
+
+	/*  translation_buffer should have room for max_size bytes,
+	    plus some margin.  */
+	unsigned char		*translation_buffer;
+	size_t			cur_size;
+};
+
+#define	DTB_TRANSLATION_SIZE_MAX	3072
+#define	DTB_TRANSLATION_SIZE_MARGIN	1024
+
+void cpu_dtb_add_fixup(struct cpu *cpu, int type, void *addr, size_t data);
+void cpu_dtb_do_fixups(struct cpu *cpu);
+
+void dtb_host_cacheinvalidate(void *p, size_t len);
+int dtb_function_prologue(struct translation_context *ctx, size_t *sizep);
+int dtb_function_epilogue(struct translation_context *ctx, size_t *sizep);
+int dtb_generate_fcall(struct cpu *cpu, struct translation_context *ctx,
+	size_t *sizep, size_t f, size_t instr_call_ptr);
+int dtb_generate_ptr_inc(struct cpu *cpu, struct translation_context *ctx,
+	size_t *sizep, void *ptr, int amount);
+
+#endif	/*  DYNTRANS_BACKEND  */
+
 
 
 /*
@@ -163,6 +213,9 @@ struct cpu {
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
+#ifdef DYNTRANS_BACKEND
+	struct translation_context translation_context;
+#endif
 
 	/*
 	 *  CPU-family dependent:
@@ -217,28 +270,6 @@ void cpu_init(void);
 #define	INVALIDATE_VADDR_UPPER4		16	/*  useful for PPC emulation  */
 
 #define	TLB_CODE			0x02
-
-
-#ifdef DYNTRANS_BACKEND
-
-struct dtb_fixup {
-	struct dtb_fixup *next;
-
-};
-
-struct translation_context {
-	/*  Current address of where to emit host instructions:  */
-	void			*p;
-
-	/*  Fixups needed after first translation pass:  */
-	struct dtb_fixup	*fixups;
-};
-
-void dtb_host_cacheinvalidate(void *p, size_t len);
-int dtb_function_prologue(struct translation_context *ctx, size_t *sizep);
-int dtb_function_epilogue(struct translation_context *ctx, size_t *sizep);
-
-#endif	/*  DYNTRANS_BACKEND  */
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

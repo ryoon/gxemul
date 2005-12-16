@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.326 2005-12-11 12:45:14 debug Exp $
+ *  $Id: cpu.c,v 1.327 2005-12-16 21:44:41 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -652,6 +652,95 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
 
 	return NULL;
 }
+
+
+#ifdef DYNTRANS_BACKEND
+/*
+ *  cpu_dtb_add_fixup():
+ *
+ *  Add a fixup entry to a currently ongoing dyntrans backend translation.
+ */
+void cpu_dtb_add_fixup(struct cpu *cpu, int type, void *addr, size_t data)
+{
+	struct dtb_fixup *fixup = malloc(sizeof (struct dtb_fixup));
+	if (fixup == NULL) {
+		fprintf(stderr, "out of memory\n"),
+		exit(1);
+	}
+
+	/*  memset(fixup, 0, sizeof(struct dtb_fixup));  */
+
+	fixup->next = cpu->translation_context.fixups;
+	cpu->translation_context.fixups = fixup;
+
+	fixup->type = type;
+	fixup->addr = addr;
+	fixup->data = data;
+
+	/*  printf("{ fixup added: host addr %p, data=%p }\n", addr,
+	    (void *)data);  */
+}
+
+
+/*
+ *  cpu_dtb_do_fixups():
+ *
+ *  This function should be called when a chunk of code has been translated,
+ *  and post-fixup is to be applied (i.e. add data which for some reason was
+ *  not included in the generated code).
+ *
+ *  If no fixup is necessary for a specific host platform, then it still needs
+ *  an empty do_fixups routine here (just set done = 1).
+ */
+void cpu_dtb_do_fixups(struct cpu *cpu)
+{
+	for (;;) {
+		int done = 0;
+		size_t omit_addr;
+
+		struct dtb_fixup *fixup = cpu->translation_context.fixups;
+		if (fixup == NULL)
+			break;
+
+		cpu->translation_context.fixups = fixup->next;
+
+#ifdef DYNTRANS_BACKEND_ALPHA
+		/*  Add the data at the end of the new translation:  */
+/*printf("%p %p\n", fixup->addr, fixup->data);*/
+		omit_addr = (size_t)cpu->translation_context.p -
+		    (size_t)cpu->translation_context.translation_buffer;
+/*printf("omit_addr = %016llx\n", (long long)omit_addr);*/
+		omit_addr = ((omit_addr - 1) | (sizeof(uint64_t) - 1)) + 1;
+/*printf("omit_addr = %016llx\n", (long long)omit_addr);*/
+		{
+			uint64_t *x = (void *)(omit_addr + (size_t)cpu->
+			    translation_context.translation_buffer);
+			uint32_t *fixup_instr = (void *)fixup->addr;
+			size_t ofs = omit_addr;
+			if (ofs > 0x7fff) {
+				fatal("Alpha fixup > 0x7fff!\n");
+				exit(1);
+			}
+			*x = fixup->data;
+/*printf("orig instr = 0x%08x\n", *fixup_instr);*/
+			(*fixup_instr) &= ~0xffff;
+			(*fixup_instr) |= ofs;
+/*printf("new instr = 0x%08x\n", *fixup_instr);*/
+		}
+		omit_addr += sizeof(uint64_t);
+		cpu->translation_context.p = (void *)
+		    ((size_t)cpu->translation_context.translation_buffer
+		    + omit_addr);
+		done = 1;
+#endif	/*  DYNTRANS_BACKEND_ALPHA  */
+
+		if (!done)
+			fatal("!!! cpu_dtb_do_fixups() not implemented yet"
+			    " for this host architecture!\n");
+	}
+}
+
+#endif	/*  DYNTRANS_BACKEND  */
 
 
 /*

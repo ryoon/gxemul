@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: backend_alpha.c,v 1.1 2005-12-11 12:46:24 debug Exp $
+ *  $Id: backend_alpha.c,v 1.2 2005-12-16 21:44:42 debug Exp $
  *
  *  Dyntrans backend for Alpha hosts.
  *
@@ -33,11 +33,11 @@
  *  Registers are currently allocated as follows:
  *
  *	s0 = saved copy of original a0 (struct cpu *)
- *	s1 = saved copy of original a1 (xxx_instr_call *)
- *	s2 = saved copy of original t12 (ptr to the function itself)
+ *	s1 = saved copy of original t12 (ptr to the function itself)
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cpu.h"
@@ -77,11 +77,11 @@ uint32_t alpha_imb[8] = {
 	0x00000086,			/*  imb   */
 	0x6bfa8001,			/*  ret   */
 	0x47ff041f,			/*  nop   */
-	0x2efe0000,			/*  unop  */
+	0x2ffe0000,			/*  unop  */
 	0x47ff041f,			/*  nop   */
-	0x2efe0000,			/*  unop  */
+	0x2ffe0000,			/*  unop  */
 	0x47ff041f,			/*  nop   */
-	0x2efe0000			/*  unop  */
+	0x2ffe0000			/*  unop  */
 };
 
 
@@ -113,15 +113,16 @@ void dtb_host_cacheinvalidate(void *p, size_t len)
  *	t12 = pointer to the function start itself
  *
  *  The prologue code does the following:
- *	1) s0 = a0, s1 = a1, s2 = t12  (save the incoming args for later use)
- *	2) Save ra onto the stack.
+ *	1) Save ra, s0, and s1 onto the stack.
+ *	1) s0 = a0, s1 = t12  (save the incoming args for later use)
  */
-uint32_t alpha_prologue[5] = {
-	0x40001400 | (ALPHA_A0  << 21) | ALPHA_S0,
-	0x40001400 | (ALPHA_A1  << 21) | ALPHA_S1,
-	0x40001400 | (ALPHA_T12 << 21) | ALPHA_S2,
+uint32_t alpha_prologue[6] = {
 	0x23deffe0,		/*  lda sp,-32(sp)  */
-	0xb75e0000		/*  stq ra,0(sp)  */
+	0xb75e0000,		/*  stq ra,0(sp)  */
+	0xb53e0008,		/*  stq s0,8(sp)  */
+	0xb55e0010,		/*  stq s1,16(sp)  */
+	0x40001400 | (ALPHA_A0  << 21) | ALPHA_S0,
+	0x40001400 | (ALPHA_T12 << 21) | ALPHA_S1
 };
 int dtb_function_prologue(struct translation_context *ctx, size_t *sizep)
 {
@@ -135,7 +136,7 @@ int dtb_function_prologue(struct translation_context *ctx, size_t *sizep)
  *  dtb_function_epilogue():
  *
  *  The epilogue code does the following:
- *	1) Load ra from the stack.
+ *	1) Load ra, s0, and s1 from the stack.
  *	2) Return.
  */
 int dtb_function_epilogue(struct translation_context *ctx, size_t *sizep)
@@ -143,18 +144,81 @@ int dtb_function_epilogue(struct translation_context *ctx, size_t *sizep)
 	uint32_t *q = (uint32_t *) ctx->p;
 
 	*q++ = 0xa75e0000;	/*  ldq ra,0(sp)  */
+	*q++ = 0xa53e0008;	/*  lda s0,8(sp)  */
+	*q++ = 0xa55e0010;	/*  lda s1,16(sp)  */
 	*q++ = 0x23de0020;	/*  lda sp,32(sp)  */
 
 	*q++ = 0x6bfa8001;				/*  ret  */
 	if ((((size_t)q) & 0x7) == 4)
-		*q++ = 0x2efe0000;			/*  unop  */
+		*q++ = 0x2ffe0000;			/*  unop  */
 	if ((((size_t)q) & 0xf) == 8) {
 		*q++ = 0x47ff041f;			/*  nop  */
 		if ((((size_t)q) & 0x7) == 4)
-			*q++ = 0x2efe0000;		/*  unop  */
+			*q++ = 0x2ffe0000;		/*  unop  */
 	}
 
 	*sizep = ((size_t)q - (size_t)ctx->p);
 	return 1;
 }
+
+
+/*
+ *  dtb_generate_fcall():
+ *
+ *  Generates a function call (to a C function).
+ *
+ *	(a0 already contains the cpu pointer)
+ *	ldq  t12,ofs_a(s1)		Get the function address and
+ *	ldq  a1,ofs_b(s1)		the xxx_instr_call pointer.
+ *	jsr  ra,(t12),<nextinstr>	Call the function!
+ *	mov  s0,a0			Restore a0.
+ */
+int dtb_generate_fcall(struct cpu *cpu, struct translation_context *ctx,
+	size_t *sizep, size_t f, size_t instr_call_ptr)
+{
+	uint32_t *q = (uint32_t *) ctx->p;
+
+	cpu_dtb_add_fixup(cpu, 0, q, f);
+	*q++ = 0xa76a0000;	/*  ldq t12,ofs(s1)  */
+
+	cpu_dtb_add_fixup(cpu, 0, q, instr_call_ptr);
+	*q++ = 0xa62a0000;	/*  ldq a1,ofs(s1)  */
+
+	*q++ = 0x6b5b4000;	/*  jsr  ra,(t12),nextinstr  */
+	*q++ = 0x47e90410;	/*  mov  s0,a0  */
+
+	*sizep = ((size_t)q - (size_t)ctx->p);
+	return 1;
+}
+
+
+/*
+ *  dtb_generate_ptr_inc():
+ *
+ *  Generates an increment of a pointer (for example cpu->cd.XXX.next_ic).
+ *
+ *  NOTE: The syntax for calling this function is something like:
+ *
+ *	dtb_generate_ptr_inc(cpu, &cpu->translation_context,
+ *	    &cpu->cd.arm.next_ic);
+ */
+int dtb_generate_ptr_inc(struct cpu *cpu, struct translation_context *ctx,
+	size_t *sizep, void *ptr, int amount)
+{
+	uint32_t *q = (uint32_t *) ctx->p;
+	ssize_t ofs = (size_t)ptr - (size_t)(void *)cpu;
+
+	if (ofs < 0 || ofs > 0x7fff) {
+		fatal("dtb_generate_ptr_inc(): Huh? ofs=%p\n", (void *)ofs);
+		exit(1);
+	}
+
+	*q++ = 0xa4500000 | ofs;	/*  ldq  t1, ofs(a0)     */
+	*q++ = 0x20420000 | amount;	/*  lda  t1, amount(t1)  */
+	*q++ = 0xb4500000 | ofs;	/*  stq  t1, ofs(a0)     */
+
+	*sizep = ((size_t)q - (size_t)ctx->p);
+	return 1;
+}
+
 

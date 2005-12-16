@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1085 2005-12-15 18:27:08 debug Exp $
+$Id: HISTORY,v 1.1086 2005-12-16 21:44:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2519,3 +2519,7 @@ Changelog for GXemul:
 20051215	Fixing a bug in the MIPS mul (note: not mult) instruction,
 		so it also works with non-64-bit emulation. (Thanks to Alec
 		Voropay for noticing the problem.)
+20051216	More work on the fake/empty/simple/skeleton/whatever backend;
+		performance doesn't increase, so this isn't really worth it,
+		but it was probably worth it to prepare for a real backend
+		later.

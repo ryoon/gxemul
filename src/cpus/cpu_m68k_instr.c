@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k_instr.c,v 1.3 2005-11-06 22:41:12 debug Exp $
+ *  $Id: cpu_m68k_instr.c,v 1.4 2005-12-16 21:44:42 debug Exp $
  *
  *  Motorola 68K instructions.
  *
@@ -77,6 +77,7 @@ X(to_be_translated)
 {
 	uint32_t addr, low_pc;
 	uint16_t iword;
+	int simple = 0;
 	unsigned char *page;
 	unsigned char ib[2];
 	int main_opcode;

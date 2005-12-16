@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.639 2005-12-11 21:34:42 debug Exp $
+ *  $Id: machine.c,v 1.640 2005-12-16 21:44:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1683,7 +1683,7 @@ void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 			m->md_int.gc_data->status_hi &= ~mask;
 	}
 
-#if 0
+#if 1
 	printf("status = %08x %08x  enable = %08x %08x\n",
 	    m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
 	    m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);

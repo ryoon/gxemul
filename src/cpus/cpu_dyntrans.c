@@ -25,13 +25,33 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.48 2005-12-16 21:44:42 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.49 2005-12-19 02:16:41 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
 
 
 #ifdef	DYNTRANS_CPU_RUN_INSTR
+#if 1	/*  IC statistics:  */
+static void gather_statistics(struct cpu *cpu)
+{
+	static long long n = 0;
+	n++;
+	if (n < 100000000)
+		return;
+
+	struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic;
+	static FILE *f = NULL;
+	if (f == NULL) {
+		f = fopen("instruction_call_statistics.raw", "w");
+		if (f == NULL) {
+			fatal("Unable to open statistics file for output.\n");
+			exit(1);
+		}
+	}
+	fwrite(&ic->f, 1, sizeof(void *), f);
+}
+#else	/*  PC statistics:  */
 static void gather_statistics(struct cpu *cpu)
 {
 	uint64_t a;
@@ -89,7 +109,7 @@ a &= 0x03ffffff;
 	}
 }
 }
-
+#endif	/*  PC statistics  */
 
 #define S		gather_statistics(cpu)
 

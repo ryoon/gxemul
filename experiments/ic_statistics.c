@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ic_statistics.c,v 1.1 2005-12-19 01:38:24 debug Exp $
+ *  $Id: ic_statistics.c,v 1.2 2005-12-19 02:16:39 debug Exp $
  *
  *  This program is not optimized for speed, but it should work.
  *
@@ -149,14 +149,25 @@ void add_count(void **pointers, int n)
 void try_len(FILE *f, int len)
 {
 	void **pointers;
+	off_t off;
 
 	pointers = malloc(sizeof(void *) * len);
+
+	fseek(f, 0, SEEK_END);
+	off = ftello(f);
 
 	fseek(f, 0, SEEK_SET);
 	if (len > 1)
 		fread(&pointers[1], sizeof(void *), len-1, f);
 
 	while (!feof(f)) {
+		static long long yo = 0;
+		yo ++;
+		if ((yo & 0xfffff) == 0) {
+			fprintf(stderr, "[ len=%i, %i%% done ]\n",
+			    len, 100 * yo * sizeof(void *) / off);
+		}
+
 		/*  Make room for next pointer value:  */
 		if (len > 1)
 			memmove(&pointers[0], &pointers[1],

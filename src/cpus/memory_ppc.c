@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.21 2005-11-30 06:58:05 debug Exp $
+ *  $Id: memory_ppc.c,v 1.22 2005-12-20 18:20:55 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -44,7 +44,7 @@
 int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 	int user)
 {
-	int i, istart = 0, iend = 8, pp, regnr;
+	int i, istart = 0, iend = 8, pp;
 
 	if (flags & FLAG_INSTR)
 		iend = 4;
@@ -62,7 +62,7 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 
 	/*  Scan either the 4 instruction BATs or the 4 data BATs:  */
 	for (i=istart; i<iend; i++) {
-		regnr = SPR_IBAT0U + i * 2;
+		int regnr = SPR_IBAT0U + i * 2;
 		uint32_t upper = cpu->cd.ppc.spr[regnr];
 		uint32_t lower = cpu->cd.ppc.spr[regnr + 1];
 		uint32_t phys = lower & BAT_RPN, ebs = upper & BAT_EPI;

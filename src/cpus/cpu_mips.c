@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.12 2005-12-15 18:27:09 debug Exp $
+ *  $Id: cpu_mips.c,v 1.13 2005-12-20 04:25:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1291,9 +1291,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			debug(",%s", regname(cpu->machine, rs));
 			debug(",%s", regname(cpu->machine, rt));
 		} else if (special6 == SPECIAL2_MUL) {
-			/*  Apparently used both on R5900 _and_ MIPS32/64:  */
-			/*  TODO: this is just a guess, I don't have the
-				docs in front of me  */
+			/*  Apparently used both on R5900 and MIPS32:  */
 			debug("mul\t%s", regname(cpu->machine, rd));
 			debug(",%s", regname(cpu->machine, rs));
 			debug(",%s", regname(cpu->machine, rt));
@@ -4086,12 +4084,10 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    ((cpu->cd.mips.gpr[rs] & 0xffffffffULL) << 32)		/*  TODO: switch rt and rs?  */
 			    | (cpu->cd.mips.gpr[rt] & 0xffffffffULL);
 		} else if (special6 == SPECIAL2_MUL) {
-			/*  Apparently used both on R5900 _and_ MIPS32/64:  */
-			cpu->cd.mips.gpr[rd] = (int64_t)cpu->cd.mips.gpr[rt] *
-			    (int64_t)cpu->cd.mips.gpr[rs];
-			if (cpu->is_32bit)
-				cpu->cd.mips.gpr[rd] = (int64_t)(int32_t)
-				    cpu->cd.mips.gpr[rd];
+			/*  Apparently used both on R5900 MIPS32:  */
+			cpu->cd.mips.gpr[rd] = (int64_t)(int32_t) (
+			    (int32_t)cpu->cd.mips.gpr[rt] *
+			    (int32_t)cpu->cd.mips.gpr[rs] );
 		} else if (special6 == SPECIAL2_CLZ) {
 			/*  clz: count leading zeroes  */
 			int i, n=0;

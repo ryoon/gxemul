@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1087 2005-12-19 02:16:38 debug Exp $
+$Id: HISTORY,v 1.1088 2005-12-20 04:25:06 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2524,3 +2524,4 @@ Changelog for GXemul:
 		but it was probably worth it to prepare for a real backend
 		later.
 20051219	More instr call statistics gathering and analysis stuff.
+20051220	Another fix for old MIPS 'mul'.

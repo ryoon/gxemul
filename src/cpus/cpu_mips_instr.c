@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.6 2005-12-16 21:44:42 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.7 2005-12-20 05:02:03 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -296,6 +296,8 @@ X(nor) { reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
 X(sll) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << ic->arg[1]); }
 X(srl) { reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> ic->arg[1]); }
 X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
+X(mul) { reg(ic->arg[2]) = (int32_t)
+	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
 
 
 /*
@@ -305,6 +307,58 @@ X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
  *  arg[2] = pointer to destination
  */
 X(mov)  { reg(ic->arg[2]) = reg(ic->arg[0]); }
+
+
+/*
+ *  clz, clo, dclz, dclo: Count leading zeroes/ones.
+ *
+ *  arg[0] = pointer to rs
+ *  arg[1] = pointer to rd
+ */
+X(clz)
+{
+	uint32_t x = reg(ic->arg[0]);
+	int count;
+	for (count=0; count<32; count++) {
+		if (x & 0x80000000UL)
+			break;
+		x <<= 1;
+	}
+	reg(ic->arg[1]) = count;
+}
+X(clo)
+{
+	uint32_t x = reg(ic->arg[0]);
+	int count;
+	for (count=0; count<32; count++) {
+		if (!(x & 0x80000000UL))
+			break;
+		x <<= 1;
+	}
+	reg(ic->arg[1]) = count;
+}
+X(dclz)
+{
+	uint64_t x = reg(ic->arg[0]);
+	int count;
+	for (count=0; count<64; count++) {
+		if (x & 0x8000000000000000ULL)
+			break;
+		x <<= 1;
+	}
+	reg(ic->arg[1]) = count;
+}
+X(dclo)
+{
+	uint64_t x = reg(ic->arg[0]);
+	int count;
+	for (count=0; count<64; count++) {
+		if (!(x & 0x8000000000000000ULL))
+			break;
+		x <<= 1;
+	}
+	reg(ic->arg[1]) = count;
+}
 
 
 /*
@@ -849,6 +903,38 @@ X(to_be_translated)
 			break;
 		default:fatal("UNIMPLEMENTED cop1 (rs = %i)\n", rs);
 			goto bad;
+		}
+		break;
+
+	case HI6_SPECIAL2:
+		switch (s6) {
+
+		case SPECIAL2_MUL:
+			ic->f = instr(mul);
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+			if (rd == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			break;
+
+		case SPECIAL2_CLZ:
+		case SPECIAL2_CLO:
+		case SPECIAL2_DCLZ:
+		case SPECIAL2_DCLO:
+			switch (s6) {
+			case SPECIAL2_CLZ:  ic->f = instr(clz); break;
+			case SPECIAL2_CLO:  ic->f = instr(clo); break;
+			case SPECIAL2_DCLZ: ic->f = instr(dclz); break;
+			case SPECIAL2_DCLO: ic->f = instr(dclo); break;
+			}
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rd];
+			if (rd == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			break;
+
+		default:goto bad;
 		}
 		break;
 

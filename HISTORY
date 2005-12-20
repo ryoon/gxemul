@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1089 2005-12-20 05:02:02 debug Exp $
+$Id: HISTORY,v 1.1090 2005-12-20 18:50:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2526,3 +2526,4 @@ Changelog for GXemul:
 20051219	More instr call statistics gathering and analysis stuff.
 20051220	Another fix for MIPS 'mul'. Also converting mul and {d,}cl{o,z}
 		to dyntrans.
+		memory_ppc.c syntax error fix (noticed by Peter Valchev).

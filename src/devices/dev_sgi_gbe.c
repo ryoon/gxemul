@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.29 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.30 2005-12-20 18:50:15 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -124,15 +124,22 @@ tweaked = 0;
 		if (tweaked) {
 			/*  Tweaked (linear) mode:  */
 
-			/*  Copy data from this 64KB physical RAM block to the framebuffer:  */
-			/*  NOTE: Copy it in smaller chunks than 64KB, in case the framebuffer
-				device can optimize away portions that aren't modified that way  */
+			/*
+			 *  Copy data from this 64KB physical RAM block to the
+			 *  framebuffer:
+			 *
+			 *  NOTE: Copy it in smaller chunks than 64KB, in case
+			 *        the framebuffer device can optimize away
+			 *        portions that aren't modified that way.
+			 */
 			copy_len = sizeof(buf);
 			copy_offset = 0;
 
 			while (on_screen && copy_offset < 65536) {
-				if (old_fb_offset + copy_len > d->xres * d->yres * d->bitdepth / 8) {
-					copy_len = d->xres * d->yres * d->bitdepth / 8 - old_fb_offset;
+				if (old_fb_offset + copy_len > d->xres *
+				    d->yres * d->bitdepth / 8) {
+					copy_len = d->xres * d->yres *
+					    d->bitdepth / 8 - old_fb_offset;
 					/*  Stop after copying this block...  */
 					on_screen = 0;
 				}
@@ -149,8 +156,8 @@ tweaked = 0;
 				old_fb_offset += sizeof(buf);
 			}
 		} else {
-			/*  This is for non-tweaked (tiled) mode. Not really tested
-			    with correct image data, but might work:  */
+			/*  This is for non-tweaked (tiled) mode. Not really
+			    tested with correct image data, but might work:  */
 
 			lines_to_copy = 128;
 			if (ybase + lines_to_copy > d->yres)
@@ -210,7 +217,8 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef GBE_DEBUG
 	if (writeflag == MEM_WRITE)
-		debug("[ sgi_gbe: DEBUG: write to address 0x%llx, data=0x%llx ]\n", (long long)relative_addr, (long long)idata);
+		debug("[ sgi_gbe: DEBUG: write to address 0x%llx, data"
+		    "=0x%llx ]\n", (long long)relative_addr, (long long)idata);
 #endif
 
 	switch (relative_addr) {
@@ -261,21 +269,25 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem,
 		else {
 			/*  bit 31 = freeze, 23..12 = cury, 11.0 = curx  */
 			odata = ((random() % (d->yres + 10)) << 12)
-			       + (random() % (d->xres + 10)) + (d->freeze? ((uint32_t)1 << 31) : 0);
+			    + (random() % (d->xres + 10)) +
+			    (d->freeze? ((uint32_t)1 << 31) : 0);
 odata = random();	/*  testhack for the ip32 prom  */
 		}
 		break;
 
 	case 0x10004:		/*  vt_xymax, according to Linux  */
-		odata = ((d->yres-1) << 12) + d->xres-1;	/*  ... 12 bits maxy, 12 bits maxx.  */
+		odata = ((d->yres-1) << 12) + d->xres-1;
+		/*  ... 12 bits maxy, 12 bits maxx.  */
 		break;
 
 	case 0x10034:		/*  vt_hpixen, according to Linux  */
-		odata = (0 << 12) + d->xres-1;	/*  ... 12 bits on, 12 bits off.  */
+		odata = (0 << 12) + d->xres-1;
+		/*  ... 12 bits on, 12 bits off.  */
 		break;
 
 	case 0x10038:		/*  vt_vpixen, according to Linux  */
-		odata = (0 << 12) + d->yres-1;	/*  ... 12 bits on, 12 bits off.  */
+		odata = (0 << 12) + d->yres-1;
+		/*  ... 12 bits on, 12 bits off.  */
 		break;
 
 	case 0x20004:
@@ -286,13 +298,16 @@ odata = random();	/*  testhack for the ip32 prom  */
 		break;
 
 	case 0x30000:	/*  normal plane ctrl 0  */
-		/*  bit 15 = fifo reset, 14..13 = depth, 12..5 = tile width, 4..0 = rhs  */
+		/*  bit 15 = fifo reset, 14..13 = depth, 
+		    12..5 = tile width, 4..0 = rhs  */
 		if (writeflag == MEM_WRITE) {
 			d->plane0ctrl = idata;
 			d->bitdepth = 8 << ((d->plane0ctrl >> 13) & 3);
-			debug("[ sgi_gbe: setting color depth to %i bits ]\n", d->bitdepth);
+			debug("[ sgi_gbe: setting color depth to %i bits ]\n",
+			    d->bitdepth);
 			if (d->bitdepth != 8)
-				fatal("sgi_gbe: warning: bitdepth %i not really implemented yet\n", d->bitdepth);
+				fatal("sgi_gbe: warning: bitdepth %i not "
+				    "really implemented yet\n", d->bitdepth);
 		} else
 			odata = d->plane0ctrl;
 		break;
@@ -305,11 +320,18 @@ odata = random();	/*  testhack for the ip32 prom  */
 		break;
 
 	case 0x3000c:	/*  normal plane ctrl 3  */
-		/*  Writes to 3000c should be readable back at 30008? At least bit 0 (dma)  */
-		/*  ctrl 3: Bits 31..9 = tile table pointer bits, Bit 1 = linear, Bit 0 = dma  */
+		/*
+		 *  Writes to 3000c should be readable back at 30008?
+		 *  At least bit 0 (dma) ctrl 3.
+		 *
+		 *  Bits 31..9 = tile table pointer bits,
+		 *  Bit 1 = linear
+		 *  Bit 0 = dma
+		 */
 		if (writeflag == MEM_WRITE) {
 			d->frm_control = idata;
-			debug("[ sgi_gbe: frm_control = 0x%08x ]\n", d->frm_control);
+			debug("[ sgi_gbe: frm_control = 0x%08x ]\n",
+			    d->frm_control);
 		} else
 			odata = d->frm_control;
 		break;
@@ -322,9 +344,9 @@ odata = random();	/*  testhack for the ip32 prom  */
 		break;
 
 	/*
-	 *  Linux/sgimips seems to write color palette data to offset 0x50000 - 0x503xx,
-	 *  and gamma correction data to 0x60000 - 0x603ff, as 32-bit values at addresses
-	 *  divisible by 4 (formated as 0xrrggbb00).
+	 *  Linux/sgimips seems to write color palette data to offset 0x50000
+	 *  to 0x503xx, and gamma correction data to 0x60000 - 0x603ff, as
+	 *  32-bit values at addresses divisible by 4 (formated as 0xrrggbb00).
 	 *
 	 *  sgio2fb: initializing
 	 *  sgio2fb: I/O at 0xffffffffb6000000
@@ -360,7 +382,8 @@ odata = random();	/*  testhack for the ip32 prom  */
 			d->fb_data->rgb_palette[color_nr * 3 + 2] = b;
 
 			if (r != old_r || g != old_g || b != old_b) {
-				/*  If the palette has been changed, the entire image needs to be redrawn...  :-/  */
+				/*  If the palette has been changed, the entire
+				    image needs to be redrawn...  :-/  */
 				d->fb_data->update_x1 = 0;
 				d->fb_data->update_x2 = d->fb_data->xsize - 1;
 				d->fb_data->update_y1 = 0;
@@ -370,14 +393,18 @@ odata = random();	/*  testhack for the ip32 prom  */
 		}
 
 		if (writeflag == MEM_WRITE)
-			debug("[ sgi_gbe: unimplemented write to address 0x%llx, data=0x%llx ]\n", (long long)relative_addr, (long long)idata);
+			debug("[ sgi_gbe: unimplemented write to address "
+			    "0x%llx, data=0x%llx ]\n",
+			    (long long)relative_addr, (long long)idata);
 		else
-			debug("[ sgi_gbe: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+			debug("[ sgi_gbe: unimplemented read from address "
+			    "0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ) {
 #ifdef GBE_DEBUG
-		debug("[ sgi_gbe: DEBUG: read from address 0x%llx: 0x%llx ]\n", (long long)relative_addr, (long long)odata);
+		debug("[ sgi_gbe: DEBUG: read from address 0x%llx: 0x%llx ]\n",
+		    (long long)relative_addr, (long long)odata);
 #endif
 		memory_writemax64(cpu, data, len, odata);
 	}

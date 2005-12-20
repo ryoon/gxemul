@@ -1,0 +1,28 @@
+#
+#  $Id: Makefile.skel,v 1.1 2005-12-20 21:20:11 debug Exp $
+#
+#  Makefile for GXemul machines
+#
+
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
+OBJS=machine_testppc.o
+
+all:
+	$(MAKE) objs
+	$(MAKE) automachine.o
+
+automachine.c: $(OBJS) automachine_head.c automachine_middle.c automachine_tail.c makeautomachine.sh
+	./makeautomachine.sh
+
+objs: $(OBJS)
+
+$(OBJS): Makefile
+
+
+clean:
+	rm -f $(OBJS) *core
+	rm -f automachine.[co]
+
+clean_all: clean
+	rm -f Makefile
+

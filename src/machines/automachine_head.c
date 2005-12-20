@@ -25,17 +25,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: autodev_head.c,v 1.6 2005-12-20 21:19:15 debug Exp $
+ *  $Id: automachine_head.c,v 1.1 2005-12-20 21:19:17 debug Exp $
  *
  *  Automatically register all devices from the devices/ subdir.
  *
- *  NOTE: autodev_head.c, plus a line for each device, plus autodev_middle.c,
- *  plus another line (again) for each device, plus autodev_tail.c should be
- *  combined into one. See makeautodev.sh for more info.
+ *  NOTE: automachine_head.c, plus a line for each machine, plus
+ *  automachine_middle.c, plus another line (again) for each machine, plus
+ *  automachine_tail.c should be combined into one. See makeautomachine.sh
+ *  for more info.
  */
 
 #include <stdio.h>
 
-#include "bus_pci.h"
-#include "device.h"
+#include "machine.h"
 

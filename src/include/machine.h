@@ -28,11 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.91 2005-12-04 14:25:49 debug Exp $
+ *  $Id: machine.h,v 1.92 2005-12-20 21:19:16 debug Exp $
  */
 
 #include <sys/types.h>
 #include <sys/time.h>
+
 
 #include "symbol.h"
 
@@ -445,12 +446,44 @@ struct machine {
 #define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000ULL
 
 
+/*  For the automachine system:  */
+struct machine_entry_subtype {
+	int			machine_subtype;/*  Old-style subtype  */
+	const char		*name;		/*  Official name  */
+	int			n_aliases;
+	char			**aliases;	/*  Aliases  */
+};
+
+struct machine_entry {
+	struct machine_entry	*next;
+
+	/*  Machine type:  */
+	int			arch;
+	int			machine_type;	/*  Old-style type  */
+	const char		*name;		/*  Official name  */
+	int			n_aliases;
+	char			**aliases;	/*  Aliases  */
+
+	int			(*setup)(struct machine *machine);
+
+	/*  Machine subtypes:  */
+	int			n_subtypes;
+	struct machine_entry_subtype **subtype;
+};
+
+#define	MACHINE_SETUP(x)	int machine_setup_ ## x(struct machine *machine)
+#define	MACHINE_SETUP_TYPE(n)	int (*n)(struct machine *)
+
+void automachine_init(void);
+
+
 /*  machine.c:  */
 struct machine *machine_new(char *name, struct emul *emul);
 int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch);
 void machine_add_tickfunction(struct machine *machine,
 	void (*func)(struct cpu *, void *), void *extra, int clockshift);
+void machine_register(char *name, MACHINE_SETUP_TYPE(setup));
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);
 int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);

@@ -25,17 +25,47 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: autodev_head.c,v 1.6 2005-12-20 21:19:15 debug Exp $
- *
- *  Automatically register all devices from the devices/ subdir.
- *
- *  NOTE: autodev_head.c, plus a line for each device, plus autodev_middle.c,
- *  plus another line (again) for each device, plus autodev_tail.c should be
- *  combined into one. See makeautodev.sh for more info.
+ *  $Id: machine_testppc.c,v 1.1 2005-12-20 21:19:17 debug Exp $
  */
 
-#include <stdio.h>
+#include "machine.h"
+#include "memory.h"
+#include "misc.h"
 
-#include "bus_pci.h"
-#include "device.h"
+
+MACHINE_SETUP(testppc)
+{
+	char tmpstr[1000];
+
+	machine->machine_name = "PPC test machine";
+
+	/*  TODO: interrupt for PPC?  */
+
+#if 0
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
+	    (long long)DEV_CONS_ADDRESS);
+
+                cons_data = device_add(machine, tmpstr);
+                machine->main_console_handle = cons_data->console_handle;
+                 
+                snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+                    (long long)DEV_MP_ADDRESS);
+                device_add(machine, tmpstr);
+                
+                fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, 
+VFB_GENERIC,
+                    640,480, 640,480, 24, "testppc generic"); 
+
+                snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+                    (long long)DEV_DISK_ADDRESS);
+                device_add(machine, tmpstr);
+                
+                snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx 
+irq=0",
+                    (long long)DEV_ETHER_ADDRESS);
+                device_add(machine, tmpstr);
+#endif
+
+	return 1;
+}
 

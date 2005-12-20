@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1090 2005-12-20 18:50:20 debug Exp $
+$Id: HISTORY,v 1.1091 2005-12-20 21:19:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2527,3 +2527,6 @@ Changelog for GXemul:
 20051220	Another fix for MIPS 'mul'. Also converting mul and {d,}cl{o,z}
 		to dyntrans.
 		memory_ppc.c syntax error fix (noticed by Peter Valchev).
+		Beginning to move out machines from src/machine.c into
+		individual files in src/machines (in a way similar to the
+		autodev system for devices).

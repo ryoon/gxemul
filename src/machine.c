@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.640 2005-12-16 21:44:41 debug Exp $
+ *  $Id: machine.c,v 1.641 2005-12-20 21:19:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -96,28 +96,6 @@
 #define	BOOTSTR_BUFLEN		1000
 #define	BOOTARG_BUFLEN		2000
 #define	ETHERNET_STRING_MAXLEN	40
-
-struct machine_entry_subtype {
-	int			machine_subtype;/*  Old-style subtype  */
-	const char		*name;		/*  Official name  */
-	int			n_aliases;
-	char			**aliases;	/*  Aliases  */
-};
-
-struct machine_entry {
-	struct machine_entry	*next;
-
-	/*  Machine type:  */
-	int			arch;
-	int			machine_type;	/*  Old-style type  */
-	const char		*name;		/*  Official name  */
-	int			n_aliases;
-	char			**aliases;	/*  Aliases  */
-
-	/*  Machine subtypes:  */
-	int			n_subtypes;
-	struct machine_entry_subtype **subtype;
-};
 
 
 /*  See main.c:  */
@@ -840,12 +818,15 @@ void kmin_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 	/*  debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);  */
 
 	if (assrt)
-		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR -
+		    IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR -
+		    IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+	    / 0x10] & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK -
+	    IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KMIN_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, KMIN_INT_TC3);
@@ -858,15 +839,19 @@ void kmin_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 void kn03_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
-	/*  debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);  */
+	/*  debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n",
+	    irq_nr, assrt);  */
 
 	if (assrt)
-		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR -
+		    IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR -
+		    IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+	    / 0x10] & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK -
+	    IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KN03_INT_ASIC);
 	else
 		cpu_interrupt_ack(cpu, KN03_INT_ASIC);
@@ -883,15 +868,15 @@ void maxine_interrupt(struct machine *m, struct cpu *cpu,
 	debug("maxine_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
 
 	if (assrt)
-		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
-		    / 0x10] |= irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR -
+		    IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
-		    / 0x10] &= ~irq_nr;
+		m->md_int.dec_ioasic_data->reg[(IOASIC_INTR -
+		    IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START)
-	    / 0x10])
+	if (m->md_int.dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+	    / 0x10] & m->md_int.dec_ioasic_data->reg[(IOASIC_IMSK -
+	    IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, XINE_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, XINE_INT_TC3);
@@ -1322,7 +1307,7 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
 			assrt = 1;
 	}
 
-	/*  Hopefully _MISC and _SERIAL will not be both on at the same time.  */
+	/*  Hopefully _MISC and _SERIAL will not be both on at the same time. */
 	if (irq_nr & MACE_PERIPH_MISC) {
 		if (assrt)
 			mace_interrupts |= (irq_nr & ~MACE_PERIPH_MISC);
@@ -1384,7 +1369,8 @@ void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
  *  Au1x00 interrupt routine:
  *
  *  TODO: This is just bogus so far.  For more info, read this:
- *  http://www.meshcube.org/cgi-bin/viewcvs.cgi/kernel/linux/arch/mips/au1000/common/
+ *  http://www.meshcube.org/cgi-bin/viewcvs.cgi/kernel/linux/arch/
+ *	mips/au1000/common/
  *
  *  CPU int 2 = IC 0, request 0
  *  CPU int 3 = IC 0, request 1
@@ -5821,8 +5807,6 @@ void machine_default_cputype(struct machine *m)
  *  This function creates a new machine_entry struct, and fills it with some
  *  valid data; it is up to the caller to add additional data that weren't
  *  passed as arguments to this function.
- *
- *  For internal use.
  */
 static struct machine_entry *machine_entry_new(const char *name,
 	int arch, int oldstyle_type, int n_aliases, int n_subtypes)
@@ -5966,6 +5950,36 @@ void machine_list_available_types_and_cpus(void)
 
 
 /*
+ *  machine_register():
+ *
+ *  Used by automachine.c to register all machines in src/machines/.
+ */
+void machine_register(char *name, MACHINE_SETUP_TYPE(setup))
+{
+	printf("machine_register('%s')\n", name);
+
+#if 0
+	struct machine_entry *me;
+
+
+/*  TODO:
+	Real name.
+	Arch?
+	Subtypes!
+*/
+
+	me = machine_entry_new("Real name (TODO)",
+	    ARCH_ARM, MACHINE_ZAURUS, 1, 0);
+	me->aliases[0] = "zaurus";
+	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+#endif
+
+}
+
+
+/*
  *  machine_init():
  *
  *  This function should be called before any other machine_*() function
@@ -5974,6 +5988,8 @@ void machine_list_available_types_and_cpus(void)
 void machine_init(void)
 {
 	struct machine_entry *me;
+
+	automachine_init();
 
 	/*
 	 *  NOTE: This list is in reverse order, so that the

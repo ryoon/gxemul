@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.86 2005-11-23 00:40:47 debug Exp $
+#  $Id: Makefile.skel,v 1.87 2005-12-20 21:19:14 debug Exp $
 #
 #  Makefile for GXemul src
 #
@@ -11,7 +11,7 @@ OBJS=console.o cpu.o debugger.o diskimage.o emul.o emul_parse.o file.o \
 	symbol.o useremul.o x11.o
 
 all: do_include
-	$(MAKE) do_src do_cpus do_devices do_promemul
+	$(MAKE) do_src do_cpus do_devices do_machines do_promemul
 
 do_include:
 	cd include; $(MAKE); cd ..
@@ -21,6 +21,9 @@ do_cpus:
 
 do_devices:
 	cd devices; $(MAKE); cd ..
+
+do_machines:
+	cd machines; $(MAKE); cd ..
 
 do_promemul:
 	cd promemul; $(MAKE); cd ..
@@ -34,12 +37,14 @@ clean:
 	cd include; $(MAKE) clean; cd ..
 	cd cpus; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
+	cd machines; $(MAKE) clean; cd ..
 	cd promemul; $(MAKE) clean; cd ..
 
 clean_all: clean
 	cd include; $(MAKE) clean_all; cd ..
 	cd cpus; $(MAKE) clean_all; cd ..
 	cd devices; $(MAKE) clean_all; cd ..
+	cd machines; $(MAKE) clean_all; cd ..
 	cd promemul; $(MAKE) clean_all; cd ..
 	rm -f Makefile
 

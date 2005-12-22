@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1091 2005-12-20 21:19:13 debug Exp $
+$Id: HISTORY,v 1.1092 2005-12-22 20:15:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2530,3 +2530,4 @@ Changelog for GXemul:
 		Beginning to move out machines from src/machine.c into
 		individual files in src/machines (in a way similar to the
 		autodev system for devices).
+20051222	Updating the documentation regarding NetBSD/pmax 3.0.

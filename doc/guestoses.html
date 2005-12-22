@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.115 2005-12-04 13:14:01 debug Exp $
+$Id: guestoses.html,v 1.116 2005-12-22 20:15:20 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -131,11 +131,12 @@ steps:
   <li>Download a NetBSD CD-ROM iso image:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
 	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/pmaxcd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/pmaxcd-3.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/pmaxcd-3.0.iso</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
-	<b>gxemul -e 3max -A -d nbsd_pmax.img -d bc:pmaxcd.iso</b>
+	<b>gxemul -e 3max -A -d nbsd_pmax.img -d bc:pmaxcd-3.0.iso</b>
+	(or <b>pmaxcd.iso</b>)
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
 	DECstation. Remember to choose <tt>vt100</tt> as your terminal
@@ -149,7 +150,7 @@ For an ftp install, substitute steps 2 and 3 above with these:
   <li>Download a NetBSD pmax INSTALL kernel:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	or
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
@@ -183,8 +184,8 @@ NetBSD from the harddisk image:<pre>
 	<b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>
 
-<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.x
-doesn't work with X out-of-the-box on pmax. It seems that this has to do
+<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.x and 3.x
+do not work with X out-of-the-box on pmax. It seems that this has to do
 with NetBSD switching console system to "WSCONS" somewhere between 1.6.2
 and 2.0. For now, if you want X, then try NetBSD 1.6.2.
 
@@ -226,8 +227,8 @@ follow these instructions:
   <li>Download a NetBSD/arc 1.6.2 CDROM image, and a generic NetBSD/arc
 	kernel:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso</a>
-
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
+
 </pre>
   <li>Start the emulator using this command line:<pre>
 	<b>gxemul -e pica -x -d nbsd_arc.img -d bc:arccd.iso \

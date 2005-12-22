@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.168 2005-12-04 13:14:00 debug Exp $
+$Id: RELEASE,v 1.169 2005-12-22 20:15:27 debug Exp $
 
 I'm working on post-0.3.7.
 
@@ -31,7 +31,7 @@ the documentation.
 
     Guest operating system             Emulated machine
     ----------------------             ----------------
-    NetBSD/pmax 2.1 (and 1.6.2)        DECstation 5000/200
+    NetBSD/pmax 3.0 (and 1.6.2)        DECstation 5000/200
     OpenBSD/pmax 2.8-BETA              DECstation 5000/200
     Ultrix 4.2-4.5                     DECstation 5000/200
     Sprite demo harddisk image         DECstation 5000/200

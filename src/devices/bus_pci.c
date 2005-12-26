@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.52 2005-12-05 05:50:46 debug Exp $
+ *  $Id: bus_pci.c,v 1.53 2005-12-26 12:32:11 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -147,7 +147,7 @@ void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
 		}
 		/*  Writes are not really supported yet:  */
 		if (idata != x) {
-			debug("[ bus_pci: write to PCI DATA: data = 0x%08llx"
+			fatal("[ bus_pci: write to PCI DATA: data = 0x%08llx"
 			    " differs from current value 0x%08llx; NOT YET"
 			    " SUPPORTED. bus %i, device %i, function %i (%s)"
 			    " register 0x%02x ]\n", (long long)idata,

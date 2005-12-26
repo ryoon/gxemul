@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.9 2005-11-30 16:23:08 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.10 2005-12-26 12:32:10 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1194,7 +1194,7 @@ void coproc_register_write(struct cpu *cpu,
 			unimpl = 0;
 			break;
 		case COP0_COUNT:
-			if (tmp != (int64_t)(int32_t)tmp)
+			if (tmp != (uint64_t)(int64_t)(int32_t)tmp)
 				fatal("WARNING: trying to write a 64-bit value"
 				    " to the COUNT register!\n");
 			tmp = (int64_t)(int32_t)tmp;
@@ -1204,7 +1204,7 @@ void coproc_register_write(struct cpu *cpu,
 			/*  Clear the timer interrupt bit (bit 7):  */
 			cpu->cd.mips.compare_register_set = 1;
 			mips_cpu_interrupt_ack(cpu, 7);
-			if (tmp != (int64_t)(int32_t)tmp)
+			if (tmp != (uint64_t)(int64_t)(int32_t)tmp)
 				fatal("WARNING: trying to write a 64-bit value"
 				    " to the COMPARE register!\n");
 			tmp = (int64_t)(int32_t)tmp;
@@ -1309,7 +1309,7 @@ void coproc_register_write(struct cpu *cpu,
 #endif
 
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
-			    (oldmode & MIPS1_ISOL_CACHES) !=
+			    ((uint32_t)oldmode & MIPS1_ISOL_CACHES) !=
 			    (tmp & MIPS1_ISOL_CACHES)) {
 				/*  R3000-style caches when isolated are
 				    treated in bintrans mode by changing
@@ -2166,7 +2166,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	if (cpu->cd.mips.cpu_type.mmu_model != MMU3K &&
 	    cpu->cd.mips.cpu_type.rev != MIPS_R4100) {
 		uint64_t vaddr1, vaddr2;
-		int i, asid;
+		int i;
+		unsigned int asid;
 
 		vaddr1 = cp->reg[COP0_ENTRYHI] & ENTRYHI_VPN2_MASK_R10K;
 		asid = cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_dpi.c,v 1.4 2005-11-30 16:23:08 debug Exp $
+ *  $Id: generate_arm_dpi.c,v 1.5 2005-12-26 12:32:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -39,10 +39,10 @@ char *op[16] = {
 	"tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn" };
 
 
-char *uppercase(char *l)
+static char *uppercase(char *l)
 {
 	static char staticbuf[1000];
-	int i = 0;
+	size_t i = 0;
 
 	while (*l && i < sizeof(staticbuf)) {
 		char u = *l++;

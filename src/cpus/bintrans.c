@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.3 2005-12-04 03:55:29 debug Exp $
+ *  $Id: bintrans.c,v 1.4 2005-12-26 12:32:10 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -1101,8 +1101,8 @@ void old_bintrans_init_cpu(struct cpu *cpu)
 #if 1
 		for (i=0; i<1048576; i++) {
 			unsigned char *ptr = NULL;
-			if (i < (0xa0000000ULL >> 12) ||
-			    i >= (0xc0000000ULL >> 12))
+			if ((unsigned int)i < (0xa0000000ULL >> 12) ||
+			    (unsigned int)i >= (0xc0000000ULL >> 12))
 				ptr = cpu->cd.mips.
 				    vaddr_to_hostaddr_r2k3k_dcachetable
 				    ->haddr_entry[(i & 1023) * 2];

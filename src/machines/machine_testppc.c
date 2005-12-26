@@ -25,12 +25,21 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_testppc.c,v 1.1 2005-12-20 21:19:17 debug Exp $
+ *  $Id: machine_testppc.c,v 1.2 2005-12-26 12:32:13 debug Exp $
  */
 
+#include <stdio.h>
+
+#include "cpu.h"
+#include "device.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "mp.h"
+
+
+MACHINE_HEAD
 
 
 MACHINE_SETUP(testppc)
@@ -38,34 +47,39 @@ MACHINE_SETUP(testppc)
 	char tmpstr[1000];
 
 	machine->machine_name = "PPC test machine";
+	machine->stable = 1;
 
 	/*  TODO: interrupt for PPC?  */
 
-#if 0
 	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 	    (long long)DEV_CONS_ADDRESS);
+	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-                cons_data = device_add(machine, tmpstr);
-                machine->main_console_handle = cons_data->console_handle;
-                 
-                snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-                    (long long)DEV_MP_ADDRESS);
-                device_add(machine, tmpstr);
-                
-                fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, 
-VFB_GENERIC,
-                    640,480, 640,480, 24, "testppc generic"); 
+	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
+	    (long long)DEV_MP_ADDRESS);
+	device_add(machine, tmpstr);
 
-                snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-                    (long long)DEV_DISK_ADDRESS);
-                device_add(machine, tmpstr);
-                
-                snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx 
-irq=0",
-                    (long long)DEV_ETHER_ADDRESS);
-                device_add(machine, tmpstr);
-#endif
+	dev_fb_init(machine, machine->memory, DEV_FB_ADDRESS, VFB_GENERIC,
+	    640,480, 640,480, 24, "testppc generic"); 
 
-	return 1;
+	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
+	    (long long)DEV_DISK_ADDRESS);
+	device_add(machine, tmpstr);
+
+	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
+	    (long long)DEV_ETHER_ADDRESS);
+	device_add(machine, tmpstr);
+}
+
+
+MACHINE_REGISTER(testppc)
+{
+	struct machine_entry *me = machine_entry_new("Test-machine for PPC",
+	    ARCH_PPC, MACHINE_TESTPPC, 1, 0);
+	me->setup = machine_setup_testppc;
+	me->aliases[0] = "testppc";
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.7 2005-11-30 16:23:09 debug Exp $
+ *  $Id: generate_tail.c,v 1.8 2005-12-26 12:32:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -35,7 +35,7 @@
 char *uppercase(char *l)
 {
 	static char staticbuf[1000];
-	int i = 0;
+	size_t i = 0;
 
 	while (*l && i < sizeof(staticbuf)) {
 		char u = *l++;

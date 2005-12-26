@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.2 2005-11-11 13:23:16 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.3 2005-12-26 12:32:10 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -280,7 +280,8 @@ bugs are triggered.  */
 
 	if (use_tlb) {
 #ifndef V2P_MMU3K
-		int odd = 0, cached_lo1 = 0;
+		int odd = 0;
+		uint64_t cached_lo1 = 0;
 #endif
 		int g_bit, v_bit, d_bit;
 		uint64_t cached_hi, cached_lo0;

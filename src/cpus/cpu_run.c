@@ -25,13 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.5 2005-11-19 21:01:01 debug Exp $
+ *  $Id: cpu_run.c,v 1.6 2005-12-26 12:32:10 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
  *  be inlined from here.)
  *
- *  TODO: Rewrite/cleanup. This is too ugly.
+ *  TODO: Rewrite/cleanup. This is too ugly and inefficient! Also, the
+ *        dyntrans stuff doesn't require this kind of complexity, it can be a
+ *        lot simpler.
  */
 
 #include "console.h"

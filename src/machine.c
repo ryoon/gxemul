@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.641 2005-12-20 21:19:14 debug Exp $
+ *  $Id: machine.c,v 1.642 2005-12-26 12:32:08 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -104,7 +104,7 @@ extern int verbose;
 
 
 /*  This is initialized by machine_init():  */
-static struct machine_entry *first_machine_entry = NULL;
+struct machine_entry *first_machine_entry = NULL;
 
 
 /*
@@ -617,7 +617,7 @@ int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
  */
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
-	int psize = 1024;	/*  1024 256 64 16 4 1  */
+	size_t psize = 1024;	/*  1024 256 64 16 4 1  */
 
 	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
@@ -1699,10 +1699,10 @@ void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr,
 void machine_setup(struct machine *machine)
 {
 	uint64_t addr, addr2;
-	int i, j, stable = 0;
+	int i, j;
 	struct memory *mem;
 	char tmpstr[1000];
-	struct cons_data *cons_data;
+	struct machine_entry *me;
 
 	/*  DECstation:  */
 	char *framebuffer_console_name, *serial_console_name;
@@ -1737,8 +1737,6 @@ void machine_setup(struct machine *machine)
 	unsigned char macaddr[6];
 
 	/*  Generic bootstring stuff:  */
-	int bootdev_type = 0;
-	int bootdev_id;
 	char *bootstr = NULL;
 	char *bootarg = NULL;
 	char *init_bootpath;
@@ -1753,7 +1751,8 @@ void machine_setup(struct machine *machine)
 	struct cpu *cpu = machine->cpus[machine->bootstrap_cpu];
 
 
-	bootdev_id = diskimage_bootdev(machine, &bootdev_type);
+	machine->bootdev_id = diskimage_bootdev(machine,
+	    &machine->bootdev_type);
 
 	mem = cpu->mem;
 	machine->machine_name = NULL;
@@ -1777,6 +1776,27 @@ void machine_setup(struct machine *machine)
 		}
 	}
 
+
+	/*
+	 *  If the machine has a setup function in src/machines/machine_*.c
+	 *  then use that one, otherwise use the old hardcoded stuff here:
+	 */
+
+	me = first_machine_entry;
+	while (me != NULL) {
+		if (machine->machine_type == me->machine_type &&
+		    me->setup != NULL) {
+			me->setup(machine);
+			goto machine_setup_done;
+		}
+		me = me->next;
+	}
+
+
+	/*
+	 *  Old-style setup:
+	 */
+
 	switch (machine->machine_type) {
 
 	case MACHINE_NONE:
@@ -1792,7 +1812,7 @@ void machine_setup(struct machine *machine)
 		 */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "\"Bare\" MIPS machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTMIPS:
@@ -1810,12 +1830,11 @@ void machine_setup(struct machine *machine)
 		 */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "MIPS test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=2",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -1890,7 +1909,7 @@ void machine_setup(struct machine *machine)
 			/*  Supposed to have 25MHz R3000 CPU, R3010 FPC,  */
 			/*  and a R3220 Memory coprocessor  */
 			machine->machine_name = "DECstation 5000/200 (3MAX, KN02)";
-			stable = 1;
+			machine->stable = 1;
 
 			if (machine->emulated_hz == 0)
 				machine->emulated_hz = 25000000;
@@ -2393,17 +2412,17 @@ void machine_setup(struct machine *machine)
 #endif
 				strlcpy(bootpath, "5/rz1/", sizeof(bootpath));
 
-			if (bootdev_id < 0 || machine->force_netboot) {
+			if (machine->bootdev_id < 0 || machine->force_netboot) {
 				/*  tftp boot:  */
 				strlcpy(bootpath, "5/tftp/", sizeof(bootpath));
 				bootpath[0] = '0' + boot_net_boardnumber;
 			} else {
 				/*  disk boot:  */
 				bootpath[0] = '0' + boot_scsi_boardnumber;
-				if (diskimage_is_a_tape(machine, bootdev_id,
-				    bootdev_type))
+				if (diskimage_is_a_tape(machine, machine->bootdev_id,
+				    machine->bootdev_type))
 					bootpath[2] = 't';
-				bootpath[4] = '0' + bootdev_id;
+				bootpath[4] = '0' + machine->bootdev_id;
 			}
 
 			init_bootpath = bootpath;
@@ -2537,7 +2556,7 @@ void machine_setup(struct machine *machine)
 	case MACHINE_COBALT:
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 		machine->machine_name = "Cobalt";
-		stable = 1;
+		machine->stable = 1;
 
 		/*
 		 *  Interrupts seem to be the following:
@@ -2674,7 +2693,7 @@ void machine_setup(struct machine *machine)
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
 			/*  131 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 770";
-			stable = 1;
+			machine->stable = 1;
 			hpc_fb_addr = 0xa000000;
 			hpc_fb_xsize = 640;
 			hpc_fb_ysize = 240;
@@ -2698,7 +2717,7 @@ void machine_setup(struct machine *machine)
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
 			/*  166 (or 168) MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 780";
-			stable = 1;
+			machine->stable = 1;
 			hpc_fb_addr = 0xa180100;
 			hpc_fb_xsize = 640;
 			hpc_fb_ysize = 240;
@@ -2722,7 +2741,7 @@ void machine_setup(struct machine *machine)
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
 			/*  131 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 800";
-			stable = 1;
+			machine->stable = 1;
 			hpc_fb_addr = 0xa000000;
 			hpc_fb_xsize = 800;
 			hpc_fb_ysize = 600;
@@ -2746,7 +2765,7 @@ void machine_setup(struct machine *machine)
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_880:
 			/*  168 MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 880";
-			stable = 1;
+			machine->stable = 1;
 			hpc_fb_addr = 0xa0ea600;
 			hpc_fb_xsize = 800;
 			hpc_fb_ysize = 600;
@@ -3325,7 +3344,7 @@ Why is this here? TODO
 			case 32:
 				strlcat(machine->machine_name,
 				    " (O2)", MACHINE_NAME_MAXBUF);
-				stable = 1;
+				machine->stable = 1;
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
 				dev_ram_init(machine, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
@@ -3606,7 +3625,7 @@ Why is this here? TODO
 				case MACHINE_ARC_JAZZ_PICA:
 					strlcat(machine->machine_name, " (Microsoft Jazz, Acer PICA-61)",
 					    MACHINE_NAME_MAXBUF);
-					stable = 1;
+					machine->stable = 1;
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
 					strlcat(machine->machine_name, " (Microsoft Jazz, MIPS Magnum)",
@@ -3801,7 +3820,7 @@ Not yet.
 			}
 			init_bootpath[0] = '\0';
 
-			if (bootdev_id < 0 || machine->force_netboot) {
+			if (machine->bootdev_id < 0 || machine->force_netboot) {
 				snprintf(init_bootpath, 400, "tftp()");
 			} else {
 				/*  TODO: Make this nicer.  */
@@ -3814,14 +3833,14 @@ Not yet.
 						    MACHINE_NAME_MAXBUF);
 				}
 
-				if (diskimage_is_a_cdrom(machine, bootdev_id,
-				    bootdev_type))
+				if (diskimage_is_a_cdrom(machine, machine->bootdev_id,
+				    machine->bootdev_type))
 					snprintf(init_bootpath + strlen(init_bootpath),
-					    400,"scsi(0)cdrom(%i)fdisk(0)", bootdev_id);
+					    400,"scsi(0)cdrom(%i)fdisk(0)", machine->bootdev_id);
 				else
 					snprintf(init_bootpath + strlen(init_bootpath),
 					    400,"scsi(0)disk(%i)rdisk(0)partition(1)",
-					    bootdev_id);
+					    machine->bootdev_id);
 			}
 
 			if (machine->machine_type == MACHINE_ARC)
@@ -4093,7 +4112,7 @@ Not yet.
 		case MACHINE_EVBMIPS_MALTA_BE:
 			machine->machine_name = "MALTA (evbmips, little endian)";
 			cpu->byte_order = EMUL_LITTLE_ENDIAN;
-			stable = 1;
+			machine->stable = 1;
 
 			if (machine->machine_subtype == MACHINE_EVBMIPS_MALTA_BE) {
 				machine->machine_name = "MALTA (evbmips, big endian)";
@@ -4302,21 +4321,21 @@ Not yet.
 		 *  NOTE: NO devices at all.
 		 */
 		machine->machine_name = "\"Bare\" PPC machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
+#if 0
 	case MACHINE_TESTPPC:
 		/*
 		 *  A PPC test machine, similar to the test machine for MIPS.
 		 */
 		machine->machine_name = "PPC test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		/*  TODO: interrupt for PPC?  */
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -4334,6 +4353,7 @@ Not yet.
 		device_add(machine, tmpstr);
 
 		break;
+#endif
 
 	case MACHINE_WALNUT:
 		/*
@@ -4458,7 +4478,7 @@ Not yet.
 		 *  NetBSD/prep (http://www.netbsd.org/Ports/prep/)
 		 */
 		machine->machine_name = "PowerPC Reference Platform";
-		stable = 1;
+		machine->stable = 1;
 		if (machine->emulated_hz == 0)
 			machine->emulated_hz = 20000000;
 
@@ -4635,17 +4655,16 @@ Not yet.
 	case MACHINE_BARESH:
 		/*  A bare SH machine, with no devices.  */
 		machine->machine_name = "\"Bare\" SH machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTSH:
 		machine->machine_name = "SH test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -4677,17 +4696,16 @@ Not yet.
 	case MACHINE_BAREHPPA:
 		/*  A bare HPPA machine, with no devices.  */
 		machine->machine_name = "\"Bare\" HPPA machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTHPPA:
 		machine->machine_name = "HPPA test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -4711,17 +4729,16 @@ Not yet.
 	case MACHINE_BAREI960:
 		/*  A bare I960 machine, with no devices.  */
 		machine->machine_name = "\"Bare\" i960 machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTI960:
 		machine->machine_name = "i960 test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -4745,17 +4762,16 @@ Not yet.
 	case MACHINE_BARESPARC:
 		/*  A bare SPARC machine, with no devices.  */
 		machine->machine_name = "\"Bare\" SPARC machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTSPARC:
 		machine->machine_name = "SPARC test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -4786,17 +4802,16 @@ Not yet.
 #ifdef ENABLE_ALPHA
 	case MACHINE_BAREALPHA:
 		machine->machine_name = "\"Bare\" Alpha machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTALPHA:
 		machine->machine_name = "Alpha test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -4894,17 +4909,16 @@ Not yet.
 #ifdef ENABLE_ARM
 	case MACHINE_BAREARM:
 		machine->machine_name = "\"Bare\" ARM machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTARM:
 		machine->machine_name = "ARM test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -4934,7 +4948,7 @@ Not yet.
 
 	case MACHINE_CATS:
 		machine->machine_name = "CATS evaluation board";
-		stable = 1;
+		machine->stable = 1;
 
 		if (machine->emulated_hz == 0)
 			machine->emulated_hz = 50000000;
@@ -4974,7 +4988,7 @@ Not yet.
 		if (machine->prom_emulation) {
 			struct ebsaboot ebsaboot;
 			char bs[300];
-			int boot_id = bootdev_id >= 0? bootdev_id : 0;
+			int boot_id = machine->bootdev_id >= 0? machine->bootdev_id : 0;
 
 			cpu->cd.arm.r[0] = /* machine->physical_ram_in_mb */
 			    7 * 1048576 - 0x1000;
@@ -5284,24 +5298,23 @@ Not yet.
 	case MACHINE_BAREAVR:
 		/*  A bare Atmel AVR machine, with no devices.  */
 		machine->machine_name = "\"Bare\" Atmel AVR machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 #endif	/*  ENABLE_AVR  */
 
 #ifdef ENABLE_IA64
 	case MACHINE_BAREIA64:
 		machine->machine_name = "\"Bare\" IA64 machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTIA64:
 		machine->machine_name = "IA64 test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -5324,17 +5337,16 @@ Not yet.
 #ifdef ENABLE_M68K
 	case MACHINE_BAREM68K:
 		machine->machine_name = "\"Bare\" M68K machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_TESTM68K:
 		machine->machine_name = "M68K test machine";
-		stable = 1;
+		machine->stable = 1;
 
 		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
 		    (long long)DEV_CONS_ADDRESS);
-		cons_data = device_add(machine, tmpstr);
-		machine->main_console_handle = cons_data->console_handle;
+		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
 		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
 		    (long long)DEV_MP_ADDRESS);
@@ -5357,7 +5369,7 @@ Not yet.
 #ifdef ENABLE_X86
 	case MACHINE_BAREX86:
 		machine->machine_name = "\"Bare\" x86 machine";
-		stable = 1;
+		machine->stable = 1;
 		break;
 
 	case MACHINE_X86:
@@ -5392,6 +5404,13 @@ Not yet.
 		exit(1);
 	}
 
+
+	/*
+	 *  NOTE: Ugly goto usage. Might be possible to remove if/when all
+	 *        machines are moved to src/machines/machine_*.c.
+	 */
+machine_setup_done:
+
 	if (machine->machine_name != NULL)
 		debug("machine: %s", machine->machine_name);
 
@@ -5414,7 +5433,7 @@ Not yet.
 	if (verbose >= 2)
 		machine_dump_bus_info(machine);
 
-	if (!stable)
+	if (!machine->stable)
 		fatal("!\n!  NOTE: This machine type is not implemented well"
 		    " enough yet to run\n!  any real-world code!"
 		    " (At least, it hasn't been verified to do so.)\n!\n"
@@ -5808,7 +5827,7 @@ void machine_default_cputype(struct machine *m)
  *  valid data; it is up to the caller to add additional data that weren't
  *  passed as arguments to this function.
  */
-static struct machine_entry *machine_entry_new(const char *name,
+struct machine_entry *machine_entry_new(const char *name,
 	int arch, int oldstyle_type, int n_aliases, int n_subtypes)
 {
 	struct machine_entry *me;
@@ -5831,6 +5850,7 @@ static struct machine_entry *machine_entry_new(const char *name,
 		exit(1);
 	}
 	me->n_subtypes = n_subtypes;
+	me->setup = NULL;
 
 	if (n_subtypes > 0) {
 		me->subtype = malloc(sizeof(struct machine_entry_subtype *) *
@@ -5855,7 +5875,7 @@ static struct machine_entry *machine_entry_new(const char *name,
  *
  *  For internal use.
  */
-static struct machine_entry_subtype *machine_entry_subtype_new(
+struct machine_entry_subtype *machine_entry_subtype_new(
 	const char *name, int oldstyle_type, int n_aliases)
 {
 	struct machine_entry_subtype *mes;
@@ -5950,36 +5970,6 @@ void machine_list_available_types_and_cpus(void)
 
 
 /*
- *  machine_register():
- *
- *  Used by automachine.c to register all machines in src/machines/.
- */
-void machine_register(char *name, MACHINE_SETUP_TYPE(setup))
-{
-	printf("machine_register('%s')\n", name);
-
-#if 0
-	struct machine_entry *me;
-
-
-/*  TODO:
-	Real name.
-	Arch?
-	Subtypes!
-*/
-
-	me = machine_entry_new("Real name (TODO)",
-	    ARCH_ARM, MACHINE_ZAURUS, 1, 0);
-	me->aliases[0] = "zaurus";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-#endif
-
-}
-
-
-/*
  *  machine_init():
  *
  *  This function should be called before any other machine_*() function
@@ -5994,6 +5984,8 @@ void machine_init(void)
 	/*
 	 *  NOTE: This list is in reverse order, so that the
 	 *  entries will appear in normal order when listed.  :-)
+	 *
+	 *  TODO: Sort!
 	 */
 
 	/*  Zaurus:  */
@@ -6044,6 +6036,7 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+#if 0
 	/*  Test-machine for PPC:  */
 	me = machine_entry_new("Test-machine for PPC", ARCH_PPC,
 	    MACHINE_TESTPPC, 1, 0);
@@ -6051,6 +6044,7 @@ void machine_init(void)
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
+#endif
 
 	/*  Test-machine for MIPS:  */
 	me = machine_entry_new("Test-machine for MIPS", ARCH_MIPS,

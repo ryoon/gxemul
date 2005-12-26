@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.1 2005-08-29 14:46:34 debug Exp $
+ *  $Id: yamon.c,v 1.2 2005-12-26 12:32:14 debug Exp $
  *
  *  YAMON emulation.
  */
@@ -73,7 +73,7 @@ int yamon_emul(struct cpu *cpu)
 	switch (ofs) {
 	case 0x804:	/*  "print count": string at a1, count at a2  */
 		n = 0;
-		while (n < cpu->cd.mips.gpr[MIPS_GPR_A2]) {
+		while (n < (int)cpu->cd.mips.gpr[MIPS_GPR_A2]) {
 			char ch = mem_readchar(cpu, MIPS_GPR_A1, n);
 			console_putchar(cpu->machine->main_console_handle,
 			    ch);

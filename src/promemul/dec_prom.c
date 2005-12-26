@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.1 2005-08-29 14:46:34 debug Exp $
+ *  $Id: dec_prom.c,v 1.2 2005-12-26 12:32:14 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -349,7 +349,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		i = 0; ch = -1; argreg = MIPS_GPR_A1;
 		while (ch != '\0') {
 			char printfbuf[8000];
-			int x;
+			size_t x;
 
 			printfbuf[0] = printfbuf[sizeof(printfbuf)-1] = '\0';
 
@@ -508,7 +508,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0x64:		/*  getenv()  */
 		/*  Find the environment variable given by a0:  */
-		for (i=0; i<sizeof(buf); i++)
+		for (i=0; i<(int)sizeof(buf); i++)
 			cpu->memory_rw(cpu, cpu->mem,
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i],
 			    sizeof(char), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);

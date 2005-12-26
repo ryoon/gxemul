@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.86 2005-12-03 04:14:12 debug Exp $
+ *  $Id: net.c,v 1.87 2005-12-26 12:32:09 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1954,7 +1954,7 @@ void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
 	si.sin_port = htons(portnr);
 
 	if (sendto(s, packet, len, 0, (struct sockaddr *)&si,
-	    sizeof(si)) != len) {
+	    sizeof(si)) != (ssize_t)len) {
 		perror("send_udp(): sendto");
 	}
 

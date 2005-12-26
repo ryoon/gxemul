@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.128 2005-12-11 12:45:28 debug Exp $
+ *  $Id: debugger.c,v 1.129 2005-12-26 12:32:08 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1631,10 +1631,10 @@ static struct cmd cmds[] = {
  */
 static void debugger_cmd_help(struct machine *m, char *cmd_line)
 {
-	int i, max_name_len = 0, only_one = 0, only_one_match = 0;
+	int only_one = 0, only_one_match = 0;
 	char *nlines_env = getenv("LINES");
-	int nlines = atoi(nlines_env != NULL? nlines_env : "999999");
-	int j, curlines;
+	int nlines = atoi(nlines_env != NULL? nlines_env : "999999"), curlines;
+	size_t i, j, max_name_len = 0;
 
 	if (cmd_line[0] != '\0') {
 		only_one = 1;
@@ -1642,7 +1642,7 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 
 	i = 0;
 	while (cmds[i].name != NULL) {
-		int a = strlen(cmds[i].name);
+		size_t a = strlen(cmds[i].name);
 		if (cmds[i].args != NULL)
 			a += 1 + strlen(cmds[i].args);
 		if (a > max_name_len)
@@ -1974,7 +1974,7 @@ static char *debugger_readline(void)
 				j = 0;		/*  j = # of cmds printed  */
 				while (cmds[i].name != NULL) {
 					if (cmds[i].tmp_flag) {
-						int q;
+						size_t q;
 						if (j == 0)
 							printf("  ");
 						printf("%s",

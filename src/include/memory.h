@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.45 2005-12-03 00:38:05 debug Exp $
+ *  $Id: memory.h,v 1.46 2005-12-26 12:32:12 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -99,7 +99,7 @@ struct memory {
 	struct translation_page_entry **translation_page_entry_array;
 
 	unsigned char	*quick_jump_host_address[MAX_QUICK_JUMPS];
-	int		quick_jump_page_offset[MAX_QUICK_JUMPS];
+	size_t		quick_jump_page_offset[MAX_QUICK_JUMPS];
 	int		n_quick_jumps;
 	int		quick_jumps_index;
 };

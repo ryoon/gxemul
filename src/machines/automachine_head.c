@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: automachine_head.c,v 1.1 2005-12-20 21:19:17 debug Exp $
+ *  $Id: automachine_head.c,v 1.2 2005-12-26 12:32:13 debug Exp $
  *
- *  Automatically register all devices from the devices/ subdir.
+ *  Automatically register all machines in the src/machines/ subdir.
  *
  *  NOTE: automachine_head.c, plus a line for each machine, plus
  *  automachine_middle.c, plus another line (again) for each machine, plus

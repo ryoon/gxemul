@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.68 2005-12-03 04:14:12 debug Exp $
+ *  $Id: useremul.c,v 1.69 2005-12-26 12:32:09 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -364,7 +364,7 @@ static unsigned char *get_userland_buf(struct cpu *cpu,
 	uint64_t baseaddr, uint64_t len)
 {
 	unsigned char *charbuf;
-	ssize_t i;
+	size_t i;
 
 	charbuf = malloc(len);
 	if (charbuf == NULL) {

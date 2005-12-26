@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautomachine.sh,v 1.1 2005-12-20 21:19:17 debug Exp $
+#  $Id: makeautomachine.sh,v 1.2 2005-12-26 12:32:13 debug Exp $
 
 
 printf "Generating automachine.c... "
@@ -40,11 +40,11 @@ cat automachine_head.c >> automachine.c
 
 printf "2"
 for a in machine_*.c; do
-	B=`grep MACHINE_SETUP $a`
+	B=`grep MACHINE_REGISTER $a`
 	if [ z"$B" != z ]; then
-		C=`grep MACHINE_SETUP $a | cut -d \( -f 2|cut -d \) -f 1`
+		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
 		for B in $C; do
-			printf "int machine_setup_$B(struct machine *);\n" >> automachine.c
+			printf "void machine_register_$B(void);\n" >> automachine.c
 		done
 	fi
 done
@@ -53,12 +53,11 @@ cat automachine_middle.c >> automachine.c
 
 printf "1"
 for a in machine_*.c; do
-	B=`grep MACHINE_SETUP $a`
+	B=`grep MACHINE_REGISTER $a`
 	if [ z"$B" != z ]; then
-		C=`grep MACHINE_SETUP $a | cut -d \( -f 2|cut -d \) -f 1`
+		C=`grep MACHINE_REGISTER $a | cut -d \( -f 2|cut -d \) -f 1`
 		for B in $C; do
-			printf "\tmachine_register(\""$B"\"," >> automachine.c
-			printf " machine_setup_$B);\n" >> automachine.c
+			printf "\tmachine_register_$B();\n" >> automachine.c
 		done
 	fi
 done

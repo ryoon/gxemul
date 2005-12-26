@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.116 2005-12-22 20:15:20 debug Exp $
+$Id: guestoses.html,v 1.117 2005-12-26 12:32:07 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -353,16 +353,16 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 	<b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
 
 </pre>
-  <li>Download the NetBSD/hpcmips 2.1 ISO image, and a generic kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/hpcmipscd.iso">hpcmipscd.iso</a>
+  <li>Download the NetBSD/hpcmips 3.0 ISO image, and a generic kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/hpcmipscd-3.0.iso">hpcmipscd-3.0.iso</a>
 
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
 	<b>gxemul -e mobilepro770 -X -A -d nbsd_hpcmips.img  \
-	  -d b:hpcmipscd.iso -j hpcmips/installation/netbsd.gz</b>
+	  -d b:hpcmipscd-3.0.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -760,15 +760,15 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
-  <li>Download the NetBSD/cats 2.1 ISO image and the generic and install kernels:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/catscd.iso</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
+  <li>Download the NetBSD/cats 3.0 ISO image and the generic and install kernels:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/catscd-3.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/catscd-3.0.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -XEcats -d nbsd_cats.img -d catscd.iso netbsd.aout-INSTALL.gz</b>
+	<b>gxemul -XEcats -d nbsd_cats.img -d catscd-3.0.iso netbsd.aout-INSTALL.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -776,7 +776,7 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 </ol>
 
 <p>Alternatively, to install from FTP, you can skip downloading the ISO,
-and start the install without <tt>-d catscd.iso</tt>. Suitable network 
+and start the install without <tt>-d catscd-3.0.iso</tt>. Suitable network 
 settings are IP 10.0.0.1, gateway/default route 10.0.0.254, netmask 
 255.0.0.0, nameserver 10.0.0.254.
 

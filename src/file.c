@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.124 2005-12-11 21:34:42 debug Exp $
+ *  $Id: file.c,v 1.125 2005-12-26 12:32:08 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -342,9 +342,9 @@ static void file_load_macho(struct machine *m, struct memory *mem,
 	char *symbols, *strings;
 	uint32_t cputype, cpusubtype, filetype, ncmds, sizeofcmds, flags;
 	uint64_t vmaddr, vmsize, fileoff, filesize;
-	int cmd_type, cmd_len, pos, i, flavor;
+	int cmd_type, cmd_len, i, flavor;
 	int32_t symoff, nsyms, stroff, strsize;
-	size_t len;
+	size_t len, pos;
 
 	if (m->cpus[0]->byte_order == EMUL_BIG_ENDIAN)
 		encoding = ELFDATA2MSB;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1092 2005-12-22 20:15:19 debug Exp $
+$Id: HISTORY,v 1.1093 2005-12-26 12:32:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2531,3 +2531,6 @@ Changelog for GXemul:
 		individual files in src/machines (in a way similar to the
 		autodev system for devices).
 20051222	Updating the documentation regarding NetBSD/pmax 3.0.
+20051223	- " - NetBSD/cats 3.0.
+20051225	- " - NetBSD/hpcmips 3.0.
+20051226	Continuing on the machine registry redesign.

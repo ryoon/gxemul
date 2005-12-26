@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.106 2005-12-04 15:15:56 debug Exp $
+ *  $Id: diskimage.c,v 1.107 2005-12-26 12:32:08 debug Exp $
  *
  *  Disk image support.
  *
@@ -595,7 +595,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		memcpy(xferp->data_in+8,  "GXemul  ", 8);
 		if (diskimage_getname(cpu->machine, id,
 		    type, namebuf, sizeof(namebuf))) {
-			int i;
+			size_t i;
 			for (i=0; i<sizeof(namebuf); i++)
 				if (namebuf[i] == 0) {
 					for (; i<sizeof(namebuf); i++)
@@ -1025,7 +1025,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		if (xferp->cmd_len != 6)
 			debug(" (weird len=%i)", xferp->cmd_len);
 
-		for (i=0; i<xferp->cmd_len; i++)
+		for (i=0; i<(ssize_t)xferp->cmd_len; i++)
 			debug(" %02x", xferp->cmd[i]);
 
 		/*  TODO: actualy care about cmd[]  */
@@ -1286,10 +1286,10 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		} else {
 			int i;
 			fatal("[ unknown MODE_SELECT: cmd =");
-			for (i=0; i<xferp->cmd_len; i++)
+			for (i=0; i<(ssize_t)xferp->cmd_len; i++)
 				fatal(" %02x", xferp->cmd[i]);
 			fatal(", data_out =");
-			for (i=0; i<xferp->data_out_len; i++)
+			for (i=0; i<(ssize_t)xferp->data_out_len; i++)
 				fatal(" %02x", xferp->data_out[i]);
 			fatal(" ]");
 		}
@@ -1308,7 +1308,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 	case 0xbd:
 		fatal("[ SCSI 0x%02x (len %i), TODO: ", xferp->cmd[0],
 		    xferp->cmd_len);
-		for (i=0; i<xferp->cmd_len; i++)
+		for (i=0; i<(ssize_t)xferp->cmd_len; i++)
 			fatal(" %02x", xferp->cmd[i]);
 		fatal(" ]\n");
 

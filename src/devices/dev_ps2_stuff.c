@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.25 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.26 2005-12-26 12:32:11 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -79,8 +79,10 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 			cpu_interrupt(cpu, 8 + 9 + i);
 
 			/*  timer 1..3 are "single-shot"? TODO  */
-			if (i > 0)
-				d->timer_mode[i] &= ~(T_MODE_CMPE | T_MODE_OVFF);
+			if (i > 0) {
+				d->timer_mode[i] &=
+				    ~(T_MODE_CMPE | T_MODE_OVFF);
+			}
 		}
 	}
 }

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.92 2005-12-20 21:19:16 debug Exp $
+ *  $Id: machine.h,v 1.93 2005-12-26 12:32:12 debug Exp $
  */
 
 #include <sys/types.h>
@@ -102,6 +102,9 @@ struct machine {
 
 	char	*machine_name;
 
+	int	stable;			/*  startup warning for non-stable
+					    emulation modes.  */
+
 	/*  The serial number is mostly used when emulating multiple machines
 	    in a network. nr_of_nics is the current nr of network cards, which
 	    is useful when emulating multiple cards in one machine:  */
@@ -165,6 +168,9 @@ struct machine {
 	int	register_dump;
 	int	arch_pagesize;
 
+	int	bootdev_type;
+	int	bootdev_id;
+
 	int	n_breakpoints;
 	char	*breakpoint_string[MAX_BREAKPOINTS];
 	uint64_t breakpoint_addr[MAX_BREAKPOINTS];
@@ -184,7 +190,7 @@ struct machine {
 	int	bintrans_enable;
 	int	old_bintrans_enable;
 	int	bintrans_enabled_from_start;
-	int	bintrans_size;
+	size_t	bintrans_size;
 	int	instruction_trace;
 	int	single_step_on_bad_addr;
 	int	show_nr_of_instructions;
@@ -464,16 +470,17 @@ struct machine_entry {
 	int			n_aliases;
 	char			**aliases;	/*  Aliases  */
 
-	int			(*setup)(struct machine *machine);
+	void			(*setup)(struct machine *machine);
 
 	/*  Machine subtypes:  */
 	int			n_subtypes;
 	struct machine_entry_subtype **subtype;
 };
 
-#define	MACHINE_SETUP(x)	int machine_setup_ ## x(struct machine *machine)
-#define	MACHINE_SETUP_TYPE(n)	int (*n)(struct machine *)
-
+#define	MACHINE_HEAD	extern struct machine_entry *first_machine_entry;
+#define	MACHINE_SETUP(x)	void machine_setup_ ## x(struct machine *machine)
+#define	MACHINE_SETUP_TYPE(n)	void (*n)(struct machine *)
+#define	MACHINE_REGISTER(x)	void machine_register_ ## x(void)
 void automachine_init(void);
 
 
@@ -506,6 +513,10 @@ void machine_dumpinfo(struct machine *);
 void machine_bus_register(struct machine *, char *busname,
 	void (*debug_dump)(void *), void *extra);
 void machine_list_available_types_and_cpus(void);
+struct machine_entry *machine_entry_new(const char *name, 
+	int arch, int oldstyle_type, int n_aliases, int n_subtypes);
+struct machine_entry_subtype *machine_entry_subtype_new(
+	const char *name, int oldstyle_type, int n_aliases);
 void machine_init(void);
 
 

@@ -1,7 +1,10 @@
-$Id: TODO,v 1.187 2005-12-19 02:16:21 debug Exp $
+$Id: TODO,v 1.188 2005-12-26 12:32:06 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
+
+Machine registry:
+	x)  SORT all machines!
 
 Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be

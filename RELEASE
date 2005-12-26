@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.169 2005-12-22 20:15:27 debug Exp $
+$Id: RELEASE,v 1.170 2005-12-26 12:32:06 debug Exp $
 
 I'm working on post-0.3.7.
 
@@ -38,11 +38,11 @@ the documentation.
     Debian GNU/Linux for DECstation    DECstation 5000/200
     Redhat Linux 7.1 for mips          DECstation 5000/200
     NetBSD/arc 1.6.2                   Acer PICA-61
-    NetBSD/hpcmips 2.1                 NEC MobilePro 770, 780, 800, 880
+    NetBSD/hpcmips 3.0                 NEC MobilePro 770, 780, 800, 880
     NetBSD/cobalt 2.1                  Cobalt
     NetBSD/evbmips 2.1                 Malta 5Kc/4Kc evaluation board
     NetBSD/sgimips 2.1                 SGI O2 ("IP32")
-    NetBSD/cats 2.1                    CATS (ARM)
+    NetBSD/cats 3.0                    CATS (ARM)
     OpenBSD/cats 3.8                   CATS (ARM)
     NetBSD/prep 2.1                    PReP (PowerPC Reference Platform)
 

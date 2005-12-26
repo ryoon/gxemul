@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.242 2005-12-11 21:34:42 debug Exp $
+ *  $Id: emul.c,v 1.243 2005-12-26 12:32:08 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -228,7 +228,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	dp = dirbuf; filenr = 1;
 	p = NULL;
 	while (dp < dirbuf + dirlen) {
-		int i, nlen = dp[0];
+		size_t i, nlen = dp[0];
 		int x = dp[2] + (dp[3] << 8) + (dp[4] << 16) +
 		    ((uint64_t)dp[5] << 24);
 		int y = dp[6] + (dp[7] << 8);
@@ -300,7 +300,7 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	}
 
 	for (;;) {
-		int len, i;
+		size_t len, i;
 
 		/*  Too close to another sector? Then realign.  */
 		if ((dirofs & 2047) + 70 > 2047) {

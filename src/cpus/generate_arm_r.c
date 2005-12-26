@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_r.c,v 1.4 2005-11-19 18:53:07 debug Exp $
+ *  $Id: generate_arm_r.c,v 1.5 2005-12-26 14:14:27 debug Exp $
  *
  *  Generate functions for computing "reg" operands.
  */
@@ -255,8 +255,19 @@ void f(int s, int func, int only_name)
 	case 6:	/*  ror c  OR rrx (Arithmetic Shift Right by constant)  */
 		/*  0=rrx, 1..31=ror  */
 		if (c == 0) {
-			printf("\tprintf(\"%s\\n\");\n", name);
-			printf("\texit(1);  /*  TODO  */\n\treturn 0;\n");
+			printf("{ uint64_t x=");
+			if (pc)
+				printf("tmp");
+			else
+				printf("cpu->cd.arm.r[%i]",rm);
+			printf("; if (cpu->cd.arm.flags & ARM_F_C)"
+			    " x |= 0x100000000ULL;");
+			if (s) {
+				printf("cpu->cd.arm.flags &= ~ARM_F_C;"
+				    "if(x&1) cpu->cd.arm.flags |= "
+				    "ARM_F_C;");
+			}
+			printf("return x >> 1; }\n");
 		} else if (s) {
 			printf("{ uint64_t x = ");
 			if (pc)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.93 2005-12-03 10:52:52 debug Exp $
+ *  $Id: dev_vga.c,v 1.94 2005-12-26 14:14:38 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -73,7 +73,7 @@ struct vga_data {
 	uint64_t	control_base;
 
 	struct vfb_data *fb;
-	size_t		fb_size;
+	uint32_t	fb_size;
 
 	int		fb_max_x;		/*  pixels  */
 	int		fb_max_y;		/*  pixels  */
@@ -99,7 +99,7 @@ struct vga_data {
 	int		graphics_mode;
 	int		bits_per_pixel;
 	unsigned char	*gfx_mem;
-	size_t		gfx_mem_size;
+	uint32_t	gfx_mem_size;
 
 	/*  Registers:  */
 	int		attribute_state;	/*  0 or 1  */
@@ -361,7 +361,8 @@ static void vga_update_graphics(struct machine *machine, struct vga_data *d,
 			}
 			for (iy=y*ry; iy<(y+1)*ry; iy++)
 				for (ix=x*rx; ix<(x+1)*rx; ix++) {
-					int addr2 = (d->fb_max_x * iy + ix) * 3;
+					uint32_t addr2 = (d->fb_max_x * iy
+					    + ix) * 3;
 					if (addr2 < d->fb_size)
 						dev_fb_access(machine->cpus[0],
 						    machine->memory, addr2,
@@ -382,7 +383,8 @@ static void vga_update_graphics(struct machine *machine, struct vga_data *d,
 static void vga_update_text(struct machine *machine, struct vga_data *d,
 	int x1, int y1, int x2, int y2)
 {
-	int fg, bg, i, x,y, subx, line, start, end, base;
+	int fg, bg, x,y, subx, line;
+	size_t i, start, end, base;
 	int font_size = d->font_height;
 	int font_width = d->font_width;
 	unsigned char *pal = d->fb->rgb_palette;
@@ -459,7 +461,7 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 			}
 
 			for (iy=0; iy<d->pixel_repy; iy++) {
-				int addr = (d->fb_max_x * (d->pixel_repy *
+				uint32_t addr = (d->fb_max_x * (d->pixel_repy *
 				    (line+y) + iy) + x * d->pixel_repx) * 3;
 				if (addr >= d->fb_size)
 					continue;
@@ -593,7 +595,8 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	struct vga_data *d = extra;
-	int i,j, x=0, y=0, x2=0, y2=0, modified = 0;
+	int j, x=0, y=0, x2=0, y2=0, modified = 0;
+	size_t i;
 
 	if (relative_addr + len >= GFX_ADDR_WINDOW)
 		return 0;
@@ -630,8 +633,8 @@ int dev_vga_graphics_access(struct cpu *cpu, struct memory *mem,
 					int b = data[i] & pixelmask;
 					int m = d->sequencer_reg[
 					    VGA_SEQ_MAP_MASK] & 0x0f;
-					int addr = (y * d->max_x + x + i*8 + j)
-					    * d->bits_per_pixel / 8;
+					uint32_t addr = (y * d->max_x + x +
+					    i*8 + j) * d->bits_per_pixel / 8;
 					unsigned char byte;
 					if (!(d->graphcontr_reg[
 					    VGA_GRAPHCONTR_MASK] & pixelmask))
@@ -691,7 +694,8 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 {
 	struct vga_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int i, x, y, x2, y2, r, base;
+	int x, y, x2, y2, r, base;
+	size_t i;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -966,7 +970,7 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	struct vga_data *d = extra;
-	int i;
+	size_t i;
 	uint64_t idata = 0, odata = 0;
 
 	for (i=0; i<len; i++) {
@@ -1195,7 +1199,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	uint64_t videomem_base, uint64_t control_base, char *name)
 {
 	struct vga_data *d;
-	int i;
+	size_t i;
 	size_t allocsize;
 
 	d = malloc(sizeof(struct vga_data));

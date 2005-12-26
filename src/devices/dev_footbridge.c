@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.38 2005-12-03 04:14:14 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.39 2005-12-26 14:14:37 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -71,7 +71,7 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 		d->timer_poll_mode = 0;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
-		int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
+		unsigned int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
 		if (d->timer_control[i] & TIMER_FCLK_16)
 			amount >>= 4;
 		else if (d->timer_control[i] & TIMER_FCLK_256)

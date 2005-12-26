@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.47 2005-12-03 04:14:14 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.48 2005-12-26 14:14:38 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -115,7 +115,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata=0;
-	int i;
+	size_t i;
 	struct ns_data *d = extra;
 
 	if (writeflag == MEM_WRITE)

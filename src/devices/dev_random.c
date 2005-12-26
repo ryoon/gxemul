@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_random.c,v 1.2 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_random.c,v 1.3 2005-12-26 14:14:38 debug Exp $
  *  
  *  A simple device which returns random data for all reads, and discards all
  *  writes.
@@ -51,7 +51,7 @@ int dev_random_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	if (writeflag == MEM_READ) {
-		int i;
+		unsigned int i;
 		for (i=0; i<len; i++)
 			data[i] = random();
 	}

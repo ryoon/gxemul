@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.2 2005-12-26 12:32:14 debug Exp $
+ *  $Id: dec_prom.c,v 1.3 2005-12-26 14:14:41 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -517,7 +517,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
-			for (j=0; j<strlen((char *)buf); j++) {
+			for (j=0; j<(int32_t)strlen((char *)buf); j++) {
 				cpu->memory_rw(cpu, cpu->mem, (uint64_t)
 				    (DEC_PROM_STRINGS + i + j), &ch2,
 				    sizeof(char), MEM_READ, CACHE_DATA |
@@ -529,7 +529,7 @@ int decstation_prom_emul(struct cpu *cpu)
 			    (uint64_t)(DEC_PROM_STRINGS
 			    + i + strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
-			if (nmatches == strlen((char *)buf) && ch2 == '=') {
+			if (nmatches == (int)strlen((char *)buf) && ch2=='=') {
 				cpu->cd.mips.gpr[MIPS_GPR_V0] =
 				    DEC_PROM_STRINGS + i +
 				    strlen((char *)buf) + 1;

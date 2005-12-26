@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.2 2005-11-16 21:15:20 debug Exp $
+ *  $Id: arcbios.c,v 1.3 2005-12-26 14:14:41 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -843,7 +843,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 
 	if (config_data != NULL) {
 		unsigned char *p = config_data;
-		int i;
+		size_t i;
 
 		if (machine->md.arc.n_configuration_data >= MAX_CONFIG_DATA) {
 			printf("fatal error: you need to increase "
@@ -1383,7 +1383,7 @@ int arcbios_emul(struct cpu *cpu)
 			int match_len = 0;
 
 			memset(buf, 0, sizeof(buf));
-			for (i=0; i<sizeof(buf); i++) {
+			for (i=0; i<(ssize_t)sizeof(buf); i++) {
 				cpu->memory_rw(cpu, cpu->mem,
 				    cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
 				    &buf[i], 1, MEM_READ, CACHE_NONE);
@@ -1551,7 +1551,8 @@ int arcbios_emul(struct cpu *cpu)
 				machine->tick_func[i](cpu,
 				    machine->tick_extra[i]);
 
-			for (i=0; i<cpu->cd.mips.gpr[MIPS_GPR_A2]; i++) {
+			for (i=0; i<(int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2];
+			    i++) {
 				int x;
 				unsigned char ch;
 
@@ -1689,7 +1690,7 @@ int arcbios_emul(struct cpu *cpu)
 				break;
 			}
 
-			for (i=0; i<cpu->cd.mips.gpr[MIPS_GPR_A2]; i++)
+			for (i=0; i<(int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2]; i++)
 				cpu->memory_rw(cpu, cpu->mem,
 				    cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
 				    &tmp_buf[i], sizeof(char), MEM_READ,
@@ -1711,7 +1712,8 @@ int arcbios_emul(struct cpu *cpu)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EIO;
 			free(tmp_buf);
 		} else {
-			for (i=0; i<cpu->cd.mips.gpr[MIPS_GPR_A2]; i++) {
+			for (i=0; i<(int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2];
+			    i++) {
 				unsigned char ch = '\0';
 				cpu->memory_rw(cpu, cpu->mem,
 				    cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
@@ -1767,7 +1769,7 @@ int arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x78:		/*  GetEnvironmentVariable(char *)  */
 		/*  Find the environment variable given by a0:  */
-		for (i=0; i<sizeof(buf); i++)
+		for (i=0; i<(ssize_t)sizeof(buf); i++)
 			cpu->memory_rw(cpu, cpu->mem,
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
 			    &buf[i], sizeof(char), MEM_READ, CACHE_NONE);
@@ -1776,7 +1778,7 @@ int arcbios_emul(struct cpu *cpu)
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
-			for (j=0; j<strlen((char *)buf); j++) {
+			for (j=0; j<(ssize_t)strlen((char *)buf); j++) {
 				cpu->memory_rw(cpu, cpu->mem,
 				    (uint64_t)(ARC_ENV_STRINGS + i + j),
 				    &ch2, sizeof(char), MEM_READ, CACHE_NONE);
@@ -1787,7 +1789,7 @@ int arcbios_emul(struct cpu *cpu)
 			    (uint64_t)(ARC_ENV_STRINGS + i +
 			    strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_NONE);
-			if (nmatches == strlen((char *)buf) && ch2 == '=') {
+			if (nmatches == (int)strlen((char *)buf) && ch2=='=') {
 				cpu->cd.mips.gpr[MIPS_GPR_V0] =
 				    ARC_ENV_STRINGS + i +
 				    strlen((char *)buf) + 1;

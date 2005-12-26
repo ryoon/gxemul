@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.18 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.19 2005-12-26 14:14:38 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -92,7 +92,8 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i, regnr;
+	size_t i;
+	int regnr;
 	struct gs_data *d = extra;
 
 	if (writeflag == MEM_WRITE)

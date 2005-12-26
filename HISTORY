@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1093 2005-12-26 12:32:05 debug Exp $
+$Id: HISTORY,v 1.1094 2005-12-26 14:14:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2534,3 +2534,4 @@ Changelog for GXemul:
 20051223	- " - NetBSD/cats 3.0.
 20051225	- " - NetBSD/hpcmips 3.0.
 20051226	Continuing on the machine registry redesign.
+		Adding support for ARM rrx (33-bit rotate).

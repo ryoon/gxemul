@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.14 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_fdc.c,v 1.15 2005-12-26 14:14:36 debug Exp $
  *  
  *  PC-style floppy controller.
  *
@@ -64,7 +64,7 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i;
+	size_t i;
 	struct fdc_data *d = extra;
 
 	if (writeflag == MEM_WRITE)

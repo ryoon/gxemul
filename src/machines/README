@@ -1,0 +1,10 @@
+$Id: README,v 1.1 2005-12-26 14:14:40 debug Exp $
+
+How to add new machine types to GXemul:
+---------------------------------------
+
+The easiest way is to simply copy a test machine (such as machine_testppc.c)
+into whatever you want the new machine to be called, e.g. machine_foo.c,
+update Makefile.skel to include machine_foo.o in the list of object files to
+build, and then change the contents of machine_foo.c.
+

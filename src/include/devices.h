@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.204 2005-12-04 14:25:49 debug Exp $
+ *  $Id: devices.h,v 1.205 2005-12-26 14:14:39 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -664,7 +664,7 @@ struct vr41xx_data {
 	int		cpumodel;
 
 	int		kiu_console_handle;
-	int		kiu_offset;
+	uint32_t	kiu_offset;
 	int		kiu_irq_nr;
 	int		kiu_int_assert;
 	int		d0;

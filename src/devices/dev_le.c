@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.47 2005-12-11 16:45:58 debug Exp $
+ *  $Id: dev_le.c,v 1.48 2005-12-26 14:14:37 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -233,7 +233,8 @@ static void le_tx(struct net *net, struct le_data *d)
 {
 	int start_txp = d->txp;
 	uint16_t tx_descr[4];
-	int stp, enp, i, cur_packet_offset;
+	int stp, enp, cur_packet_offset;
+	size_t i;
 	uint32_t bufaddr, buflen;
 
 	/*  TODO: This is just a guess:  */
@@ -352,7 +353,8 @@ static void le_tx(struct net *net, struct le_data *d)
  */
 static void le_rx(struct net *net, struct le_data *d)
 {
-	int i, start_rxp = d->rxp;
+	int start_rxp = d->rxp;
+	size_t i;
 	uint16_t rx_descr[4];
 	uint32_t bufaddr, buflen;
 
@@ -390,7 +392,7 @@ static void le_rx(struct net *net, struct le_data *d)
 
 		/*  Copy data from the packet into SRAM:  */
 		for (i=0; i<buflen; i++) {
-			if (d->rx_packet_offset + i >= d->rx_packet_len)
+			if (d->rx_packet_offset+(ssize_t)i >= d->rx_packet_len)
 				break;
 			d->sram[(bufaddr + i) & (SRAM_SIZE-1)] =
 			    d->rx_packet[d->rx_packet_offset + i];
@@ -609,7 +611,8 @@ int dev_le_sram_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	int i, retval;
+	size_t i;
+	int retval;
 	struct le_data *d = extra;
 
 #ifdef LE_DEBUG
@@ -658,7 +661,8 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i, retval = 1;
+	size_t i;
+	int retval = 1;
 	struct le_data *d = extra;
 
 	if (writeflag == MEM_WRITE)
@@ -675,11 +679,12 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	/*  Read from station's ROM (ethernet address):  */
 	if (relative_addr >= 0xc0000 && relative_addr <= 0xfffff) {
-		i = (relative_addr & 0xff) / 4;
-		i = d->rom[i & (ROM_SIZE-1)];
+		uint32_t a;
+		int j = (relative_addr & 0xff) / 4;
+		a = d->rom[j & (ROM_SIZE-1)];
 
 		if (writeflag == MEM_READ) {
-			odata = (i << 24) + (i << 16) + (i << 8) + i;
+			odata = (a << 24) + (a << 16) + (a << 8) + a;
 		} else {
 			fatal("[ le: WRITE to ethernet addr (%08lx):",
 			    (long)relative_addr);

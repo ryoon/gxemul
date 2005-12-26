@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.93 2005-12-26 12:32:12 debug Exp $
+ *  $Id: machine.h,v 1.94 2005-12-26 14:14:39 debug Exp $
  */
 
 #include <sys/types.h>
@@ -470,7 +470,8 @@ struct machine_entry {
 	int			n_aliases;
 	char			**aliases;	/*  Aliases  */
 
-	void			(*setup)(struct machine *machine);
+	void			(*setup)(struct machine *);
+	void			(*set_default_cpu)(struct machine *);
 
 	/*  Machine subtypes:  */
 	int			n_subtypes;
@@ -478,9 +479,14 @@ struct machine_entry {
 };
 
 #define	MACHINE_HEAD	extern struct machine_entry *first_machine_entry;
-#define	MACHINE_SETUP(x)	void machine_setup_ ## x(struct machine *machine)
 #define	MACHINE_SETUP_TYPE(n)	void (*n)(struct machine *)
+#define	MACHINE_SETUP(x)	void machine_setup_ ## x(struct machine *machine)
+#define	MACHINE_DEFAULT_CPU(x)	void machine_default_cpu_ ## x(struct machine *machine)
 #define	MACHINE_REGISTER(x)	void machine_register_ ## x(void)
+#define	MR_DEFAULT(x,name,arch,type,n,m) struct machine_entry \
+	    *me = machine_entry_new(name,arch,type,n,m);	\
+	me->setup = machine_setup_ ## x;	\
+	me->set_default_cpu = machine_default_cpu_ ## x;
 void automachine_init(void);
 
 

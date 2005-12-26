@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.30 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.31 2005-12-26 14:14:38 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -211,7 +211,7 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	int i;
+	unsigned int i;
 	struct gif_data *d = extra;
 
 	if (relative_addr + len > DEV_PS2_GIF_LENGTH)
@@ -241,12 +241,17 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			/*
 			 *  NetBSD and Linux:
 			 *
-			 *	[ gif write to addr 0x0 (len=608):
-			 *	 04 00 00 00 00 00 00 10, 0e 00 00 00 00 00 00 00, 00 00 00 00 00 00 0a 00, 50 00 00 00 00 00 00 00,
-			 *	 00 00 00 00 00 00 00 00, 51 00 00 00 00 00 00 00, 08 00 00 00 16 00 00 00, 52 00 00 00 00 00 00 00,
-			 *	 00 00 00 00 00 00 00 00, 53 00 00 00 00 00 00 00, 20 80 00 00 00 00 00 08, 00 00 00 00 00 00 00 00,
-			 *	 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80,
-			 *	 aa aa 00 80 aa aa 00 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80,
+			 *  [ gif write to addr 0x0 (len=608):
+			 *  04 00 00 00 00 00 00 10, 0e 00 00 00 00 00 00 00,
+			 *  00 00 00 00 00 00 0a 00, 50 00 00 00 00 00 00 00,
+			 *  00 00 00 00 00 00 00 00, 51 00 00 00 00 00 00 00,
+			 *  08 00 00 00 16 00 00 00, 52 00 00 00 00 00 00 00,
+			 *  00 00 00 00 00 00 00 00, 53 00 00 00 00 00 00 00,
+			 *  20 80 00 00 00 00 00 08, 00 00 00 00 00 00 00 00,
+			 *  00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80,
+			 *  00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80,
+			 *  aa aa 00 80 aa aa 00 80, 00 00 aa 80 00 00 aa 80,
+			 *  00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80,
 			 */
 
 			/*
@@ -267,17 +272,21 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 				    * d->bytes_per_pixel;
 				int addr = (24 + y*xsize) * 4;
 				for (x=0; x<xsize; x++) {
-					/*  There are three bytes (r,g,b) at data[addr + 0] .. [addr + 2].
-					    TODO: This should be translated to a direct update of the framebuffer.  */
+					/*  There are three bytes (r,g,b) at
+					    data[addr + 0] .. [addr + 2].
+					    TODO: This should be translated to a
+					    direct update of the framebuffer. */
 
 					dev_fb_access(d->cpu, d->cpu->mem,
-					    fb_addr, data + addr, 3, MEM_WRITE, d->vfb_data);
+					    fb_addr, data + addr, 3, MEM_WRITE,
+					    d->vfb_data);
 
 					fb_addr += d->bytes_per_pixel;
 					addr += 4;
 				}
 			}
-		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {			/*  blockcopy  */
+		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {
+			/*  blockcopy  */
 			int y_source, y_dest, x_source, x_dest, x_size, y_size;
 			x_source = data[8*4 + 0] + ((data[8*4 + 1]) << 8);
 			y_source = data[8*4 + 2] + ((data[8*4 + 3]) << 8);
@@ -286,13 +295,16 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			x_size   = data[12*4 + 0] + ((data[12*4 + 1]) << 8);
 			y_size   = data[13*4 + 0] + ((data[13*4 + 1]) << 8);
 
-			/*  debug("[ gif: blockcopy (%i,%i) -> (%i,%i), size=(%i,%i) ]\n",
-			    x_source,y_source, x_dest,y_dest, x_size,y_size);  */
+			/*  debug("[ gif: blockcopy (%i,%i) -> (%i,%i), size="
+			    "(%i,%i) ]\n", x_source,y_source, x_dest,y_dest,
+			    x_size,y_size);  */
 
-			framebuffer_blockcopyfill(d->vfb_data, 0, 0,0,0, x_dest,y_dest,
-			    x_dest + x_size - 1, y_dest + y_size - 1, x_source, y_source);
-		} else if (data[8] == 0x10 && data[9] == 0x55 && len == 48) {			/*  Linux "clear":  */
-			/*  This is used by linux to clear the lowest 16 pixels of the framebuffer.  */
+			framebuffer_blockcopyfill(d->vfb_data, 0, 0,0,0,
+			    x_dest, y_dest, x_dest + x_size - 1, y_dest +
+			    y_size - 1, x_source, y_source);
+		} else if (data[8] == 0x10 && data[9] == 0x55 && len == 48) {
+			/*  Linux "clear":  This is used by linux to clear the
+			    lowest 16 pixels of the framebuffer.  */
 			int xbase, ybase, xend, yend;
 
 			xbase = (data[8*4 + 0] + (data[8*4 + 1] << 8)) / 16;
@@ -300,10 +312,13 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			xend  = (data[8*5 + 0] + (data[8*5 + 1] << 8)) / 16;
 			yend  = (data[8*5 + 2] + (data[8*5 + 3] << 8)) / 16;
 
-			/*  debug("[ gif: linux \"clear\" (%i,%i)-(%i,%i) ]\n", xbase,ybase, xend,yend);  */
+			/*  debug("[ gif: linux \"clear\" (%i,%i)-(%i,%i) ]\n",
+			    xbase, ybase, xend, yend);  */
 
-			framebuffer_blockcopyfill(d->vfb_data, 1, 0,0,0, xbase,ybase, xend-1,yend-1, 0,0);
-		} else if (data[0] == 0x07 && data[1] == 0x80 && len == 128) {			/*  NetBSD "output cursor":  */
+			framebuffer_blockcopyfill(d->vfb_data, 1, 0,0,0,
+			    xbase, ybase, xend - 1, yend - 1, 0,0);
+		} else if (data[0] == 0x07 && data[1] == 0x80 && len == 128) {
+			/*  NetBSD "output cursor":  */
 			int xbase, ybase, xend, yend, x, y;
 
 			xbase = (data[20*4 + 0] + (data[20*4 + 1] << 8)) / 16;
@@ -311,13 +326,15 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			xend  = (data[28*4 + 0] + (data[28*4 + 1] << 8)) / 16;
 			yend  = (data[28*4 + 2] + (data[28*4 + 3] << 8)) / 16;
 
-			/*  debug("[ gif: NETBSD cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);  */
+			/*  debug("[ gif: NETBSD cursor at (%i,%i)-(%i,%i) ]\n",
+			    xbase, ybase, xend, yend);  */
 
 			/*  Output the cursor to framebuffer memory:  */
 
 			for (y=ybase; y<=yend; y++)
 				for (x=xbase; x<=xend; x++) {
-					int fb_addr = (x + y * d->xsize) * d->bytes_per_pixel;
+					int fb_addr = (x + y * d->xsize) *
+					    d->bytes_per_pixel;
 					unsigned char pixels[3];
 
 					dev_fb_access(d->cpu, d->cpu->mem,
@@ -332,7 +349,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 					    fb_addr, pixels, sizeof(pixels),
 					    MEM_WRITE, d->vfb_data);
 				}
-		} else if (data[0] == 0x01 && data[1] == 0x00 && len == 80) {			/*  Linux "output cursor":  */
+		} else if (data[0] == 0x01 && data[1] == 0x00 && len == 80) {
+			/*  Linux "output cursor":  */
 			int xbase, ybase, xend, yend, x, y;
 
 			xbase = (data[7*8 + 0] + (data[7*8 + 1] << 8)) / 16;
@@ -340,13 +358,15 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			xend  = (data[8*8 + 0] + (data[8*8 + 1] << 8)) / 16;
 			yend  = (data[8*8 + 2] + (data[8*8 + 3] << 8)) / 16;
 
-			debug("[ gif: LINUX cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);
+			debug("[ gif: LINUX cursor at (%i,%i)-(%i,%i) ]\n",
+			    xbase, ybase, xend, yend);
 
 			/*  Output the cursor to framebuffer memory:  */
 
 			for (y=ybase; y<=yend; y++)
 				for (x=xbase; x<=xend; x++) {
-					int fb_addr = (x + y * d->xsize) * d->bytes_per_pixel;
+					int fb_addr = (x + y * d->xsize) *
+					    d->bytes_per_pixel;
 					unsigned char pixels[3];
 
 					dev_fb_access(d->cpu, d->cpu->mem,
@@ -362,7 +382,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 					    MEM_WRITE, d->vfb_data);
 				}
 		} else {		/*  Unknown command:  */
-			fatal("[ gif write to addr 0x%x (len=%i):", (int)relative_addr, len);
+			fatal("[ gif write to addr 0x%x (len=%i):",
+			    (int)relative_addr, len);
 			for (i=0; i<len; i++)
 				fatal(" %02x", data[i]);
 			fatal(" ]\n");
@@ -405,9 +426,11 @@ int devinit_ps2_gif(struct devinit *devinit)
 	}
 
 #if 0
-	test_triangle(d,  300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
-	test_triangle(d,  310,210, 128,32,0,  175,410, 0,32,0,  500,470, 125,255,125);
-	test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);
+	test_triangle(d, 300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
+	test_triangle(d, 310,210, 128,32,0,  175,410, 0,32,0,
+	    500,470, 125,255,125);
+	test_triangle(d, 100,450, 255,255,0,  250,370, 0,255,255,
+	    400,470, 255,0,255);
 #endif
 
 	memory_device_register(devinit->machine->memory, devinit->name,

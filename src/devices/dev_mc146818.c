@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.81 2005-12-03 11:18:12 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.82 2005-12-26 14:14:37 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -319,7 +319,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	struct tm *tmp;
 	time_t timet;
 	struct mc_data *d = extra;
-	int i, relative_addr = r;
+	int relative_addr = r;
+	size_t i;
 
 	relative_addr /= d->addrdiv;
 
@@ -506,10 +507,12 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		case 0x128:
 			d->reg[relative_addr] = data[0];
 			if (data[0] & 8) {
+				int j;
+
 				/*  Used on SGI to power off the machine.  */
 				fatal("[ md146818: power off ]\n");
-				for (i=0; i<cpu->machine->ncpus; i++)
-					cpu->machine->cpus[i]->running = 0;
+				for (j=0; j<cpu->machine->ncpus; j++)
+					cpu->machine->cpus[j]->running = 0;
 				cpu->machine->
 				    exit_without_entering_debugger = 1;
 			}

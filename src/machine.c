@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.642 2005-12-26 12:32:08 debug Exp $
+ *  $Id: machine.c,v 1.643 2005-12-26 14:14:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4973,6 +4973,9 @@ Not yet.
 		dev_ram_init(machine, 0xf0000000, 0x1000000,
 		    DEV_RAM_MIRROR, 0x0);
 
+		/*  Linux uses 0xc0000000 as phys.:  */
+		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+
 		/*  NetBSD and OpenBSD clean their caches here:  */
 		dev_ram_init(machine, 0x50000000, 0x4000, DEV_RAM_RAM, 0);
 
@@ -5574,6 +5577,8 @@ void machine_memsize_fix(struct machine *m)
  */
 void machine_default_cputype(struct machine *m)
 {
+	struct machine_entry *me;
+
 	if (m == NULL) {
 		fatal("machine_default_cputype(): m == NULL?\n");
 		exit(1);
@@ -5581,6 +5586,16 @@ void machine_default_cputype(struct machine *m)
 
 	if (m->cpu_name != NULL)
 		return;
+
+	me = first_machine_entry;
+	while (me != NULL) {
+		if (m->machine_type == me->machine_type &&
+		    me->set_default_cpu != NULL) {
+			me->set_default_cpu(m);
+			goto default_cpu_done;
+		}
+		me = me->next;
+	}
 
 	switch (m->machine_type) {
 	case MACHINE_BAREMIPS:
@@ -5690,7 +5705,9 @@ void machine_default_cputype(struct machine *m)
 
 	/*  PowerPC:  */
 	case MACHINE_BAREPPC:
+#if 0
 	case MACHINE_TESTPPC:
+#endif
 		m->cpu_name = strdup("PPC970");
 		break;
 	case MACHINE_WALNUT:
@@ -5810,6 +5827,8 @@ void machine_default_cputype(struct machine *m)
 			m->cpu_name = strdup("AMD64");
 		break;
 	}
+
+default_cpu_done:
 
 	if (m->cpu_name == NULL) {
 		fprintf(stderr, "machine_default_cputype(): no default"

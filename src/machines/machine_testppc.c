@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_testppc.c,v 1.2 2005-12-26 12:32:13 debug Exp $
+ *  $Id: machine_testppc.c,v 1.3 2005-12-26 14:14:40 debug Exp $
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "cpu.h"
 #include "device.h"
@@ -72,12 +73,19 @@ MACHINE_SETUP(testppc)
 }
 
 
+MACHINE_DEFAULT_CPU(testppc)
+{
+	machine->cpu_name = strdup("PPC970");
+}
+
+
 MACHINE_REGISTER(testppc)
 {
-	struct machine_entry *me = machine_entry_new("Test-machine for PPC",
+	MR_DEFAULT(testppc, "Test-machine for PPC",
 	    ARCH_PPC, MACHINE_TESTPPC, 1, 0);
-	me->setup = machine_setup_testppc;
+
 	me->aliases[0] = "testppc";
+
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

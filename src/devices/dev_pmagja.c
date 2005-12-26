@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.17 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.18 2005-12-26 17:22:43 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -73,7 +73,7 @@ int dev_pmagja_access(struct cpu *cpu, struct memory *mem,
 {
 	uint64_t idata = 0, odata = 0;
 	struct pmagja_data *d = extra;
-	int i, res = 1;
+	size_t i, res = 1;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -82,7 +82,7 @@ int dev_pmagja_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef JA_DEBUG
 {
-int i;
+size_t i;
 for (i=0; i<len; i++)
   if (data[i] != 0 && data[i] != 1 && data[i]!=0xff)
 	if (writeflag)

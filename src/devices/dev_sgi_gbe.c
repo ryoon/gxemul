@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.30 2005-12-20 18:50:15 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.31 2005-12-26 17:22:43 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -136,8 +136,8 @@ tweaked = 0;
 			copy_offset = 0;
 
 			while (on_screen && copy_offset < 65536) {
-				if (old_fb_offset + copy_len > d->xres *
-				    d->yres * d->bitdepth / 8) {
+				if (old_fb_offset + copy_len > (uint64_t)
+				    (d->xres * d->yres * d->bitdepth / 8)) {
 					copy_len = d->xres * d->yres *
 					    d->bitdepth / 8 - old_fb_offset;
 					/*  Stop after copying this block...  */

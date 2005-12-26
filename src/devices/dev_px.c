@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.30 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_px.c,v 1.31 2005-12-26 17:22:43 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -143,7 +143,7 @@ uint32_t px_readword(struct cpu *cpu, unsigned char *dma_buf, int ofs)
 void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 {
 	unsigned char dma_buf[32768];
-	int dma_len = sizeof(dma_buf);
+	size_t dma_len = sizeof(dma_buf);
 	int bytesperpixel;
 	uint32_t cmdword;
 
@@ -231,7 +231,7 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		debug(",HS_EQUALS");
 
 	{
-		int i;
+		size_t i;
 		for (i=0; i<dma_len; i++)
 			debug(" %02x", dma_buf[i]);
 	}
@@ -565,7 +565,7 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 {
 	uint64_t idata = 0, odata = 0;
 	struct px_data *d = extra;
-	int i;
+	size_t i;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);

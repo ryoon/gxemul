@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.41 2005-12-03 04:14:14 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.42 2005-12-26 17:22:43 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -112,7 +112,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 {
 	struct crime_data *d = extra;
 	uint64_t idata = 0;
-	int i;
+	size_t i;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -182,10 +182,12 @@ TODO.
 				idata &= ~0x200;
 			}
 			if (idata & 0x800) {
+				int j;
+
 				/*  This is used by the IP32 PROM's
 				    "reboot" command:  */
-				for (i=0; i<cpu->machine->ncpus; i++)
-					cpu->machine->cpus[i]->running = 0;
+				for (j=0; j<cpu->machine->ncpus; j++)
+					cpu->machine->cpus[j]->running = 0;
 				cpu->machine->
 				    exit_without_entering_debugger = 1;
 				idata &= ~0x800;
@@ -258,7 +260,7 @@ int dev_mace_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	int i;
+	size_t i;
 	struct mace_data *d = extra;
 
 	if (writeflag == MEM_WRITE)

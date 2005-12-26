@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.57 2005-11-29 04:28:09 debug Exp $
+ *  $Id: dev_wdc.c,v 1.58 2005-12-26 14:22:32 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -102,7 +102,7 @@ struct wdc_data {
 	int		atapi_phase;
 	struct scsi_transfer *atapi_st;
 	int		atapi_len;
-	int		atapi_received;
+	size_t		atapi_received;
 
 	unsigned char	identify_struct[512];
 };
@@ -212,7 +212,7 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	/*  27-46: Model number  */
 	if (diskimage_getname(cpu->machine, d->drive + d->base_drive,
 	    DISKIMAGE_IDE, namebuf, sizeof(namebuf))) {
-		int i;
+		size_t i;
 		for (i=0; i<sizeof(namebuf); i++)
 			if (namebuf[i] == 0) {
 				for (; i<sizeof(namebuf); i++)
@@ -403,7 +403,7 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
  */
 void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 {
-	int i;
+	size_t i;
 
 	d->cur_command = idata;
 	d->atapi_cmd_in_progress = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.77 2005-12-11 16:45:58 debug Exp $
+ *  $Id: dev_asc.c,v 1.78 2005-12-26 14:22:32 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
  *
@@ -312,8 +312,8 @@ fatal("TODO..............\n");
 				fatal("no incoming DMA data?\n");
 				res = 0;
 			} else {
-				int len = d->xferp->data_in_len;
-				int len2 = d->reg_wo[NCR_TCL] +
+				size_t len = d->xferp->data_in_len;
+				size_t len2 = d->reg_wo[NCR_TCL] +
 				    d->reg_wo[NCR_TCM] * 256;
 				if (len2 == 0)
 					len2 = 65536;

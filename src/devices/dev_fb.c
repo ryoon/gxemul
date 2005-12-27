@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.112 2005-11-30 08:52:30 debug Exp $
+ *  $Id: dev_fb.c,v 1.113 2005-12-27 04:56:06 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -591,7 +591,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	struct vfb_data *d = extra;
-	int i;
+	size_t i;
 
 #ifdef FB_DEBUG
 	if (writeflag == MEM_WRITE) { if (data[0]) {
@@ -620,7 +620,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 
 			/*  If all bytes are equal to what is already stored
 			    in the framebuffer, then simply return:  */
-			if (i==len-1)
+			if (i == len-1)
 				return 1;
 		}
 	}
@@ -679,15 +679,17 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE) {
 		if (len > 8)
 			memcpy(d->framebuffer + relative_addr, data, len);
-		else
+		else {
 			for (i=0; i<len; i++)
 				d->framebuffer[relative_addr + i] = data[i];
+		}
 	} else {
 		if (len > 8)
 			memcpy(data, d->framebuffer + relative_addr, len);
-		else
+		else {
 			for (i=0; i<len; i++)
 				data[i] = d->framebuffer[relative_addr + i];
+		}
 	}
 
 	return 1;

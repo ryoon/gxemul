@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21030.c,v 1.2 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_dec21030.c,v 1.3 2005-12-27 04:56:06 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -95,8 +95,8 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 {
 	struct dec21030_data *d = extra;
 	uint64_t idata, odata = 0;
-	int reg, r, i, white = 255, black = 0;
-	int newlen;
+	int reg, r, white = 255, black = 0;
+	size_t i, newlen;
 	unsigned char buf2[MAX_XSIZE];
 
 	/*  Read/write to the framebuffer:  */

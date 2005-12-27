@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.31 2005-12-26 17:22:43 debug Exp $
+ *  $Id: dev_px.c,v 1.32 2005-12-27 04:56:06 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -242,7 +242,7 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 	/*  NetBSD and Ultrix copyspans  */
 	if (cmdword == 0x405) {
 		uint32_t nspans, lw;
-		int spannr, ofs;
+		uint32_t spannr, ofs;
 		uint32_t span_len, span_src, span_dst;
 		/*  unsigned char pixels[PX_XSIZE * 3];  */
 
@@ -328,20 +328,21 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 
 			d->vfb_data->update_x1 = 0; d->vfb_data->update_x2 =
 			    PX_XSIZE-1;
-			if (span_dst < d->vfb_data->update_y1)
+			if ((int32_t)span_dst < d->vfb_data->update_y1)
 				d->vfb_data->update_y1 = span_dst;
-			if (span_dst > d->vfb_data->update_y2)
+			if ((int32_t)span_dst > d->vfb_data->update_y2)
 				d->vfb_data->update_y2 = span_dst;
-			if (span_src < d->vfb_data->update_y1)
+			if ((int32_t)span_src < d->vfb_data->update_y1)
 				d->vfb_data->update_y1 = span_src;
-			if (span_src > d->vfb_data->update_y2)
+			if ((int32_t)span_src > d->vfb_data->update_y2)
 				d->vfb_data->update_y2 = span_src;
 		}
 	}
 
 	/*  NetBSD and Ultrix erasecols/eraserows  */
 	if (cmdword == 0x411) {
-		uint32_t v1, v2, lw, attr;
+		uint32_t v1, v2, attr;
+		int32_t lw;
 		int x,y,x2,y2;
 		int fb_y;
 		int bg_r, bg_g, bg_b;

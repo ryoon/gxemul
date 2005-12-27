@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.42 2005-12-26 17:22:43 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.43 2005-12-27 04:56:06 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -1167,7 +1167,7 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 			uint32_t x2 = (d->reg[0x2074 / sizeof(uint32_t)]
 			    >> 16) & 0xfff;
 			uint32_t y2 = d->reg[0x2074 / sizeof(uint32_t)]& 0xfff;
-			int y;
+			uint32_t y;
 
 			op >>= 24;
 
@@ -1213,7 +1213,8 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 			uint32_t x2 = (d->reg[0x2074 / sizeof(uint32_t)]
 			    >> 16) & 0xfff;
 			uint32_t y2 = d->reg[0x2074 / sizeof(uint32_t)]& 0xfff;
-			int x,y;
+			size_t x, y;
+
 			if (x2 < x1) {
 				int tmp = x1; x1 = x2; x2 = tmp;
 			}
@@ -1222,6 +1223,7 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 			}
 			if (x2-x1 <= 15)
 				data <<= 16;
+
 			x=x1; y=y1;
 			while (x <= x2 && y <= y2) {
 				unsigned char buf = color;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1095 2005-12-26 14:22:31 debug Exp $
+$Id: HISTORY,v 1.1096 2005-12-27 20:47:36 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2536,3 +2536,7 @@ Changelog for GXemul:
 20051226	Continuing on the machine registry redesign.
 		Adding support for ARM rrx (33-bit rotate).
 		Fixing some signed/unsigned issues (exposed by gcc -W).
+20051227	Fixing the bug which prevented a NetBSD/prep 3.0 install kernel
+		from starting (triggered when an mtmsr was the last instruction
+		on a page). Unfortunately not enough to get the kernel to run
+		as well as the 2.1 kernels did.

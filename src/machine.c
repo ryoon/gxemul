@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.643 2005-12-26 14:14:35 debug Exp $
+ *  $Id: machine.c,v 1.644 2005-12-29 05:52:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4976,8 +4976,8 @@ Not yet.
 		/*  Linux uses 0xc0000000 as phys.:  */
 		dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 
-		/*  NetBSD and OpenBSD clean their caches here:  */
-		dev_ram_init(machine, 0x50000000, 0x4000, DEV_RAM_RAM, 0);
+		/*  NetBSD, OpenBSD, and Linux (?) clean their caches here:  */
+		dev_ram_init(machine, 0x50000000, 0x10000, DEV_RAM_RAM, 0);
 
 		/*  Interrupt ack space?  */
 		dev_ram_init(machine, 0x80000000, 0x1000, DEV_RAM_RAM, 0);

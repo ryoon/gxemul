@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.42 2005-12-11 21:34:43 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.43 2005-12-29 05:52:56 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -383,16 +383,28 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		}
 
 		/*  Other special registers:  */
-		debug("cpu%i: srr0 = 0x%016llx  srr1 = 0x%016llx\n", x,
-		    (long long)cpu->cd.ppc.spr[SPR_SRR0],
-		    (long long)cpu->cd.ppc.spr[SPR_SRR1]);
+		if (bits32) {
+			debug("cpu%i: srr0 = 0x%08x srr1 = 0x%08x\n", x,
+			    (int)cpu->cd.ppc.spr[SPR_SRR0],
+			    (int)cpu->cd.ppc.spr[SPR_SRR1]);
+		} else {
+			debug("cpu%i: srr0 = 0x%016llx  srr1 = 0x%016llx\n", x,
+			    (long long)cpu->cd.ppc.spr[SPR_SRR0],
+			    (long long)cpu->cd.ppc.spr[SPR_SRR1]);
+		}
+		debug("cpu%i: msr = ", x);
 		reg_access_msr(cpu, &tmp, 0, 0);
-		debug("cpu%i: msr = 0x%016llx  ", x, (long long)tmp);
+		if (bits32)
+			debug("0x%08x  ", (int)tmp);
+		else
+			debug("0x%016llx  ", (long long)tmp);
 		debug("tb  = 0x%08x%08x\n", (int)cpu->cd.ppc.spr[SPR_TBU],
 		    (int)cpu->cd.ppc.spr[SPR_TBL]);
-		debug("cpu%i: dec = 0x%08x  hdec = 0x%08x\n",
-		    x, (int)cpu->cd.ppc.spr[SPR_DEC],
-		    (int)cpu->cd.ppc.spr[SPR_HDEC]);
+		debug("cpu%i: dec = 0x%08x", x, (int)cpu->cd.ppc.spr[SPR_DEC]);
+		if (!bits32)
+			debug("  hdec = 0x%08x\n",
+			    (int)cpu->cd.ppc.spr[SPR_HDEC]);
+		debug("\n");
 	}
 
 	if (coprocs & 1) {

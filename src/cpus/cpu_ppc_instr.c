@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.54 2005-12-27 20:47:37 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.55 2005-12-29 05:52:56 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1718,7 +1718,7 @@ X(mtmsr)
 {
 	MODE_uint_t old_pc;
 
-	/*  TODO: check permission  */
+	/*  TODO: check permission!  */
 
 	/*  Synchronize the PC (pointing to _after_ this instruction)  */
 	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[1];
@@ -1726,10 +1726,11 @@ X(mtmsr)
 
 	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 1, 1);
 
-	/*  Super-ugly hack:  If the pc wasn't changed (i.e. if there
-	    was no exception while accessing the msr), then we _decrease_
-	    the PC by 4 again. This is because the next instruction could
-	    be an end_of_page.  */
+	/*
+	 *  Super-ugly hack:  If the pc wasn't changed (i.e. if there was no
+	 *  exception while accessing the msr), then we _decrease_ the PC by 4
+	 *  again. This is because the next ic could be an end_of_page.
+	 */
 	if ((MODE_uint_t)cpu->pc == old_pc)
 		cpu->pc -= 4;
 }
@@ -1742,7 +1743,7 @@ X(mtmsr)
  */
 X(wrteei)
 {
-	/*  TODO: check permission  */
+	/*  TODO: check permission!  */
 	uint64_t x;
 
 	/*  Synchronize the PC (pointing to _after_ this instruction)  */

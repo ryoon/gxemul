@@ -25,13 +25,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.39 2005-12-26 14:14:37 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.40 2005-12-30 21:07:41 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
  *  TODO:
  *	o)  Add actual support for the fcom serial port.
  *	o)  FIQs.
+ *	o)  Pretty much everything else as well :)  (This entire thing
+ *	    is a quick hack to work primarily with NetBSD and OpenBSD
+ *	    as a guest OS.)
  */
 
 #include <stdio.h>
@@ -42,7 +45,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"	/*  for struct footbridge_data  */
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -224,6 +227,11 @@ int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE && idata != 0)
 			fatal("[ footbridge: TODO: write to PCI_ADDRESS_"
 			    "EXTENSION: 0x%llx ]\n", (long long)idata);
+		break;
+
+	case SA_CONTROL:
+		/*  Read by Linux:  */
+		odata = PCI_CENTRAL_FUNCTION;
 		break;
 
 	case UART_DATA:

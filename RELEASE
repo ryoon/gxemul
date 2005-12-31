@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.170 2005-12-26 12:32:06 debug Exp $
+$Id: RELEASE,v 1.171 2005-12-31 15:48:29 debug Exp $
 
 I'm working on post-0.3.7.
 
@@ -7,7 +7,7 @@ I'm working on post-0.3.7.
 Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
 ================================================================
 
-Copyright (C) 2003-2005  Anders Gavare.
+Copyright (C) 2003-2006  Anders Gavare.
 
 
 GXemul is an experimental instruction-level machine emulator. Several

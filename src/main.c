@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.253 2005-12-11 21:34:42 debug Exp $
+ *  $Id: main.c,v 1.254 2005-12-31 15:48:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -195,7 +195,7 @@ static void usage(int longusage)
 #ifdef VERSION
 	printf("-" VERSION);
 #endif
-	printf("   Copyright (C) 2003-2005  Anders Gavare\n");
+	printf("   Copyright (C) 2003-2006  Anders Gavare\n");
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 
@@ -751,7 +751,7 @@ int main(int argc, char *argv[])
 #ifdef VERSION
 	debug("-" VERSION);
 #endif
-	debug("   Copyright (C) 2003-2005  Anders Gavare\n");
+	debug("   Copyright (C) 2003-2006  Anders Gavare\n");
 	debug("Read the source code and/or documentation for "
 	    "other Copyright messages.\n\n");
 

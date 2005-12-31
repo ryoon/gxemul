@@ -1,26 +1,23 @@
-$Id: TODO,v 1.189 2005-12-26 14:14:34 debug Exp $
+$Id: TODO,v 1.190 2005-12-31 15:48:29 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Machine registry:
-	x)  Default CPU type. (Function?)
 	x)  Default amount of memory. (Function?)
-	x)  SORT all machines!
 	x)  Move more machines.
 
 Dyntrans:
+	x)  64-bit stuff: good generic virtual memory translation, and
+	    other structures. not all 64 bits need to be used (e.g. Alpha)
+	x)  Delay slots!
+	x)  Old MIPS -> dyntrans!
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
 	x)  Think about sharing code between CPUs of the same
 	    arch/bitlength (the translation caches).
-	x)  Instr call statistics
-	x)  "fake" skeleton backend
-	x)  64-bit stuff: good generic virtual memory translation, and
-	    other structures. not all 64 bits need to be used (e.g. Alpha)
-	x)  Delay slots!
-	x)  Old MIPS -> dyntrans!
+	x)  better (meaningful) instr call statistics
 	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
 	x)  PPC optimizations; instr combs
@@ -105,7 +102,7 @@ Caches / memory hierarchies: (this is mostly MIPS-specific)
 	    memory latencies should be emulated as correctly as
 	    possible.
 
-MIPS CPU emulation:
+MIPS CPU emulation:  (note: this is for the OLD mips stuff)
 	o)  i386 bintrans backend: movn etc, slt[u] for
 		64-bit mode, 64-bit shifts etc
 	o)  Instructions:

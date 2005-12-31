@@ -1,4 +1,4 @@
-$Id: README,v 1.92 2005-11-29 05:25:26 debug Exp $
+$Id: README,v 1.93 2005-12-31 15:48:29 debug Exp $
 
 I'm working on post-0.3.7.
 
@@ -7,7 +7,7 @@ I'm working on post-0.3.7.
 Gavare's eXperimental Emulator   --   GXemul 0.3.X
 ==================================================
 
-Copyright (C) 2003-2005  Anders Gavare.
+Copyright (C) 2003-2006  Anders Gavare.
 
 
 Overview

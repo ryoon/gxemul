@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.5 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_x86.c,v 1.6 2005-12-31 15:48:33 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -168,7 +168,7 @@ void x86_cpu_list_available_types(void)
 	while (models[i].model_number != 0) {
 		debug("%s", models[i].name);
 
-		for (j=0; j<10-strlen(models[i].name); j++)
+		for (j=0; j<10-(int)strlen(models[i].name); j++)
 			debug(" ");
 		i++;
 		if ((i % 6) == 0 || models[i].name == NULL)
@@ -713,7 +713,8 @@ void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 	int segment = 1, rpl, orig_selector = selector;
 	unsigned char descr[8];
 	char *table_name = "GDT";
-	uint64_t base, limit, table_base, table_limit;
+	uint64_t base, limit, table_base;
+	int64_t table_limit;
 
 	if (segnr > 0x100)	/*  arbitrary, larger than N_X86_SEGS  */
 		segment = 0;
@@ -2596,7 +2597,7 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 	if (PROTECTED_MODE) {
 		int i, int_type = 0;
 
-		if (nr * 8 > cpu->cd.x86.idtr_limit) {
+		if (nr * 8 > (int)cpu->cd.x86.idtr_limit) {
 			fatal("TODO: protected mode int 0x%02x outside idtr"
 			    " limit (%i)?\n", nr, (int)cpu->cd.x86.idtr_limit);
 			cpu->running = 0;
@@ -2738,7 +2739,7 @@ int x86_interrupt(struct cpu *cpu, int nr, int errcode)
 	/*
 	 *  Real mode:
 	 */
-	if (nr * 4 > cpu->cd.x86.idtr_limit) {
+	if (nr * 4 > (int)cpu->cd.x86.idtr_limit) {
 		fatal("TODO: real mode int 0x%02x outside idtr limit ("
 		    "%i)?\n", nr, (int)cpu->cd.x86.idtr_limit);
 		cpu->running = 0;

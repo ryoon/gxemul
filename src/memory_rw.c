@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.81 2005-12-09 05:34:19 debug Exp $
+ *  $Id: memory_rw.c,v 1.82 2005-12-31 15:48:32 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -93,7 +93,8 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	if (REAL_MODE && !(misc_flags & PHYSICAL)) {
 		if ((vaddr & 0xffff) + len > 0x10000) {
 			/*  Do one byte at a time:  */
-			int res = 0, i;
+			int res = 0;
+			size_t i;
 			for (i=0; i<len; i++)
 				res = MEMORY_RW(cpu, mem, vaddr+i, &data[i], 1,
 				    writeflag, misc_flags);
@@ -108,7 +109,8 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		    Then do a write of all the new bytes. This is to make sure
 		    than both pages around the boundary are writable so we don't
 		    do a partial write.  */
-		int res = 0, i;
+		int res = 0;
+		size_t i;
 		if (writeflag == MEM_WRITE) {
 			unsigned char tmp;
 			for (i=0; i<len; i++) {

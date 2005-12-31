@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1096 2005-12-27 20:47:36 debug Exp $
+$Id: HISTORY,v 1.1097 2005-12-31 11:20:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2540,3 +2540,4 @@ Changelog for GXemul:
 		from starting (triggered when an mtmsr was the last instruction
 		on a page). Unfortunately not enough to get the kernel to run
 		as well as the 2.1 kernels did.
+20051230	Some dyntrans refactoring.

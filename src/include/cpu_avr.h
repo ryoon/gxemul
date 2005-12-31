@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.10 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_avr.h,v 1.11 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -38,7 +38,7 @@ struct cpu_family;
 
 #define	N_AVR_REGS		32
 
-#define	AVR_N_IC_ARGS			2
+#define	AVR_N_IC_ARGS			3
 #define	AVR_INSTR_ALIGNMENT_SHIFT	1
 #define	AVR_IC_ENTRIES_SHIFT		11
 #define	AVR_IC_ENTRIES_PER_PAGE		(1 << AVR_IC_ENTRIES_SHIFT)
@@ -49,7 +49,6 @@ struct cpu_family;
 
 struct avr_instr_call {
 	void	(*f)(struct cpu *, struct avr_instr_call *);
-	int	len;
 	size_t	arg[AVR_N_IC_ARGS];
 };
 
@@ -62,9 +61,7 @@ struct avr_tc_physpage {
 };
 
 
-#define	AVR_N_VPH_ENTRIES	1048576
-
-#define	AVR_MAX_VPH_TLB_ENTRIES		256
+#define	AVR_MAX_VPH_TLB_ENTRIES		128
 struct avr_vpg_tlb_entry {
 	unsigned char	valid;
 	unsigned char	writeflag;
@@ -109,33 +106,14 @@ struct avr_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of AVR_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct avr_tc_physpage	*cur_physpage;
-	struct avr_instr_call	*cur_ic_page;
-	struct avr_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct avr_instr_call *, int low_addr);
+	DYNTRANS_ITC(avr)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
+	 *  32-bit virtual -> physical -> host address translation:
 	 *
-	 *  host_load and host_store point to arrays of AVR_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  AVR_N_VPH_ENTRIES uint32_t.
+	 *  (All of this isn't really needed on AVRs.)
 	 */
-
-	struct avr_vpg_tlb_entry	vph_tlb_entry[AVR_MAX_VPH_TLB_ENTRIES];
-	unsigned char			*host_load[AVR_N_VPH_ENTRIES];
-	unsigned char			*host_store[AVR_N_VPH_ENTRIES];
-	uint32_t			phys_addr[AVR_N_VPH_ENTRIES];
-	struct avr_tc_physpage		*phys_page[AVR_N_VPH_ENTRIES];
-
-	uint32_t			phystranslation[AVR_N_VPH_ENTRIES/32];
-	uint8_t				vaddr_to_tlbindex[AVR_N_VPH_ENTRIES];
+	VPH32(avr,AVR,uint32_t,uint8_t)
 };
 
 

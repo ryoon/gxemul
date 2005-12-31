@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.23 2005-12-01 11:20:57 debug Exp $
+ *  $Id: cpu_mips.h,v 1.24 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -227,8 +227,6 @@ struct mips_tc_physpage {
 	int		flags;
 	uint64_t	physaddr;
 };
-
-#define	MIPS_N_VPH_ENTRIES		1048576
 
 #define	MIPS_MAX_VPH_TLB_ENTRIES	128
 struct mips_vpg_tlb_entry {
@@ -430,32 +428,12 @@ struct mips_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-	/*  cur_ic_page is a pointer to an array of MIPS_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct mips_tc_physpage	*cur_physpage;
-	struct mips_instr_call	*cur_ic_page;
-	struct mips_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct mips_instr_call *, int low_addr);
+	DYNTRANS_ITC(mips)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
-	 *
-	 *  host_load and host_store point to arrays of MIPS_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  MIPS_N_VPH_ENTRIES uint32_t.
+	 *  32-bit virtual -> physical -> host address translation:
 	 */
-
-	struct mips_vpg_tlb_entry   vph_tlb_entry[MIPS_MAX_VPH_TLB_ENTRIES];
-	unsigned char		    *host_load[MIPS_N_VPH_ENTRIES]; 
-	unsigned char		    *host_store[MIPS_N_VPH_ENTRIES];
-	uint32_t		    phys_addr[MIPS_N_VPH_ENTRIES]; 
-	struct mips_tc_physpage     *phys_page[MIPS_N_VPH_ENTRIES];
-
-	uint32_t		    phystranslation[MIPS_N_VPH_ENTRIES/32];
-	uint8_t			    vaddr_to_tlbindex[MIPS_N_VPH_ENTRIES];
+	VPH32(mips,MIPS,uint64_t,uint8_t)
 };
 
 

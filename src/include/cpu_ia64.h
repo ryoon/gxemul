@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.7 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.8 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -81,7 +81,7 @@ struct ia64_vph_page {
 };
 
 
-#define	IA64_MAX_VPH_TLB_ENTRIES	64
+#define	IA64_MAX_VPH_TLB_ENTRIES	128
 struct ia64_vpg_tlb_entry {
 	unsigned char	valid;
 	unsigned char	writeflag;
@@ -99,16 +99,7 @@ struct ia64_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of IA64_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct ia64_tc_physpage *cur_physpage;
-	struct ia64_instr_call	*cur_ic_page;
-	struct ia64_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct ia64_instr_call *, int low_addr);
+	DYNTRANS_ITC(ia64)
 
 	/*
 	 *  Virtual -> physical -> host address translation:

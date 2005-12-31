@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.27 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.28 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -131,21 +131,11 @@ struct alpha_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of ALPHA_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct alpha_tc_physpage *cur_physpage;
-	struct alpha_instr_call	*cur_ic_page;
-	struct alpha_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct alpha_instr_call *, int low_addr);
+	DYNTRANS_ITC(alpha)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
+	 *  Hardcoded Alpha virtual -> physical -> host address translation:
 	 */
-
 	struct alpha_vpg_tlb_entry vph_tlb_entry[ALPHA_MAX_VPH_TLB_ENTRIES];
 	struct alpha_vph_page	*vph_default_page;
 	struct alpha_vph_page	*vph_next_free_page;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.58 2005-11-30 16:23:10 debug Exp $
+ *  $Id: cpu_arm.h,v 1.59 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -140,8 +140,6 @@ struct arm_tc_physpage {
 #define	ARM_EXCEPTION_FIQ	7
 
 
-#define	ARM_N_VPH_ENTRIES	1048576
-
 #define	ARM_MAX_VPH_TLB_ENTRIES		128
 struct arm_vpg_tlb_entry {
 	unsigned char	valid;
@@ -222,36 +220,15 @@ struct arm_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of ARM_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct arm_tc_physpage	*cur_physpage;
-	struct arm_instr_call	*cur_ic_page;
-	struct arm_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct arm_instr_call *, int low_addr);
+	DYNTRANS_ITC(arm)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
-	 *
-	 *  host_load and host_store point to arrays of ARM_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  ARM_N_VPH_ENTRIES uint32_t.
+	 *  32-bit virtual -> physical -> host address translation:
 	 */
-
-	struct arm_vpg_tlb_entry	vph_tlb_entry[ARM_MAX_VPH_TLB_ENTRIES];
-	unsigned char			*host_load[ARM_N_VPH_ENTRIES];
-	unsigned char			*host_store[ARM_N_VPH_ENTRIES];
-	uint32_t			phys_addr[ARM_N_VPH_ENTRIES];
-	struct arm_tc_physpage		*phys_page[ARM_N_VPH_ENTRIES];
-
-	uint32_t			phystranslation[ARM_N_VPH_ENTRIES/32];
-	uint8_t				vaddr_to_tlbindex[ARM_N_VPH_ENTRIES];
+	VPH32(arm,ARM,uint32_t,uint8_t)
 
 	/*  ARM specific: */
-	uint32_t			is_userpage[ARM_N_VPH_ENTRIES/32];
+	uint32_t			is_userpage[N_VPH32_ENTRIES/32];
 };
 
 

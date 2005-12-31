@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.58 2005-12-16 21:44:44 debug Exp $
+ *  $Id: cpu.h,v 1.59 2005-12-31 11:20:47 debug Exp $
  *
  *  See cpu.c.
  */
@@ -38,8 +38,92 @@
 #include <inttypes.h>
 #include <sys/time.h>
 
-/*  This is needed for undefining 'mips' or 'ppc', on weird systems:  */
+/*  This is needed for undefining 'mips', 'ppc' etc. on weird systems:  */
 #include "../../config.h"
+
+/*
+ *  Dyntrans misc declarations, used throughout the dyntrans code.
+ */
+#define DYNTRANS_MISC_DECLARATIONS(arch,ARCH,addrtype)  struct \
+	arch ## _instr_call {					\
+		void	(*f)(struct cpu *, struct arch ## _instr_call *); \
+		size_t	arg[ARCH ## _N_IC_ARGS];			\
+	};								\
+									\
+	/*  Translation cache struct for each physical page:  */	\
+	struct arch ## _tc_physpage {					\
+		struct arch ## _instr_call ics[ARCH ## _IC_ENTRIES_PER_PAGE+1];\
+		uint32_t	next_ofs;	/*  (0 for end of chain)  */ \
+		int		flags;					\
+		addrtype	physaddr;				\
+	};								\
+									\
+	struct arch ## _vpg_tlb_entry {					\
+		uint8_t		valid;					\
+		uint8_t		writeflag;				\
+		addrtype	vaddr_page;				\
+		addrtype	paddr_page;				\
+		unsigned char	*host_page;				\
+		int64_t		timestamp;				\
+	};
+
+/*
+ *  Dyntrans "Instruction Translation Cache":
+ *
+ *  cur_physpage is a pointer to the current physpage. (It _HAPPENS_ to
+ *  be the same as cur_ic_page, because all the instrcalls should be placed
+ *  first in the physpage struct!)
+ *
+ *  cur_ic_page is a pointer to an array of xxx_IC_ENTRIES_PER_PAGE
+ *  instruction call entries.
+ *
+ *  next_ic points to the next such instruction call to be executed.
+ *
+ *  combination_check, when set to non-NULL, is executed automatically after
+ *  an instruction has been translated. (It check for combinations of
+ *  instructions; low_addr is the offset of the translated instruction in the
+ *  current page, NOT shifted right.)
+ */
+#define DYNTRANS_ITC(arch)	struct arch ## _tc_physpage *cur_physpage;  \
+				struct arch ## _instr_call  *cur_ic_page;   \
+				struct arch ## _instr_call  *next_ic;       \
+				void (*combination_check)(struct cpu *,     \
+				    struct arch ## _instr_call *, int low_addr);
+
+/*
+ *  32-bit dyntrans emulated Virtual -> physical -> host address translation:
+ *  -------------------------------------------------------------------------
+ *
+ *  This stuff assumes that 4 KB pages are used. 20 bits to select a page
+ *  means just 1 M entries needed. This is small enough that a couple of
+ *  full-size tables can fit in virtual memory on modern hosts (both 32-bit
+ *  and 64-bit hosts). :-)
+ *
+ *  Usage: e.g. VPH32(arm,ARM,uint32_t,uint8_t)
+ *           or VPH32(sparc,SPARC,uint64_t,uint16_t)
+ *
+ *  The vph_tlb_entry entries are cpu dependant tlb entries.
+ *
+ *  The host_load and host_store entries point to host pages; the phys_addr
+ *  entries are uint32_t or uint64_t (emulated physical addresses).
+ *
+ *  phys_page points to translation cache physpages.
+ *
+ *  phystranslation is a bitmap which tells us whether a physical page has
+ *  a code translation.
+ *
+ *  vaddr_to_tlbindex is a virtual address to tlb index hint table.
+ *  The tlb hint is one 
+ */
+#define	N_VPH32_ENTRIES		1048576
+#define	VPH32(arch,ARCH,paddrtype,tlbindextype)		struct		\
+	arch ## _vpg_tlb_entry	vph_tlb_entry[ARCH ## _MAX_VPH_TLB_ENTRIES];\
+	unsigned char		*host_load[N_VPH32_ENTRIES];		\
+	unsigned char		*host_store[N_VPH32_ENTRIES];		\
+	paddrtype		phys_addr[N_VPH32_ENTRIES];		\
+	struct arch ## _tc_physpage  *phys_page[N_VPH32_ENTRIES];	\
+	uint32_t		phystranslation[N_VPH32_ENTRIES/32];	\
+	tlbindextype		vaddr_to_tlbindex[N_VPH32_ENTRIES];
 
 #include "cpu_alpha.h"
 #include "cpu_arm.h"
@@ -97,7 +181,7 @@ struct cpu_family {
 
 
 /*
- *  Dynamic translation definitions:
+ *  More dyntrans stuff:
  *
  *  The translation cache begins with N_BASE_TABLE_ENTRIES uint32_t offsets
  *  into the cache, for possible translation cache structs for physical pages.
@@ -116,8 +200,7 @@ struct cpu_family {
 
 #ifdef DYNTRANS_BACKEND
 
-/*  TODO: convert this into a fixed-size array? Might increase
-    performace.  */
+/*  TODO: convert this into a fixed-size array? Might increase performace.  */
 struct dtb_fixup {
 	struct dtb_fixup	*next;
 	int			type;	/*  Fixup type [optional]  */

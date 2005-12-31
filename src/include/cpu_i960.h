@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.7 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_i960.h,v 1.8 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -51,7 +51,6 @@ struct cpu_family;
 
 struct i960_instr_call {
 	void	(*f)(struct cpu *, struct i960_instr_call *);
-	int	len;
 	size_t	arg[I960_N_IC_ARGS];
 };
 
@@ -64,9 +63,7 @@ struct i960_tc_physpage {
 };
 
 
-#define	I960_N_VPH_ENTRIES	1048576
-
-#define	I960_MAX_VPH_TLB_ENTRIES		256
+#define	I960_MAX_VPH_TLB_ENTRIES		128
 struct i960_vpg_tlb_entry {
 	unsigned char	valid;
 	unsigned char	writeflag;
@@ -87,33 +84,12 @@ struct i960_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of I960_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct i960_tc_physpage	*cur_physpage;
-	struct i960_instr_call	*cur_ic_page;
-	struct i960_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct i960_instr_call *, int low_addr);
+	DYNTRANS_ITC(i960)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
-	 *
-	 *  host_load and host_store point to arrays of I960_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  I960_N_VPH_ENTRIES uint32_t.
+	 *  32-bit virtual -> physical -> host address translation:
 	 */
-
-	struct i960_vpg_tlb_entry	vph_tlb_entry[I960_MAX_VPH_TLB_ENTRIES];
-	unsigned char			*host_load[I960_N_VPH_ENTRIES];
-	unsigned char			*host_store[I960_N_VPH_ENTRIES];
-	uint32_t			phys_addr[I960_N_VPH_ENTRIES];
-	struct i960_tc_physpage		*phys_page[I960_N_VPH_ENTRIES];
-
-	uint32_t			phystranslation[I960_N_VPH_ENTRIES/32];
-	uint8_t				vaddr_to_tlbindex[I960_N_VPH_ENTRIES];
+	VPH32(i960,I960,uint32_t,uint8_t)
 };
 
 

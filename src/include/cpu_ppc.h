@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.57 2005-12-04 02:40:04 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.58 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -95,30 +95,10 @@ struct ppc_cpu_type_def {
 #define	PPC_ADDR_TO_PAGENR(a)		((a) >> (PPC_IC_ENTRIES_SHIFT \
 					+ PPC_INSTR_ALIGNMENT_SHIFT))
 
-struct ppc_instr_call {
-	void	(*f)(struct cpu *, struct ppc_instr_call *);
-	size_t	arg[PPC_N_IC_ARGS];
-};
-
-/*  Translation cache struct for each physical page:  */
-struct ppc_tc_physpage {
-	struct ppc_instr_call ics[PPC_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	int		flags;
-	uint64_t	physaddr;
-};
-
-#define	PPC_N_VPH_ENTRIES		1048576
+DYNTRANS_MISC_DECLARATIONS(ppc,PPC,uint64_t)
 
 #define	PPC_MAX_VPH_TLB_ENTRIES		128
-struct ppc_vpg_tlb_entry {
-	uint8_t		valid;
-	uint8_t		writeflag;
-	int64_t		timestamp;
-	uint64_t	vaddr_page;
-	uint64_t	paddr_page;
-	unsigned char	*host_page;
-};
+
 
 struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
@@ -150,33 +130,12 @@ struct ppc_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of PPC_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct ppc_tc_physpage	*cur_physpage;
-	struct ppc_instr_call	*cur_ic_page;
-	struct ppc_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct ppc_instr_call *, int low_addr);
+	DYNTRANS_ITC(ppc)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
-	 *
-	 *  host_load and host_store point to arrays of PPC_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  PPC_N_VPH_ENTRIES uint32_t.
+	 *  32-bit virtual -> physical -> host address translation:
 	 */
-
-	struct ppc_vpg_tlb_entry	vph_tlb_entry[PPC_MAX_VPH_TLB_ENTRIES];
-	unsigned char			*host_load[PPC_N_VPH_ENTRIES]; 
-	unsigned char			*host_store[PPC_N_VPH_ENTRIES];
-	uint32_t			phys_addr[PPC_N_VPH_ENTRIES]; 
-	struct ppc_tc_physpage		*phys_page[PPC_N_VPH_ENTRIES];
-
-	uint32_t			phystranslation[PPC_N_VPH_ENTRIES/32];
-	uint8_t				vaddr_to_tlbindex[PPC_N_VPH_ENTRIES];
+	VPH32(ppc,PPC,uint64_t,uint8_t)
 };
 
 

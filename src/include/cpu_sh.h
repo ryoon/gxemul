@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.10 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_sh.h,v 1.11 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -46,30 +46,10 @@ struct cpu_family;
 #define	SH_ADDR_TO_PAGENR(a)		((a) >> (SH_IC_ENTRIES_SHIFT \
 					+ SH_INSTR_ALIGNMENT_SHIFT))
 
-struct sh_instr_call {
-	void	(*f)(struct cpu *, struct sh_instr_call *);
-	size_t	arg[SH_N_IC_ARGS];
-};
+DYNTRANS_MISC_DECLARATIONS(sh,SH,uint64_t)
 
-/*  Translation cache struct for each physical page:  */
-struct sh_tc_physpage {
-	struct sh_instr_call ics[SH_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	int		flags;
-	uint64_t	physaddr;
-};
+#define	SH_MAX_VPH_TLB_ENTRIES		128
 
-#define	SH_N_VPH_ENTRIES		1048576
-
-#define	SH_MAX_VPH_TLB_ENTRIES		256
-struct sh_vpg_tlb_entry {
-	uint8_t		valid;
-	uint8_t		writeflag;
-	int64_t		timestamp;
-	uint64_t	vaddr_page;
-	uint64_t	paddr_page;
-	unsigned char	*host_page;
-};
 
 struct sh_cpu {
 	int		bits;
@@ -81,33 +61,12 @@ struct sh_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of SH_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct sh_tc_physpage	*cur_physpage;
-	struct sh_instr_call	*cur_ic_page;
-	struct sh_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct sh_instr_call *, int low_addr);
+	DYNTRANS_ITC(sh)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
-	 *
-	 *  host_load and host_store point to arrays of SH_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  SH_N_VPH_ENTRIES uint32_t.
+	 *  32-bit virtual -> physical -> host address translation:
 	 */
-
-	struct sh_vpg_tlb_entry  vph_tlb_entry[SH_MAX_VPH_TLB_ENTRIES];
-	unsigned char		 *host_load[SH_N_VPH_ENTRIES]; 
-	unsigned char		 *host_store[SH_N_VPH_ENTRIES];
-	uint32_t		 phys_addr[SH_N_VPH_ENTRIES]; 
-	struct sh_tc_physpage    *phys_page[SH_N_VPH_ENTRIES];
-
-	uint32_t		 phystranslation[SH_N_VPH_ENTRIES/32];
-	uint8_t			 vaddr_to_tlbindex[SH_N_VPH_ENTRIES];
+	VPH32(sh,SH,uint64_t,uint8_t)
 };
 
 

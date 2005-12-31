@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.9 2005-11-16 21:15:19 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.10 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -48,31 +48,9 @@ struct cpu_family;
 #define	M68K_ADDR_TO_PAGENR(a)		((a) >> (M68K_IC_ENTRIES_SHIFT \
 					+ M68K_INSTR_ALIGNMENT_SHIFT))
 
-struct m68k_instr_call {
-	void	(*f)(struct cpu *, struct m68k_instr_call *);
-	int	len;
-	size_t	arg[M68K_N_IC_ARGS];
-};
+DYNTRANS_MISC_DECLARATIONS(m68k,M68K,uint32_t)
 
-/*  Translation cache struct for each physical page:  */
-struct m68k_tc_physpage {
-	struct m68k_instr_call ics[M68K_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint32_t	physaddr;
-	int		flags;
-};
-
-
-#define	M68K_N_VPH_ENTRIES	1048576
-
-#define	M68K_MAX_VPH_TLB_ENTRIES		256
-struct m68k_vpg_tlb_entry {
-	uint8_t		valid;
-	uint8_t		writeflag;
-	uint32_t	vaddr_page;
-	uint32_t	paddr_page;
-	unsigned char	*host_page;
-};
+#define	M68K_MAX_VPH_TLB_ENTRIES		128
 
 
 struct m68k_cpu {
@@ -87,33 +65,12 @@ struct m68k_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of M68K_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct m68k_tc_physpage	*cur_physpage;
-	struct m68k_instr_call	*cur_ic_page;
-	struct m68k_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct m68k_instr_call *, int low_addr);
+	DYNTRANS_ITC(m68k)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
-	 *
-	 *  host_load and host_store point to arrays of M68K_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  M68K_N_VPH_ENTRIES uint32_t.
+	 *  32-bit virtual -> physical -> host address translation:
 	 */
-
-	struct m68k_vpg_tlb_entry	vph_tlb_entry[M68K_MAX_VPH_TLB_ENTRIES];
-	unsigned char			*host_load[M68K_N_VPH_ENTRIES];
-	unsigned char			*host_store[M68K_N_VPH_ENTRIES];
-	uint32_t			phys_addr[M68K_N_VPH_ENTRIES];
-	struct m68k_tc_physpage		*phys_page[M68K_N_VPH_ENTRIES];
-
-	uint32_t			phystranslation[M68K_N_VPH_ENTRIES/32];
-	int16_t				vaddr_to_tlbindex[M68K_N_VPH_ENTRIES];
+	VPH32(m68k,M68K,uint32_t,uint8_t)
 };
 
 

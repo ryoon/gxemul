@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.20 2005-12-11 21:34:45 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.21 2005-12-31 11:20:47 debug Exp $
  */
 
 #include "misc.h"
@@ -68,30 +68,10 @@ struct sparc_cpu_type_def {
 #define	SPARC_ADDR_TO_PAGENR(a)		((a) >> (SPARC_IC_ENTRIES_SHIFT \
 					+ SPARC_INSTR_ALIGNMENT_SHIFT))
 
-struct sparc_instr_call {
-	void	(*f)(struct cpu *, struct sparc_instr_call *);
-	size_t	arg[SPARC_N_IC_ARGS];
-};
+DYNTRANS_MISC_DECLARATIONS(sparc,SPARC,uint64_t)
 
-/*  Translation cache struct for each physical page:  */
-struct sparc_tc_physpage {
-	struct sparc_instr_call ics[SPARC_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	int		flags;
-	uint64_t	physaddr;
-};
+#define	SPARC_MAX_VPH_TLB_ENTRIES		128
 
-#define	SPARC_N_VPH_ENTRIES		1048576
-
-#define	SPARC_MAX_VPH_TLB_ENTRIES		256
-struct sparc_vpg_tlb_entry {
-	uint8_t		valid;
-	uint8_t		writeflag;
-	unsigned char	*host_page;
-	int64_t		timestamp;
-	uint64_t	vaddr_page;
-	uint64_t	paddr_page;
-};
 
 #define	N_SPARC_REG		32
 #define	SPARC_REG_NAMES	{				\
@@ -141,33 +121,12 @@ struct sparc_cpu {
 	/*
 	 *  Instruction translation cache:
 	 */
-
-	/*  cur_ic_page is a pointer to an array of SPARC_IC_ENTRIES_PER_PAGE
-	    instruction call entries. next_ic points to the next such
-	    call to be executed.  */
-	struct sparc_tc_physpage	*cur_physpage;
-	struct sparc_instr_call	*cur_ic_page;
-	struct sparc_instr_call	*next_ic;
-
-	void			(*combination_check)(struct cpu *,
-				    struct sparc_instr_call *, int low_addr);
+	DYNTRANS_ITC(sparc)
 
 	/*
-	 *  Virtual -> physical -> host address translation:
-	 *
-	 *  host_load and host_store point to arrays of SPARC_N_VPH_ENTRIES
-	 *  pointers (to host pages); phys_addr points to an array of
-	 *  SPARC_N_VPH_ENTRIES uint32_t.
+	 *  32-bit virtual -> physical -> host address translation:
 	 */
-
-	struct sparc_vpg_tlb_entry  vph_tlb_entry[SPARC_MAX_VPH_TLB_ENTRIES];
-	unsigned char		    *host_load[SPARC_N_VPH_ENTRIES]; 
-	unsigned char		    *host_store[SPARC_N_VPH_ENTRIES];
-	uint32_t		    phys_addr[SPARC_N_VPH_ENTRIES]; 
-	struct sparc_tc_physpage    *phys_page[SPARC_N_VPH_ENTRIES];
-
-	uint32_t		    phystranslation[SPARC_N_VPH_ENTRIES/32];
-	uint8_t			    vaddr_to_tlbindex[SPARC_N_VPH_ENTRIES];
+	VPH32(sparc,SPARC,uint64_t,uint8_t)
 };
 
 

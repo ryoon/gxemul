@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.8 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_i960.h,v 1.9 2005-12-31 15:48:04 debug Exp $
  */
 
 #include "misc.h"
@@ -49,28 +49,9 @@ struct cpu_family;
 #define	I960_ADDR_TO_PAGENR(a)		((a) >> (I960_IC_ENTRIES_SHIFT \
 					+ I960_INSTR_ALIGNMENT_SHIFT))
 
-struct i960_instr_call {
-	void	(*f)(struct cpu *, struct i960_instr_call *);
-	size_t	arg[I960_N_IC_ARGS];
-};
-
-/*  Translation cache struct for each physical page:  */
-struct i960_tc_physpage {
-	struct i960_instr_call ics[I960_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint32_t	physaddr;
-	int		flags;
-};
-
+DYNTRANS_MISC_DECLARATIONS(i960,I960,uint32_t)
 
 #define	I960_MAX_VPH_TLB_ENTRIES		128
-struct i960_vpg_tlb_entry {
-	unsigned char	valid;
-	unsigned char	writeflag;
-	uint32_t	vaddr_page;
-	uint32_t	paddr_page;
-	unsigned char	*host_page;
-};
 
 
 struct i960_cpu {

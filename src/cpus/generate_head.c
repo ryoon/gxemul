@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.11 2005-12-31 11:20:46 debug Exp $
+ *  $Id: generate_head.c,v 1.12 2005-12-31 15:48:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -136,19 +136,13 @@ int main(int argc, char *argv[])
 	printf("\tcpu->cd.%s.next_ic --;\n", a);
 	printf("}\n\n");
 
-	/*  TODO: solve this in a nicer way!  */
-	if (strcmp(a, "avr") == 0)
-	        printf("static struct %s_instr_call nothing_call = { "
-		    "instr(nothing), 0, {0,0} };\n", a);
-	else {
-		printf("#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH\n");
-	        printf("static struct %s_instr_call nothing_call = { "
-		    "instr(nothing), {0,0,0} };\n", a);
-		printf("#else\n");
-	        printf("static struct %s_instr_call nothing_call = { "
-		    "instr(nothing), {0,0,0} };\n", a);
-		printf("#endif\n");
-	}
+	printf("#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH\n");
+        printf("static struct %s_instr_call nothing_call = { "
+	    "instr(nothing), {0,0,0} };\n", a);
+	printf("#else\n");
+        printf("static struct %s_instr_call nothing_call = { "
+	    "instr(nothing), {0,0,0} };\n", a);
+	printf("#endif\n");
 
 	printf("\n");
 

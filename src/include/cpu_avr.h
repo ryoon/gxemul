@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.11 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_avr.h,v 1.12 2005-12-31 15:48:04 debug Exp $
  */
 
 #include "misc.h"
@@ -47,28 +47,9 @@ struct cpu_family;
 #define	AVR_ADDR_TO_PAGENR(a)		((a) >> (AVR_IC_ENTRIES_SHIFT \
 					+ AVR_INSTR_ALIGNMENT_SHIFT))
 
-struct avr_instr_call {
-	void	(*f)(struct cpu *, struct avr_instr_call *);
-	size_t	arg[AVR_N_IC_ARGS];
-};
-
-/*  Translation cache struct for each physical page:  */
-struct avr_tc_physpage {
-	struct avr_instr_call ics[AVR_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint32_t	physaddr;
-	int		flags;
-};
-
+DYNTRANS_MISC_DECLARATIONS(avr,AVR,uint64_t)
 
 #define	AVR_MAX_VPH_TLB_ENTRIES		128
-struct avr_vpg_tlb_entry {
-	unsigned char	valid;
-	unsigned char	writeflag;
-	uint32_t	vaddr_page;
-	uint32_t	paddr_page;
-	unsigned char	*host_page;
-};
 
 
 #define SREG_NAMES	"cznvshti"

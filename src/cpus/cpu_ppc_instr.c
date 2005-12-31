@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.55 2005-12-29 05:52:56 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.56 2005-12-31 11:20:21 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -182,7 +182,7 @@ X(addic_dot)
  */
 X(bclr)
 {
-	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	unsigned int bo = ic->arg[0], bi31m = ic->arg[1];
 	int ctr_ok, cond_ok;
 	uint64_t old_pc = cpu->pc;
 	MODE_uint_t tmp, addr = cpu->cd.ppc.spr[SPR_LR];
@@ -221,7 +221,7 @@ X(bclr_20)
 X(bclr_l)
 {
 	uint64_t low_pc, old_pc = cpu->pc;
-	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	unsigned int bo = ic->arg[0], bi31m = ic->arg[1]  /* ,bh = ic->arg[2]*/;
 	int ctr_ok, cond_ok;
 	MODE_uint_t tmp, addr = cpu->cd.ppc.spr[SPR_LR];
 	if (!(bo & 4))
@@ -272,7 +272,7 @@ X(bclr_l)
  */
 X(bcctr)
 {
-	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	unsigned int bo = ic->arg[0], bi31m = ic->arg[1]  /*,bh = ic->arg[2]*/;
 	uint64_t old_pc = cpu->pc;
 	MODE_uint_t addr = cpu->cd.ppc.spr[SPR_CTR];
 	int cond_ok = (bo >> 4) & 1;
@@ -300,7 +300,7 @@ X(bcctr)
 X(bcctr_l)
 {
 	uint64_t low_pc, old_pc = cpu->pc;
-	int bo = ic->arg[0], bi31m = ic->arg[1]  /* , bh = ic->arg[2]  */;
+	unsigned int bo = ic->arg[0], bi31m = ic->arg[1]  /*,bh = ic->arg[2] */;
 	MODE_uint_t addr = cpu->cd.ppc.spr[SPR_CTR];
 	int cond_ok = (bo >> 4) & 1;
 	cond_ok |= ( ((bo >> 3) & 1) == ((cpu->cd.ppc.cr >> bi31m) & 1) );
@@ -364,7 +364,7 @@ X(ba)
 X(bc)
 {
 	MODE_uint_t tmp;
-	int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1];
+	unsigned int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1];
 	if (!(bo & 4))
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
@@ -379,7 +379,8 @@ X(bc)
 X(bcl)
 {
 	MODE_uint_t tmp;
-	int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1], low_pc;
+	unsigned int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1];
+	int low_pc;
 
 	/*  Calculate LR:  */
 	low_pc = ((size_t)ic - (size_t)
@@ -422,7 +423,7 @@ X(b_samepage)
 X(bc_samepage)
 {
 	MODE_uint_t tmp;
-	int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1];
+	unsigned int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1];
 	if (!(bo & 4))
 		cpu->cd.ppc.spr[SPR_CTR] --;
 	ctr_ok = (bo >> 2) & 1;
@@ -449,7 +450,8 @@ X(bc_samepage_simple1)
 X(bcl_samepage)
 {
 	MODE_uint_t tmp;
-	int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1], low_pc;
+	unsigned int ctr_ok, cond_ok, bi31m = ic->arg[2], bo = ic->arg[1];
+	int low_pc;
 
 	/*  Calculate LR:  */
 	low_pc = ((size_t)ic - (size_t)
@@ -819,8 +821,8 @@ X(dcbz)
 {
 	MODE_uint_t addr = reg(ic->arg[0]) + reg(ic->arg[1]);
 	unsigned char cacheline[128];
-	int cacheline_size = 1 << cpu->cd.ppc.cpu_type.dlinesize;
-	int cleared = 0;
+	size_t cacheline_size = 1 << cpu->cd.ppc.cpu_type.dlinesize;
+	size_t cleared = 0;
 
 	/*  Synchronize the PC first:  */
 	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[2];

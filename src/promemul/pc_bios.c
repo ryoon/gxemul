@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.3 2005-11-05 13:39:42 debug Exp $
+ *  $Id: pc_bios.c,v 1.4 2005-12-31 11:20:33 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -1330,7 +1330,7 @@ static void pc_bios_int1a(struct cpu *cpu)
 static void pc_bios_int1c(struct cpu *cpu)
 {
 	unsigned char ticks[4];
-	int i;
+	size_t i;
 
 	/*  Increase word at 0x0040:0x006C  */
 	cpu->memory_rw(cpu, cpu->mem, 0x46C,

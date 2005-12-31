@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_testppc.c,v 1.3 2005-12-26 14:14:40 debug Exp $
+ *  $Id: machine_testppc.c,v 1.4 2005-12-31 15:47:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -40,7 +40,11 @@
 #include "mp.h"
 
 
-MACHINE_HEAD
+MACHINE_SETUP(bareppc)
+{
+	machine->machine_name = "Generic \"bare\" PPC machine";
+	machine->stable = 1;
+}
 
 
 MACHINE_SETUP(testppc)
@@ -73,9 +77,24 @@ MACHINE_SETUP(testppc)
 }
 
 
+MACHINE_DEFAULT_CPU(bareppc)
+{
+	machine->cpu_name = strdup("PPC970");
+}
+
+
 MACHINE_DEFAULT_CPU(testppc)
 {
 	machine->cpu_name = strdup("PPC970");
+}
+
+
+MACHINE_REGISTER(bareppc)
+{
+	MR_DEFAULT(bareppc, "Generic \"bare\" PPC machine",
+	    ARCH_PPC, MACHINE_BAREPPC, 1, 0);
+	me->aliases[0] = "bareppc";
+	machine_entry_add(me, ARCH_PPC);
 }
 
 
@@ -83,11 +102,7 @@ MACHINE_REGISTER(testppc)
 {
 	MR_DEFAULT(testppc, "Test-machine for PPC",
 	    ARCH_PPC, MACHINE_TESTPPC, 1, 0);
-
 	me->aliases[0] = "testppc";
-
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	machine_entry_add(me, ARCH_PPC);
 }
 

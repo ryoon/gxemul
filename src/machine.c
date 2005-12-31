@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.644 2005-12-29 05:52:54 debug Exp $
+ *  $Id: machine.c,v 1.645 2005-12-31 15:47:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1786,7 +1786,7 @@ void machine_setup(struct machine *machine)
 	while (me != NULL) {
 		if (machine->machine_type == me->machine_type &&
 		    me->setup != NULL) {
-			me->setup(machine);
+			me->setup(machine, cpu);
 			goto machine_setup_done;
 		}
 		me = me->next;
@@ -4314,47 +4314,6 @@ Not yet.
 #endif	/*  ENABLE_MIPS  */
 
 #ifdef ENABLE_PPC
-	case MACHINE_BAREPPC:
-		/*
-		 *  A "bare" PPC machine.
-		 *
-		 *  NOTE: NO devices at all.
-		 */
-		machine->machine_name = "\"Bare\" PPC machine";
-		machine->stable = 1;
-		break;
-
-#if 0
-	case MACHINE_TESTPPC:
-		/*
-		 *  A PPC test machine, similar to the test machine for MIPS.
-		 */
-		machine->machine_name = "PPC test machine";
-		machine->stable = 1;
-
-		/*  TODO: interrupt for PPC?  */
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testppc generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-#endif
-
 	case MACHINE_WALNUT:
 		/*
 		 *  NetBSD/evbppc (http://www.netbsd.org/Ports/evbppc/)
@@ -5153,25 +5112,6 @@ Not yet.
 		}
 		break;
 
-	case MACHINE_ZAURUS:
-		machine->machine_name = "Zaurus";
-		dev_ram_init(machine, 0xa0000000, 0x20000000,
-		    DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(machine, 0xc0000000, 0x20000000,
-		    DEV_RAM_MIRROR, 0x0);
-
-		/*  TODO: replace this with the correct device  */
-		dev_ram_init(machine, 0x40d00000, 0x1000, DEV_RAM_RAM, 0);
-
-		device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
-		device_add(machine, "ns16550 irq=0 addr=0xfd400000 addr_mult=4");
-
-		/*  TODO  */
-		if (machine->prom_emulation) {
-			arm_setup_initial_translation_table(cpu, 0x4000);
-		}
-		break;
-
 	case MACHINE_NETWINDER:
 		machine->machine_name = "NetWinder";
 
@@ -5206,27 +5146,6 @@ Not yet.
 
 		if (machine->prom_emulation) {
 			arm_setup_initial_translation_table(cpu, 0x4000);
-		}
-		break;
-
-	case MACHINE_SHARK:
-		machine->machine_name = "Digital DNARD (\"Shark\")";
-
-		bus_isa_init(machine, BUS_ISA_IDE0, 0x08100000, 0xc0000000, 32, 48);
-
-		if (machine->prom_emulation) {
-			arm_setup_initial_translation_table(cpu,
-			    machine->physical_ram_in_mb * 1048576 - 65536);
-
-			/*  TODO: Framebuffer  */
-			of_emul_init(machine, NULL, 0xf1000000, 1024, 768);
-			of_emul_init_isa(machine);
-
-			/*
-			 *  r0 = OpenFirmware entry point.  NOTE: See
-			 *  cpu_arm.c for the rest of this semi-ugly hack.
-			 */
-			cpu->cd.arm.r[0] = cpu->cd.arm.of_emul_addr;
 		}
 		break;
 
@@ -5459,6 +5378,16 @@ void machine_memsize_fix(struct machine *m)
 	}
 
 	if (m->physical_ram_in_mb == 0) {
+		struct machine_entry *me = first_machine_entry;
+		while (me != NULL) {
+			if (m->machine_type == me->machine_type &&
+			    me->set_default_ram != NULL) {
+				me->set_default_ram(m);
+				goto default_ram_done;
+			}
+			me = me->next;
+		}
+
 		switch (m->machine_type) {
 		case MACHINE_PS2:
 			m->physical_ram_in_mb = 32;
@@ -5527,7 +5456,6 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_BEBOX:
 		case MACHINE_PREP:
 		case MACHINE_CATS:
-		case MACHINE_ZAURUS:
 			m->physical_ram_in_mb = 64;
 			break;
 		case MACHINE_HPCARM:
@@ -5542,6 +5470,8 @@ void machine_memsize_fix(struct machine *m)
 			break;
 		}
 	}
+
+default_ram_done:
 
 	/*  Special hack for hpcmips machines:  */
 	if (m->machine_type == MACHINE_HPCMIPS) {
@@ -5704,12 +5634,6 @@ void machine_default_cputype(struct machine *m)
 		break;
 
 	/*  PowerPC:  */
-	case MACHINE_BAREPPC:
-#if 0
-	case MACHINE_TESTPPC:
-#endif
-		m->cpu_name = strdup("PPC970");
-		break;
 	case MACHINE_WALNUT:
 		/*  For NetBSD/evbppc.  */
 		m->cpu_name = strdup("PPC405GP");
@@ -5794,11 +5718,7 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_CATS:
 	case MACHINE_NETWINDER:
-	case MACHINE_SHARK:
 		m->cpu_name = strdup("SA110");
-		break;
-	case MACHINE_ZAURUS:
-		m->cpu_name = strdup("PXA210");
 		break;
 
 	/*  AVR:  */
@@ -5922,6 +5842,41 @@ struct machine_entry_subtype *machine_entry_subtype_new(
 
 
 /*
+ *  machine_entry_add():
+ *
+ *  Inserts a new machine_entry into the machine entries list.
+ */
+void machine_entry_add(struct machine_entry *me, int arch)
+{
+	struct machine_entry *prev, *next;
+
+	/*  Only insert it if the architecture is implemented in this
+	    emulator configuration:  */
+	if (cpu_family_ptr_by_number(arch) == NULL)
+		return;
+
+	prev = NULL;
+	next = first_machine_entry;
+
+	for (;;) {
+		if (next == NULL)
+			break;
+		if (strcasecmp(me->name, next->name) < 0)
+			break;
+
+		prev = next;
+		next = next->next;
+	}
+
+	if (prev != NULL)
+		prev->next = me;
+	else
+		first_machine_entry = me;
+	me->next = next;
+}
+
+
+/*
  *  machine_list_available_types_and_cpus():
  *
  *  List all available machine types (for example when running the emulator
@@ -5998,449 +5953,115 @@ void machine_init(void)
 {
 	struct machine_entry *me;
 
-	automachine_init();
 
 	/*
-	 *  NOTE: This list is in reverse order, so that the
-	 *  entries will appear in normal order when listed.  :-)
-	 *
-	 *  TODO: Sort!
+	 *  First, add all machines in src/machines/machine_*.c:
 	 */
 
-	/*  Zaurus:  */
-	me = machine_entry_new("Zaurus (ARM)",
-	    ARCH_ARM, MACHINE_ZAURUS, 1, 0);
-	me->aliases[0] = "zaurus";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	automachine_init();
 
-	/*  X86 machine:  */
-	me = machine_entry_new("x86-based PC", ARCH_X86,
-	    MACHINE_X86, 2, 2);
-	me->aliases[0] = "pc";
-	me->aliases[1] = "x86";
-	me->subtype[0] = machine_entry_subtype_new("Generic PC",
-	    MACHINE_X86_GENERIC, 2);
-	me->subtype[0]->aliases[0] = "pc";
-	me->subtype[0]->aliases[1] = "generic";
-	me->subtype[1] = machine_entry_subtype_new("PC XT", MACHINE_X86_XT, 1);
-	me->subtype[1]->aliases[0] = "xt";
-	if (cpu_family_ptr_by_number(ARCH_X86) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
 
-	/*  Walnut: (NetBSD/evbppc)  */
-	me = machine_entry_new("Walnut evaluation board", ARCH_PPC,
-	    MACHINE_WALNUT, 2, 0);
-	me->aliases[0] = "walnut";
-	me->aliases[1] = "evbppc";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*
+	 *  The following are old-style hardcoded machine definitions:
+	 */
 
-	/*  Test-machine for SPARC:  */
-	me = machine_entry_new("Test-machine for SPARC", ARCH_SPARC,
-	    MACHINE_TESTSPARC, 1, 0);
-	me->aliases[0] = "testsparc";
-	if (cpu_family_ptr_by_number(ARCH_SPARC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
 
-	/*  Test-machine for SH:  */
-	me = machine_entry_new("Test-machine for SH", ARCH_SH,
-	    MACHINE_TESTSH, 1, 0);
-	me->aliases[0] = "testsh";
-	if (cpu_family_ptr_by_number(ARCH_SH) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Algor evaluation board:  */
+	me = machine_entry_new("Algor", ARCH_MIPS, MACHINE_ALGOR, 1, 2);
+	me->aliases[0] = "algor";
+	me->subtype[0] = machine_entry_subtype_new("P4032",
+	    MACHINE_ALGOR_P4032, 1);
+	me->subtype[0]->aliases[0] = "p4032";
+	me->subtype[1] = machine_entry_subtype_new("P5064",
+	    MACHINE_ALGOR_P5064, 1);
+	me->subtype[1]->aliases[0] = "p5064";
+	machine_entry_add(me, ARCH_MIPS);
 
-#if 0
-	/*  Test-machine for PPC:  */
-	me = machine_entry_new("Test-machine for PPC", ARCH_PPC,
-	    MACHINE_TESTPPC, 1, 0);
-	me->aliases[0] = "testppc";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-#endif
-
-	/*  Test-machine for MIPS:  */
-	me = machine_entry_new("Test-machine for MIPS", ARCH_MIPS,
-	    MACHINE_TESTMIPS, 1, 0);
-	me->aliases[0] = "testmips";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Test-machine for M68K:  */
-	me = machine_entry_new("Test-machine for M68K", ARCH_M68K,
-	    MACHINE_TESTM68K, 1, 0);
-	me->aliases[0] = "testm68k";
-	if (cpu_family_ptr_by_number(ARCH_M68K) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Test-machine for IA64:  */
-	me = machine_entry_new("Test-machine for IA64", ARCH_IA64,
-	    MACHINE_TESTIA64, 1, 0);
-	me->aliases[0] = "testia64";
-	if (cpu_family_ptr_by_number(ARCH_IA64) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Test-machine for i960:  */
-	me = machine_entry_new("Test-machine for i960", ARCH_I960,
-	    MACHINE_TESTI960, 1, 0);
-	me->aliases[0] = "testi960";
-	if (cpu_family_ptr_by_number(ARCH_I960) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Test-machine for HPPA:  */
-	me = machine_entry_new("Test-machine for HPPA", ARCH_HPPA,
-	    MACHINE_TESTHPPA, 1, 0);
-	me->aliases[0] = "testhppa";
-	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Test-machine for ARM:  */
-	me = machine_entry_new("Test-machine for ARM", ARCH_ARM,
-	    MACHINE_TESTARM, 1, 0);
-	me->aliases[0] = "testarm";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Test-machine for Alpha:  */
-	me = machine_entry_new("Test-machine for Alpha", ARCH_ALPHA,
-	    MACHINE_TESTALPHA, 1, 0);
-	me->aliases[0] = "testalpha";
-	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Sun Ultra1:  */
-	me = machine_entry_new("Sun Ultra1", ARCH_SPARC, MACHINE_ULTRA1, 1, 0);
-	me->aliases[0] = "ultra1";
-	if (cpu_family_ptr_by_number(ARCH_SPARC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Sony Playstation 2:  */
-	me = machine_entry_new("Sony Playstation 2", ARCH_MIPS,
-	    MACHINE_PS2, 2, 0);
-	me->aliases[0] = "playstation2";
-	me->aliases[1] = "ps2";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Sony NeWS:  */
-	me = machine_entry_new("Sony NeWS", ARCH_MIPS,
-	    MACHINE_SONYNEWS, 2, 0);
-	me->aliases[0] = "sonynews";
-	me->aliases[1] = "news";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  SGI:  */
-	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 10);
-	me->aliases[0] = "silicon graphics";
-	me->aliases[1] = "sgi";
-	me->subtype[0] = machine_entry_subtype_new("IP12", 12, 1);
-	me->subtype[0]->aliases[0] = "ip12";
-	me->subtype[1] = machine_entry_subtype_new("IP19", 19, 1);
-	me->subtype[1]->aliases[0] = "ip19";
-	me->subtype[2] = machine_entry_subtype_new("IP20", 20, 1);
-	me->subtype[2]->aliases[0] = "ip20";
-	me->subtype[3] = machine_entry_subtype_new("IP22", 22, 2);
-	me->subtype[3]->aliases[0] = "ip22";
-	me->subtype[3]->aliases[1] = "indy";
-	me->subtype[4] = machine_entry_subtype_new("IP24", 24, 1);
-	me->subtype[4]->aliases[0] = "ip24";
-	me->subtype[5] = machine_entry_subtype_new("IP27", 27, 3);
-	me->subtype[5]->aliases[0] = "ip27";
-	me->subtype[5]->aliases[1] = "origin 200";
-	me->subtype[5]->aliases[2] = "origin 2000";
-	me->subtype[6] = machine_entry_subtype_new("IP28", 28, 1);
-	me->subtype[6]->aliases[0] = "ip28";
-	me->subtype[7] = machine_entry_subtype_new("IP30", 30, 2);
-	me->subtype[7]->aliases[0] = "ip30";
-	me->subtype[7]->aliases[1] = "octane";
-	me->subtype[8] = machine_entry_subtype_new("IP32", 32, 2);
-	me->subtype[8]->aliases[0] = "ip32";
-	me->subtype[8]->aliases[1] = "o2";
-	me->subtype[9] = machine_entry_subtype_new("IP35", 35, 1);
-	me->subtype[9]->aliases[0] = "ip35";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  PReP: (NetBSD/prep etc.)  */
-	me = machine_entry_new("PowerPC Reference Platform", ARCH_PPC,
-	    MACHINE_PREP, 1, 0);
-	me->aliases[0] = "prep";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Playstation Portable:  */
-	me = machine_entry_new("Playstation Portable", ARCH_MIPS,
-	    MACHINE_PSP, 1, 0);
-	me->aliases[0] = "psp";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  NetWinder:  */
-	me = machine_entry_new("NetWinder", ARCH_ARM, MACHINE_NETWINDER, 1, 0);
-	me->aliases[0] = "netwinder";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  NetGear:  */
-	me = machine_entry_new("NetGear WG602v1", ARCH_MIPS,
-	    MACHINE_NETGEAR, 2, 0);
-	me->aliases[0] = "netgear";
-	me->aliases[1] = "wg602v1";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Motorola Sandpoint: (NetBSD/sandpoint)  */
-	me = machine_entry_new("Motorola Sandpoint",
-	    ARCH_PPC, MACHINE_SANDPOINT, 1, 0);
-	me->aliases[0] = "sandpoint";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Meshcube:  */
-	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
-	me->aliases[0] = "meshcube";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Macintosh (PPC):  */
-	me = machine_entry_new("Macintosh (PPC)", ARCH_PPC,
-	    MACHINE_MACPPC, 1, 2);
-	me->aliases[0] = "macppc";
-	me->subtype[0] = machine_entry_subtype_new("MacPPC G4",
-	    MACHINE_MACPPC_G4, 1);
-	me->subtype[0]->aliases[0] = "g4";
-	me->subtype[1] = machine_entry_subtype_new("MacPPC G5",
-	    MACHINE_MACPPC_G5, 1);
-	me->subtype[1]->aliases[0] = "g5";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Iyonix:  */
-	me = machine_entry_new("Iyonix", ARCH_ARM,
-	    MACHINE_IYONIX, 1, 0);
-	me->aliases[0] = "iyonix";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Intel IQ80321 (ARM):  */
-	me = machine_entry_new("Intel IQ80321 (ARM)", ARCH_ARM,
-	    MACHINE_IQ80321, 1, 0);
-	me->aliases[0] = "iq80321";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  HPCarm:  */
-	me = machine_entry_new("Handheld SH (HPCsh)",
-	    ARCH_SH, MACHINE_HPCSH, 1, 2);
-	me->aliases[0] = "hpcsh";
-	me->subtype[0] = machine_entry_subtype_new("Jornada 680",
-	    MACHINE_HPCSH_JORNADA680, 1);
-	me->subtype[0]->aliases[0] = "jornada680";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Jornada 690", MACHINE_HPCSH_JORNADA690, 1);
-	me->subtype[1]->aliases[0] = "jornada690";
-	if (cpu_family_ptr_by_number(ARCH_SH) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  HPCmips:  */
-	me = machine_entry_new("Handheld MIPS (HPCmips)",
-	    ARCH_MIPS, MACHINE_HPCMIPS, 1, 8);
-	me->aliases[0] = "hpcmips";
+	/*  Alpha:  */
+	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 2);
+	me->aliases[0] = "alpha";
 	me->subtype[0] = machine_entry_subtype_new(
-	    "Casio Cassiopeia BE-300", MACHINE_HPCMIPS_CASIO_BE300, 2);
-	me->subtype[0]->aliases[0] = "be-300";
-	me->subtype[0]->aliases[1] = "be300";
+	    "DEC 3000/300", ST_DEC_3000_300, 1);
+	me->subtype[0]->aliases[0] = "3000/300";
 	me->subtype[1] = machine_entry_subtype_new(
-	    "Casio Cassiopeia E-105", MACHINE_HPCMIPS_CASIO_E105, 2);
-	me->subtype[1]->aliases[0] = "e-105";
-	me->subtype[1]->aliases[1] = "e105";
+	    "EB164", ST_EB164, 1);
+	me->subtype[1]->aliases[0] = "eb164";
+	machine_entry_add(me, ARCH_ALPHA);
+
+	/*  ARC:  */
+	me = machine_entry_new("ARC", ARCH_MIPS, MACHINE_ARC, 1, 8);
+	me->aliases[0] = "arc";
+
+	me->subtype[0] = machine_entry_subtype_new(
+	    "Acer PICA-61", MACHINE_ARC_JAZZ_PICA, 3);
+	me->subtype[0]->aliases[0] = "pica-61";
+	me->subtype[0]->aliases[1] = "acer pica";
+	me->subtype[0]->aliases[2] = "pica";
+
+	me->subtype[1] = machine_entry_subtype_new(
+	    "Deskstation Tyne", MACHINE_ARC_DESKTECH_TYNE, 3);
+	me->subtype[1]->aliases[0] = "deskstation tyne";
+	me->subtype[1]->aliases[1] = "desktech";
+	me->subtype[1]->aliases[2] = "tyne";
+
 	me->subtype[2] = machine_entry_subtype_new(
-	    "Agenda VR3", MACHINE_HPCMIPS_AGENDA_VR3, 2);
-	me->subtype[2]->aliases[0] = "agenda";
-	me->subtype[2]->aliases[1] = "vr3";
+	    "Jazz Magnum", MACHINE_ARC_JAZZ_MAGNUM, 2);
+	me->subtype[2]->aliases[0] = "magnum";
+	me->subtype[2]->aliases[1] = "jazz magnum";
+
 	me->subtype[3] = machine_entry_subtype_new(
-	    "IBM WorkPad Z50", MACHINE_HPCMIPS_IBM_WORKPAD_Z50, 2);
-	me->subtype[3]->aliases[0] = "workpad";
-	me->subtype[3]->aliases[1] = "z50";
+	    "NEC-R94", MACHINE_ARC_NEC_R94, 2);
+	me->subtype[3]->aliases[0] = "nec-r94";
+	me->subtype[3]->aliases[1] = "r94";
+
 	me->subtype[4] = machine_entry_subtype_new(
-	    "NEC MobilePro 770", MACHINE_HPCMIPS_NEC_MOBILEPRO_770, 1);
-	me->subtype[4]->aliases[0] = "mobilepro770";
+	    "NEC-RD94", MACHINE_ARC_NEC_RD94, 2);
+	me->subtype[4]->aliases[0] = "nec-rd94";
+	me->subtype[4]->aliases[1] = "rd94";
+
 	me->subtype[5] = machine_entry_subtype_new(
-	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
-	me->subtype[5]->aliases[0] = "mobilepro780";
+	    "NEC-R96", MACHINE_ARC_NEC_R96, 2);
+	me->subtype[5]->aliases[0] = "nec-r96";
+	me->subtype[5]->aliases[1] = "r96";
+
 	me->subtype[6] = machine_entry_subtype_new(
-	    "NEC MobilePro 800", MACHINE_HPCMIPS_NEC_MOBILEPRO_800, 1);
-	me->subtype[6]->aliases[0] = "mobilepro800";
+	    "NEC-R98", MACHINE_ARC_NEC_R98, 2);
+	me->subtype[6]->aliases[0] = "nec-r98";
+	me->subtype[6]->aliases[1] = "r98";
+
 	me->subtype[7] = machine_entry_subtype_new(
-	    "NEC MobilePro 880", MACHINE_HPCMIPS_NEC_MOBILEPRO_880, 1);
-	me->subtype[7]->aliases[0] = "mobilepro880";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	    "Olivetti M700", MACHINE_ARC_JAZZ_M700, 2);
+	me->subtype[7]->aliases[0] = "olivetti";
+	me->subtype[7]->aliases[1] = "m700";
 
-	/*  HPCarm:  */
-	me = machine_entry_new("Handheld ARM (HPCarm)",
-	    ARCH_ARM, MACHINE_HPCARM, 1, 2);
-	me->aliases[0] = "hpcarm";
-	me->subtype[0] = machine_entry_subtype_new("Ipaq",
-	    MACHINE_HPCARM_IPAQ, 1);
-	me->subtype[0]->aliases[0] = "ipaq";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
-	me->subtype[1]->aliases[0] = "jornada720";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	machine_entry_add(me, ARCH_MIPS);
 
-	/*  Generic "bare" X86 machine:  */
-	me = machine_entry_new("Generic \"bare\" X86 machine", ARCH_X86,
-	    MACHINE_BAREX86, 1, 0);
-	me->aliases[0] = "barex86";
-	if (cpu_family_ptr_by_number(ARCH_X86) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Artesyn's PM/PPC board: (NetBSD/pmppc)  */
+	me = machine_entry_new("Artesyn's PM/PPC board", ARCH_PPC,
+	    MACHINE_PMPPC, 1, 0);
+	me->aliases[0] = "pmppc";
+	machine_entry_add(me, ARCH_PPC);
 
-	/*  Generic "bare" SPARC machine:  */
-	me = machine_entry_new("Generic \"bare\" SPARC machine", ARCH_SPARC,
-	    MACHINE_BARESPARC, 1, 0);
-	me->aliases[0] = "baresparc";
-	if (cpu_family_ptr_by_number(ARCH_SPARC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  BeBox: (NetBSD/bebox)  */
+	me = machine_entry_new("BeBox", ARCH_PPC, MACHINE_BEBOX, 1, 0);
+	me->aliases[0] = "bebox";
+	machine_entry_add(me, ARCH_PPC);
 
-	/*  Generic "bare" SH machine:  */
-	me = machine_entry_new("Generic \"bare\" SH machine", ARCH_SH,
-	    MACHINE_BARESH, 1, 0);
-	me->aliases[0] = "baresh";
-	if (cpu_family_ptr_by_number(ARCH_SH) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  CATS (ARM) evaluation board:  */
+	me = machine_entry_new("CATS evaluation board (ARM)", ARCH_ARM,
+	    MACHINE_CATS, 1, 0);
+	me->aliases[0] = "cats";
+	machine_entry_add(me, ARCH_ARM);
 
-	/*  Generic "bare" PPC machine:  */
-	me = machine_entry_new("Generic \"bare\" PPC machine", ARCH_PPC,
-	    MACHINE_BAREPPC, 1, 0);
-	me->aliases[0] = "bareppc";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Cobalt:  */
+	me = machine_entry_new("Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
+	me->aliases[0] = "cobalt";
+	machine_entry_add(me, ARCH_MIPS);
 
-	/*  Generic "bare" MIPS machine:  */
-	me = machine_entry_new("Generic \"bare\" MIPS machine", ARCH_MIPS,
-	    MACHINE_BAREMIPS, 1, 0);
-	me->aliases[0] = "baremips";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" M68K machine:  */
-	me = machine_entry_new("Generic \"bare\" M68K machine", ARCH_M68K,
-	    MACHINE_BAREM68K, 1, 0);
-	me->aliases[0] = "barem68k";
-	if (cpu_family_ptr_by_number(ARCH_M68K) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" IA64 machine:  */
-	me = machine_entry_new("Generic \"bare\" IA64 machine", ARCH_IA64,
-	    MACHINE_BAREIA64, 1, 0);
-	me->aliases[0] = "bareia64";
-	if (cpu_family_ptr_by_number(ARCH_IA64) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" i960 machine:  */
-	me = machine_entry_new("Generic \"bare\" i960 machine", ARCH_I960,
-	    MACHINE_BAREI960, 1, 0);
-	me->aliases[0] = "barei960";
-	if (cpu_family_ptr_by_number(ARCH_I960) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" HPPA machine:  */
-	me = machine_entry_new("Generic \"bare\" HPPA machine", ARCH_HPPA,
-	    MACHINE_BAREHPPA, 1, 0);
-	me->aliases[0] = "barehppa";
-	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" Atmel AVR machine:  */
-	me = machine_entry_new("Generic \"bare\" Atmel AVR machine", ARCH_AVR,
-	    MACHINE_BAREAVR, 1, 0);
-	me->aliases[0] = "bareavr";
-	if (cpu_family_ptr_by_number(ARCH_AVR) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" ARM machine:  */
-	me = machine_entry_new("Generic \"bare\" ARM machine", ARCH_ARM,
-	    MACHINE_BAREARM, 1, 0);
-	me->aliases[0] = "barearm";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Generic "bare" Alpha machine:  */
-	me = machine_entry_new("Generic \"bare\" Alpha machine", ARCH_ALPHA,
-	    MACHINE_BAREALPHA, 1, 0);
-	me->aliases[0] = "barealpha";
-	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Evaluation Boards (MALTA etc):  */
-	me = machine_entry_new("Evaluation boards (evbmips)", ARCH_MIPS,
-	    MACHINE_EVBMIPS, 1, 3);
-	me->aliases[0] = "evbmips";
-	me->subtype[0] = machine_entry_subtype_new("Malta",
-	    MACHINE_EVBMIPS_MALTA, 1);
-	me->subtype[0]->aliases[0] = "malta";
-	me->subtype[1] = machine_entry_subtype_new("Malta (Big-Endian)",
-	    MACHINE_EVBMIPS_MALTA_BE, 1);
-	me->subtype[1]->aliases[0] = "maltabe";
-	me->subtype[2] = machine_entry_subtype_new("PB1000",
-	    MACHINE_EVBMIPS_PB1000, 1);
-	me->subtype[2]->aliases[0] = "pb1000";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Digital DNARD ("Shark"):  */
-	me = machine_entry_new("Digital DNARD (\"Shark\")", ARCH_ARM,
-	    MACHINE_SHARK, 2, 0);
-	me->aliases[0] = "shark";
-	me->aliases[1] = "dnard";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  DB64360: (for playing with PMON for PPC)  */
+	me = machine_entry_new("DB64360", ARCH_PPC, MACHINE_DB64360, 1, 0);
+	me->aliases[0] = "db64360";
+	machine_entry_add(me, ARCH_PPC);
 
 	/*  DECstation:  */
 	me = machine_entry_new("DECstation/DECsystem",
@@ -6491,121 +6112,327 @@ void machine_init(void)
 	me->subtype[8]->aliases[0] = "5100";
 	me->subtype[8]->aliases[1] = "mipsmate";
 
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	machine_entry_add(me, ARCH_MIPS);
 
-	/*  DB64360: (for playing with PMON for PPC)  */
-	me = machine_entry_new("DB64360", ARCH_PPC, MACHINE_DB64360, 1, 0);
-	me->aliases[0] = "db64360";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Evaluation Boards (MALTA etc):  */
+	me = machine_entry_new("Evaluation boards (evbmips)", ARCH_MIPS,
+	    MACHINE_EVBMIPS, 1, 3);
+	me->aliases[0] = "evbmips";
+	me->subtype[0] = machine_entry_subtype_new("Malta",
+	    MACHINE_EVBMIPS_MALTA, 1);
+	me->subtype[0]->aliases[0] = "malta";
+	me->subtype[1] = machine_entry_subtype_new("Malta (Big-Endian)",
+	    MACHINE_EVBMIPS_MALTA_BE, 1);
+	me->subtype[1]->aliases[0] = "maltabe";
+	me->subtype[2] = machine_entry_subtype_new("PB1000",
+	    MACHINE_EVBMIPS_PB1000, 1);
+	me->subtype[2]->aliases[0] = "pb1000";
+	machine_entry_add(me, ARCH_MIPS);
 
-	/*  Cobalt:  */
-	me = machine_entry_new("Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
-	me->aliases[0] = "cobalt";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Generic "bare" Alpha machine:  */
+	me = machine_entry_new("Generic \"bare\" Alpha machine", ARCH_ALPHA,
+	    MACHINE_BAREALPHA, 1, 0);
+	me->aliases[0] = "barealpha";
+	machine_entry_add(me, ARCH_ALPHA);
 
-	/*  CATS (ARM) evaluation board:  */
-	me = machine_entry_new("CATS evaluation board (ARM)", ARCH_ARM,
-	    MACHINE_CATS, 1, 0);
-	me->aliases[0] = "cats";
-	if (cpu_family_ptr_by_number(ARCH_ARM) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Generic "bare" ARM machine:  */
+	me = machine_entry_new("Generic \"bare\" ARM machine", ARCH_ARM,
+	    MACHINE_BAREARM, 1, 0);
+	me->aliases[0] = "barearm";
+	machine_entry_add(me, ARCH_ARM);
 
-	/*  BeBox: (NetBSD/bebox)  */
-	me = machine_entry_new("BeBox", ARCH_PPC, MACHINE_BEBOX, 1, 0);
-	me->aliases[0] = "bebox";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Generic "bare" Atmel AVR machine:  */
+	me = machine_entry_new("Generic \"bare\" Atmel AVR machine", ARCH_AVR,
+	    MACHINE_BAREAVR, 1, 0);
+	me->aliases[0] = "bareavr";
+	machine_entry_add(me, ARCH_AVR);
 
-	/*  Artesyn's PM/PPC board: (NetBSD/pmppc)  */
-	me = machine_entry_new("Artesyn's PM/PPC board", ARCH_PPC,
-	    MACHINE_PMPPC, 1, 0);
-	me->aliases[0] = "pmppc";
-	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Generic "bare" HPPA machine:  */
+	me = machine_entry_new("Generic \"bare\" HPPA machine", ARCH_HPPA,
+	    MACHINE_BAREHPPA, 1, 0);
+	me->aliases[0] = "barehppa";
+	machine_entry_add(me, ARCH_HPPA);
 
-	/*  ARC:  */
-	me = machine_entry_new("ARC", ARCH_MIPS, MACHINE_ARC, 1, 8);
-	me->aliases[0] = "arc";
+	/*  Generic "bare" i960 machine:  */
+	me = machine_entry_new("Generic \"bare\" i960 machine", ARCH_I960,
+	    MACHINE_BAREI960, 1, 0);
+	me->aliases[0] = "barei960";
+	machine_entry_add(me, ARCH_I960);
 
-	me->subtype[0] = machine_entry_subtype_new(
-	    "Acer PICA-61", MACHINE_ARC_JAZZ_PICA, 3);
-	me->subtype[0]->aliases[0] = "pica-61";
-	me->subtype[0]->aliases[1] = "acer pica";
-	me->subtype[0]->aliases[2] = "pica";
+	/*  Generic "bare" IA64 machine:  */
+	me = machine_entry_new("Generic \"bare\" IA64 machine", ARCH_IA64,
+	    MACHINE_BAREIA64, 1, 0);
+	me->aliases[0] = "bareia64";
+	machine_entry_add(me, ARCH_IA64);
 
+	/*  Generic "bare" M68K machine:  */
+	me = machine_entry_new("Generic \"bare\" M68K machine", ARCH_M68K,
+	    MACHINE_BAREM68K, 1, 0);
+	me->aliases[0] = "barem68k";
+	machine_entry_add(me, ARCH_M68K);
+
+	/*  Generic "bare" MIPS machine:  */
+	me = machine_entry_new("Generic \"bare\" MIPS machine", ARCH_MIPS,
+	    MACHINE_BAREMIPS, 1, 0);
+	me->aliases[0] = "baremips";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  Generic "bare" SH machine:  */
+	me = machine_entry_new("Generic \"bare\" SH machine", ARCH_SH,
+	    MACHINE_BARESH, 1, 0);
+	me->aliases[0] = "baresh";
+	machine_entry_add(me, ARCH_SH);
+
+	/*  Generic "bare" SPARC machine:  */
+	me = machine_entry_new("Generic \"bare\" SPARC machine", ARCH_SPARC,
+	    MACHINE_BARESPARC, 1, 0);
+	me->aliases[0] = "baresparc";
+	machine_entry_add(me, ARCH_SPARC);
+
+	/*  Generic "bare" X86 machine:  */
+	me = machine_entry_new("Generic \"bare\" X86 machine", ARCH_X86,
+	    MACHINE_BAREX86, 1, 0);
+	me->aliases[0] = "barex86";
+	machine_entry_add(me, ARCH_X86);
+
+	/*  HPCarm:  */
+	me = machine_entry_new("Handheld ARM (HPCarm)",
+	    ARCH_ARM, MACHINE_HPCARM, 1, 2);
+	me->aliases[0] = "hpcarm";
+	me->subtype[0] = machine_entry_subtype_new("Ipaq",
+	    MACHINE_HPCARM_IPAQ, 1);
+	me->subtype[0]->aliases[0] = "ipaq";
 	me->subtype[1] = machine_entry_subtype_new(
-	    "Deskstation Tyne", MACHINE_ARC_DESKTECH_TYNE, 3);
-	me->subtype[1]->aliases[0] = "deskstation tyne";
-	me->subtype[1]->aliases[1] = "desktech";
-	me->subtype[1]->aliases[2] = "tyne";
+	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
+	me->subtype[1]->aliases[0] = "jornada720";
+	machine_entry_add(me, ARCH_ARM);
 
+	/*  HPCmips:  */
+	me = machine_entry_new("Handheld MIPS (HPCmips)",
+	    ARCH_MIPS, MACHINE_HPCMIPS, 1, 8);
+	me->aliases[0] = "hpcmips";
+	me->subtype[0] = machine_entry_subtype_new(
+	    "Casio Cassiopeia BE-300", MACHINE_HPCMIPS_CASIO_BE300, 2);
+	me->subtype[0]->aliases[0] = "be-300";
+	me->subtype[0]->aliases[1] = "be300";
+	me->subtype[1] = machine_entry_subtype_new(
+	    "Casio Cassiopeia E-105", MACHINE_HPCMIPS_CASIO_E105, 2);
+	me->subtype[1]->aliases[0] = "e-105";
+	me->subtype[1]->aliases[1] = "e105";
 	me->subtype[2] = machine_entry_subtype_new(
-	    "Jazz Magnum", MACHINE_ARC_JAZZ_MAGNUM, 2);
-	me->subtype[2]->aliases[0] = "magnum";
-	me->subtype[2]->aliases[1] = "jazz magnum";
-
+	    "Agenda VR3", MACHINE_HPCMIPS_AGENDA_VR3, 2);
+	me->subtype[2]->aliases[0] = "agenda";
+	me->subtype[2]->aliases[1] = "vr3";
 	me->subtype[3] = machine_entry_subtype_new(
-	    "NEC-R94", MACHINE_ARC_NEC_R94, 2);
-	me->subtype[3]->aliases[0] = "nec-r94";
-	me->subtype[3]->aliases[1] = "r94";
-
+	    "IBM WorkPad Z50", MACHINE_HPCMIPS_IBM_WORKPAD_Z50, 2);
+	me->subtype[3]->aliases[0] = "workpad";
+	me->subtype[3]->aliases[1] = "z50";
 	me->subtype[4] = machine_entry_subtype_new(
-	    "NEC-RD94", MACHINE_ARC_NEC_RD94, 2);
-	me->subtype[4]->aliases[0] = "nec-rd94";
-	me->subtype[4]->aliases[1] = "rd94";
-
+	    "NEC MobilePro 770", MACHINE_HPCMIPS_NEC_MOBILEPRO_770, 1);
+	me->subtype[4]->aliases[0] = "mobilepro770";
 	me->subtype[5] = machine_entry_subtype_new(
-	    "NEC-R96", MACHINE_ARC_NEC_R96, 2);
-	me->subtype[5]->aliases[0] = "nec-r96";
-	me->subtype[5]->aliases[1] = "r96";
-
+	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
+	me->subtype[5]->aliases[0] = "mobilepro780";
 	me->subtype[6] = machine_entry_subtype_new(
-	    "NEC-R98", MACHINE_ARC_NEC_R98, 2);
-	me->subtype[6]->aliases[0] = "nec-r98";
-	me->subtype[6]->aliases[1] = "r98";
-
+	    "NEC MobilePro 800", MACHINE_HPCMIPS_NEC_MOBILEPRO_800, 1);
+	me->subtype[6]->aliases[0] = "mobilepro800";
 	me->subtype[7] = machine_entry_subtype_new(
-	    "Olivetti M700", MACHINE_ARC_JAZZ_M700, 2);
-	me->subtype[7]->aliases[0] = "olivetti";
-	me->subtype[7]->aliases[1] = "m700";
+	    "NEC MobilePro 880", MACHINE_HPCMIPS_NEC_MOBILEPRO_880, 1);
+	me->subtype[7]->aliases[0] = "mobilepro880";
+	machine_entry_add(me, ARCH_MIPS);
 
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
-
-	/*  Alpha:  */
-	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 2);
-	me->aliases[0] = "alpha";
-	me->subtype[0] = machine_entry_subtype_new(
-	    "DEC 3000/300", ST_DEC_3000_300, 1);
-	me->subtype[0]->aliases[0] = "3000/300";
+	/*  HPCsh:  */
+	me = machine_entry_new("Handheld SH (HPCsh)",
+	    ARCH_SH, MACHINE_HPCSH, 1, 2);
+	me->aliases[0] = "hpcsh";
+	me->subtype[0] = machine_entry_subtype_new("Jornada 680",
+	    MACHINE_HPCSH_JORNADA680, 1);
+	me->subtype[0]->aliases[0] = "jornada680";
 	me->subtype[1] = machine_entry_subtype_new(
-	    "EB164", ST_EB164, 1);
-	me->subtype[1]->aliases[0] = "eb164";
-	if (cpu_family_ptr_by_number(ARCH_ALPHA) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	    "Jornada 690", MACHINE_HPCSH_JORNADA690, 1);
+	me->subtype[1]->aliases[0] = "jornada690";
+	machine_entry_add(me, ARCH_SH);
 
-	/*  Algor evaluation board:  */
-	me = machine_entry_new("Algor", ARCH_MIPS, MACHINE_ALGOR, 1, 2);
-	me->aliases[0] = "algor";
-	me->subtype[0] = machine_entry_subtype_new("P4032",
-	    MACHINE_ALGOR_P4032, 1);
-	me->subtype[0]->aliases[0] = "p4032";
-	me->subtype[1] = machine_entry_subtype_new("P5064",
-	    MACHINE_ALGOR_P5064, 1);
-	me->subtype[1]->aliases[0] = "p5064";
-	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
-		me->next = first_machine_entry; first_machine_entry = me;
-	}
+	/*  Intel IQ80321 (ARM):  */
+	me = machine_entry_new("Intel IQ80321 (ARM)", ARCH_ARM,
+	    MACHINE_IQ80321, 1, 0);
+	me->aliases[0] = "iq80321";
+	machine_entry_add(me, ARCH_ARM);
+
+	/*  Iyonix:  */
+	me = machine_entry_new("Iyonix", ARCH_ARM,
+	    MACHINE_IYONIX, 1, 0);
+	me->aliases[0] = "iyonix";
+	machine_entry_add(me, ARCH_ARM);
+
+	/*  Macintosh (PPC):  */
+	me = machine_entry_new("Macintosh (PPC)", ARCH_PPC,
+	    MACHINE_MACPPC, 1, 2);
+	me->aliases[0] = "macppc";
+	me->subtype[0] = machine_entry_subtype_new("MacPPC G4",
+	    MACHINE_MACPPC_G4, 1);
+	me->subtype[0]->aliases[0] = "g4";
+	me->subtype[1] = machine_entry_subtype_new("MacPPC G5",
+	    MACHINE_MACPPC_G5, 1);
+	me->subtype[1]->aliases[0] = "g5";
+	machine_entry_add(me, ARCH_PPC);
+
+	/*  Meshcube:  */
+	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
+	me->aliases[0] = "meshcube";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  Motorola Sandpoint: (NetBSD/sandpoint)  */
+	me = machine_entry_new("Motorola Sandpoint",
+	    ARCH_PPC, MACHINE_SANDPOINT, 1, 0);
+	me->aliases[0] = "sandpoint";
+	machine_entry_add(me, ARCH_PPC);
+
+	/*  NetGear:  */
+	me = machine_entry_new("NetGear WG602v1", ARCH_MIPS,
+	    MACHINE_NETGEAR, 2, 0);
+	me->aliases[0] = "netgear";
+	me->aliases[1] = "wg602v1";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  NetWinder:  */
+	me = machine_entry_new("NetWinder", ARCH_ARM, MACHINE_NETWINDER, 1, 0);
+	me->aliases[0] = "netwinder";
+	machine_entry_add(me, ARCH_ARM);
+
+	/*  Playstation 2:  */
+	me = machine_entry_new("Playstation 2", ARCH_MIPS, MACHINE_PS2, 2, 0);
+	me->aliases[0] = "playstation2";
+	me->aliases[1] = "ps2";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  Playstation Portable:  */
+	me = machine_entry_new("Playstation Portable", ARCH_MIPS,
+	    MACHINE_PSP, 1, 0);
+	me->aliases[0] = "psp";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  PReP: (NetBSD/prep etc.)  */
+	me = machine_entry_new("PowerPC Reference Platform", ARCH_PPC,
+	    MACHINE_PREP, 1, 0);
+	me->aliases[0] = "prep";
+	machine_entry_add(me, ARCH_PPC);
+
+	/*  SGI:  */
+	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 10);
+	me->aliases[0] = "silicon graphics";
+	me->aliases[1] = "sgi";
+	me->subtype[0] = machine_entry_subtype_new("IP12", 12, 1);
+	me->subtype[0]->aliases[0] = "ip12";
+	me->subtype[1] = machine_entry_subtype_new("IP19", 19, 1);
+	me->subtype[1]->aliases[0] = "ip19";
+	me->subtype[2] = machine_entry_subtype_new("IP20", 20, 1);
+	me->subtype[2]->aliases[0] = "ip20";
+	me->subtype[3] = machine_entry_subtype_new("IP22", 22, 2);
+	me->subtype[3]->aliases[0] = "ip22";
+	me->subtype[3]->aliases[1] = "indy";
+	me->subtype[4] = machine_entry_subtype_new("IP24", 24, 1);
+	me->subtype[4]->aliases[0] = "ip24";
+	me->subtype[5] = machine_entry_subtype_new("IP27", 27, 3);
+	me->subtype[5]->aliases[0] = "ip27";
+	me->subtype[5]->aliases[1] = "origin 200";
+	me->subtype[5]->aliases[2] = "origin 2000";
+	me->subtype[6] = machine_entry_subtype_new("IP28", 28, 1);
+	me->subtype[6]->aliases[0] = "ip28";
+	me->subtype[7] = machine_entry_subtype_new("IP30", 30, 2);
+	me->subtype[7]->aliases[0] = "ip30";
+	me->subtype[7]->aliases[1] = "octane";
+	me->subtype[8] = machine_entry_subtype_new("IP32", 32, 2);
+	me->subtype[8]->aliases[0] = "ip32";
+	me->subtype[8]->aliases[1] = "o2";
+	me->subtype[9] = machine_entry_subtype_new("IP35", 35, 1);
+	me->subtype[9]->aliases[0] = "ip35";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  Sony NeWS:  */
+	me = machine_entry_new("Sony NeWS", ARCH_MIPS,
+	    MACHINE_SONYNEWS, 2, 0);
+	me->aliases[0] = "sonynews";
+	me->aliases[1] = "news";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  Sun Ultra1:  */
+	me = machine_entry_new("Sun Ultra1", ARCH_SPARC, MACHINE_ULTRA1, 1, 0);
+	me->aliases[0] = "ultra1";
+	machine_entry_add(me, ARCH_SPARC);
+
+	/*  Test-machine for Alpha:  */
+	me = machine_entry_new("Test-machine for Alpha", ARCH_ALPHA,
+	    MACHINE_TESTALPHA, 1, 0);
+	me->aliases[0] = "testalpha";
+	machine_entry_add(me, ARCH_ALPHA);
+
+	/*  Test-machine for ARM:  */
+	me = machine_entry_new("Test-machine for ARM", ARCH_ARM,
+	    MACHINE_TESTARM, 1, 0);
+	me->aliases[0] = "testarm";
+	machine_entry_add(me, ARCH_ARM);
+
+	/*  Test-machine for HPPA:  */
+	me = machine_entry_new("Test-machine for HPPA", ARCH_HPPA,
+	    MACHINE_TESTHPPA, 1, 0);
+	me->aliases[0] = "testhppa";
+	machine_entry_add(me, ARCH_HPPA);
+
+	/*  Test-machine for i960:  */
+	me = machine_entry_new("Test-machine for i960", ARCH_I960,
+	    MACHINE_TESTI960, 1, 0);
+	me->aliases[0] = "testi960";
+	machine_entry_add(me, ARCH_I960);
+
+	/*  Test-machine for IA64:  */
+	me = machine_entry_new("Test-machine for IA64", ARCH_IA64,
+	    MACHINE_TESTIA64, 1, 0);
+	me->aliases[0] = "testia64";
+	machine_entry_add(me, ARCH_IA64);
+
+	/*  Test-machine for M68K:  */
+	me = machine_entry_new("Test-machine for M68K", ARCH_M68K,
+	    MACHINE_TESTM68K, 1, 0);
+	me->aliases[0] = "testm68k";
+	machine_entry_add(me, ARCH_M68K);
+
+	/*  Test-machine for MIPS:  */
+	me = machine_entry_new("Test-machine for MIPS", ARCH_MIPS,
+	    MACHINE_TESTMIPS, 1, 0);
+	me->aliases[0] = "testmips";
+	machine_entry_add(me, ARCH_MIPS);
+
+	/*  Test-machine for SH:  */
+	me = machine_entry_new("Test-machine for SH", ARCH_SH,
+	    MACHINE_TESTSH, 1, 0);
+	me->aliases[0] = "testsh";
+	machine_entry_add(me, ARCH_SH);
+
+	/*  Test-machine for SPARC:  */
+	me = machine_entry_new("Test-machine for SPARC", ARCH_SPARC,
+	    MACHINE_TESTSPARC, 1, 0);
+	me->aliases[0] = "testsparc";
+	machine_entry_add(me, ARCH_SPARC);
+
+	/*  Walnut: (NetBSD/evbppc)  */
+	me = machine_entry_new("Walnut evaluation board", ARCH_PPC,
+	    MACHINE_WALNUT, 2, 0);
+	me->aliases[0] = "walnut";
+	me->aliases[1] = "evbppc";
+	machine_entry_add(me, ARCH_PPC);
+
+	/*  X86 machine:  */
+	me = machine_entry_new("x86-based PC", ARCH_X86,
+	    MACHINE_X86, 2, 2);
+	me->aliases[0] = "pc";
+	me->aliases[1] = "x86";
+	me->subtype[0] = machine_entry_subtype_new("Generic PC",
+	    MACHINE_X86_GENERIC, 2);
+	me->subtype[0]->aliases[0] = "pc";
+	me->subtype[0]->aliases[1] = "generic";
+	me->subtype[1] = machine_entry_subtype_new("PC XT", MACHINE_X86_XT, 1);
+	me->subtype[1]->aliases[0] = "xt";
+	machine_entry_add(me, ARCH_X86);
 }
 

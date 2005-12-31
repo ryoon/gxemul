@@ -1,11 +1,11 @@
 #
-#  $Id: Makefile.skel,v 1.1 2005-12-20 21:20:11 debug Exp $
+#  $Id: Makefile.skel,v 1.2 2005-12-31 15:47:38 debug Exp $
 #
 #  Makefile for GXemul machines
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
-OBJS=machine_testppc.o
+OBJS=machine_shark.o machine_testppc.o machine_zaurus.o
 
 all:
 	$(MAKE) objs

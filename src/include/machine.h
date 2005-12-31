@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.94 2005-12-26 14:14:39 debug Exp $
+ *  $Id: machine.h,v 1.95 2005-12-31 15:47:35 debug Exp $
  */
 
 #include <sys/types.h>
@@ -470,18 +470,20 @@ struct machine_entry {
 	int			n_aliases;
 	char			**aliases;	/*  Aliases  */
 
-	void			(*setup)(struct machine *);
+	void			(*setup)(struct machine *, struct cpu *);
 	void			(*set_default_cpu)(struct machine *);
+	void			(*set_default_ram)(struct machine *);
 
 	/*  Machine subtypes:  */
 	int			n_subtypes;
 	struct machine_entry_subtype **subtype;
 };
 
-#define	MACHINE_HEAD	extern struct machine_entry *first_machine_entry;
-#define	MACHINE_SETUP_TYPE(n)	void (*n)(struct machine *)
-#define	MACHINE_SETUP(x)	void machine_setup_ ## x(struct machine *machine)
+#define	MACHINE_SETUP_TYPE(n)	void (*n)(struct machine *, struct cpu *)
+#define	MACHINE_SETUP(x)	void machine_setup_ ## x(struct machine *machine, \
+				    struct cpu *cpu)
 #define	MACHINE_DEFAULT_CPU(x)	void machine_default_cpu_ ## x(struct machine *machine)
+#define	MACHINE_DEFAULT_RAM(x)	void machine_default_ram_ ## x(struct machine *machine)
 #define	MACHINE_REGISTER(x)	void machine_register_ ## x(void)
 #define	MR_DEFAULT(x,name,arch,type,n,m) struct machine_entry \
 	    *me = machine_entry_new(name,arch,type,n,m);	\
@@ -523,6 +525,7 @@ struct machine_entry *machine_entry_new(const char *name,
 	int arch, int oldstyle_type, int n_aliases, int n_subtypes);
 struct machine_entry_subtype *machine_entry_subtype_new(
 	const char *name, int oldstyle_type, int n_aliases);
+void machine_entry_add(struct machine_entry *me, int arch);
 void machine_init(void);
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1097 2005-12-31 11:20:45 debug Exp $
+$Id: HISTORY,v 1.1098 2005-12-31 15:47:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2541,3 +2541,4 @@ Changelog for GXemul:
 		on a page). Unfortunately not enough to get the kernel to run
 		as well as the 2.1 kernels did.
 20051230	Some dyntrans refactoring.
+20051231	Continuing on the machine registry redesign.

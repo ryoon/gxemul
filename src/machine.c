@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.647 2006-01-01 12:38:10 debug Exp $
+ *  $Id: machine.c,v 1.648 2006-01-01 20:41:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3649,37 +3649,6 @@ Not yet.
 #endif	/*  ENABLE_PPC  */
 
 #ifdef ENABLE_SH
-	case MACHINE_BARESH:
-		/*  A bare SH machine, with no devices.  */
-		machine->machine_name = "\"Bare\" SH machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTSH:
-		machine->machine_name = "SH test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testsh generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-
 	case MACHINE_HPCSH:
 		/*  Handheld SH-based machines:  */
 		machine->machine_name = "HPCsh";
@@ -3688,113 +3657,6 @@ Not yet.
 
 		break;
 #endif	/*  ENABLE_SH  */
-
-#ifdef ENABLE_HPPA
-	case MACHINE_BAREHPPA:
-		/*  A bare HPPA machine, with no devices.  */
-		machine->machine_name = "\"Bare\" HPPA machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTHPPA:
-		machine->machine_name = "HPPA test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testhppa generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-#endif	/*  ENABLE_HPPA  */
-
-#ifdef ENABLE_I960
-	case MACHINE_BAREI960:
-		/*  A bare I960 machine, with no devices.  */
-		machine->machine_name = "\"Bare\" i960 machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTI960:
-		machine->machine_name = "i960 test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testi960 generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-#endif	/*  ENABLE_I960  */
-
-#ifdef ENABLE_SPARC
-	case MACHINE_BARESPARC:
-		/*  A bare SPARC machine, with no devices.  */
-		machine->machine_name = "\"Bare\" SPARC machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTSPARC:
-		machine->machine_name = "SPARC test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testsparc generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-
-	case MACHINE_ULTRA1:
-		/*
-		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
-		 *  OpenBSD/sparc64 (http://www.openbsd.org/sparc64.html)
-		 */
-		machine->machine_name = "Sun Ultra1";
-		break;
-#endif	/*  ENABLE_SPARC  */
 
 #ifdef ENABLE_ALPHA
 	case MACHINE_ALPHA:
@@ -4092,78 +3954,6 @@ Not yet.
 		}
 		break;
 #endif	/*  ENABLE_ARM  */
-
-#ifdef ENABLE_AVR
-	case MACHINE_BAREAVR:
-		/*  A bare Atmel AVR machine, with no devices.  */
-		machine->machine_name = "\"Bare\" Atmel AVR machine";
-		machine->stable = 1;
-		break;
-#endif	/*  ENABLE_AVR  */
-
-#ifdef ENABLE_IA64
-	case MACHINE_BAREIA64:
-		machine->machine_name = "\"Bare\" IA64 machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTIA64:
-		machine->machine_name = "IA64 test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testia64 generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-#endif	/*  ENABLE_IA64  */
-
-#ifdef ENABLE_M68K
-	case MACHINE_BAREM68K:
-		machine->machine_name = "\"Bare\" M68K machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTM68K:
-		machine->machine_name = "M68K test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testm68k generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-#endif	/*  ENABLE_M68K  */
 
 #ifdef ENABLE_X86
 	case MACHINE_BAREX86:
@@ -4546,29 +4336,8 @@ void machine_default_cputype(struct machine *m)
 		break;
 
 	/*  SH:  */
-	case MACHINE_BARESH:
-	case MACHINE_TESTSH:
 	case MACHINE_HPCSH:
 		m->cpu_name = strdup("SH");
-		break;
-
-	/*  HPPA:  */
-	case MACHINE_BAREHPPA:
-	case MACHINE_TESTHPPA:
-		m->cpu_name = strdup("HPPA");
-		break;
-
-	/*  i960:  */
-	case MACHINE_BAREI960:
-	case MACHINE_TESTI960:
-		m->cpu_name = strdup("i960");
-		break;
-
-	/*  SPARC:  */
-	case MACHINE_BARESPARC:
-	case MACHINE_TESTSPARC:
-	case MACHINE_ULTRA1:
-		m->cpu_name = strdup("SPARCv9");
 		break;
 
 	/*  Alpha:  */
@@ -4586,23 +4355,6 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_NETWINDER:
 		m->cpu_name = strdup("SA110");
-		break;
-
-	/*  AVR:  */
-	case MACHINE_BAREAVR:
-		m->cpu_name = strdup("AVR");
-		break;
-
-	/*  IA64:  */
-	case MACHINE_BAREIA64:
-	case MACHINE_TESTIA64:
-		m->cpu_name = strdup("IA64");
-		break;
-
-	/*  M68K:  */
-	case MACHINE_BAREM68K:
-	case MACHINE_TESTM68K:
-		m->cpu_name = strdup("68020");
 		break;
 
 	/*  x86:  */
@@ -4990,48 +4742,6 @@ void machine_init(void)
 	me->subtype[2]->aliases[0] = "pb1000";
 	machine_entry_add(me, ARCH_MIPS);
 
-	/*  Generic "bare" Atmel AVR machine:  */
-	me = machine_entry_new("Generic \"bare\" Atmel AVR machine", ARCH_AVR,
-	    MACHINE_BAREAVR, 1, 0);
-	me->aliases[0] = "bareavr";
-	machine_entry_add(me, ARCH_AVR);
-
-	/*  Generic "bare" HPPA machine:  */
-	me = machine_entry_new("Generic \"bare\" HPPA machine", ARCH_HPPA,
-	    MACHINE_BAREHPPA, 1, 0);
-	me->aliases[0] = "barehppa";
-	machine_entry_add(me, ARCH_HPPA);
-
-	/*  Generic "bare" i960 machine:  */
-	me = machine_entry_new("Generic \"bare\" i960 machine", ARCH_I960,
-	    MACHINE_BAREI960, 1, 0);
-	me->aliases[0] = "barei960";
-	machine_entry_add(me, ARCH_I960);
-
-	/*  Generic "bare" IA64 machine:  */
-	me = machine_entry_new("Generic \"bare\" IA64 machine", ARCH_IA64,
-	    MACHINE_BAREIA64, 1, 0);
-	me->aliases[0] = "bareia64";
-	machine_entry_add(me, ARCH_IA64);
-
-	/*  Generic "bare" M68K machine:  */
-	me = machine_entry_new("Generic \"bare\" M68K machine", ARCH_M68K,
-	    MACHINE_BAREM68K, 1, 0);
-	me->aliases[0] = "barem68k";
-	machine_entry_add(me, ARCH_M68K);
-
-	/*  Generic "bare" SH machine:  */
-	me = machine_entry_new("Generic \"bare\" SH machine", ARCH_SH,
-	    MACHINE_BARESH, 1, 0);
-	me->aliases[0] = "baresh";
-	machine_entry_add(me, ARCH_SH);
-
-	/*  Generic "bare" SPARC machine:  */
-	me = machine_entry_new("Generic \"bare\" SPARC machine", ARCH_SPARC,
-	    MACHINE_BARESPARC, 1, 0);
-	me->aliases[0] = "baresparc";
-	machine_entry_add(me, ARCH_SPARC);
-
 	/*  Generic "bare" X86 machine:  */
 	me = machine_entry_new("Generic \"bare\" X86 machine", ARCH_X86,
 	    MACHINE_BAREX86, 1, 0);
@@ -5198,47 +4908,6 @@ void machine_init(void)
 	me->aliases[0] = "sonynews";
 	me->aliases[1] = "news";
 	machine_entry_add(me, ARCH_MIPS);
-
-	/*  Sun Ultra1:  */
-	me = machine_entry_new("Sun Ultra1", ARCH_SPARC, MACHINE_ULTRA1, 1, 0);
-	me->aliases[0] = "ultra1";
-	machine_entry_add(me, ARCH_SPARC);
-
-	/*  Test-machine for HPPA:  */
-	me = machine_entry_new("Test-machine for HPPA", ARCH_HPPA,
-	    MACHINE_TESTHPPA, 1, 0);
-	me->aliases[0] = "testhppa";
-	machine_entry_add(me, ARCH_HPPA);
-
-	/*  Test-machine for i960:  */
-	me = machine_entry_new("Test-machine for i960", ARCH_I960,
-	    MACHINE_TESTI960, 1, 0);
-	me->aliases[0] = "testi960";
-	machine_entry_add(me, ARCH_I960);
-
-	/*  Test-machine for IA64:  */
-	me = machine_entry_new("Test-machine for IA64", ARCH_IA64,
-	    MACHINE_TESTIA64, 1, 0);
-	me->aliases[0] = "testia64";
-	machine_entry_add(me, ARCH_IA64);
-
-	/*  Test-machine for M68K:  */
-	me = machine_entry_new("Test-machine for M68K", ARCH_M68K,
-	    MACHINE_TESTM68K, 1, 0);
-	me->aliases[0] = "testm68k";
-	machine_entry_add(me, ARCH_M68K);
-
-	/*  Test-machine for SH:  */
-	me = machine_entry_new("Test-machine for SH", ARCH_SH,
-	    MACHINE_TESTSH, 1, 0);
-	me->aliases[0] = "testsh";
-	machine_entry_add(me, ARCH_SH);
-
-	/*  Test-machine for SPARC:  */
-	me = machine_entry_new("Test-machine for SPARC", ARCH_SPARC,
-	    MACHINE_TESTSPARC, 1, 0);
-	me->aliases[0] = "testsparc";
-	machine_entry_add(me, ARCH_SPARC);
 
 	/*  Walnut: (NetBSD/evbppc)  */
 	me = machine_entry_new("Walnut evaluation board", ARCH_PPC,

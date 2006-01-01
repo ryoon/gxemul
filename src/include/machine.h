@@ -2,7 +2,7 @@
 #define	MACHINE_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.95 2005-12-31 15:47:35 debug Exp $
+ *  $Id: machine.h,v 1.96 2006-01-01 20:41:24 debug Exp $
  */
 
 #include <sys/types.h>

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.4 2006-01-01 12:38:12 debug Exp $
+#  $Id: Makefile.skel,v 1.5 2006-01-01 20:41:25 debug Exp $
 #
 #  Makefile for GXemul machines
 #
@@ -7,8 +7,7 @@
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 OBJS=interrupts.o \
 	machine_cats.o machine_shark.o \
-	machine_testalpha.o machine_testarm.o machine_testmips.o \
-	machine_testppc.o \
+	machine_test.o \
 	machine_zaurus.o
 
 all:

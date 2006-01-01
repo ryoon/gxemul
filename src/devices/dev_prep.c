@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.1 2005-11-21 09:17:26 debug Exp $
+ *  $Id: dev_prep.c,v 1.2 2006-01-01 13:17:17 debug Exp $
  *
  *  PReP interrupt controller.
  */
@@ -45,9 +45,7 @@
 /*
  *  dev_prep_access():
  */
-int dev_prep_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
-	void *extra)
+DEVICE_ACCESS(prep)
 {
 	/*  struct prep_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;

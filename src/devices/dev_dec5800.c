@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.17 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.18 2006-01-01 13:17:16 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -73,9 +73,7 @@ void dev_dec5800_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_dec5800_vectors_access():
  */
-int dev_dec5800_vectors_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(dec5800_vectors)
 {
 	uint64_t idata = 0, odata = 0;
 	struct dec5800_data *d = extra;
@@ -107,9 +105,7 @@ int dev_dec5800_vectors_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_dec5800_access():
  */
-int dev_dec5800_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(dec5800)
 {
 	uint64_t idata = 0, odata = 0;
 	struct dec5800_data *d = extra;
@@ -194,9 +190,7 @@ struct decbi_data {
 /*
  *  dev_decbi_access():
  */
-int dev_decbi_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(decbi)
 {
 	uint64_t idata = 0, odata = 0;
 	int node_nr;
@@ -312,9 +306,7 @@ struct deccca_data {
 /*
  *  dev_deccca_access():
  */
-int dev_deccca_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(deccca)
 {
 	uint64_t idata = 0, odata = 0;
 	/*  struct deccca_data *d = extra;  */
@@ -396,9 +388,7 @@ struct decxmi_data {
 /*
  *  dev_decxmi_access():
  */
-int dev_decxmi_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(decxmi)
 {
 	uint64_t idata = 0, odata = 0;
 	int node_nr;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.26 2005-12-26 12:32:11 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.27 2006-01-01 13:17:17 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -91,9 +91,7 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_ps2_stuff_access():
  */
-int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(ps2_stuff)
 {
 	uint64_t idata = 0, odata = 0;
 	int regnr = 0;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmppc.c,v 1.5 2005-11-17 13:53:42 debug Exp $
+ *  $Id: dev_pmppc.c,v 1.6 2006-01-01 13:17:17 debug Exp $
  *  
  *  PM/PPC devices.
  *
@@ -56,9 +56,7 @@ struct pmppc_data {
 /*
  *  dev_pmppc_board_access():
  */
-int dev_pmppc_board_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
-	void *extra)
+DEVICE_ACCESS(pmppc_board)
 {
 	struct pmppc_data *d = extra;
 	uint64_t idata = 0, odata = 0;

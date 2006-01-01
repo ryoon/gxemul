@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21030.c,v 1.3 2005-12-27 04:56:06 debug Exp $
+ *  $Id: dev_dec21030.c,v 1.4 2006-01-01 13:17:16 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -89,9 +89,7 @@ struct dec21030_data {
 /*
  *  dev_dec21030_access():
  */
-int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(dec21030)
 {
 	struct dec21030_data *d = extra;
 	uint64_t idata, odata = 0;

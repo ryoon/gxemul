@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.29 2005-12-26 14:22:32 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.30 2006-01-01 13:17:18 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -308,9 +308,7 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 /*
  *  dev_wdsc_access():
  */
-int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(wdsc)
 {
 	size_t i;
 	struct wdsc_data *d = extra;

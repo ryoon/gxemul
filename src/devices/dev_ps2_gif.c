@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.31 2005-12-26 14:14:38 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.32 2006-01-01 13:17:17 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -207,9 +207,7 @@ void test_triangle(struct gif_data *d,
 /*
  *  dev_ps2_gif_access():
  */
-int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(ps2_gif)
 {
 	unsigned int i;
 	struct gif_data *d = extra;

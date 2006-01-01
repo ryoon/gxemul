@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.21 2005-12-26 14:14:37 debug Exp $
+ *  $Id: dev_jazz.c,v 1.22 2006-01-01 13:17:16 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -161,9 +161,7 @@ void dev_jazz_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_jazz_access():
  */
-int dev_jazz_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(jazz)
 {
 	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -298,9 +296,7 @@ printf("R4030_SYS_ISA_VECTOR: w=%i\n", writeflag);
 /*
  *  dev_jazz_led_access():
  */
-int dev_jazz_led_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(jazz_led)
 {
 	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -340,13 +336,13 @@ int dev_jazz_led_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_jazz_access_a0():
+ *  dev_jazz_a0_access():
  *
  *  ISA interrupt stuff, high 8 interrupts.
+ *
+ *  TODO: use isa8 stuff instead!
  */
-int dev_jazz_access_a0(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(jazz_a0)
 {
 	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -393,13 +389,11 @@ int dev_jazz_access_a0(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_jazz_access_20():
+ *  dev_jazz_20_access():
  *
  *  ISA interrupt stuff, low 8 interrupts.
  */
-int dev_jazz_access_20(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(jazz_20)
 {
 	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -446,14 +440,12 @@ int dev_jazz_access_20(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_jazz_access_jazzio():
+ *  dev_jazz_jazzio_access():
  *
  *  See jazzio_intr() in NetBSD's
  *  /usr/src/sys/arch/arc/jazz/jazzio.c for more info.
  */
-int dev_jazz_access_jazzio(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(jazz_jazzio)
 {
 	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -528,13 +520,13 @@ int devinit_jazz(struct devinit *devinit)
 	    DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, "jazz_isa_20",
-	    0x90000020ULL, 2, dev_jazz_access_20, (void *)d, DM_DEFAULT, NULL);
+	    0x90000020ULL, 2, dev_jazz_20_access, (void *)d, DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, "jazz_isa_a0",
-	    0x900000a0ULL, 2, dev_jazz_access_a0, (void *)d, DM_DEFAULT, NULL);
+	    0x900000a0ULL, 2, dev_jazz_a0_access, (void *)d, DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, "pica_jazzio",
-	    0xf0000000ULL, 4, dev_jazz_access_jazzio, (void *)d,
+	    0xf0000000ULL, 4, dev_jazz_jazzio_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_jazz_tick,

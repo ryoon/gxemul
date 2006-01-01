@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.15 2005-12-26 14:14:36 debug Exp $
+ *  $Id: dev_fdc.c,v 1.16 2006-01-01 13:17:16 debug Exp $
  *  
  *  PC-style floppy controller.
  *
@@ -59,9 +59,7 @@ struct fdc_data {
 /*
  *  dev_fdc_access():
  */
-int dev_fdc_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(fdc)
 {
 	uint64_t idata = 0, odata = 0;
 	size_t i;

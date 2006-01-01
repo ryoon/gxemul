@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.9 2005-11-13 00:14:08 debug Exp $
+ *  $Id: dev_ether.c,v 1.10 2006-01-01 13:17:16 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -86,9 +86,7 @@ void dev_ether_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_ether_buf_access():
  */
-int dev_ether_buf_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(ether_buf)
 {
 	struct ether_data *d = (struct ether_data *) extra;
 
@@ -103,9 +101,7 @@ int dev_ether_buf_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_ether_access():
  */
-int dev_ether_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(ether)
 {
 	struct ether_data *d = (struct ether_data *) extra;
 	uint64_t idata = 0, odata = 0;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.26 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.27 2006-01-01 13:17:17 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -63,9 +63,7 @@ void dev_sgi_ip22_tick(struct cpu *cpu, void *extra)
  *
  *  The memory controller (?).
  */
-int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_ip22_imc)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -169,9 +167,7 @@ int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem,
  *
  *  A so far unknown device, used by the IP22 prom during startup.
  */
-int dev_sgi_ip22_unknown_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_ip22_unknown)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -214,9 +210,7 @@ int dev_sgi_ip22_unknown_access(struct cpu *cpu, struct memory *mem,
  *
  *  A so far unknown device, used by the IP22 prom during startup.
  */
-int dev_sgi_ip22_unknown2_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_ip22_unknown2)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -253,9 +247,7 @@ int dev_sgi_ip22_unknown2_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_sgi_ip22_sysid_access():
  */
-int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_ip22_sysid)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -291,12 +283,8 @@ int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_sgi_ip22_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_ip22)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;

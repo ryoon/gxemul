@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.5 2005-12-16 21:44:43 debug Exp $
+ *  $Id: dev_gc.c,v 1.6 2006-01-01 13:17:16 debug Exp $
  *  
  *  Grand Central Interrupt controller (used by MacPPC).
  */
@@ -44,9 +44,7 @@
 /*
  *  dev_gc_access():
  */
-int dev_gc_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(gc)
 {
 	struct gc_data *d = extra;
 	uint64_t idata = 0, odata = 0;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01.c,v 1.7 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_kn01.c,v 1.8 2006-01-01 13:17:16 debug Exp $
  *  
  *  KN01 stuff ("PMAX", DECstation type 1); CSR (System Control Register)
  *  and VDAC.
@@ -81,9 +81,7 @@ struct vdac_data {
 /*
  *  dev_kn01_csr_access():
  */
-int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(kn01_csr)
 {
 	struct kn01_csr_data *k = extra;
 	int csr;
@@ -116,9 +114,7 @@ int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_vdac_access():
  */
-int dev_vdac_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(vdac)
 {
 	struct vdac_data *d = (struct vdac_data *) extra;
 

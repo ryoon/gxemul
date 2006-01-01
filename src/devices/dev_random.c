@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_random.c,v 1.3 2005-12-26 14:14:38 debug Exp $
+ *  $Id: dev_random.c,v 1.4 2006-01-01 13:17:17 debug Exp $
  *  
  *  A simple device which returns random data for all reads, and discards all
  *  writes.
@@ -46,9 +46,7 @@
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_random_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(random)
 {
 	if (writeflag == MEM_READ) {
 		unsigned int i;

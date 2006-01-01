@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.38 2005-12-26 14:14:37 debug Exp $
+ *  $Id: dev_gt.c,v 1.39 2006-01-01 13:17:16 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -79,8 +79,7 @@ void dev_gt_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_gt_access():
  */
-int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	unsigned char *data, size_t len, int writeflag, void *extra)
+DEVICE_ACCESS(gt)
 {
 	uint64_t idata = 0, odata = 0;
 	int bus, dev, func, reg;

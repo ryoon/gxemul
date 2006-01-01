@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.78 2005-12-26 14:22:32 debug Exp $
+ *  $Id: dev_asc.c,v 1.79 2006-01-01 13:17:16 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
  *
@@ -754,9 +754,7 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 /*
  *  dev_asc_address_reg_access():
  */
-int dev_asc_address_reg_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(asc_address_reg)
 {
 	struct asc_data *d = extra;
 
@@ -776,9 +774,7 @@ int dev_asc_address_reg_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_asc_dma_access():
  */
-int dev_asc_dma_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(asc_dma)
 {
 	struct asc_data *d = extra;
 
@@ -819,9 +815,7 @@ int dev_asc_dma_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_asc_access():
  */
-int dev_asc_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(asc)
 {
 	int regnr;
 	struct asc_data *d = extra;
@@ -1280,8 +1274,7 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 	d->dma_controller_data = dma_controller_data;
 
 	memory_device_register(mem, "asc", baseaddr,
-	    mode == DEV_ASC_PICA?
-		DEV_ASC_PICA_LENGTH : DEV_ASC_DEC_LENGTH,
+	    mode == DEV_ASC_PICA? DEV_ASC_PICA_LENGTH : DEV_ASC_DEC_LENGTH,
 	    dev_asc_access, d, DM_DEFAULT, NULL);
 
 	if (mode == DEV_ASC_DEC) {

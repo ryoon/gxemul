@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_v3.c,v 1.2 2005-12-04 15:15:57 debug Exp $
+ *  $Id: dev_v3.c,v 1.3 2006-01-01 13:17:18 debug Exp $
  *  
  *  V3 Semiconductor PCI controller.
  *
@@ -51,9 +51,7 @@
  *
  *  Passes semi-direct PCI accesses onto bus_pci.
  */
-int dev_v3_pci_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(v3_pci)
 {
 	uint64_t idata = 0, odata = 0;
 	int bus, dev, func, reg;
@@ -93,9 +91,7 @@ int dev_v3_pci_access(struct cpu *cpu, struct memory *mem,
  *
  *  The PCI controller registers.
  */
-int dev_v3_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(v3)
 {
 	struct v3_data *d = extra;
 	uint64_t idata = 0, odata = 0;

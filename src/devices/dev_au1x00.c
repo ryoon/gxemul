@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.15 2005-12-03 04:14:14 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.16 2006-01-01 13:17:16 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -69,9 +69,7 @@ struct au1x00_pc_data {
  *
  *  Interrupt Controller.
  */
-int dev_au1x00_ic_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(au1x00_ic)
 {
 	struct au1x00_ic_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -191,9 +189,7 @@ int dev_au1x00_ic_access(struct cpu *cpu, struct memory *mem,
  *
  *  UART (Serial controllers).
  */
-int dev_au1x00_uart_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(au1x00_uart)
 {
 	struct au1x00_uart_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -265,9 +261,7 @@ void dev_au1x00_pc_tick(struct cpu *cpu, void *extra)
  *
  *  Programmable Counters.
  */
-int dev_au1x00_pc_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(au1x00_pc)
 {
 	struct au1x00_pc_data *d = extra;
 	uint64_t idata = 0, odata = 0;

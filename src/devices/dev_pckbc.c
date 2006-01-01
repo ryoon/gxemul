@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.63 2005-12-26 14:14:38 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.64 2006-01-01 13:17:16 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -582,9 +582,7 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 /*
  *  dev_pckbc_access():
  */
-int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(pckbc)
 {
 	uint64_t idata = 0, odata = 0;
 	int port_nr = 0;

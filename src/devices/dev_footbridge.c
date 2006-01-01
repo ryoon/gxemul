@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.40 2005-12-30 21:07:41 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.41 2006-01-01 13:17:16 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -108,9 +108,7 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
  *  interrupt has occurred (and acknowledging it at the same time), than
  *  dealing with the legacy 0x20/0xa0 ISA ports.
  */
-int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(footbridge_isa)
 {
 	/*  struct footbridge_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;
@@ -144,9 +142,7 @@ int dev_footbridge_isa_access(struct cpu *cpu, struct memory *mem,
  *  space (i.e. not one port for addr and one port for data). This function
  *  translates that into bus_pci calls.
  */
-int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(footbridge_pci)
 {
 	struct footbridge_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -184,9 +180,7 @@ int dev_footbridge_pci_access(struct cpu *cpu, struct memory *mem,
  *
  *  The DC21285 registers.
  */
-int dev_footbridge_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(footbridge)
 {
 	struct footbridge_data *d = extra;
 	uint64_t idata = 0, odata = 0;

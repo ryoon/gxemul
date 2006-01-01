@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.19 2005-12-03 04:14:14 debug Exp $
+ *  $Id: dev_8250.c,v 1.20 2006-01-01 13:17:15 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -101,8 +101,7 @@ void dev_8250_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_8250_access():
  */
-int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	unsigned char *data, size_t len, int writeflag, void *extra)
+DEVICE_ACCESS(8250)
 {
 	uint64_t idata = 0, odata = 0;
 	struct dev_8250_data *d = extra;

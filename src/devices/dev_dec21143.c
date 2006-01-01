@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.19 2005-12-02 22:40:22 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.20 2006-01-01 13:17:16 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -819,9 +819,7 @@ static void dec21143_reset(struct cpu *cpu, struct dec21143_data *d)
 /*
  *  dev_dec21143_access():
  */
-int dev_dec21143_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(dec21143)
 {
 	struct dec21143_data *d = extra;
 	uint64_t idata = 0, odata = 0;

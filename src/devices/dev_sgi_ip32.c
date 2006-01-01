@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.43 2005-12-27 04:56:06 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.44 2006-01-01 13:17:17 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -106,9 +106,7 @@ void dev_crime_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_crime_access():
  */
-int dev_crime_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(crime)
 {
 	struct crime_data *d = extra;
 	uint64_t idata = 0;
@@ -256,9 +254,7 @@ struct crime_data *dev_crime_init(struct machine *machine, struct memory *mem,
 /*
  *  dev_mace_access():
  */
-int dev_mace_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(mace)
 {
 	size_t i;
 	struct mace_data *d = extra;
@@ -337,9 +333,7 @@ struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr,
 /*
  *  dev_macepci_access():
  */
-int dev_macepci_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(macepci)
 {
 	struct macepci_data *d = (struct macepci_data *) extra;
 	uint64_t idata = 0, odata=0;
@@ -773,9 +767,7 @@ void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_sgi_mec_access():
  */
-int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_mec)
 {
 	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -981,9 +973,7 @@ struct sgi_ust_data {
 /*
  *  dev_sgi_ust_access():
  */
-int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_ust)
 {
 	struct sgi_ust_data *d = (struct sgi_ust_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -1058,9 +1048,7 @@ struct sgi_mte_data {
 /*
  *  dev_sgi_mte_access():
  */
-int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_mte)
 {
 	struct sgi_mte_data *d = (struct sgi_mte_data *) extra;
 	uint64_t first_addr, last_addr, zerobuflen, fill_addr, fill_len;

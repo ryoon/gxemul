@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.15 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.16 2006-01-01 13:17:17 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -51,9 +51,7 @@ struct sgi_ip19_data {
 /*
  *  dev_sgi_ip19_access():
  */
-int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgi_ip19)
 {
 	struct sgi_ip19_data *d = (struct sgi_ip19_data *) extra;
 	uint64_t idata = 0, odata = 0;

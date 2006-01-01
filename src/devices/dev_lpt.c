@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.6 2005-12-03 04:14:14 debug Exp $
+ *  $Id: dev_lpt.c,v 1.7 2006-01-01 13:17:16 debug Exp $
  *
  *  LPT (parallel printer) controller.
  */
@@ -73,9 +73,7 @@ void dev_lpt_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_lpt_access():
  */
-int dev_lpt_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(lpt)
 {
 	uint64_t idata = 0, odata=0;
 	struct lpt_data *d = extra;

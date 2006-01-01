@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn220.c,v 1.5 2005-11-13 00:14:09 debug Exp $
+ *  $Id: dev_kn220.c,v 1.6 2006-01-01 13:17:16 debug Exp $
  *  
  *  DEC KN220 (DECsystem 5500) devices.
  *
@@ -59,9 +59,7 @@ struct sgec_data {
 /*
  *  dev_dec5500_ioboard_access():
  */
-int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(dec5500_ioboard)
 {
 	/*  struct dec5500_ioboard_data *d =
 	    (struct dec5500_ioboard_data *) extra;  */
@@ -110,9 +108,7 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_sgec_access():
  */
-int dev_sgec_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
+DEVICE_ACCESS(sgec)
 {
 	/*  struct sgec_data *d = (struct sgec_data *) extra;  */
 	uint64_t idata = 0, odata = 0;

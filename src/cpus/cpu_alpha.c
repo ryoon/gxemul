@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.4 2005-11-26 05:46:51 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.5 2006-01-01 16:08:25 debug Exp $
  *
  *  Alpha CPU emulation.
  *

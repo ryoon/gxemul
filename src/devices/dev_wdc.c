@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.59 2006-01-01 13:17:18 debug Exp $
+ *  $Id: dev_wdc.c,v 1.60 2006-01-01 16:08:26 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -517,6 +517,13 @@ void wdc_command(struct cpu *cpu, struct wdc_data *d, int idata)
 		d->atapi_phase = PHASE_CMDOUT;
 		break;
 
+	case WDCC_DIAGNOSE:
+		debug("[ wdc: WDCC_DIAGNOSE drive %i: TODO ]\n", d->drive);
+		/*  TODO: interrupt here?  */
+		d->delayed_interrupt = INT_DELAY;
+		d->error = 1;		/*  No error?  */
+		break;
+
 	/*  Unsupported commands, without warning:  */
 	case WDCC_SEC_SET_PASSWORD:
 	case WDCC_SEC_UNLOCK:
@@ -774,8 +781,7 @@ DEVICE_ACCESS(wdc)
 	case wd_error:	/*  1: error (r), precomp (w)  */
 		if (writeflag == MEM_READ) {
 			odata = d->error;
-			debug("[ wdc: read from ERROR: 0x%02x ]\n",
-			    (int)odata);
+			debug("[ wdc: read from ERROR: 0x%02x ]\n", (int)odata);
 			/*  TODO:  is the error value cleared on read?  */
 			d->error = 0;
 		} else {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.20 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.21 2006-01-01 16:08:26 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -925,7 +925,7 @@ DEVICE_ACCESS(dec21143)
 				d->reg[CSR_STATUS/8] &= ~STATUS_RS;
 			}
 			idata &= ~(OPMODE_HBD | OPMODE_SCR | OPMODE_PCS
-			    | OPMODE_PS | OPMODE_SF | OPMODE_TTM);
+			    | OPMODE_PS | OPMODE_SF | OPMODE_TTM | OPMODE_FD);
 			if (idata & OPMODE_PNIC_IT) {
 				idata &= ~OPMODE_PNIC_IT;
 				d->tx_idling = d->tx_idling_threshold;

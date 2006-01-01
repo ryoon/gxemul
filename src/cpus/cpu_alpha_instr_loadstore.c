@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.2 2005-11-22 17:52:58 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.3 2006-01-01 16:08:25 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *

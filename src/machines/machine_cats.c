@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.1 2006-01-01 12:38:13 debug Exp $
+ *  $Id: machine_cats.c,v 1.2 2006-01-01 16:08:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -61,24 +61,20 @@ MACHINE_SETUP(cats)
 	machine->md_interrupt = isa32_interrupt;
 	machine->isa_pic_data.native_irq = 10;
 
-	/*
-	 *  DC21285_ROM_BASE (0x41000000): "reboot" code. Works with NetBSD.
-	 */
-	dev_ram_init(machine, 0x41000000, 12, DEV_RAM_RAM, 0);
-	store_32bit_word(cpu, 0x41000008ULL, 0xef8c64ebUL);
-
-	/*  OpenBSD reboot needs 0xf??????? to be mapped to phys.:  */
-	dev_ram_init(machine, 0xf0000000, 0x1000000,
-	    DEV_RAM_MIRROR, 0x0);
-
-	/*  Linux uses 0xc0000000 as phys.:  */
-	dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+	/*  DC21285_ROM_BASE (256 KB at 0x41000000)  */
+	dev_ram_init(machine, 0x41000000, 256 * 1024, DEV_RAM_RAM, 0);
 
 	/*  NetBSD, OpenBSD, and Linux (?) clean their caches here:  */
 	dev_ram_init(machine, 0x50000000, 0x10000, DEV_RAM_RAM, 0);
 
 	/*  Interrupt ack space?  */
 	dev_ram_init(machine, 0x80000000, 0x1000, DEV_RAM_RAM, 0);
+
+	/*  Linux uses 0xc0000000 as phys.:  */
+	dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+
+	/*  OpenBSD reboot needs 0xf??????? to be mapped to phys.:  */
+	dev_ram_init(machine, 0xf0000000, 0x1000000, DEV_RAM_MIRROR, 0x0);
 
 	bus_isa_init(machine, BUS_ISA_PCKBC_FORCE_USE |
 	    BUS_ISA_PCKBC_NONPCSTYLE, 0x7c000000, 0x80000000, 32, 48);
@@ -91,6 +87,9 @@ MACHINE_SETUP(cats)
 		struct ebsaboot ebsaboot;
 		char bs[300];
 		int boot_id = machine->bootdev_id >= 0? machine->bootdev_id : 0;
+
+		/*  DC21285_ROM_BASE "reboot" code:  (works with NetBSD)  */
+		store_32bit_word(cpu, 0x41000008ULL, 0xef8c64ebUL);
 
 		cpu->cd.arm.r[0] = /* machine->physical_ram_in_mb */
 		    7 * 1048576 - 0x1000;
@@ -129,11 +128,9 @@ MACHINE_SETUP(cats)
 		    (machine->boot_string_argument[0])? " " : "",
 		    machine->boot_string_argument);
 
-		store_string(cpu, cpu->cd.arm.r[0] +
-		    sizeof(struct ebsaboot), bs);
+		store_string(cpu, cpu->cd.arm.r[0]+sizeof(struct ebsaboot), bs);
 
-		arm_setup_initial_translation_table(cpu,
-		    7 * 1048576 - 32768);
+		arm_setup_initial_translation_table(cpu, 7 * 1048576 - 32768);
 	}
 }
 

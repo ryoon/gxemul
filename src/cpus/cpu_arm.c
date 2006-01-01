@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.46 2005-11-30 16:23:08 debug Exp $
+ *  $Id: cpu_arm.c,v 1.47 2006-01-01 16:08:25 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -654,11 +654,7 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 		    "mode 0x%02x (pc=0x%x) ]\n", newmode, (int)cpu->pc);
 		/*  exit(1);  */
 	}
-#if 0
-if (oldmode==0x10 && newmode ==0x17 && cpu->pc == 0x1644f0)
-single_step = 1;
-/* 00008554 */
-#endif
+
 	cpu->cd.arm.cpsr |= ARM_FLAG_I;
 	if (exception_nr == ARM_EXCEPTION_RESET ||
 	    exception_nr == ARM_EXCEPTION_FIQ)

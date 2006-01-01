@@ -25,9 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.648 2006-01-01 20:41:23 debug Exp $
- *
- *  Emulation of specific machines.
+ *  $Id: machine.c,v 1.649 2006-01-01 20:56:23 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -3470,68 +3468,6 @@ Not yet.
 		}
 		break;
 
-	case MACHINE_PREP:
-		/*
-		 *  NetBSD/prep (http://www.netbsd.org/Ports/prep/)
-		 */
-		machine->machine_name = "PowerPC Reference Platform";
-		machine->stable = 1;
-		if (machine->emulated_hz == 0)
-			machine->emulated_hz = 20000000;
-
-		machine->md_int.bebox_data = device_add(machine, "prep");
-		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
-		machine->md_interrupt = isa32_interrupt;
-
-		pci_data = dev_eagle_init(machine, mem,
-		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
-
-		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
-		    0x80000000, 0xc0000000, 32, 48);
-
-		bus_pci_add(machine, pci_data, mem, 0, 13, 0, "dec21143");
-
-		if (machine->use_x11)
-			bus_pci_add(machine, pci_data, mem, 0, 14, 0, "s3_virge");
-
-		if (machine->prom_emulation) {
-			/*  Linux on PReP has 0xdeadc0de at address 0? (See
-			    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/113568.html)  */
-			store_32bit_word(cpu, 0, 0xdeadc0de);
-
-			/*  r4 should point to first free byte after the loaded kernel:  */
-			cpu->cd.ppc.gpr[4] = 6 * 1048576;
-
-			/*
-			 *  r6 should point to bootinfo.
-			 *  (See NetBSD's prep/include/bootinfo.h for details.)
-			 */
-			cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576 - 0x8000;
-
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 0, 12);  /*  next  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 4, 2);  /*  type: clock  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 8, machine->emulated_hz);
-
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+12, 20);  /*  next  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+16, 1);  /*  type: console  */
-			store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
-			    machine->use_x11? "vga" : "com", 4);
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+24, 0x3f8);  /*  addr  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+28, 9600);  /*  speed  */
-
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+32, 0);  /*  next  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+36, 0);  /*  type: residual  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+40,	/*  addr of data  */
-			    cpu->cd.ppc.gpr[6] + 0x100);
-
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100, 0x200);  /*  TODO: residual  */
-			/*  store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM PPS Model 7248 (E)");  */
-			store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, "IBM PPS Model 6050/6070 (E)");
-
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100+0x1f8, machine->physical_ram_in_mb * 1048576);  /*  memsize  */
-		}
-		break;
-
 	case MACHINE_MACPPC:
 		/*
 		 *  NetBSD/macppc (http://www.netbsd.org/Ports/macppc/)
@@ -4121,7 +4057,6 @@ void machine_memsize_fix(struct machine *m)
 			break;
 		case MACHINE_ALPHA:
 		case MACHINE_BEBOX:
-		case MACHINE_PREP:
 			m->physical_ram_in_mb = 64;
 			break;
 		case MACHINE_HPCARM:
@@ -4316,10 +4251,6 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_BEBOX:
 		/*  For NetBSD/bebox. Dual 133 MHz 603e CPUs, for example.  */
 		m->cpu_name = strdup("PPC603e");
-		break;
-	case MACHINE_PREP:
-		/*  For NetBSD/prep. TODO: Differs between models!  */
-		m->cpu_name = strdup("PPC604");
 		break;
 	case MACHINE_MACPPC:
 		switch (m->machine_subtype) {
@@ -4864,12 +4795,6 @@ void machine_init(void)
 	    MACHINE_PSP, 1, 0);
 	me->aliases[0] = "psp";
 	machine_entry_add(me, ARCH_MIPS);
-
-	/*  PReP: (NetBSD/prep etc.)  */
-	me = machine_entry_new("PowerPC Reference Platform", ARCH_PPC,
-	    MACHINE_PREP, 1, 0);
-	me->aliases[0] = "prep";
-	machine_entry_add(me, ARCH_PPC);
 
 	/*  SGI:  */
 	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 10);

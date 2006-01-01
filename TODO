@@ -1,11 +1,7 @@
-$Id: TODO,v 1.190 2005-12-31 15:48:29 debug Exp $
+$Id: TODO,v 1.191 2006-01-01 13:48:57 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-
-Machine registry:
-	x)  Default amount of memory. (Function?)
-	x)  Move more machines.
 
 Dyntrans:
 	x)  64-bit stuff: good generic virtual memory translation, and
@@ -27,6 +23,9 @@ Dyntrans:
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
+
+Machine registry:
+	x)  Move more machines from src/machine.c into src/machines/.
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.645 2005-12-31 15:47:36 debug Exp $
+ *  $Id: machine.c,v 1.646 2006-01-01 12:11:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1804,55 +1804,6 @@ void machine_setup(struct machine *machine)
 		exit(1);
 
 #ifdef ENABLE_MIPS
-	case MACHINE_BAREMIPS:
-		/*
-		 *  A "bare" MIPS test machine.
-		 *
-		 *  NOTE: NO devices at all.
-		 */
-		cpu->byte_order = EMUL_BIG_ENDIAN;
-		machine->machine_name = "\"Bare\" MIPS machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTMIPS:
-		/*
-		 *  A MIPS test machine (which happens to work with the
-		 *  code in my master's thesis).  :-)
-		 *
-		 *  IRQ map:
-		 *	7	CPU counter
-		 *	6	SMP IPIs
-		 *	5	not used yet
-		 *	4	not used yet
-		 *	3	ethernet
-		 *	2	serial console
-		 */
-		cpu->byte_order = EMUL_BIG_ENDIAN;
-		machine->machine_name = "MIPS test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=2",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testmips generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=3",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-
 	case MACHINE_DEC:
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
@@ -4759,36 +4710,6 @@ Not yet.
 #endif	/*  ENABLE_SPARC  */
 
 #ifdef ENABLE_ALPHA
-	case MACHINE_BAREALPHA:
-		machine->machine_name = "\"Bare\" Alpha machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTALPHA:
-		machine->machine_name = "Alpha test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testalpha generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		break;
-
 	case MACHINE_ALPHA:
 		if (machine->prom_emulation) {
 			struct rpb rpb;
@@ -4866,45 +4787,6 @@ Not yet.
 #endif	/*  ENABLE_ALPHA  */
 
 #ifdef ENABLE_ARM
-	case MACHINE_BAREARM:
-		machine->machine_name = "\"Bare\" ARM machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_TESTARM:
-		machine->machine_name = "ARM test machine";
-		machine->stable = 1;
-
-		snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-		    (long long)DEV_CONS_ADDRESS);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-		    (long long)DEV_MP_ADDRESS);
-		device_add(machine, tmpstr);
-
-		fb = dev_fb_init(machine, mem, DEV_FB_ADDRESS, VFB_GENERIC,
-		    640,480, 640,480, 24, "testarm generic");
-
-		snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-		    (long long)DEV_DISK_ADDRESS);
-		device_add(machine, tmpstr);
-
-		snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-		    (long long)DEV_ETHER_ADDRESS);
-		device_add(machine, tmpstr);
-
-		/*  Place a tiny stub at end of memory, and set the link
-		    register to point to it. This stub halts the machine.  */
-		cpu->cd.arm.r[ARM_SP] =
-		    machine->physical_ram_in_mb * 1048576 - 4096;
-		cpu->cd.arm.r[ARM_LR] = cpu->cd.arm.r[ARM_SP] + 32;
-		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 0, 0xe3a00201);
-		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 4, 0xe5c00010);
-		store_32bit_word(cpu, cpu->cd.arm.r[ARM_LR] + 8,
-		    0xeafffffe);
-		break;
-
 	case MACHINE_CATS:
 		machine->machine_name = "CATS evaluation board";
 		machine->stable = 1;
@@ -5528,10 +5410,6 @@ void machine_default_cputype(struct machine *m)
 	}
 
 	switch (m->machine_type) {
-	case MACHINE_BAREMIPS:
-	case MACHINE_TESTMIPS:
-		m->cpu_name = strdup("R4000");
-		break;
 	case MACHINE_PS2:
 		m->cpu_name = strdup("R5900");
 		break;
@@ -5700,15 +5578,11 @@ void machine_default_cputype(struct machine *m)
 		break;
 
 	/*  Alpha:  */
-	case MACHINE_BAREALPHA:
-	case MACHINE_TESTALPHA:
 	case MACHINE_ALPHA:
 		m->cpu_name = strdup("Alpha");
 		break;
 
 	/*  ARM:  */
-	case MACHINE_BAREARM:
-	case MACHINE_TESTARM:
 	case MACHINE_HPCARM:
 		m->cpu_name = strdup("SA1110");
 		break;
@@ -6129,18 +6003,6 @@ void machine_init(void)
 	me->subtype[2]->aliases[0] = "pb1000";
 	machine_entry_add(me, ARCH_MIPS);
 
-	/*  Generic "bare" Alpha machine:  */
-	me = machine_entry_new("Generic \"bare\" Alpha machine", ARCH_ALPHA,
-	    MACHINE_BAREALPHA, 1, 0);
-	me->aliases[0] = "barealpha";
-	machine_entry_add(me, ARCH_ALPHA);
-
-	/*  Generic "bare" ARM machine:  */
-	me = machine_entry_new("Generic \"bare\" ARM machine", ARCH_ARM,
-	    MACHINE_BAREARM, 1, 0);
-	me->aliases[0] = "barearm";
-	machine_entry_add(me, ARCH_ARM);
-
 	/*  Generic "bare" Atmel AVR machine:  */
 	me = machine_entry_new("Generic \"bare\" Atmel AVR machine", ARCH_AVR,
 	    MACHINE_BAREAVR, 1, 0);
@@ -6170,12 +6032,6 @@ void machine_init(void)
 	    MACHINE_BAREM68K, 1, 0);
 	me->aliases[0] = "barem68k";
 	machine_entry_add(me, ARCH_M68K);
-
-	/*  Generic "bare" MIPS machine:  */
-	me = machine_entry_new("Generic \"bare\" MIPS machine", ARCH_MIPS,
-	    MACHINE_BAREMIPS, 1, 0);
-	me->aliases[0] = "baremips";
-	machine_entry_add(me, ARCH_MIPS);
 
 	/*  Generic "bare" SH machine:  */
 	me = machine_entry_new("Generic \"bare\" SH machine", ARCH_SH,
@@ -6361,18 +6217,6 @@ void machine_init(void)
 	me->aliases[0] = "ultra1";
 	machine_entry_add(me, ARCH_SPARC);
 
-	/*  Test-machine for Alpha:  */
-	me = machine_entry_new("Test-machine for Alpha", ARCH_ALPHA,
-	    MACHINE_TESTALPHA, 1, 0);
-	me->aliases[0] = "testalpha";
-	machine_entry_add(me, ARCH_ALPHA);
-
-	/*  Test-machine for ARM:  */
-	me = machine_entry_new("Test-machine for ARM", ARCH_ARM,
-	    MACHINE_TESTARM, 1, 0);
-	me->aliases[0] = "testarm";
-	machine_entry_add(me, ARCH_ARM);
-
 	/*  Test-machine for HPPA:  */
 	me = machine_entry_new("Test-machine for HPPA", ARCH_HPPA,
 	    MACHINE_TESTHPPA, 1, 0);
@@ -6396,12 +6240,6 @@ void machine_init(void)
 	    MACHINE_TESTM68K, 1, 0);
 	me->aliases[0] = "testm68k";
 	machine_entry_add(me, ARCH_M68K);
-
-	/*  Test-machine for MIPS:  */
-	me = machine_entry_new("Test-machine for MIPS", ARCH_MIPS,
-	    MACHINE_TESTMIPS, 1, 0);
-	me->aliases[0] = "testmips";
-	machine_entry_add(me, ARCH_MIPS);
 
 	/*  Test-machine for SH:  */
 	me = machine_entry_new("Test-machine for SH", ARCH_SH,

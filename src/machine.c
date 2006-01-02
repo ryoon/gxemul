@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.649 2006-01-01 20:56:23 debug Exp $
+ *  $Id: machine.c,v 1.650 2006-01-02 21:38:11 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -422,12 +422,6 @@ void machine_dumpinfo(struct machine *m)
  ****************************************************************************/
 
 
-int int_to_bcd(int i)
-{
-	return (i/10) * 16 + (i % 10);
-}
-
-
 /*
  *  dump_mem_string():
  *
@@ -822,8 +816,6 @@ void machine_setup(struct machine *machine)
 	unsigned char macaddr[6];
 
 	/*  Generic bootstring stuff:  */
-	char *bootstr = NULL;
-	char *bootarg = NULL;
 	char *init_bootpath;
 
 	/*  PCI stuff:  */
@@ -1464,22 +1456,22 @@ void machine_setup(struct machine *machine)
 			init_bootpath = bootpath;
 			}
 
-			bootarg = malloc(BOOTARG_BUFLEN);
-			if (bootarg == NULL) {
+			machine->bootarg = malloc(BOOTARG_BUFLEN);
+			if (machine->bootarg == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strlcpy(bootarg, init_bootpath, BOOTARG_BUFLEN);
-			if (strlcat(bootarg, machine->boot_kernel_filename,
+			strlcpy(machine->bootarg, init_bootpath, BOOTARG_BUFLEN);
+			if (strlcat(machine->bootarg, machine->boot_kernel_filename,
 			    BOOTARG_BUFLEN) > BOOTARG_BUFLEN) {
 				fprintf(stderr, "bootarg truncated?\n");
 				exit(1);
 			}
 
-			bootstr = "boot";
+			machine->bootstr = "boot";
 
-			store_string(cpu, DEC_PROM_INITIAL_ARGV+0x10, bootstr);
-			store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, bootarg);
+			store_string(cpu, DEC_PROM_INITIAL_ARGV+0x10, machine->bootstr);
+			store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, machine->bootarg);
 			store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
 			    machine->boot_string_argument);
 
@@ -1489,8 +1481,8 @@ void machine_setup(struct machine *machine)
 				cpu->cd.mips.gpr[MIPS_GPR_A0] --;
 
 			if (machine->boot_string_argument[0] != '\0') {
-				strlcat(bootarg, " ", BOOTARG_BUFLEN);
-				if (strlcat(bootarg, machine->boot_string_argument,
+				strlcat(machine->bootarg, " ", BOOTARG_BUFLEN);
+				if (strlcat(machine->bootarg, machine->boot_string_argument,
 				    BOOTARG_BUFLEN) >= BOOTARG_BUFLEN) {
 					fprintf(stderr, "bootstr truncated?\n");
 					exit(1);
@@ -1503,7 +1495,7 @@ void machine_setup(struct machine *machine)
 
 			xx.b.common.next = (char *)&xx.c - (char *)&xx.b;
 			xx.b.common.type = BTINFO_BOOTPATH;
-			strlcpy(xx.b.bootpath, bootstr, sizeof(xx.b.bootpath));
+			strlcpy(xx.b.bootpath, machine->bootstr, sizeof(xx.b.bootpath));
 
 			xx.c.common.next = 0;
 			xx.c.common.type = BTINFO_SYMTAB;
@@ -1553,7 +1545,7 @@ void machine_setup(struct machine *machine)
 			{
 				char tmps[500];
 
-				snprintf(tmps, sizeof(tmps), "boot=%s", bootarg);
+				snprintf(tmps, sizeof(tmps), "boot=%s", machine->bootarg);
 				tmps[sizeof(tmps)-1] = '\0';
 				add_environment_string(cpu, tmps, &addr);
 
@@ -1655,10 +1647,10 @@ void machine_setup(struct machine *machine)
 			 */
 			cpu->cd.mips.gpr[MIPS_GPR_A0] =
 			    machine->physical_ram_in_mb * 1048576 + 0xffffffff80000000ULL;
-			bootstr = "root=/dev/hda1 ro";
+			machine->bootstr = "root=/dev/hda1 ro";
 			/*  bootstr = "nfsroot=/usr/cobalt/";  */
 			/*  TODO: bootarg, and/or automagic boot device detection  */
-			store_string(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0] - 512, bootstr);
+			store_string(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0] - 512, machine->bootstr);
 		}
 		break;
 
@@ -1910,11 +1902,11 @@ void machine_setup(struct machine *machine)
 			cpu->cd.mips.gpr[MIPS_GPR_A2] = machine->physical_ram_in_mb * 1048576
 			    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
-			bootstr = machine->boot_kernel_filename;
+			machine->bootstr = machine->boot_kernel_filename;
 			store_32bit_word(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512, 
 			    0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 16);
 			store_32bit_word(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-			store_string(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
+			store_string(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 16, machine->bootstr);
 
 			/*  Special case for the Agenda VR3:  */
 			if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
@@ -1940,7 +1932,7 @@ void machine_setup(struct machine *machine)
 
 				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64, tmp);
 
-				bootarg = tmp;
+				machine->bootarg = tmp;
 			} else if (machine->boot_string_argument[0]) {
 				cpu->cd.mips.gpr[MIPS_GPR_A0] ++;	/*  argc  */
 
@@ -1950,7 +1942,7 @@ void machine_setup(struct machine *machine)
 				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
 				    machine->boot_string_argument);
 
-				bootarg = machine->boot_string_argument;
+				machine->bootarg = machine->boot_string_argument;
 			}
 
 			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
@@ -1978,90 +1970,6 @@ void machine_setup(struct machine *machine)
 			    address 0x8.......:  */
 			dev_ram_init(machine, 0x80000000, 0x20000000,
 			    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x0);
-		}
-
-		break;
-
-	case MACHINE_PS2:
-		cpu->byte_order = EMUL_LITTLE_ENDIAN;
-		machine->machine_name = "Playstation 2";
-
-		if (machine->physical_ram_in_mb != 32)
-			fprintf(stderr, "WARNING! Playstation 2 machines are supposed to have exactly 32 MB RAM. Continuing anyway.\n");
-		if (!machine->use_x11)
-			fprintf(stderr, "WARNING! Playstation 2 without -X is pretty meaningless. Continuing anyway.\n");
-
-		/*
-		 *  According to NetBSD:
-		 *	Hardware irq 0 is timer/interrupt controller
-		 *	Hardware irq 1 is dma controller
-		 *
-		 *  Some things are not yet emulated (at all), and hence are detected incorrectly:
-		 *	sbus0 at mainbus0: controller type 2
-		 *	ohci0 at sbus0			(at 0x1f801600, according to linux)
-		 *	ohci0: OHCI version 1.0
-		 */
-
-		machine->md_int.ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
-		device_add(machine, "ps2_gs addr=0x12000000");
-		device_add(machine, "ps2_ether addr=0x14001000");
-		dev_ram_init(machine, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
-		/*  irq = 8 + 32 + 1 (SBUS/USB)  */
-		device_add(machine, "ohci addr=0x1f801600 irq=41");
-
-		machine->md_interrupt = ps2_interrupt;
-
-		/*  Set the Harddisk controller present flag, if either
-		    disk 0 or 1 is present:  */
-		if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
-		    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
-			if (machine->prom_emulation)
-				store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
-			dev_ps2_spd_init(machine, mem, 0x14000000);
-		}
-
-		if (machine->prom_emulation) {
-			int tmplen = 1000;
-			char *tmp = malloc(tmplen);
-			time_t timet;
-			struct tm *tm_ptr;
-
-			add_symbol_name(&machine->symbol_context,
-			    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0, 0);
-			store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
-			store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
-
-			store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
-			if (tmp == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
-
-			strlcpy(tmp, "root=/dev/hda1 crtmode=vesa0,60", tmplen);
-
-			if (machine->boot_string_argument[0])
-				snprintf(tmp+strlen(tmp), tmplen-strlen(tmp),
-				    " %s", machine->boot_string_argument);
-			tmp[tmplen-1] = '\0';
-
-			bootstr = tmp;
-			store_string(cpu, PLAYSTATION2_OPTARGS, bootstr);
-
-			/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
-
-			/*  RTC data given by the BIOS:  */
-			timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
-			tm_ptr = gmtime(&timet);
-			/*  TODO:  are these 0- or 1-based?  */
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tm_ptr->tm_sec));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tm_ptr->tm_min));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tm_ptr->tm_hour));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tm_ptr->tm_mday));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tm_ptr->tm_mon + 1));
-			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tm_ptr->tm_year - 100));
-
-			/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
-			store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 2);
 		}
 
 		break;
@@ -2882,20 +2790,20 @@ Not yet.
 			if (machine->machine_type == MACHINE_ARC)
 				strlcat(init_bootpath, "\\", MACHINE_NAME_MAXBUF);
 
-			bootstr = malloc(BOOTSTR_BUFLEN);
-			if (bootstr == NULL) {
+			machine->bootstr = malloc(BOOTSTR_BUFLEN);
+			if (machine->bootstr == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strlcpy(bootstr, init_bootpath, BOOTSTR_BUFLEN);
-			if (strlcat(bootstr, machine->boot_kernel_filename,
+			strlcpy(machine->bootstr, init_bootpath, BOOTSTR_BUFLEN);
+			if (strlcat(machine->bootstr, machine->boot_kernel_filename,
 			    BOOTSTR_BUFLEN) >= BOOTSTR_BUFLEN) {
 				fprintf(stderr, "boot string too long?\n");
 				exit(1);
 			}
 
 			/*  Boot args., eg "-a"  */
-			bootarg = machine->boot_string_argument;
+			machine->bootarg = machine->boot_string_argument;
 
 			/*  argc, argv, envp in a0, a1, a2:  */
 			cpu->cd.mips.gpr[MIPS_GPR_A0] = 0;	/*  note: argc is increased later  */
@@ -2911,13 +2819,13 @@ Not yet.
 
 			/*  bootstr:  */
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, bootstr, &addr);
+			add_environment_string(cpu, machine->bootstr, &addr);
 			cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
 
 			/*  bootarg:  */
-			if (bootarg[0] != '\0') {
+			if (machine->bootarg[0] != '\0') {
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, bootarg, &addr);
+				add_environment_string(cpu, machine->bootarg, &addr);
 				cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
 			}
 
@@ -3020,9 +2928,9 @@ Not yet.
 				add_environment_string(cpu, "kernname=unix", &addr);
 			} else {
 				char *tmp;
-				size_t mlen = strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2;
+				size_t mlen = strlen(machine->bootarg) + strlen("OSLOADOPTIONS=") + 2;
 				tmp = malloc(mlen);
-				snprintf(tmp, mlen, "OSLOADOPTIONS=%s", bootarg);
+				snprintf(tmp, mlen, "OSLOADOPTIONS=%s", machine->bootarg);
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, tmp, &addr);
 
@@ -3103,42 +3011,6 @@ Not yet.
 		device_add(machine, "8250 addr=0x18000800 addr_mult=4 irq=0");
 		break;
 
-	case MACHINE_SONYNEWS:
-		/*
-		 *  There are several models, according to
-		 *  http://www.netbsd.org/Ports/newsmips/:
-		 *
-		 *  "R3000 and hyper-bus based models"
-		 *	NWS-3470D, -3410, -3460, -3710, -3720
-		 *
-		 *  "R4000/4400 and apbus based models"
-		 *	NWS-5000
-		 *
-		 *  For example: (found using google)
-		 *
-		 *    cpu_model = news3700
-		 *    SONY NET WORK STATION, Model NWS-3710, Machine ID #30145
-		 *    cpu0: MIPS R3000 (0x220) Rev. 2.0 with MIPS R3010 Rev.2.0
-		 *    64KB/4B direct-mapped I, 64KB/4B direct-mapped w-thr. D
-		 *
-		 *  See http://katsu.watanabe.name/doc/sonynews/model.html
-		 *  for more details.
-		 */
-		cpu->byte_order = EMUL_BIG_ENDIAN;
-		machine->machine_name = "Sony NeWS (NET WORK STATION)";
-
-		if (machine->prom_emulation) {
-			/*  This is just a test.  TODO  */
-			int i;
-			for (i=0; i<32; i++)
-				cpu->cd.mips.gpr[i] =
-				    0x01230000 + (i << 8) + 0x55;
-		}
-
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "z8530 addr=0x1e950000 irq=0 addr_mult=4");
-		break;
-
 	case MACHINE_EVBMIPS:
 		/*  http://www.netbsd.org/Ports/evbmips/  */
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
@@ -3202,10 +3074,10 @@ Not yet.
 			store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
 			store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
 
-			bootstr = strdup(machine->boot_kernel_filename);
-			bootarg = strdup(machine->boot_string_argument);
-			store_string(cpu, (int32_t)0x9fc01040, bootstr);
-			store_string(cpu, (int32_t)0x9fc01200, bootarg);
+			machine->bootstr = strdup(machine->boot_kernel_filename);
+			machine->bootarg = strdup(machine->boot_string_argument);
+			store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
+			store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
 
 			/*  a2 = (yamon_env_var *)envp  */
 			cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
@@ -3326,10 +3198,10 @@ Not yet.
 			store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
 			store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
 
-			bootstr = strdup(machine->boot_kernel_filename);
-			bootarg = strdup(machine->boot_string_argument);
-			store_string(cpu, (int32_t)0x9fc01040, bootstr);
-			store_string(cpu, (int32_t)0x9fc01200, bootarg);
+			machine->bootstr = strdup(machine->boot_kernel_filename);
+			machine->bootarg = strdup(machine->boot_string_argument);
+			store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
+			store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
 
 			/*  a2 = (yamon_env_var *)envp  */
 			cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
@@ -3734,11 +3606,11 @@ Not yet.
 			cpu->cd.arm.r[1] = machine->physical_ram_in_mb * 1048576 - 512;	/*  argv  */
 			cpu->cd.arm.r[2] = machine->physical_ram_in_mb * 1048576 - 256;	/*  ptr to hpc_bootinfo  */
 
-			bootstr = machine->boot_kernel_filename;
+			machine->bootstr = machine->boot_kernel_filename;
 			store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512,
 			    machine->physical_ram_in_mb * 1048576 - 512 + 16);
 			store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-			store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
+			store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 16, machine->bootstr);
 
 			if (machine->boot_string_argument[0]) {
 				cpu->cd.arm.r[0] ++;	/*  argc  */
@@ -3749,7 +3621,7 @@ Not yet.
 				store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 64,
 				    machine->boot_string_argument);
 
-				bootarg = machine->boot_string_argument;
+				machine->bootarg = machine->boot_string_argument;
 			}
 
 			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
@@ -3947,11 +3819,11 @@ machine_setup_done:
 	if (machine->emulated_hz < 1)
 		machine->emulated_hz = 5000000;
 
-	if (bootstr != NULL) {
-		debug("bootstring%s: %s", (bootarg!=NULL &&
-		    strlen(bootarg) >= 1)? "(+bootarg)" : "", bootstr);
-		if (bootarg != NULL && strlen(bootarg) >= 1)
-			debug(" %s", bootarg);
+	if (machine->bootstr != NULL) {
+		debug("bootstring%s: %s", (machine->bootarg!=NULL &&
+		    strlen(machine->bootarg) >= 1)? "(+bootarg)" : "", machine->bootstr);
+		if (machine->bootarg != NULL && strlen(machine->bootarg) >= 1)
+			debug(" %s", machine->bootarg);
 		debug("\n");
 	}
 
@@ -3992,9 +3864,6 @@ void machine_memsize_fix(struct machine *m)
 		}
 
 		switch (m->machine_type) {
-		case MACHINE_PS2:
-			m->physical_ram_in_mb = 32;
-			break;
 		case MACHINE_SGI:
 			m->physical_ram_in_mb = 64;
 			break;
@@ -4129,9 +3998,6 @@ void machine_default_cputype(struct machine *m)
 	}
 
 	switch (m->machine_type) {
-	case MACHINE_PS2:
-		m->cpu_name = strdup("R5900");
-		break;
 	case MACHINE_DEC:
 		if (m->machine_subtype > 2)
 			m->cpu_name = strdup("R3000A");
@@ -4139,9 +4005,6 @@ void machine_default_cputype(struct machine *m)
 			m->cpu_name = strdup("R3000");
 		if (m->cpu_name == NULL)
 			m->cpu_name = strdup("R2000");
-		break;
-	case MACHINE_SONYNEWS:
-		m->cpu_name = strdup("R3000");
 		break;
 	case MACHINE_HPCMIPS:
 		switch (m->machine_subtype) {
@@ -4784,12 +4647,6 @@ void machine_init(void)
 	me->aliases[0] = "netwinder";
 	machine_entry_add(me, ARCH_ARM);
 
-	/*  Playstation 2:  */
-	me = machine_entry_new("Playstation 2", ARCH_MIPS, MACHINE_PS2, 2, 0);
-	me->aliases[0] = "playstation2";
-	me->aliases[1] = "ps2";
-	machine_entry_add(me, ARCH_MIPS);
-
 	/*  Playstation Portable:  */
 	me = machine_entry_new("Playstation Portable", ARCH_MIPS,
 	    MACHINE_PSP, 1, 0);
@@ -4825,13 +4682,6 @@ void machine_init(void)
 	me->subtype[8]->aliases[1] = "o2";
 	me->subtype[9] = machine_entry_subtype_new("IP35", 35, 1);
 	me->subtype[9]->aliases[0] = "ip35";
-	machine_entry_add(me, ARCH_MIPS);
-
-	/*  Sony NeWS:  */
-	me = machine_entry_new("Sony NeWS", ARCH_MIPS,
-	    MACHINE_SONYNEWS, 2, 0);
-	me->aliases[0] = "sonynews";
-	me->aliases[1] = "news";
 	machine_entry_add(me, ARCH_MIPS);
 
 	/*  Walnut: (NetBSD/evbppc)  */

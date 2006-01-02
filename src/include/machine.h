@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.96 2006-01-01 20:41:24 debug Exp $
+ *  $Id: machine.h,v 1.97 2006-01-02 21:38:12 debug Exp $
  */
 
 #include <sys/types.h>
@@ -170,6 +170,8 @@ struct machine {
 
 	int	bootdev_type;
 	int	bootdev_id;
+	char	*bootstr;
+	char	*bootarg;
 
 	int	n_breakpoints;
 	char	*breakpoint_string[MAX_BREAKPOINTS];

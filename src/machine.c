@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.650 2006-01-02 21:38:11 debug Exp $
+ *  $Id: machine.c,v 1.651 2006-01-03 20:33:19 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -3163,62 +3163,6 @@ Not yet.
 		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0xfff0;
 
 		break;
-
-	case MACHINE_ALGOR:
-		switch (machine->machine_subtype) {
-		case MACHINE_ALGOR_P4032:
-			machine->machine_name = "\"Algor\" P4032";
-			break;
-		case MACHINE_ALGOR_P5064:
-			machine->machine_name = "\"Algor\" P5064";
-			break;
-		default:fatal("Unimplemented Algor machine.\n");
-			exit(1);
-		}
-
-		machine->md_int.v3_data = dev_v3_init(machine, mem);
-		machine->md_interrupt = isa8_interrupt;
-		machine->isa_pic_data.native_irq = 2;
-		/*  Hm. ISA interrupts at 6, but "local" at 2!  */
-
-		bus_isa_init(machine, 0, 0x1d000000, 0x10000000, 8, 24);
-
-		bus_pci_add(machine, machine->md_int.v3_data->pci_data,
-		    mem, 0, 0, 0, "dec21143");
-
-		if (machine->prom_emulation) {
-			/*  NetBSD/algor wants these:  */
-
-			/*  a0 = argc  */
-			cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
-
-			/*  a1 = argv  */
-			cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
-			store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
-			store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
-			store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
-
-			machine->bootstr = strdup(machine->boot_kernel_filename);
-			machine->bootarg = strdup(machine->boot_string_argument);
-			store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
-			store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
-
-			/*  a2 = (yamon_env_var *)envp  */
-			cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
-			{
-				char tmps[50];
-
-				store_32bit_word(cpu, (int32_t)0x9fc01800, 0x9fc01900);
-				store_32bit_word(cpu, (int32_t)0x9fc01804, 0x9fc01a00);
-				store_32bit_word(cpu, (int32_t)0x9fc01808, 0);
-
-				snprintf(tmps, sizeof(tmps), "memsize=0x%08x",
-				    machine->physical_ram_in_mb * 1048576);
-				store_string(cpu, (int)0x9fc01900, tmps);
-				store_string(cpu, (int)0x9fc01a00, "ethaddr=10:20:30:30:20:10");
-			}
-		}
-		break;
 #endif	/*  ENABLE_MIPS  */
 
 #ifdef ENABLE_PPC
@@ -4089,9 +4033,6 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_PSP:
 		m->cpu_name = strdup("Allegrex");
 		break;
-	case MACHINE_ALGOR:
-		m->cpu_name = strdup("RM5200");
-		break;
 
 	/*  PowerPC:  */
 	case MACHINE_WALNUT:
@@ -4377,18 +4318,6 @@ void machine_init(void)
 	/*
 	 *  The following are old-style hardcoded machine definitions:
 	 */
-
-
-	/*  Algor evaluation board:  */
-	me = machine_entry_new("Algor", ARCH_MIPS, MACHINE_ALGOR, 1, 2);
-	me->aliases[0] = "algor";
-	me->subtype[0] = machine_entry_subtype_new("P4032",
-	    MACHINE_ALGOR_P4032, 1);
-	me->subtype[0]->aliases[0] = "p4032";
-	me->subtype[1] = machine_entry_subtype_new("P5064",
-	    MACHINE_ALGOR_P5064, 1);
-	me->subtype[1]->aliases[0] = "p5064";
-	machine_entry_add(me, ARCH_MIPS);
 
 	/*  Alpha:  */
 	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 2);

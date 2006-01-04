@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.93 2005-12-31 15:48:30 debug Exp $
+$Id: experiments.html,v 1.94 2006-01-04 05:58:47 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -198,7 +198,7 @@ following experimental devices:
 
   <tr>
     <td align="left" valign="top" width="200">
-	<b><tt>cons</tt>:</b>
+	<a name="expdevices_cons"><b><tt>cons</tt>:</b></a>
 	<p>A simple console device, for writing
 	characters to the controlling terminal
 	and receiving keypresses.
@@ -234,7 +234,7 @@ following experimental devices:
 
   <tr>
     <td align="left" valign="top">
-	<b><tt>mp</tt>:</b>
+	<a name="expdevices_mp"><b><tt>mp</tt>:</b></a>
 	<p>This device controls the behaviour of CPUs in an emulated
 	multi-processor system.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_mp.c</tt></font>
@@ -338,7 +338,7 @@ following experimental devices:
 
   <tr>
     <td align="left" valign="top">
-	<b><tt>fb</tt>:</b>
+	<a name="expdevices_fb"><b><tt>fb</tt>:</b></a>
 	<p>A simple linear framebuffer, for graphics output.
 	640 x 480 pixels, 3 bytes per pixel (red, green, blue, 8 bits each).
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_fb.c</tt></font>
@@ -366,7 +366,7 @@ following experimental devices:
 
   <tr>
     <td align="left" valign="top">
-	<b><tt>disk</tt>:</b>
+	<a name="expdevices_disk"><b><tt>disk</tt>:</b></a>
 	<p>Disk controller, which can read from and write
 	to disk images. It does not use interrupts; read and
 	write operations finish instantaneously.
@@ -415,7 +415,7 @@ following experimental devices:
 
   <tr>
     <td align="left" valign="top">
-	<b><tt>ether</tt>:</b>
+	<a name="expdevices_ether"><b><tt>ether</tt>:</b></a>
 	<p>A simple ethernet controller, enough to send
 	and receive packets on a simulated network.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_ether.c</tt></font>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.652 2006-01-06 11:41:44 debug Exp $
+ *  $Id: machine.c,v 1.653 2006-01-06 11:55:50 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -62,9 +62,6 @@
 #include "net.h"
 #include "of.h"
 #include "symbol.h"
-
-/*  For Alpha emulation:  */
-#include "alpha_rpb.h"
 
 /*  For SGI and ARC emulation:  */
 #include "sgi_arcbios.h"
@@ -3410,83 +3407,6 @@ Not yet.
 		break;
 #endif	/*  ENABLE_SH  */
 
-#ifdef ENABLE_ALPHA
-	case MACHINE_ALPHA:
-		if (machine->prom_emulation) {
-			struct rpb rpb;
-			struct crb crb;
-			struct ctb ctb;
-
-			/*  TODO:  Most of these... They are used by NetBSD/alpha:  */
-			/*  a0 = First free Page Frame Number  */
-			/*  a1 = PFN of current Level 1 page table  */
-			/*  a2 = Bootinfo magic  */
-			/*  a3 = Bootinfo pointer  */
-			/*  a4 = Bootinfo version  */
-			cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
-			cpu->cd.alpha.r[ALPHA_A1] = 0;
-			cpu->cd.alpha.r[ALPHA_A2] = 0;
-			cpu->cd.alpha.r[ALPHA_A3] = 0;
-			cpu->cd.alpha.r[ALPHA_A4] = 0;
-
-			/*  HWRPB: Hardware Restart Parameter Block  */
-			memset(&rpb, 0, sizeof(struct rpb));
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(rpb.rpb_phys), HWRPB_ADDR);
-			strlcpy((char *)&(rpb.rpb_magic), "HWRPB", 8);
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(rpb.rpb_size), sizeof(struct rpb));
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(rpb.rpb_page_size), 8192);
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(rpb.rpb_type), machine->machine_subtype);
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(rpb.rpb_cc_freq), 100000000);
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(rpb.rpb_ctb_off), CTB_ADDR - HWRPB_ADDR);
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(rpb.rpb_crb_off), CRB_ADDR - HWRPB_ADDR);
-
-			/*  CTB: Console Terminal Block  */
-			memset(&ctb, 0, sizeof(struct ctb));
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(ctb.ctb_term_type), machine->use_x11?
-			    CTB_GRAPHICS : CTB_PRINTERPORT);
-
-			/*  CRB: Console Routine Block  */
-			memset(&crb, 0, sizeof(struct crb));
-			store_64bit_word_in_host(cpu, (unsigned char *)
-			    &(crb.crb_v_dispatch), CRB_ADDR - 0x100);
-			store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
-
-			/*
-			 *  Place a special "hack" palcode call at 0x10000:
-			 *  (Hopefully nothing else will be there.)
-			 */
-			store_32bit_word(cpu, 0x10000, 0x3fffffe);
-
-			store_buf(cpu, HWRPB_ADDR, (char *)&rpb, sizeof(struct rpb));
-			store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));
-			store_buf(cpu, CRB_ADDR, (char *)&crb, sizeof(struct crb));
-		}
-
-		switch (machine->machine_subtype) {
-		case ST_DEC_3000_300:
-			machine->machine_name = "DEC 3000/300";
-			machine->main_console_handle = (size_t)device_add(machine,
-			    "z8530 addr=0x1b0200000 irq=0 addr_mult=4");
-			break;
-		case ST_EB164:
-			machine->machine_name = "EB164";
-			break;
-		default:fatal("Unimplemented Alpha machine type %i\n",
-			    machine->machine_subtype);
-			exit(1);
-		}
-
-		break;
-#endif	/*  ENABLE_ALPHA  */
-
 #ifdef ENABLE_ARM
 	case MACHINE_HPCARM:
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
@@ -3769,7 +3689,6 @@ void machine_memsize_fix(struct machine *m)
 				m->physical_ram_in_mb = 32;
 			}
 			break;
-		case MACHINE_ALPHA:
 		case MACHINE_BEBOX:
 			m->physical_ram_in_mb = 64;
 			break;
@@ -3970,11 +3889,6 @@ void machine_default_cputype(struct machine *m)
 	/*  SH:  */
 	case MACHINE_HPCSH:
 		m->cpu_name = strdup("SH");
-		break;
-
-	/*  Alpha:  */
-	case MACHINE_ALPHA:
-		m->cpu_name = strdup("Alpha");
 		break;
 
 	/*  ARM:  */
@@ -4202,17 +4116,6 @@ void machine_init(void)
 	/*
 	 *  The following are old-style hardcoded machine definitions:
 	 */
-
-	/*  Alpha:  */
-	me = machine_entry_new("Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 2);
-	me->aliases[0] = "alpha";
-	me->subtype[0] = machine_entry_subtype_new(
-	    "DEC 3000/300", ST_DEC_3000_300, 1);
-	me->subtype[0]->aliases[0] = "3000/300";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "EB164", ST_EB164, 1);
-	me->subtype[1]->aliases[0] = "eb164";
-	machine_entry_add(me, ARCH_ALPHA);
 
 	/*  ARC:  */
 	me = machine_entry_new("ARC", ARCH_MIPS, MACHINE_ARC, 1, 8);

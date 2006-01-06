@@ -1,13 +1,16 @@
 #
-#  $Id: Makefile.skel,v 1.8 2006-01-03 20:33:20 debug Exp $
+#  $Id: Makefile.skel,v 1.9 2006-01-06 11:41:46 debug Exp $
 #
 #  Makefile for GXemul machines
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 OBJS=interrupts.o \
-	machine_algor.o machine_cats.o machine_playstation2.o machine_prep.o \
-	machine_shark.o machine_sonynews.o machine_test.o machine_zaurus.o
+	machine_algor.o machine_cats.o \
+	machine_iq80321.o machine_iyonix.o \
+	machine_playstation2.o machine_prep.o \
+	machine_shark.o machine_sonynews.o machine_test.o \
+	machine_x86.o machine_zaurus.o
 
 all:
 	$(MAKE) objs

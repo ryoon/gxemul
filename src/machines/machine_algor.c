@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.1 2006-01-03 20:33:20 debug Exp $
+ *  $Id: machine_algor.c,v 1.2 2006-01-06 11:41:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -58,7 +58,7 @@ MACHINE_SETUP(algor)
 
 	machine->md_int.v3_data = dev_v3_init(machine, machine->memory);
 	machine->md_interrupt = isa8_interrupt;
-	machine->isa_pic_data.native_irq = 2;
+	machine->isa_pic_data.native_irq = 6;
 	/*  Hm. ISA interrupts at 6, but "local" at 2!  */
 
 	bus_isa_init(machine, 0, 0x1d000000, 0x10000000, 8, 24);

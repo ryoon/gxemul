@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.651 2006-01-03 20:33:19 debug Exp $
+ *  $Id: machine.c,v 1.652 2006-01-06 11:41:44 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -3639,106 +3639,7 @@ Not yet.
 			arm_setup_initial_translation_table(cpu, 0x4000);
 		}
 		break;
-
-	case MACHINE_IQ80321:
-		/*
-		 *  Intel IQ80321. See http://sources.redhat.com/ecos/docs-latest/redboot/iq80321.html
-		 *  for more details about the memory map.
-		 */
-		machine->machine_name = "Intel IQ80321 (ARM)";
-		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
-		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
-		device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=1");
-
-		/*  Used by "Redboot":  */
-		dev_ram_init(machine, 0xa800024, 4, DEV_RAM_RAM, 0);
-		store_32bit_word(cpu, 0xa800024, 0x7fff);
-		device_add(machine, "ns16550 irq=0 addr=0x0d800000 addr_mult=4 in_use=0");
-		device_add(machine, "ns16550 irq=0 addr=0x0d800020 addr_mult=4 in_use=0");
-
-		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
-		dev_ram_init(machine, 0xa0000000, 0x20000000,
-		    DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(machine, 0xc0000000, 0x20000000,
-		    DEV_RAM_MIRROR, 0x0);
-
-		/*  0xe0000000 and 0xff000000 = cache flush regions  */
-		dev_ram_init(machine, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
-		dev_ram_init(machine, 0xff000000, 0x100000, DEV_RAM_RAM, 0x0);
-
-		device_add(machine, "i80321 addr=0xffffe000");
-
-		if (machine->prom_emulation) {
-			arm_setup_initial_translation_table(cpu, 0x4000);
-			arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
-			arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
-			arm_translation_table_set_l1(cpu, 0xe0000000, 0xe0000000);
-			arm_translation_table_set_l1(cpu, 0xf0000000, 0xf0000000);
-		}
-		break;
-
-	case MACHINE_IYONIX:
-		machine->machine_name = "Iyonix";
-		cpu->cd.arm.coproc[6] = arm_coproc_i80321;
-		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
-
-		/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
-		dev_ram_init(machine, 0xa0000000, 0x20000000,
-		    DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(machine, 0xc0000000, 0x20000000,
-		    DEV_RAM_MIRROR, 0x0);
-		dev_ram_init(machine, 0xf0000000, 0x08000000,
-		    DEV_RAM_MIRROR, 0x0);
-
-		device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=0");
-
-		bus_isa_init(machine, 0,
-		    0x90000000, 0x98000000, 32, 48);
-
-		device_add(machine, "i80321 addr=0xffffe000");
-
-		if (machine->prom_emulation) {
-			arm_setup_initial_translation_table(cpu,
-			    machine->physical_ram_in_mb * 1048576 - 65536);
-			arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
-			arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
-			arm_translation_table_set_l1_b(cpu, 0xff000000, 0xff000000);
-		}
-		break;
 #endif	/*  ENABLE_ARM  */
-
-#ifdef ENABLE_X86
-	case MACHINE_BAREX86:
-		machine->machine_name = "\"Bare\" x86 machine";
-		machine->stable = 1;
-		break;
-
-	case MACHINE_X86:
-		if (machine->machine_subtype == MACHINE_X86_XT)
-			machine->machine_name = "PC XT";
-		else
-			machine->machine_name = "Generic x86 PC";
-
-		machine->md_interrupt = x86_pc_interrupt;
-
-		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1 | BUS_ISA_VGA |
-		    BUS_ISA_PCKBC_FORCE_USE |
-		    (machine->machine_subtype == MACHINE_X86_XT?
-		    BUS_ISA_NO_SECOND_PIC : 0) | BUS_ISA_FDC,
-		    X86_IO_BASE, 0x00000000, 0, 16);
-
-		if (machine->prom_emulation)
-			pc_bios_init(cpu);
-
-		if (!machine->use_x11 && !quiet_mode)
-			fprintf(stderr, "-------------------------------------"
-			    "------------------------------------------\n"
-			    "\n  WARNING! You are emulating a PC without -X. "
-			    "You will miss graphical output!\n\n"
-			    "-------------------------------------"
-			    "------------------------------------------\n");
-		break;
-#endif	/*  ENABLE_X86  */
 
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);
@@ -3877,10 +3778,6 @@ void machine_memsize_fix(struct machine *m)
 			break;
 		case MACHINE_NETWINDER:
 			m->physical_ram_in_mb = 16;
-			break;
-		case MACHINE_X86:
-			if (m->machine_subtype == MACHINE_X86_XT)
-				m->physical_ram_in_mb = 1;
 			break;
 		}
 	}
@@ -4084,21 +3981,8 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_HPCARM:
 		m->cpu_name = strdup("SA1110");
 		break;
-	case MACHINE_IQ80321:
-	case MACHINE_IYONIX:
-		m->cpu_name = strdup("80321_600_B0");
-		break;
 	case MACHINE_NETWINDER:
 		m->cpu_name = strdup("SA110");
-		break;
-
-	/*  x86:  */
-	case MACHINE_BAREX86:
-	case MACHINE_X86:
-		if (m->machine_subtype == MACHINE_X86_XT)
-			m->cpu_name = strdup("8086");
-		else
-			m->cpu_name = strdup("AMD64");
 		break;
 	}
 
@@ -4465,12 +4349,6 @@ void machine_init(void)
 	me->subtype[2]->aliases[0] = "pb1000";
 	machine_entry_add(me, ARCH_MIPS);
 
-	/*  Generic "bare" X86 machine:  */
-	me = machine_entry_new("Generic \"bare\" X86 machine", ARCH_X86,
-	    MACHINE_BAREX86, 1, 0);
-	me->aliases[0] = "barex86";
-	machine_entry_add(me, ARCH_X86);
-
 	/*  HPCarm:  */
 	me = machine_entry_new("Handheld ARM (HPCarm)",
 	    ARCH_ARM, MACHINE_HPCARM, 1, 2);
@@ -4528,18 +4406,6 @@ void machine_init(void)
 	    "Jornada 690", MACHINE_HPCSH_JORNADA690, 1);
 	me->subtype[1]->aliases[0] = "jornada690";
 	machine_entry_add(me, ARCH_SH);
-
-	/*  Intel IQ80321 (ARM):  */
-	me = machine_entry_new("Intel IQ80321 (ARM)", ARCH_ARM,
-	    MACHINE_IQ80321, 1, 0);
-	me->aliases[0] = "iq80321";
-	machine_entry_add(me, ARCH_ARM);
-
-	/*  Iyonix:  */
-	me = machine_entry_new("Iyonix", ARCH_ARM,
-	    MACHINE_IYONIX, 1, 0);
-	me->aliases[0] = "iyonix";
-	machine_entry_add(me, ARCH_ARM);
 
 	/*  Macintosh (PPC):  */
 	me = machine_entry_new("Macintosh (PPC)", ARCH_PPC,
@@ -4619,18 +4485,5 @@ void machine_init(void)
 	me->aliases[0] = "walnut";
 	me->aliases[1] = "evbppc";
 	machine_entry_add(me, ARCH_PPC);
-
-	/*  X86 machine:  */
-	me = machine_entry_new("x86-based PC", ARCH_X86,
-	    MACHINE_X86, 2, 2);
-	me->aliases[0] = "pc";
-	me->aliases[1] = "x86";
-	me->subtype[0] = machine_entry_subtype_new("Generic PC",
-	    MACHINE_X86_GENERIC, 2);
-	me->subtype[0]->aliases[0] = "pc";
-	me->subtype[0]->aliases[1] = "generic";
-	me->subtype[1] = machine_entry_subtype_new("PC XT", MACHINE_X86_XT, 1);
-	me->subtype[1]->aliases[0] = "xt";
-	machine_entry_add(me, ARCH_X86);
 }
 

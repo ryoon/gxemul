@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,91 +25,66 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.17 2006-01-06 11:41:45 debug Exp $
- *  
- *  PC-style floppy controller.
- *
- *  TODO!  (This is just a dummy skeleton right now.)
- *
- *  TODO 2: Make it work nicely with both ARC and PC emulation.
- *
- *  See http://members.tripod.com/~oldboard/assembly/765.html for a
- *  quick overview.
+ *  $Id: machine_iyonix.c,v 1.1 2006-01-06 11:41:46 debug Exp $
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "bus_isa.h"
+#include "cpu.h"
 #include "device.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
-#define	DEV_FDC_LENGTH		6	/*  TODO 8, but collision with wdc  */
-
-
-struct fdc_data {
-	unsigned char	reg[DEV_FDC_LENGTH];
-	int		irqnr;
-};
-
-
-/*
- *  dev_fdc_access():
- */
-DEVICE_ACCESS(fdc)
+MACHINE_SETUP(iyonix)
 {
-	uint64_t idata = 0, odata = 0;
-	size_t i;
-	struct fdc_data *d = extra;
+	machine->machine_name = "Iyonix";
 
-	if (writeflag == MEM_WRITE)
-		idata = memory_readmax64(cpu, data, len);
+	cpu->cd.arm.coproc[6] = arm_coproc_i80321;
+	cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 
-	switch (relative_addr) {
-	case 0x04:
-		break;
-	default:if (writeflag==MEM_READ) {
-			fatal("[ fdc: read from reg %i ]\n",
-			    (int)relative_addr);
-			odata = d->reg[relative_addr];
-		} else {
-			fatal("[ fdc: write to reg %i:", (int)relative_addr);
-			for (i=0; i<len; i++)
-				fatal(" %02x", data[i]);
-			fatal(" ]\n");
-			d->reg[relative_addr] = idata;
-		}
+	/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
+	dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+	dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+	dev_ram_init(machine, 0xf0000000, 0x08000000, DEV_RAM_MIRROR, 0x0);
+
+	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=0");
+
+	bus_isa_init(machine, 0, 0x90000000ULL, 0x98000000ULL, 32, 48);
+
+	device_add(machine, "i80321 addr=0xffffe000");
+
+	if (machine->prom_emulation) {
+		arm_setup_initial_translation_table(cpu,
+		    machine->physical_ram_in_mb * 1048576 - 65536);
+		arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
+		arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
+		arm_translation_table_set_l1_b(cpu, 0xff000000, 0xff000000);
 	}
-
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
-
-	return 1;
 }
 
 
-/*
- *  devinit_fdc():
- */
-int devinit_fdc(struct devinit *devinit)
+MACHINE_DEFAULT_CPU(iyonix)
 {
-	struct fdc_data *d;
+	machine->cpu_name = strdup("80321_600_B0");
+}
 
-	d = malloc(sizeof(struct fdc_data));
-	if (d == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-	memset(d, 0, sizeof(struct fdc_data));
-	d->irqnr = devinit->irq_nr;
 
-	memory_device_register(devinit->machine->memory, devinit->name,
-	    devinit->addr, DEV_FDC_LENGTH, dev_fdc_access, d,
-	    DM_DEFAULT, NULL);
+MACHINE_DEFAULT_RAM(iyonix)
+{
+	machine->physical_ram_in_mb = 32;
+}
 
-	return 1;
+
+MACHINE_REGISTER(iyonix)
+{
+	MR_DEFAULT(iyonix, "Iyonix", ARCH_ARM, MACHINE_IYONIX, 1, 0);
+	me->aliases[0] = "iyonix";
+	me->set_default_ram = machine_default_ram_iyonix;
+	machine_entry_add(me, ARCH_ARM);
 }
 

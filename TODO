@@ -1,7 +1,11 @@
-$Id: TODO,v 1.191 2006-01-01 13:48:57 debug Exp $
+$Id: TODO,v 1.192 2006-01-06 11:41:43 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
+
+Configure:
+	x)  Clean up the enable/disable stuff.
+	x)  Disable the "--enable-" options for Release builds.
 
 Dyntrans:
 	x)  64-bit stuff: good generic virtual memory translation, and

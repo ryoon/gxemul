@@ -2,7 +2,7 @@
 #define	CPU_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,9 +28,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.59 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu.h,v 1.60 2006-01-06 13:03:56 debug Exp $
  *
- *  See cpu.c.
+ *  CPU-related definitions.
  */
 
 
@@ -174,10 +174,6 @@ struct cpu_family {
 	void			(*functioncall_trace)(struct cpu *,
 				    uint64_t f, int n_args);
 };
-
-#ifdef TRACE_NULL_CRASHES
-#define	TRACE_NULL_N_ENTRIES		16
-#endif
 
 
 /*

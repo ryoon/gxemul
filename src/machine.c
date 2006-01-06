@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.653 2006-01-06 11:55:50 debug Exp $
+ *  $Id: machine.c,v 1.654 2006-01-06 13:03:54 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -3163,58 +3163,6 @@ Not yet.
 #endif	/*  ENABLE_MIPS  */
 
 #ifdef ENABLE_PPC
-	case MACHINE_WALNUT:
-		/*
-		 *  NetBSD/evbppc (http://www.netbsd.org/Ports/evbppc/)
-		 */
-		machine->machine_name = "Walnut evaluation board";
-
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "ns16550 irq=0 addr=0xef600300");
-
-		/*  OpenBIOS board config data:  */
-		dev_ram_init(machine, 0xfffe0b50, 64, DEV_RAM_RAM, 0);
-		store_32bit_word(cpu, 0xfffe0b50, 0xfffe0b54);
-		store_32bit_word(cpu, 0xfffe0b54, 0x4e800020);  /*  blr  */
-		store_32bit_word(cpu, 0xfffe0b74, machine->physical_ram_in_mb * 1048576);
-		store_32bit_word(cpu, 0xfffe0b84, machine->emulated_hz);
-		store_32bit_word(cpu, 0xfffe0b88, 33000000);
-		store_32bit_word(cpu, 0xfffe0b8c, 66000000);
-#if 0
-        unsigned char   usr_config_ver[4];
-        unsigned char   rom_sw_ver[30];
-        unsigned int    mem_size;
-        unsigned char   mac_address_local[6];
-        unsigned char   mac_address_pci[6];
-        unsigned int    processor_speed;
-        unsigned int    plb_speed;
-        unsigned int    pci_speed;
-#endif
-
-		break;
-
-	case MACHINE_PMPPC:
-		/*
-		 *  NetBSD/pmppc (http://www.netbsd.org/Ports/pmppc/)
-		 */
-		machine->machine_name = "Artesyn's PM/PPC board";
-		if (machine->emulated_hz == 0)
-			machine->emulated_hz = 10000000;
-
-		dev_pmppc_init(mem);
-
-		machine->md_int.cpc700_data = dev_cpc700_init(machine, mem);
-		machine->md_interrupt = cpc700_interrupt;
-
-		/*  RTC at "ext int 5" = "int 25" in IBM jargon, int
-		    31-25 = 6 for the rest of us.  */
-		dev_mc146818_init(machine, mem, 0x7ff00000, 31-25, MC146818_PMPPC, 1);
-
-		bus_pci_add(machine, machine->md_int.cpc700_data->pci_data,
-		    mem, 0, 8, 0, "dec21143");
-
-		break;
-
 	case MACHINE_SANDPOINT:
 		/*
 		 *  NetBSD/sandpoint (http://www.netbsd.org/Ports/sandpoint/)
@@ -3522,43 +3470,6 @@ Not yet.
 			    hpc_fb_bits, machine->machine_name);
 		}
 		break;
-
-	case MACHINE_NETWINDER:
-		machine->machine_name = "NetWinder";
-
-		if (machine->physical_ram_in_mb > 256)
-			fprintf(stderr, "WARNING! Real NetWinders cannot"
-			    " have more than 256 MB RAM. Continuing anyway.\n");
-
-		machine->md_int.footbridge_data =
-		    device_add(machine, "footbridge addr=0x42000000");
-		machine->md_interrupt = isa32_interrupt;
-		machine->isa_pic_data.native_irq = 11;
-
-		bus_isa_init(machine, 0, 0x7c000000, 0x80000000, 32, 48);
-#if 0
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
-		machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
-		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-
-		device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0");
-		device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1");
-
-			dev_vga_init(machine, mem, 0x800a0000ULL, 0x7c0003c0, machine->machine_name);
-			j = dev_pckbc_init(machine, mem, 0x7c000060, PCKBC_8042,
-			    32 + 1, 32 + 12, machine->use_x11, 0);
-			machine->main_console_handle = j;
-#endif
-		if (machine->use_x11) {
-			bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
-			    mem, 0xc0, 8, 0, "igsfb");
-		}
-
-		if (machine->prom_emulation) {
-			arm_setup_initial_translation_table(cpu, 0x4000);
-		}
-		break;
 #endif	/*  ENABLE_ARM  */
 
 	default:
@@ -3694,9 +3605,6 @@ void machine_memsize_fix(struct machine *m)
 			break;
 		case MACHINE_HPCARM:
 			m->physical_ram_in_mb = 32;
-			break;
-		case MACHINE_NETWINDER:
-			m->physical_ram_in_mb = 16;
 			break;
 		}
 	}
@@ -3851,14 +3759,6 @@ void machine_default_cputype(struct machine *m)
 		break;
 
 	/*  PowerPC:  */
-	case MACHINE_WALNUT:
-		/*  For NetBSD/evbppc.  */
-		m->cpu_name = strdup("PPC405GP");
-		break;
-	case MACHINE_PMPPC:
-		/*  For NetBSD/pmppc.  */
-		m->cpu_name = strdup("PPC750");
-		break;
 	case MACHINE_SANDPOINT:
 		/*
 		 *  For NetBSD/sandpoint. According to NetBSD's page:
@@ -3894,9 +3794,6 @@ void machine_default_cputype(struct machine *m)
 	/*  ARM:  */
 	case MACHINE_HPCARM:
 		m->cpu_name = strdup("SA1110");
-		break;
-	case MACHINE_NETWINDER:
-		m->cpu_name = strdup("SA110");
 		break;
 	}
 
@@ -4115,6 +4012,8 @@ void machine_init(void)
 
 	/*
 	 *  The following are old-style hardcoded machine definitions:
+	 *
+	 *  TODO: Move these to individual files in src/machines/.
 	 */
 
 	/*  ARC:  */
@@ -4164,12 +4063,6 @@ void machine_init(void)
 	me->subtype[7]->aliases[1] = "m700";
 
 	machine_entry_add(me, ARCH_MIPS);
-
-	/*  Artesyn's PM/PPC board: (NetBSD/pmppc)  */
-	me = machine_entry_new("Artesyn's PM/PPC board", ARCH_PPC,
-	    MACHINE_PMPPC, 1, 0);
-	me->aliases[0] = "pmppc";
-	machine_entry_add(me, ARCH_PPC);
 
 	/*  BeBox: (NetBSD/bebox)  */
 	me = machine_entry_new("BeBox", ARCH_PPC, MACHINE_BEBOX, 1, 0);
@@ -4340,11 +4233,6 @@ void machine_init(void)
 	me->aliases[1] = "wg602v1";
 	machine_entry_add(me, ARCH_MIPS);
 
-	/*  NetWinder:  */
-	me = machine_entry_new("NetWinder", ARCH_ARM, MACHINE_NETWINDER, 1, 0);
-	me->aliases[0] = "netwinder";
-	machine_entry_add(me, ARCH_ARM);
-
 	/*  Playstation Portable:  */
 	me = machine_entry_new("Playstation Portable", ARCH_MIPS,
 	    MACHINE_PSP, 1, 0);
@@ -4381,12 +4269,5 @@ void machine_init(void)
 	me->subtype[9] = machine_entry_subtype_new("IP35", 35, 1);
 	me->subtype[9]->aliases[0] = "ip35";
 	machine_entry_add(me, ARCH_MIPS);
-
-	/*  Walnut: (NetBSD/evbppc)  */
-	me = machine_entry_new("Walnut evaluation board", ARCH_PPC,
-	    MACHINE_WALNUT, 2, 0);
-	me->aliases[0] = "walnut";
-	me->aliases[1] = "evbppc";
-	machine_entry_add(me, ARCH_PPC);
 }
 

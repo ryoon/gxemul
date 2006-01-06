@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.191 2006-01-06 12:20:17 debug Exp $
+#  $Id: configure,v 1.192 2006-01-06 13:03:53 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -136,8 +136,6 @@ if [ z"$*" != z ]; then
 
 			echo "  --always32         enable ALWAYS_SIGNEXTEND_32"\
 			    "(for hunting down 32-bit bugs)"
-			echo "  --tracenull        enable" \
-			    "TRACE_NULL_CRASHES (for bug hunting)"
 			printf "  --enable-caches    enable cache emulation"
 			printf " (BUGGY)\n"
 			echo "  --enable-delays    enable instruction" \
@@ -295,14 +293,6 @@ if [ z$ONEKPAGE = zYES ]; then
 	echo 'Enabling 1 KB page dyntrans support. (NOTE:' \
 	    'This slows down everything.)'
 	printf "#define ONEKPAGE\n" >> config.h
-fi
-
-
-#  Development option: TRACE_NULL_CRASHES
-if [ z$TRACENULL = zYES ]; then
-	echo 'Enabling TRACE_NULL_CRASHES. (NOTE:' \
-	    'This slows down the emulator.)'
-	printf "#define TRACE_NULL_CRASHES\n" >> config.h
 fi
 
 

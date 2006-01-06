@@ -1,4 +1,9 @@
-$Id: BUGS,v 1.39 2005-12-11 21:34:41 debug Exp $
+$Id: BUGS,v 1.40 2006-01-06 13:03:53 debug Exp $
+
+If you experience a CRASH, then please run gdb on the core dump, do a back
+trace, and send it to me.
+
+Some of the known bugs are:
 
   x)  Floating point coprocessor stuff is buggy. Writing a new (portable)
       framework for fp emulation is in the TODO.

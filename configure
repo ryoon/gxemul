@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.190 2005-12-31 15:48:29 debug Exp $
+#  $Id: configure,v 1.191 2006-01-06 12:20:17 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -71,17 +71,17 @@ else
 	DYNTRANSBACKEND=NO #YES
 	ENABLEALPHA=YES
 	ENABLEARM=YES
-	ENABLEAVR=NO
-	ENABLEHPPA=NO
-	ENABLEI960=NO
-	ENABLEIA64=NO
-	ENABLEM68K=NO
+	ENABLEAVR=YES
+	ENABLEHPPA=YES
+	ENABLEI960=YES
+	ENABLEIA64=YES
+	ENABLEM68K=YES
 	ENABLEMIPS=YES
 	NEWMIPS=NO
 	ENABLEPPC=YES
-	ENABLESH=NO
+	ENABLESH=YES
 	ENABLESPARC=YES
-	ENABLEX86=NO
+	ENABLEX86=YES
 fi
 
 if [ z"$*" != z ]; then
@@ -101,71 +101,10 @@ if [ z"$*" != z ]; then
 			MIPS16=NO
 		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
-		else if [ z$a = z--enable-all ]; then
-			ENABLEALPHA=YES
-			ENABLEARM=YES
-			ENABLEAVR=YES
-			ENABLEHPPA=YES
-			ENABLEI960=YES
-			ENABLEIA64=YES
-			ENABLEM68K=YES
-			ENABLEMIPS=YES
-			ENABLEPPC=YES
-			ENABLESH=YES
-			ENABLESPARC=YES
-			ENABLEX86=YES
 		else if [ z$a = z--disable-dyntransbackend ]; then
 			DYNTRANSBACKEND=NO
 		else if [ z$a = z--enable-dyntransbackend ]; then
 			DYNTRANSBACKEND=YES
-		else if [ z$a = z--disable-alpha ]; then
-			ENABLEALPHA=NO
-		else if [ z$a = z--enable-alpha ]; then
-			ENABLEALPHA=YES
-		else if [ z$a = z--disable-arm ]; then
-			ENABLEARM=NO
-		else if [ z$a = z--enable-arm ]; then
-			ENABLEARM=YES
-		else if [ z$a = z--disable-avr ]; then
-			ENABLEAVR=NO
-		else if [ z$a = z--enable-avr ]; then
-			ENABLEAVR=YES
-		else if [ z$a = z--disable-hppa ]; then
-			ENABLEHPPA=NO
-		else if [ z$a = z--enable-hppa ]; then
-			ENABLEHPPA=YES
-		else if [ z$a = z--disable-i960 ]; then
-			ENABLEI960=NO
-		else if [ z$a = z--enable-i960 ]; then
-			ENABLEI960=YES
-		else if [ z$a = z--disable-ia64 ]; then
-			ENABLEIA64=NO
-		else if [ z$a = z--enable-ia64 ]; then
-			ENABLEIA64=YES
-		else if [ z$a = z--disable-m68k ]; then
-			ENABLEM68K=NO
-		else if [ z$a = z--enable-m68k ]; then
-			ENABLEM86K=YES
-		else if [ z$a = z--disable-mips ]; then
-			ENABLEMIPS=NO
-		else if [ z$a = z--enable-mips ]; then
-			ENABLEMIPS=YES
-		else if [ z$a = z--disable-ppc ]; then
-			ENABLEPPC=NO
-		else if [ z$a = z--enable-ppc ]; then
-			ENABLEPPC=YES
-		else if [ z$a = z--disable-sh ]; then
-			ENABLESH=NO
-		else if [ z$a = z--enable-sh ]; then
-			ENABLESH=YES
-		else if [ z$a = z--disable-sparc ]; then
-			ENABLESPARC=NO
-		else if [ z$a = z--enable-sparc ]; then
-			ENABLESPARC=YES
-		else if [ z$a = z--disable-x86 ]; then
-			ENABLEX86=NO
-		else if [ z$a = z--enable-x86 ]; then
-			ENABLEX86=YES
 		else if [ z$a = z--disable-delays ]; then
 			DELAYS=NO
 		else if [ z$a = z--enable-delays ]; then
@@ -204,98 +143,12 @@ if [ z"$*" != z ]; then
 			echo "  --enable-delays    enable instruction" \
 			    "latency/delay emulation"
 
-			printf "  --enable-all       enable everything\n"
-
 			if [ z$DYNTRANSBACKEND = zYES ]; then
 				printf "  --disable-dyntransbackend  disable "
 			else
 				printf "  --enable-dyntransbackend  enable"
 			fi
 			printf "dyntrans backend\n"
-
-			if [ z$ENABLEALPHA = zYES ]; then
-				printf "  --disable-alpha    disable "
-			else
-				printf "  --enable-alpha     enable "
-			fi
-			printf "Alpha CPU emulation\n"
-
-			if [ z$ENABLEARM = zYES ]; then
-				printf "  --disable-arm      disable "
-			else
-				printf "  --enable-arm       enable "
-			fi
-			printf "ARM CPU emulation\n"
-
-			if [ z$ENABLEAVR = zYES ]; then
-				printf "  --disable-avr      disable "
-			else
-				printf "  --enable-avr       enable "
-			fi
-			printf "Atmel AVR CPU emulation\n"
-
-			if [ z$ENABLEHPPA = zYES ]; then
-				printf "  --disable-hppa     disable "
-			else
-				printf "  --enable-hppa      enable "
-			fi
-			printf "HPPA CPU emulation\n"
-
-			if [ z$ENABLEI960 = zYES ]; then
-				printf "  --disable-i960     disable "
-			else
-				printf "  --enable-i960      enable "
-			fi
-			printf "i960 CPU emulation\n"
-
-			if [ z$ENABLEIA64 = zYES ]; then
-				printf "  --disable-ia64     disable "
-			else
-				printf "  --enable-ia64      enable "
-			fi
-			printf "IA64 CPU emulation\n"
-
-			if [ z$ENABLEM68K = zYES ]; then
-				printf "  --disable-m68k     disable "
-			else
-				printf "  --enable-m68k      enable "
-			fi
-			printf "M68K CPU emulation\n"
-
-			if [ z$ENABLEMIPS = zYES ]; then
-				printf "  --disable-mips     disable "
-			else
-				printf "  --enable-mips      enable "
-			fi
-			printf "MIPS CPU emulation\n"
-
-			if [ z$ENABLEPPC = zYES ]; then
-				printf "  --disable-ppc      disable "
-			else
-				printf "  --enable-ppc       enable "
-			fi
-			printf "POWER/PPC CPU emulation\n"
-
-			if [ z$ENABLESH = zYES ]; then
-				printf "  --disable-sh       disable "
-			else
-				printf "  --enable-sh        enable "
-			fi
-			printf "SH CPU emulation\n"
-
-			if [ z$ENABLESPARC = zYES ]; then
-				printf "  --disable-sparc    disable "
-			else
-				printf "  --enable-sparc     enable "
-			fi
-			printf "SPARC CPU emulation\n"
-
-			if [ z$ENABLEX86 = zYES ]; then
-				printf "  --disable-x86      disable "
-			else
-				printf "  --enable-x86       enable "
-			fi
-			printf "x86 CPU emulation\n"
 
 			echo "  --enable-mips16    enable MIPS16 support"
 			echo "  --enable-newmips   use new MIPS dyntrans code"
@@ -313,8 +166,7 @@ if [ z"$*" != z ]; then
 			    "available options."
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi
 	done
 fi
 
@@ -1306,6 +1158,9 @@ fi
 ###############################################################################
 
 if [ z$DYNTRANSBACKEND = zYES ]; then
+	printf "Dyntrans: Not yet.\n"
+	exit
+
 	printf "checking for dyntrans backend... "
 	DBFOUND=NO
 

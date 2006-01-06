@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.2 2006-01-06 11:41:46 debug Exp $
+ *  $Id: machine_algor.c,v 1.3 2006-01-06 12:20:18 debug Exp $
  */
 
 #include <stdio.h>
@@ -95,7 +95,8 @@ MACHINE_SETUP(algor)
 			snprintf(tmps, sizeof(tmps), "memsize=0x%08x",
 			    machine->physical_ram_in_mb * 1048576);
 			store_string(cpu, (int)0x9fc01900, tmps);
-			store_string(cpu, (int)0x9fc01a00, "ethaddr=10:20:30:30:20:10");
+			store_string(cpu, (int)0x9fc01a00,
+			    "ethaddr=10:20:30:30:20:10");
 		}
 	}
 }

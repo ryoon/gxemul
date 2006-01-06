@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.1 2006-01-06 11:41:46 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.2 2006-01-06 12:20:18 debug Exp $
  */
 
 #include <stdio.h>
@@ -42,7 +42,8 @@
 MACHINE_SETUP(iq80321)
 {
 	/*
-	 *  Intel IQ80321. See http://sources.redhat.com/ecos/docs-latest/redboot/iq80321.html
+	 *  Intel IQ80321. See http://sources.redhat.com/ecos/
+	 *	docs-latest/redboot/iq80321.html
 	 *  for more details about the memory map.
 	 */
 
@@ -55,8 +56,10 @@ MACHINE_SETUP(iq80321)
 	/*  Used by "Redboot":  */
 	dev_ram_init(machine, 0xa800024, 4, DEV_RAM_RAM, 0);
 	store_32bit_word(cpu, 0xa800024, 0x7fff);
-	device_add(machine, "ns16550 irq=0 addr=0x0d800000 addr_mult=4 in_use=0");
-	device_add(machine, "ns16550 irq=0 addr=0x0d800020 addr_mult=4 in_use=0");
+	device_add(machine,
+	    "ns16550 irq=0 addr=0x0d800000 addr_mult=4 in_use=0");
+	device_add(machine,
+	    "ns16550 irq=0 addr=0x0d800020 addr_mult=4 in_use=0");
 
 	/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 	dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);

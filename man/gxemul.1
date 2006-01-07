@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.44 2006-01-01 13:17:15 debug Exp $
+.\" $Id: gxemul.1,v 1.45 2006-01-07 10:17:16 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -168,11 +168,11 @@ FLOPPY.
 Override the default geometry; use H heads and S sectors-per-track.
 (The number of cylinders is calculated automatically.)
 .It i
-IDE.
+IDE. (This is the default for most machine types.)
 .It r
 Read-only (don't allow changes to be written to the file).
 .It s
-SCSI (this is the default for most machine types).
+SCSI.
 .It t
 Tape.
 .It 0-7
@@ -200,7 +200,7 @@ This disables automatic clock adjustments, which is otherwise turned on.)
 Display each instruction as it is being executed.
 .It Fl J
 Disable some speed tricks. For MIPS emulation, these are mostly 
-timing-related. For non-MIPS emulation (i.e. those modes using dyntrans), 
+timing-related. For non-MIPS emulation (i.e. modes using dyntrans), 
 this flag disables the use of "instruction combinations".
 .It Fl j Ar n
 Set the name of the kernel to

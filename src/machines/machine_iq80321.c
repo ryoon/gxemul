@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.2 2006-01-06 12:20:18 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.3 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -71,13 +71,14 @@ MACHINE_SETUP(iq80321)
 
 	device_add(machine, "i80321 addr=0xffffe000");
 
-	if (machine->prom_emulation) {
-		arm_setup_initial_translation_table(cpu, 0x4000);
-		arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
-		arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
-		arm_translation_table_set_l1(cpu, 0xe0000000, 0xe0000000);
-		arm_translation_table_set_l1(cpu, 0xf0000000, 0xf0000000);
-	}
+	if (!machine->prom_emulation)
+		return;
+
+	arm_setup_initial_translation_table(cpu, 0x4000);
+	arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
+	arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
+	arm_translation_table_set_l1(cpu, 0xe0000000, 0xe0000000);
+	arm_translation_table_set_l1(cpu, 0xf0000000, 0xf0000000);
 }
 
 

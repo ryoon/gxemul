@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.1 2006-01-07 10:17:19 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.2 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,7 +48,10 @@
 MACHINE_SETUP(evbmips)
 {
 	char tmpstr[1000];
+	char tmps[50];
+	uint64_t env, tmpptr;
 	struct pci_data *pci_data;
+	int i;
 
 	/*  See http://www.netbsd.org/Ports/evbmips/ for more info.  */
 
@@ -108,66 +111,60 @@ MACHINE_SETUP(evbmips)
 		exit(1);
 	}
 
-	if (machine->prom_emulation) {
-		int i;
+	if (!machine->prom_emulation)
+		return;
 
-		/*  NetBSD/evbmips wants these: (at least for Malta)  */
 
-		/*  a0 = argc  */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
+	/*  NetBSD/evbmips wants these: (at least for Malta)  */
 
-		/*  a1 = argv  */
-		cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
-		store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
-		store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
-		store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
+	/*  a0 = argc  */
+	cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
 
-		machine->bootstr = strdup(machine->boot_kernel_filename);
-		machine->bootarg = strdup(machine->boot_string_argument);
-		store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
-		store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
+	/*  a1 = argv  */
+	cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
+	store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
+	store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
+	store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
 
-		/*  a2 = (yamon_env_var *)envp  */
-		cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
-		{
-			uint64_t env = cpu->cd.mips.gpr[MIPS_GPR_A2];
-			uint64_t tmpptr = 0xffffffff9fc01c00ULL;
-			char tmps[50];
+	machine->bootstr = strdup(machine->boot_kernel_filename);
+	machine->bootarg = strdup(machine->boot_string_argument);
+	store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
+	store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
 
-			snprintf(tmps, sizeof(tmps), "0x%08x",
-			    machine->physical_ram_in_mb * 1048576);
-			add_environment_string_dual(cpu,
-			    &env, &tmpptr, "memsize", tmps);
+	/*  a2 = (yamon_env_var *)envp  */
+	cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
 
-			add_environment_string_dual(cpu,
-			    &env, &tmpptr, "yamonrev", "02.06");
+	env = cpu->cd.mips.gpr[MIPS_GPR_A2];
+	tmpptr = 0xffffffff9fc01c00ULL;
 
-			/*  End of env:  */
-			tmpptr = 0;
-			add_environment_string_dual(cpu,
-			    &env, &tmpptr, NULL, NULL);
-		}
+	snprintf(tmps, sizeof(tmps), "0x%08x", machine->physical_ram_in_mb<<20);
+	add_environment_string_dual(cpu, &env, &tmpptr, "memsize", tmps);
 
-		/*  a3 = memsize  */
-		cpu->cd.mips.gpr[MIPS_GPR_A3] =
-		    machine->physical_ram_in_mb * 1048576;
-		/*  Hm. Linux ignores a3.  */
+	add_environment_string_dual(cpu, &env, &tmpptr, "yamonrev", "02.06");
 
-		/*
-		 *  TODO:
-		 *	Core ID numbers.
-		 *	How much of this is not valid for PBxxxx?
-		 *
-		 *  See maltareg.h for more info.
-		 */
-		store_32bit_word(cpu, (int32_t)(0x80000000 + MALTA_REVISION),
-		    (1 << 10) + 0x26);
+	/*  End of env:  */
+	tmpptr = 0;
+	add_environment_string_dual(cpu,
+		    &env, &tmpptr, NULL, NULL);
 
-		/*  Call vectors at 0x9fc005xx:  */
-		for (i=0; i<0x100; i+=4)
-			store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,
-			    (int64_t)(int32_t)0x9fc00800 + i);
-	}
+	/*  a3 = memsize  */
+	cpu->cd.mips.gpr[MIPS_GPR_A3] = machine->physical_ram_in_mb * 1048576;
+	/*  Hm. Linux ignores a3.  */
+
+	/*
+	 *  TODO:
+	 *	Core ID numbers.
+	 *	How much of this is not valid for PBxxxx?
+	 *
+	 *  See maltareg.h for more info.
+	 */
+	store_32bit_word(cpu, (int32_t)(0x80000000 + MALTA_REVISION),
+	    (1 << 10) + 0x26);
+
+	/*  Call vectors at 0x9fc005xx:  */
+	for (i=0; i<0x100; i+=4)
+		store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,
+		    (int64_t)(int32_t)0x9fc00800 + i);
 }
 
 

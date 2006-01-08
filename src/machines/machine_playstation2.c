@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.1 2006-01-02 21:38:13 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.2 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -50,6 +50,11 @@ static int int_to_bcd(int i)
 
 MACHINE_SETUP(playstation2)
 {
+	int tmplen;
+	char *tmp;
+	time_t timet;
+	struct tm *tm_ptr;
+
 	machine->machine_name = "Playstation 2";
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
@@ -97,59 +102,59 @@ MACHINE_SETUP(playstation2)
 		dev_ps2_spd_init(machine, machine->memory, 0x14000000);
 	}
 
-	if (machine->prom_emulation) {
-		int tmplen = 1000;
-		char *tmp = malloc(tmplen);
-		time_t timet;
-		struct tm *tm_ptr;
+	if (!machine->prom_emulation)
+		return;
 
-		add_symbol_name(&machine->symbol_context,
-		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0, 0);
-		store_32bit_word(cpu, PLAYSTATION2_BDA + 0,
-		    PLAYSTATION2_SIFBIOS);
-		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
-		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
-		if (tmp == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
+	tmplen = 1000;
+	tmp = malloc(tmplen);
 
-		strlcpy(tmp, "root=/dev/hda1 crtmode=vesa0,60", tmplen);
+	add_symbol_name(&machine->symbol_context,
+	    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0, 0);
+	store_32bit_word(cpu, PLAYSTATION2_BDA + 0,
+	    PLAYSTATION2_SIFBIOS);
+	store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
-		if (machine->boot_string_argument[0])
-			snprintf(tmp+strlen(tmp), tmplen-strlen(tmp),
-			    " %s", machine->boot_string_argument);
-		tmp[tmplen-1] = '\0';
-
-		machine->bootstr = tmp;
-		store_string(cpu, PLAYSTATION2_OPTARGS, machine->bootstr);
-
-		/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
-
-		/*  RTC data given by the BIOS:  */
-		timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
-		tm_ptr = gmtime(&timet);
-		/*  TODO:  are these 0- or 1-based?  */
-		store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tm_ptr->tm_sec));
-		store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tm_ptr->tm_min));
-		store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tm_ptr->tm_hour));
-		store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tm_ptr->tm_mday));
-		store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000 + 0x10 +6, int_to_bcd(tm_ptr->tm_mon+1));
-		store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000+0x10+7, int_to_bcd(tm_ptr->tm_year-100));
-
-		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This
-		    contains the sbus controller type.  */
-		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb
-		    * 1048576 - 0x1000 + 0x1c, 2);
+	store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
+	if (tmp == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
 	}
+
+	strlcpy(tmp, "root=/dev/hda1 crtmode=vesa0,60", tmplen);
+
+	if (machine->boot_string_argument[0])
+		snprintf(tmp+strlen(tmp), tmplen-strlen(tmp),
+		    " %s", machine->boot_string_argument);
+	tmp[tmplen-1] = '\0';
+
+	machine->bootstr = tmp;
+	store_string(cpu, PLAYSTATION2_OPTARGS, machine->bootstr);
+
+	/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
+
+	/*  RTC data given by the BIOS:  */
+	timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
+	tm_ptr = gmtime(&timet);
+	/*  TODO:  are these 0- or 1-based?  */
+	store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tm_ptr->tm_sec));
+	store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tm_ptr->tm_min));
+	store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tm_ptr->tm_hour));
+	store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tm_ptr->tm_mday));
+	store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tm_ptr->tm_mon+1));
+	store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tm_ptr->tm_year-100));
+
+	/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This
+	    contains the sbus controller type.  */
+	store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb
+	    * 1048576 - 0x1000 + 0x1c, 2);
 }
 
 

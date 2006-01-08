@@ -25,13 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iyonix.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_sandpoint.c,v 1.1 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
 #include <string.h>
 
-#include "bus_isa.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
@@ -40,52 +39,36 @@
 #include "misc.h"
 
 
-MACHINE_SETUP(iyonix)
+MACHINE_SETUP(sandpoint)
 {
-	machine->machine_name = "Iyonix";
+	/*
+	 *  NetBSD/sandpoint (http://www.netbsd.org/Ports/sandpoint/)
+	 */
+	machine->machine_name = "Motorola Sandpoint";
 
-	cpu->cd.arm.coproc[6] = arm_coproc_i80321;
-	cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
-
-	/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
-	dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
-	dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
-	dev_ram_init(machine, 0xf0000000, 0x08000000, DEV_RAM_MIRROR, 0x0);
-
-	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=0");
-
-	bus_isa_init(machine, 0, 0x90000000ULL, 0x98000000ULL, 32, 48);
-
-	device_add(machine, "i80321 addr=0xffffe000");
-
-	if (!machine->prom_emulation)
-		return;
-
-	arm_setup_initial_translation_table(cpu,
-	    machine->physical_ram_in_mb * 1048576 - 65536);
-	arm_translation_table_set_l1(cpu, 0xa0000000, 0xa0000000);
-	arm_translation_table_set_l1(cpu, 0xc0000000, 0xa0000000);
-	arm_translation_table_set_l1_b(cpu, 0xff000000, 0xff000000);
+	/*  r4 should point to first free byte after the loaded kernel:  */
+	cpu->cd.ppc.gpr[4] = 6 * 1048576;
 }
 
 
-MACHINE_DEFAULT_CPU(iyonix)
+MACHINE_DEFAULT_CPU(sandpoint)
 {
-	machine->cpu_name = strdup("80321_600_B0");
+	/*
+	 *  According to NetBSD's page:
+	 *
+	 *  "Unity" module has an MPC8240.
+	 *  "Altimus" module has an MPC7400 (G4) or an MPC107.
+	 */
+
+	machine->cpu_name = strdup("MPC7400");
 }
 
 
-MACHINE_DEFAULT_RAM(iyonix)
+MACHINE_REGISTER(sandpoint)
 {
-	machine->physical_ram_in_mb = 32;
-}
-
-
-MACHINE_REGISTER(iyonix)
-{
-	MR_DEFAULT(iyonix, "Iyonix", ARCH_ARM, MACHINE_IYONIX, 1, 0);
-	me->aliases[0] = "iyonix";
-	me->set_default_ram = machine_default_ram_iyonix;
-	machine_entry_add(me, ARCH_ARM);
+	MR_DEFAULT(sandpoint, "Motorola Sandpoint (PPC)", ARCH_PPC,
+	    MACHINE_SANDPOINT, 1, 0);
+	me->aliases[0] = "sandpoint";
+	machine_entry_add(me, ARCH_PPC);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_shark.c,v 1.1 2005-12-31 15:49:00 debug Exp $
+ *  $Id: machine_shark.c,v 1.2 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,20 +47,22 @@ MACHINE_SETUP(shark)
 
 	bus_isa_init(machine, BUS_ISA_IDE0, 0x08100000, 0xc0000000, 32, 48);
 
-	if (machine->prom_emulation) {
-		arm_setup_initial_translation_table(cpu,
-		    machine->physical_ram_in_mb * 1048576 - 65536);
+	if (!machine->prom_emulation)
+		return;
 
-		/*  TODO: Framebuffer  */
-		of_emul_init(machine, NULL, 0xf1000000, 1024, 768);
-		of_emul_init_isa(machine);
 
-		/*
-		 *  r0 = OpenFirmware entry point.  NOTE: See cpu_arm.c for
-		 *  the rest of this semi-ugly hack.
-		 */
-		cpu->cd.arm.r[0] = cpu->cd.arm.of_emul_addr;
-	}
+	arm_setup_initial_translation_table(cpu,
+	    machine->physical_ram_in_mb * 1048576 - 65536);
+
+	/*  TODO: Framebuffer  */
+	of_emul_init(machine, NULL, 0xf1000000, 1024, 768);
+	of_emul_init_isa(machine);
+
+	/*
+	 *  r0 = OpenFirmware entry point.  NOTE: See cpu_arm.c for
+	 *  the rest of this semi-ugly hack.
+	 */
+	cpu->cd.arm.r[0] = cpu->cd.arm.of_emul_addr;
 }
 
 

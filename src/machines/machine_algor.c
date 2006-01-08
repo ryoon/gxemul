@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.3 2006-01-06 12:20:18 debug Exp $
+ *  $Id: machine_algor.c,v 1.4 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -66,38 +66,38 @@ MACHINE_SETUP(algor)
 	bus_pci_add(machine, machine->md_int.v3_data->pci_data,
 	    machine->memory, 0, 0, 0, "dec21143");
 
-	if (machine->prom_emulation) {
-		/*  NetBSD/algor wants these:  */
+	if (!machine->prom_emulation)
+		return;
 
-		/*  a0 = argc  */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
+	/*  NetBSD/algor wants these:  */
 
-		/*  a1 = argv  */
-		cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
-		store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
-		store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
-		store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
+	/*  a0 = argc  */
+	cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;
 
-		machine->bootstr = strdup(machine->boot_kernel_filename);
-		machine->bootarg = strdup(machine->boot_string_argument);
-		store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
-		store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
+	/*  a1 = argv  */
+	cpu->cd.mips.gpr[MIPS_GPR_A1] = (int32_t)0x9fc01000;
+	store_32bit_word(cpu, (int32_t)0x9fc01000, 0x9fc01040);
+	store_32bit_word(cpu, (int32_t)0x9fc01004, 0x9fc01200);
+	store_32bit_word(cpu, (int32_t)0x9fc01008, 0);
 
-		/*  a2 = (yamon_env_var *)envp  */
-		cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
-		{
-			char tmps[50];
+	machine->bootstr = strdup(machine->boot_kernel_filename);
+	machine->bootarg = strdup(machine->boot_string_argument);
+	store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
+	store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
 
-			store_32bit_word(cpu, (int32_t)0x9fc01800, 0x9fc01900);
-			store_32bit_word(cpu, (int32_t)0x9fc01804, 0x9fc01a00);
-			store_32bit_word(cpu, (int32_t)0x9fc01808, 0);
+	/*  a2 = (yamon_env_var *)envp  */
+	cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
+	{
+		char tmps[50];
+		store_32bit_word(cpu, (int32_t)0x9fc01800, 0x9fc01900);
+		store_32bit_word(cpu, (int32_t)0x9fc01804, 0x9fc01a00);
+		store_32bit_word(cpu, (int32_t)0x9fc01808, 0);
 
-			snprintf(tmps, sizeof(tmps), "memsize=0x%08x",
-			    machine->physical_ram_in_mb * 1048576);
-			store_string(cpu, (int)0x9fc01900, tmps);
-			store_string(cpu, (int)0x9fc01a00,
-			    "ethaddr=10:20:30:30:20:10");
-		}
+		snprintf(tmps, sizeof(tmps), "memsize=0x%08x",
+		    machine->physical_ram_in_mb * 1048576);
+		store_string(cpu, (int)0x9fc01900, tmps);
+		store_string(cpu, (int)0x9fc01a00,
+		    "ethaddr=10:20:30:30:20:10");
 	}
 }
 

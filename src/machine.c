@@ -25,14 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.655 2006-01-07 10:17:17 debug Exp $
+ *  $Id: machine.c,v 1.656 2006-01-08 11:05:01 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
  *
  *	Helper functions.
  *
- *	Machine-specific initialization routines.
+ *	OLD Machine-specific initialization routines. (All new ones are in
+ *	src/machines/.)
  */
 
 #include <stdio.h>
@@ -3048,189 +3049,6 @@ Not yet.
 		break;
 #endif	/*  ENABLE_MIPS  */
 
-#ifdef ENABLE_PPC
-	case MACHINE_SANDPOINT:
-		/*
-		 *  NetBSD/sandpoint (http://www.netbsd.org/Ports/sandpoint/)
-		 */
-		machine->machine_name = "Motorola Sandpoint";
-
-		/*  r4 should point to first free byte after the loaded kernel:  */
-		cpu->cd.ppc.gpr[4] = 6 * 1048576;
-
-		break;
-
-	case MACHINE_BEBOX:
-		/*
-		 *  NetBSD/bebox (http://www.netbsd.org/Ports/bebox/)
-		 */
-		machine->machine_name = "BeBox";
-
-		machine->md_int.bebox_data = device_add(machine, "bebox");
-		machine->isa_pic_data.native_irq = 5;
-		machine->md_interrupt = isa32_interrupt;
-
-		pci_data = dev_eagle_init(machine, mem,
-		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
-
-		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_VGA,
-		    0x80000000, 0xc0000000, 32, 48);
-
-		if (machine->prom_emulation) {
-			/*  According to the docs, and also used by NetBSD:  */
-			store_32bit_word(cpu, 0x3010, machine->physical_ram_in_mb * 1048576);
-
-			/*  Used by Linux:  */
-			store_32bit_word(cpu, 0x32f8, machine->physical_ram_in_mb * 1048576);
-
-			/*  TODO: List of stuff, see http://www.beatjapan.org/
-			    mirror/www.be.com/aboutbe/benewsletter/
-			    Issue27.html#Cookbook  for the details.  */
-			store_32bit_word(cpu, 0x301c, 0);
-
-			/*  NetBSD/bebox: r3 = startkernel, r4 = endkernel,
-			    r5 = args, r6 = ptr to bootinfo?  */
-			cpu->cd.ppc.gpr[3] = 0x3100;
-			cpu->cd.ppc.gpr[4] = 0x400000;
-			cpu->cd.ppc.gpr[5] = 0x2000;
-			store_string(cpu, cpu->cd.ppc.gpr[5], "-a");
-			cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576 - 0x100;
-
-			/*  See NetBSD's bebox/include/bootinfo.h for details  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 0, 12);  /*  next  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 4, 0);  /*  mem  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 8,
-			    machine->physical_ram_in_mb * 1048576);
-
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 12, 20);  /* next */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 16, 1); /* console */
-			store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
-			    machine->use_x11? "vga" : "com", 4);
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 24, 0x3f8);/* addr */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 28, 9600);/* speed */
-
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 32, 0);  /*  next  */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 36, 2);  /*  clock */
-			store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 40, 100);
-		}
-		break;
-
-	case MACHINE_MACPPC:
-		/*
-		 *  NetBSD/macppc (http://www.netbsd.org/Ports/macppc/)
-		 *  OpenBSD/macppc (http://www.openbsd.org/macppc.html)
-		 */
-		machine->machine_name = "Macintosh (PPC)";
-		if (machine->emulated_hz == 0)
-			machine->emulated_hz = 40000000;
-
-		machine->md_int.gc_data = dev_gc_init(machine, mem, 0xf3000000, 64);
-		machine->md_interrupt = gc_interrupt;
-
-		pci_data = dev_uninorth_init(machine, mem, 0xe2000000,
-		    64 /*  isa irq base */, 0 /*  pci irq: TODO */);
-
-		bus_pci_add(machine, pci_data, mem, 0, 12, 0, "dec21143");
-		bus_pci_add(machine, pci_data, mem, 0, 15, 0, "gc_obio");
-
-		if (machine->use_x11)
-			bus_pci_add(machine, pci_data, mem, 0, 16, 0, "ati_radeon_9200_2");
-
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "z8530 addr=0xf3013000 irq=23 dma_irq=8 addr_mult=0x10");
-
-		fb = dev_fb_init(machine, mem, 0xf1000000,
-		    VFB_GENERIC | VFB_REVERSE_START, 1024,768, 1024,768, 8, "ofb");
-
-		device_add(machine, "hammerhead addr=0xf2800000");
-
-		device_add(machine, "adb addr=0xf3016000 irq=1");
-
-		if (machine->prom_emulation) {
-			uint64_t b = 8 * 1048576, a = b - 0x800;
-			int i;
-
-			of_emul_init(machine, fb, 0xf1000000, 1024, 768);
-			of_emul_init_uninorth(machine);
-			if (machine->use_x11)
-				of_emul_init_adb(machine);
-			else
-				of_emul_init_zs(machine);
-
-			/*
-			 *  r3 = pointer to boot_args (for the Mach kernel).
-			 *  See http://darwinsource.opendarwin.org/10.3/
-			 *  BootX-59/bootx.tproj/include.subproj/boot_args.h
-			 *  for more info.
-			 */
-			cpu->cd.ppc.gpr[3] = a;
-			store_16bit_word(cpu, a + 0x0000, 1);	/*  revision  */
-			store_16bit_word(cpu, a + 0x0002, 2);	/*  version  */
-			store_buf(cpu, a + 0x0004, machine->boot_string_argument, 256);
-			/*  26 dram banks; "long base; long size"  */
-			store_32bit_word(cpu, a + 0x0104, 0);	/*  base  */
-			store_32bit_word(cpu, a + 0x0108, machine->physical_ram_in_mb
-			    * 256);		/*  size (in pages)  */
-			for (i=8; i<26*8; i+= 4)
-				store_32bit_word(cpu, a + 0x0104 + i, 0);
-			a += (0x104 + 26 * 8);
-			/*  Video info:  */
-			store_32bit_word(cpu, a+0, 0xf1000000);	/*  video base  */
-			store_32bit_word(cpu, a+4, 0);		/*  display code (?)  */
-			store_32bit_word(cpu, a+8, 1024);	/*  bytes per pixel row  */
-			store_32bit_word(cpu, a+12, 1024);	/*  width  */
-			store_32bit_word(cpu, a+16, 768);	/*  height  */
-			store_32bit_word(cpu, a+20, 8);		/*  pixel depth  */
-			a += 24;
-			store_32bit_word(cpu, a+0, 127);	/*  gestalt number (TODO)  */
-			store_32bit_word(cpu, a+4, 0);		/*  device tree pointer (TODO)  */
-			store_32bit_word(cpu, a+8, 0);		/*  device tree length  */
-			store_32bit_word(cpu, a+12, b);		/*  last address of kernel data area  */
-
-			/*  r4 = "MOSX" (0x4D4F5358)  */
-			cpu->cd.ppc.gpr[4] = 0x4D4F5358;
-
-			/*
-			 *  r5 = OpenFirmware entry point.  NOTE: See
-			 *  cpu_ppc.c for the rest of this semi-ugly hack.
-			 */
-			dev_ram_init(machine, cpu->cd.ppc.of_emul_addr,
-			    0x1000, DEV_RAM_RAM, 0x0);
-			store_32bit_word(cpu, cpu->cd.ppc.of_emul_addr,
-			    0x44ee0002);
-			cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;
-
-#if 0
-			/*  r6 = args  */
-			cpu->cd.ppc.gpr[1] -= 516;
-			cpu->cd.ppc.gpr[6] = cpu->cd.ppc.gpr[1] + 4;
-			store_string(cpu, cpu->cd.ppc.gpr[6],
-			    machine->boot_string_argument);
-			/*  should be something like '/controller/disk/bsd'  */
-
-			/*  r7 = length? TODO  */
-			cpu->cd.ppc.gpr[7] = 5;
-#endif
-		}
-		break;
-
-	case MACHINE_DB64360:
-		/*  For playing with PMON2000 for PPC:  */
-		machine->machine_name = "DB64360";
-
-		machine->main_console_handle = (size_t)device_add(machine,
-		    "ns16550 irq=0 addr=0x1d000020 addr_mult=4");
-
-		if (machine->prom_emulation) {
-			int i;
-			for (i=0; i<32; i++)
-				cpu->cd.ppc.gpr[i] =
-				    0x12340000 + (i << 8) + 0x55;
-		}
-
-		break;
-#endif	/*  ENABLE_PPC  */
-
 #ifdef ENABLE_SH
 	case MACHINE_HPCSH:
 		/*  Handheld SH-based machines:  */
@@ -3483,9 +3301,6 @@ void machine_memsize_fix(struct machine *m)
 				m->physical_ram_in_mb = 32;
 			}
 			break;
-		case MACHINE_BEBOX:
-			m->physical_ram_in_mb = 64;
-			break;
 		case MACHINE_HPCARM:
 			m->physical_ram_in_mb = 32;
 			break;
@@ -3626,34 +3441,6 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_PSP:
 		m->cpu_name = strdup("Allegrex");
-		break;
-
-	/*  PowerPC:  */
-	case MACHINE_SANDPOINT:
-		/*
-		 *  For NetBSD/sandpoint. According to NetBSD's page:
-		 *
-		 *  "Unity" module has an MPC8240.
-		 *  "Altimus" module has an MPC7400 (G4) or an MPC107.
-		 */
-		m->cpu_name = strdup("MPC7400");
-		break;
-	case MACHINE_BEBOX:
-		/*  For NetBSD/bebox. Dual 133 MHz 603e CPUs, for example.  */
-		m->cpu_name = strdup("PPC603e");
-		break;
-	case MACHINE_MACPPC:
-		switch (m->machine_subtype) {
-		case MACHINE_MACPPC_G4:
-			m->cpu_name = strdup("PPC750");
-			break;
-		case MACHINE_MACPPC_G5:
-			m->cpu_name = strdup("PPC970");
-			break;
-		}
-		break;
-	case MACHINE_DB64360:
-		m->cpu_name = strdup("PPC750");
 		break;
 
 	/*  SH:  */
@@ -3934,20 +3721,10 @@ void machine_init(void)
 
 	machine_entry_add(me, ARCH_MIPS);
 
-	/*  BeBox: (NetBSD/bebox)  */
-	me = machine_entry_new("BeBox", ARCH_PPC, MACHINE_BEBOX, 1, 0);
-	me->aliases[0] = "bebox";
-	machine_entry_add(me, ARCH_PPC);
-
 	/*  Cobalt:  */
 	me = machine_entry_new("Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
 	me->aliases[0] = "cobalt";
 	machine_entry_add(me, ARCH_MIPS);
-
-	/*  DB64360: (for playing with PMON for PPC)  */
-	me = machine_entry_new("DB64360", ARCH_PPC, MACHINE_DB64360, 1, 0);
-	me->aliases[0] = "db64360";
-	machine_entry_add(me, ARCH_PPC);
 
 	/*  DECstation:  */
 	me = machine_entry_new("DECstation/DECsystem",
@@ -4058,28 +3835,10 @@ void machine_init(void)
 	me->subtype[1]->aliases[0] = "jornada690";
 	machine_entry_add(me, ARCH_SH);
 
-	/*  Macintosh (PPC):  */
-	me = machine_entry_new("Macintosh (PPC)", ARCH_PPC,
-	    MACHINE_MACPPC, 1, 2);
-	me->aliases[0] = "macppc";
-	me->subtype[0] = machine_entry_subtype_new("MacPPC G4",
-	    MACHINE_MACPPC_G4, 1);
-	me->subtype[0]->aliases[0] = "g4";
-	me->subtype[1] = machine_entry_subtype_new("MacPPC G5",
-	    MACHINE_MACPPC_G5, 1);
-	me->subtype[1]->aliases[0] = "g5";
-	machine_entry_add(me, ARCH_PPC);
-
 	/*  Meshcube:  */
 	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
 	me->aliases[0] = "meshcube";
 	machine_entry_add(me, ARCH_MIPS);
-
-	/*  Motorola Sandpoint: (NetBSD/sandpoint)  */
-	me = machine_entry_new("Motorola Sandpoint",
-	    ARCH_PPC, MACHINE_SANDPOINT, 1, 0);
-	me->aliases[0] = "sandpoint";
-	machine_entry_add(me, ARCH_PPC);
 
 	/*  NetGear:  */
 	me = machine_entry_new("NetGear WG602v1", ARCH_MIPS,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_zaurus.c,v 1.1 2005-12-31 15:49:00 debug Exp $
+ *  $Id: machine_zaurus.c,v 1.2 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,10 +52,11 @@ MACHINE_SETUP(zaurus)
 	device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
 	device_add(machine, "ns16550 irq=0 addr=0xfd400000 addr_mult=4");
 
+	if (!machine->prom_emulation)
+		return;
+
 	/*  TODO  */
-	if (machine->prom_emulation) {
-		arm_setup_initial_translation_table(cpu, 0x4000);
-	}
+	arm_setup_initial_translation_table(cpu, 0x4000);
 }
 
 

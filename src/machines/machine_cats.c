@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.2 2006-01-01 16:08:27 debug Exp $
+ *  $Id: machine_cats.c,v 1.3 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -46,6 +46,10 @@
 
 MACHINE_SETUP(cats)
 {
+	struct ebsaboot ebsaboot;
+	char bs[300];
+	int boot_id = machine->bootdev_id >= 0? machine->bootdev_id : 0;
+
 	machine->machine_name = "CATS evaluation board";
 	machine->stable = 1;
 
@@ -82,56 +86,54 @@ MACHINE_SETUP(cats)
 	bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
 	    machine->memory, 0xc0, 8, 0, "s3_virge");
 
-	if (machine->prom_emulation) {
-		/*  See cyclone_boot.h for details.  */
-		struct ebsaboot ebsaboot;
-		char bs[300];
-		int boot_id = machine->bootdev_id >= 0? machine->bootdev_id : 0;
+	if (!machine->prom_emulation)
+		return;
 
-		/*  DC21285_ROM_BASE "reboot" code:  (works with NetBSD)  */
-		store_32bit_word(cpu, 0x41000008ULL, 0xef8c64ebUL);
+	/*  See cyclone_boot.h for details.  */
 
-		cpu->cd.arm.r[0] = /* machine->physical_ram_in_mb */
-		    7 * 1048576 - 0x1000;
+	/*  DC21285_ROM_BASE "reboot" code:  (works with NetBSD)  */
+	store_32bit_word(cpu, 0x41000008ULL, 0xef8c64ebUL);
 
-		memset(&ebsaboot, 0, sizeof(struct ebsaboot));
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_magic), BT_MAGIC_NUMBER_CATS);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_vargp), 0);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_pargp), 0);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_args), cpu->cd.arm.r[0]
-		    + sizeof(struct ebsaboot));
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_l1), 7 * 1048576 - 32768);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_memstart), 0);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_memend),
-		    machine->physical_ram_in_mb * 1048576);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_memavail), 7 * 1048576);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_fclk), 50 * 1000000);
-		store_32bit_word_in_host(cpu, (unsigned char *)
-		    &(ebsaboot.bt_pciclk), 66 * 1000000);
-		/*  TODO: bt_vers  */
-		/*  TODO: bt_features  */
+	cpu->cd.arm.r[0] = /* machine->physical_ram_in_mb */
+	    7 * 1048576 - 0x1000;
 
-		store_buf(cpu, cpu->cd.arm.r[0],
-		    (char *)&ebsaboot, sizeof(struct ebsaboot));
+	memset(&ebsaboot, 0, sizeof(struct ebsaboot));
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_magic), BT_MAGIC_NUMBER_CATS);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_vargp), 0);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_pargp), 0);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_args), cpu->cd.arm.r[0]
+	    + sizeof(struct ebsaboot));
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_l1), 7 * 1048576 - 32768);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_memstart), 0);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_memend),
+	    machine->physical_ram_in_mb * 1048576);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_memavail), 7 * 1048576);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_fclk), 50 * 1000000);
+	store_32bit_word_in_host(cpu, (unsigned char *)
+	    &(ebsaboot.bt_pciclk), 66 * 1000000);
+	/*  TODO: bt_vers  */
+	/*  TODO: bt_features  */
 
-		snprintf(bs, sizeof(bs), "(hd%i)%s root=/dev/wd%i%s%s",
-		    boot_id, machine->boot_kernel_filename, boot_id,
-		    (machine->boot_string_argument[0])? " " : "",
-		    machine->boot_string_argument);
+	store_buf(cpu, cpu->cd.arm.r[0],
+	    (char *)&ebsaboot, sizeof(struct ebsaboot));
 
-		store_string(cpu, cpu->cd.arm.r[0]+sizeof(struct ebsaboot), bs);
+	snprintf(bs, sizeof(bs), "(hd%i)%s root=/dev/wd%i%s%s",
+	    boot_id, machine->boot_kernel_filename, boot_id,
+	    (machine->boot_string_argument[0])? " " : "",
+	    machine->boot_string_argument);
 
-		arm_setup_initial_translation_table(cpu, 7 * 1048576 - 32768);
-	}
+	store_string(cpu, cpu->cd.arm.r[0]+sizeof(struct ebsaboot), bs);
+
+	arm_setup_initial_translation_table(cpu, 7 * 1048576 - 32768);
 }
 
 

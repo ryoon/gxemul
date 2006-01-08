@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.1 2006-01-06 13:03:57 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.2 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -77,9 +77,10 @@ MACHINE_SETUP(netwinder)
 		    machine->memory, 0xc0, 8, 0, "igsfb");
 	}
 
-	if (machine->prom_emulation) {
-		arm_setup_initial_translation_table(cpu, 0x4000);
-	}
+	if (!machine->prom_emulation)
+		return;
+
+	arm_setup_initial_translation_table(cpu, 0x4000);
 }
 
 

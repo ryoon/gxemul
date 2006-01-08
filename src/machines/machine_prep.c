@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.1 2006-01-01 20:56:24 debug Exp $
+ *  $Id: machine_prep.c,v 1.2 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -74,56 +74,56 @@ MACHINE_SETUP(prep)
 		    0, 14, 0, "s3_virge");
 	}
 
-	if (machine->prom_emulation) {
-		/*  Linux on PReP has 0xdeadc0de at address 0? (See
-		    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/
-		    113568.html)  */
-		store_32bit_word(cpu, 0, 0xdeadc0de);
+	if (!machine->prom_emulation)
+		return;
 
-		/*
-		 *  r4 should point to first free byte after the loaded kernel.
-		 *  r6 should point to bootinfo.
-		 */
-		cpu->cd.ppc.gpr[4] = 6 * 1048576;
-		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb*1048576-0x8000;
 
-		/*
-		 *  (See NetBSD's prep/include/bootinfo.h for details.)
-		 *
-		 *  32-bit "next" offset;
-		 *  32-bit "type";
-		 *  type-specific data...
-		 */
+	/*  Linux on PReP has 0xdeadc0de at address 0? (See
+	    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/
+	    113568.html)  */
+	store_32bit_word(cpu, 0, 0xdeadc0de);
 
-		/*  type: clock  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 0, 12);
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 4, 2);
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 8,
-		    machine->emulated_hz);
+	/*
+	 *  r4 should point to first free byte after the loaded kernel.
+	 *  r6 should point to bootinfo.
+	 */
+	cpu->cd.ppc.gpr[4] = 6 * 1048576;
+	cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb*1048576-0x8000;
 
-		/*  type: console  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+12, 20);
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+16, 1);
-		store_buf(cpu, cpu->cd.ppc.gpr[6] + 20,
-		    machine->use_x11? "vga" : "com", 4);
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+24, 0x3f8);/*  addr  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+28, 9600);/*  speed  */
+	/*
+	 *  (See NetBSD's prep/include/bootinfo.h for details.)
+	 *
+	 *  32-bit "next" offset;
+	 *  32-bit "type";
+	 *  type-specific data...
+	 */
 
-		/*  type: residual  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+32, 0);
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+36, 0);
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+40,/*  addr of data  */
-		    cpu->cd.ppc.gpr[6] + 0x100);
+	/*  type: clock  */
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 0, 12);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 4, 2);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+ 8, machine->emulated_hz);
 
-		/*  Residual data:  (TODO)  */
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100, 0x200);
-		/*  store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8,
-		    "IBM PPS Model 7248 (E)");  */
-		store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8,
-		    "IBM PPS Model 6050/6070 (E)");
-		store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100+0x1f8,
-		    machine->physical_ram_in_mb * 1048576);  /*  memsize  */
-	}
+	/*  type: console  */
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+12, 20);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+16, 1);
+	store_buf(cpu, cpu->cd.ppc.gpr[6]+20, machine->use_x11? "vga":"com", 4);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+24, 0x3f8);/*  addr  */
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+28, 9600);/*  speed  */
+
+	/*  type: residual  */
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+32, 0);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+36, 0);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+40,/*  addr of data  */
+	    cpu->cd.ppc.gpr[6] + 0x100);
+
+	/*  Residual data:  (TODO)  */
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100, 0x200);
+	/*  store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8,
+	    "IBM PPS Model 7248 (E)");  */
+	store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8,
+	    "IBM PPS Model 6050/6070 (E)");
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100+0x1f8,
+	    machine->physical_ram_in_mb * 1048576);  /*  memsize  */
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.1 2006-01-06 11:55:52 debug Exp $
+ *  $Id: machine_alpha.c,v 1.2 2006-01-08 11:05:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,75 +44,9 @@
 
 MACHINE_SETUP(alpha)
 {
-	switch (machine->machine_subtype) {
-	case ST_DEC_3000_300:
-		machine->machine_name = "Alpha DEC3000/300";
-		break;
-	case ST_EB164:
-		machine->machine_name = "Alpha EB164";
-		break;
-	default:fatal("Huh? Unimplemented Alpha machine type %i.\n",
-		    machine->machine_subtype);
-		exit(1);
-	}
-
-	if (machine->prom_emulation) {
-		struct rpb rpb;
-		struct crb crb;
-		struct ctb ctb;
-
-		/*  TODO:  Most of these... They are used by NetBSD/alpha:  */
-		/*  a0 = First free Page Frame Number  */
-		/*  a1 = PFN of current Level 1 page table  */
-		/*  a2 = Bootinfo magic  */
-		/*  a3 = Bootinfo pointer  */
-		/*  a4 = Bootinfo version  */
-		cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
-		cpu->cd.alpha.r[ALPHA_A1] = 0;
-		cpu->cd.alpha.r[ALPHA_A2] = 0;
-		cpu->cd.alpha.r[ALPHA_A3] = 0;
-		cpu->cd.alpha.r[ALPHA_A4] = 0;
-
-		/*  HWRPB: Hardware Restart Parameter Block  */
-		memset(&rpb, 0, sizeof(struct rpb));
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(rpb.rpb_phys), HWRPB_ADDR);
-		strlcpy((char *)&(rpb.rpb_magic), "HWRPB", 8);
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(rpb.rpb_size), sizeof(struct rpb));
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(rpb.rpb_page_size), 8192);
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(rpb.rpb_type), machine->machine_subtype);
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(rpb.rpb_cc_freq), 100000000);
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(rpb.rpb_ctb_off), CTB_ADDR - HWRPB_ADDR);
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(rpb.rpb_crb_off), CRB_ADDR - HWRPB_ADDR);
-
-		/*  CTB: Console Terminal Block  */
-		memset(&ctb, 0, sizeof(struct ctb));
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(ctb.ctb_term_type), machine->use_x11?
-		    CTB_GRAPHICS : CTB_PRINTERPORT);
-
-		/*  CRB: Console Routine Block  */
-		memset(&crb, 0, sizeof(struct crb));
-		store_64bit_word_in_host(cpu, (unsigned char *)
-		    &(crb.crb_v_dispatch), CRB_ADDR - 0x100);
-		store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
-
-		/*
-		 *  Place a special "hack" palcode call at 0x10000:
-		 *  (Hopefully nothing else will be there.)
-		 */
-		store_32bit_word(cpu, 0x10000, 0x3fffffe);
-
-		store_buf(cpu, HWRPB_ADDR, (char *)&rpb, sizeof(struct rpb));
-		store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));
-		store_buf(cpu, CRB_ADDR, (char *)&crb, sizeof(struct crb));
-	}
+	struct rpb rpb;
+	struct crb crb;
+	struct ctb ctb;
 
 	switch (machine->machine_subtype) {
 	case ST_DEC_3000_300:
@@ -127,6 +61,61 @@ MACHINE_SETUP(alpha)
 		    machine->machine_subtype);
 		exit(1);
 	}
+
+	if (!machine->prom_emulation)
+		return;
+
+	/*  TODO:  Most of these... They are used by NetBSD/alpha:  */
+	/*  a0 = First free Page Frame Number  */
+	/*  a1 = PFN of current Level 1 page table  */
+	/*  a2 = Bootinfo magic  */
+	/*  a3 = Bootinfo pointer  */
+	/*  a4 = Bootinfo version  */
+	cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
+	cpu->cd.alpha.r[ALPHA_A1] = 0;
+	cpu->cd.alpha.r[ALPHA_A2] = 0;
+	cpu->cd.alpha.r[ALPHA_A3] = 0;
+	cpu->cd.alpha.r[ALPHA_A4] = 0;
+
+	/*  HWRPB: Hardware Restart Parameter Block  */
+	memset(&rpb, 0, sizeof(struct rpb));
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_phys), HWRPB_ADDR);
+	strlcpy((char *)&(rpb.rpb_magic), "HWRPB", 8);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_size), sizeof(struct rpb));
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_page_size), 8192);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_type), machine->machine_subtype);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_cc_freq), 100000000);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_ctb_off), CTB_ADDR - HWRPB_ADDR);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_crb_off), CRB_ADDR - HWRPB_ADDR);
+
+	/*  CTB: Console Terminal Block  */
+	memset(&ctb, 0, sizeof(struct ctb));
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(ctb.ctb_term_type), machine->use_x11?
+	    CTB_GRAPHICS : CTB_PRINTERPORT);
+
+	/*  CRB: Console Routine Block  */
+	memset(&crb, 0, sizeof(struct crb));
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(crb.crb_v_dispatch), CRB_ADDR - 0x100);
+	store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
+
+	/*
+	 *  Place a special "hack" palcode call at 0x10000:
+	 *  (Hopefully nothing else will be there.)
+	 */
+	store_32bit_word(cpu, 0x10000, 0x3fffffe);
+
+	store_buf(cpu, HWRPB_ADDR, (char *)&rpb, sizeof(struct rpb));
+	store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));
+	store_buf(cpu, CRB_ADDR, (char *)&crb, sizeof(struct crb));
 }
 
 

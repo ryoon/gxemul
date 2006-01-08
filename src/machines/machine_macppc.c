@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.1 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_macppc.c,v 1.2 2006-01-08 11:15:48 debug Exp $
  */
 
 #include <stdio.h>
@@ -120,9 +120,9 @@ MACHINE_SETUP(macppc)
 	store_32bit_word(cpu, a+20, 8);		/*  pixel depth  */
 	a += 24;
 	store_32bit_word(cpu, a+0, 127);	/*  gestalt number (TODO)  */
-	store_32bit_word(cpu, a+4, 0);		/*  device tree pointer (TODO)  */
+	store_32bit_word(cpu, a+4, 0);		/*  device tree pointer (TODO)*/
 	store_32bit_word(cpu, a+8, 0);		/*  device tree length  */
-	store_32bit_word(cpu, a+12, b);		/*  last address of kernel data area  */
+	store_32bit_word(cpu, a+12, b);	/*  last address of kernel data area  */
 
 	/*  r4 = "MOSX" (0x4D4F5358)  */
 	cpu->cd.ppc.gpr[4] = 0x4D4F5358;

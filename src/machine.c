@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.657 2006-01-08 11:15:46 debug Exp $
+ *  $Id: machine.c,v 1.658 2006-01-10 20:30:04 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -2873,107 +2873,6 @@ Not yet.
 		}
 
 		break;
-
-	case MACHINE_MESHCUBE:
-		machine->machine_name = "MeshCube";
-
-		if (machine->physical_ram_in_mb != 64)
-			fprintf(stderr, "WARNING! MeshCubes are supposed to have exactly 64 MB RAM. Continuing anyway.\n");
-		if (machine->use_x11)
-			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
-
-		/*  First of all, the MeshCube has an Au1500 in it:  */
-		machine->md_interrupt = au1x00_interrupt;
-		machine->md_int.au1x00_ic_data = dev_au1x00_init(machine, mem);
-
-		/*
-		 *  TODO:  Which non-Au1500 devices, and at what addresses?
-		 *
-		 *  "4G Systems MTX-1 Board" at ?
-		 *	1017fffc, 14005004, 11700000, 11700008, 11900014,
-		 *	1190002c, 11900100, 11900108, 1190010c,
-		 *	10400040 - 10400074,
-		 *	14001000 (possibly LCD?)
-		 *	11100028 (possibly ttySx?)
-		 *
-		 *  "usb_ohci=base:0x10100000,len:0x100000,irq:26"
-		 */
-
-		device_add(machine, "random addr=0x1017fffc len=4");
-
-		if (machine->prom_emulation) {
-			/*
-			 *  TODO:  A Linux kernel wants "memsize" from somewhere... I
-			 *  haven't found any docs on how it is used though.
-			 */
-			cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;
-			cpu->cd.mips.gpr[MIPS_GPR_A1] = 0xa0001000ULL;
-			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A1],
-			    0xa0002000ULL);
-			store_string(cpu, 0xa0002000ULL, "something=somethingelse");
-
-			cpu->cd.mips.gpr[MIPS_GPR_A2] = 0xa0003000ULL;
-			store_string(cpu, 0xa0002000ULL, "hello=world\n");
-		}
-		break;
-
-	case MACHINE_NETGEAR:
-		machine->machine_name = "NetGear WG602v1";
-
-		if (machine->use_x11)
-			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
-		if (machine->physical_ram_in_mb != 16)
-			fprintf(stderr, "WARNING! Real NetGear WG602v1 boxes have exactly 16 MB RAM. Continuing anyway.\n");
-
-		/*
-		 *  Lots of info about the IDT 79RC 32334
-		 *  http://www.idt.com/products/pages/Integrated_Processors-79RC32334.html
-		 */
-		device_add(machine, "8250 addr=0x18000800 addr_mult=4 irq=0");
-		break;
-
-	case MACHINE_PSP:
-		/*
-		 *  The Playstation Portable seems to be a strange beast.
-		 *
-		 *  http://yun.cup.com/psppg004.html (in Japanese) seems to
-		 *  suggest that virtual addresses are not displaced by
-		 *  0x80000000 as on normal CPUs, but by 0x40000000?
-		 */
-		machine->machine_name = "Playstation Portable";
-		cpu->byte_order = EMUL_LITTLE_ENDIAN;
-
-		if (!machine->use_x11 && !quiet_mode)
-			fprintf(stderr, "-------------------------------------"
-			    "------------------------------------------\n"
-			    "\n  WARNING! You are emulating a PSP without -X. "
-			    "You will miss graphical output!\n\n"
-			    "-------------------------------------"
-			    "------------------------------------------\n");
-
-		/*  480 x 272 pixels framebuffer (512 bytes per line)  */
-		fb = dev_fb_init(machine, mem, 0x04000000, VFB_HPC,
-		    480,272, 512,1088, -15, "Playstation Portable");
-
-		/*
-		 *  TODO/NOTE: This is ugly, but necessary since GXemul doesn't
-		 *  emulate any MIPS CPU without MMU right now.
-		 */
-		mips_coproc_tlb_set_entry(cpu, 0, 1048576*16,
-		    0x44000000 /*vaddr*/, 0x4000000, 0x4000000 + 1048576*16,
-		    1,1,1,1,1, 0, 2, 2);
-		mips_coproc_tlb_set_entry(cpu, 1, 1048576*16,
-		    0x8000000 /*vaddr*/, 0x0, 0x0 + 1048576*16,
-		    1,1,1,1,1, 0, 2, 2);
-		mips_coproc_tlb_set_entry(cpu, 2, 1048576*16,
-		    0x9000000 /*vaddr*/, 0x01000000, 0x01000000 + 1048576*16,
-		    1,1,1,1,1, 0, 2, 2);
-		mips_coproc_tlb_set_entry(cpu, 3, 1048576*16,
-		    0x0 /*vaddr*/, 0, 0 + 1048576*16, 1,1,1,1,1, 0, 2, 2);
-
-		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0xfff0;
-
-		break;
 #endif	/*  ENABLE_MIPS  */
 
 #ifdef ENABLE_SH
@@ -3189,21 +3088,6 @@ void machine_memsize_fix(struct machine *m)
 				break;
 			}
 			break;
-		case MACHINE_MESHCUBE:
-			m->physical_ram_in_mb = 64;
-			break;
-		case MACHINE_NETGEAR:
-			m->physical_ram_in_mb = 16;
-			break;
-		case MACHINE_PSP:
-			/*
-			 *  According to
-			 *  http://wiki.ps2dev.org/psp:memory_map:
-			 *	0×08000000 = 8 MB kernel memory
-			 *	0×08800000 = 24 MB user memory
-			 */
-			m->physical_ram_in_mb = 8 + 24;
-			break;
 		case MACHINE_ARC:
 			switch (m->machine_subtype) {
 			case MACHINE_ARC_JAZZ_PICA:
@@ -3324,14 +3208,6 @@ void machine_default_cputype(struct machine *m)
 			exit(1);
 		}
 		break;
-	case MACHINE_MESHCUBE:
-		m->cpu_name = strdup("R4400");
-		/*  TODO:  Should be AU1500, but Linux doesn't like
-		    the absence of caches in the emulator  */
-		break;
-	case MACHINE_NETGEAR:
-		m->cpu_name = strdup("RC32334");
-		break;
 	case MACHINE_ARC:
 		switch (m->machine_subtype) {
 		case MACHINE_ARC_JAZZ_PICA:
@@ -3362,9 +3238,6 @@ void machine_default_cputype(struct machine *m)
 		    R4000, R4400 or R5000 or similar:  */
 		if (m->cpu_name == NULL)
 			m->cpu_name = strdup("R4400");
-		break;
-	case MACHINE_PSP:
-		m->cpu_name = strdup("Allegrex");
 		break;
 
 	/*  SH:  */
@@ -3753,24 +3626,6 @@ void machine_init(void)
 	    "Jornada 690", MACHINE_HPCSH_JORNADA690, 1);
 	me->subtype[1]->aliases[0] = "jornada690";
 	machine_entry_add(me, ARCH_SH);
-
-	/*  Meshcube:  */
-	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
-	me->aliases[0] = "meshcube";
-	machine_entry_add(me, ARCH_MIPS);
-
-	/*  NetGear:  */
-	me = machine_entry_new("NetGear WG602v1", ARCH_MIPS,
-	    MACHINE_NETGEAR, 2, 0);
-	me->aliases[0] = "netgear";
-	me->aliases[1] = "wg602v1";
-	machine_entry_add(me, ARCH_MIPS);
-
-	/*  Playstation Portable:  */
-	me = machine_entry_new("Playstation Portable", ARCH_MIPS,
-	    MACHINE_PSP, 1, 0);
-	me->aliases[0] = "psp";
-	machine_entry_add(me, ARCH_MIPS);
 
 	/*  SGI:  */
 	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 10);

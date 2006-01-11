@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.658 2006-01-10 20:30:04 debug Exp $
+ *  $Id: machine.c,v 1.659 2006-01-11 05:56:01 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -77,9 +77,11 @@
 #include "dec_kmin.h"
 #include "dec_maxine.h"
 
-/*  HPC:  */
+
 #include "hpc_bootinfo.h"
 #include "vripreg.h"
+
+
 
 #define	BOOTSTR_BUFLEN		1000
 #define	BOOTARG_BUFLEN		2000
@@ -783,13 +785,13 @@ void machine_setup(struct machine *machine)
 	int boot_scsi_boardnumber = 3, boot_net_boardnumber = 3;
 	char *turbochannel_default_gfx_card = "PMAG-BA";
 		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA  */
-
-	/*  HPCmips:  */
 	struct xx {
 		struct btinfo_magic a;
 		struct btinfo_bootpath b;
 		struct btinfo_symtab c;
 	} xx;
+
+	/*  HPCmips:  */
 	struct hpc_bootinfo hpc_bootinfo;
 	int hpc_platid_flags = 0, hpc_platid_cpu_submodel = 0,
 	    hpc_platid_cpu_model = 0, hpc_platid_cpu_series = 0,
@@ -1571,326 +1573,6 @@ void machine_setup(struct machine *machine)
 
 			/*  The end:  */
 			add_environment_string(cpu, "", &addr);
-		}
-
-		break;
-
-	case MACHINE_HPCMIPS:
-		cpu->byte_order = EMUL_LITTLE_ENDIAN;
-		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
-		/*
-		NOTE: See http://forums.projectmayo.com/viewtopic.php?topic=2743&forum=23
-		for info on framebuffer addresses.
-		*/
-
-		switch (machine->machine_subtype) {
-		case MACHINE_HPCMIPS_CASIO_BE300:
-			/*  166MHz VR4131  */
-			machine->machine_name = "Casio Cassiopeia BE-300";
-			hpc_fb_addr = 0x0a200000;
-			hpc_fb_xsize = 240;
-			hpc_fb_ysize = 320;
-			hpc_fb_xsize_mem = 256;
-			hpc_fb_ysize_mem = 320;
-			hpc_fb_bits = 15;
-			hpc_fb_encoding = BIFB_D16_0000;
-
-			/*  TODO: irq?  */
-			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
-			machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 6;	/*  VR4131  */
-			hpc_platid_vendor = 3;		/*  Casio  */
-			hpc_platid_series = 1;		/*  CASSIOPEIAE  */
-			hpc_platid_model = 2;		/*  EXXX  */
-			hpc_platid_submodel = 3;	/*  E500  */
-			/*  TODO: Don't use model number for E500, it's a BE300!  */
-			break;
-		case MACHINE_HPCMIPS_CASIO_E105:
-			/*  131MHz VR4121  */
-			machine->machine_name = "Casio Cassiopeia E-105";
-			hpc_fb_addr = 0x0a200000;	/*  TODO?  */
-			hpc_fb_xsize = 240;
-			hpc_fb_ysize = 320;
-			hpc_fb_xsize_mem = 256;
-			hpc_fb_ysize_mem = 320;
-			hpc_fb_bits = 16;
-			hpc_fb_encoding = BIFB_D16_0000;
-
-			/*  TODO: irq?  */
-			snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x0a008680 addr_mult=4 in_use=%i", machine->use_x11? 0 : 1);
-			machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
-			hpc_platid_vendor = 3;		/*  Casio  */
-			hpc_platid_series = 1;		/*  CASSIOPEIAE  */
-			hpc_platid_model = 2;		/*  EXXX  */
-			hpc_platid_submodel = 2;	/*  E105  */
-			break;
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
-			/*  131 MHz VR4121  */
-			machine->machine_name = "NEC MobilePro 770";
-			machine->stable = 1;
-			hpc_fb_addr = 0xa000000;
-			hpc_fb_xsize = 640;
-			hpc_fb_ysize = 240;
-			hpc_fb_xsize_mem = 800;
-			hpc_fb_ysize_mem = 240;
-			hpc_fb_bits = 16;
-			hpc_fb_encoding = BIFB_D16_0000;
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
-			hpc_platid_vendor = 1;		/*  NEC  */
-			hpc_platid_series = 2;		/*  NEC MCR  */
-			hpc_platid_model = 2;		/*  MCR 5XX  */
-			hpc_platid_submodel = 4;	/*  MCR 520A  */
-			break;
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
-			/*  166 (or 168) MHz VR4121  */
-			machine->machine_name = "NEC MobilePro 780";
-			machine->stable = 1;
-			hpc_fb_addr = 0xa180100;
-			hpc_fb_xsize = 640;
-			hpc_fb_ysize = 240;
-			hpc_fb_xsize_mem = 640;
-			hpc_fb_ysize_mem = 240;
-			hpc_fb_bits = 16;
-			hpc_fb_encoding = BIFB_D16_0000;
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
-			hpc_platid_vendor = 1;		/*  NEC  */
-			hpc_platid_series = 2;		/*  NEC MCR  */
-			hpc_platid_model = 2;		/*  MCR 5XX  */
-			hpc_platid_submodel = 8;	/*  MCR 530A  */
-			break;
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
-			/*  131 MHz VR4121  */
-			machine->machine_name = "NEC MobilePro 800";
-			machine->stable = 1;
-			hpc_fb_addr = 0xa000000;
-			hpc_fb_xsize = 800;
-			hpc_fb_ysize = 600;
-			hpc_fb_xsize_mem = 800;
-			hpc_fb_ysize_mem = 600;
-			hpc_fb_bits = 16;
-			hpc_fb_encoding = BIFB_D16_0000;
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
-			hpc_platid_vendor = 1;		/*  NEC  */
-			hpc_platid_series = 2;		/*  NEC MCR  */
-			hpc_platid_model = 3;		/*  MCR 7XX  */
-			hpc_platid_submodel = 2;	/*  MCR 700A  */
-			break;
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_880:
-			/*  168 MHz VR4121  */
-			machine->machine_name = "NEC MobilePro 880";
-			machine->stable = 1;
-			hpc_fb_addr = 0xa0ea600;
-			hpc_fb_xsize = 800;
-			hpc_fb_ysize = 600;
-			hpc_fb_xsize_mem = 800;
-			hpc_fb_ysize_mem = 600;
-			hpc_fb_bits = 16;
-			hpc_fb_encoding = BIFB_D16_0000;
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
-			hpc_platid_vendor = 1;		/*  NEC  */
-			hpc_platid_series = 2;		/*  NEC MCR  */
-			hpc_platid_model = 3;		/*  MCR 7XX  */
-			hpc_platid_submodel = 4;	/*  MCR 730A  */
-			break;
-		case MACHINE_HPCMIPS_AGENDA_VR3:
-			/*  66 MHz VR4181  */
-			machine->machine_name = "Agenda VR3";
-			/*  TODO:  */
-			hpc_fb_addr = 0x1000;
-			hpc_fb_xsize = 160;
-			hpc_fb_ysize = 240;
-			hpc_fb_xsize_mem = 160;
-			hpc_fb_ysize_mem = 240;
-			hpc_fb_bits = 4;
-			hpc_fb_encoding = BIFB_D4_M2L_F;
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4181);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			/*  TODO: Hm... irq 17 according to linux, but
-			    VRIP_INTR_SIU (=9) here?  */
-			{
-				int x;
-				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr=0x0c000010", 8 + VRIP_INTR_SIU);
-				x = (size_t)device_add(machine, tmpstr);
-
-				if (!machine->use_x11)
-					machine->main_console_handle = x;
-			}
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 4;	/*  VR4181  */
-			hpc_platid_vendor = 15;		/*  Agenda  */
-			hpc_platid_series = 1;		/*  VR  */
-			hpc_platid_model = 1;		/*  VR3  */
-			hpc_platid_submodel = 0;	/*  -  */
-
-			dev_ram_init(machine, 0x0f000000, 0x01000000,
-			    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x0);
-			break;
-		case MACHINE_HPCMIPS_IBM_WORKPAD_Z50:
-			/*  131 MHz VR4121  */
-			machine->machine_name = "IBM Workpad Z50";
-			/*  TODO:  */
-			hpc_fb_addr = 0xa000000;
-			hpc_fb_xsize = 640;
-			hpc_fb_ysize = 480;
-			hpc_fb_xsize_mem = 640;
-			hpc_fb_ysize_mem = 480;
-			hpc_fb_bits = 16;
-			hpc_fb_encoding = BIFB_D16_0000;
-
-			machine->md_int.vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			machine->md_interrupt = vr41xx_interrupt;
-
-			hpc_platid_cpu_arch = 1;	/*  MIPS  */
-			hpc_platid_cpu_series = 1;	/*  VR  */
-			hpc_platid_cpu_model = 1;	/*  VR41XX  */
-			hpc_platid_cpu_submodel = 3;	/*  VR4121  */
-			hpc_platid_vendor = 9;		/*  IBM  */
-			hpc_platid_series = 1;		/*  WorkPad  */
-			hpc_platid_model = 1;		/*  Z50  */
-			hpc_platid_submodel = 0;	/*  0  */
-			break;
-		default:
-			printf("Unimplemented hpcmips machine number.\n");
-			exit(1);
-		}
-
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-		      (hpc_platid_cpu_arch << 26) + (hpc_platid_cpu_series << 20)
-		    + (hpc_platid_cpu_model << 14) + (hpc_platid_cpu_submodel <<  8)
-		    + hpc_platid_flags);
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-		      (hpc_platid_vendor << 22) + (hpc_platid_series << 16)
-		    + (hpc_platid_model <<  8) + hpc_platid_submodel);
-
-		if (machine->use_x11)
-			machine->main_console_handle =
-			    machine->md_int.vr41xx_data->kiu_console_handle;
-
-		if (machine->prom_emulation) {
-			/*  NetBSD/hpcmips and possibly others expects the following:  */
-
-			cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;	/*  argc  */
-			cpu->cd.mips.gpr[MIPS_GPR_A1] = machine->physical_ram_in_mb * 1048576
-			    + 0xffffffff80000000ULL - 512;	/*  argv  */
-			cpu->cd.mips.gpr[MIPS_GPR_A2] = machine->physical_ram_in_mb * 1048576
-			    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
-
-			machine->bootstr = machine->boot_kernel_filename;
-			store_32bit_word(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512, 
-			    0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 16);
-			store_32bit_word(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-			store_string(cpu, 0xffffffff80000000ULL + machine->physical_ram_in_mb * 1048576 - 512 + 16, machine->bootstr);
-
-			/*  Special case for the Agenda VR3:  */
-			if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
-				const int tmplen = 1000;
-				char *tmp = malloc(tmplen);
-
-				cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;	/*  argc  */
-
-				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
-				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
-
-				snprintf(tmp, tmplen, "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
-				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0");
-				tmp[tmplen-1] = '\0';
-
-				if (!machine->use_x11)
-					snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " console=ttyS0,115200");
-				tmp[tmplen-1] = '\0';
-
-				if (machine->boot_string_argument[0])
-					snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " %s", machine->boot_string_argument);
-				tmp[tmplen-1] = '\0';
-
-				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64, tmp);
-
-				machine->bootarg = tmp;
-			} else if (machine->boot_string_argument[0]) {
-				cpu->cd.mips.gpr[MIPS_GPR_A0] ++;	/*  argc  */
-
-				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
-				store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
-
-				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
-				    machine->boot_string_argument);
-
-				machine->bootarg = machine->boot_string_argument;
-			}
-
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpc_fb_addr);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpc_fb_xsize_mem * (((hpc_fb_bits-1)|7)+1) / 8);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpc_fb_xsize);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpc_fb_ysize);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpc_fb_encoding);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
-
-			/*  printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
-			    printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);  */
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
-			store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
-		}
-
-		if (hpc_fb_addr != 0) {
-			dev_fb_init(machine, mem, hpc_fb_addr, VFB_HPC,
-			    hpc_fb_xsize, hpc_fb_ysize,
-			    hpc_fb_xsize_mem, hpc_fb_ysize_mem,
-			    hpc_fb_bits, machine->machine_name);
-
-			/*  NetBSD/hpcmips uses framebuffer at physical
-			    address 0x8.......:  */
-			dev_ram_init(machine, 0x80000000, 0x20000000,
-			    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES, 0x0);
 		}
 
 		break;
@@ -3073,21 +2755,6 @@ void machine_memsize_fix(struct machine *m)
 		case MACHINE_SGI:
 			m->physical_ram_in_mb = 64;
 			break;
-		case MACHINE_HPCMIPS:
-			/*  Most have 32 MB by default.  */
-			m->physical_ram_in_mb = 32;
-			switch (m->machine_subtype) {
-			case MACHINE_HPCMIPS_CASIO_BE300:
-				m->physical_ram_in_mb = 16;
-				break;
-			case MACHINE_HPCMIPS_CASIO_E105:
-				m->physical_ram_in_mb = 32;
-				break;
-			case MACHINE_HPCMIPS_AGENDA_VR3:
-				m->physical_ram_in_mb = 16;
-				break;
-			}
-			break;
 		case MACHINE_ARC:
 			switch (m->machine_subtype) {
 			case MACHINE_ARC_JAZZ_PICA:
@@ -3182,31 +2849,6 @@ void machine_default_cputype(struct machine *m)
 			m->cpu_name = strdup("R3000");
 		if (m->cpu_name == NULL)
 			m->cpu_name = strdup("R2000");
-		break;
-	case MACHINE_HPCMIPS:
-		switch (m->machine_subtype) {
-		case MACHINE_HPCMIPS_CASIO_BE300:
-			m->cpu_name = strdup("VR4131");
-			break;
-		case MACHINE_HPCMIPS_CASIO_E105:
-			m->cpu_name = strdup("VR4121");
-			break;
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
-		case MACHINE_HPCMIPS_NEC_MOBILEPRO_880:
-			m->cpu_name = strdup("VR4121");
-			break;
-		case MACHINE_HPCMIPS_AGENDA_VR3:
-			m->cpu_name = strdup("VR4181");
-			break;
-		case MACHINE_HPCMIPS_IBM_WORKPAD_Z50:
-			m->cpu_name = strdup("VR4121");
-			break;
-		default:
-			printf("Unimplemented HPCMIPS model?\n");
-			exit(1);
-		}
 		break;
 	case MACHINE_ARC:
 		switch (m->machine_subtype) {
@@ -3580,40 +3222,6 @@ void machine_init(void)
 	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
 	me->subtype[1]->aliases[0] = "jornada720";
 	machine_entry_add(me, ARCH_ARM);
-
-	/*  HPCmips:  */
-	me = machine_entry_new("Handheld MIPS (HPCmips)",
-	    ARCH_MIPS, MACHINE_HPCMIPS, 1, 8);
-	me->aliases[0] = "hpcmips";
-	me->subtype[0] = machine_entry_subtype_new(
-	    "Casio Cassiopeia BE-300", MACHINE_HPCMIPS_CASIO_BE300, 2);
-	me->subtype[0]->aliases[0] = "be-300";
-	me->subtype[0]->aliases[1] = "be300";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Casio Cassiopeia E-105", MACHINE_HPCMIPS_CASIO_E105, 2);
-	me->subtype[1]->aliases[0] = "e-105";
-	me->subtype[1]->aliases[1] = "e105";
-	me->subtype[2] = machine_entry_subtype_new(
-	    "Agenda VR3", MACHINE_HPCMIPS_AGENDA_VR3, 2);
-	me->subtype[2]->aliases[0] = "agenda";
-	me->subtype[2]->aliases[1] = "vr3";
-	me->subtype[3] = machine_entry_subtype_new(
-	    "IBM WorkPad Z50", MACHINE_HPCMIPS_IBM_WORKPAD_Z50, 2);
-	me->subtype[3]->aliases[0] = "workpad";
-	me->subtype[3]->aliases[1] = "z50";
-	me->subtype[4] = machine_entry_subtype_new(
-	    "NEC MobilePro 770", MACHINE_HPCMIPS_NEC_MOBILEPRO_770, 1);
-	me->subtype[4]->aliases[0] = "mobilepro770";
-	me->subtype[5] = machine_entry_subtype_new(
-	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
-	me->subtype[5]->aliases[0] = "mobilepro780";
-	me->subtype[6] = machine_entry_subtype_new(
-	    "NEC MobilePro 800", MACHINE_HPCMIPS_NEC_MOBILEPRO_800, 1);
-	me->subtype[6]->aliases[0] = "mobilepro800";
-	me->subtype[7] = machine_entry_subtype_new(
-	    "NEC MobilePro 880", MACHINE_HPCMIPS_NEC_MOBILEPRO_880, 1);
-	me->subtype[7]->aliases[0] = "mobilepro880";
-	machine_entry_add(me, ARCH_MIPS);
 
 	/*  HPCsh:  */
 	me = machine_entry_new("Handheld SH (HPCsh)",

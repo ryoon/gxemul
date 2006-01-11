@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.1 2006-01-06 13:03:57 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.2 2006-01-11 05:56:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,8 +44,6 @@
 
 MACHINE_SETUP(pmppc)
 {
-	struct pci_data *pci_data;
-
 	/*
 	 *  NetBSD/pmppc (http://www.netbsd.org/Ports/pmppc/)
 	 */

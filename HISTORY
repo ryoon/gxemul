@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1101 2006-01-08 11:05:00 debug Exp $
+$Id: HISTORY,v 1.1102 2006-01-11 05:55:57 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2542,5 +2542,5 @@ Changelog for GXemul:
 		as well as the 2.1 kernels did.
 20051230	Some dyntrans refactoring.
 20051231	Continuing on the machine registry redesign.
-20060101-08	Continuing... moving more machines. Moving MD interrupt stuff
+20060101-10	Continuing... moving more machines. Moving MD interrupt stuff
 		from machine.c into a new src/machines/interrupts.c.

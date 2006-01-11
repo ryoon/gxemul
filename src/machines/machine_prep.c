@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_prep.c,v 1.3 2006-01-11 05:56:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -57,7 +57,7 @@ MACHINE_SETUP(prep)
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 20000000;
 
-	machine->md_int.bebox_data = device_add(machine, "prep");
+	machine->md_int.prep_data = device_add(machine, "prep");
 	machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
 	machine->md_interrupt = isa32_interrupt;
 

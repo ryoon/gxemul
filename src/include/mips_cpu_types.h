@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.12 2006-01-07 10:17:18 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.13 2006-01-11 19:20:08 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -97,8 +97,8 @@
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,   4,	48, 4,15,0,0,15,0,0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? linesize? etc */ \
 	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
 	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,5,1,14,5,1,18, 6, 1 }, /*  instrs/cycle? cachelinesize & assoc.? RM7000A? */ \
-	{ "RM7900",	0x34/*?*/,  0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	64, 4,14,5,1,14,5,1,18, 6, 1 }, /*  instrs/cycle? cachelinesize? assoc = 4ways for all  */ \
-	{ "RM9000",	0x34/*?*/,  0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,5,1,14,5,1,18, 6, 1 }, /*  This is totally bogus  */ \
+	{ "RM7900",	0x34 /*?*/,  0x0 /* ? */,DCOUNT,EXC4K, MMU4K,	4,	64, 4,14,5,1,14,5,1,18, 6, 1 }, /*  instrs/cycle? cachelinesize? assoc = 4ways for all  */ \
+	{ "RM9000",	0x34 /*?*/,  0x0 /* ? */,DCOUNT,EXC4K, MMU4K,	4,	48, 4,14,5,1,14,5,1,18, 6, 1 }, /*  This is totally bogus  */ \
 	{ "RC32334",	MIPS_RC32300,0x00,	0,	EXC32, MMU4K,  32,      16, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, \
 	{ "4Kc",	0x100+MIPS_4Kc, 1,	0,	EXC32, MMU32,  32,	16, 4,14,4,2,14,4,2, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
 	{ "5Kc",	0x100+MIPS_5Kc, 1,	0,	EXC64, MMU64,  64,	48, 4,15,5,2,15,5,2, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \

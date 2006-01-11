@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.16 2006-01-11 05:56:02 debug Exp $
+#  $Id: Makefile.skel,v 1.17 2006-01-11 19:20:08 debug Exp $
 #
 #  Makefile for GXemul machines
 #
@@ -8,7 +8,8 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 OBJS=interrupts.o \
 	machine_algor.o machine_alpha.o machine_bebox.o machine_cats.o \
 	machine_cobalt.o machine_db64360.o machine_evbmips.o \
-	machine_hpcmips.o machine_iq80321.o machine_iyonix.o \
+	machine_hpcarm.o machine_hpcmips.o machine_hpcsh.o \
+	machine_iq80321.o machine_iyonix.o \
 	machine_macppc.o machine_meshcube.o machine_netgear.o \
 	machine_netwinder.o machine_playstation2.o machine_pmppc.o \
 	machine_prep.o machine_psp.o \

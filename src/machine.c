@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.659 2006-01-11 05:56:01 debug Exp $
+ *  $Id: machine.c,v 1.660 2006-01-11 19:20:06 debug Exp $
  *
  *  This module is quite large. Hopefully it is still clear enough to be
  *  easily understood. The main parts are:
@@ -76,11 +76,6 @@
 #include "dec_kn03.h"
 #include "dec_kmin.h"
 #include "dec_maxine.h"
-
-
-#include "hpc_bootinfo.h"
-#include "vripreg.h"
-
 
 
 #define	BOOTSTR_BUFLEN		1000
@@ -790,20 +785,6 @@ void machine_setup(struct machine *machine)
 		struct btinfo_bootpath b;
 		struct btinfo_symtab c;
 	} xx;
-
-	/*  HPCmips:  */
-	struct hpc_bootinfo hpc_bootinfo;
-	int hpc_platid_flags = 0, hpc_platid_cpu_submodel = 0,
-	    hpc_platid_cpu_model = 0, hpc_platid_cpu_series = 0,
-	    hpc_platid_cpu_arch = 0,
-	    hpc_platid_submodel = 0, hpc_platid_model = 0,
-	    hpc_platid_series = 0, hpc_platid_vendor = 0;
-	uint64_t hpc_fb_addr = 0;
-	int hpc_fb_bits = 0, hpc_fb_encoding = 0;
-	int hpc_fb_xsize = 0;
-	int hpc_fb_ysize = 0;
-	int hpc_fb_xsize_mem = 0;
-	int hpc_fb_ysize_mem = 0;
 
 	/*  ARCBIOS stuff:  */
 	uint64_t sgi_ram_offset = 0;
@@ -2557,133 +2538,6 @@ Not yet.
 		break;
 #endif	/*  ENABLE_MIPS  */
 
-#ifdef ENABLE_SH
-	case MACHINE_HPCSH:
-		/*  Handheld SH-based machines:  */
-		machine->machine_name = "HPCsh";
-
-		/*  TODO  */
-
-		break;
-#endif	/*  ENABLE_SH  */
-
-#ifdef ENABLE_ARM
-	case MACHINE_HPCARM:
-		cpu->byte_order = EMUL_LITTLE_ENDIAN;
-		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
-		switch (machine->machine_subtype) {
-		case MACHINE_HPCARM_IPAQ:
-			/*  SA-1110 206MHz  */
-			machine->machine_name = "Compaq iPAQ H3600";
-			hpc_fb_addr = 0x48200000;	/*  TODO  */
-			hpc_fb_xsize = 240;
-			hpc_fb_ysize = 320;
-			hpc_fb_xsize_mem = 256;
-			hpc_fb_ysize_mem = 320;
-			hpc_fb_bits = 15;
-			hpc_fb_encoding = BIFB_D16_0000;
-			hpc_platid_cpu_arch = 3;	/*  ARM  */
-			hpc_platid_cpu_series = 1;	/*  StrongARM  */
-			hpc_platid_cpu_model = 2;	/*  SA-1110  */
-			hpc_platid_cpu_submodel = 0;
-			hpc_platid_vendor = 7;		/*  Compaq  */
-			hpc_platid_series = 4;		/*  IPAQ  */
-			hpc_platid_model = 2;		/*  H36xx  */
-			hpc_platid_submodel = 1;	/*  H3600  */
-			break;
-		case MACHINE_HPCARM_JORNADA720:
-			/*  SA-1110 206MHz  */
-			machine->machine_name = "Jornada 720";
-			hpc_fb_addr = 0x48200000;
-			hpc_fb_xsize = 640;
-			hpc_fb_ysize = 240;
-			hpc_fb_xsize_mem = 640;
-			hpc_fb_ysize_mem = 240;
-			hpc_fb_bits = 16;
-			hpc_fb_encoding = BIFB_D16_0000;
-			hpc_platid_cpu_arch = 3;	/*  ARM  */
-			hpc_platid_cpu_series = 1;	/*  StrongARM  */
-			hpc_platid_cpu_model = 2;	/*  SA-1110  */
-			hpc_platid_cpu_submodel = 0;
-			hpc_platid_vendor = 11;		/*  HP  */
-			hpc_platid_series = 2;		/*  Jornada  */
-			hpc_platid_model = 2;		/*  7xx  */
-			hpc_platid_submodel = 1;	/*  720  */
-			break;
-		default:
-			printf("Unimplemented hpcarm machine number.\n");
-			exit(1);
-		}
-
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-		      (hpc_platid_cpu_arch << 26) + (hpc_platid_cpu_series << 20)
-		    + (hpc_platid_cpu_model << 14) + (hpc_platid_cpu_submodel <<  8)
-		    + hpc_platid_flags);
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-		      (hpc_platid_vendor << 22) + (hpc_platid_series << 16)
-		    + (hpc_platid_model <<  8) + hpc_platid_submodel);
-
-		if (machine->prom_emulation) {
-			/*  NetBSD/hpcarm and possibly others expects the following:  */
-
-			cpu->cd.arm.r[0] = 1;	/*  argc  */
-			cpu->cd.arm.r[1] = machine->physical_ram_in_mb * 1048576 - 512;	/*  argv  */
-			cpu->cd.arm.r[2] = machine->physical_ram_in_mb * 1048576 - 256;	/*  ptr to hpc_bootinfo  */
-
-			machine->bootstr = machine->boot_kernel_filename;
-			store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512,
-			    machine->physical_ram_in_mb * 1048576 - 512 + 16);
-			store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-			store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 16, machine->bootstr);
-
-			if (machine->boot_string_argument[0]) {
-				cpu->cd.arm.r[0] ++;	/*  argc  */
-
-				store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 4, machine->physical_ram_in_mb * 1048576 - 512 + 64);
-				store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
-
-				store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 64,
-				    machine->boot_string_argument);
-
-				machine->bootarg = machine->boot_string_argument;
-			}
-
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, hpc_fb_addr);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpc_fb_xsize_mem * (((hpc_fb_bits-1)|7)+1) / 8);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpc_fb_xsize);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpc_fb_ysize);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpc_fb_encoding);
-			store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse,
-			    machine->use_x11? BI_CNUSE_BUILTIN : BI_CNUSE_SERIAL);
-
-			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
-			store_buf(cpu, machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
-
-			/*
-			 *  TODO: ugly hack, only works with small NetBSD
-			 *        kernels!
-			 */
-			cpu->cd.arm.r[ARM_SP] = 0xc02c0000;
-		}
-
-		/*  Physical RAM at 0xc0000000:  */
-		dev_ram_init(machine, 0xc0000000, 0x20000000,
-		    DEV_RAM_MIRROR, 0x0);
-
-		/*  Cache flush region:  */
-		dev_ram_init(machine, 0xe0000000, 0x10000, DEV_RAM_RAM, 0x0);
-
-		if (hpc_fb_addr != 0) {
-			dev_fb_init(machine, mem, hpc_fb_addr, VFB_HPC,
-			    hpc_fb_xsize, hpc_fb_ysize,
-			    hpc_fb_xsize_mem, hpc_fb_ysize_mem,
-			    hpc_fb_bits, machine->machine_name);
-		}
-		break;
-#endif	/*  ENABLE_ARM  */
-
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);
 		exit(1);
@@ -2778,9 +2632,6 @@ void machine_memsize_fix(struct machine *m)
 			default:
 				m->physical_ram_in_mb = 32;
 			}
-			break;
-		case MACHINE_HPCARM:
-			m->physical_ram_in_mb = 32;
 			break;
 		}
 	}
@@ -2880,16 +2731,6 @@ void machine_default_cputype(struct machine *m)
 		    R4000, R4400 or R5000 or similar:  */
 		if (m->cpu_name == NULL)
 			m->cpu_name = strdup("R4400");
-		break;
-
-	/*  SH:  */
-	case MACHINE_HPCSH:
-		m->cpu_name = strdup("SH");
-		break;
-
-	/*  ARM:  */
-	case MACHINE_HPCARM:
-		m->cpu_name = strdup("SA1110");
 		break;
 	}
 
@@ -3210,30 +3051,6 @@ void machine_init(void)
 	me->subtype[8]->aliases[1] = "mipsmate";
 
 	machine_entry_add(me, ARCH_MIPS);
-
-	/*  HPCarm:  */
-	me = machine_entry_new("Handheld ARM (HPCarm)",
-	    ARCH_ARM, MACHINE_HPCARM, 1, 2);
-	me->aliases[0] = "hpcarm";
-	me->subtype[0] = machine_entry_subtype_new("Ipaq",
-	    MACHINE_HPCARM_IPAQ, 1);
-	me->subtype[0]->aliases[0] = "ipaq";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
-	me->subtype[1]->aliases[0] = "jornada720";
-	machine_entry_add(me, ARCH_ARM);
-
-	/*  HPCsh:  */
-	me = machine_entry_new("Handheld SH (HPCsh)",
-	    ARCH_SH, MACHINE_HPCSH, 1, 2);
-	me->aliases[0] = "hpcsh";
-	me->subtype[0] = machine_entry_subtype_new("Jornada 680",
-	    MACHINE_HPCSH_JORNADA680, 1);
-	me->subtype[0]->aliases[0] = "jornada680";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Jornada 690", MACHINE_HPCSH_JORNADA690, 1);
-	me->subtype[1]->aliases[0] = "jornada690";
-	machine_entry_add(me, ARCH_SH);
 
 	/*  SGI:  */
 	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 10);

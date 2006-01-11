@@ -25,13 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcmips.c,v 1.1 2006-01-11 05:56:02 debug Exp $
+ *  $Id: machine_hpcmips.c,v 1.2 2006-01-11 19:20:08 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 
 #include "cpu.h"
 #include "device.h"

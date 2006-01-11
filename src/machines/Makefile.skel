@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.17 2006-01-11 19:20:08 debug Exp $
+#  $Id: Makefile.skel,v 1.18 2006-01-11 20:14:44 debug Exp $
 #
 #  Makefile for GXemul machines
 #
@@ -11,8 +11,8 @@ OBJS=interrupts.o \
 	machine_hpcarm.o machine_hpcmips.o machine_hpcsh.o \
 	machine_iq80321.o machine_iyonix.o \
 	machine_macppc.o machine_meshcube.o machine_netgear.o \
-	machine_netwinder.o machine_playstation2.o machine_pmppc.o \
-	machine_prep.o machine_psp.o \
+	machine_netwinder.o machine_playstation2.o machine_pmax.o \
+	machine_pmppc.o machine_prep.o machine_psp.o \
 	machine_sandpoint.o machine_shark.o machine_sonynews.o machine_test.o \
 	machine_walnut.o machine_x86.o machine_zaurus.o
 

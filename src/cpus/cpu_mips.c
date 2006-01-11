@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.14 2006-01-06 13:03:55 debug Exp $
+ *  $Id: cpu_mips.c,v 1.15 2006-01-11 20:14:43 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2029,7 +2029,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	    cpu->machine->prom_emulation) {
 		int rom_jal = 1, res = 1;
 		switch (cpu->machine->machine_type) {
-		case MACHINE_DEC:
+		case MACHINE_PMAX:
 			res = decstation_prom_emul(cpu);
 			break;
 		case MACHINE_PS2:

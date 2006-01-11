@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.107 2005-12-26 12:32:08 debug Exp $
+ *  $Id: diskimage.c,v 1.108 2006-01-11 20:14:41 debug Exp $
  *
  *  Disk image support.
  *
@@ -612,7 +612,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		 *  the drives.
 		 */
 
-		if (machine->machine_type == MACHINE_DEC) {
+		if (machine->machine_type == MACHINE_PMAX) {
 			/*  DEC, RZ25 (rev 0900) = 832527 sectors  */
 			/*  DEC, RZ58 (rev 2000) = 2698061 sectors  */
 			memcpy(xferp->data_in+8,  "DEC     ", 8);
@@ -626,7 +626,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[1] = 0x80;  /*  0x80 = removable  */
 			/*  memcpy(xferp->data_in+16, "CD-ROM          ", 16);*/
 
-			if (machine->machine_type == MACHINE_DEC) {
+			if (machine->machine_type == MACHINE_PMAX) {
 				/*  SONY, CD-ROM:  */
 				memcpy(xferp->data_in+8, "SONY    ", 8);
 				memcpy(xferp->data_in+16,
@@ -652,7 +652,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[1] = 0x80;  /*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "TAPE            ", 16);
 
-			if (machine->machine_type == MACHINE_DEC) {
+			if (machine->machine_type == MACHINE_PMAX) {
 				/*
 				 *  TODO:  find out if these are correct.
 				 *
@@ -1501,7 +1501,7 @@ int diskimage_add(struct machine *machine, char *fname)
 
 	d->type = DISKIMAGE_IDE;
 
-	if (machine->machine_type == MACHINE_DEC ||
+	if (machine->machine_type == MACHINE_PMAX ||
 	    machine->machine_type == MACHINE_ARC)
 		d->type = DISKIMAGE_SCSI;
 
@@ -1556,7 +1556,7 @@ int diskimage_add(struct machine *machine, char *fname)
 			 */
 
 #if 0
-			if (machine->machine_type == MACHINE_DEC)
+			if (machine->machine_type == MACHINE_PMAX)
 				d->logical_block_size = 512;
 			else
 				d->logical_block_size = 2048;

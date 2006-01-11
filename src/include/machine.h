@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.98 2006-01-07 10:17:18 debug Exp $
+ *  $Id: machine.h,v 1.99 2006-01-11 20:14:43 debug Exp $
  */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ struct machine {
 	char	*name;
 
 	int	arch;			/*  ARCH_MIPS, ARCH_PPC, ..  */
-	int	machine_type;		/*  MACHINE_DEC, ..  */
+	int	machine_type;		/*  MACHINE_PMAX, ..  */
 	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
 
 	char	*machine_name;
@@ -286,7 +286,7 @@ struct machine {
 /*  MIPS:  */
 #define	MACHINE_BAREMIPS	1000
 #define	MACHINE_TESTMIPS	1001
-#define	MACHINE_DEC		1002
+#define	MACHINE_PMAX		1002
 #define	MACHINE_COBALT		1003
 #define	MACHINE_HPCMIPS		1004
 #define	MACHINE_PS2		1005
@@ -516,6 +516,7 @@ void store_16bit_word_in_host(struct cpu *cpu, unsigned char *data,
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr);
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
+void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr);
 void add_environment_string_dual(struct cpu *cpu,
 	uint64_t *ptrp, uint64_t *addrp, char *s1, char *s2);
 void machine_setup(struct machine *);

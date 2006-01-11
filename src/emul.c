@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.243 2005-12-26 12:32:08 debug Exp $
+ *  $Id: emul.c,v 1.244 2006-01-11 20:14:41 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -526,7 +526,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		return 0;
 
 	switch (m->machine_type) {
-	case MACHINE_DEC:
+	case MACHINE_PMAX:
 		/*
 		 *  The first few bytes of a disk contains information about
 		 *  where the bootblock(s) are located. (These are all 32-bit
@@ -1342,7 +1342,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	add_dump_points(m);
 
 	/*  TODO: This is MIPS-specific!  */
-	if (m->machine_type == MACHINE_DEC &&
+	if (m->machine_type == MACHINE_PMAX &&
 	    cpu->cd.mips.cpu_type.mmu_model == MMU3K)
 		add_symbol_name(&m->symbol_context,
 		    0x9fff0000, 0x10000, "r2k3k_cache", 0, 0);

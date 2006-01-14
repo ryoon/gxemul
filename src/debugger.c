@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.130 2006-01-14 12:51:58 debug Exp $
+ *  $Id: debugger.c,v 1.131 2006-01-14 20:04:27 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1110,7 +1110,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 		printf("\n");
 		return;
 	case 'h':
-		if ((data & 1) != 0)
+		if ((addr & 1) != 0)
 			printf("WARNING: address isn't aligned\n");
 		if (m->cpus[0]->is_32bit)
 			printf("0x%08x", (int)addr);
@@ -1125,7 +1125,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 		printf("\n");
 		return;
 	case 'w':
-		if ((data & 3) != 0)
+		if ((addr & 3) != 0)
 			printf("WARNING: address isn't aligned\n");
 		if (m->cpus[0]->is_32bit)
 			printf("0x%08x", (int)addr);
@@ -1141,7 +1141,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 		printf("\n");
 		return;
 	case 'd':
-		if ((data & 7) != 0)
+		if ((addr & 7) != 0)
 			printf("WARNING: address isn't aligned\n");
 		if (m->cpus[0]->is_32bit)
 			printf("0x%08x", (int)addr);

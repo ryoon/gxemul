@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.3 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.4 2006-01-14 20:04:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -53,6 +53,15 @@ MACHINE_SETUP(iq80321)
 	cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=1");
 
+#if 1
+{
+int i;
+for (i=0; i<1048576*16; i+=4)
+	store_32bit_word(cpu, i, 0x70000000 + i);
+}
+#endif
+
+#if 0
 	/*  Used by "Redboot":  */
 	dev_ram_init(machine, 0xa800024, 4, DEV_RAM_RAM, 0);
 	store_32bit_word(cpu, 0xa800024, 0x7fff);
@@ -60,6 +69,7 @@ MACHINE_SETUP(iq80321)
 	    "ns16550 irq=0 addr=0x0d800000 addr_mult=4 in_use=0");
 	device_add(machine,
 	    "ns16550 irq=0 addr=0x0d800020 addr_mult=4 in_use=0");
+#endif
 
 	/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 	dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.244 2006-01-11 20:14:41 debug Exp $
+ *  $Id: emul.c,v 1.245 2006-01-14 20:04:27 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1360,6 +1360,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 
 
 #if 0
+/*  For experimental FreeBSD/arm development  */
 if (m->machine_type == MACHINE_IQ80321) {
 	store_32bit_word(cpu, 0xc0200000, 0);
 	store_32bit_word(cpu, 0xc0200004, 0xd0000000);

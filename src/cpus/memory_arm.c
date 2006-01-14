@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.30 2005-11-05 17:56:46 debug Exp $
+ *  $Id: memory_arm.c,v 1.31 2006-01-14 20:04:27 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "arm_cpu_types.h"
 #include "cpu.h"
 #include "memory.h"
 #include "misc.h"
@@ -199,16 +200,18 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 			ap &= 3;
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
-		case 3:	{
-				static int first = 1;
-				if (first) {
-					fatal("[ WARNING! ARM course second "
-					    "level page table seems to contain"
-					    " tiny pages; treating as 4K ]\n");
-					first = 0;
-				}
+		case 3:	if (cpu->cd.arm.cpu_type.flags & XSCALE_MMU) {
+				/*  4KB page (Xscale)  */
+				subpage = 0;
+			} else {
+				/*  1KB page  */
+				subpage = 1;
+				ap = (d2 >> 4) & 3;
+				*return_addr = (d2 & 0xfffffc00) |
+				    (vaddr & 0x000003ff);
+				break;
 			}
-			subpage = 1;
+			/*  NOTE: Fall-through for XScale!  */
 		case 2:	/*  4KB page:  */
 			ap3 = (d2 >> 10) & 3;
 			ap2 = (d2 >>  8) & 3;
@@ -220,20 +223,16 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 			case 0x800: ap = ap2; break;
 			default:    ap = ap3;
 			}
-			/*  Ugly hack: (TODO)  */
-			if ((d2 & 3) == 3)
+			/*  NOTE: Ugly hack for XScale:  */
+			if ((d2 & 3) == 3) {
+				/*  Treated as 4KB page:  */
 				ap = ap0;
-			if (ap0 != ap1 || ap0 != ap2 || ap0 != ap3)
-				subpage = 1;
+			} else {
+				if (ap0 != ap1 || ap0 != ap2 || ap0 != ap3)
+					subpage = 1;
+			}
 			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
 			break;
-#if 0
-		case 3:	/*  1KB page:  */
-			subpage = 1;
-			ap = (d2 >> 4) & 3;
-			*return_addr = (d2 & 0xfffffc00) | (vaddr & 0x000003ff);
-			break;
-#endif
 		}
 		access = arm_check_access(cpu, ap, dav, user);
 		if (access > writeflag)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.1 2006-01-11 20:14:44 debug Exp $
+ *  $Id: machine_pmax.c,v 1.2 2006-01-14 11:29:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -82,7 +82,8 @@ MACHINE_SETUP(pmax)
 	switch (machine->machine_subtype) {
 
 	case MACHINE_DEC_PMAX_3100:		/*  type  1, KN01  */
-		/*  Supposed to have 12MHz or 16.67MHz R2000 CPU, R2010 FPC, R2020 Memory coprocessor  */
+		/*  Supposed to have 12MHz or 16.67MHz R2000 CPU, R2010 FPC,
+		    R2020 Memory coprocessor  */
 		machine->machine_name = "DEC PMAX 3100 (KN01)";
 
 		/*  12 MHz for 2100, 16.67 MHz for 3100  */
@@ -90,157 +91,160 @@ MACHINE_SETUP(pmax)
 			machine->emulated_hz = 16670000;
 
 		if (machine->physical_ram_in_mb > 24)
-			fprintf(stderr, "WARNING! Real DECstation 3100 machines cannot have more than 24MB RAM. Continuing anyway.\n");
+			fprintf(stderr, "WARNING! Real DECstation 3100 machines"
+			    " cannot have more than 24MB RAM.\n");
 
 		if ((machine->physical_ram_in_mb % 4) != 0)
-			fprintf(stderr, "WARNING! Real DECstation 3100 machines have an integer multiple of 4 MBs of RAM. Continuing anyway.\n");
+			fprintf(stderr, "WARNING! Real DECstation 3100 machines"
+			    " have an integer multiple of 4 MBs of RAM.\n");
 
-		color_fb_flag = 1;	/*  1 for color, 0 for mono. TODO: command line option?  */
+		/*  1 for color, 0 for mono. TODO: command line option?  */
+		color_fb_flag = 1;
 
-			/*
-			 *  According to NetBSD/pmax:
-			 *
-			 *  pm0 at ibus0 addr 0xfc00000: 1024x864x1  (or x8 for color)
-			 *  dc0 at ibus0 addr 0x1c000000
-			 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
-			 *  sii0 at ibus0 addr 0x1a000000
-			 *  mcclock0 at ibus0 addr 0x1d000000: mc146818 or compatible
-			 *  0x1e000000 = system status and control register
-			 */
-			fb = dev_fb_init(machine, mem, KN01_PHYS_FBUF_START,
-			    color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
-			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01");
-			dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
-			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
-			dev_le_init(machine, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
-			dev_sii_init(machine, mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
-			dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ, machine->use_x11);
-			dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
-			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
+		/*
+		 *  According to NetBSD/pmax:
+		 *
+		 *  pm0 at ibus0 addr 0xfc00000: 1024x864x1  (or x8 for color)
+		 *  dc0 at ibus0 addr 0x1c000000
+		 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
+		 *  sii0 at ibus0 addr 0x1a000000
+		 *  mcclock0 at ibus0 addr 0x1d000000: mc146818 or compatible
+		 *  0x1e000000 = system status and control register
+		 */
+		fb = dev_fb_init(machine, mem, KN01_PHYS_FBUF_START,
+		    color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
+		    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01");
+		dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
+		dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
+		dev_le_init(machine, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
+		dev_sii_init(machine, mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
+		dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ, machine->use_x11);
+		dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
+		dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
-			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
-			serial_console_name      = "osconsole=3";	/*  3  */
-			break;
+		framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
+		serial_console_name      = "osconsole=3";	/*  3  */
+		break;
 
-		case MACHINE_DEC_3MAX_5000:		/*  type  2, KN02  */
-			/*  Supposed to have 25MHz R3000 CPU, R3010 FPC,  */
-			/*  and a R3220 Memory coprocessor  */
-			machine->machine_name = "DECstation 5000/200 (3MAX, KN02)";
-			machine->stable = 1;
+	case MACHINE_DEC_3MAX_5000:		/*  type  2, KN02  */
+		/*  Supposed to have 25MHz R3000 CPU, R3010 FPC,  */
+		/*  and a R3220 Memory coprocessor  */
+		machine->machine_name = "DECstation 5000/200 (3MAX, KN02)";
+		machine->stable = 1;
 
-			if (machine->emulated_hz == 0)
-				machine->emulated_hz = 25000000;
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 25000000;
 
-			if (machine->physical_ram_in_mb < 8)
-				fprintf(stderr, "WARNING! Real KN02 machines do not have less than 8MB RAM. Continuing anyway.\n");
-			if (machine->physical_ram_in_mb > 480)
-				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
+		if (machine->physical_ram_in_mb < 8)
+			fprintf(stderr, "WARNING! Real KN02 machines do not have less than 8MB RAM. Continuing anyway.\n");
+		if (machine->physical_ram_in_mb > 480)
+			fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
-			/*  An R3220 memory thingy:  */
-			cpu->cd.mips.coproc[3] = mips_coproc_new(cpu, 3);
+		/*  An R3220 memory thingy:  */
+		cpu->cd.mips.coproc[3] = mips_coproc_new(cpu, 3);
 
-			/*
-			 *  According to NetBSD/pmax:
-			 *  asc0 at tc0 slot 5 offset 0x0
-			 *  le0 at tc0 slot 6 offset 0x0
-			 *  ibus0 at tc0 slot 7 offset 0x0
-			 *  dc0 at ibus0 addr 0x1fe00000
-			 *  mcclock0 at ibus0 addr 0x1fe80000: mc146818
-			 *
-			 *  kn02 shared irq numbers (IP) are offset by +8
-			 *  in the emulator
-			 */
+		/*
+		 *  According to NetBSD/pmax:
+		 *  asc0 at tc0 slot 5 offset 0x0
+		 *  le0 at tc0 slot 6 offset 0x0
+		 *  ibus0 at tc0 slot 7 offset 0x0
+		 *  dc0 at ibus0 addr 0x1fe00000
+		 *  mcclock0 at ibus0 addr 0x1fe80000: mc146818
+		 *
+		 *  kn02 shared irq numbers (IP) are offset by +8
+		 *  in the emulator
+		 */
 
-			/*  KN02 interrupts:  */
-			machine->md_interrupt = kn02_interrupt;
+		/*  KN02 interrupts:  */
+		machine->md_interrupt = kn02_interrupt;
 
-			/*
-			 *  TURBOchannel slots 0, 1, and 2 are free for
-			 *  option cards.  Let's put in zero or more graphics
-			 *  boards:
-			 *
-			 *  TODO: It's also possible to have larger graphics
-			 *  cards that occupy several slots. How to solve
-			 *  this nicely?
-			 */
-			dev_turbochannel_init(machine, mem, 0,
-			    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
-			    machine->n_gfx_cards >= 1?
-				turbochannel_default_gfx_card : "",
-			    KN02_IP_SLOT0 +8);
+		/*
+		 *  TURBOchannel slots 0, 1, and 2 are free for
+		 *  option cards.  Let's put in zero or more graphics
+		 *  boards:
+		 *
+		 *  TODO: It's also possible to have larger graphics
+		 *  cards that occupy several slots. How to solve
+		 *  this nicely?
+		 */
+		dev_turbochannel_init(machine, mem, 0,
+		    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
+		    machine->n_gfx_cards >= 1?
+			turbochannel_default_gfx_card : "",
+		    KN02_IP_SLOT0 +8);
 
-			dev_turbochannel_init(machine, mem, 1,
-			    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
-			    machine->n_gfx_cards >= 2?
-				turbochannel_default_gfx_card : "",
-			    KN02_IP_SLOT1 +8);
+		dev_turbochannel_init(machine, mem, 1,
+		    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
+		    machine->n_gfx_cards >= 2?
+			turbochannel_default_gfx_card : "",
+		    KN02_IP_SLOT1 +8);
 
-			dev_turbochannel_init(machine, mem, 2,
-			    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
-			    machine->n_gfx_cards >= 3?
-				turbochannel_default_gfx_card : "",
-			    KN02_IP_SLOT2 +8);
+		dev_turbochannel_init(machine, mem, 2,
+		    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
+		    machine->n_gfx_cards >= 3?
+			turbochannel_default_gfx_card : "",
+		    KN02_IP_SLOT2 +8);
 
-			/*  TURBOchannel slots 3 and 4 are reserved.  */
+		/*  TURBOchannel slots 3 and 4 are reserved.  */
 
-			/*  TURBOchannel slot 5 is PMAZ-AA ("asc" SCSI).  */
-			dev_turbochannel_init(machine, mem, 5,
-			    KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END,
-			    "PMAZ-AA", KN02_IP_SCSI +8);
+		/*  TURBOchannel slot 5 is PMAZ-AA ("asc" SCSI).  */
+		dev_turbochannel_init(machine, mem, 5,
+		    KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END,
+		    "PMAZ-AA", KN02_IP_SCSI +8);
 
-			/*  TURBOchannel slot 6 is PMAD-AA ("le" ethernet).  */
-			dev_turbochannel_init(machine, mem, 6,
-			    KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END,
-			    "PMAD-AA", KN02_IP_LANCE +8);
+		/*  TURBOchannel slot 6 is PMAD-AA ("le" ethernet).  */
+		dev_turbochannel_init(machine, mem, 6,
+		    KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END,
+		    "PMAD-AA", KN02_IP_LANCE +8);
 
-			/*  TURBOchannel slot 7 is system stuff.  */
-			machine->main_console_handle =
-			    dev_dc7085_init(machine, mem,
-			    KN02_SYS_DZ, KN02_IP_DZ +8, machine->use_x11);
-			dev_mc146818_init(machine, mem,
-			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
+		/*  TURBOchannel slot 7 is system stuff.  */
+		machine->main_console_handle =
+		    dev_dc7085_init(machine, mem,
+		    KN02_SYS_DZ, KN02_IP_DZ +8, machine->use_x11);
+		dev_mc146818_init(machine, mem,
+		    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
-			machine->md_int.kn02_csr =
-			    dev_kn02_init(cpu, mem, KN02_SYS_CSR);
+		machine->md_int.kn02_csr =
+		    dev_kn02_init(cpu, mem, KN02_SYS_CSR);
 
-			framebuffer_console_name = "osconsole=0,7";
+		framebuffer_console_name = "osconsole=0,7";
 								/*  fb,keyb  */
-			serial_console_name      = "osconsole=2";
-			boot_scsi_boardnumber = 5;
-			boot_net_boardnumber = 6;	/*  TODO: 3?  */
-			break;
+		serial_console_name      = "osconsole=2";
+		boot_scsi_boardnumber = 5;
+		boot_net_boardnumber = 6;	/*  TODO: 3?  */
+		break;
 
-		case MACHINE_DEC_3MIN_5000:		/*  type 3, KN02BA  */
-			machine->machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
-			if (machine->emulated_hz == 0)
-				machine->emulated_hz = 33000000;
-			if (machine->physical_ram_in_mb > 128)
-				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
+	case MACHINE_DEC_3MIN_5000:		/*  type 3, KN02BA  */
+		machine->machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 33000000;
+		if (machine->physical_ram_in_mb > 128)
+			fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
-			/*  KMIN interrupts:  */
-			machine->md_interrupt = kmin_interrupt;
+		/*  KMIN interrupts:  */
+		machine->md_interrupt = kmin_interrupt;
 
-			/*
-			 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
-			 *  tc slot 1:   0x14000000
-			 *  tc slot 2:   0x18000000
-			 *  ioasic0 at tc0 slot 3 offset 0x0				(0x1c000000) slot 0
-			 *  asic regs							(0x1c040000) slot 1
-			 *  station's ether address					(0x1c080000) slot 2
-			 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00	(0x1c0c0000) slot 3
-			 *  scc0 at ioasic0 offset 0x100000				(0x1c100000) slot 4
-			 *  scc1 at ioasic0 offset 0x180000: console			(0x1c180000) slot 6
-			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1c200000) slot 8
-			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
-			 *  dma for asc0						(0x1c380000) slot 14
-			 */
-			machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
-			dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
-			dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-			dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
-			dev_mc146818_init(machine, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
-			dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
-			    NULL, DEV_ASC_DEC, NULL, NULL);
+		/*
+		 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
+		 *  tc slot 1:   0x14000000
+		 *  tc slot 2:   0x18000000
+		 *  ioasic0 at tc0 slot 3 offset 0x0				(0x1c000000) slot 0
+		 *  asic regs							(0x1c040000) slot 1
+		 *  station's ether address					(0x1c080000) slot 2
+		 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00	(0x1c0c0000) slot 3
+		 *  scc0 at ioasic0 offset 0x100000				(0x1c100000) slot 4
+		 *  scc1 at ioasic0 offset 0x180000: console			(0x1c180000) slot 6
+		 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1c200000) slot 8
+		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
+		 *  dma for asc0						(0x1c380000) slot 14
+		 */
+		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
+		dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
+		dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+		dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+		dev_mc146818_init(machine, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
+		dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
+		    NULL, DEV_ASC_DEC, NULL, NULL);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for

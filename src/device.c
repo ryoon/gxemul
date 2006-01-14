@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.21 2005-12-03 04:14:11 debug Exp $
+ *  $Id: device.c,v 1.22 2006-01-14 11:29:34 debug Exp $
  *
  *  Device registry framework.
  */
@@ -142,7 +142,7 @@ int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
  *
  *  Return value is a function pointer, or NULL if the name was not found.
  */
-void (*pci_lookup_initf(char *name))(struct machine *machine,
+void (*pci_lookup_initf(const char *name))(struct machine *machine,
 	struct memory *mem, struct pci_device *pd)
 {
 	int i;

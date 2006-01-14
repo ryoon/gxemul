@@ -25,10 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.3 2006-01-11 05:56:02 debug Exp $
+ *  $Id: machine_prep.c,v 1.4 2006-01-14 11:29:38 debug Exp $
+ *
+ *  Machines conforming to the PowerPC Reference Platform specs.
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_isa.h"
@@ -46,32 +49,58 @@
 MACHINE_SETUP(prep)
 {
 	struct pci_data *pci_data;
+	char *model_name = "";
 
-	/*
-	 *  NetBSD/prep (http://www.netbsd.org/Ports/prep/)
-	 */
+	switch (machine->machine_subtype) {
 
-	machine->machine_name = "PowerPC Reference Platform";
-	machine->stable = 1;
+	case MACHINE_PREP_IBM6050:
+		machine->machine_name =
+		    "PowerPC Reference Platform, IBM 6050/6070";
+		machine->stable = 1;
+		model_name = "IBM PPS Model 6050/6070 (E)";
 
-	if (machine->emulated_hz == 0)
-		machine->emulated_hz = 20000000;
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 20000000;
 
-	machine->md_int.prep_data = device_add(machine, "prep");
-	machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
-	machine->md_interrupt = isa32_interrupt;
+		machine->md_int.prep_data = device_add(machine, "prep");
+		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
+		machine->md_interrupt = isa32_interrupt;
 
-	pci_data = dev_eagle_init(machine, machine->memory,
-	    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
+		pci_data = dev_eagle_init(machine, machine->memory,
+		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
 
-	bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
-	    0x80000000, 0xc0000000, 32, 48);
+		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
+		    0x80000000, 0xc0000000, 32, 48);
 
-	bus_pci_add(machine, pci_data, machine->memory, 0, 13, 0, "dec21143");
+		bus_pci_add(machine, pci_data, machine->memory, 0, 13, 0, "dec21143");
 
-	if (machine->use_x11) {
-		bus_pci_add(machine, pci_data, machine->memory,
-		    0, 14, 0, "s3_virge");
+		if (machine->use_x11) {
+			bus_pci_add(machine, pci_data, machine->memory,
+			    0, 14, 0, "s3_virge");
+		}
+		break;
+
+	case MACHINE_PREP_MVME2400:
+		machine->machine_name = "PowerPC Reference Platform, MVME2400";
+
+		/*  TODO: _EXACT_ model name for mvme2400?  */
+		model_name = "MOT MVME2400";
+
+		machine->md_int.prep_data = device_add(machine, "prep");
+		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
+		machine->md_interrupt = isa32_interrupt;
+
+		pci_data = dev_eagle_init(machine, machine->memory,
+		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
+
+		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
+		    0x80000000, 0xc0000000, 32, 48);
+
+		break;
+
+	default:fatal("Unimplemented PReP machine subtype %i\n",
+		    machine->machine_subtype);
+		exit(1);
 	}
 
 	if (!machine->prom_emulation)
@@ -118,10 +147,7 @@ MACHINE_SETUP(prep)
 
 	/*  Residual data:  (TODO)  */
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100, 0x200);
-	/*  store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8,
-	    "IBM PPS Model 7248 (E)");  */
-	store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8,
-	    "IBM PPS Model 6050/6070 (E)");
+	store_string(cpu, cpu->cd.ppc.gpr[6]+0x100+0x8, model_name);
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[6]+0x100+0x1f8,
 	    machine->physical_ram_in_mb * 1048576);  /*  memsize  */
 }
@@ -129,9 +155,20 @@ MACHINE_SETUP(prep)
 
 MACHINE_DEFAULT_CPU(prep)
 {
-	/*  NOTE/TODO: The actual CPU type differs between different
-	    PReP models!  */
-	machine->cpu_name = strdup("PPC604");
+	switch (machine->machine_subtype) {
+
+	case MACHINE_PREP_IBM6050:
+		machine->cpu_name = strdup("PPC604");
+		break;
+
+	case MACHINE_PREP_MVME2400:
+		machine->cpu_name = strdup("PPC750");
+		break;
+
+	default:fatal("Unimplemented PReP machine subtype %i\n",
+		    machine->machine_subtype);
+		exit(1);
+	}
 }
 
 
@@ -144,9 +181,21 @@ MACHINE_DEFAULT_RAM(prep)
 MACHINE_REGISTER(prep)
 {
 	MR_DEFAULT(prep, "PowerPC Reference Platform", ARCH_PPC,
-	    MACHINE_PREP, 1, 0);
+	    MACHINE_PREP, 1, 2);
+
 	me->aliases[0] = "prep";
+
+	me->subtype[0] = machine_entry_subtype_new(
+	    "IBM 6050/6070", MACHINE_PREP_IBM6050, 1);
+	me->subtype[0]->aliases[0] = "ibm6050";
+	me->subtype[0]->aliases[1] = "ibm6070";
+
+	me->subtype[1] = machine_entry_subtype_new(
+	    "MVME2400", MACHINE_PREP_MVME2400, 1);
+	me->subtype[1]->aliases[0] = "mvme2400";
+
 	me->set_default_ram = machine_default_ram_prep;
+
 	machine_entry_add(me, ARCH_PPC);
 }
 

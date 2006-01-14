@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.19 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.20 2006-01-14 11:29:37 debug Exp $
  *  
  *  PC CMOS/RTC device.
  *
@@ -158,6 +158,7 @@ int devinit_pccmos(struct devinit *devinit)
 		break;
 	case MACHINE_BEBOX:
 	case MACHINE_PREP:
+	case MACHINE_MVMEPPC:
 		irq_nr = 32 + 8;
 		break;
 	case MACHINE_SHARK:

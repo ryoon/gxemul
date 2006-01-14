@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.15 2005-12-03 04:14:16 debug Exp $
+ *  $Id: device.h,v 1.16 2006-01-14 11:29:37 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
@@ -81,7 +81,7 @@ void device_init(void);
 /*  PCI stuff:  (TODO: move somewhere else?)  */
 int pci_register(char *name, void (*initf)(struct machine *, struct memory *,
 	struct pci_device *));
-void (*pci_lookup_initf(char *name))(struct machine *machine,
+void (*pci_lookup_initf(const char *name))(struct machine *machine,
 	struct memory *mem, struct pci_device *pd);
 
 #endif	/*  DEVICE_H  */

@@ -25,16 +25,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.39 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_gt.c,v 1.40 2006-01-14 11:29:36 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
  *	GT-64011	Used in Cobalt machines.
  *	GT-64120	Used in evbmips machines (Malta).
+ *	GT-64260	Used in mvmeppc machines.
  *
  *  TODO: This more or less just a dummy device, so far. It happens to work
- *        with NetBSD/cobalt and /evbmips, and in some cases it might happen
- *        to work with Linux as well, but don't rely on it for anything else.
+ *        with some NetBSD ports in some cases, and perhaps with Linux too,
+ *        but it is not really working for anything else.
  */
 
 #include <stdio.h>
@@ -55,6 +56,7 @@
 
 #define PCI_PRODUCT_GALILEO_GT64011  0x4146    /*  GT-64011  */
 #define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /*  GT-64120  */
+#define	PCI_PRODUCT_GALILEO_GT64260  0x6430    /*  GT-64260  */
 
 struct gt_data {
 	int	irqnr;
@@ -187,6 +189,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	uint64_t isa_portbase = 0, isa_membase = 0;
 	int isa_irqbase = 0, pci_irqbase = 0;
 	uint64_t pci_io_offset = 0, pci_mem_offset = 0;
+	char *gt_name = "NO";
 
 	d = malloc(sizeof(struct gt_data));
 	if (d == NULL) {
@@ -201,6 +204,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	case 11:
 		/*  Cobalt:  */
 		d->type = PCI_PRODUCT_GALILEO_GT64011;
+		gt_name = "gt64011";
 		pci_io_offset = 0;
 		pci_mem_offset = 0;
 		pci_portbase = 0x10000000ULL;
@@ -213,6 +217,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	case 120:
 		/*  EVBMIPS (Malta):  */
 		d->type = PCI_PRODUCT_GALILEO_GT64120;
+		gt_name = "gt64120";
 		pci_io_offset = 0;
 		pci_mem_offset = 0;
 		pci_portbase = 0x18000000ULL;
@@ -222,7 +227,20 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		isa_membase = 0x10000000ULL;
 		isa_irqbase = 8;
 		break;
-	default:fatal("dev_gt_init(): type must be 11 or 120.\n");
+	case 260:
+		/*  MVMEPPC (mvme5500):  */
+		d->type = PCI_PRODUCT_GALILEO_GT64260;
+		gt_name = "gt64260";
+		pci_io_offset = 0;
+		pci_mem_offset = 0;
+		pci_portbase = 0x18000000ULL;
+		pci_membase = 0x10000000ULL;
+		pci_irqbase = 8;
+		isa_portbase = 0x18000000ULL;
+		isa_membase = 0x10000000ULL;
+		isa_irqbase = 8;
+		break;
+	default:fatal("dev_gt_init(): unimplemented GT type (%i).\n", type);
 		exit(1);
 	}
 
@@ -236,8 +254,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64011
 	 *  System Controller, rev 1
 	 */
-	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0,
-	    d->type == PCI_PRODUCT_GALILEO_GT64011? "gt64011" : "gt64120");
+	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0, gt_name);
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH,
 	    dev_gt_access, d, DM_DEFAULT, NULL);

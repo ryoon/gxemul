@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.53 2005-12-26 12:32:11 debug Exp $
+ *  $Id: bus_pci.c,v 1.54 2006-01-14 11:29:36 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -197,7 +197,7 @@ void bus_pci_setaddr(struct cpu *cpu, struct pci_data *pci_data,
  */
 void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	struct memory *mem, int bus, int device, int function,
-	char *name)
+	const char *name)
 {
 	struct pci_device *pd;
 	int ofs;
@@ -582,14 +582,14 @@ PCIINIT(ahc)
 #define PCI_VENDOR_GALILEO           0x11ab    /* Galileo Technology */
 #define PCI_PRODUCT_GALILEO_GT64011  0x4146    /* GT-64011 System Controller */
 #define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /* GT-64120 */
+#define	PCI_PRODUCT_GALILEO_GT64260  0x6430    /* GT-64260 */
 
 PCIINIT(gt64011)
 {
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_GALILEO,
 	    PCI_PRODUCT_GALILEO_GT64011));
 
-	PCI_SET_DATA(PCI_CLASS_REG,
-	    PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
 	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x01);	/*  Revision 1  */
 }
 
@@ -606,6 +606,15 @@ PCIINIT(gt64120)
 		PCI_SET_DATA(PCI_MAPREG_START + 0x10, 0x1be00000);
 		break;
 	}
+}
+
+PCIINIT(gt64260)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_GALILEO,
+	    PCI_PRODUCT_GALILEO_GT64260));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x01);	/*  Revision 1?  */
 }
 
 

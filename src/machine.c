@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.661 2006-01-11 20:14:41 debug Exp $
+ *  $Id: machine.c,v 1.662 2006-01-14 11:29:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,7 +52,6 @@
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
-#include "of.h"
 #include "symbol.h"
 
 /*  For SGI and ARC emulation:  */

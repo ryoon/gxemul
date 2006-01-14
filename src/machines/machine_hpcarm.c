@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcarm.c,v 1.1 2006-01-11 19:20:08 debug Exp $
+ *  $Id: machine_hpcarm.c,v 1.2 2006-01-14 11:29:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -144,7 +144,7 @@ MACHINE_SETUP(hpcarm)
 	machine->bootstr = machine->boot_kernel_filename;
 	store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512,
 	    machine->physical_ram_in_mb * 1048576 - 512 + 16);
-	store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 4,0);
+	store_32bit_word(cpu, machine->physical_ram_in_mb * 1048576 - 512 +4,0);
 	store_string(cpu, machine->physical_ram_in_mb * 1048576 - 512 + 16,
 	    machine->bootstr);
 

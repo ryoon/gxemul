@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.54 2006-01-14 11:29:36 debug Exp $
+ *  $Id: bus_pci.c,v 1.55 2006-01-14 12:52:01 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.

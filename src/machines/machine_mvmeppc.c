@@ -25,9 +25,15 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.1 2006-01-14 11:29:38 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.2 2006-01-14 12:52:03 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
+ *
+ *  Note:  MVME machines that adhere to the PReP standard should be
+ *         in machine_prep.c instead.
+ *
+ *
+ *  TODO: This is mostly bogus.
  */
 
 #include <stdio.h>

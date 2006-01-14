@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.87 2005-12-26 12:32:09 debug Exp $
+ *  $Id: net.c,v 1.88 2006-01-14 12:51:59 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *

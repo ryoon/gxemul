@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.327 2005-12-16 21:44:41 debug Exp $
+ *  $Id: cpu.c,v 1.328 2006-01-14 12:51:58 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */

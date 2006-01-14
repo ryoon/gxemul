@@ -2,7 +2,7 @@
 #define	CPU_ALPHA_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.28 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.29 2006-01-14 12:52:02 debug Exp $
  */
 
 #include "misc.h"
@@ -124,6 +124,7 @@ struct alpha_cpu {
 	/*  Misc.:  */
 	uint64_t		pcc;			/*  Cycle Counter  */
 	uint64_t		ipl;
+	uint64_t		sysvalue;
 	uint64_t		load_linked_addr;
 	int			ll_flag;
 

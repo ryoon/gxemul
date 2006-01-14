@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.60 2006-01-01 16:08:26 debug Exp $
+ *  $Id: dev_wdc.c,v 1.61 2006-01-14 12:52:01 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -569,9 +569,7 @@ DEVICE_ACCESS(wdc)
 
 	case wd_data:	/*  0: data  */
 		if (writeflag == MEM_READ) {
-			odata = 0;
-
-			odata += wdc_get_inbuf(d);
+			odata = wdc_get_inbuf(d);
 
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 				if (len >= 2)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.3 2006-01-01 16:08:25 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.4 2006-01-14 12:52:00 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -133,7 +133,7 @@ void alpha_prom_call(struct cpu *cpu)
  *  alpha_palcode():
  *
  *  Execute an Alpha PALcode instruction. (Most of these correspond to
- *  NetBSD/alpha code).
+ *  OSF1 palcodes, used by for example NetBSD/alpha.)
  */
 void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 {
@@ -147,6 +147,14 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 	case 0x2b:	/*  PAL_OSF1_wrfen  */
 		/*  Floating point enable: a0 = 1 or 0.  */
 		/*  TODO  */
+		break;
+	case 0x31:	/*  PAL_OSF1_wrval  */
+		/*  a0 = value  */
+		cpu->cd.alpha.sysvalue = cpu->cd.alpha.r[ALPHA_A0];
+		break;
+	case 0x32:	/*  PAL_OSF1_rdval  */
+		/*  return: v0 = value  */
+		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.sysvalue;
 		break;
 	case 0x33:	/*  PAL_OSF1_tbi  */
 		/*  a0 = op, a1 = vaddr  */

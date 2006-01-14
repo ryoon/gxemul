@@ -2,7 +2,7 @@
 #define	CPU_ARM_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.59 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_arm.h,v 1.60 2006-01-14 12:52:02 debug Exp $
  */
 
 #include "misc.h"

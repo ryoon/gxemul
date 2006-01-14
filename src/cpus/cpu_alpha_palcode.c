@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.4 2006-01-14 12:52:00 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.5 2006-01-14 13:15:32 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -86,6 +86,7 @@ void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen)
 	case 0x3c: snprintf(buf, buflen, "PAL_OSF1_whami"); break;
 	case 0x3d: snprintf(buf, buflen, "PAL_OSF1_retsys"); break;
 	case 0x3f: snprintf(buf, buflen, "PAL_OSF1_rti"); break;
+	case 0x81: snprintf(buf, buflen, "PAL_bugchk"); break;
 	case 0x83: snprintf(buf, buflen, "PAL_OSF1_callsys"); break;
 	case 0x86: snprintf(buf, buflen, "PAL_OSF1_imb"); break;
 	case 0x92: snprintf(buf, buflen, "PAL_OSF1_urti"); break;
@@ -188,6 +189,9 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 	case 0x3c:	/*  PAL_OSF1_whami  */
 		/*  Returns CPU id in v0:  */
 		cpu->cd.alpha.r[ALPHA_V0] = cpu->cpu_id;
+		break;
+	case 0x81:	/*  PAL_bugchk  */
+		cpu->running = 0;
 		break;
 	case 0x83:	/*  PAL_OSF1_syscall  */
 		if (cpu->machine->userland_emul != NULL)

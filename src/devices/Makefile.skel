@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.111 2005-12-20 21:19:15 debug Exp $
+#  $Id: Makefile.skel,v 1.112 2006-01-15 13:25:06 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -27,7 +27,7 @@ OBJS=lk201.o \
 	dev_ps2_spd.o dev_ps2_ether.o \
 	dev_ohci.o dev_pcic.o dev_malta_lcd.o dev_hammerhead.o \
 	dev_vr41xx.o dev_au1x00.o \
-	dev_lpt.o dev_adb.o \
+	dev_lpt.o dev_adb.o dev_nvram.o \
 	dev_pmppc.o dev_bebox.o dev_prep.o dev_footbridge.o dev_i80321.o \
 	bus_isa.o bus_pci.o
 

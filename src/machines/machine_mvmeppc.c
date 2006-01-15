@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.2 2006-01-14 12:52:03 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.3 2006-01-15 13:25:06 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *
@@ -62,6 +62,18 @@ MACHINE_SETUP(mvmeppc)
 		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
 		     0x80000000, 0xc0000000, 32, 48);
 
+		device_add(machine, "nvram addr=0x80000074 name2=mvme1600");
+
+		/*
+		 *  "DRAM size register": TODO: turn this into a device?
+		 *  See the definition of p160x_dram_size in NetBSD's
+		 *  .../arch/mvmeppc/platform_160x.c for details.
+		 *
+		 *  0x11 = two banks of 32 MB each.
+		 */
+		dev_ram_init(machine, 0x80000804, 1, DEV_RAM_RAM, 0);
+		store_byte(cpu, 0x80000804, 0x11);
+
 		break;
 
 	case MACHINE_MVMEPPC_2100:
@@ -96,9 +108,16 @@ MACHINE_SETUP(mvmeppc)
 	if (!machine->prom_emulation)
 		return;
 
+	/*  r3 = start of kernel, r4 = end of kernel (for NetBSD/mvmeppc)  */
+	cpu->cd.ppc.gpr[3] = 0;
+	cpu->cd.ppc.gpr[4] = 1048576 * 10;
 	cpu->cd.ppc.gpr[5] = machine->physical_ram_in_mb * 1048576-0x100;
 	store_string(cpu, cpu->cd.ppc.gpr[5]+ 44, "PC16550");
 	store_16bit_word(cpu, cpu->cd.ppc.gpr[5]+ 76, 0x1600);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 80,
+	    machine->physical_ram_in_mb * 1048576);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 84, 66 * 1000000);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 88, 66 * 1000000);
 #if 0
 0         u_int32_t       bi_boothowto;
 4         u_int32_t       bi_bootaddr;
@@ -145,7 +164,7 @@ MACHINE_DEFAULT_CPU(mvmeppc)
 
 MACHINE_DEFAULT_RAM(mvmeppc)
 {
-	machine->physical_ram_in_mb = 32;
+	machine->physical_ram_in_mb = 64;
 }
 
 

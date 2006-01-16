@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.3 2006-01-15 13:25:06 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.4 2006-01-16 00:51:15 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *
@@ -52,15 +52,21 @@
 
 MACHINE_SETUP(mvmeppc)
 {
-	struct pci_data *pci_data;
+	struct pci_data *pci_data = NULL;
 
 	switch (machine->machine_subtype) {
 
 	case MACHINE_MVMEPPC_1600:
 		machine->machine_name = "MVME1600";
 
+		pci_data = dev_eagle_init(machine, machine->memory,
+		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
+        
 		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
-		     0x80000000, 0xc0000000, 32, 48);
+		    0x80000000, 0xc0000000, 32, 48);
+
+		bus_pci_add(machine, pci_data, machine->memory,
+		    0, 14, 0, "dec21143");
 
 		device_add(machine, "nvram addr=0x80000074 name2=mvme1600");
 

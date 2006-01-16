@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.8 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_eagle.c,v 1.9 2006-01-16 00:51:14 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -128,6 +128,19 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	case MACHINE_PREP:
 		bus_pci_add(machine, d->pci_data, mem, 0, 11, 0, "ibm_isa");
 		break;
+	case MACHINE_MVMEPPC:
+		switch (machine->machine_subtype) {
+		case MACHINE_MVMEPPC_1600:
+			bus_pci_add(machine, d->pci_data, mem, 0, 11, 0,
+			    "i82378zb");
+			break;
+		default:fatal("unimplemented machine subtype for "
+			    "eagle/mvmeppc\n");
+			exit(1);
+		}
+		break;
+	default:fatal("unimplemented machine type for eagle\n");
+		exit(1);
 	}
 
 	return d->pci_data;

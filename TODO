@@ -1,4 +1,4 @@
-$Id: TODO,v 1.194 2006-01-11 05:55:57 debug Exp $
+$Id: TODO,v 1.195 2006-01-16 00:51:13 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -31,6 +31,7 @@ The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
 	    minimum size, etc, or up to a max size)
 	x)  keep track of interrupts and busses?
+	x)  refactor various clocks/nvram/cmos into one device?
 
 PCI:
 	x)  add support for address fixups

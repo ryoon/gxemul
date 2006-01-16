@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.50 2005-12-31 11:20:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.51 2006-01-16 03:34:11 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -35,13 +35,14 @@
 #if 1	/*  IC statistics:  */
 static void gather_statistics(struct cpu *cpu)
 {
+	struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic;
 	static long long n = 0;
+	static FILE *f = NULL;
+
 	n++;
 	if (n < 100000000)
 		return;
 
-	struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic;
-	static FILE *f = NULL;
 	if (f == NULL) {
 		f = fopen("instruction_call_statistics.raw", "w");
 		if (f == NULL) {

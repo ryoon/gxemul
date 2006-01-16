@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.69 2006-01-04 05:58:47 debug Exp $
+$Id: technical.html,v 1.70 2006-01-16 03:34:11 debug Exp $
 
 Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 
@@ -423,11 +423,15 @@ actually compile and run.)
   <p>
   <li>And last but not least, the device should have an access function.
 	The access function is called whenever there is a load or store
-	to an address which is in the device' memory mapped region.
-<pre>
-	int dev_foo_access(struct cpu *cpu, struct memory *mem,
+	to an address which is in the device' memory mapped region. To
+	simplify things a little, a macro <tt>DEVICE_ACCESS(x)</tt>
+	is expanded into<pre>
+	int dev_x_access(struct cpu *cpu, struct memory *mem,
 	    uint64_t relative_addr, unsigned char *data, size_t len,
 	    int writeflag, void *extra)
+</pre>	The access function can look like this:
+<pre>
+	DEVICE_ACCESS(foo)
 	{
 		struct foo_data *d = extra;
 		uint64_t idata = 0, odata = 0;

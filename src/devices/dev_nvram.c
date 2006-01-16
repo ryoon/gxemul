@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_nvram.c,v 1.1 2006-01-15 13:25:06 debug Exp $
+ *  $Id: dev_nvram.c,v 1.2 2006-01-16 01:45:28 debug Exp $
  *
  *  NVRAM reached through ISA port 0x74-0x77.
  *  (See dev_pccmos.c for the traditional PC-style CMOS/RTC device.)
@@ -147,10 +147,10 @@ int devinit_nvram(struct devinit *devinit)
 		memcpy(&d->ram[0x1f18], "0", 2);  /*  includes nul  */
 
 		/*  speed_mpu:  */
-		memcpy(&d->ram[0x1f36], "66", 3);  /*  includes nul  */
+		memcpy(&d->ram[0x1f36], "33", 3);  /*  includes nul  */
 
 		/*  speed_bus:  */
-		memcpy(&d->ram[0x1f39], "66", 3);  /*  includes nul  */
+		memcpy(&d->ram[0x1f39], "33", 3);  /*  includes nul  */
 	} else {
 		fatal("Unimplemented NVRAM type '%s'\n", devinit->name2);
 		exit(1);

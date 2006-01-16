@@ -25,9 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.4 2006-01-16 00:51:15 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.5 2006-01-16 01:45:29 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
+ *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
  *
  *  Note:  MVME machines that adhere to the PReP standard should be
  *         in machine_prep.c instead.
@@ -41,11 +42,13 @@
 #include <string.h>
 
 #include "bus_isa.h"
+#include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
 #include "diskimage.h"
 #include "machine.h"
+#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -59,10 +62,14 @@ MACHINE_SETUP(mvmeppc)
 	case MACHINE_MVMEPPC_1600:
 		machine->machine_name = "MVME1600";
 
+		machine->md_int.prep_data = device_add(machine, "prep");
+		machine->isa_pic_data.native_irq = 1;   /*  Semi-bogus  */
+		machine->md_interrupt = isa32_interrupt;
+
 		pci_data = dev_eagle_init(machine, machine->memory,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);
         
-		bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1,
+		bus_isa_init(machine, BUS_ISA_LPTBASE_3BC,
 		    0x80000000, 0xc0000000, 32, 48);
 
 		bus_pci_add(machine, pci_data, machine->memory,
@@ -122,8 +129,8 @@ MACHINE_SETUP(mvmeppc)
 	store_16bit_word(cpu, cpu->cd.ppc.gpr[5]+ 76, 0x1600);
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 80,
 	    machine->physical_ram_in_mb * 1048576);
-	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 84, 66 * 1000000);
-	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 88, 66 * 1000000);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 84, 33 * 1000000);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 88, 33 * 1000000);
 #if 0
 0         u_int32_t       bi_boothowto;
 4         u_int32_t       bi_bootaddr;

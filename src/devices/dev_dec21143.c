@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.21 2006-01-01 16:08:26 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.22 2006-01-16 01:45:27 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -43,7 +43,7 @@
  *
  *  TODO:
  *	o)  Handle _writes_ to MII registers.
- *	o)  Make it work with Linux as a guest OS.
+ *	o)  Make it work with modern Linux kernels (as a guest OS).
  *	o)  Endianness for descriptors? If necessary.
  *	o)  Actually handle the "Setup" packet.
  *	o)  MAC filtering on incoming packets.

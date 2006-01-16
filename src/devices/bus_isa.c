@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.8 2006-01-14 12:52:01 debug Exp $
+ *  $Id: bus_isa.c,v 1.9 2006-01-16 01:45:27 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -75,6 +75,7 @@ void bus_isa_debug_dump(void *extra)
  *  BUS_ISA_PCKBC_FORCE_USE	Always assume keyboard console, not serial. (*3)
  *  BUS_ISA_PCKBC_NONPCSTYLE	Don't set the pc-style flag for the keyboard.
  *  BUS_ISA_NO_SECOND_PIC	Only useful for 8086 XT (pre-AT) emulation. :-)
+ *  BUS_ISA_LPTBASE_3BC		Set lptbase to 0x3bc instead of 0x378.
  *
  *  (*1) For machines with a PCI bus, this flag should not be used. Instead, a
  *       PCI VGA card should be added to the PCI bus.
@@ -94,6 +95,7 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 	char tmpstr[300];
 	int wdc0_irq = 14, wdc1_irq = 15;
 	int tmp_handle, kbd_in_use;
+	int lptbase = 0x378;
 
 	memset(d, 0, sizeof(struct bus_isa_data));
 	d->isa_portbase = isa_portbase;
@@ -139,8 +141,13 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 	    " in_use=0", isa_irqbase +3, (long long)(isa_portbase + 0x2f8));
 	device_add(machine, tmpstr);
 
+	if (bus_isa_flags & BUS_ISA_LPTBASE_3BC) {
+		bus_isa_flags &= ~BUS_ISA_LPTBASE_3BC;
+		lptbase = 0x3bc;
+	}
+
 	snprintf(tmpstr, sizeof(tmpstr), "lpt irq=%i addr=0x%llx name2=lpt"
-	    " in_use=0", isa_irqbase + 7, (long long)(isa_portbase + 0x378));
+	    " in_use=0", isa_irqbase + 7, (long long)(isa_portbase + lptbase));
 	device_add(machine, tmpstr);
 
 	if (bus_isa_flags & BUS_ISA_IDE0) {

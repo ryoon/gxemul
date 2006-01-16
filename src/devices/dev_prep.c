@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.2 2006-01-01 13:17:17 debug Exp $
+ *  $Id: dev_prep.c,v 1.3 2006-01-16 01:45:28 debug Exp $
  *
  *  PReP interrupt controller.
  */
@@ -53,10 +53,11 @@ DEVICE_ACCESS(prep)
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
-	if (writeflag == MEM_READ)
+	if (writeflag == MEM_READ) {
 		odata = cpu->machine->isa_pic_data.last_int;
-	else
+	} else {
 		fatal("[ prep: write to interrupt register? ]\n");
+	}
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -80,7 +81,7 @@ int devinit_prep(struct devinit *devinit)
 	memset(d, 0, sizeof(struct prep_data));
 
 	memory_device_register(devinit->machine->memory, devinit->name,
-	    0xbffffff0, 1, dev_prep_access, d, DM_DEFAULT, NULL);
+	    0xbffff000, 0x1000, dev_prep_access, d, DM_DEFAULT, NULL);
 
 	devinit->return_ptr = d;
 

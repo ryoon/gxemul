@@ -2,7 +2,7 @@
 #define	BUS_ISA_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_isa.h,v 1.3 2006-01-16 01:45:28 debug Exp $
+ *  $Id: bus_isa.h,v 1.4 2006-01-16 01:45:50 debug Exp $
  *
  *  ISA bus.
  */

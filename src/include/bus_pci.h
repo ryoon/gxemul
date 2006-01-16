@@ -2,7 +2,7 @@
 #define	BUS_PCI_H
 
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.27 2006-01-14 11:29:37 debug Exp $
+ *  $Id: bus_pci.h,v 1.28 2006-01-16 01:45:50 debug Exp $
  */
 
 #include "misc.h"

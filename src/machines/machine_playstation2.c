@@ -25,12 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.3 2006-01-16 01:45:29 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "cpu.h"
 #include "device.h"

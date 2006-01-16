@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.328 2006-01-14 12:51:58 debug Exp $
+ *  $Id: cpu.c,v 1.329 2006-01-16 04:48:08 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -515,7 +515,7 @@ void cpu_show_cycles(struct machine *machine, int forced)
 		s = ms / 1000;
 		ms -= 1000 * s;
 
-		printf("emulated time = %02i:%02i:%02i.%03i; ", h, m, s, ms);
+		printf(", emulated time = %02i:%02i:%02i.%03i; ", h, m, s, ms);
 	}
 
 	/*  Instructions per second, and average so far:  */

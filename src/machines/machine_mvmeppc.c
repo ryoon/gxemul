@@ -25,12 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.5 2006-01-16 01:45:29 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.6 2006-01-16 04:48:11 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
  *
- *  Note:  MVME machines that adhere to the PReP standard should be
+ *  Note:  MVME machines that really adhere to the PReP standard should be
  *         in machine_prep.c instead.
  *
  *
@@ -156,8 +156,8 @@ MACHINE_DEFAULT_CPU(mvmeppc)
 	switch (machine->machine_subtype) {
 
 	case MACHINE_MVMEPPC_1600:
-		/*  TODO? Check with NetBSD/mvmeppc  */
-		machine->cpu_name = strdup("PPC603");
+		/*  Suitable for NetBSD/mvmeppc:  */
+		machine->cpu_name = strdup("PPC603e");
 		break;
 
 	case MACHINE_MVMEPPC_2100:

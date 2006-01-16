@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.1 2006-01-01 12:38:12 debug Exp $
+ *  $Id: interrupts.c,v 1.2 2006-01-16 04:48:10 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -898,6 +898,7 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 			cpu_interrupt_ack(m->cpus[1], 65);
 		break;
 	case MACHINE_PREP:
+	case MACHINE_MVMEPPC:
 		if (irq_nr < 32) {
 			if (assrt)
 				m->md_int.prep_data->int_status |= mask;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.56 2006-01-16 01:45:27 debug Exp $
+ *  $Id: bus_pci.c,v 1.57 2006-01-16 04:48:10 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -668,6 +668,11 @@ PCIINIT(i82378zb)
 
 	PCI_SET_DATA(PCI_BHLC_REG,
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+
+	PCI_SET_DATA(0x40, 0x20);
+
+	/*  PIRQ[0]=10 PIRQ[1]=11 PIRQ[2]=14 PIRQ[3]=15  */
+	PCI_SET_DATA(0x60, 0x0f0e0b0a);
 }
 
 PCIINIT(piix3_ide)
@@ -941,7 +946,7 @@ PCIINIT(dec21143)
 	case MACHINE_MVMEPPC:
 		/*  TODO  */
 		irq = 32 + 10;
-		pci_int_line = 0x20a;
+		pci_int_line = 0x40a;
 		break;
 	case MACHINE_PMPPC:
 		/*  TODO, not working yet  */

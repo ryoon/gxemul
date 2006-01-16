@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.254 2005-12-31 15:48:32 debug Exp $
+ *  $Id: main.c,v 1.255 2006-01-16 21:22:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -794,12 +794,13 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			emuls[n_emuls - 1] =
-			    emul_create_from_configfile(s);
 
 			/*  Always allow slave xterms when using multiple
 			    emulations:  */
 			console_allow_slaves(1);
+
+			emuls[n_emuls - 1] =
+			    emul_create_from_configfile(s);
 		}
 	}
 

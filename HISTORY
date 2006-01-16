@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1106 2006-01-16 03:34:09 debug Exp $
+$Id: HISTORY,v 1.1107 2006-01-16 21:22:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2550,4 +2550,4 @@ Changelog for GXemul:
 		specific hardware devices are emulated yet.
 20060116	Minor updates to the mvme1600 emulation mode; the Eagle PCI bus
 		seems to work without much modification, and a 21143 can be
-		detected, but interrupts don't work yet.
+		detected, interrupts might work (but untested so far).

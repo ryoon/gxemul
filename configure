@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.193 2006-01-11 05:55:58 debug Exp $
+#  $Id: configure,v 1.194 2006-01-16 21:22:28 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1104,7 +1104,7 @@ else
 	fi
 
 	#  x86:
-	if `uname -m|grep -q -v 64|grep -q 86`; then
+	if `uname -m|grep -v 64|grep -q 86`; then
 		printf "#define I386\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h
 		printf "i386\n"

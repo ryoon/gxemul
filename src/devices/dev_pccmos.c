@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.20 2006-01-14 11:29:37 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.21 2006-01-17 05:55:54 debug Exp $
  *  
- *  PC CMOS/RTC device.
+ *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
  *
  *  The main point of this device is to be a "PC style wrapper" for accessing
  *  the MC146818 (the RTC). In most other respects, this device is bogus, and

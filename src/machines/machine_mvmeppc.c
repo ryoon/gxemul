@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.6 2006-01-16 04:48:11 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.7 2006-01-17 05:55:59 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -126,6 +126,9 @@ MACHINE_SETUP(mvmeppc)
 	cpu->cd.ppc.gpr[4] = 1048576 * 10;
 	cpu->cd.ppc.gpr[5] = machine->physical_ram_in_mb * 1048576-0x100;
 	store_string(cpu, cpu->cd.ppc.gpr[5]+ 44, "PC16550");
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 68, 9600);
+	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 72, 0);
+
 	store_16bit_word(cpu, cpu->cd.ppc.gpr[5]+ 76, 0x1600);
 	store_32bit_word(cpu, cpu->cd.ppc.gpr[5]+ 80,
 	    machine->physical_ram_in_mb * 1048576);

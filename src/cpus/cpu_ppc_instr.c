@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.57 2006-01-14 11:29:35 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.58 2006-01-17 05:55:52 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2463,6 +2463,7 @@ X(tlbsx_dot)
 X(tlbli)
 {
 	fatal("tlbli\n");
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
 
@@ -2475,6 +2476,7 @@ X(tlbld)
 	    MODE_uint_t paddr = cpu->cd.ppc.spr[SPR_RPA];  */
 
 	fatal("tlbld\n");
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
 

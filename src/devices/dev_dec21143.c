@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.22 2006-01-16 01:45:27 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.23 2006-01-17 05:55:53 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -412,6 +412,9 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			free(d->cur_tx_buf);
 			d->cur_tx_buf = NULL;
 			d->cur_tx_buf_len = 0;
+
+			/*  TODO: Shouldn't the OWN bit be cleared on all
+			    kinds of segments, not just the Last?  */
 
 			/*  We are done.  */
 			tdes0 &= ~TDSTAT_OWN;

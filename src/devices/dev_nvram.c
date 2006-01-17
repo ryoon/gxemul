@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_nvram.c,v 1.2 2006-01-16 01:45:28 debug Exp $
+ *  $Id: dev_nvram.c,v 1.3 2006-01-17 05:55:53 debug Exp $
  *
- *  NVRAM reached through ISA port 0x74-0x77.
- *  (See dev_pccmos.c for the traditional PC-style CMOS/RTC device.)
+ *  NVRAM reached through ISA port 0x74-0x77, and a wrapper for an MK48Txx
+ *  RTC. (See dev_pccmos.c for the traditional PC-style CMOS/RTC device.)
  *
  *  TODO: Perhaps implement flags for which parts of ram that are actually
  *        implemented, and warn when accesses occur to other parts?
@@ -47,11 +47,19 @@
 #include "misc.h"
 
 
+#include "mk48txxreg.h"
+
+
 #define	DEV_NVRAM_LENGTH		4
+
+#define	MK48TXX_FAKE_ADDR	0x1d80000000ULL
 
 struct nvram_data {
 	uint16_t	reg_select;
 	unsigned char	ram[65536];
+
+	int		rtc_offset;
+	int		rtc_irq;
 };
 
 
@@ -85,9 +93,32 @@ DEVICE_ACCESS(nvram)
 		break;
 
 	case 3:	if (writeflag == MEM_WRITE) {
-			d->ram[d->reg_select] = idata;
+			if (d->reg_select >= d->rtc_offset + 8 &&
+			    d->reg_select < d->rtc_offset + 0x10) {
+				/*  RTC access:  */
+				unsigned char b = idata;
+				cpu->memory_rw(cpu, cpu->mem,
+				    MK48TXX_FAKE_ADDR + d->reg_select -
+				    d->rtc_offset, &b, 1, MEM_WRITE,
+				    PHYSICAL);
+			} else {
+				/*  NVRAM access:  */
+				d->ram[d->reg_select] = idata;
+			}
 		} else {
-			odata = d->ram[d->reg_select];
+			if (d->reg_select >= d->rtc_offset + 8 &&
+			    d->reg_select < d->rtc_offset + 0x10) {
+				/*  RTC access:  */
+				unsigned char b;
+				cpu->memory_rw(cpu, cpu->mem,
+				    MK48TXX_FAKE_ADDR + d->reg_select -
+				    d->rtc_offset, &b, 1, MEM_READ,
+				    PHYSICAL);
+				odata = b;
+			} else {
+				/*  NVRAM access:  */
+				odata = d->ram[d->reg_select];
+			}
 		}
 		break;
 
@@ -107,8 +138,8 @@ DEVICE_ACCESS(nvram)
  */
 int devinit_nvram(struct devinit *devinit)
 {
+	char tmpstr[100];
 	struct nvram_data *d = malloc(sizeof(struct nvram_data));
-
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -132,6 +163,7 @@ int devinit_nvram(struct devinit *devinit)
 		 *  0x1f39   3 bytes	speed_bus
 		 *  0x1f3c 187 bytes	reserved
 		 *  0x1ff7   1 byte	cksum
+		 *  0x1ff8-0x1fff = offsets 8..15 of the MK48T18 RTC
 		 *
 		 *  Example of values from a real machine (according to Google):
 		 *  Model: MVME1603-051, Serial: 2451669, PWA: 01-W3066F01E
@@ -151,6 +183,9 @@ int devinit_nvram(struct devinit *devinit)
 
 		/*  speed_bus:  */
 		memcpy(&d->ram[0x1f39], "33", 3);  /*  includes nul  */
+
+		d->rtc_offset = MK48T18_CLKOFF;
+		d->rtc_irq = 32 + 8;
 	} else {
 		fatal("Unimplemented NVRAM type '%s'\n", devinit->name2);
 		exit(1);
@@ -159,6 +194,10 @@ int devinit_nvram(struct devinit *devinit)
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_NVRAM_LENGTH, dev_nvram_access, (void *)d,
 	    DM_DEFAULT, NULL);
+
+	snprintf(tmpstr, sizeof(tmpstr), "mk48txx addr=0x%llx irq=%i",
+	    (long long)MK48TXX_FAKE_ADDR, d->rtc_irq);
+	device_add(devinit->machine, tmpstr);
 
 	return 1;
 }

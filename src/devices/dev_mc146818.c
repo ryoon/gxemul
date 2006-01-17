@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.83 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.84 2006-01-17 05:55:53 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -642,7 +642,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 
 	if (machine->machine_type != MACHINE_PREP) {
 		/*  NetBSD/prep has a really ugly clock detection code;
-		    all other machines/OSes don't need this.  */
+		    no other machines/OSes don't need this.  */
 		d->ugly_netbsd_prep_hack_done = NETBSD_HACK_DONE;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.47 2006-01-01 16:08:25 debug Exp $
+ *  $Id: cpu_arm.c,v 1.48 2006-01-22 12:36:26 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -303,8 +303,11 @@ void arm_cpu_register_match(struct machine *m, char *name,
 				m->cpus[cpunr]->cd.arm.r[i] = *valuep;
 				if (i == ARM_PC)
 					m->cpus[cpunr]->pc = *valuep;
-			} else
+			} else {
 				*valuep = m->cpus[cpunr]->cd.arm.r[i];
+				if (i == ARM_PC)
+					*valuep = m->cpus[cpunr]->pc;
+			}
 			*match_register = 1;
 		}
 	}

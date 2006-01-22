@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.60 2006-01-14 12:52:02 debug Exp $
+ *  $Id: cpu_arm.h,v 1.61 2006-01-22 12:36:27 debug Exp $
  */
 
 #include "misc.h"
@@ -199,7 +199,8 @@ struct arm_cpu {
 	/*
 	 *  System Control Coprocessor registers:
 	 */
-	uint32_t		control;
+	uint32_t		control;	/*  Control Register  */
+	uint32_t		auxctrl;	/*  Aux. Control Register  */
 	uint32_t		ttb;		/*  Translation Table Base  */
 	uint32_t		dacr;		/*  Domain Access Control  */
 	uint32_t		fsr;		/*  Fault Status Register  */

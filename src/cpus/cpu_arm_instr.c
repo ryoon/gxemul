@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.57 2006-01-14 11:29:35 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.58 2006-01-22 12:36:26 debug Exp $
  *
  *  ARM instructions.
  *
@@ -582,6 +582,39 @@ X(mull)
 	}
 }
 Y(mull)
+
+
+/*
+ *  smulXY:  16-bit * 16-bit multiplication (32-bit result)
+ *
+ *  arg[0] = ptr to rm
+ *  arg[1] = ptr to rs
+ *  arg[2] = ptr to rd
+ */
+X(smulbb)
+{
+	reg(ic->arg[2]) = (int32_t)(int16_t)reg(ic->arg[0]) *
+	    (int32_t)(int16_t)reg(ic->arg[1]);
+}
+Y(smulbb)
+X(smultb)
+{
+	reg(ic->arg[2]) = (int32_t)(int16_t)(reg(ic->arg[0]) >> 16) *
+	    (int32_t)(int16_t)reg(ic->arg[1]);
+}
+Y(smultb)
+X(smulbt)
+{
+	reg(ic->arg[2]) = (int32_t)(int16_t)reg(ic->arg[0]) *
+	    (int32_t)(int16_t)(reg(ic->arg[1]) >> 16);
+}
+Y(smulbt)
+X(smultt)
+{
+	reg(ic->arg[2]) = (int32_t)(int16_t)(reg(ic->arg[0]) >> 16) *
+	    (int32_t)(int16_t)(reg(ic->arg[1]) >> 16);
+}
+Y(smultt)
 
 
 /*
@@ -2583,8 +2616,17 @@ X(to_be_translated)
 			goto bad;
 		}
 		if ((iword & 0x0ff0f090) == 0x01600080) {
-			/*  TODO: smulXY  */
-			goto bad;
+			/*  smulXY (16-bit * 16-bit => 32-bit)  */
+			switch (iword & 0x60) {
+			case 0x00: ic->f = cond_instr(smulbb); break;
+			case 0x20: ic->f = cond_instr(smultb); break;
+			case 0x40: ic->f = cond_instr(smulbt); break;
+			default:   ic->f = cond_instr(smultt); break;
+			}
+			ic->arg[0] = (size_t)(&cpu->cd.arm.r[rm]);
+			ic->arg[1] = (size_t)(&cpu->cd.arm.r[r8]);
+			ic->arg[2] = (size_t)(&cpu->cd.arm.r[rn]); /*  Rd  */
+			break;
 		}
 		if ((iword & 0x0ff0f0b0) == 0x012000a0) {
 			/*  TODO: smulwY  */

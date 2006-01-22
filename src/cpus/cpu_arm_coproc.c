@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.16 2006-01-01 16:08:25 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.17 2006-01-22 12:36:26 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -74,9 +74,19 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 
 	case 1:	/*  Control Register:  */
 		if (l_bit) {
-			cpu->cd.arm.r[rd] = cpu->cd.arm.control;
+			if (opcode2 == 1)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.auxctrl;
+			else
+				cpu->cd.arm.r[rd] = cpu->cd.arm.control;
 			return;
 		}
+		if (opcode2 == 1) {
+			old_control = cpu->cd.arm.auxctrl;
+			cpu->cd.arm.auxctrl = cpu->cd.arm.r[rd];
+			/* XXX: Handle this. */
+			return;
+		}
+			
 		/*
 		 *  Write to control:  Check each bit individually:
 		 */

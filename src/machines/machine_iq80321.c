@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.5 2006-01-22 12:36:28 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.6 2006-01-22 23:20:36 debug Exp $
  */
 
 #include <stdio.h>
@@ -78,6 +78,8 @@ for (i=0; i<1048576*16; i+=4)
 	/*  0xe0000000 and 0xff000000 = cache flush regions  */
 	dev_ram_init(machine, 0xe0000000, 0x100000, DEV_RAM_RAM, 0x0);
 	dev_ram_init(machine, 0xff000000, 0x100000, DEV_RAM_RAM, 0x0);
+
+	device_add(machine, "iq80321_7seg addr=0xfe840000");
 
 	device_add(machine, "i80321 addr=0xffffe000");
 

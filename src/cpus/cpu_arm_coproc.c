@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.17 2006-01-22 12:36:26 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.18 2006-01-22 23:20:35 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -63,9 +63,10 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	switch (crn) {
 
 	case 0:	/*  Main ID register:  */
-		if (opcode2 != 0)
+		if (opcode2 != 0) {
 			fatal("[ arm_coproc_15: TODO: cr0, opcode2=%i ]\n",
 			    opcode2);
+		}
 		if (l_bit)
 			cpu->cd.arm.r[rd] = cpu->cd.arm.cpu_type.cpu_id;
 		else
@@ -74,17 +75,31 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 
 	case 1:	/*  Control Register:  */
 		if (l_bit) {
-			if (opcode2 == 1)
-				cpu->cd.arm.r[rd] = cpu->cd.arm.auxctrl;
-			else
-				cpu->cd.arm.r[rd] = cpu->cd.arm.control;
+			/*  Load from the normal/aux control register:  */
+			switch (opcode2) {
+			case 0:	cpu->cd.arm.r[rd] = cpu->cd.arm.control;
+				break;
+			case 1:	cpu->cd.arm.r[rd] = cpu->cd.arm.auxctrl;
+				break;
+			default:fatal("Unimplemented opcode2 = %i\n", opcode2);
+				fatal("(opcode1=%i crn=%i crm=%i rd=%i l=%i)\n",
+				    opcode1, crn, crm, rd, l_bit);
+				exit(1);
+			}
 			return;
 		}
+
 		if (opcode2 == 1) {
 			old_control = cpu->cd.arm.auxctrl;
 			cpu->cd.arm.auxctrl = cpu->cd.arm.r[rd];
-			/* XXX: Handle this. */
+			fatal("[ TODO: Write to ARM auxctrl: 0x%08x ]\n",
+			    (int)cpu->cd.arm.auxctrl);
 			return;
+		} else if (opcode2 != 0) {
+			fatal("Unimplemented write, opcode2 = %i\n", opcode2);
+			fatal("(opcode1=%i crn=%i crm=%i rd=%i l=%i)\n",
+			    opcode1, crn, crm, rd, l_bit);
+			exit(1);
 		}
 			
 		/*
@@ -185,6 +200,7 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		break;
 
 	case 9:	/*  Cache lockdown:  */
+		fatal("[ arm_coproc_15: cache lockdown: TODO ]\n");
 		/*  TODO  */
 		break;
 
@@ -207,7 +223,8 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		break;
 
 	case 15:/*  IMPLEMENTATION DEPENDENT!  */
-		debug("[ arm_coproc_15: TODO: IMPLEMENTATION DEPENDENT! ]\n");
+		fatal("[ arm_coproc_15: TODO: IMPLEMENTATION DEPENDENT! ]\n");
+		exit(1);
 		break;
 
 	default:fatal("arm_coproc_15: unimplemented crn = %i\n", crn);
@@ -230,6 +247,7 @@ void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd)
 {
 	switch (crm) {
+#if 0
 	case 0:	fatal("[ 80321: crm 0: TODO ]\n");
 		break;
 	case 1:	fatal("[ 80321: crm 1: TODO ]\n");
@@ -249,6 +267,7 @@ void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			exit(1);
 		}
 		break;
+#endif
 	default:fatal("arm_coproc_i80321: unimplemented opcode1=%i opcode2=%i"
 		    " crn=%i crm=%i rd=%i l=%i)\n", opcode1, opcode2,
 		    crn, crm, rd, l_bit);
@@ -266,8 +285,10 @@ void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd)
 {
 	switch (crm) {
+#if 0
 	case 0:	fatal("[ 80321_14: crm 0: TODO ]\n");
 		break;
+#endif
 	default:fatal("arm_coproc_i80321_14: unimplemented opcode1=%i opcode2="
 		    "%i crn=%i crm=%i rd=%i l=%i)\n", opcode1, opcode2,
 		    crn, crm, rd, l_bit);

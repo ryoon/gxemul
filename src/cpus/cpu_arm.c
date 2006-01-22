@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.48 2006-01-22 12:36:26 debug Exp $
+ *  $Id: cpu_arm.c,v 1.49 2006-01-22 23:20:35 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -99,13 +99,14 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->invalidate_code_translation = arm_invalidate_code_translation;
 	cpu->translate_address = arm_translate_address;
 
-	cpu->cd.arm.cpu_type    = cpu_type_defs[found];
-	cpu->name               = cpu->cd.arm.cpu_type.name;
-	cpu->is_32bit           = 1;
+	cpu->cd.arm.cpu_type = cpu_type_defs[found];
+	cpu->name            = cpu->cd.arm.cpu_type.name;
+	cpu->is_32bit        = 1;
 
 	cpu->cd.arm.cpsr = ARM_FLAG_I | ARM_FLAG_F;
 	cpu->cd.arm.control = ARM_CONTROL_PROG32 | ARM_CONTROL_DATA32
 	    | ARM_CONTROL_CACHE | ARM_CONTROL_ICACHE | ARM_CONTROL_ALIGN;
+	/*  TODO: default auxctrl contents  */
 
 	if (cpu->machine->prom_emulation) {
 		cpu->cd.arm.cpsr |= ARM_MODE_SVC32;
@@ -132,6 +133,8 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 
 	/*  Coprocessor 15 = the system control coprocessor.  */
 	cpu->cd.arm.coproc[15] = arm_coproc_15;
+
+	/*  TODO: default coprocessors for xscale etc  */
 
 	/*
 	 *  NOTE/TODO: Ugly hack for OpenFirmware emulation:

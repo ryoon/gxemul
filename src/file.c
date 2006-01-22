@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.126 2006-01-14 12:51:59 debug Exp $
+ *  $Id: file.c,v 1.127 2006-01-22 23:20:33 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1569,10 +1569,17 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 			debug(" len=0x%llx\n", (long long)p_memsz);
 
-			if (p_vaddr != p_paddr)
-				fatal("WARNING! vaddr (0x%llx) and paddr "
-				    "(0x%llx) differ; using vaddr\n",
-				    (long long)p_vaddr, (long long)p_paddr);
+			if (p_vaddr != p_paddr) {
+				if (elf64)
+					fatal("NOTE: vaddr (0x%llx) and "
+					    "paddr (0x%llx) differ; using "
+					    "vaddr\n", (long long)p_vaddr,
+					    (long long)p_paddr);
+				else
+					fatal("NOTE: vaddr (0x%08x) and "
+					    "paddr (0x%08x) differ; using vaddr"
+					    "\n", (int)p_vaddr, (int)p_paddr);
+			}
 
 			if (p_memsz < p_filesz) {
 				fprintf(stderr, "%s: memsz < filesz. TODO: how"

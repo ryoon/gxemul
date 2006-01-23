@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.61 2006-01-22 12:36:27 debug Exp $
+ *  $Id: cpu_arm.h,v 1.62 2006-01-23 00:13:21 debug Exp $
  */
 
 #include "misc.h"
@@ -207,6 +207,12 @@ struct arm_cpu {
 	uint32_t		far;		/*  Fault Address Register  */
 	uint32_t		pid;		/*  Process Id Register  */
 
+	/*  i80321 (XScale) registers:  */
+	uint32_t		tmr0;		/*  tmr0  */
+	uint32_t		tcr0;		/*  tcr0  */
+	uint32_t		trr0;		/*  trr0  */
+	uint32_t		tisr;		/*  tisr  */
+
 	/*  For caching the host address of the L1 translation table:  */
 	unsigned char		*translation_table;
 	uint32_t		last_ttb;
@@ -270,7 +276,7 @@ int arm_cpu_family_init(struct cpu_family *);
 /*  cpu_arm_coproc.c:  */
 void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
-void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
 void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);

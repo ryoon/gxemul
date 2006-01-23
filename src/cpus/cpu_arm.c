@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.49 2006-01-22 23:20:35 debug Exp $
+ *  $Id: cpu_arm.c,v 1.50 2006-01-23 00:13:20 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -134,7 +134,11 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Coprocessor 15 = the system control coprocessor.  */
 	cpu->cd.arm.coproc[15] = arm_coproc_15;
 
-	/*  TODO: default coprocessors for xscale etc  */
+	/*  Default coprocessors (6 and 14) for i80321:  */
+	if (cpu->cd.arm.cpu_type.flags & ARM_I80321) {
+		cpu->cd.arm.coproc[6]  = arm_coproc_i80321_6;
+		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
+	}
 
 	/*
 	 *  NOTE/TODO: Ugly hack for OpenFirmware emulation:

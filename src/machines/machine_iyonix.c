@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iyonix.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_iyonix.c,v 1.3 2006-01-23 00:13:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -43,9 +43,6 @@
 MACHINE_SETUP(iyonix)
 {
 	machine->machine_name = "Iyonix";
-
-	cpu->cd.arm.coproc[6] = arm_coproc_i80321;
-	cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
 
 	/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 	dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);

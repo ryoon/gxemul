@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.18 2006-01-22 23:20:35 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.19 2006-01-23 00:13:20 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -239,40 +239,56 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 
 
 /*
- *  arm_coproc_i80321():
+ *  arm_coproc_i80321_6():
  *
- *  Intel 80321 coprocessor.
+ *  Intel 80321 coprocessor 6.
  */
-void arm_coproc_i80321(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd)
 {
 	switch (crm) {
-#if 0
+#if 1
 	case 0:	fatal("[ 80321: crm 0: TODO ]\n");
 		break;
+#endif
 	case 1:	fatal("[ 80321: crm 1: TODO ]\n");
 		switch (crn) {
 		case 0:	/*  tmr0:  */
+			if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.tmr0;
+			else
+				cpu->cd.arm.tmr0 = cpu->cd.arm.r[rd];
 			break;
 		case 2:	/*  tcr0:  */
+			if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.tcr0;
+			else
+				cpu->cd.arm.tcr0 = cpu->cd.arm.r[rd];
 			break;
 		case 4:	/*  trr0:  */
+			if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.trr0;
+			else
+				cpu->cd.arm.trr0 = cpu->cd.arm.r[rd];
 			break;
 		case 6:	/*  tisr:  */
+			if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.tisr;
+			else
+				cpu->cd.arm.tisr = cpu->cd.arm.r[rd];
 			break;
-		default:fatal("arm_coproc_i80321: unimplemented crn = %i\n",
-			    crn);
-			fatal("(opcode1=%i opcode2=%i crm=%i rd=%i l=%i)\n",
-			    opcode1, opcode2, crm, rd, l_bit);
-			exit(1);
+		default:goto unknown;
 		}
 		break;
-#endif
-	default:fatal("arm_coproc_i80321: unimplemented opcode1=%i opcode2=%i"
-		    " crn=%i crm=%i rd=%i l=%i)\n", opcode1, opcode2,
-		    crn, crm, rd, l_bit);
-		exit(1);
+	default:goto unknown;
 	}
+
+	return;
+
+unknown:
+	fatal("arm_coproc_i80321_6: unimplemented opcode1=%i opcode2=%i crn="
+	    "%i crm=%i rd=%i l=%i)\n", opcode1, opcode2, crn, crm, rd, l_bit);
+	exit(1);
 }
 
 
@@ -285,7 +301,7 @@ void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd)
 {
 	switch (crm) {
-#if 0
+#if 1
 	case 0:	fatal("[ 80321_14: crm 0: TODO ]\n");
 		break;
 #endif

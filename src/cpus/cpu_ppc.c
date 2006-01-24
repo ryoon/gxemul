@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.44 2006-01-01 16:08:25 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.45 2006-01-24 21:26:01 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -300,7 +300,7 @@ void ppc_exception(struct cpu *cpu, int exception_nr)
 
 	cpu->pc = exception_nr * 0x100;
 	if (cpu->cd.ppc.msr & PPC_MSR_IP)
-		cpu->pc += 0xfff00000;
+		cpu->pc += 0xfff00000ULL;
 
 	if (cpu->is_32bit)
 		ppc32_pc_to_pointers(cpu);

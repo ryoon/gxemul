@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.62 2006-01-23 00:13:21 debug Exp $
+ *  $Id: cpu_arm.h,v 1.63 2006-01-24 21:26:02 debug Exp $
  */
 
 #include "misc.h"
@@ -199,6 +199,7 @@ struct arm_cpu {
 	/*
 	 *  System Control Coprocessor registers:
 	 */
+	uint32_t		cachetype;	/*  Cache Type Register  */
 	uint32_t		control;	/*  Control Register  */
 	uint32_t		auxctrl;	/*  Aux. Control Register  */
 	uint32_t		ttb;		/*  Translation Table Base  */
@@ -206,17 +207,40 @@ struct arm_cpu {
 	uint32_t		fsr;		/*  Fault Status Register  */
 	uint32_t		far;		/*  Fault Address Register  */
 	uint32_t		pid;		/*  Process Id Register  */
+	uint32_t		cpar;		/*  CoProcessor Access Reg.  */
 
-	/*  i80321 (XScale) registers:  */
-	uint32_t		tmr0;		/*  tmr0  */
-	uint32_t		tcr0;		/*  tcr0  */
-	uint32_t		trr0;		/*  trr0  */
-	uint32_t		tisr;		/*  tisr  */
+	/*  i80321 Coprocessor 6: ICU (Interrupt controller)  */
+	uint32_t		i80321_inten;
+	uint32_t		i80321_isteer;
+	uint32_t		tmr0;
+	uint32_t		tmr1;
+	uint32_t		tcr0;
+	uint32_t		tcr1;
+	uint32_t		trr0;
+	uint32_t		trr1;
+	uint32_t		tisr;
+	uint32_t		wdtcr;
+
+	/*  XScale Coprocessor 14: (Performance Monitoring Unit)  */
+	/*  XSC1 access style:  */
+	uint32_t		xsc1_pmnc;	/*  Perf. Monitor Ctrl Reg.  */
+	uint32_t		xsc1_ccnt;	/*  Clock Counter  */
+	uint32_t		xsc1_pmn0;	/*  Perf. Counter Reg. 0  */
+	uint32_t		xsc1_pmn1;	/*  Perf. Counter Reg. 1  */
+	/*  XSC2 access style:  */
+	uint32_t		xsc2_pmnc;	/*  Perf. Monitor Ctrl Reg.  */
+	uint32_t		xsc2_ccnt;	/*  Clock Counter  */
+	uint32_t		xsc2_inten;	/*  Interrupt Enable  */
+	uint32_t		xsc2_flag;	/*  Overflow Flag Register  */
+	uint32_t		xsc2_evtsel;	/*  Event Selection Register  */
+	uint32_t		xsc2_pmn0;	/*  Perf. Counter Reg. 0  */
+	uint32_t		xsc2_pmn1;	/*  Perf. Counter Reg. 1  */
+	uint32_t		xsc2_pmn2;	/*  Perf. Counter Reg. 2  */
+	uint32_t		xsc2_pmn3;	/*  Perf. Counter Reg. 3  */
 
 	/*  For caching the host address of the L1 translation table:  */
 	unsigned char		*translation_table;
 	uint32_t		last_ttb;
-
 
 	/*
 	 *  Interrupts:
@@ -256,6 +280,30 @@ struct arm_cpu {
 #define	ARM_CONTROL_RR		0x4000
 #define	ARM_CONTROL_L4		0x8000
 
+/*  Auxiliary Control Register bits:  */
+#define	ARM_AUXCTRL_MD		0x30	/*  MiniData Cache Attribute  */
+#define	ARM_AUXCTRL_MD_SHIFT	4
+#define	ARM_AUXCTRL_P		0x02	/*  Page Table Memory Attribute  */
+#define	ARM_AUXCTRL_K		0x01	/*  Write Buffer Coalescing Disable  */
+
+/*  Cache Type register bits:  */
+#define	ARM_CACHETYPE_CLASS		0x1e000000
+#define	ARM_CACHETYPE_CLASS_SHIFT	25
+#define	ARM_CACHETYPE_HARVARD		0x01000000
+#define	ARM_CACHETYPE_HARVARD_SHIFT	24
+#define	ARM_CACHETYPE_DSIZE		0x001c0000
+#define	ARM_CACHETYPE_DSIZE_SHIFT	18
+#define	ARM_CACHETYPE_DASSOC		0x00038000
+#define	ARM_CACHETYPE_DASSOC_SHIFT	15
+#define	ARM_CACHETYPE_DLINE		0x00003000
+#define	ARM_CACHETYPE_DLINE_SHIFT	12
+#define	ARM_CACHETYPE_ISIZE		0x000001c0
+#define	ARM_CACHETYPE_ISIZE_SHIFT	6
+#define	ARM_CACHETYPE_IASSOC		0x00000038
+#define	ARM_CACHETYPE_IASSOC_SHIFT	3
+#define	ARM_CACHETYPE_ILINE		0x00000003
+#define	ARM_CACHETYPE_ILINE_SHIFT	0
+
 /*  cpu_arm.c:  */
 void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr);
 void arm_translation_table_set_l1(struct cpu *cpu, uint32_t vaddr,
@@ -278,7 +326,7 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
 void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
-void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+void arm_coproc_xscale_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
 
 /*  memory_arm.c:  */

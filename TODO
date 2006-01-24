@@ -1,4 +1,4 @@
-$Id: TODO,v 1.195 2006-01-16 00:51:13 debug Exp $
+$Id: TODO,v 1.196 2006-01-24 21:26:00 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -33,14 +33,15 @@ The Device subsystem:
 	x)  keep track of interrupts and busses?
 	x)  refactor various clocks/nvram/cmos into one device?
 
+ARM:
+	x)  add more xscale (i80321) stuff (interrupts, pci?, ...)
+	x)  emulate more full ARM systems (iq80321 for {net,free}bsd,
+	    zaurus for openbsd, ... and stuff for linux as well?)
+
 PCI:
 	x)  add support for address fixups
 	x)  generalize the interrupt routing stuff (lines etc). this should
 	    be per machine? or per bus, that's better
-
-ARM:
-	x)  emulate more full ARM systems (iq80321 for {net,free}bsd,
-	    zaurus for openbsd, ... and stuff for linux as well?)
 
 MacPPC:
 	x)  dev_zs / interrupts?

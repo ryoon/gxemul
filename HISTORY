@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1110 2006-01-22 23:20:31 debug Exp $
+$Id: HISTORY,v 1.1111 2006-01-24 21:26:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2555,3 +2555,5 @@ Changelog for GXemul:
 20060121	Adding an aux control register for ARM. (A BIG thank you to
 		Olivier Houchard for tracking down this bug.)
 20060122	Adding more ARM instructions (smulXY), and dev_iq80321_7seg.
+20060124	Adding disassembly of more ARM instructions (mia*, mra/mar),
+		and some semi-bogus XScale and i80321 registers.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.19 2006-01-23 00:13:20 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.20 2006-01-24 21:26:01 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -62,15 +62,28 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 
 	switch (crn) {
 
-	case 0:	/*  Main ID register:  */
-		if (opcode2 != 0) {
-			fatal("[ arm_coproc_15: TODO: cr0, opcode2=%i ]\n",
+	case 0:	/*
+		 *  Main ID register (and Cache Type register, on XScale)
+		 *
+		 *  Writes are supposed to be ignored, according to Intel docs.
+		 */
+		switch (opcode2) {
+		case 0:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.cpu_type.cpu_id;
+			else
+				fatal("[ arm_coproc_15: attempt to write "
+				    "to the Main ID register? ]\n");
+			break;
+		case 1:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.cachetype;
+			else
+				fatal("[ arm_coproc_15: attempt to write "
+				    "to the Cache Type register? ]\n");
+			break;
+		default:fatal("[ arm_coproc_15: TODO: cr0, opcode2=%i ]\n",
 			    opcode2);
+			exit(1);
 		}
-		if (l_bit)
-			cpu->cd.arm.r[rd] = cpu->cd.arm.cpu_type.cpu_id;
-		else
-			fatal("[ arm_coproc_15: attempt to write to cr0? ]\n");
 		break;
 
 	case 1:	/*  Control Register:  */
@@ -90,10 +103,21 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		}
 
 		if (opcode2 == 1) {
+			/*  Write to auxctrl:  */
 			old_control = cpu->cd.arm.auxctrl;
 			cpu->cd.arm.auxctrl = cpu->cd.arm.r[rd];
-			fatal("[ TODO: Write to ARM auxctrl: 0x%08x ]\n",
-			    (int)cpu->cd.arm.auxctrl);
+			if ((old_control & ARM_AUXCTRL_MD) !=
+			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_MD)) {
+				debug("[ setting the minidata cache attribute"
+				    " to 0x%x ]\n", (cpu->cd.arm.auxctrl &
+				    ARM_AUXCTRL_MD) >> ARM_AUXCTRL_MD_SHIFT);
+			}
+			if ((old_control & ARM_AUXCTRL_K) !=
+			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_K)) {
+				debug("[ %s write buffer coalescing ]\n",
+				    cpu->cd.arm.auxctrl & ARM_AUXCTRL_K?
+				    "Disabling" : "Enabling");
+			}
 			return;
 		} else if (opcode2 != 0) {
 			fatal("Unimplemented write, opcode2 = %i\n", opcode2);
@@ -222,9 +246,27 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		}
 		break;
 
+	/*  case 14:  */
+		/*  Breakpoint registers on XScale (possibly others?)  */
+		/*  TODO  */
+		/*  break;  */
+
 	case 15:/*  IMPLEMENTATION DEPENDENT!  */
-		fatal("[ arm_coproc_15: TODO: IMPLEMENTATION DEPENDENT! ]\n");
-		exit(1);
+		switch (crm) {
+		case 1:	/*
+			 *  On XScale (and others? TODO), this is the
+			 *  CoProcessor Access Register.  Note/TODO: This isn't
+			 *  really used throughout the rest of the code yet.
+			 */
+			if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.cpar;
+			else
+				cpu->cd.arm.cpar = cpu->cd.arm.r[rd];
+			break;
+		default:fatal("[ arm_coproc_15: TODO: IMPLEMENTATION "
+			    "DEPENDENT! ]\n");
+			exit(1);
+		}
 		break;
 
 	default:fatal("arm_coproc_15: unimplemented crn = %i\n", crn);
@@ -233,9 +275,6 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		exit(1);
 	}
 }
-
-
-/*****************************************************************************/
 
 
 /*
@@ -247,10 +286,22 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd)
 {
 	switch (crm) {
-#if 1
-	case 0:	fatal("[ 80321: crm 0: TODO ]\n");
+
+	case 0:	switch (crn) {
+		case 0:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.i80321_inten;
+			else
+				cpu->cd.arm.i80321_inten = cpu->cd.arm.r[rd];
+			break;
+		case 4:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.i80321_isteer;
+			else
+				cpu->cd.arm.i80321_isteer = cpu->cd.arm.r[rd];
+			break;
+		default:goto unknown;
+		}
 		break;
-#endif
+
 	case 1:	fatal("[ 80321: crm 1: TODO ]\n");
 		switch (crn) {
 		case 0:	/*  tmr0:  */
@@ -259,11 +310,29 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			else
 				cpu->cd.arm.tmr0 = cpu->cd.arm.r[rd];
 			break;
-		case 2:	/*  tcr0:  */
+		case 1:	/*  tmr1:  */
 			if (l_bit)
-				cpu->cd.arm.r[rd] = cpu->cd.arm.tcr0;
+				cpu->cd.arm.r[rd] = cpu->cd.arm.tmr1;
 			else
+				cpu->cd.arm.tmr1 = cpu->cd.arm.r[rd];
+			break;
+		case 2:	/*  tcr0:  */
+			if (l_bit) {
+				/*  NOTE/TODO: Ugly hack: timer increment  */
+				cpu->cd.arm.tcr0 ++;
+				cpu->cd.arm.r[rd] = cpu->cd.arm.tcr0;
+			} else {
 				cpu->cd.arm.tcr0 = cpu->cd.arm.r[rd];
+			}
+			break;
+		case 3:	/*  tcr1:  */
+			if (l_bit) {
+				/*  NOTE/TODO: Ugly hack: timer increment  */
+				cpu->cd.arm.tcr1 ++;
+				cpu->cd.arm.r[rd] = cpu->cd.arm.tcr1;
+			} else {
+				cpu->cd.arm.tcr1 = cpu->cd.arm.r[rd];
+			}
 			break;
 		case 4:	/*  trr0:  */
 			if (l_bit)
@@ -271,15 +340,28 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			else
 				cpu->cd.arm.trr0 = cpu->cd.arm.r[rd];
 			break;
+		case 5:	/*  trr1:  */
+			if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.trr1;
+			else
+				cpu->cd.arm.trr1 = cpu->cd.arm.r[rd];
+			break;
 		case 6:	/*  tisr:  */
 			if (l_bit)
 				cpu->cd.arm.r[rd] = cpu->cd.arm.tisr;
 			else
 				cpu->cd.arm.tisr = cpu->cd.arm.r[rd];
 			break;
+		case 7:	/*  wdtcr:  */
+			if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.wdtcr;
+			else
+				cpu->cd.arm.wdtcr = cpu->cd.arm.r[rd];
+			break;
 		default:goto unknown;
 		}
 		break;
+
 	default:goto unknown;
 	}
 
@@ -293,22 +375,109 @@ unknown:
 
 
 /*
- *  arm_coproc_i80321_14():
+ *  arm_coproc_xscale_14():
  *
- *  Intel 80321 coprocessor 14.
+ *  XScale coprocessor 14, Performance Monitoring Unit.
  */
-void arm_coproc_i80321_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
+void arm_coproc_xscale_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd)
 {
-	switch (crm) {
-#if 1
-	case 0:	fatal("[ 80321_14: crm 0: TODO ]\n");
-		break;
-#endif
-	default:fatal("arm_coproc_i80321_14: unimplemented opcode1=%i opcode2="
-		    "%i crn=%i crm=%i rd=%i l=%i)\n", opcode1, opcode2,
-		    crn, crm, rd, l_bit);
-		exit(1);
+	if (opcode2 != 0) {
+		fatal("TODO: opcode2 = %i\n", opcode2);
+		goto unknown;
 	}
+
+	switch (crm) {
+
+	case 0:	switch (crn) {
+		case 0:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc1_pmnc;
+			else
+				cpu->cd.arm.xsc1_pmnc = cpu->cd.arm.r[rd];
+			break;
+		case 1:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc1_ccnt;
+			else
+				cpu->cd.arm.xsc1_ccnt = cpu->cd.arm.r[rd];
+			break;
+		case 2:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc1_pmn0;
+			else
+				cpu->cd.arm.xsc1_pmn0 = cpu->cd.arm.r[rd];
+			break;
+		case 3:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc1_pmn1;
+			else
+				cpu->cd.arm.xsc1_pmn1 = cpu->cd.arm.r[rd];
+			break;
+		default:goto unknown;
+		}
+		break;
+
+	case 1:	switch (crn) {
+		case 0:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_pmnc;
+			else
+				cpu->cd.arm.xsc2_pmnc = cpu->cd.arm.r[rd];
+			break;
+		case 1:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_ccnt;
+			else
+				cpu->cd.arm.xsc2_ccnt = cpu->cd.arm.r[rd];
+			break;
+		case 4:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_inten;
+			else
+				cpu->cd.arm.xsc2_inten = cpu->cd.arm.r[rd];
+			break;
+		case 5:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_flag;
+			else
+				cpu->cd.arm.xsc2_flag = cpu->cd.arm.r[rd];
+			break;
+		case 8:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_evtsel;
+			else
+				cpu->cd.arm.xsc2_evtsel = cpu->cd.arm.r[rd];
+			break;
+		default:goto unknown;
+		}
+		break;
+
+	case 2:	switch (crn) {
+		case 0:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_pmn0;
+			else
+				cpu->cd.arm.xsc2_pmn0 = cpu->cd.arm.r[rd];
+			break;
+		case 1:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_pmn1;
+			else
+				cpu->cd.arm.xsc2_pmn1 = cpu->cd.arm.r[rd];
+			break;
+		case 2:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_pmn2;
+			else
+				cpu->cd.arm.xsc2_pmn2 = cpu->cd.arm.r[rd];
+			break;
+		case 3:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc2_pmn3;
+			else
+				cpu->cd.arm.xsc2_pmn3 = cpu->cd.arm.r[rd];
+			break;
+		default:goto unknown;
+		}
+		break;
+
+	default:goto unknown;
+	}
+
+	return;
+
+unknown:
+	fatal("arm_coproc_xscale_14: unimplemented opcode1=%i opcode2="
+	    "%i crn=%i crm=%i rd=%i l=%i)\n", opcode1, opcode2, crn,
+	    crm, rd, l_bit);
+	exit(1);
 }
 

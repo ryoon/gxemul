@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.31 2006-01-14 20:04:27 debug Exp $
+ *  $Id: memory_arm.c,v 1.32 2006-01-24 21:26:01 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -200,7 +200,7 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 			ap &= 3;
 			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
 			break;
-		case 3:	if (cpu->cd.arm.cpu_type.flags & XSCALE_MMU) {
+		case 3:	if (cpu->cd.arm.cpu_type.flags & ARM_XSCALE) {
 				/*  4KB page (Xscale)  */
 				subpage = 0;
 			} else {

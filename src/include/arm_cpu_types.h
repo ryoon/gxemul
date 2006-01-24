@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arm_cpu_types.h,v 1.6 2006-01-23 00:13:21 debug Exp $
+ *  $Id: arm_cpu_types.h,v 1.7 2006-01-24 21:26:02 debug Exp $
  */
 
 /*  See cpu_arm.h for struct arm_cpu_type_def.  */
@@ -39,11 +39,7 @@
 /*  Flags:  */
 #define	ARM_NO_MMU		1
 #define	ARM_DUAL_ENDIAN		2
-#define	XSCALE_MMU		4
-#define	ARM_I80321		8
-
-/*  Combinations:  */
-#define	XSCALE		(XSCALE_MMU | ARM_I80321)
+#define	ARM_XSCALE		4
 
 #include "armreg.h"
 
@@ -89,26 +85,26 @@
 	{ "IXP1200",	CPU_ID_IXP1200,	0,		14, 1, 14, 1 }, \
 	{ "80200",	CPU_ID_80200,	0,		14, 1, 14, 1 }, \
 	\
-	{ "PXA210",	CPU_ID_PXA210,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA210A",	CPU_ID_PXA210A,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA210B",	CPU_ID_PXA210B,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA210C",	CPU_ID_PXA210C,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA250",	CPU_ID_PXA250,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA250A",	CPU_ID_PXA250A,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA250B",	CPU_ID_PXA250B,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA250C",	CPU_ID_PXA250C,	XSCALE,		16, 1,  0, 1 }, \
-	{ "PXA27X",	CPU_ID_PXA27X,	XSCALE,		16, 1,  0, 1 }, \
+	{ "PXA210",	CPU_ID_PXA210,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA210A",	CPU_ID_PXA210A,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA210B",	CPU_ID_PXA210B,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA210C",	CPU_ID_PXA210C,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA250",	CPU_ID_PXA250,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA250A",	CPU_ID_PXA250A,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA250B",	CPU_ID_PXA250B,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA250C",	CPU_ID_PXA250C,	ARM_XSCALE,	16, 1,  0, 1 }, \
+	{ "PXA27X",	CPU_ID_PXA27X,	ARM_XSCALE,	16, 1,  0, 1 }, \
 	\
-	{ "IXP425_255",	CPU_ID_IXP425_266,XSCALE,	14, 1, 14, 1 }, \
-	{ "IXP425_400",	CPU_ID_IXP425_400,XSCALE,	14, 1, 14, 1 }, \
-	{ "IXP425_533",	CPU_ID_IXP425_533,XSCALE,	14, 1, 14, 1 }, \
+	{ "IXP425_255",	CPU_ID_IXP425_266,ARM_XSCALE,	14, 1, 14, 1 }, \
+	{ "IXP425_400",	CPU_ID_IXP425_400,ARM_XSCALE,	14, 1, 14, 1 }, \
+	{ "IXP425_533",	CPU_ID_IXP425_533,ARM_XSCALE,	14, 1, 14, 1 }, \
 	\
-	{ "80219_400",	CPU_ID_80219_400,XSCALE,	14, 1, 14, 1 }, \
-	{ "80219_600",	CPU_ID_80219_600,XSCALE,	14, 1, 14, 1 }, \
-	{ "80321_400",	CPU_ID_80321_400,XSCALE,	14, 1, 14, 1 }, \
-	{ "80321_400_B0",CPU_ID_80321_400_B0,XSCALE,	14, 1, 14, 1 }, \
-	{ "80321_600",	CPU_ID_80321_600,XSCALE,	14, 1, 14, 1 }, \
-	{ "80321_600_B0",CPU_ID_80321_600_B0,XSCALE,	14, 1, 14, 1 }, \
+	{ "80219_400",	CPU_ID_80219_400,ARM_XSCALE,	14, 1, 14, 1 }, \
+	{ "80219_600",	CPU_ID_80219_600,ARM_XSCALE,	14, 1, 14, 1 }, \
+	{ "80321_400",	CPU_ID_80321_400,ARM_XSCALE,	14, 1, 14, 1 }, \
+	{ "80321_400_B0",CPU_ID_80321_400_B0,ARM_XSCALE,14, 1, 14, 1 }, \
+	{ "80321_600",	CPU_ID_80321_600,ARM_XSCALE,	14, 1, 14, 1 }, \
+	{ "80321_600_B0",CPU_ID_80321_600_B0,ARM_XSCALE,14, 1, 14, 1 }, \
 	\
 	{ NULL, 0, 0, 0,0, 0,0 } }
 

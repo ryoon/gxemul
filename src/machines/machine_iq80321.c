@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.7 2006-01-23 00:13:21 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.8 2006-01-24 21:26:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,6 +48,8 @@ MACHINE_SETUP(iq80321)
 	 */
 
 	machine->machine_name = "Intel IQ80321 (ARM)";
+
+	cpu->cd.arm.coproc[6] = arm_coproc_i80321_6;
 
 	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=1");
 

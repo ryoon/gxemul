@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.50 2006-01-23 00:13:20 debug Exp $
+ *  $Id: cpu_arm.c,v 1.51 2006-01-24 21:26:01 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -131,14 +131,25 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 		}
 	}
 
+	/*  TODO: Some of these values (iway and dway) aren't used yet:  */
+	cpu->cd.arm.cachetype =
+	      (5 << ARM_CACHETYPE_CLASS_SHIFT)
+	    | (1 << ARM_CACHETYPE_HARVARD_SHIFT)
+	    | ((cpu->cd.arm.cpu_type.dcache_shift - 9) <<
+		ARM_CACHETYPE_DSIZE_SHIFT)
+	    | (5 << ARM_CACHETYPE_DASSOC_SHIFT)		/*  32-way  */
+	    | (2 << ARM_CACHETYPE_DLINE_SHIFT)		/*  8 words/line  */
+	    | ((cpu->cd.arm.cpu_type.icache_shift - 9) <<
+		ARM_CACHETYPE_ISIZE_SHIFT)
+	    | (5 << ARM_CACHETYPE_IASSOC_SHIFT)		/*  32-way  */
+	    | (2 << ARM_CACHETYPE_ILINE_SHIFT);		/*  8 words/line  */
+
 	/*  Coprocessor 15 = the system control coprocessor.  */
 	cpu->cd.arm.coproc[15] = arm_coproc_15;
 
-	/*  Default coprocessors (6 and 14) for i80321:  */
-	if (cpu->cd.arm.cpu_type.flags & ARM_I80321) {
-		cpu->cd.arm.coproc[6]  = arm_coproc_i80321_6;
-		cpu->cd.arm.coproc[14] = arm_coproc_i80321_14;
-	}
+	/*  Coprocessor 14 for XScale:  */
+	if (cpu->cd.arm.cpu_type.flags & ARM_XSCALE)
+		cpu->cd.arm.coproc[14] = arm_coproc_xscale_14;
 
 	/*
 	 *  NOTE/TODO: Ugly hack for OpenFirmware emulation:
@@ -461,6 +472,20 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("cpu%i:      high vectors:      %s\n", x,
 		    cpu->cd.arm.control &
 		    ARM_CONTROL_V? "yes (0xffff0000)" : "no");
+
+		/*  TODO: auxctrl on which CPU types?  */
+		if (cpu->cd.arm.cpu_type.flags & ARM_XSCALE) {
+			debug("cpu%i:  auxctrl = 0x%08x\n", x,
+			    cpu->cd.arm.auxctrl);
+			debug("cpu%i:      minidata cache attr = 0x%x\n",
+			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_MD)
+			    >> ARM_AUXCTRL_MD_SHIFT);
+			debug("cpu%i:      page table memory attr: %i\n",
+			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_P)? 1 : 0);
+			debug("cpu%i:      write buffer coalescing: %s\n",
+			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_K)?
+			    "disabled" : "enabled");
+		}
 
 		debug("cpu%i:  ttb = 0x%08x  dacr = 0x%08x\n", x,
 		    cpu->cd.arm.ttb, cpu->cd.arm.dacr);
@@ -1237,6 +1262,17 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx1100 0100nnnn ddddcccc oooommmm    MCRR c,op,Rd,Rn,CRm
 		 *  xxxx1100 0101nnnn ddddcccc oooommmm    MRRC c,op,Rd,Rn,CRm
 		 */
+		if ((iw & 0x0fe00fff) == 0x0c400000) {
+			debug("%s%s\t", iw & 0x100000? "mra" : "mar",
+			    condition);
+			if (iw & 0x100000)
+				debug("%s,%s,acc0\n",
+				    arm_regname[r12], arm_regname[r16]);
+			else
+				debug("acc0,%s,%s\n",
+				    arm_regname[r12], arm_regname[r16]);
+			break;
+		}
 		if ((iw & 0x0fe00000) == 0x0c400000) {
 			debug("%s%s\t", iw & 0x100000? "mrrc" : "mcrr",
 			    condition);
@@ -1253,6 +1289,22 @@ int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		 *  xxxx1110 oooonnnn ddddpppp qqq0mmmm		CDP
 		 *  xxxx1110 oooLNNNN ddddpppp qqq1MMMM		MRC/MCR
 		 */
+		if ((iw & 0x0ff00ff0) == 0x0e200010) {
+			/*  Special case: mia* DSP instructions  */
+			switch ((iw >> 16) & 0xf) {
+			case  0: debug("mia"); break;
+			case  8: debug("miaph"); break;
+			case 12: debug("miaBB"); break;
+			case 13: debug("miaTB"); break;
+			case 14: debug("miaBT"); break;
+			case 15: debug("miaTT"); break;
+			default: debug("UNKNOWN mia vector instruction?");
+			}
+			debug("%s\t", condition);
+			debug("acc%i,%s,%s\n", ((iw >> 5) & 7),
+			    arm_regname[iw & 15], arm_regname[r12]);
+			break;
+		}
 		if (iw & 0x10) {
 			debug("%s%s\t",
 			    (iw & 0x00100000)? "mrc" : "mcr", condition);

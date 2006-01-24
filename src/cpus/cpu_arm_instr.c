@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.58 2006-01-22 12:36:26 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.59 2006-01-24 21:26:01 debug Exp $
  *
  *  ARM instructions.
  *
@@ -3019,6 +3019,13 @@ simple = 1;
 		 *  xxxx1100 0100nnnn ddddcccc oooommmm    MCRR c,op,Rd,Rn,CRm
 		 *  xxxx1100 0101nnnn ddddcccc oooommmm    MRRC c,op,Rd,Rn,CRm
 		 */
+		if ((iword & 0x0fe00fff) == 0x0c400000) {
+			/*  Special case: mar/mra DSP instructions  */
+			fatal("TODO: mar/mra DSP instructions!\n");
+			/*  Perhaps these are actually identical to MCRR/MRRC */
+			goto bad;
+		}
+
 		if ((iword & 0x0fe00000) == 0x0c400000) {
 			fatal("MCRR/MRRC: TODO\n");
 			goto bad;
@@ -3030,11 +3037,22 @@ simple = 1;
 		 *  For now, treat as Undefined instructions. This causes e.g.
 		 *  Linux/ARM to emulate these instructions (floating point).
 		 */
+#if 0
 		ic->f = cond_instr(und);
 		ic->arg[0] = addr & 0xfff;
+#else
+		fatal("LDC/STC: TODO\n");
+		goto bad;
+#endif
 		break;
 
 	case 0xe:
+		if ((iword & 0x0ff00ff0) == 0x0e200010) {
+			/*  Special case: mia* DSP instructions  */
+			/*  See Intel's 27343601.pdf, page 16-20  */
+			fatal("TODO: mia* DSP instructions!\n");
+			goto bad;
+		}
 		if (iword & 0x10) {
 			/*  xxxx1110 oooLNNNN ddddpppp qqq1MMMM  MCR/MRC  */
 			ic->arg[0] = iword;

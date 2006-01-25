@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.32 2006-01-24 21:26:01 debug Exp $
+ *  $Id: memory_arm.c,v 1.33 2006-01-25 05:51:12 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -266,7 +266,7 @@ exception_return:
 		fatal("{ arm memory fault: vaddr=0x%08x domain=%i dav=%i ap=%i "
 		    "access=%i user=%i", (int)vaddr, domain, dav, ap,
 		    access, user);
-		fatal(" d=0x%08x d2=0x%08x }\n", d, d2);
+		fatal(" d=0x%08x d2=0x%08x pc=0x%08x }\n", d, d2, (int)cpu->pc);
 	}
 
 	if (instr)

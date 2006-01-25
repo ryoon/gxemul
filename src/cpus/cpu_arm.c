@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.51 2006-01-24 21:26:01 debug Exp $
+ *  $Id: cpu_arm.c,v 1.52 2006-01-25 05:51:11 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -477,12 +477,12 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		if (cpu->cd.arm.cpu_type.flags & ARM_XSCALE) {
 			debug("cpu%i:  auxctrl = 0x%08x\n", x,
 			    cpu->cd.arm.auxctrl);
-			debug("cpu%i:      minidata cache attr = 0x%x\n",
+			debug("cpu%i:      minidata cache attr = 0x%x\n", x,
 			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_MD)
 			    >> ARM_AUXCTRL_MD_SHIFT);
-			debug("cpu%i:      page table memory attr: %i\n",
+			debug("cpu%i:      page table memory attr: %i\n", x,
 			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_P)? 1 : 0);
-			debug("cpu%i:      write buffer coalescing: %s\n",
+			debug("cpu%i:      write buffer coalescing: %s\n", x,
 			    (cpu->cd.arm.auxctrl & ARM_AUXCTRL_K)?
 			    "disabled" : "enabled");
 		}

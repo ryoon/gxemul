@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.114 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_fb.c,v 1.115 2006-01-30 03:24:44 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -248,14 +248,16 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 				int x;
 				char buf[8192 * 3];
 				if (d->bit_depth == 24)
-					for (x=0; x<linelen; x+=3) {
+					for (x=0; x<linelen && x<sizeof(buf);
+					    x += 3) {
 						buf[x] = fill_r;
 						buf[x+1] = fill_g;
 						buf[x+2] = fill_b;
 					}
-				else
-					printf("TODO: fill for non-24-bit"
-					    " modes\n");
+				else {
+					fatal("[ fb: TODO: fill for non-24-bit"
+					    " modes ]\n");
+				}
 
 				memmove(d->framebuffer + dest_ofs, buf,
 				    linelen);

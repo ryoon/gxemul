@@ -1,4 +1,4 @@
-$Id: TODO,v 1.196 2006-01-24 21:26:00 debug Exp $
+$Id: TODO,v 1.197 2006-01-30 03:24:43 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -171,7 +171,10 @@ Save state of the whole emulated machine, to be able to load it back
 	so on.  Like taking a snapshot. (SimOS seems to do this,
 	according to its website.))
 
-Better X-windows functionality:
+Better framebuffer and X-windows functionality:
+	o)  -Yx sometimes causes crashes.
+	o)  Simple device access to framebuffer_blockcopyfill() etc,
+	    and text output (using the built-in fonts), for dev_fb.
 	o)  CLEAN UP the ugly event code
 	o)  Mouse clicks can be "missed" in the current system; this is
 	    not good. They should be put on a stack of some kind.

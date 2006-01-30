@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.31 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_mp.c,v 1.32 2006-01-30 03:24:44 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -124,15 +124,16 @@ DEVICE_ACCESS(mp)
 		which_cpu = idata;
 
 		for (i=0; i<cpu->machine->ncpus; i++)
-			if (i!=which_cpu)
+			if (i != which_cpu)
 				d->cpus[i]->running = 0;
 		break;
 
 	case DEV_MP_UNPAUSE_CPU:
 		/*  Unpause all cpus except our selves:  */
 		which_cpu = idata;
+
 		for (i=0; i<cpu->machine->ncpus; i++)
-			if (i!=which_cpu)
+			if (i != which_cpu)
 				d->cpus[i]->running = 1;
 		break;
 
@@ -143,7 +144,12 @@ DEVICE_ACCESS(mp)
 		break;
 
 	case DEV_MP_HARDWARE_RANDOM:
-		/*  Return (up to) 64 bits of "hardware random":  */
+		/*
+		 *  Return (up to) 64 bits of "hardware random":
+		 *
+		 *  NOTE: Remember that random() is (usually) 31 bits of
+		 *        random data, _NOT_ 32, hence this construction.
+		 */
 		odata = random();
 		odata = (odata << 31) ^ random();
 		odata = (odata << 31) ^ random();

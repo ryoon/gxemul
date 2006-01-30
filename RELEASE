@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.171 2005-12-31 15:48:29 debug Exp $
+$Id: RELEASE,v 1.172 2006-01-30 03:24:43 debug Exp $
 
 I'm working on post-0.3.7.
 
@@ -172,9 +172,9 @@ Also, src/include/alpha_rpb.h requires the following:
 See individual files for license details, if you plan to redistribute GXemul
 or reuse code.
 
-Thanks to (in no specific order) Joachim Buss, Juli Mallett, Juan Romero
-Pardines, Alec Voropay, Göran Weinholt, Alexander Yurchenko, and everyone
-else who has provided me with feedback.
+Thanks to (in no specific order) Joachim Buss, Olivier Houchard, Juli Mallett,
+Juan Romero Pardines, Alec Voropay, Göran Weinholt, Alexander Yurchenko, and
+everyone else who has provided me with feedback.
 
 If you have found GXemul useful in some way, or feel like sending me comments
 or feedback in general, then mail me at anders(at)gavare.se.

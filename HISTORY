@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1111 2006-01-24 21:26:00 debug Exp $
+$Id: HISTORY,v 1.1112 2006-02-02 19:30:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2557,3 +2557,5 @@ Changelog for GXemul:
 20060122	Adding more ARM instructions (smulXY), and dev_iq80321_7seg.
 20060124	Adding disassembly of more ARM instructions (mia*, mra/mar),
 		and some semi-bogus XScale and i80321 registers.
+20060201-02	Various minor updates. Moving the last machines out of
+		machine.c.

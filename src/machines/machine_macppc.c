@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.2 2006-01-08 11:15:48 debug Exp $
+ *  $Id: machine_macppc.c,v 1.3 2006-02-02 19:30:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -172,7 +172,7 @@ MACHINE_DEFAULT_RAM(macppc)
 
 MACHINE_REGISTER(macppc)
 {
-	MR_DEFAULT(macppc, "Macintosh (PPC)", ARCH_PPC, MACHINE_MACPPC, 1, 2);
+	MR_DEFAULT(macppc, "Macintosh", ARCH_PPC, MACHINE_MACPPC, 1, 2);
 	me->aliases[0] = "macppc";
 	me->subtype[0] = machine_entry_subtype_new("MacPPC G4",
 	    MACHINE_MACPPC_G4, 1);

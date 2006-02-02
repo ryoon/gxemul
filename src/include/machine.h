@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.100 2006-01-14 11:29:37 debug Exp $
+ *  $Id: machine.h,v 1.101 2006-02-02 19:30:13 debug Exp $
  */
 
 #include <sys/types.h>
@@ -529,6 +529,8 @@ void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
 void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr);
 void add_environment_string_dual(struct cpu *cpu,
 	uint64_t *ptrp, uint64_t *addrp, char *s1, char *s2);
+void store_pointer_and_advance(struct cpu *cpu, uint64_t *addrp,
+	uint64_t data, int flag64);
 void machine_setup(struct machine *);
 void machine_memsize_fix(struct machine *);
 void machine_default_cputype(struct machine *);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.10 2005-09-21 19:10:35 debug Exp $
+ *  $Id: arcbios.h,v 1.11 2006-02-02 19:30:13 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -59,8 +59,8 @@ void arcbios_set_default_exception_handler(struct cpu *cpu);
 
 void arcbios_console_init(struct machine *machine,
 	uint64_t vram, uint64_t ctrlregs);
-void arcbios_init(struct machine *machine, int is64bit,
-	uint64_t sgi_ram_offset);
+void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
+	char *primary_ether_string, uint8_t *primary_ether_macaddr);
 
 
 /*  For internal use in arcbios.c:  */
@@ -78,6 +78,8 @@ struct emul_arc_child64 {
 	uint64_t			ptr_parent;
 	struct arcbios_component64	component;
 };
+
+#define	ARC_BOOTSTR_BUFLEN		1000
 
 
 #endif	/*  ARCBIOS_H  */

@@ -1,10 +1,15 @@
-$Id: TODO,v 1.197 2006-01-30 03:24:43 debug Exp $
+$Id: TODO,v 1.198 2006-02-02 19:30:10 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
-Machine registry:
-	x)  Move all remaining machines from src/machine.c into src/machines/.
+x) More generic out_of_memory error reporting, and check everywhere!
+	Causes:	OpenBSD has low default limits for normal users.
+		Host is 32-bit? (32-bit hosts are limited to 4 GB or less
+		of userspace memory.)
+		You are actually low on RAM. (As trivial as this might sound,
+		Unix systems usually allow processes to allocate virtual
+		memory beyond the amount of RAM in the machine.)
 
 Dyntrans:
 	x)  64-bit stuff: good generic virtual memory translation, and
@@ -30,7 +35,8 @@ Dyntrans:
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
 	    minimum size, etc, or up to a max size)
-	x)  keep track of interrupts and busses?
+	x)  keep track of interrupts and busses? actually, allow any device
+	    to be a bus might be a nice idea
 	x)  refactor various clocks/nvram/cmos into one device?
 
 ARM:

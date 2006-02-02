@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.1 2006-01-08 11:15:48 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.2 2006-02-02 19:30:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -138,7 +138,7 @@ MACHINE_DEFAULT_CPU(cobalt)
 
 MACHINE_REGISTER(cobalt)
 {
-	MR_DEFAULT(cobalt, "Cobalt (MIPS)", ARCH_MIPS, MACHINE_COBALT, 1, 0);
+	MR_DEFAULT(cobalt, "Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
 	me->aliases[0] = "cobalt";
 	machine_entry_add(me, ARCH_MIPS);
 }

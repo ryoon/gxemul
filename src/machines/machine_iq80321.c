@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.8 2006-01-24 21:26:02 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.9 2006-02-02 19:30:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,7 +47,7 @@ MACHINE_SETUP(iq80321)
 	 *  for more details about the memory map.
 	 */
 
-	machine->machine_name = "Intel IQ80321 (ARM)";
+	machine->machine_name = "Intel IQ80321";
 
 	cpu->cd.arm.coproc[6] = arm_coproc_i80321_6;
 
@@ -102,7 +102,7 @@ MACHINE_DEFAULT_CPU(iq80321)
 
 MACHINE_REGISTER(iq80321)
 {
-	MR_DEFAULT(iq80321, "Intel IQ80321 (ARM)", ARCH_ARM, MACHINE_IQ80321,
+	MR_DEFAULT(iq80321, "Intel IQ80321", ARCH_ARM, MACHINE_IQ80321,
 	    1, 0);
 	me->aliases[0] = "iq80321";
 	machine_entry_add(me, ARCH_ARM);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.1 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_sgi.c,v 1.2 2006-02-03 17:25:14 debug Exp $
  *
  *  http://obsolete.majix.org/computers/sgi/iptable.shtml contains a
  *  pretty detailed list of IP ("Inhouse Processor") model numbers.
@@ -521,13 +521,6 @@ Why is this here? TODO
 		    machine->machine_subtype);
 		exit(1);
 	}
-
-	/*
-	 *  This is important:  :-)
-	 *
-	 *  TODO:  There should not be any use of ARCBIOS before this
-	 *  point.
-	 */
 
 	if (!machine->prom_emulation)
 		return;

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.198 2006-02-02 19:30:10 debug Exp $
+$Id: TODO,v 1.199 2006-02-03 17:25:13 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -11,16 +11,29 @@ x) More generic out_of_memory error reporting, and check everywhere!
 		Unix systems usually allow processes to allocate virtual
 		memory beyond the amount of RAM in the machine.)
 
+x) Add support for running debugger commands on the command line and
+	in configuration files!
+
+x) Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
+	Use the debugger's symbolic name stuff. (which will have to be
+	extended soon to support stuff like  "2*x + symbol + y" etc. cool
+	stuff)
+
 Dyntrans:
-	x)  64-bit stuff: good generic virtual memory translation, and
-	    other structures. not all 64 bits need to be used (e.g. Alpha)
-	x)  Delay slots!
-	x)  Old MIPS -> dyntrans!
+	TOP Priority:
+		x)  64-bit stuff: good generic virtual memory translation, and
+		    other structures. not all 64 bits need to be used
+		    (e.g. Alpha)
+		x)  Delay slots!
+		x)  Old MIPS -> dyntrans!
+	Other stuff:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
 	x)  Think about sharing code between CPUs of the same
-	    arch/bitlength (the translation caches).
+	    arch/bitlength/endianness (the translation caches).
+	    (Eg. a little-endian R4000 and a little-endian R5000 could
+	    share code, but not an R3000 and an R4000.)
 	x)  better (meaningful) instr call statistics
 	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
@@ -33,6 +46,8 @@ Dyntrans:
 	    experiment in a separate project (not in GXemul)
 
 The Device subsystem:
+	x)  DEVINIT macro, similar to the machine registry. (allows multiple
+	    devinits per file!)
 	x)  allow devices to be moved and/or changed in size (down to a
 	    minimum size, etc, or up to a max size)
 	x)  keep track of interrupts and busses? actually, allow any device

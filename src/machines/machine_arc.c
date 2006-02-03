@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.1 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_arc.c,v 1.2 2006-02-03 17:25:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -98,12 +98,17 @@ MACHINE_SETUP(arc)
 		    "rd94 addr=0x80000000, irq=0");
 
 		device_add(machine, "sn addr=0x80001000 irq=0");
-		dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
-		i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11, 0);
+		dev_mc146818_init(machine, mem, 0x80004000ULL, 0,
+		    MC146818_ARC_NEC, 1);
+		i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042,
+		    0, 0, machine->use_x11, 0);
 
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=3 addr=0x80006000 in_use=%i name2=tty0", machine->use_x11? 0 : 1);
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "ns16550 irq=3 addr=0x80006000 in_use=%i name2=tty0",
+		    machine->use_x11? 0 : 1);
 		j = (size_t)device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x80007000 in_use=%i name2=tty1", 0);
+		snprintf(tmpstr, sizeof(tmpstr),
+		    "ns16550 irq=0 addr=0x80007000 in_use=%i name2=tty1", 0);
 		device_add(machine, tmpstr);
 
 		if (machine->use_x11)
@@ -118,8 +123,10 @@ MACHINE_SETUP(arc)
 		switch (machine->machine_subtype) {
 		case MACHINE_ARC_NEC_RD94:
 		case MACHINE_ARC_NEC_R94:
-			/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
-			bus_pci_add(machine, pci_data, mem, 0, 3, 0, "dec21030");	/*  tga graphics  */
+			/*  PCI devices:  (NOTE: bus must be 0, device must be
+			    3, 4, or 5, for NetBSD to accept interrupts)  */
+			bus_pci_add(machine, pci_data, mem, 0, 3, 0,
+			    "dec21030");	/*  tga graphics  */
 			break;
 		case MACHINE_ARC_NEC_R96:
 			dev_fb_init(machine, mem, 0x100e00000ULL,
@@ -133,7 +140,8 @@ MACHINE_SETUP(arc)
 		/*
 		 *  "NEC-R98" (NEC RISCserver 4200)
 		 *
-		 *  According to http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html:
+		 *  According to http://mail-index.netbsd.org/port-arc/
+		 *	2004/02/01/0001.html:
 		 *
 		 *  Network adapter at "start: 0x 0 18600000, length: 0x1000, level: 4, vector: 9"
 		 *  Disk at "start: 0x 0 18c103f0, length: 0x1000, level: 5, vector: 6"
@@ -157,61 +165,61 @@ MACHINE_SETUP(arc)
 	case MACHINE_ARC_JAZZ_PICA:
 	case MACHINE_ARC_JAZZ_MAGNUM:
 		/*
-				 *  "PICA-61"
-				 *
-				 *  According to NetBSD 1.6.2:
-				 *
-				 *  jazzio0 at mainbus0
-				 *  timer0 at jazzio0 addr 0xe0000228
-				 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
-				 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
-				 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
-				 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
-				 *  ALI_S3 at jazzio0 addr 0xe0800000 intr 3 not configured
-				 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
-				 *  sn0: Ethernet address 69:6a:6b:6c:00:00
-				 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
-				 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
-				 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
-				 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
-				 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
-				 *  jazzisabr0 at mainbus0
-				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
-				 *
-				 *  "Microsoft-Jazz", "MIPS Magnum"
-				 *
-				 *  timer0 at jazzio0 addr 0xe0000228
-				 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
-				 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
-				 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
-				 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
-				 *  VXL at jazzio0 addr 0xe0800000 intr 3 not configured
-				 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
-				 *  sn0: Ethernet address 69:6a:6b:6c:00:00
-				 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
-				 *  scsibus0 at asc0: 8 targets, 8 luns per target
-				 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
-				 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
-				 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
-				 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
-				 *  jazzisabr0 at mainbus0
-				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
-				 */
+		 *  "PICA-61"
+		 *
+		 *  According to NetBSD 1.6.2:
+		 *
+		 *  jazzio0 at mainbus0
+		 *  timer0 at jazzio0 addr 0xe0000228
+		 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
+		 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
+		 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
+		 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
+		 *  ALI_S3 at jazzio0 addr 0xe0800000 intr 3 not configured
+		 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
+		 *  sn0: Ethernet address 69:6a:6b:6c:00:00
+		 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
+		 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
+		 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
+		 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
+		 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
+		 *  jazzisabr0 at mainbus0
+		 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
+		 *
+		 *  "Microsoft-Jazz", "MIPS Magnum"
+		 *
+		 *  timer0 at jazzio0 addr 0xe0000228
+		 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
+		 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
+		 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
+		 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
+		 *  VXL at jazzio0 addr 0xe0800000 intr 3 not configured
+		 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
+		 *  sn0: Ethernet address 69:6a:6b:6c:00:00
+		 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
+		 *  scsibus0 at asc0: 8 targets, 8 luns per target
+		 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
+		 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
+		 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
+		 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
+		 *  jazzisabr0 at mainbus0
+		 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
+		 */
 
-				switch (machine->machine_subtype) {
-				case MACHINE_ARC_JAZZ_PICA:
-					strlcat(machine->machine_name, " (Microsoft Jazz, Acer PICA-61)",
-					    MACHINE_NAME_MAXBUF);
-					machine->stable = 1;
-					break;
-				case MACHINE_ARC_JAZZ_MAGNUM:
-					strlcat(machine->machine_name, " (Microsoft Jazz, MIPS Magnum)",
-					    MACHINE_NAME_MAXBUF);
-					break;
-				default:
-					fatal("error in machine.c. jazz\n");
-					exit(1);
-				}
+		switch (machine->machine_subtype) {
+		case MACHINE_ARC_JAZZ_PICA:
+			strlcat(machine->machine_name, " (Microsoft Jazz, Acer PICA-61)",
+			    MACHINE_NAME_MAXBUF);
+			machine->stable = 1;
+			break;
+		case MACHINE_ARC_JAZZ_MAGNUM:
+			strlcat(machine->machine_name, " (Microsoft Jazz, MIPS Magnum)",
+			    MACHINE_NAME_MAXBUF);
+			break;
+		default:
+			fatal("error in machine.c. jazz\n");
+			exit(1);
+		}
 
 				machine->md_int.jazz_data = device_add(machine,
 				    "jazz addr=0x80000000");
@@ -367,10 +375,8 @@ Not yet.
 	}
 
 	/*
-	 *  This is important:  :-)
-	 *
-	 *  TODO:  There should not be any use of ARCBIOS before this
-	 *  point.
+	 *  NOTE: ARCBIOS shouldn't be used before this point. (The only
+	 *  exception is that arcbios_console_init() may be called.)
 	 */
 
 	if (!machine->prom_emulation)

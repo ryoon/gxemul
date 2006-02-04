@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.57 2006-01-16 04:48:10 debug Exp $
+ *  $Id: bus_pci.c,v 1.58 2006-02-04 12:27:13 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -620,19 +620,48 @@ PCIINIT(gt64260)
 
 
 /*
+ *  Intel 31244   Serial ATA Controller
  *  Intel 82371SB PIIX3 PCI-ISA bridge
  *  Intel 82371AB PIIX4 PCI-ISA bridge
  *  Intel 82371SB IDE controller
  *  Intel 82371AB IDE controller
- *  and 82378ZB System I/O controller.
+ *  Intel 82378ZB System I/O controller.
  */
 
 #define	PCI_VENDOR_INTEL		0x8086
+#define	PCI_PRODUCT_INTEL_31244		0x3200
 #define	PCI_PRODUCT_INTEL_82371SB_ISA	0x7000
 #define	PCI_PRODUCT_INTEL_82371SB_IDE	0x7010
 #define	PCI_PRODUCT_INTEL_82371AB_ISA	0x7110
 #define	PCI_PRODUCT_INTEL_82371AB_IDE	0x7111
 #define	PCI_PRODUCT_INTEL_SIO		0x0484
+
+PCIINIT(i31244)
+{
+	char tmpstr[100];
+
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
+	    PCI_PRODUCT_INTEL_31244));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x00);
+
+	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
+		    pd->pcibus->isa_irqbase + 14);
+		device_add(machine, tmpstr);
+	}
+
+	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
+	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
+		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
+		    (long long)(pd->pcibus->isa_portbase + 0x170),
+		    pd->pcibus->isa_irqbase + 15);
+		device_add(machine, tmpstr);
+	}
+}
 
 PCIINIT(piix3_isa)
 {

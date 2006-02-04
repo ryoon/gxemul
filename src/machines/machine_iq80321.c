@@ -25,12 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.9 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.10 2006-02-04 12:27:14 debug Exp $
  */
 
 #include <stdio.h>
 #include <string.h>
 
+#include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
@@ -41,6 +42,8 @@
 
 MACHINE_SETUP(iq80321)
 {
+	struct pci_data *pci;
+
 	/*
 	 *  Intel IQ80321. See http://sources.redhat.com/ecos/
 	 *	docs-latest/redboot/iq80321.html
@@ -81,7 +84,14 @@ for (i=0; i<1048576*16; i+=4)
 
 	device_add(machine, "iq80321_7seg addr=0xfe840000");
 
-	device_add(machine, "i80321 addr=0xffffe000");
+	pci = device_add(machine, "i80321 addr=0xffffe000");
+
+	/*
+	 *  PCI device 0: should be "Intel i82546EB 1000BASE-T Ethernet" (TODO)
+	 *  PCI device 1: "Intel 31244 Serial ATA Controller"
+	 */
+	bus_pci_add(machine, pci, machine->memory, 0, 0, 0, "dec21143");
+	bus_pci_add(machine, pci, machine->memory, 0, 1, 0, "i31244");
 
 	if (!machine->prom_emulation)
 		return;

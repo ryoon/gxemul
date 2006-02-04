@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.246 2006-02-04 11:10:58 debug Exp $
+ *  $Id: emul.c,v 1.247 2006-02-04 12:27:12 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1548,28 +1548,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 	/*  Initialize the interactive debugger:  */
 	debugger_init(emuls, n_emuls);
 
-#if 0
-#if 0
-/*  For experimental FreeBSD/arm development  */
-/*if (m->machine_type == MACHINE_IQ80321) {
-	store_32bit_word(cpu, 0xc0200000, 0);
-	store_32bit_word(cpu, 0xc0200004, 0xd0000000); */
-}*/
-#endif
-emuls[0]->n_debugger_cmds = 2;
-emuls[0]->debugger_cmds = realloc(emuls[0]->debugger_cmds,
-    emuls[0]->n_debugger_cmds * sizeof(char *));
-if (emuls[0]->debugger_cmds == NULL) {
-	fatal("out of memory\n");
-	exit(1);
-}
-
-emuls[0]->debugger_cmds[0] = strdup("put w 0xc0200000, 0");
-emuls[0]->debugger_cmds[1] = strdup("put w 0xc0200004, 0xd0000000");
-
-#endif
-
-	/*  Run optional debugger commands before starting:  */
+	/*  Run any additional debugger commands before starting:  */
 	for (i=0; i<n_emuls; i++) {
 		struct emul *emul = emuls[i];
 		if (emul->n_debugger_cmds > 0) {

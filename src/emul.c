@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.245 2006-01-14 20:04:27 debug Exp $
+ *  $Id: emul.c,v 1.246 2006-02-04 11:10:58 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -68,6 +68,15 @@ extern struct emul *debugger_emul;
 extern struct diskimage *diskimages[];
 
 static char *diskimage_types[] = DISKIMAGE_TYPES;
+
+
+static void print_separator(void)
+{
+	int i = 79;
+	while (i-- > 0)
+		debug("-");
+	debug("\n");
+}
 
 
 /*
@@ -903,13 +912,10 @@ static void add_arc_components(struct machine *m)
 void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	int n_devices, char **device_names)
 {
-	struct emul *emul;
 	struct cpu *cpu;
 	int i, iadd = DEBUG_INDENTATION;
 	uint64_t memory_amount, entrypoint = 0, gp = 0, toc = 0;
 	int byte_order;
-
-	emul = m->emul;
 
 	debug("machine \"%s\":\n", m->name);
 	debug_indentation(iadd);
@@ -1358,16 +1364,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		add_arc_components(m);
 
-
-#if 0
-/*  For experimental FreeBSD/arm development  */
-if (m->machine_type == MACHINE_IQ80321) {
-	store_32bit_word(cpu, 0xc0200000, 0);
-	store_32bit_word(cpu, 0xc0200004, 0xd0000000);
-}
-#endif
-
-
 	debug("starting cpu%i at ", m->bootstrap_cpu);
 	switch (m->arch) {
 
@@ -1549,13 +1545,48 @@ void emul_run(struct emul **emuls, int n_emuls)
 
 	atexit(fix_console);
 
-	i = 79;
-	while (i-- > 0)
-		debug("-");
-	debug("\n\n");
-
 	/*  Initialize the interactive debugger:  */
 	debugger_init(emuls, n_emuls);
+
+#if 0
+#if 0
+/*  For experimental FreeBSD/arm development  */
+/*if (m->machine_type == MACHINE_IQ80321) {
+	store_32bit_word(cpu, 0xc0200000, 0);
+	store_32bit_word(cpu, 0xc0200004, 0xd0000000); */
+}*/
+#endif
+emuls[0]->n_debugger_cmds = 2;
+emuls[0]->debugger_cmds = realloc(emuls[0]->debugger_cmds,
+    emuls[0]->n_debugger_cmds * sizeof(char *));
+if (emuls[0]->debugger_cmds == NULL) {
+	fatal("out of memory\n");
+	exit(1);
+}
+
+emuls[0]->debugger_cmds[0] = strdup("put w 0xc0200000, 0");
+emuls[0]->debugger_cmds[1] = strdup("put w 0xc0200004, 0xd0000000");
+
+#endif
+
+	/*  Run optional debugger commands before starting:  */
+	for (i=0; i<n_emuls; i++) {
+		struct emul *emul = emuls[i];
+		if (emul->n_debugger_cmds > 0) {
+			int j;
+			if (i == 0)
+				print_separator();
+			for (j = 0; j < emul->n_debugger_cmds; j ++) {
+				debug("> %s\n", emul->debugger_cmds[j]);
+				debugger_execute_cmd(emul->debugger_cmds[j],
+				    strlen(emul->debugger_cmds[j]));
+			}
+		}
+	}
+
+	print_separator();
+	debug("\n");
+
 
 	/*
 	 *  console_init_main() makes sure that the terminal is in a

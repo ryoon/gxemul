@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.36 2005-03-14 19:14:03 debug Exp $
+ *  $Id: emul.h,v 1.37 2006-02-04 11:10:59 debug Exp $
  */
 
 #include "misc.h"
@@ -37,14 +37,18 @@ struct machine;
 struct net;
 
 struct emul {
-	int		next_serial_nr;
-
-	struct net	*net;
-
 	char		*name;
+
+	int		next_serial_nr;
+	struct net	*net;
 
 	int		n_machines;
 	struct machine	**machines;
+
+	/*  Additional debugger commands to run before
+	    starting the simulation:  */
+	int		n_debugger_cmds;
+	char		**debugger_cmds;
 };
 
 

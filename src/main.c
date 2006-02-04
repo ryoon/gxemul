@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.255 2006-01-16 21:22:30 debug Exp $
+ *  $Id: main.c,v 1.256 2006-02-04 11:10:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -298,6 +298,8 @@ static void usage(int longusage)
 	    " get a list of\n            available emulation modes)\n");
 
 	printf("\nGeneral options:\n");
+	printf("  -c cmd    add cmd as a command to run before starting "
+	    "the simulation\n");
 	printf("  -D        guarantee fully deterministic behaviour\n");
 	printf("  -H        display a list of possible CPU and "
 	    "machine types\n");
@@ -341,7 +343,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "ABC:Dd:E:e:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "ABC:c:Dd:E:e:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XxY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
@@ -357,6 +359,17 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;
+			break;
+		case 'c':
+			emul->n_debugger_cmds ++;
+			emul->debugger_cmds = realloc(emul->debugger_cmds,
+			    emul->n_debugger_cmds * sizeof(char *));
+			if (emul->debugger_cmds == NULL) {
+			        fatal("out of memory\n");
+			        exit(1);
+			}
+			emul->debugger_cmds[emul->n_debugger_cmds-1] =
+			    strdup(optarg);
 			break;
 		case 'D':
 			fully_deterministic = 1;

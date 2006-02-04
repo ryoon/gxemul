@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1112 2006-02-02 19:30:10 debug Exp $
+$Id: HISTORY,v 1.1113 2006-02-04 11:10:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2559,3 +2559,6 @@ Changelog for GXemul:
 		and some semi-bogus XScale and i80321 registers.
 20060201-02	Various minor updates. Moving the last machines out of
 		machine.c.
+20060204	Adding a -c command line option, for running debugger commands
+		before the simulation starts, but after all files have been
+		loaded.

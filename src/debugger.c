@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.131 2006-01-14 20:04:27 debug Exp $
+ *  $Id: debugger.c,v 1.132 2006-02-04 11:10:58 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1054,7 +1054,6 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 	}
 
 	/*  here: q is the address, p is the data.  */
-
 	res = debugger_parse_name(m, q, 0, &addr);
 	switch (res) {
 	case NAME_PARSE_NOMATCH:
@@ -1800,6 +1799,96 @@ void debugger_assignment(struct machine *m, char *cmd)
 
 
 /*
+ *  debugger_execute_cmd():
+ */
+void debugger_execute_cmd(char *cmd, int cmd_len)
+{
+	int i, n, i_match, matchlen;
+
+	/*
+	 *  Is there a '=' on the command line? Then try to do an
+	 *  assignment.  (Only if there is just one word, followed
+	 *  by the '=' sign. This makes it possible to use commands
+	 *  such as "device add name addr=xyz".)
+	 */
+	if (strchr(cmd, '=') != NULL) {
+		/*  Count the nr of words:  */
+		int nw = 0, inword = 0;
+		char *p = cmd;
+		while (*p) {
+			if (*p == '=')
+				break;
+			if (*p != ' ') {
+				if (!inword)
+					nw ++;
+				inword = 1;
+			} else
+				inword = 0;
+			p++;
+		}
+
+		if (nw == 1) {
+			debugger_assignment(debugger_machine, cmd);
+			return;
+		}
+	}
+
+	i = 0;
+	while (cmds[i].name != NULL)
+		cmds[i++].tmp_flag = 0;
+
+	/*  How many chars in cmd to match against:  */
+	matchlen = 0;
+	while (isalpha((int)cmd[matchlen]))
+		matchlen ++;
+
+	/*  Check for a command name match:  */
+	n = i = i_match = 0;
+	while (cmds[i].name != NULL) {
+		if (strncasecmp(cmds[i].name, cmd, matchlen) == 0
+		    && cmds[i].f != NULL) {
+			cmds[i].tmp_flag = 1;
+			i_match = i;
+			n++;
+		}
+		i++;
+	}
+
+	/*  No match?  */
+	if (n == 0) {
+		printf("Unknown command '%s'. Type 'help' for help.\n", cmd);
+		return;
+	}
+
+	/*  More than one match?  */
+	if (n > 1) {
+		printf("Ambiguous command '%s':  ", cmd);
+		i = 0;
+		while (cmds[i].name != NULL) {
+			if (cmds[i].tmp_flag)
+				printf("  %s", cmds[i].name);
+			i++;
+		}
+		printf("\n");
+		return;
+	}
+
+	/*  Exactly one match:  */
+	if (cmds[i_match].f != NULL) {
+		char *p = cmd + matchlen;
+		/*  Remove leading whitespace from the args...  */
+		while (*p != '\0' && *p == ' ')
+			p++;
+
+		/*  ... and run the command:  */
+		cmds[i_match].f(debugger_machine, p);
+	} else
+		printf("FATAL ERROR: internal error in debugger.c:"
+		    " no handler for this command?\n");
+}
+
+
+/*
  *  debugger_readline():
  *
  *  Read a line from the terminal.
@@ -2064,7 +2153,7 @@ static char *debugger_readline(void)
  */
 void debugger(void)
 {
-	int i, n, i_match, matchlen, cmd_len;
+	int i, cmd_len;
 	char *cmd;
 
 	if (debugger_n_steps_left_before_interaction > 0) {
@@ -2076,6 +2165,7 @@ void debugger(void)
 	 *  Clear all dyntrans translations, because otherwise things would
 	 *  become to complex to keep in sync.
 	 */
+	/*  TODO: In all machines  */
 	for (i=0; i<debugger_machine->ncpus; i++)
 		if (debugger_machine->cpus[i]->translation_cache != NULL)
 			cpu_create_or_reset_tc(debugger_machine->cpus[i]);
@@ -2108,87 +2198,7 @@ void debugger(void)
 			repeat_cmd[0] = '\0';
 		}
 
-		/*
-		 *  Is there a '=' on the command line? Then try to do an
-		 *  assignment.  (Only if there is just one word, followed
-		 *  by the '=' sign. This makes it possible to use commands
-		 *  such as "device add name addr=xyz".)
-		 */
-		if (strchr(cmd, '=') != NULL) {
-			/*  Count the nr of words:  */
-			int nw = 0, inword = 0;
-			char *p = cmd;
-			while (*p) {
-				if (*p == '=')
-					break;
-				if (*p != ' ') {
-					if (!inword)
-						nw ++;
-					inword = 1;
-				} else
-					inword = 0;
-				p++;
-			}
-
-			if (nw == 1) {
-				debugger_assignment(debugger_machine, cmd);
-				continue;
-			}
-		}
-
-		i = 0;
-		while (cmds[i].name != NULL)
-			cmds[i++].tmp_flag = 0;
-
-		/*  How many chars in cmd to match against:  */
-		matchlen = 0;
-		while (isalpha((int)cmd[matchlen]))
-			matchlen ++;
-
-		/*  Check for a command name match:  */
-		n = i = i_match = 0;
-		while (cmds[i].name != NULL) {
-			if (strncasecmp(cmds[i].name, cmd, matchlen) == 0
-			    && cmds[i].f != NULL) {
-				cmds[i].tmp_flag = 1;
-				i_match = i;
-				n++;
-			}
-			i++;
-		}
-
-		/*  No match?  */
-		if (n == 0) {
-			printf("Unknown command '%s'. "
-			    "Type 'help' for help.\n", cmd);
-			continue;
-		}
-
-		/*  More than one match?  */
-		if (n > 1) {
-			printf("Ambiguous command '%s':  ", cmd);
-			i = 0;
-			while (cmds[i].name != NULL) {
-				if (cmds[i].tmp_flag)
-					printf("  %s", cmds[i].name);
-				i++;
-			}
-			printf("\n");
-			continue;
-		}
-
-		/*  Exactly one match:  */
-		if (cmds[i_match].f != NULL) {
-			char *p = cmd + matchlen;
-			/*  Remove leading whitespace from the args...  */
-			while (*p != '\0' && *p == ' ')
-				p++;
-
-			/*  ... and run the command:  */
-			cmds[i_match].f(debugger_machine, p);
-		} else
-			printf("FATAL ERROR: internal error in debugger.c:"
-			    " no handler for this command?\n");
+		debugger_execute_cmd(cmd, cmd_len);
 
 		/*  Special hack for the "step" command:  */
 		if (exit_debugger == -1)

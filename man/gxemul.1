@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.47 2006-02-02 19:30:12 debug Exp $
+.\" $Id: gxemul.1,v 1.48 2006-02-04 11:10:57 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -307,6 +307,13 @@ emulation.
 .Pp
 General options:
 .Bl -tag -width Ds
+.It Fl c Ar cmd
+Add
+.Ar cmd
+as a command to run before starting the simulation. A similar effect can 
+be achieved by using the
+.Fl V
+option, and entering the commands manually.
 .It Fl D
 Guarantee fully deterministic behavior. Normally, the emulator calls
 srandom() with a seed based on the current time at startup. When the

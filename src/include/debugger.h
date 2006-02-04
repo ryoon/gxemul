@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.h,v 1.1 2005-01-26 08:22:57 debug Exp $
+ *  $Id: debugger.h,v 1.2 2006-02-04 11:10:59 debug Exp $
  *
  *  See src/debugger.c.
  */
@@ -37,6 +37,7 @@ struct emul;
 
 /*  debugger.c:  */
 void debugger_activate(int x);
+void debugger_execute_cmd(char *cmd, int cmd_len);
 void debugger(void);
 void debugger_reset(void);
 void debugger_init(struct emul **emuls, int n_emuls);

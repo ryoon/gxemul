@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.115 2006-01-30 03:24:44 debug Exp $
+ *  $Id: dev_fb.c,v 1.116 2006-02-05 10:26:36 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -37,7 +37,7 @@
  *	generic (any resolution, several bit depths possible)
  *
  *
- *  TODO:  This should actually be independant of X11, but that
+ *  TODO:  This should actually be independent of X11, but that
  *         might be too hard to do right now.
  *
  *  TODO:  playstation 2 pixels are stored in another format, actually

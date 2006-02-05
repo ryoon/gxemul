@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sandpoint.c,v 1.1 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_sandpoint.c,v 1.2 2006-02-05 10:26:36 debug Exp $
  */
 
 #include <stdio.h>
@@ -46,8 +46,13 @@ MACHINE_SETUP(sandpoint)
 	 */
 	machine->machine_name = "Motorola Sandpoint";
 
+	device_add(machine, "ns16550 irq=36 addr=0x800003f8");
+
 	/*  r4 should point to first free byte after the loaded kernel:  */
 	cpu->cd.ppc.gpr[4] = 6 * 1048576;
+
+	if (!machine->prom_emulation)
+		return;
 }
 
 

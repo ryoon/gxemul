@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.60 2006-01-06 13:03:56 debug Exp $
+ *  $Id: cpu.h,v 1.61 2006-02-05 10:26:36 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -102,7 +102,7 @@
  *  Usage: e.g. VPH32(arm,ARM,uint32_t,uint8_t)
  *           or VPH32(sparc,SPARC,uint64_t,uint16_t)
  *
- *  The vph_tlb_entry entries are cpu dependant tlb entries.
+ *  The vph_tlb_entry entries are cpu dependent tlb entries.
  *
  *  The host_load and host_store entries point to host pages; the phys_addr
  *  entries are uint32_t or uint64_t (emulated physical addresses).

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1113 2006-02-04 11:10:56 debug Exp $
+$Id: HISTORY,v 1.1114 2006-02-05 10:26:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2562,3 +2562,4 @@ Changelog for GXemul:
 20060204	Adding a -c command line option, for running debugger commands
 		before the simulation starts, but after all files have been
 		loaded.
+		Minor iq80321-related updates.

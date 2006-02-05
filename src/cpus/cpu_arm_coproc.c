@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.20 2006-01-24 21:26:01 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.21 2006-02-05 10:26:36 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <ctype.h>
 
 #include "cpu.h"
@@ -409,6 +410,10 @@ void arm_coproc_xscale_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 				cpu->cd.arm.r[rd] = cpu->cd.arm.xsc1_pmn1;
 			else
 				cpu->cd.arm.xsc1_pmn1 = cpu->cd.arm.r[rd];
+			break;
+		case 7:	/*  UNIMPLEMENTED!!! TODO  */
+			/*  Possibly some kind of idle or sleep function.  */
+			usleep(1);
 			break;
 		default:goto unknown;
 		}

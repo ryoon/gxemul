@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.8 2005-10-26 14:37:06 debug Exp $
+ *  $Id: cop0.h,v 1.9 2006-02-05 10:26:36 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
@@ -196,7 +196,7 @@
 #define	EXCEPTION_TR		13	/*  Trap exception  */
 #define	EXCEPTION_VCEI		14	/*  Virtual Coherency Exception, Instruction  */
 #define	EXCEPTION_FPE		15	/*  Floating point exception  */
-/*  16..17: Available for "implementation dependant use"  */
+/*  16..17: Available for "implementation dependent use"  */
 #define	EXCEPTION_C2E		18	/*  MIPS64 C2E (precise coprocessor 2 exception)  */
 /*  19..21: Reserved  */
 #define	EXCEPTION_MDMX		22	/*  MIPS64 MDMX unusable  */

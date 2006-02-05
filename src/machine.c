@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.663 2006-02-02 19:30:12 debug Exp $
+ *  $Id: machine.c,v 1.664 2006-02-05 10:26:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -379,13 +379,6 @@ void machine_dumpinfo(struct machine *m)
 }
 
 
-/****************************************************************************
- *                                                                          *
- *                              Helper functions                            *
- *                                                                          *
- ****************************************************************************/
-
-
 /*
  *  dump_mem_string():
  *
@@ -724,13 +717,6 @@ void store_16bit_word_in_host(struct cpu *cpu,
 		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
 	}
 }
-
-
-/****************************************************************************
- *                                                                          *
- *                  Machine dependant Initialization routines               *
- *                                                                          *
- ****************************************************************************/
 
 
 /*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.2 2006-01-16 04:48:10 debug Exp $
+ *  $Id: interrupts.c,v 1.3 2006-02-05 10:26:36 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -943,6 +943,33 @@ void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	if (m->md_int.gc_data->status_lo & m->md_int.gc_data->enable_lo ||
 	    m->md_int.gc_data->status_hi & m->md_int.gc_data->enable_hi)
+		cpu_interrupt(m->cpus[0], 65);
+	else
+		cpu_interrupt_ack(m->cpus[0], 65);
+}
+
+
+/*
+ *  i80321 (ARM) Interrupt Controller.
+ *
+ *  (Used by the IQ80321 machine.)
+ */
+void i80321_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
+{
+	uint32_t mask = 1 << (irq_nr & 31);
+	if (irq_nr < 32) {
+		if (assrt)
+			m->md_int.i80321_data->status |= mask;
+		else
+			m->md_int.i80321_data->status &= ~mask;
+	}
+
+#if 1
+	printf("status = %08x  enable = %08x\n",
+	    m->md_int.i80321_data->status, m->md_int.i80321_data->enable);
+#endif
+
+	if (m->md_int.i80321_data->status & m->md_int.i80321_data->enable)
 		cpu_interrupt(m->cpus[0], 65);
 	else
 		cpu_interrupt_ack(m->cpus[0], 65);

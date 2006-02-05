@@ -28,9 +28,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.40 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_x86.h,v 1.41 2006-02-05 10:26:36 debug Exp $
  *
- *  x86 (including AMD64) cpu dependant stuff.
+ *  x86 (including AMD64) cpu dependent stuff.
  */
 
 #include "misc.h"

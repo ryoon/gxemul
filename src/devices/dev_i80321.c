@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.7 2006-02-04 12:27:13 debug Exp $
+ *  $Id: dev_i80321.c,v 1.8 2006-02-05 10:26:36 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
  *  TODO: This is mostly just a dummy device.
+ *  TODO 2: This is hardcoded for little endian emulation.
  */
 
 #include <stdio.h>
@@ -39,6 +40,7 @@
 #include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -47,14 +49,6 @@
 #include "i80321reg.h"
 
 #define	DEV_I80321_LENGTH		VERDE_PMMR_SIZE
-
-struct i80321_data {
-	uint32_t	pci_addr;
-	uint64_t	pci_data_to_be_written;
-	struct pci_data *pci_bus;
-
-	uint32_t	mcu_reg[VERDE_MCU_SIZE / sizeof(uint32_t)];
-};
 
 
 /*
@@ -65,7 +59,7 @@ DEVICE_ACCESS(i80321)
 	struct i80321_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	char *n = NULL;
-	int bus, dev, func, reg;
+	int i, bus, dev, func, reg;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -94,41 +88,35 @@ DEVICE_ACCESS(i80321)
 		}
 		break;
 	case VERDE_ATU_BASE + ATU_OCCDR:
-		/*  PCI data  */
-		if (len == 4) {
-			bus_pci_data_access(cpu, d->pci_bus, writeflag ==
-			    MEM_READ? &odata : &idata, len, writeflag);
-		} else if (len == 2) {
-			/*  16-bit access, used by FreeBSD (?)  */
-			if (writeflag == MEM_READ) {
-				bus_pci_data_access(cpu, d->pci_bus, &odata,
-				    sizeof(uint32_t), MEM_READ);
-			} else {
-				d->pci_data_to_be_written = idata & 0xffff;
-			}
-		} else {
-			fatal("i80321: unsupported pci data len %i (X)\n", len);
-		}
-		break;
+	case VERDE_ATU_BASE + ATU_OCCDR + 1:
 	case VERDE_ATU_BASE + ATU_OCCDR + 2:
-		/*  PCI data, 16-bit access, used by FreeBSD (?)  */
-
-/*  TODO: 8-bit!  */
-
-		if (len == 2) {
-			if (writeflag == MEM_READ) {
-				bus_pci_data_access(cpu, d->pci_bus, &odata,
-				    sizeof(uint32_t), MEM_READ);
-				odata >>= 16;
-			} else {
-				d->pci_data_to_be_written &= 0xffff;
-				d->pci_data_to_be_written |= (idata & 0xffff) << 16;
-				bus_pci_data_access(cpu, d->pci_bus,
-				    &d->pci_data_to_be_written, sizeof(uint32_t),
-				    MEM_WRITE);
+	case VERDE_ATU_BASE + ATU_OCCDR + 3:
+		/*  PCI data  */
+		if (writeflag == MEM_READ) {
+			uint64_t tmp;
+			bus_pci_data_access(cpu, d->pci_bus, &tmp,
+			    sizeof(uint32_t), MEM_READ);
+			switch (relative_addr) {
+			case VERDE_ATU_BASE + ATU_OCCDR + 1:
+				odata = tmp >> 8; break;
+			case VERDE_ATU_BASE + ATU_OCCDR + 2:
+				odata = tmp >> 16; break;
+			case VERDE_ATU_BASE + ATU_OCCDR + 3:
+				odata = tmp >> 24; break;
+			default:odata = tmp;
 			}
 		} else {
-			fatal("i80321: unsupported pci data len %i (Y)\n", len);
+			uint64_t tmp;
+			int r = relative_addr - (VERDE_ATU_BASE + ATU_OCCDR);
+			bus_pci_data_access(cpu, d->pci_bus, &tmp,
+			    sizeof(uint32_t), MEM_READ);
+			for (i=0; i<len; i++) {
+				uint8_t b = idata >> (i*8);
+				tmp &= ~(0xff << ((r+i)*8));
+				tmp |= b << ((r+i)*8);
+			}
+			bus_pci_data_access(cpu, d->pci_bus, &tmp,
+			    sizeof(uint32_t), MEM_WRITE);
 		}
 		break;
 
@@ -202,7 +190,7 @@ int devinit_i80321(struct devinit *devinit)
 	    devinit->addr, DEV_I80321_LENGTH,
 	    dev_i80321_access, d, DM_DEFAULT, NULL);
 
-	devinit->return_ptr = d->pci_bus;
+	devinit->return_ptr = d;
 
 	return 1;
 }

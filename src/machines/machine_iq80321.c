@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.10 2006-02-04 12:27:14 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.11 2006-02-05 10:26:36 debug Exp $
  */
 
 #include <stdio.h>
@@ -36,6 +36,7 @@
 #include "device.h"
 #include "devices.h"
 #include "machine.h"
+#include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -52,17 +53,14 @@ MACHINE_SETUP(iq80321)
 
 	machine->machine_name = "Intel IQ80321";
 
+	machine->md_interrupt = i80321_interrupt;
 	cpu->cd.arm.coproc[6] = arm_coproc_i80321_6;
 
-	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=1");
+	machine->md_int.i80321_data = device_add(machine,
+	    "i80321 addr=0xffffe000");
+	pci = machine->md_int.i80321_data->pci_bus;
 
-#if 0
-{
-int i;
-for (i=0; i<1048576*16; i+=4)
-	store_32bit_word(cpu, i, 0x70000000 + i);
-}
-#endif
+	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=1");
 
 #if 0
 	/*  Used by "Redboot":  */
@@ -84,13 +82,11 @@ for (i=0; i<1048576*16; i+=4)
 
 	device_add(machine, "iq80321_7seg addr=0xfe840000");
 
-	pci = device_add(machine, "i80321 addr=0xffffe000");
-
 	/*
 	 *  PCI device 0: should be "Intel i82546EB 1000BASE-T Ethernet" (TODO)
 	 *  PCI device 1: "Intel 31244 Serial ATA Controller"
 	 */
-	bus_pci_add(machine, pci, machine->memory, 0, 0, 0, "dec21143");
+	/* bus_pci_add(machine, pci, machine->memory, 0, 0, 0, "dec21143"); */
 	bus_pci_add(machine, pci, machine->memory, 0, 1, 0, "i31244");
 
 	if (!machine->prom_emulation)

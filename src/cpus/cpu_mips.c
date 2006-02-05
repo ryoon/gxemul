@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.15 2006-01-11 20:14:43 debug Exp $
+ *  $Id: cpu_mips.c,v 1.16 2006-02-05 10:26:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3961,7 +3961,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		which_cache = copz & 3;
 
 		/*
-		 *  TODO:  The cache instruction is implementation dependant.
+		 *  TODO:  The cache instruction is implementation dependent.
 		 */
 
 		/*

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_interrupts.h,v 1.1 2006-01-01 12:38:12 debug Exp $
+ *  $Id: machine_interrupts.h,v 1.2 2006-02-05 10:26:36 debug Exp $
  */
 
 #include "machine.h"
@@ -56,5 +56,6 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
 void x86_pc_interrupt(struct machine *m, struct cpu *, int irq_nr, int assrt);
 void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
 void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt);
+void i80321_interrupt(struct machine *m, struct cpu *cpu, int, int assrt);
 
 #endif	/*  MACHINE_INTERRUPTS_H  */

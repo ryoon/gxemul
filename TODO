@@ -1,4 +1,4 @@
-$Id: TODO,v 1.200 2006-02-04 12:27:11 debug Exp $
+$Id: TODO,v 1.201 2006-02-05 10:26:35 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -116,7 +116,7 @@ Caches / memory hierarchies: (this is mostly MIPS-specific)
 	o)  R2000/R3000 isn't _100%_ correct, just almost correct :)
 	o)  Move the -S (fill mem with random) functionality into the
 	    memory.c subsystem, not machine.c or wherever it is now
-	o)  ECC stuff, simulation of memory errors?  (Machine dependant)
+	o)  ECC stuff, simulation of memory errors?  (Machine dependent)
 	o)  More than 4GB of emulated RAM, when run on a 32-bit host?
 	    (using manual swap-out of blocks to disk, ugly)
 	o)  A global command line option should be used to turn

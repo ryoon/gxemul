@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_mk48txx.c,v 1.1 2006-01-17 05:55:53 debug Exp $
+ *  $Id: dev_mk48txx.c,v 1.2 2006-02-09 20:02:59 debug Exp $
  *
  *  Mostek MK48Txx Real Time Clock.
  *
@@ -100,10 +100,7 @@ x++;
 }
 
 
-/*
- *  devinit_mk48txx():
- */
-int devinit_mk48txx(struct devinit *devinit)
+DEVINIT(mk48txx)
 {
 	struct mk48txx_data *d = malloc(sizeof(struct mk48txx_data));
 	if (d == NULL) {

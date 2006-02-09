@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.10 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_ether.c,v 1.11 2006-02-09 20:02:59 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -196,10 +196,7 @@ DEVICE_ACCESS(ether)
 }
 
 
-/*
- *  devinit_ether():
- */
-int devinit_ether(struct devinit *devinit)
+DEVINIT(ether)
 {
 	struct ether_data *d = malloc(sizeof(struct ether_data));
 	size_t nlen;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1114 2006-02-05 10:26:35 debug Exp $
+$Id: HISTORY,v 1.1115 2006-02-09 20:02:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2563,3 +2563,4 @@ Changelog for GXemul:
 		before the simulation starts, but after all files have been
 		loaded.
 		Minor iq80321-related updates.
+20060209	Minor hacks (DEVINIT macro, etc).

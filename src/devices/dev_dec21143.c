@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.23 2006-01-17 05:55:53 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.24 2006-02-09 20:02:59 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -983,10 +983,7 @@ DEVICE_ACCESS(dec21143)
 }
 
 
-/*
- *  devinit_dec21143():
- */
-int devinit_dec21143(struct devinit *devinit)
+DEVINIT(dec21143)
 {
 	struct dec21143_data *d;
 	char name2[100];

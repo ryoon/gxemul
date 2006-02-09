@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zero.c,v 1.4 2006-01-01 13:17:18 debug Exp $
+ *  $Id: dev_zero.c,v 1.5 2006-02-09 20:02:59 debug Exp $
  *  
  *  A simple device which returns zero for all reads, and discards all writes.
  */
@@ -40,9 +40,6 @@
 #include "misc.h"
 
 
-/*
- *  dev_zero_access():
- */
 DEVICE_ACCESS(zero)
 {
 	if (writeflag == MEM_READ) {
@@ -55,10 +52,7 @@ DEVICE_ACCESS(zero)
 }
 
 
-/*
- *  devinit_zero():
- */
-int devinit_zero(struct devinit *devinit)
+DEVINIT(zero)
 {
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr, devinit->len,

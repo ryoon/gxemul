@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_hammerhead.c,v 1.2 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_hammerhead.c,v 1.3 2006-02-09 20:02:59 debug Exp $
  *  
  *  Hammerhead controller, for the secondary CPU on MacPPC machines.
  */
@@ -96,10 +96,7 @@ return 1;
 }
 
 
-/*
- *  devinit_hammerhead():
- */
-int devinit_hammerhead(struct devinit *devinit)
+DEVINIT(hammerhead)
 {
 	struct hammerhead_data *d = malloc(sizeof(struct hammerhead_data));
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21030.c,v 1.4 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_dec21030.c,v 1.5 2006-02-09 20:02:59 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -233,10 +233,7 @@ DEVICE_ACCESS(dec21030)
 }
 
 
-/*
- *  devinit_dec21030():
- */
-int devinit_dec21030(struct devinit *devinit)
+DEVINIT(dec21030)
 {
 	struct dec21030_data *d;
 

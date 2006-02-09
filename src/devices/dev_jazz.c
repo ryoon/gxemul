@@ -25,9 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.22 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_jazz.c,v 1.23 2006-02-09 20:02:59 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
+ *
+ *  TODO/NOTE: This is mostly a quick hack, it doesn't really implement
+ *  much of the Jazz architecture.  Also, the a0/20 isa-like stuff is
+ *  not supposed to be here.
  */
 
 #include <stdio.h>
@@ -494,10 +498,7 @@ DEVICE_ACCESS(jazz_jazzio)
 }
 
 
-/*
- *  devinit_jazz():
- */
-int devinit_jazz(struct devinit *devinit)
+DEVINIT(jazz)
 {
 	struct jazz_data *d = malloc(sizeof(struct jazz_data));
 	if (d == NULL) {

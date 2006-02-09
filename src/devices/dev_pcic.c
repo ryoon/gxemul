@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.15 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_pcic.c,v 1.16 2006-02-09 20:02:59 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -210,10 +210,7 @@ DEVICE_ACCESS(pcic)
 }
 
 
-/*
- *  devinit_pcic():
- */
-int devinit_pcic(struct devinit *devinit)
+DEVINIT(pcic)
 {
 	struct pcic_data *d = malloc(sizeof(struct pcic_data));
 

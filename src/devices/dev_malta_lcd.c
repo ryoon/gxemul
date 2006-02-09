@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_malta_lcd.c,v 1.5 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_malta_lcd.c,v 1.6 2006-02-09 20:02:59 debug Exp $
  *
  *  Malta (evbmips) LCD thingy. Mostly a dummy device.
  */
@@ -122,10 +122,7 @@ DEVICE_ACCESS(malta_lcd)
 }
 
 
-/*
- *  devinit_malta_lcd():
- */
-int devinit_malta_lcd(struct devinit *devinit)
+DEVINIT(malta_lcd)
 {
 	struct malta_lcd_data *d = malloc(sizeof(struct malta_lcd_data));
 

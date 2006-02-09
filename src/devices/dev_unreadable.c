@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_unreadable.c,v 1.11 2006-01-01 13:17:18 debug Exp $
+ *  $Id: dev_unreadable.c,v 1.12 2006-02-09 20:02:59 debug Exp $
  *  
  *  A simple device which returns an error for all accesses (both reads and
  *  writes).
@@ -50,10 +50,7 @@ DEVICE_ACCESS(unreadable)
 }
 
 
-/*
- *  devinit_unreadable():
- */
-int devinit_unreadable(struct devinit *devinit)
+DEVINIT(unreadable)
 {
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr, devinit->len,

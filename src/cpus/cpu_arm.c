@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.53 2006-02-05 10:26:35 debug Exp $
+ *  $Id: cpu_arm.c,v 1.54 2006-02-09 20:02:58 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -401,42 +401,42 @@ void arm_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		}
 
 		if (m != ARM_MODE_USR32 && m != ARM_MODE_SYS32) {
-			debug("cpu%i:  usr r8..r14 =", x);
+			debug("cpu%i:  usr r8-14:", x);
 			for (i=0; i<7; i++)
 				debug(" %08x", cpu->cd.arm.default_r8_r14[i]);
 			debug("\n");
 		}
 
 		if (m != ARM_MODE_FIQ32) {
-			debug("cpu%i:  fiq r8..r14 =", x);
+			debug("cpu%i:  fiq r8-14:", x);
 			for (i=0; i<7; i++)
 				debug(" %08x", cpu->cd.arm.fiq_r8_r14[i]);
 			debug("\n");
 		}
 
 		if (m != ARM_MODE_IRQ32) {
-			debug("cpu%i:  irq r13..r14 =", x);
+			debug("cpu%i:  irq r13-14:", x);
 			for (i=0; i<2; i++)
 				debug(" %08x", cpu->cd.arm.irq_r13_r14[i]);
 			debug("\n");
 		}
 
 		if (m != ARM_MODE_SVC32) {
-			debug("cpu%i:  svc r13..r14 =", x);
+			debug("cpu%i:  svc r13-14:", x);
 			for (i=0; i<2; i++)
 				debug(" %08x", cpu->cd.arm.svc_r13_r14[i]);
 			debug("\n");
 		}
 
 		if (m != ARM_MODE_ABT32) {
-			debug("cpu%i:  abt r13..r14 =", x);
+			debug("cpu%i:  abt r13-14:", x);
 			for (i=0; i<2; i++)
 				debug(" %08x", cpu->cd.arm.abt_r13_r14[i]);
 			debug("\n");
 		}
 
 		if (m != ARM_MODE_UND32) {
-			debug("cpu%i:  und r13..r14 =", x);
+			debug("cpu%i:  und r13-14:", x);
 			for (i=0; i<2; i++)
 				debug(" %08x", cpu->cd.arm.und_r13_r14[i]);
 			debug("\n");

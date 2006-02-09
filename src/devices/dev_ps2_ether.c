@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ether.c,v 1.5 2006-01-01 13:17:17 debug Exp $
+ *  $Id: dev_ps2_ether.c,v 1.6 2006-02-09 20:02:59 debug Exp $
  *  
  *  Playstation 2 ethernet (smap and emac3).
  *
@@ -85,10 +85,7 @@ DEVICE_ACCESS(ps2_ether)
 }
 
 
-/*
- *  devinit_ps2_ether():
- */
-int devinit_ps2_ether(struct devinit *devinit)
+DEVINIT(ps2_ether)
 {
 	struct ps2_ether_data *d;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.61 2006-01-14 12:52:01 debug Exp $
+ *  $Id: dev_wdc.c,v 1.62 2006-02-09 20:02:59 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -909,10 +909,7 @@ DEVICE_ACCESS(wdc)
 }
 
 
-/*
- *  devinit_wdc():
- */
-int devinit_wdc(struct devinit *devinit)
+DEVINIT(wdc)
 {
 	struct wdc_data *d;
 	uint64_t alt_status_addr;

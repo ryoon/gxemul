@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.49 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.50 2006-02-09 20:02:59 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -316,10 +316,7 @@ DEVICE_ACCESS(ns16550)
 }
 
 
-/*
- *  devinit_ns16550():
- */
-int devinit_ns16550(struct devinit *devinit)
+DEVINIT(ns16550)
 {
 	struct ns_data *d = malloc(sizeof(struct ns_data));
 	size_t nlen;

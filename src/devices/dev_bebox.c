@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.8 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_bebox.c,v 1.9 2006-02-09 20:02:59 debug Exp $
  *
  *  Emulation of BeBox motherboard registers. See the following URL for more
  *  information:
@@ -141,10 +141,7 @@ DEVICE_ACCESS(bebox)
 }
 
 
-/*
- *  devinit_bebox():
- */
-int devinit_bebox(struct devinit *devinit)
+DEVINIT(bebox)
 {
 	struct bebox_data *d;
 

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautodev.sh,v 1.5 2005-11-09 06:35:45 debug Exp $
+#  $Id: makeautodev.sh,v 1.6 2006-02-09 20:02:59 debug Exp $
 
 
 printf "Generating autodev.c... "
@@ -39,10 +39,13 @@ printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> autodev.c
 cat autodev_head.c >> autodev.c
 
 printf "4"
-for a in dev_*.o; do
-	B=`echo $a|cut -c5-|sed s/\\\\.o//g`
-	if grep devinit_$B dev_$B.c > /dev/null; then
-		printf "int devinit_$B(struct devinit *);\n" >> autodev.c
+for a in dev_*.c; do
+	B=`grep DEVINIT $a`
+	if [ z"$B" != z ]; then
+		C=`grep DEVINIT $a | cut -d \( -f 2|cut -d \) -f 1`
+		for B in $C; do
+			printf "int devinit_$B(struct devinit *);\n" >> autodev.c
+		done
 	fi
 done
 
@@ -61,11 +64,14 @@ done
 cat autodev_middle.c >> autodev.c
 
 printf "2"
-for a in dev_*.o; do
-	B=`echo $a|cut -c5-|sed s/\\\\.o//g`
-	if grep devinit_$B dev_$B.c > /dev/null; then
-		printf "\tdevice_register(\""$B"\"," >> autodev.c
-		printf " devinit_$B);\n" >> autodev.c
+for a in dev_*.c; do
+	B=`grep DEVINIT $a`
+	if [ z"$B" != z ]; then
+		C=`grep DEVINIT $a | cut -d \( -f 2|cut -d \) -f 1`
+		for B in $C; do
+			printf "\tdevice_register(\""$B"\"," >> autodev.c
+			printf " devinit_$B);\n" >> autodev.c
+		done
 	fi
 done
 

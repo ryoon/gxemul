@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.10 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_disk.c,v 1.11 2006-02-09 20:02:59 debug Exp $
  *
  *  Basic "Disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
@@ -138,10 +138,7 @@ DEVICE_ACCESS(disk)
 }
 
 
-/*
- *  devinit_disk():
- */
-int devinit_disk(struct devinit *devinit)
+DEVINIT(disk)
 {
 	struct disk_data *d = malloc(sizeof(struct disk_data));
 	size_t nlen;

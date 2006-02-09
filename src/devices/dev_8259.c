@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.23 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_8259.c,v 1.24 2006-02-09 20:02:58 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -249,7 +249,7 @@ DEVICE_ACCESS(8259)
  *	    which the PIC is connected. (That is left to machine specific
  *	    code in src/machine.c.)
  */
-int devinit_8259(struct devinit *devinit)
+DEVINIT(8259)
 {
 	struct pic8259_data *d = malloc(sizeof(struct pic8259_data));
 	char *name2;

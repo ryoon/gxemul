@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.20 2006-01-01 13:17:17 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.21 2006-02-09 20:02:59 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -143,7 +143,7 @@ DEVICE_ACCESS(ps2_gs)
  *
  *  TODO:  Make this clearer.
  */
-int devinit_ps2_gs(struct devinit *devinit)
+DEVINIT(ps2_gs)
 {
 	struct gs_data *d;
 	char str[100];

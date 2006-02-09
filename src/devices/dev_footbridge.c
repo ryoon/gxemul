@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.41 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.42 2006-02-09 20:02:59 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -391,10 +391,7 @@ DEVICE_ACCESS(footbridge)
 }
 
 
-/*
- *  devinit_footbridge():
- */
-int devinit_footbridge(struct devinit *devinit)
+DEVINIT(footbridge)
 {
 	struct footbridge_data *d;
 	uint64_t pci_addr = 0x7b000000;

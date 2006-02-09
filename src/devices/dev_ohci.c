@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.7 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_ohci.c,v 1.8 2006-02-09 20:02:59 debug Exp $
  *  
  *  USB OHCI (Open Host Controller Interface).
  *
@@ -149,10 +149,7 @@ fatal("URK\n");
 }
 
 
-/*
- *  devinit_ohci():
- */
-int devinit_ohci(struct devinit *devinit)
+DEVINIT(ohci)
 {
 	struct ohci_data *d;
 

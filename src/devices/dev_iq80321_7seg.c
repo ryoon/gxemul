@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_iq80321_7seg.c,v 1.1 2006-01-22 23:20:36 debug Exp $
+ *  $Id: dev_iq80321_7seg.c,v 1.2 2006-02-09 20:02:59 debug Exp $
  *
  *  IQ80321 LED device. Should work with NetBSD's iq80321_7seg.c.
  *
@@ -97,10 +97,7 @@ DEVICE_ACCESS(iq80321_7seg)
 }
 
 
-/*
- *  devinit_iq80321_7seg():
- */
-int devinit_iq80321_7seg(struct devinit *devinit)
+DEVINIT(iq80321_7seg)
 {
 	struct iq80321_7seg_data *d = malloc(sizeof(struct iq80321_7seg_data));
 	if (d == NULL) {

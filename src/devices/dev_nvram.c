@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_nvram.c,v 1.3 2006-01-17 05:55:53 debug Exp $
+ *  $Id: dev_nvram.c,v 1.4 2006-02-09 20:02:59 debug Exp $
  *
  *  NVRAM reached through ISA port 0x74-0x77, and a wrapper for an MK48Txx
  *  RTC. (See dev_pccmos.c for the traditional PC-style CMOS/RTC device.)
@@ -133,10 +133,7 @@ DEVICE_ACCESS(nvram)
 }
 
 
-/*
- *  devinit_nvram():
- */
-int devinit_nvram(struct devinit *devinit)
+DEVINIT(nvram)
 {
 	char tmpstr[100];
 	struct nvram_data *d = malloc(sizeof(struct nvram_data));

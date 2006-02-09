@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.20 2006-01-01 13:17:15 debug Exp $
+ *  $Id: dev_8250.c,v 1.21 2006-02-09 20:02:58 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -132,10 +132,7 @@ DEVICE_ACCESS(8250)
 }
 
 
-/*
- *  devinit_8250():
- */
-int devinit_8250(struct devinit *devinit)
+DEVINIT(8250)
 {
 	struct dev_8250_data *d;
 

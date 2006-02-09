@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.21 2006-01-17 05:55:54 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.22 2006-02-09 20:02:59 debug Exp $
  *  
  *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
  *
@@ -114,10 +114,7 @@ DEVICE_ACCESS(pccmos)
 }
 
 
-/*
- *  devinit_pccmos():
- */
-int devinit_pccmos(struct devinit *devinit)
+DEVINIT(pccmos)
 {
 	struct pccmos_data *d = malloc(sizeof(struct pccmos_data));
 	int irq_nr, type = MC146818_PC_CMOS, len = DEV_PCCMOS_LENGTH;

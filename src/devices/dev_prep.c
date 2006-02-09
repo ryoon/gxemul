@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_prep.c,v 1.3 2006-01-16 01:45:28 debug Exp $
+ *  $Id: dev_prep.c,v 1.4 2006-02-09 20:02:59 debug Exp $
  *
  *  PReP interrupt controller.
  */
@@ -66,10 +66,7 @@ DEVICE_ACCESS(prep)
 }
 
 
-/*
- *  devinit_prep():
- */
-int devinit_prep(struct devinit *devinit)
+DEVINIT(prep)
 {
 	struct prep_data *d;
 

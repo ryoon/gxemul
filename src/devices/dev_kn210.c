@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn210.c,v 1.14 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_kn210.c,v 1.15 2006-02-09 20:02:59 debug Exp $
  *  
  *  DECsystem 5400 (KN210) stuff
  */
@@ -75,10 +75,7 @@ DEVICE_ACCESS(kn210)
 }
 
 
-/*
- *  devinit_kn210():
- */
-int devinit_kn210(struct devinit *devinit)
+DEVINIT(kn210)
 {
 	struct kn210_data *d;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.7 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_lpt.c,v 1.8 2006-02-09 20:02:59 debug Exp $
  *
  *  LPT (parallel printer) controller.
  */
@@ -115,10 +115,7 @@ DEVICE_ACCESS(lpt)
 }
 
 
-/*
- *  devinit_lpt():
- */
-int devinit_lpt(struct devinit *devinit)
+DEVINIT(lpt)
 {
 	struct lpt_data *d = malloc(sizeof(struct lpt_data));
 	size_t nlen;

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.201 2006-02-05 10:26:35 debug Exp $
+$Id: TODO,v 1.202 2006-02-09 20:02:58 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -47,7 +47,7 @@ The Device subsystem:
 	    devinits per file!)
 	x)  allow devices to be moved and/or changed in size (down to a
 	    minimum size, etc, or up to a max size)
-	x)  keep track of interrupts and busses? actually, allow any device
+	x)  keep track of interrupts and busses? actually, allowing any device
 	    to be a bus might be a nice idea
 	x)  refactor various clocks/nvram/cmos into one device?
 

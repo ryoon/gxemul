@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ahc.c,v 1.3 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_ahc.c,v 1.4 2006-02-09 20:02:59 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -198,10 +198,7 @@ cpu_interrupt(cpu, 0x200);
 }
 
 
-/*
- *  devinit_ahc():
- */
-int devinit_ahc(struct devinit *devinit)
+DEVINIT(ahc)
 {
 	struct ahc_data *d = malloc(sizeof(struct ahc_data));
 	if (d == NULL) {

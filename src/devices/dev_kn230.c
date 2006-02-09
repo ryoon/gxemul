@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.14 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_kn230.c,v 1.15 2006-02-09 20:02:59 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -83,10 +83,7 @@ DEVICE_ACCESS(kn230)
 }
 
 
-/*
- *  devinit_kn230():
- */
-int devinit_kn230(struct devinit *devinit)
+DEVINIT(kn230)
 {
 	struct kn230_csr *d;
 

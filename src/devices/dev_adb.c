@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.7 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_adb.c,v 1.8 2006-02-09 20:02:58 debug Exp $
  *
  *  ADB (Apple Desktop Bus) controller.
  *
@@ -441,10 +441,7 @@ DEVICE_ACCESS(adb)
 }
 
 
-/*
- *  devinit_adb():
- */
-int devinit_adb(struct devinit *devinit)
+DEVINIT(adb)
 {
 	struct adb_data *d = malloc(sizeof(struct adb_data));
 

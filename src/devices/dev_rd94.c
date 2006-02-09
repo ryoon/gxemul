@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.33 2006-01-01 13:17:17 debug Exp $
+ *  $Id: dev_rd94.c,v 1.34 2006-02-09 20:02:59 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -205,10 +205,7 @@ DEVICE_ACCESS(rd94)
 }
 
 
-/*
- *  devinit_rd94():
- */
-int devinit_rd94(struct devinit *devinit)
+DEVINIT(rd94)
 {
 	struct rd94_data *d = malloc(sizeof(struct rd94_data));
 	if (d == NULL) {

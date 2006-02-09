@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.8 2006-02-05 10:26:36 debug Exp $
+ *  $Id: dev_i80321.c,v 1.9 2006-02-09 20:02:59 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -156,10 +156,7 @@ DEVICE_ACCESS(i80321)
 }
 
 
-/*
- *  devinit_i80321():
- */
-int devinit_i80321(struct devinit *devinit)
+DEVINIT(i80321)
 {
 	struct i80321_data *d = malloc(sizeof(struct i80321_data));
 	uint32_t memsize = devinit->machine->physical_ram_in_mb * 1048576;

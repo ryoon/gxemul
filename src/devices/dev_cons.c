@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.32 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_cons.c,v 1.33 2006-02-09 20:02:59 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -110,10 +110,7 @@ DEVICE_ACCESS(cons)
 }
 
 
-/*
- *  devinit_cons():
- */
-int devinit_cons(struct devinit *devinit)
+DEVINIT(cons)
 {
 	struct cons_data *d;
 	char *name3;

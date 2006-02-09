@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.16 2006-01-01 13:17:17 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.17 2006-02-09 20:02:59 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -111,10 +111,7 @@ DEVICE_ACCESS(sgi_ip19)
 }
 
 
-/*
- *  devinit__sgi_ip19():
- */
-int devinit_sgi_ip19(struct devinit *devinit)
+DEVINIT(sgi_ip19)
 {
 	struct sgi_ip19_data *d = malloc(sizeof(struct sgi_ip19_data));
 	if (d == NULL) {

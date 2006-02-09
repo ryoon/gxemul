@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.33 2006-02-05 10:26:36 debug Exp $
+ *  $Id: dev_mp.c,v 1.34 2006-02-09 20:02:59 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -247,10 +247,7 @@ DEVICE_ACCESS(mp)
 }
 
 
-/*
- *  devinit_mp():
- */
-int devinit_mp(struct devinit *devinit)
+DEVINIT(mp)
 {
 	struct mp_data *d;
 	int n;

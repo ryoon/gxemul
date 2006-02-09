@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.3 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.4 2006-02-09 22:40:27 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -55,8 +55,6 @@
 int ia64_cpu_new(struct cpu *cpu, struct memory *mem,
 	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
-	int i;
-
 	if (strcasecmp(cpu_type_name, "IA64") != 0)
 		return 0;
 
@@ -71,17 +69,6 @@ int ia64_cpu_new(struct cpu *cpu, struct memory *mem,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
-
-	/*  Create the default virtual->physical->host translation:  */
-	cpu->cd.ia64.vph_default_page = malloc(sizeof(struct ia64_vph_page));
-	if (cpu->cd.ia64.vph_default_page == NULL) {
-		fprintf(stderr, "out of memory in ia64_cpu_new()\n");
-		exit(1);
-	}
-	memset(cpu->cd.ia64.vph_default_page, 0, sizeof(struct ia64_vph_page));
-	for (i=0; i<IA64_LEVEL0; i++)
-		cpu->cd.ia64.vph_table0[i] = cpu->cd.ia64.vph_table0_kernel[i]
-		    = cpu->cd.ia64.vph_default_page;
 
 	return 1;
 }

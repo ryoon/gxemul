@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64_instr.c,v 1.3 2005-12-16 21:44:42 debug Exp $
+ *  $Id: cpu_ia64_instr.c,v 1.4 2006-02-09 22:40:27 debug Exp $
  *
  *  IA64 instructions.
  *
@@ -75,9 +75,9 @@ X(end_of_page)
 X(to_be_translated)
 {
 	uint64_t addr, low_pc;
+#ifdef DYNTRANS_BACKEND
 	int simple = 0;
-	struct ia64_vph_page *vph_p;
-	unsigned char *page;
+#endif
 	unsigned char ib[16];
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -91,17 +91,6 @@ X(to_be_translated)
 
 	/*  Read the instruction word from memory:  */
 #if 0
-	if ((addr >> _TOPSHIFT) == 0) {
-		vph_p = cpu->cd.alpha.vph_table0[(addr >>
-		    ALPHA_LEVEL0_SHIFT) & 8191];
-		page = vph_p->host_load[(addr >> ALPHA_LEVEL1_SHIFT) & 8191];
-	} else if ((addr >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[(addr >>
-		    ALPHA_LEVEL0_SHIFT) & 8191];
-		page = vph_p->host_load[(addr >> ALPHA_LEVEL1_SHIFT) & 8191];
-	} else
-		page = NULL;
-
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
 		memcpy(ib, page + (addr & 8191), sizeof(ib));

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.h,v 1.13 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_hppa.h,v 1.14 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -60,14 +60,13 @@ struct hppa_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(hppa)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(hppa,HPPA)
 	VPH32(hppa,HPPA,uint64_t,uint8_t)
+	VPH64(hppa,HPPA,uint8_t)
 };
 
 

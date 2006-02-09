@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.51 2006-01-16 03:34:11 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.52 2006-02-09 22:40:27 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -538,12 +538,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	} else
 		vph_p = cpu->cd.alpha.vph_table0[a];
 #else
-#ifdef DYNTRANS_IA64
-	fatal("IA64 todo\n");
-#else
-	fatal("Neither alpha, ia64, nor 32-bit? 3\n");
+	fatal("Neither alpha nor 32-bit? 3\n");
 	exit(1);
-#endif
 #endif
 #endif
 
@@ -561,12 +557,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		ok = 1;
 	}
 #else
-#ifdef DYNTRANS_IA64
-	fatal("IA64 todo\n");
-#else
-	fatal("Neither alpha, ia64, nor 32-bit? 4\n");
+	fatal("Neither alpha nor 32-bit? 4\n");
 	exit(1);
-#endif
 #endif
 #endif
 
@@ -741,12 +733,8 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	/*  Temporary, to avoid a compiler warning:  */
 	cached_pc = 0;
 	ppp = NULL;
-#ifdef DYNTRANS_IA64
-	fatal("IA64 todo\n");
-#else
-	fatal("Neither alpha, ia64, nor 32-bit? 1\n");
+	fatal("Neither alpha nor 32-bit? 1\n");
 	exit(1);
-#endif
 #endif
 #endif
 
@@ -849,11 +837,7 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 			    cpu->cd.alpha.vph_default_page;
 	}
 #else	/*  !DYNTRANS_ALPHA  */
-#ifdef DYNTRANS_IA64
-	fatal("IA64: blah blah TODO\n");
-#else
-	fatal("Not yet for non-1-level, non-Alpha, non-ia64\n");
-#endif	/*  !DYNTRANS_IA64  */
+	fatal("Not yet for non-1-level, non-Alpha\n");
 #endif	/*  !DYNTRANS_ALPHA  */
 #endif
 }
@@ -1095,12 +1079,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 					vph_p = cpu->cd.alpha.vph_table0[a];
 				vph_p->phys_page[b] = NULL;
 #else	/*  !DYNTRANS_ALPHA  */
-#ifdef DYNTRANS_IA64
-				fatal("IA64: blah yo yo TODO\n");
-#else
-				fatal("Not yet for non-1-level, non-Alpha, "
-				    "non-ia64\n");
-#endif	/*  !DYNTRANS_IA64  */
+				fatal("Not yet for non-1-level, non-Alpha\n");
 #endif	/*  !DYNTRANS_ALPHA  */
 #endif
 			}
@@ -1141,12 +1120,8 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	    " p=0x%x\n", (int)vaddr_page, host_page, writeflag,
 	    (int)paddr_page);  */
 #else	/*  !MODE32  */
-#ifdef DYNTRANS_IA64
-	fatal("IA64 update todo\n");
-#else
-	fatal("Neither 32-bit, IA64, nor Alpha? 2\n");
+	fatal("Neither 32-bit nor Alpha? 2\n");
 	exit(1);
-#endif
 #endif
 #endif
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.h,v 1.9 2005-12-31 15:48:04 debug Exp $
+ *  $Id: cpu_i960.h,v 1.10 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -63,13 +63,11 @@ struct i960_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and 32-bit virtual -> physical ->
+	 *  host address translation:
 	 */
 	DYNTRANS_ITC(i960)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(i960,I960)
 	VPH32(i960,I960,uint32_t,uint8_t)
 };
 

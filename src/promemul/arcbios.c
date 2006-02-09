@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.4 2006-02-02 19:30:15 debug Exp $
+ *  $Id: arcbios.c,v 1.5 2006-02-09 22:40:27 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -451,7 +451,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 	/*
 	 *  TODO: Huh? Why isn't it necessary to convert from arc to sgi types?
 	 *
-	 *  TODO 2: It seems that it _is_ neccessary, but NetBSD's arcdiag
+	 *  TODO 2: It seems that it _is_ necessary, but NetBSD's arcdiag
 	 *  doesn't handle the sgi case separately.
 	 */
 #if 1

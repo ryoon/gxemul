@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.13 2006-01-14 12:52:02 debug Exp $
+ *  $Id: cpu_avr.h,v 1.14 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -92,8 +92,9 @@ struct avr_cpu {
 	/*
 	 *  32-bit virtual -> physical -> host address translation:
 	 *
-	 *  (All of this isn't really needed on AVRs.)
+	 *  (All 32 bits are not really needed on AVRs.)
 	 */
+	VPH_TLBS(avr,AVR)
 	VPH32(avr,AVR,uint32_t,uint8_t)
 };
 

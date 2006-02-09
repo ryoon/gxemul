@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.59 2006-01-14 12:52:02 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.60 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -128,14 +128,13 @@ struct ppc_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(ppc)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(ppc,PPC)
 	VPH32(ppc,PPC,uint64_t,uint8_t)
+	VPH64(ppc,PPC,uint8_t)
 };
 
 

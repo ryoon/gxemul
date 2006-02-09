@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.63 2006-01-24 21:26:02 debug Exp $
+ *  $Id: cpu_arm.h,v 1.64 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -249,13 +249,11 @@ struct arm_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache, and 32-bit virtual -> physical ->
+	 *  host address translation:
 	 */
 	DYNTRANS_ITC(arm)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(arm,ARM)
 	VPH32(arm,ARM,uint32_t,uint8_t)
 
 	/*  ARM specific: */

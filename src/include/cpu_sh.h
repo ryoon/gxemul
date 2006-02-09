@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.11 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_sh.h,v 1.12 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -59,14 +59,13 @@ struct sh_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(sh)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(sh,SH)
 	VPH32(sh,SH,uint64_t,uint8_t)
+	VPH64(sh,SH,uint8_t)
 };
 
 

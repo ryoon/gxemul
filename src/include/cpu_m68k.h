@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.10 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.11 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -63,13 +63,11 @@ struct m68k_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and 32-bit virtual -> physical ->
+	 *  host address translation:
 	 */
 	DYNTRANS_ITC(m68k)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(m68k,M68K)
 	VPH32(m68k,M68K,uint32_t,uint8_t)
 };
 

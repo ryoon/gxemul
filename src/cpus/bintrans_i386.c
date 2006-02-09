@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.2 2005-11-30 16:23:08 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.3 2006-02-09 22:40:26 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -2697,8 +2697,8 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 /*
  *  bintrans_backend_init():
  *
- *  This is neccessary for broken GCC 2.x. (For GCC 3.x, this wouldn't be
- *  neccessary, and the old code would have worked.)
+ *  This is necessary for broken GCC 2.x. (For GCC 3.x, this wouldn't be
+ *  needed; the old code would have worked.)
  */
 static void bintrans_backend_init(void)
 { 

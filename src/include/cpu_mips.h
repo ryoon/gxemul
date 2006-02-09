@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.24 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_mips.h,v 1.25 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -426,14 +426,13 @@ struct mips_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(mips)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(mips,MIPS)
 	VPH32(mips,MIPS,uint64_t,uint8_t)
+	VPH64(mips,MIPS,uint8_t)
 };
 
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.8 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.9 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -45,71 +45,24 @@ struct cpu_family;
 #define	IA64_ADDR_TO_PAGENR(a)		((a) >> (IA64_IC_ENTRIES_SHIFT \
 					+ IA64_INSTR_ALIGNMENT_SHIFT))
 
-/*  TODO  */
-struct ia64_instr_call {
-	void	(*f)(struct cpu *, struct ia64_instr_call *);
-	size_t	arg[IA64_N_IC_ARGS];
-};
+DYNTRANS_MISC_DECLARATIONS(ia64,IA64,uint64_t)
 
-/*  Translation cache struct for each physical page:  */
-struct ia64_tc_physpage {
-	struct ia64_instr_call ics[IA64_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	int		flags;
-	uint64_t	physaddr;
-};
+#define	IA64_MAX_VPH_TLB_ENTRIES		128
 
-
-/*
- *  Virtual->physical->host page entry:
- *
- *	38 + 14 + 12 bits = 64 bits
- *
- *  TODO!!!!
- */
-#define	IA64_LEVEL0_SHIFT		26
-#define	IA64_LEVEL0			8192
-#define	IA64_LEVEL1_SHIFT		12
-#define	IA64_LEVEL1			16384
-struct ia64_vph_page {
-	void		*host_load[IA64_LEVEL1];
-	void		*host_store[IA64_LEVEL1];
-	uint64_t	phys_addr[IA64_LEVEL1];
-	struct ia64_tc_physpage *phys_page[IA64_LEVEL1];
-	int		refcount;
-	struct ia64_vph_page	*next;	/*  Freelist, used if refcount = 0.  */
-};
-
-
-#define	IA64_MAX_VPH_TLB_ENTRIES	128
-struct ia64_vpg_tlb_entry {
-	unsigned char	valid;
-	unsigned char	writeflag;
-	int64_t		timestamp;
-	uint64_t	vaddr_page;
-	uint64_t	paddr_page;
-	unsigned char	*host_page;
-};
+#define	N_IA64_REG	128
 
 struct ia64_cpu {
 	/*  TODO  */
-	uint64_t	r[128];
+	uint64_t	r[N_IA64_REG];
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(ia64)
-
-	/*
-	 *  Virtual -> physical -> host address translation:
-	 */
-	struct ia64_vpg_tlb_entry vph_tlb_entry[IA64_MAX_VPH_TLB_ENTRIES];
-	struct ia64_vph_page	*vph_default_page;
-	struct ia64_vph_page	*vph_next_free_page;
-	struct ia64_vph_table	*vph_next_free_table;
-	struct ia64_vph_page	*vph_table0[IA64_LEVEL0];
-	struct ia64_vph_page	*vph_table0_kernel[IA64_LEVEL0];
+	VPH_TLBS(ia64,IA64)
+	VPH64(ia64,IA64,uint8_t)
 };
 
 

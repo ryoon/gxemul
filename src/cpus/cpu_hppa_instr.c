@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa_instr.c,v 1.5 2005-12-16 21:44:42 debug Exp $
+ *  $Id: cpu_hppa_instr.c,v 1.6 2006-02-09 22:40:27 debug Exp $
  *
  *  HPPA instructions.
  *
@@ -80,7 +80,9 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode;
+#ifdef DYNTRANS_BACKEND
 	int simple = 0;
+#endif
 	/* void (*samepage_function)(struct cpu *, struct hppa_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */

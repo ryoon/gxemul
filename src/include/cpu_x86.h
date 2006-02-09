@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.41 2006-02-05 10:26:36 debug Exp $
+ *  $Id: cpu_x86.h,v 1.42 2006-02-09 22:40:27 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */
@@ -161,14 +161,13 @@ struct x86_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(x86)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(x86,X86)
 	VPH32(x86,X86,uint64_t,uint8_t)
+	VPH64(x86,X86,uint8_t)
 };
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.3 2005-12-16 21:44:42 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.4 2006-02-09 22:40:26 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -2520,9 +2520,9 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 /*
  *  bintrans_backend_init():
  *
- *  This is neccessary for broken 2.95.4 compilers on FreeBSD/Alpha 4.9,
- *  and probably a few others. (For Compaq's CC, and for gcc 3.x, this
- *  wouldn't be neccessary, and the old code would have worked.)
+ *  This is necessary for broken 2.95.4 compilers on FreeBSD/Alpha 4.9, and
+ *  probably a few others. (For Compaq's CC, and for gcc 3.x, this wouldn't be
+ *  needed; the old code would have worked.)
  */
 static void bintrans_backend_init(void)
 { 

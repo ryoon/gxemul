@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.7 2005-12-20 05:02:03 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.8 2006-02-09 22:40:27 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -582,7 +582,9 @@ X(to_be_translated)
 	uint32_t iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
+#ifdef DYNTRANS_BACKEND
 	int simple = 0;
+#endif
 	int main_opcode, rt, rs, rd, sa, s6, x64 = 0;
 	int in_crosspage_delayslot = 0;
 	int delay_slot_danger = 1;

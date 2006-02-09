@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1115 2006-02-09 20:02:58 debug Exp $
+$Id: HISTORY,v 1.1116 2006-02-09 22:40:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2564,3 +2564,5 @@ Changelog for GXemul:
 		loaded.
 		Minor iq80321-related updates.
 20060209	Minor hacks (DEVINIT macro, etc).
+		Preparing for the generalization of the 64-bit dyntrans address
+		translation subsystem.

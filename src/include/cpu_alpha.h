@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.29 2006-01-14 12:52:02 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.30 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -137,7 +137,7 @@ struct alpha_cpu {
 	/*
 	 *  Hardcoded Alpha virtual -> physical -> host address translation:
 	 */
-	struct alpha_vpg_tlb_entry vph_tlb_entry[ALPHA_MAX_VPH_TLB_ENTRIES];
+	VPH_TLBS(alpha,ALPHA)
 	struct alpha_vph_page	*vph_default_page;
 	struct alpha_vph_page	*vph_next_free_page;
 	struct alpha_vph_table	*vph_next_free_table;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.88 2006-01-14 12:51:59 debug Exp $
+ *  $Id: net.c,v 1.89 2006-02-09 22:40:26 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2419,7 +2419,7 @@ struct net *net_init(struct emul *emul, int init_flags,
 
 	net_dumpinfo(net);
 
-	/*  This is neccessary when using the real network:  */
+	/*  This is necessary when using the real network:  */
 	signal(SIGPIPE, SIG_IGN);
 
 	return net;

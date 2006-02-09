@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960_instr.c,v 1.3 2005-12-16 21:44:42 debug Exp $
+ *  $Id: cpu_i960_instr.c,v 1.4 2006-02-09 22:40:27 debug Exp $
  *
  *  Intel i960 instructions.
  *
@@ -79,7 +79,9 @@ X(to_be_translated)
 	uint16_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
+#ifdef DYNTRANS_BACKEND
 	int simple = 0;
+#endif
 	int main_opcode;
 	/* void (*samepage_function)(struct cpu *, struct i960_instr_call *);*/
 

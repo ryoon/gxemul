@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.21 2005-12-31 11:20:47 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.22 2006-02-09 22:40:27 debug Exp $
  */
 
 #include "misc.h"
@@ -119,14 +119,13 @@ struct sparc_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(sparc)
-
-	/*
-	 *  32-bit virtual -> physical -> host address translation:
-	 */
+	VPH_TLBS(sparc,SPARC)
 	VPH32(sparc,SPARC,uint64_t,uint8_t)
+	VPH64(sparc,SPARC,uint8_t)
 };
 
 

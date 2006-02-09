@@ -1,4 +1,4 @@
-$Id: README,v 1.6 2005-12-02 09:11:20 debug Exp $
+$Id: README,v 1.7 2006-02-09 22:40:27 debug Exp $
 
 dev_*:
 	Devices. (Please read 'Emulation of hardware devices' in
@@ -13,7 +13,7 @@ bus_pci.c:
 	PCI bus framework, and some glue code for PCI devices. Example of
 	glue code would be PCI-IDE controllers, which are implemented using
 	dev_wdc plus some PCI configuration registers, which identifies the
-	specific controller (fake, but it works).
+	specific controller (fake, but it usually works).
 
 other files:
 	Misc. stuff.

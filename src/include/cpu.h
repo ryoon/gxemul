@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.61 2006-02-05 10:26:36 debug Exp $
+ *  $Id: cpu.h,v 1.62 2006-02-09 22:40:27 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -91,6 +91,17 @@
 				    struct arch ## _instr_call *, int low_addr);
 
 /*
+ *  Virtual -> physical -> host address translation TLB entries:
+ *  ------------------------------------------------------------
+ *
+ *  Regardless of whether 32-bit or 64-bit address translation is used, the
+ *  same TLB entry structure is used.
+ */
+#define	VPH_TLBS(arch,ARCH)						\
+	struct arch ## _vpg_tlb_entry					\
+	    vph_tlb_entry[ARCH ## _MAX_VPH_TLB_ENTRIES];
+
+/*
  *  32-bit dyntrans emulated Virtual -> physical -> host address translation:
  *  -------------------------------------------------------------------------
  *
@@ -113,17 +124,30 @@
  *  a code translation.
  *
  *  vaddr_to_tlbindex is a virtual address to tlb index hint table.
- *  The tlb hint is one 
+ *  The values in this array are the tlb index plus 1, so a value of, say,
+ *  3 means tlb index 2. A value of 0 would mean a tlb index of -1, which
+ *  is not a valid index. (I.e. no hit.)
  */
 #define	N_VPH32_ENTRIES		1048576
-#define	VPH32(arch,ARCH,paddrtype,tlbindextype)		struct		\
-	arch ## _vpg_tlb_entry	vph_tlb_entry[ARCH ## _MAX_VPH_TLB_ENTRIES];\
+#define	VPH32(arch,ARCH,paddrtype,tlbindextype)				\
 	unsigned char		*host_load[N_VPH32_ENTRIES];		\
 	unsigned char		*host_store[N_VPH32_ENTRIES];		\
 	paddrtype		phys_addr[N_VPH32_ENTRIES];		\
 	struct arch ## _tc_physpage  *phys_page[N_VPH32_ENTRIES];	\
 	uint32_t		phystranslation[N_VPH32_ENTRIES/32];	\
 	tlbindextype		vaddr_to_tlbindex[N_VPH32_ENTRIES];
+
+/*
+ *  64-bit dyntrans emulated Virtual -> physical -> host address translation:
+ *  -------------------------------------------------------------------------
+ *
+ *  Usage: e.g. VPH64(alpha,ALPHA,uint8_t)
+ *           or VPH64(sparc,SPARC,uint16_t)
+ *
+ *  TODO
+ */
+#define	VPH64(arch,ARCH,tlbindextype)			\
+	int dummy;
 
 #include "cpu_alpha.h"
 #include "cpu_arm.h"

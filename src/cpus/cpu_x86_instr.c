@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.4 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.5 2006-02-09 22:55:20 debug Exp $
  *
  *  x86/amd64 instructions.
  *
@@ -82,7 +82,7 @@ X(to_be_translated)
 	unsigned char *page;
 	int main_opcode;
 	unsigned char ib[17];
-	void (*samepage_function)(struct cpu *, struct x86_instr_call *);
+	/* void (*samepage_function)(struct cpu *, struct x86_instr_call *); */
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.x86.cur_ic_page)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.53 2006-02-09 22:43:56 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.54 2006-02-09 22:55:20 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -701,12 +701,11 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 #else
 	uint64_t
 #endif
-	    cached_pc;
+	    cached_pc = cpu->pc;
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
 #ifdef MODE32
 	int index;
-	cached_pc = cpu->pc;
 	index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 	ppp = cpu->cd.DYNTRANS_ARCH.phys_page[index];
 	if (ppp != NULL)
@@ -716,7 +715,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	uint32_t a, b;
 	int kernel = 0;
 	struct alpha_vph_page *vph_p;
-	cached_pc = cpu->pc;
 	a = (cached_pc >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
 	b = (cached_pc >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
 	if ((cached_pc >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
@@ -730,8 +728,8 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 			goto have_it;
 	}
 #else
+	fatal("X1: cached_pc=%016llx\n", (long long)cached_pc);
 	/*  Temporary, to avoid a compiler warning:  */
-	cached_pc = 0;
 	ppp = NULL;
 	fatal("Neither alpha nor 32-bit? 1\n");
 	exit(1);

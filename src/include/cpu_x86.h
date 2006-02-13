@@ -2,7 +2,7 @@
 #define	CPU_X86_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.42 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_x86.h,v 1.43 2006-02-13 04:23:25 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */

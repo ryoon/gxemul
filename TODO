@@ -1,7 +1,8 @@
-$Id: TODO,v 1.203 2006-02-09 22:43:56 debug Exp $
+$Id: TODO,v 1.204 2006-02-15 06:00:49 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
+x) ARM: add ID for "i80321 600MHz rev 2 (XScale core)"
 
 x) More generic out_of_memory error reporting, and check everywhere!
 	Causes:	OpenBSD has low default limits for normal users.
@@ -15,6 +16,10 @@ x) Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
 	Use the debugger's symbolic name stuff. (which will have to be
 	extended soon to support stuff like  "2*x + symbol + y" etc. cool
 	stuff)
+
+x) Heuristics for automagically opening files/disk images, if no command
+	line options are given (except for a filename). (Is this a good
+	thing?)
 
 Dyntrans:
 	TOP Priority:

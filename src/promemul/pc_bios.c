@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.4 2005-12-31 11:20:33 debug Exp $
+ *  $Id: pc_bios.c,v 1.5 2006-02-16 05:57:10 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *

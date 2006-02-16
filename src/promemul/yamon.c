@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.2 2005-12-26 12:32:14 debug Exp $
+ *  $Id: yamon.c,v 1.3 2006-02-16 05:57:10 debug Exp $
  *
  *  YAMON emulation.
  */

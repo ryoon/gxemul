@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.3 2005-12-26 14:14:41 debug Exp $
+ *  $Id: dec_prom.c,v 1.4 2006-02-16 05:57:10 debug Exp $
  *
  *  DECstation PROM emulation.
  */

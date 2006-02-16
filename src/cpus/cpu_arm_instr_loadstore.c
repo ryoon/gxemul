@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_loadstore.c,v 1.19 2005-11-19 18:53:07 debug Exp $
+ *  $Id: cpu_arm_instr_loadstore.c,v 1.20 2006-02-16 19:49:04 debug Exp $
  *
  *
  *  TODO:  Many things...
@@ -53,6 +53,9 @@
  */
 
 
+#if defined(A__SIGNED) && !defined(A__H) && !defined(A__L)
+#define A__LDRD
+#endif
 #if defined(A__SIGNED) && defined(A__H) && !defined(A__L)
 #define A__STRD
 #endif
@@ -76,7 +79,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 	    = (void *)(size_t)ic->arg[1];
 #endif
 
-#ifdef A__STRD
+#if defined(A__STRD) || defined(A__LDRD)
 	unsigned char data[8];
 	const int datalen = 8;
 #else
@@ -120,32 +123,40 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 	    ;
 
-#ifdef A__L
+
+#if defined(A__L) || defined(A__LDRD)
 	/*  Load:  */
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, data, datalen,
 	    MEM_READ, memory_rw_flags)) {
 		/*  load failed, an exception was generated  */
 		return;
 	}
-#ifdef A__B
+#if defined(A__B) && !defined(A__LDRD)
 	reg(ic->arg[2]) =
 #ifdef A__SIGNED
 	    (int32_t)(int8_t)
 #endif
 	    data[0];
 #else
-#ifdef A__H
+#if defined(A__H) && !defined(A__LDRD)
 	reg(ic->arg[2]) =
 #ifdef A__SIGNED
 	    (int32_t)(int16_t)
 #endif
 	    (data[0] + (data[1] << 8));
 #else
+#ifndef A__LDRD
 #ifdef HOST_LITTLE_ENDIAN
 	/*  Nothing.  */
 #else
 	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
 	    (data[2] << 16) + (data[3] << 24);
+#endif
+#else
+	reg(ic->arg[2]) = data[0] + (data[1] << 8) +
+	    (data[2] << 16) + (data[3] << 24);
+	reg(((uint32_t *)ic->arg[2]) + 1) = data[4] + (data[5] << 8) +
+	    (data[6] << 16) + (data[7] << 24);
 #endif
 #endif
 #endif
@@ -195,7 +206,7 @@ void A__NAME__general(struct cpu *cpu, struct arm_instr_call *ic)
  */
 void A__NAME(struct cpu *cpu, struct arm_instr_call *ic)
 {
-#ifdef A__STRD
+#if defined(A__LDRD) || defined(A__STRD)
 	/*  Chicken out, let's do this unoptimized for now:  */
 	A__NAME__general(cpu, ic);
 #else
@@ -435,6 +446,11 @@ void A__NAME_PC__le(struct cpu *cpu, struct arm_instr_call *ic)
 #endif
 
 
+#ifdef A__LDRD
+#undef A__LDRD
+#endif
+
 #ifdef A__STRD
 #undef A__STRD
 #endif
+

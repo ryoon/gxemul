@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1116 2006-02-09 22:40:26 debug Exp $
+$Id: HISTORY,v 1.1117 2006-02-16 19:49:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2566,3 +2566,4 @@ Changelog for GXemul:
 20060209	Minor hacks (DEVINIT macro, etc).
 		Preparing for the generalization of the 64-bit dyntrans address
 		translation subsystem.
+20060216	Adding ARM ldrd (double-register load).

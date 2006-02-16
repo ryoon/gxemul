@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_loadstore.c,v 1.5 2005-11-30 16:23:08 debug Exp $
+ *  $Id: generate_arm_loadstore.c,v 1.6 2006-02-16 19:49:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -181,8 +181,7 @@ int main(int argc, char *argv[])
 		    for (l=0; l<=1; l++) {
 			if (s==0 && h==0)
 				continue;
-			if (l==0 && s==1 && h==0)
-				continue;
+			/*  l=0, s=1, h=0 means LDRD  */
 			/*  l=0, s=1, h=1 means STRD  */
 
 			printf("#define A__NAME__general arm_instr_%s_"
@@ -259,8 +258,6 @@ int main(int argc, char *argv[])
 				printf("\tarm_instr_nop");
 			else if (s==0 && h==0)
 				printf("\tarm_instr_invalid");
-			else if (l==0 && s==1 && h==0)
-				printf("\tarm_instr_invalid");
 			else
 				printf("\tarm_instr_%s_%s_%s_%s_%s_%s_%s%s%s",
 				    l? "load" : "store",
@@ -293,8 +290,6 @@ int main(int argc, char *argv[])
 			if (c == 15)
 				printf("\tarm_instr_nop");
 			else if (s==0 && h==0)
-				printf("\tarm_instr_invalid");
-			else if (l==0 && s==1 && h==0)
 				printf("\tarm_instr_invalid");
 			else
 				printf("\tarm_instr_%s_%s_%s_%s_%s_%s_"

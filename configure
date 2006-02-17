@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.196 2006-02-17 18:38:30 debug Exp $
+#  $Id: configure,v 1.197 2006-02-17 20:27:21 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -49,11 +49,8 @@
 #    o)  which compiler flags to use  (overridden by setting CFLAGS)
 #    o)  X11 flags and libraries  (TODO: should be possible to override)
 #    o)  binary translation (on supported platforms)
-#    o)  prefetch capability  (TODO: this is assumed on Alpha, but not all
-#                              Alphas have it...)
 #
 #  TODO:
-#    o)  do not enable prefetch on Alpha ev4 or ev5, only on pca56 and newer
 #    o)  X11 libs and includes via command line options?
 #
 ###############################################################################
@@ -1221,32 +1218,6 @@ else
 	fi
 fi
 rm -f _test_end*
-
-###############################################################################
-
-#  Prefetch support?
-printf "checking for asm prefetch support... "
-if [ z"`uname -m`" = zalpha ]; then
-	rm -f _alpha_asm_test.c _alpha_asm_test
-	printf 'int main(int argc, char *argv[])
-	 { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y));
-	  return 0; }\n' > _alpha_asm_test.c
-	$CC $CFLAGS -O2 _alpha_asm_test.c -o _alpha_asm_test \
-	    > /dev/null 2> /dev/null
-	if [ -x _alpha_asm_test ]; then
-#		printf "#define HAVE_PREFETCH\n" >> config.h
-		printf "#define PREFETCH(x) asm(\"ldl" >> config.h
-		printf " \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
-		echo "yes"
-		PREFSUP=YES
-	fi
-	rm -f _alpha_asm_test.c _alpha_asm_test
-fi
-if [ z$PREFSUP = z ]; then
-	printf "#define PREFETCH(x) { }\n" >> config.h
-	echo "no"
-fi
-
 
 ###############################################################################
 

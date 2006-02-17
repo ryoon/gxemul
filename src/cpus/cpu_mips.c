@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.16 2006-02-05 10:26:36 debug Exp $
+ *  $Id: cpu_mips.c,v 1.17 2006-02-17 20:27:21 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2159,8 +2159,6 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 	}
 #endif
-
-	PREFETCH(cpu->cd.mips.pc_last_host_4k_page + (cached_pc & 0xfff));
 
 #ifdef HALT_IF_PC_ZERO
 	/*  Halt if PC = 0:  */

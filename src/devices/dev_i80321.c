@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.10 2006-02-17 18:38:30 debug Exp $
+ *  $Id: dev_i80321.c,v 1.11 2006-02-17 20:27:21 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -165,6 +165,7 @@ DEVICE_ACCESS(i80321)
 				tmp &= ~(0xff << ((r+i)*8));
 				tmp |= b << ((r+i)*8);
 			}
+			tmp &= 0xffffffff;  /* needed because << is 32-bit */
 			bus_pci_data_access(cpu, d->pci_bus, &tmp,
 			    sizeof(uint32_t), MEM_WRITE);
 		}
@@ -233,8 +234,8 @@ DEVINIT(i80321)
 	    0x80000000 /*  TODO: pci_portbase  */,
 	    0x80010000 /*  TODO: pci_membase  */,
 	    0 /*  TODO: pci_irqbase  */,
-	    0 /*  TODO: isa_portbase  */,
-	    0 /*  TODO: isa_membase  */,
+	    0x80000000 /*  TODO: isa_portbase  */,
+	    0xc0000000 /*  TODO: isa_membase  */,
 	    0 /*  TODO: isa_irqbase  */);
 
 	memory_device_register(devinit->machine->memory, devinit->name,

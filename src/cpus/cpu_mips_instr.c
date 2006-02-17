@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.8 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.9 2006-02-17 20:27:21 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -633,7 +633,7 @@ X(to_be_translated)
 	/*  Is the instruction in the delay slot known to be safe?  */
 	if ((addr & 0xffc) < 0xffc) {
 		/*  TODO: check the instruction  */
-		/*  delay_slot_danger = 0;  */
+		delay_slot_danger = 0;
 	}
 
 

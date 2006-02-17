@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.59 2006-02-05 10:26:36 debug Exp $
+ *  $Id: bus_pci.c,v 1.60 2006-02-17 20:27:21 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -60,7 +60,7 @@
 extern int verbose;
 
 
-/*  #define debug fatal  */
+#define debug fatal
 
 
 /*
@@ -137,7 +137,7 @@ void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
 
 	/*  Register write:  */
 	if (writeflag == MEM_WRITE) {
-		debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n",
+		debug("[ bus_pci: write to PCI DATA: data = 0x%08llx ]\n",
 		    (long long)idata);
 		if (idata == 0xffffffffULL &&
 		    pci_data->cur_reg >= PCI_MAPREG_START &&
@@ -638,31 +638,26 @@ PCIINIT(gt64260)
 
 PCIINIT(i31244)
 {
-	char tmpstr[100];
+	uint64_t port, memaddr;
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_31244));
 
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
-	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x00);
+	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x33) + 0x00);
 
-	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x2814001e);
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140100);
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
+		char tmpstr[150];
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
 		    pd->pcibus->isa_irqbase + 14);
 		device_add(machine, tmpstr);
 	}
 
-	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
-	    diskimage_exist(machine, 3, DISKIMAGE_IDE)) {
-		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x170),
-		    pd->pcibus->isa_irqbase + 15);
-		device_add(machine, tmpstr);
-	}
+	allocate_device_space(pd, 0x100, 0x100, &port, &memaddr);
 }
 
 PCIINIT(piix3_isa)

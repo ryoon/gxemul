@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.195 2006-02-09 20:02:58 debug Exp $
+#  $Id: configure,v 1.196 2006-02-17 18:38:30 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -650,17 +650,17 @@ if [ -x _testprog ]; then
 		CWARNINGS="$CWARNINGS -msg_disable longlongtype,unusedtop"
 	fi
 
-#	if [ z"$UNSTABLE" = zYES ]; then
-#		printf "checking whether -W -Wno-unused can be used... "
-#		rm -f _testprog
-#		$CC $CFLAGS _testprog.c -o _testprog -Wall -Wall -Wno-unused 2> /dev/null
-#		if [ -x _testprog ]; then
-#			printf "yes\n"
-#			CWARNINGS="$CWARNINGS -W -Wno-unused"
-#		else
-#			printf "no\n"
-#		fi
-#	fi
+	if [ z"$UNSTABLE" = zYES ]; then
+		printf "checking whether -Werror can be used... "
+		rm -f _testprog
+		$CC $CFLAGS $CWARNINGS _testprog.c -o _testprog -Werror 2> /dev/null
+		if [ -x _testprog ]; then
+			printf "yes\n"
+			CWARNINGS="$CWARNINGS -Werror"
+		else
+			printf "no\n"
+		fi
+	fi
 else
 	printf "no\n"
 fi

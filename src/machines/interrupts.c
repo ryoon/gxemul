@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.3 2006-02-05 10:26:36 debug Exp $
+ *  $Id: interrupts.c,v 1.4 2006-02-17 18:38:30 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -959,17 +959,17 @@ void i80321_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 	uint32_t mask = 1 << (irq_nr & 31);
 	if (irq_nr < 32) {
 		if (assrt)
-			m->md_int.i80321_data->status |= mask;
+			cpu->cd.arm.i80321_isrc |= mask;
 		else
-			m->md_int.i80321_data->status &= ~mask;
+			cpu->cd.arm.i80321_isrc &= ~mask;
 	}
 
-#if 1
-	printf("status = %08x  enable = %08x\n",
-	    m->md_int.i80321_data->status, m->md_int.i80321_data->enable);
+#if 0
+	printf("isrc = %08x  inten = %08x\n",
+	    cpu->cd.arm.i80321_isrc, cpu->cd.arm.i80321_inten);
 #endif
 
-	if (m->md_int.i80321_data->status & m->md_int.i80321_data->enable)
+	if (cpu->cd.arm.i80321_isrc & cpu->cd.arm.i80321_inten)
 		cpu_interrupt(m->cpus[0], 65);
 	else
 		cpu_interrupt_ack(m->cpus[0], 65);

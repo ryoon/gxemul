@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.64 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_arm.h,v 1.65 2006-02-17 18:38:30 debug Exp $
  */
 
 #include "misc.h"
@@ -210,8 +210,9 @@ struct arm_cpu {
 	uint32_t		cpar;		/*  CoProcessor Access Reg.  */
 
 	/*  i80321 Coprocessor 6: ICU (Interrupt controller)  */
-	uint32_t		i80321_inten;
+	uint32_t		i80321_inten;	/*  enable  */
 	uint32_t		i80321_isteer;
+	uint32_t		i80321_isrc;	/*  current assertions  */
 	uint32_t		tmr0;
 	uint32_t		tmr1;
 	uint32_t		tcr0;

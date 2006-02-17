@@ -1,9 +1,8 @@
-$Id: TODO,v 1.205 2006-02-16 05:57:09 debug Exp $
+$Id: TODO,v 1.206 2006-02-17 18:38:30 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 x) ARM:
-	o)  ldrd (2-register load)
 	o)  interrupt controller
 	o)  timers
 	o)  add ID for "i80321 600MHz rev 2 (XScale core)"

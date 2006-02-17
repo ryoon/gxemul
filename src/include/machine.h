@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.102 2006-02-05 10:26:36 debug Exp $
+ *  $Id: machine.h,v 1.103 2006-02-17 18:38:30 debug Exp $
  */
 
 #include <sys/types.h>
@@ -249,7 +249,6 @@ struct machine {
 		struct prep_data *prep_data;
 		struct cpc700_data *cpc700_data;
 		struct gc_data *gc_data;
-		struct i80321_data *i80321_data;
 		struct v3_data *v3_data;
 	} md_int;
 

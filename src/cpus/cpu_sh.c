@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.8 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_sh.c,v 1.9 2006-02-17 18:38:30 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -126,7 +126,7 @@ void sh_cpu_dumpinfo(struct cpu *cpu)
 void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
-	uint64_t offset, tmp;
+	uint64_t offset;
 	int i, x = cpu->cpu_id, nregs = cpu->cd.sh.compact? 16 : 64;
 	int bits32 = cpu->cd.sh.bits == 32;
 
@@ -221,10 +221,9 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	uint64_t offset, addr;
+	uint64_t addr;
 	uint16_t iword;
 	int hi4, lo4, lo8, r8, r4;
-	char *symbol, *mnem = "ERROR";
 
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
 		iword = (instr[0] << 8) + instr[1];
@@ -545,10 +544,9 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	uint64_t offset, addr;
+	uint64_t offset;
 	uint32_t iword;
-	int hi6;
-	char *symbol, *mnem = "ERROR";
+	char *symbol;
 
 	if (running)
 		dumpaddr = cpu->pc;

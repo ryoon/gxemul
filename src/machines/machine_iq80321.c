@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.11 2006-02-05 10:26:36 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.12 2006-02-17 18:38:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -43,6 +43,7 @@
 
 MACHINE_SETUP(iq80321)
 {
+	struct i80321_data *i80321_data;
 	struct pci_data *pci;
 
 	/*
@@ -56,11 +57,10 @@ MACHINE_SETUP(iq80321)
 	machine->md_interrupt = i80321_interrupt;
 	cpu->cd.arm.coproc[6] = arm_coproc_i80321_6;
 
-	machine->md_int.i80321_data = device_add(machine,
-	    "i80321 addr=0xffffe000");
-	pci = machine->md_int.i80321_data->pci_bus;
+	i80321_data = device_add(machine, "i80321 addr=0xffffe000");
+	pci = i80321_data->pci_bus;
 
-	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=1");
+	device_add(machine, "ns16550 irq=28 addr=0xfe800000 in_use=1");
 
 #if 0
 	/*  Used by "Redboot":  */

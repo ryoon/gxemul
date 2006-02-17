@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.6 2005-12-31 15:48:33 debug Exp $
+ *  $Id: cpu_x86.c,v 1.7 2006-02-17 18:38:30 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -508,14 +508,14 @@ static uint32_t read_imm_and_print(unsigned char **instrp, uint64_t *ilenp,
 }
 
 
-static uint32_t read_imm(unsigned char **instrp, uint64_t *newpcp,
+uint32_t read_imm(unsigned char **instrp, uint64_t *newpcp,
 	int mode)
 {
 	return read_imm_common(instrp, newpcp, mode, 0);
 }
 
 
-static void print_csip(struct cpu *cpu)
+void print_csip(struct cpu *cpu)
 {
 	fatal("0x%04x:", cpu->cd.x86.s[X86_S_CS]);
 	if (PROTECTED_MODE)
@@ -2429,7 +2429,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
  *
  *  TODO: Level 1 and 2 info.
  */
-static void x86_cpuid(struct cpu *cpu)
+void x86_cpuid(struct cpu *cpu)
 {
 	switch (cpu->cd.x86.r[X86_R_AX]) {
 	/*  Normal CPU id:  */

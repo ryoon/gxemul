@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.21 2006-02-05 10:26:36 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.22 2006-02-17 18:38:30 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -39,6 +39,8 @@
 #include "cpu.h"
 #include "misc.h"
 #include "symbol.h"
+
+#include "i80321reg.h"
 
 
 /*
@@ -296,14 +298,31 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			break;
 		case 4:	if (l_bit)
 				cpu->cd.arm.r[rd] = cpu->cd.arm.i80321_isteer;
-			else
+			else {
 				cpu->cd.arm.i80321_isteer = cpu->cd.arm.r[rd];
+				if (cpu->cd.arm.r[rd] != 0) {
+					fatal("ARM xscale interrupt steering"
+					    " is not yet implemented\n");
+					exit(1);
+				}
+			}
+			break;
+		case 8:	if (l_bit)
+				cpu->cd.arm.r[rd] = cpu->cd.arm.i80321_isrc;
+			else {
+				cpu->cd.arm.i80321_isrc = cpu->cd.arm.r[rd];
+				fatal("TODO: XScale int ack?\n");
+				exit(1);
+			}
 			break;
 		default:goto unknown;
 		}
 		break;
 
-	case 1:	fatal("[ 80321: crm 1: TODO ]\n");
+	case 1:
+/* fatal("TIMER opcode1=%i opcode2=%i crn="
+    "%i crm=%i rd=%i l=%i)\n", opcode1, opcode2, crn, crm, rd, l_bit); */
+
 		switch (crn) {
 		case 0:	/*  tmr0:  */
 			if (l_bit)
@@ -350,8 +369,14 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		case 6:	/*  tisr:  */
 			if (l_bit)
 				cpu->cd.arm.r[rd] = cpu->cd.arm.tisr;
-			else
-				cpu->cd.arm.tisr = cpu->cd.arm.r[rd];
+			else {
+				/*  Writing clears interrupts:  */
+				cpu->cd.arm.tisr &= ~cpu->cd.arm.r[rd];
+				if (!(cpu->cd.arm.tisr & TISR_TMR0))
+					cpu_interrupt_ack(cpu, 9);  /* TMR0 */
+				if (!(cpu->cd.arm.tisr & TISR_TMR1))
+					cpu_interrupt_ack(cpu, 10); /* TMR1 */
+			}
 			break;
 		case 7:	/*  wdtcr:  */
 			if (l_bit)
@@ -413,7 +438,6 @@ void arm_coproc_xscale_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 			break;
 		case 7:	/*  UNIMPLEMENTED!!! TODO  */
 			/*  Possibly some kind of idle or sleep function.  */
-			usleep(1);
 			break;
 		default:goto unknown;
 		}

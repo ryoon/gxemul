@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.9 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_i80321.c,v 1.10 2006-02-17 18:38:30 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -48,12 +48,32 @@
 
 #include "i80321reg.h"
 
-#define	DEV_I80321_LENGTH		VERDE_PMMR_SIZE
+#define	TICK_SHIFT		14
+#define	DEV_I80321_LENGTH	VERDE_PMMR_SIZE
 
 
 /*
- *  dev_i80321_access():
+ *  dev_i80321_tick():
  */
+void dev_i80321_tick(struct cpu *cpu, void *extra)
+{
+	/*  struct i80321_data *d = extra;  */
+	int do_timer_interrupt = 0;
+
+	if (cpu->cd.arm.tmr0 & TMRx_ENABLE) {
+		do_timer_interrupt = 1;
+	}
+
+	if (do_timer_interrupt) {
+		cpu_interrupt(cpu, 9);
+		cpu->cd.arm.tisr |= TISR_TMR0;
+	} else {
+		cpu_interrupt_ack(cpu, 9);
+		cpu->cd.arm.tisr &= ~TISR_TMR0;
+	}
+}
+
+        
 DEVICE_ACCESS(i80321)
 {
 	struct i80321_data *d = extra;
@@ -64,6 +84,13 @@ DEVICE_ACCESS(i80321)
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+	/*  PCI configuration space:  */
+	if (relative_addr >= 0x100 && relative_addr < 0x140) {
+		/*  TODO  */
+		goto ret;
+	}
+
+	/*  MCU registers:  */
 	if (relative_addr >= VERDE_MCU_BASE &&
 	    relative_addr <  VERDE_MCU_BASE + VERDE_MCU_SIZE) {
 		int regnr = (relative_addr - VERDE_MCU_BASE) / sizeof(uint32_t);
@@ -73,9 +100,32 @@ DEVICE_ACCESS(i80321)
 			odata = d->mcu_reg[regnr];
 	}
 
+
 	switch (relative_addr) {
 
 	/*  Address Translation Unit:  */
+	case VERDE_ATU_BASE + ATU_IALR0:
+	case VERDE_ATU_BASE + ATU_IATVR0:
+	case VERDE_ATU_BASE + ATU_IALR1:
+	case VERDE_ATU_BASE + ATU_IALR2:
+	case VERDE_ATU_BASE + ATU_IATVR2:
+	case VERDE_ATU_BASE + ATU_OIOWTVR:
+	case VERDE_ATU_BASE + ATU_OMWTVR0:
+	case VERDE_ATU_BASE + ATU_OUMWTVR0:
+	case VERDE_ATU_BASE + ATU_OMWTVR1:
+	case VERDE_ATU_BASE + ATU_OUMWTVR1:
+		/*  Ignoring these for now. TODO  */
+		break;
+	case VERDE_ATU_BASE + ATU_ATUCR:
+		/*  ATU configuration register; ignored for now. TODO  */
+		break;
+	case VERDE_ATU_BASE + ATU_ATUIMR:
+	case VERDE_ATU_BASE + ATU_IABAR3:
+	case VERDE_ATU_BASE + ATU_IAUBAR3:
+	case VERDE_ATU_BASE + ATU_IALR3:
+	case VERDE_ATU_BASE + ATU_IATVR3:
+		/*  Ignoring these for now. TODO  */
+		break;
 	case VERDE_ATU_BASE + ATU_OCCAR:
 		/*  PCI address  */
 		if (writeflag == MEM_WRITE) {
@@ -119,6 +169,9 @@ DEVICE_ACCESS(i80321)
 			    sizeof(uint32_t), MEM_WRITE);
 		}
 		break;
+	case VERDE_ATU_BASE + ATU_PCIXSR:
+		odata = 0;		/*  TODO  */
+		break;
 
 	/*  Memory Controller Unit:  */
 	case VERDE_MCU_BASE + MCU_SDBR:
@@ -149,6 +202,7 @@ DEVICE_ACCESS(i80321)
 		}
 	}
 
+ret:
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
@@ -186,6 +240,9 @@ DEVINIT(i80321)
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_I80321_LENGTH,
 	    dev_i80321_access, d, DM_DEFAULT, NULL);
+
+	machine_add_tickfunction(devinit->machine,
+	    dev_i80321_tick, d, TICK_SHIFT);
 
 	devinit->return_ptr = d;
 

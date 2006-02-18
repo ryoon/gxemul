@@ -25,11 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_v3.c,v 1.3 2006-01-01 13:17:18 debug Exp $
+ *  $Id: dev_v3.c,v 1.4 2006-02-18 17:55:25 debug Exp $
  *  
  *  V3 Semiconductor PCI controller.
  *
- *  TODO: This doesn't really work yet.
  *  See NetBSD's src/sys/arch/algor/pci/ for details.
  */
 
@@ -46,11 +45,6 @@
 #include "misc.h"
 
 
-/*
- *  dev_v3_pci_access():
- *
- *  Passes semi-direct PCI accesses onto bus_pci.
- */
 DEVICE_ACCESS(v3_pci)
 {
 	uint64_t idata = 0, odata = 0;
@@ -76,6 +70,7 @@ DEVICE_ACCESS(v3_pci)
 	reg  = relative_addr & 0xfc;
 	bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
 
+	/*  Pass semi-direct PCI accesses onto bus_pci:  */
 	bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
 	    &odata : &idata, len, writeflag);
 
@@ -86,11 +81,6 @@ DEVICE_ACCESS(v3_pci)
 }
 
 
-/*
- *  dev_v3_access():
- *
- *  The PCI controller registers.
- */
 DEVICE_ACCESS(v3)
 {
 	struct v3_data *d = extra;
@@ -148,9 +138,6 @@ DEVICE_ACCESS(v3)
 }
 
 
-/*
- *  dev_v3_init():
- */
 struct v3_data *dev_v3_init(struct machine *machine, struct memory *mem)
 {
 	struct v3_data *d;
@@ -181,7 +168,7 @@ struct v3_data *dev_v3_init(struct machine *machine, struct memory *mem)
 		bus_pci_add(machine, d->pci_data, mem, 0, 2, 1, "piix3_ide");
 		break;
 	default:fatal("!\n! WARNING: v3 for non-implemented machine"
-		    " type\n!\n");
+		    " type %i\n!\n", machine->machine_type);
 		exit(1);
 	}
 

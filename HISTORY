@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1119 2006-02-18 13:15:20 debug Exp $
+$Id: HISTORY,v 1.1120 2006-02-18 17:55:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2570,3 +2570,4 @@ Changelog for GXemul:
 20060217	Continuing on various ARM-related stuff.
 20060218	More progress on the ATA/wdc emulation for NetBSD/iq80321.
 		NetBSD/evbarm can now be installed :-)  Updating the docs, etc.
+		Continuing on Algor emulation.

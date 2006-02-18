@@ -1,7 +1,9 @@
-$Id: TODO,v 1.207 2006-02-18 14:02:19 debug Exp $
+$Id: TODO,v 1.208 2006-02-18 17:55:24 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
+Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
+	Add interrupt controller in dev_algor.c.
 
 Dyntrans:
 	TOP Priority:

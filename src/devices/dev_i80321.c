@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.13 2006-02-18 13:42:39 debug Exp $
+ *  $Id: dev_i80321.c,v 1.14 2006-02-18 17:55:25 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -52,9 +52,6 @@
 #define	DEV_I80321_LENGTH	VERDE_PMMR_SIZE
 
 
-/*
- *  dev_i80321_tick():
- */
 void dev_i80321_tick(struct cpu *cpu, void *extra)
 {
 	/*  struct i80321_data *d = extra;  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.4 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_algor.c,v 1.5 2006-02-18 17:55:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,10 +47,10 @@ MACHINE_SETUP(algor)
 {
 	switch (machine->machine_subtype) {
 	case MACHINE_ALGOR_P4032:
-		machine->machine_name = "\"Algor\" P4032";
+		machine->machine_name = "Algor P4032";
 		break;
 	case MACHINE_ALGOR_P5064:
-		machine->machine_name = "\"Algor\" P5064";
+		machine->machine_name = "Algor P5064";
 		break;
 	default:fatal("Unimplemented Algor machine.\n");
 		exit(1);
@@ -61,7 +61,9 @@ MACHINE_SETUP(algor)
 	machine->isa_pic_data.native_irq = 6;
 	/*  Hm. ISA interrupts at 6, but "local" at 2!  */
 
-	bus_isa_init(machine, 0, 0x1d000000, 0x10000000, 8, 24);
+	device_add(machine, "algor addr=0x1ff00000");
+
+	bus_isa_init(machine, BUS_ISA_FDC, 0x1d000000, 0x10000000, 8, 24);
 
 	bus_pci_add(machine, machine->md_int.v3_data->pci_data,
 	    machine->memory, 0, 0, 0, "dec21143");

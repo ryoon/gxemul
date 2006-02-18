@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.123 2006-02-18 14:02:19 debug Exp $
+$Id: guestoses.html,v 1.124 2006-02-18 21:03:10 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1011,7 +1011,7 @@ chmod +w simpleroot28.fs</b>		&lt;--- make sure
 
 </pre>
   <li>Start the emulator with all three (!) disk images:<pre>
-	<b>gxemul -e 3max -A -M64 -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+	<b>gxemul -e 3max -A -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
 
 </pre>
 	(If you add <tt>-X</tt>, you will run with the graphical
@@ -1080,7 +1080,7 @@ root password, and so on.
 Once you have completed the installation procedure, the following command
 will let you boot from the new rootdisk image:
 <pre>
-	<b>gxemul -e 3max -X -M64 -o '-aN' -d obsd_pmax.img -j bsd</b>
+	<b>gxemul -e 3max -X -o '-aN' -d obsd_pmax.img -j bsd</b>
 </pre>
 
 <p>
@@ -1195,7 +1195,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	(On FreeBSD and similar systems, it is called <tt>/dev/cd0c</tt>.
 	Replace that with the name of your CDROM drive, or the name of a
 	.iso image file.) Then, start the emulator like this:<pre>
-        <b>gxemul -XAM64 -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+        <b>gxemul -X -A -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
 </pre>
   <li>Once the first stage of the installation is done (restoring the root
@@ -1203,7 +1203,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	new rootdisk, to continue the installation process.
 	This is done by removing the bootflag ('<tt>b</tt>') from the second
 	diskimage argument:<pre>
-        <b>gxemul -XAM64 -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+        <b>gxemul -X -A -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
 </ol>
@@ -1211,7 +1211,7 @@ The following instructions should let you install Ultrix onto a disk image:
 <p>
 When the installation is completed, the following command should start  
 Ultrix from the harddisk image:<pre>
-        <b>gxemul -XAM64 -e 3max -j vmunix -d rootdisk.img</b>
+        <b>gxemul -X -A -e 3max -j vmunix -d rootdisk.img</b>
 </pre>
 
 <p>Ultrix mostly seems to work with dynamic binary translation (which can
@@ -1233,7 +1233,7 @@ There is also a <b><tt>-z</tt></b> option for supplying names of X11
 displays to use. The following example starts Ultrix on an emulated
 tripple-headed workstation, on three different displays (<tt>remote1:0.0</tt>,
 <tt>localhost:0.0</tt>, and <tt>remote2:0.0</tt>), using no scaledown:<pre>
-        <b>gxemul -M64 -AN -e 3max -jgenvmunix -d rootdisk.img \
+        <b>gxemul -A -N -e 3max -jgenvmunix -d rootdisk.img \
             -XZ3 -z remote1:0.0 -z localhost:0.0 -z remote2:0.0</b>
 </pre>
 
@@ -1416,134 +1416,6 @@ to boot from the installed disk image:<pre>
 
 </pre>
 
-
-
-
-
-<!--
-
-OLD:
-
-<p><br>
-<a name="declinux"></a>
-<h3>Debian GNU/Linux for DECstation:</h3>
-
-<font color="#ef0000">NOTE: This is experimental, and <i>extremely</i>
-unstable. During my tests, even pressing the wrong key during the install
-(for example the wrong cursor key) can cause a kernel Oops. My success
-rate is probably around 50%.</font>
-
-<p><font color="#ef0000">I <i>think</i> this has to do with interrupts
-from the serial controller. Hopefully using the <tt><b>-U</b></tt> command
-line option will reduce the risk for such crashes. (I haven't had time to
-come up with a clean solution to this yet; it feels like a buffer overflow
-in Linux' serial driver for the 5000/200, but it is also likely that it is
-a bug in GXemul.)</font>
-
-<p><font color="#ef0000">Everything runs extremely slow. Even if you have
-a very fast host machine, an install attempt can still take several hours!
-</font>
-
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20041212-debian_1.png"><img src="20041212-debian_1_small.gif"></a>
-&nbsp;&nbsp;&nbsp;
-<a href="20041212-debian_2.png"><img src="20041212-debian_2_small.gif"></a>
-&nbsp;&nbsp;&nbsp;
-<a href="20041213-debian_3.png"><img src="20041213-debian_3_small.gif"></a>
-&nbsp;&nbsp;&nbsp;
-<a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a>
-
-<p>
-The following steps should let you install Debian GNU/Linux for DECstation
-onto a harddisk image:
-
-<p>
-<ol>
-  <li>Create an empty harddisk image, which will be the root disk
-	that Debian installs itself onto:<pre>
-	<b>dd if=/dev/zero of=debian.img bs=1024 count=1 seek=3000000</b>
-
-</pre>
-  <li>Download an install kernel:<pre>
-	<a href="http://ftp.egr.msu.edu/debian/dists/stable/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://ftp.egr.msu.edu/debian/dists/stable/main/</a>
-	    <a href="http://ftp.egr.msu.edu/debian/dists/stable/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
-
-</pre>
-  <p>
-  <li>For a text-mode installation, start the emulator like this:<pre>
-	<b>gxemul -e 3max -U -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
-
-</pre>
-	(If you want to, you can try <b><tt>-X</tt></b> instead of
-	<b><tt>-o 'console=ttyS3'</tt></b> on the command line. This will
-	cause Linux to use the graphical framebuffer. Unfortunately, Linux
-	does not seem to have a driver for the DZ11 keyboard controller yet,
-	so you cannot interact with the system. You will see the penguin in
-	the upper lefthand corner while booting, and nicely rendered Unicode
-	characters, but that's about it.)
-	<p>
-	You need to enter some values during the installation procedure, for
-	example network settings. The following should work:<pre>
-	DHCP:                       No, choose "<b>Configure network manually</b>"
-	IP address:                 <b>10.0.0.1</b>
-	Netmask:                    <b>255.0.0.0</b>
-	Gateway:                    <b>10.0.0.254</b>
-	Name server addresses:      <b>10.0.0.254</b>
-</pre>
-  <li>Once the first phase of the install has finished, the following command
-	should let you boot into Debian, and perform post-install
-	configuration:<pre>
-	<b>gxemul -e 3max -U -M64 -o 'console=ttyS3' -d debian.img</b>
-
-</pre>Note: All these steps take a lot of time, so you will have plenty
-	of time to drink lots of cups of coffee.
-  <p>
-  <li>It seems that there's a problem with getting a login prompt on serial 
-	console (at least when I've done test installs), so when the
-	installation is finished and you're supposed to get a login prompt,
-	you need to press CTRL-C and type <b><tt>quit</tt></b>, and then:
-	download a normal kernel (<i>not</i> a RAMDISK kernel):<pre>
-	<a href="http://ftp.egr.msu.edu/debian/dists/stable/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://ftp.egr.msu.edu/debian/dists/stable/main/installer-mipsel/</a>
-	    <a href="http://ftp.egr.msu.edu/debian/dists/stable/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
-
-</pre>and boot Debian using the following command line:<pre>
-	<b>gxemul -e 3max -U -M64 -o \
-	    'console=ttyS3 root=/dev/sda1 rw init=/bin/sh' \
-	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
-
-</pre>
-	You'll enter single-user mode. You need to add a line to
-	/etc/inittab, to enable logins via serial console.<pre>
-	sh-2.05b# <b>echo 'T3:23:respawn:/sbin/getty -L ttyS3 9600 vt100' >> /etc/inittab</b>
-	sh-2.05b# <b>echo 'ttyS3' >> /etc/securetty</b>
-	sh-2.05b# <b>sync; umount /</b>
-	sh-2.05b# <b>halt</b>
-</pre>
-</ol>
-
-<p>
-The system should now be ready for everyday use.
-
-<p>
-Use this command to boot from the completely installed disk image:<pre>
-	<b>gxemul -e 3max -U -M64 -o 'console=ttyS3' -d debian.img</b>
-
-</pre>
-
-<p>
-[&nbsp;<font color="#ff0000">UPDATE 2005-01-19:</font>&nbsp;
-Kaj-Michael Lang noticed that the current CVS-version of
-<a href="http://www.linux-mips.org/">linux-mips</a> has
-support for keyboards now, on DECstation 5000/200, so it is
-possible to run Debian GNU/Linux with framebuffer/keyboard.
-(Add <b><tt>-X</tt></b> (or <b><tt>-XY2</tt></b>) and remove the
-<b><tt>console=ttyS3</tt></b> option.) He has made a kernel available here:
-<a href="http://home.tal.org/~milang/o2/kernels/">http://home.tal.org/~milang/o2/kernels</a>/<a href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
-It has other problems (ethernet doesn't seem to work, for
-example), but at least it doesn't Oops that often.&nbsp;]
-
---->
 
 
 

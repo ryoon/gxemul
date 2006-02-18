@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.24 2006-02-18 13:42:39 debug Exp $
+ *  $Id: device.c,v 1.25 2006-02-18 21:03:11 debug Exp $
  *
  *  Device registry framework.
  */
@@ -348,8 +348,8 @@ void *device_add(struct machine *machine, char *name_and_params)
 			devinit.in_use = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "name2=", 6) == 0) {
 			char *h = s2 + 6;
-			quoted = 0;
 			size_t len = 0;
+			quoted = 0;
 			while (*h) {
 				if (*h == '\'')
 					quoted = !quoted;

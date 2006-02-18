@@ -1,4 +1,4 @@
-$Id: TODO,v 1.208 2006-02-18 17:55:24 debug Exp $
+$Id: TODO,v 1.209 2006-02-18 21:03:09 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -43,6 +43,9 @@ Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
 	Use the debugger's symbolic name stuff. (which will have to be
 	extended soon to support stuff like  "2*x + symbol + y" etc. cool
 	stuff)
+
+Sprite (guest OS for DECstation emulation)
+	x)  Timing problems during bootup?
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a

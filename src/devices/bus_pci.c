@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.61 2006-02-18 13:15:21 debug Exp $
+ *  $Id: bus_pci.c,v 1.62 2006-02-18 21:03:12 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -60,7 +60,7 @@
 extern int verbose;
 
 
-#define debug fatal
+/* #define debug fatal */
 
 
 /*
@@ -147,7 +147,7 @@ void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
 		}
 		/*  Writes are not really supported yet:  */
 		if (idata != x) {
-			fatal("[ bus_pci: write to PCI DATA: data = 0x%08llx"
+			debug("[ bus_pci: write to PCI DATA: data = 0x%08llx"
 			    " differs from current value 0x%08llx; NOT YET"
 			    " SUPPORTED. bus %i, device %i, function %i (%s)"
 			    " register 0x%02x ]\n", (long long)idata,
@@ -644,7 +644,6 @@ PCIINIT(gt64260)
 PCIINIT(i31244)
 {
 	uint64_t port, memaddr;
-	int irq_line = 0;
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_31244));
@@ -654,14 +653,14 @@ PCIINIT(i31244)
 
 	switch (machine->machine_type) {
 	case MACHINE_IQ80321:
-		irq_line = 1;	/*  S-PCI-X slot uses PCI IRQ A  */
+		/*  S-PCI-X slot uses PCI IRQ A  */
 		break;
 	default:fatal("i31244 in non-implemented machine type %i\n",
 		    machine->machine_type);
 		exit(1);
 	}
 
-	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140000 | (irq_line << 8));
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140100);
 
 	allocate_device_space(pd, 0x400, 0, &port, &memaddr);
 	allocate_device_space(pd, 0x400, 0, &port, &memaddr);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.11 2006-02-17 20:27:21 debug Exp $
+ *  $Id: dev_i80321.c,v 1.12 2006-02-18 13:15:21 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -118,6 +118,16 @@ DEVICE_ACCESS(i80321)
 		break;
 	case VERDE_ATU_BASE + ATU_ATUCR:
 		/*  ATU configuration register; ignored for now. TODO  */
+		break;
+	case VERDE_ATU_BASE + ATU_PCSR:
+		/*  TODO: Temporary hack to allow NetBSD/evbarm to
+		    reboot itself.  Should be rewritten as soon as possible!  */
+		if (writeflag == MEM_WRITE && idata == 0x30) {
+			int j;
+			for (j=0; j<cpu->machine->ncpus; j++)
+				cpu->machine->cpus[j]->running = 0;
+			cpu->machine->exit_without_entering_debugger = 1;
+		}
 		break;
 	case VERDE_ATU_BASE + ATU_ATUIMR:
 	case VERDE_ATU_BASE + ATU_IABAR3:
@@ -224,26 +234,26 @@ DEVINIT(i80321)
 	memset(d, 0, sizeof(struct i80321_data));
 
 	d->mcu_reg[MCU_SDBR / sizeof(uint32_t)] = base = 0xa0000000;
-	d->mcu_reg[MCU_SBR0 / sizeof(uint32_t)] = (base+memsize) >> 25;
-	d->mcu_reg[MCU_SBR1 / sizeof(uint32_t)] = (base+memsize) >> 25;
+	d->mcu_reg[MCU_SBR0 / sizeof(uint32_t)] = (base + memsize) >> 25;
+	d->mcu_reg[MCU_SBR1 / sizeof(uint32_t)] = (base + memsize) >> 25;
 
 	d->pci_bus = bus_pci_init(devinit->machine,
 	    0 /*  TODO: pciirq  */,
-	    0 /*  TODO: pci_io_offset  */,
-	    0 /*  TODO: pci_mem_offset  */,
-	    0x80000000 /*  TODO: pci_portbase  */,
-	    0x80010000 /*  TODO: pci_membase  */,
-	    0 /*  TODO: pci_irqbase  */,
-	    0x80000000 /*  TODO: isa_portbase  */,
-	    0xc0000000 /*  TODO: isa_membase  */,
+	    0x90000000 /*  TODO: pci_io_offset  */,
+	    0x90010000 /*  TODO: pci_mem_offset  */,
+	    0xffff0000 /*  TODO: pci_portbase  */,
+	    0x00000000 /*  TODO: pci_membase  */,
+	    29 /*  TODO: pci_irqbase  */,
+	    0x90000000 /*  TODO: isa_portbase  */,
+	    0x90010000 /*  TODO: isa_membase  */,
 	    0 /*  TODO: isa_irqbase  */);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_I80321_LENGTH,
 	    dev_i80321_access, d, DM_DEFAULT, NULL);
 
-	machine_add_tickfunction(devinit->machine,
-	    dev_i80321_tick, d, TICK_SHIFT);
+	machine_add_tickfunction(devinit->machine, dev_i80321_tick,
+	    d, TICK_SHIFT);
 
 	devinit->return_ptr = d;
 

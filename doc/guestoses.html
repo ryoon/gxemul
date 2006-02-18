@@ -4,13 +4,13 @@
 <table border=0 width=100% bgcolor="#d0d0d0"><tr>
 <td width=100% align=center valign=center><table border=0 width=100%><tr>
 <td align="left" valign=center bgcolor="#d0efff"><font color="#6060e0" size="6">
-<b>Gavare's eXperimental Emulator:&nbsp;&nbsp;&nbsp;</b></font>
+<b>Gavare's eXperimental Emulator:</b></font><br>
 <font color="#000000" size="6"><b>Installing and running "guest OSes"</b>
 </font></td></tr></table></td></tr></table><p>
 
 <!--
 
-$Id: guestoses.html,v 1.121 2006-01-22 12:36:26 debug Exp $
+$Id: guestoses.html,v 1.122 2006-02-18 13:15:20 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -48,15 +48,16 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
-  <li><a href="#netbsdinstall">NetBSD/pmax</a>
+  <li><a href="#netbsdpmaxinstall">NetBSD/pmax</a>
   <li><a href="#netbsdarcinstall">NetBSD/arc</a>
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats</a>
+  <li><a href="#netbsdevbarminstall">NetBSD/evbarm</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep</a>
-  <li><a href="#openbsdinstall">OpenBSD/pmax</a>
+  <li><a href="#openbsdpmaxinstall">OpenBSD/pmax</a>
   <li><a href="#openbsdcatsinstall">OpenBSD/cats</a>
   <li><a href="#ultrixinstall">Ultrix/RISC</a>
   <li><a href="#sprite">Sprite for DECstation</a>
@@ -101,7 +102,7 @@ system, the harddisk image looks and acts like a real disk.
 
 
 <p><br>
-<a name="netbsdinstall"></a>
+<a name="netbsdpmaxinstall"></a>
 <h3>NetBSD/pmax:</h3>
 
 <p>
@@ -425,7 +426,7 @@ image, from an emulated DECstation 3MAX machine:
 </pre>
   <p>
   <li>Install NetBSD/pmax 3.0 according to instructions
-	<a href="#netbsdinstall">further up on this page</a>.
+	<a href="#netbsdpmaxinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
 	<b>gxemul -e3max -A -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
@@ -490,7 +491,7 @@ image, from an emulated DECstation 3MAX machine:
 <p>
 <ol>
   <li>Install NetBSD/pmax 3.0 according to instructions
-	<a href="#netbsdinstall">further up on this page</a>.
+	<a href="#netbsdpmaxinstall">further up on this page</a>.
   <p>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD onto:<pre>
@@ -581,7 +582,7 @@ time consuming, but necessary:
 <ol>
   <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
 	This needs to have a 750 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdinstall">Install NetBSD/pmax 3.0 from CDROM</a>.
+	<a href="#netbsdpmaxinstall">Install NetBSD/pmax 3.0 from CDROM</a>.
 	(Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
@@ -791,6 +792,79 @@ Use the following command line to boot the emulated CATS machine:<pre>
 
 
 
+
+<p><br>
+<a name="netbsdevbarminstall"></a>
+<h3>NetBSD/evbarm:</h3>
+
+<a href="http://www.netbsd.org/Ports/evbarm/">NetBSD/evbarm</a> can
+run in GXemul on an emulated IQ80321 evaluation board.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20060218-netbsd-evbarm.png"><img src="20060218-netbsd-evbarm_small.png"></a>
+
+<p>It is tricky to install, because there is (as far as I know) no INSTALL
+kernel. One way to install the NetBSD/evbarm distribution onto a disk
+image is to install the files using another (emulated) machine.
+
+<p>The following instructions will let you install NetBSD/evbarm onto a disk 
+image, from an emulated CATS machine:
+
+<p>
+<ol>
+  <li>Install NetBSD/cats 3.0 according to instructions
+	<a href="#netbsdcatsinstall">further up on this page</a>.
+  <p>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_iq80321.img bs=1024 count=1 seek=999000</b>
+
+</pre>
+  <li>Download an IQ80321 kernel with wdc support, and the 2.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbarm/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbarm/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbarm/binary/kernel/netbsd-wd0-IQ80321.gz">netbsd-wd0-IQ80321.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbarmcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbarmcd.iso</a>
+
+</pre>
+  <p>
+  <li>The first step is to copy the .tgz files we want onto the CATS
+	machine's harddisk. Start the CATS machine like this:<pre>
+	<b>gxemul -XEcats -d nbsd_cats.img -d evbarmcd.iso netbsd.aout-GENERIC.gz</b>
+
+</pre>and execute the following commands as <tt>root</tt>:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>mount /dev/cd0a /mnt; cd /root; cp /mnt/evbarm/binary/sets/[bcegmt]* .
+sync; halt</b>
+</pre></td></tr></table>
+  <p>
+  <li>Now let's extract the files onto the IQ80321's disk image. Start the 
+	CATS machine again, with the following command line:<pre>
+	<b>gxemul -XEcats -d nbsd_cats.img -d nbsd_iq80321.img netbsd.aout-GENERIC.gz</b>
+
+</pre>and execute the following commands as <tt>root</tt>:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>disklabel -I -i wd1</b>
+    (enter suitable commands, e.g. <i>a, 4.2BSD, 1c, 750M, b,
+     swap, a, 200M, P, W, y, Q</i>)
+<b>newfs /dev/wd1a; mount /dev/wd1a /mnt; cd /mnt; sh
+for a in /root/[bcegmt]*.tgz; do echo $a; tar zxfp $a; done
+exit
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES &gt;&gt; rc.conf
+echo "/dev/wd0a / ffs rw 1 1" &gt; fstab
+echo "/dev/wd0b none swap sw 0 0" &gt;&gt; fstab
+cd /; umount /mnt; sync; halt</b>
+</pre></td></tr></table>
+</ol>
+
+<p>You should now be able to boot NetBSD/evbarm using this command:<pre>
+	<b>gxemul -xEiq80321 -d nbsd_iq80321.img netbsd-wd0-IQ80321.gz</b>
+</pre>
+
+
+
+
+
+
 <p><br>
 <a name="netbsdprepinstall"></a>
 <h3>NetBSD/prep:</h3>
@@ -885,12 +959,12 @@ system type, and init path.
 
 
 <p><br>
-<a name="openbsdinstall"></a>
+<a name="openbsdpmaxinstall"></a>
 <h3>OpenBSD/pmax:</h3>
 
 Installing <a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a> is
 a bit harder than installing NetBSD/pmax. You should first read the <a
-href="#netbsdinstall">section above</a> on how to install NetBSD/pmax,
+href="#netbsdpmaxinstall">section above</a> on how to install NetBSD/pmax,
 before continuing here. If you have never installed OpenBSD on any
 architecture, then you need a great deal of patience to do this. If, on
 the other hand you are used to installing OpenBSD, then this should be no
@@ -1651,7 +1725,7 @@ client. Performing this setup is quite time consuming, but necessary:
 <ol>
   <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
 	This needs to have a 800 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdinstall">Install NetBSD/pmax 3.0 from CDROM</a>.
+	<a href="#netbsdpmaxinstall">Install NetBSD/pmax 3.0 from CDROM</a>.
 	(Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
@@ -1943,7 +2017,8 @@ fdisk and mke2fs, which are useful for creating Linux paritions on disk images.
 <h3>NetBSD/netwinder:</h3>
 
 <a href="http://www.netbsd.org/Ports/netwinder/">NetBSD/netwinder</a>
-could possibly run in GXemul. <font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
+could possibly run in GXemul.
+<font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
 
 <p>It is tricky to install, because there is (as far as I know) no INSTALL
 kernel. One way to install the NetBSD/netwinder distribution onto a disk
@@ -1956,7 +2031,7 @@ distribution onto a disk image, from an emulated DECstation 3MAX machine:
 <p>
 <ol>
   <li>Install NetBSD/pmax 3.0 according to instructions
-	<a href="#netbsdinstall">further up on this page</a>.
+	<a href="#netbsdpmaxinstall">further up on this page</a>.
   <p>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD onto:<pre>

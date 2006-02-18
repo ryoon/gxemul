@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.62 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_wdc.c,v 1.63 2006-02-18 13:15:21 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -934,13 +934,20 @@ DEVINIT(wdc)
 
 	alt_status_addr = devinit->addr + 0x206;
 
-	/*  Special hack for macppc:  */
-	if (devinit->machine->machine_type == MACHINE_MACPPC)
+	/*  Special hacks for individual machines:  */
+	switch (devinit->machine->machine_type) {
+	case MACHINE_MACPPC:
 		alt_status_addr = devinit->addr + 0x160;
-
-	/*  Special hack for pcic/hpcmips:  TODO: Fix  */
-	if (devinit->addr == 0x14000180)
-		alt_status_addr = 0x14000386;
+		break;
+	case MACHINE_HPCMIPS:
+		/*  TODO: Fix  */
+		if (devinit->addr == 0x14000180)
+			alt_status_addr = 0x14000386;
+		break;
+	case MACHINE_IQ80321:
+		alt_status_addr = devinit->addr + 0x402;
+		break;
+	}
 
 	/*  Get disk geometries:  */
 	for (i=0; i<2; i++)

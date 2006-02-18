@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.28 2006-01-16 01:45:50 debug Exp $
+ *  $Id: bus_pci.h,v 1.29 2006-02-18 13:15:21 debug Exp $
  */
 
 #include "misc.h"
@@ -86,6 +86,7 @@ struct pci_device {
 	int			bus, device, function;
 	unsigned char		cfg_mem[PCI_CFG_MEM_SIZE];
 	unsigned char		cfg_mem_size[PCI_CFG_MEM_SIZE];
+	int			cur_mapreg_offset;
 };
 
 #define	PCIINIT(name)	void pciinit_ ## name(struct machine *machine,	\

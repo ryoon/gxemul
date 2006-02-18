@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.60 2006-02-17 20:27:21 debug Exp $
+ *  $Id: bus_pci.c,v 1.61 2006-02-18 13:15:21 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -283,8 +283,11 @@ static void allocate_device_space(struct pci_device *pd,
 	if (portsize != 0) {
 		port = ((port - 1) | (portsize - 1)) + 1;
 		pd->pcibus->cur_pci_portbase = port;
-		PCI_SET_DATA(PCI_MAPREG_START, port | PCI_MAPREG_TYPE_IO);
-		PCI_SET_DATA_SIZE(PCI_MAPREG_START, portsize - 1);
+		PCI_SET_DATA(PCI_MAPREG_START + pd->cur_mapreg_offset,
+		    port | PCI_MAPREG_TYPE_IO);
+		PCI_SET_DATA_SIZE(PCI_MAPREG_START + pd->cur_mapreg_offset,
+		    portsize - 1);
+		pd->cur_mapreg_offset += sizeof(uint32_t);
 	}
 
 	/*  Calculate an aligned starting memory location:  */
@@ -292,8 +295,10 @@ static void allocate_device_space(struct pci_device *pd,
 	if (memsize != 0) {
 		mem = ((mem - 1) | (memsize - 1)) + 1;
 		pd->pcibus->cur_pci_membase = mem;
-		PCI_SET_DATA(PCI_MAPREG_START + 0x04, mem);
-		PCI_SET_DATA_SIZE(PCI_MAPREG_START + 0x04, memsize - 1);
+		PCI_SET_DATA(PCI_MAPREG_START + pd->cur_mapreg_offset, mem);
+		PCI_SET_DATA_SIZE(PCI_MAPREG_START + pd->cur_mapreg_offset,
+		    memsize - 1);
+		pd->cur_mapreg_offset += sizeof(uint32_t);
 	}
 
 	*portp = port + pd->pcibus->pci_actual_io_offset;
@@ -639,6 +644,7 @@ PCIINIT(gt64260)
 PCIINIT(i31244)
 {
 	uint64_t port, memaddr;
+	int irq_line = 0;
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_31244));
@@ -646,18 +652,29 @@ PCIINIT(i31244)
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x33) + 0x00);
 
-	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140100);
+	switch (machine->machine_type) {
+	case MACHINE_IQ80321:
+		irq_line = 1;	/*  S-PCI-X slot uses PCI IRQ A  */
+		break;
+	default:fatal("i31244 in non-implemented machine type %i\n",
+		    machine->machine_type);
+		exit(1);
+	}
 
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140000 | (irq_line << 8));
+
+	allocate_device_space(pd, 0x400, 0, &port, &memaddr);
+	allocate_device_space(pd, 0x400, 0, &port, &memaddr);
+
+	/*  PCI IDE using dev_wdc:  */
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		char tmpstr[150];
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
-		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
-		    pd->pcibus->isa_irqbase + 14);
+		    (long long)(pd->pcibus->pci_actual_io_offset + 0),
+		    pd->pcibus->pci_irqbase + 0);
 		device_add(machine, tmpstr);
 	}
-
-	allocate_device_space(pd, 0x100, 0x100, &port, &memaddr);
 }
 
 PCIINIT(piix3_isa)

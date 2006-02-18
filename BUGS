@@ -1,4 +1,4 @@
-$Id: BUGS,v 1.40 2006-01-06 13:03:53 debug Exp $
+$Id: BUGS,v 1.41 2006-02-18 13:15:20 debug Exp $
 
 If you experience a CRASH, then please run gdb on the core dump, do a back
 trace, and send it to me.
@@ -16,9 +16,6 @@ Some of the known bugs are:
       a buffer overflow in the serial driver. (Another thing that gives weight
       to this theory is that the serial driver in Linux is still being
       developed.)  But this is just a guess.
-
-  x)  Hardware device ticks are done at cycle specific intervals, not
-      instruction intervals, so sometimes a fraction of a cycle can be "lost".
 
   x)  Binary-translated 64-bit stuff checks to see if the top 32 bits are
       all zeroes or all ones, and then uses 32-bit tables and such. This

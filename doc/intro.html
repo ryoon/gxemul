@@ -4,13 +4,13 @@
 <table border=0 width=100% bgcolor="#d0d0d0"><tr>
 <td width=100% align=center valign=center><table border=0 width=100%><tr>
 <td align="left" valign=center bgcolor="#d0efff"><font color="#6060e0" size="6">
-<b>Gavare's eXperimental Emulator:&nbsp;&nbsp;&nbsp;</b></font>
+<b>Gavare's eXperimental Emulator:</b></font><br>
 <font color="#000000" size="6"><b>Introduction</b>
 </font></td></tr></table></td></tr></table><p>
 
 <!--
 
-$Id: intro.html,v 1.71 2006-01-11 05:55:59 debug Exp $
+$Id: intro.html,v 1.72 2006-02-18 13:15:21 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -80,9 +80,8 @@ complaining too much. Still, the emulator could be of interest for
 academic research and experiments, such as when learning how to write
 operating system code.
 
-<p>The emulator is written in C, does not depend on third-party libraries
-(except X11, but that is optional), and should compile and run on most
-Unix-like systems.
+<p>The emulator is written in C, does not depend on third-party libraries,
+and should compile and run on most 64-bit and 32-bit Unix-like systems.
 
 <p>The emulator contains code which tries to emulate the workings of CPUs
 and surrounding hardware found in real machines, but it does not contain
@@ -139,13 +138,6 @@ course, to let it remain open source and simply supply the source code.
 under a different license (e.g. the GPL), then contact me and I might 
 re-license/dual-license files on a case-by-case basis.
 
-<p>(If a stable, unmodified release of GXemul is packaged into binary form,
-and it is clear which version of GXemul was used to build the package, 
-then it can be argued that the source code is available, just not in that 
-specific package. Common sense should be used in this case, and not 
-pedanticism.)
-
-
 
 
 
@@ -160,8 +152,9 @@ Uncompress the .tar.gz distribution file, and run
 	$ <b>make</b>
 </pre>
 
-<p>This should work on most Unix-like systems. If it doesn't, then
-mail me a bug report.
+<p>This should work on most Unix-like systems. GXemul does not require any 
+specific libraries to build, however, if you build on a system which does 
+not have X11 libraries installed, some functionality will be lost.
 
 <p>The emulator's performance is highly dependent on both runtime settings
 and on compiler settings, so you might want to experiment with different

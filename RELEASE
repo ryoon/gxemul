@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.172 2006-01-30 03:24:43 debug Exp $
+$Id: RELEASE,v 1.173 2006-02-18 13:15:20 debug Exp $
 
 I'm working on post-0.3.7.
 
@@ -45,6 +45,7 @@ the documentation.
     NetBSD/cats 3.0                    CATS (ARM)
     OpenBSD/cats 3.8                   CATS (ARM)
     NetBSD/prep 2.1                    PReP (PowerPC Reference Platform)
+    NetBSD/evbarm 2.1                  IQ80321 (ARM)
 
 Some of these guest operating systems are easier to install and run than
 others. The best supported guest operating systems are probably NetBSD/pmax,
@@ -56,9 +57,10 @@ emulator, it does not simulate things smaller than an instruction. What this
 means is that pipe-line stalls, penalties caused by branch-prediction misses
 or cache misses, and other micro-architectural effects are not simulated.
 
-User-visible change between release 0.3.7 and 0.3.X include:
+The user-visible changes between release 0.3.7 and 0.3.X include:
 
-    o)	...
+    o)	The IQ80321 machine mode is now working well enough to allow
+	NetBSD/evbarm to run from a disk image.
 
 There have also been lots of other changes, too many and small to mention here.
 

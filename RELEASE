@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.175 2006-02-18 15:18:15 debug Exp $
+$Id: RELEASE,v 1.176 2006-02-18 19:05:58 debug Exp $
 I'm working on what will become 0.3.8.
 -------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 The user-visible changes between release 0.3.7 and 0.3.8 include:
 
     o)	The IQ80321 (Xscale) machine mode is now working well enough to
-	allow NetBSD/evbarm 2.1 to run from a disk image.
+	run NetBSD/evbarm 2.1.
 
     o)	Faster framebuffer output in some situations.
 

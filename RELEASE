@@ -1,10 +1,8 @@
-$Id: RELEASE,v 1.174 2006-02-18 14:02:19 debug Exp $
-
-I'm working on post-0.3.7.
-
+$Id: RELEASE,v 1.175 2006-02-18 15:18:15 debug Exp $
+I'm working on what will become 0.3.8.
 -------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.X
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.8
 ================================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -15,54 +13,30 @@ emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-MIPS processors are emulated using either a simple binary translation 
-layer (recompilation into native code), which is used on Alpha and i386 
-hosts, or by traditional interpretation (very very slow, but works on any 
-host platform).
+The documentation lists the machines and guest operating systems that can 
+be regarded as "working" in GXemul. The best supported guest operating 
+systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
-ARM and PowerPC processors are emulated using a newer dynamic translation 
-system. Performance is somewhere between traditional interpretation and 
-recompilation into native code. However, the dynamic translation system 
-used in GXemul does NOT generate native code, and thus doesn't require 
-platform-specific back-ends. In plain English, this means that the 
-dyntrans system works on any host platform.
+The user-visible changes between release 0.3.7 and 0.3.8 include:
 
-I have verified that the following "guest" operating systems can run inside
-the emulator. Instructions on how to install and run these can be found in
-the documentation.
+    o)	The IQ80321 (Xscale) machine mode is now working well enough to
+	allow NetBSD/evbarm 2.1 to run from a disk image.
 
-    Guest operating system             Emulated machine
-    ----------------------             ----------------
-    NetBSD/pmax 3.0 (and 1.6.2)        DECstation 5000/200
-    OpenBSD/pmax 2.8-BETA              DECstation 5000/200
-    Ultrix 4.2-4.5                     DECstation 5000/200
-    Sprite demo harddisk image         DECstation 5000/200
-    Debian GNU/Linux for DECstation    DECstation 5000/200
-    Redhat Linux 7.1 for mips          DECstation 5000/200
-    NetBSD/arc 1.6.2                   Acer PICA-61
-    NetBSD/hpcmips 3.0                 NEC MobilePro 770, 780, 800, 880
-    NetBSD/cobalt 2.1                  Cobalt
-    NetBSD/evbmips 2.1                 Malta 5Kc/4Kc evaluation board
-    NetBSD/sgimips 2.1                 SGI O2 ("IP32")
-    NetBSD/cats 3.0                    CATS (ARM)
-    OpenBSD/cats 3.8                   CATS (ARM)
-    NetBSD/prep 2.1                    PReP (PowerPC Reference Platform)
-    NetBSD/evbarm 2.1                  IQ80321 (ARM)
+    o)	Faster framebuffer output in some situations.
 
-Some of these guest operating systems are easier to install and run than
-others. The best supported guest operating systems are probably NetBSD/pmax,
-NetBSD/cats and OpenBSD/cats.
+Source code related changes include:
 
-The emulator can also be used in other experiments; it does not have to run
-entire guest operating systems. However, as GXemul is an instruction-level
-emulator, it does not simulate things smaller than an instruction. What this
-means is that pipe-line stalls, penalties caused by branch-prediction misses
-or cache misses, and other micro-architectural effects are not simulated.
+    o)	I've finally begun to reimplement the MIPS emulation mode using the
+	new dyntrans system. It will be quite some time until it can run
+	anything, but things are moving in the right direction.
 
-The user-visible changes between release 0.3.7 and 0.3.X include:
+    o)	Some changes to the concepts of input-only, output-only, and
+	input-output consoles.
 
-    o)	The IQ80321 machine mode is now working well enough to allow
-	NetBSD/evbarm to run from a disk image.
+    o)	Some more clean-up of PCI bus concepts.
+
+    o)	Machine definitions have been moved out of src/machines.c, and into
+	individual files in a new sub-directory (src/machines/).
 
 There have also been lots of other changes, too many and small to mention here.
 
@@ -79,11 +53,8 @@ Files included in this release are:
   experiments                 Experimental code. (Usually not needed.)
   src                         Source code.
 
-To build the emulator, run the ./configure script, and then run make.
-
-Building the emulator should work on most Unix-like systems. (One system which
-is specifically known to NOT work is Ultrix/RISC inside the emulator; Ultrix
-chokes on the configure script and the default cc in Ultrix doesn't work.)
+To build the emulator, run the ./configure script, and then run make. This 
+should work on most Unix-like systems.
 
 Regarding files in the src/include/ directory: only some of these are written
 by me, the rest are from other sources (such as NetBSD). The license text says

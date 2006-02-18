@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.71 2006-02-18 13:15:21 debug Exp $
+$Id: technical.html,v 1.72 2006-02-18 15:18:15 debug Exp $
 
 Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 
@@ -108,11 +108,13 @@ different kinds of emulation, so these might change in the future.)
 	line option.)
   <p>
   <li><b>All other modes:</b><br>
-	These use a kind of dynamic translation system. (This system does
-	not use host-specific backends, so it is not "recompilation" or
-	anything like that.) Speed is slower than real binary translation,
-	but faster than traditional interpretation, and with some tricks
-	it will hopefully still give reasonable speed. The ARM and PowerPC
+	These use a kind of dynamic translation system. This system does
+	not recompile anything into native code, it only uses tables of
+	pointers to functions written in (sometimes machine-generated) C
+	code. Speed is lower than what can be achieved using real binary
+	translation into native code, but higher than when traditional
+	interpretation is used. With some tricks, it will hopefully still
+	give reasonable speed. The ARM and PowerPC
 	emulation modes use this kind of translation.
 </ul>
 
@@ -330,7 +332,7 @@ fragmentation issue mentioned above.
 
 Each file called <tt>dev_*.c</tt> in the <tt>src/device/</tt> directory is
 responsible for one hardware device. These are used from
-<tt>src/machine.c</tt>, when initializing which hardware a particular
+<tt>src/machines/machine_*.c</tt>, when initializing which hardware a particular
 machine model will be using, or when adding devices to a machine using the
 <tt>device()</tt> command in configuration files.
 
@@ -345,10 +347,7 @@ actually compile and run.)
   <li>A <tt>devinit</tt> function in <tt>src/devices/dev_foo.c</tt>. It
 	would typically look something like this:
 <pre>
-	/*
-	 *  devinit_foo():
-	 */
-	int devinit_foo(struct devinit *devinit)
+	DEVINIT(foo)
 	{
 	        struct foo_data *d = malloc(sizeof(struct foo_data));
 
@@ -356,7 +355,7 @@ actually compile and run.)
 	                fprintf(stderr, "out of memory\n");
 	                exit(1);
 	        }
-	        memset(d, 0, sizeof(struct foon_data));
+	        memset(d, 0, sizeof(struct foo_data));
 
 		/*
 		 *  Set up stuff here, for example fill d with useful
@@ -380,6 +379,11 @@ actually compile and run.)
 	}       
 </pre><br>
 
+	<p><tt>DEVINIT(foo)</tt> is defined as <tt>int devinit_foo(struct devinit *devinit)</tt>,
+	and the <tt>devinit</tt> argument contains everything that the device driver's
+	initialization function needs.
+
+  <p>
   <li>At the top of <tt>dev_foo.c</tt>, the <tt>foo_data</tt> struct
 	should be defined.
 <pre>

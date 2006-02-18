@@ -1,10 +1,8 @@
-$Id: README,v 1.94 2006-02-18 14:02:19 debug Exp $
-
-I'm working on post-0.3.7.
-
+$Id: README,v 1.95 2006-02-18 15:18:14 debug Exp $
+I'm working on what will become 0.3.8.
 ------------------------------------------------------------------------------
 
-Gavare's eXperimental Emulator   --   GXemul 0.3.X
+Gavare's eXperimental Emulator   --   GXemul 0.3.8
 ==================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -38,7 +36,7 @@ To compile, type './configure' and then 'make'. This should work on most
 Unix-like systems. If not, then please mail me a bug report.
 
 If you are impatient, and want to try out running a guest operating system 
-inside GXemul, please read this:  doc/guestoses.html#netbsdinstall
+inside GXemul, read this:  doc/guestoses.html#netbsdcatsinstall
 
 If you want to use GXemul for experimenting with code of your own, 
 then I suggest you compile a Hello World program according to the tips 

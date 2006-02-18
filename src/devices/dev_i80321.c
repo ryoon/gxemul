@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_i80321.c,v 1.12 2006-02-18 13:15:21 debug Exp $
+ *  $Id: dev_i80321.c,v 1.13 2006-02-18 13:42:39 debug Exp $
  *
  *  Intel i80321 (ARM) core functionality.
  *
@@ -48,7 +48,7 @@
 
 #include "i80321reg.h"
 
-#define	TICK_SHIFT		14
+#define	TICK_SHIFT		20
 #define	DEV_I80321_LENGTH	VERDE_PMMR_SIZE
 
 

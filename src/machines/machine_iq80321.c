@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.14 2006-02-18 13:15:21 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.15 2006-02-18 13:42:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -60,7 +60,8 @@ MACHINE_SETUP(iq80321)
 	i80321_data = device_add(machine, "i80321 addr=0xffffe000");
 	pci = i80321_data->pci_bus;
 
-	device_add(machine, "ns16550 irq=28 addr=0xfe800000 name2=console");
+	device_add(machine, "ns16550 irq=28 addr=0xfe800000 "
+	    "name2='serial console'");
 
 	/*  0xa0000000 = physical ram, 0xc0000000 = uncached  */
 	dev_ram_init(machine, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);

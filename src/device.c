@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.23 2006-01-14 12:51:58 debug Exp $
+ *  $Id: device.c,v 1.24 2006-02-18 13:42:39 debug Exp $
  *
  *  Device registry framework.
  */
@@ -264,6 +264,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 	struct devinit devinit;
 	char *s2, *s3;
 	size_t len;
+	int quoted;
 
 	memset(&devinit, 0, sizeof(struct devinit));
 	devinit.machine = machine;
@@ -347,15 +348,24 @@ void *device_add(struct machine *machine, char *name_and_params)
 			devinit.in_use = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "name2=", 6) == 0) {
 			char *h = s2 + 6;
+			quoted = 0;
 			size_t len = 0;
-			while (*h && *h != ' ')
+			while (*h) {
+				if (*h == '\'')
+					quoted = !quoted;
 				h++, len++;
+				if (!quoted && *h == ' ')
+					break;
+			}
 			devinit.name2 = malloc(len + 1);
 			if (devinit.name2 == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			snprintf(devinit.name2, len + 1, s2 + 6);
+			h = s2 + 6;
+			if (*h == '\'')
+				len -= 2, h++;
+			snprintf(devinit.name2, len + 1, h);
 		} else {
 			fatal("unknown param: %s\n", s2);
 			if (device_exit_on_error)
@@ -366,8 +376,13 @@ void *device_add(struct machine *machine, char *name_and_params)
 
 		/*  skip to the next param:  */
 		s2 = s3;
-		while (*s2 != '\0' && *s2 != ' ' && *s2 != ',' && *s2 != ';')
+		quoted = 0;
+		while (*s2 != '\0' && (*s2 != ' ' || quoted) &&
+		    *s2 != ',' && *s2 != ';') {
+			if (*s2 == '\'')
+				quoted = !quoted;
 			s2 ++;
+		}
 	}
 
 

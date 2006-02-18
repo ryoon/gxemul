@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.104 2006-02-17 20:27:21 debug Exp $
+ *  $Id: machine.h,v 1.105 2006-02-18 13:42:39 debug Exp $
  */
 
 #include <sys/types.h>
@@ -100,6 +100,7 @@ struct machine {
 	int	machine_type;		/*  MACHINE_PMAX, ..  */
 	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
 
+	/*  Name set by code in src/machines/machine_*.c:  */
 	char	*machine_name;
 
 	int	stable;			/*  startup warning for non-stable

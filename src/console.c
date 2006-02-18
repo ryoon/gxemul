@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.14 2006-01-14 12:51:58 debug Exp $
+ *  $Id: console.c,v 1.15 2006-02-18 13:42:38 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -218,9 +218,10 @@ static void start_xterm(int handle)
 	a[1] = "-geometry";
 	a[2] = "80x25";
 	a[3] = "-title";
-	mlen = strlen(console_handles[handle].name) + 30;
+	mlen = strlen(console_handles[handle].name) +
+	    strlen(console_handles[handle].machine_name) + 30;
 	a[4] = malloc(mlen);
-	snprintf(a[4], mlen, "GXemul: %s [%s]",
+	snprintf(a[4], mlen, "GXemul: %s %s",
 	    console_handles[handle].machine_name,
 	    console_handles[handle].name);
 	a[5] = "-e";
@@ -711,7 +712,7 @@ int console_start_slave(struct machine *machine, char *consolename,
 		chp->outputonly = 1;
 		chp->in_use_for_input = 0;
 	}
-	chp->machine_name = strdup(machine->name);
+	chp->machine_name = strdup(machine->machine_name);
 	chp->name = strdup(consolename);
 
 	if (allow_slaves)

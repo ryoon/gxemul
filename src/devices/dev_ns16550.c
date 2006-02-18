@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.50 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.51 2006-02-18 13:42:39 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -338,7 +338,8 @@ DEVINIT(ns16550)
 	d->stopbits	= "1";
 	d->name		= devinit->name2 != NULL? devinit->name2 : "";
 	d->console_handle =
-	    console_start_slave(devinit->machine, devinit->name, d->in_use);
+	    console_start_slave(devinit->machine, devinit->name2 != NULL?
+	    devinit->name2 : devinit->name, d->in_use);
 
 	nlen = strlen(devinit->name) + 10;
 	if (devinit->name2 != NULL)

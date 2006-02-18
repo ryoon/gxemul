@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.21 2006-02-09 20:02:58 debug Exp $
+ *  $Id: dev_8250.c,v 1.22 2006-02-18 13:42:39 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -46,6 +46,8 @@
 
 struct dev_8250_data {
 	int		console_handle;
+	char		*name;
+
 	int		irq_enable;
 	int		irqnr;
 	int		in_use;
@@ -134,6 +136,8 @@ DEVICE_ACCESS(8250)
 
 DEVINIT(8250)
 {
+	size_t nlen;
+	char *name;
 	struct dev_8250_data *d;
 
 	d = malloc(sizeof(struct dev_8250_data));
@@ -150,10 +154,25 @@ DEVINIT(8250)
 	d->databits = 8;
 	d->parity   = 'N';
 	d->stopbits = "1";
+	d->name = devinit->name2 != NULL? devinit->name2 : "";
 	d->console_handle =
-	    console_start_slave(devinit->machine, "console", d->in_use);
+	    console_start_slave(devinit->machine, devinit->name2 != NULL?
+	    devinit->name2 : devinit->name, d->in_use);
 
-	memory_device_register(devinit->machine->memory, devinit->name,
+	nlen = strlen(devinit->name) + 10;
+	if (devinit->name2 != NULL)
+		nlen += strlen(devinit->name2);
+	name = malloc(nlen);
+	if (name == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	if (devinit->name2 != NULL && devinit->name2[0])
+		snprintf(name, nlen, "%s [%s]", devinit->name, devinit->name2);
+	else
+		snprintf(name, nlen, "%s", devinit->name);
+
+	memory_device_register(devinit->machine->memory, name,
 	    devinit->addr, DEV_8250_LENGTH * devinit->addr_mult,
 	    dev_8250_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_8250_tick, d,

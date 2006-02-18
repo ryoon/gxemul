@@ -1,8 +1,10 @@
-$Id: RELEASE,v 1.176 2006-02-18 19:05:58 debug Exp $
-I'm working on what will become 0.3.8.
+$Id: RELEASE,v 1.177 2006-02-18 21:48:15 debug Exp $
+
+Working on post-0.3.8.
+
 -------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.8
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.?
 ================================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -17,26 +19,9 @@ The documentation lists the machines and guest operating systems that can
 be regarded as "working" in GXemul. The best supported guest operating 
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
-The user-visible changes between release 0.3.7 and 0.3.8 include:
+The user-visible changes between release 0.3.8 and 0.3.? include:
 
-    o)	The IQ80321 (Xscale) machine mode is now working well enough to
-	run NetBSD/evbarm 2.1.
-
-    o)	Faster framebuffer output in some situations.
-
-Source code related changes include:
-
-    o)	I've finally begun to reimplement the MIPS emulation mode using the
-	new dyntrans system. It will be quite some time until it can run
-	anything, but things are moving in the right direction.
-
-    o)	Some changes to the concepts of input-only, output-only, and
-	input-output consoles.
-
-    o)	Some more clean-up of PCI bus concepts.
-
-    o)	Machine definitions have been moved out of src/machines.c, and into
-	individual files in a new sub-directory (src/machines/).
+    o)	...
 
 There have also been lots of other changes, too many and small to mention here.
 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.122 2006-02-18 13:15:20 debug Exp $
+$Id: guestoses.html,v 1.123 2006-02-18 14:02:19 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1342,7 +1342,7 @@ start the X11 environment.
 
 It is possible to run Debian GNU/Linux for DECstation in the emulator,
 on an emulated 5000/200 ("3max"). Although the Debian project has released
-install ramdisk kernels for this purpose, they have problems:
+install ramdisk kernels for this purpose, these do not always work:
 <ul>
   <li>Serial console output doesn't work too well in GXemul. There are
 	random oopses, which may be due to bugs in GXemul, but may
@@ -1357,7 +1357,7 @@ install ramdisk kernels for this purpose, they have problems:
 	networking. (Perhaps this has been fixed now, I don't know.)
 </ul>
 
-<p>David Muse has now made available a precompiled install kernel which
+<p>David Muse has made available a precompiled install kernel which
 has support for framebuffer, keyboard, and networking, which works
 pretty well. Thanks David. :-)
 

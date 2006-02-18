@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.48 2006-02-04 11:10:57 debug Exp $
+.\" $Id: gxemul.1,v 1.49 2006-02-18 14:02:20 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -56,16 +56,18 @@ real machine.
 The processor architecture best emulated by GXemul is MIPS, but other
 architectures (ARM and PowerPC) are also partially emulated.
 .Pp
-MIPS processors are emulated either using a simple type of binary 
-translator (on Alpha and i386 hosts), or using traditional slow 
-interpretation (all other hosts, including amd64 machines running in 
-64-bit mode).
+MIPS processors are emulated using either a simple binary translation
+layer (recompilation into native code), which is used on Alpha and i386
+hosts, or by traditional interpretation (very very slow, but works on any
+host platform).
 .Pp
-Non-MIPS processors are emulated using a newer dynamic 
-translation system (called dyntrans in the rest of this man page);
-dyntrans does not require any host-specific code, so it should work on any 
-platform. Performance is somewhere between binary translation and 
-traditional interpretation.
+Non-MIPS processors are emulated using a newer dynamic translation
+system (called dyntrans in the rest of this man page). Performance is 
+somewhere between traditional interpretation and recompilation into native 
+code. However, the dynamic translation system used in GXemul does NOT 
+generate native code, and thus doesn't require platform-specific 
+back-ends. In plain English, this means that the dyntrans system works on 
+any host platform.
 .Pp
 There are three ways to invoke the emulator:
 .Pp

@@ -1,27 +1,7 @@
-$Id: TODO,v 1.206 2006-02-17 18:38:30 debug Exp $
+$Id: TODO,v 1.207 2006-02-18 14:02:19 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-x) ARM:
-	o)  interrupt controller
-	o)  timers
-	o)  add ID for "i80321 600MHz rev 2 (XScale core)"
-	o)  ata controller (?)
-	x)  emulate more full ARM systems (iq80321 for {net,free}bsd,
-	    zaurus for openbsd, ... and stuff for linux as well?)
-
-x) More generic out_of_memory error reporting, and check everywhere!
-	Causes:	OpenBSD has low default limits for normal users.
-		Host is 32-bit? (32-bit hosts are limited to 4 GB or less
-		of userspace memory.)
-		You are actually low on RAM. (As trivial as this might sound,
-		Unix systems usually allow processes to allocate virtual
-		memory beyond the amount of RAM in the machine.)
-
-x) Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
-	Use the debugger's symbolic name stuff. (which will have to be
-	extended soon to support stuff like  "2*x + symbol + y" etc. cool
-	stuff)
 
 Dyntrans:
 	TOP Priority:
@@ -49,12 +29,30 @@ Dyntrans:
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
 
+More generic out_of_memory error reporting, and check everywhere!
+	Causes:	OpenBSD has low default limits for normal users.
+		Host is 32-bit? (32-bit hosts are limited to 4 GB or less
+		of userspace memory.)
+		You are actually low on RAM. (As trivial as this might sound,
+		Unix systems usually allow processes to allocate virtual
+		memory beyond the amount of RAM in the machine.)
+
+Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
+	Use the debugger's symbolic name stuff. (which will have to be
+	extended soon to support stuff like  "2*x + symbol + y" etc. cool
+	stuff)
+
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
 	    minimum size, etc, or up to a max size)
 	x)  keep track of interrupts and busses? actually, allowing any device
 	    to be a bus might be a nice idea
 	x)  refactor various clocks/nvram/cmos into one device?
+
+ARM:
+	o)  add ID for "i80321 600MHz rev 2 (XScale core)"
+	o)  make the ata controller usable for FreeBSD!
+	x)  zaurus for openbsd...
 
 PCI:
 	x)  add support for address fixups

@@ -1,4 +1,4 @@
-$Id: README,v 1.93 2005-12-31 15:48:29 debug Exp $
+$Id: README,v 1.94 2006-02-18 14:02:19 debug Exp $
 
 I'm working on post-0.3.7.
 
@@ -19,14 +19,16 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 MIPS processors are emulated using either a simple binary translation 
-layer ("recompilation"), which is used on Alpha and i386 hosts, or by 
-traditional interpretation (very very slow, but works on any host platform).
+layer (recompilation into native code), which is used on Alpha and i386 
+hosts, or by traditional interpretation (very very slow, but works on any 
+host platform).
 
-ARM and PowerPC processors are emulated using a newer dynamic translation
-system. Performance is somewhere between traditional interpretation and
-dynamic recompilation; however, the dynamic translation system used in
-GXemul does NOT require platform-specific back-end code. In plain English,
-this means that the dyntrans system works on any host platform.
+ARM and PowerPC processors are emulated using a newer dynamic translation 
+system. Performance is somewhere between traditional interpretation and 
+recompilation into native code. However, the dynamic translation system 
+used in GXemul does NOT generate native code, and thus doesn't require 
+platform-specific back-ends. In plain English, this means that the 
+dyntrans system works on any host platform.
 
 
 Quick start

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.59 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.60 2006-02-19 08:04:14 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -987,7 +987,7 @@ X(frsp)
 X(fctiwz)
 {
 	struct ieee_float_value frb;
-	int32_t res = 0;
+	uint32_t res = 0;
 
 	CHECK_FOR_FPU_EXCEPTION;
 

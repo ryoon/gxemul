@@ -1,5 +1,6 @@
 #ifndef ARM_TMPHEAD_1
 #define ARM_TMPHEAD_1
+/*  $Id: arm_tmphead_1.h,v 1.3 2006-02-19 08:04:13 debug Exp $  */
 extern uint8_t condition_hi[16];
 extern uint8_t condition_ge[16];
 extern uint8_t condition_gt[16];

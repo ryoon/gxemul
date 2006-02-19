@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.664 2006-02-05 10:26:35 debug Exp $
+ *  $Id: machine.c,v 1.665 2006-02-19 08:04:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -221,7 +221,7 @@ int machine_name_to_type(char *stype, char *ssubtype,
  *  clock cycle count) to a machine.
  */
 void machine_add_tickfunction(struct machine *machine, void (*func)
-	(struct cpu *, void *), void *extra, int clockshift)
+	(struct cpu *, void *), void *extra, int tickshift)
 {
 	int n = machine->n_tick_entries;
 
@@ -231,15 +231,20 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 		exit(1);
 	}
 
-	/*  Don't use too low clockshifts, that would be too inefficient
-	    with bintrans.  */
-	if (clockshift < N_SAFE_BINTRANS_LIMIT_SHIFT)
-		fatal("WARNING! clockshift = %i, less than "
-		    "N_SAFE_BINTRANS_LIMIT_SHIFT (%i)\n",
-		    clockshift, N_SAFE_BINTRANS_LIMIT_SHIFT);
+	/*
+	 *  The dyntrans subsystem wants to run code in relatively large
+	 *  chunks without checking for external interrupts, so we cannot
+	 *  allow too low tickshifts:
+	 */
+	if (tickshift < N_SAFE_DYNTRANS_LIMIT_SHIFT) {
+		fatal("ERROR! tickshift = %i, less than "
+		    "N_SAFE_DYNTRANS_LIMIT_SHIFT (%i)\n",
+		    tickshift, N_SAFE_DYNTRANS_LIMIT_SHIFT);
+		exit(1);
+	}
 
 	machine->ticks_till_next[n]   = 0;
-	machine->ticks_reset_value[n] = 1 << clockshift;
+	machine->ticks_reset_value[n] = 1 << tickshift;
 	machine->tick_func[n]         = func;
 	machine->tick_extra[n]        = extra;
 

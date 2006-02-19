@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.3 2006-01-23 00:13:21 debug Exp $
+ *  $Id: machine_pmax.c,v 1.4 2006-02-19 08:04:17 debug Exp $
+ *
+ *  DECstation ("PMAX") machine description.
  */
 
 #include <stdio.h>
@@ -236,24 +238,32 @@ MACHINE_SETUP(pmax)
 		machine->md_interrupt = kmin_interrupt;
 
 		/*
-		 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
+		 *  tc0 at mainbus0: 12.5 MHz clock  (0x10000000,slotsize=64MB)
 		 *  tc slot 1:   0x14000000
 		 *  tc slot 2:   0x18000000
-		 *  ioasic0 at tc0 slot 3 offset 0x0				(0x1c000000) slot 0
-		 *  asic regs							(0x1c040000) slot 1
-		 *  station's ether address					(0x1c080000) slot 2
-		 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00	(0x1c0c0000) slot 3
-		 *  scc0 at ioasic0 offset 0x100000				(0x1c100000) slot 4
-		 *  scc1 at ioasic0 offset 0x180000: console			(0x1c180000) slot 6
-		 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1c200000) slot 8
-		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
-		 *  dma for asc0						(0x1c380000) slot 14
+		 *  ioasic0 at tc0 slot 3 offset 0x0	(0x1c000000) slot 0
+		 *  asic regs				(0x1c040000) slot 1
+		 *  station's ether address		(0x1c080000) slot 2
+		 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00
+		 *					(0x1c0c0000) slot 3
+		 *  scc0 at ioasic0 offset 0x100000	(0x1c100000) slot 4
+		 *  scc1 at ioasic0 offset 0x180000: console(0x1c180000) slot 6
+		 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or
+		 *	compatible			(0x1c200000) slot 8
+		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz,
+		 *	SCSI ID 7			(0x1c300000) slot 12
+		 *  dma for asc0			(0x1c380000) slot 14
 		 */
-		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
-		dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
-		dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-		dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
-		dev_mc146818_init(machine, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
+		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
+		    mem, 0x1c000000, 0);
+		dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE + 8,
+		    4 * 65536);
+		dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 + 8,
+		    machine->use_x11, 0, 1);
+		dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 + 8,
+		    machine->use_x11, 1, 1);
+		dev_mc146818_init(machine, mem, 0x1c200000, KMIN_INTR_CLOCK + 8,
+		    MC146818_DEC, 1);
 		dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
 		    NULL, DEV_ASC_DEC, NULL, NULL);
 
@@ -276,11 +286,12 @@ MACHINE_SETUP(pmax)
 		    machine->n_gfx_cards >= 3?
 			turbochannel_default_gfx_card : "", KMIN_INT_TC2);
 
-		/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
+		/*  (kmin shared irq numbers (IP) are offset by +8 in the
+		    emulator)  */
 		/*  kmin_csr = dev_kmin_init(cpu, mem, KMIN_REG_INTR);  */
 
-		framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb (?)  */
-		serial_console_name      = "osconsole=3";	/*  ?  */
+		framebuffer_console_name = "osconsole=0,3";	/* fb,keyb(?) */
+		serial_console_name      = "osconsole=3";	/* ? */
 		break;
 
 	case MACHINE_DEC_3MAXPLUS_5000:	/*  type 4, KN03  */
@@ -299,27 +310,38 @@ MACHINE_SETUP(pmax)
 		machine->md_interrupt = kn03_interrupt;
 
 		/*
-		 *  tc0 at mainbus0: 25 MHz clock (slot 0)			(0x1e000000)
-		 *  tc0 slot 1							(0x1e800000)
-		 *  tc0 slot 2							(0x1f000000)
-		 *  ioasic0 at tc0 slot 3 offset 0x0				(0x1f800000)
-		 *    something that has to do with interrupts? (?)		(0x1f840000 ?)
-		 *  le0 at ioasic0 offset 0xc0000				(0x1f8c0000)
-		 *  scc0 at ioasic0 offset 0x100000				(0x1f900000)
-		 *  scc1 at ioasic0 offset 0x180000: console			(0x1f980000)
-		 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
-		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
+		 *  tc0 at mainbus0: 25 MHz clock (slot 0)	(0x1e000000)
+		 *  tc0 slot 1					(0x1e800000)
+		 *  tc0 slot 2					(0x1f000000)
+		 *  ioasic0 at tc0 slot 3 offset 0x0		(0x1f800000)
+		 *    something that has to do with interrupts? (?)(0x1f840000?)
+		 *  le0 at ioasic0 offset 0xc0000		(0x1f8c0000)
+		 *  scc0 at ioasic0 offset 0x100000		(0x1f900000)
+		 *  scc1 at ioasic0 offset 0x180000: console	(0x1f980000)
+		 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or
+		 *	compatible				(0x1fa00000)
+		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz,
+		 *	SCSI ID 7				(0x1fb00000)
 		 */
-		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000, 0);
+		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
+		    mem, 0x1f800000, 0);
 
-		dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
+		dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0,
+		    KN03_INTR_LANCE +8, 4 * 65536);
 
-		machine->md_int.dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
-		machine->md_int.dec_ioasic_data->dma_func_extra[2] = dev_scc_init(machine, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-		machine->md_int.dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
-		machine->md_int.dec_ioasic_data->dma_func_extra[3] = dev_scc_init(machine, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+		machine->md_int.dec_ioasic_data->dma_func[3] =
+		    dev_scc_dma_func;
+		machine->md_int.dec_ioasic_data->dma_func_extra[2] =
+		    dev_scc_init(machine, mem, KN03_SYS_SCC_0,
+		    KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+		machine->md_int.dec_ioasic_data->dma_func[2] =
+		    dev_scc_dma_func;
+		machine->md_int.dec_ioasic_data->dma_func_extra[3] =
+		    dev_scc_init(machine, mem, KN03_SYS_SCC_1,
+		    KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 
-		dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
+		dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC,
+		    MC146818_DEC, 1);
 		dev_asc_init(machine, mem, KN03_SYS_SCSI,
 		    KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
@@ -351,8 +373,8 @@ MACHINE_SETUP(pmax)
 		/*  TODO: interrupts  */
 		/*  shared (turbochannel) interrupts are +8  */
 
-		framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb (?)  */
-		serial_console_name      = "osconsole=3";	/*  ?  */
+		framebuffer_console_name = "osconsole=0,3";	/* fb,keyb(?) */
+		serial_console_name      = "osconsole=3";	/* ? */
 		break;
 
 	case MACHINE_DEC_5800:		/*  type 5, KN5800  */
@@ -364,7 +386,8 @@ MACHINE_SETUP(pmax)
 			    "with less than 48MB RAM. Continuing anyway.\n");
 
 		/*
-		 *  According to http://www2.no.netbsd.org/Ports/pmax/models.html,
+		 *  According to
+		 *  http://www2.no.netbsd.org/Ports/pmax/models.html,
 		 *  the 5800-series is based on VAX 6000/300.
 		 */
 
@@ -372,14 +395,17 @@ MACHINE_SETUP(pmax)
 		 *  Ultrix might support SMP on this machine type.
 		 *
 		 *  Something at 0x10000000.
-		 *  ssc serial console at 0x10140000, interrupt 2 (shared with XMI?).
+		 *  ssc serial console at 0x10140000, interrupt 2 (shared
+		 *  with XMI?).
 		 *  xmi 0 at address 0x11800000   (node x at offset x*0x80000)
 		 *  Clock uses interrupt 3 (shared with XMI?).
 		 */
 
-		machine->md_int.dec5800_csr = dev_dec5800_init(machine, mem, 0x10000000);
+		machine->md_int.dec5800_csr = dev_dec5800_init(machine,
+		    mem, 0x10000000);
 		dev_decbi_init(mem, 0x10000000);
-		dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11, &machine->md_int.dec5800_csr->csr);
+		dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11,
+		    &machine->md_int.dec5800_csr->csr);
 		dev_decxmi_init(mem, 0x11800000);
 		dev_deccca_init(mem, DEC_DECCCA_BASEADDR);
 
@@ -415,7 +441,8 @@ MACHINE_SETUP(pmax)
 		/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 		/*  error registers (?) at 0x17000000 and 0x10080000  */
 		device_add(machine, "kn210 addr=0x10080000");
-		dev_ssc_init(machine, mem, 0x10140000, 0, machine->use_x11, NULL);	/*  TODO:  not irq 0  */
+		dev_ssc_init(machine, mem, 0x10140000, 0,
+		    machine->use_x11, NULL);	/*  TODO:  not irq 0  */
 		break;
 
 	case MACHINE_DEC_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -437,21 +464,28 @@ MACHINE_SETUP(pmax)
 		/*
 		 *  Something at address 0xca00000. (?)
 		 *  Something at address 0xe000000. (?)
-		 *  tc0 slot 0								(0x10000000)
-		 *  tc0 slot 1								(0x14000000)
+		 *  tc0 slot 0					(0x10000000)
+		 *  tc0 slot 1					(0x14000000)
 		 *  (tc0 slot 2 used by the framebuffer)
-		 *  ioasic0 at tc0 slot 3 offset 0x0					(0x1c000000)
-		 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00		(0x1c0c0000)
-		 *  scc0 at ioasic0 offset 0x100000: console  <-- serial		(0x1c100000)
-		 *  mcclock0 at ioasic0 offset 0x200000: mc146818			(0x1c200000)
-		 *  isdn at ioasic0 offset 0x240000 not configured			(0x1c240000)
-		 *  bba0 at ioasic0 offset 0x240000 (audio0 at bba0)        <--- which one of isdn and bba0?
-		 *  dtop0 at ioasic0 offset 0x280000					(0x1c280000)
-		 *  fdc at ioasic0 offset 0x2c0000 not configured  <-- floppy		(0x1c2c0000)
-		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7		(0x1c300000)
-		 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8 built-in framebuffer	(0xa000000)
+		 *  ioasic0 at tc0 slot 3 offset 0x0		(0x1c000000)
+		 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00
+		 *						(0x1c0c0000)
+		 *  scc0 at ioasic0 offset 0x100000: console  <-- serial
+		 *						(0x1c100000)
+		 *  mcclock0 at ioasic0 offset 0x200000: mc146818 (0x1c200000)
+		 *  isdn at ioasic0 offset 0x240000 not configured (0x1c240000)
+		 *  bba0 at ioasic0 offset 0x240000 (audio0 at bba0)
+		 *	^--- which one of isdn and bba0?
+		 *  dtop0 at ioasic0 offset 0x280000		(0x1c280000)
+		 *  fdc at ioasic0 offset 0x2c0000 not configured
+		 *	^-- floppy				(0x1c2c0000)
+		 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI
+		 *	ID 7					(0x1c300000)
+		 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8
+		 *	built-in framebuffer			(0xa000000)
 		 */
-		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
+		machine->md_int.dec_ioasic_data =
+		    dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 
 		/*  TURBOchannel slots (0 and 1):  */
 		dev_turbochannel_init(machine, mem, 0,
@@ -485,7 +519,7 @@ MACHINE_SETUP(pmax)
 		dev_asc_init(machine, mem, 0x1c300000,
 		    XINE_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
-		framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
+		framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb?  */
 		serial_console_name      = "osconsole=3";
 		break;
 
@@ -508,23 +542,29 @@ MACHINE_SETUP(pmax)
 		 *  something at 0x10040000
 		 *  scc at 0x10140000
 		 *  qbus at (or around) 0x10080000
-		 *  dssi (disk controller) buffers at 0x10100000, registers at 0x10160000.
-		 *  sgec (ethernet) registers at 0x10008000, station addresss at 0x10120000.
+		 *  dssi (disk controller) buffers at 0x10100000,
+		 *	registers at 0x10160000.
+		 *  sgec (ethernet) registers at 0x10008000, station
+		 *	addresss at 0x10120000.
 		 *  asc (scsi) at 0x17100000.
 		 */
 
-		dev_ssc_init(machine, mem, 0x10140000, 0, machine->use_x11, NULL);		/*  TODO:  not irq 0  */
+		dev_ssc_init(machine, mem, 0x10140000, 0,
+		    machine->use_x11, NULL);		/*  TODO:  not irq 0  */
 
-		/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
+		/*  something at 0x17000000, ultrix says "cpu 0 panic: "
+		    "DS5500 I/O Board is missing" if this is not here  */
 		dev_dec5500_ioboard_init(cpu, mem, 0x17000000);
 
 		dev_sgec_init(mem, 0x10008000, 0);		/*  irq?  */
 
 		/*  The asc controller might be TURBOchannel-ish?  */
 #if 0
-		dev_turbochannel_init(machine, mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
+		dev_turbochannel_init(machine, mem, 0, 0x17100000,
+		    0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
 #else
-		dev_asc_init(machine, mem, 0x17100000, 0, NULL, DEV_ASC_DEC, NULL, NULL);		/*  irq?  */
+		dev_asc_init(machine, mem, 0x17100000, 0, NULL,
+		    DEV_ASC_DEC, NULL, NULL);		/*  irq?  */
 #endif
 
 		framebuffer_console_name = "osconsole=0,0";	/*  TODO (?)  */
@@ -556,12 +596,22 @@ MACHINE_SETUP(pmax)
 		 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 		 *  sii0 at ibus0 addr 0x1a000000
 		 */
-		dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
-		dev_dc7085_init(machine, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, machine->use_x11);		/*  NOTE: CSR_INTR  */
-		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, machine->use_x11); */	/*  NOTE: CSR_INTR  */
-		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, machine->use_x11); */	/*  NOTE: CSR_INTR  */
-		dev_le_init(machine, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
-		dev_sii_init(machine, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
+		dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, 4,
+		    MC146818_DEC, 1);
+		dev_dc7085_init(machine, mem, KN230_SYS_DZ0,
+		    KN230_CSR_INTR_DZ0, machine->use_x11);/*  NOTE: CSR_INTR  */
+		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ1,
+		    KN230_CSR_INTR_OPT0, machine->use_x11);
+			NOTE: CSR_INTR  */
+		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2,
+		    KN230_CSR_INTR_OPT1, machine->use_x11);
+			NOTE: CSR_INTR  */
+		dev_le_init(machine, mem, KN230_SYS_LANCE,
+		    KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END,
+		    KN230_CSR_INTR_LANCE, 4*1048576);
+		dev_sii_init(machine, mem, KN230_SYS_SII,
+		    KN230_SYS_SII_B_START, KN230_SYS_SII_B_END,
+		    KN230_CSR_INTR_SII);
 
 		snprintf(tmpstr, sizeof(tmpstr),
 		    "kn230 addr=0x%llx", (long long)KN230_SYS_ICSR);
@@ -592,7 +642,7 @@ MACHINE_SETUP(pmax)
 		store_32bit_word(cpu, DEC_PROM_CALLBACK_STRUCT + i*4,
 		    DEC_PROM_EMULATION + i*8);
 
-	/*  Fill PROM with dummy return instructions:  (TODO: make this nicer)  */
+	/*  Fill PROM with dummy return instructions: (TODO: make this nicer) */
 	for (i=0; i<100; i++) {
 		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
 		    0x03e00008);	/*  return  */

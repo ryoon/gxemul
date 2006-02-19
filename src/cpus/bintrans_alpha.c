@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.4 2006-02-09 22:40:26 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.5 2006-02-19 08:04:13 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1072,7 +1072,7 @@ static int bintrans_write_instruction__delayedbranch(
 			*a++ = 0x00; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
 			/*  Don't execute too many instructions. (see comment below)  */
-			*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
+			*a++ = (N_SAFE_DYNTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_DYNTRANS_LIMIT-1) >> 8)&255;
 				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
 			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
@@ -1161,7 +1161,7 @@ static int bintrans_write_instruction__delayedbranch(
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
 		if (!only_care_about_chunk_p && !forward) {
-			*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
+			*a++ = (N_SAFE_DYNTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_DYNTRANS_LIMIT-1) >> 8)&255;
 				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
 			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
@@ -2617,7 +2617,7 @@ static void bintrans_backend_init(void)
 	bintrans_jump_to_32bit_pc = (void *)p;
 
 	/*  Don't execute too many instructions:  */
-	*p++ = 0x205f0000 | (N_SAFE_BINTRANS_LIMIT-1);  /*  lda t1,safe-1 */
+	*p++ = 0x205f0000 | (N_SAFE_DYNTRANS_LIMIT-1);  /*  lda t1,safe-1 */
 
 	*p++ = 0x40e20da1;		/*  cmple t6,t1,t0  */
 	q = p;	/*  *q is updated later  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.116 2006-02-05 10:26:36 debug Exp $
+ *  $Id: dev_fb.c,v 1.117 2006-02-19 08:04:15 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -513,7 +513,10 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 #endif
 
 	if (d->update_x2 != -1) {
-		int y, addr, addr2, q = d->vfb_scaledown;
+#ifdef WITH_X11
+		int y;
+#endif
+		int addr, addr2, q = d->vfb_scaledown;
 
 		if (d->update_x1 >= d->visible_xsize)
 			d->update_x1 = d->visible_xsize - 1;

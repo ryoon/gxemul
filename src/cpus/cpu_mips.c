@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.17 2006-02-17 20:27:21 debug Exp $
+ *  $Id: cpu_mips.c,v 1.18 2006-02-19 08:04:14 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -94,8 +94,6 @@ static char *special2_names[] = SPECIAL2_NAMES;
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
 static char *cop0_names[] = COP0_NAMES;
-
-#include "cpu_mips16.c"
 
 
 #ifdef EXPERIMENTAL_NEWMIPS
@@ -2198,170 +2196,97 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->mflo_delay--;
 #endif
 
-	/*  Read an instruction from memory:  */
-#ifdef ENABLE_MIPS16
-	if (cpu->cd.mips.mips16 && (cached_pc & 1)) {
-		/*  16-bit instruction word:  */
-		unsigned char instr16[2];
-		int mips16_offset = 0;
-
-		if (!cpu->memory_rw(cpu, cpu->mem, cached_pc ^ 1, &instr16[0],
-		    sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
-			return 0;
-
-		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
-			we are in usermode, then reverse endianness!  */
-
-		/*  The rest of the code is written for little endian, so swap if necessary:  */
-		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			int tmp;
-			tmp  = instr16[0]; instr16[0] = instr16[1]; instr16[1] = tmp;
-		}
-
-		cpu->cd.mips.mips16_extend = 0;
-
-		/*
-		 *  Translate into 32-bit instruction, little endian (instr[3..0]):
-		 *
-		 *  This ugly loop is necessary because if we would get an exception between
-		 *  reading an extend instruction and the next instruction, and execution
-		 *  continues on the second instruction, the extend data would be lost. So the
-		 *  entire instruction (the two parts) need to be read in. If an exception is
-		 *  caused, it will appear as if it was caused when reading the extend instruction.
-		 */
-		while (mips16_to_32(cpu, instr16, instr) == 0) {
-			if (instruction_trace_cached)
-				debug("cpu%i @ %016llx: %02x%02x\t\t\textend\n",
-				    cpu->cpu_id, (cpu->cd.mips.pc_last ^ 1) + mips16_offset,
-				    instr16[1], instr16[0]);
-
-			/*  instruction with extend:  */
-			mips16_offset += 2;
-			if (!cpu->memory_rw(cpu, cpu->mem, (cached_pc ^ 1) +
-			    mips16_offset, &instr16[0], sizeof(instr16),
-			    MEM_READ, CACHE_INSTRUCTION))
-				return 0;
-
-			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-				int tmp;
-				tmp  = instr16[0]; instr16[0] = instr16[1]; instr16[1] = tmp;
-			}
-		}
-
-		/*  TODO: bintrans like in 32-bit mode?  */
-
-		/*  Advance the program counter:  */
-		cpu->pc += sizeof(instr16) + mips16_offset;
-		cached_pc = cpu->pc;
-
-		if (instruction_trace_cached) {
-			uint64_t offset;
-			char *symbol = get_symbol_name(&cpu->machine->
-			    symbol_context, cpu->cd.mips.pc_last ^ 1, &offset);
-			if (symbol != NULL && offset==0)
-				debug("<%s>\n", symbol);
-
-			debug("cpu%i @ %016llx: %02x%02x => %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, (cpu->cd.mips.pc_last ^ 1) + mips16_offset,
-			    instr16[1], instr16[0],
-			    instr[3], instr[2], instr[1], instr[0],
-			    cpu_flags(cpu));
-		}
-	} else
-#endif
-	    {
-		/*
-		 *  Fetch a 32-bit instruction word from memory:
-		 *
-		 *  1)  The special case of reading an instruction from the
-		 *      same host RAM page as the last one is handled here,
-		 *      to gain a little bit performance.
-		 *
-		 *  2)  Fallback to reading from memory the usual way.
-		 */
-		if (cached_pc & 3) {
-			mips_cpu_exception(cpu, EXCEPTION_ADEL,
-			    0, cached_pc, 0, 0, 0, 0);
-			return 0;
-		}
-		if (cpu->cd.mips.pc_last_host_4k_page != NULL &&
-		    (cached_pc & ~0xfff) == cpu->cd.mips.pc_last_virtual_page) {
-			/*  NOTE: This only works on the host if offset is
-			    aligned correctly!  (TODO)  */
-			*(uint32_t *)instr = *(uint32_t *)
-			    (cpu->cd.mips.pc_last_host_4k_page + (cached_pc & 0xffc));
+	/*
+	 *  Fetch a 32-bit instruction word from memory:
+	 *
+	 *  1)  The special case of reading an instruction from the
+	 *      same host RAM page as the last one is handled here,
+	 *      to gain a little bit performance.
+	 *
+	 *  2)  Fallback to reading from memory the usual way.
+	 */
+	if (cached_pc & 3) {
+		mips_cpu_exception(cpu, EXCEPTION_ADEL,
+		    0, cached_pc, 0, 0, 0, 0);
+		return 0;
+	}
+	if (cpu->cd.mips.pc_last_host_4k_page != NULL &&
+	    (cached_pc & ~0xfff) == cpu->cd.mips.pc_last_virtual_page) {
+		/*  NOTE: This only works on the host if offset is
+		    aligned correctly!  (TODO)  */
+		*(uint32_t *)instr = *(uint32_t *)
+		    (cpu->cd.mips.pc_last_host_4k_page + (cached_pc & 0xffc));
 #ifdef BINTRANS
-			cpu->cd.mips.pc_bintrans_paddr_valid = 1;
-			cpu->cd.mips.pc_bintrans_paddr =
-			    cpu->cd.mips.pc_last_physical_page | (cached_pc & 0xfff);
-			cpu->cd.mips.pc_bintrans_host_4kpage = cpu->cd.mips.pc_last_host_4k_page;
+		cpu->cd.mips.pc_bintrans_paddr_valid = 1;
+		cpu->cd.mips.pc_bintrans_paddr =
+		    cpu->cd.mips.pc_last_physical_page | (cached_pc & 0xfff);
+		cpu->cd.mips.pc_bintrans_host_4kpage = cpu->cd.mips.pc_last_host_4k_page;
 #endif
-                } else {
-			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
-			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
-				return 0;
-		}
+	} else {
+		if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
+		    sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
+			return 0;
+	}
 
 #ifdef BINTRANS
-		if (cpu->cd.mips.dont_run_next_bintrans) {
-			cpu->cd.mips.dont_run_next_bintrans = 0;
-		} else if (cpu->machine->bintrans_enable &&
-		    cpu->cd.mips.pc_bintrans_paddr_valid) {
-			int res;
-			cpu->cd.mips.bintrans_instructions_executed = 0;
+	if (cpu->cd.mips.dont_run_next_bintrans) {
+		cpu->cd.mips.dont_run_next_bintrans = 0;
+	} else if (cpu->machine->bintrans_enable &&
+	    cpu->cd.mips.pc_bintrans_paddr_valid) {
+		int res;
+		cpu->cd.mips.bintrans_instructions_executed = 0;
 
-			res = bintrans_attempt_translate(cpu,
-			    cpu->cd.mips.pc_bintrans_paddr);
+		res = bintrans_attempt_translate(cpu,
+		    cpu->cd.mips.pc_bintrans_paddr);
 
-			if (res >= 0) {
-				/*  debug("BINTRANS translation + hit,"
-				    " pc = %016llx\n", (long long)cached_pc);  */
-				if (res > 0 || cpu->pc != cached_pc) {
-					if (instruction_trace_cached)
-						mips_cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-					if (res & BINTRANS_DONT_RUN_NEXT)
-						cpu->cd.mips.dont_run_next_bintrans = 1;
-					res &= BINTRANS_N_MASK;
+		if (res >= 0) {
+			/*  debug("BINTRANS translation + hit,"
+			    " pc = %016llx\n", (long long)cached_pc);  */
+			if (res > 0 || cpu->pc != cached_pc) {
+				if (instruction_trace_cached)
+					mips_cpu_disassemble_instr(cpu, instr, 1, 0, 1);
+				if (res & BINTRANS_DONT_RUN_NEXT)
+					cpu->cd.mips.dont_run_next_bintrans = 1;
+				res &= BINTRANS_N_MASK;
 
-					if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
-						int x = cp0->reg[COP0_COUNT], y = cp0->reg[COP0_COMPARE];
-						int diff = x - y;
-						if (diff < 0 && diff + (res-1) >= 0
-						    && cpu->cd.mips.compare_register_set) {
-							mips_cpu_interrupt(cpu, 7);
-							cpu->cd.mips.compare_register_set = 0;
-						}
-
-						cp0->reg[COP0_COUNT] = (int64_t)
-						    (int32_t)(cp0->reg[COP0_COUNT] + res-1);
+				if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
+					int x = cp0->reg[COP0_COUNT], y = cp0->reg[COP0_COMPARE];
+					int diff = x - y;
+					if (diff < 0 && diff + (res-1) >= 0
+					    && cpu->cd.mips.compare_register_set) {
+						mips_cpu_interrupt(cpu, 7);
+						cpu->cd.mips.compare_register_set = 0;
 					}
 
-					return res;
+					cp0->reg[COP0_COUNT] = (int64_t)
+					    (int32_t)(cp0->reg[COP0_COUNT] + res-1);
 				}
+
+				return res;
 			}
 		}
+	}
 #endif
 
-		if (instruction_trace_cached)
-			mips_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
+	if (instruction_trace_cached)
+		mips_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
 
-		/*  Advance the program counter:  */
-		cpu->pc += sizeof(instr);
-		cached_pc = cpu->pc;
+	/*  Advance the program counter:  */
+	cpu->pc += sizeof(instr);
+	cached_pc = cpu->pc;
 
-		/*
-		 *  TODO:  If Reverse-endian is set in the status cop0 register
-		 *  and we are in usermode, then reverse endianness!
-		 */
+	/*
+	 *  TODO:  If Reverse-endian is set in the status cop0 register
+	 *  and we are in usermode, then reverse endianness!
+	 */
 
-		/*
-		 *  The rest of the code is written for little endian, so
-		 *  swap if necessary:
-		 */
-		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			int tmp = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
-			    tmp = instr[1]; instr[1] = instr[2]; instr[2] = tmp;
-		}
+	/*
+	 *  The rest of the code is written for little endian, so
+	 *  swap if necessary:
+	 */
+	if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+		int tmp = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
+		    tmp = instr[1]; instr[1] = instr[2]; instr[2] = tmp;
 	}
 
 

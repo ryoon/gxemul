@@ -28,15 +28,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.26 2006-02-13 04:23:25 debug Exp $
+ *  $Id: cpu_mips.h,v 1.27 2006-02-19 08:04:16 debug Exp $
  */
 
 #include "misc.h"
 
-/*  
- *  ENABLE_MIPS16 should be defined on the cc commandline using -D, if you 
- *  want it. (This is done by ./configure --mips16)
- */
 /*  #define MFHILO_DELAY  */
 
 struct cpu_family;
@@ -244,9 +240,6 @@ struct mips_vpg_tlb_entry {
 #define	BINTRANS_DONT_RUN_NEXT		0x1000000
 #define	BINTRANS_N_MASK			0x0ffffff
 
-#define	N_SAFE_BINTRANS_LIMIT_SHIFT	14
-#define	N_SAFE_BINTRANS_LIMIT	((1 << (N_SAFE_BINTRANS_LIMIT_SHIFT - 1)) - 1)
-
 #define	N_BINTRANS_VADDR_TO_HOST	20
 
 /*  Virtual to host address translation tables:  */
@@ -355,11 +348,6 @@ struct mips_cpu {
 	void		(*bintrans_fast_eret)(struct cpu *);
 	void		(*bintrans_fast_tlbwri)(struct cpu *, int);
 	void		(*bintrans_fast_tlbpr)(struct cpu *, int);
-
-#ifdef ENABLE_MIPS16
-	int		mips16;			/*  non-zero if MIPS16 code is allowed  */
-	uint16_t	mips16_extend;		/*  set on 'extend' instructions to the entire 16-bit extend instruction  */
-#endif
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	int		instruction_delay;
@@ -484,10 +472,6 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int writeflag, size_t len, unsigned char *data);
 int mips_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
-
-
-/*  mips16.c:  */
-int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr);
 
 
 /*  NEW DYNTRANS:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.3 2006-02-09 22:40:26 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.4 2006-02-19 08:04:14 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1497,8 +1497,8 @@ try_chunk_p:
 			/*  7c 01                jl     <okk>  */
 			/*  c3                   ret    */
 			*a++ = 0x81; *a++ = 0xfd;
-			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
-			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
+			*a++ = (N_SAFE_DYNTRANS_LIMIT-1) & 255;
+			*a++ = ((N_SAFE_DYNTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
 			*a++ = 0x7c; failskip = a; *a++ = 0x01;
 			bintrans_write_chunkreturn_fail(&a);
 			*failskip = (size_t)a - (size_t)failskip - 1;
@@ -1598,8 +1598,8 @@ try_chunk_p:
 			/*  7c 01                jl     <okk>  */
 			/*  c3                   ret    */
 			*a++ = 0x81; *a++ = 0xfd;
-			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
-			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
+			*a++ = (N_SAFE_DYNTRANS_LIMIT-1) & 255;
+			*a++ = ((N_SAFE_DYNTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
 			*a++ = 0x7c; failskip = a; *a++ = 0x01;
 			bintrans_write_chunkreturn_fail(&a);
 			*failskip = (size_t)a - (size_t)failskip - 1;
@@ -1677,8 +1677,8 @@ try_chunk_p:
 		/*  c3                   ret    */
 		if (!only_care_about_chunk_p && !forward) {
 			*a++ = 0x81; *a++ = 0xfd;
-			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
-			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
+			*a++ = (N_SAFE_DYNTRANS_LIMIT-1) & 255;
+			*a++ = ((N_SAFE_DYNTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
 			*a++ = 0x7c; failskip = a; *a++ = 0x01;
 			bintrans_write_chunkreturn_fail(&a);
 			*failskip = (size_t)a - (size_t)failskip - 1;
@@ -2786,8 +2786,8 @@ static void bintrans_backend_init(void)
 	/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
 	/*  7c 01                jl     <okk>  */
 	/*  c3                   ret    */
-	*p++ = 0x81; *p++ = 0xfd; *p++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
-	*p++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *p++ = 0; *p++ = 0;
+	*p++ = 0x81; *p++ = 0xfd; *p++ = (N_SAFE_DYNTRANS_LIMIT-1) & 255;
+	*p++ = ((N_SAFE_DYNTRANS_LIMIT-1) >> 8) & 255; *p++ = 0; *p++ = 0;
 	*p++ = 0x7c; *p++ = 0x01;
 	*p++ = 0xc3;
 

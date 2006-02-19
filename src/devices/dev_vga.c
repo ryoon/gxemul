@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.95 2006-01-01 13:17:18 debug Exp $
+ *  $Id: dev_vga.c,v 1.96 2006-02-19 08:04:15 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -467,7 +467,8 @@ static void vga_update_text(struct machine *machine, struct vga_data *d,
 					continue;
 				dev_fb_access(machine->cpus[0],
 				    machine->memory, addr, rgb_line,
-				    3 * font_width, MEM_WRITE, d->fb);
+				    3 * machine->x11_scaleup * font_width,
+				    MEM_WRITE, d->fb);
 			}
 		}
 	}

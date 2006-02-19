@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.2 2006-02-03 17:25:14 debug Exp $
+ *  $Id: machine_sgi.c,v 1.3 2006-02-19 08:04:17 debug Exp $
+ *
+ *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
  *  http://obsolete.majix.org/computers/sgi/iptable.shtml contains a
  *  pretty detailed list of IP ("Inhouse Processor") model numbers.
@@ -151,11 +153,15 @@ MACHINE_SETUP(sgi)
 		 *  int0 at mainbus0 addr 0x1fb801c0: bus 1MHz, CPU 2MHz
 		 *  imc0 at mainbus0 addr 0x1fa00000: revision 0
 		 *  gio0 at imc0
-		 *  unknown GIO card (product 0x00 revision 0x00) at gio0 slot 0 addr 0x1f400000 not configured
-		 *  unknown GIO card (product 0x00 revision 0x00) at gio0 slot 1 addr 0x1f600000 not configured
-		 *  unknown GIO card (product 0x00 revision 0x00) at gio0 slot 2 addr 0x1f000000 not configured
+		 *  unknown GIO card (product 0x00 revision 0x00)
+		 *	at gio0 slot 0 addr 0x1f400000 not configured
+		 *  unknown GIO card (product 0x00 revision 0x00)
+		 *	at gio0 slot 1 addr 0x1f600000 not configured
+		 *  unknown GIO card (product 0x00 revision 0x00)
+		 *	at gio0 slot 2 addr 0x1f000000 not configured
 		 *  hpc0 at gio0 addr 0x1fb80000: SGI HPC1
-		 *  zsc0 at hpc0 offset 0xd10   (channels 0 and 1, channel 1 for console)
+		 *  zsc0 at hpc0 offset 0xd10   (channels 0 and 1,
+		 *				 channel 1 for console)
 		 *  zsc1 at hpc0 offset 0xd00   (2 channels)
 		 *  sq0 at hpc0 offset 0x100: SGI Seeq 80c03
 		 *  wdsc0 at hpc0 offset 0x11f
@@ -163,9 +169,11 @@ MACHINE_SETUP(sgi)
 		 */
 
 		/*  int0 at mainbus0 addr 0x1fb801c0  */
-		machine->md_int.sgi_ip20_data = dev_sgi_ip20_init(cpu, mem, DEV_SGI_IP20_BASE);
+		machine->md_int.sgi_ip20_data = dev_sgi_ip20_init(cpu, mem,
+		    DEV_SGI_IP20_BASE);
 
-		/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
+		/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:
+		    TODO (or in dev_sgi_ip20?)  */
 
 		machine->main_console_handle = (size_t)device_add(machine,
 		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
@@ -185,9 +193,9 @@ MACHINE_SETUP(sgi)
 		device_add(machine, "unreadable addr=0x1f980000 len=0x10000");
 
 		/*  Return nothing for gio slots 0, 1, and 2: */
-		device_add(machine, "unreadable addr=0x1f400000 len=0x1000");	/*  gio0 slot 0  */
-		device_add(machine, "unreadable addr=0x1f600000 len=0x1000");	/*  gio0 slot 1  */
-		device_add(machine, "unreadable addr=0x1f000000 len=0x1000");	/*  gio0 slot 2  */
+		device_add(machine, "unreadable addr=0x1f400000 len=0x1000");
+		device_add(machine, "unreadable addr=0x1f600000 len=0x1000");
+		device_add(machine, "unreadable addr=0x1f000000 len=0x1000");
 
 		break;
 
@@ -207,12 +215,14 @@ MACHINE_SETUP(sgi)
 			strlcat(machine->machine_name,
 			    " (Indy, Indigo2, Challenge S; Full-house)",
 			    MACHINE_NAME_MAXBUF);
-			machine->md_int.sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
+			machine->md_int.sgi_ip22_data =
+			    dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
 		} else {
 			strlcat(machine->machine_name,
 			    " (Indy, Indigo2, Challenge S; Guiness)",
 			    MACHINE_NAME_MAXBUF);
-			machine->md_int.sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
+			machine->md_int.sgi_ip22_data =
+			    dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
 		}
 
 /*
@@ -245,7 +255,7 @@ Why is this here? TODO
 		 *  haltwo0 at hpc0 offset 0x58000: HAL2 revision 0.0.0
 		 *  audio0 at haltwo0: half duplex
 		 *
-		 *  IRQ numbers are of the form 8 + x, where x = 0..31 for local0
+		 *  IRQ numbers are of the form 8 + x, where x=0..31 for local0
 		 *  interrupts, and 32..63 for local1.  + y*65 for "mappable".
 		 */
 
@@ -271,14 +281,15 @@ Why is this here? TODO
 
 		/*  dsclock0: TODO:  possibly irq 8 + 33  */
 
-		/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
+		/*  Return memory read errors so that hpc1 and hpc2 are
+		    not detected:  */
 		device_add(machine, "unreadable addr=0x1fb00000, len=0x10000");
 		device_add(machine, "unreadable addr=0x1f980000, len=0x10000");
 
 		/*  Similarly for gio slots 0, 1, and 2:  */
-		device_add(machine, "unreadable addr=0x1f400000, len=0x1000");	/*  gio0 slot 0  */
-		device_add(machine, "unreadable addr=0x1f600000, len=0x1000");	/*  gio0 slot 1  */
-		device_add(machine, "unreadable addr=0x1f000000, len=0x1000");	/*  gio0 slot 2  */
+		device_add(machine, "unreadable addr=0x1f400000, len=0x1000");
+		device_add(machine, "unreadable addr=0x1f600000, len=0x1000");
+		device_add(machine, "unreadable addr=0x1f000000, len=0x1000");
 
 		break;
 
@@ -342,7 +353,8 @@ Why is this here? TODO
 		strlcat(machine->machine_name, " (Octane)",
 		    MACHINE_NAME_MAXBUF);
 
-		machine->md_int.sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
+		machine->md_int.sgi_ip30_data =
+		    dev_sgi_ip30_init(machine, mem, 0x0ff00000);
 		machine->md_interrupt = sgi_ip30_interrupt;
 
 		dev_ram_init(machine, 0xa0000000ULL, 128 * 1048576,
@@ -359,17 +371,21 @@ Why is this here? TODO
 		 *  Something at paddr=f8000003c  used by Linux/Octane
 		 *
 		 *  16550 serial port at paddr=1f620178, addr mul 1
-		 *  (Error messages are printed to this serial port by the PROM.)
+		 *  (Error messages are printed to this serial port by
+		 *  the PROM.)
 		 *
-		 *  There seems to also be a serial port at 1f620170. The "symmon"
-		 *  program dumps something there, but it doesn't look like
-		 *  readable text.  (TODO)
+		 *  There seems to also be a serial port at 1f620170. The
+		 *  "symmon" program dumps something there, but it doesn't
+		 *  look like readable text.  (TODO)
 		 */
 
 		/*  TODO: irq!  */
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x1f620170 name2=tty0 in_use=%i", machine->use_x11? 0 : 1);
-		machine->main_console_handle = (size_t)device_add(machine, tmpstr);
-		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr=0x1f620178 name2=tty1 in_use=0");
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
+		    "0x1f620170 name2=tty0 in_use=%i", machine->use_x11? 0 : 1);
+		machine->main_console_handle = (size_t)device_add(machine,
+		    tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="
+		    "0x1f620178 name2=tty1 in_use=0");
 		device_add(machine, tmpstr);
 
 		/*  MardiGras graphics:  */
@@ -381,18 +397,26 @@ Why is this here? TODO
 		strlcat(machine->machine_name, " (O2)", MACHINE_NAME_MAXBUF);
 		machine->stable = 1;
 
-		/*  TODO:  Find out where the physical ram is actually located.  */
-		dev_ram_init(machine, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
-		dev_ram_init(machine, 0x10000000ULL,           256, DEV_RAM_MIRROR, 0x00000000);
-		dev_ram_init(machine, 0x11ffff00ULL,           256, DEV_RAM_MIRROR, 0x01ffff00);
-		dev_ram_init(machine, 0x12000000ULL,           256, DEV_RAM_MIRROR, 0x02000000);
-		dev_ram_init(machine, 0x17ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
-		dev_ram_init(machine, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-		dev_ram_init(machine, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
+		/*  TODO: Find out where the phys ram is actually located.  */
+		dev_ram_init(machine, 0x07ffff00ULL,           256,
+		    DEV_RAM_MIRROR, 0x03ffff00);
+		dev_ram_init(machine, 0x10000000ULL,           256,
+		    DEV_RAM_MIRROR, 0x00000000);
+		dev_ram_init(machine, 0x11ffff00ULL,           256,
+		    DEV_RAM_MIRROR, 0x01ffff00);
+		dev_ram_init(machine, 0x12000000ULL,           256,
+		    DEV_RAM_MIRROR, 0x02000000);
+		dev_ram_init(machine, 0x17ffff00ULL,           256,
+		    DEV_RAM_MIRROR, 0x03ffff00);
+		dev_ram_init(machine, 0x20000000ULL, 128 * 1048576,
+		    DEV_RAM_MIRROR, 0x00000000);
+		dev_ram_init(machine, 0x40000000ULL, 128 * 1048576,
+		    DEV_RAM_MIRROR, 0x10000000);
 
-		machine->md_int.ip32.crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
-		dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
-		dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  framebuffer?  */
+		machine->md_int.ip32.crime_data = dev_crime_init(machine,
+		    mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
+		dev_sgi_mte_init(mem, 0x15000000);		/*  mte ???  */
+		dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  */
 
 		/*
 		 *  A combination of NetBSD and Linux info:
@@ -407,7 +431,8 @@ Why is this here? TODO
 		 *	1f300000	perif:
 		 *	  1f300000	  audio
 		 *	  1f310000	  isa
-		 *	    1f318000	    (accessed by Irix' pciio_pio_write64)
+		 *	    1f318000	    (accessed by Irix'
+		 *			     pciio_pio_write64)
 		 *	  1f320000	  kbdms
 		 *	  1f330000	  i2c
 		 *	  1f340000	  ust
@@ -417,69 +442,78 @@ Why is this here? TODO
 		 * 	  1f3a0000	  mcclock0
 		 */
 
-				machine->md_int.ip32.mace_data = dev_mace_init(mem, 0x1f310000, 2);
-				machine->md_interrupt = sgi_ip32_interrupt;
+		machine->md_int.ip32.mace_data =
+		    dev_mace_init(mem, 0x1f310000, 2);
+		machine->md_interrupt = sgi_ip32_interrupt;
 
-				/*
-				 *  IRQ mapping is really ugly.  TODO: fix
-				 *
-				 *  com0 at mace0 offset 0x390000 intr 4 intrmask 0x3f00000: ns16550a, working fifo
-				 *  com1 at mace0 offset 0x398000 intr 4 intrmask 0xfc000000: ns16550a, working fifo
-				 *  pckbc0 at mace0 offset 0x320000 intr 5 intrmask 0x0
-				 *  mcclock0 at mace0 offset 0x3a0000 intrmask 0x0
-				 *  macepci0 at mace0 offset 0x80000 intr 7 intrmask 0x0: rev 1
-				 *
-				 *  intr 4 = MACE_PERIPH_SERIAL
-				 *  intr 5 = MACE_PERIPH_MISC
-				 *  intr 7 = MACE_PCI_BRIDGE
-				 */
+		/*
+		 *  IRQ mapping is really ugly.  TODO: fix
+		 *
+		 *  com0 at mace0 offset 0x390000 intr 4 intrmask
+		 *	0x3f00000: ns16550a, working fifo
+		 *  com1 at mace0 offset 0x398000 intr 4 intrmask
+		 *	0xfc000000: ns16550a, working fifo
+		 *  pckbc0 at mace0 offset 0x320000 intr 5 intrmask 0x0
+		 *  mcclock0 at mace0 offset 0x3a0000 intrmask 0x0
+		 *  macepci0 at mace0 offset 0x80000 intr 7 intrmask 0x0: rev 1
+		 *
+		 *  intr 4 = MACE_PERIPH_SERIAL
+		 *  intr 5 = MACE_PERIPH_MISC
+		 *  intr 7 = MACE_PCI_BRIDGE
+		 */
 
-				if (eaddr_string == NULL) {
-					fprintf(stderr, "out of memory\n");
-					exit(1);
-				}
-				snprintf(eaddr_string, ETHERNET_STRING_MAXLEN,
-				    "eaddr=%02x:%02x:%02x:%02x:%02x:%02x",
-				    macaddr[0], macaddr[1], macaddr[2],
-				    macaddr[3], macaddr[4], macaddr[5]);
-				dev_sgi_mec_init(machine, mem, 0x1f280000,
-				    MACE_ETHERNET, macaddr);
+		if (eaddr_string == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		snprintf(eaddr_string, ETHERNET_STRING_MAXLEN,
+		    "eaddr=%02x:%02x:%02x:%02x:%02x:%02x",
+		    macaddr[0], macaddr[1], macaddr[2],
+		    macaddr[3], macaddr[4], macaddr[5]);
+		dev_sgi_mec_init(machine, mem, 0x1f280000,
+		    MACE_ETHERNET, macaddr);
 
-				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
+		dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
-				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr=0x1f390000 addr_mult=0x100 in_use=%i name2=tty0",
-				    (1<<20) + MACE_PERIPH_SERIAL, machine->use_x11? 0 : 1);
-				j = (size_t)device_add(machine, tmpstr);
-				snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr=0x1f398000 addr_mult=0x100 in_use=%i name2=tty1",
-				    (1<<26) + MACE_PERIPH_SERIAL, 0);
-				device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr="
+		    "0x1f390000 addr_mult=0x100 in_use=%i name2=tty0",
+		    (1<<20) + MACE_PERIPH_SERIAL, machine->use_x11? 0 : 1);
+		j = (size_t)device_add(machine, tmpstr);
+		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%i addr="
+		    "0x1f398000 addr_mult=0x100 in_use=%i name2=tty1",
+		    (1<<26) + MACE_PERIPH_SERIAL, 0);
+		device_add(machine, tmpstr);
 
-				machine->main_console_handle = j;
+		machine->main_console_handle = j;
 
-				/*  TODO: Once this works, it should be enabled
-				    always, not just when using X!  */
-				if (machine->use_x11) {
-					i = dev_pckbc_init(machine, mem, 0x1f320000,
-					    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-					    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
-						/*  keyb+mouse (mace irq numbers)  */
-					machine->main_console_handle = i;
-				}
+		/*  TODO: Once this works, it should be enabled
+		    always, not just when using X!  */
+		if (machine->use_x11) {
+			i = dev_pckbc_init(machine, mem, 0x1f320000,
+			    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
+			    0x800 + MACE_PERIPH_MISC, machine->use_x11, 0);
+				/*  keyb+mouse (mace irq numbers)  */
+			machine->main_console_handle = i;
+		}
 
-				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
-				machine->main_console_handle = (size_t)device_add(machine,
-				    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
+		dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) +
+		    MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
+		machine->main_console_handle = (size_t)device_add(machine,
+		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 
-				/*
-				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
-				 *
-				 *	ne*             at pci? dev ? function ?
-				 *	ahc0            at pci0 dev 1 function ?
-				 *	ahc1            at pci0 dev 2 function ?
-				 */
+		/*
+		 *  PCI devices:   (according to NetBSD's GENERIC
+		 *  config file for sgimips)
+		 *
+		 *	ne*             at pci? dev ? function ?
+		 *	ahc0            at pci0 dev 1 function ?
+		 *	ahc1            at pci0 dev 2 function ?
+		 */
 
-		pci_data = dev_macepci_init(machine, mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
-		/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, "ne2000");  TODO  */
+		pci_data = dev_macepci_init(machine, mem, 0x1f080000,
+		    MACE_PCI_BRIDGE);	/*  macepci0  */
+		/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0,
+		    "ne2000");  TODO  */
 
 		/*  TODO: make this nicer  */
 		if (diskimage_exist(machine, 0, DISKIMAGE_SCSI) ||

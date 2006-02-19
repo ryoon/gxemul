@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.177 2006-02-18 21:48:15 debug Exp $
+$Id: RELEASE,v 1.178 2006-02-19 08:04:09 debug Exp $
 
 Working on post-0.3.8.
 
@@ -27,7 +27,6 @@ There have also been lots of other changes, too many and small to mention here.
 
 Files included in this release are:
 
-  BUGS                        A list of known bugs.
   HISTORY                     Detailed revision history / changelog.
   LICENSE                     Copyright message / license.
   README                      Quick start instructions, for the impatient.

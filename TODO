@@ -1,4 +1,4 @@
-$Id: TODO,v 1.209 2006-02-18 21:03:09 debug Exp $
+$Id: TODO,v 1.210 2006-02-19 08:04:09 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -51,8 +51,14 @@ The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
 	    minimum size, etc, or up to a max size)
 	x)  keep track of interrupts and busses? actually, allowing any device
-	    to be a bus might be a nice idea
+	    to be a bus might be a nice idea.
+	x)  turn interrupt controllers into devices? :-)
 	x)  refactor various clocks/nvram/cmos into one device?
+
+Clocks:
+	x)  General framework for automagic clock adjustment for _all_
+	    kinds of clocks and timers. (Which should be possible to turn
+	    off, of course, like the way DECstation emulation works now.)
 
 ARM:
 	o)  add ID for "i80321 600MHz rev 2 (XScale core)"
@@ -98,6 +104,7 @@ Config file parser:
 
 Floating point layer:
 	o)  make it common enough to be used by _all_ emulation modes
+	o)  implement more stuff
 	o)  non-IEEE modes (i.e. x86)?
 
 Userland emulation:
@@ -107,6 +114,12 @@ Userland emulation:
 Sound:
 	x)  generic sound framework
 	x)  add one or more sound cards as devices
+
+ASC SCSI controller:
+	x)  NetBSD/arc 2.0 uses the ASC controller in a way which GXemul
+	    cannot yet handle. (NetBSD 1.6.2 works ok.) (Possibly a problem
+	    in NetBSD itself, http://mail-index.netbsd.org/source-changes/
+	    2005/11/06/0024.html suggests that.)
 
 Caches / memory hierarchies: (this is mostly MIPS-specific)
 	o)  MIPS coproc.c: bits in config registers should reflect

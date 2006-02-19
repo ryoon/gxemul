@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.17 2005-12-11 12:46:24 debug Exp $
+#  $Id: Makefile.skel,v 1.18 2006-02-19 08:04:13 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -165,7 +165,7 @@ tmp_m68k_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_mips.o: cpu_mips.c cpu_mips16.c cpu_dyntrans.c memory_mips.c \
+cpu_mips.o: cpu_mips.c cpu_dyntrans.c memory_mips.c \
 	cpu_mips_instr.c tmp_mips_head.c tmp_mips_tail.c
 
 memory_mips.c: ../memory_rw.c memory_mips_v2p.c

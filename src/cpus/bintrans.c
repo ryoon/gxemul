@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.4 2005-12-26 12:32:10 debug Exp $
+ *  $Id: bintrans.c,v 1.5 2006-02-19 08:04:13 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -923,7 +923,7 @@ run_it:
 	    (long long)cpu->pc, (long long)cpu->cd.mips.gpr[31]);  */
 
 	if (!cpu->cd.mips.delay_slot && !cpu->cd.mips.nullify_next &&
-	    cpu->cd.mips.bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT
+	    cpu->cd.mips.bintrans_instructions_executed < N_SAFE_DYNTRANS_LIMIT
 	    && (cpu->pc & 3) == 0
 	    && cpu->cd.mips.bintrans_instructions_executed != old_n_executed) {
 		int ok = 0, a, b;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.10 2005-12-26 12:32:10 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.11 2006-02-19 08:04:14 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -84,11 +84,7 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
  */
 static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 {
-#ifdef ENABLE_MIPS16
-	const int m16 = 1;
-#else
-	const int m16 = 0;
-#endif
+	const int m16 = 0;	/*  TODO: MIPS16 support  */
 	int cpu_type, IB, DB, SB, IC, DC, SC, IA, DA;
 
 	/*  Default values:  */

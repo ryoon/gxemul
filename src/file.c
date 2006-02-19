@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.127 2006-01-22 23:20:33 debug Exp $
+ *  $Id: file.c,v 1.128 2006-02-19 08:04:12 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1466,32 +1466,6 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		debug("%016llx\n", (long long)eentry);
 	else
 		debug("%08x\n", (int)eentry);
-
-	/*
-	 *  MIPS16 encoding?
-	 *
-	 *  TODO:  Find out what e_flag actually contains.
-	 *  TODO 2: This only sets mips16 for cpu 0. Yuck. Fix this!
-	 */
-	if (arch == ARCH_MIPS && ((eflags >> 24) & 0xff) == 0x24) {
-		debug("MIPS16 encoding (e_flags = 0x%08x)\n", eflags);
-#ifdef ENABLE_MIPS16
-		m->cpus[0]->cd.mips.mips16 = 1;
-#else
-		fatal("ENABLE_MIPS16 must be defined in misc.h.\n"
-		    "(or use the --mips16 configure option)\n");
-		exit(1);
-#endif
-	} else if (arch == ARCH_MIPS && (eentry & 0x3)) {
-		debug("MIPS16 encoding (eentry not 32-bit aligned)\n");
-#ifdef ENABLE_MIPS16
-		m->cpus[0]->cd.mips.mips16 = 1;
-#else
-		fatal("ENABLE_MIPS16 must be defined in misc.h.\n"
-		    "(or use the --mips16 configure option)\n");
-		exit(1);
-#endif
-	}
 
 	/*
 	 *  SH64: 32-bit instruction encoding?  TODO

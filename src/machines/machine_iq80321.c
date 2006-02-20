@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.15 2006-02-18 13:42:39 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.16 2006-02-20 05:35:51 debug Exp $
  */
 
 #include <stdio.h>
@@ -53,6 +53,7 @@ MACHINE_SETUP(iq80321)
 	 */
 
 	machine->machine_name = "Intel IQ80321";
+	machine->stable = 1;
 
 	machine->md_interrupt = i80321_interrupt;
 	cpu->cd.arm.coproc[6] = arm_coproc_i80321_6;

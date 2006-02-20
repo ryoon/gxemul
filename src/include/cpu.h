@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.63 2006-02-19 08:04:16 debug Exp $
+ *  $Id: cpu.h,v 1.64 2006-02-20 18:54:55 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -221,55 +221,6 @@ struct cpu_family {
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
 
 
-#ifdef DYNTRANS_BACKEND
-
-/*  TODO: convert this into a fixed-size array? Might increase performace.  */
-struct dtb_fixup {
-	struct dtb_fixup	*next;
-	int			type;	/*  Fixup type [optional]  */
-	void			*addr;	/*  Address of the instruction
-					    (in host memory)  */
-	size_t			data;	/*  Emulation data.  */
-};
-
-struct translation_context {
-	/*  Current address of where to emit host instructions:  */
-	/*  (NULL means no translation is currently being done.)  */
-	void			*p;
-
-	/*  index of the instr_call of the first translated instruction:  */
-	void			*ic_page;
-	int			start_instr_call_index;
-
-	/*  Fixups needed after first translation pass:  */
-	struct dtb_fixup	*fixups;
-
-	int			n_simple;
-
-	/*  translation_buffer should have room for max_size bytes,
-	    plus some margin.  */
-	unsigned char		*translation_buffer;
-	size_t			cur_size;
-};
-
-#define	DTB_TRANSLATION_SIZE_MAX	3072
-#define	DTB_TRANSLATION_SIZE_MARGIN	1024
-
-void cpu_dtb_add_fixup(struct cpu *cpu, int type, void *addr, size_t data);
-void cpu_dtb_do_fixups(struct cpu *cpu);
-
-void dtb_host_cacheinvalidate(void *p, size_t len);
-int dtb_function_prologue(struct translation_context *ctx, size_t *sizep);
-int dtb_function_epilogue(struct translation_context *ctx, size_t *sizep);
-int dtb_generate_fcall(struct cpu *cpu, struct translation_context *ctx,
-	size_t *sizep, size_t f, size_t instr_call_ptr);
-int dtb_generate_ptr_inc(struct cpu *cpu, struct translation_context *ctx,
-	size_t *sizep, void *ptr, int amount);
-
-#endif	/*  DYNTRANS_BACKEND  */
-
-
-
 /*
  *  The generic CPU struct:
  */
@@ -319,9 +270,6 @@ struct cpu {
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
-#ifdef DYNTRANS_BACKEND
-	struct translation_context translation_context;
-#endif
 
 	/*
 	 *  CPU-family dependent:

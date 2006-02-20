@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.5 2006-02-09 22:55:20 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.6 2006-02-20 18:54:55 debug Exp $
  *
  *  x86/amd64 instructions.
  *
@@ -76,9 +76,6 @@ X(end_of_page)
 X(to_be_translated)
 {
 	uint64_t addr, low_pc;
-#ifdef DYNTRANS_BACKEND
-	int simple = 0;
-#endif
 	unsigned char *page;
 	int main_opcode;
 	unsigned char ib[17];

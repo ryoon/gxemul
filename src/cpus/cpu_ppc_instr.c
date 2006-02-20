@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.60 2006-02-19 08:04:14 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.61 2006-02-20 18:54:55 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2514,9 +2514,6 @@ X(to_be_translated)
 	uint32_t iword, mask;
 	unsigned char *page;
 	unsigned char ib[4];
-#ifdef DYNTRANS_BACKEND
-	int simple = 0;
-#endif
 	int main_opcode, rt, rs, ra, rb, rc, aa_bit, l_bit, lk_bit, spr, sh,
 	    xo, imm, load, size, update, zero, bf, bo, bi, bh, oe_bit, n64=0,
 	    bfa, fp, byterev, nb, mb, me;

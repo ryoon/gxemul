@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.5 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.6 2006-02-20 18:54:55 debug Exp $
  *
  *  SH instructions.
  *
@@ -80,9 +80,6 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-#ifdef DYNTRANS_BACKEND
-	int simple = 0;
-#endif
 	int main_opcode, instr_size = 4;
 	/* void (*samepage_function)(struct cpu *, struct sh_instr_call *);*/
 

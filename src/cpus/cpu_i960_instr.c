@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960_instr.c,v 1.4 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_i960_instr.c,v 1.5 2006-02-20 18:54:55 debug Exp $
  *
  *  Intel i960 instructions.
  *
@@ -79,9 +79,6 @@ X(to_be_translated)
 	uint16_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-#ifdef DYNTRANS_BACKEND
-	int simple = 0;
-#endif
 	int main_opcode;
 	/* void (*samepage_function)(struct cpu *, struct i960_instr_call *);*/
 

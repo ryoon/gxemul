@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64_instr.c,v 1.4 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_ia64_instr.c,v 1.5 2006-02-20 18:54:55 debug Exp $
  *
  *  IA64 instructions.
  *
@@ -75,9 +75,6 @@ X(end_of_page)
 X(to_be_translated)
 {
 	uint64_t addr, low_pc;
-#ifdef DYNTRANS_BACKEND
-	int simple = 0;
-#endif
 	unsigned char ib[16];
 
 	/*  Figure out the (virtual) address of the instruction:  */

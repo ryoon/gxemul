@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.9 2006-02-17 20:27:21 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.10 2006-02-20 18:54:55 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -582,9 +582,6 @@ X(to_be_translated)
 	uint32_t iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
-#ifdef DYNTRANS_BACKEND
-	int simple = 0;
-#endif
 	int main_opcode, rt, rs, rd, sa, s6, x64 = 0;
 	int in_crosspage_delayslot = 0;
 	int delay_slot_danger = 1;

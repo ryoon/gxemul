@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.12 2005-12-31 15:48:04 debug Exp $
+ *  $Id: generate_head.c,v 1.13 2006-02-20 18:54:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -104,7 +104,6 @@ int main(int argc, char *argv[])
 	    "extern int old_instruction_trace;\n"
 	    "extern int old_quiet_mode;\n"
 	    "extern int show_opcode_statistics;\n"
-	    "extern int dyntrans_backend_enable;\n"
 	    "extern int quiet_mode;\n");
 
 	printf("\n/* instr uses the same names as in "

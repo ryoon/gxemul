@@ -1,26 +1,17 @@
-$Id: TODO,v 1.211 2006-02-20 18:29:33 debug Exp $
+$Id: TODO,v 1.212 2006-02-21 06:58:32 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
-	Add interrupt controller in dev_algor.c.
+Dyntrans _TOP_ priority:
+	x)  64-bit stuff: good generic virtual memory translation, and
+	    other structures. not all 64 bits need to be used
+	    (e.g. Alpha)
+	x)  Delay slots!
+	x)  Old MIPS -> dyntrans!
 
-ARM:
-	o)  add ID for "i80321 600MHz rev 2 (XScale core)"
-	o)  try to get netbsd/evbarm 3.x running (iq80321)
-	o)  make the ata controller usable for FreeBSD!
-	o)  zaurus for openbsd...
-	o)  debian/cats crashes because of unimplemented coproc stuff.
-	    fix this?
+Clean up unused code!!!
 
-Dyntrans:
-	TOP Priority:
-		x)  64-bit stuff: good generic virtual memory translation, and
-		    other structures. not all 64 bits need to be used
-		    (e.g. Alpha)
-		x)  Delay slots!
-		x)  Old MIPS -> dyntrans!
-	Other stuff:
+Other dyntrans stuff:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
@@ -38,6 +29,22 @@ Dyntrans:
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
+
+Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
+	Add interrupt controller in dev_algor.c.
+
+ARM:
+	o)  add ID for "i80321 600MHz rev 2 (XScale core)"
+	o)  try to get netbsd/evbarm 3.x running (iq80321)
+	o)  make the ata controller usable for FreeBSD!
+	o)  zaurus for openbsd...
+	o)  debian/cats crashes because of unimplemented coproc stuff.
+	    fix this?
+
+Documentation:
+	o)  Try to rewrite the install instructions for those machines
+	    that use 3MAX into using CATS? (To remove the need to a raw
+	    ffs partition using up all of the disk image.)
 
 More generic out_of_memory error reporting, and check everywhere!
 	Causes:	OpenBSD has low default limits for normal users.

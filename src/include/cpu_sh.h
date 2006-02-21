@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.13 2006-02-13 04:23:25 debug Exp $
+ *  $Id: cpu_sh.h,v 1.14 2006-02-21 18:10:42 debug Exp $
  */
 
 #include "misc.h"
@@ -46,7 +46,11 @@ struct cpu_family;
 #define	SH_ADDR_TO_PAGENR(a)		((a) >> (SH_IC_ENTRIES_SHIFT \
 					+ SH_INSTR_ALIGNMENT_SHIFT))
 
+#define	SH_L2N		17
+#define	SH_L3N		18
+
 DYNTRANS_MISC_DECLARATIONS(sh,SH,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(sh,SH)
 
 #define	SH_MAX_VPH_TLB_ENTRIES		128
 

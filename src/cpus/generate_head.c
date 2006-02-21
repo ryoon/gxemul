@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.13 2006-02-20 18:54:55 debug Exp $
+ *  $Id: generate_head.c,v 1.14 2006-02-21 18:10:42 debug Exp $
  */
 
 #include <stdio.h>
@@ -33,6 +33,9 @@
 #include <string.h>
 
 
+/*  NOTE:  Static return buffer, so calling it multiple times in the
+	same printf statement with the same argument works :-)  but not
+	with different args. Hahaha. Really ugly.  */
 char *uppercase(char *l)
 {
 	static char staticbuf[1000];
@@ -65,18 +68,31 @@ int main(int argc, char *argv[])
 	a = argv[1];
 	b = argv[2];
 
+
 	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
 
 	printf("#define DYNTRANS_MAX_VPH_TLB_ENTRIES "
 	    "%s_MAX_VPH_TLB_ENTRIES\n", uppercase(a));
 	printf("#define DYNTRANS_ARCH %s\n", a);
 	printf("#define DYNTRANS_%s\n", uppercase(a));
-	printf("#ifdef DYNTRANS_32\n"
-	    "#define DYNTRANS_1LEVEL\n"
-	    "#endif\n");
+
+	/*  For 64-bit platforms, arch_L2N, and arch_L3N must be defined.  */
+	printf("#ifndef DYNTRANS_32\n");
+	printf("#define DYNTRANS_L2N %s_L2N\n"
+	    "#define DYNTRANS_L3N %s_L3N\n"
+	    "#if !defined(%s_L2N) || !defined(%s_L3N)\n"
+	    "#error arch_L2N, and arch_L3N must be defined for this arch!\n"
+	    "#endif\n",
+	    uppercase(a), uppercase(a), uppercase(a), uppercase(a));
+	printf("#define DYNTRANS_L2_64_TABLE %s_l2_64_table\n"
+	    "#define DYNTRANS_L3_64_TABLE %s_l3_64_table\n", a, a);
+	printf("#endif\n");
+
+	/*  Default pagesize is 4KB.  */
 	printf("#ifndef DYNTRANS_PAGESIZE\n"
 	    "#define DYNTRANS_PAGESIZE 4096\n"
 	    "#endif\n");
+
 	printf("#define DYNTRANS_IC %s_instr_call\n", a);
 	printf("#define DYNTRANS_IC_ENTRIES_PER_PAGE "
 	    "%s_IC_ENTRIES_PER_PAGE\n", uppercase(a));

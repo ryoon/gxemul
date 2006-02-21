@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.30 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.31 2006-02-21 18:10:42 debug Exp $
  */
 
 #include "misc.h"
@@ -65,18 +65,13 @@ struct cpu_family;
 #define	ALPHA_ADDR_TO_PAGENR(a)		((a) >> (ALPHA_IC_ENTRIES_SHIFT \
 					+ ALPHA_INSTR_ALIGNMENT_SHIFT))
 
-struct alpha_instr_call {
-	void	(*f)(struct cpu *, struct alpha_instr_call *);
-	size_t	arg[ALPHA_N_IC_ARGS];
-};
+#define	ALPHA_MAX_VPH_TLB_ENTRIES	128
 
-/*  Translation cache struct for each physical page:  */
-struct alpha_tc_physpage {
-	struct alpha_instr_call ics[ALPHA_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint32_t	physaddr;
-	int		flags;
-};
+#define	ALPHA_L2N		17
+#define	ALPHA_L3N		17
+
+DYNTRANS_MISC_DECLARATIONS(alpha,ALPHA,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(alpha,ALPHA)
 
 
 /*
@@ -102,15 +97,6 @@ struct alpha_vph_page {
 	struct alpha_vph_page	*next;	/*  Freelist, used if refcount = 0.  */
 };
 
-#define	ALPHA_MAX_VPH_TLB_ENTRIES	128
-struct alpha_vpg_tlb_entry {
-	unsigned char	valid;
-	unsigned char	writeflag;
-	int64_t		timestamp;
-	uint64_t	vaddr_page;
-	uint64_t	paddr_page;
-	unsigned char	*host_page;
-};
 
 struct alpha_cpu {
 	/*
@@ -136,6 +122,7 @@ struct alpha_cpu {
 
 	/*
 	 *  Hardcoded Alpha virtual -> physical -> host address translation:
+	 *  TODO: Remove this when the generalized stuff works!
 	 */
 	VPH_TLBS(alpha,ALPHA)
 	struct alpha_vph_page	*vph_default_page;
@@ -143,6 +130,9 @@ struct alpha_cpu {
 	struct alpha_vph_table	*vph_next_free_table;
 	struct alpha_vph_page	*vph_table0[ALPHA_LEVEL0];
 	struct alpha_vph_page	*vph_table0_kernel[ALPHA_LEVEL0];
+
+	/*  Generalized 64-bit vph:  */
+	VPH64(alpha,ALPHA,uint8_t)
 };
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.55 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.56 2006-02-21 18:10:42 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -728,11 +728,25 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 			goto have_it;
 	}
 #else
-	fatal("X1: cached_pc=%016llx\n", (long long)cached_pc);
-	/*  Temporary, to avoid a compiler warning:  */
-	ppp = NULL;
-	fatal("Neither alpha nor 32-bit? 1\n");
-	exit(1);
+	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+	uint32_t x1, x2, x3;
+	struct DYNTRANS_L2_64_TABLE *l2;
+	struct DYNTRANS_L3_64_TABLE *l3;
+
+	x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
+	x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+	x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N)) & mask3;
+	fatal("X1: cached_pc=%016llx x1=%x x2=%x x3=%x\n",
+	    (long long)cached_pc, (int)x1, (int)x2, (int)x3);
+	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
+	fatal("  l2 = %p\n", l2);
+	l3 = l2->l3[x2];
+	fatal("  l3 = %p\n", l3);
+	ppp = l3->phys_page[x3];
+	if (ppp != NULL)
+		goto have_it;
 #endif
 #endif
 
@@ -740,7 +754,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	return;
 
 	/*  Quick return path:  */
-#if defined(MODE32) || defined(DYNTRANS_ALPHA)
 have_it:
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
@@ -749,9 +762,35 @@ have_it:
 	/*  printf("cached_pc=0x%016llx  pagenr=%lli  table_index=%lli, "
 	    "physpage_ofs=0x%016llx\n", (long long)cached_pc, (long long)pagenr,
 	    (long long)table_index, (long long)physpage_ofs);  */
-#endif
 }
 #endif	/*  DYNTRANS_PC_TO_POINTERS_FUNC  */
+
+
+
+#ifdef DYNTRANS_INIT_64BIT_DUMMY_TABLES
+/*
+ *  XXX_init_64bit_dummy_tables():
+ *
+ *  Initializes 64-bit dummy tables and pointers.
+ */
+void DYNTRANS_INIT_64BIT_DUMMY_TABLES(struct cpu *cpu)
+{
+	struct DYNTRANS_L2_64_TABLE *dummy;
+	int x1;
+
+	if (cpu->is_32bit)
+		return;
+
+	printf("\n\n##########   INITIALIZING 64 BIT DUMMY TABLES\n");
+
+	dummy = zeroed_alloc(sizeof(struct DYNTRANS_L2_64_TABLE));
+
+	cpu->cd.DYNTRANS_ARCH.l2_64_dummy = dummy;
+
+	for (x1 = 0; x1 < (1 << DYNTRANS_L1N); x1 ++)
+		cpu->cd.DYNTRANS_ARCH.l1_64[x1] = dummy;
+}
+#endif	/*  DYNTRANS_INIT_64BIT_DUMMY_TABLES  */
 
 
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.64 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu.h,v 1.65 2006-02-21 18:10:42 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -65,6 +65,14 @@
 		addrtype	paddr_page;				\
 		unsigned char	*host_page;				\
 		int64_t		timestamp;				\
+	};
+
+#define	DYNTRANS_MISC64_DECLARATIONS(arch,ARCH)				\
+	struct arch ## _l3_64_table {					\
+		struct arch ## _tc_physpage *phys_page[1 << ARCH ## _L3N]; \
+	};								\
+	struct arch ## _l2_64_table {					\
+		struct arch ## _l3_64_table	*l3[1 << ARCH ## _L2N];	\
 	};
 
 /*
@@ -144,11 +152,19 @@
  *  Usage: e.g. VPH64(alpha,ALPHA,uint8_t)
  *           or VPH64(sparc,SPARC,uint16_t)
  *
- *  TODO
+ *  l1_64 is an array containing poiners to l2 tables.
+ *
+ *  l2_64_dummy is a pointer to a "dummy table". Instead of having NULL
+ *  pointers in l1_64 for unused slots, a pointer to the dummy table can be
+ *  used.
  */
-#define	VPH64(arch,ARCH,tlbindextype)			\
-	int dummy;
+#define	DYNTRANS_L1N		17
+#define	VPH64(arch,ARCH,tlbindextype)					\
+	struct arch ## _l2_64_table	*l2_64_dummy;			\
+	struct arch ## _l2_64_table	*l1_64[1 << DYNTRANS_L1N];
 
+
+/*  Include all CPUs' header files here:  */
 #include "cpu_alpha.h"
 #include "cpu_arm.h"
 #include "cpu_avr.h"

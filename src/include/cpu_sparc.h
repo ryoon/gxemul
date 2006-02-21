@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.23 2006-02-13 04:23:25 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.24 2006-02-21 18:10:42 debug Exp $
  */
 
 #include "misc.h"
@@ -68,7 +68,12 @@ struct sparc_cpu_type_def {
 #define	SPARC_ADDR_TO_PAGENR(a)		((a) >> (SPARC_IC_ENTRIES_SHIFT \
 					+ SPARC_INSTR_ALIGNMENT_SHIFT))
 
+#define	SPARC_L2N		17
+#define	SPARC_L3N		18	/*  4KB pages on 32-bit sparc,  */
+					/*  8KB pages on 64-bit?  TODO  */
+
 DYNTRANS_MISC_DECLARATIONS(sparc,SPARC,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC)
 
 #define	SPARC_MAX_VPH_TLB_ENTRIES		128
 

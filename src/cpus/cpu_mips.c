@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.18 2006-02-19 08:04:14 debug Exp $
+ *  $Id: cpu_mips.c,v 1.19 2006-02-21 18:10:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -347,6 +347,10 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	    sizeof(unsigned char *));
 	cpu->cd.mips.host_load_orig = cpu->cd.mips.host_OLD_load;
 	cpu->cd.mips.host_store_orig = cpu->cd.mips.host_OLD_store;
+
+#ifdef EXPERIMENTAL_NEWMIPS
+	mips_init_64bit_dummy_tables(cpu);
+#endif
 
 	return 1;
 }

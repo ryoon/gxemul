@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.10 2006-02-13 04:23:25 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.11 2006-02-21 18:10:42 debug Exp $
  */
 
 #include "misc.h"
@@ -45,7 +45,11 @@ struct cpu_family;
 #define	IA64_ADDR_TO_PAGENR(a)		((a) >> (IA64_IC_ENTRIES_SHIFT \
 					+ IA64_INSTR_ALIGNMENT_SHIFT))
 
+#define	IA64_L2N		17
+#define	IA64_L3N		18
+
 DYNTRANS_MISC_DECLARATIONS(ia64,IA64,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(ia64,IA64)
 
 #define	IA64_MAX_VPH_TLB_ENTRIES		128
 

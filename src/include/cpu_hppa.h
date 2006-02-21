@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.h,v 1.15 2006-02-13 04:23:25 debug Exp $
+ *  $Id: cpu_hppa.h,v 1.16 2006-02-21 18:10:42 debug Exp $
  */
 
 #include "misc.h"
@@ -46,7 +46,11 @@ struct cpu_family;
 #define	HPPA_ADDR_TO_PAGENR(a)		((a) >> (HPPA_IC_ENTRIES_SHIFT \
 					+ HPPA_INSTR_ALIGNMENT_SHIFT))
 
+#define	HPPA_L2N		17
+#define	HPPA_L3N		18
+
 DYNTRANS_MISC_DECLARATIONS(hppa,HPPA,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(hppa,HPPA)
 
 #define	HPPA_MAX_VPH_TLB_ENTRIES		128
 

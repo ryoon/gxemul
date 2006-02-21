@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.27 2006-02-19 08:04:16 debug Exp $
+ *  $Id: cpu_mips.h,v 1.28 2006-02-21 18:10:42 debug Exp $
  */
 
 #include "misc.h"
@@ -211,6 +211,14 @@ struct r4000_cache_line {
 #define	MIPS_ADDR_TO_PAGENR(a)		((a) >> (MIPS_IC_ENTRIES_SHIFT \
 					+ MIPS_INSTR_ALIGNMENT_SHIFT))
 
+#define	MIPS_L2N		17
+#define	MIPS_L3N		18
+
+#define	MIPS_MAX_VPH_TLB_ENTRIES	128
+DYNTRANS_MISC_DECLARATIONS(mips,MIPS,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(mips,MIPS)
+
+#if 0
 struct mips_instr_call {
 	void	(*f)(struct cpu *, struct mips_instr_call *);
 	size_t	arg[MIPS_N_IC_ARGS];
@@ -224,7 +232,6 @@ struct mips_tc_physpage {
 	uint64_t	physaddr;
 };
 
-#define	MIPS_MAX_VPH_TLB_ENTRIES	128
 struct mips_vpg_tlb_entry {
 	uint8_t		valid;
 	uint8_t		writeflag;
@@ -233,7 +240,7 @@ struct mips_vpg_tlb_entry {
 	uint64_t	vaddr_page;
 	uint64_t	paddr_page;
 };
-
+#endif
 
 /*******************************  OLD:  *****************************/
 
@@ -479,6 +486,7 @@ void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void mips_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+void mips_init_64bit_dummy_tables(struct cpu *cpu);
 
 
 #endif	/*  CPU_MIPS_H  */

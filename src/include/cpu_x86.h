@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.43 2006-02-13 04:23:25 debug Exp $
+ *  $Id: cpu_x86.h,v 1.44 2006-02-21 18:10:42 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */
@@ -103,7 +103,11 @@ struct x86_model {
 #define	X86_PC_TO_IC_ENTRY(a)		((a) & (X86_IC_ENTRIES_PER_PAGE-1))
 #define	X86_ADDR_TO_PAGENR(a)		((a) >> X86_IC_ENTRIES_SHIFT)
 
+#define	X86_L2N			17
+#define	X86_L3N			18
+
 DYNTRANS_MISC_DECLARATIONS(x86,X86,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(x86,X86)
 
 #define	X86_MAX_VPH_TLB_ENTRIES		128
 

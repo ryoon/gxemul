@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1123 2006-02-20 18:54:54 debug Exp $
+$Id: HISTORY,v 1.1124 2006-02-21 18:10:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2577,3 +2577,4 @@ Changelog for GXemul:
 20060219	Various minor updates. Removing the old MIPS16 skeleton code,
 		because it will need to be rewritten for dyntrans anyway.
 20060220	Removing the non-working dyntrans backend support.
+		Continuing on the 64-bit dyntrans virtual memory generalization.

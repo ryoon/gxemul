@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.60 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.61 2006-02-21 18:10:42 debug Exp $
  */
 
 #include "misc.h"
@@ -95,7 +95,11 @@ struct ppc_cpu_type_def {
 #define	PPC_ADDR_TO_PAGENR(a)		((a) >> (PPC_IC_ENTRIES_SHIFT \
 					+ PPC_INSTR_ALIGNMENT_SHIFT))
 
+#define	PPC_L2N			17
+#define	PPC_L3N			18
+
 DYNTRANS_MISC_DECLARATIONS(ppc,PPC,uint64_t)
+DYNTRANS_MISC64_DECLARATIONS(ppc,PPC)
 
 #define	PPC_MAX_VPH_TLB_ENTRIES		128
 

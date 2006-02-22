@@ -1,4 +1,4 @@
-$Id: TODO,v 1.212 2006-02-21 06:58:32 debug Exp $
+$Id: TODO,v 1.213 2006-02-22 17:42:46 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -15,10 +15,6 @@ Other dyntrans stuff:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
-	x)  Think about sharing code between CPUs of the same
-	    arch/bitlength/endianness (the translation caches).
-	    (Eg. a little-endian R4000 and a little-endian R5000 could
-	    share code, but not an R3000 and an R4000.)
 	x)  better (meaningful) instr call statistics
 	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)

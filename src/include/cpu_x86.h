@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.44 2006-02-21 18:10:42 debug Exp $
+ *  $Id: cpu_x86.h,v 1.45 2006-02-22 17:42:47 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */
@@ -107,7 +107,7 @@ struct x86_model {
 #define	X86_L3N			18
 
 DYNTRANS_MISC_DECLARATIONS(x86,X86,uint64_t)
-DYNTRANS_MISC64_DECLARATIONS(x86,X86)
+DYNTRANS_MISC64_DECLARATIONS(x86,X86,uint8_t)
 
 #define	X86_MAX_VPH_TLB_ENTRIES		128
 

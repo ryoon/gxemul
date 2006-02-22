@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.14 2006-02-21 18:10:42 debug Exp $
+ *  $Id: cpu_sh.h,v 1.15 2006-02-22 17:42:47 debug Exp $
  */
 
 #include "misc.h"
@@ -50,7 +50,7 @@ struct cpu_family;
 #define	SH_L3N		18
 
 DYNTRANS_MISC_DECLARATIONS(sh,SH,uint64_t)
-DYNTRANS_MISC64_DECLARATIONS(sh,SH)
+DYNTRANS_MISC64_DECLARATIONS(sh,SH,uint8_t)
 
 #define	SH_MAX_VPH_TLB_ENTRIES		128
 

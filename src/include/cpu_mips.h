@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.28 2006-02-21 18:10:42 debug Exp $
+ *  $Id: cpu_mips.h,v 1.29 2006-02-22 17:42:47 debug Exp $
  */
 
 #include "misc.h"
@@ -216,7 +216,7 @@ struct r4000_cache_line {
 
 #define	MIPS_MAX_VPH_TLB_ENTRIES	128
 DYNTRANS_MISC_DECLARATIONS(mips,MIPS,uint64_t)
-DYNTRANS_MISC64_DECLARATIONS(mips,MIPS)
+DYNTRANS_MISC64_DECLARATIONS(mips,MIPS,uint8_t)
 
 #if 0
 struct mips_instr_call {

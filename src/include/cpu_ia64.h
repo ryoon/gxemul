@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.11 2006-02-21 18:10:42 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.12 2006-02-22 17:42:47 debug Exp $
  */
 
 #include "misc.h"
@@ -49,7 +49,7 @@ struct cpu_family;
 #define	IA64_L3N		18
 
 DYNTRANS_MISC_DECLARATIONS(ia64,IA64,uint64_t)
-DYNTRANS_MISC64_DECLARATIONS(ia64,IA64)
+DYNTRANS_MISC64_DECLARATIONS(ia64,IA64,uint8_t)
 
 #define	IA64_MAX_VPH_TLB_ENTRIES		128
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.56 2006-02-21 18:10:42 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.57 2006-02-22 17:42:46 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -514,22 +514,19 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #else
 	uint64_t
 #endif
-	    cached_pc, physaddr = 0;
+	    cached_pc = cpu->pc, physaddr = 0;
 	uint32_t physpage_ofs;
 	int ok, pagenr, table_index;
 	uint32_t *physpage_entryp;
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
 
 #ifdef MODE32
-	int index;
-	cached_pc = cpu->pc;
-	index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
+	int index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 #else
 #ifdef DYNTRANS_ALPHA
 	uint32_t a, b;
 	int kernel = 0;
 	struct alpha_vph_page *vph_p;
-	cached_pc = cpu->pc;
 	a = (cached_pc >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
 	b = (cached_pc >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
 	if ((cached_pc >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
@@ -538,8 +535,22 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	} else
 		vph_p = cpu->cd.alpha.vph_table0[a];
 #else
-	fatal("Neither alpha nor 32-bit? 3\n");
-	exit(1);
+	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+	uint32_t x1, x2, x3;
+	struct DYNTRANS_L2_64_TABLE *l2;
+	struct DYNTRANS_L3_64_TABLE *l3;
+
+	x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
+	x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+	x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N)) & mask3;
+	fatal("X3: cached_pc=%016llx x1=%x x2=%x x3=%x\n",
+	    (long long)cached_pc, (int)x1, (int)x2, (int)x3);
+	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
+	fatal("  l2 = %p\n", l2);
+	l3 = l2->l3[x2];
+	fatal("  l3 = %p\n", l3);
 #endif
 #endif
 
@@ -557,8 +568,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		ok = 1;
 	}
 #else
-	fatal("Neither alpha nor 32-bit? 4\n");
-	exit(1);
+	if (l3->host_load[x3] != NULL) {
+		physaddr = l3->phys_addr[x3];
+		ok = 1;
+	}
 #endif
 #endif
 
@@ -593,6 +606,9 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef MODE32
 		index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 #endif
+
+/*  TODO: UPdate the index here for alpha and 64-bit modes as well!!  */
+
 		physaddr = paddr;
 	}
 
@@ -609,6 +625,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		}
 	}
 #endif
+/*  TODO: similar update for 64-bit mode!  */
 
 	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE) {
 		debug("[ dyntrans: resetting the translation cache ]\n");
@@ -653,11 +670,14 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef MODE32
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL)
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = ppp;
-#endif
-
+#else
 #ifdef DYNTRANS_ALPHA
 	if (vph_p->host_load[b] != NULL)
 		vph_p->phys_page[b] = ppp;
+#else
+	if (l3->host_load[x3] != NULL)
+		l3->phys_page[x3] = ppp;
+#endif
 #endif
 
 #ifdef MODE32
@@ -666,6 +686,11 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	    translations, it is already non-writable.)  */
 	if (!cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5] &
 	    (1 << (pagenr & 31)))
+#else
+#ifdef DYNTRANS_ALPHA
+#else
+	if (!l3->phystranslation[x3 >> 5] & (1 << (x3 & 31)))
+#endif
 #endif
 	cpu->invalidate_translation_caches(cpu, physaddr,
 	    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
@@ -738,12 +763,8 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
 	x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
 	x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N)) & mask3;
-	fatal("X1: cached_pc=%016llx x1=%x x2=%x x3=%x\n",
-	    (long long)cached_pc, (int)x1, (int)x2, (int)x3);
 	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
-	fatal("  l2 = %p\n", l2);
 	l3 = l2->l3[x2];
-	fatal("  l3 = %p\n", l3);
 	ppp = l3->phys_page[x3];
 	if (ppp != NULL)
 		goto have_it;
@@ -775,20 +796,26 @@ have_it:
  */
 void DYNTRANS_INIT_64BIT_DUMMY_TABLES(struct cpu *cpu)
 {
-	struct DYNTRANS_L2_64_TABLE *dummy;
-	int x1;
+	struct DYNTRANS_L2_64_TABLE *dummy_l2;
+	struct DYNTRANS_L3_64_TABLE *dummy_l3;
+	int x1, x2;
 
 	if (cpu->is_32bit)
 		return;
 
 	printf("\n\n##########   INITIALIZING 64 BIT DUMMY TABLES\n");
 
-	dummy = zeroed_alloc(sizeof(struct DYNTRANS_L2_64_TABLE));
+	dummy_l2 = zeroed_alloc(sizeof(struct DYNTRANS_L2_64_TABLE));
+	dummy_l3 = zeroed_alloc(sizeof(struct DYNTRANS_L3_64_TABLE));
 
-	cpu->cd.DYNTRANS_ARCH.l2_64_dummy = dummy;
+	cpu->cd.DYNTRANS_ARCH.l2_64_dummy = dummy_l2;
+	cpu->cd.DYNTRANS_ARCH.l3_64_dummy = dummy_l3;
 
 	for (x1 = 0; x1 < (1 << DYNTRANS_L1N); x1 ++)
-		cpu->cd.DYNTRANS_ARCH.l1_64[x1] = dummy;
+		cpu->cd.DYNTRANS_ARCH.l1_64[x1] = dummy_l2;
+
+	for (x2 = 0; x2 < (1 << DYNTRANS_L2N); x2 ++)
+		dummy_l2->l3[x2] = dummy_l3;
 }
 #endif	/*  DYNTRANS_INIT_64BIT_DUMMY_TABLES  */
 
@@ -874,7 +901,8 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 			    cpu->cd.alpha.vph_default_page;
 	}
 #else	/*  !DYNTRANS_ALPHA  */
-	fatal("Not yet for non-1-level, non-Alpha\n");
+	fatal("BLAH Not yet for non-1-level, non-Alpha\n");
+	exit(1);
 #endif	/*  !DYNTRANS_ALPHA  */
 #endif
 }
@@ -1116,7 +1144,8 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 					vph_p = cpu->cd.alpha.vph_table0[a];
 				vph_p->phys_page[b] = NULL;
 #else	/*  !DYNTRANS_ALPHA  */
-				fatal("Not yet for non-1-level, non-Alpha\n");
+				fatal("8 Not yet for non-1-level, non-Alpha\n");
+				exit(1);
 #endif	/*  !DYNTRANS_ALPHA  */
 #endif
 			}
@@ -1289,7 +1318,10 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			cpu->cd.DYNTRANS_ARCH.is_userpage[index >> 5]
 			    |= 1 << (index & 31);
 #endif
-#endif	/*  32  */
+#else	/* !MODE32  */
+		fatal("64-bit Blah blah yoyo\n");
+		exit(1);
+#endif	/* !MODE32  */
 #endif	/*  !ALPHA  */
 	} else {
 		/*
@@ -1349,7 +1381,10 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			    writeflag? host_page : NULL;
 			cpu->cd.DYNTRANS_ARCH.phys_addr[index] = paddr_page;
 		}
-#endif	/*  32  */
+#else	/*  !MODE32  */
+		fatal("64-bit todo xyz\n");
+		exit(1);
+#endif	/*  !MODE32  */
 #endif	/*  !ALPHA  */
 	}
 }

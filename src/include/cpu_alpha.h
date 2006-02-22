@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.31 2006-02-21 18:10:42 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.32 2006-02-22 17:42:47 debug Exp $
  */
 
 #include "misc.h"
@@ -71,7 +71,7 @@ struct cpu_family;
 #define	ALPHA_L3N		17
 
 DYNTRANS_MISC_DECLARATIONS(alpha,ALPHA,uint64_t)
-DYNTRANS_MISC64_DECLARATIONS(alpha,ALPHA)
+DYNTRANS_MISC64_DECLARATIONS(alpha,ALPHA,uint8_t)
 
 
 /*

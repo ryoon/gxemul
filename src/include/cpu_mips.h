@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.29 2006-02-22 17:42:47 debug Exp $
+ *  $Id: cpu_mips.h,v 1.30 2006-02-22 20:09:09 debug Exp $
  */
 
 #include "misc.h"
@@ -486,6 +486,10 @@ void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void mips_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+void mips32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void mips32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
+void mips32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 void mips_init_64bit_dummy_tables(struct cpu *cpu);
 
 

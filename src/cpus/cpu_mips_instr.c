@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.10 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.11 2006-02-22 20:09:09 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -586,6 +586,9 @@ X(to_be_translated)
 	int in_crosspage_delayslot = 0;
 	int delay_slot_danger = 1;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
+
+printf("cpu->cd.DYNTRANS_ARCH.cur_ic_page = %p\n",
+    cpu->cd.mips.cur_ic_page);
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)

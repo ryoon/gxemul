@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.57 2006-02-22 17:42:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.58 2006-02-22 20:09:09 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -119,7 +119,8 @@ a &= 0x03ffffff;
 			cpu->cd.DYNTRANS_ARCH.next_ic += ic->arg[0];	\
 			ic->f(cpu, ic);
 #else
-#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
+#define I	printf("G: %p\n", cpu->cd.DYNTRANS_ARCH.next_ic);	\
+		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
 #endif
 
 
@@ -234,8 +235,11 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		if (show_opcode_statistics)
 			S;
 
+printf("1... IC = %p, IC->f = %p\n", ic, ic->f);
+
 		/*  Execute just one instruction:  */
 		ic->f(cpu, ic);
+printf("1... IC = %p, IC->f = %p\n", ic, ic->f);
 		n_instrs = 1;
 	} else if (show_opcode_statistics) {
 		/*  Gather statistics while executing multiple instructions:  */
@@ -577,6 +581,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 
 	if (!ok) {
 		uint64_t paddr;
+printf("**\n");
 		if (cpu->translate_address != NULL)
 			ok = cpu->translate_address(cpu, cached_pc,
 			    &paddr, FLAG_INSTR);
@@ -584,6 +589,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			paddr = cached_pc;
 			ok = 1;
 		}
+printf("** ok=%i\n", ok);
 		if (!ok) {
 			/*  fatal("TODO: instruction vaddr=>paddr translation"
 			    " failed. vaddr=0x%llx\n", (long long)cached_pc);
@@ -602,20 +608,40 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 				exit(1);
 			}
 		}
+
+		/*  If there was an exception, the PC can have changed.
+		    Update cached_pc:  */
 		cached_pc = cpu->pc;
+
 #ifdef MODE32
 		index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
+#else
+#ifdef DYNTRANS_ALPHA
+		fatal("ALPHA! NO, REMOVE THIS!\n");
+#else
+		x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
+		x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+		x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
+		    & mask3;
+#endif
 #endif
 
-/*  TODO: UPdate the index here for alpha and 64-bit modes as well!!  */
-
 		physaddr = paddr;
+printf("UrK: physaddr = %016llx\n", (long long)physaddr);
 	}
 
 #ifdef MODE32
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] == NULL) {
+#else
+#ifdef DYNTRANS_ALPHA
+	if (vph_p->host_load[b] == NULL) {
+#else
+	if (l3->host_load[x3] == NULL) {
+#endif
+#endif
 		unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
 		    physaddr, MEM_READ);
+printf("- j: host_page=%p\n",host_page);
 		if (host_page != NULL) {
 			int q = DYNTRANS_PAGESIZE - 1;
 			host_page += (physaddr &
@@ -624,8 +650,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			    host_page, TLB_CODE, physaddr & ~q);
 		}
 	}
-#endif
-/*  TODO: similar update for 64-bit mode!  */
+printf("- k\n");
 
 	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE) {
 		debug("[ dyntrans: resetting the translation cache ]\n");
@@ -686,19 +711,16 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	    translations, it is already non-writable.)  */
 	if (!cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5] &
 	    (1 << (pagenr & 31)))
-#else
-#ifdef DYNTRANS_ALPHA
-#else
-	if (!l3->phystranslation[x3 >> 5] & (1 << (x3 & 31)))
-#endif
 #endif
 	cpu->invalidate_translation_caches(cpu, physaddr,
 	    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
 
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 
+printf(":A next_ic=%p\n", cpu->cd.DYNTRANS_ARCH.next_ic);
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
+printf(":B next_ic=%p\n", cpu->cd.DYNTRANS_ARCH.next_ic);
 
 	/*  printf("cached_pc=0x%016llx  pagenr=%lli  table_index=%lli, "
 	    "physpage_ofs=0x%016llx\n", (long long)cached_pc, (long long)pagenr,
@@ -777,8 +799,10 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	/*  Quick return path:  */
 have_it:
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
+printf("@A next_ic=%p\n", cpu->cd.DYNTRANS_ARCH.next_ic);
 	cpu->cd.DYNTRANS_ARCH.next_ic = cpu->cd.DYNTRANS_ARCH.cur_ic_page +
 	    DYNTRANS_PC_TO_IC_ENTRY(cached_pc);
+printf("@B next_ic=%p\n", cpu->cd.DYNTRANS_ARCH.next_ic);
 
 	/*  printf("cached_pc=0x%016llx  pagenr=%lli  table_index=%lli, "
 	    "physpage_ofs=0x%016llx\n", (long long)cached_pc, (long long)pagenr,
@@ -1186,8 +1210,16 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	    " p=0x%x\n", (int)vaddr_page, host_page, writeflag,
 	    (int)paddr_page);  */
 #else	/*  !MODE32  */
-	fatal("Neither 32-bit nor Alpha? 2\n");
-	exit(1);
+	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+	uint32_t x1, x2, x3;
+/*	struct DYNTRANS_L2_64_TABLE *l2;
+	struct DYNTRANS_L3_64_TABLE *l3;
+*/
+	fatal("update_translation_table(): v=0x%llx, h=%p w=%i"
+	    " p=0x%llx\n", (long long)vaddr_page, host_page, writeflag,
+	    (long long)paddr_page);
 #endif
 #endif
 
@@ -1319,7 +1351,11 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			    |= 1 << (index & 31);
 #endif
 #else	/* !MODE32  */
-		fatal("64-bit Blah blah yoyo\n");
+		fatal("64-bit Blah blah yoyo: Fortsätt här :-)\n");
+		x1 = (vaddr_page >> (64-DYNTRANS_L1N)) & mask1;
+		x2 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+		x3 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
+		    & mask3;
 		exit(1);
 #endif	/* !MODE32  */
 #endif	/*  !ALPHA  */

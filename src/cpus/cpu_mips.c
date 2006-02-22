@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.19 2006-02-21 18:10:42 debug Exp $
+ *  $Id: cpu_mips.c,v 1.20 2006-02-22 20:09:09 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -162,13 +162,30 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->name               = cpu->cd.mips.cpu_type.name;
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = INITIAL_STACK_POINTER;
-	cpu->update_translation_table = mips_OLD_update_translation_table;
-	cpu->invalidate_translation_caches =
-	    mips_invalidate_translation_caches_paddr;
 
 	if (cpu->cd.mips.cpu_type.isa_level <= 2 ||
 	    cpu->cd.mips.cpu_type.isa_level == 32)
 		cpu->is_32bit = 1;
+
+#ifdef EXPERIMENTAL_NEWMIPS
+	if (cpu->is_32bit) {
+		cpu->update_translation_table = mips32_update_translation_table;
+		cpu->invalidate_translation_caches =
+		    mips32_invalidate_translation_caches;
+		cpu->invalidate_code_translation =
+		    mips32_invalidate_code_translation;
+	} else {
+		cpu->update_translation_table = mips_update_translation_table;
+		cpu->invalidate_translation_caches =
+		    mips_invalidate_translation_caches;
+		cpu->invalidate_code_translation =
+		    mips_invalidate_code_translation;
+	}
+#else
+	cpu->update_translation_table = mips_OLD_update_translation_table;
+	cpu->invalidate_translation_caches =
+	    mips_invalidate_translation_caches_paddr;
+#endif
 
 	if (cpu_id == 0)
 		debug("%s", cpu->cd.mips.cpu_type.name);

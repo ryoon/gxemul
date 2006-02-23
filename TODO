@@ -1,4 +1,4 @@
-$Id: TODO,v 1.213 2006-02-22 17:42:46 debug Exp $
+$Id: TODO,v 1.214 2006-02-23 05:49:51 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -36,6 +36,14 @@ ARM:
 	o)  zaurus for openbsd...
 	o)  debian/cats crashes because of unimplemented coproc stuff.
 	    fix this?
+
+Cache simulation:
+	o)  Separate from the CPU concept, so that multi-core CPUs sharing
+	    e.g. a L2 cache can be simulated (?)
+	o)  Instruction cache emulation is easiest (if separate from the
+	    data cache); similar hack as the S;I; hack in cpu_dyntrans.c.
+	o)  Data cache emulation = harder; each arch's load/store routines
+	    must include support?
 
 Documentation:
 	o)  Try to rewrite the install instructions for those machines

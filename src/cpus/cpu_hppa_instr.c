@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa_instr.c,v 1.7 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_hppa_instr.c,v 1.8 2006-02-24 01:20:35 debug Exp $
  *
  *  HPPA instructions.
  *
@@ -128,10 +128,12 @@ X(to_be_translated)
 
 	main_opcode = iword >> 26;
 
+#if 0
 	switch (main_opcode) {
 
 	default:goto bad;
 	}
+#endif
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

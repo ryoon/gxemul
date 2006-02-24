@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k_instr.c,v 1.6 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_m68k_instr.c,v 1.7 2006-02-24 01:20:35 debug Exp $
  *
  *  Motorola 68K instructions.
  *
@@ -133,10 +133,12 @@ X(to_be_translated)
 
 	main_opcode = iword;
 
+#if 0
 	switch (main_opcode) {
 
 	default:goto bad;
 	}
+#endif
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

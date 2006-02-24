@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960_instr.c,v 1.5 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_i960_instr.c,v 1.6 2006-02-24 01:20:35 debug Exp $
  *
  *  Intel i960 instructions.
  *
@@ -130,15 +130,14 @@ X(to_be_translated)
 	 */
 
 
-/*  TODO  */
-
-
 	main_opcode = iword;
 
+#if 0
 	switch (main_opcode) {
 
 	default:goto bad;
 	}
+#endif
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

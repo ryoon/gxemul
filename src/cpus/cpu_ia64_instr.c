@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64_instr.c,v 1.5 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_ia64_instr.c,v 1.6 2006-02-24 01:20:35 debug Exp $
  *
  *  IA64 instructions.
  *
@@ -108,8 +108,7 @@ X(to_be_translated)
 #undef	DYNTRANS_TO_BE_TRANSLATED_HEAD
 
 
-fatal("[ UNIMPLEMENTED IA64 instruction ]\n");
-goto bad;
+/*  TODO  */
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_TAIL

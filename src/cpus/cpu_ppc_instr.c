@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.62 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.63 2006-02-24 01:20:36 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1948,7 +1948,7 @@ X(extsh) {
 DOT2(extsh)
 X(extsw) {
 #ifdef MODE32
-	fatal("TODO: extsw: invalid instruction\n"); exit(1);
+	fatal("TODO: extsw: invalid instruction\n");
 #else
 	reg(ic->arg[2]) = (int64_t)(int32_t)reg(ic->arg[0]);
 #endif

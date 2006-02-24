@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.9 2006-02-17 18:38:30 debug Exp $
+ *  $Id: cpu_sh.c,v 1.10 2006-02-24 00:20:42 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -88,6 +88,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
+
+	sh_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }

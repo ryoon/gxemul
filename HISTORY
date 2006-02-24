@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1126 2006-02-22 20:09:08 debug Exp $
+$Id: HISTORY,v 1.1127 2006-02-24 00:20:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2578,3 +2578,4 @@ Changelog for GXemul:
 		because it will need to be rewritten for dyntrans anyway.
 20060220-22	Removing the non-working dyntrans backend support.
 		Continuing on the 64-bit dyntrans virtual memory generalization.
+20060223	More work on the 64-bit vm generalization.

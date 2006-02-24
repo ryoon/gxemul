@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.61 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.62 2006-02-24 00:20:42 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2530,7 +2530,22 @@ X(to_be_translated)
 	addr &= ~((1 << PPC_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
+#ifdef MODE32
 	page = cpu->cd.ppc.host_load[addr >> 12];
+#else
+	{
+		const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+		const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+		const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+		uint32_t x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
+		uint32_t x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+		uint32_t x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-
+		    DYNTRANS_L3N)) & mask3;
+		struct DYNTRANS_L2_64_TABLE *l2 = cpu->cd.ppc.l1_64[x1];
+		struct DYNTRANS_L3_64_TABLE *l3 = l2->l3[x2];
+		page = l3->host_load[x3];
+	}
+#endif
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

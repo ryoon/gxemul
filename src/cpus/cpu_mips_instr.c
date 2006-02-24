@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.11 2006-02-22 20:09:09 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.12 2006-02-24 00:20:41 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -587,9 +587,6 @@ X(to_be_translated)
 	int delay_slot_danger = 1;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 
-printf("cpu->cd.DYNTRANS_ARCH.cur_ic_page = %p\n",
-    cpu->cd.mips.cur_ic_page);
-
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
 	    / sizeof(struct mips_instr_call);
@@ -608,7 +605,22 @@ printf("cpu->cd.DYNTRANS_ARCH.cur_ic_page = %p\n",
 	addr &= ~((1 << MIPS_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
+#ifdef MODE32
 	page = cpu->cd.mips.host_load[(uint32_t)addr >> 12];
+#else
+	{
+		const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+		const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+		const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+		uint32_t x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
+		uint32_t x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+		uint32_t x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-
+		    DYNTRANS_L3N)) & mask3;
+		struct DYNTRANS_L2_64_TABLE *l2 = cpu->cd.mips.l1_64[x1];
+		struct DYNTRANS_L3_64_TABLE *l3 = l2->l3[x2];
+		page = l3->host_load[x3];
+	}
+#endif
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */

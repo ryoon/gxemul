@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.45 2006-01-24 21:26:01 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.46 2006-02-24 00:20:41 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -156,6 +156,8 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Some default stack pointer value.  TODO: move this?  */
 	cpu->cd.ppc.gpr[1] = machine->physical_ram_in_mb * 1048576 - 4096;
+
+	ppc_init_64bit_dummy_tables(cpu);
 
 	/*
 	 *  NOTE/TODO: Ugly hack for OpenFirmware emulation:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.11 2005-12-11 21:34:43 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.12 2006-02-24 00:20:42 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -124,6 +124,8 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 			debug(")");
 		}
 	}
+
+	sparc_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }

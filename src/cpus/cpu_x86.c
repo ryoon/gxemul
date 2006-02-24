@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.7 2006-02-17 18:38:30 debug Exp $
+ *  $Id: cpu_x86.c,v 1.8 2006-02-24 00:20:42 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -141,6 +141,8 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
+
+	x86_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }

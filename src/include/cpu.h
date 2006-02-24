@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.67 2006-02-22 20:09:09 debug Exp $
+ *  $Id: cpu.h,v 1.68 2006-02-24 00:20:42 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -74,9 +74,13 @@
 		uint64_t	phys_addr[1 << ARCH ## _L3N];		\
 		tlbindextype	vaddr_to_tlbindex[1 << ARCH ## _L3N];	\
 		struct arch ## _tc_physpage *phys_page[1 << ARCH ## _L3N]; \
+		struct arch ## _l3_64_table	*next;			\
+		int		refcount;				\
 	};								\
 	struct arch ## _l2_64_table {					\
 		struct arch ## _l3_64_table	*l3[1 << ARCH ## _L2N];	\
+		struct arch ## _l2_64_table	*next;			\
+		int				refcount;		\
 	};
 
 /*
@@ -165,7 +169,9 @@
 #define	DYNTRANS_L1N		17
 #define	VPH64(arch,ARCH,tlbindextype)					\
 	struct arch ## _l3_64_table	*l3_64_dummy;			\
+	struct arch ## _l3_64_table	*next_free_l3;			\
 	struct arch ## _l2_64_table	*l2_64_dummy;			\
+	struct arch ## _l2_64_table	*next_free_l2;			\
 	struct arch ## _l2_64_table	*l1_64[1 << DYNTRANS_L1N];
 
 

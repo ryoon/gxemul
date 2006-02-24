@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.15 2006-02-22 17:42:47 debug Exp $
+ *  $Id: cpu_sh.h,v 1.16 2006-02-24 00:20:42 debug Exp $
  */
 
 #include "misc.h"
@@ -82,6 +82,7 @@ void sh32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void sh32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void sh32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+void sh_init_64bit_dummy_tables(struct cpu *cpu);
 int sh_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int sh_cpu_family_init(struct cpu_family *);

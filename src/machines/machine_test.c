@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.1 2006-01-01 20:41:25 debug Exp $
+ *  $Id: machine_test.c,v 1.2 2006-02-24 00:20:42 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -55,7 +55,7 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 	device_add(machine, tmpstr);
 
 	dev_fb_init(machine, machine->memory, DEV_FB_ADDRESS, VFB_GENERIC,
-	    640,480, 640,480, 24, "testalpha generic"); 
+	    640,480, 640,480, 24, "generic"); 
 
 	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
 	    (long long)DEV_DISK_ADDRESS);

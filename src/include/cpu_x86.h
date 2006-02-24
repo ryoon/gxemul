@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.45 2006-02-22 17:42:47 debug Exp $
+ *  $Id: cpu_x86.h,v 1.46 2006-02-24 00:20:42 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */
@@ -303,6 +303,7 @@ void x86_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void x8632_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void x86_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 void x8632_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+void x86_init_64bit_dummy_tables(struct cpu *cpu);
 int x86_cpu_family_init(struct cpu_family *);
 
 

@@ -1,11 +1,11 @@
-$Id: TODO,v 1.214 2006-02-23 05:49:51 debug Exp $
+$Id: TODO,v 1.215 2006-02-24 00:37:00 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 Dyntrans _TOP_ priority:
-	x)  64-bit stuff: good generic virtual memory translation, and
-	    other structures. not all 64 bits need to be used
-	    (e.g. Alpha)
+	x)  64-bit stuff
+		Loads/stores! PPC, MIPS, SPARC, ...
+		Rewrite/remove the old Alpha code
 	x)  Delay slots!
 	x)  Old MIPS -> dyntrans!
 

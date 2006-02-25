@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1128 2006-02-25 12:55:19 debug Exp $
+$Id: HISTORY,v 1.1129 2006-02-25 13:27:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2581,3 +2581,4 @@ Changelog for GXemul:
 20060223	More work on the 64-bit vm generalization.
 20060225	Various minor updates.
 		Beginning on MIPS dyntrans load/store instructions.
+		Minor PPC updates (64-bit load/store, etc).

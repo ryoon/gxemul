@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.63 2006-02-24 01:20:36 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.64 2006-02-25 13:27:40 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1715,10 +1715,13 @@ X(mfmsr)
  *  mtmsr:  Move To MSR
  *
  *  arg[0] = pointer to source register
+ *  arg[1] = page offset of the next instruction
+ *  arg[2] = 0 for 32-bit (mtmsr), 1 for 64-bit (mtmsrd)
  */
 X(mtmsr)
 {
 	MODE_uint_t old_pc;
+	uint64_t x = reg(ic->arg[0]);
 
 	/*  TODO: check permission!  */
 
@@ -1726,7 +1729,13 @@ X(mtmsr)
 	cpu->pc = (cpu->pc & ~0xfff) + ic->arg[1];
 	old_pc = cpu->pc;
 
-	reg_access_msr(cpu, (uint64_t*)ic->arg[0], 1, 1);
+	if (!ic->arg[2]) {
+		uint64_t y;
+		reg_access_msr(cpu, &y, 0, 0);
+		x = (y & 0xffffffff00000000ULL) | (x & 0xffffffffULL);
+	}
+
+	reg_access_msr(cpu, &x, 1, 1);
 
 	/*
 	 *  Super-ugly hack:  If the pc wasn't changed (i.e. if there was no
@@ -2426,6 +2435,12 @@ X(sc)
 X(user_syscall)
 {
 	useremul_syscall(cpu, ic->arg[0]);
+
+	if (!cpu->running) {
+		cpu->running_translated = 0;
+		cpu->n_translated_instrs --;
+		cpu->cd.ppc.next_ic = &nothing_call;
+	}
 }
 
 
@@ -2701,6 +2716,7 @@ X(to_be_translated)
 	case PPC_HI6_LHAU:
 	case PPC_HI6_LWZ:
 	case PPC_HI6_LWZU:
+	case PPC_HI6_LD:
 	case PPC_HI6_LFD:
 	case PPC_HI6_LFS:
 	case PPC_HI6_STB:
@@ -2709,6 +2725,7 @@ X(to_be_translated)
 	case PPC_HI6_STHU:
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
+	case PPC_HI6_STD:
 	case PPC_HI6_STFD:
 	case PPC_HI6_STFS:
 		rs = (iword >> 21) & 31;
@@ -2725,6 +2742,7 @@ X(to_be_translated)
 		case PPC_HI6_LHZU: load=1; size=1; update=1; break;
 		case PPC_HI6_LWZ:  load=1; size=2; break;
 		case PPC_HI6_LWZU: load=1; size=2; update=1; break;
+		case PPC_HI6_LD:   load=1; size=3; break;
 		case PPC_HI6_LFD:  load=1; size=3; fp=1;ic->f=instr(lfd);break;
 		case PPC_HI6_LFS:  load=1; size=2; fp=1;ic->f=instr(lfs);break;
 		case PPC_HI6_STB:  break;
@@ -2733,6 +2751,7 @@ X(to_be_translated)
 		case PPC_HI6_STHU: size=1; update=1; break;
 		case PPC_HI6_STW:  size=2; break;
 		case PPC_HI6_STWU: size=2; update=1; break;
+		case PPC_HI6_STD:  size=3; break;
 		case PPC_HI6_STFD: size=3; fp=1; ic->f = instr(stfd); break;
 		case PPC_HI6_STFS: size=2; fp=1; ic->f = instr(stfs); break;
 		}
@@ -3089,6 +3108,7 @@ X(to_be_translated)
 			break;
 
 		case PPC_31_MTMSR:
+		case PPC_31_MTMSRD:
 			rs = (iword >> 21) & 31;
 			l_bit = (iword >> 16) & 1;
 			if (l_bit) {
@@ -3097,6 +3117,7 @@ X(to_be_translated)
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			ic->arg[1] = (addr & 0xfff) + 4;
+			ic->arg[2] = xo == PPC_31_MTMSRD;
 			ic->f = instr(mtmsr);
 			break;
 

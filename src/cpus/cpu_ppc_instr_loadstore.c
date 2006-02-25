@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.6 2005-11-23 06:59:52 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.7 2006-02-25 13:27:40 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -44,7 +44,11 @@
 void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 {
 #ifdef MODE32
-	uint32_t addr = reg(ic->arg[1]) +
+	uint32_t addr =
+#else
+	uint64_t addr =
+#endif
+	    reg(ic->arg[1]) +
 #ifdef LS_INDEXED
 	    reg(ic->arg[2]);
 #else
@@ -161,9 +165,6 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 #ifdef LS_UPDATE
 	reg(ic->arg[1]) = addr;
 #endif
-#else	/*  !MODE32  */
-	fatal("TODO: mode64\n");
-#endif	/*  !MODE32  */
 }
 #endif
 
@@ -171,7 +172,11 @@ void LS_GENERIC_N(struct cpu *cpu, struct ppc_instr_call *ic)
 void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 {
 #ifdef MODE32
-	uint32_t addr = reg(ic->arg[1])
+	uint32_t addr =
+#else
+	uint64_t addr =
+#endif
+	    reg(ic->arg[1])
 #ifdef LS_INDEXED
 	    + reg(ic->arg[2])
 #else
@@ -198,6 +203,14 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 		return;
 	}
 #endif
+
+
+#ifndef MODE32
+/*******************************************/
+LS_GENERIC_N(cpu, ic);
+/*******************************************/
+#endif
+
 
 	if (page == NULL) {
 		LS_GENERIC_N(cpu, ic);
@@ -293,11 +306,6 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 
 #ifdef LS_UPDATE
 	reg(ic->arg[1]) = new_addr;
-#endif
-
-#else	/*  !MODE32  */
-	fatal("ppc load/store mode64: TODO\n");
-	exit(1);
 #endif
 }
 

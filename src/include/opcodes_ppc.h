@@ -2,7 +2,7 @@
 #define	OPCODES_PPC_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.45 2005-12-04 02:40:04 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.46 2006-02-25 13:27:40 debug Exp $
  *
  *
  *  PPC and POWER opcodes. These are gathered from various sources.
@@ -76,6 +76,7 @@
 #define	PPC_HI6_30		0x1e
 #define	  PPC_30_RLDICL		  0x0
 #define	  PPC_30_RLDICR		  0x1
+#define	  PPC_30_RLDIMI		  0x3
 #define	PPC_HI6_31		0x1f
 #define	  PPC_31_CMP		  0
 #define	  PPC_31_TW		  4
@@ -112,6 +113,7 @@
 #define	  PPC_31_STWCX_DOT	  150
 #define	  PPC_31_STWX		  151
 #define	  PPC_31_WRTEEI		  163
+#define	  PPC_31_MTMSRD		  178
 #define	  PPC_31_STDUX		  181
 #define	  PPC_31_STWUX		  183
 #define	  PPC_31_SUBFZE		  200

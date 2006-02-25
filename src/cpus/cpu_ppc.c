@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.46 2006-02-24 00:20:41 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.47 2006-02-25 13:27:40 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -953,6 +953,16 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("rldicr%s\tr%i,r%i,%i,%i",
 			    rc?".":"", ra, rs, sh, me);
 			break;
+		case PPC_30_RLDIMI:
+			/*  TODO: just a guess  */
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			sh = ((iword >> 11) & 31) | ((iword & 2) << 4);
+			me = ((iword >> 6) & 31) | (iword & 0x20);
+			rc = iword & 1;
+			debug("rldimi%s\tr%i,r%i,%i,%i",
+			    rc?".":"", ra, rs, sh, me);
+			break;
 		default:
 			debug("unimplemented hi6_30, xo = 0x%x", xo);
 		}
@@ -1117,6 +1127,14 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case PPC_31_WRTEEI:
 			debug("wrteei\t%i", iword & 0x8000? 1 : 0);
+			break;
+		case PPC_31_MTMSRD:
+			/*  TODO: Just a guess based on MTMSR  */
+			rs = (iword >> 21) & 31;
+			l_bit = (iword >> 16) & 1;
+			debug("mtmsrd\tr%i", rs);
+			if (l_bit)
+				debug(",%i", l_bit);
 			break;
 		case PPC_31_ADDZE:
 		case PPC_31_ADDZEO:

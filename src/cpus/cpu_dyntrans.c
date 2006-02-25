@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.60 2006-02-25 12:55:19 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.61 2006-02-25 13:27:40 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -823,8 +823,6 @@ void DYNTRANS_INIT_64BIT_DUMMY_TABLES(struct cpu *cpu)
 
 	if (cpu->is_32bit)
 		return;
-
-	printf("\n\n##########   INITIALIZING 64 BIT DUMMY TABLES\n");
 
 	dummy_l2 = zeroed_alloc(sizeof(struct DYNTRANS_L2_64_TABLE));
 	dummy_l3 = zeroed_alloc(sizeof(struct DYNTRANS_L3_64_TABLE));

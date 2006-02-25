@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_random.c,v 1.5 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_random.c,v 1.6 2006-02-25 12:55:20 debug Exp $
  *  
  *  A simple device which returns random data for all reads, and discards all
  *  writes.
@@ -41,11 +41,6 @@
 #include "misc.h"
 
 
-/*
- *  dev_random_access():
- *
- *  Returns 1 if ok, 0 on error.
- */
 DEVICE_ACCESS(random)
 {
 	if (writeflag == MEM_READ) {

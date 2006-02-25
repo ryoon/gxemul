@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.59 2006-02-24 00:20:41 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.60 2006-02-25 12:55:19 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -133,10 +133,10 @@ a &= 0x03ffffff;
  */
 int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 {
-#ifdef MODE32
-	uint32_t cached_pc;
-#else
+#ifdef DYNTRANS_DUALMODE_32
 	uint64_t cached_pc;
+#else
+	uint32_t cached_pc;
 #endif
 	int low_pc, n_instrs;
 
@@ -195,6 +195,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			unsigned char instr[4];		/*  General case...  */
 #endif
 #endif
+
 			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
 				fatal("XXX_cpu_run_instr(): could not read "

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.12 2006-02-24 00:20:41 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.13 2006-02-25 12:55:19 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -41,6 +41,16 @@
  */
 X(nop)
 {
+}
+
+
+/*
+ *  invalid:  For catching bugs.
+ */
+X(invalid)
+{
+	fatal("MIPS: invalid(): INTERNAL ERROR\n");
+	exit(1);
 }
 
 
@@ -290,12 +300,15 @@ X(sltu) {
 	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) < (uint64_t)reg(ic->arg[1]);
 #endif
 }
-X(or) { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
+X(and) { reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
+X(or)  { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 X(xor) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
 X(nor) { reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
 X(sll) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << ic->arg[1]); }
 X(srl) { reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> ic->arg[1]); }
 X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
+X(dsll) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) << (int64_t)ic->arg[1]; }
+X(dsra) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> (int64_t)ic->arg[1]; }
 X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
 
@@ -455,6 +468,9 @@ X(cfc1)
 }
 
 
+#include "tmp_mips_loadstore.c"
+
+
 /*****************************************************************************/
 
 
@@ -586,6 +602,7 @@ X(to_be_translated)
 	int in_crosspage_delayslot = 0;
 	int delay_slot_danger = 1;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
+	int store, signedness, size;
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
@@ -677,10 +694,20 @@ X(to_be_translated)
 		case SPECIAL_SLL:
 		case SPECIAL_SRL:
 		case SPECIAL_SRA:
+		case SPECIAL_DSLL:
+		case SPECIAL_DSLL32:
+		case SPECIAL_DSRA:
+		case SPECIAL_DSRA32:
 			switch (s6) {
 			case SPECIAL_SLL:  ic->f = instr(sll); break;
 			case SPECIAL_SRL:  ic->f = instr(srl); break;
 			case SPECIAL_SRA:  ic->f = instr(sra); break;
+			case SPECIAL_DSLL: ic->f = instr(dsll); x64=1; break;
+			case SPECIAL_DSLL32:ic->f= instr(dsll); x64=1;
+					   sa += 32; break;
+			case SPECIAL_DSRA: ic->f = instr(dsra); x64=1; break;
+			case SPECIAL_DSRA32:ic->f = instr(dsra); x64=1;
+					   sa += 32; break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 			ic->arg[1] = sa;
@@ -695,6 +722,7 @@ X(to_be_translated)
 		case SPECIAL_DSUBU:
 		case SPECIAL_SLT:
 		case SPECIAL_SLTU:
+		case SPECIAL_AND:
 		case SPECIAL_OR:
 		case SPECIAL_XOR:
 		case SPECIAL_NOR:
@@ -709,6 +737,7 @@ X(to_be_translated)
 			case SPECIAL_DSUBU: ic->f = instr(dsubu); x64=1; break;
 			case SPECIAL_SLT:   ic->f = instr(slt); break;
 			case SPECIAL_SLTU:  ic->f = instr(sltu); break;
+			case SPECIAL_AND:   ic->f = instr(and); break;
 			case SPECIAL_OR:    ic->f = instr(or); break;
 			case SPECIAL_XOR:   ic->f = instr(xor); break;
 			case SPECIAL_NOR:   ic->f = instr(nor); break;
@@ -952,11 +981,32 @@ X(to_be_translated)
 		}
 		break;
 
+	case HI6_LW:
+	case HI6_SW:
+		size = 2; signedness = 0; store = 0;
+		switch (main_opcode) {
+		case HI6_LW: signedness = 1; break;
+		case HI6_SW: store = 1; break;
+		}
+		ic->f =
+#ifdef MODE32
+		    mips32_loadstore
+#else
+		    mips_loadstore
+#endif
+		    [store * 8 + size * 2 + signedness];
+		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
+		ic->arg[2] = (int32_t)imm;
+		break;
+
 	default:goto bad;
 	}
 
+#ifdef MODE32
 	if (x64)
 		ic->f = instr(invalid_32_64);
+#endif
 
 	if (in_crosspage_delayslot)
 		cpu->cd.mips.combination_check = NULL;

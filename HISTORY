@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1127 2006-02-24 00:20:41 debug Exp $
+$Id: HISTORY,v 1.1128 2006-02-25 12:55:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2579,3 +2579,5 @@ Changelog for GXemul:
 20060220-22	Removing the non-working dyntrans backend support.
 		Continuing on the 64-bit dyntrans virtual memory generalization.
 20060223	More work on the 64-bit vm generalization.
+20060225	Various minor updates.
+		Beginning on MIPS dyntrans load/store instructions.

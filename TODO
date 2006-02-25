@@ -1,17 +1,12 @@
-$Id: TODO,v 1.215 2006-02-24 00:37:00 debug Exp $
+$Id: TODO,v 1.216 2006-02-25 12:55:19 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-Dyntrans _TOP_ priority:
-	x)  64-bit stuff
-		Loads/stores! PPC, MIPS, SPARC, ...
-		Rewrite/remove the old Alpha code
+Dyntrans:
+	x)  MIPS fast load/store:  endianness, alignment check
+	x)  PPC 64-bit loads/stores
 	x)  Delay slots!
 	x)  Old MIPS -> dyntrans!
-
-Clean up unused code!!!
-
-Other dyntrans stuff:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)

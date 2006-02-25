@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.7 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_avr.c,v 1.8 2006-02-25 16:27:00 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -131,15 +131,22 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("%c", cpu->cd.avr.sreg & AVR_SREG_N? 'N' : 'n');
 		debug("%c", cpu->cd.avr.sreg & AVR_SREG_Z? 'Z' : 'z');
 		debug("%c", cpu->cd.avr.sreg & AVR_SREG_C? 'C' : 'c');
-		debug("  pc = 0x%04x", x, (int)cpu->pc);
+		debug("  pc = 0x%04x", (int)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		for (i=0; i<N_AVR_REGS; i++) {
-			if ((i % 4) == 0)
-			        debug("cpu%i:\t", x);
-		        debug("r%02i = 0x%02x", i, cpu->cd.avr.r[i]);
-			debug((i % 4) == 3? "\n" : "   ");
+			int r = (i >> 3) + ((i & 7) << 2);
+			if ((i % 8) == 0)
+			        debug("cpu%i:", x);
+		        debug(" r%02i=0x%02x", r, cpu->cd.avr.r[r]);
+			if ((i % 8) == 7)
+				debug("\n");
 		}
+
+		debug("cpu%i: x=%i, y=%i, z=%i\n", x,
+		    (int)(int16_t)(cpu->cd.avr.r[27]*256 + cpu->cd.avr.r[26]),
+		    (int)(int16_t)(cpu->cd.avr.r[29]*256 + cpu->cd.avr.r[28]),
+		    (int)(int16_t)(cpu->cd.avr.r[31]*256 + cpu->cd.avr.r[30]));
 	}
 
 	debug("cpu%i: nr of instructions: %lli\n", x,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1129 2006-02-25 13:27:40 debug Exp $
+$Id: HISTORY,v 1.1130 2006-02-25 16:26:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2582,3 +2582,7 @@ Changelog for GXemul:
 20060225	Various minor updates.
 		Beginning on MIPS dyntrans load/store instructions.
 		Minor PPC updates (64-bit load/store, etc).
+		Fixes for the variable-instruction-length framework, some
+		minor AVR updates.
+		Beginning on a skeleton for automatically generating documen-
+		tation (for devices etc.).

@@ -1,0 +1,15 @@
+#
+#  $Id: Makefile.skel,v 1.1 2006-02-25 16:27:00 debug Exp $
+#
+#  Makefile for GXemul documentation
+#
+
+all:
+	mkdir generated; cd generated; ../make_documentation.sh YES; cd ..
+
+clean:
+	rm -rf generated
+
+clean_all: clean
+	rm -f Makefile
+

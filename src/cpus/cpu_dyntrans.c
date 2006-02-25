@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.61 2006-02-25 13:27:40 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.62 2006-02-25 16:27:00 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -178,11 +178,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		/*
 		 *  Single-step:
 		 */
-		struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic
-#ifndef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-		    ++
-#endif
-		    ;
+		struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic;
 		if (cpu->machine->instruction_trace) {
 #ifdef DYNTRANS_X86
 			unsigned char instr[17];
@@ -216,13 +212,18 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		    be combined into one. This clears all translations:  */
 		if (cpu->cd.DYNTRANS_ARCH.cur_physpage->flags & COMBINATIONS) {
 			int i;
-			for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
+			for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {
 				cpu->cd.DYNTRANS_ARCH.cur_physpage->ics[i].f =
 #ifdef DYNTRANS_DUALMODE_32
 				    cpu->is_32bit?
 				        instr32(to_be_translated) :
 #endif
 				        instr(to_be_translated);
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+				cpu->cd.DYNTRANS_ARCH.cur_physpage->ics[i].
+				    arg[0] = 0;
+#endif
+			}
 			fatal("[ Note: The translation of physical page 0x%llx"
 			    " contained combinations of instructions; these "
 			    "are now flushed because we are single-stepping."
@@ -236,7 +237,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			S;
 
 		/*  Execute just one instruction:  */
-		ic->f(cpu, ic);
+		I;
 
 		n_instrs = 1;
 	} else if (show_opcode_statistics) {
@@ -472,19 +473,27 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 	ppp->physaddr = physaddr;
 
 	/*  TODO: Is this faster than copying an entire template page?  */
-	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
+	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {
 		ppp->ics[i].f =
 #ifdef DYNTRANS_DUALMODE_32
 		    cpu->is_32bit? instr32(to_be_translated) :
 #endif
 		    instr(to_be_translated);
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+		ppp->ics[i].arg[0] = 0;
+#endif
+	}
 
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].f =
 #ifdef DYNTRANS_DUALMODE_32
 	    cpu->is_32bit? instr32(end_of_page) :
 #endif
 	    instr(end_of_page);
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].arg[0] = 0;
+#endif
 
+/*  TODO:  */
 #ifdef DYNTRANS_DELAYSLOT
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 1].f =
 #ifdef DYNTRANS_DUALMODE_32
@@ -1618,14 +1627,24 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		 *  directly afterwards.
 		 */
 		single_step_breakpoint = 0;
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+		cpu->cd.DYNTRANS_ARCH.next_ic = ic + ic->arg[0];
+#endif
 		ic->f(cpu, ic);
 		ic->f =
 #ifdef DYNTRANS_DUALMODE_32
 		    cpu->is_32bit? instr32(to_be_translated) :
 #endif
 		    instr(to_be_translated);
-	} else
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+		ic->arg[0] = 0;
+#endif
+	} else {
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+		cpu->cd.DYNTRANS_ARCH.next_ic = ic + ic->arg[0];
+#endif
 		ic->f(cpu, ic);
+	}
 
 	return;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.8 2006-02-25 16:27:00 debug Exp $
+ *  $Id: cpu_avr.c,v 1.9 2006-02-25 18:30:31 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -58,7 +58,15 @@
 int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	if (strcasecmp(cpu_type_name, "AVR") != 0)
+	int type = 0;
+
+	if (strcasecmp(cpu_type_name, "AVR") == 0 ||
+	    strcasecmp(cpu_type_name, "AVR16") == 0)
+		type = 16;
+	if (strcasecmp(cpu_type_name, "AVR22") == 0)
+		type = 22;
+
+	if (type == 0)
 		return 0;
 
 	cpu->memory_rw = avr_memory_rw;
@@ -70,7 +78,11 @@ int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
-	cpu->cd.avr.pc_mask = 0xffff;
+	cpu->cd.avr.is_22bit = (type == 22);
+	cpu->cd.avr.pc_mask = cpu->cd.avr.is_22bit? 0x3fffff : 0xffff;
+
+	cpu->cd.avr.sram_mask = 0xff;	/*  256 bytes ram  */
+	cpu->cd.avr.sp = cpu->cd.avr.sram_mask - 2;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -88,8 +100,7 @@ int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
  */
 void avr_cpu_list_available_types(void)
 {
-	debug("AVR\n");
-	/*  TODO  */
+	debug("AVR\tAVR16\tAVR22\n");
 }
 
 
@@ -98,8 +109,8 @@ void avr_cpu_list_available_types(void)
  */
 void avr_cpu_dumpinfo(struct cpu *cpu)
 {
-	/*  TODO  */
-	debug("\n");
+	debug(" (%i-bit program counter)\n",
+	    cpu->cd.avr.is_22bit? 22 : 16);
 }
 
 
@@ -131,7 +142,10 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("%c", cpu->cd.avr.sreg & AVR_SREG_N? 'N' : 'n');
 		debug("%c", cpu->cd.avr.sreg & AVR_SREG_Z? 'Z' : 'z');
 		debug("%c", cpu->cd.avr.sreg & AVR_SREG_C? 'C' : 'c');
-		debug("  pc = 0x%04x", (int)cpu->pc);
+		if (cpu->cd.avr.is_22bit)
+			debug("  pc = 0x%06x", (int)cpu->pc);
+		else
+			debug("  pc = 0x%04x", (int)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		for (i=0; i<N_AVR_REGS; i++) {
@@ -143,10 +157,11 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				debug("\n");
 		}
 
-		debug("cpu%i: x=%i, y=%i, z=%i\n", x,
+		debug("cpu%i: x=%i, y=%i, z=%i, sp=0x%04x\n", x,
 		    (int)(int16_t)(cpu->cd.avr.r[27]*256 + cpu->cd.avr.r[26]),
 		    (int)(int16_t)(cpu->cd.avr.r[29]*256 + cpu->cd.avr.r[28]),
-		    (int)(int16_t)(cpu->cd.avr.r[31]*256 + cpu->cd.avr.r[30]));
+		    (int)(int16_t)(cpu->cd.avr.r[31]*256 + cpu->cd.avr.r[30]),
+		    cpu->cd.avr.sp);
 	}
 
 	debug("cpu%i: nr of instructions: %lli\n", x,
@@ -327,6 +342,21 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		rd = ((iw >> 4) & 0xf) + 16;
 		imm = ((iw >> 4) & 0xf0) | (iw & 0xf);
 		debug("ldi\tr%i,0x%x\n", rd, imm);
+	} else if ((iw & 0xfc07) == 0xf001) {
+/*  TODO: refactor the conditional branch stuff  */
+		print_spaces(len);
+		addr = (iw >> 3) & 0x7f;
+		if (addr >= 64)
+			addr -= 128;
+		addr = (addr + 1) * 2 + dumpaddr;
+		debug("breq\t0x%x\n", addr);
+	} else if ((iw & 0xfc07) == 0xf401) {
+		print_spaces(len);
+		addr = (iw >> 3) & 0x7f;
+		if (addr >= 64)
+			addr -= 128;
+		addr = (addr + 1) * 2 + dumpaddr;
+		debug("brne\t0x%x\n", addr);
 	} else {
 		print_spaces(len);
 		debug("UNIMPLEMENTED 0x%04x\n", iw);

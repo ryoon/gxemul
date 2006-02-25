@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.14 2006-02-09 22:40:27 debug Exp $
+ *  $Id: cpu_avr.h,v 1.15 2006-02-25 18:30:31 debug Exp $
  */
 
 #include "misc.h"
@@ -38,7 +38,7 @@ struct cpu_family;
 
 #define	N_AVR_REGS		32
 
-#define	AVR_N_IC_ARGS			3
+#define	AVR_N_IC_ARGS			4
 #define	AVR_INSTR_ALIGNMENT_SHIFT	1
 #define	AVR_IC_ENTRIES_SHIFT		11
 #define	AVR_IC_ENTRIES_PER_PAGE		(1 << AVR_IC_ENTRIES_SHIFT)
@@ -63,9 +63,14 @@ DYNTRANS_MISC_DECLARATIONS(avr,AVR,uint64_t)
 #define	AVR_SREG_T		0x40	/*  Transfer bit  */
 #define	AVR_SREG_I		0x80	/*  Interrupt enable/disable  */
 
+#define	AVR_SRAM_BASE	0x800000
+
 
 struct avr_cpu {
 	uint32_t	pc_mask;
+	int		is_22bit;	/*  0 for 16-bit, 1 for 22-bit PC  */
+
+	uint32_t	sram_mask;
 
 	/*
 	 *  General Purpose Registers:
@@ -74,6 +79,9 @@ struct avr_cpu {
 
 	/*  Status register:  */
 	uint8_t		sreg;
+
+	/*  Stack pointer (high and low byte combined):  */
+	uint16_t	sp;
 
 	/*
 	 *  In order to keep an accurate cycle count, this variable should be

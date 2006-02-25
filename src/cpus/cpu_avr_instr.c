@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.8 2006-02-25 16:27:00 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.9 2006-02-25 18:30:31 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -40,11 +40,139 @@
 /*****************************************************************************/
 
 
+void push_value(struct cpu *cpu, uint32_t value, int len)
+{
+	unsigned char data[4];
+
+	data[0] = value; data[1] = value >> 8;
+	data[2] = value >> 16; data[3] = value >> 24;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, cpu->cd.avr.sp + AVR_SRAM_BASE,
+	    data, len, MEM_WRITE, CACHE_DATA)) {
+		fatal("push_value(): write failed: TODO\n");
+		exit(1);
+	}
+
+	cpu->cd.avr.sp -= len;
+	cpu->cd.avr.sp &= cpu->cd.avr.sram_mask;
+}
+
+
+void pop_value(struct cpu *cpu, uint32_t *value, int len)
+{
+	unsigned char data[4];
+
+	cpu->cd.avr.sp += len;
+	cpu->cd.avr.sp &= cpu->cd.avr.sram_mask;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, cpu->cd.avr.sp + AVR_SRAM_BASE,
+	    data, len, MEM_READ, CACHE_DATA)) {
+		fatal("pop_value(): write failed: TODO\n");
+		exit(1);
+	}
+
+	*value = data[0];
+	if (len > 1)
+		(*value) += (data[1] << 8);
+	if (len > 2)
+		(*value) += (data[2] << 16);
+	if (len > 3)
+		(*value) += (data[3] << 24);
+}
+
+
+/*****************************************************************************/
+
+
 /*
  *  nop:  Do nothing.
  */
 X(nop)
 {
+}
+
+
+/*
+ *  breq:  Conditional relative jump.
+ *
+ *  arg[1]: relative offset
+ */
+X(breq)
+{
+	uint32_t low_pc;
+
+	if (!(cpu->cd.avr.sreg & AVR_SREG_Z))
+		return;
+
+	cpu->cd.avr.extra_cycles ++;
+
+	/*  Calculate new PC from the next instruction + arg[1]  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.avr.cur_ic_page) /
+	    sizeof(struct avr_instr_call);
+	cpu->pc &= ~((AVR_IC_ENTRIES_PER_PAGE-1)
+	    << AVR_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << AVR_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (int32_t)ic->arg[1];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	avr_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  breq_samepage:  Continional relative jump (to within the same page).
+ *
+ *  arg[1] = pointer to new avr_instr_call
+ */
+X(breq_samepage)
+{
+	if (!(cpu->cd.avr.sreg & AVR_SREG_Z))
+		return;
+
+	cpu->cd.avr.extra_cycles ++;
+	cpu->cd.avr.next_ic = (struct avr_instr_call *) ic->arg[1];
+}
+
+
+/*
+ *  brne:  Conditional relative jump.
+ *
+ *  arg[1]: relative offset
+ */
+X(brne)
+{
+	uint32_t low_pc;
+
+	if (cpu->cd.avr.sreg & AVR_SREG_Z)
+		return;
+
+	cpu->cd.avr.extra_cycles ++;
+
+	/*  Calculate new PC from the next instruction + arg[1]  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.avr.cur_ic_page) /
+	    sizeof(struct avr_instr_call);
+	cpu->pc &= ~((AVR_IC_ENTRIES_PER_PAGE-1)
+	    << AVR_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << AVR_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (int32_t)ic->arg[1];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	avr_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  brne_samepage:  Continional relative jump (to within the same page).
+ *
+ *  arg[1] = pointer to new avr_instr_call
+ */
+X(brne_samepage)
+{
+	if (cpu->cd.avr.sreg & AVR_SREG_Z)
+		return;
+
+	cpu->cd.avr.extra_cycles ++;
+	cpu->cd.avr.next_ic = (struct avr_instr_call *) ic->arg[1];
 }
 
 
@@ -74,6 +202,75 @@ X(ldi)
 
 
 /*
+ *  ld_y:  Load byte pointed to by register Y into a register.
+ *
+ *  arg[1]: ptr to rd
+ */
+X(ld_y)
+{
+	if (!cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + cpu->cd.avr.r[28]
+	    + 256*cpu->cd.avr.r[29], (uint8_t *)(ic->arg[1]), 1, MEM_READ,
+	    CACHE_DATA)) {
+		fatal("ld_y(): read failed: TODO\n");
+		exit(1);
+	}
+	cpu->cd.avr.extra_cycles ++;
+}
+
+
+/*
+ *  adiw:  rd+1:rd += constant
+ *
+ *  arg[1]: ptr to rd
+ *  arg[2]: k
+ */
+X(adiw)
+{
+	uint32_t value = *(uint8_t *)(ic->arg[1]) +
+	    (*(uint8_t *)(ic->arg[1] + 1) << 8);
+	value += ic->arg[2];
+
+	cpu->cd.avr.sreg &= ~(AVR_SREG_S | AVR_SREG_V | AVR_SREG_N
+	    | AVR_SREG_Z | AVR_SREG_C);
+
+	/*  TODO: is this V bit calculated correctly?  */
+	if (value > 0xffff)
+		cpu->cd.avr.sreg |= AVR_SREG_C | AVR_SREG_V;
+	if (value & 0x8000)
+		cpu->cd.avr.sreg |= AVR_SREG_N;
+	if (value == 0)
+		cpu->cd.avr.sreg |= AVR_SREG_Z;
+
+	if ((cpu->cd.avr.sreg & AVR_SREG_N) ^
+	    (cpu->cd.avr.sreg & AVR_SREG_V))
+		cpu->cd.avr.sreg |= AVR_SREG_S;
+
+	*(uint8_t *)(ic->arg[1]) = value;
+	*(uint8_t *)(ic->arg[1] + 1) = value >> 8;
+
+	cpu->cd.avr.extra_cycles ++;
+}
+
+
+/*
+ *  and:  rd = rd & rr
+ *
+ *  arg[1]: ptr to rr
+ *  arg[2]: ptr to rd
+ */
+X(and)
+{
+	*(uint8_t *)(ic->arg[2]) &= *(uint8_t *)(ic->arg[1]);
+	cpu->cd.avr.sreg &= ~(AVR_SREG_S | AVR_SREG_V | AVR_SREG_N
+	    | AVR_SREG_Z);
+	if (*(uint8_t *)(ic->arg[2]) == 0)
+		cpu->cd.avr.sreg |= AVR_SREG_Z;
+	if (*(uint8_t *)(ic->arg[2]) & 0x80)
+		cpu->cd.avr.sreg |= AVR_SREG_S | AVR_SREG_N;
+}
+
+
+/*
  *  mov:  Copy register.
  *
  *  arg[1]: ptr to rr
@@ -82,6 +279,69 @@ X(ldi)
 X(mov)
 {
 	*(uint8_t *)(ic->arg[2]) = *(uint8_t *)(ic->arg[1]);
+}
+
+
+/*
+ *  sts:  Store a register into memory.
+ *
+ *  arg[1]: pointer to the register
+ *  arg[2]: absolute address (16 bits)
+ */
+X(sts)
+{
+	uint8_t r = *(uint8_t *)(ic->arg[1]);
+	if (!cpu->memory_rw(cpu, cpu->mem, ic->arg[2] + AVR_SRAM_BASE,
+	    &r, sizeof(uint8_t), MEM_WRITE, CACHE_DATA)) {
+		fatal("sts: write failed: TODO\n");
+		exit(1);
+	}
+	cpu->cd.avr.extra_cycles ++;
+}
+
+
+/*
+ *  ret:  Return from subroutine call.
+ */
+X(ret)
+{
+	uint32_t new_pc;
+
+	cpu->cd.avr.extra_cycles += 3 + cpu->cd.avr.is_22bit;
+
+	/*  Pop the address of the following instruction:  */
+	pop_value(cpu, &new_pc, 2 + cpu->cd.avr.is_22bit);
+	cpu->pc = new_pc << 1;
+
+	/*  Find the new physical page and update the translation pointers:  */
+	avr_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  rcall:  Relative call.
+ *
+ *  arg[1]: relative offset
+ */
+X(rcall)
+{
+	uint32_t low_pc;
+
+	cpu->cd.avr.extra_cycles += 2 + cpu->cd.avr.is_22bit;
+
+	/*  Push the address of the following instruction:  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.avr.cur_ic_page) /
+	    sizeof(struct avr_instr_call);
+	cpu->pc &= ~((AVR_IC_ENTRIES_PER_PAGE-1)
+	    << AVR_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << AVR_INSTR_ALIGNMENT_SHIFT);
+	push_value(cpu, (cpu->pc >> 1) + 1, 2 + cpu->cd.avr.is_22bit);
+
+	/*  Calculate new PC from the next instruction + arg[1]  */
+	cpu->pc += (int32_t)ic->arg[1];
+
+	/*  Find the new physical page and update the translation pointers:  */
+	avr_pc_to_pointers(cpu);
 }
 
 
@@ -135,7 +395,18 @@ X(sei) { cpu->cd.avr.sreg |= AVR_SREG_I; }
 
 
 /*
- *  swap:  Swap nibbles.
+ *  push, pop:  Push/pop a register onto/from the stack.
+ *
+ *  arg[1]: ptr to rd
+ */
+X(push) { push_value(cpu, *(uint8_t *)(ic->arg[1]), 1);
+	  cpu->cd.avr.extra_cycles ++; }
+X(pop)  { uint32_t t; pop_value(cpu, &t, 1); *(uint8_t *)(ic->arg[1]) = t;
+	  cpu->cd.avr.extra_cycles ++; }
+
+
+/*
+ *  swap:  Swap nibbles in a register.
  *
  *  arg[1]: ptr to rd
  */
@@ -188,6 +459,34 @@ void avr_combine_instructions(struct cpu *cpu, struct avr_instr_call *ic,
 /*****************************************************************************/
 
 
+static uint16_t read_word(struct cpu *cpu, unsigned char *ib, int addr)
+{
+	uint16_t iword;
+	unsigned char *page = cpu->cd.avr.host_load[addr >> 12];
+
+	if (page != NULL) {
+		/*  fatal("TRANSLATION HIT!\n");  */
+		memcpy(ib, page + (addr & 0xfff), sizeof(uint16_t));
+	} else {
+		/*  fatal("TRANSLATION MISS!\n");  */
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, ib,
+		    sizeof(uint16_t), MEM_READ, CACHE_INSTRUCTION)) {
+			fatal("to_be_translated(): "
+			    "read failed: TODO\n");
+			exit(1);
+		}
+	}
+
+	iword = *((uint16_t *)&ib[0]);
+
+#ifdef HOST_BIG_ENDIAN
+	iword = ((iword & 0xff) << 8) |
+		((iword & 0xff00) >> 8);
+#endif
+	return iword;
+}
+
+
 /*
  *  avr_instr_to_be_translated():
  *
@@ -198,9 +497,8 @@ void avr_combine_instructions(struct cpu *cpu, struct avr_instr_call *ic,
  */
 X(to_be_translated)
 {
-	int addr, low_pc, rd, rr, main_opcode;
+	int addr, low_pc, rd, rr, tmp, main_opcode;
 	uint16_t iword;
-	unsigned char *page;
 	unsigned char ib[2];
 	void (*samepage_function)(struct cpu *, struct avr_instr_call *);
 
@@ -216,27 +514,7 @@ X(to_be_translated)
 	addr &= cpu->cd.avr.pc_mask;
 
 	/*  Read the instruction word from memory:  */
-	page = cpu->cd.avr.host_load[addr >> 12];
-
-	if (page != NULL) {
-		/*  fatal("TRANSLATION HIT!\n");  */
-		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
-	} else {
-		/*  fatal("TRANSLATION MISS!\n");  */
-		if (!cpu->memory_rw(cpu, cpu->mem, addr, ib,
-		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
-			fatal("to_be_translated(): "
-			    "read failed: TODO\n");
-			goto bad;
-		}
-	}
-
-	iword = *((uint16_t *)&ib[0]);
-
-#ifdef HOST_BIG_ENDIAN
-	iword = ((iword & 0xff) << 8) |
-		((iword & 0xff00) >> 8);
-#endif
+	iword = read_word(cpu, ib, addr);
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -263,6 +541,14 @@ X(to_be_translated)
 		goto bad;
 
 	case 0x2:
+		if ((iword & 0xfc00) == 0x2000) {
+			rd = (iword & 0x1f0) >> 4;
+			rr = ((iword & 0x200) >> 5) | (iword & 0xf);
+			ic->f = instr(and);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rr]);
+			ic->arg[2] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
 		if ((iword & 0xfc00) == 0x2c00) {
 			rd = (iword & 0x1f0) >> 4;
 			rr = ((iword & 0x200) >> 5) | (iword & 0xf);
@@ -273,7 +559,37 @@ X(to_be_translated)
 		}
 		goto bad;
 
+	case 0x8:
+		if ((iword & 0xfe0f) == 0x8008) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(ld_y);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
+		goto bad;
+
 	case 0x9:
+		if ((iword & 0xfe0f) == 0x900f) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(pop);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
+		if ((iword & 0xfe0f) == 0x9200) {
+			uint8_t tmpbytes[2];
+			ic->arg[0] = 2;	/*  Note: 2 words!  */
+			ic->f = instr(sts);
+			rd = (iword >> 4) & 31;
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			ic->arg[2] = read_word(cpu, tmpbytes, addr + 2);
+			break;
+		}
+		if ((iword & 0xfe0f) == 0x920f) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(push);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
 		if ((iword & 0xfe0f) == 0x9402) {
 			rd = (iword >> 4) & 31;
 			ic->f = instr(swap);
@@ -306,14 +622,34 @@ X(to_be_translated)
 			}
 			break;
 		}
+		if ((iword & 0xffff) == 0x9508) {
+			ic->f = instr(ret);
+			break;
+		}
+		if ((iword & 0xff00) == 0x9600) {
+			ic->f = instr(adiw);
+			rd = ((iword >> 3) & 6) + 24;
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			ic->arg[2] = (iword & 15) + ((iword & 0xc0) >> 2);
+			break;
+		}
 		goto bad;
 
-	case 0xc:
-		ic->f = instr(rjmp);
-		samepage_function = instr(rjmp_samepage);
+	case 0xc:	/*  rjmp  */
+	case 0xd:	/*  rcall  */
+		samepage_function = NULL;
+		switch (main_opcode) {
+		case 0xc:
+			ic->f = instr(rjmp);
+			samepage_function = instr(rjmp_samepage);
+			break;
+		case 0xd:
+			ic->f = instr(rcall);
+			break;
+		}
 		ic->arg[1] = (((int16_t)((iword & 0x0fff) << 4)) >> 3) + 2;
 		/*  Special case: branch within the same page:  */
-		{
+		if (samepage_function != NULL) {
 			uint32_t mask_within_page =
 			    ((AVR_IC_ENTRIES_PER_PAGE-1) <<
 			    AVR_INSTR_ALIGNMENT_SHIFT) |
@@ -337,6 +673,62 @@ X(to_be_translated)
 		ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
 		ic->arg[2] = ((iword >> 4) & 0xf0) | (iword & 0xf);
 		break;
+
+	case 0xf:
+		if ((iword & 0xfc07) == 0xf001) {
+			ic->f = instr(breq);
+			samepage_function = instr(breq_samepage);
+			tmp = (iword >> 3) & 0x7f;
+			if (tmp >= 64)
+				tmp -= 128;
+			ic->arg[1] = (tmp + 1) * 2;
+			/*  Special case: branch within the same page:  */
+			if (samepage_function != NULL) {
+				uint32_t mask_within_page =
+				    ((AVR_IC_ENTRIES_PER_PAGE-1) <<
+				    AVR_INSTR_ALIGNMENT_SHIFT) |
+				    ((1 << AVR_INSTR_ALIGNMENT_SHIFT) - 1);
+				uint32_t old_pc = addr;
+				uint32_t new_pc = old_pc + (int32_t)ic->arg[1];
+				if ((old_pc & ~mask_within_page) ==
+				    (new_pc & ~mask_within_page)) {
+					ic->f = samepage_function;
+					ic->arg[1] = (size_t) (
+					    cpu->cd.avr.cur_ic_page +
+					    ((new_pc & mask_within_page) >>
+					    AVR_INSTR_ALIGNMENT_SHIFT));
+				}
+			}
+			break;
+		}
+/*  TODO: refactor  */
+		if ((iword & 0xfc07) == 0xf401) {
+			ic->f = instr(brne);
+			samepage_function = instr(brne_samepage);
+			tmp = (iword >> 3) & 0x7f;
+			if (tmp >= 64)
+				tmp -= 128;
+			ic->arg[1] = (tmp + 1) * 2;
+			/*  Special case: branch within the same page:  */
+			if (samepage_function != NULL) {
+				uint32_t mask_within_page =
+				    ((AVR_IC_ENTRIES_PER_PAGE-1) <<
+				    AVR_INSTR_ALIGNMENT_SHIFT) |
+				    ((1 << AVR_INSTR_ALIGNMENT_SHIFT) - 1);
+				uint32_t old_pc = addr;
+				uint32_t new_pc = old_pc + (int32_t)ic->arg[1];
+				if ((old_pc & ~mask_within_page) ==
+				    (new_pc & ~mask_within_page)) {
+					ic->f = samepage_function;
+					ic->arg[1] = (size_t) (
+					    cpu->cd.avr.cur_ic_page +
+					    ((new_pc & mask_within_page) >>
+					    AVR_INSTR_ALIGNMENT_SHIFT));
+				}
+			}
+			break;
+		}
+		goto bad;
 
 	default:goto bad;
 	}

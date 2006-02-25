@@ -1,4 +1,4 @@
-$Id: TODO,v 1.216 2006-02-25 12:55:19 debug Exp $
+$Id: TODO,v 1.217 2006-02-25 18:30:31 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -23,6 +23,10 @@ Dyntrans:
 
 Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
 	Add interrupt controller in dev_algor.c.
+
+AVR:
+	o)  first 0x60 bytes of SRAM area should be mapped to registers
+	    etc using a device!
 
 ARM:
 	o)  add ID for "i80321 600MHz rev 2 (XScale core)"

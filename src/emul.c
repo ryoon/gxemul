@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.247 2006-02-04 12:27:12 debug Exp $
+ *  $Id: emul.c,v 1.248 2006-02-26 21:39:12 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -105,12 +105,13 @@ static void add_dump_points(struct machine *m)
 			uint64_t addr;
 			int res = get_symbol_addr(&m->symbol_context,
 			    m->breakpoint_string[i], &addr);
-			if (!res)
+			if (!res) {
 				fprintf(stderr,
-				    "WARNING! Breakpoint '%s' could not be"
+				    "ERROR! Breakpoint '%s' could not be"
 					" parsed\n",
 				    m->breakpoint_string[i]);
-			else {
+				exit(1);
+			} else {
 				dp = addr;
 				string_flag = 1;
 			}

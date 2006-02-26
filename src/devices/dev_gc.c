@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.6 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_gc.c,v 1.7 2006-02-26 21:39:12 debug Exp $
  *  
  *  Grand Central Interrupt controller (used by MacPPC).
  */
@@ -41,9 +41,6 @@
 #include "misc.h"
 
 
-/*
- *  dev_gc_access():
- */
 DEVICE_ACCESS(gc)
 {
 	struct gc_data *d = extra;
@@ -67,9 +64,7 @@ DEVICE_ACCESS(gc)
 
 	case 0x10:
 		if (writeflag == MEM_READ)
-			odata = d->status_hi
-& d->enable_hi
-;
+			odata = d->status_hi & d->enable_hi;
 		break;
 
 	case 0x14:
@@ -94,9 +89,7 @@ DEVICE_ACCESS(gc)
 
 	case 0x20:
 		if (writeflag == MEM_READ)
-			odata = d->status_lo
-& d->enable_lo
-;
+			odata = d->status_lo & d->enable_lo;
 		break;
 
 	case 0x24:

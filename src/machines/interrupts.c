@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.7 2006-02-26 20:11:14 debug Exp $
+ *  $Id: interrupts.c,v 1.8 2006-02-26 21:39:12 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -935,7 +935,7 @@ void gc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 			m->md_int.gc_data->status_hi &= ~mask;
 	}
 
-#if 1
+#if 0
 	printf("status = %08x %08x  enable = %08x %08x\n",
 	    m->md_int.gc_data->status_hi, m->md_int.gc_data->status_lo,
 	    m->md_int.gc_data->enable_hi, m->md_int.gc_data->enable_lo);

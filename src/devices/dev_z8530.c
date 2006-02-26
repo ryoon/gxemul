@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.5 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_z8530.c,v 1.6 2006-02-26 21:39:12 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -52,25 +52,23 @@
 #include "z8530reg.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
 #define	ZS_TICK_SHIFT		14
 #define	ZS_N_REGS		16
+#define	ZS_N_CHANNELS		2
 #define	DEV_Z8530_LENGTH	4
 
 struct z8530_data {
 	int		irq_nr;
 	int		dma_irq_nr;
 	int		irq_asserted;
-
-	int		in_use;
 	int		addr_mult;
 
-	/*  2 of everything, because there are two channels.  */
-	int		console_handle[2];
-	int		reg_select[2];
-	uint8_t		rr[2][ZS_N_REGS];
-	uint8_t		wr[2][ZS_N_REGS];
+	int		console_handle[ZS_N_CHANNELS];
+	int		reg_select[ZS_N_CHANNELS];
+	uint8_t		rr[ZS_N_CHANNELS][ZS_N_REGS];
+	uint8_t		wr[ZS_N_CHANNELS][ZS_N_REGS];
 };
 
 
@@ -125,9 +123,6 @@ void dev_z8530_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_z8530_access():
- */
 DEVICE_ACCESS(z8530)
 {
 	struct z8530_data *d = extra;
@@ -143,28 +138,31 @@ DEVICE_ACCESS(z8530)
 
 	relative_addr /= d->addr_mult;
 
-	port_nr = relative_addr / 2;
+	port_nr = (relative_addr / 2) % ZS_N_CHANNELS;
 	relative_addr &= 1;
 
 	if (relative_addr == 0) {
 		/*  Register access:  */
 		if (writeflag == MEM_READ) {
 			odata = d->rr[port_nr][d->reg_select[port_nr]];
-			if (d->reg_select[port_nr] != 0)
-				debug("[ z8530: read from port %i reg %2i: "
-				    "0x%02x ]\n", port_nr, d->reg_select[
-				    port_nr], (int)odata);
+			debug("[ z8530: read from port %i reg %2i: "
+			    "0x%02x ]\n", port_nr, d->reg_select[
+			    port_nr], (int)odata);
 			d->reg_select[port_nr] = 0;
 		} else {
 			if (d->reg_select[port_nr] == 0) {
-				d->reg_select[port_nr] = idata & 15;
+				if (idata < 16)
+					d->reg_select[port_nr] = idata & 15;
+				else
+					d->reg_select[port_nr] = idata & 7;
+				switch (idata & 0xf8) {
+				case ZSWR0_CLR_INTR:	/*  Interrupt ack:  */
+					d->rr[1][3] = 0;
+					break;
+				}
 			} else {
 				d->wr[port_nr][d->reg_select[port_nr]] = idata;
 				switch (d->reg_select[port_nr]) {
-				case 8:	/*  Interrupt ack:  */
-					if (idata == ZSWR0_CLR_INTR)
-						d->rr[1][3] = 0;
-					break;
 				default:debug("[ z8530: write to  port %i reg "
 					    "%2i: 0x%02x ]\n", port_nr, d->
 					    reg_select[port_nr], (int)idata);
@@ -213,12 +211,11 @@ DEVINIT(z8530)
 	memset(d, 0, sizeof(struct z8530_data));
 	d->irq_nr     = devinit->irq_nr;
 	d->dma_irq_nr = devinit->dma_irq_nr;
-	d->in_use     = devinit->in_use;
 	d->addr_mult  = devinit->addr_mult;
 
 	snprintf(tmp, sizeof(tmp), "%s [ch-b]", devinit->name);
 	d->console_handle[0] = console_start_slave(devinit->machine, tmp,
-	    d->in_use);
+	    devinit->in_use);
 	snprintf(tmp, sizeof(tmp), "%s [ch-a]", devinit->name);
 	d->console_handle[1] = console_start_slave(devinit->machine, tmp, 0);
 

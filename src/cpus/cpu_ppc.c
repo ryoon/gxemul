@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.47 2006-02-25 13:27:40 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.48 2006-02-26 10:09:24 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -944,24 +944,22 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_30:
 		xo = (iword >> 2) & 7;
 		switch (xo) {
+		case PPC_30_RLDICL:
 		case PPC_30_RLDICR:
+		case PPC_30_RLDIMI:	/*  mb, not me  */
+			mnem = NULL;
+			switch (xo) {
+			case PPC_30_RLDICL: mnem = "rldicl"; break;
+			case PPC_30_RLDICR: mnem = "rldicr"; break;
+			case PPC_30_RLDIMI: mnem = "rldimi"; break;
+			}
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			sh = ((iword >> 11) & 31) | ((iword & 2) << 4);
 			me = ((iword >> 6) & 31) | (iword & 0x20);
 			rc = iword & 1;
-			debug("rldicr%s\tr%i,r%i,%i,%i",
-			    rc?".":"", ra, rs, sh, me);
-			break;
-		case PPC_30_RLDIMI:
-			/*  TODO: just a guess  */
-			rs = (iword >> 21) & 31;
-			ra = (iword >> 16) & 31;
-			sh = ((iword >> 11) & 31) | ((iword & 2) << 4);
-			me = ((iword >> 6) & 31) | (iword & 0x20);
-			rc = iword & 1;
-			debug("rldimi%s\tr%i,r%i,%i,%i",
-			    rc?".":"", ra, rs, sh, me);
+			debug("%s%s\tr%i,r%i,%i,%i",
+			    mnem, rc?".":"", ra, rs, sh, me);
 			break;
 		default:
 			debug("unimplemented hi6_30, xo = 0x%x", xo);
@@ -1466,6 +1464,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			mnem = power? "srai" : "srawi";
 			debug("%s%s\tr%i,r%i,%i", mnem,
 			    rc? "." : "", ra, rs, sh);
+			break;
+		case PPC_31_DSSALL:
+			debug("dssall");
 			break;
 		case PPC_31_EIEIO:
 			debug("%s", power? "eieio?" : "eieio");

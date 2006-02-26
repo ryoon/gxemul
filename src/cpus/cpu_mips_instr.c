@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.13 2006-02-25 12:55:19 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.14 2006-02-26 10:09:24 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -532,6 +532,7 @@ X(end_of_page)
 }
 
 
+#if 0
 X(end_of_page2)
 {
 fatal("this should be removed: end of page2\n");
@@ -555,6 +556,7 @@ exit(1);
 	fatal("DELAY SLOT in DELAY SLOT across a page boundary? HUH?\n");
 	exit(1);
 }
+#endif
 
 
 /*****************************************************************************/

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.7 2006-02-25 13:27:40 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.8 2006-02-26 10:09:24 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *
@@ -207,7 +207,10 @@ void LS_N(struct cpu *cpu, struct ppc_instr_call *ic)
 
 #ifndef MODE32
 /*******************************************/
+if (!cpu->is_32bit) {
 LS_GENERIC_N(cpu, ic);
+return;
+}
 /*******************************************/
 #endif
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.64 2006-02-25 13:27:40 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.65 2006-02-26 10:09:24 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -1411,6 +1411,35 @@ X(mfsrin)
 
 
 /*
+ *  rldicl:
+ *
+ *  arg[0] = copy of the instruction word
+ */
+X(rldicl)
+{
+	int rs = (ic->arg[0] >> 21) & 31;
+	int ra = (ic->arg[0] >> 16) & 31;
+	int sh = ((ic->arg[0] >> 11) & 31) | ((ic->arg[0] & 2) << 4);
+	int mb = ((ic->arg[0] >> 6) & 31) | (ic->arg[0] & 0x20);
+	int rc = ic->arg[0] & 1;
+	uint64_t tmp = cpu->cd.ppc.gpr[rs], tmp2;
+	/*  TODO: Fix this, its performance is awful:  */
+	while (sh-- != 0) {
+		int b = (tmp >> 63) & 1;
+		tmp = (tmp << 1) | b;
+	}
+	tmp2 = 0;
+	while (mb <= 63) {
+		tmp |= ((uint64_t)1 << (63-mb));
+		mb ++;
+	}
+	cpu->cd.ppc.gpr[ra] = tmp & tmp2;
+	if (rc)
+		update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
+}
+
+
+/*
  *  rldicr:
  *
  *  arg[0] = copy of the instruction word
@@ -1433,6 +1462,37 @@ X(rldicr)
 	cpu->cd.ppc.gpr[ra] = tmp;
 	if (rc)
 		update_cr0(cpu, tmp);
+}
+
+
+/*
+ *  rldimi:
+ *
+ *  arg[0] = copy of the instruction word
+ */
+X(rldimi)
+{
+	uint32_t iw = ic->arg[0];
+	int rs = (iw >> 21) & 31, ra = (iw >> 16) & 31;
+	int sh = ((iw >> 11) & 31) | ((iw & 2) << 4);
+	int mb = ((iw >> 6) & 31) | (iw & 0x20);
+	int rc = ic->arg[0] & 1;
+	int m;
+	uint64_t tmp, s = cpu->cd.ppc.gpr[rs];
+	/*  TODO: Fix this, its performance is awful:  */
+	while (sh-- != 0) {
+		int b = (s >> 63) & 1;
+		s = (s << 1) | b;
+	}
+	m = mb; tmp = 0;
+	do {
+		tmp |= ((uint64_t)1 << (63-m));
+		m ++;
+	} while (m != 63 - sh);
+	cpu->cd.ppc.gpr[ra] &= ~tmp;
+	cpu->cd.ppc.gpr[ra] |= (tmp & s);
+	if (rc)
+		update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
 }
 
 
@@ -1673,7 +1733,7 @@ X(mtctr) {
 
 
 /*
- *  rfi:  Return from Interrupt
+ *  rfi[d]:  Return from Interrupt
  */
 X(rfi)
 {
@@ -1685,6 +1745,20 @@ X(rfi)
 	reg_access_msr(cpu, &tmp, 1, 0);
 
 	cpu->pc = cpu->cd.ppc.spr[SPR_SRR0];
+	quick_pc_to_pointers(cpu);
+}
+X(rfid)
+{
+	uint64_t tmp, mask = 0x800000000000ff73ULL;
+
+	reg_access_msr(cpu, &tmp, 0, 0);
+	tmp &= ~mask;
+	tmp |= (cpu->cd.ppc.spr[SPR_SRR1] & mask);
+	reg_access_msr(cpu, &tmp, 1, 0);
+
+	cpu->pc = cpu->cd.ppc.spr[SPR_SRR0];
+	if (!(tmp & PPC_MSR_SF))
+		cpu->pc = (uint32_t)cpu->pc;
 	quick_pc_to_pointers(cpu);
 }
 
@@ -2921,6 +2995,10 @@ X(to_be_translated)
 			ic->f = instr(rfi);
 			break;
 
+		case PPC_19_RFID:
+			ic->f = instr(rfid);
+			break;
+
 		case PPC_19_MCRF:
 			bf = (iword >> 23) & 7;
 			bfa = (iword >> 18) & 7;
@@ -3010,11 +3088,17 @@ X(to_be_translated)
 		xo = (iword >> 2) & 7;
 		switch (xo) {
 
+		case PPC_30_RLDICL:
 		case PPC_30_RLDICR:
-			ic->f = instr(rldicr);
+		case PPC_30_RLDIMI:
+			switch (xo) {
+			case PPC_30_RLDICL: ic->f = instr(rldicl); break;
+			case PPC_30_RLDICR: ic->f = instr(rldicr); break;
+			case PPC_30_RLDIMI: ic->f = instr(rldimi); break;
+			}
 			ic->arg[0] = iword;
 			if (cpu->cd.ppc.bits == 32) {
-				fatal("TODO: rldicr in 32-bit mode?\n");
+				fatal("TODO: rld* in 32-bit mode?\n");
 				goto bad;
 			}
 			break;
@@ -3183,6 +3267,7 @@ X(to_be_translated)
 			break;
 
 		case PPC_31_SYNC:
+		case PPC_31_DSSALL:
 		case PPC_31_EIEIO:
 		case PPC_31_DCBST:
 		case PPC_31_DCBTST:

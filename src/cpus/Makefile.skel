@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.19 2006-02-25 12:55:19 debug Exp $
+#  $Id: Makefile.skel,v 1.20 2006-02-26 10:09:24 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -183,9 +183,7 @@ tmp_mips_tail.c: generate_tail
 ###############################################################################
 
 cpu_ppc.o: cpu_ppc.c cpu_ppc_instr.c cpu_dyntrans.c memory_ppc.c \
-	../memory_rw.c tmp_ppc_head.c tmp_ppc_tail.c
-
-cpu_ppc_instr.c: tmp_ppc_loadstore.c
+	../memory_rw.c tmp_ppc_head.c tmp_ppc_tail.c tmp_ppc_loadstore.c
 
 tmp_ppc_loadstore.c: cpu_ppc_instr_loadstore.c generate_ppc_loadstore
 	./generate_ppc_loadstore > tmp_ppc_loadstore.c

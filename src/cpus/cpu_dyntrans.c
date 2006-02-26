@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.63 2006-02-26 09:21:44 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.64 2006-02-26 10:09:24 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -447,10 +447,13 @@ static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #endif
 
+#if 0
+/*  TODO  */
 #ifdef DYNTRANS_DELAYSLOT
 static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
 #ifdef DYNTRANS_DUALMODE_32
 static void instr32(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
+#endif
 #endif
 #endif
 

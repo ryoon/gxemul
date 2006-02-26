@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.6 2006-02-18 13:42:39 debug Exp $
+ *  $Id: interrupts.c,v 1.7 2006-02-26 20:11:14 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -964,7 +964,7 @@ void i80321_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 			cpu->cd.arm.i80321_isrc &= ~mask;
 	}
 
-	/*  debug("isrc = %08x  inten = %08x\n",
+	/*  fatal("isrc = %08x  inten = %08x\n",
 	    cpu->cd.arm.i80321_isrc, cpu->cd.arm.i80321_inten);  */
 
 	if (cpu->cd.arm.i80321_isrc & cpu->cd.arm.i80321_inten)

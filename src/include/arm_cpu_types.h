@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arm_cpu_types.h,v 1.8 2006-01-25 05:51:13 debug Exp $
+ *  $Id: arm_cpu_types.h,v 1.9 2006-02-26 20:11:14 debug Exp $
  */
 
 /*  See cpu_arm.h for struct arm_cpu_type_def.  */
@@ -105,6 +105,7 @@
 	{ "80321_400_B0",CPU_ID_80321_400_B0,ARM_XSCALE,15, 1, 15, 1 }, \
 	{ "80321_600",	CPU_ID_80321_600,ARM_XSCALE,	15, 1, 15, 1 }, \
 	{ "80321_600_B0",CPU_ID_80321_600_B0,ARM_XSCALE,15, 1, 15, 1 }, \
+	{ "80321_600_2",CPU_ID_80321_600_2,ARM_XSCALE,15, 1, 15, 1 }, \
 	\
 	{ NULL, 0, 0, 0,0, 0,0 } }
 

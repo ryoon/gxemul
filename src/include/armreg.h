@@ -1,4 +1,4 @@
-/*  GXemul: $Id: armreg.h,v 1.2 2006-02-05 10:26:36 debug Exp $  */
+/*  GXemul: $Id: armreg.h,v 1.3 2006-02-26 20:11:14 debug Exp $  */
 /*	$NetBSD: armreg.h,v 1.33 2005/07/20 14:38:11 nonaka Exp $	*/
 
 /*
@@ -214,6 +214,7 @@
 #define	CPU_ID_80321_600	0x69052430
 #define	CPU_ID_80321_400_B0	0x69052c20
 #define	CPU_ID_80321_600_B0	0x69052c30
+#define	CPU_ID_80321_600_2	0x69052c32
 #define	CPU_ID_80219_400	0x69052e20
 #define	CPU_ID_80219_600	0x69052e30
 #define	CPU_ID_IXP425_533	0x690541c0

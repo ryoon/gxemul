@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.22 2006-02-17 18:38:30 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.23 2006-02-26 20:11:14 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -37,6 +37,7 @@
 #include <ctype.h>
 
 #include "cpu.h"
+#include "machine.h"
 #include "misc.h"
 #include "symbol.h"
 
@@ -291,9 +292,11 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	switch (crm) {
 
 	case 0:	switch (crn) {
-		case 0:	if (l_bit)
+		case 0:	if (l_bit) {
 				cpu->cd.arm.r[rd] = cpu->cd.arm.i80321_inten;
-			else
+				fatal("TODO: XScale read from inten?\n");
+				exit(1);
+			} else
 				cpu->cd.arm.i80321_inten = cpu->cd.arm.r[rd];
 			break;
 		case 4:	if (l_bit)
@@ -319,9 +322,8 @@ void arm_coproc_i80321_6(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		}
 		break;
 
-	case 1:
-/* fatal("TIMER opcode1=%i opcode2=%i crn="
-    "%i crm=%i rd=%i l=%i)\n", opcode1, opcode2, crn, crm, rd, l_bit); */
+	case 1:	/*  fatal("TIMER opcode1=%i opcode2=%i crn="
+    "%i crm=%i rd=%i l=%i)\n", opcode1, opcode2, crn, crm, rd, l_bit);  */
 
 		switch (crn) {
 		case 0:	/*  tmr0:  */

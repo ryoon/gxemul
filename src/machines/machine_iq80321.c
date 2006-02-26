@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.16 2006-02-20 05:35:51 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.17 2006-02-26 20:11:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -80,8 +80,8 @@ MACHINE_SETUP(iq80321)
 	 *  "Intel 31244 Serial ATA Controller", must be at device 6 according
 	 *  to NetBSD's iq80321/iq80321_pci.c:iq80321_pci_intr_map().
 	 */
-	bus_pci_add(machine, pci, machine->memory, 0, 6, 0, "i31244");
-
+/*	bus_pci_add(machine, pci, machine->memory, 0, 6, 0, "i31244");
+*/
 	if (!machine->prom_emulation)
 		return;
 
@@ -95,7 +95,7 @@ MACHINE_SETUP(iq80321)
 
 MACHINE_DEFAULT_CPU(iq80321)
 {
-	machine->cpu_name = strdup("80321_600_B0");
+	machine->cpu_name = strdup("80321_600_2");
 }
 
 

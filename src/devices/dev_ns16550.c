@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.51 2006-02-18 13:42:39 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.52 2006-02-26 20:11:14 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -47,7 +47,7 @@
 #include "comreg.h"
 
 
-/*  #define debug fatal  */
+#define debug fatal
 
 #define	TICK_SHIFT		14
 #define	DEV_NS16550_LENGTH	8
@@ -91,6 +91,7 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 	 *  If interrupts are enabled, and interrupts are pending, then
 	 *  cause a CPU interrupt.
  	 */
+
 	if (((d->reg[com_ier] & IER_ETXRDY) && (d->reg[com_iir] & IIR_TXRDY)) ||
 	    ((d->reg[com_ier] & IER_ERXRDY) && (d->reg[com_iir] & IIR_RXRDY))) {
 		d->reg[com_iir] &= ~IIR_NOPEND;
@@ -216,7 +217,13 @@ DEVICE_ACCESS(ns16550)
 			odata = d->reg[com_iir];
 			debug("[ ns16550 (%s): read from iir: 0x%02x ]\n",
 			    d->name, (int)odata);
+#if 0
 			dev_ns16550_tick(cpu, d);
+#else
+/*  FreeBSD/arm experiment:  */
+d->reg[com_iir] = IIR_NOPEND;
+cpu_interrupt_ack(cpu, d->irqnr);
+#endif
 		}
 		break;
 
@@ -287,6 +294,10 @@ DEVICE_ACCESS(ns16550)
 			d->reg[com_mcr] = idata;
 			debug("[ ns16550 (%s): write to mcr: 0x%02x ]\n",
 			    d->name, (int)idata);
+			if (!(d->reg[com_iir] & IIR_TXRDY)
+			    && (idata & MCR_IENABLE))
+				d->reg[com_iir] |= IIR_TXRDY;
+			dev_ns16550_tick(cpu, d);
 		} else {
 			odata = d->reg[com_mcr];
 			debug("[ ns16550 (%s): read from mcr: 0x%02x ]\n",

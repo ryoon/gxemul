@@ -1,4 +1,4 @@
-$Id: TODO,v 1.218 2006-02-25 18:35:16 debug Exp $
+$Id: TODO,v 1.219 2006-02-26 20:11:14 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -31,7 +31,6 @@ AVR:
 	    display" device with scanlines and stuff like that)
 
 ARM:
-	o)  add ID for "i80321 600MHz rev 2 (XScale core)"
 	o)  try to get netbsd/evbarm 3.x running (iq80321)
 	o)  make the ata controller usable for FreeBSD!
 	o)  zaurus for openbsd...

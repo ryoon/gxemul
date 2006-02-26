@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.32 2006-01-01 13:17:17 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.33 2006-02-26 08:54:33 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -96,6 +96,8 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 	int tweaked = 1;
 
 #ifdef MTE_TEST
+/*  Actually just a return, but this fools the Compaq compiler...  */
+if (cpu != NULL)
 return;
 #endif
 

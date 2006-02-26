@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.128 2006-02-19 08:04:12 debug Exp $
+ *  $Id: file.c,v 1.129 2006-02-26 08:54:32 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -61,7 +61,7 @@ extern int verbose;
 
 
 /*  ELF machine types as strings: (same as exec_elf.h)  */
-#define N_ELF_MACHINE_TYPES	64
+#define N_ELF_MACHINE_TYPES	84
 static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
 	"NONE", "M32", "SPARC", "386",				/*  0..3  */
 	"68K", "88K", "486", "860",				/*  4..7  */
@@ -78,7 +78,12 @@ static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
 	"H8S", "H8_500", "IA_64", "MIPS_X",			/*  48..51  */
 	"COLDFIRE", "68HC12", "unknown54", "unknown55",		/*  52..55  */
 	"unknown56", "unknown57", "unknown58", "unknown59",	/*  56..59  */
-	"unknown60", "unknown61", "AMD64", "unknown63"		/*  60..63  */
+	"unknown60", "unknown61", "AMD64", "unknown63",		/*  60..63  */
+	"unknown64", "unknown65", "unknown66", "unknown67",	/*  64..67  */
+	"unknown68", "unknown69", "unknown70", "unknown71",	/*  68..71  */
+	"unknown72", "unknown73", "unknown74", "unknown75",	/*  72..75  */
+	"unknown76", "unknown77", "unknown78", "unknown79",	/*  76..79  */
+	"unknown80", "unknown81", "unknown82", "AVR"		/*  80..83  */
 };
 
 
@@ -1545,12 +1550,12 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 			if (p_vaddr != p_paddr) {
 				if (elf64)
-					fatal("NOTE: vaddr (0x%llx) and "
+					debug("NOTE: vaddr (0x%llx) and "
 					    "paddr (0x%llx) differ; using "
 					    "vaddr\n", (long long)p_vaddr,
 					    (long long)p_paddr);
 				else
-					fatal("NOTE: vaddr (0x%08x) and "
+					debug("NOTE: vaddr (0x%08x) and "
 					    "paddr (0x%08x) differ; using vaddr"
 					    "\n", (int)p_vaddr, (int)p_paddr);
 			}

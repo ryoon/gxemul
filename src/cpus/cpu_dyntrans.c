@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.62 2006-02-25 16:27:00 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.63 2006-02-26 09:21:44 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -494,12 +494,14 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 #endif
 
 /*  TODO:  */
+#if 0
 #ifdef DYNTRANS_DELAYSLOT
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 1].f =
 #ifdef DYNTRANS_DUALMODE_32
 	    cpu->is_32bit? instr32(end_of_page2) :
 #endif
 	    instr(end_of_page2);
+#endif
 #endif
 
 	cpu->translation_cache_cur_ofs += sizeof(struct DYNTRANS_TC_PHYSPAGE);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1132 2006-02-25 18:35:16 debug Exp $
+$Id: HISTORY,v 1.1133 2006-02-26 09:21:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2585,3 +2585,4 @@ Changelog for GXemul:
 		minor AVR updates (a simple Hello World program works!).
 		Beginning on a skeleton for automatically generating documen-
 		tation (for devices etc.).
+20060226	...

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.2 2006-02-24 00:20:42 debug Exp $
+ *  $Id: machine_test.c,v 1.3 2006-02-26 09:21:45 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -188,11 +188,19 @@ MACHINE_DEFAULT_CPU(bareavr)
 }
 
 
+MACHINE_DEFAULT_RAM(bareavr)
+{
+	/*  SRAM starts at 8 MB, and is 4 MB long.  */
+	machine->physical_ram_in_mb = 12;
+}
+
+
 MACHINE_REGISTER(bareavr)
 {
 	MR_DEFAULT(bareavr, "Generic \"bare\" AVR machine",
 	    ARCH_AVR, MACHINE_BAREAVR, 1, 0);
 	me->aliases[0] = "bareavr";
+	me->set_default_ram = machine_default_ram_bareavr;
 	machine_entry_add(me, ARCH_AVR);
 }
 

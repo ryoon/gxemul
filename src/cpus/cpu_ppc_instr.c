@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.65 2006-02-26 10:09:24 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.66 2006-02-26 10:30:11 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2040,6 +2040,10 @@ DOT2(extsw)
 X(slw) {	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0])
 		    << (reg(ic->arg[1]) & 31); }
 DOT2(slw)
+X(sld) {int sa = reg(ic->arg[1]) & 127;
+	if (sa >= 64)	reg(ic->arg[2]) = 0;
+	else reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) << (sa & 63); }
+DOT2(sld)
 X(sraw)
 {
 	uint32_t tmp = reg(ic->arg[0]);
@@ -2078,6 +2082,8 @@ X(orc) {	reg(ic->arg[2]) = reg(ic->arg[0]) | (~reg(ic->arg[1])); }
 DOT2(orc)
 X(xor) {	reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
 DOT2(xor)
+X(eqv) {	reg(ic->arg[2]) = ~(reg(ic->arg[0]) ^ reg(ic->arg[1])); }
+DOT2(eqv)
 
 
 /*
@@ -3476,6 +3482,7 @@ X(to_be_translated)
 		case PPC_31_EXTSH:
 		case PPC_31_EXTSW:
 		case PPC_31_SLW:
+		case PPC_31_SLD:
 		case PPC_31_SRAW:
 		case PPC_31_SRW:
 		case PPC_31_AND:
@@ -3485,6 +3492,7 @@ X(to_be_translated)
 		case PPC_31_OR:
 		case PPC_31_ORC:
 		case PPC_31_XOR:
+		case PPC_31_EQV:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -3499,6 +3507,8 @@ X(to_be_translated)
 					  rc_f  = instr(extsw_dot); break;
 			case PPC_31_SLW:  ic->f = instr(slw);
 					  rc_f  = instr(slw_dot); break;
+			case PPC_31_SLD:  ic->f = instr(sld);
+					  rc_f  = instr(sld_dot); break;
 			case PPC_31_SRAW: ic->f = instr(sraw);
 					  rc_f  = instr(sraw_dot); break;
 			case PPC_31_SRW:  ic->f = instr(srw);
@@ -3518,6 +3528,8 @@ X(to_be_translated)
 					  rc_f  = instr(orc_dot); break;
 			case PPC_31_XOR:  ic->f = instr(xor);
 					  rc_f  = instr(xor_dot); break;
+			case PPC_31_EQV:  ic->f = instr(eqv);
+					  rc_f  = instr(eqv_dot); break;
 			}
 			ic->arg[0] = (size_t)(&cpu->cd.ppc.gpr[rs]);
 			ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[rb]);

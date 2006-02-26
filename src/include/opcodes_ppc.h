@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.47 2006-02-26 10:09:24 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.48 2006-02-26 10:30:11 debug Exp $
  *
  *
  *  PPC and POWER opcodes. These are gathered from various sources.
@@ -88,6 +88,7 @@
 #define	  PPC_31_LWZX		  23
 #define	  PPC_31_SLW		  24
 #define	  PPC_31_CNTLZW		  26
+#define	  PPC_31_SLD		  27
 #define	  PPC_31_AND		  28
 #define	  PPC_31_CMPL		  32
 #define	  PPC_31_SUBF		  40
@@ -131,6 +132,7 @@
 #define	  PPC_31_ADD		  266
 #define	  PPC_31_DCBT		  278
 #define	  PPC_31_LHZX		  279
+#define	  PPC_31_EQV		  284
 #define	  PPC_31_TLBIE		  306
 #define	  PPC_31_LHZUX		  311
 #define	  PPC_31_XOR		  316

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.48 2006-02-26 10:09:24 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.49 2006-02-26 10:30:11 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1354,11 +1354,13 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%s\tr%i,r%i", mnem, ra, rb);
 			break;
 		case PPC_31_SLW:
+		case PPC_31_SLD:
 		case PPC_31_SRAW:
 		case PPC_31_SRW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
 		case PPC_31_NOR:
+		case PPC_31_EQV:
 		case PPC_31_OR:
 		case PPC_31_ORC:
 		case PPC_31_XOR:
@@ -1373,6 +1375,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				switch (xo) {
 				case PPC_31_SLW:  mnem =
 					power? "sl" : "slw"; break;
+				case PPC_31_SLD:  mnem = "sld"; break;
 				case PPC_31_SRAW:  mnem =
 					power? "sra" : "sraw"; break;
 				case PPC_31_SRW:  mnem =
@@ -1381,6 +1384,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				case PPC_31_NAND: mnem = "nand"; break;
 				case PPC_31_ANDC: mnem = "andc"; break;
 				case PPC_31_NOR:  mnem = "nor"; break;
+				case PPC_31_EQV:  mnem = "eqv"; break;
 				case PPC_31_OR:   mnem = "or"; break;
 				case PPC_31_ORC:  mnem = "orc"; break;
 				case PPC_31_XOR:  mnem = "xor"; break;

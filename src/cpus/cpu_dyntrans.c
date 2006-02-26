@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.64 2006-02-26 10:09:24 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.65 2006-02-26 10:30:10 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -946,16 +946,12 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 	x3 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))& mask3;
 
 	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
-	if (l2 == cpu->cd.DYNTRANS_ARCH.l2_64_dummy) {
-		fatal("xxx_invalidate_tlb_entry(): huh? L2 problem.\n");
-		exit(1);
-	}
+	if (l2 == cpu->cd.DYNTRANS_ARCH.l2_64_dummy)
+		return;
 
 	l3 = l2->l3[x2];
-	if (l3 == cpu->cd.DYNTRANS_ARCH.l3_64_dummy) {
-		fatal("xxx_invalidate_tlb_entry(): huh? L3 problem.\n");
-		exit(1);
-	}
+	if (l3 == cpu->cd.DYNTRANS_ARCH.l3_64_dummy)
+		return;
 
 	if (flags & JUST_MARK_AS_NON_WRITABLE) {
 		l3->host_store[x3] = NULL;

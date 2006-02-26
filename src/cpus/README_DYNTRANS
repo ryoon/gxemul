@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.7 2005-12-09 05:34:20 debug Exp $
+$Id: README_DYNTRANS,v 1.8 2006-02-26 12:15:28 debug Exp $
 
 -------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ Dyntrans TODO:
 	------		-------				-----		-----
 	Alpha		32-bit				64		no
 	ARM		32-bit, 16-bit (Thumb)		32		no
-	Atmel AVR	16-bit				8		no
+	Atmel AVR	16-bit + variable		8		no
 	F-CPU		?				?		?
 	HPPA		32-bit				64/32		yes
 	i960		32-bit + variable		32		?
@@ -83,16 +83,11 @@ Dyntrans TODO:
 
   x)  various register-window archs (SPARC etc)
 
-  x)  Atmel AVR etc?
-
   x)  Alpha: hahaha, zapnot and inserts/extracts don't
 	    compile into very nice code :-|  fix this
 		Solution: if short assembly language snippets can be
 		compiled on the current host, then compile such snippets
 		for alpha_instr_zapnot etc.
-
-  x)  64-bit virtual memory translation tables (PPC, Alpha, MIPS,
-	    HPPA, sh, amd64, etc)
 
   x)  x86: convert to dyntrans. LOTS of stuff to consider.
 

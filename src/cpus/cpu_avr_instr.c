@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.9 2006-02-25 18:30:31 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.10 2006-02-26 12:15:28 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -219,6 +219,22 @@ X(ld_y)
 
 
 /*
+ *  out:  Write a byte from a register to I/O space.
+ *
+ *  arg[1]: ptr to rr
+ *  arg[2]: I/O port nr
+ */
+X(out)
+{
+	if (!cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + ic->arg[2],
+	    (uint8_t *)(ic->arg[1]), 1, MEM_WRITE, CACHE_DATA)) {
+		fatal("out: write failed: TODO\n");
+		exit(1);
+	}
+}
+
+
+/*
  *  adiw:  rd+1:rd += constant
  *
  *  arg[1]: ptr to rd
@@ -267,6 +283,25 @@ X(and)
 		cpu->cd.avr.sreg |= AVR_SREG_Z;
 	if (*(uint8_t *)(ic->arg[2]) & 0x80)
 		cpu->cd.avr.sreg |= AVR_SREG_S | AVR_SREG_N;
+}
+
+
+/*
+ *  andi:  rd = rd & imm
+ *
+ *  arg[1]: ptr to rd
+ *  arg[2]: imm
+ */
+X(andi)
+{
+	uint8_t x = *(uint8_t *)(ic->arg[1]) & ic->arg[2];
+	cpu->cd.avr.sreg &= ~(AVR_SREG_S | AVR_SREG_V | AVR_SREG_N
+	    | AVR_SREG_Z);
+	if (x == 0)
+		cpu->cd.avr.sreg |= AVR_SREG_Z;
+	if (x & 0x80)
+		cpu->cd.avr.sreg |= AVR_SREG_S | AVR_SREG_N;
+	*(uint8_t *)(ic->arg[1]) = x;
 }
 
 
@@ -406,6 +441,29 @@ X(pop)  { uint32_t t; pop_value(cpu, &t, 1); *(uint8_t *)(ic->arg[1]) = t;
 
 
 /*
+ *  dec:  Decremebts a register.
+ *
+ *  arg[1]: ptr to rd
+ */
+X(dec)
+{
+	uint8_t x = *(uint8_t *)(ic->arg[1]) - 1;
+	cpu->cd.avr.sreg &= ~(AVR_SREG_S | AVR_SREG_V | AVR_SREG_N
+	    | AVR_SREG_Z);
+	if (x == 0)
+		cpu->cd.avr.sreg |= AVR_SREG_Z;
+	if (x == 0x7f)
+		cpu->cd.avr.sreg |= AVR_SREG_V;
+	if (x & 0x80)
+		cpu->cd.avr.sreg |= AVR_SREG_N;
+	if ((cpu->cd.avr.sreg & AVR_SREG_N) ^
+	    (cpu->cd.avr.sreg & AVR_SREG_V))
+		cpu->cd.avr.sreg |= AVR_SREG_S;
+	*(uint8_t *)(ic->arg[1]) = x;
+}
+
+
+/*
  *  swap:  Swap nibbles in a register.
  *
  *  arg[1]: ptr to rd
@@ -497,7 +555,7 @@ static uint16_t read_word(struct cpu *cpu, unsigned char *ib, int addr)
  */
 X(to_be_translated)
 {
-	int addr, low_pc, rd, rr, tmp, main_opcode;
+	int addr, low_pc, rd, rr, tmp, main_opcode, a;
 	uint16_t iword;
 	unsigned char ib[2];
 	void (*samepage_function)(struct cpu *, struct avr_instr_call *);
@@ -559,6 +617,13 @@ X(to_be_translated)
 		}
 		goto bad;
 
+	case 0x7:
+		rd = ((iword >> 4) & 15) + 16;
+		ic->f = instr(andi);
+		ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+		ic->arg[2] = ((iword >> 4) & 0xf0) + (iword & 0xf);
+		break;
+
 	case 0x8:
 		if ((iword & 0xfe0f) == 0x8008) {
 			rd = (iword >> 4) & 31;
@@ -609,6 +674,12 @@ X(to_be_translated)
 			}
 			break;
 		}
+		if ((iword & 0xfe0f) == 0x940a) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(dec);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
 		if ((iword & 0xff8f) == 0x9488) {
 			switch ((iword >> 4) & 7) {
 			case 0: ic->f = instr(clc); break;
@@ -631,6 +702,17 @@ X(to_be_translated)
 			rd = ((iword >> 3) & 6) + 24;
 			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
 			ic->arg[2] = (iword & 15) + ((iword & 0xc0) >> 2);
+			break;
+		}
+		goto bad;
+
+	case 0xb:
+		if ((iword & 0xf800) == 0xb800) {
+			a = ((iword & 0x600) >> 5) | (iword & 0xf);
+			rr = (iword >> 4) & 31;
+			ic->f = instr(out);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rr]);
+			ic->arg[2] = a;
 			break;
 		}
 		goto bad;

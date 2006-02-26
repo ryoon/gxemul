@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1135 2006-02-26 10:30:10 debug Exp $
+$Id: HISTORY,v 1.1136 2006-02-26 12:15:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2586,3 +2586,4 @@ Changelog for GXemul:
 		Beginning on a skeleton for automatically generating documen-
 		tation (for devices etc.).
 20060226	PPC updates (adding some more 64-bit instructions, etc).
+		AVR updates (more instructions).

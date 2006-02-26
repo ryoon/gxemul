@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.9 2006-02-25 18:30:31 debug Exp $
+ *  $Id: cpu_avr.c,v 1.10 2006-02-26 12:15:28 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -288,6 +288,11 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
 		debug("mov\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xf000) == 0x7000) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 15) + 16;
+		imm = ((iw >> 4) & 0xf0) + (iw & 15);
+		debug("andi\tr%i,0x%x\n", rd, imm);
 	} else if ((iw & 0xfe0f) == 0x8000) {
 		print_spaces(len);
 		rd = (iw >> 4) & 31;
@@ -317,6 +322,10 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		print_spaces(len);
 		rd = (iw >> 4) & 7;
 		debug("%s%c\n", iw & 0x80? "cl" : "se", sreg_names[rd]);
+	} else if ((iw & 0xfe0f) == 0x940a) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("dec\tr%i\n", rd);
 	} else if ((iw & 0xffef) == 0x9508) {
 		/*  ret and reti  */
 		print_spaces(len);
@@ -332,6 +341,16 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		imm = ((iw & 0xc0) >> 2) | (iw & 0xf);
 		rd = ((iw >> 4) & 3) * 2 + 24;
 		debug("adiw\tr%i:r%i,0x%x\n", rd, rd+1, imm);
+	} else if ((iw & 0xff00) == 0x9a00) {
+		print_spaces(len);
+		imm = iw & 7;
+		rd = (iw >> 3) & 31;	/*  A  */
+		debug("sbi\t%i,%i\n", rd, imm);
+	} else if ((iw & 0xf800) == 0xb800) {
+		print_spaces(len);
+		imm = ((iw & 0x600) >> 5) | (iw & 0xf);
+		rr = (iw >> 4) & 31;
+		debug("out\t0x%x,r%i\n", imm, rr);
 	} else if ((iw & 0xe000) == 0xc000) {
 		print_spaces(len);
 		addr = (int16_t)((iw & 0xfff) << 4);

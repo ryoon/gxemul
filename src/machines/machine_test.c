@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.3 2006-02-26 09:21:45 debug Exp $
+ *  $Id: machine_test.c,v 1.4 2006-02-26 12:15:28 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -177,8 +177,12 @@ MACHINE_REGISTER(testarm)
 
 MACHINE_SETUP(bareavr)
 {
+	char tmpstr[200];
 	machine->machine_name = "Generic \"bare\" AVR machine";
 	machine->stable = 1;
+	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%llx",
+	    (long long)AVR_SRAM_BASE);
+	device_add(machine, tmpstr);
 }
 
 

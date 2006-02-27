@@ -25,7 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.1 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_bebox.c,v 1.2 2006-02-27 05:32:26 debug Exp $
+ *
+ *  Experimental machine for running NetBSD/bebox (see
+ *  http://www.netbsd.org/Ports/bebox/ for more info.)
  */
 
 #include <stdio.h>
@@ -46,9 +49,6 @@ MACHINE_SETUP(bebox)
 {
 	struct pci_data *pci_data;
 
-	/*
-	 *  NetBSD/bebox (http://www.netbsd.org/Ports/bebox/)
-	 */
 	machine->machine_name = "BeBox";
 
 	machine->md_int.bebox_data = device_add(machine, "bebox");

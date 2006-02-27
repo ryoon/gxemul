@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_eagle.c,v 1.9 2006-01-16 00:51:14 debug Exp $
+ *  $Id: dev_eagle.c,v 1.10 2006-02-27 05:32:26 debug Exp $
  *  
  *  Motorola MPC105 "Eagle" host bridge.
  */
@@ -101,6 +101,27 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct eagle_data));
 	d->pciirq = pciirq;
 
+	/*
+	 *  According to http://www.beatjapan.org/mirror/www.be.com/
+	 *  aboutbe/benewsletter/Issue27.html#Cookbook :
+	 *
+	 *  "HARDWARE MEMORY MAP
+	 *   The MPC105 defines the physical memory map of the system as
+	 *   follows:
+	 *
+	 *   Start        Size         Description
+	 *
+	 *   0x00000000   0x40000000   Physical RAM
+	 *   0x40000000   0x40000000   Other system memory
+	 *                             (motherboard glue regs)
+	 *   0x80000000   0x00800000   ISA I/O
+	 *   0x81000000   0x3E800000   PCI I/O
+	 *   0xBFFFFFF0   0x00000010   PCI/ISA interrupt acknowledge
+	 *   0xC0000000   0x3F000000   PCI memory
+	 *   0xFF000000   0x01000000   ROM/flash
+	 */
+
+	/*  TODO: Make these work like the BE web page stated...  */
 	pci_io_offset  = 0x80000000ULL;
 	pci_mem_offset = 0xc0000000ULL;
 	pci_portbase   = 0x00000000ULL;

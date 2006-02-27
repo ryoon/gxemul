@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.124 2006-02-18 21:03:10 debug Exp $
+$Id: guestoses.html,v 1.125 2006-02-27 05:32:25 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -73,6 +73,7 @@ you might find the following information interesting:
   <li><a href="#openbsdarcinstall">OpenBSD/arc</a>
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder</a>
+  <li><a href="#netbsdmacppcinstall">NetBSD/macppc</a>
 </ul>
 
 
@@ -1954,6 +1955,51 @@ generic kernel:<pre>
 
 
 
+
+
+
+
+
+<p><br>
+<a name="netbsdmacppcinstall"></a>
+<h3>NetBSD/macppc:</h3>
+
+It is <font color="#ff0000"><b>ALMOST</b></font> possible to install and run
+<a href="http://www.netbsd.org/Ports/macppc/">NetBSD/macppc</a> in GXemul
+on an emulated generic PowerPC machine. No specific Machintosh model
+is emulated, but it is enough to for NetBSD to recognize it.
+
+<p>To install NetBSD/macppc onto a disk image, follow these instructions:
+
+<p>
+<ol start="1">
+  <li>Create an empty harddisk image, which will be the root disk
+	that you will install NetBSD/macppc onto:<pre>
+    <b>dd if=/dev/zero of=nbsd_macppc.img bs=1024 count=1 seek=2000000</b>
+
+</pre>
+  <li>Download the NetBSD/macppc 3.0 ISO image and a generic kernel:<pre>
+    <a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/macppccd-3.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/macppccd-3.0.iso</a>
+    <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/macppc/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/macppc/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/macppc/binary/kernel/netbsd-GENERIC.MP.gz">netbsd-GENERIC.MP.gz</a>
+
+</pre>
+  <p>
+  <li>Start the installation like this:<pre>
+    <b>gxemul -x -e g4 -d nbsd_macppc.img -d b:macppccd-3.0.iso -j macppc/binary/kernel/netbsd-INSTALL.gz</b>
+
+</pre>
+</ol>
+
+<p>If everything worked, NetBSD/macppc should now be installed on the disk image.
+
+<p><font color="#ff0000"><b>2006-02-26:</b></font> That's it. The installation
+succeeds, but it is not possible to start from the newly installed disk.
+/sbin/init dies, so the following command doesn't really work yet:
+
+<p>Use the following command line to boot the emulated machine:<pre>
+	<b>gxemul -x -e g4 -d nbsd_macppc.img netbsd-GENERIC.MP.gz</b>
+
+</pre>
 
 
 

@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *   
- *  $Id: dev_gc.c,v 1.7 2006-02-26 21:39:12 debug Exp $
+ *  $Id: dev_gc.c,v 1.8 2006-02-27 05:32:26 debug Exp $
  *  
  *  Grand Central Interrupt controller (used by MacPPC).
  */
@@ -110,6 +110,10 @@ DEVICE_ACCESS(gc)
 			if (d->status_lo != old_status_lo)
 				cpu_interrupt(cpu, d->reassert_irq);
 		}
+		break;
+
+	case 0x2c:
+		/*  Avoir a debug message.  */
 		break;
 
 	default:if (writeflag == MEM_WRITE) {

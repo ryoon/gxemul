@@ -25,12 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.6 2006-02-26 21:39:12 debug Exp $
+ *  $Id: dev_z8530.c,v 1.7 2006-02-27 05:41:07 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
  *  Features:
  *	o)  Two channels, 0 = "channel B", 1 = "channel A".
+ *	    Normally, only channel B is in use.
  *
  *  This is a work in progress... TODOs include:
  *	o)  Implement more of the register set.
@@ -74,6 +75,9 @@ struct z8530_data {
 
 /*
  *  check_incoming():
+ *
+ *  Sets the RX interrupt flag for ports B and A, if something there is input
+ *  available on port 0 or 1, respectively.
  */
 static void check_incoming(struct cpu *cpu, struct z8530_data *d)
 {
@@ -90,6 +94,8 @@ static void check_incoming(struct cpu *cpu, struct z8530_data *d)
 
 /*
  *  dev_z8530_tick():
+ *
+ *  Generate transmit and receive interrupts at regular intervals.
  */
 void dev_z8530_tick(struct cpu *cpu, void *extra)
 {

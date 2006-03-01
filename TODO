@@ -1,4 +1,4 @@
-$Id: TODO,v 1.219 2006-02-26 20:11:14 debug Exp $
+$Id: TODO,v 1.220 2006-03-01 19:44:19 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -25,6 +25,8 @@ Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
 	Add interrupt controller in dev_algor.c.
 
 AVR:
+	o)  add explicit avr cpu types (avr9xxxx)
+	o)  pc on stack, 2 vs 3 byte update ==> different instr calls.
 	o)  first 0x60 bytes of SRAM area should be mapped to registers
 	    etc using a device!
 	o)  Cycle-accurate device emulation framework (e.g. a "CRT
@@ -46,6 +48,9 @@ Cache simulation:
 	    must include support?
 
 Documentation:
+	o)  Automagic documentation generation:
+		x)  REMEMBER that several machines/devices can be in
+			the same source file!
 	o)  Try to rewrite the install instructions for those machines
 	    that use 3MAX into using CATS? (To remove the need to a raw
 	    ffs partition using up all of the disk image.)

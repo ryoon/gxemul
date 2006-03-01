@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.10 2006-02-26 12:15:28 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.11 2006-03-01 18:44:30 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -287,6 +287,24 @@ X(and)
 
 
 /*
+ *  eor:  rd = rd ^ rr
+ *
+ *  arg[1]: ptr to rr
+ *  arg[2]: ptr to rd
+ */
+X(eor)
+{
+	*(uint8_t *)(ic->arg[2]) ^= *(uint8_t *)(ic->arg[1]);
+	cpu->cd.avr.sreg &= ~(AVR_SREG_S | AVR_SREG_V | AVR_SREG_N
+	    | AVR_SREG_Z);
+	if (*(uint8_t *)(ic->arg[2]) == 0)
+		cpu->cd.avr.sreg |= AVR_SREG_Z;
+	if (*(uint8_t *)(ic->arg[2]) & 0x80)
+		cpu->cd.avr.sreg |= AVR_SREG_S | AVR_SREG_N;
+}
+
+
+/*
  *  andi:  rd = rd & imm
  *
  *  arg[1]: ptr to rd
@@ -331,6 +349,24 @@ X(sts)
 		fatal("sts: write failed: TODO\n");
 		exit(1);
 	}
+	cpu->cd.avr.extra_cycles ++;
+}
+
+
+/*
+ *  sbi:  Set bit in I/O register.
+ *
+ *  arg[1]: I/O register number (0..31)
+ *  arg[2]: byte mask to write (1, 2, ..., 0x40, or 0x80)
+ */
+X(sbi)
+{
+	uint8_t r;
+	cpu->memory_rw(cpu, cpu->mem, ic->arg[1] + AVR_SRAM_BASE,
+	    &r, sizeof(uint8_t), MEM_READ, CACHE_DATA);
+	r |= ic->arg[2];
+	cpu->memory_rw(cpu, cpu->mem, ic->arg[1] + AVR_SRAM_BASE,
+	    &r, sizeof(uint8_t), MEM_WRITE, CACHE_DATA);
 	cpu->cd.avr.extra_cycles ++;
 }
 
@@ -607,6 +643,14 @@ X(to_be_translated)
 			ic->arg[2] = (size_t)(&cpu->cd.avr.r[rd]);
 			break;
 		}
+		if ((iword & 0xfc00) == 0x2400) {
+			rd = (iword & 0x1f0) >> 4;
+			rr = ((iword & 0x200) >> 5) | (iword & 0xf);
+			ic->f = instr(eor);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rr]);
+			ic->arg[2] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
 		if ((iword & 0xfc00) == 0x2c00) {
 			rd = (iword & 0x1f0) >> 4;
 			rr = ((iword & 0x200) >> 5) | (iword & 0xf);
@@ -702,6 +746,12 @@ X(to_be_translated)
 			rd = ((iword >> 3) & 6) + 24;
 			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
 			ic->arg[2] = (iword & 15) + ((iword & 0xc0) >> 2);
+			break;
+		}
+		if ((iword & 0xff00) == 0x9a00) {
+			ic->f = instr(sbi);
+			ic->arg[1] = (iword >> 3) & 31;
+			ic->arg[2] = 1 << (iword & 7);
 			break;
 		}
 		goto bad;

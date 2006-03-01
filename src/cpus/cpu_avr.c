@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.11 2006-03-01 18:44:30 debug Exp $
+ *  $Id: cpu_avr.c,v 1.12 2006-03-01 20:31:47 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -268,16 +268,56 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if ((iw & 0xffff) == 0x0000) {
 		print_spaces(len);
 		debug("nop\n");
-	} else if ((iw & 0xfc00) == 0x0c00) {
+	} else if ((iw & 0xff00) == 0x0100) {
+		print_spaces(len);
+		rd = (iw >> 3) & 30;
+		rr = (iw << 1) & 30;
+		debug("movw\tr%i:r%i,r%i:r%i\n", rd+1, rd, rr+1, rr);
+	} else if ((iw & 0xff00) == 0x0200) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 15) + 16;
+		rr = (iw & 15) + 16;
+		debug("muls\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xff88) == 0x0300) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 7) + 16;
+		rr = (iw & 7) + 16;
+		debug("mulsu\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xff88) == 0x0308) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 7) + 16;
+		rr = (iw & 7) + 16;
+		debug("fmul\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xff88) == 0x0380) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 7) + 16;
+		rr = (iw & 7) + 16;
+		debug("fmuls\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xff88) == 0x0388) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 7) + 16;
+		rr = (iw & 7) + 16;
+		debug("fmulsu\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xec00) == 0x0400) {
 		print_spaces(len);
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
-		debug("add\tr%i,r%i\n", rd, rr);
-	} else if ((iw & 0xfc00) == 0x1c00) {
+		debug("cp%s\tr%i,r%i\n", iw & 0x1000? "" : "c", rd, rr);
+	} else if ((iw & 0xec00) == 0x0800) {
 		print_spaces(len);
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
-		debug("adc\tr%i,r%i\n", rd, rr);
+		debug("%s\tr%i,r%i\n", iw & 0x1000? "sub" : "sbc", rd, rr);
+	} else if ((iw & 0xec00) == 0x0c00) {
+		print_spaces(len);
+		rd = (iw & 0x1f0) >> 4;
+		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
+		debug("%s\tr%i,r%i\n", iw & 0x1000? "adc" : "add", rd, rr);
+	} else if ((iw & 0xfc00) == 0x1000) {
+		print_spaces(len);
+		rd = (iw & 0x1f0) >> 4;
+		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
+		debug("cpse\tr%i,r%i\n", rd, rr);
 	} else if ((iw & 0xfc00) == 0x2000) {
 		print_spaces(len);
 		rd = (iw & 0x1f0) >> 4;
@@ -288,16 +328,36 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
 		debug("eor\tr%i,r%i\n", rd, rr);
+	} else if ((iw & 0xfc00) == 0x2800) {
+		print_spaces(len);
+		rd = (iw & 0x1f0) >> 4;
+		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
+		debug("or\tr%i,r%i\n", rd, rr);
 	} else if ((iw & 0xfc00) == 0x2c00) {
 		print_spaces(len);
 		rd = (iw & 0x1f0) >> 4;
 		rr = ((iw & 0x200) >> 5) | (iw & 0xf);
 		debug("mov\tr%i,r%i\n", rd, rr);
-	} else if ((iw & 0xf000) == 0x7000) {
+	} else if ((iw & 0xf000) == 0x3000) {
 		print_spaces(len);
 		rd = ((iw >> 4) & 15) + 16;
 		imm = ((iw >> 4) & 0xf0) + (iw & 15);
-		debug("andi\tr%i,0x%x\n", rd, imm);
+		debug("cpi\tr%i,0x%x\n", rd, imm);
+	} else if ((iw & 0xf000) == 0x4000) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 15) + 16;
+		imm = ((iw >> 4) & 0xf0) + (iw & 15);
+		debug("sbci\tr%i,0x%x\n", rd, imm);
+	} else if ((iw & 0xf000) == 0x5000) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 15) + 16;
+		imm = ((iw >> 4) & 0xf0) + (iw & 15);
+		debug("subi\tr%i,0x%x\n", rd, imm);
+	} else if ((iw & 0xe000) == 0x6000) {
+		print_spaces(len);
+		rd = ((iw >> 4) & 15) + 16;
+		imm = ((iw >> 4) & 0xf0) + (iw & 15);
+		debug("%s\tr%i,0x%x\n", iw & 0x1000? "andi" : "ori", rd, imm);
 	} else if ((iw & 0xfe0f) == 0x8000) {
 		print_spaces(len);
 		rd = (iw >> 4) & 31;
@@ -314,11 +374,14 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		print_spaces(len);
 		rd = (iw >> 4) & 31;
 		debug("%s\tr%i\n", iw & 0x200? "push" : "pop", rd);
-	} else if ((iw & 0xfe0f) == 0x9200) {
+	} else if ((iw & 0xfe0f) == 0x9000) {
 		print_two(ib, &len);
 		addr = (ib[3] << 8) + ib[2];
 		print_spaces(len);
-		debug("sts\t0x%x,r%i\n", addr, (iw & 0x1f0) >> 4);
+		if (iw & 0x200)
+			debug("sts\t0x%x,r%i\n", addr, (iw & 0x1f0) >> 4);
+		else
+			debug("lds\tr%i,0x%x\n", (iw & 0x1f0) >> 4, addr);
 	} else if ((iw & 0xfe0f) == 0x9209) {
 		print_spaces(len);
 		rr = (iw >> 4) & 31;
@@ -327,10 +390,18 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		print_spaces(len);
 		rr = (iw >> 4) & 31;
 		debug("st\t-Y,r%i\n", rr);
+	} else if ((iw & 0xfe0f) == 0x9401) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("neg\tr%i\n", rd);
 	} else if ((iw & 0xfe0f) == 0x9402) {
 		print_spaces(len);
 		rd = (iw >> 4) & 31;
 		debug("swap\tr%i\n", rd);
+	} else if ((iw & 0xfe0f) == 0x9403) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("inc\tr%i\n", rd);
 	} else if ((iw & 0xff0f) == 0x9408) {
 		print_spaces(len);
 		rd = (iw >> 4) & 7;
@@ -339,6 +410,12 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		print_spaces(len);
 		rd = (iw >> 4) & 31;
 		debug("dec\tr%i\n", rd);
+	} else if ((iw & 0xff8f) == 0x9408) {
+		print_spaces(len);
+		debug("bset\t%i\n", (iw >> 4) & 7);
+	} else if ((iw & 0xff8f) == 0x9488) {
+		print_spaces(len);
+		debug("bclr\t%i\n", (iw >> 4) & 7);
 	} else if ((iw & 0xffef) == 0x9508) {
 		/*  ret and reti  */
 		print_spaces(len);
@@ -357,16 +434,24 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		imm = ((iw & 0xc0) >> 2) | (iw & 0xf);
 		rd = ((iw >> 4) & 3) * 2 + 24;
 		debug("adiw\tr%i:r%i,0x%x\n", rd, rd+1, imm);
-	} else if ((iw & 0xff00) == 0x9a00) {
+	} else if ((iw & 0xfd00) == 0x9800) {
 		print_spaces(len);
 		imm = iw & 7;
 		rd = (iw >> 3) & 31;	/*  A  */
-		debug("sbi\t%i,%i\n", rd, imm);
-	} else if ((iw & 0xf800) == 0xb800) {
+		debug("%sbi\t0x%x,%i\n", iw & 0x0200? "s" : "c", rd, imm);
+	} else if ((iw & 0xfd00) == 0x9900) {
+		print_spaces(len);
+		imm = iw & 7;
+		rd = (iw >> 3) & 31;	/*  A  */
+		debug("sbi%s\t0x%x,%i\n", iw & 0x0200? "s" : "c", rd, imm);
+	} else if ((iw & 0xf000) == 0xb000) {
 		print_spaces(len);
 		imm = ((iw & 0x600) >> 5) | (iw & 0xf);
 		rr = (iw >> 4) & 31;
-		debug("out\t0x%x,r%i\n", imm, rr);
+		if (iw & 0x800)
+			debug("out\t0x%x,r%i\n", imm, rr);
+		else
+			debug("in\tr%i,0x%x\n", rr, imm);
 	} else if ((iw & 0xe000) == 0xc000) {
 		print_spaces(len);
 		addr = (int16_t)((iw & 0xfff) << 4);
@@ -377,21 +462,25 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		rd = ((iw >> 4) & 0xf) + 16;
 		imm = ((iw >> 4) & 0xf0) | (iw & 0xf);
 		debug("ldi\tr%i,0x%x\n", rd, imm);
-	} else if ((iw & 0xfc07) == 0xf001) {
-/*  TODO: refactor the conditional branch stuff  */
+	} else if ((iw & 0xfc00) == 0xf000) {
 		print_spaces(len);
 		addr = (iw >> 3) & 0x7f;
 		if (addr >= 64)
 			addr -= 128;
 		addr = (addr + 1) * 2 + dumpaddr;
-		debug("breq\t0x%x\n", addr);
-	} else if ((iw & 0xfc07) == 0xf401) {
+		debug("brbs\t%c,0x%x\n", sreg_names[iw & 7], addr);
+	} else if ((iw & 0xfc00) == 0xf400) {
 		print_spaces(len);
 		addr = (iw >> 3) & 0x7f;
 		if (addr >= 64)
 			addr -= 128;
 		addr = (addr + 1) * 2 + dumpaddr;
-		debug("brne\t0x%x\n", addr);
+		debug("brbc\t%c,0x%x\n", sreg_names[iw & 7], addr);
+	} else if ((iw & 0xfc08) == 0xfc00) {
+		print_spaces(len);
+		rr = (iw >> 4) & 31;
+		imm = iw & 7;
+		debug("sbr%s\tr%i,%i\n", iw & 0x0200 ? "s" : "c", rr, imm);
 	} else {
 		print_spaces(len);
 		debug("UNIMPLEMENTED 0x%04x\n", iw);

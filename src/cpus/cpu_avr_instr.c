@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.11 2006-03-01 18:44:30 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.12 2006-03-01 20:31:47 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -354,11 +354,21 @@ X(sts)
 
 
 /*
- *  sbi:  Set bit in I/O register.
+ *  cbi,sbi:  Clear/Set bit in I/O register.
  *
  *  arg[1]: I/O register number (0..31)
- *  arg[2]: byte mask to write (1, 2, ..., 0x40, or 0x80)
+ *  arg[2]: byte mask to and/or into the old value (1, 2, ..., 0x40, or 0x80)
  */
+X(cbi)
+{
+	uint8_t r;
+	cpu->memory_rw(cpu, cpu->mem, ic->arg[1] + AVR_SRAM_BASE,
+	    &r, sizeof(uint8_t), MEM_READ, CACHE_DATA);
+	r &= ic->arg[2];
+	cpu->memory_rw(cpu, cpu->mem, ic->arg[1] + AVR_SRAM_BASE,
+	    &r, sizeof(uint8_t), MEM_WRITE, CACHE_DATA);
+	cpu->cd.avr.extra_cycles ++;
+}
 X(sbi)
 {
 	uint8_t r;
@@ -748,10 +758,15 @@ X(to_be_translated)
 			ic->arg[2] = (iword & 15) + ((iword & 0xc0) >> 2);
 			break;
 		}
-		if ((iword & 0xff00) == 0x9a00) {
-			ic->f = instr(sbi);
+		if ((iword & 0xfd00) == 0x9800) {
+			if (iword & 0x200)
+				ic->f = instr(sbi);
+			else
+				ic->f = instr(cbi);
 			ic->arg[1] = (iword >> 3) & 31;
 			ic->arg[2] = 1 << (iword & 7);
+			if (!(iword & 0x200))
+				ic->arg[2] = ~ic->arg[2];
 			break;
 		}
 		goto bad;

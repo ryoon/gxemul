@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.9 2006-02-09 20:02:58 debug Exp $
+ *  $Id: dev_8253.c,v 1.10 2006-03-04 12:38:47 debug Exp $
  *  
  *  8253/8254 Programmable Interval Timer.
  *
@@ -138,7 +138,7 @@ DEVINIT(8253)
 	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_8253_tick,
-	    d, TICK_SHIFT);
+	    d, TICK_SHIFT, 0.0);
 
 	return 1;
 }

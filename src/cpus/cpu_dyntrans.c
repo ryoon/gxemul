@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.65 2006-02-26 10:30:10 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.66 2006-03-04 12:38:47 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -240,6 +240,32 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		I;
 
 		n_instrs = 1;
+	} else if (cpu->machine->cycle_accurate) {
+		if (show_opcode_statistics) {
+			fatal("Not yet with cycle-accurate emulation.\n");
+			exit(1);
+		}
+
+		/*  Executing multiple instructions, and call devices'
+		    tick functions:  */
+		n_instrs = 0;
+		for (;;) {
+			struct DYNTRANS_IC *ic;
+/*  TODO: continue here  */
+int64_t cycles = cpu->cd.avr.extra_cycles;
+			I;
+			n_instrs += 1;
+cycles = cpu->cd.avr.extra_cycles - cycles + 1;
+/*  The instruction took 'cycles' cycles.  */
+/* printf("A\n"); */
+while (cycles-- > 0)
+	cpu->machine->tick_func[1](cpu, cpu->machine->tick_extra[1]);
+/* printf("B\n"); */
+
+			if (!cpu->running_translated ||
+			    n_instrs + cpu->n_translated_instrs >= 4096)
+				break;
+		}
 	} else if (show_opcode_statistics) {
 		/*  Gather statistics while executing multiple instructions:  */
 		n_instrs = 0;

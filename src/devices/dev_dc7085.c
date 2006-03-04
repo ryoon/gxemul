@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.54 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.55 2006-03-04 12:38:47 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -320,7 +320,8 @@ int dev_dc7085_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "dc7085", baseaddr, DEV_DC7085_LENGTH,
 	    dev_dc7085_access, d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_dc7085_tick, d, DC_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_dc7085_tick, d,
+	    DC_TICK_SHIFT, 0.0);
 
 	return d->console_handle;
 }

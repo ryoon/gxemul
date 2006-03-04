@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.84 2006-01-17 05:55:53 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.85 2006-03-04 12:38:47 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -715,6 +715,7 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 
 	mc146818_update_time(d);
 
-	machine_add_tickfunction(machine, dev_mc146818_tick, d, TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_mc146818_tick, d,
+	    TICK_SHIFT, 0.0);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.665 2006-02-19 08:04:12 debug Exp $
+ *  $Id: machine.c,v 1.666 2006-03-04 12:38:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -219,9 +219,15 @@ int machine_name_to_type(char *stype, char *ssubtype,
  *
  *  Adds a tick function (a function called every now and then, depending on
  *  clock cycle count) to a machine.
+ *
+ *  If tickshift is non-zero, a tick will occur every (1 << tickshift) cycles.
+ *  This is used for the normal (fast dyntrans) emulation modes.
+ *
+ *  If tickshift is zero, then this is a cycle-accurate tick function.
+ *  The hz value is used in this case.
  */
 void machine_add_tickfunction(struct machine *machine, void (*func)
-	(struct cpu *, void *), void *extra, int tickshift)
+	(struct cpu *, void *), void *extra, int tickshift, double hz)
 {
 	int n = machine->n_tick_entries;
 
@@ -231,22 +237,25 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 		exit(1);
 	}
 
-	/*
-	 *  The dyntrans subsystem wants to run code in relatively large
-	 *  chunks without checking for external interrupts, so we cannot
-	 *  allow too low tickshifts:
-	 */
-	if (tickshift < N_SAFE_DYNTRANS_LIMIT_SHIFT) {
-		fatal("ERROR! tickshift = %i, less than "
-		    "N_SAFE_DYNTRANS_LIMIT_SHIFT (%i)\n",
-		    tickshift, N_SAFE_DYNTRANS_LIMIT_SHIFT);
-		exit(1);
+	if (!machine->cycle_accurate) {
+		/*
+		 *  The dyntrans subsystem wants to run code in relatively
+		 *  large chunks without checking for external interrupts,
+		 *  so we cannot allow too low tickshifts:
+		 */
+		if (tickshift < N_SAFE_DYNTRANS_LIMIT_SHIFT) {
+			fatal("ERROR! tickshift = %i, less than "
+			    "N_SAFE_DYNTRANS_LIMIT_SHIFT (%i)\n",
+			    tickshift, N_SAFE_DYNTRANS_LIMIT_SHIFT);
+			exit(1);
+		}
 	}
 
 	machine->ticks_till_next[n]   = 0;
 	machine->ticks_reset_value[n] = 1 << tickshift;
 	machine->tick_func[n]         = func;
 	machine->tick_extra[n]        = extra;
+	machine->tick_hz[n]           = hz;
 
 	machine->n_tick_entries ++;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lpt.c,v 1.8 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_lpt.c,v 1.9 2006-03-04 12:38:47 debug Exp $
  *
  *  LPT (parallel printer) controller.
  */
@@ -146,7 +146,8 @@ DEVINIT(lpt)
 
 	memory_device_register(devinit->machine->memory, name, devinit->addr,
 	    DEV_LPT_LENGTH, dev_lpt_access, d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(devinit->machine, dev_lpt_tick, d, TICK_SHIFT);
+	machine_add_tickfunction(devinit->machine, dev_lpt_tick, d,
+	    TICK_SHIFT, 0.0);
 
 	/*
 	 *  NOTE:  Ugly cast into a pointer, because this is a convenient way

@@ -25,9 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_avr.c,v 1.2 2006-03-04 11:20:43 debug Exp $
+ *  $Id: dev_avr.c,v 1.3 2006-03-04 12:38:47 debug Exp $
  *  
  *  AVR I/O and register area.
+ *
+ *  NOTE: The dyntrans system usually translates in/out instructions so that
+ *  cpu->cd.avr.xxx is accessed directly (where xxx is the right i/o register).
+ *  This device is only here in case these addresses are reached using load/
+ *  stores to low memory addresses.
  */
 
 #include <stdio.h>
@@ -45,23 +50,6 @@
 struct avr_data {
 	int		dummy;
 };
-
-
-void x(struct cpu *cpu)
-{
-	static FILE *f = NULL;
-	static int count = 0;
-	if (f == NULL) {
-		f = fopen("output.ppm", "w");
-		fprintf(f, "P5\n125 625\n255\n");
-	}
-	fprintf(f, "%c", (int) cpu->cd.avr.portd_write);
-	count ++;
-	if (count == 125 * 625) {
-		fclose(f);
-		exit(1);
-	}
-}
 
 
 DEVICE_ACCESS(avr)

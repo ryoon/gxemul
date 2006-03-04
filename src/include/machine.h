@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.106 2006-03-04 11:20:43 debug Exp $
+ *  $Id: machine.h,v 1.107 2006-03-04 12:38:49 debug Exp $
  */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@
 #define	MAX_BREAKPOINTS		8
 #define	BREAKPOINT_FLAG_R	1
 
-#define	MAX_TICK_FUNCTIONS	14
+#define	MAX_TICK_FUNCTIONS	16
 
 struct cpu_family;
 struct diskimage;
@@ -100,6 +100,9 @@ struct machine {
 	int	machine_type;		/*  MACHINE_PMAX, ..  */
 	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
 
+	int	cycle_accurate;		/*  Set to non-zero for cycle
+					    accurate (slow) emulation.  */
+
 	/*  Name set by code in src/machines/machine_*.c:  */
 	char	*machine_name;
 
@@ -132,6 +135,7 @@ struct machine {
 	int	ticks_reset_value[MAX_TICK_FUNCTIONS];
 	void	(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
 	void	*tick_extra[MAX_TICK_FUNCTIONS];
+	double	tick_hz[MAX_TICK_FUNCTIONS];
 
 	void	(*md_interrupt)(struct machine *m, struct cpu *cpu,
 		    int irq_nr, int assert);
@@ -512,7 +516,8 @@ struct machine *machine_new(char *name, struct emul *emul);
 int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch);
 void machine_add_tickfunction(struct machine *machine,
-	void (*func)(struct cpu *, void *), void *extra, int clockshift);
+	void (*func)(struct cpu *, void *), void *extra,
+	int clockshift, double hz);
 void machine_register(char *name, MACHINE_SETUP_TYPE(setup));
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);

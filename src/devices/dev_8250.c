@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.22 2006-02-18 13:42:39 debug Exp $
+ *  $Id: dev_8250.c,v 1.23 2006-03-04 12:38:47 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -176,7 +176,7 @@ DEVINIT(8250)
 	    devinit->addr, DEV_8250_LENGTH * devinit->addr_mult,
 	    dev_8250_access, d, DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_8250_tick, d,
-	    DEV_8250_TICKSHIFT);
+	    DEV_8250_TICKSHIFT, 0.0);
 
 	return 1;
 }

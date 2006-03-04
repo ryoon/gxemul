@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.23 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_jazz.c,v 1.24 2006-03-04 12:38:47 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  *
@@ -531,7 +531,7 @@ DEVINIT(jazz)
 	    DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_jazz_tick,
-	    d, DEV_JAZZ_TICKSHIFT);
+	    d, DEV_JAZZ_TICKSHIFT, 0.0);
 
 	devinit->return_ptr = d;
 

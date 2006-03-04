@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.34 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_rd94.c,v 1.35 2006-03-04 12:38:48 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -222,7 +222,7 @@ DEVINIT(rd94)
 	    dev_rd94_access, (void *)d, DM_DEFAULT, NULL);
 
 	machine_add_tickfunction(devinit->machine, dev_rd94_tick,
-	    d, RD94_TICK_SHIFT);
+	    d, RD94_TICK_SHIFT, 0.0);
 
 	devinit->return_ptr = d->pci_data;
 

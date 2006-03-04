@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.11 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_ether.c,v 1.12 2006-03-04 12:38:47 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -233,7 +233,7 @@ DEVINIT(ether)
 	net_add_nic(devinit->machine->emul->net, d, d->mac);
 
 	machine_add_tickfunction(devinit->machine,
-	    dev_ether_tick, d, DEV_ETHER_TICK_SHIFT);
+	    dev_ether_tick, d, DEV_ETHER_TICK_SHIFT, 0.0);
 
 	return 1;
 }

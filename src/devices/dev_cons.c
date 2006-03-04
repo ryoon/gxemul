@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.33 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_cons.c,v 1.34 2006-03-04 12:38:47 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -145,7 +145,7 @@ DEVINIT(cons)
 	    devinit->addr, DEV_CONS_LENGTH, dev_cons_access, d,
 	    DM_DEFAULT, NULL);
 	machine_add_tickfunction(devinit->machine, dev_cons_tick,
-	    d, CONS_TICK_SHIFT);
+	    d, CONS_TICK_SHIFT, 0.0);
 
 	/*  NOTE: Ugly cast into pointer  */
 	devinit->return_ptr = (void *)(size_t)d->console_handle;

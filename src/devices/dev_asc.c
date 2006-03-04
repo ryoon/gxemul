@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.79 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_asc.c,v 1.80 2006-03-04 12:38:47 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
  *
@@ -1287,6 +1287,6 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 		    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK, d->dma);
 	}
 
-	machine_add_tickfunction(machine, dev_asc_tick, d, ASC_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_asc_tick, d, ASC_TICK_SHIFT, 0.0);
 }
 

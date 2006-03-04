@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.18 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.19 2006-03-04 12:38:47 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -171,7 +171,7 @@ struct dec5800_data *dev_dec5800_init(struct machine *machine,
 	memory_device_register(mem, "dec5800_vectors",
 	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access,
 	    d, DM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_dec5800_tick, d, 14);
+	machine_add_tickfunction(machine, dev_dec5800_tick, d, 14, 0.0);
 
 	return d;
 }

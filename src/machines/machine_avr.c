@@ -25,10 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_avr.c,v 1.1 2006-03-04 11:20:43 debug Exp $
+ *  $Id: machine_avr.c,v 1.2 2006-03-04 12:38:49 debug Exp $
  *
- *  Various "test" machines (bare machines with just a CPU, or a bare machine
- *  plus some experimental devices).
+ *  Experimental AVR machines.
  */
 
 #include <stdio.h>
@@ -40,13 +39,13 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "mp.h"
 
 
 MACHINE_SETUP(bareavr)
 {
 	char tmpstr[200];
 	machine->machine_name = "Generic \"bare\" AVR machine";
+	machine->cycle_accurate = 1;
 	machine->stable = 1;
 	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%llx",
 	    (long long)AVR_SRAM_BASE);
@@ -84,10 +83,12 @@ MACHINE_SETUP(avr_pal)
 {
 	char tmpstr[200];
 	machine->machine_name = "AVR connected to a PAL TV";
+	machine->cycle_accurate = 1;
 	machine->stable = 1;
 	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%llx",
 	    (long long)AVR_SRAM_BASE);
 	device_add(machine, tmpstr);
+	device_add(machine, "pal");
 }
 
 
@@ -106,7 +107,7 @@ MACHINE_DEFAULT_RAM(avr_pal)
 
 MACHINE_REGISTER(avr_pal)
 {
-	MR_DEFAULT(bareavr, "AVR connected to a PAL TV",
+	MR_DEFAULT(avr_pal, "AVR connected to a PAL TV",
 	    ARCH_AVR, MACHINE_AVR_PAL, 1, 0);
 	me->aliases[0] = "avr_pal";
 	me->set_default_ram = machine_default_ram_avr_pal;

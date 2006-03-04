@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.12 2006-03-01 20:31:47 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.13 2006-03-04 11:20:42 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -220,6 +220,7 @@ X(ld_y)
 
 /*
  *  out:  Write a byte from a register to I/O space.
+ *  (out is the generic function, out_* are special cases.)
  *
  *  arg[1]: ptr to rr
  *  arg[2]: I/O port nr
@@ -232,6 +233,14 @@ X(out)
 		exit(1);
 	}
 }
+X(out_ddra)  { cpu->cd.avr.ddra = *(uint8_t *)(ic->arg[1]); }
+X(out_ddrb)  { cpu->cd.avr.ddrb = *(uint8_t *)(ic->arg[1]); }
+X(out_ddrc)  { cpu->cd.avr.ddrc = *(uint8_t *)(ic->arg[1]); }
+X(out_ddrd)  { cpu->cd.avr.ddrd = *(uint8_t *)(ic->arg[1]); }
+X(out_porta) { cpu->cd.avr.portd_write = *(uint8_t *)(ic->arg[1]); }
+X(out_portb) { cpu->cd.avr.portd_write = *(uint8_t *)(ic->arg[1]); }
+X(out_portc) { cpu->cd.avr.portd_write = *(uint8_t *)(ic->arg[1]); }
+X(out_portd) { cpu->cd.avr.portd_write = *(uint8_t *)(ic->arg[1]); }
 
 
 /*
@@ -775,9 +784,19 @@ X(to_be_translated)
 		if ((iword & 0xf800) == 0xb800) {
 			a = ((iword & 0x600) >> 5) | (iword & 0xf);
 			rr = (iword >> 4) & 31;
-			ic->f = instr(out);
 			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rr]);
 			ic->arg[2] = a;
+			switch (a) {
+			case 0x1a: ic->f = instr(out_ddra); break;
+			case 0x17: ic->f = instr(out_ddrb); break;
+			case 0x14: ic->f = instr(out_ddrc); break;
+			case 0x11: ic->f = instr(out_ddrd); break;
+			case 0x1b: ic->f = instr(out_porta); break;
+			case 0x18: ic->f = instr(out_portb); break;
+			case 0x15: ic->f = instr(out_portc); break;
+			case 0x12: ic->f = instr(out_portd); break;
+			default:ic->f = instr(out);
+			}
 			break;
 		}
 		goto bad;

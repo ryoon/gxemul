@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1138 2006-03-01 18:44:30 debug Exp $
+$Id: HISTORY,v 1.1139 2006-03-04 11:20:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2590,3 +2590,4 @@ Changelog for GXemul:
 		FINALLY found and fixed the zs bug, making NetBSD/macppc
 		accept the serial console.
 20060301	Adding more AVR instructions.
+20060304	Continuing on AVR-related stuff.

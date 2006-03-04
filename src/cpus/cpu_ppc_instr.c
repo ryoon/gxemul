@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.66 2006-02-26 10:30:11 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.67 2006-03-04 11:20:42 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2626,7 +2626,7 @@ X(to_be_translated)
 
 	/*  Read the instruction word from memory:  */
 #ifdef MODE32
-	page = cpu->cd.ppc.host_load[addr >> 12];
+	page = cpu->cd.ppc.host_load[((uint32_t)addr) >> 12];
 #else
 	{
 		const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;

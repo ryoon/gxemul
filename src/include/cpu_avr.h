@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.15 2006-02-25 18:30:31 debug Exp $
+ *  $Id: cpu_avr.h,v 1.16 2006-03-04 11:20:43 debug Exp $
  */
 
 #include "misc.h"
@@ -79,6 +79,20 @@ struct avr_cpu {
 
 	/*  Status register:  */
 	uint8_t		sreg;
+
+	/*  Ports A-D:  */
+	uint8_t		ddra;	/*  Direction  */
+	uint8_t		ddrb;
+	uint8_t		ddrc;
+	uint8_t		ddrd;
+	uint8_t		porta_read;
+	uint8_t		porta_write;
+	uint8_t		portb_read;
+	uint8_t		portb_write;
+	uint8_t		portc_read;
+	uint8_t		portc_write;
+	uint8_t		portd_read;
+	uint8_t		portd_write;
 
 	/*  Stack pointer (high and low byte combined):  */
 	uint16_t	sp;

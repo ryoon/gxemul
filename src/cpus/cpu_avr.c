@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.12 2006-03-01 20:31:47 debug Exp $
+ *  $Id: cpu_avr.c,v 1.13 2006-03-04 11:20:42 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -61,7 +61,9 @@ int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int type = 0;
 
 	if (strcasecmp(cpu_type_name, "AVR") == 0 ||
-	    strcasecmp(cpu_type_name, "AVR16") == 0)
+	    strcasecmp(cpu_type_name, "AVR16") == 0 ||
+	    strcasecmp(cpu_type_name, "AT90S2313") == 0 ||
+	    strcasecmp(cpu_type_name, "AT90S8515") == 0)
 		type = 16;
 	if (strcasecmp(cpu_type_name, "AVR22") == 0)
 		type = 22;

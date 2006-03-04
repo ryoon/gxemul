@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_avr.c,v 1.1 2006-02-26 12:15:28 debug Exp $
+ *  $Id: dev_avr.c,v 1.2 2006-03-04 11:20:43 debug Exp $
  *  
  *  AVR I/O and register area.
  */
@@ -47,16 +47,89 @@ struct avr_data {
 };
 
 
+void x(struct cpu *cpu)
+{
+	static FILE *f = NULL;
+	static int count = 0;
+	if (f == NULL) {
+		f = fopen("output.ppm", "w");
+		fprintf(f, "P5\n125 625\n255\n");
+	}
+	fprintf(f, "%c", (int) cpu->cd.avr.portd_write);
+	count ++;
+	if (count == 125 * 625) {
+		fclose(f);
+		exit(1);
+	}
+}
+
+
 DEVICE_ACCESS(avr)
 {
 	uint64_t idata = 0, odata = 0;
-/*	struct avr_data *d = extra;  */
+	/*  struct avr_data *d = extra;  */
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
-	printf("AVR: addr=%i, len=%i, idata=%i\n", (int)relative_addr,
-	    (int)len, (int)idata);
+	switch (relative_addr) {
+
+	case 0x11:	/*  ddrd  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.avr.ddrd = idata;
+		else
+			odata = cpu->cd.avr.ddrd;
+		break;
+
+	case 0x12:	/*  portd  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.avr.portd_write = idata;
+		else
+			odata = cpu->cd.avr.portd_read;
+		break;
+
+	case 0x14:	/*  ddrc  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.avr.ddrc = idata;
+		else
+			odata = cpu->cd.avr.ddrc;
+		break;
+
+	case 0x17:	/*  ddrb  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.avr.ddrb = idata;
+		else
+			odata = cpu->cd.avr.ddrb;
+		break;
+
+	case 0x1a:	/*  ddrc  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.avr.ddra = idata;
+		else
+			odata = cpu->cd.avr.ddra;
+		break;
+
+	case 0x3d:	/*  spl  */
+		if (writeflag == MEM_WRITE) {
+			cpu->cd.avr.sp &= 0xff00;
+			cpu->cd.avr.sp |= (idata & 0xff);
+		} else {
+			odata = cpu->cd.avr.sp & 0xff;
+		}
+		break;
+
+	case 0x3e:	/*  sph  */
+		if (writeflag == MEM_WRITE) {
+			cpu->cd.avr.sp &= 0xff;
+			cpu->cd.avr.sp |= ((idata & 0xff) << 8);
+		} else {
+			odata = (cpu->cd.avr.sp >> 8) & 0xff;
+		}
+		break;
+
+	default:fatal("AVR: addr=%i, len=%i, idata=%i\n", (int)relative_addr,
+		    (int)len, (int)idata);
+	}
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

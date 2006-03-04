@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.105 2006-02-18 13:42:39 debug Exp $
+ *  $Id: machine.h,v 1.106 2006-03-04 11:20:43 debug Exp $
  */
 
 #include <sys/types.h>
@@ -361,6 +361,7 @@ struct machine {
 
 /*  AVR:  */
 #define	MACHINE_BAREAVR		12000
+#define	MACHINE_AVR_PAL		12001
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0

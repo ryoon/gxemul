@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.49 2006-02-26 10:30:11 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.50 2006-03-04 11:20:42 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -94,6 +94,9 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits = cpu->cd.ppc.cpu_type.bits;
 	cpu->cd.ppc.spr[SPR_PVR] = cpu->cd.ppc.cpu_type.pvr;
+
+	/*  cpu->cd.ppc.msr = PPC_MSR_IR | PPC_MSR_DR |
+	    PPC_MSR_SF | PPC_MSR_FP;  */
 
 	cpu->cd.ppc.spr[SPR_IBAT0U] = 0x00001ffc | BAT_Vs;
 	cpu->cd.ppc.spr[SPR_IBAT0L] = 0x00000000 | BAT_PP_RW;

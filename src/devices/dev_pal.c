@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pal.c,v 1.1 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_pal.c,v 1.2 2006-03-04 12:58:25 debug Exp $
  *  
  *  PAL (TV) emulation. Experimental.
  *
@@ -74,9 +74,11 @@ void dev_pal_tick(struct cpu *cpu, void *extra)
 	    + 2] = signal;
 
 d->fb->update_x1 = 0;
-d->fb->update_y1 = 0;
 d->fb->update_x2 = d->visible_x - 1;
-d->fb->update_y2 = d->visible_y - 1;
+if (d->cur_scanline < d->fb->update_y1)
+	d->fb->update_y1 = d->cur_scanline;
+if (d->cur_scanline > d->fb->update_y2)
+	d->fb->update_y2 = d->cur_scanline;
 
 	d->cur_x ++;
 	if (d->cur_x >= d->visible_x) {
@@ -100,7 +102,7 @@ DEVINIT(pal)
 
 	d->hz = 12000000;
 	d->addr = 0x9000000;
-	d->visible_x = 800;
+	d->visible_x = 579;
 	d->visible_y = 625;
 
 	if (devinit->machine->machine_type != MACHINE_AVR_PAL) {

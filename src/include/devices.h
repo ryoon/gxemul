@@ -2,7 +2,7 @@
 #define	DEVICES_H
 
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.207 2006-02-18 17:55:25 debug Exp $
+ *  $Id: devices.h,v 1.208 2006-03-04 12:58:25 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -235,7 +235,7 @@ struct vfb_data {
 	int		ysize;
 	int		bit_depth;
 	int		color32k;	/*  hack for 16-bit HPCmips  */
-	int		psp_15bit;	/*  plastation portable hack  */
+	int		psp_15bit;	/*  playstation portable hack  */
 
 	unsigned char	color_plane_mask;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1141 2006-03-05 16:00:22 debug Exp $
+$Id: HISTORY,v 1.1142 2006-03-05 17:58:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2594,3 +2594,4 @@ Changelog for GXemul:
 		cycle-accurate device emulation. Adding an experimental "PAL
 		TV" device (just a dummy so far).
 20060305	Adding more AVR instructions.
+		Adding a dummy epcom serial controller (for TS7200 emulation).

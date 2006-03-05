@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_ts7200.c,v 1.1 2006-02-17 20:27:21 debug Exp $
+ *  $Id: machine_ts7200.c,v 1.2 2006-03-05 17:58:16 debug Exp $
  */
 
 #include <stdio.h>
@@ -43,10 +43,11 @@ MACHINE_SETUP(ts7200)
 {
 	machine->machine_name = "TS7200";
 
-	/*  TODO: _NOT_ an ns16550  */
-	device_add(machine, "ns16550 irq=0 addr=0x808c0000 addr_mult=4");
-
 	dev_ram_init(machine, 0xc0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
+
+        machine->main_console_handle = (size_t)device_add(machine,
+	    "epcom addr=0x808c0000 name2='serial console'");
+
 
 	if (!machine->prom_emulation)
 		return;
@@ -60,7 +61,7 @@ MACHINE_SETUP(ts7200)
 
 MACHINE_DEFAULT_CPU(ts7200)
 {
-	machine->cpu_name = strdup("80321_600_B0");
+	machine->cpu_name = strdup("ARM920T");
 }
 
 

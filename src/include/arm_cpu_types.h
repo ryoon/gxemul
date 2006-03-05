@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arm_cpu_types.h,v 1.9 2006-02-26 20:11:14 debug Exp $
+ *  $Id: arm_cpu_types.h,v 1.10 2006-03-05 17:58:16 debug Exp $
  */
 
 /*  See cpu_arm.h for struct arm_cpu_type_def.  */
@@ -63,7 +63,7 @@
 	{ "ARM7500FE",	CPU_ID_ARM7500FE,0,		12, 1,  0, 1 }, \
 	\
 	{ "ARM810",	CPU_ID_ARM810,	0,		12, 1,  0, 1 }, \
-	{ "ARM920T",	CPU_ID_ARM920T,	0,		12, 1,  0, 1 }, \
+	{ "ARM920T",	CPU_ID_ARM920T,	0,		14, 1, 14, 1 }, \
 	{ "ARM922T",	CPU_ID_ARM922T,	0,		12, 1,  0, 1 }, \
 	{ "ARM940T",	CPU_ID_ARM940T,	ARM_NO_MMU,	12, 1,  0, 1 }, \
 	\

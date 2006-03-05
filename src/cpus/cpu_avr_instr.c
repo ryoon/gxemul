@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.14 2006-03-05 16:00:22 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.15 2006-03-05 16:20:24 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -43,16 +43,10 @@
 void push_value(struct cpu *cpu, uint32_t value, int len)
 {
 	unsigned char data[4];
-
 	data[0] = value; data[1] = value >> 8;
 	data[2] = value >> 16; data[3] = value >> 24;
-
-	if (!cpu->memory_rw(cpu, cpu->mem, cpu->cd.avr.sp + AVR_SRAM_BASE,
-	    data, len, MEM_WRITE, CACHE_DATA)) {
-		fatal("push_value(): write failed: TODO\n");
-		exit(1);
-	}
-
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.avr.sp + AVR_SRAM_BASE,
+	    data, len, MEM_WRITE, CACHE_DATA);
 	cpu->cd.avr.sp -= len;
 	cpu->cd.avr.sp &= cpu->cd.avr.sram_mask;
 }
@@ -61,16 +55,10 @@ void push_value(struct cpu *cpu, uint32_t value, int len)
 void pop_value(struct cpu *cpu, uint32_t *value, int len)
 {
 	unsigned char data[4];
-
 	cpu->cd.avr.sp += len;
 	cpu->cd.avr.sp &= cpu->cd.avr.sram_mask;
-
-	if (!cpu->memory_rw(cpu, cpu->mem, cpu->cd.avr.sp + AVR_SRAM_BASE,
-	    data, len, MEM_READ, CACHE_DATA)) {
-		fatal("pop_value(): write failed: TODO\n");
-		exit(1);
-	}
-
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.avr.sp + AVR_SRAM_BASE,
+	    data, len, MEM_READ, CACHE_DATA);
 	*value = data[0];
 	if (len > 1)
 		(*value) += (data[1] << 8);
@@ -208,12 +196,9 @@ X(ldi)
  */
 X(ld_y)
 {
-	if (!cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + cpu->cd.avr.r[28]
+	cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + cpu->cd.avr.r[28]
 	    + 256*cpu->cd.avr.r[29], (uint8_t *)(ic->arg[1]), 1, MEM_READ,
-	    CACHE_DATA)) {
-		fatal("ld_y(): read failed: TODO\n");
-		exit(1);
-	}
+	    CACHE_DATA);
 	cpu->cd.avr.extra_cycles ++;
 }
 
@@ -227,11 +212,8 @@ X(ld_y)
  */
 X(out)
 {
-	if (!cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + ic->arg[2],
-	    (uint8_t *)(ic->arg[1]), 1, MEM_WRITE, CACHE_DATA)) {
-		fatal("out: write failed: TODO\n");
-		exit(1);
-	}
+	cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + ic->arg[2],
+	    (uint8_t *)(ic->arg[1]), 1, MEM_WRITE, CACHE_DATA);
 }
 X(out_ddra)  { cpu->cd.avr.ddra = *(uint8_t *)(ic->arg[1]); }
 X(out_ddrb)  { cpu->cd.avr.ddrb = *(uint8_t *)(ic->arg[1]); }
@@ -266,8 +248,8 @@ X(adiw)
 	if (value == 0)
 		cpu->cd.avr.sreg |= AVR_SREG_Z;
 
-	if ((cpu->cd.avr.sreg & AVR_SREG_N) ^
-	    (cpu->cd.avr.sreg & AVR_SREG_V))
+	if ((cpu->cd.avr.sreg & AVR_SREG_N? 1 : 0) ^
+	    (cpu->cd.avr.sreg & AVR_SREG_V? 1 : 0))
 		cpu->cd.avr.sreg |= AVR_SREG_S;
 
 	*(uint8_t *)(ic->arg[1]) = value;
@@ -329,6 +311,30 @@ X(andi)
 	if (x & 0x80)
 		cpu->cd.avr.sreg |= AVR_SREG_S | AVR_SREG_N;
 	*(uint8_t *)(ic->arg[1]) = x;
+}
+
+
+/*
+ *  cpi:  Compare rd with immediate
+ *
+ *  arg[1]: ptr to rd
+ *  arg[2]: imm
+ */
+X(cpi)
+{
+	uint8_t x = *(uint8_t *)(ic->arg[1]), k = ic->arg[2], z = x - k;
+	cpu->cd.avr.sreg &= ~(AVR_SREG_S | AVR_SREG_V | AVR_SREG_N
+	    | AVR_SREG_Z | AVR_SREG_H | AVR_SREG_C);
+	if (z == 0)
+		cpu->cd.avr.sreg |= AVR_SREG_Z;
+	if (z & 0x80)
+		cpu->cd.avr.sreg |= AVR_SREG_N;
+	/*  TODO: h and v bits!  */
+	if (abs((int)k) > abs((int)x))
+		cpu->cd.avr.sreg |= AVR_SREG_C;
+	if ((cpu->cd.avr.sreg & AVR_SREG_N? 1 : 0) ^
+	    (cpu->cd.avr.sreg & AVR_SREG_V? 1 : 0))
+		cpu->cd.avr.sreg |= AVR_SREG_S;
 }
 
 
@@ -559,8 +565,8 @@ X(inc)
 		cpu->cd.avr.sreg |= AVR_SREG_V;
 	if (x & 0x80)
 		cpu->cd.avr.sreg |= AVR_SREG_N;
-	if ((cpu->cd.avr.sreg & AVR_SREG_N) ^
-	    (cpu->cd.avr.sreg & AVR_SREG_V))
+	if ((cpu->cd.avr.sreg & AVR_SREG_N? 1 : 0) ^
+	    (cpu->cd.avr.sreg & AVR_SREG_V? 1 : 0))
 		cpu->cd.avr.sreg |= AVR_SREG_S;
 	*(uint8_t *)(ic->arg[1]) = x;
 }
@@ -575,8 +581,8 @@ X(dec)
 		cpu->cd.avr.sreg |= AVR_SREG_V;
 	if (x & 0x80)
 		cpu->cd.avr.sreg |= AVR_SREG_N;
-	if ((cpu->cd.avr.sreg & AVR_SREG_N) ^
-	    (cpu->cd.avr.sreg & AVR_SREG_V))
+	if ((cpu->cd.avr.sreg & AVR_SREG_N? 1 : 0) ^
+	    (cpu->cd.avr.sreg & AVR_SREG_V? 1 : 0))
 		cpu->cd.avr.sreg |= AVR_SREG_S;
 	*(uint8_t *)(ic->arg[1]) = x;
 }
@@ -743,6 +749,13 @@ X(to_be_translated)
 			break;
 		}
 		goto bad;
+
+	case 0x3:
+		rd = ((iword >> 4) & 15) + 16;
+		ic->f = instr(cpi);
+		ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+		ic->arg[2] = ((iword >> 4) & 0xf0) + (iword & 0xf);
+		break;
 
 	case 0x7:
 		rd = ((iword >> 4) & 15) + 16;

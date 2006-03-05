@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_avr.c,v 1.3 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_avr.c,v 1.4 2006-03-05 16:20:24 debug Exp $
  *  
  *  AVR I/O and register area.
  *
@@ -45,6 +45,9 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+/*  #define debug fatal  */
 
 
 struct avr_data {
@@ -83,6 +86,13 @@ DEVICE_ACCESS(avr)
 			odata = cpu->cd.avr.ddrc;
 		break;
 
+	case 0x15:	/*  portc  */
+		if (writeflag == MEM_WRITE)
+			cpu->cd.avr.portc_write = idata;
+		else
+			odata = cpu->cd.avr.portc_read;
+		break;
+
 	case 0x17:	/*  ddrb  */
 		if (writeflag == MEM_WRITE)
 			cpu->cd.avr.ddrb = idata;
@@ -115,8 +125,8 @@ DEVICE_ACCESS(avr)
 		}
 		break;
 
-	default:fatal("AVR: addr=%i, len=%i, idata=%i\n", (int)relative_addr,
-		    (int)len, (int)idata);
+	default:debug("AVR: addr=0x%02x, len=%i, idata=%i\n",
+		    (int)relative_addr, (int)len, (int)idata);
 	}
 
 	if (writeflag == MEM_READ)

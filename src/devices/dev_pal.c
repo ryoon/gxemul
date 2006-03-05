@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pal.c,v 1.3 2006-03-05 16:00:22 debug Exp $
+ *  $Id: dev_pal.c,v 1.4 2006-03-05 16:20:24 debug Exp $
  *  
  *  PAL (TV) emulation. Experimental.
  *
@@ -92,10 +92,10 @@ void dev_pal_tick(struct cpu *cpu, void *extra)
 		d->cur_scanline ++;
 		if (d->cur_scanline >= d->visible_y) {
 			d->cur_scanline = 0;
-d->fb->update_x1 = 0;
-d->fb->update_x2 = d->visible_x - 1;
-d->fb->update_y1 = 0;
-d->fb->update_y2 = d->visible_y - 1;
+			d->fb->update_x1 = 0;
+			d->fb->update_x2 = d->visible_x - 1;
+			d->fb->update_y1 = 0;
+			d->fb->update_y2 = d->visible_y - 1;
 		}
 	}
 }

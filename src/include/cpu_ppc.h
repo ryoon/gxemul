@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.63 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.64 2006-03-05 16:51:55 debug Exp $
  */
 
 #include "misc.h"
@@ -84,6 +84,7 @@ struct ppc_cpu_type_def {
 
 #define	PPC_NGPRS		32
 #define	PPC_NFPRS		32
+#define	PPC_NVRS		32
 #define	PPC_N_TGPRS		4
 
 #define	PPC_N_IC_ARGS			3
@@ -120,6 +121,9 @@ struct ppc_cpu {
 	uint32_t	fpscr;		/*  FP Status and Control Register  */
 	uint64_t	gpr[PPC_NGPRS];	/*  General Purpose Registers  */
 	uint64_t	fpr[PPC_NFPRS];	/*  Floating-Point Registers  */
+
+	uint64_t	vr_hi[PPC_NVRS];/*  128-bit Vector registers  */
+	uint64_t	vr_lo[PPC_NVRS];/*  (Hi and lo 64-bit parts)  */
 
 	uint64_t	msr;		/*  Machine state register  */
 	uint64_t	tgpr[PPC_N_TGPRS];/*Temporary gpr 0..3  */

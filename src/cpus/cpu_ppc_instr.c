@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.67 2006-03-04 11:20:42 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.68 2006-03-05 16:51:55 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -3622,21 +3622,33 @@ X(to_be_translated)
 			}
 			break;
 
-		case 359:
-			fatal("[ TODO: 359 ]\n");
-			ic->f = instr(nop);
-			break;
 		case PPC_31_LVX:
-			fatal("[ TODO: lvx ]\n");
-			ic->f = instr(nop);
-			break;
+		case PPC_31_LVXL:
 		case PPC_31_STVX:
-			fatal("[ TODO: stvx ]\n");
-			ic->f = instr(nop);
-			break;
 		case PPC_31_STVXL:
-			fatal("[ TODO: stvxl ]\n");
-			ic->f = instr(nop);
+			fatal("[ TODO: altivec load/store ]\n");
+			load = 0;
+			switch (xo) {
+			case PPC_31_LVX:
+			case PPC_31_LVXL:
+				load = 1; break;
+			}
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			ic->arg[0] = (size_t)(&cpu->cd.ppc.vr_hi[rs]);
+			if (ra == 0)
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.zero);
+			else
+				ic->arg[1] = (size_t)(&cpu->cd.ppc.gpr[ra]);
+			ic->arg[2] = (size_t)(&cpu->cd.ppc.gpr[rb]);
+			ic->f =
+#ifdef MODE32
+				    ppc32_loadstore_indexed
+#else
+				    ppc_loadstore_indexed
+#endif
+				    [3 + 4 * load];
 			break;
 
 		default:goto bad;

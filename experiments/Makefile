@@ -1,7 +1,7 @@
-# $Id: Makefile,v 1.7 2005-12-19 01:38:24 debug Exp $
+# $Id: Makefile,v 1.8 2006-03-05 16:52:36 debug Exp $
 
 BINS=cp_removeblocks bintrans_eval try_runlen \
-	sgiprom_to_bin decprom_dump_txt_to_bin \
+	sgiprom_to_bin decprom_dump_txt_to_bin hex_to_bin \
 	new_test_1 new_test_2 new_test_x new_test_loadstore ic_statistics
 
 all: $(BINS)

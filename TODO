@@ -1,4 +1,4 @@
-$Id: TODO,v 1.220 2006-03-01 19:44:19 debug Exp $
+$Id: TODO,v 1.221 2006-03-05 16:51:55 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -23,14 +23,6 @@ Dyntrans:
 
 Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
 	Add interrupt controller in dev_algor.c.
-
-AVR:
-	o)  add explicit avr cpu types (avr9xxxx)
-	o)  pc on stack, 2 vs 3 byte update ==> different instr calls.
-	o)  first 0x60 bytes of SRAM area should be mapped to registers
-	    etc using a device!
-	o)  Cycle-accurate device emulation framework (e.g. a "CRT
-	    display" device with scanlines and stuff like that)
 
 ARM:
 	o)  try to get netbsd/evbarm 3.x running (iq80321)

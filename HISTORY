@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1140 2006-03-04 12:38:46 debug Exp $
+$Id: HISTORY,v 1.1141 2006-03-05 16:00:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2593,3 +2593,4 @@ Changelog for GXemul:
 20060304	Continuing on AVR-related stuff. Beginning on a framework for
 		cycle-accurate device emulation. Adding an experimental "PAL
 		TV" device (just a dummy so far).
+20060305	Adding more AVR instructions.

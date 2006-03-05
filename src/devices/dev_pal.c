@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pal.c,v 1.2 2006-03-04 12:58:25 debug Exp $
+ *  $Id: dev_pal.c,v 1.3 2006-03-05 16:00:22 debug Exp $
  *  
  *  PAL (TV) emulation. Experimental.
  *
@@ -64,7 +64,20 @@ struct pal_data {
 void dev_pal_tick(struct cpu *cpu, void *extra)
 {
 	struct pal_data *d = extra;
-	int signal = cpu->cd.avr.portd_write * 4;
+	int signal = 0x80;
+
+	switch (cpu->machine->machine_type) {
+
+	case MACHINE_AVR_PAL:
+		signal = cpu->cd.avr.portd_write * 4;
+		break;
+
+	case MACHINE_AVR_MAHPONG:
+		signal = (cpu->cd.avr.portc_write & 0x80) |
+		    ((cpu->cd.avr.portc_write & 0x08) << 3) |
+		    ((cpu->cd.avr.portd_write & 0x10) << 1);
+		break;
+	}
 
 	d->fb->framebuffer[3 * (d->cur_x + d->cur_scanline * d->visible_x)
 	    + 0] = signal;
@@ -73,19 +86,17 @@ void dev_pal_tick(struct cpu *cpu, void *extra)
 	d->fb->framebuffer[3 * (d->cur_x + d->cur_scanline * d->visible_x)
 	    + 2] = signal;
 
-d->fb->update_x1 = 0;
-d->fb->update_x2 = d->visible_x - 1;
-if (d->cur_scanline < d->fb->update_y1)
-	d->fb->update_y1 = d->cur_scanline;
-if (d->cur_scanline > d->fb->update_y2)
-	d->fb->update_y2 = d->cur_scanline;
-
 	d->cur_x ++;
 	if (d->cur_x >= d->visible_x) {
 		d->cur_x = 0;
 		d->cur_scanline ++;
-		if (d->cur_scanline >= d->visible_y)
+		if (d->cur_scanline >= d->visible_y) {
 			d->cur_scanline = 0;
+d->fb->update_x1 = 0;
+d->fb->update_x2 = d->visible_x - 1;
+d->fb->update_y1 = 0;
+d->fb->update_y2 = d->visible_y - 1;
+		}
 	}
 }
 
@@ -105,8 +116,11 @@ DEVINIT(pal)
 	d->visible_x = 579;
 	d->visible_y = 625;
 
-	if (devinit->machine->machine_type != MACHINE_AVR_PAL) {
-		fatal("Only implemented for avr_pal.\n");
+	switch (devinit->machine->machine_type) {
+	case MACHINE_AVR_PAL:
+	case MACHINE_AVR_MAHPONG:
+		break;
+	default:fatal("Not yet implemented for this machine type.\n");
 		exit(1);
 	}
 

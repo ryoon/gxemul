@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr_instr.c,v 1.13 2006-03-04 11:20:42 debug Exp $
+ *  $Id: cpu_avr_instr.c,v 1.14 2006-03-05 16:00:22 debug Exp $
  *
  *  Atmel AVR (8-bit) instructions.
  *
@@ -363,6 +363,42 @@ X(sts)
 
 
 /*
+ *  st_y:       Store a register into memory at address Y.
+ *  st_y_plus:  Store a register into memory at address Y, and update Y.
+ *  st_minus_y: Same as above, but with pre-decrement instead of post-increment.
+ *
+ *  arg[1]: pointer to the register
+ */
+X(st_y)
+{
+	uint16_t y = (cpu->cd.avr.r[29] << 8) + cpu->cd.avr.r[28];
+	cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + y,
+	    (uint8_t *)ic->arg[1], sizeof(uint8_t), MEM_WRITE, CACHE_DATA);
+	cpu->cd.avr.extra_cycles ++;
+}
+X(st_y_plus)
+{
+	uint16_t y = (cpu->cd.avr.r[29] << 8) + cpu->cd.avr.r[28];
+	cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + y,
+	    (uint8_t *)ic->arg[1], sizeof(uint8_t), MEM_WRITE, CACHE_DATA);
+	cpu->cd.avr.extra_cycles ++;
+	y ++;
+	cpu->cd.avr.r[29] = y >> 8;
+	cpu->cd.avr.r[28] = y;
+}
+X(st_minus_y)
+{
+	uint16_t y = (cpu->cd.avr.r[29] << 8) + cpu->cd.avr.r[28];
+	y --;
+	cpu->cd.avr.r[29] = y >> 8;
+	cpu->cd.avr.r[28] = y;
+	cpu->memory_rw(cpu, cpu->mem, AVR_SRAM_BASE + y,
+	    (uint8_t *)ic->arg[1], sizeof(uint8_t), MEM_WRITE, CACHE_DATA);
+	cpu->cd.avr.extra_cycles ++;
+}
+
+
+/*
  *  cbi,sbi:  Clear/Set bit in I/O register.
  *
  *  arg[1]: I/O register number (0..31)
@@ -387,6 +423,18 @@ X(sbi)
 	cpu->memory_rw(cpu, cpu->mem, ic->arg[1] + AVR_SRAM_BASE,
 	    &r, sizeof(uint8_t), MEM_WRITE, CACHE_DATA);
 	cpu->cd.avr.extra_cycles ++;
+}
+
+
+/*
+ *  lpm: Load program memory at addess Z into r0.
+ */
+X(lpm)
+{
+	uint16_t z = (cpu->cd.avr.r[31] << 8) + cpu->cd.avr.r[30];
+	cpu->memory_rw(cpu, cpu->mem, z, &cpu->cd.avr.r[0],
+	    sizeof(uint8_t), MEM_READ, CACHE_DATA);
+	cpu->cd.avr.extra_cycles += 2;
 }
 
 
@@ -496,10 +544,26 @@ X(pop)  { uint32_t t; pop_value(cpu, &t, 1); *(uint8_t *)(ic->arg[1]) = t;
 
 
 /*
- *  dec:  Decremebts a register.
+ *  inc, dec:  Increment/decrement a register.
  *
  *  arg[1]: ptr to rd
  */
+X(inc)
+{
+	uint8_t x = *(uint8_t *)(ic->arg[1]) + 1;
+	cpu->cd.avr.sreg &= ~(AVR_SREG_S | AVR_SREG_V | AVR_SREG_N
+	    | AVR_SREG_Z);
+	if (x == 0)
+		cpu->cd.avr.sreg |= AVR_SREG_Z;
+	if (x == 0x80)
+		cpu->cd.avr.sreg |= AVR_SREG_V;
+	if (x & 0x80)
+		cpu->cd.avr.sreg |= AVR_SREG_N;
+	if ((cpu->cd.avr.sreg & AVR_SREG_N) ^
+	    (cpu->cd.avr.sreg & AVR_SREG_V))
+		cpu->cd.avr.sreg |= AVR_SREG_S;
+	*(uint8_t *)(ic->arg[1]) = x;
+}
 X(dec)
 {
 	uint8_t x = *(uint8_t *)(ic->arg[1]) - 1;
@@ -694,6 +758,12 @@ X(to_be_translated)
 			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
 			break;
 		}
+		if ((iword & 0xfe0f) == 0x8208) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(st_y);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
 		goto bad;
 
 	case 0x9:
@@ -712,6 +782,18 @@ X(to_be_translated)
 			ic->arg[2] = read_word(cpu, tmpbytes, addr + 2);
 			break;
 		}
+		if ((iword & 0xfe0f) == 0x9209) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(st_y_plus);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
+		if ((iword & 0xfe0f) == 0x920a) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(st_minus_y);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
 		if ((iword & 0xfe0f) == 0x920f) {
 			rd = (iword >> 4) & 31;
 			ic->f = instr(push);
@@ -721,6 +803,12 @@ X(to_be_translated)
 		if ((iword & 0xfe0f) == 0x9402) {
 			rd = (iword >> 4) & 31;
 			ic->f = instr(swap);
+			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
+			break;
+		}
+		if ((iword & 0xfe0f) == 0x9403) {
+			rd = (iword >> 4) & 31;
+			ic->f = instr(inc);
 			ic->arg[1] = (size_t)(&cpu->cd.avr.r[rd]);
 			break;
 		}
@@ -758,6 +846,10 @@ X(to_be_translated)
 		}
 		if ((iword & 0xffff) == 0x9508) {
 			ic->f = instr(ret);
+			break;
+		}
+		if ((iword & 0xffff) == 0x95c8) {
+			ic->f = instr(lpm);
 			break;
 		}
 		if ((iword & 0xff00) == 0x9600) {

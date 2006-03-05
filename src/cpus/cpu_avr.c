@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.13 2006-03-04 11:20:42 debug Exp $
+ *  $Id: cpu_avr.c,v 1.14 2006-03-05 16:00:22 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -368,6 +368,10 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		print_spaces(len);
 		rd = (iw >> 4) & 31;
 		debug("ld\tr%i,Y\n", rd);
+	} else if ((iw & 0xfe0f) == 0x8208) {
+		print_spaces(len);
+		rd = (iw >> 4) & 31;
+		debug("st\tY,r%i\n", rd);
 	} else if ((iw & 0xfe0f) == 0x900c) {
 		print_spaces(len);
 		rd = (iw >> 4) & 31;
@@ -431,6 +435,9 @@ int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	} else if ((iw & 0xffff) == 0x95a8) {
 		print_spaces(len);
 		debug("wdr\n");
+	} else if ((iw & 0xffef) == 0x95c8) {
+		print_spaces(len);
+		debug("%slpm\n", iw & 0x0010? "e" : "");
 	} else if ((iw & 0xff00) == 0x9600) {
 		print_spaces(len);
 		imm = ((iw & 0xc0) >> 2) | (iw & 0xf);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_avr.c,v 1.2 2006-03-04 12:38:49 debug Exp $
+ *  $Id: machine_avr.c,v 1.3 2006-03-05 16:00:23 debug Exp $
  *
  *  Experimental AVR machines.
  */
@@ -111,6 +111,45 @@ MACHINE_REGISTER(avr_pal)
 	    ARCH_AVR, MACHINE_AVR_PAL, 1, 0);
 	me->aliases[0] = "avr_pal";
 	me->set_default_ram = machine_default_ram_avr_pal;
+	machine_entry_add(me, ARCH_AVR);
+}
+
+
+/*****************************************************************************/
+
+
+MACHINE_SETUP(avr_mahpong)
+{
+	char tmpstr[200];
+	machine->machine_name = "AVR setup for Mahpong";
+	machine->cycle_accurate = 1;
+	machine->stable = 1;
+	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%llx",
+	    (long long)AVR_SRAM_BASE);
+	device_add(machine, tmpstr);
+	device_add(machine, "pal");
+}
+
+
+MACHINE_DEFAULT_CPU(avr_mahpong)
+{
+	machine->cpu_name = strdup("AT90S8515");
+}
+
+
+MACHINE_DEFAULT_RAM(avr_mahpong)
+{
+	/*  SRAM starts at 8 MB, and is 4 MB long.  */
+	machine->physical_ram_in_mb = 12;
+}
+
+
+MACHINE_REGISTER(avr_mahpong)
+{
+	MR_DEFAULT(avr_mahpong, "AVR setup for Mahpong",
+	    ARCH_AVR, MACHINE_AVR_MAHPONG, 1, 0);
+	me->aliases[0] = "avr_mahpong";
+	me->set_default_ram = machine_default_ram_avr_mahpong;
 	machine_entry_add(me, ARCH_AVR);
 }
 

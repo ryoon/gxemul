@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.203 2006-02-27 05:37:46 debug Exp $
+#  $Id: configure,v 1.204 2006-03-09 05:26:44 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -47,11 +47,16 @@
 #    o)  special hacks for some OSes
 #    o)  which compiler to use  (overridden by setting CC)
 #    o)  which compiler flags to use  (overridden by setting CFLAGS)
-#    o)  X11 flags and libraries  (TODO: should be possible to override)
-#    o)  binary translation (on supported platforms)
+#    o)  X11 flags and libraries  (TODO: should be possible to override
+#	 via command line options?)
+#    o)  native translation backends (on supported platforms)
 #
-#  TODO:
-#    o)  X11 libs and includes via command line options?
+#
+#  The general philosophy regarding command line switches is that anything
+#  which can be incorporated into the program as a runtime command line option
+#  should be, instead of requiring a recompile.
+#
+#  --enable-delays and --enable-caches should probably go away (TODO).
 #
 ###############################################################################
 

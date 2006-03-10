@@ -25,13 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.37 2006-03-10 16:46:53 debug Exp $
+ *  $Id: emul_parse.c,v 1.38 2006-03-10 17:58:23 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
- *  TODO: This could be extended to support XML config files as well, but
- *        XML is ugly. It is ugly right now as well. The question is: which
- *        solution is the least ugly?
+ *  TODO: REWRITE THIS FROM SCRATCH! :-)
  */
 
 #include <stdio.h>
@@ -49,10 +47,13 @@
 	(ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || \
 	ch == '_' || ch == '$' || (ch >= '0' && ch <= '9') )
 
+#define	MAX_WORD_LEN		200
 
 #define	EXPECT_WORD			1
 #define	EXPECT_LEFT_PARENTHESIS		2
 #define	EXPECT_RIGHT_PARENTHESIS	4
+
+static int parenthesis_level = 0;
 
 
 /*
@@ -173,10 +174,12 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 				done = 1;
 		} else {
 			if ((expect & EXPECT_LEFT_PARENTHESIS) && ch == '(') {
+				parenthesis_level ++;
 				buf[curlen++] = ch;
 				break;
 			}
 			if ((expect & EXPECT_RIGHT_PARENTHESIS) && ch == ')') {
+				parenthesis_level --;
 				buf[curlen++] = ch;
 				break;
 			}
@@ -258,6 +261,9 @@ static int cur_machine_n_x11_disp;
 		}						\
 	}
 
+static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
+	int *parsestate, char *word, size_t maxbuflen);
+
 
 /*
  *  parse_on_off():
@@ -276,32 +282,6 @@ int parse_on_off(char *s)
 		return 0;
 
 	fatal("parse_on_off(): unknown value '%s'\n", s);
-	exit(1);
-}
-
-
-/*
- *  parse__none():
- *
- *  emul ( [...] )
- */
-static void parse__none(struct emul *e, FILE *f, int *in_emul, int *line,
-	int *parsestate, char *word, size_t maxbuflen)
-{
-	if (strcmp(word, "emul") == 0) {
-		if (*in_emul) {
-			fatal("line %i: only one emul per config "
-			    "file is supported!\n", *line);
-			exit(1);
-		}
-		*parsestate = PARSESTATE_EMUL;
-		*in_emul = 1;
-		read_one_word(f, word, maxbuflen,
-		    line, EXPECT_LEFT_PARENTHESIS);
-		return;
-	}
-
-	fatal("line %i: expecting 'emul', not '%s'\n", *line, word);
 	exit(1);
 }
 
@@ -800,10 +780,10 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 void emul_parse_config(struct emul *e, char *fname)
 {
 	FILE *f = fopen(fname, "r");
-	char word[500];
+	char word[MAX_WORD_LEN];
 	int in_emul = 0;
 	int line = 1;
-	int parsestate = PARSESTATE_NONE;
+	int parsestate = PARSESTATE_EMUL;
 
 	/*  debug("emul_parse_config()\n");  */
 	if (f == NULL) {
@@ -820,10 +800,6 @@ void emul_parse_config(struct emul *e, char *fname)
 		/*  debug("word = '%s'\n", word);  */
 
 		switch (parsestate) {
-		case PARSESTATE_NONE:
-			parse__none(e, f, &in_emul, &line, &parsestate,
-			    word, sizeof(word));
-			break;
 		case PARSESTATE_EMUL:
 			parse__emul(e, f, &in_emul, &line, &parsestate,
 			    word, sizeof(word));
@@ -836,6 +812,8 @@ void emul_parse_config(struct emul *e, char *fname)
 			parse__machine(e, f, &in_emul, &line, &parsestate,
 			    word, sizeof(word));
 			break;
+		case PARSESTATE_NONE:
+			break;
 		default:
 			fatal("INTERNAL ERROR in emul_parse.c ("
 			    "parsestate %i is not imlemented yet?)\n",
@@ -844,7 +822,7 @@ void emul_parse_config(struct emul *e, char *fname)
 		}
 	}
 
-	if (parsestate != PARSESTATE_NONE) {
+	if (parenthesis_level != 0) {
 		fatal("EOF but not enough right parentheses?\n");
 		exit(1);
 	}

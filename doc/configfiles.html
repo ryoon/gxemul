@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: configfiles.html,v 1.19 2006-02-18 15:18:15 debug Exp $
+$Id: configfiles.html,v 1.20 2006-03-10 17:58:23 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -74,19 +74,18 @@ through an example is good enough:
 !  Each configuration file should contain one emul entry. Almost
 !  everything else is optional.</font>
 
-<b>emul(</b>
-    <b>name(<font color="#ff003f">"my test emul"</font>)</b>	 <font color="#2020cf">!  Optional name of this emulation</font>
+<b>name(<font color="#ff003f">"my test emul"</font>)</b>	 <font color="#2020cf">!  Optional name of this emulation</font>
 
-    <font color="#2020cf">!  This creates an ethernet network:</font>
-    <b>net(</b>
+<font color="#2020cf">!  This creates an ethernet network:</font>
+<b>net(</b>
 	<b>ipv4net(<font color="#ff003f">"10.2.0.0"</font>)</b>  <font color="#2020cf">!  The default is 10.0.0.0/8, but</font>
 	<b>ipv4len(16)</b>          <font color="#2020cf">!  it can be overridden like this.</font>
 	<font color="#2020cf">!  local_port(12345)</font>
 	<font color="#2020cf">!  add_remote("localhost:12346")</font>
-    <b>)</b>
+<b>)</b>
 
-    <font color="#2020cf">!  This creates a machine:</font>
-    <b>machine(</b>
+<font color="#2020cf">!  This creates a machine:</font>
+<b>machine(</b>
 	<b>name(<font color="#ff003f">"My test machine"</font>)</b>
 
 	<font color="#2020cf">! serial_nr(123)    ! Useful when emulating multiple machines</font>
@@ -170,16 +169,15 @@ through an example is good enough:
 	</i></b>-->
 	}</font>
 
-    <b>)</b>
+<b>)</b>
 
-    <font color="#2020cf">!  Multiple machine are allowed.</font>
-    <b>machine(</b>
+<font color="#2020cf">!  Multiple machine are allowed.</font>
+<b>machine(</b>
 	<b>name(<font color="#ff003f">"another machine"</font>)</b>
 	<b>type(<font color="#ff003f">"hpcmips"</font>)</b>
 	<b>subtype(<font color="#ff003f">"be300"</font>)</b>
 
 	<i>...</i>
-    <b>)</b>
 <b>)</b>
 </pre>
 </td></tr></table>
@@ -207,12 +205,9 @@ if <b>myconfig</b> is the name of the configuration file.
 Here is an example of what a minimal configuration file might look like:
 
 <p><table border="0"><tr><td width="40">&nbsp;</td><td><pre>
-<font color="#2020cf">!!gxemul</font>
-<b>emul(</b>
-    <b>machine(</b>
-        <b>subtype(<font color="#ff003f">"3max"</font>)</b>
-        <b>load(<font color="#ff003f">"netbsd-pmax-INSTALL-2.0"</font>)</b>
-    <b>)</b>
+<b>machine(</b>
+    <b>subtype(<font color="#ff003f">"3max"</font>)</b>
+    <b>load(<font color="#ff003f">"netbsd-pmax-INSTALL-2.0"</font>)</b>
 <b>)</b>
 </pre>
 </td></tr></table>
@@ -240,46 +235,39 @@ have one configuration file per emulated machine.
 
 <p><table border="0" width="100%"><tr><td width="40">&nbsp;</td>
 <td><pre>
-<font color="#2020cf">!!gxemul
-!
-!  Configuration file for a
+<font color="#2020cf">!  Configuration file for a
 !  "client" machine, netbooting
 !  of another machine.</font>
 
-<b>emul(</b>
-    <b>net(</b>
+<b>net(</b>
 	<b>local_port(15000)</b>
 	<b>add_remote(<font color="#ff003f">"localhost:15001"</font>)</b>
-    <b>)</b>
-    <b>machine(</b>
+<b>)</b>
+<b>machine(</b>
 	<b>name(<font color="#ff003f">"client machine"</font>)</b>
 	<b>serial_nr(1)</b>	<font color="#2020cf">!  10.0.0.1</font>
 
 	<b>type(<font color="#ff003f">"sgi"</font>)</b>
 	<b>subtype(<font color="#ff003f">"o2"</font>)</b>
         <b>load(<font color="#ff003f">"netbsd-GENERIC32_IP3x.gz"</font>)</b>
-    <b>)</b>
-<b>)</b></pre></td><td width="20">&nbsp;</td><td><pre>
-<font color="#2020cf">!!gxemul
-!
-!  Configuration file for the
+<b>)</b>
+</pre></td><td width="20">&nbsp;</td><td><pre>
+<font color="#2020cf">!  Configuration file for the
 !  "server" machine.</font>
-!
 
-<b>emul(</b>
-    <b>net(</b>
+<b>net(</b>
 	<b>local_port(15001)</b>
 	<b>add_remote(<font color="#ff003f">"localhost:15000"</font>)</b>
-    <b>)</b>
-    <b>machine(</b>
+<b>)</b>
+<b>machine(</b>
 	<b>name(<font color="#ff003f">"nfs server"</font>)</b>
 	<b>serial_nr(2)</b>	<font color="#2020cf">!  10.0.0.2</font>
 
         <b>type(<font color="#ff003f">"dec"</font>)</b>
         <b>subtype(<font color="#ff003f">"3max"</font>)</b>
         <b>disk(<font color="#ff003f">"nbsd_pmax.img"</font>)</b>
-    <b>)</b>
-<b>)</b></pre></td><td width="20">&nbsp;</td></tr></table>
+<b>)</b>
+</pre></td><td width="20">&nbsp;</td></tr></table>
 
 <p>This example creates a network using the default settings (10.0.0.0/8), 
 but it also allows the network to be connected to other emulator 

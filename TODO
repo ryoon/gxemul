@@ -1,4 +1,4 @@
-$Id: TODO,v 1.222 2006-03-10 06:15:25 debug Exp $
+$Id: TODO,v 1.223 2006-03-10 17:59:50 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -104,13 +104,8 @@ Busses:
 	o)  dev->bus: TurboChannel, PCMCIA, ADB?
 
 Config file parser:
-	o)  Refresh/rewrite it :)
+	o)  Rewrite it from scratch!
 	o)  Usage of any expression available through the debugger
-	o)  Expressions such as "add device" would be nice to be able
-	    to do on the command line manually.
-	o)  Remove the requirement for !!gxemul on the first line.
-	o)  Allow machine() entries even if there is no emul() entry (but
-	    then don't allow any emul() entries at all).
 	o)  Support for running debugger commands (like the -c
 	    command line option)
 

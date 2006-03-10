@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.14 2006-02-26 10:09:24 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.15 2006-03-10 20:20:20 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -242,6 +242,45 @@ X(jalr_trace)
 	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
 		cpu->pc = rs;
 		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  j, jal:  Jump [and link].
+ *
+ *  arg[0] = lowest 28 bits of new pc.
+ *  arg[1] = offset from start of page to the jal instruction + 8
+ */
+X(j)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+		    MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc = old_pc | (uint32_t)ic->arg[0];
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+}
+X(jal)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += ic->arg[1];
+	cpu->cd.mips.gpr[31] = cpu->pc;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->cd.mips.delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+		    MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc = old_pc | (int32_t)ic->arg[0];
 		quick_pc_to_pointers(cpu);
 	}
 	cpu->cd.mips.delay_slot = NOT_DELAYED;
@@ -530,33 +569,6 @@ X(end_of_page)
 
 	/*  fatal("[ end_of_page: back from delay slot ]\n");  */
 }
-
-
-#if 0
-X(end_of_page2)
-{
-fatal("this should be removed: end of page2\n");
-exit(1);
-
-	/*  Update the PC:  (offset 4, but on the next page)  */
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
-	    MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += ((MIPS_IC_ENTRIES_PER_PAGE+1) << MIPS_INSTR_ALIGNMENT_SHIFT);
-
-	if (cpu->cd.mips.delay_slot == NOT_DELAYED) {
-		/*  Find the new physpage and update translation pointers:  */
-		quick_pc_to_pointers(cpu);
-
-		/*  end_of_page doesn't count as an executed instruction:  */
-		cpu->n_translated_instrs --;
-
-		return;
-	}
-
-	fatal("DELAY SLOT in DELAY SLOT across a page boundary? HUH?\n");
-	exit(1);
-}
-#endif
 
 
 /*****************************************************************************/
@@ -909,6 +921,24 @@ X(to_be_translated)
 		ic->arg[1] = imm << 16;
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
+		break;
+
+	case HI6_J:
+	case HI6_JAL:
+		switch (main_opcode) {
+		case HI6_J:
+			ic->f = instr(j);
+			break;
+		case HI6_JAL:
+			ic->f = instr(jal);
+			break;
+		}
+		ic->arg[0] = (iword & 0x03ffffff) << 2;
+		ic->arg[1] = (addr & 0xffc) + 8;
+		if (in_crosspage_delayslot) {
+			fatal("[ WARNING: branch in delay slot? ]\n");
+			ic->f = instr(nop);
+		}
 		break;
 
 	case HI6_COP0:

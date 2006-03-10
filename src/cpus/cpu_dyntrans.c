@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.67 2006-03-04 12:58:25 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.68 2006-03-10 20:20:20 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -199,8 +199,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			} else {
 				cpu_disassemble_instr(cpu->machine, cpu,
 				    instr, 1, 0, 0);
-#ifdef DYNTRANS_MIPS
-/*  TODO: generalize, not just MIPS  */
+#ifdef DYNTRANS_DELAYSLOT
 				/*  Show the instruction in the delay slot,
 				    if any:  */
 				fatal("TODO: check for delay slot!\n");
@@ -471,16 +470,6 @@ static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #ifdef DYNTRANS_DUALMODE_32
 static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
-#endif
-
-#if 0
-/*  TODO  */
-#ifdef DYNTRANS_DELAYSLOT
-static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
-#ifdef DYNTRANS_DUALMODE_32
-static void instr32(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
-#endif
-#endif
 #endif
 
 /*

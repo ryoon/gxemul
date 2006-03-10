@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1143 2006-03-10 17:58:23 debug Exp $
+$Id: HISTORY,v 1.1144 2006-03-10 20:20:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2597,3 +2597,4 @@ Changelog for GXemul:
 		Adding a dummy epcom serial controller (for TS7200 emulation).
 20060310	Removing the emul() command from configuration files, so only
 		net() and machine() are supported.
+		Minor progress on the MIPS dyntrans rewrite.

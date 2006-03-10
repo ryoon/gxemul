@@ -1,10 +1,12 @@
-$Id: TODO,v 1.223 2006-03-10 17:59:50 debug Exp $
+$Id: TODO,v 1.224 2006-03-10 20:20:20 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 Dyntrans:
-	x)  MIPS fast load/store:  endianness, alignment check
-	x)  PPC 64-bit loads/stores
+	x)  64-bit vmspaces:
+		o)  optimize for the 32-bit case.
+		o)  Implementations for MIPS, PPC, Alpha etc.
+		o)  endianness, alignment check
 	x)  Delay slots!
 	x)  Old MIPS -> dyntrans!
 	x)  INVALIDATION should cause translations in _all_ cpus to be

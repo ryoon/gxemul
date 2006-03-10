@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.37 2006-02-04 11:10:59 debug Exp $
+ *  $Id: emul.h,v 1.38 2006-03-10 16:46:54 debug Exp $
  */
 
 #include "misc.h"
@@ -64,7 +64,7 @@ void emul_run(struct emul **emuls, int n_emuls);
 
 
 /*  emul_parse.c:  */
-void emul_parse_config(struct emul *e, FILE *f);
+void emul_parse_config(struct emul *e, char *fname);
 
 
 #endif	/*  EMUL_H  */

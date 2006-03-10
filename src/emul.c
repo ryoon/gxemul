@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.249 2006-02-27 05:32:26 debug Exp $
+ *  $Id: emul.c,v 1.250 2006-03-10 16:46:53 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1493,32 +1493,12 @@ struct emul *emul_create_from_configfile(char *fname)
 {
 	int iadd = DEBUG_INDENTATION;
 	struct emul *e = emul_new(fname);
-	FILE *f;
-	char buf[128];
-	size_t len;
 
 	debug("Creating emulation from configfile \"%s\":\n", fname);
 	debug_indentation(iadd);
 
-	f = fopen(fname, "r");
-	if (f == NULL) {
-		perror(fname);
-		exit(1);
-	}
+	emul_parse_config(e, fname);
 
-	/*  Read header: (must be !!gxemul)  */
-	len = fread(buf, 1, 8, f);
-	if (len != 8 || strncmp(buf, "!!gxemul", 8) != 0) {
-		fprintf(stderr, "%s: must start with '!!gxemul'\n", fname);
-		exit(1);
-	}
-
-	/*  Restart from beginning:  */
-	rewind(f);
-
-	emul_parse_config(e, f);
-
-	fclose(f);
 	debug_indentation(-iadd);
 	return e;
 }

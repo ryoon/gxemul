@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.36 2006-01-14 12:51:59 debug Exp $
+ *  $Id: emul_parse.c,v 1.37 2006-03-10 16:46:53 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -797,14 +797,19 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
  *
  *  Set up an emulation by parsing a config file.
  */
-void emul_parse_config(struct emul *e, FILE *f)
+void emul_parse_config(struct emul *e, char *fname)
 {
+	FILE *f = fopen(fname, "r");
 	char word[500];
 	int in_emul = 0;
 	int line = 1;
 	int parsestate = PARSESTATE_NONE;
 
 	/*  debug("emul_parse_config()\n");  */
+	if (f == NULL) {
+		perror(fname);
+		exit(1);
+	}
 
 	while (!feof(f)) {
 		read_one_word(f, word, sizeof(word), &line,
@@ -843,5 +848,7 @@ void emul_parse_config(struct emul *e, FILE *f)
 		fatal("EOF but not enough right parentheses?\n");
 		exit(1);
 	}
+
+	fclose(f);
 }
 

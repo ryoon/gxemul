@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.11 2006-02-19 08:04:14 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.12 2006-03-12 10:30:36 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1707,7 +1707,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		if (cpu->cd.mips.delay_slot) {
+		if (cpu->delay_slot) {
 			fatal("%s: jump inside a jump's delay slot, "
 			    "or similar. TODO\n", instr_mnem);
 			cpu->running = 0;
@@ -1725,8 +1725,8 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 			cond_true = !cond_true;
 
 		if (cond_true) {
-			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-			cpu->cd.mips.delay_jmpaddr = cpu->pc + (imm << 2);
+			cpu->delay_slot = TO_BE_DELAYED;
+			cpu->delay_jmpaddr = cpu->pc + (imm << 2);
 		} else {
 			/*  "likely":  */
 			if (nd) {
@@ -2308,7 +2308,7 @@ void coproc_eret(struct cpu *cpu)
 	} else {
 		cpu->pc = cpu->cd.mips.pc_last =
 		    cpu->cd.mips.coproc[0]->reg[COP0_EPC];
-		cpu->cd.mips.delay_slot = 0;
+		cpu->delay_slot = 0;
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_EXL;
 	}
 
@@ -2523,7 +2523,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 		 */
 
 		cpu->pc = cpu->cd.mips.pc_last = cp->reg[COP0_DEPC];
-		cpu->cd.mips.delay_slot = 0;
+		cpu->delay_slot = 0;
 		cp->reg[COP0_STATUS] &= ~STATUS_EXL;
 
 		return;

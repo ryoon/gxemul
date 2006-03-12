@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.30 2006-02-22 20:09:09 debug Exp $
+ *  $Id: cpu_mips.h,v 1.31 2006-03-12 10:30:36 debug Exp $
  */
 
 #include "misc.h"
@@ -151,12 +151,6 @@ struct mips_coproc {
 #define	MIPS_GPR_SP		29		/*  sp  */
 #define	MIPS_GPR_FP		30		/*  fp  */
 #define	MIPS_GPR_RA		31		/*  ra  */
-
-/*  Meaning of delay_slot:  */
-#define	NOT_DELAYED			0
-#define	DELAYED				1
-#define	TO_BE_DELAYED			2
-#define	EXCEPTION_IN_DELAY_SLOT		0x100
 
 #define	N_HI6			64
 #define	N_SPECIAL		64
@@ -360,8 +354,6 @@ struct mips_cpu {
 	int		instruction_delay;
 #endif
 
-	uint64_t	delay_jmpaddr;		/*  only used if delay_slot > 0  */
-	int		delay_slot;
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
 

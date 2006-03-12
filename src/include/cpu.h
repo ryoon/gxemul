@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.68 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu.h,v 1.69 2006-03-12 10:30:36 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -238,6 +238,12 @@ struct cpu_family {
 #define	TRANSLATIONS			1
 #define	COMBINATIONS			2
 
+/*  Meaning of delay_slot:  */
+#define	NOT_DELAYED			0
+#define	DELAYED				1
+#define	TO_BE_DELAYED			2
+#define	EXCEPTION_IN_DELAY_SLOT		0x100
+
 #define	N_SAFE_DYNTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_DYNTRANS_LIMIT	((1 << (N_SAFE_DYNTRANS_LIMIT_SHIFT - 1)) - 1)
 
@@ -297,6 +303,9 @@ struct cpu {
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
+
+	uint64_t	delay_jmpaddr;	/*  only used if delay_slot > 0  */
+	int		delay_slot;
 
 	/*
 	 *  CPU-family dependent:

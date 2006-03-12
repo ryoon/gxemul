@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.4 2006-02-19 08:04:14 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.5 2006-03-12 10:30:35 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -347,7 +347,7 @@ static int bintrans_write_instruction__jr(unsigned char **addrp,
 	 */
 
 	/*  c7 86 38 30 00 00 01 00 00 00    movl   $0x1,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
@@ -683,7 +683,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	store_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
 
 	/*  c7 86 38 30 00 00 01 00 00 00    movl   $0x1,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
@@ -1400,7 +1400,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 */
 
 	/*  c7 86 38 30 00 00 01 00 00 00    movl   $0x1,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
@@ -1448,7 +1448,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 		goto try_chunk_p;
 
 	/*  Skip all of this if there is no branch:  */
-	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 
 	/*  8b 86 38 30 00 00       mov    0x3038(%esi),%eax  */
 	*a++ = 0x8b; *a++ = 0x86;
@@ -1465,7 +1465,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 	 */
 
 	/*  c7 86 38 30 00 00 00 00 00 00    movl   $0x0,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.5 2006-02-19 08:04:13 debug Exp $
+ *  $Id: bintrans.c,v 1.6 2006-03-12 10:30:35 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -346,7 +346,7 @@ int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 
 
 	/*  Abort if the current "environment" isn't safe enough:  */
-	if (cpu->cd.mips.delay_slot || cpu->cd.mips.nullify_next ||
+	if (cpu->delay_slot || cpu->cd.mips.nullify_next ||
 	    (paddr & 3) != 0)
 		return cpu->cd.mips.bintrans_instructions_executed;
 
@@ -922,7 +922,7 @@ run_it:
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->cd.mips.gpr[31]);  */
 
-	if (!cpu->cd.mips.delay_slot && !cpu->cd.mips.nullify_next &&
+	if (!cpu->delay_slot && !cpu->cd.mips.nullify_next &&
 	    cpu->cd.mips.bintrans_instructions_executed < N_SAFE_DYNTRANS_LIMIT
 	    && (cpu->pc & 3) == 0
 	    && cpu->cd.mips.bintrans_instructions_executed != old_n_executed) {

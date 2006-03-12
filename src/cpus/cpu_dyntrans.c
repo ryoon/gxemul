@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.68 2006-03-10 20:20:20 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.69 2006-03-12 10:30:35 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1586,8 +1586,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 				    "instruction has not yet executed.)\n",
 				    (long long)cpu->pc);
 #ifdef DYNTRANS_DELAYSLOT
-				if (cpu->cd.DYNTRANS_ARCH.delay_slot !=
-				    NOT_DELAYED)
+				if (cpu->delay_slot != NOT_DELAYED)
 					fatal("ERROR! Breakpoint in a delay"
 					    " slot! Not yet supported.\n");
 #endif
@@ -1636,7 +1635,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 
 	/*  ... and finally execute the translated instruction:  */
-	if (single_step_breakpoint) {
+	if (single_step_breakpoint && cpu->delay_slot == NOT_DELAYED) {
 		/*
 		 *  Special case when single-stepping: Execute the translated
 		 *  instruction, but then replace it with a "to be translated"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.20 2006-02-22 20:09:09 debug Exp $
+ *  $Id: cpu_mips.c,v 1.21 2006-03-12 10:30:35 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -730,10 +730,10 @@ void mips_cpu_register_match(struct machine *m, char *name,
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
 			m->cpus[cpunr]->pc = *valuep;
-			if (m->cpus[cpunr]->cd.mips.delay_slot) {
+			if (m->cpus[cpunr]->delay_slot) {
 				printf("NOTE: Clearing the delay slot"
 				    " flag! (It was set before.)\n");
-				m->cpus[cpunr]->cd.mips.delay_slot = 0;
+				m->cpus[cpunr]->delay_slot = 0;
 			}
 			if (m->cpus[cpunr]->cd.mips.nullify_next) {
 				printf("NOTE: Clearing the nullify-ne"
@@ -813,7 +813,7 @@ void mips_cpu_register_match(struct machine *m, char *name,
  */
 static const char *cpu_flags(struct cpu *cpu)
 {
-	if (cpu->cd.mips.delay_slot) {
+	if (cpu->delay_slot) {
 		if (cpu->cd.mips.last_was_jumptoself)
 			return " (dj)";
 		else
@@ -1786,7 +1786,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		 */
 		/*  debug("[ warning: cpu%i exception while EXL is set, not setting EPC ]\n", cpu->cpu_id);  */
 	} else {
-		if (cpu->cd.mips.delay_slot || cpu->cd.mips.nullify_next) {
+		if (cpu->delay_slot || cpu->cd.mips.nullify_next) {
 			reg[COP0_EPC] = cpu->cd.mips.pc_last - 4;
 			reg[COP0_CAUSE] |= CAUSE_BD;
 
@@ -1798,7 +1798,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		}
 	}
 
-	cpu->cd.mips.delay_slot = NOT_DELAYED;
+	cpu->delay_slot = NOT_DELAYED;
 	cpu->cd.mips.nullify_next = 0;
 
 	/*  TODO: This is true for MIPS64, but how about others?  */
@@ -1883,8 +1883,8 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
  *
  *  Execute one instruction on a cpu.
  *
- *  If we are in a delay slot, set cpu->pc to cpu->cd.mips.delay_jmpaddr
- *  after the instruction is executed.
+ *  If we are in a delay slot, set cpu->pc to cpu->delay_jmpaddr after the
+ *  instruction is executed.
  *
  *  Return value is the number of instructions executed during this call,
  *  0 if no instruction was executed.
@@ -1964,13 +1964,13 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  Hardwire the zero register to 0:  */
 	cpu->cd.mips.gpr[MIPS_GPR_ZERO] = 0;
 
-	if (cpu->cd.mips.delay_slot) {
-		if (cpu->cd.mips.delay_slot == DELAYED) {
-			cached_pc = cpu->pc = cpu->cd.mips.delay_jmpaddr;
-			cpu->cd.mips.delay_slot = NOT_DELAYED;
-		} else /* if (cpu->cd.mips.delay_slot == TO_BE_DELAYED) */ {
+	if (cpu->delay_slot) {
+		if (cpu->delay_slot == DELAYED) {
+			cached_pc = cpu->pc = cpu->delay_jmpaddr;
+			cpu->delay_slot = NOT_DELAYED;
+		} else /* if (cpu->delay_slot == TO_BE_DELAYED) */ {
 			/*  next instruction will be delayed  */
-			cpu->cd.mips.delay_slot = DELAYED;
+			cpu->delay_slot = DELAYED;
 		}
 	}
 
@@ -2081,7 +2081,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			cpu->pc = cpu->cd.mips.gpr[MIPS_GPR_RA];
 			/*  no need to update cached_pc, as we're returning  */
-			cpu->cd.mips.delay_slot = NOT_DELAYED;
+			cpu->delay_slot = NOT_DELAYED;
 
 			if (cpu->machine->show_trace_tree)
 				cpu_functioncall_trace_return(cpu);
@@ -2501,7 +2501,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			return 1;
 		case SPECIAL_JR:
-			if (cpu->cd.mips.delay_slot) {
+			if (cpu->delay_slot) {
 				fatal("jr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 1;
@@ -2509,15 +2509,15 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 
-			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-			cpu->cd.mips.delay_jmpaddr = cpu->cd.mips.gpr[rs];
+			cpu->delay_slot = TO_BE_DELAYED;
+			cpu->delay_jmpaddr = cpu->cd.mips.gpr[rs];
 
 			if (cpu->machine->show_trace_tree && rs == 31)
 				cpu_functioncall_trace_return(cpu);
 
 			return 1;
 		case SPECIAL_JALR:
-			if (cpu->cd.mips.delay_slot) {
+			if (cpu->delay_slot) {
 				fatal("jalr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 1;
@@ -2535,8 +2535,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.mips.show_trace_addr = tmpvalue;
 			}
 
-			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-			cpu->cd.mips.delay_jmpaddr = tmpvalue;
+			cpu->delay_slot = TO_BE_DELAYED;
+			cpu->delay_jmpaddr = tmpvalue;
 			return 1;
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
@@ -3111,7 +3111,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			 *  executed 1 instruction.
 			 */
 			ninstrs_executed = 1;
-			if (cpu->machine->speed_tricks && cpu->cd.mips.delay_slot &&
+			if (cpu->machine->speed_tricks && cpu->delay_slot &&
 			    cpu->cd.mips.last_was_jumptoself &&
 			    cpu->cd.mips.jump_to_self_reg == rt &&
 			    cpu->cd.mips.jump_to_self_reg == rs) {
@@ -3162,7 +3162,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case HI6_BLEZL:
 		case HI6_BEQL:
 		case HI6_BNEL:
-			if (cpu->cd.mips.delay_slot) {
+			if (cpu->delay_slot) {
 				fatal("b*: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 1;
@@ -3184,8 +3184,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 			if (cond) {
-				cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-				cpu->cd.mips.delay_jmpaddr = cached_pc + (imm << 2);
+				cpu->delay_slot = TO_BE_DELAYED;
+				cpu->delay_jmpaddr = cached_pc + (imm << 2);
 			} else {
 				if (likely)
 					cpu->cd.mips.nullify_next = 1;		/*  nullify delay slot  */
@@ -3792,8 +3792,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.mips.gpr[31] = cached_pc + 4;
 
 			if (cond) {
-				cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-				cpu->cd.mips.delay_jmpaddr = cached_pc + (imm << 2);
+				cpu->delay_slot = TO_BE_DELAYED;
+				cpu->delay_jmpaddr = cached_pc + (imm << 2);
 			} else {
 				if (likely)
 					cpu->cd.mips.nullify_next = 1;		/*  nullify delay slot  */
@@ -3813,7 +3813,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  NOT REACHED  */
 	case HI6_J:
 	case HI6_JAL:
-		if (cpu->cd.mips.delay_slot) {
+		if (cpu->delay_slot) {
 			fatal("j/jal: jump inside a jump's delay slot, or similar. TODO\n");
 			cpu->running = 0;
 			return 1;
@@ -3827,8 +3827,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		addr = cached_pc & ~((1 << 28) - 1);
 		addr |= imm;
 
-		cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-		cpu->cd.mips.delay_jmpaddr = addr;
+		cpu->delay_slot = TO_BE_DELAYED;
+		cpu->delay_jmpaddr = addr;
 
 		if (cpu->machine->show_trace_tree && hi6 == HI6_JAL) {
 			cpu->cd.mips.show_trace_delay = 2;

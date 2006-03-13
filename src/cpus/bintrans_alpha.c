@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.6 2006-03-12 10:30:35 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.7 2006-03-13 05:20:43 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -156,7 +156,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_pc_last	(((size_t)&dummy_cpu.cd.mips.pc_last) - ((size_t)&dummy_cpu))
 #define ofs_n	(((size_t)&dummy_cpu.cd.mips.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
 #define ofs_ds	(((size_t)&dummy_cpu.delay_slot) - ((size_t)&dummy_cpu))
-#define ofs_ja	(((size_t)&dummy_cpu.cd.mips.delay_jmpaddr) - ((size_t)&dummy_cpu))
+#define ofs_ja	(((size_t)&dummy_cpu.delay_jmpaddr) - ((size_t)&dummy_cpu))
 #define ofs_sp	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_SP]) - ((size_t)&dummy_cpu))
 #define ofs_ra	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_RA]) - ((size_t)&dummy_cpu))
 #define ofs_a0	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_A0]) - ((size_t)&dummy_cpu))

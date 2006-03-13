@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.5 2006-03-12 10:30:35 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.6 2006-03-13 05:20:43 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -359,7 +359,7 @@ static int bintrans_write_instruction__jr(unsigned char **addrp,
 #endif
 		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 
-	store_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
+	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
 
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
@@ -680,7 +680,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	*a++ = 0x0d; *a++ = subimm; *a++ = subimm >> 8;
 	*a++ = subimm >> 16; *a++ = subimm >> 24;
 
-	store_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
+	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
 
 	/*  c7 86 38 30 00 00 01 00 00 00    movl   $0x1,0x3038(%esi)  */
 	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
@@ -1418,7 +1418,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	} else {
 		*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
 	}
-	store_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
+	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
 
 	if (skip1 != NULL)
 		*skip1 = (size_t)a - (size_t)skip1 - 1;
@@ -1476,7 +1476,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 	/*  89 d1                   mov    %edx,%ecx  */
 	*a++ = 0x89; *a++ = 0xc3;
 	*a++ = 0x89; *a++ = 0xd1;
-	load_into_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
+	load_into_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
 	store_eax_edx_into_pc(&a);
 
 try_chunk_p:

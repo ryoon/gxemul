@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1145 2006-03-12 10:30:34 debug Exp $
+$Id: HISTORY,v 1.1146 2006-03-15 19:22:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2600,3 +2600,5 @@ Changelog for GXemul:
 		Minor progress on the MIPS dyntrans rewrite.
 20060311	Continuing on the MIPS dyntrans rewrite (adding more
 		instructions, etc).
+20060315	Adding more instructions (sllv, srav, srlv, bgtz[l], blez[l],
+		beql, bnel, various loads and stores).

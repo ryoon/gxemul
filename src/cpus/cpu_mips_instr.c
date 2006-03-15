@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.16 2006-03-12 10:30:36 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.17 2006-03-15 19:22:56 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -165,6 +165,252 @@ X(b_samepage)
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT))
 		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+	cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  beql:  Branch if equal likely
+ *  bnel:  Branch if not equal likely
+ *
+ *  arg[0] = pointer to rs
+ *  arg[1] = pointer to rt
+ *  arg[2] = (int32_t) relative offset from the next instruction
+ */
+X(beql)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int x = rs == rt;
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(beql_samepage)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int x = rs == rt;
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bnel)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int x = rs != rt;
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bnel_samepage)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int x = rs != rt;
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  blez:   Branch if less than or equal
+ *  blezl:  Branch if less than or equal likely
+ *
+ *  arg[0] = pointer to rs
+ *  arg[2] = (int32_t) relative offset from the next instruction
+ */
+X(blez)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs <= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(blez_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs <= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(blezl)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs <= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(blezl_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs <= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bgtz:   Branch if greater than zero
+ *  bgtzl:  Branch if greater than zero likely
+ *
+ *  arg[0] = pointer to rs
+ *  arg[2] = (int32_t) relative offset from the next instruction
+ */
+X(bgtz)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs > 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bgtz_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs > 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bgtzl)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs > 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bgtzl_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs > 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
 	cpu->delay_slot = NOT_DELAYED;
 }
 
@@ -363,8 +609,14 @@ X(or)  { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 X(xor) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
 X(nor) { reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
 X(sll) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << ic->arg[1]); }
+X(sllv){ int32_t sa = reg(ic->arg[1]) & 31;
+	 reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << sa); }
 X(srl) { reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> ic->arg[1]); }
+X(srlv){ int32_t sa = reg(ic->arg[1]) & 31;
+	 reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> sa); }
 X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
+X(srav){ int32_t sa = reg(ic->arg[1]) & 31;
+	 reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> sa); }
 X(dsll) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) << (int64_t)ic->arg[1]; }
 X(dsrl) { reg(ic->arg[2]) = (int64_t)((uint64_t)reg(ic->arg[0]) >>
 	(uint64_t) ic->arg[1]);}
@@ -727,8 +979,11 @@ X(to_be_translated)
 		switch (s6) {
 
 		case SPECIAL_SLL:
+		case SPECIAL_SLLV:
 		case SPECIAL_SRL:
+		case SPECIAL_SRLV:
 		case SPECIAL_SRA:
+		case SPECIAL_SRAV:
 		case SPECIAL_DSRL:
 		case SPECIAL_DSRL32:
 		case SPECIAL_DSLL:
@@ -737,8 +992,11 @@ X(to_be_translated)
 		case SPECIAL_DSRA32:
 			switch (s6) {
 			case SPECIAL_SLL:  ic->f = instr(sll); break;
+			case SPECIAL_SLLV: ic->f = instr(sllv); sa = -1; break;
 			case SPECIAL_SRL:  ic->f = instr(srl); break;
+			case SPECIAL_SRLV: ic->f = instr(srlv); sa = -1; break;
 			case SPECIAL_SRA:  ic->f = instr(sra); break;
+			case SPECIAL_SRAV: ic->f = instr(srav); sa = -1; break;
 			case SPECIAL_DSRL: ic->f = instr(dsrl); x64=1; break;
 			case SPECIAL_DSRL32:ic->f= instr(dsrl); x64=1;
 					   sa += 32; break;
@@ -750,7 +1008,10 @@ X(to_be_translated)
 					   sa += 32; break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
-			ic->arg[1] = sa;
+			if (sa >= 0)
+				ic->arg[1] = sa;
+			else
+				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
 			if (rd == MIPS_GPR_ZERO)
 				ic->f = instr(nop);
@@ -875,6 +1136,12 @@ X(to_be_translated)
 
 	case HI6_BEQ:
 	case HI6_BNE:
+	case HI6_BEQL:
+	case HI6_BNEL:
+	case HI6_BLEZ:
+	case HI6_BLEZL:
+	case HI6_BGTZ:
+	case HI6_BGTZL:
 		samepage_function = NULL;  /*  get rid of a compiler warning  */
 		switch (main_opcode) {
 		case HI6_BEQ:
@@ -889,6 +1156,36 @@ X(to_be_translated)
 		case HI6_BNE:
 			ic->f = instr(bne);
 			samepage_function = instr(bne_samepage);
+			break;
+		case HI6_BEQL:
+			ic->f = instr(beql);
+			samepage_function = instr(beql_samepage);
+			/*  Special case: comparing a register with itself:  */
+			if (rs == rt) {
+				ic->f = instr(b);
+				samepage_function = instr(b_samepage);
+			}
+			break;
+		case HI6_BNEL:
+			ic->f = instr(bnel);
+			samepage_function = instr(bnel_samepage);
+			break;
+		case HI6_BLEZ:
+			ic->f = instr(blez);
+			samepage_function = instr(blez_samepage);
+			break;
+		case HI6_BLEZL:
+			ic->f = instr(blezl);
+			samepage_function = instr(blezl_samepage);
+			break;
+		case HI6_BGTZ:
+			ic->f = instr(bgtz);
+			samepage_function = instr(bgtz_samepage);
+			break;
+		case HI6_BGTZL:
+			ic->f = instr(bgtzl);
+			samepage_function = instr(bgtzl_samepage);
+			break;
 		}
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
@@ -1035,14 +1332,27 @@ X(to_be_translated)
 		}
 		break;
 
+	case HI6_LB:
+	case HI6_LBU:
+	case HI6_SB:
+	case HI6_LH:
+	case HI6_LHU:
+	case HI6_SH:
 	case HI6_LW:
 	case HI6_SW:
 	case HI6_LD:
 	case HI6_SD:
 		size = 2; signedness = 0; store = 0;
 		switch (main_opcode) {
+		case HI6_LB: size = 0; signedness = 1; break;
+		case HI6_LBU:size = 0; break;
 		case HI6_LW: signedness = 1; break;
+		case HI6_LWU: break;
+		case HI6_LH: size = 2; signedness = 1; break;
+		case HI6_LHU:size = 2; break;
 		case HI6_LD: size = 3;  break;
+		case HI6_SB: store = 1; size = 0; break;
+		case HI6_SH: store = 1; size = 1; break;
 		case HI6_SW: store = 1; break;
 		case HI6_SD: store = 1; size = 3; break;
 		}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.1 2006-02-25 12:55:20 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.2 2006-03-15 19:22:56 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -59,7 +59,8 @@ void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
 #ifndef LS_1
 	/*  Check alignment:  */
 	if (addr & (LS_SIZE - 1)) {
-		fatal("TODO: mips dyntrans alignment exception\n");
+		fatal("TODO: mips dyntrans alignment exception, size = %i,"
+		    " addr = %016llx\n", LS_SIZE, (long long)addr);
 		exit(1);
 	}
 #endif

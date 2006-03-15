@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.18 2006-03-15 20:34:05 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.19 2006-03-15 20:50:33 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -705,7 +705,9 @@ X(dclo)
 
 /*
  *  addiu:  Add immediate (32-bit).
- *  daddiu:  Add immediate (64-bit).
+ *  slti:   Set if less than immediate (signed 32-bit)
+ *  sltiu:  Set if less than immediate (signed 32-bit, but unsigned compare)
+ *  daddiu: Add immediate (64-bit).
  *
  *  arg[0] = pointer to rs
  *  arg[1] = pointer to rt
@@ -715,6 +717,15 @@ X(addiu)
 {
 	reg(ic->arg[1]) = (int32_t)
 	    ((int32_t)reg(ic->arg[0]) + (int32_t)ic->arg[2]);
+}
+X(slti)
+{
+	reg(ic->arg[1]) = (MODE_int_t)reg(ic->arg[0]) < (int32_t)ic->arg[2];
+}
+X(sltiu)
+{
+	reg(ic->arg[1]) = (MODE_uint_t)reg(ic->arg[0]) <
+	   ((MODE_uint_t)(int32_t)ic->arg[2]);
 }
 X(daddiu)
 {
@@ -1111,7 +1122,7 @@ X(to_be_translated)
 			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rd];
 			if (s6 == SPECIAL_JALR && rd == MIPS_GPR_ZERO)
 				s6 = SPECIAL_JR;
-			ic->arg[2] = (addr & 0xffc) + 4;
+			ic->arg[2] = (addr & 0xffc) + 8;
 			switch (s6) {
 			case SPECIAL_JR:
 				if (rs == MIPS_GPR_RA) {
@@ -1217,6 +1228,8 @@ X(to_be_translated)
 		break;
 
 	case HI6_ADDIU:
+	case HI6_SLTI:
+	case HI6_SLTIU:
 	case HI6_DADDIU:
 	case HI6_ANDI:
 	case HI6_ORI:
@@ -1225,6 +1238,7 @@ X(to_be_translated)
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
 		if (main_opcode == HI6_ADDI ||
 		    main_opcode == HI6_ADDIU ||
+		    main_opcode == HI6_SLTI ||
 		    main_opcode == HI6_DADDI ||
 		    main_opcode == HI6_DADDIU)
 			ic->arg[2] = (int16_t)iword;
@@ -1232,6 +1246,8 @@ X(to_be_translated)
 			ic->arg[2] = (uint16_t)iword;
 		switch (main_opcode) {
 		case HI6_ADDIU:   ic->f = instr(addiu); break;
+		case HI6_SLTI:    ic->f = instr(slti); break;
+		case HI6_SLTIU:   ic->f = instr(sltiu); break;
 		case HI6_DADDIU:  ic->f = instr(daddiu); x64 = 1; break;
 		case HI6_ANDI:    ic->f = instr(andi); break;
 		case HI6_ORI:     ic->f = instr(ori); break;

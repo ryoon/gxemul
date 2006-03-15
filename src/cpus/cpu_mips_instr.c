@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.17 2006-03-15 19:22:56 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.18 2006-03-15 20:34:05 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -529,6 +529,23 @@ X(jal)
 	}
 	cpu->delay_slot = NOT_DELAYED;
 }
+X(jal_trace)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	cpu->delay_slot = TO_BE_DELAYED;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += ic->arg[1];
+	cpu->cd.mips.gpr[31] = cpu->pc;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		old_pc &= ~0x03ffffff;
+		cpu->pc = old_pc | (int32_t)ic->arg[0];
+		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
 
 
 /*
@@ -688,6 +705,7 @@ X(dclo)
 
 /*
  *  addiu:  Add immediate (32-bit).
+ *  daddiu:  Add immediate (64-bit).
  *
  *  arg[0] = pointer to rs
  *  arg[1] = pointer to rt
@@ -698,15 +716,6 @@ X(addiu)
 	reg(ic->arg[1]) = (int32_t)
 	    ((int32_t)reg(ic->arg[0]) + (int32_t)ic->arg[2]);
 }
-
-
-/*
- *  daddiu:  Add immediate (64-bit).
- *
- *  arg[0] = pointer to rs
- *  arg[1] = pointer to rt
- *  arg[2] = (int32_t) immediate value
- */
 X(daddiu)
 {
 	reg(ic->arg[1]) = reg(ic->arg[0]) + (int32_t)ic->arg[2];
@@ -793,7 +802,8 @@ X(cfc1)
  */
 X(b_samepage_addiu)
 {
-	reg(ic[1].arg[1]) = reg(ic[1].arg[0]) + (int32_t)ic[1].arg[2];
+	reg(ic[1].arg[1]) = (int32_t)
+	    ( (int32_t)reg(ic[1].arg[0]) + (int32_t)ic[1].arg[2] );
 	cpu->n_translated_instrs ++;
 	cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
 }
@@ -1249,7 +1259,10 @@ X(to_be_translated)
 			ic->f = instr(j);
 			break;
 		case HI6_JAL:
-			ic->f = instr(jal);
+			if (cpu->machine->show_trace_tree)
+				ic->f = instr(jal_trace);
+			else
+				ic->f = instr(jal);
 			break;
 		}
 		ic->arg[0] = (iword & 0x03ffffff) << 2;

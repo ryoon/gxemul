@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.69 2006-03-12 10:30:35 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.70 2006-03-15 20:34:05 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -174,11 +174,16 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 
-	if (single_step || cpu->machine->instruction_trace) {
+	if (single_step || cpu->machine->instruction_trace
+	    || cpu->machine->register_dump) {
 		/*
 		 *  Single-step:
 		 */
 		struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic;
+		if (cpu->machine->register_dump) {
+			debug("\n");
+			cpu_register_dump(cpu->machine, cpu, 1, 0x1);
+		}
 		if (cpu->machine->instruction_trace) {
 #ifdef DYNTRANS_X86
 			unsigned char instr[17];

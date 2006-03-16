@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.19 2006-03-15 20:50:33 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.20 2006-03-16 05:32:04 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -825,7 +825,9 @@ X(b_samepage_addiu)
 
 X(end_of_page)
 {
+#if 0
 	struct mips_instr_call self;
+#endif
 
 	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
@@ -845,8 +847,11 @@ X(end_of_page)
 	}
 
 	/*  Tricky situation; the delay slot is on the next virtual page:  */
-	/*  fatal("[ end_of_page: delay slot across page boundary! ]\n");  */
+	fatal("[ end_of_page: delay slot across page boundary! ]\n");
+	fatal("TODO\n");
+	exit(1);
 
+#if 0
 	/*  to_be_translated will overwrite the current ic.  */
 	self = *ic;
 
@@ -862,6 +867,7 @@ X(end_of_page)
 	*ic = self;
 
 	/*  fatal("[ end_of_page: back from delay slot ]\n");  */
+#endif
 }
 
 

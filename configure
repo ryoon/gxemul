@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.205 2006-03-16 05:36:56 debug Exp $
+#  $Id: configure,v 1.206 2006-03-16 05:45:34 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -86,7 +86,7 @@ else
 fi
 
 if [ z"$UNSTABLE" = zYES ]; then
-	printf "###  DEVELOPMENT (UNSTABLE)\n\n"
+	printf "###\n###  DEVELOPMENT (UNSTABLE)\n###\n\n"
 fi
 
 if [ z"$*" != z ]; then
@@ -112,14 +112,8 @@ if [ z"$*" != z ]; then
 			NEWMIPS=NO
 		else if [ z$a = z--enable-newmips ]; then
 			NEWMIPS=YES
-		else if [ z$a = z--disable-1k-pages ]; then
-			ONEKPAGE=NO
-		else if [ z$a = z--enable-1k-pages ]; then
-			ONEKPAGE=YES
 		else if [ z$a = z--help ]; then
-			echo "usage: $0 [options]"
-
-			printf "\nGeneral options:\n\n"
+			printf "usage: $0 [options]\n\n"
 
 			echo "  --disable-bintrans  configure without the" \
 			    "old binary translation subsystem,"
@@ -127,28 +121,26 @@ if [ z"$*" != z ]; then
 			    "supports it"
 			echo "  --disable-x         don't include X11 support"
 
-			printf "\nDevelopment (debug) options:\n\n"
+			if [ z"$UNSTABLE" = zYES ]; then
+				printf "\nAdditional Development (debug) "
+				printf "options:\n\n"
 
-			printf "  --enable-caches    enable cache emulation"
-			printf " (BUGGY)\n"
-			echo "  --enable-delays    enable instruction" \
-			    "latency/delay emulation"
+				printf "  --enable-caches    enable cache "
+				printf "emulation (BUGGY, TO BE REMOVED)\n"
+				echo "  --enable-delays    enable instruction" \
+				    "latency/delay emulation (TO BE REMOVED)"
 
-			echo "  --enable-newmips   use new MIPS dyntrans code"
-			#printf "  --enable-1k-pages  allow 1KB dyntrans pages"
-			#printf " (default: 4KB)\n"
-
-			printf "\n(Pretty much all of these options are only"
-			printf " meaningful during the development of\nthe"
-			printf " emulator, and should not be used when "
-			printf "compiling a stable version.)\n"
+				printf "  --enable-newmips   use new MIPS "
+				echo "dyntrans code"
+			fi
+			echo
 			exit
 		else
 			echo "Invalid option: $a"
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -256,16 +248,6 @@ fi
 if [ z$DELAYS = zYES ]; then
 	echo 'Enabling Instruction delay/latency emulation.'
 	printf "#define ENABLE_INSTRUCTION_DELAYS\n" >> config.h
-fi
-
-
-#  1KB page emulation:
-if [ z$ONEKPAGE = zYES ]; then
-	echo '1 KB pages: not yet.'
-	exit
-	echo 'Enabling 1 KB page dyntrans support. (NOTE:' \
-	    'This slows down everything.)'
-	printf "#define ONEKPAGE\n" >> config.h
 fi
 
 

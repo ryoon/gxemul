@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.21 2006-03-16 18:48:03 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.22 2006-03-16 18:56:13 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -573,6 +573,17 @@ X(xori) { reg(ic->arg[1]) = reg(ic->arg[0]) ^ (int32_t)ic->arg[2]; }
 /*
  *  2-register:
  */
+X(div)
+{
+	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	int32_t res, rem;
+	if (b == 0)
+		res = 0, rem = 0;
+	else
+		res = a / b, rem = a % b;
+	reg(&cpu->cd.mips.lo) = res;
+	reg(&cpu->cd.mips.hi) = rem;
+}
 X(divu)
 {
 	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
@@ -1079,6 +1090,7 @@ X(to_be_translated)
 		case SPECIAL_MFLO:
 		case SPECIAL_MTHI:
 		case SPECIAL_MTLO:
+		case SPECIAL_DIV:
 		case SPECIAL_DIVU:
 		case SPECIAL_DDIVU:
 		case SPECIAL_MULT:
@@ -1099,6 +1111,7 @@ X(to_be_translated)
 			case SPECIAL_MFLO:  ic->f = instr(mov); break;
 			case SPECIAL_MTHI:  ic->f = instr(mov); break;
 			case SPECIAL_MTLO:  ic->f = instr(mov); break;
+			case SPECIAL_DIV:   ic->f = instr(div); break;
 			case SPECIAL_DIVU:  ic->f = instr(divu); break;
 			case SPECIAL_DDIVU: ic->f = instr(ddivu); x64=1; break;
 			case SPECIAL_MULT : ic->f = instr(mult); break;
@@ -1403,17 +1416,17 @@ X(to_be_translated)
 	case HI6_SD:
 		size = 2; signedness = 0; store = 0;
 		switch (main_opcode) {
-		case HI6_LB: size = 0; signedness = 1; break;
-		case HI6_LBU:size = 0; break;
-		case HI6_LW: signedness = 1; break;
+		case HI6_LB:  size = 0; signedness = 1; break;
+		case HI6_LBU: size = 0; break;
+		case HI6_LH:  size = 1; signedness = 1; break;
+		case HI6_LHU: size = 1; break;
+		case HI6_LW:  signedness = 1; break;
 		case HI6_LWU: break;
-		case HI6_LH: size = 2; signedness = 1; break;
-		case HI6_LHU:size = 2; break;
-		case HI6_LD: size = 3;  break;
-		case HI6_SB: store = 1; size = 0; break;
-		case HI6_SH: store = 1; size = 1; break;
-		case HI6_SW: store = 1; break;
-		case HI6_SD: store = 1; size = 3; break;
+		case HI6_LD:  size = 3;  break;
+		case HI6_SB:  store = 1; size = 0; break;
+		case HI6_SH:  store = 1; size = 1; break;
+		case HI6_SW:  store = 1; break;
+		case HI6_SD:  store = 1; size = 3; break;
 		}
 		ic->f =
 #ifdef MODE32

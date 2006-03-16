@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.20 2006-03-16 05:32:04 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.21 2006-03-16 18:48:03 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -549,6 +549,16 @@ X(jal_trace)
 
 
 /*
+ *  cache:  Cache operation.
+ */
+X(cache)
+{
+	/*  TODO. For now, just clear the rmw bit:  */
+	cpu->cd.mips.rmw = 0;
+}
+
+
+/*
  *  2-register + immediate:
  *
  *  arg[0] = pointer to rs
@@ -573,6 +583,17 @@ X(divu)
 		res = a / b, rem = a % b;
 	reg(&cpu->cd.mips.lo) = (int32_t)res;
 	reg(&cpu->cd.mips.hi) = (int32_t)rem;
+}
+X(ddivu)
+{
+	uint64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	uint64_t res, rem;
+	if (b == 0)
+		res = 0, rem = 0;
+	else
+		res = a / b, rem = a % b;
+	reg(&cpu->cd.mips.lo) = res;
+	reg(&cpu->cd.mips.hi) = rem;
 }
 X(mult)
 {
@@ -606,7 +627,7 @@ exit(1);
 X(addu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) + reg(ic->arg[1])); }
 X(subu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) - reg(ic->arg[1])); }
 X(daddu){ reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
-X(dsubu){ reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
+X(dsubu){ reg(ic->arg[2]) = reg(ic->arg[0]) - reg(ic->arg[1]); }
 X(slt) {
 #ifdef MODE32
 	reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) < (int32_t)reg(ic->arg[1]);
@@ -1059,6 +1080,7 @@ X(to_be_translated)
 		case SPECIAL_MTHI:
 		case SPECIAL_MTLO:
 		case SPECIAL_DIVU:
+		case SPECIAL_DDIVU:
 		case SPECIAL_MULT:
 		case SPECIAL_MULTU:
 		case SPECIAL_TEQ:
@@ -1077,7 +1099,8 @@ X(to_be_translated)
 			case SPECIAL_MFLO:  ic->f = instr(mov); break;
 			case SPECIAL_MTHI:  ic->f = instr(mov); break;
 			case SPECIAL_MTLO:  ic->f = instr(mov); break;
-			case SPECIAL_DIVU : ic->f = instr(divu); break;
+			case SPECIAL_DIVU:  ic->f = instr(divu); break;
+			case SPECIAL_DDIVU: ic->f = instr(ddivu); x64=1; break;
 			case SPECIAL_MULT : ic->f = instr(mult); break;
 			case SPECIAL_MULTU: ic->f = instr(multu); break;
 			case SPECIAL_TEQ:   ic->f = instr(teq); break;
@@ -1374,6 +1397,7 @@ X(to_be_translated)
 	case HI6_LHU:
 	case HI6_SH:
 	case HI6_LW:
+	case HI6_LWU:
 	case HI6_SW:
 	case HI6_LD:
 	case HI6_SD:
@@ -1401,6 +1425,11 @@ X(to_be_translated)
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;
+		break;
+
+	case HI6_CACHE:
+		/*  TODO: rt and op etc...  */
+		ic->f = instr(cache);
 		break;
 
 	default:goto bad;

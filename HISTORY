@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1148 2006-03-16 05:36:55 debug Exp $
+$Id: HISTORY,v 1.1149 2006-03-16 18:48:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2604,3 +2604,4 @@ Changelog for GXemul:
 		beql, bnel, slti[u], various loads and stores).
 20060316	Removing the ALWAYS_SIGNEXTEND_32 option, since it was rarely
 		used.
+		Adding more MIPS dyntrans instructions, and fixing bugs.

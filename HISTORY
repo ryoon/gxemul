@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1147 2006-03-15 20:50:33 debug Exp $
+$Id: HISTORY,v 1.1148 2006-03-16 05:36:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2602,3 +2602,5 @@ Changelog for GXemul:
 		instructions, etc).
 20060315	Adding more instructions (sllv, srav, srlv, bgtz[l], blez[l],
 		beql, bnel, slti[u], various loads and stores).
+20060316	Removing the ALWAYS_SIGNEXTEND_32 option, since it was rarely
+		used.

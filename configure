@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.204 2006-03-09 05:26:44 debug Exp $
+#  $Id: configure,v 1.205 2006-03-16 05:36:56 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -94,8 +94,6 @@ if [ z"$*" != z ]; then
 	for a in $*; do
 		if [ z$a = z--disable-x ]; then
 			NOX11=YES
-		else if [ z$a = z--always32 ]; then
-			ALWAYS32=YES
 		else if [ z$a = z--tracenull ]; then
 			TRACENULL=YES
 		else if [ z$a = z--disable-bintrans ]; then
@@ -131,8 +129,6 @@ if [ z"$*" != z ]; then
 
 			printf "\nDevelopment (debug) options:\n\n"
 
-			echo "  --always32         enable ALWAYS_SIGNEXTEND_32"\
-			    "(for hunting down 32-bit bugs)"
 			printf "  --enable-caches    enable cache emulation"
 			printf " (BUGGY)\n"
 			echo "  --enable-delays    enable instruction" \
@@ -152,7 +148,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -260,14 +256,6 @@ fi
 if [ z$DELAYS = zYES ]; then
 	echo 'Enabling Instruction delay/latency emulation.'
 	printf "#define ENABLE_INSTRUCTION_DELAYS\n" >> config.h
-fi
-
-
-#  Development option: ALWAYS_SIGNEXTEND_32
-if [ z$ALWAYS32 = zYES ]; then
-	echo 'Enabling ALWAYS_SIGNEXTEND_32. (NOTE:' \
-	    'This slows down everything.)'
-	printf "#define ALWAYS_SIGNEXTEND_32\n" >> config.h
 fi
 
 

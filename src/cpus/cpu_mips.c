@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.21 2006-03-12 10:30:35 debug Exp $
+ *  $Id: cpu_mips.c,v 1.22 2006-03-16 05:36:57 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2090,94 +2090,6 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 10;
 		}
 	}
-
-#ifdef ALWAYS_SIGNEXTEND_32
-	/*
-	 *  An extra check for 32-bit mode to make sure that all
-	 *  registers are sign-extended:   (Slow, but might be useful
-	 *  to detect bugs that have to do with sign-extension.)
-	 */
-	if (cpu->is_32bit) {
-		int warning = 0;
-		uint64_t x;
-
-		if (cpu->cd.mips.gpr[0] != 0) {
-			fatal("\nWARNING: r0 was not zero! (%016llx)\n\n",
-			    (long long)cpu->cd.mips.gpr[0]);
-			cpu->cd.mips.gpr[0] = 0;
-			warning = 1;
-		}
-
-		if (cpu->pc != (int64_t)(int32_t)cpu->pc) {
-			fatal("\nWARNING: pc was not sign-extended correctly"
-			    " (%016llx)\n\n", (long long)cpu->pc);
-			cpu->pc = (int64_t)(int32_t)cpu->pc;
-			warning = 1;
-		}
-
-		if (cpu->cd.mips.pc_last != (int64_t)(int32_t)cpu->cd.mips.pc_last) {
-			fatal("\nWARNING: pc_last was not sign-extended correc"
-			    "tly (%016llx)\n\n", (long long)cpu->cd.mips.pc_last);
-			cpu->cd.mips.pc_last = (int64_t)(int32_t)cpu->cd.mips.pc_last;
-			warning = 1;
-		}
-
-		/*  Sign-extend ALL registers, including coprocessor registers and tlbs:  */
-		for (i=1; i<32; i++) {
-			x = cpu->cd.mips.gpr[i];
-			cpu->cd.mips.gpr[i] &= 0xffffffff;
-			if (cpu->cd.mips.gpr[i] & 0x80000000ULL)
-				cpu->cd.mips.gpr[i] |= 0xffffffff00000000ULL;
-			if (x != cpu->cd.mips.gpr[i]) {
-				fatal("\nWARNING: r%i (%s) was not sign-"
-				    "extended correctly (%016llx != "
-				    "%016llx)\n\n", i, regname(cpu->machine, i),
-				    (long long)x, (long long)cpu->cd.mips.gpr[i]);
-				warning = 1;
-			}
-		}
-		for (i=0; i<32; i++) {
-			x = cpu->cd.mips.coproc[0]->reg[i];
-			cpu->cd.mips.coproc[0]->reg[i] &= 0xffffffffULL;
-			if (cpu->cd.mips.coproc[0]->reg[i] & 0x80000000ULL)
-				cpu->cd.mips.coproc[0]->reg[i] |=
-				    0xffffffff00000000ULL;
-			if (x != cpu->cd.mips.coproc[0]->reg[i]) {
-				fatal("\nWARNING: cop0,r%i was not sign-extended correctly (%016llx != %016llx)\n\n",
-				    i, (long long)x, (long long)cpu->cd.mips.coproc[0]->reg[i]);
-				warning = 1;
-			}
-		}
-		for (i=0; i<cpu->cd.mips.coproc[0]->nr_of_tlbs; i++) {
-			x = cpu->cd.mips.coproc[0]->tlbs[i].hi;
-			cpu->cd.mips.coproc[0]->tlbs[i].hi &= 0xffffffffULL;
-			if (cpu->cd.mips.coproc[0]->tlbs[i].hi & 0x80000000ULL)
-				cpu->cd.mips.coproc[0]->tlbs[i].hi |=
-				    0xffffffff00000000ULL;
-			if (x != cpu->cd.mips.coproc[0]->tlbs[i].hi) {
-				fatal("\nWARNING: tlb[%i].hi was not sign-extended correctly (%016llx != %016llx)\n\n",
-				    i, (long long)x, (long long)cpu->cd.mips.coproc[0]->tlbs[i].hi);
-				warning = 1;
-			}
-
-			x = cpu->cd.mips.coproc[0]->tlbs[i].lo0;
-			cpu->cd.mips.coproc[0]->tlbs[i].lo0 &= 0xffffffffULL;
-			if (cpu->cd.mips.coproc[0]->tlbs[i].lo0 & 0x80000000ULL)
-				cpu->cd.mips.coproc[0]->tlbs[i].lo0 |=
-				    0xffffffff00000000ULL;
-			if (x != cpu->cd.mips.coproc[0]->tlbs[i].lo0) {
-				fatal("\nWARNING: tlb[%i].lo0 was not sign-extended correctly (%016llx != %016llx)\n\n",
-				    i, (long long)x, (long long)cpu->cd.mips.coproc[0]->tlbs[i].lo0);
-				warning = 1;
-			}
-		}
-
-		if (warning) {
-			fatal("Halting. pc = %016llx\n", (long long)cpu->pc);
-			cpu->running = 0;
-		}
-	}
-#endif
 
 #ifdef HALT_IF_PC_ZERO
 	/*  Halt if PC = 0:  */

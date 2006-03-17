@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.22 2006-03-16 18:56:13 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.23 2006-03-17 05:30:56 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -60,7 +60,7 @@ X(invalid)
  */
 X(invalid_32_64)
 {
-	fatal("invalid_32_64: TODO\n");
+	fatal("invalid_32_64: TODO: cause an exception\n");
 	exit(1);
 }
 
@@ -1414,6 +1414,7 @@ X(to_be_translated)
 	case HI6_SW:
 	case HI6_LD:
 	case HI6_SD:
+		/*  TODO: LWU should probably also be x64=1?  */
 		size = 2; signedness = 0; store = 0;
 		switch (main_opcode) {
 		case HI6_LB:  size = 0; signedness = 1; break;
@@ -1422,11 +1423,11 @@ X(to_be_translated)
 		case HI6_LHU: size = 1; break;
 		case HI6_LW:  signedness = 1; break;
 		case HI6_LWU: break;
-		case HI6_LD:  size = 3;  break;
+		case HI6_LD:  size = 3; x64 = 1; break;
 		case HI6_SB:  store = 1; size = 0; break;
 		case HI6_SH:  store = 1; size = 1; break;
 		case HI6_SW:  store = 1; break;
-		case HI6_SD:  store = 1; size = 3; break;
+		case HI6_SD:  store = 1; size = 3; x64 = 1; break;
 		}
 		ic->f =
 #ifdef MODE32

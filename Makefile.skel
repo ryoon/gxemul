@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.38 2006-02-25 16:26:59 debug Exp $
+#  $Id: Makefile.skel,v 1.39 2006-03-17 05:40:02 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -17,7 +17,7 @@ build:
 docs:
 	cd doc; $(MAKE); cd ..
 
-install: build
+install: build docs
 	@echo
 	@echo "There is no automatic 'make install'. You need to manually copy the gxemul"
 	@echo "binary and any other files you need to where you want them to reside. The man/"

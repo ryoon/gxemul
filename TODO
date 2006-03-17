@@ -1,4 +1,4 @@
-$Id: TODO,v 1.225 2006-03-16 05:45:34 debug Exp $
+$Id: TODO,v 1.226 2006-03-17 05:40:02 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -8,25 +8,31 @@ Unused configure options:
 	    into a runtime command line option?
 
 Dyntrans:
+	x)  Old MIPS -> dyntrans!
 	x)  64-bit vmspaces:
 		o)  optimize for the 32-bit case.
 		o)  Implementations for MIPS, PPC, Alpha etc.
-		o)  endianness, alignment check
+		o)  endianness, alignment checks, unaligned loads/stores,
+			lengths, ...
 	x)  Delay slots!
-	x)  Old MIPS -> dyntrans!
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
-	x)  better (meaningful) instr call statistics
+	x)  better (formally defined) instr call statistics, multiple
+	    different types? (virtual pc, physical pc)
 	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
 	x)  PPC optimizations; instr combs
-	x)  Alpha
-	x)  SPARC
-	x)  PPC (64-bit stuff)
+	x)  Alpha: virtual memory management
+	x)  SPARC: everything
+	x)  PPC: 64-bit stuff
+	x)  H8?
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
+	x)  Remove the dyntrans_alignment_check functionality; although
+	    it gives slightly higher peformance sometimes, is increases
+	    the complexity of the code too much!
 
 Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
 	Add interrupt controller in dev_algor.c.
@@ -44,7 +50,9 @@ Cache simulation:
 	o)  Instruction cache emulation is easiest (if separate from the
 	    data cache); similar hack as the S;I; hack in cpu_dyntrans.c.
 	o)  Data cache emulation = harder; each arch's load/store routines
-	    must include support?
+	    must include support? running one instruction at a time and
+	    having a cpu-dependant lookup function for each instruction
+	    is another option (but very very slow).
 
 Documentation:
 	o)  Automagic documentation generation:

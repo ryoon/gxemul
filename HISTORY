@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1149 2006-03-16 18:48:02 debug Exp $
+$Id: HISTORY,v 1.1150 2006-03-18 11:33:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2605,3 +2605,5 @@ Changelog for GXemul:
 20060316	Removing the ALWAYS_SIGNEXTEND_32 option, since it was rarely
 		used.
 		Adding more MIPS dyntrans instructions, and fixing bugs.
+20060318	Implementing fast stores for MIPS dyntrans (big/little endian,
+		32-bit and 64-bit modes).

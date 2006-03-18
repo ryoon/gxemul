@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.2 2006-03-15 19:22:56 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.3 2006-03-18 11:33:33 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -36,8 +36,8 @@
  *  The GENERIC function always checks for alignment, and supports both big
  *  and little endian byte order.
  *
- *  The quick function is included multiple times (alignment check on/off,
- *  big/little endian) for each GENERIC function.
+ *  The quick function is included twice (big/little endian) for each
+ *  GENERIC function.
  */
 
 
@@ -98,9 +98,85 @@ void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
 
 void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 {
-/*	uint64_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];  */
+	unsigned char *p;
+#ifdef MODE32
+	uint32_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	p = cpu->cd.mips.host_load[addr >> 12];
+#else
+	uint64_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+	uint32_t x1, x2, x3;
+	struct DYNTRANS_L2_64_TABLE *l2;
+	struct DYNTRANS_L3_64_TABLE *l3;
 
-	/*  TEMPORARY:  */
+	x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
+	x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+	x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N)) & mask3;
+	/*  fatal("X3: addr=%016llx x1=%x x2=%x x3=%x\n", (long long)addr,
+	    (int)x1, (int)x2, (int)x3);  */
+	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
+	/*  fatal("  l2 = %p\n", l2);  */
+	l3 = l2->l3[x2];
+	/*  fatal("  l3 = %p\n", l3);  */
+	p = l3->host_load[x3];
+	/*  fatal("  p = %p\n", p);  */
+#endif
+
+	if (p == NULL
+#ifndef LS_1
+	    || addr & (LS_SIZE - 1)
+#endif
+	    ) {
+		LS_GENERIC_N(cpu, ic);
+		return;
+	}
+
+	addr &= 0xfff;
+
+#ifdef LS_LOAD
+	/*  Load:  */
+
 	LS_GENERIC_N(cpu, ic);
+
+#else
+	/*  Store: */
+
+#ifdef LS_1
+	p[addr] = reg(ic->arg[0]);
+#endif
+#ifdef LS_2
+	{ uint32_t x = reg(ic->arg[0]);
+#ifdef LS_BE
+	p[addr] = x >> 8; p[addr+1] = x; }
+#else
+	p[addr] = x; p[addr+1] = x >> 8; }
+#endif
+#endif  /*  LS_2  */
+#ifdef LS_4
+	{ uint32_t x = reg(ic->arg[0]);
+#ifdef LS_BE
+	p[addr] = x >> 24; p[addr+1] = x >> 16; 
+	p[addr+2] = x >> 8; p[addr+3] = x; }
+#else
+	p[addr] = x; p[addr+1] = x >> 8; 
+	p[addr+2] = x >> 16; p[addr+3] = x >> 24; }
+#endif
+#endif  /*  LS_4  */
+#ifdef LS_8
+	{ uint64_t x = *(uint64_t *)(ic->arg[0]);
+#ifdef LS_BE
+	p[addr]   = x >> 56; p[addr+1] = x >> 48; p[addr+2] = x >> 40;
+	p[addr+3] = x >> 32; p[addr+4] = x >> 24; p[addr+5] = x >> 16;
+	p[addr+6] = x >> 8;  p[addr+7] = x; }
+#else
+	p[addr]   = x;       p[addr+1] = x >>  8; p[addr+2] = x >> 16;
+	p[addr+3] = x >> 24; p[addr+4] = x >> 32; p[addr+5] = x >> 40;
+	p[addr+6] = x >> 48; p[addr+7] = x >> 56; }
+#endif
+#endif	/*  LS_8  */
+
+#endif	/*  store  */
 }
 

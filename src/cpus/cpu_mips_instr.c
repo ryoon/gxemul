@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.23 2006-03-17 05:30:56 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.24 2006-03-18 11:33:32 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1435,7 +1435,8 @@ X(to_be_translated)
 #else
 		    mips_loadstore
 #endif
-		    [store * 8 + size * 2 + signedness];
+		    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16)
+		    + store * 8 + size * 2 + signedness];
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;

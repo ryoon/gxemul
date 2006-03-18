@@ -25,14 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_mips_loadstore.c,v 1.1 2006-02-25 12:55:20 debug Exp $
+ *  $Id: generate_mips_loadstore.c,v 1.2 2006-03-18 11:33:33 debug Exp $
  */
 
 #include <stdio.h>
 #include <string.h>
 
 
-void print_function_name(int store, int size, int signedness)
+void print_function_name(int store, int size, int signedness, int endianness)
 {
 	if (store)
 		printf("s");
@@ -42,10 +42,12 @@ void print_function_name(int store, int size, int signedness)
 			printf("u");
 	}
 	printf("%i", 1 << size);
+	if (endianness >= 0)
+		printf(endianness? "_be" : "_le");
 }
 
 
-void loadstore(int mode32, int store, int size, int signedness)
+void loadstore(int mode32, int store, int size, int signedness, int endianness)
 {
 	if (store && signedness)
 		return;
@@ -58,11 +60,11 @@ void loadstore(int mode32, int store, int size, int signedness)
 		printf("#define LS_LOAD\n");
 
 	printf("#define LS_N mips%s_instr_", mode32? "32" : "");
-	print_function_name(store, size, signedness);
+	print_function_name(store, size, signedness, endianness);
 	printf("\n");
 
 	printf("#define LS_GENERIC_N mips%s_generic_", mode32? "32" : "");
-	print_function_name(store, size, signedness);
+	print_function_name(store, size, signedness, -1);
 	printf("\n");
 
 	printf("#define LS_%i\n", 1 << size);
@@ -71,9 +73,23 @@ void loadstore(int mode32, int store, int size, int signedness)
 	if (signedness && !store)
 		printf("#define LS_SIGNED\n");
 
-	printf("#define LS_INCLUDE_GENERIC\n");
+	if (endianness)
+		printf("#define LS_BE\n");
+	else
+		printf("#define LS_LE\n");
+
+	if (endianness == 0)
+		printf("#define LS_INCLUDE_GENERIC\n");
+
 	printf("#include \"cpu_mips_instr_loadstore.c\"\n");
-	printf("#undef LS_INCLUDE_GENERIC\n");
+
+	if (endianness == 0)
+		printf("#undef LS_INCLUDE_GENERIC\n");
+
+	if (endianness)
+		printf("#undef LS_BE\n");
+	else
+		printf("#undef LS_LE\n");
 
 	if (signedness && !store)
 		printf("#undef LS_SIGNED\n");
@@ -95,24 +111,27 @@ void loadstore(int mode32, int store, int size, int signedness)
 
 int main(int argc, char *argv[])
 {
-	int store, mode32, size, signedness;
+	int store, mode32, size, signedness, endianness;
 
 	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
 
 	for (mode32=0; mode32<=1; mode32++)
-	    for (store=0; store<=1; store++)
+	    for (endianness=0; endianness<=1; endianness++)
+	      for (store=0; store<=1; store++)
 		for (size=0; size<=3; size++)
 		    for (signedness=0; signedness<=1; signedness++)
-			loadstore(mode32, store, size, signedness);
+			loadstore(mode32, store, size, signedness,
+			    endianness);
 
 	for (mode32=0; mode32<=1; mode32++) {
 		printf("#if%sdef MODE32\n", mode32? "" : "n");
-		printf("\n\nvoid (*mips%s_loadstore[16])(struct cpu *, struct "
+		printf("\n\nvoid (*mips%s_loadstore[32])(struct cpu *, struct "
 		    "mips_instr_call *) = {\n", mode32? "32" : "");
-		for (store=0; store<=1; store++)
-		    for (size=0; size<=3; size++)
-			for (signedness=0; signedness<=1; signedness++) {
-				if (store || size || signedness)
+		for (endianness=0; endianness<=1; endianness++)
+		   for (store=0; store<=1; store++)
+		      for (size=0; size<=3; size++)
+			  for (signedness=0; signedness<=1; signedness++) {
+				if (store || size || signedness || endianness)
 					printf(",\n");
 
 				if (store && signedness) {
@@ -122,7 +141,8 @@ int main(int argc, char *argv[])
 				}
 
 				printf("\tmips%s_instr_", mode32? "32" : "");
-				print_function_name(store, size, signedness);
+				print_function_name(store, size, signedness,
+				    endianness);
 			}
 		printf(" };\n");
 		printf("#endif\n");

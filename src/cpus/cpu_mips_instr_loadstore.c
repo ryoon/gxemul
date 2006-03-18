@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.3 2006-03-18 11:33:33 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.4 2006-03-18 12:03:17 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -138,7 +138,54 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 #ifdef LS_LOAD
 	/*  Load:  */
 
-	LS_GENERIC_N(cpu, ic);
+#ifdef LS_1
+	reg(ic->arg[0]) =
+#ifdef LS_SIGNED
+	    (int8_t)
+#endif
+	    p[addr];
+#endif	/*  LS_1  */
+
+#ifdef LS_2
+	reg(ic->arg[0]) =
+#ifdef LS_SIGNED
+	    (int16_t)
+#endif
+#ifdef LS_BE
+	    ((p[addr]<<8) + p[addr+1]);
+#else
+	    (p[addr] + (p[addr+1]<<8));
+#endif
+#endif	/*  LS_2  */
+
+#ifdef LS_4
+	reg(ic->arg[0]) =
+#ifdef LS_SIGNED
+	    (int32_t)
+#else
+	    (uint32_t)
+#endif
+#ifdef LS_BE
+	    ((p[addr]<<24) + (p[addr+1]<<16) + (p[addr+2]<<8) + p[addr+3]);
+#else
+	    (p[addr] + (p[addr+1]<<8) + (p[addr+2]<<16) + (p[addr+3]<<24));
+#endif
+#endif	/*  LS_4  */
+
+#ifdef LS_8
+	*((uint64_t *)ic->arg[0]) =
+#ifdef LS_BE
+	    ((uint64_t)p[addr] << 56) + ((uint64_t)p[addr+1] << 48) +
+	    ((uint64_t)p[addr+2] << 40) + ((uint64_t)p[addr+3] << 32) +
+	    ((uint64_t)p[addr+4] << 24) +
+	    (p[addr+5] << 16) + (p[addr+6] << 8) + p[addr+7];
+#else
+	    p[addr+0] + (p[addr+1] << 8) + (p[addr+2] << 16) +
+	    ((uint64_t)p[addr+3] << 24) + ((uint64_t)p[addr+4] << 32) +
+	    ((uint64_t)p[addr+5] << 40) + ((uint64_t)p[addr+6] << 48) +
+	    ((uint64_t)p[addr+7] << 56);
+#endif
+#endif	/*  LS_8  */
 
 #else
 	/*  Store: */

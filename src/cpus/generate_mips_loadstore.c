@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_mips_loadstore.c,v 1.2 2006-03-18 11:33:33 debug Exp $
+ *  $Id: generate_mips_loadstore.c,v 1.3 2006-03-18 12:03:17 debug Exp $
  */
 
 #include <stdio.h>
@@ -42,14 +42,24 @@ void print_function_name(int store, int size, int signedness, int endianness)
 			printf("u");
 	}
 	printf("%i", 1 << size);
-	if (endianness >= 0)
-		printf(endianness? "_be" : "_le");
+
+	if (endianness >= 0) {
+		/*  Special case so that Byte loads/stores are only
+		    included ones (for little endian):  */
+		if (size == 0 && endianness)
+			printf("_le");
+		else
+			printf(endianness? "_be" : "_le");
+	}
 }
 
 
 void loadstore(int mode32, int store, int size, int signedness, int endianness)
 {
 	if (store && signedness)
+		return;
+
+	if (size == 0 && endianness)
 		return;
 
 	printf("#if%sdef MODE32\n", mode32? "" : "n");

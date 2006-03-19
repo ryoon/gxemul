@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.68 2006-03-05 16:51:55 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.69 2006-03-19 19:52:15 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2477,7 +2477,7 @@ X(stfdx)
  */
 X(tlbia)
 {
-	printf("[ tlbia ]\n");
+	fatal("[ tlbia ]\n");
 	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
@@ -2487,6 +2487,7 @@ X(tlbia)
  */
 X(tlbie)
 {
+	/*  fatal("[ tlbie ]\n");  */
 	cpu->invalidate_translation_caches(cpu, reg(ic->arg[0]),
 	    INVALIDATE_VADDR);
 }

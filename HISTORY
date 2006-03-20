@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1151 2006-03-18 12:03:16 debug Exp $
+$Id: HISTORY,v 1.1152 2006-03-20 04:38:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2607,3 +2607,5 @@ Changelog for GXemul:
 		Adding more MIPS dyntrans instructions, and fixing bugs.
 20060318	Implementing fast loads/stores for MIPS dyntrans (big/little
 		endian, 32-bit and 64-bit modes).
+20060320	Making MIPS dyntrans the default configure option; use
+		"--enable-oldmips" to use the old bintrans system.

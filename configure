@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.206 2006-03-16 05:45:34 debug Exp $
+#  $Id: configure,v 1.207 2006-03-20 04:38:27 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -78,7 +78,7 @@ else
 	ENABLEIA64=YES
 	ENABLEM68K=YES
 	ENABLEMIPS=YES
-	NEWMIPS=NO
+	OLDMIPS=NO
 	ENABLEPPC=YES
 	ENABLESH=YES
 	ENABLESPARC=YES
@@ -108,10 +108,10 @@ if [ z"$*" != z ]; then
 			CACHES=NO
 		else if [ z$a = z--enable-caches ]; then
 			CACHES=YES
-		else if [ z$a = z--disable-newmips ]; then
-			NEWMIPS=NO
-		else if [ z$a = z--enable-newmips ]; then
-			NEWMIPS=YES
+		else if [ z$a = z--disable-oldmips ]; then
+			OLDMIPS=NO
+		else if [ z$a = z--enable-oldmips ]; then
+			OLDMIPS=YES
 		else if [ z$a = z--help ]; then
 			printf "usage: $0 [options]\n\n"
 
@@ -130,8 +130,8 @@ if [ z"$*" != z ]; then
 				echo "  --enable-delays    enable instruction" \
 				    "latency/delay emulation (TO BE REMOVED)"
 
-				printf "  --enable-newmips   use new MIPS "
-				echo "dyntrans code"
+				printf "  --enable-oldmips   use OLD MIPS "
+				echo "bintrans code"
 			fi
 			echo
 			exit
@@ -218,10 +218,13 @@ if [ z$ENABLEM68K = zYES ]; then
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
-	if [ z$NEWMIPS = zYES ]; then
+	if [ z$OLDMIPS = zNO ]; then
 		echo 'Enabling the _EXPERIMENTAL_ MIPS dyntrans code.'
 		echo
 		printf "#define EXPERIMENTAL_NEWMIPS\n" >> config.h
+	else
+		echo 'Disabling the EXPERIMENTAL MIPS dyntrans code.'
+		echo
 	fi
 	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore"
 fi

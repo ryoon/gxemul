@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.50 2006-02-19 08:04:11 debug Exp $
+.\" $Id: gxemul.1,v 1.51 2006-03-20 04:38:28 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -29,7 +29,7 @@
 .\" This is a minimal man page for GXemul. Process this file with
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd FEBRUARY 2006
+.Dd MARCH 2006
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -248,7 +248,10 @@ Use a random bootstrap cpu, instead of CPU nr 0. (For SMP experiments.)
 .It Fl r
 Dump register contents for every executed instruction.
 .It Fl S
-Initialize the emulated RAM to random data, instead of zeroes.
+Initialize emulated RAM to random data, instead of zeroes. This option
+is useful when trying to trigger bugs in a program that occur because the
+program assumed that uninitialized memory contains zeros. (Use with
+care.)
 .It Fl T
 Enter the single-step debugger on unimplemented memory accesses.
 .It Fl t

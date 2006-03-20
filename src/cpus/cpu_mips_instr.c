@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.24 2006-03-18 11:33:32 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.25 2006-03-20 20:37:47 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -620,6 +620,47 @@ X(multu)
 	reg(&cpu->cd.mips.lo) = (int32_t)res;
 	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
 }
+X(dmult)
+{
+	uint64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]), c = 0;
+	uint64_t hi = 0, lo = 0;
+	int i, neg = 0;
+	if (a >> 63)
+		neg = !neg, a = -a;
+	if (b >> 63)
+		neg = !neg, b = -b;
+	for (i=0; i<64; i++) {
+		if (a & 1) {
+			hi += c;
+			lo += b;
+		}
+		a >>= 1; c = (c << 1) | (b >> 63); b <<= 1;
+	}
+	if (neg) {
+		lo --;
+		if (lo >> 63)
+			hi --;
+		hi ^= (int64_t) -1;
+		lo ^= (int64_t) -1;
+	}
+	reg(&cpu->cd.mips.lo) = lo;
+	reg(&cpu->cd.mips.hi) = hi;
+}
+X(dmultu)
+{
+	uint64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]), c = 0;
+	uint64_t hi = 0, lo = 0;
+	int i;
+	for (i=0; i<64; i++) {
+		if (a & 1) {
+			hi += c;
+			lo += b;
+		}
+		a >>= 1; c = (c << 1) | (b >> 63); b <<= 1;
+	}
+	reg(&cpu->cd.mips.lo) = lo;
+	reg(&cpu->cd.mips.hi) = hi;
+}
 X(teq)
 {
 	MODE_uint_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
@@ -763,6 +804,8 @@ X(daddiu)
 {
 	reg(ic->arg[1]) = reg(ic->arg[0]) + (int32_t)ic->arg[2];
 }
+X(inc)  { reg(ic->arg[1]) ++; }
+X(dec)  { reg(ic->arg[1]) --; }
 
 
 /*
@@ -852,6 +895,20 @@ X(b_samepage_addiu)
 }
 
 
+/*
+ *  b_samepage_daddiu:
+ *
+ *  Combination of branch within the same page, followed by daddiu.
+ */
+X(b_samepage_daddiu)
+{
+	*(uint64_t *)ic[1].arg[1] = *(uint64_t *)ic[1].arg[0] +
+	    (int32_t)ic[1].arg[2];
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+}
+
+
 /*****************************************************************************/
 
 
@@ -924,6 +981,27 @@ void COMBINE(b_addiu)(struct cpu *cpu, struct mips_instr_call *ic,
 	}
 
 	/*  TODO: other branches that are followed by addiu should be here  */
+}
+
+
+/*
+ *  Combine: [Conditional] branch, followed by daddiu.
+ */
+void COMBINE(b_daddiu)(struct cpu *cpu, struct mips_instr_call *ic,
+	int low_addr)
+{
+	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
+	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
+
+	if (n_back < 1)
+		return;
+
+	if (ic[-1].f == instr(b_samepage)) {
+		ic[-1].f = instr(b_samepage_daddiu);
+		combined;
+	}
+
+	/*  TODO: other branches that are followed by daddiu should be here  */
 }
 
 
@@ -1095,6 +1173,8 @@ X(to_be_translated)
 		case SPECIAL_DDIVU:
 		case SPECIAL_MULT:
 		case SPECIAL_MULTU:
+		case SPECIAL_DMULT:
+		case SPECIAL_DMULTU:
 		case SPECIAL_TEQ:
 			switch (s6) {
 			case SPECIAL_ADDU:  ic->f = instr(addu); break;
@@ -1116,6 +1196,8 @@ X(to_be_translated)
 			case SPECIAL_DDIVU: ic->f = instr(ddivu); x64=1; break;
 			case SPECIAL_MULT : ic->f = instr(mult); break;
 			case SPECIAL_MULTU: ic->f = instr(multu); break;
+			case SPECIAL_DMULT: ic->f = instr(dmult); x64=1; break;
+			case SPECIAL_DMULTU:ic->f = instr(dmultu); x64=1; break;
 			case SPECIAL_TEQ:   ic->f = instr(teq); break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
@@ -1135,8 +1217,20 @@ X(to_be_translated)
 				ic->arg[2] = (size_t)&cpu->cd.mips.lo;
 				break;
 			}
-			/*  rd==0 => nop:  */
+			/*  Special cases:  */
 			switch (s6) {
+			case SPECIAL_ADDU:
+			case SPECIAL_DADDU:
+				if ((rs == MIPS_GPR_ZERO || rt == MIPS_GPR_ZERO)
+				    && (s6 == SPECIAL_DADDU || (s6 ==
+				    SPECIAL_ADDU && cpu->is_32bit))) {
+					ic->f = instr(mov);
+					if (rs == MIPS_GPR_ZERO) {
+						ic->arg[0] = (size_t)
+						    &cpu->cd.mips.gpr[rt];
+					}
+				}
+				break;
 			case SPECIAL_MTHI:
 			case SPECIAL_MTLO:
 			case SPECIAL_DIV:
@@ -1286,6 +1380,7 @@ X(to_be_translated)
 			ic->arg[2] = (int16_t)iword;
 		else
 			ic->arg[2] = (uint16_t)iword;
+
 		switch (main_opcode) {
 		case HI6_ADDIU:   ic->f = instr(addiu); break;
 		case HI6_SLTI:    ic->f = instr(slti); break;
@@ -1295,11 +1390,22 @@ X(to_be_translated)
 		case HI6_ORI:     ic->f = instr(ori); break;
 		case HI6_XORI:    ic->f = instr(xori); break;
 		}
+
+		if ((main_opcode == HI6_ADDIU && cpu->is_32bit) ||
+		    main_opcode == HI6_DADDIU) {
+			if (rs == rt && ic->arg[2] == 1)
+				ic->f = instr(inc);
+			if (rs == rt && ic->arg[2] == -1)
+				ic->f = instr(dec);
+		}
+
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 
 		if (ic->f == instr(addiu))
 			cpu->cd.mips.combination_check = COMBINE(b_addiu);
+		if (ic->f == instr(daddiu))
+			cpu->cd.mips.combination_check = COMBINE(b_daddiu);
 		break;
 
 	case HI6_LUI:

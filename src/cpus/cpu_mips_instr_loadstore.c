@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.5 2006-03-19 19:52:15 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.6 2006-03-20 20:37:47 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -160,9 +160,17 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 	    (int16_t)
 #endif
 #ifdef LS_BE
+#ifdef HOST_BIG_ENDIAN
+	    ( *(uint16_t *)(p + addr) );
+#else
 	    ((p[addr]<<8) + p[addr+1]);
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	    ( *(uint16_t *)(p + addr) );
 #else
 	    (p[addr] + (p[addr+1]<<8));
+#endif
 #endif
 #endif	/*  LS_2  */
 
@@ -174,24 +182,40 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 	    (uint32_t)
 #endif
 #ifdef LS_BE
+#ifdef HOST_BIG_ENDIAN
+	    ( *(uint32_t *)(p + addr) );
+#else
 	    ((p[addr]<<24) + (p[addr+1]<<16) + (p[addr+2]<<8) + p[addr+3]);
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	    ( *(uint32_t *)(p + addr) );
 #else
 	    (p[addr] + (p[addr+1]<<8) + (p[addr+2]<<16) + (p[addr+3]<<24));
+#endif
 #endif
 #endif	/*  LS_4  */
 
 #ifdef LS_8
 	*((uint64_t *)ic->arg[0]) =
 #ifdef LS_BE
+#ifdef HOST_BIG_ENDIAN
+	    ( *(uint64_t *)(p + addr) );
+#else
 	    ((uint64_t)p[addr] << 56) + ((uint64_t)p[addr+1] << 48) +
 	    ((uint64_t)p[addr+2] << 40) + ((uint64_t)p[addr+3] << 32) +
 	    ((uint64_t)p[addr+4] << 24) +
 	    (p[addr+5] << 16) + (p[addr+6] << 8) + p[addr+7];
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	    ( *(uint64_t *)(p + addr) );
 #else
 	    p[addr+0] + (p[addr+1] << 8) + (p[addr+2] << 16) +
 	    ((uint64_t)p[addr+3] << 24) + ((uint64_t)p[addr+4] << 32) +
 	    ((uint64_t)p[addr+5] << 40) + ((uint64_t)p[addr+6] << 48) +
 	    ((uint64_t)p[addr+7] << 56);
+#endif
 #endif
 #endif	/*  LS_8  */
 
@@ -204,31 +228,55 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 #ifdef LS_2
 	{ uint32_t x = reg(ic->arg[0]);
 #ifdef LS_BE
+#ifdef HOST_LITTLE_ENDIAN
+	*((uint16_t *)(p+addr)) = x; }
+#else
 	p[addr] = x >> 8; p[addr+1] = x; }
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	*((uint16_t *)(p+addr)) = x; }
 #else
 	p[addr] = x; p[addr+1] = x >> 8; }
+#endif
 #endif
 #endif  /*  LS_2  */
 #ifdef LS_4
 	{ uint32_t x = reg(ic->arg[0]);
 #ifdef LS_BE
+#ifdef HOST_BIG_ENDIAN
+	*((uint32_t *)(p+addr)) = x; }
+#else
 	p[addr] = x >> 24; p[addr+1] = x >> 16; 
 	p[addr+2] = x >> 8; p[addr+3] = x; }
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	*((uint32_t *)(p+addr)) = x; }
 #else
 	p[addr] = x; p[addr+1] = x >> 8; 
 	p[addr+2] = x >> 16; p[addr+3] = x >> 24; }
+#endif
 #endif
 #endif  /*  LS_4  */
 #ifdef LS_8
 	{ uint64_t x = *(uint64_t *)(ic->arg[0]);
 #ifdef LS_BE
+#ifdef HOST_BIG_ENDIAN
+	*((uint64_t *)(p+addr)) = x; }
+#else
 	p[addr]   = x >> 56; p[addr+1] = x >> 48; p[addr+2] = x >> 40;
 	p[addr+3] = x >> 32; p[addr+4] = x >> 24; p[addr+5] = x >> 16;
 	p[addr+6] = x >> 8;  p[addr+7] = x; }
+#endif
+#else
+#ifdef HOST_LITTLE_ENDIAN
+	*((uint64_t *)(p+addr)) = x; }
 #else
 	p[addr]   = x;       p[addr+1] = x >>  8; p[addr+2] = x >> 16;
 	p[addr+3] = x >> 24; p[addr+4] = x >> 32; p[addr+5] = x >> 40;
 	p[addr+6] = x >> 48; p[addr+7] = x >> 56; }
+#endif
 #endif
 #endif	/*  LS_8  */
 

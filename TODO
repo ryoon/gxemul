@@ -1,20 +1,22 @@
-$Id: TODO,v 1.227 2006-03-21 05:25:32 debug Exp $
+$Id: TODO,v 1.228 2006-03-21 05:35:17 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 Unused configure options:
 	x)  Remove the Cache option, since it is broken anyway.
 	x)  Remove the delay option, since it isn't really used. Turn
-	    into a runtime command line option?
+	    into a runtime command line option? Or enable this together
+	    with cache simulation?
 
 Dyntrans:
 	x)  Old MIPS -> dyntrans!
-	x)  64-bit vmspaces:
-		o)  optimize for the 32-bit case.
-		o)  Implementations for MIPS, PPC, Alpha etc.
-		o)  endianness, alignment checks, unaligned loads/stores,
-			lengths, ...
-	x)  Delay slots!
+		o)  Delay slots across page boundaries!
+		o)  Extra cpu family function, for detecting if an instruction
+		    has a delay slot! (Nicer disassembly while running.)
+		o)  Implement more instructions:
+			branches, coprocessor stuff, unaligned loads/stores
+		o)  PROM stuff!
+		o)  SMP stuff
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
@@ -49,6 +51,8 @@ Cache simulation:
 	    e.g. a L2 cache can be simulated (?)
 	o)  Instruction cache emulation is easiest (if separate from the
 	    data cache); similar hack as the S;I; hack in cpu_dyntrans.c.
+	    NOTE: if the architecture has a delay slot, then an instruction
+	    slot can actually be executed as 2 instructions.
 	o)  Data cache emulation = harder; each arch's load/store routines
 	    must include support? running one instruction at a time and
 	    having a cpu-dependant lookup function for each instruction

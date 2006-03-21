@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.207 2006-03-20 04:38:27 debug Exp $
+#  $Id: configure,v 1.208 2006-03-21 05:35:17 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -119,7 +119,8 @@ if [ z"$*" != z ]; then
 			    "old binary translation subsystem,"
 			echo "                      even if the host" \
 			    "supports it"
-			echo "  --disable-x         don't include X11 support"
+			echo "  --disable-x         don't include X11 support,"\
+			    "even if the host supports it"
 
 			if [ z"$UNSTABLE" = zYES ]; then
 				printf "\nAdditional Development (debug) "

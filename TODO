@@ -1,4 +1,4 @@
-$Id: TODO,v 1.226 2006-03-17 05:40:02 debug Exp $
+$Id: TODO,v 1.227 2006-03-21 05:25:32 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -31,7 +31,7 @@ Dyntrans:
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
 	x)  Remove the dyntrans_alignment_check functionality; although
-	    it gives slightly higher peformance sometimes, is increases
+	    it gives slightly higher peformance sometimes, it increases
 	    the complexity of the code too much!
 
 Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working

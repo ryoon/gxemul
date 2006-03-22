@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol_demangle.c,v 1.1 2006-03-22 21:39:23 debug Exp $
+ *  $Id: symbol_demangle.c,v 1.2 2006-03-22 21:41:46 debug Exp $
  *
  *  C++ symbol name demangling.
+ *
+ *  TODO: Constructors, destructors, and lots of other stuff. See
+ *  http://www.codesourcery.com/cxx-abi/abi.html#mangling for details.
  */
 
 #include <stdio.h>
@@ -229,7 +232,6 @@ fail:
  */
 char *symbol_demangle_cplusplus(char *name)
 {
-printf("! NAME = %s\n", name);
 	/*  Only support _Z-style mangled names, for now:  */
 	if (strlen(name) < 2 || name[0] != '_' || name[1] != 'Z')
 		return NULL;

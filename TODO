@@ -1,4 +1,4 @@
-$Id: TODO,v 1.228 2006-03-21 05:35:17 debug Exp $
+$Id: TODO,v 1.229 2006-03-22 19:38:18 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -215,7 +215,8 @@ MIPS CPU emulation:  (note: this is for the OLD mips stuff)
 File/disk/symbol handling:
 	o)  Better handling of tape files
 	o)  Read function argument count and types from binaries? (ELF?)
-	o)  Demangle C++ names.
+	o)  Demangle C++ names. Note: GNU's C++ differs from e.g. Microsoft's
+	    C++, so multiple schemes must be possible.
 
 Debugger:
 	o)  see src/debugger.c for more

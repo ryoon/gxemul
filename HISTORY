@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1153 2006-03-20 20:37:47 debug Exp $
+$Id: HISTORY,v 1.1154 2006-03-22 20:18:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2610,3 +2610,4 @@ Changelog for GXemul:
 20060320	Making MIPS dyntrans the default configure option; use
 		"--enable-oldmips" to use the old bintrans system.
 		Adding MIPS dyntrans dmult[u]; minor updates.
+20060322	Continuing... adding some more instructions.

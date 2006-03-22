@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.25 2006-03-20 20:37:47 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.26 2006-03-22 20:18:41 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -319,6 +319,168 @@ X(blezl_samepage)
 {
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs <= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bltz:   Branch if less than
+ *  bltzl:  Branch if less than likely
+ *
+ *  arg[0] = pointer to rs
+ *  arg[2] = (int32_t) relative offset from the next instruction
+ */
+X(bltz)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bltz_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bltzl)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bltzl_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bgez:   Branch if greater than or equal
+ *  bgezl:  Branch if greater than or equal likely
+ *
+ *  arg[0] = pointer to rs
+ *  arg[2] = (int32_t) relative offset from the next instruction
+ */
+X(bgez)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bgez_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bgezl)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0);
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bgezl_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0);
 	cpu->delay_slot = TO_BE_DELAYED;
 	if (x)
 		ic[1].f(cpu, ic+1);
@@ -1506,6 +1668,55 @@ X(to_be_translated)
 			break;
 
 		default:goto bad;
+		}
+		break;
+
+	case HI6_REGIMM:
+		switch (rt) {
+		case REGIMM_BGEZ:
+		case REGIMM_BGEZL:
+		case REGIMM_BLTZ:
+		case REGIMM_BLTZL:
+			samepage_function = NULL;
+			switch (rt) {
+			case REGIMM_BGEZ:
+				ic->f = instr(bgez);
+				samepage_function = instr(bgez_samepage);
+				break;
+			case REGIMM_BGEZL:
+				ic->f = instr(bgezl);
+				samepage_function = instr(bgezl_samepage);
+				break;
+			case REGIMM_BLTZ:
+				ic->f = instr(bltz);
+				samepage_function = instr(bltz_samepage);
+				break;
+			case REGIMM_BLTZL:
+				ic->f = instr(bltzl);
+				samepage_function = instr(bltzl_samepage);
+				break;
+			}
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+			ic->arg[2] = (imm << MIPS_INSTR_ALIGNMENT_SHIFT)
+			    + (addr & 0xffc) + 4;
+			/*  Is the offset from the start of the current page
+			    still within the same page? Then use the
+			    samepage_function:  */
+			if ((uint32_t)ic->arg[2] < ((MIPS_IC_ENTRIES_PER_PAGE-1)
+			    << MIPS_INSTR_ALIGNMENT_SHIFT) && (addr & 0xffc)
+			    < 0xffc) {
+				ic->arg[2] = (size_t) (cpu->cd.mips.cur_ic_page+
+				    ((ic->arg[2] >> MIPS_INSTR_ALIGNMENT_SHIFT)
+				    & (MIPS_IC_ENTRIES_PER_PAGE - 1)));
+				ic->f = samepage_function;
+			}
+			if (in_crosspage_delayslot) {
+				fatal("[ WARNING: branch in delay slot? ]\n");
+				ic->f = instr(nop);
+			}
+			break;
+		default:fatal("UNIMPLEMENTED regimm rt=%i\n", rt);
+			goto bad;
 		}
 		break;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1154 2006-03-22 20:18:41 debug Exp $
+$Id: HISTORY,v 1.1155 2006-03-22 21:39:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2611,3 +2611,4 @@ Changelog for GXemul:
 		"--enable-oldmips" to use the old bintrans system.
 		Adding MIPS dyntrans dmult[u]; minor updates.
 20060322	Continuing... adding some more instructions.
+		Adding a simple skeleton for demangling C++ "_ZN" symbols.

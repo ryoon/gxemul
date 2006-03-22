@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.h,v 1.6 2005-08-09 17:18:23 debug Exp $
+ *  $Id: symbol.h,v 1.7 2006-03-22 21:39:23 debug Exp $
  *
  *  Symbol handling routines.
  */
@@ -67,5 +67,7 @@ void symbol_readfile(struct symbol_context *, char *fname);
 void symbol_recalc_sizes(struct symbol_context *);
 void symbol_init(struct symbol_context *);
 
+/*  symbol_demangle.c:  */
+char *symbol_demangle_cplusplus(char *name);
 
 #endif	/*  SYMBOL_H  */

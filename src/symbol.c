@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.34 2006-01-14 12:51:59 debug Exp $
+ *  $Id: symbol.c,v 1.35 2006-03-22 21:39:23 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -36,8 +36,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "misc.h"
 
 #include "symbol.h"
 
@@ -268,11 +266,18 @@ void add_symbol_name(struct symbol_context *sc,
 		exit(1);
 	}
 
-	s->name = strdup(name);
+	memset(s, 0, sizeof(struct symbol));
+
+	s->name = symbol_demangle_cplusplus(name);
+
 	if (s->name == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
+		s->name = strdup(name);
+		if (s->name == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
 	}
+
 	s->addr   = addr;
 	s->len    = len;
 	s->type   = type;

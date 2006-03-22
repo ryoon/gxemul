@@ -1,4 +1,4 @@
-$Id: TODO,v 1.229 2006-03-22 19:38:18 debug Exp $
+$Id: TODO,v 1.230 2006-03-22 21:39:22 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -16,6 +16,7 @@ Dyntrans:
 		o)  Implement more instructions:
 			branches, coprocessor stuff, unaligned loads/stores
 		o)  PROM stuff!
+		o)  Count/compare interrupt.
 		o)  SMP stuff
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1155 2006-03-22 21:39:22 debug Exp $
+$Id: HISTORY,v 1.1156 2006-03-23 06:51:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2612,3 +2612,4 @@ Changelog for GXemul:
 		Adding MIPS dyntrans dmult[u]; minor updates.
 20060322	Continuing... adding some more instructions.
 		Adding a simple skeleton for demangling C++ "_ZN" symbols.
+20060323	Moving src/debugger.c into a new directory (src/debugger/).

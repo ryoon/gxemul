@@ -1,4 +1,4 @@
-$Id: TODO,v 1.231 2006-03-22 21:43:55 debug Exp $
+$Id: TODO,v 1.232 2006-03-23 06:51:47 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,6 +7,23 @@ Unused configure options:
 	x)  Remove the delay option, since it isn't really used. Turn
 	    into a runtime command line option? Or enable this together
 	    with cache simulation?
+
+Debugger:
+
+See: http://sources.redhat.com/gdb/onlinedocs/gdb_33.html#SEC683
+(remote debugging protocol)
+?  How does SMP debugging work?
+
+	o)  Try to make more modular and, if possible, reentrant!
+	o)  Remove the emul command. (But show network info if showing
+		machines?)
+	o)  Generalize the expression evaluator. (debugger_expr.c)
+	o)  Place commands in a separate file, the "main engine" in a
+	    separate file, etc.  (debugger_cmds.c)
+	o)  GDB remote support, ability to turn on/off with a debugger
+	    command, or enable at startup with a command line option! (tcp
+	    port)
+	o)  see src/debugger.c for more
 
 Dyntrans:
 	x)  Old MIPS -> dyntrans!
@@ -219,9 +236,6 @@ File/disk/symbol handling:
 	o)  Better demangling of C++ names. Note: GNU's C++ differs from e.g.
 	    Microsoft's C++, so multiple schemes must be possible. See
 	    URL at top of src/symbol_demangle.c for more info.
-
-Debugger:
-	o)  see src/debugger.c for more
 
 Userland ABI emulation:
 	o)  see src/useremul.c

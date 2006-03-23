@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.209 2006-03-22 20:18:41 debug Exp $
+#  $Id: configure,v 1.210 2006-03-23 06:51:47 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1150,7 +1150,7 @@ echo "" >> _Makefile.header
 
 
 #  Create the Makefiles:
-D=". src src/include src/cpus src/devices src/devices/fonts"
+D=". src src/include src/cpus src/debugger src/devices src/devices/fonts"
 D="$D src/machines src/promemul doc"
 for a in $D; do
 	echo "creating $a/Makefile"

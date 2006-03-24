@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.108 2006-03-05 16:00:22 debug Exp $
+ *  $Id: machine.h,v 1.109 2006-03-24 05:53:16 debug Exp $
  */
 
 #include <sys/types.h>
@@ -437,8 +437,9 @@ struct machine {
 #define	MACHINE_PREP_MVME2400		2
 
 /*  MacPPC:  TODO: Real model names  */
-#define	MACHINE_MACPPC_G4		1
-#define	MACHINE_MACPPC_G5		2
+#define	MACHINE_MACPPC_G3		1
+#define	MACHINE_MACPPC_G4		2
+#define	MACHINE_MACPPC_G5		3
 
 /*  MVMEPPC  */
 #define	MACHINE_MVMEPPC_1600		1

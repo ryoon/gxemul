@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.129 2006-02-26 08:54:32 debug Exp $
+ *  $Id: file.c,v 1.130 2006-03-24 05:53:15 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1518,17 +1518,15 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		}
 
 		/*
-		 *  Hack for loading Linux/PPC kernels, linked to high
-		 *  addresses, at low addresses.
+		 *  Hack for loading PPC kernels that are linked to high
+		 *  addresses. (This requires enabling of instruction and
+		 *  data virtual address translation.)
 		 */
 		if (arch == ARCH_PPC) {
-			if (elf64) {
-				p_vaddr &= 0x0fffffffffffffffULL;
-				p_paddr &= 0x0fffffffffffffffULL;
-			} else {
-				p_vaddr &= 0x0fffffff;
-				p_paddr &= 0x0fffffff;
-			}
+			if ( (elf64 && (p_vaddr >> 60) != 0) ||
+			    (!elf64 && (p_vaddr >> 28) != 0) )
+				m->cpus[m->bootstrap_cpu]->
+				    cd.ppc.msr |= PPC_MSR_IR | PPC_MSR_DR;
 		}
 
 		if (p_memsz != 0 && (p_type == PT_LOAD ||

@@ -25,7 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.3 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_macppc.c,v 1.4 2006-03-24 05:53:17 debug Exp $
+ *
+ *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
+ *        systems. They do not model real PowerMacs, but should be enough to
+ *        begin experimenting with NetBSD/macppc and OpenBSD/macppc.
  */
 
 #include <stdio.h>
@@ -154,8 +158,11 @@ MACHINE_SETUP(macppc)
 MACHINE_DEFAULT_CPU(macppc)
 {
 	switch (machine->machine_subtype) {
-	case MACHINE_MACPPC_G4:
+	case MACHINE_MACPPC_G3:
 		machine->cpu_name = strdup("PPC750");
+		break;
+	case MACHINE_MACPPC_G4:
+		machine->cpu_name = strdup("MPC7400");
 		break;
 	case MACHINE_MACPPC_G5:
 		machine->cpu_name = strdup("PPC970");
@@ -172,14 +179,17 @@ MACHINE_DEFAULT_RAM(macppc)
 
 MACHINE_REGISTER(macppc)
 {
-	MR_DEFAULT(macppc, "Macintosh", ARCH_PPC, MACHINE_MACPPC, 1, 2);
+	MR_DEFAULT(macppc, "Macintosh", ARCH_PPC, MACHINE_MACPPC, 1, 3);
 	me->aliases[0] = "macppc";
-	me->subtype[0] = machine_entry_subtype_new("MacPPC G4",
+	me->subtype[0] = machine_entry_subtype_new("MacPPC G3",
+	    MACHINE_MACPPC_G3, 1);
+	me->subtype[0]->aliases[0] = "g3";
+	me->subtype[1] = machine_entry_subtype_new("MacPPC G4",
 	    MACHINE_MACPPC_G4, 1);
-	me->subtype[0]->aliases[0] = "g4";
-	me->subtype[1] = machine_entry_subtype_new("MacPPC G5",
+	me->subtype[1]->aliases[0] = "g4";
+	me->subtype[2] = machine_entry_subtype_new("MacPPC G5",
 	    MACHINE_MACPPC_G5, 1);
-	me->subtype[1]->aliases[0] = "g5";
+	me->subtype[2]->aliases[0] = "g5";
 	me->set_default_ram = machine_default_ram_macppc;
 	machine_entry_add(me, ARCH_PPC);
 }

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1156 2006-03-23 06:51:47 debug Exp $
+$Id: HISTORY,v 1.1157 2006-03-24 05:53:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2613,3 +2613,5 @@ Changelog for GXemul:
 20060322	Continuing... adding some more instructions.
 		Adding a simple skeleton for demangling C++ "_ZN" symbols.
 20060323	Moving src/debugger.c into a new directory (src/debugger/).
+20060324	Fixing the hack used to load PPC ELFs (useful for relocated
+		Linux/ppc kernels), and adding a dummy G3 machine mode.

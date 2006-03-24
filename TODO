@@ -1,4 +1,4 @@
-$Id: TODO,v 1.232 2006-03-23 06:51:47 debug Exp $
+$Id: TODO,v 1.233 2006-03-24 05:53:14 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,23 +7,6 @@ Unused configure options:
 	x)  Remove the delay option, since it isn't really used. Turn
 	    into a runtime command line option? Or enable this together
 	    with cache simulation?
-
-Debugger:
-
-See: http://sources.redhat.com/gdb/onlinedocs/gdb_33.html#SEC683
-(remote debugging protocol)
-?  How does SMP debugging work?
-
-	o)  Try to make more modular and, if possible, reentrant!
-	o)  Remove the emul command. (But show network info if showing
-		machines?)
-	o)  Generalize the expression evaluator. (debugger_expr.c)
-	o)  Place commands in a separate file, the "main engine" in a
-	    separate file, etc.  (debugger_cmds.c)
-	o)  GDB remote support, ability to turn on/off with a debugger
-	    command, or enable at startup with a command line option! (tcp
-	    port)
-	o)  see src/debugger.c for more
 
 Dyntrans:
 	x)  Old MIPS -> dyntrans!
@@ -54,6 +37,22 @@ Dyntrans:
 	    it gives slightly higher peformance sometimes, it increases
 	    the complexity of the code too much!
 
+Debugger:
+	o)  See: http://sources.redhat.com/gdb/onlinedocs/gdb_33.html#SEC683
+	    (remote debugging protocol)
+	o)  How does SMP debugging work? Does it simply use "threads"?
+	o)  Try to make the debugger more modular and, if possible, reentrant!
+	o)  Remove the emul command? (But show network info if showing
+		machines?)
+	o)  Generalize the expression evaluator. (debugger_expr.c)
+	o)  Place commands in a separate file, the "main engine" in a
+	    separate file, etc.  (debugger_cmds.c)
+	o)  GDB remote support, ability to turn on/off with a debugger
+	    command, or enable at startup with a command line option! (tcp
+	    port)
+	o)  see src/debugger.c for more
+
+
 Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
 	Add interrupt controller in dev_algor.c.
 
@@ -77,6 +76,7 @@ Cache simulation:
 	    is another option (but very very slow).
 
 Documentation:
+	o)  machines, cpus, devices.
 	o)  Automagic documentation generation:
 		x)  REMEMBER that several machines/devices can be in
 			the same source file!

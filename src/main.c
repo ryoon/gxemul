@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.258 2006-03-25 19:55:33 debug Exp $
+ *  $Id: main.c,v 1.259 2006-03-25 21:24:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -395,10 +395,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'G':
-			m->gdb_port = atoi(optarg);
-			if (m->gdb_port < 1 || m->gdb_port > 65535) {
+			m->gdb.port = atoi(optarg);
+			if (m->gdb.port < 1 || m->gdb.port > 65535) {
 				fprintf(stderr, "Invalid debugger port %i.\n",
-				    m->gdb_port);
+				    m->gdb.port);
 				exit(1);
 			}
 			msopts = 1;

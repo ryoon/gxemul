@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.2 2006-03-25 19:55:33 debug Exp $
+ *  $Id: debugger.c,v 1.3 2006-03-25 21:24:31 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -61,6 +61,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "debugger.h"
+#include "debugger_gdb.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"

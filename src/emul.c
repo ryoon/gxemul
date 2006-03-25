@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.250 2006-03-10 16:46:53 debug Exp $
+ *  $Id: emul.c,v 1.251 2006-03-25 21:24:31 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1596,6 +1596,10 @@ void emul_run(struct emul **emuls, int n_emuls)
 				continue;
 
 			for (j=0; j<e->n_machines; j++) {
+				if (e->machines[j]->gdb.port > 0)
+					debugger_gdb_check_incoming(
+					    e->machines[j]);
+
 				/*  TODO: cpu_run() is a strange name, since
 				    there can be multiple cpus in a machine  */
 				anything = cpu_run(e, e->machines[j]);

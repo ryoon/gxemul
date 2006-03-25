@@ -1,8 +1,8 @@
-#ifndef	DEBUGGER_H
-#define	DEBUGGER_H
+#ifndef	DEBUGGER_GDB_H
+#define	DEBUGGER_GDB_H
 
 /*
- *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,19 +28,35 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.h,v 1.4 2006-03-25 21:24:31 debug Exp $
+ *  $Id: debugger_gdb.h,v 1.1 2006-03-25 21:24:32 debug Exp $
  *
- *  See src/debugger/debugger.c.
+ *  See src/debugger/debugger_gdb.c.
  */
 
-struct emul;
 struct machine;
 
-/*  debugger.c:  */
-void debugger_activate(int x);
-void debugger_execute_cmd(char *cmd, int cmd_len);
-void debugger(void);
-void debugger_reset(void);
-void debugger_init(struct emul **emuls, int n_emuls);
+struct debugger_gdb {
+	int		port;
+	int		socket;
 
-#endif	/*  DEBUGGER_H  */
+	int		rx_state;
+
+	unsigned char	*rx_buf;
+	size_t		rx_buf_size;
+	size_t		rx_buf_pos;
+};
+
+
+#define	DEBUGGER_GDB_RXBUF_SIZE		4096
+
+#define	RXSTATE_WAITING_FOR_DOLLAR	0
+#define	RXSTATE_WAITING_FOR_HASH	1
+#define	RXSTATE_WAITING_FOR_CHECKSUM1	2
+#define	RXSTATE_WAITING_FOR_CHECKSUM2	3
+
+
+/*  debugger_gdb.c:  */
+void debugger_gdb_init(struct machine *machine);
+void debugger_gdb_check_incoming(struct machine *machine);
+
+#endif	/*  DEBUGGER_GDB_H  */

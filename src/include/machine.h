@@ -28,13 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.110 2006-03-25 19:55:33 debug Exp $
+ *  $Id: machine.h,v 1.111 2006-03-25 21:24:32 debug Exp $
  */
 
 #include <sys/types.h>
 #include <sys/time.h>
 
-
+#include "debugger_gdb.h"
 #include "symbol.h"
 
 #include "machine_arc.h"
@@ -178,10 +178,7 @@ struct machine {
 	char	*bootstr;
 	char	*bootarg;
 
-	/*  Listening port for remote GDB connections:  */
-	int	gdb_port;
-	int	gdb_listening;
-	int	gdb_connected;
+	struct debugger_gdb gdb;
 
 	int	n_breakpoints;
 	char	*breakpoint_string[MAX_BREAKPOINTS];

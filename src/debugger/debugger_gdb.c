@@ -1,8 +1,5 @@
-#ifndef	DEBUGGER_H
-#define	DEBUGGER_H
-
 /*
- *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,22 +25,43 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.h,v 1.3 2006-03-25 19:55:33 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.1 2006-03-25 19:55:33 debug Exp $
  *
- *  See src/debugger.c.
+ *  Routines used for communicating with the GNU debugger, using the GDB
+ *  remote serial protocol.
  */
 
-struct emul;
-struct machine;
+#include <stdio.h>
 
-/*  debugger.c:  */
-void debugger_activate(int x);
-void debugger_execute_cmd(char *cmd, int cmd_len);
-void debugger(void);
-void debugger_reset(void);
-void debugger_init(struct emul **emuls, int n_emuls);
+#include "debugger.h"
+#include "machine.h"
 
-/*  debugger_gdb.c:  */
-void debugger_gdb_init(struct machine *machine);
 
-#endif	/*  DEBUGGER_H  */
+/*
+ *  debugger_gdb_listen():
+ *
+ *  Set up a GDB remote listening port for a specific emulated machine.
+ */
+static void debugger_gdb_listen(struct machine *machine)
+{
+	/*  TODO  */
+
+	machine->gdb_listening = 1;
+}
+
+
+/*
+ *  debugger_gdb_init():
+ *
+ *  Initialize stuff needed for a GDB remote connection.
+ */
+void debugger_gdb_init(struct machine *machine)
+{
+	if (machine->gdb_port < 1)
+		return;
+
+	if (!machine->gdb_listening)
+		debugger_gdb_listen(machine);
+}
+
+

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.1 2006-03-23 06:51:48 debug Exp $
+ *  $Id: debugger.c,v 1.2 2006-03-25 19:55:33 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -2236,7 +2236,7 @@ void debugger_reset(void)
  */
 void debugger_init(struct emul **emuls, int n_emuls)
 {
-	int i;
+	int i, j;
 
 	debugger_n_emuls = n_emuls;
 	debugger_emuls = emuls;
@@ -2252,6 +2252,10 @@ void debugger_init(struct emul **emuls, int n_emuls)
 		    "cannot handle this situation yet.\n\n");
 		exit(1);
 	}
+
+	for (i=0; i<n_emuls; i++)
+		for (j=0; j<emuls[i]->n_machines; j++)
+			debugger_gdb_init(emuls[i]->machines[j]);
 
 	debugger_machine = emuls[0]->machines[0];
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.109 2006-03-24 05:53:16 debug Exp $
+ *  $Id: machine.h,v 1.110 2006-03-25 19:55:33 debug Exp $
  */
 
 #include <sys/types.h>
@@ -177,6 +177,11 @@ struct machine {
 	int	bootdev_id;
 	char	*bootstr;
 	char	*bootarg;
+
+	/*  Listening port for remote GDB connections:  */
+	int	gdb_port;
+	int	gdb_listening;
+	int	gdb_connected;
 
 	int	n_breakpoints;
 	char	*breakpoint_string[MAX_BREAKPOINTS];

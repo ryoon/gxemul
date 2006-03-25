@@ -1,12 +1,12 @@
 #
-#  $Id: Makefile.skel,v 1.1 2006-03-23 06:51:48 debug Exp $
+#  $Id: Makefile.skel,v 1.2 2006-03-25 19:55:33 debug Exp $
 #
 #  Makefile for GXemul src/debugger
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 
-OBJS=debugger.o
+OBJS=debugger.o debugger_gdb.o
 
 all: $(OBJS)
 

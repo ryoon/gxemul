@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.257 2006-02-20 18:54:54 debug Exp $
+ *  $Id: main.c,v 1.258 2006-03-25 19:55:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -242,6 +242,7 @@ static void usage(int longusage)
 	printf("                s      SCSI\n");
 	printf("                t      tape\n");
 	printf("                0-7    force a specific ID\n");
+	printf("  -G port   listen to gdb remote connections on this port\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects"
 	    " rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic"
@@ -342,7 +343,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "ABC:c:Dd:E:e:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "ABC:c:Dd:E:e:G:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XxY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
@@ -391,6 +392,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 'e':
 			subtype = optarg;
+			msopts = 1;
+			break;
+		case 'G':
+			m->gdb_port = atoi(optarg);
+			if (m->gdb_port < 1 || m->gdb_port > 65535) {
+				fprintf(stderr, "Invalid debugger port %i.\n",
+				    m->gdb_port);
+				exit(1);
+			}
 			msopts = 1;
 			break;
 		case 'H':

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.2 2006-03-25 21:24:31 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.3 2006-03-26 19:29:22 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -38,10 +38,31 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "debugger_gdb.h"
 #include "machine.h"
 #include "memory.h"
+
+
+/*
+ *  rx_one():
+ *
+ *  Helper function.
+ */
+static unsigned char rx_one(struct machine *machine)
+{
+	unsigned char ch;
+
+	if (machine->gdb.rx_buf_head == machine->gdb.rx_buf_tail)
+		return 0;
+
+	ch = machine->gdb.rx_buf[machine->gdb.rx_buf_tail ++];
+	if (machine->gdb.rx_buf_tail == DEBUGGER_GDB_RXBUF_SIZE)
+		machine->gdb.rx_buf_tail = 0;
+
+	return ch;
+}
 
 
 /*
@@ -88,8 +109,7 @@ static void debugger_gdb_listen(struct machine *machine)
 	fcntl(machine->gdb.socket, F_SETFL, res | O_NONBLOCK);
 
 	machine->gdb.rx_buf = zeroed_alloc(DEBUGGER_GDB_RXBUF_SIZE);
-	machine->gdb.rx_buf_size = DEBUGGER_GDB_RXBUF_SIZE;
-	machine->gdb.rx_buf_pos = 0;
+	machine->gdb.rx_buf_head = machine->gdb.rx_buf_tail = 0;
 }
 
 
@@ -101,7 +121,36 @@ static void debugger_gdb_listen(struct machine *machine)
  */
 void debugger_gdb_check_incoming(struct machine *machine)
 {
+	ssize_t len, to_read;
+	unsigned char ch;
+
+	to_read = DEBUGGER_GDB_RXBUF_SIZE - machine->gdb.rx_buf_head;
+	if (to_read > DEBUGGER_GDB_RXBUF_SIZE / 2)
+		to_read = DEBUGGER_GDB_RXBUF_SIZE / 2;
+
+	len = read(machine->gdb.socket, machine->gdb.rx_buf +
+	    machine->gdb.rx_buf_head, to_read);
+	if (len == 0) {
+		perror("GDB socket read");
+		fprintf(stderr, "Connection closed.\n");
+		exit(1);
+	}
+
+	/*  EAGAIN, and similar:  */
+	if (len < 0)
+		return;
+
+	machine->gdb.rx_buf_head += len;
+	if (machine->gdb.rx_buf_head == DEBUGGER_GDB_RXBUF_SIZE)
+		machine->gdb.rx_buf_head = 0;
+
 	switch (machine->gdb.rx_state) {
+
+	case RXSTATE_WAITING_FOR_DOLLAR:
+		ch = rx_one(machine);
+		if (ch == '$')
+			machine->gdb.rx_state = RXSTATE_WAITING_FOR_HASH;
+		break;
 
 	default:fatal("debugger_gdb_check_incoming(): internal error (state"
 		    " %i unknown)\n", machine->gdb.rx_state);

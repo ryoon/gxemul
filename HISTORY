@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1158 2006-03-25 19:55:32 debug Exp $
+$Id: HISTORY,v 1.1159 2006-03-26 19:29:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2615,6 +2615,6 @@ Changelog for GXemul:
 20060323	Moving src/debugger.c into a new directory (src/debugger/).
 20060324	Fixing the hack used to load PPC ELFs (useful for relocated
 		Linux/ppc kernels), and adding a dummy G3 machine mode.
-20060325	Beginning to experiment with GDB remote serial protocol
+20060325-26	Beginning to experiment with GDB remote serial protocol
 		connections; adding a -G command line option for selecting
 		which TCP port to listen to.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.h,v 1.1 2006-03-25 21:24:32 debug Exp $
+ *  $Id: debugger_gdb.h,v 1.2 2006-03-26 19:29:22 debug Exp $
  *
  *  See src/debugger/debugger_gdb.c.
  */
@@ -42,8 +42,8 @@ struct debugger_gdb {
 	int		rx_state;
 
 	unsigned char	*rx_buf;
-	size_t		rx_buf_size;
-	size_t		rx_buf_pos;
+	size_t		rx_buf_head;
+	size_t		rx_buf_tail;
 };
 
 

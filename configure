@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.210 2006-03-23 06:51:47 debug Exp $
+#  $Id: configure,v 1.211 2006-03-30 19:49:02 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -946,6 +946,27 @@ else
 	printf "yes\n"
 fi
 rm -f _tests.[co] _tests
+
+
+#  Check for PRIx64 in inttypes.h:
+printf "checking for PRIx64 in inttypes.h... "
+printf "#include <inttypes.h>\nint main(int argc, char *argv[])\n
+{\n#ifdef PRIx64\nreturn 0;\n#else\nreturn 1;\n#endif\n}\n" > _testpri.c
+$CC $CFLAGS _testpri.c -o _testpri 2> /dev/null
+if [ ! -x _testpri ]; then
+	printf "\nERROR! COULD NOT COMPILE PRIx64 TEST PROGRAM AT ALL!\n"
+	exit
+else
+	if ./_testpri; then
+		printf "yes\n"
+	else
+		printf "no\n"
+
+		printf "\nTODO!\n\n"
+		exit
+	fi
+fi
+rm -f _testpri.c _testpri
 
 
 #  Check for 64-bit off_t:

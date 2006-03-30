@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.2 2005-11-13 00:14:07 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.3 2006-03-30 19:41:51 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -64,8 +64,8 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	size_t offset;
 	const int MAX = N_BINTRANS_VADDR_TO_HOST;
 
-	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i\n",
-	    cpu, (long long)vaddr, writeflag);  */
+	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016"PRIx64
+	    ", wf=%i\n", cpu, (uint64_t) vaddr, writeflag);  */
 
 #if 0
 /*  Hm. This seems to work now, so this #if X can be removed. (?)  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.22 2005-12-20 18:20:55 debug Exp $
+ *  $Id: memory_ppc.c,v 1.23 2006-03-30 19:41:51 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -279,9 +279,9 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		return 0;
 
 	if (!quiet_mode)
-		fatal("[ memory_ppc: exception! vaddr=0x%llx pc=0x%llx "
-		    "instr=%i user=%i wf=%i ]\n", (long long)vaddr,
-		    (long long)cpu->pc, instr, user, writeflag);
+		fatal("[ memory_ppc: exception! vaddr=0x%"PRIx64" pc=0x%"PRIx64
+		    " instr=%i user=%i wf=%i ]\n", (uint64_t) vaddr,
+		    (uint64_t) cpu->pc, instr, user, writeflag);
 
 	if (cpu->cd.ppc.cpu_type.flags & PPC_603) {
 		cpu->cd.ppc.spr[instr? SPR_IMISS : SPR_DMISS] = vaddr;

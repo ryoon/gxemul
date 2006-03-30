@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.1 2005-08-29 14:36:42 debug Exp $
+ *  $Id: memory_x86.c,v 1.2 2006-03-30 19:41:51 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -72,9 +72,9 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		writable = 1;
 	} else {
 		if (PROTECTED_MODE && vaddr > dc->limit) {
-			fatal("TODO: vaddr=0x%llx > limit (0x%llx)\n",
-			    (long long)vaddr, (long long)dc->limit);
-/*			goto fail;  */
+			fatal("TODO: vaddr=0x%"PRIx64" > limit (0x%"PRIx64")\n",
+			    (uint64_t) vaddr, (uint64_t) dc->limit);
+			/*  goto fail;  */
 		}
 
 		/*  TODO: Check the Privilege Level  */
@@ -90,8 +90,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		/*  TODO: This should be cached somewhere, in some
 			kind of simulated TLB.  */
 		if (cpu->cd.x86.cr[3] & 0xfff) {
-			fatal("TODO: cr3=%016llx (lowest bits non-zero)\n",
-			    (long long)cpu->cd.x86.cr[3]);
+			fatal("TODO: cr3=%016"PRIx64" (lowest bits non-zero)\n",
+			    (uint64_t) cpu->cd.x86.cr[3]);
 			goto fail;
 		}
 
@@ -107,8 +107,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		res = cpu->memory_rw(cpu, cpu->mem, table_addr + 4*a, pded,
 		    sizeof(pded), MEM_READ, PHYSICAL);
 		if (!res) {
-			fatal("TODO: could not read pde (table = 0x%llx)\n",
-			    (long long)table_addr);
+			fatal("TODO: could not read pde (table = 0x%"PRIx64
+			    ")\n", (uint64_t) table_addr);
 			goto fail;
 		}
 		if ((pded[0] & 0x01) && !(pded[0] & 0x20)) {
@@ -129,9 +129,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		if (!(pde & 0x01)) {
 			fatal("PAGE FAULT: pde not present: vaddr=0x%08x, "
 			    "usermode=%i\n", (int)vaddr, usermode);
-			fatal("            CS:EIP = 0x%04x:0x%016llx\n",
-			    (int)cpu->cd.x86.s[X86_S_CS],
-			    (long long)cpu->pc);
+			fatal("            CS:EIP = 0x%04x:0x%016"PRIx64"\n",
+			    (int) cpu->cd.x86.s[X86_S_CS], (uint64_t) cpu->pc);
 			if (!no_exceptions) {
 				cpu->cd.x86.cr[2] = vaddr;
 				x86_interrupt(cpu, 14, (writeflag? 2 : 0) +
@@ -145,8 +144,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		res = cpu->memory_rw(cpu, cpu->mem, table_addr + 4*b, pted,
 		    sizeof(pted), MEM_READ, PHYSICAL);
 		if (!res) {
-			fatal("TODO: could not read pte (pt = 0x%llx)\n",
-			    (long long)table_addr);
+			fatal("TODO: could not read pte (pt = 0x%"PRIx64")\n",
+			    (uint64_t) table_addr);
 			goto fail;
 		}
 		pte = pted[0] + (pted[1] << 8) + (pted[2] << 16) +

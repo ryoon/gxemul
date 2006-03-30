@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.4 2006-02-16 05:57:10 debug Exp $
+ *  $Id: dec_prom.c,v 1.5 2006-03-30 19:41:51 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -659,9 +659,10 @@ int decstation_prom_emul(struct cpu *cpu)
 			cpu->dead = 1;
 			break;
 		default:
-			fatal("DEC prom emulation: unknown rex() a0=0x%llx ("
-			    "'%c')\n", (long long)cpu->cd.mips.gpr[MIPS_GPR_A0],
-			    (char)cpu->cd.mips.gpr[MIPS_GPR_A0]);
+			fatal("DEC prom emulation: unknown rex() a0=0x%"PRIx64
+			    " ('%c')\n",
+			    (int64_t) cpu->cd.mips.gpr[MIPS_GPR_A0],
+			    (char) cpu->cd.mips.gpr[MIPS_GPR_A0]);
 			cpu->running = 0;
 			cpu->dead = 1;
 		}

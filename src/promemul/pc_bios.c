@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.5 2006-02-16 05:57:10 debug Exp $
+ *  $Id: pc_bios.c,v 1.6 2006-03-30 19:41:51 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -878,8 +878,8 @@ static void pc_bios_int13(struct cpu *cpu)
 			}
 
 			debug("[ pc_bios_int13(): %s biosdisk 0x%02x (offset="
-			    "0x%llx) mem=0x%04x:0x%04x ]\n", ah==2? "read from"
-			    : "write to", dl, (long long)offset,
+			    "0x%"PRIx64") mem=0x%04x:0x%04x ]\n", ah==2?
+			    "read from" : "write to", dl, (uint64_t) offset,
 			    cpu->cd.x86.s[X86_S_ES], bx);
 
 			if (ah == 3) {
@@ -897,9 +897,9 @@ static void pc_bios_int13(struct cpu *cpu)
 			if (!res) {
 				err = 4;
 				fatal("[ pc_bios_int13(): FAILED to %s"
-				    " biosdisk 0x%02x (offset=0x%llx)"
+				    " biosdisk 0x%02x (offset=0x%"PRIx64")"
 				    " ]\n", ah==2? "read from" :
-				    "write to", dl, (long long)offset);
+				    "write to", dl, (uint64_t) offset);
 			} else if (ah == 2) {
 				cpu->cd.x86.cursegment = X86_S_ES;
 				if (bx + 512*al > 0x10000) {

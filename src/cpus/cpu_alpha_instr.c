@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.8 2006-02-20 18:54:54 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.9 2006-03-30 19:36:04 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -794,8 +794,8 @@ X(to_be_translated)
 	iword = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
 #endif
 
-	/*  fatal("{ Alpha: translating pc=0x%016llx iword=0x%08x }\n",
-	    (long long)addr, (int)iword);  */
+	/*  fatal("{ Alpha: translating pc=0x%016"PRIx64" iword=0x%08"PRIx32
+	    " }\n", (uint64_t) addr, (uint32_t) iword);  */
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD

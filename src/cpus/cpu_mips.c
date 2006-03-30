@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.23 2006-03-18 11:36:34 debug Exp $
+ *  $Id: cpu_mips.c,v 1.24 2006-03-30 19:36:04 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -554,13 +554,14 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				    (int)m->cpus[i]->cd.mips.coproc[0]->reg
 				    [COP0_RANDOM]);
 			else
-				printf("index=0x%016llx random=0x%016llx",
-				    (long long)m->cpus[i]->cd.mips.coproc[0]->
-				    reg[COP0_INDEX], (long long)m->cpus[i]->
+				printf("index=0x%016"PRIx64
+				    " random=0x%016"PRIx64,
+				    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->
+				    reg[COP0_INDEX], (uint64_t)m->cpus[i]->
 				    cd.mips.coproc[0]->reg[COP0_RANDOM]);
 
 			if (m->cpus[i]->cd.mips.cpu_type.isa_level >= 3)
-				printf(" wired=0x%llx", (long long) m->cpus
+				printf(" wired=0x%"PRIx64, (uint64_t) m->cpus
 				    [i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
 
 			printf(")\n");
@@ -580,12 +581,12 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
 					    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
 				else
-					printf("%3i: hi=0x%016llx mask=0x%016llx "
-					    "lo0=0x%016llx lo1=0x%016llx\n", j,
-					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
-					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
-					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
-					    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
+					printf("%3i: hi=0x%016"PRIx64" mask=0x%016"PRIx64" "
+					    "lo0=0x%016"PRIx64" lo1=0x%016"PRIx64"\n", j,
+					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
+					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
+					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
+					    (uint64_t)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
 			}
 		}
 		return;
@@ -618,9 +619,8 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			    reg[COP0_INDEX] & INDEX_MASK),
 			    (int) (m->cpus[i]->cd.mips.coproc[0]->
 			    reg[COP0_RANDOM] & RANDOM_MASK));
-			printf(" wired=0x%llx", (long long)
-			    m->cpus[i]->cd.mips.coproc[0]->
-			    reg[COP0_WIRED]);
+			printf(" wired=0x%"PRIx64, (uint64_t)
+			    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
 		}
 
 		printf(")\n");
@@ -658,18 +658,18 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				break;
 			default:switch (m->cpus[i]->cd.mips.cpu_type.mmu_model){
 				case MMU10K:
-					printf("vaddr=0x%1x..%011llx ",
-					    (int) (hi >> 60), (long long)
+					printf("vaddr=0x%1x..%011"PRIx64" ",
+					    (int) (hi >> 60), (uint64_t)
 					    (hi&ENTRYHI_VPN2_MASK_R10K));
 					break;
 				case MMU32:
-					printf("vaddr=0x%08x ", (int)
-					    (hi&ENTRYHI_VPN2_MASK));
+					printf("vaddr=0x%08"PRIx32" ",
+					    (uint32_t)(hi&ENTRYHI_VPN2_MASK));
 					break;
 				default:/*  R4000 etc.  */
-					printf("vaddr=0x%1x..%010llx ",
+					printf("vaddr=0x%1x..%010"PRIx64" ",
 					    (int) (hi >> 60),
-					    (long long) (hi&ENTRYHI_VPN2_MASK));
+					    (uint64_t) (hi&ENTRYHI_VPN2_MASK));
 				}
 				if (hi & TLB_G)
 					printf("(global): ");
@@ -682,7 +682,7 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				if (!(lo0 & ENTRYLO_V))
 					printf(" p0=(invalid)   ");
 				else
-					printf(" p0=0x%09llx ", (long long)
+					printf(" p0=0x%09"PRIx64" ", (uint64_t)
 					    (((lo0&ENTRYLO_PFN_MASK) >>
 					    ENTRYLO_PFN_SHIFT) << pageshift));
 				printf(lo0 & ENTRYLO_D? "D" : " ");
@@ -690,7 +690,7 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				if (!(lo1 & ENTRYLO_V))
 					printf(" p1=(invalid)   ");
 				else
-					printf(" p1=0x%09llx ", (long long)
+					printf(" p1=0x%09"PRIx64" ", (uint64_t)
 					    (((lo1&ENTRYLO_PFN_MASK) >>
 					    ENTRYLO_PFN_SHIFT) << pageshift));
 				printf(lo1 & ENTRYLO_D? "D" : " ");
@@ -866,9 +866,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		debug("cpu%i: ", cpu->cpu_id);
 
 	if (cpu->is_32bit)
-		debug("%08x", (int)dumpaddr);
+		debug("%08"PRIx32, (uint32_t)dumpaddr);
 	else
-		debug("%016llx", (long long)dumpaddr);
+		debug("%016"PRIx64, (uint64_t)dumpaddr);
 
 	*((uint32_t *)&instr[0]) = *((uint32_t *)&originstr[0]);
 
@@ -1115,9 +1115,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		}
 
 		if (cpu->is_32bit)
-			debug("0x%08x", (int)addr);
+			debug("0x%08"PRIx32, (uint32_t)addr);
 		else
-			debug("0x%016llx", (long long)addr);
+			debug("0x%016"PRIx64, (uint64_t)addr);
 
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    addr, &offset);
@@ -1200,8 +1200,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			    rt, imm, regname(cpu->machine, rs));
 
 			if (running) {
-				debug("\t[0x%016llx = %s]",
-				    (long long)(cpu->cd.mips.gpr[rs] + imm));
+				debug("\t[0x%016"PRIx64" = %s]",
+				    (uint64_t)(cpu->cd.mips.gpr[rs] + imm));
 				if (symbol != NULL)
 					debug(" = %s", symbol);
 				debug("]");
@@ -1225,10 +1225,11 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			debug("\t[");
 
 			if (cpu->is_32bit)
-				debug("0x%08x", (int)(cpu->cd.mips.gpr[rs] + imm));
+				debug("0x%08"PRIx32,
+				    (uint32_t) (cpu->cd.mips.gpr[rs] + imm));
 			else
-				debug("0x%016llx",
-				    (long long)(cpu->cd.mips.gpr[rs] + imm));
+				debug("0x%016"PRIx64,
+				    (uint64_t) (cpu->cd.mips.gpr[rs] + imm));
 
 			if (symbol != NULL)
 				debug(" = %s", symbol);
@@ -1249,9 +1250,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		    addr, &offset);
 		debug("%s\t0x", hi6_names[hi6]);
 		if (cpu->is_32bit)
-			debug("%08x", (int)addr);
+			debug("%08"PRIx32, (uint32_t) addr);
 		else
-			debug("%016llx", (long long)addr);
+			debug("%016"PRIx64, (uint64_t) addr);
 		if (symbol != NULL)
 			debug("\t<%s>", symbol);
 		break;
@@ -1290,8 +1291,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		if (cache_op==6)	debug("hit writeback");
 		if (cache_op==7)	debug("hit set virtual");
 		if (running)
-			debug(", addr 0x%016llx",
-			    (long long)(cpu->cd.mips.gpr[rt] + imm));
+			debug(", addr 0x%016"PRIx64,
+			    (uint64_t)(cpu->cd.mips.gpr[rt] + imm));
 		if (showtag)
 		debug(", taghi=%08lx lo=%08lx",
 		    (long)cpu->cd.mips.coproc[0]->reg[COP0_TAGDATA_HI],
@@ -1376,9 +1377,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			addr = (dumpaddr + 4) + (imm << 2);
 
 			if (cpu->is_32bit)
-				debug("0x%08x", (int)addr);
+				debug("0x%08"PRIx32, (uint32_t) addr);
 			else
-				debug("0x%016llx", (long long)addr);
+				debug("0x%016"PRIx64, (uint64_t) addr);
 			break;
 		default:
 			debug("unimplemented regimm5 = 0x%02x", regimm5);
@@ -1416,21 +1417,24 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    cpu->pc, &offset);
 
 		if (bits32)
-			debug("cpu%i:  pc = %08x", cpu->cpu_id, (int)cpu->pc);
+			debug("cpu%i:  pc = %08"PRIx32,
+			    cpu->cpu_id, (uint32_t) cpu->pc);
 		else
-			debug("cpu%i:    pc = 0x%016llx",
-			    cpu->cpu_id, (long long)cpu->pc);
+			debug("cpu%i:    pc = 0x%016"PRIx64,
+			    cpu->cpu_id, (uint64_t) cpu->pc);
 
 		debug("    <%s>\n", symbol != NULL? symbol :
 		    " no symbol ");
 
 		if (bits32)
-			debug("cpu%i:  hi = %08x  lo = %08x\n",
-			    cpu->cpu_id, (int)cpu->cd.mips.hi, (int)cpu->cd.mips.lo);
+			debug("cpu%i:  hi = %08"PRIx32"  lo = %08"PRIx32"\n",
+			    cpu->cpu_id, (uint32_t) cpu->cd.mips.hi,
+			    (uint32_t) cpu->cd.mips.lo);
 		else
-			debug("cpu%i:    hi = 0x%016llx    lo = 0x%016llx\n",
-			    cpu->cpu_id, (long long)cpu->cd.mips.hi,
-			    (long long)cpu->cd.mips.lo);
+			debug("cpu%i:    hi = 0x%016"PRIx64"    lo = 0x%016"
+			    PRIx64"\n", cpu->cpu_id,
+			    (uint64_t) cpu->cd.mips.hi,
+			    (uint64_t) cpu->cd.mips.lo);
 
 		/*  General registers:  */
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
@@ -1438,10 +1442,10 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<32; i++) {
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug(" %3s=%016llx%016llx",
+				debug(" %3s=%016"PRIx64"%016"PRIx64,
 				    regname(cpu->machine, i),
-				    (long long)cpu->cd.mips.gpr_quadhi[i],
-				    (long long)cpu->cd.mips.gpr[i]);
+				    (uint64_t)cpu->cd.mips.gpr_quadhi[i],
+				    (uint64_t)cpu->cd.mips.gpr[i]);
 				if ((i & 1) == 1)
 					debug("\n");
 			}
@@ -1466,7 +1470,9 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if (r == MIPS_GPR_ZERO)
 					debug("                           ");
 				else
-					debug("   %3s = 0x%016llx", regname(cpu->machine, r), (long long)cpu->cd.mips.gpr[r]);
+					debug("   %3s = 0x%016"PRIx64,
+					    regname(cpu->machine, r),
+					    (uint64_t)cpu->cd.mips.gpr[r]);
 				if ((i & 1) == 1)
 					debug("\n");
 			}
@@ -1508,7 +1514,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				    || i == COP0_RANDOM || i == COP0_WIRED))
 					debug(" =         0x%08x", (int)cpu->cd.mips.coproc[coprocnr]->reg[i]);
 				else
-					debug(" = 0x%016llx", (long long)
+					debug(" = 0x%016"PRIx64, (uint64_t)
 					    cpu->cd.mips.coproc[coprocnr]->reg[i]);
 			}
 
@@ -1525,9 +1531,9 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("cpu%i: ", cpu->cpu_id);
 			debug("config_select1 = 0x");
 			if (cpu->is_32bit)
-				debug("%08x", (int)cpu->cd.mips.cop0_config_select1);
+				debug("%08"PRIx32, (uint32_t)cpu->cd.mips.cop0_config_select1);
 			else
-				debug("%016llx", (long long)cpu->cd.mips.cop0_config_select1);
+				debug("%016"PRIx64, (uint64_t)cpu->cd.mips.cop0_config_select1);
 			debug("\n");
 		}
 
@@ -1670,20 +1676,20 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 				else if (memory_points_to_string(cpu, cpu->mem, d, 1))
 					debug(" a%i=\"%s\"", x, memory_conv_to_string(cpu, cpu->mem, d, strbuf, sizeof(strbuf)));
 				else
-					debug(" a%i=0x%llx", x, (long long)d);
+					debug(" a%i=0x%"PRIx64, x, (uint64_t)d);
 			}
 			break;
 		default:
 			if (cpu->is_32bit)
 				debug(" vaddr=0x%08x", (int)vaddr);
 			else
-				debug(" vaddr=0x%016llx", (long long)vaddr);
+				debug(" vaddr=0x%016"PRIx64, (uint64_t)vaddr);
 		}
 
 		if (cpu->is_32bit)
 			debug(" pc=0x%08x ", (int)cpu->cd.mips.pc_last);
 		else
-			debug(" pc=0x%016llx ", (long long)cpu->cd.mips.pc_last);
+			debug(" pc=0x%016"PRIx64" ", (uint64_t)cpu->cd.mips.pc_last);
 
 		if (symbol != NULL)
 			debug("<%s> ]\n", symbol);
@@ -1700,14 +1706,14 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			fatal("cpu%i: ", cpu->cpu_id);
 		fatal("warning: LOW reference: vaddr=");
 		if (cpu->is_32bit)
-			fatal("0x%08x", (int)vaddr);
+			fatal("0x%08"PRIx32, (uint32_t) vaddr);
 		else
-			fatal("0x%016llx", (long long)vaddr);
+			fatal("0x%016"PRIx64, (uint64_t) vaddr);
 		fatal(", exception %s, pc=", exception_names[exccode]);
 		if (cpu->is_32bit)
-			fatal("0x%08x", (int)cpu->cd.mips.pc_last);
+			fatal("0x%08"PRIx32, (uint32_t) cpu->cd.mips.pc_last);
 		else
-			fatal("0x%016llx", (long long)cpu->cd.mips.pc_last);
+			fatal("0x%016"PRIx64, (uint64_t)cpu->cd.mips.pc_last);
 		fatal(" <%s> ]\n", symbol? symbol : "(no symbol)");
 	}
 
@@ -1983,9 +1989,9 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (cached_pc == cpu->machine->breakpoint_addr[i]) {
 				fatal("Breakpoint reached, pc=0x");
 				if (cpu->is_32bit)
-					fatal("%08x", (int)cached_pc);
+					fatal("%08"PRIx32, (uint32_t)cached_pc);
 				else
-					fatal("%016llx", (long long)cached_pc);
+					fatal("%016"PRIx64,(uint64_t)cached_pc);
 				fatal("\n");
 				single_step = 1;
 				return 0;
@@ -2174,7 +2180,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		if (res >= 0) {
 			/*  debug("BINTRANS translation + hit,"
-			    " pc = %016llx\n", (long long)cached_pc);  */
+			    " pc = %016"PRIx64"\n", (uint64_t)cached_pc);  */
 			if (res > 0 || cpu->pc != cached_pc) {
 				if (instruction_trace_cached)
 					mips_cpu_disassemble_instr(cpu, instr, 1, 0, 1);
@@ -2891,8 +2897,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 1;
 		default:
 			if (!instruction_trace_cached) {
-				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
+				fatal("cpu%i @ %016"PRIx64": %02x%02x%02x%02x%s\t",
+				    cpu->cpu_id, (uint64_t)cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented special6 = 0x%02x\n", special6);
@@ -3030,7 +3036,9 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if ((int64_t)cpu->cd.mips.gpr[rt] > 1 && (int64_t)cpu->cd.mips.gpr[rt] < 0x70000000
 				    && (imm >= -30000 && imm <= -1)) {
 					if (instruction_trace_cached)
-						debug("changing r%i from %016llx to", rt, (long long)cpu->cd.mips.gpr[rt]);
+						debug("changing r%i from %016"
+						    PRIx64" to", rt, (uint64_t)
+						    cpu->cd.mips.gpr[rt]);
 
 					while ((int64_t)cpu->cd.mips.gpr[rt] > 0 && ninstrs_executed < 1000
 					    && ((int64_t)cpu->cd.mips.gpr[rt] + (int64_t)imm) > 0) {
@@ -3039,14 +3047,17 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					}
 
 					if (instruction_trace_cached)
-						debug(" %016llx\n", (long long)cpu->cd.mips.gpr[rt]);
+						debug(" %016"PRIx64"\n",
+						    (uint64_t)cpu->cd.mips.gpr[rt]);
 
 					/*  TODO: return value, cpu->cd.mips.gpr[rt] * 2;  */
 				}
 				if ((int64_t)cpu->cd.mips.gpr[rt] > -0x70000000 && (int64_t)cpu->cd.mips.gpr[rt] < -1
 				     && (imm >= 1 && imm <= 30000)) {
 					if (instruction_trace_cached)
-						debug("changing r%i from %016llx to", rt, (long long)cpu->cd.mips.gpr[rt]);
+						debug("changing r%i from %016"
+						    PRIx64" to", rt, (uint64_t)
+						    cpu->cd.mips.gpr[rt]);
 
 					while ((int64_t)cpu->cd.mips.gpr[rt] < 0 && ninstrs_executed < 1000
 					    && ((int64_t)cpu->cd.mips.gpr[rt] + (int64_t)imm) < 0) {
@@ -3055,7 +3066,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					}
 
 					if (instruction_trace_cached)
-						debug(" %016llx\n", (long long)cpu->cd.mips.gpr[rt]);
+						debug(" %016"PRIx64"\n",
+						    (uint64_t)cpu->cd.mips.gpr[rt]);
 				}
 			}
 
@@ -3233,7 +3245,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #if 0
 			if (cpu->cd.mips.cpu_type.isa_level == 4 && (imm & (wlen - 1)) != 0)
 				debug("WARNING: low bits of imm value not zero! (MIPS IV) "
-				    "pc=%016llx", (long long)cpu->cd.mips.pc_last);
+				    "pc=%016"PRIx64, (uint64_t)cpu->cd.mips.pc_last);
 #endif
 
 			/*
@@ -3512,12 +3524,14 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (instruction_trace_cached) {
 				switch (wlen) {
-				case 2:	debug("0x%04x", (int)value); break;
-				case 4:	debug("0x%08x", (int)value); break;
-				case 8:	debug("0x%016llx", (long long)value);
+				case 2:	debug("0x%04"PRIx16, (uint16_t)value);
 					break;
-				case 16:debug("0x%016llx", (long long)value_hi);
-					debug("%016llx", (long long)value); 
+				case 4:	debug("0x%08"PRIx32, (uint32_t)value);
+					break;
+				case 8:	debug("0x%016"PRIx64, (uint64_t)value);
+					break;
+				case 16:debug("0x%016"PRIx64, (uint64_t)value_hi);
+					debug("%016"PRIx64, (uint64_t)value); 
 					break;
 				default:debug("0x%02x", (int)value);
 				}
@@ -3593,7 +3607,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
 						break;
 
-					/*  debug("unaligned byte at %016llx, reg_ofs=%i reg=0x%016llx\n",
+					/*  debug("unaligned byte at %016"PRIx64", reg_ofs=%i reg=0x%016"PRIx64"\n",
 					    tmpaddr, reg_ofs, (long long)result_value);  */
 
 					/*  Store one byte:  */
@@ -3623,8 +3637,10 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
 						break;
 
-					/*  debug("unaligned byte at %016llx, reg_ofs=%i reg=0x%016llx\n",
-					    tmpaddr, reg_ofs, (long long)result_value);  */
+					/*  debug("unaligned byte at %016"
+					    PRIx64", reg_ofs=%i reg=0x%016"
+					    PRIx64"\n", (uint64_t) tmpaddr,
+					    reg_ofs, (uint64_t)result_value); */
 
 					/*  Load one byte:  */
 					databyte = aligned_word[tmpaddr & (wlen-1)];
@@ -3648,12 +3664,12 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (instruction_trace_cached) {
 				char *t;
 				switch (wlen) {
-				case 2:		t = "0x%04llx"; break;
-				case 4:		t = "0x%08llx"; break;
-				case 8:		t = "0x%016llx"; break;
-				default:	t = "0x%02llx";
+				case 2:		t = "0x%04"PRIx64; break;
+				case 4:		t = "0x%08"PRIx64; break;
+				case 8:		t = "0x%016"PRIx64; break;
+				default:	t = "0x%02"PRIx64;
 				}
-				debug(t, (long long)cpu->cd.mips.gpr[rt]);
+				debug(t, (uint64_t) cpu->cd.mips.gpr[rt]);
 				debug("]\n");
 			}
 
@@ -3714,8 +3730,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 1;
 		default:
 			if (!instruction_trace_cached) {
-				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
+				fatal("cpu%i @ %016"PRIx64": %02x%02x%02x%02x%s\t",
+				    cpu->cpu_id, (uint64_t)cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented regimm5 = 0x%02x\n", regimm5);
@@ -3965,8 +3981,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.mips.gpr[rd] = n;
 		} else {
 			if (!instruction_trace_cached) {
-				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
+				fatal("cpu%i @ %016"PRIx64": %02x%02x%02x%02x%s\t",
+				    cpu->cpu_id, (uint64_t)cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented special_2 = 0x%02x, rs=0x%02x rt=0x%02x rd=0x%02x\n",
@@ -3977,8 +3993,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		return 1;
 	default:
 		if (!instruction_trace_cached) {
-			fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, (long long)cpu->cd.mips.pc_last,
+			fatal("cpu%i @ %016"PRIx64": %02x%02x%02x%02x%s\t",
+			    cpu->cpu_id, (uint64_t)cpu->cd.mips.pc_last,
 			    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 		}
 		fatal("unimplemented hi6 = 0x%02x\n", hi6);

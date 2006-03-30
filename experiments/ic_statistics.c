@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ic_statistics.c,v 1.2 2005-12-19 02:16:39 debug Exp $
+ *  $Id: ic_statistics.c,v 1.3 2006-03-30 19:36:03 debug Exp $
  *
  *  This program is not optimized for speed, but it should work.
  *
@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <inttypes.h>
 
 
 struct entry {
@@ -73,7 +74,7 @@ char *cached_size_t_to_symbol(size_t s)
 	cache_s[n_cached_symbols - 1] = s;
 
 	snprintf(tmp, sizeof(tmp), "nm ../gxemul | grep "
-	    "%llx", (long long)s);
+	    "%"PRIx64, (uint64_t)s);
 	q = popen(tmp, "r");
 	if (q == NULL) {
 		perror("popen()");

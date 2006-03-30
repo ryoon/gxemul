@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.12 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.13 2006-03-30 19:36:04 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -184,9 +184,9 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i: pc = 0x", x);
 		if (bits32)
-			debug("%08x", (int)cpu->pc);
+			debug("%08"PRIx32, (uint32_t) cpu->pc);
 		else
-			debug("%016llx", (long long)cpu->pc);
+			debug("%016"PRIx64, (uint64_t) cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		if (bits32) {
@@ -210,14 +210,17 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				int r = ((i >> 1) & 15) | ((i&1) << 4);
 				if ((i & 1) == 0)
 					debug("cpu%i: ", x);
+
 				/*  Skip the zero register:  */
 				if (r==0) {
 					debug("                         ");
 					continue;
 				}
+
 				debug("%s = ", sparc_regnames[r]);
-				debug("0x%016llx", (long long)
+				debug("0x%016"PRIx64, (uint64_t)
 				    cpu->cd.sparc.r[r]);
+
 				if ((i & 1) < 1)
 					debug("  ");
 				else
@@ -304,9 +307,9 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("cpu%i: ", cpu->cpu_id);
 
 	if (cpu->is_32bit)
-		debug("%08x", (int)dumpaddr);
+		debug("%08", (uint32_t) dumpaddr);
 	else
-		debug("%016llx", (long long)dumpaddr);
+		debug("%016"PRIx64, (uint64_t) dumpaddr);
 
 	iword = *(uint32_t *)&instr[0];
 	iword = BE32_TO_HOST(iword);
@@ -372,7 +375,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 			tmp = (int64_t)(int32_t)tmps;
 			tmp += dumpaddr;
-			debug("0x%llx", (long long)tmp);
+			debug("0x%"PRIx64, (uint64_t) tmp);
 			symbol = get_symbol_name(&cpu->machine->
 			    symbol_context, tmp, &offset);
 			if (symbol != NULL)
@@ -393,7 +396,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	case 1:	tmp = (int32_t)iword << 2;
 		tmp += dumpaddr;
-		debug("call\t0x%llx", (long long)tmp);
+		debug("call\t0x%"PRIx64, (uint64_t) tmp);
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    tmp, &offset);
 		if (symbol != NULL)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.6 2006-02-24 00:20:41 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.7 2006-03-30 19:36:04 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -174,15 +174,15 @@ void alpha_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (gprs) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
-		debug("cpu%i:\t pc = 0x%016llx", x, (long long)cpu->pc);
+		debug("cpu%i:\t pc = 0x%016"PRIx64, x, (uint64_t) cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 		for (i=0; i<N_ALPHA_REGS; i++) {
 			int r = (i >> 1) + ((i & 1) << 4);
 			if ((i % 2) == 0)
 				debug("cpu%i:\t", x);
 			if (r != ALPHA_ZERO)
-				debug("%3s = 0x%016llx", alpha_regname[r],
-				    (long long)cpu->cd.alpha.r[r]);
+				debug("%3s = 0x%016"PRIx64, alpha_regname[r],
+				    (uint64_t) cpu->cd.alpha.r[r]);
 			debug((i % 2) == 1? "\n" : "   ");
 		}
 	}
@@ -263,7 +263,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i:\t", cpu->cpu_id);
 
-	debug("%016llx:  ", (long long)dumpaddr);
+	debug("%016"PRIx64":  ", (uint64_t) dumpaddr);
 
 	iw = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
 	debug("%08x\t", (int)iw);
@@ -570,7 +570,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 				debug("jsr");
 			debug("\t%s,", alpha_regname[ra]);
 			debug("(%s),", alpha_regname[rb]);
-			debug("0x%llx", (long long)tmp);
+			debug("0x%"PRIx64, (uint64_t) tmp);
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    tmp, &offset);
 			if (symbol != NULL)
@@ -592,7 +592,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		debug("%s\t", opcode==0x30? "br" : "bsr");
 		if (ra != ALPHA_ZERO)
 			debug("%s,", alpha_regname[ra]);
-		debug("0x%llx", (long long)tmp);
+		debug("0x%"PRIx64, (uint64_t) tmp);
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    tmp, &offset);
 		if (symbol != NULL)
@@ -632,7 +632,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			debug("f%i,", ra);
 		else
 			debug("%s,", alpha_regname[ra]);
-		debug("0x%llx", (long long)tmp);
+		debug("0x%"PRIx64, (uint64_t) tmp);
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    tmp, &offset);
 		if (symbol != NULL)

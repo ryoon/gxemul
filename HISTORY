@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1159 2006-03-26 19:29:22 debug Exp $
+$Id: HISTORY,v 1.1160 2006-03-30 19:36:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2618,3 +2618,6 @@ Changelog for GXemul:
 20060325-26	Beginning to experiment with GDB remote serial protocol
 		connections; adding a -G command line option for selecting
 		which TCP port to listen to.
+20060330	Beginning a major cleanup to replace things like "0x%016llx"
+		with more correct "0x%016"PRIx64, etc.
+		Continuing on the GDB remote serial protocol support.

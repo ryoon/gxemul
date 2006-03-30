@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.5 2006-01-14 13:15:32 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.6 2006-03-30 19:36:04 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -120,8 +120,8 @@ void alpha_prom_call(struct cpu *cpu)
 		/*  getenv  */
 		fatal("[ Alpha PALcode: GXemul PROM call 0x22: TODO ]\n");
 		break;
-	default:fatal("[ Alpha PALcode: GXemul PROM call, a0=0x%llx ]\n",
-		    (long long)cpu->cd.alpha.r[ALPHA_A0]);
+	default:fatal("[ Alpha PALcode: GXemul PROM call, a0=0x%"PRIx64" ]\n",
+		    (uint64_t) cpu->cd.alpha.r[ALPHA_A0]);
 		cpu->running = 0;
 	}
 
@@ -159,16 +159,16 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		break;
 	case 0x33:	/*  PAL_OSF1_tbi  */
 		/*  a0 = op, a1 = vaddr  */
-		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%lli a1=0x%llx ]\n",
-		    (signed long long)cpu->cd.alpha.r[ALPHA_A0],
-		    (long long)cpu->cd.alpha.r[ALPHA_A1]);
+		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
+		    PRIx64" ]\n", (int64_t)cpu->cd.alpha.r[ALPHA_A0],
+		    (uint64_t)cpu->cd.alpha.r[ALPHA_A1]);
 		/*  TODO  */
 		break;
 	case 0x34:	/*  PAL_OSF1_wrent (Write System Entry Address)  */
 		/*  a0 = new vector, a1 = vector selector  */
-		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%lli a1=0x%llx ]\n",
-		    (signed long long)cpu->cd.alpha.r[ALPHA_A0],
-		    (long long)cpu->cd.alpha.r[ALPHA_A1]);
+		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
+		    PRIx64" ]\n", (int64_t) cpu->cd.alpha.r[ALPHA_A0],
+		    (uint64_t) cpu->cd.alpha.r[ALPHA_A1]);
 		/*  TODO  */
 		break;
 	case 0x35:	/*  PAL_OSF1_swpipl  */

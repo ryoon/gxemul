@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.5 2006-02-09 22:40:27 debug Exp $
+ *  $Id: arcbios.c,v 1.6 2006-03-30 19:36:04 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -699,8 +699,8 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		uint64_t eparent, echild, epeer, tmp;
 		unsigned char buf[8];
 
-		/*  debug("[ addchild: peeraddr = 0x%016llx ]\n",
-		    (long long)peeraddr);  */
+		/*  debug("[ addchild: peeraddr = 0x%016"PRIx64" ]\n",
+		    (uint64_t) peeraddr);  */
 
 		cpu->memory_rw(cpu, cpu->mem,
 		    peeraddr + 0 * machine->md.arc.wordlen, &buf[0],
@@ -744,25 +744,25 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		/*  debug("  epeer=%llx echild=%llx eparent=%llx\n",
-		    (long long)epeer, (long long)echild,
-		    (long long)eparent);  */
+		/*  debug("  epeer=%"PRIx64" echild=%"PRIx64" eparent=%"PRIx64
+		    "\n", (uint64_t) epeer, (uint64_t) echild,
+		    (uint64_t) eparent);  */
 
 		if (eparent == parent && epeer == 0) {
 			epeer = a;
 			store_64bit_word(cpu, peeraddr + 0 *
 			    machine->md.arc.wordlen, epeer);
-			/*  debug("[ addchild: adding 0x%016llx as peer "
-			    "to 0x%016llx ]\n", (long long)a,
-			    (long long)peeraddr);  */
+			/*  debug("[ addchild: adding 0x%016"PRIx64" as peer "
+			    "to 0x%016"PRIx64" ]\n", (uint64_t) a,
+			    (uint64_t) peeraddr);  */
 		}
 		if (peeraddr == parent && echild == 0) {
 			echild = a;
 			store_64bit_word(cpu, peeraddr + 1 *
 			    machine->md.arc.wordlen, echild);
-			/*  debug("[ addchild: adding 0x%016llx as child "
-			    "to 0x%016llx ]\n", (long long)a,
-			    (long long)peeraddr);  */
+			/*  debug("[ addchild: adding 0x%016"PRIx64" as child "
+			    "to 0x%016"PRIx64" ]\n", (uint64_t) a,
+			    (uint64_t) peeraddr);  */
 		}
 
 		/*  Go to the next component:  */

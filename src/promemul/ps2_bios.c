@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.2 2006-02-16 05:57:10 debug Exp $
+ *  $Id: ps2_bios.c,v 1.3 2006-03-30 19:36:05 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -61,14 +61,14 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0x200;		/*  TODO  */
 		break;
 	case 1:			/*  halt(int mode)  */
-		debug("[ SIFBIOS halt(0x%llx) ]\n",
-		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1]);
+		debug("[ SIFBIOS halt(0x%"PRIx64") ]\n",
+		    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A1]);
 		cpu->running = 0;
 		cpu->dead = 1;
 		break;
 	case 2:			/*  setdve(int mode)  */
-		debug("[ SIFBIOS setdve(0x%llx) ]\n",
-		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1]);
+		debug("[ SIFBIOS setdve(0x%"PRIx64") ]\n",
+		    (uint64_t) cpu->cd.mips.gpr[MIPS_GPR_A1]);
 		break;
 	case 3:			/*  putchar(int ch)  */
 		/*  debug("[ SIFBIOS putchar(0x%x) ]\n",
@@ -111,10 +111,11 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;		/*  TODO  */
 		break;
 	case 64:
-		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%x,0x%x,0x%x): TODO ]\n",
-		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1],
-		    (int)cpu->cd.mips.gpr[MIPS_GPR_A2],
-		    (int)cpu->cd.mips.gpr[MIPS_GPR_A3]);
+		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%"PRIx32",0x%"PRIx32",0x%"
+		    PRIx32"): TODO ]\n",
+		    (uint32_t) cpu->cd.mips.gpr[MIPS_GPR_A1],
+		    (uint32_t) cpu->cd.mips.gpr[MIPS_GPR_A2],
+		    (uint32_t) cpu->cd.mips.gpr[MIPS_GPR_A3]);
 
 		/*
 		 *  This is really really ugly:   TODO
@@ -165,8 +166,8 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 65:
-		fatal("[ SIFBIOS alloc iop heap(0x%x) ]\n",
-		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1]);
+		fatal("[ SIFBIOS alloc iop heap(0x"PRIx32") ]\n",
+		    (uint32_t)cpu->cd.mips.gpr[MIPS_GPR_A1]);
 
 		/*
 		 *  Linux uses this to allocate "heap" for the OHCI USB

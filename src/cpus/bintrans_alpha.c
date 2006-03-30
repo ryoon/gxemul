@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.7 2006-03-13 05:20:43 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.8 2006-03-30 19:36:04 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -242,8 +242,8 @@ static void bintrans_write_quickjump(struct memory *mem,
 
 	ofs = (alpha_addr - ((size_t)a+4)) / 4;
 
-	/*  printf("chunkoffset=%i, %016llx %016llx %i\n",
-	    chunkoffset, (long long)alpha_addr, (long long)a, ofs);  */
+	/*  printf("chunkoffset=%i, %016"PRIx64" %p %i\n",
+	    chunkoffset, (uint64_t) alpha_addr, a, ofs);  */
 
 	if (ofs > -0xfffff && ofs < 0xfffff) {
 		*a++ = 0xc3e00000 | (ofs & 0x1fffff);	/*  br <chunk>  */
@@ -1189,7 +1189,7 @@ static int bintrans_write_instruction__delayedbranch(
 		/*  printf("%08x ", *potential_chunk_p);  */
 		alpha_addr = *potential_chunk_p + (size_t)mem->translation_code_chunk_space;
 		ofs = (alpha_addr - ((size_t)a+4)) / 4;
-		/*  printf("%016llx %016llx %i\n", (long long)alpha_addr, (long long)a, ofs);  */
+		/*  printf("%016"PRIx64" %p %i\n", (uint64_t)alpha_addr, a, ofs);  */
 
 		if ((*potential_chunk_p) != 0 && ofs > -0xfffff && ofs < 0xfffff) {
 			*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + ((ofs >> 16) & 0x1f); *a++ = 0xc3;	/*  br <chunk>  */

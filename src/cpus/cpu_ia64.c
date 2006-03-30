@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.5 2006-02-24 00:20:41 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.6 2006-03-30 19:36:04 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -140,7 +140,7 @@ void ia64_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (gprs) {
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
-		debug("cpu%i:\t pc = 0x%016llx", x, (long long)cpu->pc);
+		debug("cpu%i:\t pc = 0x%016"PRIx64, x, (uint64_t)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		/*  TODO  */
@@ -197,7 +197,7 @@ int ia64_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i:\t", cpu->cpu_id);
 
-	debug("%016llx:  ", (long long)dumpaddr);
+	debug("%016"PRIx64":  ", (uint64_t) dumpaddr);
 
 debug("TODO\n");
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.2 2005-11-30 16:23:09 debug Exp $
+ *  $Id: memory_mips.c,v 1.3 2006-03-30 19:36:04 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  */
@@ -314,10 +314,10 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 	/*  Data cache isolated?  Then don't access main memory:  */
 	if (cache_isolated) {
-		/*  debug("ISOLATED write=%i cache=%i vaddr=%016llx "
-		    "paddr=%016llx => addr in cache = 0x%lx\n",
-		    writeflag, cache, (long long)vaddr,
-		    (long long)paddr, addr);  */
+		/*  debug("ISOLATED write=%i cache=%i vaddr=%016"PRIx64" "
+		    "paddr=%016"PRIx64" => addr in cache = 0x%lx\n",
+		    writeflag, cache, (uint64_t) vaddr,
+		    (uint64_t) paddr, addr);  */
 
 		if (writeflag==MEM_READ) {
 			for (i=0; i<len; i++)

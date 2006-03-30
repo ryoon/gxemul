@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.4 2006-02-19 08:04:17 debug Exp $
+ *  $Id: machine_pmax.c,v 1.5 2006-03-30 19:36:04 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -614,7 +614,7 @@ MACHINE_SETUP(pmax)
 		    KN230_CSR_INTR_SII);
 
 		snprintf(tmpstr, sizeof(tmpstr),
-		    "kn230 addr=0x%llx", (long long)KN230_SYS_ICSR);
+		    "kn230 addr=0x%"PRIx64, (uint64_t) KN230_SYS_ICSR);
 		machine->md_int.kn230_csr = device_add(machine, tmpstr);
 
 		serial_console_name = "osconsole=0";
@@ -797,8 +797,8 @@ MACHINE_SETUP(pmax)
 	 */
 	{
 		char tmps[300];
-		snprintf(tmps, sizeof(tmps), "cca=%x",
-		    (int)(DEC_DECCCA_BASEADDR + 0xa0000000ULL));
+		snprintf(tmps, sizeof(tmps), "cca=%"PRIx32,
+		    (uint32_t) (DEC_DECCCA_BASEADDR + 0xa0000000ULL));
 		add_environment_string(cpu, tmps, &addr);
 	}
 
@@ -810,14 +810,14 @@ MACHINE_SETUP(pmax)
 		tmps[sizeof(tmps)-1] = '\0';
 		add_environment_string(cpu, tmps, &addr);
 
-		snprintf(tmps, sizeof(tmps), "bitmap=0x%x", (uint32_t)((
-		    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
-		    & 0xffffffffULL));
+		snprintf(tmps, sizeof(tmps), "bitmap=0x%"PRIx32, (uint32_t)
+		    ( (DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
+		    & 0xffffffffULL) );
 		tmps[sizeof(tmps)-1] = '\0';
 		add_environment_string(cpu, tmps, &addr);
 
-		snprintf(tmps, sizeof(tmps), "bitmaplen=0x%x",
-		    machine->physical_ram_in_mb * 1048576 / 4096 / 8);
+		snprintf(tmps, sizeof(tmps), "bitmaplen=0x%"PRIx32, (uint32_t)
+		    ( machine->physical_ram_in_mb * 1048576 / 4096 / 8) );
 		tmps[sizeof(tmps)-1] = '\0';
 		add_environment_string(cpu, tmps, &addr);
 	}

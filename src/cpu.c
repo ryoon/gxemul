@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.330 2006-02-20 18:54:54 debug Exp $
+ *  $Id: cpu.c,v 1.331 2006-03-30 19:36:03 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -256,9 +256,9 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 		fatal("%s", symbol);
 	else {
 		if (cpu->is_32bit)
-			fatal("0x%08x", (int)f);
+			fatal("0x%08"PRIx32, (uint32_t) f);
 		else
-			fatal("0x%llx", (long long)f);
+			fatal("0x%"PRIx64, (uint64_t) f);
 	}
 	fatal("(");
 
@@ -476,8 +476,8 @@ void cpu_show_cycles(struct machine *machine, int forced)
 			    cur_cycles_per_second) / 16;
 		}
 
-		/*  debug("[ updating emulated_hz to %lli Hz ]\n",
-		    (long long)machine->emulated_hz);  */
+		/*  debug("[ updating emulated_hz to %"PRIi64" Hz ]\n",
+		    machine->emulated_hz);  */
 	}
 
 
@@ -485,8 +485,8 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	if (!machine->show_nr_of_instructions && !forced)
 		goto do_return;
 
-	printf("[ %lli instrs",
-	    (long long)(machine->ncycles * instrs_per_cycle));
+	printf("[ %"PRIi64" instrs", (int64_t)
+	    (machine->ncycles * instrs_per_cycle));
 
 	if (!machine->automatic_clock_adjustment) {
 		d = machine->emulated_hz / 1000;
@@ -510,15 +510,15 @@ void cpu_show_cycles(struct machine *machine, int forced)
 		is = 0;
 	if (avg < 0)
 		avg = 0;
-	printf("; i/s=%lli avg=%lli", (long long)is, (long long)avg);
+	printf("; i/s=%"PRIi64" avg=%"PRIi64, is, avg);
 
 	symbol = get_symbol_name(&machine->symbol_context, pc, &offset);
 
 	if (machine->ncpus == 1) {
 		if (machine->cpus[machine->bootstrap_cpu]->is_32bit)
-			printf("; pc=0x%08x", (int)pc);
+			printf("; pc=0x%08"PRIx32, (uint32_t) pc);
 		else
-			printf("; pc=0x%016llx", (long long)pc);
+			printf("; pc=0x%016"PRIx64, (uint64_t) pc);
 	}
 
 	if (symbol != NULL)

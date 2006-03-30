@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.8 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_x86.c,v 1.9 2006-03-30 19:36:04 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -232,14 +232,14 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    cpu->pc, &offset);
 
 		debug("cpu%i:  rip = 0x", x);
-	        debug("%016llx", (long long)cpu->pc);
+	        debug("%016"PRIx64, (uin64_t) cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		for (i=0; i<N_X86_REGS; i++) {
 			if ((i & 1) == 0)
 				debug("cpu%i:", x);
-			debug("  r%s = 0x%016llx", reg_names[i],
-			    (long long)cpu->cd.x86.r[i]);
+			debug("  r%s = 0x%016"PRIx64, reg_names[i],
+			    (uint64_t)cpu->cd.x86.r[i]);
 			if ((i & 1) == 1)
 				debug("\n");
 		}
@@ -282,22 +282,25 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    cpu->machine->isa_pic_data.pic2->irq_base);
 	} else if (PROTECTED_MODE) {
 		/*  Protected mode:  */
-		debug("cpu%i:  cs=0x%04x  ds=0x%04x  es=0x%04x  "
-		    "fs=0x%04x  gs=0x%04x  ss=0x%04x\n", x,
-		    (int)cpu->cd.x86.s[X86_S_CS], (int)cpu->cd.x86.s[X86_S_DS],
-		    (int)cpu->cd.x86.s[X86_S_ES], (int)cpu->cd.x86.s[X86_S_FS],
-		    (int)cpu->cd.x86.s[X86_S_GS], (int)cpu->cd.x86.s[X86_S_SS]);
+		debug("cpu%i:  cs=0x%04"PRIx16"  ds=0x%04"PRIx16"  es=0x%04"
+		    PRIx16"  fs=0x%04"PRIx16"  gs=0x%04"PRIx16"  ss=0x%04"
+		    PRIx16"\n", x, (uint16_t)cpu->cd.x86.s[X86_S_CS],
+		    (uint16_t)cpu->cd.x86.s[X86_S_DS],
+		    (uint16_t)cpu->cd.x86.s[X86_S_ES],
+		    (uint16_t)cpu->cd.x86.s[X86_S_FS],
+		    (uint16_t)cpu->cd.x86.s[X86_S_GS],
+		    (uint16_t)cpu->cd.x86.s[X86_S_SS]);
 	}
 
 	if (PROTECTED_MODE) {
 		/*  Protected mode:  */
-		debug("cpu%i:  cr0=0x%08x  cr2=0x%08x  cr3=0x%08x  eflags="
-		    "0x%08x\n", x, (int)cpu->cd.x86.cr[0],
-		    (int)cpu->cd.x86.cr[2], (int)cpu->cd.x86.cr[3],
-		    (int)cpu->cd.x86.rflags);
-		debug("cpu%i:  tr = 0x%04x (base=0x%llx, limit=0x%x)\n",
-		    x, (int)cpu->cd.x86.tr, (long long)cpu->cd.x86.tr_base,
-		    (int)cpu->cd.x86.tr_limit);
+		debug("cpu%i:  cr0=0x%08"PRIx32"  cr2=0x%08"PRIx32"  cr3=0x%08"
+		    PRIx32"  eflags=0x%08"PRIx32"\n", x,
+		    (uint32_t)cpu->cd.x86.cr[0], (uint32_t)cpu->cd.x86.cr[2], 
+		    (uint32_t)cpu->cd.x86.cr[3], (uint32_t)cpu->cd.x86.rflags);
+		debug("cpu%i:  tr = 0x%04"PRIx16" (base=0x%"PRIx64", limit=0x"
+		    PRIx32")\n", x, (uint16_t)cpu->cd.x86.tr, (uint64_t)
+		    cpu->cd.x86.tr_base, (uint32_t)cpu->cd.x86.tr_limit);
 	}
 }
 
@@ -657,8 +660,8 @@ void x86_task_switch(struct cpu *cpu, int new_tr, uint64_t *curpc)
 	reload_segment_descriptor(cpu, RELOAD_TR, new_tr, NULL);
 
 	if (cpu->cd.x86.tr_limit < 0x67)
-		fatal("WARNING: tr_limit = 0x%x, must be at least 0x67!\n",
-		    (int)cpu->cd.x86.tr_limit);
+		fatal("WARNING: tr_limit = 0x%"PRIx16", must be at least "
+		    "0x67!\n", (uint16_t)cpu->cd.x86.tr_limit);
 
 	/*  Read new registers:  */
 #define READ_VALUE { cpu->memory_rw(cpu, cpu->mem, cpu->cd.x86.tr_base + \

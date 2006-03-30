@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.c,v 1.6 2006-01-14 12:51:59 debug Exp $
+ *  $Id: float_emul.c,v 1.7 2006-03-30 19:36:03 debug Exp $
  *
  *  Floating point emulation routines.
  */
@@ -142,8 +142,8 @@ void ieee_interpret_float_value(uint64_t x, struct ieee_float_value *fvp,
 	fvp->f = fraction;
 
 #ifdef IEEE_DEBUG
-	fatal("{ ieee: x=%016llx sign=%i exponent=%i frac=%f ",
-	    (long long)x, sign, exponent, fraction);
+	fatal("{ ieee: x=%016"PRIx64" sign=%i exponent=%i frac=%f ",
+	    (uint64_t) x, sign, exponent, fraction);
 #endif
 
 	/*  TODO: this is awful for exponents of large magnitude.  */
@@ -274,7 +274,7 @@ uint64_t ieee_store_float_value(double nf, int fmt, int nan)
 			r = 0;
 
 #ifdef IEEE_DEBUG
-		fatal(" exp=%i, r = %016llx }\n", exponent, (long long)r);
+		fatal(" exp=%i, r = %016"PRIx64" }\n", exponent, (uint64_t) r);
 #endif
 		break;
 	default:/*  TODO  */

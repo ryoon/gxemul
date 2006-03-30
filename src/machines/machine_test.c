@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.5 2006-03-04 11:20:43 debug Exp $
+ *  $Id: machine_test.c,v 1.6 2006-03-30 19:36:04 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -46,23 +46,24 @@
 static void default_test(struct machine *machine, struct cpu *cpu)
 {
 	char tmpstr[1000];
-	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=0",
-	    (long long)DEV_CONS_ADDRESS);
+
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=0",
+	    (uint64_t) DEV_CONS_ADDRESS);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-	    (long long)DEV_MP_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64,
+	    (uint64_t) DEV_MP_ADDRESS);
 	device_add(machine, tmpstr);
 
 	dev_fb_init(machine, machine->memory, DEV_FB_ADDRESS, VFB_GENERIC,
 	    640,480, 640,480, 24, "generic"); 
 
-	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-	    (long long)DEV_DISK_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%"PRIx64,
+	    (uint64_t) DEV_DISK_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=0",
-	    (long long)DEV_ETHER_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=0",
+	    (uint64_t) DEV_ETHER_ADDRESS);
 	device_add(machine, tmpstr);
 }
 
@@ -396,23 +397,23 @@ MACHINE_SETUP(testmips)
 	machine->stable = 1;
 	cpu->byte_order = EMUL_BIG_ENDIAN;
 
-	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%llx irq=2",
-	    (long long)DEV_CONS_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=2",
+	    (uint64_t) DEV_CONS_ADDRESS);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%llx",
-	    (long long)DEV_MP_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "mp addr=0x%"PRIx64,
+	    (uint64_t) DEV_MP_ADDRESS);
 	device_add(machine, tmpstr);
 
 	dev_fb_init(machine, machine->memory, DEV_FB_ADDRESS, VFB_GENERIC,
 	    640,480, 640,480, 24, "testmips generic"); 
 
-	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%llx",
-	    (long long)DEV_DISK_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%"PRIx64,
+	    (uint64_t) DEV_DISK_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%llx irq=3",
-	    (long long)DEV_ETHER_ADDRESS);
+	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=3",
+	    (uint64_t) DEV_ETHER_ADDRESS);
 	device_add(machine, tmpstr);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_avr.c,v 1.3 2006-03-05 16:00:23 debug Exp $
+ *  $Id: machine_avr.c,v 1.4 2006-03-30 19:36:04 debug Exp $
  *
  *  Experimental AVR machines.
  */
@@ -47,8 +47,8 @@ MACHINE_SETUP(bareavr)
 	machine->machine_name = "Generic \"bare\" AVR machine";
 	machine->cycle_accurate = 1;
 	machine->stable = 1;
-	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%llx",
-	    (long long)AVR_SRAM_BASE);
+	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%"PRIx64,
+	    (uint64_t) AVR_SRAM_BASE);
 	device_add(machine, tmpstr);
 }
 
@@ -85,8 +85,8 @@ MACHINE_SETUP(avr_pal)
 	machine->machine_name = "AVR connected to a PAL TV";
 	machine->cycle_accurate = 1;
 	machine->stable = 1;
-	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%llx",
-	    (long long)AVR_SRAM_BASE);
+	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%"PRIx64,
+	    (uint64_t) AVR_SRAM_BASE);
 	device_add(machine, tmpstr);
 	device_add(machine, "pal");
 }
@@ -124,8 +124,8 @@ MACHINE_SETUP(avr_mahpong)
 	machine->machine_name = "AVR setup for Mahpong";
 	machine->cycle_accurate = 1;
 	machine->stable = 1;
-	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%llx",
-	    (long long)AVR_SRAM_BASE);
+	snprintf(tmpstr, sizeof(tmpstr), "avr addr=0x%"PRIx64,
+	    (uint64_t) AVR_SRAM_BASE);
 	device_add(machine, tmpstr);
 	device_add(machine, "pal");
 }

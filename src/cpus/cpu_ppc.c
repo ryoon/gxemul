@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.51 2006-03-05 16:51:55 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.52 2006-03-30 19:36:04 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -296,7 +296,7 @@ void ppc_exception(struct cpu *cpu, int exception_nr)
 		cpu->cd.ppc.spr[SPR_SRR1] = (cpu->cd.ppc.msr & 0x87c0ffff);
 
 	if (!quiet_mode)
-		fatal("[ PPC Exception 0x%x; pc=0x%llx ]\n", exception_nr,
+		fatal("[ PPC Exception 0x%x; pc=0x%"PRIx64" ]\n", exception_nr,
 		    (long long)cpu->pc);
 
 	/*  Disable External Interrupts, Recoverable Interrupt Mode,
@@ -336,17 +336,17 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i: pc  = 0x", x);
 		if (bits32)
-			debug("%08x", (int)cpu->pc);
+			debug("%08"PRIx32, (uint32_t)cpu->pc);
 		else
-			debug("%016llx", (long long)cpu->pc);
+			debug("%016"PRIx64, (uint64_t)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		debug("cpu%i: lr  = 0x", x);
 		if (bits32)
-			debug("%08x", (int)cpu->cd.ppc.spr[SPR_LR]);
+			debug("%08"PRIx32, (uint32_t)cpu->cd.ppc.spr[SPR_LR]);
 		else
-			debug("%016llx", (long long)cpu->cd.ppc.spr[SPR_LR]);
-		debug("  cr  = 0x%08x", (int)cpu->cd.ppc.cr);
+			debug("%016"PRIx64, (uint64_t)cpu->cd.ppc.spr[SPR_LR]);
+		debug("  cr  = 0x%08"PRIx32, (uint32_t)cpu->cd.ppc.cr);
 
 		if (bits32)
 			debug("  ");
@@ -354,15 +354,17 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("\ncpu%i: ", x);
 		debug("ctr = 0x", x);
 		if (bits32)
-			debug("%08x", (int)cpu->cd.ppc.spr[SPR_CTR]);
+			debug("%08"PRIx32, (uint32_t)cpu->cd.ppc.spr[SPR_CTR]);
 		else
-			debug("%016llx", (long long)cpu->cd.ppc.spr[SPR_CTR]);
+			debug("%016"PRIx64, (uint64_t)cpu->cd.ppc.spr[SPR_CTR]);
 
 		debug("  xer = 0x", x);
 		if (bits32)
-			debug("%08x\n", (int)cpu->cd.ppc.spr[SPR_XER]);
+			debug("%08"PRIx32, (uint32_t)cpu->cd.ppc.spr[SPR_XER]);
 		else
-			debug("%016llx\n", (long long)cpu->cd.ppc.spr[SPR_XER]);
+			debug("%016"PRIx64, (uint64_t)cpu->cd.ppc.spr[SPR_XER]);
+
+		debug("\n");
 
 		if (bits32) {
 			/*  32-bit:  */

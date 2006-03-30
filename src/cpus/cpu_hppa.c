@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.7 2006-02-24 00:20:41 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.8 2006-03-30 19:36:04 debug Exp $
  *
  *  HP PA-RISC CPU emulation.
  *
@@ -138,9 +138,9 @@ void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i: pc  = 0x", x);
 		if (bits32)
-			debug("%08x", (int)cpu->pc);
+			debug("%08"PRIx32, (uint32_t) cpu->pc);
 		else
-			debug("%016llx", (long long)cpu->pc);
+			debug("%016"PRIx64, (uint64_t) cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		if (bits32) {
@@ -148,8 +148,8 @@ void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<nregs; i++) {
 				if ((i % 4) == 0)
 					debug("cpu%i:", x);
-				debug(" r%02i = 0x%08x ", i,
-				    (int)cpu->cd.hppa.r[i]);
+				debug(" r%02i = 0x%08"PRIx32" ", i,
+				    (uint32_t)cpu->cd.hppa.r[i]);
 				if ((i % 4) == 3)
 					debug("\n");
 			}
@@ -159,8 +159,8 @@ void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				int r = (i >> 1) + ((i & 1) << 4);
 				if ((i % 2) == 0)
 					debug("cpu%i:", x);
-				debug(" r%02i = 0x%016llx ", r,
-				    (long long)cpu->cd.hppa.r[r]);
+				debug(" r%02i = 0x%016"PRIx64" ", r,
+				    (uint64_t) cpu->cd.hppa.r[r]);
 				if ((i % 2) == 1)
 					debug("\n");
 			}
@@ -243,9 +243,9 @@ int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("cpu%i: ", cpu->cpu_id);
 
 	if (cpu->cd.hppa.bits == 32)
-		debug("%08x", (int)dumpaddr);
+		debug("%08"PRIx32, (uint32_t) dumpaddr);
 	else
-		debug("%016llx", (long long)dumpaddr);
+		debug("%016"PRIx64, (uint64_t) dumpaddr);
 
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
 		iword = (instr[0] << 24) + (instr[1] << 16) + (instr[2] << 8)
@@ -254,7 +254,7 @@ int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		iword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8)
 		    + instr[0];
 
-	debug(": %08x\t", iword);
+	debug(": %08"PRIx32"\t", (uint32_t) iword);
 
 	/*
 	 *  Decode the instruction:

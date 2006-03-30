@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.h,v 1.2 2006-03-26 19:29:22 debug Exp $
+ *  $Id: debugger_gdb.h,v 1.3 2006-03-30 19:36:04 debug Exp $
  *
  *  See src/debugger/debugger_gdb.c.
  */
@@ -39,16 +39,17 @@ struct debugger_gdb {
 	int		port;
 	int		socket;
 
-	int		rx_state;
+	int		rx_state;	/*  current receive state  */
 
 	unsigned char	*rx_buf;
-	size_t		rx_buf_head;
-	size_t		rx_buf_tail;
+	unsigned char	rx_buf_checksum;
+	unsigned char	rx_checksum1;
+	size_t		rx_buf_size;
+	size_t		rx_buf_curlen;
 };
 
 
-#define	DEBUGGER_GDB_RXBUF_SIZE		4096
-
+/*  Receive states:  */
 #define	RXSTATE_WAITING_FOR_DOLLAR	0
 #define	RXSTATE_WAITING_FOR_HASH	1
 #define	RXSTATE_WAITING_FOR_CHECKSUM1	2

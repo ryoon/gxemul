@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.187 2006-01-14 12:51:59 debug Exp $
+ *  $Id: memory.c,v 1.188 2006-03-30 19:36:04 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -387,13 +387,13 @@ void memory_device_register(struct memory *mem, const char *device_name,
 
 	if (verbose >= 2) {
 		/*  (40 bits of physical address is displayed)  */
-		debug("device at 0x%010llx: %s", (long long)baseaddr,
+		debug("device at 0x%010"PRIx64": %s", (uint64_t) baseaddr,
 		    device_name);
 
 		if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
 		    && (baseaddr & mem->dev_dyntrans_alignment) != 0) {
 			fatal("\nWARNING: Device dyntrans access, but unaligned"
-			    " baseaddr 0x%llx.\n", (long long)baseaddr);
+			    " baseaddr 0x%"PRIx64".\n", (uint64_t) baseaddr);
 		}
 
 		if (flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
@@ -555,8 +555,8 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	table = mem->pagetable;
 	entry = (paddr >> shrcount) & mask;
 
-	/*  printf("memory_paddr_to_hostaddr(): p=%16llx w=%i => entry=0x%x\n",
-	    (long long)paddr, writeflag, entry);  */
+	/*  printf("memory_paddr_to_hostaddr(): p=%16"PRIx64
+	    " w=%i => entry=0x%x\n", (uint64_t) paddr, writeflag, entry);  */
 
 	if (table[entry] == NULL) {
 		size_t alloclen;

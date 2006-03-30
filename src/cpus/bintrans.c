@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.6 2006-03-12 10:30:35 debug Exp $
+ *  $Id: bintrans.c,v 1.7 2006-03-30 19:36:04 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -180,7 +180,7 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 static void bintrans_register_potential_quick_jump(struct memory *mem,
 	unsigned char *a, int p)
 {
-	/*  printf("%02i: a=%016llx p=%i\n", mem->quick_jumps_index, a, p);  */
+	/*  printf("%02i: a=%p p=%i\n", mem->quick_jumps_index, a, p);  */
 	mem->quick_jump_host_address[mem->quick_jumps_index] = a;
 	mem->quick_jump_page_offset[mem->quick_jumps_index] = p;
 	mem->quick_jumps_index ++;
@@ -377,15 +377,15 @@ int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	}
 
 #if 1
-/*  printf("A paddr=%016llx\n", (long long)paddr);  */
+/*  printf("A paddr=%016"PRIx64"\n", (uint64_t) paddr);  */
 /*  Sometimes this works.  */
 quick_attempt_translate_again:
 #endif
 /*printf("B: ");
-printf("v=%016llx p=%016llx h=%p paddr=%016llx\n",
-(long long)cpu->cd.mips.pc_last_virtual_page,
-(long long)cpu->cd.mips.pc_last_physical_page,
-cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
+printf("v=%016"PRIx64" p=%016"PRIx64" h=%p paddr=%016"PRIx64"\n",
+(uint64_t) cpu->cd.mips.pc_last_virtual_page,
+(uint64_t) cpu->cd.mips.pc_last_physical_page,
+cpu->cd.mips.pc_last_host_4k_page,(uint64_t) paddr);
 */
 	/*
 	 *  If the chunk space is all used up, we need to start over from
@@ -910,8 +910,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 	f = ca2;
 
 run_it:
-	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
-	    (long long)cpu->pc, (long long)cpu->cd.mips.gpr[31]); */
+	/*  printf("BEFORE: pc=%016"PRIx64" r31=%016"PRIx64"\n",
+	    (uint64_t) cpu->pc, (uint64_t) cpu->cd.mips.gpr[31]); */
 
 	enter_chunks_into_tables(cpu, cpu->pc, &tep->chunk[0]);
 
@@ -919,8 +919,8 @@ run_it:
 
 	bintrans_runchunk(cpu, f);
 
-	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
-	    (long long)cpu->pc, (long long)cpu->cd.mips.gpr[31]);  */
+	/*  printf("AFTER:  pc=%016"PRIx64" r31=%016"PRIx64"\n",
+	    (uint64_t) cpu->pc, (uint64_t) cpu->cd.mips.gpr[31]);  */
 
 	if (!cpu->delay_slot && !cpu->cd.mips.nullify_next &&
 	    cpu->cd.mips.bintrans_instructions_executed < N_SAFE_DYNTRANS_LIMIT
@@ -1017,10 +1017,10 @@ run_it:
 
 /*
 printf("C: ");
-printf("v=%016llx p=%016llx h=%p paddr=%016llx\n",
-(long long)cpu->cd.mips.pc_last_virtual_page,
-(long long)cpu->cd.mips.pc_last_physical_page,
-cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
+printf("v=%016"PRIx64" p=%016"PRIx64" h=%p paddr=%016"PRIx64"\n",
+(uint64_t) cpu->cd.mips.pc_last_virtual_page,
+(uint64_t) cpu->cd.mips.pc_last_physical_page,
+cpu->cd.mips.pc_last_host_4k_page, (uint64_t) paddr);
 */
 					goto quick_attempt_translate_again;
 				}

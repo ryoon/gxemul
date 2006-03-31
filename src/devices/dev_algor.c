@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_algor.c,v 1.1 2006-02-18 17:55:25 debug Exp $
+ *  $Id: dev_algor.c,v 1.2 2006-03-31 23:20:25 debug Exp $
  *
  *  Algor misc. stuff.
  *
@@ -73,8 +73,8 @@ DEVICE_ACCESS(algor)
 			fatal("[ algor: read from 0x%x ]\n",
 			    (int)relative_addr);
 		} else {
-			fatal("[ algor: write to 0x%x: 0x%llx ]\n",
-			    (int)relative_addr, (long long)idata);
+			fatal("[ algor: write to 0x%x: 0x%"PRIx64" ]\n",
+			    (int) relative_addr, (uint64_t) idata);
 		}
 	}
 
@@ -82,8 +82,8 @@ DEVICE_ACCESS(algor)
 		if (writeflag == MEM_READ) {
 			debug("[ algor: read from %s ]\n", n);
 		} else {
-			debug("[ algor: write to %s: 0x%llx ]\n",
-			    n, (long long)idata);
+			debug("[ algor: write to %s: 0x%"PRIx64" ]\n",
+			    n, (uint64_t) idata);
 		}
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.22 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.23 2006-03-31 23:20:25 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -205,7 +205,7 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		return;
 	}
 
-	debug("mardigras_20400(): 0x%016llx\n", (long long)idata);
+	debug("mardigras_20400(): 0x%016"PRIx64"\n", (uint64_t) idata);
 }
 
 
@@ -281,8 +281,8 @@ DEVICE_ACCESS(sgi_mardigras)
 			debug("[ sgi_mardigras: read from 0x%08lx ]\n",
 			    (long)relative_addr);
 		} else {
-			debug("[ sgi_mardigras: write to  0x%08lx: 0x%016llx"
-			    " ]\n", (long)relative_addr, (long long)idata);
+			debug("[ sgi_mardigras: write to  0x%08lx: 0x%016"PRIx64
+			    " ]\n", (long) relative_addr, (uint64_t) idata);
 		}
 	}
 

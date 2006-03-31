@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.6 2006-03-20 20:37:47 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.7 2006-03-31 23:53:41 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -60,7 +60,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
 	/*  Check alignment:  */
 	if (addr & (LS_SIZE - 1)) {
 		fatal("TODO: mips dyntrans alignment exception, size = %i,"
-		    " addr = %016llx\n", LS_SIZE, (long long)addr);
+		    " addr = %016"PRIx64"\n", LS_SIZE, (uint64_t) addr);
 		exit(1);
 	}
 #endif
@@ -118,8 +118,8 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 	x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
 	x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
 	x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N)) & mask3;
-	/*  fatal("X3: addr=%016llx x1=%x x2=%x x3=%x\n", (long long)addr,
-	    (int)x1, (int)x2, (int)x3);  */
+	/*  fatal("X3: addr=%016"PRIx64" x1=%x x2=%x x3=%x\n",
+	    (uint64_t) addr, (int) x1, (int) x2, (int) x3);  */
 	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 	/*  fatal("  l2 = %p\n", l2);  */
 	l3 = l2->l3[x2];

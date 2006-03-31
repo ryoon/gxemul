@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.97 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_vga.c,v 1.98 2006-03-31 23:53:41 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -521,8 +521,8 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 		int base = ((d->crtc_reg[VGA_CRTC_START_ADDR_HIGH] << 8)
 		    + d->crtc_reg[VGA_CRTC_START_ADDR_LOW]) * 2;
 		int new_u_y1, new_u_y2;
-		debug("[ dev_vga_tick: dyntrans access, %llx .. %llx ]\n",
-		    (long long)low, (long long)high);
+		debug("[ dev_vga_tick: dyntrans access, %"PRIx64" .. %"
+		    PRIx64" ]\n", (uint64_t) low, (uint64_t) high);
 		low -= base;
 		high -= base;
 		d->update_x1 = 0;

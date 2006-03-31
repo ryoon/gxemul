@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.3 2005-12-26 12:32:10 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.4 2006-03-31 23:53:41 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -379,24 +379,26 @@ bugs are triggered.  */
 			/*  Is there a VPN and ASID match?  */
 			if (entry_vpn2 == vaddr_vpn2 &&
 			    (entry_asid == vaddr_asid || g_bit)) {
-				/*  debug("OK MAP 1, i=%i { vaddr=%016llx "
-				    "==> paddr %016llx v=%i d=%i "
-				    "asid=0x%02x }\n", i, (long long)vaddr,
-				    (long long) *return_addr, v_bit?1:0,
+				/*  debug("OK MAP 1, i=%i { vaddr=%016"PRIx64" "
+				    "==> paddr %016"PRIx64" v=%i d=%i "
+				    "asid=0x%02x }\n", i, (uint64_t) vaddr,
+				    (uint64_t) *return_addr, v_bit?1:0,
 				    d_bit?1:0, vaddr_asid);  */
 				if (v_bit) {
 					if (d_bit || (!d_bit &&
 					    writeflag == MEM_READ)) {
 						uint64_t paddr;
 						/*  debug("OK MAP 2!!! { w=%i "
-						    "vaddr=%016llx ==> d=%i v="
-						    "%i paddr %016llx ",
-						    writeflag, (long long)vaddr,
+						    "vaddr=%016"PRIx64" ==> "
+						    "d=%i v=%i paddr %016"
+						    PRIx64" ",
+						    writeflag, (uint64_t)vaddr,
 						    d_bit?1:0, v_bit?1:0,
-						    (long long) *return_addr);
+						    (uint64_t) *return_addr);
 						    debug(", tlb entry %2i: ma"
-						    "sk=%016llx hi=%016llx lo0"
-						    "=%016llx lo1=%016llx\n",
+						    "sk=%016"PRIx64" hi=%016"
+						    PRIx64" lo0=%016"PRIx64
+						    " lo1=%016"PRIx64"\n",
 						    i, cp0->tlbs[i].mask, cp0->
 						    tlbs[i].hi, cp0->tlbs[i].
 						    lo0, cp0->tlbs[i].lo1);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.36 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.37 2006-03-31 23:53:41 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -376,7 +376,8 @@ static uint64_t vr41xx_kiu(struct cpu *cpu, int ofs, uint64_t idata,
 	default:
 		if (writeflag == MEM_WRITE)
 			debug("[ vr41xx KIU: unimplemented write to offset "
-			    "0x%x, data=0x%016llx ]\n", ofs, (long long)idata);
+			    "0x%x, data=0x%016"PRIx64" ]\n", ofs,
+			    (uint64_t) idata);
 		else
 			debug("[ vr41xx KIU: unimplemented read from offset "
 			    "0x%x ]\n", ofs);
@@ -517,11 +518,11 @@ DEVICE_ACCESS(vr41xx)
 	default:
 		if (writeflag == MEM_WRITE)
 			debug("[ vr41xx: unimplemented write to address "
-			    "0x%llx, data=0x%016llx ]\n",
-			    (long long)relative_addr, (long long)idata);
+			    "0x%"PRIx64", data=0x%016"PRIx64" ]\n",
+			    (uint64_t) relative_addr, (uint64_t) idata);
 		else
 			debug("[ vr41xx: unimplemented read from address "
-			    "0x%llx ]\n", (long long)relative_addr);
+			    "0x%"PRIx64" ]\n", (uint64_t) relative_addr);
 	}
 
 ret:
@@ -590,8 +591,8 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	 *  which chips.
 	 */
 	if (cpumodel == 4131) {
-		snprintf(tmps, sizeof(tmps), "ns16550 irq=%i addr=0x%llx "
-		    "name2=siu", 8+VRIP_INTR_SIU, (long long)(baseaddr+0x800));
+		snprintf(tmps, sizeof(tmps), "ns16550 irq=%i addr=0x%"PRIx64" "
+		    "name2=siu", 8+VRIP_INTR_SIU, (uint64_t) (baseaddr+0x800));
 		device_add(machine, tmps);
 	} else {
 		/*  This is used by Linux and NetBSD:  */

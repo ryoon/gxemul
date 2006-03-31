@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.64 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_wdc.c,v 1.65 2006-03-31 23:53:41 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -588,15 +588,15 @@ DEVICE_ACCESS(wdc)
 			}
 
 			if (d->data_debug) {
-				char *s = "0x%04llx ]\n";
+				char *s = "0x%04"PRIx64" ]\n";
 				if (len == 1)
-					s = "0x%02llx ]\n";
+					s = "0x%02"PRIx64" ]\n";
 				if (len == 4)
-					s = "0x%08llx ]\n";
+					s = "0x%08"PRIx64" ]\n";
 				if (len == 8)
-					s = "0x%016llx ]\n";
+					s = "0x%016"PRIx64" ]\n";
 				debug("[ wdc: read from DATA: ");
-				debug(s, (long long)odata);
+				debug(s, (uint64_t) odata);
 			}
 
 			if (d->atapi_cmd_in_progress) {
@@ -629,15 +629,15 @@ DEVICE_ACCESS(wdc)
 		} else {
 			int inbuf_len;
 			if (d->data_debug) {
-				char *s = "0x%04llx ]\n";
+				char *s = "0x%04"PRIx64" ]\n";
 				if (len == 1)
-					s = "0x%02llx ]\n";
+					s = "0x%02"PRIx64" ]\n";
 				if (len == 4)
-					s = "0x%08llx ]\n";
+					s = "0x%08"PRIx64" ]\n";
 				if (len == 8)
-					s = "0x%016llx ]\n";
+					s = "0x%016"PRIx64" ]\n";
 				debug("[ wdc: write to DATA: ");
-				debug(s, (long long)idata);
+				debug(s, (uint64_t) idata);
 			}
 			if (!d->write_in_progress &&
 			    !d->atapi_cmd_in_progress) {

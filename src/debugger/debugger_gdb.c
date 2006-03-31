@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.4 2006-03-30 19:36:04 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.5 2006-03-31 23:47:27 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "cpu.h"
 #include "debugger_gdb.h"
 #include "machine.h"
 #include "memory.h"
@@ -90,7 +91,12 @@ static void debugger_gdb_listen(struct machine *machine)
 }
 
 
-static void send_response(struct machine *machine, unsigned char *msg)
+/*
+ *  send_packet():
+ *
+ *  Sends a packet with the correct checksum.
+ */
+static void send_packet(struct machine *machine, unsigned char *msg)
 {
 	unsigned char hex[16] = "0123456789abcdef";
 	unsigned char checksum = 0x00;
@@ -122,13 +128,18 @@ void debugger_gdb__execute_command(struct machine *machine)
 	fatal("[ EXECUTE: '%s' ]\n", machine->gdb.rx_buf);
 
 	if (strcmp(cmd, "?") == 0) {
-		send_response(machine, "x00");
+		send_packet(machine, "S00");
+	} else if (strcmp(cmd, "g") == 0) {
+
+		cpu_gdb_stub(machine->cpus[0], cmd);
+		/*  TODO  */
+		
 	} else if (strncmp(cmd, "Hc", 2) == 0) {
 		fatal("[ TODO: GDB SET THREAD ]\n");
-		send_response(machine, "OK");
+		send_packet(machine, "OK");
 	} else {
 		fatal("[ (UNKNOWN COMMAND) ]\n");
-		send_response(machine, "");
+		send_packet(machine, "");
 	}
 }
 
@@ -154,11 +165,11 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 	if (len < 0)
 		return 0;
 
-	fatal("[ debugger_gdb: received char ");
+	debug("[ debugger_gdb: received char ");
 	if (ch >= ' ')
-		fatal("'%c' ]\n", ch);
+		debug("'%c' ]\n", ch);
 	else
-		fatal("0x%02x ]\n", ch);
+		debug("0x%02x ]\n", ch);
 
 	switch (machine->gdb.rx_state) {
 
@@ -174,7 +185,7 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 			machine->gdb.rx_buf_curlen = 0;
 			machine->gdb.rx_buf_checksum = 0x00;
 		} else {
-			fatal("[ debugger_gdb: ignoring char '%c' ]\n", ch);
+			debug("[ debugger_gdb: ignoring char '%c' ]\n", ch);
 		}
 		break;
 
@@ -198,7 +209,7 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 
 			machine->gdb.rx_buf_checksum += ch;
 
-			fatal("[ debugger_gdb: current checksum = "
+			debug("[ debugger_gdb: current checksum = "
 			    "0x%02x ]\n", machine->gdb.rx_buf_checksum);
 		}
 		break;
@@ -253,7 +264,7 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 	}
 
 	if (machine->gdb.rx_state != old_state)
-		fatal("[ debugger_gdb: state %i -> %i ]\n",
+		debug("[ debugger_gdb: state %i -> %i ]\n",
 		    old_state, machine->gdb.rx_state);
 
 	return 1;

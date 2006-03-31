@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.13 2006-03-30 19:36:04 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.14 2006-03-31 23:47:27 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -251,6 +251,18 @@ void sparc_cpu_register_match(struct machine *m, char *name,
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	}
+}
+
+
+/*
+ *  sparc_cpu_gdb_stub():
+ *  
+ *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ */
+int sparc_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+{
+	fatal("sparc_cpu_gdb_stub(): TODO\n");
+	return 0;
 }
 
 

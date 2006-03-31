@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.69 2006-03-12 10:30:36 debug Exp $
+ *  $Id: cpu.h,v 1.70 2006-03-31 23:47:27 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -224,6 +224,7 @@ struct cpu_family {
 				    uint64_t irq_nr);
 	void			(*functioncall_trace)(struct cpu *,
 				    uint64_t f, int n_args);
+	int			(*gdb_stub)(struct cpu *, char *cmd);
 };
 
 
@@ -338,6 +339,7 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs);
 int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr, int bintrans);
+int cpu_gdb_stub(struct cpu *cpu, char *cmd);
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);
@@ -376,6 +378,7 @@ void cpu_init(void);
 	fp->interrupt = n ## _cpu_interrupt; 				\
 	fp->interrupt_ack = n ## _cpu_interrupt_ack;			\
 	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
+	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	return 1;							\
 	}
 
@@ -395,6 +398,7 @@ void cpu_init(void);
 	fp->interrupt = n ## _cpu_interrupt; 				\
 	fp->interrupt_ack = n ## _cpu_interrupt_ack;			\
 	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
+	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	return 1;							\
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.10 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_sh.c,v 1.11 2006-03-31 23:47:27 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -190,6 +190,18 @@ void sh_cpu_register_match(struct machine *m, char *name,
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	}
+}
+
+
+/*
+ *  sh_cpu_gdb_stub():
+ *  
+ *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ */
+int sh_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+{
+	fatal("sh_cpu_gdb_stub(): TODO\n");
+	return 0;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.c,v 1.4 2005-11-13 00:14:07 debug Exp $
+ *  $Id: cpu_i960.c,v 1.5 2006-03-31 23:47:27 debug Exp $
  *
  *  Intel i960 CPU emulation.
  */
@@ -145,6 +145,18 @@ void i960_cpu_register_match(struct machine *m, char *name,
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	}
+}
+
+
+/*
+ *  i960_cpu_gdb_stub():
+ *  
+ *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ */
+int i960_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+{
+	fatal("i960_cpu_gdb_stub(): TODO\n");
+	return 0;
 }
 
 

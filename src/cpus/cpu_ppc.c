@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.52 2006-03-30 19:36:04 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.53 2006-03-31 23:47:27 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -597,6 +597,18 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 			*match_register = 1;
 		}
 	}
+}
+
+
+/*
+ *  ppc_cpu_gdb_stub():
+ *  
+ *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ */
+int ppc_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+{
+	fatal("ppc_cpu_gdb_stub(): TODO\n");
+	return 0;
 }
 
 

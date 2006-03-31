@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.6 2006-03-30 19:36:04 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.7 2006-03-31 23:47:27 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -145,6 +145,18 @@ void ia64_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		/*  TODO  */
 	}
+}
+
+
+/*
+ *  ia64_cpu_gdb_stub():
+ *  
+ *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ */
+int ia64_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+{
+	fatal("ia64_cpu_gdb_stub(): TODO\n");
+	return 0;
 }
 
 

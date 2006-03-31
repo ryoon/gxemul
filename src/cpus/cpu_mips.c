@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.24 2006-03-30 19:36:04 debug Exp $
+ *  $Id: cpu_mips.c,v 1.25 2006-03-31 23:47:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1567,6 +1567,18 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 #undef DYNTRANS_FUNCTION_TRACE
 
 #endif
+
+
+/*
+ *  mips_cpu_gdb_stub():
+ *
+ *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ */
+int mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+{
+	fatal("mips_cpu_gdb_stub(): TODO\n");
+	return 0;
+}
 
 
 /*

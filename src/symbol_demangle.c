@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol_demangle.c,v 1.3 2006-03-23 06:51:48 debug Exp $
+ *  $Id: symbol_demangle.c,v 1.4 2006-04-02 10:21:07 debug Exp $
  *
  *  C++ symbol name demangling.
  *
@@ -89,7 +89,7 @@ static char *symbol_demangle_cplusplus_nested(char *name)
 			add_string(result, &result_len, "::");
 
 		/*  Read the part itself:  */
-		while (len-- > 0 && result_len < MAXLEN)
+		while (len-- >= 1 && result_len < MAXLEN)
 			result[result_len ++] = *name++;
 
 		first = 0;

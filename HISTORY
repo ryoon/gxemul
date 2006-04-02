@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1161 2006-03-31 23:47:26 debug Exp $
+$Id: HISTORY,v 1.1162 2006-04-02 10:21:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2622,3 +2622,5 @@ Changelog for GXemul:
 		with more correct "0x%016"PRIx64, etc.
 		Continuing on the GDB remote serial protocol support.
 20060331	More cleanup, and some minor GDB remote progress.
+20060402	Adding a hack to the configure script, to allow compilation
+		on systems that lack PRIx64 etc.

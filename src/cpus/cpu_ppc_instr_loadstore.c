@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr_loadstore.c,v 1.8 2006-02-26 10:09:24 debug Exp $
+ *  $Id: cpu_ppc_instr_loadstore.c,v 1.9 2006-04-02 10:21:08 debug Exp $
  *
  *  POWER/PowerPC load/store instructions.
  *

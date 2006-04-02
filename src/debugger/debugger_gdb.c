@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.5 2006-03-31 23:47:27 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.6 2006-04-02 10:21:09 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -96,15 +96,15 @@ static void debugger_gdb_listen(struct machine *machine)
  *
  *  Sends a packet with the correct checksum.
  */
-static void send_packet(struct machine *machine, unsigned char *msg)
+static void send_packet(struct machine *machine, char *msg)
 {
-	unsigned char hex[16] = "0123456789abcdef";
+	unsigned char hex[17] = "0123456789abcdef";
 	unsigned char checksum = 0x00;
 	int i = 0;
 	unsigned char ch;
 
 	while (msg[i]) {
-		checksum += msg[i];
+		checksum += (unsigned char) msg[i];
 		i ++;
 	}
 
@@ -123,7 +123,7 @@ static void send_packet(struct machine *machine, unsigned char *msg)
  */
 void debugger_gdb__execute_command(struct machine *machine)
 {
-	char *cmd = machine->gdb.rx_buf;
+	char *cmd = (char *) machine->gdb.rx_buf;
 
 	fatal("[ EXECUTE: '%s' ]\n", machine->gdb.rx_buf);
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_misc.c,v 1.4 2005-11-11 07:31:31 debug Exp $
+ *  $Id: cpu_arm_instr_misc.c,v 1.5 2006-04-02 10:21:08 debug Exp $
  *
  *  Misc ARM instructions. Included from cpu_arm_instr.c.
  */

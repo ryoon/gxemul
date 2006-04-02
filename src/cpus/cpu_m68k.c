@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.6 2006-03-31 23:47:27 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.7 2006-04-02 10:21:08 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */

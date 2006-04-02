@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr_dpi.c,v 1.16 2005-11-19 18:53:07 debug Exp $
+ *  $Id: cpu_arm_instr_dpi.c,v 1.17 2006-04-02 10:21:08 debug Exp $
  *
  *
  *  ARM Data Processing Instructions

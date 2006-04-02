@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.26 2006-03-22 20:18:41 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.27 2006-04-02 10:21:08 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -830,7 +830,8 @@ X(teq)
 		/*  Synch. PC and cause an exception:  */
 fatal("todo... sync pc and cause exception\n");
 exit(1);
-		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+/*		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+*/
 	}
 }
 
@@ -1557,7 +1558,7 @@ X(to_be_translated)
 		    main_opcode == HI6_DADDIU) {
 			if (rs == rt && ic->arg[2] == 1)
 				ic->f = instr(inc);
-			if (rs == rt && ic->arg[2] == -1)
+			if (rs == rt && ic->arg[2] == (size_t) -1)
 				ic->f = instr(dec);
 		}
 

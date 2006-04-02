@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.211 2006-03-30 19:49:02 debug Exp $
+#  $Id: configure,v 1.212 2006-04-02 10:20:57 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -960,10 +960,19 @@ else
 	if ./_testpri; then
 		printf "yes\n"
 	else
-		printf "no\n"
+		printf "no, using an ugly hack instead, "
+		printf "#define NO_C99_PRINTF_DEFINES\n" >> config.h
 
-		printf "\nTODO!\n\n"
-		exit
+		printf "#include <stdio.h>\nint main(int argc, char *argv[]){
+		    printf(\"%%i\\\n\", (int)sizeof(long));return 0;}
+		    " > _testpri.c
+		$CC $CFLAGS _testpri.c -o _testpri 2> /dev/null
+		if [ z`./_testpri` = z8 ]; then
+			printf "PRIx64=lx\n"
+		else
+			printf "PRIx64=llx\n"
+			printf "#define NO_C99_64BIT_LONGLONG\n" >> config.h
+		fi
 	fi
 fi
 rm -f _testpri.c _testpri

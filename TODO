@@ -1,4 +1,4 @@
-$Id: TODO,v 1.233 2006-03-24 05:53:14 debug Exp $
+$Id: TODO,v 1.234 2006-04-05 05:33:38 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,6 +7,12 @@ Unused configure options:
 	x)  Remove the delay option, since it isn't really used. Turn
 	    into a runtime command line option? Or enable this together
 	    with cache simulation?
+
+MIPS:
+	x)  SPECIAL3 opcode; separate "sq" instruction from most other
+	    ISAs. implement both in dyntrans and interpretation; disable
+	    in bintrans (if not yet done).
+	x)  Go through the entire MIPS64 ISA vol 2 :-)
 
 Dyntrans:
 	x)  Old MIPS -> dyntrans!

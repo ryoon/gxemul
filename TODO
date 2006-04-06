@@ -1,4 +1,4 @@
-$Id: TODO,v 1.234 2006-04-05 05:33:38 debug Exp $
+$Id: TODO,v 1.235 2006-04-06 18:08:41 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -64,6 +64,7 @@ Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
 
 ARM:
 	o)  try to get netbsd/evbarm 3.x running (iq80321)
+	o)  make the xscale counter registers (ccnt) work
 	o)  make the ata controller usable for FreeBSD!
 	o)  zaurus for openbsd...
 	o)  debian/cats crashes because of unimplemented coproc stuff.

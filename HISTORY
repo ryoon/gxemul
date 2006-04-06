@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1162 2006-04-02 10:21:04 debug Exp $
+$Id: HISTORY,v 1.1163 2006-04-06 18:08:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2624,3 +2624,5 @@ Changelog for GXemul:
 20060331	More cleanup, and some minor GDB remote progress.
 20060402	Adding a hack to the configure script, to allow compilation
 		on systems that lack PRIx64 etc.
+20060406	Removing the temporary FreeBSD/arm hack in dev_ns16550.c and
+		replacing it with a better fix from Olivier Houchard.

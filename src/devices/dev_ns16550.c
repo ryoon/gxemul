@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.53 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.54 2006-04-06 18:08:42 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -47,7 +47,7 @@
 #include "comreg.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
 #define	TICK_SHIFT		14
 #define	DEV_NS16550_LENGTH	8
@@ -215,15 +215,11 @@ DEVICE_ACCESS(ns16550)
 			d->fcr = idata;
 		} else {
 			odata = d->reg[com_iir];
+			if (d->reg[com_iir] & IIR_TXRDY)
+				d->reg[com_iir] &= ~IIR_TXRDY;
 			debug("[ ns16550 (%s): read from iir: 0x%02x ]\n",
 			    d->name, (int)odata);
-#if 0
 			dev_ns16550_tick(cpu, d);
-#else
-/*  FreeBSD/arm experiment:  */
-d->reg[com_iir] = IIR_NOPEND;
-cpu_interrupt_ack(cpu, d->irqnr);
-#endif
 		}
 		break;
 

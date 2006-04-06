@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.25 2006-02-18 21:03:11 debug Exp $
+ *  $Id: device.c,v 1.26 2006-04-06 19:17:37 debug Exp $
  *
  *  Device registry framework.
  */
@@ -257,6 +257,7 @@ int device_unregister(char *name)
  *  device called "kn210" at a specific address.
  *
  *  TODO: This function is quite ugly, and should be cleaned up.
+ *  name_and_params should be const.
  */
 void *device_add(struct machine *machine, char *name_and_params)
 {

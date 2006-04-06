@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.62 2006-02-18 21:03:12 debug Exp $
+ *  $Id: bus_pci.c,v 1.63 2006-04-06 19:17:37 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -60,7 +60,7 @@
 extern int verbose;
 
 
-/* #define debug fatal */
+#define debug fatal
 
 
 /*
@@ -164,9 +164,9 @@ void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
 	pci_data->last_was_write_ffffffff = 0;
 
 	debug("[ bus_pci: read from PCI DATA, bus %i, device "
-	    "%i, function %i (%s) register 0x%02x: 0x%08lx ]\n", (long)
-	    pci_data->cur_bus, pci_data->cur_device,
-	    pci_data->cur_func, dev->name, pci_data->cur_reg, (long)*data);
+	    "%i, function %i (%s) register 0x%02x: (len=%i) 0x%08lx ]\n",
+	    pci_data->cur_bus, pci_data->cur_device, pci_data->cur_func,
+	    dev->name, pci_data->cur_reg, len, (long)*data);
 }
 
 
@@ -644,6 +644,7 @@ PCIINIT(gt64260)
 PCIINIT(i31244)
 {
 	uint64_t port, memaddr;
+	int irq = 0;
 
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_INTEL,
 	    PCI_PRODUCT_INTEL_31244));
@@ -653,17 +654,18 @@ PCIINIT(i31244)
 
 	switch (machine->machine_type) {
 	case MACHINE_IQ80321:
-		/*  S-PCI-X slot uses PCI IRQ A  */
+		/*  S-PCI-X slot uses PCI IRQ A, int 29  */
+		irq = (1 << 8) + 29;
 		break;
 	default:fatal("i31244 in non-implemented machine type %i\n",
 		    machine->machine_type);
 		exit(1);
 	}
 
-	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140100);
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x01100000 | irq);
 
-	allocate_device_space(pd, 0x400, 0, &port, &memaddr);
-	allocate_device_space(pd, 0x400, 0, &port, &memaddr);
+	allocate_device_space(pd, 0x1000, 0, &port, &memaddr);
+	allocate_device_space(pd, 0x1000, 0, &port, &memaddr);
 
 	/*  PCI IDE using dev_wdc:  */
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||

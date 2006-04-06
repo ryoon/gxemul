@@ -1,4 +1,4 @@
-$Id: TODO,v 1.235 2006-04-06 18:08:41 debug Exp $
+$Id: TODO,v 1.236 2006-04-06 19:17:36 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -121,6 +121,8 @@ Clocks:
 	    off, of course, like the way DECstation emulation works now.)
 
 PCI:
+	x)  last write was ffffffff ==> fix this, it should be used
+	    together with a mask to get the correct bits
 	x)  add support for address fixups
 	x)  generalize the interrupt routing stuff (lines etc). this should
 	    be per machine? or per bus, that's better

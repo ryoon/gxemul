@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.7 2006-03-30 19:36:04 debug Exp $
+ *  $Id: bintrans.c,v 1.8 2006-04-08 00:12:42 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -755,7 +755,7 @@ cpu->cd.mips.pc_last_host_4k_page,(uint64_t) paddr);
 		case HI6_LBU:
 		case HI6_LB:
 #if 0
-		case HI6_SQ:
+		case HI6_SQ_SPECIAL3:
 #endif
 		case HI6_SD:
 		case HI6_SW:

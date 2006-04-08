@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.70 2006-03-31 23:47:27 debug Exp $
+ *  $Id: cpu.h,v 1.71 2006-04-08 00:12:43 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -224,7 +224,7 @@ struct cpu_family {
 				    uint64_t irq_nr);
 	void			(*functioncall_trace)(struct cpu *,
 				    uint64_t f, int n_args);
-	int			(*gdb_stub)(struct cpu *, char *cmd);
+	char			*(*gdb_stub)(struct cpu *, char *cmd);
 };
 
 
@@ -339,7 +339,7 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs);
 int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr, int bintrans);
-int cpu_gdb_stub(struct cpu *cpu, char *cmd);
+char *cpu_gdb_stub(struct cpu *cpu, char *cmd);
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);

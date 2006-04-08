@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.8 2006-03-31 23:47:27 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.9 2006-04-08 00:12:42 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -192,12 +192,13 @@ void alpha_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 /*
  *  alpha_cpu_gdb_stub():
  *  
- *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ *  Execute a "remote GDB" command. Returns a newly allocated response string
+ *  on success, NULL on failure.
  */
-int alpha_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+char *alpha_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
 	fatal("alpha_cpu_gdb_stub(): TODO\n");
-	return 0;
+	return NULL;
 }
 
 

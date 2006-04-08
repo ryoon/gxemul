@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.10 2006-04-02 10:21:08 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.11 2006-04-08 00:12:42 debug Exp $
  *
  *  HP PA-RISC CPU emulation.
  *
@@ -194,13 +194,14 @@ void hppa_cpu_register_match(struct machine *m, char *name,
 
 /*
  *  hppa_cpu_gdb_stub():
- *  
- *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ *
+ *  Execute a "remote GDB" command. Returns a newly allocated response string
+ *  on success, NULL on failure.
  */
-int hppa_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+char *hppa_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
 	fatal("hppa_cpu_gdb_stub(): TODO\n");
-	return 0;
+	return NULL;
 }
 
 

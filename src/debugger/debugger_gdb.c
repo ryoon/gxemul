@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.6 2006-04-02 10:21:09 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.7 2006-04-08 00:12:43 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -44,6 +44,10 @@
 #include "debugger_gdb.h"
 #include "machine.h"
 #include "memory.h"
+
+
+extern int single_step;
+extern int exit_debugger;
 
 
 /*
@@ -130,10 +134,14 @@ void debugger_gdb__execute_command(struct machine *machine)
 	if (strcmp(cmd, "?") == 0) {
 		send_packet(machine, "S00");
 	} else if (strcmp(cmd, "g") == 0) {
-
-		cpu_gdb_stub(machine->cpus[0], cmd);
-		/*  TODO  */
-		
+		char *reply = cpu_gdb_stub(machine->cpus[0], cmd);
+		if (reply != NULL) {
+			send_packet(machine, reply);
+			free(reply);
+		}
+	} else if (strncmp(cmd, "c", 2) == 0) {
+		send_packet(machine, "OK");
+		exit_debugger = 1;
 	} else if (strncmp(cmd, "Hc", 2) == 0) {
 		fatal("[ TODO: GDB SET THREAD ]\n");
 		send_packet(machine, "OK");
@@ -175,8 +183,7 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 
 	case RXSTATE_WAITING_FOR_DOLLAR:
 		if (ch == '$') {
-			machine->gdb.rx_state =
-			    RXSTATE_WAITING_FOR_HASH;
+			machine->gdb.rx_state = RXSTATE_WAITING_FOR_HASH;
 			if (machine->gdb.rx_buf != NULL)
 				free(machine->gdb.rx_buf);
 			machine->gdb.rx_buf_size = 200;
@@ -184,6 +191,14 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 			    machine->gdb.rx_buf_size + 1);
 			machine->gdb.rx_buf_curlen = 0;
 			machine->gdb.rx_buf_checksum = 0x00;
+		} else if (ch == 0x03) {
+			/*  TODO: CTRL-C from GDB  */
+			fatal("[ GDB break ]\n");
+			single_step = 1;
+			ch = '+';
+			write(machine->gdb.socket, &ch, 1);
+			send_packet(machine, "S02");
+			machine->gdb.rx_state = RXSTATE_WAITING_FOR_DOLLAR;
 		} else {
 			debug("[ debugger_gdb: ignoring char '%c' ]\n", ch);
 		}
@@ -191,8 +206,7 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 
 	case RXSTATE_WAITING_FOR_HASH:
 		if (ch == '#') {
-			machine->gdb.rx_state =
-			    RXSTATE_WAITING_FOR_CHECKSUM1;
+			machine->gdb.rx_state = RXSTATE_WAITING_FOR_CHECKSUM1;
 
 			machine->gdb.rx_buf[machine->gdb.rx_buf_curlen] = '\0';
 		} else {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.25 2006-03-31 23:47:27 debug Exp $
+ *  $Id: cpu_mips.c,v 1.26 2006-04-08 00:12:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1169,7 +1169,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	case HI6_SH:
 	case HI6_SW:
 	case HI6_SD:
-	case HI6_SQ:
+	case HI6_SQ_SPECIAL3:
 	case HI6_SC:
 	case HI6_SCD:
 	case HI6_SWC1:
@@ -1569,15 +1569,63 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 #endif
 
 
+static void add_response_word(char *r, uint64_t value, size_t maxlen, int len)
+{
+	char *format = (len == 4)? "%08llx" : "%016llx";
+	if (len == 4)
+		value &= 0xffffffffULL;
+	snprintf(r + strlen(r), maxlen - strlen(r), format, (uint64_t)value);
+}
+
+
 /*
  *  mips_cpu_gdb_stub():
  *
  *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
  */
-int mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+char *mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
-	fatal("mips_cpu_gdb_stub(): TODO\n");
-	return 0;
+	if (strcmp(cmd, "g") == 0) {
+		/*  76 registers:  gprs, sr, lo, hi, badvaddr, cause, pc,
+		    fprs, fsr, fir, fp.  */
+		int i;
+		char *r;
+		size_t wlen = cpu->is_32bit?
+		    sizeof(uint32_t) : sizeof(uint64_t);
+		size_t len = 1 + 76 * wlen;
+		r = malloc(len);
+		if (r == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		r[0] = '\0';
+		for (i=0; i<32; i++)
+			add_response_word(r, cpu->cd.mips.gpr[i], len, wlen);
+		add_response_word(r, cpu->cd.mips.coproc[0]->reg[COP0_STATUS],
+		    len, wlen);
+		add_response_word(r, cpu->cd.mips.lo, len, wlen);
+		add_response_word(r, cpu->cd.mips.hi, len, wlen);
+		add_response_word(r, cpu->cd.mips.coproc[0]->reg[COP0_BADVADDR],
+		    len, wlen);
+		add_response_word(r, cpu->cd.mips.coproc[0]->reg[COP0_CAUSE],
+		    len, wlen);
+		add_response_word(r, cpu->pc, len, wlen);
+		for (i=0; i<32; i++)
+			add_response_word(r, cpu->cd.mips.coproc[1]->reg[i],
+			    len, wlen);
+		add_response_word(r, cpu->cd.mips.coproc[1]->reg[31] /* fcsr */,
+		    len, wlen);
+		add_response_word(r, cpu->cd.mips.coproc[1]->reg[0] /* fcir */,
+		    len, wlen);
+
+		/*  TODO: fp = gpr 30?  */
+		add_response_word(r, cpu->cd.mips.gpr[30], len, wlen);
+
+		return r;
+	}
+
+	fatal("mips_cpu_gdb_stub(): cmd='%s' TODO\n", cmd);
+	return NULL;
 }
 
 
@@ -2955,7 +3003,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case HI6_SH:
 	case HI6_SW:
 	case HI6_SD:
-	case HI6_SQ:
+	case HI6_SQ_SPECIAL3:
 	case HI6_SC:
 	case HI6_SCD:
 	case HI6_SWC1:
@@ -3178,7 +3226,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case HI6_SH:
 		case HI6_SW:
 		case HI6_SD:
-		case HI6_SQ:
+		case HI6_SQ_SPECIAL3:
 		case HI6_SC:
 		case HI6_SCD:
 		case HI6_SWC1:
@@ -3205,7 +3253,7 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case HI6_SD:	{ wlen = 8;         signd = 0; }  break;
 
 			case HI6_LQ_MDMX:	{ wlen = 16; st = 0; signd = 0; }  break;	/*  R5900, otherwise MDMX (TODO)  */
-			case HI6_SQ:		{ wlen = 16;         signd = 0; }  break;	/*  R5900 ?  */
+			case HI6_SQ_SPECIAL3:	{ wlen = 16;         signd = 0; }  break;	/*  R5900 ?  */
 
 			/*  The rest:  */
 			case HI6_LH:	{ wlen = 2; st = 0;            }  break;

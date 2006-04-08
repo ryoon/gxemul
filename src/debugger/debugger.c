@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.4 2006-03-30 19:36:04 debug Exp $
+ *  $Id: debugger.c,v 1.5 2006-04-08 00:12:43 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -104,7 +104,7 @@ static struct emul **debugger_emuls;
 static struct emul *debugger_emul;
 static struct machine *debugger_machine;
 
-static int exit_debugger;
+volatile int exit_debugger;
 
 #define	MAX_CMD_BUFLEN		72
 #define	N_PREVIOUS_CMDS		150
@@ -128,9 +128,26 @@ static uint64_t last_unasm_addr = MAGIC_UNTOUCHED;
  */
 char debugger_readchar(void)
 {
-	int ch;
-	while ((ch = console_readchar(MAIN_CONSOLE)) < 0) {
+	int ch, i, j;
+
+	while ((ch = console_readchar(MAIN_CONSOLE)) < 0 && !exit_debugger) {
+		/*  Check for X11 events:  */
 		x11_check_event(debugger_emuls, debugger_n_emuls);
+
+		/*  Check for incoming GDB packets:  */
+		for (i=0; i<debugger_n_emuls; i++) {
+			struct emul *e = debugger_emuls[i];
+			if (e == NULL)
+				continue;
+
+			for (j=0; j<e->n_machines; j++) {
+				if (e->machines[j]->gdb.port > 0)
+					debugger_gdb_check_incoming(
+					    e->machines[j]);
+			}
+		}
+
+		/*  Give up some CPU time:  */
 		usleep(1);
 	}
 	return ch;
@@ -1917,7 +1934,7 @@ static char *debugger_readline(void)
 	cmd_len = 0;
 	cursor_pos = 0;
 
-	while (ch != '\n') {
+	while (ch != '\n' && !exit_debugger) {
 		ch = debugger_readchar();
 
 		if ((ch == '\b' || ch == 127) && cursor_pos > 0) {
@@ -2151,6 +2168,9 @@ static char *debugger_readline(void)
 
 		fflush(stdout);
 	}
+
+	if (exit_debugger)
+		cmd[0] = '\0';
 
 	return cmd;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.8 2006-03-30 19:36:04 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.9 2006-04-08 00:12:42 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1278,7 +1278,8 @@ static int bintrans_write_instruction__loadstore(
 	int ofs, alignment, load = 0, alpha_rs, alpha_rt, unaligned = 0;
 
 	/*  TODO: Not yet:  */
-	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ) {
+	if (instruction_type == HI6_LQ_MDMX ||
+	    instruction_type == HI6_SQ_SPECIAL3) {
 		return 0;
 	}
 
@@ -1336,7 +1337,7 @@ static int bintrans_write_instruction__loadstore(
 	alignment = 0;
 	switch (instruction_type) {
 	case HI6_LQ_MDMX:
-	case HI6_SQ:
+	case HI6_SQ_SPECIAL3:
 		alignment = 15;
 		break;
 	case HI6_LD:
@@ -1836,7 +1837,7 @@ ok_unaligned_load1 = a;
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T2, rt);
 		break;
 
-	case HI6_SQ:
+	case HI6_SQ_SPECIAL3:
 		/*  TODO  */
 		break;
 	case HI6_SD:

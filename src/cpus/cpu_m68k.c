@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.7 2006-04-02 10:21:08 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.8 2006-04-08 00:12:42 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -154,13 +154,14 @@ void m68k_cpu_register_match(struct machine *m, char *name,
 
 /*
  *  m68k_cpu_gdb_stub():
- *  
- *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ *
+ *  Execute a "remote GDB" command. Returns a newly allocated response string
+ *  on success, NULL on failure.
  */
-int m68k_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+char *m68k_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
 	fatal("m68k_cpu_gdb_stub(): TODO\n");
-	return 0;
+	return NULL;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.55 2006-03-31 23:47:27 debug Exp $
+ *  $Id: cpu_arm.c,v 1.56 2006-04-08 00:12:42 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -715,13 +715,14 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 
 /*
  *  arm_cpu_gdb_stub():
- *  
- *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ *
+ *  Execute a "remote GDB" command. Returns a newly allocated response string
+ *  on success, NULL on failure.
  */
-int arm_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+char *arm_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
 	fatal("arm_cpu_gdb_stub(): TODO\n");
-	return 0;
+	return NULL;
 }
 
 

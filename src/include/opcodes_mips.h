@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.2 2005-03-15 06:52:15 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.3 2006-04-08 00:12:43 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  */
@@ -40,7 +40,7 @@
 	"special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz", 			/*  0x00 - 0x07  */	\
 	"addi", "addiu", "slti", "sltiu", "andi", "ori", "xori", "lui",			/*  0x08 - 0x0f  */	\
 	"cop0", "cop1", "cop2", "cop3", "beql", "bnel", "blezl", "bgtzl",		/*  0x10 - 0x17  */	\
-	"daddi", "daddiu", "ldl", "ldr", "special2", "opcode_1d", "lq_mdmx", "sq",	/*  0x18 - 0x1f  */	\
+	"daddi", "daddiu", "ldl", "ldr", "special2", "opcode_1d", "lq_mdmx", "special3",	/*  0x18 - 0x1f  */	\
 	"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",				/*  0x20 - 0x27  */	\
 	"sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",				/*  0x28 - 0x2f  */	\
 	"ll", "lwc1", "lwc2", "lwc3", "lld", "ldc1", "ldc2", "ld",			/*  0x30 - 0x37  */	\
@@ -208,7 +208,7 @@
 #define	    SPECIAL2_SDBBP		    0x3f    /*  111111  */  /*  EJTAG (?)  TODO  */
 /*	JALX (TODO)			0x1d	    011101  */
 #define	HI6_LQ_MDMX			0x1e	/*  011110  */	/*  lq on R5900, MDMX on others?  */
-#define	HI6_SQ				0x1f	/*  011111  */	/*  R5900 ?  */
+#define	HI6_SQ_SPECIAL3			0x1f	/*  011111  */	/*  sq on R5900, SPECIAL3 on MIPS32/64 rev 2  */
 #define	HI6_LB				0x20	/*  100000  */	/*  MIPS I  */
 #define	HI6_LH				0x21	/*  100001  */	/*  MIPS I  */
 #define	HI6_LWL				0x22	/*  100010  */	/*  MIPS I  */

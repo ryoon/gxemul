@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.11 2006-04-02 10:21:08 debug Exp $
+ *  $Id: cpu_x86.c,v 1.12 2006-04-08 00:12:43 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -532,13 +532,14 @@ void print_csip(struct cpu *cpu)
 
 /*
  *  x86_cpu_gdb_stub():
- *  
- *  Execute a "remote GDB" command. Returns 1 on success, 0 on error.
+ *
+ *  Execute a "remote GDB" command. Returns a newly allocated response string
+ *  on success, NULL on failure.
  */
-int x86_cpu_gdb_stub(struct cpu *cpu, char *cmd)
+char *x86_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
 	fatal("x86_cpu_gdb_stub(): TODO\n");
-	return 0;
+	return NULL;
 }
 
 

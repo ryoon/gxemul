@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.259 2006-03-25 21:24:31 debug Exp $
+ *  $Id: main.c,v 1.260 2006-04-08 00:12:42 debug Exp $
  */
 
 #include <stdio.h>
@@ -401,6 +401,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 				    m->gdb.port);
 				exit(1);
 			}
+			single_step = 1;	/*  implicit -V  */
 			msopts = 1;
 			break;
 		case 'H':

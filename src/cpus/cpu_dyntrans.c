@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.71 2006-03-30 19:36:04 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.72 2006-04-08 15:40:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1630,18 +1630,32 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *  be converted into a single function call.
 	 *
 	 *  Note: Single-stepping or instruction tracing doesn't work with
-	 *  instruction combination.
+	 *  instruction combination. For architectures with delay slots,
+	 *  we also ignore combinations if the delay slot is across a page
+	 *  boundary.
 	 */
-	if (!single_step && !cpu->machine->instruction_trace) {
+	if (!single_step && !cpu->machine->instruction_trace
+#ifdef DYNTRANS_DELAYSLOT
+	    && !in_crosspage_delayslot
+#endif
+	    ) {
 		if (cpu->cd.DYNTRANS_ARCH.combination_check != NULL &&
 		    cpu->machine->speed_tricks)
 			cpu->cd.DYNTRANS_ARCH.combination_check(cpu, ic,
 			    addr & (DYNTRANS_PAGESIZE - 1));
-		cpu->cd.DYNTRANS_ARCH.combination_check = NULL;
 	}
 
+	cpu->cd.DYNTRANS_ARCH.combination_check = NULL;
+
 	/*  ... and finally execute the translated instruction:  */
-	if (single_step_breakpoint && cpu->delay_slot == NOT_DELAYED) {
+	if ((single_step_breakpoint && cpu->delay_slot == NOT_DELAYED)
+#ifdef DYNTRANS_DELAYSLOT
+	    || in_crosspage_delayslot
+#endif
+	    ) {
+#ifdef DYNTRANS_DELAYSLOT
+fatal("EXECUTING THE DELAY SLOT %p\n", ic->f);
+#endif
 		/*
 		 *  Special case when single-stepping: Execute the translated
 		 *  instruction, but then replace it with a "to be translated"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.27 2006-04-02 10:21:08 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.28 2006-04-08 15:40:23 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -680,8 +680,7 @@ X(jal)
 	MODE_uint_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += ic->arg[1];
-	cpu->cd.mips.gpr[31] = cpu->pc;
+	cpu->cd.mips.gpr[31] = cpu->pc + ic->arg[1];
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
@@ -696,8 +695,7 @@ X(jal_trace)
 	MODE_uint_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += ic->arg[1];
-	cpu->cd.mips.gpr[31] = cpu->pc;
+	cpu->cd.mips.gpr[31] = cpu->pc + ic->arg[1];
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
@@ -1077,49 +1075,37 @@ X(b_samepage_daddiu)
 
 X(end_of_page)
 {
-#if 0
-	struct mips_instr_call self;
-#endif
+	struct mips_instr_call *next_ic;
 
+printf("END OF PAGE: pc = %016llx\n", (long long)cpu->pc);
 	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (MIPS_IC_ENTRIES_PER_PAGE << MIPS_INSTR_ALIGNMENT_SHIFT);
+printf("END OF PAGE: pc = %016llx\n", (long long)cpu->pc);
+
+	/*  Find the new physpage and update translation pointers:  */
+	quick_pc_to_pointers(cpu);
+
+	/*  end_of_page doesn't count as an executed instruction:  */
+	cpu->n_translated_instrs --;
 
 	/*  Simple jump to the next page (if we are lucky):  */
-	if (cpu->delay_slot == NOT_DELAYED) {
-
-		/*  Find the new physpage and update translation pointers:  */
-		quick_pc_to_pointers(cpu);
-
-		/*  end_of_page doesn't count as an executed instruction:  */
-		cpu->n_translated_instrs --;
-
+	if (cpu->delay_slot == NOT_DELAYED)
 		return;
-	}
 
 	/*  Tricky situation; the delay slot is on the next virtual page:  */
 	fatal("[ end_of_page: delay slot across page boundary! ]\n");
-	fatal("TODO\n");
-	exit(1);
 
-#if 0
-	/*  to_be_translated will overwrite the current ic.  */
-	self = *ic;
-
-	instr(to_be_translated)(cpu, ic);
+	next_ic = cpu->cd.mips.next_ic ++;
+	instr(to_be_translated)(cpu, next_ic);
 
 	/*  The instruction in the delay slot has now executed.  */
+	fatal("[ end_of_page: back from executing the delay slot ]\n");
 
 	/*  Find the physpage etc of the instruction in the delay slot
 	    (or, if there was an exception, the exception handler):  */
 	quick_pc_to_pointers(cpu);
-
-	/*  Restore the end_of_page instr call.  */
-	*ic = self;
-
-	/*  fatal("[ end_of_page: back from delay slot ]\n");  */
-#endif
 }
 
 
@@ -1196,8 +1182,8 @@ X(to_be_translated)
 	    / sizeof(struct mips_instr_call);
 
 	/*  Special case for branch with delayslot on the next page:  */
-	if (low_pc >= MIPS_IC_ENTRIES_PER_PAGE) {
-		/*  fatal("[ TEMPORARY delay-slot translation ]\n");  */
+	if (cpu->delay_slot == TO_BE_DELAYED && low_pc == 0) {
+		fatal("[ delay-slot translation across page boundary ]\n");
 		low_pc = 0;
 		in_crosspage_delayslot = 1;
 	}

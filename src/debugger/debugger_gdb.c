@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.10 2006-04-08 13:54:02 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.11 2006-04-08 16:47:18 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -194,7 +194,7 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 
 	if (len == 0) {
 		perror("GDB socket read");
-		fprintf(stderr, "Connection closed. TODO\n");
+		fprintf(stderr, "Connection closed. Exiting.\n");
 		exit(1);
 	}
 
@@ -221,7 +221,6 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 			machine->gdb.rx_buf_curlen = 0;
 			machine->gdb.rx_buf_checksum = 0x00;
 		} else if (ch == 0x03) {
-			/*  TODO: CTRL-C from GDB  */
 			fatal("[ GDB break ]\n");
 			single_step = 1;
 			ch = '+';

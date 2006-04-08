@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.180 2006-04-08 01:45:02 debug Exp $
+$Id: RELEASE,v 1.181 2006-04-08 16:47:17 debug Exp $
 
-Working on post-0.3.8.
+Working on what will become 0.4.0.
 
 -------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.3.?
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.0
 ================================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -19,13 +19,13 @@ The documentation lists the machines and guest operating systems that can
 be regarded as "working" in GXemul. The best supported guest operating 
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
-The user-visible changes between release 0.3.8 and 0.3.? include:
+The user-visible changes between release 0.3.8 and 0.4.0 include:
 
     o)	...
 
     o)	Rudimentary support for GDB remote serial protocol connections.
 	This means that you can run e.g. the Data Display Debugger, and
-	connect it to a GXemul instance. (Only for the MIPS target so far.)
+	connect it to a GXemul instance.
 
 There have also been lots of other changes, too many and small to mention here.
 

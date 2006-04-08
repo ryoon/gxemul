@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.33 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.34 2006-04-08 16:47:18 debug Exp $
  */
 
 #include "misc.h"
@@ -106,6 +106,7 @@ struct alpha_cpu {
 	uint64_t		r[N_ALPHA_REGS];	/*  Integer  */
 	uint64_t		f[N_ALPHA_REGS];	/*  Floating Point  */
 
+	uint64_t		fpcr;			/*  FP Control Reg.  */
 
 	/*  Misc.:  */
 	uint64_t		pcc;			/*  Cycle Counter  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.9 2006-04-08 00:12:42 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.10 2006-04-08 16:47:18 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -189,14 +189,83 @@ void alpha_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 }
 
 
+static void add_response_word(struct cpu *cpu, char *r, uint64_t value,
+	size_t maxlen, int len)
+{
+	char *format = (len == 4)? "%08"PRIx64 : "%016"PRIx64;
+	if (len == 4)
+		value &= 0xffffffffULL;
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		if (len == 4) {
+			value = ((value & 0xff) << 24) +
+				((value & 0xff00) << 8) +
+				((value & 0xff0000) >> 8) +
+				((value & 0xff000000) >> 24);
+		} else {
+			value = ((value & 0xff) << 56) +
+				((value & 0xff00) << 40) +
+				((value & 0xff0000) << 24) +
+				((value & 0xff000000) << 8) +
+				((value & 0xff00000000) >> 8) +
+				((value & 0xff0000000000) >> 24) +
+				((value & 0xff000000000000) >> 40) +
+				((value & 0xff00000000000000) >> 56);
+		}
+	}
+	snprintf(r + strlen(r), maxlen - strlen(r), format, (uint64_t)value);
+}
+
+
 /*
  *  alpha_cpu_gdb_stub():
- *  
+ *
  *  Execute a "remote GDB" command. Returns a newly allocated response string
  *  on success, NULL on failure.
  */
 char *alpha_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 {
+	if (strcmp(cmd, "g") == 0) {
+		int i;
+		char *r;
+		size_t wlen = cpu->is_32bit?
+		    sizeof(uint32_t) : sizeof(uint64_t);
+		size_t len = 1 + 76 * wlen;
+		r = malloc(len);
+		if (r == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		r[0] = '\0';
+		for (i=0; i<128; i++)
+			add_response_word(cpu, r, i, len, wlen);
+		return r;
+	}
+
+	if (cmd[0] == 'p') {
+		int regnr = strtol(cmd + 1, NULL, 16);
+		size_t wlen = cpu->is_32bit?
+		    sizeof(uint32_t) : sizeof(uint64_t);
+		size_t len = 2 * wlen + 1;
+		char *r = malloc(len);
+		r[0] = '\0';
+		if (regnr >= 0 && regnr <= 31) {
+			add_response_word(cpu, r,
+			    cpu->cd.alpha.r[regnr], len, wlen);
+		} else if (regnr >= 32 && regnr <= 62) {
+			add_response_word(cpu, r,
+			    cpu->cd.alpha.f[regnr - 32], len, wlen);
+		} else if (regnr == 0x3f) {
+			add_response_word(cpu, r, cpu->cd.alpha.fpcr,
+			    len, wlen);
+		} else if (regnr == 0x40) {
+			add_response_word(cpu, r, cpu->pc, len, wlen);
+		} else {
+			/*  Unimplemented:  */
+			add_response_word(cpu, r, 0xcc000 + regnr, len, wlen);
+		}
+		return r;
+	}
+
 	fatal("alpha_cpu_gdb_stub(): TODO\n");
 	return NULL;
 }

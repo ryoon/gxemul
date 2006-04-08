@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.179 2006-03-05 17:58:16 debug Exp $
+$Id: RELEASE,v 1.180 2006-04-08 01:45:02 debug Exp $
 
 Working on post-0.3.8.
 
@@ -22,6 +22,10 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 The user-visible changes between release 0.3.8 and 0.3.? include:
 
     o)	...
+
+    o)	Rudimentary support for GDB remote serial protocol connections.
+	This means that you can run e.g. the Data Display Debugger, and
+	connect it to a GXemul instance. (Only for the MIPS target so far.)
 
 There have also been lots of other changes, too many and small to mention here.
 

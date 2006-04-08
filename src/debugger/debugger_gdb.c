@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.7 2006-04-08 00:12:43 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.8 2006-04-08 01:45:02 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -139,12 +139,36 @@ void debugger_gdb__execute_command(struct machine *machine)
 			send_packet(machine, reply);
 			free(reply);
 		}
-	} else if (strncmp(cmd, "c", 2) == 0) {
+	} else if (strcmp(cmd, "c") == 0) {
 		send_packet(machine, "OK");
 		exit_debugger = 1;
 	} else if (strncmp(cmd, "Hc", 2) == 0) {
 		fatal("[ TODO: GDB SET THREAD ]\n");
 		send_packet(machine, "OK");
+	} else if (strncmp(cmd, "m", 1) == 0) {
+		/*  Memory read  */
+		char *p = strchr(cmd, ',');
+		if (p == NULL) {
+			send_packet(machine, "E00");
+		} else {
+			uint64_t addr = strtoull(cmd + 1, NULL, 16);
+			uint64_t len = strtoull(p + 1, NULL, 16);
+			char *reply = malloc(len * 2 + 1);
+			size_t i;
+
+			reply[0] = '\0';
+			for (i=0; i<len; i++) {
+				unsigned char ch;
+				machine->cpus[0]->memory_rw(machine->cpus[0],
+				    machine->cpus[0]->mem, addr+i, &ch,
+				    sizeof(ch), MEM_READ, CACHE_NONE);
+				snprintf(reply + strlen(reply),
+				    len*2, "%02x", ch);
+			}
+
+			send_packet(machine, reply);
+			free(reply);
+		}
 	} else {
 		fatal("[ (UNKNOWN COMMAND) ]\n");
 		send_packet(machine, "");

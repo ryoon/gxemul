@@ -1,0 +1,142 @@
+<html><head><title>Gavare's eXperimental Emulator:&nbsp;&nbsp;&nbsp;GDB remote serial protocol connection</title>
+<meta name="robots" content="noarchive,nofollow,noindex"></head>
+<body bgcolor="#f8f8f8" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<table border=0 width=100% bgcolor="#d0d0d0"><tr>
+<td width=100% align=center valign=center><table border=0 width=100%><tr>
+<td align="left" valign=center bgcolor="#d0efff"><font color="#6060e0" size="6">
+<b>Gavare's eXperimental Emulator:</b></font><br>
+<font color="#000000" size="6"><b>GDB remote serial protocol connection</b>
+</font></td></tr></table></td></tr></table><p>
+
+<!--
+
+$Id: gdb_remote.html,v 1.1 2006-04-08 01:45:02 debug Exp $
+
+Copyright (C) 2006  Anders Gavare.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+-->
+
+<a href="./">Back to the index</a>
+
+<p><br>
+<h2>GDB remote serial protocol connection</h2>
+
+<p>
+<ul>
+  <li><a href="#intro">Introduction</a>
+  <li><a href="#prerequisites">Prerequisites</a>
+  <li><a href="#example">Example session</a>
+</ul>
+
+
+
+
+
+
+<p><br>
+<a name="intro"></a>
+<h3>Introduction:</h3>
+
+GXemul has (very rudimentary) GDB serial protocol support. This means that 
+you can start up GDB, or a front-end program which in turn uses GDB, and 
+connect it to a running GXemul instance.
+
+<p>The GDB front-end I use in this example is the <a 
+href="http://www.gnu.org/software/ddd/">Data Display Debugger (DDD)</a>.
+
+<p><a href="20060407-ddd-via-gdb-experiment.png">
+<img src="20060407-ddd-via-gdb-experiment_small.png"></a>
+
+<p>The screenshot is of DDD connected to a small test program compiled for 
+64-bit MIPS, running in GXemul.
+
+<p>The only supported CPU architecture so far is MIPS, because that's the 
+only architecture which I found documentation for regarding how registers 
+are transmitted with the 'g' GDB remote command.
+
+
+
+
+
+<p><br>
+<a name="prerequisites"></a>
+<h3>Prerequisites:</h3>
+
+<ul>
+  <li>Build and install GDB for your target. You should use the same
+	configuration as you did when you compiled your compiler (e.g.
+	mips64-unknown-elf). Assuming you use ~/crossdev for all
+	your cross-development tools:<pre>
+	# <b>wget <a href="http://ftp.gnu.org/gnu/gdb/gdb-6.4.tar.gz">http://ftp.gnu.org/gnu/gdb/gdb-6.4.tar.gz</a></b>
+	# <b>tar zxf gdb-6.4.tar.gz</b>
+	# <b>cd gdb-6.4</b>
+	# <b>./configure --prefix=$HOME/crossdev --target=mips64-unknown-elf</b>
+	# <b>gmake install</b>
+</pre>
+  <p>
+  <li>Optionally, but highly recommended:  Install a front-end for GDB, such 
+	as DDD. In FreeBSD, this is done by:<pre>
+	# <b>pkg_add -r ddd</b>
+</pre>
+	Other operating systems that have DDD available as a pre-compiled
+	package have similar methods of installing it; otherwise you could
+	try compiling DDD from source.
+</ul>
+
+You can still run a bare GDB session without a GUI front-end if you like.
+
+
+
+
+
+<p><br>
+<a name="example"></a>
+<h3>Example session:</h3>
+
+<ol>
+  <li>Start up GXemul, and tell it to wait for an incoming GDB connection
+	on a certain port:<pre>
+	# <b>gxemul -Etestmips -XY2 -G10000 x_mips_rectangles</b>
+</pre>
+  <p>
+  <li>Start the DDD, using a GDB configured for this specific target,
+	and also give the name of the binary/kernel. (This binary
+	should have been compiled with <tt>-g</tt>.)<pre>
+	# <b>ddd --debugger mips64-unknown-elf-gdb x_mips_rectangles</b>
+</pre>
+  <p>
+  <li>At the <tt>(gdb)</tt> prompt in DDD, type:<pre>
+	(gdb) <b>target remote localhost:10000</b>
+</pre>
+  <p>
+  <li>Press F9 (Continue) to start. Press ESC when you wish to interrupt.
+</ol>
+
+
+</p>
+
+</body>
+</html>

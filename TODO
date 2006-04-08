@@ -1,4 +1,4 @@
-$Id: TODO,v 1.236 2006-04-06 19:17:36 debug Exp $
+$Id: TODO,v 1.237 2006-04-08 13:54:02 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -44,8 +44,7 @@ Dyntrans:
 	    the complexity of the code too much!
 
 Debugger:
-	o)  See: http://sources.redhat.com/gdb/onlinedocs/gdb_33.html#SEC683
-	    (remote debugging protocol)
+	o)  ENDIANNESS in the MIPS gdb stub
 	o)  How does SMP debugging work? Does it simply use "threads"?
 	o)  Try to make the debugger more modular and, if possible, reentrant!
 	o)  Remove the emul command? (But show network info if showing
@@ -53,9 +52,6 @@ Debugger:
 	o)  Generalize the expression evaluator. (debugger_expr.c)
 	o)  Place commands in a separate file, the "main engine" in a
 	    separate file, etc.  (debugger_cmds.c)
-	o)  GDB remote support, ability to turn on/off with a debugger
-	    command, or enable at startup with a command line option! (tcp
-	    port)
 	o)  see src/debugger.c for more
 
 

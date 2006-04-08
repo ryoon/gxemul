@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.26 2006-04-08 00:12:42 debug Exp $
+ *  $Id: cpu_mips.c,v 1.27 2006-04-08 13:54:02 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1569,11 +1569,29 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 #endif
 
 
-static void add_response_word(char *r, uint64_t value, size_t maxlen, int len)
+static void add_response_word(struct cpu *cpu, char *r, uint64_t value,
+	size_t maxlen, int len)
 {
-	char *format = (len == 4)? "%08llx" : "%016llx";
+	char *format = (len == 4)? "%08"PRIx64 : "%016"PRIx64;
 	if (len == 4)
 		value &= 0xffffffffULL;
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		if (len == 4) {
+			value = ((value & 0xff) << 24) +
+				((value & 0xff00) << 8) +
+				((value & 0xff0000) >> 8) +
+				((value & 0xff000000) >> 24);
+		} else {
+			value = ((value & 0xff) << 56) +
+				((value & 0xff00) << 40) +
+				((value & 0xff0000) << 24) +
+				((value & 0xff000000) << 8) +
+				((value & 0xff00000000) >> 8) +
+				((value & 0xff0000000000) >> 24) +
+				((value & 0xff000000000000) >> 40) +
+				((value & 0xff00000000000000) >> 56);
+		}
+	}
 	snprintf(r + strlen(r), maxlen - strlen(r), format, (uint64_t)value);
 }
 
@@ -1600,26 +1618,27 @@ char *mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 		}
 		r[0] = '\0';
 		for (i=0; i<32; i++)
-			add_response_word(r, cpu->cd.mips.gpr[i], len, wlen);
-		add_response_word(r, cpu->cd.mips.coproc[0]->reg[COP0_STATUS],
-		    len, wlen);
-		add_response_word(r, cpu->cd.mips.lo, len, wlen);
-		add_response_word(r, cpu->cd.mips.hi, len, wlen);
-		add_response_word(r, cpu->cd.mips.coproc[0]->reg[COP0_BADVADDR],
-		    len, wlen);
-		add_response_word(r, cpu->cd.mips.coproc[0]->reg[COP0_CAUSE],
-		    len, wlen);
-		add_response_word(r, cpu->pc, len, wlen);
-		for (i=0; i<32; i++)
-			add_response_word(r, cpu->cd.mips.coproc[1]->reg[i],
+			add_response_word(cpu, r, cpu->cd.mips.gpr[i],
 			    len, wlen);
-		add_response_word(r, cpu->cd.mips.coproc[1]->reg[31] /* fcsr */,
-		    len, wlen);
-		add_response_word(r, cpu->cd.mips.coproc[1]->reg[0] /* fcir */,
-		    len, wlen);
+		add_response_word(cpu, r,
+		    cpu->cd.mips.coproc[0]->reg[COP0_STATUS], len, wlen);
+		add_response_word(cpu, r, cpu->cd.mips.lo, len, wlen);
+		add_response_word(cpu, r, cpu->cd.mips.hi, len, wlen);
+		add_response_word(cpu, r,
+		    cpu->cd.mips.coproc[0]->reg[COP0_BADVADDR], len, wlen);
+		add_response_word(cpu, r,
+		    cpu->cd.mips.coproc[0]->reg[COP0_CAUSE], len, wlen);
+		add_response_word(cpu, r, cpu->pc, len, wlen);
+		for (i=0; i<32; i++)
+			add_response_word(cpu, r,
+			    cpu->cd.mips.coproc[1]->reg[i], len, wlen);
+		add_response_word(cpu, r,
+		    cpu->cd.mips.coproc[1]->reg[31] /* fcsr */, len, wlen);
+		add_response_word(cpu, r,
+		    cpu->cd.mips.coproc[1]->reg[0] /* fcir */, len, wlen);
 
 		/*  TODO: fp = gpr 30?  */
-		add_response_word(r, cpu->cd.mips.gpr[30], len, wlen);
+		add_response_word(cpu, r, cpu->cd.mips.gpr[30], len, wlen);
 
 		return r;
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.9 2006-04-08 11:56:48 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.10 2006-04-08 13:54:02 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -129,11 +129,11 @@ void debugger_gdb__execute_command(struct machine *machine)
 {
 	char *cmd = (char *) machine->gdb.rx_buf;
 
-	fatal("[ EXECUTE: '%s' ]\n", machine->gdb.rx_buf);
+	fatal("[ Remote GDB command: '%s' ]\n", machine->gdb.rx_buf);
 
 	if (strcmp(cmd, "?") == 0) {
 		send_packet(machine, "S00");
-	} else if (strcmp(cmd, "g") == 0) {
+	} else if (strcmp(cmd, "g") == 0 || strncmp(cmd, "p", 1) == 0) {
 		char *reply = cpu_gdb_stub(machine->cpus[0], cmd);
 		if (reply != NULL) {
 			send_packet(machine, reply);
@@ -161,7 +161,8 @@ void debugger_gdb__execute_command(struct machine *machine)
 				unsigned char ch;
 				machine->cpus[0]->memory_rw(machine->cpus[0],
 				    machine->cpus[0]->mem, addr+i, &ch,
-				    sizeof(ch), MEM_READ, CACHE_NONE);
+				    sizeof(ch), MEM_READ, CACHE_NONE
+				    | NO_EXCEPTIONS);
 				snprintf(reply + strlen(reply),
 				    len*2, "%02x", ch);
 			}

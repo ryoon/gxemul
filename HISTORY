@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1165 2006-04-08 11:56:47 debug Exp $
+$Id: HISTORY,v 1.1166 2006-04-08 13:54:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2628,5 +2628,6 @@ Changelog for GXemul:
 		replacing it with a better fix from Olivier Houchard.
 20060407	A remote debugger (gdb or ddd) can now start and stop the
 		emulator using the GDB remote serial protocol, and registers
-		and memory can be read.
-20060408	GDB single-stepping also works.
+		and memory can be read. MIPS only for now.
+20060408	More GDB progress: single-stepping also works, and also adding
+		support for ARM targets.

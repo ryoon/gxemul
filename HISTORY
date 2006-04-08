@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1164 2006-04-08 00:12:41 debug Exp $
+$Id: HISTORY,v 1.1165 2006-04-08 11:56:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2626,5 +2626,7 @@ Changelog for GXemul:
 		on systems that lack PRIx64 etc.
 20060406	Removing the temporary FreeBSD/arm hack in dev_ns16550.c and
 		replacing it with a better fix from Olivier Houchard.
-20060408	A remote debugger (gdb or ddd) can now start and stop the
-		emulator using the GDB remote serial protocol.
+20060407	A remote debugger (gdb or ddd) can now start and stop the
+		emulator using the GDB remote serial protocol, and registers
+		and memory can be read.
+20060408	GDB single-stepping also works.

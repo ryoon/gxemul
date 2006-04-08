@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.5 2006-04-08 00:12:43 debug Exp $
+ *  $Id: debugger.c,v 1.6 2006-04-08 11:56:48 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -2200,11 +2200,36 @@ void debugger(void)
 		if (debugger_machine->cpus[i]->translation_cache != NULL)
 			cpu_create_or_reset_tc(debugger_machine->cpus[i]);
 
+	/*
+	 *  Ugly GDB hack: After single stepping, we need to send back
+	 *  status to GDB:
+	 */
+	if (exit_debugger == -1) {
+		int i, j;
+		for (i=0; i<debugger_n_emuls; i++) {
+			struct emul *e = debugger_emuls[i];
+			if (e == NULL)
+				continue;
+
+			for (j=0; j<e->n_machines; j++) {
+				if (e->machines[j]->gdb.port > 0)
+					debugger_gdb_after_singlestep(
+					    e->machines[j]);
+			}
+		}
+	}
+
+
 	exit_debugger = 0;
 
 	while (!exit_debugger) {
 		/*  Read a line from the terminal:  */
 		cmd = debugger_readline();
+
+		/*  Special hack for the "step" _GDB_ command:  */
+		if (exit_debugger == -1)
+			return;
+
 		cmd_len = strlen(cmd);
 
 		/*  Remove spaces:  */

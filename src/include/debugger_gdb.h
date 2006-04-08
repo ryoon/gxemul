@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.h,v 1.3 2006-03-30 19:36:04 debug Exp $
+ *  $Id: debugger_gdb.h,v 1.4 2006-04-08 11:56:48 debug Exp $
  *
  *  See src/debugger/debugger_gdb.c.
  */
@@ -59,5 +59,7 @@ struct debugger_gdb {
 /*  debugger_gdb.c:  */
 void debugger_gdb_init(struct machine *machine);
 void debugger_gdb_check_incoming(struct machine *machine);
+void debugger_gdb_after_singlestep(struct machine *machine);
+
 
 #endif	/*  DEBUGGER_GDB_H  */

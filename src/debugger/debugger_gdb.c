@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.8 2006-04-08 01:45:02 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.9 2006-04-08 11:56:48 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -169,6 +169,10 @@ void debugger_gdb__execute_command(struct machine *machine)
 			send_packet(machine, reply);
 			free(reply);
 		}
+	} else if (strcmp(cmd, "s") == 0) {
+		unsigned char ch = '+';
+		write(machine->gdb.socket, &ch, 1);
+		exit_debugger = -1;
 	} else {
 		fatal("[ (UNKNOWN COMMAND) ]\n");
 		send_packet(machine, "");
@@ -183,7 +187,7 @@ void debugger_gdb__execute_command(struct machine *machine)
  */
 int debugger_gdb__check_incoming_char(struct machine *machine)
 {
-	int old_state = machine->gdb.rx_state;
+	/*  int old_state = machine->gdb.rx_state;  */
 	unsigned char ch, ch1;
 	ssize_t len = read(machine->gdb.socket, &ch, 1);
 
@@ -197,11 +201,11 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 	if (len < 0)
 		return 0;
 
-	debug("[ debugger_gdb: received char ");
+	/*  debug("[ debugger_gdb: received char ");
 	if (ch >= ' ')
 		debug("'%c' ]\n", ch);
 	else
-		debug("0x%02x ]\n", ch);
+		debug("0x%02x ]\n", ch);  */
 
 	switch (machine->gdb.rx_state) {
 
@@ -224,7 +228,9 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 			send_packet(machine, "S02");
 			machine->gdb.rx_state = RXSTATE_WAITING_FOR_DOLLAR;
 		} else {
-			debug("[ debugger_gdb: ignoring char '%c' ]\n", ch);
+			if (ch != '+')
+				debug("[ debugger_gdb: ignoring char '"
+				    "%c' ]\n", ch);
 		}
 		break;
 
@@ -247,8 +253,8 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 
 			machine->gdb.rx_buf_checksum += ch;
 
-			debug("[ debugger_gdb: current checksum = "
-			    "0x%02x ]\n", machine->gdb.rx_buf_checksum);
+			/*  debug("[ debugger_gdb: current checksum = "
+			    "0x%02x ]\n", machine->gdb.rx_buf_checksum);  */
 		}
 		break;
 
@@ -301,9 +307,9 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 		exit(1);
 	}
 
-	if (machine->gdb.rx_state != old_state)
+	/*  if (machine->gdb.rx_state != old_state)
 		debug("[ debugger_gdb: state %i -> %i ]\n",
-		    old_state, machine->gdb.rx_state);
+		    old_state, machine->gdb.rx_state);  */
 
 	return 1;
 }
@@ -319,6 +325,24 @@ void debugger_gdb_check_incoming(struct machine *machine)
 {
 	while (debugger_gdb__check_incoming_char(machine))
 		;
+}
+
+
+/*
+ *  debugger_gdb_after_singlestep():
+ *
+ *  Single-step works like this:
+ *
+ *	GDB to GXemul:		s
+ *	GXemul to GDB:		+
+ *	(GXemul single-steps one instruction)
+ *	GXemul to GDB:		T00
+ *
+ *  This function should be called after the instruction has been executed.
+ */
+void debugger_gdb_after_singlestep(struct machine *machine)
+{
+	send_packet(machine, "T00");
 }
 
 

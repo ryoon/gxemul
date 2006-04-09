@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.28 2006-04-08 15:40:23 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.29 2006-04-09 20:28:22 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1036,6 +1036,40 @@ X(cfc1)
 }
 
 
+/*
+ *  tlbw: TLB write indexed and random
+ *
+ *  arg[0] = 1 for random, 0 for indexed
+ *  arg[2] = relative addr of this instruction within the page
+ */
+X(tlbw)
+{
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	coproc_tlbwri(cpu, ic->arg[0]);
+}
+
+
+/*
+ *  tlbp: TLB probe
+ *  tlbr: TLB read
+ *
+ *  arg[2] = relative addr of this instruction within the page
+ */
+X(tlbp)
+{
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	coproc_tlbpr(cpu, 0);
+}
+X(tlbr)
+{
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	coproc_tlbpr(cpu, 1);
+}
+
+
 #include "tmp_mips_loadstore.c"
 
 
@@ -1587,6 +1621,27 @@ X(to_be_translated)
 		break;
 
 	case HI6_COP0:
+		if ((iword >> 25) & 1) {
+			ic->arg[2] = addr & 0xffc;
+			switch (iword & 0xff) {
+			case COP0_TLBR:
+				ic->f = instr(tlbr);
+				break;
+			case COP0_TLBWI:
+			case COP0_TLBWR:
+				ic->f = instr(tlbw);
+				ic->arg[0] = (iword & 0xff) == COP0_TLBWR;
+				break;
+			case COP0_TLBP:
+				ic->f = instr(tlbp);
+				break;
+			default:fatal("UNIMPLEMENTED cop0 (func 0x%02x)\n",
+				    iword & 0xff);
+				goto bad;
+			}
+			break;
+		}
+
 		/*  rs contains the coprocessor opcode!  */
 		switch (rs) {
 		case COPz_MFCz:
@@ -1605,6 +1660,7 @@ X(to_be_translated)
 			ic->arg[2] = addr & 0xffc;
 			ic->f = rs == COPz_MTCz? instr(mtc0) : instr(dmtc0);
 			break;
+		
 		default:fatal("UNIMPLEMENTED cop0 (rs = %i)\n", rs);
 			goto bad;
 		}

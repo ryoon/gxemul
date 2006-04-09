@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.63 2006-04-06 19:17:37 debug Exp $
+ *  $Id: bus_pci.c,v 1.64 2006-04-09 20:28:22 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -286,7 +286,7 @@ static void allocate_device_space(struct pci_device *pd,
 		PCI_SET_DATA(PCI_MAPREG_START + pd->cur_mapreg_offset,
 		    port | PCI_MAPREG_TYPE_IO);
 		PCI_SET_DATA_SIZE(PCI_MAPREG_START + pd->cur_mapreg_offset,
-		    portsize - 1);
+		    ((portsize - 1) & ~0xf) | 0xd);
 		pd->cur_mapreg_offset += sizeof(uint32_t);
 	}
 
@@ -297,7 +297,7 @@ static void allocate_device_space(struct pci_device *pd,
 		pd->pcibus->cur_pci_membase = mem;
 		PCI_SET_DATA(PCI_MAPREG_START + pd->cur_mapreg_offset, mem);
 		PCI_SET_DATA_SIZE(PCI_MAPREG_START + pd->cur_mapreg_offset,
-		    memsize - 1);
+		    ((memsize - 1) & ~0xf) | 0x0);
 		pd->cur_mapreg_offset += sizeof(uint32_t);
 	}
 

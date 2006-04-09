@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.72 2006-04-08 15:40:22 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.73 2006-04-09 20:28:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -157,6 +157,9 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 #ifdef DYNTRANS_ARM
 	if (cpu->cd.arm.irq_asserted && !(cpu->cd.arm.cpsr & ARM_FLAG_I))
 		arm_exception(cpu, ARM_EXCEPTION_IRQ);
+#endif
+#ifdef DYNTRANS_MIPS
+	/*  TODO!  */
 #endif
 #ifdef DYNTRANS_PPC
 	if (cpu->cd.ppc.dec_intr_pending && cpu->cd.ppc.msr & PPC_MSR_EE) {
@@ -334,6 +337,15 @@ while (cycles-- > 0)
 		    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
 	}
 
+#ifdef DYNTRANS_MIPS
+	/*  Update the count register:  */
+	{
+		uint32_t old = cpu->cd.mips.coproc[0]->reg[COP0_COUNT];
+		cpu->cd.mips.coproc[0]->reg[COP0_COUNT] =
+		    (int32_t) (old + n_instrs);
+		/*  TODO compare  */
+	}
+#endif
 #ifdef DYNTRANS_PPC
 	/*  Update the Decrementer and Time base registers:  */
 	{

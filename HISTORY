@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1167 2006-04-08 15:40:22 debug Exp $
+$Id: HISTORY,v 1.1168 2006-04-09 20:28:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2630,5 +2630,5 @@ Changelog for GXemul:
 		emulator using the GDB remote serial protocol, and registers
 		and memory can be read. MIPS only for now.
 20060408	More GDB progress: single-stepping also works, and also adding
-		support for ARM targets.
+		support for ARM, PowerPC, and Alpha targets.
 		Continuing on the delay-slot-across-page-boundary issue.

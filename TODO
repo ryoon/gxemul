@@ -1,4 +1,4 @@
-$Id: TODO,v 1.237 2006-04-08 13:54:02 debug Exp $
+$Id: TODO,v 1.238 2006-04-11 03:51:10 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -16,7 +16,8 @@ MIPS:
 
 Dyntrans:
 	x)  Old MIPS -> dyntrans!
-		o)  Delay slots across page boundaries!
+		o)  Delay slots across page boundaries, for b* branches?
+			IMPORTANT! This is probably not solved yet.
 		o)  Extra cpu family function, for detecting if an instruction
 		    has a delay slot! (Nicer disassembly while running.)
 		o)  Implement more instructions:
@@ -44,7 +45,7 @@ Dyntrans:
 	    the complexity of the code too much!
 
 Debugger:
-	o)  ENDIANNESS in the MIPS gdb stub
+	o)  MIPS gdb stub "p" command!
 	o)  How does SMP debugging work? Does it simply use "threads"?
 	o)  Try to make the debugger more modular and, if possible, reentrant!
 	o)  Remove the emul command? (But show network info if showing
@@ -118,7 +119,8 @@ Clocks:
 
 PCI:
 	x)  last write was ffffffff ==> fix this, it should be used
-	    together with a mask to get the correct bits
+	    together with a mask to get the correct bits. also, not ALL
+	    bits are size bits! (lowest 4 vs lowest 2?)
 	x)  add support for address fixups
 	x)  generalize the interrupt routing stuff (lines etc). this should
 	    be per machine? or per bus, that's better

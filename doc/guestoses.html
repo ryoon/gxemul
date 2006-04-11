@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.125 2006-02-27 05:32:25 debug Exp $
+$Id: guestoses.html,v 1.126 2006-04-11 03:44:57 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1454,10 +1454,12 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
   <li>This is the tricky part: on redhat_mips.img, you need to create an MS-DOS
 	(!) partition table, and then an ext2 partition. This is what Linux
 	will then see as /dev/sda1.
-	<p>On a Linux host, you could use a loopback mount, or similar. Otherwise,
-	I recommend you run fdisk and mke2fs and untar the archive from within
+	<p>I recommend you run fdisk and mke2fs and untar the archive from within
 	Debian/DECstation or <a href="#debiancats">Debian/CATS</a> running
-	inside the emulator. Use your imagination.
+	inside the emulator. (Alternatively, if you are on a Linux host,
+	you could use a loopback mount, or similar. This might require
+	root access. See e.g.
+	<a href="http://www.mega-tokyo.com/osfaq2/index.php/Disk%20Images%20Under%20Linux">http://www.mega-tokyo.com/osfaq2/index.php/Disk%20Images%20Under%20Linux</a>.)
 	<p>
 	In order to actually boot the system you need to modify /etc/fstab.
 	Change<pre>

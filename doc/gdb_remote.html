@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: gdb_remote.html,v 1.4 2006-04-10 17:02:05 debug Exp $
+$Id: gdb_remote.html,v 1.5 2006-04-11 03:44:57 debug Exp $
 
 Copyright (C) 2006  Anders Gavare.  All rights reserved.
 
@@ -120,16 +120,19 @@ You can still run a bare GDB session without a GUI front-end if you like.
   <li>Start up GXemul, and tell it to wait for an incoming GDB connection
 	on a certain port:<pre>
 	# <b>gxemul -Etestmips -XY2 -G10000 x_mips_rectangles</b>
+
 </pre>
   <p>
   <li>Start the DDD, using a GDB configured for this specific target,
 	and also give the name of the binary/kernel. (This binary
 	should have been compiled with <tt>-g</tt>.)<pre>
 	# <b>ddd --debugger mips64-unknown-elf-gdb x_mips_rectangles</b>
+
 </pre>
   <p>
   <li>At the <tt>(gdb)</tt> prompt in DDD, type:<pre>
 	(gdb) <b>target remote localhost:10000</b>
+
 </pre>
   <p>
   <li>Press F9 (Continue) to start. (For POWER/PowerPC targets, it might

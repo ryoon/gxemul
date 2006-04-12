@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1168 2006-04-09 20:28:21 debug Exp $
+$Id: HISTORY,v 1.1169 2006-04-12 19:38:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2632,3 +2632,5 @@ Changelog for GXemul:
 20060408	More GDB progress: single-stepping also works, and also adding
 		support for ARM, PowerPC, and Alpha targets.
 		Continuing on the delay-slot-across-page-boundary issue.
+20060412	Minor update: beginning to add support for the SPARC target
+		to the remote GDB functionality.

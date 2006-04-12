@@ -1,4 +1,4 @@
-$Id: TODO,v 1.238 2006-04-11 03:51:10 debug Exp $
+$Id: TODO,v 1.239 2006-04-12 19:38:29 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -34,7 +34,6 @@ Dyntrans:
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
 	x)  PPC optimizations; instr combs
 	x)  Alpha: virtual memory management
-	x)  SPARC: everything
 	x)  PPC: 64-bit stuff
 	x)  H8?
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
@@ -43,6 +42,13 @@ Dyntrans:
 	x)  Remove the dyntrans_alignment_check functionality; although
 	    it gives slightly higher peformance sometimes, it increases
 	    the complexity of the code too much!
+
+SPARC:
+	x)  Pretty much everything:
+		o)  Begin to implement instructions.
+		o)  Add all registers (floating point, control regs etc)
+		o)  Disassemly of some more instructions.
+		o)  Finish the GDB register stuff.
 
 Debugger:
 	o)  MIPS gdb stub "p" command!

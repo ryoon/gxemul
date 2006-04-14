@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1170 2006-04-14 18:00:30 debug Exp $
+$Id: HISTORY,v 1.1171 2006-04-14 19:22:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2635,4 +2635,5 @@ Changelog for GXemul:
 20060412	Minor update: beginning to add support for the SPARC target
 		to the remote GDB functionality.
 20060414	Various MIPS updates: adding more instructions for dyntrans
-		(eret, add), and making some exceptions work.
+		(eret, add), and making some exceptions work. Fixing a bug
+		in dmult[u].

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.30 2006-04-14 18:00:30 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.31 2006-04-14 19:22:10 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -798,8 +798,11 @@ X(dmult)
 		neg = !neg, b = -b;
 	for (i=0; i<64; i++) {
 		if (a & 1) {
+			uint64_t old_lo = lo;
 			hi += c;
 			lo += b;
+			if (lo < old_lo)
+				hi ++;
 		}
 		a >>= 1; c = (c << 1) | (b >> 63); b <<= 1;
 	}
@@ -820,8 +823,11 @@ X(dmultu)
 	int i;
 	for (i=0; i<64; i++) {
 		if (a & 1) {
+			uint64_t old_lo = lo;
 			hi += c;
 			lo += b;
+			if (lo < old_lo)
+				hi ++;
 		}
 		a >>= 1; c = (c << 1) | (b >> 63); b <<= 1;
 	}
@@ -1588,8 +1594,8 @@ X(to_be_translated)
 			ic->f = samepage_function;
 		}
 		if (in_crosspage_delayslot) {
-			fatal("[ WARNING: branch in delay slot? ]\n");
-			ic->f = instr(nop);
+			fatal("TODO: branch in delay slot?\n");
+			goto bad;
 		}
 		break;
 
@@ -1662,8 +1668,8 @@ X(to_be_translated)
 		ic->arg[0] = (iword & 0x03ffffff) << 2;
 		ic->arg[1] = (addr & 0xffc) + 8;
 		if (in_crosspage_delayslot) {
-			fatal("[ WARNING: branch in delay slot? ]\n");
-			ic->f = instr(nop);
+			fatal("TODO: branch in delay slot?\n");
+			goto bad;
 		}
 		break;
 
@@ -1804,8 +1810,8 @@ X(to_be_translated)
 				ic->f = samepage_function;
 			}
 			if (in_crosspage_delayslot) {
-				fatal("[ WARNING: branch in delay slot? ]\n");
-				ic->f = instr(nop);
+				fatal("TODO: branch in delay slot?\n");
+				goto bad;
 			}
 			break;
 		default:fatal("UNIMPLEMENTED regimm rt=%i\n", rt);

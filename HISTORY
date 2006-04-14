@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1171 2006-04-14 19:22:10 debug Exp $
+$Id: HISTORY,v 1.1172 2006-04-14 19:58:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2637,3 +2637,4 @@ Changelog for GXemul:
 20060414	Various MIPS updates: adding more instructions for dyntrans
 		(eret, add), and making some exceptions work. Fixing a bug
 		in dmult[u].
+		Implementing the first SPARC instructions (sethi, or).

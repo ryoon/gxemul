@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc_instr.c,v 1.69 2006-03-19 19:52:15 debug Exp $
+ *  $Id: cpu_ppc_instr.c,v 1.70 2006-04-14 19:58:21 debug Exp $
  *
  *  POWER/PowerPC instructions.
  *
@@ -2599,7 +2599,7 @@ X(end_of_page)
 /*
  *  ppc_instr_to_be_translated():
  *
- *  Translate an instruction word into an ppc_instr_call. ic is filled in with
+ *  Translate an instruction word into a ppc_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
  *  there was a translation failure. The newly translated instruction is then
  *  executed.

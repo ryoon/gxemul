@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.31 2006-04-14 19:22:10 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.32 2006-04-14 19:58:21 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1241,7 +1241,7 @@ void COMBINE(b_daddiu)(struct cpu *cpu, struct mips_instr_call *ic,
 /*
  *  mips_instr_to_be_translated():
  *
- *  Translate an instruction word into an mips_instr_call. ic is filled in with
+ *  Translate an instruction word into a mips_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
  *  there was a translation failure. The newly translated instruction is then
  *  executed.

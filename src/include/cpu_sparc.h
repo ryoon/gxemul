@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.26 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.27 2006-04-14 19:58:21 debug Exp $
  */
 
 #include "misc.h"
@@ -84,6 +84,8 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"o0","o1","o2","o3","o4","o5","sp","o7",	\
 	"l0","l1","l2","l3","l4","l5","l6","l7",	\
 	"i0","i1","i2","i3","i4","i5","fp","i7" }
+
+#define	SPARC_ZEROREG		0	/*  g0  */
 
 #define	N_SPARC_BRANCH_TYPES	16
 #define	SPARC_BRANCH_NAMES {						\

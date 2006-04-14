@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.8 2006-02-24 01:20:36 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.9 2006-04-14 19:58:21 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -42,6 +42,32 @@
 X(nop)
 {
 }
+
+
+/*****************************************************************************/
+
+
+/*
+ *  set:  Set a register to a value (e.g. sethi).
+ *
+ *  arg[0] = ptr to rd
+ *  arg[1] = value (uint32_t)
+ */
+X(set)
+{
+	reg(ic->arg[0]) = (uint32_t)ic->arg[1];
+}
+
+
+/*
+ *  Computational/arithmetic instructions:
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int16_t)
+ *  arg[2] = ptr to rd
+ */
+X(or)       { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
+X(or_imm)   { reg(ic->arg[2]) = reg(ic->arg[0]) | (int16_t)ic->arg[1]; }
 
 
 /*****************************************************************************/
@@ -69,18 +95,20 @@ X(end_of_page)
 /*
  *  sparc_instr_to_be_translated():
  *
- *  Translate an instruction word into an sparc_instr_call. ic is filled in with
+ *  Translate an instruction word into a sparc_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
  *  there was a translation failure. The newly translated instruction is then
  *  executed.
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc;
+	MODE_uint_t addr;
+	int low_pc;
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode;
+	int main_opcode, op2, rd, rs1, rs2, siconst, btype, asi, cc, p;
+	int use_imm;
 	/* void (*samepage_function)(struct cpu *, struct sparc_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -112,7 +140,7 @@ X(to_be_translated)
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
-		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
+		memcpy(ib, page + (addr & 0xffc), sizeof(ib));
 	} else {
 		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, ib,
@@ -123,14 +151,9 @@ X(to_be_translated)
 		}
 	}
 
-	iword = *((uint32_t *)&ib[0]);
-
-#ifdef HOST_LITTLE_ENDIAN
-	iword = ((iword & 0xff) << 24) |
-		((iword & 0xff00) << 8) |
-		((iword & 0xff0000) >> 8) |
-		((iword & 0xff000000) >> 24);
-#endif
+	/*  SPARC instruction words are always big-endian. Convert
+	    to host order:  */
+	iword = BE32_TO_HOST( *((uint32_t *)&ib[0]) );
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -142,14 +165,71 @@ X(to_be_translated)
 	 *  Translate the instruction:
 	 */
 
-	main_opcode = iword >> 26;
+	main_opcode = iword >> 30;
+	rd = (iword >> 25) & 31;
+	btype = rd & (N_SPARC_BRANCH_TYPES - 1);
+	rs1 = (iword >> 14) & 31;
+	use_imm = (iword >> 13) & 1;
+	asi = (iword >> 5) & 0xff;
+	rs2 = iword & 31;
+	siconst = (int16_t)((iword & 0x1fff) << 3) >> 3;
+	op2 = (main_opcode == 0)? ((iword >> 22) & 7) : ((iword >> 19) & 0x3f);
+	cc = (iword >> 20) & 3;
+	p = (iword >> 19) & 1;
 
-#if 0
 	switch (main_opcode) {
 
-	default:goto bad;
+	case 0:	switch (op2) {
+
+		case 4:	/*  sethi  */
+			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rd];
+			ic->arg[1] = (iword & 0x3fffff) << 10;
+			ic->f = instr(set);
+			if (rd == SPARC_ZEROREG)
+				ic->f = instr(nop);
+			break;
+
+		default:fatal("TODO: unimplemented op2=%i for main "
+			    "opcode %i\n", op2, main_opcode);
+			goto bad;
+		}
+		break;
+
+	case 2:	switch (op2) {
+
+		case 2:	/*  or  */
+			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
+			ic->f = NULL;
+			if (use_imm) {
+				ic->arg[1] = siconst;
+				switch (op2) {
+				case 2: ic->f = instr(or_imm); break;
+				}
+			} else {
+				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
+				switch (op2) {
+				case 2: ic->f = instr(or); break;
+				}
+			}
+			if (ic->f == NULL) {
+				fatal("TODO: Unimplemented instruction "
+				    "(possibly missed use_imm impl.)\n");
+				goto bad;
+			}
+			ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
+			if (rd == SPARC_ZEROREG)
+				ic->f = instr(nop);
+			break;
+
+		default:fatal("TODO: unimplemented op2=%i for main "
+			    "opcode %i\n", op2, main_opcode);
+			goto bad;
+		}
+		break;
+
+	default:fatal("TODO: unimplemented main opcode %i\n", main_opcode);
+		goto bad;
 	}
-#endif
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

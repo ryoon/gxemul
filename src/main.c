@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.260 2006-04-08 00:12:42 debug Exp $
+ *  $Id: main.c,v 1.261 2006-04-14 18:16:42 debug Exp $
  */
 
 #include <stdio.h>
@@ -676,7 +676,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		exit(1);
 	}
 
-#ifndef EXPERIMENTAL_NEWMIPS
+#ifdef OLDMIPS
 	if (m->bintrans_enable && m->arch == ARCH_MIPS) {
 		m->speed_tricks = 0;
 		/*  TODO: Print a warning about this?  */

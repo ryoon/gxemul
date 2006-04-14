@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.28 2006-04-14 18:00:30 debug Exp $
+ *  $Id: cpu_mips.c,v 1.29 2006-04-14 18:16:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -96,7 +96,7 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 static char *cop0_names[] = COP0_NAMES;
 
 
-#ifdef EXPERIMENTAL_NEWMIPS
+#ifndef OLDMIPS
 #define DYNTRANS_DUALMODE_32
 #define DYNTRANS_DELAYSLOT
 #include "tmp_mips_head.c"
@@ -170,7 +170,7 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	    cpu->cd.mips.cpu_type.isa_level == 32)
 		cpu->is_32bit = 1;
 
-#ifdef EXPERIMENTAL_NEWMIPS
+#ifndef OLDMIPS
 	if (cpu->is_32bit) {
 		cpu->update_translation_table = mips32_update_translation_table;
 		cpu->invalidate_translation_caches =
@@ -368,7 +368,7 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.mips.host_load_orig = cpu->cd.mips.host_OLD_load;
 	cpu->cd.mips.host_store_orig = cpu->cd.mips.host_OLD_store;
 
-#ifdef EXPERIMENTAL_NEWMIPS
+#ifndef OLDMIPS
 	mips_init_64bit_dummy_tables(cpu);
 #endif
 
@@ -1559,7 +1559,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 }
 
 
-#ifndef EXPERIMENTAL_NEWMIPS
+#ifdef OLDMIPS
 
 #define DYNTRANS_FUNCTION_TRACE mips_cpu_functioncall_trace
 #define	DYNTRANS_MIPS
@@ -1730,7 +1730,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	uint64_t *reg = &cpu->cd.mips.coproc[0]->reg[0];
 	int exc_model = cpu->cd.mips.cpu_type.exc_model;
 
-#ifdef EXPERIMENTAL_NEWMIPS
+#ifndef OLDMIPS
 	cpu->cd.mips.pc_last = cpu->pc;
 #endif
 
@@ -1949,7 +1949,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	reg[COP0_CAUSE] = (int64_t)(int32_t)reg[COP0_CAUSE];
 	reg[COP0_STATUS] = (int64_t)(int32_t)reg[COP0_STATUS];
 
-#ifdef EXPERIMENTAL_NEWMIPS
+#ifndef OLDMIPS
 	if (cpu->is_32bit)
 		mips32_pc_to_pointers(cpu);
 	else
@@ -1976,7 +1976,7 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
 #include "memory_mips.c"
 
 
-#ifndef EXPERIMENTAL_NEWMIPS
+#ifdef OLDMIPS
 /*
  *  mips_OLD_cpu_run_instr():
  *
@@ -4097,15 +4097,11 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  NOTREACHED  */
 }
-#endif	/*  !EXPERIMENTAL_NEWMIPS  */
+#endif	/*  OLDMIPS  */
 
 
 
-#ifdef EXPERIMENTAL_NEWMIPS
-
-#include "tmp_mips_tail.c"
-
-#else
+#ifdef OLDMIPS
 
 #define CPU_RUN		mips_OLD_cpu_run
 #define CPU_RUN_MIPS
@@ -4115,6 +4111,10 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #undef CPU_RUN_MIPS
 #undef CPU_RUN
 CPU_OLD_FAMILY_INIT(mips,"MIPS")
+
+#else
+
+#include "tmp_mips_tail.c"
 
 #endif
 

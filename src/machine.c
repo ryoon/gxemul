@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.667 2006-03-20 04:38:29 debug Exp $
+ *  $Id: machine.c,v 1.668 2006-04-14 18:16:41 debug Exp $
  */
 
 #include <stdio.h>
@@ -90,7 +90,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->serial_nr = 1;
 	m->machine_type = MACHINE_NONE;
 	m->machine_subtype = MACHINE_NONE;
-#if defined(BINTRANS) && !defined(EXPERIMENTAL_NEWMIPS)
+#if defined(BINTRANS) && defined(OLDMIPS)
 	m->bintrans_enable = 1;
 	m->old_bintrans_enable = 1;
 #endif

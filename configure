@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.212 2006-04-02 10:20:57 debug Exp $
+#  $Id: configure,v 1.213 2006-04-14 18:16:41 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -222,13 +222,10 @@ if [ z$ENABLEM68K = zYES ]; then
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
-	if [ z$OLDMIPS = zNO ]; then
-		echo 'Enabling the _EXPERIMENTAL_ MIPS dyntrans code.'
+	if [ z$OLDMIPS = zYES ]; then
+		echo 'Disabling the new MIPS dyntrans code.'
 		echo
-		printf "#define EXPERIMENTAL_NEWMIPS\n" >> config.h
-	else
-		echo 'Disabling the EXPERIMENTAL MIPS dyntrans code.'
-		echo
+		printf "#define OLDMIPS\n" >> config.h
 	fi
 	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore"
 fi

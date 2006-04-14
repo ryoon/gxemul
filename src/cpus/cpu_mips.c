@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.27 2006-04-08 13:54:02 debug Exp $
+ *  $Id: cpu_mips.c,v 1.28 2006-04-14 18:00:30 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -100,6 +100,9 @@ static char *cop0_names[] = COP0_NAMES;
 #define DYNTRANS_DUALMODE_32
 #define DYNTRANS_DELAYSLOT
 #include "tmp_mips_head.c"
+
+void mips_pc_to_pointers(struct cpu *);
+void mips32_pc_to_pointers(struct cpu *);
 #endif
 
 
@@ -1727,6 +1730,10 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	uint64_t *reg = &cpu->cd.mips.coproc[0]->reg[0];
 	int exc_model = cpu->cd.mips.cpu_type.exc_model;
 
+#ifdef EXPERIMENTAL_NEWMIPS
+	cpu->cd.mips.pc_last = cpu->pc;
+#endif
+
 	if (!quiet_mode) {
 		uint64_t offset;
 		int x;
@@ -1941,6 +1948,13 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	/*  Sign-extend:  */
 	reg[COP0_CAUSE] = (int64_t)(int32_t)reg[COP0_CAUSE];
 	reg[COP0_STATUS] = (int64_t)(int32_t)reg[COP0_STATUS];
+
+#ifdef EXPERIMENTAL_NEWMIPS
+	if (cpu->is_32bit)
+		mips32_pc_to_pointers(cpu);
+	else
+		mips_pc_to_pointers(cpu);
+#endif
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.29 2006-04-09 20:28:22 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.30 2006-04-14 18:00:30 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -773,6 +773,13 @@ X(mult)
 	reg(&cpu->cd.mips.lo) = (int32_t)res;
 	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
 }
+X(mult_xx)
+{
+	/*  Undocumented (?) R5900 multiplication  */
+	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	int64_t res = (int64_t)a * (int64_t)b;
+	reg(ic->arg[2]) = res;	/*  TODO: 32-bit or 64-bit?  */
+}
 X(multu)
 {
 	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
@@ -835,7 +842,11 @@ exit(1);
 
 
 /*
- *  3-register:
+ *  3-register arithmetic instructions:
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to rt
+ *  arg[2] = ptr to rd
  */
 X(addu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) + reg(ic->arg[1])); }
 X(subu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) - reg(ic->arg[1])); }
@@ -874,6 +885,29 @@ X(dsrl) { reg(ic->arg[2]) = (int64_t)((uint64_t)reg(ic->arg[0]) >>
 X(dsra) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> (int64_t)ic->arg[1]; }
 X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
+
+
+/*
+ *  3-register arithmetic instructions, with overflow exceptions:
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to rt
+ *  arg[2] = ptr to rd
+ */
+X(add)
+{
+	int32_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int32_t rd = rs + rt;
+
+	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+fatal("todo... sync pc and cause overflow exception\n");
+exit(1);
+/*		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+*/
+	} else
+		reg(ic->arg[2]) = rd;
+}
 
 
 /*
@@ -1070,6 +1104,15 @@ X(tlbr)
 }
 
 
+/*
+ *  eret: Return from exception handler
+ */
+X(eret)
+{
+	coproc_eret(cpu);
+}
+
+
 #include "tmp_mips_loadstore.c"
 
 
@@ -1111,12 +1154,10 @@ X(end_of_page)
 {
 	struct mips_instr_call *next_ic;
 
-printf("END OF PAGE: pc = %016llx\n", (long long)cpu->pc);
 	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (MIPS_IC_ENTRIES_PER_PAGE << MIPS_INSTR_ALIGNMENT_SHIFT);
-printf("END OF PAGE: pc = %016llx\n", (long long)cpu->pc);
 
 	/*  Find the new physpage and update translation pointers:  */
 	quick_pc_to_pointers(cpu);
@@ -1337,6 +1378,7 @@ X(to_be_translated)
 				ic->f = instr(nop);
 			break;
 
+		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
 		case SPECIAL_SUBU:
 		case SPECIAL_DADDU:
@@ -1360,6 +1402,7 @@ X(to_be_translated)
 		case SPECIAL_DMULTU:
 		case SPECIAL_TEQ:
 			switch (s6) {
+			case SPECIAL_ADD:   ic->f = instr(add); break;
 			case SPECIAL_ADDU:  ic->f = instr(addu); break;
 			case SPECIAL_SUBU:  ic->f = instr(subu); break;
 			case SPECIAL_DADDU: ic->f = instr(daddu); x64=1; break;
@@ -1424,6 +1467,10 @@ X(to_be_translated)
 			case SPECIAL_MULTU:
 			case SPECIAL_DMULT:
 			case SPECIAL_DMULTU:
+				if (s6 == SPECIAL_MULT && rd != MIPS_GPR_ZERO) {
+					ic->f = instr(mult_xx);
+					break;
+				}
 				if (rd != MIPS_GPR_ZERO) {
 					fatal("TODO: rd NON-zero\n");
 					goto bad;
@@ -1634,6 +1681,9 @@ X(to_be_translated)
 				break;
 			case COP0_TLBP:
 				ic->f = instr(tlbp);
+				break;
+			case COP0_ERET:
+				ic->f = instr(eret);
 				break;
 			default:fatal("UNIMPLEMENTED cop0 (func 0x%02x)\n",
 				    iword & 0xff);

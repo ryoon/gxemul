@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.5 2006-03-30 19:36:04 debug Exp $
+ *  $Id: machine_pmax.c,v 1.6 2006-04-14 18:00:30 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -638,17 +638,27 @@ MACHINE_SETUP(pmax)
 
 
 	/*  DECstation PROM stuff:  (TODO: endianness)  */
-	for (i=0; i<100; i++)
+	for (i=0; i<150; i++)
 		store_32bit_word(cpu, DEC_PROM_CALLBACK_STRUCT + i*4,
 		    DEC_PROM_EMULATION + i*8);
 
+#ifdef EXPERIMENTAL_NEWMIPS
+	/*  Fill PROM with special "trapping" instructions:  */
+	for (i=0; i<150; i++) {
+		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
+		    0x7f00c0de);	/*  trap instruction  */
+		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8 + 4,
+		    0x00000000);	/*  nop  */
+	}
+#else
 	/*  Fill PROM with dummy return instructions: (TODO: make this nicer) */
-	for (i=0; i<100; i++) {
+	for (i=0; i<150; i++) {
 		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
 		    0x03e00008);	/*  return  */
 		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8 + 4,
 		    0x00000000);	/*  nop  */
 	}
+#endif
 
 	/*
 	 *  According to dec_prom.h from NetBSD:

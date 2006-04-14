@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.73 2006-04-09 20:28:22 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.74 2006-04-14 18:00:30 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1665,9 +1665,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	    || in_crosspage_delayslot
 #endif
 	    ) {
-#ifdef DYNTRANS_DELAYSLOT
-fatal("EXECUTING THE DELAY SLOT %p\n", ic->f);
-#endif
 		/*
 		 *  Special case when single-stepping: Execute the translated
 		 *  instruction, but then replace it with a "to be translated"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.29 2006-04-14 18:16:42 debug Exp $
+ *  $Id: cpu_mips.c,v 1.30 2006-04-15 19:47:29 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1890,7 +1890,13 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		}
 	}
 
+#ifndef OLDMIPS
+	if (cpu->delay_slot)
+		cpu->delay_slot = EXCEPTION_IN_DELAY_SLOT;
+	else
+#endif
 	cpu->delay_slot = NOT_DELAYED;
+
 	cpu->cd.mips.nullify_next = 0;
 
 	/*  TODO: This is true for MIPS64, but how about others?  */
@@ -1936,9 +1942,8 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	if (exc_model == EXC3K) {
-		/*  R2000/R3000:  Shift the lowest 6 bits to the left two steps:  */
-		reg[COP0_STATUS] =
-		    (reg[COP0_STATUS] & ~0x3f) +
+		/*  R{2,3}000:  Shift the lowest 6 bits to the left two steps:*/
+		reg[COP0_STATUS] = (reg[COP0_STATUS] & ~0x3f) +
 		    ((reg[COP0_STATUS] & 0xf) << 2);
 	} else {
 		/*  R4000:  */

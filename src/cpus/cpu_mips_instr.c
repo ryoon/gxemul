@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.33 2006-04-15 08:21:06 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.34 2006-04-15 19:47:29 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -755,6 +755,17 @@ X(divu)
 	reg(&cpu->cd.mips.lo) = (int32_t)res;
 	reg(&cpu->cd.mips.hi) = (int32_t)rem;
 }
+X(ddiv)
+{
+	int64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	int64_t res, rem;
+	if (b == 0)
+		res = 0, rem = 0;
+	else
+		res = a / b, rem = a % b;
+	reg(&cpu->cd.mips.lo) = res;
+	reg(&cpu->cd.mips.hi) = rem;
+}
 X(ddivu)
 {
 	uint64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
@@ -791,12 +802,12 @@ X(dmult)
 {
 	uint64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]), c = 0;
 	uint64_t hi = 0, lo = 0;
-	int i, neg = 0;
+	int neg = 0;
 	if (a >> 63)
 		neg = !neg, a = -a;
 	if (b >> 63)
 		neg = !neg, b = -b;
-	for (i=0; i<64; i++) {
+	for (; a; a >>= 1) {
 		if (a & 1) {
 			uint64_t old_lo = lo;
 			hi += c;
@@ -804,12 +815,12 @@ X(dmult)
 			if (lo < old_lo)
 				hi ++;
 		}
-		a >>= 1; c = (c << 1) | (b >> 63); b <<= 1;
+		c = (c << 1) | (b >> 63); b <<= 1;
 	}
 	if (neg) {
-		lo --;
-		if (lo >> 63)
+		if (lo == 0)
 			hi --;
+		lo --;
 		hi ^= (int64_t) -1;
 		lo ^= (int64_t) -1;
 	}
@@ -820,8 +831,7 @@ X(dmultu)
 {
 	uint64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]), c = 0;
 	uint64_t hi = 0, lo = 0;
-	int i;
-	for (i=0; i<64; i++) {
+	for (; a; a >>= 1) {
 		if (a & 1) {
 			uint64_t old_lo = lo;
 			hi += c;
@@ -829,7 +839,7 @@ X(dmultu)
 			if (lo < old_lo)
 				hi ++;
 		}
-		a >>= 1; c = (c << 1) | (b >> 63); b <<= 1;
+		c = (c << 1) | (b >> 63); b <<= 1;
 	}
 	reg(&cpu->cd.mips.lo) = lo;
 	reg(&cpu->cd.mips.hi) = hi;
@@ -896,7 +906,7 @@ X(mul) { reg(ic->arg[2]) = (int32_t)
 
 
 /*
- *  3-register arithmetic instructions, with overflow exceptions:
+ *  Add instructions with overflow exceptions:
  *
  *  arg[0] = ptr to rs
  *  arg[1] = ptr to rt
@@ -906,6 +916,22 @@ X(add)
 {
 	int32_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int32_t rd = rs + rt;
+
+	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+	} else
+		reg(ic->arg[2]) = rd;
+}
+X(dadd)
+{
+	int64_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int64_t rd = rs + rt;
 
 	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
 		/*  Synch. PC and cause an exception:  */
@@ -1457,6 +1483,7 @@ X(to_be_translated)
 		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
 		case SPECIAL_SUBU:
+		case SPECIAL_DADD:
 		case SPECIAL_DADDU:
 		case SPECIAL_DSUBU:
 		case SPECIAL_SLT:
@@ -1471,6 +1498,7 @@ X(to_be_translated)
 		case SPECIAL_MTLO:
 		case SPECIAL_DIV:
 		case SPECIAL_DIVU:
+		case SPECIAL_DDIV:
 		case SPECIAL_DDIVU:
 		case SPECIAL_MULT:
 		case SPECIAL_MULTU:
@@ -1481,6 +1509,7 @@ X(to_be_translated)
 			case SPECIAL_ADD:   ic->f = instr(add); break;
 			case SPECIAL_ADDU:  ic->f = instr(addu); break;
 			case SPECIAL_SUBU:  ic->f = instr(subu); break;
+			case SPECIAL_DADD:  ic->f = instr(dadd); break;
 			case SPECIAL_DADDU: ic->f = instr(daddu); x64=1; break;
 			case SPECIAL_DSUBU: ic->f = instr(dsubu); x64=1; break;
 			case SPECIAL_SLT:   ic->f = instr(slt); break;
@@ -1495,6 +1524,7 @@ X(to_be_translated)
 			case SPECIAL_MTLO:  ic->f = instr(mov); break;
 			case SPECIAL_DIV:   ic->f = instr(div); break;
 			case SPECIAL_DIVU:  ic->f = instr(divu); break;
+			case SPECIAL_DDIV:  ic->f = instr(ddiv); x64=1; break;
 			case SPECIAL_DDIVU: ic->f = instr(ddivu); x64=1; break;
 			case SPECIAL_MULT : ic->f = instr(mult); break;
 			case SPECIAL_MULTU: ic->f = instr(multu); break;

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.239 2006-04-12 19:38:29 debug Exp $
+$Id: TODO,v 1.240 2006-04-15 08:48:24 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -22,9 +22,11 @@ Dyntrans:
 		    has a delay slot! (Nicer disassembly while running.)
 		o)  Implement more instructions:
 			branches, coprocessor stuff, unaligned loads/stores
-		o)  PROM stuff!
 		o)  Count/compare interrupt.
 		o)  SMP stuff
+		o)  TLB dump.
+		o)  Make sure that all guest OSes that worked with the old
+		    system still work with dyntrans!
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)

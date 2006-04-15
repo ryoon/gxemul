@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.3 2006-01-16 01:45:29 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.4 2006-04-15 08:21:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -115,6 +115,9 @@ MACHINE_SETUP(playstation2)
 	store_32bit_word(cpu, PLAYSTATION2_BDA + 0,
 	    PLAYSTATION2_SIFBIOS);
 	store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
+
+	/*  "Magic trap" instruction for software PROM emulation:  */
+	store_32bit_word(cpu, PLAYSTATION2_SIFBIOS, 0x00c0de0c);
 
 	store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb
 	    * 1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);

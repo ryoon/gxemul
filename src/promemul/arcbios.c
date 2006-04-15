@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.7 2006-03-31 23:20:25 debug Exp $
+ *  $Id: arcbios.c,v 1.8 2006-04-15 08:21:07 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -2897,11 +2897,23 @@ void arcbios_init(struct machine *machine, int is64bit, uint64_t sgi_ram_offset,
 			    ARC_FIRMWARE_ENTRIES + i*8);
 			store_64bit_word(cpu, ARC_PRIVATE_VECTORS + i*8,
 			    ARC_PRIVATE_ENTRIES + i*8);
+
+			/*  "Magic trap" instruction:  */
+			store_32bit_word(cpu, ARC_FIRMWARE_ENTRIES + i*8,
+			    0x00c0de0c);
+			store_32bit_word(cpu, ARC_PRIVATE_ENTRIES + i*8,
+			    0x00c0de0c);
 		} else {
 			store_32bit_word(cpu, ARC_FIRMWARE_VECTORS + i*4,
 			    ARC_FIRMWARE_ENTRIES + i*4);
 			store_32bit_word(cpu, ARC_PRIVATE_VECTORS + i*4,
 			    ARC_PRIVATE_ENTRIES + i*4);
+
+			/*  "Magic trap" instruction:  */
+			store_32bit_word(cpu, ARC_FIRMWARE_ENTRIES + i*4,
+			    0x00c0de0c);
+			store_32bit_word(cpu, ARC_PRIVATE_ENTRIES + i*4,
+			    0x00c0de0c);
 		}
 	}
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1172 2006-04-14 19:58:21 debug Exp $
+$Id: HISTORY,v 1.1173 2006-04-15 08:21:06 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2638,3 +2638,5 @@ Changelog for GXemul:
 		(eret, add), and making some exceptions work. Fixing a bug
 		in dmult[u].
 		Implementing the first SPARC instructions (sethi, or).
+20060415	Adding "magic trap" instructions so that PROM calls can be
+		software emulated in MIPS dyntrans.

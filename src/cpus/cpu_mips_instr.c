@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.32 2006-04-14 19:58:21 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.33 2006-04-15 08:21:06 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -839,10 +839,12 @@ X(teq)
 	MODE_uint_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	if (a == b) {
 		/*  Synch. PC and cause an exception:  */
-fatal("todo... sync pc and cause exception\n");
-exit(1);
-/*		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
-*/
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 	}
 }
 
@@ -907,10 +909,12 @@ X(add)
 
 	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
 		/*  Synch. PC and cause an exception:  */
-fatal("todo... sync pc and cause overflow exception\n");
-exit(1);
-/*		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
-*/
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 	} else
 		reg(ic->arg[2]) = rd;
 }
@@ -1073,6 +1077,72 @@ X(cfc1)
 	cpu->pc |= ic->arg[2];
 	/*  TODO: cause exception if necessary  */
 	reg(ic->arg[0]) = reg(ic->arg[1]);
+}
+
+
+/*
+ *  syscall, break:  Synchronize the PC and cause an exception.
+ */
+X(syscall)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	mips_cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0);
+}
+X(break)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	mips_cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
+}
+
+
+/*
+ *  promemul:  PROM software emulation.
+ */
+X(promemul)
+{
+	/*  Synch. PC and call the DEC PROM emulation layer:  */
+	int res, low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	switch (cpu->machine->machine_type) {
+	case MACHINE_PMAX:
+		res = decstation_prom_emul(cpu);
+		break;
+	case MACHINE_PS2:
+		res = playstation2_sifbios_emul(cpu);
+		break;
+	case MACHINE_ARC:
+	case MACHINE_SGI:
+		res = arcbios_emul(cpu);
+		break;
+	case MACHINE_EVBMIPS:
+		res = yamon_emul(cpu);
+		break;
+	default:fatal("TODO: Unimplemented machine type for PROM magic trap\n");
+		exit(1);
+	}
+
+	if (res) {
+		/*  Return from the PROM call:  */
+		cpu->pc = cpu->cd.mips.gpr[MIPS_GPR_RA];
+		cpu->delay_slot = NOT_DELAYED;
+
+		if (cpu->machine->show_trace_tree)
+			cpu_functioncall_trace_return(cpu);
+	} else {
+		/*  The PROM call blocks.  */
+		cpu->n_translated_instrs += 1000;
+	}
+
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -1517,6 +1587,19 @@ X(to_be_translated)
 				fatal("[ WARNING: branch in delay slot? ]\n");
 				ic->f = instr(nop);
 			}
+			break;
+
+		case SPECIAL_SYSCALL:
+			if (((iword >> 6) & 0xfffff) == 0x30378) {
+				/*  "Magic trap" for PROM emulation:  */
+				ic->f = instr(promemul);
+			} else {
+				ic->f = instr(syscall);
+			}
+			break;
+
+		case SPECIAL_BREAK:
+			ic->f = instr(break);
 			break;
 
 		case SPECIAL_SYNC:

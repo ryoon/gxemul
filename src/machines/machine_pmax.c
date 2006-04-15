@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.7 2006-04-14 18:16:42 debug Exp $
+ *  $Id: machine_pmax.c,v 1.8 2006-04-15 08:21:07 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -643,10 +643,10 @@ MACHINE_SETUP(pmax)
 		    DEC_PROM_EMULATION + i*8);
 
 #ifndef OLDMIPS
-	/*  Fill PROM with special "trapping" instructions:  */
+	/*  Fill PROM with special "magic trap" instructions:  */
 	for (i=0; i<150; i++) {
 		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
-		    0x7f00c0de);	/*  trap instruction  */
+		    0x00c0de0c);	/*  trap instruction  */
 		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8 + 4,
 		    0x00000000);	/*  nop  */
 	}

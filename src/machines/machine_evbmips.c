@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.3 2006-04-15 08:21:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -165,6 +165,11 @@ MACHINE_SETUP(evbmips)
 	for (i=0; i<0x100; i+=4)
 		store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00500 + i,
 		    (int64_t)(int32_t)0x9fc00800 + i);
+
+	/*  "Magic trap" PROM instructions at 0x9fc008xx:  */
+	for (i=0; i<0x100; i+=4)
+		store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00800 + i,
+		    0x00c0de0c);
 }
 
 

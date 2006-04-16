@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1174 2006-04-15 19:47:28 debug Exp $
+$Id: HISTORY,v 1.1175 2006-04-16 15:12:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2642,3 +2642,5 @@ Changelog for GXemul:
 		software emulated in MIPS dyntrans.
 		Adding more MIPS dyntrans instructions (ddiv, dadd) and
 		fixing another bug in dmult.
+20060416	More MIPS dyntrans progress: adding [d]addi and various other
+		updates.

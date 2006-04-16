@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.74 2006-04-14 18:00:30 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.75 2006-04-16 15:12:43 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1687,6 +1687,22 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 		cpu->cd.DYNTRANS_ARCH.next_ic = ic + ic->arg[0];
 #endif
+
+		/*  An additional check, to catch some bugs:  */
+		if (ic->f == (
+#ifdef DYNTRANS_DUALMODE_32
+		    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+		    instr(to_be_translated))) {
+			fatal("INTERNAL ERROR: ic->f not set!\n");
+			goto bad;
+		}
+		if (ic->f == NULL) {
+			fatal("INTERNAL ERROR: ic->f == NULL!\n");
+			goto bad;
+		}
+
+		/*  Finally finally :-), execute the instruction:  */
 		ic->f(cpu, ic);
 	}
 

@@ -1,8 +1,8 @@
-$Id: TODO,v 1.240 2006-04-15 08:48:24 debug Exp $
+$Id: TODO,v 1.241 2006-04-16 15:12:43 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-Unused configure options:
+The configure script:
 	x)  Remove the Cache option, since it is broken anyway.
 	x)  Remove the delay option, since it isn't really used. Turn
 	    into a runtime command line option? Or enable this together

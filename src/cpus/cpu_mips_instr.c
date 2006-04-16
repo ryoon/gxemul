@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.34 2006-04-15 19:47:29 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.35 2006-04-16 15:12:43 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -867,8 +867,40 @@ X(teq)
  *  arg[2] = ptr to rd
  */
 X(addu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) + reg(ic->arg[1])); }
-X(subu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) - reg(ic->arg[1])); }
+X(add)
+{
+	int32_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int32_t rd = rs + rt;
+
+	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+	} else
+		reg(ic->arg[2]) = rd;
+}
 X(daddu){ reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
+X(dadd)
+{
+	int64_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	int64_t rd = rs + rt;
+
+	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+	} else
+		reg(ic->arg[2]) = rd;
+}
+X(subu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) - reg(ic->arg[1])); }
 X(dsubu){ reg(ic->arg[2]) = reg(ic->arg[0]) - reg(ic->arg[1]); }
 X(slt) {
 #ifdef MODE32
@@ -903,47 +935,6 @@ X(dsrl) { reg(ic->arg[2]) = (int64_t)((uint64_t)reg(ic->arg[0]) >>
 X(dsra) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> (int64_t)ic->arg[1]; }
 X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
-
-
-/*
- *  Add instructions with overflow exceptions:
- *
- *  arg[0] = ptr to rs
- *  arg[1] = ptr to rt
- *  arg[2] = ptr to rd
- */
-X(add)
-{
-	int32_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
-	int32_t rd = rs + rt;
-
-	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
-		/*  Synch. PC and cause an exception:  */
-		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-		    / sizeof(struct mips_instr_call);
-		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-		    << MIPS_INSTR_ALIGNMENT_SHIFT);
-		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
-	} else
-		reg(ic->arg[2]) = rd;
-}
-X(dadd)
-{
-	int64_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
-	int64_t rd = rs + rt;
-
-	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
-		/*  Synch. PC and cause an exception:  */
-		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-		    / sizeof(struct mips_instr_call);
-		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-		    << MIPS_INSTR_ALIGNMENT_SHIFT);
-		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
-	} else
-		reg(ic->arg[2]) = rd;
-}
 
 
 /*
@@ -1009,18 +1000,54 @@ X(dclo)
 
 /*
  *  addiu:  Add immediate (32-bit).
+ *  daddiu: Add immediate (64-bit).
  *  slti:   Set if less than immediate (signed 32-bit)
  *  sltiu:  Set if less than immediate (signed 32-bit, but unsigned compare)
- *  daddiu: Add immediate (64-bit).
  *
  *  arg[0] = pointer to rs
  *  arg[1] = pointer to rt
  *  arg[2] = (int32_t) immediate value
  */
+X(addi)
+{
+	int32_t rs = reg(ic->arg[0]), imm = (int32_t)ic->arg[1];
+	int32_t rt = rs + imm;
+
+	if ((rs >= 0 && imm >= 0 && rt < 0) || (rs < 0 && imm < 0 && rt >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+	} else
+		reg(ic->arg[1]) = rt;
+}
 X(addiu)
 {
 	reg(ic->arg[1]) = (int32_t)
 	    ((int32_t)reg(ic->arg[0]) + (int32_t)ic->arg[2]);
+}
+X(daddi)
+{
+	int64_t rs = reg(ic->arg[0]), imm = (int32_t)ic->arg[1];
+	int64_t rt = rs + imm;
+
+	if ((rs >= 0 && imm >= 0 && rt < 0) || (rs < 0 && imm < 0 && rt >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+	} else
+		reg(ic->arg[1]) = rt;
+}
+X(daddiu)
+{
+	reg(ic->arg[1]) = reg(ic->arg[0]) + (int32_t)ic->arg[2];
 }
 X(slti)
 {
@@ -1030,10 +1057,6 @@ X(sltiu)
 {
 	reg(ic->arg[1]) = (MODE_uint_t)reg(ic->arg[0]) <
 	   ((MODE_uint_t)(int32_t)ic->arg[2]);
-}
-X(daddiu)
-{
-	reg(ic->arg[1]) = reg(ic->arg[0]) + (int32_t)ic->arg[2];
 }
 X(inc)  { reg(ic->arg[1]) ++; }
 X(dec)  { reg(ic->arg[1]) --; }
@@ -1183,6 +1206,9 @@ X(tlbw)
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 	coproc_tlbwri(cpu, ic->arg[0]);
+
+/*  TODO: smarter invalidate  */
+cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
 
@@ -1391,7 +1417,7 @@ X(to_be_translated)
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
-		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
+		memcpy(ib, page + (addr & 0xffc), sizeof(ib));
 	} else {
 		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, ib,
@@ -1712,9 +1738,11 @@ X(to_be_translated)
 		}
 		break;
 
+	case HI6_ADDI:
 	case HI6_ADDIU:
 	case HI6_SLTI:
 	case HI6_SLTIU:
+	case HI6_DADDI:
 	case HI6_DADDIU:
 	case HI6_ANDI:
 	case HI6_ORI:
@@ -1731,9 +1759,11 @@ X(to_be_translated)
 			ic->arg[2] = (uint16_t)iword;
 
 		switch (main_opcode) {
+		case HI6_ADDI:    ic->f = instr(addi); break;
 		case HI6_ADDIU:   ic->f = instr(addiu); break;
 		case HI6_SLTI:    ic->f = instr(slti); break;
 		case HI6_SLTIU:   ic->f = instr(sltiu); break;
+		case HI6_DADDI:   ic->f = instr(daddi); x64 = 1; break;
 		case HI6_DADDIU:  ic->f = instr(daddiu); x64 = 1; break;
 		case HI6_ANDI:    ic->f = instr(andi); break;
 		case HI6_ORI:     ic->f = instr(ori); break;

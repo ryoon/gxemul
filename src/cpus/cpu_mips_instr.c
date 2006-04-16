@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.35 2006-04-16 15:12:43 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.36 2006-04-16 15:26:50 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -999,8 +999,8 @@ X(dclo)
 
 
 /*
- *  addiu:  Add immediate (32-bit).
- *  daddiu: Add immediate (64-bit).
+ *  addi, daddi: Add immediate, overflow detection.
+ *  addiu, daddiu: Add immediate.
  *  slti:   Set if less than immediate (signed 32-bit)
  *  sltiu:  Set if less than immediate (signed 32-bit, but unsigned compare)
  *
@@ -1010,7 +1010,7 @@ X(dclo)
  */
 X(addi)
 {
-	int32_t rs = reg(ic->arg[0]), imm = (int32_t)ic->arg[1];
+	int32_t rs = reg(ic->arg[0]), imm = (int32_t)ic->arg[2];
 	int32_t rt = rs + imm;
 
 	if ((rs >= 0 && imm >= 0 && rt < 0) || (rs < 0 && imm < 0 && rt >= 0)) {
@@ -1031,7 +1031,7 @@ X(addiu)
 }
 X(daddi)
 {
-	int64_t rs = reg(ic->arg[0]), imm = (int32_t)ic->arg[1];
+	int64_t rs = reg(ic->arg[0]), imm = (int32_t)ic->arg[2];
 	int64_t rt = rs + imm;
 
 	if ((rs >= 0 && imm >= 0 && rt < 0) || (rs < 0 && imm < 0 && rt >= 0)) {
@@ -1304,7 +1304,8 @@ X(end_of_page)
 	instr(to_be_translated)(cpu, next_ic);
 
 	/*  The instruction in the delay slot has now executed.  */
-	fatal("[ end_of_page: back from executing the delay slot ]\n");
+	fatal("[ end_of_page: back from executing the delay slot, %i ]\n",
+	    cpu->delay_slot);
 
 	/*  Find the physpage etc of the instruction in the delay slot
 	    (or, if there was an exception, the exception handler):  */

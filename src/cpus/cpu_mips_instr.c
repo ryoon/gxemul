@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.41 2006-04-16 17:45:39 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.42 2006-04-16 18:02:42 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1107,7 +1107,7 @@ X(mtc0)
 	    (uint64_t *)ic->arg[0], 0, select);
 
 
-/*  urk  */
+/*  TODO: fix/remove these!  */
 cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
@@ -1240,6 +1240,16 @@ X(tlbr)
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 	coproc_tlbpr(cpu, 1);
+}
+
+
+/*
+ *  rfe: Return from exception handler (R2000/R3000)
+ */
+X(rfe)
+{
+	coproc_rfe(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -1838,6 +1848,9 @@ X(to_be_translated)
 				break;
 			case COP0_TLBP:
 				ic->f = instr(tlbp);
+				break;
+			case COP0_RFE:
+				ic->f = instr(rfe);
 				break;
 			case COP0_ERET:
 				ic->f = instr(eret);

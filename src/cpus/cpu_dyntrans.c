@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.75 2006-04-16 15:12:43 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.76 2006-04-16 18:02:42 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -159,7 +159,22 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		arm_exception(cpu, ARM_EXCEPTION_IRQ);
 #endif
 #ifdef DYNTRANS_MIPS
-	/*  TODO!  */
+	if (cpu->cd.mips.cached_interrupt_is_possible) {
+		int enabled, mask;
+		int status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
+		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
+			/*  R3000:  */
+			enabled = status & MIPS_SR_INT_IE;
+		} else {
+			/*  R4000 and others:  */
+			enabled = (status & STATUS_IE)
+			    && !(status & STATUS_EXL) && !(status & STATUS_ERL);
+		}
+		mask = status & cpu->cd.mips.coproc[0]->reg[COP0_CAUSE]
+		    & STATUS_IM_MASK;
+		if (enabled && mask)
+			mips_cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0,0);
+	}
 #endif
 #ifdef DYNTRANS_PPC
 	if (cpu->cd.ppc.dec_intr_pending && cpu->cd.ppc.msr & PPC_MSR_EE) {

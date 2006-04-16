@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.31 2006-04-16 10:58:28 debug Exp $
+ *  $Id: cpu_mips.c,v 1.32 2006-04-16 18:02:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2113,7 +2113,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  cleared (in mips_cpu_interrupt_ack()), so we don't need to do a
 	 *  full check each time.
 	 */
-	if (cpu->cd.mips.cached_interrupt_is_possible && !cpu->cd.mips.nullify_next) {
+	if (cpu->cd.mips.cached_interrupt_is_possible &&
+	    !cpu->cd.mips.nullify_next) {
 		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
 			/*  R3000:  */
 			int enabled, mask;

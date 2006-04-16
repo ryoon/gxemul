@@ -1,4 +1,4 @@
-$Id: TODO,v 1.243 2006-04-16 17:45:39 debug Exp $
+$Id: TODO,v 1.244 2006-04-16 18:02:42 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -18,10 +18,10 @@ Dyntrans:
 	x)  Old MIPS -> dyntrans!
 		o)  Delay slots across page boundaries, for b* branches?
 			IMPORTANT! This is probably not solved yet.
+		o)  The first tlbwr isn't random! (Can be below wired!)
 		o)  Extra cpu family function, for detecting if an instruction
 		    has a delay slot! (Nicer disassembly while running.)
-		o)  Implement more instructions:
-			branches, coprocessor stuff, unaligned loads/stores
+		o)  Implement all instructions!
 		o)  Count/compare interrupt.
 		o)  SMP stuff
 		o)  TLB dump.

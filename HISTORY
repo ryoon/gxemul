@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1179 2006-04-16 18:02:41 debug Exp $
+$Id: HISTORY,v 1.1180 2006-04-16 23:10:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2646,3 +2646,5 @@ Changelog for GXemul:
 		rfi, an ugly hack for supporting R2000/R3000 style faked caches,
 		preliminary interrupt support, and various other updates and
 		bugfixes.
+20060417	Adding more SPARC instructions (add, sub, sll[x], sra[x],
+		srl[x]).

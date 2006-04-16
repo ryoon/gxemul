@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.9 2006-04-14 19:58:21 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.10 2006-04-16 23:10:16 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -63,11 +63,36 @@ X(set)
  *  Computational/arithmetic instructions:
  *
  *  arg[0] = ptr to rs1
- *  arg[1] = ptr to rs2 or an immediate value (int16_t)
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
  *  arg[2] = ptr to rd
  */
+X(add)      { reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
+X(add_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) + (int32_t)ic->arg[1]; }
 X(or)       { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
-X(or_imm)   { reg(ic->arg[2]) = reg(ic->arg[0]) | (int16_t)ic->arg[1]; }
+X(or_imm)   { reg(ic->arg[2]) = reg(ic->arg[0]) | (int32_t)ic->arg[1]; }
+X(sub)      { reg(ic->arg[2]) = reg(ic->arg[0]) - reg(ic->arg[1]); }
+X(sub_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) - (int32_t)ic->arg[1]; }
+
+X(sll)      { reg(ic->arg[2]) = (uint32_t)reg(ic->arg[0]) <<
+		(reg(ic->arg[1]) & 31); }
+X(sllx)     { reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) <<
+		(reg(ic->arg[1]) & 63); }
+X(sll_imm)  { reg(ic->arg[2]) = (uint32_t)reg(ic->arg[0]) << ic->arg[1]; }
+X(sllx_imm) { reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) << ic->arg[1]; }
+
+X(srl)      { reg(ic->arg[2]) = (uint32_t)reg(ic->arg[0]) >>
+		(reg(ic->arg[1]) & 31); }
+X(srlx)     { reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) >>
+		(reg(ic->arg[1]) & 63); }
+X(srl_imm)  { reg(ic->arg[2]) = (uint32_t)reg(ic->arg[0]) >> ic->arg[1]; }
+X(srlx_imm) { reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) >> ic->arg[1]; }
+
+X(sra)      { reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) >>
+		(reg(ic->arg[1]) & 31); }
+X(srax)     { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >>
+		(reg(ic->arg[1]) & 63); }
+X(sra_imm)  { reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) >> ic->arg[1]; }
+X(srax_imm) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> ic->arg[1]; }
 
 
 /*****************************************************************************/
@@ -108,7 +133,7 @@ X(to_be_translated)
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, op2, rd, rs1, rs2, siconst, btype, asi, cc, p;
-	int use_imm;
+	int use_imm, x64 = 0;
 	/* void (*samepage_function)(struct cpu *, struct sparc_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -197,18 +222,72 @@ X(to_be_translated)
 
 	case 2:	switch (op2) {
 
+		case 0:	/*  add  */
 		case 2:	/*  or  */
+		case 4:	/*  sub  */
+		case 37:/*  sll  */
+		case 38:/*  srl  */
+		case 39:/*  sra  */
 			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
 			ic->f = NULL;
 			if (use_imm) {
 				ic->arg[1] = siconst;
 				switch (op2) {
-				case 2: ic->f = instr(or_imm); break;
+				case 0:	ic->f = instr(add_imm); break;
+				case 2:	ic->f = instr(or_imm); break;
+				case 4:	ic->f = instr(sub_imm); break;
+				case 37:if (siconst & 0x1000) {
+						ic->f = instr(sllx_imm);
+						ic->arg[1] &= 63;
+						x64 = 1;
+					} else {
+						ic->f = instr(sll_imm);
+						ic->arg[1] &= 31;
+					}
+					break;
+				case 38:if (siconst & 0x1000) {
+						ic->f = instr(srlx_imm);
+						ic->arg[1] &= 63;
+						x64 = 1;
+					} else {
+						ic->f = instr(srl_imm);
+						ic->arg[1] &= 31;
+					}
+					break;
+				case 39:if (siconst & 0x1000) {
+						ic->f = instr(srax_imm);
+						ic->arg[1] &= 63;
+						x64 = 1;
+					} else {
+						ic->f = instr(sra_imm);
+						ic->arg[1] &= 31;
+					}
+					break;
 				}
 			} else {
 				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
 				switch (op2) {
-				case 2: ic->f = instr(or); break;
+				case 0:  ic->f = instr(add); break;
+				case 2:  ic->f = instr(or); break;
+				case 4:  ic->f = instr(sub); break;
+				case 37:if (siconst & 0x1000) {
+						ic->f = instr(sllx);
+						x64 = 1;
+					} else
+						ic->f = instr(sll);
+					break;
+				case 38:if (siconst & 0x1000) {
+						ic->f = instr(srlx);
+						x64 = 1;
+					} else
+						ic->f = instr(srl);
+					break;
+				case 39:if (siconst & 0x1000) {
+						ic->f = instr(srax);
+						x64 = 1;
+					} else
+						ic->f = instr(sra);
+					break;
 				}
 			}
 			if (ic->f == NULL) {
@@ -228,6 +307,12 @@ X(to_be_translated)
 		break;
 
 	default:fatal("TODO: unimplemented main opcode %i\n", main_opcode);
+		goto bad;
+	}
+
+
+	if (x64 && cpu->is_32bit) {
+		fatal("TODO: 64-bit instr on 32-bit cpu\n");
 		goto bad;
 	}
 

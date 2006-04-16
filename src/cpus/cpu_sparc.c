@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.18 2006-04-16 10:58:28 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.19 2006-04-16 23:10:16 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -194,7 +194,7 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if ((i & 3) == 0)
 					debug("cpu%i: ", x);
 				/*  Skip the zero register:  */
-				if (i==0) {
+				if (i == SPARC_ZEROREG) {
 					debug("               ");
 					continue;
 				}
@@ -212,7 +212,7 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					debug("cpu%i: ", x);
 
 				/*  Skip the zero register:  */
-				if (r==0) {
+				if (i == SPARC_ZEROREG) {
 					debug("                         ");
 					continue;
 				}
@@ -237,13 +237,21 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 void sparc_cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
-	int cpunr = 0;
+	int i, cpunr = 0;
 
 	/*  CPU number:  */
-
 	/*  TODO  */
 
-	/*  Register name:  */
+	for (i=0; i<N_SPARC_REG; i++) {
+		if (strcasecmp(name, sparc_regnames[i]) == 0) {
+			if (writeflag && i != SPARC_ZEROREG)
+				m->cpus[cpunr]->cd.sparc.r[i] = *valuep;
+			else
+				*valuep = m->cpus[cpunr]->cd.sparc.r[i];
+			*match_register = 1;
+		}
+	}
+
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
 			m->cpus[cpunr]->pc = *valuep;

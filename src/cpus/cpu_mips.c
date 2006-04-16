@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.30 2006-04-15 19:47:29 debug Exp $
+ *  $Id: cpu_mips.c,v 1.31 2006-04-16 10:58:28 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1588,11 +1588,11 @@ static void add_response_word(struct cpu *cpu, char *r, uint64_t value,
 			value = ((value & 0xff) << 56) +
 				((value & 0xff00) << 40) +
 				((value & 0xff0000) << 24) +
-				((value & 0xff000000) << 8) +
-				((value & 0xff00000000) >> 8) +
-				((value & 0xff0000000000) >> 24) +
-				((value & 0xff000000000000) >> 40) +
-				((value & 0xff00000000000000) >> 56);
+				((value & 0xff000000ULL) << 8) +
+				((value & 0xff00000000ULL) >> 8) +
+				((value & 0xff0000000000ULL) >> 24) +
+				((value & 0xff000000000000ULL) >> 40) +
+				((value & 0xff00000000000000ULL) >> 56);
 		}
 	}
 	snprintf(r + strlen(r), maxlen - strlen(r), format, (uint64_t)value);

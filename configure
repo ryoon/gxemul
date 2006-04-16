@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.213 2006-04-14 18:16:41 debug Exp $
+#  $Id: configure,v 1.214 2006-04-16 10:50:28 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -960,15 +960,26 @@ else
 		printf "no, using an ugly hack instead, "
 		printf "#define NO_C99_PRINTF_DEFINES\n" >> config.h
 
-		printf "#include <stdio.h>\nint main(int argc, char *argv[]){
-		    printf(\"%%i\\\n\", (int)sizeof(long));return 0;}
-		    " > _testpri.c
-		$CC $CFLAGS _testpri.c -o _testpri 2> /dev/null
-		if [ z`./_testpri` = z8 ]; then
-			printf "PRIx64=lx\n"
-		else
+		# Try llx first:
+		printf "#include <stdio.h>\n#include <inttypes.h>\nint main(int argc, char *argv[]){
+		    printf(\"%%llx\\\n\", (int64_t)128);return 0;}\n" > _testpri.c
+		rm -f _testpri
+		$CC $CFLAGS $CWARNINGS _testpri.c -o _testpri 2> /dev/null
+		if [ z`./_testpri` = z80 ]; then
 			printf "PRIx64=llx\n"
 			printf "#define NO_C99_64BIT_LONGLONG\n" >> config.h
+		else
+			# Try lx too:
+			printf "#include <stdio.h>\n#include <inttypes.h>\nint main(int argc, char *argv[]){
+			    printf(\"%%lx\\\n\", (int64_t)128);return 0;}\n" > _testpri.c
+			rm -f _testpri
+			$CC $CFLAGS $CWARNINGS _testpri.c -o _testpri 2> /dev/null
+			if [ z`./_testpri` = z80 ]; then
+				printf "PRIx64=lx\n"
+			else
+				printf "\nFailed, neither lx nor llx worked!\n"
+				exit
+			fi
 		fi
 	fi
 fi

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.40 2006-04-16 17:27:01 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.41 2006-04-16 17:45:39 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1105,6 +1105,13 @@ X(mtc0)
 	/*  TODO: cause exception if necessary  */
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
 	    (uint64_t *)ic->arg[0], 0, select);
+
+
+/*  urk  */
+cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
+cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+
 }
 X(dmfc0)
 {
@@ -1997,14 +2004,35 @@ X(to_be_translated)
 		case HI6_SW:  store = 1; break;
 		case HI6_SD:  store = 1; size = 3; x64 = 1; break;
 		}
-		ic->f =
+
+		/*
+		 *  NOTE/TODO: This is not very good; this is used for code
+		 *  which relies on R2000/R3000 cache characteristics.
+		 *  Unfortunately the code only gets translated _once_, which
+		 *  could be a performance bottleneck. If profiling reveals
+		 *  this to be a problem, then this must be redesigned. :-/
+		 */
+
+		if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
+		    cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 
+		    MIPS1_ISOL_CACHES) {
+			ic->f =
 #ifdef MODE32
-		    mips32_loadstore
+			    mips32_loadstore_generic
 #else
-		    mips_loadstore
+			    mips_loadstore_generic
 #endif
-		    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16)
-		    + store * 8 + size * 2 + signedness];
+			    [ store * 8 + size * 2 + signedness];
+		} else {
+			ic->f =
+#ifdef MODE32
+			    mips32_loadstore
+#else
+			    mips_loadstore
+#endif
+			    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16)
+			    + store * 8 + size * 2 + signedness];
+		}
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;

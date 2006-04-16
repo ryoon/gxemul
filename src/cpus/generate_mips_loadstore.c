@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_mips_loadstore.c,v 1.3 2006-03-18 12:03:17 debug Exp $
+ *  $Id: generate_mips_loadstore.c,v 1.4 2006-04-16 17:45:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -133,6 +133,7 @@ int main(int argc, char *argv[])
 			loadstore(mode32, store, size, signedness,
 			    endianness);
 
+	/*  Array of pointers to fast load/store functions:  */
 	for (mode32=0; mode32<=1; mode32++) {
 		printf("#if%sdef MODE32\n", mode32? "" : "n");
 		printf("\n\nvoid (*mips%s_loadstore[32])(struct cpu *, struct "
@@ -153,6 +154,32 @@ int main(int argc, char *argv[])
 				printf("\tmips%s_instr_", mode32? "32" : "");
 				print_function_name(store, size, signedness,
 				    endianness);
+			}
+		printf(" };\n");
+		printf("#endif\n");
+	}
+
+	/*  Array of pointers to the generic functions:  */
+	for (mode32=0; mode32<=1; mode32++) {
+		printf("#if%sdef MODE32\n", mode32? "" : "n");
+		printf("\n\nvoid (*mips%s_loadstore_generic[16])("
+		    "struct cpu *, struct mips_instr_call *) = {\n",
+		    mode32? "32" : "");
+		for (store=0; store<=1; store++)
+		    for (size=0; size<=3; size++)
+			for (signedness=0; signedness<=1; signedness++) {
+				if (store || size || signedness)
+					printf(",\n");
+
+				if (store && signedness) {
+					printf("\tmips%s_instr_invalid",
+					    mode32? "32" : "");
+					continue;
+				}
+
+				printf("\tmips%s_generic_", mode32? "32" : "");
+				print_function_name(store, size, signedness,
+				    -1);
 			}
 		printf(" };\n");
 		printf("#endif\n");

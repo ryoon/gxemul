@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.39 2006-04-16 17:05:24 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.40 2006-04-16 17:27:01 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -921,15 +921,17 @@ X(or)  { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 X(xor) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
 X(nor) { reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
 X(sll) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << ic->arg[1]); }
-X(sllv){ int32_t sa = reg(ic->arg[1]) & 31;
+X(sllv){ int sa = reg(ic->arg[1]) & 31;
 	 reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << sa); }
 X(srl) { reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> ic->arg[1]); }
-X(srlv){ int32_t sa = reg(ic->arg[1]) & 31;
+X(srlv){ int sa = reg(ic->arg[1]) & 31;
 	 reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> sa); }
 X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
-X(srav){ int32_t sa = reg(ic->arg[1]) & 31;
+X(srav){ int sa = reg(ic->arg[1]) & 31;
 	 reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> sa); }
 X(dsll) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) << (int64_t)ic->arg[1]; }
+X(dsllv){ int sa = reg(ic->arg[1]) & 63;
+	 reg(ic->arg[2]) = (int64_t)(reg(ic->arg[0]) << sa); }
 X(dsrl) { reg(ic->arg[2]) = (int64_t)((uint64_t)reg(ic->arg[0]) >>
 	(uint64_t) ic->arg[1]);}
 X(dsra) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> (int64_t)ic->arg[1]; }
@@ -1240,6 +1242,7 @@ X(tlbr)
 X(eret)
 {
 	coproc_eret(cpu);
+	quick_pc_to_pointers(cpu);
 }
 
 
@@ -1479,6 +1482,7 @@ X(to_be_translated)
 		case SPECIAL_DSRL:
 		case SPECIAL_DSRL32:
 		case SPECIAL_DSLL:
+		case SPECIAL_DSLLV:
 		case SPECIAL_DSLL32:
 		case SPECIAL_DSRA:
 		case SPECIAL_DSRA32:
@@ -1493,6 +1497,8 @@ X(to_be_translated)
 			case SPECIAL_DSRL32:ic->f= instr(dsrl); x64=1;
 					   sa += 32; break;
 			case SPECIAL_DSLL: ic->f = instr(dsll); x64=1; break;
+			case SPECIAL_DSLLV:ic->f = instr(dsllv);
+					   x64 = 1; sa = -1; break;
 			case SPECIAL_DSLL32:ic->f= instr(dsll); x64=1;
 					   sa += 32; break;
 			case SPECIAL_DSRA: ic->f = instr(dsra); x64=1; break;

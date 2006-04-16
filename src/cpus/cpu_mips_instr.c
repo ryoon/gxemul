@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.36 2006-04-16 15:26:50 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.37 2006-04-16 16:00:18 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -586,7 +586,7 @@ X(bgtzl_samepage)
  */
 X(jr)
 {
-	MODE_uint_t rs = reg(ic->arg[0]);
+	MODE_int_t rs = reg(ic->arg[0]);
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -598,7 +598,7 @@ X(jr)
 }
 X(jr_ra)
 {
-	MODE_uint_t rs = cpu->cd.mips.gpr[MIPS_GPR_RA];
+	MODE_int_t rs = cpu->cd.mips.gpr[MIPS_GPR_RA];
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -610,7 +610,7 @@ X(jr_ra)
 }
 X(jr_ra_trace)
 {
-	MODE_uint_t rs = cpu->cd.mips.gpr[MIPS_GPR_RA];
+	MODE_int_t rs = cpu->cd.mips.gpr[MIPS_GPR_RA];
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -623,7 +623,7 @@ X(jr_ra_trace)
 }
 X(jalr)
 {
-	MODE_uint_t rs = reg(ic->arg[0]), rd;
+	MODE_int_t rs = reg(ic->arg[0]), rd;
 	cpu->delay_slot = TO_BE_DELAYED;
 	rd = cpu->pc & ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -639,7 +639,7 @@ X(jalr)
 }
 X(jalr_trace)
 {
-	MODE_uint_t rs = reg(ic->arg[0]), rd;
+	MODE_int_t rs = reg(ic->arg[0]), rd;
 	cpu->delay_slot = TO_BE_DELAYED;
 	rd = cpu->pc & ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -725,9 +725,9 @@ X(cache)
  *  arg[1] = pointer to rt
  *  arg[2] = uint32_t immediate value
  */
-X(andi) { reg(ic->arg[1]) = reg(ic->arg[0]) & (int32_t)ic->arg[2]; }
-X(ori)  { reg(ic->arg[1]) = reg(ic->arg[0]) | (int32_t)ic->arg[2]; }
-X(xori) { reg(ic->arg[1]) = reg(ic->arg[0]) ^ (int32_t)ic->arg[2]; }
+X(andi) { reg(ic->arg[1]) = reg(ic->arg[0]) & (uint32_t)ic->arg[2]; }
+X(ori)  { reg(ic->arg[1]) = reg(ic->arg[0]) | (uint32_t)ic->arg[2]; }
+X(xori) { reg(ic->arg[1]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[2]; }
 
 
 /*

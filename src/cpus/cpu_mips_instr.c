@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.37 2006-04-16 16:00:18 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.38 2006-04-16 16:15:51 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -935,6 +935,8 @@ X(dsrl) { reg(ic->arg[2]) = (int64_t)((uint64_t)reg(ic->arg[0]) >>
 X(dsra) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> (int64_t)ic->arg[1]; }
 X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
+X(movn) { if (reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
+X(movz) { if (!reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
 
 
 /*
@@ -1519,6 +1521,8 @@ X(to_be_translated)
 		case SPECIAL_OR:
 		case SPECIAL_XOR:
 		case SPECIAL_NOR:
+		case SPECIAL_MOVN:
+		case SPECIAL_MOVZ:
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
 		case SPECIAL_MTHI:
@@ -1558,6 +1562,8 @@ X(to_be_translated)
 			case SPECIAL_DMULT: ic->f = instr(dmult); x64=1; break;
 			case SPECIAL_DMULTU:ic->f = instr(dmultu); x64=1; break;
 			case SPECIAL_TEQ:   ic->f = instr(teq); break;
+			case SPECIAL_MOVN:  ic->f = instr(movn); break;
+			case SPECIAL_MOVZ:  ic->f = instr(movz); break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
@@ -1576,20 +1582,8 @@ X(to_be_translated)
 				ic->arg[2] = (size_t)&cpu->cd.mips.lo;
 				break;
 			}
-			/*  Special cases:  */
+			/*  Special cases for rd:  */
 			switch (s6) {
-			case SPECIAL_ADDU:
-			case SPECIAL_DADDU:
-				if ((rs == MIPS_GPR_ZERO || rt == MIPS_GPR_ZERO)
-				    && (s6 == SPECIAL_DADDU || (s6 ==
-				    SPECIAL_ADDU && cpu->is_32bit))) {
-					ic->f = instr(mov);
-					if (rs == MIPS_GPR_ZERO) {
-						ic->arg[0] = (size_t)
-						    &cpu->cd.mips.gpr[rt];
-					}
-				}
-				break;
 			case SPECIAL_MTHI:
 			case SPECIAL_MTLO:
 			case SPECIAL_DIV:
@@ -1859,6 +1853,14 @@ X(to_be_translated)
 			ic->arg[1] = rd + ((iword & 7) << 5);
 			ic->arg[2] = addr & 0xffc;
 			ic->f = rs == COPz_MTCz? instr(mtc0) : instr(dmtc0);
+			break;
+		case 8:	if (iword == 0x4100ffff) {
+				/*  R2020 DECstation write-loop thingy.  */
+				ic->f = instr(nop);
+			} else {
+				fatal("Unimplemented blah blah zzzz...\n");
+				goto bad;
+			}
 			break;
 		
 		default:fatal("UNIMPLEMENTED cop0 (rs = %i)\n", rs);

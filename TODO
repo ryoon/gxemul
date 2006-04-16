@@ -1,4 +1,4 @@
-$Id: TODO,v 1.244 2006-04-16 18:02:42 debug Exp $
+$Id: TODO,v 1.245 2006-04-16 23:14:49 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -47,13 +47,14 @@ Dyntrans:
 
 SPARC:
 	x)  Pretty much everything:
-		o)  Begin to implement instructions.
 		o)  Add all registers (floating point, control regs etc)
+		o)  Save/restore register windows etc!
 		o)  Disassemly of some more instructions.
+		o)  Are sll etc 32-bit sign-extending or zero-extending?
 		o)  Finish the GDB register stuff.
 
 Debugger:
-	o)  MIPS gdb stub "p" command!
+	o)  MIPS gdb stub "p" command vs "g" command!
 	o)  How does SMP debugging work? Does it simply use "threads"?
 	o)  Try to make the debugger more modular and, if possible, reentrant!
 	o)  Remove the emul command? (But show network info if showing

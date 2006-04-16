@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.27 2006-04-14 19:58:21 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.28 2006-04-16 23:14:49 debug Exp $
  */
 
 #include "misc.h"
@@ -122,7 +122,6 @@ struct sparc_cpu {
 	struct sparc_cpu_type_def cpu_type;
 
 	uint64_t	r[N_SPARC_REG];
-	uint64_t	zero;			/*  for dyntrans; ALWAYS zero */
 
 
 	/*

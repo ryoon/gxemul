@@ -1,4 +1,4 @@
-$Id: TODO,v 1.241 2006-04-16 15:12:43 debug Exp $
+$Id: TODO,v 1.242 2006-04-16 17:05:24 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -16,6 +16,7 @@ MIPS:
 
 Dyntrans:
 	x)  Old MIPS -> dyntrans!
+		o)  Support disconnected caches for R2000/R3000!
 		o)  Delay slots across page boundaries, for b* branches?
 			IMPORTANT! This is probably not solved yet.
 		o)  Extra cpu family function, for detecting if an instruction

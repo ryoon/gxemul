@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.38 2006-04-16 16:15:51 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.39 2006-04-16 17:05:24 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1300,14 +1300,14 @@ X(end_of_page)
 		return;
 
 	/*  Tricky situation; the delay slot is on the next virtual page:  */
-	fatal("[ end_of_page: delay slot across page boundary! ]\n");
+	/*  fatal("[ end_of_page: delay slot across page boundary! ]\n");  */
 
 	next_ic = cpu->cd.mips.next_ic ++;
 	instr(to_be_translated)(cpu, next_ic);
 
 	/*  The instruction in the delay slot has now executed.  */
-	fatal("[ end_of_page: back from executing the delay slot, %i ]\n",
-	    cpu->delay_slot);
+	/*  fatal("[ end_of_page: back from executing the delay slot, %i ]\n",
+	    cpu->delay_slot);  */
 
 	/*  Find the physpage etc of the instruction in the delay slot
 	    (or, if there was an exception, the exception handler):  */
@@ -1389,8 +1389,8 @@ X(to_be_translated)
 
 	/*  Special case for branch with delayslot on the next page:  */
 	if (cpu->delay_slot == TO_BE_DELAYED && low_pc == 0) {
-		fatal("[ delay-slot translation across page boundary ]\n");
-		low_pc = 0;
+		/*  fatal("[ delay-slot translation across page "
+		    "boundary ]\n");  */
 		in_crosspage_delayslot = 1;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.44 2006-04-17 13:36:12 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.45 2006-04-17 14:18:04 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1130,6 +1130,10 @@ X(dmtc0)
 	/*  TODO: cause exception if necessary  */
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
 	    (uint64_t *)ic->arg[0], 1, select);
+
+/*  TODO: fix/remove these!  */
+cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
+cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 X(cfc1)
 {
@@ -1249,7 +1253,9 @@ X(tlbr)
 X(rfe)
 {
 	coproc_rfe(cpu);
-	quick_pc_to_pointers(cpu);
+
+	/*  pc to pointers should not be necessary here.  */
+	/*  quick_pc_to_pointers(cpu);  */
 }
 
 

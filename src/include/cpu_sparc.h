@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.28 2006-04-16 23:14:49 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.29 2006-04-17 09:29:41 debug Exp $
  */
 
 #include "misc.h"
@@ -118,11 +118,44 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"ldc","ldcsr","[50]","lddc", "stc","stcsr","scdfq","scdf",	\
 	"[56]","[57]","[58]","[59]", "[60]","[61]","casxa","[63]" }
 
+
+/*  Max number of Trap Levels and Windows:  */
+#define	MAXTL			4
+#define	MAXWIN			32
+
+
 struct sparc_cpu {
 	struct sparc_cpu_type_def cpu_type;
 
+	/*  Registers in the Current Window:  */
 	uint64_t	r[N_SPARC_REG];
 
+	/*  TODO: all registes  */
+
+	uint64_t	pstate;		/*  Processor State Register  */
+	uint64_t	y;		/*  Y-reg (only low 32-bits used)  */
+	uint64_t	tick;		/*  Tick Register  */
+	uint64_t	ver;		/*  Version register  */
+
+	uint8_t		cwp;		/*  Current Window Pointer  */
+	uint8_t		cansave;	/*  CANSAVE register  */
+	uint8_t		canrestore;	/*  CANRESTORE register  */
+	uint8_t		otherwin;	/*  OTHERWIN register  */
+	uint8_t		cleanwin;	/*  CLEANWIN register  */
+
+	uint8_t		wstate;		/*  Window state  */
+
+	uint8_t		ccr;		/*  Condition Code Register  */
+	uint8_t		asi;		/*  Address Space Identifier  */
+	uint8_t		tl;		/*  Trap Level Register  */
+	uint8_t		pil;		/*  Processor Interrupt Level Reg.  */
+
+	uint64_t	tpc[MAXTL];	/*  Trap Program Counter  */
+	uint64_t	tnpc[MAXTL];	/*  Trap Next Program Counter  */
+	uint64_t	tstate[MAXTL];	/*  Trap State  */
+	uint32_t	ttype[MAXTL];	/*  Trap Type  */
+
+	uint64_t	tba;		/*  Trap Base Address  */
 
 	/*
 	 *  Instruction translation cache and Virtual->Physical->Host
@@ -133,6 +166,81 @@ struct sparc_cpu {
 	VPH32(sparc,SPARC,uint64_t,uint8_t)
 	VPH64(sparc,SPARC,uint8_t)
 };
+
+
+/*  Processor State Register (PSTATE) bit definitions:  */
+#define	SPARC_PSTATE_PID1	0x800
+#define	SPARC_PSTATE_PID0	0x400
+#define	SPARC_PSTATE_CLE	0x200	/*  Current Little Endian  */
+#define	SPARC_PSTATE_TLE	0x100	/*  Trap Little Endian  */
+#define	SPARC_PSTATE_MM_MASK	0x0c0	/*  Memory Model (TODO)  */
+#define	SPARC_PSTATE_MM_SHIFT	    6
+#define	SPARC_PSTATE_RED	0x020	/*  Reset/Error/Debug state  */
+#define	SPARC_PSTATE_PEF	0x010	/*  Enable Floating-point  */
+#define	SPARC_PSTATE_AM		0x008	/*  Address Mask  */
+#define	SPARC_PSTATE_PRIV	0x004	/*  Privileged Mode  */
+#define	SPARC_PSTATE_IE		0x002	/*  Interrupt Enable  */
+#define	SPARC_PSTATE_AG		0x001	/*  Alternate Globals  */
+
+
+/*  Condition Code Register bit definitions:  */
+#define	SPARC_CCR_XCC_MASK	0xf0
+#define	SPARC_CCR_XCC_SHIFT	4
+#define	SPARC_CCR_ICC_MASK	0x0f
+#define	SPARC_CCR_N		8
+#define	SPARC_CCR_Z		4
+#define	SPARC_CCR_V		2
+#define	SPARC_CCR_C		1
+
+
+/*  CWP, CANSAVE, CANRESTORE, OTHERWIN, CLEANWIN bitmask:  */
+#define	SPARC_CWP_MASK		0x1f
+
+
+/*  Window State bit definitions:  */
+#define	SPARC_WSTATE_OTHER_MASK		0x38
+#define	SPARC_WSTATE_OTHER_SHIFT	3
+#define	SPARC_WSTATE_NORMAL_MASK	0x07
+
+
+/*  Tick Register bit definitions:  */
+#define	SPARC_TICK_NPT		(1ULL << 63)	/*  Non-privileged trap  */
+
+
+/*  Addess Space Identifier bit definitions:  */
+#define	SPARC_ASI_RESTRICTED	0x80
+
+
+/*  Trap Level Register bit definitions:  */
+#define	SPARC_TL_MASK		0x07
+
+
+/*  Processor Interrupt Level Register bit definitions:  */
+#define	SPARC_PIL_MASK		0x0f
+
+
+/*  Trap Type Register bit definitions:  */
+#define	SPARC_TTYPE_MASK	0x1ff
+
+
+/*  Trap Base Address bit definitions:  */
+#define	SPARC_TBA_MASK		0xffffffffffff8000ULL
+
+
+/*
+ *  Full address for a trap is:
+ *	TBA<bits 63..15> || X || TTYPE[TL] || 00000
+ *
+ *  where X is a bit which is true if TL>0 when the trap was taken.
+ */
+
+
+/*  Version Register bit definitions:  */
+#define	SPARC_VER_MANUF_SHIFT	48
+#define	SPARC_VER_IMPL_SHIFT	32
+#define	SPARC_VER_MASK_SHIFT	24
+#define	SPARC_VER_MAXTL_SHIFT	8
+#define	SPARC_VER_MAXWIN_SHIFT	0
 
 
 /*  cpu_sparc.c:  */

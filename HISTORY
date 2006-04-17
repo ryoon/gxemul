@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1180 2006-04-16 23:10:15 debug Exp $
+$Id: HISTORY,v 1.1181 2006-04-17 09:29:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2647,4 +2647,4 @@ Changelog for GXemul:
 		preliminary interrupt support, and various other updates and
 		bugfixes.
 20060417	Adding more SPARC instructions (add, sub, sll[x], sra[x],
-		srl[x]).
+		srl[x]), and useful SPARC header definitions.

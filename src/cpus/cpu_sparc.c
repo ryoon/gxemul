@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.19 2006-04-16 23:10:16 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.20 2006-04-17 09:29:41 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -124,6 +124,12 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 			debug(")");
 		}
 	}
+
+	/*  After a reset, the Tick register is not readable by user code:  */
+	cpu->cd.sparc.tick |= SPARC_TICK_NPT;
+
+	/*  Insert number of Windows and Trap levels into the version reg.:  */
+	cpu->cd.sparc.ver |= MAXWIN | (MAXTL << SPARC_VER_MAXTL_SHIFT);
 
 	sparc_init_64bit_dummy_tables(cpu);
 

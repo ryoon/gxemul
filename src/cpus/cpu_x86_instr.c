@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.8 2006-04-17 09:39:18 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.9 2006-04-17 09:50:16 debug Exp $
  *
  *  x86/amd64 instructions.
  *
@@ -43,6 +43,20 @@
 X(nop)
 {
 }
+
+
+/*****************************************************************************/
+
+
+/*
+ *  sti, cli, std, cld, stc, clc:  Set/clear flag bits.
+ */
+X(stc) { cpu->cd.x86.rflags |= X86_FLAGS_CF; }
+X(clc) { cpu->cd.x86.rflags &= ~X86_FLAGS_CF; }
+X(std) { cpu->cd.x86.rflags |= X86_FLAGS_DF; }
+X(cld) { cpu->cd.x86.rflags &= ~X86_FLAGS_DF; }
+X(sti) { cpu->cd.x86.rflags |= X86_FLAGS_IF; }
+X(cli) { cpu->cd.x86.rflags &= ~X86_FLAGS_IF; }
 
 
 /*****************************************************************************/
@@ -141,6 +155,28 @@ X(to_be_translated)
 	main_opcode = ib[0];
 
 	switch (main_opcode) {
+
+	case 0x90:	/*  nop  */
+		ic->arg[0] = 1;
+		ic->f = instr(nop);
+		break;
+
+	case 0xf8:	/*  clc  */
+	case 0xf9:	/*  stc  */
+	case 0xfa:	/*  cli  */
+	case 0xfb:	/*  sti  */
+	case 0xfc:	/*  cld  */
+	case 0xfd:	/*  std  */
+		ic->arg[0] = 1;
+		switch (main_opcode) {
+		case 0xf8: ic->f = instr(sti); break;
+		case 0xf9: ic->f = instr(stc); break;
+		case 0xfa: ic->f = instr(cli); break;
+		case 0xfb: ic->f = instr(sti); break;
+		case 0xfc: ic->f = instr(cld); break;
+		case 0xfd: ic->f = instr(std); break;
+		}
+		break;
 
 	default:goto bad;
 	}

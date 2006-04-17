@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.45 2006-04-17 14:18:04 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.46 2006-04-17 18:33:55 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2170,15 +2170,16 @@ goto bad;
 	case HI6_SDL:
 	case HI6_SDR:
 		/*  TODO: replace these with faster versions...  */
+		store = 0;
 		switch (main_opcode) {
 		case HI6_LWL: ic->f = instr(lwl); break;
 		case HI6_LWR: ic->f = instr(lwr); break;
 		case HI6_LDL: ic->f = instr(ldl); break;
 		case HI6_LDR: ic->f = instr(ldr); break;
-		case HI6_SWL: ic->f = instr(swl); break;
-		case HI6_SWR: ic->f = instr(swr); break;
-		case HI6_SDL: ic->f = instr(sdl); break;
-		case HI6_SDR: ic->f = instr(sdr); break;
+		case HI6_SWL: ic->f = instr(swl); store = 1; break;
+		case HI6_SWR: ic->f = instr(swr); store = 1; break;
+		case HI6_SDL: ic->f = instr(sdl); store = 1; break;
+		case HI6_SDR: ic->f = instr(sdr); store = 1; break;
 		}
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.9 2006-04-17 09:50:16 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.10 2006-04-17 09:58:10 debug Exp $
  *
  *  x86/amd64 instructions.
  *
@@ -150,7 +150,11 @@ X(to_be_translated)
 
 	/*
 	 *  Translate the instruction:
+	 *
+	 *  REMEMBER to always set ic->arg[0] to the instruction length!
 	 */
+
+	ic->arg[0] = 0;
 
 	main_opcode = ib[0];
 

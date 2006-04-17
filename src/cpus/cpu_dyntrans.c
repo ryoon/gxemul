@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.77 2006-04-17 09:39:18 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.78 2006-04-17 09:58:10 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1701,6 +1701,12 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	} else {
 #ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 		cpu->cd.DYNTRANS_ARCH.next_ic = ic + ic->arg[0];
+
+		/*  Additional check, for variable length ISAs:  */
+		if (ic->arg[0] == 0) {
+			fatal("INTERNAL ERROR: instr len = 0!\n");
+			goto bad;
+		}
 #endif
 
 		/*  An additional check, to catch some bugs:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.78 2006-04-17 09:58:10 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.79 2006-04-17 11:06:46 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1597,17 +1597,10 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *  Check for breakpoints.
 	 */
 	if (!single_step_breakpoint) {
-#ifdef MODE32
-		uint32_t curpc = cpu->pc;
-#else
-		uint64_t curpc = cpu->pc;
-#endif
+		MODE_uint_t curpc = cpu->pc;
 		int i;
 		for (i=0; i<cpu->machine->n_breakpoints; i++)
-			if (curpc ==
-#ifdef MODE32
-			    (uint32_t)
-#endif
+			if (curpc == (MODE_uint_t)
 			    cpu->machine->breakpoint_addr[i]) {
 				if (!cpu->machine->instruction_trace) {
 					int old_quiet_mode = quiet_mode;

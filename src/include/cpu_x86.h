@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.46 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_x86.h,v 1.47 2006-04-17 11:06:46 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */
@@ -286,8 +286,10 @@ struct x86_cpu {
 #define	DESCR_TYPE_DATA		2
 
 
+#define	LONG_MODE		(cpu->cd.x86.efer & X86_EFER_LME)
 #define	PROTECTED_MODE		(cpu->cd.x86.cr[0] & X86_CR0_PE)
 #define	REAL_MODE		(!PROTECTED_MODE)
+
 
 /*  cpu_x86.c:  */
 void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.12 2006-04-08 00:12:43 debug Exp $
+ *  $Id: cpu_x86.c,v 1.13 2006-04-17 11:06:46 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -191,48 +191,12 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	uint64_t offset;
 	int i, x = cpu->cpu_id;
 
-	if (REAL_MODE) {
-		/*  Real-mode:  */
-		debug("cpu%i:  cs:ip = 0x%04x:0x%04x\n", x,
-		    cpu->cd.x86.s[X86_S_CS], (int)cpu->pc);
-
-		debug("cpu%i:  ax = 0x%04x  bx = 0x%04x  cx = 0x%04x  dx = "
-		    "0x%04x\n", x,
-		    (int)cpu->cd.x86.r[X86_R_AX], (int)cpu->cd.x86.r[X86_R_BX],
-		    (int)cpu->cd.x86.r[X86_R_CX], (int)cpu->cd.x86.r[X86_R_DX]);
-		debug("cpu%i:  si = 0x%04x  di = 0x%04x  bp = 0x%04x  sp = "
-		    "0x%04x\n", x,
-		    (int)cpu->cd.x86.r[X86_R_SI], (int)cpu->cd.x86.r[X86_R_DI],
-		    (int)cpu->cd.x86.r[X86_R_BP], (int)cpu->cd.x86.r[X86_R_SP]);
-
-		debug("cpu%i:  ds = 0x%04x  es = 0x%04x  ss = 0x%04x  flags "
-		    "= 0x%04x\n", x,
-		    (int)cpu->cd.x86.s[X86_S_DS], (int)cpu->cd.x86.s[X86_S_ES],
-		    (int)cpu->cd.x86.s[X86_S_SS], (int)cpu->cd.x86.rflags);
-	} else {
+	if (LONG_MODE) {
+		/*  64-bit long mode:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
-		debug("cpu%i:  eip=0x", x);
-	        debug("%08x", (int)cpu->pc);
-		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
-
-		debug("cpu%i:  eax=0x%08x  ebx=0x%08x  ecx=0x%08x  edx="
-		    "0x%08x\n", x,
-		    (int)cpu->cd.x86.r[X86_R_AX], (int)cpu->cd.x86.r[X86_R_BX],
-		    (int)cpu->cd.x86.r[X86_R_CX], (int)cpu->cd.x86.r[X86_R_DX]);
-		debug("cpu%i:  esi=0x%08x  edi=0x%08x  ebp=0x%08x  esp="
-		    "0x%08x\n", x,
-		    (int)cpu->cd.x86.r[X86_R_SI], (int)cpu->cd.x86.r[X86_R_DI],
-		    (int)cpu->cd.x86.r[X86_R_BP], (int)cpu->cd.x86.r[X86_R_SP]);
-#if 0
-	} else {
-		/*  64-bit  */
-		symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->pc, &offset);
-
-		debug("cpu%i:  rip = 0x", x);
-	        debug("%016"PRIx64, (uin64_t) cpu->pc);
+		debug("cpu%i:  rip = 0x%016"PRIx64, x, cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		for (i=0; i<N_X86_REGS; i++) {
@@ -243,7 +207,49 @@ void x86_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i & 1) == 1)
 				debug("\n");
 		}
-#endif
+	} else if (REAL_MODE) {
+		/*  16-bit real-mode:  */
+		debug("cpu%i:  cs:ip = 0x%04"PRIx16":0x%04"PRIx16"\n", x,
+		    cpu->cd.x86.s[X86_S_CS], (uint16_t)cpu->pc);
+
+		debug("cpu%i:  ax = 0x%04"PRIx16"  bx = 0x%04"PRIx16
+		    "  cx = 0x%04"PRIx16"  dx = 0x%04"PRIx16"\n", x,
+		    (uint16_t)cpu->cd.x86.r[X86_R_AX],
+		    (uint16_t)cpu->cd.x86.r[X86_R_BX],
+		    (uint16_t)cpu->cd.x86.r[X86_R_CX],
+		    (uint16_t)cpu->cd.x86.r[X86_R_DX]);
+		debug("cpu%i:  si = 0x%04"PRIx16"  di = 0x%04"PRIx16
+		    "  bp = 0x%04"PRIx16"  sp = 0x%04"PRIx16"\n", x,
+		    (uint16_t)cpu->cd.x86.r[X86_R_SI],
+		    (uint16_t)cpu->cd.x86.r[X86_R_DI],
+		    (uint16_t)cpu->cd.x86.r[X86_R_BP],
+		    (uint16_t)cpu->cd.x86.r[X86_R_SP]);
+		debug("cpu%i:  ds = 0x%04"PRIx16"  es = 0x%04"PRIx16
+		    "  ss = 0x%04"PRIx16"  flags = 0x%04"PRIx16"\n", x,
+		    (uint16_t)cpu->cd.x86.s[X86_S_DS],
+		    (uint16_t)cpu->cd.x86.s[X86_S_ES],
+		    (uint16_t)cpu->cd.x86.s[X86_S_SS],
+		    (uint16_t)cpu->cd.x86.rflags);
+	} else {
+		/*  32-bit protected mode:  */
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    cpu->pc, &offset);
+
+		debug("cpu%i:  eip=0x%08"PRIx32, x, (uint32_t)cpu->pc);
+		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
+
+		debug("cpu%i:  eax=0x%08"PRIx32"  ebx=0x%08"PRIx32
+		    "  ecx=0x%08"PRIx32"  edx=0x%08"PRIx32"\n", x,
+		    (uint32_t)cpu->cd.x86.r[X86_R_AX],
+		    (uint32_t)cpu->cd.x86.r[X86_R_BX],
+		    (uint32_t)cpu->cd.x86.r[X86_R_CX],
+		    (uint32_t)cpu->cd.x86.r[X86_R_DX]);
+		debug("cpu%i:  esi=0x%08"PRIx32"  edi=0x%08"PRIx32
+		    "  ebp=0x%08"PRIx32"  esp=0x%08"PRIx32"\n", x,
+		    (uint32_t)cpu->cd.x86.r[X86_R_SI],
+		    (uint32_t)cpu->cd.x86.r[X86_R_DI],
+		    (uint32_t)cpu->cd.x86.r[X86_R_BP],
+		    (uint32_t)cpu->cd.x86.r[X86_R_SP]);
 	}
 
 	if (coprocs != 0) {

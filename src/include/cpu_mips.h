@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.31 2006-03-12 10:30:36 debug Exp $
+ *  $Id: cpu_mips.h,v 1.32 2006-04-17 13:36:12 debug Exp $
  */
 
 #include "misc.h"
@@ -473,7 +473,11 @@ int mips_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 
 
-/*  NEW DYNTRANS:  */
+/*  Dyntrans unaligned load/store:  */
+void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic, 
+	int is_left, int wlen, int store);
+
+
 void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

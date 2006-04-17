@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.214 2006-04-16 10:50:28 debug Exp $
+#  $Id: configure,v 1.215 2006-04-17 13:36:12 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -227,6 +227,7 @@ if [ z$ENABLEMIPS = zYES ]; then
 		echo
 		printf "#define OLDMIPS\n" >> config.h
 	fi
+	CPU_ARCHS="$CPU_ARCHS cpu_mips_instr_unaligned.o"
 	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore"
 fi
 if [ z$ENABLEPPC = zYES ]; then

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1183 2006-04-17 11:06:46 debug Exp $
+$Id: HISTORY,v 1.1184 2006-04-17 13:36:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2651,3 +2651,5 @@ Changelog for GXemul:
 		Adding the first (trivial) x86/AMD64 dyntrans instructions (nop,
 		cli/sti, stc/clc, std/cld, simple mov, inc ax). Various other
 		x86 updates related to variable instruction length stuff.
+		Adding unaligned loads/stores to the MIPS dyntrans mode (but
+		still using the pre-dyntrans (slow) imlementation).

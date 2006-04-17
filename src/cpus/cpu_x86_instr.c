@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.7 2006-02-24 01:20:36 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.8 2006-04-17 09:39:18 debug Exp $
  *
  *  x86/amd64 instructions.
  *
@@ -75,7 +75,7 @@ X(end_of_page)
  */
 X(to_be_translated)
 {
-	uint64_t addr, low_pc;
+	MODE_uint_t addr, low_pc;
 	unsigned char *page;
 	int main_opcode;
 	unsigned char ib[17];
@@ -96,8 +96,23 @@ X(to_be_translated)
 	cpu->cd.x86.cursegment = X86_S_CS;
 	cpu->cd.x86.seg_override = 0;
 
-	/*  Read the instruction word from memory:  */
+/*  Read the instruction word from memory:  */
+#ifdef MODE32
 	page = cpu->cd.x86.host_load[addr >> 12];
+#else
+	{
+		const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+		const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+		const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+		uint32_t x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
+		uint32_t x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+		uint32_t x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-
+		    DYNTRANS_L3N)) & mask3;
+		struct DYNTRANS_L2_64_TABLE *l2 = cpu->cd.x86.l1_64[x1];
+		struct DYNTRANS_L3_64_TABLE *l3 = l2->l3[x2];
+		page = l3->host_load[x3];
+	}
+#endif
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
@@ -123,18 +138,12 @@ X(to_be_translated)
 	 *  Translate the instruction:
 	 */
 
-
-/*  TODO  */
-
-
 	main_opcode = ib[0];
 
-#if 0
 	switch (main_opcode) {
 
 	default:goto bad;
 	}
-#endif
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

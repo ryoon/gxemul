@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.42 2006-04-16 18:02:42 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.43 2006-04-17 11:33:08 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1465,6 +1465,13 @@ X(to_be_translated)
 	}
 
 
+/*  TODO: Move this somewhere else?  */
+if (cpu->cd.mips.gpr[0] != 0) {
+fatal("BLAH! zero register non-zero! Bug!\n");
+goto bad;
+}
+
+
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
 #include "cpu_dyntrans.c"
 #undef  DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -2049,6 +2056,8 @@ X(to_be_translated)
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;
+		if (!store && rt == MIPS_GPR_ZERO)
+			ic->f = instr(nop);
 		break;
 
 	case HI6_CACHE:

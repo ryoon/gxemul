@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1186 2006-04-19 18:55:55 debug Exp $
+$Id: HISTORY,v 1.1187 2006-04-19 19:39:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2656,3 +2656,5 @@ Changelog for GXemul:
 20060419	Fixing a MIPS dyntrans exception-in-delay-slot bug.
 		Removing the old "show opcode statistics" functionality, since
 		it wasn't really useful and isn't implemented for dyntrans.
+		Single-stepping (or running with instruction trace) now looks
+		ok with dyntrans with delay-slot architectures.

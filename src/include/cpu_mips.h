@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.33 2006-04-19 18:55:57 debug Exp $
+ *  $Id: cpu_mips.h,v 1.34 2006-04-19 19:39:41 debug Exp $
  */
 
 #include "misc.h"
@@ -416,6 +416,7 @@ struct mips_cpu {
 
 
 /*  cpu_mips.c:  */
+int mips_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib);
 void mips_cpu_tlbdump(struct machine *m, int x, int rawflag);
 void mips_cpu_register_match(struct machine *m, char *name, 
 	int writeflag, uint64_t *valuep, int *match_register);

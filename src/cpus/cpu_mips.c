@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.33 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_mips.c,v 1.34 2006-04-19 19:39:40 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -188,6 +188,8 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->invalidate_translation_caches =
 	    mips_invalidate_translation_caches_paddr;
 #endif
+
+	cpu->instruction_has_delayslot = mips_cpu_instruction_has_delayslot;
 
 	if (cpu_id == 0)
 		debug("%s", cpu->cd.mips.cpu_type.name);
@@ -467,6 +469,58 @@ void mips_cpu_list_available_types(void)
 		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
 			debug("\n");
 	}
+}
+
+
+/*
+ *  mips_cpu_instruction_has_delayslot():
+ *
+ *  Return 1 if an opcode is a branch, 0 otherwise.
+ */
+int mips_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
+{
+	uint32_t iword = *((uint32_t *)&ib[0]);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		iword = LE32_TO_HOST(iword);
+	else
+		iword = BE32_TO_HOST(iword);
+
+	switch (iword >> 26) {
+	case HI6_SPECIAL:
+		switch (iword & 0x3f) {
+		case SPECIAL_JR:
+		case SPECIAL_JALR:
+			return 1;
+		}
+		break;
+	case HI6_REGIMM:
+		switch ((iword >> 16) & 0x1f) {
+		case REGIMM_BLTZ:
+		case REGIMM_BGEZ:
+		case REGIMM_BLTZL:
+		case REGIMM_BGEZL:
+		case REGIMM_BLTZAL:
+		case REGIMM_BLTZALL:
+		case REGIMM_BGEZAL:
+		case REGIMM_BGEZALL:
+			return 1;
+		}
+		break;
+	case HI6_BEQ:
+	case HI6_BEQL:
+	case HI6_BNE:
+	case HI6_BNEL:
+	case HI6_BGTZ:
+	case HI6_BGTZL:
+	case HI6_BLEZ:
+	case HI6_BLEZL:
+	case HI6_J:
+	case HI6_JAL:
+		return 1;
+	}
+
+	return 0;
 }
 
 
@@ -1178,12 +1232,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			if (symbol != NULL)
 				debug(" = %s", symbol);
 
-			debug(", data=");
-		} else
-			break;
-		/*  NOTE: No break here (if we are running) as it is up
-		    to the caller to print 'data'.  */
-		return sizeof(instrword);
+			debug(", data=TODO]");
+		}
+		break;
 	case HI6_J:
 	case HI6_JAL:
 		imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +

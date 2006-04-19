@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.72 2006-04-19 18:55:57 debug Exp $
+ *  $Id: cpu.h,v 1.73 2006-04-19 19:39:41 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -285,14 +285,10 @@ struct cpu {
 	void		(*invalidate_code_translation)(struct cpu *,
 			    uint64_t paddr, int flags);
 	void		(*useremul_syscall)(struct cpu *cpu, uint32_t code);
+	int		(*instruction_has_delayslot)(struct cpu *cpu,
+			    unsigned char *ib);
 
 	uint64_t	pc;
-
-#ifdef TRACE_NULL_CRASHES
-	/*  TODO: remove this, it's MIPS only  */
-	int		trace_null_index;
-	uint64_t	trace_null_addr[TRACE_NULL_N_ENTRIES];
-#endif  
 
 	int		trace_tree_depth;
 

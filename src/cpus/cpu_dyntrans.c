@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.81 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.82 2006-04-19 19:39:40 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -243,7 +243,23 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 #ifdef DYNTRANS_DELAYSLOT
 				/*  Show the instruction in the delay slot,
 				    if any:  */
-				fatal("TODO: check for delay slot!\n");
+				if (cpu->instruction_has_delayslot == NULL)
+					fatal("WARNING: ihd func not yet"
+					    " implemented?\n");
+				else if (cpu->instruction_has_delayslot(cpu,
+				    instr)) {
+					int saved_delayslot = cpu->delay_slot;
+					cpu->memory_rw(cpu, cpu->mem, cached_pc
+					    + sizeof(instr), &instr[0],
+					    sizeof(instr), MEM_READ,
+					    CACHE_INSTRUCTION);
+					cpu->delay_slot = DELAYED;
+					cpu->pc += sizeof(instr);
+					cpu_disassemble_instr(cpu->machine,
+					    cpu, instr, 1, 0, 0);
+					cpu->delay_slot = saved_delayslot;
+					cpu->pc -= sizeof(instr);
+				}
 #endif
 			}
 		}

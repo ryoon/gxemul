@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.16 2006-04-08 00:12:42 debug Exp $
+ *  $Id: cpu_avr.c,v 1.17 2006-04-19 18:55:56 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -200,6 +200,20 @@ void avr_cpu_register_match(struct machine *m, char *name,
 			*match_register = 1;
 		}
 	}
+}
+
+
+/*
+ *  avr_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void avr_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.246 2006-04-19 18:32:14 debug Exp $
+$Id: TODO,v 1.247 2006-04-19 18:55:56 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -30,8 +30,8 @@ Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
-	x)  better (formally defined) instr call statistics, multiple
-	    different types? (virtual pc, physical pc)
+	x)  better (formally defined) instr call statistics (-s command
+	    line option?), multiple different types? (virtual pc, physical pc)
 	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
 	x)  PPC optimizations; instr combs

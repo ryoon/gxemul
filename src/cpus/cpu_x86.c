@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.13 2006-04-17 11:06:46 debug Exp $
+ *  $Id: cpu_x86.c,v 1.14 2006-04-19 18:55:56 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -533,6 +533,20 @@ void print_csip(struct cpu *cpu)
 		fatal("0x%llx", (long long)cpu->pc);
 	else
 		fatal("0x%04x", (int)cpu->pc);
+}
+
+
+/*
+ *  x86_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void x86_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

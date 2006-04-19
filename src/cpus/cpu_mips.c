@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.32 2006-04-16 18:02:42 debug Exp $
+ *  $Id: cpu_mips.c,v 1.33 2006-04-19 18:55:56 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -79,7 +79,6 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 
 extern volatile int single_step;
-extern int show_opcode_statistics;
 extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
@@ -90,7 +89,7 @@ static char *exception_names[] = EXCEPTION_NAMES;
 static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
-static char *special2_names[] = SPECIAL2_NAMES;
+/*  static char *special2_names[] = SPECIAL2_NAMES;  */
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
 static char *cop0_names[] = COP0_NAMES;
@@ -467,64 +466,6 @@ void mips_cpu_list_available_types(void)
 		i++;
 		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
 			debug("\n");
-	}
-}
-
-
-/*
- *  mips_cpu_show_full_statistics():
- *
- *  Show detailed statistics on opcode usage on each cpu.
- */
-void mips_cpu_show_full_statistics(struct machine *m)
-{
-	int i, s1, s2, iadd = DEBUG_INDENTATION;
-
-	if (m->bintrans_enable)
-		fatal("NOTE: Dynamic binary translation is used; this list"
-		    " of opcode usage\n      only includes instructions that"
-		    " were interpreted manually!\n");
-
-	for (i=0; i<m->ncpus; i++) {
-		fatal("cpu%i opcode statistics:\n", i);
-		debug_indentation(iadd);
-
-		for (s1=0; s1<N_HI6; s1++) {
-			if (m->cpus[i]->cd.mips.stats_opcode[s1] > 0)
-				fatal("opcode %02x (%7s): %li\n", s1,
-				    hi6_names[s1],
-				    m->cpus[i]->cd.mips.stats_opcode[s1]);
-
-			debug_indentation(iadd);
-			if (s1 == HI6_SPECIAL)
-				for (s2=0; s2<N_SPECIAL; s2++)
-					if (m->cpus[i]->cd.mips.stats__special[
-					    s2] > 0)
-						fatal("special %02x (%7s): "
-						    "%li\n", s2, special_names[
-						    s2], m->cpus[i]->cd.mips.
-						    stats__special[s2]);
-			if (s1 == HI6_REGIMM)
-				for (s2=0; s2<N_REGIMM; s2++)
-					if (m->cpus[i]->cd.mips.stats__regimm[
-					    s2] > 0)
-						fatal("regimm %02x (%7s): "
-						    "%li\n", s2, regimm_names[
-						    s2], m->cpus[i]->cd.mips.
-						    stats__regimm[s2]);
-			if (s1 == HI6_SPECIAL2)
-				for (s2=0; s2<N_SPECIAL; s2++)
-					if (m->cpus[i]->cd.mips.stats__special2
-					    [s2] > 0)
-						fatal("special2 %02x (%7s): "
-						    "%li\n", s2,
-						    special2_names[s2], m->
-						    cpus[i]->cd.mips.
-						    stats__special2[s2]);
-			debug_indentation(-iadd);
-		}
-
-		debug_indentation(-iadd);
 	}
 }
 
@@ -2348,15 +2289,9 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  Get the top 6 bits of the instruction:  */
 	hi6 = instr[3] >> 2;  	/*  & 0x3f  */
 
-	if (show_opcode_statistics)
-		cpu->cd.mips.stats_opcode[hi6] ++;
-
 	switch (hi6) {
 	case HI6_SPECIAL:
 		special6 = instr[0] & 0x3f;
-
-		if (show_opcode_statistics)
-			cpu->cd.mips.stats__special[special6] ++;
 
 		switch (special6) {
 		case SPECIAL_SLL:
@@ -3778,9 +3713,6 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
 
-		if (show_opcode_statistics)
-			cpu->cd.mips.stats__regimm[regimm5] ++;
-
 		switch (regimm5) {
 		case REGIMM_BLTZ:
 		case REGIMM_BGEZ:
@@ -3945,9 +3877,6 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
 
-		if (show_opcode_statistics)
-			cpu->cd.mips.stats__special2[special6] ++;
-
 		instrword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
 
 		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
@@ -4109,14 +4038,14 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 #ifdef OLDMIPS
 
-#define CPU_RUN		mips_OLD_cpu_run
+#define CPU_RUN		mips_cpu_run
 #define CPU_RUN_MIPS
 #define CPU_RINSTR	mips_OLD_cpu_run_instr
 #include "cpu_run.c"
 #undef CPU_RINSTR
 #undef CPU_RUN_MIPS
 #undef CPU_RUN
-CPU_OLD_FAMILY_INIT(mips,"MIPS")
+CPU_FAMILY_INIT(mips,"MIPS")
 
 #else
 

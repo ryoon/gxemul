@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.334 2006-04-17 18:35:02 debug Exp $
+ *  $Id: cpu.c,v 1.335 2006-04-19 18:55:56 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -43,7 +43,6 @@
 
 
 extern int quiet_mode;
-extern int show_opcode_statistics;
 
 static struct cpu_family *first_cpu_family = NULL;
 
@@ -106,21 +105,6 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 
 	fatal("\ncpu_new(): unknown cpu type '%s'\n", cpu_type_name);
 	exit(1);
-}
-
-
-/*
- *  cpu_show_full_statistics():
- *
- *  Show detailed statistics on opcode usage on each cpu.
- */
-void cpu_show_full_statistics(struct machine *m)
-{
-	if (m->cpu_family == NULL ||
-	    m->cpu_family->show_full_statistics == NULL)
-		fatal("cpu_show_full_statistics(): NULL\n");
-	else
-		m->cpu_family->show_full_statistics(m);
 }
 
 
@@ -427,9 +411,6 @@ void cpu_run_deinit(struct machine *machine)
 
 	if (machine->show_nr_of_instructions || !quiet_mode)
 		cpu_show_cycles(machine, 1);
-
-	if (show_opcode_statistics)
-		cpu_show_full_statistics(machine);
 
 	fflush(stdout);
 }

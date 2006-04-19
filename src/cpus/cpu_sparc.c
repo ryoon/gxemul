@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.20 2006-04-17 09:29:41 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.21 2006-04-19 18:55:56 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -265,6 +265,20 @@ void sparc_cpu_register_match(struct machine *m, char *name,
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	}
+}
+
+
+/*
+ *  sparc_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void sparc_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1185 2006-04-19 18:32:14 debug Exp $
+$Id: HISTORY,v 1.1186 2006-04-19 18:55:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2654,3 +2654,5 @@ Changelog for GXemul:
 		Adding unaligned loads/stores to the MIPS dyntrans mode (but
 		still using the pre-dyntrans (slow) imlementation).
 20060419	Fixing a MIPS dyntrans exception-in-delay-slot bug.
+		Removing the old "show opcode statistics" functionality, since
+		it wasn't really useful and isn't implemented for dyntrans.

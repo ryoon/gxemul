@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.71 2006-04-08 00:12:43 debug Exp $
+ *  $Id: cpu.h,v 1.72 2006-04-19 18:55:57 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -216,7 +216,6 @@ struct cpu_family {
 	int			(*run)(struct emul *emul,
 				    struct machine *machine);
 	void			(*dumpinfo)(struct cpu *cpu);
-	void			(*show_full_statistics)(struct machine *m);
 	void			(*tlbdump)(struct machine *m, int x,
 				    int rawflag);
 	int			(*interrupt)(struct cpu *cpu, uint64_t irq_nr);
@@ -331,7 +330,6 @@ struct cpu {
 /*  cpu.c:  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
-void cpu_show_full_statistics(struct machine *m);
 void cpu_tlbdump(struct machine *m, int x, int rawflag);
 void cpu_register_match(struct machine *m, char *name, 
 	int writeflag, uint64_t *valuep, int *match_register);
@@ -379,26 +377,7 @@ void cpu_init(void);
 	fp->interrupt_ack = n ## _cpu_interrupt_ack;			\
 	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
 	fp->gdb_stub = n ## _cpu_gdb_stub;				\
-	return 1;							\
-	}
-
-#define CPU_OLD_FAMILY_INIT(n,s)	int n ## _cpu_family_init(	\
-	struct cpu_family *fp) {					\
-	/*  Fill in the cpu_family struct with valid data for this arch.  */ \
-	fp->name = s;							\
-	fp->cpu_new = n ## _cpu_new;					\
-	fp->list_available_types = n ## _cpu_list_available_types;	\
-	fp->register_match = n ## _cpu_register_match;			\
-	fp->disassemble_instr = n ## _cpu_disassemble_instr;		\
-	fp->register_dump = n ## _cpu_register_dump;			\
-	fp->run = n ## _OLD_cpu_run;					\
-	fp->dumpinfo = n ## _cpu_dumpinfo;				\
-	fp->show_full_statistics = n ## _cpu_show_full_statistics;	\
 	fp->tlbdump = n ## _cpu_tlbdump;				\
-	fp->interrupt = n ## _cpu_interrupt; 				\
-	fp->interrupt_ack = n ## _cpu_interrupt_ack;			\
-	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
-	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	return 1;							\
 	}
 

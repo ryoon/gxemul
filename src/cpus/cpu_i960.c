@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.c,v 1.7 2006-04-08 00:12:42 debug Exp $
+ *  $Id: cpu_i960.c,v 1.8 2006-04-19 18:55:56 debug Exp $
  *
  *  Intel i960 CPU emulation.
  */
@@ -145,6 +145,20 @@ void i960_cpu_register_match(struct machine *m, char *name,
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	}
+}
+
+
+/*
+ *  i960_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void i960_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

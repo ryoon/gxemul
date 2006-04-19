@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.6 2006-04-08 11:56:48 debug Exp $
+ *  $Id: debugger.c,v 1.7 2006-04-19 18:55:57 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -928,24 +928,6 @@ static void debugger_cmd_ninstrs(struct machine *m, char *cmd_line)
 
 
 /*
- *  debugger_cmd_opcodestats():
- */
-static void debugger_cmd_opcodestats(struct machine *m, char *cmd_line)
-{
-	if (*cmd_line) {
-		printf("syntax: opcodestats\n");
-		return;
-	}
-
-	if (!show_opcode_statistics) {
-		printf("You need to start the emulator "
-		    "with -s, if you want to gather statistics.\n");
-	} else
-		cpu_show_full_statistics(m);
-}
-
-
-/*
  *  debugger_cmd_pause():
  */
 static void debugger_cmd_pause(struct machine *m, char *cmd_line)
@@ -1598,9 +1580,6 @@ static struct cmd cmds[] = {
 
 	{ "ninstrs", "[on|off]", 0, debugger_cmd_ninstrs,
 		"toggle (set or unset) show_nr_of_instructions" },
-
-	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
-		"show opcode statistics" },
 
 	{ "pause", "cpuid", 0, debugger_cmd_pause,
 		"pause (or unpause) a CPU" },

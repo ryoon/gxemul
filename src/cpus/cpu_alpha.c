@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.11 2006-04-16 10:58:28 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.12 2006-04-19 18:55:56 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -186,6 +186,20 @@ void alpha_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug((i % 2) == 1? "\n" : "   ");
 		}
 	}
+}
+
+
+/*
+ *  alpha_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void alpha_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.57 2006-04-08 13:54:02 debug Exp $
+ *  $Id: cpu_arm.c,v 1.58 2006-04-19 18:55:56 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -710,6 +710,20 @@ void arm_exception(struct cpu *cpu, int exception_nr)
 	cpu->pc = cpu->cd.arm.r[ARM_PC] = exception_nr * 4 +
 	    ((cpu->cd.arm.control & ARM_CONTROL_V)? 0xffff0000 : 0);
 	quick_pc_to_pointers(cpu);
+}
+
+
+/*
+ *  arm_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void arm_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

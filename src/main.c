@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.261 2006-04-14 18:16:42 debug Exp $
+ *  $Id: main.c,v 1.262 2006-04-19 18:55:56 debug Exp $
  */
 
 #include <stdio.h>
@@ -46,7 +46,6 @@
 
 extern volatile int single_step;
 extern int force_debugger_at_exit;
-extern int show_opcode_statistics;
 
 extern int optind;
 extern char *optarg;
@@ -307,7 +306,7 @@ static void usage(int longusage)
 	printf("  -K        force the debugger to be entered at the end "
 	    "of a simulation\n");
 	printf("  -q        quiet mode (don't print startup messages)\n");
-	printf("  -s        show opcode usage statistics after simulation\n");
+	/*  TODO:  printf("  -s        gather detailed statistics\n");  */
 	printf("  -V        start up in the single-step debugger, paused\n");
 	printf("  -v        verbose debug messages\n");
 	printf("\n");
@@ -496,9 +495,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			m->random_mem_contents = 1;
 			msopts = 1;
 			break;
-		case 's':
-			show_opcode_statistics = 1;
-			break;
+		/*  case 's':
+			TODO
+			break;  */
 		case 'T':
 			m->single_step_on_bad_addr = 1;
 			msopts = 1;

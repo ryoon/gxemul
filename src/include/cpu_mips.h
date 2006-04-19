@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.32 2006-04-17 13:36:12 debug Exp $
+ *  $Id: cpu_mips.h,v 1.33 2006-04-19 18:55:57 debug Exp $
  */
 
 #include "misc.h"
@@ -388,14 +388,6 @@ struct mips_cpu {
 	uint64_t	gpr_quadhi[N_MIPS_GPRS];
 
 
-	/*
-	 *  Statistics:
-	 */
-	long		stats_opcode[N_HI6];
-	long		stats__special[N_SPECIAL];
-	long		stats__regimm[N_REGIMM];
-	long		stats__special2[N_SPECIAL];
-
 	/*  Data and Instruction caches:  */
 	unsigned char	*cache[2];
 	void		*cache_tags[2];
@@ -424,7 +416,6 @@ struct mips_cpu {
 
 
 /*  cpu_mips.c:  */
-void mips_cpu_show_full_statistics(struct machine *m);
 void mips_cpu_tlbdump(struct machine *m, int x, int rawflag);
 void mips_cpu_register_match(struct machine *m, char *name, 
 	int writeflag, uint64_t *valuep, int *match_register);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.56 2006-04-16 10:58:28 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.57 2006-04-19 18:55:56 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -597,6 +597,16 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 			*match_register = 1;
 		}
 	}
+}
+
+
+/*
+ *  ppc_cpu_tlbdump():
+ *
+ *  Not currently used for PPC.
+ */
+void ppc_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

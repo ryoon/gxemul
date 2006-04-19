@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.9 2006-04-08 00:12:42 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.10 2006-04-19 18:55:56 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -145,6 +145,20 @@ void ia64_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		/*  TODO  */
 	}
+}
+
+
+/*
+ *  mips_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void ia64_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
 }
 
 

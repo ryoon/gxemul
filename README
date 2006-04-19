@@ -1,4 +1,4 @@
-$Id: README,v 1.98 2006-04-08 16:47:17 debug Exp $
+$Id: README,v 1.99 2006-04-19 05:02:47 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -10,8 +10,8 @@ Gavare's eXperimental Emulator   --   GXemul 0.4.0
 Copyright (C) 2003-2006  Anders Gavare.
 
 
-Overview
---------
+Overview  --  What is GXemul?
+-----------------------------
 
 GXemul is an experimental instruction-level machine emulator. Several
 emulation modes are available. In some modes, processors and surrounding
@@ -29,6 +29,36 @@ recompilation into native code. However, the dynamic translation system
 used in GXemul does not generate native code, and thus doesn't require 
 platform-specific back-ends. In plain English, this means that the 
 dyntrans system works on any host platform.
+
+Possible uses of the emulator include:
+
+ o)  educational purposes, e.g. to learn how to write code for MIPS
+
+ o)  hobby operating system development
+
+ o)  running guest operating systems in a "sandboxed" environment
+
+ o)  compiling your source code inside a guest operating system which you
+     otherwise would not have access to (e.g. various exotic ports of
+     NetBSD), to make sure that your source code is portable to those
+     platforms
+
+ o)  simulating (ethernet) networks of computers running various
+     operating systems, to study their interaction with each other
+
+Use your imagination :-)
+
+
+What isn't GXemul?
+------------------
+
+GXemul is not (in general) a cycle-accurate simulator, because it does not
+simulate things smaller than an instruction. Pipe-line stalls, cache-miss
+effects etc are more or less completely ignored.
+
+The emulation is good enough to "fake" hardware enough to let unmodified
+guest operating systems run, but it does not precisely match any actual
+real-world hardware.
 
 
 Quick start

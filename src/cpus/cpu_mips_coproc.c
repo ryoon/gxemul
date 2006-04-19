@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.14 2006-04-19 19:03:52 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.15 2006-04-19 19:36:16 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2101,7 +2101,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		return;
 	}
 
-#if 1
+#if 0
 	/*  Debug dump of the previous entry at that index:  */
 	debug(" old entry at index = %04x", index);
 	debug(" mask = %016llx", (long long) cp->tlbs[index].mask);

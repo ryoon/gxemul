@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.47 2006-04-19 18:32:14 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.48 2006-04-19 19:49:32 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1600,13 +1600,6 @@ X(to_be_translated)
 		/*  TODO: check the instruction  */
 		delay_slot_danger = 0;
 	}
-
-
-/*  TODO: Move this somewhere else?  */
-if (cpu->cd.mips.gpr[0] != 0) {
-fatal("BLAH! zero register non-zero! Bug!\n");
-goto bad;
-}
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD

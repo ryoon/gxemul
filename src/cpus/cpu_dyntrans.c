@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.82 2006-04-19 19:39:40 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.83 2006-04-19 19:49:32 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -126,11 +126,13 @@ a &= 0x03ffffff;
 #define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
 
 /*  Temporary hack for MIPS, to hunt for 32-bit/64-bit sign-extension bugs:  */
-/*  #define I		{ int k; for (k=1; k<=31; k++)/
+/*  #define I		{ int k; for (k=1; k<=31; k++)	\
 	cpu->cd.mips.gpr[k] = (int32_t)cpu->cd.mips.gpr[k];\
-ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);\
-}  */
-
+	if (cpu->cd.mips.gpr[0] != 0) {			\
+		fatal("NOOOOOO\n"); exit(1);		\
+	}						\
+	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic); }
+*/
 #endif
 
 

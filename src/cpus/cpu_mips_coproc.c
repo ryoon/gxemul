@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.13 2006-04-02 10:21:08 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.14 2006-04-19 19:03:52 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2101,7 +2101,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		return;
 	}
 
-#if 0
+#if 1
 	/*  Debug dump of the previous entry at that index:  */
 	debug(" old entry at index = %04x", index);
 	debug(" mask = %016llx", (long long) cp->tlbs[index].mask);
@@ -2587,6 +2587,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 					    (long long)cp->reg[COP0_ENTRYLO0]);
 					debug(", lo1=%016llx\n",
 					    (long long)cp->reg[COP0_ENTRYLO1]);
+					return;
 				}
 				coproc_tlbwri(cpu, op == COP0_TLBWR);
 				return;
@@ -2671,7 +2672,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	fatal("cpu%i: UNIMPLEMENTED coproc%i function %08lx "
 	    "(pc = %016llx)\n", cpu->cpu_id, cp->coproc_nr, function,
 	    (long long)cpu->cd.mips.pc_last);
-#if 1
+#if 0
 	single_step = 1;
 #else
 	mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);

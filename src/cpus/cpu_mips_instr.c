@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.46 2006-04-17 18:33:55 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.47 2006-04-19 18:32:14 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -83,6 +83,8 @@ X(beq)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -90,8 +92,8 @@ X(beq)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(beq_samepage)
 {
@@ -118,6 +120,8 @@ X(bne)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -125,8 +129,8 @@ X(bne)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bne_samepage)
 {
@@ -151,12 +155,14 @@ X(b)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 		    MIPS_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc = old_pc + (int32_t)ic->arg[2];
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(b_samepage)
 {
@@ -187,6 +193,8 @@ X(beql)
 		ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -194,8 +202,8 @@ X(beql)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(beql_samepage)
 {
@@ -224,6 +232,8 @@ X(bnel)
 		ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -231,8 +241,8 @@ X(bnel)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bnel_samepage)
 {
@@ -269,6 +279,8 @@ X(blez)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -276,8 +288,8 @@ X(blez)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(blez_samepage)
 {
@@ -305,6 +317,8 @@ X(blezl)
 		ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -312,8 +326,8 @@ X(blezl)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(blezl_samepage)
 {
@@ -350,6 +364,8 @@ X(bltz)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -357,8 +373,8 @@ X(bltz)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bltz_samepage)
 {
@@ -386,6 +402,8 @@ X(bltzl)
 		ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -393,8 +411,8 @@ X(bltzl)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bltzl_samepage)
 {
@@ -431,6 +449,8 @@ X(bgez)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -438,8 +458,8 @@ X(bgez)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bgez_samepage)
 {
@@ -467,6 +487,8 @@ X(bgezl)
 		ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -474,8 +496,8 @@ X(bgezl)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bgezl_samepage)
 {
@@ -512,6 +534,8 @@ X(bgtz)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -519,8 +543,8 @@ X(bgtz)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bgtz_samepage)
 {
@@ -548,6 +572,8 @@ X(bgtzl)
 		ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		if (x) {
 			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -555,8 +581,8 @@ X(bgtzl)
 			quick_pc_to_pointers(cpu);
 		} else
 			cpu->cd.mips.next_ic ++;
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(bgtzl_samepage)
 {
@@ -592,9 +618,11 @@ X(jr)
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
 		cpu->pc = rs;
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(jr_ra)
 {
@@ -604,9 +632,11 @@ X(jr_ra)
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
 		cpu->pc = rs;
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(jr_ra_trace)
 {
@@ -617,9 +647,11 @@ X(jr_ra_trace)
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
 		cpu->pc = rs;
 		cpu_functioncall_trace_return(cpu);
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(jalr)
 {
@@ -633,9 +665,11 @@ X(jalr)
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
 		cpu->pc = rs;
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(jalr_trace)
 {
@@ -650,9 +684,11 @@ X(jalr_trace)
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
 		cpu->pc = rs;
 		cpu_functioncall_trace(cpu, cpu->pc);
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 
 
@@ -669,11 +705,13 @@ X(j)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		old_pc &= ~0x03ffffff;
 		cpu->pc = old_pc | (uint32_t)ic->arg[0];
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(jal)
 {
@@ -684,11 +722,13 @@ X(jal)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		old_pc &= ~0x03ffffff;
 		cpu->pc = old_pc | (int32_t)ic->arg[0];
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 X(jal_trace)
 {
@@ -699,12 +739,14 @@ X(jal_trace)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
 		old_pc &= ~0x03ffffff;
 		cpu->pc = old_pc | (int32_t)ic->arg[0];
 		cpu_functioncall_trace(cpu, cpu->pc);
 		quick_pc_to_pointers(cpu);
-	}
-	cpu->delay_slot = NOT_DELAYED;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 
 

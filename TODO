@@ -1,4 +1,4 @@
-$Id: TODO,v 1.245 2006-04-16 23:14:49 debug Exp $
+$Id: TODO,v 1.246 2006-04-19 18:32:14 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -13,8 +13,6 @@ MIPS:
 	    ISAs. implement both in dyntrans and interpretation; disable
 	    in bintrans (if not yet done).
 	x)  Go through the entire MIPS64 ISA vol 2 :-)
-
-Dyntrans:
 	x)  Old MIPS -> dyntrans!
 		o)  Delay slots across page boundaries, for b* branches?
 			IMPORTANT! This is probably not solved yet.
@@ -27,6 +25,8 @@ Dyntrans:
 		o)  TLB dump.
 		o)  Make sure that all guest OSes that worked with the old
 		    system still work with dyntrans!
+
+Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
@@ -46,12 +46,11 @@ Dyntrans:
 	    the complexity of the code too much!
 
 SPARC:
-	x)  Pretty much everything:
-		o)  Add all registers (floating point, control regs etc)
-		o)  Save/restore register windows etc!
-		o)  Disassemly of some more instructions.
-		o)  Are sll etc 32-bit sign-extending or zero-extending?
-		o)  Finish the GDB register stuff.
+	o)  Add all registers (floating point, control regs etc)
+	o)  Save/restore register windows etc!
+	o)  Disassemly of some more instructions.
+	o)  Are sll etc 32-bit sign-extending or zero-extending?
+	o)  Finish the GDB register stuff.
 
 Debugger:
 	o)  MIPS gdb stub "p" command vs "g" command!

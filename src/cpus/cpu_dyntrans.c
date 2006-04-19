@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.79 2006-04-17 11:06:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.80 2006-04-19 18:32:14 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -113,14 +113,24 @@ a &= 0x03ffffff;
 }
 #endif	/*  PC statistics  */
 
+
 #define S		gather_statistics(cpu)
+
 
 #ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 #define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic;		\
 			cpu->cd.DYNTRANS_ARCH.next_ic += ic->arg[0];	\
 			ic->f(cpu, ic);
 #else
+
 #define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
+
+/*  Temporary hack for MIPS, to hunt for 32-bit/64-bit sign-extension bugs:  */
+/*  #define I		{ int k; for (k=1; k<=31; k++)/
+	cpu->cd.mips.gpr[k] = (int32_t)cpu->cd.mips.gpr[k];\
+ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);\
+}  */
+
 #endif
 
 
@@ -153,6 +163,8 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	 *  conversion; if the conversion caused an exception of some kind
 	 *  then interrupts are probably disabled, and the exception will get
 	 *  priority over device interrupts.)
+	 *
+	 *  TODO: Turn this into a family-specific function somewhere...
  	 */
 #ifdef DYNTRANS_ARM
 	if (cpu->cd.arm.irq_asserted && !(cpu->cd.arm.cpsr & ARM_FLAG_I))

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.262 2006-04-19 18:55:56 debug Exp $
+ *  $Id: main.c,v 1.263 2006-04-20 16:59:05 debug Exp $
  */
 
 #include <stdio.h>
@@ -306,7 +306,6 @@ static void usage(int longusage)
 	printf("  -K        force the debugger to be entered at the end "
 	    "of a simulation\n");
 	printf("  -q        quiet mode (don't print startup messages)\n");
-	/*  TODO:  printf("  -s        gather detailed statistics\n");  */
 	printf("  -V        start up in the single-step debugger, paused\n");
 	printf("  -v        verbose debug messages\n");
 	printf("\n");
@@ -342,18 +341,26 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "ABC:c:Dd:E:e:G:HhI:iJj:KM:m:"
-	    "Nn:Oo:p:QqRrSsTtUu:VvW:XxY:y:Z:z:")) != -1) {
+	char *opts =
+#if defined(BINTRANS)
+	    "ABC:c:Dd:E:e:G:HhI:iJj:KM:m:Nn:Oo:p:QqRrSTtUu:VvW:XxY:y:Z:z:";
+#else
+	    "AC:c:Dd:E:e:G:HhI:iJj:KM:m:Nn:Oo:p:QqRrSTtUu:VvW:XxY:y:Z:z:";
+#endif
+
+	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
 		case 'A':
 			m->dyntrans_alignment_check = 0;
 			msopts = 1;
 			break;
+#ifdef BINTRANS
 		case 'B':
-			/*  Turns off both bintrans and dyntrans.  */
+			/*  Turns off bintrans.  */
 			m->bintrans_enable = 0;
 			msopts = 1;
 			break;
+#endif
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;
@@ -495,9 +502,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			m->random_mem_contents = 1;
 			msopts = 1;
 			break;
-		/*  case 's':
-			TODO
-			break;  */
 		case 'T':
 			m->single_step_on_bad_addr = 1;
 			msopts = 1;

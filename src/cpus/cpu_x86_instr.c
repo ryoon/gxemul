@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.11 2006-04-17 11:06:46 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.12 2006-04-20 16:59:05 debug Exp $
  *
  *  x86/amd64 instructions.
  *
@@ -125,7 +125,7 @@ X(end_of_page)
 #define GET_NEXT_BYTE get_next_byte64
 #endif
 /*  Get the next instruction byte; return 1 on success, 0 on failure  */
-int GET_NEXT_BYTE(struct cpu *cpu, char *byte, MODE_uint_t addr)
+int GET_NEXT_BYTE(struct cpu *cpu, unsigned char *byte, MODE_uint_t addr)
 {
 	unsigned char *page;
 

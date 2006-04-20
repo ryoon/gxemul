@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.76 2006-03-20 04:38:27 debug Exp $
+$Id: intro.html,v 1.77 2006-04-20 16:59:05 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -52,6 +52,7 @@ SUCH DAMAGE.
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#run">How to run the emulator</a>
   <li><a href="#cpus">Which processor architectures does GXemul emulate?</a>
+  <li><a href="#translation">What kind of translation does GXemul use?</a>
   <li><a href="#accuracy">Emulation accuracy</a>
   <li><a href="#emulmodes">Which machines does GXemul emulate?</a>
 </ul>
@@ -213,7 +214,8 @@ their original meaning in those xterm windows.
 <a name="cpus"></a>
 <h3>Which processor architectures does GXemul emulate?</h3>
 
-<h4>MIPS:</h4>
+<ul>
+  <li><b>MIPS:</b><br>
 
 Emulation of R4000, which is a 64-bit CPU, was my initial goal.
 R2000/R3000-like CPUs (32-bit), R1x000, and generic MIPS32/MIPS64-style
@@ -221,24 +223,95 @@ CPUs are also emulated, and are hopefully almost as stable as the R4000
 emulation. Several guest operating systems for MIPS can run inside
 the emulator.
 
-<p>(For MIPS emulation, I have written an experimental dynamic binary
-translation subsystem, for Alpha and i386 hosts. This gives higher total
-performance than interpreting one instruction at a time and executing it.
-If you wish to disable bintrans, add <b>-B</b> to the command line.)
-
-<h4>ARM:</h4>
+  <p>
+  <li><b>ARM:</b><br>
 
 ARM emulation is good enough to run NetBSD/cats, OpenBSD/cats, and 
-NetBSD/evbarm, but it is not as tested or fine-tuned as the MIPS emulation 
-mode.
+NetBSD/evbarm. It has been somewhat tuned for speed, but doesn't support 
+all features of modern ARM processors.
 
-<h4>PowerPC:</h4>
+  <p>
+  <li><b>PowerPC:</b><br>
 
 PowerPC emulation is still in its beginning stages, but good enough
-to run NetBSD/prep 2.1.
+to install and run NetBSD/prep 2.1.
 
-<p>Non-MIPS emulation modes use dynamic translation, but not recompilation 
-into native code. This makes it possible to run on any host platform.
+</ul>
+
+
+
+
+
+<p><br>
+<a name="translation"></a>
+<h3>What kind of translation does GXemul use?</h3>
+
+<b>Static vs. dynamic:</b>
+
+<p>In order to support guest operating systems, which can overwrite old 
+code pages in memory with new code, it is necessary to translate code 
+dynamically. It is not possible to do a "one-pass" (static) translation.
+Self-modifying code and Just-in-Time compilers running inside 
+the emulator are other things that would not work with a static 
+translator. GXemul is a dynamic translator. However, it does not 
+necessarily translate into native code, like many other emulators.
+
+<p><b>"Runnable" Intermediate Representation:</b>
+
+<p>Dynamic translators usually translate from the emulated architecture
+(e.g. MIPS) into a kind of <i>intermediate representation</i> (IR), and then
+to native code (e.g. AMD64 or x86 code). Since one of my main goals for
+GXemul is to keep everything as portable as possible, I have tried to make
+sure that the IR is something which can be executed regardless of whether 
+the final step (translation from IR to native code) has been implemented.
+
+<p>The IR in GXemul consists of arrays of pointers to functions, and a few 
+arguments which are passed along to those functions. The functions are 
+implemented in either manually hand-coded C, or automatically generated C.
+In any case, this is all statically linked into the GXemul binary at link 
+time.
+
+<p><b>Performance:</b>
+
+<p>The performance of using this kind of runnable IR is lower than what 
+can be achieved by emulators using native code generation, but can be 
+significantly higher than when using a naive fetch-decode-execute 
+interpretation loop. In my opinion, using a runnable IR is an interesting 
+compromise.
+
+<p>The overhead per emulated instruction is around or below approximately
+10 host instructions. This is very much dependent on your host
+architecture and what compiler and compiler switches you are using.
+Added to this instruction count is (of course) also the C code used to 
+implement each specific instruction.
+
+<p><b>Instruction Combinations:</b>
+
+Short, common instruction sequences can sometimes be replaced by a 
+"compound" instruction. An example could be a compare instruction followed 
+by a conditional branch instruction. The advantages of instruction 
+combinations are that
+<ul>
+  <li>the overhead per instruction is slightly reduced, and
+  <p>
+  <li>the host's compiler can make a good job at optimizing the common
+	instruction sequence.
+</ul>
+
+<p>The special cases where instruction combinations gives the most gain
+are in the cores of string/memory manipulation functions such as 
+<tt>memset()</tt> or <tt>strlen()</tt>. The core loop can then be replaced 
+by a native call to the equivalent function.
+
+<p><b>Native Code Back-ends: (not yet implemented)</b>
+
+<p>In theory, it will be possible to add native code generation (as used
+in other more high-performance emulators) to GXemul, as long as that
+generated code abides to the C ABI on the host, but for now I wanted to
+make sure that GXemul works without such native code back-ends. For this
+reason, as of release 0.4.0, GXemul is completely free of native code
+back-ends.
+
 
 
 

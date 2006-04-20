@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.54 2006-04-19 18:55:56 debug Exp $
+.\" $Id: gxemul.1,v 1.55 2006-04-20 16:59:05 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -138,12 +138,12 @@ increase in performance, but the emulator will not run correctly if the
 emulated code actually tries to do unaligned loads or stores. (This option 
 is only meaningful when emulating MIPS CPUs, when the host architecture is 
 Alpha or i386, and binary translation is enabled.)
-.It Fl B
-Disable native translation backends. By default, translation backends are
-used if the host+target architecture combination is supported. Currently,
-the only supported host architecture for the old bintrans system (used
-when emulating MIPS processors) are Alpha and i386. The old bintrans
-system will hopefully be removed some day.
+.\" .It Fl B
+.\" Disable native translation backends. By default, translation backends are
+.\" used if the host+target architecture combination is supported. Currently,
+.\" the only supported host architecture for the old bintrans system (used
+.\" when emulating MIPS processors) are Alpha and i386. The old bintrans
+.\" system will hopefully be removed some day.
 .It Fl C Ar x
 Try to emulate a specific CPU type,
 .Ar "x".

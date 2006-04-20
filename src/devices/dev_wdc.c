@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.65 2006-03-31 23:53:41 debug Exp $
+ *  $Id: dev_wdc.c,v 1.66 2006-04-20 16:59:05 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -749,8 +749,13 @@ DEVICE_ACCESS(wdc)
 			    inbuf_len % 512 == 0) ) {
 				int count = (d->write_in_progress ==
 				    WDCC_WRITEMULTI)? d->write_count : 1;
-				unsigned char buf[512 * count];
+				unsigned char *buf = malloc(512 * count);
 				unsigned char *b = buf;
+
+				if (buf == NULL) {
+					fprintf(stderr, "out of memory\n");
+					exit(1);
+				}
 
 				if (d->inbuf_tail+512*count <= WDC_INBUF_SIZE) {
 					b = d->inbuf + d->inbuf_tail;
@@ -772,6 +777,8 @@ DEVICE_ACCESS(wdc)
 
 				if (d->write_count == 0)
 					d->write_in_progress = 0;
+
+				free(buf);
 			}
 		}
 		break;

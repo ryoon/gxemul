@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1187 2006-04-19 19:39:40 debug Exp $
+$Id: HISTORY,v 1.1188 2006-04-20 16:59:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2658,3 +2658,5 @@ Changelog for GXemul:
 		it wasn't really useful and isn't implemented for dyntrans.
 		Single-stepping (or running with instruction trace) now looks
 		ok with dyntrans with delay-slot architectures.
+20060420	Minor hacks (removing the -B command line option when compiled
+		for non-bintrans, and some other very minor updates).

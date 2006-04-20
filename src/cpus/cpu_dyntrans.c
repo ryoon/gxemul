@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.83 2006-04-19 19:49:32 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.84 2006-04-20 16:59:05 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -149,7 +149,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	/*
 	 *  TODO:  Statistics stuff!
 	 */
-	const int show_opcode_statistics = 0;
+	int show_opcode_statistics = 0;
 
 #ifdef DYNTRANS_DUALMODE_32
 	uint64_t cached_pc;

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.77 2006-04-20 16:59:05 debug Exp $
+$Id: intro.html,v 1.78 2006-04-20 17:11:06 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -287,7 +287,7 @@ implement each specific instruction.
 
 <p><b>Instruction Combinations:</b>
 
-Short, common instruction sequences can sometimes be replaced by a 
+<p>Short, common instruction sequences can sometimes be replaced by a 
 "compound" instruction. An example could be a compare instruction followed 
 by a conditional branch instruction. The advantages of instruction 
 combinations are that
@@ -303,7 +303,7 @@ are in the cores of string/memory manipulation functions such as
 <tt>memset()</tt> or <tt>strlen()</tt>. The core loop can then be replaced 
 by a native call to the equivalent function.
 
-<p><b>Native Code Back-ends: (not yet implemented)</b>
+<p><b>Native Code Back-ends: (not in this release)</b>
 
 <p>In theory, it will be possible to add native code generation (as used
 in other more high-performance emulators) to GXemul, as long as that

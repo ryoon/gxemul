@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.48 2006-04-19 19:49:32 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.49 2006-04-20 18:32:20 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -973,10 +973,14 @@ X(srav){ int sa = reg(ic->arg[1]) & 31;
 	 reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> sa); }
 X(dsll) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) << (int64_t)ic->arg[1]; }
 X(dsllv){ int sa = reg(ic->arg[1]) & 63;
-	 reg(ic->arg[2]) = (int64_t)(reg(ic->arg[0]) << sa); }
+	 reg(ic->arg[2]) = reg(ic->arg[0]) << sa; }
 X(dsrl) { reg(ic->arg[2]) = (int64_t)((uint64_t)reg(ic->arg[0]) >>
 	(uint64_t) ic->arg[1]);}
+X(dsrlv){ int sa = reg(ic->arg[1]) & 63;
+	 reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) >> sa; }
 X(dsra) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> (int64_t)ic->arg[1]; }
+X(dsrav){ int sa = reg(ic->arg[1]) & 63;
+	 reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> sa; }
 X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
 X(movn) { if (reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
@@ -1312,6 +1316,219 @@ X(eret)
 
 
 /*
+ *  Load linked / store conditional:
+ *
+ *  A Load-linked instruction initiates a RMW (read-modify-write) sequence.
+ *  COP0_LLADDR is updated for diagnostic purposes, except for CPUs in the
+ *  R10000 family.
+ *
+ *  A Store-conditional instruction ends the sequence.
+ *
+ *  arg[0] = ptr to rt
+ *  arg[1] = ptr to rs
+ *  arg[2] = int32_t imm
+ */
+X(ll)
+{
+	MODE_int_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	int low_pc;
+	uint8_t word[sizeof(uint32_t)];
+
+	/*  Synch. PC and load using slow memory_rw():  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	if (addr & (sizeof(word)-1)) {
+		fatal("TODO: load linked unaligned access: exception\n");
+		exit(1);
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
+	    sizeof(word), MEM_READ, CACHE_DATA)) {
+		/*  An exception occurred.  */
+		return;
+	}
+
+	cpu->cd.mips.rmw = 1;
+	cpu->cd.mips.rmw_addr = addr;
+	cpu->cd.mips.rmw_len = sizeof(word);
+	if (cpu->cd.mips.cpu_type.exc_model != MMU10K)
+		cpu->cd.mips.coproc[0]->reg[COP0_LLADDR] =
+		    (addr >> 4) & 0xffffffffULL;
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		reg(ic->arg[0]) = (int32_t) (word[0] + (word[1] << 8)
+		    + (word[2] << 16) + (word[3] << 24));
+	else
+		reg(ic->arg[0]) = (int32_t) (word[3] + (word[2] << 8)
+		    + (word[1] << 16) + (word[0] << 24));
+}
+X(lld)
+{
+	MODE_int_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	int low_pc;
+	uint8_t word[sizeof(uint64_t)];
+
+	/*  Synch. PC and load using slow memory_rw():  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	if (addr & (sizeof(word)-1)) {
+		fatal("TODO: load linked unaligned access: exception\n");
+		exit(1);
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
+	    sizeof(word), MEM_READ, CACHE_DATA)) {
+		/*  An exception occurred.  */
+		return;
+	}
+
+	cpu->cd.mips.rmw = 1;
+	cpu->cd.mips.rmw_addr = addr;
+	cpu->cd.mips.rmw_len = sizeof(word);
+	if (cpu->cd.mips.cpu_type.exc_model != MMU10K)
+		cpu->cd.mips.coproc[0]->reg[COP0_LLADDR] =
+		    (addr >> 4) & 0xffffffffULL;
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		reg(ic->arg[0]) = word[0] + (word[1] << 8)
+		    + (word[2] << 16) + ((uint64_t)word[3] << 24) +
+		    + ((uint64_t)word[4] << 32) + ((uint64_t)word[5] << 40)
+		    + ((uint64_t)word[6] << 48) + ((uint64_t)word[7] << 56);
+	else
+		reg(ic->arg[0]) = word[7] + (word[6] << 8)
+		    + (word[5] << 16) + ((uint64_t)word[4] << 24) +
+		    + ((uint64_t)word[3] << 32) + ((uint64_t)word[2] << 40)
+		    + ((uint64_t)word[1] << 48) + ((uint64_t)word[0] << 56);
+}
+X(sc)
+{
+	MODE_int_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	uint64_t r = reg(ic->arg[0]);
+	int low_pc, i;
+	uint8_t word[sizeof(uint32_t)];
+
+	/*  Synch. PC and store using slow memory_rw():  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	if (addr & (sizeof(word)-1)) {
+		fatal("TODO: sc unaligned access: exception\n");
+		exit(1);
+	}
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		word[0]=r; word[1]=r>>8; word[2]=r>>16; word[3]=r>>24;
+	} else {
+		word[3]=r; word[2]=r>>8; word[1]=r>>16; word[0]=r>>24;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
+	    sizeof(word), MEM_WRITE, CACHE_DATA)) {
+		/*  An exception occurred.  */
+		return;
+	}
+
+	/*  If rmw is 0, then the store failed.  (This cache-line was written
+	    to by someone else.)  */
+	if (cpu->cd.mips.rmw == 0 || cpu->cd.mips.rmw_addr != addr
+	    || cpu->cd.mips.rmw_len != sizeof(word)) {
+		reg(ic->arg[0]) = 0;
+		cpu->cd.mips.rmw = 0;
+		return;
+	}
+
+	/*  We succeeded. Let's invalidate everybody else's store to this
+	    cache line:  */
+	for (i=0; i<cpu->machine->ncpus; i++) {
+		if (cpu->machine->cpus[i]->cd.mips.rmw) {
+			uint64_t yaddr = addr, xaddr = cpu->machine->cpus[i]->
+			    cd.mips.rmw_addr;
+			uint64_t mask = ~(cpu->machine->cpus[i]->
+			    cd.mips.cache_linesize[CACHE_DATA] - 1);
+			xaddr &= mask;
+			yaddr &= mask;
+			if (xaddr == yaddr)
+				cpu->machine->cpus[i]->cd.mips.rmw = 0;
+		}
+	}
+
+	reg(ic->arg[0]) = 1;
+	cpu->cd.mips.rmw = 0;
+}
+X(scd)
+{
+	MODE_int_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
+	uint64_t r = reg(ic->arg[0]);
+	int low_pc, i;
+	uint8_t word[sizeof(uint64_t)];
+
+	/*  Synch. PC and store using slow memory_rw():  */
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	if (addr & (sizeof(word)-1)) {
+		fatal("TODO: sc unaligned access: exception\n");
+		exit(1);
+	}
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		word[0]=r;     word[1]=r>>8; word[2]=r>>16; word[3]=r>>24;
+		word[4]=r>>32; word[5]=r>>40; word[6]=r>>48; word[7]=r>>56;
+	} else {
+		word[7]=r;     word[6]=r>>8; word[5]=r>>16; word[4]=r>>24;
+		word[3]=r>>32; word[2]=r>>40; word[1]=r>>48; word[0]=r>>56;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
+	    sizeof(word), MEM_WRITE, CACHE_DATA)) {
+		/*  An exception occurred.  */
+		return;
+	}
+
+	/*  If rmw is 0, then the store failed.  (This cache-line was written
+	    to by someone else.)  */
+	if (cpu->cd.mips.rmw == 0 || cpu->cd.mips.rmw_addr != addr
+	    || cpu->cd.mips.rmw_len != sizeof(word)) {
+		reg(ic->arg[0]) = 0;
+		cpu->cd.mips.rmw = 0;
+		return;
+	}
+
+	/*  We succeeded. Let's invalidate everybody else's store to this
+	    cache line:  */
+	for (i=0; i<cpu->machine->ncpus; i++) {
+		if (cpu->machine->cpus[i]->cd.mips.rmw) {
+			uint64_t yaddr = addr, xaddr = cpu->machine->cpus[i]->
+			    cd.mips.rmw_addr;
+			uint64_t mask = ~(cpu->machine->cpus[i]->
+			    cd.mips.cache_linesize[CACHE_DATA] - 1);
+			xaddr &= mask;
+			yaddr &= mask;
+			if (xaddr == yaddr)
+				cpu->machine->cpus[i]->cd.mips.rmw = 0;
+		}
+	}
+
+	reg(ic->arg[0]) = 1;
+	cpu->cd.mips.rmw = 0;
+}
+
+
+/*
  *  Unaligned loads/stores:
  *
  *  arg[0] = ptr to rt
@@ -1634,11 +1851,13 @@ X(to_be_translated)
 		case SPECIAL_SRA:
 		case SPECIAL_SRAV:
 		case SPECIAL_DSRL:
+		case SPECIAL_DSRLV:
 		case SPECIAL_DSRL32:
 		case SPECIAL_DSLL:
 		case SPECIAL_DSLLV:
 		case SPECIAL_DSLL32:
 		case SPECIAL_DSRA:
+		case SPECIAL_DSRAV:
 		case SPECIAL_DSRA32:
 			switch (s6) {
 			case SPECIAL_SLL:  ic->f = instr(sll); break;
@@ -1648,6 +1867,8 @@ X(to_be_translated)
 			case SPECIAL_SRA:  ic->f = instr(sra); break;
 			case SPECIAL_SRAV: ic->f = instr(srav); sa = -1; break;
 			case SPECIAL_DSRL: ic->f = instr(dsrl); x64=1; break;
+			case SPECIAL_DSRLV:ic->f = instr(dsrlv);
+					   x64 = 1; sa = -1; break;
 			case SPECIAL_DSRL32:ic->f= instr(dsrl); x64=1;
 					   sa += 32; break;
 			case SPECIAL_DSLL: ic->f = instr(dsll); x64=1; break;
@@ -1656,6 +1877,8 @@ X(to_be_translated)
 			case SPECIAL_DSLL32:ic->f= instr(dsll); x64=1;
 					   sa += 32; break;
 			case SPECIAL_DSRA: ic->f = instr(dsra); x64=1; break;
+			case SPECIAL_DSRAV:ic->f = instr(dsrav);
+					   x64 = 1; sa = -1; break;
 			case SPECIAL_DSRA32:ic->f = instr(dsra); x64=1;
 					   sa += 32; break;
 			}
@@ -2194,6 +2417,26 @@ X(to_be_translated)
 		ic->arg[2] = (int32_t)imm;
 		if (!store && rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
+		break;
+
+	case HI6_LL:
+	case HI6_LLD:
+	case HI6_SC:
+	case HI6_SCD:
+		store = 0;
+		switch (main_opcode) {
+		case HI6_LL:  ic->f = instr(ll); break;
+		case HI6_LLD: ic->f = instr(lld); break;
+		case HI6_SC:  ic->f = instr(sc); store = 1; break;
+		case HI6_SCD: ic->f = instr(scd); store = 1; break;
+		}
+		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
+		ic->arg[2] = (int32_t)imm;
+		if (!store && rt == MIPS_GPR_ZERO) {
+			fatal("HM... unusual load linked\n");
+			goto bad;
+		}
 		break;
 
 	case HI6_LWL:

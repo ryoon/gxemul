@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1188 2006-04-20 16:59:04 debug Exp $
+$Id: HISTORY,v 1.1189 2006-04-20 18:32:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2660,3 +2660,4 @@ Changelog for GXemul:
 		ok with dyntrans with delay-slot architectures.
 20060420	Minor hacks (removing the -B command line option when compiled
 		for non-bintrans, and some other very minor updates).
+		Adding (slow) MIPS dyntrans load-linked/store-conditional.

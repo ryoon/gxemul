@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.34 2006-04-19 19:39:40 debug Exp $
+ *  $Id: cpu_mips.c,v 1.35 2006-04-20 18:32:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1547,6 +1547,11 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					break;
 				}
 		}
+	}
+
+	if (cpu->cd.mips.rmw) {
+		printf("cpu%i: Read-Modify-Write in progress, address "
+		    "0x%016"PRIx64"\n", cpu->cpu_id, cpu->cd.mips.rmw_addr);
 	}
 }
 

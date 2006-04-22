@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1191 2006-04-22 09:28:26 debug Exp $
+$Id: HISTORY,v 1.1192 2006-04-22 12:51:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2667,3 +2667,7 @@ Changelog for GXemul:
 		Finally found one of the MIPS dyntrans bugs that I've been
 		looking for (copy/paste spelling error BIG vs LITTLE endian in
 		cpu_mips_instr_loadstore.c for 16-bit fast stores).
+		FINALLY found the major MIPS dyntrans bug: slti vs sltiu
+		signed/unsigned code in cpu_mips_instr.c. :-)
+		Adding more MIPS dyntrans instructions (lwc1, swc1).
+		NetBSD/hpcmips can now reach userland when using dyntrans :-)

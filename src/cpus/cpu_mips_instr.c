@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.51 2006-04-22 12:01:00 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.52 2006-04-22 12:51:41 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1322,6 +1322,9 @@ X(eret)
 }
 
 
+#include "tmp_mips_loadstore.c"
+
+
 /*
  *  Load linked / store conditional:
  *
@@ -1536,6 +1539,67 @@ X(scd)
 
 
 /*
+ *  lwc1, swc1:  Coprocessor 1 load/store
+ *
+ *  arg[0] = ptr to coprocessor register
+ *  arg[1] = ptr to rs (base pointer register)
+ *  arg[2] = int32_t imm
+ */
+X(lwc1)
+{
+	const int cpnr = 1;
+
+	/*  Synch. PC and call the generic load/store function:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	/*  ... but first, let's see if the coprocessor is available:  */
+	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
+	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+		return;
+	}
+
+#ifdef MODE32
+	mips32_loadstore
+#else
+	mips_loadstore
+#endif
+	    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16) + 2 * 2 + 1]
+	    (cpu, ic);
+}
+X(swc1)
+{
+	const int cpnr = 1;
+
+	/*  Synch. PC and call the generic load/store function:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	/*  ... but first, let's see if the coprocessor is available:  */
+	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
+	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+		return;
+	}
+
+#ifdef MODE32
+	mips32_loadstore
+#else
+	mips_loadstore
+#endif
+	    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16) + 8 + 2 * 2]
+	    (cpu, ic);
+}
+
+
+/*
  *  Unaligned loads/stores:
  *
  *  arg[0] = ptr to rt
@@ -1622,9 +1686,6 @@ X(sdr)
 	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
 	mips_unaligned_loadstore(cpu, ic, 0 /* is_left */, sizeof(uint64_t), 1);
 }
-
-
-#include "tmp_mips_loadstore.c"
 
 
 /*****************************************************************************/
@@ -2137,6 +2198,7 @@ X(to_be_translated)
 		if (main_opcode == HI6_ADDI ||
 		    main_opcode == HI6_ADDIU ||
 		    main_opcode == HI6_SLTI ||
+		    main_opcode == HI6_SLTIU ||
 		    main_opcode == HI6_DADDI ||
 		    main_opcode == HI6_DADDIU)
 			ic->arg[2] = (int16_t)iword;
@@ -2471,6 +2533,17 @@ X(to_be_translated)
 		ic->arg[2] = (int32_t)imm;
 		if (!store && rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
+		break;
+
+	case HI6_LWC1:
+	case HI6_SWC1:
+		ic->arg[0] = (size_t)&cpu->cd.mips.coproc[1]->reg[rt];
+		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
+		ic->arg[2] = (int32_t)imm;
+		switch (main_opcode) {
+		case HI6_LWC1: ic->f = instr(lwc1); break;
+		case HI6_SWC1: ic->f = instr(swc1); break;
+		}
 		break;
 
 	case HI6_CACHE:

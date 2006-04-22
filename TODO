@@ -1,4 +1,4 @@
-$Id: TODO,v 1.247 2006-04-19 18:55:56 debug Exp $
+$Id: TODO,v 1.248 2006-04-22 11:06:48 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -14,15 +14,10 @@ MIPS:
 	    in bintrans (if not yet done).
 	x)  Go through the entire MIPS64 ISA vol 2 :-)
 	x)  Old MIPS -> dyntrans!
-		o)  Delay slots across page boundaries, for b* branches?
-			IMPORTANT! This is probably not solved yet.
 		o)  The first tlbwr isn't random! (Can be below wired!)
-		o)  Extra cpu family function, for detecting if an instruction
-		    has a delay slot! (Nicer disassembly while running.)
 		o)  Implement all instructions!
-		o)  Count/compare interrupt.
+		o)  Count/compare interrupt, for R4000 and up.
 		o)  SMP stuff
-		o)  TLB dump.
 		o)  Make sure that all guest OSes that worked with the old
 		    system still work with dyntrans!
 

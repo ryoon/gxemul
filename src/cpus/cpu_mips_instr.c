@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.49 2006-04-20 18:32:20 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.50 2006-04-22 11:06:49 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -757,6 +757,10 @@ X(cache)
 {
 	/*  TODO. For now, just clear the rmw bit:  */
 	cpu->cd.mips.rmw = 0;
+
+/*  TODO: fix  */
+cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
+cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
 
@@ -1217,10 +1221,12 @@ X(break)
 X(promemul)
 {
 	/*  Synch. PC and call the DEC PROM emulation layer:  */
+	MODE_int_t old_pc;
 	int res, low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
 	    / sizeof(struct mips_instr_call);
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	old_pc = cpu->pc;
 
 	switch (cpu->machine->machine_type) {
 	case MACHINE_PMAX:
@@ -1249,7 +1255,8 @@ X(promemul)
 			cpu_functioncall_trace_return(cpu);
 	} else {
 		/*  The PROM call blocks.  */
-		cpu->n_translated_instrs += 1000;
+		cpu->n_translated_instrs += 10;
+		cpu->pc = old_pc;
 	}
 
 	quick_pc_to_pointers(cpu);

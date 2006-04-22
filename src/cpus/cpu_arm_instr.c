@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.61 2006-02-20 18:54:55 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.62 2006-04-22 08:24:31 debug Exp $
  *
  *  ARM instructions.
  *
@@ -1320,8 +1320,8 @@ Y(bdt_store)
 
 
 /*  Various load/store multiple instructions:  */
-uint32_t *multi_opcode[256];
-void (**multi_opcode_f[256])(struct cpu *, struct arm_instr_call *);
+extern uint32_t *multi_opcode[256];
+extern void (**multi_opcode_f[256])(struct cpu *, struct arm_instr_call *);
 X(multi_0x08b15018);
 X(multi_0x08ac000c__ge);
 X(multi_0x08a05018);

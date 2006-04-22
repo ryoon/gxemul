@@ -1,4 +1,4 @@
-/*  gxemul: $Id: dec_prom.h,v 1.5 2005-03-05 12:34:02 debug Exp $  */
+/*  gxemul: $Id: dec_prom.h,v 1.6 2006-04-22 08:24:31 debug Exp $  */
 #ifndef _PMAX_DEC_PROM_H_
 #define _PMAX_DEC_PROM_H_
 
@@ -85,10 +85,10 @@
 
 #define DEC_PROM_MAGIC	0x30464354
 
-/* typedef */ struct memmap {
+/* typedef */ struct dec_memmap {
 	uint32_t	pagesize;	/* system page size */		/*  was type int in netbsd  */
 	u_char		bitmap[15360];	/* bit for each page indicating safe to use */
-} memmap;
+} /*  memmap  */;
 
 typedef struct {
 	int	revision;	/* hardware revision level */

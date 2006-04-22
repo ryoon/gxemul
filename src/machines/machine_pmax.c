@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.8 2006-04-15 08:21:07 debug Exp $
+ *  $Id: machine_pmax.c,v 1.9 2006-04-22 08:24:31 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -777,19 +777,22 @@ MACHINE_SETUP(pmax)
 
 	store_buf(cpu, BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
 
-	/*
-	 *  The system's memmap:  (memmap is a global variable, in
-	 *  dec_prom.h)
-	 */
+	/*  The system's memmap:  */
+	machine->md.pmax.memmap = malloc(sizeof(struct dec_memmap));
+	if (machine->md.pmax.memmap == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
 	store_32bit_word_in_host(cpu,
-	    (unsigned char *)&memmap.pagesize, 4096);
+	    (unsigned char *)&machine->md.pmax.memmap->pagesize, 4096);
 	{
 		unsigned int i;
-		for (i=0; i<sizeof(memmap.bitmap); i++)
-			memmap.bitmap[i] = ((int)i * 4096*8 <
+		for (i=0; i<sizeof(machine->md.pmax.memmap->bitmap); i++)
+			machine->md.pmax.memmap->bitmap[i] = ((int)i * 4096*8 <
 			    1048576*machine->physical_ram_in_mb)? 0xff : 0x00;
 	}
-	store_buf(cpu, DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
+	store_buf(cpu, DEC_MEMMAP_ADDR,
+	    (char *)&machine->md.pmax.memmap, sizeof(struct dec_memmap));
 
 	/*  Environment variables:  */
 	addr = DEC_PROM_STRINGS;
@@ -821,8 +824,9 @@ MACHINE_SETUP(pmax)
 		add_environment_string(cpu, tmps, &addr);
 
 		snprintf(tmps, sizeof(tmps), "bitmap=0x%"PRIx32, (uint32_t)
-		    ( (DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
-		    & 0xffffffffULL) );
+		    ( (DEC_MEMMAP_ADDR + sizeof(uint32_t) /* skip the
+			page size and point to the memmap */
+		    ) & 0xffffffffULL) );
 		tmps[sizeof(tmps)-1] = '\0';
 		add_environment_string(cpu, tmps, &addr);
 

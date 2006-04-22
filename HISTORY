@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1189 2006-04-20 18:32:19 debug Exp $
+$Id: HISTORY,v 1.1190 2006-04-22 08:24:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2661,3 +2661,6 @@ Changelog for GXemul:
 20060420	Minor hacks (removing the -B command line option when compiled
 		for non-bintrans, and some other very minor updates).
 		Adding (slow) MIPS dyntrans load-linked/store-conditional.
+20060422	Applying fixes for bugs discovered by Nils Weller's nwcc
+		(static DEC memmap => now per machine, and adding an extern
+		keyword in cpu_arm_instr.c).

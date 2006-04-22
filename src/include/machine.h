@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.111 2006-03-25 21:24:32 debug Exp $
+ *  $Id: machine.h,v 1.112 2006-04-22 08:24:31 debug Exp $
  */
 
 #include <sys/types.h>
@@ -38,6 +38,7 @@
 #include "symbol.h"
 
 #include "machine_arc.h"
+#include "machine_pmax.h"
 #include "machine_x86.h"
 
 
@@ -224,6 +225,7 @@ struct machine {
 	/*  Machine-dependent: (PROM stuff, etc.)  */
 	union {
 		struct machine_arcbios	arc;
+		struct machine_pmax	pmax;
 		struct machine_pc	pc;
 	} md;
 

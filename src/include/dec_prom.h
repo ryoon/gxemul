@@ -1,4 +1,4 @@
-/*  gxemul: $Id: dec_prom.h,v 1.6 2006-04-22 08:24:31 debug Exp $  */
+/*  gxemul: $Id: dec_prom.h,v 1.7 2006-04-22 08:40:45 debug Exp $  */
 #ifndef _PMAX_DEC_PROM_H_
 #define _PMAX_DEC_PROM_H_
 
@@ -101,6 +101,9 @@ typedef struct {
 	int	reserved[4];
 } tcinfo;
 
+#if 0
+/*  Not in GXemul.  */
+
 typedef int jmp_buf[12];
 typedef void (*psig_t)(int);
 
@@ -202,6 +205,8 @@ extern const struct callback callvec;
 /* XXX make sure that no calls to bcopy overlap! */
 #define bcopy(src, dst, len) memcpy(dst, src, len)
 #endif
+
+#endif	/*  not in gxemul  */
 
 /*
  * The prom routines use the following structure to hold strings.

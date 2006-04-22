@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.9 2006-04-22 08:24:31 debug Exp $
+ *  $Id: machine_pmax.c,v 1.10 2006-04-22 08:40:45 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -792,7 +792,7 @@ MACHINE_SETUP(pmax)
 			    1048576*machine->physical_ram_in_mb)? 0xff : 0x00;
 	}
 	store_buf(cpu, DEC_MEMMAP_ADDR,
-	    (char *)&machine->md.pmax.memmap, sizeof(struct dec_memmap));
+	    (char *)machine->md.pmax.memmap, sizeof(struct dec_memmap));
 
 	/*  Environment variables:  */
 	addr = DEC_PROM_STRINGS;

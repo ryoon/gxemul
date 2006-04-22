@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1196 2006-04-22 19:50:47 debug Exp $
+$Id: HISTORY,v 1.1197 2006-04-22 21:17:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2670,7 +2670,7 @@ Changelog for GXemul:
 		FINALLY found the major MIPS dyntrans bug: slti vs sltiu
 		signed/unsigned code in cpu_mips_instr.c. :-)
 		Adding more MIPS dyntrans instructions (lwc1, swc1, bgezal[l],
-		ctc1, tlt[u], tge[u], tne).
+		ctc1, tlt[u], tge[u], tne, beginning on rdhwr).
 		NetBSD/hpcmips can now reach userland when using dyntrans :-)
 		Adding some more x86 dyntrans instructions.
 		Finally removed the old Alpha-specific virtual memory code,

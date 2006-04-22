@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.54 2006-04-22 19:50:47 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.55 2006-04-22 21:17:47 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1533,6 +1533,17 @@ X(eret)
 }
 
 
+/*
+ *  rdhwr: Read hardware register into gpr (MIPS32/64 rev 2).
+ *
+ *  arg[0] = ptr to rt (destination register)
+ */
+X(rdhwr_cpunum)
+{
+	reg(ic->arg[0]) = cpu->cpu_id;
+}
+
+
 #include "tmp_mips_loadstore.c"
 
 
@@ -2801,6 +2812,20 @@ X(to_be_translated)
 
 		switch (s6) {
 
+		case SPECIAL3_RDHWR:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+
+			switch (rd) {
+
+			case 0:	ic->f = instr(rdhwr_cpunum);
+				if (rt == MIPS_GPR_ZERO)
+					ic->f = instr(nop);
+				break;
+
+			default:fatal("unimplemented rdhwr register\n");
+				goto bad;
+			}
+			break;
 
 		default:goto bad;
 		}

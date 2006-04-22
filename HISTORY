@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1193 2006-04-22 13:59:57 debug Exp $
+$Id: HISTORY,v 1.1194 2006-04-22 18:07:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2671,4 +2671,5 @@ Changelog for GXemul:
 		signed/unsigned code in cpu_mips_instr.c. :-)
 		Adding more MIPS dyntrans instructions (lwc1, swc1).
 		NetBSD/hpcmips can now reach userland when using dyntrans :-)
-		Adding bgezal[l], ctc1.
+		Adding more MIPS dyntrans instructions: bgezal[l], ctc1.
+		Adding some more x86 dyntrans instructions.

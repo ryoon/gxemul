@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.84 2006-04-20 16:59:05 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.85 2006-04-22 18:07:30 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -123,7 +123,23 @@ a &= 0x03ffffff;
 			ic->f(cpu, ic);
 #else
 
-#define I		ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
+/*  The normal instruction execution core:  */
+#define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
+
+/*  Temporary hack for finding NULL bugs:  */
+/*  #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; 			\
+		if (ic->f == NULL) {					\
+			int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - \
+			    (size_t)cpu->cd.DYNTRANS_ARCH.cur_ic_page) / \
+			    sizeof(struct DYNTRANS_IC);			\
+			cpu->pc &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) << \
+			    DYNTRANS_INSTR_ALIGNMENT_SHIFT);		\
+			cpu->pc += (low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT);\
+			printf("Crash at %016"PRIx64"\n", cpu->pc);	\
+			cpu->running = 0;				\
+			return 0;					\
+		}							\
+		ic->f(cpu, ic);  */
 
 /*  Temporary hack for MIPS, to hunt for 32-bit/64-bit sign-extension bugs:  */
 /*  #define I		{ int k; for (k=1; k<=31; k++)	\
@@ -1702,6 +1718,20 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 
 	cpu->cd.DYNTRANS_ARCH.combination_check = NULL;
 
+	/*  An additional check, to catch some bugs:  */
+	if (ic->f == (
+#ifdef DYNTRANS_DUALMODE_32
+	    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+	    instr(to_be_translated))) {
+		fatal("INTERNAL ERROR: ic->f not set!\n");
+		goto bad;
+	}
+	if (ic->f == NULL) {
+		fatal("INTERNAL ERROR: ic->f == NULL!\n");
+		goto bad;
+	}
+
 	/*  ... and finally execute the translated instruction:  */
 	if ((single_step_breakpoint && cpu->delay_slot == NOT_DELAYED)
 #ifdef DYNTRANS_DELAYSLOT
@@ -1736,20 +1766,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			goto bad;
 		}
 #endif
-
-		/*  An additional check, to catch some bugs:  */
-		if (ic->f == (
-#ifdef DYNTRANS_DUALMODE_32
-		    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-		    instr(to_be_translated))) {
-			fatal("INTERNAL ERROR: ic->f not set!\n");
-			goto bad;
-		}
-		if (ic->f == NULL) {
-			fatal("INTERNAL ERROR: ic->f == NULL!\n");
-			goto bad;
-		}
 
 		/*  Finally finally :-), execute the instruction:  */
 		ic->f(cpu, ic);

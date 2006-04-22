@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86_instr.c,v 1.12 2006-04-20 16:59:05 debug Exp $
+ *  $Id: cpu_x86_instr.c,v 1.13 2006-04-22 18:07:30 debug Exp $
  *
  *  x86/amd64 instructions.
  *
@@ -76,9 +76,60 @@ X(inc_ax)
 	MODE_uint_t r = cpu->cd.x86.r[X86_R_AX], r2 = r + 1;
 	cpu->cd.x86.r[X86_R_AX] = (r & ~0xffff) + (r2 & 0xffff);
 }
-X(inc_eax)
+X(inc_cx)
 {
-	cpu->cd.x86.r[X86_R_AX] ++;
+	MODE_uint_t r = cpu->cd.x86.r[X86_R_CX], r2 = r + 1;
+	cpu->cd.x86.r[X86_R_CX] = (r & ~0xffff) + (r2 & 0xffff);
+}
+X(inc_dx)
+{
+	MODE_uint_t r = cpu->cd.x86.r[X86_R_DX], r2 = r + 1;
+	cpu->cd.x86.r[X86_R_DX] = (r & ~0xffff) + (r2 & 0xffff);
+}
+X(inc_bx)
+{
+	MODE_uint_t r = cpu->cd.x86.r[X86_R_BX], r2 = r + 1;
+	cpu->cd.x86.r[X86_R_BX] = (r & ~0xffff) + (r2 & 0xffff);
+}
+X(inc_sp)
+{
+	MODE_uint_t r = cpu->cd.x86.r[X86_R_SP], r2 = r + 1;
+	cpu->cd.x86.r[X86_R_SP] = (r & ~0xffff) + (r2 & 0xffff);
+}
+X(inc_bp)
+{
+	MODE_uint_t r = cpu->cd.x86.r[X86_R_BP], r2 = r + 1;
+	cpu->cd.x86.r[X86_R_BP] = (r & ~0xffff) + (r2 & 0xffff);
+}
+X(inc_si)
+{
+	MODE_uint_t r = cpu->cd.x86.r[X86_R_SI], r2 = r + 1;
+	cpu->cd.x86.r[X86_R_SI] = (r & ~0xffff) + (r2 & 0xffff);
+}
+X(inc_di)
+{
+	MODE_uint_t r = cpu->cd.x86.r[X86_R_DI], r2 = r + 1;
+	cpu->cd.x86.r[X86_R_DI] = (r & ~0xffff) + (r2 & 0xffff);
+}
+X(inc_eax) { cpu->cd.x86.r[X86_R_AX] ++; }
+X(inc_ecx) { cpu->cd.x86.r[X86_R_CX] ++; }
+X(inc_edx) { cpu->cd.x86.r[X86_R_DX] ++; }
+X(inc_ebx) { cpu->cd.x86.r[X86_R_BX] ++; }
+X(inc_esp) { cpu->cd.x86.r[X86_R_SP] ++; }
+X(inc_ebp) { cpu->cd.x86.r[X86_R_BP] ++; }
+X(inc_esi) { cpu->cd.x86.r[X86_R_SI] ++; }
+X(inc_edi) { cpu->cd.x86.r[X86_R_DI] ++; }
+
+
+/*
+ *  mov_reg_imm_8:
+ *
+ *  arg[1] = imm8
+ *  arg[2] = pointer to a _byte_ inside an emulated register
+ */
+X(mov_reg_imm_8)
+{
+	*((uint8_t *)ic->arg[2]) = ic->arg[1];
 }
 
 
@@ -265,19 +316,62 @@ X(to_be_translated)
 		break;
 
 	case 0x40:	/*  inc ax  etc.  */
+	case 0x41:
+	case 0x42:
+	case 0x43:
+	case 0x44:
+	case 0x45:
+	case 0x46:
+	case 0x47:
 		if (mode16) {
 			switch (main_opcode) {
 			case 0x40: ic->f = instr(inc_ax); break;
+			case 0x41: ic->f = instr(inc_cx); break;
+			case 0x42: ic->f = instr(inc_dx); break;
+			case 0x43: ic->f = instr(inc_bx); break;
+			case 0x44: ic->f = instr(inc_sp); break;
+			case 0x45: ic->f = instr(inc_bp); break;
+			case 0x46: ic->f = instr(inc_si); break;
+			case 0x47: ic->f = instr(inc_di); break;
 			}
 		} else {
 			switch (main_opcode) {
 			case 0x40: ic->f = instr(inc_eax); break;
+			case 0x41: ic->f = instr(inc_ecx); break;
+			case 0x42: ic->f = instr(inc_edx); break;
+			case 0x43: ic->f = instr(inc_ebx); break;
+			case 0x44: ic->f = instr(inc_esp); break;
+			case 0x45: ic->f = instr(inc_ebp); break;
+			case 0x46: ic->f = instr(inc_esi); break;
+			case 0x47: ic->f = instr(inc_edi); break;
 			}
 		}
 		break;
 
 	case 0x90:	/*  nop  */
 		ic->f = instr(nop);
+		break;
+
+	case 0xb0:	/*  mov al,imm  etc.  */
+	case 0xb1:
+	case 0xb2:
+	case 0xb3:
+	case 0xb4:
+	case 0xb5:
+	case 0xb6:
+	case 0xb7:
+		GNB;
+		ic->arg[1] = ib[len - 1];
+		/*  Calculate for little endian first:  */
+		ic->arg[2] = (size_t)&cpu->cd.x86.r[main_opcode & 3];
+		if (main_opcode >= 0xb4)
+			ic->arg[2] ++;
+#ifdef HOST_BIG_ENDIAN
+		/*  Switch byte order:  */
+		ic->arg[2] = (ic->arg[2] & ~(sizeof(uint64_t)-1)) +
+		    sizeof(uint64_t) - 1 - (ic->arg[2] & (sizeof(uint64_t)-1));
+#endif
+		ic->f = instr(mov_reg_imm_8);
 		break;
 
 	case 0xb8:	/*  mov ax,imm  etc.  */

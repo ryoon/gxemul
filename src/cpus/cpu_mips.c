@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.35 2006-04-20 18:32:19 debug Exp $
+ *  $Id: cpu_mips.c,v 1.36 2006-04-22 12:06:35 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2192,15 +2192,6 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			return 10;
 		}
 	}
-
-#ifdef HALT_IF_PC_ZERO
-	/*  Halt if PC = 0:  */
-	if (cached_pc == 0) {
-		debug("cpu%i: pc=0, halting\n", cpu->cpu_id);
-		cpu->running = 0;
-		return 0;
-	}
-#endif
 
 #ifdef BINTRANS
 	if ((single_step || instruction_trace_cached)

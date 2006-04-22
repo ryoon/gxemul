@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.335 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu.c,v 1.336 2006-04-22 09:28:26 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -258,7 +258,7 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 		fatal("%s", symbol);
 	else {
 		if (cpu->is_32bit)
-			fatal("0x%08"PRIx32, (uint32_t) f);
+			fatal("0x%"PRIx32, (uint32_t) f);
 		else
 			fatal("0x%"PRIx64, (uint64_t) f);
 	}
@@ -268,6 +268,11 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 		cpu->machine->cpu_family->functioncall_trace(cpu, f, n_args);
 
 	fatal(")>\n");
+
+#ifdef PRINT_MEMORY_CHECKSUM
+	/*  Temporary hack for finding bugs:  */
+	fatal("call chksum=%016"PRIx64"\n", memory_checksum(cpu->mem));
+#endif
 }
 
 

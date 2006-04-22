@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.8 2006-04-16 17:27:01 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.9 2006-04-22 09:28:27 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -229,7 +229,7 @@ void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 #ifdef LS_2
 	{ uint32_t x = reg(ic->arg[0]);
 #ifdef LS_BE
-#ifdef HOST_LITTLE_ENDIAN
+#ifdef HOST_BIG_ENDIAN
 	*((uint16_t *)(p+addr)) = x; }
 #else
 	p[addr] = x >> 8; p[addr+1] = x; }

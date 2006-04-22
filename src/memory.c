@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.188 2006-03-30 19:36:04 debug Exp $
+ *  $Id: memory.c,v 1.189 2006-04-22 09:28:27 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -591,5 +591,46 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	}
 
 	return (unsigned char *) table[entry];
+}
+
+
+#define	UPDATE_CHECKSUM(value) {					\
+		internal_state -= 0x118c7771c0c0a77fULL;		\
+		internal_state = ((internal_state + (value)) << 7) ^	\
+		    (checksum >> 11) ^ ((checksum - (value)) << 3) ^	\
+		    (internal_state - checksum) ^ ((value) - internal_state); \
+		checksum ^= internal_state;				\
+	}
+
+
+/*
+ *  memory_checksum():
+ *
+ *  Calculate a 64-bit checksum of everything in a struct memory. This is
+ *  useful for tracking down bugs; an old (presumably working) version of
+ *  the emulator can be compared to a newer (buggy) version.
+ */
+uint64_t memory_checksum(struct memory *mem)
+{
+	uint64_t internal_state = 0x80624185376feff2ULL;
+	uint64_t checksum = 0xcb9a87d5c010072cULL;
+	const int n_entries = (1 << BITS_PER_PAGETABLE) - 1;
+	const size_t len = (1 << BITS_PER_MEMBLOCK) / sizeof(uint64_t);
+	size_t entry, i;
+
+	for (entry=0; entry<=n_entries; entry++) {
+		uint64_t **table = mem->pagetable;
+		uint64_t *memblock = table[entry];
+
+		if (memblock == NULL) {
+			UPDATE_CHECKSUM(0x1198ab7c8174a76fULL);
+			continue;
+		}
+
+		for (i=0; i<len; i++)
+			UPDATE_CHECKSUM(memblock[i]);
+	}
+
+	return checksum;
 }
 

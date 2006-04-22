@@ -2,7 +2,7 @@
 #define	MEMORY_H
 
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.47 2006-01-01 13:17:18 debug Exp $
+ *  $Id: memory.h,v 1.48 2006-04-22 09:28:27 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -189,5 +189,8 @@ void memory_device_register(struct memory *mem, const char *,
 	    struct memory *,uint64_t,unsigned char *,size_t,int,void *),
 	void *extra, int flags, unsigned char *dyntrans_data);
 void memory_device_remove(struct memory *mem, int i);
+
+uint64_t memory_checksum(struct memory *mem);
+
 
 #endif	/*  MEMORY_H  */

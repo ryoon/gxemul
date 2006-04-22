@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1190 2006-04-22 08:24:30 debug Exp $
+$Id: HISTORY,v 1.1191 2006-04-22 09:28:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2664,3 +2664,6 @@ Changelog for GXemul:
 20060422	Applying fixes for bugs discovered by Nils Weller's nwcc
 		(static DEC memmap => now per machine, and adding an extern
 		keyword in cpu_arm_instr.c).
+		Finally found one of the MIPS dyntrans bugs that I've been
+		looking for (copy/paste spelling error BIG vs LITTLE endian in
+		cpu_mips_instr_loadstore.c for 16-bit fast stores).

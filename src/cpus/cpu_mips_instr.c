@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.53 2006-04-22 13:59:57 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.54 2006-04-22 19:50:47 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -895,6 +895,9 @@ X(xori) { reg(ic->arg[1]) = reg(ic->arg[0]) ^ (uint32_t)ic->arg[2]; }
 
 /*
  *  2-register:
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to rt
  */
 X(div)
 {
@@ -1007,10 +1010,75 @@ X(dmultu)
 	reg(&cpu->cd.mips.lo) = lo;
 	reg(&cpu->cd.mips.hi) = hi;
 }
+X(tge)
+{
+	MODE_int_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	if (a >= b) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+	}
+}
+X(tgeu)
+{
+	MODE_uint_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	if (a >= b) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+	}
+}
+X(tlt)
+{
+	MODE_int_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	if (a < b) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+	}
+}
+X(tltu)
+{
+	MODE_uint_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	if (a < b) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+	}
+}
 X(teq)
 {
 	MODE_uint_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	if (a == b) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+	}
+}
+X(tne)
+{
+	MODE_uint_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	if (a != b) {
 		/*  Synch. PC and cause an exception:  */
 		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
 		    / sizeof(struct mips_instr_call);
@@ -2129,7 +2197,12 @@ X(to_be_translated)
 		case SPECIAL_MULTU:
 		case SPECIAL_DMULT:
 		case SPECIAL_DMULTU:
+		case SPECIAL_TGE:
+		case SPECIAL_TGEU:
+		case SPECIAL_TLT:
+		case SPECIAL_TLTU:
 		case SPECIAL_TEQ:
+		case SPECIAL_TNE:
 			switch (s6) {
 			case SPECIAL_ADD:   ic->f = instr(add); break;
 			case SPECIAL_ADDU:  ic->f = instr(addu); break;
@@ -2155,7 +2228,12 @@ X(to_be_translated)
 			case SPECIAL_MULTU: ic->f = instr(multu); break;
 			case SPECIAL_DMULT: ic->f = instr(dmult); x64=1; break;
 			case SPECIAL_DMULTU:ic->f = instr(dmultu); x64=1; break;
+			case SPECIAL_TGE:   ic->f = instr(tge); break;
+			case SPECIAL_TGEU:  ic->f = instr(tgeu); break;
+			case SPECIAL_TLT:   ic->f = instr(tlt); break;
+			case SPECIAL_TLTU:  ic->f = instr(tltu); break;
 			case SPECIAL_TEQ:   ic->f = instr(teq); break;
+			case SPECIAL_TNE:   ic->f = instr(tne); break;
 			case SPECIAL_MOVN:  ic->f = instr(movn); break;
 			case SPECIAL_MOVZ:  ic->f = instr(movz); break;
 			}
@@ -2702,6 +2780,29 @@ X(to_be_translated)
 		switch (main_opcode) {
 		case HI6_LWC1: ic->f = instr(lwc1); break;
 		case HI6_SWC1: ic->f = instr(swc1); break;
+		}
+		break;
+
+	case HI6_LQ_MDMX:
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+			fatal("TODO: R5900 128-bit loads\n");
+			goto bad;
+		}
+
+		fatal("TODO: MDMX\n");
+		goto bad;
+		/*  break  */
+
+	case HI6_SQ_SPECIAL3:
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+			fatal("TODO: R5900 128-bit stores\n");
+			goto bad;
+		}
+
+		switch (s6) {
+
+
+		default:goto bad;
 		}
 		break;
 

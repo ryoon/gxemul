@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1195 2006-04-22 18:28:43 debug Exp $
+$Id: HISTORY,v 1.1196 2006-04-22 19:50:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2669,9 +2669,10 @@ Changelog for GXemul:
 		cpu_mips_instr_loadstore.c for 16-bit fast stores).
 		FINALLY found the major MIPS dyntrans bug: slti vs sltiu
 		signed/unsigned code in cpu_mips_instr.c. :-)
-		Adding more MIPS dyntrans instructions (lwc1, swc1).
+		Adding more MIPS dyntrans instructions (lwc1, swc1, bgezal[l],
+		ctc1, tlt[u], tge[u], tne).
 		NetBSD/hpcmips can now reach userland when using dyntrans :-)
-		Adding more MIPS dyntrans instructions: bgezal[l], ctc1.
 		Adding some more x86 dyntrans instructions.
 		Finally removed the old Alpha-specific virtual memory code,
 		and replaced it with the generic 64-bit version.
+		Beginning to add disassembly support for SPECIAL3 MIPS opcodes.

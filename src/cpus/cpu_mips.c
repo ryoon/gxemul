@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.36 2006-04-22 12:06:35 debug Exp $
+ *  $Id: cpu_mips.c,v 1.37 2006-04-22 19:50:47 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -89,7 +89,8 @@ static char *exception_names[] = EXCEPTION_NAMES;
 static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
-/*  static char *special2_names[] = SPECIAL2_NAMES;  */
+static char *special2_names[] = SPECIAL2_NAMES;
+static char *special3_names[] = SPECIAL3_NAMES;
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
 static char *cop0_names[] = COP0_NAMES;
@@ -1079,7 +1080,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			debug("mtsa\t%s", regname(cpu->machine, rs));
 			break;
 		default:
-			debug("unimplemented special6 = 0x%02x", special6);
+			debug("%s\t= UNIMPLEMENTED", special_names[special6]);
 		}
 		break;
 	case HI6_BEQ:
@@ -1183,6 +1184,32 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	case HI6_SWR:
 	case HI6_SDL:
 	case HI6_SDR:
+		if (hi6 == HI6_LQ_MDMX &&
+		    cpu->cd.mips.cpu_type.rev != MIPS_R5900) {
+			debug("mdmx\t(UNIMPLEMENTED)");
+			break;
+		}
+		if (hi6 == HI6_SQ_SPECIAL3 &&
+		    cpu->cd.mips.cpu_type.rev != MIPS_R5900) {
+			special6 = instr[0] & 0x3f;
+			debug("%s", special3_names[special6]);
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			rd = (instr[1] >> 3) & 31;
+
+			switch (special6) {
+
+			case SPECIAL3_RDHWR:
+				debug("\t%s", regname(cpu->machine, rt));
+				debug(",hwr%i", rd);
+				break;
+
+			default:
+				debug("\t(UNIMPLEMENTED)");
+			}
+			break;
+		}
+
 		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 		rt = instr[2] & 31;
 		imm = (instr[1] << 8) + instr[0];
@@ -1347,7 +1374,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			debug(",%s", regname(cpu->machine, rs));
 			debug(",%s", regname(cpu->machine, rt));
 		} else {
-			debug("unimplemented special2 = 0x%02x", special6);
+			debug("%s\t= UNIMPLEMENTED", special2_names[special6]);
 		}
 		break;
 	case HI6_REGIMM:

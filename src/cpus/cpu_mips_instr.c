@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.50 2006-04-22 11:06:49 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.51 2006-04-22 12:01:00 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -76,7 +76,7 @@ X(invalid_32_64)
  */
 X(beq)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs == rt;
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -113,7 +113,7 @@ X(beq_samepage)
 }
 X(bne)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs != rt;
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -150,7 +150,7 @@ X(bne_samepage)
 }
 X(b)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -185,7 +185,7 @@ X(b_samepage)
  */
 X(beql)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs == rt;
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -224,7 +224,7 @@ X(beql_samepage)
 }
 X(bnel)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
 	int x = rs != rt;
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -272,7 +272,7 @@ X(bnel_samepage)
  */
 X(blez)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs <= 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -309,7 +309,7 @@ X(blez_samepage)
 }
 X(blezl)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs <= 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -357,7 +357,7 @@ X(blezl_samepage)
  */
 X(bltz)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs < 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -394,7 +394,7 @@ X(bltz_samepage)
 }
 X(bltzl)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs < 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -442,7 +442,7 @@ X(bltzl_samepage)
  */
 X(bgez)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs >= 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -479,7 +479,7 @@ X(bgez_samepage)
 }
 X(bgezl)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs >= 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -527,7 +527,7 @@ X(bgezl_samepage)
  */
 X(bgtz)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs > 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -564,7 +564,7 @@ X(bgtz_samepage)
 }
 X(bgtzl)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs > 0);
 	cpu->delay_slot = TO_BE_DELAYED;
@@ -700,7 +700,7 @@ X(jalr_trace)
  */
 X(j)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -715,7 +715,7 @@ X(j)
 }
 X(jal)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.mips.gpr[31] = cpu->pc + ic->arg[1];
@@ -732,7 +732,7 @@ X(jal)
 }
 X(jal_trace)
 {
-	MODE_uint_t old_pc = cpu->pc;
+	MODE_int_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->cd.mips.gpr[31] = cpu->pc + ic->arg[1];
@@ -1220,7 +1220,7 @@ X(break)
  */
 X(promemul)
 {
-	/*  Synch. PC and call the DEC PROM emulation layer:  */
+	/*  Synchronize the PC and call the correct emulation layer:  */
 	MODE_int_t old_pc;
 	int res, low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
 	    / sizeof(struct mips_instr_call);
@@ -1248,7 +1248,7 @@ X(promemul)
 
 	if (res) {
 		/*  Return from the PROM call:  */
-		cpu->pc = cpu->cd.mips.gpr[MIPS_GPR_RA];
+		cpu->pc = (MODE_int_t)cpu->cd.mips.gpr[MIPS_GPR_RA];
 		cpu->delay_slot = NOT_DELAYED;
 
 		if (cpu->machine->show_trace_tree)
@@ -1778,7 +1778,7 @@ X(to_be_translated)
 	addr = cpu->pc & ~((MIPS_IC_ENTRIES_PER_PAGE-1)
 	    << MIPS_INSTR_ALIGNMENT_SHIFT);
 	addr += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc = addr;
+	cpu->pc = (MODE_int_t)addr;
 	addr &= ~((1 << MIPS_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */

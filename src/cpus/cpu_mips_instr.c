@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.52 2006-04-22 12:51:41 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.53 2006-04-22 13:59:57 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -504,6 +504,123 @@ X(bgezl_samepage)
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs >= 0);
 	cpu->delay_slot = TO_BE_DELAYED;
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bgezal:   Branch if greater than or equal (and link)
+ *  bgezall:  Branch if greater than or equal (and link) likely
+ *
+ *  arg[0] = pointer to rs
+ *  arg[2] = (int32_t) relative offset from the next instruction
+ */
+X(bgezal)
+{
+	MODE_int_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bgezal_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bgezall)
+{
+	MODE_int_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bgezall_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs >= 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
 	if (x)
 		ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -1132,6 +1249,7 @@ X(set)
  *  mfc0, dmfc0:  Move from Coprocessor 0.
  *  mtc0, dmtc0:  Move to Coprocessor 0.
  *  cfc1: Copy control word from Coprocessor 1.
+ *  ctc1: Copy control word to Coprocessor 1.
  *
  *  arg[0] = pointer to GPR (rt)
  *  arg[1] = coprocessor 0 register number | (select << 5)
@@ -1187,10 +1305,35 @@ cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 X(cfc1)
 {
+	const int cpnr = 1;
+
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
-	/*  TODO: cause exception if necessary  */
+
+	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
+	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+		return;
+	}
+
 	reg(ic->arg[0]) = reg(ic->arg[1]);
+}
+X(ctc1)
+{
+	const int cpnr = 1;
+
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+
+	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
+	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+		return;
+	}
+
+	/*  TODO: exceptions if writing to coproc1 reg 31!  */
+
+	reg(ic->arg[1]) = reg(ic->arg[0]);
 }
 
 
@@ -2340,6 +2483,12 @@ X(to_be_translated)
 			if (rt == MIPS_GPR_ZERO)
 				ic->f = instr(nop);
 			break;
+		case COPz_CTCz:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = (size_t)&cpu->cd.mips.coproc[1]->fcr[rd];
+			ic->arg[2] = addr & 0xffc;
+			ic->f = instr(ctc1);
+			break;
 		default:fatal("UNIMPLEMENTED cop1 (rs = %i)\n", rs);
 			goto bad;
 		}
@@ -2383,6 +2532,8 @@ X(to_be_translated)
 		case REGIMM_BGEZL:
 		case REGIMM_BLTZ:
 		case REGIMM_BLTZL:
+		case REGIMM_BGEZAL:
+		case REGIMM_BGEZALL:
 			samepage_function = NULL;
 			switch (rt) {
 			case REGIMM_BGEZ:
@@ -2400,6 +2551,14 @@ X(to_be_translated)
 			case REGIMM_BLTZL:
 				ic->f = instr(bltzl);
 				samepage_function = instr(bltzl_samepage);
+				break;
+			case REGIMM_BGEZAL:
+				ic->f = instr(bgezal);
+				samepage_function = instr(bgezal_samepage);
+				break;
+			case REGIMM_BGEZALL:
+				ic->f = instr(bgezall);
+				samepage_function = instr(bgezall_samepage);
 				break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];

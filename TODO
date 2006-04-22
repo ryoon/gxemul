@@ -1,4 +1,4 @@
-$Id: TODO,v 1.248 2006-04-22 11:06:48 debug Exp $
+$Id: TODO,v 1.249 2006-04-22 13:59:57 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -20,6 +20,8 @@ MIPS:
 		o)  SMP stuff
 		o)  Make sure that all guest OSes that worked with the old
 		    system still work with dyntrans!
+		o)  Refactor code for performance and 
+		    readability/maintainability.
 
 Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be

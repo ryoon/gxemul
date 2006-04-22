@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.15 2006-04-19 19:36:16 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.16 2006-04-22 13:59:57 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2434,9 +2434,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 				    regnames[rt], fs);
 				return;
 			}
-			cpu->cd.mips.gpr[rt] = cp->fcr[fs] & 0xffffffffULL;
-			if (cpu->cd.mips.gpr[rt] & 0x80000000ULL)
-				cpu->cd.mips.gpr[rt] |= 0xffffffff00000000ULL;
+			cpu->cd.mips.gpr[rt] = (int32_t)cp->fcr[fs];
 			/*  TODO: implement delay for gpr[rt]
 			    (for MIPS I,II,III only)  */
 			return;

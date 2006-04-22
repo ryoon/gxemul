@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.85 2006-04-22 18:07:30 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.86 2006-04-22 18:28:43 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -638,18 +638,6 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef MODE32
 	int index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 #else
-#ifdef DYNTRANS_ALPHA
-	uint32_t a, b;
-	int kernel = 0;
-	struct alpha_vph_page *vph_p;
-	a = (cached_pc >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-	b = (cached_pc >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-	if ((cached_pc >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-		kernel = 1;
-	} else
-		vph_p = cpu->cd.alpha.vph_table0[a];
-#else
 	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
 	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
 	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
@@ -667,7 +655,6 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	l3 = l2->l3[x2];
 	/*  fatal("  l3 = %p\n", l3);  */
 #endif
-#endif
 
 	/*  Virtual to physical address translation:  */
 	ok = 0;
@@ -677,17 +664,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		ok = 1;
 	}
 #else
-#ifdef DYNTRANS_ALPHA
-	if (vph_p->host_load[b] != NULL) {
-		physaddr = vph_p->phys_addr[b];
-		ok = 1;
-	}
-#else
 	if (l3->host_load[x3] != NULL) {
 		physaddr = l3->phys_addr[x3];
 		ok = 1;
 	}
-#endif
 #endif
 
 	if (!ok) {
@@ -725,14 +705,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef MODE32
 		index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
 #else
-#ifdef DYNTRANS_ALPHA
-		fatal("ALPHA! NO, REMOVE THIS!\n");
-#else
 		x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
 		x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
 		x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
 		    & mask3;
-#endif
 #endif
 
 		physaddr = paddr;
@@ -741,11 +717,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #ifdef MODE32
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] == NULL) {
 #else
-#ifdef DYNTRANS_ALPHA
-	if (vph_p->host_load[b] == NULL) {
-#else
 	if (l3->host_load[x3] == NULL) {
-#endif
 #endif
 		unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
 		    physaddr, MEM_READ);
@@ -756,12 +728,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			cpu->update_translation_table(cpu, cached_pc & ~q,
 			    host_page, TLB_CODE, physaddr & ~q);
 #ifndef MODE32
-#ifndef DYNTRANS_ALPHA
 			/*  Recalculate l2 and l3, since they might have
 			    changed now:  */
 			l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 			l3 = l2->l3[x2];
-#endif
 #endif
 		}
 	}
@@ -810,13 +780,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL)
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = ppp;
 #else
-#ifdef DYNTRANS_ALPHA
-	if (vph_p->host_load[b] != NULL)
-		vph_p->phys_page[b] = ppp;
-#else
 	if (l3->host_load[x3] != NULL)
 		l3->phys_page[x3] = ppp;
-#endif
 #endif
 
 #ifdef MODE32
@@ -870,23 +835,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	if (ppp != NULL)
 		goto have_it;
 #else
-#ifdef DYNTRANS_ALPHA
-	uint32_t a, b;
-	int kernel = 0;
-	struct alpha_vph_page *vph_p;
-	a = (cached_pc >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-	b = (cached_pc >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-	if ((cached_pc >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-		kernel = 1;
-	} else
-		vph_p = cpu->cd.alpha.vph_table0[a];
-	if (vph_p != cpu->cd.alpha.vph_default_page) {
-		ppp = vph_p->phys_page[b];
-		if (ppp != NULL)
-			goto have_it;
-	}
-#else
 	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
 	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
 	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
@@ -902,7 +850,6 @@ void DYNTRANS_PC_TO_POINTERS_FUNC(struct cpu *cpu)
 	ppp = l3->phys_page[x3];
 	if (ppp != NULL)
 		goto have_it;
-#endif
 #endif
 
 	DYNTRANS_PC_TO_POINTERS_GENERIC(cpu);
@@ -990,49 +937,6 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 		cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[index] = 0;
 	}
 #else
-	/*  2-level:  */
-#ifdef DYNTRANS_ALPHA
-	struct alpha_vph_page *vph_p;
-	uint32_t a, b;
-	int kernel = 0;
-
-	a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-	b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-	if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-		kernel = 1;
-	} else
-		vph_p = cpu->cd.alpha.vph_table0[a];
-
-	if (vph_p == cpu->cd.alpha.vph_default_page) {
-		fatal("alpha_invalidate_tlb_entry(): huh? Problem 1.\n");
-		exit(1);
-	}
-
-	if (flags & JUST_MARK_AS_NON_WRITABLE) {
-		vph_p->host_store[b] = NULL;
-		return;
-	}
-	vph_p->host_load[b] = NULL;
-	vph_p->host_store[b] = NULL;
-	vph_p->phys_addr[b] = 0;
-	vph_p->phys_page[b] = NULL;
-	vph_p->refcount --;
-	if (vph_p->refcount < 0) {
-		fatal("alpha_invalidate_tlb_entry(): huh? Problem 2.\n");
-		exit(1);
-	}
-	if (vph_p->refcount == 0) {
-		vph_p->next = cpu->cd.alpha.vph_next_free_page;
-		cpu->cd.alpha.vph_next_free_page = vph_p;
-		if (kernel)
-			cpu->cd.alpha.vph_table0_kernel[a] =
-			    cpu->cd.alpha.vph_default_page;
-		else
-			cpu->cd.alpha.vph_table0[a] =
-			    cpu->cd.alpha.vph_default_page;
-	}
-#else	/*  !DYNTRANS_ALPHA  */
 	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
 	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
 	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
@@ -1082,7 +986,6 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 			    cpu->cd.DYNTRANS_ARCH.l2_64_dummy;
 		}
 	}
-#endif	/*  !DYNTRANS_ALPHA  */
 #endif
 }
 #endif
@@ -1304,25 +1207,6 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 				cpu->cd.DYNTRANS_ARCH.phystranslation[
 				    index >> 5] &= ~ (1 << (index & 31));
 #else
-				/*  2-level:  */
-#ifdef DYNTRANS_ALPHA
-				struct alpha_vph_page *vph_p;
-				uint32_t a, b;
-				int kernel = 0;
-
-				a = (vaddr_page >> ALPHA_LEVEL0_SHIFT)
-				    & (ALPHA_LEVEL0 - 1);
-				b = (vaddr_page >> ALPHA_LEVEL1_SHIFT)
-				    & (ALPHA_LEVEL1 - 1);
-				if ((vaddr_page >> ALPHA_TOPSHIFT) ==
-				    ALPHA_TOP_KERNEL) {
-					vph_p = cpu->cd.alpha.
-					    vph_table0_kernel[a];
-					kernel = 1;
-				} else
-					vph_p = cpu->cd.alpha.vph_table0[a];
-				vph_p->phys_page[b] = NULL;
-#else	/*  !DYNTRANS_ALPHA  */
 				const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
 				const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
 				const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
@@ -1338,7 +1222,6 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 				l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 				l3 = l2->l3[x2];
 				l3->phys_page[x3] = NULL;
-#endif	/*  !DYNTRANS_ALPHA  */
 #endif
 			}
 		}
@@ -1362,14 +1245,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #endif
 	int found, r, lowest_index, start, end, useraccess = 0;
 
-#ifdef DYNTRANS_ALPHA
-	uint32_t a, b;
-	struct alpha_vph_page *vph_p;
-	int kernel = 0;
-	/*  fatal("update_translation_table(): v=0x%"PRIx64", h=%p w=%i"
-	    " p=0x%"PRIx64"\n", (uint64_t)vaddr_page, host_page, writeflag,
-	    (uint64_t)paddr_page);  */
-#else
 #ifdef MODE32
 	uint32_t index;
 	vaddr_page &= 0xffffffffULL;
@@ -1387,7 +1262,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	/*  fatal("update_translation_table(): v=0x%"PRIx64", h=%p w=%i"
 	    " p=0x%"PRIx64"\n", (uint64_t)vaddr_page, host_page, writeflag,
 	    (uint64_t)paddr_page);  */
-#endif
 #endif
 
 	if (writeflag & MEMORY_USER_ACCESS) {
@@ -1468,42 +1342,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #endif
 
 		/*  Add the new translation to the table:  */
-#ifdef DYNTRANS_ALPHA
-		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-			vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-			kernel = 1;
-		} else
-			vph_p = cpu->cd.alpha.vph_table0[a];
-		if (vph_p == cpu->cd.alpha.vph_default_page) {
-			if (cpu->cd.alpha.vph_next_free_page != NULL) {
-				if (kernel)
-					vph_p = cpu->cd.alpha.vph_table0_kernel
-					    [a] = cpu->cd.alpha.
-					    vph_next_free_page;
-				else
-					vph_p = cpu->cd.alpha.vph_table0[a] =
-					    cpu->cd.alpha.vph_next_free_page;
-				cpu->cd.alpha.vph_next_free_page = vph_p->next;
-			} else {
-				if (kernel)
-					vph_p = cpu->cd.alpha.vph_table0_kernel
-					    [a] = malloc(sizeof(struct
-					    alpha_vph_page));
-				else
-					vph_p = cpu->cd.alpha.vph_table0[a] =
-					    malloc(sizeof(struct
-					    alpha_vph_page));
-				memset(vph_p, 0, sizeof(struct alpha_vph_page));
-			}
-		}
-		vph_p->refcount ++;
-		vph_p->host_load[b] = host_page;
-		vph_p->host_store[b] = writeflag? host_page : NULL;
-		vph_p->phys_addr[b] = paddr_page;
-		vph_p->phys_page[b] = NULL;
-#else
 #ifdef MODE32
 		index = DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 		cpu->cd.DYNTRANS_ARCH.host_load[index] = host_page;
@@ -1556,7 +1394,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		l3->vaddr_to_tlbindex[x3] = r + 1;
 		l3->refcount ++;
 #endif	/* !MODE32  */
-#endif	/*  !ALPHA  */
 	} else {
 		/*
 		 *  The translation was already in the TLB.
@@ -1572,27 +1409,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 1;
 		if (writeflag & MEM_DOWNGRADE)
 			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 0;
-#ifdef DYNTRANS_ALPHA
-		a = (vaddr_page >> ALPHA_LEVEL0_SHIFT) & (ALPHA_LEVEL0 - 1);
-		b = (vaddr_page >> ALPHA_LEVEL1_SHIFT) & (ALPHA_LEVEL1 - 1);
-		if ((vaddr_page >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-			vph_p = cpu->cd.alpha.vph_table0_kernel[a];
-			kernel = 1;
-		} else
-			vph_p = cpu->cd.alpha.vph_table0[a];
-		vph_p->phys_page[b] = NULL;
-		if (vph_p->phys_addr[b] == paddr_page) {
-			if (writeflag & MEM_WRITE)
-				vph_p->host_store[b] = host_page;
-			if (writeflag & MEM_DOWNGRADE)
-				vph_p->host_store[b] = NULL;
-		} else {
-			/*  Change the entire physical/host mapping:  */
-			vph_p->host_load[b] = host_page;
-			vph_p->host_store[b] = writeflag? host_page : NULL;
-			vph_p->phys_addr[b] = paddr_page;
-		}
-#else
 #ifdef MODE32
 		index = DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
@@ -1634,7 +1450,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			l3->phys_addr[x3] = paddr_page;
 		}
 #endif	/*  !MODE32  */
-#endif	/*  !ALPHA  */
 	}
 }
 #endif	/*  DYNTRANS_UPDATE_TRANSLATION_TABLE  */

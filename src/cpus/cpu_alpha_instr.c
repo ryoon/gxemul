@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.9 2006-03-30 19:36:04 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.10 2006-04-22 18:28:43 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -749,7 +749,6 @@ X(to_be_translated)
 {
 	uint64_t addr, low_pc;
 	uint32_t iword;
-	struct alpha_vph_page *vph_p;
 	unsigned char *page;
 	unsigned char ib[4];
 	void (*samepage_function)(struct cpu *, struct alpha_instr_call *);
@@ -765,16 +764,18 @@ X(to_be_translated)
 	cpu->pc = addr;
 
 	/*  Read the instruction word from memory:  */
-	if ((addr >> ALPHA_TOPSHIFT) == 0) {
-		vph_p = cpu->cd.alpha.vph_table0[(addr >>
-		    ALPHA_LEVEL0_SHIFT) & 8191];
-		page = vph_p->host_load[(addr >> ALPHA_LEVEL1_SHIFT) & 8191];
-	} else if ((addr >> ALPHA_TOPSHIFT) == ALPHA_TOP_KERNEL) {
-		vph_p = cpu->cd.alpha.vph_table0_kernel[(addr >>
-		    ALPHA_LEVEL0_SHIFT) & 8191];
-		page = vph_p->host_load[(addr >> ALPHA_LEVEL1_SHIFT) & 8191];
-	} else
-		page = NULL;
+	{
+		const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+		const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+		const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+		uint32_t x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
+		uint32_t x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+		uint32_t x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-
+		    DYNTRANS_L3N)) & mask3;
+		struct DYNTRANS_L2_64_TABLE *l2 = cpu->cd.alpha.l1_64[x1];
+		struct DYNTRANS_L3_64_TABLE *l3 = l2->l3[x2];
+		page = l3->host_load[x3];
+	}
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
@@ -788,14 +789,9 @@ X(to_be_translated)
 		}
 	}
 
-#ifdef HOST_LITTLE_ENDIAN
-	iword = *((uint32_t *)&ib[0]);
-#else
-	iword = ib[0] + (ib[1]<<8) + (ib[2]<<16) + (ib[3]<<24);
-#endif
-
-	/*  fatal("{ Alpha: translating pc=0x%016"PRIx64" iword=0x%08"PRIx32
-	    " }\n", (uint64_t) addr, (uint32_t) iword);  */
+	/*  Alpha instruction words are always little-endian. Convert
+	    to host order:  */
+	iword = LE32_TO_HOST( *((uint32_t *)&ib[0]) );
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD

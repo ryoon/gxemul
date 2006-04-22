@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.34 2006-04-08 16:47:18 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.35 2006-04-22 18:28:43 debug Exp $
  */
 
 #include "misc.h"
@@ -74,30 +74,6 @@ DYNTRANS_MISC_DECLARATIONS(alpha,ALPHA,uint64_t)
 DYNTRANS_MISC64_DECLARATIONS(alpha,ALPHA,uint8_t)
 
 
-/*
- *  Virtual->physical->host page entry:
- *
- *	13 + 13 + 13 bits = 39 bits (should be enough for most userspace
- *	applications)
- *
- *  There is also an additional check for kernel space addresses.
- */
-#define	ALPHA_TOPSHIFT			39
-#define	ALPHA_TOP_KERNEL		0x1fffff8
-#define	ALPHA_LEVEL0_SHIFT		26
-#define	ALPHA_LEVEL0			8192
-#define	ALPHA_LEVEL1_SHIFT		13
-#define	ALPHA_LEVEL1			8192
-struct alpha_vph_page {
-	void		*host_load[ALPHA_LEVEL1];
-	void		*host_store[ALPHA_LEVEL1];
-	uint64_t	phys_addr[ALPHA_LEVEL1];
-	struct alpha_tc_physpage *phys_page[ALPHA_LEVEL1];
-	int		refcount;
-	struct alpha_vph_page	*next;	/*  Freelist, used if refcount = 0.  */
-};
-
-
 struct alpha_cpu {
 	/*
 	 *  General Purpose Registers:
@@ -117,22 +93,11 @@ struct alpha_cpu {
 
 
 	/*
-	 *  Instruction translation cache:
+	 *  Instruction translation cache and Virtual->Physical->Host
+	 *  address translation:
 	 */
 	DYNTRANS_ITC(alpha)
-
-	/*
-	 *  Hardcoded Alpha virtual -> physical -> host address translation:
-	 *  TODO: Remove this when the generalized stuff works!
-	 */
 	VPH_TLBS(alpha,ALPHA)
-	struct alpha_vph_page	*vph_default_page;
-	struct alpha_vph_page	*vph_next_free_page;
-	struct alpha_vph_table	*vph_next_free_table;
-	struct alpha_vph_page	*vph_table0[ALPHA_LEVEL0];
-	struct alpha_vph_page	*vph_table0_kernel[ALPHA_LEVEL0];
-
-	/*  Generalized 64-bit vph:  */
 	VPH64(alpha,ALPHA,uint8_t)
 };
 

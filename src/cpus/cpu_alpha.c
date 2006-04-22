@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.12 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.13 2006-04-22 18:28:43 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -64,8 +64,6 @@ static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES;
 int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
-	int i;
-
 	if (strcasecmp(cpu_type_name, "Alpha") != 0)
 		return 0;
 
@@ -80,18 +78,6 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
-
-	/*  Create the default virtual->physical->host translation:  */
-	cpu->cd.alpha.vph_default_page = malloc(sizeof(struct alpha_vph_page));
-	if (cpu->cd.alpha.vph_default_page == NULL) {
-		fprintf(stderr, "out of memory in alpha_cpu_new()\n");
-		exit(1);
-	}
-	memset(cpu->cd.alpha.vph_default_page, 0,
-	    sizeof(struct alpha_vph_page));
-	for (i=0; i<ALPHA_LEVEL0; i++)
-		cpu->cd.alpha.vph_table0[i] = cpu->cd.alpha.vph_table0_kernel[i]
-		    = cpu->cd.alpha.vph_default_page;
 
 	cpu->cd.alpha.r[ALPHA_SP] = 0xfffffc000000ff00ULL;
 

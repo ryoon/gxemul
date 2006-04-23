@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1197 2006-04-22 21:17:47 debug Exp $
+$Id: HISTORY,v 1.1198 2006-04-23 10:47:57 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2676,3 +2676,6 @@ Changelog for GXemul:
 		Finally removed the old Alpha-specific virtual memory code,
 		and replaced it with the generic 64-bit version.
 		Beginning to add disassembly support for SPECIAL3 MIPS opcodes.
+20060423	Continuing on the delay-slot-across-page-boundary issue;
+		adding an end_of_page2 ic slot (like I had planned before, but
+		had removed for some reason).

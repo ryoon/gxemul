@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.86 2006-04-22 18:28:43 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.87 2006-04-23 10:47:57 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -126,8 +126,11 @@ a &= 0x03ffffff;
 /*  The normal instruction execution core:  */
 #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
 
+/*  static long long nr_of_I_calls = 0;  */
+
 /*  Temporary hack for finding NULL bugs:  */
 /*  #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; 			\
+		nr_of_I_calls ++;					\
 		if (ic->f == NULL) {					\
 			int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - \
 			    (size_t)cpu->cd.DYNTRANS_ARCH.cur_ic_page) / \
@@ -136,6 +139,11 @@ a &= 0x03ffffff;
 			    DYNTRANS_INSTR_ALIGNMENT_SHIFT);		\
 			cpu->pc += (low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT);\
 			printf("Crash at %016"PRIx64"\n", cpu->pc);	\
+			printf("nr of I calls: %lli\n", nr_of_I_calls);	\
+			printf("Next ic = %p\n", cpu->cd.		\
+				DYNTRANS_ARCH.next_ic);			\
+			printf("cur ic page = %p\n", cpu->cd.		\
+				DYNTRANS_ARCH.cur_ic_page);		\
 			cpu->running = 0;				\
 			return 0;					\
 		}							\
@@ -556,6 +564,13 @@ static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
 static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
 #endif
 
+#ifdef DYNTRANS_DELAYSLOT
+static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
+#ifdef DYNTRANS_DUALMODE_32
+static void instr32(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
+#endif
+#endif
+
 /*
  *  XXX_tc_allocate_default_page():
  *
@@ -586,24 +601,24 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 #endif
 	}
 
+	/*  End-of-page:  */
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].f =
 #ifdef DYNTRANS_DUALMODE_32
 	    cpu->is_32bit? instr32(end_of_page) :
 #endif
 	    instr(end_of_page);
+
 #ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].arg[0] = 0;
 #endif
 
-/*  TODO:  */
-#if 0
+	/*  End-of-page-2, for delay-slot architectures:  */
 #ifdef DYNTRANS_DELAYSLOT
 	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 1].f =
 #ifdef DYNTRANS_DUALMODE_32
 	    cpu->is_32bit? instr32(end_of_page2) :
 #endif
 	    instr(end_of_page2);
-#endif
 #endif
 
 	cpu->translation_cache_cur_ofs += sizeof(struct DYNTRANS_TC_PHYSPAGE);

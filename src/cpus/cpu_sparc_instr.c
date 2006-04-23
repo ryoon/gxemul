@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.10 2006-04-16 23:10:16 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.11 2006-04-23 10:47:57 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -107,10 +107,32 @@ X(end_of_page)
 	    SPARC_INSTR_ALIGNMENT_SHIFT);
 
 	/*  Find the new physical page and update the translation pointers:  */
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	quick_pc_to_pointers(cpu);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
+}
+
+
+X(end_of_page2)
+{
+	/*  Synchronize PC on the _second_ instruction on the next page:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	/*  This doesn't count as an executed instruction.  */
+	cpu->n_translated_instrs --;
+
+	quick_pc_to_pointers(cpu);
+
+	if (cpu->delay_slot == NOT_DELAYED)
+		return;
+
+	fatal("end_of_page2: fatal error, we're in a delay slot\n");
+	exit(1);
 }
 
 

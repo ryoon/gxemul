@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.55 2006-04-22 21:17:47 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.56 2006-04-23 10:47:57 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1976,6 +1976,28 @@ X(end_of_page)
 	/*  Find the physpage etc of the instruction in the delay slot
 	    (or, if there was an exception, the exception handler):  */
 	quick_pc_to_pointers(cpu);
+}
+
+
+X(end_of_page2)
+{
+	/*  Synchronize PC on the _second_ instruction on the next page:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	/*  This doesn't count as an executed instruction.  */
+	cpu->n_translated_instrs --;
+
+	quick_pc_to_pointers(cpu);
+
+	if (cpu->delay_slot == NOT_DELAYED)
+		return;
+
+	fatal("end_of_page2: fatal error, we're in a delay slot\n");
+	exit(1);
 }
 
 

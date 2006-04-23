@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.73 2006-04-19 19:39:41 debug Exp $
+ *  $Id: cpu.h,v 1.74 2006-04-23 10:47:57 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -43,6 +43,17 @@
 
 /*
  *  Dyntrans misc declarations, used throughout the dyntrans code.
+ *
+ *  Note that there is place for all instruction calls within a page,
+ *  and then 2 more. The first one of these "extra" instruction slots is
+ *  the end-of-page slot. It transfers control to the first instruction
+ *  slot on the next (virtual) page.
+ *
+ *  The second of these extra instruction slots is an additional 
+ *  end-of-page slot for delay-slot architectures. On e.g. MIPS, a branch
+ *  instruction can "nullify" (skip) the delay-slot. If the end-of-page
+ *  slot is skipped, then we end up one step after that. That's where the
+ *  end_of_page2 slot is. :)
  */
 #define DYNTRANS_MISC_DECLARATIONS(arch,ARCH,addrtype)  struct \
 	arch ## _instr_call {					\
@@ -52,7 +63,7 @@
 									\
 	/*  Translation cache struct for each physical page:  */	\
 	struct arch ## _tc_physpage {					\
-		struct arch ## _instr_call ics[ARCH ## _IC_ENTRIES_PER_PAGE+1];\
+		struct arch ## _instr_call ics[ARCH ## _IC_ENTRIES_PER_PAGE+2];\
 		uint32_t	next_ofs;	/*  (0 for end of chain)  */ \
 		int		flags;					\
 		addrtype	physaddr;				\

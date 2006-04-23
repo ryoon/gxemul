@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.38 2006-04-23 12:45:54 debug Exp $
+ *  $Id: cpu_mips.c,v 1.39 2006-04-23 15:20:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1342,6 +1342,15 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 			switch (special6) {
 
+			case MMI_MADD:
+			case MMI_MADDU:
+				if (rd != MIPS_GPR_ZERO) {
+					debug("%s,", regname(cpu->machine, rd));
+				}
+				debug("%s", regname(cpu->machine, rs));
+				debug(",%s", regname(cpu->machine, rt));
+				break;
+
 			case MMI_MMI0:
 				debug("%s\t", mmi0_names[c790mmifunc]);
 				switch (c790mmifunc) {
@@ -1364,7 +1373,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		case SPECIAL2_MSUB:
 		case SPECIAL2_MSUBU:
 			if (rd != MIPS_GPR_ZERO) {
-				debug("%s,", regname(cpu->machine, rd));
+				debug("WEIRD_NONZERO_RD(%s),",
+				    regname(cpu->machine, rd));
 			}
 			debug("%s", regname(cpu->machine, rs));
 			debug(",%s", regname(cpu->machine, rt));

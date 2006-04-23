@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.58 2006-04-23 12:45:54 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.59 2006-04-23 15:20:31 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1191,9 +1191,18 @@ X(madd)
 	hilo += sum;
 	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
 }
+X(madd_rd)
+{
+	int64_t rs = (int32_t)reg(ic->arg[0]), rt = (int32_t)reg(ic->arg[1]);
+	int64_t sum = rs * rt,
+	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
+	hilo += sum;
+	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
+	reg(ic->arg[2]) = (int32_t)hilo;
+}
 X(msub)
 {
-	int64_t rs = (uint32_t)reg(ic->arg[0]), rt = (uint32_t)reg(ic->arg[1]);
+	int64_t rs = (int32_t)reg(ic->arg[0]), rt = (int32_t)reg(ic->arg[1]);
 	int64_t sum = rs * rt,
 	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
 	hilo -= sum;
@@ -1201,11 +1210,20 @@ X(msub)
 }
 X(maddu)
 {
-	int64_t rs = (int32_t)reg(ic->arg[0]), rt = (int32_t)reg(ic->arg[1]);
+	int64_t rs = (uint32_t)reg(ic->arg[0]), rt = (uint32_t)reg(ic->arg[1]);
 	int64_t sum = rs * rt,
 	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
 	hilo += sum;
 	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
+}
+X(maddu_rd)
+{
+	int64_t rs = (uint32_t)reg(ic->arg[0]), rt = (uint32_t)reg(ic->arg[1]);
+	int64_t sum = rs * rt,
+	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
+	hilo += sum;
+	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
+	reg(ic->arg[2]) = (int32_t)hilo;
 }
 X(msubu)
 {
@@ -2667,6 +2685,27 @@ X(to_be_translated)
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 			/*  R5900, TX79/C790, have MMI instead of SPECIAL2:  */
 			switch (s6) {
+
+			case MMI_MADD:
+				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
+				ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+				if (rd == MIPS_GPR_ZERO)
+					ic->f = instr(madd);
+				else
+					ic->f = instr(madd_rd);
+				break;
+
+			case MMI_MADDU:
+				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
+				ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
+				if (rd == MIPS_GPR_ZERO)
+					ic->f = instr(maddu);
+				else
+					ic->f = instr(maddu_rd);
+				break;
+
 			default:goto bad;
 			}
 			break;

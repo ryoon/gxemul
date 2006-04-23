@@ -1,27 +1,45 @@
-$Id: TODO,v 1.249 2006-04-22 13:59:57 debug Exp $
+$Id: TODO,v 1.250 2006-04-23 08:39:21 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-The configure script:
-	x)  Remove the Cache option, since it is broken anyway.
-	x)  Remove the delay option, since it isn't really used. Turn
-	    into a runtime command line option? Or enable this together
-	    with cache simulation?
+--------------
+
+What I want for the 0.4.0 release: (optimistic :-)
+
+	x)  MIPS dyntrans working at least as well as the old mode did.
+	x)  Complete removal of bintrans.  :-]
+
+If time permits:
+
+	x)  Removal of the cache and delay command line options.
+	x)  Removal of the alignment check functionality.
+	x)  Removal of other legacy command line options?
+	x)  Statistics gathering should be well-defined (physical vs
+	    virtual PC, etc).
+	x)  Some more GDB support? Breakpoints would be nice.
+	x)  More refactoring of the debugger (expression evaluator)?
+	x)  Possibly more work on the Alpha emulation mode.
+	x)  Begin on the cache simulation framework.
+
+--------------
+
 
 MIPS:
-	x)  SPECIAL3 opcode; separate "sq" instruction from most other
-	    ISAs. implement both in dyntrans and interpretation; disable
-	    in bintrans (if not yet done).
-	x)  Go through the entire MIPS64 ISA vol 2 :-)
-	x)  Old MIPS -> dyntrans!
-		o)  The first tlbwr isn't random! (Can be below wired!)
-		o)  Implement all instructions!
-		o)  Count/compare interrupt, for R4000 and up.
-		o)  SMP stuff
-		o)  Make sure that all guest OSes that worked with the old
-		    system still work with dyntrans!
-		o)  Refactor code for performance and 
-		    readability/maintainability.
+	o)  Dyntrans: R2000/R3000 caches don't quite work yet (NetBSD/pmax,
+	    Ultrix etc).
+	o)  Dyntrans: The first tlbwr isn't random! (Can be below wired!)
+	o)  Dyntrans: Count register updates, and compare interrupts.
+	o)  Dyntrans: SMP correctness
+	o)  Dyntrans: Make sure that all guest OSes work!
+	o)  Refactor code for performance and readability/maintainability.
+	o)  Go through the entire MIPS64 ISA vol 2 :-)
+	o)  R4000 and others:
+		x)  watchhi/watchlo exceptions, and other exception
+		    handling details
+	o)  R10000 and others:  (R12000, R14000 ?)
+		x)  memory space, exceptions, ...
+		x)  use cop0 framemask for tlb lookups
+		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
@@ -31,9 +49,6 @@ Dyntrans:
 	    line option?), multiple different types? (virtual pc, physical pc)
 	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
-	x)  PPC optimizations; instr combs
-	x)  Alpha: virtual memory management
-	x)  PPC: 64-bit stuff
 	x)  H8?
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  true recompilation backend? think carefully about this,
@@ -41,6 +56,10 @@ Dyntrans:
 	x)  Remove the dyntrans_alignment_check functionality; although
 	    it gives slightly higher peformance sometimes, it increases
 	    the complexity of the code too much!
+
+Alpha:
+	o)  Virtual memory (tlbs etc)
+	o)  Get {NetBSD,OpenBSD,Linux}/alpha booting.
 
 SPARC:
 	o)  Add all registers (floating point, control regs etc)
@@ -55,13 +74,27 @@ Debugger:
 	o)  Try to make the debugger more modular and, if possible, reentrant!
 	o)  Remove the emul command? (But show network info if showing
 		machines?)
-	o)  Generalize the expression evaluator. (debugger_expr.c)
+	o)  Generalize the expression evaluator. (debugger_expr.c?)
 	o)  Place commands in a separate file, the "main engine" in a
 	    separate file, etc.  (debugger_cmds.c)
 	o)  see src/debugger.c for more
 
+The configure script:
+	x)  Remove the Cache option, since it is broken anyway.
+	x)  Remove the delay option, since it isn't really used. Turn
+	    into a runtime command line option? Or enable this together
+	    with cache simulation?
 
-Algor:	PCI and ISA and LOCAL interrupts! --> wdc could start working
+POWER/PowerPC:
+	x)  PPC optimizations; instr combs
+	x)  64-bit stuff
+	x)  find and fix the bug which causes NetBSD/macppc to fail after
+	    an install!
+	x)  macppc: adb controller; keyboard (for framebuffer mode)
+	x)  make OpenBSD/macppc work (PCI controller stuff)
+
+Algor:
+	PCI and ISA and LOCAL interrupts! --> wdc could start working
 	Add interrupt controller in dev_algor.c.
 
 ARM:
@@ -130,11 +163,6 @@ PCI:
 	x)  generalize the interrupt routing stuff (lines etc). this should
 	    be per machine? or per bus, that's better
 
-MacPPC:
-	x)  dev_zs / interrupts?
-	x)  adb controller; keyboard
-	x)  make OpenBSD/macppc work (PCI controller stuff)
-
 Network layer:
 	o)  DHCP (for Debian and BSD installers :-)
 	o)  increase performance
@@ -196,51 +224,6 @@ Caches / memory hierarchies: (this is mostly MIPS-specific)
 	    faked like they are right now. When on, caches and
 	    memory latencies should be emulated as correctly as
 	    possible.
-
-MIPS CPU emulation:  (note: this is for the OLD mips stuff)
-	o)  i386 bintrans backend: movn etc, slt[u] for
-		64-bit mode, 64-bit shifts etc
-	o)  Instructions:
-		o)  All ISAs:
-			o)  Floating point exception handling, and
-				add more instructions.
-			o)  Finish the MIPS16 translator, and test it!
-			o)  MIPS ISA I, II, III, IV
-			o)  MIPS V (SIMD vector stuff?)
-			o)  MDMX  (MIPS Digital Media Extension)
-			o)  MIPS 3D
-			o)  MIPS MT (Multi-thread stuff) (What's this?)
-		o)  Warn about mis-used bit fields (ie bits that
-		    should be all zeroes, warn about if they are not)!
-		    Both for coprocessor registers and for instruction
-		    opcodes.
-		o)  the special2 stuff is a mess right now
-		o)  warn and/or cause exceptions for unimplemented
-		    instructions (depending on CPU type)
-	o)  R2000/R3000:
-		x)  R3000 "tri-byte stores". (What's this?)
-	o)  R4000 and others:
-		x)  watchhi/watchlo exceptions, and other exception
-		    handling details
-	o)  R10000 and others:  (R12000, R14000 ?)
-		x)  memory space, exceptions, ...
-		x)  use cop0 framemask for tlb lookups
-		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
-	o)  Implement load delays?  Warnings on interlocks.
-	o)  Implement all coprocessor 0 bits / functions.
-		x)  coproc 0 selectors! (R4000 ?)
-	o)  R4300 (nintendo64, no mmu?), R5900 (playstation2, weird
-		TLB/cache? 128-bit GPRs, new instructions),
-		4K (note: NOT R4000), 5K (note: NOT R5000),
-		R6000 (ISA II), R8000
-	o)  Multi-cpu stuff:
-		+)  Interrupt routing (ie devices vs mainbus, or
-		    connect each device to a fixed cpu)
-		+)  SGI's NUMA architecture. Study
-			x)  Linux sources
-			x)  SGI's specs on NUMA address space
-		+)  Ultrix?  NetBSD doesn't do SMP on MIPS yet :-(
-		+)  Own experiments with ycx2.
 
 File/disk/symbol handling:
 	o)  Better handling of tape files

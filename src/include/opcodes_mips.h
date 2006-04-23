@@ -28,9 +28,29 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.6 2006-04-23 07:47:29 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.7 2006-04-23 08:39:21 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
+ *
+ *  There are quite a number of different MIPS instruction sets, some are
+ *  subsets/supersets of others, but not all of them.
+ *
+ *  MIPS ISA I, II, III, IV:  Backward-compatible ISAs used in R2000/R3000
+ *                            (ISA I), R6000 (ISA II), R4000 (ISA III),
+ *                            and R5000/R1x000 (ISA IV).
+ *  MIPS ISA V:               Never implemented in hardware?
+ *
+ *  MIPS32 and MIPS64:        The "modern" version of the ISA.
+ *
+ *  MIPS16:                   A special encoding form for MIPS32/64 which
+ *                            uses 16-bit instruction words instead of
+ *                            32-bit.
+ *
+ *  MDMX:                     MIPS Digital Media Extension.
+ *
+ *  MIPS 3D:                  3D instructions.
+ *
+ *  MIPS MT:                  Multi-Threaded stuff.
  */
 
 

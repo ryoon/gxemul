@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.7 2006-04-23 08:39:21 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.8 2006-04-23 12:45:54 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  *
@@ -60,17 +60,17 @@
 	"special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz", 			/*  0x00 - 0x07  */	\
 	"addi", "addiu", "slti", "sltiu", "andi", "ori", "xori", "lui",			/*  0x08 - 0x0f  */	\
 	"cop0", "cop1", "cop2", "cop3", "beql", "bnel", "blezl", "bgtzl",		/*  0x10 - 0x17  */	\
-	"daddi", "daddiu", "ldl", "ldr", "special2", "opcode_1d", "lq" /*mdmx*/, "sq" /*special3*/,	/*  0x18 - 0x1f  */	\
+	"daddi", "daddiu", "ldl", "ldr", "special2", "hi6_1d", "lq" /*mdmx*/, "sq" /*special3*/,	/*  0x18 - 0x1f  */	\
 	"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",				/*  0x20 - 0x27  */	\
 	"sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",				/*  0x28 - 0x2f  */	\
 	"ll", "lwc1", "lwc2", "lwc3", "lld", "ldc1", "ldc2", "ld",			/*  0x30 - 0x37  */	\
 	"sc", "swc1", "swc2", "swc3", "scd", "sdc1", "sdc2", "sd"			/*  0x38 - 0x3f  */	}
 
 #define	REGIMM_NAMES	{	\
-	"bltz",      "bgez",  "bltzl", "bgezl", "regimm_04", "regimm_05", "regimm_06", "regimm_07",			/*  0x00 - 0x07  */	\
-	"tgei",      "tgeiu", "tlti", "tltiu", "teqi", "regimm_0d", "tnei", "regimm_0f",	/*  0x08 - 0x0f  */	\
-	"bltzal",    "bgezal", "bltzall", "bgezall", "regimm_14", "regimm_15", "regimm_16", "regimm_17",		/*  0x10 - 0x17  */	\
-	"regimm_18", "regimm_19", "regimm_1a", "regimm_1b", "regimm_1c", "regimm_1d", "regimm_1e", "synci" 	/*  0x18 - 0x1f  */ }
+	"bltz",      "bgez",      "bltzl",     "bgezl",     "regimm_04", "regimm_05", "regimm_06", "regimm_07",	/*  0x00 - 0x07  */	\
+	"tgei",      "tgeiu",     "tlti",      "tltiu",     "teqi",      "regimm_0d", "tnei",      "regimm_0f",	/*  0x08 - 0x0f  */	\
+	"bltzal",    "bgezal",    "bltzall",   "bgezall",   "regimm_14", "regimm_15", "regimm_16", "regimm_17",	/*  0x10 - 0x17  */	\
+	"regimm_18", "regimm_19", "regimm_1a", "regimm_1b", "regimm_1c", "regimm_1d", "regimm_1e", "synci"	/*  0x18 - 0x1f  */ }
 
 #define	SPECIAL_NAMES	{	\
 	"sll",  "special_01", "srl",  "sra",  "sllv",   "special_05", "srlv",   "srav",		/*  0x00 - 0x07  */	\
@@ -84,13 +84,36 @@
 
 #define	SPECIAL2_NAMES	{	\
 	"madd",        "maddu",       "mul",         "special2_03", "msub",        "msubu",       "special2_06", "special2_07", /*  0x00 - 0x07  */	\
-	"mov_xxx",     "pmfhi_lo",    "special2_0a", "special2_0b", "special2_0c", "special2_0d", "special2_0e", "special2_0f",	/*  0x08 - 0x0f  */	\
+	"special2_08", "special2_09", "special2_0a", "special2_0b", "special2_0c", "special2_0d", "special2_0e", "special2_0f",	/*  0x08 - 0x0f  */	\
 	"special2_10", "special2_11", "special2_12", "special2_13", "special2_14", "special2_15", "special2_16", "special2_17", /*  0x10 - 0x17  */	\
 	"special2_18", "special2_19", "special2_1a", "special2_1b", "special2_1c", "special2_1d", "special2_1e", "special2_1f",	/*  0x18 - 0x1f  */	\
 	"clz",         "clo",         "special2_22", "special2_23", "dclz",        "dclo",        "special2_26", "special2_27", /*  0x20 - 0x27  */	\
-	"special2_28", "por", 	      "special2_2a", "special2_2b", "special2_2c", "special2_2d", "special2_2e", "special2_2f",	/*  0x28 - 0x2f  */	\
+	"special2_28", "special2_29", "special2_2a", "special2_2b", "special2_2c", "special2_2d", "special2_2e", "special2_2f",	/*  0x28 - 0x2f  */	\
 	"special2_30", "special2_31", "special2_32", "special2_33", "special2_34", "special2_35", "special2_36", "special2_37", /*  0x30 - 0x37  */	\
 	"special2_38", "special2_39", "special2_3a", "special2_3b", "special2_3c", "special2_3d", "special2_3e", "sdbbp"	/*  0x38 - 0x3f  */  }
+
+/*  MMI (on R5900, TX79/C790) occupies the same space as SPECIAL2  */
+#define	MMI_NAMES	{	\
+	"madd",   "maddu",  "mmi_02", "mmi_03", "plzcw",  "mmi_05", "mmi_06", "mmi_07", /*  0x00 - 0x07  */	\
+	"mmi0",   "mmi2",   "mmi_0a", "mmi_0b", "mmi_0c", "mmi_0d", "mmi_0e", "mmi_0f",	/*  0x08 - 0x0f  */	\
+	"mfhi1",  "mthi1",  "mflo1",  "mtlo1",  "mmi_14", "mmi_15", "mmi_16", "mmi_17",	/*  0x10 - 0x17  */	\
+	"mult1",  "multu1", "div1",   "divu1",  "mmi_1c", "mmi_1d", "mmi_1e", "mmi_1f",	/*  0x18 - 0x1f  */	\
+	"madd1",  "maddu1", "mmi_22", "mmi_23", "mmi_24", "mmi_25", "mmi_26", "mmi_27",	/*  0x20 - 0x27  */	\
+	"mmi1",   "mmi3",   "mmi_2a", "mmi_2b", "mmi_2c", "mmi_2d", "mmi_2e", "mmi_2f",	/*  0x28 - 0x2f  */	\
+	"pmfhl",  "pmthl",  "mmi_32", "mmi_33", "psllh",  "mmi_35", "psrlh",  "psrah",	/*  0x30 - 0x37  */	\
+	"mmi_38", "mmi_39", "mmi_3a", "mmi_3b", "psllw",  "mmi_3d", "psrlw",  "psraw"	/*  0x38 - 0x3f  */	}
+
+#define	MMI0_NAMES	{	\
+	"paddw",   "psubw",   "pcgtw",   "pmaxw",	/*  0x00 - 0x03  */	\
+	"paddh",   "psubh",   "pcgth",   "pmaxh",	/*  0x04 - 0x07  */	\
+	"paddb",   "psubb",   "pcgtb",   "mmi0_0b",	/*  0x08 - 0x0b  */	\
+	"mmi0_0c", "mmi0_0d", "mmi0_0e", "mmi0_0f",	/*  0x0c - 0x0f  */	\
+	"paddsw",  "psubsw",  "pextlw",  "ppacw",	/*  0x10 - 0x13  */	\
+	"paddsh",  "psubsh",  "pextlh",  "ppach",	/*  0x14 - 0x17  */	\
+	"paddsb",  "psubsb",  "pextlb",  "ppacb",	/*  0x18 - 0x1b  */	\
+	"mmi0_1c", "mmi0_1d", "pext5",   "ppac5"	/*  0x1c - 0x1f  */	}
+
+/*  TODO: MMI1..MMI3 opcode maps  */
 
 #define	SPECIAL3_NAMES	{	\
 	"ext",         "dextm",       "dextu",       "dext",        "ins",         "dinsm",       "dinsu",       "dins",	/*  0x00 - 0x07  */	\
@@ -235,14 +258,39 @@
 #define	    SPECIAL2_MUL		    0x02    /*  000010  */  /*  MIPS32 (?) TODO  */
 #define	    SPECIAL2_MSUB		    0x04    /*  000100  */  /*  MIPS32 (?) TODO  */
 #define	    SPECIAL2_MSUBU		    0x05    /*  000001  */  /*  MIPS32 (?) TODO  */
-#define	    SPECIAL2_MOV_XXX		    0x08    /*  001000  */  /*  Undocumented R5900 ?  */
-#define	    SPECIAL2_PMFHI		    0x09    /*  001001  */  /*  Undocumented R5900 ?  */
 #define	    SPECIAL2_CLZ		    0x20    /*  100100  */  /*  MIPS32  */
 #define	    SPECIAL2_CLO		    0x21    /*  100101  */  /*  MIPS32  */
 #define	    SPECIAL2_DCLZ		    0x24    /*  100100  */  /*  MIPS64  */
 #define	    SPECIAL2_DCLO		    0x25    /*  100101  */  /*  MIPS64  */
-#define	    SPECIAL2_POR		    0x29    /*  101001  */  /*  Undocumented R5900 ?  */
 #define	    SPECIAL2_SDBBP		    0x3f    /*  111111  */  /*  EJTAG (?)  TODO  */
+/*  MMI (R5900, TX79/C790) occupies the same opcode space as SPECIAL2:  */
+#define	    MMI_MADD			    0x00
+#define	    MMI_MADDU			    0x01
+#define	    MMI_PLZCW			    0x04
+#define	    MMI_MMI0			    0x08
+#define	    MMI_MMI2			    0x09
+#define	    MMI_MFHI1			    0x10
+#define	    MMI_MTHI1			    0x11
+#define	    MMI_MFLO1			    0x12
+#define	    MMI_MTLO1			    0x13
+#define	    MMI_MULT1			    0x18
+#define	    MMI_MULTU1			    0x19
+#define	    MMI_DIV1			    0x1a
+#define	    MMI_DIVU1			    0x1b
+#define	    MMI_MADD1			    0x20
+#define	    MMI_MADDU1			    0x21
+#define	    MMI_MMI1			    0x28
+#define	    MMI_MMI3			    0x29
+#define	    MMI_PMFHL			    0x30
+#define	    MMI_PMTHL			    0x31
+#define	    MMI_PSLLH			    0x34
+#define	    MMI_PSRLH			    0x36
+#define	    MMI_PSRAH			    0x37
+#define	    MMI_PSLLW			    0x3c
+#define	    MMI_PSRLW			    0x3e
+#define	    MMI_PSRAW			    0x3f
+/*  TODO: MMI0..MMI3 opcodes  */
+
 /*	JALX (TODO)			0x1d	    011101  */
 #define	HI6_LQ_MDMX			0x1e	/*  011110  */	/*  lq on R5900, MDMX on others?  */
 /*  TODO: MDMX opcodes  */

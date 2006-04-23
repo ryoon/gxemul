@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.37 2006-04-22 19:50:47 debug Exp $
+ *  $Id: cpu_mips.c,v 1.38 2006-04-23 12:45:54 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -90,6 +90,8 @@ static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
+static char *mmi_names[] = MMI_NAMES;
+static char *mmi0_names[] = MMI0_NAMES;
 static char *special3_names[] = SPECIAL3_NAMES;
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
@@ -1262,6 +1264,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			debug(", data=TODO]");
 		}
 		break;
+
 	case HI6_J:
 	case HI6_JAL:
 		imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
@@ -1278,6 +1281,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		if (symbol != NULL)
 			debug("\t<%s>", symbol);
 		break;
+
 	case HI6_COP0:
 	case HI6_COP1:
 	case HI6_COP2:
@@ -1290,6 +1294,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		coproc_function(cpu, cpu->cd.mips.coproc[hi6 - HI6_COP0],
 		    hi6 - HI6_COP0, imm, 1, running);
 		return sizeof(instrword);
+
 	case HI6_CACHE:
 		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5); /*  base  */
 		copz = instr[2] & 31;
@@ -1321,6 +1326,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		    (long)cpu->cd.mips.coproc[0]->reg[COP0_TAGDATA_LO]);
 		debug(" ]");
 		break;
+
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
 		instrword = (instr[3] << 24) + (instr[2] << 16) +
@@ -1328,55 +1334,62 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 		rt = instr[2] & 31;
 		rd = (instr[1] >> 3) & 31;
-		if ((instrword & 0xfc0007ffULL) == 0x70000000) {
-			debug("madd\t%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-			debug(",%s", regname(cpu->machine, rt));
-		} else if (special6 == SPECIAL2_MUL) {
-			/*  Apparently used both on R5900 and MIPS32:  */
-			debug("mul\t%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-			debug(",%s", regname(cpu->machine, rt));
-		} else if (special6 == SPECIAL2_CLZ) {
-			debug("clz\t%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-		} else if (special6 == SPECIAL2_CLO) {
-			debug("clo\t%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-		} else if (special6 == SPECIAL2_DCLZ) {
-			debug("dclz\t%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-		} else if (special6 == SPECIAL2_DCLO) {
-			debug("dclo\t%s", regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-		} else if ((instrword & 0xffff07ffULL) == 0x70000209
-		    || (instrword & 0xffff07ffULL) == 0x70000249) {
-			if (instr[0] == 0x49) {
-				debug("pmflo\t%s", regname(cpu->machine, rd));
-				debug("  (rs=%s)", regname(cpu->machine, rs));
-			} else {
-				debug("pmfhi\t%s", regname(cpu->machine, rd));
-				debug("  (rs=%s)", regname(cpu->machine, rs));
+
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+			int c790mmifunc = (instrword >> 6) & 0x1f;
+			if (special6 != MMI_MMI0)
+				debug("%s\t", mmi_names[special6]);
+
+			switch (special6) {
+
+			case MMI_MMI0:
+				debug("%s\t", mmi0_names[c790mmifunc]);
+				switch (c790mmifunc) {
+				default:debug("(UNIMPLEMENTED)");
+				}
+				break;
+
+			default:debug("(UNIMPLEMENTED)");
 			}
-		} else if ((instrword & 0xfc1fffff) == 0x70000269 
-		    || (instrword & 0xfc1fffff) == 0x70000229) {
-			if (instr[0] == 0x69) {
-				debug("pmtlo\t%s", regname(cpu->machine, rs));
-			} else {
-				debug("pmthi\t%s", regname(cpu->machine, rs));
-			} 
-		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
-			debug("por\t%s", regname(cpu->machine, rd));
+			break;
+		}
+
+		/*  SPECIAL2:  */
+		debug("%s\t", special2_names[special6]);
+
+		switch (special6) {
+
+		case SPECIAL2_MADD:
+		case SPECIAL2_MADDU:
+		case SPECIAL2_MSUB:
+		case SPECIAL2_MSUBU:
+			if (rd != MIPS_GPR_ZERO) {
+				debug("%s,", regname(cpu->machine, rd));
+			}
+			debug("%s", regname(cpu->machine, rs));
+			debug(",%s", regname(cpu->machine, rt));
+			break;
+
+		case SPECIAL2_MUL:
+			/*  Apparently used both on R5900 and MIPS32:  */
+			debug("%s", regname(cpu->machine, rd));
 			debug(",%s", regname(cpu->machine, rs));
 			debug(",%s", regname(cpu->machine, rt));
-		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
-			debug("pextlw\t%s", regname(cpu->machine, rd));
+			break;
+
+		case SPECIAL2_CLZ:
+		case SPECIAL2_CLO:
+		case SPECIAL2_DCLZ:
+		case SPECIAL2_DCLO:
+			debug("%s", regname(cpu->machine, rd));
 			debug(",%s", regname(cpu->machine, rs));
-			debug(",%s", regname(cpu->machine, rt));
-		} else {
-			debug("%s\t= UNIMPLEMENTED", special2_names[special6]);
+			break;
+
+		default:
+			debug("(UNIMPLEMENTED)");
 		}
 		break;
+
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
 		switch (regimm5) {

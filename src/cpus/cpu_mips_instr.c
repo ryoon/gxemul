@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.57 2006-04-23 11:30:12 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.58 2006-04-23 12:45:54 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1174,6 +1174,47 @@ X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
 X(movn) { if (reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
 X(movz) { if (!reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
+
+
+/*
+ *  madd, maddu, msub, msubu: Multiply-and-add/subtract
+ *
+ *  arg[0] = ptr to rs
+ *  arg[1] = ptr to rt
+ *  arg[2] = ptr to rd (only used on R5900/TX79)
+ */
+X(madd)
+{
+	int64_t rs = (int32_t)reg(ic->arg[0]), rt = (int32_t)reg(ic->arg[1]);
+	int64_t sum = rs * rt,
+	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
+	hilo += sum;
+	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
+}
+X(msub)
+{
+	int64_t rs = (uint32_t)reg(ic->arg[0]), rt = (uint32_t)reg(ic->arg[1]);
+	int64_t sum = rs * rt,
+	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
+	hilo -= sum;
+	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
+}
+X(maddu)
+{
+	int64_t rs = (int32_t)reg(ic->arg[0]), rt = (int32_t)reg(ic->arg[1]);
+	int64_t sum = rs * rt,
+	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
+	hilo += sum;
+	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
+}
+X(msubu)
+{
+	int64_t rs = (uint32_t)reg(ic->arg[0]), rt = (uint32_t)reg(ic->arg[1]);
+	int64_t sum = rs * rt,
+	    hilo = (cpu->cd.mips.hi << 32) | (uint32_t)(cpu->cd.mips.lo);
+	hilo -= sum;
+	cpu->cd.mips.hi = (int32_t)(hilo>>32); cpu->cd.mips.lo = (int32_t)hilo;
+}
 
 
 /*
@@ -2623,7 +2664,30 @@ X(to_be_translated)
 		break;
 
 	case HI6_SPECIAL2:
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+			/*  R5900, TX79/C790, have MMI instead of SPECIAL2:  */
+			switch (s6) {
+			default:goto bad;
+			}
+			break;
+		}
+
+		/*  SPECIAL2:  */
 		switch (s6) {
+
+		case SPECIAL2_MADD:
+		case SPECIAL2_MADDU:
+		case SPECIAL2_MSUB:
+		case SPECIAL2_MSUBU:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
+			switch (s6) {
+			case SPECIAL2_MADD: ic->f = instr(madd); break;
+			case SPECIAL2_MADDU:ic->f = instr(maddu); break;
+			case SPECIAL2_MSUB: ic->f = instr(msub); break;
+			case SPECIAL2_MSUBU:ic->f = instr(msubu); break;
+			}
+			break;
 
 		case SPECIAL2_MUL:
 			ic->f = instr(mul);
@@ -2830,6 +2894,16 @@ X(to_be_translated)
 		switch (main_opcode) {
 		case HI6_LWC1: ic->f = instr(lwc1); break;
 		case HI6_SWC1: ic->f = instr(swc1); break;
+		}
+		break;
+
+	case HI6_LWC3:
+		if (cpu->cd.mips.cpu_type.isa_level >= 4) {
+			/*  PREF (prefetch); treat as nop for now:  */
+			ic->f = instr(nop);
+		} else {
+			fatal("TODO: lwc3 not implemented yet\n");
+			goto bad;
 		}
 		break;
 

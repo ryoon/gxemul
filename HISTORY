@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1199 2006-04-23 11:30:12 debug Exp $
+$Id: HISTORY,v 1.1200 2006-04-23 12:45:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2684,3 +2684,6 @@ Changelog for GXemul:
 		NetBSD/hpcmips and NetBSD/pmax (when running on an emulated
 		R4400) can now be installed and run. :-)  (Many bugs left
 		to fix, though.)
+		Adding more MIPS dyntrans instructions: madd[u], msub[u].
+		Cleaning up the SPECIAL2 vs R5900/TX79/C790 "MMI" opcode
+		maps somewhat (disassembly and dyntrans instruction decoding).

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.181 2006-04-08 16:47:17 debug Exp $
+$Id: RELEASE,v 1.182 2006-04-23 10:22:17 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -19,9 +19,18 @@ The documentation lists the machines and guest operating systems that can
 be regarded as "working" in GXemul. The best supported guest operating 
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
-The user-visible changes between release 0.3.8 and 0.4.0 include:
+The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 
-    o)	...
+    o)	The emulation of MIPS processors has been completely rewritten;
+	it now uses the same portable dynamic translation system as the
+	ARM and PowerPC emulation modes.
+
+	On Alpha and i386 hosts (and AMD64 hosts running in 32-bit mode),
+	which previously used binary translation into native code, this
+	release will most likely perform several times slower than 0.3.8.
+
+	On all other hosts (including AMD64 running in native 64-bit mode),
+	0.4.0 is a magnitude faster than 0.3.8, when emulating MIPS.
 
     o)	Rudimentary support for GDB remote serial protocol connections.
 	This means that you can run e.g. the Data Display Debugger, and

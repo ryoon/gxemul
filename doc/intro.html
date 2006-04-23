@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.78 2006-04-20 17:11:06 debug Exp $
+$Id: intro.html,v 1.79 2006-04-23 10:22:17 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -72,14 +72,11 @@ emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-<p>The processor architecture best emulated by GXemul is MIPS, but other
-architectures such as ARM and PowerPC are also partially emulated.
-
-<p>Devices and CPUs are not simulated with 100% accuracy. They are only
-``faked'' well enough to allow guest operating systems run without
-complaining too much. Still, the emulator could be of interest for
-academic research and experiments, such as when learning how to write
-operating system code.
+<p>Devices and processors (ARM, MIPS, PowerPC) are not simulated with 100% 
+accuracy. They are only ``faked'' well enough to allow guest operating 
+systems run without complaining too much. Still, the emulator could be of 
+interest for academic research and experiments, such as when learning how 
+to write operating system code.
 
 <p>The emulator is written in C, does not depend on third-party libraries,
 and should compile and run on most 64-bit and 32-bit Unix-like systems.
@@ -214,29 +211,7 @@ their original meaning in those xterm windows.
 <a name="cpus"></a>
 <h3>Which processor architectures does GXemul emulate?</h3>
 
-<ul>
-  <li><b>MIPS:</b><br>
-
-Emulation of R4000, which is a 64-bit CPU, was my initial goal.
-R2000/R3000-like CPUs (32-bit), R1x000, and generic MIPS32/MIPS64-style
-CPUs are also emulated, and are hopefully almost as stable as the R4000 
-emulation. Several guest operating systems for MIPS can run inside
-the emulator.
-
-  <p>
-  <li><b>ARM:</b><br>
-
-ARM emulation is good enough to run NetBSD/cats, OpenBSD/cats, and 
-NetBSD/evbarm. It has been somewhat tuned for speed, but doesn't support 
-all features of modern ARM processors.
-
-  <p>
-  <li><b>PowerPC:</b><br>
-
-PowerPC emulation is still in its beginning stages, but good enough
-to install and run NetBSD/prep 2.1.
-
-</ul>
+TODO: MIPS, ARM, PowerPC.
 
 
 

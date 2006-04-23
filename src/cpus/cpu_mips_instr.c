@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.56 2006-04-23 10:47:57 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.57 2006-04-23 11:30:12 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1344,7 +1344,6 @@ X(mtc0)
 
 
 /*  TODO: fix/remove these!  */
-cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 
@@ -1368,7 +1367,6 @@ X(dmtc0)
 	    (uint64_t *)ic->arg[0], 1, select);
 
 /*  TODO: fix/remove these!  */
-cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 X(cfc1)
@@ -1402,6 +1400,20 @@ X(ctc1)
 	/*  TODO: exceptions if writing to coproc1 reg 31!  */
 
 	reg(ic->arg[1]) = reg(ic->arg[0]);
+}
+
+
+/*
+ *  cop1_slow:  Fallback to legacy cop1 code. (Slow, but it should work.)
+ */
+X(cop1_slow)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	coproc_function(cpu, cpu->cd.mips.coproc[1], 1, ic->arg[0], 0, 1);
 }
 
 
@@ -2585,6 +2597,7 @@ X(to_be_translated)
 
 	case HI6_COP1:
 		/*  rs contains the coprocessor opcode!  */
+#if 0
 		switch (rs) {
 		case COPz_CFCz:
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
@@ -2603,6 +2616,10 @@ X(to_be_translated)
 		default:fatal("UNIMPLEMENTED cop1 (rs = %i)\n", rs);
 			goto bad;
 		}
+#else
+		ic->f = instr(cop1_slow);
+		ic->arg[0] = (uint32_t)iword & ((1 << 26) - 1);
+#endif
 		break;
 
 	case HI6_SPECIAL2:

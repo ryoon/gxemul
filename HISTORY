@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1198 2006-04-23 10:47:57 debug Exp $
+$Id: HISTORY,v 1.1199 2006-04-23 11:30:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2679,3 +2679,8 @@ Changelog for GXemul:
 20060423	Continuing on the delay-slot-across-page-boundary issue;
 		adding an end_of_page2 ic slot (like I had planned before, but
 		had removed for some reason).
+		Adding a quick-and-dirty fallback to legacy coprocessor 1
+		code (i.e. skipping dyntrans implementation for now).
+		NetBSD/hpcmips and NetBSD/pmax (when running on an emulated
+		R4400) can now be installed and run. :-)  (Many bugs left
+		to fix, though.)

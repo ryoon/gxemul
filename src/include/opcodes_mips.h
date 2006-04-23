@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.5 2006-04-22 19:50:48 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.6 2006-04-23 07:47:29 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  */
@@ -40,7 +40,7 @@
 	"special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz", 			/*  0x00 - 0x07  */	\
 	"addi", "addiu", "slti", "sltiu", "andi", "ori", "xori", "lui",			/*  0x08 - 0x0f  */	\
 	"cop0", "cop1", "cop2", "cop3", "beql", "bnel", "blezl", "bgtzl",		/*  0x10 - 0x17  */	\
-	"daddi", "daddiu", "ldl", "ldr", "special2", "opcode_1d", "lq"/*mdmx*/, "sq"/*special3*/,	/*  0x18 - 0x1f  */	\
+	"daddi", "daddiu", "ldl", "ldr", "special2", "opcode_1d", "lq" /*mdmx*/, "sq" /*special3*/,	/*  0x18 - 0x1f  */	\
 	"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",				/*  0x20 - 0x27  */	\
 	"sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",				/*  0x28 - 0x2f  */	\
 	"ll", "lwc1", "lwc2", "lwc3", "lld", "ldc1", "ldc2", "ld",			/*  0x30 - 0x37  */	\

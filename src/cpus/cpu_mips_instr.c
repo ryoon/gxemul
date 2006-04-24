@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.60 2006-04-24 05:12:55 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.61 2006-04-24 05:14:53 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2685,6 +2685,13 @@ X(to_be_translated)
 
 			default:goto bad;
 			}
+			break;
+		}
+
+		/*  TODO: is this correct? Or are there other non-MIPS32/64
+		    MIPS processors that have support for SPECIAL2 opcodes?  */
+		if (cpu->cd.mips.cpu_type.isa_level < 32) {
+			ic->f = instr(reserved);
 			break;
 		}
 

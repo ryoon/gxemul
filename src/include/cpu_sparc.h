@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.31 2006-04-24 18:23:28 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.32 2006-04-24 18:25:50 debug Exp $
  */
 
 #include "misc.h"
@@ -136,7 +136,7 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"addxcc","[25]","umulcc","smulcc","subxcc","[29]","udivcc","sdivcc",\
 	"taddcc","tsubcc","taddcctv","tsubcctv","mulscc","sll","srl","sra",\
 	"rd*/stbar","[41]","rdpr","[43]", "[44]","[45]","popc","movre",	\
-	"sir","saved/restored","wrpr","[51]", "[52]","[53]","[54]","[55]",\
+	"sir/wr","saved/restored","wrpr","[51]", "[52]","[53]","[54]","[55]",\
 	"jmpl", "rett", "trap", "flush", "save", "restore", "[62]","[63]" }
 
 #define	N_LOADSTORE_TYPES	64

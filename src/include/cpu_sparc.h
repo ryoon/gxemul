@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.30 2006-04-24 17:16:44 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.31 2006-04-24 18:23:28 debug Exp $
  */
 
 #include "misc.h"
@@ -86,6 +86,38 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"i0","i1","i2","i3","i4","i5","fp","i7" }
 
 #define	SPARC_ZEROREG		0	/*  g0  */
+#define	SPARC_REG_G0		0
+#define	SPARC_REG_G1		1
+#define	SPARC_REG_G2		2
+#define	SPARC_REG_G3		3
+#define	SPARC_REG_G4		4
+#define	SPARC_REG_G5		5
+#define	SPARC_REG_G6		6
+#define	SPARC_REG_G7		7
+#define	SPARC_REG_O0		8
+#define	SPARC_REG_O1		9
+#define	SPARC_REG_O2		10
+#define	SPARC_REG_O3		11
+#define	SPARC_REG_O4		12
+#define	SPARC_REG_O5		13
+#define	SPARC_REG_O6		14
+#define	SPARC_REG_O7		15
+#define	SPARC_REG_L0		16
+#define	SPARC_REG_L1		17
+#define	SPARC_REG_L2		18
+#define	SPARC_REG_L3		19
+#define	SPARC_REG_L4		20
+#define	SPARC_REG_L5		21
+#define	SPARC_REG_L6		22
+#define	SPARC_REG_L7		23
+#define	SPARC_REG_I0		24
+#define	SPARC_REG_I1		25
+#define	SPARC_REG_I2		26
+#define	SPARC_REG_I3		27
+#define	SPARC_REG_I4		28
+#define	SPARC_REG_I5		29
+#define	SPARC_REG_I6		30
+#define	SPARC_REG_I7		31
 
 #define	N_SPARC_BRANCH_TYPES	16
 #define	SPARC_BRANCH_NAMES {						\
@@ -103,8 +135,8 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"addcc","andcc","orcc","xorcc","subcc","andncc","orncc","xnorcc",\
 	"addxcc","[25]","umulcc","smulcc","subxcc","[29]","udivcc","sdivcc",\
 	"taddcc","tsubcc","taddcctv","tsubcctv","mulscc","sll","srl","sra",\
-	"[40]","[41]","[42]","[43]", "[44]","[45]","[46]","movre",	\
-	"[48]","[49]","[50]","[51]", "[52]","[53]","[54]","[55]",	\
+	"rd*/stbar","[41]","rdpr","[43]", "[44]","[45]","popc","movre",	\
+	"sir","saved/restored","wrpr","[51]", "[52]","[53]","[54]","[55]",\
 	"jmpl", "rett", "trap", "flush", "save", "restore", "[62]","[63]" }
 
 #define	N_LOADSTORE_TYPES	64
@@ -114,9 +146,9 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"lda","lduba","lduha","ldda", "sta","stba","stha","stda",	\
 	"[24]","ldsba","ldsha","ldxa", "[28]","ldstuba","stxa","swapa",	 \
 	"ldf","ldfsr","[34]","lddf", "stf","stfsr","stdfq","stdf",	\
-	"[40]","[41]","[42]","[43]", "[44]","[45]","[46]","[47]",	\
+	"[40]","[41]","[42]","[43]", "[44]","prefetch","[46]","[47]",	\
 	"ldc","ldcsr","[50]","lddc", "stc","stcsr","scdfq","scdf",	\
-	"[56]","[57]","[58]","[59]", "[60]","[61]","casxa","[63]" }
+	"[56]","[57]","[58]","[59]", "[60]","prefetcha","casxa","[63]" }
 
 
 /*  Max number of Trap Levels and Windows:  */
@@ -129,6 +161,8 @@ struct sparc_cpu {
 
 	/*  Registers in the Current Window:  */
 	uint64_t	r[N_SPARC_REG];
+
+	uint64_t	scratch;
 
 	/*  TODO: all registes  */
 

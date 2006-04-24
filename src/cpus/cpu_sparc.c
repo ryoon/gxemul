@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.22 2006-04-24 17:16:44 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.23 2006-04-24 18:23:28 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -421,6 +421,12 @@ int sparc_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 		break;
 	case 1:	/*  call  */
 		return 1;
+	case 2:	/*  misc alu instructions  */
+		switch (op2) {
+		case 56:/*  jump and link  */
+			return 1;
+		}
+		break;
 	}
 
 	return 0;
@@ -467,7 +473,13 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	iword = *(uint32_t *)&instr[0];
 	iword = BE32_TO_HOST(iword);
 
-	debug(": %08x\t", iword);
+	debug(": %08x", iword);
+
+	if (running && cpu->delay_slot)
+		debug(" (d)");
+
+	debug("\t");
+
 
 	/*
 	 *  Decode the instruction:

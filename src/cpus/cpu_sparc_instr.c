@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.12 2006-04-24 17:16:44 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.13 2006-04-24 18:23:28 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -45,6 +45,52 @@ X(nop)
 
 
 /*****************************************************************************/
+
+
+/*
+ *  call
+ *
+ *  arg[0] = int32_t displacement compared to the current instruction
+ *  arg[1] = int32_t displacement of current instruction compared to
+ *           start of the page
+ */
+X(call)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	old_pc += (int32_t)ic->arg[1];
+	cpu->cd.sparc.r[SPARC_REG_O7] = old_pc;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = old_pc + (int32_t)ic->arg[0];
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(call_trace)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	old_pc += (int32_t)ic->arg[1];
+	cpu->cd.sparc.r[SPARC_REG_O7] = old_pc;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = old_pc + (int32_t)ic->arg[0];
+		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
 
 
 /*
@@ -71,6 +117,164 @@ X(ba)
 
 
 /*
+ *  Jump and link
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ *  arg[2] = ptr to rd
+ */
+X(jmpl_imm)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+	reg(ic->arg[2]) = cpu->pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(jmpl_imm_no_rd)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(jmpl_reg)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+	reg(ic->arg[2]) = cpu->pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + reg(ic->arg[1]);
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(jmpl_reg_no_rd)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + reg(ic->arg[1]);
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+X(jmpl_imm_trace)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+	reg(ic->arg[2]) = cpu->pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(jmpl_reg_trace)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+	reg(ic->arg[2]) = cpu->pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + reg(ic->arg[1]);
+		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(retl_trace)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+		quick_pc_to_pointers(cpu);
+		cpu_functioncall_trace_return(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
  *  set:  Set a register to a value (e.g. sethi).
  *
  *  arg[0] = ptr to rd
@@ -91,8 +295,12 @@ X(set)
  */
 X(add)      { reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
 X(add_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) + (int32_t)ic->arg[1]; }
+X(and)      { reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
+X(and_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) & (int32_t)ic->arg[1]; }
 X(or)       { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 X(or_imm)   { reg(ic->arg[2]) = reg(ic->arg[0]) | (int32_t)ic->arg[1]; }
+X(xor)      { reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
+X(xor_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) ^ (int32_t)ic->arg[1]; }
 X(sub)      { reg(ic->arg[2]) = reg(ic->arg[0]) - reg(ic->arg[1]); }
 X(sub_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) - (int32_t)ic->arg[1]; }
 
@@ -178,9 +386,8 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, op2, rd, rs1, rs2, siconst, btype, asi, cc, p;
-	int use_imm, x64 = 0;
-	int32_t tmpi32;
+	int main_opcode, op2, rd, rs1, rs2, btype, asi, cc, p, use_imm, x64 = 0;
+	int32_t tmpi32, siconst;
 	/* void (*samepage_function)(struct cpu *, struct sparc_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -267,6 +474,7 @@ X(to_be_translated)
 			ic->arg[0] = (int32_t)tmpi32 + (addr & 0xffc);
 			/*  rd contains the annul bit concatenated with 4 bits
 			    of condition code:  */
+			/*  TODO: samepage  */
 			switch (rd) {
 			case 0x08:/*  ba  */
 				ic->f = instr(ba);
@@ -289,10 +497,23 @@ X(to_be_translated)
 		}
 		break;
 
+	case 1:	/*  call and link  */
+		tmpi32 = (iword << 2);
+		ic->arg[0] = (int32_t)tmpi32;
+		ic->arg[1] = addr & 0xffc;
+		if (cpu->machine->show_trace_tree)
+			ic->f = instr(call_trace);
+		else
+			ic->f = instr(call);
+		/*  TODO: samepage  */
+		break;
+
 	case 2:	switch (op2) {
 
 		case 0:	/*  add  */
+		case 1:	/*  and  */
 		case 2:	/*  or  */
+		case 3:	/*  xor  */
 		case 4:	/*  sub  */
 		case 37:/*  sll  */
 		case 38:/*  srl  */
@@ -303,7 +524,9 @@ X(to_be_translated)
 				ic->arg[1] = siconst;
 				switch (op2) {
 				case 0:	ic->f = instr(add_imm); break;
+				case 1:	ic->f = instr(and_imm); break;
 				case 2:	ic->f = instr(or_imm); break;
+				case 3:	ic->f = instr(xor_imm); break;
 				case 4:	ic->f = instr(sub_imm); break;
 				case 37:if (siconst & 0x1000) {
 						ic->f = instr(sllx_imm);
@@ -337,7 +560,9 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
 				switch (op2) {
 				case 0:  ic->f = instr(add); break;
+				case 1:  ic->f = instr(and); break;
 				case 2:  ic->f = instr(or); break;
+				case 3:  ic->f = instr(xor); break;
 				case 4:  ic->f = instr(sub); break;
 				case 37:if (siconst & 0x1000) {
 						ic->f = instr(sllx);
@@ -367,6 +592,39 @@ X(to_be_translated)
 			ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
 			if (rd == SPARC_ZEROREG)
 				ic->f = instr(nop);
+			break;
+
+		case 56:/*  jump and link  */
+			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
+			ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
+			if (rd == SPARC_ZEROREG)
+				ic->arg[2] = (size_t)&cpu->cd.sparc.scratch;
+
+			if (use_imm) {
+				ic->arg[1] = siconst;
+				if (rd == SPARC_ZEROREG)
+					ic->f = instr(jmpl_imm_no_rd);
+				else
+					ic->f = instr(jmpl_imm);
+			} else {
+				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
+				if (rd == SPARC_ZEROREG)
+					ic->f = instr(jmpl_reg_no_rd);
+				else
+					ic->f = instr(jmpl_reg);
+			}
+
+			/*  special trace case:  */
+			if (cpu->machine->show_trace_tree) {
+				if (iword == 0x81c3e008)
+					ic->f = instr(retl_trace);
+				else {
+					if (use_imm)
+						ic->f = instr(jmpl_imm_trace);
+					else
+						ic->f = instr(jmpl_reg_trace);
+				}
+			}
 			break;
 
 		default:fatal("TODO: unimplemented op2=%i for main "

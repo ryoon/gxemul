@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.11 2006-04-23 10:47:57 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.12 2006-04-24 17:16:44 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -45,6 +45,29 @@ X(nop)
 
 
 /*****************************************************************************/
+
+
+/*
+ *  ba
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ */
+X(ba)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+		    << SPARC_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc = old_pc + (int32_t)ic->arg[0];
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
 
 
 /*
@@ -151,16 +174,26 @@ X(to_be_translated)
 {
 	MODE_uint_t addr;
 	int low_pc;
+	int in_crosspage_delayslot = 0;
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, op2, rd, rs1, rs2, siconst, btype, asi, cc, p;
 	int use_imm, x64 = 0;
+	int32_t tmpi32;
 	/* void (*samepage_function)(struct cpu *, struct sparc_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
 	low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
 	    / sizeof(struct sparc_instr_call);
+
+	/*  Special case for branch with delayslot on the next page:  */
+	if (cpu->delay_slot == TO_BE_DELAYED && low_pc == 0) {
+		/*  fatal("[ delay-slot translation across page "
+		    "boundary ]\n");  */
+		in_crosspage_delayslot = 1;
+	}
+
 	addr = cpu->pc & ~((SPARC_IC_ENTRIES_PER_PAGE-1)
 	    << SPARC_INSTR_ALIGNMENT_SHIFT);
 	addr += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
@@ -227,6 +260,20 @@ X(to_be_translated)
 	switch (main_opcode) {
 
 	case 0:	switch (op2) {
+
+		case 2:	/*  branch (32-bit integer comparison)  */
+			tmpi32 = (iword << 10);
+			tmpi32 >>= 8;
+			ic->arg[0] = (int32_t)tmpi32 + (addr & 0xffc);
+			/*  rd contains the annul bit concatenated with 4 bits
+			    of condition code:  */
+			switch (rd) {
+			case 0x08:/*  ba  */
+				ic->f = instr(ba);
+				break;
+			default:goto bad;
+			}
+			break;
 
 		case 4:	/*  sethi  */
 			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rd];

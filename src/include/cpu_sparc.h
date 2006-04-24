@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.29 2006-04-17 09:29:41 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.30 2006-04-24 17:16:44 debug Exp $
  */
 
 #include "misc.h"
@@ -90,7 +90,7 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 #define	N_SPARC_BRANCH_TYPES	16
 #define	SPARC_BRANCH_NAMES {						\
 	"bn", "be",  "ble", "bl",  "bleu", "bcs", "bneg", "bvs",	\
-	"b",  "bne", "bg",  "bge", "bgu",  "bcc", "bpos", "bvc"  }
+	"ba", "bne", "bg",  "bge", "bgu",  "bcc", "bpos", "bvc"  }
 
 #define	N_SPARC_REGBRANCH_TYPES	8
 #define	SPARC_REGBRANCH_NAMES {						\
@@ -244,6 +244,7 @@ struct sparc_cpu {
 
 
 /*  cpu_sparc.c:  */
+int sparc_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib);
 void sparc_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void sparc_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

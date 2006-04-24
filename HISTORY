@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1201 2006-04-24 05:12:55 debug Exp $
+$Id: HISTORY,v 1.1202 2006-04-24 17:16:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2690,3 +2690,4 @@ Changelog for GXemul:
 20060424	Adding an isa_revision field to mips_cpu_types.h, and making
 		sure that SPECIAL3 opcodes cause Reserved Instruction
 		exceptions on MIPS32/64 revisions lower than 2.
+		Adding the SPARC 'ba' instruction.

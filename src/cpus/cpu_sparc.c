@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.21 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.22 2006-04-24 17:16:44 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -43,6 +43,7 @@
 
 
 #define	DYNTRANS_DUALMODE_32
+#define	DYNTRANS_DELAYSLOT
 #include "tmp_sparc_head.c"
 
 
@@ -85,6 +86,8 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->name              = cpu->cd.sparc.cpu_type.name;
 	cpu->byte_order        = EMUL_BIG_ENDIAN;
 	cpu->is_32bit = (cpu->cd.sparc.cpu_type.bits == 32)? 1 : 0;
+
+	cpu->instruction_has_delayslot = sparc_cpu_instruction_has_delayslot;
 
 	if (cpu->is_32bit) {
 		cpu->update_translation_table =
@@ -261,10 +264,14 @@ void sparc_cpu_register_match(struct machine *m, char *name,
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
 			m->cpus[cpunr]->pc = *valuep;
-		} else
+		} else {
 			*valuep = m->cpus[cpunr]->pc;
+		}
 		*match_register = 1;
 	}
+
+	if (*match_register && m->cpus[cpunr]->is_32bit)
+		(*valuep) &= 0xffffffffULL;
 }
 
 
@@ -385,6 +392,37 @@ int sparc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 int sparc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	/*  fatal("sparc_cpu_interrupt_ack(): TODO\n");  */
+	return 0;
+}
+
+
+/*
+ *  sparc_cpu_instruction_has_delayslot():
+ *
+ *  Return 1 if an opcode is a branch, 0 otherwise.
+ */
+int sparc_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
+{
+	uint32_t iword = *((uint32_t *)&ib[0]);
+	int hi2, op2;
+
+	iword = BE32_TO_HOST(iword);
+
+	hi2 = iword >> 30;
+	op2 = (hi2 == 0)? ((iword >> 22) & 7) : ((iword >> 19) & 0x3f);
+
+	switch (hi2) {
+	case 0:	/*  conditional branch  */
+		switch (op2) {
+		case 1:
+		case 2:
+		case 3:	return 1;
+		}
+		break;
+	case 1:	/*  call  */
+		return 1;
+	}
+
 	return 0;
 }
 

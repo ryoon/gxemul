@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.61 2006-04-24 05:14:53 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.62 2006-04-24 17:16:44 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2998,8 +2998,6 @@ X(to_be_translated)
 	}
 #endif
 
-	if (in_crosspage_delayslot)
-		cpu->cd.mips.combination_check = NULL;
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
 #include "cpu_dyntrans.c" 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.62 2006-04-22 08:24:31 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.63 2006-04-24 05:12:55 debug Exp $
  *
  *  ARM instructions.
  *
@@ -201,10 +201,8 @@ uint8_t condition_gt[16] = { 1,0,1,0, 0,0,0,0, 0,1,0,1, 0,0,0,0 };
 
 
 /*
- *  nop:  Do nothing.
  *  invalid:  Invalid instructions end up here.
  */
-X(nop) { }
 X(invalid) {
 	uint32_t low_pc;
 	low_pc = ((size_t)ic - (size_t)
@@ -213,12 +211,19 @@ X(invalid) {
 	    << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 
-	fatal("Invalid ARM instruction: pc=0x%08x\n", (int)cpu->pc);
+	fatal("FATAL ERROR: An internal error occured in the ARM"
+	    " dyntrans code. Please contact the author with detailed"
+	    " repro steps on how to trigger this bug. pc = 0x%08"PRIx32"\n",
+	    (uint32_t)cpu->pc);
+	exit(1);
+}
 
-	cpu->running = 0;
-	cpu->running_translated = 0;
-	cpu->n_translated_instrs --;
-	cpu->cd.arm.next_ic = &nothing_call;
+
+/*
+ *  nop:  Do nothing.
+ */
+X(nop)
+{
 }
 
 

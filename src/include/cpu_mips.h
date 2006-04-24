@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.34 2006-04-19 19:39:41 debug Exp $
+ *  $Id: cpu_mips.h,v 1.35 2006-04-24 05:12:56 debug Exp $
  */
 
 #include "misc.h"
@@ -51,6 +51,7 @@ struct mips_cpu_type_def {
 	char		exc_model;		/*  EXC3K or EXC4K  */
 	char		mmu_model;		/*  MMU3K or MMU4K  */
 	char		isa_level;		/*  1, 2, 3, 4, 5, 32, 64  */
+	char		isa_revision;		/*  1 or 2 (for MIPS32/64)  */
 	int		nr_of_tlb_entries;	/*  32, 48, 64, ...  */
 	char		instrs_per_cycle;	/*  simplified, 1, 2, or 4  */
 	int		picache;

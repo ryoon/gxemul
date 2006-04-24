@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.59 2006-04-23 15:20:31 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.60 2006-04-24 05:12:55 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -37,31 +37,55 @@
 
 
 /*
- *  nop:  Do nothing.
- */
-X(nop)
-{
-}
-
-
-/*
  *  invalid:  For catching bugs.
  */
 X(invalid)
 {
-	fatal("MIPS: invalid(): INTERNAL ERROR\n");
+	fatal("FATAL ERROR: An internal error occured in the MIPS"
+	    " dyntrans code. Please contact the author with detailed"
+	    " repro steps on how to trigger this bug.\n");
 	exit(1);
 }
 
 
 /*
- *  invalid_32_64:  Attempt to execute a 64-bit instruction on an
- *                  emulated 32-bit processor.
+ *  reserved:  Attempt to execute a reserved instruction (e.g. a 64-bit
+ *             instruction on an emulated 32-bit processor).
  */
-X(invalid_32_64)
+X(reserved)
 {
-	fatal("invalid_32_64: TODO: cause an exception\n");
-	exit(1);
+	/*  Synchronize the PC and cause an exception:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	mips_cpu_exception(cpu, EXCEPTION_RI, 0, 0, 0, 0, 0, 0);
+}
+
+
+/*
+ *  cpu:  Cause a CoProcessor Unusable exception.
+ *
+ *  arg[0] = the number of the coprocessor
+ */
+X(cpu)
+{
+	/*  Synchronize the PC and cause an exception:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, ic->arg[0], 0, 0, 0);
+}
+
+
+/*
+ *  nop:  Do nothing.
+ */
+X(nop)
+{
 }
 
 
@@ -1375,8 +1399,6 @@ X(set)
 /*
  *  mfc0, dmfc0:  Move from Coprocessor 0.
  *  mtc0, dmtc0:  Move to Coprocessor 0.
- *  cfc1: Copy control word from Coprocessor 1.
- *  ctc1: Copy control word to Coprocessor 1.
  *
  *  arg[0] = pointer to GPR (rt)
  *  arg[1] = coprocessor 0 register number | (select << 5)
@@ -1427,38 +1449,6 @@ X(dmtc0)
 
 /*  TODO: fix/remove these!  */
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-}
-X(cfc1)
-{
-	const int cpnr = 1;
-
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc |= ic->arg[2];
-
-	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
-
-	reg(ic->arg[0]) = reg(ic->arg[1]);
-}
-X(ctc1)
-{
-	const int cpnr = 1;
-
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc |= ic->arg[2];
-
-	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
-
-	/*  TODO: exceptions if writing to coproc1 reg 31!  */
-
-	reg(ic->arg[1]) = reg(ic->arg[0]);
 }
 
 
@@ -1850,7 +1840,7 @@ X(lwc1)
 	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
 
 	/*  ... but first, let's see if the coprocessor is available:  */
-	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
+	if (!(cpu->cd.mips.coproc[0]->
 	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
 		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		return;
@@ -1876,7 +1866,7 @@ X(swc1)
 	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
 
 	/*  ... but first, let's see if the coprocessor is available:  */
-	if (cpu->cd.mips.coproc[cpnr] == NULL || !(cpu->cd.mips.coproc[0]->
+	if (!(cpu->cd.mips.coproc[0]->
 	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
 		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		return;
@@ -2655,30 +2645,17 @@ X(to_be_translated)
 		break;
 
 	case HI6_COP1:
-		/*  rs contains the coprocessor opcode!  */
-#if 0
-		switch (rs) {
-		case COPz_CFCz:
-			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
-			ic->arg[1] = (size_t)&cpu->cd.mips.coproc[1]->fcr[rd];
-			ic->arg[2] = addr & 0xffc;
-			ic->f = instr(cfc1);
-			if (rt == MIPS_GPR_ZERO)
-				ic->f = instr(nop);
-			break;
-		case COPz_CTCz:
-			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
-			ic->arg[1] = (size_t)&cpu->cd.mips.coproc[1]->fcr[rd];
-			ic->arg[2] = addr & 0xffc;
-			ic->f = instr(ctc1);
-			break;
-		default:fatal("UNIMPLEMENTED cop1 (rs = %i)\n", rs);
-			goto bad;
-		}
-#else
+		/*  Fallback to slow pre-dyntrans code, for now.  */
+		/*  TODO: Fix/optimize/rewrite.  */
 		ic->f = instr(cop1_slow);
 		ic->arg[0] = (uint32_t)iword & ((1 << 26) - 1);
-#endif
+
+		/*  Cause a coprocessor unusable exception if
+		    there is no floating point coprocessor:  */
+		if (cpu->cd.mips.coproc[1] == NULL) {
+			ic->f = instr(cpu);
+			ic->arg[0] = 1;
+		}
 		break;
 
 	case HI6_SPECIAL2:
@@ -2934,6 +2911,12 @@ X(to_be_translated)
 		case HI6_LWC1: ic->f = instr(lwc1); break;
 		case HI6_SWC1: ic->f = instr(swc1); break;
 		}
+		/*  Cause a coprocessor unusable exception if
+		    there is no floating point coprocessor:  */
+		if (cpu->cd.mips.coproc[1] == NULL) {
+			ic->f = instr(cpu);
+			ic->arg[0] = 1;
+		}
 		break;
 
 	case HI6_LWC3:
@@ -2960,6 +2943,12 @@ X(to_be_translated)
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 			fatal("TODO: R5900 128-bit stores\n");
 			goto bad;
+		}
+
+		if (cpu->cd.mips.cpu_type.isa_level < 32 ||
+		    cpu->cd.mips.cpu_type.isa_revision < 2) {
+			ic->f = instr(reserved);
+			break;
 		}
 
 		switch (s6) {
@@ -2992,8 +2981,14 @@ X(to_be_translated)
 	}
 
 #ifdef MODE32
-	if (x64)
-		ic->f = instr(invalid_32_64);
+	if (x64) {
+		static int has_warned = 0;
+		if (!has_warned)
+			fatal("[ WARNING/NOTE: attempt to execute a 64-bit"
+			    " instruction on an emulated 32-bit processor ]\n");
+		has_warned = 1;
+		ic->f = instr(reserved);
+	}
 #endif
 
 	if (in_crosspage_delayslot)

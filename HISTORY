@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1200 2006-04-23 12:45:54 debug Exp $
+$Id: HISTORY,v 1.1201 2006-04-24 05:12:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2687,3 +2687,6 @@ Changelog for GXemul:
 		Adding more MIPS dyntrans instructions: madd[u], msub[u].
 		Cleaning up the SPECIAL2 vs R5900/TX79/C790 "MMI" opcode
 		maps somewhat (disassembly and dyntrans instruction decoding).
+20060424	Adding an isa_revision field to mips_cpu_types.h, and making
+		sure that SPECIAL3 opcodes cause Reserved Instruction
+		exceptions on MIPS32/64 revisions lower than 2.

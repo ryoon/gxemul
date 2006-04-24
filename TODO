@@ -1,4 +1,4 @@
-$Id: TODO,v 1.251 2006-04-23 15:20:31 debug Exp $
+$Id: TODO,v 1.252 2006-04-24 05:12:29 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -18,13 +18,18 @@ If time permits:
 	    virtual PC, etc).
 	x)  Some more GDB support? Breakpoints would be nice.
 	x)  More refactoring of the debugger (expression evaluator)?
-	x)  Possibly more work on the Alpha emulation mode.
+	x)  Possibly more work on the Alpha emulation mode (to get
+	    NetBSD/OpenBSD/Linux booting).
+	x)  Possibly more work on the PPC emulation mode (to get NetBSD/macppc
+	    to boot up after an install).
 	x)  Begin on the cache simulation framework.
 
 --------------
 
 
 MIPS:
+	o)  There's a bug causing awk errors after a fresh install of
+	    NetBSD/hpcmips and NetBSD/pmax (using R4400).
 	o)  Dyntrans: R2000/R3000 caches don't quite work yet (NetBSD/pmax,
 	    Ultrix etc).
 	o)  Dyntrans: The first tlbwr isn't random! (Can be below wired!)
@@ -44,6 +49,7 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 Dyntrans:
+	x)  Common "invalid()" function with friendly fatal error message?
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)

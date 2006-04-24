@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.40 2006-04-24 05:12:55 debug Exp $
+ *  $Id: cpu_mips.c,v 1.41 2006-04-24 16:35:25 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -92,6 +92,9 @@ static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
 static char *mmi_names[] = MMI_NAMES;
 static char *mmi0_names[] = MMI0_NAMES;
+static char *mmi1_names[] = MMI1_NAMES;
+static char *mmi2_names[] = MMI2_NAMES;
+static char *mmi3_names[] = MMI3_NAMES;
 static char *special3_names[] = SPECIAL3_NAMES;
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
@@ -1041,17 +1044,20 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
-			if (special6 == SPECIAL_MULT) {
-				if (rd != 0) {
-					debug("mult_xx\t%s",
-					    regname(cpu->machine, rd));
-					debug(",%s", regname(cpu->machine, rs));
-					debug(",%s", regname(cpu->machine, rt));
-					goto disasm_ret;
+			debug("%s\t", special_names[special6]);
+			if (rd != 0) {
+				if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+					if (special6 == SPECIAL_MULT ||
+					    special6 == SPECIAL_MULTU)
+						debug("%s,",
+						    regname(cpu->machine, rd));
+					else
+						debug("WEIRD_R5900_RD,");
+				} else {
+					debug("WEIRD_RD_NONZERO,");
 				}
 			}
-			debug("%s\t%s", special_names[special6],
-			    regname(cpu->machine, rs));
+			debug("%s", regname(cpu->machine, rs));
 			debug(",%s", regname(cpu->machine, rt));
 			break;
 		case SPECIAL_SYNC:
@@ -1075,12 +1081,21 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				debug("break");
 			break;
 		case SPECIAL_MFSA:
-			rd = (instr[1] >> 3) & 31;
-			debug("mfsa\t%s", regname(cpu->machine, rd));
+			if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+				rd = (instr[1] >> 3) & 31;
+				debug("mfsa\t%s", regname(cpu->machine, rd));
+			} else {
+				debug("unimplemented special 0x28");
+			}
 			break;
 		case SPECIAL_MTSA:
-			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			debug("mtsa\t%s", regname(cpu->machine, rs));
+			if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+				rs = ((instr[3] & 3) << 3) +
+				    ((instr[2] >> 5) & 7);
+				debug("mtsa\t%s", regname(cpu->machine, rs));
+			} else {
+				debug("unimplemented special 0x29");
+			}
 			break;
 		default:
 			debug("%s\t= UNIMPLEMENTED", special_names[special6]);
@@ -1338,7 +1353,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 			int c790mmifunc = (instrword >> 6) & 0x1f;
-			if (special6 != MMI_MMI0)
+			if (special6 != MMI_MMI0 && special6 != MMI_MMI1 &&
+			    special6 != MMI_MMI2 && special6 != MMI_MMI3)
 				debug("%s\t", mmi_names[special6]);
 
 			switch (special6) {
@@ -1354,6 +1370,27 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 			case MMI_MMI0:
 				debug("%s\t", mmi0_names[c790mmifunc]);
+				switch (c790mmifunc) {
+				default:debug("(UNIMPLEMENTED)");
+				}
+				break;
+
+			case MMI_MMI1:
+				debug("%s\t", mmi1_names[c790mmifunc]);
+				switch (c790mmifunc) {
+				default:debug("(UNIMPLEMENTED)");
+				}
+				break;
+
+			case MMI_MMI2:
+				debug("%s\t", mmi2_names[c790mmifunc]);
+				switch (c790mmifunc) {
+				default:debug("(UNIMPLEMENTED)");
+				}
+				break;
+
+			case MMI_MMI3:
+				debug("%s\t", mmi3_names[c790mmifunc]);
 				switch (c790mmifunc) {
 				default:debug("(UNIMPLEMENTED)");
 				}

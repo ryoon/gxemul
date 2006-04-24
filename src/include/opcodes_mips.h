@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.8 2006-04-23 12:45:54 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.9 2006-04-24 16:35:25 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  *
@@ -57,30 +57,30 @@
 /*  Opcodes:  */
 
 #define	HI6_NAMES	{	\
-	"special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz", 			/*  0x00 - 0x07  */	\
-	"addi", "addiu", "slti", "sltiu", "andi", "ori", "xori", "lui",			/*  0x08 - 0x0f  */	\
-	"cop0", "cop1", "cop2", "cop3", "beql", "bnel", "blezl", "bgtzl",		/*  0x10 - 0x17  */	\
-	"daddi", "daddiu", "ldl", "ldr", "special2", "hi6_1d", "lq" /*mdmx*/, "sq" /*special3*/,	/*  0x18 - 0x1f  */	\
-	"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",				/*  0x20 - 0x27  */	\
-	"sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",				/*  0x28 - 0x2f  */	\
-	"ll", "lwc1", "lwc2", "lwc3", "lld", "ldc1", "ldc2", "ld",			/*  0x30 - 0x37  */	\
-	"sc", "swc1", "swc2", "swc3", "scd", "sdc1", "sdc2", "sd"			/*  0x38 - 0x3f  */	}
+	"special", "regimm", "j",    "jal",   "beq",      "bne",   "blez",  "bgtz", 		/*  0x00 - 0x07  */	\
+	"addi",    "addiu",  "slti", "sltiu", "andi",     "ori",   "xori",  "lui",		/*  0x08 - 0x0f  */	\
+	"cop0",    "cop1",   "cop2", "cop3",  "beql",     "bnel",  "blezl", "bgtzl",		/*  0x10 - 0x17  */	\
+	"daddi",   "daddiu", "ldl",  "ldr",   "special2", "hi6_1d","lq" /*mdmx*/, "sq" /*special3*/, /*  0x18 - 0x1f  */\
+	"lb",      "lh",     "lwl",  "lw",    "lbu",      "lhu",   "lwr",   "lwu",		/*  0x20 - 0x27  */	\
+	"sb",      "sh",     "swl",  "sw",    "sdl",      "sdr",   "swr",   "cache",		/*  0x28 - 0x2f  */	\
+	"ll",      "lwc1",   "lwc2", "lwc3",  "lld",      "ldc1",  "ldc2",  "ld",		/*  0x30 - 0x37  */	\
+	"sc",      "swc1",   "swc2", "swc3",  "scd",      "sdc1",  "sdc2",  "sd"		/*  0x38 - 0x3f  */	}
 
 #define	REGIMM_NAMES	{	\
 	"bltz",      "bgez",      "bltzl",     "bgezl",     "regimm_04", "regimm_05", "regimm_06", "regimm_07",	/*  0x00 - 0x07  */	\
 	"tgei",      "tgeiu",     "tlti",      "tltiu",     "teqi",      "regimm_0d", "tnei",      "regimm_0f",	/*  0x08 - 0x0f  */	\
 	"bltzal",    "bgezal",    "bltzall",   "bgezall",   "regimm_14", "regimm_15", "regimm_16", "regimm_17",	/*  0x10 - 0x17  */	\
-	"regimm_18", "regimm_19", "regimm_1a", "regimm_1b", "regimm_1c", "regimm_1d", "regimm_1e", "synci"	/*  0x18 - 0x1f  */ }
+	"mtsab",     "mtsah",     "regimm_1a", "regimm_1b", "regimm_1c", "regimm_1d", "regimm_1e", "synci"	/*  0x18 - 0x1f  */ }
 
 #define	SPECIAL_NAMES	{	\
-	"sll",  "special_01", "srl",  "sra",  "sllv",   "special_05", "srlv",   "srav",		/*  0x00 - 0x07  */	\
-	"jr",   "jalr",       "movz", "movn", "syscall","break",      "special_0e", "sync",	/*  0x08 - 0x0f  */	\
-	"mfhi", "mthi",       "mflo", "mtlo", "dsllv",  "special_15", "dsrlv",  "dsrav",	/*  0x10 - 0x17  */	\
-	"mult", "multu",      "div",  "divu", "dmult",  "dmultu",     "ddiv",   "ddivu",	/*  0x18 - 0x1f  */	\
-	"add",  "addu",       "sub",  "subu", "and",    "or",         "xor",    "nor",		/*  0x20 - 0x27  */	\
-	"mfsa", "mtsa",       "slt",  "sltu", "dadd",   "daddu",      "dsub",   "dsubu",	/*  0x28 - 0x2f  */	\
-	"tge",  "tgeu",       "tlt",  "tltu", "teq",    "special_35", "tne",    "special_37",	/*  0x30 - 0x37  */	\
-	"dsll", "special_39", "dsrl", "dsra", "dsll32", "special_3d", "dsrl32", "dsra32"	/*  0x38 - 0x3f  */	}
+	"sll",     "special_01", "srl",  "sra",  "sllv",   "special_05", "srlv",   "srav",	/*  0x00 - 0x07  */	\
+	"jr",      "jalr",       "movz", "movn", "syscall","break",      "special_0e", "sync",	/*  0x08 - 0x0f  */	\
+	"mfhi",    "mthi",       "mflo", "mtlo", "dsllv",  "special_15", "dsrlv",  "dsrav",	/*  0x10 - 0x17  */	\
+	"mult",    "multu",      "div",  "divu", "dmult",  "dmultu",     "ddiv",   "ddivu",	/*  0x18 - 0x1f  */	\
+	"add",     "addu",       "sub",  "subu", "and",    "or",         "xor",    "nor",	/*  0x20 - 0x27  */	\
+	"special_28","special_29","slt", "sltu", "dadd",   "daddu",      "dsub",   "dsubu",	/*  0x28 - 0x2f  */	\
+	"tge",     "tgeu",       "tlt",  "tltu", "teq",    "special_35", "tne",    "special_37",/*  0x30 - 0x37  */	\
+	"dsll",    "special_39", "dsrl", "dsra", "dsll32", "special_3d", "dsrl32", "dsra32"	/*  0x38 - 0x3f  */	}
 
 #define	SPECIAL2_NAMES	{	\
 	"madd",        "maddu",       "mul",         "special2_03", "msub",        "msubu",       "special2_06", "special2_07", /*  0x00 - 0x07  */	\
@@ -113,7 +113,35 @@
 	"paddsb",  "psubsb",  "pextlb",  "ppacb",	/*  0x18 - 0x1b  */	\
 	"mmi0_1c", "mmi0_1d", "pext5",   "ppac5"	/*  0x1c - 0x1f  */	}
 
-/*  TODO: MMI1..MMI3 opcode maps  */
+#define	MMI1_NAMES	{	\
+	"mmi1_00", "pabsw",   "pceqw",   "pminw",	/*  0x00 - 0x03  */	\
+	"padsbh",  "pabsh",   "pceqh",   "pminh",	/*  0x04 - 0x07  */	\
+	"mmi1_08", "mmi1_09", "pceqb",   "mmi1_0b",	/*  0x08 - 0x0b  */	\
+	"mmi1_0c", "mmi1_0d", "mmi1_0e", "mmi1_0f",	/*  0x0c - 0x0f  */	\
+	"padduw",  "psubuw",  "pextlw",  "mmi1_13",	/*  0x10 - 0x13  */	\
+	"padduh",  "psubuh",  "pextlh",  "mmi1_17",	/*  0x14 - 0x17  */	\
+	"paddub",  "psubub",  "pextlb",  "qfsrv",	/*  0x18 - 0x1b  */	\
+	"mmi1_1c", "mmi1_1d", "mmi1_1e", "mmi1_1f"	/*  0x1c - 0x1f  */	}
+
+#define	MMI2_NAMES	{	\
+	"pmaddw",  "mmi2_01", "psllvw",  "psrlvw",	/*  0x00 - 0x03  */	\
+	"pmsubw",  "mmi2_05", "mmi2_06", "mmi2_07",	/*  0x04 - 0x07  */	\
+	"pmfhi",   "pmflo",   "pinth",   "mmi2_0b",	/*  0x08 - 0x0b  */	\
+	"pmultw",  "pdivw",   "pcpyld" , "mmi2_0f",	/*  0x0c - 0x0f  */	\
+	"pmaddh",  "phmadh",  "pand",    "pxor",	/*  0x10 - 0x13  */	\
+	"pmsubh",  "phmsbh",  "mmi2_16", "mmi2_17",	/*  0x14 - 0x17  */	\
+	"mmi2_18", "mmi2_19", "pexeh",   "prevh",	/*  0x18 - 0x1b  */	\
+	"pmulth",  "pdivbw",  "pexew",   "prot3w"	/*  0x1c - 0x1f  */	}
+
+#define	MMI3_NAMES	{	\
+	"pmadduw",  "mmi3_01", "mmi3_02", "psravw",	/*  0x00 - 0x03  */	\
+	"mmi3_04",  "mmi3_05", "mmi3_06", "mmi3_07",	/*  0x04 - 0x07  */	\
+	"pmthi",    "pmtlo",   "pinteh",  "mmi3_0b",	/*  0x08 - 0x0b  */	\
+	"pmultuw",  "pdivuw",  "pcpyud" , "mmi3_0f",	/*  0x0c - 0x0f  */	\
+	"mmi3_10",  "mmi3_11", "por",     "pnor",	/*  0x10 - 0x13  */	\
+	"mmi3_14",  "mmi3_15", "mmi3_16", "mmi3_17",	/*  0x14 - 0x17  */	\
+	"mmi3_18",  "mmi3_19", "pexch",   "pcpyh",	/*  0x18 - 0x1b  */	\
+	"mmi3_1c",  "mmi3_1d", "pexcw",   "mmi3_1f"	/*  0x1c - 0x1f  */	}
 
 #define	SPECIAL3_NAMES	{	\
 	"ext",         "dextm",       "dextu",       "dext",        "ins",         "dinsm",       "dinsu",       "dins",	/*  0x00 - 0x07  */	\
@@ -166,8 +194,8 @@
 #define	    SPECIAL_OR			    0x25    /*  100101  */	/*  MIPS I  */
 #define	    SPECIAL_XOR			    0x26    /*  100110  */	/*  MIPS I  */
 #define	    SPECIAL_NOR			    0x27    /*  100111  */	/*  MIPS I  */
-#define	    SPECIAL_MFSA		    0x28    /*  101000  */  	/*  Undocumented R5900 ?  */
-#define	    SPECIAL_MTSA		    0x29    /*  101001  */  	/*  Undocumented R5900 ?  */
+#define	    SPECIAL_MFSA		    0x28    /*  101000  */  	/*  R5900/TX79/C790  */
+#define	    SPECIAL_MTSA		    0x29    /*  101001  */  	/*  R5900/TX79/C790  */
 #define	    SPECIAL_SLT			    0x2a    /*  101010  */	/*  MIPS I  */
 #define	    SPECIAL_SLTU		    0x2b    /*  101011  */	/*  MIPS I  */
 #define	    SPECIAL_DADD		    0x2c    /*  101100  */	/*  MIPS III  */
@@ -206,6 +234,8 @@
 #define	    REGIMM_BGEZAL		    0x11    /*  10001  */
 #define	    REGIMM_BLTZALL		    0x12    /*  10010  */
 #define	    REGIMM_BGEZALL		    0x13    /*  10011  */
+#define	    REGIMM_MTSAB		    0x18    /*  11000  */	/*  R5900/TX79/C790  */
+#define	    REGIMM_MTSAH		    0x19    /*  11001  */	/*  R5900/TX79/C790  */
 #define	    REGIMM_SYNCI		    0x1f    /*  11111  */
 /*  regimm ...............  */
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.112 2006-04-22 08:24:31 debug Exp $
+ *  $Id: machine.h,v 1.113 2006-04-25 04:11:33 debug Exp $
  */
 
 #include <sys/types.h>
@@ -202,10 +202,8 @@ struct machine {
 	int	bintrans_enabled_from_start;
 	size_t	bintrans_size;
 	int	instruction_trace;
-	int	single_step_on_bad_addr;
 	int	show_nr_of_instructions;
 	int	show_symbolic_register_names;
-	int64_t	max_instructions;
 	int	emulated_hz;
 	int	max_random_cycles_per_chunk;
 	int	speed_tricks;

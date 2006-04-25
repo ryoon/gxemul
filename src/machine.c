@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.668 2006-04-14 18:16:41 debug Exp $
+ *  $Id: machine.c,v 1.669 2006-04-25 04:11:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -336,9 +336,6 @@ void machine_dumpinfo(struct machine *m)
 	if (m->dbe_on_nonexistant_memaccess)
 		debug(", dbe_on_nonexistant_memaccess");
 	debug("\n");
-
-	if (m->single_step_on_bad_addr)
-		debug("single-step on bad addresses\n");
 
 	if (m->arch == ARCH_MIPS) {
 		if (m->bintrans_enable)

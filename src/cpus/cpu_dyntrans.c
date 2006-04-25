@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.87 2006-04-23 10:47:57 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.88 2006-04-25 04:11:33 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -323,11 +323,6 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 
 		n_instrs = 1;
 	} else if (cpu->machine->cycle_accurate) {
-		if (show_opcode_statistics) {
-			fatal("Not yet with cycle-accurate emulation.\n");
-			exit(1);
-		}
-
 		/*  Executing multiple instructions, and call devices'
 		    tick functions:  */
 		n_instrs = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.251 2006-03-25 21:24:31 debug Exp $
+ *  $Id: emul.c,v 1.252 2006-04-25 04:11:32 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1000,6 +1000,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	debug(": ");
 	for (i=0; i<m->ncpus; i++) {
 		m->cpus[i] = cpu_new(m->memory, m, i, m->cpu_name);
+		if (m->cpus[i] == NULL) {
+			fprintf(stderr, "Unable to create CPU object. "
+			    "Aborting.");
+			exit(1);
+		}
 		if (m->bintrans_enable)
 			bintrans_init_cpu(m->cpus[i]);
 	}

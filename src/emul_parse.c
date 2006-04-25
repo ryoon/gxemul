@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.38 2006-03-10 17:58:23 debug Exp $
+ *  $Id: emul_parse.c,v 1.39 2006-04-25 04:11:32 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -214,7 +214,6 @@ static char cur_machine_subtype[50];
 static char cur_machine_bootname[150];
 static char cur_machine_bootarg[250];
 static char cur_machine_slowsi[10];
-static char cur_machine_debugger_on_badaddr[10];
 static char cur_machine_prom_emulation[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
@@ -281,8 +280,9 @@ int parse_on_off(char *s)
 	    strcasecmp(s, "disable") == 0 || strcasecmp(s, "0") == 0)
 		return 0;
 
-	fatal("parse_on_off(): unknown value '%s'\n", s);
-	exit(1);
+	fprintf(stderr, "parse_on_off(): WARNING: unknown value '%s'\n", s);
+
+	return 0;
 }
 
 
@@ -349,7 +349,6 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_n_device = 0;
 		cur_machine_n_x11_disp = 0;
 		cur_machine_slowsi[0] = '\0';
-		cur_machine_debugger_on_badaddr[0] = '\0';
 		cur_machine_prom_emulation[0] = '\0';
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
@@ -488,12 +487,6 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			    sizeof(cur_machine_slowsi));
 		m->slow_serial_interrupts_hack_for_linux =
 		    parse_on_off(cur_machine_slowsi);
-
-		if (!cur_machine_debugger_on_badaddr[0])
-			strlcpy(cur_machine_debugger_on_badaddr, "no",
-			    sizeof(cur_machine_debugger_on_badaddr));
-		m->single_step_on_bad_addr =
-		    parse_on_off(cur_machine_debugger_on_badaddr);
 
 		if (!cur_machine_prom_emulation[0])
 			strlcpy(cur_machine_prom_emulation, "yes",
@@ -665,7 +658,6 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("bootname", cur_machine_bootname);
 	WORD("bootarg", cur_machine_bootarg);
 	WORD("slow_serial_interrupts_hack_for_linux", cur_machine_slowsi);
-	WORD("debugger_on_badaddr", cur_machine_debugger_on_badaddr);
 	WORD("prom_emulation", cur_machine_prom_emulation);
 	WORD("use_x11", cur_machine_use_x11);
 	WORD("x11_scaledown", cur_machine_x11_scaledown);

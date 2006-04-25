@@ -1,4 +1,4 @@
-$Id: README,v 1.100 2006-04-23 10:22:17 debug Exp $
+$Id: README,v 1.101 2006-04-25 04:11:31 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -22,14 +22,15 @@ Processors (ARM, MIPS, PowerPC) are emulated using a kind of dynamic
 translation system. Performance is somewhere between traditional 
 interpretation and recompilation into native code. However, the dynamic 
 translation system used in GXemul does not (currently) generate native 
-code, and thus doesn't require platform-specific back-ends. In plain 
+code, and thus does not require platform-specific back-ends. In plain 
 English, this means that the dyntrans system works on any host platform.
 
 Possible uses of the emulator include:
 
  o)  educational purposes, e.g. to learn how to write code for MIPS
 
- o)  hobby operating system development
+ o)  hobby operating system development; the emulator can be used as a
+     complement to testing your code on real hardware
 
  o)  running guest operating systems in a "sandboxed" environment
 
@@ -48,11 +49,11 @@ What isn't GXemul?
 ------------------
 
 GXemul is not (in general) a cycle-accurate simulator, because it does not
-simulate things smaller than an instruction. Pipe-line stalls, cache-miss
-effects etc are more or less completely ignored.
+simulate things smaller than an instruction. Pipe-line stalls, 
+instruction latency effects etc. are more or less completely ignored.
 
-The emulation is good enough to "fake" hardware enough to let unmodified
-guest operating systems run, but it does not precisely match any actual
+The emulation "fakes" hardware devices enough to let unmodified guest
+operating systems run, but it does not precisely match any actual
 real-world hardware.
 
 

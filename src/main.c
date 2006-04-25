@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.263 2006-04-20 16:59:05 debug Exp $
+ *  $Id: main.c,v 1.264 2006-04-25 04:11:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -253,7 +253,6 @@ static void usage(int longusage)
 	printf("                -j bsd             for OpenBSD/pmax\n");
 	printf("                -j vmunix          for Ultrix/RISC\n");
 	printf("  -M m      emulate m MBs of physical RAM\n");
-	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at"
 	    " regular intervals\n");
 	printf("  -n nr     set nr of CPUs (for SMP experiments)\n");
@@ -343,9 +342,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	char *opts =
 #if defined(BINTRANS)
-	    "ABC:c:Dd:E:e:G:HhI:iJj:KM:m:Nn:Oo:p:QqRrSTtUu:VvW:XxY:y:Z:z:";
+	    "ABC:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrStUu:VvW:XxY:y:Z:z:";
 #else
-	    "AC:c:Dd:E:e:G:HhI:iJj:KM:m:Nn:Oo:p:QqRrSTtUu:VvW:XxY:y:Z:z:";
+	    "AC:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrStUu:VvW:XxY:y:Z:z:";
 #endif
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
@@ -444,10 +443,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			m->physical_ram_in_mb = atoi(optarg);
 			msopts = 1;
 			break;
-		case 'm':
-			m->max_instructions = atoi(optarg);
-			msopts = 1;
-			break;
 		case 'N':
 			m->show_nr_of_instructions = 1;
 			msopts = 1;
@@ -500,10 +495,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 'S':
 			m->random_mem_contents = 1;
-			msopts = 1;
-			break;
-		case 'T':
-			m->single_step_on_bad_addr = 1;
 			msopts = 1;
 			break;
 		case 't':

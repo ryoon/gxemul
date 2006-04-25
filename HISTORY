@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1203 2006-04-24 18:23:28 debug Exp $
+$Id: HISTORY,v 1.1204 2006-04-25 04:11:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2692,3 +2692,7 @@ Changelog for GXemul:
 		exceptions on MIPS32/64 revisions lower than 2.
 		Adding the SPARC 'ba', 'call', 'jmpl/retl', 'and', and 'xor'
 		instructions.
+20060425	Removing the -m command line option ("run at most x 
+		instructions") and -T ("single_step_on_bad_addr"), because
+		they never worked correctly with dyntrans anyway.
+		Freshening up the man page.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.7 2006-04-02 10:21:08 debug Exp $
+ *  $Id: cpu_run.c,v 1.8 2006-04-25 04:11:33 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -61,7 +61,6 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 {
 	struct cpu **cpus = machine->cpus;
 	int ncpus = machine->ncpus;
-	int64_t max_instructions_cached = machine->max_instructions;
 	int64_t max_random_cycles_per_chunk_cached =
 	    machine->max_random_cycles_per_chunk;
 	int64_t ncycles_chunk_end;
@@ -249,10 +248,6 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 			cpu_show_cycles(machine, 0);
 			machine->ncycles_show = machine->ncycles;
 		}
-
-		if (max_instructions_cached != 0 &&
-		    machine->ncycles >= max_instructions_cached)
-			running = 0;
 
 		/*  Let's allow other machines to run.  */
 		rounds ++;

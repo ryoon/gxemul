@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.215 2006-04-17 13:36:12 debug Exp $
+#  $Id: configure,v 1.216 2006-04-25 04:56:43 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1083,64 +1083,65 @@ rm -f _testuint.c _testuint
 #
 ###############################################################################
 
-printf "checking for bintrans backend... "
+if [ z$OLDMIPS = zYES ]; then
+	printf "checking for bintrans backend... "
 
-BINTRANS=NO
+	BINTRANS=NO
 
-if [ z$ENABLEMIPS = zNO ]; then
-	printf "NO!\nTEMPORARY HACK/PROBLEM: Disabling bintrans for now,\n"
-	printf "until things have stabilized.\n"
-	NOBINTRANS=YES
+	if [ z$ENABLEMIPS = zNO ]; then
+		printf "NO!\nTEMPORARY HACK/PROBLEM: Disabling bintrans for"
+		printf "now,\nuntil things have stabilized.\n"
+		NOBINTRANS=YES
+	fi
+
+	if [ z$NOBINTRANS = zYES ]; then
+		printf "disabled\n"
+	else
+		#  Alpha:
+		if [ z"`uname -m`" = zalpha ]; then
+			printf "#define ALPHA\n" >> config.h
+			printf "#define BINTRANS\n" >> config.h
+			printf "Alpha\n"
+			BINTRANS=YES
+		fi
+
+		#  x86:
+		if `uname -m|grep -v 64|grep -q 86`; then
+			printf "#define I386\n" >> config.h
+			printf "#define BINTRANS\n" >> config.h
+			printf "i386\n"
+			BINTRANS=YES
+		fi
+
+	# MIPS not yet
+	#	#  MIPS:
+	#	if [ z"`uname -m`" = zmips ]; then
+	#		printf "#define MIPS\n" >> config.h
+	#		printf "#define BINTRANS\n" >> config.h
+	#		printf "MIPS\n"
+	#		BINTRANS=YES
+	#	fi
+
+	#	#  UltraSPARC:
+	#	if [ z"`uname -m`" = zsun4u ]; then
+	#		printf "#define SPARCV9\n" >> config.h
+	#		printf "#define BINTRANS\n" >> config.h
+	#		printf "SPARC V9\n"
+	#		BINTRANS=YES
+	#	else
+	#		if [ z"`uname -m`" = zsparc64 ]; then
+	#			printf "#define SPARCV9\n" >> config.h
+	#			printf "#define BINTRANS\n" >> config.h
+	#			printf "SPARC V9\n"
+	#			BINTRANS=YES
+	#		fi
+	#	fi
+
+		if [ z$BINTRANS = zNO ]; then
+			printf "not supported yet on this arch\n"
+		fi
+	fi
 fi
-
-if [ z$NOBINTRANS = zYES ]; then
-	printf "disabled\n"
-else
-	#  Alpha:
-	if [ z"`uname -m`" = zalpha ]; then
-		printf "#define ALPHA\n" >> config.h
-		printf "#define BINTRANS\n" >> config.h
-		printf "Alpha\n"
-		BINTRANS=YES
-	fi
-
-	#  x86:
-	if `uname -m|grep -v 64|grep -q 86`; then
-		printf "#define I386\n" >> config.h
-		printf "#define BINTRANS\n" >> config.h
-		printf "i386\n"
-		BINTRANS=YES
-	fi
-
-# MIPS not yet
-#	#  MIPS:
-#	if [ z"`uname -m`" = zmips ]; then
-#		printf "#define MIPS\n" >> config.h
-#		printf "#define BINTRANS\n" >> config.h
-#		printf "MIPS\n"
-#		BINTRANS=YES
-#	fi
-
-#	#  UltraSPARC:
-#	if [ z"`uname -m`" = zsun4u ]; then
-#		printf "#define SPARCV9\n" >> config.h
-#		printf "#define BINTRANS\n" >> config.h
-#		printf "SPARC V9\n"
-#		BINTRANS=YES
-#	else
-#		if [ z"`uname -m`" = zsparc64 ]; then
-#			printf "#define SPARCV9\n" >> config.h
-#			printf "#define BINTRANS\n" >> config.h
-#			printf "SPARC V9\n"
-#			BINTRANS=YES
-#		fi
-#	fi
-
-	if [ z$BINTRANS = zNO ]; then
-		printf "not supported yet on this arch\n"
-	fi
-fi
-
 
 ###############################################################################
 

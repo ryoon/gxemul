@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.264 2006-04-25 04:11:33 debug Exp $
+ *  $Id: main.c,v 1.265 2006-04-25 04:11:45 debug Exp $
  */
 
 #include <stdio.h>
@@ -270,8 +270,6 @@ static void usage(int longusage)
 	printf("  -r        register dumps before every instruction\n");
 	printf("  -S        initialize emulated RAM to random bytes, "
 	    "instead of zeroes\n");
-	printf("  -T        enter the single-step debugger on "
-	    "unimplemented memory accesses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef WITH_X11

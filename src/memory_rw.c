@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.82 2005-12-31 15:48:32 debug Exp $
+ *  $Id: memory_rw.c,v 1.83 2006-04-25 04:11:33 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -507,18 +507,6 @@ have_paddr:
 					    old_pc, &offset);
 					fatal(" <%s> ]\n",
 					    symbol? symbol : " no symbol ");
-				}
-
-				if (cpu->machine->single_step_on_bad_addr) {
-					fatal("[ unimplemented access to "
-					    "0x%llx, pc=0x",(long long)paddr);
-					if (cpu->is_32bit)
-						fatal("%08x ]\n",
-						    (int)old_pc);
-					else
-						fatal("%016llx ]\n",
-						    (long long)old_pc);
-					single_step = 1;
 				}
 			}
 

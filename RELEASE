@@ -1,6 +1,10 @@
-$Id: RELEASE,v 1.183 2006-04-25 04:11:31 debug Exp $
+$Id: RELEASE,v 1.184 2006-04-26 03:59:11 debug Exp $
 
 Working on what will become 0.4.0.
+
+NOTE THAT DYNTRANS IS NOT stable yet for MIPS; these release notes are
+preliminary. It could take anything from days to months to get everything
+working as well as in 0.3.8.
 
 -------------------------------------------------------------------------
 

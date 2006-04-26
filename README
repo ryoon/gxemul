@@ -1,4 +1,4 @@
-$Id: README,v 1.101 2006-04-25 04:11:31 debug Exp $
+$Id: README,v 1.102 2006-04-26 03:59:11 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -45,16 +45,21 @@ Possible uses of the emulator include:
 Use your imagination :-)
 
 
-What isn't GXemul?
-------------------
+GXemul's limitations
+--------------------
 
-GXemul is not (in general) a cycle-accurate simulator, because it does not
-simulate things smaller than an instruction. Pipe-line stalls, 
-instruction latency effects etc. are more or less completely ignored.
+ o)  GXemul is not (in general) a cycle-accurate simulator, because it does
+     not simulate things smaller than an instruction. Pipe-line stalls,
+     instruction latency effects etc. are more or less completely ignored.
 
-The emulation "fakes" hardware devices enough to let unmodified guest
-operating systems run, but it does not precisely match any actual
-real-world hardware.
+ o)  Hardware devices have been implemented in an ad-hoc and as-needed
+     manner, usually only enough to fool certain guest operating systems
+     (e.g. NetBSD) that the hardware devices exist and function well
+     enough for those guest operating systems to use them.
+
+     A consequence of this is that a machine mode may be implemented well
+     enough to run NetBSD for that machine mode, but another guest
+     operating system may not run at all, or behave strangely.
 
 
 Quick start

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.265 2006-04-25 04:11:45 debug Exp $
+ *  $Id: main.c,v 1.266 2006-04-28 05:20:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -348,6 +348,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
 		case 'A':
+			fprintf(stderr, "NOTE: The -A command line option"
+			    " is DEPRECATED and will be removed soon.\n");
 			m->dyntrans_alignment_check = 0;
 			msopts = 1;
 			break;

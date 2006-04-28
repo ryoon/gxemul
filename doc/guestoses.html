@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.126 2006-04-11 03:44:57 debug Exp $
+$Id: guestoses.html,v 1.127 2006-04-28 05:20:03 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -137,7 +137,7 @@ steps:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	<b>gxemul -e 3max -A -d nbsd_pmax.img -d bc:pmaxcd-3.0.iso</b>
+	<b>gxemul -e 3max -d nbsd_pmax.img -d bc:pmaxcd-3.0.iso</b>
 	(or <b>pmaxcd.iso</b>)
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -156,7 +156,7 @@ For an ftp install, substitute steps 2 and 3 above with these:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	<b>gxemul -e 3max -A -d nbsd_pmax.img -O netbsd-INSTALL.gz</b>
+	<b>gxemul -e 3max -d nbsd_pmax.img -O netbsd-INSTALL.gz</b>
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
 	DECstation. Remember to choose <tt>vt100</tt> as your terminal
@@ -363,7 +363,7 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -e mobilepro770 -X -A -d nbsd_hpcmips.img  \
+	<b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img  \
 	  -d b:hpcmipscd-3.0.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
@@ -430,7 +430,7 @@ image, from an emulated DECstation 3MAX machine:
 	<a href="#netbsdpmaxinstall">further up on this page</a>.
   <p>
   <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e3max -A -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
+	<b>gxemul -e3max -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
 
 </pre>
   <li>Log in as root (on the emulated 3MAX machine), and execute the
@@ -506,7 +506,7 @@ image, from an emulated DECstation 3MAX machine:
 </pre>
   <p>
   <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e 3max -A -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
+	<b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
 
 </pre>and execute the following commands as <tt>root</tt>:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
@@ -588,7 +588,7 @@ time consuming, but necessary:
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
-	<b>gxemul -e 3max -A -d nbsd_pmax.img</b>
+	<b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
 	inside the emulator:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
@@ -1012,7 +1012,7 @@ chmod +w simpleroot28.fs</b>		&lt;--- make sure
 
 </pre>
   <li>Start the emulator with all three (!) disk images:<pre>
-	<b>gxemul -e 3max -A -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+	<b>gxemul -e 3max -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
 
 </pre>
 	(If you add <tt>-X</tt>, you will run with the graphical
@@ -1047,7 +1047,7 @@ chmod +w simpleroot28.fs</b>		&lt;--- make sure
 	password! The first time you boot up OpenBSD after the install, you
 	need to go into single user mode and run <b>passwd root</b> to set
 	the root password, or you will not be able to log in at all!<pre>
-	<b>gxemul -e 3max -A -d obsd_pmax.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
+	<b>gxemul -e 3max -d obsd_pmax.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
 </pre>
 While you are at it, you might want to extract the X11 install sets
 as well, as the installer seems to ignore them too. (Perhaps due to a bug
@@ -1196,7 +1196,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	(On FreeBSD and similar systems, it is called <tt>/dev/cd0c</tt>.
 	Replace that with the name of your CDROM drive, or the name of a
 	.iso image file.) Then, start the emulator like this:<pre>
-        <b>gxemul -X -A -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+        <b>gxemul -X -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
 </pre>
   <li>Once the first stage of the installation is done (restoring the root
@@ -1204,7 +1204,7 @@ The following instructions should let you install Ultrix onto a disk image:
 	new rootdisk, to continue the installation process.
 	This is done by removing the bootflag ('<tt>b</tt>') from the second
 	diskimage argument:<pre>
-        <b>gxemul -X -A -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+        <b>gxemul -X -e 3max -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
 </ol>
@@ -1212,7 +1212,7 @@ The following instructions should let you install Ultrix onto a disk image:
 <p>
 When the installation is completed, the following command should start  
 Ultrix from the harddisk image:<pre>
-        <b>gxemul -X -A -e 3max -j vmunix -d rootdisk.img</b>
+        <b>gxemul -X -e 3max -j vmunix -d rootdisk.img</b>
 </pre>
 
 <p>Ultrix mostly seems to work with dynamic binary translation (which can
@@ -1234,7 +1234,7 @@ There is also a <b><tt>-z</tt></b> option for supplying names of X11
 displays to use. The following example starts Ultrix on an emulated
 tripple-headed workstation, on three different displays (<tt>remote1:0.0</tt>,
 <tt>localhost:0.0</tt>, and <tt>remote2:0.0</tt>), using no scaledown:<pre>
-        <b>gxemul -A -N -e 3max -jgenvmunix -d rootdisk.img \
+        <b>gxemul -N -e 3max -jgenvmunix -d rootdisk.img \
             -XZ3 -z remote1:0.0 -z localhost:0.0 -z remote2:0.0</b>
 </pre>
 
@@ -1605,7 +1605,7 @@ client. Performing this setup is quite time consuming, but necessary:
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
 	Start up the emulated DECstation:<pre>
-	<b>gxemul -e 3max -A -d nbsd_pmax.img</b>
+	<b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
 	inside the emulator:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
@@ -1809,7 +1809,7 @@ instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -e pica -X -A -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
+	<b>gxemul -e pica -X -d obsd_arc.img -d b:openbsd_arc_2.3.iso -j 2.3/arc/bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
@@ -1920,7 +1920,7 @@ distribution onto a disk image, from an emulated DECstation 3MAX machine:
 </pre>
   <p>
   <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e 3max -A -d nbsd_pmax.img -d nbsd_netwinder.img -d netwinder.iso</b>
+	<b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_netwinder.img -d netwinder.iso</b>
 
 </pre>and execute the following commands as <tt>root</tt>:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>

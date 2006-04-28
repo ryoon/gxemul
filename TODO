@@ -1,4 +1,4 @@
-$Id: TODO,v 1.252 2006-04-24 05:12:29 debug Exp $
+$Id: TODO,v 1.253 2006-04-28 05:20:03 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -11,6 +11,8 @@ What I want for the 0.4.0 release: (optimistic :-)
 
 If time permits:
 
+	x)  Autotests for all instructions (MIPS64 rev 2, PPC, possibly
+	    ARM).
 	x)  Removal of the cache and delay command line options.
 	x)  Removal of the alignment check functionality.
 	x)  Removal of other legacy command line options?
@@ -26,6 +28,12 @@ If time permits:
 
 --------------
 
+Thoughts about ISA autotests:
+	x)  Test instructions several different CPUs? E.g. testing a
+	    MIPS64 rev 2 instruction on ISA I,II,III,IV,MIPS32,MIPS64
+	    and MIPS32 rev 2, and MIPS64 rev 2. It should get the
+	    correct behaviour on all.
+	x)  Test C790 instructions as well.
 
 MIPS:
 	o)  There's a bug causing awk errors after a fresh install of

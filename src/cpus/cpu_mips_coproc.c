@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.16 2006-04-22 13:59:57 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.17 2006-04-28 05:20:04 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -434,13 +434,13 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 		if (!cpu->machine->prom_emulation)
 			c->reg[COP0_STATUS] |= STATUS_BEV;
 
-		/*  Default pagesize = 4 KB.  */
+		/*  Default pagesize = 4 KB  (i.e. dualpage = 8KB)  */
 		c->reg[COP0_PAGEMASK] = 0x1fff;
 
 		/*  Note: .rev may contain the company ID as well!  */
 		c->reg[COP0_PRID] =
-		      (0x00 << 24)		/*  Company Options  */
-		    | (0x00 << 16)		/*  Company ID       */
+		      (0x00 << 24)			/*  Company Options  */
+		    | (0x00 << 16)			/*  Company ID       */
 		    | (cpu->cd.mips.cpu_type.rev <<  8)	/*  Processor ID     */
 		    | (cpu->cd.mips.cpu_type.sub)	/*  Revision         */
 		    ;
@@ -450,7 +450,7 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 		initialize_cop0_config(cpu, c);
 
 		/*  Make sure the status register is sign-extended nicely:  */
-		c->reg[COP0_STATUS] = (int64_t)(int32_t)c->reg[COP0_STATUS];
+		c->reg[COP0_STATUS] = (int32_t)c->reg[COP0_STATUS];
 	}
 
 	if (coproc_nr == 1)

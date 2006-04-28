@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: technical.html,v 1.72 2006-02-18 15:18:15 debug Exp $
+$Id: technical.html,v 1.73 2006-04-28 05:20:03 debug Exp $
 
 Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 
@@ -70,12 +70,14 @@ because the host architecture and emulated architecture can usually not be
 compared just like that.
 
 <p>Performance depends on several factors, including (but not limited to)  
-host architecture, host clock speed, which compiler and compiler flags
-were used to build the emulator, what the workload is, and so on. For
-example, if an emulated operating system tries to read a block from disk,
-from its point of view the read was instantaneous (no waiting). So 1 MIPS
-in an emulated OS might have taken more than one million instructions on a
-real machine.
+host architecture, target architecture, host clock speed, which compiler
+and compiler flags were used to build the emulator, what the workload is,
+what additional runtime flags are given to the emulator, and so on.
+
+<p>Devices are generally not timing-accurate: for example, if an emulated
+operating system tries to read a block from disk, from its point of view
+the read was instantaneous (no waiting). So 1 MIPS in an emulated OS might
+have taken more than one million instructions on a real machine.
 
 <p>Also, if the emulator says it has executed 1 million instructions, and 
 the CPU family in question was capable of scalar execution (i.e. one cycle 
@@ -85,38 +87,20 @@ penalties that are not simulated by GXemul.
 
 <p>Because of these issues, it is in my opinion best to measure
 performance as the actual (real-world) time it takes to perform a task
-with the emulator. Typical examples would be "How long does it take to 
-install NetBSD?", or "How long does it take to compile XYZ inside NetBSD 
-in the emulator?".
+with the emulator, e.g.:
+
+<ul>
+  <li>"How long does it take to install NetBSD onto a disk image?"
+  <li>"How long does it take to compile XYZ inside NetBSD
+	in the emulator?".
+</ul>
 
 <p>So, how fast is it? :-)&nbsp;&nbsp;&nbsp;Answer: it varies.
 
-<p>The emulation technique used varies depending on which processor type 
-is being emulated. (One of my main goals with GXemul is to experiment with 
-different kinds of emulation, so these might change in the future.)
-
-<ul>
-  <li><b>MIPS:</b><br>
-	There are two emulation modes. The most important one is an
-	implementation of a <i>dynamic binary translator</i>.
-	(Compared to real binary translators, though, GXemul's bintrans
-	subsystem is very simple and does not perform very well.)
-	This mode can be used on Alpha and i386 host. The other emulation
-	mode is simple interpretation, where an instruction is read from
-	emulated memory, and interpreted one-at-a-time. (Slow, but it
-	works. It can be forcefully used by using the <tt>-B</tt> command
-	line option.)
-  <p>
-  <li><b>All other modes:</b><br>
-	These use a kind of dynamic translation system. This system does
-	not recompile anything into native code, it only uses tables of
-	pointers to functions written in (sometimes machine-generated) C
-	code. Speed is lower than what can be achieved using real binary
-	translation into native code, but higher than when traditional
-	interpretation is used. With some tricks, it will hopefully still
-	give reasonable speed. The ARM and PowerPC
-	emulation modes use this kind of translation.
-</ul>
+<p>The emulation technique used varies depending on which processor type
+is being emulated. As one of my main goals with GXemul is to experiment
+with different kinds of emulation, the performance could change in the 
+future.
 
 
 

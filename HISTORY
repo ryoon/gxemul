@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1204 2006-04-25 04:11:31 debug Exp $
+$Id: HISTORY,v 1.1205 2006-04-28 18:24:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2696,3 +2696,5 @@ Changelog for GXemul:
 		instructions") and -T ("single_step_on_bad_addr"), because
 		they never worked correctly with dyntrans anyway.
 		Freshening up the man page.
+20060428	Adding more MIPS dyntrans instructions: bltzal[l], idle.
+		Enabling MIPS dyntrans compare interrupts.

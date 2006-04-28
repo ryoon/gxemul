@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.62 2006-04-24 17:16:44 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.63 2006-04-28 18:24:22 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -636,6 +636,123 @@ X(bgezall_samepage)
 {
 	MODE_int_t rs = reg(ic->arg[0]);
 	int x = (rs >= 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bltzal:   Branch if less than zero (and link)
+ *  bltzall:  Branch if less than zero (and link) likely
+ *
+ *  arg[0] = pointer to rs
+ *  arg[2] = (int32_t) relative offset from the next instruction
+ */
+X(bltzal)
+{
+	MODE_int_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bltzal_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		if (x)
+			cpu->cd.mips.next_ic = (struct mips_instr_call *)
+			    ic->arg[2];
+		else
+			cpu->cd.mips.next_ic ++;
+	}
+	cpu->delay_slot = NOT_DELAYED;
+}
+X(bltzall)
+{
+	MODE_int_t old_pc = cpu->pc;
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0), low_pc;
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->cd.mips.gpr[MIPS_GPR_RA] = cpu->pc + 8;
+
+	if (x)
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bltzall_samepage)
+{
+	MODE_int_t rs = reg(ic->arg[0]);
+	int x = (rs < 0), low_pc;
 
 	cpu->delay_slot = TO_BE_DELAYED;
 	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
@@ -2599,6 +2716,7 @@ X(to_be_translated)
 			case COP0_ERET:
 				ic->f = instr(eret);
 				break;
+			case COP0_IDLE:
 			case COP0_STANDBY:
 			case COP0_SUSPEND:
 			case COP0_HIBERNATE:
@@ -2749,6 +2867,8 @@ X(to_be_translated)
 		case REGIMM_BLTZL:
 		case REGIMM_BGEZAL:
 		case REGIMM_BGEZALL:
+		case REGIMM_BLTZAL:
+		case REGIMM_BLTZALL:
 			samepage_function = NULL;
 			switch (rt) {
 			case REGIMM_BGEZ:
@@ -2774,6 +2894,14 @@ X(to_be_translated)
 			case REGIMM_BGEZALL:
 				ic->f = instr(bgezall);
 				samepage_function = instr(bgezall_samepage);
+				break;
+			case REGIMM_BLTZAL:
+				ic->f = instr(bltzal);
+				samepage_function = instr(bltzal_samepage);
+				break;
+			case REGIMM_BLTZALL:
+				ic->f = instr(bltzall);
+				samepage_function = instr(bltzall_samepage);
 				break;
 			}
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];

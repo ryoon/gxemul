@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.9 2006-04-24 16:35:25 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.10 2006-04-28 18:24:22 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  *
@@ -261,16 +261,17 @@
 /*  COP1 fmt codes = bits 25..21 (only if COP1):  */
 #define	    COPz_CFCz			    0x02    /*  00010  */  /*  MIPS I  */
 #define	    COPz_CTCz			    0x06    /*  00110  */  /*  MIPS I  */
-/*  COP0 opcodes = bits 4..0 (only if COP0 and CO=1):  */
-#define	    COP0_TLBR			    0x01    /*  00001  */
-#define	    COP0_TLBWI			    0x02    /*  00010  */
-#define	    COP0_TLBWR			    0x06    /*  00110  */
-#define	    COP0_TLBP			    0x08    /*  01000  */
-#define	    COP0_RFE			    0x10    /*  10000  */
-#define	    COP0_ERET			    0x18    /*  11000  */
-#define	    COP0_STANDBY		    0x21
-#define	    COP0_SUSPEND		    0x22
-#define	    COP0_HIBERNATE		    0x23
+/*  COP0 opcodes = bits 7..0 (only if COP0 and CO=1):  */
+#define	    COP0_TLBR			    0x01    /*  000001  */
+#define	    COP0_TLBWI			    0x02    /*  000010  */
+#define	    COP0_TLBWR			    0x06    /*  000110  */
+#define	    COP0_TLBP			    0x08    /*  001000  */
+#define	    COP0_RFE			    0x10    /*  010000  */
+#define	    COP0_ERET			    0x18    /*  011000  */
+#define	    COP0_IDLE			    0x20    /*  100000  */
+#define	    COP0_STANDBY		    0x21    /*  100001  */
+#define	    COP0_SUSPEND		    0x22    /*  100010  */
+#define	    COP0_HIBERNATE		    0x23    /*  100011  */
 #define	HI6_COP1			0x11	/*  010001  */
 #define	HI6_COP2			0x12	/*  010010  */
 #define	HI6_COP3			0x13	/*  010011  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.88 2006-04-25 04:11:33 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.89 2006-04-28 18:24:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -410,9 +410,14 @@ while (cycles-- > 0)
 	/*  Update the count register:  */
 	{
 		uint32_t old = cpu->cd.mips.coproc[0]->reg[COP0_COUNT];
+		int32_t diff1 = cpu->cd.mips.coproc[0]->reg[COP0_COMPARE] - old;
+		int32_t diff2;
 		cpu->cd.mips.coproc[0]->reg[COP0_COUNT] =
 		    (int32_t) (old + n_instrs);
-		/*  TODO compare  */
+		diff2 = cpu->cd.mips.coproc[0]->reg[COP0_COMPARE] -
+		    cpu->cd.mips.coproc[0]->reg[COP0_COUNT];
+		if (cpu->cd.mips.compare_register_set && diff1>0 && diff2<=0)
+			cpu_interrupt(cpu, 7);
 	}
 #endif
 #ifdef DYNTRANS_PPC

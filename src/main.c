@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.266 2006-04-28 05:20:03 debug Exp $
+ *  $Id: main.c,v 1.267 2006-04-29 09:32:18 debug Exp $
  */
 
 #include <stdio.h>
@@ -248,10 +248,16 @@ static void usage(int longusage)
 	    " clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable some speed tricks\n");
-	printf("  -j name   set the name of the kernel, for example:\n");
-	printf("                -j netbsd          for NetBSD/pmax\n");
-	printf("                -j bsd             for OpenBSD/pmax\n");
-	printf("                -j vmunix          for Ultrix/RISC\n");
+	printf("  -j name   set the name of the kernel; for DECstation "
+	    "emulation, this passes\n            the name to the bootloader,"
+	    " for example:\n");
+	printf("                -j netbsd     (NetBSD/pmax)      "
+	    "-j bsd      (OpenBSD/pmax)\n");
+	printf("                -j vmsprite   (Sprite/pmax)      "
+	    "-j vmunix   (Ultrix/RISC)\n");
+	printf("            For other emulation modes, if the boot disk is an"
+	    " ISO9660\n            filesystem, -j sets the name of the"
+	    " kernel to load.\n");
 	printf("  -M m      emulate m MBs of physical RAM\n");
 	printf("  -N        display nr of instructions/second average, at"
 	    " regular intervals\n");
@@ -259,9 +265,9 @@ static void usage(int longusage)
 	printf("  -O        force netboot (tftp instead of disk), even when"
 	    " a disk image is\n"
 	    "            present (for DECstation, SGI, and ARC emulation)\n");
-	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI"
-	    " emulation).\n");
-	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
+	printf("  -o arg    set the boot argument, for DEC, ARC, or SGI"
+	    " emulation\n");
+	printf("            (default arg for DEC is -a, for ARC/SGI -aN)\n");
 	printf("  -p pc     add a breakpoint (remember to use the '0x' "
 	    "prefix for hex!)\n");
 	printf("  -Q        no built-in PROM emulation  (use this for "
@@ -296,7 +302,8 @@ static void usage(int longusage)
 	printf("\nGeneral options:\n");
 	printf("  -c cmd    add cmd as a command to run before starting "
 	    "the simulation\n");
-	printf("  -D        guarantee fully deterministic behaviour\n");
+	printf("  -D        guarantee (almost) fully deterministic "
+	    "behaviour\n");
 	printf("  -H        display a list of possible CPU and "
 	    "machine types\n");
 	printf("  -h        display this help message\n");

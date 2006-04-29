@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.18 2006-04-29 08:18:30 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.19 2006-04-29 09:49:48 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -67,14 +67,6 @@ extern volatile int single_step;
 
 static char *cop0_names[] = COP0_NAMES;
 static char *regnames[] = MIPS_REGISTER_NAMES;
-
-
-/*  FPU control registers:  */
-#define	FPU_FCIR	0
-#define	FPU_FCCR	25
-#define	FPU_FCSR	31
-#define	  FCSR_FCC0_SHIFT	  23
-#define	  FCSR_FCC1_SHIFT	  25
 
 
 /*
@@ -1719,10 +1711,11 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 
 		/*  Both the FCCR and FCSR contain condition code bits...  */
 		if (cc == 0)
-			cond_true = (cp->fcr[FPU_FCSR] >> FCSR_FCC0_SHIFT) & 1;
+			cond_true = (cp->fcr[MIPS_FPU_FCSR] >>
+			    MIPS_FCSR_FCC0_SHIFT) & 1;
 		else
-			cond_true = (cp->fcr[FPU_FCSR] >>
-			    (FCSR_FCC1_SHIFT + cc-1)) & 1;
+			cond_true = (cp->fcr[MIPS_FPU_FCSR] >>
+			    (MIPS_FCSR_FCC1_SHIFT + cc-1)) & 1;
 
 		if (!tf)
 			cond_true = !cond_true;
@@ -1878,20 +1871,20 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 		 *	FCCR:  bits 7..0
 		 *	FCSR:  bits 31..25 and 23
 		 */
-		cp->fcr[FPU_FCCR] &= ~(1 << cc);
+		cp->fcr[MIPS_FPU_FCCR] &= ~(1 << cc);
 		if (cond_true)
-			cp->fcr[FPU_FCCR] |= (1 << cc);
+			cp->fcr[MIPS_FPU_FCCR] |= (1 << cc);
 
 		if (cc == 0) {
-			bit = 1 << FCSR_FCC0_SHIFT;
-			cp->fcr[FPU_FCSR] &= ~bit;
+			bit = 1 << MIPS_FCSR_FCC0_SHIFT;
+			cp->fcr[MIPS_FPU_FCSR] &= ~bit;
 			if (cond_true)
-				cp->fcr[FPU_FCSR] |= bit;
+				cp->fcr[MIPS_FPU_FCSR] |= bit;
 		} else {
-			bit = 1 << (FCSR_FCC1_SHIFT + cc-1);
-			cp->fcr[FPU_FCSR] &= ~bit;
+			bit = 1 << (MIPS_FCSR_FCC1_SHIFT + cc-1);
+			cp->fcr[MIPS_FPU_FCSR] &= ~bit;
 			if (cond_true)
-				cp->fcr[FPU_FCSR] |= bit;
+				cp->fcr[MIPS_FPU_FCSR] |= bit;
 		}
 
 		return 1;
@@ -2474,20 +2467,21 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 					    on status bits!  */
 
 					switch (fs) {
-					case FPU_FCCR:
-						cp->fcr[FPU_FCSR] =
-						    (cp->fcr[FPU_FCSR] &
+					case MIPS_FPU_FCCR:
+						cp->fcr[MIPS_FPU_FCSR] =
+						    (cp->fcr[MIPS_FPU_FCSR] &
 						    0x017fffffULL) | ((tmp & 1)
-						    << FCSR_FCC0_SHIFT)
+						    << MIPS_FCSR_FCC0_SHIFT)
 						    | (((tmp & 0xfe) >> 1) <<
-						    FCSR_FCC1_SHIFT);
+						    MIPS_FCSR_FCC1_SHIFT);
 						break;
-					case FPU_FCSR:
-						cp->fcr[FPU_FCCR] =
-						    (cp->fcr[FPU_FCCR] &
+					case MIPS_FPU_FCSR:
+						cp->fcr[MIPS_FPU_FCCR] =
+						    (cp->fcr[MIPS_FPU_FCCR] &
 						    0xffffff00ULL) | ((tmp >>
-						    FCSR_FCC0_SHIFT) & 1) |
-						    (((tmp >> FCSR_FCC1_SHIFT)
+						    MIPS_FCSR_FCC0_SHIFT) & 1) |
+						    (((tmp >>
+						    MIPS_FCSR_FCC1_SHIFT)
 						    & 0x7f) << 1);
 						break;
 					default:

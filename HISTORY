@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1208 2006-04-29 08:31:11 debug Exp $
+$Id: HISTORY,v 1.1209 2006-04-29 09:49:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2698,5 +2698,10 @@ Changelog for GXemul:
 		Freshening up the man page.
 20060428	Adding more MIPS dyntrans instructions: bltzal[l], idle.
 		Enabling MIPS dyntrans compare interrupts.
-20060429	More MIPS instructions: [d]sub, sdc1, ldc1, dmtc1, dmfc1.
+20060429	FINALLY found the weird dyntrans bug, causing NetBSD etc. to
+		behave strangely: some floating point code (conditional
+		coprocessor branches) could not be reused from the old
+		non-dyntrans code. The "quick-and-dirty fallback" only appeared
+		to work. Fixing by implementing bc1* for MIPS dyntrans.
+		More MIPS instructions: [d]sub, sdc1, ldc1, dmtc1, dmfc1.
 		Freshening up MIPS floating point disassembly appearance.

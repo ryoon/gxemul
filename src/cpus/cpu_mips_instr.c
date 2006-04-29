@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.66 2006-04-29 08:31:12 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.67 2006-04-29 09:49:48 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1601,6 +1601,62 @@ cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 
 /*
+ *  cop1_bc:  Floating point conditional branch.
+ *
+ *  arg[0] = cc
+ *  arg[1] = nd (=2) and tf (=1) bits
+ *  arg[2] = offset (relative to start of this page)
+ */
+X(cop1_bc)
+{
+	MODE_int_t old_pc = cpu->pc;
+	const int cpnr = 1;
+	int x, low_pc, cc = ic->arg[0];
+
+	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+	if (!(cpu->cd.mips.coproc[0]->
+	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+		return;
+	}
+
+	/*  Get the correct condition code bit:  */
+	if (cc == 0)
+		x = (cpu->cd.mips.coproc[1]->fcr[MIPS_FPU_FCSR]
+		    >> MIPS_FCSR_FCC0_SHIFT) & 1;
+	else
+		x = (cpu->cd.mips.coproc[1]->fcr[MIPS_FPU_FCSR]
+		    >> (MIPS_FCSR_FCC1_SHIFT + cc-1)) & 1;
+
+	/*  Branch on false? Then invert the truth value.  */
+	if (!(ic->arg[1] & 1))
+		x ^= 1;
+
+	/*  Execute the delay slot (except if it is nullified):  */
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (x || !(ic->arg[1] & 2))
+		ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (x) {
+			old_pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[2];
+			quick_pc_to_pointers(cpu);
+		} else
+			cpu->cd.mips.next_ic ++;
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
  *  cop1_slow:  Fallback to legacy cop1 code. (Slow, but it should work.)
  */
 X(cop1_slow)
@@ -2694,8 +2750,8 @@ X(to_be_translated)
 		}
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rt];
-		ic->arg[2] = (imm << MIPS_INSTR_ALIGNMENT_SHIFT)
-		    + (addr & 0xffc) + 4;
+		ic->arg[2] = (int32_t) ( (imm << MIPS_INSTR_ALIGNMENT_SHIFT)
+		    + (addr & 0xffc) + 4 );
 		/*  Is the offset from the start of the current page still
 		    within the same page? Then use the samepage_function:  */
 		if ((uint32_t)ic->arg[2] < ((MIPS_IC_ENTRIES_PER_PAGE - 1)
@@ -2764,7 +2820,7 @@ X(to_be_translated)
 	case HI6_LUI:
 		ic->f = instr(set);
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
-		ic->arg[1] = imm << 16;
+		ic->arg[1] = (int32_t) (imm << 16);
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 		break;
@@ -2871,8 +2927,25 @@ X(to_be_translated)
 
 		case COPz_BCzc:
 			/*  Conditional branch:  */
-			fatal("not yet\n");
-			goto bad;
+			/*  TODO: Reimplement this in a faster way.  */
+			ic->f = instr(cop1_bc);
+			ic->arg[0] = (iword >> 18) & 7;	/*  cc  */
+			ic->arg[1] = (iword >> 16) & 3;	/*  nd, tf bits  */
+			ic->arg[2] = (int32_t) ((imm <<
+			    MIPS_INSTR_ALIGNMENT_SHIFT) + (addr & 0xffc) + 4);
+			if (cpu->delay_slot) {
+				fatal("TODO: branch in delay slot?\n");
+				goto bad;
+			}
+			if (cpu->cd.mips.cpu_type.isa_level <= 3 &&
+			    ic->arg[0] != 0) {
+				fatal("Attempt to execute a non-cc-0 BC*"
+				    " instruction on an isa level %i cpu. "
+				    "TODO: How should this be handled?\n",
+				    cpu->cd.mips.cpu_type.isa_level);
+				goto bad;
+			}
+
 			break;
 
 		case COP1_FMT_S:

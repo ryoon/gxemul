@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.35 2006-04-24 05:12:56 debug Exp $
+ *  $Id: cpu_mips.h,v 1.36 2006-04-29 09:49:48 debug Exp $
  */
 
 #include "misc.h"
@@ -84,7 +84,13 @@ struct mips_tlb {
 /*
  *  Coproc 1:
  */
-#define	N_MIPS_FCRS		32
+/*  FPU control registers:  */
+#define	N_MIPS_FCRS			32
+#define	MIPS_FPU_FCIR			0
+#define	MIPS_FPU_FCCR			25
+#define	MIPS_FPU_FCSR			31
+#define	   MIPS_FCSR_FCC0_SHIFT		   23
+#define	   MIPS_FCSR_FCC1_SHIFT		   25
 
 struct mips_coproc {
 	int		coproc_nr;

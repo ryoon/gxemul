@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.10 2006-04-22 08:40:45 debug Exp $
+ *  $Id: machine_pmax.c,v 1.11 2006-04-29 22:10:31 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -648,6 +648,14 @@ MACHINE_SETUP(pmax)
 		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
 		    0x00c0de0c);	/*  trap instruction  */
 		store_32bit_word(cpu, DEC_PROM_EMULATION + i*8 + 4,
+		    0x00000000);	/*  nop  */
+	}
+
+	/*  Jumptable at beginning of PROM:  also "magic trap" instructions:  */
+	for (i=0; i<0x180; i+=8) {
+		store_32bit_word(cpu, 0xbfc00000 + i,
+		    0x00c0de0c);	/*  trap instruction  */
+		store_32bit_word(cpu, 0xbfc00000 + i + 4,
 		    0x00000000);	/*  nop  */
 	}
 #else

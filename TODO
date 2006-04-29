@@ -1,4 +1,4 @@
-$Id: TODO,v 1.254 2006-04-29 16:02:27 debug Exp $
+$Id: TODO,v 1.255 2006-04-29 22:10:31 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -37,10 +37,8 @@ Thoughts about ISA autotests:
 	x)  Test C790 instructions as well.
 
 MIPS:
-	o)  There's a bug causing awk errors after a fresh install of
-	    NetBSD/hpcmips and NetBSD/pmax (using R4400).
 	o)  Dyntrans: R2000/R3000 caches don't quite work yet (NetBSD/pmax,
-	    Ultrix etc).
+	    Ultrix, Sprite, etc).
 	o)  Dyntrans: The first tlbwr isn't random! (Can be below wired!)
 	o)  Dyntrans: Count register updates, and compare interrupts.
 	o)  Dyntrans: SMP correctness

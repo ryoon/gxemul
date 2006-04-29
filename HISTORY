@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1205 2006-04-28 18:24:22 debug Exp $
+$Id: HISTORY,v 1.1206 2006-04-29 07:01:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2698,3 +2698,4 @@ Changelog for GXemul:
 		Freshening up the man page.
 20060428	Adding more MIPS dyntrans instructions: bltzal[l], idle.
 		Enabling MIPS dyntrans compare interrupts.
+20060429	More MIPS instructions: [d]sub.

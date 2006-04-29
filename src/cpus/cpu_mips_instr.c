@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.63 2006-04-28 18:24:22 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.64 2006-04-29 07:01:55 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1273,7 +1273,41 @@ X(dadd)
 		reg(ic->arg[2]) = rd;
 }
 X(subu) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) - reg(ic->arg[1])); }
+X(sub)
+{
+	/*  NOTE: Negating rt and using addition. TODO: Is this correct?  */
+	int32_t rs = reg(ic->arg[0]), rt = - reg(ic->arg[1]);
+	int32_t rd = rs + rt;
+
+	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+	} else
+		reg(ic->arg[2]) = rd;
+}
 X(dsubu){ reg(ic->arg[2]) = reg(ic->arg[0]) - reg(ic->arg[1]); }
+X(dsub)
+{
+	/*  NOTE: Negating rt and using addition. TODO: Is this correct?  */
+	int64_t rs = reg(ic->arg[0]), rt = - reg(ic->arg[1]);
+	int64_t rd = rs + rt;
+
+	if ((rs >= 0 && rt >= 0 && rd < 0) || (rs < 0 && rt < 0 && rd >= 0)) {
+		/*  Synch. PC and cause an exception:  */
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+	} else
+		reg(ic->arg[2]) = rd;
+}
 X(slt) {
 #ifdef MODE32
 	reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) < (int32_t)reg(ic->arg[1]);
@@ -1540,11 +1574,8 @@ X(mtc0)
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
 	    (uint64_t *)ic->arg[0], 0, select);
 
-
 /*  TODO: fix/remove these!  */
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-
-
 }
 X(dmfc0)
 {
@@ -2384,9 +2415,11 @@ X(to_be_translated)
 
 		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
+		case SPECIAL_SUB:
 		case SPECIAL_SUBU:
 		case SPECIAL_DADD:
 		case SPECIAL_DADDU:
+		case SPECIAL_DSUB:
 		case SPECIAL_DSUBU:
 		case SPECIAL_SLT:
 		case SPECIAL_SLTU:
@@ -2417,9 +2450,11 @@ X(to_be_translated)
 			switch (s6) {
 			case SPECIAL_ADD:   ic->f = instr(add); break;
 			case SPECIAL_ADDU:  ic->f = instr(addu); break;
+			case SPECIAL_SUB:   ic->f = instr(sub); break;
 			case SPECIAL_SUBU:  ic->f = instr(subu); break;
-			case SPECIAL_DADD:  ic->f = instr(dadd); break;
+			case SPECIAL_DADD:  ic->f = instr(dadd); x64=1; break;
 			case SPECIAL_DADDU: ic->f = instr(daddu); x64=1; break;
+			case SPECIAL_DSUB:  ic->f = instr(dsub); x64=1; break;
 			case SPECIAL_DSUBU: ic->f = instr(dsubu); x64=1; break;
 			case SPECIAL_SLT:   ic->f = instr(slt); break;
 			case SPECIAL_SLTU:  ic->f = instr(sltu); break;

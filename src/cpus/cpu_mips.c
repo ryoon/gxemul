@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.41 2006-04-24 16:35:25 debug Exp $
+ *  $Id: cpu_mips.c,v 1.42 2006-04-29 08:31:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1833,9 +1833,11 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		    exception_names[exccode], tlb? " <tlb>" : "");
 
 		switch (exccode) {
+
 		case EXCEPTION_INT:
 			debug(" cause_im=0x%02x", (int)((reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
 			break;
+
 		case EXCEPTION_SYS:
 			debug(" v0=%i", (int)cpu->cd.mips.gpr[MIPS_GPR_V0]);
 			for (x=0; x<4; x++) {
@@ -1850,6 +1852,11 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 					debug(" a%i=0x%"PRIx64, x, (uint64_t)d);
 			}
 			break;
+
+		case EXCEPTION_CPU:
+			debug(" coproc_nr=%i", coproc_nr);
+			break;
+
 		default:
 			if (cpu->is_32bit)
 				debug(" vaddr=0x%08x", (int)vaddr);
@@ -1858,7 +1865,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		}
 
 		if (cpu->is_32bit)
-			debug(" pc=0x%08x ", (int)cpu->cd.mips.pc_last);
+			debug(" pc=0x%08"PRIx32" ", (uint32_t)cpu->cd.mips.pc_last);
 		else
 			debug(" pc=0x%016"PRIx64" ", (uint64_t)cpu->cd.mips.pc_last);
 

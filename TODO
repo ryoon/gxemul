@@ -1,4 +1,4 @@
-$Id: TODO,v 1.253 2006-04-28 05:20:03 debug Exp $
+$Id: TODO,v 1.254 2006-04-29 16:02:27 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,6 +7,7 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 What I want for the 0.4.0 release: (optimistic :-)
 
 	x)  MIPS dyntrans working at least as well as the old mode did.
+	x)  "data=TODO" -> implement dump of memory where possible
 	x)  Complete removal of bintrans.  :-]
 
 If time permits:

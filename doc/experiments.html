@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.96 2006-02-18 13:15:20 debug Exp $
+$Id: experiments.html,v 1.97 2006-04-29 09:20:42 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -313,7 +313,7 @@ following experimental devices:
 		the specified one.</td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top">0x00c0</tt></td>
+	    <td align="left" valign="top"><tt>0x00c0</tt></td>
 	    <td align="left" valign="top">Read: <b><tt>ipi_read()</tt></b>.
 		Returns the next pending IPI. 0 is returned if there is no 
 		pending IPI (so 0 shouldn't be used for valid IPIs).
@@ -322,7 +322,7 @@ following experimental devices:
 		Clears the IPI queue, discarding any pending IPIs.</td>
 	  </tr>
 	  <tr>
-	    <td align="left" valign="top">0x00d0</tt></td>
+	    <td align="left" valign="top"><tt>0x00d0</tt></td>
 	    <td align="left" valign="top">Read: <b><tt>ncycles()</tt></b>.
 		Returns approximately the number of cycles executed.
 		Note: this value is not updated for every instruction,

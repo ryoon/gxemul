@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.10 2006-04-28 18:24:22 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.11 2006-04-29 08:18:31 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  *
@@ -258,9 +258,20 @@
 #define	    COPz_DMFCz			    0x01    /*  00001  */
 #define	    COPz_MTCz			    0x04    /*  00100  */
 #define	    COPz_DMTCz			    0x05    /*  00101  */
-/*  COP1 fmt codes = bits 25..21 (only if COP1):  */
+/*
+ *  For cop1 (the floating point coprocessor), if bits 25..21 are
+ *  a valid format, then bits 5..0 are the math opcode.
+ *
+ *  Otherwise, bits 25..21 are the main coprocessor opcode.
+ */
 #define	    COPz_CFCz			    0x02    /*  00010  */  /*  MIPS I  */
 #define	    COPz_CTCz			    0x06    /*  00110  */  /*  MIPS I  */
+#define	    COPz_BCzc			    0x08    /*  01000  */
+#define	    COP1_FMT_S			    0x10    /*  10000  */
+#define	    COP1_FMT_D			    0x11    /*  10001  */
+#define	    COP1_FMT_W			    0x14    /*  10100  */
+#define	    COP1_FMT_L			    0x15    /*  10101  */
+#define	    COP1_FMT_PS			    0x16    /*  10110  */
 /*  COP0 opcodes = bits 7..0 (only if COP0 and CO=1):  */
 #define	    COP0_TLBR			    0x01    /*  000001  */
 #define	    COP0_TLBWI			    0x02    /*  000010  */

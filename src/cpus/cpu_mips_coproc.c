@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.17 2006-04-28 05:20:04 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.18 2006-04-29 08:18:30 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1432,12 +1432,15 @@ static int mips_fmt_to_ieee_fmt[32] = {
 	IEEE_FMT_W, IEEE_FMT_L, /* PS (Paired Single) */ 0, 0,
 	0, 0, 0, 0,  0, 0, 0, 0  };
 
-/*  MIPS floating point types:  */
-#define	FMT_S		16
-#define	FMT_D		17
-#define	FMT_W		20
-#define	FMT_L		21
-#define	FMT_PS		22
+static char *fmtname[32] = {
+	 "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",
+	 "8",  "9", "10", "11", "12", "13", "14", "15",
+	 "s",  "d", "18", "19",  "w",  "l", "ps", "23",
+	"24", "25", "26", "27", "28", "29", "30", "31" 	};
+
+static char *ccname[16] = {
+	"f",  "un",   "eq",  "ueq", "olt", "ult", "ole", "ule",
+	"sf", "ngle", "seq", "ngl", "lt",  "nge", "le",  "ngt"  };
 
 #define	FPU_OP_ADD	1
 #define	FPU_OP_SUB	2
@@ -1467,7 +1470,7 @@ static void fpu_store_float_value(struct mips_coproc *cp, int fd,
 	 *  TODO: This is for 32-bit mode. It has to be updated later
 	 *        for 64-bit coprocessor functionality!
 	 */
-	if (fmt == FMT_D || fmt == FMT_L) {
+	if (fmt == COP1_FMT_D || fmt == COP1_FMT_L) {
 		cp->reg[fd] = r & 0xffffffffULL;
 		cp->reg[(fd+1) & 31] = (r >> 32) & 0xffffffffULL;
 
@@ -1506,7 +1509,7 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 		fs_v = cp->reg[fs];
 		/*  TODO: register-pair mode and plain
 		    register mode? "FR" bit?  */
-		if (fmt == FMT_D || fmt == FMT_L)
+		if (fmt == COP1_FMT_D || fmt == COP1_FMT_L)
 			fs_v = (fs_v & 0xffffffffULL) +
 			    (cp->reg[(fs + 1) & 31] << 32);
 		ieee_interpret_float_value(fs_v, &float_value[0], ieee_fmt);
@@ -1515,7 +1518,7 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 		uint64_t v = cp->reg[ft];
 		/*  TODO: register-pair mode and
 		    plain register mode? "FR" bit?  */
-		if (fmt == FMT_D || fmt == FMT_L)
+		if (fmt == COP1_FMT_D || fmt == COP1_FMT_L)
 			v = (v & 0xffffffffULL) +
 			    (cp->reg[(ft + 1) & 31] << 32);
 		ieee_interpret_float_value(v, &float_value[1], ieee_fmt);
@@ -1593,7 +1596,7 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 		 *  TODO:  this is for 32-bit mode. It has to be updated later
 		 *		for 64-bit coprocessor stuff.
 		 */
-		if (output_fmt == FMT_D || output_fmt == FMT_L) {
+		if (output_fmt == COP1_FMT_D || output_fmt == COP1_FMT_L) {
 			cp->reg[fd] = fs_v & 0xffffffffULL;
 			cp->reg[(fd+1) & 31] = (fs_v >> 32) & 0xffffffffULL;
 			if (cp->reg[fd] & 0x80000000ULL)
@@ -1741,7 +1744,8 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  add.fmt: Floating-point add  */
 	if ((function & 0x0000003f) == 0x00000000) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("add.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+			debug("add.%s\tr%i,r%i,r%i\n",
+			    fmtname[fmt], fd, fs, ft);
 		if (unassemble_only)
 			return 1;
 
@@ -1752,7 +1756,8 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  sub.fmt: Floating-point subtract  */
 	if ((function & 0x0000003f) == 0x00000001) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("sub.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+			debug("sub.%s\tr%i,r%i,r%i\n",
+			    fmtname[fmt], fd, fs, ft);
 		if (unassemble_only)
 			return 1;
 
@@ -1763,7 +1768,8 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  mul.fmt: Floating-point multiply  */
 	if ((function & 0x0000003f) == 0x00000002) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("mul.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+			debug("mul.%s\tr%i,r%i,r%i\n",
+			    fmtname[fmt], fd, fs, ft);
 		if (unassemble_only)
 			return 1;
 
@@ -1774,7 +1780,8 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  div.fmt: Floating-point divide  */
 	if ((function & 0x0000003f) == 0x00000003) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("div.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+			debug("div.%s\tr%i,r%i,r%i\n",
+			    fmtname[fmt], fd, fs, ft);
 		if (unassemble_only)
 			return 1;
 
@@ -1785,7 +1792,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  sqrt.fmt: Floating-point square-root  */
 	if ((function & 0x001f003f) == 0x00000004) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("sqrt.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("sqrt.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
@@ -1796,7 +1803,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  abs.fmt: Floating-point absolute value  */
 	if ((function & 0x001f003f) == 0x00000005) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("abs.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("abs.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
@@ -1807,7 +1814,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  mov.fmt: Floating-point (non-arithmetic) move  */
 	if ((function & 0x0000003f) == 0x00000006) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("mov.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("mov.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
@@ -1818,7 +1825,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  neg.fmt: Floating-point negate  */
 	if ((function & 0x001f003f) == 0x00000007) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("neg.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("neg.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
@@ -1829,26 +1836,26 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  trunc.l.fmt: Truncate  */
 	if ((function & 0x001f003f) == 0x00000009) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("trunc.l.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("trunc.l.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
 		/*  TODO: not CVT?  */
 
-		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_L);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, COP1_FMT_L);
 		return 1;
 	}
 
 	/*  trunc.w.fmt: Truncate  */
 	if ((function & 0x001f003f) == 0x0000000d) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("trunc.w.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("trunc.w.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
 		/*  TODO: not CVT?  */
 
-		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_W);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, COP1_FMT_W);
 		return 1;
 	}
 
@@ -1858,7 +1865,8 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 		int bit;
 
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("c.%i.%i\tr%i,r%i,r%i\n", cond, fmt, cc, fs, ft);
+			debug("c.%s.%s\tcc%i,r%i,r%i\n", ccname[cond],
+			    fmtname[fmt], cc, fs, ft);
 		if (unassemble_only)
 			return 1;
 
@@ -1892,33 +1900,33 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	/*  cvt.s.fmt: Convert to single floating-point  */
 	if ((function & 0x001f003f) == 0x00000020) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("cvt.s.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("cvt.s.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_S);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, COP1_FMT_S);
 		return 1;
 	}
 
 	/*  cvt.d.fmt: Convert to double floating-point  */
 	if ((function & 0x001f003f) == 0x00000021) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("cvt.d.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("cvt.d.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_D);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, COP1_FMT_D);
 		return 1;
 	}
 
 	/*  cvt.w.fmt: Convert to word fixed-point  */
 	if ((function & 0x001f003f) == 0x00000024) {
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("cvt.w.%i\tr%i,r%i\n", fmt, fd, fs);
+			debug("cvt.w.%s\tr%i,r%i\n", fmtname[fmt], fd, fs);
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_W);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, COP1_FMT_W);
 		return 1;
 	}
 
@@ -2379,7 +2387,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			if (cpnr == 0)
 				debug("%s", cop0_names[rd]);
 			else
-				debug("cpreg%i", rd);
+				debug("r%i", rd);
 			if (function & 7)
 				debug(",%i", (int)(function & 7));
 			debug("\n");
@@ -2405,7 +2413,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			if (cpnr == 0)
 				debug("%s", cop0_names[rd]);
 			else
-				debug("cpreg%i", rd);
+				debug("r%i", rd);
 			if (function & 7)
 				debug(",%i", (int)(function & 7));
 			debug("\n");

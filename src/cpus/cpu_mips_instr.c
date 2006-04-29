@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.64 2006-04-29 07:01:55 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.65 2006-04-29 08:18:30 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1605,10 +1605,17 @@ cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
  */
 X(cop1_slow)
 {
+	const int cpnr = 1;
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
 	    / sizeof(struct mips_instr_call);
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+
+	if (!(cpu->cd.mips.coproc[0]->
+	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+		return;
+	}
 
 	coproc_function(cpu, cpu->cd.mips.coproc[1], 1, ic->arg[0], 0, 1);
 }
@@ -2552,9 +2559,9 @@ X(to_be_translated)
 					ic->f = instr(jalr);
 				break;
 			}
-			if (in_crosspage_delayslot) {
-				fatal("[ WARNING: branch in delay slot? ]\n");
-				ic->f = instr(nop);
+			if (cpu->delay_slot) {
+				fatal("branch in delay slot?\n");
+				goto bad;
 			}
 			break;
 
@@ -2645,7 +2652,7 @@ X(to_be_translated)
 			    & (MIPS_IC_ENTRIES_PER_PAGE - 1)));
 			ic->f = samepage_function;
 		}
-		if (in_crosspage_delayslot) {
+		if (cpu->delay_slot) {
 			fatal("TODO: branch in delay slot?\n");
 			goto bad;
 		}
@@ -2724,7 +2731,7 @@ X(to_be_translated)
 		}
 		ic->arg[0] = (iword & 0x03ffffff) << 2;
 		ic->arg[1] = (addr & 0xffc) + 8;
-		if (in_crosspage_delayslot) {
+		if (cpu->delay_slot) {
 			fatal("TODO: branch in delay slot?\n");
 			goto bad;
 		}
@@ -2798,17 +2805,53 @@ X(to_be_translated)
 		break;
 
 	case HI6_COP1:
-		/*  Fallback to slow pre-dyntrans code, for now.  */
-		/*  TODO: Fix/optimize/rewrite.  */
-		ic->f = instr(cop1_slow);
-		ic->arg[0] = (uint32_t)iword & ((1 << 26) - 1);
-
-		/*  Cause a coprocessor unusable exception if
+		/*  Always cause a coprocessor unusable exception if
 		    there is no floating point coprocessor:  */
 		if (cpu->cd.mips.coproc[1] == NULL) {
 			ic->f = instr(cpu);
 			ic->arg[0] = 1;
+			break;
 		}
+
+		/*  Bits 25..21 are floating point main opcode:  */
+		switch (rs) {
+
+		case COPz_BCzc:
+			/*  Conditional branch:  */
+			fatal("not yet\n");
+			goto bad;
+			break;
+
+		case COP1_FMT_S:
+		case COP1_FMT_D:
+		case COP1_FMT_W:
+		case COP1_FMT_L:
+		case COP1_FMT_PS:
+		case COPz_CFCz:
+		case COPz_CTCz:
+		case COPz_MFCz:
+		case COPz_MTCz:
+			/*  Fallback to slow pre-dyntrans code, for now.  */
+			/*  TODO: Fix/optimize/rewrite.  */
+			ic->f = instr(cop1_slow);
+			ic->arg[0] = (uint32_t)iword & ((1 << 26) - 1);
+			break;
+
+		default:fatal("COP1 floating point opcode = 0x%02x\n", rs);
+			goto bad;
+		}
+		break;
+
+	case HI6_COP2:
+		/*  Always cause a coprocessor unusable exception if
+		    there is no coprocessor 2:  */
+		if (cpu->cd.mips.coproc[2] == NULL) {
+			ic->f = instr(cpu);
+			ic->arg[0] = 2;
+			break;
+		}
+		fatal("COP2 functionality not yet implemented\n");
+		goto bad;
 		break;
 
 	case HI6_SPECIAL2:
@@ -2953,7 +2996,7 @@ X(to_be_translated)
 				    & (MIPS_IC_ENTRIES_PER_PAGE - 1)));
 				ic->f = samepage_function;
 			}
-			if (in_crosspage_delayslot) {
+			if (cpu->delay_slot) {
 				fatal("TODO: branch in delay slot?\n");
 				goto bad;
 			}

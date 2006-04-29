@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.67 2006-04-29 09:49:48 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.68 2006-04-29 16:02:46 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1548,13 +1548,23 @@ X(set)
 
 
 /*
+ *  cfc0:         Copy from Coprocessor 0.
  *  mfc0, dmfc0:  Move from Coprocessor 0.
  *  mtc0, dmtc0:  Move to Coprocessor 0.
  *
  *  arg[0] = pointer to GPR (rt)
- *  arg[1] = coprocessor 0 register number | (select << 5)
+ *  arg[1] = coprocessor 0 register number | (select << 5)   (or for the
+ *           cfc0 instruction, the coprocessor control register number)
  *  arg[2] = relative addr of this instruction within the page
  */
+X(cfc0)
+{
+	int fs = ic->arg[1] & 31;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+	reg(ic->arg[0]) = (int32_t)cpu->cd.mips.coproc[0]->fcr[fs];
+}
 X(mfc0)
 {
 	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
@@ -2883,6 +2893,14 @@ X(to_be_translated)
 
 		/*  rs contains the coprocessor opcode!  */
 		switch (rs) {
+		case COPz_CFCz:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = rd + ((iword & 7) << 5);
+			ic->arg[2] = addr & 0xffc;
+			ic->f = instr(cfc0);
+			if (rt == MIPS_GPR_ZERO)
+				ic->f = instr(nop);
+			break;
 		case COPz_MFCz:
 		case COPz_DMFCz:
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];

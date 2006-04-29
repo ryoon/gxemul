@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1209 2006-04-29 09:49:47 debug Exp $
+$Id: HISTORY,v 1.1210 2006-04-29 16:02:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2703,5 +2703,6 @@ Changelog for GXemul:
 		coprocessor branches) could not be reused from the old
 		non-dyntrans code. The "quick-and-dirty fallback" only appeared
 		to work. Fixing by implementing bc1* for MIPS dyntrans.
-		More MIPS instructions: [d]sub, sdc1, ldc1, dmtc1, dmfc1.
+		More MIPS instructions: [d]sub, sdc1, ldc1, dmtc1, dmfc1,
+		cfc0.
 		Freshening up MIPS floating point disassembly appearance.

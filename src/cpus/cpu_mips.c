@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.42 2006-04-29 08:31:11 debug Exp $
+ *  $Id: cpu_mips.c,v 1.43 2006-04-30 09:48:22 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1844,12 +1844,21 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 				int64_t d = cpu->cd.mips.gpr[MIPS_GPR_A0 + x];
 				char strbuf[30];
 
-				if (d > -256 && d < 256)
+				if (d > -256 && d < 256) {
 					debug(" a%i=%i", x, (int)d);
-				else if (memory_points_to_string(cpu, cpu->mem, d, 1))
-					debug(" a%i=\"%s\"", x, memory_conv_to_string(cpu, cpu->mem, d, strbuf, sizeof(strbuf)));
-				else
-					debug(" a%i=0x%"PRIx64, x, (uint64_t)d);
+				} else if (memory_points_to_string(cpu,
+				    cpu->mem, d, 1)) {
+					debug(" a%i=\"%s\"", x,
+					    memory_conv_to_string(cpu, cpu->mem,
+					    d, strbuf, sizeof(strbuf)));
+				} else {
+					if (cpu->is_32bit)
+						debug(" a%i=0x%"PRIx32, x,
+						    (uint32_t)d);
+					else
+						debug(" a%i=0x%"PRIx64, x,
+						    (uint64_t)d);
+				}
 			}
 			break;
 

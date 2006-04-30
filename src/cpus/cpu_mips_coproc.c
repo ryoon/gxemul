@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.19 2006-04-29 09:49:48 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.20 2006-04-30 09:48:22 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2082,11 +2082,17 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
 	if (randomflag) {
-		if (cpu->cd.mips.cpu_type.mmu_model == MMU3K)
+		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
+			cp->reg[COP0_RANDOM] =
+			    ((random() % (cp->nr_of_tlbs - 8)) + 8)
+			    << R2K3K_RANDOM_SHIFT;
 			index = (cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
 			    >> R2K3K_RANDOM_SHIFT;
-		else
+		} else {
+			cp->reg[COP0_RANDOM] = cp->reg[COP0_WIRED] + (random()
+			    % (cp->nr_of_tlbs - cp->reg[COP0_WIRED]));
 			index = cp->reg[COP0_RANDOM] & RANDOM_MASK;
+		}
 	} else {
 		if (cpu->cd.mips.cpu_type.mmu_model == MMU3K)
 			index = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK)
@@ -2102,13 +2108,14 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		return;
 	}
 
+
 #if 0
 	/*  Debug dump of the previous entry at that index:  */
 	debug(" old entry at index = %04x", index);
-	debug(" mask = %016llx", (long long) cp->tlbs[index].mask);
-	debug(" hi = %016llx", (long long) cp->tlbs[index].hi);
-	debug(" lo0 = %016llx", (long long) cp->tlbs[index].lo0);
-	debug(" lo1 = %016llx\n", (long long) cp->tlbs[index].lo1);
+	debug(" mask = %016"PRIx64, cp->tlbs[index].mask);
+	debug(" hi = %016"PRIx64, cp->tlbs[index].hi);
+	debug(" lo0 = %016"PRIx64, cp->tlbs[index].lo0);
+	debug(" lo1 = %016"PRIx64"\n", cp->tlbs[index].lo1);
 #endif
 
 	/*  Translation caches must be invalidated:  */
@@ -2245,17 +2252,6 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			cp->tlbs[index].hi &= ~TLB_G;
 			if (g_bit)
 				cp->tlbs[index].hi |= TLB_G;
-		}
-	}
-
-	if (randomflag) {
-		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
-			cp->reg[COP0_RANDOM] =
-			    ((random() % (cp->nr_of_tlbs - 8)) + 8)
-			    << R2K3K_RANDOM_SHIFT;
-		} else {
-			cp->reg[COP0_RANDOM] = cp->reg[COP0_WIRED] + (random()
-			    % (cp->nr_of_tlbs - cp->reg[COP0_WIRED]));
 		}
 	}
 }

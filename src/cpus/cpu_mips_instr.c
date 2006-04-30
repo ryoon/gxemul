@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.68 2006-04-29 16:02:46 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.69 2006-04-30 09:48:22 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1577,12 +1577,17 @@ X(mfc0)
 }
 X(mtc0)
 {
+	MODE_int_t old_pc;
 	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
+	uint64_t tmp = (MODE_int_t)reg(ic->arg[0]);
+
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
+	old_pc = cpu->pc;
+
 	/*  TODO: cause exception if necessary  */
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
-	    (uint64_t *)ic->arg[0], 0, select);
+	    &tmp, 0, select);
 
 /*  TODO: fix/remove these!  */
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);

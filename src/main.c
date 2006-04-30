@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.267 2006-04-29 09:32:18 debug Exp $
+ *  $Id: main.c,v 1.268 2006-04-30 21:02:22 debug Exp $
  */
 
 #include <stdio.h>
@@ -340,6 +340,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	char ***diskimagesp, int *n_diskimagesp)
 {
 	int ch, res, using_switch_d = 0, using_switch_Z = 0;
+	int using_switch_e = 0, using_switch_E = 0;
 	char *type = NULL, *subtype = NULL;
 	int n_cpus_set = 0;
 	int msopts = 0;		/*  Machine-specific options used  */
@@ -399,10 +400,18 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'E':
+			if (using_switch_E ++ > 0) {
+				fprintf(stderr, "-E already used.\n");
+				exit(1);
+			}
 			type = optarg;
 			msopts = 1;
 			break;
 		case 'e':
+			if (using_switch_e ++ > 0) {
+				fprintf(stderr, "-e already used.\n");
+				exit(1);
+			}
 			subtype = optarg;
 			msopts = 1;
 			break;

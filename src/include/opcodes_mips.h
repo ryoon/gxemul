@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.11 2006-04-29 08:18:31 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.12 2006-04-30 21:02:46 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  *
@@ -118,9 +118,9 @@
 	"padsbh",  "pabsh",   "pceqh",   "pminh",	/*  0x04 - 0x07  */	\
 	"mmi1_08", "mmi1_09", "pceqb",   "mmi1_0b",	/*  0x08 - 0x0b  */	\
 	"mmi1_0c", "mmi1_0d", "mmi1_0e", "mmi1_0f",	/*  0x0c - 0x0f  */	\
-	"padduw",  "psubuw",  "pextlw",  "mmi1_13",	/*  0x10 - 0x13  */	\
-	"padduh",  "psubuh",  "pextlh",  "mmi1_17",	/*  0x14 - 0x17  */	\
-	"paddub",  "psubub",  "pextlb",  "qfsrv",	/*  0x18 - 0x1b  */	\
+	"padduw",  "psubuw",  "pextuw",  "mmi1_13",	/*  0x10 - 0x13  */	\
+	"padduh",  "psubuh",  "pextuh",  "mmi1_17",	/*  0x14 - 0x17  */	\
+	"paddub",  "psubub",  "pextub",  "qfsrv",	/*  0x18 - 0x1b  */	\
 	"mmi1_1c", "mmi1_1d", "mmi1_1e", "mmi1_1f"	/*  0x1c - 0x1f  */	}
 
 #define	MMI2_NAMES	{	\
@@ -310,7 +310,54 @@
 #define	    MMI_MADDU			    0x01
 #define	    MMI_PLZCW			    0x04
 #define	    MMI_MMI0			    0x08
+#define		MMI0_PADDW			0x00
+#define		MMI0_PSUBW			0x01
+#define		MMI0_PCGTW			0x02
+#define		MMI0_PMAXW			0x03
+#define		MMI0_PADDH			0x04
+#define		MMI0_PSUBH			0x05
+#define		MMI0_PCGTH			0x06
+#define		MMI0_PMAXH			0x07
+#define		MMI0_PADDB			0x08
+#define		MMI0_PSUBB			0x09
+#define		MMI0_PCGTB			0x0a
+#define		MMI0_PADDSW			0x10
+#define		MMI0_PSUBSW			0x11
+#define		MMI0_PEXTLW			0x12
+#define		MMI0_PPACW			0x13
+#define		MMI0_PADDSH			0x14
+#define		MMI0_PSUBSH			0x15
+#define		MMI0_PEXTLH			0x16
+#define		MMI0_PPACH			0x17
+#define		MMI0_PADDSB			0x18
+#define		MMI0_PSUBSB			0x19
+#define		MMI0_PEXTLB			0x1a
+#define		MMI0_PPACB			0x1b
+#define		MMI0_PEXT5			0x1e
+#define		MMI0_PPAC5			0x1f
 #define	    MMI_MMI2			    0x09
+#define		MMI2_PMADDW			0x00
+#define		MMI2_PSLLVW			0x02
+#define		MMI2_PSRLVW			0x03
+#define		MMI2_PMSUBW			0x04
+#define		MMI2_PMFHI			0x08
+#define		MMI2_PMFLO			0x09
+#define		MMI2_PINTH			0x0a
+#define		MMI2_PMULTW			0x0c
+#define		MMI2_PDIVW			0x0d
+#define		MMI2_PCPYLD			0x0e
+#define		MMI2_PMADDH			0x10
+#define		MMI2_PHMADH			0x11
+#define		MMI2_PAND			0x12
+#define		MMI2_PXOR			0x13
+#define		MMI2_PMSUBH			0x14
+#define		MMI2_PHMSBH			0x15
+#define		MMI2_PEXEH			0x1a
+#define		MMI2_PREVH			0x1b
+#define		MMI2_PMULTH			0x1c
+#define		MMI2_PDIVBW			0x1d
+#define		MMI2_PEXEW			0x1e
+#define		MMI2_PROT3W			0x1f
 #define	    MMI_MFHI1			    0x10
 #define	    MMI_MTHI1			    0x11
 #define	    MMI_MFLO1			    0x12
@@ -322,7 +369,38 @@
 #define	    MMI_MADD1			    0x20
 #define	    MMI_MADDU1			    0x21
 #define	    MMI_MMI1			    0x28
+#define		MMI1_PABSW			0x01
+#define		MMI1_PCEQW			0x02
+#define		MMI1_PMINW			0x03
+#define		MMI1_PADSBH			0x04
+#define		MMI1_PABSH			0x05
+#define		MMI1_PCEQH			0x06
+#define		MMI1_PMINH			0x07
+#define		MMI1_PCEQB			0x0a
+#define		MMI1_PADDUW			0x10
+#define		MMI1_PSUBUW			0x11
+#define		MMI1_PEXTUW			0x12
+#define		MMI1_PADDUH			0x14
+#define		MMI1_PSUBUH			0x15
+#define		MMI1_PEXTUH			0x16
+#define		MMI1_PADDUB			0x18
+#define		MMI1_PSUBUB			0x19
+#define		MMI1_PEXTUB			0x1a
+#define		MMI1_QFSRV			0x1b
 #define	    MMI_MMI3			    0x29
+#define		MMI3_PMADDUW			0x00
+#define		MMI3_PSRAVW			0x03
+#define		MMI3_PMTHI			0x08
+#define		MMI3_PMTLO			0x09
+#define		MMI3_PINTEH			0x0a
+#define		MMI3_PMULTUW			0x0c
+#define		MMI3_PDIVUW			0x0d
+#define		MMI3_PCPYUD			0x0e
+#define		MMI3_POR			0x12
+#define		MMI3_PNOR			0x13
+#define		MMI3_PEXCH			0x1a
+#define		MMI3_PCPYH			0x1b
+#define		MMI3_PEXCW			0x1e
 #define	    MMI_PMFHL			    0x30
 #define	    MMI_PMTHL			    0x31
 #define	    MMI_PSLLH			    0x34
@@ -331,8 +409,6 @@
 #define	    MMI_PSLLW			    0x3c
 #define	    MMI_PSRLW			    0x3e
 #define	    MMI_PSRAW			    0x3f
-/*  TODO: MMI0..MMI3 opcodes  */
-
 /*	JALX (TODO)			0x1d	    011101  */
 #define	HI6_LQ_MDMX			0x1e	/*  011110  */	/*  lq on R5900, MDMX on others?  */
 /*  TODO: MDMX opcodes  */

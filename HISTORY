@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1210 2006-04-29 16:02:46 debug Exp $
+$Id: HISTORY,v 1.1211 2006-04-30 21:02:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2706,3 +2706,5 @@ Changelog for GXemul:
 		More MIPS instructions: [d]sub, sdc1, ldc1, dmtc1, dmfc1,
 		cfc0.
 		Freshening up MIPS floating point disassembly appearance.
+20060430	Continuing on C790/R5900/TX79 disassembly; implementing 128-bit
+		"por" and "pextlw".

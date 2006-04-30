@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.43 2006-04-30 09:48:22 debug Exp $
+ *  $Id: cpu_mips.c,v 1.44 2006-04-30 21:02:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1371,6 +1371,20 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			case MMI_MMI0:
 				debug("%s\t", mmi0_names[c790mmifunc]);
 				switch (c790mmifunc) {
+
+				case MMI0_PEXTLB:
+				case MMI0_PEXTLH:
+				case MMI0_PEXTLW:
+				case MMI0_PMAXH:
+				case MMI0_PMAXW:
+				case MMI0_PPACB:
+				case MMI0_PPACH:
+				case MMI0_PPACW:
+					debug("%s", regname(cpu->machine, rd));
+					debug(",%s", regname(cpu->machine, rs));
+					debug(",%s", regname(cpu->machine, rt));
+					break;
+
 				default:debug("(UNIMPLEMENTED)");
 				}
 				break;
@@ -1378,6 +1392,17 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			case MMI_MMI1:
 				debug("%s\t", mmi1_names[c790mmifunc]);
 				switch (c790mmifunc) {
+
+				case MMI1_PEXTUB:
+				case MMI1_PEXTUH:
+				case MMI1_PEXTUW:
+				case MMI1_PMINH:
+				case MMI1_PMINW:
+					debug("%s", regname(cpu->machine, rd));
+					debug(",%s", regname(cpu->machine, rs));
+					debug(",%s", regname(cpu->machine, rt));
+					break;
+
 				default:debug("(UNIMPLEMENTED)");
 				}
 				break;
@@ -1385,6 +1410,27 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			case MMI_MMI2:
 				debug("%s\t", mmi2_names[c790mmifunc]);
 				switch (c790mmifunc) {
+
+				case MMI2_PMFHI:
+				case MMI2_PMFLO:
+					debug("%s", regname(cpu->machine, rd));
+					break;
+
+				case MMI2_PHMADH:
+				case MMI2_PHMSBH:
+				case MMI2_PINTH:
+				case MMI2_PMADDH:
+				case MMI2_PMADDW:
+				case MMI2_PMSUBH:
+				case MMI2_PMSUBW:
+				case MMI2_PMULTH:
+				case MMI2_PMULTW:
+				case MMI2_PSLLVW:
+					debug("%s", regname(cpu->machine, rd));
+					debug(",%s", regname(cpu->machine, rs));
+					debug(",%s", regname(cpu->machine, rt));
+					break;
+
 				default:debug("(UNIMPLEMENTED)");
 				}
 				break;
@@ -1392,6 +1438,23 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			case MMI_MMI3:
 				debug("%s\t", mmi3_names[c790mmifunc]);
 				switch (c790mmifunc) {
+
+				case MMI3_PMTHI:
+				case MMI3_PMTLO:
+					debug("%s", regname(cpu->machine, rs));
+					break;
+
+				case MMI3_PINTEH:
+				case MMI3_PMADDUW:
+				case MMI3_PMULTUW:
+				case MMI3_PNOR:
+				case MMI3_POR:
+				case MMI3_PSRAVW:
+					debug("%s", regname(cpu->machine, rd));
+					debug(",%s", regname(cpu->machine, rs));
+					debug(",%s", regname(cpu->machine, rt));
+					break;
+
 				default:debug("(UNIMPLEMENTED)");
 				}
 				break;

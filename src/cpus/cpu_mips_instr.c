@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.69 2006-04-30 09:48:22 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.70 2006-04-30 21:02:46 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1349,6 +1349,35 @@ X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
 X(movn) { if (reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
 X(movz) { if (!reg(ic->arg[1])) reg(ic->arg[2]) = reg(ic->arg[0]); }
+
+
+/*
+ *  p*:  128-bit C790/TX79/R5900 stuff
+ *
+ *  arg[0] = rs (note: not a pointer)
+ *  arg[1] = rt (note: not a pointer)
+ *  arg[2] = rd (note: not a pointer)
+ */
+X(por)
+{
+	cpu->cd.mips.gpr[ic->arg[2]] = cpu->cd.mips.gpr[ic->arg[0]] |
+	    cpu->cd.mips.gpr[ic->arg[1]];
+	cpu->cd.mips.gpr_quadhi[ic->arg[2]] =
+	    cpu->cd.mips.gpr_quadhi[ic->arg[0]] |
+	    cpu->cd.mips.gpr_quadhi[ic->arg[1]];
+}
+X(pextlw)
+{
+	uint64_t lo, hi;
+
+	lo = (uint32_t)cpu->cd.mips.gpr[ic->arg[1]] |
+	    (uint64_t)((uint64_t)cpu->cd.mips.gpr[ic->arg[0]] << 32);
+	hi = (cpu->cd.mips.gpr[ic->arg[0]] & 0xffffffff00000000ULL) |
+	    (uint32_t)((uint64_t)cpu->cd.mips.gpr[ic->arg[1]] >> 32);
+
+	cpu->cd.mips.gpr[ic->arg[2]] = lo;
+	cpu->cd.mips.gpr_quadhi[ic->arg[2]] = hi;
+}
 
 
 /*
@@ -3008,6 +3037,8 @@ X(to_be_translated)
 	case HI6_SPECIAL2:
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 			/*  R5900, TX79/C790, have MMI instead of SPECIAL2:  */
+			int mmi_subopcode = (iword >> 6) & 0x1f;
+
 			switch (s6) {
 
 			case MMI_MADD:
@@ -3028,6 +3059,40 @@ X(to_be_translated)
 					ic->f = instr(maddu);
 				else
 					ic->f = instr(maddu_rd);
+				break;
+
+			case MMI_MMI0:
+				switch (mmi_subopcode) {
+
+				case MMI0_PEXTLW:
+					ic->arg[0] = rs;
+					ic->arg[1] = rt;
+					ic->arg[2] = rd;
+					if (rd == MIPS_GPR_ZERO)
+						ic->f = instr(nop);
+					else
+						ic->f = instr(pextlw);
+					break;
+
+				default:goto bad;
+				}
+				break;
+
+			case MMI_MMI3:
+				switch (mmi_subopcode) {
+
+				case MMI3_POR:
+					ic->arg[0] = rs;
+					ic->arg[1] = rt;
+					ic->arg[2] = rd;
+					if (rd == MIPS_GPR_ZERO)
+						ic->f = instr(nop);
+					else
+						ic->f = instr(por);
+					break;
+
+				default:goto bad;
+				}
 				break;
 
 			default:goto bad;

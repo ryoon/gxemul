@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol_demangle.c,v 1.4 2006-04-02 10:21:07 debug Exp $
+ *  $Id: symbol_demangle.c,v 1.5 2006-05-01 09:00:19 debug Exp $
  *
  *  C++ symbol name demangling.
  *
@@ -77,7 +77,7 @@ static char *symbol_demangle_cplusplus_nested(char *name)
 		if (*name == '0') {
 			name ++;
 		} else {
-			while (isdigit(*name)) {
+			while (isdigit((int)*name)) {
 				len *= 10;
 				len += (*name - '0');
 				name ++;

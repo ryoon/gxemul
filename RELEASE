@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.184 2006-04-26 03:59:11 debug Exp $
+$Id: RELEASE,v 1.185 2006-05-01 07:45:19 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -30,18 +30,21 @@ The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 	ARM and PowerPC emulation modes.
 
 	On Alpha and i386 hosts (and AMD64 hosts running in 32-bit mode),
-	GXemul previously used translation into native code. This release will
-	most likely perform worse than 0.3.8 on those host architectures.
+	GXemul previously used translation into native code. This release
+	will perform worse than 0.3.8 on those host architectures.
 
 	On all other hosts (including AMD64 running in native 64-bit mode),
-	0.4.0 is a magnitude faster than 0.3.8, when emulating MIPS.
+	0.4.0 is a faster than 0.3.8, when emulating MIPS.
 
 	I think that in the long term, moving towards full portability like
 	this is a good idea.
 
-    o)	Rudimentary support for GDB remote serial protocol connections.
-	This means that you can run e.g. the Data Display Debugger, and
-	connect it to a GXemul instance.
+    o)	I have begun implementing rudimentary support for GDB remote serial
+	protocol connections. This means that you can run e.g. the Data
+	Display Debugger, and connect it to a GXemul instance.
+
+	No advanced functionality is working yet, but starting and stopping
+	the emulated machine and single-stepping should work.
 
 There have also been lots of other changes, too many and small to mention here.
 

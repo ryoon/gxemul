@@ -1,52 +1,28 @@
-$Id: TODO,v 1.255 2006-04-29 22:10:31 debug Exp $
+$Id: TODO,v 1.256 2006-05-01 07:55:38 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 --------------
 
-What I want for the 0.4.0 release: (optimistic :-)
+Stuff to finish before a 0.4.0 release:
 
 	x)  MIPS dyntrans working at least as well as the old mode did.
-	x)  "data=TODO" -> implement dump of memory where possible
-	x)  Complete removal of bintrans.  :-]
-
-If time permits:
-
-	x)  Autotests for all instructions (MIPS64 rev 2, PPC, possibly
-	    ARM).
-	x)  Removal of the cache and delay command line options.
-	x)  Removal of the alignment check functionality.
-	x)  Removal of other legacy command line options?
-	x)  Statistics gathering should be well-defined (physical vs
-	    virtual PC, etc).
-	x)  Some more GDB support? Breakpoints would be nice.
-	x)  More refactoring of the debugger (expression evaluator)?
-	x)  Possibly more work on the Alpha emulation mode (to get
-	    NetBSD/OpenBSD/Linux booting).
-	x)  Possibly more work on the PPC emulation mode (to get NetBSD/macppc
-	    to boot up after an install).
-	x)  Begin on the cache simulation framework.
+		+)  R2000/R3000 caches
+		+)  Remaining other bug (Ultrix weirdness etc).
+		+)  No release until everything mentioned in the
+		    documentation is working as in 0.3.8.
+		+)  Remove obvious bottlenecks, and do at least _some_
+		    optimization before the release.
+	x)  Complete removal of bintrans! :-)
 
 --------------
-
-Thoughts about ISA autotests:
-	x)  Test instructions several different CPUs? E.g. testing a
-	    MIPS64 rev 2 instruction on ISA I,II,III,IV,MIPS32,MIPS64
-	    and MIPS32 rev 2, and MIPS64 rev 2. It should get the
-	    correct behaviour on all.
-	x)  Test C790 instructions as well.
 
 MIPS:
 	o)  Dyntrans: R2000/R3000 caches don't quite work yet (NetBSD/pmax,
 	    Ultrix, Sprite, etc).
-	o)  Dyntrans: The first tlbwr isn't random! (Can be below wired!)
-	o)  Dyntrans: Count register updates, and compare interrupts.
+	o)  Dyntrans: Count register updates are probably not 100% correct yet.
 	o)  Dyntrans: SMP correctness
-	o)  Dyntrans: Make sure that all guest OSes work!
 	o)  Refactor code for performance and readability/maintainability.
-	o)  Go through the entire MIPS64 ISA vol 2 :-)
-	o)  Go through the entire C790 ISA:
-		x)  MMI 0..3 etc
 	o)  R4000 and others:
 		x)  watchhi/watchlo exceptions, and other exception
 		    handling details
@@ -74,10 +50,11 @@ Dyntrans:
 
 Alpha:
 	o)  Virtual memory (tlbs etc)
-	o)  Get {NetBSD,OpenBSD,Linux}/alpha booting.
+	o)  Get {NetBSD,OpenBSD,Linux}/alpha booting. :)
 
 SPARC:
 	o)  Add all registers (floating point, control regs etc)
+	o)  Add old-style (32-bit) SPARC processors too!
 	o)  Save/restore register windows etc!
 	o)  Disassemly of some more instructions.
 	o)  Are sll etc 32-bit sign-extending or zero-extending?

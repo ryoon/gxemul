@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.185 2006-05-01 07:45:19 debug Exp $
+$Id: RELEASE,v 1.186 2006-05-01 07:55:38 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -34,7 +34,7 @@ The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 	will perform worse than 0.3.8 on those host architectures.
 
 	On all other hosts (including AMD64 running in native 64-bit mode),
-	0.4.0 is a faster than 0.3.8, when emulating MIPS.
+	0.4.0 is likely to be much faster than 0.3.8, when emulating MIPS.
 
 	I think that in the long term, moving towards full portability like
 	this is a good idea.

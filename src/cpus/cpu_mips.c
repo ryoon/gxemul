@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.44 2006-04-30 21:02:45 debug Exp $
+ *  $Id: cpu_mips.c,v 1.45 2006-05-01 07:55:38 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1277,7 +1277,11 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			if (symbol != NULL)
 				debug(" = %s", symbol);
 
-			debug(", data=TODO]");
+			/*  TODO: In some cases, it is possible to peek into
+			    memory, and display that data here, like for the
+			    other emulation modes.  */
+
+			debug("]");
 		}
 		break;
 

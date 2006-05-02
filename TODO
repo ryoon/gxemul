@@ -1,4 +1,4 @@
-$Id: TODO,v 1.256 2006-05-01 07:55:38 debug Exp $
+$Id: TODO,v 1.257 2006-05-02 04:41:43 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -13,6 +13,7 @@ Stuff to finish before a 0.4.0 release:
 		    documentation is working as in 0.3.8.
 		+)  Remove obvious bottlenecks, and do at least _some_
 		    optimization before the release.
+	x)  OpenBSD 3.8 -> 3.9 (cats and sgi?)
 	x)  Complete removal of bintrans! :-)
 
 --------------

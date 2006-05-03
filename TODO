@@ -1,4 +1,4 @@
-$Id: TODO,v 1.257 2006-05-02 04:41:43 debug Exp $
+$Id: TODO,v 1.258 2006-05-03 05:03:21 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -56,6 +56,10 @@ Alpha:
 SPARC:
 	o)  Add all registers (floating point, control regs etc)
 	o)  Add old-style (32-bit) SPARC processors too!
+	o)  Try with PROMs from real machines (extract from the
+	    Ultra1)
+	o)  Add some real machine modes with correct CPU, memory amount etc.
+		o)  SS1,2,5,10,20, Ultra1, Ultra10, E450 (?)
 	o)  Save/restore register windows etc!
 	o)  Disassemly of some more instructions.
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
@@ -64,6 +68,8 @@ SPARC:
 Debugger:
 	o)  MIPS gdb stub "p" command vs "g" command!
 	o)  How does SMP debugging work? Does it simply use "threads"?
+		What if the guest OS (running on an emulated SMP machine)
+		has a usertask running, with userland threads?
 	o)  Try to make the debugger more modular and, if possible, reentrant!
 	o)  Remove the emul command? (But show network info if showing
 		machines?)

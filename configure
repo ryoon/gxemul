@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.216 2006-04-25 04:56:43 debug Exp $
+#  $Id: configure,v 1.217 2006-05-04 17:11:46 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -171,6 +171,11 @@ if [ z"$X" = zgxemul ]; then
 	echo '/*  No VERSION defined.  */' >> config.h
 else
 	printf "#define VERSION \"$X\"\n" >> config.h
+fi
+
+
+if [ z"$UNSTABLE" = zYES ]; then
+	printf "#define UNSTABLE_DEVEL\n" >> config.h
 fi
 
 

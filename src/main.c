@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.268 2006-04-30 21:02:22 debug Exp $
+ *  $Id: main.c,v 1.269 2006-05-04 17:11:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -200,8 +200,10 @@ static void usage(int longusage)
 	printf("\nusage: %s [machine, other, and general options] [file "
 	    "[...]]\n", progname);
 	printf("   or  %s [general options] @configfile\n", progname);
+#ifdef UNSTABLE_DEVEL
 	printf("   or  %s [userland, other, and general options] file "
 	    "[args ...]\n", progname);
+#endif
 
 	if (!longusage) {
 		printf("\nRun  %s -h  for help on command line options.\n",
@@ -295,9 +297,11 @@ static void usage(int longusage)
 	printf("  -z disp   add disp as an X11 display to use for "
 	    "framebuffers\n");
 
+#ifdef UNSTABLE_DEVEL
 	printf("\nUserland options:\n");
 	printf("  -u emul   userland-only (syscall) emulation (use -H to"
 	    " get a list of\n            available emulation modes)\n");
+#endif
 
 	printf("\nGeneral options:\n");
 	printf("  -c cmd    add cmd as a command to run before starting "
@@ -347,11 +351,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
+	    "A"
 #if defined(BINTRANS)
-	    "ABC:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrStUu:VvW:XxY:y:Z:z:";
-#else
-	    "AC:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrStUu:VvW:XxY:y:Z:z:";
+	    "B"
 #endif
+	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrStU"
+#ifdef UNSTABLE_DEVEL
+	    "u:"
+#endif
+	    "VvW:XxY:y:Z:z:";
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.59 2006-05-01 07:45:20 debug Exp $
+.\" $Id: gxemul.1,v 1.60 2006-05-04 17:11:09 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -42,9 +42,10 @@
 .Nm
 .Op general options
 .Ar @configfile
-.Nm
-.Op userland, other, and general options
-.Ar file Op Ar args ...
+.\" TODO: Reenable this once userland emulation works:
+.\" .Nm
+.\" .Op userland, other, and general options
+.\" .Ar file Op Ar args ...
 .Sh DESCRIPTION
 .Nm
 is an experimental instruction-level machine emulator. Several
@@ -60,16 +61,17 @@ translation system used in GXemul does not (currently) generate native
 code, and thus does not require platform-specific back-ends. In plain
 English, this means that the dyntrans system works on any host platform.
 .Pp
-There are three ways to invoke the emulator:
+The emulator can be invoked in the following ways:
 .Pp
 1. When emulating a complete machine, configuration options can be entered
 directly on the command line.
 .Pp
 2. Options can be read from a configuration file.
-.Pp
-3. When emulating a userland environment (syscall-only emulation, not
-emulating complete machines), then the program name and its argument
-should be given on the command line. (This mode doesn't really work yet.)
+.\" .Pp
+.\" 3. When emulating a userland environment (syscall-only emulation, not
+.\" emulating complete machines), then the program name and its argument
+.\" should be given on the command line. (This mode doesn't really work yet,
+.\" and is disabled for stable release builds.)
 .Pp
 The easiest way to use the emulator is to supply settings directly on the 
 command line. The most important thing you need to supply is the
@@ -313,16 +315,16 @@ Add
 as an X11 display to use for framebuffers.
 .El
 .Pp
-Userland options:
-.Bl -tag -width Ds
-.It Fl u Ar emul-mode
-Userland-only (syscall) emulation. (Use
-.Fl H
-to get a list of available emulation modes.) Some (but not all) of the
-options listed under Other options above can also be used with userland
-emulation.
-.El
-.Pp
+.\" Userland options:
+.\" .Bl -tag -width Ds
+.\" .It Fl u Ar emul-mode
+.\" Userland-only (syscall) emulation. (Use
+.\" .Fl H
+.\" to get a list of available emulation modes.) Some (but not all) of the
+.\" options listed under Other options above can also be used with 
+.\" userland emulation.
+.\" .El
+.\" .Pp
 General options:
 .Bl -tag -width Ds
 .It Fl c Ar cmd
@@ -347,7 +349,9 @@ Display a list of available CPU types, machine types, and userland
 emulation modes. (Most of these don't work. Please read the documentation
 included in the
 .Nm
-distribution for details on which modes that actually work.)
+distribution for details on which modes that actually work. Userland
+emulation is not included in stable release builds, since it doesn't work 
+yet.)
 .It Fl h
 Display a list of all available command line options.
 .It Fl K

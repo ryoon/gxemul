@@ -1,4 +1,4 @@
-$Id: TODO,v 1.259 2006-05-04 17:14:30 debug Exp $
+$Id: TODO,v 1.260 2006-05-04 19:30:07 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -74,7 +74,6 @@ SPARC:
 	o)  Finish the GDB register stuff.
 
 Debugger:
-	o)  MIPS gdb stub "p" command vs "g" command!
 	o)  How does SMP debugging work? Does it simply use "threads"?
 		What if the guest OS (running on an emulated SMP machine)
 		has a usertask running, with userland threads?

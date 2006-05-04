@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.97 2006-04-29 09:20:42 debug Exp $
+$Id: experiments.html,v 1.98 2006-05-04 19:20:39 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -65,116 +65,21 @@ that you do two things:
 
 <p>
 <ul>
-  <li>Build and install a cross-compiler for MIPS.
-  <li>Compile this hello world program, and run it in the emulator.
+  <li>Build and install a cross-compiler for your chosen target.
+	GCC is usually a good compiler choice, because it is portable
+	and in wide-spread use. (Other compilers should work too.)
+
+  <p>
+  <li>Compile the Hello World demo program for your chosen target, and run 
+	it in the emulator.
 </ul>
 
-<p>
-<table border="0"><tr><td width="40">&nbsp;</td><td>
-<pre>
-<font color=#f00000>/*  Hello world for GXemul  */
+<p>The Hello World demo program is included in the GXemul source
+code distribution, in the <a href="../demos/hello/"><tt>demos/hello/</tt></a>
+subdirectory. The README files in the demo directories have several 
+examples of how the demo programs can be built.
 
-/*  Note: The cast to a signed int causes the address to be sign-extended
-    correctly to 0xffffffffb00000xx when compiled in 64-bit mode  */
-</font><font color=#a0a0a0>#define	PUTCHAR_ADDRESS		((signed int)0xb0000000)
-#define	HALT_ADDRESS		((signed int)0xb0000010)
-
-</font><font color=#c000c0>void </font><font color=#000000><a name="printchar">printchar</a>(</font><font color=#c000c0>char </font><font color=#000000>ch)
-{
-	*((</font><font color=#c000c0>volatile unsigned char </font><font color=#000000>*) PUTCHAR_ADDRESS) = ch;
-}
-
-</font><font color=#c000c0>void </font><font color=#000000><a name="halt">halt</a>(</font><font color=#c000c0>void</font><font color=#000000>)
-{
-	*((</font><font color=#c000c0>volatile unsigned char </font><font color=#000000>*) HALT_ADDRESS) = 0;
-}
-
-</font><font color=#c000c0>void </font><font color=#000000><a name="printstr">printstr</a>(</font><font color=#c000c0>char </font><font color=#000000>*s)
-{
-	</font><font color=#c000c0>while </font><font color=#000000>(*s)
-		printchar(*s++);
-}
-
-</font><font color=#c000c0>void </font><font color=#000000>f(</font><font color=#c000c0>void</font><font color=#000000>)
-{
-	printstr(</font><font color=#00c000>"Hello world\n"</font><font color=#000000>);
-	halt();
-}
-</font></pre>
-</td></tr></table>
-
-<p>(This hello world program is available here as well:
-<a href="hello_mips.c"><tt>hello_mips.c</tt></a>)
-
-<p>I recommend that you build a GCC cross compiler for the
-<b>mips64-unknown-elf</b> target, and install it. Other compilers could
-work too, but GCC is good because of its portability. Then try to compile
-and link the hello world program:
-<pre>
-	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -mips4 -mabi=64 -c</b>
-	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello_mips.o -o hello_mips --oformat=elf64-bigmips</b>
-	$ <b>file hello_mips</b>
-	hello_mips: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>gxemul -q -E testmips hello_mips</b>
-	Hello world
-
-	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -c</b>
-	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello_mips.o -o hello_mips</b>
-	$ <b>file hello_mips</b>
-	hello_mips: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>gxemul -q -E testmips hello_mips</b>
-	Hello world
-</pre>
-
-<p>
-As you can see above, a GCC configured for mips64-unknown-elf can produce
-both 64-bit and 32-bit binaries. If you don't want to run the entire
-Hello World program, but want to single-step through the execution to
-learn more about how MIPS programs run, then add -V to the command line:
-
-<p>
-<pre>
-	$ <b>gxemul -V -E testmips hello_mips</b>
-	..
-	GXemul&gt; <b>r</b>
-	cpu0:    pc = a800000000030078    <f>
-	cpu0:    hi = 0000000000000000    lo = 0000000000000000
-	cpu0:    zr = 0000000000000000    at = 0000000000000000
-	cpu0:    v0 = 0000000000000000    v1 = 0000000000000000
-	..
-	cpu0:    gp = a8000000000780c0    sp = ffffffffa0007f00
-	cpu0:    fp = 0000000000000000    ra = 0000000000000000
-	GXemul&gt; <b>s 15</b>
-	&lt;f&gt;
-	a800000000030078: 67bdfff0      daddiu  sp,sp,-16
-	a80000000003007c: 3c04a800      lui     a0,0xa800
-	a800000000030080: 3c010003      lui     at,0x3
-	a800000000030084: 64840000      daddiu  a0,a0,0
-	a800000000030088: 642100b8      daddiu  at,at,184
-	a80000000003008c: 0004203c      dsll32  a0,a0,0
-	a800000000030090: 0081202d      daddu   a0,a0,at
-	a800000000030094: ffbf0000      sd      ra,0(sp)  [0xffffffffa0007ef0, data=0x0000000000000000]
-	a800000000030098: 0c00c00a      jal     0xa800000000030028 &lt;printstr&gt;
-	a80000000003009c: 00000000 (d)  nop
-	  &lt;printstr("Hello world\n",0,0,0,..)&gt;
-	&lt;printstr&gt;
-	a800000000030028: 67bdfff0      daddiu  sp,sp,-16
-	a80000000003002c: ffb00000      sd      s0,0(sp)  [0xffffffffa0007ee0, data=0x0000000000000000]
-	a800000000030030: ffbf0008      sd      ra,8(sp)  [0xffffffffa0007ee8, data=0xa8000000000300a0]
-	a800000000030034: 90820000      lbu     v0,0(a0)  [0xa8000000000300b8 = $LC0, data=0x48]
-	a800000000030038: 00021600      sll     v0,v0,24
-	GXemul&gt; <b>print v0</b>
-	v0 = 0x0000000048000000
-	GXemul&gt; <b>_</b>
-</pre>
-
-<p>The syntax of the single-step debugger shouldn't be too hard to grasp.
-Type "<tt>s</tt>" to single-step one instruction. For some commands (e.g.
-the single-step command), just pressing enter on a blank line will cause
-the last command to be repeated. Type "<tt>quit</tt>" to quit.
-
-<p>
-Hopefully this is enough to get you inspired. :-)
+<p>Hopefully this is enough to get you inspired. :-)
 
 
 
@@ -203,6 +108,7 @@ following experimental devices:
 	characters to the controlling terminal
 	and receiving keypresses.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_cons.c</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>dev_cons.h</tt></font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x10000000</font>
     </td>
     <td align="left" valign="top" width="25">&nbsp;</td>
@@ -238,6 +144,7 @@ following experimental devices:
 	<p>This device controls the behaviour of CPUs in an emulated
 	multi-processor system.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_mp.c</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>dev_mp.h</tt></font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x11000000</font>
     </td>
     <td></td>
@@ -342,6 +249,7 @@ following experimental devices:
 	<p>A simple linear framebuffer, for graphics output.
 	640 x 480 pixels, 3 bytes per pixel (red, green, blue, 8 bits each).
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_fb.c</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>dev_fb.h</tt></font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x12000000</font>
     </td>
     <td></td>
@@ -371,6 +279,7 @@ following experimental devices:
 	to disk images. It does not use interrupts; read and
 	write operations finish instantaneously.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_disk.c</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>TODO</tt></font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x13000000</font>
     </td>
     <td></td>
@@ -419,6 +328,7 @@ following experimental devices:
 	<p>A simple ethernet controller, enough to send
 	and receive packets on a simulated network.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_ether.c</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>TODO</tt></font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x14000000</font>
     </td>
     <td></td>
@@ -470,41 +380,66 @@ means that it can be accessed at virtual address
 <tt>0xffffffff90000000</tt> too, but devices should usually be accessed in
 a non-cached manner.)
 
-<p> (When using the PPC test machine (<tt>testppc</tt>), the addresses are
+<p>When using the Alpha, ARM, or PPC test machines, the addresses are
 <tt>0x10000000</tt>, <tt>0x11000000</tt> etc., so no need to add any
-virtual displacement.)
+virtual displacement.
 
-<p>The <b><tt>mp</tt></b>, <b><tt>disk</tt></b>, and <b><tt>ether</tt></b>
-devices are agnostic when it comes to word-length. For example, when
-reading offset <tt>0x0000</tt> of the <b><tt>mp</tt></b>
-device, you may use any kind of read (an 8-bit read will work just as well
-as a 64-bit read, although the value will be truncated to 8 bits in the
-first case). You can <i>not</i>, however, read one byte from <tt>0x0000</tt>
-and one from <tt>0x0001</tt>, and combine the result. The read from
-<tt>0x0001</tt> will be invalid.
+<p>The <tt>mp</tt>, <tt>disk</tt>, and <tt>ether</tt> devices are agnostic 
+when it comes to word-length. For example, when reading offset 
+<tt>0x0000</tt> of the <tt>mp</tt> device, you may use any kind of read 
+(an 8-bit read will work just as well as a 64-bit read, although the value 
+will be truncated to 8 bits in the first case). You can <i>not</i>, 
+however, read one byte from <tt>0x0000</tt> and one from <tt>0x0001</tt>, 
+and combine the result. The read from <tt>0x0001</tt> will be invalid.
 
-<p>The <b><tt>cons</tt></b> device should be accessed using 8-bit reads
+<p>The <tt>cons</tt> device should be accessed using 8-bit reads 
 and writes. Doing a getchar() (ie reading from offset <tt>0x00</tt>)  
-returns <tt>0</tt> if no character was available.
+returns <tt>0</tt> if no character was available. Whenever a character is 
+available, the <tt>cons</tt> device' interrupt is asserted. When there are 
+no more available characters, the interrupt is deasserted. (Remember that 
+the interrupt has to be unmasked to be able to actually cause an 
+interrupt.)
 
-<p>On MIPS, the <b><tt>cons</tt></b> device is hardwired to interrupt 2
-(the lowest hardware interrupt). Whenever a character is available, the
-interrupt is asserted. When there are no more available characters, the
-interrupt is deasserted. (Remember that the interrupt has to be enabled in
-the status register of the system coprocessor.)
-
-<p>The <b><tt>ether</tt></b> device is hardwired to interrupt 3.
-
-<p>The IPIs controlled by the <b><tt>mp</tt></b> device are hardwired to
-interrupt 6. Whenever an IPI is "sent", interrupt 6 is asserted on the
-target CPU(s), and the IPI number is added last in the IPI queue for that
-CPU. It is then up to that CPU to read from offset <tt>0x00c0</tt>, to
-figure out what kind of IPI it was.
+<p>IPIs (inter-processor interrupts) are controlled by the <tt>mp</tt> 
+device. Whenever an IPI is "sent" from a source to one or more target 
+CPUs, the interrupt is asserted on the target CPUs, and the IPI number is 
+added last in the IPI queue for each of the target CPUs. It is then up to 
+those CPUs to individually read from offset <tt>0x00c0</tt>, to figure out 
+what kind of IPI it was.
 
 <p>A simple tutorial on how to use the <tt>disk</tt> device, if not clear 
 from the description above, can be found here: <a 
 href="test_disk.c"><tt>test_disk.c</tt></a>
 
+
+<p>Interrupt mappings are as follows:
+
+<p><center>
+<table border="1">
+	<tr><td align="center">
+		<b><tt>testmips</tt></b>
+	</td></tr>
+	<tr><td>
+		<table border="0">
+		<tr><td align="center">IRQ:</td><td>&nbsp;</td>
+			<td>Used for:</td></tr>
+		<tr><td align="center">7</td><td></td>
+			<td>MIPS count/compare interrupt</td></tr>
+		<tr><td align="center">6</td><td></td>
+			<td><tt>mp</tt> (inter-processor interrupts)</td></tr>
+		<tr><td align="center">3</td><td></td>
+			<td><tt>ether</tt></td></tr>
+		<tr><td align="center">2</td><td></td>
+			<td><tt>cons</tt></td></tr>
+		</table>
+	</td></tr>
+</table>
+</center>
+
+<p>Other machines:  TODO
+
+
+<p><br>
 
 
 

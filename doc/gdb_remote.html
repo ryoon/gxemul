@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: gdb_remote.html,v 1.8 2006-04-29 09:20:42 debug Exp $
+$Id: gdb_remote.html,v 1.9 2006-05-04 19:20:39 debug Exp $
 
 Copyright (C) 2006  Anders Gavare.  All rights reserved.
 
@@ -68,11 +68,11 @@ instance.
 <p>The GDB front-end I use in this example is the <a 
 href="http://www.gnu.org/software/ddd/">Data Display Debugger (DDD)</a>.
 
-<p><a href="20060407-ddd-via-gdb-experiment.png">
-<img src="20060407-ddd-via-gdb-experiment_small.png"></a>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20060504-gdb-64bit-mips.png"><img src="20060504-gdb-64bit-mips_small.png"></a>
 
-<p>The screenshot is of DDD connected to a small test program compiled for 
-64-bit MIPS, running in GXemul.
+<p>The screenshot above shows DDD connected to GXemul, running the Hello 
+World demo program.
 
 
 
@@ -118,14 +118,14 @@ You can still run a bare GDB session without a GUI front-end if you like.
 <ol>
   <li>Start up GXemul, and tell it to wait for an incoming GDB connection
 	on a certain port:<pre>
-	# <b>gxemul -Etestmips -XY2 -G10000 x_mips_rectangles</b>
+	# <b>gxemul -x -E testmips -G 10000 hello_mips</b>
 
 </pre>
   <p>
   <li>Start the DDD, using a GDB configured for this specific target,
 	and also give the name of the binary/kernel. (This binary
 	should have been compiled with <tt>-g</tt>.)<pre>
-	# <b>ddd --debugger mips64-unknown-elf-gdb x_mips_rectangles</b>
+	# <b>ddd --debugger mips64-unknown-elf-gdb hello_mips</b>
 
 </pre>
   <p>
@@ -138,6 +138,8 @@ You can still run a bare GDB session without a GUI front-end if you like.
 	be necessary to Continue twice.) Press ESC when you wish to interrupt.
 </ol>
 
+<p>Note: For 64-bit MIPS targets, you might have to fiddle with 
+MIPS-related GDB settings, to make GDB send correct commands to GXemul.
 
 </p>
 

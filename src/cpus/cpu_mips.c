@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.45 2006-05-01 07:55:38 debug Exp $
+ *  $Id: cpu_mips.c,v 1.46 2006-05-04 19:20:39 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1691,14 +1691,20 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		if (coprocnr == 1) {
 			for (i=0; i<32; i++)
 				switch (i) {
-				case 0:	printf("cpu%i: fcr0  (fcir) = 0x%08x\n",
-					    cpu->cpu_id, (int)cpu->cd.mips.coproc[coprocnr]->fcr[i]);
+				case MIPS_FPU_FCIR:
+					printf("cpu%i: fcr0  (fcir) = 0x%08x\n",
+					    cpu->cpu_id, (int)cpu->cd.mips.
+					    coproc[coprocnr]->fcr[i]);
 					break;
-				case 25:printf("cpu%i: fcr25 (fccr) = 0x%08x\n",
-					    cpu->cpu_id, (int)cpu->cd.mips.coproc[coprocnr]->fcr[i]);
+				case MIPS_FPU_FCCR:
+					printf("cpu%i: fcr25 (fccr) = 0x%08x\n",
+					    cpu->cpu_id, (int)cpu->cd.mips.
+					    coproc[coprocnr]->fcr[i]);
 					break;
-				case 31:printf("cpu%i: fcr31 (fcsr) = 0x%08x\n",
-					    cpu->cpu_id, (int)cpu->cd.mips.coproc[coprocnr]->fcr[i]);
+				case MIPS_FPU_FCSR:
+					printf("cpu%i: fcr31 (fcsr) = 0x%08x\n",
+					    cpu->cpu_id, (int)cpu->cd.mips.
+					    coproc[coprocnr]->fcr[i]);
 					break;
 				}
 		}
@@ -1795,6 +1801,47 @@ char *mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 		/*  TODO: fp = gpr 30?  */
 		add_response_word(cpu, r, cpu->cd.mips.gpr[30], len, wlen);
 
+		return r;
+	}
+
+	if (cmd[0] == 'p') {
+		int regnr = strtol(cmd + 1, NULL, 16);
+		size_t wlen = cpu->is_32bit? sizeof(uint32_t):sizeof(uint64_t);
+		size_t len = 2 * wlen + 1;
+		char *r = malloc(len);
+		r[0] = '\0';
+		if (regnr >= 0 && regnr <= 31) {
+			add_response_word(cpu, r,
+			    cpu->cd.mips.gpr[regnr], len, wlen);
+		} else if (regnr == 0x20) {
+			add_response_word(cpu, r, cpu->cd.mips.coproc[0]->
+			    reg[COP0_STATUS], len, wlen);
+		} else if (regnr == 0x21) {
+			add_response_word(cpu, r, cpu->cd.mips.lo, len, wlen);
+		} else if (regnr == 0x22) {
+			add_response_word(cpu, r, cpu->cd.mips.hi, len, wlen);
+		} else if (regnr == 0x23) {
+			add_response_word(cpu, r, cpu->cd.mips.coproc[0]->
+			    reg[COP0_BADVADDR], len, wlen);
+		} else if (regnr == 0x24) {
+			add_response_word(cpu, r, cpu->cd.mips.coproc[0]->
+			    reg[COP0_CAUSE], len, wlen);
+		} else if (regnr == 0x25) {
+			add_response_word(cpu, r, cpu->pc, len, wlen);
+		} else if (regnr >= 0x26 && regnr <= 0x45 &&
+		    cpu->cd.mips.coproc[1] != NULL) {
+			add_response_word(cpu, r, cpu->cd.mips.coproc[1]->
+			    reg[regnr - 0x26], len, wlen);
+		} else if (regnr == 0x46) {
+			add_response_word(cpu, r, cpu->cd.mips.coproc[1]->
+			    fcr[MIPS_FPU_FCSR], len, wlen);
+		} else if (regnr == 0x47) {
+			add_response_word(cpu, r, cpu->cd.mips.coproc[1]->
+			    fcr[MIPS_FPU_FCIR], len, wlen);
+		} else {
+			/*  Unimplemented:  */
+			add_response_word(cpu, r, 0xcc000 + regnr, len, wlen);
+		}
 		return r;
 	}
 
@@ -4273,3 +4320,4 @@ CPU_FAMILY_INIT(mips,"MIPS")
 
 
 #endif	/*  ENABLE_MIPS  */
+

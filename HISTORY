@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1212 2006-05-04 17:14:30 debug Exp $
+$Id: HISTORY,v 1.1213 2006-05-04 19:20:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2713,3 +2713,7 @@ Changelog for GXemul:
 		to make it easier to reuse those files (placing them in
 		src/include/testmachine/), and beginning on a set of "demos"
 		or "tutorials" for the testmachine functionality.
+		Minor updates to the MIPS GDB remote protocol stub.
+		Refreshing doc/experiments.html and gdb_remote.html.
+		Enabling Alpha emulation in the stable release configuration,
+		even though no guest OSes for Alpha can run yet.

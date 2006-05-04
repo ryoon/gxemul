@@ -1,4 +1,4 @@
-$Id: TODO,v 1.260 2006-05-04 19:30:07 debug Exp $
+$Id: TODO,v 1.261 2006-05-04 19:49:25 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -25,6 +25,10 @@ Stuff to finish before a 0.4.0 release:
 	x)  Complete removal of bintrans! :-)
 
 --------------
+
+SMP:
+	o)  dev_mp doesn't work well with dyntrans yet
+	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 
 MIPS:
 	o)  Dyntrans: R2000/R3000 caches don't quite work yet (NetBSD/pmax,

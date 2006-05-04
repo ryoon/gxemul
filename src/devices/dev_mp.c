@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.35 2006-05-04 17:14:30 debug Exp $
+ *  $Id: dev_mp.c,v 1.36 2006-05-04 19:49:25 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -121,7 +121,7 @@ DEVICE_ACCESS(mp)
 		break;
 
 	case DEV_MP_PAUSE_CPU:
-		/*  Pause all cpus except our selves:  */
+		/*  Pause all cpus except a specific CPU:  */
 		which_cpu = idata;
 
 		for (i=0; i<cpu->machine->ncpus; i++)

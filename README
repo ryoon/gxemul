@@ -1,4 +1,4 @@
-$Id: README,v 1.102 2006-04-26 03:59:11 debug Exp $
+$Id: README,v 1.103 2006-05-04 19:49:25 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -42,6 +42,8 @@ Possible uses of the emulator include:
  o)  simulating (ethernet) networks of computers running various
      operating systems, to study their interaction with each other
 
+ o)  debugging code in general
+
 Use your imagination :-)
 
 
@@ -58,8 +60,8 @@ GXemul's limitations
      enough for those guest operating systems to use them.
 
      A consequence of this is that a machine mode may be implemented well
-     enough to run NetBSD for that machine mode, but another guest
-     operating system may not run at all, or behave strangely.
+     enough to run NetBSD for that machine mode, but other guest operating
+     systems may not run at all, or behave strangely.
 
 
 Quick start
@@ -67,6 +69,9 @@ Quick start
 
 To compile, type './configure' and then 'make'. This should work on most
 Unix-like systems. If not, then please mail me a bug report.
+
+You might want to experiment with various CC and CFLAGS environment
+variable settings, to get optimum performance.
 
 If you are impatient, and want to try out running a guest operating system 
 inside GXemul, read this:  doc/guestoses.html#netbsdcatsinstall

@@ -1,5 +1,5 @@
 /*
- *  $Id: hello.c,v 1.1 2006-05-04 17:14:30 debug Exp $
+ *  $Id: hello.c,v 1.2 2006-05-04 17:16:38 debug Exp $
  *
  *  GXemul demo:  Hello World
  *
@@ -10,12 +10,13 @@
 
 
 #ifdef MIPS
-/*  Note: The ugly cast to a signed int causes the address to be sign-extended
-    correctly to 0xffffffffb00000xx when compiled in 64-bit mode  */
+/*  Note: The ugly cast to a signed int (32-bit) causes the address to be
+	sign-extended correctly on MIPS when compiled in 64-bit mode  */
 #define	PHYSADDR_OFFSET		((signed int)0x80000000)
 #else
 #define	PHYSADDR_OFFSET		0
 #endif
+
 
 #define	PUTCHAR_ADDRESS		(PHYSADDR_OFFSET +		\
 				DEV_CONS_ADDRESS + DEV_CONS_PUTGETCHAR)

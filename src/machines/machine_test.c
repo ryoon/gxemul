@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.7 2006-05-04 17:14:31 debug Exp $
+ *  $Id: machine_test.c,v 1.8 2006-05-04 17:33:35 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -41,6 +41,7 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "testmachine/dev_cons.h"
 #include "testmachine/dev_fb.h"
 #include "testmachine/dev_mp.h"
 

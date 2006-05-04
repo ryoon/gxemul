@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.34 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_cons.c,v 1.35 2006-05-04 17:33:35 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -46,6 +46,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "testmachine/dev_cons.h"
 
 
 #define	CONS_TICK_SHIFT		14

@@ -1,0 +1,29 @@
+$Id: README,v 1.1 2006-05-04 17:14:31 debug Exp $
+
+The files in this directory describe the devices found in GXemul's "test 
+machines". These machines do not match any real-world machines, but they 
+have devices that are similar to those found in real machines:
+
+  o)  console (dev_cons):
+	A simple console device, with putchar() and getchar()
+	functionality. It also has a halt() function, to make it easy
+	to exit from the emulator.
+
+  o)  mp (dev_mp):
+	A multiprocessor inter-processor communication device.
+	It also contains other useful functionality, such as retrieving
+	the amount of "physical" RAM installed in the emulated machine.
+
+  o)  framebuffer (dev_fb):
+	640 x 480 pixels, 3 bytes per pixel, red-green-blue
+
+  o)  disk (dev_disk):
+	Used for reading and writing 512-byte sectors from/to disk images.
+
+  o)  ethernet (dev_ether):
+	A very simple ethernet NIC, capable of sending and receiving
+	ethernet frames on the simulated network.
+
+Please read the GXemul documentation for more details, and study the demo 
+programs.
+

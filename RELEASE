@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.186 2006-05-01 07:55:38 debug Exp $
+$Id: RELEASE,v 1.187 2006-05-04 17:14:30 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -56,6 +56,7 @@ Files included in this release are:
   RELEASE                     This file.
   TODO                        TODO notes.
   configure, Makefile.skel    sh and make scripts for building GXemul.
+  demos                       Tutorial-like demos of testmachine functionality.
   doc                         Documentation.
   experiments                 Experimental code. (Usually not needed.)
   src                         Source code.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.208 2006-03-04 12:58:25 debug Exp $
+ *  $Id: devices.h,v 1.209 2006-05-04 17:14:31 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -148,10 +148,6 @@ void dev_bt459_init(struct machine *machine, struct memory *mem,
 	int color_fb_flag, int irq_nr, int type);
 
 /*  dev_cons.c:  */
-#define	DEV_CONS_ADDRESS		0x0000000010000000
-#define	DEV_CONS_LENGTH			0x0000000000000020
-#define	    DEV_CONS_PUTGETCHAR		    0x0000
-#define	    DEV_CONS_HALT		    0x0010
 struct cons_data {
 	int	console_handle;
 	int	irq_nr;
@@ -213,7 +209,6 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 #define	DEV_ETHER_LENGTH		0x8000
 
 /*  dev_fb.c:  */
-#define	DEV_FB_ADDRESS		0x12000000	/*  Default for testmips  */
 #define	DEV_FB_LENGTH		0x3c0000	/*  3c0000 to not colide with */
 						/*  turbochannel rom,         */
 						/*  otherwise size = 4MB      */

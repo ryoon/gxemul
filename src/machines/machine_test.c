@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.6 2006-03-30 19:36:04 debug Exp $
+ *  $Id: machine_test.c,v 1.7 2006-05-04 17:14:31 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -40,7 +40,9 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "mp.h"
+
+#include "testmachine/dev_fb.h"
+#include "testmachine/dev_mp.h"
 
 
 static void default_test(struct machine *machine, struct cpu *cpu)

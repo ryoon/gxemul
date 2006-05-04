@@ -1,8 +1,8 @@
-#ifndef	MP_H
-#define	MP_H
+#ifndef	TESTMACHINE_CONS_H
+#define	TESTMACHINE_CONS_H
 
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,28 +28,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mp.h,v 1.7 2005-09-18 19:54:16 debug Exp $
+ *  $Id: dev_cons.h,v 1.1 2006-05-04 17:14:31 debug Exp $
  *
- *  dev_mp definitions.
+ *  Definitions used by the "cons" device in GXemul.
  */
 
-#define	MIPS_IPI_INT			6
 
-#define	DEV_MP_ADDRESS			0x0000000011000000ULL
-#define	DEV_MP_LENGTH			0x0000000000000100ULL
-#define     DEV_MP_WHOAMI		    0x0000
-#define     DEV_MP_NCPUS		    0x0010
-#define     DEV_MP_STARTUPCPU		    0x0020
-#define     DEV_MP_STARTUPADDR		    0x0030
-#define     DEV_MP_PAUSE_ADDR		    0x0040
-#define     DEV_MP_PAUSE_CPU		    0x0050
-#define     DEV_MP_UNPAUSE_CPU		    0x0060
-#define     DEV_MP_STARTUPSTACK		    0x0070
-#define     DEV_MP_HARDWARE_RANDOM	    0x0080
-#define     DEV_MP_MEMORY		    0x0090
-#define	    DEV_MP_IPI_ONE		    0x00a0
-#define	    DEV_MP_IPI_MANY		    0x00b0
-#define	    DEV_MP_IPI_READ		    0x00c0
-#define	    DEV_MP_NCYCLES		    0x00d0
+#define	DEV_CONS_ADDRESS		0x0000000010000000
+#define	DEV_CONS_LENGTH			0x0000000000000020
+#define	    DEV_CONS_PUTGETCHAR		    0x0000
+#define	    DEV_CONS_HALT		    0x0010
 
-#endif	/*  MP_H  */
+
+#endif	/*  TESTMACHINE_CONS_H  */

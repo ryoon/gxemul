@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1211 2006-04-30 21:02:45 debug Exp $
+$Id: HISTORY,v 1.1212 2006-05-04 17:14:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2703,8 +2703,13 @@ Changelog for GXemul:
 		coprocessor branches) could not be reused from the old
 		non-dyntrans code. The "quick-and-dirty fallback" only appeared
 		to work. Fixing by implementing bc1* for MIPS dyntrans.
-		More MIPS instructions: [d]sub, sdc1, ldc1, dmtc1, dmfc1,
-		cfc0.
+		More MIPS instructions: [d]sub, sdc1, ldc1, dmtc1, dmfc1, cfc0.
 		Freshening up MIPS floating point disassembly appearance.
 20060430	Continuing on C790/R5900/TX79 disassembly; implementing 128-bit
 		"por" and "pextlw".
+20060504	Disabling -u (userland emulation) unless compiled as unstable
+		development version.
+		Beginning on freshening up the testmachine include files,
+		to make it easier to reuse those files (placing them in
+		src/include/testmachine/), and beginning on a set of "demos"
+		or "tutorials" for the testmachine functionality.

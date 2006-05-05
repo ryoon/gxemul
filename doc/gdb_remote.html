@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: gdb_remote.html,v 1.9 2006-05-04 19:20:39 debug Exp $
+$Id: gdb_remote.html,v 1.10 2006-05-05 05:32:13 debug Exp $
 
 Copyright (C) 2006  Anders Gavare.  All rights reserved.
 
@@ -72,7 +72,7 @@ href="http://www.gnu.org/software/ddd/">Data Display Debugger (DDD)</a>.
 <a href="20060504-gdb-64bit-mips.png"><img src="20060504-gdb-64bit-mips_small.png"></a>
 
 <p>The screenshot above shows DDD connected to GXemul, running the Hello 
-World demo program.
+World demo program compiled for mips64-unknown-elf, on a FreeBSD/amd64 host.
 
 
 
@@ -134,14 +134,32 @@ You can still run a bare GDB session without a GUI front-end if you like.
 
 </pre>
   <p>
-  <li>Press F9 (Continue) to start. (For POWER/PowerPC targets, it might
-	be necessary to Continue twice.) Press ESC when you wish to interrupt.
+  <li>Press F9 (Continue) to start. Press ESC when you wish to interrupt.
+	You can also use F5 (Step) to single-step one instruction at a time.
 </ol>
 
-<p>Note: For 64-bit MIPS targets, you might have to fiddle with 
-MIPS-related GDB settings, to make GDB send correct commands to GXemul.
+
+
+<p><br><b><u>Notes:</u><b>
+
+<p>
+<ul>
+	<li>The remote GDB functionality in GXemul is quite hack-ish, very
+		unstable, very slow, and does not support any fancy features
+		such as breakpoints or watchpoints yet.
+	<li>For 64-bit MIPS targets, you might have to fiddle with
+		MIPS-related GDB settings, to make GDB send correct commands
+		to GXemul. Otherwise, GDB only sends the lowest 32 bits
+		of memory addresses, which is incorrect.
+	<li>When remote-debugging PowerPC targets using DDD, you might have to
+		press F9 <i>twice</i> to get it to start. I am not sure why.
+</ul>
 
 </p>
+
+
+<p><br>
+
 
 </body>
 </html>

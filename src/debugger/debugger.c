@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.8 2006-05-05 05:32:46 debug Exp $
+ *  $Id: debugger.c,v 1.9 2006-05-05 21:28:09 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -71,12 +71,13 @@
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
+#include "settings.h"
 #include "x11.h"
 
 
 extern int extra_argc;
 extern char **extra_argv;
-
+extern struct settings *global_settings;
 extern int quiet_mode;
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.270 2006-05-05 05:32:46 debug Exp $
+ *  $Id: main.c,v 1.271 2006-05-05 21:28:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -755,8 +755,24 @@ int main(int argc, char *argv[])
 	int i;
 
 	progname = argv[0];
+
+	/*  Create the settings object, and add global settings to it:  */
 	global_settings = settings_new();
 
+	settings_add(global_settings, "single_step", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&single_step);
+	settings_add(global_settings, "force_debugger_at_exit", 1,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
+	    (void *)&force_debugger_at_exit);
+	settings_add(global_settings, "fully_deterministic", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
+	    (void *)&fully_deterministic);
+	settings_add(global_settings, "verbose", 1,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&verbose);
+	settings_add(global_settings, "quiet_mode", 1,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&quiet_mode);
+
+	/*  Initialize all emulator subsystems:  */
 	console_init();
 	cpu_init();
 	device_init();

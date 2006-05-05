@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.15 2006-02-18 13:42:38 debug Exp $
+ *  $Id: console.c,v 1.16 2006-05-05 21:28:09 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -76,10 +76,12 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 
 
 extern char *progname;
 extern int verbose;
+extern struct settings *global_settings;
 
 
 static struct termios console_oldtermios;
@@ -971,6 +973,13 @@ void console_init(void)
 {
 	int handle;
 	struct console_handle *chp;
+	struct settings *console_settings = settings_new();
+
+	settings_add(global_settings, "console", 1,
+            SETTINGS_TYPE_SUBSETTINGS, 0, console_settings);
+
+	settings_add(console_settings, "allow_slaves", 0,
+            SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&allow_slaves);
 
 	chp = console_new_handle("MAIN", &handle);
 	if (handle != MAIN_CONSOLE) {

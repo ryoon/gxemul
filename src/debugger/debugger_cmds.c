@@ -25,10 +25,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.1 2006-05-05 05:32:46 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.2 2006-05-05 21:28:09 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
+
+
+/*
+ *  debugger_cmd_allsettings():
+ */
+static void debugger_cmd_allsettings(struct machine *m, char *cmd_line)
+{
+	settings_debugdump(global_settings, GLOBAL_SETTINGS_NAME, 1);
+}
 
 
 /*
@@ -1239,6 +1248,9 @@ struct cmd {
 };
 
 static struct cmd cmds[] = {
+	{ "allsettings", "", 0, debugger_cmd_allsettings,
+		"show all settings" },
+
 	{ "breakpoint", "...", 0, debugger_cmd_breakpoint,
 		"manipulate breakpoints" },
 

@@ -3,5 +3,5 @@ all:
 	@echo the demo program.
 
 clean:
-	rm -f *.o hello_*
+	rm -f *.o hello_* *core
 

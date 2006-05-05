@@ -3,5 +3,5 @@ all:
 	@echo the demo program.
 
 clean:
-	rm -f *.o rectangles_*
+	rm -f *.o rectangles_* *core
 

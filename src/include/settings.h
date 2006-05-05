@@ -28,22 +28,33 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.h,v 1.1 2006-05-05 05:32:46 debug Exp $
+ *  $Id: settings.h,v 1.2 2006-05-05 21:28:09 debug Exp $
  */
 
 #include "misc.h"
 
+#define	GLOBAL_SETTINGS_NAME	"settings"
 
-struct settings {
-	int			n_settings;
+struct settings;
 
-	/*  TODO  */
-};
+/*  Storage types:  */
+#define	SETTINGS_TYPE_SUBSETTINGS	1
+#define	SETTINGS_TYPE_INT		2
+#define	SETTINGS_TYPE_INT32		3
+#define	SETTINGS_TYPE_INT64		4
 
+/*  Presentation formats:  */
+#define	SETTINGS_FORMAT_DECIMAL		1	/*  -123  */
+#define	SETTINGS_FORMAT_HEX		2	/*  0xffffffff80000000  */
+#define	SETTINGS_FORMAT_BOOL		3	/*  true, false  */
+#define	SETTINGS_FORMAT_YESNO		4	/*  yes, no  */
 
 /*  settings.c:  */
 struct settings *settings_new(void);
 void settings_destroy(struct settings *settings);
-
+void settings_debugdump(struct settings *settings, const char *prefix,
+	int recurse);
+void settings_add(struct settings *settings, const char *name, int writable,
+	int type, int format, void *ptr);
 
 #endif	/*  SETTINGS_H  */

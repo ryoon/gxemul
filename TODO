@@ -1,4 +1,4 @@
-$Id: TODO,v 1.261 2006-05-04 19:49:25 debug Exp $
+$Id: TODO,v 1.262 2006-05-05 05:32:46 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -85,6 +85,28 @@ Debugger:
 	o)  Remove the emul command? (But show network info if showing
 		machines?)
 	o)  Generalize the expression evaluator. (debugger_expr.c?)
+		settable variables	("show nr of instructions on average")
+		emul[x]			defaults to current emul
+		machine[x]		defaults to current machine
+		cpu[x]			defaults to currently focused cpu
+		registers		cpu arch dependent (#-prefix)
+		symbols			@-prefix
+		numeric constants	decimal, hex, and octal ($-prefix)
+		boolean			yes,no, true,false
+		operators (+ - * / % & | ^ !)
+		parentheses for grouping subexpressions
+		NOTE: the change from % to # for register prefix!
+		examples:
+				emul[0].machine[2].cpu[0].pc
+				machine[test2].cpu[1].ra = main
+				settings.show_trace_tree = yes
+
+		Settings: a name-tree, each name has a host memory address
+			and a raw type/size (e.g. int32_t), and a prefered
+			readable format type (e.g. "boolean").
+		Help command should have subsections! One for "expressions",
+		mirrored in the documentation, but the internal help should
+		be the one that should be considered correct.
 	o)  Place commands in a separate file, the "main engine" in a
 	    separate file, etc.  (debugger_cmds.c)
 	o)  see src/debugger.c for more

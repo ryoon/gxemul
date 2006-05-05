@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1213 2006-05-04 19:20:38 debug Exp $
+$Id: HISTORY,v 1.1214 2006-05-05 05:32:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2717,3 +2717,6 @@ Changelog for GXemul:
 		Refreshing doc/experiments.html and gdb_remote.html.
 		Enabling Alpha emulation in the stable release configuration,
 		even though no guest OSes for Alpha can run yet.
+20060505	Adding a generic 'settings' object, which will contain
+		references to settable variables (which will later be possible
+		to access using the debugger).

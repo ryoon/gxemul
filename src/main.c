@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.269 2006-05-04 17:11:08 debug Exp $
+ *  $Id: main.c,v 1.270 2006-05-05 05:32:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -42,6 +42,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "misc.h"
+#include "settings.h"
 
 
 extern volatile int single_step;
@@ -49,6 +50,8 @@ extern int force_debugger_at_exit;
 
 extern int optind;
 extern char *optarg;
+
+struct settings *global_settings;
 
 int extra_argc;
 char **extra_argv;
@@ -752,6 +755,7 @@ int main(int argc, char *argv[])
 	int i;
 
 	progname = argv[0];
+	global_settings = settings_new();
 
 	console_init();
 	cpu_init();
@@ -858,6 +862,8 @@ int main(int argc, char *argv[])
 
 	/*  Run all emulations:  */
 	emul_run(emuls, n_emuls);
+
+	settings_destroy(global_settings);
 
 	return 0;
 }

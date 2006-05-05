@@ -1,4 +1,4 @@
-$Id: TODO,v 1.263 2006-05-05 18:15:59 debug Exp $
+$Id: TODO,v 1.264 2006-05-05 21:52:21 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -102,14 +102,14 @@ Debugger:
 				machine[test2].cpu[1].ra = main
 				settings.show_trace_tree = yes
 
-		Settings: a name-tree, each name has a host memory address
-			and a raw type/size (e.g. int32_t), and a prefered
-			readable format type (e.g. "boolean").
+		Settings:
+			o)  Remove a setting.
+			o)  Read/write a setting given a name. (Read as
+			    string and/or int64_t simultaneously?)
+
 		Help command should have subsections! One for "expressions",
 		mirrored in the documentation, but the internal help should
 		be the one that should be considered correct.
-	o)  Place commands in a separate file, the "main engine" in a
-	    separate file, etc.  (debugger_cmds.c)
 	o)  see src/debugger.c for more
 
 The configure script:

@@ -25,14 +25,25 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.2 2006-05-05 21:28:09 debug Exp $
+ *  $Id: settings.c,v 1.3 2006-05-05 21:52:21 debug Exp $
+ *
+ *  A generic settings object. (This module should be 100% indepedent of GXemul
+ *  and hence easily reusable.)  It is basically a tree structure of nodes,
+ *  where each node has a name and a few properties. The main property is
+ *  a pointer, which can either point to other settings ("sub-settings"),
+ *  or to a variable in memory.
+ *
+ *  Appart from the pointer, the other properties are a definition of the
+ *  type being pointed to (int, int32_t, int64_t, etc), how it should be
+ *  presented (e.g. it may be an int value in memory, but it should be
+ *  presented as a boolean "true/false" value), and a flag which tells us
+ *  whether the setting is directly writable or not.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "misc.h"
 #include "settings.h"
 
 
@@ -40,11 +51,16 @@ struct settings {
 	int			n_settings;
 
 	/*
-	 *  Each setting has a name, a storage type, a presentation
-	 *  format, and a pointer. For subsettings, the pointer points to
-	 *  the subsettings object; for other settings, the pointer
-	 *  points to a variable.
+	 *  Each setting has a name, a writable flag, a storage type, a
+	 *  presentation format, and a pointer.
+	 *
+	 *  For subsettings, the pointer points to the subsettings object;
+	 *  for other settings, the pointer points to a variable.
+	 *
+	 *  These pointers point to simple linear arrays, containing n_settings
+	 *  entries each.
 	 */
+
 	char			**name;
 	int			*writable;
 	int			*storage_type;
@@ -68,6 +84,7 @@ struct settings *settings_new(void)
 		exit(1);
 	}
 
+	/*  No settings.  */
 	memset(settings, 0, sizeof(struct settings));
 
 	return settings;
@@ -81,13 +98,36 @@ struct settings *settings_new(void)
  */
 void settings_destroy(struct settings *settings)
 {
+	int i;
+
 	if (settings == NULL) {
 		fprintf(stderr, "settings_destroy(): internal error, "
 		    "settings = NULL!\n");
 		exit(1);
 	}
 
-	/*  TODO  */
+	if (settings->name != NULL) {
+		for (i=0; i<settings->n_settings; i++) {
+			if (settings->name[i] != NULL)
+				free(settings->name[i]);
+		}
+
+		free(settings->name);
+	}
+
+	if (settings->writable != NULL)
+		free(settings->writable);
+
+	if (settings->storage_type != NULL)
+		free(settings->storage_type);
+
+	if (settings->presentation_format != NULL)
+		free(settings->presentation_format);
+
+	if (settings->ptr != NULL)
+		free(settings->ptr);
+
+	free(settings);
 }
 
 
@@ -200,11 +240,4 @@ out_of_mem:
 	exit(1);
 }
 
-
-/*
- *  TODO:
- *	Removing a setting.
- *	Reading from a setting, given a name.
- *	Writing to a setting, given a name.
- */
 

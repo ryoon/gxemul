@@ -28,10 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.h,v 1.2 2006-05-05 21:28:09 debug Exp $
+ *  $Id: settings.h,v 1.3 2006-05-05 21:52:21 debug Exp $
  */
 
-#include "misc.h"
+#include <inttypes.h>
 
 #define	GLOBAL_SETTINGS_NAME	"settings"
 

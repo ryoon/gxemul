@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1214 2006-05-05 05:32:45 debug Exp $
+$Id: HISTORY,v 1.1215 2006-05-06 08:50:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2720,3 +2720,4 @@ Changelog for GXemul:
 20060505	Adding a generic 'settings' object, which will contain
 		references to settable variables (which will later be possible
 		to access using the debugger).
+20060506	Updating dev_disk and corresponding demo/documentation.

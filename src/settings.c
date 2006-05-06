@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.3 2006-05-05 21:52:21 debug Exp $
+ *  $Id: settings.c,v 1.4 2006-05-06 18:04:48 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/*  Including misc.h should ONLY be necessary to work around the fact that
+    many systems don't have PRIx64 etc defined.  */
+#include "misc.h"
 
 #include "settings.h"
 

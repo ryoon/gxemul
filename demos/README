@@ -1,27 +1,31 @@
-OVERVIEW
+Overview
 --------
 
-This directory contains various simple tutorial-like demos, on how to use 
-the "test machines" in GXemul.
+This directory contains various simple tutorial-like demos, which
+demonstrate some of the functionality of the the "test machines" in GXemul.
 
-	hello			Prints Hello World to the console.
-
-	rectangles		Draws random rectangles to the framebuffer.
-
-	disk			Reads sectors from a disk image, and
-				dumps the contents in hex and ascii to
-				the console.
-
-Each directory has a README file, describing how to build and run 
-the demo.
+Each directory has a README file, containing examples on how to build and
+run the demo programs for various target architectures.
 
 
-LICENSE NOTE
+Simple demos:
+-------------
+
+  o)  hello		Prints Hello World to the console.
+
+  o)  rectangles	Draws random rectangles to the framebuffer.
+
+  o)  disk		Reads sectors from a disk image, and
+			dumps the contents in hex and ascii to
+			the console.
+
+
+License note
 ------------
 
 These demos are not under the same license(s) as the rest of GXemul.
 
 The demos are public domain, so you can reuse the code even in projects
-which have licenses that are incompatible with the BSD-style license used
-for GXemul.
+which have licenses that are incompatible with the BSD-style licenses used
+for GXemul itself.
 

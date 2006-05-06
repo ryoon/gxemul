@@ -1,4 +1,4 @@
-$Id: TODO,v 1.264 2006-05-05 21:52:21 debug Exp $
+$Id: TODO,v 1.265 2006-05-06 08:01:48 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -13,7 +13,6 @@ Stuff to finish before a 0.4.0 release:
 		    documentation is working as in 0.3.8.
 		+)  Remove obvious bottlenecks, and do at least _some_
 		    optimization before the release.
-	x)  OpenBSD 3.8 -> 3.9 (cats and sgi?)
 	x)  The halt() functionality in dev_cons must halt the machine!
 	x)  Better test machine examples:
 		x)  Something more complex, with user input, and
@@ -24,6 +23,7 @@ Stuff to finish before a 0.4.0 release:
 		    o) ether
 		x)  Think about portable interrupt settings...
 	x)  Complete removal of bintrans! :-)
+	x)  Wait for new releases of NetBSD, and test with those.
 
 --------------
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.209 2006-05-04 17:14:31 debug Exp $
+ *  $Id: devices.h,v 1.210 2006-05-06 08:42:49 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -196,9 +196,6 @@ void dev_deccca_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_DECXMI_LENGTH			0x800000
 int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_decxmi_init(struct memory *mem, uint64_t baseaddr);
-
-/*  dev_disk.c:  */
-#define	DEV_DISK_ADDRESS		0x13000000
 
 /*  dev_eagle.c:  */
 struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,

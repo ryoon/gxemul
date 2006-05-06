@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.35 2006-05-04 17:33:35 debug Exp $
+ *  $Id: dev_cons.c,v 1.36 2006-05-06 08:42:49 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -78,9 +78,12 @@ DEVICE_ACCESS(cons)
 
 	/*  Exit the emulator:  */
 	if (relative_addr == DEV_CONS_HALT) {
-		cpu->running = 0;
-		cpu->machine->exit_without_entering_debugger = 1;
-		return 1;
+		/*  cpu->running = 0;
+		    cpu->machine->exit_without_entering_debugger = 1;
+		    return 1;  */
+		/*  TODO: this doesn't work yet. for now, let's
+		    simply use exit()  */
+		exit(1);
 	}
 
 	if (writeflag == MEM_WRITE) {

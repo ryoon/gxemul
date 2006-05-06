@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.99 2006-05-04 19:49:25 debug Exp $
+$Id: experiments.html,v 1.100 2006-05-06 08:42:48 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -276,10 +276,10 @@ following experimental devices:
     <td align="left" valign="top">
 	<a name="expdevices_disk"><b><tt>disk</tt>:</b></a>
 	<p>Disk controller, which can read from and write
-	to disk images. It does not use interrupts; read and
+	to emulated IDE disks. It does not use interrupts; read and
 	write operations finish instantaneously.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_disk.c</tt></font>
-	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>TODO</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>dev_disk.h</tt></font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x13000000</font>
     </td>
     <td></td>
@@ -296,7 +296,7 @@ following experimental devices:
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top"><tt>0x0010</tt></td>
-	    <td align="left" valign="top">Write: Select the SCSI ID to be used in the next
+	    <td align="left" valign="top">Write: Select the IDE ID to be used in the next
 		read/write operation.</td>
 	  </tr>
 	  <tr>
@@ -407,9 +407,6 @@ added last in the IPI queue for each of the target CPUs. It is then up to
 those CPUs to individually read from offset <tt>0x00c0</tt>, to figure out 
 what kind of IPI it was.
 
-<p>A simple tutorial on how to use the <tt>disk</tt> device, if not clear 
-from the description above, can be found here: <a 
-href="test_disk.c"><tt>test_disk.c</tt></a>
 
 
 <p>Interrupt mappings are as follows:

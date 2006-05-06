@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_disk.c,v 1.11 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_disk.c,v 1.12 2006-05-06 08:42:49 debug Exp $
  *
- *  Basic "Disk" device. This is a simple test device which can be used to
+ *  Basic "disk" device. This is a simple test device which can be used to
  *  read and write data from disk devices.
  */
 
@@ -44,8 +44,8 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "testmachine/dev_disk.h"
 
-#define	BUF_SIZE	8192
 
 struct disk_data {
 	int64_t		offset;
@@ -83,44 +83,49 @@ DEVICE_ACCESS(disk)
 		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
-	case 0x00:
+
+	case DEV_DISK_OFFSET:
 		if (writeflag == MEM_READ) {
 			odata = d->offset;
 		} else {
 			d->offset = idata;
 		}
 		break;
-	case 0x10:
+
+	case DEV_DISK_ID:
 		if (writeflag == MEM_READ) {
 			odata = d->disk_id;
 		} else {
 			d->disk_id = idata;
 		}
 		break;
-	case 0x20:
+
+	case DEV_DISK_START_OPERATION:
 		if (writeflag == MEM_READ) {
 			odata = d->command;
 		} else {
 			d->command = idata;
 			switch (d->command) {
 			case 0:	d->status = diskimage_access(cpu->machine,
-				     d->disk_id, DISKIMAGE_SCSI, 0,
+				     d->disk_id, DISKIMAGE_IDE, 0,
 				     d->offset, d->buf, 512);
 				break;
 			case 1:	d->status = diskimage_access(cpu->machine,
-				     d->disk_id, DISKIMAGE_SCSI, 1,
+				     d->disk_id, DISKIMAGE_IDE, 1,
 				     d->offset, d->buf, 512);
 				break;
 			}
 		}
 		break;
-	case 0x30:
+
+	case DEV_DISK_STATUS:
 		if (writeflag == MEM_READ) {
 			odata = d->status;
 		} else {
 			d->status = idata;
 		}
 		break;
+
 	default:if (writeflag == MEM_WRITE) {
 			fatal("[ disk: unimplemented write to "
 			    "offset 0x%x: data=0x%x ]\n", (int)
@@ -165,13 +170,14 @@ DEVINIT(disk)
 	snprintf(n2, nlen, "%s [data buffer]", devinit->name);
 
 	memory_device_register(devinit->machine->memory, n1,
-	    devinit->addr, 0x4000, dev_disk_access, (void *)d,
+	    devinit->addr, DEV_DISK_BUFFER, dev_disk_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, n2,
-	    devinit->addr + 0x4000, devinit->machine->arch_pagesize,
-	    dev_disk_buf_access, (void *)d, DM_DYNTRANS_OK |
-	    DM_DYNTRANS_WRITE_OK | DM_READS_HAVE_NO_SIDE_EFFECTS, d->buf);
+	    devinit->addr + DEV_DISK_BUFFER,
+	    devinit->machine->arch_pagesize, dev_disk_buf_access,
+	    (void *)d, DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK |
+	    DM_READS_HAVE_NO_SIDE_EFFECTS, d->buf);
 
 	return 1;
 }

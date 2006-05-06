@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.108 2006-01-11 20:14:41 debug Exp $
+ *  $Id: diskimage.c,v 1.109 2006-05-06 08:42:48 debug Exp $
  *
  *  Disk image support.
  *
@@ -1499,8 +1499,10 @@ int diskimage_add(struct machine *machine, char *fname)
 		d2->next = d;
 	}
 
+	/*  Default to IDE disks...  */
 	d->type = DISKIMAGE_IDE;
 
+	/*  ... but some machines use SCSI by default:  */
 	if (machine->machine_type == MACHINE_PMAX ||
 	    machine->machine_type == MACHINE_ARC)
 		d->type = DISKIMAGE_SCSI;

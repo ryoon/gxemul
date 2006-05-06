@@ -1,6 +1,6 @@
 Alpha
 -----
-alpha-unknown-elf-gcc -I../../src/include/testmachine -O2 -g		\
+alpha-unknown-elf-gcc -I../../src/include/testmachine -g		\
 	rectangles.c -c -o rectangles_alpha.o
 alpha-unknown-elf-ld -Ttext 0x10000 -e f rectangles_alpha.o -o rectangles_alpha
 file rectangles_alpha
@@ -9,7 +9,7 @@ gxemul -X -E testalpha rectangles_alpha
 
 ARM
 ---
-arm-unknown-elf-gcc -I../../src/include/testmachine -O2 -g		\
+arm-unknown-elf-gcc -I../../src/include/testmachine -g			\
 	rectangles.c -c -o rectangles_arm.o
 arm-unknown-elf-ld -e f rectangles_arm.o -o rectangles_arm
 file rectangles_arm
@@ -18,7 +18,7 @@ gxemul -X -E testarm rectangles_arm
 
 MIPS (64-bit)
 -------------
-mips64-unknown-elf-gcc -I../../src/include/testmachine -O2 -g -DMIPS	\
+mips64-unknown-elf-gcc -I../../src/include/testmachine -g -DMIPS	\
 	rectangles.c -mips4 -mabi=64 -c -o rectangles_mips.o
 mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f			\
 	rectangles_mips.o -o rectangles_mips --oformat=elf64-bigmips
@@ -28,7 +28,7 @@ gxemul -X -E testmips rectangles_mips
 
 MIPS (32-bit)
 -------------
-mips64-unknown-elf-gcc -I../../src/include/testmachine -O2 -g -DMIPS	\
+mips64-unknown-elf-gcc -I../../src/include/testmachine -g -DMIPS	\
 	rectangles.c -mips1 -mabi=32 -c -o rectangles_mips.o
 mips64-unknown-elf-ld -Ttext 0x80030000 -e f				\
 	rectangles_mips.o -o rectangles_mips
@@ -43,7 +43,7 @@ TODO
 
 PPC (32-bit)
 ------------
-ppc-unknown-elf-gcc -I../../src/include/testmachine -O2 -g		\
+ppc-unknown-elf-gcc -I../../src/include/testmachine -g			\
 	rectangles.c -c -o rectangles_ppc.o
 ppc-unknown-elf-ld -e f rectangles_ppc.o -o rectangles_ppc
 file rectangles_ppc

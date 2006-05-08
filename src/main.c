@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.271 2006-05-05 21:28:09 debug Exp $
+ *  $Id: main.c,v 1.272 2006-05-08 05:29:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -285,11 +285,9 @@ static void usage(int longusage)
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
-#endif /*  WITH_X11  */
 	printf("  -x        open up new xterms for emulated serial ports "
 	    "(default is on when\n            using configuration files or"
 	    " when X11 is used, off otherwise)\n");
-#ifdef WITH_X11
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
 #endif /*  WITH_X11  */
 	printf("  -y x      set max_random_cycles_per_chunk to x"
@@ -362,7 +360,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
-	    "VvW:XxY:y:Z:z:";
+	    "VvW:"
+#ifdef WITH_X11
+	    "XxY:"
+#endif
+	    "y:Z:z:";
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
@@ -716,14 +718,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		fprintf(stderr, "WARNING: %s was compiled without "
 		    "bintrans support. Ignoring -b.\n", progname);
 		m->bintrans_enable = 0;
-	}
-#endif
-
-#ifndef WITH_X11
-	if (m->use_x11) {
-		fprintf(stderr, "WARNING: %s was compiled without "
-		    "X11 support. Ignoring -X.\n", progname);
-		m->use_x11 = 0;
 	}
 #endif
 

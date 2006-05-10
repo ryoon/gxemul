@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.218 2006-05-04 17:33:22 debug Exp $
+#  $Id: configure,v 1.219 2006-05-10 02:53:56 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -890,12 +890,20 @@ printf "#include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 int main(int argc, char *argv[]) { fseeko(NULL, 0, 0); return 0;}\n" > _tests.c
-$CC $CFLAGS _tests.c -o _tests 2> /dev/null
+$CC $CFLAGS $CWARNINGS _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
-	printf "missing\n"
-	printf "WARNING! fseeko missing from libc. Using a hack, "
-	printf "which probably doesn't work.\n"
-	printf "#define HACK_FSEEKO\n" >> config.h
+	# Try with _LARGEFILE_SOURCE (hack to make fseeko
+	# work on 64-bit Linux):
+	$CC $CFLAGS -D_LARGEFILE_SOURCE $CWARNINGS _tests.c -o _tests 2> /dev/null
+	if [ ! -x _tests ]; then
+		printf "missing\n"
+		printf "WARNING! fseeko missing from libc. Using a hack, "
+		printf "which probably doesn't work.\n"
+		printf "#define HACK_FSEEKO\n" >> config.h
+	else
+		printf "using -D_LARGEFILE_SOURCE hack\n"
+		CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE"
+	fi
 else
 	printf "found\n"
 fi

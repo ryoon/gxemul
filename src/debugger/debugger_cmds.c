@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.2 2006-05-05 21:28:09 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.3 2006-05-10 03:37:21 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -1188,13 +1188,21 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 
 	while (addr < addr_end) {
 		unsigned int i, len;
+		int failed = 0;
 		unsigned char buf[17];	/*  TODO: How long can an
 					    instruction be, on weird archs?  */
 		memset(buf, 0, sizeof(buf));
 
-		for (i=0; i<sizeof(buf); i++)
-			c->memory_rw(c, mem, addr+i, buf+i, 1, MEM_READ,
-			    CACHE_NONE | NO_EXCEPTIONS);
+		for (i=0; i<sizeof(buf); i++) {
+			if (c->memory_rw(c, mem, addr+i, buf+i, 1, MEM_READ,
+			    CACHE_NONE | NO_EXCEPTIONS) == MEMORY_ACCESS_FAILED)
+				failed ++;
+		}
+
+		if (failed == sizeof(buf)) {
+			printf("(memory access failed)\n");
+			break;
+		}
 
 		len = cpu_disassemble_instr(m, c, buf, 0, addr, 0);
 

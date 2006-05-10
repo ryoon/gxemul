@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1217 2006-05-10 02:53:55 debug Exp $
+$Id: HISTORY,v 1.1218 2006-05-10 02:58:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2725,3 +2725,4 @@ Changelog for GXemul:
 		with current test machines :-).
 20060510	Adding a -D_LARGEFILE_SOURCE hack for 64-bit Linux hosts,
 		so that fseeko() doesn't give a warning.
+		Very minor MIPS instruction updates (x64=1 checks).

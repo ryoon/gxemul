@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.89 2006-04-28 18:24:22 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.90 2006-05-10 20:04:59 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -212,6 +212,10 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			/*  R4000 and others:  */
 			enabled = (status & STATUS_IE)
 			    && !(status & STATUS_EXL) && !(status & STATUS_ERL);
+			/*  Special case for R5900/C790/TX79:  */
+			if (cpu->cd.mips.cpu_type.rev == MIPS_R5900 &&
+			    !(status & R5900_STATUS_EIE))
+				enabled = 0;
 		}
 		mask = status & cpu->cd.mips.coproc[0]->reg[COP0_CAUSE]
 		    & STATUS_IM_MASK;

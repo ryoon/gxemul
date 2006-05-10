@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.10 2006-04-17 12:58:08 debug Exp $
+ *  $Id: cop0.h,v 1.11 2006-05-10 20:04:59 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
@@ -125,7 +125,8 @@
 #define	   STATUS_ERL		    0x04
 #define	   STATUS_EXL		    0x02
 #define	   STATUS_IE		    0x01
-#define	   R5900_STATUS_EIE	    0x10000
+#define	   R5900_STATUS_EDI	    0x20000		/*  EI/DI instruction enable  */
+#define	   R5900_STATUS_EIE	    0x10000		/*  Enable Interrupt Enable  */
 #define	COP0_CAUSE		13
 #define	   CAUSE_BD		    0x80000000UL	/*  branch delay flag  */
 #define	   CAUSE_CE_MASK	    0x30000000		/*  which coprocessor  */

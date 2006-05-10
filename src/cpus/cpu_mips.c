@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.46 2006-05-04 19:20:39 debug Exp $
+ *  $Id: cpu_mips.c,v 1.47 2006-05-10 20:04:59 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -934,6 +934,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 					debug("nop");
 				else if (sa == 1)
 					debug("ssnop");
+				else if (sa == 3)
+					debug("ehb");
 				else
 					debug("nop (weird, sa=%i)", sa);
 				goto disasm_ret;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.71 2006-05-10 02:06:34 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.72 2006-05-10 20:04:59 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1093,12 +1093,15 @@ X(mult)
 	reg(&cpu->cd.mips.lo) = (int32_t)res;
 	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
 }
-X(mult_xx)
+X(mult_r5900)
 {
-	/*  R5900 multiplication  */
+	/*  C790/TX79/R5900 multiplication, stores result in
+	    hi, lo, and a third register  */
 	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	int64_t res = (int64_t)a * (int64_t)b;
-	reg(ic->arg[2]) = res;	/*  TODO: 32-bit or 64-bit?  */
+	reg(&cpu->cd.mips.lo) = (int32_t)res;
+	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
+	reg(ic->arg[2]) = (int32_t)res;
 }
 X(multu)
 {
@@ -1106,6 +1109,16 @@ X(multu)
 	uint64_t res = (uint64_t)a * (uint64_t)b;
 	reg(&cpu->cd.mips.lo) = (int32_t)res;
 	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
+}
+X(multu_r5900)
+{
+	/*  C790/TX79/R5900 multiplication, stores result in
+	    hi, lo, and a third register  */
+	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
+	uint64_t res = (uint64_t)a * (uint64_t)b;
+	reg(&cpu->cd.mips.lo) = (int32_t)res;
+	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
+	reg(ic->arg[2]) = (int32_t)res;
 }
 X(dmult)
 {
@@ -1852,6 +1865,28 @@ X(eret)
 
 
 /*
+ *  deret: Return from debug (EJTAG) handler
+ */
+X(deret)
+{
+	/*
+	 *  According to the MIPS64 manual, deret loads PC from the DEPC cop0
+	 *  register, and jumps there immediately. No delay slot.
+	 *
+	 *  TODO: This instruction is only available if the processor is in
+	 *  debug mode. (What does that mean?)
+	 *
+	 *  TODO: This instruction is undefined in a delay slot.
+	 */
+
+	cpu->pc = cpu->cd.mips.coproc[0]->reg[COP0_DEPC];
+	cpu->delay_slot = 0;
+	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_EXL;
+	quick_pc_to_pointers(cpu);
+}
+
+
+/*
  *  rdhwr: Read hardware register into gpr (MIPS32/64 rev 2).
  *
  *  arg[0] = ptr to rt (destination register)
@@ -2281,6 +2316,23 @@ X(sdr)
 }
 
 
+/*
+ *  di, ei: R5900 interrupt enable/disable.
+ *
+ *  TODO: check the R5900_STATUS_EDI bit in the status register. If it is
+ *  cleared, and we are not running in kernel mode, then both the EI and DI
+ *  instructions should be treated as NOPs!
+ */
+X(di_r5900)
+{
+	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
+}
+X(ei_r5900)
+{
+	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
+}
+
+
 /*****************************************************************************/
 
 
@@ -2674,12 +2726,21 @@ X(to_be_translated)
 			case SPECIAL_MULTU:
 			case SPECIAL_DMULT:
 			case SPECIAL_DMULTU:
-#if 0
 				if (s6 == SPECIAL_MULT && rd != MIPS_GPR_ZERO) {
-					ic->f = instr(mult_xx);
+					if (cpu->cd.mips.cpu_type.rev ==
+					    MIPS_R5900) {
+						ic->f = instr(mult_r5900);
+						break;
+					}
 					break;
 				}
-#endif
+				if (s6 == SPECIAL_MULTU && rd!=MIPS_GPR_ZERO) {
+					if (cpu->cd.mips.cpu_type.rev ==
+					    MIPS_R5900) {
+						ic->f = instr(multu_r5900);
+						break;
+					}
+				}
 				if (rd != MIPS_GPR_ZERO) {
 					fatal("TODO: rd NON-zero\n");
 					goto bad;
@@ -2895,6 +2956,8 @@ X(to_be_translated)
 		break;
 
 	case HI6_COP0:
+		/*  TODO: Is checking bit 25 enough, or perhaps all bits
+		    25..21 must be checked?  */
 		if ((iword >> 25) & 1) {
 			ic->arg[2] = addr & 0xffc;
 			switch (iword & 0xff) {
@@ -2915,12 +2978,27 @@ X(to_be_translated)
 			case COP0_ERET:
 				ic->f = instr(eret);
 				break;
+			case COP0_DERET:
+				ic->f = instr(deret);
+				break;
 			case COP0_IDLE:
 			case COP0_STANDBY:
 			case COP0_SUSPEND:
 			case COP0_HIBERNATE:
 				/*  TODO  */
 				ic->f = instr(nop);
+				break;
+			case COP0_EI:
+				if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+					ic->f = instr(ei_r5900);
+				} else
+					goto bad;
+				break;
+			case COP0_DI:
+				if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+					ic->f = instr(di_r5900);
+				} else
+					goto bad;
 				break;
 			default:fatal("UNIMPLEMENTED cop0 (func 0x%02x)\n",
 				    iword & 0xff);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.15 2006-04-24 05:12:56 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.16 2006-05-10 20:04:59 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -36,7 +36,7 @@
 #include <misc.h>
 
 /*  MIPS CPU types:  */
-#include "cpuregs.h"
+#include "mips_cpuregs.h"
 
 #define	EXC3K		3
 #define	EXC4K		4
@@ -93,7 +93,7 @@
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4, 0,	48, 4,15,5,2,15,5,2, 0, 0, 0 }, /*  2way I,D; instrs/cycle?  */ \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3, 0,	48, 4,14,6,2,13,6,2, 0, 0, 0 }, /*  instrs/cycle?  */ \
 	{ "TX3920",	MIPS_TX3900,0x30,	0,	EXC32, MMU32,	1, 0,	32, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
-	{ "TX7901",	0x38,	    0x01,	0,	EXC4K, MMU4K,  64, 1,	48, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
+	{ "TX7901",	MIPS_TX7900,0x01,	0,	EXC4K, MMU4K,   3, 1,	48, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,   4, 0,	48, 4,15,0,0,15,0,0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? linesize? etc */ \
 	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4, 0,	48, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
 	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4, 0,	48, 4,14,5,1,14,5,1,18, 6, 1 }, /*  instrs/cycle? cachelinesize & assoc.? RM7000A? */ \

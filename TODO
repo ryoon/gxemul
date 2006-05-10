@@ -1,4 +1,4 @@
-$Id: TODO,v 1.268 2006-05-10 03:17:39 debug Exp $
+$Id: TODO,v 1.269 2006-05-10 20:04:59 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -38,6 +38,10 @@ MIPS:
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
 	o)  Dyntrans: SMP correctness
 	o)  Refactor code for performance and readability/maintainability.
+	o)  DROTR32 and similar MIPS64 rev 2 instructions, which have
+	    a rotation bit which differs from previous ISAs.
+	o)  EI and DI instructions for MIPS64/32 rev 2. NOTE: These are
+	    _NOT_ the same as for R5900!
 	o)  R4000 and others:
 		x)  watchhi/watchlo exceptions, and other exception
 		    handling details

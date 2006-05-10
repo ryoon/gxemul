@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.36 2006-04-29 09:49:48 debug Exp $
+ *  $Id: cpu_mips.h,v 1.37 2006-05-10 20:04:59 debug Exp $
  */
 
 #include "misc.h"
@@ -384,15 +384,21 @@ struct mips_cpu {
 	uint64_t	rmw_addr;	/*  Address of rmw modification  */
 
 	/*
-	 *  TODO:  The R5900 has 128-bit registers. I'm not really sure
+	 *  NOTE:  The R5900 has 128-bit registers. I'm not really sure
 	 *  whether they are used a lot or not, at least with code produced
 	 *  with gcc they are not. An important case however is lq and sq
 	 *  (load and store of 128-bit values). These "upper halves" of R5900
 	 *  quadwords can be used in those cases.
 	 *
+	 *  hi1 and lo1 are the high 64-bit parts of the hi and lo registers.
+	 *  sa is a 32-bit "shift amount" register.
+	 *
 	 *  TODO:  Generalize this.
 	 */
 	uint64_t	gpr_quadhi[N_MIPS_GPRS];
+	uint64_t	hi1;
+	uint64_t	lo1;
+	uint32_t	r5900_sa;
 
 
 	/*  Data and Instruction caches:  */

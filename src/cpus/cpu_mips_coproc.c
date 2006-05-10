@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.20 2006-04-30 09:48:22 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.21 2006-05-10 20:04:59 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2501,48 +2501,28 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			return;
 	}
 
-	/*  For AU1500 and probably others:  deret  */
-	if (function == 0x0200001f) {
-		if (unassemble_only) {
-			debug("deret\n");
-			return;
-		}
-
-		/*
-		 *  According to the MIPS64 manual, deret loads PC from the
-		 *  DEPC cop0 register, and jumps there immediately. No
-		 *  delay slot.
-		 *
-		 *  TODO: This instruction is only available if the processor
-		 *  is in debug mode. (What does that mean?)
-		 *  TODO: This instruction is undefined in a delay slot.
-		 */
-
-		cpu->pc = cpu->cd.mips.pc_last = cp->reg[COP0_DEPC];
-		cpu->delay_slot = 0;
-		cp->reg[COP0_STATUS] &= ~STATUS_EXL;
-
-		return;
-	}
-
 
 	/*  Ugly R5900 hacks:  */
-	if ((function & 0xfffff) == 0x38) {		/*  ei  */
-		if (unassemble_only) {
-			debug("ei\n");
+	if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+		if ((function & 0xfffff) == COP0_EI) {
+			if (unassemble_only) {
+				debug("ei\n");
+				return;
+			}
+			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |=
+			    R5900_STATUS_EIE;
 			return;
 		}
-		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
-		return;
-	}
 
-	if ((function & 0xfffff) == 0x39) {		/*  di  */
-		if (unassemble_only) {
-			debug("di\n");
+		if ((function & 0xfffff) == COP0_DI) {
+			if (unassemble_only) {
+				debug("di\n");
+				return;
+			}
+			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &=
+			    ~R5900_STATUS_EIE;
 			return;
 		}
-		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
-		return;
 	}
 
 	co_bit = (function >> 25) & 1;
@@ -2609,6 +2589,26 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 					return;
 				}
 				coproc_eret(cpu);
+				return;
+			case COP0_DERET:
+				if (unassemble_only) {
+					debug("deret\n");
+					return;
+				}
+				/*
+				 *  According to the MIPS64 manual, deret
+				 *  loads PC from the DEPC cop0 register, and
+				 *  jumps there immediately. No delay slot.
+				 *
+				 *  TODO: This instruction is only available
+				 *  if the processor is in debug mode. (What
+				 *  does that mean?) TODO: This instruction
+				 *  is undefined in a delay slot.
+				 */
+				cpu->pc = cpu->cd.mips.pc_last =
+				    cp->reg[COP0_DEPC];
+				cpu->delay_slot = 0;
+				cp->reg[COP0_STATUS] &= ~STATUS_EXL;
 				return;
 			case COP0_STANDBY:
 				if (unassemble_only) {

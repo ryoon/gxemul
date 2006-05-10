@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.12 2006-04-30 21:02:46 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.13 2006-05-10 20:04:59 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  *
@@ -38,9 +38,12 @@
  *  MIPS ISA I, II, III, IV:  Backward-compatible ISAs used in R2000/R3000
  *                            (ISA I), R6000 (ISA II), R4000 (ISA III),
  *                            and R5000/R1x000 (ISA IV).
+ *
  *  MIPS ISA V:               Never implemented in hardware?
  *
- *  MIPS32 and MIPS64:        The "modern" version of the ISA.
+ *  MIPS32 and MIPS64:        The "modern" version of the ISA. These exist
+ *                            in a revision 1, and a revision 2 (the latest
+ *                            at the time of writing this).
  *
  *  MIPS16:                   A special encoding form for MIPS32/64 which
  *                            uses 16-bit instruction words instead of
@@ -267,6 +270,7 @@
 #define	    COPz_CFCz			    0x02    /*  00010  */  /*  MIPS I  */
 #define	    COPz_CTCz			    0x06    /*  00110  */  /*  MIPS I  */
 #define	    COPz_BCzc			    0x08    /*  01000  */
+#define	    COPz_MFMCz			    0x0b    /*  01011  */
 #define	    COP1_FMT_S			    0x10    /*  10000  */
 #define	    COP1_FMT_D			    0x11    /*  10001  */
 #define	    COP1_FMT_W			    0x14    /*  10100  */
@@ -279,10 +283,13 @@
 #define	    COP0_TLBP			    0x08    /*  001000  */
 #define	    COP0_RFE			    0x10    /*  010000  */
 #define	    COP0_ERET			    0x18    /*  011000  */
+#define	    COP0_DERET			    0x1f    /*  011111  */  /*  EJTAG  */
 #define	    COP0_IDLE			    0x20    /*  100000  */
 #define	    COP0_STANDBY		    0x21    /*  100001  */
 #define	    COP0_SUSPEND		    0x22    /*  100010  */
 #define	    COP0_HIBERNATE		    0x23    /*  100011  */
+#define	    COP0_EI			    0x38    /*  111000  */  /*  R5900/TX79/C790  */
+#define	    COP0_DI			    0x39    /*  111001  */  /*  R5900/TX79/C790  */
 #define	HI6_COP1			0x11	/*  010001  */
 #define	HI6_COP2			0x12	/*  010010  */
 #define	HI6_COP3			0x13	/*  010011  */

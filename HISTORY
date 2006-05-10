@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1219 2006-05-10 04:44:25 debug Exp $
+$Id: HISTORY,v 1.1220 2006-05-10 20:04:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2725,6 +2725,10 @@ Changelog for GXemul:
 		with current test machines :-).
 20060510	Adding a -D_LARGEFILE_SOURCE hack for 64-bit Linux hosts,
 		so that fseeko() doesn't give a warning.
-		Very minor MIPS instruction updates (x64=1 checks).
 		Updating the section about how dyntrans works (the "runnable
 		IR") in doc/intro.html.
+		Instruction updates (some x64=1 checks, some more R5900
+		dyntrans stuff: better mul/mult separation from MIPS32/64,
+		adding ei and di).
+		Updating MIPS cpuregs.h to a newer one (from NetBSD).
+		Adding more MIPS dyntrans instructions: deret, ehb.

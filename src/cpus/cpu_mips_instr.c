@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.70 2006-04-30 21:02:46 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.71 2006-05-10 02:06:34 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1045,20 +1045,20 @@ X(div)
 	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	int32_t res, rem;
 	if (b == 0)
-		res = 0, rem = 0;
+		res = 0, rem = a;
 	else
-		res = a / b, rem = a % b;
-	reg(&cpu->cd.mips.lo) = res;
-	reg(&cpu->cd.mips.hi) = rem;
+		res = a / b, rem = a - b*res;
+	reg(&cpu->cd.mips.lo) = (int32_t)res;
+	reg(&cpu->cd.mips.hi) = (int32_t)rem;
 }
 X(divu)
 {
 	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	uint32_t res, rem;
 	if (b == 0)
-		res = 0, rem = 0;
+		res = 0, rem = a;
 	else
-		res = a / b, rem = a % b;
+		res = a / b, rem = a - b*res;
 	reg(&cpu->cd.mips.lo) = (int32_t)res;
 	reg(&cpu->cd.mips.hi) = (int32_t)rem;
 }
@@ -1067,9 +1067,10 @@ X(ddiv)
 	int64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	int64_t res, rem;
 	if (b == 0)
-		res = 0, rem = 0;
+		res = 0;
 	else
-		res = a / b, rem = a % b;
+		res = a / b;
+	rem = a - b*res;
 	reg(&cpu->cd.mips.lo) = res;
 	reg(&cpu->cd.mips.hi) = rem;
 }
@@ -1078,9 +1079,10 @@ X(ddivu)
 	uint64_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	uint64_t res, rem;
 	if (b == 0)
-		res = 0, rem = 0;
+		res = 0;
 	else
-		res = a / b, rem = a % b;
+		res = a / b;
+	rem = a - b*res;
 	reg(&cpu->cd.mips.lo) = res;
 	reg(&cpu->cd.mips.hi) = rem;
 }
@@ -1093,7 +1095,7 @@ X(mult)
 }
 X(mult_xx)
 {
-	/*  Undocumented (?) R5900 multiplication  */
+	/*  R5900 multiplication  */
 	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	int64_t res = (int64_t)a * (int64_t)b;
 	reg(ic->arg[2]) = res;	/*  TODO: 32-bit or 64-bit?  */
@@ -2672,10 +2674,12 @@ X(to_be_translated)
 			case SPECIAL_MULTU:
 			case SPECIAL_DMULT:
 			case SPECIAL_DMULTU:
+#if 0
 				if (s6 == SPECIAL_MULT && rd != MIPS_GPR_ZERO) {
 					ic->f = instr(mult_xx);
 					break;
 				}
+#endif
 				if (rd != MIPS_GPR_ZERO) {
 					fatal("TODO: rd NON-zero\n");
 					goto bad;
@@ -3291,9 +3295,9 @@ X(to_be_translated)
 		store = 0;
 		switch (main_opcode) {
 		case HI6_LL:  ic->f = instr(ll); break;
-		case HI6_LLD: ic->f = instr(lld); break;
+		case HI6_LLD: ic->f = instr(lld); x64 = 1; break;
 		case HI6_SC:  ic->f = instr(sc); store = 1; break;
-		case HI6_SCD: ic->f = instr(scd); store = 1; break;
+		case HI6_SCD: ic->f = instr(scd); store = 1; x64 = 1; break;
 		}
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
@@ -3317,12 +3321,12 @@ X(to_be_translated)
 		switch (main_opcode) {
 		case HI6_LWL: ic->f = instr(lwl); break;
 		case HI6_LWR: ic->f = instr(lwr); break;
-		case HI6_LDL: ic->f = instr(ldl); break;
-		case HI6_LDR: ic->f = instr(ldr); break;
+		case HI6_LDL: ic->f = instr(ldl); x64 = 1; break;
+		case HI6_LDR: ic->f = instr(ldr); x64 = 1; break;
 		case HI6_SWL: ic->f = instr(swl); store = 1; break;
 		case HI6_SWR: ic->f = instr(swr); store = 1; break;
-		case HI6_SDL: ic->f = instr(sdl); store = 1; break;
-		case HI6_SDR: ic->f = instr(sdr); store = 1; break;
+		case HI6_SDL: ic->f = instr(sdl); store = 1; x64 = 1; break;
+		case HI6_SDR: ic->f = instr(sdr); store = 1; x64 = 1; break;
 		}
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];

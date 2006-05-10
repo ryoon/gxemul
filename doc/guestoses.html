@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.131 2006-05-06 08:48:39 debug Exp $
+$Id: guestoses.html,v 1.132 2006-05-10 03:17:39 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -48,32 +48,21 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
-  <li><a href="#netbsdpmaxinstall">NetBSD/pmax</a>
-  <li><a href="#netbsdarcinstall">NetBSD/arc</a>
-  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips</a>
-  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt</a>
-  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips</a>
-  <li><a href="#netbsdsgimips">NetBSD/sgimips</a>
-  <li><a href="#netbsdcatsinstall">NetBSD/cats</a>
-  <li><a href="#netbsdevbarminstall">NetBSD/evbarm</a>
-  <li><a href="#netbsdprepinstall">NetBSD/prep</a>
-  <li><a href="#openbsdpmaxinstall">OpenBSD/pmax</a>
-  <li><a href="#openbsdcatsinstall">OpenBSD/cats</a>
-  <li><a href="#ultrixinstall">Ultrix/RISC</a>
+  <li><a href="#netbsdpmaxinstall">NetBSD/pmax 3.0 or 1.6.2</a>
+  <li><a href="#netbsdarcinstall">NetBSD/arc 1.6.2</a>
+  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.0</a>
+  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 2.1</a>
+  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 2.1</a>
+  <li><a href="#netbsdsgimips">NetBSD/sgimips 2.1</a>
+  <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0</a>
+  <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
+  <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
+  <li><a href="#openbsdpmaxinstall">OpenBSD/pmax 2.8-BETA</a>
+  <li><a href="#openbsdcatsinstall">OpenBSD/cats 3.9</a>
+  <li><a href="#ultrixinstall">Ultrix/RISC 4.5</a>
   <li><a href="#sprite">Sprite for DECstation</a>
   <li><a href="#declinux">Debian GNU/Linux for DECstation</a>
   <li><a href="#declinuxredhat">Redhat Linux for DECstation</a>
-</ul>
-
-<p>In addition to the "working" guest operating systems listed above,
-you might find the following information interesting:
-<ul>
-  <li><a href="#mach">Mach/PMAX</a>
-  <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
-  <li><a href="#openbsdarcinstall">OpenBSD/arc</a>
-  <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
-  <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder</a>
-  <li><a href="#netbsdmacppcinstall">NetBSD/macppc</a>
 </ul>
 
 
@@ -89,13 +78,32 @@ The emulator works well enough to run complete operating systems. These
 are often refered to as <i>guest</i> operating systems, in contrast to the 
 <i>host</i> operating system which the emulator is running under.
 
-<p>
-Although it is possible to let a guest OS access real hardware, such as
-harddisks, it is much more flexible and attractive to simulate harddisks
-using files residing in the host's filesystem. On Unix-like systems, files
-may contain holes, which makes this really simple. To the guest operating
+<p>Although it is possible to let a guest OS access real hardware, such as 
+harddisks, it is much more flexible and attractive to simulate harddisks 
+using files residing in the host's filesystem. On Unix-like systems, files 
+may contain holes, which makes this really simple. To the guest operating 
 system, the harddisk image looks and acts like a real disk.
 
+<p>In addition to the "working" guest operating systems listed above,
+you might find the following information interesting:
+<ul>
+  <li><a href="#mach">Mach/PMAX</a>
+  <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
+  <li><a href="#openbsdarcinstall">OpenBSD/arc 2.3</a>
+  <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
+  <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 2.1</a>
+  <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.0</a>
+</ul>
+
+<p>The version numbers of the various operating systems were the latest 
+versions that worked satisfactory with GXemul at the time this page was 
+updated; if new versions have been released since then, they might work as 
+well.
+
+<p>Some operating systems are listed with a version number <i>less</i> 
+than what was available at the time of this GXemul release (e.g. 
+NetBSD/prep). The reasons for this is because of incompleteness in 
+GXemul's machine, device, and/or processor implementations.
 
 
 
@@ -117,7 +125,7 @@ onto a harddisk image in the emulator, follow these instructions:
 <p><ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1 count=512 seek=1900000000</b>
+	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=1900000</b>
 
 </pre>
 </ol>

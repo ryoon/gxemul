@@ -1,4 +1,4 @@
-$Id: TODO,v 1.267 2006-05-10 01:33:50 debug Exp $
+$Id: TODO,v 1.268 2006-05-10 03:17:39 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -25,7 +25,6 @@ Stuff to finish before a 0.4.0 release:
 		x)  Think about portable interrupt settings...
 	x)  Complete removal of bintrans! :-)
 	x)  Wait for new releases of NetBSD, and test with those.
-	x)  List verison numbers of OSes at top of guestoses.html.
 
 --------------
 

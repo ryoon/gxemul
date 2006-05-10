@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.64 2006-04-09 20:28:22 debug Exp $
+ *  $Id: bus_pci.c,v 1.65 2006-05-10 03:32:32 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -60,7 +60,9 @@
 extern int verbose;
 
 
+#ifdef UNSTABLE_DEVEL
 #define debug fatal
+#endif
 
 
 /*

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.269 2006-05-10 20:04:59 debug Exp $
+$Id: TODO,v 1.270 2006-05-11 05:00:36 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -296,6 +296,8 @@ Better framebuffer and X-windows functionality:
 		on size (and center the image, with a black border).
 	o)  Different scaledown on different windows?
 	o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
+	o)  Bug reported by Elijah Rutschman on MacOS with weird
+	    keys (F5 = cursor down?).
 	o)  Keyboard and mouse events:
 		x)  Do this for more machines than just DECstation
 		x)  more X11 cursor keycodes

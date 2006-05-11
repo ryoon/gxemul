@@ -1,4 +1,4 @@
-$Id: TODO,v 1.270 2006-05-11 05:00:36 debug Exp $
+$Id: TODO,v 1.271 2006-05-11 05:06:59 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -38,6 +38,10 @@ MIPS:
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
 	o)  Dyntrans: SMP correctness
 	o)  Refactor code for performance and readability/maintainability.
+	o)  Instruction combinations? Possible candidates (but profile first!):
+		o)  multiple loads/stores in a row
+		o)  strlen, memset loops etc
+		o)  compare + branch
 	o)  DROTR32 and similar MIPS64 rev 2 instructions, which have
 	    a rotation bit which differs from previous ISAs.
 	o)  EI and DI instructions for MIPS64/32 rev 2. NOTE: These are

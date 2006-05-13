@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.23 2006-04-24 18:23:28 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.24 2006-05-13 23:20:00 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -198,6 +198,9 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("%016"PRIx64, (uint64_t) cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
+		debug("cpu%i: y  = 0x%08"PRIx32"\n",
+		    x, (uint32_t)cpu->cd.sparc.y);
+
 		if (bits32) {
 			for (i=0; i<N_SPARC_REG; i++) {
 				if ((i & 3) == 0)
@@ -266,6 +269,15 @@ void sparc_cpu_register_match(struct machine *m, char *name,
 			m->cpus[cpunr]->pc = *valuep;
 		} else {
 			*valuep = m->cpus[cpunr]->pc;
+		}
+		*match_register = 1;
+	}
+
+	if (strcasecmp(name, "y") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->cd.sparc.y = (uint32_t) *valuep;
+		} else {
+			*valuep = (uint32_t) m->cpus[cpunr]->cd.sparc.y;
 		}
 		*match_register = 1;
 	}
@@ -452,7 +464,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	uint32_t iword;
 	int hi2, op2, rd, rs1, rs2, siconst, btype, tmps, no_rd = 0;
 	int asi, no_rs1 = 0, no_rs2 = 0, jmpl = 0, shift_x = 0, cc, p;
-	char *symbol, *mnem;
+	char *symbol, *mnem, *rd_name;
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -569,6 +581,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		break;
 
 	case 2:	mnem = sparc_alu_names[op2];
+		rd_name = sparc_regnames[rd];
 		switch (op2) {
 		case 0:	/*  add  */
 			if (rd == rs1 && (iword & 0x3fff) == 0x2001) {
@@ -607,6 +620,16 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if (iword == 0x81580000) {
 				mnem = "flushw";
 				no_rs1 = no_rs2 = no_rd = 1;
+			}
+			break;
+		case 48:/*  wr* (SPARCv8)  */
+			mnem = "wr";
+			switch (rd) {
+			case 0:	rd_name = "y"; break;
+			case 2:	rd_name = "ccr"; break;
+			case 3:	rd_name = "asi"; break;
+			case 6:	rd_name = "fprs"; break;
+			default:rd_name = "UNIMPLEMENTED";
 			}
 			break;
 		case 49:/*  ?  */
@@ -661,7 +684,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if ((!no_rs1 || !no_rs2) && !no_rd)
 			debug(",");
 		if (!no_rd)
-			debug("%%%s", sparc_regnames[rd]);
+			debug("%%%s", rd_name);
 		break;
 
 	case 3:	debug("%s\t", sparc_loadstore_names[op2]);

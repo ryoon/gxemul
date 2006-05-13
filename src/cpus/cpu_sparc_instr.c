@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.13 2006-04-24 18:23:28 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.14 2006-05-13 23:20:00 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -326,6 +326,22 @@ X(sra_imm)  { reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) >> ic->arg[1]; }
 X(srax_imm) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> ic->arg[1]; }
 
 
+/*
+ *  wr*:  Pre-SPARCv9 write to special registers:
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ */
+X(wr_y)
+{
+	cpu->cd.sparc.y = (uint32_t) (reg(ic->arg[0]) ^ reg(ic->arg[1]));
+}
+X(wr_y_imm)
+{
+	cpu->cd.sparc.y = (uint32_t) (reg(ic->arg[0]) ^ (int32_t)ic->arg[1]);
+}
+
+
 /*****************************************************************************/
 
 
@@ -592,6 +608,26 @@ X(to_be_translated)
 			ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
 			if (rd == SPARC_ZEROREG)
 				ic->f = instr(nop);
+			break;
+
+		case 48:/*  wr* (pre-SPARCv9)  */
+			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
+			ic->f = NULL;
+			if (use_imm) {
+				ic->arg[1] = siconst;
+				switch (rd) {
+				case 0:	ic->f = instr(wr_y_imm); break;
+				}
+			} else {
+				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
+				switch (rd) {
+				case 0:	ic->f = instr(wr_y); break;
+				}
+			}
+			if (ic->f == NULL) {
+				fatal("TODO: Unimplemented wr instruction\n");
+				goto bad;
+			}
 			break;
 
 		case 56:/*  jump and link  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.33 2006-05-13 23:20:00 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.34 2006-05-14 00:08:19 debug Exp $
  */
 
 #include "misc.h"
@@ -119,6 +119,17 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 #define	SPARC_REG_I6		30
 #define	SPARC_REG_I7		31
 
+/*  Privileged registers:  */
+#define	N_SPARC_PREG		32
+#define	SPARC_PREG_NAMES	{					\
+	"tpc", "tnpc", "tstate", "tt", "tick", "tba", "pstate", "tl",	\
+	"pil", "cwp", "cansave", "canrestore", "cleanwin", "otherwin",	\
+	"wstate", "reserved15", "reserved16", "reserved17", "reserved18", \
+	"reserved19", "reserved20", "reserved21", "reserved22", \
+	"reserved23", "reserved24", "reserved25", "reserved26", \
+	"reserved27", "reserved28", "reserved29", "reserved30", \
+	"reserved31" }
+
 #define	N_SPARC_BRANCH_TYPES	16
 #define	SPARC_BRANCH_NAMES {						\
 	"bn", "be",  "ble", "bl",  "bleu", "bcs", "bneg", "bvs",	\
@@ -169,6 +180,7 @@ struct sparc_cpu {
 	uint64_t	pstate;		/*  Processor State Register  */
 	uint64_t	y;		/*  Y-reg (only low 32-bits used)  */
 	uint64_t	tick;		/*  Tick Register  */
+	uint64_t	tick_cmpr;	/*  Tick Compare Register (?)  */
 	uint64_t	ver;		/*  Version register  */
 
 	uint8_t		cwp;		/*  Current Window Pointer  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1221 2006-05-13 23:20:00 debug Exp $
+$Id: HISTORY,v 1.1222 2006-05-14 00:08:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2732,5 +2732,5 @@ Changelog for GXemul:
 		adding ei and di).
 		Updating MIPS cpuregs.h to a newer one (from NetBSD).
 		Adding more MIPS dyntrans instructions: deret, ehb.
-20060514	Adding disassembly of the SPARC pre-v9 wr instruction, and
-		implementing it for the y register.
+20060514	Adding disassembly and beginning implementation of SPARC wr
+		and wrpr instructions.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.14 2006-05-13 23:20:00 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.15 2006-05-14 00:08:19 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -327,18 +327,28 @@ X(srax_imm) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> ic->arg[1]; }
 
 
 /*
- *  wr*:  Pre-SPARCv9 write to special registers:
+ *  wrpr:  Write to privileged register
  *
  *  arg[0] = ptr to rs1
  *  arg[1] = ptr to rs2 or an immediate value (int32_t)
  */
-X(wr_y)
+X(wrpr_tick)
 {
-	cpu->cd.sparc.y = (uint32_t) (reg(ic->arg[0]) ^ reg(ic->arg[1]));
+	cpu->cd.sparc.tick = (uint32_t) (reg(ic->arg[0]) ^ reg(ic->arg[1]));
 }
-X(wr_y_imm)
+X(wrpr_tick_imm)
 {
-	cpu->cd.sparc.y = (uint32_t) (reg(ic->arg[0]) ^ (int32_t)ic->arg[1]);
+	cpu->cd.sparc.tick = (uint32_t) (reg(ic->arg[0]) ^ (int32_t)ic->arg[1]);
+}
+X(wrpr_pil)
+{
+	cpu->cd.sparc.pil = (reg(ic->arg[0]) ^ reg(ic->arg[1]))
+	    & SPARC_PIL_MASK;
+}
+X(wrpr_pil_imm)
+{
+	cpu->cd.sparc.pil = (reg(ic->arg[0]) ^ (int32_t)ic->arg[1])
+	    & SPARC_PIL_MASK;
 }
 
 
@@ -610,22 +620,49 @@ X(to_be_translated)
 				ic->f = instr(nop);
 			break;
 
-		case 48:/*  wr* (pre-SPARCv9)  */
+		case 48:/*  wr  (Note: works as xor)  */
+			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
+			if (use_imm) {
+				ic->arg[1] = siconst;
+				ic->f = instr(xor_imm);
+			} else {
+				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
+				ic->f = instr(xor);
+			}
+			ic->arg[2] = (size_t) NULL;
+			switch (rd) {
+			case 0:	ic->arg[2] = (size_t)&cpu->cd.sparc.y;
+				break;
+			case 0x17:
+				ic->arg[2] = (size_t)&cpu->cd.sparc.tick_cmpr;
+				break;
+			}
+			if (ic->arg[2] == (size_t)NULL) {
+				fatal("TODO: Unimplemented wr instruction, "
+				    "rd = 0x%02x\n", rd);
+				goto bad;
+			}
+			break;
+
+		case 50:/*  wrpr  (Note: works as xor)  */
 			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
 			ic->f = NULL;
 			if (use_imm) {
 				ic->arg[1] = siconst;
 				switch (rd) {
-				case 0:	ic->f = instr(wr_y_imm); break;
+				case 4:	ic->f = instr(wrpr_tick_imm); break;
+				case 8:	ic->f = instr(wrpr_pil_imm); break;
 				}
 			} else {
 				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
 				switch (rd) {
-				case 0:	ic->f = instr(wr_y); break;
+				case 4:	ic->f = instr(wrpr_tick); break;
+				case 8:	ic->f = instr(wrpr_pil); break;
 				}
 			}
 			if (ic->f == NULL) {
-				fatal("TODO: Unimplemented wr instruction\n");
+				fatal("TODO: Unimplemented wrpr instruction,"
+				    " rd = 0x%02x\n", rd);
 				goto bad;
 			}
 			break;

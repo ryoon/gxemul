@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.24 2006-05-13 23:20:00 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.25 2006-05-14 00:08:19 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -48,6 +48,7 @@
 
 
 static char *sparc_regnames[N_SPARC_REG] = SPARC_REG_NAMES;
+static char *sparc_pregnames[N_SPARC_PREG] = SPARC_PREG_NAMES;
 static char *sparc_regbranch_names[N_SPARC_REGBRANCH_TYPES] =
 	SPARC_REGBRANCH_NAMES;
 static char *sparc_branch_names[N_SPARC_BRANCH_TYPES] = SPARC_BRANCH_NAMES;
@@ -629,6 +630,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case 2:	rd_name = "ccr"; break;
 			case 3:	rd_name = "asi"; break;
 			case 6:	rd_name = "fprs"; break;
+			case 23:rd_name = "tick_cmpr"; break;	/*  v9 ?  */
 			default:rd_name = "UNIMPLEMENTED";
 			}
 			break;
@@ -637,6 +639,11 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				mnem = "restored";
 				no_rs1 = no_rs2 = no_rd = 1;
 			}
+			break;
+		case 50:/*  wrpr  */
+			rd_name = sparc_pregnames[rd];
+			if (rs1 == SPARC_ZEROREG)
+				no_rs1 = 1;
 			break;
 		case 56:/*  jmpl  */
 			jmpl = 1;

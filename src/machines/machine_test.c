@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.9 2006-05-06 08:42:49 debug Exp $
+ *  $Id: machine_test.c,v 1.10 2006-05-15 18:35:10 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -568,13 +568,13 @@ MACHINE_SETUP(testsparc)
 
 MACHINE_DEFAULT_CPU(baresparc)
 {
-	machine->cpu_name = strdup("SPARCv9");
+	machine->cpu_name = strdup("UltraSPARC");
 }
 
 
 MACHINE_DEFAULT_CPU(testsparc)
 {
-	machine->cpu_name = strdup("SPARCv9");
+	machine->cpu_name = strdup("UltraSPARC");
 }
 
 

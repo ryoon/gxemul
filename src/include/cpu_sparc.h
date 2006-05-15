@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.34 2006-05-14 00:08:19 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.35 2006-05-15 18:35:10 debug Exp $
  */
 
 #include "misc.h"
@@ -53,8 +53,8 @@ struct sparc_cpu_type_def {
 };
 
 #define SPARC_CPU_TYPE_DEFS	{					\
-	{ "SPARCv7",	32, 14,5,4, 14,5,4, 0,0,0 },			\
-	{ "SPARCv9",	64, 14,5,4, 14,5,4, 0,0,0 },			\
+	{ "TMS390Z50",	32, 14,5,4, 14,5,4, 0,0,0 },			\
+	{ "UltraSPARC",	64, 14,5,4, 14,5,4, 0,0,0 },			\
 	{ NULL,		0,  0,0,0,  0,0,0,  0,0,0 }			\
 	}
 
@@ -146,7 +146,8 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 	"addcc","andcc","orcc","xorcc","subcc","andncc","orncc","xnorcc",\
 	"addxcc","[25]","umulcc","smulcc","subxcc","[29]","udivcc","sdivcc",\
 	"taddcc","tsubcc","taddcctv","tsubcctv","mulscc","sll","srl","sra",\
-	"rd*/stbar","[41]","rdpr","[43]", "[44]","[45]","popc","movre",	\
+	"rd*/stbar", "rd" /* rd psr on pre-sparcv9 */, "rdpr","rd",	\
+	"[44]","[45]","popc","movre",	 \
 	"wr*","saved/restored","wrpr","[51]", "[52]","[53]","[54]","[55]",\
 	"jmpl", "rett", "trap", "flush", "save", "restore", "[62]","[63]" }
 
@@ -175,8 +176,12 @@ struct sparc_cpu {
 
 	uint64_t	scratch;
 
-	/*  TODO: all registes  */
+	/*  Pre-SPARCv9 specific:  */
+	uint32_t	psr;		/*  Processor State Register  */
+	uint32_t	tbr;		/*  Trap base register  */
+	uint32_t	wim;		/*  Window invalid mask  */
 
+	/*  SPARCv9 etc.:  */
 	uint64_t	pstate;		/*  Processor State Register  */
 	uint64_t	y;		/*  Y-reg (only low 32-bits used)  */
 	uint64_t	tick;		/*  Tick Register  */

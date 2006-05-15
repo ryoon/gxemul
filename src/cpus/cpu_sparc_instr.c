@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.15 2006-05-14 00:08:19 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.16 2006-05-15 18:35:10 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -327,6 +327,17 @@ X(srax_imm) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> ic->arg[1]; }
 
 
 /*
+ *  rd:  Read special register:
+ *
+ *  arg[2] = ptr to rd
+ */
+X(rd_psr)
+{
+	reg(ic->arg[2]) = cpu->cd.sparc.psr;
+}
+
+
+/*
  *  wrpr:  Write to privileged register
  *
  *  arg[0] = ptr to rs1
@@ -349,6 +360,14 @@ X(wrpr_pil_imm)
 {
 	cpu->cd.sparc.pil = (reg(ic->arg[0]) ^ (int32_t)ic->arg[1])
 	    & SPARC_PIL_MASK;
+}
+X(wrpr_pstate)
+{
+	sparc_update_pstate(cpu, reg(ic->arg[0]) ^ reg(ic->arg[1]));
+}
+X(wrpr_pstate_imm)
+{
+	sparc_update_pstate(cpu, reg(ic->arg[0]) ^ (int32_t)ic->arg[1]);
 }
 
 
@@ -620,6 +639,19 @@ X(to_be_translated)
 				ic->f = instr(nop);
 			break;
 
+		case 41:/*  rd %psr,%gpr on pre-sparcv9  */
+			if (cpu->is_32bit) {
+				ic->f = instr(rd_psr);
+				ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
+				if (rd == SPARC_ZEROREG)
+					ic->f = instr(nop);
+			} else {
+				fatal("opcode 2,41 not yet implemented"
+				    " for 64-bit cpus\n");
+				goto bad;
+			}
+			break;
+
 		case 48:/*  wr  (Note: works as xor)  */
 			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
 			if (use_imm) {
@@ -651,12 +683,14 @@ X(to_be_translated)
 				ic->arg[1] = siconst;
 				switch (rd) {
 				case 4:	ic->f = instr(wrpr_tick_imm); break;
-				case 8:	ic->f = instr(wrpr_pil_imm); break;
+				case 6: ic->f = instr(wrpr_pstate_imm); break;
+				case 8: ic->f = instr(wrpr_pil_imm); break;
 				}
 			} else {
 				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
 				switch (rd) {
 				case 4:	ic->f = instr(wrpr_tick); break;
+				case 6:	ic->f = instr(wrpr_pstate); break;
 				case 8:	ic->f = instr(wrpr_pil); break;
 				}
 			}

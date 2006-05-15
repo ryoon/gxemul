@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1222 2006-05-14 00:08:19 debug Exp $
+$Id: HISTORY,v 1.1223 2006-05-15 18:35:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2734,3 +2734,5 @@ Changelog for GXemul:
 		Adding more MIPS dyntrans instructions: deret, ehb.
 20060514	Adding disassembly and beginning implementation of SPARC wr
 		and wrpr instructions.
+20060515	Adding a SUN SPARC machine mode, with dummy SS20 and Ultra1
+		machines. Adding the 32-bit "rd psr" instruction.

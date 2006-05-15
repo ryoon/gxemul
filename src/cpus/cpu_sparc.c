@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.25 2006-05-14 00:08:19 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.26 2006-05-15 18:35:10 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -201,6 +201,13 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i: y  = 0x%08"PRIx32"\n",
 		    x, (uint32_t)cpu->cd.sparc.y);
+
+		if (bits32)
+			debug("cpu%i: psr = 0x%08"PRIx32"\n",
+			    x, (uint32_t) cpu->cd.sparc.psr);
+		else
+			debug("cpu%i: pstate = 0x%016"PRIx64"\n",
+			    x, (uint64_t) cpu->cd.sparc.pstate);
 
 		if (bits32) {
 			for (i=0; i<N_SPARC_REG; i++) {
@@ -465,7 +472,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	uint32_t iword;
 	int hi2, op2, rd, rs1, rs2, siconst, btype, tmps, no_rd = 0;
 	int asi, no_rs1 = 0, no_rs2 = 0, jmpl = 0, shift_x = 0, cc, p;
-	char *symbol, *mnem, *rd_name;
+	char *symbol, *mnem, *rd_name, *rs_name;
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -479,7 +486,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("cpu%i: ", cpu->cpu_id);
 
 	if (cpu->is_32bit)
-		debug("%08", (uint32_t) dumpaddr);
+		debug("%08"PRIx32, (uint32_t) dumpaddr);
 	else
 		debug("%016"PRIx64, (uint64_t) dumpaddr);
 
@@ -582,6 +589,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		break;
 
 	case 2:	mnem = sparc_alu_names[op2];
+		rs_name = sparc_regnames[rs1];
 		rd_name = sparc_regnames[rd];
 		switch (op2) {
 		case 0:	/*  add  */
@@ -617,7 +625,14 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			} else
 				siconst &= 0x1f;
 			break;
+		case 41:rs_name = "psr";
+			no_rs2 = 1;
+			break;
+		case 42:rs_name = "wim";
+			no_rs2 = 1;
+			break;
 		case 43:/*  ?  */
+			/*  TODO: pre-sparcv9: rd, rs_name = "tbr";  */
 			if (iword == 0x81580000) {
 				mnem = "flushw";
 				no_rs1 = no_rs2 = no_rd = 1;
@@ -671,7 +686,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("x");
 		debug("\t");
 		if (!no_rs1)
-			debug("%%%s", sparc_regnames[rs1]);
+			debug("%%%s", rs_name);
 		if (!no_rs1 && !no_rs2) {
 			if (jmpl)
 				debug("+");
@@ -717,6 +732,21 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	debug("\n");
 	return sizeof(iword);
+}
+
+
+/*
+ *  sparc_update_pstate():
+ *
+ *  Update the pstate register (64-bit sparcs).
+ */
+static void sparc_update_pstate(struct cpu *cpu, uint64_t new_pstate)
+{
+	/*  uint64_t old_pstate = cpu->cd.sparc.pstate;  */
+
+	/*  TODO: Check individual bits.  */
+
+	cpu->cd.sparc.pstate = new_pstate;
 }
 
 

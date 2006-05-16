@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.9 2006-04-22 09:28:27 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.10 2006-05-16 03:15:14 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -99,16 +99,15 @@ void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
 
 void LS_N(struct cpu *cpu, struct mips_instr_call *ic)
 {
+	MODE_uint_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
 	unsigned char *p;
 #ifdef MODE32
-	uint32_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
 #ifdef LS_LOAD
 	p = cpu->cd.mips.host_load[addr >> 12];
 #else
 	p = cpu->cd.mips.host_store[addr >> 12];
 #endif
 #else	/*  !MODE32  */
-	uint64_t addr = reg(ic->arg[1]) + (int32_t)ic->arg[2];
 	const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
 	const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
 	const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.132 2006-05-10 03:17:39 debug Exp $
+$Id: guestoses.html,v 1.133 2006-05-16 03:15:14 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1393,7 +1393,7 @@ onto a harddisk image:
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -XAe3max -d debian_pmax.img -d debian-31r0a-mipsel-netinst.iso vmlinux-2.4.31</b>
+	<b>gxemul -X -e3max -d debian_pmax.img -d debian-31r0a-mipsel-netinst.iso vmlinux-2.4.31</b>
 
 </pre>
 	Everything is <i>really</i> slow, for several reasons (framebuffer is
@@ -1419,14 +1419,14 @@ onto a harddisk image:
   <li>Once the first phase of the install has finished, the following command
 	should let you boot into Debian, and perform post-install
 	configuration:<pre>
-	<b>gxemul -XAe3max -o 'root=/dev/sda1' -d debian_pmax.img vmlinux-2.4.31</b>
+	<b>gxemul -X -e3max -o 'root=/dev/sda1' -d debian_pmax.img vmlinux-2.4.31</b>
 
 </pre>The post-install step takes quite some time.
 </ol>
 
 <p>Debian GNU/Linux for DECstation should now be installed. Use this command
 to boot from the installed disk image:<pre>
-	<b>gxemul -XAe3max -o 'root=/dev/sda1' -d debian_pmax.img vmlinux-2.4.31</b>
+	<b>gxemul -X -e3max -o 'root=/dev/sda1' -d debian_pmax.img vmlinux-2.4.31</b>
 
 </pre>
 
@@ -1491,7 +1491,7 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
 </ol>
 
 <p>To boot Redhat linux from the disk image, use the following command line:<pre>
-	<b>gxemul -XAe3max -o "root=/dev/sda1 ro" -d redhat_mips.img vmlinux-2.4.31</b>
+	<b>gxemul -X -e3max -o "root=/dev/sda1 ro" -d redhat_mips.img vmlinux-2.4.31</b>
 
 </pre>
 If you need to boot into single user mode, change options to

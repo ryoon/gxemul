@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.90 2006-05-10 20:04:59 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.91 2006-05-16 03:15:14 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -344,7 +344,8 @@ while (cycles-- > 0)
 /* printf("B\n"); */
 
 			if (!cpu->running_translated ||
-			    n_instrs + cpu->n_translated_instrs >= 16384)
+			    n_instrs + cpu->n_translated_instrs >=
+			    N_SAFE_DYNTRANS_LIMIT / 2)
 				break;
 		}
 	} else if (show_opcode_statistics) {
@@ -361,7 +362,8 @@ while (cycles-- > 0)
 			n_instrs += 24;
 
 			if (!cpu->running_translated ||
-			    n_instrs + cpu->n_translated_instrs >= 16384)
+			    n_instrs + cpu->n_translated_instrs >=
+			    N_SAFE_DYNTRANS_LIMIT / 2)
 				break;
 		}
 	} else {
@@ -381,7 +383,8 @@ while (cycles-- > 0)
 			n_instrs += 60;
 
 			if (!cpu->running_translated ||
-			    n_instrs + cpu->n_translated_instrs >= 16384)
+			    n_instrs + cpu->n_translated_instrs >=
+			    N_SAFE_DYNTRANS_LIMIT / 2)
 				break;
 		}
 	}

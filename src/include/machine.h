@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.114 2006-05-15 18:35:10 debug Exp $
+ *  $Id: machine.h,v 1.115 2006-05-17 20:27:31 debug Exp $
  */
 
 #include <sys/types.h>
@@ -439,8 +439,10 @@ struct machine {
 #define	MACHINE_PREP_MVME2400		2
 
 /*  Sun SPARC:  */
-#define	MACHINE_SPARC_SS20		1
-#define	MACHINE_SPARC_ULTRA1		2
+#define	MACHINE_SPARC_SS5		1
+#define	MACHINE_SPARC_SS20		2
+#define	MACHINE_SPARC_ULTRA1		3
+#define	MACHINE_SPARC_ULTRA60		4
 
 /*  MacPPC:  TODO: Real model names  */
 #define	MACHINE_MACPPC_G3		1

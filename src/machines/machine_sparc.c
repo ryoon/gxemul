@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sparc.c,v 1.1 2006-05-15 18:35:10 debug Exp $
+ *  $Id: machine_sparc.c,v 1.2 2006-05-17 20:27:31 debug Exp $
  *
  *  SPARC machines.
  */
@@ -46,6 +46,11 @@ MACHINE_SETUP(sparc)
 {
 	switch (machine->machine_subtype) {
 
+	case MACHINE_SPARC_SS5:
+		machine->machine_name = "SUN SPARCstation 5";
+
+		break;
+
 	case MACHINE_SPARC_SS20:
 		machine->machine_name = "SUN SPARCstation 20";
 
@@ -53,6 +58,11 @@ MACHINE_SETUP(sparc)
 
 	case MACHINE_SPARC_ULTRA1:
 		machine->machine_name = "SUN Ultra1";
+
+		break;
+
+	case MACHINE_SPARC_ULTRA60:
+		machine->machine_name = "SUN Ultra60";
 
 		break;
 
@@ -71,12 +81,20 @@ MACHINE_DEFAULT_CPU(sparc)
 {
 	switch (machine->machine_subtype) {
 
+	case MACHINE_SPARC_SS5:
+		machine->cpu_name = strdup("MB86907");
+		break;
+
 	case MACHINE_SPARC_SS20:
 		machine->cpu_name = strdup("TMS390Z50");
 		break;
 
 	case MACHINE_SPARC_ULTRA1:
 		machine->cpu_name = strdup("UltraSPARC");
+		break;
+
+	case MACHINE_SPARC_ULTRA60:
+		machine->cpu_name = strdup("UltraSPARC-II");
 		break;
 
 	default:fatal("Unimplemented SPARC machine subtype %i\n",
@@ -94,17 +112,25 @@ MACHINE_DEFAULT_RAM(sparc)
 
 MACHINE_REGISTER(sparc)
 {
-	MR_DEFAULT(sparc, "SPARC", ARCH_SPARC, MACHINE_SPARC, 1, 2);
+	MR_DEFAULT(sparc, "SPARC", ARCH_SPARC, MACHINE_SPARC, 1, 4);
 
 	me->aliases[0] = "sparc";
 
 	me->subtype[0] = machine_entry_subtype_new(
-	    "SUN SPARCstation 20", MACHINE_SPARC_SS20, 1);
-	me->subtype[0]->aliases[0] = "ss20";
+	    "SUN SPARCstation 5", MACHINE_SPARC_SS5, 1);
+	me->subtype[0]->aliases[0] = "ss5";
 
 	me->subtype[1] = machine_entry_subtype_new(
+	    "SUN SPARCstation 20", MACHINE_SPARC_SS20, 1);
+	me->subtype[1]->aliases[0] = "ss20";
+
+	me->subtype[2] = machine_entry_subtype_new(
 	    "SUN Ultra1", MACHINE_SPARC_ULTRA1, 1);
-	me->subtype[1]->aliases[0] = "ultra1";
+	me->subtype[2]->aliases[0] = "ultra1";
+
+	me->subtype[3] = machine_entry_subtype_new(
+	    "SUN Ultra60", MACHINE_SPARC_ULTRA60, 1);
+	me->subtype[3]->aliases[0] = "ultra60";
 
 	me->set_default_ram = machine_default_ram_sparc;
 

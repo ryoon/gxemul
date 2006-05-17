@@ -1,4 +1,4 @@
-$Id: TODO,v 1.271 2006-05-11 05:06:59 debug Exp $
+$Id: TODO,v 1.272 2006-05-17 20:27:31 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -79,13 +79,10 @@ Alpha:
 
 SPARC:
 	o)  Add all registers (floating point, control regs etc)
-	o)  Add old-style (32-bit) SPARC processors too!
-	o)  Try with PROMs from real machines (extract from the Ultra1)
-	o)  Add some real machine modes with correct CPU, memory amount etc.
-		o)  SS1,2,5,10,20, Ultra1, Ultra10, E450 (?)
 	o)  Save/restore register windows etc!
 	o)  Disassemly of some more instructions.
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
+	o)  Finish the cmp (subcc) flag computation code.
 	o)  Finish the GDB register stuff.
 
 Debugger:

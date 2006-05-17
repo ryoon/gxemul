@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.21 2006-05-10 20:04:59 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.22 2006-05-17 20:27:31 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -425,6 +425,10 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 
 		if (!cpu->machine->prom_emulation)
 			c->reg[COP0_STATUS] |= STATUS_BEV;
+
+		/*  Ugly hack for R5900/TX79/C790:  */
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900)
+			c->reg[COP0_STATUS] |= R5900_STATUS_EIE;
 
 		/*  Default pagesize = 4 KB  (i.e. dualpage = 8KB)  */
 		c->reg[COP0_PAGEMASK] = 0x1fff;

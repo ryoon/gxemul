@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.27 2006-05-17 20:03:49 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.28 2006-05-17 20:27:31 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -154,10 +154,10 @@ void sparc_cpu_list_available_types(void)
 	i = 0;
 	while (tdefs[i].name != NULL) {
 		debug("%s", tdefs[i].name);
-		for (j=10 - strlen(tdefs[i].name); j>0; j--)
+		for (j=16 - strlen(tdefs[i].name); j>0; j--)
 			debug(" ");
 		i++;
-		if ((i % 6) == 0 || tdefs[i].name == NULL)
+		if ((i % 4) == 0 || tdefs[i].name == NULL)
 			debug("\n");
 	}
 }

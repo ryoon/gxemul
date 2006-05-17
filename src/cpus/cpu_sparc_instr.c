@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.17 2006-05-17 20:03:49 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.18 2006-05-17 20:27:31 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -353,8 +353,6 @@ int64_t sparc_subcc64(struct cpu *cpu, int64_t rs1, int64_t rs2)
 	if (sign1 != sign2 && sign1 != signd)
 		cc |= SPARC_CCR_V;
 	/*  TODO: SPARC_CCR_C  */
-printf("URK: rs=%016llx rs2=%016llx rd=%016llx\n",(long long)rs1,
-(long long)rs2,(long long)rd);
 #ifndef MODE32
 	mask <<= SPARC_CCR_XCC_SHIFT;
 	cc <<= SPARC_CCR_XCC_SHIFT;

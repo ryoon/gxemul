@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.8 2006-02-26 21:39:12 debug Exp $
+ *  $Id: interrupts.c,v 1.9 2006-05-17 20:27:31 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -337,7 +337,7 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
-	debug("ps2_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
+	/*  debug("ps2_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);  */
 
 	if (irq_nr >= 32) {
 		int msk = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.16 2006-05-15 18:35:10 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.17 2006-05-17 20:03:49 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -327,6 +327,65 @@ X(srax_imm) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> ic->arg[1]; }
 
 
 /*
+ *  Subtract with ccr update:
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ *  arg[2] = ptr to rd
+ */
+int32_t sparc_subcc32(struct cpu *cpu, int32_t rs1, int32_t rs2);
+#ifdef MODE32
+int32_t sparc_subcc32(struct cpu *cpu, int32_t rs1, int32_t rs2)
+#else
+int64_t sparc_subcc64(struct cpu *cpu, int64_t rs1, int64_t rs2)
+#endif
+{
+	int cc = 0, sign1 = 0, sign2 = 0, signd = 0, mask = SPARC_CCR_ICC_MASK;
+	MODE_int_t rd = rs1 - rs2;
+	if (rd == 0)
+		cc = SPARC_CCR_Z;
+	else if (rd < 0)
+		cc = SPARC_CCR_N, signd = 1;
+	if (rs1 < 0)
+		sign1 = 1;
+	if (rs2 < 0)
+		sign2 = 1;
+	if (sign1 != sign2 && sign1 != signd)
+		cc |= SPARC_CCR_V;
+	/*  TODO: SPARC_CCR_C  */
+printf("URK: rs=%016llx rs2=%016llx rd=%016llx\n",(long long)rs1,
+(long long)rs2,(long long)rd);
+#ifndef MODE32
+	mask <<= SPARC_CCR_XCC_SHIFT;
+	cc <<= SPARC_CCR_XCC_SHIFT;
+#endif
+	cpu->cd.sparc.ccr &= ~mask;
+	cpu->cd.sparc.ccr |= cc;
+	return rd;
+}
+X(subcc)
+{
+	/*  Like sub, but updates the ccr, and does both 32-bit and
+	    64-bit comparison at the same time.  */
+	MODE_int_t rs1 = reg(ic->arg[0]), rs2 = reg(ic->arg[1]), rd;
+	rd = sparc_subcc32(cpu, rs1, rs2);
+#ifndef MODE32
+	rd = sparc_subcc64(cpu, rs1, rs2);
+#endif
+	reg(ic->arg[2]) = rd;
+}
+X(subcc_imm)
+{
+	MODE_int_t rs1 = reg(ic->arg[0]), rs2 = (int32_t)ic->arg[1], rd;
+	rd = sparc_subcc32(cpu, rs1, rs2);
+#ifndef MODE32
+	rd = sparc_subcc64(cpu, rs1, rs2);
+#endif
+	reg(ic->arg[2]) = rd;
+}
+
+
+/*
  *  rd:  Read special register:
  *
  *  arg[2] = ptr to rd
@@ -560,6 +619,7 @@ X(to_be_translated)
 		case 2:	/*  or  */
 		case 3:	/*  xor  */
 		case 4:	/*  sub  */
+		case 20:/*  subcc (cmp)  */
 		case 37:/*  sll  */
 		case 38:/*  srl  */
 		case 39:/*  sra  */
@@ -573,6 +633,7 @@ X(to_be_translated)
 				case 2:	ic->f = instr(or_imm); break;
 				case 3:	ic->f = instr(xor_imm); break;
 				case 4:	ic->f = instr(sub_imm); break;
+				case 20:ic->f = instr(subcc_imm); break;
 				case 37:if (siconst & 0x1000) {
 						ic->f = instr(sllx_imm);
 						ic->arg[1] &= 63;
@@ -604,11 +665,12 @@ X(to_be_translated)
 			} else {
 				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
 				switch (op2) {
-				case 0:  ic->f = instr(add); break;
-				case 1:  ic->f = instr(and); break;
-				case 2:  ic->f = instr(or); break;
-				case 3:  ic->f = instr(xor); break;
-				case 4:  ic->f = instr(sub); break;
+				case 0: ic->f = instr(add); break;
+				case 1: ic->f = instr(and); break;
+				case 2: ic->f = instr(or); break;
+				case 3: ic->f = instr(xor); break;
+				case 4: ic->f = instr(sub); break;
+				case 20:ic->f = instr(subcc); break;
 				case 37:if (siconst & 0x1000) {
 						ic->f = instr(sllx);
 						x64 = 1;
@@ -635,8 +697,19 @@ X(to_be_translated)
 				goto bad;
 			}
 			ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
-			if (rd == SPARC_ZEROREG)
-				ic->f = instr(nop);
+			if (rd == SPARC_ZEROREG) {
+				/*  Opcodes which update the ccr should use
+				    the scratch register instead of being
+				    turned into a nop, when the zero register
+				    is used as the destination:  */
+				switch (op2) {
+				case 20:/*  subcc  */
+					ic->arg[2] = (size_t)
+					    &cpu->cd.sparc.scratch;
+					break;
+				default:ic->f = instr(nop);
+				}
+			}
 			break;
 
 		case 41:/*  rd %psr,%gpr on pre-sparcv9  */
@@ -664,6 +737,8 @@ X(to_be_translated)
 			ic->arg[2] = (size_t) NULL;
 			switch (rd) {
 			case 0:	ic->arg[2] = (size_t)&cpu->cd.sparc.y;
+				break;
+			case 6:	ic->arg[2] = (size_t)&cpu->cd.sparc.fprs;
 				break;
 			case 0x17:
 				ic->arg[2] = (size_t)&cpu->cd.sparc.tick_cmpr;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.26 2006-05-15 18:35:10 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.27 2006-05-17 20:03:49 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -199,8 +199,25 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("%016"PRIx64, (uint64_t) cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		debug("cpu%i: y  = 0x%08"PRIx32"\n",
+		debug("cpu%i: y  = 0x%08"PRIx32"   ",
 		    x, (uint32_t)cpu->cd.sparc.y);
+		debug("icc = ");
+		debug(cpu->cd.sparc.ccr & SPARC_CCR_N? "N" : "n");
+		debug(cpu->cd.sparc.ccr & SPARC_CCR_Z? "Z" : "z");
+		debug(cpu->cd.sparc.ccr & SPARC_CCR_V? "V" : "v");
+		debug(cpu->cd.sparc.ccr & SPARC_CCR_C? "C" : "c");
+		if (!bits32) {
+			debug("  xcc = ");
+			debug((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT)
+			    & SPARC_CCR_N? "N" : "n");
+			debug((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT)
+			    & SPARC_CCR_Z? "Z" : "z");
+			debug((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT)
+			    & SPARC_CCR_V? "V" : "v");
+			debug((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT)
+			    & SPARC_CCR_C? "C" : "c");
+		}
+		debug("\n");
 
 		if (bits32)
 			debug("cpu%i: psr = 0x%08"PRIx32"\n",
@@ -625,6 +642,27 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			} else
 				siconst &= 0x1f;
 			break;
+		case 40:/*  rd*  */
+			mnem = "rd";
+			no_rs2 = 1;
+			rs_name = "UNIMPLEMENTED";
+			switch (rs1) {
+			case 0:	rs_name = "y"; break;
+			case 2:	rs_name = "ccr"; break;
+			case 3:	rs_name = "asi"; break;
+			case 4:	rs_name = "tick"; break;
+			case 5:	rs_name = "pc"; break;
+			case 6:	rs_name = "fprs"; break;
+			case 15:/*  membar etc.  */
+				if ((iword >> 13) & 1) {
+					no_rd = 1;
+					mnem = "membar";
+					rs_name = "#TODO";
+				}
+				break;
+			case 23:rs_name = "tick_cmpr"; break;	/*  v9 ?  */
+			}
+			break;
 		case 41:rs_name = "psr";
 			no_rs2 = 1;
 			break;
@@ -640,6 +678,8 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case 48:/*  wr* (SPARCv8)  */
 			mnem = "wr";
+			if (rs1 == SPARC_ZEROREG)
+				no_rs1 = 1;
 			switch (rd) {
 			case 0:	rd_name = "y"; break;
 			case 2:	rd_name = "ccr"; break;

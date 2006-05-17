@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.35 2006-05-15 18:35:10 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.36 2006-05-17 20:03:49 debug Exp $
  */
 
 #include "misc.h"
@@ -184,6 +184,7 @@ struct sparc_cpu {
 	/*  SPARCv9 etc.:  */
 	uint64_t	pstate;		/*  Processor State Register  */
 	uint64_t	y;		/*  Y-reg (only low 32-bits used)  */
+	uint64_t	fprs;		/*  Floating Point Register Status  */
 	uint64_t	tick;		/*  Tick Register  */
 	uint64_t	tick_cmpr;	/*  Tick Compare Register (?)  */
 	uint64_t	ver;		/*  Version register  */

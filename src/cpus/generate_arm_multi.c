@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.12 2005-11-30 16:23:08 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.13 2006-05-17 19:01:27 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *
@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "misc.h"
 
 
@@ -62,7 +63,8 @@ void generate_opcode(uint32_t opcode)
 	int p, u, s, w, load, r, n_regs, i, x;
 
 	if ((opcode & 0x0e000000) != 0x08000000) {
-		fprintf(stderr, "opcode 0x%08x is not an ldm/stm\n", opcode);
+		fprintf(stderr, "opcode 0x%08"PRIx32" is not an ldm/stm\n",
+		    opcode);
 		exit(1);
 	}
 
@@ -80,21 +82,22 @@ void generate_opcode(uint32_t opcode)
 	/*  TODO: Check for register pairs, for 64-bit load/stores  */
 
 	if (n_regs == 0) {
-		fprintf(stderr, "opcode 0x%08x has no registers set\n", opcode);
+		fprintf(stderr, "opcode 0x%08"PRIx32" has no registers set\n",
+		    opcode);
 		exit(1);
 	}
 
 	if (s) {
-		fprintf(stderr, "opcode 0x%08x has s-bit set\n", opcode);
+		fprintf(stderr, "opcode 0x%08"PRIx32" has s-bit set\n", opcode);
 		exit(1);
 	}
 
 	if (r == 15) {
-		fprintf(stderr, "opcode 0x%08x has r=15\n", opcode);
+		fprintf(stderr, "opcode 0x%08"PRIx32" has r=15\n", opcode);
 		exit(1);
 	}
 
-	printf("\nvoid arm_instr_multi_0x%08x(struct cpu *cpu,"
+	printf("\nvoid arm_instr_multi_0x%08"PRIx32"(struct cpu *cpu,"
 	    " struct arm_instr_call *ic) {\n", opcode);
 
 	printf("\tunsigned char *page;\n");

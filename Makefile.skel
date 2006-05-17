@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.41 2006-05-06 08:42:48 debug Exp $
+#  $Id: Makefile.skel,v 1.42 2006-05-17 18:07:17 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -27,7 +27,7 @@ install: build docs
 	@echo
 
 clean:
-	rm -f $(BIN) *core core.* *.gmon _*
+	rm -f $(BIN) *core core.* *.gmon _* *.exe
 	cd src; $(MAKE) clean; cd ..
 	cd doc; $(MAKE) clean; cd ..
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1225 2006-05-17 20:27:31 debug Exp $
+$Id: HISTORY,v 1.1226 2006-05-18 05:10:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2738,4 +2738,6 @@ Changelog for GXemul:
 		machines. Adding the 32-bit "rd psr" instruction.
 20060517	Disassembly support for the general SPARC rd instruction.
 		Partial implementation of the cmp (subcc) instruction.
-		Some other minor updates.
+		Some other minor updates (making sure that R5900 processors
+		start up with the EIE bit enabled, otherwise Linux/playstation2
+		receives no interrupts).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.28 2006-05-17 20:27:31 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.29 2006-05-18 05:10:43 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -642,8 +642,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			} else
 				siconst &= 0x1f;
 			break;
-		case 40:/*  rd*  */
-			mnem = "rd";
+		case 40:/*  rd on pre-sparcv9, membar etc on sparcv9  */
 			no_rs2 = 1;
 			rs_name = "UNIMPLEMENTED";
 			switch (rs1) {

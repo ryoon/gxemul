@@ -1,4 +1,4 @@
-$Id: TODO,v 1.272 2006-05-17 20:27:31 debug Exp $
+$Id: TODO,v 1.273 2006-05-18 05:19:00 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -12,6 +12,8 @@ Stuff to finish before a 0.4.0 release:
 			o) Ultrix
 			o) Linux
 		+)  Some more work on C790/R5900/TX79.
+			_MAYBE_ TX79 and R5900 actually differ in their
+			opcodes? Check this carefully!
 		+)  Remove obvious bottlenecks, and do at least _some_
 		    optimization before the release.
 		+)  No release until everything mentioned in the

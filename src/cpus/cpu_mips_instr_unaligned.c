@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_unaligned.c,v 1.1 2006-04-17 13:36:12 debug Exp $
+ *  $Id: cpu_mips_instr_unaligned.c,v 1.2 2006-05-19 16:27:55 debug Exp $
  *
  *  MIPS unaligned load/store instructions; the following args are used:
  *  
@@ -48,9 +48,17 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 {
 	/*  For L (Left):   address is the most significant byte  */
 	/*  For R (Right):  address is the least significant byte  */
-	uint64_t addr = *((uint64_t *)ic->arg[1]) + ic->arg[2];
-	int i, signd = 0, dir, reg_dir, reg_ofs;
+	uint64_t addr = *((uint64_t *)ic->arg[1]) + (int32_t)ic->arg[2];
+	int i, signd = 0, dir, reg_dir, reg_ofs, ok;
 	uint64_t result_value, tmpaddr;
+	uint64_t aligned_addr = addr & ~(wlen-1);
+	unsigned char aligned_word[8], databyte;
+
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+	    / sizeof(struct mips_instr_call);
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+	    << MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
 
 	if (!store && wlen == sizeof(uint32_t))
 		signd = 1;
@@ -71,8 +79,6 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 
 	if (store) {
 		/*  Store:  */
-		uint64_t aligned_addr = addr & ~(wlen-1);
-		unsigned char aligned_word[8];
 		uint64_t oldpc = cpu->pc;
 
 		/*
@@ -82,9 +88,8 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 		 *  this is a Store, the exception is converted
 		 *  to a TLBS:
 		 */
-		int ok = cpu->memory_rw(cpu, cpu->mem,
-		    aligned_addr, &aligned_word[0], wlen,
-		    MEM_READ, CACHE_DATA);
+		ok = cpu->memory_rw(cpu, cpu->mem, aligned_addr,
+		    &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
 		if (!ok) {
 			if (cpu->pc != oldpc) {
 				cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &=
@@ -115,42 +120,39 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 		ok = cpu->memory_rw(cpu, cpu->mem,
 		    aligned_addr, &aligned_word[0], wlen,
 		    MEM_WRITE, CACHE_DATA);
-		if (!ok)
-			return;
-	} else {
-		/*  Load:  */
-		uint64_t aligned_addr = addr & ~(wlen-1);
-		unsigned char aligned_word[8], databyte;
-		int ok = cpu->memory_rw(cpu, cpu->mem,
-		    aligned_addr, &aligned_word[0], wlen,
-		    MEM_READ, CACHE_DATA);
-		if (!ok)
-			return;
 
-		for (i=0; i<wlen; i++) {
-			tmpaddr = addr + i*dir;
-			/*  Have we moved into another word/dword? Then stop: */
-			if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
-				break;
-
-			/*  debug("unaligned byte at %016"
-			    PRIx64", reg_ofs=%i reg=0x%016"
-			    PRIx64"\n", (uint64_t) tmpaddr,
-			    reg_ofs, (uint64_t)result_value); */
-
-			/*  Load one byte:  */
-			databyte = aligned_word[tmpaddr & (wlen-1)];
-			result_value &= ~((uint64_t)0xff << (reg_ofs * 8));
-			result_value |= (uint64_t)databyte << (reg_ofs * 8);
-
-			reg_ofs += reg_dir;
-		}
-
-		/*  Sign extend for 32-bit load lefts:  */
-		if (signd && wlen == 4)
-			result_value = (int64_t)(int32_t)result_value;
-
-		(*(uint64_t *)ic->arg[0]) = result_value;
+		return;
 	}
+
+	/*  Load:  */
+	ok = cpu->memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen,
+	    MEM_READ, CACHE_DATA);
+	if (!ok)
+		return;
+
+	for (i=0; i<wlen; i++) {
+		tmpaddr = addr + i*dir;
+		/*  Have we moved into another word/dword? Then stop: */
+		if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
+			break;
+
+		/*  debug("unaligned byte at %016"
+		    PRIx64", reg_ofs=%i reg=0x%016"
+		    PRIx64"\n", (uint64_t) tmpaddr,
+		    reg_ofs, (uint64_t)result_value); */
+
+		/*  Load one byte:  */
+		databyte = aligned_word[tmpaddr & (wlen-1)];
+		result_value &= ~((uint64_t)0xff << (reg_ofs * 8));
+		result_value |= (uint64_t)databyte << (reg_ofs * 8);
+
+		reg_ofs += reg_dir;
+	}
+
+	/*  Sign extend for 32-bit load lefts:  */
+	if (signd)
+		result_value = (int32_t)result_value;
+
+	(*(uint64_t *)ic->arg[0]) = result_value;
 }
 

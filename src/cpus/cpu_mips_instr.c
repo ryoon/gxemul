@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.72 2006-05-10 20:04:59 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.73 2006-05-19 16:27:55 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2234,86 +2234,14 @@ X(sdc1)
  *  arg[1] = ptr to rs
  *  arg[2] = int32_t imm
  */
-X(lwl)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 1 /* is_left */, sizeof(uint32_t), 0);
-}
-X(lwr)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 0 /* is_left */, sizeof(uint32_t), 0);
-}
-X(ldl)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 1 /* is_left */, sizeof(uint64_t), 0);
-}
-X(ldr)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 0 /* is_left */, sizeof(uint64_t), 0);
-}
-X(swl)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 1 /* is_left */, sizeof(uint32_t), 1);
-}
-X(swr)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 0 /* is_left */, sizeof(uint32_t), 1);
-}
-X(sdl)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 1 /* is_left */, sizeof(uint64_t), 1);
-}
-X(sdr)
-{
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	mips_unaligned_loadstore(cpu, ic, 0 /* is_left */, sizeof(uint64_t), 1);
-}
+X(lwl) { mips_unaligned_loadstore(cpu, ic, 1, sizeof(uint32_t), 0); }
+X(lwr) { mips_unaligned_loadstore(cpu, ic, 0, sizeof(uint32_t), 0); }
+X(ldl) { mips_unaligned_loadstore(cpu, ic, 1, sizeof(uint64_t), 0); }
+X(ldr) { mips_unaligned_loadstore(cpu, ic, 0, sizeof(uint64_t), 0); }
+X(swl) { mips_unaligned_loadstore(cpu, ic, 1, sizeof(uint32_t), 1); }
+X(swr) { mips_unaligned_loadstore(cpu, ic, 0, sizeof(uint32_t), 1); }
+X(sdl) { mips_unaligned_loadstore(cpu, ic, 1, sizeof(uint64_t), 1); }
+X(sdr) { mips_unaligned_loadstore(cpu, ic, 0, sizeof(uint64_t), 1); }
 
 
 /*

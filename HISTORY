@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1226 2006-05-18 05:10:43 debug Exp $
+$Id: HISTORY,v 1.1227 2006-05-20 08:03:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2741,3 +2741,4 @@ Changelog for GXemul:
 		Some other minor updates (making sure that R5900 processors
 		start up with the EIE bit enabled, otherwise Linux/playstation2
 		receives no interrupts).
+20060519	Minor MIPS updates/cleanups.

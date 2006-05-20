@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.73 2006-05-19 16:27:55 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.74 2006-05-20 08:03:30 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1575,8 +1575,6 @@ X(sltiu)
 	reg(ic->arg[1]) = (MODE_uint_t)reg(ic->arg[0]) <
 	   ((MODE_uint_t)(int32_t)ic->arg[2]);
 }
-X(inc)  { reg(ic->arg[1]) ++; }
-X(dec)  { reg(ic->arg[1]) --; }
 
 
 /*
@@ -2416,7 +2414,6 @@ X(to_be_translated)
 	unsigned char ib[4];
 	int main_opcode, rt, rs, rd, sa, s6, x64 = 0;
 	int in_crosspage_delayslot = 0;
-	int delay_slot_danger = 1;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 	int store, signedness, size;
 
@@ -2474,12 +2471,6 @@ X(to_be_translated)
 		iword = LE32_TO_HOST(iword);
 	else
 		iword = BE32_TO_HOST(iword);
-
-	/*  Is the instruction in the delay slot known to be safe?  */
-	if ((addr & 0xffc) < 0xffc) {
-		/*  TODO: check the instruction  */
-		delay_slot_danger = 0;
-	}
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -2837,14 +2828,6 @@ X(to_be_translated)
 		case HI6_XORI:    ic->f = instr(xori); break;
 		}
 
-		if ((main_opcode == HI6_ADDIU && cpu->is_32bit) ||
-		    main_opcode == HI6_DADDIU) {
-			if (rs == rt && ic->arg[2] == 1)
-				ic->f = instr(inc);
-			if (rs == rt && ic->arg[2] == (size_t) -1)
-				ic->f = instr(dec);
-		}
-
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 
@@ -2978,7 +2961,8 @@ X(to_be_translated)
 	case HI6_COP1:
 		/*  Always cause a coprocessor unusable exception if
 		    there is no floating point coprocessor:  */
-		if (cpu->cd.mips.coproc[1] == NULL) {
+		if (cpu->cd.mips.cpu_type.flags & NOFPU ||
+		    cpu->cd.mips.coproc[1] == NULL) {
 			ic->f = instr(cpu);
 			ic->arg[0] = 1;
 			break;
@@ -3010,6 +2994,10 @@ X(to_be_translated)
 
 			break;
 
+		case COPz_DMFCz:
+		case COPz_DMTCz:
+			x64 = 1;
+			/*  FALL-THROUGH  */
 		case COP1_FMT_S:
 		case COP1_FMT_D:
 		case COP1_FMT_W:
@@ -3019,8 +3007,6 @@ X(to_be_translated)
 		case COPz_CTCz:
 		case COPz_MFCz:
 		case COPz_MTCz:
-		case COPz_DMFCz:
-		case COPz_DMTCz:
 			/*  Fallback to slow pre-dyntrans code, for now.  */
 			/*  TODO: Fix/optimize/rewrite.  */
 			ic->f = instr(cop1_slow);
@@ -3356,7 +3342,8 @@ X(to_be_translated)
 		}
 		/*  Cause a coprocessor unusable exception if
 		    there is no floating point coprocessor:  */
-		if (cpu->cd.mips.coproc[1] == NULL) {
+		if (cpu->cd.mips.cpu_type.flags & NOFPU ||
+		    cpu->cd.mips.coproc[1] == NULL) {
 			ic->f = instr(cpu);
 			ic->arg[0] = 1;
 		}

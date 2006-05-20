@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.91 2006-05-16 03:15:14 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.92 2006-05-20 08:03:30 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -219,6 +219,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		}
 		mask = status & cpu->cd.mips.coproc[0]->reg[COP0_CAUSE]
 		    & STATUS_IM_MASK;
+
 		if (enabled && mask)
 			mips_cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0,0);
 	}
@@ -414,8 +415,8 @@ while (cycles-- > 0)
 	}
 
 #ifdef DYNTRANS_MIPS
-	/*  Update the count register:  */
-	{
+	/*  Update the count register (on everything except EXC3K):  */
+	if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
 		uint32_t old = cpu->cd.mips.coproc[0]->reg[COP0_COUNT];
 		int32_t diff1 = cpu->cd.mips.coproc[0]->reg[COP0_COMPARE] - old;
 		int32_t diff2;

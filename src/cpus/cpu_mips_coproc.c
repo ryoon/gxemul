@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.22 2006-05-17 20:27:31 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.23 2006-05-20 08:03:30 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2277,9 +2277,8 @@ void coproc_rfe(struct cpu *cpu)
 	    ((cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 
 	/*  Changing from kernel to user mode? Then this is necessary:  */
-	if (!oldmode && 
-	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &
-	    MIPS1_SR_KU_CUR))
+	if (!oldmode &&
+	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SR_KU_CUR))
 		invalidate_translation_caches(cpu, 0, 0, 1, 0);
 }
 
@@ -2359,13 +2358,11 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 		return;
 	}
 
-#if 0
 	/*  No FPU?  */
 	if (cpnr == 1 && (cpu->cd.mips.cpu_type.flags & NOFPU)) {
 		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		return;
 	}
-#endif
 
 	/*  For quick reference:  */
 	copz = (function >> 21) & 31;
@@ -2672,11 +2669,8 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	fatal("cpu%i: UNIMPLEMENTED coproc%i function %08lx "
 	    "(pc = %016llx)\n", cpu->cpu_id, cp->coproc_nr, function,
 	    (long long)cpu->cd.mips.pc_last);
-#if 0
-	single_step = 1;
-#else
+
 	mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
-#endif
 }
 
 #endif	/*  ENABLE_MIPS  */

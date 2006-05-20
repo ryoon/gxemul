@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.47 2006-05-10 20:04:59 debug Exp $
+ *  $Id: cpu_mips.c,v 1.48 2006-05-20 08:03:30 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1008,17 +1008,15 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
-			if ((special6 == SPECIAL_ADDU ||
-			    special6 == SPECIAL_DADDU ||
-			    special6 == SPECIAL_SUBU ||
-			    special6 == SPECIAL_DSUBU) && rt == 0) {
-				/*  Special case 1: addu/daddu/subu/dsubu with
+			if (cpu->is_32bit && (special6 == SPECIAL_ADDU ||
+			    special6 == SPECIAL_SUBU) && rt == 0) {
+				/*  Special case 1: addu/subu with
 				    rt = the zero register ==> move  */
 				debug("move\t%s", regname(cpu->machine, rd));
 				debug(",%s", regname(cpu->machine, rs));
-			} else if ((special6 == SPECIAL_ADDU ||
-			    special6 == SPECIAL_DADDU) && rs == 0) {
-				/*  Special case 2: addu/daddu with
+			} else if (special6 == SPECIAL_ADDU && cpu->is_32bit
+			    && rs == 0) {
+				/*  Special case 2: addu with
 				    rs = the zero register ==> move  */
 				debug("move\t%s", regname(cpu->machine, rd));
 				debug(",%s", regname(cpu->machine, rt));
@@ -1560,6 +1558,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	int coprocnr, i, bits32;
 	uint64_t offset;
 	char *symbol;
+	int bits128 = cpu->cd.mips.cpu_type.rev == MIPS_R5900;
 
 	bits32 = cpu->is_32bit;
 
@@ -1571,6 +1570,9 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		if (bits32)
 			debug("cpu%i:  pc = %08"PRIx32,
 			    cpu->cpu_id, (uint32_t) cpu->pc);
+		else if (bits128)
+			debug("cpu%i:  pc=%016"PRIx64,
+			    cpu->cpu_id, (uint64_t) cpu->pc);
 		else
 			debug("cpu%i:    pc = 0x%016"PRIx64,
 			    cpu->cpu_id, (uint64_t) cpu->pc);
@@ -1582,22 +1584,33 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("cpu%i:  hi = %08"PRIx32"  lo = %08"PRIx32"\n",
 			    cpu->cpu_id, (uint32_t) cpu->cd.mips.hi,
 			    (uint32_t) cpu->cd.mips.lo);
-		else
+		else if (bits128) {
+			debug("cpu%i:  hi=%016"PRIx64"%016"PRIx64"  lo="
+			    "%016"PRIx64"%016"PRIx64"\n", cpu->cpu_id,
+			    cpu->cd.mips.hi1, cpu->cd.mips.hi,
+			    cpu->cd.mips.lo1, cpu->cd.mips.lo);
+		} else {
 			debug("cpu%i:    hi = 0x%016"PRIx64"    lo = 0x%016"
 			    PRIx64"\n", cpu->cpu_id,
 			    (uint64_t) cpu->cd.mips.hi,
 			    (uint64_t) cpu->cd.mips.lo);
+		}
 
 		/*  General registers:  */
-		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
+		if (bits128) {
 			/*  128-bit:  */
 			for (i=0; i<32; i++) {
+				int r = (i >> 1) + ((i & 1) << 4);
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug(" %3s=%016"PRIx64"%016"PRIx64,
-				    regname(cpu->machine, i),
-				    (uint64_t)cpu->cd.mips.gpr_quadhi[i],
-				    (uint64_t)cpu->cd.mips.gpr[i]);
+				if (r == MIPS_GPR_ZERO)
+					debug("                           "
+					    "          ");
+				else
+					debug(" %3s=%016"PRIx64"%016"PRIx64,
+					    regname(cpu->machine, r),
+					    (uint64_t)cpu->cd.mips.gpr_quadhi[r],
+					    (uint64_t)cpu->cd.mips.gpr[r]);
 				if ((i & 1) == 1)
 					debug("\n");
 			}
@@ -1609,7 +1622,9 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if (i == MIPS_GPR_ZERO)
 					debug("               ");
 				else
-					debug(" %3s = %08x", regname(cpu->machine, i), (int)cpu->cd.mips.gpr[i]);
+					debug(" %3s = %08"PRIx32,
+					    regname(cpu->machine, i),
+					    (uint32_t)cpu->cd.mips.gpr[i]);
 				if ((i & 3) == 3)
 					debug("\n");
 			}
@@ -1864,17 +1879,21 @@ int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
 	if (irq_nr >= 8) {
 		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(cpu->machine, cpu, irq_nr, 1);
+			cpu->machine->md_interrupt(cpu->machine,
+			    cpu, irq_nr, 1);
 		else
-			fatal("mips_cpu_interrupt(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
+			fatal("mips_cpu_interrupt(): irq_nr = %i, "
+			    "but md_interrupt = NULL ?\n", irq_nr);
 		return 1;
 	}
 
 	if (irq_nr < 2)
 		return 0;
 
-	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] |= ((1 << irq_nr) << STATUS_IM_SHIFT);
+	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] |=
+	    ((1 << irq_nr) << STATUS_IM_SHIFT);
 	cpu->cd.mips.cached_interrupt_is_possible = 1;
+
 	return 1;
 }
 
@@ -1892,16 +1911,19 @@ int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	if (irq_nr >= 8) {
 		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(cpu->machine, cpu, irq_nr, 0);
+			cpu->machine->md_interrupt(cpu->machine, cpu,
+			    irq_nr, 0);
 		else
-			fatal("mips_cpu_interrupt_ack(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
+			fatal("mips_cpu_interrupt_ack(): irq_nr = %i, "
+			    "but md_interrupt = NULL ?\n", irq_nr);
 		return 1;
 	}
 
 	if (irq_nr < 2)
 		return 0;
 
-	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &= ~((1 << irq_nr) << STATUS_IM_SHIFT);
+	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &=
+	    ~((1 << irq_nr) << STATUS_IM_SHIFT);
 	if (!(cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] & STATUS_IM_MASK))
 		cpu->cd.mips.cached_interrupt_is_possible = 0;
 

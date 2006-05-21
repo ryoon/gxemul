@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.337 2006-04-25 04:11:32 debug Exp $
+ *  $Id: cpu.c,v 1.338 2006-05-21 09:51:36 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -469,6 +469,9 @@ void cpu_show_cycles(struct machine *machine, int forced)
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
 		    / instrs_per_cycle;
 
+		fatal("[ CYCLES PER SECOND = %"PRIi64" ]\n",
+		    cur_cycles_per_second);
+
 		if (cur_cycles_per_second < 1000000)
 			cur_cycles_per_second = 1000000;
 
@@ -480,8 +483,8 @@ void cpu_show_cycles(struct machine *machine, int forced)
 			    cur_cycles_per_second) / 16;
 		}
 
-		/*  debug("[ updating emulated_hz to %"PRIi64" Hz ]\n",
-		    machine->emulated_hz);  */
+		fatal("[ updating emulated_hz to %"PRIi64" Hz ]\n",
+		    machine->emulated_hz);
 	}
 
 

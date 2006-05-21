@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.92 2006-05-20 08:03:30 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.93 2006-05-21 09:51:36 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1524,6 +1524,9 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 *  (Special case for 32-bit mode: set the corresponding bit in the
 	 *  phystranslation[] array.)
 	 */
+	/*  Make sure cur_physpage is in synch:  */
+	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 #ifdef MODE32
 	if (!(cpu->cd.DYNTRANS_ARCH.cur_physpage->flags & TRANSLATIONS)) {
 		uint32_t index = DYNTRANS_ADDR_TO_PAGENR((uint32_t)addr);

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.133 2006-05-16 03:15:14 debug Exp $
+$Id: guestoses.html,v 1.134 2006-05-21 09:51:36 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1600,7 +1600,7 @@ it works.</font>
 mailed Adaptec several times, asking for documentation, but never received 
 any reply.) OpenBSD/sgi can still run in the emulator, as long as it doesn't
 use SCSI. For a simple test with the ramdisk (install) kernel, try dowloading<pre>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.8/sgi/">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.8/sgi</a>/<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.8/sgi/bsd.rd">bsd.rd</a>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi</a>/<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd.rd">bsd.rd</a>
 
 </pre>and run <b><tt>gxemul -xeo2 bsd.rd</tt></b>.
 
@@ -1642,7 +1642,7 @@ reboot</b>
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
 (log in as anonymous...)
-<b>cd pub/OpenBSD/3.8/sgi
+<b>cd pub/OpenBSD/3.9/sgi
 mget b*tgz c* e* g* m*
 quit
 sh
@@ -1653,10 +1653,8 @@ dd if=/dev/zero of=swap bs=1024 count=32768
 halt</b>
 </pre></td></tr></table>
   <li>Download the OpenBSD/sgi GENERIC and RAMDISK kernels:<pre>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.8/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.8/sgi/bsd</a>
-	MD5 (bsd) = f16eaf3dcbd51876db7c25f70e6d8a08
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.8/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.8/sgi/bsd.rd</a>
-	MD5 (bsd.rd) = 4843e6139d8dd04b03d5f0e33e9a4f7b
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd</a>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd.rd">ftp://ftp.se.openbsd.org/pub/OpenBSD/3.9/sgi/bsd.rd</a>
 
 </pre>
   <li>Create a configuration file called <tt>config_client</tt>:

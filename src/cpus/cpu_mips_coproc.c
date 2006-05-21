@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.23 2006-05-20 08:03:30 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.24 2006-05-21 11:34:33 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -77,36 +77,57 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 {
 	const int m16 = 0;	/*  TODO: MIPS16 support  */
-	int cpu_type, IB, DB, SB, IC, DC, SC, IA, DA;
+	int IB, DB, SB, IC, DC, SC, IA, DA;
 
-	/*  Default values:  */
-	c->reg[COP0_CONFIG] =
-	      (   0 << 31)	/*  config1 present  */
-	    | (0x00 << 16)	/*  implementation dependent  */
-	    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
-				/*  endian mode  */
-	    | (   2 << 13)	/*  0 = MIPS32,
-				    1 = MIPS64 with 32-bit segments,
-				    2 = MIPS64 with all segments,
-				    3 = reserved  */
-	    | (   0 << 10)	/*  architecture revision level,
-				    0 = "Revision 1", other
-				    values are reserved  */
-	    | (   1 <<  7)	/*  MMU type:  0 = none,
-				    1 = Standard TLB,
-				    2 = Standard BAT,
-				    3 = fixed mapping, 4-7=reserved  */
-	    | (   0 <<  0)	/*  kseg0 coherency algorithm
-				(TODO)  */
-	    ;
+	/*  Generic case for MIPS32/64:  */
+	if (cpu->cd.mips.cpu_type.isa_level == 32 ||
+	    cpu->cd.mips.cpu_type.isa_level == 64) {
+		/*  According to the MIPS64 (5K) User's Manual:  */
+		c->reg[COP0_CONFIG] =
+		      (   (uint32_t)1 << 31)/*  Config 1 present bit  */
+		    | (   0 << 20)	/*  ISD:  instruction scheduling
+					    disable (=1)  */
+		    | (   0 << 17)	/*  DID:  dual issue disable  */
+		    | (   0 << 16)	/*  BM:   burst mode  */
+		    | ((cpu->byte_order == EMUL_BIG_ENDIAN? 1 : 0) << 15)
+				 	/*  endian mode  */
+		    | ((cpu->cd.mips.cpu_type.isa_level == 64? 2 : 0) << 13)
+					/*  0=MIPS32, 1=64S, 2=64  */
+		    | (   0 << 10)	/*  Architecture revision  */
+		    | (   1 <<  7)	/*  MMU type: 1=TLB, 3=FMT  */
+		    | (   2 <<  0)	/*  kseg0 cache coherency algorithm  */
+		    ;
+		/*  Config select 1: caches etc. TODO: Don't use
+			cpu->machine for this stuff!  */
+		IB = cpu->machine->cache_picache_linesize - 1;
+		IB = IB < 0? 0 : (IB > 7? 7 : IB);
+		DB = cpu->machine->cache_pdcache_linesize - 1;
+		DB = DB < 0? 0 : (DB > 7? 7 : DB);
+		IC = cpu->machine->cache_picache -
+		    cpu->machine->cache_picache_linesize - 7;
+		DC = cpu->machine->cache_pdcache -
+		    cpu->machine->cache_pdcache_linesize - 7;
+		IA = cpu->cd.mips.cpu_type.piways - 1;
+		DA = cpu->cd.mips.cpu_type.pdways - 1;
+		cpu->cd.mips.cop0_config_select1 =
+		    ((cpu->cd.mips.cpu_type.nr_of_tlb_entries - 1) << 25)
+		    | (IC << 22)	/*  IS: I-cache sets per way  */
+		    | (IB << 19)	/*  IL: I-cache line-size  */
+		    | (IA << 16)	/*  IA: I-cache assoc. (ways-1)  */
+		    | (DC << 13)	/*  DS: D-cache sets per way  */
+		    | (DB << 10)	/*  DL: D-cache line-size  */
+		    | (DA <<  7)	/*  DA: D-cache assoc. (ways-1)  */
+		    | (16 * 0)		/*  Existance of PerformanceCounters  */
+		    | ( 8 * 0)		/*  Existance of Watch Registers  */
+		    | ( 4 * m16)	/*  Existance of MIPS16  */
+		    | ( 2 * 0)		/*  Existance of EJTAG  */
+		    | ( 1 * 1)		/*  Existance of FPU  */
+		    ;
 
-	cpu_type = cpu->cd.mips.cpu_type.rev & 0xff;
+		return;
+	}
 
-	/*  AU1x00 are treated as 4Kc (MIPS32 cores):  */
-	if ((cpu->cd.mips.cpu_type.rev & 0xffff) == 0x0301)
-		cpu_type = MIPS_4Kc;
-
-	switch (cpu_type) {
+	switch (cpu->cd.mips.cpu_type.rev) {
 	case MIPS_R4000:	/*  according to the R4000 manual  */
 	case MIPS_R4600:
 		IB = cpu->machine->cache_picache_linesize - 4;
@@ -291,52 +312,9 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 						(TODO)  */
 		    ;
 		break;
-	case MIPS_4Kc:
-	case MIPS_5Kc:
-		/*  According to the MIPS64 (5K) User's Manual:  */
-		c->reg[COP0_CONFIG] =
-		      (   (uint32_t)1 << 31)/*  Config 1 present bit  */
-		    | (   0 << 20)	/*  ISD:  instruction scheduling
-					    disable (=1)  */
-		    | (   0 << 17)	/*  DID:  dual issue disable  */
-		    | (   0 << 16)	/*  BM:   burst mode  */
-		    | ((cpu->byte_order == EMUL_BIG_ENDIAN? 1 : 0) << 15)
-				 	/*  endian mode  */
-		    | ((cpu_type == MIPS_5Kc? 2 : 0) << 13)
-					/*  0=MIPS32, 1=64S, 2=64  */
-		    | (   0 << 10)	/*  Architecture revision  */
-		    | (   1 <<  7)	/*  MMU type: 1=TLB, 3=FMT  */
-		    | (   2 <<  0)	/*  kseg0 cache coherency algorithm  */
-		    ;
-		/*  Config select 1: caches etc. TODO: Don't use
-			cpu->machine for this stuff!  */
-		IB = cpu->machine->cache_picache_linesize - 1;
-		IB = IB < 0? 0 : (IB > 7? 7 : IB);
-		DB = cpu->machine->cache_pdcache_linesize - 1;
-		DB = DB < 0? 0 : (DB > 7? 7 : DB);
-		IC = cpu->machine->cache_picache -
-		    cpu->machine->cache_picache_linesize - 7;
-		DC = cpu->machine->cache_pdcache -
-		    cpu->machine->cache_pdcache_linesize - 7;
-		IA = cpu->cd.mips.cpu_type.piways - 1;
-		DA = cpu->cd.mips.cpu_type.pdways - 1;
-		cpu->cd.mips.cop0_config_select1 =
-		    ((cpu->cd.mips.cpu_type.nr_of_tlb_entries - 1) << 25)
-		    | (IC << 22)	/*  IS: I-cache sets per way  */
-		    | (IB << 19)	/*  IL: I-cache line-size  */
-		    | (IA << 16)	/*  IA: I-cache assoc. (ways-1)  */
-		    | (DC << 13)	/*  DS: D-cache sets per way  */
-		    | (DB << 10)	/*  DL: D-cache line-size  */
-		    | (DA <<  7)	/*  DA: D-cache assoc. (ways-1)  */
-		    | (16 * 0)		/*  Existance of PerformanceCounters  */
-		    | ( 8 * 0)		/*  Existance of Watch Registers  */
-		    | ( 4 * m16)	/*  Existance of MIPS16  */
-		    | ( 2 * 0)		/*  Existance of EJTAG  */
-		    | ( 1 * 1)		/*  Existance of FPU  */
-		    ;
-		break;
-	default:
-		;
+	default:fatal("Internal error: No initialization code for"
+		    " config0? cpu rev = 0x%x", cpu->cd.mips.cpu_type.rev);
+		exit(1);
 	}
 }
 

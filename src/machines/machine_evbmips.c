@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.4 2006-05-21 11:15:25 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.5 2006-05-21 11:34:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -125,23 +125,8 @@ MACHINE_SETUP(evbmips)
 		 *  "usb_ohci=base:0x10100000,len:0x100000,irq:26"
 		 */
 
+		/*  Linux reads this during startup...  */
 		device_add(machine, "random addr=0x1017fffc len=4");
-
-#if 0
-	/*
-	 *  TODO:  A Linux kernel wants "memsize" from somewhere... I
-	 *  haven't found any docs on how it is used though.
-	 */
-
-	cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;
-
-	cpu->cd.mips.gpr[MIPS_GPR_A1] = 0xa0001000ULL;
-	store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A1], 0xa0002000ULL);
-	store_string(cpu, 0xa0002000ULL, "something=somethingelse");
-
-	cpu->cd.mips.gpr[MIPS_GPR_A2] = 0xa0003000ULL;
-	store_string(cpu, 0xa0002000ULL, "hello=world\n");
-#endif
 
 		break;
 

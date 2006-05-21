@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.5 2006-05-21 11:34:33 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.6 2006-05-21 11:35:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -100,12 +100,15 @@ MACHINE_SETUP(evbmips)
 	case MACHINE_EVBMIPS_MESHCUBE:
 		machine->machine_name = "Meshcube";
 
+		/*  See: http://mail-index.netbsd.org/port-evbmips/2006/
+		    02/23/0000.html  */
+
 		if (machine->physical_ram_in_mb != 64)
-			fprintf(stderr, "WARNING! MeshCubes are supposed to have "
-			    "exactly 64 MB RAM. Continuing anyway.\n");
+			fprintf(stderr, "WARNING! MeshCubes are supposed to "
+			    "have exactly 64 MB RAM. Continuing anyway.\n");
 		if (machine->use_x11)
-			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. "
-			    "Continuing anyway.\n");
+			fprintf(stderr, "WARNING! MeshCube with -X is "
+			    "meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
 		machine->md_interrupt = au1x00_interrupt;

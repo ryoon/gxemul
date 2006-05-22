@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.39 2006-04-25 04:11:32 debug Exp $
+ *  $Id: emul_parse.c,v 1.40 2006-05-22 04:53:52 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -520,13 +520,23 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		}
 
 		if (!cur_machine_bintrans[0])
-			strlcpy(cur_machine_bintrans, "yes",
+			strlcpy(cur_machine_bintrans,
+#ifdef OLDMIPS
+			    "yes",
+#else
+			    "no",
+#endif
 			    sizeof(cur_machine_bintrans));
 		m->bintrans_enable = m->bintrans_enabled_from_start =
 		    parse_on_off(cur_machine_bintrans);
 
 		if (!cur_machine_old_bintrans[0])
-			strlcpy(cur_machine_old_bintrans, "yes",
+			strlcpy(cur_machine_old_bintrans,
+#ifdef OLDMIPS
+			    "yes",
+#else
+			    "no",
+#endif
 			    sizeof(cur_machine_old_bintrans));
 		m->old_bintrans_enable = parse_on_off(cur_machine_old_bintrans);
 

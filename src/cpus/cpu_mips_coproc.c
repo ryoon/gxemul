@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.24 2006-05-21 11:34:33 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.25 2006-05-22 04:53:52 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -128,6 +128,10 @@ static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
 	}
 
 	switch (cpu->cd.mips.cpu_type.rev) {
+	case MIPS_R2000:
+	case MIPS_R3000:
+		/*  No config register.  */
+		break;
 	case MIPS_R4000:	/*  according to the R4000 manual  */
 	case MIPS_R4600:
 		IB = cpu->machine->cache_picache_linesize - 4;

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.62 2006-02-18 13:15:21 debug Exp $
+$Id: misc.html,v 1.63 2006-05-22 04:53:52 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -175,11 +175,11 @@ might be suitable choices.
 
 <ul>
   <li><b>(+)</b>&nbsp;&nbsp;Your compiler needs to output real assembly
-	language code, which the assembler (eg gas, the GNU assembler) can 
+	language code, which the assembler (e.g. gas, the GNU assembler) can 
 	then compile into object format, and then you need to link this
 	into an executable image. This is much closer to how things work
 	in real life than running assembly language listings in a simulator
-	(eg SPIM).
+	(e.g. SPIM).
   <p>
   <li><b>(-)</b>&nbsp;&nbsp;GXemul does not simulate out-of-order
 	execution, penalties related to instruction scheduling, or
@@ -382,7 +382,8 @@ count.)
 <a name="userland"></a>
 <h3>Running userland binaries:</h3>
 
-<font color="#ff0000">Note: This does not really work yet.</font>
+<font color="#ff0000">Note: This feature does not really work yet.
+It is currently disabled in stable release builds of the emulator.</font>
 
 <p>There is some skeleton code for running userland programs as well. This
 will not emulate any particular machine, but instead try to translate

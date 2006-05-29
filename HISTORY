@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1231 2006-05-29 20:15:42 debug Exp $
+$Id: HISTORY,v 1.1232 2006-05-29 20:21:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2747,4 +2747,5 @@ Changelog for GXemul:
 		Cleanup/fix of MIPS config0 register initialization.
 20060529	Minor MIPS fixes, including a sign-extension fix to the
 		unaligned load/store code, which makes NetBSD/pmax on R3000
-		work better with dyntrans.
+		work better with dyntrans. (Ultrix and Linux/DECstation still
+		don't work, though.)

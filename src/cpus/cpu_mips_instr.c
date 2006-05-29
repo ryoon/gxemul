@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.74 2006-05-20 08:03:30 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.75 2006-05-29 20:15:42 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -976,7 +976,7 @@ X(jal)
 	MODE_int_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.mips.gpr[31] = cpu->pc + ic->arg[1];
+	cpu->cd.mips.gpr[31] = (MODE_int_t)cpu->pc + (int32_t)ic->arg[1];
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
@@ -993,7 +993,7 @@ X(jal_trace)
 	MODE_int_t old_pc = cpu->pc;
 	cpu->delay_slot = TO_BE_DELAYED;
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->cd.mips.gpr[31] = cpu->pc + ic->arg[1];
+	cpu->cd.mips.gpr[31] = (MODE_int_t)cpu->pc + (int32_t)ic->arg[1];
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
@@ -1324,41 +1324,35 @@ X(dsub)
 		reg(ic->arg[2]) = rd;
 }
 X(slt) {
-#ifdef MODE32
-	reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) < (int32_t)reg(ic->arg[1]);
-#else
-	reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) < (int64_t)reg(ic->arg[1]);
-#endif
+	reg(ic->arg[2]) =
+	    (MODE_int_t)reg(ic->arg[0]) < (MODE_int_t)reg(ic->arg[1]);
 }
 X(sltu) {
-#ifdef MODE32
-	reg(ic->arg[2]) = (uint32_t)reg(ic->arg[0]) < (uint32_t)reg(ic->arg[1]);
-#else
-	reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) < (uint64_t)reg(ic->arg[1]);
-#endif
+	reg(ic->arg[2]) =
+	    (MODE_uint_t)reg(ic->arg[0]) < (MODE_uint_t)reg(ic->arg[1]);
 }
 X(and) { reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
 X(or)  { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 X(xor) { reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
 X(nor) { reg(ic->arg[2]) = ~(reg(ic->arg[0]) | reg(ic->arg[1])); }
-X(sll) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << ic->arg[1]); }
-X(sllv){ int sa = reg(ic->arg[1]) & 31;
+X(sll) { reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << (int32_t)ic->arg[1]); }
+X(sllv){ int32_t sa = reg(ic->arg[1]) & 31;
 	 reg(ic->arg[2]) = (int32_t)(reg(ic->arg[0]) << sa); }
 X(srl) { reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> ic->arg[1]); }
-X(srlv){ int sa = reg(ic->arg[1]) & 31;
+X(srlv){ int32_t sa = reg(ic->arg[1]) & 31;
 	 reg(ic->arg[2]) = (int32_t)((uint32_t)reg(ic->arg[0]) >> sa); }
 X(sra) { reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> ic->arg[1]); }
-X(srav){ int sa = reg(ic->arg[1]) & 31;
+X(srav){ int32_t sa = reg(ic->arg[1]) & 31;
 	 reg(ic->arg[2]) = (int32_t)((int32_t)reg(ic->arg[0]) >> sa); }
 X(dsll) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) << (int64_t)ic->arg[1]; }
-X(dsllv){ int sa = reg(ic->arg[1]) & 63;
+X(dsllv){ int64_t sa = reg(ic->arg[1]) & 63;
 	 reg(ic->arg[2]) = reg(ic->arg[0]) << sa; }
 X(dsrl) { reg(ic->arg[2]) = (int64_t)((uint64_t)reg(ic->arg[0]) >>
 	(uint64_t) ic->arg[1]);}
-X(dsrlv){ int sa = reg(ic->arg[1]) & 63;
+X(dsrlv){ int64_t sa = reg(ic->arg[1]) & 63;
 	 reg(ic->arg[2]) = (uint64_t)reg(ic->arg[0]) >> sa; }
 X(dsra) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> (int64_t)ic->arg[1]; }
-X(dsrav){ int sa = reg(ic->arg[1]) & 63;
+X(dsrav){ int64_t sa = reg(ic->arg[1]) & 63;
 	 reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> sa; }
 X(mul) { reg(ic->arg[2]) = (int32_t)
 	( (int32_t)reg(ic->arg[0]) * (int32_t)reg(ic->arg[1]) ); }
@@ -1621,7 +1615,7 @@ X(mtc0)
 {
 	MODE_int_t old_pc;
 	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
-	uint64_t tmp = (MODE_int_t)reg(ic->arg[0]);
+	uint64_t tmp = (int32_t) reg(ic->arg[0]);
 
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
@@ -2645,6 +2639,12 @@ X(to_be_translated)
 			case SPECIAL_MULTU:
 			case SPECIAL_DMULT:
 			case SPECIAL_DMULTU:
+			case SPECIAL_TGE:
+			case SPECIAL_TGEU:
+			case SPECIAL_TLT:
+			case SPECIAL_TLTU:
+			case SPECIAL_TEQ:
+			case SPECIAL_TNE:
 				if (s6 == SPECIAL_MULT && rd != MIPS_GPR_ZERO) {
 					if (cpu->cd.mips.cpu_type.rev ==
 					    MIPS_R5900) {
@@ -3284,6 +3284,13 @@ X(to_be_translated)
 	case HI6_LLD:
 	case HI6_SC:
 	case HI6_SCD:
+		/*  32-bit load-linked/store-condition for ISA II and up:  */
+		/*  (64-bit load-linked/store-condition for ISA III...)  */
+		if (cpu->cd.mips.cpu_type.isa_level < 2) {
+			ic->f = instr(reserved);
+			break;
+		}
+
 		store = 0;
 		switch (main_opcode) {
 		case HI6_LL:  ic->f = instr(ll); break;
@@ -3331,6 +3338,19 @@ X(to_be_translated)
 	case HI6_SWC1:
 	case HI6_LDC1:
 	case HI6_SDC1:
+		/*  64-bit floating-point load/store for ISA II and up...  */
+		if ((main_opcode == HI6_LDC1 || main_opcode == HI6_SDC1)
+		    && cpu->cd.mips.cpu_type.isa_level < 2) {
+			ic->f = instr(reserved);
+			break;
+		}
+
+		if (main_opcode == HI6_LDC1 || main_opcode == HI6_SDC1) {
+			fatal("TODO: 64-bit two-reg floating point "
+			    "load/store etc.\n");
+			goto bad;
+		}
+
 		ic->arg[0] = (size_t)&cpu->cd.mips.coproc[1]->reg[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;
@@ -3340,6 +3360,7 @@ X(to_be_translated)
 		case HI6_SWC1: ic->f = instr(swc1); break;
 		case HI6_SDC1: ic->f = instr(sdc1); break;
 		}
+
 		/*  Cause a coprocessor unusable exception if
 		    there is no floating point coprocessor:  */
 		if (cpu->cd.mips.cpu_type.flags & NOFPU ||
@@ -3350,8 +3371,9 @@ X(to_be_translated)
 		break;
 
 	case HI6_LWC3:
+		/*  PREF (prefetch) on ISA IV and MIPS32/64:  */
 		if (cpu->cd.mips.cpu_type.isa_level >= 4) {
-			/*  PREF (prefetch); treat as nop for now:  */
+			/*  Treat as nop for now:  */
 			ic->f = instr(nop);
 		} else {
 			fatal("TODO: lwc3 not implemented yet\n");
@@ -3377,6 +3399,12 @@ X(to_be_translated)
 
 		if (cpu->cd.mips.cpu_type.isa_level < 32 ||
 		    cpu->cd.mips.cpu_type.isa_revision < 2) {
+			static int warning = 0;
+			if (!warning) {
+				fatal("[ WARNING! SPECIAL3 opcode used on a"
+				    " cpu which doesn't implement it ]\n");
+				warning = 1;
+			}
 			ic->f = instr(reserved);
 			break;
 		}
@@ -3393,7 +3421,8 @@ X(to_be_translated)
 					ic->f = instr(nop);
 				break;
 
-			default:fatal("unimplemented rdhwr register\n");
+			default:fatal("unimplemented rdhwr register rd=%i\n",
+				    rd);
 				goto bad;
 			}
 			break;

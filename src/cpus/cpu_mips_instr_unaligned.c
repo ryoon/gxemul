@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_unaligned.c,v 1.2 2006-05-19 16:27:55 debug Exp $
+ *  $Id: cpu_mips_instr_unaligned.c,v 1.3 2006-05-29 20:15:42 debug Exp $
  *
  *  MIPS unaligned load/store instructions; the following args are used:
  *  
@@ -49,7 +49,7 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 	/*  For L (Left):   address is the most significant byte  */
 	/*  For R (Right):  address is the least significant byte  */
 	uint64_t addr = *((uint64_t *)ic->arg[1]) + (int32_t)ic->arg[2];
-	int i, signd = 0, dir, reg_dir, reg_ofs, ok;
+	int i, dir, reg_dir, reg_ofs, ok;
 	uint64_t result_value, tmpaddr;
 	uint64_t aligned_addr = addr & ~(wlen-1);
 	unsigned char aligned_word[8], databyte;
@@ -59,9 +59,6 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
 	    << MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-
-	if (!store && wlen == sizeof(uint32_t))
-		signd = 1;
 
 	dir = 1;		/*  big endian, Left  */
 	reg_dir = -1;
@@ -76,6 +73,12 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 		dir = -dir;
 
 	result_value = *((uint64_t *)ic->arg[0]);
+
+	if (cpu->is_32bit) {
+		result_value = (int32_t)result_value;
+		aligned_addr = (int32_t)aligned_addr;
+		addr = (int32_t)addr;
+	}
 
 	if (store) {
 		/*  Store:  */
@@ -136,9 +139,8 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 		if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
 			break;
 
-		/*  debug("unaligned byte at %016"
-		    PRIx64", reg_ofs=%i reg=0x%016"
-		    PRIx64"\n", (uint64_t) tmpaddr,
+		/*  debug("unaligned byte at %016"PRIx64", reg_ofs=%i reg="
+		    "0x%016"PRIx64"\n", (uint64_t) tmpaddr,
 		    reg_ofs, (uint64_t)result_value); */
 
 		/*  Load one byte:  */
@@ -150,7 +152,7 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 	}
 
 	/*  Sign extend for 32-bit load lefts:  */
-	if (signd)
+	if (!store && wlen == sizeof(uint32_t))
 		result_value = (int32_t)result_value;
 
 	(*(uint64_t *)ic->arg[0]) = result_value;

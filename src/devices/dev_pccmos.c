@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.22 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.23 2006-05-30 19:49:39 debug Exp $
  *  
  *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
  *
@@ -160,6 +160,10 @@ DEVINIT(pccmos)
 		break;
 	case MACHINE_SHARK:
 	case MACHINE_IYONIX:
+		/*  TODO  */
+		irq_nr = 32 + 8;
+		break;
+	case MACHINE_ALPHA:
 		/*  TODO  */
 		irq_nr = 32 + 8;
 		break;

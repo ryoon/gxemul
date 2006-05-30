@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_alpha.c,v 1.3 2006-05-30 19:49:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -39,6 +39,7 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "alpha_autoconf.h"
 #include "alpha_rpb.h"
 
 
@@ -49,14 +50,22 @@ MACHINE_SETUP(alpha)
 	struct ctb ctb;
 
 	switch (machine->machine_subtype) {
+
+	case ST_ALPHABOOK1:
+		machine->machine_name = "AlphaBook 1";
+		device_add(machine, "lca");
+		break;
+
 	case ST_DEC_3000_300:
 		machine->machine_name = "DEC 3000/300";
 		machine->main_console_handle = (size_t)device_add(machine,
 		    "z8530 addr=0x1b0200000 irq=0 addr_mult=4");
 		break;
+
 	case ST_EB164:
 		machine->machine_name = "EB164";
 		break;
+
 	default:fatal("Unimplemented Alpha machine type %i\n",
 		    machine->machine_subtype);
 		exit(1);
@@ -65,17 +74,17 @@ MACHINE_SETUP(alpha)
 	if (!machine->prom_emulation)
 		return;
 
-	/*  TODO:  Most of these... They are used by NetBSD/alpha:  */
+	/*  These are used by NetBSD/alpha:  */
 	/*  a0 = First free Page Frame Number  */
 	/*  a1 = PFN of current Level 1 page table  */
 	/*  a2 = Bootinfo magic  */
 	/*  a3 = Bootinfo pointer  */
 	/*  a4 = Bootinfo version  */
 	cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
-	cpu->cd.alpha.r[ALPHA_A1] = 0;
-	cpu->cd.alpha.r[ALPHA_A2] = 0;
-	cpu->cd.alpha.r[ALPHA_A3] = 0;
-	cpu->cd.alpha.r[ALPHA_A4] = 0;
+	cpu->cd.alpha.r[ALPHA_A1] = 0;	/*  TODO  */
+	cpu->cd.alpha.r[ALPHA_A2] = ALPHA_BOOTINFO_MAGIC;
+	cpu->cd.alpha.r[ALPHA_A3] = 0;	/*  TODO  */
+	cpu->cd.alpha.r[ALPHA_A4] = 1;
 
 	/*  HWRPB: Hardware Restart Parameter Block  */
 	memset(&rpb, 0, sizeof(struct rpb));
@@ -121,6 +130,7 @@ MACHINE_SETUP(alpha)
 
 MACHINE_DEFAULT_CPU(alpha)
 {
+	/*  TODO  */
 	machine->cpu_name = strdup("Alpha");
 }
 
@@ -133,13 +143,20 @@ MACHINE_DEFAULT_RAM(alpha)
 
 MACHINE_REGISTER(alpha)
 {
-	MR_DEFAULT(alpha, "Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 2);
+	MR_DEFAULT(alpha, "Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 3);
 	me->aliases[0] = "alpha";
-	me->subtype[0] = machine_entry_subtype_new("DEC 3000/300",
+
+	me->subtype[0] = machine_entry_subtype_new("AlphaBook 1",
+	    ST_ALPHABOOK1, 1);
+	me->subtype[0]->aliases[0] = "alphabook1";
+
+	me->subtype[1] = machine_entry_subtype_new("DEC 3000/300",
 	    ST_DEC_3000_300, 1);
-	me->subtype[0]->aliases[0] = "3000/300";
-	me->subtype[1] = machine_entry_subtype_new("EB164", ST_EB164, 1);
-	me->subtype[1]->aliases[0] = "eb164";
+	me->subtype[1]->aliases[0] = "3000/300";
+
+	me->subtype[2] = machine_entry_subtype_new("EB164", ST_EB164, 1);
+	me->subtype[2]->aliases[0] = "eb164";
+
 	me->set_default_ram = machine_default_ram_alpha;
 	machine_entry_add(me, ARCH_ALPHA);
 }

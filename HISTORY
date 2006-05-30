@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1232 2006-05-29 20:21:29 debug Exp $
+$Id: HISTORY,v 1.1233 2006-05-30 19:49:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2749,3 +2749,5 @@ Changelog for GXemul:
 		unaligned load/store code, which makes NetBSD/pmax on R3000
 		work better with dyntrans. (Ultrix and Linux/DECstation still
 		don't work, though.)
+20060530	Minor updates to the Alpha machine mode: adding an AlphaBook
+		mode, an LCA bus (forwarding accesses to an ISA bus), etc.

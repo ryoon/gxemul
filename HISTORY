@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1233 2006-05-30 19:49:38 debug Exp $
+$Id: HISTORY,v 1.1234 2006-05-31 05:33:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2751,3 +2751,5 @@ Changelog for GXemul:
 		don't work, though.)
 20060530	Minor updates to the Alpha machine mode: adding an AlphaBook
 		mode, an LCA bus (forwarding accesses to an ISA bus), etc.
+20060531	Applying a bugfix for the MIPS dyntrans sc[d] instruction from
+		Ondrej Palkovsky. (Many thanks.)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.75 2006-05-29 20:15:42 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.76 2006-05-31 05:33:42 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2010,18 +2010,18 @@ X(sc)
 		word[3]=r; word[2]=r>>8; word[1]=r>>16; word[0]=r>>24;
 	}
 
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
-	    sizeof(word), MEM_WRITE, CACHE_DATA)) {
-		/*  An exception occurred.  */
-		return;
-	}
-
 	/*  If rmw is 0, then the store failed.  (This cache-line was written
 	    to by someone else.)  */
 	if (cpu->cd.mips.rmw == 0 || cpu->cd.mips.rmw_addr != addr
 	    || cpu->cd.mips.rmw_len != sizeof(word)) {
 		reg(ic->arg[0]) = 0;
 		cpu->cd.mips.rmw = 0;
+		return;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
+	    sizeof(word), MEM_WRITE, CACHE_DATA)) {
+		/*  An exception occurred.  */
 		return;
 	}
 
@@ -2070,18 +2070,18 @@ X(scd)
 		word[3]=r>>32; word[2]=r>>40; word[1]=r>>48; word[0]=r>>56;
 	}
 
-	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
-	    sizeof(word), MEM_WRITE, CACHE_DATA)) {
-		/*  An exception occurred.  */
-		return;
-	}
-
 	/*  If rmw is 0, then the store failed.  (This cache-line was written
 	    to by someone else.)  */
 	if (cpu->cd.mips.rmw == 0 || cpu->cd.mips.rmw_addr != addr
 	    || cpu->cd.mips.rmw_len != sizeof(word)) {
 		reg(ic->arg[0]) = 0;
 		cpu->cd.mips.rmw = 0;
+		return;
+	}
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, word,
+	    sizeof(word), MEM_WRITE, CACHE_DATA)) {
+		/*  An exception occurred.  */
 		return;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.4 2006-06-01 18:02:54 debug Exp $
+ *  $Id: machine_alpha.c,v 1.5 2006-06-01 18:12:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -55,6 +55,10 @@ MACHINE_SETUP(alpha)
 	case ST_ALPHABOOK1:
 		machine->machine_name = "AlphaBook 1";
 		device_add(machine, "lca");
+		break;
+
+	case ST_DEC_4100:
+		machine->machine_name = "AlphaServer 4100";
 		break;
 
 	case ST_DEC_3000_300:
@@ -166,6 +170,10 @@ MACHINE_DEFAULT_CPU(alpha)
 		machine->cpu_name = strdup("21066");
 		break;
 
+	case ST_DEC_4100:
+		machine->cpu_name = strdup("21164A-2");
+		break;
+
 	case ST_DEC_3000_300:
 		machine->cpu_name = strdup("21064");
 		break;
@@ -189,19 +197,23 @@ MACHINE_DEFAULT_RAM(alpha)
 
 MACHINE_REGISTER(alpha)
 {
-	MR_DEFAULT(alpha, "Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 3);
+	MR_DEFAULT(alpha, "Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 4);
 	me->aliases[0] = "alpha";
 
 	me->subtype[0] = machine_entry_subtype_new("AlphaBook 1",
 	    ST_ALPHABOOK1, 1);
 	me->subtype[0]->aliases[0] = "alphabook1";
 
-	me->subtype[1] = machine_entry_subtype_new("DEC 3000/300",
-	    ST_DEC_3000_300, 1);
-	me->subtype[1]->aliases[0] = "3000/300";
+	me->subtype[1] = machine_entry_subtype_new("AlphaServer 4100",
+	    ST_DEC_4100, 1);
+	me->subtype[1]->aliases[0] = "alphaserver4100";
 
-	me->subtype[2] = machine_entry_subtype_new("EB164", ST_EB164, 1);
-	me->subtype[2]->aliases[0] = "eb164";
+	me->subtype[2] = machine_entry_subtype_new("DEC 3000/300",
+	    ST_DEC_3000_300, 1);
+	me->subtype[2]->aliases[0] = "3000/300";
+
+	me->subtype[3] = machine_entry_subtype_new("EB164", ST_EB164, 1);
+	me->subtype[3]->aliases[0] = "eb164";
 
 	me->set_default_ram = machine_default_ram_alpha;
 	machine_entry_add(me, ARCH_ALPHA);

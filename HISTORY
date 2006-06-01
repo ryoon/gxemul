@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1234 2006-05-31 05:33:41 debug Exp $
+$Id: HISTORY,v 1.1235 2006-06-01 05:27:08 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2753,3 +2753,5 @@ Changelog for GXemul:
 		mode, an LCA bus (forwarding accesses to an ISA bus), etc.
 20060531	Applying a bugfix for the MIPS dyntrans sc[d] instruction from
 		Ondrej Palkovsky. (Many thanks.)
+20060601	Minifix to allow ARM immediate msr instruction to not give
+		an error for some valid values.

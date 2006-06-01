@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.63 2006-04-24 05:12:55 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.64 2006-06-01 05:25:26 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2640,16 +2640,16 @@ X(to_be_translated)
 		    (iword & 0x0fb0f000) == 0x0320f000) {
 			/*  msr: move to [S|C]PSR from a register or
 			    immediate value  */
-			if (rm == ARM_PC) {
-				fatal("msr PC?\n");
-				goto bad;
-			}
 			if (iword & 0x02000000) {
 				if (iword & 0x00400000)
 					ic->f = cond_instr(msr_imm_spsr);
 				else
 					ic->f = cond_instr(msr_imm);
 			} else {
+				if (rm == ARM_PC) {
+					fatal("msr PC?\n");
+					goto bad;
+				}
 				if (iword & 0x00400000)
 					ic->f = cond_instr(msr_spsr);
 				else

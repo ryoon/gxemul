@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.3 2006-05-30 19:49:39 debug Exp $
+ *  $Id: machine_alpha.c,v 1.4 2006-06-01 18:02:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,6 +48,7 @@ MACHINE_SETUP(alpha)
 	struct rpb rpb;
 	struct crb crb;
 	struct ctb ctb;
+	struct mddt mddt;
 
 	switch (machine->machine_subtype) {
 
@@ -86,7 +87,11 @@ MACHINE_SETUP(alpha)
 	cpu->cd.alpha.r[ALPHA_A3] = 0;	/*  TODO  */
 	cpu->cd.alpha.r[ALPHA_A4] = 1;
 
-	/*  HWRPB: Hardware Restart Parameter Block  */
+	/*
+	 *  HWRPB: Hardware Restart Parameter Block
+	 *
+	 *  TODO: Almost everything.
+	 */
 	memset(&rpb, 0, sizeof(struct rpb));
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_phys), HWRPB_ADDR);
@@ -103,6 +108,8 @@ MACHINE_SETUP(alpha)
 	    &(rpb.rpb_ctb_off), CTB_ADDR - HWRPB_ADDR);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_crb_off), CRB_ADDR - HWRPB_ADDR);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_memdat_off), MEMDAT_ADDR - HWRPB_ADDR);
 
 	/*  CTB: Console Terminal Block  */
 	memset(&ctb, 0, sizeof(struct ctb));
@@ -117,6 +124,28 @@ MACHINE_SETUP(alpha)
 	store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
 
 	/*
+	 *  MDDT: Memory Data Descriptor Table. For now, it is a simple
+	 *  two-entry table with half of the available RAM in each entry.
+	 *  (The values are in number of 8K pages.)
+	 *  The first 16 MB are not included (the kernel lives there).
+	 *  The last 1 MB is not included either, it is reserved for bootup
+	 *  and similar.
+	 */
+	memset(&mddt, 0, sizeof(struct mddt));
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(mddt.mddt_cluster_cnt), 2);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(mddt.mddt_clusters[0].mddt_pfn), 128 * 16);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(mddt.mddt_clusters[0].mddt_pg_cnt),
+	    (machine->physical_ram_in_mb - 16) * 128);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(mddt.mddt_clusters[1].mddt_pfn), machine->physical_ram_in_mb*128);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(mddt.mddt_clusters[1].mddt_pg_cnt), (machine->physical_ram_in_mb
+	    - 1) * 128);
+
+	/*
 	 *  Place a special "hack" palcode call at 0x10000:
 	 *  (Hopefully nothing else will be there.)
 	 */
@@ -125,13 +154,30 @@ MACHINE_SETUP(alpha)
 	store_buf(cpu, HWRPB_ADDR, (char *)&rpb, sizeof(struct rpb));
 	store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));
 	store_buf(cpu, CRB_ADDR, (char *)&crb, sizeof(struct crb));
+	store_buf(cpu, MEMDAT_ADDR, (char *)&mddt, sizeof(struct mddt));
 }
 
 
 MACHINE_DEFAULT_CPU(alpha)
 {
-	/*  TODO  */
-	machine->cpu_name = strdup("Alpha");
+	switch (machine->machine_subtype) {
+
+	case ST_ALPHABOOK1:
+		machine->cpu_name = strdup("21066");
+		break;
+
+	case ST_DEC_3000_300:
+		machine->cpu_name = strdup("21064");
+		break;
+
+	case ST_EB164:
+		machine->cpu_name = strdup("21164PC");
+		break;
+
+	default:fatal("Unimplemented Alpha machine type %i\n",
+		    machine->machine_subtype);
+		exit(1);
+	}
 }
 
 

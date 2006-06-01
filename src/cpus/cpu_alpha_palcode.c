@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.6 2006-03-30 19:36:04 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.7 2006-06-01 18:02:54 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -148,6 +148,14 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 	case 0x2b:	/*  PAL_OSF1_wrfen  */
 		/*  Floating point enable: a0 = 1 or 0.  */
 		/*  TODO  */
+		break;
+	case 0x2d:	/*  PAL_OSF1_wrvptptr  */
+		/*  a0 = value  */
+		cpu->cd.alpha.wrvptptr = cpu->cd.alpha.r[ALPHA_A0];
+		break;
+	case 0x30:	/*  PAL_OSF1_swpctx  */
+		/*  TODO  */
+		/*  Swap context  */
 		break;
 	case 0x31:	/*  PAL_OSF1_wrval  */
 		/*  a0 = value  */

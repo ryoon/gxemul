@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.13 2006-04-22 18:28:43 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.14 2006-06-01 18:02:54 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -64,7 +64,17 @@ static char *alpha_regname[N_ALPHA_REGS] = ALPHA_REG_NAMES;
 int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
-	if (strcasecmp(cpu_type_name, "Alpha") != 0)
+	int i = 0;
+	struct alpha_cpu_type_def cpu_type_defs[] = ALPHA_CPU_TYPE_DEFS;
+
+	/*  Scan the cpu_type_defs list for this cpu type:  */
+	while (cpu_type_defs[i].name != NULL) {
+		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
+			break;
+		}
+		i++;
+	}
+	if (cpu_type_defs[i].name == NULL)
 		return 0;
 
 	cpu->memory_rw = alpha_memory_rw;
@@ -104,9 +114,18 @@ void alpha_cpu_dumpinfo(struct cpu *cpu)
  */
 void alpha_cpu_list_available_types(void)
 {
-	/*  TODO  */
+	int i, j;
+	struct alpha_cpu_type_def tdefs[] = ALPHA_CPU_TYPE_DEFS;
 
-	debug("Alpha\n");
+	i = 0;
+	while (tdefs[i].name != NULL) {
+		debug("%s", tdefs[i].name);
+		for (j=16 - strlen(tdefs[i].name); j>0; j--)
+			debug(" ");
+		i++;
+		if ((i % 4) == 0 || tdefs[i].name == NULL)
+			debug("\n");
+	}
 }
 
 

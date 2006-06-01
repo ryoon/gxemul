@@ -43,6 +43,7 @@
 /*  GXemul:  */
 #define	CTB_ADDR	(HWRPB_ADDR + 0x1000)
 #define	CRB_ADDR	(HWRPB_ADDR + 0x1400)
+#define	MEMDAT_ADDR	(HWRPB_ADDR + 0x1800)
 
 #ifndef	ASSEMBLER
 struct rpb {

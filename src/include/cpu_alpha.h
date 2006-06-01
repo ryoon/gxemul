@@ -28,10 +28,39 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.35 2006-04-22 18:28:43 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.36 2006-06-01 18:02:54 debug Exp $
  */
 
 #include "misc.h"
+
+
+/*  ALPHA CPU types:  */
+struct alpha_cpu_type_def { 
+	char		*name;
+	int		features;
+	int		icache_shift;
+	int		ilinesize;
+	int		iway;
+	int		dcache_shift;
+	int		dlinesize;
+	int		dway;
+	int		l2cache_shift;
+	int		l2linesize;
+	int		l2way;
+};
+
+/*  TODO: More features  */
+#define	ALPHA_FEATURE_BWX		1
+
+#define ALPHA_CPU_TYPE_DEFS	{					\
+	{ "21064",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21066",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21164",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21164A-2",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21164PC",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21264",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21364",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
+	{ NULL,		0,	  0,0,0,  0,0,0,   0,0,0 }		}
 
 
 struct cpu_family;
@@ -87,9 +116,12 @@ struct alpha_cpu {
 	/*  Misc.:  */
 	uint64_t		pcc;			/*  Cycle Counter  */
 	uint64_t		ipl;
-	uint64_t		sysvalue;
 	uint64_t		load_linked_addr;
 	int			ll_flag;
+
+	/*  PALcode specific:  */
+	uint64_t		wrvptptr;
+	uint64_t		sysvalue;
 
 
 	/*

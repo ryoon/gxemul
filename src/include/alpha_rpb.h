@@ -467,7 +467,7 @@ struct mddt {
 #define	MDDT_SYSTEM			0x00	/* system software only */
 #define	MDDT_mbz	  0xfffffffffffffffc	/* 2:63 -- must be zero */
 		int64_t		mddt_usage;	/*  30: bitmap permissions */
-	} mddt_clusters[1];			/* variable length array */
+	} mddt_clusters[2];			/* variable length array */
 };
 
 /*

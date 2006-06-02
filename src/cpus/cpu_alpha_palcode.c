@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.7 2006-06-01 18:02:54 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.8 2006-06-02 18:11:38 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -212,6 +212,12 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		break;
 	case 0x86:	/*  PAL_OSF1_imb  */
 		/*  TODO  */
+		break;
+	case 0x3fffffd:
+		fatal("[ Alpha PALcode: Fixup: TODO ]\n");
+		/*  Return from the fixup call.  */
+		cpu->cd.alpha.r[ALPHA_V0] = 0;	/*  Success?  */
+		cpu->pc = cpu->cd.alpha.r[ALPHA_RA];
 		break;
 	case 0x3fffffe:
 		alpha_prom_call(cpu);

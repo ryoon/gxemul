@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.36 2006-06-01 18:02:54 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.37 2006-06-02 18:11:38 debug Exp $
  */
 
 #include "misc.h"
@@ -151,5 +151,8 @@ int alpha_cpu_family_init(struct cpu_family *);
 void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen);
 void alpha_palcode(struct cpu *cpu, uint32_t palcode);
 
+/*  memory_alpha.c:  */
+int alpha_translate_address(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
 
 #endif	/*  CPU_ALPHA_H  */

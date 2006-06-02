@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.5 2006-06-01 18:12:03 debug Exp $
+ *  $Id: machine_alpha.c,v 1.6 2006-06-02 18:11:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -126,6 +126,9 @@ MACHINE_SETUP(alpha)
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(crb.crb_v_dispatch), CRB_ADDR - 0x100);
 	store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(crb.crb_v_fixup), CRB_ADDR - 0x80);
+	store_64bit_word(cpu, CRB_ADDR - 0x80 + 8, 0x10800);
 
 	/*
 	 *  MDDT: Memory Data Descriptor Table. For now, it is a simple
@@ -150,10 +153,11 @@ MACHINE_SETUP(alpha)
 	    - 1) * 128);
 
 	/*
-	 *  Place a special "hack" palcode call at 0x10000:
+	 *  Place a special "hack" palcode call at 0x10000 and 0x10800:
 	 *  (Hopefully nothing else will be there.)
 	 */
 	store_32bit_word(cpu, 0x10000, 0x3fffffe);
+	store_32bit_word(cpu, 0x10800, 0x3fffffd);
 
 	store_buf(cpu, HWRPB_ADDR, (char *)&rpb, sizeof(struct rpb));
 	store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));

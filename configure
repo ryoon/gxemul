@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.219 2006-05-10 02:53:56 debug Exp $
+#  $Id: configure,v 1.220 2006-06-02 18:11:38 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -188,7 +188,7 @@ printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
 #  Support for various CPU types:
 if [ z$ENABLEALPHA = zYES ]; then
 	printf "#define ENABLE_ALPHA\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_alpha.o cpu_alpha_palcode.o"
+	CPU_ARCHS="$CPU_ARCHS cpu_alpha.o cpu_alpha_palcode.o memory_alpha.o"
 	CPU_TOOLS="$CPU_TOOLS generate_alpha_misc"
 fi
 if [ z$ENABLEARM = zYES ]; then

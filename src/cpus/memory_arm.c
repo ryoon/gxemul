@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.33 2006-01-25 05:51:12 debug Exp $
+ *  $Id: memory_arm.c,v 1.34 2006-06-02 18:11:38 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1236 2006-06-01 18:02:54 debug Exp $
+$Id: HISTORY,v 1.1237 2006-06-02 18:11:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2756,3 +2756,4 @@ Changelog for GXemul:
 20060601	Minifix to allow ARM immediate msr instruction to not give
 		an error for some valid values.
 		More Alpha updates.
+20060602	Some minor Alpha updates.

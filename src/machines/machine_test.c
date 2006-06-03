@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.11 2006-05-15 18:39:27 debug Exp $
+ *  $Id: machine_test.c,v 1.12 2006-06-03 06:50:52 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -92,13 +92,13 @@ MACHINE_SETUP(testalpha)
 
 MACHINE_DEFAULT_CPU(barealpha)
 {
-	machine->cpu_name = strdup("Alpha");
+	machine->cpu_name = strdup("21264");
 }
 
 
 MACHINE_DEFAULT_CPU(testalpha)
 {
-	machine->cpu_name = strdup("Alpha");
+	machine->cpu_name = strdup("21264");
 }
 
 

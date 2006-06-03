@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.10 2006-04-22 18:28:43 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.11 2006-06-03 06:46:44 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -910,6 +910,7 @@ X(to_be_translated)
 		case 0x02: ic->f = instr(s4addl); break;
 		case 0x09: ic->f = instr(subl); break;
 		case 0x0b: ic->f = instr(s4subl); break;
+		case 0x0f: ic->f = instr(cmpbge); break;
 		case 0x12: ic->f = instr(s8addl); break;
 		case 0x1b: ic->f = instr(s8subl); break;
 		case 0x1d: ic->f = instr(cmpult); break;
@@ -928,6 +929,7 @@ X(to_be_translated)
 		case 0x82: ic->f = instr(s4addl_imm); break;
 		case 0x89: ic->f = instr(subl_imm); break;
 		case 0x8b: ic->f = instr(s4subl_imm); break;
+		case 0x8f: ic->f = instr(cmpbge_imm); break;
 		case 0x92: ic->f = instr(s8addl_imm); break;
 		case 0x9b: ic->f = instr(s8subl_imm); break;
 		case 0x9d: ic->f = instr(cmpult_imm); break;

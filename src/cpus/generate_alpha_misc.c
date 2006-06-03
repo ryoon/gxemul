@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_alpha_misc.c,v 1.1 2005-08-29 14:36:41 debug Exp $
+ *  $Id: generate_alpha_misc.c,v 1.2 2006-06-03 06:46:44 debug Exp $
  */
 
 #include <stdio.h>
@@ -194,6 +194,21 @@ int main(int argc, char *argv[])
 		printf("#undef ALU_N\n");
 	    }
 	printf("#undef ALU_CMOV\n");
+
+	printf("#define ALU_CMPBGE\n");
+	for (imm = 0; imm <= 1; imm ++) {
+		printf("#define ALU_N alpha_instr_cmpbge");
+		if (imm)
+			printf("_imm");
+		printf("\n");
+		if (imm)
+			printf("#define ALU_IMM\n");
+		printf("#include \"cpu_alpha_instr_alu.c\"\n");
+		if (imm)
+			printf("#undef ALU_IMM\n");
+		printf("#undef ALU_N\n");
+	    }
+	printf("#undef ALU_CMPBGE\n");
 
 	for (imm = 0; imm <= 1; imm ++)
 	  for (lo = 0; lo <= 1; lo ++)

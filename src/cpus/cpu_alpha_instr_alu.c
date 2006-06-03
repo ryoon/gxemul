@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_alu.c,v 1.2 2006-01-01 16:08:25 debug Exp $
+ *  $Id: cpu_alpha_instr_alu.c,v 1.3 2006-06-03 06:46:44 debug Exp $
  *
  *  Alpha ALU instructions.  (Included from tmp_alpha_misc.c.)
  *
@@ -45,6 +45,7 @@
  *	ALU_MSK				masks
  *	ALU_CMOV			conditional moves
  *	ALU_CMP				compares
+ *	ALU_CMPBGE			byte compare
  *	none of the above		everything else (add, sub, ...)
  */
 
@@ -192,6 +193,26 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 
 #else	/*  ! CMOV  */
 
+#ifdef ALU_CMPBGE
+
+	uint64_t ra = *((uint64_t *)ic->arg[1]), rc = 0, rb =
+#ifdef ALU_IMM
+		    (uint64_t)ic->arg[2]
+#else
+		    (*((uint64_t *)ic->arg[2]))
+#endif
+		    ;
+	int i;
+	for (i=7; i>=0; i--) {
+		if ((uint8_t)ra >= (uint8_t)rb)
+			rc |= (1 << i);
+		rb >>= 8; ra >>= 8;
+	}
+
+	*((uint64_t *)ic->arg[0]) = rc;
+
+#else	/*  ! CMPBGE  */
+
 #ifdef ALU_CMP
 
 	uint64_t x;
@@ -329,6 +350,7 @@ void ALU_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif	/*  !ALU_CMP  */
 
 	*((uint64_t *)ic->arg[0]) = x;
+#endif	/*  ! CMPBGE  */
 #endif	/*  ! CMOV  */
 #endif	/*  ! MSK  */
 #endif	/*  ! EXT  */

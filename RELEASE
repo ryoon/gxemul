@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.189 2006-06-12 10:21:11 debug Exp $
+$Id: RELEASE,v 1.190 2006-06-12 11:13:33 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -40,7 +40,7 @@ The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 	this is a good idea.
 
     o)	The "test machine" functionality is better defined than before, and
-	some tutorial-like demos have been written.
+	some tutorial-like demos have been added.
 
     o)	I have begun implementing rudimentary support for GDB remote serial
 	protocol connections. This means that you can run e.g. the Data
@@ -49,7 +49,8 @@ The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 	No advanced GDB functionality is working yet, but starting and
 	stopping the emulated machine and single-stepping should work.
 
-There have also been lots of other changes, too many and small to mention here.
+There have also been lots of other changes, too many and too small to
+mention here. Please read the HISTORY files for more details.
 
 Files included in this release are:
 
@@ -64,7 +65,7 @@ Files included in this release are:
   experiments                 Experimental code. (Usually not needed.)
   src                         Source code.
 
-To build the emulator, run the ./configure script, and then run make. This 
+To build the emulator, run the configure script, and then run make. This 
 should work on most Unix-like systems.
 
 Regarding files in the src/include/ directory: only some of these are written

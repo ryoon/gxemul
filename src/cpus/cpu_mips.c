@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.49 2006-05-29 20:15:42 debug Exp $
+ *  $Id: cpu_mips.c,v 1.50 2006-06-12 11:13:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2195,9 +2195,10 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	reg[COP0_STATUS] = (int64_t)(int32_t)reg[COP0_STATUS];
 
 #ifndef OLDMIPS
-	if (cpu->is_32bit)
+	if (cpu->is_32bit) {
+		reg[COP0_EPC] = (int64_t)(int32_t)reg[COP0_EPC];
 		mips32_pc_to_pointers(cpu);
-	else
+	} else
 		mips_pc_to_pointers(cpu);
 #endif
 }

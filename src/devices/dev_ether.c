@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.12 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_ether.c,v 1.13 2006-06-12 11:13:33 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -37,12 +37,13 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
+
+#include "testmachine/dev_ether.h"
 
 
 #define	DEV_ETHER_MAXBUFLEN	16384

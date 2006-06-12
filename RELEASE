@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.190 2006-06-12 11:13:33 debug Exp $
+$Id: RELEASE,v 1.191 2006-06-12 21:53:49 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -34,13 +34,14 @@ The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 	will perform worse than 0.3.8 on those host architectures.
 
 	On all other hosts (including AMD64 running in native 64-bit mode),
-	0.4.0 is likely to be much faster than 0.3.8, when emulating MIPS.
+	0.4.0 is likely to be faster than 0.3.8, when emulating MIPS.
 
 	I think that in the long term, moving towards full portability like
 	this is a good idea.
 
-    o)	The "test machine" functionality is better defined than before, and
-	some tutorial-like demos have been added.
+    o)	The "test machine" functionality is more well-defined than before,
+	and some tutorial-like demos have been added. These could be useful
+	e.g. in operating system construction courses.
 
     o)	I have begun implementing rudimentary support for GDB remote serial
 	protocol connections. This means that you can run e.g. the Data

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.210 2006-05-06 08:42:49 debug Exp $
+ *  $Id: devices.h,v 1.211 2006-06-12 10:21:12 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -200,10 +200,6 @@ void dev_decxmi_init(struct memory *mem, uint64_t baseaddr);
 /*  dev_eagle.c:  */
 struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 	int irqbase, int pciirq);
-
-/*  dev_ether.c:  */
-#define	DEV_ETHER_ADDRESS		0x14000000
-#define	DEV_ETHER_LENGTH		0x8000
 
 /*  dev_fb.c:  */
 #define	DEV_FB_LENGTH		0x3c0000	/*  3c0000 to not colide with */

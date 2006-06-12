@@ -15,9 +15,8 @@ Simple demos:
 
   o)  rectangles	Draws random rectangles to the framebuffer.
 
-  o)  disk		Reads sectors from a disk image, and
-			dumps the contents in hex and ascii to
-			the console.
+  o)  disk		Reads sectors from a disk image, and dumps the
+			contents in hex and ascii to the console.
 
 
 License note

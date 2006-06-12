@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1239 2006-06-12 08:35:23 debug Exp $
+$Id: HISTORY,v 1.1240 2006-06-12 10:21:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2757,5 +2757,7 @@ Changelog for GXemul:
 		an error for some valid values.
 		More Alpha updates.
 20060602	Some minor Alpha updates.
-20060603	Adding the Alpha cmpbge instruction.
-20060612	Minor updates.
+20060603	Adding the Alpha cmpbge instruction. NetBSD/alpha prints its
+		first boot messages :-) on an emulated Alphabook 1.
+20060612	Minor updates; adding a dev_ether.h include file for the
+		testmachine ether device.

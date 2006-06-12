@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.76 2006-05-31 05:33:42 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.77 2006-06-12 21:35:08 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1613,13 +1613,11 @@ X(mfc0)
 }
 X(mtc0)
 {
-	MODE_int_t old_pc;
 	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
 	uint64_t tmp = (int32_t) reg(ic->arg[0]);
 
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
-	old_pc = cpu->pc;
 
 	/*  TODO: cause exception if necessary  */
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
@@ -1811,6 +1809,12 @@ X(tlbw)
 
 /*  TODO: smarter invalidate  */
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+	/*
+	 *  TODO:  Woaaaaaah, super-ugly test hack. Seems to work with
+	 *  Linux and NetBSD, and sometimes with Ultrix (R4400).
+	 */
+	cpu_create_or_reset_tc(cpu);
 }
 
 
@@ -2289,8 +2293,6 @@ X(b_samepage_daddiu)
 
 X(end_of_page)
 {
-	struct mips_instr_call *next_ic;
-
 	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1) <<
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
@@ -2309,8 +2311,7 @@ X(end_of_page)
 	/*  Tricky situation; the delay slot is on the next virtual page:  */
 	/*  fatal("[ end_of_page: delay slot across page boundary! ]\n");  */
 
-	next_ic = cpu->cd.mips.next_ic ++;
-	instr(to_be_translated)(cpu, next_ic);
+	instr(to_be_translated)(cpu, cpu->cd.mips.next_ic);
 
 	/*  The instruction in the delay slot has now executed.  */
 	/*  fatal("[ end_of_page: back from executing the delay slot, %i ]\n",

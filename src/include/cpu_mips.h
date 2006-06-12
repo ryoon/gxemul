@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.37 2006-05-10 20:04:59 debug Exp $
+ *  $Id: cpu_mips.h,v 1.38 2006-06-12 21:35:08 debug Exp $
  */
 
 #include "misc.h"
@@ -363,10 +363,6 @@ struct mips_cpu {
 
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
-
-	/*  This is set to non-zero, if it is possible at all that an
-	    interrupt will occur.  */
-	int		cached_interrupt_is_possible;
 
 	int		show_trace_delay;	/*  0=normal, > 0 = delay until show_trace  */
 	uint64_t	show_trace_addr;

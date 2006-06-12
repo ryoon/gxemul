@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.50 2006-06-12 11:13:33 debug Exp $
+ *  $Id: cpu_mips.c,v 1.51 2006-06-12 21:35:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1892,7 +1892,6 @@ int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 
 	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] |=
 	    ((1 << irq_nr) << STATUS_IM_SHIFT);
-	cpu->cd.mips.cached_interrupt_is_possible = 1;
 
 	return 1;
 }
@@ -1924,8 +1923,6 @@ int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &=
 	    ~((1 << irq_nr) << STATUS_IM_SHIFT);
-	if (!(cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] & STATUS_IM_MASK))
-		cpu->cd.mips.cached_interrupt_is_possible = 0;
 
 	return 1;
 }
@@ -2347,15 +2344,8 @@ int mips_OLD_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  bit in the cause register is set) and corresponding enable bits
 	 *  in the status register are set, then cause an interrupt exception
 	 *  instead of executing the current instruction.
-	 *
-	 *  NOTE: cached_interrupt_is_possible is set to 1 whenever an
-	 *  interrupt bit in the cause register is set to one (in
-	 *  mips_cpu_interrupt()) and set to 0 whenever all interrupt bits are
-	 *  cleared (in mips_cpu_interrupt_ack()), so we don't need to do a
-	 *  full check each time.
 	 */
-	if (cpu->cd.mips.cached_interrupt_is_possible &&
-	    !cpu->cd.mips.nullify_next) {
+	if (!cpu->cd.mips.nullify_next) {
 		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
 			/*  R3000:  */
 			int enabled, mask;

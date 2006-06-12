@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.93 2006-05-21 09:51:36 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.94 2006-06-12 21:35:08 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -202,7 +202,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 		arm_exception(cpu, ARM_EXCEPTION_IRQ);
 #endif
 #ifdef DYNTRANS_MIPS
-	if (cpu->cd.mips.cached_interrupt_is_possible) {
+	{
 		int enabled, mask;
 		int status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
 		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {

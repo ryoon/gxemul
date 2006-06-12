@@ -1,4 +1,4 @@
-$Id: TODO,v 1.276 2006-06-12 11:13:33 debug Exp $
+$Id: TODO,v 1.277 2006-06-12 21:35:07 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -12,6 +12,7 @@ MUST stuff before a 0.4.0 release:
 	x)  MIPS dyntrans working at least as well as the old mode did.
 		(Everything listed in the documentation should work, including
 		Ultrix and Linux!)
+	x)  REMOVE/FIX the cpu_create_or_reset_tc() call in cpu_mips_instr.c!
 	x)  Complete removal of bintrans!
 
 0.4.1 or so:

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1240 2006-06-12 10:21:11 debug Exp $
+$Id: HISTORY,v 1.1241 2006-06-12 21:35:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2760,4 +2760,8 @@ Changelog for GXemul:
 20060603	Adding the Alpha cmpbge instruction. NetBSD/alpha prints its
 		first boot messages :-) on an emulated Alphabook 1.
 20060612	Minor updates; adding a dev_ether.h include file for the
-		testmachine ether device.
+		testmachine ether device. Continuing the hunt for the dyntrans
+		bug which makes Linux and Ultrix on DECstation behave
+		strangely... FINALLY found it! It seems to be related to
+		invalidation of the translation cache, on tlbw{r,i}. There
+		also seems to be some remaining interrupt-related problems.

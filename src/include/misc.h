@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.239 2006-04-22 12:06:36 debug Exp $
+ *  $Id: misc.h,v 1.240 2006-06-12 21:35:08 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -49,7 +49,7 @@
  *  ENABLE_INSTRUCTION_DELAYS should be defined on the cc commandline using
  *  -D if you want it. (This is done by ./configure --delays)
  */
-/*  #define USE_TINY_CACHE  */
+/* #define USE_TINY_CACHE */
 
 
 #ifdef NO_C99_PRINTF_DEFINES

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.25 2006-05-22 04:53:52 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.26 2006-06-12 21:35:08 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1324,10 +1324,6 @@ void coproc_register_write(struct cpu *cpu,
 			    affects IM bits 0 and 1:  */
 			cp->reg[reg_nr] &= ~(0x3 << STATUS_IM_SHIFT);
 			cp->reg[reg_nr] |= (tmp & (0x3 << STATUS_IM_SHIFT));
-			if (!(cp->reg[COP0_CAUSE] & STATUS_IM_MASK))
-		                cpu->cd.mips.cached_interrupt_is_possible = 0;
-			else
-		                cpu->cd.mips.cached_interrupt_is_possible = 1;
 			return;
 		case COP0_FRAMEMASK:
 			/*  TODO: R10000  */

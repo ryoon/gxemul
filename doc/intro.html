@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.84 2006-05-22 04:53:52 debug Exp $
+$Id: intro.html,v 1.85 2006-06-12 08:35:23 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -52,6 +52,7 @@ SUCH DAMAGE.
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#run">How to run the emulator</a>
   <li><a href="#cpus">Which processor architectures does GXemul emulate?</a>
+  <li><a href="#hosts">Which host architectures are supported?</a>
   <li><a href="#translation">What kind of translation does GXemul use?</a>
   <li><a href="#accuracy">Emulation accuracy</a>
   <li><a href="#emulmodes">Which machines does GXemul emulate?</a>
@@ -220,6 +221,19 @@ PowerPC.
 
 
 <p><br>
+<a name="hosts"></a>
+<h3>Which host architectures are supported?</h3>
+
+As of release 0.4.0 of GXemul, the old binary translation subsystem, which 
+was used for emulation of MIPS processors on Alpha and i386 hosts, has 
+been removed. The current dynamic translation subsystem should work on any 
+host.
+
+
+
+
+
+<p><br>
 <a name="translation"></a>
 <h3>What kind of translation does GXemul use?</h3>
 
@@ -375,23 +389,25 @@ are emulated well enough to run at least one "guest OS":
 <ul>
   <li><b><u>ARM</u></b>
   <ul>
-    <li><b>CATS</b>
-    <li><b>IQ80321</b> (evbarm)
+    <li><b>CATS</b> (NetBSD/cats, OpenBSD/cats)
+    <li><b>IQ80321</b> (NetBSD/evbarm)
   </ul>
   <p>
   <li><b><u>MIPS</u></b>
   <ul>
-    <li><b>DECstation 5000/200</b>&nbsp;&nbsp;("3max")
-    <li><b>Acer Pica-61</b>&nbsp;&nbsp;(an ARC machine)
-    <li><b>NEC MobilePro 770, 780, 800, and 880</b>&nbsp;&nbsp;(HPCmips machines)
-    <li><b>Cobalt</b>
-    <li><b>Malta</b> (evbmips)
+    <li><b>DECstation 5000/200</b> (NetBSD/pmax, OpenBSD/pmax, Ultrix,
+	Linux/DECstation, Sprite)
+    <li><b>Acer Pica-61</b> (NetBSD/arc)
+    <li><b>NEC MobilePro 770, 780, 800, and 880</b> (NetBSD/hpcmips)
+    <li><b>Cobalt</b> (NetBSD/cobalt)
+    <li><b>Malta</b> (NetBSD/evbmips)
     <li><b>SGI O2 (aka IP32)</b> <font color="#0000e0">(<super>*</super>)</font>
+	(NetBSD/sgi)
   </ul>
   <p>
   <li><b><u>PowerPC</u></b>
   <ul>
-    <li><b>IBM 6050/6070 (PReP, PowerPC Reference Platform)</b>
+    <li><b>IBM 6050/6070 (PReP, PowerPC Reference Platform)</b> (NetBSD/prep)
   </ul>
 </ul>
 

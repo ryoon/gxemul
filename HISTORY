@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1238 2006-06-03 06:46:44 debug Exp $
+$Id: HISTORY,v 1.1239 2006-06-12 08:35:23 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2758,3 +2758,4 @@ Changelog for GXemul:
 		More Alpha updates.
 20060602	Some minor Alpha updates.
 20060603	Adding the Alpha cmpbge instruction.
+20060612	Minor updates.

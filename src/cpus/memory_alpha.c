@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_alpha.c,v 1.1 2006-06-02 18:11:38 debug Exp $
+ *  $Id: memory_alpha.c,v 1.2 2006-06-12 08:35:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -49,14 +49,14 @@ int alpha_translate_address(struct cpu *cpu, uint64_t vaddr,
 	/*  UGLY hack for now:  */
 	/*  TODO: Real virtual memory support.  */
 
-	if ((vaddr & ~0xffff) == 0xfffffc0010000000 ||
-	    (vaddr & ~0xffff) == 0x0000000010000000)
+	if ((vaddr & ~0xffff) == 0xfffffc0010000000ULL ||
+	    (vaddr & ~0xffff) == 0x0000000010000000ULL)
 		*return_addr = (vaddr & 0x0fffffff) +
 		    (cpu->machine->physical_ram_in_mb-1) * 1048576;
 
 	/*  At 0x20000000, NetBSD stores temp prom data  */
-	if ((vaddr & ~0x1fff) == 0xfffffc0020000000 ||
-	    (vaddr & ~0x1fff) == 0x0000000020000000)
+	if ((vaddr & ~0x1fff) == 0xfffffc0020000000ULL ||
+	    (vaddr & ~0x1fff) == 0x0000000020000000ULL)
 		*return_addr = (vaddr & 0x0fffffff) + 512*1024 +
 		    (cpu->machine->physical_ram_in_mb-1) * 1048576;
 

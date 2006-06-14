@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.79 2006-06-14 08:53:21 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.80 2006-06-14 09:19:22 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1820,8 +1820,8 @@ X(tlbw)
 	cpu->pc |= ic->arg[2];
 	coproc_tlbwri(cpu, ic->arg[0]);
 
-/*  TODO: smarter invalidate  */
-cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	/*  TODO: smarter invalidate  */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 	/*
 	 *  TODO:  Woaaaaaah, super-ugly test hack. Seems to work with

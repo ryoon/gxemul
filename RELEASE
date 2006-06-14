@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.191 2006-06-12 21:53:49 debug Exp $
+$Id: RELEASE,v 1.192 2006-06-14 09:19:22 debug Exp $
 
 Working on what will become 0.4.0.
 
@@ -23,7 +23,8 @@ The documentation lists the machines and guest operating systems that can
 be regarded as "working" in GXemul. The best supported guest operating 
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
-The major user-noticable changes between release 0.3.8 and 0.4.0 include:
+
+The most important change between release 0.3.8 and 0.4.0 is:
 
     o)	The emulation of MIPS processors has been completely rewritten;
 	it now uses the same portable dynamic translation system as the
@@ -39,6 +40,8 @@ The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 	I think that in the long term, moving towards full portability like
 	this is a good idea.
 
+There have also been many other changes, including, but not limited to:
+
     o)	The "test machine" functionality is more well-defined than before,
 	and some tutorial-like demos have been added. These could be useful
 	e.g. in operating system construction courses.
@@ -50,8 +53,8 @@ The major user-noticable changes between release 0.3.8 and 0.4.0 include:
 	No advanced GDB functionality is working yet, but starting and
 	stopping the emulated machine and single-stepping should work.
 
-There have also been lots of other changes, too many and too small to
-mention here. Please read the HISTORY files for more details.
+Please read the HISTORY files for more details.
+
 
 Files included in this release are:
 
@@ -68,6 +71,7 @@ Files included in this release are:
 
 To build the emulator, run the configure script, and then run make. This 
 should work on most Unix-like systems.
+
 
 Regarding files in the src/include/ directory: only some of these are written
 by me, the rest are from other sources (such as NetBSD). The license text says
@@ -161,6 +165,7 @@ Also, src/include/alpha_rpb.h requires the following:
 
 See individual files for license details, if you plan to redistribute GXemul
 or reuse code.
+
 
 Thanks to (in no specific order) Joachim Buss, Olivier Houchard, Juli Mallett,
 Juan Romero Pardines, Alec Voropay, Göran Weinholt, Alexander Yurchenko, and

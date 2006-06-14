@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.78 2006-06-14 08:24:52 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.79 2006-06-14 08:53:21 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1615,16 +1615,29 @@ X(mtc0)
 {
 	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
 	uint64_t tmp = (int32_t) reg(ic->arg[0]);
-
+#if 0
+	uint32_t oldstatus = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
+#endif
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 
 	/*  TODO: cause exception if necessary  */
-	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
-	    &tmp, 0, select);
+	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd, &tmp, 0, select);
 
-/*  TODO: fix/remove these!  */
-cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	/*  TODO: fix/remove these, when things have stabilized!  */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+#if 0
+	/*  Interrupts enabled, and any interrupt pending?  */
+	if (rd == COP0_STATUS && !(oldstatus & STATUS_IE)) {
+		uint32_t status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
+		uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
+		/*  NOTE: STATUS_IE happens to match the enable bit also
+		    on R2000/R3000, so this is ok.  */
+		if (status & STATUS_IE && (status & cause & STATUS_IM_MASK))
+			cpu->running_translated = 0;
+	}
+#endif
 }
 X(dmfc0)
 {

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.278 2006-06-12 21:53:50 debug Exp $
+$Id: TODO,v 1.279 2006-06-14 08:24:52 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -13,7 +13,6 @@ MUST stuff before a 0.4.0 release:
 		(Everything listed in the documentation should work, including
 		Ultrix and Linux!)
 	x)  REMOVE/FIX the cpu_create_or_reset_tc() call in cpu_mips_instr.c!
-	x)  Add sdc1 and similar instructions!
 	x)  Fix the R4000 timing problems with NetBSD/pmax?
 	x)  Complete removal of bintrans!
 

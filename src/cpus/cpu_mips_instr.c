@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.77 2006-06-12 21:35:08 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.78 2006-06-14 08:24:52 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2172,6 +2172,9 @@ X(swc1)
 X(ldc1)
 {
 	const int cpnr = 1;
+	int use_fp_pairs =
+	    !(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_FR);
+	uint64_t fpr, *backup_ptr;
 
 	/*  Synch. PC and call the generic load/store function:  */
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
@@ -2187,6 +2190,9 @@ X(ldc1)
 		return;
 	}
 
+	backup_ptr = (uint64_t *) ic->arg[0];
+	ic->arg[0] = (size_t) &fpr;
+
 #ifdef MODE32
 	mips32_loadstore
 #else
@@ -2194,10 +2200,22 @@ X(ldc1)
 #endif
 	    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16) + 3 * 2 + 1]
 	    (cpu, ic);
+
+	if (use_fp_pairs) {
+		backup_ptr[0] = (int64_t)(int32_t) fpr;
+		backup_ptr[1] = (int64_t)(int32_t) (fpr >> 32);
+	} else {
+		*backup_ptr = fpr;
+	}
+
+	ic->arg[0] = (size_t) backup_ptr;
 }
 X(sdc1)
 {
 	const int cpnr = 1;
+	int use_fp_pairs =
+	    !(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_FR);
+	uint64_t fpr, *backup_ptr;
 
 	/*  Synch. PC and call the generic load/store function:  */
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
@@ -2211,6 +2229,17 @@ X(sdc1)
 	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
 		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		return;
+	}
+
+	backup_ptr = (uint64_t *) ic->arg[0];
+	ic->arg[0] = (size_t) &fpr;
+
+	if (use_fp_pairs) {
+		uint32_t lo = backup_ptr[0];
+		uint32_t hi = backup_ptr[1];
+		fpr = (((uint64_t)hi) << 32) | lo;
+	} else {
+		fpr = *backup_ptr;
 	}
 
 #ifdef MODE32
@@ -2220,6 +2249,8 @@ X(sdc1)
 #endif
 	    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16) + 8 + 3 * 2]
 	    (cpu, ic);
+
+	ic->arg[0] = (size_t) backup_ptr;
 }
 
 
@@ -3346,12 +3377,6 @@ X(to_be_translated)
 			break;
 		}
 
-		if (main_opcode == HI6_LDC1 || main_opcode == HI6_SDC1) {
-			fatal("TODO: 64-bit two-reg floating point "
-			    "load/store etc.\n");
-			goto bad;
-		}
-
 		ic->arg[0] = (size_t)&cpu->cd.mips.coproc[1]->reg[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;
@@ -3445,7 +3470,8 @@ X(to_be_translated)
 		static int has_warned = 0;
 		if (!has_warned)
 			fatal("[ WARNING/NOTE: attempt to execute a 64-bit"
-			    " instruction on an emulated 32-bit processor ]\n");
+			    " instruction on an emulated 32-bit processor; "
+			    "pc=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc);
 		has_warned = 1;
 		ic->f = instr(reserved);
 	}

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1241 2006-06-12 21:35:07 debug Exp $
+$Id: HISTORY,v 1.1242 2006-06-14 08:24:51 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2765,3 +2765,6 @@ Changelog for GXemul:
 		strangely... FINALLY found it! It seems to be related to
 		invalidation of the translation cache, on tlbw{r,i}. There
 		also seems to be some remaining interrupt-related problems.
+20060614	Correcting the implementation of ldc1/sdc1 for MIPS dyntrans
+		(so that it uses 16 32-bit registers if the FR bit in the
+		status register is not set).

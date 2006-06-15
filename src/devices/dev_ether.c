@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.13 2006-06-12 11:13:33 debug Exp $
+ *  $Id: dev_ether.c,v 1.14 2006-06-15 17:29:38 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -46,14 +46,10 @@
 #include "testmachine/dev_ether.h"
 
 
-#define	DEV_ETHER_MAXBUFLEN	16384
 #define	DEV_ETHER_TICK_SHIFT	14
 
-#define	STATUS_RECEIVED		0x01
-#define	STATUS_MORE_AVAIL	0x02
-
 struct ether_data {
-	unsigned char	buf[DEV_ETHER_MAXBUFLEN];
+	unsigned char	buf[DEV_ETHER_BUFFER_SIZE];
 	unsigned char	mac[6];
 
 	int		status;
@@ -71,11 +67,11 @@ void dev_ether_tick(struct cpu *cpu, void *extra)
 	struct ether_data *d = (struct ether_data *) extra;
 	int r = 0;
 
-	d->status &= ~STATUS_MORE_AVAIL;
+	d->status &= ~DEV_ETHER_STATUS_MORE_PACKETS_AVAILABLE;
 	if (cpu->machine->emul->net != NULL)
 		r = net_ethernet_rx_avail(cpu->machine->emul->net, d);
 	if (r)
-		d->status |= STATUS_MORE_AVAIL;
+		d->status |= DEV_ETHER_STATUS_MORE_PACKETS_AVAILABLE;
 
 	if (d->status)
 		cpu_interrupt(cpu, d->irq_nr);
@@ -99,9 +95,6 @@ DEVICE_ACCESS(ether_buf)
 }
 
 
-/*
- *  dev_ether_access():
- */
 DEVICE_ACCESS(ether)
 {
 	struct ether_data *d = (struct ether_data *) extra;
@@ -112,8 +105,12 @@ DEVICE_ACCESS(ether)
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
-	switch (relative_addr) {
-	case 0x0000:
+	/*  Note: relative_addr + DEV_ETHER_BUFFER_SIZE to get the same
+	    offsets as in the header file:  */
+
+	switch (relative_addr + DEV_ETHER_BUFFER_SIZE) {
+
+	case DEV_ETHER_STATUS:
 		if (writeflag == MEM_READ) {
 			odata = d->status;
 			d->status = 0;
@@ -121,7 +118,8 @@ DEVICE_ACCESS(ether)
 		} else
 			fatal("[ ether: WARNING: write to status ]\n");
 		break;
-	case 0x0010:
+
+	case DEV_ETHER_PACKETLENGTH:
 		if (writeflag == MEM_READ)
 			odata = d->packet_len;
 		else {
@@ -130,56 +128,62 @@ DEVICE_ACCESS(ether)
 				    " short (%i bytes) ]\n", (int)idata);
 				idata = -1;
 			}
-			if (idata > DEV_ETHER_MAXBUFLEN) {
+			if (idata > DEV_ETHER_BUFFER_SIZE) {
 				fatal("[ ether: ERROR: packet len too"
 				    " large (%i bytes) ]\n", (int)idata);
-				idata = DEV_ETHER_MAXBUFLEN;
+				idata = DEV_ETHER_BUFFER_SIZE;
 			}
 			d->packet_len = idata;
 		}
 		break;
-	case 0x0020:
-		if (writeflag == MEM_READ)
+
+	case DEV_ETHER_COMMAND:
+		if (writeflag == MEM_READ) {
 			fatal("[ ether: WARNING: read from command ]\n");
-		else {
-			switch (idata) {
-			case 0x00:		/*  Receive:  */
-				if (cpu->machine->emul->net == NULL)
-					fatal("[ ether: RECEIVE but no "
-					    "net? ]\n");
-				else {
-					d->status &= ~STATUS_RECEIVED;
-					net_ethernet_rx(cpu->machine->emul->net,
-					    d, &incoming_ptr, &incoming_len);
-					if (incoming_ptr != NULL) {
-						d->status |= STATUS_RECEIVED;
-						if (incoming_len >
-						    DEV_ETHER_MAXBUFLEN)
-							incoming_len =
-							    DEV_ETHER_MAXBUFLEN;
-						memcpy(d->buf, incoming_ptr,
-						    incoming_len);
-						free(incoming_ptr);
-						d->packet_len = incoming_len;
-					}
+			break;
+		}
+
+		/*  Write:  */
+		switch (idata) {
+
+		case DEV_ETHER_COMMAND_RX:	/*  Receive:  */
+			if (cpu->machine->emul->net == NULL)
+				fatal("[ ether: RECEIVE but no net? ]\n");
+			else {
+				d->status &= ~DEV_ETHER_STATUS_PACKET_RECEIVED;
+				net_ethernet_rx(cpu->machine->emul->net,
+				    d, &incoming_ptr, &incoming_len);
+				if (incoming_ptr != NULL) {
+					d->status |=
+					    DEV_ETHER_STATUS_PACKET_RECEIVED;
+					if (incoming_len>DEV_ETHER_BUFFER_SIZE)
+						incoming_len =
+						    DEV_ETHER_BUFFER_SIZE;
+					memcpy(d->buf, incoming_ptr,
+					    incoming_len);
+					free(incoming_ptr);
+					d->packet_len = incoming_len;
 				}
-				dev_ether_tick(cpu, d);
-				break;
-			case 0x01:		/*  Send  */
-				if (cpu->machine->emul->net == NULL)
-					fatal("[ ether: SEND but no net? ]\n");
-				else
-					net_ethernet_tx(cpu->machine->emul->net,
-					    d, d->buf, d->packet_len);
-				d->status &= ~STATUS_RECEIVED;
-				dev_ether_tick(cpu, d);
-				break;
-			default:fatal("[ ether: UNIMPLEMENTED command 0x"
-				    "%02x ]\n", idata);
-				cpu->running = 0;
 			}
+			dev_ether_tick(cpu, d);
+			break;
+
+		case DEV_ETHER_COMMAND_TX:	/*  Send  */
+			if (cpu->machine->emul->net == NULL)
+				fatal("[ ether: SEND but no net? ]\n");
+			else
+				net_ethernet_tx(cpu->machine->emul->net,
+				    d, d->buf, d->packet_len);
+			d->status &= ~DEV_ETHER_STATUS_PACKET_RECEIVED;
+			dev_ether_tick(cpu, d);
+			break;
+
+		default:fatal("[ ether: UNIMPLEMENTED command 0x"
+			    "%02x ]\n", idata);
+			cpu->running = 0;
 		}
 		break;
+
 	default:if (writeflag == MEM_WRITE) {
 			fatal("[ ether: unimplemented write to "
 			    "offset 0x%x: data=0x%x ]\n", (int)
@@ -222,13 +226,13 @@ DEVINIT(ether)
 	snprintf(n1, nlen, "%s [%s]", devinit->name, tmp);
 	snprintf(n2, nlen, "%s [%s, control]", devinit->name, tmp);
 
-	memory_device_register(devinit->machine->memory, n1,
-	    devinit->addr, DEV_ETHER_MAXBUFLEN, dev_ether_buf_access, (void *)d,
+	memory_device_register(devinit->machine->memory, n1, devinit->addr,
+	    DEV_ETHER_BUFFER_SIZE, dev_ether_buf_access, (void *)d,
 	    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK |
 	    DM_READS_HAVE_NO_SIDE_EFFECTS, d->buf);
 	memory_device_register(devinit->machine->memory, n2,
-	    devinit->addr + DEV_ETHER_MAXBUFLEN,
-	    DEV_ETHER_LENGTH-DEV_ETHER_MAXBUFLEN, dev_ether_access, (void *)d,
+	    devinit->addr + DEV_ETHER_BUFFER_SIZE,
+	    DEV_ETHER_LENGTH-DEV_ETHER_BUFFER_SIZE, dev_ether_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
 	net_add_nic(devinit->machine->emul->net, d, d->mac);

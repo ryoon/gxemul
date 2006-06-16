@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.220 2006-06-02 18:11:38 debug Exp $
+#  $Id: configure,v 1.221 2006-06-16 18:31:24 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -56,7 +56,7 @@
 #  which can be incorporated into the program as a runtime command line option
 #  should be, instead of requiring a recompile.
 #
-#  --enable-delays and --enable-caches should probably go away (TODO).
+#  --enable-caches should go away (TODO).
 #
 ###############################################################################
 
@@ -79,7 +79,6 @@ else
 	ENABLEIA64=YES
 	ENABLEM68K=YES
 	ENABLEMIPS=YES
-	OLDMIPS=NO
 	ENABLEPPC=YES
 	ENABLESH=YES
 	ENABLESPARC=YES
@@ -97,31 +96,12 @@ if [ z"$*" != z ]; then
 			NOX11=YES
 		else if [ z$a = z--tracenull ]; then
 			TRACENULL=YES
-		else if [ z$a = z--disable-bintrans ]; then
-			NOBINTRANS=YES
-		else if [ z$a = z--enable-bintrans ]; then
-			NOBINTRANS=NO
-		else if [ z$a = z--disable-delays ]; then
-			DELAYS=NO
-		else if [ z$a = z--enable-delays ]; then
-			DELAYS=YES
 		else if [ z$a = z--disable-caches ]; then
 			CACHES=NO
 		else if [ z$a = z--enable-caches ]; then
 			CACHES=YES
-		else if [ z$a = z--disable-oldmips ]; then
-			OLDMIPS=NO
-		else if [ z$a = z--enable-oldmips ]; then
-			OLDMIPS=YES
 		else if [ z$a = z--help ]; then
 			printf "usage: $0 [options]\n\n"
-
-			if [ z"$UNSTABLE" = zYES ]; then
-				echo "  --disable-bintrans  configure without" \
-				    "the old binary translation subsystem,"
-				echo "                      even if the host" \
-				    "supports it"
-			fi
 
 			echo "  --disable-x         don't include X11 support,"\
 			    "even if the host supports it"
@@ -132,11 +112,6 @@ if [ z"$*" != z ]; then
 
 				printf "  --enable-caches    enable cache "
 				printf "emulation (BUGGY, TO BE REMOVED)\n"
-				echo "  --enable-delays    enable instruction" \
-				    "latency/delay emulation (TO BE REMOVED)"
-
-				printf "  --enable-oldmips   use OLD MIPS "
-				echo "bintrans code"
 			fi
 			echo
 			exit
@@ -145,7 +120,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi
 	done
 fi
 
@@ -228,11 +203,6 @@ if [ z$ENABLEM68K = zYES ]; then
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
-	if [ z$OLDMIPS = zYES ]; then
-		echo 'Disabling the new MIPS dyntrans code.'
-		echo
-		printf "#define OLDMIPS\n" >> config.h
-	fi
 	CPU_ARCHS="$CPU_ARCHS cpu_mips_instr_unaligned.o"
 	CPU_TOOLS="$CPU_TOOLS generate_mips_loadstore"
 fi
@@ -255,24 +225,10 @@ if [ z$ENABLEX86 = zYES ]; then
 fi
 
 
-#  Instruction delay/latency emulation:
-if [ z$DELAYS = zYES ]; then
-	echo 'Enabling Instruction delay/latency emulation.'
-	printf "#define ENABLE_INSTRUCTION_DELAYS\n" >> config.h
-fi
-
-
 #  Cache emulation:
 if [ z$CACHES = zYES ]; then
 	echo 'Enabling Cache emulation. (EXPERIMENTAL and BUGGY)'
 	printf "#define ENABLE_CACHE_EMULATION\n" >> config.h
-
-	if [ z$DELAYS != zYES ]; then
-		printf 'WARNING: Cache emulation without instruction '
-		printf 'delay/latency emulation\n'
-		printf '         (--delays) will not produce correct '
-		printf 'cache miss penalties and such.\n'
-	fi
 
 	printf "\nNOTE: Cache emulation enabled, but right now it triggers "
 	printf "weird bugs in the\n      emulator. You have been warned.\n\n"
@@ -1090,72 +1046,6 @@ else
 fi
 rm -f _testuint.c _testuint
 
-
-###############################################################################
-#
-#  OLD binary translation (BINTRANS):
-#
-###############################################################################
-
-if [ z$OLDMIPS = zYES ]; then
-	printf "checking for bintrans backend... "
-
-	BINTRANS=NO
-
-	if [ z$ENABLEMIPS = zNO ]; then
-		printf "NO!\nTEMPORARY HACK/PROBLEM: Disabling bintrans for"
-		printf "now,\nuntil things have stabilized.\n"
-		NOBINTRANS=YES
-	fi
-
-	if [ z$NOBINTRANS = zYES ]; then
-		printf "disabled\n"
-	else
-		#  Alpha:
-		if [ z"`uname -m`" = zalpha ]; then
-			printf "#define ALPHA\n" >> config.h
-			printf "#define BINTRANS\n" >> config.h
-			printf "Alpha\n"
-			BINTRANS=YES
-		fi
-
-		#  x86:
-		if `uname -m|grep -v 64|grep -q 86`; then
-			printf "#define I386\n" >> config.h
-			printf "#define BINTRANS\n" >> config.h
-			printf "i386\n"
-			BINTRANS=YES
-		fi
-
-	# MIPS not yet
-	#	#  MIPS:
-	#	if [ z"`uname -m`" = zmips ]; then
-	#		printf "#define MIPS\n" >> config.h
-	#		printf "#define BINTRANS\n" >> config.h
-	#		printf "MIPS\n"
-	#		BINTRANS=YES
-	#	fi
-
-	#	#  UltraSPARC:
-	#	if [ z"`uname -m`" = zsun4u ]; then
-	#		printf "#define SPARCV9\n" >> config.h
-	#		printf "#define BINTRANS\n" >> config.h
-	#		printf "SPARC V9\n"
-	#		BINTRANS=YES
-	#	else
-	#		if [ z"`uname -m`" = zsparc64 ]; then
-	#			printf "#define SPARCV9\n" >> config.h
-	#			printf "#define BINTRANS\n" >> config.h
-	#			printf "SPARC V9\n"
-	#			BINTRANS=YES
-	#		fi
-	#	fi
-
-		if [ z$BINTRANS = zNO ]; then
-			printf "not supported yet on this arch\n"
-		fi
-	fi
-fi
 
 ###############################################################################
 

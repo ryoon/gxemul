@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.57 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.58 2006-06-16 18:31:26 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -752,7 +752,7 @@ int ppc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *  cpu->pc for relative addresses.
  */
 int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
 	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb, bt, ba, bb, fpreg;

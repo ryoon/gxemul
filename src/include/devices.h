@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.211 2006-06-12 10:21:12 debug Exp $
+ *  $Id: devices.h,v 1.212 2006-06-16 18:31:26 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -370,7 +370,7 @@ void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_pal
 /*  dev_kn02.c:  */
 struct kn02_csr {
 	uint8_t		csr[sizeof(uint32_t)];
-	uint8_t		filler[4096 - sizeof(uint32_t)];  /*  for bintrans mapping  */
+	uint8_t		filler[4096 - sizeof(uint32_t)];  /*  for dyntrans mapping  */
 };
 int dev_kn02_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem,

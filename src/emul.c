@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.252 2006-04-25 04:11:32 debug Exp $
+ *  $Id: emul.c,v 1.253 2006-06-16 18:31:24 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -39,7 +39,6 @@
 #include <unistd.h>
 
 #include "arcbios.h"
-#include "bintrans.h"
 #include "cpu.h"
 #include "emul.h"
 #include "console.h"
@@ -940,9 +939,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	if (m->arch == ARCH_ALPHA)
 		m->arch_pagesize = 8192;
 
-	if (m->arch != ARCH_MIPS)
-		m->bintrans_enable = 0;
-
 	machine_memsize_fix(m);
 
 	/*
@@ -990,10 +986,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	}
 	memset(m->cpus, 0, sizeof(struct cpu *) * m->ncpus);
 
-	/*  Initialize dynamic binary translation, if available:  */
-	if (m->bintrans_enable)
-		bintrans_init(m, m->memory);
-
 	debug("cpu0");
 	if (m->ncpus > 1)
 		debug(" .. cpu%i", m->ncpus - 1);
@@ -1005,8 +997,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			    "Aborting.");
 			exit(1);
 		}
-		if (m->bintrans_enable)
-			bintrans_init_cpu(m->cpus[i]);
 	}
 	debug("\n");
 
@@ -1017,8 +1007,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		m->cpus[m->ncpus] = cpu_new(m->memory, m,
 		    0  /*  use 0 here to show info with debug()  */,
 		    "Allegrex" /*  TODO  */);
-		if (m->bintrans_enable)
-			bintrans_init_cpu(m->cpus[m->ncpus]);
 		debug("\n");
 		m->ncpus ++;
 	}

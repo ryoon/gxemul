@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.14 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_sh.c,v 1.15 2006-06-16 18:31:26 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -248,7 +248,7 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *  lowest 4 or 8 bits then select sub-opcode.
  */
 int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	uint64_t addr;
 	uint16_t iword;
@@ -571,7 +571,7 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
  *  cpu->pc for relative addresses.
  */
 int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	uint64_t offset;
 	uint32_t iword;
@@ -595,7 +595,7 @@ int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	if (cpu->cd.sh.compact)
 		return sh_cpu_disassemble_instr_compact(cpu, instr,
-		    running, dumpaddr, bintrans);
+		    running, dumpaddr);
 
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
 		iword = (instr[0] << 24) + (instr[1] << 16) + (instr[2] << 8)

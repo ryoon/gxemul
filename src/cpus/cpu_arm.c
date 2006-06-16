@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.58 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_arm.c,v 1.59 2006-06-16 18:31:25 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -857,7 +857,7 @@ int arm_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *  cpu->pc for relative addresses.
  */                     
 int arm_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
-        int running, uint64_t dumpaddr, int bintrans)
+        int running, uint64_t dumpaddr)
 {
 	uint32_t iw, tmp;
 	int main_opcode, secondary_opcode, s_bit, r16, r12, r8;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.15 2006-06-02 18:11:38 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.16 2006-06-16 18:31:25 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -346,7 +346,7 @@ static void alpha_print_imm16_disp(int imm, int rb)
  *  cpu->pc for relative addresses.
  */                     
 int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
-        int running, uint64_t dumpaddr, int bintrans)
+        int running, uint64_t dumpaddr)
 {
 	uint32_t iw;
 	uint64_t offset, tmp;

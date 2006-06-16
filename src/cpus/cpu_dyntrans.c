@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.94 2006-06-12 21:35:08 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.95 2006-06-16 18:31:25 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -270,7 +270,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 				    "the instruction\n");
 			} else {
 				cpu_disassemble_instr(cpu->machine, cpu,
-				    instr, 1, 0, 0);
+				    instr, 1, 0);
 #ifdef DYNTRANS_DELAYSLOT
 				/*  Show the instruction in the delay slot,
 				    if any:  */
@@ -287,7 +287,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 					cpu->delay_slot = DELAYED;
 					cpu->pc += sizeof(instr);
 					cpu_disassemble_instr(cpu->machine,
-					    cpu, instr, 1, 0, 0);
+					    cpu, instr, 1, 0);
 					cpu->delay_slot = saved_delayslot;
 					cpu->pc -= sizeof(instr);
 				}
@@ -1494,7 +1494,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 				if (!cpu->machine->instruction_trace) {
 					int old_quiet_mode = quiet_mode;
 					quiet_mode = 0;
-					DISASSEMBLE(cpu, ib, 1, 0, 0);
+					DISASSEMBLE(cpu, ib, 1, 0);
 					quiet_mode = old_quiet_mode;
 				}
 				fatal("BREAKPOINT: pc = 0x%"PRIx64"\n(The "
@@ -1630,7 +1630,7 @@ bad:	/*
 #endif
 	else {
 		fatal(":\n");
-		DISASSEMBLE(cpu, ib, 1, 0, 0);
+		DISASSEMBLE(cpu, ib, 1, 0);
 	}
 
 	cpu->running = 0;

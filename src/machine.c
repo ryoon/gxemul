@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.670 2006-05-04 17:11:46 debug Exp $
+ *  $Id: machine.c,v 1.671 2006-06-16 18:31:24 debug Exp $
  */
 
 #include <stdio.h>
@@ -90,10 +90,6 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->serial_nr = 1;
 	m->machine_type = MACHINE_NONE;
 	m->machine_subtype = MACHINE_NONE;
-#if defined(BINTRANS) && defined(OLDMIPS)
-	m->bintrans_enable = 1;
-	m->old_bintrans_enable = 1;
-#endif
 	m->arch_pagesize = 4096;	/*  Should be overriden in
 					    emul.c for other pagesizes.  */
 	m->dyntrans_alignment_check = 1;
@@ -108,7 +104,6 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->n_gfx_cards = 1;
 	m->dbe_on_nonexistant_memaccess = 1;
 	m->show_symbolic_register_names = 1;
-	m->bintrans_size = DEFAULT_BINTRANS_SIZE_IN_MB * 1048576;
 	symbol_init(&m->symbol_context);
 
 	return m;
@@ -336,15 +331,6 @@ void machine_dumpinfo(struct machine *m)
 	if (m->dbe_on_nonexistant_memaccess)
 		debug(", dbe_on_nonexistant_memaccess");
 	debug("\n");
-
-	if (m->arch == ARCH_MIPS) {
-		if (m->bintrans_enable)
-			debug("bintrans enabled (%i MB cache)\n",
-			    (int) (m->bintrans_size / 1048576));
-		else
-			debug("bintrans disabled, other speedtricks %s\n",
-			    m->speed_tricks? "enabled" : "disabled");
-	}
 
 	debug("clock: ");
 	if (m->automatic_clock_adjustment)

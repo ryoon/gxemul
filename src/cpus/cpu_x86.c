@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.14 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_x86.c,v 1.15 2006-06-16 18:31:26 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -1531,7 +1531,7 @@ static int modrm(struct cpu *cpu, int writeflag, int mode, int mode67,
  *  The rest of running tells us the default (code) operand size.
  */
 int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	int op, rep = 0, lock = 0, n_prefix_bytes = 0;
 	uint64_t ilen = 0, offset;

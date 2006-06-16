@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.74 2006-04-23 10:47:57 debug Exp $
+ *  $Id: cpu.h,v 1.75 2006-06-16 18:31:26 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -221,7 +221,7 @@ struct cpu_family {
 				    uint64_t *valuep, int *match_register);
 	int			(*disassemble_instr)(struct cpu *cpu,
 				    unsigned char *instr, int running,
-				    uint64_t dumpaddr, int bintrans);
+				    uint64_t dumpaddr);
 	void			(*register_dump)(struct cpu *cpu,
 				    int gprs, int coprocs);
 	int			(*run)(struct emul *emul,
@@ -343,7 +343,7 @@ void cpu_register_match(struct machine *m, char *name,
 void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs);
 int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
-	unsigned char *instr, int running, uint64_t addr, int bintrans);
+	unsigned char *instr, int running, uint64_t addr);
 char *cpu_gdb_stub(struct cpu *cpu, char *cmd);
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);

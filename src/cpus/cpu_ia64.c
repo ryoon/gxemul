@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.10 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.11 2006-06-16 18:31:25 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -208,7 +208,7 @@ int ia64_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *  cpu->pc for relative addresses.
  */                     
 int ia64_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
-        int running, uint64_t dumpaddr, int bintrans)
+        int running, uint64_t dumpaddr)
 {
 	uint64_t offset;
 	char *symbol;

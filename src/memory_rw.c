@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.84 2006-06-02 18:11:38 debug Exp $
+ *  $Id: memory_rw.c,v 1.85 2006-06-16 18:31:25 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -53,10 +53,6 @@
  *  If the address indicates access to a memory mapped device, that device'
  *  read/write access function is called.
  *
- *  If instruction latency/delay support is enabled, then
- *  cpu->instruction_delay is increased by the number of instruction to
- *  delay execution.
- *
  *  This function should not be called with cpu == NULL.
  *
  *  Returns one of the following:
@@ -80,9 +76,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	uint64_t paddr;
 	int cache, no_exceptions, offset;
 	unsigned char *memblock;
-#ifdef MEM_MIPS
-	int bintrans_cached = cpu->machine->bintrans_enable;
-#endif
 	int dyntrans_device_danger = 0;
 
 	no_exceptions = misc_flags & NO_EXCEPTIONS;
@@ -150,15 +143,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 #endif	/*  X86  */
 
-#ifdef MEM_MIPS
-	if (bintrans_cached) {
-		if (cache == CACHE_INSTRUCTION) {
-			cpu->cd.mips.pc_bintrans_host_4kpage = NULL;
-			cpu->cd.mips.pc_bintrans_paddr_valid = 0;
-		}
-	}
-#endif	/*  MEM_MIPS  */
-
 #ifdef MEM_USERLAND
 #ifdef MEM_ALPHA
 	paddr = vaddr;
@@ -223,42 +207,12 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 #endif
 
-#ifdef MEM_MIPS
-	/*
-	 *  If correct cache emulation is enabled, and we need to simluate
-	 *  cache misses even from the instruction cache, we can't run directly
-	 *  from a host page. :-/
-	 */
-#if defined(ENABLE_CACHE_EMULATION) && defined(ENABLE_INSTRUCTION_DELAYS)
-#else
-	if (cache == CACHE_INSTRUCTION) {
-		cpu->cd.mips.pc_last_virtual_page = vaddr & ~0xfff;
-		cpu->cd.mips.pc_last_physical_page = paddr & ~0xfff;
-		cpu->cd.mips.pc_last_host_4k_page = NULL;
-
-		/*  _last_host_4k_page will be set to 1 further down,
-		    if the page is actually in host ram  */
-	}
-#endif
-#endif	/*  MEM_MIPS  */
 #endif	/*  ifndef MEM_USERLAND  */
 
 
 #if defined(MEM_MIPS) || defined(MEM_USERLAND)
 have_paddr:
 #endif
-
-
-#ifdef MEM_MIPS
-	/*  TODO: How about bintrans vs cache emulation?  */
-	if (bintrans_cached) {
-		if (cache == CACHE_INSTRUCTION) {
-			cpu->cd.mips.pc_bintrans_paddr_valid = 1;
-			cpu->cd.mips.pc_bintrans_paddr = paddr;
-		}
-	}
-#endif	/*  MEM_MIPS  */
-
 
 
 #ifndef MEM_USERLAND
@@ -372,16 +326,8 @@ have_paddr:
 					    data, len, writeflag,
 					    mem->dev_extra[i]);
 
-#ifdef ENABLE_INSTRUCTION_DELAYS
 				if (res == 0)
 					res = -1;
-
-#ifdef MEM_MIPS
-				cpu->cd.mips.instruction_delay +=
-				    ( (abs(res) - 1) *
-				     cpu->cd.mips.cpu_type.instrs_per_cycle );
-#endif
-#endif
 
 #ifndef MEM_X86
 				/*
@@ -606,17 +552,6 @@ have_paddr:
 			*(uint8_t *)data = *(uint8_t *)(memblock + offset);
 		else
 			memcpy(data, memblock + offset, len);
-
-#ifdef MEM_MIPS
-		if (cache == CACHE_INSTRUCTION) {
-			cpu->cd.mips.pc_last_host_4k_page = memblock
-			    + (offset & ~offset_mask);
-			if (bintrans_cached) {
-				cpu->cd.mips.pc_bintrans_host_4kpage =
-				    cpu->cd.mips.pc_last_host_4k_page;
-			}
-		}
-#endif	/*  MIPS  */
 	}
 
 

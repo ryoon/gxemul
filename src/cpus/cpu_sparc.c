@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.29 2006-05-18 05:10:43 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.30 2006-06-16 18:31:26 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -483,7 +483,7 @@ int sparc_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
  *  cpu->pc for relative addresses.
  */
 int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	uint64_t offset, tmp;
 	uint32_t iword;

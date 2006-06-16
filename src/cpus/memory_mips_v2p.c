@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.4 2006-03-31 23:53:41 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.5 2006-06-16 18:31:26 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -48,12 +48,10 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 {
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
-	int instr = flags & FLAG_INSTR;
 	int ksu, use_tlb, status, i;
 	uint64_t vaddr_vpn2=0, vaddr_asid=0;
 	int exccode, tlb_refill;
 	struct mips_coproc *cp0;
-	int bintrans_cached = cpu->machine->bintrans_enable;
 
 #ifdef V2P_MMU3K
 	const int x_64 = 0;
@@ -84,51 +82,6 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 #endif
 #endif	/*  !V2P_MMU3K  */
 
-
-#ifdef USE_TINY_CACHE
-	/*
-	 *  Check the tiny translation cache first:
-	 *
-	 *  Only userland addresses are checked, because other addresses
-	 *  are probably better of being statically translated, or through
-	 *  the TLB.  (Note: When running with 64-bit addresses, this
-	 *  will still produce the correct result. At worst, we check the
-	 *  cache in vain, but the result should still be correct.)
-	 */
-	if (!bintrans_cached &&
-	    (vaddr & 0xc0000000ULL) != 0x80000000ULL) {
-		int i, wf = 1 + (writeflag == MEM_WRITE);
-		uint64_t vaddr_shift_12 = vaddr >> 12;
-
-		if (instr) {
-			/*  Code:  */
-			for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++) {
-				if (cpu->cd.mips.translation_cache_instr[i].wf
-				    >= wf && vaddr_shift_12 == (cpu->cd.mips.
-				    translation_cache_instr[i].vaddr_pfn)) {
-					*return_addr = cpu->cd.mips.
-					    translation_cache_instr[i].paddr
-					    | (vaddr & 0xfff);
-					return cpu->cd.mips.
-					    translation_cache_instr[i].wf;
-				}
-			}
-		} else {
-			/*  Data:  */
-			for (i=0; i<N_TRANSLATION_CACHE_DATA; i++) {
-				if (cpu->cd.mips.translation_cache_data[i].wf
-				    >= wf && vaddr_shift_12 == (cpu->cd.mips.
-				    translation_cache_data[i].vaddr_pfn)) {
-					*return_addr = cpu->cd.mips.
-					    translation_cache_data[i].paddr
-					    | (vaddr & 0xfff);
-					return cpu->cd.mips.
-					    translation_cache_data[i].wf;
-				}
-			}
-		}
-	}
-#endif
 
 	exccode = -1;
 	tlb_refill = 1;
@@ -415,18 +368,6 @@ bugs are triggered.  */
 						paddr = (pfn << pfn_shift) |
 						    (vaddr & pmask);
 #endif
-
-						/*
-						 *  Enter into the tiny trans-
-						 *  lation cache (if enabled)
-						 *  and return:
-						 */
-						if (!bintrans_cached)
-							insert_into_tiny_cache(
-							    cpu, instr, d_bit?
-							    MEM_WRITE :
-							    MEM_READ,
-							    vaddr, paddr);
 
 						*return_addr = paddr;
 						return d_bit? 2 : 1;

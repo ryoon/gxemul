@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.12 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.13 2006-06-16 18:31:25 debug Exp $
  *
  *  HP PA-RISC CPU emulation.
  *
@@ -252,7 +252,7 @@ int hppa_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *  cpu->pc for relative addresses.
  */
 int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	uint64_t offset;
 	uint32_t iword;

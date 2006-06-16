@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.48 2006-04-22 09:28:27 debug Exp $
+ *  $Id: memory.h,v 1.49 2006-06-16 18:31:26 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -44,9 +44,6 @@
 
 struct cpu;
 struct translation_page_entry;
-
-/*  For bintrans:  */
-#define	MAX_QUICK_JUMPS			8
 
 struct memory {
 	uint64_t	physical_max;
@@ -73,35 +70,6 @@ struct memory {
 	uint64_t	dev_dyntrans_write_high[MAX_DEVICES];
 
 	int		dev_dyntrans_alignment;
-
-
-	/*
-	 *  NOTE/TODO: This bintrans was for MIPS only. Ugly. :-/
-	 */
-
-	/*
-	 *  translation_code_chunk_space is a large chunk of (linear) memory
-	 *  where translated code chunks and translation_entrys are stored.
-	 *  When this is filled, translation is restart from scratch (by
-	 *  resetting translation_code_chunk_space_head to 0, and removing all
-	 *  translation entries).
-	 *
-	 *  (Using a static memory region like this is somewhat inspired by
-	 *  the QEMU web pages,
-	 *  http://fabrice.bellard.free.fr/qemu/qemu-tech.html#SEC13)
-	 */
-
-	unsigned char	*translation_code_chunk_space;
-	size_t		translation_code_chunk_space_head;
-
-	int		bintrans_32bit_only;
-
-	struct translation_page_entry **translation_page_entry_array;
-
-	unsigned char	*quick_jump_host_address[MAX_QUICK_JUMPS];
-	size_t		quick_jump_page_offset[MAX_QUICK_JUMPS];
-	int		n_quick_jumps;
-	int		quick_jumps_index;
 };
 
 #define	BITS_PER_PAGETABLE	20

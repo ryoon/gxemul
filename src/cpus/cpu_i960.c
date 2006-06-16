@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_i960.c,v 1.8 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_i960.c,v 1.9 2006-06-16 18:31:25 debug Exp $
  *
  *  Intel i960 CPU emulation.
  */
@@ -216,7 +216,7 @@ static void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
  *  cpu->pc for relative addresses.
  */
 int i960_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	uint64_t offset;
 	int len = 0;

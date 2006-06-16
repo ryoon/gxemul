@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.9 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.10 2006-06-16 18:31:25 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -219,7 +219,7 @@ static void print_spaces(int len) { int i; debug(" "); for (i=0; i<16-len/2*5;
  *  cpu->pc for relative addresses.
  */
 int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	uint64_t offset;
 	int len = 0;

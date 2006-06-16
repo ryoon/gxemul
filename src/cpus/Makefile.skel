@@ -1,12 +1,12 @@
 #
-#  $Id: Makefile.skel,v 1.20 2006-02-26 10:09:24 debug Exp $
+#  $Id: Makefile.skel,v 1.21 2006-06-16 18:31:25 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 
-OBJS=cpu_mips.o cpu_mips_coproc.o bintrans.o memory_fast_v2h.o \
+OBJS=cpu_mips.o cpu_mips_coproc.o memory_fast_v2h.o \
 	$(CPU_ARCHS) $(CPU_BACKENDS)
 TOOLS=generate_head generate_tail $(CPU_TOOLS)
 
@@ -20,11 +20,6 @@ buildobjs: $(OBJS)
 
 $(OBJS): Makefile
 
-
-
-#  Old bintrans:
-
-bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
 
 ###############################################################################

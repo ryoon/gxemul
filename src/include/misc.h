@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.240 2006-06-12 21:35:08 debug Exp $
+ *  $Id: misc.h,v 1.241 2006-06-16 18:31:26 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -44,12 +44,6 @@
  */
 
 #include "../../config.h"
-
-/*  
- *  ENABLE_INSTRUCTION_DELAYS should be defined on the cc commandline using
- *  -D if you want it. (This is done by ./configure --delays)
- */
-/* #define USE_TINY_CACHE */
 
 
 #ifdef NO_C99_PRINTF_DEFINES
@@ -130,9 +124,6 @@ struct memory;
 /*  Debug stuff:  */
 #define	DEBUG_BUFSIZE		1024
 #define	DEBUG_INDENTATION	4
-#ifndef	DEFAULT_BINTRANS_SIZE_IN_MB
-#define	DEFAULT_BINTRANS_SIZE_IN_MB	16
-#endif
 
 
 /*  dec_prom.c:  */

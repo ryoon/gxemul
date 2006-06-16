@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.189 2006-04-22 09:28:27 debug Exp $
+ *  $Id: memory.c,v 1.190 2006-06-16 18:31:25 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -270,9 +270,8 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high)
 {
-	int i, j;
 	size_t s;
-	int need_inval = 0;
+	int i, need_inval = 0;
 
 	/*  TODO: This is O(n), so it might be good to rewrite it some day.
 	    For now, it will be enough, as long as this function is not
@@ -307,26 +306,6 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 					    | INVALIDATE_PADDR);
 			}
 
-			if (cpu->machine->arch == ARCH_MIPS) {
-				/*
-				 *  ... and invalidate the "fast_vaddr_to_
-				 *  hostaddr" cache entries that contain
-				 *  pointers to this device:  (NOTE: Device i,
-				 *  cache entry j)
-				 */
-				for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
-					if (cpu->cd.
-					    mips.bintrans_data_hostpage[j] >=
-					    mem->dev_dyntrans_data[i] &&
-					    cpu->cd.mips.
-					    bintrans_data_hostpage[j] <
-					    mem->dev_dyntrans_data[i] +
-					    mem->dev_length[i])
-						cpu->cd.mips.
-						    bintrans_data_hostpage[j]
-						    = NULL;
-				}
-			}
 			return;
 		}
 	}

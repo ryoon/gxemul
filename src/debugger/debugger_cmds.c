@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.3 2006-05-10 03:37:21 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.4 2006-06-16 18:31:26 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -139,42 +139,6 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 	}
 
 	printf("Unknown breakpoint subcommand.\n");
-}
-
-
-/*
- *  debugger_cmd_bintrans():
- */
-static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
-{
-	int i;
-
-	if (*cmd_line == '\0')
-		goto printstate;
-
-	if (!m->bintrans_enabled_from_start) {
-		printf("You must have enabled bintrans from the start of the "
-		    "simulation.\nIt is not possible to turn on afterwards.\n");
-		return;
-	}
-
-	while (*cmd_line == ' ')
-		cmd_line++;
-
-	/*  Note: len 3 and 4, to include the NUL char.  */
-	if (strncasecmp(cmd_line, "on", 3) == 0) {
-		m->bintrans_enable = 1;
-		for (i=0; i<m->ncpus; i++)
-			bintrans_restart(m->cpus[i]);
-	} else if (strncasecmp(cmd_line, "off", 4) == 0)
-		m->bintrans_enable = 0;
-	else
-		printf("syntax: bintrans [on|off]\n");
-
-printstate:
-	printf("bintrans is now %s%s\n",
-	     m->bintrans_enable? "ENABLED" : "disabled",
-	     m->old_bintrans_enable? " (using the OLD bintrans system)" : "");
 }
 
 
@@ -1100,10 +1064,6 @@ static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 	if (old_show_trace_tree != previous_mode)
 		printf("  (was: %s)", previous_mode? "ON" : "OFF");
 	printf("\n");
-
-	if (m->bintrans_enable && old_show_trace_tree)
-		printf("NOTE: the trace tree functionality doesn't "
-		    "work very well with bintrans!\n");
 }
 
 
@@ -1204,7 +1164,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 			break;
 		}
 
-		len = cpu_disassemble_instr(m, c, buf, 0, addr, 0);
+		len = cpu_disassemble_instr(m, c, buf, 0, addr);
 
 		if (ctrl_c)
 			return;
@@ -1261,9 +1221,6 @@ static struct cmd cmds[] = {
 
 	{ "breakpoint", "...", 0, debugger_cmd_breakpoint,
 		"manipulate breakpoints" },
-
-	{ "bintrans", "[on|off]", 0, debugger_cmd_bintrans,
-		"toggle bintrans on or off" },
 
 	/*  NOTE: Try to keep 'c' down to only one command. Having 'continue'
 	    available as a one-letter command is very convenient.  */

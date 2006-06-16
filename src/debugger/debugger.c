@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.9 2006-05-05 21:28:09 debug Exp $
+ *  $Id: debugger.c,v 1.10 2006-06-16 18:31:26 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -59,7 +59,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "bintrans.h"
 #include "console.h"
 #include "cpu.h"
 #include "device.h"

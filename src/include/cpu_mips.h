@@ -28,12 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.38 2006-06-12 21:35:08 debug Exp $
+ *  $Id: cpu_mips.h,v 1.39 2006-06-16 18:31:26 debug Exp $
  */
 
 #include "misc.h"
-
-/*  #define MFHILO_DELAY  */
 
 struct cpu_family;
 struct emul;
@@ -165,16 +163,6 @@ struct mips_coproc {
 
 /*******************************  OLD:  *****************************/
 
-/*  Number of "tiny" translation cache entries:  */
-#define	N_TRANSLATION_CACHE_INSTR	5
-#define	N_TRANSLATION_CACHE_DATA	5
-
-struct translation_cache_entry {
-	int		wf;
-	uint64_t	vaddr_pfn;
-	uint64_t	paddr;
-};
-
 /*  This should be a value which the program counter
     can "never" have:  */
 #define	PC_LAST_PAGE_IMPOSSIBLE_VALUE	3
@@ -243,22 +231,6 @@ struct mips_vpg_tlb_entry {
 };
 #endif
 
-/*******************************  OLD:  *****************************/
-
-#define	BINTRANS_DONT_RUN_NEXT		0x1000000
-#define	BINTRANS_N_MASK			0x0ffffff
-
-#define	N_BINTRANS_VADDR_TO_HOST	20
-
-/*  Virtual to host address translation tables:  */
-struct vth32_table {
-	void			*haddr_entry[1024 * 2];
-	uint32_t		paddr_entry[1024];
-	uint32_t		*bintrans_chunks[1024];
-	struct vth32_table	*next_free;
-	int			refcount;
-};
-
 /********************************************************************/
 
 struct mips_cpu {
@@ -276,17 +248,6 @@ struct mips_cpu {
 	/*  General purpose registers:  */
 	uint64_t	gpr[N_MIPS_GPRS];
 
-	/*
-	 *  The translation_cached stuff is used to speed up the
-	 *  most recent lookups into the TLB.  Whenever the TLB is
-	 *  written to, translation_cached[] must be filled with zeros.
-	 */
-#ifdef USE_TINY_CACHE
-	struct translation_cache_entry
-			translation_cache_instr[N_TRANSLATION_CACHE_INSTR];
-	struct translation_cache_entry
-			translation_cache_data[N_TRANSLATION_CACHE_DATA];
-#endif
 
 	/*
 	 *  For faster memory lookup when running instructions:
@@ -310,57 +271,6 @@ struct mips_cpu {
 	uint64_t	pc_last_physical_page;
 	unsigned char	*pc_last_host_4k_page;
 
-	/*  MIPS Bintrans:  */
-	int		dont_run_next_bintrans;
-	int		bintrans_instructions_executed;  /*  set to the
-				number of bintranslated instructions executed
-				when running a bintrans codechunk  */
-	int		pc_bintrans_paddr_valid;
-	uint64_t	pc_bintrans_paddr;
-	unsigned char	*pc_bintrans_host_4kpage;
-
-	/*  Chunk base address:  */
-	unsigned char	*chunk_base_address;
-
-	/*  This should work for 32-bit MIPS emulation:  */
-	struct vth32_table *vaddr_to_hostaddr_nulltable;
-	struct vth32_table *vaddr_to_hostaddr_r2k3k_icachetable;
-	struct vth32_table *vaddr_to_hostaddr_r2k3k_dcachetable;
-	struct vth32_table **vaddr_to_hostaddr_table0_kernel;
-	struct vth32_table **vaddr_to_hostaddr_table0_cacheisol_i;
-	struct vth32_table **vaddr_to_hostaddr_table0_cacheisol_d;
-	struct vth32_table **vaddr_to_hostaddr_table0_user;
-	struct vth32_table **vaddr_to_hostaddr_table0;  /*  should point to kernel or user  */
-	struct vth32_table *next_free_vth_table;
-
-/*  Testing...  */
-	unsigned char	**host_OLD_load;
-	unsigned char	**host_OLD_store;
-	unsigned char	**host_load_orig;
-	unsigned char	**host_store_orig;
-	unsigned char	**huge_r2k3k_cache_table;
-
-	/*  For 64-bit (generic) emulation:  */
-	unsigned char	*(*fast_vaddr_to_hostaddr)(struct cpu *cpu,
-			    uint64_t vaddr, int writeflag);
-	int		bintrans_next_index;
-	int		bintrans_data_writable[N_BINTRANS_VADDR_TO_HOST];
-	uint64_t	bintrans_data_vaddr[N_BINTRANS_VADDR_TO_HOST];
-	unsigned char	*bintrans_data_hostpage[N_BINTRANS_VADDR_TO_HOST];
-
-	void		(*bintrans_load_32bit)(struct cpu *);	/*  Note: incorrect args  */
-	void		(*bintrans_store_32bit)(struct cpu *);	/*  Note: incorrect args  */
-	void		(*bintrans_jump_to_32bit_pc)(struct cpu *);
-	void		(*bintrans_simple_exception)(struct cpu *, int);
-	void		(*bintrans_fast_rfe)(struct cpu *);
-	void		(*bintrans_fast_eret)(struct cpu *);
-	void		(*bintrans_fast_tlbwri)(struct cpu *, int);
-	void		(*bintrans_fast_tlbpr)(struct cpu *, int);
-
-#ifdef ENABLE_INSTRUCTION_DELAYS
-	int		instruction_delay;
-#endif
-
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
 
@@ -369,11 +279,6 @@ struct mips_cpu {
 
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;
-
-#ifdef MFHILO_DELAY
-	int		mfhi_delay;	/*  instructions since last mfhi  */
-	int		mflo_delay;	/*  instructions since last mflo  */
-#endif
 
 	int		rmw;		/*  Read-Modify-Write  */
 	int		rmw_len;	/*  Length of rmw modification  */
@@ -431,7 +336,7 @@ void mips_cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register);
 void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
 int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-        int running, uint64_t addr, int bintrans);
+        int running, uint64_t addr);
 int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
@@ -450,10 +355,6 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
         uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
         int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
         int cachealgo0, int cachealgo1);
-void mips_OLD_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-        unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void clear_all_chunks_from_all_tables(struct cpu *cpu);
-void mips_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t, int);
 void coproc_register_read(struct cpu *cpu,
         struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int select);
 void coproc_register_write(struct cpu *cpu,

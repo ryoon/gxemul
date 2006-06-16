@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.116 2006-05-21 11:15:25 debug Exp $
+ *  $Id: machine.h,v 1.117 2006-06-16 18:31:26 debug Exp $
  */
 
 #include <sys/types.h>
@@ -197,10 +197,6 @@ struct machine {
 
 	int	dbe_on_nonexistant_memaccess;
 	int	dyntrans_alignment_check;
-	int	bintrans_enable;
-	int	old_bintrans_enable;
-	int	bintrans_enabled_from_start;
-	size_t	bintrans_size;
 	int	instruction_trace;
 	int	show_nr_of_instructions;
 	int	show_symbolic_register_names;

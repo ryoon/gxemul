@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.98 2006-03-31 23:53:41 debug Exp $
+ *  $Id: dev_vga.c,v 1.99 2006-06-16 18:31:26 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -1218,7 +1218,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->gfx_mem_size   = 1;	/*  Nothing, as we start in text mode  */
 	d->pixel_repx = d->pixel_repy = machine->x11_scaleup;
 
-	/*  Allocate in full pages, to make it possible to use bintrans:  */
+	/*  Allocate in full pages, to make it possible to use dyntrans:  */
 	allocsize = ((d->charcells_size-1) | (machine->arch_pagesize-1)) + 1;
 	d->charcells = malloc(d->charcells_size);
 	d->charcells_outputed = malloc(d->charcells_size);

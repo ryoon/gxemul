@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.272 2006-05-08 05:29:04 debug Exp $
+ *  $Id: main.c,v 1.273 2006-06-16 18:31:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -223,11 +223,6 @@ static void usage(int longusage)
 	printf("\nOther options:\n");
 	printf("  -A        disable alignment checks in some cases (for higher"
 	    " speed)\n");
-#if defined(BINTRANS)
-	printf("  -B        disable native translation backends. (translation"
-	    " is turned on\n            by default, if it is supposed for "
-	    "the particular host)\n");
-#endif
 	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
 	    "list of types.)\n");
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\""
@@ -353,9 +348,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	char *opts =
 	    "A"
-#if defined(BINTRANS)
-	    "B"
-#endif
 	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrStU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
@@ -374,13 +366,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			m->dyntrans_alignment_check = 0;
 			msopts = 1;
 			break;
-#ifdef BINTRANS
-		case 'B':
-			/*  Turns off bintrans.  */
-			m->bintrans_enable = 0;
-			msopts = 1;
-			break;
-#endif
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;
@@ -646,13 +631,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		quiet_mode = 0;
 	}
 
-	if ((m->instruction_trace || m->register_dump || m->show_trace_tree)
-	    && m->bintrans_enable) {
-		if (m->arch == ARCH_MIPS)
-			fprintf(stderr, "Implicitly turning off bintrans.\n");
-		m->bintrans_enable = 0;
-	}
-
 
 	/*
 	 *  Usually, an executable filename must be supplied.
@@ -699,32 +677,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		exit(1);
 	}
 
-#ifdef OLDMIPS
-	if (m->bintrans_enable && m->arch == ARCH_MIPS) {
-		m->speed_tricks = 0;
-		/*  TODO: Print a warning about this?  */
-	}
-#endif
-
-	if (m->n_breakpoints > 0 &&
-	    m->bintrans_enable && m->arch == ARCH_MIPS) {
-		fprintf(stderr, "Breakpoints and MIPS binary translation "
-		    "don't work too well together right now.\n");
-		exit(1);
-	}
-
-#ifndef BINTRANS
-	if (m->bintrans_enable) {
-		fprintf(stderr, "WARNING: %s was compiled without "
-		    "bintrans support. Ignoring -b.\n", progname);
-		m->bintrans_enable = 0;
-	}
-#endif
-
 	if (!using_switch_Z && !m->use_x11)
 		m->n_gfx_cards = 0;
-
-	m->bintrans_enabled_from_start = m->bintrans_enable;
 
 	return 0;
 }

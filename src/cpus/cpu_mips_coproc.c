@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.26 2006-06-12 21:35:08 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.27 2006-06-16 18:31:26 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -35,7 +35,6 @@
 #include <string.h>
 #include <math.h>
 
-#include "bintrans.h"
 #include "cop0.h"
 #include "cpu.h"
 #include "cpu_mips.h"
@@ -510,471 +509,6 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 
 
 /*
- *  old_update_translation_table():
- */
-static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-	unsigned char *host_page, int writeflag, uint64_t paddr_page)
-{
-	int a, b, index;
-	struct vth32_table *tbl1;
-	void *p_r, *p_w;
-	uint32_t p_paddr;
-
-	/*  This table stuff only works for 32-bit mode:  */
-	if (vaddr_page & 0x80000000ULL) {
-		if ((vaddr_page >> 32) != 0xffffffffULL)
-			return;
-	} else {
-		if ((vaddr_page >> 32) != 0)
-			return;
-	}
-
-	a = (vaddr_page >> 22) & 0x3ff;
-	b = (vaddr_page >> 12) & 0x3ff;
-	index = (vaddr_page >> 12) & 0xfffff;
-
-	/*  printf("vaddr = %08x, a = %03x, b = %03x\n",
-	    (int)vaddr_page,a, b);  */
-
-	tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
-	/*  printf("tbl1 = %p\n", tbl1);  */
-	if (tbl1 == cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
-		/*  Allocate a new table1:  */
-		/*  printf("ALLOCATING a new table1, 0x%08x - "
-		    "0x%08x\n", a << 22, (a << 22) + 0x3fffff);  */
-		if (cpu->cd.mips.next_free_vth_table == NULL) {
-			tbl1 = malloc(sizeof(struct vth32_table));
-			if (tbl1 == NULL) {
-				fprintf(stderr, "out of mem\n");
-				exit(1);
-			}
-			memset(tbl1, 0, sizeof(struct vth32_table));
-		} else {
-			tbl1 = cpu->cd.mips.next_free_vth_table;
-			cpu->cd.mips.next_free_vth_table = tbl1->next_free;
-			tbl1->next_free = NULL;
-		}
-		cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a] = tbl1;
-		if (tbl1->refcount != 0) {
-			printf("INTERNAL ERROR in coproc.c\n");
-			exit(1);
-		}
-	}
-	p_r = tbl1->haddr_entry[b*2];
-	p_w = tbl1->haddr_entry[b*2+1];
-	p_paddr = tbl1->paddr_entry[b];
-	/*  printf("   p_r=%p p_w=%p\n", p_r, p_w);  */
-	if (p_r == NULL && p_paddr == 0 &&
-	    (host_page != NULL || paddr_page != 0)) {
-		tbl1->refcount ++;
-		/*  printf("ADDING %08x -> %p wf=%i (refcount is "
-		    "now %i)\n", (int)vaddr_page, host_page,
-		    writeflag, tbl1->refcount);  */
-	}
-	if (writeflag == -1) {
-		/*  Forced downgrade to read-only:  */
-		tbl1->haddr_entry[b*2 + 1] = NULL;
-		if (cpu->cd.mips.host_OLD_store ==
-		    cpu->cd.mips.host_store_orig)
-			cpu->cd.mips.host_OLD_store[index] = NULL;
-	} else if (writeflag==0 && p_w != NULL && host_page != NULL) {
-		/*  Don't degrade a page from writable to readonly.  */
-	} else {
-		if (host_page != NULL) {
-			tbl1->haddr_entry[b*2] = host_page;
-			if (cpu->cd.mips.host_OLD_load ==
-			    cpu->cd.mips.host_load_orig)
-				cpu->cd.mips.host_OLD_load[index] = host_page;
-			if (writeflag) {
-				tbl1->haddr_entry[b*2+1] = host_page;
-				if (cpu->cd.mips.host_OLD_store ==
-				    cpu->cd.mips.host_store_orig)
-					cpu->cd.mips.host_OLD_store[index] =
-					    host_page;
-			} else {
-				tbl1->haddr_entry[b*2+1] = NULL;
-				if (cpu->cd.mips.host_OLD_store ==
-				    cpu->cd.mips.host_store_orig)
-					cpu->cd.mips.host_OLD_store[index] =
-					    NULL;
-			}
-		} else {
-			tbl1->haddr_entry[b*2] = NULL;
-			tbl1->haddr_entry[b*2+1] = NULL;
-			if (cpu->cd.mips.host_OLD_store ==
-			    cpu->cd.mips.host_store_orig) {
-				cpu->cd.mips.host_OLD_load[index] = NULL;
-				cpu->cd.mips.host_OLD_store[index] = NULL;
-			}
-		}
-		tbl1->paddr_entry[b] = paddr_page;
-	}
-	tbl1->bintrans_chunks[b] = NULL;
-}
-
-
-/*
- *  mips_OLD_update_translation_table():
- */
-void mips_OLD_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-	unsigned char *host_page, int writeflag, uint64_t paddr_page)
-{
-	if (!cpu->machine->bintrans_enable)
-		return;
-
-	if (writeflag > 0)
-		bintrans_invalidate(cpu, paddr_page);
-
-	if (cpu->machine->old_bintrans_enable) {
-		old_update_translation_table(cpu, vaddr_page, host_page,
-		    writeflag, paddr_page);
-		return;
-	}
-
-	/*  TODO  */
-	/*  printf("update_translation_table(): TODO\n");  */
-}
-
-
-/*
- *  invalidate_table_entry():
- */
-static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
-{
-	int a, b, index;
-	struct vth32_table *tbl1;
-	void *p_r, *p_w;
-	uint32_t p_paddr;
-
-	if (!cpu->machine->old_bintrans_enable) {
-		/*  printf("invalidate_table_entry(): New: TODO\n");  */
-		return;
-	}
-
-	/*  This table stuff only works for 32-bit mode:  */
-	if (vaddr & 0x80000000ULL) {
-		if ((vaddr >> 32) != 0xffffffffULL) {
-			fatal("invalidate_table_entry(): vaddr = 0x%016llx\n",
-			    (long long)vaddr);
-			return;
-		}
-	} else {
-		if ((vaddr >> 32) != 0) {
-			fatal("invalidate_table_entry(): vaddr = 0x%016llx\n",
-			    (long long)vaddr);
-			return;
-		}
-	}
-
-	a = (vaddr >> 22) & 0x3ff;
-	b = (vaddr >> 12) & 0x3ff;
-	index = (vaddr >> 12) & 0xfffff;
-
-	/*  printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
-
-	tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
-	/*  printf("tbl1 = %p\n", tbl1);  */
-	p_r = tbl1->haddr_entry[b*2];
-	p_w = tbl1->haddr_entry[b*2+1];
-	p_paddr = tbl1->paddr_entry[b];
-	tbl1->bintrans_chunks[b] = NULL;
-	/*  printf("B:  p_r=%p p_w=%p\n", p_r,p_w);  */
-	cpu->cd.mips.host_load_orig[index] = NULL;
-	cpu->cd.mips.host_store_orig[index] = NULL;
-	if (p_r != NULL || p_paddr != 0) {
-		/*  printf("Found a mapping, "
-		    "vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
-		tbl1->haddr_entry[b*2] = NULL;
-		tbl1->haddr_entry[b*2+1] = NULL;
-		tbl1->paddr_entry[b] = 0;
-		tbl1->refcount --;
-		if (tbl1->refcount == 0) {
-			cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a] =
-			    cpu->cd.mips.vaddr_to_hostaddr_nulltable;
-			/*  "free" tbl1:  */
-			tbl1->next_free = cpu->cd.mips.next_free_vth_table;
-			cpu->cd.mips.next_free_vth_table = tbl1;
-		}
-	}
-}
-
-
-/*
- *  clear_all_chunks_from_all_tables():
- */
-void clear_all_chunks_from_all_tables(struct cpu *cpu)
-{
-	int a, b;
-	struct vth32_table *tbl1;
-
-	if (!cpu->machine->old_bintrans_enable) {
-		printf("clear_all_chunks_from_all_tables(): New: TODO\n");
-		return;
-	}
-
-	for (a=0; a<0x400; a++) {
-		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
-		if (tbl1 != cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
-			for (b=0; b<0x400; b++) {
-				int index;
-
-				tbl1->haddr_entry[b*2] = NULL;
-				tbl1->haddr_entry[b*2+1] = NULL;
-				tbl1->paddr_entry[b] = 0;
-				tbl1->bintrans_chunks[b] = NULL;
-
-				if (cpu->cd.mips.host_OLD_store ==
-				    cpu->cd.mips.host_store_orig) {
-					index = (a << 10) + b;
-					cpu->cd.mips.host_OLD_load[index] =
-					    NULL;
-					cpu->cd.mips.host_OLD_store[index] =
-					    NULL;
-				}
-			}
-		}
-	}
-}
-
-
-/*
- *  mips_invalidate_translation_caches_paddr():
- *
- *  Invalidate based on physical address.
- */
-void mips_invalidate_translation_caches_paddr(struct cpu *cpu,
-	uint64_t paddr, int flags)
-{
-	paddr &= ~0xfff;
-
-	if (cpu->machine->bintrans_enable) {
-#if 1
-		int i;
-		uint64_t tlb_paddr0, tlb_paddr1;
-		uint64_t tlb_vaddr;
-		uint64_t p, p2;
-
-		switch (cpu->cd.mips.cpu_type.mmu_model) {
-		case MMU3K:
-			for (i=0; i<64; i++) {
-				tlb_paddr0 = cpu->cd.mips.coproc[0]->
-				    tlbs[i].lo0 & R2K3K_ENTRYLO_PFN_MASK;
-				tlb_vaddr = cpu->cd.mips.coproc[0]->
-				    tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
-				tlb_vaddr = (int64_t)(int32_t)tlb_vaddr;
-				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 &
-				    R2K3K_ENTRYLO_V) && tlb_paddr0 == paddr)
-					invalidate_table_entry(cpu, tlb_vaddr);
-			}
-			break;
-		default:
-			for (i=0; i<cpu->cd.mips.coproc[0]->nr_of_tlbs; i++) {
-				int psize = 12;
-				int or_pmask = 0x1fff;
-				int phys_shift = 12;
-				int tmp_pmask = cpu->cd.mips.coproc[0]->
-				    tlbs[i].mask | or_pmask;
-
-				if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
-					or_pmask = 0x7ff;
-					phys_shift = 10;
-				}
-				switch (tmp_pmask) {
-				case 0x000007ff:	psize = 10; break;
-				case 0x00001fff:	psize = 12; break;
-				case 0x00007fff:	psize = 14; break;
-				case 0x0001ffff:	psize = 16; break;
-				case 0x0007ffff:	psize = 18; break;
-				case 0x001fffff:	psize = 20; break;
-				case 0x007fffff:	psize = 22; break;
-				case 0x01ffffff:	psize = 24; break;
-				case 0x07ffffff:	psize = 26; break;
-				default:
-					printf("invalidate_translation_caches"
-					    "_paddr(): bad pagemask: 0x%x\n",
-					    (int)tmp_pmask);
-				}
-				tlb_paddr0 = (cpu->cd.mips.coproc[0]->tlbs[i].
-				    lo0 & ENTRYLO_PFN_MASK)>>ENTRYLO_PFN_SHIFT;
-				tlb_paddr1 = (cpu->cd.mips.coproc[0]->tlbs[i].
-				    lo1 & ENTRYLO_PFN_MASK)>>ENTRYLO_PFN_SHIFT;
-				tlb_paddr0 <<= phys_shift;
-				tlb_paddr1 <<= phys_shift;
-				if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
-					tlb_vaddr = cpu->cd.mips.coproc[0]->
-					    tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
-					if (tlb_vaddr & ((int64_t)1 << 43))
-						tlb_vaddr |=
-						    0xfffff00000000000ULL;
-				} else {
-					tlb_vaddr = cpu->cd.mips.coproc[0]->
-					    tlbs[i].hi & ENTRYHI_VPN2_MASK;
-					if (tlb_vaddr & ((int64_t)1 << 39))
-						tlb_vaddr |=
-						    0xffffff0000000000ULL;
-				}
-				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 &
-				    ENTRYLO_V) && paddr >= tlb_paddr0 &&
-				    paddr < tlb_paddr0 + (1<<psize)) {
-					p2 = 1 << psize;
-					for (p=0; p<p2; p+=4096)
-						invalidate_table_entry(cpu,
-						    tlb_vaddr + p);
-				}
-				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo1 &
-				    ENTRYLO_V) && paddr >= tlb_paddr1 &&
-				    paddr < tlb_paddr1 + (1<<psize)) {
-					p2 = 1 << psize;
-					for (p=0; p<p2; p+=4096)
-						invalidate_table_entry(cpu,
-						    tlb_vaddr + p +
-						    (1 << psize));
-				}
-			}
-		}
-#endif
-
-		if (paddr < 0x20000000) {
-			invalidate_table_entry(cpu, 0xffffffff80000000ULL
-			    + paddr);
-			invalidate_table_entry(cpu, 0xffffffffa0000000ULL
-			    + paddr);
-		}
-	}
-
-#if 0
-{
-	int i;
-
-	/*  TODO: Don't invalidate everything.  */
-	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-		cpu->bintrans_data_hostpage[i] = NULL;
-}
-#endif
-}
-
-
-/*
- *  invalidate_translation_caches():
- *
- *  This is necessary for every change to the TLB, and when the ASID is changed,
- *  so that for example user-space addresses are not cached when they should
- *  not be.
- */
-static void invalidate_translation_caches(struct cpu *cpu,
-	int all, uint64_t vaddr, int kernelspace, int old_asid_to_invalidate)
-{
-	int i;
-
-	/*  printf("inval(all=%i, kernel=%i, addr=%016llx)\n",
-	    all, kernelspace, (long long)vaddr);  */
-
-	if (!cpu->machine->bintrans_enable)
-		goto nobintrans;
-
-	if (all) {
-		int i;
-		uint64_t tlb_vaddr;
-		switch (cpu->cd.mips.cpu_type.mmu_model) {
-		case MMU3K:
-			for (i=0; i<64; i++) {
-				tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi
-				    & R2K3K_ENTRYHI_VPN_MASK;
-				tlb_vaddr = (int64_t)(int32_t)tlb_vaddr;
-				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 &
-				    R2K3K_ENTRYLO_V) && (tlb_vaddr &
-				    0xc0000000ULL) != 0x80000000ULL) {
-					int asid = (cpu->cd.mips.coproc[0]->
-					    tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK
-					    ) >> R2K3K_ENTRYHI_ASID_SHIFT;
-					if (old_asid_to_invalidate < 0 ||
-					    old_asid_to_invalidate == asid)
-						invalidate_table_entry(cpu,
-						    tlb_vaddr);
-				}
-			}
-			break;
-		default:
-			for (i=0; i<cpu->cd.mips.coproc[0]->nr_of_tlbs; i++) {
-				int psize = 10, or_pmask = 0x1fff;
-				int phys_shift = 12;
-
-				if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
-					or_pmask = 0x7ff;
-					phys_shift = 10;
-				}
-
-				switch (cpu->cd.mips.coproc[0]->tlbs[i].mask
-				    | or_pmask) {
-				case 0x000007ff:	psize = 10; break;
-				case 0x00001fff:	psize = 12; break;
-				case 0x00007fff:	psize = 14; break;
-				case 0x0001ffff:	psize = 16; break;
-				case 0x0007ffff:	psize = 18; break;
-				case 0x001fffff:	psize = 20; break;
-				case 0x007fffff:	psize = 22; break;
-				case 0x01ffffff:	psize = 24; break;
-				case 0x07ffffff:	psize = 26; break;
-				default:
-					printf("invalidate_translation_caches"
-					    "(): bad pagemask?\n");
-				}
-
-				if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
-					tlb_vaddr = cpu->cd.mips.coproc[0]->
-					    tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
-					if (tlb_vaddr & ((int64_t)1 << 43))
-						tlb_vaddr |=
-						    0xfffff00000000000ULL;
-				} else {
-					tlb_vaddr = cpu->cd.mips.coproc[0]->
-					    tlbs[i].hi & ENTRYHI_VPN2_MASK;
-					if (tlb_vaddr & ((int64_t)1 << 39))
-						tlb_vaddr |=
-						    0xffffff0000000000ULL;
-				}
-
-				/*  TODO: Check the ASID etc.  */
-
-				invalidate_table_entry(cpu, tlb_vaddr);
-				invalidate_table_entry(cpu, tlb_vaddr |
-				    (1 << psize));
-			}
-		}
-	} else
-		invalidate_table_entry(cpu, vaddr);
-
-nobintrans:
-
-	/*  TODO: Don't invalidate everything.  */
-	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-		cpu->cd.mips.bintrans_data_hostpage[i] = NULL;
-
-	if (kernelspace)
-		all = 1;
-
-#ifdef USE_TINY_CACHE
-{
-	vaddr >>= 12;
-
-	/*  Invalidate the tiny translation cache...  */
-	if (!cpu->machine->bintrans_enable)
-		for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
-			if (all || vaddr == (cpu->cd.mips.
-			    translation_cache_instr[i].vaddr_pfn))
-				cpu->cd.mips.translation_cache_instr[i].wf = 0;
-
-	if (!cpu->machine->bintrans_enable)
-		for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
-			if (all || vaddr == (cpu->cd.mips.
-			    translation_cache_data[i].vaddr_pfn))
-				cpu->cd.mips.translation_cache_data[i].wf = 0;
-}
-#endif
-}
-
-
-/*
  *  coproc_register_read();
  *
  *  Read a value from a MIPS coprocessor register.
@@ -1206,9 +740,12 @@ void coproc_register_write(struct cpu *cpu,
 					inval = 1;
 				break;
 			}
+#if 0
+TODO
 			if (inval)
 				invalidate_translation_caches(cpu, 1, 0, 0,
 				    old_asid);
+#endif
 			unimpl = 0;
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
 			    (tmp & 0x3f)!=0) {
@@ -1282,41 +819,6 @@ void coproc_register_write(struct cpu *cpu,
 			}
 #endif
 
-			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
-			    ((uint32_t)oldmode & MIPS1_ISOL_CACHES) !=
-			    (tmp & MIPS1_ISOL_CACHES)) {
-				/*  R3000-style caches when isolated are
-				    treated in bintrans mode by changing
-				    the vaddr_to_hostaddr_table0 pointer:  */
-				if (tmp & MIPS1_ISOL_CACHES) {
-					/*  2-level table:  */
-					cpu->cd.mips.vaddr_to_hostaddr_table0 =
-					  tmp & MIPS1_SWAP_CACHES?
-					  cpu->cd.mips.
-					  vaddr_to_hostaddr_table0_cacheisol_i
-					  : cpu->cd.mips.
-					  vaddr_to_hostaddr_table0_cacheisol_d;
-
-					/*  1M-entry table:  */
-					cpu->cd.mips.host_OLD_load =
-					    cpu->cd.mips.host_OLD_store =
-					    cpu->cd.mips.huge_r2k3k_cache_table;
-				} else {
-					/*  2-level table:  */
-					cpu->cd.mips.vaddr_to_hostaddr_table0 =
-					    cpu->cd.mips.
-						vaddr_to_hostaddr_table0_kernel;
-
-					/*  TODO: cpu->cd.mips.
-					    vaddr_to_hostaddr_table0_user;  */
-
-					/*  1M-entry table:  */
-					cpu->cd.mips.host_OLD_load =
-					    cpu->cd.mips.host_load_orig;
-					cpu->cd.mips.host_OLD_store =
-					    cpu->cd.mips.host_store_orig;
-				}
-			}
 			unimpl = 0;
 			break;
 		case COP0_CAUSE:
@@ -2112,8 +1614,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 /*  TODO: Bug? Why does this if need to be commented out?  */
 
+#if 0
 		/*  if (cp->tlbs[index].lo0 & ENTRYLO_V)  */
 			invalidate_translation_caches(cpu, 0, oldvaddr, 0, 0);
+#endif
 		break;
 	default:
 		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
@@ -2134,10 +1638,13 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		 *
 		 *  TODO: non-4KB page sizes!
 		 */
+#if 0
+TODO
 		invalidate_translation_caches(
 		    cpu, 0, oldvaddr & ~0x1fff, 0, 0);
 		invalidate_translation_caches(
 		    cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
+#endif
 	}
 
 
@@ -2254,10 +1761,13 @@ void coproc_rfe(struct cpu *cpu)
 	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 	    ((cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 
+#if 0
+TODO
 	/*  Changing from kernel to user mode? Then this is necessary:  */
 	if (!oldmode &&
 	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SR_KU_CUR))
 		invalidate_translation_caches(cpu, 0, 0, 1, 0);
+#endif
 }
 
 

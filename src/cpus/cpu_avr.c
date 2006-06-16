@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.17 2006-04-19 18:55:56 debug Exp $
+ *  $Id: cpu_avr.c,v 1.18 2006-06-16 18:31:25 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -270,7 +270,7 @@ static void print_spaces(int len) { int i; debug(" "); for (i=0; i<15-len/2*6;
  *  cpu->pc for relative addresses.
  */
 int avr_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
-	int running, uint64_t dumpaddr, int bintrans)
+	int running, uint64_t dumpaddr)
 {
 	uint64_t offset;
 	int len = 0, addr, iw, rd, rr, imm;

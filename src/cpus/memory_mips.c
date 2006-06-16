@@ -25,57 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.4 2006-04-14 18:16:42 debug Exp $
+ *  $Id: memory_mips.c,v 1.5 2006-06-16 18:31:26 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  */
 
 #include <sys/types.h>
 #include <sys/mman.h>
-
-
-/*
- *  insert_into_tiny_cache():
- *
- *  If the tiny cache is enabled (USE_TINY_CACHE), then this routine inserts
- *  a vaddr to paddr translation first in the instruction (or data) tiny
- *  translation cache.
- */
-static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
-	uint64_t vaddr, uint64_t paddr)
-{
-#ifdef USE_TINY_CACHE
-	int wf = 1 + (writeflag == MEM_WRITE);
-
-	if (cpu->machine->bintrans_enable)
-		return;
-
-	paddr &= ~0xfff;
-	vaddr >>= 12;
-
-	if (instr) {
-		/*  Code:  */
-		memmove(&cpu->cd.mips.translation_cache_instr[1],
-		    &cpu->cd.mips.translation_cache_instr[0],
-		    sizeof(struct translation_cache_entry) *
-		    (N_TRANSLATION_CACHE_INSTR - 1));
-
-		cpu->cd.mips.translation_cache_instr[0].wf = wf;
-		cpu->cd.mips.translation_cache_instr[0].vaddr_pfn = vaddr;
-		cpu->cd.mips.translation_cache_instr[0].paddr = paddr;
-	} else {
-		/*  Data:  */
-		memmove(&cpu->cd.mips.translation_cache_data[1],
-		    &cpu->cd.mips.translation_cache_data[0],
-		    sizeof(struct translation_cache_entry) *
-		    (N_TRANSLATION_CACHE_DATA - 1));
-
-		cpu->cd.mips.translation_cache_data[0].wf = wf;
-		cpu->cd.mips.translation_cache_data[0].vaddr_pfn = vaddr;
-		cpu->cd.mips.translation_cache_data[0].paddr = paddr;
-	}
-#endif
-}
 
 
 /*
@@ -117,13 +73,6 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	/*  Is this a cache hit or miss?  */
 	hit = (rp[cache_line].tag_valid & R3000_TAG_VALID) &&
 	    (rp[cache_line].tag_paddr == (paddr & tag_mask));
-
-#ifdef ENABLE_INSTRUCTION_DELAYS
-	if (!hit)
-		cpu->cd.mips.instruction_delay +=
-		    cpu->cd.mips.cpu_type.instrs_per_cycle
-		    * cpu->cd.mips.cache_miss_penalty[which_cache];
-#endif
 
 	/*
 	 *  The cache miss bit is only set on cache reads, and only to the
@@ -283,13 +232,6 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		& ~cpu->cd.mips.cache_mask[which_cache])
 	    == (paddr & ~(cpu->cd.mips.cache_mask[which_cache]));
 
-#ifdef ENABLE_INSTRUCTION_DELAYS
-	if (!hit)
-		cpu->cd.mips.instruction_delay +=
-		    cpu->cd.mips.cpu_type.instrs_per_cycle
-		    * cpu->cd.mips.cache_miss_penalty[which_cache];
-#endif
-
 	/*
 	 *  The cache miss bit is only set on cache reads, and only to the
 	 *  data cache. (?)
@@ -370,12 +312,3 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 #include "memory_mips_v2p.c"
 
 
-#ifdef OLDMIPS
-
-#define MEMORY_RW	mips_memory_rw
-#define MEM_MIPS
-#include "../memory_rw.c"
-#undef MEM_MIPS
-#undef MEMORY_RW
-
-#endif

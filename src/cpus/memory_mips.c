@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.5 2006-06-16 18:31:26 debug Exp $
+ *  $Id: memory_mips.c,v 1.6 2006-06-17 10:00:08 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
+ *
+ *  NOTE: The cache emulation code (ifdef ENABLE_CACHE_EMULATION) is old
+ *        and doesn't work with dyntrans. TODO: rewrite this.
  */
 
 #include <sys/types.h>

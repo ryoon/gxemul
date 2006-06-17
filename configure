@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.221 2006-06-16 18:31:24 debug Exp $
+#  $Id: configure,v 1.222 2006-06-17 10:00:08 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -55,8 +55,6 @@
 #  The general philosophy regarding command line switches is that anything
 #  which can be incorporated into the program as a runtime command line option
 #  should be, instead of requiring a recompile.
-#
-#  --enable-caches should go away (TODO).
 #
 ###############################################################################
 
@@ -94,25 +92,10 @@ if [ z"$*" != z ]; then
 	for a in $*; do
 		if [ z$a = z--disable-x ]; then
 			NOX11=YES
-		else if [ z$a = z--tracenull ]; then
-			TRACENULL=YES
-		else if [ z$a = z--disable-caches ]; then
-			CACHES=NO
-		else if [ z$a = z--enable-caches ]; then
-			CACHES=YES
 		else if [ z$a = z--help ]; then
 			printf "usage: $0 [options]\n\n"
-
 			echo "  --disable-x         don't include X11 support,"\
 			    "even if the host supports it"
-
-			if [ z"$UNSTABLE" = zYES ]; then
-				printf "\nAdditional Development (debug) "
-				printf "options:\n\n"
-
-				printf "  --enable-caches    enable cache "
-				printf "emulation (BUGGY, TO BE REMOVED)\n"
-			fi
 			echo
 			exit
 		else
@@ -120,7 +103,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi
+		fi; fi
 	done
 fi
 

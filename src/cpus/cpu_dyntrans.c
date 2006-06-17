@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.95 2006-06-16 18:31:25 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.96 2006-06-17 13:14:34 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -953,10 +953,13 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 		    (int)vaddr_page);  */
 		cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
 	} else {
+		int tlbi = cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[index];
 		cpu->cd.DYNTRANS_ARCH.host_load[index] = NULL;
 		cpu->cd.DYNTRANS_ARCH.host_store[index] = NULL;
 		cpu->cd.DYNTRANS_ARCH.phys_addr[index] = 0;
 		cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
+		if (tlbi > 0)
+			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[tlbi-1].valid = 0;
 		cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[index] = 0;
 	}
 #else

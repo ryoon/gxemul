@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.80 2006-06-14 09:19:22 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.81 2006-06-17 13:14:34 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1623,9 +1623,6 @@ X(mtc0)
 
 	/*  TODO: cause exception if necessary  */
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd, &tmp, 0, select);
-
-	/*  TODO: fix/remove these, when things have stabilized!  */
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 #if 0
 	/*  Interrupts enabled, and any interrupt pending?  */

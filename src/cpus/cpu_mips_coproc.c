@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.27 2006-06-16 18:31:26 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.28 2006-06-17 13:14:34 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -509,6 +509,34 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 
 
 /*
+ *  invalidate_asid():
+ *
+ *  Go through all entries in the TLB. If an entry has a matching asid,
+ *  then its virtual address dyntrans translation is invalidated.
+ *
+ *  Note: In the R3000 case, the asid argument is shifted 6 bits.
+ */
+static void invalidate_asid(struct cpu *cpu, int asid)
+{
+	struct mips_coproc *cp = cpu->cd.mips.coproc[0];
+	int i, ntlbs = cp->nr_of_tlbs;
+	struct mips_tlb *tlb = cp->tlbs;
+
+	if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
+		for (i=0; i<ntlbs; i++)
+			if ((tlb[i].hi & R2K3K_ENTRYHI_ASID_MASK) == asid) {
+				cpu->invalidate_translation_caches(cpu,
+				    tlb[i].hi & R2K3K_ENTRYHI_VPN_MASK,
+				    INVALIDATE_VADDR);
+			}
+	} else {
+		/*  TODO: Implement support for other.  */
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	}
+}
+
+
+/*
  *  coproc_register_read();
  *
  *  Read a value from a MIPS coprocessor register.
@@ -720,14 +748,13 @@ void coproc_register_write(struct cpu *cpu,
 			break;
 		case COP0_ENTRYHI:
 			/*
-			 *  Translation caches must be invalidated, because the
-			 *  address space might change (if the ASID changes).
+			 *  Translation caches must be invalidated if the
+			 *  ASID changes:
 			 */
 			switch (cpu->cd.mips.cpu_type.mmu_model) {
 			case MMU3K:
-				old_asid = (cp->reg[COP0_ENTRYHI] &
-				    R2K3K_ENTRYHI_ASID_MASK) >>
-				    R2K3K_ENTRYHI_ASID_SHIFT;
+				old_asid = cp->reg[COP0_ENTRYHI] &
+				    R2K3K_ENTRYHI_ASID_MASK;
 				if ((cp->reg[COP0_ENTRYHI] &
 				    R2K3K_ENTRYHI_ASID_MASK) !=
 				    (tmp & R2K3K_ENTRYHI_ASID_MASK))
@@ -740,12 +767,10 @@ void coproc_register_write(struct cpu *cpu,
 					inval = 1;
 				break;
 			}
-#if 0
-TODO
+
 			if (inval)
-				invalidate_translation_caches(cpu, 1, 0, 0,
-				    old_asid);
-#endif
+				invalidate_asid(cpu, old_asid);
+
 			unimpl = 0;
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
 			    (tmp & 0x3f)!=0) {

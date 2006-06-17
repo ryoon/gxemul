@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1245 2006-06-17 10:00:07 debug Exp $
+$Id: HISTORY,v 1.1246 2006-06-17 13:14:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2775,3 +2775,6 @@ Changelog for GXemul:
 20060617	Some documentation updates (adding "NetBSD-archive" to some
 		URLs, and new Debian/DECstation installation screenshots).
 		Removing the "tracenull" and "enable-caches" configure options.
+		Improving MIPS dyntrans performance somewhat (only invalidate
+		translations if necessary, on writes to the entryhi register,
+		instead of doing it for all cop0 writes).

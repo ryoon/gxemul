@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.135 2006-05-22 04:53:52 debug Exp $
+$Id: guestoses.html,v 1.136 2006-06-17 09:35:54 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -115,12 +115,26 @@ GXemul's machine, device, and/or processor implementations.
 <a name="netbsdpmaxinstall"></a>
 <h3>NetBSD/pmax:</h3>
 
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<p><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>
+was the first guest OS that could be installed onto a disk
+image in GXemul. The device emulation of the 5000/200 model of the
+DECstation is reasonably complete; it should be enough to emulate a
+networked X-windows-capable workstation.
+
+<p>NetBSD/pmax 1.6.2 works perfectly with X out-of-the-box. Unfortunately,
+newer NetBSD releases have changed slightly, and nowadays X does not
+work straight away. (It seems that this has to do with NetBSD switching
+console system to "WSCONS" somewhere between 1.6.2 and 2.0. I haven't had
+time to figure out how to do it, but at worst it might require a kernel
+recompilation.) What this means is that if you want to use emulated X11,
+then you need to run NetBSD 1.6.2. If you feel that you only need
+serial-console emulation, then choose the latest NetBSD version available.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20050317-example.png"><img src="20050317-example_small.png"></a>
 
-<p>To install <a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>
-onto a harddisk image in the emulator, follow these instructions:
+<p>To install NetBSD/pmax onto a harddisk image in the emulator,
+follow these instructions:
 
 <p><ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
@@ -140,7 +154,7 @@ steps:
 <ol start="2">
 
   <li>Download a NetBSD CD-ROM iso image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/pmaxcd.iso</a>
 	or
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/pmaxcd-3.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/pmaxcd-3.0.iso</a>
 
@@ -159,7 +173,7 @@ For an ftp install, substitute steps 2 and 3 above with these:
 <ol start="2">
 
   <li>Download a NetBSD pmax INSTALL kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	or
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 
@@ -195,12 +209,8 @@ NetBSD from the harddisk image:<pre>
 	<b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>
 
-<p><font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.x and 3.x
-do not work with X out-of-the-box on pmax. It seems that this has to do
-with NetBSD switching console system to "WSCONS" somewhere between 1.6.2
-and 2.0. For now, if you want X, then try NetBSD 1.6.2.
-
-<p>With NetBSD/pmax 1.6.2, try the following to start with a framebuffer:<pre>
+<p>If you installed NetBSD/pmax 1.6.2, then try the following to start
+with a framebuffer:<pre>
 	<b>gxemul -X -e 3max -d nbsd_pmax.img</b>
 </pre>
 and log in as <tt>root</tt> and type <tt>startx</tt> to start X windows.
@@ -216,7 +226,7 @@ and log in as <tt>root</tt> and type <tt>startx</tt> to start X windows.
 <a name="netbsdarcinstall"></a>
 <h3>NetBSD/arc:</h3>
 
-It is possible to install and run <a
+It is possible to install and run an old version of <a
 href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>
 on an emulated Acer PICA-61 in the emulator.
 
@@ -225,8 +235,8 @@ on an emulated Acer PICA-61 in the emulator.
 <a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a>
 
 <p>
-To install NetBSD/arc from a CDROM image onto an emulated harddisk image,
-follow these instructions:
+To install NetBSD/arc 1.6.2 from a CDROM image onto an emulated
+harddisk image, follow these instructions:
 
 <p>
 <ol start="1">
@@ -237,8 +247,8 @@ follow these instructions:
 </pre>
   <li>Download a NetBSD/arc 1.6.2 CDROM image, and a generic NetBSD/arc
 	kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/iso/1.6.2/arccd.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-archive/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
@@ -249,8 +259,8 @@ follow these instructions:
 	(Try removing <tt>-x</tt> if you have problems with the xterm.)
     <p>
   <li>From now on, you have to use your imagination, as there is no
-	automatic installation program for NetBSD/arc. Here are some tips
-	and hints on how you can proceed with the install:
+	automatic installation program for NetBSD/arc 1.6.2. Here are
+	some tips and hints on how you can proceed with the install:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>mount /dev/cd0a /mnt2
 disklabel -i -I sd0</b>    (for example 'a', '4.2BSD', '1c',
@@ -1356,8 +1366,8 @@ It is possible to run Debian GNU/Linux for DECstation in the emulator,
 on an emulated 5000/200 ("3max"). Although the Debian project has released
 install ramdisk kernels for this purpose, these do not always work:
 <ul>
-  <li>Serial console output doesn't work too well in GXemul. There are
-	random oopses, which may be due to bugs in GXemul, but may
+  <li>Serial console output doesn't work too well in GXemul. Linux
+	oopses randomly, which may be due to bugs in GXemul, but may
 	also be due to bugs in the serial controller code in Linux.
 	(The speed at which serial interrupts are generated can be
 	lowered with the <tt>-U</tt> command line option, but it only
@@ -1392,28 +1402,44 @@ onto a harddisk image:
   <p>
   <li>Start the installation like this:<pre>
 	<b>gxemul -X -e3max -d debian_pmax.img -d debian-31r0a-mipsel-netinst.iso vmlinux-2.4.31</b>
-
 </pre>
-	Everything is <i>really</i> slow, for several reasons (framebuffer is
-	always slower than serial console, and Debian's install seems to be
-	made up of scripts that run a lot slower in the emulator than pure
-	C code would).
+
+	<p>If everything goes well, you will see Linux' boot messages, and then
+	arrive at the language chooser.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-1.png"><img src="debian-1-small.png"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-2.png"><img src="debian-2-small.png"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-3.png"><img src="debian-3-small.png"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-4.png"><img src="debian-4-small.png"></a>
+
+	<p>There will be a warning about the keyboard
+	layout. Don't mind this. Continue, and then select <b>Detect
+	and mount CD-ROM</b> in the next menu.
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-5.png"><img src="debian-5-small.png"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-6.png"><img src="debian-6-small.png"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-7.png"><img src="debian-7-small.png"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-8.png"><img src="debian-8-small.png"></a>
+
 	<p>
-	There will be a <font color="#d00000">warning</font> about "Select
-	keyboard layout". Don't mind this. Continue by selecting "Detect and
-	mount CD-ROM".
+	There will also be a warning about lack of loadable modules. Don't
+	mind this either, continue anyway by choosing <b>Yes</b>.
 	<p>
-	There will also be a <font color="#d00000">warning</font> about lack
-	of loadable modules. Don't mind this, continue anyway.
-	<p>
-	You need to enter some values during the installation procedure, for
-	example network settings. The following should work:<pre>
-	DHCP:                       No, choose "<b>Configure network manually</b>"
+	When you reach the network configuration part of the install, choose
+	<b>Configure network manually</b> and enter the following values:<pre>
 	IP address:                 <b>10.0.0.1</b>
 	Netmask:                    <b>255.0.0.0</b>
 	Gateway:                    <b>10.0.0.254</b>
 	Name server addresses:      <b>10.0.0.254</b>
+
 </pre>
+	<p>Choose <b>Erase entire disk</b> in the partitioner.
+
+	<p>Wait for the base system to be installed. This takes almost forever,
+	so you can go fetch several Jolts or cups of coffee in the meanwhile.
+
   <li>Once the first phase of the install has finished, the following command
 	should let you boot into Debian, and perform post-install
 	configuration:<pre>

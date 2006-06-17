@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1243 2006-06-16 18:31:24 debug Exp $
+$Id: HISTORY,v 1.1244 2006-06-17 09:35:53 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2772,3 +2772,5 @@ Changelog for GXemul:
 		Removing the old MIPS interpretation mode.
 		Removing the MFHILO_DELAY and instruction delay stuff, because
 		they wouldn't work with dyntrans anyway.
+20060617	Some documentation updates (adding "NetBSD-archive" to some
+		URLs, and new Debian/DECstation installation screenshots).

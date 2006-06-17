@@ -1,4 +1,4 @@
-$Id: TODO,v 1.281 2006-06-16 18:32:00 debug Exp $
+$Id: TODO,v 1.282 2006-06-17 09:35:53 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -9,10 +9,8 @@ everything the "right way" as things are right now.
 
 MUST stuff before a 0.4.0 release:
 
-	x)  MIPS dyntrans working at least as well as the old mode did.
-		(Everything listed in the documentation should work, including
-		Ultrix and Linux!)
-	x)  REMOVE/FIX the cpu_create_or_reset_tc() call in cpu_mips_instr.c!
+	x)  FIX THE CACHE INVALIDATION BOTTLENECKS!
+		(e.g. cpu_create_or_reset_tc() in cpu_mips_instr.c!)
 	x)  Fix the R4000 timing problems with NetBSD/pmax!
 
 0.4.1 or so:

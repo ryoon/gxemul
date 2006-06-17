@@ -1,4 +1,4 @@
-$Id: TODO,v 1.282 2006-06-17 09:35:53 debug Exp $
+$Id: TODO,v 1.283 2006-06-17 10:01:20 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -128,12 +128,6 @@ Debugger:
 		mirrored in the documentation, but the internal help should
 		be the one that should be considered correct.
 	o)  see src/debugger.c for more
-
-The configure script:
-	x)  Remove the Cache option, since it is broken anyway.
-	x)  Remove the delay option, since it isn't really used. Turn
-	    into a runtime command line option? Or enable this together
-	    with cache simulation?
 
 POWER/PowerPC:
 	x)  PPC optimizations; instr combs

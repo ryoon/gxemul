@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.136 2006-06-17 09:35:54 debug Exp $
+$Id: guestoses.html,v 1.137 2006-06-17 12:21:29 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1440,16 +1440,21 @@ onto a harddisk image:
 	<p>Wait for the base system to be installed. This takes almost forever,
 	so you can go fetch several Jolts or cups of coffee in the meanwhile.
 
-  <li>Once the first phase of the install has finished, the following command
-	should let you boot into Debian, and perform post-install
-	configuration:<pre>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-9.png"><img src="debian-9-small.png"></a>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="debian-10.png"><img src="debian-10-small.png"></a>
+
+	<p>Congratulations! The first phase of the installation is now completed.
+	Reboot using the following command line:<pre>
 	<b>gxemul -X -e3max -o 'root=/dev/sda1' -d debian_pmax.img vmlinux-2.4.31</b>
 
-</pre>The post-install step takes quite some time.
+</pre>
+	<p>The post-install step takes quite some time as well.
+
 </ol>
 
-<p>Debian GNU/Linux for DECstation should now be installed. Use this command
-to boot from the installed disk image:<pre>
+<p><br>Debian GNU/Linux for DECstation is now installed and ready to be used.
+Use this command to boot from the installed disk image:<pre>
 	<b>gxemul -X -e3max -o 'root=/dev/sda1' -d debian_pmax.img vmlinux-2.4.31</b>
 
 </pre>

@@ -1,4 +1,4 @@
-/* GXemul: $Id: alpha_autoconf.h,v 1.1 2006-05-30 19:49:39 debug Exp $ */
+/* GXemul: $Id: alpha_autoconf.h,v 1.2 2006-06-17 09:35:37 debug Exp $ */
 /* $NetBSD: autoconf.h,v 1.22 2005/12/11 12:16:16 christos Exp $ */
 
 #ifndef	ALPHA_AUTOCONF_H
@@ -71,7 +71,7 @@ struct bootdev_data {
  *		    (u_long), then the bootinfo
  */
 
-#define	ALPHA_BOOTINFO_MAGIC		0xdeadbeeffeedface
+#define	ALPHA_BOOTINFO_MAGIC		0xdeadbeeffeedfaceULL
 
 struct bootinfo_v1 {
 	u_long	ssym;			/* 0: start of kernel sym table	*/

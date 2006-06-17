@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.52 2006-06-16 18:31:25 debug Exp $
+ *  $Id: cpu_mips.c,v 1.53 2006-06-17 10:49:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -37,31 +37,6 @@
 #include <ctype.h>
 
 #include "../../config.h"
-
-
-#ifndef ENABLE_MIPS
-
-
-#include "cpu_mips.h"
-
-/*
- *  mips_cpu_family_init():
- *
- *  Bogus function.
- */
-int mips_cpu_family_init(struct cpu_family *fp)
-{
-	return 0;
-}
-
-
-/*  TODO: Maybe it isn't very nice to have these global like this...  */
-void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
-	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)  { }
-
-
-#else   /*  ENABLE_MIPS  */
-
 
 #include "arcbios.h"
 #include "cop0.h"
@@ -2162,7 +2137,4 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 
 #include "tmp_mips_tail.c"
-
-
-#endif	/*  ENABLE_MIPS  */
 

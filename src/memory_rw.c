@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.85 2006-06-16 18:31:25 debug Exp $
+ *  $Id: memory_rw.c,v 1.86 2006-06-18 08:45:54 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -143,33 +143,14 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 #endif	/*  X86  */
 
+
 #ifdef MEM_USERLAND
 #ifdef MEM_ALPHA
 	paddr = vaddr;
 #else
 	paddr = vaddr & 0x7fffffff;
 #endif
-	goto have_paddr;
-#endif
-
-#ifndef MEM_USERLAND
-#ifdef MEM_MIPS
-	/*
-	 *  For instruction fetch, are we on the same page as the last
-	 *  instruction we fetched?
-	 *
-	 *  NOTE: There's no need to check this stuff here if this address
-	 *  is known to be in host ram, as it's done at instruction fetch
-	 *  time in cpu.c!  Only check if _host_4k_page == NULL.
-	 */
-	if (cache == CACHE_INSTRUCTION &&
-	    cpu->cd.mips.pc_last_host_4k_page == NULL &&
-	    (vaddr & ~0xfff) == cpu->cd.mips.pc_last_virtual_page) {
-		paddr = cpu->cd.mips.pc_last_physical_page | (vaddr & 0xfff);
-		goto have_paddr;
-	}
-#endif	/*  MEM_MIPS  */
-
+#else	/*  !MEM_USERLAND  */
 	if (misc_flags & PHYSICAL || cpu->translate_address == NULL) {
 		paddr = vaddr;
 	} else {
@@ -206,13 +187,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 	}
 #endif
-
-#endif	/*  ifndef MEM_USERLAND  */
-
-
-#if defined(MEM_MIPS) || defined(MEM_USERLAND)
-have_paddr:
-#endif
+#endif	/*  !MEM_USERLAND  */
 
 
 #ifndef MEM_USERLAND

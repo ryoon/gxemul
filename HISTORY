@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1246 2006-06-17 13:14:34 debug Exp $
+$Id: HISTORY,v 1.1247 2006-06-18 08:45:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2778,3 +2778,4 @@ Changelog for GXemul:
 		Improving MIPS dyntrans performance somewhat (only invalidate
 		translations if necessary, on writes to the entryhi register,
 		instead of doing it for all cop0 writes).
+20060618	More cleanup after the removal of the old MIPS emulation.

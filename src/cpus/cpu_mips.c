@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.53 2006-06-17 10:49:16 debug Exp $
+ *  $Id: cpu_mips.c,v 1.54 2006-06-18 08:45:54 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -306,15 +306,6 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*  System coprocessor (0), and FPU (1):  */
 	cpu->cd.mips.coproc[0] = mips_coproc_new(cpu, 0);
 	cpu->cd.mips.coproc[1] = mips_coproc_new(cpu, 1);
-
-	/*
-	 *  Initialize the cpu->cd.mips.pc_last_* cache (a 1-entry cache of the
-	 *  last program counter value).  For pc_last_virtual_page, any
-	 *  "impossible" value will do.  The pc should never ever get this
-	 *  value.  (The other pc_last* variables do not need initialization,
-	 *  as they are not used before pc_last_virtual_page.)
-	 */
-	cpu->cd.mips.pc_last_virtual_page = PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
 	switch (cpu->cd.mips.cpu_type.mmu_model) {
 	case MMU3K:

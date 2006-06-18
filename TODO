@@ -1,4 +1,4 @@
-$Id: TODO,v 1.284 2006-06-18 08:24:44 debug Exp $
+$Id: TODO,v 1.285 2006-06-18 08:45:54 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -55,6 +55,8 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 Dyntrans:
+	x)  Move the mips_init_64bit_dummy_tables() etc calls into
+	    src/cpu.c, for all 64-bit cpus?
 	x)  64-bit "phystranslation" lookup as in 32-bit mode? Would probably
 		help performance a bit.
 	x)  Common fatal_abort() function, which drops into the debugger

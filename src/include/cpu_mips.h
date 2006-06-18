@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.39 2006-06-16 18:31:26 debug Exp $
+ *  $Id: cpu_mips.h,v 1.40 2006-06-18 08:45:55 debug Exp $
  */
 
 #include "misc.h"
@@ -163,10 +163,6 @@ struct mips_coproc {
 
 /*******************************  OLD:  *****************************/
 
-/*  This should be a value which the program counter
-    can "never" have:  */
-#define	PC_LAST_PAGE_IMPOSSIBLE_VALUE	3
-
 /*  An "impossible" paddr:  */
 #define	IMPOSSIBLE_PADDR		0x1212343456566767ULL
 
@@ -248,29 +244,6 @@ struct mips_cpu {
 	/*  General purpose registers:  */
 	uint64_t	gpr[N_MIPS_GPRS];
 
-
-	/*
-	 *  For faster memory lookup when running instructions:
-	 *
-	 *  Reading memory to load instructions is a very common thing in the
-	 *  emulator, and an instruction is very often read from the address
-	 *  following the previously executed instruction. That means that we
-	 *  don't have to go through the TLB each time.
-	 *
-	 *  We then get the vaddr -> paddr translation for free. There is an
-	 *  even better case when the paddr is a RAM address (as opposed to an
-	 *  address in a memory mapped device). Then we can figure out the
-	 *  address in the host's memory directly, and skip the paddr -> host
-	 *  address calculation as well.
-	 *
-	 *  A modification to the TLB should set the virtual_page variable to
-	 *  an "impossible" value, so that there won't be a hit on the next
-	 *  instruction.
-	 */
-	uint64_t	pc_last_virtual_page;
-	uint64_t	pc_last_physical_page;
-	unsigned char	*pc_last_host_4k_page;
-
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
 
@@ -342,7 +315,6 @@ int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
         /*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
         int vaddr_asid, int x_64);
-void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
 int mips_cpu_run(struct emul *emul, struct machine *machine);
 void mips_cpu_dumpinfo(struct cpu *cpu);
 void mips_cpu_list_available_types(void);

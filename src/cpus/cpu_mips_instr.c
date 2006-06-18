@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.81 2006-06-17 13:14:34 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.82 2006-06-18 08:45:55 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1816,15 +1816,6 @@ X(tlbw)
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 	coproc_tlbwri(cpu, ic->arg[0]);
-
-	/*  TODO: smarter invalidate  */
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-
-	/*
-	 *  TODO:  Woaaaaaah, super-ugly test hack. Seems to work with
-	 *  Linux and NetBSD, and sometimes with Ultrix (R4400).
-	 */
-	cpu_create_or_reset_tc(cpu);
 }
 
 

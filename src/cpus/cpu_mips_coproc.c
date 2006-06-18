@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.28 2006-06-17 13:14:34 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.29 2006-06-18 08:45:54 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1558,37 +1558,13 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 /*
  *  coproc_tlbwri():
  *
- *  'tlbwr' and 'tlbwi'
+ *  MIPS TLB write random (tlbwr) and write indexed (tlbwi) instructions.
  */
 void coproc_tlbwri(struct cpu *cpu, int randomflag)
 {
 	struct mips_coproc *cp = cpu->cd.mips.coproc[0];
-	int index, g_bit;
+	int index, g_bit, old_asid = -1;
 	uint64_t oldvaddr;
-	int old_asid = -1;
-
-	/*
-	 *  ... and the last instruction page:
-	 *
-	 *  Some thoughts about this:  Code running in
-	 *  the kernel's physical address space has the
-	 *  same vaddr->paddr translation, so the last
-	 *  virtual page invalidation only needs to
-	 *  happen if we are for some extremely weird
-	 *  reason NOT running in the kernel's physical
-	 *  address space.
-	 *
-	 *  (An even insaner (but probably useless)
-	 *  optimization would be to only invalidate
-	 *  the last virtual page stuff if the TLB
-	 *  update actually affects the vaddr in
-	 *  question.)
-	 */
-
-	if (cpu->pc < (uint64_t)0xffffffff80000000ULL ||
-	    cpu->pc >= (uint64_t)0xffffffffc0000000ULL)
-		cpu->cd.mips.pc_last_virtual_page =
-		    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
 	if (randomflag) {
 		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
@@ -1768,6 +1744,16 @@ TODO
 				cp->tlbs[index].hi |= TLB_G;
 		}
 	}
+
+/*  TODO: smarter invalidate  */
+cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+
+/*
+ *  TODO:  Woaaaaaah, super-ugly test hack. Seems to work with
+ *  Linux and NetBSD, and sometimes with Ultrix (R4400).
+ */
+cpu_create_or_reset_tc(cpu);
+
 }
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1247 2006-06-18 08:45:54 debug Exp $
+$Id: HISTORY,v 1.1248 2006-06-18 13:58:36 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2779,3 +2779,5 @@ Changelog for GXemul:
 		translations if necessary, on writes to the entryhi register,
 		instead of doing it for all cop0 writes).
 20060618	More cleanup after the removal of the old MIPS emulation.
+		Trying to fix the MIPS dyntrans performance bugs/bottlenecks;
+		only semi-successful so far (for R3000).

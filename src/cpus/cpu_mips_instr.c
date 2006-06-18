@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.82 2006-06-18 08:45:55 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.83 2006-06-18 13:58:37 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3278,34 +3278,14 @@ X(to_be_translated)
 		case HI6_SD:  store = 1; size = 3; x64 = 1; break;
 		}
 
-		/*
-		 *  NOTE/TODO: This is not very good; this is used for code
-		 *  which relies on R2000/R3000 cache characteristics.
-		 *  Unfortunately the code only gets translated _once_, which
-		 *  could be a performance bottleneck. If profiling reveals
-		 *  this to be a problem, then this must be redesigned. :-/
-		 */
-
-		if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
-		    cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 
-		    MIPS1_ISOL_CACHES) {
-			ic->f =
+		ic->f =
 #ifdef MODE32
-			    mips32_loadstore_generic
+		    mips32_loadstore
 #else
-			    mips_loadstore_generic
+		    mips_loadstore
 #endif
-			    [ store * 8 + size * 2 + signedness];
-		} else {
-			ic->f =
-#ifdef MODE32
-			    mips32_loadstore
-#else
-			    mips_loadstore
-#endif
-			    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16)
-			    + store * 8 + size * 2 + signedness];
-		}
+		    [ (cpu->byte_order == EMUL_LITTLE_ENDIAN? 0 : 16)
+		    + store * 8 + size * 2 + signedness];
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;

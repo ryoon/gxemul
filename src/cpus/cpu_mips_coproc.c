@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.29 2006-06-18 08:45:54 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.30 2006-06-18 13:58:37 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -511,8 +511,9 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 /*
  *  invalidate_asid():
  *
- *  Go through all entries in the TLB. If an entry has a matching asid,
- *  then its virtual address dyntrans translation is invalidated.
+ *  Go through all entries in the TLB. If an entry has a matching asid, is
+ *  valid, and is not global (i.e. the ASID matters), then its virtual address
+ *  translation is invalidated.
  *
  *  Note: In the R3000 case, the asid argument is shifted 6 bits.
  */
@@ -524,7 +525,9 @@ static void invalidate_asid(struct cpu *cpu, int asid)
 
 	if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
 		for (i=0; i<ntlbs; i++)
-			if ((tlb[i].hi & R2K3K_ENTRYHI_ASID_MASK) == asid) {
+			if ((tlb[i].hi & R2K3K_ENTRYHI_ASID_MASK) == asid
+			    && (tlb[i].lo0 & R2K3K_ENTRYLO_V)
+			    && !(tlb[i].lo0 & R2K3K_ENTRYLO_G)) {
 				cpu->invalidate_translation_caches(cpu,
 				    tlb[i].hi & R2K3K_ENTRYHI_VPN_MASK,
 				    INVALIDATE_VADDR);
@@ -826,24 +829,13 @@ void coproc_register_write(struct cpu *cpu,
 		case COP0_STATUS:
 			oldmode = cp->reg[COP0_STATUS];
 			tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
-#if 0
-/*  Why was this here? It should not be necessary.  */
 
-			/*  Changing from kernel to user mode? Then
-			    invalidate some translation caches:  */
-			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
-				if (!(oldmode & MIPS1_SR_KU_CUR)
-				    && (tmp & MIPS1_SR_KU_CUR))
-					invalidate_translation_caches(cpu,
-					    0, 0, 1, 0);
-			} else {
-				/*  TODO: don't hardcode  */
-				if ((oldmode & 0xff) != (tmp & 0xff))
-					invalidate_translation_caches(
-					    cpu, 0, 0, 1, 0);
-			}
-#endif
-
+/*  TODO: FIX!!!  */
+if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
+    (oldmode & MIPS1_ISOL_CACHES) != (tmp & MIPS1_ISOL_CACHES)) {
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	cpu_create_or_reset_tc(cpu);
+}
 			unimpl = 0;
 			break;
 		case COP0_CAUSE:
@@ -1603,8 +1595,13 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	debug(" lo1 = %016"PRIx64"\n", cp->tlbs[index].lo1);
 #endif
 
-	/*  Translation caches must be invalidated:  */
+	/*
+	 *  Any virtual address translation for the old TLB entry must be
+	 *  invalidated first:
+	 */
+
 	switch (cpu->cd.mips.cpu_type.mmu_model) {
+
 	case MMU3K:
 		oldvaddr = cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK;
 		oldvaddr &= 0xffffffffULL;
@@ -1613,15 +1610,11 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		old_asid = (cp->tlbs[index].hi & R2K3K_ENTRYHI_ASID_MASK)
 		    >> R2K3K_ENTRYHI_ASID_SHIFT;
 
-/*  TODO: Bug? Why does this if need to be commented out?  */
-
-#if 0
-		/*  if (cp->tlbs[index].lo0 & ENTRYLO_V)  */
-			invalidate_translation_caches(cpu, 0, oldvaddr, 0, 0);
-#endif
+		cpu->invalidate_translation_caches(cpu, oldvaddr,
+		    INVALIDATE_VADDR);
 		break;
-	default:
-		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
+
+	default:if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
 			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
 			/*  44 addressable bits:  */
 			if (oldvaddr & 0x80000000000ULL)
@@ -1635,16 +1628,15 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		}
 
 		/*
-		 *  Both pages:
-		 *
 		 *  TODO: non-4KB page sizes!
 		 */
-#if 0
-TODO
-		invalidate_translation_caches(
-		    cpu, 0, oldvaddr & ~0x1fff, 0, 0);
-		invalidate_translation_caches(
-		    cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
+#if 1
+		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+#else
+		cpu->invalidate_translation_caches(cpu, oldvaddr,
+		    INVALIDATE_VADDR);
+		cpu->invalidate_translation_caches(cpu, oldvaddr | 0x1000,
+		    INVALIDATE_VADDR);
 #endif
 	}
 
@@ -1691,7 +1683,7 @@ TODO
 	/*  Write the new entry:  */
 
 	if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
-		uint64_t vaddr, paddr;
+		uint32_t vaddr, paddr;
 		int wf = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_D? 1 : 0;
 		unsigned char *memblock = NULL;
 
@@ -1701,24 +1693,20 @@ TODO
 		vaddr =  cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
 		paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
 
-		/*  TODO: This is ugly.  */
-		if (paddr < 0x10000000)
-			memblock = memory_paddr_to_hostaddr(
-			    cpu->mem, paddr, 1);
+		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, 0);
 
+		/*  Invalidate any code translation, if we are writing
+		    a Dirty page to the TLB:  */
+		if (wf) {
+			cpu->invalidate_code_translation(cpu, paddr,
+			    INVALIDATE_PADDR);
+		}
+
+		/*  If we have a memblock (host page) for the physical
+		    page, then add a translation for it immediately:  */
 		if (memblock != NULL &&
 		    cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 			memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
-
-			/*
-			 *  TODO: Hahaha, this is even uglier than the thing
-			 *  above. Some OSes seem to map code pages read/write,
-			 *  which causes the bintrans cache to be invalidated
-			 *  even when it doesn't have to be.
-			 */
-/*			if (vaddr < 0x10000000)  */
-				wf = 0;
-
 			cpu->update_translation_table(cpu, vaddr, memblock,
 			    wf, paddr);
 		}
@@ -1743,17 +1731,24 @@ TODO
 			if (g_bit)
 				cp->tlbs[index].hi |= TLB_G;
 		}
+
+#if 1
+		cpu_create_or_reset_tc(cpu);
+#else
+		/*  Invalidate any code translations, if we are writing
+		    Dirty pages to the TLB:  */
+		if (cp->tlbs[index].lo0 & ENTRYLO_D)
+			cpu->invalidate_code_translation(cpu,
+			    ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
+			    >> ENTRYLO_PFN_SHIFT) << 12,
+			    INVALIDATE_PADDR);
+		if (cp->tlbs[index].lo1 & ENTRYLO_D)
+			cpu->invalidate_code_translation(cpu,
+			    ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
+			    >> ENTRYLO_PFN_SHIFT) << 12,
+			    INVALIDATE_PADDR);
+#endif
 	}
-
-/*  TODO: smarter invalidate  */
-cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-
-/*
- *  TODO:  Woaaaaaah, super-ugly test hack. Seems to work with
- *  Linux and NetBSD, and sometimes with Ultrix (R4400).
- */
-cpu_create_or_reset_tc(cpu);
-
 }
 
 
@@ -1764,21 +1759,9 @@ cpu_create_or_reset_tc(cpu);
  */
 void coproc_rfe(struct cpu *cpu)
 {
-	int oldmode;
-
-	oldmode = cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SR_KU_CUR;
-
 	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] =
 	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 	    ((cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
-
-#if 0
-TODO
-	/*  Changing from kernel to user mode? Then this is necessary:  */
-	if (!oldmode &&
-	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SR_KU_CUR))
-		invalidate_translation_caches(cpu, 0, 0, 1, 0);
-#endif
 }
 
 

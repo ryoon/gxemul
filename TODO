@@ -1,4 +1,4 @@
-$Id: TODO,v 1.283 2006-06-17 10:01:20 debug Exp $
+$Id: TODO,v 1.284 2006-06-18 08:24:44 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -9,30 +9,15 @@ everything the "right way" as things are right now.
 
 MUST stuff before a 0.4.0 release:
 
-	x)  FIX THE CACHE INVALIDATION BOTTLENECKS!
-		(e.g. cpu_create_or_reset_tc() in cpu_mips_instr.c!)
+	x)  FIX THE MAJOR CACHE INVALIDATION BOTTLENECKS!
+		(don't call cpu_create_or_reset_tc() in cpu_mips_instr.c!)
 	x)  Fix the R4000 timing problems with NetBSD/pmax!
 
 0.4.1 or so:
 
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
-	x)  MIPS dyntrans:
-		x)  [Re]add an interrupt-asserted bit for MIPS, to speed up
-		    interrupt handling slightly?
-		+)  Print a warning on the first reserved instruction.
-		+)  Some more work on opcodes.
-			x) MIPS64 revision 2.
-			x) _MAYBE_ TX79 and R5900 actually differ in their
-			   opcodes? Check this carefully!
-		+)  Remove obvious bottlenecks, and do at least _some_
-		    optimization and refactoring.
 	x)  Actually use the settings object, better debugger stuff, etc.
-	x)  Better GDB remote stuff.
-	x)  Better test machine examples:
-		x)  Something more complex, with user input, and
-		    network and disk usage as well? And SMP :-)
-		x)  Think about portable interrupt settings...
 	x)  Wait for new releases of NetBSD, and test with those.
 
 --------------
@@ -42,8 +27,14 @@ SMP:
 	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 
 MIPS:
-	o)  Dyntrans: R2000/R3000 caches don't quite work yet (NetBSD/pmax,
-	    Ultrix, Sprite, etc).
+	o)  Fix invalidate_asid so it works well for non-R3000 too!
+	x)  [Re]add an interrupt-asserted bit for MIPS, to speed up
+	    interrupt handling slightly?
+	+)  Print a warning on the first reserved instruction.
+	+)  Some more work on opcodes.
+		x) MIPS64 revision 2.
+		x) _MAYBE_ TX79 and R5900 actually differ in their
+		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
 	o)  Dyntrans: SMP correctness
 	o)  Refactor code for performance and readability/maintainability.

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.63 2006-06-19 04:19:07 debug Exp $
+.\" $Id: gxemul.1,v 1.64 2006-06-19 05:03:39 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -59,7 +59,7 @@ translation system. Performance is somewhere between traditional
 interpretation and recompilation into native code. However, the dynamic
 translation system used in GXemul does not (currently) generate native
 code, and thus does not require platform-specific back-ends. In plain
-English, this means that the dyntrans system works on any host platform.
+English, this means that the dyntrans system works on any host architecture.
 .Pp
 The emulator can be invoked in the following ways:
 .Pp
@@ -402,8 +402,23 @@ emulated test machine in "paused" mode:
 .Pp
 .Dl "gxemul -E testmips -V hello_mips"
 .Pp
-(Paused mode means that you enter the interactive single-step debugger
-directly at startup, instead of launching the Hello World program.)
+Paused mode means that you enter the interactive single-step debugger
+directly at startup, instead of launching the Hello World program.
+.Pp
+The paused mode is also what should be used when running "unknown" files 
+for the first time in the emulator. E.g. if you have a binary which you 
+think is some kind of MIPS ROM image, then you can try the following:
+.Pp
+.Dl "gxemul -vv -E baremips -V 0xbfc00000:image.raw"
+.Pp
+You can then use the single-stepping functionality of the built-in 
+debugger to run the code in the ROM image, to see how it behaves. Based on 
+that, you can deduce what machine type it was actually from (the 
+baremips machine is not a real machine), and perhaps try again with 
+another emulation mode.
+.Pp
+In general, however, real ROM images require much more emulation detail 
+than GXemul provides, so they can usually not run.
 .Pp
 Please read the documentation for more details.
 .Sh BUGS

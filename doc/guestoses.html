@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.142 2006-06-18 08:16:57 debug Exp $
+$Id: guestoses.html,v 1.143 2006-06-19 05:03:38 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -117,11 +117,10 @@ GXemul's machine, device, and/or processor implementations.
 <a name="netbsdpmaxinstall"></a>
 <h3>NetBSD/pmax:</h3>
 
-<p><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>
-was the first guest OS that could be installed onto a disk
-image in GXemul. The device emulation of the 5000/200 model of the
-DECstation is reasonably complete; it should be enough to emulate a
-networked X-windows-capable workstation.
+<p><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a> was the
+first guest OS that could be installed onto a disk image in GXemul. The
+device emulation of the DECstation 5000/200 is reasonably complete; it
+should be enough to emulate a networked X-windows-capable workstation.
 
 <p>NetBSD/pmax 1.6.2 works perfectly with X out-of-the-box. Unfortunately,
 newer NetBSD releases have changed slightly, and nowadays X does not
@@ -1238,9 +1237,7 @@ Ultrix from the harddisk image:<pre>
         <b>gxemul -X -e 3max -j vmunix -d rootdisk.img</b>
 </pre>
 
-<p>Ultrix mostly seems to work with dynamic binary translation (which can
-be disabled by the <b><tt>-B</tt></b> command line option). If you have a
-very fast host machine, and use bintrans, you might experience a weird
+<p>If you have a very fast host machine, you might experience a weird
 timer related bug, which makes it impossible to logon to the system. It is
 triggered when the emulation goes faster than any real DECstation machine
 was capable of running. A temporary workaround is to add

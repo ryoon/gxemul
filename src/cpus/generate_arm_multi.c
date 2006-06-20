@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_arm_multi.c,v 1.13 2006-05-17 19:01:27 debug Exp $
+ *  $Id: generate_arm_multi.c,v 1.14 2006-06-20 04:02:45 debug Exp $
  *
  *  Generation of commonly used ARM load/store multiple instructions.
  *
@@ -205,7 +205,7 @@ void generate_opcode(uint32_t opcode)
 	printf("\t} else\n");
 	printf("\t\tinstr(bdt_%s)(cpu, ic);\n", load? "load" : "store");
 
-	printf("}\nY(multi_0x%08x)\n", opcode);
+	printf("}\nY(multi_0x%08"PRIx32")\n", opcode);
 }
 
 

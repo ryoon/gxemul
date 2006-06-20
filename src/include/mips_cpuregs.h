@@ -1,4 +1,4 @@
-/*  gxemul: $Id: mips_cpuregs.h,v 1.1 2006-05-10 20:04:59 debug Exp $  */
+/*  gxemul: $Id: mips_cpuregs.h,v 1.2 2006-06-20 21:29:47 debug Exp $  */
 /*	$NetBSD: cpuregs.h,v 1.69 2005/12/20 21:06:43 tron Exp $	*/
 
 /*
@@ -57,7 +57,7 @@
 #ifndef _MIPS_CPUREGS_H_
 #define	_MIPS_CPUREGS_H_
 
-#include <sys/cdefs.h>		/* For __CONCAT() */
+/* #include <sys/cdefs.h>  */		/* For __CONCAT() */
 
 #if defined(_KERNEL_OPT)
 #include "opt_cputype.h"

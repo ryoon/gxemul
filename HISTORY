@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1248 2006-06-18 13:58:36 debug Exp $
+$Id: HISTORY,v 1.1249 2006-06-20 21:29:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2781,3 +2781,4 @@ Changelog for GXemul:
 20060618	More cleanup after the removal of the old MIPS emulation.
 		Trying to fix the MIPS dyntrans performance bugs/bottlenecks;
 		only semi-successful so far (for R3000).
+20060620	Minor update to allow clean compilation again on Tru64/Alpha.

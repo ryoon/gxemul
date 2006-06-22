@@ -1,4 +1,4 @@
-$Id: TODO,v 1.288 2006-06-22 11:01:17 debug Exp $
+$Id: TODO,v 1.289 2006-06-22 13:51:54 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -6,7 +6,7 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 
 0.4.0:
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
-	x)  Fix the interrupt timing problems! (Test with e.g. NetBSD/pmax.)
+	x)  Fix the interrupt problems with Ultrix.
 	x)  Fix the linker/build errors on HP-UX/parisc and HP-UX/ia64?
 
 0.4.1 ...?

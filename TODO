@@ -1,16 +1,23 @@
-$Id: TODO,v 1.290 2006-06-22 15:08:38 debug Exp $
+$Id: TODO,v 1.291 2006-06-22 15:35:41 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 --------------
 
+Possible release schedule:
+
 0.4.0:
+	x)  Quick release, even though performance for non-R3000 MIPS
+	    dyntrans sucks. (Assuming everything mentioned in the documentation
+	    works.)
+
+0.4.1:
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
 	x)  Fix the interrupt problems with Ultrix!
 	x)  Find/fix bug which is triggered when building the emulator inside
 	    NetBSD/pmax 3.0 inside the emulator!
 
-0.4.1 ...?
+0.4.2 ...?
 	x)  Clean-up!
 	x)  Clock framework?
 	x)  Optimizations, continuing on 64-bit issues etc with dyntrans

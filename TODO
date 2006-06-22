@@ -1,4 +1,4 @@
-$Id: TODO,v 1.289 2006-06-22 13:51:54 debug Exp $
+$Id: TODO,v 1.290 2006-06-22 15:08:38 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -6,8 +6,9 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 
 0.4.0:
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
-	x)  Fix the interrupt problems with Ultrix.
-	x)  Fix the linker/build errors on HP-UX/parisc and HP-UX/ia64?
+	x)  Fix the interrupt problems with Ultrix!
+	x)  Find/fix bug which is triggered when building the emulator inside
+	    NetBSD/pmax 3.0 inside the emulator!
 
 0.4.1 ...?
 	x)  Clean-up!

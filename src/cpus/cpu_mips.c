@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.54 2006-06-18 08:45:54 debug Exp $
+ *  $Id: cpu_mips.c,v 1.55 2006-06-22 11:43:03 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1879,13 +1879,11 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	uint64_t *reg = &cpu->cd.mips.coproc[0]->reg[0];
 	int exc_model = cpu->cd.mips.cpu_type.exc_model;
 
-	cpu->cd.mips.pc_last = cpu->pc;
-
 	if (!quiet_mode) {
 		uint64_t offset;
 		int x;
 		char *symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->cd.mips.pc_last, &offset);
+		    cpu->pc, &offset);
 
 		debug("[ ");
 		if (cpu->machine->ncpus > 1)
@@ -1936,9 +1934,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		}
 
 		if (cpu->is_32bit)
-			debug(" pc=0x%08"PRIx32" ", (uint32_t)cpu->cd.mips.pc_last);
+			debug(" pc=0x%08"PRIx32" ", (uint32_t)cpu->pc);
 		else
-			debug(" pc=0x%016"PRIx64" ", (uint64_t)cpu->cd.mips.pc_last);
+			debug(" pc=0x%016"PRIx64" ", (uint64_t)cpu->pc);
 
 		if (symbol != NULL)
 			debug("<%s> ]\n", symbol);
@@ -1949,7 +1947,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (tlb && vaddr < 0x1000) {
 		uint64_t offset;
 		char *symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->cd.mips.pc_last, &offset);
+		    cpu->pc, &offset);
 		fatal("[ ");
 		if (cpu->machine->ncpus > 1)
 			fatal("cpu%i: ", cpu->cpu_id);
@@ -1960,9 +1958,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			fatal("0x%016"PRIx64, (uint64_t) vaddr);
 		fatal(", exception %s, pc=", exception_names[exccode]);
 		if (cpu->is_32bit)
-			fatal("0x%08"PRIx32, (uint32_t) cpu->cd.mips.pc_last);
+			fatal("0x%08"PRIx32, (uint32_t) cpu->pc);
 		else
-			fatal("0x%016"PRIx64, (uint64_t)cpu->cd.mips.pc_last);
+			fatal("0x%016"PRIx64, (uint64_t)cpu->pc);
 		fatal(" <%s> ]\n", symbol? symbol : "(no symbol)");
 	}
 
@@ -1982,12 +1980,15 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (tlb || (exccode >= EXCEPTION_MOD && exccode <= EXCEPTION_ADES) ||
 	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED) {
 		reg[COP0_BADVADDR] = vaddr;
-#if 1
+#if 0
 /*  TODO: This should be removed.  */
 		/*  sign-extend vaddr, if it is 32-bit  */
 		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
 			reg[COP0_BADVADDR] |=
 			    0xffffffff00000000ULL;
+#else
+		if (cpu->is_32bit)
+			reg[COP0_BADVADDR] = (int32_t)reg[COP0_BADVADDR];
 #endif
 		if (exc_model == EXC3K) {
 			reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
@@ -2043,13 +2044,13 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		    " not setting EPC ]\n", cpu->cpu_id);  */
 	} else {
 		if (cpu->delay_slot || cpu->cd.mips.nullify_next) {
-			reg[COP0_EPC] = cpu->cd.mips.pc_last - 4;
+			reg[COP0_EPC] = cpu->pc - 4;
 			reg[COP0_CAUSE] |= CAUSE_BD;
 
 			/*  TODO: Should the BD flag actually be set
 			    on nullified slots?  */
 		} else {
-			reg[COP0_EPC] = cpu->cd.mips.pc_last;
+			reg[COP0_EPC] = cpu->pc;
 			reg[COP0_CAUSE] &= ~CAUSE_BD;
 		}
 	}
@@ -2119,8 +2120,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (cpu->is_32bit) {
 		reg[COP0_EPC] = (int64_t)(int32_t)reg[COP0_EPC];
 		mips32_pc_to_pointers(cpu);
-	} else
+	} else {
 		mips_pc_to_pointers(cpu);
+	}
 }
 
 

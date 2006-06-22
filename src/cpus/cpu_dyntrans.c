@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.96 2006-06-17 13:14:34 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.97 2006-06-22 11:43:03 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -125,6 +125,18 @@ a &= 0x03ffffff;
 
 /*  The normal instruction execution core:  */
 #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic);
+
+/*  For heavy debugging:  */
+/*  #define I	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++;	\
+		{	\
+			int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - \
+			    (size_t)cpu->cd.DYNTRANS_ARCH.cur_ic_page) / \
+			    sizeof(struct DYNTRANS_IC);			\
+			printf("cur_ic_page=%p ic=%p (low_pc=0x%x)\n",	\
+			    cpu->cd.DYNTRANS_ARCH.cur_ic_page,		\
+			    ic, low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT); \
+		} \
+		ic->f(cpu, ic);  */
 
 /*  static long long nr_of_I_calls = 0;  */
 

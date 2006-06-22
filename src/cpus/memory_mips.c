@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.6 2006-06-17 10:00:08 debug Exp $
+ *  $Id: memory_mips.c,v 1.7 2006-06-22 11:43:03 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  *
@@ -201,15 +201,6 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			}
 			cpu->cd.mips.cache[which_cache][(addr+i) &
 			    cpu->cd.mips.cache_mask[which_cache]] = data[i];
-		}
-	}
-
-	/*  Run instructions from the right host page:  */
-	if (cache == CACHE_INSTRUCTION) {
-		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
-		if (memblock != NULL) {
-			cpu->cd.mips.pc_last_host_4k_page = memblock +
-			    (paddr & ((1 << BITS_PER_MEMBLOCK) - 1) & ~0xfff);
 		}
 	}
 

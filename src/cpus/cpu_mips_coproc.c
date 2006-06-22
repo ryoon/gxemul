@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.30 2006-06-18 13:58:37 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.31 2006-06-22 11:43:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -663,11 +663,10 @@ void coproc_register_write(struct cpu *cpu,
 			    (tmp & 0xff)!=0) {
 				/*  char *symbol;
 				    uint64_t offset;
-				    symbol = get_symbol_name(
-				    cpu->cd.mips.pc_last, &offset);
+				    symbol = get_symbol_name(cpu->pc, &offset);
 				    fatal("YO! pc = 0x%08llx <%s> "
 				    "lo=%016llx\n", (long long)
-				    cpu->cd.mips.pc_last, symbol? symbol :
+				    cpu->pc, symbol? symbol :
 				    "no symbol", (long long)tmp); */
 				tmp &= (R2K3K_ENTRYLO_PFN_MASK |
 				    R2K3K_ENTRYLO_N | R2K3K_ENTRYLO_D |
@@ -779,11 +778,11 @@ void coproc_register_write(struct cpu *cpu,
 			    (tmp & 0x3f)!=0) {
 				/* char *symbol;
 				   uint64_t offset;
-				   symbol = get_symbol_name(cpu->
-				    cd.mips.pc_last, &offset);
+				   symbol = get_symbol_name(cpu->pc,
+				    &offset);
 				   fatal("YO! pc = 0x%08llx <%s> "
-				    "hi=%016llx\n", (long long)cpu->
-				    cd.mips.pc_last, symbol? symbol :
+				    "hi=%016llx\n", (long long)cpu->pc,
+				    symbol? symbol :
 				    "no symbol", (long long)tmp);  */
 				tmp &= ~0x3f;
 			}
@@ -829,13 +828,21 @@ void coproc_register_write(struct cpu *cpu,
 		case COP0_STATUS:
 			oldmode = cp->reg[COP0_STATUS];
 			tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
+			/*
+			 *  TODO: Perhaps this can be solved some other
+			 *  way, like in the old bintrans system?
+			 */
+			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
+			    (oldmode & MIPS1_ISOL_CACHES) !=
+			    (tmp & MIPS1_ISOL_CACHES)) {
+				cpu->invalidate_translation_caches(
+				    cpu, 0, INVALIDATE_ALL);
 
-/*  TODO: FIX!!!  */
-if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
-    (oldmode & MIPS1_ISOL_CACHES) != (tmp & MIPS1_ISOL_CACHES)) {
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-	cpu_create_or_reset_tc(cpu);
-}
+				/*  Perhaps add some kind of INVALIDATE_
+				    ALL_PADDR_WHICH_HAS_A_CORRESPONDING_
+				    VADDR of some kind? :-)  */
+				cpu_create_or_reset_tc(cpu);
+			}
 			unimpl = 0;
 			break;
 		case COP0_CAUSE:
@@ -1619,6 +1626,9 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			/*  44 addressable bits:  */
 			if (oldvaddr & 0x80000000000ULL)
 				oldvaddr |= 0xfffff00000000000ULL;
+		} else if (cpu->is_32bit) {
+			/*  Some kind of MIPS32 or similar:  */
+			oldvaddr = (int32_t)oldvaddr;
 		} else {
 			/*  Assume MMU4K  */
 			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
@@ -1627,12 +1637,12 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				oldvaddr |= 0xffffff0000000000ULL;
 		}
 
-		/*
-		 *  TODO: non-4KB page sizes!
-		 */
 #if 1
 		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 #else
+		/*
+		 *  TODO: non-4KB page sizes!
+		 */
 		cpu->invalidate_translation_caches(cpu, oldvaddr,
 		    INVALIDATE_VADDR);
 		cpu->invalidate_translation_caches(cpu, oldvaddr | 0x1000,
@@ -1737,12 +1747,14 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 #else
 		/*  Invalidate any code translations, if we are writing
 		    Dirty pages to the TLB:  */
-		if (cp->tlbs[index].lo0 & ENTRYLO_D)
+if (cp->reg[COP0_PAGEMASK] != 0)
+printf("MASK = %08"PRIx32"\n", (uint32_t)cp->reg[COP0_PAGEMASK]);
+//		if (cp->tlbs[index].lo0 & ENTRYLO_D)
 			cpu->invalidate_code_translation(cpu,
 			    ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
 			    >> ENTRYLO_PFN_SHIFT) << 12,
 			    INVALIDATE_PADDR);
-		if (cp->tlbs[index].lo1 & ENTRYLO_D)
+//		if (cp->tlbs[index].lo1 & ENTRYLO_D)
 			cpu->invalidate_code_translation(cpu,
 			    ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
 			    >> ENTRYLO_PFN_SHIFT) << 12,
@@ -1772,45 +1784,16 @@ void coproc_rfe(struct cpu *cpu)
  */
 void coproc_eret(struct cpu *cpu)
 {
-	int oldmode, newmode;
-
-	/*  Kernel mode flag:  */
-	oldmode = 0;
-	if ((cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS3_SR_KSU_MASK)
-			!= MIPS3_SR_KSU_USER
-	    || (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & (STATUS_EXL |
-	    STATUS_ERL)) ||
-	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 1) == 0)
-		oldmode = 1;
-
 	if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_ERL) {
-		cpu->pc = cpu->cd.mips.pc_last =
-		    cpu->cd.mips.coproc[0]->reg[COP0_ERROREPC];
+		cpu->pc = cpu->cd.mips.coproc[0]->reg[COP0_ERROREPC];
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_ERL;
 	} else {
-		cpu->pc = cpu->cd.mips.pc_last =
-		    cpu->cd.mips.coproc[0]->reg[COP0_EPC];
+		cpu->pc = cpu->cd.mips.coproc[0]->reg[COP0_EPC];
 		cpu->delay_slot = 0;
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_EXL;
 	}
 
 	cpu->cd.mips.rmw = 0;	/*  the "LL bit"  */
-
-	/*  New kernel mode flag:  */
-	newmode = 0;
-	if ((cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS3_SR_KSU_MASK)
-			!= MIPS3_SR_KSU_USER
-	    || (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & (STATUS_EXL |
-	    STATUS_ERL)) ||
-	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 1) == 0)
-		newmode = 1;
-
-#if 0
-	/*  Changing from kernel to user mode?
-	    Then this is necessary:  TODO  */
-	if (oldmode && !newmode)
-		invalidate_translation_caches(cpu, 0, 0, 1, 0);
-#endif
 }
 
 
@@ -2088,8 +2071,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 				 *  does that mean?) TODO: This instruction
 				 *  is undefined in a delay slot.
 				 */
-				cpu->pc = cpu->cd.mips.pc_last =
-				    cp->reg[COP0_DEPC];
+				cpu->pc = cp->reg[COP0_DEPC];
 				cpu->delay_slot = 0;
 				cp->reg[COP0_STATUS] &= ~STATUS_EXL;
 				return;
@@ -2148,9 +2130,9 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 		return;
 	}
 
-	fatal("cpu%i: UNIMPLEMENTED coproc%i function %08lx "
-	    "(pc = %016llx)\n", cpu->cpu_id, cp->coproc_nr, function,
-	    (long long)cpu->cd.mips.pc_last);
+	fatal("cpu%i: UNIMPLEMENTED coproc%i function %08"PRIx32" "
+	    "(pc = %016"PRIx64")\n", cpu->cpu_id, cp->coproc_nr,
+	    (uint32_t)function, cpu->pc);
 
 	mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 }

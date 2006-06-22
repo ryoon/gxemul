@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1249 2006-06-20 21:29:47 debug Exp $
+$Id: HISTORY,v 1.1250 2006-06-22 11:43:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2782,3 +2782,6 @@ Changelog for GXemul:
 		Trying to fix the MIPS dyntrans performance bugs/bottlenecks;
 		only semi-successful so far (for R3000).
 20060620	Minor update to allow clean compilation again on Tru64/Alpha.
+20060622	MIPS cleanup and fixes (removing the pc_last stuff, which
+		doesn't make sense with dyntrans anyway, and fixing a cross-
+		page-delay-slot-with-exception case in end_of_page).

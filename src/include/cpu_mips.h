@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.40 2006-06-18 08:45:55 debug Exp $
+ *  $Id: cpu_mips.h,v 1.41 2006-06-22 11:43:03 debug Exp $
  */
 
 #include "misc.h"
@@ -237,7 +237,6 @@ struct mips_cpu {
 	int		compare_register_set;
 
 	/*  Special purpose registers:  */
-	uint64_t	pc_last;		/*  PC of last instruction   */
 	uint64_t	hi;
 	uint64_t	lo;
 

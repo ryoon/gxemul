@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.83 2006-06-18 13:58:37 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.84 2006-06-22 11:43:03 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1019,6 +1019,7 @@ X(cache)
 /*  TODO: fix  */
 cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
 cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+/* cpu_create_or_reset_tc(cpu); */
 }
 
 
@@ -2330,17 +2331,34 @@ X(end_of_page)
 	    MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (MIPS_IC_ENTRIES_PER_PAGE << MIPS_INSTR_ALIGNMENT_SHIFT);
 
-	/*  Find the new physpage and update translation pointers:  */
-	quick_pc_to_pointers(cpu);
-
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
+
+	/*
+	 *  Find the new physpage and update translation pointers.
+	 *
+	 *  Note: This may cause an exception, if e.g. the new page is
+	 *  not accessible.
+	 */
+	quick_pc_to_pointers(cpu);
 
 	/*  Simple jump to the next page (if we are lucky):  */
 	if (cpu->delay_slot == NOT_DELAYED)
 		return;
 
-	/*  Tricky situation; the delay slot is on the next virtual page:  */
+	/*
+	 *  If we were in a delay slot, and we got an exception while doing
+	 *  quick_pc_to_pointers, then return. The function which called
+	 *  end_of_page should handle this case.
+	 */
+	if (cpu->delay_slot == EXCEPTION_IN_DELAY_SLOT)
+		return;
+
+	/*
+	 *  Tricky situation; the delay slot is on the next virtual page.
+	 *  Calling to_be_translated will translate one instruction manually,
+	 *  execute it, and then discard it.
+	 */
 	/*  fatal("[ end_of_page: delay slot across page boundary! ]\n");  */
 
 	instr(to_be_translated)(cpu, cpu->cd.mips.next_ic);
@@ -2730,7 +2748,7 @@ X(to_be_translated)
 				break;
 			}
 			if (cpu->delay_slot) {
-				fatal("branch in delay slot?\n");
+				fatal("TODO: branch in delay slot? (1)\n");
 				goto bad;
 			}
 			break;
@@ -2823,7 +2841,7 @@ X(to_be_translated)
 			ic->f = samepage_function;
 		}
 		if (cpu->delay_slot) {
-			fatal("TODO: branch in delay slot?\n");
+			fatal("TODO: branch in delay slot? (2)\n");
 			goto bad;
 		}
 		break;
@@ -2894,7 +2912,9 @@ X(to_be_translated)
 		ic->arg[0] = (iword & 0x03ffffff) << 2;
 		ic->arg[1] = (addr & 0xffc) + 8;
 		if (cpu->delay_slot) {
-			fatal("TODO: branch in delay slot?\n");
+			fatal("TODO: branch in delay slot (=%i)? (3); addr=%016"
+			    PRIx64" iword=%08"PRIx32"\n", cpu->delay_slot,
+			    (uint64_t)addr, iword);
 			goto bad;
 		}
 		break;
@@ -3013,7 +3033,7 @@ X(to_be_translated)
 			ic->arg[2] = (int32_t) ((imm <<
 			    MIPS_INSTR_ALIGNMENT_SHIFT) + (addr & 0xffc) + 4);
 			if (cpu->delay_slot) {
-				fatal("TODO: branch in delay slot?\n");
+				fatal("TODO: branch in delay slot? (4)\n");
 				goto bad;
 			}
 			if (cpu->cd.mips.cpu_type.isa_level <= 3 &&
@@ -3242,7 +3262,7 @@ X(to_be_translated)
 				ic->f = samepage_function;
 			}
 			if (cpu->delay_slot) {
-				fatal("TODO: branch in delay slot?\n");
+				fatal("TODO: branch in delay slot? (5)\n");
 				goto bad;
 			}
 			break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.86 2006-06-18 08:45:54 debug Exp $
+ *  $Id: memory_rw.c,v 1.87 2006-06-22 11:43:03 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -372,13 +372,8 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif /* MIPS */
 		{
 			if (paddr >= mem->physical_max) {
+				uint64_t offset, old_pc = cpu->pc;
 				char *symbol;
-				uint64_t offset;
-#ifdef MEM_MIPS
-				uint64_t old_pc = cpu->cd.mips.pc_last;
-#else
-				uint64_t old_pc = cpu->pc;
-#endif
 
 				/*  This allows for example OS kernels to probe
 				    memory a few KBs past the end of memory,

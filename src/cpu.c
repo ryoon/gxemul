@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.340 2006-06-16 18:31:24 debug Exp $
+ *  $Id: cpu.c,v 1.341 2006-06-22 13:22:40 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -569,7 +569,7 @@ void cpu_run_init(struct machine *machine)
 	if (machine->a_few_cycles < 1)
 		machine->a_few_cycles = 1;
 
-	if (ncpus > 1 && machine->max_random_cycles_per_chunk == 0)
+	if (ncpus > 1)
 		machine->a_few_cycles = 1;
 
 	/*  debug("cpu_run_init(): a_few_cycles = %i\n",

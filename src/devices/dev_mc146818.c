@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.85 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.86 2006-06-22 13:22:41 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -137,8 +137,7 @@ static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 #endif
 
 	if (d->interrupt_hz > 0)
-		d->interrupt_every_x_cycles =
-		    emulated_hz / d->interrupt_hz;
+		d->interrupt_every_x_cycles = emulated_hz / d->interrupt_hz;
 	else
 		d->interrupt_every_x_cycles = 0;
 }
@@ -160,7 +159,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 		if (d->cycles_left_until_interrupt < 0 ||
 		    d->cycles_left_until_interrupt >=
 		    d->interrupt_every_x_cycles) {
-			/*  debug("[ rtc interrupt (every %i cycles) ]\n",
+			/*  fatal("[ rtc interrupt (every %i cycles) ]\n",
 			    d->interrupt_every_x_cycles);  */
 			cpu_interrupt(cpu, d->irq_nr);
 

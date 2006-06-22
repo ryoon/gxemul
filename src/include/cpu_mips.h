@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.41 2006-06-22 11:43:03 debug Exp $
+ *  $Id: cpu_mips.h,v 1.42 2006-06-22 13:22:41 debug Exp $
  */
 
 #include "misc.h"
@@ -239,6 +239,9 @@ struct mips_cpu {
 	/*  Special purpose registers:  */
 	uint64_t	hi;
 	uint64_t	lo;
+
+	/*  Dummy destination register when writing to the zero register:  */
+	uint64_t	scratch;
 
 	/*  General purpose registers:  */
 	uint64_t	gpr[N_MIPS_GPRS];

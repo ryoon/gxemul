@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1250 2006-06-22 11:43:02 debug Exp $
+$Id: HISTORY,v 1.1251 2006-06-22 13:22:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2785,3 +2785,8 @@ Changelog for GXemul:
 20060622	MIPS cleanup and fixes (removing the pc_last stuff, which
 		doesn't make sense with dyntrans anyway, and fixing a cross-
 		page-delay-slot-with-exception case in end_of_page).
+		Removing the old max_random_cycles_per_chunk stuff.
+		FINALLY found and fixed the bug which caused NetBSD/pmax
+		clocks to behave strangely (it was a load to the zero register,
+		which was treated as a NOP; now it is treated as a load to a
+		dummy scratch register).

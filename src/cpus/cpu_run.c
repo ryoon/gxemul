@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.8 2006-04-25 04:11:33 debug Exp $
+ *  $Id: cpu_run.c,v 1.9 2006-06-22 13:22:41 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -40,15 +40,6 @@
 #include "debugger.h"
 
 
-static int instrs_per_cycle(struct cpu *cpu) {
-#ifdef CPU_RUN_MIPS
-	return cpu->cd.mips.cpu_type.instrs_per_cycle;
-#else
-	return 1;
-#endif
-}
-
-
 /*
  *  CPU_RUN():
  *
@@ -61,8 +52,6 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 {
 	struct cpu **cpus = machine->cpus;
 	int ncpus = machine->ncpus;
-	int64_t max_random_cycles_per_chunk_cached =
-	    machine->max_random_cycles_per_chunk;
 	int64_t ncycles_chunk_end;
 	int running, rounds;
 
@@ -72,8 +61,7 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 	while (running || single_step) {
 		ncycles_chunk_end = machine->ncycles + (1 << 17);
 
-		machine->a_few_instrs = machine->a_few_cycles *
-		    instrs_per_cycle(cpus[0]);
+		machine->a_few_instrs = machine->a_few_cycles;
 
 		/*  Do a chunk of cycles:  */
 		do {
@@ -112,36 +100,16 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 					single_step = 2;
 				}
 
-				for (j=0; j<instrs_per_cycle(cpus[0]); j++) {
-					if (single_step)
-						debugger();
-					for (i=0; i<ncpus; i++)
-						if (cpus[i]->running) {
-							int instrs_run =
-							    CPU_RINSTR(emul,
-							    cpus[i]);
-							if (i == 0)
-								cpu0instrs +=
-								    instrs_run;
-						}
-				}
-			} else if (max_random_cycles_per_chunk_cached > 0) {
+				if (single_step)
+					debugger();
 				for (i=0; i<ncpus; i++)
-					if (cpus[i]->running && !single_step) {
-						a_few_instrs2 = machine->
-						    a_few_cycles;
-						if (a_few_instrs2 >=
-						    max_random_cycles_per_chunk_cached)
-							a_few_instrs2 = max_random_cycles_per_chunk_cached;
-						j = (random() % a_few_instrs2) + 1;
-						j *= instrs_per_cycle(cpus[i]);
-						while (j-- >= 1 && cpus[i]->running) {
-							int instrs_run = CPU_RINSTR(emul, cpus[i]);
-							if (i == 0)
-								cpu0instrs += instrs_run;
-							if (single_step)
-								break;
-						}
+					if (cpus[i]->running) {
+						int instrs_run =
+						    CPU_RINSTR(emul,
+						    cpus[i]);
+						if (i == 0)
+							cpu0instrs +=
+							    instrs_run;
 					}
 			} else {
 				/*  CPU 0 is special, cpu0instr must be updated.  */
@@ -164,8 +132,7 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 
 				/*  CPU 1 and up:  */
 				for (i=1; i<ncpus; i++) {
-					a_few_instrs2 = machine->a_few_cycles *
-					    instrs_per_cycle(cpus[i]);
+					a_few_instrs2 = machine->a_few_cycles;
 					for (j=0; j<a_few_instrs2; )
 						if (cpus[i]->running) {
 							int instrs_run = 0;
@@ -188,32 +155,11 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 			 *
 			 *  Here, cpu0instrs is the number of instructions
 			 *  executed on cpu0.  (TODO: don't use cpu 0 for this,
-			 *  use some kind of "mainbus" instead.)  Hardware
-			 *  ticks are not per instruction, but per cycle,
-			 *  so we divide by the number of
-			 *  instructions_per_cycle for cpu0.
-			 *
-			 *  TODO:  This doesn't work in a machine with, say,
-			 *  a mixture of R3000, R4000, and R10000 CPUs, if
-			 *  there ever was such a thing.
-			 *
-			 *  TODO 2:  A small bug occurs if cpu0instrs isn't
-			 *  evenly divisible by instrs_per_cycle. We then
-			 *  cause hardware ticks a fraction of a cycle too
-			 *  often.
+			 *  use some kind of "mainbus" instead.)
 			 */
-			i = instrs_per_cycle(cpus[0]);
-			switch (i) {
-			case 1:	break;
-			case 2:	cpu0instrs >>= 1; break;
-			case 4:	cpu0instrs >>= 2; break;
-			default:
-				cpu0instrs /= i;
-			}
 
 			for (te=0; te<machine->n_tick_entries; te++) {
 				machine->ticks_till_next[te] -= cpu0instrs;
-
 				if (machine->ticks_till_next[te] <= 0) {
 					while (machine->ticks_till_next[te]
 					    <= 0)

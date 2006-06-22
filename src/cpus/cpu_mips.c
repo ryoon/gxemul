@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.55 2006-06-22 11:43:03 debug Exp $
+ *  $Id: cpu_mips.c,v 1.56 2006-06-22 13:22:41 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1980,16 +1980,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (tlb || (exccode >= EXCEPTION_MOD && exccode <= EXCEPTION_ADES) ||
 	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED) {
 		reg[COP0_BADVADDR] = vaddr;
-#if 0
-/*  TODO: This should be removed.  */
-		/*  sign-extend vaddr, if it is 32-bit  */
-		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
-			reg[COP0_BADVADDR] |=
-			    0xffffffff00000000ULL;
-#else
 		if (cpu->is_32bit)
 			reg[COP0_BADVADDR] = (int32_t)reg[COP0_BADVADDR];
-#endif
+
 		if (exc_model == EXC3K) {
 			reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
 			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << R2K3K_CONTEXT_BADVPN_SHIFT) & R2K3K_CONTEXT_BADVPN_MASK);

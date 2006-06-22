@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.7 2006-04-22 08:40:45 debug Exp $
+ *  $Id: dec_prom.c,v 1.8 2006-06-22 13:22:41 debug Exp $
  *
  *  DECstation PROM emulation.
+ *
+ *  Implementation note: Remember that only the lowest 32 bits of GPRs are
+ *  actually valid when using dyntrans with e.g. R3000 CPUs.
  */
 
 #include <stdio.h>
@@ -62,10 +65,10 @@ extern int quiet_mode;
  *  (Helper function.)
  */
 static unsigned char mem_readchar(struct cpu *cpu, int regbase, int offset)
-	{
+{
 	unsigned char ch;
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[regbase] + offset,
-	    &ch, sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
+	cpu->memory_rw(cpu, cpu->mem, (int32_t)cpu->cd.mips.gpr[regbase] +
+	    offset, &ch, sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 	return ch;
 }
 
@@ -187,7 +190,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
 			cpu->memory_rw(cpu, cpu->mem,
-			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
+			    (int32_t)cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
 			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)
 				printf("%c", ch);
@@ -313,7 +316,7 @@ int decstation_prom_emul(struct cpu *cpu)
 				/*  It seems that trailing newlines
 				    are not included in the buffer.  */
 			} else if (ch != '\b') {
-				cpu->memory_rw(cpu, cpu->mem,
+				cpu->memory_rw(cpu, cpu->mem, (int32_t)
 				    cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
 				    &ch2, sizeof(ch2), MEM_WRITE,
 				    CACHE_DATA | NO_EXCEPTIONS);
@@ -326,9 +329,9 @@ int decstation_prom_emul(struct cpu *cpu)
 
 		/*  Trailing nul-byte:  */
 		ch2 = '\0';
-		cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] +
-		    i, &ch2, sizeof(ch2), MEM_WRITE,
-		    CACHE_DATA | NO_EXCEPTIONS);
+		cpu->memory_rw(cpu, cpu->mem, (int32_t)
+		    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch2, sizeof(ch2),
+		    MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
 
 		/*  Return the input argument:  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = cpu->cd.mips.gpr[MIPS_GPR_A0];
@@ -509,7 +512,7 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0x64:		/*  getenv()  */
 		/*  Find the environment variable given by a0:  */
 		for (i=0; i<(int)sizeof(buf); i++)
-			cpu->memory_rw(cpu, cpu->mem,
+			cpu->memory_rw(cpu, cpu->mem, (int32_t)
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i],
 			    sizeof(char), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 		buf[sizeof(buf)-1] = '\0';
@@ -518,15 +521,14 @@ int decstation_prom_emul(struct cpu *cpu)
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
 			for (j=0; j<(int32_t)strlen((char *)buf); j++) {
-				cpu->memory_rw(cpu, cpu->mem, (uint64_t)
+				cpu->memory_rw(cpu, cpu->mem, (int32_t)
 				    (DEC_PROM_STRINGS + i + j), &ch2,
 				    sizeof(char), MEM_READ, CACHE_DATA |
 				    NO_EXCEPTIONS);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			cpu->memory_rw(cpu, cpu->mem,
-			    (uint64_t)(DEC_PROM_STRINGS
+			cpu->memory_rw(cpu, cpu->mem, (int32_t)(DEC_PROM_STRINGS
 			    + i + strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (nmatches == (int)strlen((char *)buf) && ch2=='=') {
@@ -674,7 +676,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
-			cpu->memory_rw(cpu, cpu->mem,
+			cpu->memory_rw(cpu, cpu->mem, (int32_t)
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
 			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)

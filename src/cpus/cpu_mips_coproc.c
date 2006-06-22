@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.31 2006-06-22 11:43:03 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.32 2006-06-22 13:22:41 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1595,11 +1595,24 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 #if 0
 	/*  Debug dump of the previous entry at that index:  */
-	debug(" old entry at index = %04x", index);
-	debug(" mask = %016"PRIx64, cp->tlbs[index].mask);
-	debug(" hi = %016"PRIx64, cp->tlbs[index].hi);
-	debug(" lo0 = %016"PRIx64, cp->tlbs[index].lo0);
-	debug(" lo1 = %016"PRIx64"\n", cp->tlbs[index].lo1);
+	fatal("{ old TLB entry at index %02x:", index);
+	if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
+		fatal(" hi=%08"PRIx32, (uint32_t)cp->tlbs[index].hi);
+		fatal(" lo=%08"PRIx32, (uint32_t)cp->tlbs[index].lo0);
+	} else {
+		if (cpu->is_32bit) {
+			fatal(" mask=%08"PRIx32,(uint32_t)cp->tlbs[index].mask);
+			fatal(" hi=%08"PRIx32, (uint32_t)cp->tlbs[index].hi);
+			fatal(" lo0=%08"PRIx32, (uint32_t)cp->tlbs[index].lo0);
+			fatal(" lo1=%08"PRIx32, (uint32_t)cp->tlbs[index].lo1);
+		} else {
+			fatal(" mask=%016"PRIx64, cp->tlbs[index].mask);
+			fatal(" hi=%016"PRIx64, cp->tlbs[index].hi);
+			fatal(" lo0=%016"PRIx64, cp->tlbs[index].lo0);
+			fatal(" lo1=%016"PRIx64, cp->tlbs[index].lo1);
+		}
+	}
+	fatal(" }\n");
 #endif
 
 	/*
@@ -1627,7 +1640,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			if (oldvaddr & 0x80000000000ULL)
 				oldvaddr |= 0xfffff00000000000ULL;
 		} else if (cpu->is_32bit) {
-			/*  Some kind of MIPS32 or similar:  */
+			/*  MIPS32 etc.:  */
 			oldvaddr = (int32_t)oldvaddr;
 		} else {
 			/*  Assume MMU4K  */
@@ -1749,6 +1762,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		    Dirty pages to the TLB:  */
 if (cp->reg[COP0_PAGEMASK] != 0)
 printf("MASK = %08"PRIx32"\n", (uint32_t)cp->reg[COP0_PAGEMASK]);
+
 //		if (cp->tlbs[index].lo0 & ENTRYLO_D)
 			cpu->invalidate_code_translation(cpu,
 			    ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
@@ -1759,6 +1773,33 @@ printf("MASK = %08"PRIx32"\n", (uint32_t)cp->reg[COP0_PAGEMASK]);
 			    ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
 			    >> ENTRYLO_PFN_SHIFT) << 12,
 			    INVALIDATE_PADDR);
+
+
+	if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
+			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
+			/*  44 addressable bits:  */
+			if (oldvaddr & 0x80000000000ULL)
+				oldvaddr |= 0xfffff00000000000ULL;
+		} else if (cpu->is_32bit) {
+			/*  MIPS32 etc.:  */
+			oldvaddr = (int32_t)oldvaddr;
+		} else {
+			/*  Assume MMU4K  */
+			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+			/*  40 addressable bits:  */
+			if (oldvaddr & 0x8000000000ULL)
+				oldvaddr |= 0xffffff0000000000ULL;
+		}
+
+cpu->invalidate_translation_caches(cpu, ((cp->tlbs[index].lo0 & 
+ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << 12, INVALIDATE_PADDR);
+cpu->invalidate_translation_caches(cpu, ((cp->tlbs[index].lo1 & 
+ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << 12, INVALIDATE_PADDR);
+
+cpu->invalidate_translation_caches(cpu, oldvaddr, INVALIDATE_VADDR);
+cpu->invalidate_translation_caches(cpu, oldvaddr | 0x1000, INVALIDATE_VADDR);
+
+
 #endif
 	}
 }

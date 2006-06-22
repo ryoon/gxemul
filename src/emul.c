@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.253 2006-06-16 18:31:24 debug Exp $
+ *  $Id: emul.c,v 1.254 2006-06-22 13:22:40 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1347,10 +1347,6 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		    0x9fff0000, 0x10000, "r2k3k_cache", 0, 0);
 
 	symbol_recalc_sizes(&m->symbol_context);
-
-	if (m->max_random_cycles_per_chunk > 0)
-		debug("using random cycle chunks (1 to %i cycles)\n",
-		    m->max_random_cycles_per_chunk);
 
 	/*  Special hack for ARC/SGI emulation:  */
 	if ((m->machine_type == MACHINE_ARC ||

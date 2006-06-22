@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.273 2006-06-16 18:31:25 debug Exp $
+ *  $Id: main.c,v 1.274 2006-06-22 13:22:41 debug Exp $
  */
 
 #include <stdio.h>
@@ -285,8 +285,6 @@ static void usage(int longusage)
 	    " when X11 is used, off otherwise)\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
 #endif /*  WITH_X11  */
-	printf("  -y x      set max_random_cycles_per_chunk to x"
-	    " (experimental)\n");
 	printf("  -Z n      set nr of graphics cards, for emulating a "
 	    "dual-head or tripple-head\n"
 	    "            environment (only for DECstation emulation)\n");
@@ -356,7 +354,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 #ifdef WITH_X11
 	    "XxY:"
 #endif
-	    "y:Z:z:";
+	    "Z:z:";
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
@@ -554,10 +552,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 				fprintf(stderr, "Invalid scaledown value.\n");
 				exit(1);
 			}
-			msopts = 1;
-			break;
-		case 'y':
-			m->max_random_cycles_per_chunk = atoi(optarg);
 			msopts = 1;
 			break;
 		case 'Z':

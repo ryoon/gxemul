@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.84 2006-06-22 11:43:03 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.85 2006-06-22 13:22:41 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1847,8 +1847,7 @@ X(rfe)
 {
 	coproc_rfe(cpu);
 
-	/*  pc to pointers should not be necessary here.  */
-	/*  quick_pc_to_pointers(cpu);  */
+	/*  Note: no pc to pointers conversion is necessary here.  */
 }
 
 
@@ -2504,8 +2503,7 @@ X(to_be_translated)
 		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, ib,
 		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
-			fatal("to_be_translated(): "
-			    "read failed: TODO\n");
+			fatal("to_be_translated(): read failed: TODO\n");
 			goto bad;
 		}
 	}
@@ -2526,8 +2524,10 @@ X(to_be_translated)
 	/*
 	 *  Translate the instruction:
  	 *
-	 *  NOTE: _NEVER_ allow writes to the zero register; all such
-	 *  instructions should be made into NOPs.
+	 *  NOTE: _NEVER_ allow writes to the zero register; all instructions
+	 *  that use the zero register as their destination should be treated
+	 *  as NOPs, except those that access memory (they should use the
+	 *  scratch register instead).
 	 */
 
 	main_opcode = iword >> 26;
@@ -3309,8 +3309,10 @@ X(to_be_translated)
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;
+
+		/*  Load into the dummy scratch register, if rt = zero  */
 		if (!store && rt == MIPS_GPR_ZERO)
-			ic->f = instr(nop);
+			ic->arg[0] = (size_t)&cpu->cd.mips.scratch;
 		break;
 
 	case HI6_LL:
@@ -3363,8 +3365,10 @@ X(to_be_translated)
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
 		ic->arg[2] = (int32_t)imm;
+
+		/*  Load into the dummy scratch register, if rt = zero  */
 		if (!store && rt == MIPS_GPR_ZERO)
-			ic->f = instr(nop);
+			ic->arg[0] = (size_t)&cpu->cd.mips.scratch;
 		break;
 
 	case HI6_LWC1:

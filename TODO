@@ -1,13 +1,13 @@
-$Id: TODO,v 1.286 2006-06-19 05:03:38 debug Exp $
+$Id: TODO,v 1.287 2006-06-22 10:04:01 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 --------------
 
 0.4.0:
-	x)  FIX THE MAJOR CACHE INVALIDATION BOTTLENECKS!
-		(don't call cpu_create_or_reset_tc() in cpu_mips_instr.c!)
-	x)  Fix the R4000 interrupt timing problems! (Test with NetBSD/pmax)
+	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
+	x)  Fix the interrupt timing problems! (Test with e.g. NetBSD/pmax.)
+	x)  Fix the linker/build errors on HP-UX/parisc and HP-UX/ia64.
 
 0.4.1 ...?
 	x)  Clean-up!
@@ -197,6 +197,9 @@ PCI:
 	x)  add support for address fixups
 	x)  generalize the interrupt routing stuff (lines etc). this should
 	    be per machine? or per bus, that's better
+	x)  add a "pcn" NIC (AMD PCnet32 Lance 79c970 (PCI 1022:2000)),
+	    could be useful for several machine modes (Malta, Algor, evbarm,
+	    hp700?, macppc, etc.)
 
 Network layer:
 	o)  DHCP (for Debian and BSD installers :-)

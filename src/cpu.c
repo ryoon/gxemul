@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.341 2006-06-22 13:22:40 debug Exp $
+ *  $Id: cpu.c,v 1.342 2006-06-22 13:27:03 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -435,17 +435,10 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	char *symbol;
 	int64_t mseconds, ninstrs, is, avg;
 	struct timeval tv;
-	int h, m, s, ms, d, instrs_per_cycle = 1;
+	int h, m, s, ms, d;
 
 	static int64_t mseconds_last = 0;
 	static int64_t ninstrs_last = -1;
-
-	switch (machine->arch) {
-	case ARCH_MIPS:
-		instrs_per_cycle = machine->cpus[machine->bootstrap_cpu]->
-		    cd.mips.cpu_type.instrs_per_cycle;
-		break;
-	}
 
 	pc = machine->cpus[machine->bootstrap_cpu]->pc;
 
@@ -459,15 +452,14 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = machine->ncycles_since_gettimeofday * instrs_per_cycle;
+	ninstrs = machine->ncycles_since_gettimeofday;
 
 	if (machine->automatic_clock_adjustment) {
 		static int first_adjustment = 1;
 
 		/*  Current nr of cycles per second:  */
 		int64_t cur_cycles_per_second = 1000 *
-		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
-		    / instrs_per_cycle;
+		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last);
 
 		/*  fatal("[ CYCLES PER SECOND = %"PRIi64" ]\n",
 		    cur_cycles_per_second);  */
@@ -492,8 +484,7 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	if (!machine->show_nr_of_instructions && !forced)
 		goto do_return;
 
-	printf("[ %"PRIi64" instrs", (int64_t)
-	    (machine->ncycles * instrs_per_cycle));
+	printf("[ %"PRIi64" instrs", (int64_t)machine->ncycles);
 
 	if (!machine->automatic_clock_adjustment) {
 		d = machine->emulated_hz / 1000;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.32 2006-06-22 13:22:41 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.33 2006-06-22 13:30:38 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1641,6 +1641,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				oldvaddr |= 0xfffff00000000000ULL;
 		} else if (cpu->is_32bit) {
 			/*  MIPS32 etc.:  */
+			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
 			oldvaddr = (int32_t)oldvaddr;
 		} else {
 			/*  Assume MMU4K  */

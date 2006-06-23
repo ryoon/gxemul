@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.147 2006-06-23 12:22:23 debug Exp $
+$Id: guestoses.html,v 1.148 2006-06-23 20:23:40 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1690,7 +1690,7 @@ reboot</b>
 <b>cd /tftpboot; ftp -i ftp.se.openbsd.org</b>
 (log in as anonymous...)
 <b>cd pub/OpenBSD/3.9/sgi
-mget b*tgz c* e* g* m*
+mget b*tgz c*tgz e* g* m*
 quit
 sh
 for a in *.tgz; do echo $a; tar zxfp $a; done
@@ -1706,9 +1706,7 @@ halt</b>
 </pre>
   <li>Create a configuration file called <tt>config_client</tt>:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<font color="#2020cf">!!gxemul
-!
-!  Configuration file for running OpenBSD/sgi diskless with
+<font color="#2020cf">!  Configuration file for running OpenBSD/sgi diskless with
 !  a NetBSD/pmax machine as the nfs server.
 !
 !  This config file is for the client.</font>
@@ -1733,7 +1731,6 @@ halt</b>
 	... and another configuration file for the server,
 	<tt>config_server</tt>:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<font color="#2020cf">!!gxemul</font>
 <b>    net(
 	local_port(12444)               </b>! the server<b>
 	add_remote("localhost:12445")   </b>! the client<b>

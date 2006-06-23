@@ -1,4 +1,4 @@
-$Id: TODO,v 1.291 2006-06-22 15:35:41 debug Exp $
+$Id: TODO,v 1.292 2006-06-23 09:13:34 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,9 +7,9 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 Possible release schedule:
 
 0.4.0:
-	x)  Quick release, even though performance for non-R3000 MIPS
-	    dyntrans sucks. (Assuming everything mentioned in the documentation
-	    works.)
+	x)  Quick release, even though performance for non-R3000 MIPS dyntrans
+	    is really poor. (Assuming everything mentioned in the documentation
+	    works as expected.)
 
 0.4.1:
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
@@ -19,7 +19,8 @@ Possible release schedule:
 
 0.4.2 ...?
 	x)  Clean-up!
-	x)  Clock framework?
+	x)  Clock framework? Go through all clock devices, make sure they
+	    return correct data, and run at correct speeds!
 	x)  Optimizations, continuing on 64-bit issues etc with dyntrans
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.

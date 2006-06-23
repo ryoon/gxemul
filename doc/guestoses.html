@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.145 2006-06-23 11:44:08 debug Exp $
+$Id: guestoses.html,v 1.146 2006-06-23 11:47:05 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -588,11 +588,13 @@ emulate the AHC PCI SCSI controller in the O2. (I have mailed Adaptec
 several times, asking for documentation, but never received any reply.)
 NetBSD can still run in the emulator, as long as it doesn't use SCSI.
 
-<p>For a simple test with the 2.1 ramdisk (install) kernel, try 
+<p>For a simple test with the 2.1 or 3.0 ramdisk/install kernel, try 
 dowloading<pre>
 	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	or
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
-</pre>and run&nbsp;&nbsp;<b><tt>gxemul -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
+</pre>and run&nbsp;&nbsp;<b><tt>gxemul -x -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
 
 <p>It is possible to set up an environment for netbooting the emulated SGI
 machine off of another emulated machine. Performing this setup is quite

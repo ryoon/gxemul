@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.8 2006-06-22 13:22:41 debug Exp $
+ *  $Id: dec_prom.c,v 1.9 2006-06-23 11:47:05 debug Exp $
  *
  *  DECstation PROM emulation.
  *
@@ -648,7 +648,7 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0xac:		/*  rex()  */
 		debug("[ DEC PROM rex('%c') ]\n",
 		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
-		switch (cpu->cd.mips.gpr[MIPS_GPR_A0]) {
+		switch ((int32_t)cpu->cd.mips.gpr[MIPS_GPR_A0]) {
 		case 'h':
 			debug("DEC PROM: rex('h') ==> halt\n");
 			cpu->machine->exit_without_entering_debugger = 1;

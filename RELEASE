@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.193 2006-06-16 18:32:00 debug Exp $
+$Id: RELEASE,v 1.194 2006-06-23 08:54:56 debug Exp $
 
 Working on what will become 0.4.0. See the top of the TODO file for a
 list of things that I feel need to be done before the release.
@@ -32,10 +32,16 @@ The most important change between release 0.3.8 and 0.4.0 is:
 	will perform worse than 0.3.8 on those host architectures.
 
 	On all other hosts (including AMD64 running in native 64-bit mode),
-	0.4.0 is likely to be faster than 0.3.8, when emulating MIPS.
+	0.4.0 is likely to be faster than 0.3.8, when emulating MIPS, at
+	least for R3000 emulation.
 
 	I think that in the long term, moving towards full portability like
 	this is a good idea.
+
+(Since the MIPS emulation mode has been rewritten from scratch, and I have
+not really had much time over for debugging, there are most likely new
+bugs in 0.4.0 that were not present in 0.3.8. However, I feel that it is
+better to make a quick release now than to wait even longer.)
 
 There have also been many other changes, including, but not limited to:
 
@@ -167,6 +173,10 @@ or reuse code.
 Thanks to (in no specific order) Joachim Buss, Olivier Houchard, Juli Mallett,
 Juan Romero Pardines, Alec Voropay, Göran Weinholt, Alexander Yurchenko, and
 everyone else who has provided me with feedback.
+
+Special thanks to Alec Voropay for testing this release with Linux
+kernels, and on Cygwin, and also thanks to Ondrej Palkovsky for testing
+with HelenOS.
 
 If you have found GXemul useful in some way, or feel like sending me comments
 or feedback in general, then mail me at anders(at)gavare.se.

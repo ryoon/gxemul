@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.223 2006-06-17 10:49:16 debug Exp $
+#  $Id: configure,v 1.224 2006-06-23 08:54:56 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -49,7 +49,6 @@
 #    o)  which compiler flags to use  (overridden by setting CFLAGS)
 #    o)  X11 flags and libraries  (TODO: should be possible to override
 #	 via command line options?)
-#    o)  native translation backends (on supported platforms)
 #
 #
 #  The general philosophy regarding command line switches is that anything
@@ -1072,7 +1071,6 @@ echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "CPU_ARCHS=$CPU_ARCHS" >> _Makefile.header
-echo "CPU_BACKENDS=$CPU_BACKENDS" >> _Makefile.header
 echo "CPU_TOOLS=$CPU_TOOLS" >> _Makefile.header
 echo "" >> _Makefile.header
 

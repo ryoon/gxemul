@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.195 2006-06-23 11:44:08 debug Exp $
+$Id: RELEASE,v 1.196 2006-06-23 12:49:46 debug Exp $
 
 Working on what will become 0.4.0. See the top of the TODO file for a
 list of things that I feel need to be done before the release.
@@ -48,6 +48,10 @@ There have also been many other changes, including, but not limited to:
     o)	The "test machine" functionality is more well-defined than before,
 	and some tutorial-like demos have been added. These could be useful
 	e.g. in operating system construction courses.
+
+    o)	NetBSD/sgimips 3.0 works now. This is most likely due to the rewrite
+	of the MIPS emulation mode. Previous releases of GXemul only worked
+	with NetBSD/sgimips 2.1.
 
     o)	I have begun implementing rudimentary support for GDB remote serial
 	protocol connections. This means that you can run e.g. the Data

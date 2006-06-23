@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.64 2006-06-01 05:25:26 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.65 2006-06-23 12:49:46 debug Exp $
  *
  *  ARM instructions.
  *
@@ -761,7 +761,7 @@ X(msr_imm_spsr)
 	cpu->pc &= ~((ARM_IC_ENTRIES_PER_PAGE-1) << ARM_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << ARM_INSTR_ALIGNMENT_SHIFT);
 	old_pc = cpu->pc;
-	printf("msr_spsr: old pc = 0x%08x\n", old_pc);
+	printf("msr_spsr: old pc = 0x%08"PRIx32"\n", old_pc);
 }
 		exit(1);
 	}

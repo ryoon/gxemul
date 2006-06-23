@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.144 2006-06-23 09:43:50 debug Exp $
+$Id: guestoses.html,v 1.145 2006-06-23 11:44:08 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -275,7 +275,7 @@ cd ../etc; echo "rc_configured=YES" &gt;&gt; rc.conf
 cat > /mnt/etc/fstab
 /dev/sd0a / ffs rw 1 1
 /dev/sd0b none swap sw 0 0
-</b>(press ctrl-d)<b>
+</b>(press ctrl-d)
 <b>cd /; umount /mnt; umount /mnt2
 halt</b>
 </pre></td></tr></table>
@@ -888,8 +888,9 @@ cd /; umount /mnt; sync; halt</b>
 <h3>NetBSD/prep:</h3>
 
 It is possible to install and run
-<a href="http://www.netbsd.org/Ports/prep/">NetBSD/prep</a> in GXemul
-on an emulated IBM 6050 (PowerPC) machine.
+<a href="http://www.netbsd.org/Ports/prep/">NetBSD/prep</a> 2.1 in GXemul
+on an emulated IBM 6050 (PowerPC) machine. (NetBSD 3.0 uses the wdc 
+controller in a way which isn't implemented in GXemul yet.)
 
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20051123-netbsd-prep.png"><img src="20051123-netbsd-prep_small.png"></a>
@@ -1203,6 +1204,12 @@ also usable.)
 <a href="20040504-ultrix45-boot1.png"><img src="20040504-ultrix45-boot1_small.png"></a>
 &nbsp;&nbsp;&nbsp;
 <a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.png"></a>
+
+<p><font color="#f00000"><b>NOTE:</b> This specific release of the 
+emulator is not very stable yet (because the MIPS emulation mode has been 
+completely rewritten, and I did not have much time over for debugging). 
+Ultrix 4.5 in R3000 mode has problems with interrupts. Ultrix 4.2 should 
+work, however, and Ultrix 4.5 with <tt>-C R4400</tt>.</font>
 
 <p>
 The following instructions should let you install Ultrix onto a disk image:

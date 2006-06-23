@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.194 2006-06-23 08:54:56 debug Exp $
+$Id: RELEASE,v 1.195 2006-06-23 11:44:08 debug Exp $
 
 Working on what will become 0.4.0. See the top of the TODO file for a
 list of things that I feel need to be done before the release.
@@ -61,6 +61,7 @@ Please read the HISTORY files for more details.
 
 Files included in this release are:
 
+  BUGS                        List of known bugs for this release.
   HISTORY                     Detailed revision history / changelog.
   LICENSE                     Copyright message / license.
   README                      Quick start instructions, for the impatient.

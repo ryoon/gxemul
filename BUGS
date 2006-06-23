@@ -1,0 +1,17 @@
+KNOWN BUGS IN RELEASE 0.4.0
+---------------------------
+
+Because the MIPS emulation mode has been completely rewritten, and I
+haven't had much time to debug it, there are some known (serious) bugs:
+
+	o)  Although the new MIPS emulation system is stable enough to
+	    let many guest operating systems install, it is not stable
+	    enough to let the emulator be compiled inside itself (in a
+	    guest OS) after an install, in all emulation modes.
+
+	o)  Ultrix 4.5 on R3000 in the emulator has problems with keyboard
+	    interrupts; Ultrix 4.2 works fine, though, and Ultrix 4.5 when
+	    run with -C R4400.
+
+These problems will hopefully be corrected in future releases.
+

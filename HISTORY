@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1253 2006-06-23 08:54:55 debug Exp $
+$Id: HISTORY,v 1.1254 2006-06-23 09:22:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2791,6 +2791,8 @@ Changelog for GXemul:
 		clocks to behave strangely (it was a load to the zero register,
 		which was treated as a NOP; now it is treated as a load to a
 		dummy scratch register).
-20060623	Preparing for a quick release, even though there are known
+20060623	Increasing the dyntrans chunk size back to
+		N_SAFE_DYNTRANS_LIMIT, instead of N_SAFE_DYNTRANS_LIMIT/2.
+		Preparing for a quick release, even though there are known
 		bugs, and performance for non-R3000 MIPS emulation is very
 		poor. :-/

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.146 2006-06-23 11:47:05 debug Exp $
+$Id: guestoses.html,v 1.147 2006-06-23 12:22:23 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -53,7 +53,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.0</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 2.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 2.1</a>
-  <li><a href="#netbsdsgimips">NetBSD/sgimips 2.1</a>
+  <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
@@ -580,7 +580,7 @@ generic kernel:<pre>
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20050626-netbsd-sgimips-netboot.png"><img src="20050626-netbsd-sgimips-netboot_small.png"></a>
+<a href="20060623-netbsd-sgimips-3.0.png"><img src="20060623-netbsd-sgimips-3.0_small.png"></a>
 
 <p><a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a> can run
 in GXemul on an emulated O2 (SGI-IP32). However, GXemul does not yet
@@ -588,10 +588,8 @@ emulate the AHC PCI SCSI controller in the O2. (I have mailed Adaptec
 several times, asking for documentation, but never received any reply.)
 NetBSD can still run in the emulator, as long as it doesn't use SCSI.
 
-<p>For a simple test with the 2.1 or 3.0 ramdisk/install kernel, try 
+<p>For a simple test with the ramdisk/install kernel, try 
 dowloading<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
-	or
 	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>and run&nbsp;&nbsp;<b><tt>gxemul -x -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
@@ -641,9 +639,9 @@ reboot</b>
 	NetBSD/sgimips distribution sets:<br>(NOTE: This
 	takes quite some time, even if you have a fast network connection.)
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>cd /tftpboot; ftp -i ftp.uk.netbsd.org</b>
+<b>cd /tftpboot; ftp -i ftp.se.netbsd.org</b>
 (log in as anonymous...)
-<b>cd /pub/NetBSD/NetBSD-2.1/sgimips/binary/sets
+<b>cd /pub/NetBSD/NetBSD-3.0/sgimips/binary/sets
 mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz
 quit
 sh
@@ -654,15 +652,13 @@ dd if=/dev/zero of=swap bs=1024 count=32768
 halt</b>
 </pre></td></tr></table>
   <li>Download the NetBSD/sgimips GENERIC and INSTALL kernels:<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-2.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>
   <li>Create a configuration file called <tt>config_client</tt>:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<font color="#2020cf">!!gxemul
-!
-!  Configuration file for running NetBSD/sgimips diskless with
+<font color="#2020cf">!  Configuration file for running NetBSD/sgimips diskless with
 !  a NetBSD/pmax machine as the nfs server.</font>
 
 <b>    net(
@@ -685,7 +681,6 @@ halt</b>
 	... and another configuration file for the server,
 	<tt>config_server</tt>:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<font color="#2020cf">!!gxemul</font>
 <b>    net(
 	local_port(12444)               </b>! the server<b>
 	add_remote("localhost:12445")   </b>! the client<b>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.10 2006-06-24 19:52:28 debug Exp $
+ *  $Id: generate_tail.c,v 1.11 2006-06-24 21:47:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -75,12 +75,10 @@ int main(int argc, char *argv[])
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_FUNCTION_TRACE\n\n");
 
-	printf("#ifndef MODE32\n");
-	printf("#define DYNTRANS_INIT_64BIT_DUMMY_TABLES "
-	    "%s_init_64bit_dummy_tables\n", a);
+	printf("#define DYNTRANS_INIT_TABLES "
+	    "%s_cpu_init_tables\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_INIT_64BIT_DUMMY_TABLES\n\n");
-	printf("#endif\n");
+	printf("#undef DYNTRANS_INIT_TABLES\n\n");
 
 	printf("#define DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE "
 	    "%s_tc_allocate_default_page\n", a);

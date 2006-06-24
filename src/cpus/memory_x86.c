@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_x86.c,v 1.2 2006-03-30 19:41:51 debug Exp $
+ *  $Id: memory_x86.c,v 1.3 2006-06-24 21:47:23 debug Exp $
  *
  *  Included from cpu_x86.c.
  *
@@ -35,7 +35,7 @@
 
 
 /*
- *  translate_address():
+ *  translate_v2p():
  *
  *  Return values:
  *	0  Failure

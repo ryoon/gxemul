@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1259 2006-06-24 19:52:26 debug Exp $
+$Id: HISTORY,v 1.1260 2006-06-24 21:47:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2807,3 +2807,5 @@ Changelog for GXemul:
 		with something more reasonable.
 		Finally removing the old "cpu_run" kludge; moving around stuff
 		in machine.c and emul.c to better suit the dyntrans system.
+		Various minor dyntrans cleanups (renaming translate_address to
+		translate_v2p, and experimenting with template physpages).

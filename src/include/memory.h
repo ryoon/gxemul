@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.49 2006-06-16 18:31:26 debug Exp $
+ *  $Id: memory.h,v 1.50 2006-06-24 21:47:24 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -94,22 +94,6 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem,
 
 unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	uint64_t paddr, int writeflag);
-
-/*  memory_fast_v2h.c:  */
-unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu, uint64_t vaddr,
-	int writeflag);
-
-/*  MIPS stuff:  */
-int translate_address_mmu3k(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags);
-int translate_address_mmu8k(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags);
-int translate_address_mmu10k(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags);
-int translate_address_mmu4100(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags);
-int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags);
 
 
 /*  Writeflag:  */

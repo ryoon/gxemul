@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.59 2006-06-16 18:31:25 debug Exp $
+ *  $Id: cpu_arm.c,v 1.60 2006-06-24 21:47:23 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -97,7 +97,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->invalidate_translation_caches =
 	    arm_invalidate_translation_caches;
 	cpu->invalidate_code_translation = arm_invalidate_code_translation;
-	cpu->translate_address = arm_translate_address;
+	cpu->translate_v2p = arm_translate_v2p;
 
 	cpu->cd.arm.cpu_type = cpu_type_defs[found];
 	cpu->name            = cpu->cd.arm.cpu_type.name;
@@ -185,7 +185,7 @@ void arm_setup_initial_translation_table(struct cpu *cpu, uint32_t ttb_addr)
 	}
 
 	cpu->cd.arm.control |= ARM_CONTROL_MMU;
-	cpu->translate_address = arm_translate_address_mmu;
+	cpu->translate_v2p = arm_translate_v2p_mmu;
 	cpu->cd.arm.dacr |= 0x00000003;
 	cpu->cd.arm.ttb = ttb_addr;
 

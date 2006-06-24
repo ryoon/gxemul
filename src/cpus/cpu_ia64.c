@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.11 2006-06-16 18:31:25 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.12 2006-06-24 21:47:23 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -69,8 +69,6 @@ int ia64_cpu_new(struct cpu *cpu, struct memory *mem,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
-
-	ia64_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }

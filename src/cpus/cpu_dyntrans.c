@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.101 2006-06-24 19:52:28 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.102 2006-06-24 21:47:23 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -187,10 +187,10 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 	 */
 	int show_opcode_statistics = 0;
 
-#ifdef DYNTRANS_DUALMODE_32
-	uint64_t cached_pc;
-#else
+#ifdef MODE32
 	uint32_t cached_pc;
+#else
+	uint64_t cached_pc;
 #endif
 	int low_pc, n_instrs;
 
@@ -575,22 +575,6 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 
 
 #ifdef DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE
-
-/*  forward declaration of to_be_translated and end_of_page:  */
-static void instr(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
-static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
-#ifdef DYNTRANS_DUALMODE_32
-static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
-static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
-#endif
-
-#ifdef DYNTRANS_DELAYSLOT
-static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
-#ifdef DYNTRANS_DUALMODE_32
-static void instr32(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
-#endif
-#endif
-
 /*
  *  XXX_tc_allocate_default_page():
  *
@@ -601,50 +585,20 @@ static void DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE(struct cpu *cpu,
 	uint64_t physaddr)
 { 
 	struct DYNTRANS_TC_PHYSPAGE *ppp;
-	int i;
 
-	/*  Create the physpage header:  */
 	ppp = (struct DYNTRANS_TC_PHYSPAGE *)(cpu->translation_cache
 	    + cpu->translation_cache_cur_ofs);
-	ppp->next_ofs = 0;
-	ppp->physaddr = physaddr;
 
-	/*  TODO: Is this faster than copying an entire template page?  */
-	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {
-		ppp->ics[i].f =
-#ifdef DYNTRANS_DUALMODE_32
-		    cpu->is_32bit? instr32(to_be_translated) :
-#endif
-		    instr(to_be_translated);
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-		ppp->ics[i].arg[0] = 0;
-#endif
-	}
+	/*  Copy the entire template page first:  */
+	memcpy(ppp, cpu->cd.DYNTRANS_ARCH.physpage_template, sizeof(
+	    struct DYNTRANS_TC_PHYSPAGE));
 
-	/*  End-of-page:  */
-	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].f =
-#ifdef DYNTRANS_DUALMODE_32
-	    cpu->is_32bit? instr32(end_of_page) :
-#endif
-	    instr(end_of_page);
-
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].arg[0] = 0;
-#endif
-
-	/*  End-of-page-2, for delay-slot architectures:  */
-#ifdef DYNTRANS_DELAYSLOT
-	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 1].f =
-#ifdef DYNTRANS_DUALMODE_32
-	    cpu->is_32bit? instr32(end_of_page2) :
-#endif
-	    instr(end_of_page2);
-#endif
+	ppp->physaddr = physaddr & ~(DYNTRANS_PAGESIZE - 1);
 
 	cpu->translation_cache_cur_ofs += sizeof(struct DYNTRANS_TC_PHYSPAGE);
 
 	cpu->translation_cache_cur_ofs --;
-	cpu->translation_cache_cur_ofs |= 63;
+	cpu->translation_cache_cur_ofs |= 127;
 	cpu->translation_cache_cur_ofs ++;
 }
 #endif	/*  DYNTRANS_TC_ALLOCATE_DEFAULT_PAGE  */
@@ -707,10 +661,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 
 	if (!ok) {
 		uint64_t paddr;
-		if (cpu->translate_address != NULL)
-			ok = cpu->translate_address(cpu, cached_pc,
-			    &paddr, FLAG_INSTR);
-		else {
+		if (cpu->translate_v2p != NULL) {
+			ok = cpu->translate_v2p(
+			    cpu, cached_pc, &paddr, FLAG_INSTR);
+		} else {
 			paddr = cached_pc;
 			ok = 1;
 		}
@@ -719,7 +673,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			    "failed. vaddr=0x%"PRIx64"\n", (uint64_t)cached_pc);
 			fatal("!! cpu->pc=0x%"PRIx64"\n", (uint64_t)cpu->pc); */
 
-			ok = cpu->translate_address(cpu, cpu->pc, &paddr,
+			ok = cpu->translate_v2p(cpu, cpu->pc, &paddr,
 			    FLAG_INSTR);
 
 			/*  printf("EXCEPTION HANDLER: vaddr = 0x%x ==> "
@@ -776,6 +730,8 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		cpu_create_or_reset_tc(cpu);
 	}
 
+	physaddr &= ~(DYNTRANS_PAGESIZE - 1);
+
 	pagenr = DYNTRANS_ADDR_TO_PAGENR(physaddr);
 	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
 
@@ -787,9 +743,11 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	while (physpage_ofs != 0) {
 		ppp = (struct DYNTRANS_TC_PHYSPAGE *)(cpu->translation_cache
 		    + physpage_ofs);
+
 		/*  If we found the page in the cache, then we're done:  */
-		if (DYNTRANS_ADDR_TO_PAGENR(ppp->physaddr) == pagenr)
+		if (ppp->physaddr == physaddr)
 			break;
+
 		/*  Try the next page in the chain:  */
 		physpage_ofs = ppp->next_ofs;
 	}
@@ -904,18 +862,84 @@ have_it:
 
 
 
-#ifdef DYNTRANS_INIT_64BIT_DUMMY_TABLES
+#ifdef DYNTRANS_INIT_TABLES
+
+/*  forward declaration of to_be_translated and end_of_page:  */
+static void instr(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
+static void instr(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
+#ifdef DYNTRANS_DUALMODE_32
+static void instr32(to_be_translated)(struct cpu *, struct DYNTRANS_IC *);
+static void instr32(end_of_page)(struct cpu *,struct DYNTRANS_IC *);
+#endif
+
+#ifdef DYNTRANS_DELAYSLOT
+static void instr(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
+#ifdef DYNTRANS_DUALMODE_32
+static void instr32(end_of_page2)(struct cpu *,struct DYNTRANS_IC *);
+#endif
+#endif
+
 /*
- *  XXX_init_64bit_dummy_tables():
+ *  XXX_init_tables():
  *
- *  Initializes 64-bit dummy tables and pointers.
+ *  Initializes the default translation page (for newly allocated pages), and
+ *  for 64-bit emulation it also initializes 64-bit dummy tables and pointers.
  */
-void DYNTRANS_INIT_64BIT_DUMMY_TABLES(struct cpu *cpu)
+void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 {
+#ifndef MODE32
 	struct DYNTRANS_L2_64_TABLE *dummy_l2;
 	struct DYNTRANS_L3_64_TABLE *dummy_l3;
 	int x1, x2;
+#endif
+	int i;
+	struct DYNTRANS_TC_PHYSPAGE *ppp = malloc(sizeof(
+	    struct DYNTRANS_TC_PHYSPAGE));
 
+	if (ppp == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	ppp->next_ofs = 0;
+	/*  ppp->physaddr is filled in by the page allocator  */
+
+	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {
+		ppp->ics[i].f =
+#ifdef DYNTRANS_DUALMODE_32
+		    cpu->is_32bit? instr32(to_be_translated) :
+#endif
+		    instr(to_be_translated);
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+		ppp->ics[i].arg[0] = 0;
+#endif
+	}
+
+	/*  End-of-page:  */
+	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].f =
+#ifdef DYNTRANS_DUALMODE_32
+	    cpu->is_32bit? instr32(end_of_page) :
+#endif
+	    instr(end_of_page);
+
+#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
+	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 0].arg[0] = 0;
+#endif
+
+	/*  End-of-page-2, for delay-slot architectures:  */
+#ifdef DYNTRANS_DELAYSLOT
+	ppp->ics[DYNTRANS_IC_ENTRIES_PER_PAGE + 1].f =
+#ifdef DYNTRANS_DUALMODE_32
+	    cpu->is_32bit? instr32(end_of_page2) :
+#endif
+	    instr(end_of_page2);
+#endif
+
+	cpu->cd.DYNTRANS_ARCH.physpage_template = ppp;
+
+
+	/*  Prepare 64-bit virtual address translation tables:  */
+#ifndef MODE32
 	if (cpu->is_32bit)
 		return;
 
@@ -930,8 +954,9 @@ void DYNTRANS_INIT_64BIT_DUMMY_TABLES(struct cpu *cpu)
 
 	for (x2 = 0; x2 < (1 << DYNTRANS_L2N); x2 ++)
 		dummy_l2->l3[x2] = dummy_l3;
+#endif
 }
-#endif	/*  DYNTRANS_INIT_64BIT_DUMMY_TABLES  */
+#endif	/*  DYNTRANS_INIT_TABLES  */
 
 
 
@@ -1177,10 +1202,12 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 			prev_ppp = ppp;
 			ppp = (struct DYNTRANS_TC_PHYSPAGE *)
 			    (cpu->translation_cache + physpage_ofs);
+
 			/*  If we found the page in the cache,
 			    then we're done:  */
 			if (ppp->physaddr == addr)
 				break;
+
 			/*  Try the next page in the chain:  */
 			physpage_ofs = ppp->next_ofs;
 		}

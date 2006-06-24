@@ -25,14 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.5 2006-06-16 18:31:26 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.6 2006-06-24 21:47:23 debug Exp $
  *
  *  Included from memory.c.
  */
 
 
 /*
- *  translate_address():
+ *  translate_v2p():
  *
  *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
  *
@@ -44,7 +44,7 @@
  *	2  Success, the page is read/write
  */
 int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags)
+	uint64_t *return_paddr, int flags)
 {
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
@@ -195,7 +195,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		 *  On IP27 (and probably others), addresses such as
 		 *  0x92... and 0x96... have to do with NUMA stuff.
 		 */
-		*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
+		*return_paddr = vaddr & (((uint64_t)1 << 44) - 1);
 		return 2;
 	}
 
@@ -219,7 +219,7 @@ bugs are triggered.  */
 			/*  kseg0, kseg1:  */
 			if (vaddr >= (uint64_t)0xffffffff80000000ULL &&
 			    vaddr <= (uint64_t)0xffffffffbfffffffULL) {
-				*return_addr = vaddr & 0x1fffffff;
+				*return_paddr = vaddr & 0x1fffffff;
 				return 2;
 			}
 
@@ -335,7 +335,7 @@ bugs are triggered.  */
 				/*  debug("OK MAP 1, i=%i { vaddr=%016"PRIx64" "
 				    "==> paddr %016"PRIx64" v=%i d=%i "
 				    "asid=0x%02x }\n", i, (uint64_t) vaddr,
-				    (uint64_t) *return_addr, v_bit?1:0,
+				    (uint64_t) *return_paddr, v_bit?1:0,
 				    d_bit?1:0, vaddr_asid);  */
 				if (v_bit) {
 					if (d_bit || (!d_bit &&
@@ -347,7 +347,7 @@ bugs are triggered.  */
 						    PRIx64" ",
 						    writeflag, (uint64_t)vaddr,
 						    d_bit?1:0, v_bit?1:0,
-						    (uint64_t) *return_addr);
+						    (uint64_t) *return_paddr);
 						    debug(", tlb entry %2i: ma"
 						    "sk=%016"PRIx64" hi=%016"
 						    PRIx64" lo0=%016"PRIx64
@@ -369,7 +369,7 @@ bugs are triggered.  */
 						    (vaddr & pmask);
 #endif
 
-						*return_addr = paddr;
+						*return_paddr = paddr;
 						return d_bit? 2 : 1;
 					} else {
 						/*  TLB modif. exception  */

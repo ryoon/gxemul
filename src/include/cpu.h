@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.76 2006-06-24 19:52:28 debug Exp $
+ *  $Id: cpu.h,v 1.77 2006-06-24 21:47:23 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -114,6 +114,7 @@
 #define DYNTRANS_ITC(arch)	struct arch ## _tc_physpage *cur_physpage;  \
 				struct arch ## _instr_call  *cur_ic_page;   \
 				struct arch ## _instr_call  *next_ic;       \
+				struct arch ## _tc_physpage *physpage_template;\
 				void (*combination_check)(struct cpu *,     \
 				    struct arch ## _instr_call *, int low_addr);
 
@@ -235,6 +236,7 @@ struct cpu_family {
 	void			(*functioncall_trace)(struct cpu *,
 				    uint64_t f, int n_args);
 	char			*(*gdb_stub)(struct cpu *, char *cmd);
+	void			(*init_tables)(struct cpu *cpu);
 };
 
 
@@ -286,8 +288,8 @@ struct cpu {
 			    struct memory *mem, uint64_t vaddr,
 			    unsigned char *data, size_t len,
 			    int writeflag, int cache_flags);
-	int		(*translate_address)(struct cpu *, uint64_t vaddr,
-			    uint64_t *return_addr, int flags);
+	int		(*translate_v2p)(struct cpu *, uint64_t vaddr,
+			    uint64_t *return_paddr, int flags);
 	void		(*update_translation_table)(struct cpu *,
 			    uint64_t vaddr_page, unsigned char *host_page,
 			    int writeflag, uint64_t paddr_page);
@@ -384,6 +386,7 @@ void cpu_init(void);
 	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	fp->tlbdump = n ## _cpu_tlbdump;				\
 	fp->run_instr = n ## _cpu_run_instr;				\
+	fp->init_tables = n ## _cpu_init_tables;			\
 	return 1;							\
 	}
 

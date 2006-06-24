@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.23 2006-03-30 19:41:51 debug Exp $
+ *  $Id: memory_ppc.c,v 1.24 2006-06-24 21:47:23 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -41,7 +41,7 @@
  *  BAT translation. Returns -1 if there was no BAT hit, >= 0 for a hit.
  *  (0 for access denied, 1 for read-only, and 2 for read-write access allowed.)
  */
-int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
+int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_paddr, int flags,
 	int user)
 {
 	int i, istart = 0, iend = 8, pp;
@@ -78,7 +78,7 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags,
 		if ((vaddr & ~mask) != (ebs & ~mask))
 			continue;
 
-		*return_addr = (vaddr & mask) | (phys & ~mask);
+		*return_paddr = (vaddr & mask) | (phys & ~mask);
 
 		pp = lower & BAT_PP;
 		switch (pp) {
@@ -139,7 +139,7 @@ static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
  *  a permission violation. *resp is set to 0 for no access, 1 for read-only
  *  access, or 2 for read/write access.
  */
-static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_addr,
+static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_paddr,
 	int *resp, uint64_t msr, int writeflag, int instr)
 {
 	int srn = (vaddr >> 28) & 15, api = (vaddr >> 22) & PTE_API;
@@ -186,7 +186,7 @@ static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_addr,
 		return 1;
 
 	access = lower_pte & PTE_PP;
-	*return_addr = (lower_pte & PTE_RPGN) | (vaddr & ~PTE_RPGN);
+	*return_paddr = (lower_pte & PTE_RPGN) | (vaddr & ~PTE_RPGN);
 
 	key = (cpu->cd.ppc.sr[srn] & SR_PRKEY && msr & PPC_MSR_PR) ||
 	    (cpu->cd.ppc.sr[srn] & SR_SUKEY && !(msr & PPC_MSR_PR));
@@ -212,7 +212,7 @@ static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_addr,
 
 
 /*
- *  ppc_translate_address():
+ *  ppc_translate_v2p():
  *
  *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
  *
@@ -221,8 +221,8 @@ static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_addr,
  *	1  Success, the page is readable only
  *	2  Success, the page is read/write
  */
-int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int flags)
+int ppc_translate_v2p(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_paddr, int flags)
 {
 	int instr = flags & FLAG_INSTR, res = 0, match, user;
 	int writeflag = flags & FLAG_WRITEFLAG? 1 : 0;
@@ -235,18 +235,18 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 		vaddr &= 0xffffffff;
 
 	if ((instr && !(msr & PPC_MSR_IR)) || (!instr && !(msr & PPC_MSR_DR))) {
-		*return_addr = vaddr;
+		*return_paddr = vaddr;
 		return 2;
 	}
 
 	if (cpu->cd.ppc.cpu_type.flags & PPC_601) {
-		fatal("ppc_translate_address(): TODO: 601\n");
+		fatal("ppc_translate_v2p(): TODO: 601\n");
 		exit(1);
 	}
 
 	/*  Try the BATs first:  */
 	if (cpu->cd.ppc.bits == 32) {
-		res = ppc_bat(cpu, vaddr, return_addr, flags, user);
+		res = ppc_bat(cpu, vaddr, return_paddr, flags, user);
 		if (res > 0)
 			return res;
 		if (res == 0) {
@@ -257,7 +257,7 @@ int ppc_translate_address(struct cpu *cpu, uint64_t vaddr,
 
 	/*  Virtual to physical translation:  */
 	if (cpu->cd.ppc.bits == 32) {
-		match = ppc_vtp32(cpu, vaddr, return_addr, &res, msr,
+		match = ppc_vtp32(cpu, vaddr, return_paddr, &res, msr,
 		    writeflag, instr);
 		if (match && res > 0)
 			return res;

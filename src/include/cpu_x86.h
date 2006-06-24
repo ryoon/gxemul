@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.47 2006-04-17 11:06:46 debug Exp $
+ *  $Id: cpu_x86.h,v 1.48 2006-06-24 21:47:24 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */
@@ -310,7 +310,7 @@ int x86_cpu_family_init(struct cpu_family *);
 
 
 /*  memory_x86.c:  */
-int x86_translate_address(struct cpu *cpu, uint64_t vaddr,
+int x86_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 
 #endif	/*  CPU_X86_H  */

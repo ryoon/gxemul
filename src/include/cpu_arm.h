@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.65 2006-02-17 18:38:30 debug Exp $
+ *  $Id: cpu_arm.h,v 1.66 2006-06-24 21:47:23 debug Exp $
  */
 
 #include "misc.h"
@@ -329,9 +329,9 @@ void arm_coproc_xscale_14(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 	int crn, int crm, int rd);
 
 /*  memory_arm.c:  */
-int arm_translate_address(struct cpu *cpu, uint64_t vaddr,
+int arm_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
-int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr,
+int arm_translate_v2p_mmu(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
 
 #endif	/*  CPU_ARM_H  */

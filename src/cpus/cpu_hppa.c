@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.13 2006-06-16 18:31:25 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.14 2006-06-24 21:47:23 debug Exp $
  *
  *  HP PA-RISC CPU emulation.
  *
@@ -87,8 +87,6 @@ int hppa_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
-
-	hppa_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }

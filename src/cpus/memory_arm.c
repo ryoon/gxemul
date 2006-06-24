@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.34 2006-06-02 18:11:38 debug Exp $
+ *  $Id: memory_arm.c,v 1.35 2006-06-24 21:47:23 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -48,14 +48,16 @@ extern int quiet_mode;
 
 
 /*
- *  arm_translate_address():
+ *  arm_translate_v2p():
  *
- *  Address translation with the MMU disabled.
+ *  Address translation with the MMU disabled. (Just treat the virtual address
+ *  as a physical address.)
  */
-int arm_translate_address(struct cpu *cpu, uint64_t vaddr64,
-	uint64_t *return_addr, int flags)
+int arm_translate_v2p(struct cpu *cpu, uint64_t vaddr64,
+	uint64_t *return_paddr, int flags)
 {
-	*return_addr = vaddr64 & 0xffffffff;
+	*return_paddr = vaddr64 & 0xffffffff;
+
 	return 2;
 }
 
@@ -101,7 +103,7 @@ static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
 
 
 /*
- *  arm_translate_address_mmu():
+ *  arm_translate_v2p_mmu():
  *
  *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
  *
@@ -113,8 +115,8 @@ static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
  *  If this is a 1KB page access, then the return value is ORed with
  *  MEMORY_NOT_FULL_PAGE.
  */
-int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
-	uint64_t *return_addr, int flags)
+int arm_translate_v2p_mmu(struct cpu *cpu, uint64_t vaddr64,
+	uint64_t *return_paddr, int flags)
 {
 	unsigned char *q;
 	uint32_t addr, d=0, d2 = (uint32_t)(int32_t)-1, ptba, vaddr = vaddr64;
@@ -198,7 +200,7 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 			case 0xc000:	ap >>= 6; break;
 			}
 			ap &= 3;
-			*return_addr = (d2 & 0xffff0000) | (vaddr & 0x0000ffff);
+			*return_paddr = (d2 & 0xffff0000)|(vaddr & 0x0000ffff);
 			break;
 		case 3:	if (cpu->cd.arm.cpu_type.flags & ARM_XSCALE) {
 				/*  4KB page (Xscale)  */
@@ -207,7 +209,7 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 				/*  1KB page  */
 				subpage = 1;
 				ap = (d2 >> 4) & 3;
-				*return_addr = (d2 & 0xfffffc00) |
+				*return_paddr = (d2 & 0xfffffc00) |
 				    (vaddr & 0x000003ff);
 				break;
 			}
@@ -231,7 +233,7 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 				if (ap0 != ap1 || ap0 != ap2 || ap0 != ap3)
 					subpage = 1;
 			}
-			*return_addr = (d2 & 0xfffff000) | (vaddr & 0x00000fff);
+			*return_paddr = (d2 & 0xfffff000)|(vaddr & 0x00000fff);
 			break;
 		}
 		access = arm_check_access(cpu, ap, dav, user);
@@ -245,7 +247,7 @@ int arm_translate_address_mmu(struct cpu *cpu, uint64_t vaddr64,
 			fs = FAULT_DOMAIN_S;
 			goto exception_return;
 		}
-		*return_addr = (d & 0xfff00000) | (vaddr & 0x000fffff);
+		*return_paddr = (d & 0xfff00000) | (vaddr & 0x000fffff);
 		ap = (d >> 10) & 3;
 		access = arm_check_access(cpu, ap, dav, user);
 		if (access > writeflag)

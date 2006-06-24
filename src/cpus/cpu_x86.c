@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.15 2006-06-16 18:31:26 debug Exp $
+ *  $Id: cpu_x86.c,v 1.16 2006-06-24 21:47:23 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -95,7 +95,7 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->cd.x86.model = models[i];
 
-	cpu->translate_address = x86_translate_address;
+	cpu->translate_v2p = x86_translate_v2p;
 
 	/*  Initial startup is in 16-bit real mode:  */
 	cpu->pc = 0xfff0;
@@ -141,8 +141,6 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
-
-	x86_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }
@@ -3164,7 +3162,7 @@ cpu->machine->isa_pic_data.pic2->irr, cpu->machine->isa_pic_data.pic2->ier);
 }
 
 
-#define	TRANSLATE_ADDRESS       x86_translate_address
+#define	TRANSLATE_ADDRESS       x86_translate_v2p
 #include "memory_x86.c"
 #undef TRANSLATE_ADDRESS
 

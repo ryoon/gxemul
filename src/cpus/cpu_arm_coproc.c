@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_coproc.c,v 1.23 2006-02-26 20:11:14 debug Exp $
+ *  $Id: cpu_arm_coproc.c,v 1.24 2006-06-24 21:47:23 debug Exp $
  *
  *  ARM coprocessor emulation.
  */
@@ -139,9 +139,9 @@ void arm_coproc_15(struct cpu *cpu, int opcode1, int opcode2, int l_bit,
 		    (cpu->cd.arm.control & ARM_CONTROL_MMU)) {
 			debug("[ %s the MMU ]\n", cpu->cd.arm.control &
 			    ARM_CONTROL_MMU? "enabling" : "disabling");
-			cpu->translate_address =
+			cpu->translate_v2p =
 			    cpu->cd.arm.control & ARM_CONTROL_MMU?
-			    arm_translate_address_mmu : arm_translate_address;
+			    arm_translate_v2p_mmu : arm_translate_v2p;
 		}
 		if ((old_control & ARM_CONTROL_ALIGN) !=
 		    (cpu->cd.arm.control & ARM_CONTROL_ALIGN))

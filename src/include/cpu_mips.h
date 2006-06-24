@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.42 2006-06-22 13:22:41 debug Exp $
+ *  $Id: cpu_mips.h,v 1.43 2006-06-24 21:47:24 debug Exp $
  */
 
 #include "misc.h"
@@ -348,6 +348,17 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 int mips_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 
+int translate_v2p_mmu3k(struct cpu *cpu, uint64_t vaddr,
+        uint64_t *return_addr, int flags);
+int translate_v2p_mmu8k(struct cpu *cpu, uint64_t vaddr,
+        uint64_t *return_addr, int flags);
+int translate_v2p_mmu10k(struct cpu *cpu, uint64_t vaddr,
+        uint64_t *return_addr, int flags);
+int translate_v2p_mmu4100(struct cpu *cpu, uint64_t vaddr,
+        uint64_t *return_addr, int flags);
+int translate_v2p_generic(struct cpu *cpu, uint64_t vaddr,
+        uint64_t *return_addr, int flags);
+
 
 /*  Dyntrans unaligned load/store:  */
 void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic, 
@@ -362,7 +373,6 @@ void mips32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void mips32_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
-void mips_init_64bit_dummy_tables(struct cpu *cpu);
 
 
 #endif	/*  CPU_MIPS_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.7 2006-06-22 11:43:03 debug Exp $
+ *  $Id: memory_mips.c,v 1.8 2006-06-24 21:47:23 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  *
@@ -277,32 +277,32 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 }
 
 
-#define TRANSLATE_ADDRESS	translate_address_mmu3k
+#define TRANSLATE_ADDRESS	translate_v2p_mmu3k
 #define	V2P_MMU3K
 #include "memory_mips_v2p.c"
 #undef TRANSLATE_ADDRESS
 #undef V2P_MMU3K
 
-#define TRANSLATE_ADDRESS	translate_address_mmu8k
+#define TRANSLATE_ADDRESS	translate_v2p_mmu8k
 #define	V2P_MMU8K
 #include "memory_mips_v2p.c"
 #undef TRANSLATE_ADDRESS
 #undef V2P_MMU8K
 
-#define TRANSLATE_ADDRESS	translate_address_mmu10k
+#define TRANSLATE_ADDRESS	translate_v2p_mmu10k
 #define	V2P_MMU10K
 #include "memory_mips_v2p.c"
 #undef TRANSLATE_ADDRESS
 #undef V2P_MMU10K
 
 /*  Almost generic  :-)  */
-#define TRANSLATE_ADDRESS	translate_address_mmu4100
+#define TRANSLATE_ADDRESS	translate_v2p_mmu4100
 #define	V2P_MMU4100
 #include "memory_mips_v2p.c"
 #undef TRANSLATE_ADDRESS
 #undef V2P_MMU4100
 
-#define TRANSLATE_ADDRESS	translate_address_generic
+#define TRANSLATE_ADDRESS	translate_v2p_generic
 #include "memory_mips_v2p.c"
 
 

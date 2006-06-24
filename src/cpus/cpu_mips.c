@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.57 2006-06-24 19:52:28 debug Exp $
+ *  $Id: cpu_mips.c,v 1.58 2006-06-24 21:47:23 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -305,22 +305,20 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	switch (cpu->cd.mips.cpu_type.mmu_model) {
 	case MMU3K:
-		cpu->translate_address = translate_address_mmu3k;
+		cpu->translate_v2p = translate_v2p_mmu3k;
 		break;
 	case MMU8K:
-		cpu->translate_address = translate_address_mmu8k;
+		cpu->translate_v2p = translate_v2p_mmu8k;
 		break;
 	case MMU10K:
-		cpu->translate_address = translate_address_mmu10k;
+		cpu->translate_v2p = translate_v2p_mmu10k;
 		break;
 	default:
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R4100)
-			cpu->translate_address = translate_address_mmu4100;
+			cpu->translate_v2p = translate_v2p_mmu4100;
 		else
-			cpu->translate_address = translate_address_generic;
+			cpu->translate_v2p = translate_v2p_generic;
 	}
-
-	mips_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }

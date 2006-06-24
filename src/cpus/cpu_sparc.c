@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.30 2006-06-16 18:31:26 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.31 2006-06-24 21:47:23 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -134,8 +134,6 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Insert number of Windows and Trap levels into the version reg.:  */
 	cpu->cd.sparc.ver |= MAXWIN | (MAXTL << SPARC_VER_MAXTL_SHIFT);
-
-	sparc_init_64bit_dummy_tables(cpu);
 
 	return 1;
 }

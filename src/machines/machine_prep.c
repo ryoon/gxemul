@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.7 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_prep.c,v 1.8 2006-06-24 11:03:20 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -186,14 +186,10 @@ MACHINE_REGISTER(prep)
 	machine_entry_add_alias(me, "prep");
 	me->set_default_ram = machine_default_ram_prep;
 
-	machine_entry_add_subtype(me,
-	    "IBM 6050/6070", MACHINE_PREP_IBM6050,
-	    "ibm6050", "ibm6070",
-	    NULL);
+	machine_entry_add_subtype(me, "IBM 6050/6070", MACHINE_PREP_IBM6050,
+	    "ibm6050", "ibm6070", NULL);
 
-	machine_entry_add_subtype(me,
-	    "MVME2400", MACHINE_PREP_MVME2400,
-	    "mvme2400",
-	    NULL);
+	machine_entry_add_subtype(me, "MVME2400", MACHINE_PREP_MVME2400,
+	    "mvme2400", NULL);
 }
 

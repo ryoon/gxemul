@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.33 2006-06-22 13:30:38 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.34 2006-06-24 23:40:27 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1756,7 +1756,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				cp->tlbs[index].hi |= TLB_G;
 		}
 
-#if 1
+#if 0
 		cpu_create_or_reset_tc(cpu);
 #else
 		/*  Invalidate any code translations, if we are writing
@@ -1764,18 +1764,18 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 if (cp->reg[COP0_PAGEMASK] != 0)
 printf("MASK = %08"PRIx32"\n", (uint32_t)cp->reg[COP0_PAGEMASK]);
 
-//		if (cp->tlbs[index].lo0 & ENTRYLO_D)
+		if (cp->tlbs[index].lo0 & ENTRYLO_D)
 			cpu->invalidate_code_translation(cpu,
 			    ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
 			    >> ENTRYLO_PFN_SHIFT) << 12,
 			    INVALIDATE_PADDR);
-//		if (cp->tlbs[index].lo1 & ENTRYLO_D)
+		if (cp->tlbs[index].lo1 & ENTRYLO_D)
 			cpu->invalidate_code_translation(cpu,
 			    ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
 			    >> ENTRYLO_PFN_SHIFT) << 12,
 			    INVALIDATE_PADDR);
 
-
+#if 1
 	if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
 			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
 			/*  44 addressable bits:  */
@@ -1799,7 +1799,7 @@ ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << 12, INVALIDATE_PADDR);
 
 cpu->invalidate_translation_caches(cpu, oldvaddr, INVALIDATE_VADDR);
 cpu->invalidate_translation_caches(cpu, oldvaddr | 0x1000, INVALIDATE_VADDR);
-
+#endif
 
 #endif
 	}

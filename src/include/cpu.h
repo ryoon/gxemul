@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.77 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu.h,v 1.78 2006-06-24 23:40:27 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -366,8 +366,6 @@ void cpu_init(void);
 #define	INVALIDATE_PADDR		4
 #define	INVALIDATE_VADDR		8
 #define	INVALIDATE_VADDR_UPPER4		16	/*  useful for PPC emulation  */
-
-#define	TLB_CODE			0x02
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.88 2006-06-24 21:47:22 debug Exp $
+ *  $Id: memory_rw.c,v 1.89 2006-06-24 23:40:27 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -489,9 +489,6 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		cpu->update_translation_table(cpu, vaddr & ~offset_mask,
 		    memblock + (offset & ~offset_mask),
 		    (misc_flags & MEMORY_USER_ACCESS) |
-#ifndef MEM_MIPS
-		    (cache == CACHE_INSTRUCTION? TLB_CODE : 0) |
-#endif
 #if !defined(MEM_MIPS) && !defined(MEM_USERLAND)
 		    (cache == CACHE_INSTRUCTION?
 			(writeflag == MEM_WRITE? 1 : 0) : ok - 1),

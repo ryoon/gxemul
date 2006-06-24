@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.102 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.103 2006-06-24 23:40:27 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -715,7 +715,7 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			host_page += (physaddr &
 			    ((1 << BITS_PER_MEMBLOCK) - 1) & ~q);
 			cpu->update_translation_table(cpu, cached_pc & ~q,
-			    host_page, TLB_CODE, physaddr & ~q);
+			    host_page, 0, physaddr & ~q);
 #ifndef MODE32
 			/*  Recalculate l2 and l3, since they might have
 			    changed now:  */
@@ -1251,9 +1251,8 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 #endif
 	}
 
-	/*  Invalidate entries (NOTE: only code entries) in the VPH table:  */
-	for (r = DYNTRANS_MAX_VPH_TLB_ENTRIES/2;
-	     r < DYNTRANS_MAX_VPH_TLB_ENTRIES; r ++) {
+	/*  Invalidate entries in the VPH table:  */
+	for (r = 0; r < DYNTRANS_MAX_VPH_TLB_ENTRIES; r ++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			vaddr_page = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r]
 			    .vaddr_page & ~(DYNTRANS_PAGESIZE-1);
@@ -1308,7 +1307,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #ifndef MODE32
 	int64_t lowest, highest = -1;
 #endif
-	int found, r, lowest_index, start, end, useraccess = 0;
+	int found, r, lowest_index, useraccess = 0;
 
 #ifdef MODE32
 	uint32_t index;
@@ -1329,25 +1328,16 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	    (uint64_t)paddr_page);  */
 #endif
 
+	assert((vaddr_page & (DYNTRANS_PAGESIZE-1)) == 0);
+	assert((paddr_page & (DYNTRANS_PAGESIZE-1)) == 0);
+
 	if (writeflag & MEMORY_USER_ACCESS) {
 		writeflag &= ~MEMORY_USER_ACCESS;
 		useraccess = 1;
 	}
 
-	start = 0; end = DYNTRANS_MAX_VPH_TLB_ENTRIES / 2;
-#if 1
-	/*  Half of the TLB used for data, half for code:  */
-	if (writeflag & TLB_CODE) {
-		writeflag &= ~TLB_CODE;
-		start = end; end = DYNTRANS_MAX_VPH_TLB_ENTRIES;
-	}
-#else
-	/*  Data and code entries are mixed.  */
-	end = DYNTRANS_MAX_VPH_TLB_ENTRIES;
-#endif
-
 	/*  Scan the current TLB entries:  */
-	lowest_index = start;
+	lowest_index = 0;
 
 #ifdef MODE32
 	/*
@@ -1362,13 +1352,12 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	    DYNTRANS_ADDR_TO_PAGENR(vaddr_page)] - 1;
 	if (found < 0) {
 		static unsigned int x = 0;
-		lowest_index = (x % (end-start)) + start;
-		x ++;
+		lowest_index = (x++) % DYNTRANS_MAX_VPH_TLB_ENTRIES;
 	}
 #else
 	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
 	found = -1;
-	for (r=start; r<end; r++) {
+	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp < lowest) {
 			lowest = cpu->cd.DYNTRANS_ARCH.
 			    vph_tlb_entry[r].timestamp;

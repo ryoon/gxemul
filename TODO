@@ -1,4 +1,4 @@
-$Id: TODO,v 1.294 2006-06-24 10:21:34 debug Exp $
+$Id: TODO,v 1.295 2006-06-24 19:58:43 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -9,8 +9,10 @@ Possible release schedule:
 0.4.1:
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
 	x)  Fix the interrupt problems with Ultrix!
-	x)  Find/fix bug which is triggered when building the emulator inside
-	    NetBSD/pmax 3.0 inside the emulator!
+	x)  Find/fix the bug that causes NetBSD/cats etc to run less
+	    stable than it did in 0.3.8!
+	x)  Find/fix the bug which is triggered when building the emulator
+	    inside NetBSD/pmax 3.0 inside the emulator!
 	x)  Formalize the statistics gathering stuff for dyntrans...
 	x)  ... and use it to optimize MIPS dyntrans stuff.
 

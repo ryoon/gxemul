@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.4 2006-06-16 18:31:26 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.5 2006-06-24 19:52:28 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -901,7 +901,7 @@ static void debugger_cmd_quit(struct machine *m, char *cmd_line)
 	}
 
 	for (i=0; i<debugger_n_emuls; i++) {
-		single_step = 0;
+		single_step = NOT_SINGLE_STEPPING;
 
 		e = debugger_emuls[i];
 		force_debugger_at_exit = 0;

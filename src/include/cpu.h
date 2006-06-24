@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.75 2006-06-16 18:31:26 debug Exp $
+ *  $Id: cpu.h,v 1.76 2006-06-24 19:52:28 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -224,8 +224,8 @@ struct cpu_family {
 				    uint64_t dumpaddr);
 	void			(*register_dump)(struct cpu *cpu,
 				    int gprs, int coprocs);
-	int			(*run)(struct emul *emul,
-				    struct machine *machine);
+	int			(*run_instr)(struct emul *emul,
+				    struct cpu *cpu);
 	void			(*dumpinfo)(struct cpu *cpu);
 	void			(*tlbdump)(struct machine *m, int x,
 				    int rawflag);
@@ -351,7 +351,6 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);
 void cpu_functioncall_trace_return(struct cpu *cpu);
 void cpu_create_or_reset_tc(struct cpu *cpu);
 void cpu_run_init(struct machine *machine);
-int cpu_run(struct emul *emul, struct machine *machine);
 void cpu_run_deinit(struct machine *machine);
 void cpu_dumpinfo(struct machine *m, struct cpu *cpu);
 void cpu_list_available_types(void);
@@ -378,13 +377,13 @@ void cpu_init(void);
 	fp->register_match = n ## _cpu_register_match;			\
 	fp->disassemble_instr = n ## _cpu_disassemble_instr;		\
 	fp->register_dump = n ## _cpu_register_dump;			\
-	fp->run = n ## _cpu_run;					\
 	fp->dumpinfo = n ## _cpu_dumpinfo;				\
 	fp->interrupt = n ## _cpu_interrupt; 				\
 	fp->interrupt_ack = n ## _cpu_interrupt_ack;			\
 	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
 	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	fp->tlbdump = n ## _cpu_tlbdump;				\
+	fp->run_instr = n ## _cpu_run_instr;				\
 	return 1;							\
 	}
 

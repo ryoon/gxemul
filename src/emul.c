@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.254 2006-06-22 13:22:40 debug Exp $
+ *  $Id: emul.c,v 1.255 2006-06-24 19:52:27 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -55,12 +55,16 @@
 #include "x11.h"
 
 
-extern int force_debugger_at_exit;
-
 extern int extra_argc;
 extern char **extra_argv;
 
 extern int verbose;
+extern int quiet_mode;
+extern int force_debugger_at_exit;
+extern int single_step;
+extern int old_show_trace_tree;
+extern int old_instruction_trace;
+extern int old_quiet_mode;
 extern int quiet_mode;
 
 extern struct emul *debugger_emul;
@@ -1577,24 +1581,50 @@ void emul_run(struct emul **emuls, int n_emuls)
 	while (go) {
 		go = 0;
 
-		x11_check_event(emuls, n_emuls);
+		/*  Flush X11 and serial console output every now and then:  */
+		if (emuls[0]->machines[0]->ncycles >
+		    emuls[0]->machines[0]->ncycles_flush + (1<<18)) {
+			x11_check_event(emuls, n_emuls);
+			console_flush();
+			emuls[0]->machines[0]->ncycles_flush =
+			    emuls[0]->machines[0]->ncycles;
+		}
 
-		for (i=0; i<n_emuls; i++) {
-			e = emuls[i];
-			if (e == NULL)
-				continue;
+		if (emuls[0]->machines[0]->ncycles >
+		    emuls[0]->machines[0]->ncycles_show + (1<<25)) {
+			emuls[0]->machines[0]->ncycles_since_gettimeofday +=
+			    (emuls[0]->machines[0]->ncycles -
+			     emuls[0]->machines[0]->ncycles_show);
+			cpu_show_cycles(emuls[0]->machines[0], 0);
+			emuls[0]->machines[0]->ncycles_show =
+			    emuls[0]->machines[0]->ncycles;
+		}
 
-			for (j=0; j<e->n_machines; j++) {
-				if (e->machines[j]->gdb.port > 0)
-					debugger_gdb_check_incoming(
-					    e->machines[j]);
+		if (single_step == ENTER_SINGLE_STEPPING) {
+			/*  TODO: Cleanup!  */
+			old_instruction_trace =
+			    emuls[0]->machines[0]->instruction_trace;
+			old_quiet_mode = quiet_mode;
+			old_show_trace_tree =
+			    emuls[0]->machines[0]->show_trace_tree;
+			emuls[0]->machines[0]->instruction_trace = 1;
+			emuls[0]->machines[0]->show_trace_tree = 1;
+			quiet_mode = 0;
+			single_step = SINGLE_STEPPING;
+		}
 
-				/*  TODO: cpu_run() is a strange name, since
-				    there can be multiple cpus in a machine  */
-				anything = cpu_run(e, e->machines[j]);
-				if (anything)
-					go = 1;
-			}
+		if (single_step == SINGLE_STEPPING)
+			debugger();
+
+		e = emuls[0];	/*  Note: Only 1 emul supported now.  */
+
+		for (j=0; j<e->n_machines; j++) {
+			if (e->machines[j]->gdb.port > 0)
+				debugger_gdb_check_incoming(e->machines[j]);
+
+			anything = machine_run(e->machines[j]);
+			if (anything)
+				go = 1;
 		}
 	}
 

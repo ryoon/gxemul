@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1258 2006-06-24 10:19:18 debug Exp $
+$Id: HISTORY,v 1.1259 2006-06-24 19:52:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2805,3 +2805,5 @@ Changelog for GXemul:
 
 20060624	Replacing the error-prone machine type initialization stuff
 		with something more reasonable.
+		Finally removing the old "cpu_run" kludge; moving around stuff
+		in machine.c and emul.c to better suit the dyntrans system.

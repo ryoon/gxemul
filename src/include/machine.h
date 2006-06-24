@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.119 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine.h,v 1.120 2006-06-24 19:52:28 debug Exp $
  */
 
 #include <sys/types.h>
@@ -551,6 +551,7 @@ void machine_default_cputype(struct machine *);
 void machine_dumpinfo(struct machine *);
 void machine_bus_register(struct machine *, char *busname,
 	void (*debug_dump)(void *), void *extra);
+int machine_run(struct machine *machine);
 void machine_list_available_types_and_cpus(void);
 struct machine_entry *machine_entry_new(const char *name, 
 	int arch, int oldstyle_type);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.342 2006-06-22 13:27:03 debug Exp $
+ *  $Id: cpu.c,v 1.343 2006-06-24 19:52:27 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -319,24 +319,6 @@ void cpu_create_or_reset_tc(struct cpu *cpu)
 	 */
 	if (cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
-}
-
-
-/*
- *  cpu_run():
- *
- *  Run instructions on all CPUs in this machine, for a "medium duration"
- *  (or until all CPUs have halted).
- *
- *  Return value is 1 if anything happened, 0 if all CPUs are stopped.
- */
-int cpu_run(struct emul *emul, struct machine *m)
-{
-	if (m->cpu_family == NULL || m->cpu_family->run == NULL) {
-		fatal("cpu_run(): NULL\n");
-		return 0;
-	} else
-		return m->cpu_family->run(emul, m);
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.109 2006-05-06 08:42:48 debug Exp $
+ *  $Id: diskimage.c,v 1.110 2006-06-24 19:52:27 debug Exp $
  *
  *  Disk image support.
  *
@@ -524,7 +524,7 @@ int diskimage_scsicommand(struct cpu *cpu, int id, int type,
 		fatal(" %02x", xferp->cmd[i]);
 	fatal("\n");
 if (xferp->cmd_len > 7 && xferp->cmd[5] == 0x11)
-	single_step = 1;
+	single_step = ENTER_SINGLE_STEPPING;
 #endif
 
 #if 0

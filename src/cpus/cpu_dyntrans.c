@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.100 2006-06-24 11:03:20 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.101 2006-06-24 19:52:28 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1521,7 +1521,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 					    " slot! Not yet supported.\n");
 #endif
 				single_step_breakpoint = 1;
-				single_step = 1;
+				single_step = ENTER_SINGLE_STEPPING;
 				goto stop_running_translated;
 			}
 	}

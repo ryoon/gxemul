@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.672 2006-06-24 10:19:18 debug Exp $
+ *  $Id: machine.c,v 1.673 2006-06-24 19:52:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,6 +44,7 @@
 #include "bus_isa.h"
 #include "bus_pci.h"
 #include "cpu.h"
+#include "debugger.h"
 #include "device.h"
 #include "devices.h"
 #include "diskimage.h"
@@ -893,6 +894,65 @@ void machine_default_cputype(struct machine *m)
 		    m->machine_type, m->machine_subtype);
 		exit(1);
 	}
+}
+
+
+/*****************************************************************************/
+
+
+/*
+ *  machine_run():
+ *
+ *  Run one or more instructions on all CPUs in this machine. (Usually,
+ *  around N_SAFE_DYNTRANS_LIMIT instructions will be run by the dyntrans
+ *  system.)
+ *
+ *  Return value is 1 if any CPU in this machine is still running,
+ *  or 0 if all CPUs are stopped.
+ */
+int machine_run(struct machine *machine)
+{
+	struct cpu **cpus = machine->cpus;
+	int ncpus = machine->ncpus, cpu0instrs = 0, i, te;
+
+	for (i=0; i<ncpus; i++) {
+		if (cpus[i]->running) {
+			int instrs_run = machine->cpu_family->run_instr(
+			    machine->emul, cpus[i]);
+			if (i == 0)
+				cpu0instrs += instrs_run;
+		}
+	}
+
+	/*
+	 *  Hardware 'ticks':  (clocks, interrupt sources...)
+	 *
+	 *  Here, cpu0instrs is the number of instructions
+	 *  executed on cpu0.  (TODO: don't use cpu 0 for this,
+	 *  use some kind of "mainbus" instead.)
+	 */
+
+	machine->ncycles += cpu0instrs;
+
+	for (te=0; te<machine->n_tick_entries; te++) {
+		machine->ticks_till_next[te] -= cpu0instrs;
+		if (machine->ticks_till_next[te] <= 0) {
+			while (machine->ticks_till_next[te] <= 0) {
+				machine->ticks_till_next[te] +=
+				    machine->ticks_reset_value[te];
+			}
+
+			machine->tick_func[te](cpus[0],
+			    machine->tick_extra[te]);
+		}
+	}
+
+	/*  Is any CPU still alive?  */
+	for (i=0; i<ncpus; i++)
+		if (cpus[i]->running)
+			return 1;
+
+	return 0;
 }
 
 

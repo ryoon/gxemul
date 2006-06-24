@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.274 2006-06-22 13:22:41 debug Exp $
+ *  $Id: main.c,v 1.275 2006-06-24 19:52:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -37,6 +37,7 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "debugger.h"
 #include "device.h"
 #include "diskimage.h"
 #include "emul.h"
@@ -418,7 +419,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 				    m->gdb.port);
 				exit(1);
 			}
-			single_step = 1;	/*  implicit -V  */
+			/*  Note: implicit -V  */
+			single_step = ENTER_SINGLE_STEPPING;
 			msopts = 1;
 			break;
 		case 'H':
@@ -527,7 +529,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'V':
-			single_step = 1;
+			single_step = ENTER_SINGLE_STEPPING;
 			break;
 		case 'v':
 			verbose ++;

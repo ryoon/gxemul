@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.15 2006-04-19 18:55:57 debug Exp $
+ *  $Id: generate_head.c,v 1.16 2006-06-24 19:52:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -70,6 +70,8 @@ int main(int argc, char *argv[])
 
 
 	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
+
+	printf("#include \"debugger.h\"\n");
 
 	printf("#define DYNTRANS_MAX_VPH_TLB_ENTRIES "
 	    "%s_MAX_VPH_TLB_ENTRIES\n", uppercase(a));

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_gdb.c,v 1.11 2006-04-08 16:47:18 debug Exp $
+ *  $Id: debugger_gdb.c,v 1.12 2006-06-24 19:52:28 debug Exp $
  *
  *  Routines used for communicating with the GNU debugger, using the GDB
  *  remote serial protocol.
@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 #include "cpu.h"
+#include "debugger.h"
 #include "debugger_gdb.h"
 #include "machine.h"
 #include "memory.h"
@@ -222,7 +223,7 @@ int debugger_gdb__check_incoming_char(struct machine *machine)
 			machine->gdb.rx_buf_checksum = 0x00;
 		} else if (ch == 0x03) {
 			fatal("[ GDB break ]\n");
-			single_step = 1;
+			single_step = ENTER_SINGLE_STEPPING;
 			ch = '+';
 			write(machine->gdb.socket, &ch, 1);
 			send_packet(machine, "S02");

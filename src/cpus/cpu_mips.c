@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.56 2006-06-22 13:22:41 debug Exp $
+ *  $Id: cpu_mips.c,v 1.57 2006-06-24 19:52:28 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -53,10 +53,6 @@
 
 
 extern volatile int single_step;
-extern int old_show_trace_tree;
-extern int old_instruction_trace;
-extern int old_quiet_mode;
-extern int quiet_mode;
 
 static char *exception_names[] = EXCEPTION_NAMES;
 

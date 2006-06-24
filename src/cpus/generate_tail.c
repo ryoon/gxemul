@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.9 2006-02-21 18:10:42 debug Exp $
+ *  $Id: generate_tail.c,v 1.10 2006-06-24 19:52:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -193,14 +193,6 @@ int main(int argc, char *argv[])
 	printf("#define DYNTRANS_CPU_RUN_INSTR %s_cpu_run_instr\n", a);
 	printf("#include \"cpu_dyntrans.c\"\n");
 	printf("#undef DYNTRANS_CPU_RUN_INSTR\n\n");
-
-	printf("#define CPU_RUN %s_cpu_run\n", a);
-	printf("#define CPU_RINSTR %s_cpu_run_instr\n", a);
-	printf("#define CPU_RUN_%s\n", uppercase(a));
-	printf("#include \"cpu_run.c\"\n");
-	printf("#undef CPU_RINSTR\n");
-	printf("#undef CPU_RUN_%s\n", uppercase(a));
-	printf("#undef CPU_RUN\n\n");
 
 	printf("CPU_FAMILY_INIT(%s,\"%s\")\n\n", a, b);
 

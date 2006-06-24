@@ -1,4 +1,4 @@
-$Id: TODO,v 1.293 2006-06-24 07:18:30 debug Exp $
+$Id: TODO,v 1.294 2006-06-24 10:21:34 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -11,6 +11,8 @@ Possible release schedule:
 	x)  Fix the interrupt problems with Ultrix!
 	x)  Find/fix bug which is triggered when building the emulator inside
 	    NetBSD/pmax 3.0 inside the emulator!
+	x)  Formalize the statistics gathering stuff for dyntrans...
+	x)  ... and use it to optimize MIPS dyntrans stuff.
 
 0.4.2 ...?
 	x)  Clean-up!

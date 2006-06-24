@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.4 2006-03-24 05:53:17 debug Exp $
+ *  $Id: machine_macppc.c,v 1.5 2006-06-24 10:19:19 debug Exp $
  *
  *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
  *        systems. They do not model real PowerMacs, but should be enough to
@@ -179,18 +179,19 @@ MACHINE_DEFAULT_RAM(macppc)
 
 MACHINE_REGISTER(macppc)
 {
-	MR_DEFAULT(macppc, "Macintosh", ARCH_PPC, MACHINE_MACPPC, 1, 3);
-	me->aliases[0] = "macppc";
-	me->subtype[0] = machine_entry_subtype_new("MacPPC G3",
-	    MACHINE_MACPPC_G3, 1);
-	me->subtype[0]->aliases[0] = "g3";
-	me->subtype[1] = machine_entry_subtype_new("MacPPC G4",
-	    MACHINE_MACPPC_G4, 1);
-	me->subtype[1]->aliases[0] = "g4";
-	me->subtype[2] = machine_entry_subtype_new("MacPPC G5",
-	    MACHINE_MACPPC_G5, 1);
-	me->subtype[2]->aliases[0] = "g5";
+	MR_DEFAULT(macppc, "Macintosh", ARCH_PPC, MACHINE_MACPPC);
+
+	machine_entry_add_alias(me, "macppc");
+
+	machine_entry_add_subtype(me, "MacPPC G3", MACHINE_MACPPC_G3,
+	    "g3", NULL);
+
+	machine_entry_add_subtype(me, "MacPPC G4", MACHINE_MACPPC_G4,
+	    "g4", NULL);
+
+	machine_entry_add_subtype(me, "MacPPC G5", MACHINE_MACPPC_G5,
+	    "g5", NULL);
+
 	me->set_default_ram = machine_default_ram_macppc;
-	machine_entry_add(me, ARCH_PPC);
 }
 

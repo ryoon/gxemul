@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_avr.c,v 1.4 2006-03-30 19:36:04 debug Exp $
+ *  $Id: machine_avr.c,v 1.5 2006-06-24 10:19:19 debug Exp $
  *
  *  Experimental AVR machines.
  */
@@ -69,10 +69,11 @@ MACHINE_DEFAULT_RAM(bareavr)
 MACHINE_REGISTER(bareavr)
 {
 	MR_DEFAULT(bareavr, "Generic \"bare\" AVR machine",
-	    ARCH_AVR, MACHINE_BAREAVR, 1, 0);
-	me->aliases[0] = "bareavr";
+	    ARCH_AVR, MACHINE_BAREAVR);
+
+	machine_entry_add_alias(me, "bareavr");
+
 	me->set_default_ram = machine_default_ram_bareavr;
-	machine_entry_add(me, ARCH_AVR);
 }
 
 
@@ -108,10 +109,11 @@ MACHINE_DEFAULT_RAM(avr_pal)
 MACHINE_REGISTER(avr_pal)
 {
 	MR_DEFAULT(avr_pal, "AVR connected to a PAL TV",
-	    ARCH_AVR, MACHINE_AVR_PAL, 1, 0);
-	me->aliases[0] = "avr_pal";
+	    ARCH_AVR, MACHINE_AVR_PAL);
+
+	machine_entry_add_alias(me, "avr_pal");
+
 	me->set_default_ram = machine_default_ram_avr_pal;
-	machine_entry_add(me, ARCH_AVR);
 }
 
 
@@ -147,9 +149,10 @@ MACHINE_DEFAULT_RAM(avr_mahpong)
 MACHINE_REGISTER(avr_mahpong)
 {
 	MR_DEFAULT(avr_mahpong, "AVR setup for Mahpong",
-	    ARCH_AVR, MACHINE_AVR_MAHPONG, 1, 0);
-	me->aliases[0] = "avr_mahpong";
+	    ARCH_AVR, MACHINE_AVR_MAHPONG);
+
+	machine_entry_add_alias(me, "avr_mahpong");
+
 	me->set_default_ram = machine_default_ram_avr_mahpong;
-	machine_entry_add(me, ARCH_AVR);
 }
 

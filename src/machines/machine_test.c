@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.13 2006-06-12 10:21:12 debug Exp $
+ *  $Id: machine_test.c,v 1.14 2006-06-24 10:19:19 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -106,18 +106,18 @@ MACHINE_DEFAULT_CPU(testalpha)
 MACHINE_REGISTER(barealpha)
 {
 	MR_DEFAULT(barealpha, "Generic \"bare\" Alpha machine",
-	    ARCH_ALPHA, MACHINE_BAREALPHA, 1, 0);
-	me->aliases[0] = "barealpha";
-	machine_entry_add(me, ARCH_ALPHA);
+	    ARCH_ALPHA, MACHINE_BAREALPHA);
+
+	machine_entry_add_alias(me, "barealpha");
 }
 
 
 MACHINE_REGISTER(testalpha)
 {
 	MR_DEFAULT(testalpha, "Test-machine for Alpha",
-	    ARCH_ALPHA, MACHINE_TESTALPHA, 1, 0);
-	me->aliases[0] = "testalpha";
-	machine_entry_add(me, ARCH_ALPHA);
+	    ARCH_ALPHA, MACHINE_TESTALPHA);
+
+	machine_entry_add_alias(me, "testalpha");
 }
 
 
@@ -165,18 +165,17 @@ MACHINE_DEFAULT_CPU(testarm)
 MACHINE_REGISTER(barearm)
 {
 	MR_DEFAULT(barearm, "Generic \"bare\" ARM machine",
-	    ARCH_ARM, MACHINE_BAREARM, 1, 0);
-	me->aliases[0] = "barearm";
-	machine_entry_add(me, ARCH_ARM);
+	    ARCH_ARM, MACHINE_BAREARM);
+
+	machine_entry_add_alias(me, "barearm");
 }
 
 
 MACHINE_REGISTER(testarm)
 {
-	MR_DEFAULT(testarm, "Test-machine for ARM",
-	    ARCH_ARM, MACHINE_TESTARM, 1, 0);
-	me->aliases[0] = "testarm";
-	machine_entry_add(me, ARCH_ARM);
+	MR_DEFAULT(testarm, "Test-machine for ARM", ARCH_ARM, MACHINE_TESTARM);
+
+	machine_entry_add_alias(me, "testarm");
 }
 
 
@@ -214,18 +213,18 @@ MACHINE_DEFAULT_CPU(testhppa)
 MACHINE_REGISTER(barehppa)
 {
 	MR_DEFAULT(barehppa, "Generic \"bare\" HPPA machine",
-	    ARCH_HPPA, MACHINE_BAREHPPA, 1, 0);
-	me->aliases[0] = "barehppa";
-	machine_entry_add(me, ARCH_HPPA);
+	    ARCH_HPPA, MACHINE_BAREHPPA);
+
+	machine_entry_add_alias(me, "barehppa");
 }
 
 
 MACHINE_REGISTER(testhppa)
 {
 	MR_DEFAULT(testhppa, "Test-machine for HPPA",
-	    ARCH_HPPA, MACHINE_TESTHPPA, 1, 0);
-	me->aliases[0] = "testhppa";
-	machine_entry_add(me, ARCH_HPPA);
+	    ARCH_HPPA, MACHINE_TESTHPPA);
+
+	machine_entry_add_alias(me, "testhppa");
 }
 
 
@@ -262,18 +261,18 @@ MACHINE_DEFAULT_CPU(testi960)
 MACHINE_REGISTER(barei960)
 {
 	MR_DEFAULT(barei960, "Generic \"bare\" i960 machine",
-	    ARCH_I960, MACHINE_BAREI960, 1, 0);
-	me->aliases[0] = "barei960";
-	machine_entry_add(me, ARCH_I960);
+	    ARCH_I960, MACHINE_BAREI960);
+
+	machine_entry_add_alias(me, "barei960");
 }
 
 
 MACHINE_REGISTER(testi960)
 {
 	MR_DEFAULT(testi960, "Test-machine for i960",
-	    ARCH_I960, MACHINE_TESTI960, 1, 0);
-	me->aliases[0] = "testi960";
-	machine_entry_add(me, ARCH_I960);
+	    ARCH_I960, MACHINE_TESTI960);
+
+	machine_entry_add_alias(me, "testi960");
 }
 
 
@@ -310,18 +309,18 @@ MACHINE_DEFAULT_CPU(testia64)
 MACHINE_REGISTER(bareia64)
 {
 	MR_DEFAULT(bareia64, "Generic \"bare\" IA64 machine",
-	    ARCH_IA64, MACHINE_BAREIA64, 1, 0);
-	me->aliases[0] = "bareia64";
-	machine_entry_add(me, ARCH_IA64);
+	    ARCH_IA64, MACHINE_BAREIA64);
+
+	machine_entry_add_alias(me, "bareia64");
 }
 
 
 MACHINE_REGISTER(testia64)
 {
 	MR_DEFAULT(testia64, "Test-machine for IA64",
-	    ARCH_IA64, MACHINE_TESTIA64, 1, 0);
-	me->aliases[0] = "testia64";
-	machine_entry_add(me, ARCH_IA64);
+	    ARCH_IA64, MACHINE_TESTIA64);
+
+	machine_entry_add_alias(me, "testia64");
 }
 
 
@@ -358,18 +357,18 @@ MACHINE_DEFAULT_CPU(testm68k)
 MACHINE_REGISTER(barem68k)
 {
 	MR_DEFAULT(barem68k, "Generic \"bare\" M68K machine",
-	    ARCH_M68K, MACHINE_BAREM68K, 1, 0);
-	me->aliases[0] = "barem68k";
-	machine_entry_add(me, ARCH_M68K);
+	    ARCH_M68K, MACHINE_BAREM68K);
+
+	machine_entry_add_alias(me, "barem68k");
 }
 
 
 MACHINE_REGISTER(testm68k)
 {
 	MR_DEFAULT(testm68k, "Test-machine for M68K",
-	    ARCH_M68K, MACHINE_TESTM68K, 1, 0);
-	me->aliases[0] = "testm68k";
-	machine_entry_add(me, ARCH_M68K);
+	    ARCH_M68K, MACHINE_TESTM68K);
+
+	machine_entry_add_alias(me, "testm68k");
 }
 
 
@@ -438,18 +437,18 @@ MACHINE_DEFAULT_CPU(testmips)
 MACHINE_REGISTER(baremips)
 {
 	MR_DEFAULT(baremips, "Generic \"bare\" MIPS machine",
-	    ARCH_MIPS, MACHINE_BAREMIPS, 1, 0);
-	me->aliases[0] = "baremips";
-	machine_entry_add(me, ARCH_MIPS);
+	    ARCH_MIPS, MACHINE_BAREMIPS);
+
+	machine_entry_add_alias(me, "baremips");
 }
 
 
 MACHINE_REGISTER(testmips)
 {
 	MR_DEFAULT(testmips, "Test-machine for MIPS",
-	    ARCH_MIPS, MACHINE_TESTMIPS, 1, 0);
-	me->aliases[0] = "testmips";
-	machine_entry_add(me, ARCH_MIPS);
+	    ARCH_MIPS, MACHINE_TESTMIPS);
+
+	machine_entry_add_alias(me, "testmips");
 }
 
 
@@ -486,18 +485,17 @@ MACHINE_DEFAULT_CPU(testppc)
 MACHINE_REGISTER(bareppc)
 {
 	MR_DEFAULT(bareppc, "Generic \"bare\" PPC machine",
-	    ARCH_PPC, MACHINE_BAREPPC, 1, 0);
-	me->aliases[0] = "bareppc";
-	machine_entry_add(me, ARCH_PPC);
+	    ARCH_PPC, MACHINE_BAREPPC);
+
+	machine_entry_add_alias(me, "bareppc");
 }
 
 
 MACHINE_REGISTER(testppc)
 {
-	MR_DEFAULT(testppc, "Test-machine for PPC",
-	    ARCH_PPC, MACHINE_TESTPPC, 1, 0);
-	me->aliases[0] = "testppc";
-	machine_entry_add(me, ARCH_PPC);
+	MR_DEFAULT(testppc, "Test-machine for PPC", ARCH_PPC, MACHINE_TESTPPC);
+
+	machine_entry_add_alias(me, "testppc");
 }
 
 
@@ -534,18 +532,17 @@ MACHINE_DEFAULT_CPU(testsh)
 MACHINE_REGISTER(baresh)
 {
 	MR_DEFAULT(baresh, "Generic \"bare\" SH machine",
-	    ARCH_SH, MACHINE_BARESH, 1, 0);
-	me->aliases[0] = "baresh";
-	machine_entry_add(me, ARCH_SH);
+	    ARCH_SH, MACHINE_BARESH);
+
+	machine_entry_add_alias(me, "baresh");
 }
 
 
 MACHINE_REGISTER(testsh)
 {
-	MR_DEFAULT(testsh, "Test-machine for SH",
-	    ARCH_SH, MACHINE_TESTSH, 1, 0);
-	me->aliases[0] = "testsh";
-	machine_entry_add(me, ARCH_SH);
+	MR_DEFAULT(testsh, "Test-machine for SH", ARCH_SH, MACHINE_TESTSH);
+
+	machine_entry_add_alias(me, "testsh");
 }
 
 
@@ -582,17 +579,17 @@ MACHINE_DEFAULT_CPU(testsparc)
 MACHINE_REGISTER(baresparc)
 {
 	MR_DEFAULT(baresparc, "Generic \"bare\" SPARC machine",
-	    ARCH_SPARC, MACHINE_BARESPARC, 1, 0);
-	me->aliases[0] = "baresparc";
-	machine_entry_add(me, ARCH_SPARC);
+	    ARCH_SPARC, MACHINE_BARESPARC);
+
+	machine_entry_add_alias(me, "baresparc");
 }
 
 
 MACHINE_REGISTER(testsparc)
 {
 	MR_DEFAULT(testsparc, "Test-machine for SPARC",
-	    ARCH_SPARC, MACHINE_TESTSPARC, 1, 0);
-	me->aliases[0] = "testsparc";
-	machine_entry_add(me, ARCH_SPARC);
+	    ARCH_SPARC, MACHINE_TESTSPARC);
+
+	machine_entry_add_alias(me, "testsparc");
 }
 

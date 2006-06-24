@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iyonix.c,v 1.4 2006-01-24 21:26:02 debug Exp $
+ *  $Id: machine_iyonix.c,v 1.5 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -82,9 +82,10 @@ MACHINE_DEFAULT_RAM(iyonix)
 
 MACHINE_REGISTER(iyonix)
 {
-	MR_DEFAULT(iyonix, "Iyonix", ARCH_ARM, MACHINE_IYONIX, 1, 0);
-	me->aliases[0] = "iyonix";
+	MR_DEFAULT(iyonix, "Iyonix", ARCH_ARM, MACHINE_IYONIX);
+
+	machine_entry_add_alias(me, "iyonix");
+
 	me->set_default_ram = machine_default_ram_iyonix;
-	machine_entry_add(me, ARCH_ARM);
 }
 

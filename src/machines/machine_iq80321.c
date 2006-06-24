@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.18 2006-04-06 19:17:38 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.19 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -101,9 +101,8 @@ MACHINE_DEFAULT_CPU(iq80321)
 
 MACHINE_REGISTER(iq80321)
 {
-	MR_DEFAULT(iq80321, "Intel IQ80321", ARCH_ARM, MACHINE_IQ80321,
-	    1, 0);
-	me->aliases[0] = "iq80321";
-	machine_entry_add(me, ARCH_ARM);
+	MR_DEFAULT(iq80321, "Intel IQ80321", ARCH_ARM, MACHINE_IQ80321);
+
+	machine_entry_add_alias(me, "iq80321");
 }
 

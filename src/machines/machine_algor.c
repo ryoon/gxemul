@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.5 2006-02-18 17:55:25 debug Exp $
+ *  $Id: machine_algor.c,v 1.6 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -112,15 +112,14 @@ MACHINE_DEFAULT_CPU(algor)
 
 MACHINE_REGISTER(algor)
 {
-	MR_DEFAULT(algor, "Algor evaluation board", ARCH_MIPS, MACHINE_ALGOR,
-	    1, 2);
-	me->aliases[0] = "algor";
-	me->subtype[0] = machine_entry_subtype_new("P4032",
-	    MACHINE_ALGOR_P4032, 1);
-	me->subtype[0]->aliases[0] = "p4032";
-	me->subtype[1] = machine_entry_subtype_new("P5064",
-	    MACHINE_ALGOR_P5064, 1);
-	me->subtype[1]->aliases[0] = "p5064";
-	machine_entry_add(me, ARCH_MIPS);
+	MR_DEFAULT(algor, "Algor evaluation board", ARCH_MIPS, MACHINE_ALGOR);
+
+	machine_entry_add_alias(me, "algor");
+
+	machine_entry_add_subtype(me, "P4032", MACHINE_ALGOR_P4032,
+	    "p4032", NULL);
+
+	machine_entry_add_subtype(me, "P5064", MACHINE_ALGOR_P5064,
+	    "p5064", NULL);
 }
 

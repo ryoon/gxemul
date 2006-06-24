@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcsh.c,v 1.1 2006-01-11 19:20:08 debug Exp $
+ *  $Id: machine_hpcsh.c,v 1.2 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -75,14 +75,14 @@ MACHINE_DEFAULT_CPU(hpcsh)
 
 MACHINE_REGISTER(hpcsh)
 {
-	MR_DEFAULT(hpcsh, "Handhelp SH (HPCsh)", ARCH_SH, MACHINE_HPCSH, 1, 2);
-	me->aliases[0] = "hpcsh";
-	me->subtype[0] = machine_entry_subtype_new("Jornada 680",
-	    MACHINE_HPCSH_JORNADA680, 1);
-	me->subtype[0]->aliases[0] = "jornada680";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Jornada 690", MACHINE_HPCSH_JORNADA690, 1);
-	me->subtype[1]->aliases[0] = "jornada690";
-	machine_entry_add(me, ARCH_SH);
+	MR_DEFAULT(hpcsh, "Handhelp SH (HPCsh)", ARCH_SH, MACHINE_HPCSH);
+
+	machine_entry_add_alias(me, "hpcsh");
+
+	machine_entry_add_subtype(me, "Jornada 680",
+	    MACHINE_HPCSH_JORNADA680, "jornada680", NULL);
+
+	machine_entry_add_subtype(me, "Jornada 690",
+	    MACHINE_HPCSH_JORNADA690, "jornada690", NULL);
 }
 

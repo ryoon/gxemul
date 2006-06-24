@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sandpoint.c,v 1.2 2006-02-05 10:26:36 debug Exp $
+ *  $Id: machine_sandpoint.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -71,9 +71,9 @@ MACHINE_DEFAULT_CPU(sandpoint)
 
 MACHINE_REGISTER(sandpoint)
 {
-	MR_DEFAULT(sandpoint, "Motorola Sandpoint (PPC)", ARCH_PPC,
-	    MACHINE_SANDPOINT, 1, 0);
-	me->aliases[0] = "sandpoint";
-	machine_entry_add(me, ARCH_PPC);
+	MR_DEFAULT(sandpoint, "Motorola Sandpoint (PPC)",
+	    ARCH_PPC, MACHINE_SANDPOINT);
+
+	machine_entry_add_alias(me, "sandpoint");
 }
 

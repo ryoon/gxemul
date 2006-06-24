@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.12 2006-06-16 18:31:26 debug Exp $
+ *  $Id: machine_pmax.c,v 1.13 2006-06-24 10:19:19 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -883,56 +883,39 @@ MACHINE_DEFAULT_RAM(pmax)
 
 MACHINE_REGISTER(pmax)
 {
-	MR_DEFAULT(pmax, "DECstation/DECsystem", ARCH_MIPS, MACHINE_PMAX, 3, 9);
+	MR_DEFAULT(pmax, "DECstation/DECsystem", ARCH_MIPS, MACHINE_PMAX);
 
-	me->aliases[0] = "decstation";
-	me->aliases[1] = "decsystem";
-	me->aliases[2] = "dec";
-	me->subtype[0] = machine_entry_subtype_new(
-	    "DECstation 3100 (PMAX)", MACHINE_DEC_PMAX_3100, 3);
-	me->subtype[0]->aliases[0] = "pmax";
-	me->subtype[0]->aliases[1] = "3100";
-	me->subtype[0]->aliases[2] = "2100";
+	machine_entry_add_alias(me, "decstation");
+	machine_entry_add_alias(me, "decsystem");
+	machine_entry_add_alias(me, "dec");
 
-	me->subtype[1] = machine_entry_subtype_new(
-	    "DECstation 5000/200 (3MAX)", MACHINE_DEC_3MAX_5000, 2);
-	me->subtype[1]->aliases[0] = "3max";
-	me->subtype[1]->aliases[1] = "5000/200";
+	machine_entry_add_subtype(me, "DECstation 3100 (PMAX)",
+	    MACHINE_DEC_PMAX_3100, "pmax", "3100", "2100", NULL);
 
-	me->subtype[2] = machine_entry_subtype_new(
-	    "DECstation 5000/1xx (3MIN)", MACHINE_DEC_3MIN_5000, 2);
-	me->subtype[2]->aliases[0] = "3min";
-	me->subtype[2]->aliases[1] = "5000/1xx";
+	machine_entry_add_subtype(me, "DECstation 5000/200 (3MAX)",
+	    MACHINE_DEC_3MAX_5000, "3max", "5000/200", NULL);
 
-	me->subtype[3] = machine_entry_subtype_new(
-	    "DECstation 5000 (3MAXPLUS)", MACHINE_DEC_3MAXPLUS_5000, 2);
-	me->subtype[3]->aliases[0] = "3maxplus";
-	me->subtype[3]->aliases[1] = "3max+";
+	machine_entry_add_subtype(me, "DECstation 5000/1xx (3MIN)",
+	    MACHINE_DEC_3MIN_5000, "3min", "5000/1xx", NULL);
 
-	me->subtype[4] = machine_entry_subtype_new(
-	    "DECsystem 58x0", MACHINE_DEC_5800, 2);
-	me->subtype[4]->aliases[0] = "5800";
-	me->subtype[4]->aliases[1] = "58x0";
+	machine_entry_add_subtype(me, "DECstation 5000 (3MAXPLUS)",
+	    MACHINE_DEC_3MAXPLUS_5000, "3maxplus", "3max+", NULL);
 
-	me->subtype[5] = machine_entry_subtype_new(
-	    "DECsystem 5400", MACHINE_DEC_5400, 1);
-	me->subtype[5]->aliases[0] = "5400";
+	machine_entry_add_subtype(me, "DECsystem 58x0",
+	    MACHINE_DEC_5800, "5800", "58x0", NULL);
 
-	me->subtype[6] = machine_entry_subtype_new(
-	    "DECstation Maxine (5000)", MACHINE_DEC_MAXINE_5000, 1);
-	me->subtype[6]->aliases[0] = "maxine";
+	machine_entry_add_subtype(me, "DECsystem 5400",
+	    MACHINE_DEC_5400, "5400", NULL);
 
-	me->subtype[7] = machine_entry_subtype_new(
-	    "DECsystem 5500", MACHINE_DEC_5500, 1);
-	me->subtype[7]->aliases[0] = "5500";
+	machine_entry_add_subtype(me, "DECstation Maxine (5000)",
+	    MACHINE_DEC_MAXINE_5000, "maxine", NULL);
 
-	me->subtype[8] = machine_entry_subtype_new(
-	    "DECstation MipsMate (5100)", MACHINE_DEC_MIPSMATE_5100, 2);
-	me->subtype[8]->aliases[0] = "5100";
-	me->subtype[8]->aliases[1] = "mipsmate";
+	machine_entry_add_subtype(me, "DECsystem 5500",
+	    MACHINE_DEC_5500, "5500", NULL);
+
+	machine_entry_add_subtype(me, "DECstation MipsMate (5100)",
+	    MACHINE_DEC_MIPSMATE_5100, "5100", "mipsmate", NULL);
 
 	me->set_default_ram = machine_default_ram_pmax;
-
-	machine_entry_add(me, ARCH_MIPS);
 }
 

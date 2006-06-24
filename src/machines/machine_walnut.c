@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_walnut.c,v 1.1 2006-01-06 13:03:57 debug Exp $
+ *  $Id: machine_walnut.c,v 1.2 2006-06-24 10:19:19 debug Exp $
+ *
+ *  TODO: Other evbppc machines?
  */
 
 #include <stdio.h>
@@ -82,10 +84,9 @@ MACHINE_DEFAULT_CPU(walnut)
 
 MACHINE_REGISTER(walnut)
 {
-	MR_DEFAULT(walnut, "Walnut evaluation board", ARCH_PPC,
-	    MACHINE_WALNUT, 2, 0);
-	me->aliases[0] = "evbppc";
-	me->aliases[1] = "walnut";
-	machine_entry_add(me, ARCH_PPC);
+	MR_DEFAULT(walnut, "Walnut evaluation board", ARCH_PPC, MACHINE_WALNUT);
+
+	machine_entry_add_alias(me, "evbppc");
+	machine_entry_add_alias(me, "walnut");
 }
 

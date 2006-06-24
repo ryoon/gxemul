@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.3 2006-03-24 05:53:17 debug Exp $
+ *  $Id: machine_arc.c,v 1.4 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -428,54 +428,35 @@ MACHINE_DEFAULT_RAM(arc)
 
 MACHINE_REGISTER(arc)
 {
-	MR_DEFAULT(arc, "ARC", ARCH_MIPS, MACHINE_ARC, 1, 8);
+	MR_DEFAULT(arc, "ARC", ARCH_MIPS, MACHINE_ARC);
 
 	me->set_default_ram = machine_default_ram_arc;
 
-	me->aliases[0] = "arc";
+	machine_entry_add_alias(me, "arc");
 
-	me->subtype[0] = machine_entry_subtype_new(
-	    "Acer PICA-61", MACHINE_ARC_JAZZ_PICA, 3);
-	me->subtype[0]->aliases[0] = "pica-61";
-	me->subtype[0]->aliases[1] = "acer pica";
-	me->subtype[0]->aliases[2] = "pica";
+	machine_entry_add_subtype(me, "Acer PICA-61", MACHINE_ARC_JAZZ_PICA,
+	    "pica-61", "acer pica", "pica", NULL);
 
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Deskstation Tyne", MACHINE_ARC_DESKTECH_TYNE, 3);
-	me->subtype[1]->aliases[0] = "deskstation tyne";
-	me->subtype[1]->aliases[1] = "desktech";
-	me->subtype[1]->aliases[2] = "tyne";
+	machine_entry_add_subtype(me, "Deskstation Tyne",
+	    MACHINE_ARC_DESKTECH_TYNE,
+	    "deskstation tyne", "desktech", "tyne", NULL);
 
-	me->subtype[2] = machine_entry_subtype_new(
-	    "Jazz Magnum", MACHINE_ARC_JAZZ_MAGNUM, 2);
-	me->subtype[2]->aliases[0] = "magnum";
-	me->subtype[2]->aliases[1] = "jazz magnum";
+	machine_entry_add_subtype(me, "Jazz Magnum", MACHINE_ARC_JAZZ_MAGNUM,
+	    "magnum", "jazz magnum", NULL);
 
-	me->subtype[3] = machine_entry_subtype_new(
-	    "NEC-R94", MACHINE_ARC_NEC_R94, 2);
-	me->subtype[3]->aliases[0] = "nec-r94";
-	me->subtype[3]->aliases[1] = "r94";
+	machine_entry_add_subtype(me, "NEC-R94", MACHINE_ARC_NEC_R94,
+	    "nec-r94", "r94", NULL);
 
-	me->subtype[4] = machine_entry_subtype_new(
-	    "NEC-RD94", MACHINE_ARC_NEC_RD94, 2);
-	me->subtype[4]->aliases[0] = "nec-rd94";
-	me->subtype[4]->aliases[1] = "rd94";
+	machine_entry_add_subtype(me, "NEC-RD94", MACHINE_ARC_NEC_RD94,
+	    "nec-rd94", "rd94", NULL);
 
-	me->subtype[5] = machine_entry_subtype_new(
-	    "NEC-R96", MACHINE_ARC_NEC_R96, 2);
-	me->subtype[5]->aliases[0] = "nec-r96";
-	me->subtype[5]->aliases[1] = "r96";
+	machine_entry_add_subtype(me, "NEC-R96", MACHINE_ARC_NEC_R96,
+	    "nec-r96", "r96", NULL);
 
-	me->subtype[6] = machine_entry_subtype_new(
-	    "NEC-R98", MACHINE_ARC_NEC_R98, 2);
-	me->subtype[6]->aliases[0] = "nec-r98";
-	me->subtype[6]->aliases[1] = "r98";
+	machine_entry_add_subtype(me, "NEC-R98", MACHINE_ARC_NEC_R98,
+	    "nec-r98", "r98", NULL);
 
-	me->subtype[7] = machine_entry_subtype_new(
-	    "Olivetti M700", MACHINE_ARC_JAZZ_M700, 2);
-	me->subtype[7]->aliases[0] = "olivetti";
-	me->subtype[7]->aliases[1] = "m700";
-
-	machine_entry_add(me, ARCH_MIPS);
+	machine_entry_add_subtype(me, "Olivetti M700", MACHINE_ARC_JAZZ_M700,
+	    "olivetti", "m700", NULL);
 }
 

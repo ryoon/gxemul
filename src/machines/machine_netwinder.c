@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -98,9 +98,10 @@ MACHINE_DEFAULT_RAM(netwinder)
 
 MACHINE_REGISTER(netwinder)
 {
-	MR_DEFAULT(netwinder, "NetWinder", ARCH_ARM, MACHINE_NETWINDER, 1, 0);
-	me->aliases[0] = "netwinder";
+	MR_DEFAULT(netwinder, "NetWinder", ARCH_ARM, MACHINE_NETWINDER);
+
+	machine_entry_add_alias(me, "netwinder");
+
 	me->set_default_ram = machine_default_ram_netwinder;
-	machine_entry_add(me, ARCH_ARM);
 }
 

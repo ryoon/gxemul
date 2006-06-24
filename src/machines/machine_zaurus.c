@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_zaurus.c,v 1.3 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_zaurus.c,v 1.4 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -74,9 +74,10 @@ MACHINE_DEFAULT_RAM(zaurus)
 
 MACHINE_REGISTER(zaurus)
 {
-	MR_DEFAULT(zaurus, "Zaurus", ARCH_ARM, MACHINE_ZAURUS, 1, 0);
-	me->aliases[0] = "zaurus";
+	MR_DEFAULT(zaurus, "Zaurus", ARCH_ARM, MACHINE_ZAURUS);
+
+	machine_entry_add_alias(me, "zaurus");
+
 	me->set_default_ram = machine_default_ram_zaurus;
-	machine_entry_add(me, ARCH_ARM);
 }
 

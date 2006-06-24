@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.4 2006-04-15 08:21:07 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.5 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -176,10 +176,11 @@ MACHINE_DEFAULT_RAM(playstation2)
 
 MACHINE_REGISTER(playstation2)
 {
-	MR_DEFAULT(playstation2, "Playstation 2", ARCH_MIPS, MACHINE_PS2, 2, 0);
-	me->aliases[0] = "playstation2";
-	me->aliases[1] = "ps2";
+	MR_DEFAULT(playstation2, "Playstation 2", ARCH_MIPS, MACHINE_PS2);
+
+	machine_entry_add_alias(me, "playstation2");
+	machine_entry_add_alias(me, "ps2");
+
 	me->set_default_ram = machine_default_ram_playstation2;
-	machine_entry_add(me, ARCH_MIPS);
 }
 

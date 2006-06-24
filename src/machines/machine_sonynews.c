@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sonynews.c,v 1.1 2006-01-02 21:38:13 debug Exp $
+ *  $Id: machine_sonynews.c,v 1.2 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -86,9 +86,8 @@ MACHINE_DEFAULT_CPU(sonynews)
 
 MACHINE_REGISTER(sonynews)
 {
-	MR_DEFAULT(sonynews, "Sony NeWS (MIPS)", ARCH_MIPS,
-	    MACHINE_SONYNEWS, 1, 0);
-	me->aliases[0] = "sonynews";
-	machine_entry_add(me, ARCH_MIPS);
+	MR_DEFAULT(sonynews, "Sony NeWS (MIPS)", ARCH_MIPS, MACHINE_SONYNEWS);
+
+	machine_entry_add_alias(me, "sonynews");
 }
 

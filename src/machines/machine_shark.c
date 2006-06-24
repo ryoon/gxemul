@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_shark.c,v 1.2 2006-01-08 11:05:03 debug Exp $
+ *  $Id: machine_shark.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -74,10 +74,9 @@ MACHINE_DEFAULT_CPU(shark)
 
 MACHINE_REGISTER(shark)
 {
-	MR_DEFAULT(shark, "Digital DNARD (\"Shark\")", ARCH_ARM,
-	    MACHINE_SHARK, 2, 0);
-	me->aliases[0] = "shark";
-	me->aliases[1] = "dnard";
-	machine_entry_add(me, ARCH_ARM);
+	MR_DEFAULT(shark, "Digital DNARD (\"Shark\")", ARCH_ARM, MACHINE_SHARK);
+
+	machine_entry_add_alias(me, "shark");
+	machine_entry_add_alias(me, "dnard");
 }
 

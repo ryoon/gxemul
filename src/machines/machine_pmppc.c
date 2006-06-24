@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.2 2006-01-11 05:56:02 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -74,9 +74,8 @@ MACHINE_DEFAULT_CPU(pmppc)
 
 MACHINE_REGISTER(pmppc)
 {
-	MR_DEFAULT(pmppc, "Artesyn's PM/PPC board", ARCH_PPC,
-	    MACHINE_PMPPC, 1, 0);
-	me->aliases[0] = "pmppc";
-	machine_entry_add(me, ARCH_PPC);
+	MR_DEFAULT(pmppc, "Artesyn's PM/PPC board", ARCH_PPC, MACHINE_PMPPC);
+
+	machine_entry_add_alias(me, "pmppc");
 }
 

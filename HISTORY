@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1257 2006-06-24 07:18:29 debug Exp $
+$Id: HISTORY,v 1.1258 2006-06-24 10:19:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2803,3 +2803,5 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.0  ==============
 
+20060624	Replacing the error-prone machine type initialization stuff
+		with something more reasonable.

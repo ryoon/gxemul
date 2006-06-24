@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_psp.c,v 1.1 2006-01-10 20:30:05 debug Exp $
+ *  $Id: machine_psp.c,v 1.2 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -103,9 +103,10 @@ MACHINE_DEFAULT_RAM(psp)
 
 MACHINE_REGISTER(psp)
 {
-	MR_DEFAULT(psp, "Playstation Portable", ARCH_MIPS, MACHINE_PSP, 1, 0);
-	me->aliases[0] = "psp";
+	MR_DEFAULT(psp, "Playstation Portable", ARCH_MIPS, MACHINE_PSP);
+
+	machine_entry_add_alias(me, "psp");
+
 	me->set_default_ram = machine_default_ram_psp;
-	machine_entry_add(me, ARCH_MIPS);
 }
 

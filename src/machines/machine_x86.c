@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_x86.c,v 1.1 2006-01-06 11:41:46 debug Exp $
+ *  $Id: machine_x86.c,v 1.2 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -110,24 +110,25 @@ MACHINE_DEFAULT_RAM(x86)
 MACHINE_REGISTER(barex86)
 {
 	MR_DEFAULT(barex86, "Generic \"bare\" X86 machine", ARCH_X86,
-	    MACHINE_BAREX86, 1, 0);
-	me->aliases[0] = "barex86";
-	machine_entry_add(me, ARCH_X86);
+	    MACHINE_BAREX86);
+
+	machine_entry_add_alias(me, "barex86");
 }
 
 
 MACHINE_REGISTER(x86)
 {
-	MR_DEFAULT(x86, "x86-based PC", ARCH_X86, MACHINE_X86, 2, 2);
-	me->aliases[0] = "pc";
-	me->aliases[1] = "x86";
-	me->subtype[0] = machine_entry_subtype_new("Generic PC",
-	    MACHINE_X86_GENERIC, 2);
-	me->subtype[0]->aliases[0] = "pc";
-	me->subtype[0]->aliases[1] = "generic";
-	me->subtype[1] = machine_entry_subtype_new("PC XT", MACHINE_X86_XT, 1);
-	me->subtype[1]->aliases[0] = "xt";
+	MR_DEFAULT(x86, "x86-based PC", ARCH_X86, MACHINE_X86);
+
+	machine_entry_add_alias(me, "pc");
+	machine_entry_add_alias(me, "x86");
+
+	machine_entry_add_subtype(me, "Generic PC", MACHINE_X86_GENERIC,
+	    "pc", "generic", NULL);
+
+	machine_entry_add_subtype(me, "PC XT", MACHINE_X86_XT,
+	    "xt", NULL);
+
 	me->set_default_ram = machine_default_ram_x86;
-	machine_entry_add(me, ARCH_X86);
 }
 

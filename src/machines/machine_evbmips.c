@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.6 2006-05-21 11:35:58 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.7 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -238,27 +238,22 @@ MACHINE_DEFAULT_RAM(evbmips)
 
 MACHINE_REGISTER(evbmips)
 {
-	MR_DEFAULT(evbmips, "MIPS evaluation boards (evbmips)", ARCH_MIPS,
-	    MACHINE_EVBMIPS, 1, 4);
-	me->aliases[0] = "evbmips";
+	MR_DEFAULT(evbmips, "MIPS evaluation boards (evbmips)",
+	    ARCH_MIPS, MACHINE_EVBMIPS);
 
-	me->subtype[0] = machine_entry_subtype_new("Malta",
-	    MACHINE_EVBMIPS_MALTA, 1);
-	me->subtype[0]->aliases[0] = "malta";
+	machine_entry_add_alias(me, "evbmips");
 
-	me->subtype[1] = machine_entry_subtype_new("Malta (Big-Endian)",
-	    MACHINE_EVBMIPS_MALTA_BE, 1);
-	me->subtype[1]->aliases[0] = "maltabe";
+	machine_entry_add_subtype(me, "Malta", MACHINE_EVBMIPS_MALTA,
+	    "malta", NULL);
 
-	me->subtype[2] = machine_entry_subtype_new("MeshCube",
-	    MACHINE_EVBMIPS_MESHCUBE, 1);
-	me->subtype[2]->aliases[0] = "meshcube";
+	machine_entry_add_subtype(me, "Malta (Big-Endian)",
+	    MACHINE_EVBMIPS_MALTA_BE, "maltabe", NULL);
 
-	me->subtype[3] = machine_entry_subtype_new("PB1000",
-	    MACHINE_EVBMIPS_PB1000, 1);
-	me->subtype[3]->aliases[0] = "pb1000";
+	machine_entry_add_subtype(me, "MeshCube", MACHINE_EVBMIPS_MESHCUBE,
+	    "meshcube", NULL);
 
-	machine_entry_add(me, ARCH_MIPS);
+	machine_entry_add_subtype(me, "PB1000", MACHINE_EVBMIPS_PB1000,
+	    "pb1000", NULL);
 
 	me->set_default_ram = machine_default_ram_evbmips;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sparc.c,v 1.2 2006-05-17 20:27:31 debug Exp $
+ *  $Id: machine_sparc.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  *
  *  SPARC machines.
  */
@@ -112,28 +112,22 @@ MACHINE_DEFAULT_RAM(sparc)
 
 MACHINE_REGISTER(sparc)
 {
-	MR_DEFAULT(sparc, "SPARC", ARCH_SPARC, MACHINE_SPARC, 1, 4);
+	MR_DEFAULT(sparc, "SPARC", ARCH_SPARC, MACHINE_SPARC);
 
-	me->aliases[0] = "sparc";
+	machine_entry_add_alias(me, "sparc");
 
-	me->subtype[0] = machine_entry_subtype_new(
-	    "SUN SPARCstation 5", MACHINE_SPARC_SS5, 1);
-	me->subtype[0]->aliases[0] = "ss5";
+	machine_entry_add_subtype(me, "SUN SPARCstation 5", MACHINE_SPARC_SS5,
+	    "ss5", "sparcstation5", NULL);
 
-	me->subtype[1] = machine_entry_subtype_new(
-	    "SUN SPARCstation 20", MACHINE_SPARC_SS20, 1);
-	me->subtype[1]->aliases[0] = "ss20";
+	machine_entry_add_subtype(me, "SUN SPARCstation 20", MACHINE_SPARC_SS20,
+	    "ss20", "sparcstation20", NULL);
 
-	me->subtype[2] = machine_entry_subtype_new(
-	    "SUN Ultra1", MACHINE_SPARC_ULTRA1, 1);
-	me->subtype[2]->aliases[0] = "ultra1";
+	machine_entry_add_subtype(me, "SUN Ultra1", MACHINE_SPARC_ULTRA1,
+	    "ultra1", NULL);
 
-	me->subtype[3] = machine_entry_subtype_new(
-	    "SUN Ultra60", MACHINE_SPARC_ULTRA60, 1);
-	me->subtype[3]->aliases[0] = "ultra60";
+	machine_entry_add_subtype(me, "SUN Ultra60", MACHINE_SPARC_ULTRA60,
+	    "ultra60", NULL);
 
 	me->set_default_ram = machine_default_ram_sparc;
-
-	machine_entry_add(me, ARCH_SPARC);
 }
 

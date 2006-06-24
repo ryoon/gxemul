@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.671 2006-06-16 18:31:24 debug Exp $
+ *  $Id: machine.c,v 1.672 2006-06-24 10:19:18 debug Exp $
  */
 
 #include <stdio.h>
@@ -896,15 +896,19 @@ void machine_default_cputype(struct machine *m)
 }
 
 
+/*****************************************************************************/
+
+
 /*
  *  machine_entry_new():
  *
  *  This function creates a new machine_entry struct, and fills it with some
  *  valid data; it is up to the caller to add additional data that weren't
- *  passed as arguments to this function.
+ *  passed as arguments to this function, such as alias names and machine
+ *  subtypes.
  */
-struct machine_entry *machine_entry_new(const char *name,
-	int arch, int oldstyle_type, int n_aliases, int n_subtypes)
+struct machine_entry *machine_entry_new(const char *name, int arch,
+	int oldstyle_type)
 {
 	struct machine_entry *me;
 
@@ -919,43 +923,49 @@ struct machine_entry *machine_entry_new(const char *name,
 	me->name = name;
 	me->arch = arch;
 	me->machine_type = oldstyle_type;
-	me->n_aliases = n_aliases;
-	me->aliases = malloc(sizeof(char *) * n_aliases);
-	if (me->aliases == NULL) {
-		fprintf(stderr, "machine_entry_new(): out of memory (2)\n");
-		exit(1);
-	}
-	me->n_subtypes = n_subtypes;
+	me->n_aliases = 0;
+	me->aliases = NULL;
+	me->n_subtypes = 0;
 	me->setup = NULL;
-
-	if (n_subtypes > 0) {
-		me->subtype = malloc(sizeof(struct machine_entry_subtype *) *
-		    n_subtypes);
-		if (me->subtype == NULL) {
-			fprintf(stderr, "machine_entry_new(): out of "
-			    "memory (3)\n");
-			exit(1);
-		}
-	}
 
 	return me;
 }
 
 
 /*
- *  machine_entry_subtype_new():
+ *  machine_entry_add_alias():
  *
- *  This function creates a new machine_entry_subtype struct, and fills it with
- *  some valid data; it is up to the caller to add additional data that weren't
- *  passed as arguments to this function.
- *
- *  For internal use.
+ *  This function adds an "alias" to a machine entry.
  */
-struct machine_entry_subtype *machine_entry_subtype_new(
-	const char *name, int oldstyle_type, int n_aliases)
+void machine_entry_add_alias(struct machine_entry *me, const char *name)
 {
+	me->n_aliases ++;
+	me->aliases = realloc(me->aliases, sizeof(char *) * me->n_aliases);
+	if (me->aliases == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	me->aliases[me->n_aliases - 1] = (char *) name;
+}
+
+
+/*
+ *  machine_entry_add_subtype():
+ *
+ *  This function adds a subtype to a machine entry. The argument list after
+ *  oldstyle_subtype is a list of one or more char *, followed by NULL. E.g.:
+ *
+ *	machine_entry_add_subtype(me, "Machine X", MACHINE_X,
+ *	    "machine-x", "x", NULL);
+ */
+void machine_entry_add_subtype(struct machine_entry *me, const char *name,
+	int oldstyle_subtype, ...)
+{
+	va_list argp;
 	struct machine_entry_subtype *mes;
 
+	/*  Allocate a new subtype struct:  */
 	mes = malloc(sizeof(struct machine_entry_subtype));
 	if (mes == NULL) {
 		fprintf(stderr, "machine_entry_subtype_new(): out "
@@ -963,27 +973,53 @@ struct machine_entry_subtype *machine_entry_subtype_new(
 		exit(1);
 	}
 
-	memset(mes, 0, sizeof(struct machine_entry_subtype));
-	mes->name = name;
-	mes->machine_subtype = oldstyle_type;
-	mes->n_aliases = n_aliases;
-	mes->aliases = malloc(sizeof(char *) * n_aliases);
-	if (mes->aliases == NULL) {
-		fprintf(stderr, "machine_entry_subtype_new(): "
-		    "out of memory (2)\n");
+	/*  Add the subtype to the machine entry:  */
+	me->n_subtypes ++;
+	me->subtype = realloc(me->subtype, sizeof(struct
+	    machine_entry_subtype *) * me->n_subtypes);
+	if (me->subtype == NULL) {
+		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
+	me->subtype[me->n_subtypes - 1] = mes;
 
-	return mes;
+	/*  Fill the struct with subtype data:  */
+	memset(mes, 0, sizeof(struct machine_entry_subtype));
+	mes->name = name;
+	mes->machine_subtype = oldstyle_subtype;
+
+	/*  ... and all aliases:  */
+	mes->n_aliases = 0;
+	mes->aliases = NULL;
+
+	va_start(argp, oldstyle_subtype);
+
+	for (;;) {
+		char *s = va_arg(argp, char *);
+		if (s == NULL)
+			break;
+
+		mes->n_aliases ++;
+		mes->aliases = realloc(mes->aliases, sizeof(char *) *
+		    mes->n_aliases);
+		if (mes->aliases == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+
+		mes->aliases[mes->n_aliases - 1] = s;
+	}
+
+	va_end(argp);
 }
 
 
 /*
- *  machine_entry_add():
+ *  machine_entry_register():
  *
  *  Inserts a new machine_entry into the machine entries list.
  */
-void machine_entry_add(struct machine_entry *me, int arch)
+void machine_entry_register(struct machine_entry *me, int arch)
 {
 	struct machine_entry *prev, *next;
 

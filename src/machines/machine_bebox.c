@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.2 2006-02-27 05:32:26 debug Exp $
+ *  $Id: machine_bebox.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/Ports/bebox/ for more info.)
@@ -117,9 +117,10 @@ MACHINE_DEFAULT_RAM(bebox)
 
 MACHINE_REGISTER(bebox)
 {
-	MR_DEFAULT(bebox, "BeBox", ARCH_PPC, MACHINE_BEBOX, 1, 0);
-	me->aliases[0] = "bebox";
+	MR_DEFAULT(bebox, "BeBox", ARCH_PPC, MACHINE_BEBOX);
+
+	machine_entry_add_alias(me, "bebox");
+
 	me->set_default_ram = machine_default_ram_bebox;
-	machine_entry_add(me, ARCH_PPC);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.4 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_cats.c,v 1.5 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -152,9 +152,10 @@ MACHINE_DEFAULT_RAM(cats)
 MACHINE_REGISTER(cats)
 {
 	MR_DEFAULT(cats, "CATS evaluation board", ARCH_ARM,
-	    MACHINE_CATS, 1, 0);
-	me->aliases[0] = "cats";
+	    MACHINE_CATS);
+
+	machine_entry_add_alias(me, "cats");
+
 	me->set_default_ram = machine_default_ram_cats;
-	machine_entry_add(me, ARCH_ARM);
 }
 

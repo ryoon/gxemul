@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.3 2006-02-19 08:04:17 debug Exp $
+ *  $Id: machine_sgi.c,v 1.4 2006-06-24 10:19:19 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -595,46 +595,32 @@ MACHINE_DEFAULT_RAM(sgi)
 
 MACHINE_REGISTER(sgi)
 {
-	MR_DEFAULT(sgi, "SGI", ARCH_MIPS, MACHINE_SGI, 1, 10);
+	MR_DEFAULT(sgi, "SGI", ARCH_MIPS, MACHINE_SGI);
+
 	me->set_default_ram = machine_default_ram_sgi;
-	me->aliases[0] = "silicon graphics";
-	me->aliases[1] = "sgi";
 
-	me->subtype[0] = machine_entry_subtype_new("IP12", 12, 1);
-	me->subtype[0]->aliases[0] = "ip12";
+	machine_entry_add_alias(me, "silicon graphics");
+	machine_entry_add_alias(me, "sgi");
 
-	me->subtype[1] = machine_entry_subtype_new("IP19", 19, 1);
-	me->subtype[1]->aliases[0] = "ip19";
+	machine_entry_add_subtype(me, "IP12", 12, "ip12", NULL);
 
-	me->subtype[2] = machine_entry_subtype_new("IP20", 20, 1);
-	me->subtype[2]->aliases[0] = "ip20";
+	machine_entry_add_subtype(me, "IP19", 19, "ip19", NULL);
 
-	me->subtype[3] = machine_entry_subtype_new("IP22", 22, 2);
-	me->subtype[3]->aliases[0] = "ip22";
-	me->subtype[3]->aliases[1] = "indy";
+	machine_entry_add_subtype(me, "IP20", 20, "ip20", NULL);
 
-	me->subtype[4] = machine_entry_subtype_new("IP24", 24, 1);
-	me->subtype[4]->aliases[0] = "ip24";
+	machine_entry_add_subtype(me, "IP22", 22, "ip22", "indy", NULL);
 
-	me->subtype[5] = machine_entry_subtype_new("IP27", 27, 3);
-	me->subtype[5]->aliases[0] = "ip27";
-	me->subtype[5]->aliases[1] = "origin 200";
-	me->subtype[5]->aliases[2] = "origin 2000";
+	machine_entry_add_subtype(me, "IP24", 24, "ip24", NULL);
 
-	me->subtype[6] = machine_entry_subtype_new("IP28", 28, 1);
-	me->subtype[6]->aliases[0] = "ip28";
+	machine_entry_add_subtype(me, "IP27", 27,
+	    "ip27", "origin 200", "origin 2000", NULL);
 
-	me->subtype[7] = machine_entry_subtype_new("IP30", 30, 2);
-	me->subtype[7]->aliases[0] = "ip30";
-	me->subtype[7]->aliases[1] = "octane";
+	machine_entry_add_subtype(me, "IP28", 28, "ip28", NULL);
 
-	me->subtype[8] = machine_entry_subtype_new("IP32", 32, 2);
-	me->subtype[8]->aliases[0] = "ip32";
-	me->subtype[8]->aliases[1] = "o2";
+	machine_entry_add_subtype(me, "IP30", 30, "ip30", "octane", NULL);
 
-	me->subtype[9] = machine_entry_subtype_new("IP35", 35, 1);
-	me->subtype[9]->aliases[0] = "ip35";
+	machine_entry_add_subtype(me, "IP32", 32, "ip32", "o2", NULL); 
 
-	machine_entry_add(me, ARCH_MIPS);
+	machine_entry_add_subtype(me, "IP35", 35, "ip35", NULL); 
 }
 

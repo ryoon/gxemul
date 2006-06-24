@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.8 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.9 2006-06-24 10:19:19 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -186,24 +186,19 @@ MACHINE_DEFAULT_RAM(mvmeppc)
 
 MACHINE_REGISTER(mvmeppc)
 {
-	MR_DEFAULT(mvmeppc, "MVME", ARCH_PPC, MACHINE_MVMEPPC, 1, 3);
+	MR_DEFAULT(mvmeppc, "MVME", ARCH_PPC, MACHINE_MVMEPPC);
 
-	me->aliases[0] = "mvmeppc";
+	machine_entry_add_alias(me, "mvmeppc");
 
-	me->subtype[0] = machine_entry_subtype_new(
-	    "MVME1600", MACHINE_MVMEPPC_1600, 1);
-	me->subtype[0]->aliases[0] = "mvme1600";
+	machine_entry_add_subtype(me, "MVME1600", MACHINE_MVMEPPC_1600,
+	    "mvme1600", NULL);
 
-	me->subtype[1] = machine_entry_subtype_new(
-	    "MVME2100", MACHINE_MVMEPPC_2100, 1);
-	me->subtype[1]->aliases[0] = "mvme2100";
+	machine_entry_add_subtype(me, "MVME2100", MACHINE_MVMEPPC_2100,
+	    "mvme2100", NULL);
 
-	me->subtype[2] = machine_entry_subtype_new(
-	    "MVME5500", MACHINE_MVMEPPC_5500, 1);
-	me->subtype[2]->aliases[0] = "mvme5500";
+	machine_entry_add_subtype(me, "MVME5500", MACHINE_MVMEPPC_5500,
+	    "mvme5500", NULL);
 
 	me->set_default_ram = machine_default_ram_mvmeppc;
-
-	machine_entry_add(me, ARCH_PPC);
 }
 

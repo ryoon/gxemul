@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.6 2006-06-02 18:11:38 debug Exp $
+ *  $Id: machine_alpha.c,v 1.7 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -201,25 +201,22 @@ MACHINE_DEFAULT_RAM(alpha)
 
 MACHINE_REGISTER(alpha)
 {
-	MR_DEFAULT(alpha, "Alpha", ARCH_ALPHA, MACHINE_ALPHA, 1, 4);
-	me->aliases[0] = "alpha";
+	MR_DEFAULT(alpha, "Alpha", ARCH_ALPHA, MACHINE_ALPHA);
 
-	me->subtype[0] = machine_entry_subtype_new("AlphaBook 1",
-	    ST_ALPHABOOK1, 1);
-	me->subtype[0]->aliases[0] = "alphabook1";
+	machine_entry_add_alias(me, "alpha");
 
-	me->subtype[1] = machine_entry_subtype_new("AlphaServer 4100",
-	    ST_DEC_4100, 1);
-	me->subtype[1]->aliases[0] = "alphaserver4100";
+	machine_entry_add_subtype(me, "AlphaBook 1", ST_ALPHABOOK1,
+	    "alphabook1", NULL);
 
-	me->subtype[2] = machine_entry_subtype_new("DEC 3000/300",
-	    ST_DEC_3000_300, 1);
-	me->subtype[2]->aliases[0] = "3000/300";
+	machine_entry_add_subtype(me, "AlphaServer 4100", ST_DEC_4100,
+	    "alphaserver4100", NULL);
 
-	me->subtype[3] = machine_entry_subtype_new("EB164", ST_EB164, 1);
-	me->subtype[3]->aliases[0] = "eb164";
+	machine_entry_add_subtype(me, "DEC 3000/300", ST_DEC_3000_300,
+	    "3000/300", NULL);
+
+	machine_entry_add_subtype(me, "EB164", ST_EB164,
+	    "eb164", NULL);
 
 	me->set_default_ram = machine_default_ram_alpha;
-	machine_entry_add(me, ARCH_ALPHA);
 }
 

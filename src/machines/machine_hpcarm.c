@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcarm.c,v 1.2 2006-01-14 11:29:38 debug Exp $
+ *  $Id: machine_hpcarm.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -206,16 +206,16 @@ MACHINE_DEFAULT_RAM(hpcarm)
 
 MACHINE_REGISTER(hpcarm)
 {
-	MR_DEFAULT(hpcarm, "Handhelp ARM (HPCarm)", ARCH_ARM,
-	    MACHINE_HPCARM, 1, 2);
-	me->aliases[0] = "hpcarm";
-	me->subtype[0] = machine_entry_subtype_new("Ipaq",
-	    MACHINE_HPCARM_IPAQ, 1);
-	me->subtype[0]->aliases[0] = "ipaq";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Jornada 720", MACHINE_HPCARM_JORNADA720, 1);
-	me->subtype[1]->aliases[0] = "jornada720";
+	MR_DEFAULT(hpcarm, "Handhelp ARM (HPCarm)", ARCH_ARM, MACHINE_HPCARM);
+
+	machine_entry_add_alias(me, "hpcarm");
+
+	machine_entry_add_subtype(me, "Ipaq", MACHINE_HPCARM_IPAQ,
+	    "ipaq", NULL);
+
+	machine_entry_add_subtype(me, "Jornada 720", MACHINE_HPCARM_JORNADA720,
+	    "jornada720", NULL);
+
 	me->set_default_ram = machine_default_ram_hpcarm;
-	machine_entry_add(me, ARCH_ARM);
 }
 

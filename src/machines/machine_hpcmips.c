@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcmips.c,v 1.2 2006-01-11 19:20:08 debug Exp $
+ *  $Id: machine_hpcmips.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -475,38 +475,35 @@ MACHINE_DEFAULT_RAM(hpcmips)
 
 MACHINE_REGISTER(hpcmips)
 {
-	MR_DEFAULT(hpcmips, "Handhelp MIPS (HPCmips)", ARCH_MIPS,
-	    MACHINE_HPCMIPS, 1, 8);
-	me->aliases[0] = "hpcmips";
-	me->subtype[0] = machine_entry_subtype_new(
-	    "Casio Cassiopeia BE-300", MACHINE_HPCMIPS_CASIO_BE300, 2);
-	me->subtype[0]->aliases[0] = "be-300";
-	me->subtype[0]->aliases[1] = "be300";
-	me->subtype[1] = machine_entry_subtype_new(
-	    "Casio Cassiopeia E-105", MACHINE_HPCMIPS_CASIO_E105, 2);
-	me->subtype[1]->aliases[0] = "e-105";
-	me->subtype[1]->aliases[1] = "e105";
-	me->subtype[2] = machine_entry_subtype_new(
-	    "Agenda VR3", MACHINE_HPCMIPS_AGENDA_VR3, 2);
-	me->subtype[2]->aliases[0] = "agenda";
-	me->subtype[2]->aliases[1] = "vr3";
-	me->subtype[3] = machine_entry_subtype_new(
-	    "IBM WorkPad Z50", MACHINE_HPCMIPS_IBM_WORKPAD_Z50, 2);
-	me->subtype[3]->aliases[0] = "workpad";
-	me->subtype[3]->aliases[1] = "z50";
-	me->subtype[4] = machine_entry_subtype_new(
-	    "NEC MobilePro 770", MACHINE_HPCMIPS_NEC_MOBILEPRO_770, 1);
-	me->subtype[4]->aliases[0] = "mobilepro770";
-	me->subtype[5] = machine_entry_subtype_new(
-	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
-	me->subtype[5]->aliases[0] = "mobilepro780";
-	me->subtype[6] = machine_entry_subtype_new(
-	    "NEC MobilePro 800", MACHINE_HPCMIPS_NEC_MOBILEPRO_800, 1);
-	me->subtype[6]->aliases[0] = "mobilepro800";
-	me->subtype[7] = machine_entry_subtype_new(
-	    "NEC MobilePro 880", MACHINE_HPCMIPS_NEC_MOBILEPRO_880, 1);
-	me->subtype[7]->aliases[0] = "mobilepro880";
+	MR_DEFAULT(hpcmips, "Handhelp MIPS (HPCmips)",
+	    ARCH_MIPS, MACHINE_HPCMIPS);
+
+	machine_entry_add_alias(me, "hpcmips");
+
+	machine_entry_add_subtype(me, "Casio Cassiopeia BE-300",
+	    MACHINE_HPCMIPS_CASIO_BE300, "be-300", "be300", NULL);
+
+	machine_entry_add_subtype(me, "Casio Cassiopeia E-105",
+	    MACHINE_HPCMIPS_CASIO_E105, "e-105", "e105", NULL);
+
+	machine_entry_add_subtype(me, "Agenda VR3", MACHINE_HPCMIPS_AGENDA_VR3,
+	    "agenda", "vr3", NULL);
+
+	machine_entry_add_subtype(me, "IBM WorkPad Z50",
+	    MACHINE_HPCMIPS_IBM_WORKPAD_Z50, "workpad", "z50", NULL);
+
+	machine_entry_add_subtype(me, "NEC MobilePro 770",
+	    MACHINE_HPCMIPS_NEC_MOBILEPRO_770, "mobilepro770", NULL);
+
+	machine_entry_add_subtype(me, "NEC MobilePro 780",
+	    MACHINE_HPCMIPS_NEC_MOBILEPRO_780, "mobilepro780", NULL);
+
+	machine_entry_add_subtype(me, "NEC MobilePro 800",
+	    MACHINE_HPCMIPS_NEC_MOBILEPRO_800, "mobilepro800", NULL);
+
+	machine_entry_add_subtype(me, "NEC MobilePro 880",
+	    MACHINE_HPCMIPS_NEC_MOBILEPRO_880, "mobilepro880", NULL);
+
 	me->set_default_ram = machine_default_ram_hpcmips;
-	machine_entry_add(me, ARCH_MIPS);
 }
 

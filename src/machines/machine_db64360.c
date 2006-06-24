@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_db64360.c,v 1.2 2006-02-02 19:30:14 debug Exp $
+ *  $Id: machine_db64360.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,9 +72,10 @@ MACHINE_DEFAULT_RAM(db64360)
 
 MACHINE_REGISTER(db64360)
 {
-	MR_DEFAULT(db64360, "DB64360", ARCH_PPC, MACHINE_DB64360, 1, 0);
-	me->aliases[0] = "db64360";
+	MR_DEFAULT(db64360, "DB64360", ARCH_PPC, MACHINE_DB64360);
+
+	machine_entry_add_alias(me, "db64360");
+
 	me->set_default_ram = machine_default_ram_db64360;
-	machine_entry_add(me, ARCH_PPC);
 }
 

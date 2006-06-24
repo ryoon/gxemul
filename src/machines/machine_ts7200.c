@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_ts7200.c,v 1.2 2006-03-05 17:58:16 debug Exp $
+ *  $Id: machine_ts7200.c,v 1.3 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -67,8 +67,8 @@ MACHINE_DEFAULT_CPU(ts7200)
 
 MACHINE_REGISTER(ts7200)
 {
-	MR_DEFAULT(ts7200, "TS7200", ARCH_ARM, MACHINE_TS7200, 1, 0);
-	me->aliases[0] = "ts7200";
-	machine_entry_add(me, ARCH_ARM);
+	MR_DEFAULT(ts7200, "TS7200", ARCH_ARM, MACHINE_TS7200);
+
+	machine_entry_add_alias(me, "ts7200");
 }
 

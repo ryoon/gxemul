@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netgear.c,v 1.1 2006-01-10 20:30:05 debug Exp $
+ *  $Id: machine_netgear.c,v 1.2 2006-06-24 10:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,10 +72,11 @@ MACHINE_DEFAULT_RAM(netgear)
 
 MACHINE_REGISTER(netgear)
 {
-	MR_DEFAULT(netgear, "NetGear WG602v1", ARCH_MIPS, MACHINE_NETGEAR, 2,0);
-	me->aliases[0] = "netgear";
-	me->aliases[1] = "wg602v1";
+	MR_DEFAULT(netgear, "NetGear WG602v1", ARCH_MIPS, MACHINE_NETGEAR);
+
+	machine_entry_add_alias(me, "netgear");
+	machine_entry_add_alias(me, "wg602v1");
+
 	me->set_default_ram = machine_default_ram_netgear;
-	machine_entry_add(me, ARCH_MIPS);
 }
 

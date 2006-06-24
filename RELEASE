@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.196 2006-06-23 12:49:46 debug Exp $
+$Id: RELEASE,v 1.197 2006-06-24 07:18:30 debug Exp $
 
-Working on what will become 0.4.0. See the top of the TODO file for a
+Working on what will become 0.4.1. See the top of the TODO file for a
 list of things that I feel need to be done before the release.
 
 -------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.0
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.1
 ================================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -21,44 +21,9 @@ be regarded as "working" in GXemul. The best supported guest operating
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 
-The most important change between release 0.3.8 and 0.4.0 is:
+The most important changes between release 0.4.0 and 0.4.1 are:
 
-    o)	The emulation of MIPS processors has been completely rewritten;
-	it now uses the same portable dynamic translation system as the
-	ARM and PowerPC emulation modes.
-
-	On Alpha and i386 hosts (and AMD64 hosts running in 32-bit mode),
-	GXemul previously used translation into native code. This release
-	will perform worse than 0.3.8 on those host architectures.
-
-	On all other hosts (including AMD64 running in native 64-bit mode),
-	0.4.0 is likely to be faster than 0.3.8, when emulating MIPS, at
-	least for R3000 emulation.
-
-	I think that in the long term, moving towards full portability like
-	this is a good idea.
-
-(Since the MIPS emulation mode has been rewritten from scratch, and I have
-not really had much time over for debugging, there are most likely new
-bugs in 0.4.0 that were not present in 0.3.8. However, I feel that it is
-better to make a quick release now than to wait even longer.)
-
-There have also been many other changes, including, but not limited to:
-
-    o)	The "test machine" functionality is more well-defined than before,
-	and some tutorial-like demos have been added. These could be useful
-	e.g. in operating system construction courses.
-
-    o)	NetBSD/sgimips 3.0 works now. This is most likely due to the rewrite
-	of the MIPS emulation mode. Previous releases of GXemul only worked
-	with NetBSD/sgimips 2.1.
-
-    o)	I have begun implementing rudimentary support for GDB remote serial
-	protocol connections. This means that you can run e.g. the Data
-	Display Debugger, and connect it to a GXemul instance.
-
-	No advanced GDB functionality is working yet, but starting and
-	stopping the emulated machine and single-stepping should work.
+    o)	...
 
 Please read the HISTORY files for more details.
 
@@ -178,10 +143,6 @@ or reuse code.
 Thanks to (in no specific order) Joachim Buss, Olivier Houchard, Juli Mallett,
 Juan Romero Pardines, Alec Voropay, Göran Weinholt, Alexander Yurchenko, and
 everyone else who has provided me with feedback.
-
-Special thanks to Alec Voropay for testing this release with Linux
-kernels, and on Cygwin, and also thanks to Ondrej Palkovsky for testing
-with HelenOS.
 
 If you have found GXemul useful in some way, or feel like sending me comments
 or feedback in general, then mail me at anders(at)gavare.se.

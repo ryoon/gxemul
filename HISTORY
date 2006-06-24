@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1256 2006-06-23 20:43:44 debug Exp $
+$Id: HISTORY,v 1.1257 2006-06-24 07:18:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2800,3 +2800,6 @@ Changelog for GXemul:
 		NetBSD/cats seemed less stable with full size chunks. :(
 		NetBSD/sgimips 3.0 can now run :-)  (With release 0.3.8, only
 		NetBSD/sgimips 2.1 worked, not 3.0.)
+
+==============  RELEASE 0.4.0  ==============
+

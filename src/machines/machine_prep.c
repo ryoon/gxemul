@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.5 2006-01-16 00:51:15 debug Exp $
+ *  $Id: machine_prep.c,v 1.6 2006-06-24 06:53:04 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -187,7 +187,7 @@ MACHINE_REGISTER(prep)
 	me->aliases[0] = "prep";
 
 	me->subtype[0] = machine_entry_subtype_new(
-	    "IBM 6050/6070", MACHINE_PREP_IBM6050, 1);
+	    "IBM 6050/6070", MACHINE_PREP_IBM6050, 2);
 	me->subtype[0]->aliases[0] = "ibm6050";
 	me->subtype[0]->aliases[1] = "ibm6070";
 

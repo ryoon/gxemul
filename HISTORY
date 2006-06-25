@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1263 2006-06-25 02:46:07 debug Exp $
+$Id: HISTORY,v 1.1264 2006-06-25 11:08:04 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2816,3 +2816,6 @@ Changelog for GXemul:
 		when going out of it.
 		Fixing the MIPS interrupt problems by letting mtc0 immediately
 		cause interrupts.
+
+==============  RELEASE 0.4.0.1  ==============
+

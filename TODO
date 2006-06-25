@@ -1,21 +1,15 @@
-$Id: TODO,v 1.297 2006-06-25 02:36:46 debug Exp $
+$Id: TODO,v 1.298 2006-06-25 11:08:04 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 --------------
 
-Possible release schedule, if time permits:
-
-0.4.1:
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
 	x)  Find a way to get rid of the cpu_create_or_reset_tc in the
 	    R2000/R3000 cache isolation code. (NetBSD works without it,
 	    but not Ultrix and Linux yet.)
 	x)  Formalize the statistics gathering stuff for dyntrans...
 	x)  ... and use it to optimize MIPS dyntrans stuff.
-
-0.4.2 ...?
-	x)  Clean-up!
 	x)  Clock framework? Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
 	x)  Optimizations, continuing on 64-bit issues etc with dyntrans

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1261 2006-06-24 23:40:27 debug Exp $
+$Id: HISTORY,v 1.1262 2006-06-25 00:15:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2811,3 +2811,6 @@ Changelog for GXemul:
 		translate_v2p, and experimenting with template physpages).
 20060625	Removing the speed hack which separated the vph entries into
 		two halves (code vs data); things seem a lot more stable now.
+		Minor performance hack: R2000/R3000 cache isolation now only
+		clears address translations when going into isolation, not
+		when going out of it.

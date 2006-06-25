@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.103 2006-06-24 23:40:27 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.104 2006-06-25 00:15:44 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -726,7 +726,9 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	}
 
 	if (cpu->translation_cache_cur_ofs >= DYNTRANS_CACHE_SIZE) {
-		debug("[ dyntrans: resetting the translation cache ]\n");
+#ifdef UNSTABLE_DEVEL
+		fatal("[ dyntrans: resetting the translation cache ]\n");
+#endif
 		cpu_create_or_reset_tc(cpu);
 	}
 

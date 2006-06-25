@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.34 2006-06-24 23:40:27 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.35 2006-06-25 00:15:44 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -557,31 +557,7 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_PAGEMASK)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_WIRED)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_BADVADDR)	unimpl = 0;
-	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT) {
-#if 0
-		/*
-		 *  This speeds up delay-loops that just read the count
-		 *  register until it has reached a certain value. (Only for
-		 *  R4000 etc.)
-		 *
-		 *  TODO: Maybe this should be optional?
-		 */
-		if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
-			int increase = 500;
-			int32_t x = cp->reg[COP0_COUNT];
-			int32_t y = cp->reg[COP0_COMPARE];
-			int32_t diff = x - y;
-			if (diff < 0 && diff + increase >= 0
-			    && cpu->cd.mips.compare_register_set) {
-				mips_cpu_interrupt(cpu, 7);
-				cpu->cd.mips.compare_register_set = 0;
-			}
-			cp->reg[COP0_COUNT] = (int64_t)
-			    (int32_t)(cp->reg[COP0_COUNT] + increase);
-		}
-#endif
-		unimpl = 0;
-	}
+	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_COMPARE)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_STATUS)	unimpl = 0;
@@ -828,20 +804,32 @@ void coproc_register_write(struct cpu *cpu,
 		case COP0_STATUS:
 			oldmode = cp->reg[COP0_STATUS];
 			tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
+
 			/*
-			 *  TODO: Perhaps this can be solved some other
-			 *  way, like in the old bintrans system?
+			 *  When isolating caches, invalidate all translations.
+			 *  During the isolation, a special hack in memory_rw.c
+			 *  prevents translation tables from being updated, so
+			 *  the translation caches don't have to be invalidated
+			 *  when switching back to normal mode.
 			 */
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
 			    (oldmode & MIPS1_ISOL_CACHES) !=
 			    (tmp & MIPS1_ISOL_CACHES)) {
-				cpu->invalidate_translation_caches(
-				    cpu, 0, INVALIDATE_ALL);
+				/*  Invalidate everything if we are switching
+				    to isolated mode:  */
+				if (tmp & MIPS1_ISOL_CACHES) {
+					cpu->invalidate_translation_caches(
+					    cpu, 0, INVALIDATE_ALL);
+				}
 
 				/*  Perhaps add some kind of INVALIDATE_
 				    ALL_PADDR_WHICH_HAS_A_CORRESPONDING_
 				    VADDR of some kind? :-)  */
+/*  NOTE: Not needed for NetBSD, but Linux still needs this. It shouldn't,
+    though.  */
+#if 1
 				cpu_create_or_reset_tc(cpu);
+#endif
 			}
 			unimpl = 0;
 			break;

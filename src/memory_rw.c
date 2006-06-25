@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.89 2006-06-24 23:40:27 debug Exp $
+ *  $Id: memory_rw.c,v 1.90 2006-06-25 00:15:44 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -479,6 +479,11 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
 	if (cpu->update_translation_table != NULL && !dyntrans_device_danger
+#ifdef MEM_MIPS
+	    /*  Ugly hack for R2000/R3000 caches:  */
+	    && (cpu->cd.mips.cpu_type.mmu_model != MMU3K ||
+            !(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES))
+#endif
 #ifndef MEM_MIPS
 /*	    && !(misc_flags & MEMORY_USER_ACCESS)  */
 #ifndef MEM_USERLAND

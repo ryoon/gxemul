@@ -1,4 +1,4 @@
-$Id: TODO,v 1.295 2006-06-24 19:58:43 debug Exp $
+$Id: TODO,v 1.296 2006-06-25 00:15:44 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -8,11 +8,10 @@ Possible release schedule:
 
 0.4.1:
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
+	x)  Find a way to get rid of the cpu_create_or_reset_tc in the
+	    R2000/R3000 cache isolation code. (NetBSD works without it,
+	    but not Linux yet?)
 	x)  Fix the interrupt problems with Ultrix!
-	x)  Find/fix the bug that causes NetBSD/cats etc to run less
-	    stable than it did in 0.3.8!
-	x)  Find/fix the bug which is triggered when building the emulator
-	    inside NetBSD/pmax 3.0 inside the emulator!
 	x)  Formalize the statistics gathering stuff for dyntrans...
 	x)  ... and use it to optimize MIPS dyntrans stuff.
 

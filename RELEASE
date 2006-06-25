@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.197 2006-06-24 07:18:30 debug Exp $
+$Id: RELEASE,v 1.198 2006-06-25 02:36:46 debug Exp $
 
 Working on what will become 0.4.1. See the top of the TODO file for a
 list of things that I feel need to be done before the release.
@@ -23,14 +23,21 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 The most important changes between release 0.4.0 and 0.4.1 are:
 
-    o)	...
+    o)	Some instabilities in the dynamic translation system have
+	been removed.
+
+    o)	Some bottlenecks for MIPS emulation of non-R3000 processors
+	have been removed.
+
+    o)	MIPS interrupts work slightly better. (In particular,
+	Ultrix 4.5 can now be installed again, without strange
+	workarounds.)
 
 Please read the HISTORY files for more details.
 
 
 Files included in this release are:
 
-  BUGS                        List of known bugs for this release.
   HISTORY                     Detailed revision history / changelog.
   LICENSE                     Copyright message / license.
   README                      Quick start instructions, for the impatient.

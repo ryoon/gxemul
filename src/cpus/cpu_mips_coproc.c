@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.35 2006-06-25 00:15:44 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.36 2006-06-25 00:27:36 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1744,13 +1744,14 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				cp->tlbs[index].hi |= TLB_G;
 		}
 
-#if 0
-		cpu_create_or_reset_tc(cpu);
-#else
 		/*  Invalidate any code translations, if we are writing
 		    Dirty pages to the TLB:  */
-if (cp->reg[COP0_PAGEMASK] != 0)
-printf("MASK = %08"PRIx32"\n", (uint32_t)cp->reg[COP0_PAGEMASK]);
+		if (cp->reg[COP0_PAGEMASK] != 0 &&
+		    cp->reg[COP0_PAGEMASK] != 0x1800) {
+			printf("TODO: MASK = %08"PRIx32"\n",
+			    (uint32_t)cp->reg[COP0_PAGEMASK]);
+			exit(1);
+		}
 
 		if (cp->tlbs[index].lo0 & ENTRYLO_D)
 			cpu->invalidate_code_translation(cpu,
@@ -1784,10 +1785,6 @@ cpu->invalidate_translation_caches(cpu, ((cp->tlbs[index].lo0 &
 ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << 12, INVALIDATE_PADDR);
 cpu->invalidate_translation_caches(cpu, ((cp->tlbs[index].lo1 & 
 ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << 12, INVALIDATE_PADDR);
-
-cpu->invalidate_translation_caches(cpu, oldvaddr, INVALIDATE_VADDR);
-cpu->invalidate_translation_caches(cpu, oldvaddr | 0x1000, INVALIDATE_VADDR);
-#endif
 
 #endif
 	}

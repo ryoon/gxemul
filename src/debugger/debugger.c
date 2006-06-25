@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.11 2006-06-24 19:52:28 debug Exp $
+ *  $Id: debugger.c,v 1.12 2006-06-25 01:25:32 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -792,8 +792,12 @@ void debugger(void)
 	 */
 	/*  TODO: In all machines  */
 	for (i=0; i<debugger_machine->ncpus; i++)
-		if (debugger_machine->cpus[i]->translation_cache != NULL)
+		if (debugger_machine->cpus[i]->translation_cache != NULL) {
 			cpu_create_or_reset_tc(debugger_machine->cpus[i]);
+			debugger_machine->cpus[i]->
+			    invalidate_translation_caches(
+			    debugger_machine->cpus[i], 0, INVALIDATE_ALL);
+		}
 
 	/*
 	 *  Ugly GDB hack: After single stepping, we need to send back

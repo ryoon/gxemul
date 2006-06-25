@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.85 2006-06-22 13:22:41 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.86 2006-06-25 01:25:32 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1627,13 +1627,15 @@ X(mtc0)
 
 #if 0
 	/*  Interrupts enabled, and any interrupt pending?  */
-	if (rd == COP0_STATUS && !(oldstatus & STATUS_IE)) {
+	if (rd == COP0_STATUS && !cpu->delay_slot) {
 		uint32_t status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
 		uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
 		/*  NOTE: STATUS_IE happens to match the enable bit also
 		    on R2000/R3000, so this is ok.  */
-		if (status & STATUS_IE && (status & cause & STATUS_IM_MASK))
-			cpu->running_translated = 0;
+		if (status & STATUS_IE && (status & cause & STATUS_IM_MASK)) {
+			cpu->pc += sizeof(uint32_t);
+			mips_cpu_exception(cpu, EXCEPTION_INT, 0, 0,0,0,0,0);
+		}
 	}
 #endif
 }
@@ -1654,9 +1656,6 @@ X(dmtc0)
 	/*  TODO: cause exception if necessary  */
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd,
 	    (uint64_t *)ic->arg[0], 1, select);
-
-/*  TODO: fix/remove these!  */
-cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 }
 
 

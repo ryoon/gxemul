@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.36 2006-06-25 00:27:36 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.37 2006-06-25 02:46:07 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -822,12 +822,12 @@ void coproc_register_write(struct cpu *cpu,
 					    cpu, 0, INVALIDATE_ALL);
 				}
 
-				/*  Perhaps add some kind of INVALIDATE_
-				    ALL_PADDR_WHICH_HAS_A_CORRESPONDING_
-				    VADDR of some kind? :-)  */
-/*  NOTE: Not needed for NetBSD, but Linux still needs this. It shouldn't,
-    though.  */
 #if 1
+				/*
+				 *  NOTE: This is not needed for NetBSD, but
+				 *  Ultrix and Linux still needs this. They
+				 *  shouldn't, though. Something else is buggy.
+				 */
 				cpu_create_or_reset_tc(cpu);
 #endif
 			}

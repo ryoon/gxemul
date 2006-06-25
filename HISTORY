@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1262 2006-06-25 00:15:43 debug Exp $
+$Id: HISTORY,v 1.1263 2006-06-25 02:46:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2814,3 +2814,5 @@ Changelog for GXemul:
 		Minor performance hack: R2000/R3000 cache isolation now only
 		clears address translations when going into isolation, not
 		when going out of it.
+		Fixing the MIPS interrupt problems by letting mtc0 immediately
+		cause interrupts.

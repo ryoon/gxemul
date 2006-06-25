@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.86 2006-06-25 01:25:32 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.87 2006-06-25 02:46:08 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1616,28 +1616,33 @@ X(mtc0)
 {
 	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
 	uint64_t tmp = (int32_t) reg(ic->arg[0]);
-#if 0
-	uint32_t oldstatus = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
-#endif
+
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 
 	/*  TODO: cause exception if necessary  */
 	coproc_register_write(cpu, cpu->cd.mips.coproc[0], rd, &tmp, 0, select);
 
-#if 0
-	/*  Interrupts enabled, and any interrupt pending?  */
+	/*
+	 *  Interrupts enabled, and any interrupt pending? (Note/TODO: This
+	 *  code is duplicated in cpu_dyntrans.c. Fix this?)
+	 */
 	if (rd == COP0_STATUS && !cpu->delay_slot) {
 		uint32_t status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
 		uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
 		/*  NOTE: STATUS_IE happens to match the enable bit also
 		    on R2000/R3000, so this is ok.  */
+		if (status & (STATUS_EXL | STATUS_ERL))
+			status &= ~STATUS_IE;
+		/*  Ugly R5900 special case:  (TODO: move this?)  */
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900 &&
+		    !(status & R5900_STATUS_EIE))
+			status &= ~STATUS_IE;
 		if (status & STATUS_IE && (status & cause & STATUS_IM_MASK)) {
 			cpu->pc += sizeof(uint32_t);
 			mips_cpu_exception(cpu, EXCEPTION_INT, 0, 0,0,0,0,0);
 		}
 	}
-#endif
 }
 X(dmfc0)
 {

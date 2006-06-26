@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.19 2006-06-26 18:29:13 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.20 2006-06-26 20:03:09 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -868,8 +868,14 @@ X(to_be_translated)
 		}
 		break;
 
-	default:fatal("TODO: unimplemented main opcode %i\n", main_opcode);
-		goto bad;
+	case 3:	switch (op2) {
+
+		default:fatal("TODO: unimplemented op2=%i for main "
+			    "opcode %i\n", op2, main_opcode);
+			goto bad;
+		}
+		break;
+
 	}
 
 

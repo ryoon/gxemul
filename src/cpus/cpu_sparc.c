@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.32 2006-06-26 18:29:13 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.33 2006-06-26 20:03:09 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -744,7 +744,8 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if ((iword >> 13) & 1) {
 				if (siconst >= -9 && siconst <= 9)
 					debug("%i", siconst);
-				else if (siconst < 0)
+				else if (siconst < 0 && (op2 == 0 ||
+				    op2 == 4 || op2 == 20 || op2 == 60))
 					debug("-0x%x", -siconst);
 				else
 					debug("0x%x", siconst);

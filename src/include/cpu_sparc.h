@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.38 2006-05-18 05:10:44 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.39 2006-06-26 18:29:13 debug Exp $
  */
 
 #include "misc.h"
@@ -40,7 +40,9 @@ struct cpu_family;
 /*  SPARC CPU types:  */
 struct sparc_cpu_type_def { 
 	char		*name;
-	int		bits;
+	int		v;			/*  v8, v9 etc  */
+	int		bits;			/*  32 or 64  */
+	int		nwindows;		/*  usually 8 or more  */
 	int		icache_shift;
 	int		ilinesize;
 	int		iway;
@@ -52,14 +54,20 @@ struct sparc_cpu_type_def {
 	int		l2way;
 };
 
+/*  NOTE/TODO: Maybe some of the types listed below as v8 are in
+    fact v7; I haven't had time to check. Also, the nwindows value is
+    just bogus.  */
+/*  See http://www.sparc.com/standards/v8v9-numbers.html for
+    implementation numbers!  */
+
 #define SPARC_CPU_TYPE_DEFS	{					\
-	{ "TMS390Z50",		32, 14,5,2, 14,5,2,  0,0,0 },		\
-	{ "MB86904",		32, 14,5,2, 13,4,2,  0,0,0 },		\
-	{ "MB86907",		32, 14,5,2, 14,5,2, 19,5,1 },		\
-	{ "UltraSPARC",		64, 14,5,4, 14,5,4, 19,6,1 },		\
-	{ "UltraSPARC-IIi",	64, 15,5,2, 14,5,2, 21,6,1 },		\
-	{ "UltraSPARC-II",	64, 15,5,2, 14,5,2, 22,6,1 },		\
-	{ NULL,			0,  0,0,0,  0,0,0,   0,0,0 }		\
+	{ "TMS390Z50",		8, 32, 8, 14,5,2, 14,5,2,  0,0,0 },	\
+	{ "MB86904",		8, 32, 8, 14,5,2, 13,4,2,  0,0,0 },	\
+	{ "MB86907",		8, 32, 8, 14,5,2, 14,5,2, 19,5,1 },	\
+	{ "UltraSPARC",		9, 64, 8, 14,5,4, 14,5,4, 19,6,1 },	\
+	{ "UltraSPARC-IIi",	9, 64, 8, 15,5,2, 14,5,2, 21,6,1 },	\
+	{ "UltraSPARC-II",	9, 64, 8, 15,5,2, 14,5,2, 22,6,1 },	\
+	{ NULL,			0,  0, 0,  0,0,0,  0,0,0,  0,0,0 }	\
 	}
 
 
@@ -83,6 +91,8 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 
 
 #define	N_SPARC_REG		32
+#define	N_SPARC_INOUT_REG	8
+#define	N_SPARC_LOCAL_REG	8
 #define	SPARC_REG_NAMES	{				\
 	"g0","g1","g2","g3","g4","g5","g6","g7",	\
 	"o0","o1","o2","o3","o4","o5","sp","o7",	\
@@ -158,8 +168,8 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 
 #define	N_LOADSTORE_TYPES	64
 #define	SPARC_LOADSTORE_NAMES {						\
-	"ld","ldub","lduh","ldd", "st","stb","sth","std",		\
-	"[8]","ldsb","ldsh","ldx", "[12]","ldstub","stx","swap",	\
+	"lduw","ldub","lduh","ldd", "st","stb","sth","std",		\
+	"ldsw","ldsb","ldsh","ldx", "[12]","ldstub","stx","swap",	\
 	"lda","lduba","lduha","ldda", "sta","stba","stha","stda",	\
 	"[24]","ldsba","ldsha","ldxa", "[28]","ldstuba","stxa","swapa",	 \
 	"ldf","ldfsr","[34]","lddf", "stf","stfsr","stdfq","stdf",	\
@@ -178,6 +188,9 @@ struct sparc_cpu {
 
 	/*  Registers in the Current Window:  */
 	uint64_t	r[N_SPARC_REG];
+
+	uint64_t	r_inout[MAXWIN][N_SPARC_INOUT_REG];
+	uint64_t	r_local[MAXWIN][N_SPARC_LOCAL_REG];
 
 	uint64_t	scratch;
 

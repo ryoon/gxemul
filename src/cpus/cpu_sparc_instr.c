@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.18 2006-05-17 20:27:31 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.19 2006-06-26 18:29:13 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -327,6 +327,52 @@ X(srax_imm) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> ic->arg[1]; }
 
 
 /*
+ *  Save:
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ *  arg[2] = ptr to rd (_after_ the register window change)
+ */
+X(save_v9_imm)
+{
+	MODE_uint_t rs = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+	int cwp = cpu->cd.sparc.cwp;
+
+	if (cpu->cd.sparc.cansave == 0) {
+		fatal("save_v9_imm: spill trap. TODO\n");
+		exit(1);
+	}
+
+	if (cpu->cd.sparc.cleanwin - cpu->cd.sparc.canrestore == 0) {
+		fatal("save_v9_imm: clean_window trap. TODO\n");
+		exit(1);
+	}
+
+	/*  Save away old in registers:  */
+	memcpy(&cpu->cd.sparc.r_inout[cwp][0], &cpu->cd.sparc.r[SPARC_REG_I0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_I0]) * N_SPARC_INOUT_REG);
+
+	/*  Save away old local registers:  */
+	memcpy(&cpu->cd.sparc.r_local[cwp][0], &cpu->cd.sparc.r[SPARC_REG_L0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_L0]) * N_SPARC_INOUT_REG);
+
+	cwp = cpu->cd.sparc.cwp = (cwp + 1) % cpu->cd.sparc.cpu_type.nwindows;
+	cpu->cd.sparc.cansave --;
+	cpu->cd.sparc.canrestore ++;	/*  TODO: modulo here too?  */
+
+	/*  The out registers become the new in registers:  */
+	memcpy(&cpu->cd.sparc.r[SPARC_REG_I0], &cpu->cd.sparc.r[SPARC_REG_O0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_O0]) * N_SPARC_INOUT_REG);
+
+	/*  Read new local registers:  */
+	memcpy(&cpu->cd.sparc.r[SPARC_REG_L0], &cpu->cd.sparc.r_local[cwp][0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_L0]) * N_SPARC_INOUT_REG);
+
+	reg(ic->arg[2]) = rs;
+}
+
+
+/*
  *  Subtract with ccr update:
  *
  *  arg[0] = ptr to rs1
@@ -621,6 +667,7 @@ X(to_be_translated)
 		case 37:/*  sll  */
 		case 38:/*  srl  */
 		case 39:/*  sra  */
+		case 60:/*  save  */
 			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
 			ic->f = NULL;
 			if (use_imm) {
@@ -659,6 +706,12 @@ X(to_be_translated)
 						ic->arg[1] &= 31;
 					}
 					break;
+				case 60:switch (cpu->cd.sparc.cpu_type.v) {
+					case 9:	ic->f = instr(save_v9_imm);
+						break;
+					default:fatal("only for v9 so far\n");
+						goto bad;
+					}
 				}
 			} else {
 				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
@@ -696,12 +749,14 @@ X(to_be_translated)
 			}
 			ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
 			if (rd == SPARC_ZEROREG) {
-				/*  Opcodes which update the ccr should use
-				    the scratch register instead of being
-				    turned into a nop, when the zero register
-				    is used as the destination:  */
+				/*
+				 *  Some opcodes should write to the scratch
+				 *  register instead of becoming NOPs, when
+				 *  rd is the zero register.
+				 */
 				switch (op2) {
 				case 20:/*  subcc  */
+				case 60:/*  save  */
 					ic->arg[2] = (size_t)
 					    &cpu->cd.sparc.scratch;
 					break;

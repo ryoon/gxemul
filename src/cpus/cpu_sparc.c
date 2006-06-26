@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.31 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.32 2006-06-26 18:29:13 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -134,6 +134,16 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Insert number of Windows and Trap levels into the version reg.:  */
 	cpu->cd.sparc.ver |= MAXWIN | (MAXTL << SPARC_VER_MAXTL_SHIFT);
+
+	/*  Misc. initial settings suitable for userland emulation:  */
+	cpu->cd.sparc.cansave = cpu->cd.sparc.cpu_type.nwindows - 1;
+	cpu->cd.sparc.cleanwin = cpu->cd.sparc.cpu_type.nwindows / 2;
+
+	if (cpu->cd.sparc.cpu_type.nwindows >= MAXWIN) {
+		fatal("Fatal internal error: nwindows = %1 is more than %i\n",
+		    cpu->cd.sparc.cpu_type.nwindows, MAXWIN);
+		exit(1);
+	}
 
 	return 1;
 }
@@ -734,6 +744,8 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if ((iword >> 13) & 1) {
 				if (siconst >= -9 && siconst <= 9)
 					debug("%i", siconst);
+				else if (siconst < 0)
+					debug("-0x%x", -siconst);
 				else
 					debug("0x%x", siconst);
 			} else {
@@ -746,7 +758,14 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%%%s", rd_name);
 		break;
 
-	case 3:	debug("%s\t", sparc_loadstore_names[op2]);
+	case 3:	mnem = sparc_loadstore_names[op2];
+		switch (op2) {
+		case 0:	/*  'lduw' was called only 'ld' in pre-v9  */
+			if (cpu->cd.sparc.cpu_type.v < 9)
+				mnem = "ld";
+			break;
+		}
+		debug("%s\t", mnem);
 		if (op2 & 4)
 			debug("%%%s,", sparc_regnames[rd]);
 		debug("[%%%s", sparc_regnames[rs1]);
@@ -760,7 +779,7 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				debug("+%%%s", sparc_regnames[rs2]);
 		}
 		debug("]");
-		if (asi != 0)
+		if ((op2 & 0x30) == 0x10)
 			debug("(%i)", asi);
 		if (!(op2 & 4))
 			debug(",%%%s", sparc_regnames[rd]);

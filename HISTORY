@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1264 2006-06-25 11:08:04 debug Exp $
+$Id: HISTORY,v 1.1265 2006-06-26 18:29:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2819,3 +2819,5 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.0.1  ==============
 
+20060626	Continuing on SPARC emulation (beginning on the 'save'
+		instruction).

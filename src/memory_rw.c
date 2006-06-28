@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.90 2006-06-25 00:15:44 debug Exp $
+ *  $Id: memory_rw.c,v 1.91 2006-06-28 21:43:12 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -289,6 +289,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 						    mem->dev_dyntrans_data[i] +
 						    (paddr & ~offset_mask);
 					}
+
 					cpu->update_translation_table(cpu,
 					    vaddr & ~offset_mask, host_addr,
 					    wf, orig_paddr & ~offset_mask);

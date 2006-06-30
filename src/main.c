@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.275 2006-06-24 19:52:28 debug Exp $
+ *  $Id: main.c,v 1.276 2006-06-30 18:46:43 debug Exp $
  */
 
 #include <stdio.h>
@@ -248,7 +248,7 @@ static void usage(int longusage)
 	printf("            actual runtime speed) (this disables automatic"
 	    " clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
-	printf("  -J        disable some speed tricks\n");
+	printf("  -J        disable dyntrans instruction combinations\n");
 	printf("  -j name   set the name of the kernel; for DECstation "
 	    "emulation, this passes\n            the name to the bootloader,"
 	    " for example:\n");
@@ -277,6 +277,16 @@ static void usage(int longusage)
 	printf("  -r        register dumps before every instruction\n");
 	printf("  -S        initialize emulated RAM to random bytes, "
 	    "instead of zeroes\n");
+	printf("  -s f:name write statistics to file 'name', "
+	    "f is one or more of the following:\n");
+	printf("                v    virtual program counter\n");
+	printf("                p    physical equivalent of program counter\n");
+	printf("                i    internal ic->f representation of "
+	    "the program counter\n");
+	printf("            and optionally:\n");
+	printf("                d    disable statistics gathering at "
+	    "startup\n");
+	printf("                o    overwrite instead of append\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef WITH_X11
@@ -439,7 +449,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			msopts = 1;
 			break;
 		case 'J':
-			m->speed_tricks = 0;
+			m->allow_instruction_combinations = 0;
 			msopts = 1;
 			break;
 		case 'j':

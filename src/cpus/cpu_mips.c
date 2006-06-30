@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.58 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_mips.c,v 1.59 2006-06-30 18:46:43 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -747,6 +747,10 @@ void mips_cpu_register_match(struct machine *m, char *name,
 	}
 
 	/*  TODO: Coprocessor 1,2,3 registers.  */
+
+	/*  Only return lowest 32 bits when doing 32-bit emulation:  */
+	if (!writeflag && m->cpus[cpunr]->is_32bit)
+		*valuep = (uint32_t) (*valuep);
 }
 
 

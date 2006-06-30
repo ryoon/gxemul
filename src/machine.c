@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.673 2006-06-24 19:52:27 debug Exp $
+ *  $Id: machine.c,v 1.674 2006-06-30 18:46:43 debug Exp $
  */
 
 #include <stdio.h>
@@ -95,7 +95,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 					    emul.c for other pagesizes.  */
 	m->dyntrans_alignment_check = 1;
 	m->prom_emulation = 1;
-	m->speed_tricks = 1;
+	m->allow_instruction_combinations = 1;
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
 	m->boot_kernel_filename = "";
 	m->boot_string_argument = NULL;

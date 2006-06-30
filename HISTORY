@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1266 2006-06-27 04:57:53 debug Exp $
+$Id: HISTORY,v 1.1267 2006-06-30 18:46:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2821,3 +2821,6 @@ Changelog for GXemul:
 
 20060626	Continuing on SPARC emulation (beginning on the 'save'
 		instruction, register windows, etc).
+20060629	Planning statistics gathering (new -s command line option),
+		and renaming speed_tricks to allow_instruction_combinations.
+20060630	Minor updates (manual page stuff, etc).

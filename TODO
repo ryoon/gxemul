@@ -1,4 +1,4 @@
-$Id: TODO,v 1.300 2006-06-28 21:43:12 debug Exp $
+$Id: TODO,v 1.301 2006-06-30 18:46:43 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -22,6 +22,13 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 	x)  Actually use the settings object, better debugger stuff, etc.
 	x)  Wait for new releases of NetBSD, and test with those.
 
+	x)  Command line flags for:
+		o)  CPU endianness?
+		o)  Cache sizes? (multiple levels)
+
+	x)  Remove some of the complexity in file format guessing, for
+		Ultrix kernels that are actually disk images?
+
 --------------
 
 SMP:
@@ -41,8 +48,12 @@ MIPS:
 	o)  Dyntrans: SMP correctness
 	o)  Refactor code for performance and readability/maintainability.
 	o)  Instruction combinations? Possible candidates (but profile first!):
-		o)  multiple loads/stores in a row
+		o)  R2000/R3000 cache cleaner!
 		o)  strlen, memset loops etc
+		o)  multiple loads/stores in a row, e.g. relative to
+		    the stack pointer
+		o)  lui + or, lui + add, and 64-bit variants
+		o)  jr ra + addiu to the v0 register?
 		o)  compare + branch
 	o)  DROTR32 and similar MIPS64 rev 2 instructions, which have
 	    a rotation bit which differs from previous ISAs.
@@ -57,8 +68,25 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 Dyntrans:
-	x)  Move the mips_init_64bit_dummy_tables() etc calls into
-	    src/cpu.c, for all 64-bit cpus?
+	x)  Program Counter statistics:
+		-s flags:filename
+		where type: virtual (v), physical (p), or instruction (i)
+		i prints the address of ic->f, which is only meaningful
+		together with a specific binary of gxemul, for optimization
+		of gxemul itself (e.g. implementation of new instruction
+		combinations).
+		Additional flags:
+			disabled (d): start "paused"
+			overwrite (o): overwrite old files. default is to
+					append at the end (which is useful for
+					running multiple emulation passes)
+		Writes raw (ascii) statistics to filename, suitable for
+		post-processing with Unix text tools.
+		Per machine? What about SMP? All data to the same file?
+		A debugger command should be possible to use to enable/
+		disable statistics gathering.
+		Configuration file option!
+		-s always turns off speed-tricks (instruction combinations)!
 	x)  64-bit "phystranslation" lookup as in 32-bit mode? Would probably
 		help performance a bit.
 	x)  Common fatal_abort() function, which drops into the debugger
@@ -66,14 +94,15 @@ Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
-	x)  better (formally defined) instr call statistics (-s command
-	    line option?), multiple different types? (virtual pc, physical pc)
 	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
 	x)  H8?
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
+		o) First test would be to just implement a simple
+		   instruction such as MIPS' addiu or lui, on AMD64
+		   hosts...
 	x)  Remove the dyntrans_alignment_check functionality; although
 	    it gives slightly higher peformance sometimes, it increases
 	    the complexity of the code too much!

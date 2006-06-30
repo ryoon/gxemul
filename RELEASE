@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.200 2006-06-27 04:57:55 debug Exp $
+$Id: RELEASE,v 1.201 2006-06-30 18:46:43 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -22,7 +22,19 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 The most important changes between release 0.4.0.1 and 0.4.1 are:
 
-    o)	...
+    o)	A new -s command line option is now available, for dumping
+	runtime data/statistics on every instruction to a file.
+
+	Currently, the following kinds of data can be dumped:
+
+	1. the program counter (virtual address)
+	2. the physical address representation of the program counter
+	3. the internal dyntrans instruction call pointer (useful when
+	   developing/optimizing the emulator)
+
+	(There was a -s command line option in previous releases of
+	the emulator, but it did not work as intended, and was not
+	rewritten for the dyntrans system.)
 
 Please read the HISTORY files for more details.
 

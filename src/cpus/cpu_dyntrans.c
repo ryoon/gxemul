@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.104 2006-06-25 00:15:44 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.105 2006-06-30 18:46:43 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1585,7 +1585,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #endif
 	    ) {
 		if (cpu->cd.DYNTRANS_ARCH.combination_check != NULL &&
-		    cpu->machine->speed_tricks)
+		    cpu->machine->allow_instruction_combinations)
 			cpu->cd.DYNTRANS_ARCH.combination_check(cpu, ic,
 			    addr & (DYNTRANS_PAGESIZE - 1));
 	}

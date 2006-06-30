@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.65 2006-06-22 13:22:40 debug Exp $
+.\" $Id: gxemul.1,v 1.66 2006-06-30 18:46:43 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -29,7 +29,7 @@
 .\" This is a minimal man page for GXemul. Process this file with
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd JUNE 2006
+.Dd JULY 2006
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -55,11 +55,10 @@ systems (e.g. NetBSD) run inside the emulator as if they were running on a
 real machine.
 .Pp
 Processors (ARM, MIPS, PowerPC) are emulated using a kind of dynamic
-translation system. Performance is somewhere between traditional
-interpretation and recompilation into native code. However, the dynamic
-translation system used in GXemul does not (currently) generate native
-code, and thus does not require platform-specific back-ends. In plain
-English, this means that the dyntrans system works on any host architecture.
+translation system. However, unlike some other dynamically translating
+emulators, GXemul does not currently generate native code, only 
+a "runnable intermediate representation", and will thus run on any host 
+architecture, without the need to implement per-architecture backends.
 .Pp
 The emulator can be invoked in the following ways:
 .Pp
@@ -103,6 +102,12 @@ the
 .Fl j
 option to indicate which file on the CDROM filesystem that should be 
 loaded into emulated memory.
+.Pp
+Gzipped kernels are automatically unzipped, by calling the external gunzip 
+program, both when specifying a gzipped file directly on the command line 
+and when loading such a file using the
+.Fl j
+option.
 .Pp
 Machine selection options:
 .Bl -tag -width Ds
@@ -212,10 +217,10 @@ Hz. (This affects emulated clock devices only, not actual runtime speed.
 This disables automatic clock adjustments, which is otherwise turned on.)
 (This option is probably only valid for DECstation emulation.)
 .It Fl i
-Display each instruction as it is being executed.
+Enable instruction trace, i.e. display disassembly of each instruction as
+it is being executed.
 .It Fl J
-Disable some speed tricks. This usually means disabling the use of
-dyntrans "instruction combinations".
+Disable instruction combinations in the dynamic translator.
 .It Fl j Ar n
 Set the name of the kernel to
 .Ar "n".
@@ -234,12 +239,11 @@ regular intervals.
 .It Fl n Ar nr
 Set the number of processors in the machine, for SMP experiments.
 .Pp
-Note: The emulator allocates quite a 
-lot of virtual memory for per-CPU translation tables. On 64-bit hosts, 
-this is normally not a problem. On 32-bit hosts, this can use up all 
-available virtual userspace memory. The solution is to either run the 
-emulator on a 64-bit host, or limit the number of emulated CPUs to a 
-reasonable number (say, less than 32).
+Note 1: The emulator allocates quite a lot of virtual memory for
+per-CPU translation tables. On 64-bit hosts, this is normally not a
+problem. On 32-bit hosts, this can use up all available virtual userspace
+memory. The solution is to either run the emulator on a 64-bit host,
+or limit the number of emulated CPUs to a reasonably low number.
 .Pp
 Note 2: SMP simulation is not working very well yet; multiple processors 
 are simulated, but synchronization between the processors does not map
@@ -258,10 +262,15 @@ Add a breakpoint.
 can be a symbol, or a numeric value. (Remember to use the "0x" prefix for
 hexadecimal values.)
 .It Fl Q
-Disable the built-in PROM emulation. This is useful for 
-experimenting with running raw ROM images from real machines.
+Disable the built-in (software-only) PROM emulation. This option is useful
+for experimenting with running raw ROM images from real machines. The default 
+behaviour of the emulator is to "fake" certain PROM calls used by guest 
+operating systems (e.g. NetBSD), so that no real PROM image is needed.
 .It Fl R
-Use a random bootstrap cpu, instead of CPU nr 0. (For SMP experiments.)
+Use a random bootstrap cpu, instead of CPU nr 0. (This option is only 
+meaningful together with the
+.Fl n
+option.)
 .It Fl r
 Dump register contents for every executed instruction.
 .It Fl S
@@ -269,6 +278,49 @@ Initialize emulated RAM to random data, instead of zeroes. This option
 is useful when trying to trigger bugs in a program that occur because the
 program assumed that uninitialized memory contains zeros. (Use with
 care.)
+.It Fl s Ar flags:filename
+Gather statistics based on the current emulated program counter value, 
+while the program executes. The statistics is actually just a raw dump of 
+all program counter values in sequence, suitable for post-analysis with 
+e.g. Unix-based text processing tools. Output is appended to
+.Ar filename.
+.Pp
+The
+.Ar flags
+should include one or more of the following type specifiers:
+.Bl -tag -width Ds
+.It v
+Virtual. This means that the program counter value is used.
+.It p
+Physical. This means that the physical address of where the program
+is actually running is used.
+.It i
+Instruction call. This type of statistics gathering is practically only 
+useful during development of the emulator itself. The output is a list of
+addresses of instruction call functions (ic->f), which after some
+post-processing can be used as a basis for deciding when to implement
+instruction combinations.
+.El
+.Pp
+The
+.Ar flags
+may also include the following optional modifiers:
+.Bl -tag -width Ds
+.It d
+Disabled at startup.
+.It o
+Overwrite the file, instead of appending to it.
+.El
+.Pp
+Statistics gathering can be enabled/disabled at runtime by using the
+"TODO" debugger command.
+.Pp
+When gathering instruction statistics using the
+.Fl s
+option, instruction combinations are always disabled (i.e.
+an implicit
+.Fl J
+is added to the command line).
 .It Fl t
 Show a trace tree of all function calls being made.
 .It Fl U

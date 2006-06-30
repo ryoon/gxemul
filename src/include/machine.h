@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.120 2006-06-24 19:52:28 debug Exp $
+ *  $Id: machine.h,v 1.121 2006-06-30 18:46:44 debug Exp $
  */
 
 #include <sys/types.h>
@@ -201,7 +201,7 @@ struct machine {
 	int	show_nr_of_instructions;
 	int	show_symbolic_register_names;
 	int	emulated_hz;
-	int	speed_tricks;
+	int	allow_instruction_combinations;
 	char	*userland_emul;		/*  NULL for no userland emulation  */
 	int	force_netboot;
 	int	slow_serial_interrupts_hack_for_linux;

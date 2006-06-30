@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr_loadstore.c,v 1.4 2006-04-22 18:28:43 debug Exp $
+ *  $Id: cpu_alpha_instr_loadstore.c,v 1.5 2006-06-30 20:22:53 debug Exp $
  *
  *  Alpha load/store instructions.  (Included from cpu_alpha_instr_inc.c.)
  *
@@ -43,7 +43,6 @@
 
 
 #ifndef LS_IGNORE_OFFSET
-#ifndef LS_ALIGN_CHECK
 static void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 {
 #ifdef LS_B
@@ -125,7 +124,6 @@ static void LS_GENERIC_N(struct cpu *cpu, struct alpha_instr_call *ic)
 #endif
 }
 #endif
-#endif
 
 
 static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
@@ -182,7 +180,6 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 
 	c = addr & 8191;
 
-#ifdef LS_ALIGN_CHECK
 #ifndef LS_B
 	if (c &
 #ifdef LS_W
@@ -199,7 +196,6 @@ static void LS_N(struct cpu *cpu, struct alpha_instr_call *ic)
 		return;
 	}
 	else
-#endif
 #endif
 
 	if (page != NULL) {

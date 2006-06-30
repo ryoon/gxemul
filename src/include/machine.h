@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.121 2006-06-30 18:46:44 debug Exp $
+ *  $Id: machine.h,v 1.122 2006-06-30 20:22:54 debug Exp $
  */
 
 #include <sys/types.h>
@@ -46,6 +46,8 @@
 #define	BREAKPOINT_FLAG_R	1
 
 #define	MAX_TICK_FUNCTIONS	16
+
+#define	MAX_STATISTICS_FIELDS	8
 
 struct cpu_family;
 struct diskimage;
@@ -88,8 +90,6 @@ struct machine_bus {
 };
 
 
-#define	MACHINE_NAME_MAXBUF		150
-
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
 	struct emul *emul;
@@ -116,6 +116,7 @@ struct machine {
 	int	serial_nr;
 	int	nr_of_nics;
 
+	/*  TODO: How about multiple cpu familys in one machine?  */
 	struct cpu_family *cpu_family;
 
 	/*
@@ -160,8 +161,6 @@ struct machine {
 	int64_t	ncycles_flush;
 	int64_t	ncycles_since_gettimeofday;
 	struct timeval starttime;
-	int	a_few_cycles;
-	int	a_few_instrs;
 
 	struct diskimage *first_diskimage;
 
@@ -181,6 +180,7 @@ struct machine {
 
 	struct debugger_gdb gdb;
 
+	/*  Breakpoints:  */
 	int	n_breakpoints;
 	char	*breakpoint_string[MAX_BREAKPOINTS];
 	uint64_t breakpoint_addr[MAX_BREAKPOINTS];
@@ -196,9 +196,9 @@ struct machine {
 	int	cache_secondary_linesize;
 
 	int	dbe_on_nonexistant_memaccess;
-	int	dyntrans_alignment_check;
 	int	instruction_trace;
 	int	show_nr_of_instructions;
+	int	show_trace_tree;
 	int	show_symbolic_register_names;
 	int	emulated_hz;
 	int	allow_instruction_combinations;
@@ -208,12 +208,15 @@ struct machine {
 	uint64_t file_loaded_end_addr;
 	char	*boot_kernel_filename;
 	char	*boot_string_argument;
-
 	int	automatic_clock_adjustment;
 	int	exit_without_entering_debugger;
-	int	show_trace_tree;
-
 	int	n_gfx_cards;
+
+	/*  Instruction statistics:  */
+	char	*statistics_filename;
+	FILE	*statistics_file;
+	int	statistics_enabled;
+	char	*statistics_fields;	/*  "vpi" etc.  */
 
 	/*  Machine-dependent: (PROM stuff, etc.)  */
 	union {
@@ -404,11 +407,6 @@ struct machine {
 #define	MACHINE_HPCSH_JORNADA680		1
 #define	MACHINE_HPCSH_JORNADA690		2
 
-/*  Playstation 2:  */
-#define	PLAYSTATION2_BDA	0xffffffffa0001000ULL
-#define	PLAYSTATION2_OPTARGS	0xffffffff81fff100ULL
-#define	PLAYSTATION2_SIFBIOS	0xffffffffbfc10000ULL
-
 /*  SGI and ARC:  */
 #define	MACHINE_ARC_NEC_RD94		1
 #define	MACHINE_ARC_JAZZ_PICA		2
@@ -452,28 +450,6 @@ struct machine {
 /*  X86:  */
 #define	MACHINE_X86_GENERIC		1
 #define	MACHINE_X86_XT			2
-
-
-/*
- *  Problem: kernels seem to be loaded at low addresses in RAM, so
- *  storing environment strings and memory descriptors there is a bad
- *  idea. They are stored at 0xbfc..... instead.  The ARC SPB must
- *  be at physical address 0x1000 though.
- */
-#define	SGI_SPB_ADDR		0xffffffff80001000ULL
-/*  0xbfc10000 is firmware callback vector stuff  */
-#define	ARC_FIRMWARE_VECTORS	0xffffffffbfc80000ULL
-#define	ARC_FIRMWARE_ENTRIES	0xffffffffbfc88000ULL
-#define	ARC_ARGV_START		0xffffffffbfc90000ULL
-#define	ARC_ENV_STRINGS		0xffffffffbfc98000ULL
-#define	ARC_ENV_POINTERS	0xffffffffbfc9d000ULL
-#define	SGI_SYSID_ADDR		0xffffffffbfca1800ULL
-#define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00ULL
-#define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80ULL
-#define	ARC_CONFIG_DATA_ADDR	0xffffffffbfca2000ULL
-#define	FIRST_ARC_COMPONENT	0xffffffffbfca8000ULL
-#define	ARC_PRIVATE_VECTORS	0xffffffffbfcb0000ULL
-#define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000ULL
 
 
 /*  For the automachine system:  */
@@ -524,6 +500,7 @@ int machine_name_to_type(char *stype, char *ssubtype,
 void machine_add_tickfunction(struct machine *machine,
 	void (*func)(struct cpu *, void *), void *extra,
 	int clockshift, double hz);
+void machine_statistics_init(struct machine *, char *fname);
 void machine_register(char *name, MACHINE_SETUP_TYPE(setup));
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);

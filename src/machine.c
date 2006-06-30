@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.674 2006-06-30 18:46:43 debug Exp $
+ *  $Id: machine.c,v 1.675 2006-06-30 20:22:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -93,7 +93,6 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->machine_subtype = MACHINE_NONE;
 	m->arch_pagesize = 4096;	/*  Should be overriden in
 					    emul.c for other pagesizes.  */
-	m->dyntrans_alignment_check = 1;
 	m->prom_emulation = 1;
 	m->allow_instruction_combinations = 1;
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
@@ -254,6 +253,79 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 	machine->tick_hz[n]           = hz;
 
 	machine->n_tick_entries ++;
+}
+
+
+/*
+ *  machine_statistics_init():
+ *
+ *  Initialize the parts of a machine struct that deal with instruction
+ *  statistics gathering.
+ *
+ *  Note: The fname argument contains "flags:filename".
+ */
+void machine_statistics_init(struct machine *machine, char *fname)
+{
+	int n_fields = 0;
+	char *pcolon = fname;
+	char *mode = "a";	/*  Append by default  */
+
+	machine->allow_instruction_combinations = 0;
+
+	if (machine->statistics_fields != NULL) {
+		fprintf(stderr, "Only one -s option is allowed.\n");
+		exit(1);
+	}
+
+	machine->statistics_fields = malloc(MAX_STATISTICS_FIELDS + 1);
+	machine->statistics_enabled = 1;
+
+	while (*pcolon && *pcolon != ':')
+		pcolon ++;
+
+	if (*pcolon != ':') {
+		fprintf(stderr, "The syntax for the -s option is:    "
+		    "-s flags:filename\nYou omitted the flags. Run g"
+		    "xemul -h for a list of available flags.\n");
+		exit(1);
+	}
+
+	while (*fname != ':') {
+		switch (*fname) {
+
+		/*  Type flags:  */
+		case 'v':
+		case 'i':
+		case 'p':
+			machine->statistics_fields[n_fields ++] = *fname;
+			if (n_fields >= MAX_STATISTICS_FIELDS) {
+				fprintf(stderr, "Internal error: Too many "
+				    "statistics fields used. Increase "
+				    "MAX_STATISTICS_FIELDS.\n");
+				exit(1);
+			}
+			machine->statistics_fields[n_fields] = '\0';
+			break;
+
+		/*  Optional flags:  */
+		case 'o':
+			mode = "w";
+			break;
+		case 'd':
+			machine->statistics_enabled = 0;
+			break;
+
+		default:fprintf(stderr, "Unknown flag '%c' used with the"
+			    " -s option. Aborting.\n", *fname);
+			exit(1);
+		}
+		fname ++;
+	}
+
+	fname ++;	/*  point to the filename after the colon  */
+
+	machine->statistics_filename = strdup(fname);
+	machine->statistics_file = fopen(machine->statistics_filename, mode);
 }
 
 

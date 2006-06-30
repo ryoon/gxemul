@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1267 2006-06-30 18:46:42 debug Exp $
+$Id: HISTORY,v 1.1268 2006-06-30 20:22:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2823,4 +2823,6 @@ Changelog for GXemul:
 		instruction, register windows, etc).
 20060629	Planning statistics gathering (new -s command line option),
 		and renaming speed_tricks to allow_instruction_combinations.
-20060630	Minor updates (manual page stuff, etc).
+20060630	Some minor manual page updates.
+		Various cleanups.
+		Implementing the -s command line option.

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_alpha_misc.c,v 1.2 2006-06-03 06:46:44 debug Exp $
+ *  $Id: generate_alpha_misc.c,v 1.3 2006-06-30 20:22:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ char *cmov[N_CMOV] = { "lbs", "lbc", "eq", "ne", "lt", "ge", "le", "gt" };
 
 int main(int argc, char *argv[])
 {
-	int load, size, zero, aligncheck, n, msk, llsc;
+	int load, size, zero, n, msk, llsc;
 	int ra, rc, lo, scale, imm, not, op, quad;
 
 	printf("\n/*  AUTOMATICALLY GENERATED! Do not edit.  */\n\n");
@@ -267,14 +267,11 @@ int main(int argc, char *argv[])
 	 *  Normal load/store:
 	 */
 	for (llsc=0; llsc<=1; llsc++)
-	  for (aligncheck=0; aligncheck<=1; aligncheck++)
 	    for (load=0; load<=1; load++)
 		for (zero=0; zero<=1; zero++)
 		    for (size=0; size<4; size++) {
 			if (llsc && size < 2)
 				continue;
-			if (aligncheck)
-				printf("#define LS_ALIGN_CHECK\n");
 			if (zero)
 				printf("#define LS_IGNORE_OFFSET\n");
 			if (load)
@@ -304,8 +301,6 @@ int main(int argc, char *argv[])
 			printf("%s", sizechar[size]);
 			if (zero)
 				printf("_0");
-			if (aligncheck)
-				printf("_aligncheck");
 			if (llsc)
 				printf("_llsc");
 			printf("\n");
@@ -324,8 +319,6 @@ int main(int argc, char *argv[])
 				printf("#undef LS_LLSC\n");
 			if (zero)
 				printf("#undef LS_IGNORE_OFFSET\n");
-			if (aligncheck)
-				printf("#undef LS_ALIGN_CHECK\n");
 		    }
 
 	/*
@@ -363,13 +356,12 @@ int main(int argc, char *argv[])
 	printf("#undef LS_UNALIGNED\n");
 
 	/*  Lookup table for most normal loads/stores:  */
-	printf("\n\nvoid (*alpha_loadstore[64])(struct cpu *, struct "
+	printf("\n\nvoid (*alpha_loadstore[32])(struct cpu *, struct "
 	    "alpha_instr_call *) = {\n");
 
 	for (llsc = 0; llsc <= 1; llsc ++)
-	    for (aligncheck=0; aligncheck<=1; aligncheck++)
-		for (load=0; load<=1; load++)
-		  for (zero=0; zero<=1; zero++)
+	    for (load=0; load<=1; load++)
+		for (zero=0; zero<=1; zero++)
 		    for (size=0; size<4; size++) {
 			printf("\talpha_instr_");
 			if (llsc && (size != 2 && size != 3)) {
@@ -382,8 +374,6 @@ int main(int argc, char *argv[])
 				printf("%s", sizechar[size]);
 				if (zero)
 					printf("_0");
-				if (aligncheck)
-					printf("_aligncheck");
 				if (llsc)
 					printf("_llsc");
 			}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.5 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.6 2006-06-30 20:22:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -41,6 +41,10 @@
 #include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
+
+#define PLAYSTATION2_BDA        0xffffffffa0001000ULL
+#define PLAYSTATION2_OPTARGS    0xffffffff81fff100ULL
+#define PLAYSTATION2_SIFBIOS    0xffffffffbfc10000ULL
 
 
 static int int_to_bcd(int i)

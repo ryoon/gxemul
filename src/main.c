@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.276 2006-06-30 18:46:43 debug Exp $
+ *  $Id: main.c,v 1.277 2006-06-30 20:22:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -195,9 +195,9 @@ static void usage(int longusage)
 {
 	printf("GXemul");
 #ifdef VERSION
-	printf("-" VERSION);
+	printf(" " VERSION);
 #endif
-	printf("   Copyright (C) 2003-2006  Anders Gavare\n");
+	printf("    Copyright (C) 2003-2006  Anders Gavare\n");
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 
@@ -222,8 +222,6 @@ static void usage(int longusage)
 	    "with -E.)\n");
 
 	printf("\nOther options:\n");
-	printf("  -A        disable alignment checks in some cases (for higher"
-	    " speed)\n");
 	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
 	    "list of types.)\n");
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\""
@@ -356,8 +354,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "A"
-	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrStU"
+	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:tU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -369,12 +366,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 
 	while ((ch = getopt(argc, argv, opts)) != -1) {
 		switch (ch) {
-		case 'A':
-			fprintf(stderr, "NOTE: The -A command line option"
-			    " is DEPRECATED and will be removed soon.\n");
-			m->dyntrans_alignment_check = 0;
-			msopts = 1;
-			break;
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;
@@ -519,6 +510,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 'S':
 			m->random_mem_contents = 1;
+			msopts = 1;
+			break;
+		case 's':
+			machine_statistics_init(m, optarg);
 			msopts = 1;
 			break;
 		case 't':
@@ -763,9 +758,9 @@ int main(int argc, char *argv[])
 	/*  Print startup message:  */
 	debug("GXemul");
 #ifdef VERSION
-	debug("-" VERSION);
+	debug(" " VERSION);
 #endif
-	debug("   Copyright (C) 2003-2006  Anders Gavare\n");
+	debug("    Copyright (C) 2003-2006  Anders Gavare\n");
 	debug("Read the source code and/or documentation for "
 	    "other Copyright messages.\n\n");
 

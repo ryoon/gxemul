@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.66 2006-06-30 18:46:43 debug Exp $
+.\" $Id: gxemul.1,v 1.67 2006-06-30 20:22:52 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -130,19 +130,6 @@ Use this together with
 .Pp
 Other options:
 .Bl -tag -width Ds
-.\" The -A command line option is DEPRECATED and will be removed soon.
-.\" .It Fl A
-.\" Disable load/store alignment checks in some cases. This might give a small
-.\" increase in performance, but the emulator will not run correctly if the 
-.\" emulated code actually tries to do unaligned loads or stores. (This option 
-.\" is only meaningful when emulating MIPS CPUs, when the host architecture is 
-.\" Alpha or i386, and binary translation is enabled.)
-.\" .It Fl B
-.\" Disable native translation backends. By default, translation backends are
-.\" used if the host+target architecture combination is supported. Currently,
-.\" the only supported host architecture for the old bintrans system (used
-.\" when emulating MIPS processors) are Alpha and i386. The old bintrans
-.\" system will hopefully be removed some day.
 .It Fl C Ar x
 Try to emulate a specific CPU type,
 .Ar "x".
@@ -282,7 +269,7 @@ care.)
 Gather statistics based on the current emulated program counter value, 
 while the program executes. The statistics is actually just a raw dump of 
 all program counter values in sequence, suitable for post-analysis with 
-e.g. Unix-based text processing tools. Output is appended to
+separate tools. Output is appended to
 .Ar filename.
 .Pp
 The
@@ -321,6 +308,9 @@ option, instruction combinations are always disabled (i.e.
 an implicit
 .Fl J
 is added to the command line).
+.Pp
+If a value is missing (e.g. the end-of-page slot does not really have a 
+known physical address), it is written out as just a dash ("-").
 .It Fl t
 Show a trace tree of all function calls being made.
 .It Fl U

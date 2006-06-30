@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.4 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_arc.c,v 1.5 2006-06-30 20:22:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -41,6 +41,8 @@
 #include "machine_interrupts.h"
 #include "memory.h"
 #include "misc.h"
+
+#define	MACHINE_NAME_MAXBUF	100
 
 
 MACHINE_SETUP(arc)
@@ -59,8 +61,7 @@ MACHINE_SETUP(arc)
 	}
 
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
-	snprintf(machine->machine_name,
-	    MACHINE_NAME_MAXBUF, "ARC");
+	snprintf(machine->machine_name, MACHINE_NAME_MAXBUF, "ARC");
 
 	switch (machine->machine_subtype) {
 

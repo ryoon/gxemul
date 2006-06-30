@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.12 2006-02-02 19:30:32 debug Exp $
+ *  $Id: arcbios.h,v 1.13 2006-06-30 20:22:54 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -80,6 +80,29 @@ struct emul_arc_child64 {
 };
 
 #define	ARC_BOOTSTR_BUFLEN		1000
+
+
+/*
+ *  Problem: kernels seem to be loaded at low addresses in RAM, so
+ *  storing environment strings and memory descriptors there is a bad
+ *  idea. They are stored at 0xbfc..... instead.  The ARC SPB must
+ *  be at physical address 0x1000 though.
+ */
+
+#define SGI_SPB_ADDR            0xffffffff80001000ULL
+/*  0xbfc10000 is firmware callback vector stuff  */
+#define ARC_FIRMWARE_VECTORS    0xffffffffbfc80000ULL
+#define ARC_FIRMWARE_ENTRIES    0xffffffffbfc88000ULL
+#define ARC_ARGV_START          0xffffffffbfc90000ULL
+#define ARC_ENV_STRINGS         0xffffffffbfc98000ULL
+#define ARC_ENV_POINTERS        0xffffffffbfc9d000ULL
+#define SGI_SYSID_ADDR          0xffffffffbfca1800ULL
+#define ARC_DSPSTAT_ADDR        0xffffffffbfca1c00ULL
+#define ARC_MEMDESC_ADDR        0xffffffffbfca1c80ULL
+#define ARC_CONFIG_DATA_ADDR    0xffffffffbfca2000ULL
+#define FIRST_ARC_COMPONENT     0xffffffffbfca8000ULL
+#define ARC_PRIVATE_VECTORS     0xffffffffbfcb0000ULL
+#define ARC_PRIVATE_ENTRIES     0xffffffffbfcb8000ULL
 
 
 #endif	/*  ARCBIOS_H  */

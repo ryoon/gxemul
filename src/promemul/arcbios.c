@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.8 2006-04-15 08:21:07 debug Exp $
+ *  $Id: arcbios.c,v 1.9 2006-06-30 20:22:54 debug Exp $
  *
  *  ARCBIOS emulation.
  */
@@ -2267,10 +2267,10 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 		if (machine->machine_type == MACHINE_SGI) {
 			if (machine->machine_subtype == 30)
 				strlcat(init_bootpath, "xio(0)pci(15)",
-				    MACHINE_NAME_MAXBUF);
+				    bootpath_len);
 			if (machine->machine_subtype == 32)
 				strlcat(init_bootpath, "pci(0)",
-				    MACHINE_NAME_MAXBUF);
+				    bootpath_len);
 		}
 
 		if (diskimage_is_a_cdrom(machine, machine->bootdev_id,
@@ -2286,7 +2286,7 @@ static void arc_environment_setup(struct machine *machine, int is64bit,
 	}
 
 	if (machine->machine_type == MACHINE_ARC)
-		strlcat(init_bootpath, "\\", MACHINE_NAME_MAXBUF);
+		strlcat(init_bootpath, "\\", bootpath_len);
 
 	machine->bootstr = malloc(ARC_BOOTSTR_BUFLEN);
 		if (machine->bootstr == NULL) {

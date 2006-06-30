@@ -25,93 +25,78 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.105 2006-06-30 18:46:43 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.106 2006-06-30 20:22:53 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
 
 
 #ifdef	DYNTRANS_CPU_RUN_INSTR
-#if 1	/*  IC statistics:  */
+/*
+ *  gather_statistics():
+ */
 static void gather_statistics(struct cpu *cpu)
 {
+	char ch, buf[60];
 	struct DYNTRANS_IC *ic = cpu->cd.DYNTRANS_ARCH.next_ic;
-	static long long n = 0;
-	static FILE *f = NULL;
-
-	n++;
-	if (n < 100000000)
-		return;
-
-	if (f == NULL) {
-		f = fopen("instruction_call_statistics.raw", "w");
-		if (f == NULL) {
-			fatal("Unable to open statistics file for output.\n");
-			exit(1);
-		}
-	}
-	fwrite(&ic->f, 1, sizeof(void *), f);
-}
-#else	/*  PC statistics:  */
-static void gather_statistics(struct cpu *cpu)
-{
+	int i = 0;
 	uint64_t a;
 	int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - (size_t)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page) / sizeof(struct DYNTRANS_IC);
-	if (low_pc < 0 || low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE)
-		return;
 
-#if 0
-	/*  Use the physical address:  */
-	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
-	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
-	a = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
-#else
-	/*  Use the PC (virtual address):  */
-	a = cpu->pc;
-#endif
+	buf[0] = '\0';
 
-	a &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
-	    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
-	a += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
+	while ((ch = cpu->machine->statistics_fields[i]) != '\0') {
+		if (i != 0)
+			strlcat(buf, " ", sizeof(buf));
 
-	/*
-	 *  TODO: Everything below this line should be cleaned up :-)
-	 */
-a &= 0x03ffffff;
-{
-	static long long *array = NULL;
-	static char *array_16kpage_in_use = NULL;
-	static int n = 0;
-	a >>= DYNTRANS_INSTR_ALIGNMENT_SHIFT;
-	if (array == NULL)
-		array = zeroed_alloc(sizeof(long long) * 16384*1024);
-	if (array_16kpage_in_use == NULL)
-		array_16kpage_in_use = zeroed_alloc(sizeof(char) * 1024);
-	a &= (16384*1024-1);
-	array[a] ++;
-	array_16kpage_in_use[a / 16384] = 1;
-	n++;
-	if ((n & 0x3fffffff) == 0) {
-		FILE *f = fopen("statistics.out", "w");
-		int i, j;
-		printf("Saving statistics... "); fflush(stdout);
-		for (i=0; i<1024; i++)
-			if (array_16kpage_in_use[i]) {
-				for (j=0; j<16384; j++)
-					if (array[i*16384 + j] > 0)
-						fprintf(f, "%lli\t"
-						    "0x%016"PRIx64"\n",
-						    (uint64_t)array[i*16384+j],
-						    (uint64_t)((i*16384+j) <<
-					    DYNTRANS_INSTR_ALIGNMENT_SHIFT));
-			}
-		fclose(f);
-		printf("n=0x%08x\n", n);
+		switch (ch) {
+		case 'i':
+			snprintf(buf + strlen(buf), sizeof(buf),
+			    "%p", (void *)ic->f);
+			break;
+		case 'p':
+			/*  Physical program counter address:  */
+			/*  (low_pc must be within the page!)  */
+			if (low_pc < 0 ||
+			    low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE)
+				strlcat(buf, "-", sizeof(buf));
+			cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
+			    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
+			a = cpu->cd.DYNTRANS_ARCH.cur_physpage->physaddr;
+			a &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+			    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+			a += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
+			if (cpu->is_32bit)
+				snprintf(buf + strlen(buf), sizeof(buf),
+				    "0x%016"PRIx32, (uint32_t)a);
+			else
+				snprintf(buf + strlen(buf), sizeof(buf),
+				    "0x%016"PRIx64, (uint64_t)a);
+			break;
+		case 'v':
+			/*  Virtual program counter address:  */
+			/*  (low_pc inside the page, or in a delay slot)  */
+			if (low_pc < 0 ||
+			    low_pc >= DYNTRANS_IC_ENTRIES_PER_PAGE + 2)
+				strlcat(buf, "-", sizeof(buf));
+			a = cpu->pc;
+			a &= ~((DYNTRANS_IC_ENTRIES_PER_PAGE-1) <<
+			    DYNTRANS_INSTR_ALIGNMENT_SHIFT);
+			a += low_pc << DYNTRANS_INSTR_ALIGNMENT_SHIFT;
+			if (cpu->is_32bit)
+				snprintf(buf + strlen(buf), sizeof(buf),
+				    "0x%016"PRIx32, (uint32_t)a);
+			else
+				snprintf(buf + strlen(buf), sizeof(buf),
+				    "0x%016"PRIx64, (uint64_t)a);
+			break;
+		}
+		i++;
 	}
+
+	fprintf(cpu->machine->statistics_file, "%s\n", buf);
 }
-}
-#endif	/*  PC statistics  */
 
 
 #define S		gather_statistics(cpu)
@@ -182,11 +167,6 @@ a &= 0x03ffffff;
  */
 int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 {
-	/*
-	 *  TODO:  Statistics stuff!
-	 */
-	int show_opcode_statistics = 0;
-
 #ifdef MODE32
 	uint32_t cached_pc;
 #else
@@ -332,7 +312,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 			    ~(COMBINATIONS | TRANSLATIONS);
 		}
 
-		if (show_opcode_statistics)
+		if (cpu->machine->statistics_enabled)
 			S;
 
 		/*  Execute just one instruction:  */
@@ -361,7 +341,7 @@ while (cycles-- > 0)
 			    N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
-	} else if (show_opcode_statistics) {
+	} else if (cpu->machine->statistics_enabled) {
 		/*  Gather statistics while executing multiple instructions:  */
 		n_instrs = 0;
 		for (;;) {

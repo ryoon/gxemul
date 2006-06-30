@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.344 2006-06-24 21:47:22 debug Exp $
+ *  $Id: cpu.c,v 1.345 2006-06-30 20:22:52 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -525,34 +525,9 @@ do_return:
  */
 void cpu_run_init(struct machine *machine)
 {
-	int ncpus = machine->ncpus;
-	int te;
-
-	machine->a_few_cycles = 1048576;
 	machine->ncycles_flush = 0;
 	machine->ncycles = 0;
 	machine->ncycles_show = 0;
-
-	/*
-	 *  Instead of doing { one cycle, check hardware ticks }, we
-	 *  can do { n cycles, check hardware ticks }, as long as
-	 *  n is at most as much as the lowest number of cycles/tick
-	 *  for any hardware device.
-	 */
-	for (te=0; te<machine->n_tick_entries; te++) {
-		if (machine->ticks_reset_value[te] < machine->a_few_cycles)
-			machine->a_few_cycles = machine->ticks_reset_value[te];
-	}
-
-	machine->a_few_cycles >>= 1;
-	if (machine->a_few_cycles < 1)
-		machine->a_few_cycles = 1;
-
-	if (ncpus > 1)
-		machine->a_few_cycles = 1;
-
-	/*  debug("cpu_run_init(): a_few_cycles = %i\n",
-	    machine->a_few_cycles);  */
 
 	/*  For performance measurement:  */
 	gettimeofday(&machine->starttime, NULL);

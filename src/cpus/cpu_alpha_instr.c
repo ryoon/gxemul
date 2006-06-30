@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.11 2006-06-03 06:46:44 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.12 2006-06-30 20:22:53 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -879,8 +879,7 @@ X(to_be_translated)
 		}
 		ic->f = alpha_loadstore[
 		    loadstore_type + (imm==0? 4 : 0) + 8 * load
-		    + (cpu->machine->dyntrans_alignment_check? 16:0)
-		    + 32 * llsc];
+		    + 16 * llsc];
 		/*  Load to the zero register is treated as a prefetch
 		    hint. It is ignored here.  */
 		if (load && ra == ALPHA_ZERO) {

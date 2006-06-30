@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.38 2006-06-28 21:43:12 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.39 2006-06-30 20:22:53 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -828,7 +828,12 @@ void coproc_register_write(struct cpu *cpu,
 				 *  Ultrix and Linux still needs this. They
 				 *  shouldn't, though. Something else is buggy.
 				 */
+{
+static int x = 0;
+x ++;
+if (x == 13)
 				cpu_create_or_reset_tc(cpu);
+}
 #endif
 			}
 			unimpl = 0;
@@ -1714,10 +1719,17 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			    INVALIDATE_PADDR);
 		}
 
+		if (cp->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) {
+			fatal("Wow! Interesting case; tlbw* while caches"
+			    " are isolated. TODO\n");
+			/*  Don't update the translation table in this
+			    case...  */
+			exit(1);
+		}
+
 		/*  If we have a memblock (host page) for the physical
 		    page, then add a translation for it immediately:  */
 		if (memblock != NULL &&
-		    !(cp->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) &&
 		    cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 			memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
 			cpu->update_translation_table(cpu, vaddr, memblock,

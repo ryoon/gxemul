@@ -1,4 +1,4 @@
-$Id: TODO,v 1.301 2006-06-30 18:46:43 debug Exp $
+$Id: TODO,v 1.302 2006-06-30 20:22:52 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -69,24 +69,10 @@ MIPS:
 
 Dyntrans:
 	x)  Program Counter statistics:
-		-s flags:filename
-		where type: virtual (v), physical (p), or instruction (i)
-		i prints the address of ic->f, which is only meaningful
-		together with a specific binary of gxemul, for optimization
-		of gxemul itself (e.g. implementation of new instruction
-		combinations).
-		Additional flags:
-			disabled (d): start "paused"
-			overwrite (o): overwrite old files. default is to
-					append at the end (which is useful for
-					running multiple emulation passes)
-		Writes raw (ascii) statistics to filename, suitable for
-		post-processing with Unix text tools.
 		Per machine? What about SMP? All data to the same file?
 		A debugger command should be possible to use to enable/
 		disable statistics gathering.
 		Configuration file option!
-		-s always turns off speed-tricks (instruction combinations)!
 	x)  64-bit "phystranslation" lookup as in 32-bit mode? Would probably
 		help performance a bit.
 	x)  Common fatal_abort() function, which drops into the debugger

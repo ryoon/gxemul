@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.12 2006-06-25 01:25:32 debug Exp $
+ *  $Id: debugger.c,v 1.13 2006-06-30 20:22:54 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -89,7 +89,6 @@ extern int quiet_mode;
 volatile int single_step = NOT_SINGLE_STEPPING;
 volatile int exit_debugger;
 int force_debugger_at_exit = 0;
-int show_opcode_statistics = 0;
 
 volatile int single_step_breakpoint = 0;
 int debugger_n_steps_left_before_interaction = 0;

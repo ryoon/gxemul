@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.4 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_sgi.c,v 1.5 2006-06-30 20:22:54 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -55,7 +55,8 @@
 #include "crimereg.h"
 
 
-#define ETHERNET_STRING_MAXLEN  40
+#define ETHERNET_STRING_MAXLEN  	40
+#define	MACHINE_NAME_MAXBUF		100
 
 
 MACHINE_SETUP(sgi)

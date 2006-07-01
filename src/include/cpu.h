@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.79 2006-06-25 00:27:36 debug Exp $
+ *  $Id: cpu.h,v 1.80 2006-07-01 21:15:46 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -148,9 +148,6 @@
  *
  *  phys_page points to translation cache physpages.
  *
- *  phystranslation is a bitmap which tells us whether a physical page has
- *  a code translation.
- *
  *  vaddr_to_tlbindex is a virtual address to tlb index hint table.
  *  The values in this array are the tlb index plus 1, so a value of, say,
  *  3 means tlb index 2. A value of 0 would mean a tlb index of -1, which
@@ -162,7 +159,6 @@
 	unsigned char		*host_store[N_VPH32_ENTRIES];		\
 	paddrtype		phys_addr[N_VPH32_ENTRIES];		\
 	struct arch ## _tc_physpage  *phys_page[N_VPH32_ENTRIES];	\
-	uint32_t		phystranslation[N_VPH32_ENTRIES/32];	\
 	tlbindextype		vaddr_to_tlbindex[N_VPH32_ENTRIES];
 
 /*

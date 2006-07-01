@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.122 2006-06-30 20:22:54 debug Exp $
+ *  $Id: machine.h,v 1.123 2006-07-01 21:15:46 debug Exp $
  */
 
 #include <sys/types.h>
@@ -156,10 +156,10 @@ struct machine {
 	int	n_busses;
 
 	/*  These are used by stuff in cpu.c, mostly:  */
-	int64_t ncycles;
-	int64_t	ncycles_show;
-	int64_t	ncycles_flush;
-	int64_t	ncycles_since_gettimeofday;
+	int64_t ninstrs;
+	int64_t	ninstrs_show;
+	int64_t	ninstrs_flush;
+	int64_t	ninstrs_since_gettimeofday;
 	struct timeval starttime;
 
 	struct diskimage *first_diskimage;

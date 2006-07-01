@@ -1,19 +1,13 @@
-$Id: TODO,v 1.303 2006-07-01 07:37:25 debug Exp $
+$Id: TODO,v 1.304 2006-07-01 21:15:45 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
---------------
-
-	x)  Rename machine->ncycles to ninstrs, since instructions is what 
-		is being counted
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
 	x)  Find a way to get rid of the cpu_create_or_reset_tc in the
 	    R2000/R3000 cache isolation code. (NetBSD works without it,
 	    but not Ultrix and Linux yet.)
 	x)  Make memory_paddr_to_hostaddr actually return the hostaddr
 		instead of the memblock?
-	x)  Formalize the statistics gathering stuff for dyntrans...
-	x)  ... and use it to optimize MIPS dyntrans stuff.
 	x)  Clock framework? Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
 	x)  Optimizations, continuing on 64-bit issues etc with dyntrans
@@ -31,7 +25,26 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 	x)  Remove some of the complexity in file format guessing, for
 		Ultrix kernels that are actually disk images?
 
---------------
+-------------------------------------------------------------------------------
+
+Simple Valgrind-like checks?
+	o)  Mark every address with bits which tell whether or not the address
+	    has been written to.
+	o)  What should happen when programs are loaded?  Text/data, bss (zero
+	    filled). But stack space and heap is uninitialized.
+	o)  Uninitialized local variables:
+		A load from a place on the stack which has not previously
+		been stored to => warning.
+	o)  If calls to malloc() and free() can be intercepted:
+		o)  Access to a memory area after free() => warning.
+		o)  Memory returned by malloc() is marked as not-initialized.
+		o)  Non-passive, but good to have: Change the argument
+		    given to malloc, to return a slightly larger memory
+		    area, i.e.  margin_before + size + margin_after,
+		    and return the pointer  + margin_before.
+		    Any access to the margin_before or _after space results
+		    in warnings. (free() must be modified to free the
+		    actually allocated address.)
 
 SMP:
 	o)  dev_mp doesn't work well with dyntrans yet

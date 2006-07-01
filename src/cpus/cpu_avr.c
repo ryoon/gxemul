@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.18 2006-06-16 18:31:25 debug Exp $
+ *  $Id: cpu_avr.c,v 1.19 2006-07-01 21:15:46 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -167,9 +167,9 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	}
 
 	debug("cpu%i: nr of instructions: %lli\n", x,
-	    (long long)cpu->machine->ncycles);
+	    (long long)cpu->machine->ninstrs);
 	debug("cpu%i: nr of cycles:       %lli\n", x,
-	    (long long)(cpu->machine->ncycles + cpu->cd.avr.extra_cycles));
+	    (long long)(cpu->machine->ninstrs + cpu->cd.avr.extra_cycles));
 }
 
 

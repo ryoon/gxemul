@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.13 2006-06-30 20:22:54 debug Exp $
+ *  $Id: debugger.c,v 1.14 2006-07-01 21:15:46 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -859,7 +859,7 @@ void debugger(void)
 	}
 
 	gettimeofday(&debugger_machine->starttime, NULL);
-	debugger_machine->ncycles_since_gettimeofday = 0;
+	debugger_machine->ninstrs_since_gettimeofday = 0;
 
 	single_step = NOT_SINGLE_STEPPING;
 	debugger_machine->instruction_trace = old_instruction_trace;

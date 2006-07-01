@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.255 2006-06-24 19:52:27 debug Exp $
+ *  $Id: emul.c,v 1.256 2006-07-01 21:15:45 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1582,22 +1582,22 @@ void emul_run(struct emul **emuls, int n_emuls)
 		go = 0;
 
 		/*  Flush X11 and serial console output every now and then:  */
-		if (emuls[0]->machines[0]->ncycles >
-		    emuls[0]->machines[0]->ncycles_flush + (1<<18)) {
+		if (emuls[0]->machines[0]->ninstrs >
+		    emuls[0]->machines[0]->ninstrs_flush + (1<<18)) {
 			x11_check_event(emuls, n_emuls);
 			console_flush();
-			emuls[0]->machines[0]->ncycles_flush =
-			    emuls[0]->machines[0]->ncycles;
+			emuls[0]->machines[0]->ninstrs_flush =
+			    emuls[0]->machines[0]->ninstrs;
 		}
 
-		if (emuls[0]->machines[0]->ncycles >
-		    emuls[0]->machines[0]->ncycles_show + (1<<25)) {
-			emuls[0]->machines[0]->ncycles_since_gettimeofday +=
-			    (emuls[0]->machines[0]->ncycles -
-			     emuls[0]->machines[0]->ncycles_show);
+		if (emuls[0]->machines[0]->ninstrs >
+		    emuls[0]->machines[0]->ninstrs_show + (1<<25)) {
+			emuls[0]->machines[0]->ninstrs_since_gettimeofday +=
+			    (emuls[0]->machines[0]->ninstrs -
+			     emuls[0]->machines[0]->ninstrs_show);
 			cpu_show_cycles(emuls[0]->machines[0], 0);
-			emuls[0]->machines[0]->ncycles_show =
-			    emuls[0]->machines[0]->ncycles;
+			emuls[0]->machines[0]->ninstrs_show =
+			    emuls[0]->machines[0]->ninstrs;
 		}
 
 		if (single_step == ENTER_SINGLE_STEPPING) {

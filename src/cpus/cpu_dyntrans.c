@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.107 2006-07-01 17:28:22 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.108 2006-07-01 21:15:46 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -759,15 +759,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		l3->phys_page[x3] = ppp;
 #endif
 
-#ifdef MODE32
-	/*  Small optimization: only mark the physical page as non-writable
-	    if it did not contain translations. (Because if it does contain
-	    translations, it is already non-writable.)  */
-	if (!cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5] &
-	    (1 << (pagenr & 31)))
-#endif
-	cpu->invalidate_translation_caches(cpu, physaddr,
-	    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
+	if (!(ppp->flags & TRANSLATIONS)) {
+		cpu->invalidate_translation_caches(cpu, physaddr,
+		    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
+	}
 
 	cpu->cd.DYNTRANS_ARCH.cur_ic_page = &ppp->ics[0];
 
@@ -1161,18 +1156,6 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 		struct DYNTRANS_TC_PHYSPAGE *ppp, *prev_ppp;
 
 		pagenr = DYNTRANS_ADDR_TO_PAGENR(addr);
-
-#ifdef MODE32
-		/*  If this page isn't marked as having any translations,
-		    then return immediately.  */
-		if (!(cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5]
-		    & 1 << (pagenr & 31)))
-			return;
-		/*  Remove the mark:  */
-		cpu->cd.DYNTRANS_ARCH.phystranslation[pagenr >> 5] &=
-		    ~ (1 << (pagenr & 31));
-#endif
-
 		table_index = PAGENR_TO_TABLE_INDEX(pagenr);
 
 		physpage_entryp = &(((uint32_t *)cpu->
@@ -1249,10 +1232,6 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 				uint32_t index =
 				    DYNTRANS_ADDR_TO_PAGENR(vaddr_page);
 				cpu->cd.DYNTRANS_ARCH.phys_page[index] = NULL;
-				/*  Remove the mark:  */
-				index = DYNTRANS_ADDR_TO_PAGENR(paddr_page);
-				cpu->cd.DYNTRANS_ARCH.phystranslation[
-				    index >> 5] &= ~ (1 << (index & 31));
 #else
 				const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
 				const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
@@ -1534,20 +1513,12 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	/*
 	 *  If we end up here, then an instruction was translated.
 	 *  Mark the page as containing a translation.
-	 *
-	 *  (Special case for 32-bit mode: set the corresponding bit in the
-	 *  phystranslation[] array.)
 	 */
+
 	/*  Make sure cur_physpage is in synch:  */
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
-#ifdef MODE32
-	if (!(cpu->cd.DYNTRANS_ARCH.cur_physpage->flags & TRANSLATIONS)) {
-		uint32_t index = DYNTRANS_ADDR_TO_PAGENR((uint32_t)addr);
-		cpu->cd.DYNTRANS_ARCH.phystranslation[index >> 5] |=
-		    (1 << (index & 31));
-	}
-#endif
+
 	cpu->cd.DYNTRANS_ARCH.cur_physpage->flags |= TRANSLATIONS;
 
 

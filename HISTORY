@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1268 2006-06-30 20:22:52 debug Exp $
+$Id: HISTORY,v 1.1269 2006-07-01 21:15:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2826,3 +2826,7 @@ Changelog for GXemul:
 20060630	Some minor manual page updates.
 		Various cleanups.
 		Implementing the -s command line option.
+20060701	FINALLY found the bug which prevented Linux and Ultrix from
+		running without the ugly hack in the R2000/R3000 cache isol
+		code; it was the phystranslation hint array which was buggy.
+		Removing the phystranslation hint code completely, for now.

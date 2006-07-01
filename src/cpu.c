@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.345 2006-06-30 20:22:52 debug Exp $
+ *  $Id: cpu.c,v 1.346 2006-07-01 21:15:45 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -440,7 +440,7 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = machine->ncycles_since_gettimeofday;
+	ninstrs = machine->ninstrs_since_gettimeofday;
 
 	if (machine->automatic_clock_adjustment) {
 		static int first_adjustment = 1;
@@ -472,13 +472,13 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	if (!machine->show_nr_of_instructions && !forced)
 		goto do_return;
 
-	printf("[ %"PRIi64" instrs", (int64_t)machine->ncycles);
+	printf("[ %"PRIi64" instrs", (int64_t)machine->ninstrs);
 
 	if (!machine->automatic_clock_adjustment) {
 		d = machine->emulated_hz / 1000;
 		if (d < 1)
 			d = 1;
-		ms = machine->ncycles / d;
+		ms = machine->ninstrs / d;
 		h = ms / 3600000;
 		ms -= 3600000 * h;
 		m = ms / 60000;
@@ -525,13 +525,13 @@ do_return:
  */
 void cpu_run_init(struct machine *machine)
 {
-	machine->ncycles_flush = 0;
-	machine->ncycles = 0;
-	machine->ncycles_show = 0;
+	machine->ninstrs_flush = 0;
+	machine->ninstrs = 0;
+	machine->ninstrs_show = 0;
 
 	/*  For performance measurement:  */
 	gettimeofday(&machine->starttime, NULL);
-	machine->ncycles_since_gettimeofday = 0;
+	machine->ninstrs_since_gettimeofday = 0;
 }
 
 

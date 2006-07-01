@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.39 2006-06-30 20:22:53 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.40 2006-07-01 21:15:46 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -821,20 +821,6 @@ void coproc_register_write(struct cpu *cpu,
 					cpu->invalidate_translation_caches(
 					    cpu, 0, INVALIDATE_ALL);
 				}
-
-#if 1
-				/*
-				 *  NOTE: This is not needed for NetBSD, but
-				 *  Ultrix and Linux still needs this. They
-				 *  shouldn't, though. Something else is buggy.
-				 */
-{
-static int x = 0;
-x ++;
-if (x == 13)
-				cpu_create_or_reset_tc(cpu);
-}
-#endif
 			}
 			unimpl = 0;
 			break;

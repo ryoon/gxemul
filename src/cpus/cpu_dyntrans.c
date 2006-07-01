@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.106 2006-06-30 20:22:53 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.107 2006-07-01 17:28:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -884,6 +884,7 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 	}
 
 	ppp->next_ofs = 0;
+	ppp->flags = 0;
 	/*  ppp->physaddr is filled in by the page allocator  */
 
 	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.201 2006-06-30 18:46:43 debug Exp $
+$Id: RELEASE,v 1.202 2006-07-01 21:48:31 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -21,6 +21,11 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 
 The most important changes between release 0.4.0.1 and 0.4.1 are:
+
+    o)	After removing some buggy code (hints for physical page translations),
+	the workaround for R2000/R3000 caches which was needed in 0.4.0.1
+	to make Linux and Ultrix run is not needed anymore. This fix gives
+	higher performance for R2000/R3000 emulation (e.g. DECstation).
 
     o)	A new -s command line option is now available, for dumping
 	runtime data/statistics on every instruction to a file.

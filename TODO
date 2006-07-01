@@ -1,9 +1,11 @@
-$Id: TODO,v 1.302 2006-06-30 20:22:52 debug Exp $
+$Id: TODO,v 1.303 2006-07-01 07:37:25 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 --------------
 
+	x)  Rename machine->ncycles to ninstrs, since instructions is what 
+		is being counted
 	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
 	x)  Find a way to get rid of the cpu_create_or_reset_tc in the
 	    R2000/R3000 cache isolation code. (NetBSD works without it,

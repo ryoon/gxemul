@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.h,v 1.66 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_arm.h,v 1.67 2006-07-01 23:01:22 debug Exp $
  */
 
 #include "misc.h"
@@ -83,20 +83,6 @@ struct arm_cpu_type_def {
 #define	ARM_ADDR_TO_PAGENR(a)		((a) >> (ARM_IC_ENTRIES_SHIFT \
 					+ ARM_INSTR_ALIGNMENT_SHIFT))
 
-struct arm_instr_call {
-	void	(*f)(struct cpu *, struct arm_instr_call *);
-	size_t	arg[ARM_N_IC_ARGS];
-};
-
-/*  Translation cache struct for each physical page:  */
-struct arm_tc_physpage {
-	struct arm_instr_call ics[ARM_IC_ENTRIES_PER_PAGE + 1];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	uint32_t	physaddr;
-	int		flags;
-};
-
-
 #define	ARM_F_N		8	/*  Same as ARM_FLAG_*, but        */
 #define	ARM_F_Z		4	/*  for the 'flags' field instead  */
 #define	ARM_F_C		2	/*  of cpsr.                       */
@@ -139,15 +125,9 @@ struct arm_tc_physpage {
 #define	ARM_EXCEPTION_IRQ	6
 #define	ARM_EXCEPTION_FIQ	7
 
+DYNTRANS_MISC_DECLARATIONS(arm,ARM,uint32_t)
 
 #define	ARM_MAX_VPH_TLB_ENTRIES		128
-struct arm_vpg_tlb_entry {
-	unsigned char	valid;
-	unsigned char	writeflag;
-	uint32_t	vaddr_page;
-	uint32_t	paddr_page;
-	unsigned char	*host_page;
-};
 
 
 struct arm_cpu {

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1269 2006-07-01 21:15:45 debug Exp $
+$Id: HISTORY,v 1.1270 2006-07-01 23:01:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2830,3 +2830,6 @@ Changelog for GXemul:
 		running without the ugly hack in the R2000/R3000 cache isol
 		code; it was the phystranslation hint array which was buggy.
 		Removing the phystranslation hint code completely, for now.
+20060702	Minor dyntrans cleanups; invalidation of physpages now only
+		invalidate those parts of a page that have actually been
+		translated. (32 parts per page.)

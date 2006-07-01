@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.108 2006-07-01 21:15:46 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.109 2006-07-01 23:01:22 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -303,13 +303,16 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 				    arg[0] = 0;
 #endif
 			}
+
 			fatal("[ Note: The translation of physical page 0x%"
 			    PRIx64" contained combinations of instructions; "
 			    "these are now flushed because we are single-"
 			    "stepping. ]\n", (long long)cpu->cd.DYNTRANS_ARCH.
 			    cur_physpage->physaddr);
+
 			cpu->cd.DYNTRANS_ARCH.cur_physpage->flags &=
-			    ~(COMBINATIONS | TRANSLATIONS);
+			    ~COMBINATIONS;
+			cpu->cd.DYNTRANS_ARCH.cur_physpage->translations = 0;
 		}
 
 		if (cpu->machine->statistics_enabled)
@@ -759,7 +762,12 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 		l3->phys_page[x3] = ppp;
 #endif
 
-	if (!(ppp->flags & TRANSLATIONS)) {
+	/*
+	 *  If there are no translations yet on this page, then mark it
+	 *  as non-writable. If there are already translations, then it
+	 *  should already have been marked as non-writable.
+	 */
+	if (ppp->translations == 0) {
 		cpu->invalidate_translation_caches(cpu, physaddr,
 		    JUST_MARK_AS_NON_WRITABLE | INVALIDATE_PADDR);
 	}
@@ -880,6 +888,7 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 
 	ppp->next_ofs = 0;
 	ppp->flags = 0;
+	ppp->translations = 0;
 	/*  ppp->physaddr is filled in by the page allocator  */
 
 	for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {
@@ -1181,7 +1190,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 		if (physpage_ofs == 0)
 			ppp = NULL;
 
-#if 1
+#if 0
 		/*
 		 *  "Bypass" the page, removing it from the code cache.
 		 *
@@ -1203,16 +1212,29 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 		 *  it might be faster since we don't risk wasting cache
 		 *  memory as quickly (which would force unnecessary Restarts).
 		 */
-		if (ppp != NULL) {
-			/*  TODO: Is this faster than copying an entire
-			    template page?  */
-			int i;
-			for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++)
-				ppp->ics[i].f =
+		if (ppp != NULL && ppp->translations != 0) {
+			uint32_t x = ppp->translations;	/*  TODO:
+				urk Should be same type as ppp->translations */
+			int i, j, n, m;
+			n = 8 * sizeof(x);
+			m = DYNTRANS_IC_ENTRIES_PER_PAGE / n;
+
+			for (i=0; i<n; i++) {
+				if (x & 1) {
+					for (j=0; j<m; j++)
+						ppp->ics[i*m + j].f =
 #ifdef DYNTRANS_DUALMODE_32
-				    cpu->is_32bit? instr32(to_be_translated) :
+						    cpu->is_32bit?
+						    instr32(to_be_translated) :
 #endif
-				    instr(to_be_translated);
+						    instr(to_be_translated);
+				}
+
+				x >>= 1;
+			}
+
+			ppp->flags &= ~COMBINATIONS;
+			ppp->translations = 0;
 		}
 #endif
 	}
@@ -1511,16 +1533,22 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 
 #ifdef DYNTRANS_TO_BE_TRANSLATED_TAIL
 	/*
-	 *  If we end up here, then an instruction was translated.
-	 *  Mark the page as containing a translation.
+	 *  If we end up here, then an instruction was translated. Let's mark
+	 *  the page as containing a translation at this part of the page.
 	 */
 
 	/*  Make sure cur_physpage is in synch:  */
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
 
-	cpu->cd.DYNTRANS_ARCH.cur_physpage->flags |= TRANSLATIONS;
+	{
+		int x = addr & (DYNTRANS_PAGESIZE - 1);
+		int addr_per_translation_range = DYNTRANS_PAGESIZE / (8 *
+		    sizeof(cpu->cd.DYNTRANS_ARCH.cur_physpage->translations));
+		x /= addr_per_translation_range;
 
+		cpu->cd.DYNTRANS_ARCH.cur_physpage->translations |= (1 << x);
+	}
 
 	/*
 	 *  Now it is time to check for combinations of instructions that can

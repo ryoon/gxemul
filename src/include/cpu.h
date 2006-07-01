@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.80 2006-07-01 21:15:46 debug Exp $
+ *  $Id: cpu.h,v 1.81 2006-07-01 23:01:22 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -54,6 +54,17 @@
  *  instruction can "nullify" (skip) the delay-slot. If the end-of-page
  *  slot is skipped, then we end up one step after that. That's where the
  *  end_of_page2 slot is. :)
+ *
+ *  next_ofs points to the next page in a chain of possible pages.
+ *  (several pages can be in the same chain, but only one matches the
+ *  specific physaddr.)
+ *
+ *  flags contains special flags. Currently only COMBINATIONS, which indicates
+ *  that the page has instruction combinations.
+ *
+ *  translations is a tiny bitmap indicating which parts of the page have
+ *  actual translations. Bit 0 corresponds to the lowest 1/32th of the page,
+ *  bit 1 to the second-lowest 1/32th, and so on.
  */
 #define DYNTRANS_MISC_DECLARATIONS(arch,ARCH,addrtype)  struct \
 	arch ## _instr_call {					\
@@ -65,6 +76,7 @@
 	struct arch ## _tc_physpage {					\
 		struct arch ## _instr_call ics[ARCH ## _IC_ENTRIES_PER_PAGE+2];\
 		uint32_t	next_ofs;	/*  (0 for end of chain)  */ \
+		uint32_t	translations;				\
 		int		flags;					\
 		addrtype	physaddr;				\
 	};								\
@@ -244,8 +256,7 @@ struct cpu_family {
  */
 
 /*  Physpage flags:  */
-#define	TRANSLATIONS			1
-#define	COMBINATIONS			2
+#define	COMBINATIONS			1
 
 /*  Meaning of delay_slot:  */
 #define	NOT_DELAYED			0

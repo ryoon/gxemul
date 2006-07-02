@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.87 2006-06-25 02:46:08 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.88 2006-07-02 00:07:18 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1013,13 +1013,10 @@ X(jal_trace)
  */
 X(cache)
 {
-	/*  TODO. For now, just clear the rmw bit:  */
-	cpu->cd.mips.rmw = 0;
+	/*  TODO: Implement cache operations.  */
 
-/*  TODO: fix  */
-cpu->invalidate_code_translation(cpu, 0, INVALIDATE_ALL);
-cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-/* cpu_create_or_reset_tc(cpu); */
+	/*  Make sure the rmw bit is cleared:  */
+	cpu->cd.mips.rmw = 0;
 }
 
 

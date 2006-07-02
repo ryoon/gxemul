@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.40 2006-07-01 21:15:46 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.41 2006-07-02 00:07:18 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1722,13 +1722,44 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			    wf, paddr);
 		}
 	} else {
-		/*  R4000:  */
-		g_bit = (cp->reg[COP0_ENTRYLO0] &
-		    cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
+		/*  R4000 etc.:  */
+		unsigned char *memblock = NULL;
+		int wf0, wf1;
+		uint64_t vaddr0, vaddr1, paddr0, paddr1;
+
 		cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
 		cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
 		cp->tlbs[index].lo1  = cp->reg[COP0_ENTRYLO1];
 		cp->tlbs[index].lo0  = cp->reg[COP0_ENTRYLO0];
+
+		wf0 = cp->tlbs[index].lo0 & ENTRYLO_D;
+		wf1 = cp->tlbs[index].lo1 & ENTRYLO_D;
+
+		paddr0 = ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
+		    >> ENTRYLO_PFN_SHIFT) << 12;
+		paddr1 = ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
+		    >> ENTRYLO_PFN_SHIFT) << 12;
+
+		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
+			vaddr0 = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
+			/*  44 addressable bits:  */
+			if (vaddr0 & 0x80000000000ULL)
+				vaddr0 |= 0xfffff00000000000ULL;
+		} else if (cpu->is_32bit) {
+			/*  MIPS32 etc.:  */
+			vaddr0 = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+			vaddr0 = (int32_t)vaddr0;
+		} else {
+			/*  Assume MMU4K  */
+			vaddr0 = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+			/*  40 addressable bits:  */
+			if (vaddr0 & 0x8000000000ULL)
+				vaddr0 |= 0xffffff0000000000ULL;
+		}
+		vaddr1 = vaddr0 | 0x1000;	/*  TODO  */
+
+		g_bit = (cp->reg[COP0_ENTRYLO0] &
+		    cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
 
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
 			/*  NOTE: The VR4131 (and possibly others) don't have
@@ -1743,8 +1774,6 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				cp->tlbs[index].hi |= TLB_G;
 		}
 
-		/*  Invalidate any code translations, if we are writing
-		    Dirty pages to the TLB:  */
 		if (cp->reg[COP0_PAGEMASK] != 0 &&
 		    cp->reg[COP0_PAGEMASK] != 0x1800) {
 			printf("TODO: MASK = %08"PRIx32"\n",
@@ -1752,40 +1781,29 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			exit(1);
 		}
 
-		if (cp->tlbs[index].lo0 & ENTRYLO_D)
-			cpu->invalidate_code_translation(cpu,
-			    ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
-			    >> ENTRYLO_PFN_SHIFT) << 12,
+		/*  Invalidate any code translations, if we are writing
+		    Dirty pages to the TLB:  */
+		if (wf0)
+			cpu->invalidate_code_translation(cpu, paddr0,
 			    INVALIDATE_PADDR);
-		if (cp->tlbs[index].lo1 & ENTRYLO_D)
-			cpu->invalidate_code_translation(cpu,
-			    ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
-			    >> ENTRYLO_PFN_SHIFT) << 12,
+		if (wf1)
+			cpu->invalidate_code_translation(cpu, paddr1,
 			    INVALIDATE_PADDR);
 
-#if 1
-	if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
-			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
-			/*  44 addressable bits:  */
-			if (oldvaddr & 0x80000000000ULL)
-				oldvaddr |= 0xfffff00000000000ULL;
-		} else if (cpu->is_32bit) {
-			/*  MIPS32 etc.:  */
-			oldvaddr = (int32_t)oldvaddr;
-		} else {
-			/*  Assume MMU4K  */
-			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
-			/*  40 addressable bits:  */
-			if (oldvaddr & 0x8000000000ULL)
-				oldvaddr |= 0xffffff0000000000ULL;
+		/*  If we have a memblock (host page) for the physical
+		    page, then add a translation for it immediately:  */
+		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr0, 0);
+		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & ENTRYLO_V) {
+			memblock += (paddr0 & ((1 << BITS_PER_PAGETABLE) - 1));
+			cpu->update_translation_table(cpu, vaddr0, memblock,
+			    wf0, paddr0);
 		}
-
-cpu->invalidate_translation_caches(cpu, ((cp->tlbs[index].lo0 & 
-ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << 12, INVALIDATE_PADDR);
-cpu->invalidate_translation_caches(cpu, ((cp->tlbs[index].lo1 & 
-ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << 12, INVALIDATE_PADDR);
-
-#endif
+		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr1, 0);
+		if (memblock != NULL && cp->reg[COP0_ENTRYLO1] & ENTRYLO_V) {
+			memblock += (paddr1 & ((1 << BITS_PER_PAGETABLE) - 1));
+			cpu->update_translation_table(cpu, vaddr1, memblock,
+			    wf1, paddr1);
+		}
 	}
 }
 

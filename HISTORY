@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1270 2006-07-01 23:01:22 debug Exp $
+$Id: HISTORY,v 1.1271 2006-07-02 00:07:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2833,3 +2833,4 @@ Changelog for GXemul:
 20060702	Minor dyntrans cleanups; invalidation of physpages now only
 		invalidate those parts of a page that have actually been
 		translated. (32 parts per page.)
+		Some R4000 speed fixes.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.346 2006-07-01 21:15:45 debug Exp $
+ *  $Id: cpu.c,v 1.347 2006-07-02 10:05:14 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -41,8 +41,6 @@
 #include "memory.h"
 #include "misc.h"
 
-
-extern int quiet_mode;
 
 static struct cpu_family *first_cpu_family = NULL;
 
@@ -389,9 +387,11 @@ void cpu_run_deinit(struct machine *machine)
 	int te;
 
 	/*
-	 *  Two last ticks of every hardware device.  This will allow
-	 *  framebuffers to draw the last updates to the screen before
-	 *  halting.
+	 *  Two last ticks of every hardware device.  This will allow e.g.
+	 *  framebuffers to draw the last updates to the screen before halting.
+	 *
+	 *  TODO: This should be refactored when redesigning the mainbus
+	 *        concepts!
 	 */
         for (te=0; te<machine->n_tick_entries; te++) {
 		machine->tick_func[te](machine->cpus[0],
@@ -400,9 +400,7 @@ void cpu_run_deinit(struct machine *machine)
 		    machine->tick_extra[te]);
 	}
 
-	debug("cpu_run_deinit(): All CPUs halted.\n");
-
-	if (machine->show_nr_of_instructions || !quiet_mode)
+	if (machine->show_nr_of_instructions)
 		cpu_show_cycles(machine, 1);
 
 	fflush(stdout);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.676 2006-07-01 21:15:45 debug Exp $
+ *  $Id: machine.c,v 1.677 2006-07-02 10:05:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -999,9 +999,9 @@ int machine_run(struct machine *machine)
 	/*
 	 *  Hardware 'ticks':  (clocks, interrupt sources...)
 	 *
-	 *  Here, cpu0instrs is the number of instructions
-	 *  executed on cpu0.  (TODO: don't use cpu 0 for this,
-	 *  use some kind of "mainbus" instead.)
+	 *  Here, cpu0instrs is the number of instructions executed on cpu0.
+	 *
+	 *  TODO: This should be redesigned into some "mainbus" stuff instead!
 	 */
 
 	machine->ninstrs += cpu0instrs;

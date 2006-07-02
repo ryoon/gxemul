@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.20 2006-06-26 20:03:09 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.21 2006-07-02 11:01:19 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -34,6 +34,18 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+/*
+ *  invalid:  For catching bugs.
+ */
+X(invalid)
+{
+	fatal("FATAL ERROR: An internal error occured in the SPARC"
+	    " dyntrans code. Please contact the author with detailed"
+	    " repro steps on how to trigger this bug.\n");
+	exit(1);
+}
 
 
 /*
@@ -429,6 +441,9 @@ X(subcc_imm)
 }
 
 
+#include "tmp_sparc_loadstore.c"
+
+
 /*
  *  rd:  Read special register:
  *
@@ -529,12 +544,12 @@ X(end_of_page2)
 X(to_be_translated)
 {
 	MODE_uint_t addr;
-	int low_pc;
-	int in_crosspage_delayslot = 0;
+	int low_pc, in_crosspage_delayslot = 0;
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
 	int main_opcode, op2, rd, rs1, rs2, btype, asi, cc, p, use_imm, x64 = 0;
+	int store, signedness, size;
 	int32_t tmpi32, siconst;
 	/* void (*samepage_function)(struct cpu *, struct sparc_instr_call *);*/
 
@@ -869,6 +884,54 @@ X(to_be_translated)
 		break;
 
 	case 3:	switch (op2) {
+
+		case  0:/*  lduw  */
+		case  1:/*  ldub  */
+		case  2:/*  lduh  */
+		case  4:/*  st(w) */
+		case  5:/*  stb   */
+		case  6:/*  sth   */
+		case  8:/*  ldsw  */
+		case  9:/*  ldsb  */
+		case 10:/*  ldsh  */
+		case 11:/*  ldx  */
+		case 14:/*  stx   */
+			store = 1; signedness = 0; size = 3;
+			switch (op2) {
+			case  0: /*  lduw  */	store=0; size=2; break;
+			case  1: /*  ldub  */	store=0; size=0; break;
+			case  2: /*  lduh  */	store=0; size=1; break;
+			case  4: /*  st  */	size = 2; break;
+			case  5: /*  stb  */	size = 0; break;
+			case  6: /*  sth  */	size = 1; break;
+			case  8: /*  ldsw  */	store=0; size=2; signedness=1;
+						break;
+			case  9: /*  ldsb  */	store=0; size=0; signedness=1;
+						break;
+			case 10: /*  ldsh  */	store=0; size=1; signedness=1;
+						break;
+			case 11: /*  ldx  */	store=0; break;
+			case 14: /*  stx  */	break;
+			}
+			ic->f =
+#ifdef MODE32
+			    sparc32_loadstore
+#else
+			    sparc_loadstore
+#endif
+			    [ use_imm*16 + store*8 + size*2 + signedness ];
+
+			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rd];
+			ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs1];
+			if (use_imm)
+				ic->arg[2] = siconst;
+			else
+				ic->arg[2] = (size_t)&cpu->cd.sparc.r[rs2];
+
+			if (!store && rd == SPARC_ZEROREG)
+				ic->arg[0] = (size_t)&cpu->cd.sparc.scratch;
+
+			break;
 
 		default:fatal("TODO: unimplemented op2=%i for main "
 			    "opcode %i\n", op2, main_opcode);

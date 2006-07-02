@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.22 2006-06-17 10:49:16 debug Exp $
+#  $Id: Makefile.skel,v 1.23 2006-07-02 11:01:19 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -204,7 +204,10 @@ tmp_sh_tail.c: generate_tail
 ###############################################################################
 
 cpu_sparc.o: cpu_sparc.c cpu_sparc_instr.c cpu_dyntrans.c ../memory_rw.c \
-	tmp_sparc_head.c tmp_sparc_tail.c
+	tmp_sparc_head.c tmp_sparc_tail.c tmp_sparc_loadstore.c
+
+tmp_sparc_loadstore.c: cpu_sparc_instr_loadstore.c generate_sparc_loadstore
+	./generate_sparc_loadstore > tmp_sparc_loadstore.c
 
 tmp_sparc_head.c: generate_head
 	./generate_head sparc SPARC > tmp_sparc_head.c

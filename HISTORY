@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1274 2006-07-02 09:59:58 debug Exp $
+$Id: HISTORY,v 1.1275 2006-07-02 11:01:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2837,3 +2837,4 @@ Changelog for GXemul:
 		Experimenting with MIPS instruction combination for some
 		addiu+bne+sw loops, and sw+sw+sw.
 		Adding support (again) for larger-than-4KB pages in MIPS tlbw*.
+		Continuing on SPARC emulation: adding load/store instructions.

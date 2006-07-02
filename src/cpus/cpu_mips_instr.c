@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.89 2006-07-02 01:32:35 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.90 2006-07-02 08:09:40 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2971,6 +2971,9 @@ X(to_be_translated)
 				ic->arg[2] = ic->arg[1];
 			}
 		}
+
+		/*  TODO: Some addiu, daddiu, and ori with the zero register
+		    can become ic->f = instr(set) !  */
 
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.305 2006-07-02 09:18:45 debug Exp $
+$Id: TODO,v 1.306 2006-07-02 10:16:24 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -42,8 +42,6 @@ SMP:
 
 MIPS:
 	o)  Fix invalidate_asid so it works well for non-R3000 too!
-	x)  [Re]add an interrupt-asserted bit for MIPS, to speed up
-	    interrupt handling slightly?
 	+)  Print a warning on the first reserved instruction.
 	+)  Some more work on opcodes.
 		x) MIPS64 revision 2.

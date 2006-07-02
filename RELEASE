@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.203 2006-07-01 23:54:32 debug Exp $
+$Id: RELEASE,v 1.204 2006-07-02 10:12:54 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -24,10 +24,10 @@ The most important changes between release 0.4.0.1 and 0.4.1 are:
 
     o)	MIPS emulation performance has been improved somewhat.
 
-	(Among other things, after removing some buggy code (hints for
+	Among other things, after removing some buggy code (hints for
 	physical page translations), the workaround for R2000/R3000 caches
 	which was needed in 0.4.0.1 to make Linux and Ultrix run is not
-	needed anymore.)
+	needed anymore.
 
     o)	A new -s command line option is now available, for dumping
 	runtime data/statistics on every instruction to a file.
@@ -36,12 +36,12 @@ The most important changes between release 0.4.0.1 and 0.4.1 are:
 
 	1. the program counter (virtual address)
 	2. the physical address representation of the program counter
-	3. the internal dyntrans instruction call pointer (useful when
-	   developing/optimizing the emulator)
+	3. the internal dyntrans instruction call pointer, useful when
+	   developing/optimizing the emulator
 
-	There was a -s command line option in previous releases of
+	(There was a -s command line option in previous releases of
 	the emulator, but it did not work as intended, and was not
-	rewritten for the dyntrans system.
+	rewritten for the dyntrans system.)
 
 Please read the HISTORY files for more details.
 

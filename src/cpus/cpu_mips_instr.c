@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.88 2006-07-02 00:07:18 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.89 2006-07-02 01:32:35 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2294,6 +2294,56 @@ X(ei_r5900)
 
 
 /*
+ *  sw_loop:
+ *
+ *  s:	addiu	rX,rX,4			rX = arg[0] and arg[1]
+ *	bne	rY,rX,s  (or rX,rY,s)	rt=arg[1], rs=arg[0]
+ *	sw	rZ,-4(rX)		rt=arg[0], rs=arg[1]
+ */
+X(sw_loop)
+{
+	MODE_uint_t rX = reg(ic->arg[0]), rZ = reg(ic[2].arg[0]);
+	uint64_t *rYp = (uint64_t *) ic[1].arg[0];
+	MODE_uint_t rY, bytes_to_write;
+	unsigned char *page;
+	int partial = 0;
+
+	page = cpu->cd.mips.host_store[rX >> 12];
+
+	/*  Fallback:  */
+	if (page == NULL || (rX & 3) != 0 || rZ != 0) {
+		instr(addiu)(cpu, ic);
+		return;
+        }
+
+	if (rYp == (uint64_t *) ic->arg[0])
+		rYp = (uint64_t *) ic[1].arg[1];
+
+	rY = reg(rYp);
+
+	bytes_to_write = rY - rX;
+	if ((rX & 0xfff) + bytes_to_write > 0x1000) {
+		bytes_to_write = 0x1000 - (rX & 0xfff);
+		partial = 1;
+	}
+
+	/*  printf("rX = %08x\n", (int)rX);
+	    printf("rY = %08x\n", (int)rY);
+	    printf("rZ = %08x\n", (int)rZ);
+	    printf("%i bytes\n", (int)bytes_to_write);  */
+
+	memset(page + (rX & 0xfff), 0, bytes_to_write);
+
+	reg(ic->arg[0]) = rX + bytes_to_write;
+
+	cpu->n_translated_instrs += bytes_to_write / 4 * 3 - 1;
+	cpu->cd.mips.next_ic = partial?
+	    (struct mips_instr_call *) &ic[0] :
+	    (struct mips_instr_call *) &ic[3];
+}
+
+
+/*
  *  b_samepage_addiu:
  *
  *  Combination of branch within the same page, followed by addiu.
@@ -2396,6 +2446,40 @@ X(end_of_page2)
 
 
 /*****************************************************************************/
+
+
+/*
+ *  Combine:  Memory fill loop (addiu, bne, sw)
+ *
+ *  s:	addiu	rX,rX,4
+ *	bne	rY,rX,s
+ *	sw	rZ,-4(rX)
+ */
+void COMBINE(sw_loop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
+{
+	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
+	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
+
+	/*  Only for 32-bit virtual address translation so far.  */
+	if (!cpu->is_32bit)
+		return;
+
+	if (n_back < 2)
+		return;
+
+	if (ic[-2].f == instr(addiu) && ic[-2].arg[0] == ic[-2].arg[1] &&
+	    (int32_t)ic[-2].arg[2] == 4 &&
+	    ic[-1].f == instr(bne_samepage) &&
+	    (ic[-1].arg[0] == ic[-2].arg[0] ||
+		ic[-1].arg[1] == ic[-2].arg[0]) &&
+	    ic[-1].arg[0] != ic[-1].arg[1] &&
+	    ic[-1].arg[2] == (size_t) &ic[-2] &&
+	    ic[0].arg[0] != ic[0].arg[1] &&
+	    ic[0].arg[1] == ic[-2].arg[0] && (int32_t)ic[0].arg[2] == -4) {
+		ic[-2].f = instr(sw_loop);
+		combined;
+	}
+}
 
 
 /*
@@ -2880,6 +2964,14 @@ X(to_be_translated)
 		case HI6_XORI:    ic->f = instr(xori); break;
 		}
 
+		if (ic->arg[2] == 0) {
+			if ((cpu->is_32bit && ic->f == instr(addiu)) ||
+			    (!cpu->is_32bit && ic->f == instr(daddiu))) {
+				ic->f = instr(mov);
+				ic->arg[2] = ic->arg[1];
+			}
+		}
+
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 
@@ -3314,6 +3406,10 @@ X(to_be_translated)
 		/*  Load into the dummy scratch register, if rt = zero  */
 		if (!store && rt == MIPS_GPR_ZERO)
 			ic->arg[0] = (size_t)&cpu->cd.mips.scratch;
+
+		if (main_opcode == HI6_SW && (int32_t)imm == -4)
+			cpu->cd.mips.combination_check = COMBINE(sw_loop);
+
 		break;
 
 	case HI6_LL:

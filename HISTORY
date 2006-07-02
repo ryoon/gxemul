@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1271 2006-07-02 00:07:18 debug Exp $
+$Id: HISTORY,v 1.1272 2006-07-02 01:32:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2834,3 +2834,5 @@ Changelog for GXemul:
 		invalidate those parts of a page that have actually been
 		translated. (32 parts per page.)
 		Some R4000 speed fixes.
+		Experimenting with a MIPS instruction combination for some
+		addiu+bne+sw loops.

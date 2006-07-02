@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.81 2006-07-01 23:01:22 debug Exp $
+ *  $Id: cpu.h,v 1.82 2006-07-02 01:32:35 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -267,7 +267,7 @@ struct cpu_family {
 #define	N_SAFE_DYNTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_DYNTRANS_LIMIT	((1 << (N_SAFE_DYNTRANS_LIMIT_SHIFT - 1)) - 1)
 
-#define	DYNTRANS_CACHE_SIZE		(24*1048576)
+#define	DYNTRANS_CACHE_SIZE		(32*1048576)
 #define	DYNTRANS_CACHE_MARGIN		350000
 
 #define	N_BASE_TABLE_ENTRIES		32768

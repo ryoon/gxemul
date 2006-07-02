@@ -1,29 +1,19 @@
-$Id: TODO,v 1.304 2006-07-01 21:15:45 debug Exp $
+$Id: TODO,v 1.305 2006-07-02 09:18:45 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECKS!
-	x)  Find a way to get rid of the cpu_create_or_reset_tc in the
-	    R2000/R3000 cache isolation code. (NetBSD works without it,
-	    but not Ultrix and Linux yet.)
+	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECK
+		IN TLBW* AND THE ASID INVALIDATION!!!
 	x)  Make memory_paddr_to_hostaddr actually return the hostaddr
 		instead of the memblock?
 	x)  Clock framework? Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
-	x)  Optimizations, continuing on 64-bit issues etc with dyntrans
 	x)  Continue on SPARC emulation
 	x)  Continue on Alpha emulation
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
 	x)  Actually use the settings object, better debugger stuff, etc.
 	x)  Wait for new releases of NetBSD, and test with those.
-
-	x)  Command line flags for:
-		o)  CPU endianness?
-		o)  Cache sizes? (multiple levels)
-
-	x)  Remove some of the complexity in file format guessing, for
-		Ultrix kernels that are actually disk images?
 
 -------------------------------------------------------------------------------
 
@@ -88,8 +78,6 @@ Dyntrans:
 		A debugger command should be possible to use to enable/
 		disable statistics gathering.
 		Configuration file option!
-	x)  64-bit "phystranslation" lookup as in 32-bit mode? Would probably
-		help performance a bit.
 	x)  Common fatal_abort() function, which drops into the debugger
 		without continuing.
 	x)  INVALIDATION should cause translations in _all_ cpus to be
@@ -115,7 +103,8 @@ Alpha:
 SPARC:
 	o)  Add all registers (floating point, control regs etc)
 	o)  Save/restore register windows etc!
-	o)  Disassemly of some more instructions.
+	o)  Load/stores!
+	o)  Disassemly of some more instructions?
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
 	o)  Finish the cmp (subcc) flag computation code.
 	o)  Finish the GDB register stuff.
@@ -175,6 +164,9 @@ ARM:
 	    fix this?
 
 Cache simulation:
+	o)  Command line flags for:
+		o)  CPU endianness?
+		o)  Cache sizes? (multiple levels)
 	o)  Separate from the CPU concept, so that multi-core CPUs sharing
 	    e.g. a L2 cache can be simulated (?)
 	o)  Instruction cache emulation is easiest (if separate from the
@@ -207,9 +199,6 @@ Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
 	Use the debugger's symbolic name stuff. (which will have to be
 	extended soon to support stuff like  "2*x + symbol + y" etc. cool
 	stuff)
-
-Sprite (guest OS for DECstation emulation)
-	x)  Timing problems during bootup?
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
@@ -298,6 +287,8 @@ Caches / memory hierarchies: (this is mostly MIPS-specific)
 	    possible.
 
 File/disk/symbol handling:
+	o)  Remove some of the complexity in file format guessing, for
+		Ultrix kernels that are actually disk images?
 	o)  Better handling of tape files
 	o)  Read function argument count and types from binaries? (ELF?)
 	o)  Better demangling of C++ names. Note: GNU's C++ differs from e.g.

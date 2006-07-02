@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.41 2006-07-02 00:07:18 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.42 2006-07-02 09:18:45 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -533,8 +533,29 @@ static void invalidate_asid(struct cpu *cpu, int asid)
 				    INVALIDATE_VADDR);
 			}
 	} else {
-		/*  TODO: Implement support for other.  */
+#if 1
+		/* TODO: Fix this! It shouldn't be needed!  */
 		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+#else
+		for (i=0; i<ntlbs; i++) {
+			if ((tlb[i].hi & ENTRYHI_ASID) == asid
+			    && !(tlb[i].hi & TLB_G)) {
+				uint64_t vaddr0 =
+				    cp->tlbs[i].hi & ENTRYHI_VPN2_MASK, vaddr1;
+				/*  40 addressable bits:  */
+				if (vaddr0 & 0x8000000000ULL)
+					vaddr0 |= 0xffffff0000000000ULL;
+				vaddr1 = vaddr0 | 0x1000;  /*  TODO: mask  */
+
+				if (tlb[i].lo0 & ENTRYLO_V)
+					cpu->invalidate_translation_caches(cpu,
+					    vaddr0, INVALIDATE_VADDR);
+				if (tlb[i].lo1 & ENTRYLO_V)
+					cpu->invalidate_translation_caches(cpu,
+					    vaddr1, INVALIDATE_VADDR);
+			}
+		}
+#endif
 	}
 }
 
@@ -1631,6 +1652,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		}
 
 #if 1
+		/*  TODO: FIX THIS! It shouldn't be needed!  */
 		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 #else
 		/*

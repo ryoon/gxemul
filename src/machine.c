@@ -25,18 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.677 2006-07-02 10:05:14 debug Exp $
+ *  $Id: machine.c,v 1.678 2006-07-02 10:09:49 debug Exp $
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#ifdef SOLARIS
-/*  TODO: is this strings vs string separation really necessary?  */
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 #include <time.h>
 #include <unistd.h>
 

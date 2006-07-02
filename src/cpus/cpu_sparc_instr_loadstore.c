@@ -25,13 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr_loadstore.c,v 1.1 2006-07-02 11:01:20 debug Exp $
+ *  $Id: cpu_sparc_instr_loadstore.c,v 1.2 2006-07-02 11:10:20 debug Exp $
  *
  *  SPARC load/store instructions; the following args are used:
  *  
  *  arg[0] = pointer to the register to load to or store from
  *  arg[1] = pointer to the base register
- *  arg[2] = offset (as an int32_t)
+ *  arg[2] = if LS_USE_IMM is defined:  an int32_t immediate offset
+ *           otherwise:                 pointer to the offset register
  */
 
 

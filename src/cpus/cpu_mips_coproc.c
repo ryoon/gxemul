@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.42 2006-07-02 09:18:45 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.43 2006-07-02 09:59:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1746,8 +1746,9 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	} else {
 		/*  R4000 etc.:  */
 		unsigned char *memblock = NULL;
+		int pfn_shift;
 		int wf0, wf1;
-		uint64_t vaddr0, vaddr1, paddr0, paddr1;
+		uint64_t vaddr0, vaddr1, paddr0, paddr1, mask, ptmp;
 
 		cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
 		cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
@@ -1757,10 +1758,36 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		wf0 = cp->tlbs[index].lo0 & ENTRYLO_D;
 		wf1 = cp->tlbs[index].lo1 & ENTRYLO_D;
 
+		mask = cp->reg[COP0_PAGEMASK];
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R4100)
+			mask |= 0x07ff;
+		else
+			mask |= 0x1fff;
+		switch (mask) {
+		case 0x00007ff:
+			if (cp->tlbs[index].lo0 & ENTRYLO_V ||
+			    cp->tlbs[index].lo1 & ENTRYLO_V) {
+				fatal("1KB pages don't work with dyntrans.\n");
+				exit(1);
+			}
+			pfn_shift = 10;
+			break;
+		case 0x0001fff:	pfn_shift = 12; break;
+		case 0x0007fff:	pfn_shift = 14; break;
+		case 0x001ffff:	pfn_shift = 16; break;
+		case 0x007ffff:	pfn_shift = 18; break;
+		case 0x01fffff:	pfn_shift = 20; break;
+		case 0x07fffff:	pfn_shift = 22; break;
+		case 0x1ffffff:	pfn_shift = 24; break;
+		case 0x7ffffff:	pfn_shift = 26; break;
+		default:fatal("Unimplemented MASK = 0x%016"PRIx64"\n", mask);
+			exit(1);
+		}
+
 		paddr0 = ((cp->tlbs[index].lo0 & ENTRYLO_PFN_MASK)
-		    >> ENTRYLO_PFN_SHIFT) << 12;
+		    >> ENTRYLO_PFN_SHIFT) << pfn_shift;
 		paddr1 = ((cp->tlbs[index].lo1 & ENTRYLO_PFN_MASK)
-		    >> ENTRYLO_PFN_SHIFT) << 12;
+		    >> ENTRYLO_PFN_SHIFT) << pfn_shift;
 
 		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
 			vaddr0 = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
@@ -1778,7 +1805,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			if (vaddr0 & 0x8000000000ULL)
 				vaddr0 |= 0xffffff0000000000ULL;
 		}
-		vaddr1 = vaddr0 | 0x1000;	/*  TODO  */
+
+		vaddr1 = vaddr0 | (1 << pfn_shift);
 
 		g_bit = (cp->reg[COP0_ENTRYLO0] &
 		    cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
@@ -1796,24 +1824,20 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				cp->tlbs[index].hi |= TLB_G;
 		}
 
-		if (cp->reg[COP0_PAGEMASK] != 0 &&
-		    cp->reg[COP0_PAGEMASK] != 0x1800) {
-			printf("TODO: MASK = %08"PRIx32"\n",
-			    (uint32_t)cp->reg[COP0_PAGEMASK]);
-			exit(1);
-		}
-
 		/*  Invalidate any code translations, if we are writing
-		    Dirty pages to the TLB:  */
-		if (wf0)
-			cpu->invalidate_code_translation(cpu, paddr0,
-			    INVALIDATE_PADDR);
-		if (wf1)
-			cpu->invalidate_code_translation(cpu, paddr1,
-			    INVALIDATE_PADDR);
+		    Dirty pages to the TLB:  (TODO: hardcoded... ugly)  */
+		for (ptmp = 0; ptmp < (1 << pfn_shift); ptmp += 0x1000) {
+			if (wf0)
+				cpu->invalidate_code_translation(cpu,
+				    paddr0 + ptmp, INVALIDATE_PADDR);
+			if (wf1)
+				cpu->invalidate_code_translation(cpu,
+				    paddr1 + ptmp, INVALIDATE_PADDR);
+		}
 
 		/*  If we have a memblock (host page) for the physical
 		    page, then add a translation for it immediately:  */
+		/*  (NOTE/TODO: Only for 4KB pages so far:)  */
 		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr0, 0);
 		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & ENTRYLO_V) {
 			memblock += (paddr0 & ((1 << BITS_PER_PAGETABLE) - 1));

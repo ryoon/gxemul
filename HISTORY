@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1273 2006-07-02 09:02:22 debug Exp $
+$Id: HISTORY,v 1.1274 2006-07-02 09:59:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2833,6 +2833,7 @@ Changelog for GXemul:
 20060702	Minor dyntrans cleanups; invalidation of physpages now only
 		invalidate those parts of a page that have actually been
 		translated. (32 parts per page.)
-		Some R4000 speed fixes.
-		Experimenting with a MIPS instruction combination for some
+		Some MIPS non-R3000 speed fixes.
+		Experimenting with MIPS instruction combination for some
 		addiu+bne+sw loops, and sw+sw+sw.
+		Adding support (again) for larger-than-4KB pages in MIPS tlbw*.

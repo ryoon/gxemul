@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1272 2006-07-02 01:32:35 debug Exp $
+$Id: HISTORY,v 1.1273 2006-07-02 09:02:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2835,4 +2835,4 @@ Changelog for GXemul:
 		translated. (32 parts per page.)
 		Some R4000 speed fixes.
 		Experimenting with a MIPS instruction combination for some
-		addiu+bne+sw loops.
+		addiu+bne+sw loops, and sw+sw+sw.

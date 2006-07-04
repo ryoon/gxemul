@@ -1,4 +1,4 @@
-$Id: TODO,v 1.306 2006-07-02 10:16:24 debug Exp $
+$Id: TODO,v 1.307 2006-07-04 05:24:38 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -10,6 +10,7 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 	    return correct data, and run at correct speeds!
 	x)  Continue on SPARC emulation
 	x)  Continue on Alpha emulation
+	x)  Alignment exceptions (MIPS, PPC?, ...)
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
 	x)  Actually use the settings object, better debugger stuff, etc.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.91 2006-07-02 09:02:23 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.92 2006-07-04 05:06:54 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1846,19 +1846,36 @@ X(tlbr)
  */
 X(rfe)
 {
-	coproc_rfe(cpu);
+	/*  Just rotate the interrupt/user bits:  */
+	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] =
+	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & ~0x3f) |
+	    ((cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 
-	/*  Note: no pc to pointers conversion is necessary here.  */
+	/*
+	 *  Note: no pc to pointers conversion is necessary here. Usually the
+	 *  rfe instruction resides in the delay slot of a jr k0/k1, and
+	 *  it is up to that instruction to do the pointer conversion.
+	 */
 }
 
 
 /*
- *  eret: Return from exception handler
+ *  eret: Return from exception handler (non-R3000 style)
  */
 X(eret)
 {
-	coproc_eret(cpu);
+	if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_ERL) {
+		cpu->pc = cpu->cd.mips.coproc[0]->reg[COP0_ERROREPC];
+		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_ERL;
+	} else {
+		cpu->pc = cpu->cd.mips.coproc[0]->reg[COP0_EPC];
+		cpu->delay_slot = 0;             
+		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_EXL;
+	}
+
 	quick_pc_to_pointers(cpu);
+
+	cpu->cd.mips.rmw = 0;   /*  the "LL bit"  */
 }
 
 
@@ -3616,8 +3633,11 @@ X(to_be_translated)
 		    cpu->cd.mips.cpu_type.isa_revision < 2) {
 			static int warning = 0;
 			if (!warning) {
-				fatal("[ WARNING! SPECIAL3 opcode used on a"
-				    " cpu which doesn't implement it ]\n");
+				fatal("[ WARNING! SPECIAL3 opcode used, but"
+				    " the %s processor does not implement "
+				    "such instructions. Only printing this "
+				    "warning once. ]\n",
+				    cpu->cd.mips.cpu_type.name);
 				warning = 1;
 			}
 			ic->f = instr(reserved);

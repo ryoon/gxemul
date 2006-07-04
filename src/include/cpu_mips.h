@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.43 2006-06-24 21:47:24 debug Exp $
+ *  $Id: cpu_mips.h,v 1.44 2006-07-04 05:06:55 debug Exp $
  */
 
 #include "misc.h"
@@ -69,6 +69,9 @@ struct mips_cpu_type_def {
 
 /*
  *  Coproc 0:
+ *
+ *  NOTE:
+ *	On R3000, only hi and lo0 are used, and then only the lowest 32 bits.
  */
 #define	N_MIPS_COPROC_REGS	32
 struct mips_tlb {

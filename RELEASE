@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.204 2006-07-02 10:12:54 debug Exp $
+$Id: RELEASE,v 1.205 2006-07-04 05:06:53 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -30,7 +30,7 @@ The most important changes between release 0.4.0.1 and 0.4.1 are:
 	needed anymore.
 
     o)	A new -s command line option is now available, for dumping
-	runtime data/statistics on every instruction to a file.
+	raw runtime data/statistics on every instruction to a file.
 
 	Currently, the following kinds of data can be dumped:
 
@@ -38,6 +38,8 @@ The most important changes between release 0.4.0.1 and 0.4.1 are:
 	2. the physical address representation of the program counter
 	3. the internal dyntrans instruction call pointer, useful when
 	   developing/optimizing the emulator
+
+	This data can then be analyzed by external tools.
 
 	(There was a -s command line option in previous releases of
 	the emulator, but it did not work as intended, and was not

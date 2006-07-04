@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1275 2006-07-02 11:01:19 debug Exp $
+$Id: HISTORY,v 1.1276 2006-07-04 05:06:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2838,3 +2838,7 @@ Changelog for GXemul:
 		addiu+bne+sw loops, and sw+sw+sw.
 		Adding support (again) for larger-than-4KB pages in MIPS tlbw*.
 		Continuing on SPARC emulation: adding load/store instructions.
+20060704	Fixing a virtual vs physical page shift bug in the new tlbw*
+		implementation. Problem noticed by Jakub Jermar. (Many thanks.)
+		Moving rfe and eret to cpu_mips_instr.c, since that is the
+		only place that uses them nowadays.

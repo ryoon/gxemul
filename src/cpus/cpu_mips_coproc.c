@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.43 2006-07-02 09:59:58 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.44 2006-07-04 05:06:54 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1746,7 +1746,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	} else {
 		/*  R4000 etc.:  */
 		unsigned char *memblock = NULL;
-		int pfn_shift;
+		int pfn_shift = 12, vpn_shift = 12;
 		int wf0, wf1;
 		uint64_t vaddr0, vaddr1, paddr0, paddr1, mask, ptmp;
 
@@ -1759,10 +1759,12 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		wf1 = cp->tlbs[index].lo1 & ENTRYLO_D;
 
 		mask = cp->reg[COP0_PAGEMASK];
-		if (cpu->cd.mips.cpu_type.rev == MIPS_R4100)
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
+			pfn_shift = 10;
 			mask |= 0x07ff;
-		else
+		} else {
 			mask |= 0x1fff;
+		}
 		switch (mask) {
 		case 0x00007ff:
 			if (cp->tlbs[index].lo0 & ENTRYLO_V ||
@@ -1770,16 +1772,16 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				fatal("1KB pages don't work with dyntrans.\n");
 				exit(1);
 			}
-			pfn_shift = 10;
+			vpn_shift = 10;
 			break;
-		case 0x0001fff:	pfn_shift = 12; break;
-		case 0x0007fff:	pfn_shift = 14; break;
-		case 0x001ffff:	pfn_shift = 16; break;
-		case 0x007ffff:	pfn_shift = 18; break;
-		case 0x01fffff:	pfn_shift = 20; break;
-		case 0x07fffff:	pfn_shift = 22; break;
-		case 0x1ffffff:	pfn_shift = 24; break;
-		case 0x7ffffff:	pfn_shift = 26; break;
+		case 0x0001fff:	break;
+		case 0x0007fff:	vpn_shift = 14; break;
+		case 0x001ffff:	vpn_shift = 16; break;
+		case 0x007ffff:	vpn_shift = 18; break;
+		case 0x01fffff:	vpn_shift = 20; break;
+		case 0x07fffff:	vpn_shift = 22; break;
+		case 0x1ffffff:	vpn_shift = 24; break;
+		case 0x7ffffff:	vpn_shift = 26; break;
 		default:fatal("Unimplemented MASK = 0x%016"PRIx64"\n", mask);
 			exit(1);
 		}
@@ -1806,7 +1808,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				vaddr0 |= 0xffffff0000000000ULL;
 		}
 
-		vaddr1 = vaddr0 | (1 << pfn_shift);
+		vaddr1 = vaddr0 | (1 << vpn_shift);
 
 		g_bit = (cp->reg[COP0_ENTRYLO0] &
 		    cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
@@ -1824,8 +1826,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				cp->tlbs[index].hi |= TLB_G;
 		}
 
-		/*  Invalidate any code translations, if we are writing
-		    Dirty pages to the TLB:  (TODO: hardcoded... ugly)  */
+		/*
+		 *  Invalidate any code translations, if we are writing Dirty
+		 *  pages to the TLB:  (TODO: 4KB hardcoded... ugly)
+		 */
 		for (ptmp = 0; ptmp < (1 << pfn_shift); ptmp += 0x1000) {
 			if (wf0)
 				cpu->invalidate_code_translation(cpu,
@@ -1835,9 +1839,16 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				    paddr1 + ptmp, INVALIDATE_PADDR);
 		}
 
-		/*  If we have a memblock (host page) for the physical
-		    page, then add a translation for it immediately:  */
-		/*  (NOTE/TODO: Only for 4KB pages so far:)  */
+		/*
+		 *  If we have a memblock (host page) for the physical page,
+		 *  then add a translation for it immediately, to save some
+		 *  time. (It would otherwise be added later on anyway,
+		 *  because of a translation miss.)
+		 *
+		 *  NOTE/TODO: This is only for 4KB pages so far. It would
+		 *             be too expensive to add e.g. 16MB pages like
+		 *             this.
+		 */
 		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr0, 0);
 		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & ENTRYLO_V) {
 			memblock += (paddr0 & ((1 << BITS_PER_PAGETABLE) - 1));
@@ -1851,19 +1862,6 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			    wf1, paddr1);
 		}
 	}
-}
-
-
-/*
- *  coproc_rfe():
- *
- *  Return from exception. (R3000 etc.)
- */
-void coproc_rfe(struct cpu *cpu)
-{
-	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] =
-	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & ~0x3f) |
-	    ((cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 }
 
 
@@ -2137,14 +2135,18 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 					debug("rfe\n");
 					return;
 				}
-				coproc_rfe(cpu);
+				fatal("Internal error (rfe): Should be "
+				    "implemented in dyntrans instead.\n");
+				exit(1);
 				return;
 			case COP0_ERET:	/*  R4000: Return from exception  */
 				if (unassemble_only) {
 					debug("eret\n");
 					return;
 				}
-				coproc_eret(cpu);
+				fatal("Internal error (eret): Should be "
+				    "implemented in dyntrans instead.\n");
+				exit(1);
 				return;
 			case COP0_DERET:
 				if (unassemble_only) {

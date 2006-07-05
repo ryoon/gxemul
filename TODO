@@ -1,4 +1,4 @@
-$Id: TODO,v 1.308 2006-07-05 05:26:17 debug Exp $
+$Id: TODO,v 1.309 2006-07-05 05:38:34 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -27,9 +27,6 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 			for (;;) {
 				halt();
 			}
-		+ Remove the BSD license from the header files too, so
-		  that they are public domain (and can be used in e.g.
-		  GPLed projects).
 
 -------------------------------------------------------------------------------
 
@@ -159,7 +156,8 @@ Debugger:
 
 POWER/PowerPC:
 	x)  PPC optimizations; instr combs
-	x)  64-bit stuff
+	x)  64-bit stuff: either Linux on G5, or perhaps some hobbyist
+		version of AIX? (if there exists such a thing)
 	x)  find and fix the bug which causes NetBSD/macppc to fail after
 	    an install!
 	x)  macppc: adb controller; keyboard (for framebuffer mode)
@@ -281,13 +279,9 @@ ASC SCSI controller:
 	    2005/11/06/0024.html suggests that.)
 
 Caches / memory hierarchies: (this is mostly MIPS-specific)
-	o)  MIPS coproc.c: bits in config registers should reflect
-	    correct cache sizes for _all_ CPU types. (currently only
-	    implemented for R4000, R1x000, and a few others)
 	o)  src/memory*.c: Implement correct cache emulation for
 	    all CPU types. (currently only R2000/R3000 is implemented)
-	    (per CPU, multiple levels should be possible,
-	    associativity etc!)
+	    (per CPU, multiple levels should be possible, associativity etc!)
 	o)  R2000/R3000 isn't _100%_ correct, just almost correct :)
 	o)  Move the -S (fill mem with random) functionality into the
 	    memory.c subsystem, not machine.c or wherever it is now

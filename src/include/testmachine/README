@@ -1,4 +1,4 @@
-$Id: README,v 1.1 2006-05-04 17:14:31 debug Exp $
+$Id: README,v 1.2 2006-07-05 05:38:36 debug Exp $
 
 The files in this directory describe the devices found in GXemul's "test 
 machines". These machines do not match any real-world machines, but they 
@@ -24,6 +24,10 @@ have devices that are similar to those found in real machines:
 	A very simple ethernet NIC, capable of sending and receiving
 	ethernet frames on the simulated network.
 
-Please read the GXemul documentation for more details, and study the demo 
-programs.
+These include files are not released under the same license as GXemul
+itself. The include files are released as public domain, so they can be
+reused also in projects that have BSD-incompatible licenses.
+
+Please read the GXemul documentation for more details on how to use the
+testmachine devices, and study the demo programs.
 

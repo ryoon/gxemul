@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1276 2006-07-04 05:06:52 debug Exp $
+$Id: HISTORY,v 1.1277 2006-07-05 05:38:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2842,3 +2842,7 @@ Changelog for GXemul:
 		implementation. Problem noticed by Jakub Jermar. (Many thanks.)
 		Moving rfe and eret to cpu_mips_instr.c, since that is the
 		only place that uses them nowadays.
+20060705	Removing the BSD license on the "testmachine" include files,
+		placing them in the public domain instead; this enables the
+		testmachine stuff to be used from projects which are
+		incompatible with the BSD license for some reason.

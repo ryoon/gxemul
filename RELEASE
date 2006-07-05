@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.205 2006-07-04 05:06:53 debug Exp $
+$Id: RELEASE,v 1.206 2006-07-05 05:26:17 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -20,14 +20,16 @@ be regarded as "working" in GXemul. The best supported guest operating
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 
-The most important changes between release 0.4.0.1 and 0.4.1 are:
+Changes between release 0.4.0.1 and 0.4.1 include, among other things:
 
     o)	MIPS emulation performance has been improved somewhat.
 
-	Among other things, after removing some buggy code (hints for
-	physical page translations), the workaround for R2000/R3000 caches
-	which was needed in 0.4.0.1 to make Linux and Ultrix run is not
-	needed anymore.
+	After removing some buggy code (hints for physical page
+	translations), it was possible to remove the workaround for
+	R2000/R3000 caches which was needed in 0.4.0.1 to make Linux
+	and Ultrix run. This gives an overall speedup for R3000.
+
+	On non-R3000, there have been some speedups as well.
 
     o)	A new -s command line option is now available, for dumping
 	raw runtime data/statistics on every instruction to a file.

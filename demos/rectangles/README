@@ -49,3 +49,12 @@ ppc-unknown-elf-ld -e f rectangles_ppc.o -o rectangles_ppc
 file rectangles_ppc
 gxemul -X -E testppc -C PPC750 rectangles_ppc
 
+
+SPARC (64-bit)
+--------------
+sparc64-unknown-elf-gcc -I../../src/include/testmachine -g		\
+	rectangles.c -c -o rectangles_sparc.o
+sparc64-unknown-elf-ld -e f rectangles_sparc.o -o rectangles_sparc
+file rectangles_sparc
+gxemul -X -E testsparc rectangles_sparc
+

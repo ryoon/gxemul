@@ -52,3 +52,12 @@ ppc-unknown-elf-ld -e f hello_ppc.o -o hello_ppc
 file hello_ppc
 gxemul -E testppc -C PPC750 hello_ppc
 
+
+SPARC (64-bit)
+--------------
+sparc64-unknown-elf-gcc -I../../src/include/testmachine -g		\
+	hello.c -c -o hello_sparc.o
+sparc64-unknown-elf-ld -e f hello_sparc.o -o hello_sparc
+file hello_sparc
+gxemul -E testsparc hello_sparc
+

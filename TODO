@@ -1,4 +1,4 @@
-$Id: TODO,v 1.307 2006-07-04 05:24:38 debug Exp $
+$Id: TODO,v 1.308 2006-07-05 05:26:17 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -9,12 +9,27 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 	x)  Clock framework? Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
 	x)  Continue on SPARC emulation
+		+ Enable it in the configure script as soon as it can
+		  run all the demo programs.
 	x)  Continue on Alpha emulation
 	x)  Alignment exceptions (MIPS, PPC?, ...)
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
 	x)  Actually use the settings object, better debugger stuff, etc.
 	x)  Wait for new releases of NetBSD, and test with those.
+
+	x)  Testmachine includes:
+		+ Better documentation, which uses the symbolic names
+		  instead of numbers.
+		+ dev_fb => acceleration and larger framebuffer size
+		+ Redefine the halt() function so that it stops "sometimes
+		  soon", i.e. usage should be:
+			for (;;) {
+				halt();
+			}
+		+ Remove the BSD license from the header files too, so
+		  that they are public domain (and can be used in e.g.
+		  GPLed projects).
 
 -------------------------------------------------------------------------------
 

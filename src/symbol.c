@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.35 2006-03-22 21:39:23 debug Exp $
+ *  $Id: symbol.c,v 1.36 2006-07-07 19:38:55 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -223,6 +223,9 @@ void add_symbol_name(struct symbol_context *sc,
 		fprintf(stderr, "add_symbol_name(): name = NULL\n");
 		exit(1);
 	}
+
+	if (addr == 0 && strcmp(name, "_DYNAMIC_LINK") == 0)
+		return;
 
 	if (name[0] == '\0')
 		return;

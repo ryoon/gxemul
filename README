@@ -1,4 +1,4 @@
-$Id: README,v 1.106 2006-06-27 04:57:54 debug Exp $
+$Id: README,v 1.107 2006-07-07 04:37:53 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -68,7 +68,7 @@ Quick start
 -----------
 
 To compile, type './configure' and then 'make'. This should work on most
-Unix-like systems. If not, then please mail me a bug report.
+Unix-like systems. If it does not, then please mail me a bug report.
 
 You might want to experiment with various CC and CFLAGS environment
 variable settings, to get optimum performance.

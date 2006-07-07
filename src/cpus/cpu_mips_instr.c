@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.93 2006-07-07 19:39:23 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.94 2006-07-07 22:12:33 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -135,6 +135,26 @@ X(beq_samepage)
 	}
 	cpu->delay_slot = NOT_DELAYED;
 }
+X(beq_samepage_addiu)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	cpu->n_translated_instrs ++;
+	reg(ic[1].arg[1]) = (int32_t)
+	    ((int32_t)reg(ic[1].arg[0]) + (int32_t)ic[1].arg[2]);
+	if (rs == rt)
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+	else
+		cpu->cd.mips.next_ic ++;
+}
+X(beq_samepage_nop)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	cpu->n_translated_instrs ++;
+	if (rs == rt)
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+	else
+		cpu->cd.mips.next_ic ++;
+}
 X(bne)
 {
 	MODE_int_t old_pc = cpu->pc;
@@ -171,6 +191,26 @@ X(bne_samepage)
 			cpu->cd.mips.next_ic ++;
 	}
 	cpu->delay_slot = NOT_DELAYED;
+}
+X(bne_samepage_addiu)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	cpu->n_translated_instrs ++;
+	reg(ic[1].arg[1]) = (int32_t)
+	    ((int32_t)reg(ic[1].arg[0]) + (int32_t)ic[1].arg[2]);
+	if (rs != rt)
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+	else
+		cpu->cd.mips.next_ic ++;
+}
+X(bne_samepage_nop)
+{
+	MODE_uint_t rs = reg(ic->arg[0]), rt = reg(ic->arg[1]);
+	cpu->n_translated_instrs ++;
+	if (rs != rt)
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic->arg[2];
+	else
+		cpu->cd.mips.next_ic ++;
 }
 X(b)
 {
@@ -895,6 +935,16 @@ X(jr_ra)
 		quick_pc_to_pointers(cpu);
 	} else
 		cpu->delay_slot = NOT_DELAYED;
+}
+X(jr_ra_addiu)
+{
+	/*  jr ra, followed by an addiu  */
+	MODE_int_t rs = cpu->cd.mips.gpr[MIPS_GPR_RA];
+	reg(ic[1].arg[1]) = (int32_t)
+	    ((int32_t)reg(ic[1].arg[0]) + (int32_t)ic[1].arg[2]);
+	cpu->pc = rs;
+	quick_pc_to_pointers(cpu);
+	cpu->n_translated_instrs ++;
 }
 X(jr_ra_trace)
 {
@@ -2437,6 +2487,20 @@ X(netbsd_r3k_picache_do_inv)
 
 
 /*
+ *  lui_32bit:
+ *
+ *  Combination of lui and addiu.
+ *  Note: All 32 bits of arg[2] of the lui instr_call are used.
+ */
+X(lui_32bit)
+{
+	reg(ic[0].arg[0]) = (int32_t) ic[0].arg[2];
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic ++;
+}
+
+
+/*
  *  b_samepage_addiu:
  *
  *  Combination of branch within the same page, followed by addiu.
@@ -2648,10 +2712,11 @@ void COMBINE(multi_sw)(struct cpu *cpu, struct mips_instr_call *ic,
 
 
 /*
- *  Combine: [Conditional] branch, followed by addiu.
+ *  Combine:
+ *
+ *	[Conditional] branch, followed by nop.
  */
-void COMBINE(b_addiu)(struct cpu *cpu, struct mips_instr_call *ic,
-	int low_addr)
+void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 {
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
@@ -2659,9 +2724,66 @@ void COMBINE(b_addiu)(struct cpu *cpu, struct mips_instr_call *ic,
 	if (n_back < 1)
 		return;
 
+	if (ic[-1].f == instr(bne_samepage)) {
+		ic[-1].f = instr(bne_samepage_nop);
+		combined;
+		return;
+	}
+
+	if (ic[-1].f == instr(beq_samepage)) {
+		ic[-1].f = instr(beq_samepage_nop);
+		combined;
+		return;
+	}
+
+	/*  TODO: other branches that are followed by nop should be here  */
+}
+
+
+/*
+ *  Combine:
+ *
+ *	[Conditional] branch, followed by addiu.
+ *	lui + addiu.
+ */
+void COMBINE(addiu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
+{
+	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
+	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
+
+	if (n_back < 1)
+		return;
+
+	if (ic[-1].f == instr(set) && ic[-1].arg[0] == ic[0].arg[0] &&
+	    ic[0].arg[0] == ic[0].arg[1]) {
+		ic[-1].f = instr(lui_32bit);
+		ic[-1].arg[2] = (int32_t) (ic[-1].arg[1] + ic[0].arg[2]);
+		combined;
+		return;
+	}
+
 	if (ic[-1].f == instr(b_samepage)) {
 		ic[-1].f = instr(b_samepage_addiu);
 		combined;
+		return;
+	}
+
+	if (ic[-1].f == instr(beq_samepage)) {
+		ic[-1].f = instr(beq_samepage_addiu);
+		combined;
+		return;
+	}
+
+	if (ic[-1].f == instr(bne_samepage)) {
+		ic[-1].f = instr(bne_samepage_addiu);
+		combined;
+		return;
+	}
+
+	if (ic[-1].f == instr(jr_ra)) {
+		ic[-1].f = instr(jr_ra_addiu);
+		combined;
+		return;
 	}
 
 	/*  TODO: other branches that are followed by addiu should be here  */
@@ -3137,14 +3259,11 @@ X(to_be_translated)
 			}
 		}
 
-		/*  TODO: Some addiu, daddiu, and ori with the zero register
-		    can become ic->f = instr(set) !  */
-
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 
 		if (ic->f == instr(addiu))
-			cpu->cd.mips.combination_check = COMBINE(b_addiu);
+			cpu->cd.mips.combination_check = COMBINE(addiu);
 		if (ic->f == instr(daddiu))
 			cpu->cd.mips.combination_check = COMBINE(b_daddiu);
 		break;
@@ -3153,6 +3272,8 @@ X(to_be_translated)
 		ic->f = instr(set);
 		ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
 		ic->arg[1] = (int32_t) (imm << 16);
+		/*  NOTE: Don't use arg[2] here. It can be used with
+		    instruction combinations, to do lui + addiu, etc.  */
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 		break;
@@ -3761,6 +3882,9 @@ X(to_be_translated)
 		ic->f = instr(reserved);
 	}
 #endif
+
+	if (ic->f == instr(nop) && cpu->cd.mips.combination_check == NULL)
+		cpu->cd.mips.combination_check = COMBINE(nop);
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

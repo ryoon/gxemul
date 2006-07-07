@@ -1,32 +1,50 @@
-$Id: TODO,v 1.309 2006-07-05 05:38:34 debug Exp $
+$Id: TODO,v 1.310 2006-07-07 05:21:00 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-	x)  FIX THE NON-R3000 TRANSLATION CACHE INVALIDATION BOTTLENECK
-		IN TLBW* AND THE ASID INVALIDATION!!!
+MUST:
+	o)  Figure out what causes problems in non-R3000 tlbw*, and fix
+		it (to get rid of the performance bottlenecks).
+	o)  Fix invalidate_asid so it works well for all non-R3000 CPUs too!
+
+Code cleanup:
 	x)  Make memory_paddr_to_hostaddr actually return the hostaddr
 		instead of the memblock?
-	x)  Clock framework? Go through all clock devices, make sure they
-	    return correct data, and run at correct speeds!
-	x)  Continue on SPARC emulation
-		+ Enable it in the configure script as soon as it can
-		  run all the demo programs.
-	x)  Continue on Alpha emulation
-	x)  Alignment exceptions (MIPS, PPC?, ...)
-	x)  Dyntrans with SMP... lots of work to be done here.
-	x)  Dyntrans with cache emulation... lots of work here as well.
-	x)  Actually use the settings object, better debugger stuff, etc.
-	x)  Wait for new releases of NetBSD, and test with those.
+	x)  Macro for the device tick function prototype?
 
+Long-term implementation:
+	x)  Try an instruction combination to skip r3000 cache flush code?
 	x)  Testmachine includes:
 		+ Better documentation, which uses the symbolic names
 		  instead of numbers.
-		+ dev_fb => acceleration and larger framebuffer size
+		+ dev_fb:
+			block fill and copy areas of the framebuffer to itself.
+			draw characters (from the built-in font).
+			change size of the fb at runtime.
+			(implement these so that there is room for more,
+			such as line drawings, and polygon drawing etc :-)
+		+ dev_fb input device? mouse pointer coordinates and buttons
+			(allow changes in these to cause interrupts as well?)
 		+ Redefine the halt() function so that it stops "sometimes
-		  soon", i.e. usage should be:
+		  soon", i.e. usage in demo code should be:
 			for (;;) {
 				halt();
 			}
+	x)  Continue on SPARC emulation
+		+ Enable it in the configure script as soon as it can
+		  run all the demo programs.
+	x)  Continue on Alpha emulation  (virtual memory, etc). Cleanup.
+	x)  Alignment exceptions (MIPS, PPC, ARM, ...)
+
+Long-term design:
+	x)  Clock framework? Go through all clock devices, make sure they
+	    return correct data, and run at correct speeds!
+	x)  Actually use the settings object, better debugger stuff, etc.
+	x)  Dyntrans with SMP... lots of work to be done here.
+	x)  Dyntrans with cache emulation... lots of work here as well.
+
+Misc.:
+	x)  Wait for new releases of NetBSD, and test with those.
 
 -------------------------------------------------------------------------------
 
@@ -54,7 +72,6 @@ SMP:
 	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 
 MIPS:
-	o)  Fix invalidate_asid so it works well for non-R3000 too!
 	+)  Print a warning on the first reserved instruction.
 	+)  Some more work on opcodes.
 		x) MIPS64 revision 2.
@@ -84,6 +101,10 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 Dyntrans:
+	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
+		so that it caches a translation (along with a virtual
+		page address), so that it doesn't need to do slow
+		to_be_translated for each end of page?
 	x)  Program Counter statistics:
 		Per machine? What about SMP? All data to the same file?
 		A debugger command should be possible to use to enable/
@@ -119,6 +140,7 @@ SPARC:
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
 	o)  Finish the cmp (subcc) flag computation code.
 	o)  Finish the GDB register stuff.
+	o)  SPARC v8, v7 etc?
 
 Debugger:
 	o)  How does SMP debugging work? Does it simply use "threads"?

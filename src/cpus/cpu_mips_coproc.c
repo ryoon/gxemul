@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.44 2006-07-04 05:06:54 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.45 2006-07-07 20:47:05 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -538,8 +538,8 @@ static void invalidate_asid(struct cpu *cpu, int asid)
 		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 #else
 		for (i=0; i<ntlbs; i++) {
-			if ((tlb[i].hi & ENTRYHI_ASID) == asid
-			    && !(tlb[i].hi & TLB_G)) {
+			if ((tlb[i].hi & ENTRYHI_ASID) == asid &&
+			    !(tlb[i].hi & TLB_G)) {
 				uint64_t vaddr0 =
 				    cp->tlbs[i].hi & ENTRYHI_VPN2_MASK, vaddr1;
 				/*  40 addressable bits:  */
@@ -1562,16 +1562,17 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 void coproc_tlbwri(struct cpu *cpu, int randomflag)
 {
 	struct mips_coproc *cp = cpu->cd.mips.coproc[0];
-	int index, g_bit, old_asid = -1;
+	int index, g_bit;
 	uint64_t oldvaddr;
 
 	if (randomflag) {
 		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
-			cp->reg[COP0_RANDOM] =
-			    ((random() % (cp->nr_of_tlbs - 8)) + 8)
-			    << R2K3K_RANDOM_SHIFT;
-			index = (cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
-			    >> R2K3K_RANDOM_SHIFT;
+			index = ((cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
+			    >> R2K3K_RANDOM_SHIFT) - 1;
+			/*  R3000 always has 8 wired entries:  */
+			if (index < 8)
+				index = cp->nr_of_tlbs - 1;
+			cp->reg[COP0_RANDOM] = index << R2K3K_RANDOM_SHIFT;
 		} else {
 			cp->reg[COP0_RANDOM] = cp->reg[COP0_WIRED] + (random()
 			    % (cp->nr_of_tlbs - cp->reg[COP0_WIRED]));
@@ -1618,20 +1619,24 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	/*
 	 *  Any virtual address translation for the old TLB entry must be
 	 *  invalidated first:
+	 *
+	 *  (Only Valid entries need to be invalidated, and only those that
+	 *  are either Global, or have the same ASID as the new entry will
+	 *  have. No other address translations should be active anyway.)
 	 */
 
 	switch (cpu->cd.mips.cpu_type.mmu_model) {
 
 	case MMU3K:
 		oldvaddr = cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK;
-		oldvaddr &= 0xffffffffULL;
-		if (oldvaddr & 0x80000000ULL)
-			oldvaddr |= 0xffffffff00000000ULL;
-		old_asid = (cp->tlbs[index].hi & R2K3K_ENTRYHI_ASID_MASK)
-		    >> R2K3K_ENTRYHI_ASID_SHIFT;
+		oldvaddr = (int32_t) oldvaddr;
 
-		cpu->invalidate_translation_caches(cpu, oldvaddr,
-		    INVALIDATE_VADDR);
+		if (cp->tlbs[index].lo0 & R2K3K_ENTRYLO_V &&
+		    (cp->tlbs[index].lo0 & R2K3K_ENTRYLO_G ||
+		    (cp->tlbs[index].hi & R2K3K_ENTRYHI_ASID_MASK) ==
+		    (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) ))
+			cpu->invalidate_translation_caches(cpu, oldvaddr,
+			    INVALIDATE_VADDR);
 		break;
 
 	default:if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
@@ -1658,14 +1663,16 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		/*
 		 *  TODO: non-4KB page sizes!
 		 */
-		cpu->invalidate_translation_caches(cpu, oldvaddr,
-		    INVALIDATE_VADDR);
-		cpu->invalidate_translation_caches(cpu, oldvaddr | 0x1000,
-		    INVALIDATE_VADDR);
+		if (cp->tlbs[index].lo0 & ENTRYLO_V)
+			cpu->invalidate_translation_caches(cpu, oldvaddr,
+			    INVALIDATE_VADDR);
+		if (cp->tlbs[index].lo1 & ENTRYLO_V)
+			cpu->invalidate_translation_caches(cpu, oldvaddr|0x1000,
+			    INVALIDATE_VADDR);
 #endif
 	}
 
-
+#if 0
 	/*
 	 *  Check for duplicate entries.  (There should not be two mappings
 	 *  from one virtual address to physical addresses.)
@@ -1703,7 +1710,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				    (long long)vaddr1, asid, i);
 		}
 	}
-
+#endif
 
 	/*  Write the new entry:  */
 
@@ -1747,8 +1754,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		/*  R4000 etc.:  */
 		unsigned char *memblock = NULL;
 		int pfn_shift = 12, vpn_shift = 12;
-		int wf0, wf1;
-		uint64_t vaddr0, vaddr1, paddr0, paddr1, mask, ptmp;
+		int wf0, wf1, mask;
+		uint64_t vaddr0, vaddr1, paddr0, paddr1, ptmp;
 
 		cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
 		cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
@@ -1782,7 +1789,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		case 0x07fffff:	vpn_shift = 22; break;
 		case 0x1ffffff:	vpn_shift = 24; break;
 		case 0x7ffffff:	vpn_shift = 26; break;
-		default:fatal("Unimplemented MASK = 0x%016"PRIx64"\n", mask);
+		default:fatal("Unimplemented MASK = 0x%016x\n", mask);
 			exit(1);
 		}
 

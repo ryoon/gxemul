@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.256 2006-07-01 21:15:45 debug Exp $
+ *  $Id: emul.c,v 1.257 2006-07-07 22:36:21 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1583,7 +1583,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 
 		/*  Flush X11 and serial console output every now and then:  */
 		if (emuls[0]->machines[0]->ninstrs >
-		    emuls[0]->machines[0]->ninstrs_flush + (1<<18)) {
+		    emuls[0]->machines[0]->ninstrs_flush + (1<<19)) {
 			x11_check_event(emuls, n_emuls);
 			console_flush();
 			emuls[0]->machines[0]->ninstrs_flush =

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.118 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_fb.c,v 1.119 2006-07-07 22:36:21 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -62,7 +62,7 @@
 #endif
 
 
-#define	FB_TICK_SHIFT		18
+#define	FB_TICK_SHIFT		19
 
 
 /*  #define FB_DEBUG  */

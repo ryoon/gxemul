@@ -1,4 +1,4 @@
-$Id: TODO,v 1.310 2006-07-07 05:21:00 debug Exp $
+$Id: TODO,v 1.311 2006-07-07 20:38:49 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -13,7 +13,6 @@ Code cleanup:
 	x)  Macro for the device tick function prototype?
 
 Long-term implementation:
-	x)  Try an instruction combination to skip r3000 cache flush code?
 	x)  Testmachine includes:
 		+ Better documentation, which uses the symbolic names
 		  instead of numbers.

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1279 2006-07-07 19:39:23 debug Exp $
+$Id: HISTORY,v 1.1280 2006-07-07 19:48:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2847,5 +2847,5 @@ Changelog for GXemul:
 		testmachine stuff to be used from projects which are
 		incompatible with the BSD license for some reason.
 20060707	Adding an instruction combination for the R2000/R3000 L1
-		I-cache invalidation code used by NetBSD/pmax 3.0, making a
-		full install take 554 seconds instead of 573 (on the laptop).
+		I-cache invalidation code used by NetBSD/pmax 3.0, performing a
+		full install takes 554 seconds instead of 573 (on the laptop).

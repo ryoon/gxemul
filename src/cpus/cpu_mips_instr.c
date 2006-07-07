@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.92 2006-07-04 05:06:54 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.93 2006-07-07 19:39:23 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2405,6 +2405,38 @@ X(multi_sw_3)
 
 
 /*
+ *  netbsd_r3k_picache_do_inv:
+ *
+ *  ic[0]	mtc0	rV,status
+ *     1	nop
+ *     2	nop
+ *     3  s:	addiu	rX,rX,4
+ *     4	bne	rY,rX,s
+ *     5	sb	zr,-4(rX)
+ *     6	nop
+ *     7	nop
+ *     8	mtc0	rT,status
+ */
+X(netbsd_r3k_picache_do_inv)
+{
+	MODE_uint_t rx = reg(ic[3].arg[0]), ry = reg(ic[4].arg[1]);
+
+	/*  Fallback if the environment isn't exactly right:  */
+	if (!(reg(ic[0].arg[0]) & MIPS1_ISOL_CACHES) ||
+	    (rx & 3) || (ry & 3) || cpu->delay_slot) {
+		instr(mtc0)(cpu, ic);
+		return;
+        }
+
+	reg(ic[3].arg[0]) = ry;
+	cpu->n_translated_instrs += (ry - rx + 4) / 4 * 3 + 4;
+
+	/*  Run the last mtc0 instruction:  */
+	cpu->cd.mips.next_ic = (struct mips_instr_call *) &ic[8];
+}
+
+
+/*
  *  b_samepage_addiu:
  *
  *  Combination of branch within the same page, followed by addiu.
@@ -2538,6 +2570,44 @@ void COMBINE(sw_loop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 	    ic[0].arg[0] != ic[0].arg[1] &&
 	    ic[0].arg[1] == ic[-2].arg[0] && (int32_t)ic[0].arg[2] == -4) {
 		ic[-2].f = instr(sw_loop);
+		combined;
+	}
+}
+
+
+/*
+ *  Combine:  NetBSD/pmax 3.0 R2000/R3000 physical cache invalidation loop
+ *
+ *  Instruction cache loop:
+ *
+ *  ic[-8]	mtc0	rV,status
+ *     -7	nop
+ *     -6	nop
+ *     -5  s:	addiu	rX,rX,4
+ *     -4	bne	rY,rX,s
+ *     -3	sb	zr,-4(rX)
+ *     -2	nop
+ *     -1	nop
+ *      0	mtc0	rT,status
+ */
+void COMBINE(netbsd_r3k_cache_inv)(struct cpu *cpu,
+	struct mips_instr_call *ic, int low_addr)
+{
+	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
+	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
+
+	if (n_back < 8)
+		return;
+
+	if (ic[-8].f == instr(mtc0) && ic[-8].arg[1] == COP0_STATUS &&
+	    ic[-7].f == instr(nop) && ic[-6].f == instr(nop) &&
+	    ic[-5].f == instr(addiu) && ic[-5].arg[0] == ic[-5].arg[1] &&
+	    (int32_t)ic[-5].arg[2] == 4 && ic[-4].f == instr(bne_samepage) &&
+	    ic[-4].arg[0] == ic[-5].arg[0] && ic[-4].arg[0] != ic[-4].arg[1] &&
+	    ic[-4].arg[2] == (size_t) &ic[-5] &&
+	    ic[-3].arg[1] == ic[-5].arg[0] &&
+	    ic[-2].f == instr(nop) && ic[-1].f == instr(nop)) {
+		ic[-8].f = instr(netbsd_r3k_picache_do_inv);
 		combined;
 	}
 }
@@ -3187,6 +3257,12 @@ X(to_be_translated)
 			ic->arg[1] = rd + ((iword & 7) << 5);
 			ic->arg[2] = addr & 0xffc;
 			ic->f = rs == COPz_MTCz? instr(mtc0) : instr(dmtc0);
+
+			if (cpu->cd.mips.cpu_type.exc_model == EXC3K &&
+			    rs == COPz_MTCz && rd == COP0_STATUS)
+				cpu->cd.mips.combination_check =
+				    COMBINE(netbsd_r3k_cache_inv);
+
 			break;
 		case 8:	if (iword == 0x4100ffff) {
 				/*  R2020 DECstation write-loop thingy.  */

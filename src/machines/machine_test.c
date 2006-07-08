@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.14 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_test.c,v 1.15 2006-07-08 10:25:48 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -62,6 +62,9 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 
 	dev_fb_init(machine, machine->memory, DEV_FB_ADDRESS, VFB_GENERIC,
 	    640,480, 640,480, 24, "generic"); 
+	snprintf(tmpstr, sizeof(tmpstr), "fbctrl addr=0x%"PRIx64,
+	    (uint64_t) DEV_FBCTRL_ADDRESS);
+	device_add(machine, tmpstr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%"PRIx64,
 	    (uint64_t) DEV_DISK_ADDRESS);
@@ -411,6 +414,9 @@ MACHINE_SETUP(testmips)
 
 	dev_fb_init(machine, machine->memory, DEV_FB_ADDRESS, VFB_GENERIC,
 	    640,480, 640,480, 24, "testmips generic"); 
+	snprintf(tmpstr, sizeof(tmpstr), "fbctrl addr=0x%"PRIx64,
+	    (uint64_t) DEV_FBCTRL_ADDRESS);
+	device_add(machine, tmpstr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "disk addr=0x%"PRIx64,
 	    (uint64_t) DEV_DISK_ADDRESS);

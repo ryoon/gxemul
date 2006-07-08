@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.119 2006-07-07 22:36:21 debug Exp $
+ *  $Id: dev_fb.c,v 1.120 2006-07-08 10:25:48 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -34,7 +34,8 @@
  *	DECstation Maxine, 1024x768 8-bit color
  *	HPC (mips, arm, ..) framebuffer
  *	Playstation 2 (24-bit color)
- *	generic (any resolution, several bit depths possible)
+ *	Generic (any resolution, several bit depths possible, useful for
+ *		testmachines)
  *
  *
  *  TODO:  This should actually be independent of X11, but that

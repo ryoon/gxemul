@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1283 2006-07-08 12:54:09 debug Exp $
+$Id: HISTORY,v 1.1284 2006-07-08 21:05:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2855,3 +2855,4 @@ Changelog for GXemul:
 		far can be used to change the fb resolution during runtime, but
 		in the future will also be useful for accelerated block fill/
 		copy, and possibly also simplified character output.
+		Adding an instruction combination for NetBSD/pmax' strlen.

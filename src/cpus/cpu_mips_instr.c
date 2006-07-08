@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.94 2006-07-07 22:12:33 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.95 2006-07-08 21:05:48 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2486,6 +2486,54 @@ X(netbsd_r3k_picache_do_inv)
 }
 
 
+#ifdef MODE32
+/*
+ *  netbsd_strlen():
+ *
+ *	lb      rV,0(rX)
+ *   s:	addiu   rX,rX,1
+ *	bne	zr,rV,s
+ *	nop
+ */
+X(netbsd_strlen)
+{
+	MODE_uint_t rx = reg(ic[0].arg[1]);
+	MODE_int_t rv;
+	signed char *page;
+	uint32_t pageindex = rx >> 12;
+	int i;
+
+	page = (signed char *) cpu->cd.mips.host_load[pageindex];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot || page == NULL) {
+		/*  Normal lb:  */
+		mips32_loadstore[1](cpu, ic);
+		return;
+	}
+
+	i = rx & 0xfff;
+
+	/*  TODO: This loop can be optimized further, by e.g. reading full
+	    words...  */
+	do {
+		rv = page[i ++];
+	} while (i < 0x1000 && rv != 0);
+
+	cpu->n_translated_instrs += (i - (rx & 0xfff)) * 4 - 1;
+
+	reg(ic[0].arg[1]) = (rx & ~0xfff) + i;
+	reg(ic[2].arg[0]) = rv;
+
+	/*  Done with the loop? Or continue on the next rx page?  */
+	if (rv == 0)
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) &ic[4];
+	else
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) &ic[0];
+}
+#endif
+
+
 /*
  *  lui_32bit:
  *
@@ -2714,12 +2762,32 @@ void COMBINE(multi_sw)(struct cpu *cpu, struct mips_instr_call *ic,
 /*
  *  Combine:
  *
+ *	NetBSD's strlen core.
  *	[Conditional] branch, followed by nop.
  */
 void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 {
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
+
+	if (n_back < 3)
+		return;
+#ifdef MODE32
+	if ((ic[-3].f == mips32_loadstore[1] ||
+	    ic[-3].f == mips32_loadstore[16 + 1]) &&
+	    ic[-3].arg[2] == 0 &&
+	    ic[-3].arg[0] == ic[-1].arg[0] && ic[-3].arg[1] == ic[-2].arg[0] &&
+
+	    ic[-2].arg[0] == ic[-2].arg[1] && ic[-2].arg[2] == 1 &&
+
+	    ic[-2].f == instr(addiu) && ic[-1].arg[2] == (size_t) &ic[-3] &&
+	    ic[-1].arg[1] == (size_t) &cpu->cd.mips.gpr[MIPS_GPR_ZERO] &&
+	    ic[-1].f == instr(bne_samepage)) {
+		ic[-3].f = instr(netbsd_strlen);
+		combined;
+		return;
+	}
+#endif
 
 	if (n_back < 1)
 		return;

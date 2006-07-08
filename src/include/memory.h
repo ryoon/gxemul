@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.50 2006-06-24 21:47:24 debug Exp $
+ *  $Id: memory.h,v 1.51 2006-07-08 12:30:03 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -135,6 +135,9 @@ void memory_device_dyntrans_access(struct cpu *, struct memory *mem,
 #define DEVICE_ACCESS(x)	int dev_ ## x ## _access(struct cpu *cpu, \
 	struct memory *mem, uint64_t relative_addr, unsigned char *data,  \
 	size_t len, int writeflag, void *extra)
+
+void memory_device_update_data(struct memory *mem, void *extra,
+	unsigned char *data);
 
 void memory_device_register(struct memory *mem, const char *,
 	uint64_t baseaddr, uint64_t len, int (*f)(struct cpu *,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.99 2006-06-16 18:31:26 debug Exp $
+ *  $Id: dev_vga.c,v 1.100 2006-07-08 12:30:02 debug Exp $
  *
  *  VGA charcell and graphics device.
  *
@@ -763,7 +763,7 @@ DEVICE_ACCESS(vga)
 static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 	int regnr, int idata)
 {
-	int grayscale;
+	int i, grayscale;
 
 	switch (regnr) {
 	case VGA_CRTC_CURSOR_SCANLINE_START:		/*  0x0a  */
@@ -871,6 +871,10 @@ static void vga_crtc_reg_write(struct machine *machine, struct vga_data *d,
 			d->fb_size = d->max_x * d->pixel_repx *
 			     d->max_y * d->pixel_repy * 3;
 		}
+
+		for (i=0; i<machine->ncpus; i++)
+			machine->cpus[i]->invalidate_translation_caches(
+			    machine->cpus[i], 0, INVALIDATE_ALL);
 
 		if (d->gfx_mem != NULL)
 			free(d->gfx_mem);

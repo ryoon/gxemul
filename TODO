@@ -1,4 +1,4 @@
-$Id: TODO,v 1.311 2006-07-07 20:38:49 debug Exp $
+$Id: TODO,v 1.312 2006-07-08 12:30:02 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -16,12 +16,8 @@ Long-term implementation:
 	x)  Testmachine includes:
 		+ Better documentation, which uses the symbolic names
 		  instead of numbers.
-		+ dev_fb:
-			block fill and copy areas of the framebuffer to itself.
-			draw characters (from the built-in font).
-			change size of the fb at runtime.
-			(implement these so that there is room for more,
-			such as line drawings, and polygon drawing etc :-)
+		+ dev_fb block fill and copy
+		+ dev_fb draw characters (from the built-in font)?
 		+ dev_fb input device? mouse pointer coordinates and buttons
 			(allow changes in these to cause interrupts as well?)
 		+ Redefine the halt() function so that it stops "sometimes

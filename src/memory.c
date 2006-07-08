@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.190 2006-06-16 18:31:25 debug Exp $
+ *  $Id: memory.c,v 1.191 2006-07-08 12:30:02 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -308,6 +308,31 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 
 			return;
 		}
+	}
+}
+
+
+/*
+ *  memory_device_update_data():
+ *
+ *  Update a device' dyntrans data pointer.
+ *
+ *  SUPER-IMPORTANT NOTE: Anyone who changes a dyntrans data pointer while
+ *  things are running also needs to invalidate all CPUs' address translation
+ *  caches!  Otherwise, these may contain old pointers to the old data.
+ */
+void memory_device_update_data(struct memory *mem, void *extra,
+	unsigned char *data)
+{
+	int i;
+
+	for (i=0; i<mem->n_mmapped_devices; i++) {
+		if (mem->dev_extra[i] != extra)
+			continue;
+
+		mem->dev_dyntrans_data[i] = data;
+		mem->dev_dyntrans_write_low[i] = (uint64_t)-1;
+		mem->dev_dyntrans_write_high[i] = 0;
 	}
 }
 

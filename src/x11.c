@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.61 2006-01-14 12:51:59 debug Exp $
+ *  $Id: x11.c,v 1.62 2006-07-08 12:30:02 debug Exp $
  *
  *  X11-related functions.
  */
@@ -377,6 +377,24 @@ void x11_fb_resize(struct fb_window *win, int new_xsize, int new_ysize)
 
 
 /*
+ *  x11_set_standard_properties():
+ *
+ *  Right now, this only sets the title of a window.
+ */
+void x11_set_standard_properties(struct fb_window *fb_window, char *name)
+{
+	XSetStandardProperties(fb_window->x11_display,
+	    fb_window->x11_fb_window, name,
+#ifdef VERSION
+	    "GXemul-" VERSION,
+#else
+	    "GXemul",
+#endif
+	    None, NULL, 0, NULL);
+}
+
+
+/*
  *  x11_fb_init():
  *
  *  Initialize a framebuffer window.
@@ -499,14 +517,10 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	    m->fb_windows[fb_number]->x11_fb_winysize,
 	    0, CopyFromParent, InputOutput, CopyFromParent, 0,0);
 
-	XSetStandardProperties(x11_display,
-	    m->fb_windows[fb_number]->x11_fb_window, name,
-#ifdef VERSION
-	    "GXemul-" VERSION,
-#else
-	    "GXemul",
-#endif
-	    None, NULL, 0, NULL);
+	m->fb_windows[fb_number]->x11_display = x11_display;
+
+	x11_set_standard_properties(m->fb_windows[fb_number], name);
+
 	XSelectInput(x11_display, m->fb_windows[fb_number]->x11_fb_window,
 	    StructureNotifyMask | ExposureMask | ButtonPressMask |
 	    ButtonReleaseMask | PointerMotionMask | KeyPressMask);
@@ -525,7 +539,6 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	    m->fb_windows[fb_number]->x11_fb_winxsize,
 	    m->fb_windows[fb_number]->x11_fb_winysize);
 
-	m->fb_windows[fb_number]->x11_display = x11_display;
 	m->fb_windows[fb_number]->scaledown   = scaledown;
 
 	m->fb_windows[fb_number]->fb_number = fb_number;

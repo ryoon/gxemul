@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.212 2006-06-16 18:31:26 debug Exp $
+ *  $Id: devices.h,v 1.213 2006-07-08 12:30:03 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -215,6 +215,7 @@ struct pci_data *dev_eagle_init(struct machine *machine, struct memory *mem,
 /*  Extra flags:  */
 #define	VFB_REVERSE_START	0x10000
 struct vfb_data {
+	struct memory	*memory;
 	int		vfb_type;
 
 	int		vfb_scaledown;
@@ -239,6 +240,9 @@ struct vfb_data {
 
 	/*  RGB palette for <= 8 bit modes:  (r,g,b bytes for each)  */
 	unsigned char	rgb_palette[256 * 3];
+
+	char		*name;
+	char		title[100];
 
 	void (*redraw_func)(struct vfb_data *, int, int);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.120 2006-07-08 10:25:48 debug Exp $
+ *  $Id: dev_fb.c,v 1.121 2006-07-08 12:30:02 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -105,11 +105,23 @@ void set_blackwhite_palette(struct vfb_data *d, int ncolors)
 }
 
 
+static void set_title(struct vfb_data *d)
+{
+	snprintf(d->title, sizeof(d->title),"GXemul: %ix%ix%i %s framebuffer",
+	    d->visible_xsize, d->visible_ysize, d->bit_depth, d->name);
+	d->title[sizeof(d->title)-1] = '\0';
+}
+
+
 /*
  *  dev_fb_resize():
  *
  *  Resize a framebuffer window. (This functionality is probably a bit buggy,
  *  because I didn't think of including it from the start.)
+ *
+ *  SUPER-IMPORTANT: Anyone who resizes a framebuffer by calling this function
+ *  must also clear all dyntrans address translations manually, in all cpus
+ *  which might have access to the framebuffer!
  */
 void dev_fb_resize(struct vfb_data *d, int new_xsize, int new_ysize)
 {
@@ -120,6 +132,11 @@ void dev_fb_resize(struct vfb_data *d, int new_xsize, int new_ysize)
 	if (d == NULL) {
 		fatal("dev_fb_resize(): d == NULL\n");
 		return;
+	}
+
+	if (new_xsize < 10 || new_ysize < 10) {
+		fatal("dev_fb_resize(): size too small.\n");
+		exit(1);
 	}
 
 	new_bytes_per_line = new_xsize * d->bit_depth / 8;
@@ -164,9 +181,15 @@ void dev_fb_resize(struct vfb_data *d, int new_xsize, int new_ysize)
 	d->x11_xsize = d->xsize / d->vfb_scaledown;
 	d->x11_ysize = d->ysize / d->vfb_scaledown;
 
+	memory_device_update_data(d->memory, d, d->framebuffer);
+
+	set_title(d);
+
 #ifdef WITH_X11
-	if (d->fb_window != NULL)
+	if (d->fb_window != NULL) {
 		x11_fb_resize(d->fb_window, new_xsize, new_ysize);
+		x11_set_standard_properties(d->fb_window, d->title);
+	}
 #endif
 }
 
@@ -729,7 +752,6 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	size_t size, nlen;
 	int flags;
 	int reverse_start = 0;
-	char title[400];
 	char *name2;
 
 	d = malloc(sizeof(struct vfb_data));
@@ -744,6 +766,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 		reverse_start = 1;
 	}
 
+	d->memory = mem;
 	d->vfb_type = vfb_type;
 
 	/*  Defaults:  */
@@ -822,20 +845,14 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 		d->update_x2 = d->update_y2 = -1;
 	}
 
-	/*  Don't set the title to include the size of the framebuffer for
-	    VGA, since then the resolution might change during runtime.  */
-	if (strcmp(name, "VGA") == 0)
-		snprintf(title, sizeof(title),"GXemul: %s framebuffer", name);
-	else
-		snprintf(title, sizeof(title),"GXemul: %ix%ix%i %s framebuffer",
-		    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
-	title[sizeof(title)-1] = '\0';
+	d->name = strdup(name);
+	set_title(d);
 
 #ifdef WITH_X11
 	if (machine->use_x11) {
 		int i = 0;
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
-		    title, machine->x11_scaledown, machine);
+		    d->title, machine->x11_scaledown, machine);
 		switch (d->fb_window->x11_screen_depth) {
 		case 15: i = 2; break;
 		case 16: i = 4; break;

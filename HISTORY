@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1282 2006-07-08 12:30:01 debug Exp $
+$Id: HISTORY,v 1.1283 2006-07-08 12:54:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2854,4 +2854,4 @@ Changelog for GXemul:
 20060708	Adding a framebuffer controller device (dev_fbctrl), which so
 		far can be used to change the fb resolution during runtime, but
 		in the future will also be useful for accelerated block fill/
-		copy, and possibliy also simplified character output.
+		copy, and possibly also simplified character output.

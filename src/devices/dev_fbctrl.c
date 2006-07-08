@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fbctrl.c,v 1.2 2006-07-08 12:30:02 debug Exp $
+ *  $Id: dev_fbctrl.c,v 1.3 2006-07-08 12:54:09 debug Exp $
  *
  *  A "framebuffer control" device. It can be used to manipulate the
  *  framebuffer device in testmachines.
@@ -110,7 +110,7 @@ DEVICE_ACCESS(fbctrl)
 			odata = d->current_port;
 		else {
 			d->current_port = idata;
-			if (idata < 0 || idata >= DEV_FBCTRL_NPORTS)
+			if (idata >= DEV_FBCTRL_NPORTS)
 				fatal("[ WARNING: fbctrl port number is out"
 				    " of range! ]\n");
 		}

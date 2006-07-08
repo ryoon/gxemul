@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.45 2006-07-07 20:47:05 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.46 2006-07-08 10:02:38 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2145,7 +2145,6 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 				fatal("Internal error (rfe): Should be "
 				    "implemented in dyntrans instead.\n");
 				exit(1);
-				return;
 			case COP0_ERET:	/*  R4000: Return from exception  */
 				if (unassemble_only) {
 					debug("eret\n");
@@ -2154,7 +2153,6 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 				fatal("Internal error (eret): Should be "
 				    "implemented in dyntrans instead.\n");
 				exit(1);
-				return;
 			case COP0_DERET:
 				if (unassemble_only) {
 					debug("deret\n");

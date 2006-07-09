@@ -32,9 +32,9 @@ src/include/testmachine/, are placed in the public domain. This way, they
 can be reused in projects which for some reason are incompatible with the
 conditions required by the BSD-style license.
 
-Some header files in the src/include/ directory, containing definitions
-of bitfields for hardware devices etc. are copied from NetBSD and other
-sources. If you plan to redistribute GXemul (for example as a binary
-package), or reuse code from GXemul, then you should check those files for
-their license terms.
+Some of the header files in the src/include/ directory, containing definitions
+of bitfields for hardware devices etc., are copied from NetBSD and other
+sources. If you plan to redistribute GXemul (for example as a binary package),
+or reuse code from GXemul, then you should check those files for their
+license terms.
 

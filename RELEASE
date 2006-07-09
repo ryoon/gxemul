@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.206 2006-07-05 05:26:17 debug Exp $
+$Id: RELEASE,v 1.207 2006-07-09 06:37:40 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -16,7 +16,7 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
 The documentation lists the machines and guest operating systems that can 
-be regarded as "working" in GXemul. The best supported guest operating 
+be regarded as "working" in GXemul. The best working guest operating 
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 
@@ -45,7 +45,7 @@ Changes between release 0.4.0.1 and 0.4.1 include, among other things:
 
 	(There was a -s command line option in previous releases of
 	the emulator, but it did not work as intended, and was not
-	rewritten for the dyntrans system.)
+	usable from dyntrans emulation modes.)
 
 Please read the HISTORY files for more details.
 

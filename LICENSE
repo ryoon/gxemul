@@ -25,14 +25,16 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 
 
+Exceptions to the license above:
+
 The demos in the demos/ directories, and the testmachine header files in
 src/include/testmachine/, are placed in the public domain. This way, they
 can be reused in projects which for some reason are incompatible with the
-requirements of BSD-style licenses.
+conditions required by the BSD-style license.
 
-Some files (mostly header files in the src/include/ directory, containing
-definitions of bitfields for hardware devices) are copied from NetBSD and
-other sources.  If you plan to redistribute GXemul (for example as a
-binary package), or reuse code from GXemul, then you should check those
-files for their license terms.
+Some header files in the src/include/ directory, containing definitions
+of bitfields for hardware devices etc. are copied from NetBSD and other
+sources. If you plan to redistribute GXemul (for example as a binary
+package), or reuse code from GXemul, then you should check those files for
+their license terms.
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.312 2006-07-08 12:30:02 debug Exp $
+$Id: TODO,v 1.313 2006-07-09 06:37:40 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -50,7 +50,8 @@ Simple Valgrind-like checks?
 	    filled). But stack space and heap is uninitialized.
 	o)  Uninitialized local variables:
 		A load from a place on the stack which has not previously
-		been stored to => warning.
+		been stored to => warning. Increasing the stack pointer using
+		any available means should reset the memory to uninitialized.
 	o)  If calls to malloc() and free() can be intercepted:
 		o)  Access to a memory area after free() => warning.
 		o)  Memory returned by malloc() is marked as not-initialized.
@@ -67,13 +68,11 @@ SMP:
 	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 
 MIPS:
-	+)  Print a warning on the first reserved instruction.
 	+)  Some more work on opcodes.
 		x) MIPS64 revision 2.
 		x) _MAYBE_ TX79 and R5900 actually differ in their
 		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
-	o)  Dyntrans: SMP correctness
 	o)  Refactor code for performance and readability/maintainability.
 	o)  Instruction combinations? Possible candidates (but profile first!):
 		o)  R2000/R3000 cache cleaner!
@@ -87,6 +86,7 @@ MIPS:
 	    a rotation bit which differs from previous ISAs.
 	o)  EI and DI instructions for MIPS64/32 rev 2. NOTE: These are
 	    _NOT_ the same as for R5900!
+	o)  (Re)implement 128-bit loads/stores for R5900.
 	o)  R4000 and others:
 		x)  watchhi/watchlo exceptions, and other exception
 		    handling details
@@ -97,8 +97,9 @@ MIPS:
 
 Dyntrans:
 	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
-		so that it caches a translation (along with a virtual
-		page address), so that it doesn't need to do slow
+		so that it caches a translation (that is, an instruction
+		word and the instr_call it was translated to the last
+		time), so that it doesn't need to do slow
 		to_be_translated for each end of page?
 	x)  Program Counter statistics:
 		Per machine? What about SMP? All data to the same file?

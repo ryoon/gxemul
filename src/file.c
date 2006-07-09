@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.131 2006-03-30 19:36:03 debug Exp $
+ *  $Id: file.c,v 1.132 2006-07-09 05:51:28 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1164,7 +1164,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 {
 	FILE *f;
 	int len;
-	unsigned char buf[4096];
+	unsigned char buf[16384];
 	uint64_t entry, loadaddr, vaddr, skip = 0;
 	char *p, *p2;
 
@@ -1201,7 +1201,14 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 
 	/*  Load file contents:  */
 	while (!feof(f)) {
-		len = fread(buf, 1, sizeof(buf), f);
+		size_t to_read = sizeof(buf);
+
+		/*  If vaddr isn't buf-size aligned, then start with a
+		    smaller buffer:  */
+		if (vaddr & (sizeof(buf) - 1))
+			to_read = sizeof(buf) - (vaddr & (sizeof(buf)-1));
+
+		len = fread(buf, 1, to_read, f);
 
 		if (len > 0)
 			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr, &buf[0],

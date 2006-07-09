@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.91 2006-06-28 21:43:12 debug Exp $
+ *  $Id: memory_rw.c,v 1.92 2006-07-09 05:51:28 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -506,6 +506,11 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	/*  Invalidate code translations for the page we are writing to.  */
 	if (writeflag == MEM_WRITE && cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);
+
+	if (offset + len > (1 << BITS_PER_MEMBLOCK)) {
+		printf("Write over memblock boundary?\n");
+		exit(1);
+	}
 
 	if (writeflag == MEM_WRITE) {
 		/*  Ugly optimization, but it works:  */

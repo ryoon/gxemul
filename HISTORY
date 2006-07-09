@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1284 2006-07-08 21:05:47 debug Exp $
+$Id: HISTORY,v 1.1285 2006-07-09 05:51:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2856,3 +2856,5 @@ Changelog for GXemul:
 		in the future will also be useful for accelerated block fill/
 		copy, and possibly also simplified character output.
 		Adding an instruction combination for NetBSD/pmax' strlen.
+20060709	Minor fixes (reading raw files in src/file.c wasn't memblock
+		aligned).

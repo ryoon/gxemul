@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.95 2006-07-08 21:05:48 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.96 2006-07-09 07:53:33 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2411,50 +2411,6 @@ X(sw_loop)
 
 
 /*
- *  multi_sw_3:
- *
- *	sw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
- *	sw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
- *	sw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
- */
-X(multi_sw_3)
-{
-	uint32_t *page;
-	MODE_uint_t rX = reg(ic[0].arg[1]);
-	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
-	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
-	MODE_uint_t addr2 = rX + (int32_t)ic[2].arg[2];
-	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12,
-	    index2 = addr2 >> 12;
-
-	page = (uint32_t *) cpu->cd.mips.host_store[index0];
-
-	/*  Fallback:  */
-	if (cpu->delay_slot ||
-	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
-	    (addr2 & 3) != 0 || index0 != index1 || index0 != index2) {
-		/*  Normal safe sw:  */
-		ic[1].f(cpu, ic);
-		return;
-        }
-
-	addr0 = (addr0 >> 2) & 0x3ff;
-	addr1 = (addr1 >> 2) & 0x3ff;
-	addr2 = (addr2 >> 2) & 0x3ff;
-
-	/*  printf("addr0=%x 1=%x 2=%x\n",
-	    (int)addr0, (int)addr1, (int)addr2);  */
-
-	page[addr0] = reg(ic[0].arg[0]);
-	page[addr1] = reg(ic[1].arg[0]);
-	page[addr2] = reg(ic[2].arg[0]);
-
-	cpu->n_translated_instrs += 2;
-	cpu->cd.mips.next_ic = (struct mips_instr_call *) &ic[3];
-}
-
-
-/*
  *  netbsd_r3k_picache_do_inv:
  *
  *  ic[0]	mtc0	rV,status
@@ -2507,15 +2463,21 @@ X(netbsd_strlen)
 
 	/*  Fallback:  */
 	if (cpu->delay_slot || page == NULL) {
-		/*  Normal lb:  */
+		/*
+		 *  Normal lb:  NOTE: It doesn't matter whether [1] or
+		 *  [16+1] is called here, because endianness for 8-bit
+		 *  loads is irrelevant. :-)
+		 */
 		mips32_loadstore[1](cpu, ic);
 		return;
 	}
 
 	i = rx & 0xfff;
 
-	/*  TODO: This loop can be optimized further, by e.g. reading full
-	    words...  */
+	/*
+	 *  TODO: This loop can be optimized further for optimal
+	 *  performance on the host, e.g. by reading full words...
+	 */
 	do {
 		rv = page[i ++];
 	} while (i < 0x1000 && rv != 0);
@@ -2726,41 +2688,7 @@ void COMBINE(netbsd_r3k_cache_inv)(struct cpu *cpu,
 
 
 /*
- *  Combine:  Multiple SW in a row using the same base register
- *
- *	sw	r?,???(rX)
- *	sw	r?,???(rX)
- *	sw	r?,???(rX)
- *	...
- */
-void COMBINE(multi_sw)(struct cpu *cpu, struct mips_instr_call *ic,
-	int low_addr)
-{
-	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
-	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
-
-	/*  Only for 32-bit virtual address translation so far.  */
-	if (!cpu->is_32bit)
-		return;
-
-	if (n_back < 4)
-		return;
-
-	/*  Avoid "overlapping" instruction combinations:  */
-	if (ic[-4].f == instr(multi_sw_3) || ic[-3].f == instr(multi_sw_3))
-		return;
-
-	if (ic[-2].f == ic[0].f && ic[-1].f == ic[0].f &&
-	    ic[-2].arg[1] == ic[0].arg[1] &&
-	    ic[-1].arg[1] == ic[0].arg[1]) {
-		ic[-2].f = instr(multi_sw_3);
-		combined;
-	}
-}
-
-
-/*
- *  Combine:
+ *  Combine: something ending with a nop.
  *
  *	NetBSD's strlen core.
  *	[Conditional] branch, followed by nop.
@@ -2770,16 +2698,15 @@ void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
+#ifdef MODE32
 	if (n_back < 3)
 		return;
-#ifdef MODE32
+
 	if ((ic[-3].f == mips32_loadstore[1] ||
 	    ic[-3].f == mips32_loadstore[16 + 1]) &&
 	    ic[-3].arg[2] == 0 &&
 	    ic[-3].arg[0] == ic[-1].arg[0] && ic[-3].arg[1] == ic[-2].arg[0] &&
-
 	    ic[-2].arg[0] == ic[-2].arg[1] && ic[-2].arg[2] == 1 &&
-
 	    ic[-2].f == instr(addiu) && ic[-1].arg[2] == (size_t) &ic[-3] &&
 	    ic[-1].arg[1] == (size_t) &cpu->cd.mips.gpr[MIPS_GPR_ZERO] &&
 	    ic[-1].f == instr(bne_samepage)) {
@@ -3769,15 +3696,6 @@ X(to_be_translated)
 		/*  Load into the dummy scratch register, if rt = zero  */
 		if (!store && rt == MIPS_GPR_ZERO)
 			ic->arg[0] = (size_t)&cpu->cd.mips.scratch;
-
-		/*  Check for multiple stores in a row using the same
-		    base register:  */
-		if (main_opcode == HI6_SW)
-			cpu->cd.mips.combination_check = COMBINE(multi_sw);
-
-		/*  TODO: This doesn't really improve performance much:  */
-		/*  if (main_opcode == HI6_SW && (int32_t)imm == -4)
-			cpu->cd.mips.combination_check = COMBINE(sw_loop);  */
 
 		break;
 

@@ -1,5 +1,5 @@
 /*
- *  $Id: rectangles.c,v 1.4 2006-07-08 12:30:02 debug Exp $
+ *  $Id: rectangles.c,v 1.5 2006-07-09 07:53:33 debug Exp $
  *
  *  GXemul demo:  Random rectangles
  *
@@ -23,6 +23,10 @@
 #define FBCTRL_BASE		(PHYSADDR_OFFSET + DEV_FBCTRL_ADDRESS)
 
 
+#define	XRES	800
+#define	YRES	600
+
+
 void my_memset(unsigned char *a, int x, int len)
 {
 	while (len-- > 0)
@@ -30,7 +34,7 @@ void my_memset(unsigned char *a, int x, int len)
 }
 
 
-void draw_rectangle(int xres, int x1, int y1, int x2, int y2, int c)
+void draw_rectangle(int x1, int y1, int x2, int y2, int c)
 {
 	int y, len;
 
@@ -38,7 +42,7 @@ void draw_rectangle(int xres, int x1, int y1, int x2, int y2, int c)
 		len = 3 * (x2-x1+1);
 		if (len > 0) {
 			my_memset((unsigned char *)FB_BASE +
-			    3 * (xres * y + x1), c, len);
+			    3 * (XRES * y + x1), c, len);
 		}
 	}
 }
@@ -82,7 +86,7 @@ void fbctrl_set_y1(int v)
 
 void fbctrl_command(int c)
 {
-	fbctrl_write_port(DEV_FBCTRL_PORT_COMMAND_AND_STATUS);
+	fbctrl_write_port(DEV_FBCTRL_PORT_COMMAND);
 	fbctrl_write_data(c);
 }
 
@@ -91,21 +95,19 @@ void change_resolution(int xres, int yres)
 {
 	fbctrl_set_x1(xres);
 	fbctrl_set_y1(yres);
-	fbctrl_command(DEV_FBCTRL_COMMAND_CHANGE_RESOLUTION);
+	fbctrl_command(DEV_FBCTRL_COMMAND_SET_RESOLUTION);
 }
 
 
 void f(void)
 {
-	int xres = 800, yres = 600;
-
 	/*  Change to the resolution we want:  */
-	change_resolution(xres, yres);
+	change_resolution(XRES, YRES);
 
 	/*  Draw random rectangles forever:  */
 	for (;;)  {
-		draw_rectangle(xres, my_random() % xres, my_random() % yres,
-		    my_random() % xres, my_random() % yres, my_random());
+		draw_rectangle(my_random() % XRES, my_random() % YRES,
+		    my_random() % XRES, my_random() % YRES, my_random());
 	}
 }
 

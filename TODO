@@ -1,11 +1,13 @@
-$Id: TODO,v 1.313 2006-07-09 06:37:40 debug Exp $
+$Id: TODO,v 1.314 2006-07-09 07:53:33 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 MUST:
 	o)  Figure out what causes problems in non-R3000 tlbw*, and fix
-		it (to get rid of the performance bottlenecks).
+	    it (to get rid of the performance bottlenecks).
 	o)  Fix invalidate_asid so it works well for all non-R3000 CPUs too!
+	o)  Fix the bug which makes    gxemul -i -E testmips rectangles_mips
+	    behave strangely! (when rectangles_mips is linked as 64-bit)
 
 Code cleanup:
 	x)  Make memory_paddr_to_hostaddr actually return the hostaddr

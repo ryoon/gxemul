@@ -1,7 +1,6 @@
 Alpha
 -----
-alpha-unknown-elf-gcc -I../../src/include/testmachine -g		\
-	disk.c -c -o disk_alpha.o
+alpha-unknown-elf-gcc -I../../src/include/testmachine -g disk.c -c -o disk_alpha.o
 alpha-unknown-elf-ld -Ttext 0x10000 -e f disk_alpha.o -o disk_alpha
 file disk_alpha
 gxemul -d disk.img -E testalpha disk_alpha
@@ -17,22 +16,18 @@ gxemul -d disk.img -E testarm disk_arm
 
 MIPS (64-bit)
 -------------
-mips64-unknown-elf-gcc -I../../src/include/testmachine -g -DMIPS	\
-	disk.c -mips4 -mabi=64 -c -o disk_mips.o
-mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f			\
-	disk_mips.o -o disk_mips --oformat=elf64-bigmips
+mips64-unknown-elf-gcc -I../../src/include/testmachine -g -DMIPS disk.c -mips4 -mabi=64 -c -o disk_mips.o
+mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f disk_mips.o -o disk_mips --oformat=elf64-bigmips
 file disk_mips
 gxemul -d disk.img -E testmips disk_mips
 
 
 MIPS (32-bit)
 -------------
-mips64-unknown-elf-gcc -I../../src/include/testmachine -g -DMIPS	\
-	disk.c -mips1 -mabi=32 -c -o disk_mips.o
-mips64-unknown-elf-ld -Ttext 0x80030000 -e f				\
-	disk_mips.o -o disk_mips
-file disk_mips
-gxemul -d disk.img -E testmips -C R3000 disk_mips
+mips64-unknown-elf-gcc -I../../src/include/testmachine -g -DMIPS disk.c -mips1 -mabi=32 -c -o disk_mips32.o
+mips64-unknown-elf-ld -Ttext 0x80030000 -e f disk_mips32.o -o disk_mips32
+file disk_mips32
+gxemul -d disk.img -E testmips -C R3000 disk_mips32
 
 
 PPC (64-bit)
@@ -50,8 +45,7 @@ gxemul -d disk.img -E testppc -C PPC750 disk_ppc
 
 SPARC (64-bit)
 --------------
-sparc64-unknown-elf-gcc -I../../src/include/testmachine -g		\
-	disk.c -c -o disk_sparc.o
+sparc64-unknown-elf-gcc -I../../src/include/testmachine -g disk.c -c -o disk_sparc.o
 sparc64-unknown-elf-ld -e f disk_sparc.o -o disk_sparc
 file disk_sparc
 gxemul -d disk.img -E testsparc disk_sparc

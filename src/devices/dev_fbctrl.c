@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fbctrl.c,v 1.3 2006-07-08 12:54:09 debug Exp $
+ *  $Id: dev_fbctrl.c,v 1.4 2006-07-09 07:53:33 debug Exp $
  *
  *  A "framebuffer control" device. It can be used to manipulate the
  *  framebuffer device in testmachines.
@@ -60,7 +60,7 @@ struct fbctrl_data {
  */
 static void fbctrl_command(struct cpu *cpu, struct fbctrl_data *d)
 {
-	int cmd = d->port[DEV_FBCTRL_PORT_COMMAND_AND_STATUS];
+	int cmd = d->port[DEV_FBCTRL_PORT_COMMAND];
 	int x1, y1, i;
 	struct machine *machine;
 
@@ -69,9 +69,9 @@ static void fbctrl_command(struct cpu *cpu, struct fbctrl_data *d)
 	case DEV_FBCTRL_COMMAND_NOP:
 		break;
 
-	case DEV_FBCTRL_COMMAND_CHANGE_RESOLUTION:
+	case DEV_FBCTRL_COMMAND_SET_RESOLUTION:
 		/*
-		 *  Change framebuffer resolution to (X1, Y1).
+		 *  Change the framebuffer resolution to X1 x Y1 pixels.
 		 */
 		x1 = d->port[DEV_FBCTRL_PORT_X1];
 		y1 = d->port[DEV_FBCTRL_PORT_Y1];
@@ -85,6 +85,11 @@ static void fbctrl_command(struct cpu *cpu, struct fbctrl_data *d)
 		for (i=0; i<machine->ncpus; i++)
 			machine->cpus[i]->invalidate_translation_caches(
 			    machine->cpus[i], 0, INVALIDATE_ALL);
+		break;
+
+	case DEV_FBCTRL_COMMAND_GET_RESOLUTION:
+		d->port[DEV_FBCTRL_PORT_X1] = d->vfb_data->xsize;
+		d->port[DEV_FBCTRL_PORT_Y1] = d->vfb_data->ysize;
 		break;
 
 	/*  TODO: Block copy and fill.  */
@@ -127,8 +132,7 @@ DEVICE_ACCESS(fbctrl)
 			odata = d->port[d->current_port];
 		else {
 			d->port[d->current_port] = idata;
-			if (d->current_port ==
-			    DEV_FBCTRL_PORT_COMMAND_AND_STATUS)
+			if (d->current_port == DEV_FBCTRL_PORT_COMMAND)
 				fbctrl_command(cpu, d);
 		}
 

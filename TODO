@@ -1,4 +1,4 @@
-$Id: TODO,v 1.315 2006-07-11 03:55:32 debug Exp $
+$Id: TODO,v 1.316 2006-07-11 04:44:09 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -123,9 +123,9 @@ Dyntrans:
 		o) First test would be to just implement a simple
 		   instruction such as MIPS' addiu or lui, on AMD64
 		   hosts...
-	x)  Remove the dyntrans_alignment_check functionality; although
-	    it gives slightly higher peformance sometimes, it increases
-	    the complexity of the code too much!
+	x)  Idle loop detection? (Depends on target.) Could be turned
+	    into usleep(1) or similar on the host... except when doing
+	    e.g. SMP emulation. Then it becomes trickier.
 
 Alpha:
 	o)  Virtual memory (tlbs etc)

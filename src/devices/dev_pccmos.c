@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.23 2006-05-30 19:49:39 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.24 2006-07-11 04:44:09 debug Exp $
  *  
  *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
  *
@@ -149,6 +149,9 @@ DEVINIT(pccmos)
 		/*  Malta etc.  */
 		irq_nr = 8 + 8;
 		type = MC146818_ALGOR;
+		break;
+	case MACHINE_QEMU_MIPS:
+		irq_nr = 8 + 8;		/*  TODO. Bogus so far.  */
 		break;
 	case MACHINE_X86:
 		irq_nr = 16;	/*  "No" irq  */

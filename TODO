@@ -1,4 +1,4 @@
-$Id: TODO,v 1.314 2006-07-09 07:53:33 debug Exp $
+$Id: TODO,v 1.315 2006-07-11 03:55:32 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -40,7 +40,8 @@ Long-term design:
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
 
-Misc.:
+Test:
+	x)  Test with more than one Sprite instance on an emulated network!
 	x)  Wait for new releases of NetBSD, and test with those.
 
 -------------------------------------------------------------------------------

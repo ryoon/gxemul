@@ -25,16 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.1 2006-07-11 04:44:11 debug Exp $
+ *  $Id: machine_qemu.c,v 1.2 2006-07-11 17:24:17 debug Exp $
  *
- *  This file contains (or will contain) machine descriptions for experimental
- *  machines such as those emulated by the QEMU MIPS machine mode.
+ *  This file contains semi-bogus machine descriptions for experimental
+ *  machines, mimicing those emulated by Fabrice Bellard's QEMU.
  *
  *  See e.g. http://fabrice.bellard.free.fr/qemu/mips-test-0.1.tar.gz
  *  (available from http://fabrice.bellard.free.fr/qemu/download.html).
- *
- *  TODO: Pretty much everything. (Port numbers, IRQs, register contents
- *  at startup, how to copy bootargs, ...)  This is mostly bogus so far.
  */
 
 #include <stdio.h>
@@ -55,22 +52,32 @@ MACHINE_SETUP(qemu_mips)
 	machine->machine_name = "QEMU MIPS";
 	cpu->byte_order = EMUL_BIG_ENDIAN;
 
-	/*  An ISA bus...  */
-	/*  TODO: Ports! IRQs!  */
-	bus_isa_init(machine, 0, 0x14000000ULL, 0x18000000ULL, 32, 48);
+	/*  An ISA bus at 0x14000000...  */
+	bus_isa_init(machine, 0, 0x14000000ULL, 0x18000000ULL, 8, 24);
 
-	/*  ... and an ISA interrupt controller:  */
+	/*  ... and an ISA interrupt controller, connected to MIPS irq 2:  */
 	machine->md_interrupt = isa8_interrupt;
-	machine->isa_pic_data.native_irq = 6;	/*  TODO  */
-
+	machine->isa_pic_data.native_irq = 2;
 
 	if (!machine->prom_emulation)
 		return;
 
+	/*
+	 *  Registers at startup do not seem to be defined in QEMU, but
+	 *  bootargs and memory size are placed just below 16 MB.
+	 *
+	 *  Remember to start the emulator with options, e.g.:
+	 *
+	 *	-o "console=ttyS0 root=/dev/ram rd_start=0x80800000
+	 *		rd_size=10000000 init=/bin/sh"
+	 */
 
-	/*  TODO: Register contents at startup  */
-
-	/*  TODO: Bootargs?  */
+	store_string(cpu, (int32_t)(0x80000000 + 16*1048576 - 256),
+	    machine->boot_string_argument);
+	store_32bit_word(cpu, (int32_t)(0x80000000 + 16*1048576 - 260),
+	    0x12345678);
+	store_32bit_word(cpu, (int32_t)(0x80000000 + 16*1048576 - 264),
+	    machine->physical_ram_in_mb * 1048576);
 }
 
 
@@ -81,9 +88,16 @@ MACHINE_DEFAULT_CPU(qemu_mips)
 }
 
 
+MACHINE_DEFAULT_RAM(qemu_mips)
+{       
+	machine->physical_ram_in_mb = 64;
+}
+
+
 MACHINE_REGISTER(qemu_mips)
 {
 	MR_DEFAULT(qemu_mips, "QEMU MIPS", ARCH_MIPS, MACHINE_QEMU_MIPS);
+	me->set_default_ram = machine_default_ram_qemu_mips;
 	machine_entry_add_alias(me, "qemu_mips");
 }
 

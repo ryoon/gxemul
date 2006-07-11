@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.149 2006-06-25 02:36:46 debug Exp $
+$Id: guestoses.html,v 1.150 2006-07-11 17:24:17 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -98,6 +98,7 @@ not be relevant for this specific release of GXemul.)
   <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
   <li><a href="#openbsdarcinstall">OpenBSD/arc 2.3</a>
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
+  <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 2.1</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.0</a>
 </ul>
@@ -1928,6 +1929,37 @@ manipulate Linux disk images, if you are on a non-Linux host. By choosing
 "Execute a shell" in the installer's menu, you can have access to tools such as
 fdisk and mke2fs, which are useful for creating Linux paritions on disk images.
 
+
+
+
+
+
+
+
+<p><br>
+<a name="linux_qemu_mips"></a>
+<h3>Linux/QEMU_MIPS:</h3>
+
+2006-07-11: I've added a semi-bogus machine mode which tries to 
+mimic the MIPS machine mode used in Fabrice Bellard's
+<a href="http://fabrice.bellard.free.fr/qemu/">QEMU</a>.
+
+<p><ol>
+  <li>Download <a href="http://fabrice.bellard.free.fr/qemu/mips-test-0.1.tar.gz">mips-test-0.1.tar.gz</a>
+	from <a href="http://fabrice.bellard.free.fr/qemu/download.html">http://fabrice.bellard.free.fr/qemu/download.html</a>,
+	and extract it (<tt>tar zxvf mips-test-0.1.tar.gz</tt>).
+  <p>
+  <li>Test it in GXemul using the following command line:<pre>
+	<b>gxemul -E qemu_mips -o 'console=ttyS0 root=/dev/ram
+		rd_start=0x80800000 rd_size=10000000 init=/bin/sh'
+		0x80800000:mips-test/initrd mips-test/vmlinux-r1</b>
+
+</pre>
+</ol>
+
+<p>
+During bootup, there are two BUGS messages. (Probably due to bugs in 
+GXemul.)  Still, /bin/sh is reached and can be interacted with.
 
 
 

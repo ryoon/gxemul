@@ -1,4 +1,4 @@
-$Id: TODO,v 1.316 2006-07-11 04:44:09 debug Exp $
+$Id: TODO,v 1.317 2006-07-12 05:22:45 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -8,16 +8,30 @@ MUST:
 	o)  Fix invalidate_asid so it works well for all non-R3000 CPUs too!
 	o)  Fix the bug which makes    gxemul -i -E testmips rectangles_mips
 	    behave strangely! (when rectangles_mips is linked as 64-bit)
+	o)  Actually use the settings object, better debugger stuff, etc!
+	o)  Debugger command for enabling/disabling instruction statistics
+	    during runtime.   machine.statistics = on|off
 
 Code cleanup:
 	x)  Make memory_paddr_to_hostaddr actually return the hostaddr
 		instead of the memblock?
 	x)  Macro for the device tick function prototype?
+	x)  Revert the dyntrans page template experiment? Hm.
+
+Documentation:
+	x)  Rewrite the section about experimental devices, after the
+	    framebuffer acceleration has been implemented, and demos
+	    written. (Symbolic names instead of numbers; example
+	    use cases, etc. Mention demo files that use the various
+	    features?)
+	x)  "a very simple linear framebuffer device (for graphics output)"
+	    under "which machines does gxemul emulate" ==> better
+	    description?
+	x)  Better description on how to set up a cross compiler?
+	    Example for MIPS64.
 
 Long-term implementation:
 	x)  Testmachine includes:
-		+ Better documentation, which uses the symbolic names
-		  instead of numbers.
 		+ dev_fb block fill and copy
 		+ dev_fb draw characters (from the built-in font)?
 		+ dev_fb input device? mouse pointer coordinates and buttons
@@ -31,14 +45,14 @@ Long-term implementation:
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.
 	x)  Continue on Alpha emulation  (virtual memory, etc). Cleanup.
-	x)  Alignment exceptions (MIPS, PPC, ARM, ...)
+	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 
 Long-term design:
 	x)  Clock framework? Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
-	x)  Actually use the settings object, better debugger stuff, etc.
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
+	x)  Dyntrans with valgrind-inspired memory checker.
 
 Test:
 	x)  Test with more than one Sprite instance on an emulated network!
@@ -73,6 +87,7 @@ SMP:
 MIPS:
 	+)  Some more work on opcodes.
 		x) MIPS64 revision 2.
+			o)  Find out which actual CPUs implement the rev2 ISA!
 		x) _MAYBE_ TX79 and R5900 actually differ in their
 		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.

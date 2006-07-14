@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.46 2006-07-08 10:02:38 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.47 2006-07-14 16:33:27 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1745,11 +1745,9 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		/*  If we have a memblock (host page) for the physical
 		    page, then add a translation for it immediately:  */
 		if (memblock != NULL &&
-		    cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
-			memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
+		    cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V)
 			cpu->update_translation_table(cpu, vaddr, memblock,
 			    wf, paddr);
-		}
 	} else {
 		/*  R4000 etc.:  */
 		unsigned char *memblock = NULL;
@@ -1857,17 +1855,13 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		 *             this.
 		 */
 		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr0, 0);
-		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & ENTRYLO_V) {
-			memblock += (paddr0 & ((1 << BITS_PER_PAGETABLE) - 1));
+		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & ENTRYLO_V)
 			cpu->update_translation_table(cpu, vaddr0, memblock,
 			    wf0, paddr0);
-		}
 		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr1, 0);
-		if (memblock != NULL && cp->reg[COP0_ENTRYLO1] & ENTRYLO_V) {
-			memblock += (paddr1 & ((1 << BITS_PER_PAGETABLE) - 1));
+		if (memblock != NULL && cp->reg[COP0_ENTRYLO1] & ENTRYLO_V)
 			cpu->update_translation_table(cpu, vaddr1, memblock,
 			    wf1, paddr1);
-		}
 	}
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.50 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_le.c,v 1.51 2006-07-14 16:33:28 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -604,9 +604,6 @@ void le_register_write(struct le_data *d, int r, uint32_t x)
 }
 
 
-/*
- *  dev_le_sram_access():
- */
 DEVICE_ACCESS(le_sram)
 {
 	size_t i;
@@ -652,9 +649,6 @@ DEVICE_ACCESS(le_sram)
 }
 
 
-/*
- *  dev_le_access():
- */
 DEVICE_ACCESS(le)
 {
 	uint64_t idata = 0, odata = 0;

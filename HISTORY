@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1288 2006-07-11 17:24:17 debug Exp $
+$Id: HISTORY,v 1.1289 2006-07-14 16:33:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2864,3 +2864,4 @@ Changelog for GXemul:
 		made for QEMU_MIPS also can run in GXemul... at least to some
 		extent.)  Adding a short section about how to run this mode to
 		doc/guestoses.html.
+20060714	Misc. minor code cleanups.

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.317 2006-07-12 05:22:45 debug Exp $
+$Id: TODO,v 1.318 2006-07-14 16:33:27 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -13,8 +13,6 @@ MUST:
 	    during runtime.   machine.statistics = on|off
 
 Code cleanup:
-	x)  Make memory_paddr_to_hostaddr actually return the hostaddr
-		instead of the memblock?
 	x)  Macro for the device tick function prototype?
 	x)  Revert the dyntrans page template experiment? Hm.
 
@@ -184,6 +182,13 @@ Debugger:
 			o)  Remove a setting.
 			o)  Read/write a setting given a name. (Read as
 			    string and/or int64_t simultaneously?)
+			o)  Warnings when exiting the emulator, if the
+			    settings have not been removed exactly in
+			    the same way as they were added? This would
+			    improve code cleanliness in the long term.
+			    (I.e. require a corresponding _destroy()
+			    function for all _new functions... machine_
+			    cpu_ etc.)
 
 		Help command should have subsections! One for "expressions",
 		mirrored in the documentation, but the internal help should

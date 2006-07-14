@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.24 2006-06-24 21:47:23 debug Exp $
+ *  $Id: memory_ppc.c,v 1.25 2006-07-14 16:33:28 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -107,8 +107,7 @@ int ppc_bat(struct cpu *cpu, uint64_t vaddr, uint64_t *return_paddr, int flags,
 static int get_pte_low(struct cpu *cpu, uint64_t pteg_select,
 	uint32_t *lowp, uint32_t cmp)
 {
-	unsigned char *d = memory_paddr_to_hostaddr(cpu->mem, pteg_select, 1)
-	    + (pteg_select & ((1 << BITS_PER_MEMBLOCK) - 1));
+	unsigned char *d = memory_paddr_to_hostaddr(cpu->mem, pteg_select, 1);
 	int i;
 
 	for (i=0; i<8; i++) {

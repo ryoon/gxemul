@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.70 2006-01-14 12:51:59 debug Exp $
+ *  $Id: useremul.c,v 1.71 2006-07-14 16:33:27 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -40,21 +40,25 @@
  *	Dynamic ELFs?
  *
  *	Try to prefix "/emul/mips/" or similar to all filenames,
- *		and only if that fails, try the given filename
+ *		and only if that fails, try the given filename.
+ *		Read this setting from an environment variable, and only
+ *		if there is none, fall back to hardcoded string.
  *
- *	Automagic errno translation?
+ *	Automagic errno translation!
  *
- *	Memory allocation? mmap etc.
+ *	Memory allocation? mmap, munmap, mprotect, etc.
+ *		mprotect = unmap in dyntrans...
  *
- *	File descriptor (0,1,2) assumptions?
+ *	File descriptor (0,1,2) assumptions? Find and fix these?
  *
  *
  *  This module needs more cleanup.
  *  -------------------------------
  *
  *
- *  NOTE:  This module (useremul.c) is just a quick hack to see if
- *         userland emulation works at all.
+ *  NOTE:  This module (useremul.c) is just a quick hack so far, to see if
+ *         userland emulation works at all. It only works for Hello World-
+ *         style programs compiled for FreeBSD/alpha or NetBSD/mips.
  */
 
 #include <errno.h>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.59 2006-06-30 18:46:43 debug Exp $
+ *  $Id: cpu_mips.c,v 1.60 2006-07-14 16:33:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1601,7 +1601,6 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		}
 
 		/*  Coprocessor registers:  */
-		/*  TODO: multiple selections per register?  */
 		for (i=0; i<32; i++) {
 			/*  32-bit:  */
 			if ((i & nm1) == 0)

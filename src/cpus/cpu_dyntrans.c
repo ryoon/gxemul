@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.109 2006-07-01 23:01:22 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.110 2006-07-14 16:33:27 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -691,12 +691,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #else
 	if (l3->host_load[x3] == NULL) {
 #endif
+		int q = DYNTRANS_PAGESIZE - 1;
 		unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
-		    physaddr, MEM_READ);
+		    physaddr & ~q, MEM_READ);
 		if (host_page != NULL) {
-			int q = DYNTRANS_PAGESIZE - 1;
-			host_page += (physaddr &
-			    ((1 << BITS_PER_MEMBLOCK) - 1) & ~q);
 			cpu->update_translation_table(cpu, cached_pc & ~q,
 			    host_page, 0, physaddr & ~q);
 #ifndef MODE32

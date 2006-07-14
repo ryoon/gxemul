@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.92 2006-07-09 05:51:28 debug Exp $
+ *  $Id: memory_rw.c,v 1.93 2006-07-14 16:33:27 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -280,10 +280,8 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 						uint64_t p = orig_paddr - *pp;
 						host_addr =
 						    memory_paddr_to_hostaddr(
-						    mem, p, MEM_WRITE)
-						    + (p & ~offset_mask
-						    & ((1 <<
-						    BITS_PER_MEMBLOCK) - 1));
+						    mem, p & ~offset_mask,
+						    MEM_WRITE);
 					} else {
 						host_addr =
 						    mem->dev_dyntrans_data[i] +
@@ -470,14 +468,15 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	 *  3)  If this was a Write, then invalidate any code translations
 	 *      in that page.
 	 */
-	memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
+	memblock = memory_paddr_to_hostaddr(mem, paddr & ~offset_mask,
+	    writeflag);
 	if (memblock == NULL) {
 		if (writeflag == MEM_READ)
 			memset(data, 0, len);
 		goto do_return_ok;
 	}
 
-	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
+	offset = paddr & offset_mask;
 
 	if (cpu->update_translation_table != NULL && !dyntrans_device_danger
 #ifdef MEM_MIPS
@@ -493,8 +492,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 	    && !no_exceptions)
 		cpu->update_translation_table(cpu, vaddr & ~offset_mask,
-		    memblock + (offset & ~offset_mask),
-		    (misc_flags & MEMORY_USER_ACCESS) |
+		    memblock, (misc_flags & MEMORY_USER_ACCESS) |
 #if !defined(MEM_MIPS) && !defined(MEM_USERLAND)
 		    (cache == CACHE_INSTRUCTION?
 			(writeflag == MEM_WRITE? 1 : 0) : ok - 1),
@@ -507,7 +505,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	if (writeflag == MEM_WRITE && cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);
 
-	if (offset + len > (1 << BITS_PER_MEMBLOCK)) {
+	if ((paddr&((1<<BITS_PER_MEMBLOCK)-1)) + len > (1<<BITS_PER_MEMBLOCK)) {
 		printf("Write over memblock boundary?\n");
 		exit(1);
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.191 2006-07-08 12:30:02 debug Exp $
+ *  $Id: memory.c,v 1.192 2006-07-14 16:33:27 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -543,9 +543,11 @@ void memory_device_remove(struct memory *mem, int i)
 /*
  *  memory_paddr_to_hostaddr():
  *
- *  Translate a physical address into a host address.
+ *  Translate a physical address into a host address. The usual way to call
+ *  this function is to make sure that paddr is page aligned, which will result
+ *  in the host _page_ corresponding to that address.
  *
- *  Return value is a pointer to a host memblock, or NULL on failure.
+ *  Return value is a pointer to the address in the host, or NULL on failure.
  *  On reads, a NULL return value should be interpreted as reading all zeroes.
  */
 unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
@@ -555,6 +557,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	int entry;
 	const int mask = (1 << BITS_PER_PAGETABLE) - 1;
 	const int shrcount = MAX_BITS - BITS_PER_PAGETABLE;
+	unsigned char *hostptr;
 
 	table = mem->pagetable;
 	entry = (paddr >> shrcount) & mask;
@@ -594,7 +597,12 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 		}
 	}
 
-	return (unsigned char *) table[entry];
+	hostptr = (unsigned char *) table[entry];
+
+	if (hostptr != NULL)
+		hostptr += (paddr & ((1 << BITS_PER_MEMBLOCK) - 1));
+
+	return hostptr;
 }
 
 

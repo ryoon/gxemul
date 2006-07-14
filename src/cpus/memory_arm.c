@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.35 2006-06-24 21:47:23 debug Exp $
+ *  $Id: memory_arm.c,v 1.36 2006-07-14 16:33:28 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -136,13 +136,8 @@ int arm_translate_v2p_mmu(struct cpu *cpu, uint64_t vaddr64,
 
 	if (cpu->cd.arm.translation_table == NULL ||
 	    cpu->cd.arm.ttb != cpu->cd.arm.last_ttb) {
-		uint32_t ofs;
 		cpu->cd.arm.translation_table = memory_paddr_to_hostaddr(
 		    cpu->mem, cpu->cd.arm.ttb & 0x0fffffff, 0);
-		if (cpu->cd.arm.translation_table != NULL) {
-			ofs = cpu->cd.arm.ttb & ((1 << BITS_PER_MEMBLOCK) - 1);
-			cpu->cd.arm.translation_table += ofs;
-		}
 		cpu->cd.arm.last_ttb = cpu->cd.arm.ttb;
 	}
 
@@ -180,7 +175,7 @@ int arm_translate_v2p_mmu(struct cpu *cpu, uint64_t vaddr64,
 			printf("arm memory blah blah adfh asfg asdgasdg\n");
 			exit(1);
 		}
-		d2 = *(uint32_t *)(q + (addr & ((1 << BITS_PER_MEMBLOCK) - 1)));
+		d2 = *(uint32_t *)(q);
 #ifdef HOST_LITTLE_ENDIAN
 		if (cpu->byte_order == EMUL_BIG_ENDIAN)
 #else

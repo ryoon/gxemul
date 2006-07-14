@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.8 2006-06-24 21:47:23 debug Exp $
+ *  $Id: memory_mips.c,v 1.9 2006-07-14 16:33:28 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  *
@@ -54,7 +54,6 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	uint32_t tag_mask;
 	unsigned char *memblock;
 	struct memory *mem = cpu->mem;
-	int offset;
 #endif
 	unsigned int i;
 	int cache_isolated = 0, addr, hit, which_cache = cache;
@@ -127,14 +126,11 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			    old_cached_paddr);
 */
 			memblock = memory_paddr_to_hostaddr(
-			    mem, old_cached_paddr, MEM_WRITE);
-			offset = old_cached_paddr
-			    & ((1 << BITS_PER_MEMBLOCK) - 1)
-			    & ~cpu->cd.mips.cache_mask[which_cache];
+			    mem, old_cached_paddr & ~cpu->cd.mips.
+			    cache_mask[which_cache], MEM_WRITE);
 
 			src = cpu->cd.mips.cache[which_cache];
-			dst = memblock + (offset &
-			    ~cpu->cd.mips.cache_mask[which_cache]);
+			dst = memblock;
 
 			src += cache_line *
 			    cpu->cd.mips.cache_linesize[which_cache];
@@ -147,19 +143,11 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 				memcpy(dst, src,
 				    cpu->cd.mips.cache_linesize[which_cache]);
 			}
-			/*  offset is the offset within
-			 *  the memblock:
-			 *  printf("read: offset = 0x%x\n", offset);
-			 */
 		}
 
 		/*  Copy from main memory into the cache:  */
-		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
-		offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1)
-		    & ~cpu->cd.mips.cache_mask[which_cache];
-		/*  offset is offset within the memblock:
-		 *  printf("write: offset = 0x%x\n", offset);
-		 */
+		memblock = memory_paddr_to_hostaddr(mem, paddr
+		    & ~cpu->cd.mips.cache_mask[which_cache], writeflag);
 
 /*		fatal("  FETCHING new paddr=0%08x\n", paddr);
 */
@@ -170,8 +158,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			memset(dst, 0,
 			    cpu->cd.mips.cache_linesize[which_cache]);
 		} else {
-			src = memblock + (offset &
-			    ~cpu->cd.mips.cache_mask[which_cache]);
+			src = memblock;
 
 			src += cache_line *
 			    cpu->cd.mips.cache_linesize[which_cache];

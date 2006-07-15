@@ -25,12 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ic_statistics.c,v 1.3 2006-03-30 19:36:03 debug Exp $
+ *  $Id: ic_statistics.c,v 1.4 2006-07-15 09:44:13 debug Exp $
  *
  *  This program is not optimized for speed, but it should work.
  *
+ *  Run  gxemul -s i:log.txt blahblahblah, and then
+ *
  *  for a in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do \
- *	./ic_statistics $a |sort -n > statistics.$a.txt; done
+ *	./ic_statistics log.txt $a |sort -n > statistics.$a.txt; done
  */
 
 #include <stdio.h>
@@ -41,7 +43,7 @@
 
 
 struct entry {
-	void		**ptrs;
+	uint64_t	*ptrs;
 	long long	count;
 };
 
@@ -55,7 +57,7 @@ char **cache_symbol = NULL;
 int n_cached_symbols = 0;
 
 
-char *cached_size_t_to_symbol(size_t s)
+char *cached_size_t_to_symbol(uint64_t s)
 {
 	int i = 0;
 	FILE *q;
@@ -73,8 +75,7 @@ char *cached_size_t_to_symbol(size_t s)
 	cache_symbol = realloc(cache_symbol, sizeof(char *) * n_cached_symbols);
 	cache_s[n_cached_symbols - 1] = s;
 
-	snprintf(tmp, sizeof(tmp), "nm ../gxemul | grep "
-	    "%"PRIx64, (uint64_t)s);
+	snprintf(tmp, sizeof(tmp), "nm ../gxemul | grep %"PRIx64, s);
 	q = popen(tmp, "r");
 	if (q == NULL) {
 		perror("popen()");
@@ -105,12 +106,12 @@ void print_all(int n)
 {
 	int i = 0;
 	while (i < n_entries) {
-		void **pp = entries[i].ptrs;
+		uint64_t *pp = entries[i].ptrs;
 		int j = 0;
 
 		printf("%lli\t", (long long)entries[i].count);
 		while (j < n) {
-			size_t s = (size_t)pp[j];
+			uint64_t s = pp[j];
 
 			if (j > 0)
 				printf(", ");
@@ -125,13 +126,14 @@ void print_all(int n)
 }
 
 
-void add_count(void **pointers, int n)
+void add_count(uint64_t *icpointers, int n)
 {
 	int i = 0;
 
 	/*  Scan all existing entries.  */
 	while (i < n_entries) {
-		if (memcmp(pointers, entries[i].ptrs, sizeof(void*) * n) == 0) {
+		if (memcmp(icpointers, entries[i].ptrs,
+		    sizeof(uint64_t) * n) == 0) {
 			entries[i].count ++;
 			return;
 		}
@@ -142,45 +144,49 @@ void add_count(void **pointers, int n)
 	n_entries ++;
 	entries = realloc(entries, sizeof(struct entry) * n_entries);
 	entries[n_entries-1].ptrs = malloc(sizeof(void *) * n);
-	memcpy(entries[n_entries-1].ptrs, &pointers[0], n * sizeof(void *));
+	memcpy(entries[n_entries-1].ptrs, &icpointers[0], n * sizeof(uint64_t));
 	entries[n_entries-1].count = 1;
 }
 
 
 void try_len(FILE *f, int len)
 {
-	void **pointers;
-	off_t off;
+	uint64_t *icpointers;
+	off_t off, n_read = 0;
 
-	pointers = malloc(sizeof(void *) * len);
+	icpointers = malloc(sizeof(uint64_t) * len);
 
 	fseek(f, 0, SEEK_END);
 	off = ftello(f);
 
 	fseek(f, 0, SEEK_SET);
-	if (len > 1)
-		fread(&pointers[1], sizeof(void *), len-1, f);
 
 	while (!feof(f)) {
 		static long long yo = 0;
+		char buf[100];
+
 		yo ++;
 		if ((yo & 0xfffff) == 0) {
 			fprintf(stderr, "[ len=%i, %i%% done ]\n",
 			    len, 100 * yo * sizeof(void *) / off);
 		}
 
-		/*  Make room for next pointer value:  */
+		/*  Make room for next icpointer value:  */
 		if (len > 1)
-			memmove(&pointers[0], &pointers[1],
-			    (len-1) * sizeof(void *));
+			memmove(&icpointers[0], &icpointers[1],
+			    (len-1) * sizeof(uint64_t));
 
-		/*  Read one pointer into pointers[len-1]:  */
-		fread(&pointers[len-1], sizeof(void *), 1, f);
+		/*  Read one value into icpointers[len-1]:  */
+		fgets(buf, sizeof(buf), f);
+		icpointers[len-1] = strtoull(buf, NULL, 0);
 
-		add_count(&pointers[0], len);
+		n_read ++;
+
+		if (n_read >= len)
+			add_count(&icpointers[0], len);
 	}
 
-	free(pointers);
+	free(icpointers);
 }
 
 
@@ -189,17 +195,18 @@ int main(int argc, char *argv[])
 	FILE *f;
 	int len = 1;
 
-	f = fopen("instruction_call_statistics.raw", "r");
-	if (f == NULL) {
-		f = fopen("../instruction_call_statistics.raw", "r");
-		if (f == NULL) {
-			perror("instruction_call_statistics.raw");
-			exit(1);
-		}
+	if (argc < 3) {
+		fprintf(stderr, "usage: %s input.log n\n", argv[0]);
+		exit(1);
 	}
 
-	if (argc > 1)
-		len = atoi(argv[1]);
+	f = fopen(argv[1], "r");
+	if (f == NULL) {
+		perror(argv[1]);
+		exit(1);
+	}
+
+	len = atoi(argv[2]);
 
 	if (len < 1) {
 		fprintf(stderr, "bad len\n");

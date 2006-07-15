@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.5 2006-05-16 03:15:14 debug Exp $
+ *  $Id: settings.c,v 1.6 2006-07-15 09:44:13 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -38,6 +38,11 @@
  *  presented (e.g. it may be an int value in memory, but it should be
  *  presented as a boolean "true/false" value), and a flag which tells us
  *  whether the setting is directly writable or not.
+ *
+ *  If UNSTABLE_DEVEL is defined, then warnings are printed when
+ *  settings_destroy() is called if individual settings have not yet been
+ *  deleted. (This is to help making sure that code which uses the settings
+ *  subsystem correctly un-initializes stuff.)
  */
 
 #include <stdio.h>
@@ -110,13 +115,28 @@ void settings_destroy(struct settings *settings)
 		exit(1);
 	}
 
+#ifdef UNSTABLE_DEVEL
+	printf("settings_destroy(): there are remaining settings!\n");
+#endif
+
 	if (settings->name != NULL) {
 		for (i=0; i<settings->n_settings; i++) {
-			if (settings->name[i] != NULL)
+			if (settings->name[i] != NULL) {
+#ifdef UNSTABLE_DEVEL
+				printf("settings_destroy(): setting '%s'"
+				    " was not properly deleted before "
+				    "exiting!\n", settings->name[i]);
+#endif
 				free(settings->name[i]);
+			}
 		}
 
 		free(settings->name);
+	} else if (settings->n_settings != 0) {
+		fprintf(stderr, "settings_destroy(): internal error, "
+		    "settings->name = NULL, but there were settings?"
+		    " (n_settings = %i)\n", settings->n_settings);
+		exit(1);
 	}
 
 	if (settings->writable != NULL)

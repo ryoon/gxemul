@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.6 2006-07-15 09:44:13 debug Exp $
+ *  $Id: settings.c,v 1.7 2006-07-15 10:06:11 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -43,6 +43,11 @@
  *  settings_destroy() is called if individual settings have not yet been
  *  deleted. (This is to help making sure that code which uses the settings
  *  subsystem correctly un-initializes stuff.)
+ *
+ *
+ *  TODO:
+ *	Remove a setting
+ *	Read/write settings
  */
 
 #include <stdio.h>
@@ -116,7 +121,8 @@ void settings_destroy(struct settings *settings)
 	}
 
 #ifdef UNSTABLE_DEVEL
-	printf("settings_destroy(): there are remaining settings!\n");
+	if (settings->n_settings > 0)
+		printf("settings_destroy(): there are remaining settings!\n");
 #endif
 
 	if (settings->name != NULL) {

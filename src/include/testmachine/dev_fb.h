@@ -4,7 +4,7 @@
 /*
  *  Definitions used by the framebuffer device in GXemul.
  *
- *  $Id: dev_fb.h,v 1.5 2006-07-09 07:53:34 debug Exp $
+ *  $Id: dev_fb.h,v 1.6 2006-07-16 08:11:43 debug Exp $
  *  This file is in the public domain.
  */
 
@@ -30,8 +30,10 @@
 #define	DEV_FBCTRL_PORT_Y1			2
 #define	DEV_FBCTRL_PORT_X2			3
 #define	DEV_FBCTRL_PORT_Y2			4
-#define	DEV_FBCTRL_PORT_COLOR			5
-#define	DEV_FBCTRL_NPORTS		6
+#define	DEV_FBCTRL_PORT_COLOR_R			5
+#define	DEV_FBCTRL_PORT_COLOR_G			6
+#define	DEV_FBCTRL_PORT_COLOR_B			7
+#define	DEV_FBCTRL_NPORTS		8
 
 
 /*

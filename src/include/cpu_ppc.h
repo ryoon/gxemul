@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.65 2006-06-24 21:47:24 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.66 2006-07-16 13:32:28 debug Exp $
  */
 
 #include "misc.h"
@@ -198,6 +198,8 @@ struct ppc_cpu {
 
 
 /*  cpu_ppc.c:  */
+int ppc_run_instr(struct cpu *cpu);
+int ppc32_run_instr(struct cpu *cpu);
 void ppc_exception(struct cpu *cpu, int exception_nr);
 void ppc_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.h,v 1.18 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_hppa.h,v 1.19 2006-07-16 13:32:27 debug Exp $
  */
 
 #include "misc.h"
@@ -75,10 +75,12 @@ struct hppa_cpu {
 
 
 /*  cpu_hppa.c:  */
+int hppa_run_instr(struct cpu *cpu);
 void hppa_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void hppa_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void hppa_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+int hppa32_run_instr(struct cpu *cpu);
 void hppa32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void hppa32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

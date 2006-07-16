@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.h,v 1.16 2006-03-04 11:20:43 debug Exp $
+ *  $Id: cpu_avr.h,v 1.17 2006-07-16 13:32:27 debug Exp $
  */
 
 #include "misc.h"
@@ -122,6 +122,7 @@ struct avr_cpu {
 
 
 /*  cpu_avr.c:  */
+int avr_run_instr(struct cpu *cpu);
 void avr_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void avr_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.82 2006-07-02 01:32:35 debug Exp $
+ *  $Id: cpu.h,v 1.83 2006-07-16 13:32:27 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -233,8 +233,6 @@ struct cpu_family {
 				    uint64_t dumpaddr);
 	void			(*register_dump)(struct cpu *cpu,
 				    int gprs, int coprocs);
-	int			(*run_instr)(struct emul *emul,
-				    struct cpu *cpu);
 	void			(*dumpinfo)(struct cpu *cpu);
 	void			(*tlbdump)(struct machine *m, int x,
 				    int rawflag);
@@ -291,6 +289,8 @@ struct cpu {
 	char		*name;
 
 	struct memory	*mem;
+
+	int		(*run_instr)(struct cpu *cpu);
 	int		(*memory_rw)(struct cpu *cpu,
 			    struct memory *mem, uint64_t vaddr,
 			    unsigned char *data, size_t len,
@@ -390,7 +390,6 @@ void cpu_init(void);
 	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
 	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	fp->tlbdump = n ## _cpu_tlbdump;				\
-	fp->run_instr = n ## _cpu_run_instr;				\
 	fp->init_tables = n ## _cpu_init_tables;			\
 	return 1;							\
 	}

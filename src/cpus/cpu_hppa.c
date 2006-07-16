@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.14 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.15 2006-07-16 13:32:26 debug Exp $
  *
  *  HP PA-RISC CPU emulation.
  *
@@ -70,12 +70,14 @@ int hppa_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.hppa.bits = 32;
 
 	if (cpu->is_32bit) {
+		cpu->run_instr = hppa32_run_instr;
 		cpu->update_translation_table = hppa32_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    hppa32_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
 		    hppa32_invalidate_code_translation;
 	} else {
+		cpu->run_instr = hppa_run_instr;
 		cpu->update_translation_table = hppa_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    hppa_invalidate_translation_caches;

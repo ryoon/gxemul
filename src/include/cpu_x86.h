@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.48 2006-06-24 21:47:24 debug Exp $
+ *  $Id: cpu_x86.h,v 1.49 2006-07-16 13:32:28 debug Exp $
  *
  *  x86 (including AMD64) cpu dependent stuff.
  */
@@ -295,6 +295,8 @@ struct x86_cpu {
 void reload_segment_descriptor(struct cpu *cpu, int segnr, int selector,
 	uint64_t *curpcp);
 int x86_interrupt(struct cpu *cpu, int nr, int errcode);
+int x86_run_instr(struct cpu *cpu);
+int x8632_run_instr(struct cpu *cpu);
 int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 void x86_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,

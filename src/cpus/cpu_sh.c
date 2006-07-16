@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.16 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_sh.c,v 1.17 2006-07-16 13:32:26 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -71,12 +71,14 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.sh.compact = 1;
 
 	if (cpu->is_32bit) {
+		cpu->run_instr = sh32_run_instr;
 		cpu->update_translation_table = sh32_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    sh32_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
 		    sh32_invalidate_code_translation;
 	} else {
+		cpu->run_instr = sh_run_instr;
 		cpu->update_translation_table = sh_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    sh_invalidate_translation_caches;

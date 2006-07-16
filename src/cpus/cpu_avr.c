@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.19 2006-07-01 21:15:46 debug Exp $
+ *  $Id: cpu_avr.c,v 1.20 2006-07-16 13:32:26 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -71,6 +71,7 @@ int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (type == 0)
 		return 0;
 
+	cpu->run_instr = avr_run_instr;
 	cpu->memory_rw = avr_memory_rw;
 	cpu->update_translation_table = avr_update_translation_table;
 	cpu->invalidate_translation_caches =

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.44 2006-07-04 05:06:55 debug Exp $
+ *  $Id: cpu_mips.h,v 1.45 2006-07-16 13:32:27 debug Exp $
  */
 
 #include "misc.h"
@@ -368,10 +368,12 @@ void mips_unaligned_loadstore(struct cpu *cpu, struct mips_instr_call *ic,
 	int is_left, int wlen, int store);
 
 
+int mips_run_instr(struct cpu *cpu);
 void mips_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void mips_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+int mips32_run_instr(struct cpu *cpu);
 void mips32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void mips32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.38 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.39 2006-07-16 13:32:27 debug Exp $
  */
 
 #include "misc.h"
@@ -140,6 +140,7 @@ void alpha_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 void alpha_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void alpha_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
 void alpha_init_64bit_dummy_tables(struct cpu *cpu);
+int alpha_run_instr(struct cpu *cpu);
 int alpha_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int alpha_userland_memory_rw(struct cpu *cpu, struct memory *mem,
@@ -154,5 +155,6 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode);
 /*  memory_alpha.c:  */
 int alpha_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);
+
 
 #endif	/*  CPU_ALPHA_H  */

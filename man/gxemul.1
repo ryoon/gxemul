@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.67 2006-06-30 20:22:52 debug Exp $
+.\" $Id: gxemul.1,v 1.68 2006-07-16 13:32:24 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -54,11 +54,11 @@ hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run inside the emulator as if they were running on a 
 real machine.
 .Pp
-Processors (ARM, MIPS, PowerPC) are emulated using a kind of dynamic
-translation system. However, unlike some other dynamically translating
-emulators, GXemul does not currently generate native code, only 
-a "runnable intermediate representation", and will thus run on any host 
-architecture, without the need to implement per-architecture backends.
+Processors (ARM, MIPS, PowerPC) are emulated using dynamic translation.
+However, unlike some other dynamically translating emulators, GXemul does
+not currently generate native code, only a "runnable intermediate
+representation", and will thus run on any host architecture, without the
+need to implement per-architecture backends.
 .Pp
 The emulator can be invoked in the following ways:
 .Pp
@@ -299,9 +299,9 @@ Disabled at startup.
 Overwrite the file, instead of appending to it.
 .El
 .Pp
-Statistics gathering can be enabled/disabled at runtime by using the
-"TODO" debugger command.
-.Pp
+.\" Statistics gathering can be enabled/disabled at runtime by using the
+.\" "TODO" debugger command.
+.\" .Pp
 When gathering instruction statistics using the
 .Fl s
 option, instruction combinations are always disabled (i.e.

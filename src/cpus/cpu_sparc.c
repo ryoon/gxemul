@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.33 2006-06-26 20:03:09 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.34 2006-07-16 13:32:26 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -91,6 +91,7 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->instruction_has_delayslot = sparc_cpu_instruction_has_delayslot;
 
 	if (cpu->is_32bit) {
+		cpu->run_instr = sparc32_run_instr;
 		cpu->update_translation_table =
 		    sparc32_update_translation_table;
 		cpu->invalidate_translation_caches =
@@ -98,6 +99,7 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		cpu->invalidate_code_translation =
 		    sparc32_invalidate_code_translation;
 	} else {
+		cpu->run_instr = sparc_run_instr;
 		cpu->update_translation_table = sparc_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    sparc_invalidate_translation_caches;

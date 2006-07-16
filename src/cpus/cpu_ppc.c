@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.59 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.60 2006-07-16 13:32:26 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -116,12 +116,14 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->is_32bit = (cpu->cd.ppc.bits == 32)? 1 : 0;
 
 	if (cpu->is_32bit) {
+		cpu->run_instr = ppc32_run_instr;
 		cpu->update_translation_table = ppc32_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    ppc32_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
 		    ppc32_invalidate_code_translation;
 	} else {
+		cpu->run_instr = ppc_run_instr;
 		cpu->update_translation_table = ppc_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    ppc_invalidate_translation_caches;

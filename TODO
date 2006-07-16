@@ -1,4 +1,4 @@
-$Id: TODO,v 1.318 2006-07-14 16:33:27 debug Exp $
+$Id: TODO,v 1.319 2006-07-16 13:32:23 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -6,13 +6,12 @@ MUST:
 	o)  Figure out what causes problems in non-R3000 tlbw*, and fix
 	    it (to get rid of the performance bottlenecks).
 	o)  Fix invalidate_asid so it works well for all non-R3000 CPUs too!
-	o)  Fix the bug which makes    gxemul -i -E testmips rectangles_mips
-	    behave strangely! (when rectangles_mips is linked as 64-bit)
 	o)  Actually use the settings object, better debugger stuff, etc!
 	o)  Debugger command for enabling/disabling instruction statistics
 	    during runtime.   machine.statistics = on|off
 
 Code cleanup:
+	x)  64-bit ranges in src/cpus/memory_mips_v2p.c
 	x)  Macro for the device tick function prototype?
 	x)  Revert the dyntrans page template experiment? Hm.
 

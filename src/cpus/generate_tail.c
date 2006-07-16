@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_tail.c,v 1.11 2006-06-24 21:47:23 debug Exp $
+ *  $Id: generate_tail.c,v 1.12 2006-07-16 13:32:26 debug Exp $
  */
 
 #include <stdio.h>
@@ -132,6 +132,10 @@ int main(int argc, char *argv[])
 	printf("#include \"quick_pc_to_pointers.h\"\n");
 	printf("#include \"cpu_%s_instr.c\"\n\n", a);
 
+	printf("#define DYNTRANS_RUN_INSTR %s_run_instr\n", a);
+	printf("#include \"cpu_dyntrans.c\"\n");
+	printf("#undef DYNTRANS_RUN_INSTR\n\n");
+
 
 	printf("#ifdef DYNTRANS_DUALMODE_32\n");
 	printf("#undef COMBINE_INSTRUCTIONS\n");
@@ -185,12 +189,12 @@ int main(int argc, char *argv[])
 	    "#define DYNTRANS_PC_TO_POINTERS %s_pc_to_pointers\n"
 	    "#define DYNTRANS_PC_TO_POINTERS32 %s32_pc_to_pointers\n\n", a, a);
 
+	printf("#define DYNTRANS_RUN_INSTR %s32_run_instr\n", a);
+	printf("#include \"cpu_dyntrans.c\"\n");
+	printf("#undef DYNTRANS_RUN_INSTR\n\n");
+
 	printf("#endif /*  DYNTRANS_DUALMODE_32  */\n\n\n");
 
-
-	printf("#define DYNTRANS_CPU_RUN_INSTR %s_cpu_run_instr\n", a);
-	printf("#include \"cpu_dyntrans.c\"\n");
-	printf("#undef DYNTRANS_CPU_RUN_INSTR\n\n");
 
 	printf("CPU_FAMILY_INIT(%s,\"%s\")\n\n", a, b);
 

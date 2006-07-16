@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.678 2006-07-02 10:09:49 debug Exp $
+ *  $Id: machine.c,v 1.679 2006-07-16 13:32:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -984,8 +984,7 @@ int machine_run(struct machine *machine)
 
 	for (i=0; i<ncpus; i++) {
 		if (cpus[i]->running) {
-			int instrs_run = machine->cpu_family->run_instr(
-			    machine->emul, cpus[i]);
+			int instrs_run = cpus[i]->run_instr(cpus[i]);
 			if (i == 0)
 				cpu0instrs += instrs_run;
 		}

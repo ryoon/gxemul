@@ -25,13 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.110 2006-07-14 16:33:27 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.111 2006-07-16 13:32:26 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
 
 
-#ifdef	DYNTRANS_CPU_RUN_INSTR
+#ifndef STATIC_STUFF
+#define	STATIC_STUFF
 /*
  *  gather_statistics():
  */
@@ -155,31 +156,35 @@ static void gather_statistics(struct cpu *cpu)
 	ic = cpu->cd.DYNTRANS_ARCH.next_ic ++; ic->f(cpu, ic); }
 */
 #endif
+#endif	/*  STATIC STUFF  */
 
 
+
+#ifdef	DYNTRANS_RUN_INSTR
 /*
- *  XXX_cpu_run_instr():
+ *  XXX_run_instr():
  *
  *  Execute one or more instructions on a specific CPU, using dyntrans.
+ *  (For dualmode archs, this function is included twice.)
  *
  *  Return value is the number of instructions executed during this call,
  *  0 if no instructions were executed.
  */
-int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
+int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 {
-#ifdef MODE32
-	uint32_t cached_pc;
-#else
-	uint64_t cached_pc;
-#endif
+	MODE_uint_t cached_pc;
 	int low_pc, n_instrs;
 
+	/*  Ugly... fix this some day.  */
 #ifdef DYNTRANS_DUALMODE_32
-	if (cpu->is_32bit)
-		DYNTRANS_PC_TO_POINTERS32(cpu);
-	else
-#endif
+#ifdef MODE32
+	DYNTRANS_PC_TO_POINTERS32(cpu);
+#else
 	DYNTRANS_PC_TO_POINTERS(cpu);
+#endif
+#else
+	DYNTRANS_PC_TO_POINTERS(cpu);
+#endif
 
 	/*
 	 *  Interrupt assertion?  (This is _below_ the initial PC to pointer
@@ -258,7 +263,7 @@ int DYNTRANS_CPU_RUN_INSTR(struct emul *emul, struct cpu *cpu)
 
 			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
-				fatal("XXX_cpu_run_instr(): could not read "
+				fatal("XXX_run_instr(): could not read "
 				    "the instruction\n");
 			} else {
 				cpu_disassemble_instr(cpu->machine, cpu,
@@ -441,7 +446,7 @@ while (cycles-- > 0)
 	/*  Return the nr of instructions executed:  */
 	return n_instrs;
 }
-#endif	/*  DYNTRANS_CPU_RUN_INSTR  */
+#endif	/*  DYNTRANS_RUN_INSTR  */
 
 
 

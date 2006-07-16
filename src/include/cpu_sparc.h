@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.39 2006-06-26 18:29:13 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.40 2006-07-16 13:32:28 debug Exp $
  */
 
 #include "misc.h"
@@ -315,10 +315,12 @@ struct sparc_cpu {
 
 /*  cpu_sparc.c:  */
 int sparc_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib);
+int sparc_run_instr(struct cpu *cpu);
 void sparc_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void sparc_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
 void sparc_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+int sparc32_run_instr(struct cpu *cpu);
 void sparc32_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void sparc32_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

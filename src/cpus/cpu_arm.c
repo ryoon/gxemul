@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.60 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_arm.c,v 1.61 2006-07-16 13:32:26 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -92,6 +92,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	if (found == -1)
 		return 0;
 
+	cpu->run_instr = arm_run_instr;
 	cpu->memory_rw = arm_memory_rw;
 	cpu->update_translation_table = arm_update_translation_table;
 	cpu->invalidate_translation_caches =

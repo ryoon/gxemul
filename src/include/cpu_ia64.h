@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.h,v 1.13 2006-02-24 00:20:42 debug Exp $
+ *  $Id: cpu_ia64.h,v 1.14 2006-07-16 13:32:27 debug Exp $
  */
 
 #include "misc.h"
@@ -71,6 +71,7 @@ struct ia64_cpu {
 
 
 /*  cpu_ia64.c:  */
+int ia64_run_instr(struct cpu *cpu);
 void ia64_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void ia64_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);

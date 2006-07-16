@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.16 2006-06-24 21:47:23 debug Exp $
+ *  $Id: cpu_x86.c,v 1.17 2006-07-16 13:32:26 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -124,12 +124,14 @@ int x86_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	    1 : 0;
 
 	if (cpu->is_32bit) {
+		cpu->run_instr = x8632_run_instr;
 		cpu->update_translation_table = x8632_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    x8632_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
 		    x8632_invalidate_code_translation;
 	} else {
+		cpu->run_instr = x86_run_instr;
 		cpu->update_translation_table = x86_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    x86_invalidate_translation_caches;

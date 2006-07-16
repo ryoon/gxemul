@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.60 2006-07-14 16:33:27 debug Exp $
+ *  $Id: cpu_mips.c,v 1.61 2006-07-16 13:32:26 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -144,12 +144,14 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		cpu->is_32bit = 1;
 
 	if (cpu->is_32bit) {
+		cpu->run_instr = mips32_run_instr;
 		cpu->update_translation_table = mips32_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    mips32_invalidate_translation_caches;
 		cpu->invalidate_code_translation =
 		    mips32_invalidate_code_translation;
 	} else {
+		cpu->run_instr = mips_run_instr;
 		cpu->update_translation_table = mips_update_translation_table;
 		cpu->invalidate_translation_caches =
 		    mips_invalidate_translation_caches;

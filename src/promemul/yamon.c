@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.3 2006-02-16 05:57:10 debug Exp $
+ *  $Id: yamon.c,v 1.4 2006-07-16 07:44:19 debug Exp $
  *
- *  YAMON emulation.
+ *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
 
 #include <stdio.h>
@@ -42,22 +42,9 @@
 #include "memory.h"
 #include "misc.h"
 
-
 #ifdef ENABLE_MIPS
 
-/*
- *  mem_readchar():
- *  
- *  Reads a byte from emulated RAM, using a MIPS register as a base address.
- *  (Helper function.)
- */
-static unsigned char mem_readchar(struct cpu *cpu, int regbase, int offset)
-{
-	unsigned char ch;
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[regbase] + offset,
-	    &ch, sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
-	return ch;
-}
+#include "yamon.h"
 
 
 /*
@@ -67,31 +54,67 @@ static unsigned char mem_readchar(struct cpu *cpu, int regbase, int offset)
  */
 int yamon_emul(struct cpu *cpu)
 {
-	int ofs = cpu->pc & 0xfff;
+	uint32_t ofs = (cpu->pc & 0xff) + YAMON_FUNCTION_BASE;
+	uint8_t ch;
 	int n;
 
 	switch (ofs) {
-	case 0x804:	/*  "print count": string at a1, count at a2  */
+
+	case YAMON_PRINT_COUNT_OFS:
+		/*
+		 *  print count:
+		 *	a1 = string
+		 *	a2 = count
+		 */
 		n = 0;
 		while (n < (int)cpu->cd.mips.gpr[MIPS_GPR_A2]) {
-			char ch = mem_readchar(cpu, MIPS_GPR_A1, n);
-			console_putchar(cpu->machine->main_console_handle,
-			    ch);
+			cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[
+			    MIPS_GPR_A1] + n, &ch, sizeof(ch), MEM_READ,
+			    CACHE_DATA | NO_EXCEPTIONS);
+			console_putchar(cpu->machine->main_console_handle, ch);
 			n++;
 		}
 		break;
-	case 0x820:	/*  "exit"  */
-		debug("[ yamon_emul(): exit ]\n");
+
+	case YAMON_EXIT_OFS:
+		/*
+		 *  exit
+		 */
+		debug("[ yamon_emul(): exit ]\n");
 		cpu->running = 0;
 		break;
-	case 0x854:	/*  "syscon"  */
+
+	/*  YAMON_FLUSH_CACHE_OFS: TODO  */
+	/*  YAMON_PRINT_OFS: TODO  */
+	/*  YAMON_REG_CPU_ISR_OFS: TODO  */
+	/*  YAMON_DEREG_CPU_ISR_OFS: TODO  */
+	/*  YAMON_REG_IC_ISR_OFS: TODO  */
+	/*  YAMON_DEREG_IC_ISR_OFS: TODO  */
+	/*  YAMON_REG_ESR_OFS: TODO  */
+	/*  YAMON_DEREG_ESR_OFS: TODO  */
+
+	case YAMON_GETCHAR_OFS:
+		n = console_readchar(cpu->machine->main_console_handle);
+		/*  Note: -1 (if no char was available) becomes 0xff:  */
+		ch = n;
+		cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A1],
+		    &ch, sizeof(ch), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+		break;
+
+	case YAMON_SYSCON_READ_OFS:
+		/*
+		 *  syscon
+		 */
 		fatal("[ yamon_emul(): syscon: TODO ]\n");
+
 		/*  TODO. For now, return some kind of "failure":  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
 		break;
+
 	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
 		printf("\n");
-		fatal("[ yamon_emul(): unimplemented ofs 0x%x ]\n", ofs);
+		fatal("[ yamon_emul(): unimplemented yamon function 0x%"
+		    PRIx32" ]\n", ofs);
 		cpu->running = 0;
 		cpu->dead = 1;
 	}

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1289 2006-07-14 16:33:27 debug Exp $
+$Id: HISTORY,v 1.1290 2006-07-16 07:44:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2865,3 +2865,7 @@ Changelog for GXemul:
 		extent.)  Adding a short section about how to run this mode to
 		doc/guestoses.html.
 20060714	Misc. minor code cleanups.
+20060715	Applying a patch which adds getchar() to promemul/yamon.c
+		(from Oleksandr Tymoshenko).
+		Adding yamon.h from NetBSD, and rewriting yamon.c to use it
+		(instead of ugly hardcoded numbers) + some cleanup.

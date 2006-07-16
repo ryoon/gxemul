@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.4 2006-07-16 07:44:19 debug Exp $
+ *  $Id: yamon.c,v 1.5 2006-07-16 13:51:55 debug Exp $
  *
  *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
@@ -67,9 +67,9 @@ int yamon_emul(struct cpu *cpu)
 		 *	a2 = count
 		 */
 		n = 0;
-		while (n < (int)cpu->cd.mips.gpr[MIPS_GPR_A2]) {
-			cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[
-			    MIPS_GPR_A1] + n, &ch, sizeof(ch), MEM_READ,
+		while (n < (int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2]) {
+			cpu->memory_rw(cpu, cpu->mem, (int32_t)cpu->cd.mips.gpr
+			    [MIPS_GPR_A1] + n, &ch, sizeof(ch), MEM_READ,
 			    CACHE_DATA | NO_EXCEPTIONS);
 			console_putchar(cpu->machine->main_console_handle, ch);
 			n++;
@@ -97,8 +97,9 @@ int yamon_emul(struct cpu *cpu)
 		n = console_readchar(cpu->machine->main_console_handle);
 		/*  Note: -1 (if no char was available) becomes 0xff:  */
 		ch = n;
-		cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A1],
-		    &ch, sizeof(ch), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+		cpu->memory_rw(cpu, cpu->mem, (int32_t)cpu->cd.mips.gpr[
+		    MIPS_GPR_A1], &ch, sizeof(ch), MEM_WRITE,
+		    CACHE_DATA | NO_EXCEPTIONS);
 		break;
 
 	case YAMON_SYSCON_READ_OFS:

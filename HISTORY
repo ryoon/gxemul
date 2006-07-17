@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1291 2006-07-16 13:32:23 debug Exp $
+$Id: HISTORY,v 1.1292 2006-07-17 15:26:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2871,5 +2871,5 @@ Changelog for GXemul:
 		(instead of ugly hardcoded numbers) + some cleanup.
 20060716	Found and fixed the bug which broke single-stepping of 64-bit
 		programs between 0.4.0 and 0.4.0.1 (caused by too quick
-		refactoring and no testing). Hopefully, it won't break too many
-		other things.
+		refactoring and no testing). Hopefully this fix will not
+		break too many other things.

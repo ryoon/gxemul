@@ -1,4 +1,4 @@
-$Id: TODO,v 1.319 2006-07-16 13:32:23 debug Exp $
+$Id: TODO,v 1.320 2006-07-18 19:58:05 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -45,11 +45,16 @@ Long-term implementation:
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 
 Long-term design:
-	x)  Clock framework? Go through all clock devices, make sure they
+	x)  MAINBUS REDESIGN!
+	x)  Clock framework! Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
+	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,
+	    it would be reasonably simple to add; in each individual fast
+	    load/store routine = a lot more work, and it would become
+	    kludgy very fast.)
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
-	x)  Dyntrans with valgrind-inspired memory checker.
+	x)  Reimplement the config file parser from scratch.
 
 Test:
 	x)  Test with more than one Sprite instance on an emulated network!

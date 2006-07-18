@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.10 2006-03-04 12:38:47 debug Exp $
- *  
- *  8253/8254 Programmable Interval Timer.
+ *  $Id: dev_8253.c,v 1.11 2006-07-18 19:48:03 debug Exp $
  *
- *  This is mostly bogus.
+ *  Intel 8253/8254 Programmable Interval Timer
+ *
+ *  TODO: This is just a bogus device so far. The timers don't really count
+ *        down. Fix this when there is a generic clock framework; also split
+ *        counter[] into a reset value and a current value.
  */
 
 #include <stdio.h>
@@ -44,15 +46,24 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "i8253reg.h"
+
+
+#define debug fatal
 
 #define	DEV_8253_LENGTH		4
 #define	TICK_SHIFT		14
 
 
 struct pit8253_data {
-	int		irq_nr;
 	int		in_use;
+
+	int		irq0_nr;
 	int		counter_select;
+	uint8_t		mode_byte;
+
+	int		mode[3];
+	int		counter[3];
 };
 
 
@@ -66,13 +77,19 @@ void dev_8253_tick(struct cpu *cpu, void *extra)
 	if (!d->in_use)
 		return;
 
-	cpu_interrupt(cpu, d->irq_nr);
+	switch (d->mode[0] & 0x0e) {
+	case I8253_TIMER_INTTC:
+		/*  TODO: Correct frequency!  */
+		cpu_interrupt(cpu, d->irq0_nr);
+		break;
+	case I8253_TIMER_RATEGEN:
+		break;
+	default:fatal("[ 8253: unimplemented mode 0x%x ]\n", d->mode[0] & 0x0e);
+		exit(1);
+	}
 }
 
 
-/*
- *  dev_8253_access():
- */
 DEVICE_ACCESS(8253)
 {
 	struct pit8253_data *d = (struct pit8253_data *) extra;
@@ -84,34 +101,99 @@ DEVICE_ACCESS(8253)
 	d->in_use = 1;
 
 	/*  TODO: ack somewhere else  */
-	cpu_interrupt_ack(cpu, d->irq_nr);
+	cpu_interrupt_ack(cpu, d->irq0_nr);
 
 	switch (relative_addr) {
-	case 0x00:
+
+	case I8253_TIMER_CNTR0:
+	case I8253_TIMER_CNTR1:
+	case I8253_TIMER_CNTR2:
 		if (writeflag == MEM_WRITE) {
-			/*  TODO  */
+			switch (d->mode_byte & 0x30) {
+			case I8253_TIMER_LSB:
+			case I8253_TIMER_16BIT:
+				d->counter[relative_addr] &= 0xff00;
+				d->counter[relative_addr] |= (idata & 0xff);
+				break;
+			case I8253_TIMER_MSB:
+				d->counter[relative_addr] &= 0x00ff;
+				d->counter[relative_addr] |= ((idata&0xff)<<8);
+				debug("[ 8253: counter %i set to %i (%i Hz) "
+				    "]\n", relative_addr, d->counter[
+				    relative_addr], (int)(I8253_TIMER_FREQ /
+				    (float)d->counter[relative_addr] + 0.5));
+				break;
+			default:fatal("[ 8253: huh? writing to counter"
+				    " %i but neither from msb nor lsb? ]\n",
+				    relative_addr);
+			}
 		} else {
-			/*  TODO  */
-			/*  odata = 1;  */
-			odata = random();
+			switch (d->mode_byte & 0x30) {
+			case I8253_TIMER_LSB:
+			case I8253_TIMER_16BIT:
+				odata = d->counter[relative_addr] & 0xff;
+				break;
+			case I8253_TIMER_MSB:
+				odata = (d->counter[relative_addr] >> 8) & 0xff;
+				break;
+			default:fatal("[ 8253: huh? reading from counter"
+				    " %i but neither from msb nor lsb? ]\n",
+				    relative_addr);
+			}
 		}
+
+		/*  Switch from LSB to MSB, if accessing as 16-bit word:  */
+		if ((d->mode_byte & 0x30) == I8253_TIMER_16BIT)
+			d->mode_byte &= ~I8253_TIMER_LSB;
+
 		break;
-	case 0x03:
+
+	case I8253_TIMER_MODE:
 		if (writeflag == MEM_WRITE) {
+			d->mode_byte = idata;
+
 			d->counter_select = idata >> 6;
-			/*  TODO: other bits  */
+			if (d->counter_select > 2) {
+				debug("[ 8253: attempt to select counter 3,"
+				    " which doesn't exist. ]\n");
+				d->counter_select = 0;
+			}
+
+			d->mode[d->counter_select] = idata & 0x0e;
+
+			debug("[ 8253: select=%i mode=0x%x ",
+			    d->counter_select, d->mode[d->counter_select]);
+			if (idata & 0x30) {
+				switch (idata & 0x30) {
+				case I8253_TIMER_LSB:
+					debug("LSB ");
+					break;
+				case I8253_TIMER_16BIT:
+					debug("LSB+");
+				case I8253_TIMER_MSB:
+					debug("MSB ");
+				}
+			}
+			debug("]\n");
+
+			if (idata & I8253_TIMER_BCD) {
+				fatal("[ 8253: BCD not yet implemented ]\n");
+				exit(1);
+			}
 		} else {
-			odata = d->counter_select << 6;
+			debug("[ 8253: read; can this actually happen? ]\n");
+			odata = d->mode_byte;
 		}
 		break;
-	default:
-		if (writeflag == MEM_WRITE) {
+
+	default:if (writeflag == MEM_WRITE) {
 			fatal("[ 8253: unimplemented write to address 0x%x"
 			    " data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
 			fatal("[ 8253: unimplemented read from address 0x%x "
 			    "]\n", (int)relative_addr);
 		}
+		exit(1);
 	}
 
 	if (writeflag == MEM_READ)
@@ -130,8 +212,13 @@ DEVINIT(8253)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pit8253_data));
-	d->irq_nr = devinit->irq_nr;
+	d->irq0_nr = devinit->irq_nr;
 	d->in_use = devinit->in_use;
+
+	/*  Don't cause interrupt, by default.  */
+	d->mode[0] = I8253_TIMER_RATEGEN;
+	d->mode[1] = I8253_TIMER_RATEGEN;
+	d->mode[2] = I8253_TIMER_RATEGEN;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_8253_LENGTH, dev_8253_access, (void *)d,

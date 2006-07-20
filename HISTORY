@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1293 2006-07-18 19:48:03 debug Exp $
+$Id: HISTORY,v 1.1294 2006-07-20 03:21:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2874,3 +2874,6 @@ Changelog for GXemul:
 		refactoring and no testing). Hopefully this fix will not
 		break too many other things.
 20060718	Continuing on the 8253 PIT; it now works with Linux/QEMU_MIPS.
+		Re-adding the sw+sw+sw instr comb (the problem was that I had
+		ignored endian issues); however, it doesn't seem to give any
+		big performance gain.

@@ -25,13 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.11 2006-07-18 19:48:03 debug Exp $
+ *  $Id: dev_8253.c,v 1.12 2006-07-20 03:20:03 debug Exp $
  *
  *  Intel 8253/8254 Programmable Interval Timer
  *
- *  TODO: This is just a bogus device so far. The timers don't really count
- *        down. Fix this when there is a generic clock framework; also split
- *        counter[] into a reset value and a current value.
+ *  TODO: The timers don't really count down. Fix this when there is a generic
+ *  clock framework; also split counter[] into reset value and current value.
  */
 
 #include <stdio.h>
@@ -49,7 +48,7 @@
 #include "i8253reg.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
 #define	DEV_8253_LENGTH		4
 #define	TICK_SHIFT		14

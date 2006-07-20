@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.154 2006-07-20 03:20:02 debug Exp $
+$Id: guestoses.html,v 1.155 2006-07-20 03:34:27 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -99,6 +99,7 @@ not be relevant for this specific release of GXemul.)
   <li><a href="#openbsdarcinstall">OpenBSD/arc 2.3</a>
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
   <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
+  <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 2.1</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.0</a>
 </ul>
@@ -1989,6 +1990,53 @@ from FreeBSD ports with GXemul gave the following result:
 <p>(The commands were run inside the emulators, using the ramdisk kernel 
 mentioned above.)
 
+
+
+
+
+
+
+
+<p><br>
+<a name="windows_nt_mips"></a>
+<h3>Windows NT/MIPS:</h3>
+
+Old versions of Windows NT could run on MIPS hardware, e.g.
+the PICA 61. It is theoretically possible that the emulation provided by
+GXemul some day could be stable/complete enough to emulate
+such hardware well enough to fool Windows NT into thinking
+that it is running on a real machine.
+<font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
+
+<p>Something like this would be done to install
+Windows NT onto a disk image:
+
+<ol>
+	<li>Put a "Windows NT 4.0 for MIPS" CDROM (or similar) into
+		your CDROM drive. (On FreeBSD systems, it is
+		usually called <tt>/dev/cd0c</tt> or similar. Change
+		that to whatever the CDROM is called on your system,
+		or the name of a raw .iso image. I have tried this
+		with the Swedish version, but it might work with
+		other versions too.)
+	<p>
+	<li>Create an empty harddisk image, which will be the disk image
+		that you will install Windows NT onto:<pre>
+	$ <b><tt>dd if=/dev/zero of=winnt_test.img bs=1024 count=1 seek=999000</tt></b>
+
+</pre>
+	<li>Run the ARC installer, to partition the disk image:<pre>
+	$ <b><tt>gxemul -X -e pica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\ARCINST</tt></b>
+</pre>
+	Note that <tt>ARCINST</tt> <i>almost</i> works, but not quite.
+	<p>
+	<li>Run the SETUP program:<pre>
+	$ <b><tt>gxemul -X -e pica -d winnt_test.img -d bc6:/dev/cd0c -j MIPS\\SETUPLDR</tt></b>
+</pre>
+</ol>
+
+<p><tt>SETUPLDR</tt> manages to load some drivers from the cdrom,
+but then it crashes because of incomplete emulation of some hardware devices.
 
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.17 2006-06-24 21:47:23 debug Exp $
+ *  $Id: generate_head.c,v 1.18 2006-07-20 21:53:00 debug Exp $
  */
 
 #include <stdio.h>
@@ -153,13 +153,14 @@ int main(int argc, char *argv[])
 	printf("\tcpu->cd.%s.next_ic --;\n", a);
 	printf("}\n\n");
 
-	printf("#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH\n");
-        printf("static struct %s_instr_call nothing_call = { "
-	    "instr(nothing), {0,0,0} };\n", a);
-	printf("#else\n");
-        printf("static struct %s_instr_call nothing_call = { "
-	    "instr(nothing), {0,0,0} };\n", a);
-	printf("#endif\n");
+	/*  Ugly special hack for Transputer:  */
+	if (strcasecmp(argv[1], "transputer") == 0) {
+	        printf("static struct %s_instr_call nothing_call = { "
+		    "instr(nothing), {0} };\n", a);
+	} else {
+	        printf("static struct %s_instr_call nothing_call = { "
+		    "instr(nothing), {0,0,0} };\n", a);
+	}
 
 	printf("\n");
 

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.225 2006-07-02 19:06:19 debug Exp $
+#  $Id: configure,v 1.226 2006-07-20 21:52:59 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -79,6 +79,7 @@ else
 	ENABLEPPC=YES
 	ENABLESH=YES
 	ENABLESPARC=YES
+	ENABLETRANSPUTER=YES
 	ENABLEX86=YES
 fi
 
@@ -202,6 +203,10 @@ if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_sparc.o"
 	CPU_TOOLS="$CPU_TOOLS generate_sparc_loadstore"
+fi
+if [ z$ENABLETRANSPUTER = zYES ]; then
+	printf "#define ENABLE_TRANSPUTER\n" >> config.h
+	CPU_ARCHS="$CPU_ARCHS cpu_transputer.o"
 fi
 if [ z$ENABLEX86 = zYES ]; then
 	printf "#define ENABLE_X86\n" >> config.h

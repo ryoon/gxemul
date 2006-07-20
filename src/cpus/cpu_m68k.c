@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.11 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.12 2006-07-20 21:52:59 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -124,7 +124,7 @@ void m68k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
-		debug("cpu%i: pc  = 0x%08x", x, (int)cpu->pc);
+		debug("cpu%i: pc  = 0x%08"PRIx32, x, (uint32_t)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 	}
 }

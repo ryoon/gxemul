@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.18 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.19 2006-07-20 21:52:59 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -120,7 +120,7 @@ void alpha_cpu_list_available_types(void)
 	i = 0;
 	while (tdefs[i].name != NULL) {
 		debug("%s", tdefs[i].name);
-		for (j=16 - strlen(tdefs[i].name); j>0; j--)
+		for (j=13 - strlen(tdefs[i].name); j>0; j--)
 			debug(" ");
 		i++;
 		if ((i % 4) == 0 || tdefs[i].name == NULL)

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1294 2006-07-20 03:21:27 debug Exp $
+$Id: HISTORY,v 1.1295 2006-07-20 21:52:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2877,3 +2877,5 @@ Changelog for GXemul:
 		Re-adding the sw+sw+sw instr comb (the problem was that I had
 		ignored endian issues); however, it doesn't seem to give any
 		big performance gain.
+20060720	Adding a dummy Transputer mode (T414, T800 etc) skeleton (only
+		the 'j' and 'ldc' instructions are implemented so far). :-}

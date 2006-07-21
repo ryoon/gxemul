@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.112 2006-07-20 21:52:59 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.113 2006-07-21 20:09:15 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -657,12 +657,43 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			ok = 1;
 		}
 		if (!ok) {
+			/*
+			 *  The PC is now set to the exception handler.
+			 *  Try to find the paddr in the translation arrays,
+			 *  or if that fails, call translate_v2p for the
+			 *  exception handler.
+			 */
 			/*  fatal("TODO: instruction vaddr=>paddr translation "
 			    "failed. vaddr=0x%"PRIx64"\n", (uint64_t)cached_pc);
 			fatal("!! cpu->pc=0x%"PRIx64"\n", (uint64_t)cpu->pc); */
 
-			ok = cpu->translate_v2p(cpu, cpu->pc, &paddr,
-			    FLAG_INSTR);
+			/*  If there was an exception, the PC has changed.
+			    Update cached_pc:  */
+			cached_pc = cpu->pc;
+
+#ifdef MODE32
+			index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
+			if (cpu->cd.DYNTRANS_ARCH.host_load[index] != NULL) {
+				paddr = cpu->cd.DYNTRANS_ARCH.phys_addr[index];
+				ok = 1;
+			}
+#else
+			x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
+			x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+			x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
+			    & mask3;
+			l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
+			l3 = l2->l3[x2];
+			if (l3->host_load[x3] != NULL) {
+				paddr = l3->phys_addr[x3];
+				ok = 1;
+			}
+#endif
+
+			if (!ok) {
+				ok = cpu->translate_v2p(cpu, cpu->pc, &paddr,
+				    FLAG_INSTR);
+			}
 
 			/*  printf("EXCEPTION HANDLER: vaddr = 0x%x ==> "
 			    "paddr = 0x%x\n", (int)cpu->pc, (int)paddr);
@@ -675,21 +706,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			}
 		}
 
-		/*  If there was an exception, the PC can have changed.
-		    Update cached_pc:  */
-		cached_pc = cpu->pc;
-
-#ifdef MODE32
-		index = DYNTRANS_ADDR_TO_PAGENR(cached_pc);
-#else
-		x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
-		x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
-		x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
-		    & mask3;
-#endif
-
 		physaddr = paddr;
 	}
+
+	physaddr &= ~(DYNTRANS_PAGESIZE - 1);
 
 #ifdef MODE32
 	if (cpu->cd.DYNTRANS_ARCH.host_load[index] == NULL) {
@@ -698,16 +718,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #endif
 		int q = DYNTRANS_PAGESIZE - 1;
 		unsigned char *host_page = memory_paddr_to_hostaddr(cpu->mem,
-		    physaddr & ~q, MEM_READ);
+		    physaddr, MEM_READ);
 		if (host_page != NULL) {
 			cpu->update_translation_table(cpu, cached_pc & ~q,
-			    host_page, 0, physaddr & ~q);
-#ifndef MODE32
-			/*  Recalculate l2 and l3, since they might have
-			    changed now:  */
-			l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
-			l3 = l2->l3[x2];
-#endif
+			    host_page, 0, physaddr);
 		}
 	}
 
@@ -717,8 +731,6 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 #endif
 		cpu_create_or_reset_tc(cpu);
 	}
-
-	physaddr &= ~(DYNTRANS_PAGESIZE - 1);
 
 	pagenr = DYNTRANS_ADDR_TO_PAGENR(physaddr);
 	table_index = PAGENR_TO_TABLE_INDEX(pagenr);
@@ -1013,20 +1025,84 @@ static void DYNTRANS_INVALIDATE_TLB_ENTRY(struct cpu *cpu,
 		l3->host_store[x3] = NULL;
 		return;
 	}
+
+#ifdef BUGHUNT
+
+{
+	/*  Consistency check, for debugging:  */
+	int x1, x1b; // x2, x3;
+	struct DYNTRANS_L2_64_TABLE *l2;
+	//struct DYNTRANS_L3_64_TABLE *l3;
+
+	for (x1 = 0; x1 <= mask1; x1 ++) {
+		l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
+		if (l2 == cpu->cd.DYNTRANS_ARCH.l2_64_dummy)
+			continue;
+		/*  Make sure that this l2 isn't used more than 1 time!  */
+		for (x1b = 0; x1b <= mask1; x1b ++)
+			if (x1 != x1b &&
+			    l2 == cpu->cd.DYNTRANS_ARCH.l1_64[x1b]) {
+				fatal("L2 reuse: %p\n", l2);
+				exit(1);
+			}
+	}
+}
+
+/*  Count how many pages are actually in use:  */
+{
+	int n=0, i;
+	for (i=0; i<=mask3; i++)
+		if (l3->vaddr_to_tlbindex[i])
+			n++;
+	if (n != l3->refcount) {
+		printf("Z: %i in use, but refcount = %i!\n", n, l3->refcount);
+		exit(1);
+	}
+
+	n = 0;
+	for (i=0; i<=mask3; i++)
+		if (l3->host_load[i] != NULL)
+			n++;
+	if (n != l3->refcount) {
+		printf("ZHL: %i in use, but refcount = %i!\n", n, l3->refcount);
+		exit(1);
+	}
+}
+#endif
+
 	l3->host_load[x3] = NULL;
 	l3->host_store[x3] = NULL;
 	l3->phys_addr[x3] = 0;
 	l3->phys_page[x3] = NULL;
-	l3->refcount --;
+	if (l3->vaddr_to_tlbindex[x3] != 0) {
+		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[
+		    l3->vaddr_to_tlbindex[x3] - 1].valid = 0;
+		l3->refcount --;
+	}
+	l3->vaddr_to_tlbindex[x3] = 0;
+
 	if (l3->refcount < 0) {
 		fatal("xxx_invalidate_tlb_entry(): huh? Refcount bug.\n");
 		exit(1);
 	}
+
 	if (l3->refcount == 0) {
 		l3->next = cpu->cd.DYNTRANS_ARCH.next_free_l3;
 		cpu->cd.DYNTRANS_ARCH.next_free_l3 = l3;
 		l2->l3[x2] = cpu->cd.DYNTRANS_ARCH.l3_64_dummy;
 
+#ifdef BUGHUNT
+/*  Make sure that we're placing a CLEAN page on the
+    freelist:  */
+{
+	int i;
+	for (i=0; i<=mask3; i++)
+		if (l3->host_load[i] != NULL) {
+			fatal("TRYING TO RETURN A NON-CLEAN L3 PAGE!\n");
+			exit(1);
+		}
+}
+#endif
 		l2->refcount --;
 		if (l2->refcount < 0) {
 			fatal("xxx_invalidate_tlb_entry(): Refcount bug L2.\n");
@@ -1310,8 +1386,9 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	uint32_t x1, x2, x3;
 	struct DYNTRANS_L2_64_TABLE *l2;
 	struct DYNTRANS_L3_64_TABLE *l3;
-	/*  fatal("update_translation_table(): v=0x%"PRIx64", h=%p w=%i"
-	    " p=0x%"PRIx64"\n", (uint64_t)vaddr_page, host_page, writeflag,
+
+	/*  fatal("update_translation_table(): v=0x%016"PRIx64", h=%p w=%i"
+	    " p=0x%016"PRIx64"\n", (uint64_t)vaddr_page, host_page, writeflag,
 	    (uint64_t)paddr_page);  */
 #endif
 
@@ -1401,6 +1478,7 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		x2 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
 		x3 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
 		    & mask3;
+
 		l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 		if (l2 == cpu->cd.DYNTRANS_ARCH.l2_64_dummy) {
 			if (cpu->cd.DYNTRANS_ARCH.next_free_l2 != NULL) {
@@ -1411,10 +1489,19 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 				int i;
 				l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1] =
 				    malloc(sizeof(struct DYNTRANS_L2_64_TABLE));
+				l2->refcount = 0;
 				for (i=0; i<(1 << DYNTRANS_L2N); i++)
 					l2->l3[i] = cpu->cd.DYNTRANS_ARCH.
 					    l3_64_dummy;
 			}
+			if (l2->refcount != 0) {
+				fatal("Huh? l2 Refcount problem.\n");
+				exit(1);
+			}
+		}
+		if (l2 == cpu->cd.DYNTRANS_ARCH.l2_64_dummy) {
+			fatal("INTERNAL ERROR L2 reuse\n");
+			exit(1);
 		}
 		l3 = l2->l3[x2];
 		if (l3 == cpu->cd.DYNTRANS_ARCH.l3_64_dummy) {
@@ -1426,14 +1513,47 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 				l3 = l2->l3[x2] = zeroed_alloc(sizeof(
 				    struct DYNTRANS_L3_64_TABLE));
 			}
+			if (l3->refcount != 0) {
+				fatal("Huh? l3 Refcount problem.\n");
+				exit(1);
+			}
 			l2->refcount ++;
 		}
+		if (l3 == cpu->cd.DYNTRANS_ARCH.l3_64_dummy) {
+			fatal("INTERNAL ERROR L3 reuse\n");
+			exit(1);
+		}
+
 		l3->host_load[x3] = host_page;
 		l3->host_store[x3] = writeflag? host_page : NULL;
 		l3->phys_addr[x3] = paddr_page;
 		l3->phys_page[x3] = NULL;
 		l3->vaddr_to_tlbindex[x3] = r + 1;
 		l3->refcount ++;
+
+#ifdef BUGHUNT
+/*  Count how many pages are actually in use:  */
+{
+	int n=0, i;
+	for (i=0; i<=mask3; i++)
+		if (l3->vaddr_to_tlbindex[i])
+			n++;
+	if (n != l3->refcount) {
+		printf("X: %i in use, but refcount = %i!\n", n, l3->refcount);
+		exit(1);
+	}
+
+	n = 0;
+	for (i=0; i<=mask3; i++)
+		if (l3->host_load[i] != NULL)
+			n++;
+	if (n != l3->refcount) {
+		printf("XHL: %i in use, but refcount = %i!\n", n, l3->refcount);
+		exit(1);
+	}
+}
+#endif
+
 #endif	/* !MODE32  */
 	} else {
 		/*
@@ -1486,10 +1606,38 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 				l3->host_store[x3] = NULL;
 		} else {
 			/*  Change the entire physical/host mapping:  */
+printf("HOST LOAD 2 set to %p\n", host_page);
 			l3->host_load[x3] = host_page;
 			l3->host_store[x3] = writeflag? host_page : NULL;
 			l3->phys_addr[x3] = paddr_page;
 		}
+
+#ifdef BUGHUNT
+/*  Count how many pages are actually in use:  */
+{
+	int n=0, i;
+	for (i=0; i<=mask3; i++)
+		if (l3->vaddr_to_tlbindex[i])
+			n++;
+	if (n != l3->refcount) {
+		printf("Y: %i in use, but refcount = %i!\n", n, l3->refcount);
+		exit(1);
+	}
+
+	n = 0;
+	for (i=0; i<=mask3; i++)
+		if (l3->host_load[i] != NULL)
+			n++;
+	if (n != l3->refcount) {
+		printf("YHL: %i in use, but refcount = %i!\n", n, l3->refcount);
+		printf("Entry r = %i\n", r);
+		printf("Valid = %i\n",
+cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
+		exit(1);
+	}
+}
+#endif
+
 #endif	/*  !MODE32  */
 	}
 }

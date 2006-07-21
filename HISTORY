@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1296 2006-07-21 16:55:40 debug Exp $
+$Id: HISTORY,v 1.1297 2006-07-21 20:09:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2882,3 +2882,5 @@ Changelog for GXemul:
 20060721	Adding gtreg.h from NetBSD, updating dev_gt.c to use it, plus
 		misc. other updates to get Linux 2.6 for evbmips/malta working
 		(thanks to Alec Voropay for the details).
+		FINALLY found and fixed the bug which made tlbw* for non-R3000
+		buggy; it was a reference count problem in the dyntrans core.

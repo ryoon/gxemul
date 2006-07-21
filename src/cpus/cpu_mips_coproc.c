@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.47 2006-07-14 16:33:27 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.48 2006-07-21 20:09:15 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1656,7 +1656,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				oldvaddr |= 0xffffff0000000000ULL;
 		}
 
-#if 1
+#if 0
 		/*  TODO: FIX THIS! It shouldn't be needed!  */
 		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 #else

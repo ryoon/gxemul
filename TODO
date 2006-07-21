@@ -1,4 +1,4 @@
-$Id: TODO,v 1.322 2006-07-21 05:46:45 debug Exp $
+$Id: TODO,v 1.323 2006-07-21 16:55:40 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -12,7 +12,6 @@ MUST:
 
 Code cleanup:
 	x)  64-bit ranges in src/cpus/memory_mips_v2p.c
-	x)  Macro for the device tick function prototype?
 	x)  Revert the dyntrans page template experiment? Hm.
 	x)  Refactor the cpu type detection/initialization/listing.
 

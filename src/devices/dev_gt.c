@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.41 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_gt.c,v 1.42 2006-07-21 16:55:41 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -49,6 +49,8 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "gtreg.h"
+
 
 #define	TICK_SHIFT		14
 
@@ -58,29 +60,29 @@
 #define	PCI_PRODUCT_GALILEO_GT64120  0x4620    /*  GT-64120  */
 #define	PCI_PRODUCT_GALILEO_GT64260  0x6430    /*  GT-64260  */
 
-struct gt_data {
-	int	irqnr;
-	int	pciirq;
-	int	type;
 
-	struct pci_data *pci_data;
+struct gt_data {
+	int		timer0_irqnr;
+	int		pci_irqbase;
+	int		type;
+
+	uint32_t	pci0_iold;	/*  I/O Low Decode address  */
+	uint32_t	pci0_iohd;	/*  I/O High Decode address  */
+
+	struct pci_data	*pci_data;
 };
 
 
-/*
- *  dev_gt_tick():
- */
-void dev_gt_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(gt)
 {
 	struct gt_data *gt_data = extra;
 
-	cpu_interrupt(cpu, gt_data->irqnr);
+	/*  TODO: Implement real timer interrupts.  */
+
+	cpu_interrupt(cpu, gt_data->timer0_irqnr);
 }
 
 
-/*
- *  dev_gt_access():
- */
 DEVICE_ACCESS(gt)
 {
 	uint64_t idata = 0, odata = 0;
@@ -93,51 +95,54 @@ DEVICE_ACCESS(gt)
 
 	switch (relative_addr) {
 
-	case 0x48:
-		switch (d->type) {
-		case PCI_PRODUCT_GALILEO_GT64120:
-			/*
-			 *  This is needed for Linux on Malta, according
-			 *  to Alec Voropay.  (TODO: Remove this hack when
-			 *  things have stabilized.)
-			 */
-			if (writeflag == MEM_READ) {
-				odata = 0x18000000 >> 21;
-				debug("[ gt: read from 0x48: 0x%08x ]\n",
-				    (int)odata);
-			}
-			break;
-		default:
-			fatal("[ gt: access to 0x48? (type %i) ]\n", d->type);
+	case GT_PCI0IOLD_OFS:
+		if (writeflag == MEM_READ) {
+			odata = d->pci0_iold;
+		} else {
+			fatal("[ gt: write to GT_PCI0IOLD_OFS: 0x%x (TODO) ]\n",
+			    (int)idata);
 		}
 		break;
 
-	case 0xc18:
+	case GT_PCI0IOHD_OFS:
+		if (writeflag == MEM_READ) {
+			odata = d->pci0_iohd;
+		} else {
+			fatal("[ gt: write to GT_PCI0IOHD_OFS: 0x%x (TODO) ]\n",
+			    (int)idata);
+		}
+		break;
+
+	case GT_PCI0IOREMAP_OFS:
+		/*  TODO: Same as GT_PCI0IOLD_OFS?  */
+		if (writeflag == MEM_READ) {
+			odata = d->pci0_iold;
+		} else {
+			debug("[ gt: write to GT_PCI0IOREMAP_OFS: 0x%x "
+			    "(TODO) ]\n", (int)idata);
+		}
+		break;
+
+	case GT_INTR_CAUSE:
 		if (writeflag == MEM_WRITE) {
-			debug("[ gt: write to  0xc18: 0x%08x ]\n", (int)idata);
+			debug("[ gt: write to GT_INTR_CAUSE: 0x%08x ]\n",
+			    (int)idata);
 			return 1;
 		} else {
-			odata = 0xffffffffULL;
-			/*
-			 *  ???  interrupt something...
-			 *
-			 *  TODO: Remove this hack when things have stabilized.
-			 */
-			odata = 0x00000100;
-			/*  netbsd/cobalt cobalt/machdep.c:cpu_intr()  */
+			odata = GTIC_T0EXP;
+			cpu_interrupt_ack(cpu, d->timer0_irqnr);
 
-			cpu_interrupt_ack(cpu, d->irqnr);
-
-			debug("[ gt: read from 0xc18 (0x%08x) ]\n", (int)odata);
+			debug("[ gt: read from GT_INTR_CAUSE (0x%08x) ]\n",
+			    (int)odata);
 		}
 		break;
 
-	case 0xc34:	/*  GT_PCI0_INTR_ACK  */
+	case GT_PCI0_INTR_ACK:
 		odata = cpu->machine->isa_pic_data.last_int;
-		cpu_interrupt_ack(cpu, 8 + odata);
+		cpu_interrupt_ack(cpu, d->pci_irqbase + odata);
 		break;
 
-	case 0xcf8:	/*  PCI ADDR  */
+	case GT_PCI0_CFG_ADDR:
 		if (cpu->byte_order != EMUL_LITTLE_ENDIAN) {
 			fatal("[ gt: TODO: big endian PCI access ]\n");
 			exit(1);
@@ -146,7 +151,7 @@ DEVICE_ACCESS(gt)
 		bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
 		break;
 
-	case 0xcfc:	/*  PCI DATA  */
+	case GT_PCI0_CFG_DATA:
 		if (cpu->byte_order != EMUL_LITTLE_ENDIAN) {
 			fatal("[ gt: TODO: big endian PCI access ]\n");
 			exit(1);
@@ -197,8 +202,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct gt_data));
-	d->irqnr    = irq_nr;
-	d->pciirq   = pciirq;
+	d->timer0_irqnr = irq_nr;
 
 	switch (type) {
 	case 11:
@@ -209,7 +213,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		pci_mem_offset = 0;
 		pci_portbase = 0x10000000ULL;
 		pci_membase = 0x10100000ULL;
-		pci_irqbase = 0;
+		pci_irqbase = 8;
 		isa_portbase = 0x10000000ULL;
 		isa_membase = 0x10100000ULL;
 		isa_irqbase = 8;
@@ -243,6 +247,10 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	default:fatal("dev_gt_init(): unimplemented GT type (%i).\n", type);
 		exit(1);
 	}
+
+	d->pci_irqbase = pci_irqbase;
+	d->pci0_iold = pci_portbase >> 21;
+	d->pci0_iohd = 0x0000000f;	/*  TODO?  */
 
 	d->pci_data = bus_pci_init(machine,
 	    pciirq, pci_io_offset, pci_mem_offset,

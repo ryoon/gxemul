@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.23 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_8250.c,v 1.24 2006-07-21 16:55:41 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -66,11 +66,7 @@ struct dev_8250_data {
 #define	DEV_8250_TICKSHIFT	15
 
 
-/*
- *  dev_8250_tick():
- *
- */
-void dev_8250_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(8250)
 {
 #if 0
 	/*  This stuff works for 16550.  TODO for 8250  */
@@ -100,9 +96,6 @@ void dev_8250_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_8250_access():
- */
 DEVICE_ACCESS(8250)
 {
 	uint64_t idata = 0, odata = 0;

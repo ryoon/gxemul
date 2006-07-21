@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.12 2006-07-20 03:20:03 debug Exp $
+ *  $Id: dev_8253.c,v 1.13 2006-07-21 16:55:41 debug Exp $
  *
  *  Intel 8253/8254 Programmable Interval Timer
  *
@@ -66,10 +66,7 @@ struct pit8253_data {
 };
 
 
-/*
- *  dev_8253_tick():
- */     
-void dev_8253_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(8253)
 {
 	struct pit8253_data *d = (struct pit8253_data *) extra;
 

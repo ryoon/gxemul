@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1295 2006-07-20 21:52:58 debug Exp $
+$Id: HISTORY,v 1.1296 2006-07-21 16:55:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2879,3 +2879,6 @@ Changelog for GXemul:
 		big performance gain.
 20060720	Adding a dummy Transputer mode (T414, T800 etc) skeleton (only
 		the 'j' and 'ldc' instructions are implemented so far). :-}
+20060721	Adding gtreg.h from NetBSD, updating dev_gt.c to use it, plus
+		misc. other updates to get Linux 2.6 for evbmips/malta working
+		(thanks to Alec Voropay for the details).

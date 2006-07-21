@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.125 2006-07-20 21:53:00 debug Exp $
+ *  $Id: machine.h,v 1.126 2006-07-21 16:55:41 debug Exp $
  */
 
 #include <sys/types.h>
@@ -268,6 +268,10 @@ struct machine {
 	int	n_fb_windows;
 	struct fb_window **fb_windows;
 };
+
+
+/*  Tick function "prototype":  */
+#define	DEVICE_TICK(x)	void dev_ ## x ## _tick(struct cpu *cpu, void *extra)
 
 
 /*

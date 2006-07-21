@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.80 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_asc.c,v 1.81 2006-07-21 16:55:41 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
  *
@@ -152,13 +152,7 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 	int to_id, int dmaflag, int n_messagebytes);
 
 
-/*
- *  dev_asc_tick():
- *
- *  This function is called "every now and then" from the CPU
- *  main loop.
- */
-void dev_asc_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(asc)
 {
 	struct asc_data *d = extra;
 
@@ -751,9 +745,6 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 }
 
 
-/*
- *  dev_asc_address_reg_access():
- */
 DEVICE_ACCESS(asc_address_reg)
 {
 	struct asc_data *d = extra;
@@ -771,9 +762,6 @@ DEVICE_ACCESS(asc_address_reg)
 }
 
 
-/*
- *  dev_asc_dma_access():
- */
 DEVICE_ACCESS(asc_dma)
 {
 	struct asc_data *d = extra;
@@ -812,9 +800,6 @@ DEVICE_ACCESS(asc_dma)
 }
 
 
-/*
- *  dev_asc_access():
- */
 DEVICE_ACCESS(asc)
 {
 	int regnr;

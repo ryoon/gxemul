@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.24 2006-02-09 20:02:58 debug Exp $
+ *  $Id: dev_8259.c,v 1.25 2006-07-21 16:55:41 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -51,9 +51,6 @@
 /*  #define DEV_8259_DEBUG  */
 
 
-/*
- *  dev_8259_access():
- */
 DEVICE_ACCESS(8259)
 {
 	struct pic8259_data *d = (struct pic8259_data *) extra;

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.155 2006-07-20 03:34:27 debug Exp $
+$Id: guestoses.html,v 1.156 2006-07-21 16:55:40 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -376,7 +376,7 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 <ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that you will install NetBSD/hpcmips onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
+	<b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=999000</b>
 
 </pre>
   <li>Download the NetBSD/hpcmips 3.0 ISO image, and a generic kernel:<pre>
@@ -441,7 +441,7 @@ image, from an emulated DECstation 3MAX machine:
 <ol>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD/cobalt onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_cobalt.img bs=1024 count=1 seek=1999000</b>
+	<b>dd if=/dev/zero of=nbsd_cobalt.img bs=1024 count=1 seek=999000</b>
 
 </pre>
   <li>Download the generic kernel for Cobalt and the 2.1 ISO image:<pre>
@@ -498,8 +498,9 @@ generic kernel:<pre>
 <a name="netbsdevbmipsinstall"></a>
 <h3>NetBSD/evbmips:</h3>
 
-<a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a> can run
-in GXemul on an emulated Malta evaluation board (with a 5Kc or 4Kc CPU).
+<a href="http://www.netbsd.org/Ports/evbmips/">NetBSD/evbmips</a> can run 
+in GXemul on an emulated Malta evaluation board, with a 5Kc (MIPS64) or 
+4Kc (MIPS32) processor. 5Kc is the default.
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

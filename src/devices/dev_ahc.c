@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ahc.c,v 1.4 2006-02-09 20:02:59 debug Exp $
+ *  $Id: dev_ahc.c,v 1.5 2006-07-21 16:55:41 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -62,9 +62,6 @@ struct ahc_data {
 };
 
 
-/*
- *  dev_ahc_access():
- */
 DEVICE_ACCESS(ahc)
 {
 	struct ahc_data *d = extra;

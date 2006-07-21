@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_adb.c,v 1.9 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_adb.c,v 1.10 2006-07-21 16:55:41 debug Exp $
  *
  *  ADB (Apple Desktop Bus) controller.
  *
@@ -109,10 +109,7 @@ struct adb_data {
 
 
 
-/*
- *  dev_adb_tick():
- */
-void dev_adb_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(adb)
 {
 	struct adb_data *d = extra;
 	int a;
@@ -314,9 +311,6 @@ static void adb_transfer(struct cpu *cpu, struct adb_data *d, int state_change)
 }
 
 
-/*
- *  dev_adb_access():
- */
 DEVICE_ACCESS(adb)
 {
 	uint64_t idata = 0, odata = 0;

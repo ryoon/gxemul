@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer_instr.c,v 1.1 2006-07-20 21:53:00 debug Exp $
+ *  $Id: cpu_transputer_instr.c,v 1.2 2006-07-21 05:46:45 debug Exp $
  *
  *  INMOS transputer instructions.
  *
@@ -161,6 +161,17 @@ X(to_be_translated)
 		ic->f = instr(j);
 		ic->arg[0] = (ib[0] & 0xf) + 1;
 		/*  TODO: Samepage jump!  */
+
+		if (cpu->cd.transputer.cpu_type.features & T_DEBUG
+		    && (ib[0] & 0xf) == 0) {
+			/*
+			 *  From Wikipedia:  ... "and, later, the T225. This
+			 *  added debugging breakpoint support (by extending
+			 *  the instruction J 0)"
+			 */
+			fatal("TODO: Transputer Debugger support!\n");
+			goto bad;
+		}
 		break;
 
 	case 4:	/*  ldc, load constant  */

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.321 2006-07-20 21:52:59 debug Exp $
+$Id: TODO,v 1.322 2006-07-21 05:46:45 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -46,6 +46,7 @@ Long-term implementation:
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 
 Long-term design:
+	x)  Instruction combination collisions? How to avoid easily...
 	x)  MAINBUS REDESIGN!
 	x)  Clock framework! Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!

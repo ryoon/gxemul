@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.208 2006-07-18 19:58:05 debug Exp $
+$Id: RELEASE,v 1.209 2006-07-21 05:19:37 debug Exp $
 
 Working on what will become 0.4.1.
 
@@ -27,7 +27,7 @@ Changes between release 0.4.0.1 and 0.4.1 include, among other things:
 
     o)	In the refactoring effort between 0.4.0 and 0.4.0.1, single-stepping
 	(and instruction tracing) of 64-bit programs was accidentally broken.
-	Single-stepping in 64-bit mode could resulting in strange exceptions.
+	Single-stepping in 64-bit mode could result in strange exceptions.
 	This has been fixed in 0.4.1.
 
     o)	MIPS emulation performance has been improved somewhat.

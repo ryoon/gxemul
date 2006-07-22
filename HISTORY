@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1297 2006-07-21 20:09:15 debug Exp $
+$Id: HISTORY,v 1.1298 2006-07-22 11:27:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2884,3 +2884,7 @@ Changelog for GXemul:
 		(thanks to Alec Voropay for the details).
 		FINALLY found and fixed the bug which made tlbw* for non-R3000
 		buggy; it was a reference count problem in the dyntrans core.
+20060722	Testing stuff; things seem stable enough for a new release.
+
+==============  RELEASE 0.4.1  ==============
+

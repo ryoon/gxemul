@@ -1,14 +1,6 @@
-$Id: TODO,v 1.323 2006-07-21 16:55:40 debug Exp $
+$Id: TODO,v 1.324 2006-07-22 10:23:39 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
-
-MUST:
-	o)  Figure out what causes problems in non-R3000 tlbw*, and fix
-	    it (to get rid of the performance bottlenecks).
-	o)  Fix invalidate_asid so it works well for all non-R3000 CPUs too!
-	o)  Actually use the settings object, better debugger stuff, etc!
-	o)  Debugger command for enabling/disabling instruction statistics
-	    during runtime.   machine.statistics = on|off
 
 Code cleanup:
 	x)  64-bit ranges in src/cpus/memory_mips_v2p.c
@@ -38,6 +30,9 @@ Long-term implementation:
 			for (;;) {
 				halt();
 			}
+	x)  Rewrite the networking stack; make OpenBSD work better as a guest
+	    OS, fix the performance problems, make Linux work with DHCP, etc.
+	x)  Make the wdc controller work with modern versions of NetBSD!
 	x)  Continue on SPARC emulation
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.
@@ -46,6 +41,9 @@ Long-term implementation:
 
 Long-term design:
 	x)  Instruction combination collisions? How to avoid easily...
+	o)  Actually use the settings object, better debugger stuff, etc!
+	o)  Debugger command for enabling/disabling instruction statistics
+	    during runtime.   machine.statistics = on|off
 	x)  MAINBUS REDESIGN!
 	x)  Clock framework! Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
@@ -59,7 +57,7 @@ Long-term design:
 
 Test:
 	x)  Test with more than one Sprite instance on an emulated network!
-	x)  Wait for new releases of NetBSD, and test with those.
+	x)  NetBSD 4.x, once it is out.
 
 -------------------------------------------------------------------------------
 

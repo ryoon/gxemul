@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.156 2006-07-21 16:55:40 debug Exp $
+$Id: guestoses.html,v 1.157 2006-07-22 10:23:39 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1975,21 +1975,26 @@ from FreeBSD ports with GXemul gave the following result:
         <b>while true; do ls -l > /dev/null; echo -n .; done</b>
         (80 x 36 dots)
         QEMU 0.8.1:       13 min 48 sec
-        GXemul-20060711:   7 min 54 sec
+        GXemul 20060711:   7 min 54 sec
+	GXemul 0.4.1:      4 min 59 sec
 
 	<b>while true; do /usr/bin/md5sum /usr/bin/* > /dev/null; echo -n .; done</b>
         (80 dots)
         QEMU 0.8.1:        2 min  9 sec
-        GXemul-20060711:   8 min 49 sec
+        GXemul 20060711:   8 min 49 sec
+	GXemul 0.4.1:      6 min 54 sec
 
         <b>while true; do grep hej lib/libtextwrap.so.1 > /dev/null; echo -n .; done</b>
         (80 dots)
-        QEMU 0.8.1:       10 min 5 sec
-        GXemul-20060711:   3 min 8 sec
+        QEMU 0.8.1:       10 min  5 sec
+        GXemul 20060711:   3 min  8 sec
+	GXemul 0.4.1:      1 min 42 sec
 </pre>
 
-<p>(The commands were run inside the emulators, using the ramdisk kernel 
-mentioned above.)
+<p>The commands were run inside the emulators, using the ramdisk kernel
+mentioned above. (For GXemul, 2006-07-11 was the date when the QEMU_MIPS
+mode was added. Performance has since gotten a bit better in general, for 
+non-R3000 MIPS emulation.)
 
 
 

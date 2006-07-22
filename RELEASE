@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.210 2006-07-21 20:40:50 debug Exp $
+$Id: RELEASE,v 1.211 2006-07-22 12:19:25 debug Exp $
 
-Working on what will become 0.4.1.
+Working on what will become 0.4.2.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.1
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.2
 ================================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -20,43 +20,9 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 
-Changes between release 0.4.0.1 and 0.4.1 include, among other things:
+Changes between release 0.4.1 and 0.4.2 include, among other things:
 
-    o)	Some bugs in the dynamic translation core have been fixed, making
-	all emulation modes (especially the MIPS mode) more stable.
-
-    o)	In the refactoring effort between 0.4.0 and 0.4.0.1, single-stepping
-	(and instruction tracing) of 64-bit programs was accidentally broken.
-	Single-stepping in 64-bit mode could result in strange exceptions.
-	This has been fixed in 0.4.1.
-
-    o)	MIPS emulation performance has been improved somewhat:
-
-	R3000: After removing some buggy code (hints for physical page
-	translations), it was possible to remove the workaround for R3000
-	caches which was needed in 0.4.0.1 to make Linux and Ultrix run.
-	This gives an overall speedup for R2000/R3000.
-
-	For non-R3000, there have been some speedups as well. After fixing
-	reference count bugs for 64-bit addressing in the dyntrans system,
-	workarounds/hacks in the tlbwr/tlbwi instructions and in the ASID
-	change helper function could be removed.
-
-    o)	A new -s command line option is now available, for dumping
-	raw runtime data/statistics on every instruction to a file.
-
-	Currently, the following kinds of data can be dumped:
-
-	1. the program counter (virtual address)
-	2. the physical address representation of the program counter
-	3. the internal dyntrans instruction call pointer, useful when
-	   developing/optimizing the emulator
-
-	This data can then be analyzed by external tools.
-
-	(There was a -s command line option in previous releases of
-	the emulator, but it did not work as intended, and was not
-	usable from dyntrans emulation modes.)
+    o)	... TODO
 
 Please read the HISTORY files for more details.
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.121 2006-07-08 12:30:02 debug Exp $
+ *  $Id: dev_fb.c,v 1.122 2006-07-23 23:40:29 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -235,7 +235,7 @@ void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on,
  *  block copy/fill.
  *
  *  If fillflag is non-zero, then fill_[rgb] should contain the color
- *  with which to fill.
+ *  with which to fill. (In 8-bit mode, only fill_r is used.)
  *
  *  If fillflag is zero, copy mode is used, and from_[xy] should contain
  *  the offset on the framebuffer where we should copy from.
@@ -270,21 +270,22 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 		for (y=y1; y<=y2; y++) {
 			if (y>=0 && y<d->ysize) {
 				int x;
-				char buf[8192 * 3];
-				if (d->bit_depth == 24)
+				char *buf = d->framebuffer + dest_ofs;
+
+				if (d->bit_depth == 24) {
 					for (x=0; x<linelen && x<sizeof(buf);
 					    x += 3) {
 						buf[x] = fill_r;
 						buf[x+1] = fill_g;
 						buf[x+2] = fill_b;
 					}
-				else {
-					fatal("[ fb: TODO: fill for non-24-bit"
-					    " modes ]\n");
+				} else if (d->bit_depth == 8) {
+					memset(buf, fill_r, linelen);
+				} else {
+					fatal("Unimplemented bit-depth (%i)"
+					    " for fb fill\n", d->bit_depth);
+					exit(1);
 				}
-
-				memmove(d->framebuffer + dest_ofs, buf,
-				    linelen);
 			}
 
 			dest_ofs += d->bytes_per_line;
@@ -292,12 +293,16 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	} else {
 		from_ofs = d->bytes_per_line * from_y +
 		    (d->bit_depth/8) * from_x;
-
 		for (y=y1; y<=y2; y++) {
-			if (y>=0 && y<d->ysize)
-				memmove(d->framebuffer + dest_ofs,
-				    d->framebuffer + from_ofs, linelen);
-
+			if (y >= 0 && y < d->ysize) {
+				if (from_y >= 0 && from_y < d->ysize)
+					memmove(d->framebuffer + dest_ofs,
+					    d->framebuffer + from_ofs, linelen);
+				else
+					memset(d->framebuffer + dest_ofs,
+					    0, linelen);
+			}
+			from_y ++;
 			from_ofs += d->bytes_per_line;
 			dest_ofs += d->bytes_per_line;
 		}

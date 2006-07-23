@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.157 2006-07-22 10:23:39 debug Exp $
+$Id: guestoses.html,v 1.158 2006-07-23 23:40:28 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -56,6 +56,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
+  <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.0.1</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
   <li><a href="#openbsdpmaxinstall">OpenBSD/pmax 2.8-BETA</a>
   <li><a href="#openbsdcatsinstall">OpenBSD/cats 3.9</a>
@@ -100,7 +101,6 @@ not be relevant for this specific release of GXemul.)
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
   <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
-  <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 2.1</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.0</a>
 </ul>
 
@@ -879,6 +879,94 @@ cd /; umount /mnt; sync; halt</b>
 <p>You should now be able to boot NetBSD/evbarm using this command:<pre>
 	<b>gxemul -xEiq80321 -d nbsd_iq80321.img netbsd-wd0-IQ80321.gz</b>
 </pre>
+
+
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdnetwinderinstall"></a>
+<h3>NetBSD/netwinder:</h3>
+
+It is possible to run <a 
+href="http://www.netbsd.org/Ports/netwinder/">NetBSD/netwinder</a>
+in GXemul.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20060724-netbsd-netwinder-1.png"><img src="20060724-netbsd-netwinder-1_small.png"></a>
+&nbsp;&nbsp;&nbsp;<a href="20060724-netbsd-netwinder-2.png"><img src="20060724-netbsd-netwinder-2_small.png"></a>
+
+<p>There is (as far as I know) no INSTALL ramdisk kernel, so one way to 
+install the NetBSD/netwinder distribution onto a disk image is to install 
+the files using another (emulated) machine.
+
+<p>The following instructions will let you install the NetBSD/netwinder 
+distribution onto a disk image, from an emulated DECstation 3MAX machine:
+
+<p>
+<ol>
+  <li>Install NetBSD/pmax 3.0 according to instructions
+	<a href="#netbsdpmaxinstall">further up on this page</a>.
+  <p>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_netwinder.img bs=1024 count=1 seek=999000</b>
+
+</pre>
+  <li>Download the generic kernel and the 3.0.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/netwindercd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/netwindercd-3.0.1.iso</a>
+
+</pre>
+  <p>
+  <li>Start NetBSD/pmax like this:<pre>
+	<b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_netwinder.img -d netwinder-3.0.1.iso</b>
+
+</pre>and execute the following commands as <tt>root</tt>:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>newfs /dev/sd1c
+mount /dev/cd0c /mnt
+mkdir /mnt2; mount /dev/sd1c /mnt2
+cd /mnt2; sh
+for a in /mnt/netwinder/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
+exit
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES >> rc.conf
+echo "/dev/wd0c / ffs rw 1 1" > fstab
+cd /; umount /mnt; umount /mnt2; halt</b>
+</pre></td></tr></table>
+</ol>
+
+<p>NetBSD/netwinder is now installed on the disk image. The following command
+line can now be used to start NetBSD/netwinder:<pre>
+	<b>gxemul -X -E netwinder -d nbsd_netwinder.img netbsd-GENERIC.gz</b>
+</pre>
+
+<p>This will result in a 1024x768 framebuffer. Add <tt>-Y2</tt> to the 
+command line if you want to scale it down to 512x384.
+
+<p>Note: The installation instructions above create a filesystem
+<i>without</i> a disklabel, so there is only one ffs partition and no
+swap. You will need to enter the following things when booting with the
+generic kernel:<pre>
+	root device (default wd0a): <b>wd0c</b>
+	dump device (default wd0b): <i>(just press enter)</i>
+	file system (default generic):    <i>(just press enter)</i>
+	init path (default /sbin/init):   <i>(just press enter)</i>
+</pre>
+
+<p>Also, there is a minor bug in the keyboard device, so you need to press 
+a key (any key) before typing wd0c.
+
+
+
+
+
+
 
 
 
@@ -2043,80 +2131,6 @@ Windows NT onto a disk image:
 
 <p><tt>SETUPLDR</tt> manages to load some drivers from the cdrom,
 but then it crashes because of incomplete emulation of some hardware devices.
-
-
-
-
-
-
-
-<p><br>
-<a name="netbsdnetwinderinstall"></a>
-<h3>NetBSD/netwinder:</h3>
-
-<a href="http://www.netbsd.org/Ports/netwinder/">NetBSD/netwinder</a>
-could possibly run in GXemul.
-<font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
-
-<p>It is tricky to install, because there is (as far as I know) no INSTALL
-kernel. One way to install the NetBSD/netwinder distribution onto a disk
-image is to install the files using another (emulated) machine.
-
-<p>
-The following instructions will let you install the NetBSD/netwinder
-distribution onto a disk image, from an emulated DECstation 3MAX machine:
-
-<p>
-<ol>
-  <li>Install NetBSD/pmax 3.0 according to instructions
-	<a href="#netbsdpmaxinstall">further up on this page</a>.
-  <p>
-  <li>Create an empty harddisk image, which will be the disk image
-	that you will install NetBSD onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_netwinder.img bs=1024 count=1 seek=999000</b>
-
-</pre>
-  <li>Download the generic kernel and the 2.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/netwindercd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/netwindercd.iso</a>
-
-</pre>
-  <p>
-  <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_netwinder.img -d netwinder.iso</b>
-
-</pre>and execute the following commands as <tt>root</tt>:
-<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>newfs /dev/sd1c
-mount /dev/cd0c /mnt
-mkdir /mnt2; mount /dev/sd1c /mnt2
-cd /mnt2; sh
-for a in /mnt/netwinder/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
-exit
-cd dev; sh ./MAKEDEV all; cd ../etc
-echo rc_configured=YES >> rc.conf
-echo "/dev/wd0c / ffs rw 1 1" > fstab
-cd /; umount /mnt; umount /mnt2; halt</b>
-</pre></td></tr></table>
-</ol>
-
-<p>NetBSD/netwinder is now installed on the disk image. But actually 
-running it does <b>not work yet</b>. Sorry.
-
-<p>Something like the following command line would be used to start 
-NetBSD, if it worked:<pre>
-	<b>gxemul -E netwinder -d nbsd_netwinder.img netbsd-GENERIC.gz</b>
-</pre>
-
-<p>Note: The installation instructions above create a filesystem
-<i>without</i> a disklabel, so there is only one ffs partition and no
-swap. You will need to enter the following things when booting with the
-generic kernel:<pre>
-	root device (default wd0a): <b>wd0c</b>
-	dump device (default wd0b): <b>none</b>
-	file system (default generic):    <i>(just press enter)</i>
-	init path (default /sbin/init):   <i>(just press enter)</i>
-</pre>
 
 
 

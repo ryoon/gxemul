@@ -1,4 +1,4 @@
-$Id: TODO,v 1.326 2006-07-23 15:42:20 debug Exp $
+$Id: TODO,v 1.327 2006-07-23 23:40:28 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -8,6 +8,7 @@ Code cleanup:
 	x)  Refactor the cpu type detection/initialization/listing.
 
 Documentation:
+	x)  Try NetBSD 3.0.1 instead of 3.0.
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
 	    written. (Symbolic names instead of numbers; example

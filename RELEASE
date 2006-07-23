@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.211 2006-07-22 12:19:25 debug Exp $
+$Id: RELEASE,v 1.212 2006-07-23 23:40:28 debug Exp $
 
 Working on what will become 0.4.2.
 
@@ -22,7 +22,12 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 Changes between release 0.4.1 and 0.4.2 include, among other things:
 
-    o)	... TODO
+    o)	NetBSD/netwinder 3.0.1 can now run from a disk image.
+
+	(It has to be installed manually, though, because there is no
+	installation ramdisk kernel for NetBSD/netwinder. The documentation
+	has an example of how to install NetBSD/netwinder using an emulated
+	NetBSD/pmax machine.)
 
 Please read the HISTORY files for more details.
 

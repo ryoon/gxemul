@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1303 2006-07-23 19:36:14 debug Exp $
+$Id: HISTORY,v 1.1304 2006-07-23 23:40:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2892,3 +2892,6 @@ Changelog for GXemul:
 		eqc, rev, ajw, stl, stlf, sthf, sub, ldnl, ldnlp, ldpi, move,
 		wcnt, add, bcnt).
 		Adding more SPARC instructions (andcc, addcc, bl, rdpr).
+		Progress on the igsfb framebuffer used by NetBSD/netwinder.
+		Enabling 8-bit fills in dev_fb.
+		NetBSD/netwinder 3.0.1 can now run from a disk image :-)

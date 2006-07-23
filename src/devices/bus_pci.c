@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.65 2006-05-10 03:32:32 debug Exp $
+ *  $Id: bus_pci.c,v 1.66 2006-07-23 23:40:29 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -420,15 +420,16 @@ struct pci_data *bus_pci_init(struct machine *machine, int irq_nr,
 
 
 /*
- *  Integraphics Systems "igsfb" Framebuffer (graphics) card.
- *
- *  TODO
+ *  Integraphics Systems "igsfb" Framebuffer (graphics) card, used in at
+ *  least the NetWinder.
  */
 
 #define	PCI_VENDOR_INTEGRAPHICS		0x10ea
 
 PCIINIT(igsfb)
 {
+	char tmpstr[200];
+
 	PCI_SET_DATA(PCI_ID_REG,
 	    PCI_ID_CODE(PCI_VENDOR_INTEGRAPHICS, 0x2010));
 
@@ -439,8 +440,9 @@ PCIINIT(igsfb)
 	/*  TODO  */
 	PCI_SET_DATA(0x10, 0x08000000);
 
-	dev_vga_init(machine, mem, pd->pcibus->isa_membase + 0xa0000,
-	    0x88800000 + 0x3c0, machine->machine_name);
+	snprintf(tmpstr, sizeof(tmpstr), "igsfb addr=0x%llx",
+	    (long long)(pd->pcibus->isa_membase + 0x08000000));
+	device_add(machine, tmpstr);
 }
 
 

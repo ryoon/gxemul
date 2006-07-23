@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.212 2006-07-23 23:40:28 debug Exp $
+$Id: RELEASE,v 1.213 2006-07-23 23:52:24 debug Exp $
 
 Working on what will become 0.4.2.
 
@@ -22,10 +22,11 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 Changes between release 0.4.1 and 0.4.2 include, among other things:
 
-    o)	NetBSD/netwinder 3.0.1 can now run from a disk image.
+    o)	The NetWinder emulation mode now works well enough to let
+	NetBSD/netwinder run from a disk image.
 
-	(It has to be installed manually, though, because there is no
-	installation ramdisk kernel for NetBSD/netwinder. The documentation
+	(NetBSD/netwinder has to be installed manually, though, because
+	there is no installation ramdisk kernel. The GXemul documentation
 	has an example of how to install NetBSD/netwinder using an emulated
 	NetBSD/pmax machine.)
 

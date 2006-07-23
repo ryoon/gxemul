@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.3 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.4 2006-07-23 23:50:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,6 +44,7 @@
 MACHINE_SETUP(netwinder)
 {
 	machine->machine_name = "NetWinder";
+	machine->stable = 1;
 
 	if (machine->physical_ram_in_mb > 256)
 		fprintf(stderr, "WARNING! Real NetWinders cannot"
@@ -55,22 +56,6 @@ MACHINE_SETUP(netwinder)
 	machine->isa_pic_data.native_irq = 11;
 
 	bus_isa_init(machine, 0, 0x7c000000, 0x80000000, 32, 48);
-
-#if 0
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c000020");
-	machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
-	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=64 addr=0x7c0000a0");
-	machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-
-	device_add(machine, "ns16550 irq=36 addr=0x7c0003f8 name2=com0");
-	device_add(machine, "ns16550 irq=35 addr=0x7c0002f8 name2=com1");
-
-	dev_vga_init(machine, machine->memory, 0x800a0000ULL, 0x7c0003c0,
-	    machine->machine_name);
-	j = dev_pckbc_init(machine, machine->memory, 0x7c000060, PCKBC_8042,
-	    32 + 1, 32 + 12, machine->use_x11, 0);
-	machine->main_console_handle = j;
-#endif
 
 	if (machine->use_x11) {
 		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,

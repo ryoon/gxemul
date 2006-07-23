@@ -1,25 +1,4 @@
-$Id: README_DYNTRANS,v 1.9 2006-03-15 20:34:05 debug Exp $
-
--------------------------------------------------------------------
-
-PPC optimizations TODO:
-
-	find high-level bottlenecks!
-
-	inline cr0 field calculation
-
-	load/store with r1 as base?
-
-	multiple load/stores in a row (especially with base = r1)
-
-	almost all branches are of the "general" form now, they don't
-		need to be.
-
-	combinations of compare + branch, similar to arm?
-
--------------------------------------------------------------------
-
-
+$Id: README_DYNTRANS,v 1.10 2006-07-23 19:36:14 debug Exp $
 
 Dyntrans TODO:
 
@@ -44,6 +23,7 @@ Dyntrans TODO:
 	POWER/PPC	32-bit				64/32		no
 	SH		32-bit, 16-bit (SHcompact)	64/32		yes(*)
 	SPARC		32-bit				64/32		yes
+	Transputer	8-bit				32/16		no
 	x86		8-bit + variable		64/32/16	no
 	VAX		8-bit + variable		32		no
 

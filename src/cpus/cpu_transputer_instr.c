@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer_instr.c,v 1.5 2006-07-23 14:37:34 debug Exp $
+ *  $Id: cpu_transputer_instr.c,v 1.6 2006-07-23 19:36:14 debug Exp $
  *
  *  INMOS transputer instructions.
  *
@@ -39,14 +39,6 @@
  *        there is no MMU in the Transputer, and hence there can not be any
  *        exceptions on memory accesses.
  */
-
-
-/*
- *  nop:  Do nothing.
- */
-X(nop)
-{
-}
 
 
 /*****************************************************************************/
@@ -174,8 +166,10 @@ X(ldl)
 		cpu->memory_rw(cpu, cpu->mem, addr, word, sizeof(word),
 		    MEM_READ, CACHE_DATA);
 		w32 = *(uint32_t *) &word[0];
+printf("A w32 = %08"PRIx32"\n", w32);
 	} else {
 		w32 = *(uint32_t *) &page[TRANSPUTER_PC_TO_IC_ENTRY(addr)];
+printf("B w32 = %08"PRIx32"\n", w32);
 	}
 
 	cpu->cd.transputer.a = LE32_TO_HOST(w32);
@@ -262,7 +256,9 @@ X(stnl)
  *  opr: Operate
  *
  *  TODO/NOTE: This doesn't work too well with the way dyntrans is designed
- *             to work. Maybe it should be rewritten some day.
+ *             to work. Maybe it should be rewritten some day. But how?
+ *             Right now it works almost 100% like an old-style interpretation
+ *             function.
  */
 X(opr)
 {
@@ -275,6 +271,17 @@ X(opr)
 			uint32_t tmp = cpu->cd.transputer.b;
 			cpu->cd.transputer.b = cpu->cd.transputer.a;
 			cpu->cd.transputer.a = tmp;
+		}
+		break;
+
+	case T_OPC_F_ADD:
+		{
+			uint32_t old_a = cpu->cd.transputer.a;
+			cpu->cd.transputer.a = cpu->cd.transputer.b + old_a;
+			if ((cpu->cd.transputer.a & 0x80000000) !=
+			    (cpu->cd.transputer.b & old_a & 0x80000000))
+				cpu->cd.transputer.error = 1;
+			cpu->cd.transputer.b = cpu->cd.transputer.c;
 		}
 		break;
 
@@ -313,12 +320,22 @@ X(opr)
 		cpu->cd.transputer.b = cpu->cd.transputer.c;
 		break;
 
+	case T_OPC_F_BCNT:
+		cpu->cd.transputer.a <<= 2;
+		break;
+
 	case T_OPC_F_GAJW:
 		{
 			uint32_t old_wptr = cpu->cd.transputer.wptr;
 			cpu->cd.transputer.wptr = cpu->cd.transputer.a & ~3;
 			cpu->cd.transputer.a = old_wptr;
 		}
+		break;
+
+	case T_OPC_F_WCNT:
+		cpu->cd.transputer.c = cpu->cd.transputer.b;
+		cpu->cd.transputer.b = cpu->cd.transputer.a & 3;
+		cpu->cd.transputer.a >>= 2;
 		break;
 
 	case T_OPC_F_MINT:
@@ -328,6 +345,9 @@ X(opr)
 		break;
 
 	case T_OPC_F_MOVE:
+		/*  TODO: This can be optimized a lot by using the host's
+		    memmove(). The only important thing to consider is
+		    if src or dst crosses a host memblock boundary.  */
 		{
 			uint32_t i, src = cpu->cd.transputer.c,
 			    dst = cpu->cd.transputer.b;

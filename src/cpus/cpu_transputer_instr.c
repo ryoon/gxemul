@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer_instr.c,v 1.2 2006-07-21 05:46:45 debug Exp $
+ *  $Id: cpu_transputer_instr.c,v 1.3 2006-07-23 11:22:00 debug Exp $
  *
  *  INMOS transputer instructions.
  *
@@ -50,8 +50,6 @@ X(nop)
 
 /*
  *  j:  Relative jump
- *
- *  arg[0] = relative distance from the _current_ instruction.
  */
 X(j)
 {
@@ -59,23 +57,144 @@ X(j)
 	int low_pc = ((size_t)ic - (size_t)cpu->cd.transputer.cur_ic_page)
 	    / sizeof(struct transputer_instr_call);
 	cpu->pc &= ~(TRANSPUTER_IC_ENTRIES_PER_PAGE-1);
-	cpu->pc += low_pc + ic->arg[0];
+	cpu->pc += low_pc + ic->arg[0] + 1 + cpu->cd.transputer.oreg;
+	cpu->cd.transputer.oreg = 0;
 	quick_pc_to_pointers(cpu);
 }
 
 
 /*
- *  ldc: Load constant
+ *  ldlp: Load local pointer
+ */
+X(ldlp)
+{
+	cpu->cd.transputer.c = cpu->cd.transputer.b;
+	cpu->cd.transputer.b = cpu->cd.transputer.a;
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	cpu->cd.transputer.a = cpu->cd.transputer.oreg * sizeof(uint32_t) +
+	    cpu->cd.transputer.wptr;
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
+ *  pfix: Prefix
  *
- *  arg[0] = constant
+ *  arg[0] = nibble
+ */
+X(pfix)
+{
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	cpu->cd.transputer.oreg <<= 4;
+}
+
+
+/*
+ *  ldc: Load constant
  */
 X(ldc)
 {
-	/*  TODO: Is oreg really cleared like this?  */
-	cpu->cd.transputer.oreg = ic->arg[0];
 	cpu->cd.transputer.c = cpu->cd.transputer.b;
 	cpu->cd.transputer.b = cpu->cd.transputer.a;
-	cpu->cd.transputer.a = ic->arg[0];
+	cpu->cd.transputer.a = cpu->cd.transputer.oreg | ic->arg[0];
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
+ *  nfix: Negative prefix
+ */
+X(nfix)
+{
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	cpu->cd.transputer.oreg = (~cpu->cd.transputer.oreg) << 4;
+}
+
+
+/*
+ *  ldl: Load local
+ */
+X(ldl)
+{
+	uint32_t addr;
+	uint8_t word[sizeof(uint32_t)];
+	uint32_t w32;
+	unsigned char *page;
+
+	cpu->cd.transputer.c = cpu->cd.transputer.b;
+	cpu->cd.transputer.b = cpu->cd.transputer.a;
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	addr = cpu->cd.transputer.oreg * sizeof(uint32_t) +
+	    cpu->cd.transputer.wptr;
+
+	page = cpu->cd.transputer.host_load[TRANSPUTER_ADDR_TO_PAGENR(addr)];
+	if (page == NULL) {
+		cpu->memory_rw(cpu, cpu->mem, addr, word, sizeof(word),
+		    MEM_READ, CACHE_DATA);
+		w32 = *(uint32_t *) &word[0];
+	} else {
+		w32 = *(uint32_t *) &page[TRANSPUTER_PC_TO_IC_ENTRY(addr)];
+	}
+
+	cpu->cd.transputer.a = LE32_TO_HOST(w32);
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
+ *  ajw: Adjust workspace
+ */
+X(ajw)
+{
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	cpu->cd.transputer.wptr += (cpu->cd.transputer.oreg * sizeof(uint32_t));
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
+ *  eqc: Equal to constant
+ */
+X(eqc)
+{
+	cpu->cd.transputer.a = (cpu->cd.transputer.a ==
+	    (cpu->cd.transputer.oreg | ic->arg[0]));
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
+ *  opr: Operate
+ *
+ *  TODO/NOTE: This doesn't work too well with the way dyntrans is designed
+ *             to work. Maybe it should be rewritten some day.
+ */
+X(opr)
+{
+	cpu->cd.transputer.oreg |= ic->arg[0];
+
+	switch (cpu->cd.transputer.oreg) {
+
+	case T_OPC_F_REV:
+		{
+			uint32_t tmp = cpu->cd.transputer.b;
+			cpu->cd.transputer.b = cpu->cd.transputer.a;
+			cpu->cd.transputer.a = tmp;
+		}
+		break;
+
+	case T_OPC_F_MINT:
+		cpu->cd.transputer.c = cpu->cd.transputer.b;
+		cpu->cd.transputer.b = cpu->cd.transputer.a;
+		cpu->cd.transputer.a = 0x80000000;
+		break;
+
+	default:fatal("UNIMPLEMENTED opr oreg 0x%"PRIx32"\n",
+		    cpu->cd.transputer.oreg);
+		exit(1);
+	}
+
+	cpu->cd.transputer.oreg = 0;
 }
 
 
@@ -157,9 +276,9 @@ X(to_be_translated)
 
 	switch (ib[0] >> 4) {
 
-	case 0:	/*  j, relative jump  */
+	case T_OPC_J:
+		/*  relative jump  */
 		ic->f = instr(j);
-		ic->arg[0] = (ib[0] & 0xf) + 1;
 		/*  TODO: Samepage jump!  */
 
 		if (cpu->cd.transputer.cpu_type.features & T_DEBUG
@@ -174,8 +293,44 @@ X(to_be_translated)
 		}
 		break;
 
-	case 4:	/*  ldc, load constant  */
+	case T_OPC_LDLP:
+		/*  load local pointer  */
+		ic->f = instr(ldlp);
+		break;
+
+	case T_OPC_PFIX:
+		/*  prefix  */
+		ic->f = instr(pfix);
+		break;
+
+	case T_OPC_LDC:
+		/*  load constant  */
 		ic->f = instr(ldc);
+		break;
+
+	case T_OPC_NFIX:
+		/*  negative prefix  */
+		ic->f = instr(nfix);
+		break;
+
+	case T_OPC_LDL:
+		/*  load local  */
+		ic->f = instr(ldl);
+		break;
+
+	case T_OPC_AJW:
+		/*  adjust workspace  */
+		ic->f = instr(ajw);
+		break;
+
+	case T_OPC_EQC:
+		/*  equal to constant  */
+		ic->f = instr(eqc);
+		break;
+
+	case T_OPC_OPR:
+		/*  operate  */
+		ic->f = instr(opr);
 		break;
 
 	default:fatal("UNIMPLEMENTED opcode 0x%02x\n", ib[0]);

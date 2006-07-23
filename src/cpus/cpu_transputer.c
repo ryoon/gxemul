@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.c,v 1.1 2006-07-20 21:52:59 debug Exp $
+ *  $Id: cpu_transputer.c,v 1.2 2006-07-23 11:22:00 debug Exp $
  *
  *  INMOS transputer CPU emulation.
  */
@@ -269,13 +269,42 @@ int transputer_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	opcode = ib[0] >> 4;
 	operand = ib[0] & 15;
+	debug("%02x   %-6s %2i", ib[0], opcode_names[opcode], operand);
 
-	debug("%02x   ", ib[0]);
+	switch (opcode) {
 
-	switch (opcode >> 4) {
+	case T_OPC_LDC:
+		if (running) {
+			uint32_t new_c = cpu->cd.transputer.b;
+			uint32_t new_b = cpu->cd.transputer.a;
+			uint32_t new_a = cpu->cd.transputer.oreg | operand;
+			debug("\ta=0x%"PRIx32", b=0x%"PRIx32", c=0x%"PRIx32,
+			    new_a, new_b, new_c);
+		}
+		break;
 
-	default:debug("%-6s %2i\n", opcode_names[opcode], operand);
+	case T_OPC_OPR:
+		if (running) {
+			uint32_t fopcode = cpu->cd.transputer.oreg | operand;
+			debug("\t");
+			switch (fopcode) {
+
+			case T_OPC_F_REV:
+				debug("rev");
+				break;
+
+			case T_OPC_F_MINT:
+				debug("mint");
+				break;
+
+			default:debug("UNIMPLEMENTED 0x%"PRIx32, fopcode);
+			}
+		}
+		break;
+
 	}
+
+	debug("\n");
 
 	return 1;
 }

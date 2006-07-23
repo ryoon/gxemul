@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.h,v 1.1 2006-07-20 21:53:00 debug Exp $
+ *  $Id: cpu_transputer.h,v 1.2 2006-07-23 11:22:01 debug Exp $
  */
 
 #include "misc.h"
@@ -97,6 +97,25 @@ struct transputer_cpu_type_def {
 	/*  EX  */   "stnl",	/*  store non-local		*/	\
 	/*  FX  */   "opr"	/*  operate			*/	}
 
+#define	T_OPC_J			0
+#define	T_OPC_LDLP		1
+#define	T_OPC_PFIX		2
+#define	T_OPC_LDNL		3
+#define	T_OPC_LDC		4
+#define	T_OPC_LDNLP		5
+#define	T_OPC_NFIX		6
+#define	T_OPC_LDL		7
+#define	T_OPC_ADC		8
+#define	T_OPC_CALL		9
+#define	T_OPC_CJ		10
+#define	T_OPC_AJW		11
+#define	T_OPC_EQC		12
+#define	T_OPC_STL		13
+#define	T_OPC_STNL		14
+#define	T_OPC_OPR		15
+
+#define	T_OPC_F_REV		0x00
+#define	T_OPC_F_MINT		0x42
 
 #define	TRANSPUTER_N_IC_ARGS			1
 #define	TRANSPUTER_INSTR_ALIGNMENT_SHIFT	0

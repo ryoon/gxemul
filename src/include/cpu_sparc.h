@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.40 2006-07-16 13:32:28 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.41 2006-07-23 12:40:24 debug Exp $
  */
 
 #include "misc.h"
@@ -138,11 +138,11 @@ DYNTRANS_MISC64_DECLARATIONS(sparc,SPARC,uint8_t)
 #define	SPARC_PREG_NAMES	{					\
 	"tpc", "tnpc", "tstate", "tt", "tick", "tba", "pstate", "tl",	\
 	"pil", "cwp", "cansave", "canrestore", "cleanwin", "otherwin",	\
-	"wstate", "reserved15", "reserved16", "reserved17", "reserved18", \
+	"wstate", "fq", "reserved16", "reserved17", "reserved18", \
 	"reserved19", "reserved20", "reserved21", "reserved22", \
 	"reserved23", "reserved24", "reserved25", "reserved26", \
 	"reserved27", "reserved28", "reserved29", "reserved30", \
-	"reserved31" }
+	"ver" }
 
 #define	N_SPARC_BRANCH_TYPES	16
 #define	SPARC_BRANCH_NAMES {						\

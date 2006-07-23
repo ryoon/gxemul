@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.21 2006-07-02 11:01:19 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.22 2006-07-23 12:40:24 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -100,6 +100,34 @@ X(call_trace)
 		cpu->pc = old_pc + (int32_t)ic->arg[0];
 		cpu_functioncall_trace(cpu, cpu->pc);
 		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bl
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ */
+X(bl)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = (cpu->cd.sparc.ccr & SPARC_CCR_N) ? 1 : 0;
+	int v = (cpu->cd.sparc.ccr & SPARC_CCR_V) ? 1 : 0;
+	int cond = n ^ v;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
 	} else
 		cpu->delay_slot = NOT_DELAYED;
 }
@@ -385,6 +413,114 @@ X(save_v9_imm)
 
 
 /*
+ *  Add with ccr update:
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ *  arg[2] = ptr to rd
+ */
+int32_t sparc_addcc32(struct cpu *cpu, int32_t rs1, int32_t rs2);
+#ifdef MODE32
+int32_t sparc_addcc32(struct cpu *cpu, int32_t rs1, int32_t rs2)
+#else
+int64_t sparc_addcc64(struct cpu *cpu, int64_t rs1, int64_t rs2)
+#endif
+{
+	int cc = 0, sign1 = 0, sign2 = 0, signd = 0, mask = SPARC_CCR_ICC_MASK;
+	MODE_int_t rd = rs1 + rs2;
+	if (rd == 0)
+		cc = SPARC_CCR_Z;
+	else if (rd < 0)
+		cc = SPARC_CCR_N, signd = 1;
+	if (rs1 < 0)
+		sign1 = 1;
+	if (rs2 < 0)
+		sign2 = 1;
+	if (sign1 == sign2 && sign1 != signd)
+		cc |= SPARC_CCR_V;
+	/*  TODO: SPARC_CCR_C  */
+#ifndef MODE32
+	mask <<= SPARC_CCR_XCC_SHIFT;
+	cc <<= SPARC_CCR_XCC_SHIFT;
+#endif
+	cpu->cd.sparc.ccr &= ~mask;
+	cpu->cd.sparc.ccr |= cc;
+	return rd;
+}
+X(addcc)
+{
+	/*  Like add, but updates the ccr, and does both 32-bit and
+	    64-bit comparison at the same time.  */
+	MODE_int_t rs1 = reg(ic->arg[0]), rs2 = reg(ic->arg[1]), rd;
+	rd = sparc_addcc32(cpu, rs1, rs2);
+#ifndef MODE32
+	rd = sparc_addcc64(cpu, rs1, rs2);
+#endif
+	reg(ic->arg[2]) = rd;
+}
+X(addcc_imm)
+{
+	MODE_int_t rs1 = reg(ic->arg[0]), rs2 = (int32_t)ic->arg[1], rd;
+	rd = sparc_addcc32(cpu, rs1, rs2);
+#ifndef MODE32
+	rd = sparc_addcc64(cpu, rs1, rs2);
+#endif
+	reg(ic->arg[2]) = rd;
+}
+
+
+/*
+ *  And with ccr update:
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ *  arg[2] = ptr to rd
+ */
+int32_t sparc_andcc32(struct cpu *cpu, int32_t rs1, int32_t rs2);
+#ifdef MODE32
+int32_t sparc_andcc32(struct cpu *cpu, int32_t rs1, int32_t rs2)
+#else
+int64_t sparc_andcc64(struct cpu *cpu, int64_t rs1, int64_t rs2)
+#endif
+{
+	int cc = 0, mask = SPARC_CCR_ICC_MASK;
+	MODE_int_t rd = rs1 & rs2;
+	if (rd == 0)
+		cc = SPARC_CCR_Z;
+	else if (rd < 0)
+		cc = SPARC_CCR_N;
+	/*  Note: SPARC_CCR_C and SPARC_CCR_V are always zero.  */
+#ifndef MODE32
+	mask <<= SPARC_CCR_XCC_SHIFT;
+	cc <<= SPARC_CCR_XCC_SHIFT;
+#endif
+	cpu->cd.sparc.ccr &= ~mask;
+	cpu->cd.sparc.ccr |= cc;
+	return rd;
+}
+X(andcc)
+{
+	/*  Like and, but updates the ccr, and does both 32-bit and
+	    64-bit comparison at the same time.  */
+	MODE_int_t rs1 = reg(ic->arg[0]), rs2 = reg(ic->arg[1]), rd;
+	rd = sparc_andcc32(cpu, rs1, rs2);
+#ifndef MODE32
+	rd = sparc_andcc64(cpu, rs1, rs2);
+#endif
+	reg(ic->arg[2]) = rd;
+}
+X(andcc_imm)
+{
+	MODE_int_t rs1 = reg(ic->arg[0]), rs2 = (int32_t)ic->arg[1], rd;
+	rd = sparc_andcc32(cpu, rs1, rs2);
+#ifndef MODE32
+	rd = sparc_andcc64(cpu, rs1, rs2);
+#endif
+	reg(ic->arg[2]) = rd;
+}
+
+
+/*
  *  Subtract with ccr update:
  *
  *  arg[0] = ptr to rs1
@@ -445,13 +581,24 @@ X(subcc_imm)
 
 
 /*
- *  rd:  Read special register:
+ *  rd:  Read special register
  *
  *  arg[2] = ptr to rd
  */
 X(rd_psr)
 {
 	reg(ic->arg[2]) = cpu->cd.sparc.psr;
+}
+
+
+/*
+ *  rdpr:  Read privileged register
+ *
+ *  arg[2] = ptr to rd
+ */
+X(rdpr_tba)
+{
+	reg(ic->arg[2]) = cpu->cd.sparc.tba;
 }
 
 
@@ -639,10 +786,14 @@ X(to_be_translated)
 			    of condition code:  */
 			/*  TODO: samepage  */
 			switch (rd) {
+			case 0x03:/*  bl  */
+				ic->f = instr(bl);
+				break;
 			case 0x08:/*  ba  */
 				ic->f = instr(ba);
 				break;
-			default:goto bad;
+			default:fatal("Unimplemented branch rd=%i\n", rd);
+				goto bad;
 			}
 			break;
 
@@ -678,6 +829,8 @@ X(to_be_translated)
 		case 2:	/*  or  */
 		case 3:	/*  xor  */
 		case 4:	/*  sub  */
+		case 16:/*  addcc  */
+		case 17:/*  andcc  */
 		case 20:/*  subcc (cmp)  */
 		case 37:/*  sll  */
 		case 38:/*  srl  */
@@ -693,6 +846,8 @@ X(to_be_translated)
 				case 2:	ic->f = instr(or_imm); break;
 				case 3:	ic->f = instr(xor_imm); break;
 				case 4:	ic->f = instr(sub_imm); break;
+				case 16:ic->f = instr(addcc_imm); break;
+				case 17:ic->f = instr(andcc_imm); break;
 				case 20:ic->f = instr(subcc_imm); break;
 				case 37:if (siconst & 0x1000) {
 						ic->f = instr(sllx_imm);
@@ -736,6 +891,8 @@ X(to_be_translated)
 				case 2: ic->f = instr(or); break;
 				case 3: ic->f = instr(xor); break;
 				case 4: ic->f = instr(sub); break;
+				case 16:ic->f = instr(addcc); break;
+				case 17:ic->f = instr(andcc); break;
 				case 20:ic->f = instr(subcc); break;
 				case 37:if (siconst & 0x1000) {
 						ic->f = instr(sllx);
@@ -768,8 +925,14 @@ X(to_be_translated)
 				 *  Some opcodes should write to the scratch
 				 *  register instead of becoming NOPs, when
 				 *  rd is the zero register.
+				 *
+				 *  Any opcode which updates the condition
+				 *  codes, or anything which changes register
+				 *  windows.
 				 */
 				switch (op2) {
+				case 16:/*  addcc  */
+				case 17:/*  andcc  */
 				case 20:/*  subcc  */
 				case 60:/*  save  */
 					ic->arg[2] = (size_t)
@@ -789,6 +952,22 @@ X(to_be_translated)
 			} else {
 				fatal("opcode 2,41 not yet implemented"
 				    " for 64-bit cpus\n");
+				goto bad;
+			}
+			break;
+
+		case 42:/*  rdpr on sparcv9  */
+			if (cpu->is_32bit) {
+				fatal("opcode 2,42 not yet implemented"
+				    " for 32-bit cpus\n");
+				goto bad;
+			}
+			ic->arg[2] = (size_t)&cpu->cd.sparc.r[rd];
+			if (rd == SPARC_ZEROREG)
+				ic->f = instr(nop);
+			switch (rs1) {
+			case 5:	ic->f = instr(rdpr_tba); break;
+			default:fatal("Unimplemented rs1=%i\n", rs1);
 				goto bad;
 			}
 			break;

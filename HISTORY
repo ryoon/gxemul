@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1299 2006-07-23 11:22:00 debug Exp $
+$Id: HISTORY,v 1.1300 2006-07-23 12:40:23 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2890,3 +2890,4 @@ Changelog for GXemul:
 
 20060723	More Transputer instructions (pfix, nfix, opr, mint, ldl, ldlp,
 		eqc, rev, ajw).
+		Adding more SPARC instructions (andcc, addcc, bl, rdpr).

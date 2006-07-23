@@ -1,4 +1,4 @@
-$Id: TODO,v 1.324 2006-07-22 10:23:39 debug Exp $
+$Id: TODO,v 1.325 2006-07-23 12:40:24 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -54,10 +54,6 @@ Long-term design:
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
 	x)  Reimplement the config file parser from scratch.
-
-Test:
-	x)  Test with more than one Sprite instance on an emulated network!
-	x)  NetBSD 4.x, once it is out.
 
 -------------------------------------------------------------------------------
 

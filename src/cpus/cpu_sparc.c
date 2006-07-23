@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.34 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.35 2006-07-23 12:40:24 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -675,7 +675,8 @@ int sparc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 41:rs_name = "psr";
 			no_rs2 = 1;
 			break;
-		case 42:rs_name = "wim";
+		case 42:/*  TODO: something with wim only, on sparc v8?  */
+			rs_name = sparc_pregnames[rs1];
 			no_rs2 = 1;
 			break;
 		case 43:/*  ?  */

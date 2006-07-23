@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.h,v 1.4 2006-07-23 14:37:34 debug Exp $
+ *  $Id: cpu_transputer.h,v 1.5 2006-07-23 15:32:31 debug Exp $
  */
 
 #include "misc.h"
@@ -114,45 +114,128 @@ struct transputer_cpu_type_def {
 #define	T_OPC_STNL		14
 #define	T_OPC_OPR		15
 
-/*  Operate codes:  */
-#define	N_TRANSPUTER_OPC_F_NAMES	0x80
+/*  Indirect ("operate") opcodes:  */
+#define	N_TRANSPUTER_OPC_F_NAMES	0x90
 #define	TRANSPUTER_OPC_F_NAMES	{	\
-	"rev",  "0x01", "0x02", "0x03", "0x04", "0x05", "0x06", "0x07", \
-	"0x08", "0x09", "0x0a", "0x0b", "sub",  "startp","0x0e","0x0f", \
-	"seterr","0x11","0x12", "0x13", "0x14", "stopp","0x16", "0x17", \
-	"sthf", "0x19", "0x1a", "ldpi", "stlf", "0x1d", "0x1e", "0x1f", \
-	"0x20", "0x21", "0x22", "0x23", "0x24", "0x25", "0x26", "0x27", \
-	"0x28", "0x29", "0x2a", "0x2b", "0x2c", "0x2d", "0x2e", "0x2f", \
-	"0x30", "0x31", "0x32", "0x33", "0x34", "0x35", "0x36", "0x37", \
-	"0x38", "runp", "0x3a", "sb",   "gajw", "savel","saveh","0x3f", \
-	"0x40", "0x41", "mint", "0x43", "0x44", "0x45", "0x46", "0x47", \
-	"0x48", "0x49", "move", "0x4b", "0x4c", "0x4d", "talt", "0x4f", \
-	"0x50", "0x51", "sum",  "0x53", "sttimer","stoperr","0x56","0x57", \
-	"0x58", "0x59", "0x5a", "0x5b", "0x5c", "0x5d", "0x5e", "0x5f", \
-	"0x60", "0x61", "0x62", "0x63", "0x64", "0x65", "0x66", "0x67", \
-	"0x68", "0x69", "0x6a", "0x6b", "0x6c", "0x6d", "0x6e", "0x6f", \
-	"0x70", "0x71", "0x72", "0x73", "0x74", "0x75", "0x76", "0x77", \
-	"0x78", "0x79", "0x7a", "0x7b", "0x7c", "0x7d", "0x7e", "0x7f"	}
+	"rev",  "lb",   "bsub", "endp", "diff", "add",  "gcall","in", \
+	"prod", "gt",   "wsub", "out",  "sub",  "startp","outbyte","outword",\
+	"seterr","0x11","resetch","csub0", "0x14", "stopp","ladd", "stlb", \
+	"sthf", "norm", "ldiv", "ldpi", "stlf", "xdble","ldpri","rem", \
+	"ret",  "lend", "ldtimer","0x23","0x24","0x25", "0x26", "0x27", \
+	"0x28", "testerr","testpranal","tin", "div", "0x2d", "dist", "disc", \
+	"diss", "lmul", "not",  "xor",  "bcnt", "lshr", "lshl", "lsum", \
+	"lsub", "runp", "xword","sb",   "gajw", "savel","saveh","wcnt", \
+	"shr" , "shl",  "mint", "alt",  "altwt","altend","and","enbt", \
+	"enbc", "enbs", "move", "or",   "csngl", "ccnt1", "talt", "ldiff", \
+	"sthb", "taltwt","sum", "mul","sttimer","stoperr","cword","clrhalterr",\
+	"sethalterr", "testhalterr", "dup", "move2dinit",		\
+	"move2dall", "move2dnonzero","move2dzero","0x5f",		\
+	"0x60", "0x61", "0x62", "unpacksn","0x64","0x65","0x66","0x67", \
+	"0x68", "0x69", "0x6a", "0x6b", "postnormsn","roundsn","0x6e","0x6f", \
+	"0x70", "ldinf","fmul", "cflerr",				\
+	"crcword", "crcbyte", "bitcnt", "bitrevword",			\
+	"bitrevnbits","0x79","0x7a","0x7b", "0x7c", "0x7d", "0x7e", "0x7f", \
+	"0x80", "wsubdb","0x82", "0x83", "0x84", "0x85", "0x86", "0x87", \
+	"0x88", "0x89", "0x8a", "0x8b", "0x8c", "0x8d", "0x8e", "0x8f"	}
 
 #define	T_OPC_F_REV		0x00
+#define	T_OPC_F_LB		0x01
+#define	T_OPC_F_BSUB		0x02
+#define	T_OPC_F_ENDP		0x03
+#define	T_OPC_F_DIFF		0x04
+#define	T_OPC_F_ADD		0x05
+#define	T_OPC_F_GCALL		0x06
+#define	T_OPC_F_IN		0x07
+#define	T_OPC_F_PROD		0x08
+#define	T_OPC_F_GT		0x09
+#define	T_OPC_F_WSUB		0x0a
+#define	T_OPC_F_OUT		0x0b
 #define	T_OPC_F_SUB		0x0c
 #define	T_OPC_F_STARTP		0x0d
+#define	T_OPC_F_OUTBYTE		0x0e
+#define	T_OPC_F_OUTWORD		0x0f
 #define	T_OPC_F_SETERR		0x10
+#define	T_OPC_F_RESETCH		0x12
+#define	T_OPC_F_CSUB0		0x13
 #define	T_OPC_F_STOPP		0x15
+#define	T_OPC_F_LADD		0x16
+#define	T_OPC_F_STLB		0x17
 #define	T_OPC_F_STHF		0x18
+#define	T_OPC_F_NORM		0x19
+#define	T_OPC_F_LDIV		0x1a
 #define	T_OPC_F_LDPI		0x1b
 #define	T_OPC_F_STLF		0x1c
+#define	T_OPC_F_XDBLE		0x1d
+#define	T_OPC_F_LDPRI		0x1e
+#define	T_OPC_F_REM		0x1f
+#define	T_OPC_F_RET		0x20
+#define	T_OPC_F_LEND		0x21
+#define	T_OPC_F_LDTIMER		0x22
+#define	T_OPC_F_TESTERR		0x29
+#define	T_OPC_F_TESTPRANAL	0x2a
+#define	T_OPC_F_TIN		0x2b
+#define	T_OPC_F_DIV		0x2c
+#define	T_OPC_F_DIST		0x2e
+#define	T_OPC_F_DISC		0x2f
+#define	T_OPC_F_DISS		0x30
+#define	T_OPC_F_LMUL		0x31
+#define	T_OPC_F_NOT		0x32
+#define	T_OPC_F_XOR		0x33
+#define	T_OPC_F_BCNT		0x34
+#define	T_OPC_F_LSHR		0x35
+#define	T_OPC_F_LSHL		0x36
+#define	T_OPC_F_LSUM		0x37
+#define	T_OPC_F_LSUB		0x38
 #define	T_OPC_F_RUNP		0x39
+#define	T_OPC_F_XWORD		0x3a
 #define	T_OPC_F_SB		0x3b
 #define	T_OPC_F_GAJW		0x3c
 #define	T_OPC_F_SAVEL		0x3d
 #define	T_OPC_F_SAVEH		0x3e
+#define	T_OPC_F_WCNT		0x3f
+#define	T_OPC_F_SHR		0x40
+#define	T_OPC_F_SHL		0x41
 #define	T_OPC_F_MINT		0x42
+#define	T_OPC_F_ALT		0x43
+#define	T_OPC_F_ALTWT		0x44
+#define	T_OPC_F_ALTEND		0x45
+#define	T_OPC_F_AND		0x46
+#define	T_OPC_F_ENBT		0x47
+#define	T_OPC_F_ENBC		0x48
+#define	T_OPC_F_ENBS		0x49
 #define	T_OPC_F_MOVE		0x4a
+#define	T_OPC_F_OR		0x4b
+#define	T_OPC_F_CSNGL		0x4c
+#define	T_OPC_F_CCNT1		0x4d
 #define	T_OPC_F_TALT		0x4e
+#define	T_OPC_F_LDIFF		0x4f
+#define	T_OPC_F_STHB		0x50
+#define	T_OPC_F_TALTWT		0x51
 #define	T_OPC_F_SUM		0x52
 #define	T_OPC_F_STTIMER		0x54
+#define	T_OPC_F_MUL		0x53
 #define	T_OPC_F_STOPERR		0x55
+#define	T_OPC_F_CWORD		0x56
+#define	T_OPC_F_CLRHALTERR	0x57
+#define	T_OPC_F_SETHALTERR	0x58
+#define	T_OPC_F_TESTHALTERR	0x59
+#define	T_OPC_F_DUP		0x5a
+#define	T_OPC_F_MOVE2DINIT	0x5b
+#define	T_OPC_F_MOVE2DALL	0x5c
+#define	T_OPC_F_MOVE2DNONZERO	0x5d
+#define	T_OPC_F_MOVE2DZERO	0x5e
+#define	T_OPC_F_UNPACKSN	0x63
+#define	T_OPC_F_POSTNORMSN	0x6c
+#define	T_OPC_F_ROUNDSN		0x6d
+#define	T_OPC_F_LDINF		0x71
+#define	T_OPC_F_FMUL		0x72
+#define	T_OPC_F_CFLERR		0x73
+#define	T_OPC_F_CRCWORD		0x74
+#define	T_OPC_F_CRCBYTE		0x75
+#define	T_OPC_F_BITCNT		0x76
+#define	T_OPC_F_BITREVWORD	0x77
+#define	T_OPC_F_BITREVNBITS	0x78
+#define	T_OPC_F_WSUBSB		0x81
 
 #define	TRANSPUTER_N_IC_ARGS			1
 #define	TRANSPUTER_INSTR_ALIGNMENT_SHIFT	0

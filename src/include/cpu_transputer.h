@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.h,v 1.2 2006-07-23 11:22:01 debug Exp $
+ *  $Id: cpu_transputer.h,v 1.3 2006-07-23 13:19:03 debug Exp $
  */
 
 #include "misc.h"
@@ -115,6 +115,9 @@ struct transputer_cpu_type_def {
 #define	T_OPC_OPR		15
 
 #define	T_OPC_F_REV		0x00
+#define	T_OPC_F_SUB		0x0c
+#define	T_OPC_F_STHF		0x18
+#define	T_OPC_F_STLF		0x1c
 #define	T_OPC_F_MINT		0x42
 
 #define	TRANSPUTER_N_IC_ARGS			1
@@ -140,9 +143,14 @@ struct transputer_cpu {
 
 	uint64_t	fa, fb, fc;	/*  Floating point registers  */
 
-	int		error;
+	int		error;		/*  Error flags...  */
 	int		halt_on_error;
 	int		fp_error;
+
+	uint32_t	bptrreg0;	/*  High Priority Front Pointer  */
+	uint32_t	fptrreg0;	/*  High Priority Back Pointer  */
+	uint32_t	fptrreg1;	/*  Low Priority Front Pointer  */
+	uint32_t	bptrreg1;	/*  Low Priority Back Pointer  */
 
 	/*
 	 *  Instruction translation cache and 32-bit virtual -> physical ->

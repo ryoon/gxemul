@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.c,v 1.2 2006-07-23 11:22:00 debug Exp $
+ *  $Id: cpu_transputer.c,v 1.3 2006-07-23 13:19:03 debug Exp $
  *
  *  INMOS transputer CPU emulation.
  */
@@ -273,6 +273,13 @@ int transputer_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 	switch (opcode) {
 
+	case T_OPC_PFIX:
+		if (running) {
+			uint32_t oreg = cpu->cd.transputer.oreg | operand;
+			debug("\toreg = x%"PRIx32, oreg << 4);
+		}
+		break;
+
 	case T_OPC_LDC:
 		if (running) {
 			uint32_t new_c = cpu->cd.transputer.b;
@@ -280,6 +287,15 @@ int transputer_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			uint32_t new_a = cpu->cd.transputer.oreg | operand;
 			debug("\ta=0x%"PRIx32", b=0x%"PRIx32", c=0x%"PRIx32,
 			    new_a, new_b, new_c);
+		}
+		break;
+
+	case T_OPC_STL:
+		if (running) {
+			uint32_t addr = (cpu->cd.transputer.oreg | operand)
+			    * sizeof(uint32_t) + cpu->cd.transputer.wptr;
+			debug("\t[0x%"PRIx32"] = 0x%x", addr,
+			    cpu->cd.transputer.a);
 		}
 		break;
 
@@ -291,6 +307,18 @@ int transputer_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 			case T_OPC_F_REV:
 				debug("rev");
+				break;
+
+			case T_OPC_F_SUB:
+				debug("sub");
+				break;
+
+			case T_OPC_F_STHF:
+				debug("sthf");
+				break;
+
+			case T_OPC_F_STLF:
+				debug("stlf");
 				break;
 
 			case T_OPC_F_MINT:

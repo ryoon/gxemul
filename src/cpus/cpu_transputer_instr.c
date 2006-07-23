@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer_instr.c,v 1.3 2006-07-23 11:22:00 debug Exp $
+ *  $Id: cpu_transputer_instr.c,v 1.4 2006-07-23 13:19:03 debug Exp $
  *
  *  INMOS transputer instructions.
  *
@@ -164,6 +164,59 @@ X(eqc)
 
 
 /*
+ *  stl: Store local
+ */
+X(stl)
+{
+	uint32_t addr, w32;
+	unsigned char *page;
+
+	w32 = LE32_TO_HOST(cpu->cd.transputer.a);
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	addr = cpu->cd.transputer.oreg * sizeof(uint32_t) +
+	    cpu->cd.transputer.wptr;
+
+	page = cpu->cd.transputer.host_store[TRANSPUTER_ADDR_TO_PAGENR(addr)];
+	if (page == NULL) {
+		cpu->memory_rw(cpu, cpu->mem, addr, (void *)&w32, sizeof(w32),
+		    MEM_WRITE, CACHE_DATA);
+	} else {
+		*((uint32_t *) &page[TRANSPUTER_PC_TO_IC_ENTRY(addr)]) = w32;
+	}
+
+	cpu->cd.transputer.a = cpu->cd.transputer.b;
+	cpu->cd.transputer.b = cpu->cd.transputer.c;
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
+ *  stnl: Store non-local
+ */
+X(stnl)
+{
+	uint32_t addr, w32;
+	unsigned char *page;
+
+	w32 = LE32_TO_HOST(cpu->cd.transputer.b);
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	addr = cpu->cd.transputer.oreg * sizeof(uint32_t) +
+	    cpu->cd.transputer.a;
+
+	page = cpu->cd.transputer.host_store[TRANSPUTER_ADDR_TO_PAGENR(addr)];
+	if (page == NULL) {
+		cpu->memory_rw(cpu, cpu->mem, addr, (void *)&w32, sizeof(w32),
+		    MEM_WRITE, CACHE_DATA);
+	} else {
+		*((uint32_t *) &page[TRANSPUTER_PC_TO_IC_ENTRY(addr)]) = w32;
+	}
+
+	cpu->cd.transputer.a = cpu->cd.transputer.c;
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
  *  opr: Operate
  *
  *  TODO/NOTE: This doesn't work too well with the way dyntrans is designed
@@ -181,6 +234,29 @@ X(opr)
 			cpu->cd.transputer.b = cpu->cd.transputer.a;
 			cpu->cd.transputer.a = tmp;
 		}
+		break;
+
+	case T_OPC_F_SUB:
+		{
+			uint32_t old_a = cpu->cd.transputer.a;
+			cpu->cd.transputer.a = cpu->cd.transputer.b - old_a;
+			if ((cpu->cd.transputer.a & 0x80000000) !=
+			    (cpu->cd.transputer.b & old_a & 0x80000000))
+				cpu->cd.transputer.error = 1;
+			cpu->cd.transputer.b = cpu->cd.transputer.c;
+		}
+		break;
+
+	case T_OPC_F_STHF:
+		cpu->cd.transputer.fptrreg0 = cpu->cd.transputer.a;
+		cpu->cd.transputer.a = cpu->cd.transputer.b;
+		cpu->cd.transputer.b = cpu->cd.transputer.c;
+		break;
+
+	case T_OPC_F_STLF:
+		cpu->cd.transputer.fptrreg1 = cpu->cd.transputer.a;
+		cpu->cd.transputer.a = cpu->cd.transputer.b;
+		cpu->cd.transputer.b = cpu->cd.transputer.c;
 		break;
 
 	case T_OPC_F_MINT:
@@ -326,6 +402,16 @@ X(to_be_translated)
 	case T_OPC_EQC:
 		/*  equal to constant  */
 		ic->f = instr(eqc);
+		break;
+
+	case T_OPC_STL:
+		/*  store local  */
+		ic->f = instr(stl);
+		break;
+
+	case T_OPC_STNL:
+		/*  store non-local  */
+		ic->f = instr(stnl);
 		break;
 
 	case T_OPC_OPR:

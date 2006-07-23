@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.37 2006-03-31 23:53:41 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.38 2006-07-23 19:36:04 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -289,10 +289,7 @@ static void vr41xx_keytick(struct cpu *cpu, struct vr41xx_data *d)
 }
 
 
-/*
- *  dev_vr41xx_tick():
- */
-void dev_vr41xx_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(vr41xx)
 {
 	struct vr41xx_data *d = extra;
 
@@ -387,9 +384,6 @@ static uint64_t vr41xx_kiu(struct cpu *cpu, int ofs, uint64_t idata,
 }
 
 
-/*
- *  dev_vr41xx_access():
- */
 DEVICE_ACCESS(vr41xx)
 {
 	struct vr41xx_data *d = (struct vr41xx_data *) extra;

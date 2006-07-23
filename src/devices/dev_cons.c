@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.36 2006-05-06 08:42:49 debug Exp $
+ *  $Id: dev_cons.c,v 1.37 2006-07-23 14:37:34 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -53,10 +53,7 @@
 #define	CONS_TICK_SHIFT		14
 
 
-/*
- *  dev_cons_tick():
- */
-void dev_cons_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(cons)
 {
 	struct cpu *c = cpu->machine->cpus[0];
 	struct cons_data *d = extra;
@@ -68,9 +65,6 @@ void dev_cons_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_cons_access():
- */
 DEVICE_ACCESS(cons)
 {
 	struct cons_data *d = extra;

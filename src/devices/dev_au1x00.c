@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.17 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.18 2006-07-23 14:37:34 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -241,15 +241,11 @@ DEVICE_ACCESS(au1x00_uart)
 }
 
 
-/*
- *  dev_au1x00_pc_tick():
- *
- *  Cause periodic ticks. (The PC is supposed to give interrupts at
- *  32768 Hz?)
- */
-void dev_au1x00_pc_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(au1x00_pc)
 {
 	struct au1x00_pc_data *d = extra;
+
+	/*  Periodic ticks at 32768 Hz? TODO  */
 
 	if (d->reg[PC_COUNTER_CONTROL/4] & CC_EN1)
 		cpu_interrupt(cpu, 8 + d->irq_nr);

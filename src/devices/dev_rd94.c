@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.35 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_rd94.c,v 1.36 2006-07-23 14:37:34 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -61,10 +61,7 @@ struct rd94_data {
 };
 
 
-/*
- *  dev_rd94_tick():
- */
-void dev_rd94_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(rd94)
 {
 	struct rd94_data *d = extra;
 
@@ -79,9 +76,6 @@ void dev_rd94_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_rd94_access():
- */
 DEVICE_ACCESS(rd94)
 {
 	struct rd94_data *d = (struct rd94_data *) extra;

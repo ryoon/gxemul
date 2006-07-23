@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.33 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_scc.c,v 1.34 2006-07-23 14:37:34 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -147,10 +147,7 @@ static unsigned char rx_nextchar(struct scc_data *d, int portnr)
 }
 
 
-/*
- *  dev_scc_tick():
- */
-void dev_scc_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(scc)
 {
 	int i;
 	struct scc_data *d = (struct scc_data *) extra;
@@ -298,9 +295,6 @@ int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr,
 }
 
 
-/*
- *  dev_scc_access():
- */
 DEVICE_ACCESS(scc)
 {
 	struct scc_data *d = (struct scc_data *) extra;

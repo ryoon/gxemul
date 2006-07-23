@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer_instr.c,v 1.4 2006-07-23 13:19:03 debug Exp $
+ *  $Id: cpu_transputer_instr.c,v 1.5 2006-07-23 14:37:34 debug Exp $
  *
  *  INMOS transputer instructions.
  *
@@ -34,6 +34,10 @@
  *  call. If no instruction was executed, then it should be decreased. If, say,
  *  4 instructions were combined into one function and executed, then it should
  *  be increased by 3.)
+ *
+ *  NOTE: The PC does not need to be synched before e.g. memory_rw(), because
+ *        there is no MMU in the Transputer, and hence there can not be any
+ *        exceptions on memory accesses.
  */
 
 
@@ -90,6 +94,33 @@ X(pfix)
 
 
 /*
+ *  ldnl: Load non-local
+ */
+X(ldnl)
+{
+	uint32_t addr, w32;
+	uint8_t word[sizeof(uint32_t)];
+	unsigned char *page;
+
+	cpu->cd.transputer.oreg |= ic->arg[0];
+	addr = cpu->cd.transputer.oreg * sizeof(uint32_t) +
+	    cpu->cd.transputer.a;
+
+	page = cpu->cd.transputer.host_load[TRANSPUTER_ADDR_TO_PAGENR(addr)];
+	if (page == NULL) {
+		cpu->memory_rw(cpu, cpu->mem, addr, word, sizeof(word),
+		    MEM_READ, CACHE_DATA);
+		w32 = *(uint32_t *) &word[0];
+	} else {
+		w32 = *(uint32_t *) &page[TRANSPUTER_PC_TO_IC_ENTRY(addr)];
+	}
+
+	cpu->cd.transputer.a = LE32_TO_HOST(w32);
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
  *  ldc: Load constant
  */
 X(ldc)
@@ -97,6 +128,17 @@ X(ldc)
 	cpu->cd.transputer.c = cpu->cd.transputer.b;
 	cpu->cd.transputer.b = cpu->cd.transputer.a;
 	cpu->cd.transputer.a = cpu->cd.transputer.oreg | ic->arg[0];
+	cpu->cd.transputer.oreg = 0;
+}
+
+
+/*
+ *  ldnlp: Load non-local pointer
+ */
+X(ldnlp)
+{
+	cpu->cd.transputer.a += (cpu->cd.transputer.oreg | ic->arg[0])
+	    * sizeof(uint32_t);
 	cpu->cd.transputer.oreg = 0;
 }
 
@@ -247,6 +289,18 @@ X(opr)
 		}
 		break;
 
+	case T_OPC_F_LDPI:
+		/*  Load pointer to (next) instruction  */
+		{
+			int low_pc = ((size_t)ic -
+			    (size_t)cpu->cd.transputer.cur_ic_page)
+			    / sizeof(struct transputer_instr_call);
+			cpu->pc &= ~(TRANSPUTER_IC_ENTRIES_PER_PAGE-1);
+			cpu->pc += low_pc;
+			cpu->cd.transputer.a += cpu->pc + 1;
+		}
+		break;
+
 	case T_OPC_F_STHF:
 		cpu->cd.transputer.fptrreg0 = cpu->cd.transputer.a;
 		cpu->cd.transputer.a = cpu->cd.transputer.b;
@@ -259,10 +313,32 @@ X(opr)
 		cpu->cd.transputer.b = cpu->cd.transputer.c;
 		break;
 
+	case T_OPC_F_GAJW:
+		{
+			uint32_t old_wptr = cpu->cd.transputer.wptr;
+			cpu->cd.transputer.wptr = cpu->cd.transputer.a & ~3;
+			cpu->cd.transputer.a = old_wptr;
+		}
+		break;
+
 	case T_OPC_F_MINT:
 		cpu->cd.transputer.c = cpu->cd.transputer.b;
 		cpu->cd.transputer.b = cpu->cd.transputer.a;
 		cpu->cd.transputer.a = 0x80000000;
+		break;
+
+	case T_OPC_F_MOVE:
+		{
+			uint32_t i, src = cpu->cd.transputer.c,
+			    dst = cpu->cd.transputer.b;
+			uint8_t byte;
+			for (i=1; i<=cpu->cd.transputer.a; i++) {
+				cpu->memory_rw(cpu, cpu->mem, src ++, &byte,
+				    1, MEM_READ, CACHE_DATA);
+				cpu->memory_rw(cpu, cpu->mem, dst ++, &byte,
+				    1, MEM_WRITE, CACHE_DATA);
+			}
+		}
 		break;
 
 	default:fatal("UNIMPLEMENTED opr oreg 0x%"PRIx32"\n",
@@ -379,9 +455,19 @@ X(to_be_translated)
 		ic->f = instr(pfix);
 		break;
 
+	case T_OPC_LDNL:
+		/*  load non-local  */
+		ic->f = instr(ldnl);
+		break;
+
 	case T_OPC_LDC:
 		/*  load constant  */
 		ic->f = instr(ldc);
+		break;
+
+	case T_OPC_LDNLP:
+		/*  load non-local pointer  */
+		ic->f = instr(ldnlp);
 		break;
 
 	case T_OPC_NFIX:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.64 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_bt459.c,v 1.65 2006-07-23 14:37:34 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -244,10 +244,7 @@ static void bt459_update_cursor_position(struct bt459_data *d,
 }
 
 
-/*
- *  dev_bt459_tick():
- */
-void dev_bt459_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(bt459)
 {
 	struct bt459_data *d = extra;
 	int old_cursor_on = d->cursor_on;

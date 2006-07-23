@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.55 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.56 2006-07-23 14:37:34 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -96,15 +96,12 @@ void add_to_rx_queue(void *e, int ch, int line_no)
 }
 
 
-/*
- *  dev_dc7085_tick():
- *
- *  This function is called "every now and then".
- *  If a key is available from the keyboard, add it to the rx queue.
- *  If other bits are set, an interrupt might need to be caused.
- */
-void dev_dc7085_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(dc7085)
 {
+	/*
+	 *  If a key is available from the keyboard, add it to the rx queue.
+	 *  If other bits are set, an interrupt might need to be caused.
+	 */
 	struct dc_data *d = extra;
 	int avail;
 
@@ -161,9 +158,6 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_dc7085_access():
- */
 DEVICE_ACCESS(dc7085)
 {
 	uint64_t idata = 0, odata = 0;

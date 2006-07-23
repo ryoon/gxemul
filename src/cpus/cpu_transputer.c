@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.c,v 1.3 2006-07-23 13:19:03 debug Exp $
+ *  $Id: cpu_transputer.c,v 1.4 2006-07-23 14:37:34 debug Exp $
  *
  *  INMOS transputer CPU emulation.
  */
@@ -46,7 +46,7 @@
 
 
 static char *opcode_names[16] = TRANSPUTER_INSTRUCTIONS;
-
+static char *opcode_f_names[N_TRANSPUTER_OPC_F_NAMES] = TRANSPUTER_OPC_F_NAMES;
 
 /*
  *  transputer_cpu_new():
@@ -96,6 +96,8 @@ int transputer_cpu_new(struct cpu *cpu, struct memory *mem,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
+
+	cpu->cd.transputer.wptr = machine->physical_ram_in_mb * 1048576 - 2048;
 
 	return 1;
 }
@@ -182,8 +184,47 @@ void transputer_cpu_register_match(struct machine *m, char *name,
 		*match_register = 1;
 	}
 
-	/*  TODO  */
-	/*  More register names...  */
+	if (strcasecmp(name, "a") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->cd.transputer.a = *valuep;
+		} else
+			*valuep = m->cpus[cpunr]->cd.transputer.a;
+		*match_register = 1;
+	}
+
+	if (strcasecmp(name, "b") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->cd.transputer.b = *valuep;
+		} else
+			*valuep = m->cpus[cpunr]->cd.transputer.b;
+		*match_register = 1;
+	}
+
+	if (strcasecmp(name, "c") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->cd.transputer.c = *valuep;
+		} else
+			*valuep = m->cpus[cpunr]->cd.transputer.c;
+		*match_register = 1;
+	}
+
+	if (strcasecmp(name, "wptr") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->cd.transputer.wptr = *valuep;
+		} else
+			*valuep = m->cpus[cpunr]->cd.transputer.wptr;
+		*match_register = 1;
+	}
+
+	if (strcasecmp(name, "oreg") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->cd.transputer.oreg = *valuep;
+		} else
+			*valuep = m->cpus[cpunr]->cd.transputer.oreg;
+		*match_register = 1;
+	}
+
+	/*  TODO: Front and back pointers, etc.  */
 }
 
 
@@ -271,12 +312,19 @@ int transputer_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	operand = ib[0] & 15;
 	debug("%02x   %-6s %2i", ib[0], opcode_names[opcode], operand);
 
+	/*
+	 *  For opcodes where it is nice to have additional runtime info,
+	 *  special cases need to be added here. (E.g. an instruction which
+	 *  updates registers can show the contents of the new registers
+	 *  after the update.)
+	 */
+
 	switch (opcode) {
 
 	case T_OPC_PFIX:
 		if (running) {
 			uint32_t oreg = cpu->cd.transputer.oreg | operand;
-			debug("\toreg = x%"PRIx32, oreg << 4);
+			debug("\toreg = 0x%"PRIx32, oreg << 4);
 		}
 		break;
 
@@ -303,30 +351,10 @@ int transputer_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		if (running) {
 			uint32_t fopcode = cpu->cd.transputer.oreg | operand;
 			debug("\t");
-			switch (fopcode) {
-
-			case T_OPC_F_REV:
-				debug("rev");
-				break;
-
-			case T_OPC_F_SUB:
-				debug("sub");
-				break;
-
-			case T_OPC_F_STHF:
-				debug("sthf");
-				break;
-
-			case T_OPC_F_STLF:
-				debug("stlf");
-				break;
-
-			case T_OPC_F_MINT:
-				debug("mint");
-				break;
-
-			default:debug("UNIMPLEMENTED 0x%"PRIx32, fopcode);
-			}
+			if (fopcode < N_TRANSPUTER_OPC_F_NAMES)
+				debug("%s", opcode_f_names[fopcode]);
+			else
+				debug("0x%"PRIx32, fopcode);
 		}
 		break;
 

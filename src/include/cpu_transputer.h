@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.h,v 1.5 2006-07-23 15:32:31 debug Exp $
+ *  $Id: cpu_transputer.h,v 1.6 2006-07-23 15:42:20 debug Exp $
  */
 
 #include "misc.h"
@@ -48,6 +48,8 @@ struct transputer_cpu_type_def {
 /*
  *  Features of various transputer processors according to
  *  http://www.enlight.ru/docs/cpu/t-puters/talp/app_g.txt:
+ *
+ *  (TODO: Add the T9000 too?)
  */
 
 #define	T_T4_FP		1		/*  T4 floating point  */

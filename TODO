@@ -1,4 +1,4 @@
-$Id: TODO,v 1.325 2006-07-23 12:40:24 debug Exp $
+$Id: TODO,v 1.326 2006-07-23 15:42:20 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -37,6 +37,7 @@ Long-term implementation:
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.
 	x)  Continue on Alpha emulation  (virtual memory, etc). Cleanup.
+	x)  Continue on Transputer emulation.
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 
 Long-term design:

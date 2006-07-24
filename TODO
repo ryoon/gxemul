@@ -1,6 +1,10 @@
-$Id: TODO,v 1.327 2006-07-23 23:40:28 debug Exp $
+$Id: TODO,v 1.328 2006-07-24 08:50:36 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
+
+Fix:
+	x)  NetBSD/netwinder's use of the framebuffer... the colors are
+	    a bit dark (except the initial green color).
 
 Code cleanup:
 	x)  64-bit ranges in src/cpus/memory_mips_v2p.c

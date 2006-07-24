@@ -25,12 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_igsfb.c,v 1.1 2006-07-23 23:40:29 debug Exp $
+ *  $Id: dev_igsfb.c,v 1.2 2006-07-24 08:50:36 debug Exp $
  *
  *  Integraphics Systems "igsfb" Framebuffer (graphics) card, used in at
  *  least the NetWinder.
  *
- *  TODO: This is hardcoded to 1024x768x8 right now.
+ *  TODO:  This is hardcoded to 1024x768x8 right now, and only supports the
+ *         two acceleration commands used by NetBSD for scrolling the
+ *         framebuffer. Nothing else.
  */
 
 #include <stdio.h>

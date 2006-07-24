@@ -25,10 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.65 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.66 2006-07-24 19:08:13 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
+ *
+ *  Quick source of good info: http://my.execpc.com/~geezer/osd/kbd/kbd.txt
  *
  *
  *  TODO: Finish the rewrite for 8242.
@@ -458,14 +460,15 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 		/*  Cause receive interrupt, if there's something in the
 		    receive buffer: (Otherwise deassert the interrupt.)  */
 		if (d->head[port_nr] != d->tail[port_nr] && ints_enabled) {
+int irq = port_nr==0? d->keyboard_irqnr : d->mouse_irqnr;
 			debug("[ pckbc: interrupt port %i ]\n", port_nr);
-			cpu_interrupt(cpu, port_nr==0? d->keyboard_irqnr
-			    : d->mouse_irqnr);
+fatal("[port=%i IRQ = %i diff=%i]\n", port_nr, irq, d->head[port_nr] != d->tail[port_nr]);
+			cpu_interrupt(cpu, irq);
 			d->currently_asserted[port_nr] = 1;
 		} else {
+int irq = port_nr==0? d->keyboard_irqnr : d->mouse_irqnr;
 			if (d->currently_asserted[port_nr])
-				cpu_interrupt_ack(cpu, port_nr==0?
-				    d->keyboard_irqnr : d->mouse_irqnr);
+				cpu_interrupt_ack(cpu, irq);
 			d->currently_asserted[port_nr] = 0;
 		}
 	}
@@ -569,12 +572,13 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		d->state = STATE_WAITING_FOR_FC;
 		break;
 	case KBC_RESET:
-		pckbc_add_code(d, KBR_ACK, port_nr);
+		/*  Note: Only KBR_RSTDONE, no KBR_ACK  */
 		pckbc_add_code(d, KBR_RSTDONE, port_nr);
 		break;
 	default:
 		fatal("[ pckbc: (port %i) UNIMPLEMENTED 8048 command"
 		    " 0x%02x ]\n", port_nr, cmd);
+		exit(1);
 	}
 }
 

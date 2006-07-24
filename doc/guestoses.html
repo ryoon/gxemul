@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.160 2006-07-24 08:50:36 debug Exp $
+$Id: guestoses.html,v 1.161 2006-07-24 10:35:55 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -50,7 +50,7 @@ SUCH DAMAGE.
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
   <li><a href="#netbsdpmaxinstall">NetBSD/pmax 3.0.1 or 1.6.2</a>
   <li><a href="#netbsdarcinstall">NetBSD/arc 1.6.2</a>
-  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.0</a>
+  <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.0.1</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 2.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 2.1</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0</a>
@@ -379,16 +379,15 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 	<b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=999000</b>
 
 </pre>
-  <li>Download the NetBSD/hpcmips 3.0 ISO image, and a generic kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/hpcmipscd-3.0.iso">hpcmipscd-3.0.iso</a>
-
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+  <li>Download the NetBSD/hpcmips 3.0.1 ISO image, and a generic kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/hpcmipscd-3.0.1.iso">hpcmipscd-3.0.1.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
 	<b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img  \
-	  -d b:hpcmipscd-3.0.iso -j hpcmips/installation/netbsd.gz</b>
+	  -d b:hpcmipscd-3.0.1.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real

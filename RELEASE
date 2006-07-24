@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.213 2006-07-23 23:52:24 debug Exp $
+$Id: RELEASE,v 1.214 2006-07-24 10:35:54 debug Exp $
 
 Working on what will become 0.4.2.
 
@@ -29,6 +29,11 @@ Changes between release 0.4.1 and 0.4.2 include, among other things:
 	there is no installation ramdisk kernel. The GXemul documentation
 	has an example of how to install NetBSD/netwinder using an emulated
 	NetBSD/pmax machine.)
+
+    o)	Performance increases for emulated 64-bit processors. (The virtual
+	translation table update routine was simplified to work the same
+	way for 32-bit and 64-bit emulation, and this apparently resulted
+	in a speedup for 64-bit mode.)
 
 Please read the HISTORY files for more details.
 

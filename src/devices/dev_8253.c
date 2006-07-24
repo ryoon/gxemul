@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.13 2006-07-21 16:55:41 debug Exp $
+ *  $Id: dev_8253.c,v 1.14 2006-07-24 19:08:17 debug Exp $
  *
  *  Intel 8253/8254 Programmable Interval Timer
  *
@@ -74,12 +74,15 @@ DEVICE_TICK(8253)
 		return;
 
 	switch (d->mode[0] & 0x0e) {
+
 	case I8253_TIMER_INTTC:
 		/*  TODO: Correct frequency!  */
 		cpu_interrupt(cpu, d->irq0_nr);
 		break;
+
 	case I8253_TIMER_RATEGEN:
 		break;
+
 	default:fatal("[ 8253: unimplemented mode 0x%x ]\n", d->mode[0] & 0x0e);
 		exit(1);
 	}

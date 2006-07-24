@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.226 2006-07-20 21:52:59 debug Exp $
+#  $Id: configure,v 1.227 2006-07-24 19:08:17 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -684,21 +684,23 @@ fi
 rm -f _testprog _testprog.error _testprog.stdout
 
 
-#  -g
-printf "checking whether -g can be used... "
-if [ z"$COMPAQCC" = zYES ]; then
-	printf "skipping\n"
-else
-	$CC $CFLAGS -g _testprog.c -o _testprog > _testprog.stdout 2>&1
-	cat _testprog.stdout >> _testprog.error
-	if [ -x _testprog ]; then
-		CFLAGS="-g $CFLAGS"
-		printf "yes\n"
+#  -g, for development builds
+if [ z"$UNSTABLE" = zYES ]; then
+	printf "checking whether -g can be used... "
+	if [ z"$COMPAQCC" = zYES ]; then
+		printf "skipping\n"
 	else
+		$CC $CFLAGS -g _testprog.c -o _testprog > _testprog.stdout 2>&1
+		cat _testprog.stdout >> _testprog.error
+		if [ -x _testprog ]; then
+			CFLAGS="-g $CFLAGS"
+			printf "yes\n"
+		else
 		printf "no\n"
+			fi
 	fi
+	rm -f _testprog _testprog.error _testprog.stdout
 fi
-rm -f _testprog _testprog.error _testprog.stdout
 
 
 #  -lrt for nanosleep?

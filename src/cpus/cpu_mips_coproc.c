@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.49 2006-07-21 20:39:40 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.50 2006-07-24 10:09:16 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -536,7 +536,10 @@ static void invalidate_asid(struct cpu *cpu, int asid)
 		int non4kpages = 0;
 		uint64_t topbit = 1, fillmask = 0xffffff0000000000ULL;
 
-		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
+		if (cpu->is_32bit) {
+			topbit = 0x80000000;
+			fillmask = 0xffffffff00000000ULL;
+		} else if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
 			topbit <<= 43;
 			fillmask <<= 4;
 		} else {

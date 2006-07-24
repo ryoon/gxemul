@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1310 2006-07-24 21:14:52 debug Exp $
+$Id: HISTORY,v 1.1311 2006-07-24 22:32:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2904,3 +2904,4 @@ Changelog for GXemul:
 		KBR_ACK and the KBR_RSTDONE, to work better with Linux 2.6.
 		Not causing PPC DEC interrupts if PPC_NO_DEC is set for a
 		specific CPU; NetBSD/bebox gets slightly further than before.
+		Adding some more SPARC instructions: branches, udiv.

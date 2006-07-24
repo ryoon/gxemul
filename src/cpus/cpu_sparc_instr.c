@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.22 2006-07-23 12:40:24 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.23 2006-07-24 22:32:44 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -131,6 +131,220 @@ X(bl)
 	} else
 		cpu->delay_slot = NOT_DELAYED;
 }
+X(bl_xcc)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_N)? 1:0;
+	int v = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_V)? 1:0;
+	int cond = n ^ v;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bne
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ */
+X(bne)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int cond = (cpu->cd.sparc.ccr & SPARC_CCR_Z) ? 0 : 1;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bne_a)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int cond = (cpu->cd.sparc.ccr & SPARC_CCR_Z) ? 0 : 1;
+	cpu->delay_slot = TO_BE_DELAYED;
+	if (!cond) {
+		/*  Nullify the delay slot:  */
+		cpu->cd.sparc.next_ic ++;
+		return;
+	}
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+		    << SPARC_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc = old_pc + (int32_t)ic->arg[0];
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bg
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ */
+X(bg)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = (cpu->cd.sparc.ccr & SPARC_CCR_N) ? 1 : 0;
+	int v = (cpu->cd.sparc.ccr & SPARC_CCR_V) ? 1 : 0;
+	int z = (cpu->cd.sparc.ccr & SPARC_CCR_Z) ? 1 : 0;
+	int cond = !(z | (n ^ v));
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bg_xcc)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_N)? 1:0;
+	int v = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_V)? 1:0;
+	int z = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_Z)? 1:0;
+	int cond = !(z | (n ^ v));
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  bge
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ */
+X(bge)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = (cpu->cd.sparc.ccr & SPARC_CCR_N) ? 1 : 0;
+	int v = (cpu->cd.sparc.ccr & SPARC_CCR_V) ? 1 : 0;
+	int cond = !(n ^ v);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bge_xcc)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_N)? 1:0;
+	int v = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_V)? 1:0;
+	int cond = !(n ^ v);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  be
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ */
+X(be)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int cond = cpu->cd.sparc.ccr & SPARC_CCR_Z;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(be_xcc)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int cond = (cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_Z;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
 
 
 /*
@@ -151,6 +365,33 @@ X(ba)
 		    << SPARC_INSTR_ALIGNMENT_SHIFT);
 		cpu->pc = old_pc + (int32_t)ic->arg[0];
 		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  brnz
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ *  arg[1] = ptr to rs1
+ */
+X(brnz)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int cond = reg(ic->arg[1]) != 0;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
 	} else
 		cpu->delay_slot = NOT_DELAYED;
 }
@@ -364,6 +605,23 @@ X(srax)     { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >>
 		(reg(ic->arg[1]) & 63); }
 X(sra_imm)  { reg(ic->arg[2]) = (int32_t)reg(ic->arg[0]) >> ic->arg[1]; }
 X(srax_imm) { reg(ic->arg[2]) = (int64_t)reg(ic->arg[0]) >> ic->arg[1]; }
+
+X(udiv)
+{
+	uint64_t z = (cpu->cd.sparc.y << 32) | (uint32_t)reg(ic->arg[0]);
+	z /= (uint32_t)reg(ic->arg[1]);
+	if (z > 0xffffffff)
+		z = 0xffffffff;
+	reg(ic->arg[2]) = z;
+}
+X(udiv_imm)
+{
+	uint64_t z = (cpu->cd.sparc.y << 32) | (uint32_t)reg(ic->arg[0]);
+	z /= (uint32_t)ic->arg[1];
+	if (z > 0xffffffff)
+		z = 0xffffffff;
+	reg(ic->arg[2]) = z;
+}
 
 
 /*
@@ -600,6 +858,10 @@ X(rdpr_tba)
 {
 	reg(ic->arg[2]) = cpu->cd.sparc.tba;
 }
+X(rdpr_ver)
+{
+	reg(ic->arg[2]) = cpu->cd.sparc.ver;
+}
 
 
 /*
@@ -778,6 +1040,30 @@ X(to_be_translated)
 
 	case 0:	switch (op2) {
 
+		case 1:	/*  branch (icc or xcc)  */
+			tmpi32 = (iword << 13);
+			tmpi32 >>= 11;
+			ic->arg[0] = (int32_t)tmpi32 + (addr & 0xffc);
+			/*  rd contains the annul bit concatenated with 4 bits
+			    of condition code. cc=0 for icc, 2 for xcc:  */
+			/*  TODO: samepage  */
+			switch (rd + (cc << 5)) {
+			case 0x01:	ic->f = instr(be);  break;
+			case 0x03:	ic->f = instr(bl);  break;
+			case 0x09:	ic->f = instr(bne); break;
+			case 0x0a:	ic->f = instr(bg); break;
+			case 0x0b:	ic->f = instr(bge); break;
+			case 0x19:	ic->f = instr(bne_a); break;
+			case 0x41:	ic->f = instr(be_xcc); break;
+			case 0x43:	ic->f = instr(bl_xcc); break;
+			case 0x4a:	ic->f = instr(bg_xcc); break;
+			case 0x4b:	ic->f = instr(bge_xcc); break;
+			default:fatal("Unimplemented branch, 0x%x\n",
+				    rd + (cc<<5));
+				goto bad;
+			}
+			break;
+
 		case 2:	/*  branch (32-bit integer comparison)  */
 			tmpi32 = (iword << 10);
 			tmpi32 >>= 8;
@@ -786,13 +1072,25 @@ X(to_be_translated)
 			    of condition code:  */
 			/*  TODO: samepage  */
 			switch (rd) {
-			case 0x03:/*  bl  */
-				ic->f = instr(bl);
-				break;
-			case 0x08:/*  ba  */
-				ic->f = instr(ba);
-				break;
+			case 0x01:	ic->f = instr(be);  break;
+			case 0x03:	ic->f = instr(bl);  break;
+			case 0x08:	ic->f = instr(ba);  break;
+			case 0x0b:	ic->f = instr(bge); break;
 			default:fatal("Unimplemented branch rd=%i\n", rd);
+				goto bad;
+			}
+			break;
+
+		case 3:	/*  branch on register, 64-bit integer comparison  */
+			tmpi32 = ((iword & 0x300000) >> 6) | (iword & 0x3fff);
+			tmpi32 <<= 16;
+			tmpi32 >>= 14;
+			ic->arg[0] = (int32_t)tmpi32 + (addr & 0xffc);
+			ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs1];
+			/*  TODO: samepage  */
+			switch (btype) {
+			case 0x05:	ic->f = instr(brnz); break;
+			default:fatal("Unimplemented branch 0x%x\n", rd);
 				goto bad;
 			}
 			break;
@@ -829,6 +1127,7 @@ X(to_be_translated)
 		case 2:	/*  or  */
 		case 3:	/*  xor  */
 		case 4:	/*  sub  */
+		case 14:/*  udiv  */
 		case 16:/*  addcc  */
 		case 17:/*  andcc  */
 		case 20:/*  subcc (cmp)  */
@@ -846,6 +1145,7 @@ X(to_be_translated)
 				case 2:	ic->f = instr(or_imm); break;
 				case 3:	ic->f = instr(xor_imm); break;
 				case 4:	ic->f = instr(sub_imm); break;
+				case 14:ic->f = instr(udiv_imm); break;
 				case 16:ic->f = instr(addcc_imm); break;
 				case 17:ic->f = instr(andcc_imm); break;
 				case 20:ic->f = instr(subcc_imm); break;
@@ -891,6 +1191,7 @@ X(to_be_translated)
 				case 2: ic->f = instr(or); break;
 				case 3: ic->f = instr(xor); break;
 				case 4: ic->f = instr(sub); break;
+				case 14:ic->f = instr(udiv); break;
 				case 16:ic->f = instr(addcc); break;
 				case 17:ic->f = instr(andcc); break;
 				case 20:ic->f = instr(subcc); break;
@@ -966,7 +1267,8 @@ X(to_be_translated)
 			if (rd == SPARC_ZEROREG)
 				ic->f = instr(nop);
 			switch (rs1) {
-			case 5:	ic->f = instr(rdpr_tba); break;
+			case  5:  ic->f = instr(rdpr_tba); break;
+			case 31:  ic->f = instr(rdpr_ver); break;
 			default:fatal("Unimplemented rs1=%i\n", rs1);
 				goto bad;
 			}

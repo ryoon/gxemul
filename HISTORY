@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1306 2006-07-24 09:44:00 debug Exp $
+$Id: HISTORY,v 1.1307 2006-07-24 14:46:03 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2899,3 +2899,4 @@ Changelog for GXemul:
 		updates (by removing the "timestamp" stuff). A full NetBSD/pmax
 		3.0.1 install for R4400 has dropped from 667 seconds to 577 :)
 		Fixing the igsfb "almost vga" color (it is 24-bit, not 18-bit).
+		Adding some MIPS instruction combinations (3*lw, and 3*addu).

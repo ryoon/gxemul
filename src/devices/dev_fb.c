@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.122 2006-07-23 23:40:29 debug Exp $
+ *  $Id: dev_fb.c,v 1.123 2006-07-24 08:08:39 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -246,7 +246,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	int fill_g, int fill_b, int x1, int y1, int x2, int y2,
 	int from_x, int from_y)
 {
-	int y;
+	int x, y;
 	long from_ofs, dest_ofs, linelen;
 
 	if (fillflag)
@@ -269,8 +269,8 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	if (fillflag) {
 		for (y=y1; y<=y2; y++) {
 			if (y>=0 && y<d->ysize) {
-				int x;
-				char *buf = d->framebuffer + dest_ofs;
+				unsigned char *buf =
+				    d->framebuffer + dest_ofs;
 
 				if (d->bit_depth == 24) {
 					for (x=0; x<linelen && x<sizeof(buf);

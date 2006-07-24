@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_zaurus.c,v 1.4 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_zaurus.c,v 1.5 2006-07-24 21:14:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,17 +52,23 @@ MACHINE_SETUP(zaurus)
 	device_add(machine, "ns16550 irq=0 addr=0x40100000 addr_mult=4");
 	device_add(machine, "ns16550 irq=0 addr=0xfd400000 addr_mult=4");
 
+
+dev_fb_init(machine, machine->memory, 0x44000000,
+    VFB_GENERIC, 640,240, 640,240, 16, "PXA2X0 LCD");
+         
+        
 	if (!machine->prom_emulation)
 		return;
 
-	/*  TODO  */
+	/*  TODO: Registers, etc.  */
+
 	arm_setup_initial_translation_table(cpu, 0x4000);
 }
 
 
 MACHINE_DEFAULT_CPU(zaurus)
 {
-	machine->cpu_name = strdup("PXA210");
+	machine->cpu_name = strdup("PXA27X");
 }
 
 

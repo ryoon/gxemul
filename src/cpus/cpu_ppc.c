@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.60 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.61 2006-07-24 21:14:52 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -272,7 +272,8 @@ void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag,
 		*valuep = cpu->cd.ppc.msr;
 
 	if (check_for_interrupts && cpu->cd.ppc.msr & PPC_MSR_EE) {
-		if (cpu->cd.ppc.dec_intr_pending) {
+		if (cpu->cd.ppc.dec_intr_pending &&
+		    !(cpu->cd.ppc.cpu_type.flags & PPC_NO_DEC)) {
 			ppc_exception(cpu, PPC_EXCEPTION_DEC);
 			cpu->cd.ppc.dec_intr_pending = 0;
 		} else if (cpu->cd.ppc.irq_asserted)

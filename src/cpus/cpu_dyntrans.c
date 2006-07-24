@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.114 2006-07-24 08:57:23 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.115 2006-07-24 21:14:52 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -223,7 +223,8 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 #endif
 #ifdef DYNTRANS_PPC
 	if (cpu->cd.ppc.dec_intr_pending && cpu->cd.ppc.msr & PPC_MSR_EE) {
-		ppc_exception(cpu, PPC_EXCEPTION_DEC);
+		if (!(cpu->cd.ppc.cpu_type.flags & PPC_NO_DEC))
+			ppc_exception(cpu, PPC_EXCEPTION_DEC);
 		cpu->cd.ppc.dec_intr_pending = 0;
 	}
 	if (cpu->cd.ppc.irq_asserted && cpu->cd.ppc.msr & PPC_MSR_EE)

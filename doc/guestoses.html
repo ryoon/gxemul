@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.161 2006-07-24 10:35:55 debug Exp $
+$Id: guestoses.html,v 1.162 2006-07-24 21:14:52 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -54,7 +54,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 2.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 2.1</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0</a>
-  <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0</a>
+  <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0.1</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.0.1</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
@@ -102,6 +102,7 @@ not be relevant for this specific release of GXemul.)
   <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.0</a>
+  <li><a href="#netbsdbeboxinstall">NetBSD/bebox 19981119</a>
 </ul>
 
 <p>Some operating systems are listed with a version number <i>less</i> 
@@ -780,15 +781,15 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 	<b>dd if=/dev/zero of=nbsd_cats.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
-  <li>Download the NetBSD/cats 3.0 ISO image and the generic and install kernels:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/catscd-3.0.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0/catscd-3.0.iso</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
+  <li>Download the NetBSD/cats 3.0.1 ISO image and the generic and install kernels:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/catscd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/catscd-3.0.1.iso</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cats/binary/kernel/netbsd.aout-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cats/binary/kernel/netbsd.aout-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cats/binary/kernel/netbsd.aout-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cats/binary/kernel/netbsd.aout-INSTALL.gz</a>
 
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -XEcats -d nbsd_cats.img -d catscd-3.0.iso netbsd.aout-INSTALL.gz</b>
+	<b>gxemul -XEcats -d nbsd_cats.img -d catscd-3.0.1.iso netbsd.aout-INSTALL.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
@@ -796,7 +797,7 @@ To install NetBSD/cats onto a disk image, follow these instructions:
 </ol>
 
 <p>Alternatively, to install from FTP, you can skip downloading the ISO,
-and start the install without <tt>-d catscd-3.0.iso</tt>. Suitable network 
+and start the install without <tt>-d catscd-3.0.1.iso</tt>. Suitable network 
 settings are IP 10.0.0.1, gateway/default route 10.0.0.254, netmask 
 255.0.0.0, nameserver 10.0.0.254.
 
@@ -831,7 +832,7 @@ image, from an emulated CATS machine:
 
 <p>
 <ol>
-  <li>Install NetBSD/cats 3.0 according to instructions
+  <li>Install NetBSD/cats 3.0.1 according to instructions
 	<a href="#netbsdcatsinstall">further up on this page</a>.
   <p>
   <li>Create an empty harddisk image, which will be the disk image
@@ -917,7 +918,7 @@ distribution onto a disk image, from an emulated DECstation 3MAX machine:
 
 </pre>
   <li>Download the generic kernel and the 3.0.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/netwinder/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/netwinder/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/netwinder/binary/kernel/netbsd-GENERIC.gz</a>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/netwindercd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/netwindercd-3.0.1.iso</a>
 
 </pre>
@@ -2181,6 +2182,93 @@ succeeds, but it is not possible to start from the newly installed disk.
 	<b>gxemul -x -e g4 -d nbsd_macppc.img netbsd-GENERIC.MP.gz</b>
 
 </pre>
+
+
+
+
+
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdbeboxinstall"></a>
+<h3>NetBSD/bebox:</h3>
+
+There is an old snapshot still available of
+<a href="http://www.netbsd.org/Ports/bebox/">NetBSD/bebox</a>
+from 1998-11-19, which theoretically could run in GXemul.
+<font color="#ff0000">IT DOES <b>NOT</b> WORK YET!</font>
+
+<p>The following instructions will let you install NetBSD/bebox onto a 
+disk image, using a NetBSD/prep kernel temporarily during the install:
+
+<p>
+<ol>
+  <li>Download a NetBSD/prep 2.1 install ramdisk kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/prep/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/prep/binary/kernel/netbsd-INSTALL.gz</a>
+</pre>
+  <p>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_bebox.img bs=1024 count=1 seek=999000</b>
+</pre>
+  <p>
+  <li>Download the NetBSD/bebox snapshot, and create a suitable .iso
+	image of the files:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>wget -np -l 0 -r <a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/">ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/</a>
+mv ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz .
+tar zxvf kern.tgz
+rm -f kern.tgz
+mkisofs -o netbsd-bebox-19981119.iso ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119</b>
+</pre></td></tr></table>
+  <p>
+  <li>Now let's extract the files onto the Bebox disk image. Start NetBSD/prep
+	with the following command line:<pre>
+	<b>gxemul -x -e ibm6050 -d d:netbsd-bebox-19981119.iso -d nbsd_bebox.img netbsd-INSTALL.gz</b>
+
+</pre>Choose (S) for Shell, and execute the following commands:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>disklabel -I -i wd1
+a
+4.2BSD
+1c
+750M
+b
+swap
+a
+200M
+W
+y
+Q
+newfs /dev/wd1a
+mount_cd9660 /dev/wd0c /mnt
+mount /dev/wd1a /mnt2
+cd mnt2
+for a in /mnt/*.tgz; do echo $a; tar zxfp $a; done
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES &gt;&gt; rc.conf
+echo "/dev/wd0a / ffs rw 1 1" &gt; fstab
+echo "/dev/wd0b none swap sw 0 0" &gt;&gt; fstab
+cd /; umount /mnt; umount /mnt2
+sync; halt</b>
+</pre></td></tr></table>
+</ol>
+
+<p>You should now be able to boot NetBSD/bebox using this command:<pre>
+	<b>gxemul -X -E bebox -d nbsd_bebox.img netbsd</b>
+</pre>
+
+<p>When asked for the root device, enter <b><tt>wd0a</tt></b>.
+
+<p><font color="#ff0000">IT DOES <b>NOT</b> WORK YET</font>, there are 
+errors while uncompressing the tgz files, and the machine crashes when 
+trying to run /sbin/init.
+
 
 
 

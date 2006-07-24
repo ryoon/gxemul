@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1308 2006-07-24 19:08:13 debug Exp $
+$Id: HISTORY,v 1.1309 2006-07-24 19:20:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2900,5 +2900,5 @@ Changelog for GXemul:
 		3.0.1 install for R4400 has dropped from 667 seconds to 584 :)
 		Fixing the igsfb "almost vga" color (it is 24-bit, not 18-bit).
 		Adding some MIPS instruction combinations (3*lw, and 3*addu).
-		The 8048 keyboard now only returns KBR_RSTDONE, not KBR_ACK
-		+ KBR_RSTDONE. (Seems to work better with Linux 2.6 on Malta.)
+		The 8048 keyboard now turns off interrupt enable between the
+		KBR_ACK and the KBR_RSTDONE, to work better with Linux 2.6.

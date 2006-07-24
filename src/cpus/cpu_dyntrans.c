@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.113 2006-07-21 20:09:15 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.114 2006-07-24 08:57:23 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -1367,9 +1367,6 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
-#ifndef MODE32
-	int64_t lowest, highest = -1;
-#endif
 	int found, r, lowest_index, useraccess = 0;
 
 #ifdef MODE32
@@ -1414,30 +1411,28 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	 */
 	found = (int)cpu->cd.DYNTRANS_ARCH.vaddr_to_tlbindex[
 	    DYNTRANS_ADDR_TO_PAGENR(vaddr_page)] - 1;
+#else
+	x1 = (vaddr_page >> (64-DYNTRANS_L1N)) & mask1;
+	x2 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+	x3 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
+	    & mask3;
+
+	l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
+	if (l2 == cpu->cd.DYNTRANS_ARCH.l2_64_dummy)
+		found = -1;
+	else {
+		l3 = l2->l3[x2];
+		if (l3 == cpu->cd.DYNTRANS_ARCH.l3_64_dummy)
+			found = -1;
+		else
+			found = (int)l3->vaddr_to_tlbindex[x3] - 1;
+	}
+#endif
+
 	if (found < 0) {
 		static unsigned int x = 0;
 		lowest_index = (x++) % DYNTRANS_MAX_VPH_TLB_ENTRIES;
 	}
-#else
-	lowest = cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[0].timestamp;
-	found = -1;
-	for (r=0; r<DYNTRANS_MAX_VPH_TLB_ENTRIES; r++) {
-		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp < lowest) {
-			lowest = cpu->cd.DYNTRANS_ARCH.
-			    vph_tlb_entry[r].timestamp;
-			lowest_index = r;
-		}
-		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp > highest)
-			highest = cpu->cd.DYNTRANS_ARCH.
-			    vph_tlb_entry[r].timestamp;
-		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid &&
-		    cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page ==
-		    vaddr_page) {
-			found = r;
-			break;
-		}
-	}
-#endif
 
 	if (found < 0) {
 		/*  Create the new TLB entry, overwriting the oldest one:  */
@@ -1455,9 +1450,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].vaddr_page = vaddr_page;
 		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag =
 		    writeflag & MEM_WRITE;
-#ifndef MODE32
-		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp = highest + 1;
-#endif
 
 		/*  Add the new translation to the table:  */
 #ifdef MODE32
@@ -1474,11 +1466,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 			    |= 1 << (index & 31);
 #endif
 #else	/* !MODE32  */
-		x1 = (vaddr_page >> (64-DYNTRANS_L1N)) & mask1;
-		x2 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
-		x3 = (vaddr_page >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
-		    & mask3;
-
 		l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 		if (l2 == cpu->cd.DYNTRANS_ARCH.l2_64_dummy) {
 			if (cpu->cd.DYNTRANS_ARCH.next_free_l2 != NULL) {
@@ -1563,9 +1550,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 		 *	Writeflag = MEM_DOWNGRADE: Downgrade to readonly.
 		 */
 		r = found;
-#ifndef MODE32
-		cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].timestamp = highest + 1;
-#endif
 		if (writeflag & MEM_WRITE)
 			cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].writeflag = 1;
 		if (writeflag & MEM_DOWNGRADE)

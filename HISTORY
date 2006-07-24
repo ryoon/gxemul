@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1304 2006-07-23 23:40:28 debug Exp $
+$Id: HISTORY,v 1.1305 2006-07-24 08:57:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2895,3 +2895,6 @@ Changelog for GXemul:
 		Progress on the igsfb framebuffer used by NetBSD/netwinder.
 		Enabling 8-bit fills in dev_fb.
 		NetBSD/netwinder 3.0.1 can now run from a disk image :-)
+20060724	Cleanup/performance fix for 64-bit virtual translation table
+		updates (by removing the "timestamp" stuff). A full NetBSD/pmax
+		3.0.1 install for R4400 has dropped from 667 seconds to 577 :)

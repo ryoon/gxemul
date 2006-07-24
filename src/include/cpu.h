@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.84 2006-07-20 21:53:00 debug Exp $
+ *  $Id: cpu.h,v 1.85 2006-07-24 08:57:23 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -87,7 +87,6 @@
 		addrtype	vaddr_page;				\
 		addrtype	paddr_page;				\
 		unsigned char	*host_page;				\
-		int64_t		timestamp;				\
 	};
 
 #define	DYNTRANS_MISC64_DECLARATIONS(arch,ARCH,tlbindextype)		\

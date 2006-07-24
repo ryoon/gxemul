@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1305 2006-07-24 08:57:22 debug Exp $
+$Id: HISTORY,v 1.1306 2006-07-24 09:44:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2898,3 +2898,4 @@ Changelog for GXemul:
 20060724	Cleanup/performance fix for 64-bit virtual translation table
 		updates (by removing the "timestamp" stuff). A full NetBSD/pmax
 		3.0.1 install for R4400 has dropped from 667 seconds to 577 :)
+		Fixing the igsfb "almost vga" color (it is 24-bit, not 18-bit).

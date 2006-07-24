@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_igsfb.c,v 1.2 2006-07-24 08:50:36 debug Exp $
+ *  $Id: dev_igsfb.c,v 1.3 2006-07-24 09:44:01 debug Exp $
  *
  *  Integraphics Systems "igsfb" Framebuffer (graphics) card, used in at
  *  least the NetWinder.
@@ -158,7 +158,9 @@ DEVICE_ACCESS(igsfb)
 			break;
 		case VGA_DAC_DATA:			/*  0x09  */
 			if (writeflag == MEM_WRITE) {
-				int new = (idata & 63) << 2;
+				/*  Note: 8-bit color, not 6, so it isn't
+				    exactly like normal VGA palette:  */
+				int new = idata & 0xff;
 				int old = d->vfb_data->rgb_palette[d->
 				    palette_write_index*3+d->
 				    palette_write_subindex];

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.51 2006-07-25 08:19:58 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.52 2006-07-25 08:54:21 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1204,7 +1204,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 
 	/*  bc1f, bc1t, bc1fl, bc1tl:  */
 	if ((function & 0x03e00000) == 0x01000000) {
-		int nd, tf, imm, cond_true;
+		int nd, tf, imm;
 		char *instr_mnem;
 
 		/*  cc are bits 20..18:  */

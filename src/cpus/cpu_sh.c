@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.19 2006-07-25 21:03:25 debug Exp $
+ *  $Id: cpu_sh.c,v 1.20 2006-07-25 21:29:04 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -282,6 +282,23 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	/*  fatal("sh_cpu_interrupt_ack(): TODO\n");  */
 	return 0;
+}
+
+
+/*
+ *  sh_update_sr():
+ */
+void sh_update_sr(struct cpu *cpu, uint32_t new_sr)
+{
+	uint32_t old_sr = cpu->cd.sh.sr;
+
+	if ((new_sr & SH_SR_RB) != (old_sr & SH_SR_RB)) {
+		fatal("sh_update_sr(): Register bank switching is not"
+		    " implemented yet! TODO\n");
+		exit(1);
+	}
+
+	cpu->cd.sh.sr = new_sr;
 }
 
 

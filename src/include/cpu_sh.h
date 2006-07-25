@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.19 2006-07-25 21:03:25 debug Exp $
+ *  $Id: cpu_sh.h,v 1.20 2006-07-25 21:29:04 debug Exp $
  */
 
 #include "misc.h"
@@ -138,6 +138,8 @@ void sh_init_64bit_dummy_tables(struct cpu *cpu);
 int sh_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int sh_cpu_family_init(struct cpu_family *);
+
+void sh_update_sr(struct cpu *cpu, uint32_t new_sr);
 
 
 #endif	/*  CPU_SH_H  */

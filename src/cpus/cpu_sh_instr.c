@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.8 2006-07-25 21:03:25 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.9 2006-07-25 21:29:04 debug Exp $
  *
  *  SH instructions.
  *
@@ -82,6 +82,18 @@ X(mov_l_disp_pc_rn)
 
 
 /*
+ *  or_rm_rn:  rn = rn or rm
+ *
+ *  arg[0] = ptr to rm
+ *  arg[1] = ptr to rn
+ */
+X(or_rm_rn)
+{
+	reg(ic->arg[1]) |= reg(ic->arg[0]);
+}
+
+
+/*
  *  shll_rn: Shift rn left by 1
  *
  *  arg[0] = ptr to rn
@@ -110,6 +122,22 @@ X(stc_sr_rn)
 	}
 
 	reg(ic->arg[0]) = cpu->cd.sh.sr;
+}
+
+
+/*
+ *  ldc_rm_sr: Store Rm into SR
+ *
+ *  arg[0] = ptr to rm
+ */
+X(ldc_rm_sr)
+{
+	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
+		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
+		exit(1);
+	}
+
+	sh_update_sr(cpu, reg(ic->arg[0]));
 }
 
 
@@ -253,11 +281,28 @@ X(to_be_translated)
 		}
 		break;
 
-	case 0x4:	/*  SHLL Rn  */
+	case 0x2:
+		switch (lo4) {
+		case 0xb:	/*  OR Rm,Rn  */
+			ic->f = instr(or_rm_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r4];	/* m */
+			ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			break;
+		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
+			    main_opcode, lo4);
+			goto bad;
+		}
+		break;
+
+	case 0x4:
 		switch (lo8) {
-		case 0x00:
+		case 0x00:	/*  SHLL Rn  */
 			ic->f = instr(shll_rn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			break;
+		case 0x0e:	/*  LDC Rm,SR  */
+			ic->f = instr(ldc_rm_sr);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
 			break;
 		default:fatal("Unimplemented opcode 0x%x,0x02%x\n",
 			    main_opcode, lo8);

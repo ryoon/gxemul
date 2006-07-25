@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.17 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_sh.c,v 1.18 2006-07-25 19:35:28 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -59,16 +59,25 @@
 int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	if (strcasecmp(cpu_type_name, "SH") != 0)
+	int i = 0;
+	struct sh_cpu_type_def cpu_type_defs[] = SH_CPU_TYPE_DEFS;
+
+	/*  Scan the cpu_type_defs list for this cpu type:  */
+	while (cpu_type_defs[i].name != NULL) {
+		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
+			break;
+		}
+		i++;
+	}
+	if (cpu_type_defs[i].name == NULL)
 		return 0;
 
 	cpu->memory_rw = sh_memory_rw;
 
-	/*  TODO: per CPU type?  */
+	cpu->cd.sh.cpu_type = cpu_type_defs[i];
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
-	cpu->is_32bit = 1;
-	cpu->cd.sh.bits = 32;
-	cpu->cd.sh.compact = 1;
+	cpu->is_32bit = cpu->cd.sh.cpu_type.bits == 32;
+	cpu->cd.sh.compact = 1;		/*  Default to 16-bit opcode mode  */
 
 	if (cpu->is_32bit) {
 		cpu->run_instr = sh32_run_instr;
@@ -102,8 +111,17 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
  */
 void sh_cpu_list_available_types(void)
 {
-	debug("SH\n");
-	/*  TODO  */
+	int i = 0, j;
+	struct sh_cpu_type_def tdefs[] = SH_CPU_TYPE_DEFS;
+
+	while (tdefs[i].name != NULL) {
+		debug("%s", tdefs[i].name);
+		for (j=10 - strlen(tdefs[i].name); j>0; j--)
+			debug(" ");
+		i ++;
+		if ((i % 6) == 0 || tdefs[i].name == NULL)
+			debug("\n");
+	}
 }
 
 
@@ -130,7 +148,7 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	char *symbol;
 	uint64_t offset;
 	int i, x = cpu->cpu_id, nregs = cpu->cd.sh.compact? 16 : 64;
-	int bits32 = cpu->cd.sh.bits == 32;
+	int bits32 = cpu->cd.sh.cpu_type.bits == 32;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
@@ -588,7 +606,7 @@ int sh_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	if (cpu->cd.sh.bits == 32)
+	if (cpu->cd.sh.cpu_type.bits == 32)
 		debug("%08x", (int)dumpaddr);
 	else
 		debug("%016llx", (long long)dumpaddr);

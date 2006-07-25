@@ -28,13 +28,25 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.17 2006-07-16 13:32:28 debug Exp $
+ *  $Id: cpu_sh.h,v 1.18 2006-07-25 19:35:28 debug Exp $
  */
 
 #include "misc.h"
 
 
 struct cpu_family;
+
+/*  SH CPU types:  */
+struct sh_cpu_type_def {
+	char		*name;
+	int		bits;
+};
+
+#define	SH_CPU_TYPE_DEFS	{	\
+	{ "SH3", 32 },			\
+	{ "SH4", 32 },			\
+	{ "SH5", 64 },			\
+	{ NULL, 0 } }
 
 
 #define	SH_N_IC_ARGS			3
@@ -56,7 +68,9 @@ DYNTRANS_MISC64_DECLARATIONS(sh,SH,uint8_t)
 
 
 struct sh_cpu {
-	int		bits;
+	struct sh_cpu_type_def cpu_type;
+
+	/*  compact = 1 if currently executing 16-bit long opcodes  */
 	int		compact;
 
 	uint64_t	r[64];

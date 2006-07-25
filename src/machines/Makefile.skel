@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.25 2006-07-11 04:44:11 debug Exp $
+#  $Id: Makefile.skel,v 1.26 2006-07-25 19:35:28 debug Exp $
 #
 #  Makefile for GXemul machines
 #
@@ -8,14 +8,14 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 OBJS=interrupts.o \
 	machine_algor.o machine_alpha.o machine_arc.o machine_avr.o \
 	machine_bebox.o machine_cats.o machine_cobalt.o machine_db64360.o \
-	machine_evbmips.o machine_hpcarm.o machine_hpcmips.o machine_hpcsh.o \
-	machine_iq80321.o machine_iyonix.o machine_macppc.o \
-	machine_mvmeppc.o machine_netgear.o machine_netwinder.o \
-	machine_playstation2.o machine_pmax.o machine_pmppc.o machine_prep.o \
-	machine_psp.o machine_qemu.o machine_sandpoint.o \
-	machine_sgi.o machine_shark.o machine_sonynews.o machine_sparc.o \
-	machine_test.o machine_ts7200.o machine_walnut.o machine_x86.o \
-	machine_zaurus.o
+	machine_dreamcast.o machine_evbmips.o machine_hpcarm.o \
+	machine_hpcmips.o machine_hpcsh.o machine_iq80321.o machine_iyonix.o \
+	machine_macppc.o machine_mvmeppc.o machine_netgear.o \
+	machine_netwinder.o machine_playstation2.o machine_pmax.o \
+	machine_pmppc.o machine_prep.o machine_psp.o machine_qemu.o \
+	machine_sandpoint.o machine_sgi.o machine_shark.o machine_sonynews.o \
+	machine_sparc.o machine_test.o machine_ts7200.o machine_walnut.o \
+	machine_x86.o machine_zaurus.o
 
 all:
 	$(MAKE) objs

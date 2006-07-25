@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1312 2006-07-25 18:58:02 debug Exp $
+$Id: HISTORY,v 1.1313 2006-07-25 19:35:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2906,3 +2906,4 @@ Changelog for GXemul:
 		specific CPU; NetBSD/bebox gets slightly further than before.
 		Adding some more SPARC instructions: branches, udiv.
 20060725	Refreshing dev_pckbc.c a little.
+		Minor cleanups for the SH emulation mode.

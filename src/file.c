@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.132 2006-07-09 05:51:28 debug Exp $
+ *  $Id: file.c,v 1.133 2006-07-25 19:35:28 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1483,12 +1483,12 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		debug("%08"PRIx32"\n", (uint32_t) eentry);
 
 	/*
-	 *  SH64: 32-bit instruction encoding?  TODO
+	 *  SH64: 32-bit instruction encoding?
 	 */
 	if (arch == ARCH_SH && (eentry & 1)) {
 		debug("SH64: 32-bit instruction encoding\n");
 		m->cpus[0]->cd.sh.compact = 0;
-		m->cpus[0]->cd.sh.bits = 64;
+		m->cpus[0]->cd.sh.cpu_type.bits = 64;
 	}
 
 	/*  Read the program headers:  */

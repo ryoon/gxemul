@@ -1,4 +1,4 @@
-$Id: TODO,v 1.330 2006-07-24 21:28:08 debug Exp $
+$Id: TODO,v 1.331 2006-07-25 08:19:58 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -6,8 +6,12 @@ Code cleanup:
 	x)  64-bit ranges in src/cpus/memory_mips_v2p.c
 	x)  Revert the dyntrans page template experiment? Hm.
 	x)  Refactor the cpu type detection/initialization/listing.
+		Macro, which can be used as long as the cpu definitions
+		contain a 'name'?
 
 Documentation:
+	x)  "Install netbsd/pmax first" => only use the install kernel?
+	    Or the CATS install kernel, simplifying disklabling?
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
 	    written. (Symbolic names instead of numbers; example
@@ -30,15 +34,16 @@ Long-term implementation:
 			for (;;) {
 				halt();
 			}
-	x)  Rewrite the networking stack; make OpenBSD work better as a guest
-	    OS, fix the performance problems, make Linux work with DHCP, etc.
 	x)  Make the wdc controller work with modern versions of NetBSD!
 	x)  Continue on SPARC emulation
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.
 	x)  Continue on Alpha emulation  (virtual memory, etc). Cleanup.
-	x)  Continue on Transputer emulation.
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
+	x)  Rewrite the networking stack; make OpenBSD work better as a guest
+	    OS, fix the performance problems, make Linux work with DHCP, etc.
+	    Allow SLIP connections, possibly PPP, in addition to ethernet?
+	x)  Implement more ethernet NICs.
 
 Long-term design:
 	x)  Instruction combination collisions? How to avoid easily...
@@ -140,6 +145,12 @@ Dyntrans:
 	    into usleep(1) or similar on the host... except when doing
 	    e.g. SMP emulation. Then it becomes trickier.
 
+Transputer:
+	x)  Implement support for Helios binaries.
+	x)  Stack and register contents at startup?
+	x)  Figure out how to boot an entire Helios distribution.
+	x)  Implement all instructions. :)
+
 Alpha:
 	o)  Virtual memory (tlbs etc)
 	o)  Get {NetBSD,OpenBSD,Linux}/alpha booting. :)
@@ -205,7 +216,9 @@ POWER/PowerPC:
 	x)  make OpenBSD/macppc work (PCI controller stuff)
 
 Algor:
-	PCI and ISA and LOCAL interrupts! --> wdc could start working
+	PCI and ISA and LOCAL interrupts! --> wdc could start working.
+		Or possibly not? Googling reveals that wdc might be
+		broken in NetBSD/algor. :(
 	Add interrupt controller in dev_algor.c.
 
 ARM:

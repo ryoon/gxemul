@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.85 2006-07-24 08:57:23 debug Exp $
+ *  $Id: cpu.h,v 1.86 2006-07-25 08:19:59 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -309,7 +309,7 @@ struct cpu {
 			    unsigned char *ib);
 
 	uint64_t	pc;
-
+	int		delay_slot;
 	int		trace_tree_depth;
 
 	/*
@@ -319,9 +319,6 @@ struct cpu {
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;
-
-	uint64_t	delay_jmpaddr;	/*  only used if delay_slot > 0  */
-	int		delay_slot;
 
 	/*
 	 *  CPU-family dependent:

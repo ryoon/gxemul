@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.50 2006-07-24 10:09:16 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.51 2006-07-25 08:19:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1227,36 +1227,10 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		if (cpu->delay_slot) {
-			fatal("%s: jump inside a jump's delay slot, "
-			    "or similar. TODO\n", instr_mnem);
-			cpu->running = 0;
-			return 1;
-		}
-
-		/*  Both the FCCR and FCSR contain condition code bits...  */
-		if (cc == 0)
-			cond_true = (cp->fcr[MIPS_FPU_FCSR] >>
-			    MIPS_FCSR_FCC0_SHIFT) & 1;
-		else
-			cond_true = (cp->fcr[MIPS_FPU_FCSR] >>
-			    (MIPS_FCSR_FCC1_SHIFT + cc-1)) & 1;
-
-		if (!tf)
-			cond_true = !cond_true;
-
-		if (cond_true) {
-			cpu->delay_slot = TO_BE_DELAYED;
-			cpu->delay_jmpaddr = cpu->pc + (imm << 2);
-		} else {
-			/*  "likely":  */
-			if (nd) {
-				/*  nullify the delay slot  */
-				cpu->cd.mips.nullify_next = 1;
-			}
-		}
-
-		return 1;
+		fatal("INTERNAL ERROR: MIPS coprocessor branches should not"
+		    " be implemented in cpu_mips_coproc.c, but in"
+		    " cpu_mips_instr.c!\n");
+		exit(1);
 	}
 
 	/*  add.fmt: Floating-point add  */
@@ -1470,19 +1444,13 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 			    R2K3K_INDEX_SHIFT;
 			if (i >= cp->nr_of_tlbs) {
 				/*  TODO:  exception?  */
-				fatal("warning: tlbr from index %i (too "
-				    "high)\n", i);
+				fatal("[ warning: tlbr from index %i (too "
+				    "high) ]\n", i);
 				return;
 			}
 
-			/*
-			 *  TODO: Hm. Earlier I had an & ~0x3f on the high
-			 *  assignment and an & ~0xff on the lo0 assignment.
-			 *  I wonder why.
-			 */
-
-			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi; /* & ~0x3f; */
-			cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0;/* & ~0xff; */
+			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi;
+			cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0;
 		} else {
 			/*  R4000:  */
 			i = cp->reg[COP0_INDEX] & INDEX_MASK;

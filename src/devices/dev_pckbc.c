@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.68 2006-07-25 05:23:31 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.69 2006-07-25 18:58:02 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -33,7 +33,8 @@
  *  Quick source of good info: http://my.execpc.com/~geezer/osd/kbd/kbd.txt
  *
  *
- *  TODO: Finish the rewrite for 8242.
+ *  TODOs:
+ *	Finish the rewrite for 8242.
  */
 
 #include <stdio.h>
@@ -100,8 +101,8 @@ struct pckbc_data {
 #define	STATE_LDCMDBYTE			1
 #define	STATE_RDCMDBYTE			2
 #define	STATE_WAITING_FOR_TRANSLTABLE	3
-#define	STATE_WAITING_FOR_F3		4
-#define	STATE_WAITING_FOR_FC		5
+#define	STATE_WAITING_FOR_RATE		4
+#define	STATE_WAITING_FOR_ONEKEY_MB	5
 #define	STATE_WAITING_FOR_AUX		6
 #define	STATE_WAITING_FOR_AUX_OUT	7
 #define	STATE_LDOUTPUT			8
@@ -502,16 +503,16 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		return;
 	}
 
-	if (d->state == STATE_WAITING_FOR_F3) {
-		debug("[ pckbc: (port %i) received '0xf3' data: "
+	if (d->state == STATE_WAITING_FOR_RATE) {
+		debug("[ pckbc: (port %i) received Typematic Rate data: "
 		    "0x%02x ]\n", port_nr, cmd);
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		d->state = STATE_NORMAL;
 		return;
 	}
 
-	if (d->state == STATE_WAITING_FOR_FC) {
-		debug("[ pckbc: (port %i) received '0xfc' data: "
+	if (d->state == STATE_WAITING_FOR_ONEKEY_MB) {
+		debug("[ pckbc: (port %i) received One-key make/break data: "
 		    "0x%02x ]\n", port_nr, cmd);
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		d->state = STATE_NORMAL;
@@ -537,39 +538,63 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 	}
 
 	switch (cmd) {
+
 	case 0x00:
+		/*
+		 *  TODO: What does this do? This is possibly due to an
+		 *  error in the handling of some other command code.
+		 */
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		break;
+
 	case KBC_MODEIND:	/*  Set LEDs  */
 		/*  Just ACK, no LEDs are actually set.  */
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		break;
+
 	case KBC_SETTABLE:
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		d->state = STATE_WAITING_FOR_TRANSLTABLE;
 		break;
+
 	case KBC_ENABLE:
 		d->keyscanning_enabled = 1;
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		break;
+
 	case KBC_DISABLE:
 		d->keyscanning_enabled = 0;
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		break;
+
 	case KBC_SETDEFAULT:
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		break;
-	case 0xf3:
+
+	case KBC_GETID:
+		/*  Get keyboard ID.  NOTE/TODO: Ugly hardcoded answer.  */
 		pckbc_add_code(d, KBR_ACK, port_nr);
-		d->state = STATE_WAITING_FOR_F3;
+		pckbc_add_code(d, 0xab, port_nr);
+		pckbc_add_code(d, 0x41, port_nr);
 		break;
-	case 0xfa:	/*  Just ack?  */
+
+	case KBC_TYPEMATIC:
+		/*  Set typematic (auto-repeat) delay/speed:  */
+		pckbc_add_code(d, KBR_ACK, port_nr);
+		d->state = STATE_WAITING_FOR_RATE;
+		break;
+
+	case KBC_ALLKEYS_TMB:
+		/*  "Make all keys typematic/make/break"  */
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		break;
-	case 0xfc:
+
+	case KBC_ONEKEY_MB:
+		/*  "Make one key typematic/make/break"  */
 		pckbc_add_code(d, KBR_ACK, port_nr);
-		d->state = STATE_WAITING_FOR_FC;
+		d->state = STATE_WAITING_FOR_ONEKEY_MB;
 		break;
+
 	case KBC_RESET:
 		pckbc_add_code(d, KBR_ACK, port_nr);
 		pckbc_add_code(d, KBR_RSTDONE, port_nr);
@@ -579,6 +604,7 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		 */
 		d->rx_int_enable = 0;
 		break;
+
 	default:
 		fatal("[ pckbc: (port %i) UNIMPLEMENTED 8048 command"
 		    " 0x%02x ]\n", port_nr, cmd);

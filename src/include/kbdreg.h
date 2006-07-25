@@ -1,4 +1,4 @@
-/*  gxemul: $Id: kbdreg.h,v 1.2 2005-03-05 12:34:02 debug Exp $  */
+/*  gxemul: $Id: kbdreg.h,v 1.3 2006-07-25 18:58:02 debug Exp $  */
 /*	$NetBSD: kbdreg.h,v 1.4 2000/01/23 21:01:57 soda Exp $	*/
 /*	$OpenBSD: kbdreg.h,v 1.3 1996/09/04 21:18:24 pefo Exp $	*/
 
@@ -68,13 +68,16 @@
 /* keyboard commands */
 #define	KBC_RESET	0xFF	/* reset the keyboard */
 #define	KBC_RESEND	0xFE	/* request the keyboard resend the last byte */
+#define	KBC_ONEKEY_MB	0xFC	/* make one key make/break */
+#define	KBC_ALLKEYS_TMB	0xFA	/* make all keys typematic/make/break */
 #define	KBC_SETDEFAULT	0xF6	/* resets keyboard to its power-on defaults */
 #define	KBC_DISABLE	0xF5	/* as per KBC_SETDEFAULT, but also disable key scanning */
 #define	KBC_ENABLE	0xF4	/* enable key scanning */
 #define	KBC_TYPEMATIC	0xF3	/* set typematic rate and delay */
+#define	KBC_GETID	0xF2	/* get keyboard id */
 #define	KBC_SETTABLE	0xF0	/* set scancode translation table */
-#define	KBC_MODEIND	0xED	/* set mode indicators (i.e. LEDs) */
 #define	KBC_ECHO	0xEE	/* request an echo from the keyboard */
+#define	KBC_MODEIND	0xED	/* set mode indicators (i.e. LEDs) */
 
 /* keyboard responses */
 #define	KBR_EXTENDED	0xE0	/* extended key sequence */

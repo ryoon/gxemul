@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.18 2006-07-25 19:35:28 debug Exp $
+ *  $Id: cpu_sh.h,v 1.19 2006-07-25 21:03:25 debug Exp $
  */
 
 #include "misc.h"
@@ -49,9 +49,14 @@ struct sh_cpu_type_def {
 	{ NULL, 0 } }
 
 
-#define	SH_N_IC_ARGS			3
-#define	SH_INSTR_ALIGNMENT_SHIFT	2
-#define	SH_IC_ENTRIES_SHIFT		10
+/*
+ *  TODO: Figure out how to nicely support multiple instruction encodings!
+ *  For now, I'm reverting this to SH4. SH5 will have to wait until later.
+ */
+
+#define	SH_N_IC_ARGS			2	/*  3 for SH5/SH64  */
+#define	SH_INSTR_ALIGNMENT_SHIFT	1	/*  2 for SH5/SH64  */
+#define	SH_IC_ENTRIES_SHIFT		11	/*  10 for SH5/SH64  */
 #define	SH_IC_ENTRIES_PER_PAGE		(1 << SH_IC_ENTRIES_SHIFT)
 #define	SH_PC_TO_IC_ENTRY(a)		(((a)>>SH_INSTR_ALIGNMENT_SHIFT) \
 					& (SH_IC_ENTRIES_PER_PAGE-1))
@@ -67,13 +72,31 @@ DYNTRANS_MISC64_DECLARATIONS(sh,SH,uint8_t)
 #define	SH_MAX_VPH_TLB_ENTRIES		128
 
 
+#define	SH_N_GPRS		64
+
+
 struct sh_cpu {
 	struct sh_cpu_type_def cpu_type;
 
 	/*  compact = 1 if currently executing 16-bit long opcodes  */
 	int		compact;
 
-	uint64_t	r[64];
+	uint32_t	r_otherbank[8];
+
+	uint64_t	r[SH_N_GPRS];
+
+	uint32_t	mach;		/*  Multiply-Accumulate High  */
+	uint32_t	macl;		/*  Multiply-Accumulate Low  */
+	uint32_t	pr;		/*  Procedure Register  */
+	uint32_t	fpscr;		/*  Floating-point Status/Control  */
+	uint32_t	fpul;		/*  Floating-point Communication Reg  */
+	uint32_t	sr;		/*  Status Register  */
+	uint32_t	ssr;		/*  Saved Status Register  */
+	uint32_t	spc;		/*  Saved PC  */
+	uint32_t	gbr;		/*  Global Base Register  */
+	uint32_t	vbr;		/*  Vector Base Register  */
+	uint32_t	sgr;		/*  Saved General Register  */
+	uint32_t	dbr;		/*  Debug Base Register  */
 
 
 	/*
@@ -85,6 +108,19 @@ struct sh_cpu {
 	VPH32(sh,SH,uint64_t,uint8_t)
 	VPH64(sh,SH,uint8_t)
 };
+
+
+/*  Status register bits:  */
+#define	SH_SR_T			0x00000001	/*  True/false  */
+#define	SH_SR_S			0x00000002	/*  Saturation  */
+#define	SH_SR_IMASK		0x000000f0	/*  Interrupt mask  */
+#define	SH_SR_IMASK_SHIFT		4
+#define	SH_SR_Q			0x00000100	/*  State for Divide Step  */
+#define	SH_SR_M			0x00000200	/*  State for Divide Step  */
+#define	SH_SR_FD		0x00008000	/*  FPU Disable  */
+#define	SH_SR_BL		0x10000000	/*  Exception/Interrupt Block */
+#define	SH_SR_RB		0x20000000	/*  Register Bank 0/1  */
+#define	SH_SR_MD		0x40000000	/*  Privileged Mode  */
 
 
 /*  cpu_sh.c:  */

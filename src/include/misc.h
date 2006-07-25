@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.241 2006-06-16 18:31:26 debug Exp $
+ *  $Id: misc.h,v 1.242 2006-07-25 21:03:25 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -112,14 +112,23 @@ struct memory;
 #define EMUL_BIG_ENDIAN                 1
 
 #ifdef HOST_LITTLE_ENDIAN
+#define	LE16_TO_HOST(x)	    (x)
+#define BE16_TO_HOST(x)	    ((((x) & 0xff00) >> 8) | (((x)&0xff) << 8))
+#else
+#define LE16_TO_HOST(x)	    ((((x) & 0xff00) >> 8) | (((x)&0xff) << 8))
+#define	BE16_TO_HOST(x)	    (x)
+#endif
+
+#ifdef HOST_LITTLE_ENDIAN
 #define	LE32_TO_HOST(x)	    (x)
-#define BE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | ((x) << 24) | \
+#define BE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | (((x)&0xff) << 24) | \
 			     (((x) & 0xff0000) >> 8) | (((x) & 0xff00) << 8))
 #else
-#define LE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | ((x) << 24) | \
+#define LE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | (((x)&0xff) << 24) | \
 			     (((x) & 0xff0000) >> 8) | (((x) & 0xff00) << 8))
 #define	BE32_TO_HOST(x)	    (x)
 #endif
+
 
 /*  Debug stuff:  */
 #define	DEBUG_BUFSIZE		1024

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.7 2006-02-24 01:20:36 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.8 2006-07-25 21:03:25 debug Exp $
  *
  *  SH instructions.
  *
@@ -37,10 +37,79 @@
 
 
 /*
- *  nop:  Do nothing.
+ *  nop: Nothing
  */
 X(nop)
 {
+}
+
+
+/*
+ *  mov_rm_rn:  Copy rm into rn
+ *
+ *  arg[0] = ptr to rm
+ *  arg[1] = ptr to rn
+ */
+X(mov_rm_rn)
+{
+	reg(ic->arg[1]) = reg(ic->arg[0]);
+}
+
+
+/*
+ *  mov_imm_rn:  Set rn to an signed 8-bit value
+ *
+ *  arg[0] = int8_t imm, extended to at least int32_t
+ *  arg[1] = ptr to rn
+ */
+X(mov_imm_rn)
+{
+	reg(ic->arg[1]) = (int32_t)ic->arg[0];
+}
+
+
+/*
+ *  mov_l_disp_pc_rn:  Set rn to an immediate value relative to the current pc
+ *
+ *  arg[0] = offset from beginning of the current pc's page
+ *  arg[1] = ptr to rn
+ */
+X(mov_l_disp_pc_rn)
+{
+	reg(ic->arg[1]) = ic->arg[0] + (cpu->pc &
+	    ~((SH_IC_ENTRIES_PER_PAGE-1) << SH_INSTR_ALIGNMENT_SHIFT));
+}
+
+
+/*
+ *  shll_rn: Shift rn left by 1
+ *
+ *  arg[0] = ptr to rn
+ */
+X(shll_rn)
+{
+	uint32_t rn = reg(ic->arg[0]);
+	if (rn >> 31)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[0]) = rn << 1;
+}
+
+
+/*
+ *  stc_sr_rn: Store SR into Rn
+ *
+ *  arg[0] = ptr to rn
+ */
+X(stc_sr_rn)
+{
+	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
+		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
+		exit(1);
+	}
+
+	reg(ic->arg[0]) = cpu->cd.sh.sr;
 }
 
 
@@ -80,48 +149,78 @@ X(to_be_translated)
 	uint32_t iword;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, instr_size = 4;
-	/* void (*samepage_function)(struct cpu *, struct sh_instr_call *);*/
+	int main_opcode, isize = cpu->cd.sh.compact? 2 : sizeof(ib);
+	int in_crosspage_delayslot = 0, r8, r4, lo4, lo8;
+	/*  void (*samepage_function)(struct cpu *, struct sh_instr_call *);  */
 
 	/*  Figure out the (virtual) address of the instruction:  */
-	if (cpu->cd.sh.compact) {
-		instr_size = 2;
-		fatal("Compact: TODO\n");
-		exit(1);
-	} else {
-		low_pc = ((size_t)ic - (size_t)cpu->cd.sh.cur_ic_page)
-		    / sizeof(struct sh_instr_call);
-		addr = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1)
-		    << SH_INSTR_ALIGNMENT_SHIFT);
-		addr += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);
-		cpu->pc = addr;
-		addr &= ~0x3;
+	low_pc = ((size_t)ic - (size_t)cpu->cd.sh.cur_ic_page)
+	    / sizeof(struct sh_instr_call);
+
+	/*  Special case for branch with delayslot on the next page:  */
+	if (cpu->delay_slot == TO_BE_DELAYED && low_pc == 0) {
+		/*  fatal("[ delay-slot translation across page "
+		    "boundary ]\n");  */
+		in_crosspage_delayslot = 1;
 	}
 
+	addr = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1)
+	    << SH_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc = (MODE_int_t)addr;
+	addr &= ~((1 << SH_INSTR_ALIGNMENT_SHIFT) - 1);
+
 	/*  Read the instruction word from memory:  */
-	page = cpu->cd.sh.host_load[addr >> 12];
+#ifdef MODE32
+	page = cpu->cd.sh.host_load[(uint32_t)addr >> 12];
+#else
+	{
+		const uint32_t mask1 = (1 << DYNTRANS_L1N) - 1;
+		const uint32_t mask2 = (1 << DYNTRANS_L2N) - 1;
+		const uint32_t mask3 = (1 << DYNTRANS_L3N) - 1;
+		uint32_t x1 = (addr >> (64-DYNTRANS_L1N)) & mask1;
+		uint32_t x2 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
+		uint32_t x3 = (addr >> (64-DYNTRANS_L1N-DYNTRANS_L2N-
+		    DYNTRANS_L3N)) & mask3;
+		struct DYNTRANS_L2_64_TABLE *l2 = cpu->cd.sh.l1_64[x1];
+		struct DYNTRANS_L3_64_TABLE *l3 = l2->l3[x2];
+		page = l3->host_load[x3];
+	}
+#endif
 
 	if (page != NULL) {
 		/*  fatal("TRANSLATION HIT!\n");  */
-		memcpy(ib, page + (addr & 0xfff), sizeof(ib));
+		memcpy(ib, page + (addr & 0xfff), isize);
 	} else {
 		/*  fatal("TRANSLATION MISS!\n");  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, ib,
-		    sizeof(ib), MEM_READ, CACHE_INSTRUCTION)) {
-			fatal("to_be_translated(): "
-			    "read failed: TODO\n");
+		    isize, MEM_READ, CACHE_INSTRUCTION)) {
+			fatal("to_be_translated(): read failed: TODO\n");
 			goto bad;
 		}
 	}
 
 	iword = *((uint32_t *)&ib[0]);
 
-#ifdef HOST_LITTLE_ENDIAN
-	iword = ((iword & 0xff) << 24) |
-		((iword & 0xff00) << 8) |
-		((iword & 0xff0000) >> 8) |
-		((iword & 0xff000000) >> 24);
-#endif
+	if (cpu->cd.sh.compact) {
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			iword = LE16_TO_HOST(iword);
+		else
+			iword = BE16_TO_HOST(iword);
+		main_opcode = iword >> 12;
+		r8 = (iword >> 8) & 0xf;
+		r4 = (iword >> 4) & 0xf;
+		lo8 = iword & 0xff;
+		lo4 = iword & 0xf;
+	} else {
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			iword = LE32_TO_HOST(iword);
+		else
+			iword = BE32_TO_HOST(iword);
+		main_opcode = -1;	/*  TODO  */
+		fatal("SH5/SH64 isn't implemented yet. Sorry.\n");
+		goto bad;
+	}
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -133,14 +232,69 @@ X(to_be_translated)
 	 *  Translate the instruction:
 	 */
 
-	main_opcode = iword >> 26;
-
-#if 0
 	switch (main_opcode) {
 
-	default:goto bad;
+	case 0x0:
+		switch (lo8) {
+		case 0x02:	/*  STC SR,Rn  */
+			ic->f = instr(stc_sr_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			break;
+		case 0x09:	/*  NOP  */
+			ic->f = instr(nop);
+			if (iword & 0x0f00) {
+				fatal("Unimplemented NOP variant?\n");
+				goto bad;
+			}
+			break;
+		default:fatal("Unimplemented opcode 0x%x,0x03%x\n",
+			    main_opcode, iword & 0xfff);
+			goto bad;
+		}
+		break;
+
+	case 0x4:	/*  SHLL Rn  */
+		switch (lo8) {
+		case 0x00:
+			ic->f = instr(shll_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			break;
+		default:fatal("Unimplemented opcode 0x%x,0x02%x\n",
+			    main_opcode, lo8);
+			goto bad;
+		}
+		break;
+
+	case 0x6:
+		switch (lo4) {
+		case 0x3:	/*  MOV Rm,Rn  */
+			ic->f = instr(mov_rm_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r4];	/* m */
+			ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			break;
+		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
+			    main_opcode, lo4);
+			goto bad;
+		}
+		break;
+
+	case 0xd:	/*  MOV.L @(disp,PC),Rn  */
+		ic->f = instr(mov_l_disp_pc_rn);
+		ic->arg[0] = lo8 * 4 + (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
+		    << SH_INSTR_ALIGNMENT_SHIFT) & ~3) + 4;
+		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+		break;
+
+	case 0xe:	/*  MOV #imm,Rn  */
+		ic->f = instr(mov_imm_rn);
+		ic->arg[0] = (int8_t)lo8;
+		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+		break;
+
+	default:fatal("Unimplemented main opcode 0x%x\n", main_opcode);
+		goto bad;
 	}
-#endif
+
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL
 #include "cpu_dyntrans.c" 

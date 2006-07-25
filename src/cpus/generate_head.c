@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.18 2006-07-20 21:53:00 debug Exp $
+ *  $Id: generate_head.c,v 1.19 2006-07-25 21:03:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -153,10 +153,13 @@ int main(int argc, char *argv[])
 	printf("\tcpu->cd.%s.next_ic --;\n", a);
 	printf("}\n\n");
 
-	/*  Ugly special hack for Transputer:  */
+	/*  Ugly special hacks for Transputer and SH[34]:  */
 	if (strcasecmp(argv[1], "transputer") == 0) {
 	        printf("static struct %s_instr_call nothing_call = { "
 		    "instr(nothing), {0} };\n", a);
+	} else if (strcasecmp(argv[1], "sh") == 0) {
+	        printf("static struct %s_instr_call nothing_call = { "
+		    "instr(nothing), {0,0} };\n", a);
 	} else {
 	        printf("static struct %s_instr_call nothing_call = { "
 		    "instr(nothing), {0,0,0} };\n", a);

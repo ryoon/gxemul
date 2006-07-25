@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.18 2006-07-25 19:35:28 debug Exp $
+ *  $Id: cpu_sh.c,v 1.19 2006-07-25 21:03:25 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -100,6 +100,12 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		debug("%s", cpu->name);
 	}
 
+	/*  Initial value of FPSCR (according to the SH4 manual):  */
+	cpu->cd.sh.fpscr = 0x00040001;
+
+	/*  Start in Privileged Mode:  */
+	cpu->cd.sh.sr = SH_SR_MD;
+
 	return 1;
 }
 
@@ -162,6 +168,18 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("%016llx", (long long)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
+		debug("cpu%i: sr  = %s, %s, %s, %s, %s, %s, imask=0x%x, "
+		    "%s, %s\n", x,
+		    (cpu->cd.sh.sr & SH_SR_MD)? "MD" : "!md",
+		    (cpu->cd.sh.sr & SH_SR_RB)? "RB" : "!rb",
+		    (cpu->cd.sh.sr & SH_SR_BL)? "BL" : "!bl",
+		    (cpu->cd.sh.sr & SH_SR_FD)? "FD" : "!fd",
+		    (cpu->cd.sh.sr & SH_SR_M)? "M" : "!m",
+		    (cpu->cd.sh.sr & SH_SR_Q)? "Q" : "!q",
+		    (cpu->cd.sh.sr & SH_SR_IMASK) >> SH_SR_IMASK_SHIFT,
+		    (cpu->cd.sh.sr & SH_SR_S)? "S" : "!s",
+		    (cpu->cd.sh.sr & SH_SR_T)? "T" : "!t");
+
 		if (bits32) {
 			/*  32-bit:  */
 			for (i=0; i<nregs; i++) {
@@ -207,6 +225,15 @@ void sh_cpu_register_match(struct machine *m, char *name,
 		} else
 			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
+	} else if (name[0] == 'r' && isdigit((int)name[1])) {
+		int nr = atoi(name + 1);
+		if (nr >= 0 && nr < SH_N_GPRS) {
+			if (writeflag)
+				m->cpus[cpunr]->cd.sh.r[nr] = *valuep;
+			else
+				*valuep = m->cpus[cpunr]->cd.sh.r[nr];
+			*match_register = 1;
+		}
 	}
 }
 
@@ -533,7 +560,7 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		break;
 	case 0x9:
 	case 0xd:
-		addr = ((int8_t)lo8) * (hi4==9? 2 : 4);
+		addr = lo8 * (hi4==9? 2 : 4);
 		addr += (dumpaddr & ~(hi4==9? 1 : 3)) + 4;
 		debug("mov.%s\t0x%x,r%i\n", hi4==9? "w":"l", (int)addr, r8);
 		break;

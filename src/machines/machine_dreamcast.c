@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.1 2006-07-25 19:35:28 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.2 2006-07-25 19:39:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,7 +45,7 @@ MACHINE_SETUP(dreamcast)
 	machine->machine_name = "Dreamcast";
 
 	/*  TODO: Temporary hack, because there is no virtual to physical
-	    translation for SH yet.  */
+	    translation for SH yet. NetBSD is loaded to 0x8c010000.  */
 	dev_ram_init(machine, 0x8c000000, 0x04000000, DEV_RAM_MIRROR, 0x0);
 
 	if (!machine->prom_emulation)

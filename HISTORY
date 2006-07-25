@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1315 2006-07-25 21:29:03 debug Exp $
+$Id: HISTORY,v 1.1316 2006-07-25 21:49:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2907,5 +2907,5 @@ Changelog for GXemul:
 		Adding some more SPARC instructions: branches, udiv.
 20060725	Refreshing dev_pckbc.c a little.
 		Cleanups for the SH emulation mode, and adding the first
-		"compact" instructions (various simple movs, nop, shll, stc,
-		or, ldc).
+		"compact" (16-bit) instructions: various simple movs, nop,
+		shll, stc, or, ldc.

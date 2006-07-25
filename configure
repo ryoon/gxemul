@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.227 2006-07-24 19:08:17 debug Exp $
+#  $Id: configure,v 1.228 2006-07-25 21:49:14 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -197,7 +197,7 @@ if [ z$ENABLEPPC = zYES ]; then
 fi
 if [ z$ENABLESH = zYES ]; then
 	printf "#define ENABLE_SH\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_sh.o"
+	CPU_ARCHS="$CPU_ARCHS cpu_sh.o memory_sh.o"
 fi
 if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h

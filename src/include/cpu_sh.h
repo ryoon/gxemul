@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.20 2006-07-25 21:29:04 debug Exp $
+ *  $Id: cpu_sh.h,v 1.21 2006-07-25 21:49:14 debug Exp $
  */
 
 #include "misc.h"
@@ -140,6 +140,10 @@ int sh_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 int sh_cpu_family_init(struct cpu_family *);
 
 void sh_update_sr(struct cpu *cpu, uint32_t new_sr);
+
+/*  memory_sh.c:  */
+int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
 
 
 #endif	/*  CPU_SH_H  */

@@ -23,9 +23,9 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- *   
  *
- *  $Id: machine_dreamcast.c,v 1.3 2006-07-25 21:49:14 debug Exp $
+ *
+ *  $Id: memory_sh.c,v 1.1 2006-07-25 21:49:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -33,42 +33,20 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
 
-MACHINE_SETUP(dreamcast)
+/*
+ *  sh_translate_v2p():
+ */
+int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_paddr, int flags)
 {
-	machine->machine_name = "Dreamcast";
-
-	if (!machine->prom_emulation)
-		return;
-
-	/*  NetBSD/dreamcast specific register contents:  */
 	/*  TODO  */
-}
 
-
-MACHINE_DEFAULT_CPU(dreamcast)
-{
-	/*  Hitachi SH4, 200 MHz  */
-	machine->cpu_name = strdup("SH4");
-}
-
-
-MACHINE_DEFAULT_RAM(dreamcast)
-{
-	machine->physical_ram_in_mb = 16;
-}
-
-
-MACHINE_REGISTER(dreamcast)
-{
-	MR_DEFAULT(dreamcast, "Dreamcast", ARCH_SH, MACHINE_DREAMCAST);
-	me->set_default_ram = machine_default_ram_dreamcast;
-	machine_entry_add_alias(me, "dreamcast");
+	*return_paddr = vaddr & 0x03ffffff;
+	return 2;
 }
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.331 2006-07-25 08:19:58 debug Exp $
+$Id: TODO,v 1.332 2006-07-25 21:49:14 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -39,6 +39,7 @@ Long-term implementation:
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.
 	x)  Continue on Alpha emulation  (virtual memory, etc). Cleanup.
+	x)  Nicer MIPS status bits in register dumps.
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 	x)  Rewrite the networking stack; make OpenBSD work better as a guest
 	    OS, fix the performance problems, make Linux work with DHCP, etc.

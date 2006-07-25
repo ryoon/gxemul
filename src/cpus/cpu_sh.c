@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.20 2006-07-25 21:29:04 debug Exp $
+ *  $Id: cpu_sh.c,v 1.21 2006-07-25 21:49:14 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -78,6 +78,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	cpu->is_32bit = cpu->cd.sh.cpu_type.bits == 32;
 	cpu->cd.sh.compact = 1;		/*  Default to 16-bit opcode mode  */
+
+	cpu->translate_v2p = sh_translate_v2p;
 
 	if (cpu->is_32bit) {
 		cpu->run_instr = sh32_run_instr;

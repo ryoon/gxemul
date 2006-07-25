@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.67 2006-07-24 19:20:27 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.68 2006-07-25 05:23:31 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -572,8 +572,12 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 		break;
 	case KBC_RESET:
 		pckbc_add_code(d, KBR_ACK, port_nr);
-		d->rx_int_enable = 0;
 		pckbc_add_code(d, KBR_RSTDONE, port_nr);
+		/*
+		 *  Disable interrupts during reset, or Linux 2.6
+		 *  prints warnings about spurious interrupts.
+		 */
+		d->rx_int_enable = 0;
 		break;
 	default:
 		fatal("[ pckbc: (port %i) UNIMPLEMENTED 8048 command"
@@ -583,9 +587,6 @@ static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 }
 
 
-/*
- *  dev_pckbc_access():
- */
 DEVICE_ACCESS(pckbc)
 {
 	uint64_t idata = 0, odata = 0;

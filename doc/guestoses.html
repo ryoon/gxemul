@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.163 2006-07-25 08:19:58 debug Exp $
+$Id: guestoses.html,v 1.164 2006-07-26 23:34:37 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -949,10 +949,7 @@ line can now be used to start NetBSD/netwinder:<pre>
 <p>This will result in a 1024x768 framebuffer. Add <tt>-Y2</tt> to the 
 command line if you want to scale it down to 512x384.
 
-<p>Note 1: There is a long delay when starting up NetBSD/netwinder 
-(several seconds even on a very fast host machine), so be patient.
-
-<p>Note 2: The installation instructions above create a filesystem
+<p>Note: The installation instructions above create a filesystem
 <i>without</i> a disklabel, so there is only one ffs partition and no
 swap. You will need to enter the following things when booting with the
 generic kernel:<pre>
@@ -962,8 +959,19 @@ generic kernel:<pre>
 	init path (default /sbin/init):   <i>(just press enter)</i>
 </pre>
 
-<p>Note 3: There is a minor bug in the keyboard device, so you need to
-press a key (any key) before typing wd0c.
+<p>Known bugs/problems:
+
+<ul>
+	<li>There is a long delay when starting up NetBSD/netwinder
+		(several seconds even on a very fast host machine),
+		so you need to be patient.
+	<li>The text cursor is invisible.
+	<li>There is a minor bug in the keyboard device, so you need to
+		press a key (any key) before typing wd0c.
+	<li>When halting/rebooting NetBSD/netwinder, the emulator
+		prints a message saying something about an internal
+		error. This doesn't matter; ignore the message.
+</ul>
 
 
 

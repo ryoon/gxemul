@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1317 2006-07-26 07:42:02 debug Exp $
+$Id: HISTORY,v 1.1318 2006-07-26 08:02:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2909,4 +2909,4 @@ Changelog for GXemul:
 		Cleanups for the SH emulation mode, and adding the first
 		"compact" (16-bit) instructions: various simple movs, nop,
 		shll, stc, or, ldc.
-20060726	Adding a dummy "pcn" device (AMD PCnet NIC) + PCI glue.
+20060726	Adding dummy "pcn" (AMD PCnet NIC) PCI glue.

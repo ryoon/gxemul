@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.67 2006-07-26 07:42:03 debug Exp $
+ *  $Id: bus_pci.c,v 1.68 2006-07-26 08:02:31 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -631,7 +631,7 @@ PCIINIT(gt64260)
 /*
  *  AMD PCnet Ethernet card.
  *
- *  "Am79c970A PCnet-PCI II rev 0"	Used in evbmips machines (Malta).
+ *  "Am79c970A PCnet-PCI II rev 0" or similar.
  */
 
 #define	PCI_VENDOR_AMD			0x1022	/* Advanced Micro Devices */
@@ -639,6 +639,8 @@ PCIINIT(gt64260)
 
 PCIINIT(pcn)
 {
+	int irq;
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_AMD,
 	    PCI_PRODUCT_AMD_PCNET_PCI));
 
@@ -657,6 +659,12 @@ PCIINIT(pcn)
 	}
 
 	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x01100000 | irq);
+
+	/*
+	 *  TODO: Add the pcn device here. The pcn device will need to work as
+	 *  a wrapper for dev_le + all the DMA magic and whatever is required.
+	 *  It's too much to implement right now.
+	 */
 }
 
 

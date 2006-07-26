@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.66 2006-07-23 23:40:29 debug Exp $
+ *  $Id: bus_pci.c,v 1.67 2006-07-26 07:42:03 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -624,6 +624,39 @@ PCIINIT(gt64260)
 
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
 	    PCI_SUBCLASS_BRIDGE_HOST, 0) + 0x01);	/*  Revision 1?  */
+}
+
+
+
+/*
+ *  AMD PCnet Ethernet card.
+ *
+ *  "Am79c970A PCnet-PCI II rev 0"	Used in evbmips machines (Malta).
+ */
+
+#define	PCI_VENDOR_AMD			0x1022	/* Advanced Micro Devices */
+#define	PCI_PRODUCT_AMD_PCNET_PCI	0x2000	/* PCnet-PCI Ethernet */
+
+PCIINIT(pcn)
+{
+	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_AMD,
+	    PCI_PRODUCT_AMD_PCNET_PCI));
+
+	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_NETWORK,
+	    PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x00);	/*  Revision 0  */
+
+	switch (machine->machine_type) {
+
+	case MACHINE_EVBMIPS:
+		irq = (1 << 8) + 10;	/*  TODO  */
+		break;
+
+	default:fatal("pcn in non-implemented machine type %i\n",
+		    machine->machine_type);
+		exit(1);
+	}
+
+	PCI_SET_DATA(PCI_INTERRUPT_REG, 0x01100000 | irq);
 }
 
 

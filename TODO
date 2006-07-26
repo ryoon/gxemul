@@ -1,29 +1,17 @@
-$Id: TODO,v 1.332 2006-07-25 21:49:14 debug Exp $
+$Id: TODO,v 1.333 2006-07-26 07:42:03 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-Code cleanup:
+
+Implementation:
+	x)  See netwinder_reset() in NetBSD; the current "an internal error
+	    occured" message after reboot/halt is too ugly.
+	x)  Try to make the cursor appear for NetWinder?
 	x)  64-bit ranges in src/cpus/memory_mips_v2p.c
 	x)  Revert the dyntrans page template experiment? Hm.
 	x)  Refactor the cpu type detection/initialization/listing.
 		Macro, which can be used as long as the cpu definitions
 		contain a 'name'?
-
-Documentation:
-	x)  "Install netbsd/pmax first" => only use the install kernel?
-	    Or the CATS install kernel, simplifying disklabling?
-	x)  Rewrite the section about experimental devices, after the
-	    framebuffer acceleration has been implemented, and demos
-	    written. (Symbolic names instead of numbers; example
-	    use cases, etc. Mention demo files that use the various
-	    features?)
-	x)  "a very simple linear framebuffer device (for graphics output)"
-	    under "which machines does gxemul emulate" ==> better
-	    description?
-	x)  Better description on how to set up a cross compiler?
-	    Example for MIPS64.
-
-Long-term implementation:
 	x)  Testmachine includes:
 		+ dev_fb block fill and copy
 		+ dev_fb draw characters (from the built-in font)?
@@ -45,6 +33,19 @@ Long-term implementation:
 	    OS, fix the performance problems, make Linux work with DHCP, etc.
 	    Allow SLIP connections, possibly PPP, in addition to ethernet?
 	x)  Implement more ethernet NICs.
+
+Documentation:
+	x)  "Install netbsd/pmax first" => only use the install kernel?
+	x)  Rewrite the section about experimental devices, after the
+	    framebuffer acceleration has been implemented, and demos
+	    written. (Symbolic names instead of numbers; example
+	    use cases, etc. Mention demo files that use the various
+	    features?)
+	x)  "a very simple linear framebuffer device (for graphics output)"
+	    under "which machines does gxemul emulate" ==> better
+	    description?
+	x)  Better description on how to set up a cross compiler?
+	    Example for MIPS64.
 
 Long-term design:
 	x)  Instruction combination collisions? How to avoid easily...

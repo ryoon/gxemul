@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.87 2006-07-26 23:21:48 debug Exp $
+ *  $Id: cpu.h,v 1.88 2006-07-26 23:27:07 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -368,6 +368,13 @@ struct cpu {
 	 *  truth, n_translated_instrs should be modified. E.g. if 1000
 	 *  instruction calls are done, and n_translated_instrs is 50, then
 	 *  1050 emulated instructions were actually executed.
+	 *
+	 *  Note that it can also be adjusted negatively, that is, the way
+	 *  to "get out" of a dyntrans loop is to set the current instruction
+	 *  call pointer to the "nothing" instruction. This instruction
+	 *  _decreases_ n_translated_instrs. That way, once the dyntrans loop
+	 *  exits, only real instructions will be counted, and not the
+	 *  "nothing" instructions.
 	 */
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
@@ -375,6 +382,9 @@ struct cpu {
 
 	/*
 	 *  CPU-family dependent:
+	 *
+	 *  These contain everything ranging from registers, memory management,
+	 *  status words, etc.
 	 */
 	union {
 		struct alpha_cpu      alpha;

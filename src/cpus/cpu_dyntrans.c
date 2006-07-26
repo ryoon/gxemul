@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.115 2006-07-24 21:14:52 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.116 2006-07-26 23:21:48 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -234,7 +234,6 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 	cached_pc = cpu->pc;
 
 	cpu->n_translated_instrs = 0;
-	cpu->running_translated = 1;
 
 	cpu->cd.DYNTRANS_ARCH.cur_physpage = (void *)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page;
@@ -345,8 +344,7 @@ while (cycles-- > 0)
 	cpu->machine->tick_func[1](cpu, cpu->machine->tick_extra[1]);
 /* printf("B\n"); */
 
-			if (!cpu->running_translated ||
-			    n_instrs + cpu->n_translated_instrs >=
+			if (n_instrs + cpu->n_translated_instrs >=
 			    N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
@@ -363,8 +361,7 @@ while (cycles-- > 0)
 
 			n_instrs += 24;
 
-			if (!cpu->running_translated ||
-			    n_instrs + cpu->n_translated_instrs >=
+			if (n_instrs + cpu->n_translated_instrs >=
 			    N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
@@ -384,8 +381,7 @@ while (cycles-- > 0)
 
 			n_instrs += 60;
 
-			if (!cpu->running_translated ||
-			    n_instrs + cpu->n_translated_instrs >=
+			if (n_instrs + cpu->n_translated_instrs >=
 			    N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
@@ -1783,14 +1779,17 @@ bad:	/*
 	}
 
 	cpu->running = 0;
-	cpu->dead = 1;
+
+	/*  Note: Single-stepping can jump here.  */
 stop_running_translated:
+
 	debugger_n_steps_left_before_interaction = 0;
-	cpu->running_translated = 0;
+
 	ic = cpu->cd.DYNTRANS_ARCH.next_ic = &nothing_call;
 	cpu->cd.DYNTRANS_ARCH.next_ic ++;
 
 	/*  Execute the "nothing" instruction:  */
 	ic->f(cpu, ic);
+
 #endif	/*  DYNTRANS_TO_BE_TRANSLATED_TAIL  */
 

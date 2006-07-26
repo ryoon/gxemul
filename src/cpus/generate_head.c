@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.19 2006-07-25 21:03:25 debug Exp $
+ *  $Id: generate_head.c,v 1.20 2006-07-26 23:21:48 debug Exp $
  */
 
 #include <stdio.h>
@@ -144,10 +144,7 @@ int main(int argc, char *argv[])
 	    "instruction is that\n *  this function does not increase "
 	    "the program counter or the number of\n *  translated "
 	    "instructions.  It is used to \"get out\" of running in "
-	    "translated\n *  mode.\n *\n"
-	    " *  IMPORTANT NOTE: Do a   cpu->running_translated = 0;\n"
-	    " *                  before setting cpu->cd.%s.next_ic = "
-	    "&nothing_call;\n */\n", a);
+	    "translated\n *  mode.\n */\n", a);
 	printf("X(nothing)\n{\n");
 	printf("\tcpu->n_translated_instrs --;\n");
 	printf("\tcpu->cd.%s.next_ic --;\n", a);

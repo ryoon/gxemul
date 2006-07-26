@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr_loadstore.c,v 1.11 2006-05-20 08:03:30 debug Exp $
+ *  $Id: cpu_mips_instr_loadstore.c,v 1.12 2006-07-26 23:21:48 debug Exp $
  *
  *  MIPS load/store instructions; the following args are used:
  *  
@@ -65,9 +65,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct mips_instr_call *ic)
 
 		/*  TODO: Generalize this into a abort_call, or similar:  */
 		cpu->running = 0;
-		cpu->dead = 1;
 		debugger_n_steps_left_before_interaction = 0;
-		cpu->running_translated = 0;
 		cpu->cd.mips.next_ic = &nothing_call;
 		return;
 	}

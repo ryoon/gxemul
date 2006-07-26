@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr_loadstore.c,v 1.2 2006-07-02 11:10:20 debug Exp $
+ *  $Id: cpu_sparc_instr_loadstore.c,v 1.3 2006-07-26 23:21:48 debug Exp $
  *
  *  SPARC load/store instructions; the following args are used:
  *  
@@ -65,9 +65,7 @@ void LS_GENERIC_N(struct cpu *cpu, struct sparc_instr_call *ic)
 
 		/*  TODO: Generalize this into a abort_call, or similar:  */
 		cpu->running = 0;
-		cpu->dead = 1;
 		debugger_n_steps_left_before_interaction = 0;
-		cpu->running_translated = 0;
 		cpu->cd.sparc.next_ic = &nothing_call;
 		return;
 	}

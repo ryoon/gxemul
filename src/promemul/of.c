@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.18 2006-02-16 05:57:10 debug Exp $
+ *  $Id: of.c,v 1.19 2006-07-26 23:21:48 debug Exp $
  *
  *  OpenFirmware emulation.
  *
@@ -1162,7 +1162,6 @@ int of_emul(struct cpu *cpu)
 		fatal("[ of: unimplemented service \"%s\" with %i input "
 		    "args and %i output values ]\n", service, nargs, nret);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 
 	for (i=0; i<nargs; i++)

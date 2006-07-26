@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.65 2006-06-23 12:49:46 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.66 2006-07-26 23:21:48 debug Exp $
  *
  *  ARM instructions.
  *
@@ -856,7 +856,6 @@ X(openfirmware)
 X(reboot)
 {
 	cpu->running = 0;
-	cpu->running_translated = 0;
 	cpu->n_translated_instrs --;
 	cpu->cd.arm.next_ic = &nothing_call;
 }
@@ -880,7 +879,6 @@ X(swi_useremul)
 	useremul_syscall(cpu, ic->arg[0]);
 
 	if (!cpu->running) {
-		cpu->running_translated = 0;
 		cpu->n_translated_instrs --;
 		cpu->cd.arm.next_ic = &nothing_call;
 	} else if (cpu->pc != old_pc) {

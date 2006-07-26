@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.86 2006-07-25 08:19:59 debug Exp $
+ *  $Id: cpu.h,v 1.87 2006-07-26 23:21:48 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -215,34 +215,69 @@ struct machine;
 struct memory;
 
 
+/*
+ *  cpu_family
+ *  ----------
+ *
+ *  This structure consists of various pointers to functions, performing
+ *  architecture-specific functions.
+ *
+ *  Except for the next and arch fields at the top, all fields in the
+ *  cpu_family struct are filled in by ecah CPU family's init function.
+ */
 struct cpu_family {
 	struct cpu_family	*next;
 	int			arch;
 
-	/*  These are filled in by each CPU family's init function:  */
+	/*  Familty name, e.g. "MIPS", "Alpha" etc.  */
 	char			*name;
+
+	/*  Fill in architecture specific parts of a struct cpu.  */
 	int			(*cpu_new)(struct cpu *cpu, struct memory *mem,
 				    struct machine *machine,
 				    int cpu_id, char *cpu_type_name);
+
+	/*  Initialize various translation tables.  */
+	void			(*init_tables)(struct cpu *cpu);
+
+	/*  List available CPU types for this architecture.  */
 	void			(*list_available_types)(void);
+
+	/*  Read or write a CPU register, given a name.  */
 	void			(*register_match)(struct machine *m,
 				    char *name, int writeflag,
 				    uint64_t *valuep, int *match_register);
+
+	/*  Disassemble an instruction.  */
 	int			(*disassemble_instr)(struct cpu *cpu,
 				    unsigned char *instr, int running,
 				    uint64_t dumpaddr);
+
+	/*  Dump CPU registers in readable format.  */
 	void			(*register_dump)(struct cpu *cpu,
 				    int gprs, int coprocs);
+
+	/*  Dump generic CPU info in readable format.  */
 	void			(*dumpinfo)(struct cpu *cpu);
+
+	/*  Dump TLB data for CPU id x.  */
 	void			(*tlbdump)(struct machine *m, int x,
 				    int rawflag);
+
+	/*  Assert an interrupt.  */
 	int			(*interrupt)(struct cpu *cpu, uint64_t irq_nr);
+
+	/*  De-assert an interrupt.  */
 	int			(*interrupt_ack)(struct cpu *cpu,
 				    uint64_t irq_nr);
+
+	/*  Print architecture-specific function call arguments.
+	    (This is called for each function call, if running with -t.)  */
 	void			(*functioncall_trace)(struct cpu *,
 				    uint64_t f, int n_args);
+
+	/*  GDB command handler.  */
 	char			*(*gdb_stub)(struct cpu *, char *cmd);
-	void			(*init_tables)(struct cpu *cpu);
 };
 
 
@@ -260,13 +295,13 @@ struct cpu_family {
 #define	NOT_DELAYED			0
 #define	DELAYED				1
 #define	TO_BE_DELAYED			2
-#define	EXCEPTION_IN_DELAY_SLOT		0x100
+#define	EXCEPTION_IN_DELAY_SLOT		8
 
 #define	N_SAFE_DYNTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_DYNTRANS_LIMIT	((1 << (N_SAFE_DYNTRANS_LIMIT_SHIFT - 1)) - 1)
 
-#define	DYNTRANS_CACHE_SIZE		(32*1048576)
-#define	DYNTRANS_CACHE_MARGIN		350000
+#define	DYNTRANS_CACHE_SIZE		(24*1048576)
+#define	DYNTRANS_CACHE_MARGIN		300000
 
 #define	N_BASE_TABLE_ENTRIES		32768
 #define	PAGENR_TO_TABLE_INDEX(a)	((a) & (N_BASE_TABLE_ENTRIES-1))
@@ -280,14 +315,22 @@ struct cpu {
 	/*  Pointer back to the machine this CPU is in:  */
 	struct machine	*machine;
 
-	int		byte_order;
-	int		running;
-	int		dead;
-	int		bootstrap_cpu_flag;
-	int		cpu_id;
-	int		is_32bit;	/*  0 for 64-bit, 1 for 32-bit  */
+	/*  CPU-specific name, e.g. "R2000", "21164PC", etc.  */
 	char		*name;
 
+	/*  EMUL_LITTLE_ENDIAN or EMUL_BIG_ENDIAN.  */
+	int		byte_order;
+
+	/*  0-based CPU id, in an emulated SMP system.  */
+	int		cpu_id;
+
+	/*  0 for emulated 64-bit CPUs, 1 for 32-bit.  */
+	int		is_32bit;
+
+	/*  1 while running, 0 when paused/stopped.  */
+	int		running;
+
+	/*  A pointer to the main memory connected to this CPU.  */
 	struct memory	*mem;
 
 	int		(*run_instr)(struct cpu *cpu);
@@ -308,14 +351,24 @@ struct cpu {
 	int		(*instruction_has_delayslot)(struct cpu *cpu,
 			    unsigned char *ib);
 
+	/*  The program counter. (For 32-bit modes, not all bits are used.)  */
 	uint64_t	pc;
+
+	/*  See comment further up.  */
 	int		delay_slot;
+
+	/*  The current depth of function call tracing.  */
 	int		trace_tree_depth;
 
 	/*
 	 *  Dynamic translation:
+	 *
+	 *  The number of translated instructions is assumed to be 1 per
+	 *  instruction call. For each case where this differs from the
+	 *  truth, n_translated_instrs should be modified. E.g. if 1000
+	 *  instruction calls are done, and n_translated_instrs is 50, then
+	 *  1050 emulated instructions were actually executed.
 	 */
-	int		running_translated;
 	int		n_translated_instrs;
 	unsigned char	*translation_cache;
 	size_t		translation_cache_cur_ofs;

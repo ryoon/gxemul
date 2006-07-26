@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.5 2006-07-16 13:51:55 debug Exp $
+ *  $Id: yamon.c,v 1.6 2006-07-26 23:21:48 debug Exp $
  *
  *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
@@ -117,7 +117,6 @@ int yamon_emul(struct cpu *cpu)
 		fatal("[ yamon_emul(): unimplemented yamon function 0x%"
 		    PRIx32" ]\n", ofs);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 
 	return 1;

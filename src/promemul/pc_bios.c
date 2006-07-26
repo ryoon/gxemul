@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: pc_bios.c,v 1.6 2006-03-30 19:41:51 debug Exp $
+ *  $Id: pc_bios.c,v 1.7 2006-07-26 23:21:48 debug Exp $
  *
  *  Generic PC BIOS emulation.
  *
@@ -814,7 +814,6 @@ static void pc_bios_int10(struct cpu *cpu)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x10 function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 }
 
@@ -981,7 +980,6 @@ static void pc_bios_int13(struct cpu *cpu)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x13 function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 }
 
@@ -1002,7 +1000,6 @@ static void pc_bios_int14(struct cpu *cpu)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x14 function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 }
 
@@ -1160,7 +1157,6 @@ static void pc_bios_int15(struct cpu *cpu)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x15 function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 }
 
@@ -1230,7 +1226,6 @@ static int pc_bios_int16(struct cpu *cpu, int *enable_ints_after_returnp)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x16 function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 
 	return 1;
@@ -1255,7 +1250,6 @@ static void pc_bios_int17(struct cpu *cpu)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x17 function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 }
 
@@ -1317,7 +1311,6 @@ static void pc_bios_int1a(struct cpu *cpu)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x1a function"
 		    " 0x%02x.\n", ah);
 		cpu->running = 0;
-		cpu->dead = 1;
 	}
 }
 
@@ -1861,7 +1854,6 @@ int pc_bios_emul(struct cpu *cpu)
 		fatal("FATAL: Unimplemented PC BIOS interrupt 0x%02x.\n",
 		    int_nr);
 		cpu->running = 0;
-		cpu->dead = 1;
 		return 0;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.259 2006-07-25 19:35:28 debug Exp $
+ *  $Id: emul.c,v 1.260 2006-07-26 23:21:47 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1336,8 +1336,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		useremul_setup(cpu, n_load, load_names);
 
 	/*  Startup the bootstrap CPU:  */
-	cpu->bootstrap_cpu_flag = 1;
-	cpu->running            = 1;
+	cpu->running = 1;
 
 	/*  ... or pause all CPUs, if start_paused is set:  */
 	if (m->start_paused) {

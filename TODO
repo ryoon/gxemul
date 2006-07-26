@@ -1,4 +1,4 @@
-$Id: TODO,v 1.333 2006-07-26 07:42:03 debug Exp $
+$Id: TODO,v 1.334 2006-07-26 23:21:47 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -31,7 +31,8 @@ Implementation:
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 	x)  Rewrite the networking stack; make OpenBSD work better as a guest
 	    OS, fix the performance problems, make Linux work with DHCP, etc.
-	    Allow SLIP connections, possibly PPP, in addition to ethernet?
+	    Support VDE (vde.sf.net)? Allow SLIP connections, possibly PPP,
+	    in addition to ethernet?
 	x)  Implement more ethernet NICs.
 
 Documentation:
@@ -49,10 +50,13 @@ Documentation:
 
 Long-term design:
 	x)  Instruction combination collisions? How to avoid easily...
+	x)  Think about how to do both SHmedia and SHcompact in a reasonable
+	    way!
 	o)  Actually use the settings object, better debugger stuff, etc!
 	o)  Debugger command for enabling/disabling instruction statistics
 	    during runtime.   machine.statistics = on|off
 	x)  MAINBUS REDESIGN!
+	x)  PCI redesign... I need to read up on how PCI actually works :)
 	x)  Clock framework! Go through all clock devices, make sure they
 	    return correct data, and run at correct speeds!
 	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,

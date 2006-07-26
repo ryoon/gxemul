@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.12 2006-06-30 20:22:53 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.13 2006-07-26 23:21:47 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -65,7 +65,6 @@ X(call_pal)
 	alpha_palcode(cpu, ic->arg[0]);
 
 	if (!cpu->running) {
-		cpu->running_translated = 0;
 		cpu->n_translated_instrs --;
 		cpu->cd.alpha.next_ic = &nothing_call;
 	} else if (cpu->pc != old_pc) {

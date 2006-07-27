@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.117 2006-07-27 00:11:37 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.118 2006-07-27 00:32:05 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -339,7 +339,7 @@ while (cycles-- > 0)
 		}
 	} else {
 		/*  Execute multiple instructions:  */
-		n_instrs = 0;
+		int n = 0;
 		for (;;) {
 			struct DYNTRANS_IC *ic;
 
@@ -351,12 +351,13 @@ while (cycles-- > 0)
 
 			I; I; I; I; I;   I; I; I; I; I;
 
-			n_instrs += 60;
+			n += 60;
 
-			if (n_instrs + cpu->n_translated_instrs >=
+			if (n + cpu->n_translated_instrs >=
 			    N_SAFE_DYNTRANS_LIMIT)
 				break;
 		}
+		n_instrs = n;
 	}
 
 	n_instrs += cpu->n_translated_instrs;

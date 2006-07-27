@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.99 2006-07-27 00:11:37 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.100 2006-07-27 02:17:37 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2410,6 +2410,7 @@ X(sw_loop)
 }
 
 
+#ifdef MODE32
 /*
  *  multi_sw_3:
  *
@@ -2434,7 +2435,7 @@ X(multi_sw_3_le)
 	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
 	    (addr2 & 3) != 0 || index0 != index1 || index0 != index2) {
 		/*  Normal safe sw:  */
-		ic[1].f(cpu, ic);
+		mips32_loadstore[8 + 2 * 2](cpu, ic);
 		return;
         }
 
@@ -2477,7 +2478,7 @@ X(multi_sw_3_be)
 	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
 	    (addr2 & 3) != 0 || index0 != index1 || index0 != index2) {
 		/*  Normal safe sw:  */
-		ic[1].f(cpu, ic);
+		mips32_loadstore[16 + 8 + 2 * 2](cpu, ic);
 		return;
         }
 
@@ -2503,8 +2504,10 @@ X(multi_sw_3_be)
 	cpu->n_translated_instrs += 2;
 	cpu->cd.mips.next_ic += 2;
 }
+#endif
 
 
+#ifdef MODE32
 /*
  *  multi_lw_3:
  *
@@ -2529,7 +2532,7 @@ X(multi_lw_3_le)
 	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
 	    (addr2 & 3) != 0 || index0 != index1 || index0 != index2) {
 		/*  Normal safe lw:  */
-		ic[1].f(cpu, ic);
+		mips32_loadstore[2 * 2 + 1](cpu, ic);
 		return;
         }
 
@@ -2572,7 +2575,7 @@ X(multi_lw_3_be)
 	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
 	    (addr2 & 3) != 0 || index0 != index1 || index0 != index2) {
 		/*  Normal safe lw:  */
-		ic[1].f(cpu, ic);
+		mips32_loadstore[16 + 2 * 2 + 1](cpu, ic);
 		return;
         }
 
@@ -2598,6 +2601,7 @@ X(multi_lw_3_be)
 	cpu->n_translated_instrs += 2;
 	cpu->cd.mips.next_ic += 2;
 }
+#endif
 
 
 /*
@@ -2706,14 +2710,43 @@ X(netbsd_strlen)
 
 
 /*
- *  lui_32bit:
+ *  xor_andi_sll:
  *
- *  Combination of lui and addiu.
- *  Note: All 32 bits of arg[2] of the lui instr_call are used.
+ *  Combination of xor, andi and sll.
  */
-X(lui_32bit)
+X(xor_andi_sll)
 {
-	reg(ic[0].arg[0]) = (int32_t) ic[0].arg[2];
+	/*  Fallback:  */
+	if (cpu->delay_slot) {
+		instr(xor)(cpu, ic);
+		return;
+	}
+
+	reg(ic[0].arg[2]) = reg(ic[0].arg[0]) ^ reg(ic[0].arg[1]);
+	reg(ic[1].arg[1]) = reg(ic[1].arg[0]) & (uint32_t)ic[1].arg[2];
+	reg(ic[2].arg[2]) = (int32_t)(reg(ic[2].arg[0])<<(int32_t)ic[2].arg[1]);
+
+	cpu->n_translated_instrs += 2;
+	cpu->cd.mips.next_ic += 2;
+}
+
+
+/*
+ *  andi_sll:
+ *
+ *  Combination of andi and sll.
+ */
+X(andi_sll)
+{
+	/*  Fallback:  */
+	if (cpu->delay_slot) {
+		instr(andi)(cpu, ic);
+		return;
+	}
+
+	reg(ic[0].arg[1]) = reg(ic[0].arg[0]) & (uint32_t)ic[0].arg[2];
+	reg(ic[1].arg[2]) = (int32_t)(reg(ic[1].arg[0])<<(int32_t)ic[1].arg[1]);
+
 	cpu->n_translated_instrs ++;
 	cpu->cd.mips.next_ic ++;
 }
@@ -2857,6 +2890,8 @@ void COMBINE(sw_loop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 }
 
 
+/*  Only for 32-bit virtual address translation so far.  */
+#ifdef MODE32
 /*
  *  Combine:  Multiple SW in a row using the same base register
  *
@@ -2871,18 +2906,14 @@ void COMBINE(multi_sw)(struct cpu *cpu, struct mips_instr_call *ic,
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
-	/*  Only for 32-bit virtual address translation so far.  */
-	if (!cpu->is_32bit)
-		return;
-
 	if (n_back < 4)
 		return;
-
+#if 0
 	/*  Avoid "overlapping" instruction combinations:  */
 	if (ic[-4].f == instr(multi_sw_3_be)||ic[-3].f == instr(multi_sw_3_be)||
 	    ic[-4].f == instr(multi_sw_3_le)||ic[-3].f == instr(multi_sw_3_le))
 		return;
-
+#endif
 	if (ic[-2].f == ic[0].f && ic[-1].f == ic[0].f &&
 	    ic[-2].arg[1] == ic[0].arg[1] &&
 	    ic[-1].arg[1] == ic[0].arg[1]) {
@@ -2892,8 +2923,11 @@ void COMBINE(multi_sw)(struct cpu *cpu, struct mips_instr_call *ic,
 			ic[-2].f = instr(multi_sw_3_be);
 	}
 }
+#endif
 
 
+/*  Only for 32-bit virtual address translation so far.  */
+#ifdef MODE32
 /*
  *  Combine:  Multiple LW in a row using the same base register
  *
@@ -2908,18 +2942,14 @@ void COMBINE(multi_lw)(struct cpu *cpu, struct mips_instr_call *ic,
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
-	/*  Only for 32-bit virtual address translation so far.  */
-	if (!cpu->is_32bit)
-		return;
-
 	if (n_back < 4)
 		return;
-
+#if 0
 	/*  Avoid "overlapping" instruction combinations:  */
 	if (ic[-4].f == instr(multi_lw_3_be)||ic[-3].f == instr(multi_lw_3_be)||
 	    ic[-4].f == instr(multi_lw_3_le)||ic[-3].f == instr(multi_lw_3_le))
 		return;
-
+#endif
 	/*  Note: Loads to the base register are not allowed in slot
 	    -2 and -1.  */
 	if (ic[-2].f == ic[0].f && ic[-1].f == ic[0].f &&
@@ -2933,6 +2963,7 @@ void COMBINE(multi_lw)(struct cpu *cpu, struct mips_instr_call *ic,
 			ic[-2].f = instr(multi_lw_3_be);
 	}
 }
+#endif
 
 
 /*
@@ -3020,6 +3051,32 @@ void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 /*
  *  Combine:
  *
+ *	xor + andi + sll
+ *	andi + sll
+ */
+void COMBINE(sll)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
+{
+	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
+	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
+
+	if (n_back < 2)
+		return;
+
+	if (ic[-2].f == instr(xor) && ic[-1].f == instr(andi)) {
+		ic[-2].f = instr(xor_andi_sll);
+		return;
+	}
+
+	if (ic[-1].f == instr(andi)) {
+		ic[-1].f = instr(andi_sll);
+		return;
+	}
+}
+
+
+/*
+ *  Combine:
+ *
  *	addu + addu + addu
  */
 void COMBINE(addu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
@@ -3046,7 +3103,6 @@ void COMBINE(addu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
  *  Combine:
  *
  *	[Conditional] branch, followed by addiu.
- *	lui + addiu.
  */
 void COMBINE(addiu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 {
@@ -3055,13 +3111,6 @@ void COMBINE(addiu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 
 	if (n_back < 1)
 		return;
-
-	if (ic[-1].f == instr(set) && ic[-1].arg[0] == ic[0].arg[0] &&
-	    ic[0].arg[0] == ic[0].arg[1]) {
-		ic[-1].f = instr(lui_32bit);
-		ic[-1].arg[2] = (int32_t) (ic[-1].arg[1] + ic[0].arg[2]);
-		return;
-	}
 
 	if (ic[-1].f == instr(b_samepage)) {
 		ic[-1].f = instr(b_samepage_addiu);
@@ -3257,6 +3306,8 @@ X(to_be_translated)
 			ic->arg[2] = (size_t)&cpu->cd.mips.gpr[rd];
 			if (rd == MIPS_GPR_ZERO)
 				ic->f = instr(nop);
+			if (ic->f == instr(sll))
+				cpu->cd.mips.combination_check = COMBINE(sll);
 			break;
 
 		case SPECIAL_ADD:
@@ -4003,11 +4054,12 @@ X(to_be_translated)
 
 		/*  Check for multiple loads or stores in a row using the same
 		    base register:  */
+#ifdef MODE32
 		if (main_opcode == HI6_LW)
 			cpu->cd.mips.combination_check = COMBINE(multi_lw);
 		if (main_opcode == HI6_SW)
 			cpu->cd.mips.combination_check = COMBINE(multi_sw);
-
+#endif
 		break;
 
 	case HI6_LL:

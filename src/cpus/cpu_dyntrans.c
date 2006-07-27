@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.116 2006-07-26 23:21:48 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.117 2006-07-27 00:11:37 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -290,34 +290,6 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 				}
 #endif
 			}
-		}
-
-		/*  When single-stepping, multiple instruction calls cannot
-		    be combined into one. This clears all translations:  */
-		if (cpu->cd.DYNTRANS_ARCH.cur_physpage->flags & COMBINATIONS) {
-			int i;
-			for (i=0; i<DYNTRANS_IC_ENTRIES_PER_PAGE; i++) {
-				cpu->cd.DYNTRANS_ARCH.cur_physpage->ics[i].f =
-#ifdef DYNTRANS_DUALMODE_32
-				    cpu->is_32bit?
-				        instr32(to_be_translated) :
-#endif
-				        instr(to_be_translated);
-#ifdef DYNTRANS_VARIABLE_INSTRUCTION_LENGTH
-				cpu->cd.DYNTRANS_ARCH.cur_physpage->ics[i].
-				    arg[0] = 0;
-#endif
-			}
-
-			fatal("[ Note: The translation of physical page 0x%"
-			    PRIx64" contained combinations of instructions; "
-			    "these are now flushed because we are single-"
-			    "stepping. ]\n", (long long)cpu->cd.DYNTRANS_ARCH.
-			    cur_physpage->physaddr);
-
-			cpu->cd.DYNTRANS_ARCH.cur_physpage->flags &=
-			    ~COMBINATIONS;
-			cpu->cd.DYNTRANS_ARCH.cur_physpage->translations = 0;
 		}
 
 		if (cpu->machine->statistics_enabled)
@@ -899,7 +871,6 @@ void DYNTRANS_INIT_TABLES(struct cpu *cpu)
 	}
 
 	ppp->next_ofs = 0;
-	ppp->flags = 0;
 	ppp->translations = 0;
 	/*  ppp->physaddr is filled in by the page allocator  */
 
@@ -1309,7 +1280,6 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 				x >>= 1;
 			}
 
-			ppp->flags &= ~COMBINATIONS;
 			ppp->translations = 0;
 		}
 #endif
@@ -1695,11 +1665,10 @@ cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid);
 #ifdef DYNTRANS_DELAYSLOT
 	    && !in_crosspage_delayslot
 #endif
-	    ) {
-		if (cpu->cd.DYNTRANS_ARCH.combination_check != NULL &&
-		    cpu->machine->allow_instruction_combinations)
-			cpu->cd.DYNTRANS_ARCH.combination_check(cpu, ic,
-			    addr & (DYNTRANS_PAGESIZE - 1));
+	    && cpu->cd.DYNTRANS_ARCH.combination_check != NULL
+	    && cpu->machine->allow_instruction_combinations) {
+		cpu->cd.DYNTRANS_ARCH.combination_check(cpu, ic,
+		    addr & (DYNTRANS_PAGESIZE - 1));
 	}
 
 	cpu->cd.DYNTRANS_ARCH.combination_check = NULL;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.98 2006-07-24 14:46:04 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.99 2006-07-27 00:11:37 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2853,7 +2853,6 @@ void COMBINE(sw_loop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 	    ic[0].arg[0] != ic[0].arg[1] &&
 	    ic[0].arg[1] == ic[-2].arg[0] && (int32_t)ic[0].arg[2] == -4) {
 		ic[-2].f = instr(sw_loop);
-		combined;
 	}
 }
 
@@ -2891,7 +2890,6 @@ void COMBINE(multi_sw)(struct cpu *cpu, struct mips_instr_call *ic,
 			ic[-2].f = instr(multi_sw_3_le);
 		else
 			ic[-2].f = instr(multi_sw_3_be);
-		combined;
 	}
 }
 
@@ -2933,7 +2931,6 @@ void COMBINE(multi_lw)(struct cpu *cpu, struct mips_instr_call *ic,
 			ic[-2].f = instr(multi_lw_3_le);
 		else
 			ic[-2].f = instr(multi_lw_3_be);
-		combined;
 	}
 }
 
@@ -2971,7 +2968,6 @@ void COMBINE(netbsd_r3k_cache_inv)(struct cpu *cpu,
 	    ic[-3].arg[1] == ic[-5].arg[0] &&
 	    ic[-2].f == instr(nop) && ic[-1].f == instr(nop)) {
 		ic[-8].f = instr(netbsd_r3k_picache_do_inv);
-		combined;
 	}
 }
 
@@ -3000,7 +2996,6 @@ void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 	    ic[-1].arg[1] == (size_t) &cpu->cd.mips.gpr[MIPS_GPR_ZERO] &&
 	    ic[-1].f == instr(bne_samepage)) {
 		ic[-3].f = instr(netbsd_strlen);
-		combined;
 		return;
 	}
 #endif
@@ -3010,13 +3005,11 @@ void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 
 	if (ic[-1].f == instr(bne_samepage)) {
 		ic[-1].f = instr(bne_samepage_nop);
-		combined;
 		return;
 	}
 
 	if (ic[-1].f == instr(beq_samepage)) {
 		ic[-1].f = instr(beq_samepage_nop);
-		combined;
 		return;
 	}
 
@@ -3044,7 +3037,6 @@ void COMBINE(addu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 
 	if (ic[-2].f == instr(addu) && ic[-1].f == instr(addu)) {
 		ic[-2].f = instr(multi_addu_3);
-		combined;
 		return;
 	}
 }
@@ -3068,31 +3060,26 @@ void COMBINE(addiu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 	    ic[0].arg[0] == ic[0].arg[1]) {
 		ic[-1].f = instr(lui_32bit);
 		ic[-1].arg[2] = (int32_t) (ic[-1].arg[1] + ic[0].arg[2]);
-		combined;
 		return;
 	}
 
 	if (ic[-1].f == instr(b_samepage)) {
 		ic[-1].f = instr(b_samepage_addiu);
-		combined;
 		return;
 	}
 
 	if (ic[-1].f == instr(beq_samepage)) {
 		ic[-1].f = instr(beq_samepage_addiu);
-		combined;
 		return;
 	}
 
 	if (ic[-1].f == instr(bne_samepage)) {
 		ic[-1].f = instr(bne_samepage_addiu);
-		combined;
 		return;
 	}
 
 	if (ic[-1].f == instr(jr_ra)) {
 		ic[-1].f = instr(jr_ra_addiu);
-		combined;
 		return;
 	}
 
@@ -3114,7 +3101,6 @@ void COMBINE(b_daddiu)(struct cpu *cpu, struct mips_instr_call *ic,
 
 	if (ic[-1].f == instr(b_samepage)) {
 		ic[-1].f = instr(b_samepage_daddiu);
-		combined;
 	}
 
 	/*  TODO: other branches that are followed by daddiu should be here  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.21 2006-07-26 23:34:37 debug Exp $
+ *  $Id: generate_head.c,v 1.22 2006-07-27 00:11:37 debug Exp $
  */
 
 #include <stdio.h>
@@ -130,11 +130,6 @@ int main(int argc, char *argv[])
 	printf("#ifdef DYNTRANS_DUALMODE_32\n"
 	    "#define instr32(n) %s32_instr_ ## n\n\n", a);
 	printf("#endif\n\n");
-
-	printf("/*  This is for marking a physical page as containing"
-	    "\n    combined instructions:  */\n");
-	printf("#define combined (cpu->cd.%s.cur_physpage->flags "
-	    "|= COMBINATIONS)\n", a);
 
 	printf("\n#define X(n) void %s_instr_ ## n(struct cpu *cpu, \\\n"
 	    " struct %s_instr_call *ic)\n", a, a);

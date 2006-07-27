@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.88 2006-07-26 23:27:07 debug Exp $
+ *  $Id: cpu.h,v 1.89 2006-07-27 00:11:38 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -59,9 +59,6 @@
  *  (several pages can be in the same chain, but only one matches the
  *  specific physaddr.)
  *
- *  flags contains special flags. Currently only COMBINATIONS, which indicates
- *  that the page has instruction combinations.
- *
  *  translations is a tiny bitmap indicating which parts of the page have
  *  actual translations. Bit 0 corresponds to the lowest 1/32th of the page,
  *  bit 1 to the second-lowest 1/32th, and so on.
@@ -77,7 +74,6 @@
 		struct arch ## _instr_call ics[ARCH ## _IC_ENTRIES_PER_PAGE+2];\
 		uint32_t	next_ofs;	/*  (0 for end of chain)  */ \
 		uint32_t	translations;				\
-		int		flags;					\
 		addrtype	physaddr;				\
 	};								\
 									\
@@ -287,9 +283,6 @@ struct cpu_family {
  *  The translation cache begins with N_BASE_TABLE_ENTRIES uint32_t offsets
  *  into the cache, for possible translation cache structs for physical pages.
  */
-
-/*  Physpage flags:  */
-#define	COMBINATIONS			1
 
 /*  Meaning of delay_slot:  */
 #define	NOT_DELAYED			0

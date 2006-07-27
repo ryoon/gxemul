@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.66 2006-07-26 23:21:48 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.67 2006-07-27 00:11:37 debug Exp $
  *
  *  ARM instructions.
  *
@@ -2047,7 +2047,6 @@ void COMBINE(netbsd_memset)(struct cpu *cpu,
 		    ic[ 0].f == instr(b_samepage__gt) &&
 		    ic[ 0].arg[0] == (size_t)&ic[-17]) {
 			ic[-17].f = instr(netbsd_memset);
-			combined;
 		}
 	}
 #endif
@@ -2077,7 +2076,6 @@ void COMBINE(netbsd_memcpy)(struct cpu *cpu, struct arm_instr_call *ic,
 		    ic[ 0].f == instr(b_samepage__ge) &&
 		    ic[ 0].arg[0] == (size_t)&ic[-5]) {
 			ic[-5].f = instr(netbsd_memcpy);
-			combined;
 		}
 	}
 #endif
@@ -2102,7 +2100,6 @@ void COMBINE(netbsd_cacheclean)(struct cpu *cpu,
 		    ic[-1].f == instr(b_samepage__ne) &&
 		    ic[-1].arg[0] == (size_t)&ic[-3]) {
 			ic[-3].f = instr(netbsd_cacheclean);
-			combined;
 		}
 	}
 }
@@ -2127,7 +2124,6 @@ void COMBINE(netbsd_cacheclean2)(struct cpu *cpu,
 		    ic[-1].f == instr(subs) &&
 		    ic[-1].arg[0]==ic[-1].arg[2] && ic[-1].arg[1] == 0x20) {
 			ic[-4].f = instr(netbsd_cacheclean2);
-			combined;
 		}
 	}
 }
@@ -2154,7 +2150,6 @@ void COMBINE(netbsd_scanc)(struct cpu *cpu,
 	    ic[-1].arg[1] == (size_t)arm_r_r3_t0_c0 &&
 	    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[3])) {
 		ic[-2].f = instr(netbsd_scanc);
-		combined;
 	}
 }
 
@@ -2178,7 +2173,6 @@ void COMBINE(strlen)(struct cpu *cpu,
 	    ic[-1].arg[0] == (size_t)(&cpu->cd.arm.r[3]) &&
 	    ic[-1].arg[1] == 0) {
 		ic[-2].f = instr(strlen);
-		combined;
 	}
 }
 
@@ -2204,7 +2198,6 @@ void COMBINE(xchg)(struct cpu *cpu,
 	    ic[-1].arg[0] == b && ic[-1].arg[1] == a && ic[-1].arg[2] == a &&
 	    ic[ 0].arg[0] == a && ic[ 0].arg[1] == b && ic[ 0].arg[2] == b) {
 		ic[-2].f = instr(xchg);
-		combined;
 	}
 }
 
@@ -2235,7 +2228,6 @@ void COMBINE(netbsd_copyin)(struct cpu *cpu,
 	    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[7]) &&
 	    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[8])) {
 		ic[-5].f = instr(netbsd_copyin);
-		combined;
 	}
 #endif
 }
@@ -2267,7 +2259,6 @@ void COMBINE(netbsd_copyout)(struct cpu *cpu,
 	    ic[-2].arg[2] == (size_t)(&cpu->cd.arm.r[11]) &&
 	    ic[-1].arg[2] == (size_t)(&cpu->cd.arm.r[6])) {
 		ic[-5].f = instr(netbsd_copyout);
-		combined;
 	}
 #endif
 }
@@ -2291,7 +2282,6 @@ void COMBINE(cmps_b)(struct cpu *cpu,
 				ic[-1].f = instr(cmps_neg_beq);
 			else
 				ic[-1].f = instr(cmps_pos_beq);
-			combined;
 		}
 		return;
 	}
@@ -2301,16 +2291,13 @@ void COMBINE(cmps_b)(struct cpu *cpu,
 				ic[-1].f = instr(cmps0_beq_samepage);
 			else
 				ic[-1].f = instr(cmps_beq_samepage);
-			combined;
 		}
 		if (ic[-1].f == instr(tsts) &&
 		    !(ic[-1].arg[1] & 0x80000000)) {
 			ic[-1].f = instr(tsts_lo_beq_samepage);
-			combined;
 		}
 		if (ic[-1].f == instr(teqs)) {
 			ic[-1].f = instr(teqs_beq_samepage);
-			combined;
 		}
 		return;
 	}
@@ -2320,52 +2307,43 @@ void COMBINE(cmps_b)(struct cpu *cpu,
 				ic[-1].f = instr(cmps0_bne_samepage);
 			else
 				ic[-1].f = instr(cmps_bne_samepage);
-			combined;
 		}
 		if (ic[-1].f == instr(tsts) &&
 		    !(ic[-1].arg[1] & 0x80000000)) {
 			ic[-1].f = instr(tsts_lo_bne_samepage);
-			combined;
 		}
 		if (ic[-1].f == instr(teqs)) {
 			ic[-1].f = instr(teqs_bne_samepage);
-			combined;
 		}
 		return;
 	}
 	if (ic[0].f == instr(b_samepage__cc)) {
 		if (ic[-1].f == instr(cmps)) {
 			ic[-1].f = instr(cmps_bcc_samepage);
-			combined;
 		}
 		if (ic[-1].f == instr(cmps_regshort)) {
 			ic[-1].f = instr(cmps_reg_bcc_samepage);
-			combined;
 		}
 		return;
 	}
 	if (ic[0].f == instr(b_samepage__hi)) {
 		if (ic[-1].f == instr(cmps)) {
 			ic[-1].f = instr(cmps_bhi_samepage);
-			combined;
 		}
 		if (ic[-1].f == instr(cmps_regshort)) {
 			ic[-1].f = instr(cmps_reg_bhi_samepage);
-			combined;
 		}
 		return;
 	}
 	if (ic[0].f == instr(b_samepage__gt)) {
 		if (ic[-1].f == instr(cmps)) {
 			ic[-1].f = instr(cmps_bgt_samepage);
-			combined;
 		}
 		return;
 	}
 	if (ic[0].f == instr(b_samepage__le)) {
 		if (ic[-1].f == instr(cmps)) {
 			ic[-1].f = instr(cmps_ble_samepage);
-			combined;
 		}
 		return;
 	}

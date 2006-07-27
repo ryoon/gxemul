@@ -1,4 +1,4 @@
-$Id: TODO,v 1.334 2006-07-26 23:21:47 debug Exp $
+$Id: TODO,v 1.335 2006-07-27 02:18:07 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -138,9 +138,7 @@ Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
-	x)  Call/return hints?
 	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
-	x)  H8?
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
@@ -162,12 +160,12 @@ Alpha:
 	o)  Get {NetBSD,OpenBSD,Linux}/alpha booting. :)
 
 SPARC:
-	o)  Add all registers (floating point, control regs etc)
+	o)  Load/stores to alternate address spaces!
 	o)  Save/restore register windows etc!
-	o)  Load/stores!
+	o)  Finish the subcc and addcc flag computation code.
+	o)  Add more registers (floating point, control regs etc)
 	o)  Disassemly of some more instructions?
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
-	o)  Finish the cmp (subcc) flag computation code.
 	o)  Finish the GDB register stuff.
 	o)  SPARC v8, v7 etc?
 

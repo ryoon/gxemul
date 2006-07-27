@@ -1,4 +1,4 @@
-$Id: README_DYNTRANS,v 1.10 2006-07-23 19:36:14 debug Exp $
+$Id: README_DYNTRANS,v 1.11 2006-07-27 02:18:07 debug Exp $
 
 Dyntrans TODO:
 
@@ -16,7 +16,7 @@ Dyntrans TODO:
 	i960		32-bit + variable		32		?
 	IA64		128-bit				64		no
 	M68K		16-bit + variable		32		no
-	M88K		?				32 (?)		?
+	M88K		32-bit (+var?)			32		?
 	MIPS		32-bit, 16-bit (MIPS16)		64/32		yes
 	OpenRISC	?				?		?
 	PC532		?				32 (?)		?
@@ -29,8 +29,6 @@ Dyntrans TODO:
 
 	(*) Delay slot in SHcompact?
 
-
-  x)  call/return address cache?
 
   x)  instr_call sequence analysis support? (For handtuning combinations.)
 
@@ -49,11 +47,13 @@ Dyntrans TODO:
   x)  SMP: detect when an instruction such as ll/sc or cas is used,
 	    and "synchronize" approximately the number of executed instructions
 	    (or cycles) across all CPUs.
+      Problem: devices such as dev_mp don't work well with such a synch.
+		scheme.
 
   x)  support for variable-length instructions (x86, m68k, i960, ...)
-		Solution:  don't increase the next_ic between every
-			instruction, but let each instruction's handler do
-			that for itself.
+		Current solution: ic->arg[0] contains the length of the
+				instruction (in bytes), and next_ic is
+				automatically updated.
 		Problem: what about instructions crossing a (virtual)
 			page boundary? They cannot be translated once
 			and for all :( and must be interpreted slowly!
@@ -70,7 +70,5 @@ Dyntrans TODO:
 		compiled on the current host, then compile such snippets
 		for alpha_instr_zapnot etc.
 
-  x)  x86: convert to dyntrans. LOTS of stuff to consider.
-
-  x)  88k? vax? pc532? 6502? 6800? etc
+  x)  pc532? 6502? 6800? etc
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1318 2006-07-26 08:02:30 debug Exp $
+$Id: HISTORY,v 1.1319 2006-07-27 02:18:06 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2910,3 +2910,8 @@ Changelog for GXemul:
 		"compact" (16-bit) instructions: various simple movs, nop,
 		shll, stc, or, ldc.
 20060726	Adding dummy "pcn" (AMD PCnet NIC) PCI glue.
+20060727	Various cleanups; removing stuff from cpu.h, such as
+		running_translated (not really meaningful anymore), and
+		page flags (breaking into the debugger clears all translations
+		anyway).
+		Minor MIPS instruction combination updates.

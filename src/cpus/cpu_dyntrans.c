@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.118 2006-07-27 00:32:05 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.119 2006-08-11 17:43:30 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -620,8 +620,14 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 	if (!ok) {
 		uint64_t paddr;
 		if (cpu->translate_v2p != NULL) {
+			uint64_t vaddr =
+#if defined(DYNTRANS_MIPS)
+			/*  32-bit MIPS is _sign_ extend, not zero.  */
+			    (int32_t)
+#endif
+			    cached_pc;
 			ok = cpu->translate_v2p(
-			    cpu, cached_pc, &paddr, FLAG_INSTR);
+			    cpu, vaddr, &paddr, FLAG_INSTR);
 		} else {
 			paddr = cached_pc;
 			ok = 1;

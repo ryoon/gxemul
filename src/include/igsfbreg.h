@@ -1,4 +1,4 @@
-/*  GXemul: $Id: igsfbreg.h,v 1.1 2006-07-23 23:40:29 debug Exp $  */
+/*  GXemul: $Id: igsfbreg.h,v 1.2 2006-08-11 17:43:30 debug Exp $  */
 /*	$NetBSD: igsfbreg.h,v 1.7 2005/12/11 12:21:27 christos Exp $ */
 
 /*
@@ -182,7 +182,7 @@
 
 /*
  * Linear Address registers
- *   PCI: don't write directly, just use nomral PCI configuration
+ *   PCI: don't write directly, just use normal PCI configuration
  *   ISA: only bits [23..20] are programmable, the rest MBZ
  */
 #define   IGS_EXT_LINA_LO		0x34	/* [3..0] -> [23..20] */

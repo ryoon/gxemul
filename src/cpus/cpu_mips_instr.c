@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.100 2006-07-27 02:17:37 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.101 2006-08-11 17:43:30 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1952,6 +1952,29 @@ X(deret)
 
 
 /*
+ *  wait: Wait for external interrupt.
+ */
+X(wait)
+{
+	/*
+	 *  TODO:
+	 *
+	 *  Think about how to actually implement this, in an SMP and/or
+	 *  timing accurate environment.
+	 */
+
+	if (cpu->machine->ncpus == 1) {
+		static int x = 0;
+		if ((++x) == 50) {
+			usleep(1);
+			x = 0;
+		}
+		cpu->n_translated_instrs += 5000;
+	}
+}
+
+
+/*
  *  rdhwr: Read hardware register into gpr (MIPS32/64 rev 2).
  *
  *  arg[0] = ptr to rt (destination register)
@@ -2381,7 +2404,7 @@ X(sw_loop)
 	if (cpu->delay_slot || page == NULL || (rX & 3) != 0 || rZ != 0) {
 		instr(addiu)(cpu, ic);
 		return;
-        }
+	}
 
 	if (rYp == (uint64_t *) ic->arg[0])
 		rYp = (uint64_t *) ic[1].arg[1];
@@ -2412,12 +2435,78 @@ X(sw_loop)
 
 #ifdef MODE32
 /*
- *  multi_sw_3:
+ *  multi_sw_2, _3, _4:
  *
  *	sw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
- *	sw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
- *	sw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
  */
+X(multi_sw_2_le)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_store[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    index0 != index1) {
+		/*  Normal safe sw:  */
+		mips32_loadstore[8 + 2 * 2](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+
+	r1 = reg(ic[0].arg[0]);
+	r2 = reg(ic[1].arg[0]);
+
+	r1 = LE32_TO_HOST(r1);
+	r2 = LE32_TO_HOST(r2);
+
+	page[addr0] = r1;
+	page[addr1] = r2;
+
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic ++;
+}
+X(multi_sw_2_be)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_store[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    index0 != index1) {
+		/*  Normal safe sw:  */
+		mips32_loadstore[16 + 8 + 2 * 2](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+
+	r1 = reg(ic[0].arg[0]);
+	r2 = reg(ic[1].arg[0]);
+
+	r1 = BE32_TO_HOST(r1);
+	r2 = BE32_TO_HOST(r2);
+
+	page[addr0] = r1;
+	page[addr1] = r2;
+
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic ++;
+}
 X(multi_sw_3_le)
 {
 	uint32_t *page;
@@ -2504,17 +2593,175 @@ X(multi_sw_3_be)
 	cpu->n_translated_instrs += 2;
 	cpu->cd.mips.next_ic += 2;
 }
+X(multi_sw_4_le)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2, r3, r4;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	MODE_uint_t addr2 = rX + (int32_t)ic[2].arg[2];
+	MODE_uint_t addr3 = rX + (int32_t)ic[3].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12,
+	    index2 = addr2 >> 12, index3 = addr3 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_store[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    (addr2 & 3) != 0 || (addr3 & 3) != 0 || index0 != index1 ||
+	    index0 != index2 || index0 != index3) {
+		/*  Normal safe sw:  */
+		mips32_loadstore[8 + 2 * 2](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+	addr2 = (addr2 >> 2) & 0x3ff;
+	addr3 = (addr3 >> 2) & 0x3ff;
+
+	r1 = reg(ic[0].arg[0]);
+	r2 = reg(ic[1].arg[0]);
+	r3 = reg(ic[2].arg[0]);
+	r4 = reg(ic[3].arg[0]);
+
+	r1 = LE32_TO_HOST(r1);
+	r2 = LE32_TO_HOST(r2);
+	r3 = LE32_TO_HOST(r3);
+	r4 = LE32_TO_HOST(r4);
+
+	page[addr0] = r1;
+	page[addr1] = r2;
+	page[addr2] = r3;
+	page[addr3] = r4;
+
+	cpu->n_translated_instrs += 3;
+	cpu->cd.mips.next_ic += 3;
+}
+X(multi_sw_4_be)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2, r3, r4;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	MODE_uint_t addr2 = rX + (int32_t)ic[2].arg[2];
+	MODE_uint_t addr3 = rX + (int32_t)ic[3].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12,
+	    index2 = addr2 >> 12, index3 = addr3 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_store[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    (addr2 & 3) != 0 || (addr3 & 3) != 0 || index0 != index1 ||
+	    index0 != index2 || index0 != index3) {
+		/*  Normal safe sw:  */
+		mips32_loadstore[16 + 8 + 2 * 2](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+	addr2 = (addr2 >> 2) & 0x3ff;
+	addr3 = (addr3 >> 2) & 0x3ff;
+
+	r1 = reg(ic[0].arg[0]);
+	r2 = reg(ic[1].arg[0]);
+	r3 = reg(ic[2].arg[0]);
+	r4 = reg(ic[3].arg[0]);
+
+	r1 = BE32_TO_HOST(r1);
+	r2 = BE32_TO_HOST(r2);
+	r3 = BE32_TO_HOST(r3);
+	r4 = BE32_TO_HOST(r4);
+
+	page[addr0] = r1;
+	page[addr1] = r2;
+	page[addr2] = r3;
+	page[addr3] = r4;
+
+	cpu->n_translated_instrs += 3;
+	cpu->cd.mips.next_ic += 3;
+}
 #endif
 
 
 #ifdef MODE32
 /*
- *  multi_lw_3:
+ *  multi_lw_2, _3, _4:
  *
  *	lw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
- *	lw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
- *	lw	r?,ofs(rX)		r?=arg[0], rX=arg[1], ofs=arg[2]
  */
+X(multi_lw_2_le)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_load[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    index0 != index1) {
+		/*  Normal safe lw:  */
+		mips32_loadstore[2 * 2 + 1](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+
+	r1 = page[addr0];
+	r2 = page[addr1];
+
+	r1 = LE32_TO_HOST(r1);
+	r2 = LE32_TO_HOST(r2);
+
+	reg(ic[0].arg[0]) = r1;
+	reg(ic[1].arg[0]) = r2;
+
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic ++;
+}
+X(multi_lw_2_be)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_load[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    index0 != index1) {
+		/*  Normal safe lw:  */
+		mips32_loadstore[16 + 2 * 2 + 1](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+
+	r1 = page[addr0];
+	r2 = page[addr1];
+
+	r1 = BE32_TO_HOST(r1);
+	r2 = BE32_TO_HOST(r2);
+
+	reg(ic[0].arg[0]) = r1;
+	reg(ic[1].arg[0]) = r2;
+
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic ++;
+}
 X(multi_lw_3_le)
 {
 	uint32_t *page;
@@ -2600,6 +2847,98 @@ X(multi_lw_3_be)
 
 	cpu->n_translated_instrs += 2;
 	cpu->cd.mips.next_ic += 2;
+}
+X(multi_lw_4_le)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2, r3, r4;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	MODE_uint_t addr2 = rX + (int32_t)ic[2].arg[2];
+	MODE_uint_t addr3 = rX + (int32_t)ic[3].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12,
+	    index2 = addr2 >> 12, index3 = addr3 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_load[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    (addr2 & 3) != 0 || (addr3 & 3) != 0 ||
+	    index0 != index1 || index0 != index2 || index0 != index3) {
+		/*  Normal safe lw:  */
+		mips32_loadstore[2 * 2 + 1](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+	addr2 = (addr2 >> 2) & 0x3ff;
+	addr3 = (addr3 >> 2) & 0x3ff;
+
+	r1 = page[addr0];
+	r2 = page[addr1];
+	r3 = page[addr2];
+	r4 = page[addr3];
+
+	r1 = LE32_TO_HOST(r1);
+	r2 = LE32_TO_HOST(r2);
+	r3 = LE32_TO_HOST(r3);
+	r4 = LE32_TO_HOST(r4);
+
+	reg(ic[0].arg[0]) = r1;
+	reg(ic[1].arg[0]) = r2;
+	reg(ic[2].arg[0]) = r3;
+	reg(ic[3].arg[0]) = r4;
+
+	cpu->n_translated_instrs += 3;
+	cpu->cd.mips.next_ic += 3;
+}
+X(multi_lw_4_be)
+{
+	uint32_t *page;
+	MODE_uint_t rX = reg(ic[0].arg[1]), r1, r2, r3, r4;
+	MODE_uint_t addr0 = rX + (int32_t)ic[0].arg[2];
+	MODE_uint_t addr1 = rX + (int32_t)ic[1].arg[2];
+	MODE_uint_t addr2 = rX + (int32_t)ic[2].arg[2];
+	MODE_uint_t addr3 = rX + (int32_t)ic[3].arg[2];
+	uint32_t index0 = addr0 >> 12, index1 = addr1 >> 12,
+	    index2 = addr2 >> 12, index3 = addr3 >> 12;
+
+	page = (uint32_t *) cpu->cd.mips.host_load[index0];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot ||
+	    page == NULL || (addr0 & 3) != 0 || (addr1 & 3) != 0 ||
+	    (addr2 & 3) != 0 || (addr3 & 3) != 0 ||
+	    index0 != index1 || index0 != index2 || index0 != index3) {
+		/*  Normal safe lw:  */
+		mips32_loadstore[16 + 2 * 2 + 1](cpu, ic);
+		return;
+        }
+
+	addr0 = (addr0 >> 2) & 0x3ff;
+	addr1 = (addr1 >> 2) & 0x3ff;
+	addr2 = (addr2 >> 2) & 0x3ff;
+	addr3 = (addr3 >> 2) & 0x3ff;
+
+	r1 = page[addr0];
+	r2 = page[addr1];
+	r3 = page[addr2];
+	r4 = page[addr3];
+
+	r1 = BE32_TO_HOST(r1);
+	r2 = BE32_TO_HOST(r2);
+	r3 = BE32_TO_HOST(r3);
+	r4 = BE32_TO_HOST(r4);
+
+	reg(ic[0].arg[0]) = r1;
+	reg(ic[1].arg[0]) = r2;
+	reg(ic[2].arg[0]) = r3;
+	reg(ic[3].arg[0]) = r4;
+
+	cpu->n_translated_instrs += 3;
+	cpu->cd.mips.next_ic += 3;
 }
 #endif
 
@@ -2710,9 +3049,33 @@ X(netbsd_strlen)
 
 
 /*
+ *  addiu_bne_samepage_addiu:
+ */
+X(addiu_bne_samepage_addiu)
+{
+	MODE_uint_t rs, rt;
+
+	if (cpu->delay_slot) {
+		instr(addiu)(cpu, ic);
+		return;
+	}
+
+	cpu->n_translated_instrs += 2;
+	reg(ic[0].arg[1]) = (int32_t)
+	    ((int32_t)reg(ic[0].arg[0]) + (int32_t)ic[0].arg[2]);
+	rs = reg(ic[1].arg[0]);
+	rt = reg(ic[1].arg[1]);
+	reg(ic[2].arg[1]) = (int32_t)
+	    ((int32_t)reg(ic[2].arg[0]) + (int32_t)ic[2].arg[2]);
+	if (rs != rt)
+		cpu->cd.mips.next_ic = (struct mips_instr_call *) ic[1].arg[2];
+	else
+		cpu->cd.mips.next_ic += 2;
+}
+
+
+/*
  *  xor_andi_sll:
- *
- *  Combination of xor, andi and sll.
  */
 X(xor_andi_sll)
 {
@@ -2733,8 +3096,6 @@ X(xor_andi_sll)
 
 /*
  *  andi_sll:
- *
- *  Combination of andi and sll.
  */
 X(andi_sll)
 {
@@ -2746,6 +3107,45 @@ X(andi_sll)
 
 	reg(ic[0].arg[1]) = reg(ic[0].arg[0]) & (uint32_t)ic[0].arg[2];
 	reg(ic[1].arg[2]) = (int32_t)(reg(ic[1].arg[0])<<(int32_t)ic[1].arg[1]);
+
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic ++;
+}
+
+
+/*
+ *  lui_ori:
+ */
+X(lui_ori)
+{
+	/*  Fallback:  */
+	if (cpu->delay_slot) {
+		instr(set)(cpu, ic);
+		return;
+	}
+
+	reg(ic[0].arg[0]) = (int32_t)ic[0].arg[1];
+	reg(ic[1].arg[1]) = reg(ic[1].arg[0]) | (uint32_t)ic[1].arg[2];
+
+	cpu->n_translated_instrs ++;
+	cpu->cd.mips.next_ic ++;
+}
+
+
+/*
+ *  lui_addiu:
+ */
+X(lui_addiu)
+{
+	/*  Fallback:  */
+	if (cpu->delay_slot) {
+		instr(set)(cpu, ic);
+		return;
+	}
+
+	reg(ic[0].arg[0]) = (int32_t)ic[0].arg[1];
+	reg(ic[1].arg[1]) = (int32_t)
+	    ((int32_t)reg(ic[1].arg[0]) + (int32_t)ic[1].arg[2]);
 
 	cpu->n_translated_instrs ++;
 	cpu->cd.mips.next_ic ++;
@@ -2906,21 +3306,34 @@ void COMBINE(multi_sw)(struct cpu *cpu, struct mips_instr_call *ic,
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
-	if (n_back < 4)
+	if (n_back < 3)
 		return;
-#if 0
-	/*  Avoid "overlapping" instruction combinations:  */
-	if (ic[-4].f == instr(multi_sw_3_be)||ic[-3].f == instr(multi_sw_3_be)||
-	    ic[-4].f == instr(multi_sw_3_le)||ic[-3].f == instr(multi_sw_3_le))
-		return;
-#endif
-	if (ic[-2].f == ic[0].f && ic[-1].f == ic[0].f &&
-	    ic[-2].arg[1] == ic[0].arg[1] &&
-	    ic[-1].arg[1] == ic[0].arg[1]) {
+
+	/*  Convert a multi_sw_3 to a multi_sw_4:  */
+	if ((ic[-3].f == instr(multi_sw_3_be) ||
+	    ic[-3].f == instr(multi_sw_3_le)) &&
+	    ic[-3].arg[1] == ic[0].arg[1]) {
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			ic[-3].f = instr(multi_sw_4_le);
+		else
+			ic[-3].f = instr(multi_sw_4_be);
+	}
+
+	/*  Convert a multi_sw_2 to a multi_sw_3:  */
+	if ((ic[-2].f == instr(multi_sw_2_be) ||
+	    ic[-2].f == instr(multi_sw_2_le)) &&
+	    ic[-2].arg[1] == ic[0].arg[1]) {
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			ic[-2].f = instr(multi_sw_3_le);
 		else
 			ic[-2].f = instr(multi_sw_3_be);
+	}
+
+	if (ic[-1].f == ic[0].f && ic[-1].arg[1] == ic[0].arg[1]) {
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			ic[-1].f = instr(multi_sw_2_le);
+		else
+			ic[-1].f = instr(multi_sw_2_be);
 	}
 }
 #endif
@@ -2942,25 +3355,39 @@ void COMBINE(multi_lw)(struct cpu *cpu, struct mips_instr_call *ic,
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
-	if (n_back < 4)
+	if (n_back < 3)
 		return;
-#if 0
-	/*  Avoid "overlapping" instruction combinations:  */
-	if (ic[-4].f == instr(multi_lw_3_be)||ic[-3].f == instr(multi_lw_3_be)||
-	    ic[-4].f == instr(multi_lw_3_le)||ic[-3].f == instr(multi_lw_3_le))
-		return;
-#endif
-	/*  Note: Loads to the base register are not allowed in slot
-	    -2 and -1.  */
-	if (ic[-2].f == ic[0].f && ic[-1].f == ic[0].f &&
+
+	/*  Convert a multi_lw_3 to a multi_lw_4:  */
+	if ((ic[-3].f == instr(multi_lw_3_be) ||
+	    ic[-3].f == instr(multi_lw_3_le)) &&
+	    ic[-3].arg[1] == ic[0].arg[1] &&
+	    ic[-1].arg[0] != ic[0].arg[1]) {
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			ic[-3].f = instr(multi_lw_4_le);
+		else
+			ic[-3].f = instr(multi_lw_4_be);
+	}
+
+	/*  Convert a multi_lw_2 to a multi_lw_3:  */
+	if ((ic[-2].f == instr(multi_lw_2_be) ||
+	    ic[-2].f == instr(multi_lw_2_le)) &&
 	    ic[-2].arg[1] == ic[0].arg[1] &&
-	    ic[-1].arg[1] == ic[0].arg[1] &&
-	    ic[-2].arg[0] != ic[0].arg[1] &&
 	    ic[-1].arg[0] != ic[0].arg[1]) {
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			ic[-2].f = instr(multi_lw_3_le);
 		else
 			ic[-2].f = instr(multi_lw_3_be);
+	}
+
+	/*  Note: Loads to the base register are not allowed in slot -1.  */
+	if (ic[-1].f == ic[0].f &&
+	    ic[-1].arg[1] == ic[0].arg[1] &&
+	    ic[-1].arg[0] != ic[0].arg[1]) {
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			ic[-1].f = instr(multi_lw_2_le);
+		else
+			ic[-1].f = instr(multi_lw_2_be);
 	}
 }
 #endif
@@ -3075,9 +3502,25 @@ void COMBINE(sll)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 
 
 /*
- *  Combine:
- *
- *	addu + addu + addu
+ *  lui + ori
+ */
+void COMBINE(ori)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
+{
+	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
+	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
+
+	if (n_back < 1)
+		return;
+
+	if (ic[-1].f == instr(set)) {
+		ic[-1].f = instr(lui_ori);
+		return;
+	}
+}
+
+
+/*
+ *  addu + addu + addu
  */
 void COMBINE(addu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 {
@@ -3109,8 +3552,19 @@ void COMBINE(addiu)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
-	if (n_back < 1)
+	if (n_back < 2)
 		return;
+
+	if (ic[-2].f == instr(addiu) &&
+	    ic[-1].f == instr(bne_samepage)) {
+		ic[-2].f = instr(addiu_bne_samepage_addiu);
+		return;
+	}
+
+	if (ic[-1].f == instr(set)) {
+		ic[-1].f = instr(lui_addiu);
+		return;
+	}
 
 	if (ic[-1].f == instr(b_samepage)) {
 		ic[-1].f = instr(b_samepage_addiu);
@@ -3612,6 +4066,8 @@ X(to_be_translated)
 		if (rt == MIPS_GPR_ZERO)
 			ic->f = instr(nop);
 
+		if (ic->f == instr(ori))
+			cpu->cd.mips.combination_check = COMBINE(ori);
 		if (ic->f == instr(addiu))
 			cpu->cd.mips.combination_check = COMBINE(addiu);
 		if (ic->f == instr(daddiu))
@@ -3677,7 +4133,22 @@ X(to_be_translated)
 			case COP0_DERET:
 				ic->f = instr(deret);
 				break;
-			case COP0_IDLE:
+			case COP0_WAIT:
+				ic->f = instr(wait);
+				if (cpu->cd.mips.cpu_type.rev != MIPS_RM5200 &&
+				    cpu->cd.mips.cpu_type.isa_level < 32) {
+					static int warned = 0;
+					ic->f = instr(reserved);
+					if (!warned) {
+						fatal("{ WARNING: Attempt to "
+						    "execute the WAIT instruct"
+					            "ion, but the emulated CPU "
+						    "is neither RM52xx, nor "
+						    "MIPS32/64! }\n");
+						warned = 1;
+					}
+				}
+				break;
 			case COP0_STANDBY:
 			case COP0_SUSPEND:
 			case COP0_HIBERNATE:

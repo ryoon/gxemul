@@ -1,4 +1,4 @@
-$Id: TODO,v 1.335 2006-07-27 02:18:07 debug Exp $
+$Id: TODO,v 1.336 2006-08-11 17:43:29 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -6,7 +6,6 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 Implementation:
 	x)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
-	x)  Try to make the cursor appear for NetWinder?
 	x)  64-bit ranges in src/cpus/memory_mips_v2p.c
 	x)  Revert the dyntrans page template experiment? Hm.
 	x)  Refactor the cpu type detection/initialization/listing.
@@ -95,20 +94,14 @@ SMP:
 
 MIPS:
 	+)  Some more work on opcodes.
+		x) The "wait" instruction. How to implement this functionality?
+			(SMP, non-MIPS, interrupt correctness, host idling, ...)
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
 		x) _MAYBE_ TX79 and R5900 actually differ in their
 		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
 	o)  Refactor code for performance and readability/maintainability.
-	o)  Instruction combinations? Possible candidates (but profile first!):
-		o)  R2000/R3000 cache cleaner!
-		o)  strlen, memset loops etc
-		o)  multiple loads/stores in a row, e.g. relative to
-		    the stack pointer
-		o)  lui + or, lui + add, and 64-bit variants
-		o)  jr ra + addiu to the v0 register?
-		o)  compare + branch
 	o)  DROTR32 and similar MIPS64 rev 2 instructions, which have
 	    a rotation bit which differs from previous ISAs.
 	o)  EI and DI instructions for MIPS64/32 rev 2. NOTE: These are

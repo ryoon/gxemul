@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.22 2006-07-27 00:11:37 debug Exp $
+ *  $Id: generate_head.c,v 1.23 2006-08-11 17:43:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -137,11 +137,9 @@ int main(int argc, char *argv[])
 	printf("\n/*\n *  nothing:  Do nothing.\n *\n"
 	    " *  The difference between this function and a \"nop\" "
 	    "instruction is that\n *  this function does not increase "
-	    "the program counter or the number of\n *  translated "
-	    "instructions.  It is used to \"get out\" of running in "
+	    "the program counter.  It is used to \"get out\" of running in "
 	    "translated\n *  mode.\n */\n");
 	printf("X(nothing)\n{\n");
-	printf("\tcpu->n_translated_instrs --;\n");
 	printf("\tcpu->cd.%s.next_ic --;\n", a);
 	printf("}\n\n");
 

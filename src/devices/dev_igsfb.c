@@ -25,14 +25,15 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_igsfb.c,v 1.3 2006-07-24 09:44:01 debug Exp $
+ *  $Id: dev_igsfb.c,v 1.4 2006-08-11 17:43:30 debug Exp $
  *
  *  Integraphics Systems "igsfb" Framebuffer (graphics) card, used in at
  *  least the NetWinder.
  *
  *  TODO:  This is hardcoded to 1024x768x8 right now, and only supports the
  *         two acceleration commands used by NetBSD for scrolling the
- *         framebuffer. Nothing else.
+ *         framebuffer. The cursor is hardcoded to 12x22 pixels, as that is
+ *         what NetBSD/netwinder uses.
  */
 
 #include <stdio.h>
@@ -82,7 +83,26 @@ struct dev_igsfb_data {
 	int		pixel_op_1;
 	int		pixel_op_2;
 	int		pixel_op_3;
+
+	uint8_t		ext_reg_select;
+	uint8_t		ext_reg[256];
 };
+
+
+/*
+ *  recalc_sprite_position():
+ *
+ *  TODO: This is hardcoded for NetBSD/netwinder's 12x22 pixel cursor.
+ */
+static void recalc_sprite_position(struct dev_igsfb_data *d)
+{
+	int x = d->ext_reg[IGS_EXT_SPRITE_HSTART_LO] +
+		d->ext_reg[IGS_EXT_SPRITE_HSTART_HI] * 256;
+	int y = d->ext_reg[IGS_EXT_SPRITE_VSTART_LO] +
+		d->ext_reg[IGS_EXT_SPRITE_VSTART_HI] * 256;
+
+	dev_fb_setcursor(d->vfb_data, x, y, 1, 12, 22);
+}
 
 
 /*
@@ -182,6 +202,27 @@ DEVICE_ACCESS(igsfb)
 			}
 			/*  Note/TODO: Reading from the palette isn't
 			    implemented here.  */
+			break;
+		case 0xe:	/*  IGSFB extended register select  */
+			if (writeflag == MEM_WRITE)
+				d->ext_reg_select = idata;
+			else
+				odata = d->ext_reg_select;
+			break;
+		case 0xf:	/*  IGSFB extended register data  */
+			if (writeflag == MEM_READ)
+				odata = d->ext_reg[d->ext_reg_select];
+			else {
+				d->ext_reg[d->ext_reg_select] = idata;
+				switch (d->ext_reg_select) {
+				/*  case IGS_EXT_SPRITE_HSTART_LO:
+				case IGS_EXT_SPRITE_HSTART_HI:
+				case IGS_EXT_SPRITE_VSTART_LO:  */
+				case IGS_EXT_SPRITE_VSTART_HI:
+					recalc_sprite_position(d);
+					break;
+				}
+			}
 			break;
 		}
 		return 1;

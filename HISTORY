@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1319 2006-07-27 02:18:06 debug Exp $
+$Id: HISTORY,v 1.1320 2006-08-11 17:43:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2915,3 +2915,12 @@ Changelog for GXemul:
 		page flags (breaking into the debugger clears all translations
 		anyway).
 		Minor MIPS instruction combination updates.
+20060807	Expanding the 3*sw and 3*lw MIPS instruction combinations to
+		work with 2* and 4* too, resulting in a minor performance gain.
+		Implementing a usleep hack for the RM52xx/MIPS32/MIPS64 "wait"
+		instruction (when emulating 1 cpu).
+20060808	Experimenting with some more MIPS instruction combinations.
+		Implementing support for showing a (hardcoded 12x22) text
+		cursor in igsfb.
+20060809	Simplifying the NetBSD/evbmips (Malta) install instructions
+		somewhat (by using a NetBSD/pmax ramdisk install kernel).

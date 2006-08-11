@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.67 2006-07-27 00:11:37 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.68 2006-08-11 17:43:30 debug Exp $
  *
  *  ARM instructions.
  *
@@ -215,7 +215,8 @@ X(invalid) {
 	    " dyntrans code. Please contact the author with detailed"
 	    " repro steps on how to trigger this bug. pc = 0x%08"PRIx32"\n",
 	    (uint32_t)cpu->pc);
-	exit(1);
+
+	cpu->cd.arm.next_ic = &nothing_call;
 }
 
 

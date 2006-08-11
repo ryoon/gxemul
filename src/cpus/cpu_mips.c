@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.61 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_mips.c,v 1.62 2006-08-11 17:43:30 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #include "../../config.h"
 

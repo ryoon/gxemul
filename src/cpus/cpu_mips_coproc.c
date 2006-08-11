@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.52 2006-07-25 08:54:21 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.53 2006-08-11 17:43:30 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2069,108 +2069,73 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 
 	/*  TLB operations and other things:  */
 	if (cp->coproc_nr == 0) {
+		if (!unassemble_only) {
+			fatal("FATAL INTERNAL ERROR: Should be implemented"
+			    " with dyntrans instead.\n");
+			exit(1);
+		}
+
 		op = (function) & 0xff;
 		switch (co_bit) {
 		case 1:
 			switch (op) {
 			case COP0_TLBR:		/*  Read indexed TLB entry  */
-				if (unassemble_only) {
-					debug("tlbr\n");
-					return;
-				}
-				coproc_tlbpr(cpu, 1);
+				debug("tlbr\n");
 				return;
 			case COP0_TLBWI:	/*  Write indexed  */
 			case COP0_TLBWR:	/*  Write random  */
-				if (unassemble_only) {
-					if (op == COP0_TLBWI)
-						debug("tlbwi");
-					else
-						debug("tlbwr");
-					if (!running) {
-						debug("\n");
-						return;
-					}
-					debug("\tindex=%08llx",
-					    (long long)cp->reg[COP0_INDEX]);
-					debug(", random=%08llx",
-					    (long long)cp->reg[COP0_RANDOM]);
-					debug(", mask=%016llx",
-					    (long long)cp->reg[COP0_PAGEMASK]);
-					debug(", hi=%016llx",
-					    (long long)cp->reg[COP0_ENTRYHI]);
-					debug(", lo0=%016llx",
-					    (long long)cp->reg[COP0_ENTRYLO0]);
-					debug(", lo1=%016llx\n",
-					    (long long)cp->reg[COP0_ENTRYLO1]);
+				if (op == COP0_TLBWI)
+					debug("tlbwi");
+				else
+					debug("tlbwr");
+				if (!running) {
+					debug("\n");
 					return;
 				}
-				coproc_tlbwri(cpu, op == COP0_TLBWR);
+				debug("\tindex=%08llx",
+				    (long long)cp->reg[COP0_INDEX]);
+				debug(", random=%08llx",
+				    (long long)cp->reg[COP0_RANDOM]);
+				debug(", mask=%016llx",
+				    (long long)cp->reg[COP0_PAGEMASK]);
+				debug(", hi=%016llx",
+				    (long long)cp->reg[COP0_ENTRYHI]);
+				debug(", lo0=%016llx",
+				    (long long)cp->reg[COP0_ENTRYLO0]);
+				debug(", lo1=%016llx\n",
+				    (long long)cp->reg[COP0_ENTRYLO1]);
 				return;
 			case COP0_TLBP:		/*  Probe TLB for
 						    matching entry  */
-				if (unassemble_only) {
-					debug("tlbp\n");
-					return;
-				}
-				coproc_tlbpr(cpu, 0);
+				debug("tlbp\n");
 				return;
 			case COP0_RFE:		/*  R2000/R3000 only:
 						    Return from Exception  */
-				if (unassemble_only) {
-					debug("rfe\n");
-					return;
-				}
-				fatal("Internal error (rfe): Should be "
-				    "implemented in dyntrans instead.\n");
-				exit(1);
+				debug("rfe\n");
+				return;
 			case COP0_ERET:	/*  R4000: Return from exception  */
-				if (unassemble_only) {
-					debug("eret\n");
-					return;
-				}
-				fatal("Internal error (eret): Should be "
-				    "implemented in dyntrans instead.\n");
-				exit(1);
+				debug("eret\n");
+				return;
 			case COP0_DERET:
-				if (unassemble_only) {
-					debug("deret\n");
-					return;
+				debug("deret\n");
+				return;
+			case COP0_WAIT:
+				{
+					int code = (function >> 6) & 0x7ffff;
+					debug("wait");
+					if (code > 0)
+						debug("\t0x%x", code);
+					debug("\n");
 				}
-				/*
-				 *  According to the MIPS64 manual, deret
-				 *  loads PC from the DEPC cop0 register, and
-				 *  jumps there immediately. No delay slot.
-				 *
-				 *  TODO: This instruction is only available
-				 *  if the processor is in debug mode. (What
-				 *  does that mean?) TODO: This instruction
-				 *  is undefined in a delay slot.
-				 */
-				cpu->pc = cp->reg[COP0_DEPC];
-				cpu->delay_slot = 0;
-				cp->reg[COP0_STATUS] &= ~STATUS_EXL;
 				return;
 			case COP0_STANDBY:
-				if (unassemble_only) {
-					debug("standby\n");
-					return;
-				}
-				/*  TODO: Hm. Do something here?  */
+				debug("standby\n");
 				return;
 			case COP0_SUSPEND:
-				if (unassemble_only) {
-					debug("suspend\n");
-					return;
-				}
-				/*  TODO: Hm. Do something here?  */
+				debug("suspend\n");
 				return;
 			case COP0_HIBERNATE:
-				if (unassemble_only) {
-					debug("hibernate\n");
-					return;
-				}
-				/*  TODO: Hm. Do something here?  */
+				debug("hibernate\n");
 				return;
 			default:
 				;
@@ -2187,17 +2152,6 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			return;
 		}
 		/*  TODO  */
-		return;
-	}
-
-	/*  TODO: RM5200 idle (?)  */
-	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020) {
-		if (unassemble_only) {
-			debug("idle(?)\n");	/*  TODO  */
-			return;
-		}
-
-		/*  Idle? TODO  */
 		return;
 	}
 

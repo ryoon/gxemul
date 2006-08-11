@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.7 2006-07-16 13:32:26 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.8 2006-08-11 17:43:30 debug Exp $
  */
 
 
@@ -202,17 +202,13 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	/*  vpn2 depends on pagemask, which is not fixed on R4000  */
 #endif
 
+#ifdef V2P_MMU3K
+	/*  assert(vaddr == (int64_t)(int32_t)vaddr);  */
+#endif
 
 	if (vaddr <= 0x7fffffff)
 		use_tlb = 1;
 	else {
-#if 1
-/*  TODO: This should be removed, but it seems that other
-bugs are triggered.  */
-		/*  Sign-extend vaddr, if necessary:  */
-		if ((vaddr >> 32) == 0 && vaddr & (uint32_t)0x80000000ULL)
-			vaddr |= 0xffffffff00000000ULL;
-#endif
 		if (ksu == KSU_KERNEL) {
 			/*  kseg0, kseg1:  */
 			if (vaddr >= (uint64_t)0xffffffff80000000ULL &&

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.43 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.44 2006-08-11 17:43:30 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -130,6 +130,28 @@ DEVICE_ACCESS(footbridge_isa)
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
+ *  Reset pin at ISA port 0x338, at least in the NetWinder:
+ *
+ *  TODO: NOT WORKING YET!
+ */
+DEVICE_ACCESS(footbridge_reset)
+{
+	uint64_t idata = 0;
+
+	if (writeflag == MEM_WRITE) {
+		idata = memory_readmax64(cpu, data, len);
+		if (idata & 0x40) {
+			debug("[ footbridge_reset: GP16: Halting. ]\n");
+			cpu->running = 0;
+exit(1);
+		}
+	}
 
 	return 1;
 }
@@ -444,6 +466,9 @@ DEVINIT(footbridge)
 		    devinit->machine->memory, 0xc0, 11, 0, "symphony_83c553");
 		bus_pci_add(devinit->machine, d->pcibus,
 		    devinit->machine->memory, 0xc0, 11, 1, "symphony_82c105");
+		memory_device_register(devinit->machine->memory,
+		    "footbridge_reset", 0x7c000338, 1,
+		    dev_footbridge_reset_access, d, DM_DEFAULT, NULL);
 		break;
 	default:fatal("footbridge: unimplemented machine type.\n");
 		exit(1);

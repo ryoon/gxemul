@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.164 2006-07-26 23:34:37 debug Exp $
+$Id: guestoses.html,v 1.165 2006-08-11 17:43:29 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -516,30 +516,32 @@ image, from an emulated DECstation 3MAX machine:
 
 <p>
 <ol>
-  <li>Install NetBSD/pmax 3.0.1 according to instructions
-	<a href="#netbsdpmaxinstall">further up on this page</a>.
+  <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+</pre>
   <p>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD onto:<pre>
 	<b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=999000</b>
 
 </pre>
-  <li>Download the generic kernel and the 2.1 ISO image:<pre>
+  <li>Download the Malta kernel and the 2.1 ISO image:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbmips-mipselcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbmips-mipselcd.iso</a>
 
 </pre>
   <p>
-  <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_malta.img -d evbmips-mipselcd.iso</b>
+  <li>Start the emulated DECstation machine like this:<pre>
+	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd.iso netbsd-INSTALL.gz</b>
 
-</pre>and execute the following commands as <tt>root</tt>:
+</pre>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
+to simulate a CTRL-C sent to NetBSD. Then execute the following commands:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>newfs /dev/sd1c
+<b>newfs /dev/sd0c
 mount /dev/cd0c /mnt
-mkdir /mnt2; mount /dev/sd1c /mnt2
+mkdir /mnt2; mount /dev/sd0c /mnt2
 cd /mnt2; sh
-for a in /mnt/evbmips-mipsel/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
+for a in /mnt/evbmips-mipsel/binary/sets/[bcemt]*.tgz; do echo $a; tar zxfp $a; done
 exit
 cd dev; sh ./MAKEDEV all; cd ../etc
 echo rc_configured=YES >> rc.conf
@@ -965,7 +967,6 @@ generic kernel:<pre>
 	<li>There is a long delay when starting up NetBSD/netwinder
 		(several seconds even on a very fast host machine),
 		so you need to be patient.
-	<li>The text cursor is invisible.
 	<li>There is a minor bug in the keyboard device, so you need to
 		press a key (any key) before typing wd0c.
 	<li>When halting/rebooting NetBSD/netwinder, the emulator

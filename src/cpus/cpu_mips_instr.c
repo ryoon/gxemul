@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.102 2006-08-12 11:43:13 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.103 2006-08-12 17:22:26 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1679,7 +1679,7 @@ X(mtc0)
 		uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
 		/*  NOTE: STATUS_IE happens to match the enable bit also
 		    on R2000/R3000, so this is ok.  */
-		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
+		if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
 			if (status & (STATUS_EXL | STATUS_ERL))
 				status &= ~STATUS_IE;
 		}
@@ -1967,7 +1967,7 @@ X(wait)
 
 	/*  NOTE: STATUS_IE happens to match the enable bit also
 	    on R2000/R3000, so this is ok.  */
-	if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
+	if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
 		if (status & (STATUS_EXL | STATUS_ERL))
 			status &= ~STATUS_IE;
 	}

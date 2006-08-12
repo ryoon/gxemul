@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.89 2006-07-27 00:11:38 debug Exp $
+ *  $Id: cpu.h,v 1.90 2006-08-12 11:43:13 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -352,6 +352,13 @@ struct cpu {
 
 	/*  The current depth of function call tracing.  */
 	int		trace_tree_depth;
+
+	/*
+	 *  If is_halted is true when an interrupt trap occurs, the pointer
+	 *  to the next instruction to execute will be the instruction
+	 *  following the halt instruction, not the halt instrucion itself.
+	 */
+	int		is_halted;
 
 	/*
 	 *  Dynamic translation:

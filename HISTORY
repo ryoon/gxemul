@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1320 2006-08-11 17:43:29 debug Exp $
+$Id: HISTORY,v 1.1321 2006-08-12 11:43:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2924,3 +2924,4 @@ Changelog for GXemul:
 		cursor in igsfb.
 20060809	Simplifying the NetBSD/evbmips (Malta) install instructions
 		somewhat (by using a NetBSD/pmax ramdisk install kernel).
+20060812	Experimenting more with the MIPS 'wait' instruction.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.62 2006-08-11 17:43:30 debug Exp $
+ *  $Id: cpu_mips.c,v 1.63 2006-08-12 11:43:13 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1878,6 +1878,16 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	uint64_t base;
 	uint64_t *reg = &cpu->cd.mips.coproc[0]->reg[0];
 	int exc_model = cpu->cd.mips.cpu_type.exc_model;
+
+	if (cpu->is_halted) {
+		/*
+		 *  If the exception occurred on a 'wait' instruction, then let
+		 *  the instruction following the wait instruction be the one
+		 *  we continue at when the interrupt service routine returns.
+		 */
+		cpu->is_halted = 0;
+		cpu->pc += sizeof(uint32_t);
+	}
 
 	if (!quiet_mode) {
 		uint64_t offset;

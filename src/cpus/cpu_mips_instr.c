@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.101 2006-08-11 17:43:30 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.102 2006-08-12 11:43:13 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1679,8 +1679,10 @@ X(mtc0)
 		uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
 		/*  NOTE: STATUS_IE happens to match the enable bit also
 		    on R2000/R3000, so this is ok.  */
-		if (status & (STATUS_EXL | STATUS_ERL))
-			status &= ~STATUS_IE;
+		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
+			if (status & (STATUS_EXL | STATUS_ERL))
+				status &= ~STATUS_IE;
+		}
 		/*  Ugly R5900 special case:  (TODO: move this?)  */
 		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900 &&
 		    !(status & R5900_STATUS_EIE))
@@ -1957,19 +1959,44 @@ X(deret)
 X(wait)
 {
 	/*
+	 *  If there is an interrupt, then just return. Otherwise
+	 *  re-run the wait instruction (after a delay).
+	 */
+	uint32_t status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
+	uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
+
+	/*  NOTE: STATUS_IE happens to match the enable bit also
+	    on R2000/R3000, so this is ok.  */
+	if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
+		if (status & (STATUS_EXL | STATUS_ERL))
+			status &= ~STATUS_IE;
+	}
+	/*  Ugly R5900 special case:  (TODO: move this?)  */
+	if (cpu->cd.mips.cpu_type.rev == MIPS_R5900 &&
+	    !(status & R5900_STATUS_EIE))
+		status &= ~STATUS_IE;
+	if (status & STATUS_IE && (status & cause & STATUS_IM_MASK))
+		return;
+
+	cpu->cd.mips.next_ic = ic;
+	cpu->is_halted = 1;
+
+	/*
+	 *  There was no interrupt. Go to sleep.
+	 *
 	 *  TODO:
 	 *
-	 *  Think about how to actually implement this, in an SMP and/or
-	 *  timing accurate environment.
+	 *  Think about how to actually implement this usleep stuff,
+	 *  in an SMP and/or timing accurate environment.
 	 */
 
 	if (cpu->machine->ncpus == 1) {
 		static int x = 0;
-		if ((++x) == 50) {
+		if ((++x) == 600) {
 			usleep(1);
 			x = 0;
 		}
-		cpu->n_translated_instrs += 5000;
+		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 	}
 }
 

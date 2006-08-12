@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.133 2006-07-25 19:35:28 debug Exp $
+ *  $Id: file.c,v 1.134 2006-08-12 11:43:12 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -1163,10 +1163,15 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 	char *filename, uint64_t *entrypointp)
 {
 	FILE *f;
-	int len;
+	int len, sign3264;
 	unsigned char buf[16384];
 	uint64_t entry, loadaddr, vaddr, skip = 0;
 	char *p, *p2;
+
+	/*  Special case for 32-bit MIPS:  */
+	sign3264 = 0;
+	if (m->arch == ARCH_MIPS && m->cpus[0]->is_32bit)
+		sign3264 = 1;
 
 	p = strchr(filename, ':');
 	if (p == NULL) {
@@ -1190,6 +1195,13 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 		}
 	} else
 		p = p2;
+
+	if (sign3264) {
+		loadaddr = (int64_t)(int32_t)loadaddr;
+		entry = (int64_t)(int32_t)entry;
+		vaddr = (int64_t)(int32_t)vaddr;
+		skip = (int64_t)(int32_t)skip;
+	}
 
 	f = fopen(strrchr(filename, ':')+1, "r");
 	if (f == NULL) {

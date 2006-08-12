@@ -1,6 +1,15 @@
-$Id: TODO,v 1.336 2006-08-11 17:43:29 debug Exp $
+$Id: TODO,v 1.337 2006-08-12 11:43:12 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
+
+
+MUST FIX:
+
+	x)  Fix the 64-bit vs 32-bit weirdness memory_rw vs mips stuff!
+		R4400 for NetBSD/pmax 3.0.1!
+
+
+-------------------------------------------------------------------------------
 
 
 Implementation:

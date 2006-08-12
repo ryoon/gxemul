@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.69 2006-08-12 19:32:20 debug Exp $
+ *  $Id: bus_pci.c,v 1.70 2006-08-12 19:38:24 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -778,6 +778,31 @@ PCIINIT(i82378zb)
 	PCI_SET_DATA(0x60, 0x0f0e0b0a);
 }
 
+struct piix_ide_extra {
+	void	*wdc0;
+	void	*wdc1;
+};
+
+int piix_ide_cfg_reg_write(struct pci_device *pd, int reg, uint32_t value)
+{
+	void *wdc0 = ((struct piix_ide_extra *)pd->extra)->wdc0;
+	void *wdc1 = ((struct piix_ide_extra *)pd->extra)->wdc1;
+	int enabled = 0;
+
+	switch (reg) {
+	case PCI_COMMAND_STATUS_REG:
+		if (value & PCI_COMMAND_IO_ENABLE)
+			enabled = 1;
+		if (wdc0 != NULL)
+			wdc_set_io_enabled(wdc0, enabled);
+		if (wdc1 != NULL)
+			wdc_set_io_enabled(wdc1, enabled);
+		return 1;
+	}
+
+	return 0;
+}
+
 PCIINIT(piix3_ide)
 {
 	char tmpstr[100];
@@ -793,12 +818,21 @@ PCIINIT(piix3_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
+	pd->extra = malloc(sizeof(struct piix_ide_extra));
+	if (pd->extra == NULL) {
+		fatal("Out of memory.\n");
+		exit(1);
+	}
+	((struct piix_ide_extra *)pd->extra)->wdc0 = NULL;
+	((struct piix_ide_extra *)pd->extra)->wdc1 = NULL;
+
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
 		    pd->pcibus->isa_irqbase + 14);
-		device_add(machine, tmpstr);
+		((struct piix_ide_extra *)pd->extra)->wdc0 =
+		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
@@ -806,33 +840,11 @@ PCIINIT(piix3_ide)
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x170),
 		    pd->pcibus->isa_irqbase + 15);
-		device_add(machine, tmpstr);
-	}
-}
-
-struct piix4_ide_extra {
-	void	*wdc0;
-	void	*wdc1;
-};
-
-int piix4_ide_cfg_reg_write(struct pci_device *pd, int reg, uint32_t value)
-{
-	void *wdc0 = ((struct piix4_ide_extra *)pd->extra)->wdc0;
-	void *wdc1 = ((struct piix4_ide_extra *)pd->extra)->wdc1;
-	int enabled = 0;
-
-	switch (reg) {
-	case PCI_COMMAND_STATUS_REG:
-		if (value & PCI_COMMAND_IO_ENABLE)
-			enabled = 1;
-		if (wdc0 != NULL)
-			wdc_set_io_enabled(wdc0, enabled);
-		if (wdc1 != NULL)
-			wdc_set_io_enabled(wdc1, enabled);
-		return 1;
+		((struct piix_ide_extra *)pd->extra)->wdc1 =
+		    device_add(machine, tmpstr);
 	}
 
-	return 0;
+	pd->cfg_reg_write = piix_ide_cfg_reg_write;
 }
 
 PCIINIT(piix4_ide)
@@ -850,20 +862,20 @@ PCIINIT(piix4_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
-	pd->extra = malloc(sizeof(struct piix4_ide_extra));
+	pd->extra = malloc(sizeof(struct piix_ide_extra));
 	if (pd->extra == NULL) {
 		fatal("Out of memory.\n");
 		exit(1);
 	}
-	((struct piix4_ide_extra *)pd->extra)->wdc0 = NULL;
-	((struct piix4_ide_extra *)pd->extra)->wdc1 = NULL;
+	((struct piix_ide_extra *)pd->extra)->wdc0 = NULL;
+	((struct piix_ide_extra *)pd->extra)->wdc1 = NULL;
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
 		    pd->pcibus->isa_irqbase + 14);
-		((struct piix4_ide_extra *)pd->extra)->wdc0 =
+		((struct piix_ide_extra *)pd->extra)->wdc0 =
 		    device_add(machine, tmpstr);
 	}
 
@@ -872,11 +884,11 @@ PCIINIT(piix4_ide)
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x170),
 		    pd->pcibus->isa_irqbase + 15);
-		((struct piix4_ide_extra *)pd->extra)->wdc1 =
+		((struct piix_ide_extra *)pd->extra)->wdc1 =
 		    device_add(machine, tmpstr);
 	}
 
-	pd->cfg_reg_write = piix4_ide_cfg_reg_write;
+	pd->cfg_reg_write = piix_ide_cfg_reg_write;
 }
 
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.338 2006-08-12 17:22:26 debug Exp $
+$Id: TODO,v 1.339 2006-08-12 19:38:24 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -21,7 +21,6 @@ Implementation:
 			for (;;) {
 				halt();
 			}
-	x)  Make the wdc controller work with modern versions of NetBSD!
 	x)  Continue on SPARC emulation
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.

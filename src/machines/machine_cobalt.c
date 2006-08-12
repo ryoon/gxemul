@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.3 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.4 2006-08-12 19:31:36 debug Exp $
  */
 
 #include <stdio.h>
@@ -133,6 +133,12 @@ MACHINE_SETUP(cobalt)
 MACHINE_DEFAULT_CPU(cobalt)
 {
 	machine->cpu_name = strdup("RM5200");
+}
+
+
+MACHINE_DEFAULT_RAM(cobalt)
+{
+	machine->physical_ram_in_mb = 64;
 }
 
 

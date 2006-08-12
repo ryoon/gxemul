@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.165 2006-08-11 17:43:29 debug Exp $
+$Id: guestoses.html,v 1.166 2006-08-12 19:32:20 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -51,8 +51,8 @@ SUCH DAMAGE.
   <li><a href="#netbsdpmaxinstall">NetBSD/pmax 3.0.1 or 1.6.2</a>
   <li><a href="#netbsdarcinstall">NetBSD/arc 1.6.2</a>
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.0.1</a>
-  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 2.1</a>
-  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 2.1</a>
+  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.0.1</a>
+  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.0.1</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0.1</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
@@ -431,7 +431,7 @@ do it from another (emulated) machine.
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20050413-netbsd-cobalt.png"><img src="20050413-netbsd-cobalt_small.png"></a>
+<a href="20060812-netbsd-cobalt-3.0.1.png"><img src="20060812-netbsd-cobalt-3.0.1_small.png"></a>
 
 <p>
 The following instructions will let you install NetBSD/cobalt onto a disk 
@@ -439,35 +439,35 @@ image, from an emulated DECstation 3MAX machine:
 
 <p>
 <ol>
+  <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+</pre>
+  <p>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD/cobalt onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_cobalt.img bs=1024 count=1 seek=999000</b>
+	<b>dd if=/dev/zero of=nbsd_cobalt.img bs=1024 count=1 seek=700000</b>
 
 </pre>
-  <li>Download the generic kernel for Cobalt and the 2.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/cobaltcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/cobaltcd.iso</a>
+  <li>Download the generic kernel for Cobalt and the 3.0.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/cobaltcd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/cobaltcd-3.0.1.iso</a>
 
 </pre>
-  <p>
-  <li>Install NetBSD/pmax 3.0.1 according to instructions
-	<a href="#netbsdpmaxinstall">further up on this page</a>.
-  <p>
-  <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e3max -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
+  <li>Start the emulated DECstation machine like this:<pre>
+	<b>gxemul -e 3max -d nbsd_cobalt.img -d cobaltcd-3.0.1.iso netbsd-INSTALL.gz</b>
 
 </pre>
   <li>Log in as root (on the emulated 3MAX machine), and execute the
 	following commands: (adjust according to taste)
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>newfs /dev/sd1c
+<b>newfs /dev/sd0c
 mount /dev/cd0c /mnt
-mkdir /mnt2; mount /dev/sd1c /mnt2
+mkdir /mnt2; mount /dev/sd0c /mnt2
 cd /mnt2; sh
-for a in /mnt/cobalt/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
+for a in /mnt/*/binary/sets/[bcekmt]*.tgz; do echo $a; tar zxfp $a; done
 exit
 cd dev; sh ./MAKEDEV all; cd ../etc
-echo rc_configured=YES &gt;&gt; rc.conf
+echo rc_configured=YES >> rc.conf
 echo "/dev/wd0d / ffs rw 1 1" > fstab
 cd /; umount /mnt; umount /mnt2; halt</b>
 </pre></td></tr></table>
@@ -475,7 +475,7 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 
 <p>
 You should now be able to boot NetBSD/cobalt like this:<pre>
-	<b>gxemul -M128 -E cobalt -d nbsd_cobalt.img netbsd-GENERIC.gz</b>
+	<b>gxemul -E cobalt -d nbsd_cobalt.img netbsd-GENERIC.gz</b>
 </pre>
 
 Note that the installation instructions above create a filesystem
@@ -504,10 +504,9 @@ in GXemul on an emulated Malta evaluation board, with a 5Kc (MIPS64) or
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20050622-netbsd-evbmips-malta.png"><img src="20050622-netbsd-evbmips-malta_small.png"></a>
+<a href="20060812-netbsd-malta-3.0.1.png"><img src="20060812-netbsd-malta-3.0.1_small.png"></a>
 
-<p>It is tricky to install, because there is (as far as I know) no INSTALL
-kernel. One way to install the NetBSD/evbmips distribution onto a disk
+<p>One way to install the NetBSD/evbmips distribution onto a disk
 image is to install the files using another (emulated) machine.
 
 <p>
@@ -522,17 +521,17 @@ image, from an emulated DECstation 3MAX machine:
   <p>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=999000</b>
+	<b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=700000</b>
 
 </pre>
-  <li>Download the Malta kernel and the 2.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbmips-mipselcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.1/evbmips-mipselcd.iso</a>
+  <li>Download the Malta kernel and the 3.0.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/evbmips-mipselcd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/evbmips-mipselcd-3.0.1.iso</a>
 
 </pre>
   <p>
   <li>Start the emulated DECstation machine like this:<pre>
-	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd.iso netbsd-INSTALL.gz</b>
+	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd-3.0.1.iso netbsd-INSTALL.gz</b>
 
 </pre>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
 to simulate a CTRL-C sent to NetBSD. Then execute the following commands:
@@ -541,7 +540,7 @@ to simulate a CTRL-C sent to NetBSD. Then execute the following commands:
 mount /dev/cd0c /mnt
 mkdir /mnt2; mount /dev/sd0c /mnt2
 cd /mnt2; sh
-for a in /mnt/evbmips-mipsel/binary/sets/[bcemt]*.tgz; do echo $a; tar zxfp $a; done
+for a in /mnt/*/binary/sets/[bcekmt]*.tgz; do echo $a; tar zxfp $a; done
 exit
 cd dev; sh ./MAKEDEV all; cd ../etc
 echo rc_configured=YES >> rc.conf
@@ -556,7 +555,7 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 
 <p>NOTE: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
 (MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
-2.1, however, there will be little or no difference in functionality, as
+3.0.1, however, there will be little or no difference in functionality, as
 NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs. There are two things
 that differ:<ol>
   <li>The dynamic translation core runs faster when emulating 32-bit
@@ -570,9 +569,9 @@ that differ:<ol>
 swap. You will need to enter the following things when booting with the
 generic kernel:<pre>
 	root device (default wd0a): <b>wd0c</b>
-	dump device (default wd0b): <b>none</b>
-	file system (default generic): <b>ffs</b>
-	init path (default /sbin/init):     <i>(just press enter here)</i>
+	dump device (default wd0b):		<i>(just press enter)</i>
+	file system (default generic):		<i>(just press enter)</i>
+	init path (default /sbin/init):		<i>(just press enter)</i>
 </pre>
 
 

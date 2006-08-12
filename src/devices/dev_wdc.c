@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.66 2006-04-20 16:59:05 debug Exp $
+ *  $Id: dev_wdc.c,v 1.67 2006-08-12 19:32:20 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -69,6 +69,7 @@ struct wdc_data {
 	int		addr_mult;
 	int		base_drive;
 	int		data_debug;
+	int		io_enabled;
 
 	/*  Cached values:  */
 	int		cyls[2];
@@ -126,6 +127,23 @@ void dev_wdc_tick(struct cpu *cpu, void *extra)
 		cpu_interrupt(cpu, d->irq_nr);
 		d->int_asserted = 1;
 	}
+}
+
+
+/*
+ *  wdc_set_io_enabled():
+ *
+ *  Set io_enabled to zero to disable the I/O registers temporarily (e.g.
+ *  used by PCI code in NetBSD to detect whether multiple controllers collide
+ *  in I/O space).
+ *
+ *  Return value is old contents of the io_enabled variable.
+ */
+int wdc_set_io_enabled(struct wdc_data *d, int io_enabled)
+{
+	int old = d->io_enabled;
+	d->io_enabled = io_enabled;
+	return old;
 }
 
 
@@ -555,6 +573,9 @@ DEVICE_ACCESS(wdc)
 
 	relative_addr /= d->addr_mult;
 
+	if (!d->io_enabled)
+		goto ret;
+
 	if (writeflag == MEM_WRITE) {
 		if (relative_addr == wd_data)
 			idata = memory_readmax64(cpu, data, len);
@@ -900,11 +921,13 @@ DEVICE_ACCESS(wdc)
 			    (int)relative_addr, (int)idata);
 	}
 
+
 	if (cpu->machine->machine_type != MACHINE_HPCMIPS &&
 	    cpu->machine->machine_type != MACHINE_EVBMIPS &&
 	    cpu->machine->machine_type != MACHINE_BEBOX)
 		dev_wdc_tick(cpu, extra);
 
+ret:
 	if (writeflag == MEM_READ) {
 		if (relative_addr == wd_data)
 			memory_writemax64(cpu, data, len, odata);
@@ -931,6 +954,7 @@ DEVINIT(wdc)
 	d->irq_nr     = devinit->irq_nr;
 	d->addr_mult  = devinit->addr_mult;
 	d->data_debug = 1;
+	d->io_enabled = 1;
 
 	d->inbuf = zeroed_alloc(WDC_INBUF_SIZE);
 
@@ -976,6 +1000,8 @@ DEVINIT(wdc)
 
 	machine_add_tickfunction(devinit->machine, dev_wdc_tick,
 	    d, tick_shift, 0.0);
+
+	devinit->return_ptr = d;
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.68 2006-07-26 08:02:31 debug Exp $
+ *  $Id: bus_pci.c,v 1.69 2006-08-12 19:32:20 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -56,6 +56,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "wdc.h"
 
 extern int verbose;
 
@@ -147,15 +149,27 @@ void bus_pci_data_access(struct cpu *cpu, struct pci_data *pci_data,
 			pci_data->last_was_write_ffffffff = 1;
 			return;
 		}
-		/*  Writes are not really supported yet:  */
-		if (idata != x) {
+
+		if (dev->cfg_reg_write != NULL) {
+			dev->cfg_reg_write(dev, pci_data->cur_reg, *data);
+		} else {
+			/*  Print a warning for unhandled writes:  */
 			debug("[ bus_pci: write to PCI DATA: data = 0x%08llx"
-			    " differs from current value 0x%08llx; NOT YET"
+			    " (current value = 0x%08llx); NOT YET"
 			    " SUPPORTED. bus %i, device %i, function %i (%s)"
 			    " register 0x%02x ]\n", (long long)idata,
 			    (long long)x, pci_data->cur_bus,
 			    pci_data->cur_device, pci_data->cur_func,
 			    dev->name, pci_data->cur_reg);
+
+			/*  Special warning, to detect if NetBSD's special
+			    detection of PCI devices fails:  */
+			if (pci_data->cur_reg == PCI_COMMAND_STATUS_REG
+			    && !((*data) & PCI_COMMAND_IO_ENABLE)) {
+				fatal("\n[ NetBSD PCI detection stuff not"
+				    " yet implemented for device '%s' ]\n",
+				    dev->name);
+			}
 		}
 		return;
 	}
@@ -796,6 +810,31 @@ PCIINIT(piix3_ide)
 	}
 }
 
+struct piix4_ide_extra {
+	void	*wdc0;
+	void	*wdc1;
+};
+
+int piix4_ide_cfg_reg_write(struct pci_device *pd, int reg, uint32_t value)
+{
+	void *wdc0 = ((struct piix4_ide_extra *)pd->extra)->wdc0;
+	void *wdc1 = ((struct piix4_ide_extra *)pd->extra)->wdc1;
+	int enabled = 0;
+
+	switch (reg) {
+	case PCI_COMMAND_STATUS_REG:
+		if (value & PCI_COMMAND_IO_ENABLE)
+			enabled = 1;
+		if (wdc0 != NULL)
+			wdc_set_io_enabled(wdc0, enabled);
+		if (wdc1 != NULL)
+			wdc_set_io_enabled(wdc1, enabled);
+		return 1;
+	}
+
+	return 0;
+}
+
 PCIINIT(piix4_ide)
 {
 	char tmpstr[100];
@@ -811,12 +850,21 @@ PCIINIT(piix4_ide)
 	/*  channel 0 and 1 enabled as IDE  */
 	PCI_SET_DATA(0x40, 0x80008000);
 
+	pd->extra = malloc(sizeof(struct piix4_ide_extra));
+	if (pd->extra == NULL) {
+		fatal("Out of memory.\n");
+		exit(1);
+	}
+	((struct piix4_ide_extra *)pd->extra)->wdc0 = NULL;
+	((struct piix4_ide_extra *)pd->extra)->wdc1 = NULL;
+
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
 		    pd->pcibus->isa_irqbase + 14);
-		device_add(machine, tmpstr);
+		((struct piix4_ide_extra *)pd->extra)->wdc0 =
+		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
@@ -824,8 +872,11 @@ PCIINIT(piix4_ide)
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x170),
 		    pd->pcibus->isa_irqbase + 15);
-		device_add(machine, tmpstr);
+		((struct piix4_ide_extra *)pd->extra)->wdc1 =
+		    device_add(machine, tmpstr);
 	}
+
+	pd->cfg_reg_write = piix4_ide_cfg_reg_write;
 }
 
 
@@ -899,6 +950,31 @@ PCIINIT(vt82c586_isa)
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 
+struct vt82c586_ide_extra {
+	void	*wdc0;
+	void	*wdc1;
+};
+
+int vt82c586_ide_cfg_reg_write(struct pci_device *pd, int reg, uint32_t value)
+{
+	void *wdc0 = ((struct vt82c586_ide_extra *)pd->extra)->wdc0;
+	void *wdc1 = ((struct vt82c586_ide_extra *)pd->extra)->wdc1;
+	int enabled = 0;
+
+	switch (reg) {
+	case PCI_COMMAND_STATUS_REG:
+		if (value & PCI_COMMAND_IO_ENABLE)
+			enabled = 1;
+		if (wdc0 != NULL)
+			wdc_set_io_enabled(wdc0, enabled);
+		if (wdc1 != NULL)
+			wdc_set_io_enabled(wdc1, enabled);
+		return 1;
+	}
+
+	return 0;
+}
+
 PCIINIT(vt82c586_ide)
 {
 	char tmpstr[100];
@@ -914,12 +990,21 @@ PCIINIT(vt82c586_ide)
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
 
+	pd->extra = malloc(sizeof(struct vt82c586_ide_extra));
+	if (pd->extra == NULL) {
+		fatal("Out of memory.\n");
+		exit(1);
+	}
+	((struct vt82c586_ide_extra *)pd->extra)->wdc0 = NULL;
+	((struct vt82c586_ide_extra *)pd->extra)->wdc1 = NULL;
+
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
 		    pd->pcibus->isa_irqbase + 14);
-		device_add(machine, tmpstr);
+		((struct vt82c586_ide_extra *)pd->extra)->wdc0 =
+		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
@@ -927,8 +1012,11 @@ PCIINIT(vt82c586_ide)
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x170),
 		    pd->pcibus->isa_irqbase + 15);
-		device_add(machine, tmpstr);
+		((struct vt82c586_ide_extra *)pd->extra)->wdc1 =
+		    device_add(machine, tmpstr);
 	}
+
+	pd->cfg_reg_write = vt82c586_ide_cfg_reg_write;
 }
 
 

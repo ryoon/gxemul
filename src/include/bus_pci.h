@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.29 2006-02-18 13:15:21 debug Exp $
+ *  $Id: bus_pci.h,v 1.30 2006-08-12 19:32:20 debug Exp $
  */
 
 #include "misc.h"
@@ -39,8 +39,11 @@ struct memory;
 
 struct pci_device;
 
+
 #ifndef BUS_PCI_C
+
 struct pci_data;
+
 #else
 
 struct pci_data {
@@ -80,13 +83,27 @@ struct pci_data {
 #define	PCI_CFG_MEM_SIZE	0x100
 
 struct pci_device {
+	/*  Pointer to the next PCI device on this bus:  */
 	struct pci_device	*next;
+
+	/*  Pointer back to the bus this device is connected to:  */
 	struct pci_data		*pcibus;
+
+	/*  Short device name, and bus/device/function value:  */
 	char			*name;
 	int			bus, device, function;
+
+	/*  Configuration memory:  */
 	unsigned char		cfg_mem[PCI_CFG_MEM_SIZE];
 	unsigned char		cfg_mem_size[PCI_CFG_MEM_SIZE];
+
+	/*  Used when setting up the configuration registers:  */
 	int			cur_mapreg_offset;
+
+	/*  Function to handle device-specific cfg register writes:  */
+	int			(*cfg_reg_write)(struct pci_device *pd,
+				    int reg, uint32_t value);
+	void			*extra;
 };
 
 #define	PCIINIT(name)	void pciinit_ ## name(struct machine *machine,	\
@@ -131,6 +148,8 @@ struct pci_data *bus_pci_init(struct machine *machine, int irq_nr,
 	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
 	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
 	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase);
+
+/*  Add a PCI device to a PCI bus:  */
 void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 	struct memory *mem, int bus, int device, int function,
 	const char *name);

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.215 2006-07-24 19:08:16 debug Exp $
+$Id: RELEASE,v 1.216 2006-08-12 19:32:20 debug Exp $
 
 Working on what will become 0.4.2.
 
@@ -29,6 +29,11 @@ Changes between release 0.4.1 and 0.4.2 include, among other things:
 	there is no installation ramdisk kernel. The GXemul documentation
 	has an example of how to install NetBSD/netwinder using an emulated
 	NetBSD/pmax machine.)
+
+    o)	PCI configuration register writes can now be handled, which allows
+	NetBSD/Malta (evbmips) 3.0.1 and NetBSD/cobalt 3.0.1 to run from
+	PCI IDE harddisk images. (Previously, only NetBSD 2.1 worked for
+	the Malta and Cobalt emulation modes.)
 
     o)	Some performance increases:
 

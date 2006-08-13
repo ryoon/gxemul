@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.166 2006-08-12 19:32:20 debug Exp $
+$Id: guestoses.html,v 1.167 2006-08-13 08:33:24 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -540,7 +540,7 @@ to simulate a CTRL-C sent to NetBSD. Then execute the following commands:
 mount /dev/cd0c /mnt
 mkdir /mnt2; mount /dev/sd0c /mnt2
 cd /mnt2; sh
-for a in /mnt/*/binary/sets/[bcekmt]*.tgz; do echo $a; tar zxfp $a; done
+for a in /mnt/*/binary/sets/[bcemt]*.tgz; do echo $a; tar zxfp $a; done
 exit
 cd dev; sh ./MAKEDEV all; cd ../etc
 echo rc_configured=YES >> rc.conf

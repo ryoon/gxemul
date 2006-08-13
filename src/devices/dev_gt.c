@@ -25,17 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.42 2006-07-21 16:55:41 debug Exp $
+ *  $Id: dev_gt.c,v 1.43 2006-08-13 08:34:06 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
  *	GT-64011	Used in Cobalt machines.
  *	GT-64120	Used in evbmips machines (Malta).
  *	GT-64260	Used in mvmeppc machines.
- *
- *  TODO: This more or less just a dummy device, so far. It happens to work
- *        with some NetBSD ports in some cases, and perhaps with Linux too,
- *        but it is not really working for anything else.
  */
 
 #include <stdio.h>
@@ -66,8 +62,8 @@ struct gt_data {
 	int		pci_irqbase;
 	int		type;
 
-	uint32_t	pci0_iold;	/*  I/O Low Decode address  */
-	uint32_t	pci0_iohd;	/*  I/O High Decode address  */
+	/*  Address decode registers:  */
+	uint32_t	decode[GT_N_DECODE_REGS];
 
 	struct pci_data	*pci_data;
 };
@@ -96,30 +92,32 @@ DEVICE_ACCESS(gt)
 	switch (relative_addr) {
 
 	case GT_PCI0IOLD_OFS:
-		if (writeflag == MEM_READ) {
-			odata = d->pci0_iold;
-		} else {
-			fatal("[ gt: write to GT_PCI0IOLD_OFS: 0x%x (TODO) ]\n",
-			    (int)idata);
-		}
-		break;
-
 	case GT_PCI0IOHD_OFS:
+	case GT_PCI0M0LD_OFS:
+	case GT_PCI0M0HD_OFS:
+	case GT_PCI0M1LD_OFS:
+	case GT_PCI0M1HD_OFS:
+	case GT_PCI0IOREMAP_OFS:
+	case GT_PCI0M0REMAP_OFS:
+	case GT_PCI0M1REMAP_OFS:
 		if (writeflag == MEM_READ) {
-			odata = d->pci0_iohd;
+			odata = d->decode[relative_addr / 8];
+			debug("[ gt: read from offset 0x%x: 0x%x ]\n",
+			    (int)relative_addr, (int)odata);
 		} else {
-			fatal("[ gt: write to GT_PCI0IOHD_OFS: 0x%x (TODO) ]\n",
-			    (int)idata);
+			d->decode[relative_addr / 8] = idata;
+			fatal("[ gt: write to offset 0x%x: 0x%x (TODO) ]\n",
+			    (int)relative_addr, (int)idata);
 		}
 		break;
 
-	case GT_PCI0IOREMAP_OFS:
-		/*  TODO: Same as GT_PCI0IOLD_OFS?  */
-		if (writeflag == MEM_READ) {
-			odata = d->pci0_iold;
+	case GT_PCI0_CMD_OFS:
+		if (writeflag == MEM_WRITE) {
+			debug("[ gt: write to GT_PCI0_CMD: 0x%08x (TODO) ]\n",
+			    (int)idata);
 		} else {
-			debug("[ gt: write to GT_PCI0IOREMAP_OFS: 0x%x "
-			    "(TODO) ]\n", (int)idata);
+			debug("[ gt: read from GT_PCI0_CMD (0x%08x) (TODO) ]\n",
+			    (int)odata);
 		}
 		break;
 
@@ -182,9 +180,8 @@ DEVICE_ACCESS(gt)
 /*
  *  dev_gt_init():
  *
- *  Initialize a GT device.  Return a pointer to the pci_data used, so that
- *  the caller may add PCI devices.  First, however, we add the GT device
- *  itself.
+ *  Initialize a Gallileo PCI controller device. First, the controller itself
+ *  is added to the bus, then a pointer to the bus is returned.
  */
 struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, int pciirq, int type)
@@ -248,9 +245,21 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 
+
 	d->pci_irqbase = pci_irqbase;
-	d->pci0_iold = pci_portbase >> 21;
-	d->pci0_iohd = 0x0000000f;	/*  TODO?  */
+
+	/*
+	 *  TODO: FIX THESE! Hardcoded numbers = bad.
+	 */
+	d->decode[GT_PCI0IOLD_OFS / 8] = pci_portbase >> 21;
+	d->decode[GT_PCI0IOHD_OFS / 8] = 0x40;
+	d->decode[GT_PCI0M0LD_OFS / 8] = 0x80;
+	d->decode[GT_PCI0M0HD_OFS / 8] = 0x3f;
+	d->decode[GT_PCI0M1LD_OFS / 8] = 0xc1;
+	d->decode[GT_PCI0M1HD_OFS / 8] = 0x5e;
+	d->decode[GT_PCI0IOREMAP_OFS / 8] = d->decode[GT_PCI0IOLD_OFS / 8];
+	d->decode[GT_PCI0M0REMAP_OFS / 8] = d->decode[GT_PCI0M0LD_OFS / 8];
+	d->decode[GT_PCI0M1REMAP_OFS / 8] = d->decode[GT_PCI0M1LD_OFS / 8];
 
 	d->pci_data = bus_pci_init(machine,
 	    pciirq, pci_io_offset, pci_mem_offset,

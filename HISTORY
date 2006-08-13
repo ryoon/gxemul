@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1322 2006-08-12 19:32:19 debug Exp $
+$Id: HISTORY,v 1.1323 2006-08-13 08:34:06 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2928,3 +2928,5 @@ Changelog for GXemul:
 		PCI configuration register writes can now be handled, which
 		allow PCI IDE controllers to work with NetBSD/Malta 3.0.1 and
 		NetBSD/cobalt 3.0.1. (Previously only NetBSD 2.1 worked.)
+20060813	Updating dev_gt.c based on numbers from Alec Voropay, to enable
+		Linux 2.6 to use PCI on Malta.

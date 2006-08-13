@@ -1,4 +1,4 @@
-/*  GXemul: $Id: gtreg.h,v 1.1 2006-07-21 16:55:41 debug Exp $  */
+/*  GXemul: $Id: gtreg.h,v 1.2 2006-08-13 08:34:06 debug Exp $  */
 /*	$NetBSD: gtreg.h,v 1.2 2005/12/24 20:07:03 perry Exp $	*/
 
 /*
@@ -22,9 +22,13 @@
 #define	GT_PCI0IOHD_OFS		0x050
 #define	GT_PCI0M0LD_OFS		0x058
 #define	GT_PCI0M0HD_OFS		0x060
+#define	GT_PCI0M1LD_OFS		0x080
+#define	GT_PCI0M1HD_OFS		0x088
 #define	GT_PCI0IOREMAP_OFS	0x0f0
 #define	GT_PCI0M0REMAP_OFS	0x0f8
 #define	GT_PCI0M1REMAP_OFS	0x100
+
+#define	GT_N_DECODE_REGS	(0x108 / 8)
 
 /* CPU Error Report Register Map */
 

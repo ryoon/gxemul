@@ -1,4 +1,4 @@
-$Id: TODO,v 1.339 2006-08-12 19:38:24 debug Exp $
+$Id: TODO,v 1.340 2006-08-13 08:34:06 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -32,6 +32,7 @@ Implementation:
 	    Support VDE (vde.sf.net)? Allow SLIP connections, possibly PPP,
 	    in addition to ethernet?
 	x)  Implement more ethernet NICs.
+	x)  IOP (I2O) device?
 
 Documentation:
 	x)  "Install netbsd/pmax first" => only use the install kernel?

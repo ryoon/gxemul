@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.110 2006-06-24 19:52:27 debug Exp $
+ *  $Id: diskimage.c,v 1.111 2006-08-14 17:27:45 debug Exp $
  *
  *  Disk image support.
  *
@@ -451,9 +451,11 @@ static int diskimage__internal_access(struct diskimage *d, int writeflag,
 
 	/*  Warn about non-complete data transfers:  */
 	if (lendone != (ssize_t)len) {
+#ifdef UNSTABLE_DEVEL
 		fatal("[ diskimage__internal_access(): disk_id %i, offset %lli"
 		    ", transfer not completed. len=%i, len_done=%i ]\n",
 		    d->id, (long long)offset, (int)len, (int)lendone);
+#endif
 		return 0;
 	}
 

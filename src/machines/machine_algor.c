@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.7 2006-08-14 17:45:47 debug Exp $
+ *  $Id: machine_algor.c,v 1.8 2006-08-14 18:03:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -82,7 +82,7 @@ MACHINE_SETUP(algor)
 		return;
 
 	/*  Magic "reboot" instruction at 0xbfc00000:  */
-	store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00000, 0x00c0de0d);
+	store_32bit_word(cpu, 0xffffffff9fc00000ULL, 0x00c0de0d);
 
 	/*  NetBSD/algor wants these:  */
 

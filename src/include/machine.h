@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.127 2006-07-25 19:35:28 debug Exp $
+ *  $Id: machine.h,v 1.128 2006-08-14 17:45:47 debug Exp $
  */
 
 #include <sys/types.h>
@@ -75,8 +75,11 @@ struct sgi_ip30_data;
 struct isa_pic_data {
 	struct pic8259_data	*pic1;
 	struct pic8259_data	*pic2;
+
 	int			last_int;
 	int			native_irq;
+	int			native_secondary_irq;
+	uint8_t			secondary_mask1;
 };
 
 

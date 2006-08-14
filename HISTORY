@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1323 2006-08-13 08:34:06 debug Exp $
+$Id: HISTORY,v 1.1324 2006-08-14 17:45:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2930,3 +2930,6 @@ Changelog for GXemul:
 		NetBSD/cobalt 3.0.1. (Previously only NetBSD 2.1 worked.)
 20060813	Updating dev_gt.c based on numbers from Alec Voropay, to enable
 		Linux 2.6 to use PCI on Malta.
+		Continuing on Algor interrupt stuff.
+20060814	Adding support for routing ISA interrupts to two different
+		interrupts, making it possible to run NetBSD/algor :-)

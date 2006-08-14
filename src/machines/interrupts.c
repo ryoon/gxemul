@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.9 2006-05-17 20:27:31 debug Exp $
+ *  $Id: interrupts.c,v 1.10 2006-08-14 17:45:47 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -707,6 +707,10 @@ void cpc700_interrupt(struct machine *m, struct cpu *cpu,
 /*
  *  Interrupt function for Cobalt, evbmips (Malta), and Algor.
  *
+ *  Most machines will not use secondary_mask1 and native_secondary_irq.
+ *  Algor, however, routes COM1 and COM2 interrupts to MIPS CPU interrupt 4
+ *  (called "secondary" here), and IDE interrupts to CPU interrupt 2.
+ *
  *  (irq_nr = 8 + 16 can be used to just reassert/deassert interrupts.)
  */
 void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
@@ -754,7 +758,14 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		m->isa_pic_data.last_int = x;
 	}
 
-	if (m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
+	if (m->isa_pic_data.secondary_mask1 &
+	    m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
+		cpu_interrupt(cpu, m->isa_pic_data.native_secondary_irq);
+	else
+		cpu_interrupt_ack(cpu, m->isa_pic_data.native_secondary_irq);
+
+	if (~m->isa_pic_data.secondary_mask1 &
+	    m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
 		cpu_interrupt(cpu, m->isa_pic_data.native_irq);
 	else
 		cpu_interrupt_ack(cpu, m->isa_pic_data.native_irq);

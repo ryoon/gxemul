@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.103 2006-08-12 17:22:26 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.104 2006-08-14 17:45:47 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1808,6 +1808,12 @@ X(break)
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
 	mips_cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
+}
+X(reboot)
+{
+	cpu->running = 0;
+	debugger_n_steps_left_before_interaction = 0;
+	cpu->cd.mips.next_ic = &nothing_call;
 }
 
 
@@ -3966,7 +3972,12 @@ X(to_be_translated)
 			break;
 
 		case SPECIAL_BREAK:
-			ic->f = instr(break);
+			if (((iword >> 6) & 0xfffff) == 0x30378) {
+				/*  "Magic trap" for REBOOT:  */
+				ic->f = instr(reboot);
+			} else {
+				ic->f = instr(break);
+			}
 			break;
 
 		case SPECIAL_SYNC:

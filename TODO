@@ -1,9 +1,10 @@
-$Id: TODO,v 1.340 2006-08-13 08:34:06 debug Exp $
+$Id: TODO,v 1.341 2006-08-14 17:45:47 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
+	x)  Mouse support for NetBSD/pmax 4.x!
 	x)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
 	x)  64-bit ranges in src/cpus/memory_mips_v2p.c

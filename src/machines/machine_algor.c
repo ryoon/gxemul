@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.6 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_algor.c,v 1.7 2006-08-14 17:45:47 debug Exp $
  */
 
 #include <stdio.h>
@@ -56,10 +56,20 @@ MACHINE_SETUP(algor)
 		exit(1);
 	}
 
+	/*
+	 *  Algor CPU interrupts:
+	 *
+	 *  7 = CPU count/compare
+	 *  4 = Local
+	 *  3 = PCI
+	 *  2 = ISA
+	 */
+
 	machine->md_int.v3_data = dev_v3_init(machine, machine->memory);
 	machine->md_interrupt = isa8_interrupt;
-	machine->isa_pic_data.native_irq = 6;
-	/*  Hm. ISA interrupts at 6, but "local" at 2!  */
+	machine->isa_pic_data.native_irq = 2;		/*  Primary: ISA  */
+	machine->isa_pic_data.secondary_mask1 = 0x18;
+	machine->isa_pic_data.native_secondary_irq = 4;	/*  Secondary: Local  */
 
 	device_add(machine, "algor addr=0x1ff00000");
 
@@ -70,6 +80,9 @@ MACHINE_SETUP(algor)
 
 	if (!machine->prom_emulation)
 		return;
+
+	/*  Magic "reboot" instruction at 0xbfc00000:  */
+	store_32bit_word(cpu, (int64_t)(int32_t)0x9fc00000, 0x00c0de0d);
 
 	/*  NetBSD/algor wants these:  */
 

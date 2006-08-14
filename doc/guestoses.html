@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.167 2006-08-13 08:33:24 debug Exp $
+$Id: guestoses.html,v 1.168 2006-08-14 17:45:47 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -53,6 +53,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.0.1</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.0.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.0.1</a>
+  <li><a href="#netbsdalgorinstall">NetBSD/algor 3.0.1</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0.1</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
@@ -502,8 +503,7 @@ generic kernel:<pre>
 in GXemul on an emulated Malta evaluation board, with a 5Kc (MIPS64) or 
 4Kc (MIPS32) processor. 5Kc is the default.
 
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20060812-netbsd-malta-3.0.1.png"><img src="20060812-netbsd-malta-3.0.1_small.png"></a>
 
 <p>One way to install the NetBSD/evbmips distribution onto a disk
@@ -533,8 +533,9 @@ image, from an emulated DECstation 3MAX machine:
   <li>Start the emulated DECstation machine like this:<pre>
 	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd-3.0.1.iso netbsd-INSTALL.gz</b>
 
-</pre>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
-to simulate a CTRL-C sent to NetBSD. Then execute the following commands:
+</pre>
+  <li>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
+to simulate a CTRL-C sent to NetBSD/pmax. Then execute the following commands:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>newfs /dev/sd0c
 mount /dev/cd0c /mnt
@@ -573,6 +574,91 @@ generic kernel:<pre>
 	file system (default generic):		<i>(just press enter)</i>
 	init path (default /sbin/init):		<i>(just press enter)</i>
 </pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdalgorinstall"></a>
+<h3>NetBSD/algor:</h3>
+
+<a href="http://www.netbsd.org/Ports/algor/">NetBSD/algor</a> can
+run in GXemul on an emulated Algorithmics P5064 evaluation board.
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="20060814-netbsd-algor-3.0.1.png"><img src="20060814-netbsd-algor-3.0.1_small.png"></a>
+
+<p>One way to install the NetBSD/algor distribution onto a disk
+image is to install the files using another (emulated) machine.
+
+<p>The following instructions will let you install NetBSD/algor onto a disk 
+image, from an emulated DECstation 3MAX machine:
+
+<p>
+<ol>
+  <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+</pre>
+  <p>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD/algor onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_algor.img bs=1024 count=1 seek=700000</b>
+
+</pre>
+  <li>Download the P5064 Algor kernel and the 3.0.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/algor/binary/kernel/netbsd-P5064.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/algor/binary/kernel/netbsd-P5064.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/algorcd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/algorcd-3.0.1.iso</a>
+
+</pre>
+  <p>
+  <li>Start the emulated DECstation machine like this:<pre>
+	<b>gxemul -e 3max -d nbsd_algor.img -d algorcd-3.0.1.iso netbsd-INSTALL.gz</b>
+
+</pre>
+  <li>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
+to simulate a CTRL-C sent to NetBSD/pmax. Then execute the following commands:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>newfs /dev/sd0c
+mount /dev/cd0c /mnt
+mkdir /mnt2; mount /dev/sd0c /mnt2
+cd /mnt2; sh
+for a in /mnt/*/binary/sets/[bcekmt]*.tgz; do echo $a; tar zxfp $a; done
+exit
+cd dev; sh ./MAKEDEV all; cd ../etc
+echo rc_configured=YES >> rc.conf
+echo "/dev/wd0c / ffs rw 1 1" > fstab
+cd /; umount /mnt; umount /mnt2; halt</b>
+</pre></td></tr></table>
+</ol>
+
+<p>You should now be able to boot NetBSD/algor using this command:<pre>
+	<b>gxemul -x -e p5064 -d nbsd_algor.img netbsd-P5064.gz</b>
+</pre>
+
+<p>The installation instructions above create a filesystem
+<i>without</i> a disklabel, so there is only one ffs partition and no
+swap. You will need to enter the following things when booting with the
+generic kernel:<pre>
+	root device (default wd0a): <b>wd0c</b>
+	dump device (default wd0b):		<i>(just press enter)</i>
+	file system (default generic):		<i>(just press enter)</i>
+	init path (default /sbin/init):		<i>(just press enter)</i>
+</pre>
+
+
+
+
+
 
 
 
@@ -901,17 +987,17 @@ in GXemul.
 <a href="20060724-netbsd-netwinder-1.png"><img src="20060724-netbsd-netwinder-1_small.png"></a>
 &nbsp;&nbsp;&nbsp;<a href="20060724-netbsd-netwinder-2.png"><img src="20060724-netbsd-netwinder-2_small.png"></a>
 
-<p>There is (as far as I know) no INSTALL ramdisk kernel, so one way to 
-install the NetBSD/netwinder distribution onto a disk image is to install 
-the files using another (emulated) machine.
-
-<p>The following instructions will let you install the NetBSD/netwinder 
-distribution onto a disk image, from an emulated DECstation 3MAX machine:
+<p>There is no INSTALL ramdisk kernel, so one way to install the 
+NetBSD/netwinder distribution onto a disk image is to install the files 
+using another (emulated) machine. The following instructions will let you 
+install the NetBSD/netwinder distribution onto a disk image, from an 
+emulated DECstation 3MAX machine:
 
 <p>
 <ol>
-  <li>Install NetBSD/pmax 3.0.1 according to instructions
-	<a href="#netbsdpmaxinstall">further up on this page</a>.
+  <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+</pre>
   <p>
   <li>Create an empty harddisk image, which will be the disk image
 	that you will install NetBSD onto:<pre>
@@ -924,16 +1010,18 @@ distribution onto a disk image, from an emulated DECstation 3MAX machine:
 
 </pre>
   <p>
-  <li>Start NetBSD/pmax like this:<pre>
-	<b>gxemul -e 3max -d nbsd_pmax.img -d nbsd_netwinder.img -d netwinder-3.0.1.iso</b>
+  <li>Start the emulated DECstation machine like this:<pre>
+	<b>gxemul -e 3max -d nbsd_netwinder.img -d netwindercd-3.0.1.iso netbsd-INSTALL.gz</b>
 
-</pre>and execute the following commands as <tt>root</tt>:
+</pre>
+  <li>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
+to simulate a CTRL-C sent to NetBSD/pmax. Then execute the following commands:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>newfs /dev/sd1c
+<b>newfs /dev/sd0c
 mount /dev/cd0c /mnt
-mkdir /mnt2; mount /dev/sd1c /mnt2
+mkdir /mnt2; mount /dev/sd0c /mnt2
 cd /mnt2; sh
-for a in /mnt/netwinder/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
+for a in /mnt/*/binary/sets/*.tgz; do echo $a; tar zxfp $a; done
 exit
 cd dev; sh ./MAKEDEV all; cd ../etc
 echo rc_configured=YES >> rc.conf
@@ -943,7 +1031,7 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 </ol>
 
 <p>NetBSD/netwinder is now installed on the disk image. The following command
-line can now be used to start NetBSD/netwinder:<pre>
+line can be used to start NetBSD/netwinder:<pre>
 	<b>gxemul -X -E netwinder -d nbsd_netwinder.img netbsd-GENERIC.gz</b>
 </pre>
 
@@ -1072,6 +1160,15 @@ Use the following command line to boot the emulated machine:<pre>
 <p>When asked which the root device is, type <tt><b>wd0</b></tt> and
 just press ENTER to select the default values for dump device, file
 system type, and init path.
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1297,8 +1394,8 @@ boot from the harddisk image:
 <h3>Ultrix/RISC:</h3>
 
 Ultrix 4.x can run in GXemul on an emulated DECstation 5000/200.
-(Ultrix was the native OS for these machines, but NetBSD/pmax is
-also usable.)
+(Ultrix was the native OS for these machines, but
+<a href="#netbsdpmaxinstall">NetBSD/pmax</a> is also usable.)
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -2277,6 +2374,11 @@ sync; halt</b>
 <p><font color="#ff0000">IT DOES <b>NOT</b> WORK YET</font>, there are 
 errors while uncompressing the tgz files, and the machine crashes when 
 trying to run /sbin/init.
+
+
+
+
+
 
 
 

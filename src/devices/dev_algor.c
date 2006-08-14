@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_algor.c,v 1.2 2006-03-31 23:20:25 debug Exp $
+ *  $Id: dev_algor.c,v 1.3 2006-08-14 17:45:47 debug Exp $
  *
  *  Algor misc. stuff.
  *
  *  TODO: This is hardcoded for P5064 right now. Generalize it to P40xx etc.
+ *
+ *  CPU irq 2 = ISA, 3 = PCI, 4 = Local.
  */
 
 #include <stdio.h>
@@ -59,14 +61,107 @@ DEVICE_ACCESS(algor)
 
 	switch (relative_addr) {
 
+	case P5064_LED1 + 0x0:
+	case P5064_LED1 + 0x4:
+	case P5064_LED1 + 0x8:
+	case P5064_LED1 + 0xc:
+		break;
+
 	case P5064_LOCINT:
-		{
+		/*
+		 *  TODO: See how ISAINT is implemented.
+		 *
+		 *  Implemented so far: COM1 only.
+		 */
+		n = "P5064_LOCINT";
+		if (writeflag == MEM_READ) {
+			/*  Ugly hack for NetBSD startup.  TODO: fix  */
 			static int x = 0;
-			x ++;
-			odata = LOCINT_PCIBR;
-			if ((x & 0xffff) == 0)
+			if (((++ x) & 0xffff) == 0)
 				odata |= LOCINT_RTC;
+
+			if (cpu->machine->isa_pic_data.pic1->irr &
+			    ~cpu->machine->isa_pic_data.pic1->ier & 0x10)
+				odata |= LOCINT_COM1;
+			if (cpu->machine->isa_pic_data.pic1->irr &
+			    ~cpu->machine->isa_pic_data.pic1->ier & 0x08)
+				odata |= LOCINT_COM2;
+
+			/*  Read => ack:  */
+			cpu->machine->isa_pic_data.pic1->irr &= ~0x18;
+			cpu_interrupt_ack(cpu, 4);
+		} else {
+			if (idata & LOCINT_COM1)
+				cpu->machine->isa_pic_data.pic1->ier &= ~0x10;
+			else
+				cpu->machine->isa_pic_data.pic1->ier |= 0x10;
+			if (idata & LOCINT_COM2)
+				cpu->machine->isa_pic_data.pic1->ier &= ~0x08;
+			else
+				cpu->machine->isa_pic_data.pic1->ier |= 0x08;
 		}
+		break;
+
+	case P5064_PANIC:
+		n = "P5064_PANIC";
+		if (writeflag == MEM_READ)
+			odata = 0;
+		break;
+
+	case P5064_PCIINT:
+		/*
+		 *  TODO: See how ISAINT is implemented.
+		 */
+		n = "P5064_PCIINT";
+		if (writeflag == MEM_READ) {
+			odata = 0;
+			cpu_interrupt_ack(cpu, 3);
+		}
+		break;
+
+	case P5064_ISAINT:
+		/*
+		 *  ISA interrupts:
+		 *
+		 *	Bit:  IRQ Source:
+		 *	0     ISAINT_ISABR
+		 *	1     ISAINT_IDE0
+		 *	2     ISAINT_IDE1
+		 *
+		 *  NOTE/TODO: Ugly redirection to the ISA controller.
+		 */
+		n = "P5064_ISAINT";
+		if (writeflag == MEM_WRITE) {
+			if (idata & ISAINT_IDE0)
+				cpu->machine->isa_pic_data.pic2->ier &= ~0x40;
+			else
+				cpu->machine->isa_pic_data.pic2->ier |= 0x40;
+			if (idata & ISAINT_IDE1)
+				cpu->machine->isa_pic_data.pic2->ier &= ~0x80;
+			else
+				cpu->machine->isa_pic_data.pic2->ier |= 0x80;
+			cpu->machine->isa_pic_data.pic1->ier &= ~0x04;
+		} else {
+			if (cpu->machine->isa_pic_data.pic2->irr &
+			    ~cpu->machine->isa_pic_data.pic2->ier & 0x40)
+				odata |= ISAINT_IDE0;
+			if (cpu->machine->isa_pic_data.pic2->irr &
+			    ~cpu->machine->isa_pic_data.pic2->ier & 0x80)
+				odata |= ISAINT_IDE1;
+
+			/*  Read => ack:  */
+			cpu->machine->isa_pic_data.pic2->irr &= ~0xc0;
+			cpu_interrupt_ack(cpu, 2);
+		}
+		break;
+
+	case P5064_KBDINT:
+		/*
+		 *  TODO: See how ISAINT is implemented.
+		 */
+		n = "P5064_KBDINT";
+		if (writeflag == MEM_READ)
+			odata = 0;
 		break;
 
 	default:if (writeflag == MEM_READ) {
@@ -80,7 +175,8 @@ DEVICE_ACCESS(algor)
 
 	if (n != NULL) {
 		if (writeflag == MEM_READ) {
-			debug("[ algor: read from %s ]\n", n);
+			debug("[ algor: read from %s: 0x%"PRIx64" ]\n",
+			    n, (uint64_t) odata);
 		} else {
 			debug("[ algor: write to %s: 0x%"PRIx64" ]\n",
 			    n, (uint64_t) idata);

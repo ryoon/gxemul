@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.216 2006-08-12 19:32:20 debug Exp $
+$Id: RELEASE,v 1.217 2006-08-14 17:45:47 debug Exp $
 
 Working on what will become 0.4.2.
 
@@ -30,6 +30,10 @@ Changes between release 0.4.1 and 0.4.2 include, among other things:
 	has an example of how to install NetBSD/netwinder using an emulated
 	NetBSD/pmax machine.)
 
+    o)	Algorithmics P5064 emulation works well enough to let NetBSD/algor
+	run from a disk image. (Similar to NetBSD/netwinder, it has to
+	be installed manually, using another emulated machine.)
+
     o)	PCI configuration register writes can now be handled, which allows
 	NetBSD/Malta (evbmips) 3.0.1 and NetBSD/cobalt 3.0.1 to run from
 	PCI IDE harddisk images. (Previously, only NetBSD 2.1 worked for
@@ -41,8 +45,7 @@ Changes between release 0.4.1 and 0.4.2 include, among other things:
 	to work the same way for 32-bit and 64-bit emulation, and this
 	apparently results in a speedup for all 64-bit modes.
 
-	For 32-bit MIPS, some more instruction combinations have been
-	added.
+	For 32-bit MIPS, some more instruction combinations have been added.
 
 Please read the HISTORY files for more details.
 

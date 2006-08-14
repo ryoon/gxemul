@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.67 2006-08-12 19:32:20 debug Exp $
+ *  $Id: dev_wdc.c,v 1.68 2006-08-14 17:45:47 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -924,6 +924,7 @@ DEVICE_ACCESS(wdc)
 
 	if (cpu->machine->machine_type != MACHINE_HPCMIPS &&
 	    cpu->machine->machine_type != MACHINE_EVBMIPS &&
+	    cpu->machine->machine_type != MACHINE_ALGOR &&
 	    cpu->machine->machine_type != MACHINE_BEBOX)
 		dev_wdc_tick(cpu, extra);
 

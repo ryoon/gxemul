@@ -1,4 +1,4 @@
-$Id: TODO,v 1.341 2006-08-14 17:45:47 debug Exp $
+$Id: TODO,v 1.342 2006-08-14 17:47:21 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -214,10 +214,7 @@ POWER/PowerPC:
 	x)  make OpenBSD/macppc work (PCI controller stuff)
 
 Algor:
-	PCI and ISA and LOCAL interrupts! --> wdc could start working.
-		Or possibly not? Googling reveals that wdc might be
-		broken in NetBSD/algor. :(
-	Add interrupt controller in dev_algor.c.
+	PCI interrupts... needed or stuff like the tlp NIC?
 
 ARM:
 	o)  try to get netbsd/evbarm 3.x running (iq80321)

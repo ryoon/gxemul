@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.168 2006-08-14 17:45:47 debug Exp $
+$Id: guestoses.html,v 1.169 2006-08-15 15:38:37 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -54,7 +54,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.0.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.0.1</a>
   <li><a href="#netbsdalgorinstall">NetBSD/algor 3.0.1</a>
-  <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0</a>
+  <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0.1</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.0.1</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.0.1</a>
@@ -682,7 +682,7 @@ NetBSD can still run in the emulator, as long as it doesn't use SCSI.
 
 <p>For a simple test with the ramdisk/install kernel, try 
 dowloading<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>and run&nbsp;&nbsp;<b><tt>gxemul -x -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
 
@@ -733,7 +733,7 @@ reboot</b>
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>cd /tftpboot; ftp -i ftp.se.netbsd.org</b>
 (log in as anonymous...)
-<b>cd /pub/NetBSD/NetBSD-3.0/sgimips/binary/sets
+<b>cd /pub/NetBSD/NetBSD-3.0.1/sgimips/binary/sets
 mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz
 quit
 sh
@@ -744,8 +744,8 @@ dd if=/dev/zero of=swap bs=1024 count=32768
 halt</b>
 </pre></td></tr></table>
   <li>Download the NetBSD/sgimips GENERIC and INSTALL kernels:<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>
   <li>Create a configuration file called <tt>config_client</tt>:
@@ -2171,26 +2171,21 @@ from FreeBSD ports with GXemul gave the following result:
         <b>while true; do ls -l > /dev/null; echo -n .; done</b>
         (80 x 36 dots)
         QEMU 0.8.1:       13 min 48 sec
-        GXemul 20060711:   7 min 54 sec
-	GXemul 0.4.1:      4 min 59 sec
+	GXemul 0.4.2:      4 min 31 sec
 
 	<b>while true; do /usr/bin/md5sum /usr/bin/* > /dev/null; echo -n .; done</b>
         (80 dots)
         QEMU 0.8.1:        2 min  9 sec
-        GXemul 20060711:   8 min 49 sec
-	GXemul 0.4.1:      6 min 54 sec
+	GXemul 0.4.2:      5 min 18 sec
 
         <b>while true; do grep hej lib/libtextwrap.so.1 > /dev/null; echo -n .; done</b>
         (80 dots)
         QEMU 0.8.1:       10 min  5 sec
-        GXemul 20060711:   3 min  8 sec
-	GXemul 0.4.1:      1 min 42 sec
+	GXemul 0.4.2:      1 min 36 sec
 </pre>
 
 <p>The commands were run inside the emulators, using the ramdisk kernel
-mentioned above. (For GXemul, 2006-07-11 was the date when the QEMU_MIPS
-mode was added. Performance has since gotten a bit better in general, for 
-non-R3000 MIPS emulation.)
+mentioned above.
 
 
 

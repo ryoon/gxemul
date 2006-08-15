@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1324 2006-08-14 17:45:46 debug Exp $
+$Id: HISTORY,v 1.1325 2006-08-15 15:38:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2933,3 +2933,4 @@ Changelog for GXemul:
 		Continuing on Algor interrupt stuff.
 20060814	Adding support for routing ISA interrupts to two different
 		interrupts, making it possible to run NetBSD/algor :-)
+20060814-15	Testing for the release.

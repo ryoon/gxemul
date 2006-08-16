@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.128 2006-08-14 17:45:47 debug Exp $
+ *  $Id: machine.h,v 1.129 2006-08-16 18:55:38 debug Exp $
  */
 
 #include <sys/types.h>
@@ -211,7 +211,6 @@ struct machine {
 	uint64_t file_loaded_end_addr;
 	char	*boot_kernel_filename;
 	char	*boot_string_argument;
-	int	automatic_clock_adjustment;
 	int	exit_without_entering_debugger;
 	int	n_gfx_cards;
 

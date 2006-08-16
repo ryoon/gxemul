@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.14 2006-07-01 21:15:46 debug Exp $
+ *  $Id: debugger.c,v 1.15 2006-08-16 18:55:38 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -71,6 +71,7 @@
 #include "misc.h"
 #include "net.h"
 #include "settings.h"
+#include "timer.h"
 #include "x11.h"
 
 
@@ -818,6 +819,9 @@ void debugger(void)
 	}
 
 
+	/*  Stop timers while interacting with the user:  */
+	timer_stop();
+
 	exit_debugger = 0;
 
 	while (!exit_debugger) {
@@ -858,6 +862,11 @@ void debugger(void)
 			return;
 	}
 
+	/*  Start up timers again:  */
+	timer_start();
+
+	/*  ... and reset starttime, so that nr of instructions per second
+	    can be calculated correctly:  */
 	gettimeofday(&debugger_machine->starttime, NULL);
 	debugger_machine->ninstrs_since_gettimeofday = 0;
 

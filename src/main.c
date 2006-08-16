@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.277 2006-06-30 20:22:53 debug Exp $
+ *  $Id: main.c,v 1.278 2006-08-16 18:55:37 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,6 +44,7 @@
 #include "machine.h"
 #include "misc.h"
 #include "settings.h"
+#include "timer.h"
 
 
 extern volatile int single_step;
@@ -432,7 +433,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			exit(1);
 		case 'I':
 			m->emulated_hz = atoi(optarg);
-			m->automatic_clock_adjustment = 0;
 			msopts = 1;
 			break;
 		case 'i':
@@ -726,6 +726,7 @@ int main(int argc, char *argv[])
 	cpu_init();
 	device_init();
 	machine_init();
+	timer_init();
 	useremul_init();
 
 	emuls = malloc(sizeof(struct emul *));
@@ -749,7 +750,7 @@ int main(int argc, char *argv[])
 		srandom(time(NULL) ^ (getpid() << 12));
 	} else {
 		/*  Fully deterministic. -I must have been supplied.  */
-		if (emuls[0]->machines[0]->automatic_clock_adjustment) {
+		if (emuls[0]->machines[0]->emulated_hz < 1) {
 			fatal("Cannot have -D without -I.\n");
 			exit(1);
 		}

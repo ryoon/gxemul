@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.349 2006-07-26 23:21:47 debug Exp $
+ *  $Id: cpu.c,v 1.350 2006-08-16 18:55:37 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -409,10 +409,8 @@ void cpu_run_deinit(struct machine *machine)
 /*
  *  cpu_show_cycles():
  *
- *  If automatic adjustment of clock interrupts is turned on, then recalculate
- *  emulated_hz.  Also, if show_nr_of_instructions is on, then print a
- *  line to stdout about how many instructions/cycles have been executed so
- *  far.
+ *  If show_nr_of_instructions is on, then print a line to stdout about how
+ *  many instructions/cycles have been executed so far.
  */
 void cpu_show_cycles(struct machine *machine, int forced)
 {
@@ -420,7 +418,6 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	char *symbol;
 	int64_t mseconds, ninstrs, is, avg;
 	struct timeval tv;
-	int h, m, s, ms, d;
 
 	static int64_t mseconds_last = 0;
 	static int64_t ninstrs_last = -1;
@@ -439,52 +436,11 @@ void cpu_show_cycles(struct machine *machine, int forced)
 
 	ninstrs = machine->ninstrs_since_gettimeofday;
 
-	if (machine->automatic_clock_adjustment) {
-		static int first_adjustment = 1;
-
-		/*  Current nr of cycles per second:  */
-		int64_t cur_cycles_per_second = 1000 *
-		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last);
-
-		/*  fatal("[ CYCLES PER SECOND = %"PRIi64" ]\n",
-		    cur_cycles_per_second);  */
-
-		if (cur_cycles_per_second < 1000000)
-			cur_cycles_per_second = 1000000;
-
-		if (first_adjustment) {
-			machine->emulated_hz = cur_cycles_per_second;
-			first_adjustment = 0;
-		} else {
-			machine->emulated_hz = (15 * machine->emulated_hz +
-			    cur_cycles_per_second) / 16;
-		}
-
-		/*  fatal("[ updating emulated_hz to %"PRIi64" Hz ]\n",
-		    machine->emulated_hz);  */
-	}
-
-
 	/*  RETURN here, unless show_nr_of_instructions (-N) is turned on:  */
 	if (!machine->show_nr_of_instructions && !forced)
 		goto do_return;
 
 	printf("[ %"PRIi64" instrs", (int64_t)machine->ninstrs);
-
-	if (!machine->automatic_clock_adjustment) {
-		d = machine->emulated_hz / 1000;
-		if (d < 1)
-			d = 1;
-		ms = machine->ninstrs / d;
-		h = ms / 3600000;
-		ms -= 3600000 * h;
-		m = ms / 60000;
-		ms -= 60000 * m;
-		s = ms / 1000;
-		ms -= 1000 * s;
-
-		printf(", emulated time = %02i:%02i:%02i.%03i; ", h, m, s, ms);
-	}
 
 	/*  Instructions per second, and average so far:  */
 	is = 1000 * (ninstrs-ninstrs_last) / (mseconds-mseconds_last);

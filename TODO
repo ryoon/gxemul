@@ -1,11 +1,11 @@
-$Id: TODO,v 1.343 2006-08-14 18:46:30 debug Exp $
+$Id: TODO,v 1.344 2006-08-16 18:55:37 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
 	x)  ARM "wait"-like instruction.
-	x)  CLOCK FRAMEWORK!
+	x)  CLOCK FRAMEWORK!  -I option!
 	x)  Mouse support for NetBSD/pmax 4.x!
 	x)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
@@ -38,6 +38,7 @@ Implementation:
 	x)  IOP (I2O) device?
 
 Documentation:
+	x)  Clock framework? -I option changes?
 	x)  "Install netbsd/pmax first" => only use the install kernel?
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
@@ -51,6 +52,10 @@ Documentation:
 	    Example for MIPS64.
 
 Long-term design:
+	x)  Clock framework:
+		o) Go through all clock devices, make sure they
+		   return correct data, and run at correct speeds!
+		o) How to allow BOTH correct clocks, and fixed speeds?
 	x)  Instruction combination collisions? How to avoid easily...
 	x)  Think about how to do both SHmedia and SHcompact in a reasonable
 	    way!
@@ -59,8 +64,6 @@ Long-term design:
 	    during runtime.   machine.statistics = on|off
 	x)  MAINBUS REDESIGN!
 	x)  PCI redesign... I need to read up on how PCI actually works :)
-	x)  Clock framework! Go through all clock devices, make sure they
-	    return correct data, and run at correct speeds!
 	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,
 	    it would be reasonably simple to add; in each individual fast
 	    load/store routine = a lot more work, and it would become

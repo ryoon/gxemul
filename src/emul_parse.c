@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.42 2006-06-22 13:22:41 debug Exp $
+ *  $Id: emul_parse.c,v 1.43 2006-08-16 18:55:37 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -538,7 +538,6 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		if (cur_machine_emulated_hz[0]) {
 			m->emulated_hz = mystrtoull(cur_machine_emulated_hz,
 			    NULL, 0);
-			m->automatic_clock_adjustment = 0;
 		}
 
 		/*  NOTE: Default nr of CPUs is 0:  */

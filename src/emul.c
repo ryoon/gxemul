@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.260 2006-07-26 23:21:47 debug Exp $
+ *  $Id: emul.c,v 1.261 2006-08-16 18:55:37 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -52,6 +52,7 @@
 #include "misc.h"
 #include "net.h"
 #include "sgi_arcbios.h"
+#include "timer.h"
 #include "x11.h"
 
 
@@ -1575,6 +1576,9 @@ void emul_run(struct emul **emuls, int n_emuls)
 		cpu_functioncall_trace(emuls[0]->machines[0]->cpus[0],
 		    emuls[0]->machines[0]->cpus[0]->pc);
 
+	/*  Start emulated clocks:  */
+	timer_start();
+
 	/*
 	 *  MAIN LOOP:
 	 *
@@ -1630,6 +1634,9 @@ void emul_run(struct emul **emuls, int n_emuls)
 				go = 1;
 		}
 	}
+
+	/*  Stop any running timers:  */
+	timer_stop();
 
 	/*  Deinitialize all CPUs in all machines in all emulations:  */
 	for (i=0; i<n_emuls; i++) {

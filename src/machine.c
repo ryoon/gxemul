@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.679 2006-07-16 13:32:25 debug Exp $
+ *  $Id: machine.c,v 1.680 2006-08-16 18:55:37 debug Exp $
  */
 
 #include <stdio.h>
@@ -93,7 +93,6 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
 	m->boot_kernel_filename = "";
 	m->boot_string_argument = NULL;
-	m->automatic_clock_adjustment = 1;
 	m->x11_scaledown = 1;
 	m->x11_scaleup = 1;
 	m->n_gfx_cards = 1;
@@ -398,13 +397,6 @@ void machine_dumpinfo(struct machine *m)
 		debug(", randomized contents");
 	if (m->dbe_on_nonexistant_memaccess)
 		debug(", dbe_on_nonexistant_memaccess");
-	debug("\n");
-
-	debug("clock: ");
-	if (m->automatic_clock_adjustment)
-		debug("adjusted automatically");
-	else
-		debug("fixed at %i Hz", m->emulated_hz);
 	debug("\n");
 
 	if (!m->prom_emulation)

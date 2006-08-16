@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.86 2006-06-22 13:22:41 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.87 2006-08-16 18:55:38 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -48,6 +48,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 #include "mc146818reg.h"
 
@@ -63,28 +64,28 @@
 /*  256 on DECstation, SGI uses reg at 72*4 as the Century  */
 #define	N_REGISTERS	1024
 struct mc_data {
-	int	access_style;
-	int	last_addr;
+	int		access_style;
+	int		last_addr;
 
-	int	register_choice;
-	int	reg[N_REGISTERS];
-	int	addrdiv;
+	int		register_choice;
+	int		reg[N_REGISTERS];
+	int		addrdiv;
 
-	int	use_bcd;
+	int		use_bcd;
 
-	int	timebase_hz;
-	int	interrupt_hz;
-	int	irq_nr;
+	int		timebase_hz;
+	int		interrupt_hz;
+	int		old_interrupt_hz;
+	int		irq_nr;
+	struct timer	*timer;
+	volatile int	pending_timer_interrupts;
 
-	int	previous_second;
-	int	n_seconds_elapsed;
-	int	uip_threshold;
+	int		previous_second;
+	int		n_seconds_elapsed;
+	int		uip_threshold;
 
-	int	interrupt_every_x_cycles;
-	int	cycles_left_until_interrupt;
-
-	int	ugly_netbsd_prep_hack_done;
-	int	ugly_netbsd_prep_hack_sec;
+	int		ugly_netbsd_prep_hack_done;
+	int		ugly_netbsd_prep_hack_sec;
 };
 
 
@@ -101,45 +102,14 @@ struct mc_data {
 
 
 /*
- *  recalc_interrupt_cycle():
+ *  timer_tick():
  *
- *  If automatic_clock_adjustment is turned on, then emulated_hz is modified
- *  dynamically.  We have to recalculate how often interrupts are to be
- *  triggered.
+ *  Called d->interrupt_hz times per (real-world) second.
  */
-static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
+static void timer_tick(struct timer *timer, void *extra)
 {
-	int64_t emulated_hz = cpu->machine->emulated_hz;
-#if 0
-	static int warning_printed = 0;
-
-	/*
-	 *  A hack to make Ultrix run, even on very fast host machines.
-	 *
-	 *  (Ultrix was probably never meant to be run on machines with
-	 *  faster CPUs than around 33 MHz or so.)
-	 */
-	if (d->access_style == MC146818_DEC && emulated_hz > 30000000) {
-		if (!warning_printed) {
-			fatal("\n*********************************************"
-			    "**********************************\n\n   Your hos"
-			    "t machine is too fast! The emulated CPU speed wil"
-			    "l be limited to\n   30 MHz, and clocks inside the"
-			    " emulated environment might go faster than\n   in"
-			    " the real world.  You have been warned.\n\n******"
-			    "*************************************************"
-			    "************************\n\n");
-			warning_printed = 1;
-		}
-
-		emulated_hz = 30000000;
-	}
-#endif
-
-	if (d->interrupt_hz > 0)
-		d->interrupt_every_x_cycles = emulated_hz / d->interrupt_hz;
-	else
-		d->interrupt_every_x_cycles = 0;
+	struct mc_data *d = (struct mc_data *) extra;
+	d->pending_timer_interrupts ++;
 }
 
 
@@ -149,27 +119,32 @@ static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 void dev_mc146818_tick(struct cpu *cpu, void *extra)
 {
 	struct mc_data *d = extra;
+	int pti = d->pending_timer_interrupts;
 
-	recalc_interrupt_cycle(cpu, d);
-
-	if ((d->reg[MC_REGB * 4] & MC_REGB_PIE) &&
-	     d->interrupt_every_x_cycles > 0) {
-		d->cycles_left_until_interrupt -= (1 << TICK_SHIFT);
-
-		if (d->cycles_left_until_interrupt < 0 ||
-		    d->cycles_left_until_interrupt >=
-		    d->interrupt_every_x_cycles) {
-			/*  fatal("[ rtc interrupt (every %i cycles) ]\n",
-			    d->interrupt_every_x_cycles);  */
-			cpu_interrupt(cpu, d->irq_nr);
-
-			d->reg[MC_REGC * 4] |= MC_REGC_PF;
-
-			/*  Reset the cycle countdown:  */
-			while (d->cycles_left_until_interrupt < 0)
-				d->cycles_left_until_interrupt +=
-				    d->interrupt_every_x_cycles;
+	if ((d->reg[MC_REGB * 4] & MC_REGB_PIE) && pti > 0) {
+		static int warned = 0;
+		if (pti > 500 && !warned) {
+			warned = 1;
+			fatal("[ WARNING: MC146818 interrupts lost, "
+			    "host too slow? ]\n");
 		}
+
+#if 0
+		/*  For debugging, to see how much the interrupts are
+		    lagging behind the real clock:  */
+		{
+			static int x = 0;
+			if (++x == 1) {
+				x = 0;
+				printf("%i ", pti);
+				fflush(stdout);
+			}
+		}
+#endif
+
+		cpu_interrupt(cpu, d->irq_nr);
+
+		d->reg[MC_REGC * 4] |= MC_REGC_PF;
 	}
 
 	if (d->reg[MC_REGC * 4] & MC_REGC_UF ||
@@ -474,27 +449,40 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 				;
 			}
 
-			recalc_interrupt_cycle(cpu, d);
+			if (d->interrupt_hz != d->old_interrupt_hz) {
+				debug("[ rtc changed to interrupt at %i Hz ]\n",
+				    d->interrupt_hz);
 
-			d->cycles_left_until_interrupt =
-				d->interrupt_every_x_cycles;
+				d->old_interrupt_hz = d->interrupt_hz;
+
+				if (d->timer != NULL)
+					timer_remove(d->timer);
+
+				d->timer = NULL;
+
+				if (d->interrupt_hz > 0)
+					d->timer = timer_add(d->interrupt_hz,
+					    timer_tick, d);
+			}
 
 			d->reg[MC_REGA * 4] =
 			    data[0] & (MC_REGA_RSMASK | MC_REGA_DVMASK);
-
-			debug("[ rtc set to interrupt every %i:th cycle ]\n",
-			    d->interrupt_every_x_cycles);
 			break;
 		case MC_REGB*4:
+#if 0
+OLD CODE
+TODO: Needs to be rewritten to use the new timer framework?
+
 			if (((data[0] ^ d->reg[MC_REGB*4]) & MC_REGB_PIE))
 				d->cycles_left_until_interrupt =
 				    d->interrupt_every_x_cycles;
+#endif
+
 			d->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
 				cpu_interrupt_ack(cpu, d->irq_nr);
-				/*  d->cycles_left_until_interrupt =
-				    d->interrupt_every_x_cycles;  */
 			}
+
 			/*  debug("[ mc146818: write to MC_REGB, data[0] "
 			    "= 0x%02x ]\n", data[0]);  */
 			break;
@@ -587,8 +575,14 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 		if (relative_addr == MC_REGC*4) {
 			cpu_interrupt_ack(cpu, d->irq_nr);
-			/*  d->cycles_left_until_interrupt =
-			    d->interrupt_every_x_cycles;  */
+
+			/*
+			 *  Acknowledging an interrupt decreases the
+			 *  number of pending "real world" timer ticks.
+			 */
+			if (d->reg[MC_REGC * 4] & MC_REGC_PF)
+				d->pending_timer_interrupts --;
+
 			d->reg[MC_REGC * 4] = 0x00;
 		}
 	}

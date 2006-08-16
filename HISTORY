@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1325 2006-08-15 15:38:37 debug Exp $
+$Id: HISTORY,v 1.1326 2006-08-16 18:55:36 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2934,3 +2934,8 @@ Changelog for GXemul:
 20060814	Adding support for routing ISA interrupts to two different
 		interrupts, making it possible to run NetBSD/algor :-)
 20060814-15	Testing for the release.
+
+==============  RELEASE 0.4.2  ==============
+
+20060816	Adding a framework for emulated/virtual timers (src/timer.c).
+		Rewriting the mc146818 to use the new timer framework.

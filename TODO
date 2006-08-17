@@ -1,11 +1,12 @@
-$Id: TODO,v 1.344 2006-08-16 18:55:37 debug Exp $
+$Id: TODO,v 1.345 2006-08-17 15:10:58 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
 	x)  ARM "wait"-like instruction.
-	x)  CLOCK FRAMEWORK!  -I option!
+	x)  CLOCK FRAMEWORK!
+		x)  THINK ABOUT HOW TO IMPLEMENT THE -I option!
 	x)  Mouse support for NetBSD/pmax 4.x!
 	x)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.

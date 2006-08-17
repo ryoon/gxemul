@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.1 2006-08-16 18:55:38 debug Exp $
+ *  $Id: timer.c,v 1.2 2006-08-17 15:10:58 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -55,12 +55,15 @@ struct timer {
 };
 
 static struct timer *first_timer = NULL;
-
+struct timeval timer_start_tv;
 static double timer_freq;
+static int timer_countdown_to_next_gettimeofday;
 static double timer_current_time;
 static double timer_current_time_step;
 
 static int timer_is_running;
+
+#define	SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH	1.0
 
 
 /*
@@ -122,6 +125,19 @@ void timer_remove(struct timer *t)
 
 
 /*
+ *  timer_update_frequency():
+ *
+ *  Changes the frequency of an existing timer.
+ */
+void timer_update_frequency(struct timer *t, double new_freq)
+{
+	t->freq = new_freq;
+	t->interval = 1.0 / new_freq;
+	t->next_tick_at = timer_current_time + t->interval;
+}
+
+
+/*
  *  timer_tick():
  *
  *  Timer tick handler. This is where the interesting stuff happens.
@@ -129,8 +145,33 @@ void timer_remove(struct timer *t)
 static void timer_tick(int signal_nr)
 {
 	struct timer *timer = first_timer;
+	struct timeval tv;
 
 	timer_current_time += timer_current_time_step;
+
+	if ((--timer_countdown_to_next_gettimeofday) < 0) {
+		gettimeofday(&tv, NULL);
+		tv.tv_sec -= timer_start_tv.tv_sec;
+		tv.tv_usec -= timer_start_tv.tv_usec;
+		if (tv.tv_usec < 0) {
+			tv.tv_usec += 1000000;
+			tv.tv_sec --;
+		}
+
+#if 0
+		/*  For debugging/testing:  */
+		{
+			double diff = tv.tv_usec * 0.000001 + tv.tv_sec
+			    - timer_current_time;
+			printf("timer: lagging behind %f seconds\n", diff);
+		}
+#endif
+
+		timer_current_time = tv.tv_usec * 0.000001 + tv.tv_sec;
+
+		timer_countdown_to_next_gettimeofday = timer_freq *
+		    SECONDS_BETWEEN_GETTIMEOFDAY_SYNCH;
+	}
 
 	while (timer != NULL) {
 		while (timer_current_time >= timer->next_tick_at) {
@@ -154,6 +195,7 @@ static void timer_tick(int signal_nr)
  */
 void timer_start(void)
 {
+	struct timer *timer = first_timer;
 	struct itimerval val;
 	struct sigaction saction;
 
@@ -162,6 +204,14 @@ void timer_start(void)
 
 	timer_is_running = 1;
 
+	gettimeofday(&timer_start_tv, NULL);
+	timer_current_time = 0.0;
+
+	/*  Reset all timers:  */
+	while (timer != NULL) {
+		timer->next_tick_at = timer->interval;
+		timer = timer->next;
+	}
 	val.it_interval.tv_sec = 0;
 	val.it_interval.tv_usec = 1000000.0 / timer_freq;
 	val.it_value.tv_sec = 0;
@@ -223,8 +273,9 @@ void timer_init(void)
 	first_timer = NULL;
 	timer_current_time = 0.0;
 	timer_is_running = 0;
+	timer_countdown_to_next_gettimeofday = 0;
 
-	timer_freq = 100.0;
+	timer_freq = 50.0;
 	timer_current_time_step = 1.0 / timer_freq;
 
 #ifdef TEST

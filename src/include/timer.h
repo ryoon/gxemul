@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.h,v 1.1 2006-08-16 18:55:38 debug Exp $
+ *  $Id: timer.h,v 1.2 2006-08-17 15:10:59 debug Exp $
  */
 
 struct timer;
@@ -36,6 +36,8 @@ struct timer;
 struct timer *timer_add(double freq, void (*timer_tick)(struct timer *timer,
 	void *extra), void *extra);
 void timer_remove(struct timer *t);
+
+void timer_update_frequency(struct timer *t, double new_freq);
 
 void timer_start(void);
 void timer_stop(void);

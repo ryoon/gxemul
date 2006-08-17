@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1326 2006-08-16 18:55:36 debug Exp $
+$Id: HISTORY,v 1.1327 2006-08-17 15:10:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2937,5 +2937,8 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.4.2  ==============
 
-20060816	Adding a framework for emulated/virtual timers (src/timer.c).
+20060816	Adding a framework for emulated/virtual timers (src/timer.c),
+		using only setitimer().
 		Rewriting the mc146818 to use the new timer framework.
+20060817	Adding a call to gettimeofday() every now and then (once every
+		second, at the moment) to resynch the timer if it drifts.

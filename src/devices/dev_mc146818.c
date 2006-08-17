@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.87 2006-08-16 18:55:38 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.88 2006-08-17 15:10:58 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -455,14 +455,12 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 				d->old_interrupt_hz = d->interrupt_hz;
 
-				if (d->timer != NULL)
-					timer_remove(d->timer);
-
-				d->timer = NULL;
-
-				if (d->interrupt_hz > 0)
+				if (d->timer == NULL)
 					d->timer = timer_add(d->interrupt_hz,
 					    timer_tick, d);
+				else
+					timer_update_frequency(d->timer,
+					    d->interrupt_hz);
 			}
 
 			d->reg[MC_REGA * 4] =

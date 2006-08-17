@@ -25,12 +25,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.14 2006-07-24 19:08:17 debug Exp $
+ *  $Id: dev_8253.c,v 1.15 2006-08-17 16:49:22 debug Exp $
  *
  *  Intel 8253/8254 Programmable Interval Timer
  *
- *  TODO: The timers don't really count down. Fix this when there is a generic
- *  clock framework; also split counter[] into reset value and current value.
+ *  TODO/NOTE:
+ *	The timers don't really count down. Timer 0 causes clock interrupts
+ *	at a specific frequency, but reading the counter register would not
+ *	result in anything meaningful.
+ *
+ *  (Split counter[] into reset value and current value.)
  */
 
 #include <stdio.h>
@@ -39,16 +43,16 @@
 
 #include "cpu.h"
 #include "device.h"
-#include "devices.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 #include "i8253reg.h"
 
 
-/*  #define debug fatal  */
+#define debug fatal
 
 #define	DEV_8253_LENGTH		4
 #define	TICK_SHIFT		14
@@ -57,13 +61,29 @@
 struct pit8253_data {
 	int		in_use;
 
-	int		irq0_nr;
 	int		counter_select;
 	uint8_t		mode_byte;
 
 	int		mode[3];
 	int		counter[3];
+
+	int		hz[3];
+
+	struct timer	*timer0;
+	int		irq0_nr;
+	int		pending_interrupts_timer0;
 };
+
+
+static void timer0_tick(struct timer *t, void *extra)
+{
+	struct pit8253_data *d = (struct pit8253_data *) extra;
+	d->pending_interrupts_timer0 ++;
+
+#if 1
+	printf("%i ", d->pending_interrupts_timer0); fflush(stdout);
+#endif
+}
 
 
 DEVICE_TICK(8253)
@@ -76,8 +96,8 @@ DEVICE_TICK(8253)
 	switch (d->mode[0] & 0x0e) {
 
 	case I8253_TIMER_INTTC:
-		/*  TODO: Correct frequency!  */
-		cpu_interrupt(cpu, d->irq0_nr);
+		if (d->pending_interrupts_timer0 > 0)
+			cpu_interrupt(cpu, d->irq0_nr);
 		break;
 
 	case I8253_TIMER_RATEGEN:
@@ -99,9 +119,6 @@ DEVICE_ACCESS(8253)
 
 	d->in_use = 1;
 
-	/*  TODO: ack somewhere else  */
-	cpu_interrupt_ack(cpu, d->irq0_nr);
-
 	switch (relative_addr) {
 
 	case I8253_TIMER_CNTR0:
@@ -117,10 +134,24 @@ DEVICE_ACCESS(8253)
 			case I8253_TIMER_MSB:
 				d->counter[relative_addr] &= 0x00ff;
 				d->counter[relative_addr] |= ((idata&0xff)<<8);
+				d->hz[relative_addr] = I8253_TIMER_FREQ /
+				    (float)d->counter[relative_addr] + 0.5;
 				debug("[ 8253: counter %i set to %i (%i Hz) "
 				    "]\n", relative_addr, d->counter[
-				    relative_addr], (int)(I8253_TIMER_FREQ /
-				    (float)d->counter[relative_addr] + 0.5));
+				    relative_addr], d->hz[relative_addr]);
+				switch (relative_addr) {
+				case 0:	if (d->timer0 == NULL)
+						d->timer0 = timer_add(
+						    d->hz[0], timer0_tick, d);
+					else
+						timer_update_frequency(
+						    d->timer0, d->hz[0]);
+					break;
+				case 1:	fatal("TODO: DMA refresh?\n");
+					exit(1);
+				case 2:	fatal("TODO: Tone generation etc?\n");
+					exit(1);
+				}
 				break;
 			default:fatal("[ 8253: huh? writing to counter"
 				    " %i but neither from msb nor lsb? ]\n",
@@ -218,6 +249,9 @@ DEVINIT(8253)
 	d->mode[0] = I8253_TIMER_RATEGEN;
 	d->mode[1] = I8253_TIMER_RATEGEN;
 	d->mode[2] = I8253_TIMER_RATEGEN;
+
+	devinit->machine->isa_pic_data.pending_timer_interrupts =
+	    &d->pending_interrupts_timer0;
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_8253_LENGTH, dev_8253_access, (void *)d,

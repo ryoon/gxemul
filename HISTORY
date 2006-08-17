@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1327 2006-08-17 15:10:58 debug Exp $
+$Id: HISTORY,v 1.1328 2006-08-17 16:49:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2942,3 +2942,5 @@ Changelog for GXemul:
 		Rewriting the mc146818 to use the new timer framework.
 20060817	Adding a call to gettimeofday() every now and then (once every
 		second, at the moment) to resynch the timer if it drifts.
+		Beginning to convert the ISA timer interrupt mechanism (8253
+		and 8259) to use the new timer framework.

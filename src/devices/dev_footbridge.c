@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.44 2006-08-11 17:43:30 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.45 2006-08-17 16:49:22 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -392,6 +392,7 @@ DEVICE_ACCESS(footbridge)
 	case TIMER_1_CLEAR:
 		if (d->timer_control[timer_nr] & TIMER_MODE_PERIODIC) {
 			d->timer_value[timer_nr] = d->timer_load[timer_nr];
+printf("%i\n", d->timer_load[timer_nr]);
 			d->timer_tick_countdown[timer_nr] = 1;
 		}
 		cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);

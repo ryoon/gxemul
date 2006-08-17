@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.10 2006-08-14 17:45:47 debug Exp $
+ *  $Id: interrupts.c,v 1.11 2006-08-17 16:49:22 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
@@ -705,7 +705,7 @@ void cpc700_interrupt(struct machine *m, struct cpu *cpu,
 
 
 /*
- *  Interrupt function for Cobalt, evbmips (Malta), and Algor.
+ *  Interrupt function for Cobalt, evbmips (Malta), Algor, and QEMU_MIPS.
  *
  *  Most machines will not use secondary_mask1 and native_secondary_irq.
  *  Algor, however, routes COM1 and COM2 interrupts to MIPS CPU interrupt 4
@@ -717,8 +717,8 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	int mask, x;
 	int old_isa_assert, new_isa_assert;
-
-	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
+	uint8_t old_irr1 = m->isa_pic_data.pic1->irr;
+	old_isa_assert = old_irr1 & ~m->isa_pic_data.pic1->ier;
 
 	irq_nr -= 8;
 	mask = 1 << (irq_nr & 7);
@@ -734,6 +734,15 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		else
 			m->isa_pic_data.pic2->irr &= ~mask;
 	}
+
+	/*
+	 *  If bit 0 in the IRR has been cleared, then we need to acknowledge
+	 *  a 8253 timer interrupt.
+	 */
+	if (old_irr1 & 1 && !(m->isa_pic_data.pic1->irr & 1) &&
+	    m->isa_pic_data.pending_timer_interrupts != NULL &&
+	    (*m->isa_pic_data.pending_timer_interrupts) > 0)
+		(*m->isa_pic_data.pending_timer_interrupts) --;
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
 	/*  (TODO: don't hardcode this here)  */
@@ -779,6 +788,7 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
  */
 void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
+	uint8_t old_irr1 = m->isa_pic_data.pic1->irr;
 	int mask = 1 << (irq_nr & 7);
 
 	if (irq_nr < 8) {
@@ -797,6 +807,15 @@ void x86_pc_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		else
 			m->isa_pic_data.pic2->irr &= ~mask;
 	}
+
+	/*
+	 *  If bit 0 in the IRR has been cleared, then we need to acknowledge
+	 *  a 8253 timer interrupt.
+	 */
+	if (old_irr1 & 1 && !(m->isa_pic_data.pic1->irr & 1) &&
+	    m->isa_pic_data.pending_timer_interrupts != NULL &&
+	    (*m->isa_pic_data.pending_timer_interrupts) > 0)
+		(*m->isa_pic_data.pending_timer_interrupts) --;
 
 	if (m->isa_pic_data.pic2 != NULL) {
 		/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
@@ -828,8 +847,9 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	uint32_t mask = 1 << (irq_nr & 31);
 	int old_isa_assert, new_isa_assert;
+	uint8_t old_irr1 = m->isa_pic_data.pic1->irr;
 
-	old_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
+	old_isa_assert = old_irr1 & ~m->isa_pic_data.pic1->ier;
 
 	if (irq_nr >= 32 && irq_nr < 32 + 8) {
 		int mm = 1 << (irq_nr & 7);
@@ -844,6 +864,15 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		else
 			m->isa_pic_data.pic2->irr &= ~mm;
 	}
+
+	/*
+	 *  If bit 0 in the IRR has been cleared, then we need to acknowledge
+	 *  a 8253 timer interrupt.
+	 */
+	if (old_irr1 & 1 && !(m->isa_pic_data.pic1->irr & 1) &&
+	    m->isa_pic_data.pending_timer_interrupts != NULL &&
+	    (*m->isa_pic_data.pending_timer_interrupts) > 0)
+		(*m->isa_pic_data.pending_timer_interrupts) --;
 
 	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
 	/*  (TODO: don't hardcode this here)  */

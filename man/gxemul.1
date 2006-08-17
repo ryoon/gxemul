@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.69 2006-08-11 17:43:29 debug Exp $
+.\" $Id: gxemul.1,v 1.70 2006-08-17 15:27:43 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -197,12 +197,6 @@ Pause at startup, and listen to TCP port
 .Ar port
 for incoming remote GDB connections. The emulator starts up in paused 
 mode, and it is up to the remote GDB instance to start the session.
-.It Fl I Ar x
-Emulate clock interrupts at
-.Ar x
-Hz. (This affects emulated clock devices only, not actual runtime speed.
-This disables automatic clock adjustments, which is otherwise turned on.)
-(This option is probably only valid for DECstation emulation.)
 .It Fl i
 Enable instruction trace, i.e. display disassembly of each instruction as
 it is being executed.
@@ -373,15 +367,10 @@ be achieved by using the
 .Fl V
 option, and entering the commands manually.
 .It Fl D
-Guarantee fully deterministic behavior. Normally, the emulator calls
-srandom() with a seed based on the current time at startup. When the
-.Fl D
-option is used, the srandom() call is skipped, which should cause two 
-subsequent invocations of the emulator to be identical, if all other 
-settings are identical and no user input is taking place. (If this option 
-is used, then
-.Fl I
-must also be used.)
+Causes the emulator to skip a call to srandom(). This leads to somewhat
+more deterministic behaviour than running without this option.
+However, if the emulated machine has clocks or timer interrupt sources,
+then this option is meaningless.
 .It Fl H
 Display a list of available CPU types, machine types, and userland
 emulation modes. (Most of these don't work. Please read the documentation

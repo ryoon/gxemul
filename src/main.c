@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.278 2006-08-16 18:55:37 debug Exp $
+ *  $Id: main.c,v 1.279 2006-08-17 15:27:43 debug Exp $
  */
 
 #include <stdio.h>
@@ -59,7 +59,7 @@ int extra_argc;
 char **extra_argv;
 char *progname;
 
-int fully_deterministic = 0;
+int skip_srandom_call = 0;
 
 
 /*****************************************************************************
@@ -242,10 +242,6 @@ static void usage(int longusage)
 	printf("                t      tape\n");
 	printf("                0-7    force a specific ID\n");
 	printf("  -G port   listen to gdb remote connections on this port\n");
-	printf("  -I x      emulate clock interrupts at x Hz (affects"
-	    " rtc devices only, not\n");
-	printf("            actual runtime speed) (this disables automatic"
-	    " clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable dyntrans instruction combinations\n");
 	printf("  -j name   set the name of the kernel; for DECstation "
@@ -310,8 +306,7 @@ static void usage(int longusage)
 	printf("\nGeneral options:\n");
 	printf("  -c cmd    add cmd as a command to run before starting "
 	    "the simulation\n");
-	printf("  -D        guarantee (almost) fully deterministic "
-	    "behaviour\n");
+	printf("  -D        skip the srandom call at startup\n");
 	printf("  -H        display a list of possible CPU and "
 	    "machine types\n");
 	printf("  -h        display this help message\n");
@@ -355,7 +350,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:tU"
+	    "C:c:Dd:E:e:G:HhiJj:KM:Nn:Oo:p:QqRrSs:tU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -383,7 +378,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			    strdup(optarg);
 			break;
 		case 'D':
-			fully_deterministic = 1;
+			skip_srandom_call = 1;
 			break;
 		case 'd':
 			/*  diskimage_add() is called further down  */
@@ -431,10 +426,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'h':
 			usage(1);
 			exit(1);
-		case 'I':
-			m->emulated_hz = atoi(optarg);
-			msopts = 1;
-			break;
 		case 'i':
 			m->instruction_trace = 1;
 			msopts = 1;
@@ -713,9 +704,6 @@ int main(int argc, char *argv[])
 	settings_add(global_settings, "force_debugger_at_exit", 1,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
 	    (void *)&force_debugger_at_exit);
-	settings_add(global_settings, "fully_deterministic", 0,
-	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
-	    (void *)&fully_deterministic);
 	settings_add(global_settings, "verbose", 1,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&verbose);
 	settings_add(global_settings, "quiet_mode", 1,
@@ -745,15 +733,9 @@ int main(int argc, char *argv[])
 
 	get_cmd_args(argc, argv, emuls[0], &diskimages, &n_diskimages);
 
-	if (!fully_deterministic) {
+	if (!skip_srandom_call) {
 		/*  TODO: More than just time(). Use gettimeofday().  */
 		srandom(time(NULL) ^ (getpid() << 12));
-	} else {
-		/*  Fully deterministic. -I must have been supplied.  */
-		if (emuls[0]->machines[0]->emulated_hz < 1) {
-			fatal("Cannot have -D without -I.\n");
-			exit(1);
-		}
 	}
 
 	/*  Print startup message:  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1328 2006-08-17 16:49:21 debug Exp $
+$Id: HISTORY,v 1.1329 2006-08-18 16:22:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2944,3 +2944,4 @@ Changelog for GXemul:
 		second, at the moment) to resynch the timer if it drifts.
 		Beginning to convert the ISA timer interrupt mechanism (8253
 		and 8259) to use the new timer framework.
+		Removing the -I command line option.

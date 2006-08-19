@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.680 2006-08-16 18:55:37 debug Exp $
+ *  $Id: machine.c,v 1.681 2006-08-19 07:58:20 debug Exp $
  */
 
 #include <stdio.h>
@@ -842,10 +842,6 @@ void machine_setup(struct machine *machine)
 	if (machine->emulated_hz > 0)
 		debug(" (%.2f MHz)", (float)machine->emulated_hz / 1000000);
 	debug("\n");
-
-	/*  Default fake speed: 5 MHz  */
-	if (machine->emulated_hz < 1)
-		machine->emulated_hz = 5000000;
 
 	if (machine->bootstr != NULL) {
 		debug("bootstring%s: %s", (machine->bootarg!=NULL &&

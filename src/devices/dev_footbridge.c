@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.45 2006-08-17 16:49:22 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.46 2006-08-19 07:58:21 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -49,13 +49,54 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 
 #include "dc21285reg.h"
 
 #define	DEV_FOOTBRIDGE_TICK_SHIFT	14
 #define	DEV_FOOTBRIDGE_LENGTH		0x400
-#define	TIMER_POLL_THRESHOLD		15
+
+
+static void timer_tick0(struct timer *t, void *extra)
+{ ((struct footbridge_data *)extra)->pending_timer_interrupts[0] ++; }
+static void timer_tick1(struct timer *t, void *extra)
+{ ((struct footbridge_data *)extra)->pending_timer_interrupts[1] ++; }
+static void timer_tick2(struct timer *t, void *extra)
+{ ((struct footbridge_data *)extra)->pending_timer_interrupts[2] ++; }
+static void timer_tick3(struct timer *t, void *extra)
+{ ((struct footbridge_data *)extra)->pending_timer_interrupts[3] ++; }
+
+
+static void reload_timer_value(struct cpu *cpu, struct footbridge_data *d,
+	int timer_nr)
+{
+	double freq = (double)cpu->machine->emulated_hz;
+	int cycles = d->timer_load[timer_nr];
+
+	if (d->timer_control[timer_nr] & TIMER_FCLK_16)
+		cycles <<= 4;
+	else if (d->timer_control[timer_nr] & TIMER_FCLK_256)
+		cycles <<= 8;
+	freq /= (double)cycles;
+
+	d->timer_value[timer_nr] = d->timer_load[timer_nr];
+	d->timer_tick_countdown[timer_nr] = 1;
+
+	/*  printf("%i: %i -> %f Hz\n", timer_nr,
+	    d->timer_load[timer_nr], freq);  */
+
+	if (d->timer[timer_nr] == NULL) {
+		switch (timer_nr) {
+		case 0:	d->timer[0] = timer_add(freq, timer_tick0, d); break;
+		case 1:	d->timer[1] = timer_add(freq, timer_tick1, d); break;
+		case 2:	d->timer[2] = timer_add(freq, timer_tick2, d); break;
+		case 3:	d->timer[3] = timer_add(freq, timer_tick3, d); break;
+		}
+	} else {
+		timer_update_frequency(d->timer[timer_nr], freq);
+	}
+}
 
 
 /*
@@ -70,18 +111,34 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 	int i;
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
-	if (!d->timer_being_read)
-		d->timer_poll_mode = 0;
-
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
 		unsigned int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
+
+		if (d->timer_tick_countdown[i] == 0)
+			continue;
+
+		if (d->timer_control[i] & TIMER_MODE_PERIODIC &&
+		    d->timer_control[i] & TIMER_ENABLE) {
+			if (d->pending_timer_interrupts[i] > 0) {
+				d->timer_value[i] = 0;
+				d->timer_tick_countdown[i] = 0;
+				cpu_interrupt(cpu, IRQ_TIMER_1 + i);
+			}
+			continue;
+		}
+
+		/*
+		 *  The code below this line is probably not used much anymore,
+		 *  and it definitely is not the correct way to do it.
+		 *  When changing/removing this, make sure to test with
+		 *  NetBSD/netwinder, NetBSD/cats, and OpenBSD/cats as
+		 *  guest OSes... (TODO)
+		 */
+
 		if (d->timer_control[i] & TIMER_FCLK_16)
 			amount >>= 4;
 		else if (d->timer_control[i] & TIMER_FCLK_256)
 			amount >>= 8;
-
-		if (d->timer_tick_countdown[i] == 0)
-			continue;
 
 		if (d->timer_value[i] > amount)
 			d->timer_value[i] -= amount;
@@ -338,34 +395,19 @@ DEVICE_ACCESS(footbridge)
 		if (writeflag == MEM_READ)
 			odata = d->timer_load[timer_nr];
 		else {
-			d->timer_value[timer_nr] =
-			    d->timer_load[timer_nr] = idata & TIMER_MAX_VAL;
-			debug("[ footbridge: timer %i (1-based), value %i ]\n",
-			    timer_nr + 1, (int)d->timer_value[timer_nr]);
-			d->timer_tick_countdown[timer_nr] = 1;
+			d->timer_load[timer_nr] = idata & TIMER_MAX_VAL;
+			reload_timer_value(cpu, d, timer_nr);
+			/*  debug("[ footbridge: timer %i (1-based), "
+			    "value %i ]\n", timer_nr + 1,
+			    (int)d->timer_value[timer_nr]);  */
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}
 		break;
 
 	case TIMER_1_VALUE:
-		if (writeflag == MEM_READ) {
-			/*
-			 *  NOTE/TODO: This is INCORRECT but speeds up NetBSD
-			 *  and OpenBSD boot sequences: if the timer is polled
-			 *  "very often" (such as during bootup), then this
-			 *  causes the timers to expire quickly.
-			 */
-			d->timer_being_read = 1;
-			d->timer_poll_mode ++;
-			if (d->timer_poll_mode >= TIMER_POLL_THRESHOLD) {
-				d->timer_poll_mode = TIMER_POLL_THRESHOLD;
-				dev_footbridge_tick(cpu, d);
-				dev_footbridge_tick(cpu, d);
-				dev_footbridge_tick(cpu, d);
-			}
+		if (writeflag == MEM_READ)
 			odata = d->timer_value[timer_nr];
-			d->timer_being_read = 0;
-		} else
+		else
 			d->timer_value[timer_nr] = idata & TIMER_MAX_VAL;
 		break;
 
@@ -381,9 +423,9 @@ DEVICE_ACCESS(footbridge)
 				exit(1);
 			}
 			if (idata & TIMER_ENABLE) {
-				d->timer_value[timer_nr] =
-				    d->timer_load[timer_nr];
-				d->timer_tick_countdown[timer_nr] = 1;
+				reload_timer_value(cpu, d, timer_nr);
+			} else {
+				d->pending_timer_interrupts[timer_nr] = 0;
 			}
 			cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		}
@@ -391,10 +433,13 @@ DEVICE_ACCESS(footbridge)
 
 	case TIMER_1_CLEAR:
 		if (d->timer_control[timer_nr] & TIMER_MODE_PERIODIC) {
-			d->timer_value[timer_nr] = d->timer_load[timer_nr];
-printf("%i\n", d->timer_load[timer_nr]);
-			d->timer_tick_countdown[timer_nr] = 1;
+			reload_timer_value(cpu, d, timer_nr);
 		}
+
+		if (d->pending_timer_interrupts[timer_nr] > 0) {
+			d->pending_timer_interrupts[timer_nr] --;
+		}
+
 		cpu_interrupt_ack(cpu, IRQ_TIMER_1 + timer_nr);
 		break;
 

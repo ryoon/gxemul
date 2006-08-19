@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.4 2006-07-23 23:50:31 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.5 2006-08-19 07:58:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -49,6 +49,9 @@ MACHINE_SETUP(netwinder)
 	if (machine->physical_ram_in_mb > 256)
 		fprintf(stderr, "WARNING! Real NetWinders cannot"
 		    " have more than 256 MB RAM. Continuing anyway.\n");
+
+	/*  CPU at 63.75 MHz, according to NetBSD's netwinder_machdep.c.  */
+	machine->emulated_hz = 63750000;
 
 	machine->md_int.footbridge_data =
 	    device_add(machine, "footbridge addr=0x42000000");

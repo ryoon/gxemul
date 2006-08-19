@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.279 2006-08-17 15:27:43 debug Exp $
+ *  $Id: main.c,v 1.280 2006-08-19 07:58:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -242,6 +242,8 @@ static void usage(int longusage)
 	printf("                t      tape\n");
 	printf("                0-7    force a specific ID\n");
 	printf("  -G port   listen to gdb remote connections on this port\n");
+	printf("  -I hz     set the main cpu frequency to hz (not used by "
+	    "all combinations\n            of machines and guest OSes)");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable dyntrans instruction combinations\n");
 	printf("  -j name   set the name of the kernel; for DECstation "
@@ -350,7 +352,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "C:c:Dd:E:e:G:HhiJj:KM:Nn:Oo:p:QqRrSs:tU"
+	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:tU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -426,6 +428,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 		case 'h':
 			usage(1);
 			exit(1);
+		case 'I':
+			m->emulated_hz = atoi(optarg);
+			msopts = 1;
+			break;
 		case 'i':
 			m->instruction_trace = 1;
 			msopts = 1;

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.70 2006-08-17 15:27:43 debug Exp $
+.\" $Id: gxemul.1,v 1.71 2006-08-19 07:58:20 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -197,6 +197,17 @@ Pause at startup, and listen to TCP port
 .Ar port
 for incoming remote GDB connections. The emulator starts up in paused 
 mode, and it is up to the remote GDB instance to start the session.
+.It Fl I Ar hz
+Set the main CPUs frequency to
+.Ar hz
+Hz. This option does not work for all emulated machine modes. It affects 
+the way count/compare interrupts are faked to simulate emulated time = 
+real world time. If the guest operating system relies on RTC interrupts
+instead of count/compare interrupts, then this option has no effect.
+.Pp
+Setting the frequency to zero disables automatic synchronization of 
+emulated time vs real world time, and the count/compare system runs at a 
+fixed rate.
 .It Fl i
 Enable instruction trace, i.e. display disassembly of each instruction as
 it is being executed.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: timer.c,v 1.2 2006-08-17 15:10:58 debug Exp $
+ *  $Id: timer.c,v 1.3 2006-08-19 07:58:21 debug Exp $
  *
  *  Timer framework. This is used by emulated clocks.
  */
@@ -131,6 +131,9 @@ void timer_remove(struct timer *t)
  */
 void timer_update_frequency(struct timer *t, double new_freq)
 {
+	if (t->freq == new_freq)
+		return;
+
 	t->freq = new_freq;
 	t->interval = 1.0 / new_freq;
 	t->next_tick_at = timer_current_time + t->interval;

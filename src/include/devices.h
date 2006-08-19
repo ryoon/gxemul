@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.213 2006-07-08 12:30:03 debug Exp $
+ *  $Id: devices.h,v 1.214 2006-08-19 07:58:21 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -43,6 +43,7 @@ struct cpu;
 struct machine;
 struct memory;
 struct pci_data;
+struct timer;
 
 /* #ifdef WITH_X11
 #include <X11/Xlib.h>
@@ -279,8 +280,9 @@ struct footbridge_data {
 	uint32_t	timer_load[N_FOOTBRIDGE_TIMERS];
 	uint32_t	timer_value[N_FOOTBRIDGE_TIMERS];
 	uint32_t	timer_control[N_FOOTBRIDGE_TIMERS];
-	int		timer_being_read;
-	int		timer_poll_mode;
+
+	struct timer	*timer[N_FOOTBRIDGE_TIMERS];
+	int		pending_timer_interrupts[N_FOOTBRIDGE_TIMERS];
 
 	uint32_t        irq_status;
 	uint32_t        irq_enable;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1330 2006-08-19 07:58:20 debug Exp $
+$Id: HISTORY,v 1.1331 2006-08-21 14:49:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2949,3 +2949,4 @@ Changelog for GXemul:
 		Working on Footbridge timer interrupts; NetBSD/NetWinder and
 		NetBSD/CATS now run at correct speed, but unfortunately with
 		HUGE delays during bootup.
+20060821	Some minor m68k updates.

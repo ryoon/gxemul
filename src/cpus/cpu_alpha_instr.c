@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_instr.c,v 1.13 2006-07-26 23:21:47 debug Exp $
+ *  $Id: cpu_alpha_instr.c,v 1.14 2006-08-21 17:02:36 debug Exp $
  *
  *  Alpha instructions.
  *
@@ -597,6 +597,17 @@ X(cmptle)
 
 
 /*
+ *  implver:  Return CPU implver value.
+ *
+ *  arg[0] = pointer to destination uint64_t
+ */
+X(implver)
+{
+	reg(ic->arg[0]) = cpu->cd.alpha.cpu_type.implver;
+}
+
+
+/*
  *  mull:  Signed Multiply 32x32 => 32.
  *
  *  arg[0] = pointer to destination uint64_t
@@ -993,6 +1004,7 @@ X(to_be_translated)
 		case 0xc8: ic->f = instr(xornot_imm); break;
 		case 0xe4: ic->f = instr(cmovle_imm); break;
 		case 0xe6: ic->f = instr(cmovgt_imm); break;
+		case 0xec: ic->f = instr(implver); break;
 		default:fatal("[ Alpha: unimplemented function 0x%03x for"
 			    " opcode 0x%02x ]\n", func, opcode);
 			goto bad;

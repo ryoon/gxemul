@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.39 2006-07-16 13:32:27 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.40 2006-08-21 17:02:37 debug Exp $
  */
 
 #include "misc.h"
@@ -37,7 +37,9 @@
 /*  ALPHA CPU types:  */
 struct alpha_cpu_type_def { 
 	char		*name;
+	int		pcs_type;	/*  See alpha_rpb.h  */
 	int		features;
+	int		implver;
 	int		icache_shift;
 	int		ilinesize;
 	int		iway;
@@ -53,14 +55,14 @@ struct alpha_cpu_type_def {
 #define	ALPHA_FEATURE_BWX		1
 
 #define ALPHA_CPU_TYPE_DEFS	{					\
-	{ "21064",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
-	{ "21066",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
-	{ "21164",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
-	{ "21164A-2",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
-	{ "21164PC",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
-	{ "21264",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
-	{ "21364",	0,	 16,5,2, 16,5,2,  0,0,0 },		\
-	{ NULL,		0,	  0,0,0,  0,0,0,   0,0,0 }		}
+	{ "21064",	 2, 0, 0, 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21066",	 4, 0, 0, 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21164",	 5, 0, 1, 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21164A-2",	 7, 0, 1, 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21164PC",	 9, 0, 1, 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21264",	13, 0, 2, 16,5,2, 16,5,2,  0,0,0 },		\
+	{ "21364",	 0, 0, 3, 16,5,2, 16,5,2,  0,0,0 },		\
+	{ NULL,		 0, 0, 0,  0,0,0,  0,0,0,  0,0,0 }		}
 
 
 struct cpu_family;
@@ -104,6 +106,9 @@ DYNTRANS_MISC64_DECLARATIONS(alpha,ALPHA,uint8_t)
 
 
 struct alpha_cpu {
+	struct alpha_cpu_type_def	cpu_type;
+
+
 	/*
 	 *  General Purpose Registers:
 	 */

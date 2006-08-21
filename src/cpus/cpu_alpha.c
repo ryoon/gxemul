@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.19 2006-07-20 21:52:59 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.20 2006-08-21 17:02:36 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -85,6 +85,8 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	    alpha_invalidate_translation_caches;
 	cpu->invalidate_code_translation = alpha_invalidate_code_translation;
 	cpu->is_32bit = 0;
+
+	cpu->cd.alpha.cpu_type = cpu_type_defs[i];
 
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
@@ -501,6 +503,7 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		case 0x061: mnem = "amask"; break;
 		case 0x064: mnem = "cmovle"; break;
 		case 0x066: mnem = "cmovgt"; break;
+		case 0x06c: mnem = "implver"; break;
 		default:debug("UNIMPLEMENTED opcode 0x%x func 0x%x\n",
 			    opcode, func);
 		}
@@ -519,6 +522,9 @@ int alpha_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			else
 				debug("mov\t%s,%s\n", alpha_regname[ra],
 				    alpha_regname[rc]);
+		} else if (func == 0x1ec) {
+			/*  implver  */
+			debug("%s\t%s\n", mnem, alpha_regname[rc]);
 		} else if (func & 0x80)
 			debug("%s\t%s,0x%x,%s\n", mnem,
 			    alpha_regname[ra], (rb << 3) + (func >> 8),

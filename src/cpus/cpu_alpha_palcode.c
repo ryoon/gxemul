@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.8 2006-06-02 18:11:38 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.9 2006-08-21 17:02:37 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  */
@@ -139,6 +139,9 @@ void alpha_prom_call(struct cpu *cpu)
 void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 {
 	switch (palcode) {
+	case 0x02:	/*  PAL_draina  */
+		/*  TODO?  */
+		break;
 	case 0x10:	/*  PAL_OSF1_rdmces  */
 		/*  TODO? Return something in v0.  */
 		break;
@@ -167,14 +170,14 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		break;
 	case 0x33:	/*  PAL_OSF1_tbi  */
 		/*  a0 = op, a1 = vaddr  */
-		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
+		fatal("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
 		    PRIx64" ]\n", (int64_t)cpu->cd.alpha.r[ALPHA_A0],
 		    (uint64_t)cpu->cd.alpha.r[ALPHA_A1]);
 		/*  TODO  */
 		break;
 	case 0x34:	/*  PAL_OSF1_wrent (Write System Entry Address)  */
 		/*  a0 = new vector, a1 = vector selector  */
-		debug("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
+		fatal("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
 		    PRIx64" ]\n", (int64_t) cpu->cd.alpha.r[ALPHA_A0],
 		    (uint64_t) cpu->cd.alpha.r[ALPHA_A1]);
 		/*  TODO  */

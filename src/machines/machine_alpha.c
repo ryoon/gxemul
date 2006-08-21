@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.7 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_alpha.c,v 1.8 2006-08-21 17:02:37 debug Exp $
  */
 
 #include <stdio.h>
@@ -49,11 +49,16 @@ MACHINE_SETUP(alpha)
 	struct crb crb;
 	struct ctb ctb;
 	struct mddt mddt;
+	struct pcs *pcs = malloc(sizeof(struct pcs) * machine->ncpus);
+	int i;
+
+	machine->emulated_hz = 66000000;
 
 	switch (machine->machine_subtype) {
 
 	case ST_ALPHABOOK1:
 		machine->machine_name = "AlphaBook 1";
+		machine->emulated_hz = 233000000;
 		device_add(machine, "lca");
 		break;
 
@@ -104,10 +109,17 @@ MACHINE_SETUP(alpha)
 	    &(rpb.rpb_size), sizeof(struct rpb));
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_page_size), 8192);
+	strlcpy((char *)&(rpb.rpb_ssn), "123456789", 10);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_type), machine->machine_subtype);
 	store_64bit_word_in_host(cpu, (unsigned char *)
-	    &(rpb.rpb_cc_freq), 100000000);
+	    &(rpb.rpb_cc_freq), machine->emulated_hz);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_pcs_cnt), machine->ncpus);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_pcs_size), sizeof(struct pcs));
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_pcs_off), PCS_ADDR - HWRPB_ADDR);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_ctb_off), CTB_ADDR - HWRPB_ADDR);
 	store_64bit_word_in_host(cpu, (unsigned char *)
@@ -130,6 +142,17 @@ MACHINE_SETUP(alpha)
 	    &(crb.crb_v_fixup), CRB_ADDR - 0x80);
 	store_64bit_word(cpu, CRB_ADDR - 0x80 + 8, 0x10800);
 
+	/*  PCS: Processor ID etc.  */
+	for (i=0; i<machine->ncpus; i++) {
+		memset(&pcs[i], 0, sizeof(struct pcs));
+		store_64bit_word_in_host(cpu, (unsigned char *)
+		    &(pcs[i].pcs_flags), PCS_RC | PCS_PA | PCS_PP |
+		    PCS_CV | PCS_PV | PCS_PMV | PCS_PL);
+		store_64bit_word_in_host(cpu, (unsigned char *)
+		    &(pcs[i].pcs_proc_type),
+		    machine->cpus[i]->cd.alpha.cpu_type.pcs_type);
+	}
+
 	/*
 	 *  MDDT: Memory Data Descriptor Table. For now, it is a simple
 	 *  two-entry table with half of the available RAM in each entry.
@@ -139,18 +162,21 @@ MACHINE_SETUP(alpha)
 	 *  and similar.
 	 */
 	memset(&mddt, 0, sizeof(struct mddt));
+	memset(&mddt.mddt_clusters[0], 0, sizeof(struct mddt_cluster));
+	memset(&mddt.mddt_clusters[1], 0, sizeof(struct mddt_cluster));
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(mddt.mddt_cluster_cnt), 2);
 	store_64bit_word_in_host(cpu, (unsigned char *)
-	    &(mddt.mddt_clusters[0].mddt_pfn), 128 * 16);
+	    &(mddt.mddt_clusters[0].mddt_pfn), 16 * 128);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(mddt.mddt_clusters[0].mddt_pg_cnt),
-	    (machine->physical_ram_in_mb - 16) * 128);
+	    (machine->physical_ram_in_mb/2 - 16) * 128);
 	store_64bit_word_in_host(cpu, (unsigned char *)
-	    &(mddt.mddt_clusters[1].mddt_pfn), machine->physical_ram_in_mb*128);
+	    &(mddt.mddt_clusters[1].mddt_pfn),
+	    machine->physical_ram_in_mb/2 * 128);
 	store_64bit_word_in_host(cpu, (unsigned char *)
-	    &(mddt.mddt_clusters[1].mddt_pg_cnt), (machine->physical_ram_in_mb
-	    - 1) * 128);
+	    &(mddt.mddt_clusters[1].mddt_pg_cnt),
+	    (machine->physical_ram_in_mb/2) * 128);
 
 	/*
 	 *  Place a special "hack" palcode call at 0x10000 and 0x10800:
@@ -163,6 +189,10 @@ MACHINE_SETUP(alpha)
 	store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));
 	store_buf(cpu, CRB_ADDR, (char *)&crb, sizeof(struct crb));
 	store_buf(cpu, MEMDAT_ADDR, (char *)&mddt, sizeof(struct mddt));
+	store_buf(cpu, PCS_ADDR, (char *)pcs, sizeof(struct pcs) *
+	    machine->ncpus);
+
+	free(pcs);
 }
 
 
@@ -195,7 +225,7 @@ MACHINE_DEFAULT_CPU(alpha)
 
 MACHINE_DEFAULT_RAM(alpha)
 {
-	machine->physical_ram_in_mb = 64;
+	machine->physical_ram_in_mb = 128;
 }
 
 

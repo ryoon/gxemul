@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1331 2006-08-21 14:49:02 debug Exp $
+$Id: HISTORY,v 1.1332 2006-08-21 17:02:36 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2950,3 +2950,4 @@ Changelog for GXemul:
 		NetBSD/CATS now run at correct speed, but unfortunately with
 		HUGE delays during bootup.
 20060821	Some minor m68k updates.
+		Minor Alpha emulation updates.

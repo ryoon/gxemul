@@ -44,6 +44,7 @@
 #define	CTB_ADDR	(HWRPB_ADDR + 0x1000)
 #define	CRB_ADDR	(HWRPB_ADDR + 0x1400)
 #define	MEMDAT_ADDR	(HWRPB_ADDR + 0x1800)
+#define	PCS_ADDR	(HWRPB_ADDR + 0x1c00)
 
 #ifndef	ASSEMBLER
 struct rpb {

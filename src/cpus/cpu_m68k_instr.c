@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k_instr.c,v 1.7 2006-02-24 01:20:35 debug Exp $
+ *  $Id: cpu_m68k_instr.c,v 1.8 2006-08-21 14:44:22 debug Exp $
  *
  *  Motorola 68K instructions.
  *
@@ -79,7 +79,6 @@ X(to_be_translated)
 	uint16_t iword;
 	unsigned char *page;
 	unsigned char ib[2];
-	int main_opcode;
 	/* void (*samepage_function)(struct cpu *, struct m68k_instr_call *);*/
 
 	/*  Figure out the (virtual) address of the instruction:  */
@@ -107,15 +106,7 @@ X(to_be_translated)
 		}
 	}
 
-	iword = *((uint16_t *)&ib[0]);
-
-#ifdef HOST_LITTLE_ENDIAN
-	iword = ((iword & 0xff) << 8) |
-		((iword & 0xff00) >> 8);
-#endif
-
-
-	fatal("M68K: iword = 0x%04x\n", iword);
+	iword = (ib[0] << 8) + ib[1];
 
 
 #define DYNTRANS_TO_BE_TRANSLATED_HEAD
@@ -125,20 +116,30 @@ X(to_be_translated)
 
 	/*
 	 *  Translate the instruction:
+	 *
+	 *  NOTE: The instruction length is assumed to be 2 bytes (1 slot)
+	 *        if nothing else is specified.
 	 */
+	ic->arg[0] = 1;
 
+	switch (iword >> 12) {
 
-/*  TODO  */
+	case 0x4:
+		switch ((iword >> 8) & 0xf) {
 
+		case 0xe:
+			if ((iword & 0xff) == 0x71) {
+				ic->f = instr(nop);
+				break;
+			}
+			goto bad;
 
-	main_opcode = iword;
-
-#if 0
-	switch (main_opcode) {
+		default:goto bad;
+		}
+		break;
 
 	default:goto bad;
 	}
-#endif
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

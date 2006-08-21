@@ -1,4 +1,4 @@
-$Id: TODO,v 1.348 2006-08-19 07:58:20 debug Exp $
+$Id: TODO,v 1.349 2006-08-21 14:44:22 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -73,6 +73,8 @@ Long-term design:
 	x)  Instruction combination collisions? How to avoid easily...
 	x)  Think about how to do both SHmedia and SHcompact in a reasonable
 	    way!
+	x)  68K emulation; think about how to do variable instruction
+	    lengths across page boundaries.
 	o)  Actually use the settings object, better debugger stuff, etc!
 	o)  Debugger command for enabling/disabling instruction statistics
 	    during runtime.   machine.statistics = on|off

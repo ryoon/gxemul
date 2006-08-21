@@ -28,11 +28,26 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.h,v 1.13 2006-07-16 13:32:27 debug Exp $
+ *  $Id: cpu_m68k.h,v 1.14 2006-08-21 14:44:22 debug Exp $
  */
 
 #include "misc.h"
 
+
+/*  M68K CPU types:  */
+struct m68k_cpu_type_def {
+	char		*name;
+	int		flags;
+};
+
+#define M68K_CPU_TYPE_DEFS	{				\
+	{ "68000",		0 },				\
+	{ "68010",		0 },				\
+	{ "68020",		0 },				\
+	{ "68030",		0 },				\
+	{ "68040",		0 },				\
+	{ "68060",		0 },				\
+        { NULL,                 0 }				}
 
 struct cpu_family;
 
@@ -54,6 +69,8 @@ DYNTRANS_MISC_DECLARATIONS(m68k,M68K,uint32_t)
 
 
 struct m68k_cpu {
+	struct m68k_cpu_type_def	cpu_type;
+
 	/*
 	 *  General Purpose Registers:
 	 */

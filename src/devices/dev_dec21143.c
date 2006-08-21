@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec21143.c,v 1.25 2006-03-04 12:38:47 debug Exp $
+ *  $Id: dev_dec21143.c,v 1.26 2006-08-21 14:44:22 debug Exp $
  *
  *  DEC 21143 ("Tulip") ethernet controller. Implemented from Intel document
  *  278074-001 ("21143 PC/CardBus 10/100Mb/s Ethernet LAN Controller") and by
@@ -338,8 +338,10 @@ int dec21143_tx(struct cpu *cpu, struct dec21143_data *d)
 			d->cur_tx_addr += 4 * sizeof(uint32_t);
 	}
 
+	/*
 	fatal("{ TX (%llx): 0x%08x 0x%08x 0x%x 0x%x: buf %i bytes at 0x%x }\n",
 	    (long long)addr, tdes0, tdes1, tdes2, tdes3, bufsize, (int)bufaddr);
+	*/
 	bufaddr &= 0x7fffffff;
 
 	/*  Assume no error:  */

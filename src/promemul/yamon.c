@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.7 2006-08-22 13:16:27 debug Exp $
+ *  $Id: yamon.c,v 1.8 2006-08-22 16:07:34 debug Exp $
  *
  *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
@@ -92,7 +92,7 @@ void yamon_machine_setup(struct machine *machine, uint64_t env)
 	add_environment_string_dual(cpu, &env, &tmpptr,
 	    "bootserver", "10.0.0.254");
 
-	net_generate_unique_mac(machine, macaddr);
+	net_generate_unique_mac(machine, (unsigned char *) macaddr);
 	snprintf(tmps, sizeof(tmps), "%02x.%02x.%02x.%02x.%02x.%02x",
 	    macaddr[0], macaddr[1], macaddr[2],
 	    macaddr[3], macaddr[4], macaddr[5]);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.8 2006-07-26 08:02:31 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.9 2006-08-22 13:16:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,8 +48,6 @@
 MACHINE_SETUP(evbmips)
 {
 	char tmpstr[1000];
-	char tmps[50];
-	uint64_t env, tmpptr;
 	struct pci_data *pci_data;
 	int i;
 
@@ -173,18 +171,7 @@ MACHINE_SETUP(evbmips)
 	/*  a2 = (yamon_env_var *)envp  */
 	cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
 
-	env = cpu->cd.mips.gpr[MIPS_GPR_A2];
-	tmpptr = 0xffffffff9fc01c00ULL;
-
-	snprintf(tmps, sizeof(tmps), "0x%08x", machine->physical_ram_in_mb<<20);
-	add_environment_string_dual(cpu, &env, &tmpptr, "memsize", tmps);
-
-	add_environment_string_dual(cpu, &env, &tmpptr, "yamonrev", "02.06");
-
-	/*  End of env:  */
-	tmpptr = 0;
-	add_environment_string_dual(cpu,
-		    &env, &tmpptr, NULL, NULL);
+	yamon_machine_setup(machine, cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 	/*  a3 = memsize  */
 	cpu->cd.mips.gpr[MIPS_GPR_A3] = machine->physical_ram_in_mb * 1048576;

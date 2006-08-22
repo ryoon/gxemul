@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: yamon.c,v 1.6 2006-07-26 23:21:48 debug Exp $
+ *  $Id: yamon.c,v 1.7 2006-08-22 13:16:27 debug Exp $
  *
  *  YAMON emulation. (Very basic, only what is needed to get NetBSD booting.)
  */
@@ -41,10 +41,96 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "net.h"
 
 #ifdef ENABLE_MIPS
 
 #include "yamon.h"
+
+
+/*
+ *  yamon_machine_setup():
+ */
+void yamon_machine_setup(struct machine *machine, uint64_t env)
+{
+	char tmps[200];
+	char macaddr[6];
+	uint64_t tmpptr = env + 0x400;
+	struct cpu *cpu = machine->cpus[0];
+
+	/*
+	 *  Standard YAMON environment variables:
+	 *
+	 *	baseboardserial
+	 *	bootfile		TODO
+	 *	bootprot		TODO: Non-tftp boot
+	 *	bootserport
+	 *	bootserver
+	 *	cpuconfig		TODO
+	 *	ethaddr
+	 *	fpu			TODO
+	 *	gateway
+	 *	ipaddr			TODO: Don't hardcode!
+	 *	memsize
+	 *	modetty0
+	 *	modetty1
+	 *	prompt
+	 *	start			TODO
+	 *	startdelay		TODO
+	 *	subnetmask		TODO: Real subnet mask
+	 *	yamonrev
+	 */
+
+	add_environment_string_dual(cpu, &env, &tmpptr,
+	    "baseboardserial", "0000000000");
+
+	/*  TODO: Disk boot!  */
+	add_environment_string_dual(cpu, &env, &tmpptr, "bootprot", "tftp");
+
+	add_environment_string_dual(cpu, &env, &tmpptr, "bootserport", "tty0");
+
+	add_environment_string_dual(cpu, &env, &tmpptr,
+	    "bootserver", "10.0.0.254");
+
+	net_generate_unique_mac(machine, macaddr);
+	snprintf(tmps, sizeof(tmps), "%02x.%02x.%02x.%02x.%02x.%02x",
+	    macaddr[0], macaddr[1], macaddr[2],
+	    macaddr[3], macaddr[4], macaddr[5]);
+	add_environment_string_dual(cpu, &env, &tmpptr, "ethaddr", tmps);
+
+	add_environment_string_dual(cpu, &env, &tmpptr,
+	    "gateway", "10.0.0.254");
+
+	/*  TODO: Don't hardcode!  */
+	add_environment_string_dual(cpu, &env, &tmpptr,
+	    "ipaddr", "10.0.0.1");
+
+	snprintf(tmps, sizeof(tmps), "0x%08x", machine->physical_ram_in_mb<<20);
+	add_environment_string_dual(cpu, &env, &tmpptr, "memsize", tmps);
+
+	add_environment_string_dual(cpu, &env, &tmpptr,
+	    "modetty0", "38400,n,8,1,none");
+
+	add_environment_string_dual(cpu, &env, &tmpptr,
+	    "modetty1", "38400,n,8,1,none");
+
+	add_environment_string_dual(cpu, &env, &tmpptr, "prompt", "YAMON");
+
+	add_environment_string_dual(cpu, &env, &tmpptr, "yamonrev", "02.06");
+
+	/*  TODO: Real subnet mask:  */
+	add_environment_string_dual(cpu, &env, &tmpptr,
+	    "subnetmask", "255.0.0.0");
+
+
+	/*  FreeBSD development specific:  */
+	snprintf(tmps, sizeof(tmps), "%i", machine->emulated_hz / 1000);
+	add_environment_string_dual(cpu, &env, &tmpptr, "khz", tmps);
+
+	/*  NULL terminate:  */
+	tmpptr = 0;
+	add_environment_string_dual(cpu, &env, &tmpptr, NULL, NULL);
+}
 
 
 /*

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.242 2006-07-25 21:03:25 debug Exp $
+ *  $Id: misc.h,v 1.243 2006-08-22 13:16:41 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -181,7 +181,8 @@ void useremul_init(void);
 
 
 /*  yamon.c:  */
-int yamon_emul(struct cpu *cpu);
+void yamon_machine_setup(struct machine *machine, uint64_t env);
+int yamon_emul(struct cpu *);
 
 
 #endif	/*  MISC_H  */

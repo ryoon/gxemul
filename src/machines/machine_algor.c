@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.8 2006-08-14 18:03:12 debug Exp $
+ *  $Id: machine_algor.c,v 1.9 2006-08-22 13:16:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -100,7 +100,7 @@ MACHINE_SETUP(algor)
 	store_string(cpu, (int32_t)0x9fc01040, machine->bootstr);
 	store_string(cpu, (int32_t)0x9fc01200, machine->bootarg);
 
-	/*  a2 = (yamon_env_var *)envp  */
+	/*  a2 = pointer to environment strings  */
 	cpu->cd.mips.gpr[MIPS_GPR_A2] = (int32_t)0x9fc01800;
 	{
 		char tmps[50];

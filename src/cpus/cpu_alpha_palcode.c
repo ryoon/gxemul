@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.9 2006-08-21 17:02:37 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.10 2006-08-22 15:13:03 debug Exp $
  *
  *  Alpha PALcode-related functionality.
+ *
+ *  (See http://www.alphalinux.org/docs/alphaahb.html for good descriptions
+ *  of many PALcode functions.)
  */
 
 
@@ -196,6 +199,14 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		    NetBSD sources  */
 
 		/*  KGP shoudl be set to a0.  (TODO)  */
+		break;
+	case 0x38:	/*  PAL_OSF1_wrusp  */
+		/*  a0 = value  */
+		cpu->cd.alpha.usp = cpu->cd.alpha.r[ALPHA_A0];
+		break;
+	case 0x3a:	/*  PAL_OSF1_rdusp  */
+		/*  return: v0 = value  */
+		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.usp;
 		break;
 	case 0x3c:	/*  PAL_OSF1_whami  */
 		/*  Returns CPU id in v0:  */

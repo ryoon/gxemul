@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lca.c,v 1.1 2006-05-30 19:49:39 debug Exp $
+ *  $Id: dev_lca.c,v 1.2 2006-08-22 15:13:03 debug Exp $
  *
- *  LCA bus (for Alpha machines).
+ *  LCA PCI bus (for Alpha machines).
  */
 
 #include <stdio.h>
@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "bus_isa.h"
+#include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
 #include "emul.h"
@@ -50,8 +51,70 @@
 
 
 struct lca_data {
-	int		dummy;
+	struct pci_data		*pci_data;
 };
+
+
+DEVICE_ACCESS(lca_pci_conf)
+{
+	uint64_t idata = 0, odata = 0;
+	int tag, bus, dev, func, reg;
+	struct lca_data *d = extra;
+
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
+	/*
+	 *  1. Decompose the address into a tag.
+	 *
+	 *  According to NetBSD's lca_pci.c, the address is composed like this:
+	 *
+	 *	addr = tag << 5 | (regoffset & ~0x03) << 5 | 0x3 << 3
+	 */
+	reg = (relative_addr >> 5) & 0xfc;
+	tag = (relative_addr >> 5) & ~0xff;
+
+	/*
+	 *  2. Decompose the tag into bus, dev, and func.
+	 *
+	 *  The tag can be constructed in one of two ways. On the primary
+	 *  bus (nr 0):
+	 *
+	 *	tag = (1 << (device + 11)) | (function << 8);
+	 *
+	 *  and on other busses, the tag is a normal:
+	 *
+	 *	tag = (bus << 16) | (device << 11) | (function << 8)
+	 */
+printf("tag = 0x%x\n", (int)tag);
+	bus = 0;
+
+	if (bus == 0) {
+		for (dev=0; dev<21; dev++)
+			if (tag & (0x800 << dev))
+				break;
+		if (dev >= 21) {
+			fatal("[ LCA: No bus 0 device? TODO ]\n");
+//			exit(1);
+		}
+	} else {
+		fatal("TODO. Non-zero bus.\n");
+		exit(1);
+	}
+
+	func = (tag >> 8) & 7;
+printf("bus=%i dev=%i func=%i reg=%i\n", bus,dev,func,reg);
+	bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
+
+	/*  Pass PCI accesses onto bus_pci:  */
+	bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
+	    &odata : &idata, len, writeflag);
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
 
 
 DEVICE_ACCESS(lca_isa)
@@ -92,6 +155,27 @@ DEVINIT(lca)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct lca_data));
+
+	/*  Register a PCI bus:  */
+	d->pci_data = bus_pci_init(
+	    devinit->machine,
+	    0			/*  pciirq: TODO  */,
+	    LCA_PCI_SIO,	/*  pci device io offset  */
+	    0x00000000,		/*  pci device mem offset: TODO  */
+	    0x00000000,		/*  PCI portbase: TODO  */
+	    0x00000000,		/*  PCI membase: TODO  */
+	    0x00000000,		/*  PCI irqbase: TODO  */
+	    LCA_ISA_BASE,	/*  ISA portbase  */
+	    LCA_ISA_MEMBASE,	/*  ISA membase  */
+	    8);                 /*  ISA irqbase: TODO  */
+
+	/*  Add the "sio0" controller (as seen by NetBSD):  */
+	bus_pci_add(devinit->machine, d->pci_data, devinit->machine->memory,
+	    0, 7, 0, "i82378zb");
+
+	memory_device_register(devinit->machine->memory, "lca_pci_conf",
+	    LCA_PCI_CONF, 0x20000000, dev_lca_pci_conf_access, (void *)d,
+	    DM_DEFAULT, NULL);
 
 	memory_device_register(devinit->machine->memory, "lca_isa",
 	    LCA_PCI_SIO, 0x10000 << 5, dev_lca_isa_access, (void *)d,

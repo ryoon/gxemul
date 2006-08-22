@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1333 2006-08-22 13:16:27 debug Exp $
+$Id: HISTORY,v 1.1334 2006-08-22 15:13:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2949,10 +2949,11 @@ Changelog for GXemul:
 		Working on Footbridge timer interrupts; NetBSD/NetWinder and
 		NetBSD/CATS now run at correct speed, but unfortunately with
 		HUGE delays during bootup.
-20060821	Some minor m68k updates.
+20060821	Some minor m68k updates. Adding the first instruction: nop. :)
 		Minor Alpha emulation updates.
 20060822	Adding a FreeBSD development specific YAMON environment
 		variable ("khz") (as suggested by Bruce M. Simpson).
 		Moving YAMON environment variable initialization from
 		machine_evbmips.c into promemul/yamon.c, and adding some more
 		variables.
+		Continuing on the LCA PCI bus controller (for Alpha machines).

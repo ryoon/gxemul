@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.15 2006-08-17 16:49:22 debug Exp $
+ *  $Id: dev_8253.c,v 1.16 2006-08-22 15:13:03 debug Exp $
  *
  *  Intel 8253/8254 Programmable Interval Timer
  *
@@ -80,7 +80,7 @@ static void timer0_tick(struct timer *t, void *extra)
 	struct pit8253_data *d = (struct pit8253_data *) extra;
 	d->pending_interrupts_timer0 ++;
 
-#if 1
+#if 0
 	printf("%i ", d->pending_interrupts_timer0); fflush(stdout);
 #endif
 }
@@ -100,6 +100,7 @@ DEVICE_TICK(8253)
 			cpu_interrupt(cpu, d->irq0_nr);
 		break;
 
+	case I8253_TIMER_SQWAVE:
 	case I8253_TIMER_RATEGEN:
 		break;
 
@@ -134,8 +135,12 @@ DEVICE_ACCESS(8253)
 			case I8253_TIMER_MSB:
 				d->counter[relative_addr] &= 0x00ff;
 				d->counter[relative_addr] |= ((idata&0xff)<<8);
-				d->hz[relative_addr] = I8253_TIMER_FREQ /
-				    (float)d->counter[relative_addr] + 0.5;
+				if (d->counter[relative_addr] != 0)
+					d->hz[relative_addr] =
+					    I8253_TIMER_FREQ / (float)
+					    d->counter[relative_addr] + 0.5;
+				else
+					d->hz[relative_addr] = 0;
 				debug("[ 8253: counter %i set to %i (%i Hz) "
 				    "]\n", relative_addr, d->counter[
 				    relative_addr], d->hz[relative_addr]);
@@ -149,8 +154,8 @@ DEVICE_ACCESS(8253)
 					break;
 				case 1:	fatal("TODO: DMA refresh?\n");
 					exit(1);
-				case 2:	fatal("TODO: Tone generation etc?\n");
-					exit(1);
+				case 2:	fatal("TODO: 8253 tone generation?\n");
+					break;
 				}
 				break;
 			default:fatal("[ 8253: huh? writing to counter"

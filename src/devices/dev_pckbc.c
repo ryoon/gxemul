@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.69 2006-07-25 18:58:02 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.70 2006-08-22 15:13:03 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller (and a 8242WB PS2 keyboard/mouse
  *  controller), including the 8048 keyboard chip.
@@ -658,7 +658,7 @@ if (x&1)
 }
 			if (writeflag == MEM_READ)
 				memory_writemax64(cpu, data, len, odata);
-			return 0;
+			return 1;
 		}
 		if (relative_addr != 0)
 			relative_addr = 1;

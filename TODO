@@ -1,4 +1,4 @@
-$Id: TODO,v 1.350 2006-08-21 17:02:36 debug Exp $
+$Id: TODO,v 1.351 2006-08-22 15:13:02 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -15,29 +15,10 @@ High-priority stuff:
 		x)  Workarounds for the delays during NetWinder/CATS bootup?
 			Plug-and-play detection loops!
 	x)  Alpha:
-      
-<pci_alphabook1_pickintr(&lca_configuration,0,0x2000,0x2000,"XA","XA",..)>
-        <lca_make_tag(&lca_configuration,0,7,0,"XA","XA",..)>
-        <lca_conf_read(&lca_configuration,0x3800,8,0,"XA","XA",..)>
-          
-<lca_decompose_tag(&lca_configuration,0x3800,0xfffffc00002ffd40,0xffff
-fc00002ffd44,0,"XA",..)>
-          
-<badaddr(0xfffffc01e0800118,4,0xfffffc00002ffd40,0xfffffc00002ffd44,0,
-"XA",..)>
-            
-<badaddr_read(0xfffffc01e0800118,4,0,0xfffffc00002ffd44,0,"XA",..)>
-[ memory_rw(): writeflag=0  paddr=0x1e0800118 >= physical_max; 
-pc=0xfffffc00007b
-9a80 <badaddr_read+0x130> ]
-[ memory_rw(): writeflag=0  paddr=0x1e0800118 >= physical_max; 
-pc=0xfffffc00007a
-1ca8 <lca_conf_read+0xd8> ]
-        <printf("WARNING: SIO NOT SIO II... NO 
-BETS...\n",4,0,0xfffffc00002ffd44
-,0,"XA",..)>
-
-	x)  Remove the "NOO" in src/cpu.c once things have stabilized.
+		x)  Continue on the LCA stuff. (Bus != 0)
+		x)  Virtual memory; PALcode stuff...
+		x)  Remove the "NOO" in src/cpu.c once things have stabilized.
+		x)  Interrupt support :)
 
 ------------------------------------------------------------------------------
 

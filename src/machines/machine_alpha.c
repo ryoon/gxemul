@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.8 2006-08-21 17:02:37 debug Exp $
+ *  $Id: machine_alpha.c,v 1.9 2006-08-22 15:13:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,13 +52,12 @@ MACHINE_SETUP(alpha)
 	struct pcs *pcs = malloc(sizeof(struct pcs) * machine->ncpus);
 	int i;
 
-	machine->emulated_hz = 66000000;
-
 	switch (machine->machine_subtype) {
 
 	case ST_ALPHABOOK1:
 		machine->machine_name = "AlphaBook 1";
-		machine->emulated_hz = 233000000;
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 233000000;
 		device_add(machine, "lca");
 		break;
 

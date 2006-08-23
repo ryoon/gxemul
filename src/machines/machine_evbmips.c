@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.9 2006-08-22 13:16:27 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.10 2006-08-23 15:45:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -56,6 +56,8 @@ MACHINE_SETUP(evbmips)
 	switch (machine->machine_subtype) {
 	case MACHINE_EVBMIPS_MALTA:
 	case MACHINE_EVBMIPS_MALTA_BE:
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 33000000;
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 		machine->machine_name = "MALTA (evbmips, little endian)";
 		machine->stable = 1;

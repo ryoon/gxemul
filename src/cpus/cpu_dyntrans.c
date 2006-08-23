@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.120 2006-08-12 11:43:12 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.121 2006-08-23 15:45:30 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -394,8 +394,16 @@ while (cycles-- > 0)
 		    (int32_t) (old + n_instrs);
 		diff2 = cpu->cd.mips.coproc[0]->reg[COP0_COMPARE] -
 		    cpu->cd.mips.coproc[0]->reg[COP0_COUNT];
-		if (cpu->cd.mips.compare_register_set && diff1>0 && diff2<=0)
-			cpu_interrupt(cpu, 7);
+
+		if (cpu->cd.mips.compare_register_set) {
+			if (cpu->machine->emulated_hz > 0) {
+				if (cpu->cd.mips.compare_interrupts_pending > 0)
+					cpu_interrupt(cpu, 7);
+			} else {
+				if (diff1 > 0 && diff2 <= 0)
+					cpu_interrupt(cpu, 7);
+			}
+		}
 	}
 #endif
 #ifdef DYNTRANS_PPC
@@ -1341,7 +1349,7 @@ void DYNTRANS_INVALIDATE_TC_CODE(struct cpu *cpu, uint64_t addr, int flags)
 void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
-	int found, r, lowest_index, useraccess = 0;
+	int found, r, useraccess = 0;
 
 #ifdef MODE32
 	uint32_t index;
@@ -1372,7 +1380,6 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 	}
 
 	/*  Scan the current TLB entries:  */
-	lowest_index = 0;
 
 #ifdef MODE32
 	/*
@@ -1404,13 +1411,10 @@ void DYNTRANS_UPDATE_TRANSLATION_TABLE(struct cpu *cpu, uint64_t vaddr_page,
 #endif
 
 	if (found < 0) {
+		/*  Create the new TLB entry, overwriting a "random" entry:  */
 		static unsigned int x = 0;
-		lowest_index = (x++) % DYNTRANS_MAX_VPH_TLB_ENTRIES;
-	}
+		r = (x++) % DYNTRANS_MAX_VPH_TLB_ENTRIES;
 
-	if (found < 0) {
-		/*  Create the new TLB entry, overwriting the oldest one:  */
-		r = lowest_index;
 		if (cpu->cd.DYNTRANS_ARCH.vph_tlb_entry[r].valid) {
 			/*  This one has to be invalidated first:  */
 			DYNTRANS_INVALIDATE_TLB_ENTRY(cpu,

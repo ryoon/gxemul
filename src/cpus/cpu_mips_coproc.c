@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.53 2006-08-11 17:43:30 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.54 2006-08-23 15:45:30 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -45,6 +45,7 @@
 #include "mips_cpu_types.h"
 #include "misc.h"
 #include "opcodes_mips.h"
+#include "timer.h"
 
 
 #ifndef ENABLE_MIPS
@@ -438,6 +439,23 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 
 
 /*
+ *  mips_timer_tick():
+ */
+static void mips_timer_tick(struct timer *timer, void *extra)
+{
+	struct cpu *cpu = (struct cpu *) extra;
+
+	cpu->cd.mips.compare_interrupts_pending ++;
+
+	if ((int32_t) (cpu->cd.mips.coproc[0]->reg[COP0_COUNT] -
+	    cpu->cd.mips.coproc[0]->reg[COP0_COMPARE]) < 0) {
+		cpu->cd.mips.coproc[0]->reg[COP0_COUNT] =
+		    cpu->cd.mips.coproc[0]->reg[COP0_COMPARE];
+	}
+}
+
+
+/*
  *  mips_coproc_tlb_set_entry():
  *
  *  Used by machine setup code, if a specific machine emulation starts up
@@ -753,13 +771,45 @@ void coproc_register_write(struct cpu *cpu,
 			unimpl = 0;
 			break;
 		case COP0_COMPARE:
-			/*  Clear the timer interrupt bit (bit 7):  */
-			cpu->cd.mips.compare_register_set = 1;
+			if (cpu->machine->emulated_hz > 0) {
+				int32_t compare_diff = tmp -
+				    cp->reg[COP0_COMPARE];
+				double hz;
+
+				if (compare_diff < 0)
+					hz = tmp - cp->reg[COP0_COUNT];
+
+				if (compare_diff == 0)
+					hz = 0;
+				else
+					hz = (double)cpu->machine->emulated_hz
+					    / (double)compare_diff;
+
+				/*  Initialize or re-set the periodic timer:  */
+				if (hz > 0) {
+					if (cpu->cd.mips.timer == NULL)
+						cpu->cd.mips.timer = timer_add(
+						    hz, mips_timer_tick, cpu);
+					else
+						timer_update_frequency(
+						    cpu->cd.mips.timer, hz);
+				}
+			}
+
+			/*  Ack the periodic timer, if it was asserted:  */
+			if (cp->reg[COP0_CAUSE] & 0x8000 &&
+			    cpu->cd.mips.compare_interrupts_pending > 0)
+				cpu->cd.mips.compare_interrupts_pending --;
+
+			/*  Clear the timer interrupt assertion (bit 7):  */
 			mips_cpu_interrupt_ack(cpu, 7);
+
 			if (tmp != (uint64_t)(int64_t)(int32_t)tmp)
 				fatal("WARNING: trying to write a 64-bit value"
 				    " to the COMPARE register!\n");
+
 			tmp = (int64_t)(int32_t)tmp;
+			cpu->cd.mips.compare_register_set = 1;
 			unimpl = 0;
 			break;
 		case COP0_ENTRYHI:

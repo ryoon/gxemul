@@ -1,22 +1,23 @@
-$Id: TODO,v 1.351 2006-08-22 15:13:02 debug Exp $
+$Id: TODO,v 1.352 2006-08-23 15:45:30 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 High-priority stuff:
 	x)  Clock/timer framework:
-		x)  Add -I again; useful for setting the interupt interval
-			for guest OSes which go by count/compare interrupts
-			instead of RTC interrupts.  -I 0 to let the
-			counter not be affected by Real Time, but increase
-			by 1 for each instruction ?
 		x)  FIGURE OUT A WAY TO TEST THE 8253 :)
 		    Right now it doesn't seem to be used :)
 		x)  Workarounds for the delays during NetWinder/CATS bootup?
-			Plug-and-play detection loops!
+		    Plug-and-play detection loops!
+		x)  NetBSD on Malta isn't stable yet.
+		x)  NetBSD/cobalt is not working right yet.
+		x)  Linux on Malta doesn't work right now.
+
 	x)  Alpha:
 		x)  Continue on the LCA stuff. (Bus != 0)
-		x)  Virtual memory; PALcode stuff...
+		x)  Bootup memory and register contents...
+		x)  Virtual memory...
+		x)  PALcode stuff...
 		x)  Remove the "NOO" in src/cpu.c once things have stabilized.
 		x)  Interrupt support :)
 

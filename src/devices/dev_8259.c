@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8259.c,v 1.26 2006-08-17 16:49:22 debug Exp $
+ *  $Id: dev_8259.c,v 1.27 2006-08-23 15:45:30 debug Exp $
  *  
  *  8259 Programmable Interrupt Controller.
  *
@@ -48,7 +48,7 @@
 
 #define	DEV_8259_LENGTH		2
 
-#define DEV_8259_DEBUG
+/*  #define DEV_8259_DEBUG  */
 
 
 DEVICE_ACCESS(8259)

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.46 2006-08-17 15:32:15 debug Exp $
+ *  $Id: cpu_mips.h,v 1.47 2006-08-23 15:45:30 debug Exp $
  */
 
 #include "misc.h"
@@ -36,6 +36,7 @@
 struct cpu_family;
 struct emul;
 struct machine;
+struct timer;
 
 /*
  *  CPU type definitions:  See mips_cpu_types.h.
@@ -238,6 +239,8 @@ struct mips_cpu {
 	struct mips_coproc *coproc[N_MIPS_COPROCS];
 
 	int		compare_register_set;
+	int		compare_interrupts_pending;
+	struct timer	*timer;
 
 	/*  Special purpose registers:  */
 	uint64_t	hi;

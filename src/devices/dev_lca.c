@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lca.c,v 1.2 2006-08-22 15:13:03 debug Exp $
+ *  $Id: dev_lca.c,v 1.3 2006-08-25 17:31:21 debug Exp $
  *
  *  LCA PCI bus (for Alpha machines).
  */
@@ -52,6 +52,14 @@
 
 struct lca_data {
 	struct pci_data		*pci_data;
+
+	uint64_t		ioc_conf;
+	uint64_t		tlb_enable;
+	uint64_t		window_base_0;
+	uint64_t		window_mask_0;
+	uint64_t		window_t_base_0;
+	uint64_t		window_base_1;
+	uint64_t		window_mask_1;
 };
 
 
@@ -86,16 +94,17 @@ DEVICE_ACCESS(lca_pci_conf)
 	 *
 	 *	tag = (bus << 16) | (device << 11) | (function << 8)
 	 */
-printf("tag = 0x%x\n", (int)tag);
-	bus = 0;
+	/*  printf("tag = 0x%x\n", (int)tag);  */
+	bus = d->ioc_conf & 1;
 
 	if (bus == 0) {
 		for (dev=0; dev<21; dev++)
 			if (tag & (0x800 << dev))
 				break;
 		if (dev >= 21) {
-			fatal("[ LCA: No bus 0 device? TODO ]\n");
-//			exit(1);
+			/*  fatal("[ LCA: No bus 0 device? TODO ]\n");
+			exit(1);  */
+			dev = 0;
 		}
 	} else {
 		fatal("TODO. Non-zero bus.\n");
@@ -103,10 +112,10 @@ printf("tag = 0x%x\n", (int)tag);
 	}
 
 	func = (tag >> 8) & 7;
-printf("bus=%i dev=%i func=%i reg=%i\n", bus,dev,func,reg);
-	bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
+	/*  printf("bus=%i dev=%i func=%i reg=%i\n", bus,dev,func,reg);  */
 
 	/*  Pass PCI accesses onto bus_pci:  */
+	bus_pci_setaddr(cpu, d->pci_data, bus, dev, func, reg);
 	bus_pci_data_access(cpu, d->pci_data, writeflag == MEM_READ?
 	    &odata : &idata, len, writeflag);
 
@@ -147,6 +156,136 @@ DEVICE_ACCESS(lca_isa)
 }
 
 
+DEVICE_ACCESS(lca_ioc)
+{
+	uint64_t idata = 0, odata = 0;
+	struct lca_data *d = extra;
+
+	if (writeflag == MEM_WRITE)
+		idata = memory_readmax64(cpu, data, len);
+
+	switch (relative_addr + LCA_IOC_BASE) {
+
+	case LCA_IOC_CONF:
+		if (writeflag == MEM_READ) {
+			odata = d->ioc_conf;
+		} else {
+			d->ioc_conf = idata;
+			/*  Only bit 0 is implemented so far, the PCI bus 0 vs
+			    bus non-0 selection bit.  */
+			if (idata & ~1) {
+				fatal("TODO: Write to unimplemented bit of"
+				    " IOC_CONF: 0x%x\n", (int)idata);
+				exit(1);
+			}
+		}
+		break;
+
+	case LCA_IOC_TBIA:
+		/*  TLB Invalidate All.  */
+		/*  TODO: For now, let's just ignore it.  */
+		break;
+
+	case LCA_IOC_TB_ENA:
+		if (writeflag == MEM_READ) {
+			odata = d->tlb_enable;
+		} else {
+			d->tlb_enable = idata;
+			/*  TODO: Actually implement this.  */
+			if (idata & ~IOC_TB_ENA_TEN) {
+				fatal("TODO: LCA_IOC_TB_ENA value "
+				    " (0x%"PRIx64") has unimplemented "
+				    "bits.\n", (uint64_t)idata);
+				exit(1);
+			}
+		}
+		break;
+
+	case LCA_IOC_W_BASE0:
+		if (writeflag == MEM_READ) {
+			odata = d->window_base_0;
+		} else {
+			d->window_base_0 = idata;
+			/*  TODO: Actually implement this.  */
+			if (idata != 0ULL && idata != 0x300800000ULL) {
+				fatal("TODO: LCA_IOC_W_BASE0 value differs"
+				    " (0x%"PRIx64") from the only implemented"
+				    " values\n", (uint64_t)idata);
+				exit(1);
+			}
+		}
+		break;
+
+	case LCA_IOC_W_MASK0:
+		if (writeflag == MEM_READ) {
+			odata = d->window_mask_0;
+		} else {
+			d->window_mask_0 = idata;
+			/*  TODO: Actually implement this.  */
+			if (idata != 0x700000ULL) {
+				fatal("TODO: LCA_IOC_W_MASK0 value differs"
+				    " (0x%"PRIx64") from the only implemented"
+				    " value\n", (uint64_t)idata);
+				exit(1);
+			}
+		}
+		break;
+
+	case LCA_IOC_W_T_BASE0:
+		if (writeflag == MEM_READ) {
+			odata = d->window_t_base_0;
+		} else {
+			d->window_t_base_0 = idata;
+			/*  TODO: Actually implement this.  */
+		}
+		break;
+
+	case LCA_IOC_W_BASE1:
+		if (writeflag == MEM_READ) {
+			odata = d->window_base_1;
+		} else {
+			d->window_base_1 = idata;
+			/*  TODO: Actually implement this.  */
+			if (idata != 0x240000000ULL) {
+				fatal("TODO: LCA_IOC_W_BASE1 value differs"
+				    " (0x%"PRIx64") from the only implemented"
+				    " value\n", (uint64_t)idata);
+				exit(1);
+			}
+		}
+		break;
+
+	case LCA_IOC_W_MASK1:
+		if (writeflag == MEM_READ) {
+			odata = d->window_mask_1;
+		} else {
+			d->window_mask_1 = idata;
+			/*  TODO: Actually implement this.  */
+			if (idata != 0x3ff00000ULL) {
+				fatal("TODO: LCA_IOC_W_MASK1 value differs"
+				    " (0x%"PRIx64") from the only implemented"
+				    " value\n", (uint64_t)idata);
+				exit(1);
+			}
+		}
+		break;
+
+	default:fatal("[ lca_ioc: unimplemented %s to offset 0x%x",
+		    writeflag == MEM_WRITE? "write" : "read", (int)
+		    relative_addr);
+		if (writeflag == MEM_WRITE)
+			fatal(": 0x%x", (int)idata);
+		fatal(" ]\n");
+		exit(1);
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
 DEVINIT(lca)
 {
 	struct lca_data *d = malloc(sizeof(struct lca_data));
@@ -179,6 +318,10 @@ DEVINIT(lca)
 
 	memory_device_register(devinit->machine->memory, "lca_isa",
 	    LCA_PCI_SIO, 0x10000 << 5, dev_lca_isa_access, (void *)d,
+	    DM_DEFAULT, NULL);
+
+	memory_device_register(devinit->machine->memory, "lca_ioc",
+	    LCA_IOC_BASE, 0x20000000, dev_lca_ioc_access, (void *)d,
 	    DM_DEFAULT, NULL);
 
 	/*  TODO: IRQs etc.  */

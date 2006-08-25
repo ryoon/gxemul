@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1336 2006-08-25 16:44:09 debug Exp $
+$Id: HISTORY,v 1.1337 2006-08-25 17:31:21 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2962,3 +2962,4 @@ Changelog for GXemul:
 20060825	Adding bogus SCSI commands 0x51 (SCSICDROM_READ_DISCINFO) and
 		0x52 (SCSICDROM_READ_TRACKINFO) to the SCSI emulation layer,
 		to allow NetBSD/pmax 4.0_BETA to be installed from CDROM.
+		Minor updates to the LCA PCI controller.

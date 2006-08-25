@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.30 2005-11-13 02:22:01 debug Exp $
+ *  $Id: diskimage.h,v 1.31 2006-08-25 16:44:09 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -150,6 +150,8 @@ void diskimage_dump_info(struct machine *machine);
 /*  SCSI CD-ROM commands:  */
 #define	SCSICDROM_READ_SUBCHANNEL	0x42
 #define	SCSICDROM_READ_TOC		0x43
+#define	SCSICDROM_READ_DISCINFO		0x51
+#define	SCSICDROM_READ_TRACKINFO	0x52
 
 /*  SCSI tape commands:  */
 #define	SCSICMD_REWIND			0x01

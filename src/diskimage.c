@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.111 2006-08-14 17:27:45 debug Exp $
+ *  $Id: diskimage.c,v 1.112 2006-08-25 16:44:09 debug Exp $
  *
  *  Disk image support.
  *
@@ -1248,6 +1248,32 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x00;	/*  Track nr  */
 		xferp->data_in[7] = 0x00;	/*  Reserved  */
 		/*  8..11 = absolute CDROM address  */
+
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
+	case SCSICDROM_READ_DISCINFO:
+		debug("(SCSICDROM_READ_DISCINFO: ");
+		debug("TODO");
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len,
+		    &xferp->data_in, retlen, 1);
+
+		/*  TODO  */
+
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
+	case SCSICDROM_READ_TRACKINFO:
+		debug("(SCSICDROM_READ_TRACKINFO: ");
+		debug("TODO");
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len,
+		    &xferp->data_in, retlen, 1);
+
+		/*  TODO  */
 
 		diskimage__return_default_status_and_message(xferp);
 		break;

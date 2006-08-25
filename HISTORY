@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1335 2006-08-23 15:45:29 debug Exp $
+$Id: HISTORY,v 1.1336 2006-08-25 16:44:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2959,3 +2959,6 @@ Changelog for GXemul:
 		Continuing on the LCA PCI bus controller (for Alpha machines).
 20060823	Continuing on the timer stuff: experimenting with MIPS count/
 		compare interrupts connected to the timer framework.
+20060825	Adding bogus SCSI commands 0x51 (SCSICDROM_READ_DISCINFO) and
+		0x52 (SCSICDROM_READ_TRACKINFO) to the SCSI emulation layer,
+		to allow NetBSD/pmax 4.0_BETA to be installed from CDROM.

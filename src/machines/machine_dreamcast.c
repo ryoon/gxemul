@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.3 2006-07-25 21:49:14 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.4 2006-08-25 16:59:26 debug Exp $
  */
 
 #include <stdio.h>
@@ -43,6 +43,11 @@
 MACHINE_SETUP(dreamcast)
 {
 	machine->machine_name = "Dreamcast";
+
+	if (machine->emulated_hz == 0)
+		machine->emulated_hz = 200000000;
+
+	/*  TODO: Devices.  */
 
 	if (!machine->prom_emulation)
 		return;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_chip8_instr.c,v 1.1 2006-08-27 10:37:30 debug Exp $
+ *  $Id: cpu_chip8_instr.c,v 1.2 2006-08-27 12:12:10 debug Exp $
  *
  *  CHIP8 instructions.
  *
@@ -48,11 +48,6 @@ static void chip8_putpixel(struct cpu *cpu, int x, int y, int color)
 	int linelen = cpu->cd.chip8.xres;
 	uint64_t addr = (linelen * y * cpu->machine->x11_scaleup + x)
 	    * cpu->machine->x11_scaleup + CHIP8_FB_ADDR;
-
-	if (x < 0 || x >= cpu->cd.chip8.xres)
-		return;
-	if (y < 0 || y >= cpu->cd.chip8.yres)
-		return;
 
 	cpu->cd.chip8.framebuffer_cache[y * cpu->cd.chip8.xres + x] = pixel;
 
@@ -95,21 +90,38 @@ X(sprite)
 	int x, y, height = ic->arg[2];
 	int index = cpu->cd.chip8.index;
 
-	/*  debug("[ chip8 sprite at x=%i y=%i, height=%i ]\n",
-	    xb, yb, height);  */
+	/*  Synchronize the PC first:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.chip8.cur_ic_page)
+	    / sizeof(struct chip8_instr_call);
+	cpu->pc &= ~((CHIP8_IC_ENTRIES_PER_PAGE-1)
+	    << CHIP8_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << CHIP8_INSTR_ALIGNMENT_SHIFT);
+
+	debug("[ chip8 sprite at x=%i y=%i, height=%i ]\n",
+	    xb, yb, height);
+	cpu->cd.chip8.v[15] = 0;
 
 	for (y=yb; y<yb+height; y++) {
 		uint8_t color;
 		cpu->memory_rw(cpu, cpu->mem, index++, &color,
 		    sizeof(color), MEM_READ, PHYSICAL);
 		for (x=xb; x<xb+8; x++) {
-			if (cpu->cd.chip8.framebuffer_cache[y *
-			    cpu->cd.chip8.xres + x])
+			int xc = x % cpu->cd.chip8.xres;
+			int yc = y % cpu->cd.chip8.yres;
+			if (cpu->cd.chip8.framebuffer_cache[yc *
+			    cpu->cd.chip8.xres + xc]) {
 				color ^= 0x80;
-			chip8_putpixel(cpu, x, y, color & 0x80);
+				if ((color & 0x80) == 0)
+					cpu->cd.chip8.v[15] = 1;
+			}
+			chip8_putpixel(cpu, xc, yc, color & 0x80);
 			color <<= 1;
 		}
 	}
+
+	cpu->n_translated_instrs += 100000;
+	cpu->pc += 2;
+	cpu->cd.chip8.next_ic = &nothing_call;
 }
 
 
@@ -134,19 +146,15 @@ X(add)
 	int y = *((uint8_t *)ic->arg[1]);
 	x += y;
 	*((uint8_t *)ic->arg[0]) = x;
-
-	if (x > 255)
-		cpu->cd.chip8.v[15] = 1;
+	cpu->cd.chip8.v[15] = (x > 255);
 }
 X(sub)
 {
 	int x = *((uint8_t *)ic->arg[0]);
 	int y = *((uint8_t *)ic->arg[1]);
-	x -= y;
-	*((uint8_t *)ic->arg[0]) = x;
-
-	if (x < 0)
-		cpu->cd.chip8.v[15] = 1;
+	/*  VF bit = negated borrow  */
+	cpu->cd.chip8.v[15] = (x >= y);
+	*((uint8_t *)ic->arg[0]) = x - y;
 }
 
 
@@ -255,14 +263,16 @@ X(add_imm)
 
 
 /*
- *  rand:  Set a register to a random value (0..constant).
+ *  rand:  Set a register to a random value.
  *
  *  arg[0] = ptr to register
  *  arg[1] = 8-bit constant
  */
 X(rand)
 {
-	(*((uint8_t *)ic->arg[0])) = random() % (ic->arg[1] + 1);
+	/*  http://www.pdc.kth.se/~lfo/chip8/CHIP8.htm says AND,
+	    http://members.aol.com/autismuk/chip8/chip8def.htm says %.  */
+	(*((uint8_t *)ic->arg[0])) = random() & ic->arg[1];
 }
 
 
@@ -316,7 +326,7 @@ X(font)
 	int c = *((uint8_t *)ic->arg[0]);
 	if (c > 0xf)
 		fatal("[ chip8 font: WARNING: c = 0x%02x ]\n", c);
-	cpu->cd.chip8.index = 0xf00 + 5 * (c & 0xf);
+	cpu->cd.chip8.index = CHIP8_FONT_ADDR + 5 * (c & 0xf);
 }
 
 
@@ -344,7 +354,7 @@ X(bcd)
 X(str)
 {
 	int r;
-	for (r=0; r<ic->arg[0]; r++) {
+	for (r=0; r<=ic->arg[0]; r++) {
 		cpu->memory_rw(cpu, cpu->mem, cpu->cd.chip8.index++,
 		    &cpu->cd.chip8.v[r], sizeof(uint8_t), MEM_WRITE, PHYSICAL);
 	}
@@ -359,7 +369,7 @@ X(str)
 X(ldr)
 {
 	int r;
-	for (r=0; r<ic->arg[0]; r++) {
+	for (r=0; r<=ic->arg[0]; r++) {
 		cpu->memory_rw(cpu, cpu->mem, cpu->cd.chip8.index++,
 		    &cpu->cd.chip8.v[r], sizeof(uint8_t), MEM_READ, PHYSICAL);
 	}

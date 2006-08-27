@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_chip8.c,v 1.1 2006-08-27 10:37:30 debug Exp $
+ *  $Id: cpu_chip8.c,v 1.2 2006-08-27 12:12:10 debug Exp $
  *
  *  CHIP8 CPU emulation.
  *
@@ -176,8 +176,8 @@ void chip8_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				debug("\n");
 		}
 
-		debug("cpu%i: i=0x%03x sp=0x%03x delay=%i sound=%i\n", x,
-		    cpu->cd.chip8.index & 0xfff, cpu->cd.chip8.sp,
+		debug("cpu%i: i=0x%04x sp=0x%03x delay=%i sound=%i\n", x,
+		    cpu->cd.chip8.index, cpu->cd.chip8.sp,
 		    cpu->cd.chip8.delay_timer_value,
 		    cpu->cd.chip8.sound_timer_value);
 	}
@@ -225,9 +225,9 @@ void chip8_cpu_register_match(struct machine *m, char *name,
 		}
 	} else if (strcasecmp(name, "i") == 0) {
 		if (writeflag) {
-			m->cpus[cpunr]->cd.chip8.index = *valuep & 0xfff;
+			m->cpus[cpunr]->cd.chip8.index = *valuep & 0xffff;
 		} else
-			*valuep = m->cpus[cpunr]->cd.chip8.index & 0xfff;
+			*valuep = m->cpus[cpunr]->cd.chip8.index & 0xffff;
 		*match_register = 1;
 	} else if (strcasecmp(name, "sp") == 0) {
 		if (writeflag) {

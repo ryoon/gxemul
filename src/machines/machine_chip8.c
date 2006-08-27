@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_chip8.c,v 1.1 2006-08-27 10:37:30 debug Exp $
+ *  $Id: machine_chip8.c,v 1.2 2006-08-27 12:12:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -70,112 +70,112 @@ MACHINE_SETUP(chip8)
 	fontchar[2] = 0x90;	/*  X..X  */
 	fontchar[3] = 0x90;	/*  X..X  */
 	fontchar[4] = 0x60;	/*  .XX.  */
-	store_buf(cpu, 0xf00 + 5 * 0, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 0, fontchar, sizeof(fontchar));
 	/*  1  */
 	fontchar[0] = 0x20;	/*  ..X.  */
 	fontchar[1] = 0x60;	/*  .XX.  */
 	fontchar[2] = 0x20;	/*  ..X.  */
 	fontchar[3] = 0x20;	/*  ..X.  */
 	fontchar[4] = 0x20;	/*  ..X.  */
-	store_buf(cpu, 0xf00 + 5 * 1, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 1, fontchar, sizeof(fontchar));
 	/*  2  */
 	fontchar[0] = 0x60;	/*  .XX.  */
 	fontchar[1] = 0x90;	/*  X..X  */
 	fontchar[2] = 0x20;	/*  ..X.  */
 	fontchar[3] = 0x40;	/*  .X..  */
 	fontchar[4] = 0xf0;	/*  XXXX  */
-	store_buf(cpu, 0xf00 + 5 * 2, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 2, fontchar, sizeof(fontchar));
 	/*  3  */
 	fontchar[0] = 0xe0;	/*  XXX.  */
 	fontchar[1] = 0x10;	/*  ...X  */
 	fontchar[2] = 0x60;	/*  .XX.  */
 	fontchar[3] = 0x10;	/*  ...X  */
 	fontchar[4] = 0xe0;	/*  XXX.  */
-	store_buf(cpu, 0xf00 + 5 * 3, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 3, fontchar, sizeof(fontchar));
 	/*  4  */
 	fontchar[0] = 0x90;	/*  X..X  */
 	fontchar[1] = 0x90;	/*  X..X  */
 	fontchar[2] = 0xf0;	/*  XXXX  */
 	fontchar[3] = 0x10;	/*  ...X  */
 	fontchar[4] = 0x10;	/*  ...X  */
-	store_buf(cpu, 0xf00 + 5 * 4, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 4, fontchar, sizeof(fontchar));
 	/*  5  */
 	fontchar[0] = 0xf0;	/*  XXXX  */
 	fontchar[1] = 0x80;	/*  X...  */
 	fontchar[2] = 0xe0;	/*  XXX.  */
 	fontchar[3] = 0x10;	/*  ...X  */
 	fontchar[4] = 0xe0;	/*  XXX.  */
-	store_buf(cpu, 0xf00 + 5 * 5, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 5, fontchar, sizeof(fontchar));
 	/*  6  */
 	fontchar[0] = 0x70;	/*  .XXX  */
 	fontchar[1] = 0x80;	/*  X...  */
 	fontchar[2] = 0xe0;	/*  XXX.  */
 	fontchar[3] = 0x90;	/*  X..X  */
 	fontchar[4] = 0x60;	/*  .XX.  */
-	store_buf(cpu, 0xf00 + 5 * 6, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 6, fontchar, sizeof(fontchar));
 	/*  7  */
 	fontchar[0] = 0xf0;	/*  XXXX  */
 	fontchar[1] = 0x10;	/*  ...X  */
 	fontchar[2] = 0x20;	/*  ..X.  */
 	fontchar[3] = 0x40;	/*  .X..  */
 	fontchar[4] = 0x40;	/*  .X..  */
-	store_buf(cpu, 0xf00 + 5 * 7, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 7, fontchar, sizeof(fontchar));
 	/*  8  */
 	fontchar[0] = 0x60;	/*  .XX.  */
 	fontchar[1] = 0x90;	/*  X..X  */
 	fontchar[2] = 0x60;	/*  .XX.  */
 	fontchar[3] = 0x90;	/*  X..X  */
 	fontchar[4] = 0x60;	/*  .XX.  */
-	store_buf(cpu, 0xf00 + 5 * 8, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 8, fontchar, sizeof(fontchar));
 	/*  9  */
 	fontchar[0] = 0x60;	/*  .XX.  */
 	fontchar[1] = 0x90;	/*  X..X  */
 	fontchar[2] = 0x70;	/*  .XXX  */
 	fontchar[3] = 0x10;	/*  ...X  */
 	fontchar[4] = 0x60;	/*  .XX.  */
-	store_buf(cpu, 0xf00 + 5 * 9, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 9, fontchar, sizeof(fontchar));
 	/*  A  */
 	fontchar[0] = 0x60;	/*  .XX.  */
 	fontchar[1] = 0x90;	/*  X..X  */
 	fontchar[2] = 0xf0;	/*  XXXX  */
 	fontchar[3] = 0x90;	/*  X..X  */
 	fontchar[4] = 0x90;	/*  X..X  */
-	store_buf(cpu, 0xf00 + 5 * 10, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 10, fontchar, sizeof(fontchar));
 	/*  B  */
 	fontchar[0] = 0xe0;	/*  XXX.  */
 	fontchar[1] = 0x90;	/*  X..X  */
 	fontchar[2] = 0xe0;	/*  XXX.  */
 	fontchar[3] = 0x90;	/*  X..X  */
 	fontchar[4] = 0xe0;	/*  XXX.  */
-	store_buf(cpu, 0xf00 + 5 * 11, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 11, fontchar, sizeof(fontchar));
 	/*  C  */
 	fontchar[0] = 0x70;	/*  .XXX  */
 	fontchar[1] = 0x80;	/*  X...  */
 	fontchar[2] = 0x80;	/*  X...  */
 	fontchar[3] = 0x80;	/*  X...  */
 	fontchar[4] = 0x70;	/*  .XXX  */
-	store_buf(cpu, 0xf00 + 5 * 12, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 12, fontchar, sizeof(fontchar));
 	/*  D  */
 	fontchar[0] = 0xe0;	/*  XXX.  */
 	fontchar[1] = 0x90;	/*  X..X  */
 	fontchar[2] = 0x90;	/*  X..X  */
 	fontchar[3] = 0x90;	/*  X..X  */
 	fontchar[4] = 0xe0;	/*  XXX.  */
-	store_buf(cpu, 0xf00 + 5 * 13, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 13, fontchar, sizeof(fontchar));
 	/*  E  */
 	fontchar[0] = 0xf0;	/*  XXXX  */
 	fontchar[1] = 0x80;	/*  X...  */
 	fontchar[2] = 0xe0;	/*  XXX.  */
 	fontchar[3] = 0x80;	/*  X...  */
 	fontchar[4] = 0xf0;	/*  XXXX  */
-	store_buf(cpu, 0xf00 + 5 * 14, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 14, fontchar, sizeof(fontchar));
 	/*  F  */
 	fontchar[0] = 0xf0;	/*  XXXX  */
 	fontchar[1] = 0x80;	/*  X...  */
 	fontchar[2] = 0xe0;	/*  XXX.  */
 	fontchar[3] = 0x80;	/*  X...  */
 	fontchar[4] = 0x80;	/*  X...  */
-	store_buf(cpu, 0xf00 + 5 * 15, fontchar, sizeof(fontchar));
+	store_buf(cpu, CHIP8_FONT_ADDR + 5 * 15, fontchar, sizeof(fontchar));
 
 	/*  TODO: Keyboard input device!  */
 }

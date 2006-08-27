@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_chip8.h,v 1.1 2006-08-27 10:37:30 debug Exp $
+ *  $Id: cpu_chip8.h,v 1.2 2006-08-27 12:12:10 debug Exp $
  */
 
 #include "misc.h"
@@ -54,6 +54,9 @@ DYNTRANS_MISC_DECLARATIONS(chip8,CHIP8,uint64_t)
 
 #define	CHIP8_FB_ADDR		0x10000000
 
+/*  Font address is 8110, according to
+    http://www.pdc.kth.se/~lfo/chip8/CHIP8.htm.  */
+#define	CHIP8_FONT_ADDR		8110
 
 struct chip8_cpu {
 	/*

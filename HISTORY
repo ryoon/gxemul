@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1338 2006-08-27 10:37:29 debug Exp $
+$Id: HISTORY,v 1.1339 2006-08-27 12:50:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2968,4 +2968,4 @@ Changelog for GXemul:
 		and most of the common instructions have been implemented: mvi,
 		mov_imm, add_imm, jmp, rand, cls, sprite, skeq_imm, jsr,
 		skne_imm, bcd, rts, ldr, str, mov, or, and, xor, add, sub,
-		font, ssound, sdelay, gdelay, bogus skup/skpr.
+		font, ssound, sdelay, gdelay, bogus skup/skpr, skeq, skne.

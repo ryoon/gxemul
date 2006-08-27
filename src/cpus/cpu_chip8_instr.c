@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_chip8_instr.c,v 1.2 2006-08-27 12:12:10 debug Exp $
+ *  $Id: cpu_chip8_instr.c,v 1.3 2006-08-27 12:50:21 debug Exp $
  *
  *  CHIP8 instructions.
  *
@@ -97,8 +97,8 @@ X(sprite)
 	    << CHIP8_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc += (low_pc << CHIP8_INSTR_ALIGNMENT_SHIFT);
 
-	debug("[ chip8 sprite at x=%i y=%i, height=%i ]\n",
-	    xb, yb, height);
+	/*  debug("[ chip8 sprite at x=%i y=%i, height=%i ]\n",
+	    xb, yb, height);  */
 	cpu->cd.chip8.v[15] = 0;
 
 	for (y=yb; y<yb+height; y++) {
@@ -119,7 +119,7 @@ X(sprite)
 		}
 	}
 
-	cpu->n_translated_instrs += 100000;
+	cpu->n_translated_instrs += 200000;
 	cpu->pc += 2;
 	cpu->cd.chip8.next_ic = &nothing_call;
 }
@@ -180,6 +180,25 @@ X(skeq_imm)
 X(skne_imm)
 {
 	if (*((uint8_t *)ic->arg[0]) != ic->arg[1])
+		cpu->cd.chip8.next_ic ++;
+}
+
+
+/*
+ *  skeq:  Skip next instruction if a register is equal to another.
+ *  skne:  Skip next instruction if a register is not equal to another.
+ *
+ *  arg[0] = ptr to register x
+ *  arg[1] = ptr to register y
+ */
+X(skeq)
+{
+	if (*((uint8_t *)ic->arg[0]) == *((uint8_t *)ic->arg[1]))
+		cpu->cd.chip8.next_ic ++;
+}
+X(skne)
+{
+	if (*((uint8_t *)ic->arg[0]) != *((uint8_t *)ic->arg[1]))
 		cpu->cd.chip8.next_ic ++;
 }
 
@@ -496,6 +515,15 @@ X(to_be_translated)
 		ic->arg[1] = ib[1];
 		break;
 
+	case 0x5:
+		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[1] = (size_t) &cpu->cd.chip8.v[ib[1] >> 4];
+		switch (ib[1] & 0xf) {
+		case 0x0: ic->f = instr(skeq); break;
+		default:goto bad;
+		}
+		break;
+
 	case 0x6:
 		ic->f = instr(mov_imm);
 		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
@@ -518,6 +546,15 @@ X(to_be_translated)
 		case 0x3: ic->f = instr(xor); break;
 		case 0x4: ic->f = instr(add); break;
 		case 0x5: ic->f = instr(sub); break;
+		default:goto bad;
+		}
+		break;
+
+	case 0x9:
+		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[1] = (size_t) &cpu->cd.chip8.v[ib[1] >> 4];
+		switch (ib[1] & 0xf) {
+		case 0x0: ic->f = instr(skne); break;
 		default:goto bad;
 		}
 		break;

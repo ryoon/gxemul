@@ -1,4 +1,4 @@
-$Id: TODO,v 1.353 2006-08-27 13:00:29 debug Exp $
+$Id: TODO,v 1.354 2006-08-27 13:12:47 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -14,7 +14,6 @@ High-priority stuff:
 		x)  Linux on Malta doesn't work right now.
 
 	x)  Alpha:
-		x)  Continue on the LCA stuff. (Bus != 0)
 		x)  Bootup memory and register contents...
 		x)  Virtual memory...
 		x)  PALcode stuff...

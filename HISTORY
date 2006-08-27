@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1337 2006-08-25 17:31:21 debug Exp $
+$Id: HISTORY,v 1.1338 2006-08-27 10:37:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2963,3 +2963,9 @@ Changelog for GXemul:
 		0x52 (SCSICDROM_READ_TRACKINFO) to the SCSI emulation layer,
 		to allow NetBSD/pmax 4.0_BETA to be installed from CDROM.
 		Minor updates to the LCA PCI controller.
+20060827	Implementing a CHIP8 cpu mode, and a corresponding CHIP8
+		machine, for fun. Disassembly support for all instructions,
+		and most of the common instructions have been implemented: mvi,
+		mov_imm, add_imm, jmp, rand, cls, sprite, skeq_imm, jsr,
+		skne_imm, bcd, rts, ldr, str, mov, or, and, xor, add, sub,
+		font, ssound, sdelay, gdelay, bogus skup/skpr.

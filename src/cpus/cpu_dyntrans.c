@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.122 2006-08-25 16:59:26 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.123 2006-08-27 10:37:30 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -486,6 +486,11 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		    /*  TODO: 24,25 = first register, but then
 			they go downwards, ie. 22,23 and so on  */
 		    r[24
+#endif
+#ifdef DYNTRANS_CHIP8
+		    /*  CHIP8 doesn't have a string ABI for argument
+			passing in function calls.  */
+		    v[0
 #endif
 #ifdef DYNTRANS_HPPA
 		    r[0		/*  TODO  */

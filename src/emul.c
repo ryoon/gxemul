@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.261 2006-08-16 18:55:37 debug Exp $
+ *  $Id: emul.c,v 1.262 2006-08-27 10:37:29 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1234,6 +1234,15 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			cpu->pc &= 0xfffff;
 			if (cpu->pc & 1) {
 				fatal("AVR: lowest bit of pc set: TODO\n");
+				exit(1);
+			}
+			break;
+
+		case ARCH_CHIP8:
+			cpu->pc &= 0xfff;
+			if (cpu->pc & 1) {
+				fatal("CHIP8: lowest bit of PC cannot be 1."
+				    " Aborting\n");
 				exit(1);
 			}
 			break;

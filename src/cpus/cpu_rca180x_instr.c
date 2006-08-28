@@ -25,31 +25,36 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_chip8_instr.c,v 1.3 2006-08-27 12:50:21 debug Exp $
+ *  $Id: cpu_rca180x_instr.c,v 1.1 2006-08-28 16:25:59 debug Exp $
  *
- *  CHIP8 instructions.
+ *  RCA180X instructions.
+ *
+ *  See http://www.elf-emulation.com/1802.html for a good list of 1802/1805
+ *  opcodes.
  *
  *  Individual functions should keep track of cpu->n_translated_instrs.
  *  (n_translated_instrs is automatically increased by 1 for each function
  *  call. If no instruction was executed, then it should be decreased. If, say,
  *  4 instructions were combined into one function and executed, then it should
  *  be increased by 3.)
+ *
+ *  NOTE/TODO: This file still contains CHIP8 instructions only...
  */
 
 
 /*****************************************************************************/
 
 
-static void chip8_putpixel(struct cpu *cpu, int x, int y, int color)
+static void rca180x_putpixel(struct cpu *cpu, int x, int y, int color)
 {
 	/*  TODO: Optimize.  */
 	int sx, sy;
 	uint8_t pixel = color? 255 : 0;
-	int linelen = cpu->cd.chip8.xres;
+	int linelen = cpu->cd.rca180x.xres;
 	uint64_t addr = (linelen * y * cpu->machine->x11_scaleup + x)
 	    * cpu->machine->x11_scaleup + CHIP8_FB_ADDR;
 
-	cpu->cd.chip8.framebuffer_cache[y * cpu->cd.chip8.xres + x] = pixel;
+	cpu->cd.rca180x.framebuffer_cache[y * cpu->cd.rca180x.xres + x] = pixel;
 
 	linelen = (linelen - 1) * cpu->machine->x11_scaleup;
 
@@ -71,9 +76,9 @@ X(cls)
 {
 	/*  TODO: Optimize.  */
 	int x, y;
-	for (y=0; y<cpu->cd.chip8.yres; y++)
-		for (x=0; x<cpu->cd.chip8.xres; x++)
-			chip8_putpixel(cpu, x, y, 0);
+	for (y=0; y<cpu->cd.rca180x.yres; y++)
+		for (x=0; x<cpu->cd.rca180x.xres; x++)
+			rca180x_putpixel(cpu, x, y, 0);
 }
 
 
@@ -88,40 +93,40 @@ X(sprite)
 {
 	int xb = *((uint8_t *)ic->arg[0]), yb = *((uint8_t *)ic->arg[1]);
 	int x, y, height = ic->arg[2];
-	int index = cpu->cd.chip8.index;
+	int index = cpu->cd.rca180x.index;
 
 	/*  Synchronize the PC first:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.chip8.cur_ic_page)
-	    / sizeof(struct chip8_instr_call);
-	cpu->pc &= ~((CHIP8_IC_ENTRIES_PER_PAGE-1)
-	    << CHIP8_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << CHIP8_INSTR_ALIGNMENT_SHIFT);
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.rca180x.cur_ic_page)
+	    / sizeof(struct rca180x_instr_call);
+	cpu->pc &= ~((RCA180X_IC_ENTRIES_PER_PAGE-1)
+	    << RCA180X_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << RCA180X_INSTR_ALIGNMENT_SHIFT);
 
-	/*  debug("[ chip8 sprite at x=%i y=%i, height=%i ]\n",
+	/*  debug("[ rca180x sprite at x=%i y=%i, height=%i ]\n",
 	    xb, yb, height);  */
-	cpu->cd.chip8.v[15] = 0;
+	cpu->cd.rca180x.v[15] = 0;
 
 	for (y=yb; y<yb+height; y++) {
 		uint8_t color;
 		cpu->memory_rw(cpu, cpu->mem, index++, &color,
 		    sizeof(color), MEM_READ, PHYSICAL);
 		for (x=xb; x<xb+8; x++) {
-			int xc = x % cpu->cd.chip8.xres;
-			int yc = y % cpu->cd.chip8.yres;
-			if (cpu->cd.chip8.framebuffer_cache[yc *
-			    cpu->cd.chip8.xres + xc]) {
+			int xc = x % cpu->cd.rca180x.xres;
+			int yc = y % cpu->cd.rca180x.yres;
+			if (cpu->cd.rca180x.framebuffer_cache[yc *
+			    cpu->cd.rca180x.xres + xc]) {
 				color ^= 0x80;
 				if ((color & 0x80) == 0)
-					cpu->cd.chip8.v[15] = 1;
+					cpu->cd.rca180x.v[15] = 1;
 			}
-			chip8_putpixel(cpu, xc, yc, color & 0x80);
+			rca180x_putpixel(cpu, xc, yc, color & 0x80);
 			color <<= 1;
 		}
 	}
 
 	cpu->n_translated_instrs += 200000;
 	cpu->pc += 2;
-	cpu->cd.chip8.next_ic = &nothing_call;
+	cpu->cd.rca180x.next_ic = &nothing_call;
 }
 
 
@@ -146,14 +151,14 @@ X(add)
 	int y = *((uint8_t *)ic->arg[1]);
 	x += y;
 	*((uint8_t *)ic->arg[0]) = x;
-	cpu->cd.chip8.v[15] = (x > 255);
+	cpu->cd.rca180x.v[15] = (x > 255);
 }
 X(sub)
 {
 	int x = *((uint8_t *)ic->arg[0]);
 	int y = *((uint8_t *)ic->arg[1]);
 	/*  VF bit = negated borrow  */
-	cpu->cd.chip8.v[15] = (x >= y);
+	cpu->cd.rca180x.v[15] = (x >= y);
 	*((uint8_t *)ic->arg[0]) = x - y;
 }
 
@@ -167,7 +172,7 @@ X(sub)
 X(skeq_imm)
 {
 	if (*((uint8_t *)ic->arg[0]) == ic->arg[1])
-		cpu->cd.chip8.next_ic ++;
+		cpu->cd.rca180x.next_ic ++;
 }
 
 
@@ -180,7 +185,7 @@ X(skeq_imm)
 X(skne_imm)
 {
 	if (*((uint8_t *)ic->arg[0]) != ic->arg[1])
-		cpu->cd.chip8.next_ic ++;
+		cpu->cd.rca180x.next_ic ++;
 }
 
 
@@ -194,12 +199,12 @@ X(skne_imm)
 X(skeq)
 {
 	if (*((uint8_t *)ic->arg[0]) == *((uint8_t *)ic->arg[1]))
-		cpu->cd.chip8.next_ic ++;
+		cpu->cd.rca180x.next_ic ++;
 }
 X(skne)
 {
 	if (*((uint8_t *)ic->arg[0]) != *((uint8_t *)ic->arg[1]))
-		cpu->cd.chip8.next_ic ++;
+		cpu->cd.rca180x.next_ic ++;
 }
 
 
@@ -222,7 +227,7 @@ X(mov_imm)
  */
 X(jmp)
 {
-	cpu->cd.chip8.next_ic = (struct chip8_instr_call *) ic->arg[0];
+	cpu->cd.rca180x.next_ic = (struct rca180x_instr_call *) ic->arg[0];
 }
 
 
@@ -236,19 +241,19 @@ X(jsr)
 	uint16_t pc12;
 
 	/*  Synchronize the PC first:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.chip8.cur_ic_page)
-	    / sizeof(struct chip8_instr_call);
-	cpu->pc &= ~((CHIP8_IC_ENTRIES_PER_PAGE-1)
-	    << CHIP8_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << CHIP8_INSTR_ALIGNMENT_SHIFT);
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.rca180x.cur_ic_page)
+	    / sizeof(struct rca180x_instr_call);
+	cpu->pc &= ~((RCA180X_IC_ENTRIES_PER_PAGE-1)
+	    << RCA180X_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << RCA180X_INSTR_ALIGNMENT_SHIFT);
 	pc12 = (cpu->pc & 0xfff) + sizeof(uint16_t);
 
 	/*  Push return address to the stack:  */
-	cpu->cd.chip8.sp -= sizeof(uint16_t);
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.chip8.sp, (unsigned char *)&pc12,
+	cpu->cd.rca180x.sp -= sizeof(uint16_t);
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.sp, (unsigned char *)&pc12,
 	    sizeof(pc12), MEM_WRITE, PHYSICAL);
 
-	cpu->cd.chip8.next_ic = (struct chip8_instr_call *) ic->arg[0];
+	cpu->cd.rca180x.next_ic = (struct rca180x_instr_call *) ic->arg[0];
 }
 
 
@@ -260,9 +265,9 @@ X(rts)
 	uint16_t pc12;
 
 	/*  Pop return address to the stack:  */
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.chip8.sp, (unsigned char *)&pc12,
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.sp, (unsigned char *)&pc12,
 	    sizeof(pc12), MEM_READ, PHYSICAL);
-	cpu->cd.chip8.sp += sizeof(uint16_t);
+	cpu->cd.rca180x.sp += sizeof(uint16_t);
 
 	cpu->pc = pc12 & 0xfff;
 	quick_pc_to_pointers(cpu);
@@ -289,8 +294,8 @@ X(add_imm)
  */
 X(rand)
 {
-	/*  http://www.pdc.kth.se/~lfo/chip8/CHIP8.htm says AND,
-	    http://members.aol.com/autismuk/chip8/chip8def.htm says %.  */
+	/*  http://www.pdc.kth.se/~lfo/rca180x/RCA180X.htm says AND,
+	    http://members.aol.com/autismuk/rca180x/rca180xdef.htm says %.  */
 	(*((uint8_t *)ic->arg[0])) = random() & ic->arg[1];
 }
 
@@ -308,7 +313,7 @@ X(skpr)
 X(skup)
 {
 	/*  TODO  */
-	cpu->cd.chip8.next_ic ++;
+	cpu->cd.rca180x.next_ic ++;
 }
 
 
@@ -319,9 +324,9 @@ X(skup)
  *
  *  arg[0] = ptr to register
  */
-X(gdelay) { *((uint8_t *)ic->arg[0]) = cpu->cd.chip8.delay_timer_value; }
-X(sdelay) { cpu->cd.chip8.delay_timer_value = *((uint8_t *)ic->arg[0]); }
-X(ssound) { cpu->cd.chip8.sound_timer_value = *((uint8_t *)ic->arg[0]); }
+X(gdelay) { *((uint8_t *)ic->arg[0]) = cpu->cd.rca180x.delay_timer_value; }
+X(sdelay) { cpu->cd.rca180x.delay_timer_value = *((uint8_t *)ic->arg[0]); }
+X(ssound) { cpu->cd.rca180x.sound_timer_value = *((uint8_t *)ic->arg[0]); }
 
 
 /*
@@ -331,7 +336,7 @@ X(ssound) { cpu->cd.chip8.sound_timer_value = *((uint8_t *)ic->arg[0]); }
  */
 X(adi)
 {
-	cpu->cd.chip8.index += *((uint8_t *)ic->arg[0]);
+	cpu->cd.rca180x.index += *((uint8_t *)ic->arg[0]);
 }
 
 
@@ -344,8 +349,8 @@ X(font)
 {
 	int c = *((uint8_t *)ic->arg[0]);
 	if (c > 0xf)
-		fatal("[ chip8 font: WARNING: c = 0x%02x ]\n", c);
-	cpu->cd.chip8.index = CHIP8_FONT_ADDR + 5 * (c & 0xf);
+		fatal("[ rca180x font: WARNING: c = 0x%02x ]\n", c);
+	cpu->cd.rca180x.index = CHIP8_FONT_ADDR + 5 * (c & 0xf);
 }
 
 
@@ -360,7 +365,7 @@ X(bcd)
 	uint8_t a[3];
 	a[0] = r / 100, a[1] = (r / 10) % 10, a[2] = r % 10;
 
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.chip8.index,
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.index,
 	    (unsigned char *) &a, sizeof(a), MEM_WRITE, PHYSICAL);
 }
 
@@ -374,8 +379,8 @@ X(str)
 {
 	int r;
 	for (r=0; r<=ic->arg[0]; r++) {
-		cpu->memory_rw(cpu, cpu->mem, cpu->cd.chip8.index++,
-		    &cpu->cd.chip8.v[r], sizeof(uint8_t), MEM_WRITE, PHYSICAL);
+		cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.index++,
+		    &cpu->cd.rca180x.v[r], sizeof(uint8_t), MEM_WRITE, PHYSICAL);
 	}
 }
 
@@ -389,8 +394,8 @@ X(ldr)
 {
 	int r;
 	for (r=0; r<=ic->arg[0]; r++) {
-		cpu->memory_rw(cpu, cpu->mem, cpu->cd.chip8.index++,
-		    &cpu->cd.chip8.v[r], sizeof(uint8_t), MEM_READ, PHYSICAL);
+		cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.index++,
+		    &cpu->cd.rca180x.v[r], sizeof(uint8_t), MEM_READ, PHYSICAL);
 	}
 }
 
@@ -402,7 +407,7 @@ X(ldr)
  */
 X(mvi)
 {
-	cpu->cd.chip8.index = ic->arg[0];
+	cpu->cd.rca180x.index = ic->arg[0];
 }
 
 
@@ -411,14 +416,14 @@ X(mvi)
 
 X(end_of_page)
 {
-	/*  Should never happen on CHIP8, because that would mean that we
+	/*  Should never happen on RCA180X, because that would mean that we
 	    are running outside of available memory.  */
 
-	fatal("[ chip8 end of page reached, halting ]\n");
+	fatal("[ rca180x end of page reached, halting ]\n");
 
 	cpu->running = 0;
 	debugger_n_steps_left_before_interaction = 0;
-	cpu->cd.chip8.next_ic = &nothing_call;
+	cpu->cd.rca180x.next_ic = &nothing_call;
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
@@ -429,9 +434,9 @@ X(end_of_page)
 
 
 /*
- *  chip8_instr_to_be_translated():
+ *  rca180x_instr_to_be_translated():
  *
- *  Translate an instruction word into an chip8_instr_call. ic is filled in with
+ *  Translate an instruction word into an rca180x_instr_call. ic is filled in with
  *  valid data for the translated instruction, or a "nothing" instruction if
  *  there was a translation failure. The newly translated instruction is then
  *  executed.
@@ -443,13 +448,13 @@ X(to_be_translated)
 	unsigned char *page;
 
 	/*  Figure out the (virtual) address of the instruction:  */
-	low_pc = ((size_t)ic - (size_t)cpu->cd.chip8.cur_ic_page)
-	    / sizeof(struct chip8_instr_call);
-	addr = cpu->pc & ~((CHIP8_IC_ENTRIES_PER_PAGE-1) <<
-	    CHIP8_INSTR_ALIGNMENT_SHIFT);
-	addr += (low_pc << CHIP8_INSTR_ALIGNMENT_SHIFT);
+	low_pc = ((size_t)ic - (size_t)cpu->cd.rca180x.cur_ic_page)
+	    / sizeof(struct rca180x_instr_call);
+	addr = cpu->pc & ~((RCA180X_IC_ENTRIES_PER_PAGE-1) <<
+	    RCA180X_INSTR_ALIGNMENT_SHIFT);
+	addr += (low_pc << RCA180X_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc = addr;
-	addr &= ~((1 << CHIP8_INSTR_ALIGNMENT_SHIFT) - 1);
+	addr &= ~((1 << RCA180X_INSTR_ALIGNMENT_SHIFT) - 1);
 
 	/*  Read the instruction word from memory:  */
 	page = cpu->cd.avr.host_load[addr >> 12];
@@ -492,32 +497,32 @@ X(to_be_translated)
 	case 0x1:
 		ic->f = instr(jmp);
 		dst_addr = ((ib[0] & 0xf) << 8) + ib[1];
-		ic->arg[0] = (size_t) (cpu->cd.chip8.cur_ic_page +
-		    (dst_addr >> CHIP8_INSTR_ALIGNMENT_SHIFT));
+		ic->arg[0] = (size_t) (cpu->cd.rca180x.cur_ic_page +
+		    (dst_addr >> RCA180X_INSTR_ALIGNMENT_SHIFT));
 		break;
 
 	case 0x2:
 		ic->f = instr(jsr);
 		dst_addr = ((ib[0] & 0xf) << 8) + ib[1];
-		ic->arg[0] = (size_t) (cpu->cd.chip8.cur_ic_page +
-		    (dst_addr >> CHIP8_INSTR_ALIGNMENT_SHIFT));
+		ic->arg[0] = (size_t) (cpu->cd.rca180x.cur_ic_page +
+		    (dst_addr >> RCA180X_INSTR_ALIGNMENT_SHIFT));
 		break;
 
 	case 0x3:
 		ic->f = instr(skeq_imm);
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
 		ic->arg[1] = ib[1];
 		break;
 
 	case 0x4:
 		ic->f = instr(skne_imm);
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
 		ic->arg[1] = ib[1];
 		break;
 
 	case 0x5:
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
-		ic->arg[1] = (size_t) &cpu->cd.chip8.v[ib[1] >> 4];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
+		ic->arg[1] = (size_t) &cpu->cd.rca180x.v[ib[1] >> 4];
 		switch (ib[1] & 0xf) {
 		case 0x0: ic->f = instr(skeq); break;
 		default:goto bad;
@@ -526,19 +531,19 @@ X(to_be_translated)
 
 	case 0x6:
 		ic->f = instr(mov_imm);
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
 		ic->arg[1] = ib[1];
 		break;
 
 	case 0x7:
 		ic->f = instr(add_imm);
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
 		ic->arg[1] = ib[1];
 		break;
 
 	case 0x8:
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
-		ic->arg[1] = (size_t) &cpu->cd.chip8.v[ib[1] >> 4];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
+		ic->arg[1] = (size_t) &cpu->cd.rca180x.v[ib[1] >> 4];
 		switch (ib[1] & 0xf) {
 		case 0x0: ic->f = instr(mov); break;
 		case 0x1: ic->f = instr(or); break;
@@ -551,8 +556,8 @@ X(to_be_translated)
 		break;
 
 	case 0x9:
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
-		ic->arg[1] = (size_t) &cpu->cd.chip8.v[ib[1] >> 4];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
+		ic->arg[1] = (size_t) &cpu->cd.rca180x.v[ib[1] >> 4];
 		switch (ib[1] & 0xf) {
 		case 0x0: ic->f = instr(skne); break;
 		default:goto bad;
@@ -566,14 +571,14 @@ X(to_be_translated)
 
 	case 0xc:
 		ic->f = instr(rand);
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
 		ic->arg[1] = ib[1];
 		break;
 
 	case 0xd:
 		ic->f = instr(sprite);
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
-		ic->arg[1] = (size_t) &cpu->cd.chip8.v[ib[1] >> 4];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
+		ic->arg[1] = (size_t) &cpu->cd.rca180x.v[ib[1] >> 4];
 		ic->arg[2] = ib[1] & 0xf;
 
 		if (ic->arg[2] == 0) {
@@ -594,7 +599,7 @@ X(to_be_translated)
 
 	case 0xf:
 		/*  Default arg 0:  */
-		ic->arg[0] = (size_t) &cpu->cd.chip8.v[ib[0] & 0xf];
+		ic->arg[0] = (size_t) &cpu->cd.rca180x.v[ib[0] & 0xf];
 		switch (ib[1]) {
 		case 0x07:
 			ic->f = instr(gdelay);

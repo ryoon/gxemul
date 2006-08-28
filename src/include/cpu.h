@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.91 2006-08-27 10:37:30 debug Exp $
+ *  $Id: cpu.h,v 1.92 2006-08-28 16:25:59 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -194,13 +194,13 @@
 #include "cpu_alpha.h"
 #include "cpu_arm.h"
 #include "cpu_avr.h"
-#include "cpu_chip8.h"
 #include "cpu_hppa.h"
 #include "cpu_i960.h"
 #include "cpu_ia64.h"
 #include "cpu_m68k.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
+#include "cpu_rca180x.h"
 #include "cpu_sh.h"
 #include "cpu_sparc.h"
 #include "cpu_transputer.h"
@@ -391,13 +391,13 @@ struct cpu {
 		struct alpha_cpu      alpha;
 		struct arm_cpu        arm;
 		struct avr_cpu        avr;
-		struct chip8_cpu      chip8;
 		struct hppa_cpu       hppa;
 		struct i960_cpu       i960;
 		struct ia64_cpu       ia64;
 		struct m68k_cpu       m68k;
 		struct mips_cpu       mips;
 		struct ppc_cpu        ppc;
+		struct rca180x_cpu    rca180x;
 		struct sh_cpu         sh;
 		struct sparc_cpu      sparc;
 		struct transputer_cpu transputer;

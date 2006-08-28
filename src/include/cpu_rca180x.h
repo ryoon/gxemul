@@ -1,5 +1,5 @@
-#ifndef	CPU_CHIP8_H
-#define	CPU_CHIP8_H
+#ifndef	CPU_RCA180X_H
+#define	CPU_RCA180X_H
 
 /*
  *  Copyright (C) 2006  Anders Gavare.  All rights reserved.
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_chip8.h,v 1.2 2006-08-27 12:12:10 debug Exp $
+ *  $Id: cpu_rca180x.h,v 1.1 2006-08-28 16:25:59 debug Exp $
  */
 
 #include "misc.h"
@@ -36,29 +36,47 @@
 
 struct cpu_family;
 
+#define	N_RCA180X_REGS		16
+
+#define	RCA180X_N_IC_ARGS		3
+#define	RCA180X_INSTR_ALIGNMENT_SHIFT	0
+#define	RCA180X_IC_ENTRIES_SHIFT	7
+#define	RCA180X_IC_ENTRIES_PER_PAGE	(1 << RCA180X_IC_ENTRIES_SHIFT)
+#define	RCA180X_PC_TO_IC_ENTRY(a)	(((a)>>RCA180X_INSTR_ALIGNMENT_SHIFT) \
+					& (RCA180X_IC_ENTRIES_PER_PAGE-1))
+#define	RCA180X_ADDR_TO_PAGENR(a)	((a) >> (RCA180X_IC_ENTRIES_SHIFT \
+					+ RCA180X_INSTR_ALIGNMENT_SHIFT))
+
+DYNTRANS_MISC_DECLARATIONS(rca180x,RCA180X,uint64_t)
+
+#define	RCA180X_MAX_VPH_TLB_ENTRIES		64
+
+
+/*  CHIP8 stuff:  */
 #define	N_CHIP8_REGS		16
-
-#define	CHIP8_N_IC_ARGS			3
-#define	CHIP8_INSTR_ALIGNMENT_SHIFT	1
-#define	CHIP8_IC_ENTRIES_SHIFT		11
-#define	CHIP8_IC_ENTRIES_PER_PAGE		(1 << CHIP8_IC_ENTRIES_SHIFT)
-#define	CHIP8_PC_TO_IC_ENTRY(a)		(((a)>>CHIP8_INSTR_ALIGNMENT_SHIFT) \
-					& (CHIP8_IC_ENTRIES_PER_PAGE-1))
-#define	CHIP8_ADDR_TO_PAGENR(a)		((a) >> (CHIP8_IC_ENTRIES_SHIFT \
-					+ CHIP8_INSTR_ALIGNMENT_SHIFT))
-
-DYNTRANS_MISC_DECLARATIONS(chip8,CHIP8,uint64_t)
-
-#define	CHIP8_MAX_VPH_TLB_ENTRIES		16
-
-
 #define	CHIP8_FB_ADDR		0x10000000
 
-/*  Font address is 8110, according to
-    http://www.pdc.kth.se/~lfo/chip8/CHIP8.htm.  */
+/*  Default font address:  */
 #define	CHIP8_FONT_ADDR		8110
 
-struct chip8_cpu {
+
+struct rca180x_cpu {
+	uint16_t	r[N_RCA180X_REGS];	/*  GPRs  */
+	uint8_t		d;		/*  Data register  */
+
+	int		df;		/*  Data flag (1 bit)  */
+	int		ie;		/*  Interrupt enable (1 bit)  */
+	int		q;		/*  Output bit (1 bit)  */
+	int		p;		/*  PC select (4 bits)  */
+	int		x;		/*  Data pointer select (4 bits)  */
+	int		t_x;		/*  X during interrupt  */
+	int		t_p;		/*  P during interrupt  */
+
+
+	/***********************  CHIP8 EMULATION  **************************/
+
+	int		chip8_mode;
+
 	/*
 	 *  General Purpose Registers, and the Index register:
 	 */
@@ -68,40 +86,41 @@ struct chip8_cpu {
 	/*  Stack pointer (not user accessible):  */
 	uint16_t	sp;
 
-	/*  64x32 framebuffer for CHIP8, 128x64 for SuperCHIP8  */
+	/*  64x32 framebuffer (or 128x64 for SCHIP48)  */
 	int		xres, yres;
 	uint8_t		*framebuffer_cache;
 
-	/*  54.6 Hz (chip8 mode) or 60 Hz (new mode)  */
+	/*  54.6 Hz (or new mode 60 Hz) timer  */
 	struct timer	*timer;
 	int		timer_mode_new;
 	int		delay_timer_value;
 	int		sound_timer_value;
 
+
 	/*
 	 *  Instruction translation cache:
 	 */
-	DYNTRANS_ITC(chip8)
+	DYNTRANS_ITC(rca180x)
 
 	/*
 	 *  32-bit virtual -> physical -> host address translation:
 	 *
-	 *  (All 32 bits are not really needed on CHIP8s.)
+	 *  (All 32 bits are not really needed on RCA180Xs.)
 	 */
-	VPH_TLBS(chip8,CHIP8)
-	VPH32(chip8,CHIP8,uint32_t,uint8_t)
+	VPH_TLBS(rca180x,RCA180X)
+	VPH32(rca180x,RCA180X,uint32_t,uint8_t)
 };
 
 
-/*  cpu_chip8.c:  */
-int chip8_run_instr(struct cpu *cpu);
-void chip8_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+/*  cpu_rca180x.c:  */
+int rca180x_run_instr(struct cpu *cpu);
+void rca180x_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void chip8_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
-void chip8_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
-int chip8_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
+void rca180x_invalidate_translation_caches(struct cpu *cpu, uint64_t, int);
+void rca180x_invalidate_code_translation(struct cpu *cpu, uint64_t, int);
+int rca180x_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
-int chip8_cpu_family_init(struct cpu_family *);
+int rca180x_cpu_family_init(struct cpu_family *);
 
 
-#endif	/*  CPU_CHIP8_H  */
+#endif	/*  CPU_RCA180X_H  */

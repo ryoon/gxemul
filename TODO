@@ -1,4 +1,4 @@
-$Id: TODO,v 1.355 2006-08-28 14:01:24 debug Exp $
+$Id: TODO,v 1.356 2006-08-28 16:25:59 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -12,14 +12,6 @@ High-priority stuff:
 		x)  NetBSD on Malta isn't stable yet.
 		x)  NetBSD/cobalt is not working right yet.
 		x)  Linux on Malta doesn't work right now.
-
-	x)  CHIP8 -> RCA180x conversion
-		x)  Think about how to do dual-mode, variable-instr-length
-		    ISAs, and switch between modes.
-		x)  1805 "extended" opcode -> trigger CHIP8 emulation?
-			That is, all calls 0NNN could point to 0x68 opcodes,
-			which, if running on a 1802 in CHIP8-emulation-mode,
-			would be manually interpreted.
 
 	x)  Alpha:
 		x)  Bootup memory and register contents...
@@ -183,6 +175,13 @@ Transputer:
 	x)  Implement all instructions. :)
 
 RCA1802/RCA1805, CHIP8:
+	x)  CHIP8 -> RCA180x conversion
+		x)  Think about how to do dual-mode, variable-instr-length
+		    ISAs, and switch between modes.
+		x)  1805 "extended" opcode -> trigger CHIP8 emulation?
+			That is, all calls 0NNN could point to 0x68 opcodes,
+			which, if running on a 1802 in CHIP8-emulation-mode,
+			would be manually interpreted.
 	x)  1802 info: http://www.nyx.net/~lturner/public_html/Cosmac.html
 	    and:  http://www.elf-emulation.com/1802.html
 	x)  1805 extended opcodes.

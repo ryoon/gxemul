@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_chip8.c,v 1.3 2006-08-27 13:13:12 debug Exp $
+ *  $Id: machine_chip8.c,v 1.4 2006-08-28 16:25:59 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,12 +52,14 @@ MACHINE_SETUP(chip8)
 		    "*        pretty meaningless! Continuing anyway...\n"
 		    "*\n");
 
+	machine->cpus[0]->cd.rca180x.chip8_mode = 1;
+
 	dev_fb_init(machine, machine->memory, CHIP8_FB_ADDR,
 	    VFB_GENERIC,
-	    machine->cpus[0]->cd.chip8.xres * machine->x11_scaleup,
-	    machine->cpus[0]->cd.chip8.yres * machine->x11_scaleup,
-	    machine->cpus[0]->cd.chip8.xres * machine->x11_scaleup,
-	    machine->cpus[0]->cd.chip8.yres * machine->x11_scaleup,
+	    machine->cpus[0]->cd.rca180x.xres * machine->x11_scaleup,
+	    machine->cpus[0]->cd.rca180x.yres * machine->x11_scaleup,
+	    machine->cpus[0]->cd.rca180x.xres * machine->x11_scaleup,
+	    machine->cpus[0]->cd.rca180x.yres * machine->x11_scaleup,
 	    8, "CHIP8");
 
 	/*
@@ -199,7 +201,7 @@ MACHINE_SETUP(chip8)
 
 MACHINE_DEFAULT_CPU(chip8)
 {
-	machine->cpu_name = strdup("CHIP8");
+	machine->cpu_name = strdup("RCA1802");
 }
 
 
@@ -211,7 +213,7 @@ MACHINE_DEFAULT_RAM(chip8)
 
 MACHINE_REGISTER(chip8)
 {
-	MR_DEFAULT(chip8, "CHIP8", ARCH_CHIP8, MACHINE_CHIP8);
+	MR_DEFAULT(chip8, "CHIP8", ARCH_RCA180X, MACHINE_CHIP8);
 	me->set_default_ram = machine_default_ram_chip8;
 	machine_entry_add_alias(me, "chip8");
 }

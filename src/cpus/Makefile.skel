@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.25 2006-08-27 10:37:30 debug Exp $
+#  $Id: Makefile.skel,v 1.26 2006-08-28 16:25:59 debug Exp $
 #
 #  Makefile for GXemul src/cpus
 #
@@ -111,14 +111,14 @@ tmp_avr_tail.c: generate_tail
 
 ###############################################################################
 
-cpu_chip8.o: cpu_chip8.c cpu_chip8_instr.c cpu_dyntrans.c ../memory_rw.c \
-	tmp_chip8_head.c tmp_chip8_tail.c
+cpu_rca180x.o: cpu_rca180x.c cpu_rca180x_instr.c cpu_dyntrans.c ../memory_rw.c \
+	tmp_rca180x_head.c tmp_rca180x_tail.c
 
-tmp_chip8_head.c: generate_head
-	./generate_head chip8 CHIP8 > tmp_chip8_head.c
+tmp_rca180x_head.c: generate_head
+	./generate_head rca180x RCA180X > tmp_rca180x_head.c
 
-tmp_chip8_tail.c: generate_tail
-	./generate_tail chip8 CHIP8 > tmp_chip8_tail.c
+tmp_rca180x_tail.c: generate_tail
+	./generate_tail rca180x RCA180X > tmp_rca180x_tail.c
 
 
 ###############################################################################

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.229 2006-08-27 10:37:29 debug Exp $
+#  $Id: configure,v 1.230 2006-08-28 16:25:59 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -71,13 +71,13 @@ else
 	ENABLEALPHA=YES
 	ENABLEARM=YES
 	ENABLEAVR=YES
-	ENABLECHIP8=YES
 	ENABLEHPPA=YES
 	ENABLEI960=YES
 	ENABLEIA64=YES
 	ENABLEM68K=YES
 	ENABLEMIPS=YES
 	ENABLEPPC=YES
+	ENABLERCA180X=YES
 	ENABLESH=YES
 	ENABLESPARC=YES
 	ENABLETRANSPUTER=YES
@@ -169,10 +169,6 @@ if [ z$ENABLEAVR = zYES ]; then
 	printf "#define ENABLE_AVR\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_avr.o"
 fi
-if [ z$ENABLECHIP8 = zYES ]; then
-	printf "#define ENABLE_CHIP8\n" >> config.h
-	CPU_ARCHS="$CPU_ARCHS cpu_chip8.o"
-fi
 if [ z$ENABLEHPPA = zYES ]; then
 	printf "#define ENABLE_HPPA\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_hppa.o"
@@ -199,6 +195,10 @@ if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
 	CPU_ARCHS="$CPU_ARCHS cpu_ppc.o"
 	CPU_TOOLS="$CPU_TOOLS generate_ppc_loadstore"
+fi
+if [ z$ENABLERCA180X = zYES ]; then
+	printf "#define ENABLE_RCA180X\n" >> config.h
+	CPU_ARCHS="$CPU_ARCHS cpu_rca180x.o"
 fi
 if [ z$ENABLESH = zYES ]; then
 	printf "#define ENABLE_SH\n" >> config.h

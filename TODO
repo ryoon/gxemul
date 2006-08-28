@@ -1,4 +1,4 @@
-$Id: TODO,v 1.354 2006-08-27 13:12:47 debug Exp $
+$Id: TODO,v 1.355 2006-08-28 14:01:24 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -12,6 +12,14 @@ High-priority stuff:
 		x)  NetBSD on Malta isn't stable yet.
 		x)  NetBSD/cobalt is not working right yet.
 		x)  Linux on Malta doesn't work right now.
+
+	x)  CHIP8 -> RCA180x conversion
+		x)  Think about how to do dual-mode, variable-instr-length
+		    ISAs, and switch between modes.
+		x)  1805 "extended" opcode -> trigger CHIP8 emulation?
+			That is, all calls 0NNN could point to 0x68 opcodes,
+			which, if running on a 1802 in CHIP8-emulation-mode,
+			would be manually interpreted.
 
 	x)  Alpha:
 		x)  Bootup memory and register contents...
@@ -174,12 +182,27 @@ Transputer:
 	x)  Figure out how to boot an entire Helios distribution.
 	x)  Implement all instructions. :)
 
-CHIP8:
-	x)  Keyboard input
-	x)  Sound
-	x)  Slow-down to correct speed
-	x)  1802 CPU emulation too?
-	x)  SCHIP48 (Super) emulation
+RCA1802/RCA1805, CHIP8:
+	x)  1802 info: http://www.nyx.net/~lturner/public_html/Cosmac.html
+	    and:  http://www.elf-emulation.com/1802.html
+	x)  1805 extended opcodes.
+	x)  Change to smaller pages, 1-byte instruction length,
+	    1802 instruction set, and a "secondary mode" for
+	    CHIP8 instructions! In other words, change the CPU type
+	    to 1802! (Leave the machine at CHIP8, though.)
+	    Support for variable-length instructions!
+	x)  Keyboard input.
+	x)  Sound (beep only).
+	x)  Slow-down to correct speed? Wikipedia: "it was usually operated
+	    at 3.58 MHz/2 to suit the requirements of the 1861 chip which
+	    gave a speed of a little over 100,000 instructions per second"
+	    (Note that _CHIP8_ emulation would then even slower.)
+	x)  SCHIP48 (Super) emulation:
+		Some more opcodes, 128x64 framebuffer, larger
+		sprites and fonts.
+	x)  Possible solution:
+		CHIP8 calls to 00xx => handle at high level,
+		      calls to 0xxx in general = call 1802 machine code
 
 Alpha:
 	o)  Virtual memory (tlbs etc)

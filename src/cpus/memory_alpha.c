@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_alpha.c,v 1.4 2006-08-21 17:02:37 debug Exp $
+ *  $Id: memory_alpha.c,v 1.5 2006-08-29 15:55:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -36,6 +36,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "alpha_rpb.h"
 
 
 /*
@@ -49,19 +51,15 @@ int alpha_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	/*  UGLY hack for now:  */
 	/*  TODO: Real virtual memory support.  */
 
-	if ((vaddr & ~0xffff) == 0xfffffc0010000000ULL ||
-	    (vaddr & ~0xffff) == 0x0000000010000000ULL)
-		*return_paddr = (vaddr & 0x0fffffff) +
-		    cpu->machine->physical_ram_in_mb * 1048576 - 65536;
+	if ((vaddr & ~0x7fff) == 0x0000000010000000ULL)
+		*return_paddr = (vaddr & 0x7fff) + HWRPB_PADDR;
 
 	if ((vaddr & ~0xffffff) == 0xfffffe0000000000ULL)
 		*return_paddr = 0x7efa000 + (vaddr & 0xffffff);
 
-	/*  At 0x20000000, NetBSD stores temp prom data  */
-	if ((vaddr & ~0x1fff) == 0xfffffc0020000000ULL ||
-	    (vaddr & ~0x1fff) == 0x0000000020000000ULL)
-		*return_paddr = (vaddr & 0x0fffffff) +
-		    cpu->machine->physical_ram_in_mb * 1048576 - 131072;
+	/*  At 0x20000000, NetBSD stores 8KB temp prom data  */
+	if ((vaddr & ~0x1fff) == 0x0000000020000000ULL)
+		*return_paddr = (vaddr & 0x1fff) + PROM_ARGSPACE_PADDR;
 
 	/*  printf("yo %016"PRIx64" %016"PRIx64"\n", vaddr, *return_paddr);  */
 

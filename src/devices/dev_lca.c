@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_lca.c,v 1.3 2006-08-25 17:31:21 debug Exp $
+ *  $Id: dev_lca.c,v 1.4 2006-08-29 15:55:10 debug Exp $
  *
  *  LCA PCI bus (for Alpha machines).
  */
@@ -60,6 +60,7 @@ struct lca_data {
 	uint64_t		window_t_base_0;
 	uint64_t		window_base_1;
 	uint64_t		window_mask_1;
+	uint64_t		window_t_base_1;
 };
 
 
@@ -166,6 +167,10 @@ DEVICE_ACCESS(lca_ioc)
 
 	switch (relative_addr + LCA_IOC_BASE) {
 
+	case LCA_IOC_BASE:
+		/*  Ignore? Linux reads from the base at startup.  */
+		break;
+
 	case LCA_IOC_CONF:
 		if (writeflag == MEM_READ) {
 			odata = d->ioc_conf;
@@ -267,6 +272,15 @@ DEVICE_ACCESS(lca_ioc)
 				    " value\n", (uint64_t)idata);
 				exit(1);
 			}
+		}
+		break;
+
+	case LCA_IOC_W_T_BASE1:
+		if (writeflag == MEM_READ) {
+			odata = d->window_t_base_1;
+		} else {
+			d->window_t_base_1 = idata;
+			/*  TODO: Actually implement this.  */
 		}
 		break;
 

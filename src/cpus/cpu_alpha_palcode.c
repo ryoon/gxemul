@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.11 2006-08-25 17:31:21 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.12 2006-08-29 15:55:09 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  *
@@ -174,21 +174,16 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 	case 0x33:	/*  PAL_OSF1_tbi  */
 		/*
 		 *  a0 = op, a1 = vaddr
-		 *  NOTE: Sometimes these seem to be reversed?
 		 */
 		fatal("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
 		    PRIx64" ]\n", (int64_t)cpu->cd.alpha.r[ALPHA_A0],
 		    (uint64_t)cpu->cd.alpha.r[ALPHA_A1]);
-		if (cpu->cd.alpha.r[ALPHA_A1] < 0x100)
-			cpu->invalidate_translation_caches(cpu,
-			    cpu->cd.alpha.r[ALPHA_A0], INVALIDATE_VADDR);
-		else
-			cpu->invalidate_translation_caches(cpu,
-			    cpu->cd.alpha.r[ALPHA_A1], INVALIDATE_VADDR);
+		cpu->invalidate_translation_caches(cpu,
+		    cpu->cd.alpha.r[ALPHA_A1], INVALIDATE_VADDR);
 		break;
 	case 0x34:	/*  PAL_OSF1_wrent (Write System Entry Address)  */
 		/*  a0 = new vector, a1 = vector selector  */
-		fatal("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
+		fatal("[ Alpha PALcode: PAL_OSF1_wrent: a0=%"PRIi64" a1=0x%"
 		    PRIx64" ]\n", (int64_t) cpu->cd.alpha.r[ALPHA_A0],
 		    (uint64_t) cpu->cd.alpha.r[ALPHA_A1]);
 		/*  TODO  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1340 2006-08-28 16:25:58 debug Exp $
+$Id: HISTORY,v 1.1341 2006-08-29 15:55:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2973,3 +2973,4 @@ Changelog for GXemul:
 		(more correct) RCA 180x cpu. (Disassembly for all 1802
 		instructions has been implemented, but no execution yet, and
 		no 1805 extended instructions.)
+20060829	Minor Alpha emulation updates.

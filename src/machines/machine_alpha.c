@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.9 2006-08-22 15:13:03 debug Exp $
+ *  $Id: machine_alpha.c,v 1.10 2006-08-29 15:55:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -91,7 +91,7 @@ MACHINE_SETUP(alpha)
 	/*  a4 = Bootinfo version  */
 	cpu->cd.alpha.r[ALPHA_A0] = 16*1024*1024 / 8192;
 	cpu->cd.alpha.r[ALPHA_A1] = 0;	/*  TODO  */
-	cpu->cd.alpha.r[ALPHA_A2] = ALPHA_BOOTINFO_MAGIC;
+	cpu->cd.alpha.r[ALPHA_A2] = 0;	/*  Note: NOT ALPHA_BOOTINFO_MAGIC  */
 	cpu->cd.alpha.r[ALPHA_A3] = 0;	/*  TODO  */
 	cpu->cd.alpha.r[ALPHA_A4] = 1;
 
@@ -102,7 +102,7 @@ MACHINE_SETUP(alpha)
 	 */
 	memset(&rpb, 0, sizeof(struct rpb));
 	store_64bit_word_in_host(cpu, (unsigned char *)
-	    &(rpb.rpb_phys), HWRPB_ADDR);
+	    &(rpb.rpb_phys), 0x14000);
 	strlcpy((char *)&(rpb.rpb_magic), "HWRPB", 8);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_size), sizeof(struct rpb));
@@ -136,10 +136,10 @@ MACHINE_SETUP(alpha)
 	memset(&crb, 0, sizeof(struct crb));
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(crb.crb_v_dispatch), CRB_ADDR - 0x100);
-	store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, 0x10000);
+	store_64bit_word(cpu, CRB_ADDR - 0x100 + 8, PROM_ENTRY_PADDR);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(crb.crb_v_fixup), CRB_ADDR - 0x80);
-	store_64bit_word(cpu, CRB_ADDR - 0x80 + 8, 0x10800);
+	store_64bit_word(cpu, CRB_ADDR - 0x80 + 8, PROM_ENTRY_PADDR + 0x800);
 
 	/*  PCS: Processor ID etc.  */
 	for (i=0; i<machine->ncpus; i++) {
@@ -178,11 +178,12 @@ MACHINE_SETUP(alpha)
 	    (machine->physical_ram_in_mb/2) * 128);
 
 	/*
-	 *  Place a special "hack" palcode call at 0x10000 and 0x10800:
+	 *  Place a special "hack" palcode call at PROM_ENTRY_PADDR and
+	 *  PROM_ENTRY_PADDR + 0x800:
 	 *  (Hopefully nothing else will be there.)
 	 */
-	store_32bit_word(cpu, 0x10000, 0x3fffffe);
-	store_32bit_word(cpu, 0x10800, 0x3fffffd);
+	store_32bit_word(cpu, PROM_ENTRY_PADDR, 0x3fffffe);
+	store_32bit_word(cpu, PROM_ENTRY_PADDR + 0x800, 0x3fffffd);
 
 	store_buf(cpu, HWRPB_ADDR, (char *)&rpb, sizeof(struct rpb));
 	store_buf(cpu, CTB_ADDR, (char *)&ctb, sizeof(struct ctb));

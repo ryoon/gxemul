@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.353 2006-08-28 16:25:59 debug Exp $
+ *  $Id: cpu.c,v 1.354 2006-08-29 15:55:09 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -244,11 +244,6 @@ void cpu_functioncall_trace(struct cpu *cpu, uint64_t f)
 	int i, n_args = -1;
 	char *symbol;
 	uint64_t offset;
-
-uint8_t urk;
-cpu->memory_rw(cpu, cpu->mem, 0x10000008, &urk, 1, MEM_READ, 0);
-if (urk != 'H')
-printf("NOOO!\n");
 
 	if (cpu->machine->ncpus > 1)
 		fatal("cpu%i:\t", cpu->cpu_id);

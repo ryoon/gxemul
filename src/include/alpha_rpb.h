@@ -41,6 +41,9 @@
 #define	HWRPB_ADDR	0x10000000		/* virtual address, at boot */
 
 /*  GXemul:  */
+#define	PROM_ENTRY_PADDR	0x10000
+#define	PROM_ARGSPACE_PADDR	0x12000
+#define	HWRPB_PADDR		0x14000
 #define	CTB_ADDR	(HWRPB_ADDR + 0x1000)
 #define	CRB_ADDR	(HWRPB_ADDR + 0x1400)
 #define	MEMDAT_ADDR	(HWRPB_ADDR + 0x1800)

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1341 2006-08-29 15:55:09 debug Exp $
+$Id: HISTORY,v 1.1342 2006-08-30 15:07:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2974,3 +2974,4 @@ Changelog for GXemul:
 		instructions has been implemented, but no execution yet, and
 		no 1805 extended instructions.)
 20060829	Minor Alpha emulation updates.
+20060830	Beginning to experiment a little with PCI IDE for SGI O2.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.70 2006-08-12 19:38:24 debug Exp $
+ *  $Id: bus_pci.c,v 1.71 2006-08-30 15:07:47 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -1054,6 +1054,44 @@ PCIINIT(symphony_83c553)
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
 }
 
+struct symphony_82c105_extra {
+	void	*wdc0;
+	void	*wdc1;
+};
+
+int symphony_82c105_cfg_reg_write(struct pci_device *pd, int reg,
+	uint32_t value)
+{
+	void *wdc0 = ((struct symphony_82c105_extra *)pd->extra)->wdc0;
+	void *wdc1 = ((struct symphony_82c105_extra *)pd->extra)->wdc1;
+	int enabled = 0;
+
+printf("reg = 0x%x\n", reg);
+	switch (reg) {
+	case PCI_COMMAND_STATUS_REG:
+		if (value & PCI_COMMAND_IO_ENABLE)
+			enabled = 1;
+printf("  value = 0x%x\n", value);
+		if (wdc0 != NULL)
+			wdc_set_io_enabled(wdc0, enabled);
+		if (wdc1 != NULL)
+			wdc_set_io_enabled(wdc1, enabled);
+		/*  Set all bits:  */
+		PCI_SET_DATA(reg, value);
+		return 1;
+	case PCI_MAPREG_START:
+	case PCI_MAPREG_START + 4:
+	case PCI_MAPREG_START + 8:
+	case PCI_MAPREG_START + 12:
+	case PCI_MAPREG_START + 16:
+	case PCI_MAPREG_START + 20:
+		PCI_SET_DATA(reg, value);
+		return 1;
+	}
+
+	return 0;
+}
+
 PCIINIT(symphony_82c105)
 {
 	char tmpstr[100];
@@ -1065,16 +1103,28 @@ PCIINIT(symphony_82c105)
 	PCI_SET_DATA(PCI_CLASS_REG, PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
 	    PCI_SUBCLASS_MASS_STORAGE_IDE, 0x00) + 0x05);
 
+	/*  TODO: Interrupt line:  */
+	/*  PCI_SET_DATA(PCI_INTERRUPT_REG, 0x28140000);  */
+
 	/*  APO_IDECONF  */
 	/*  channel 0 and 1 enabled  */
 	PCI_SET_DATA(0x40, 0x00000003);
+
+	pd->extra = malloc(sizeof(struct symphony_82c105_extra));
+	if (pd->extra == NULL) {
+		fatal("Out of memory.\n");
+		exit(1);
+	}
+	((struct symphony_82c105_extra *)pd->extra)->wdc0 = NULL;
+	((struct symphony_82c105_extra *)pd->extra)->wdc1 = NULL;
 
 	if (diskimage_exist(machine, 0, DISKIMAGE_IDE) ||
 	    diskimage_exist(machine, 1, DISKIMAGE_IDE)) {
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x1f0),
 		    pd->pcibus->isa_irqbase + 14);
-		device_add(machine, tmpstr);
+		((struct symphony_82c105_extra *)pd->extra)->wdc0 =
+		    device_add(machine, tmpstr);
 	}
 
 	if (diskimage_exist(machine, 2, DISKIMAGE_IDE) ||
@@ -1082,8 +1132,11 @@ PCIINIT(symphony_82c105)
 		snprintf(tmpstr, sizeof(tmpstr), "wdc addr=0x%llx irq=%i",
 		    (long long)(pd->pcibus->isa_portbase + 0x170),
 		    pd->pcibus->isa_irqbase + 15);
-		device_add(machine, tmpstr);
+		((struct symphony_82c105_extra *)pd->extra)->wdc1 =
+		    device_add(machine, tmpstr);
 	}
+
+	pd->cfg_reg_write = symphony_82c105_cfg_reg_write;
 }
 
 

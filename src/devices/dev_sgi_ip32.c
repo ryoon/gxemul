@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.45 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.46 2006-08-30 15:07:47 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -410,7 +410,16 @@ struct pci_data *dev_macepci_init(struct machine *machine,
 	}
 	memset(d, 0, sizeof(struct macepci_data));
 
-	d->pci_data = bus_pci_init(machine, pciirq, 0,0, 0,0,0, 0,0,0);
+	d->pci_data = bus_pci_init(machine,
+	    pciirq,
+	    0,
+	    0,
+	    0,
+	    0,
+	    0,
+	    0x18000003,		/*  ISA portbase  */
+	    0,
+	    0);
 
 	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH,
 	    dev_macepci_access, (void *)d, DM_DEFAULT, NULL);

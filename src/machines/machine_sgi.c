@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.5 2006-06-30 20:22:54 debug Exp $
+ *  $Id: machine_sgi.c,v 1.6 2006-08-30 15:07:47 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -529,6 +529,12 @@ Why is this here? TODO
 
 		/*  TODO: second ahc  */
 		/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, "ahc");  */
+
+		/*
+		 *  An additional PCI IDE controller, for NetBSD/sgimips
+		 *  experiments:  (Not found in a regular O2.)
+		 */
+		bus_pci_add(machine, pci_data, mem, 0, 3, 0, "symphony_82c105");
 
 		break;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1344 2006-08-30 16:10:02 debug Exp $
+$Id: HISTORY,v 1.1345 2006-08-30 16:16:13 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2977,3 +2977,5 @@ Changelog for GXemul:
 20060830	Beginning to experiment a little with PCI IDE for SGI O2.
 		Fixing the cursor key mappings for MobilePro 770 emulation.
 		Fixing the LK201 warning caused by recent NetBSD/pmax.
+		The MIPS R41xx standby, suspend, and hibernate instructions now
+		behave like the RM52xx/MIPS32/MIPS64 wait instruction.

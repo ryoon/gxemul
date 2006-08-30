@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.104 2006-08-14 17:45:47 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.105 2006-08-30 16:16:14 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1971,12 +1971,11 @@ X(wait)
 	uint32_t status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
 	uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
 
-	/*  NOTE: STATUS_IE happens to match the enable bit also
-	    on R2000/R3000, so this is ok.  */
-	if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
-		if (status & (STATUS_EXL | STATUS_ERL))
-			status &= ~STATUS_IE;
-	}
+	/*  Note: We cannot be here if the CPU is an R2000/R3000,
+	    because they don't implement WAIT.  */
+	if (status & (STATUS_EXL | STATUS_ERL))
+		status &= ~STATUS_IE;
+
 	/*  Ugly R5900 special case:  (TODO: move this?)  */
 	if (cpu->cd.mips.cpu_type.rev == MIPS_R5900 &&
 	    !(status & R5900_STATUS_EIE))
@@ -4190,8 +4189,19 @@ X(to_be_translated)
 			case COP0_STANDBY:
 			case COP0_SUSPEND:
 			case COP0_HIBERNATE:
-				/*  TODO  */
-				ic->f = instr(nop);
+				/*  NOTE: Reusing the 'wait' instruction:  */
+				ic->f = instr(wait);
+				if (cpu->cd.mips.cpu_type.rev != MIPS_R4100) {
+					static int warned = 0;
+					ic->f = instr(reserved);
+					if (!warned) {
+						fatal("{ WARNING: Attempt to "
+						    "execute a R41xx instruct"
+					            "ion, but the emulated CPU "
+						    "doesn't support it! }\n");
+						warned = 1;
+					}
+				}
 				break;
 			case COP0_EI:
 				if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {

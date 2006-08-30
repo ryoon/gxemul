@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1345 2006-08-30 16:16:13 debug Exp $
+$Id: HISTORY,v 1.1346 2006-08-30 17:14:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2979,3 +2979,5 @@ Changelog for GXemul:
 		Fixing the LK201 warning caused by recent NetBSD/pmax.
 		The MIPS R41xx standby, suspend, and hibernate instructions now
 		behave like the RM52xx/MIPS32/MIPS64 wait instruction.
+		Fixing dev_wdc so it calculates correct (64-bit) offsets before
+		giving them to diskimage_access().

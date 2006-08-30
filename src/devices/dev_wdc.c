@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.68 2006-08-14 17:45:47 debug Exp $
+ *  $Id: dev_wdc.c,v 1.69 2006-08-30 17:14:25 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -294,8 +294,8 @@ void wdc__read(struct cpu *cpu, struct wdc_data *d)
 	int i, cyl = d->cyl_hi * 256+ d->cyl_lo;
 	int count = d->seccnt? d->seccnt : 256;
 	uint64_t offset = 512 * (d->sector - 1
-	    + d->head * d->sectors_per_track[d->drive] +
-	    d->heads[d->drive] * d->sectors_per_track[d->drive] * cyl);
+	    + (int64_t)d->head * d->sectors_per_track[d->drive] +
+	    (int64_t)d->heads[d->drive] * d->sectors_per_track[d->drive] * cyl);
 
 #if 0
 	/*  LBA:  */
@@ -341,8 +341,8 @@ void wdc__write(struct cpu *cpu, struct wdc_data *d)
 	int cyl = d->cyl_hi * 256+ d->cyl_lo;
 	int count = d->seccnt? d->seccnt : 256;
 	uint64_t offset = 512 * (d->sector - 1
-	    + d->head * d->sectors_per_track[d->drive] +
-	    d->heads[d->drive] * d->sectors_per_track[d->drive] * cyl);
+	    + (int64_t)d->head * d->sectors_per_track[d->drive] +
+	    (int64_t)d->heads[d->drive] * d->sectors_per_track[d->drive] * cyl);
 #if 0
 	/*  LBA:  */
 	if (d->lba)

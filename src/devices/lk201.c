@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.25 2005-12-26 14:14:38 debug Exp $
+ *  $Id: lk201.c,v 1.26 2006-08-30 16:10:02 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -37,6 +37,7 @@
 
 #include "console.h"
 #include "devices.h"
+#include "machine.h"
 #include "misc.h"
 
 #include "dc7085.h"	/*  for port names  */
@@ -252,7 +253,7 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
  *  If a key is available from the keyboard, add it to the rx queue.
  *  If other bits are set, an interrupt might need to be caused.
  */
-void lk201_tick(struct lk201_data *d)
+void lk201_tick(struct machine *machine, struct lk201_data *d)
 {
 	int mouse_x, mouse_y, mouse_buttons, mouse_fb_nr;
 
@@ -267,12 +268,29 @@ void lk201_tick(struct lk201_data *d)
 			 *  serial console:
 			 *
 			 *  DEC MIPSMATE 5100 uses the keyboard port.
-			 *  DECstation 3100 (PMAX) uses the printer port.
-			 *  All others seem to use the comm port.
+			 *  DECstation 3100 (PMAX) and 5000/2000 (3MAX) use
+			 *  the printer port.
+			 *  Others seem to use the comm port.
 			 */
-			d->add_to_rx_queue(d->add_data, ch, DCKBD_PORT);
-			d->add_to_rx_queue(d->add_data, ch, DCCOMM_PORT);
-			d->add_to_rx_queue(d->add_data, ch, DCPRINTER_PORT);
+			if (machine->machine_type == MACHINE_PMAX) {
+				switch (machine->machine_subtype) {
+				case MACHINE_DEC_MIPSMATE_5100:
+					d->add_to_rx_queue(d->add_data,
+					    ch, DCKBD_PORT);
+					break;
+				case MACHINE_DEC_PMAX_3100:
+				case MACHINE_DEC_3MAX_5000:
+					d->add_to_rx_queue(d->add_data,
+					    ch, DCPRINTER_PORT);
+					break;
+				default:
+					d->add_to_rx_queue(d->add_data,
+					    ch, DCCOMM_PORT);
+				}
+			} else {
+				d->add_to_rx_queue(d->add_data,
+				    ch, DCCOMM_PORT);
+			}
 		}
 	}
 

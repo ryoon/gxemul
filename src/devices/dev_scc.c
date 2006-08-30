@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.34 2006-07-23 14:37:34 debug Exp $
+ *  $Id: dev_scc.c,v 1.35 2006-08-30 16:10:02 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -159,7 +159,7 @@ DEVICE_TICK(scc)
 			    d->console_handle), 2);
 	}
 	if (d->use_fb == 1 && d->scc_nr == 1)
-		lk201_tick(&d->lk201);
+		lk201_tick(cpu->machine, &d->lk201);
 
 	for (i=0; i<N_SCC_PORTS; i++) {
 		d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |= SCC_RR0_TX_EMPTY;

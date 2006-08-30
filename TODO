@@ -1,4 +1,4 @@
-$Id: TODO,v 1.357 2006-08-30 15:39:40 debug Exp $
+$Id: TODO,v 1.358 2006-08-30 16:10:02 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -49,6 +49,7 @@ Implementation:
 			for (;;) {
 				halt();
 			}
+	x)  Physical vs virtual breakpoints!
 	x)  Continue on SPARC emulation
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.

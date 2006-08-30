@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1343 2006-08-30 15:39:39 debug Exp $
+$Id: HISTORY,v 1.1344 2006-08-30 16:10:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2976,3 +2976,4 @@ Changelog for GXemul:
 20060829	Minor Alpha emulation updates.
 20060830	Beginning to experiment a little with PCI IDE for SGI O2.
 		Fixing the cursor key mappings for MobilePro 770 emulation.
+		Fixing the LK201 warning caused by recent NetBSD/pmax.

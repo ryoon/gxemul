@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.56 2006-07-23 14:37:34 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.57 2006-08-30 16:10:02 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -78,6 +78,7 @@ void add_to_rx_queue(void *e, int ch, int line_no)
 	struct dc_data *d = (struct dc_data *) e;
 	int entries_in_use = d->cur_rx_queue_pos_write -
 	    d->cur_rx_queue_pos_read;
+
 	while (entries_in_use < 0)
 		entries_in_use += MAX_QUEUE_LEN;
 
@@ -146,7 +147,7 @@ DEVICE_TICK(dc7085)
 			return;
 	}
 
-	lk201_tick(&d->lk201);
+	lk201_tick(cpu->machine, &d->lk201);
 
 	avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
 

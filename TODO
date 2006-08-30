@@ -1,4 +1,4 @@
-$Id: TODO,v 1.356 2006-08-28 16:25:59 debug Exp $
+$Id: TODO,v 1.357 2006-08-30 15:39:40 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -19,6 +19,13 @@ High-priority stuff:
 		x)  PALcode stuff...
 		x)  Remove the "NOO" in src/cpu.c once things have stabilized.
 		x)  Interrupt support :)
+
+------------------------------------------------------------------------------
+
+Before the next release:
+
+	x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips latest version
+	    are unstable.
 
 ------------------------------------------------------------------------------
 

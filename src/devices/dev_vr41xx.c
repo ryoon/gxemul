@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.38 2006-07-23 19:36:04 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.39 2006-08-30 15:39:40 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -73,13 +73,11 @@ static void vr41xx_keytick(struct cpu *cpu, struct vr41xx_data *d)
 	/*
 	 *  Keyboard input:
 	 *
-	 *  Hardcoded for MobilePro 780. (See NetBSD's hpckbdkeymap.h for
+	 *  Hardcoded for MobilePro. (See NetBSD's hpckbdkeymap.h for
 	 *  info on other keyboard layouts. mobilepro780_keytrans is the
 	 *  one used here.)
 	 *
 	 *  TODO: Make this work with "any" keyboard layout.
-	 *
-	 *  (Even MobilePro 770 seems to be different? Hm. TODO)
 	 *
 	 *  ofs 0:
 	 *	8000='o' 4000='.' 2000=DOWN  1000=UP
@@ -147,13 +145,26 @@ static void vr41xx_keytick(struct cpu *cpu, struct vr41xx_data *d)
 					d->escape_state = 2;
 				break;
 			case 2:	/*  cursor keys etc:  */
-				switch (ch) {
-				case 'A':	d->d0 = 0x1000; break;
-				case 'B':	d->d0 = 0x2000; break;
-				case 'C':	d->d0 = 0x20; break;
-				case 'D':	d->d0 = 0x10; break;
-				default:	fatal("[ vr41xx kiu: "
-				    "unimplemented escape 0x%02 ]\n", ch);
+				/*  Ugly hack for Mobilepro770:  */
+				if (cpu->machine->machine_subtype ==
+				    MACHINE_HPCMIPS_NEC_MOBILEPRO_770) {
+					switch (ch) {
+					case 'A': d->d0 = 0x2000; break;
+					case 'B': d->d0 = 0x20; break;
+					case 'C': d->d0 = 0x1000; break;
+					case 'D': d->d0 = 0x10; break;
+					default:  fatal("[ vr41xx kiu: unimpl"
+					    "emented escape 0x%02 ]\n", ch);
+					}
+				} else {
+					switch (ch) {
+					case 'A': d->d0 = 0x1000; break;
+					case 'B': d->d0 = 0x2000; break;
+					case 'C': d->d0 = 0x20; break;
+					case 'D': d->d0 = 0x10; break;
+					default:  fatal("[ vr41xx kiu: unimpl"
+					    "emented escape 0x%02 ]\n", ch);
+					}
 				}
 				d->escape_state = 0;
 			}

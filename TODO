@@ -1,4 +1,4 @@
-$Id: TODO,v 1.358 2006-08-30 16:10:02 debug Exp $
+$Id: TODO,v 1.359 2006-08-31 13:07:06 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -9,32 +9,27 @@ High-priority stuff:
 		    Right now it doesn't seem to be used :)
 		x)  Workarounds for the delays during NetWinder/CATS bootup?
 		    Plug-and-play detection loops!
-		x)  NetBSD on Malta isn't stable yet.
-		x)  NetBSD/cobalt is not working right yet.
-		x)  Linux on Malta doesn't work right now.
+		x)  Go through all other MIPS machines, one by one, and
+		    attempt to fix them.
 
 	x)  Alpha:
-		x)  Bootup memory and register contents...
-		x)  Virtual memory...
-		x)  PALcode stuff...
-		x)  Remove the "NOO" in src/cpu.c once things have stabilized.
-		x)  Interrupt support :)
-
-------------------------------------------------------------------------------
-
-Before the next release:
+		x)  OSF1 PALcode, Virtual memory support.
+		x)  Interrupt/exception/trap handling.
+		x)  More work on bootup memory and register contents.
+		x)  More Alpha machine types, so it could work with
+		    OpenBSD and Linux too?
 
 	x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips latest version
-	    are unstable.
+	    are unstable during bootup.
+	x)  Mouse support for NetBSD/pmax 4.x!
+	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
+	x)  Physical vs virtual breakpoints!
 
 ------------------------------------------------------------------------------
 
 Implementation:
-	x)  ARM "wait"-like instruction.
-	x)  Mouse support for NetBSD/pmax 4.x!
 	x)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
-	x)  64-bit ranges in src/cpus/memory_mips_v2p.c
 	x)  Revert the dyntrans page template experiment? Hm.
 	x)  Refactor the cpu type detection/initialization/listing.
 		Macro, which can be used as long as the cpu definitions
@@ -49,11 +44,9 @@ Implementation:
 			for (;;) {
 				halt();
 			}
-	x)  Physical vs virtual breakpoints!
-	x)  Continue on SPARC emulation
+	x)  Continue on SPARC emulation.
 		+ Enable it in the configure script as soon as it can
 		  run all the demo programs.
-	x)  Continue on Alpha emulation  (virtual memory, etc). Cleanup.
 	x)  Nicer MIPS status bits in register dumps.
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 	x)  Rewrite the networking stack; make OpenBSD work better as a guest
@@ -64,8 +57,6 @@ Implementation:
 	x)  IOP (I2O) device?
 
 Documentation:
-	x)  Clock framework? -I option changes?
-	x)  "Install netbsd/pmax first" => only use the install kernel?
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
 	    written. (Symbolic names instead of numbers; example
@@ -78,10 +69,6 @@ Documentation:
 	    Example for MIPS64.
 
 Long-term design:
-	x)  Clock framework:
-		o) Go through all clock devices, make sure they
-		   return correct data, and run at correct speeds!
-		o) How to allow BOTH correct clocks, and fixed speeds?
 	x)  Instruction combination collisions? How to avoid easily...
 	x)  Think about how to do both SHmedia and SHcompact in a reasonable
 	    way!
@@ -91,7 +78,10 @@ Long-term design:
 	o)  Debugger command for enabling/disabling instruction statistics
 	    during runtime.   machine.statistics = on|off
 	x)  MAINBUS REDESIGN!
-	x)  PCI redesign... I need to read up on how PCI actually works :)
+	x)  PCI redesign:
+		x)  The device subsystem needs to be redesigned to allow
+		    devices to be moved and/or disabled at runtime!
+		x)  Interrupt routing! PCI interrupts, ISA interrupts, etc.
 	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,
 	    it would be reasonably simple to add; in each individual fast
 	    load/store routine = a lot more work, and it would become
@@ -132,14 +122,16 @@ MIPS:
 			(SMP, non-MIPS, interrupt correctness, host idling, ...)
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
+			o)  DROTR32 and similar MIPS64 rev 2 instructions,
+			    which have a rotation bit which differs from
+			    previous ISAs.
+			o)  EI and DI instructions for MIPS64/32 rev 2.
+			    NOTE: These are _NOT_ the same as for R5900!
 		x) _MAYBE_ TX79 and R5900 actually differ in their
 		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
+	o)  64-bit ranges in src/cpus/memory_mips_v2p.c
 	o)  Refactor code for performance and readability/maintainability.
-	o)  DROTR32 and similar MIPS64 rev 2 instructions, which have
-	    a rotation bit which differs from previous ISAs.
-	o)  EI and DI instructions for MIPS64/32 rev 2. NOTE: These are
-	    _NOT_ the same as for R5900!
 	o)  (Re)implement 128-bit loads/stores for R5900.
 	o)  R4000 and others:
 		x)  watchhi/watchlo exceptions, and other exception
@@ -172,9 +164,7 @@ Dyntrans:
 		o) First test would be to just implement a simple
 		   instruction such as MIPS' addiu or lui, on AMD64
 		   hosts...
-	x)  Idle loop detection? (Depends on target.) Could be turned
-	    into usleep(1) or similar on the host... except when doing
-	    e.g. SMP emulation. Then it becomes trickier.
+	x)  Idle loop detection? (Depends on target.) This feels ugly.
 
 Transputer:
 	x)  Implement support for Helios binaries.
@@ -192,18 +182,13 @@ RCA1802/RCA1805, CHIP8:
 			would be manually interpreted.
 	x)  1802 info: http://www.nyx.net/~lturner/public_html/Cosmac.html
 	    and:  http://www.elf-emulation.com/1802.html
-	x)  1805 extended opcodes.
-	x)  Change to smaller pages, 1-byte instruction length,
-	    1802 instruction set, and a "secondary mode" for
-	    CHIP8 instructions! In other words, change the CPU type
-	    to 1802! (Leave the machine at CHIP8, though.)
-	    Support for variable-length instructions!
+	x)  1805 extended opcodes: Implement at least disassembly support!
 	x)  Keyboard input.
 	x)  Sound (beep only).
 	x)  Slow-down to correct speed? Wikipedia: "it was usually operated
 	    at 3.58 MHz/2 to suit the requirements of the 1861 chip which
 	    gave a speed of a little over 100,000 instructions per second"
-	    (Note that _CHIP8_ emulation would then even slower.)
+	    (Note that _CHIP8_ emulation would then be even slower.)
 	x)  SCHIP48 (Super) emulation:
 		Some more opcodes, 128x64 framebuffer, larger
 		sprites and fonts.
@@ -212,7 +197,7 @@ RCA1802/RCA1805, CHIP8:
 		      calls to 0xxx in general = call 1802 machine code
 
 Alpha:
-	o)  Virtual memory (tlbs etc)
+	o)  OSF1 PALcode, virtual memory (tlbs etc).
 	o)  Get {NetBSD,OpenBSD,Linux}/alpha booting. :)
 
 SPARC:
@@ -267,18 +252,20 @@ Debugger:
 	o)  see src/debugger.c for more
 
 POWER/PowerPC:
+	x)  find and fix the bug which causes NetBSD/macppc to fail after
+	    an install!
 	x)  PPC optimizations; instr combs
 	x)  64-bit stuff: either Linux on G5, or perhaps some hobbyist
 		version of AIX? (if there exists such a thing)
-	x)  find and fix the bug which causes NetBSD/macppc to fail after
-	    an install!
 	x)  macppc: adb controller; keyboard (for framebuffer mode)
 	x)  make OpenBSD/macppc work (PCI controller stuff)
 
 Algor:
-	PCI interrupts... needed or stuff like the tlp NIC?
+	o)  Other models than the P5064?
+	o)  PCI interrupts... needed for stuff like the tlp NIC?
 
 ARM:
+	o)  ARM "wait"-like instruction?
 	o)  try to get netbsd/evbarm 3.x running (iq80321)
 	o)  make the xscale counter registers (ccnt) work
 	o)  make the ata controller usable for FreeBSD!
@@ -303,12 +290,12 @@ Cache simulation:
 
 Documentation:
 	o)  machines, cpus, devices.
-	o)  Automagic documentation generation:
+	o)  Automagic documentation generation?
 		x)  REMEMBER that several machines/devices can be in
 			the same source file!
 	o)  Try to rewrite the install instructions for those machines
-	    that use 3MAX into using CATS? (To remove the need to a raw
-	    ffs partition using up all of the disk image.)
+	    that use 3MAX into using CATS or hpcmips? (To remove the need
+	    to use a raw ffs partition, using up all of the disk image.)
 
 More generic out_of_memory error reporting, and check everywhere!
 	Causes:	OpenBSD has low default limits for normal users.

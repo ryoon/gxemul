@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.12 2006-08-29 15:55:09 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.13 2006-08-31 13:07:06 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  *
@@ -56,6 +56,7 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode) { }
 #else   /*  ENABLE_ALPHA  */
 
 
+#include "alpha_prom.h"
 #include "console.h"
 #include "cpu.h"
 #include "machine.h"
@@ -104,25 +105,50 @@ void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen)
  */
 void alpha_prom_call(struct cpu *cpu)
 {
-	uint64_t addr;
+	uint64_t addr, a1 = cpu->cd.alpha.r[ALPHA_A1];
+	uint64_t a2 = cpu->cd.alpha.r[ALPHA_A2], a3 = cpu->cd.alpha.r[ALPHA_A3];
+	uint64_t len;
+	char *s = "";
 
 	switch (cpu->cd.alpha.r[ALPHA_A0]) {
-	case 0x02:
-		/*  puts: a1 = channel, a2 = ptr to buf, a3 = len  */
-		for (addr = cpu->cd.alpha.r[ALPHA_A2];
-		     addr < cpu->cd.alpha.r[ALPHA_A2] +
-		     cpu->cd.alpha.r[ALPHA_A3]; addr ++) {
+
+	case PROM_R_PUTS:
+		/*  a1 = channel, a2 = ptr to buf, a3 = len  */
+		for (addr = a2; addr < a2 + a3; addr ++) {
 			unsigned char ch;
 			cpu->memory_rw(cpu, cpu->mem, addr, &ch, sizeof(ch),
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			console_putchar(cpu->machine->main_console_handle, ch);
 		}
-		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.r[ALPHA_A3];
+		cpu->cd.alpha.r[ALPHA_V0] = a3;
 		break;
-	case 0x22:
-		/*  getenv  */
-		fatal("[ Alpha PALcode: GXemul PROM call 0x22: TODO ]\n");
+
+	case PROM_R_GETENV:
+		/*  a1 = variable id, a2 = char *buf, a3 = bufsize  */
+		switch (a1) {
+		case PROM_E_BOOTED_DEV:
+			s = "";		/*  TODO  */
+			break;
+		case PROM_E_BOOTED_FILE:
+			s = cpu->machine->boot_kernel_filename;
+			break;
+		case PROM_E_BOOTED_OSFLAGS:
+			s = cpu->machine->boot_string_argument;
+			break;
+		case PROM_E_TTY_DEV:
+			s = "";		/*  TODO  */
+			break;
+		default:fatal("[ Alpha PALcode: GXemul PROM getenv %i: TODO "
+			    "]\n", cpu->cd.alpha.r[ALPHA_A1]);
+			cpu->running = 0;
+		}
+		/*  Copy at most a3 bytes.  */
+		len = a3;
+		if (strlen(s) < len)
+			len = strlen(s) + 1;
+		store_buf(cpu, a2, s, len);
 		break;
+
 	default:fatal("[ Alpha PALcode: GXemul PROM call, a0=0x%"PRIx64" ]\n",
 		    (uint64_t) cpu->cd.alpha.r[ALPHA_A0]);
 		cpu->running = 0;
@@ -141,31 +167,36 @@ void alpha_prom_call(struct cpu *cpu)
  */
 void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 {
+	uint64_t a0 = cpu->cd.alpha.r[ALPHA_A0], a1 = cpu->cd.alpha.r[ALPHA_A1];
+
 	switch (palcode) {
 	case 0x02:	/*  PAL_draina  */
 		/*  TODO?  */
 		break;
 	case 0x10:	/*  PAL_OSF1_rdmces  */
-		/*  TODO? Return something in v0.  */
+		/*  TODO. Return Machine Check status in v0.  */
+		cpu->cd.alpha.r[ALPHA_V0] = 0;
 		break;
 	case 0x11:	/*  PAL_OSF1_wrmces  */
-		/*  TODO? Set something to a0.  */
+		/*  TODO. Clear Machine Check and Error status.  */
 		break;
 	case 0x2b:	/*  PAL_OSF1_wrfen  */
 		/*  Floating point enable: a0 = 1 or 0.  */
 		/*  TODO  */
 		break;
 	case 0x2d:	/*  PAL_OSF1_wrvptptr  */
-		/*  a0 = value  */
-		cpu->cd.alpha.wrvptptr = cpu->cd.alpha.r[ALPHA_A0];
+		/*  Write Virtual Page Table Pointer. a0 = value  */
+		cpu->cd.alpha.vptptr = a0;
 		break;
+#if 0
 	case 0x30:	/*  PAL_OSF1_swpctx  */
 		/*  TODO  */
 		/*  Swap context  */
 		break;
+#endif
 	case 0x31:	/*  PAL_OSF1_wrval  */
 		/*  a0 = value  */
-		cpu->cd.alpha.sysvalue = cpu->cd.alpha.r[ALPHA_A0];
+		cpu->cd.alpha.sysvalue = a0;
 		break;
 	case 0x32:	/*  PAL_OSF1_rdval  */
 		/*  return: v0 = value  */
@@ -176,22 +207,24 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		 *  a0 = op, a1 = vaddr
 		 */
 		fatal("[ Alpha PALcode: PAL_OSF1_tbi: a0=%"PRIi64" a1=0x%"
-		    PRIx64" ]\n", (int64_t)cpu->cd.alpha.r[ALPHA_A0],
-		    (uint64_t)cpu->cd.alpha.r[ALPHA_A1]);
-		cpu->invalidate_translation_caches(cpu,
-		    cpu->cd.alpha.r[ALPHA_A1], INVALIDATE_VADDR);
+		    PRIx64" ]\n", (int64_t)a0, (uint64_t)a1);
+		cpu->invalidate_translation_caches(cpu, a1, INVALIDATE_VADDR);
 		break;
 	case 0x34:	/*  PAL_OSF1_wrent (Write System Entry Address)  */
 		/*  a0 = new vector, a1 = vector selector  */
-		fatal("[ Alpha PALcode: PAL_OSF1_wrent: a0=%"PRIi64" a1=0x%"
-		    PRIx64" ]\n", (int64_t) cpu->cd.alpha.r[ALPHA_A0],
-		    (uint64_t) cpu->cd.alpha.r[ALPHA_A1]);
-		/*  TODO  */
+		if (a1 < N_ALPHA_KENTRY)
+			cpu->cd.alpha.kentry[a1] = a0;
+		else {
+			fatal("[ Alpha PALcode: PAL_OSF1_wrent: attempt to "
+			    "write to non-implemented selector %i ]\n",
+			    (int)a1);
+			cpu->running = 0;
+		}
 		break;
 	case 0x35:	/*  PAL_OSF1_swpipl  */
 		/*  a0 = new ipl, v0 = return old ipl  */
 		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.ipl;
-		cpu->cd.alpha.ipl = cpu->cd.alpha.r[ALPHA_A0];
+		cpu->cd.alpha.ipl = a0;
 		break;
 	case 0x36:	/*  PAL_OSF1_rdps  */
 		/*  TODO  */
@@ -200,16 +233,15 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 	case 0x37:	/*  PAL_OSF1_wrkgp  */
 		/*  "clobbers a0, t0, t8-t11" according to comments in
 		    NetBSD sources  */
-
-		/*  KGP shoudl be set to a0.  (TODO)  */
+		cpu->cd.alpha.kgp = a0;
 		break;
 	case 0x38:	/*  PAL_OSF1_wrusp  */
 		/*  a0 = value  */
-		cpu->cd.alpha.usp = cpu->cd.alpha.r[ALPHA_A0];
+		cpu->cd.alpha.pcb.apcb_usp = a0;
 		break;
 	case 0x3a:	/*  PAL_OSF1_rdusp  */
 		/*  return: v0 = value  */
-		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.usp;
+		cpu->cd.alpha.r[ALPHA_V0] = cpu->cd.alpha.pcb.apcb_usp;
 		break;
 	case 0x3c:	/*  PAL_OSF1_whami  */
 		/*  Returns CPU id in v0:  */
@@ -229,6 +261,10 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		break;
 	case 0x86:	/*  PAL_OSF1_imb  */
 		/*  TODO  */
+		break;
+	case 0x3fffffc:
+		fatal("[ Alpha: KENTRY not set! Halting. ]");
+		cpu->running = 0;
 		break;
 	case 0x3fffffd:
 		fatal("[ Alpha PALcode: Fixup: TODO ]\n");

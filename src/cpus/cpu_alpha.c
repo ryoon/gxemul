@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.20 2006-08-21 17:02:36 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.21 2006-08-31 13:07:06 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -94,6 +94,12 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	}
 
 	cpu->cd.alpha.r[ALPHA_SP] = 0xfffffc000000ff00ULL;
+
+	/*  Set up dummy kentry pointers to something which crashes
+	    the machine:  */
+	store_32bit_word(cpu, 0x10010, 0x3fffffc);
+	for (i=0; i<N_ALPHA_KENTRY; i++)
+		cpu->cd.alpha.kentry[i] = 0x10010;
 
 	return 1;
 }

@@ -28,10 +28,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.42 2006-08-28 14:01:24 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.43 2006-08-31 13:07:06 debug Exp $
  */
 
 #include "misc.h"
+
+#include "alpha_cpu.h"
 
 
 /*  ALPHA CPU types:  */
@@ -66,6 +68,9 @@ struct alpha_cpu_type_def {
 
 
 struct cpu_family;
+
+/*  ALPHA_KENTRY_INT .. ALPHA_KENTRY_SYS  */
+#define	N_ALPHA_KENTRY		6
 
 #define	ALPHA_V0		0
 #define	ALPHA_A0		16
@@ -124,10 +129,12 @@ struct alpha_cpu {
 	uint64_t		load_linked_addr;
 	int			ll_flag;
 
-	/*  PALcode specific:  */
-	uint64_t		wrvptptr;
+	/*  OSF1 PALcode specific:  */
+	uint64_t		vptptr;		/*  Virtual Page Table Ptr  */
 	uint64_t		sysvalue;
-	uint64_t		usp;		/*  User Stack Pointer  */
+	uint64_t		kgp;		/*  Kernel GP  */
+	uint64_t		kentry[N_ALPHA_KENTRY];
+	struct alpha_pcb	pcb;		/*  Process Control Block  */
 
 
 	/*

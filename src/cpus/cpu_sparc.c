@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.35 2006-07-23 12:40:24 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.36 2006-09-01 16:34:41 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -471,6 +471,8 @@ int sparc_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 	case 2:	/*  misc alu instructions  */
 		switch (op2) {
 		case 56:/*  jump and link  */
+			return 1;
+		case 57:/*  return  */
 			return 1;
 		}
 		break;

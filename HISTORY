@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1349 2006-09-01 15:42:58 debug Exp $
+$Id: HISTORY,v 1.1350 2006-09-01 16:34:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2993,3 +2993,5 @@ Changelog for GXemul:
 		The VR41xx RTC now returns correct time.
 		Connecting the VR41xx timer to the timer framework (fixed at
 		128 Hz, for now).
+		Continuing on SPARC emulation, adding more instructions:
+		restore, ba_xcc, ble. The rectangle drawing demo works :)

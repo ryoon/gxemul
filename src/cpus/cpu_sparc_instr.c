@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.23 2006-07-24 22:32:44 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.24 2006-09-01 16:34:42 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -137,6 +137,57 @@ X(bl_xcc)
 	int n = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_N)? 1:0;
 	int v = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_V)? 1:0;
 	int cond = n ^ v;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
+ *  ble
+ *
+ *  arg[0] = int32_t displacement compared to the start of the current page
+ */
+X(ble)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = (cpu->cd.sparc.ccr & SPARC_CCR_N) ? 1 : 0;
+	int v = (cpu->cd.sparc.ccr & SPARC_CCR_V) ? 1 : 0;
+	int z = (cpu->cd.sparc.ccr & SPARC_CCR_Z) ? 1 : 0;
+	int cond = (n ^ v) || z;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		if (cond) {
+			old_pc &= ~((SPARC_IC_ENTRIES_PER_PAGE - 1)
+			    << SPARC_INSTR_ALIGNMENT_SHIFT);
+			cpu->pc = old_pc + (int32_t)ic->arg[0];
+			quick_pc_to_pointers(cpu);
+		}
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(ble_xcc)
+{
+	MODE_uint_t old_pc = cpu->pc;
+	int n = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_N)? 1:0;
+	int v = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_V)? 1:0;
+	int z = ((cpu->cd.sparc.ccr >> SPARC_CCR_XCC_SHIFT) & SPARC_CCR_Z)? 1:0;
+	int cond = (n ^ v) || z;
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
@@ -398,6 +449,86 @@ X(brnz)
 
 
 /*
+ *  Save:
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ *  arg[2] = ptr to rd (_after_ the register window change)
+ */
+X(save_v9_imm)
+{
+	MODE_uint_t rs = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+	int cwp = cpu->cd.sparc.cwp;
+
+	if (cpu->cd.sparc.cansave == 0) {
+		fatal("save_v9_imm: spill trap. TODO\n");
+		exit(1);
+	}
+
+	if (cpu->cd.sparc.cleanwin - cpu->cd.sparc.canrestore == 0) {
+		fatal("save_v9_imm: clean_window trap. TODO\n");
+		exit(1);
+	}
+
+	/*  Save away old in registers:  */
+	memcpy(&cpu->cd.sparc.r_inout[cwp][0], &cpu->cd.sparc.r[SPARC_REG_I0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_I0]) * N_SPARC_INOUT_REG);
+
+	/*  Save away old local registers:  */
+	memcpy(&cpu->cd.sparc.r_local[cwp][0], &cpu->cd.sparc.r[SPARC_REG_L0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_L0]) * N_SPARC_INOUT_REG);
+
+	cpu->cd.sparc.cwp = (cwp + 1) % cpu->cd.sparc.cpu_type.nwindows;
+	cpu->cd.sparc.cansave --;
+	cpu->cd.sparc.canrestore ++;	/*  TODO: modulo here too?  */
+	cwp = cpu->cd.sparc.cwp;
+
+	/*  The out registers become the new in registers:  */
+	memcpy(&cpu->cd.sparc.r[SPARC_REG_I0], &cpu->cd.sparc.r[SPARC_REG_O0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_O0]) * N_SPARC_INOUT_REG);
+
+	/*  Read new local registers:  */
+	memcpy(&cpu->cd.sparc.r[SPARC_REG_L0], &cpu->cd.sparc.r_local[cwp][0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_L0]) * N_SPARC_INOUT_REG);
+
+	reg(ic->arg[2]) = rs;
+}
+
+
+/*
+ *  Restore:
+ */
+X(restore)
+{
+	int cwp = cpu->cd.sparc.cwp;
+
+	if (cpu->cd.sparc.canrestore == 0) {
+		fatal("restore: spill trap. TODO\n");
+		exit(1);
+	}
+
+	cpu->cd.sparc.cwp = cwp - 1;
+	if (cwp == 0)
+		cpu->cd.sparc.cwp = cpu->cd.sparc.cpu_type.nwindows - 1;
+	cpu->cd.sparc.cansave ++;
+	cpu->cd.sparc.canrestore --;
+	cwp = cpu->cd.sparc.cwp;
+
+	/*  The in registers become the new out registers:  */
+	memcpy(&cpu->cd.sparc.r[SPARC_REG_O0], &cpu->cd.sparc.r[SPARC_REG_I0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_O0]) * N_SPARC_INOUT_REG);
+
+	/*  Read back the local registers:  */
+	memcpy(&cpu->cd.sparc.r[SPARC_REG_L0], &cpu->cd.sparc.r_local[cwp][0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_L0]) * N_SPARC_INOUT_REG);
+
+	/*  Read back the in registers:  */
+	memcpy(&cpu->cd.sparc.r[SPARC_REG_I0], &cpu->cd.sparc.r_inout[cwp][0],
+	    sizeof(cpu->cd.sparc.r[SPARC_REG_I0]) * N_SPARC_INOUT_REG);
+}
+
+
+/*
  *  Jump and link
  *
  *  arg[0] = ptr to rs1
@@ -556,6 +687,100 @@ X(retl_trace)
 
 
 /*
+ *  Return
+ *
+ *  arg[0] = ptr to rs1
+ *  arg[1] = ptr to rs2 or an immediate value (int32_t)
+ */
+X(return_imm)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+		quick_pc_to_pointers(cpu);
+		instr(restore)(cpu, ic);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(return_reg)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + reg(ic->arg[1]);
+		quick_pc_to_pointers(cpu);
+		instr(restore)(cpu, ic);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(return_imm_trace)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + (int32_t)ic->arg[1];
+		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+		instr(restore)(cpu, ic);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(return_reg_trace)
+{
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sparc.cur_ic_page)
+	    / sizeof(struct sparc_instr_call);
+	cpu->pc &= ~((SPARC_IC_ENTRIES_PER_PAGE-1)
+	    << SPARC_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SPARC_INSTR_ALIGNMENT_SHIFT);
+
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		cpu->pc = reg(ic->arg[0]) + reg(ic->arg[1]);
+		cpu_functioncall_trace(cpu, cpu->pc);
+		quick_pc_to_pointers(cpu);
+		instr(restore)(cpu, ic);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
  *  set:  Set a register to a value (e.g. sethi).
  *
  *  arg[0] = ptr to rd
@@ -621,52 +846,6 @@ X(udiv_imm)
 	if (z > 0xffffffff)
 		z = 0xffffffff;
 	reg(ic->arg[2]) = z;
-}
-
-
-/*
- *  Save:
- *
- *  arg[0] = ptr to rs1
- *  arg[1] = ptr to rs2 or an immediate value (int32_t)
- *  arg[2] = ptr to rd (_after_ the register window change)
- */
-X(save_v9_imm)
-{
-	MODE_uint_t rs = reg(ic->arg[0]) + (int32_t)ic->arg[1];
-	int cwp = cpu->cd.sparc.cwp;
-
-	if (cpu->cd.sparc.cansave == 0) {
-		fatal("save_v9_imm: spill trap. TODO\n");
-		exit(1);
-	}
-
-	if (cpu->cd.sparc.cleanwin - cpu->cd.sparc.canrestore == 0) {
-		fatal("save_v9_imm: clean_window trap. TODO\n");
-		exit(1);
-	}
-
-	/*  Save away old in registers:  */
-	memcpy(&cpu->cd.sparc.r_inout[cwp][0], &cpu->cd.sparc.r[SPARC_REG_I0],
-	    sizeof(cpu->cd.sparc.r[SPARC_REG_I0]) * N_SPARC_INOUT_REG);
-
-	/*  Save away old local registers:  */
-	memcpy(&cpu->cd.sparc.r_local[cwp][0], &cpu->cd.sparc.r[SPARC_REG_L0],
-	    sizeof(cpu->cd.sparc.r[SPARC_REG_L0]) * N_SPARC_INOUT_REG);
-
-	cwp = cpu->cd.sparc.cwp = (cwp + 1) % cpu->cd.sparc.cpu_type.nwindows;
-	cpu->cd.sparc.cansave --;
-	cpu->cd.sparc.canrestore ++;	/*  TODO: modulo here too?  */
-
-	/*  The out registers become the new in registers:  */
-	memcpy(&cpu->cd.sparc.r[SPARC_REG_I0], &cpu->cd.sparc.r[SPARC_REG_O0],
-	    sizeof(cpu->cd.sparc.r[SPARC_REG_O0]) * N_SPARC_INOUT_REG);
-
-	/*  Read new local registers:  */
-	memcpy(&cpu->cd.sparc.r[SPARC_REG_L0], &cpu->cd.sparc.r_local[cwp][0],
-	    sizeof(cpu->cd.sparc.r[SPARC_REG_L0]) * N_SPARC_INOUT_REG);
-
-	reg(ic->arg[2]) = rs;
 }
 
 
@@ -1049,15 +1228,19 @@ X(to_be_translated)
 			/*  TODO: samepage  */
 			switch (rd + (cc << 5)) {
 			case 0x01:	ic->f = instr(be);  break;
+			case 0x02:	ic->f = instr(ble); break;
 			case 0x03:	ic->f = instr(bl);  break;
+			case 0x08:	ic->f = instr(ba);  break;
 			case 0x09:	ic->f = instr(bne); break;
-			case 0x0a:	ic->f = instr(bg); break;
+			case 0x0a:	ic->f = instr(bg);  break;
 			case 0x0b:	ic->f = instr(bge); break;
-			case 0x19:	ic->f = instr(bne_a); break;
+			case 0x19:	ic->f = instr(bne_a);  break;
 			case 0x41:	ic->f = instr(be_xcc); break;
+			case 0x42:	ic->f = instr(ble_xcc);break;
 			case 0x43:	ic->f = instr(bl_xcc); break;
+			case 0x48:	ic->f = instr(ba);     break;
 			case 0x4a:	ic->f = instr(bg_xcc); break;
-			case 0x4b:	ic->f = instr(bge_xcc); break;
+			case 0x4b:	ic->f = instr(bge_xcc);break;
 			default:fatal("Unimplemented branch, 0x%x\n",
 				    rd + (cc<<5));
 				goto bad;
@@ -1355,6 +1538,26 @@ X(to_be_translated)
 					else
 						ic->f = instr(jmpl_reg_trace);
 				}
+			}
+			break;
+
+		case 57:/*  return  */
+			ic->arg[0] = (size_t)&cpu->cd.sparc.r[rs1];
+
+			if (use_imm) {
+				ic->arg[1] = siconst;
+				ic->f = instr(return_imm);
+			} else {
+				ic->arg[1] = (size_t)&cpu->cd.sparc.r[rs2];
+				ic->f = instr(return_reg);
+			}
+
+			/*  special trace case:  */
+			if (cpu->machine->show_trace_tree) {
+				if (use_imm)
+					ic->f = instr(return_imm_trace);
+				else
+					ic->f = instr(return_reg_trace);
 			}
 			break;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.215 2006-08-30 16:10:02 debug Exp $
+ *  $Id: devices.h,v 1.216 2006-09-01 15:19:49 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -688,6 +688,8 @@ struct vr41xx_data {
 	int		d5;
 	int		dont_clear_next;
 	int		escape_state;
+
+	int		pending_timer_interrupts;
 
 	/*  See icureg.h in NetBSD for more info.  */
 	uint16_t	sysint1;

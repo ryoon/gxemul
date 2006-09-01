@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.39 2006-08-30 15:39:40 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.40 2006-09-01 15:19:49 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -43,13 +43,14 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 #include "bcureg.h"
 #include "vripreg.h"
 #include "vrkiureg.h"
 
 
-#define	DEV_VR41XX_TICKSHIFT		15
+#define	DEV_VR41XX_TICKSHIFT		14
 
 /*  #define debug fatal  */
 
@@ -300,26 +301,25 @@ static void vr41xx_keytick(struct cpu *cpu, struct vr41xx_data *d)
 }
 
 
+/*
+ *  timer_tick():
+ */
+static void timer_tick(struct timer *timer, void *extra)
+{
+	struct vr41xx_data *d = (struct vr41xx_data *) extra;
+	d->pending_timer_interrupts ++;
+}
+
+
 DEVICE_TICK(vr41xx)
 {
 	struct vr41xx_data *d = extra;
 
-	/*
-	 *  UGLY! TODO: fix this.
-	 *
-	 *  Interrupts should be triggered if the corresponding unit (for
-	 *  example the RTC unit) is activated.
-	 */
-	{
-		static unsigned int x = 0;
-		x++;
-
-		if (x > 100 && (x&3)==0) {
-			if (d->cpumodel == 4121 || d->cpumodel == 4181)
-				cpu_interrupt(cpu, 3);
-			else
-				cpu_interrupt(cpu, 8 + VRIP_INTR_ETIMER);
-		}
+	if (d->pending_timer_interrupts > 0) {
+		if (d->cpumodel == 4121 || d->cpumodel == 4181)
+			cpu_interrupt(cpu, 3);
+		else
+			cpu_interrupt(cpu, 8 + VRIP_INTR_ETIMER);
 	}
 
 	if (cpu->machine->use_x11)
@@ -418,6 +418,7 @@ DEVICE_ACCESS(vr41xx)
 	/*  TODO: Maybe these should be handled separately as well?  */
 
 	switch (relative_addr) {
+
 	/*  BCU:  0x00 .. 0x1c  */
 	case BCUREVID_REG_W:	/*  0x010  */
 	case BCU81REVID_REG_W:	/*  0x014  */
@@ -494,8 +495,30 @@ DEVICE_ACCESS(vr41xx)
 			d->msysint2 = idata;
 		break;
 
-	/*  PMU:  0xc0 .. 0xfc  */
-	/*  RTC:  0x100 .. ?  */
+	/*  RTC:  */
+	case 0xc0:
+	case 0xc2:
+	case 0xc4:
+		{
+			struct timeval tv;
+			gettimeofday(&tv, NULL);
+			/*  Adjust time by 120 years and 29 days.  */
+			tv.tv_sec += (int64_t) (120*365 + 29) * 24*60*60;
+
+			switch (relative_addr) {
+			case 0xc0:
+				odata = (tv.tv_sec & 1) << 15;
+				break;
+			case 0xc2:
+				odata = (tv.tv_sec >> 1) & 0xffff;
+				break;
+			case 0xc4:
+				odata = (tv.tv_sec >> 17) & 0xffff;
+				break;
+			}
+		}
+		break;
+
 
 	case 0x108:
 		if (writeflag == MEM_READ)
@@ -512,12 +535,16 @@ DEVICE_ACCESS(vr41xx)
 		/*  RTC interrupt register...  */
 		/*  Ack. timer interrupts?  */
 		cpu_interrupt_ack(cpu, 8 + VRIP_INTR_ETIMER);
+		if (d->pending_timer_interrupts > 0)
+			d->pending_timer_interrupts --;
 		break;
 
 	case 0x1de:	/*  on 4121?  */
 		/*  RTC interrupt register...  */
 		/*  Ack. timer interrupts?  */
 		cpu_interrupt_ack(cpu, 3);
+		if (d->pending_timer_interrupts > 0)
+			d->pending_timer_interrupts --;
 		break;
 
 	default:
@@ -616,6 +643,9 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	    0x14000000, eg IBM WorkPad Z50.  */
 	dev_ram_init(machine, 0x15000000, 0x1000000, DEV_RAM_MIRROR,
 	    0x14000000);
+
+	/*  TODO: Don't fix this to 128 Hz!  */
+	timer_add(128, timer_tick, d);
 
 	return d;
 }

@@ -1,9 +1,20 @@
-$Id: TODO,v 1.359 2006-08-31 13:07:06 debug Exp $
+$Id: TODO,v 1.360 2006-09-01 05:36:38 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
-High-priority stuff:
+	x)  GENERAL CODE CLEANUP
+		x)  Device registry (turn into struct).
+		x)  Device registry: Allow devices to be moved around;
+			if there is a collision, return false. It is up
+			to the caller to handle this situation!
+			NOTE: Translations must be invalidated!
+		x)  The TLB dump code could possibly be moved somewhere
+			else? No need to include the dummy functions
+			everywhere.
+		x)  Factor out other things from cpu_*.c? (Turn CPU name
+			detection into a macro?)
+
 	x)  Clock/timer framework:
 		x)  FIGURE OUT A WAY TO TEST THE 8253 :)
 		    Right now it doesn't seem to be used :)
@@ -14,18 +25,29 @@ High-priority stuff:
 
 	x)  Alpha:
 		x)  OSF1 PALcode, Virtual memory support.
+		x)  PALcode replacement! PAL1E etc opcodes...?
 		x)  Interrupt/exception/trap handling.
 		x)  More work on bootup memory and register contents.
 		x)  More Alpha machine types, so it could work with
-		    OpenBSD and Linux too?
+		    OpenBSD, FreeBSD, and Linux too?
+
+	x)  Continue on the settings object, connect it to machines and
+		processors, etc, and begin to rewrite the expression parser!
+
+
+	x)  Common dyntrans_abort() function, which stops dyntrans execution,
+		and drops into the debugger (if running with -K).
 
 	x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips latest version
 	    are unstable during bootup.
-	x)  Mouse support for NetBSD/pmax 4.x!
+	x)  Mouse support for NetBSD/hpcmips?
+	x)  Fix/verify mouse support for NetBSD/pmax 4.x!
 	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
 	x)  Physical vs virtual breakpoints!
 
+
 ------------------------------------------------------------------------------
+
 
 Implementation:
 	x)  See netwinder_reset() in NetBSD; the current "an internal error
@@ -74,7 +96,6 @@ Long-term design:
 	    way!
 	x)  68K emulation; think about how to do variable instruction
 	    lengths across page boundaries.
-	o)  Actually use the settings object, better debugger stuff, etc!
 	o)  Debugger command for enabling/disabling instruction statistics
 	    during runtime.   machine.statistics = on|off
 	x)  MAINBUS REDESIGN!
@@ -152,8 +173,6 @@ Dyntrans:
 		A debugger command should be possible to use to enable/
 		disable statistics gathering.
 		Configuration file option!
-	x)  Common fatal_abort() function, which drops into the debugger
-		without continuing.
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
@@ -180,6 +199,10 @@ RCA1802/RCA1805, CHIP8:
 			That is, all calls 0NNN could point to 0x68 opcodes,
 			which, if running on a 1802 in CHIP8-emulation-mode,
 			would be manually interpreted.
+		x)  Better solution:
+			CHIP8 calls to 00xx => handle at high level,
+			      calls to 0xxx in general = call 180X machine code
+				(0000 = reboot?)
 	x)  1802 info: http://www.nyx.net/~lturner/public_html/Cosmac.html
 	    and:  http://www.elf-emulation.com/1802.html
 	x)  1805 extended opcodes: Implement at least disassembly support!
@@ -192,9 +215,6 @@ RCA1802/RCA1805, CHIP8:
 	x)  SCHIP48 (Super) emulation:
 		Some more opcodes, 128x64 framebuffer, larger
 		sprites and fonts.
-	x)  Possible solution:
-		CHIP8 calls to 00xx => handle at high level,
-		      calls to 0xxx in general = call 1802 machine code
 
 Alpha:
 	o)  OSF1 PALcode, virtual memory (tlbs etc).
@@ -218,6 +238,7 @@ Debugger:
 	o)  Remove the emul command? (But show network info if showing
 		machines?)
 	o)  Generalize the expression evaluator. (debugger_expr.c?)
+		("help expr" in the debugger to show help about expressions)
 		settable variables	("show nr of instructions on average")
 		emul[x]			defaults to current emul
 		machine[x]		defaults to current machine

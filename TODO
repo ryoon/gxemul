@@ -1,4 +1,4 @@
-$Id: TODO,v 1.361 2006-09-01 15:20:32 debug Exp $
+$Id: TODO,v 1.362 2006-09-01 16:34:25 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -19,8 +19,7 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 		    Right now it doesn't seem to be used :)
 		x)  Workarounds for the delays during NetWinder/CATS bootup?
 		    Plug-and-play detection loops!
-		x)  Go through all other MIPS machines, one by one, and
-		    attempt to fix them.
+		x)  Go through all other machines, one by one, and fix them.
 
 	x)  Alpha:
 		x)  OSF1 PALcode, Virtual memory support.
@@ -29,6 +28,9 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 		x)  More work on bootup memory and register contents.
 		x)  More Alpha machine types, so it could work with
 		    OpenBSD, FreeBSD, and Linux too?
+
+	x)  SPARC:
+		x)  return -> restore
 
 	x)  Continue on the settings object, connect it to machines and
 		processors, etc, and begin to rewrite the expression parser!
@@ -78,10 +80,15 @@ Implementation:
 		  run all the demo programs.
 	x)  Nicer MIPS status bits in register dumps.
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
-	x)  Rewrite the networking stack; make OpenBSD work better as a guest
-	    OS, fix the performance problems, make Linux work with DHCP, etc.
-	    Support VDE (vde.sf.net)? Allow SLIP connections, possibly PPP,
-	    in addition to ethernet?
+	x)  Rewrite the networking stack:
+		x)  Fix performance problems caused by only allowing a
+		    single frame to be unacked.
+		x)  Don't hardcode offsets into packets!
+		x)  Make OpenBSD work better as a guest OS!
+		x)  DHCP.
+		x)  Support VDE (vde.sf.net)?
+		x)  Allow SLIP connections, possibly PPP, in addition to
+		    ethernet?
 	x)  Implement more ethernet NICs.
 	x)  IOP (I2O) device?
 

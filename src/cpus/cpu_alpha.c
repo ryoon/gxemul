@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.21 2006-08-31 13:07:06 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.22 2006-09-01 11:39:50 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -100,6 +100,10 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	store_32bit_word(cpu, 0x10010, 0x3fffffc);
 	for (i=0; i<N_ALPHA_KENTRY; i++)
 		cpu->cd.alpha.kentry[i] = 0x10010;
+
+	/*  Bogus initial context (will be overwritten on first
+	    context switch):  */
+	cpu->cd.alpha.ctx = 0x10100;
 
 	return 1;
 }

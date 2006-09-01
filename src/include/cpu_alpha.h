@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.h,v 1.43 2006-08-31 13:07:06 debug Exp $
+ *  $Id: cpu_alpha.h,v 1.44 2006-09-01 11:39:50 debug Exp $
  */
 
 #include "misc.h"
@@ -92,6 +92,8 @@ struct cpu_family;
 	"t10", "t11", "ra", "t12", "at", "gp", "sp", "zero" 	}
 
 
+/*  Dyntrans definitions:  */
+
 #define	ALPHA_N_IC_ARGS			3
 #define	ALPHA_INSTR_ALIGNMENT_SHIFT	2
 #define	ALPHA_IC_ENTRIES_SHIFT		11
@@ -108,6 +110,9 @@ struct cpu_family;
 
 DYNTRANS_MISC_DECLARATIONS(alpha,ALPHA,uint64_t)
 DYNTRANS_MISC64_DECLARATIONS(alpha,ALPHA,uint8_t)
+
+
+#define	ALPHA_PAGESHIFT		13
 
 
 struct alpha_cpu {
@@ -134,6 +139,7 @@ struct alpha_cpu {
 	uint64_t		sysvalue;
 	uint64_t		kgp;		/*  Kernel GP  */
 	uint64_t		kentry[N_ALPHA_KENTRY];
+	uint64_t		ctx;		/*  Ptr to current PCB (?)  */
 	struct alpha_pcb	pcb;		/*  Process Control Block  */
 
 

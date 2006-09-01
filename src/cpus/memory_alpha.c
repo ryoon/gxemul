@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_alpha.c,v 1.5 2006-08-29 15:55:09 debug Exp $
+ *  $Id: memory_alpha.c,v 1.6 2006-09-01 11:39:50 debug Exp $
  */
 
 #include <stdio.h>
@@ -46,10 +46,65 @@
 int alpha_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_paddr, int flags)
 {
-	*return_paddr = vaddr & 0x000003ffffffffffULL;
+	uint64_t base = cpu->cd.alpha.pcb.apcb_ptbr << ALPHA_PAGESHIFT;
+	uint64_t addr, pte1, pte2, pte3;
+	int i1, i2, i3;
+	unsigned char *pt_entry_ptr;
 
+	/*  Kernel direct-mapped space:  */
+	if ((vaddr & ~0x1ffffffffffULL) == 0xfffffc0000000000ULL) {
+		*return_paddr = vaddr & 0x000003ffffffffffULL;
+		return 2;
+	}
+
+	i1 = (vaddr >> 33) & 0x3ff;
+	i2 = (vaddr >> 23) & 0x3ff;
+	i3 = (vaddr >> 13) & 0x3ff;
+
+	printf("base = 0x%016"PRIx64"\n", base);
+	printf("i1=0x%x i2=0x%x i3=0x%x\n", i1, i2, i3);
+
+	addr = base + i1 * sizeof(uint64_t);
+
+	pt_entry_ptr = memory_paddr_to_hostaddr(cpu->mem, addr, 0);
+	if (pt_entry_ptr == NULL)
+		goto not_found;
+
+	pte1 = *(uint64_t *)(pt_entry_ptr);
+	pte1 = LE64_TO_HOST(pte1);
+
+	printf("pte1 = 0x%016"PRIx64"\n", pte1);
+
+	addr = ((pte1 >> 32) << ALPHA_PAGESHIFT) + (i2 * sizeof(uint64_t));
+
+	pt_entry_ptr = memory_paddr_to_hostaddr(cpu->mem, addr, 0);
+	if (pt_entry_ptr == NULL)
+		goto not_found;
+
+	pte2 = *(uint64_t *)(pt_entry_ptr);
+	pte2 = LE64_TO_HOST(pte2);
+
+	printf("pte2 = 0x%016"PRIx64"\n", pte2);
+
+	addr = ((pte2 >> 32) << ALPHA_PAGESHIFT) + (i3 * sizeof(uint64_t));
+
+	pt_entry_ptr = memory_paddr_to_hostaddr(cpu->mem, addr, 0);
+	if (pt_entry_ptr == NULL)
+		goto not_found;
+
+	pte3 = *(uint64_t *)(pt_entry_ptr);
+	pte3 = LE64_TO_HOST(pte3);
+
+	printf("pte3 = 0x%016"PRIx64"\n", pte3);
+
+not_found:
+	/*  No match.  */
+	fatal("[ alpha_translate_v2p: 0x%016"PRIx64" wasn't found ]\n", vaddr);
+
+#if 1
 	/*  UGLY hack for now:  */
 	/*  TODO: Real virtual memory support.  */
+	*return_paddr = vaddr & 0x000003ffffffffffULL;
 
 	if ((vaddr & ~0x7fff) == 0x0000000010000000ULL)
 		*return_paddr = (vaddr & 0x7fff) + HWRPB_PADDR;
@@ -61,8 +116,9 @@ int alpha_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	if ((vaddr & ~0x1fff) == 0x0000000020000000ULL)
 		*return_paddr = (vaddr & 0x1fff) + PROM_ARGSPACE_PADDR;
 
-	/*  printf("yo %016"PRIx64" %016"PRIx64"\n", vaddr, *return_paddr);  */
-
 	return 2;
+#else
+	return 0;
+#endif
 }
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.243 2006-08-22 13:16:41 debug Exp $
+ *  $Id: misc.h,v 1.244 2006-09-01 11:39:50 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -127,6 +127,28 @@ struct memory;
 #define LE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | (((x)&0xff) << 24) | \
 			     (((x) & 0xff0000) >> 8) | (((x) & 0xff00) << 8))
 #define	BE32_TO_HOST(x)	    (x)
+#endif
+
+#ifdef HOST_LITTLE_ENDIAN
+#define	LE64_TO_HOST(x)	    (x)
+#define BE64_TO_HOST(x)	    (	(((x) >> 56) & 0xff) +			\
+				((((x) >> 48) & 0xff) << 8) +		\
+				((((x) >> 40) & 0xff) << 16) +		\
+				((((x) >> 32) & 0xff) << 24) +		\
+				((((x) >> 24) & 0xff) << 32) +		\
+				((((x) >> 16) & 0xff) << 40) +		\
+				((((x) >> 8) & 0xff) << 48) +		\
+				(((x) & 0xff) << 56)  )
+#else
+#define	BE64_TO_HOST(x)	    (x)
+#define LE64_TO_HOST(x)	    (	(((x) >> 56) & 0xff) +			\
+				((((x) >> 48) & 0xff) << 8) +		\
+				((((x) >> 40) & 0xff) << 16) +		\
+				((((x) >> 32) & 0xff) << 24) +		\
+				((((x) >> 24) & 0xff) << 32) +		\
+				((((x) >> 16) & 0xff) << 40) +		\
+				((((x) >> 8) & 0xff) << 48) +		\
+				(((x) & 0xff) << 56)  )
 #endif
 
 

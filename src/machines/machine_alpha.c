@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_alpha.c,v 1.10 2006-08-29 15:55:10 debug Exp $
+ *  $Id: machine_alpha.c,v 1.11 2006-09-01 11:39:50 debug Exp $
  */
 
 #include <stdio.h>
@@ -113,6 +113,8 @@ MACHINE_SETUP(alpha)
 	    &(rpb.rpb_type), machine->machine_subtype);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_cc_freq), machine->emulated_hz);
+	store_64bit_word_in_host(cpu, (unsigned char *)
+	    &(rpb.rpb_intr_freq), 1024 << 12);
 	store_64bit_word_in_host(cpu, (unsigned char *)
 	    &(rpb.rpb_pcs_cnt), machine->ncpus);
 	store_64bit_word_in_host(cpu, (unsigned char *)

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1347 2006-08-31 13:07:06 debug Exp $
+$Id: HISTORY,v 1.1348 2006-09-01 11:39:49 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2982,3 +2982,4 @@ Changelog for GXemul:
 		Fixing dev_wdc so it calculates correct (64-bit) offsets before
 		giving them to diskimage_access().
 20060831	Continuing on Alpha emulation (OSF1 PALcode).
+20060901	Minor Alpha updates; beginning on virtual memory pagetables.

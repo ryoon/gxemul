@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.13 2006-08-31 13:07:06 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.14 2006-09-01 11:39:50 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  *
@@ -188,12 +188,47 @@ void alpha_palcode(struct cpu *cpu, uint32_t palcode)
 		/*  Write Virtual Page Table Pointer. a0 = value  */
 		cpu->cd.alpha.vptptr = a0;
 		break;
-#if 0
 	case 0x30:	/*  PAL_OSF1_swpctx  */
-		/*  TODO  */
-		/*  Swap context  */
+		/*  Save old context:  */
+		store_64bit_word(cpu, cpu->cd.alpha.ctx + 0,
+		    cpu->cd.alpha.pcb.apcb_ksp);
+		store_64bit_word(cpu, cpu->cd.alpha.ctx + 8,
+		    cpu->cd.alpha.pcb.apcb_usp);
+		store_64bit_word(cpu, cpu->cd.alpha.ctx + 16,
+		    cpu->cd.alpha.pcb.apcb_ptbr);
+		store_32bit_word(cpu, cpu->cd.alpha.ctx + 24,
+		    cpu->cd.alpha.pcb.apcb_cpc);
+		store_32bit_word(cpu, cpu->cd.alpha.ctx + 28,
+		    cpu->cd.alpha.pcb.apcb_asn);
+		store_64bit_word(cpu, cpu->cd.alpha.ctx + 32,
+		    cpu->cd.alpha.pcb.apcb_unique);
+		store_64bit_word(cpu, cpu->cd.alpha.ctx + 40,
+		    cpu->cd.alpha.pcb.apcb_flags);
+		store_64bit_word(cpu, cpu->cd.alpha.ctx + 48,
+		    cpu->cd.alpha.pcb.apcb_decrsv0);
+		store_64bit_word(cpu, cpu->cd.alpha.ctx + 56,
+		    cpu->cd.alpha.pcb.apcb_decrsv1);
+		/*  Load new context:  */
+		cpu->cd.alpha.ctx = a0;
+		cpu->cd.alpha.pcb.apcb_ksp =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 0);
+		cpu->cd.alpha.pcb.apcb_usp =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 8);
+		cpu->cd.alpha.pcb.apcb_ptbr =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 16);
+		cpu->cd.alpha.pcb.apcb_cpc =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 24);
+		cpu->cd.alpha.pcb.apcb_asn =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 28);
+		cpu->cd.alpha.pcb.apcb_unique =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 32);
+		cpu->cd.alpha.pcb.apcb_flags =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 40);
+		cpu->cd.alpha.pcb.apcb_decrsv0 =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 48);
+		cpu->cd.alpha.pcb.apcb_decrsv1 =
+		    load_64bit_word(cpu, cpu->cd.alpha.ctx + 56);
 		break;
-#endif
 	case 0x31:	/*  PAL_OSF1_wrval  */
 		/*  a0 = value  */
 		cpu->cd.alpha.sysvalue = a0;

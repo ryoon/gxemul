@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.681 2006-08-19 07:58:20 debug Exp $
+ *  $Id: machine.c,v 1.682 2006-09-01 11:39:49 debug Exp $
  */
 
 #include <stdio.h>
@@ -665,10 +665,36 @@ void store_pointer_and_advance(struct cpu *cpu, uint64_t *addrp,
 
 
 /*
+ *  load_64bit_word():
+ *
+ *  Helper function. Emulated byte order is taken into account.
+ */
+uint64_t load_64bit_word(struct cpu *cpu, uint64_t addr)
+{
+	unsigned char data[8];
+
+	cpu->memory_rw(cpu, cpu->mem,
+	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		int tmp = data[0]; data[0] = data[7]; data[7] = tmp;
+		tmp = data[1]; data[1] = data[6]; data[6] = tmp;
+		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
+		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
+	}
+
+	return
+	    ((uint64_t)data[0] << 56) + ((uint64_t)data[1] << 48) +
+	    ((uint64_t)data[2] << 40) + ((uint64_t)data[3] << 32) +
+	    ((uint64_t)data[4] << 24) + ((uint64_t)data[5] << 16) +
+	    ((uint64_t)data[6] << 8) + (uint64_t)data[7];
+}
+
+
+/*
  *  load_32bit_word():
  *
- *  Helper function.  Prints a warning and returns 0, if the read failed.
- *  Emulated byte order is taken into account.
+ *  Helper function. Emulated byte order is taken into account.
  */
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 {
@@ -691,8 +717,7 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 /*
  *  load_16bit_word():
  *
- *  Helper function.  Prints a warning and returns 0, if the read failed.
- *  Emulated byte order is taken into account.
+ *  Helper function. Emulated byte order is taken into account.
  */
 uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr)
 {

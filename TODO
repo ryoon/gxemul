@@ -1,10 +1,9 @@
-$Id: TODO,v 1.360 2006-09-01 05:36:38 debug Exp $
+$Id: TODO,v 1.361 2006-09-01 15:20:32 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 	x)  GENERAL CODE CLEANUP
-		x)  Device registry (turn into struct).
 		x)  Device registry: Allow devices to be moved around;
 			if there is a collision, return false. It is up
 			to the caller to handle this situation!
@@ -38,10 +37,18 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 	x)  Common dyntrans_abort() function, which stops dyntrans execution,
 		and drops into the debugger (if running with -K).
 
-	x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips latest version
-	    are unstable during bootup.
-	x)  Mouse support for NetBSD/hpcmips?
+	x)  HPCmips:
+		x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips
+		    latest version are unstable during bootup.
+		x)  Mouse support.
+		DONE: Cursor keys, wdc fix for large files, the suspend
+			instruction halts the emulator correctly (i.e.
+			running 'halt' inside netbsd), RTC now returns
+			correct time, clocks run at fixed speed (128 Hz
+			timer interrupts)
+
 	x)  Fix/verify mouse support for NetBSD/pmax 4.x!
+	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
 	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
 	x)  Physical vs virtual breakpoints!
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.220 2006-08-30 15:06:55 debug Exp $
+$Id: RELEASE,v 1.221 2006-09-01 15:20:32 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -26,8 +26,8 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	seen by guest operating systems, run at the same speed as the
 	host clock.
 
-	So far, the DECstation, NetWinder, and CATS machine modes have
-	been rewritten to use the new clock/timer framework.
+	So far, the DECstation, MobilePro, NetWinder, and CATS machine
+	modes have been rewritten to use the new clock/timer framework.
 
 Please read the HISTORY files for more details.
 

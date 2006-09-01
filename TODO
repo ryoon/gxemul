@@ -1,4 +1,4 @@
-$Id: TODO,v 1.362 2006-09-01 16:34:25 debug Exp $
+$Id: TODO,v 1.363 2006-09-01 16:52:58 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -30,7 +30,8 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 		    OpenBSD, FreeBSD, and Linux too?
 
 	x)  SPARC:
-		x)  return -> restore
+		x)  Implement Adress space identifiers.
+		x)  Continue on the register windows.
 
 	x)  Continue on the settings object, connect it to machines and
 		processors, etc, and begin to rewrite the expression parser!
@@ -75,9 +76,6 @@ Implementation:
 			for (;;) {
 				halt();
 			}
-	x)  Continue on SPARC emulation.
-		+ Enable it in the configure script as soon as it can
-		  run all the demo programs.
 	x)  Nicer MIPS status bits in register dumps.
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 	x)  Rewrite the networking stack:

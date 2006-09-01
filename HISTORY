@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1350 2006-09-01 16:34:41 debug Exp $
+$Id: HISTORY,v 1.1351 2006-09-01 16:52:57 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2995,3 +2995,5 @@ Changelog for GXemul:
 		128 Hz, for now).
 		Continuing on SPARC emulation, adding more instructions:
 		restore, ba_xcc, ble. The rectangle drawing demo works :)
+		Removing the last traces of the old ENABLE_CACHE_EMULATION
+		MIPS stuff (not usable with dyntrans anyway).

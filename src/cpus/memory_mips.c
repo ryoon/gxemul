@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,12 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.9 2006-07-14 16:33:28 debug Exp $
+ *  $Id: memory_mips.c,v 1.10 2006-09-01 16:52:58 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
- *
- *  NOTE: The cache emulation code (ifdef ENABLE_CACHE_EMULATION) is old
- *        and doesn't work with dyntrans. TODO: rewrite this.
  */
 
 #include <sys/types.h>
@@ -48,13 +45,6 @@
 int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int writeflag, size_t len, unsigned char *data)
 {
-#ifdef ENABLE_CACHE_EMULATION
-	struct r3000_cache_line *rp;
-	int cache_line;
-	uint32_t tag_mask;
-	unsigned char *memblock;
-	struct memory *mem = cpu->mem;
-#endif
 	unsigned int i;
 	int cache_isolated = 0, addr, hit, which_cache = cache;
 
@@ -62,140 +52,6 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	if (len > 4 || cache == CACHE_NONE)
 		return 0;
 
-
-#ifdef ENABLE_CACHE_EMULATION
-	if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES)
-		which_cache ^= 1;
-
-	tag_mask = 0xffffffff & ~cpu->cd.mips.cache_mask[which_cache];
-	cache_line = (paddr & cpu->cd.mips.cache_mask[which_cache])
-	    / cpu->cd.mips.cache_linesize[which_cache];
-	rp = (struct r3000_cache_line *) cpu->cd.mips.cache_tags[which_cache];
-
-	/*  Is this a cache hit or miss?  */
-	hit = (rp[cache_line].tag_valid & R3000_TAG_VALID) &&
-	    (rp[cache_line].tag_paddr == (paddr & tag_mask));
-
-	/*
-	 *  The cache miss bit is only set on cache reads, and only to the
-	 *  data cache. (?)
-	 *
-	 *  (TODO: is this correct? I don't remember where I got this from.)
-	 */
-	if (cache == CACHE_DATA && writeflag==MEM_READ) {
-		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
-		if (!hit)
-			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |=
-			    MIPS1_CACHE_MISS;
-	}
-
-	/*
-	 *  Is the Data cache isolated?  Then don't access main memory:
-	 */
-	if (cache == CACHE_DATA &&
-	    cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
-		cache_isolated = 1;
-
-	addr = paddr & cpu->cd.mips.cache_mask[which_cache];
-
-	/*
-	 *  If there was a miss and the cache is not isolated, then flush
-	 *  the old cacheline back to main memory, and read in the new
-	 *  cacheline.
-	 *
-	 *  Then access the cache.
-	 */
-/*
-	fatal("L1 CACHE isolated=%i hit=%i write=%i cache=%i cacheline=%i"
-	    " paddr=%08x => addr in"
-	    " cache = 0x%lx\n", cache_isolated, hit, writeflag,
-	    which_cache, cache_line, (int)paddr,
-	    addr);
-*/
-	if (!hit && !cache_isolated) {
-		unsigned char *dst, *src;
-		uint64_t old_cached_paddr = rp[cache_line].tag_paddr
-		    + cache_line * cpu->cd.mips.cache_linesize[which_cache];
-
-		/*  Flush the old cacheline to main memory:  */
-		if ((rp[cache_line].tag_valid & R3000_TAG_VALID) &&
-		    (rp[cache_line].tag_valid & R3000_TAG_DIRTY)) {
-/*			fatal("  FLUSHING old tag=0%08x "
-			    "old_cached_paddr=0x%08x\n",
-			    rp[cache_line].tag_paddr,
-			    old_cached_paddr);
-*/
-			memblock = memory_paddr_to_hostaddr(
-			    mem, old_cached_paddr & ~cpu->cd.mips.
-			    cache_mask[which_cache], MEM_WRITE);
-
-			src = cpu->cd.mips.cache[which_cache];
-			dst = memblock;
-
-			src += cache_line *
-			    cpu->cd.mips.cache_linesize[which_cache];
-			dst += cache_line *
-			    cpu->cd.mips.cache_linesize[which_cache];
-
-			if (memblock == NULL) {
-				fatal("BUG in memory.c! Hm.\n");
-			} else {
-				memcpy(dst, src,
-				    cpu->cd.mips.cache_linesize[which_cache]);
-			}
-		}
-
-		/*  Copy from main memory into the cache:  */
-		memblock = memory_paddr_to_hostaddr(mem, paddr
-		    & ~cpu->cd.mips.cache_mask[which_cache], writeflag);
-
-/*		fatal("  FETCHING new paddr=0%08x\n", paddr);
-*/
-		dst = cpu->cd.mips.cache[which_cache];
-
-		if (memblock == NULL) {
-			if (writeflag == MEM_READ)
-			memset(dst, 0,
-			    cpu->cd.mips.cache_linesize[which_cache]);
-		} else {
-			src = memblock;
-
-			src += cache_line *
-			    cpu->cd.mips.cache_linesize[which_cache];
-			dst += cache_line *
-			    cpu->cd.mips.cache_linesize[which_cache];
-			memcpy(dst, src,
-			    cpu->cd.mips.cache_linesize[which_cache]);
-		}
-
-		rp[cache_line].tag_paddr = paddr & tag_mask;
-		rp[cache_line].tag_valid = R3000_TAG_VALID;
-	}
-
-	if (cache_isolated && writeflag == MEM_WRITE) {
-		rp[cache_line].tag_valid = 0;
-	}
-
-	if (writeflag==MEM_READ) {
-		for (i=0; i<len; i++)
-			data[i] = cpu->cd.mips.cache[which_cache][(addr+i) &
-			    cpu->cd.mips.cache_mask[which_cache]];
-	} else {
-		for (i=0; i<len; i++) {
-			if (cpu->cd.mips.cache[which_cache][(addr+i) &
-			    cpu->cd.mips.cache_mask[which_cache]] != data[i]) {
-				rp[cache_line].tag_valid |= R3000_TAG_DIRTY;
-			}
-			cpu->cd.mips.cache[which_cache][(addr+i) &
-			    cpu->cd.mips.cache_mask[which_cache]] = data[i];
-		}
-	}
-
-	/*  Write-through! (Write to main memory as well.)  */
-	if (writeflag == MEM_READ || cache_isolated)
-		return 1;
-
-#else
 
 	/*
 	 *  R2000/R3000 without correct cache emulation:
@@ -258,7 +114,6 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		/*  No!  Not when not emulating caches fully. (TODO?)  */
 		cpu->cd.mips.cache_last_paddr[cache] = paddr;
 	}
-#endif
 
 	return 0;
 }

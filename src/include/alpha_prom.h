@@ -1,4 +1,4 @@
-/*  GXemul: $Id: alpha_prom.h,v 1.1 2006-08-31 13:07:06 debug Exp $  */
+/*  GXemul: $Id: alpha_prom.h,v 1.2 2006-09-01 16:40:57 debug Exp $  */
 /* $NetBSD: prom.h,v 1.12 2000/06/08 03:10:06 thorpej Exp $ */
 
 /*
@@ -27,6 +27,8 @@
  * any improvements or extensions that they make and grant Carnegie the
  * rights to redistribute these changes.
  */
+
+#if 0
 
 #ifndef	ASSEMBLER
 struct prom_vec {
@@ -57,6 +59,8 @@ int	prom_getenv(int, char *, int);
 
 void	hwrpb_primary_init(void);
 void	hwrpb_restart_setup(void);
+#endif
+
 #endif
 
 /* Prom operation values. */

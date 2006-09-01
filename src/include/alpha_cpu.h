@@ -1,4 +1,4 @@
-/*  GXemul: $Id: alpha_cpu.h,v 1.1 2006-08-29 15:55:10 debug Exp $  */
+/*  GXemul: $Id: alpha_cpu.h,v 1.2 2006-09-01 16:40:57 debug Exp $  */
 /* $NetBSD: alpha_cpu.h,v 1.48 2006/02/16 20:17:13 perry Exp $ */
 
 #ifndef __ALPHA_ALPHA_CPU_H__
@@ -340,6 +340,8 @@ unsigned long	alpha_implver(void);
 
 #endif /* _KERNEL */
 
+#if 0
+
 /* XXX Expose the insn wrappers to userspace, for now. */
 
 static __inline unsigned long
@@ -353,6 +355,8 @@ alpha_rpcc(void)
 
 #define	alpha_mb()	__asm volatile("mb" : : : "memory")
 #define	alpha_wmb()	__asm volatile("mb" : : : "memory")	/* XXX */
+
+#endif
 
 #if defined(_KERNEL) || defined(_STANDALONE)
 

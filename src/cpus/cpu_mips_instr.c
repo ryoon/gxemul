@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.106 2006-09-01 13:02:54 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.107 2006-09-01 15:19:01 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -4211,8 +4211,6 @@ X(to_be_translated)
 				}
 				break;
 			case COP0_STANDBY:
-			case COP0_SUSPEND:
-			case COP0_HIBERNATE:
 				/*  NOTE: Reusing the 'wait' instruction:  */
 				ic->f = instr(wait);
 				if (cpu->cd.mips.cpu_type.rev != MIPS_R4100) {
@@ -4226,6 +4224,14 @@ X(to_be_translated)
 						warned = 1;
 					}
 				}
+				break;
+			case COP0_HIBERNATE:
+				/*  TODO  */
+				goto bad;
+			case COP0_SUSPEND:
+				/*  Used by NetBSD on HPCmips (VR41xx) to
+				    halt the machine.  */
+				ic->f = instr(reboot);
 				break;
 			case COP0_EI:
 				if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1348 2006-09-01 11:39:49 debug Exp $
+$Id: HISTORY,v 1.1349 2006-09-01 15:42:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2983,3 +2983,13 @@ Changelog for GXemul:
 		giving them to diskimage_access().
 20060831	Continuing on Alpha emulation (OSF1 PALcode).
 20060901	Minor Alpha updates; beginning on virtual memory pagetables.
+		Removed the limit for max nr of devices (in preparation for
+		allowing devices' base addresses to be changed during runtime).
+		Adding a hack for MIPS [d]mfc0 select 0 (except the count
+		register), so that the coproc register is simply copied.
+		The MIPS suspend instruction now exits the emulator, instead
+		of being treated as a wait instruction (this causes NetBSD/
+		hpcmips to get correct 'halt' behavior).
+		The VR41xx RTC now returns correct time.
+		Connecting the VR41xx timer to the timer framework (fixed at
+		128 Hz, for now).

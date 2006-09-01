@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.95 2006-07-25 21:49:14 debug Exp $
+ *  $Id: memory_rw.c,v 1.96 2006-09-01 15:42:59 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -224,8 +224,8 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		 */
 #if 1
 		for (i=0; i<mem->n_mmapped_devices; i++)
-			if (paddr >= (mem->dev_baseaddr[i] & ~offset_mask) &&
-			    paddr <= ((mem->dev_endaddr[i]-1) | offset_mask)) {
+			if (paddr >= (mem->devices[i].baseaddr & ~offset_mask)&&
+			    paddr <= ((mem->devices[i].endaddr-1)|offset_mask)){
 				dyntrans_device_danger = 1;
 				break;
 			}
@@ -236,55 +236,53 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 		/*  Scan through all devices:  */
 		do {
-			if (paddr >= mem->dev_baseaddr[i] &&
-			    paddr < mem->dev_endaddr[i]) {
+			if (paddr >= mem->devices[i].baseaddr &&
+			    paddr < mem->devices[i].endaddr) {
 				/*  Found a device, let's access it:  */
 				mem->last_accessed_device = i;
 
-				paddr -= mem->dev_baseaddr[i];
-				if (paddr + len > mem->dev_length[i])
-					len = mem->dev_length[i] - paddr;
+				paddr -= mem->devices[i].baseaddr;
+				if (paddr + len > mem->devices[i].length)
+					len = mem->devices[i].length - paddr;
 
 				if (cpu->update_translation_table != NULL &&
 				    !(ok & MEMORY_NOT_FULL_PAGE) &&
-				    mem->dev_flags[i] & DM_DYNTRANS_OK) {
+				    mem->devices[i].flags & DM_DYNTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 					unsigned char *host_addr;
 
-					if (!(mem->dev_flags[i] &
+					if (!(mem->devices[i].flags &
 					    DM_DYNTRANS_WRITE_OK))
 						wf = 0;
 
 					if (writeflag && wf) {
-						if (paddr < mem->
-						    dev_dyntrans_write_low[i])
-							mem->
-							dev_dyntrans_write_low
-							    [i] = paddr &
-							    ~offset_mask;
-						if (paddr >= mem->
-						    dev_dyntrans_write_high[i])
-							mem->
-						 	dev_dyntrans_write_high
-							    [i] = paddr |
-							    offset_mask;
+						if (paddr < mem->devices[i].
+						    dyntrans_write_low)
+							mem->devices[i].
+							dyntrans_write_low =
+							    paddr &~offset_mask;
+						if (paddr >= mem->devices[i].
+						    dyntrans_write_high)
+							mem->devices[i].
+						 	dyntrans_write_high =
+							    paddr | offset_mask;
 					}
 
-					if (mem->dev_flags[i] &
+					if (mem->devices[i].flags &
 					    DM_EMULATED_RAM) {
 						/*  MEM_WRITE to force the page
 						    to be allocated, if it
 						    wasn't already  */
-						uint64_t *pp = (uint64_t *)
-						    mem->dev_dyntrans_data[i];
+						uint64_t *pp = (uint64_t *)mem->
+						    devices[i].dyntrans_data;
 						uint64_t p = orig_paddr - *pp;
 						host_addr =
 						    memory_paddr_to_hostaddr(
 						    mem, p & ~offset_mask,
 						    MEM_WRITE);
 					} else {
-						host_addr =
-						    mem->dev_dyntrans_data[i] +
+						host_addr = mem->devices[i].
+						    dyntrans_data +
 						    (paddr & ~offset_mask);
 					}
 
@@ -294,11 +292,11 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 				}
 
 				res = 0;
-				if (!no_exceptions || (mem->dev_flags[i] &
+				if (!no_exceptions || (mem->devices[i].flags &
 				    DM_READS_HAVE_NO_SIDE_EFFECTS))
-					res = mem->dev_f[i](cpu, mem, paddr,
+					res = mem->devices[i].f(cpu, mem, paddr,
 					    data, len, writeflag,
-					    mem->dev_extra[i]);
+					    mem->devices[i].extra);
 
 				if (res == 0)
 					res = -1;
@@ -312,7 +310,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 					debug("%s device '%s' addr %08lx "
 					    "failed\n", writeflag?
 					    "writing to" : "reading from",
-					    mem->dev_name[i], (long)paddr);
+					    mem->devices[i].name, (long)paddr);
 #ifdef MEM_MIPS
 					mips_cpu_exception(cpu, EXCEPTION_DBE,
 					    0, vaddr, 0, 0, 0, 0);
@@ -323,9 +321,9 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 				goto do_return_ok;
 			}
 
-			if (paddr < mem->dev_baseaddr[i])
+			if (paddr < mem->devices[i].baseaddr)
 				end = i - 1;
-			if (paddr >= mem->dev_endaddr[i])
+			if (paddr >= mem->devices[i].endaddr)
 				start = i + 1;
 			i = (start + end) >> 1;
 		} while (start <= end);

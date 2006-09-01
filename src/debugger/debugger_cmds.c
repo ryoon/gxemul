@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.5 2006-06-24 19:52:28 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.6 2006-09-01 15:42:59 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -208,15 +208,15 @@ static void debugger_cmd_device(struct machine *m, char *cmd_line)
 
 		for (i=0; i<mem->n_mmapped_devices; i++) {
 			printf("%2i: %25s @ 0x%011"PRIx64", len = 0x%"PRIx64,
-			    i, mem->dev_name[i],
-			    (uint64_t) mem->dev_baseaddr[i],
-			    (uint64_t) mem->dev_length[i]);
+			    i, mem->devices[i].name,
+			    (uint64_t) mem->devices[i].baseaddr,
+			    (uint64_t) mem->devices[i].length);
 
-			if (mem->dev_flags[i]) {
+			if (mem->devices[i].flags) {
 				printf(" (");
-				if (mem->dev_flags[i] & DM_DYNTRANS_OK)
+				if (mem->devices[i].flags & DM_DYNTRANS_OK)
 					printf("DYNTRANS R");
-				if (mem->dev_flags[i] & DM_DYNTRANS_WRITE_OK)
+				if (mem->devices[i].flags &DM_DYNTRANS_WRITE_OK)
 					printf("+W");
 				printf(")");
 			}

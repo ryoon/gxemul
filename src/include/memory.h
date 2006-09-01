@@ -28,9 +28,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.51 2006-07-08 12:30:03 debug Exp $
+ *  $Id: memory.h,v 1.52 2006-09-01 15:42:59 debug Exp $
  *
- *  Memory controller related functions.
+ *  Memory related functions.
  */
 
 #include <sys/types.h>
@@ -40,14 +40,45 @@
 
 
 #define	DEFAULT_RAM_IN_MB		32
-#define	MAX_DEVICES			26
 
 struct cpu;
-struct translation_page_entry;
 
+
+/*
+ *  Memory mapped device
+ */
+struct memory_device {
+	uint64_t	baseaddr;
+	uint64_t	endaddr;	/*  NOTE: after the last byte!  */
+	uint64_t	length;
+	int		flags;
+
+	const char	*name;
+
+	int		(*f)(struct cpu *,struct memory *,
+			    uint64_t,unsigned char *,size_t,int,void *);
+	void		*extra;
+
+	unsigned char	*dyntrans_data;
+
+	uint64_t	dyntrans_write_low;
+	uint64_t	dyntrans_write_high;
+};
+
+
+/*
+ *  Memory
+ *  ------
+ *
+ *  This struct defines a memory object. Most machines only use one memory
+ *  object (the main memory), but if necessary, multiple memories can be
+ *  used.
+ */
 struct memory {
 	uint64_t	physical_max;
 	void		*pagetable;
+
+	int		dev_dyntrans_alignment;
 
 	int		n_mmapped_devices;
 	int		last_accessed_device;
@@ -56,20 +87,7 @@ struct memory {
 	uint64_t	mmap_dev_minaddr;
 	uint64_t	mmap_dev_maxaddr;
 
-	const char	*dev_name[MAX_DEVICES];
-	uint64_t	dev_baseaddr[MAX_DEVICES];
-	uint64_t	dev_endaddr[MAX_DEVICES];	/*  after the end!  */
-	uint64_t	dev_length[MAX_DEVICES];
-	int		dev_flags[MAX_DEVICES];
-	void		*dev_extra[MAX_DEVICES];
-	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,
-			    uint64_t,unsigned char *,size_t,int,void *);
-	unsigned char	*dev_dyntrans_data[MAX_DEVICES];
-
-	uint64_t	dev_dyntrans_write_low[MAX_DEVICES];
-	uint64_t	dev_dyntrans_write_high[MAX_DEVICES];
-
-	int		dev_dyntrans_alignment;
+	struct memory_device *devices;
 };
 
 #define	BITS_PER_PAGETABLE	20

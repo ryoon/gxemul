@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.192 2006-07-14 16:33:27 debug Exp $
+ *  $Id: memory.c,v 1.193 2006-09-01 15:42:58 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -278,18 +278,18 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 	    called too often.  */
 
 	for (i=0; i<mem->n_mmapped_devices; i++) {
-		if (mem->dev_extra[i] == extra &&
-		    mem->dev_flags[i] & DM_DYNTRANS_WRITE_OK &&
-		    mem->dev_dyntrans_data[i] != NULL) {
-			if (mem->dev_dyntrans_write_low[i] != (uint64_t) -1)
+		if (mem->devices[i].extra == extra &&
+		    mem->devices[i].flags & DM_DYNTRANS_WRITE_OK &&
+		    mem->devices[i].dyntrans_data != NULL) {
+			if (mem->devices[i].dyntrans_write_low != (uint64_t) -1)
 				need_inval = 1;
 			if (low != NULL)
-				*low = mem->dev_dyntrans_write_low[i];
-			mem->dev_dyntrans_write_low[i] = (uint64_t) -1;
+				*low = mem->devices[i].dyntrans_write_low;
+			mem->devices[i].dyntrans_write_low = (uint64_t) -1;
 
 			if (high != NULL)
-				*high = mem->dev_dyntrans_write_high[i];
-			mem->dev_dyntrans_write_high[i] = 0;
+				*high = mem->devices[i].dyntrans_write_high;
+			mem->devices[i].dyntrans_write_high = 0;
 
 			if (!need_inval)
 				return;
@@ -298,10 +298,10 @@ void memory_device_dyntrans_access(struct cpu *cpu, struct memory *mem,
 			    be in the dyntrans load/store cache, by marking
 			    the pages read-only.  */
 			if (cpu->invalidate_translation_caches != NULL) {
-				for (s=0; s<mem->dev_length[i];
+				for (s=0; s<mem->devices[i].length;
 				    s+=cpu->machine->arch_pagesize)
 					cpu->invalidate_translation_caches
-					    (cpu, mem->dev_baseaddr[i] + s,
+					    (cpu, mem->devices[i].baseaddr + s,
 					    JUST_MARK_AS_NON_WRITABLE
 					    | INVALIDATE_PADDR);
 			}
@@ -327,12 +327,12 @@ void memory_device_update_data(struct memory *mem, void *extra,
 	int i;
 
 	for (i=0; i<mem->n_mmapped_devices; i++) {
-		if (mem->dev_extra[i] != extra)
+		if (mem->devices[i].extra != extra)
 			continue;
 
-		mem->dev_dyntrans_data[i] = data;
-		mem->dev_dyntrans_write_low[i] = (uint64_t)-1;
-		mem->dev_dyntrans_write_high[i] = 0;
+		mem->devices[i].dyntrans_data = data;
+		mem->devices[i].dyntrans_write_low = (uint64_t)-1;
+		mem->devices[i].dyntrans_write_high = 0;
 	}
 }
 
@@ -340,8 +340,7 @@ void memory_device_update_data(struct memory *mem, void *extra,
 /*
  *  memory_device_register():
  *
- *  Register a (memory mapped) device by adding it to the dev_* fields of a
- *  memory struct.
+ *  Register a memory mapped device.
  */
 void memory_device_register(struct memory *mem, const char *device_name,
 	uint64_t baseaddr, uint64_t len,
@@ -351,35 +350,29 @@ void memory_device_register(struct memory *mem, const char *device_name,
 {
 	int i, newi = 0;
 
-	if (mem->n_mmapped_devices >= MAX_DEVICES) {
-		fprintf(stderr, "memory_device_register(): too many "
-		    "devices registered, cannot register '%s'\n", device_name);
-		exit(1);
-	}
-
 	/*
 	 *  Figure out at which index to insert this device, and simultaneously
 	 *  check for collisions:
 	 */
 	newi = -1;
 	for (i=0; i<mem->n_mmapped_devices; i++) {
-		if (i == 0 && baseaddr + len <= mem->dev_baseaddr[i])
+		if (i == 0 && baseaddr + len <= mem->devices[i].baseaddr)
 			newi = i;
-		if (i > 0 && baseaddr + len <= mem->dev_baseaddr[i] &&
-		    baseaddr >= mem->dev_endaddr[i-1])
+		if (i > 0 && baseaddr + len <= mem->devices[i].baseaddr &&
+		    baseaddr >= mem->devices[i-1].endaddr)
 			newi = i;
 		if (i == mem->n_mmapped_devices - 1 &&
-		    baseaddr >= mem->dev_endaddr[i])
+		    baseaddr >= mem->devices[i].endaddr)
 			newi = i + 1;
 
 		/*  If we are not colliding with device i, then continue:  */
-		if (baseaddr + len <= mem->dev_baseaddr[i])
+		if (baseaddr + len <= mem->devices[i].baseaddr)
 			continue;
-		if (baseaddr >= mem->dev_endaddr[i])
+		if (baseaddr >= mem->devices[i].endaddr)
 			continue;
 
 		fatal("\nERROR! \"%s\" collides with device %i (\"%s\")!\n",
-		    device_name, i, mem->dev_name[i]);
+		    device_name, i, mem->devices[i].name);
 		exit(1);
 	}
 	if (mem->n_mmapped_devices == 0)
@@ -408,56 +401,41 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	}
 
 	for (i=0; i<mem->n_mmapped_devices; i++) {
-		if (dyntrans_data == mem->dev_dyntrans_data[i] &&
-		    mem->dev_flags[i] & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)
+		if (dyntrans_data == mem->devices[i].dyntrans_data &&
+		    mem->devices[i].flags&(DM_DYNTRANS_OK|DM_DYNTRANS_WRITE_OK)
 		    && flags & (DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK)) {
 			fatal("ERROR: the data pointer used for dyntrans "
 			    "accesses must only be used once!\n");
 			fatal("(%p cannot be used by '%s'; already in use by '"
 			    "%s')\n", dyntrans_data, device_name,
-			    mem->dev_name[i]);
+			    mem->devices[i].name);
 			exit(1);
 		}
 	}
 
 	mem->n_mmapped_devices++;
 
-	/*
-	 *  YUCK! This is ugly. TODO: fix
-	 */
+	mem->devices = realloc(mem->devices, sizeof(struct memory_device)
+	    * mem->n_mmapped_devices);
+	if (mem->devices == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
 	/*  Make space for the new entry:  */
-	memmove(&mem->dev_name[newi+1], &mem->dev_name[newi], sizeof(char *) *
-	    (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_baseaddr[newi+1], &mem->dev_baseaddr[newi],
-	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_endaddr[newi+1], &mem->dev_endaddr[newi],
-	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_length[newi+1], &mem->dev_length[newi],
-	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_flags[newi+1], &mem->dev_flags[newi], sizeof(int) *
-	    (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_extra[newi+1], &mem->dev_extra[newi], sizeof(void *) *
-	    (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_f[newi+1], &mem->dev_f[newi], sizeof(void *) *
-	    (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_dyntrans_data[newi+1], &mem->dev_dyntrans_data[newi],
-	    sizeof(void *) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_dyntrans_write_low[newi+1],
-	    &mem->dev_dyntrans_write_low[newi],
-	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
-	memmove(&mem->dev_dyntrans_write_high[newi+1],
-	    &mem->dev_dyntrans_write_high[newi],
-	    sizeof(uint64_t) * (MAX_DEVICES - newi - 1));
+	if (newi + 1 != mem->n_mmapped_devices)
+		memmove(&mem->devices[newi+1], &mem->devices[newi],
+		    sizeof(struct memory_device)
+		    * mem->n_mmapped_devices - newi - 1);
 
+	mem->devices[newi].name = strdup(device_name);
+	mem->devices[newi].baseaddr = baseaddr;
+	mem->devices[newi].endaddr = baseaddr + len;
+	mem->devices[newi].length = len;
+	mem->devices[newi].flags = flags;
+	mem->devices[newi].dyntrans_data = dyntrans_data;
 
-	mem->dev_name[newi] = strdup(device_name);
-	mem->dev_baseaddr[newi] = baseaddr;
-	mem->dev_endaddr[newi] = baseaddr + len;
-	mem->dev_length[newi] = len;
-	mem->dev_flags[newi] = flags;
-	mem->dev_dyntrans_data[newi] = dyntrans_data;
-
-	if (mem->dev_name[newi] == NULL) {
+	if (mem->devices[newi].name == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
@@ -476,10 +454,10 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		exit(1);
 	}
 
-	mem->dev_dyntrans_write_low[newi] = (uint64_t)-1;
-	mem->dev_dyntrans_write_high[newi] = 0;
-	mem->dev_f[newi] = f;
-	mem->dev_extra[newi] = extra;
+	mem->devices[newi].dyntrans_write_low = (uint64_t)-1;
+	mem->devices[newi].dyntrans_write_high = 0;
+	mem->devices[newi].f = f;
+	mem->devices[newi].extra = extra;
 
 	if (baseaddr < mem->mmap_dev_minaddr)
 		mem->mmap_dev_minaddr = baseaddr & ~mem->dev_dyntrans_alignment;
@@ -492,13 +470,13 @@ void memory_device_register(struct memory *mem, const char *device_name,
 /*
  *  memory_device_remove():
  *
- *  Unregister a (memory mapped) device from a memory struct.
+ *  Unregister a memory mapped device from a memory object.
  */
 void memory_device_remove(struct memory *mem, int i)
 {
 	if (i < 0 || i >= mem->n_mmapped_devices) {
 		fatal("memory_device_remove(): invalid device number %i\n", i);
-		return;
+		exit(1);
 	}
 
 	mem->n_mmapped_devices --;
@@ -506,30 +484,8 @@ void memory_device_remove(struct memory *mem, int i)
 	if (i == mem->n_mmapped_devices)
 		return;
 
-	/*
-	 *  YUCK! This is ugly. TODO: fix
-	 */
-
-	memmove(&mem->dev_name[i], &mem->dev_name[i+1], sizeof(char *) *
-	    (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_baseaddr[i], &mem->dev_baseaddr[i+1],
-	    sizeof(uint64_t) * (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_endaddr[i], &mem->dev_endaddr[i+1],
-	    sizeof(uint64_t) * (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_length[i], &mem->dev_length[i+1], sizeof(uint64_t) *
-	    (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_flags[i], &mem->dev_flags[i+1], sizeof(int) *
-	    (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_extra[i], &mem->dev_extra[i+1], sizeof(void *) *
-	    (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_f[i], &mem->dev_f[i+1], sizeof(void *) *
-	    (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_dyntrans_data[i], &mem->dev_dyntrans_data[i+1],
-	    sizeof(void *) * (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_dyntrans_write_low[i], &mem->dev_dyntrans_write_low
-	    [i+1], sizeof(uint64_t) * (MAX_DEVICES - i - 1));
-	memmove(&mem->dev_dyntrans_write_high[i], &mem->dev_dyntrans_write_high
-	    [i+1], sizeof(uint64_t) * (MAX_DEVICES - i - 1));
+	memmove(&mem->devices[i], &mem->devices[i+1],
+	    sizeof(struct memory_device) * (mem->n_mmapped_devices - i));
 }
 
 

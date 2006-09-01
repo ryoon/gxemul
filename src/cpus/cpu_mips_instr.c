@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.105 2006-08-30 16:16:14 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.106 2006-09-01 13:02:54 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1659,6 +1659,18 @@ X(mfc0)
 	coproc_register_read(cpu, cpu->cd.mips.coproc[0], rd, &tmp, select);
 	reg(ic->arg[0]) = (int32_t)tmp;
 }
+X(mfc0_select0)
+{
+	/*  Fast int32_t read, with no side effects:  */
+	int rd = ic->arg[1] & 31;
+#if 0
+	uint64_t tmp;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+#endif
+	reg(ic->arg[0]) = (int32_t)cpu->cd.mips.coproc[0]->reg[rd];
+}
 X(mtc0)
 {
 	int rd = ic->arg[1] & 31, select = ic->arg[1] >> 5;
@@ -1701,6 +1713,18 @@ X(dmfc0)
 	/*  TODO: cause exception if necessary  */
 	coproc_register_read(cpu, cpu->cd.mips.coproc[0], rd,
 	    (uint64_t *)ic->arg[0], select);
+}
+X(dmfc0_select0)
+{
+	/*  Fast int64_t read, with no side effects:  */
+	int rd = ic->arg[1] & 31;
+#if 0
+	uint64_t tmp;
+	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc |= ic->arg[2];
+	/*  TODO: cause exception if necessary  */
+#endif
+	reg(ic->arg[0]) = cpu->cd.mips.coproc[0]->reg[rd];
 }
 X(dmtc0)
 {
@@ -4238,6 +4262,12 @@ X(to_be_translated)
 			ic->arg[1] = rd + ((iword & 7) << 5);
 			ic->arg[2] = addr & 0xffc;
 			ic->f = rs == COPz_MFCz? instr(mfc0) : instr(dmfc0);
+			if (rs == COPz_MFCz && (iword & 7) == 0 &&
+			    rd != COP0_COUNT)
+				ic->f = instr(mfc0_select0);
+			if (rs == COPz_DMFCz && (iword & 7) == 0 &&
+			    rd != COP0_COUNT)
+				ic->f = instr(dmfc0_select0);
 			if (rt == MIPS_GPR_ZERO)
 				ic->f = instr(nop);
 			break;

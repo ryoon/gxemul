@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.89 2006-02-09 22:40:26 debug Exp $
+ *  $Id: net.c,v 1.1 2006-09-02 05:55:19 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *

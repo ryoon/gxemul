@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.43 2006-09-01 16:52:58 debug Exp $
+#  $Id: Makefile.skel,v 1.44 2006-09-02 05:55:19 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -12,7 +12,7 @@ all: build
 
 build:
 	cd src; $(MAKE); cd ..
-	$(CC) $(COPTIM) src/*.o src/cpus/*.o src/debugger/*.o src/devices/*.o src/machines/*.o src/promemul/*.o $(LIBS) -o $(BIN)
+	$(CC) $(COPTIM) src/*.o src/cpus/*.o src/debugger/*.o src/devices/*.o src/machines/*.o src/net/*.o src/promemul/*.o $(LIBS) -o $(BIN)
 
 install: build
 	@echo
@@ -35,5 +35,5 @@ clean_all: clean
 	rm -f config.h Makefile src/Makefile src/cpus/Makefile
 	rm -f src/debugger/Makefile
 	rm -f src/devices/Makefile src/devices/fonts/Makefile
-	rm -f src/machines/Makefile
+	rm -f src/machines/Makefile src/net/Makefile
 	rm -f src/promemul/Makefile src/include/Makefile

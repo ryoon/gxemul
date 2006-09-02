@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1351 2006-09-01 16:52:57 debug Exp $
+$Id: HISTORY,v 1.1352 2006-09-02 05:55:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -2997,3 +2997,4 @@ Changelog for GXemul:
 		restore, ba_xcc, ble. The rectangle drawing demo works :)
 		Removing the last traces of the old ENABLE_CACHE_EMULATION
 		MIPS stuff (not usable with dyntrans anyway).
+20060902	Moving src/net.c into its own subdirectory (src/net/).

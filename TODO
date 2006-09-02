@@ -1,4 +1,4 @@
-$Id: TODO,v 1.363 2006-09-01 16:52:58 debug Exp $
+$Id: TODO,v 1.364 2006-09-02 06:28:39 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -84,6 +84,8 @@ Implementation:
 		x)  Don't hardcode offsets into packets!
 		x)  Make OpenBSD work better as a guest OS!
 		x)  DHCP.
+		x)  Multiple networks per emulation, and let different
+		    NICs in machines connect to different networks.
 		x)  Support VDE (vde.sf.net)?
 		x)  Allow SLIP connections, possibly PPP, in addition to
 		    ethernet?
@@ -367,14 +369,6 @@ PCI:
 	    could be useful for several machine modes (Malta, Algor, evbarm,
 	    hp700?, macppc, etc.)
 
-Network layer:
-	o)  DHCP (for Debian and BSD installers :-)
-	o)  increase performance
-	o)  don't rely on NetBSD-ish usage
-	o)  Multiple networks per emulation, and let different
-	    NICs in machines connect to different networks.
-	o)  many other issues: see src/net.c
-
 Busses:
 	o)  Redesign the entire "mainbus" concept!
 	o)  Busses should be placed in a hierarchical tree!
@@ -408,6 +402,7 @@ ASC SCSI controller:
 	    cannot yet handle. (NetBSD 1.6.2 works ok.) (Possibly a problem
 	    in NetBSD itself, http://mail-index.netbsd.org/source-changes/
 	    2005/11/06/0024.html suggests that.)
+	    NetBSD 4.x seems to work? :)
 
 Caches / memory hierarchies: (this is mostly MIPS-specific)
 	o)  src/memory*.c: Implement correct cache emulation for

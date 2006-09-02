@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.193 2006-09-01 15:42:58 debug Exp $
+ *  $Id: memory.c,v 1.194 2006-09-02 05:23:12 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -426,7 +426,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	if (newi + 1 != mem->n_mmapped_devices)
 		memmove(&mem->devices[newi+1], &mem->devices[newi],
 		    sizeof(struct memory_device)
-		    * mem->n_mmapped_devices - newi - 1);
+		    * (mem->n_mmapped_devices - newi - 1));
 
 	mem->devices[newi].name = strdup(device_name);
 	mem->devices[newi].baseaddr = baseaddr;

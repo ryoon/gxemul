@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.88 2006-08-17 15:10:58 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.89 2006-09-02 04:55:10 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -113,17 +113,14 @@ static void timer_tick(struct timer *timer, void *extra)
 }
 
 
-/*
- *  dev_mc146818_tick():
- */
-void dev_mc146818_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(mc146818)
 {
 	struct mc_data *d = extra;
 	int pti = d->pending_timer_interrupts;
 
 	if ((d->reg[MC_REGB * 4] & MC_REGB_PIE) && pti > 0) {
 		static int warned = 0;
-		if (pti > 500 && !warned) {
+		if (pti > 800 && !warned) {
 			warned = 1;
 			fatal("[ WARNING: MC146818 interrupts lost, "
 			    "host too slow? ]\n");

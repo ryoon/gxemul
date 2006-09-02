@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.13 2005-11-24 12:32:11 debug Exp $
+ *  $Id: net.h,v 1.14 2006-09-02 06:21:55 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -136,8 +136,24 @@ struct net {
 	struct remote_net *remote_nets;
 };
 
-/*  net.c:  */
+/*  net_misc.c:  */
+void net_debugaddr(void *addr, int type);
 void net_generate_unique_mac(struct machine *, unsigned char *macbuf);
+void net_ip_checksum(unsigned char *ip_header, int chksumoffset, int len);
+void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
+	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr,
+	int udpflag);
+
+/*  net_ip.c:  */
+void net_ip_tcp_connectionreply(struct net *net, void *extra,
+	int con_id, int connecting, unsigned char *data, int datalen, int rst);
+void net_ip_broadcast(struct net *net, void *extra,
+        unsigned char *packet, int len);
+void net_ip(struct net *net, void *extra, unsigned char *packet, int len);
+
+/*  net.c:  */
+struct ethernet_packet_link *net_allocate_packet_link(
+	struct net *net, void *extra, int len);
 int net_ethernet_rx_avail(struct net *net, void *extra);
 int net_ethernet_rx(struct net *net, void *extra,
 	unsigned char **packetp, int *lenp);
@@ -179,5 +195,9 @@ struct remote_net {
 #define	TCP_OUTSIDE_DISCONNECTED2	4
 
 #define	TCP_INCOMING_BUF_LEN	2000
+
+#define	NET_ADDR_IPV4		1
+#define	NET_ADDR_IPV6		2
+#define	NET_ADDR_ETHERNET	3
 
 #endif	/*  NET_H  */

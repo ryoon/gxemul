@@ -1,4 +1,4 @@
-$Id: TODO,v 1.365 2006-09-04 02:32:34 debug Exp $
+$Id: TODO,v 1.366 2006-09-04 04:31:28 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -36,6 +36,7 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 	x)  Continue on the settings object, connect it to machines and
 		processors, etc, and begin to rewrite the expression parser!
 
+	x)  Userland emulation?
 
 	x)  Common dyntrans_abort() function, which stops dyntrans execution,
 		and drops into the debugger (if running with -K).
@@ -44,11 +45,7 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 		x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips
 		    latest version are unstable during bootup.
 		x)  Mouse support.
-		DONE: Cursor keys, wdc fix for large files, the suspend
-			instruction halts the emulator correctly (i.e.
-			running 'halt' inside netbsd), RTC now returns
-			correct time, clocks run at fixed speed (128 Hz
-			timer interrupts)
+		x)  A NIC?
 
 	x)  Fix/verify mouse support for NetBSD/pmax 4.x!
 	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
@@ -270,18 +267,9 @@ Debugger:
 				emul[0].machine[2].cpu[0].pc
 				machine[test2].cpu[1].ra = main
 				settings.show_trace_tree = yes
-
 		Settings:
-			o)  Remove a setting.
 			o)  Read/write a setting given a name. (Read as
 			    string and/or int64_t simultaneously?)
-			o)  Warnings when exiting the emulator, if the
-			    settings have not been removed exactly in
-			    the same way as they were added? This would
-			    improve code cleanliness in the long term.
-			    (I.e. require a corresponding _destroy()
-			    function for all _new functions... machine_
-			    cpu_ etc.)
 
 		Help command should have subsections! One for "expressions",
 		mirrored in the documentation, but the internal help should

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.280 2006-08-19 07:58:21 debug Exp $
+ *  $Id: main.c,v 1.281 2006-09-04 04:31:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -814,8 +814,21 @@ int main(int argc, char *argv[])
 	device_set_exit_on_error(0);
 	console_warn_if_slaves_are_needed(1);
 
+
 	/*  Run all emulations:  */
 	emul_run(emuls, n_emuls);
+
+
+	/*
+	 *  Deinitialize everything:
+	 */
+
+	console_deinit();
+
+	settings_remove(global_settings, "single_step");
+	settings_remove(global_settings, "force_debugger_at_exit");
+	settings_remove(global_settings, "verbose");
+	settings_remove(global_settings, "quiet_mode");
 
 	settings_destroy(global_settings);
 

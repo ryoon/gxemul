@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.h,v 1.3 2006-05-05 21:52:21 debug Exp $
+ *  $Id: settings.h,v 1.4 2006-09-04 04:31:29 debug Exp $
  */
 
 #include <inttypes.h>
@@ -49,12 +49,28 @@ struct settings;
 #define	SETTINGS_FORMAT_BOOL		3	/*  true, false  */
 #define	SETTINGS_FORMAT_YESNO		4	/*  yes, no  */
 
-/*  settings.c:  */
+
+/*
+ *  settings.c:
+ */
+
 struct settings *settings_new(void);
 void settings_destroy(struct settings *settings);
+
 void settings_debugdump(struct settings *settings, const char *prefix,
 	int recurse);
+
 void settings_add(struct settings *settings, const char *name, int writable,
 	int type, int format, void *ptr);
+void settings_remove(struct settings *settings, const char *name);
+
+int settings_access(struct settings *settings, const char *fullname,
+	int writeflag, char *valuebuf, size_t bufsize);
+
+/*  Result codes from settings_access:  */
+#define	SETTINGS_OK			1
+#define	SETTINGS_NAME_NOT_FOUND		2
+#define	SETTINGS_READONLY		3
+
 
 #endif	/*  SETTINGS_H  */

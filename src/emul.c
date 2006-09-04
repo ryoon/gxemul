@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.263 2006-08-28 16:25:59 debug Exp $
+ *  $Id: emul.c,v 1.264 2006-09-04 04:31:28 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -145,7 +145,7 @@ static void add_dump_points(struct machine *m)
  */
 static void fix_console(void)
 {
-	console_deinit();
+	console_deinit_main();
 }
 
 
@@ -1673,6 +1673,6 @@ void emul_run(struct emul **emuls, int n_emuls)
 		console_readchar(MAIN_CONSOLE);
 	}
 
-	console_deinit();
+	console_deinit_main();
 }
 

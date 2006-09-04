@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.h,v 1.14 2005-12-03 04:14:15 debug Exp $
+ *  $Id: console.h,v 1.15 2006-09-04 04:31:29 debug Exp $
  *
  *  Console functions.  (See console.c for more info.)
  */
@@ -40,7 +40,7 @@
 
 #define	CONSOLE_OUTPUT_ONLY	-1
 
-void console_deinit(void);
+void console_deinit_main(void);
 void console_sigcont(int x);
 void console_makeavail(int handle, char ch);
 int console_charavail(int handle);
@@ -62,7 +62,9 @@ int console_change_inputability(int handle, int inputability);
 void console_init_main(struct emul *);
 void console_debug_dump(struct machine *);
 void console_allow_slaves(int);
+
 void console_init(void);
+void console_deinit(void);
 
 
 #endif	/*  CONSOLE_H  */

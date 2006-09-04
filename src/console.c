@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.16 2006-05-05 21:28:09 debug Exp $
+ *  $Id: console.c,v 1.17 2006-09-04 04:31:28 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -92,6 +92,7 @@ static struct termios console_slave_tios;
 static int console_slave_outputd;
 
 static int console_initialized = 0;
+static struct settings *console_settings = NULL;
 static int console_stdout_pending;
 
 #define	CONSOLE_FIFO_LEN	4096
@@ -139,11 +140,11 @@ static int n_console_handles = 0;
 
 
 /*
- *  console_deinit():
+ *  console_deinit_main():
  *
  *  Restore host's console settings.
  */
-void console_deinit(void)
+void console_deinit_main(void)
 {
 	if (!console_initialized)
 		return;
@@ -973,7 +974,8 @@ void console_init(void)
 {
 	int handle;
 	struct console_handle *chp;
-	struct settings *console_settings = settings_new();
+
+	console_settings = settings_new();
 
 	settings_add(global_settings, "console", 1,
             SETTINGS_TYPE_SUBSETTINGS, 0, console_settings);
@@ -989,5 +991,17 @@ void console_init(void)
 	}
 
 	chp->in_use_for_input = 1;
+}
+
+
+/*
+ *  console_deinit():
+ *
+ *  Unregister settings registered by console_init().
+ */
+void console_deinit(void)
+{
+	settings_remove(console_settings, "allow_slaves");
+	settings_remove(global_settings, "console");
 }
 

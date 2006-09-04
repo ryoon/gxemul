@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.7 2006-07-15 10:06:11 debug Exp $
+ *  $Id: settings.c,v 1.8 2006-09-04 04:31:28 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -43,11 +43,6 @@
  *  settings_destroy() is called if individual settings have not yet been
  *  deleted. (This is to help making sure that code which uses the settings
  *  subsystem correctly un-initializes stuff.)
- *
- *
- *  TODO:
- *	Remove a setting
- *	Read/write settings
  */
 
 #include <stdio.h>
@@ -270,4 +265,86 @@ out_of_mem:
 	exit(1);
 }
 
+
+/*
+ *  settings_remove():
+ *
+ *  Remove a setting from a settings object.
+ */
+void settings_remove(struct settings *settings, const char *name)
+{
+	int i, m;
+
+	for (i=0; i<settings->n_settings; i++) {
+		if (strcmp(settings->name[i], name) == 0)
+			break;
+	}
+
+	if (i >= settings->n_settings) {
+#ifdef UNSTABLE_DEVEL
+		fprintf(stderr, "settings_remove(): attempting to remove"
+		    " non-existant setting '%s'\n", name);
+#endif
+		return;
+	}
+
+	/*  Check subsettings specifically:  */
+	if (settings->storage_type[i] == SETTINGS_TYPE_SUBSETTINGS &&
+	    settings->ptr[i] != NULL) {
+		struct settings *subsettings = settings->ptr[i];
+		if (subsettings->n_settings != 0) {
+			fprintf(stderr, "settings_remove(): attempting to "
+			    "remove non-emtpy setting '%s'\n", name);
+			exit(1);
+		}
+	}
+
+	settings->n_settings --;
+	free(settings->name[i]);
+
+	m = settings->n_settings - i;
+
+	memmove(&settings->name[i], &settings->name[i+1],
+	    m * sizeof(settings->name[0]));
+	memmove(&settings->writable[i], &settings->writable[i+1],
+	    m * sizeof(settings->writable[0]));
+	memmove(&settings->storage_type[i], &settings->storage_type[i+1],
+	    m * sizeof(settings->storage_type[0]));
+	memmove(&settings->presentation_format[i],
+	    &settings->presentation_format[i+1],
+	    m * sizeof(settings->presentation_format[0]));
+	memmove(&settings->ptr[i], &settings->ptr[i+1],
+	    m * sizeof(settings->ptr[0]));
+}
+
+
+/*
+ *  settings_access():
+ *
+ *  Read or write a setting. fullname may be something like
+ *  "settings.x.y". When writing a value, valuebuf should point to a string
+ *  containing the new value (note: always a string). When reading a value,
+ *  valuebuf should point to a buffer where the value will be stored (up
+ *  to bufsize-1 chars, plus the nul char).
+ *
+ *  The return value is one of the following:
+ *
+ *	SETTINGS_OK
+ *		The value was read or written.
+ *
+ *	SETTINGS_NAME_NOT_FOUND
+ *		The name was not found in the settings object.
+ *
+ *	SETTINGS_READONLY
+ *		The name was found, but it was marked as read-only, and
+ *		an attempt was made to write to it.
+ */
+int settings_access(struct settings *settings, const char *fullname,
+        int writeflag, char *valuebuf, size_t bufsize)
+{
+	/*  TODO  */
+	printf("settings_access(fullname='%s')\n", fullname);
+
+	return SETTINGS_NAME_NOT_FOUND;
+}
 

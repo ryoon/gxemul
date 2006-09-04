@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.36 2006-09-01 16:34:41 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.37 2006-09-04 15:35:55 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -89,6 +89,9 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->is_32bit = (cpu->cd.sparc.cpu_type.bits == 32)? 1 : 0;
 
 	cpu->instruction_has_delayslot = sparc_cpu_instruction_has_delayslot;
+
+	/*  TODO: Separate this into 64-bit vs 32-bit?  */
+	cpu->translate_v2p = sparc_translate_v2p;
 
 	if (cpu->is_32bit) {
 		cpu->run_instr = sparc32_run_instr;

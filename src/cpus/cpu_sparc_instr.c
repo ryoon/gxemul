@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc_instr.c,v 1.24 2006-09-01 16:34:42 debug Exp $
+ *  $Id: cpu_sparc_instr.c,v 1.25 2006-09-04 15:35:55 debug Exp $
  *
  *  SPARC instructions.
  *
@@ -803,6 +803,8 @@ X(add)      { reg(ic->arg[2]) = reg(ic->arg[0]) + reg(ic->arg[1]); }
 X(add_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) + (int32_t)ic->arg[1]; }
 X(and)      { reg(ic->arg[2]) = reg(ic->arg[0]) & reg(ic->arg[1]); }
 X(and_imm)  { reg(ic->arg[2]) = reg(ic->arg[0]) & (int32_t)ic->arg[1]; }
+X(andn)     { reg(ic->arg[2]) = reg(ic->arg[0]) & ~reg(ic->arg[1]); }
+X(andn_imm) { reg(ic->arg[2]) = reg(ic->arg[0]) & ~(int32_t)ic->arg[1]; }
 X(or)       { reg(ic->arg[2]) = reg(ic->arg[0]) | reg(ic->arg[1]); }
 X(or_imm)   { reg(ic->arg[2]) = reg(ic->arg[0]) | (int32_t)ic->arg[1]; }
 X(xor)      { reg(ic->arg[2]) = reg(ic->arg[0]) ^ reg(ic->arg[1]); }
@@ -1258,6 +1260,7 @@ X(to_be_translated)
 			case 0x01:	ic->f = instr(be);  break;
 			case 0x03:	ic->f = instr(bl);  break;
 			case 0x08:	ic->f = instr(ba);  break;
+			case 0x09:	ic->f = instr(bne); break;
 			case 0x0b:	ic->f = instr(bge); break;
 			default:fatal("Unimplemented branch rd=%i\n", rd);
 				goto bad;
@@ -1310,6 +1313,7 @@ X(to_be_translated)
 		case 2:	/*  or  */
 		case 3:	/*  xor  */
 		case 4:	/*  sub  */
+		case 5:	/*  andn  */
 		case 14:/*  udiv  */
 		case 16:/*  addcc  */
 		case 17:/*  andcc  */
@@ -1328,6 +1332,7 @@ X(to_be_translated)
 				case 2:	ic->f = instr(or_imm); break;
 				case 3:	ic->f = instr(xor_imm); break;
 				case 4:	ic->f = instr(sub_imm); break;
+				case 5:	ic->f = instr(andn_imm); break;
 				case 14:ic->f = instr(udiv_imm); break;
 				case 16:ic->f = instr(addcc_imm); break;
 				case 17:ic->f = instr(andcc_imm); break;
@@ -1374,6 +1379,7 @@ X(to_be_translated)
 				case 2: ic->f = instr(or); break;
 				case 3: ic->f = instr(xor); break;
 				case 4: ic->f = instr(sub); break;
+				case 5: ic->f = instr(andn); break;
 				case 14:ic->f = instr(udiv); break;
 				case 16:ic->f = instr(addcc); break;
 				case 17:ic->f = instr(andcc); break;

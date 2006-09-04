@@ -25,9 +25,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.1 2006-09-04 04:31:28 debug Exp $
+ *  $Id: debugger_expr.c,v 1.2 2006-09-04 04:50:38 debug Exp $
  *
  *  Expression evaluator.
+ *
+ *
+ *  TODO:
+ *	General expressions, with operators, parentheses etc.
+ *	Settings.
+ *	Sign-extension only on MIPS?
+ *	TAB completion? :-)
  */
 
 #include <stdio.h>

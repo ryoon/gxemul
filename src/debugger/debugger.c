@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.16 2006-09-04 04:31:28 debug Exp $
+ *  $Id: debugger.c,v 1.17 2006-09-04 04:50:38 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -37,12 +37,6 @@
  *	Add more functionality that already exists elsewhere in the emulator.
  *
  *	Call stack display (back-trace)?
- *
- *	More generic expression evaluator (for example + - * / between multiple
- *	terms), including _TAB COMPLETION_ of symbols and register names!
- *	Must be possible to reach any emul, any machine in any emul, any
- *	cpu in any machine, other variables in the emulator, and so forth.
- *	Perhaps a "settable variables registry" somewhere?
  *
  *	Nicer looking output of register dumps, floating point registers,
  *	etc. Warn about weird/invalid register contents.

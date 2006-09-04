@@ -1,4 +1,4 @@
-$Id: TODO,v 1.364 2006-09-02 06:28:39 debug Exp $
+$Id: TODO,v 1.365 2006-09-04 02:32:34 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -82,8 +82,10 @@ Implementation:
 		x)  Fix performance problems caused by only allowing a
 		    single frame to be unacked.
 		x)  Don't hardcode offsets into packets!
+		x)  Test with lower than 100 max tcp/udp connections,
+		    to make sure that reuse works!
 		x)  Make OpenBSD work better as a guest OS!
-		x)  DHCP.
+		x)  DHCP?
 		x)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
 		x)  Support VDE (vde.sf.net)?
@@ -465,19 +467,4 @@ Better framebuffer and X-windows functionality:
 		    emulator)
 	o)  Generalize the framebuffer stuff by moving _ALL_ X11
 		specific code to src/x11.c!
-
-Statistics:  (this could be interesting)
-	o)  Save to file and show graphics. It should be possible to
-	    run gxemul after a simulation to just show the graphics,
-	    or convert to a .ppm or .tga or similar.
-	o)  memory accesses (to measure cache efficiency and
-		page coloring efficiency)
-	o)  nr of simultaneous ASIDs in use in the TLB, for MIPS
-	o)  percentage of time spent in different "states", such as
-	    running userland code, kernel code, or idling (for CPUs
-	    that have such an instruction, or whenever the PC is
-	    inside a specific idle-function (address range)).
-	    Possible additional state (for example on R3000): caches
-	    disabled.
-	o)  position of read/write on (SCSI) disks
 

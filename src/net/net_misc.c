@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net_misc.c,v 1.1 2006-09-02 06:21:55 debug Exp $
+ *  $Id: net_misc.c,v 1.2 2006-09-04 02:32:34 debug Exp $
  *
  *  Misc. helper functions.
  */
@@ -33,6 +33,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "machine.h"
 #include "misc.h"
@@ -202,4 +206,36 @@ void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
 	tcp_header[chksumoffset + 1] = sum & 0xff;
 }
 
+
+/*
+ *  send_udp():
+ *
+ *  Send a simple UDP packet to a real (physical) host. Used for distributed
+ *  network simulations.
+ */
+void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
+	size_t len)
+{
+	int s;
+	struct sockaddr_in si;
+
+	s = socket(AF_INET, SOCK_DGRAM, 0);
+	if (s < 0) {
+		perror("send_udp(): socket");
+		return;
+	}
+
+	/*  fatal("send_udp(): sending to port %i\n", portnr);  */
+
+	si.sin_family = AF_INET;
+	si.sin_addr = *addrp;
+	si.sin_port = htons(portnr);
+
+	if (sendto(s, packet, len, 0, (struct sockaddr *)&si,
+	    sizeof(si)) != (ssize_t)len) {
+		perror("send_udp(): sendto");
+	}
+
+	close(s);
+}
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.14 2006-09-02 06:21:55 debug Exp $
+ *  $Id: net.h,v 1.15 2006-09-04 02:32:34 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -41,6 +41,18 @@ struct emul;
 struct ethernet_packet_link;
 struct remote_net;
 
+
+/*****************************************************************************/
+
+/*
+ *  NOTE: These are already defined in <net/ethernet.h> on e.g. FreeBSD,
+ *        but they are missing in some systems (at least in Linux).
+ */
+#define	ETHERTYPE_SPRITE		0x0500
+#define	ETHERTYPE_IP			0x0800
+#define	ETHERTYPE_ARP			0x0806
+#define	ETHERTYPE_REVARP		0x8035
+#define	ETHERTYPE_IPV6			0x86DD
 
 /*****************************************************************************/
 
@@ -143,6 +155,8 @@ void net_ip_checksum(unsigned char *ip_header, int chksumoffset, int len);
 void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
 	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr,
 	int udpflag);
+void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
+	size_t len);
 
 /*  net_ip.c:  */
 void net_ip_tcp_connectionreply(struct net *net, void *extra,
@@ -150,6 +164,8 @@ void net_ip_tcp_connectionreply(struct net *net, void *extra,
 void net_ip_broadcast(struct net *net, void *extra,
         unsigned char *packet, int len);
 void net_ip(struct net *net, void *extra, unsigned char *packet, int len);
+void net_udp_rx_avail(struct net *net, void *extra);
+void net_tcp_rx_avail(struct net *net, void *extra);
 
 /*  net.c:  */
 struct ethernet_packet_link *net_allocate_packet_link(

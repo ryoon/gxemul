@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.2 2006-09-02 06:21:55 debug Exp $
+ *  $Id: net.c,v 1.3 2006-09-04 02:32:34 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -104,8 +104,10 @@
  *  net_allocate_packet_link():
  *
  *  This routine allocates an ethernet_packet_link struct, and adds it at
- *  the end of the packet chain.  A data buffer is allocated (and zeroed),
- *  and the data, extra, and len fields of the link are set.
+ *  the end of the packet chain.  A data buffer is allocated, and the data,
+ *  extra, and len fields of the link are set.
+ *
+ *  Note: The data buffer is not zeroed.
  *
  *  Return value is a pointer to the link on success. It doesn't return on
  *  failure.
@@ -131,9 +133,6 @@ struct ethernet_packet_link *net_allocate_packet_link(
 		exit(1);
 	}
 	lp->next = NULL;
-
-	/*  TODO: maybe this is not necessary:  */
-	memset(lp->data, 0, len);
 
 	/*  Add last in the link chain:  */
 	lp->prev = net->last_ethernet_packet;
@@ -302,10 +301,6 @@ static void net_arp(struct net *net, void *extra,
  */
 int net_ethernet_rx_avail(struct net *net, void *extra)
 {
-	int received_packets_this_tick = 0;
-	int max_packets_this_tick = 200;
-	int con_id;
-
 	if (net == NULL)
 		return 0;
 
@@ -316,334 +311,36 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 	if (net->local_port != 0) {
 		struct sockaddr_in si;
 		socklen_t si_len = sizeof(si);
-		int res, i;
+		int res, i, nreceived = 0;
 		unsigned char buf[60000];
 
-		if ((res = recvfrom(net->local_port_socket, buf, sizeof(buf), 0,
-		    (struct sockaddr *)&si, &si_len)) != -1) {
-			/*  fatal("DISTRIBUTED packet, %i bytes from %s:%d\n",
-			    res, inet_ntoa(si.sin_addr), ntohs(si.sin_port)); */
-			for (i=0; i<net->n_nics; i++) {
-				struct ethernet_packet_link *lp;
-				lp = net_allocate_packet_link(net,
-				    net->nic_extra[i], res);
-				memcpy(lp->data, buf, res);
+		do {
+			res = recvfrom(net->local_port_socket, buf,
+			    sizeof(buf), 0, (struct sockaddr *)&si, &si_len);
+
+			if (res != -1) {
+				nreceived ++;
+
+				/*  fatal("[ incoming DISTRIBUTED packet, %i "
+				    "bytes from %s:%d\n", res,
+				    inet_ntoa(si.sin_addr),
+				    ntohs(si.sin_port));  */
+
+				/*  Add the packet to all "our" NICs on this
+				    network:  */
+				for (i=0; i<net->n_nics; i++) {
+					struct ethernet_packet_link *lp;
+					lp = net_allocate_packet_link(net,
+					    net->nic_extra[i], res);
+					memcpy(lp->data, buf, res);
+				}
 			}
-		}
+		} while (res != -1 && nreceived < 100);
 	}
 
-	/*
-	 *  UDP:
-	 */
-	for (con_id=0; con_id<MAX_UDP_CONNECTIONS; con_id++) {
-		ssize_t res;
-		unsigned char buf[66000];
-		unsigned char udp_data[66008];
-		struct sockaddr_in from;
-		socklen_t from_len = sizeof(from);
-		int ip_len, udp_len;
-		struct ethernet_packet_link *lp;
-		int max_per_packet;
-		int bytes_converted = 0;
-		int this_packets_data_length;
-		int fragment_ofs = 0;
-
-		if (received_packets_this_tick > max_packets_this_tick)
-			break;
-
-		if (!net->udp_connections[con_id].in_use)
-			continue;
-
-		if (net->udp_connections[con_id].socket < 0) {
-			fatal("INTERNAL ERROR in net.c, udp socket < 0 "
-			    "but in use?\n");
-			continue;
-		}
-
-		res = recvfrom(net->udp_connections[con_id].socket, buf,
-		    sizeof(buf), 0, (struct sockaddr *)&from, &from_len);
-
-		/*  No more incoming UDP on this connection?  */
-		if (res < 0)
-			continue;
-
-		net->timestamp ++;
-		net->udp_connections[con_id].last_used_timestamp =
-		    net->timestamp;
-
-		net->udp_connections[con_id].udp_id ++;
-
-		/*
-		 *  Special case for the nameserver:  If a UDP packet is
-		 *  received from the nameserver (if the nameserver's IP is
-		 *  known), fake it so that it comes from the gateway instead.
-		 */
-		if (net->udp_connections[con_id].fake_ns)
-			memcpy(((unsigned char *)(&from))+4,
-			    &net->gateway_ipv4_addr[0], 4);
-
-		/*
-		 *  We now have a UDP packet of size 'res' which we need
-		 *  turn into one or more ethernet packets for the emulated
-		 *  operating system.  Ethernet packets are at most 1518
-		 *  bytes long. With some margin, that means we can have
-		 *  about 1500 bytes per packet.
-		 *
-		 *	Ethernet = 14 bytes
-		 *	IP = 20 bytes
-		 *	(UDP = 8 bytes + data)
-		 *
-		 *  So data can be at most max_per_packet - 34. For UDP
-		 *  fragments, each multiple should (?) be a multiple of
-		 *  8 bytes, except the last which doesn't have any such
-		 *  restriction.
-		 */
-		max_per_packet = 1500;
-
-		/*  UDP:  */
-		udp_len = res + 8;
-		/*  from[2..3] = outside_udp_port  */
-		udp_data[0] = ((unsigned char *)&from)[2];
-		udp_data[1] = ((unsigned char *)&from)[3];
-		udp_data[2] = (net->udp_connections[con_id].
-		    inside_udp_port >> 8) & 0xff;
-		udp_data[3] = net->udp_connections[con_id].
-		    inside_udp_port & 0xff;
-		udp_data[4] = udp_len >> 8;
-		udp_data[5] = udp_len & 0xff;
-		udp_data[6] = 0;
-		udp_data[7] = 0;
-		memcpy(udp_data + 8, buf, res);
-		/*
-		 *  TODO:  UDP checksum, if necessary. At least NetBSD
-		 *  and OpenBSD accept UDP packets with 0x0000 in the
-		 *  checksum field anyway.
-		 */
-
-		while (bytes_converted < udp_len) {
-			this_packets_data_length = udp_len - bytes_converted;
-
-			/*  Do we need to fragment?  */
-			if (this_packets_data_length > max_per_packet-34) {
-				this_packets_data_length =
-				    max_per_packet - 34;
-				while (this_packets_data_length & 7)
-					this_packets_data_length --;
-			}
-
-			ip_len = 20 + this_packets_data_length;
-
-			lp = net_allocate_packet_link(net, extra,
-			    14 + 20 + this_packets_data_length);
-
-			/*  Ethernet header:  */
-			memcpy(lp->data + 0, net->udp_connections[con_id].
-			    ethernet_address, 6);
-			memcpy(lp->data + 6, net->gateway_ethernet_addr, 6);
-			lp->data[12] = 0x08;	/*  IP = 0x0800  */
-			lp->data[13] = 0x00;
-
-			/*  IP header:  */
-			lp->data[14] = 0x45;	/*  ver  */
-			lp->data[15] = 0x00;	/*  tos  */
-			lp->data[16] = ip_len >> 8;
-			lp->data[17] = ip_len & 0xff;
-			lp->data[18] = net->udp_connections[con_id].udp_id >> 8;
-			lp->data[19] = net->udp_connections[con_id].udp_id
-			    & 0xff;
-			lp->data[20] = (fragment_ofs >> 8);
-			if (bytes_converted + this_packets_data_length
-			    < udp_len)
-				lp->data[20] |= 0x20;	/*  More fragments  */
-			lp->data[21] = fragment_ofs & 0xff;
-			lp->data[22] = 0x40;	/*  ttl  */
-			lp->data[23] = 17;	/*  p = UDP  */
-			lp->data[26] = ((unsigned char *)&from)[4];
-			lp->data[27] = ((unsigned char *)&from)[5];
-			lp->data[28] = ((unsigned char *)&from)[6];
-			lp->data[29] = ((unsigned char *)&from)[7];
-			memcpy(lp->data + 30, net->udp_connections[con_id].
-			    inside_ip_address, 4);
-			net_ip_checksum(lp->data + 14, 10, 20);
-
-			memcpy(lp->data+34, udp_data + bytes_converted,
-			    this_packets_data_length);
-
-			bytes_converted += this_packets_data_length;
-			fragment_ofs = bytes_converted / 8;
-
-			received_packets_this_tick ++;
-		}
-
-		/*  This makes sure we check this connection AGAIN
-		    for more incoming UDP packets, before moving to the
-		    next connection:  */
-		con_id --;
-	}
-
-	/*
-	 *  TCP:
-	 */
-	for (con_id=0; con_id<MAX_TCP_CONNECTIONS; con_id++) {
-		unsigned char buf[66000];
-		ssize_t res, res2;
-		fd_set rfds;
-		struct timeval tv;
-
-		if (received_packets_this_tick > max_packets_this_tick)
-			break;
-
-		if (!net->tcp_connections[con_id].in_use)
-			continue;
-
-		if (net->tcp_connections[con_id].socket < 0) {
-			fatal("INTERNAL ERROR in net.c, tcp socket < 0"
-			    " but in use?\n");
-			continue;
-		}
-
-		if (net->tcp_connections[con_id].incoming_buf == NULL) {
-			net->tcp_connections[con_id].incoming_buf =
-			    malloc(TCP_INCOMING_BUF_LEN);
-			if (net->tcp_connections[con_id].incoming_buf == NULL) {
-				printf("out of memory allocating "
-				    "incoming_buf for con_id %i\n", con_id);
-				exit(1);
-			}
-		}
-
-		if (net->tcp_connections[con_id].state >=
-		    TCP_OUTSIDE_DISCONNECTED)
-			continue;
-
-		/*  Is the socket available for output?  */
-		FD_ZERO(&rfds);		/*  write  */
-		FD_SET(net->tcp_connections[con_id].socket, &rfds);
-		tv.tv_sec = tv.tv_usec = 0;
-		errno = 0;
-		res = select(net->tcp_connections[con_id].socket+1,
-		    NULL, &rfds, NULL, &tv);
-
-		if (errno == ECONNREFUSED) {
-			fatal("[ ECONNREFUSED: TODO ]\n");
-			net->tcp_connections[con_id].state =
-			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED "
-			    "(refused connection)\n");
-			continue;
-		}
-
-		if (errno == ETIMEDOUT) {
-			fatal("[ ETIMEDOUT: TODO ]\n");
-			/*  TODO  */
-			net->tcp_connections[con_id].state =
-			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED "
-			    "(timeout)\n");
-			continue;
-		}
-
-		if (net->tcp_connections[con_id].state ==
-		    TCP_OUTSIDE_TRYINGTOCONNECT && res > 0) {
-			net->tcp_connections[con_id].state =
-			    TCP_OUTSIDE_CONNECTED;
-			debug("CHANGING TO TCP_OUTSIDE_CONNECTED\n");
-			net_ip_tcp_connectionreply(net, extra, con_id, 1,
-			    NULL, 0, 0);
-		}
-
-		if (net->tcp_connections[con_id].state ==
-		    TCP_OUTSIDE_CONNECTED && res < 1) {
-			continue;
-		}
-
-		/*
-		 *  Does this connection have unacknowledged data?  Then, if
-		 *  enough number of rounds have passed, try to resend it using
-		 *  the old value of seqnr.
-		 */
-		if (net->tcp_connections[con_id].incoming_buf_len != 0) {
-			net->tcp_connections[con_id].incoming_buf_rounds ++;
-			if (net->tcp_connections[con_id].incoming_buf_rounds >
-			    10000) {
-				debug("  at seqnr %u but backing back to %u,"
-				    " resending %i bytes\n",
-				    net->tcp_connections[con_id].outside_seqnr,
-				    net->tcp_connections[con_id].
-				    incoming_buf_seqnr,
-				    net->tcp_connections[con_id].
-				    incoming_buf_len);
-
-				net->tcp_connections[con_id].
-				    incoming_buf_rounds = 0;
-				net->tcp_connections[con_id].outside_seqnr =
-				    net->tcp_connections[con_id].
-				    incoming_buf_seqnr;
-
-				net_ip_tcp_connectionreply(net, extra, con_id,
-				    0, net->tcp_connections[con_id].
-				    incoming_buf,
-				    net->tcp_connections[con_id].
-				    incoming_buf_len, 0);
-			}
-			continue;
-		}
-
-		/*  Don't receive unless the guest OS is ready!  */
-		if (((int32_t)net->tcp_connections[con_id].outside_seqnr -
-		    (int32_t)net->tcp_connections[con_id].inside_acknr) > 0) {
-/*			fatal("YOYO 1! outside_seqnr - inside_acknr = %i\n",
-			    net->tcp_connections[con_id].outside_seqnr -
-			    net->tcp_connections[con_id].inside_acknr);  */
-			continue;
-		}
-
-		/*  Is there incoming data available on the socket?  */
-		FD_ZERO(&rfds);		/*  read  */
-		FD_SET(net->tcp_connections[con_id].socket, &rfds);
-		tv.tv_sec = tv.tv_usec = 0;
-		res2 = select(net->tcp_connections[con_id].socket+1, &rfds,
-		    NULL, NULL, &tv);
-
-		/*  No more incoming TCP data on this connection?  */
-		if (res2 < 1)
-			continue;
-
-		res = read(net->tcp_connections[con_id].socket, buf, 1400);
-		if (res > 0) {
-			/*  debug("\n -{- %lli -}-\n", (long long)res);  */
-			net->tcp_connections[con_id].incoming_buf_len = res;
-			net->tcp_connections[con_id].incoming_buf_rounds = 0;
-			net->tcp_connections[con_id].incoming_buf_seqnr = 
-			    net->tcp_connections[con_id].outside_seqnr;
-			debug("  putting %i bytes (seqnr %u) in the incoming "
-			    "buf\n", res, net->tcp_connections[con_id].
-			    incoming_buf_seqnr);
-			memcpy(net->tcp_connections[con_id].incoming_buf,
-			    buf, res);
-
-			net_ip_tcp_connectionreply(net, extra, con_id, 0,
-			    buf, res, 0);
-		} else if (res == 0) {
-			net->tcp_connections[con_id].state =
-			    TCP_OUTSIDE_DISCONNECTED;
-			debug("CHANGING TO TCP_OUTSIDE_DISCONNECTED, read"
-			    " res=0\n");
-			net_ip_tcp_connectionreply(net, extra, con_id, 0,
-			    NULL, 0, 0);
-		} else {
-			net->tcp_connections[con_id].state =
-			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED, "
-			    "read res<=0, errno = %i\n", errno);
-			net_ip_tcp_connectionreply(net, extra, con_id, 0,
-			    NULL, 0, 0);
-		}
-
-		net->timestamp ++;
-		net->tcp_connections[con_id].last_used_timestamp =
-		    net->timestamp;
-	}
+	/*  IP protocol specific:  */
+	net_udp_rx_avail(net, extra);
+	net_tcp_rx_avail(net, extra);
 
 	return net_ethernet_rx(net, extra, NULL, NULL);
 }
@@ -653,7 +350,7 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
  *  net_ethernet_rx():
  *
  *  Receive an ethernet packet. (This means handing over an already prepared
- *  packet from this module (net.c) to a specific ethernet controller device.)
+ *  packet from this module to a specific ethernet controller device.)
  *
  *  Return value is 1 if there was a packet available. *packetp and *lenp
  *  will be set to the packet's data pointer and length, respectively, and
@@ -714,39 +411,6 @@ int net_ethernet_rx(struct net *net, void *extra,
 
 
 /*
- *  send_udp():
- *
- *  Send a simple UDP packet to some other (real) host. Used for distributed
- *  network simulations.
- */
-void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
-	size_t len)
-{
-	int s;
-	struct sockaddr_in si;
-
-	s = socket(AF_INET, SOCK_DGRAM, 0);
-	if (s < 0) {
-		perror("send_udp(): socket");
-		return;
-	}
-
-	/*  fatal("send_udp(): sending to port %i\n", portnr);  */
-
-	si.sin_family = AF_INET;
-	si.sin_addr = *addrp;
-	si.sin_port = htons(portnr);
-
-	if (sendto(s, packet, len, 0, (struct sockaddr *)&si,
-	    sizeof(si)) != (ssize_t)len) {
-		perror("send_udp(): sendto");
-	}
-
-	close(s);
-}
-
-
-/*
  *  net_ethernet_tx():
  *
  *  Transmit an ethernet packet, as seen from the emulated ethernet controller.
@@ -756,19 +420,25 @@ void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
 void net_ethernet_tx(struct net *net, void *extra,
 	unsigned char *packet, int len)
 {
-	int i, n;
+	int i, eth_type, for_the_gateway;
 
 	if (net == NULL)
 		return;
 
+	for_the_gateway = !memcmp(packet, net->gateway_ethernet_addr, 6);
+
 	/*  Drop too small packets:  */
-	if (len < 20)
+	if (len < 20) {
+		fatal("[ net_ethernet_tx: Warning: dropping tiny packet "
+		    "(%i bytes) ]\n", len);
 		return;
+	}
 
 	/*
-	 *  Copy this packet to all other NICs on this network:
+	 *  Copy this packet to all other NICs on this network (except if
+	 *  it is aimed specifically at the gateway's ethernet address):
 	 */
-	if (extra != NULL && net->n_nics > 0) {
+	if (!for_the_gateway && extra != NULL && net->n_nics > 0) {
 		for (i=0; i<net->n_nics; i++)
 			if (extra != net->nic_extra[i]) {
 				struct ethernet_packet_link *lp;
@@ -784,7 +454,7 @@ void net_ethernet_tx(struct net *net, void *extra,
 	 *  If this network is distributed across multiple emulator processes,
 	 *  then transmit the packet to those other processes.
 	 */
-	if (net->remote_nets != NULL) {
+	if (!for_the_gateway && net->remote_nets != NULL) {
 		struct remote_net *rnp = net->remote_nets;
 		while (rnp != NULL) {
 			send_udp(&rnp->ipv4_addr, rnp->portnr, packet, len);
@@ -792,15 +462,17 @@ void net_ethernet_tx(struct net *net, void *extra,
 		}
 	}
 
-	/*  Drop packets that are not destined for the gateway:  */
-	if (memcmp(packet, net->gateway_ethernet_addr, 6) != 0
-	    && packet[0] != 0xff && packet[0] != 0x00)
-		return;
 
 	/*
-	 *  The code below simulates the behaviour of a "NAT"-style
-	 *  gateway.
+	 *  The code below simulates the behaviour of a "NAT"-style gateway.
+	 *
+	 *  Packets that are not destined for the gateway are dropped first:
+	 *  (DHCP packets are let through, though.)
 	 */
+
+	if (!for_the_gateway && packet[0] != 0xff && packet[0] != 0x00)
+		return;
+
 #if 0
 	fatal("[ net: ethernet: ");
 	for (i=0; i<6; i++)	fatal("%02x", packet[i]); fatal(" ");
@@ -809,33 +481,26 @@ void net_ethernet_tx(struct net *net, void *extra,
 	for (i=14; i<len; i++)	fatal("%02x", packet[i]); fatal(" ]\n");
 #endif
 
-	/*  Sprite:  */
-	if (packet[12] == 0x05 && packet[13] == 0x00) {
-		/*  TODO.  */
-		fatal("[ net: TX: UNIMPLEMENTED Sprite packet ]\n");
-		return;
-	}
+	eth_type = (packet[12] << 8) + packet[13];
 
 	/*  IP:  */
-	if (packet[12] == 0x08 && packet[13] == 0x00) {
+	if (eth_type == ETHERTYPE_IP) {
 		/*  Routed via the gateway?  */
-		if (memcmp(packet+0, net->gateway_ethernet_addr, 6) == 0) {
+		if (for_the_gateway) {
 			net_ip(net, extra, packet, len);
 			return;
 		}
 
 		/*  Broadcast? (DHCP does this.)  */
-		n = 0;
-		for (i=0; i<6; i++)
-			if (packet[i] == 0xff)
-				n++;
-		if (n == 6) {
+		if (packet[0] == 0xff && packet[1] == 0xff &&
+		    packet[2] == 0xff && packet[3] == 0xff &&
+		    packet[4] == 0xff && packet[5] == 0xff) {
 			net_ip_broadcast(net, extra, packet, len);
 			return;
 		}
 
 		if (net->n_nics < 2) {
-			fatal("[ net: TX: IP packet not for gateway, "
+			fatal("[ net_ethernet_tx: IP packet not for gateway, "
 			    "and not broadcast: ");
 			for (i=0; i<14; i++)
 				fatal("%02x", packet[i]);
@@ -845,7 +510,7 @@ void net_ethernet_tx(struct net *net, void *extra,
 	}
 
 	/*  ARP:  */
-	if (packet[12] == 0x08 && packet[13] == 0x06) {
+	if (eth_type == ETHERTYPE_ARP) {
 		if (len != 42 && len != 60)
 			fatal("[ net_ethernet_tx: WARNING! unusual "
 			    "ARP len (%i) ]\n", len);
@@ -854,20 +519,27 @@ void net_ethernet_tx(struct net *net, void *extra,
 	}
 
 	/*  RARP:  */
-	if (packet[12] == 0x80 && packet[13] == 0x35) {
+	if (eth_type == ETHERTYPE_REVARP) {
 		net_arp(net, extra, packet + 14, len - 14, 1);
 		return;
 	}
 
-	/*  IPv6:  */
-	if (packet[12] == 0x86 && packet[13] == 0xdd) {
+	/*  Sprite:  */
+	if (eth_type == ETHERTYPE_SPRITE) {
 		/*  TODO.  */
-		fatal("[ net: TX: UNIMPLEMENTED IPv6 packet ]\n");
+		fatal("[ net: TX: UNIMPLEMENTED Sprite packet ]\n");
 		return;
 	}
 
-	fatal("[ net: TX: UNIMPLEMENTED ethernet packet type 0x%02x%02x! ]\n",
-	    packet[12], packet[13]);
+	/*  IPv6:  */
+	if (eth_type == ETHERTYPE_IPV6) {
+		/*  TODO.  */
+		fatal("[ net_ethernet_tx: IPv6 is not implemented yet! ]\n");
+		return;
+	}
+
+	fatal("[ net_ethernet_tx: ethernet packet type 0x%04x not yet "
+	    "implemented ]\n", eth_type);
 }
 
 
@@ -1088,6 +760,7 @@ void net_dumpinfo(struct net *net)
  *
  *  This function creates a network, and returns a pointer to it.
  *  ipv4addr should be something like "10.0.0.0", netipv4len = 8.
+ *
  *  If n_remote is more than zero, remote should be a pointer to an array
  *  of strings of the following format: "host:portnr".
  *

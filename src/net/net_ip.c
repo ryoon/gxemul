@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net_ip.c,v 1.2 2006-09-04 02:32:34 debug Exp $
+ *  $Id: net_ip.c,v 1.3 2006-09-04 11:32:53 debug Exp $
  *
  *  Internet Protocol related networking stuff.
  */
@@ -34,8 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
 
@@ -949,7 +950,7 @@ static void net_ip_broadcast_dhcp(struct net *net, void *extra,
 	/*  This is a Reply:  */
 	lp->data[42] = 0x02;
 
-	snprintf(lp->data + 70+16+64, 8, "gxemul");
+	snprintf((char *)lp->data + 70+16+64, 8, "gxemul");
 
 	/*  Recalculate IP header checksum:  */
 	net_ip_checksum(lp->data + 14, 10, 20);

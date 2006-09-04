@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.171 2006-09-01 15:20:14 debug Exp $
+$Id: guestoses.html,v 1.172 2006-09-04 02:32:00 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -100,6 +100,7 @@ not be relevant for this specific release of GXemul.)
   <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
   <li><a href="#openbsdarcinstall">OpenBSD/arc 2.3</a>
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
+  <li><a href="#linux_malta">Linux/Malta</a>
   <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.0</a>
@@ -2069,6 +2070,26 @@ however:
 manipulate Linux disk images, if you are on a non-Linux host. By choosing
 "Execute a shell" in the installer's menu, you can have access to tools such as
 fdisk and mke2fs, which are useful for creating Linux paritions on disk images.
+
+
+
+
+
+
+
+
+<p><br>
+<a name="linux_malta"></a>
+<h3>Linux/Malta:</h3>
+
+<p>I haven't yet found any pre-compiled/packaged distribution of 
+Linux/Malta kernel + userland available at any stable location on the web; 
+the general idea behind Linux/Malta seems to be that the end user always 
+compiles his/her own kernel anyway, applies patches, downloads userland 
+separately, etc.
+
+<p>For that reason, Linux/Malta support in the emulator is not 
+tested for every release; sometimes works, sometimes it doesn't work.
 
 
 

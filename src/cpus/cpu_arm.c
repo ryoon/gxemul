@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.61 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_arm.c,v 1.62 2006-09-04 02:32:00 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -77,7 +77,7 @@ void arm_pc_to_pointers(struct cpu *cpu);
 int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
-	int any_cache = 0, i, found;
+	int i, found;
 	struct arm_cpu_type_def cpu_type_defs[] = ARM_CPU_TYPE_DEFS;
 
 	/*  Scan the list for this cpu type:  */
@@ -120,15 +120,15 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Only show name and caches etc for CPU nr 0:  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
-		if (cpu->cd.arm.cpu_type.icache_shift != 0)
-			any_cache = 1;
-		if (cpu->cd.arm.cpu_type.dcache_shift != 0)
-			any_cache = 1;
-		if (any_cache) {
-			debug(" (I+D = %i+%i KB",
-			    (int)(1 << (cpu->cd.arm.cpu_type.icache_shift-10)),
-			    (int)(1 << (cpu->cd.arm.cpu_type.dcache_shift-10)));
-			debug(")");
+		if (cpu->cd.arm.cpu_type.icache_shift != 0 ||
+		    cpu->cd.arm.cpu_type.dcache_shift != 0) {
+			int isize = cpu->cd.arm.cpu_type.icache_shift;
+			int dsize = cpu->cd.arm.cpu_type.dcache_shift;
+			if (isize != 0)
+				isize = 1 << (isize - 10);
+			if (dsize != 0)
+				dsize = 1 << (dsize - 10);
+			debug(" (I+D = %i+%i KB)", isize, dsize);
 		}
 	}
 

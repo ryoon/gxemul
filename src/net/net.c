@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.3 2006-09-04 02:32:34 debug Exp $
+ *  $Id: net.c,v 1.4 2006-09-04 13:19:55 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -87,6 +87,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net_misc.c,v 1.2 2006-09-04 02:32:34 debug Exp $
+ *  $Id: net_misc.c,v 1.3 2006-09-04 13:19:55 debug Exp $
  *
  *  Misc. helper functions.
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.281 2006-09-04 04:31:28 debug Exp $
+ *  $Id: main.c,v 1.282 2006-09-05 06:13:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -736,12 +736,15 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
+	settings_add(global_settings, "emul[0]", 1,
+	    SETTINGS_TYPE_SUBSETTINGS, 0, emuls[0]->settings);
 
 	get_cmd_args(argc, argv, emuls[0], &diskimages, &n_diskimages);
 
 	if (!skip_srandom_call) {
-		/*  TODO: More than just time(). Use gettimeofday().  */
-		srandom(time(NULL) ^ (getpid() << 12));
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		srandom(tv.tv_sec ^ getpid() ^ tv.tv_usec);
 	}
 
 	/*  Print startup message:  */
@@ -753,9 +756,9 @@ int main(int argc, char *argv[])
 	debug("Read the source code and/or documentation for "
 	    "other Copyright messages.\n\n");
 
-	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE)
+	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE) {
 		n_emuls --;
-	else {
+	} else {
 		for (i=0; i<n_diskimages; i++)
 			diskimage_add(emuls[0]->machines[0], diskimages[i]);
 	}
@@ -780,6 +783,7 @@ int main(int argc, char *argv[])
 	/*  Initialize emulations from config files:  */
 	for (i=1; i<argc; i++) {
 		if (argv[i][0] == '@') {
+			char tmpstr[50];
 			char *s = argv[i] + 1;
 			if (strlen(s) == 0 && i+1 < argc &&
 			    argv[i+1][0] != '@') {
@@ -797,8 +801,20 @@ int main(int argc, char *argv[])
 			    emulations:  */
 			console_allow_slaves(1);
 
+			/*  Destroy the temporary emuls[0], since we are
+			    overwriting it:  */
+			if (n_emuls == 1) {
+				emul_destroy(emuls[0]);
+				settings_remove(global_settings, "emul[0]");
+			}
+
 			emuls[n_emuls - 1] =
 			    emul_create_from_configfile(s);
+
+			snprintf(tmpstr, sizeof(tmpstr), "emul[%i]", n_emuls-1);
+			settings_add(global_settings, tmpstr, 1,
+			    SETTINGS_TYPE_SUBSETTINGS, 0,
+			    emuls[n_emuls-1]->settings);
 		}
 	}
 
@@ -824,6 +840,15 @@ int main(int argc, char *argv[])
 	 */
 
 	console_deinit();
+
+	for (i=0; i<n_emuls; i++) {
+		char tmpstr[30];
+
+		emul_destroy(emuls[i]);
+
+		snprintf(tmpstr, sizeof(tmpstr), "emul[%i]", i);
+		settings_remove(global_settings, tmpstr);
+	}
 
 	settings_remove(global_settings, "single_step");
 	settings_remove(global_settings, "force_debugger_at_exit");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.43 2006-08-16 18:55:37 debug Exp $
+ *  $Id: emul_parse.c,v 1.44 2006-09-05 06:13:27 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -321,8 +321,10 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		    line, EXPECT_LEFT_PARENTHESIS);
 
 		/*  Default net:  */
-		strlcpy(cur_net_ipv4net, "10.0.0.0", sizeof(cur_net_ipv4net));
-		strlcpy(cur_net_ipv4len, "8", sizeof(cur_net_ipv4len));
+		strlcpy(cur_net_ipv4net, NET_DEFAULT_IPV4_MASK,
+		    sizeof(cur_net_ipv4net));
+		snprintf(cur_net_ipv4len, sizeof(cur_net_ipv4len), "%i",
+		    NET_DEFAULT_IPV4_LEN);
 		strlcpy(cur_net_local_port, "", sizeof(cur_net_local_port));
 		cur_net_n_remote = 0;
 		return;
@@ -397,7 +399,7 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 		e->net = net_init(e, NET_INIT_FLAG_GATEWAY,
 		    cur_net_ipv4net, atoi(cur_net_ipv4len),
 		    cur_net_remote, cur_net_n_remote,
-		    atoi(cur_net_local_port));
+		    atoi(cur_net_local_port), NULL);
 
 		if (e->net == NULL) {
 			fatal("line %i: fatal error: could not create"

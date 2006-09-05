@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.134 2006-09-04 02:32:00 debug Exp $
+ *  $Id: machine.h,v 1.135 2006-09-05 06:13:27 debug Exp $
  */
 
 #include <sys/types.h>
@@ -55,6 +55,7 @@ struct emul;
 struct fb_window;
 struct memory;
 struct of_data;
+struct settings;
 
 /*  Ugly:  */
 struct kn230_csr;
@@ -99,6 +100,9 @@ struct machine_bus {
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
 	struct emul *emul;
+
+	/*  Settings:  */
+	struct settings *settings;
 
 	/*  Name as choosen by the user:  */
 	char	*name;
@@ -516,6 +520,7 @@ void automachine_init(void);
 
 /*  machine.c:  */
 struct machine *machine_new(char *name, struct emul *emul);
+void machine_destroy(struct machine *machine);
 int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch);
 void machine_add_tickfunction(struct machine *machine,

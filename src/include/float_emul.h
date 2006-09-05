@@ -2,7 +2,7 @@
 #define	FLOAT_EMUL_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.h,v 1.2 2005-11-23 02:17:43 debug Exp $
+ *  $Id: float_emul.h,v 1.3 2006-09-05 06:13:27 debug Exp $
  *
  *  Floating point emulation. See src/float_emul.c for the details.
  */

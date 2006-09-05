@@ -2,7 +2,7 @@
 #define	MACHINE_X86_H
 
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine_x86.h,v 1.8 2005-09-27 23:18:33 debug Exp $
+ *  $Id: machine_x86.h,v 1.9 2006-09-05 06:13:27 debug Exp $
  */
 
 #include "misc.h"

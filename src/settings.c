@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.8 2006-09-04 04:31:28 debug Exp $
+ *  $Id: settings.c,v 1.9 2006-09-05 06:13:27 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -34,7 +34,7 @@
  *  or to a variable in memory.
  *
  *  Appart from the pointer, the other properties are a definition of the
- *  type being pointed to (int, int32_t, int64_t, etc), how it should be
+ *  type being pointed to (int, int32_t, int64_t, char*, etc), how it should be
  *  presented (e.g. it may be an int value in memory, but it should be
  *  presented as a boolean "true/false" value), and a flag which tells us
  *  whether the setting is directly writable or not.
@@ -168,7 +168,7 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 	size_t name_buflen = strlen(prefix) + 100;
 	char *name = malloc(name_buflen);
 	int i;
-	uint64_t value;
+	uint64_t value = 0;
 
 	for (i=0; i<settings->n_settings; i++) {
 		snprintf(name, name_buflen, "%s.%s", prefix, settings->name[i]);
@@ -191,6 +191,8 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 			case SETTINGS_TYPE_INT64:
 				value = *((int64_t *) settings->ptr[i]);
 				break;
+			case SETTINGS_TYPE_STRING:
+				break;
 			default:printf("FATAL ERROR! Unknown storage type"
 				    ": %i\n", settings->storage_type[i]);
 				exit(1);
@@ -209,6 +211,9 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 			case SETTINGS_FORMAT_YESNO:
 				printf(value? "yes" : "no");
 				break;
+			case SETTINGS_FORMAT_STRING:
+				printf("\"%s\"", *((char **)settings->ptr[i]));
+				break;
 			default:printf("FATAL ERROR! Unknown presentation "
 				    "format: %i\n",
 				    settings->presentation_format[i]);
@@ -216,7 +221,7 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 			}
 
 			if (!settings->writable[i])
-				printf("  (Read-only)");
+				printf("  (R/O)");
 
 			printf("\n");
 		}
@@ -234,6 +239,19 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 void settings_add(struct settings *settings, const char *name, int writable,
 	int type, int format, void *ptr)
 {
+	int i;
+
+	for (i=0; i<settings->n_settings; i++) {
+		if (strcmp(settings->name[i], name) == 0)
+			break;
+	}
+
+	if (i < settings->n_settings) {
+		fprintf(stderr, "settings_add(): name '%s' is already"
+		    " in use\n", name);
+		exit(1);
+	}
+
 	settings->n_settings ++;
 
 	if ((settings->name = realloc(settings->name, settings->n_settings

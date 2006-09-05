@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.682 2006-09-01 11:39:49 debug Exp $
+ *  $Id: machine.c,v 1.683 2006-09-05 06:13:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -49,6 +49,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
+#include "settings.h"
 #include "symbol.h"
 
 
@@ -77,7 +78,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 
 	memset(m, 0, sizeof(struct machine));
 
-	/*  Back pointer:  */
+	/*  Pointer back to the emul object that this machine belongs to:  */
 	m->emul = emul;
 
 	m->name = strdup(name);
@@ -100,7 +101,58 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->show_symbolic_register_names = 1;
 	symbol_init(&m->symbol_context);
 
+	/*  Settings:  */
+	m->settings = settings_new();
+	settings_add(m->settings, "name", 0,
+	    SETTINGS_TYPE_STRING, SETTINGS_FORMAT_STRING,
+	    (void *) &m->name);
+	settings_add(m->settings, "serial_nr", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_DECIMAL,
+	    (void *) &m->serial_nr);
+	settings_add(m->settings, "arch_pagesize", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_DECIMAL,
+	    (void *) &m->arch_pagesize);
+	settings_add(m->settings, "prom_emulation", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
+	    (void *) &m->prom_emulation);
+	settings_add(m->settings, "allow_instruction_combinations", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
+	    (void *) &m->allow_instruction_combinations);
+	settings_add(m->settings, "n_gfx_cards", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_DECIMAL,
+	    (void *) &m->n_gfx_cards);
+	settings_add(m->settings, "show_symbolic_register_names", 1,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
+	    (void *) &m->show_symbolic_register_names);
+
+
+
 	return m;
+}
+
+
+/*
+ *  machine_destroy():
+ *
+ *  Destroys a machine object.
+ */
+void machine_destroy(struct machine *machine)
+{
+	if (machine->name != NULL)
+		free(machine->name);
+
+	/*  Settings:  */
+	settings_remove(machine->settings, "name");
+	settings_remove(machine->settings, "serial_nr");
+	settings_remove(machine->settings, "arch_pagesize");
+	settings_remove(machine->settings, "prom_emulation");
+	settings_remove(machine->settings, "allow_instruction_combinations");
+	settings_remove(machine->settings, "n_gfx_cards");
+	settings_remove(machine->settings, "show_symbolic_register_names");
+
+	settings_destroy(machine->settings);
+
+	free(machine);
 }
 
 

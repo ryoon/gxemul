@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net_ip.c,v 1.3 2006-09-04 11:32:53 debug Exp $
+ *  $Id: net_ip.c,v 1.4 2006-09-05 06:13:28 debug Exp $
  *
  *  Internet Protocol related networking stuff.
  */
@@ -45,6 +45,98 @@
 
 
 /*  #define debug fatal  */
+
+
+/*
+ *  net_ip_checksum():
+ *
+ *  Fill in an IP header checksum. (This works for ICMP too.)
+ *  chksumoffset should be 10 for IP headers, and len = 20.
+ *  For ICMP packets, chksumoffset = 2 and len = length of the ICMP packet.
+ */
+void net_ip_checksum(unsigned char *ip_header, int chksumoffset, int len)
+{
+	int i;
+	uint32_t sum = 0;
+
+	for (i=0; i<len; i+=2)
+		if (i != chksumoffset) {
+			uint16_t w = (ip_header[i] << 8) + ip_header[i+1];
+			sum += w;
+			while (sum > 65535) {
+				int to_add = sum >> 16;
+				sum = (sum & 0xffff) + to_add;
+			}
+		}
+
+	sum ^= 0xffff;
+	ip_header[chksumoffset + 0] = sum >> 8;
+	ip_header[chksumoffset + 1] = sum & 0xff;
+}
+
+
+/*
+ *  net_ip_tcp_checksum():
+ *
+ *  Fill in a TCP header checksum. This differs slightly from the IP
+ *  checksum. The checksum is calculated on a pseudo header, the actual
+ *  TCP header, and the data.  This is what the pseudo header looks like:
+ *
+ *	uint32_t srcaddr;
+ *	uint32_t dstaddr;
+ *	uint16_t protocol; (= 6 for tcp)
+ *	uint16_t tcp_len;
+ *
+ *  tcp_len is length of header PLUS data.  The psedo header is created
+ *  internally here, and does not need to be supplied by the caller.
+ */
+void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
+	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr,
+	int udpflag)
+{
+	int i, pad = 0;
+	unsigned char pseudoh[12];
+	uint32_t sum = 0;
+
+	memcpy(pseudoh + 0, srcaddr, 4);
+	memcpy(pseudoh + 4, dstaddr, 4);
+	pseudoh[8] = 0x00;
+	pseudoh[9] = udpflag? 17 : 6;
+	pseudoh[10] = tcp_len >> 8;
+	pseudoh[11] = tcp_len & 255;
+
+	for (i=0; i<12; i+=2) {
+		uint16_t w = (pseudoh[i] << 8) + pseudoh[i+1];
+		sum += w;
+		while (sum > 65535) {
+			int to_add = sum >> 16;
+			sum = (sum & 0xffff) + to_add;
+		}
+	}
+
+	if (tcp_len & 1) {
+		tcp_len ++;
+		pad = 1;
+	}
+
+	for (i=0; i<tcp_len; i+=2)
+		if (i != chksumoffset) {
+			uint16_t w;
+			if (!pad || i < tcp_len-2)
+				w = (tcp_header[i] << 8) + tcp_header[i+1];
+			else
+				w = (tcp_header[i] << 8) + 0x00;
+			sum += w;
+			while (sum > 65535) {
+				int to_add = sum >> 16;
+				sum = (sum & 0xffff) + to_add;
+			}
+		}
+
+	sum ^= 0xffff;
+	tcp_header[chksumoffset + 0] = sum >> 8;
+	tcp_header[chksumoffset + 1] = sum & 0xff;
+}
 
 
 /*
@@ -76,7 +168,7 @@ static void net_ip_icmp(struct net *net, void *extra,
 	switch (type) {
 	case 8:	/*  ECHO request  */
 		debug("[ ICMP echo ]\n");
-		lp = net_allocate_packet_link(net, extra, len);
+		lp = net_allocate_ethernet_packet_link(net, extra, len);
 
 		/*  Copy the old packet first:  */
 		memcpy(lp->data + 12, packet + 12, len - 12);
@@ -148,7 +240,7 @@ void net_ip_tcp_connectionreply(struct net *net, void *extra,
 	net->tcp_connections[con_id].tcp_id ++;
 	tcp_length = 20 + option_len + datalen;
 	ip_len = 20 + tcp_length;
-	lp = net_allocate_packet_link(net, extra, 14 + ip_len);
+	lp = net_allocate_ethernet_packet_link(net, extra, 14 + ip_len);
 
 	/*  Ethernet header:  */
 	memcpy(lp->data + 0, net->tcp_connections[con_id].ethernet_address, 6);
@@ -919,7 +1011,7 @@ static void net_ip_broadcast_dhcp(struct net *net, void *extra,
 	 */
 	fatal(" ]\n");
 
-	lp = net_allocate_packet_link(net, extra, len);
+	lp = net_allocate_ethernet_packet_link(net, extra, len);
 
 	/*  Copy the old packet first:  */
 	memcpy(lp->data, packet, len);
@@ -1204,7 +1296,7 @@ void net_udp_rx_avail(struct net *net, void *extra)
 
 			ip_len = 20 + this_packets_data_length;
 
-			lp = net_allocate_packet_link(net, extra,
+			lp = net_allocate_ethernet_packet_link(net, extra,
 			    14 + 20 + this_packets_data_length);
 
 			/*  Ethernet header:  */
@@ -1426,4 +1518,5 @@ void net_tcp_rx_avail(struct net *net, void *extra)
 		    net->timestamp;
 	}
 }
+
 

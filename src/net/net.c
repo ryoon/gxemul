@@ -25,59 +25,17 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.4 2006-09-04 13:19:55 debug Exp $
+ *  $Id: net.c,v 1.5 2006-09-05 06:13:28 debug Exp $
  *
- *  Emulated (ethernet / internet) network support.
+ *  Emulated network.
  *
- *
- *  NOTE:  This is just an ugly hack, and just barely enough to get some
- *         Internet networking up and running for the guest OS.
- *
- *  TODO:
- *	o)  TCP: fin/ack stuff, and connection time-outs and
- *	    connection refused (reset on connect?), resend
- *	    data to the guest OS if no ack has arrived for
- *	    some time (? buffers?)
- *		http://www.tcpipguide.com/free/t_TCPConnectionTermination-2.htm
- *	o)  remove the netbsd-specific options in the tcp header (?)
- *	o)  Outgoing UDP packet fragment support.
- *	o)  IPv6  (outgoing, incoming, and the nameserver/gateway)
- *	o)  Incoming connections
- *
- *  TODO 2: The following comments are old! Fix this.
- *
- *
- *  The emulated NIC has a MAC address of (for example) 10:20:30:00:00:10.
- *  From the emulated environment, the only other machine existing on the
- *  network is a "gateway" or "firewall", which has an address of
- *  60:50:40:30:20:10. This module (net.c) contains the emulation of that
- *  gateway. It works like a NAT firewall, but emulated in userland software.
- *
- *  The gateway uses IPv4 address 10.0.0.254, the guest OS (inside the
- *  emulator) could use any 10.x.x.x address, except 10.0.0.254. A suitable
- *  choice is, for example 10.0.0.1.
+ *  (Read the README file in this directory for more details.)
  *
  *
  *  NOTE: The 'extra' argument used in many functions in this file is a pointer
- *  to something unique for each controller, so that if multiple controllers
- *  are emulated concurrently, they will not get packets that aren't meant
- *  for some other controller.
- *
- *
- *	|------------------  a network  --------------------------------|
- *		^               ^				^
- *		|               |				|
- *	    a NIC connected    another NIC                the gateway
- *	    to the network					|
- *								v
- *							     outside
- *							      world
- *
- *  The gateway isn't connected as a NIC, but is an "implicit" machine on the
- *  network.
- *
- *  (See http://www.sinclair.org.au/keith/networking/vendor.html for a list
- *  of ethernet MAC assignments.)
+ *  to something unique for each NIC, so that if multiple NICs are emulated
+ *  concurrently, they will not get packets that aren't meant for some other
+ *  controller.
  */
 
 #include <stdio.h>
@@ -102,7 +60,7 @@
 
 
 /*
- *  net_allocate_packet_link():
+ *  net_allocate_ethernet_packet_link():
  *
  *  This routine allocates an ethernet_packet_link struct, and adds it at
  *  the end of the packet chain.  A data buffer is allocated, and the data,
@@ -113,26 +71,21 @@
  *  Return value is a pointer to the link on success. It doesn't return on
  *  failure.
  */
-struct ethernet_packet_link *net_allocate_packet_link(
-	struct net *net, void *extra, int len)
+struct ethernet_packet_link *net_allocate_ethernet_packet_link(
+	struct net *net, void *extra, size_t len)
 {
 	struct ethernet_packet_link *lp;
 
 	lp = malloc(sizeof(struct ethernet_packet_link));
-	if (lp == NULL) {
-		fprintf(stderr, "net_allocate_packet_link(): out of memory\n");
-		exit(1);
-	}
-
-	/*  memset(lp, 0, sizeof(struct ethernet_packet_link));  */
+	if (lp == NULL)
+		goto fail;
 
 	lp->len = len;
 	lp->extra = extra;
 	lp->data = malloc(len);
-	if (lp->data == NULL) {
-		fprintf(stderr, "net_allocate_packet_link(): out of memory\n");
-		exit(1);
-	}
+	if (lp->data == NULL)
+		goto fail;
+
 	lp->next = NULL;
 
 	/*  Add last in the link chain:  */
@@ -144,6 +97,10 @@ struct ethernet_packet_link *net_allocate_packet_link(
 	net->last_ethernet_packet = lp;
 
 	return lp;
+
+fail:
+	fprintf(stderr, "net_allocate_ethernet_packet_link(): out of memory\n");
+	exit(1);
 }
 
 
@@ -212,7 +169,8 @@ static void net_arp(struct net *net, void *extra,
 			if (memcmp(packet+24, net->gateway_ipv4_addr, 4) != 0)
 				break;
 
-			lp = net_allocate_packet_link(net, extra, 60 + 14);
+			lp = net_allocate_ethernet_packet_link(
+			    net, extra, 60 + 14);
 
 			/*  Copy the old packet first:  */
 			memset(lp->data, 0, 60 + 14);
@@ -236,7 +194,8 @@ static void net_arp(struct net *net, void *extra,
 
 			break;
 		case 3:		/*  Reverse Request  */
-			lp = net_allocate_packet_link(net, extra, 60 + 14);
+			lp = net_allocate_ethernet_packet_link(
+			    net, extra, 60 + 14);
 
 			/*  Copy the old packet first:  */
 			memset(lp->data, 0, 60 + 14);
@@ -331,8 +290,8 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 				    network:  */
 				for (i=0; i<net->n_nics; i++) {
 					struct ethernet_packet_link *lp;
-					lp = net_allocate_packet_link(net,
-					    net->nic_extra[i], res);
+					lp = net_allocate_ethernet_packet_link(
+					    net, net->nic_extra[i], res);
 					memcpy(lp->data, buf, res);
 				}
 			}
@@ -443,7 +402,7 @@ void net_ethernet_tx(struct net *net, void *extra,
 		for (i=0; i<net->n_nics; i++)
 			if (extra != net->nic_extra[i]) {
 				struct ethernet_packet_link *lp;
-				lp = net_allocate_packet_link(net,
+				lp = net_allocate_ethernet_packet_link(net,
 				    net->nic_extra[i], len);
 
 				/*  Copy the entire packet:  */
@@ -760,16 +719,21 @@ void net_dumpinfo(struct net *net)
  *  net_init():
  *
  *  This function creates a network, and returns a pointer to it.
+ *
  *  ipv4addr should be something like "10.0.0.0", netipv4len = 8.
  *
  *  If n_remote is more than zero, remote should be a pointer to an array
  *  of strings of the following format: "host:portnr".
  *
+ *  Network settings are registered if settings_prefix is non-NULL.
+ *  (The one calling net_init() is also responsible for calling net_deinit().)
+ *
  *  On failure, exit() is called.
  */
 struct net *net_init(struct emul *emul, int init_flags,
-	char *ipv4addr, int netipv4len, char **remote, int n_remote,
-	int local_port)
+	const char *ipv4addr, int netipv4len,
+	char **remote, int n_remote, int local_port,
+	const char *settings_prefix)
 {
 	struct net *net;
 	int res;

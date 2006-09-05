@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1356 2006-09-04 15:35:54 debug Exp $
+$Id: HISTORY,v 1.1357 2006-09-05 06:13:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3002,3 +3002,6 @@ Changelog for GXemul:
 20060903	Cleanup of the files in src/net/, to make them less ugly.
 20060904	Continuing on the 'settings' subsystem.
 		Minor progress on the SPARC emulation mode.
+20060905	Cleanup of various things, and attempting to connect the
+		settings infrastructure to various subsystems (emul, machine,
+		etc).

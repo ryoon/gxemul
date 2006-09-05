@@ -2,7 +2,7 @@
 #define	NET_H
 
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.15 2006-09-04 02:32:34 debug Exp $
+ *  $Id: net.h,v 1.16 2006-09-05 06:13:27 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -40,6 +40,11 @@
 struct emul;
 struct ethernet_packet_link;
 struct remote_net;
+
+
+/*  Default emulated "simple" IPv4 network, if nothing else is specified:  */
+#define	NET_DEFAULT_IPV4_MASK		"10.0.0.0"
+#define	NET_DEFAULT_IPV4_LEN		8
 
 
 /*****************************************************************************/
@@ -151,14 +156,14 @@ struct net {
 /*  net_misc.c:  */
 void net_debugaddr(void *addr, int type);
 void net_generate_unique_mac(struct machine *, unsigned char *macbuf);
-void net_ip_checksum(unsigned char *ip_header, int chksumoffset, int len);
-void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
-	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr,
-	int udpflag);
 void send_udp(struct in_addr *addrp, int portnr, unsigned char *packet,
 	size_t len);
 
 /*  net_ip.c:  */
+void net_ip_checksum(unsigned char *ip_header, int chksumoffset, int len);
+void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
+	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr,
+	int udpflag);
 void net_ip_tcp_connectionreply(struct net *net, void *extra,
 	int con_id, int connecting, unsigned char *data, int datalen, int rst);
 void net_ip_broadcast(struct net *net, void *extra,
@@ -168,8 +173,8 @@ void net_udp_rx_avail(struct net *net, void *extra);
 void net_tcp_rx_avail(struct net *net, void *extra);
 
 /*  net.c:  */
-struct ethernet_packet_link *net_allocate_packet_link(
-	struct net *net, void *extra, int len);
+struct ethernet_packet_link *net_allocate_ethernet_packet_link(
+	struct net *net, void *extra, size_t len);
 int net_ethernet_rx_avail(struct net *net, void *extra);
 int net_ethernet_rx(struct net *net, void *extra,
 	unsigned char **packetp, int *lenp);
@@ -178,8 +183,8 @@ void net_ethernet_tx(struct net *net, void *extra,
 void net_dumpinfo(struct net *net);
 void net_add_nic(struct net *net, void *extra, unsigned char *macaddr);
 struct net *net_init(struct emul *emul, int init_flags,
-	char *ipv4addr, int netipv4len, char **remote, int n_remote,
-	int local_port);
+	const char *ipv4addr, int netipv4len, char **remote, int n_remote,
+	int local_port, const char *settings_prefix);
 
 /*  Flag used to signify that this net should have a gateway:  */
 #define	NET_INIT_FLAG_GATEWAY		1

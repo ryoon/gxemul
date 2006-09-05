@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.h,v 1.4 2006-09-04 04:31:29 debug Exp $
+ *  $Id: settings.h,v 1.5 2006-09-05 06:13:27 debug Exp $
  */
 
 #include <inttypes.h>
@@ -42,12 +42,14 @@ struct settings;
 #define	SETTINGS_TYPE_INT		2
 #define	SETTINGS_TYPE_INT32		3
 #define	SETTINGS_TYPE_INT64		4
+#define	SETTINGS_TYPE_STRING		5
 
 /*  Presentation formats:  */
 #define	SETTINGS_FORMAT_DECIMAL		1	/*  -123  */
 #define	SETTINGS_FORMAT_HEX		2	/*  0xffffffff80000000  */
 #define	SETTINGS_FORMAT_BOOL		3	/*  true, false  */
 #define	SETTINGS_FORMAT_YESNO		4	/*  yes, no  */
+#define	SETTINGS_FORMAT_STRING		5	/*  %s  */
 
 
 /*

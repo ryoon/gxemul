@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.264 2006-09-04 04:31:28 debug Exp $
+ *  $Id: emul.c,v 1.265 2006-09-05 06:13:27 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -51,6 +51,7 @@
 #include "mips_cpu_types.h"
 #include "misc.h"
 #include "net.h"
+#include "settings.h"
 #include "sgi_arcbios.h"
 #include "timer.h"
 #include "x11.h"
@@ -748,6 +749,14 @@ struct emul *emul_new(char *name)
 
 	memset(e, 0, sizeof(struct emul));
 
+	e->settings = settings_new();
+
+	settings_add(e->settings, "n_machines", 0,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_DECIMAL,
+	    (void *) &e->n_machines);
+
+	/*  TODO: More settings?  */
+
 	/*  Sane default values:  */
 	e->n_machines = 0;
 	e->next_serial_nr = 1;
@@ -758,9 +767,46 @@ struct emul *emul_new(char *name)
 			fprintf(stderr, "out of memory in emul_new()\n");
 			exit(1);
 		}
+
+		settings_add(e->settings, "name", 0,
+		    SETTINGS_TYPE_STRING, SETTINGS_FORMAT_STRING,
+		    (void *) &e->name);
 	}
 
 	return e;
+}
+
+
+/*
+ *  emul_destroy():
+ *
+ *  Destroys a previously created emul object.
+ */
+void emul_destroy(struct emul *emul)
+{
+	int i;
+
+	if (emul->name != NULL) {
+		settings_remove(emul->settings, "name");
+		free(emul->name);
+	}
+
+	for (i=0; i<emul->n_machines; i++) {
+		char tmpstr[20];
+
+		machine_destroy(emul->machines[i]);
+
+		snprintf(tmpstr, sizeof(tmpstr), "machine[%i]", i);
+		settings_remove(emul->settings, tmpstr);
+	}
+
+	if (emul->machines != NULL)
+		free(emul->machines);
+
+	settings_remove(emul->settings, "n_machines");
+	settings_destroy(emul->settings);
+
+	free(emul);
 }
 
 
@@ -775,9 +821,13 @@ struct emul *emul_new(char *name)
 struct machine *emul_add_machine(struct emul *e, char *name)
 {
 	struct machine *m;
+	char tmpstr[20];
+	int i;
 
 	m = machine_new(name, e);
 	m->serial_nr = (e->next_serial_nr ++);
+
+	i = e->n_machines;
 
 	e->n_machines ++;
 	e->machines = realloc(e->machines,
@@ -787,7 +837,12 @@ struct machine *emul_add_machine(struct emul *e, char *name)
 		exit(1);
 	}
 
-	e->machines[e->n_machines - 1] = m;
+	e->machines[i] = m;
+
+	snprintf(tmpstr, sizeof(tmpstr), "machine[%i]", i);
+	settings_add(e->settings, tmpstr, 1, SETTINGS_TYPE_SUBSETTINGS, 0,
+	    e->machines[i]->settings);
+
 	return m;
 }
 
@@ -1471,7 +1526,9 @@ void emul_simple_init(struct emul *emul)
 
 		/*  Create a simple network:  */
 		emul->net = net_init(emul, NET_INIT_FLAG_GATEWAY,
-		    "10.0.0.0", 8, NULL, 0, 0);
+		    NET_DEFAULT_IPV4_MASK,
+		    NET_DEFAULT_IPV4_LEN,
+		    NULL, 0, 0, NULL);
 	} else {
 		/*  Userland pseudo-machine:  */
 		debug("Syscall emulation (userland-only) setup...\n");

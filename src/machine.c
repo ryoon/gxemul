@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.683 2006-09-05 06:13:27 debug Exp $
+ *  $Id: machine.c,v 1.684 2006-09-05 06:44:38 debug Exp $
  */
 
 #include <stdio.h>
@@ -138,6 +138,11 @@ struct machine *machine_new(char *name, struct emul *emul)
  */
 void machine_destroy(struct machine *machine)
 {
+	int i;
+
+	for (i=0; i<machine->ncpus; i++)
+		cpu_destroy(machine->cpus[i]);
+
 	if (machine->name != NULL)
 		free(machine->name);
 

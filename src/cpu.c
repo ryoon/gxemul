@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.354 2006-08-29 15:55:09 debug Exp $
+ *  $Id: cpu.c,v 1.355 2006-09-05 06:44:38 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -40,6 +40,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 
 
 static struct cpu_family *first_cpu_family = NULL;
@@ -50,6 +51,9 @@ static struct cpu_family *first_cpu_family = NULL;
  *
  *  Create a new cpu object.  Each family is tried in sequence until a
  *  CPU family recognizes the cpu_type_name.
+ *
+ *  If there was no match, NULL is returned. Otherwise, a pointer to an
+ *  initialized cpu struct is returned.
  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *name)
@@ -57,6 +61,7 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	struct cpu *cpu;
 	struct cpu_family *fp;
 	char *cpu_type_name;
+	char tmpstr[30];
 
 	if (name == NULL) {
 		fprintf(stderr, "cpu_new(): cpu name = NULL?\n");
@@ -71,13 +76,24 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 
 	cpu = zeroed_alloc(sizeof(struct cpu));
 
-	cpu->memory_rw          = NULL;
-	cpu->name               = cpu_type_name;
-	cpu->mem                = mem;
-	cpu->machine            = machine;
-	cpu->cpu_id             = cpu_id;
-	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
-	cpu->running            = 0;
+	cpu->memory_rw  = NULL;
+	cpu->name       = cpu_type_name;
+	cpu->mem        = mem;
+	cpu->machine    = machine;
+	cpu->cpu_id     = cpu_id;
+	cpu->byte_order = EMUL_UNDEFINED_ENDIAN;
+	cpu->running    = 0;
+
+	/*  Create settings, and attach to the machine:  */
+	cpu->settings = settings_new();
+	snprintf(tmpstr, sizeof(tmpstr), "cpu[%i]", cpu_id);
+	settings_add(machine->settings, tmpstr, 1,
+	    SETTINGS_TYPE_SUBSETTINGS, 0, cpu->settings);
+
+	settings_add(cpu->settings, "name", 0, SETTINGS_TYPE_STRING,
+	    SETTINGS_FORMAT_STRING, (void *) &cpu->name);
+	settings_add(cpu->settings, "running", 0, SETTINGS_TYPE_INT,
+	    SETTINGS_FORMAT_YESNO, (void *) &cpu->running);
 
 	cpu_create_or_reset_tc(cpu);
 
@@ -107,7 +123,36 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 
 	fp->init_tables(cpu);
 
+	if (cpu->byte_order == EMUL_UNDEFINED_ENDIAN) {
+		fatal("\ncpu_new(): Internal bug: Endianness not set.\n");
+		exit(1);
+	}
+
 	return cpu;
+}
+
+
+/*
+ *  cpu_destroy():
+ *
+ *  Destroy a cpu object.
+ */
+void cpu_destroy(struct cpu *cpu)
+{
+	char tmpstr[30];
+
+	settings_remove(cpu->settings, "name");
+	settings_remove(cpu->settings, "running");
+
+	/*  Remove the cpu settings from the machine:  */
+	snprintf(tmpstr, sizeof(tmpstr), "cpu[%i]", cpu->cpu_id);
+	settings_remove(cpu->machine->settings, tmpstr);
+
+	settings_destroy(cpu->settings);
+
+	/*  TODO: This assumes that zeroed_alloc() actually succeeded
+	    with using mmap(), and not malloc()!  */
+	munmap(cpu, sizeof(struct cpu));
 }
 
 
@@ -557,6 +602,9 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
  *  cpu_init():
  *
  *  Should be called before any other cpu_*() function.
+ *
+ *  TODO: Make this nicer by moving out the conditional stuff to
+ *  an automagically generated file? Or a define in config.h?
  */
 void cpu_init(void)
 {

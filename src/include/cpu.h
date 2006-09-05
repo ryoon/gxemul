@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.92 2006-08-28 16:25:59 debug Exp $
+ *  $Id: cpu.h,v 1.93 2006-09-05 06:44:39 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -210,6 +210,7 @@ struct cpu;
 struct emul;
 struct machine;
 struct memory;
+struct settings;
 
 
 /*
@@ -308,6 +309,9 @@ struct cpu_family {
 struct cpu {
 	/*  Pointer back to the machine this CPU is in:  */
 	struct machine	*machine;
+
+	/*  Settings:  */
+	struct settings *settings;
 
 	/*  CPU-specific name, e.g. "R2000", "21164PC", etc.  */
 	char		*name;
@@ -409,6 +413,8 @@ struct cpu {
 /*  cpu.c:  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
+void cpu_destroy(struct cpu *cpu);
+
 void cpu_tlbdump(struct machine *m, int x, int rawflag);
 void cpu_register_match(struct machine *m, char *name, 
 	int writeflag, uint64_t *valuep, int *match_register);
@@ -417,16 +423,21 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
 int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr);
 char *cpu_gdb_stub(struct cpu *cpu, char *cmd);
+
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void cpu_functioncall_trace(struct cpu *cpu, uint64_t f);
 void cpu_functioncall_trace_return(struct cpu *cpu);
+
 void cpu_create_or_reset_tc(struct cpu *cpu);
+
 void cpu_run_init(struct machine *machine);
 void cpu_run_deinit(struct machine *machine);
+
 void cpu_dumpinfo(struct machine *m, struct cpu *cpu);
 void cpu_list_available_types(void);
 void cpu_show_cycles(struct machine *machine, int forced);
+
 struct cpu_family *cpu_family_ptr_by_number(int arch);
 void cpu_init(void);
 

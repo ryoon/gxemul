@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1357 2006-09-05 06:13:26 debug Exp $
+$Id: HISTORY,v 1.1358 2006-09-05 06:44:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3004,4 +3004,4 @@ Changelog for GXemul:
 		Minor progress on the SPARC emulation mode.
 20060905	Cleanup of various things, and attempting to connect the
 		settings infrastructure to various subsystems (emul, machine,
-		etc).
+		cpu, etc).

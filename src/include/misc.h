@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.244 2006-09-01 11:39:50 debug Exp $
+ *  $Id: misc.h,v 1.245 2006-09-05 06:44:39 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -107,24 +107,25 @@ struct machine;
 struct memory;
 
 
-#define NO_BYTE_ORDER_OVERRIDE          -1
-#define EMUL_LITTLE_ENDIAN              0
-#define EMUL_BIG_ENDIAN                 1
+#define	NO_BYTE_ORDER_OVERRIDE		-1
+#define	EMUL_UNDEFINED_ENDIAN		0
+#define	EMUL_LITTLE_ENDIAN		1
+#define	EMUL_BIG_ENDIAN			2
 
 #ifdef HOST_LITTLE_ENDIAN
 #define	LE16_TO_HOST(x)	    (x)
-#define BE16_TO_HOST(x)	    ((((x) & 0xff00) >> 8) | (((x)&0xff) << 8))
+#define	BE16_TO_HOST(x)	    ((((x) & 0xff00) >> 8) | (((x)&0xff) << 8))
 #else
-#define LE16_TO_HOST(x)	    ((((x) & 0xff00) >> 8) | (((x)&0xff) << 8))
+#define	LE16_TO_HOST(x)	    ((((x) & 0xff00) >> 8) | (((x)&0xff) << 8))
 #define	BE16_TO_HOST(x)	    (x)
 #endif
 
 #ifdef HOST_LITTLE_ENDIAN
 #define	LE32_TO_HOST(x)	    (x)
-#define BE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | (((x)&0xff) << 24) | \
+#define	BE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | (((x)&0xff) << 24) | \
 			     (((x) & 0xff0000) >> 8) | (((x) & 0xff00) << 8))
 #else
-#define LE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | (((x)&0xff) << 24) | \
+#define	LE32_TO_HOST(x)	    ((((x) & 0xff000000) >> 24) | (((x)&0xff) << 24) | \
 			     (((x) & 0xff0000) >> 8) | (((x) & 0xff00) << 8))
 #define	BE32_TO_HOST(x)	    (x)
 #endif

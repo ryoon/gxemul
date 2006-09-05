@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.63 2006-08-12 11:43:13 debug Exp $
+ *  $Id: cpu_mips.c,v 1.64 2006-09-05 07:30:34 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -50,6 +50,7 @@
 #include "memory.h"
 #include "mips_cpu_types.h"
 #include "opcodes_mips.h"
+#include "settings.h"
 #include "symbol.h"
 
 
@@ -322,6 +323,17 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		else
 			cpu->translate_v2p = translate_v2p_generic;
 	}
+
+	/*  Add all register names to the settings:  */
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	CPU_SETTINGS_ADD_REGISTER64("hi", cpu->cd.mips.hi);
+	CPU_SETTINGS_ADD_REGISTER64("lo", cpu->cd.mips.lo);
+	for (i=0; i<N_MIPS_GPRS; i++)
+		CPU_SETTINGS_ADD_REGISTER64(regnames[i], cpu->cd.mips.gpr[i]);
+	/*  TODO: Write via special handler function!  */
+	for (i=0; i<N_MIPS_COPROC_REGS; i++)
+		CPU_SETTINGS_ADD_REGISTER64(cop0_names[i],
+		    cpu->cd.mips.coproc[0]->reg[i]);
 
 	return 1;
 }
@@ -735,7 +747,7 @@ void mips_cpu_register_match(struct machine *m, char *name,
 	if (!(*match_register)) {
 		/*  Check for a symbolic coproc0 name:  */
 		int nr;
-		for (nr=0; nr<32; nr++)
+		for (nr=0; nr<N_MIPS_COPROC_REGS; nr++)
 			if (strcmp(name, cop0_names[nr]) == 0) {
 				if (writeflag) {
 					coproc_register_write(m->cpus[cpunr],

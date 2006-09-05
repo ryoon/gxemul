@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.265 2006-09-05 06:13:27 debug Exp $
+ *  $Id: emul.c,v 1.266 2006-09-05 07:30:34 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -803,7 +803,9 @@ void emul_destroy(struct emul *emul)
 	if (emul->machines != NULL)
 		free(emul->machines);
 
-	settings_remove(emul->settings, "n_machines");
+	/*  Remove any remaining level-1 settings and destroy the
+	    settings object:  */
+	settings_remove_all(emul->settings);
 	settings_destroy(emul->settings);
 
 	free(emul);
@@ -1684,15 +1686,18 @@ void emul_run(struct emul **emuls, int n_emuls)
 		if (single_step == SINGLE_STEPPING)
 			debugger();
 
-		e = emuls[0];	/*  Note: Only 1 emul supported now.  */
+		for (i=0; i<n_emuls; i++) {
+			e = emuls[i];
 
-		for (j=0; j<e->n_machines; j++) {
-			if (e->machines[j]->gdb.port > 0)
-				debugger_gdb_check_incoming(e->machines[j]);
+			for (j=0; j<e->n_machines; j++) {
+				if (e->machines[j]->gdb.port > 0)
+					debugger_gdb_check_incoming(
+					    e->machines[j]);
 
-			anything = machine_run(e->machines[j]);
-			if (anything)
-				go = 1;
+				anything = machine_run(e->machines[j]);
+				if (anything)
+					go = 1;
+			}
 		}
 	}
 

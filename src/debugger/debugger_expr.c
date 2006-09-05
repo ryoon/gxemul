@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.2 2006-09-04 04:50:38 debug Exp $
+ *  $Id: debugger_expr.c,v 1.3 2006-09-05 07:30:34 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -34,6 +34,8 @@
  *	General expressions, with operators, parentheses etc.
  *	Settings.
  *	Sign-extension only on MIPS?
+ *	SPECIAL IMPORTANT CASE: Clear the delay_slot flag when writing
+ *		to the pc register.
  *	TAB completion? :-)
  */
 

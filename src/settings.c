@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.9 2006-09-05 06:13:27 debug Exp $
+ *  $Id: settings.c,v 1.10 2006-09-05 07:30:34 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -202,8 +202,11 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 			case SETTINGS_FORMAT_DECIMAL:
 				printf("%"PRIi64, value);
 				break;
-			case SETTINGS_FORMAT_HEX:
-				printf("0x%"PRIx64, value);
+			case SETTINGS_FORMAT_HEX32:
+				printf("0x08%"PRIx32, (int32_t) value);
+				break;
+			case SETTINGS_FORMAT_HEX64:
+				printf("0x016%"PRIx64, (int64_t) value);
 				break;
 			case SETTINGS_FORMAT_BOOL:
 				printf(value? "true" : "false");
@@ -313,6 +316,9 @@ void settings_remove(struct settings *settings, const char *name)
 		if (subsettings->n_settings != 0) {
 			fprintf(stderr, "settings_remove(): attempting to "
 			    "remove non-emtpy setting '%s'\n", name);
+			fprintf(stderr, "Remaining settings are:\n");
+			for (i=0; i<subsettings->n_settings; i++)
+				fprintf(stderr, "\t%s\n", subsettings->name[i]);
 			exit(1);
 		}
 	}
@@ -333,6 +339,19 @@ void settings_remove(struct settings *settings, const char *name)
 	    m * sizeof(settings->presentation_format[0]));
 	memmove(&settings->ptr[i], &settings->ptr[i+1],
 	    m * sizeof(settings->ptr[0]));
+}
+
+
+/*
+ *  settings_remove_all():
+ *
+ *  Remove all (level-1) settings from a settings object. By level-1, I mean
+ *  all settings that do not contain subsettings.
+ */
+void settings_remove_all(struct settings *settings)
+{
+	while (settings->n_settings > 0)
+		settings_remove(settings, settings->name[0]);
 }
 
 

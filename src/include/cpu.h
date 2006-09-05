@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.93 2006-09-05 06:44:39 debug Exp $
+ *  $Id: cpu.h,v 1.94 2006-09-05 07:30:35 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -447,6 +447,15 @@ void cpu_init(void);
 #define	INVALIDATE_PADDR		4
 #define	INVALIDATE_VADDR		8
 #define	INVALIDATE_VADDR_UPPER4		16	/*  useful for PPC emulation  */
+
+
+#define	CPU_SETTINGS_ADD_REGISTER64(name, var)				   \
+	settings_add(cpu->settings, name, 1, SETTINGS_TYPE_INT64,	   \
+	    cpu->is_32bit? SETTINGS_FORMAT_HEX32 : SETTINGS_FORMAT_HEX64,  \
+	    (void *) &(var));
+#define	CPU_SETTINGS_ADD_REGISTER32(name, var)				   \
+	settings_add(cpu->settings, name, 1, SETTINGS_TYPE_INT32,	   \
+	    SETTINGS_FORMAT_HEX32, (void *) &(var));
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

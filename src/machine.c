@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.684 2006-09-05 06:44:38 debug Exp $
+ *  $Id: machine.c,v 1.685 2006-09-05 07:30:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -146,14 +146,8 @@ void machine_destroy(struct machine *machine)
 	if (machine->name != NULL)
 		free(machine->name);
 
-	/*  Settings:  */
-	settings_remove(machine->settings, "name");
-	settings_remove(machine->settings, "serial_nr");
-	settings_remove(machine->settings, "arch_pagesize");
-	settings_remove(machine->settings, "prom_emulation");
-	settings_remove(machine->settings, "allow_instruction_combinations");
-	settings_remove(machine->settings, "n_gfx_cards");
-	settings_remove(machine->settings, "show_symbolic_register_names");
+	/*  Remove any remaining level-1 settings:  */
+	settings_remove_all(machine->settings);
 
 	settings_destroy(machine->settings);
 

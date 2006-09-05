@@ -1,4 +1,4 @@
-$Id: TODO,v 1.366 2006-09-04 04:31:28 debug Exp $
+$Id: TODO,v 1.367 2006-09-05 07:30:34 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -92,6 +92,7 @@ Implementation:
 	x)  IOP (I2O) device?
 
 Documentation:
+	x)  DEVICE_TICK in technical.html
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
 	    written. (Symbolic names instead of numbers; example

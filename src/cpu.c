@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.355 2006-09-05 06:44:38 debug Exp $
+ *  $Id: cpu.c,v 1.356 2006-09-05 07:30:34 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -143,6 +143,9 @@ void cpu_destroy(struct cpu *cpu)
 
 	settings_remove(cpu->settings, "name");
 	settings_remove(cpu->settings, "running");
+
+	/*  Remove any remaining level-1 settings:  */
+	settings_remove_all(cpu->settings);
 
 	/*  Remove the cpu settings from the machine:  */
 	snprintf(tmpstr, sizeof(tmpstr), "cpu[%i]", cpu->cpu_id);

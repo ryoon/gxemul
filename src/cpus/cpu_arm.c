@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.62 2006-09-04 02:32:00 debug Exp $
+ *  $Id: cpu_arm.c,v 1.63 2006-09-05 06:45:50 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -103,6 +103,7 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->cd.arm.cpu_type = cpu_type_defs[found];
 	cpu->name            = cpu->cd.arm.cpu_type.name;
 	cpu->is_32bit        = 1;
+	cpu->byte_order      = EMUL_LITTLE_ENDIAN;
 
 	cpu->cd.arm.cpsr = ARM_FLAG_I | ARM_FLAG_F;
 	cpu->cd.arm.control = ARM_CONTROL_PROG32 | ARM_CONTROL_DATA32

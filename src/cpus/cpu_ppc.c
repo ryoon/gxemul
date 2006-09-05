@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.61 2006-07-24 21:14:52 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.62 2006-09-05 06:45:50 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -86,10 +86,10 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	cpu->memory_rw = ppc_memory_rw;
 
-	cpu->cd.ppc.cpu_type    = cpu_type_defs[found];
-	cpu->name               = cpu->cd.ppc.cpu_type.name;
-	cpu->byte_order         = EMUL_BIG_ENDIAN;
-	cpu->cd.ppc.mode        = MODE_PPC;	/*  TODO  */
+	cpu->cd.ppc.cpu_type = cpu_type_defs[found];
+	cpu->name            = cpu->cd.ppc.cpu_type.name;
+	cpu->byte_order      = EMUL_BIG_ENDIAN;
+	cpu->cd.ppc.mode     = MODE_PPC;	/*  TODO  */
 
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits = cpu->cd.ppc.cpu_type.bits;

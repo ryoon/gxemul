@@ -1,7 +1,8 @@
-$Id: TODO,v 1.367 2006-09-05 07:30:34 debug Exp $
+$Id: TODO,v 1.368 2006-09-05 08:12:30 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
+	x)  HUH? MIPS zr register = non-zero sometimes?
 
 	x)  GENERAL CODE CLEANUP
 		x)  Device registry: Allow devices to be moved around;
@@ -13,6 +14,11 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 			everywhere.
 		x)  Factor out other things from cpu_*.c? (Turn CPU name
 			detection into a macro?)
+
+	x)  Settings / expression evaluator:
+		x)  Special handlers for Write! (E.g. MIPS coproc regs)
+		x)  Rewrite all CPUs so that they register registers. :)
+		x)  Begin on the expression evaluator.
 
 	x)  Clock/timer framework:
 		x)  FIGURE OUT A WAY TO TEST THE 8253 :)
@@ -32,9 +38,6 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 	x)  SPARC:
 		x)  Implement Adress space identifiers.
 		x)  Continue on the register windows.
-
-	x)  Continue on the settings object, connect it to machines and
-		processors, etc, and begin to rewrite the expression parser!
 
 	x)  Userland emulation?
 

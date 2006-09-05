@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.194 2006-09-02 05:23:12 debug Exp $
+ *  $Id: memory.c,v 1.195 2006-09-05 06:58:29 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -120,14 +120,24 @@ void *zeroed_alloc(size_t s)
 {
 	void *p = mmap(NULL, s, PROT_READ | PROT_WRITE,
 	    MAP_ANON | MAP_PRIVATE, -1, 0);
+
 	if (p == NULL) {
+#if 1
+		fprintf(stderr, "zeroed_alloc(): mmap() failed. This should"
+		    " not usually happen. If you can reproduce this, then"
+		    " please contact me with details about your run-time"
+		    " environment.\n");
+		exit(1);
+#else
 		p = malloc(s);
 		if (p == NULL) {
 			fprintf(stderr, "out of memory\n");
 			exit(1);
 		}
 		memset(p, 0, s);
+#endif
 	}
+
 	return p;
 }
 

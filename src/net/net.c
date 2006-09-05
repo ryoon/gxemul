@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.5 2006-09-05 06:13:28 debug Exp $
+ *  $Id: net.c,v 1.6 2006-09-05 06:58:29 debug Exp $
  *
  *  Emulated network.
  *
@@ -33,9 +33,9 @@
  *
  *
  *  NOTE: The 'extra' argument used in many functions in this file is a pointer
- *  to something unique for each NIC, so that if multiple NICs are emulated
- *  concurrently, they will not get packets that aren't meant for some other
- *  controller.
+ *  to something unique for each NIC (i.e. the NIC itself :-), so that if
+ *  multiple NICs are emulated concurrently, they will not get packets that
+ *  are meant for some other controller.
  */
 
 #include <stdio.h>

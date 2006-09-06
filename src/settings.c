@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.10 2006-09-05 07:30:34 debug Exp $
+ *  $Id: settings.c,v 1.11 2006-09-06 04:55:17 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -203,10 +203,10 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 				printf("%"PRIi64, value);
 				break;
 			case SETTINGS_FORMAT_HEX32:
-				printf("0x08%"PRIx32, (int32_t) value);
+				printf("0x%08"PRIx32, (int32_t) value);
 				break;
 			case SETTINGS_FORMAT_HEX64:
-				printf("0x016%"PRIx64, (int64_t) value);
+				printf("0x%016"PRIx64, (int64_t) value);
 				break;
 			case SETTINGS_FORMAT_BOOL:
 				printf(value? "true" : "false");

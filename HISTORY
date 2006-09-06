@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1359 2006-09-05 07:30:33 debug Exp $
+$Id: HISTORY,v 1.1360 2006-09-06 04:55:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3004,3 +3004,9 @@ Changelog for GXemul:
 		Minor progress on the SPARC emulation mode.
 20060905	Cleanup of various things, and connecting the settings
 		infrastructure to various subsystems (emul, machine, cpu, etc).
+		Changing the lk201 mouse update routine to not rely on any
+		emulated hardware framebuffer cursor coordinates, but instead
+		always do (semi-usable) relative movements.
+20060906	Continuing on the lk201 mouse stuff. Mouse behaviour with
+		multiple framebuffers (which was working in Ultrix) is now
+		semi-broken (but it still works, in a way).

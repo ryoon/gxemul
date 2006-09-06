@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.216 2006-09-01 15:19:49 debug Exp $
+ *  $Id: devices.h,v 1.217 2006-09-06 04:55:35 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -726,12 +726,6 @@ struct lk201_data {
         int                     mouse_mode;
         int                     mouse_revision;         /*  0..15  */  
         int                     mouse_x, mouse_y, mouse_buttons;
-
-	int			old_host_mouse_x;
-	int			old_host_mouse_y;
-	int			old_host_mouse_stays_put;
-	int			mouse_check_interval;
-	int			mouse_check_interval_reset;
 };
 void lk201_tick(struct machine *, struct lk201_data *); 
 void lk201_tx_data(struct lk201_data *, int port, int idata);

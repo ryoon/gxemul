@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.172 2006-09-04 02:32:00 debug Exp $
+$Id: guestoses.html,v 1.173 2006-09-06 04:55:34 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -147,7 +147,7 @@ follow these instructions:
 <p><ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=1900000</b>
+	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=3000000</b>
 
 </pre>
 </ol>
@@ -250,7 +250,7 @@ harddisk image, follow these instructions:
 <ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=900000</b>
+	<b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
   <li>Download a NetBSD/arc 1.6.2 CDROM image, and a generic NetBSD/arc
@@ -1382,11 +1382,14 @@ timer related bug, which makes it impossible to logon to the system. It is
 triggered when the emulation goes faster than any real DECstation machine
 was capable of running. A temporary workaround is to add
 <b><tt>-I33000000</tt></b> to fix the emulated clock speed to 33 million
-instructions per emulated second. (When using <tt><b>-CR4400</b></tt>,
-<b><tt>-I16000000</tt></b> should be used instead.)
+instructions per emulated second.
 
-<p>
-You can experiment with adding <b><tt>-Z2</tt></b> (for emulating a 
+<p>If the workaround above doesn't work, you can also start up other 
+processes on the host, apart from the emulator, so that the emulator runs 
+more slowly. This is an ugly workaround, but seems to work. Once you have 
+logged in into Ultrix, you can kill the extra processes.
+
+<p>You can experiment with adding <b><tt>-Z2</tt></b> (for emulating a 
 dual-headed workstation) or even <b><tt>-Z3</tt></b> (tripple-headed), and 
 also the <b><tt>-Y2</tt></b> option for scaling down the framebuffer 
 windows by a factor 2x2.
@@ -1398,30 +1401,25 @@ tripple-headed workstation, on three different displays (<tt>remote1:0.0</tt>,
             -XZ3 -z remote1:0.0 -z localhost:0.0 -z remote2:0.0</b>
 </pre>
 
-<p>
-The photo below shows a single Ultrix session running tripple-headed in
+<p>The photo below shows a single Ultrix session running tripple-headed in
 GXemul on an Alpha 21164PC, with displays on a Sun Ultra1 (to the left),
 on the Alpha itself (in the middle), and on an HP700/RX X-terminal (8-bit
 color depth, running off the Alpha) to the right.
 
-<p>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20041209-ultrix-tripplehead.jpg"><img src="20041209-ultrix-tripplehead_small.jpg"></a>
 
-<p>
-The X11 displays may differ in bit depth and endianness. Unfortunately, 
+<p>The X11 displays may differ in bit depth and endianness. Unfortunately, 
 there is no way yet to set the scaledown factor on a per-window basis, so 
 the scaledown factor affects all windows.
 
-<p>
-(If you didn't use <tt><b>-Z<i>n</i></b></tt> during the installation, and 
+<p>(If you didn't use <tt><b>-Z<i>n</i></b></tt> during the installation, and 
 compiled your own <tt>/vmunix</tt>, then it will not contain support for 
 multiple graphics cards. To overcome this problem, use the generic kernel,
 <tt><b>-j genvmunix</b></tt>, whenever you are running the emulator with a 
 different setup than the one you used when Ultrix was installed.)
 
-<p>
-A note for the historically interested: OSF/1 for MIPS was quite similar
+<p>A note for the historically interested: OSF/1 for MIPS was quite similar
 to Ultrix, so that is possible to run as well.  If you are unsuccessful
 in installing Ultrix or OSF/1 directly in the emulator, you can always
 install it on your real machine onto a real SCSI disk, and then copy the
@@ -1530,7 +1528,7 @@ onto a harddisk image:
 <ol>
   <li>Create an empty harddisk image, which will be the root disk
 	that Debian installs itself onto:<pre>
-	<b>dd if=/dev/zero of=debian_pmax.img bs=1024 count=1 seek=3300000</b>
+	<b>dd if=/dev/zero of=debian_pmax.img bs=1024 count=1 seek=5000000</b>
 
 </pre>
   <li>Download David Muse' install kernel, and a Debian Netinstall CD-ROM:<pre>

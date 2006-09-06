@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.685 2006-09-05 07:30:34 debug Exp $
+ *  $Id: machine.c,v 1.686 2006-09-06 04:55:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -124,6 +124,9 @@ struct machine *machine_new(char *name, struct emul *emul)
 	settings_add(m->settings, "show_symbolic_register_names", 1,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
 	    (void *) &m->show_symbolic_register_names);
+	settings_add(m->settings, "statistics_enabled", 1,
+	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
+	    (void *) &m->statistics_enabled);
 
 
 

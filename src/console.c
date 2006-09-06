@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.17 2006-09-04 04:31:28 debug Exp $
+ *  $Id: console.c,v 1.18 2006-09-06 04:55:35 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -96,12 +96,6 @@ static struct settings *console_settings = NULL;
 static int console_stdout_pending;
 
 #define	CONSOLE_FIFO_LEN	4096
-
-/*  Mouse coordinates:  */
-static int console_framebuffer_mouse_x;		/*  absolute x, 0-based  */
-static int console_framebuffer_mouse_y;		/*  absolute y, 0-based  */
-static int console_framebuffer_mouse_fb_nr;	/*  fb_number of last
-						    framebuffer cursor update */
 
 static int console_mouse_x;		/*  absolute x, 0-based  */
 static int console_mouse_y;		/*  absolute y, 0-based  */
@@ -486,33 +480,6 @@ void console_mouse_button(int button, int pressed)
 		console_mouse_buttons |= mask;
 	else
 		console_mouse_buttons &= ~mask;
-}
-
-
-/*
- *  console_get_framebuffer_mouse():
- *
- *  TODO: Comment
- */
-void console_get_framebuffer_mouse(int *x, int *y, int *fb_nr)
-{
-	*x = console_framebuffer_mouse_x;
-	*y = console_framebuffer_mouse_y;
-	*fb_nr = console_framebuffer_mouse_fb_nr;
-}
-
-
-/*
- *  console_set_framebuffer_mouse():
- *
- *  A framebuffer device calls this function when it sets the
- *  position of a cursor (ie a mouse cursor).
- */
-void console_set_framebuffer_mouse(int x, int y, int fb_nr)
-{
-	console_framebuffer_mouse_x = x;
-	console_framebuffer_mouse_y = y;
-	console_framebuffer_mouse_fb_nr = fb_nr;
 }
 
 

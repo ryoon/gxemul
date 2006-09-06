@@ -1,32 +1,28 @@
-$Id: TODO,v 1.368 2006-09-05 08:12:30 debug Exp $
+$Id: TODO,v 1.369 2006-09-06 04:55:34 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-	x)  HUH? MIPS zr register = non-zero sometimes?
 
-	x)  GENERAL CODE CLEANUP
-		x)  Device registry: Allow devices to be moved around;
-			if there is a collision, return false. It is up
-			to the caller to handle this situation!
-			NOTE: Translations must be invalidated!
-		x)  The TLB dump code could possibly be moved somewhere
-			else? No need to include the dummy functions
-			everywhere.
-		x)  Factor out other things from cpu_*.c? (Turn CPU name
-			detection into a macro?)
-
+Implementation:
 	x)  Settings / expression evaluator:
 		x)  Special handlers for Write! (E.g. MIPS coproc regs)
 		x)  Rewrite all CPUs so that they register registers. :)
 		x)  Begin on the expression evaluator.
-
 	x)  Clock/timer framework:
 		x)  FIGURE OUT A WAY TO TEST THE 8253 :)
 		    Right now it doesn't seem to be used :)
 		x)  Workarounds for the delays during NetWinder/CATS bootup?
 		    Plug-and-play detection loops!
 		x)  Go through all other machines, one by one, and fix them.
-
+	x)  Device registry: Allow devices to be moved around;
+		if there is a collision, return false. It is up
+		to the caller to handle this situation!
+		NOTE: Translations must be invalidated!
+	x)  The TLB dump code could possibly be moved somewhere
+		else? No need to include the dummy functions
+		everywhere.
+	x)  Factor out other things from cpu_*.c? (Turn CPU name
+		detection into a macro?)
 	x)  Alpha:
 		x)  OSF1 PALcode, Virtual memory support.
 		x)  PALcode replacement! PAL1E etc opcodes...?
@@ -34,32 +30,18 @@ Hm. This file is in random order, and not all parts of it are up-to-date.
 		x)  More work on bootup memory and register contents.
 		x)  More Alpha machine types, so it could work with
 		    OpenBSD, FreeBSD, and Linux too?
-
 	x)  SPARC:
 		x)  Implement Adress space identifiers.
 		x)  Continue on the register windows.
-
 	x)  Userland emulation?
-
 	x)  Common dyntrans_abort() function, which stops dyntrans execution,
 		and drops into the debugger (if running with -K).
-
 	x)  HPCmips:
 		x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips
 		    latest version are unstable during bootup.
-		x)  Mouse support.
-		x)  A NIC?
-
-	x)  Fix/verify mouse support for NetBSD/pmax 4.x!
-	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
-	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
+		x)  Mouse/pad support.
+		x)  A NIC? (As a PCMCIA device?)
 	x)  Physical vs virtual breakpoints!
-
-
-------------------------------------------------------------------------------
-
-
-Implementation:
 	x)  See netwinder_reset() in NetBSD; the current "an internal error
 	    occured" message after reboot/halt is too ugly.
 	x)  Revert the dyntrans page template experiment? Hm.
@@ -80,12 +62,13 @@ Implementation:
 	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
 	x)  Rewrite the networking stack:
 		x)  Fix performance problems caused by only allowing a
-		    single frame to be unacked.
+		    single TCP packet to be unacked.
 		x)  Don't hardcode offsets into packets!
 		x)  Test with lower than 100 max tcp/udp connections,
 		    to make sure that reuse works!
 		x)  Make OpenBSD work better as a guest OS!
-		x)  DHCP?
+		x)  DHCP? Debian doesn't actually send DHCP packets, even
+			though it claims to?
 		x)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
 		x)  Support VDE (vde.sf.net)?
@@ -95,6 +78,8 @@ Implementation:
 	x)  IOP (I2O) device?
 
 Documentation:
+	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
+	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
 	x)  DEVICE_TICK in technical.html
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
@@ -113,8 +98,6 @@ Long-term design:
 	    way!
 	x)  68K emulation; think about how to do variable instruction
 	    lengths across page boundaries.
-	o)  Debugger command for enabling/disabling instruction statistics
-	    during runtime.   machine.statistics = on|off
 	x)  MAINBUS REDESIGN!
 	x)  PCI redesign:
 		x)  The device subsystem needs to be redesigned to allow
@@ -346,11 +329,6 @@ The Device subsystem:
 	    to be a bus might be a nice idea.
 	x)  turn interrupt controllers into devices? :-)
 	x)  refactor various clocks/nvram/cmos into one device?
-
-Clocks:
-	x)  General framework for automagic clock adjustment for _all_
-	    kinds of clocks and timers. (Which should be possible to turn
-	    off, of course, like the way DECstation emulation works now.)
 
 PCI:
 	x)  last write was ffffffff ==> fix this, it should be used

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.26 2006-08-30 16:10:02 debug Exp $
+ *  $Id: lk201.c,v 1.27 2006-09-06 04:55:35 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -152,56 +152,25 @@ void lk201_convert_ascii_to_keybcode(struct lk201_data *d, unsigned char ch)
 /*
  *  lk201_send_mouse_update_sequence():
  *
- *  mouse_x,y,buttons contains the coordinates on the host's display, the
- *  "goal" of where we want to move. d->mouse_* contains the current state.
+ *  mouse_x, _y, _buttons contains the coordinates on the host's display, the
+ *  "goal" of where we want to move.
  *
- *  TODO:  Comment this better.
+ *  d->mouse_x, _y, _buttons contain the last values transmitted to the
+ *  emulated machine.
  */
-void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
+static int lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 	int mouse_y, int mouse_buttons, int mouse_fb_nr)
 {
 	int xsign, xdelta, ysign, ydelta, m;
-	int framebuffer_nr;
-
-	if (d->old_host_mouse_x == mouse_x &&
-	    d->old_host_mouse_y == mouse_y)
-		d->old_host_mouse_stays_put ++;
-	else
-		d->old_host_mouse_stays_put = 0;
-
-	d->old_host_mouse_x = mouse_x;
-	d->old_host_mouse_y = mouse_y;
-
-	if (d->old_host_mouse_stays_put > 400 &&
-	    d->mouse_buttons == mouse_buttons)
-		return;
-
-	console_get_framebuffer_mouse(&d->mouse_x, &d->mouse_y,
-	    &framebuffer_nr);
 
 	xdelta = mouse_x - d->mouse_x;
 	ydelta = mouse_y - d->mouse_y;
 
-	/*
-	 *  If the last framebuffer cursor placement was not in the
-	 *  same window as the last host cursor movement, then we
-	 *  we have to move to the leftmost extreme or rightmost
-	 *  extreme:
-	 */
-	if (framebuffer_nr != mouse_fb_nr) {
-		if (mouse_fb_nr > framebuffer_nr)
-			xdelta = 2000;
-		if (mouse_fb_nr < framebuffer_nr)
-			xdelta = -2000;
-	}
-
 	/*  If no change, then don't send any update!  */
 	if (xdelta == 0 && ydelta == 0 && d->mouse_buttons == mouse_buttons)
-		return;
+		return 0;
 
-	m = 4 >> (d->old_host_mouse_stays_put / 30);
-	if (m < 1)
-		m = 1;
+	m = 20;
 
 	if (xdelta > m)
 		xdelta = m;
@@ -212,17 +181,23 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 	if (ydelta < -m)
 		ydelta = -m;
 
-	xsign = xdelta < 0? 1 : 0;
-	ysign = ydelta < 0? 1 : 0;
-
 	d->mouse_x += xdelta;
 	d->mouse_y += ydelta;
 	d->mouse_buttons = mouse_buttons;
 
+	/*
+	 *  TODO: Update d->mouse_framebuffer_nr some way!
+	 */
+
+	xsign = xdelta < 0? 1 : 0;
+	ysign = ydelta < 0? 1 : 0;
+
 	switch (d->mouse_mode) {
+
 	case 0:
 		/*  Do nothing (before the mouse is initialized)  */
-		break;
+		return 0;
+
 	case MOUSE_INCREMENTAL:
 		if (xdelta < 0)
 			xdelta = -xdelta;
@@ -238,11 +213,15 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 		d->add_to_rx_queue(d->add_data, xdelta, DCMOUSE_PORT);
 		d->add_to_rx_queue(d->add_data, ydelta, DCMOUSE_PORT);
 		break;
+
 	default:
 		/*  TODO:  prompt mode and perhaps more stuff  */
 		fatal("[ lk201: mouse mode 0x%02x unknown: TODO ]\n",
 		    d->mouse_mode);
+		exit(1);
 	}
+
+	return 1;
 }
 
 
@@ -298,25 +277,11 @@ void lk201_tick(struct machine *machine, struct lk201_data *d)
 	if (!d->use_fb)
 		return;
 
-	d->mouse_check_interval --;
-	if (d->mouse_check_interval <= 0) {
-		d->mouse_check_interval =
-		    d->mouse_check_interval_reset;
+	console_getmouse(&mouse_x, &mouse_y, &mouse_buttons,
+	    &mouse_fb_nr);
 
-		/*
-		 *  Check for mouse updates:
-		 *
-		 *  Note:  mouse_{x,y} are where the mouse is
-		 *  on the host's display.
-		 */
-		console_getmouse(&mouse_x, &mouse_y, &mouse_buttons,
-		    &mouse_fb_nr);
-
-		if (mouse_x != d->mouse_x || mouse_y != d->mouse_y ||
-		    mouse_buttons != d->mouse_buttons)
-			lk201_send_mouse_update_sequence(d, mouse_x, mouse_y,
-			    mouse_buttons, mouse_fb_nr);
-	}
+	lk201_send_mouse_update_sequence(d, mouse_x, mouse_y,
+	    mouse_buttons, mouse_fb_nr);
 }
 
 
@@ -433,7 +398,5 @@ void lk201_init(struct lk201_data *d, int use_fb,
 	d->mouse_mode = 0;
 	d->mouse_revision = 0;	/*  0..15  */
 	d->console_handle = console_handle;
-
-	d->mouse_check_interval_reset = 1 << 3;
 }
 

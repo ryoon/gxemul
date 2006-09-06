@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.107 2006-09-01 15:19:01 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.108 2006-09-06 06:51:43 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1621,6 +1621,7 @@ X(sltiu)
 
 /*
  *  set:  Set a register to an immediate (signed) 32-bit value.
+ *        (This is the actual implementation of the lui instruction.)
  *
  *  arg[0] = pointer to the register
  *  arg[1] = (int32_t) immediate value

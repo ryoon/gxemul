@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: float_emul.c,v 1.7 2006-03-30 19:36:03 debug Exp $
+ *  $Id: float_emul.c,v 1.8 2006-09-07 11:44:01 debug Exp $
  *
  *  Floating point emulation routines.
  */
@@ -232,10 +232,11 @@ uint64_t ieee_store_float_value(double nf, int fmt, int nan)
 
 		/*
 		 *  How to convert back from double to exponent + fraction:
-		 *  We want fraction to be 1.xxx, that is
+		 *  The fraction should be 1.xxx, that is
 		 *  1.0 <= fraction < 2.0
 		 *
 		 *  This method is very slow but should work:
+		 *  (TODO: Fix the performance problem!)
 		 */
 		exponent = 0;
 		while (nf < 1.0 && exponent > -1023) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.96 2006-09-01 15:42:59 debug Exp $
+ *  $Id: memory_rw.c,v 1.97 2006-09-07 11:44:01 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -98,10 +98,12 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	/*  Crossing a page boundary? Then do one byte at a time:  */
 	if ((vaddr & 0xfff) + len > 0x1000 && !(misc_flags & PHYSICAL)
 	    && cpu->cd.x86.cr[0] & X86_CR0_PG) {
-		/*  For WRITES: Read ALL BYTES FIRST and write them back!!!
-		    Then do a write of all the new bytes. This is to make sure
-		    than both pages around the boundary are writable so we don't
-		    do a partial write.  */
+		/*
+		 *  For WRITES: Read ALL BYTES FIRST and write them back!!!
+		 *  Then do a write of all the new bytes. This is to make sure
+		 *  than both pages around the boundary are writable so that
+		 *  there is no "partial write" performed.
+		 */
 		int res = 0;
 		size_t i;
 		if (writeflag == MEM_WRITE) {
@@ -164,9 +166,12 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		    + (misc_flags & MEMORY_USER_ACCESS)
 #endif
 		    + (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
-		/*  If the translation caused an exception, or was invalid in
-		    some way, we simply return without doing the memory
-		    access:  */
+
+		/*
+		 *  If the translation caused an exception, or was invalid in
+		 *  some way, then simply return without doing the memory
+		 *  access:
+		 */
 		if (!ok)
 			return MEMORY_ACCESS_FAILED;
 	}
@@ -499,7 +504,10 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 		    paddr & ~offset_mask);
 
-	/*  Invalidate code translations for the page we are writing to.  */
+	/*
+	 *  If writing, then invalidate code translations for the (physical)
+	 *  page address:
+	 */
 	if (writeflag == MEM_WRITE && cpu->invalidate_code_translation != NULL)
 		cpu->invalidate_code_translation(cpu, paddr, INVALIDATE_PADDR);
 

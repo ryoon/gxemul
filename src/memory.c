@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.195 2006-09-05 06:58:29 debug Exp $
+ *  $Id: memory.c,v 1.196 2006-09-07 11:44:01 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -375,7 +375,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		    baseaddr >= mem->devices[i].endaddr)
 			newi = i + 1;
 
-		/*  If we are not colliding with device i, then continue:  */
+		/*  If this is not colliding with device i, then continue:  */
 		if (baseaddr + len <= mem->devices[i].baseaddr)
 			continue;
 		if (baseaddr >= mem->devices[i].endaddr)

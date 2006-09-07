@@ -25,13 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol_demangle.c,v 1.5 2006-05-01 09:00:19 debug Exp $
+ *  $Id: symbol_demangle.c,v 1.6 2006-09-07 11:44:01 debug Exp $
  *
  *  C++ symbol name demangling.
  *
- *  For obvious performance reasons, we cannot call the external c++filt
- *  utility. The host's version of this utility might be incompatible with the
- *  binary being emulated.
+ *  For obvious performance reasons, the external c++filt utility cannot be
+ *  used. Also, the host's version of this utility might be incompatible with
+ *  the binary being emulated.
  *
  *  TODO: Constructors, destructors, and lots of other stuff. See
  *  http://www.codesourcery.com/cxx-abi/abi.html#mangling for details.

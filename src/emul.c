@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.266 2006-09-05 07:30:34 debug Exp $
+ *  $Id: emul.c,v 1.267 2006-09-07 11:44:01 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -692,8 +692,10 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 		iso_type = 3;
 
 	if (iso_type != 0) {
-		/*  We can't load a kernel if the name
-		    isn't specified.  */
+		/*
+		 *  If the user specified a kernel name, then load it from
+		 *  disk.
+		 */
 		if (cpu->machine->boot_kernel_filename == NULL ||
 		    cpu->machine->boot_kernel_filename[0] == '\0')
 			fatal("\nISO9660 filesystem, but no kernel "
@@ -716,8 +718,6 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 	}
 	if (bootblock_buf[0x000] == 'E' && bootblock_buf[0x001] == 'R' &&
 	    bootblock_buf[0x200] == 'P' && bootblock_buf[0x201] == 'M') {
-		/*  We can't load a kernel if the name
-		    isn't specified.  */
 		if (cpu->machine->boot_kernel_filename == NULL ||
 		    cpu->machine->boot_kernel_filename[0] == '\0')
 			fatal("\nApple partition table, but no kernel "
@@ -1720,7 +1720,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 		debugger();
 	}
 
-	/*  Any machine using X11? Then we should wait before exiting:  */
+	/*  Any machine using X11? Then wait before exiting:  */
 	n = 0;
 	for (i=0; i<n_emuls; i++)
 		for (j=0; j<emuls[i]->n_machines; j++)

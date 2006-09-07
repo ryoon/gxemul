@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.113 2006-08-27 13:13:12 debug Exp $
+ *  $Id: diskimage.c,v 1.114 2006-09-07 11:44:01 debug Exp $
  *
  *  Disk image support.
  *
@@ -1143,7 +1143,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*
 		 *  Bits 2..0 of buf[1] contain the 'code' which describes how
-		 *  we should space, and buf[2..4] contain the number of
+		 *  spacing should be done, and buf[2..4] contain the number of
 		 *  operations.
 		 */
 		debug("[ SPACE: buf[] = %02x %02x %02x %02x %02x %02x ]\n",

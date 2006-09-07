@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.18 2006-09-06 04:55:35 debug Exp $
+ *  $Id: console.c,v 1.19 2006-09-07 11:44:01 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -153,15 +153,17 @@ void console_deinit_main(void)
  *  console_sigcont():
  *
  *  If the user presses CTRL-Z (to stop the emulator process) and then
- *  continues, we have to make sure that the right termios settings are
- *  active.  (This should be set as the SIGCONT signal handler in src/emul.c.)
+ *  continues, the termios settings might have been invalidated. This
+ *  function restores them.
+ *
+ *  (This function should be set as the SIGCONT signal handler in src/emul.c.)
  */
 void console_sigcont(int x)
 {
 	if (!console_initialized)
 		return;
 
-	/*  Make sure our 'current' termios setting is active:  */
+	/*  Make sure that the correct (current) termios setting is active:  */
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
 
 	/*  Reset the signal handler:  */

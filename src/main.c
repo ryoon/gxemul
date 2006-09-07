@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.282 2006-09-05 06:13:27 debug Exp $
+ *  $Id: main.c,v 1.283 2006-09-07 11:44:01 debug Exp $
  */
 
 #include <stdio.h>
@@ -801,8 +801,8 @@ int main(int argc, char *argv[])
 			    emulations:  */
 			console_allow_slaves(1);
 
-			/*  Destroy the temporary emuls[0], since we are
-			    overwriting it:  */
+			/*  Destroy the temporary emuls[0], since it will
+			    be overwritten:  */
 			if (n_emuls == 1) {
 				emul_destroy(emuls[0]);
 				settings_remove(global_settings, "emul[0]");

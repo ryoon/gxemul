@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.108 2006-09-06 06:51:43 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.109 2006-09-07 11:43:23 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1096,8 +1096,8 @@ X(div)
 		res = 0, rem = a;
 	else
 		res = a / b, rem = a - b*res;
-	reg(&cpu->cd.mips.lo) = (int32_t)res;
-	reg(&cpu->cd.mips.hi) = (int32_t)rem;
+	cpu->cd.mips.lo = (int32_t)res;
+	cpu->cd.mips.hi = (int32_t)rem;
 }
 X(divu)
 {
@@ -1107,8 +1107,8 @@ X(divu)
 		res = 0, rem = a;
 	else
 		res = a / b, rem = a - b*res;
-	reg(&cpu->cd.mips.lo) = (int32_t)res;
-	reg(&cpu->cd.mips.hi) = (int32_t)rem;
+	cpu->cd.mips.lo = (int32_t)res;
+	cpu->cd.mips.hi = (int32_t)rem;
 }
 X(ddiv)
 {
@@ -1119,8 +1119,8 @@ X(ddiv)
 	else
 		res = a / b;
 	rem = a - b*res;
-	reg(&cpu->cd.mips.lo) = res;
-	reg(&cpu->cd.mips.hi) = rem;
+	cpu->cd.mips.lo = res;
+	cpu->cd.mips.hi = rem;
 }
 X(ddivu)
 {
@@ -1131,15 +1131,15 @@ X(ddivu)
 	else
 		res = a / b;
 	rem = a - b*res;
-	reg(&cpu->cd.mips.lo) = res;
-	reg(&cpu->cd.mips.hi) = rem;
+	cpu->cd.mips.lo = res;
+	cpu->cd.mips.hi = rem;
 }
 X(mult)
 {
 	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	int64_t res = (int64_t)a * (int64_t)b;
-	reg(&cpu->cd.mips.lo) = (int32_t)res;
-	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
+	cpu->cd.mips.lo = (int32_t)res;
+	cpu->cd.mips.hi = (int32_t)(res >> 32);
 }
 X(mult_r5900)
 {
@@ -1147,16 +1147,16 @@ X(mult_r5900)
 	    hi, lo, and a third register  */
 	int32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	int64_t res = (int64_t)a * (int64_t)b;
-	reg(&cpu->cd.mips.lo) = (int32_t)res;
-	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
+	cpu->cd.mips.lo = (int32_t)res;
+	cpu->cd.mips.hi = (int32_t)(res >> 32);
 	reg(ic->arg[2]) = (int32_t)res;
 }
 X(multu)
 {
 	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	uint64_t res = (uint64_t)a * (uint64_t)b;
-	reg(&cpu->cd.mips.lo) = (int32_t)res;
-	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
+	cpu->cd.mips.lo = (int32_t)res;
+	cpu->cd.mips.hi = (int32_t)(res >> 32);
 }
 X(multu_r5900)
 {
@@ -1164,8 +1164,8 @@ X(multu_r5900)
 	    hi, lo, and a third register  */
 	uint32_t a = reg(ic->arg[0]), b = reg(ic->arg[1]);
 	uint64_t res = (uint64_t)a * (uint64_t)b;
-	reg(&cpu->cd.mips.lo) = (int32_t)res;
-	reg(&cpu->cd.mips.hi) = (int32_t)(res >> 32);
+	cpu->cd.mips.lo = (int32_t)res;
+	cpu->cd.mips.hi = (int32_t)(res >> 32);
 	reg(ic->arg[2]) = (int32_t)res;
 }
 X(dmult)
@@ -1194,8 +1194,8 @@ X(dmult)
 		hi ^= (int64_t) -1;
 		lo ^= (int64_t) -1;
 	}
-	reg(&cpu->cd.mips.lo) = lo;
-	reg(&cpu->cd.mips.hi) = hi;
+	cpu->cd.mips.lo = lo;
+	cpu->cd.mips.hi = hi;
 }
 X(dmultu)
 {
@@ -1211,8 +1211,8 @@ X(dmultu)
 		}
 		c = (c << 1) | (b >> 63); b <<= 1;
 	}
-	reg(&cpu->cd.mips.lo) = lo;
-	reg(&cpu->cd.mips.hi) = hi;
+	cpu->cd.mips.lo = lo;
+	cpu->cd.mips.hi = hi;
 }
 X(tge)
 {

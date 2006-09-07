@@ -1,4 +1,4 @@
-$Id: TODO,v 1.369 2006-09-06 04:55:34 debug Exp $
+$Id: TODO,v 1.370 2006-09-07 11:44:41 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -71,7 +71,10 @@ Implementation:
 			though it claims to?
 		x)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
-		x)  Support VDE (vde.sf.net)?
+		x)  Support VDE (vde.sf.net)? Easiest/cleanest (before a
+		    redesign of the network framework has been done) is
+		    probably to connect it using the current (udp)
+		    solution.
 		x)  Allow SLIP connections, possibly PPP, in addition to
 		    ethernet?
 	x)  Implement more ethernet NICs.

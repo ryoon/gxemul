@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1360 2006-09-06 04:55:34 debug Exp $
+$Id: HISTORY,v 1.1361 2006-09-07 11:44:41 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3010,3 +3010,6 @@ Changelog for GXemul:
 20060906	Continuing on the lk201 mouse stuff. Mouse behaviour with
 		multiple framebuffers (which was working in Ultrix) is now
 		semi-broken (but it still works, in a way).
+		Moving the documentation about networking into its own file
+		(networking.html), and refreshing it a bit. Adding an example
+		of how to use ethernet frame direct-access (udp_snoop).

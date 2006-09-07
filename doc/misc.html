@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.63 2006-05-22 04:53:52 debug Exp $
+$Id: misc.html,v 1.64 2006-09-07 11:44:42 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -47,7 +47,6 @@ SUCH DAMAGE.
 
 <p>
 <ul>
-  <li><a href="#networking">Networking</a>
   <li><a href="#devel">Writing operating system code, or
 	developing firmware, using GXemul</a>
   <li><a href="#compilercontruct">Using GXemul in compiler contruction courses</a>
@@ -60,47 +59,6 @@ SUCH DAMAGE.
 
 
 
-
-
-
-
-<p><br>
-<a name="networking"></a>
-<h3>Networking:</h3>
-
-It is possible to let the guest OS running inside the emulator get access to
-the Internet. If you are interested in the technical details, and the 
-reasons why networking is implemented in the emulator the way it currently 
-is implemented, you might want to read the <a href="technical.html#net">
-networking section in the technical documentation</a>.
-
-<p><font color="#ff0000">This is still experimental, hackish, and 
-rather buggy. With NetBSD running as guest operating system, it mostly 
-works.</font>
-
-<p>When only one machine is being emulated, the following default values 
-apply:<pre>
-	IPv4 address:			10.0.0.1
-	Netmask:			255.0.0.0
-	Gateway / default route:	10.0.0.254
-	Nameserver:			10.0.0.254
-</pre>
-
-<p>The emulated machine must of course have a NIC which is emulated 
-correctly. At the moment, the following NICs should work:
-<ul>
-  <li><tt><b>ether</b></tt>, the "fake" experimental ethernet device
-	(documented <a href="experiments.html#expdevices_ether">here</a>)
-  <li><tt><b>le</b></tt>, Turbochannel Lance Ethernet, as used in
-	DECstation 5000/200 ("3max")
-  <li><tt><b>mec</b></tt>, the SGI O2's ethernet controller
-  <li><tt><b>dec21143</b></tt>, Digital's 21143 NIC (known as <tt>dc</tt>
-	in OpenBSD, or <tt>tlp</tt> in NetBSD)
-</ul>
-
-<p>The emulator acts as a NAT-like gateway/firewall; to the outside world
-it will seem like it is the host's OS that connects to other machines on
-the internet, not the guest OS.
 
 
 
@@ -298,9 +256,9 @@ you can "switch tapes" without quiting and restarting the emulator.
 <a name="filexfer"></a>
 <h3>Transfering files to/from the guest OS:</h3>
 
-If the emulated machine supports networking (see
-<a href="#networking">above</a>), then transfering files via FTP is
-probably easiest.
+If the emulated machine supports networking (see <a 
+href="networking.html#intro">this section</a> for more info), then 
+transfering files via FTP is probably easiest.
 
 <p>There is another way of transfering files which works for any kind of 
 emulated machine which supports disks (either SCSI or IDE). Any file can 

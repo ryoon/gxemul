@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: configfiles.html,v 1.26 2006-08-17 15:27:43 debug Exp $
+$Id: configfiles.html,v 1.27 2006-09-07 11:44:42 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -46,10 +46,35 @@ SUCH DAMAGE.
 
 <p>
 <ul>
+  <li><a href="#intro">Introduction</a>
   <li><a href="#config">Configuration file syntax</a>
   <li><a href="#minimal">A minimal example</a>
-  <li><a href="#multihost">Network across multiple hosts</a>
 </ul>
+
+
+
+
+<p><br>
+<a name="intro"></a>
+<h3>Introduction:</h3>
+
+GXemul can be started by entering machine settings directly on the command 
+line, or by reading a configuration file (a "configuration script").
+
+<p>Configuration files in GXemul are useful/necessary for three reasons:
+
+<p><ol>
+  <li>It can be difficult to remember long command lines with
+	lots of options.
+  <li>Some settings cannot be fully controlled on the command line. They can
+	only be set using configuration files.
+  <li>Complex setups of multiple machines, or complex network setups,
+	are not supported on the command line.
+</ol>
+
+
+
+
 
 
 
@@ -210,72 +235,6 @@ netbooting kernels.
 
 
 
-
-<p><br>
-<a name="multihost"></a>
-<h3>Network across multiple hosts:</h3>
-
-<p>It is possible to add multiple <tt>machine</tt> entries into one
-configuration file. This will cause the emulator to try to run all those
-machines simultaneously. An alternative (and better) solution for doing
-this, which gives higher reliability (stability) and performance, is to
-have one configuration file per emulated machine.
-
-<p><table border="0" width="100%"><tr><td width="40">&nbsp;</td>
-<td><pre>
-<font color="#2020cf">!  Configuration file for a
-!  "client" machine, netbooting
-!  of another machine.</font>
-
-<b>net(</b>
-	<b>local_port(15000)</b>
-	<b>add_remote(<font color="#ff003f">"localhost:15001"</font>)</b>
-<b>)</b>
-<b>machine(</b>
-	<b>name(<font color="#ff003f">"client machine"</font>)</b>
-	<b>serial_nr(1)</b>	<font color="#2020cf">!  10.0.0.1</font>
-
-	<b>type(<font color="#ff003f">"sgi"</font>)</b>
-	<b>subtype(<font color="#ff003f">"o2"</font>)</b>
-        <b>load(<font color="#ff003f">"netbsd-GENERIC32_IP3x.gz"</font>)</b>
-<b>)</b>
-</pre></td><td width="20">&nbsp;</td><td><pre>
-<font color="#2020cf">!  Configuration file for the
-!  "server" machine.</font>
-
-<b>net(</b>
-	<b>local_port(15001)</b>
-	<b>add_remote(<font color="#ff003f">"localhost:15000"</font>)</b>
-<b>)</b>
-<b>machine(</b>
-	<b>name(<font color="#ff003f">"nfs server"</font>)</b>
-	<b>serial_nr(2)</b>	<font color="#2020cf">!  10.0.0.2</font>
-
-        <b>type(<font color="#ff003f">"dec"</font>)</b>
-        <b>subtype(<font color="#ff003f">"3max"</font>)</b>
-        <b>disk(<font color="#ff003f">"nbsd_pmax.img"</font>)</b>
-<b>)</b>
-</pre></td><td width="20">&nbsp;</td></tr></table>
-
-<p>This example creates a network using the default settings (10.0.0.0/8), 
-but it also allows the network to be connected to other emulator 
-instances. <tt>local_port(15000)</tt> means that anything coming in to 
-UDP port 15000 on the host is added to the network. All ethernet packets 
-on the network are also sent out to all other connected machines (those 
-added with <tt>add_remote()</tt>).
-
-<p>As you can see in the example, this is a configuration file for
-netbooting a NetBSD/sgimips diskless machine, with a NetBSD/pmax machine
-acting as the nfs server. Note that the nfs server has ports 15000 and 
-15001 reversed!
-
-<p>"<tt>localhost</tt>" can be changed to the Internet hostname of a 
-remote machine, to run the simulation across a physical network.
-
-<p><font color="#ff0000"><b>NOTE:</b> There is no error checking or
-security checking of any kind. All UDP packets arriving at the input port
-are added to the emulated ethernet. This is not very good of course; use 
-this feature at your own risk.</font>
 
 
 

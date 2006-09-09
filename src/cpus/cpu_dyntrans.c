@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.124 2006-08-28 16:25:59 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.125 2006-09-09 09:04:32 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -249,25 +249,23 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 			cpu_register_dump(cpu->machine, cpu, 1, 0x1);
 		}
 		if (cpu->machine->instruction_trace) {
+			/*  TODO/Note: This must be large enough to hold
+			    any instruction for any ISA:  */
+			unsigned char instr[32];
 #ifdef DYNTRANS_X86
-			unsigned char instr[17];
 			cpu->cd.x86.cursegment = X86_S_CS;
 			cpu->cd.x86.seg_override = 0;
-#else
-#ifdef DYNTRANS_M68K
-			unsigned char instr[16];	/*  TODO: 16?  */
-#else
-			unsigned char instr[4];		/*  General case...  */
 #endif
-#endif
-
 			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION)) {
 				fatal("XXX_run_instr(): could not read "
 				    "the instruction\n");
 			} else {
-				cpu_disassemble_instr(cpu->machine, cpu,
-				    instr, 1, 0);
+#ifdef DYNTRANS_DELAYSLOT
+				int len =
+#endif
+				    cpu_disassemble_instr(
+				    cpu->machine, cpu, instr, 1, 0);
 #ifdef DYNTRANS_DELAYSLOT
 				/*  Show the instruction in the delay slot,
 				    if any:  */
@@ -278,15 +276,15 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 				    instr)) {
 					int saved_delayslot = cpu->delay_slot;
 					cpu->memory_rw(cpu, cpu->mem, cached_pc
-					    + sizeof(instr), &instr[0],
+					    + len, &instr[0],
 					    sizeof(instr), MEM_READ,
 					    CACHE_INSTRUCTION);
 					cpu->delay_slot = DELAYED;
-					cpu->pc += sizeof(instr);
+					cpu->pc += len;
 					cpu_disassemble_instr(cpu->machine,
 					    cpu, instr, 1, 0);
 					cpu->delay_slot = saved_delayslot;
-					cpu->pc -= sizeof(instr);
+					cpu->pc -= len;
 				}
 #endif
 			}

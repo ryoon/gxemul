@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.21 2006-07-25 21:49:14 debug Exp $
+ *  $Id: cpu_sh.h,v 1.22 2006-09-09 09:04:33 debug Exp $
  */
 
 #include "misc.h"
@@ -124,6 +124,7 @@ struct sh_cpu {
 
 
 /*  cpu_sh.c:  */
+int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib);
 int sh_run_instr(struct cpu *cpu);
 void sh_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);

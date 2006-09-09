@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.9 2006-08-22 13:16:27 debug Exp $
+ *  $Id: machine_algor.c,v 1.10 2006-09-09 09:04:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -80,9 +80,6 @@ MACHINE_SETUP(algor)
 
 	if (!machine->prom_emulation)
 		return;
-
-	/*  Magic "reboot" instruction at 0xbfc00000:  */
-	store_32bit_word(cpu, 0xffffffff9fc00000ULL, 0x00c0de0d);
 
 	/*  NetBSD/algor wants these:  */
 

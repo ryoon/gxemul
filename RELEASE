@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.222 2006-09-06 04:55:34 debug Exp $
+$Id: RELEASE,v 1.223 2006-09-09 09:04:32 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -29,13 +29,15 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	So far, the DECstation, MobilePro, NetWinder, and CATS machine
 	modes have been rewritten to use the new clock/timer framework.
 
+    o)	The wdc (standard IDE controller) had a bug which prevented disk
+	images larger than 2 GB to work correctly. This has been fixed.
+
     o)	The mouse cursor update routines in DECstation (LK201) emulation
 	previously used the fact that guest OSes set the _hardware_
 	cursor position. In order to support X Windows when emulating
 	modern versions of NetBSD/pmax, which doesn't set the hardware
 	position anymore, a workaround has been implemented which only
-	sends relative coordinates to the guest OS. This has two major
-	drawbacks:
+	sends relative coordinates to the guest OS. This has two drawbacks:
 
 	1. Ultrix emulation with dual- and tripple-head emulation will
 	   most likely feel very strange. It will still work, though.

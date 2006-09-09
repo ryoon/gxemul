@@ -1,9 +1,12 @@
-$Id: TODO,v 1.370 2006-09-07 11:44:41 debug Exp $
+$Id: TODO,v 1.371 2006-09-09 09:04:32 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
+	x)  SH:
+		x)  mov.l #imm,Rn  is a load, not an immediate mov!
+		x)  Argument passing for function calls?
 	x)  Settings / expression evaluator:
 		x)  Special handlers for Write! (E.g. MIPS coproc regs)
 		x)  Rewrite all CPUs so that they register registers. :)

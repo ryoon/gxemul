@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1361 2006-09-07 11:44:41 debug Exp $
+$Id: HISTORY,v 1.1362 2006-09-09 09:04:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3013,3 +3013,7 @@ Changelog for GXemul:
 		Moving the documentation about networking into its own file
 		(networking.html), and refreshing it a bit. Adding an example
 		of how to use ethernet frame direct-access (udp_snoop).
+20060907	Continuing on the settings infrastructure.
+20060908	Minor updates to SH emulation: for 32-bit emulation: delay
+		slots and the 'jsr @Rn' instruction. I'm putting 64-bit SH5 on
+		ice, for now.

@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.21 2006-07-25 21:49:14 debug Exp $
+ *  $Id: cpu_sh.c,v 1.22 2006-09-09 09:04:32 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
- *  TODO
+ *  TODO: It would be nice if this could encompass both 64-bit SH5, and
+ *        32-bit SH encodings. Right now, it only really supports 32-bit mode.
  */
 
 #include <stdio.h>
@@ -45,6 +46,7 @@
 
 
 #define DYNTRANS_DUALMODE_32
+#define DYNTRANS_DELAYSLOT
 #include "tmp_sh_head.c"
 
 
@@ -78,6 +80,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	cpu->is_32bit = cpu->cd.sh.cpu_type.bits == 32;
 	cpu->cd.sh.compact = 1;		/*  Default to 16-bit opcode mode  */
+
+	cpu->instruction_has_delayslot = sh_cpu_instruction_has_delayslot;
 
 	cpu->translate_v2p = sh_translate_v2p;
 
@@ -144,6 +148,40 @@ void sh_cpu_dumpinfo(struct cpu *cpu)
 
 
 /*
+ *  sh_cpu_instruction_has_delayslot():
+ *
+ *  Return 1 if an opcode is a branch, 0 otherwise.
+ */
+int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
+{
+	uint16_t iword = *((uint16_t *)&ib[0]);
+	int hi4, lo4, lo8;
+
+	if (!cpu->is_32bit)
+		return 0;
+
+	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+		iword = BE16_TO_HOST(iword);
+	else
+		iword = LE16_TO_HOST(iword);
+
+	hi4 = iword >> 12; lo4 = iword & 15; lo8 = iword & 255;
+
+        switch (hi4) {
+	case 0x4:
+		switch (lo8) {
+		case 0x0b:	/*  jsr  */
+		case 0x2b:	/*  jmp  */
+			return 1;
+		}
+		break;
+	}
+
+	return 0;
+}
+
+
+/*
  *  sh_cpu_register_dump():
  *
  *  Dump cpu registers in a relatively readable format.
@@ -170,8 +208,8 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			debug("%016llx", (long long)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		debug("cpu%i: sr  = %s, %s, %s, %s, %s, %s, imask=0x%x, "
-		    "%s, %s\n", x,
+		debug("cpu%i: sr  = 0x%08"PRIx32"  (%s, %s, %s, %s, %s, %s,"
+		    " imask=0x%x, %s, %s)\n", x, (int32_t)cpu->cd.sh.sr,
 		    (cpu->cd.sh.sr & SH_SR_MD)? "MD" : "!md",
 		    (cpu->cd.sh.sr & SH_SR_RB)? "RB" : "!rb",
 		    (cpu->cd.sh.sr & SH_SR_BL)? "BL" : "!bl",
@@ -181,6 +219,8 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (cpu->cd.sh.sr & SH_SR_IMASK) >> SH_SR_IMASK_SHIFT,
 		    (cpu->cd.sh.sr & SH_SR_S)? "S" : "!s",
 		    (cpu->cd.sh.sr & SH_SR_T)? "T" : "!t");
+
+		debug("cpu%i: pr  = 0x%08"PRIx32"\n", x, cpu->cd.sh.pr);
 
 		if (bits32) {
 			/*  32-bit:  */
@@ -323,7 +363,7 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	else
 		iword = (instr[1] << 8) + instr[0];
 
-	debug(":  %04x \t", iword);
+	debug(":  %04x %s\t", iword, cpu->delay_slot? "(d)" : "");
 	hi4 = iword >> 12; lo4 = iword & 15; lo8 = iword & 255;
 	r8 = (iword >> 8) & 15; r4 = (iword >> 4) & 15;
 

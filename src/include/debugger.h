@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.h,v 1.6 2006-09-04 04:31:29 debug Exp $
+ *  $Id: debugger.h,v 1.7 2006-09-09 09:04:33 debug Exp $
  *
  *  See src/debugger/debugger.c.
  */
@@ -53,7 +53,7 @@ void debugger_init(struct emul **emuls, int n_emuls);
 /*  debugger_expr.c:  */
 #define	NAME_PARSE_NOMATCH	0
 #define	NAME_PARSE_MULTIPLE	1
-#define	NAME_PARSE_REGISTER	2
+#define	NAME_PARSE_SETTINGS	2
 #define	NAME_PARSE_NUMBER	3
 #define	NAME_PARSE_SYMBOL	4
 int debugger_parse_name(struct machine *m, char *name, int writeflag,

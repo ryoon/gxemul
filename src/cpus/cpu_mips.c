@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.64 2006-09-05 07:30:34 debug Exp $
+ *  $Id: cpu_mips.c,v 1.65 2006-09-09 09:04:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -322,6 +322,18 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 			cpu->translate_v2p = translate_v2p_mmu4100;
 		else
 			cpu->translate_v2p = translate_v2p_generic;
+	}
+
+	if (cpu->machine->prom_emulation) {
+		/*
+		 *  Default behaviour of jumping to 0xbfc00000 should be
+		 *  a reboot, unless machine-specific initialization code
+		 *  overrides this.
+		 *
+		 *  Note: Specifically big-endian machines should override
+		 *  this, since the default MIPS CPU is little-endian!
+		 */
+		store_32bit_word(cpu, 0xffffffff9fc00000ULL, 0x00c0de0d);
 	}
 
 	/*  Add all register names to the settings:  */
@@ -672,100 +684,6 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			}
 		}
 	}
-}
-
-
-/*
- *  mips_cpu_register_match():
- */
-void mips_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-			if (m->cpus[cpunr]->delay_slot) {
-				printf("NOTE: Clearing the delay slot"
-				    " flag! (It was set before.)\n");
-				m->cpus[cpunr]->delay_slot = 0;
-			}
-			if (m->cpus[cpunr]->cd.mips.nullify_next) {
-				printf("NOTE: Clearing the nullify-ne"
-				    "xt flag! (It was set before.)\n");
-				m->cpus[cpunr]->cd.mips.nullify_next = 0;
-			}
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	} else if (strcasecmp(name, "hi") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.mips.hi = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.mips.hi;
-		*match_register = 1;
-	} else if (strcasecmp(name, "lo") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.mips.lo = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.mips.lo;
-		*match_register = 1;
-	} else if (name[0] == 'r' && isdigit((int)name[1])) {
-		int nr = atoi(name + 1);
-		if (nr >= 0 && nr < N_MIPS_GPRS) {
-			if (writeflag) {
-				if (nr != 0)
-					m->cpus[cpunr]->cd.mips.gpr[nr] = *valuep;
-				else
-					printf("WARNING: Attempt to modify r0.\n");
-			} else
-				*valuep = m->cpus[cpunr]->cd.mips.gpr[nr];
-			*match_register = 1;
-		}
-	} else {
-		/*  Check for a symbolic name such as "t6" or "at":  */
-		int nr;
-		for (nr=0; nr<N_MIPS_GPRS; nr++)
-			if (strcmp(name, regnames[nr]) == 0) {
-				if (writeflag) {
-					if (nr != 0)
-						m->cpus[cpunr]->cd.mips.gpr[nr] = *valuep;
-					else
-						printf("WARNING: Attempt to modify r0.\n");
-				} else
-					*valuep = m->cpus[cpunr]->cd.mips.gpr[nr];
-				*match_register = 1;
-			}
-	}
-
-	if (!(*match_register)) {
-		/*  Check for a symbolic coproc0 name:  */
-		int nr;
-		for (nr=0; nr<N_MIPS_COPROC_REGS; nr++)
-			if (strcmp(name, cop0_names[nr]) == 0) {
-				if (writeflag) {
-					coproc_register_write(m->cpus[cpunr],
-					    m->cpus[cpunr]->cd.mips.coproc[0], nr,
-					    valuep, 1, 0);
-				} else {
-					/*  TODO: Use coproc_register_read instead?  */
-					*valuep = m->cpus[cpunr]->cd.mips.coproc[0]->reg[nr];
-				}
-				*match_register = 1;
-			}
-	}
-
-	/*  TODO: Coprocessor 1,2,3 registers.  */
-
-	/*  Only return lowest 32 bits when doing 32-bit emulation:  */
-	if (!writeflag && m->cpus[cpunr]->is_32bit)
-		*valuep = (uint32_t) (*valuep);
 }
 
 

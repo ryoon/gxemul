@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.356 2006-09-05 07:30:34 debug Exp $
+ *  $Id: cpu.c,v 1.357 2006-09-09 09:04:32 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -174,22 +174,6 @@ void cpu_tlbdump(struct machine *m, int x, int rawflag)
 		fatal("cpu_tlbdump(): NULL\n");
 	else
 		m->cpu_family->tlbdump(m, x, rawflag);
-}
-
-
-/*
- *  cpu_register_match():
- *
- *  Used by the debugger.
- */
-void cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	if (m->cpu_family == NULL || m->cpu_family->register_match == NULL)
-		fatal("cpu_register_match(): NULL\n");
-	else
-		m->cpu_family->register_match(m, name, writeflag,
-		    valuep, match_register);
 }
 
 

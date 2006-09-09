@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.94 2006-09-05 07:30:35 debug Exp $
+ *  $Id: cpu.h,v 1.95 2006-09-09 09:04:33 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -241,11 +241,6 @@ struct cpu_family {
 	/*  List available CPU types for this architecture.  */
 	void			(*list_available_types)(void);
 
-	/*  Read or write a CPU register, given a name.  */
-	void			(*register_match)(struct machine *m,
-				    char *name, int writeflag,
-				    uint64_t *valuep, int *match_register);
-
 	/*  Disassemble an instruction.  */
 	int			(*disassemble_instr)(struct cpu *cpu,
 				    unsigned char *instr, int running,
@@ -416,8 +411,6 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 void cpu_destroy(struct cpu *cpu);
 
 void cpu_tlbdump(struct machine *m, int x, int rawflag);
-void cpu_register_match(struct machine *m, char *name, 
-	int writeflag, uint64_t *valuep, int *match_register);
 void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs);
 int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
@@ -464,7 +457,6 @@ void cpu_init(void);
 	fp->name = s;							\
 	fp->cpu_new = n ## _cpu_new;					\
 	fp->list_available_types = n ## _cpu_list_available_types;	\
-	fp->register_match = n ## _cpu_register_match;			\
 	fp->disassemble_instr = n ## _cpu_disassemble_instr;		\
 	fp->register_dump = n ## _cpu_register_dump;			\
 	fp->dumpinfo = n ## _cpu_dumpinfo;				\

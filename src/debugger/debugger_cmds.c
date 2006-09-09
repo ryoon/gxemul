@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.6 2006-09-01 15:42:59 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.7 2006-09-09 09:04:32 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -277,19 +277,21 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 		p = strchr(cmd_line, ' ');
 	}
 
+	if (m->cpus == NULL) {
+		printf("No cpus (?)\n");
+		return;
+	}
+	c = m->cpus[m->bootstrap_cpu];
+	if (c == NULL) {
+		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
+		return;
+	}
+	mem = m->cpus[m->bootstrap_cpu]->mem;
+
 	addr_start = last_dump_addr;
 
-	if (addr_start == MAGIC_UNTOUCHED) {
-		uint64_t tmp;
-		int match_register = 0;
-		cpu_register_match(m, "pc", 0, &tmp, &match_register);
-		if (match_register) {
-			addr_start = tmp;
-		} else {
-			printf("No starting address.\n");
-			return;
-		}
-	}
+	if (addr_start == MAGIC_UNTOUCHED)
+		addr_start = c->pc;
 
 	addr_end = addr_start + 16 * 16;
 
@@ -303,17 +305,6 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 			return;
 		}
 	}
-
-	if (m->cpus == NULL) {
-		printf("No cpus (?)\n");
-		return;
-	}
-	c = m->cpus[m->bootstrap_cpu];
-	if (c == NULL) {
-		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
-		return;
-	}
-	mem = m->cpus[m->bootstrap_cpu]->mem;
 
 	addr = addr_start & ~0xf;
 
@@ -645,7 +636,7 @@ static void debugger_cmd_print(struct machine *m, char *cmd_line)
 	case NAME_PARSE_MULTIPLE:
 		printf("Multiple matches. Try prefixing with %%, $, or @.\n");
 		break;
-	case NAME_PARSE_REGISTER:
+	case NAME_PARSE_SETTINGS:
 		printf("%s = 0x%"PRIx64"\n", cmd_line, (uint64_t)tmp);
 		break;
 	case NAME_PARSE_SYMBOL:
@@ -731,7 +722,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 		printf("Multiple matches for the address."
 		    " Try prefixing with %%, $, or @.\n");
 		return;
-	case NAME_PARSE_REGISTER:
+	case NAME_PARSE_SETTINGS:
 	case NAME_PARSE_SYMBOL:
 	case NAME_PARSE_NUMBER:
 		break;
@@ -749,7 +740,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 		printf("Multiple matches for the data value."
 		    " Try prefixing with %%, $, or @.\n");
 		return;
-	case NAME_PARSE_REGISTER:
+	case NAME_PARSE_SETTINGS:
 	case NAME_PARSE_SYMBOL:
 	case NAME_PARSE_NUMBER:
 		break;
@@ -1103,19 +1094,21 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		p = strchr(cmd_line, ' ');
 	}
 
+	if (m->cpus == NULL) {
+		printf("No cpus (?)\n");
+		return;
+	}
+	c = m->cpus[m->bootstrap_cpu];
+	if (c == NULL) {
+		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
+		return;
+	}
+	mem = m->cpus[m->bootstrap_cpu]->mem;
+
 	addr_start = last_unasm_addr;
 
-	if (addr_start == MAGIC_UNTOUCHED) {
-		uint64_t tmp;
-		int match_register = 0;
-		cpu_register_match(m, "pc", 0, &tmp, &match_register);
-		if (match_register) {
-			addr_start = tmp;
-		} else {
-			printf("No starting address.\n");
-			return;
-		}
-	}
+	if (addr_start == MAGIC_UNTOUCHED)
+		addr_start = c->pc;
 
 	addr_end = addr_start + 1000;
 
@@ -1130,17 +1123,6 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		}
 	} else
 		lines_left = 20;
-
-	if (m->cpus == NULL) {
-		printf("No cpus (?)\n");
-		return;
-	}
-	c = m->cpus[m->bootstrap_cpu];
-	if (c == NULL) {
-		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
-		return;
-	}
-	mem = m->cpus[m->bootstrap_cpu]->mem;
 
 	addr = addr_start;
 

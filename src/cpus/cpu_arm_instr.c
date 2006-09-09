@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm_instr.c,v 1.68 2006-08-11 17:43:30 debug Exp $
+ *  $Id: cpu_arm_instr.c,v 1.69 2006-09-09 09:04:32 debug Exp $
  *
  *  ARM instructions.
  *
@@ -33,6 +33,10 @@
  *  (If no instruction was executed, then it should be decreased. If, say, 4
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
+ *
+ *  Note: cpu->pc is prefered over r[ARM_PC]. r[ARM_PC] is only used in a
+ *        few places, and should always be kept in synch with the real
+ *        program counter.
  */
 
 

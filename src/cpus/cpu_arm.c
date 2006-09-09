@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.63 2006-09-05 06:45:50 debug Exp $
+ *  $Id: cpu_arm.c,v 1.64 2006-09-09 09:04:32 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -46,6 +46,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "of.h"
+#include "settings.h"
 #include "symbol.h"
 
 #define DYNTRANS_32
@@ -163,6 +164,10 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	}
 
 	cpu->cd.arm.flags = cpu->cd.arm.cpsr >> 28;
+
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	for (i=0; i<N_ARM_REGS - 1; i++)
+		CPU_SETTINGS_ADD_REGISTER32(arm_regname[i], cpu->cd.arm.r[i]);
 
 	return 1;
 }
@@ -300,36 +305,6 @@ void arm_cpu_list_available_types(void)
 		i++;
 		if ((i % 5) == 0 || tdefs[i].name == NULL)
 			debug("\n");
-	}
-}
-
-
-/*
- *  arm_cpu_register_match():
- */
-void arm_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int i, cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	/*  Register names:  */
-	for (i=0; i<N_ARM_REGS; i++) {
-		if (strcasecmp(name, arm_regname[i]) == 0) {
-			if (writeflag) {
-				m->cpus[cpunr]->cd.arm.r[i] = *valuep;
-				if (i == ARM_PC)
-					m->cpus[cpunr]->pc = *valuep;
-			} else {
-				*valuep = m->cpus[cpunr]->cd.arm.r[i];
-				if (i == ARM_PC)
-					*valuep = m->cpus[cpunr]->pc;
-			}
-			*match_register = 1;
-		}
 	}
 }
 

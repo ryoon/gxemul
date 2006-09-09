@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.3 2006-09-05 07:30:34 debug Exp $
+ *  $Id: debugger_expr.c,v 1.4 2006-09-09 09:04:33 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -48,6 +48,10 @@
 #include "debugger.h"
 #include "machine.h"
 #include "misc.h"
+#include "settings.h"
+
+
+extern struct settings *global_settings;
 
 
 /*
@@ -66,7 +70,8 @@
  *  0 is assumed by default.)
  *
  *  To force detection of different types, a character can be added in front of
- *  the name: "$" for numeric values, "%" for registers, and "@" for symbols.
+ *  the name: "$" for numeric values, "%" for registers or other settings,
+ *  and "@" for symbols.
  *
  *  Return value is:
  *
@@ -76,15 +81,15 @@
  *  or one of these (and then *valuep is read or written, depending on
  *  the writeflag):
  *
- *	NAME_PARSE_REGISTER	a register
+ *	NAME_PARSE_SETTINGS	a setting (e.g. a register)
  *	NAME_PARSE_NUMBER	a hex number
  *	NAME_PARSE_SYMBOL	a symbol
  */
 int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	uint64_t *valuep)
 {
-	int match_register = 0, match_symbol = 0, match_numeric = 0;
-	int skip_register, skip_numeric, skip_symbol;
+	int match_settings = 0, match_symbol = 0, match_numeric = 0;
+	int skip_settings, skip_numeric, skip_symbol;
 
 	if (m == NULL || name == NULL) {
 		fprintf(stderr, "debugger_parse_name(): NULL ptr\n");
@@ -104,14 +109,23 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 		}
 	}
 
-	skip_register = name[0] == '$' || name[0] == '@';
+	skip_settings = name[0] == '$' || name[0] == '@';
 	skip_numeric  = name[0] == '%' || name[0] == '@';
 	skip_symbol   = name[0] == '$' || name[0] == '%';
 
-	/*  Check for a register match:  */
-	if (!skip_register && strlen(name) >= 1)
-		cpu_register_match(m, name, writeflag, valuep,
-		    &match_register);
+	if (!skip_settings) {
+		char valuebuf[20] = "hej";
+#if 0
+settings.emul[0].machine[0].cpu[0].
+settings.emul[0].machine[0].
+settings.emul[0].
+settings.
+#endif
+		int res;
+		res = settings_access(global_settings, "yoyo",
+		    writeflag, valuebuf, sizeof(valuebuf));
+		match_settings = 0;
+	}
 
 	/*  Check for a number match:  */
 	if (!skip_numeric && isdigit((int)name[0])) {
@@ -156,11 +170,11 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 		free(sn);
 	}
 
-	if (match_register + match_symbol + match_numeric > 1)
+	if (match_settings + match_symbol + match_numeric > 1)
 		return NAME_PARSE_MULTIPLE;
 
-	if (match_register)
-		return NAME_PARSE_REGISTER;
+	if (match_settings)
+		return NAME_PARSE_SETTINGS;
 	if (match_numeric)
 		return NAME_PARSE_NUMBER;
 	if (match_symbol)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.9 2006-07-25 21:29:04 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.10 2006-09-09 09:04:32 debug Exp $
  *
  *  SH instructions.
  *
@@ -110,6 +110,48 @@ X(shll_rn)
 
 
 /*
+ *  jsr_rn: Jump to Rn
+ *
+ *  arg[0] = ptr to rn
+ */
+X(jsr_rn)
+{
+	MODE_int_t target = reg(ic->arg[0]), retaddr;
+	cpu->delay_slot = TO_BE_DELAYED;
+	retaddr = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1) <<
+	    SH_INSTR_ALIGNMENT_SHIFT);
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	cpu->cd.sh.pr = retaddr + (int32_t)ic->arg[1];
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = target;
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(jsr_rn_trace)
+{
+	MODE_int_t target = reg(ic->arg[0]), retaddr;
+	cpu->delay_slot = TO_BE_DELAYED;
+	retaddr = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1) <<
+	    SH_INSTR_ALIGNMENT_SHIFT);
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	cpu->cd.sh.pr = retaddr + (int32_t)ic->arg[1];
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = target;
+		cpu_functioncall_trace(cpu, cpu->pc);
+		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+
+
+/*
  *  stc_sr_rn: Store SR into Rn
  *
  *  arg[0] = ptr to rn
@@ -149,14 +191,69 @@ X(end_of_page)
 	/*  Update the PC:  (offset 0, but on the next page)  */
 	cpu->pc &= ~((SH_IC_ENTRIES_PER_PAGE-1) <<
 	    SH_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (SH_IC_ENTRIES_PER_PAGE <<
-	    SH_INSTR_ALIGNMENT_SHIFT);
-
-	/*  Find the new physical page and update the translation pointers:  */
-	DYNTRANS_PC_TO_POINTERS(cpu);
+	cpu->pc += (SH_IC_ENTRIES_PER_PAGE << SH_INSTR_ALIGNMENT_SHIFT);
 
 	/*  end_of_page doesn't count as an executed instruction:  */
 	cpu->n_translated_instrs --;
+
+	/*
+	 *  Find the new physpage and update translation pointers.
+	 *
+	 *  Note: This may cause an exception, if e.g. the new page is
+	 *  not accessible.
+	 */
+	quick_pc_to_pointers(cpu);
+
+	/*  Simple jump to the next page (if we are lucky):  */
+	if (cpu->delay_slot == NOT_DELAYED)
+		return;
+
+	/*
+	 *  If we were in a delay slot, and we got an exception while doing
+	 *  quick_pc_to_pointers, then return. The function which called
+	 *  end_of_page should handle this case.
+	 */
+	if (cpu->delay_slot == EXCEPTION_IN_DELAY_SLOT)
+		return;
+
+	/*
+	 *  Tricky situation; the delay slot is on the next virtual page.
+	 *  Calling to_be_translated will translate one instruction manually,
+	 *  execute it, and then discard it.
+	 */
+	/*  fatal("[ end_of_page: delay slot across page boundary! ]\n");  */
+
+	instr(to_be_translated)(cpu, cpu->cd.sh.next_ic);
+
+	/*  The instruction in the delay slot has now executed.  */
+	/*  fatal("[ end_of_page: back from executing the delay slot, %i ]\n",
+	    cpu->delay_slot);  */
+
+	/*  Find the physpage etc of the instruction in the delay slot
+	    (or, if there was an exception, the exception handler):  */
+	quick_pc_to_pointers(cpu);
+}
+
+
+X(end_of_page2)
+{
+	/*  Synchronize PC on the _second_ instruction on the next page:  */
+	int low_pc = ((size_t)ic - (size_t)cpu->cd.sh.cur_ic_page)
+	    / sizeof(struct sh_instr_call);
+	cpu->pc &= ~((SH_IC_ENTRIES_PER_PAGE-1)
+	    << SH_INSTR_ALIGNMENT_SHIFT);
+	cpu->pc += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);
+
+	/*  This doesn't count as an executed instruction.  */
+	cpu->n_translated_instrs --;
+
+	quick_pc_to_pointers(cpu);
+
+	if (cpu->delay_slot == NOT_DELAYED)
+		return;
+
+	fatal("end_of_page2: fatal error, we're in a delay slot\n");
+	exit(1);
 }
 
 
@@ -275,7 +372,7 @@ X(to_be_translated)
 				goto bad;
 			}
 			break;
-		default:fatal("Unimplemented opcode 0x%x,0x03%x\n",
+		default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
 			    main_opcode, iword & 0xfff);
 			goto bad;
 		}
@@ -300,11 +397,19 @@ X(to_be_translated)
 			ic->f = instr(shll_rn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
 			break;
+		case 0x0b:	/*  JSR @Rn  */
+			if (cpu->machine->show_trace_tree)
+				ic->f = instr(jsr_rn_trace);
+			else
+				ic->f = instr(jsr_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			ic->arg[1] = (addr & 0xffe) + 4;
+			break;
 		case 0x0e:	/*  LDC Rm,SR  */
 			ic->f = instr(ldc_rm_sr);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
 			break;
-		default:fatal("Unimplemented opcode 0x%x,0x02%x\n",
+		default:fatal("Unimplemented opcode 0x%x,0x%02x\n",
 			    main_opcode, lo8);
 			goto bad;
 		}
@@ -345,4 +450,5 @@ X(to_be_translated)
 #include "cpu_dyntrans.c" 
 #undef	DYNTRANS_TO_BE_TRANSLATED_TAIL
 }
+
 

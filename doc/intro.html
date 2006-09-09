@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.94 2006-09-04 02:32:00 debug Exp $
+$Id: intro.html,v 1.95 2006-09-09 09:51:17 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -449,13 +449,13 @@ emulator.
 operating systems think that they are there, but for all practical
 purposes, these caches are non-working.
 
-<p>The emulator is <i>not</i> timing-accurate, neither at the instruction
-level nor on any higher level. An attempt is made to let emulated clocks
-run at the same speed as the host (i.e. an emulated timer running at 100
-Hz will interrupt around 100 times per real second), but since the host
-speed may vary, e.g. because of other running processes, there is no
-guarantee as to how many instructions will be executed in each of these
-100 Hz cycles.
+<p>The emulator is in general <i>not</i> timing-accurate, neither at the
+instruction level nor on any higher level. An attempt is made to let
+emulated clocks run at the same speed as the host (i.e. an emulated timer
+running at 100 Hz will interrupt around 100 times per real second), but
+since the host speed may vary, e.g. because of other running processes,
+there is no guarantee as to how many instructions will be executed in
+each of these 100 Hz cycles.
 
 <p>If the host is very slow, the emulated clocks might even lag behind
 the real-world clock.

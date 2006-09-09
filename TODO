@@ -1,12 +1,9 @@
-$Id: TODO,v 1.371 2006-09-09 09:04:32 debug Exp $
+$Id: TODO,v 1.372 2006-09-09 09:51:17 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
-	x)  SH:
-		x)  mov.l #imm,Rn  is a load, not an immediate mov!
-		x)  Argument passing for function calls?
 	x)  Settings / expression evaluator:
 		x)  Special handlers for Write! (E.g. MIPS coproc regs)
 		x)  Rewrite all CPUs so that they register registers. :)
@@ -26,6 +23,11 @@ Implementation:
 		everywhere.
 	x)  Factor out other things from cpu_*.c? (Turn CPU name
 		detection into a macro?)
+	x)  SH:
+		x)  mov.l #imm,Rn  is a load, not an immediate mov!
+		x)  Argument passing for function calls?
+	x)  Disassembly, nr of bytes read and given to the cpu specific
+		disassemlby routine? It's too ugly now.
 	x)  Alpha:
 		x)  OSF1 PALcode, Virtual memory support.
 		x)  PALcode replacement! PAL1E etc opcodes...?

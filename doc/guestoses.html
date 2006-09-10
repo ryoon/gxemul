@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.174 2006-09-07 11:44:42 debug Exp $
+$Id: guestoses.html,v 1.175 2006-09-10 14:05:19 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1500,35 +1500,48 @@ start the X11 environment.
 <h3>Debian GNU/Linux for DECstation:</h3>
 
 It is possible to run Debian GNU/Linux for DECstation in the emulator,
-on an emulated 5000/200 ("3max"). Although the Debian project has released
-install ramdisk kernels for this purpose, these do not always work:
-<ul>
-  <li>Serial console output doesn't work too well in GXemul. Linux
-	oopses randomly, which may be due to bugs in GXemul, but may
-	also be due to bugs in the serial controller code in Linux.
+on an emulated 5000/200 ("3max"). However, just choosing any 
+Linux/DECstation kernel at random for the installation will not work.
+
+<p><ul>
+  <li>Linux 2.4/DECstation DZ serial console output doesn't work too well in
+	GXemul. Linux oopses randomly, which may be due to bugs in GXemul,
+	but may also be due to bugs in the serial controller code in Linux.
 	(The speed at which serial interrupts are generated can be
 	lowered with the <tt>-U</tt> command line option, but it only
 	reduces the risk, it doesn't take away the oopses completely.)
-  <li>Old install kernels supported the graphical framebuffer on the
-	3max, but not the keyboard.
-  <li>For quite some time, the MIPS linux cvs tree had support for the
-	keyboard, but it did <i>not</i> include Debian's patches for
-	networking. (Perhaps this has been fixed now, I don't know.)
+  <li>The Linux 2.6/DECstation DZ serial console driver doesn't work at 
+	all in the emulator, and I'm not really sure it would work on a
+	real 5000/200 either. Hopefully this will be fixed in Linux in
+	the future.
+  <li>To get around the serial console problem, the obvious solution is to
+	use a graphical framebuffer instead. Old Debian install kernels
+	supported the graphical framebuffer on the 3max, but not the
+	keyboard. (This has been fixed now, it seems.)
+  <li>For quite some time, the MIPS linux cvs tree has had support for the
+	framebuffer and keyboard, but it did not include Debian's
+	patches for networking, which made it unusable for network
+	installs. (Possibly fixed now.)
+  <li>The kernel has to be for 5000/200. This rules out using
+	the default kernel on netinst ISO images provided by Debian.
+	These ISO images boot directly into a kernel which is meant
+	for a different DECstation model.
+  <li>The kernel has to have an initrd which more or less matches the
+	version of Debian that will be installed.
 </ul>
 
-<p>David Muse has made available a precompiled install kernel which
-has support for framebuffer, keyboard, and networking, which works
-pretty well. Thanks David. :-)
+<p>Luckily, a precompiled install kernel has been made available by David 
+Muse, for Debian for R3000 DECstations, which has support for framebuffer, 
+keyboard, and networking, which works pretty well. Thanks David. :-)
 
-<p>
-The following steps should let you install Debian GNU/Linux for DECstation
-onto a harddisk image:
+<p>The following steps should let you install Debian GNU/Linux for 
+DECstation onto a harddisk image in the emulator:
 
 <p>
 <ol>
   <li>Create an empty harddisk image, which will be the root disk
 	that Debian installs itself onto:<pre>
-	<b>dd if=/dev/zero of=debian_pmax.img bs=1024 count=1 seek=5000000</b>
+	<b>dd if=/dev/zero of=debian_pmax.img bs=1024 count=1 seek=6000000</b>
 
 </pre>
   <li>Download David Muse' install kernel, and a Debian Netinstall CD-ROM:<pre>
@@ -1591,6 +1604,9 @@ onto a harddisk image:
 </pre>
 	<p>The post-install step takes quite some time as well. A perfect opportunity
 	for more coffee.
+
+	<p>When asked about whether the hardware clock is set to GMT or
+	not, answer Yes.
 
 	<p>When asked about "Apt configuration", choose <b>http</b> as the method
 	to use for accessing the Debian archive.

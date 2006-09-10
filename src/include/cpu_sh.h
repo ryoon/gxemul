@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.22 2006-09-09 09:04:33 debug Exp $
+ *  $Id: cpu_sh.h,v 1.23 2006-09-10 14:05:43 debug Exp $
  */
 
 #include "misc.h"
@@ -63,16 +63,14 @@ struct sh_cpu_type_def {
 #define	SH_ADDR_TO_PAGENR(a)		((a) >> (SH_IC_ENTRIES_SHIFT \
 					+ SH_INSTR_ALIGNMENT_SHIFT))
 
-#define	SH_L2N		17
-#define	SH_L3N		18
-
-DYNTRANS_MISC_DECLARATIONS(sh,SH,uint64_t)
-DYNTRANS_MISC64_DECLARATIONS(sh,SH,uint8_t)
+DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 
 #define	SH_MAX_VPH_TLB_ENTRIES		128
 
 
-#define	SH_N_GPRS		64
+/*  For SH5:  #define	SH_N_GPRS		64  */
+/*  For pre-SH5:  */
+#define	SH_N_GPRS		16
 
 
 struct sh_cpu {
@@ -81,9 +79,11 @@ struct sh_cpu {
 	/*  compact = 1 if currently executing 16-bit long opcodes  */
 	int		compact;
 
-	uint32_t	r_otherbank[8];
+	/*  General Purpose Registers:  */
+	uint32_t	r[SH_N_GPRS];
 
-	uint64_t	r[SH_N_GPRS];
+	/*  Saved Banked registers (during mode switch):  */
+	uint32_t	r_otherbank[8];
 
 	uint32_t	mach;		/*  Multiply-Accumulate High  */
 	uint32_t	macl;		/*  Multiply-Accumulate Low  */
@@ -106,7 +106,6 @@ struct sh_cpu {
 	DYNTRANS_ITC(sh)
 	VPH_TLBS(sh,SH)
 	VPH32(sh,SH,uint64_t,uint8_t)
-	VPH64(sh,SH,uint8_t)
 };
 
 

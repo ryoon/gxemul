@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.22 2006-09-09 09:04:32 debug Exp $
+ *  $Id: cpu_sh.c,v 1.23 2006-09-10 14:05:43 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -45,7 +45,7 @@
 #include "symbol.h"
 
 
-#define DYNTRANS_DUALMODE_32
+#define DYNTRANS_32
 #define DYNTRANS_DELAYSLOT
 #include "tmp_sh_head.c"
 
@@ -81,25 +81,21 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->is_32bit = cpu->cd.sh.cpu_type.bits == 32;
 	cpu->cd.sh.compact = 1;		/*  Default to 16-bit opcode mode  */
 
+	if (!cpu->is_32bit) {
+		fatal("SH64 emulation not implemented. Sorry.\n");
+		exit(1);
+	}
+
 	cpu->instruction_has_delayslot = sh_cpu_instruction_has_delayslot;
 
 	cpu->translate_v2p = sh_translate_v2p;
 
-	if (cpu->is_32bit) {
-		cpu->run_instr = sh32_run_instr;
-		cpu->update_translation_table = sh32_update_translation_table;
-		cpu->invalidate_translation_caches =
-		    sh32_invalidate_translation_caches;
-		cpu->invalidate_code_translation =
-		    sh32_invalidate_code_translation;
-	} else {
-		cpu->run_instr = sh_run_instr;
-		cpu->update_translation_table = sh_update_translation_table;
-		cpu->invalidate_translation_caches =
-		    sh_invalidate_translation_caches;
-		cpu->invalidate_code_translation =
-		    sh_invalidate_code_translation;
-	}
+	cpu->run_instr = sh_run_instr;
+	cpu->update_translation_table = sh_update_translation_table;
+	cpu->invalidate_translation_caches =
+	    sh_invalidate_translation_caches;
+	cpu->invalidate_code_translation =
+	    sh_invalidate_code_translation;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -110,7 +106,10 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	cpu->cd.sh.fpscr = 0x00040001;
 
 	/*  Start in Privileged Mode:  */
-	cpu->cd.sh.sr = SH_SR_MD;
+	cpu->cd.sh.sr = SH_SR_MD | SH_SR_IMASK;
+
+	/*  Stack pointer at end of physical RAM:  */
+	cpu->cd.sh.r[15] = cpu->machine->physical_ram_in_mb * 1048576 - 64;
 
 	return 1;
 }
@@ -142,8 +141,8 @@ void sh_cpu_list_available_types(void)
  */
 void sh_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug("\n");
-	/*  TODO  */
+	debug(" (%s-endian)\n",
+	    cpu->byte_order == EMUL_BIG_ENDIAN? "Big" : "Little");
 }
 
 
@@ -168,6 +167,12 @@ int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 	hi4 = iword >> 12; lo4 = iword & 15; lo8 = iword & 255;
 
         switch (hi4) {
+	case 0x0:
+		if (iword == 0x000b)	/*  rts  */
+			return 1;
+		if (lo8 == 0x23)	/*  braf  */
+			return 1;
+		break;
 	case 0x4:
 		switch (lo8) {
 		case 0x0b:	/*  jsr  */
@@ -175,6 +180,15 @@ int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 			return 1;
 		}
 		break;
+	case 0x8:
+		switch ((iword >> 8) & 0xf) {
+		case 0xd:	/*  bt/s  */
+		case 0xf:	/*  bf/s  */
+			return 1;
+		}
+		break;
+	case 0xa:	/*  bra  */
+		return 1;
 	}
 
 	return 0;
@@ -220,7 +234,9 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (cpu->cd.sh.sr & SH_SR_S)? "S" : "!s",
 		    (cpu->cd.sh.sr & SH_SR_T)? "T" : "!t");
 
-		debug("cpu%i: pr  = 0x%08"PRIx32"\n", x, cpu->cd.sh.pr);
+		debug("cpu%i: pr  = 0x%08"PRIx32"  mach = 0x%08"PRIx32
+		    "  macl = 0x%08"PRIx32"\n", x, (uint32_t)cpu->cd.sh.pr,
+		    (uint32_t)cpu->cd.sh.mach, (uint32_t)cpu->cd.sh.macl);
 
 		if (bits32) {
 			/*  32-bit:  */
@@ -407,6 +423,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("div0u\n");
 		else if (lo8 == 0x1a)
 			debug("sts\tmacl,r%i\n", r8);
+		else if (iword == 0x001b)
+			debug("sleep\n");
 		else if (lo8 == 0x23)
 			debug("braf\tr%i\n", r8);
 		else if (iword == 0x0028)
@@ -421,6 +439,12 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("sets\n");
 		else if (lo8 == 0x83)
 			debug("pref\t@r%i\n", r8);
+		else if (lo8 == 0x93)
+			debug("ocbi\t@r%i\n", r8);
+		else if (lo8 == 0xa3)
+			debug("ocbp\t@r%i\n", r8);
+		else if (lo8 == 0xb3)
+			debug("ocbwb\t@r%i\n", r8);
 		else
 			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
 		break;

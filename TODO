@@ -1,4 +1,4 @@
-$Id: TODO,v 1.372 2006-09-09 09:51:17 debug Exp $
+$Id: TODO,v 1.373 2006-09-10 14:05:43 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -24,7 +24,6 @@ Implementation:
 	x)  Factor out other things from cpu_*.c? (Turn CPU name
 		detection into a macro?)
 	x)  SH:
-		x)  mov.l #imm,Rn  is a load, not an immediate mov!
 		x)  Argument passing for function calls?
 	x)  Disassembly, nr of bytes read and given to the cpu specific
 		disassemlby routine? It's too ugly now.

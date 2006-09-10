@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1362 2006-09-09 09:04:31 debug Exp $
+$Id: HISTORY,v 1.1363 2006-09-10 14:05:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3017,3 +3017,6 @@ Changelog for GXemul:
 20060908	Minor updates to SH emulation: for 32-bit emulation: delay
 		slots and the 'jsr @Rn' instruction. I'm putting 64-bit SH5 on
 		ice, for now.
+20060909-10	Implementing some more 32-bit SH instructions. Removing the
+		64-bit mode completely. Enough has now been implemented to run
+		the rectangle drawing demo. :-)

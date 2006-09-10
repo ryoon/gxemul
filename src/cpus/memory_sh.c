@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.1 2006-07-25 21:49:14 debug Exp $
+ *  $Id: memory_sh.c,v 1.2 2006-09-10 14:05:43 debug Exp $
  */
 
 #include <stdio.h>
@@ -46,7 +46,11 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 {
 	/*  TODO  */
 
-	*return_paddr = vaddr & 0x03ffffff;
+	*return_paddr = vaddr;
+
+	if (vaddr & 0x80000000)
+		*return_paddr = vaddr & 0x03ffffff;
+
 	return 2;
 }
 

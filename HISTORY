@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1365 2006-09-16 05:06:06 debug Exp $
+$Id: HISTORY,v 1.1366 2006-09-16 06:28:45 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3022,4 +3022,5 @@ Changelog for GXemul:
 		the rectangle drawing demo. :-)
 20060912	Adding more SH instructions.
 20060916	Continuing on SH emulation (some more instructions: div0u,
-		div1, rotcl/rotcr, more mov instructions, dt, braf).
+		div1, rotcl/rotcr, more mov instructions, dt, braf, sets, sett,
+		tst_imm, dmuls.l, subc, ldc_rm_vbr, movt, clrt, clrs, clrmac).

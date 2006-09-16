@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.24 2006-09-16 01:33:27 debug Exp $
+ *  $Id: cpu_sh.c,v 1.25 2006-09-16 06:28:46 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -115,6 +115,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
 	CPU_SETTINGS_ADD_REGISTER32("sr", cpu->cd.sh.sr);
 	CPU_SETTINGS_ADD_REGISTER32("pr", cpu->cd.sh.pr);
+	CPU_SETTINGS_ADD_REGISTER32("vbr", cpu->cd.sh.vbr);
+	CPU_SETTINGS_ADD_REGISTER32("gbr", cpu->cd.sh.gbr);
 	CPU_SETTINGS_ADD_REGISTER32("macl", cpu->cd.sh.macl);
 	CPU_SETTINGS_ADD_REGISTER32("mach", cpu->cd.sh.mach);
 	for (i=0; i<SH_N_GPRS; i++) {
@@ -276,6 +278,12 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					debug("\n");
 			}
 		}
+	}
+
+	if (coprocs & 1) {
+		/*  System registers:  */
+		debug("cpu%i: vbr = 0x%08"PRIx32"\n", x,
+		    (uint32_t)cpu->cd.sh.vbr);
 	}
 }
 
@@ -566,12 +574,16 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("lds\tr%i,pr\n", r8);
 		else if (lo8 == 0x2b)
 			debug("jmp\t@r%i\n", r8);
+		else if (lo8 == 0x2e)
+			debug("ldc\tr%i,vbr\n", r8);
 		else if (lo8 == 0x56)
 			debug("lds.l\t@r%i+,fpul\n", r8);
 		else if (lo8 == 0x5a)
 			debug("lds\tr%i,fpul\n", r8);
 		else if (lo8 == 0x6a)
 			debug("lds\tr%i,fpscr\n", r8);
+		else if ((lo8 & 0x8f) == 0x8e)
+			debug("ldc\tr%i,r%i_bank\n", r8, (lo8 >> 4) & 7);
 		else
 			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
 		break;

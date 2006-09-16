@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: networking.html,v 1.1 2006-09-07 11:44:42 debug Exp $
+$Id: networking.html,v 1.2 2006-09-16 01:33:18 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -191,14 +191,14 @@ this feature at your own risk.</font>
 <a name="direct_example_1"></a>
 <h3>Direct-access example 1: udp_snoop:</h3>
 
-As a simple example of how the simple direct-access system works, I have 
-included a small program in the <tt>examples/</tt> directory which simply 
+The most basic example of how the simple direct-access system works is a small 
+program in the <tt>experiments/</tt> directory, <tt>udp_snoop</tt>, which simply 
 dumps incoming UDP packets to the terminal, in hex and ASCII.
 
-<p>The easiest way to test the example is to <a href="
-guestoses.html#netbsdpmaxinstall">install NetBSD/pmax</a> onto a disk 
-image, and start the emulator with a configuration file looking something 
-like this:
+<p>The easiest way to test the example is to download a <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">
+NetBSD/pmax INSTALL kernel</a>, and start the emulator with a configuration file 
+looking something like this:
+
 <pre>
 	net(
 	    add_remote("localhost:12300")
@@ -206,12 +206,12 @@ like this:
 
 	machine(
 	    subtype(3max)
-	    disk("nbsd_pmax.img")
+	    load("netbsd-INSTALL.gz")
 	)
 </pre>
 
 <p>In addition to the machine section, you can see that there is also a 
-<tt>net()</tt> section. It defaults to emulating a 10.x.x.x NAT IPv4 
+<tt>net()</tt> section. It defaults to emulating a 10.0.0.0/8 IPv4 NATed
 network, but there is also an additional "raw output", to UDP port 12300.
 
 <p>Now, do the following:

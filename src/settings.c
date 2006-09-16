@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.11 2006-09-06 04:55:17 debug Exp $
+ *  $Id: settings.c,v 1.12 2006-09-16 01:33:18 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -358,11 +358,11 @@ void settings_remove_all(struct settings *settings)
 /*
  *  settings_access():
  *
- *  Read or write a setting. fullname may be something like
- *  "settings.x.y". When writing a value, valuebuf should point to a string
- *  containing the new value (note: always a string). When reading a value,
- *  valuebuf should point to a buffer where the value will be stored (up
- *  to bufsize-1 chars, plus the nul char).
+ *  Read or write a setting. fullname may be something like "settings.x.y".
+ *  When writing a value, valuebuf should point to a string containing the
+ *  new value (note: always a string). When reading a value, valuebuf should
+ *  point to a buffer where the value will be stored (up to bufsize-1 chars,
+ *  plus the nul char).
  *
  *  The return value is one of the following:
  *
@@ -379,9 +379,18 @@ void settings_remove_all(struct settings *settings)
 int settings_access(struct settings *settings, const char *fullname,
         int writeflag, char *valuebuf, size_t bufsize)
 {
-	/*  TODO  */
+#if 0
+	int part_name_pos, part_name_len;
+
 	printf("settings_access(fullname='%s')\n", fullname);
 
+	part_name_pos = 0;
+	if (strncmp(fullname, GLOBAL_SETTINGS_NAME".",
+	    strlen(GLOBAL_SETTINGS_NAME) + 1) == 0)
+		part_name_pos = strlen(GLOBAL_SETTINGS_NAME) + 1;
+
+	while (fullname[part_name_
+#endif
 	return SETTINGS_NAME_NOT_FOUND;
 }
 

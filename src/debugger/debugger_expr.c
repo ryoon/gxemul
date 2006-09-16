@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.4 2006-09-09 09:04:33 debug Exp $
+ *  $Id: debugger_expr.c,v 1.5 2006-09-16 01:33:27 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -91,6 +91,9 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	int match_settings = 0, match_symbol = 0, match_numeric = 0;
 	int skip_settings, skip_numeric, skip_symbol;
 
+	/*  TODO!!!  */
+	int cur_emul_nr = 0, cur_machine_nr = 0, cur_cpu_nr = 0;
+
 	if (m == NULL || name == NULL) {
 		fprintf(stderr, "debugger_parse_name(): NULL ptr\n");
 		exit(1);
@@ -114,17 +117,56 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	skip_symbol   = name[0] == '$' || name[0] == '%';
 
 	if (!skip_settings) {
-		char valuebuf[20] = "hej";
-#if 0
-settings.emul[0].machine[0].cpu[0].
-settings.emul[0].machine[0].
-settings.emul[0].
-settings.
-#endif
+		char setting_name[400];
+		char valuebuf[50];
 		int res;
-		res = settings_access(global_settings, "yoyo",
+
+		valuebuf[0] = '\0';
+
+		res = settings_access(global_settings, name,
 		    writeflag, valuebuf, sizeof(valuebuf));
-		match_settings = 0;
+		if (res == SETTINGS_OK)
+			match_settings = 1;
+
+		if (!match_settings) {
+			snprintf(setting_name, sizeof(setting_name),
+			    GLOBAL_SETTINGS_NAME".%s", name);
+			res = settings_access(global_settings, setting_name,
+			    writeflag, valuebuf, sizeof(valuebuf));
+			if (res == SETTINGS_OK)
+				match_settings = 1;
+		}
+
+		if (!match_settings) {
+			snprintf(setting_name, sizeof(setting_name),
+			    GLOBAL_SETTINGS_NAME".emul[%i].%s",
+			    cur_emul_nr, name);
+			res = settings_access(global_settings, setting_name,
+			    writeflag, valuebuf, sizeof(valuebuf));
+			if (res == SETTINGS_OK)
+				match_settings = 1;
+		}
+
+		if (!match_settings) {
+			snprintf(setting_name, sizeof(setting_name),
+			    GLOBAL_SETTINGS_NAME".emul[%i].machine[%i].%s",
+			    cur_emul_nr, cur_machine_nr, name);
+			res = settings_access(global_settings, setting_name,
+			    writeflag, valuebuf, sizeof(valuebuf));
+			if (res == SETTINGS_OK)
+				match_settings = 1;
+		}
+
+		if (!match_settings) {
+			snprintf(setting_name, sizeof(setting_name),
+			    GLOBAL_SETTINGS_NAME".emul[%i].machine[%i]."
+			    "cpu[%i].%s", cur_emul_nr, cur_machine_nr,
+			    cur_cpu_nr, name);
+			res = settings_access(global_settings, setting_name,
+			    writeflag, valuebuf, sizeof(valuebuf));
+			if (res == SETTINGS_OK)
+				match_settings = 1;
+		}
 	}
 
 	/*  Check for a number match:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.23 2006-09-10 14:05:43 debug Exp $
+ *  $Id: cpu_sh.c,v 1.24 2006-09-16 01:33:27 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -42,6 +42,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 
@@ -110,6 +111,17 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Stack pointer at end of physical RAM:  */
 	cpu->cd.sh.r[15] = cpu->machine->physical_ram_in_mb * 1048576 - 64;
+
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	CPU_SETTINGS_ADD_REGISTER32("sr", cpu->cd.sh.sr);
+	CPU_SETTINGS_ADD_REGISTER32("pr", cpu->cd.sh.pr);
+	CPU_SETTINGS_ADD_REGISTER32("macl", cpu->cd.sh.macl);
+	CPU_SETTINGS_ADD_REGISTER32("mach", cpu->cd.sh.mach);
+	for (i=0; i<SH_N_GPRS; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "r%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.r[i]);
+	}
 
 	return 1;
 }
@@ -234,8 +246,12 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (cpu->cd.sh.sr & SH_SR_S)? "S" : "!s",
 		    (cpu->cd.sh.sr & SH_SR_T)? "T" : "!t");
 
-		debug("cpu%i: pr  = 0x%08"PRIx32"  mach = 0x%08"PRIx32
-		    "  macl = 0x%08"PRIx32"\n", x, (uint32_t)cpu->cd.sh.pr,
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    cpu->cd.sh.pr, &offset);
+		debug("cpu%i: pr  = 0x%08"PRIx32, x, (uint32_t)cpu->cd.sh.pr);
+		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
+
+		debug("cpu%i: mach = 0x%08"PRIx32"  macl = 0x%08"PRIx32"\n", x,
 		    (uint32_t)cpu->cd.sh.mach, (uint32_t)cpu->cd.sh.macl);
 
 		if (bits32) {
@@ -243,7 +259,7 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<nregs; i++) {
 				if ((i % 4) == 0)
 					debug("cpu%i:", x);
-				debug(" r%02i = 0x%08x ", i,
+				debug(" r%-2i = 0x%08x ", i,
 				    (int)cpu->cd.sh.r[i]);
 				if ((i % 4) == 3)
 					debug("\n");
@@ -254,43 +270,11 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				int r = (i >> 1) + ((i & 1) << 4);
 				if ((i % 2) == 0)
 					debug("cpu%i:", x);
-				debug(" r%02i = 0x%016llx ", r,
+				debug(" r%-2i = 0x%016llx ", r,
 				    (long long)cpu->cd.sh.r[r]);
 				if ((i % 2) == 1)
 					debug("\n");
 			}
-		}
-	}
-}
-
-
-/*
- *  sh_cpu_register_match():
- */
-void sh_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	} else if (name[0] == 'r' && isdigit((int)name[1])) {
-		int nr = atoi(name + 1);
-		if (nr >= 0 && nr < SH_N_GPRS) {
-			if (writeflag)
-				m->cpus[cpunr]->cd.sh.r[nr] = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->cd.sh.r[nr];
-			*match_register = 1;
 		}
 	}
 }
@@ -431,6 +415,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("clrmac\n");
 		else if (lo8 == 0x29)
 			debug("movt\tr%i\n", r8);
+		else if (lo8 == 0x2a)
+			debug("sts\tpr,r%i\n", r8);
 		else if (iword == 0x003b)
 			debug("brk\n");
 		else if (iword == 0x0048)
@@ -657,7 +643,10 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	case 0xc:
 		if (r8 == 0x3)
 			debug("trapa\t#%i\n", (uint8_t)lo8);
-		else if (r8 == 0x8)
+		else if (r8 == 0x7) {
+			addr = lo8 * 4 + (dumpaddr & ~3) + 4;
+			debug("mova\t0x%x,r0\n", (int)addr);
+		} else if (r8 == 0x8)
 			debug("tst\t#%i,r0\n", (uint8_t)lo8);
 		else if (r8 == 0x9)
 			debug("and\t#%i,r0\n", (uint8_t)lo8);

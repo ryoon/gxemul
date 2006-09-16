@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.125 2006-09-09 09:04:32 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.126 2006-09-16 05:06:06 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -444,7 +444,7 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 	    6
 #else
 #ifdef DYNTRANS_SH
-	    8
+	    8	/*  Both for 32-bit and 64-bit SuperH  */
 #else
 	    4	/*  Default value for most archs  */
 #endif
@@ -507,7 +507,8 @@ void DYNTRANS_FUNCTION_TRACE(struct cpu *cpu, uint64_t f, int n_args)
 		    r[0		/*  TODO  */
 #endif
 #ifdef DYNTRANS_SH
-		    r[2
+		    r[4		/*  NetBSD seems to use 4? But 2 seems
+					to be used by other code? TODO  */
 #endif
 #ifdef DYNTRANS_SPARC
 		    r[8		/*  o0..o5  */

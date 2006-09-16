@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.3 2006-09-16 01:33:27 debug Exp $
+ *  $Id: memory_sh.c,v 1.4 2006-09-16 05:06:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -52,7 +52,7 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 		*return_paddr = vaddr & 0x03ffffff;
 
 	/*  NetBSD/sh4 uses this for cache cleaning operations:  */
-	if ((vaddr & 0xf0000000) == 0xf0000000)
+	if ((vaddr & 0xff000000) == 0xf0000000)
 		*return_paddr = cpu->machine->physical_ram_in_mb
 		    * 1048575 - 4096 + (vaddr & 0xfff);
 

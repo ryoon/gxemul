@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.12 2006-09-16 01:33:27 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.13 2006-09-16 05:06:06 debug Exp $
  *
  *  SH instructions.
  *
@@ -121,7 +121,6 @@ X(mov_l_rm_predec_rn)
 	if (p != NULL) {
 		p[(addr & 0xfff) >> 2] = data;
 		reg(ic->arg[1]) = addr;
-		return;
 	} else {
 		/*  Slow, using memory_rw():  */
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
@@ -149,20 +148,24 @@ X(mov_l_disp_pc_rn)
 	uint32_t addr = ic->arg[0] + (cpu->pc &
 	    ~((SH_IC_ENTRIES_PER_PAGE-1) << SH_INSTR_ALIGNMENT_SHIFT));
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint32_t data;
 
 	if (p != NULL) {
-		uint32_t data = p[(addr & 0xfff) >> 2];
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-			data = LE32_TO_HOST(data);
-		else
-			data = BE32_TO_HOST(data);
-		reg(ic->arg[1]) = data;
-		return;
+		data = p[(addr & 0xfff) >> 2];
+	} else {
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  This should probably be ok, but I just want
+				to catch it when it happens...  */
+			fatal("read failed: TODO\n");
+			exit(1);
+		}
 	}
-
-	/*  Slow, using memory_rw():  */
-	fatal("slow mov_l using memory_rw: TODO\n");
-	exit(1);
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE32_TO_HOST(data);
+	else
+		data = BE32_TO_HOST(data);
+	reg(ic->arg[1]) = data;
 }
 
 
@@ -190,29 +193,36 @@ X(mov_w_disp_pc_rn)
 	uint32_t addr = ic->arg[0] + (cpu->pc &
 	    ~((SH_IC_ENTRIES_PER_PAGE-1) << SH_INSTR_ALIGNMENT_SHIFT));
 	uint16_t *p = (uint16_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint16_t data;
 
 	if (p != NULL) {
-		uint16_t data = p[(addr & 0xfff) >> 1];
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-			data = LE16_TO_HOST(data);
-		else
-			data = BE16_TO_HOST(data);
-		reg(ic->arg[1]) = (int16_t)data;
-		return;
+		data = p[(addr & 0xfff) >> 1];
+	} else {
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  This should probably be ok, but I just want
+				to catch it when it happens...  */
+			fatal("read failed: TODO\n");
+			exit(1);
+		}
 	}
-
-	/*  Slow, using memory_rw():  */
-	fatal("slow mov_w using memory_rw: TODO\n");
-	exit(1);
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE16_TO_HOST(data);
+	else
+		data = BE16_TO_HOST(data);
+	reg(ic->arg[1]) = data;
 }
 
 
 /*
- *  load_b_rm_rn:      Load an 8-bit value into Rn from address Rm.
+ *  load_b_rm_rn:      Load an int8_t value into Rn from address Rm.
+ *  load_w_rm_rn:      Load an int16_t value into Rn from address Rm.
  *  load_l_rm_rn:      Load a 32-bit value into Rn from address Rm.
  *  mov_b_r0_rm_rn:    Load an int8_t into Rn from address Rm + R0.
+ *  mov_l_r0_rm_rn:    Load a 32-bit value into Rn from address Rm + R0.
  *  mov_l_disp_rm_rn:  Load a 32-bit value into Rn from address Rm + disp.
- *  load_arg1_postinc_to_arg0:
+ *  mov_b_arg1_postinc_to_arg0:
+ *  mov_l_arg1_postinc_to_arg0:
  *
  *  arg[0] = ptr to rm   (or rm + (lo4 << 4) for disp)
  *  arg[1] = ptr to rn
@@ -234,6 +244,29 @@ X(load_b_rm_rn)
 			exit(1);
 		}
 	}
+	reg(ic->arg[1]) = data;
+}
+X(load_w_rm_rn)
+{
+	uint32_t addr = reg(ic->arg[0]);
+	int16_t *p = (int16_t *) cpu->cd.sh.host_load[addr >> 12];
+	int16_t data;
+
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 1];
+	} else {
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  This should probably be ok, but I just want
+				to catch it when it happens...  */
+			fatal("read failed: TODO\n");
+			exit(1);
+		}
+	}
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE16_TO_HOST(data);
+	else
+		data = BE16_TO_HOST(data);
 	reg(ic->arg[1]) = data;
 }
 X(load_l_rm_rn)
@@ -260,7 +293,27 @@ X(load_l_rm_rn)
 		data = BE32_TO_HOST(data);
 	reg(ic->arg[1]) = data;
 }
-X(load_arg1_postinc_to_arg0)
+X(mov_b_arg1_postinc_to_arg0)
+{
+	uint32_t addr = reg(ic->arg[1]);
+	int8_t *p = (int8_t *) cpu->cd.sh.host_load[addr >> 12];
+	int8_t data;
+	if (p != NULL) {
+		data = p[addr & 0xfff];
+	} else {
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  This should probably be ok, but I just want
+				to catch it when it happens...  */
+			fatal("read failed: TODO\n");
+			exit(1);
+		}
+	}
+	/*  The load was ok:  */
+	reg(ic->arg[1]) = addr + sizeof(int8_t);
+	reg(ic->arg[0]) = data;
+}
+X(mov_l_arg1_postinc_to_arg0)
 {
 	uint32_t addr = reg(ic->arg[1]);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
@@ -303,6 +356,30 @@ X(mov_b_r0_rm_rn)
 		}
 	}
 
+	reg(ic->arg[1]) = data;
+}
+X(mov_l_r0_rm_rn)
+{
+	uint32_t addr = reg(ic->arg[0]) + cpu->cd.sh.r[0];
+	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint32_t data;
+
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 2];
+	} else {
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  This should probably be ok, but I just want
+				to catch it when it happens...  */
+			fatal("mov_load_rm_rn: read failed: TODO\n");
+			exit(1);
+		}
+	}
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE32_TO_HOST(data);
+	else
+		data = BE32_TO_HOST(data);
 	reg(ic->arg[1]) = data;
 }
 X(mov_l_disp_rm_rn)
@@ -492,6 +569,42 @@ X(xtrct_rm_rn)
 
 
 /*
+ *  div0u:       Division step 0; prepare for unsigned division.
+ *  div1_rm_rn:  Division step 1.
+ *
+ *  arg[0] = ptr to rm
+ *  arg[1] = ptr to rn
+ */
+X(div0u)
+{
+	cpu->cd.sh.sr &= ~(SH_SR_Q | SH_SR_M | SH_SR_T);
+}
+X(div1_rm_rn)
+{
+	uint32_t q, old_q = (cpu->cd.sh.sr & SH_SR_Q)? 1 : 0;
+	uint32_t m = (cpu->cd.sh.sr & SH_SR_M)? 1 : 0;
+	uint32_t t = (cpu->cd.sh.sr & SH_SR_T)? 1 : 0;
+	uint32_t op1 = reg(ic->arg[0]), op2 = reg(ic->arg[1]);
+	uint64_t op2_64;
+
+	q = op2 >> 31;
+	op2_64 = (uint32_t) ((op2 << 1) + t);
+	if (old_q == m)
+		op2_64 -= (uint64_t)op1;
+	else
+		op2_64 += (uint64_t)op1;
+	q ^= m ^ ((op2_64 >> 32) & 1);
+	t = 1 - (q ^ m);
+	cpu->cd.sh.sr &= ~(SH_SR_Q | SH_SR_T);
+	if (q)
+		cpu->cd.sh.sr |= SH_SR_Q;
+	if (t)
+		cpu->cd.sh.sr |= SH_SR_T;
+	reg(ic->arg[1]) = (uint32_t) op2_64;
+}
+
+
+/*
  *  mul_l_rm_rn:   MACL = Rm * Rn       (32-bit)
  *  dmulu_l_rm_rn: MACH:MACL = Rm * Rn  (64-bit)
  *
@@ -588,6 +701,9 @@ X(cmppl_rn)
  *  shar_rn:  Shift rn right arithmetically by 1 (t = bit that was shifted out)
  *  shllX_rn: Shift rn left logically by X bits
  *  shlrX_rn: Shift rn right logically by X bits
+ *  rotcl_rn: Rotate rn left via the t bit
+ *  rotcr_rn: Rotate rn right via the t bit
+ *  dt_rn:    Decrease rn; t = (rn == 0)
  *
  *  arg[1] = ptr to rn
  */
@@ -617,6 +733,41 @@ X(shar_rn)
 	else
 		cpu->cd.sh.sr &= ~SH_SR_T;
 	reg(ic->arg[1]) = rn >> 1;
+}
+X(rotcl_rn)
+{
+	uint32_t rn = reg(ic->arg[1]), top;
+	top = rn & 0x80000000;
+	rn <<= 1;
+	if (cpu->cd.sh.sr & SH_SR_T)
+		rn ++;
+	if (top)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[1]) = rn;
+}
+X(rotcr_rn)
+{
+	uint32_t rn = reg(ic->arg[1]), bottom;
+	bottom = rn & 1;
+	rn >>= 1;
+	if (cpu->cd.sh.sr & SH_SR_T)
+		rn |= 0x80000000;
+	if (bottom)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[1]) = rn;
+}
+X(dt_rn)
+{
+	uint32_t rn = reg(ic->arg[1]) - 1;
+	if (rn == 0)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[1]) = rn;
 }
 X(shll2_rn) { reg(ic->arg[1]) <<= 2; }
 X(shll8_rn) { reg(ic->arg[1]) <<= 8; }
@@ -650,9 +801,11 @@ X(shld)
 
 
 /*
- *  bra: Branch (with delay-slot)
+ *  bra:   Branch using PC relative immediace displacement (with delay-slot)
+ *  braf:  Like bra, but using a register instead of an immediate
  *
  *  arg[0] = immediate offset relative to start of page
+ *  arg[1] = ptr to Rn  (for braf)
  */
 X(bra)
 {
@@ -664,7 +817,21 @@ X(bra)
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
 		cpu->pc = target;
-		/*  Note: Must be non-delayed when jumping to the new pc:  */
+		cpu->delay_slot = NOT_DELAYED;
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(braf_rn)
+{
+	MODE_int_t target = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1) <<
+	    SH_INSTR_ALIGNMENT_SHIFT);
+	target += ic->arg[0] + reg(ic->arg[1]);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = target;
 		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
 	} else
@@ -1080,6 +1247,12 @@ X(to_be_translated)
 		} else if (lo4 == 0xc) {
 			/*  MOV.B @(R0,Rm),Rn  */
 			ic->f = instr(mov_b_r0_rm_rn);
+		} else if (lo4 == 0xe) {
+			/*  MOV.L @(R0,Rm),Rn  */
+			ic->f = instr(mov_l_r0_rm_rn);
+		} else if (iword == 0x0019) {
+			/*  DIV0U  */
+			ic->f = instr(div0u);
 		} else {
 			switch (lo8) {
 			case 0x02:	/*  STC SR,Rn  */
@@ -1097,6 +1270,13 @@ X(to_be_translated)
 				break;
 			case 0x1a:	/*  STS MACL,Rn  */
 				ic->f = instr(sts_macl_rn);
+				break;
+			case 0x23:	/*  BRAF Rn  */
+				ic->f = instr(braf_rn);
+				ic->arg[0] = (int32_t) (addr &
+				    ((SH_IC_ENTRIES_PER_PAGE-1)
+				    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4;
+				/*  arg[1] is Rn  */
 				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
 				    main_opcode, iword & 0xfff);
@@ -1156,6 +1336,9 @@ X(to_be_translated)
 		case 0x3:	/*  CMP/GE Rm,Rn  */
 			ic->f = instr(cmpge_rm_rn);
 			break;
+		case 0x4:	/*  DIV1 Rm,Rn  */
+			ic->f = instr(div1_rm_rn);
+			break;
 		case 0x5:	/*  DMULU.L Rm,Rn  */
 			ic->f = instr(dmulu_l_rm_rn);
 			break;
@@ -1206,6 +1389,9 @@ X(to_be_translated)
 				ic->f = instr(ldc_rm_sr);
 				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
 				break;
+			case 0x10:	/*  DT Rn  */
+				ic->f = instr(dt_rn);
+				break;
 			case 0x11:	/*  CMP/PZ Rn  */
 				ic->f = instr(cmppz_rn);
 				break;
@@ -1229,8 +1415,14 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.pr;	/* m */
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
 				break;
+			case 0x24:	/*  ROTCL Rn  */
+				ic->f = instr(rotcl_rn);
+				break;
+			case 0x25:	/*  ROTCR Rn  */
+				ic->f = instr(rotcr_rn);
+				break;
 			case 0x26:	/*  LDS.L @Rm+,PR  */
-				ic->f = instr(load_arg1_postinc_to_arg0);
+				ic->f = instr(mov_l_arg1_postinc_to_arg0);
 				ic->arg[0] = (size_t)&cpu->cd.sh.pr;
 				break;
 			case 0x28:	/*  SHLL16 Rn  */
@@ -1264,14 +1456,23 @@ X(to_be_translated)
 		case 0x0:	/*  MOV.B @Rm,Rn  */
 			ic->f = instr(load_b_rm_rn);
 			break;
+		case 0x1:	/*  MOV.W @Rm,Rn  */
+			ic->f = instr(load_w_rm_rn);
+			break;
 		case 0x2:	/*  MOV.L @Rm,Rn  */
 			ic->f = instr(load_l_rm_rn);
 			break;
 		case 0x3:	/*  MOV Rm,Rn  */
 			ic->f = instr(mov_rm_rn);
 			break;
+		case 0x4:	/*  MOV.B @Rm+,Rn  */
+			ic->f = instr(mov_b_arg1_postinc_to_arg0);
+			/*  Note: Order  */
+			ic->arg[1] = (size_t)&cpu->cd.sh.r[r4];	/* m */
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			break;
 		case 0x6:	/*  MOV.L @Rm+,Rn  */
-			ic->f = instr(load_arg1_postinc_to_arg0);
+			ic->f = instr(mov_l_arg1_postinc_to_arg0);
 			/*  Note: Order  */
 			ic->arg[1] = (size_t)&cpu->cd.sh.r[r4];	/* m */
 			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
@@ -1340,7 +1541,7 @@ X(to_be_translated)
 		}
 		break;
 
-	case 0x9:	/*  MOV.L @(disp,PC),Rn  */
+	case 0x9:	/*  MOV.W @(disp,PC),Rn  */
 		ic->f = instr(mov_w_disp_pc_rn);
 		ic->arg[0] = lo8 * 2 + (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4;

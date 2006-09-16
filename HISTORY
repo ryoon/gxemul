@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1364 2006-09-16 01:33:26 debug Exp $
+$Id: HISTORY,v 1.1365 2006-09-16 05:06:06 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3021,3 +3021,5 @@ Changelog for GXemul:
 		64-bit mode completely. Enough has now been implemented to run
 		the rectangle drawing demo. :-)
 20060912	Adding more SH instructions.
+20060916	Continuing on SH emulation (some more instructions: div0u,
+		div1, rotcl/rotcr, more mov instructions, dt, braf).

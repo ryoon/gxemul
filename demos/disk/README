@@ -43,6 +43,15 @@ file disk_ppc
 gxemul -d disk.img -E testppc -C PPC750 disk_ppc
 
 
+SH (32-bit)
+-----------
+
+sh64-superh-elf-gcc -m5-compact -I../../src/include/testmachine -g disk.c -c -o disk_sh.o
+sh64-superh-elf-ld -mshelf32 -e _f disk_sh.o -o disk_sh
+file disk_sh
+gxemul -d disk.img -E testsh disk_sh
+
+
 SPARC (64-bit)
 --------------
 sparc64-unknown-elf-gcc -I../../src/include/testmachine -g disk.c -c -o disk_sparc.o

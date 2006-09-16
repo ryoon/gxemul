@@ -46,6 +46,15 @@ file hello_ppc
 ../../gxemul -E testppc -C PPC750 hello_ppc
 
 
+SH (32-bit)
+-----------
+
+sh64-superh-elf-gcc -m5-compact -I../../src/include/testmachine -g hello.c -c -o hello_sh.o
+sh64-superh-elf-ld -mshelf32 -e _f hello_sh.o -o hello_sh
+file hello_sh
+../../gxemul -E testsh hello_sh
+
+
 SPARC (64-bit)
 --------------
 sparc64-unknown-elf-gcc -I../../src/include/testmachine -g hello.c -c -o hello_sparc.o

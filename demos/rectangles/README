@@ -43,6 +43,15 @@ file rectangles_ppc
 ../../gxemul -X -E testppc -C PPC750 rectangles_ppc
 
 
+SH (32-bit)
+-----------
+
+sh64-superh-elf-gcc -m5-compact -I../../src/include/testmachine -g rectangles.c -c -o rectangles_sh.o
+sh64-superh-elf-ld -mshelf32 -e _f rectangles_sh.o -o rectangles_sh
+file rectangles_sh
+../../gxemul -X -E testsh rectangles_sh
+
+
 SPARC (64-bit)
 --------------
 sparc64-unknown-elf-gcc -I../../src/include/testmachine -g rectangles.c -O2 -c -o rectangles_sparc.o

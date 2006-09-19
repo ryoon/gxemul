@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.245 2006-09-05 06:44:39 debug Exp $
+ *  $Id: misc.h,v 1.246 2006-09-19 12:29:46 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -52,16 +52,20 @@
  *  The correct solution is to upgrade your compiler to C99.
  */
 #ifdef NO_C99_64BIT_LONGLONG
+#define	PRIi8		"i"
 #define	PRIi16		"i"
 #define	PRIi32		"i"
 #define	PRIi64		"lli"
+#define	PRIx8		"x"
 #define	PRIx16		"x"
 #define	PRIx32		"x"
 #define	PRIx64		"llx"
 #else
+#define	PRIi8		"i"
 #define	PRIi16		"i"
 #define	PRIi32		"i"
 #define	PRIi64		"li"
+#define	PRIx8		"x"
 #define	PRIx16		"x"
 #define	PRIx32		"x"
 #define	PRIx64		"lx"

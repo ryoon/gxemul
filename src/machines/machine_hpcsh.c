@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcsh.c,v 1.3 2006-09-16 01:33:27 debug Exp $
+ *  $Id: machine_hpcsh.c,v 1.4 2006-09-19 10:49:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -64,6 +64,24 @@ MACHINE_SETUP(hpcsh)
 */
 	machine->machine_name = "HPCsh";
 	cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
+	if (!machine->use_x11)
+		fprintf(stderr, "-------------------------------------"
+		    "------------------------------------------\n"
+		    "\n  WARNING!  You are emulating a Dreamcast without -X."
+		    "\n            You will miss graphical output!\n\n"
+		    "-------------------------------------"
+		    "------------------------------------------\n");
+
+	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
+
+	dev_ram_init(machine, 0xf0000000, 0x2000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xf1000000, 0x2000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xf4000000, 0x4000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xf5000000, 0x4000, DEV_RAM_RAM, 0x0);
+
+	dev_fb_init(machine, machine->memory, 0x10000000,
+	    VFB_HPC, 640,240, 640,240, 16, machine->machine_name);
 }
 
 

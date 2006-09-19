@@ -25,7 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.4 2006-08-25 16:59:26 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.5 2006-09-19 10:49:57 debug Exp $
+ *
+ *  Machine for experimenting with NetBSD/dreamcast.
  */
 
 #include <stdio.h>
@@ -47,7 +49,26 @@ MACHINE_SETUP(dreamcast)
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 200000000;
 
-	/*  TODO: Devices.  */
+	if (!machine->use_x11)
+		fprintf(stderr, "-------------------------------------"
+		    "------------------------------------------\n"
+		    "\n  WARNING!  You are emulating a Dreamcast without -X."
+		    "\n            You will miss graphical output!\n\n"
+		    "-------------------------------------"
+		    "------------------------------------------\n");
+
+	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
+
+	dev_ram_init(machine, 0xf0000000, 0x2000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xf1000000, 0x2000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xf4000000, 0x4000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xf5000000, 0x4000, DEV_RAM_RAM, 0x0);
+
+	/*
+ 	 *  NetBSD/dreamcast uses a 640x480 16-bit framebuffer at 0x05000000.
+	 */
+	dev_fb_init(machine, machine->memory, 0x05000000,
+	    VFB_HPC, 640,480, 640,480, 16, "Dreamcast PVR");
 
 	if (!machine->prom_emulation)
 		return;

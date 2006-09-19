@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.14 2006-09-16 06:28:46 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.15 2006-09-19 10:49:57 debug Exp $
  *
  *  SH instructions.
  *
@@ -1167,8 +1167,24 @@ X(stc_sr_rn)
 
 
 /*
- *  ldc_rm_sr:   Copy Rm into SR.
- *  ldc_rm_vbr:  Copy Rm into VBR.
+ *  ldc_rm_rn_bank: Copy Rm into banked register.
+ *
+ *  arg[0] = ptr to rm
+ *  arg[1] = ptr to banked register
+ */
+X(ldc_rm_rn_bank)
+{
+	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
+		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
+		exit(1);
+	}
+	reg(ic->arg[1]) = reg(ic->arg[0]);
+}
+
+
+/*
+ *  ldc_rm_sr:      Copy Rm into SR.
+ *  ldc_rm_vbr:     Copy Rm into VBR.
  *
  *  arg[1] = ptr to rm
  */
@@ -1538,6 +1554,10 @@ X(to_be_translated)
 			ic->f = instr(shad);
 		} else if (lo4 == 0xd) {
 			ic->f = instr(shld);
+		} else if ((lo8 & 0x8f) == 0x8e) {
+			/*  LDC Rm, Rn_BANK  */
+			ic->f = instr(ldc_rm_rn_bank);
+			ic->arg[1] = (size_t)&cpu->cd.sh.r[(lo8 >> 4) & 7];
 		} else {
 			switch (lo8) {
 			case 0x00:	/*  SHLL Rn  */

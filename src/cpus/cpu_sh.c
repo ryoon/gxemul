@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.25 2006-09-16 06:28:46 debug Exp $
+ *  $Id: cpu_sh.c,v 1.26 2006-09-19 10:49:57 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -106,6 +106,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*  Initial value of FPSCR (according to the SH4 manual):  */
 	cpu->cd.sh.fpscr = 0x00040001;
 
+	/*  (Initial value of the program counter on reboot is 0xA0000000.)  */
+
 	/*  Start in Privileged Mode:  */
 	cpu->cd.sh.sr = SH_SR_MD | SH_SR_IMASK;
 
@@ -123,6 +125,11 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		char tmpstr[5];
 		snprintf(tmpstr, sizeof(tmpstr), "r%i", i);
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.r[i]);
+	}
+	for (i=0; i<SH_N_GPRS_BANKED; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "r%i_bank", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.r_bank[i]);
 	}
 
 	return 1;
@@ -222,18 +229,13 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	char *symbol;
 	uint64_t offset;
 	int i, x = cpu->cpu_id, nregs = cpu->cd.sh.compact? 16 : 64;
-	int bits32 = cpu->cd.sh.cpu_type.bits == 32;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
-		debug("cpu%i: pc  = 0x", x);
-		if (bits32)
-			debug("%08x", (int)cpu->pc);
-		else
-			debug("%016llx", (long long)cpu->pc);
+		debug("cpu%i: pc  = 0x%08"PRIx32, x, (uint32_t)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		debug("cpu%i: sr  = 0x%08"PRIx32"  (%s, %s, %s, %s, %s, %s,"
@@ -256,34 +258,29 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("cpu%i: mach = 0x%08"PRIx32"  macl = 0x%08"PRIx32"\n", x,
 		    (uint32_t)cpu->cd.sh.mach, (uint32_t)cpu->cd.sh.macl);
 
-		if (bits32) {
-			/*  32-bit:  */
-			for (i=0; i<nregs; i++) {
-				if ((i % 4) == 0)
-					debug("cpu%i:", x);
-				debug(" r%-2i = 0x%08x ", i,
-				    (int)cpu->cd.sh.r[i]);
-				if ((i % 4) == 3)
-					debug("\n");
-			}
-		} else {
-			/*  64-bit:  */
-			for (i=0; i<nregs; i++) {
-				int r = (i >> 1) + ((i & 1) << 4);
-				if ((i % 2) == 0)
-					debug("cpu%i:", x);
-				debug(" r%-2i = 0x%016llx ", r,
-				    (long long)cpu->cd.sh.r[r]);
-				if ((i % 2) == 1)
-					debug("\n");
-			}
+		for (i=0; i<nregs; i++) {
+			if ((i % 4) == 0)
+				debug("cpu%i:", x);
+			debug(" r%-2i = 0x%08x ", i,
+			    (int)cpu->cd.sh.r[i]);
+			if ((i % 4) == 3)
+				debug("\n");
 		}
 	}
 
 	if (coprocs & 1) {
-		/*  System registers:  */
+		/*  System registers, etc:  */
 		debug("cpu%i: vbr = 0x%08"PRIx32"\n", x,
 		    (uint32_t)cpu->cd.sh.vbr);
+
+		for (i=0; i<SH_N_GPRS_BANKED; i++) {
+			if ((i % 2) == 0)
+				debug("cpu%i:", x);
+			debug(" r%i_bank = 0x%08x ", i,
+			    (int)cpu->cd.sh.r_bank[i]);
+			if ((i % 2) == 1)
+				debug("\n");
+		}
 	}
 }
 
@@ -431,6 +428,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("clrs\n");
 		else if (iword == 0x0058)
 			debug("sets\n");
+		else if ((lo8 & 0x8f) == 0x82)
+			debug("stc\tr%i_bank,r%i\n", (lo8 >> 4) & 7, r8);
 		else if (lo8 == 0x83)
 			debug("pref\t@r%i\n", r8);
 		else if (lo8 == 0x93)

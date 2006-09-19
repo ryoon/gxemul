@@ -25,14 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.124 2006-09-06 04:55:35 debug Exp $
+ *  $Id: dev_fb.c,v 1.125 2006-09-19 10:49:57 debug Exp $
  *  
  *  Generic framebuffer device.
  *
  *	DECstation VFB01 monochrome framebuffer, 1024x864
  *	DECstation VFB02 8-bit color framebuffer, 1024x864
  *	DECstation Maxine, 1024x768 8-bit color
- *	HPC (mips, arm, ..) framebuffer
  *	Playstation 2 (24-bit color)
  *	Generic (any resolution, several bit depths possible, useful for
  *		testmachines)
@@ -740,7 +739,8 @@ DEVICE_ACCESS(fb)
  *
  *  VFB_DEC_VFB01, _VFB02, and VFB_DEC_MAXINE are DECstation specific.
  *
- *  If type is VFB_HPC, then color encoding differs from the generic case.
+ *  VFB_HPC is like generic, but the color encoding is done as on HPCmips
+ *  and Dreamcast.
  *
  *  If bit_depth = -15 (note the minus sign), then a special hack is used for
  *  the Playstation Portable's 5-bit R, 5-bit G, 5-bit B.

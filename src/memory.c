@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.197 2006-09-16 01:33:18 debug Exp $
+ *  $Id: memory.c,v 1.198 2006-09-19 10:50:08 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -475,7 +475,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		mem->mmap_dev_maxaddr = (((baseaddr + len) - 1) |
 		    mem->dev_dyntrans_alignment) + 1;
 
-	if (newi <= mem->last_accessed_device)
+	if (newi < mem->last_accessed_device)
 		mem->last_accessed_device ++;
 }
 

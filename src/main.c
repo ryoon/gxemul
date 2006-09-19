@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.283 2006-09-07 11:44:01 debug Exp $
+ *  $Id: main.c,v 1.284 2006-09-19 10:50:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -694,16 +694,38 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
  */
 int main(int argc, char *argv[])
 {
+	/*  Setting constants:  */
+	const int constant_yes = 1;
+	const int constant_true = 1;
+	const int constant_no = 0;
+	const int constant_false = 0;
+
 	struct emul **emuls;
 	char **diskimages = NULL;
 	int n_diskimages = 0;
 	int n_emuls;
 	int i;
 
+
 	progname = argv[0];
 
-	/*  Create the settings object, and add global settings to it:  */
+
+	/*
+	 *  Create the settings object, and add global settings to it:
+	 *
+	 *  Read-only "constants":     yes, no, true, false.
+	 *  Global emulator settings:  verbose, single_step, ...
+	 */
 	global_settings = settings_new();
+
+	settings_add(global_settings, "yes", 0, SETTINGS_TYPE_INT,
+	    SETTINGS_FORMAT_YESNO, (void *)&constant_yes);
+	settings_add(global_settings, "no", 0, SETTINGS_TYPE_INT,
+	    SETTINGS_FORMAT_YESNO, (void *)&constant_no);
+	settings_add(global_settings, "true", 0, SETTINGS_TYPE_INT,
+	    SETTINGS_FORMAT_BOOL, (void *)&constant_true);
+	settings_add(global_settings, "false", 0, SETTINGS_TYPE_INT,
+	    SETTINGS_FORMAT_BOOL, (void *)&constant_false);
 
 	settings_add(global_settings, "single_step", 0,
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO, (void *)&single_step);
@@ -841,20 +863,10 @@ int main(int argc, char *argv[])
 
 	console_deinit();
 
-	for (i=0; i<n_emuls; i++) {
-		char tmpstr[30];
-
+	for (i=0; i<n_emuls; i++)
 		emul_destroy(emuls[i]);
 
-		snprintf(tmpstr, sizeof(tmpstr), "emul[%i]", i);
-		settings_remove(global_settings, tmpstr);
-	}
-
-	settings_remove(global_settings, "single_step");
-	settings_remove(global_settings, "force_debugger_at_exit");
-	settings_remove(global_settings, "verbose");
-	settings_remove(global_settings, "quiet_mode");
-
+	settings_remove_all(global_settings);
 	settings_destroy(global_settings);
 
 	return 0;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.23 2006-09-10 14:05:43 debug Exp $
+ *  $Id: cpu_sh.h,v 1.24 2006-09-19 10:50:08 debug Exp $
  */
 
 #include "misc.h"
@@ -71,6 +71,7 @@ DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 /*  For SH5:  #define	SH_N_GPRS		64  */
 /*  For pre-SH5:  */
 #define	SH_N_GPRS		16
+#define	SH_N_GPRS_BANKED	8
 
 
 struct sh_cpu {
@@ -83,7 +84,7 @@ struct sh_cpu {
 	uint32_t	r[SH_N_GPRS];
 
 	/*  Saved Banked registers (during mode switch):  */
-	uint32_t	r_otherbank[8];
+	uint32_t	r_bank[SH_N_GPRS_BANKED];
 
 	uint32_t	mach;		/*  Multiply-Accumulate High  */
 	uint32_t	macl;		/*  Multiply-Accumulate Low  */

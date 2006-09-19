@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.21 2006-01-01 13:17:17 debug Exp $
+ *  $Id: dev_ram.c,v 1.22 2006-09-19 10:50:08 debug Exp $
  *  
  *  A generic RAM (memory) device. Can also be used to mirror/alias another
  *  part of RAM.
@@ -59,9 +59,6 @@ struct ram_data {
 };
 
 
-/*
- *  dev_ram_access():
- */
 DEVICE_ACCESS(ram)
 {
 	struct ram_data *d = extra;

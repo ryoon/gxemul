@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.13 2006-08-21 14:44:22 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.14 2006-09-19 10:50:08 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -39,6 +39,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 
@@ -90,6 +91,15 @@ int m68k_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
+
+	/*  Add all register names to the settings:  */
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	for (i=0; i<N_M68K_AREGS; i++)
+		CPU_SETTINGS_ADD_REGISTER32(m68k_aname[i], cpu->cd.m68k.a[i]);
+	/*  Both "fp" and "a6" should map to the same register:  */
+	CPU_SETTINGS_ADD_REGISTER32("a6", cpu->cd.m68k.a[6]);
+	for (i=0; i<N_M68K_DREGS; i++)
+		CPU_SETTINGS_ADD_REGISTER32(m68k_dname[i], cpu->cd.m68k.d[i]);
 
 	return 1;
 }
@@ -165,29 +175,6 @@ void m68k_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i % 4) == 3)
 				debug("\n");
 		}
-	}
-}
-
-
-/*
- *  m68k_cpu_register_match():
- */
-void m68k_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
 	}
 }
 

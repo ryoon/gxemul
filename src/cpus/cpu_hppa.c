@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.15 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.16 2006-09-19 10:50:08 debug Exp $
  *
  *  HP PA-RISC CPU emulation.
  *
@@ -41,6 +41,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 
@@ -89,6 +90,9 @@ int hppa_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
 	}
+
+	/*  Add all register names to the settings:  */
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
 
 	return 1;
 }
@@ -165,29 +169,6 @@ void hppa_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					debug("\n");
 			}
 		}
-	}
-}
-
-
-/*
- *  hppa_cpu_register_match():
- */
-void hppa_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
 	}
 }
 

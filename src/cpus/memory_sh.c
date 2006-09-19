@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.4 2006-09-16 05:06:06 debug Exp $
+ *  $Id: memory_sh.c,v 1.5 2006-09-19 10:50:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -40,22 +40,71 @@
 
 /*
  *  sh_translate_v2p():
+ *
+ *  TODO: DON'T HARDCODE VALUES! Use NetBSD's definitions instead.
  */
 int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_paddr, int flags)
 {
+	vaddr = (uint32_t)vaddr;
+
+	if (!(vaddr & 0x80000000)) {
+		if (flags & FLAG_NOEXCEPTIONS) {
+			*return_paddr = 0;
+			return 2;
+		}
+
+		fatal("TODO: sh_translate_v2p(): User space\n");
+		exit(1);
+	}
+
+	/*  Direct-mapped physical memory.  */
+	if (vaddr >= 0x80000000 && vaddr < 0xc0000000) {
+		if (!(cpu->cd.sh.sr & SH_SR_MD)) {
+			if (flags & FLAG_NOEXCEPTIONS) {
+				*return_paddr = 0;
+				return 2;
+			}
+
+			fatal("TODO: Userspace tried to access kernel"
+			    " memory?\n");
+			exit(1);
+		}
+
+		*return_paddr = vaddr & 0x1fffffff;
+		return 2;
+	}
+
+	/*  Kernel virtual memory.  */
+	if (vaddr >= 0xc0000000 && vaddr < 0xe0000000) {
+		if (flags & FLAG_NOEXCEPTIONS) {
+			*return_paddr = 0;
+			return 2;
+		}
+
+		fatal("TODO: sh_translate_v2p(): Kernel virtual memory\n");
+		exit(1);
+	}
+
+	/*  Special registers mapped at 0xf0000000 .. 0xffffffff:  */
+	if ((vaddr & 0xf0000000) == 0xf0000000) {
+		if (!(cpu->cd.sh.sr & SH_SR_MD)) {
+			if (flags & FLAG_NOEXCEPTIONS) {
+				*return_paddr = 0;
+				return 2;
+			}
+
+			fatal("TODO: Userspace tried to access special"
+			    " registers?\n");
+			exit(1);
+		}
+
+		*return_paddr = vaddr;
+		return 2;
+	}
+
 	/*  TODO  */
-
-	*return_paddr = vaddr;
-
-	if (vaddr & 0x80000000)
-		*return_paddr = vaddr & 0x03ffffff;
-
-	/*  NetBSD/sh4 uses this for cache cleaning operations:  */
-	if ((vaddr & 0xff000000) == 0xf0000000)
-		*return_paddr = cpu->machine->physical_ram_in_mb
-		    * 1048575 - 4096 + (vaddr & 0xfff);
-
-	return 2;
+	fatal("Unknown vaddr 0x%08"PRIx32"\n", (uint32_t)vaddr);
+	exit(1);
 }
 

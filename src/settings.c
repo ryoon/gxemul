@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.12 2006-09-16 01:33:18 debug Exp $
+ *  $Id: settings.c,v 1.13 2006-09-19 10:50:08 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -57,6 +57,9 @@
 
 
 struct settings {
+	struct settings		*parent;
+	char			*name_in_parent;
+
 	int			n_settings;
 
 	/*
@@ -103,7 +106,8 @@ struct settings *settings_new(void)
 /*
  *  settings_destroy():
  *
- *  Frees all resources occupied by a settings object.
+ *  Frees all resources occupied by a settings object. Also, if this settings
+ *  object has a parent, then remove it from the parent.
  */
 void settings_destroy(struct settings *settings)
 {
@@ -152,6 +156,11 @@ void settings_destroy(struct settings *settings)
 	if (settings->ptr != NULL)
 		free(settings->ptr);
 
+	if (settings->parent != NULL) {
+		settings_remove(settings->parent, settings->name_in_parent);
+		free(settings->name_in_parent);
+	}
+
 	free(settings);
 }
 
@@ -185,6 +194,12 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 			case SETTINGS_TYPE_INT:
 				value = *((int *) settings->ptr[i]);
 				break;
+			case SETTINGS_TYPE_INT8:
+				value = *((int8_t *) settings->ptr[i]);
+				break;
+			case SETTINGS_TYPE_INT16:
+				value = *((int16_t *) settings->ptr[i]);
+				break;
 			case SETTINGS_TYPE_INT32:
 				value = *((int32_t *) settings->ptr[i]);
 				break;
@@ -201,6 +216,12 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 			switch (settings->presentation_format[i]) {
 			case SETTINGS_FORMAT_DECIMAL:
 				printf("%"PRIi64, value);
+				break;
+			case SETTINGS_FORMAT_HEX8:
+				printf("0x%02"PRIx8, (int8_t) value);
+				break;
+			case SETTINGS_FORMAT_HEX16:
+				printf("0x%04"PRIx16, (int16_t) value);
 				break;
 			case SETTINGS_FORMAT_HEX32:
 				printf("0x%08"PRIx32, (int32_t) value);
@@ -274,10 +295,19 @@ void settings_add(struct settings *settings, const char *name, int writable,
 		goto out_of_mem;
 
 	settings->name[settings->n_settings - 1] = strdup(name);
+	if (settings->name[settings->n_settings - 1] == NULL)
+		goto out_of_mem;
 	settings->writable[settings->n_settings - 1] = writable;
 	settings->storage_type[settings->n_settings - 1] = type;
 	settings->presentation_format[settings->n_settings - 1] = format;
 	settings->ptr[settings->n_settings - 1] = ptr;
+
+	if (type == SETTINGS_TYPE_SUBSETTINGS) {
+		((struct settings *)ptr)->parent = settings;
+		((struct settings *)ptr)->name_in_parent = strdup(name);
+		if (((struct settings *)ptr)->name_in_parent == NULL)
+			goto out_of_mem;
+	}
 
 	return;
 
@@ -327,6 +357,8 @@ void settings_remove(struct settings *settings, const char *name)
 	free(settings->name[i]);
 
 	m = settings->n_settings - i;
+	if (m == 0)
+		return;
 
 	memmove(&settings->name[i], &settings->name[i+1],
 	    m * sizeof(settings->name[0]));
@@ -356,6 +388,39 @@ void settings_remove_all(struct settings *settings)
 
 
 /*
+ *  settings_access_read():
+ *
+ *  Used internally by settings_access().
+ */
+static int settings_access_read(struct settings *settings, int i,
+	char *valuebuf, size_t bufsize)
+{
+	/*  TODO  */
+	printf("TODO: settings_access_read()\n");
+
+	return SETTINGS_OK;
+}
+
+
+/*
+ *  settings_access_write():
+ *
+ *  Used internally by settings_access().
+ */
+static int settings_access_write(struct settings *settings, int i,
+	char *valuebuf, size_t bufsize)
+{
+	if (!settings->writable[i])
+		return SETTINGS_READONLY;
+
+	/*  TODO  */
+	printf("TODO: settings_access_write()\n");
+
+	return SETTINGS_OK;
+}
+
+
+/*
  *  settings_access():
  *
  *  Read or write a setting. fullname may be something like "settings.x.y".
@@ -379,18 +444,41 @@ void settings_remove_all(struct settings *settings)
 int settings_access(struct settings *settings, const char *fullname,
         int writeflag, char *valuebuf, size_t bufsize)
 {
-#if 0
-	int part_name_pos, part_name_len;
+	int i;
 
-	printf("settings_access(fullname='%s')\n", fullname);
+	/*  printf("settings_access(fullname='%s')\n", fullname);  */
 
-	part_name_pos = 0;
 	if (strncmp(fullname, GLOBAL_SETTINGS_NAME".",
 	    strlen(GLOBAL_SETTINGS_NAME) + 1) == 0)
-		part_name_pos = strlen(GLOBAL_SETTINGS_NAME) + 1;
+		fullname += strlen(GLOBAL_SETTINGS_NAME) + 1;
 
-	while (fullname[part_name_
-#endif
+	for (i=0; i<settings->n_settings; i++) {
+		size_t settings_name_len = strlen(settings->name[i]);
+
+		if (strncmp(fullname, settings->name[i],
+		    settings_name_len) != 0)
+			continue;
+
+		/*  Found the correct setting?  */
+		if (fullname[settings_name_len] == '\0') {
+			if (writeflag)
+				return settings_access_write(
+				    settings, i, valuebuf, bufsize);
+			else
+				return settings_access_read(
+				    settings, i, valuebuf, bufsize);
+		}
+
+		/*  Found a setting which has sub-settings?  */
+		if (fullname[settings_name_len] == '.') {
+			/*  Recursive search:  */
+			return settings_access(
+			    (struct settings *)settings->ptr[i],
+			    fullname + settings_name_len + 1,
+			    writeflag, valuebuf, bufsize);
+		}
+	}
+
 	return SETTINGS_NAME_NOT_FOUND;
 }
 

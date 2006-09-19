@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer.c,v 1.4 2006-07-23 14:37:34 debug Exp $
+ *  $Id: cpu_transputer.c,v 1.5 2006-09-19 10:50:08 debug Exp $
  *
  *  INMOS transputer CPU emulation.
  */
@@ -39,6 +39,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 #define	DYNTRANS_32
@@ -98,6 +99,13 @@ int transputer_cpu_new(struct cpu *cpu, struct memory *mem,
 	}
 
 	cpu->cd.transputer.wptr = machine->physical_ram_in_mb * 1048576 - 2048;
+
+	CPU_SETTINGS_ADD_REGISTER64("ip", cpu->pc);
+	CPU_SETTINGS_ADD_REGISTER32("a", cpu->cd.transputer.a);
+	CPU_SETTINGS_ADD_REGISTER32("b", cpu->cd.transputer.b);
+	CPU_SETTINGS_ADD_REGISTER32("c", cpu->cd.transputer.c);
+	CPU_SETTINGS_ADD_REGISTER32("oreg", cpu->cd.transputer.oreg);
+	CPU_SETTINGS_ADD_REGISTER32("wptr", cpu->cd.transputer.wptr);
 
 	return 1;
 }
@@ -161,70 +169,6 @@ void transputer_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	    cpu->cd.transputer.c);
 
 	/*  TODO: Error flags, Floating point registers, etc.  */
-}
-
-
-/*
- *  transputer_cpu_register_match():
- */
-void transputer_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-	/*  TODO  */
-
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	}
-
-	if (strcasecmp(name, "a") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.transputer.a = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->cd.transputer.a;
-		*match_register = 1;
-	}
-
-	if (strcasecmp(name, "b") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.transputer.b = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->cd.transputer.b;
-		*match_register = 1;
-	}
-
-	if (strcasecmp(name, "c") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.transputer.c = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->cd.transputer.c;
-		*match_register = 1;
-	}
-
-	if (strcasecmp(name, "wptr") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.transputer.wptr = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->cd.transputer.wptr;
-		*match_register = 1;
-	}
-
-	if (strcasecmp(name, "oreg") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.transputer.oreg = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->cd.transputer.oreg;
-		*match_register = 1;
-	}
-
-	/*  TODO: Front and back pointers, etc.  */
 }
 
 

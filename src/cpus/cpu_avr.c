@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr.c,v 1.20 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_avr.c,v 1.21 2006-09-19 10:50:08 debug Exp $
  *
  *  Atmel AVR (8-bit) CPU emulation.
  */
@@ -39,6 +39,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 
@@ -58,7 +59,7 @@
 int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	int type = 0;
+	int type = 0, i;
 
 	if (strcasecmp(cpu_type_name, "AVR") == 0 ||
 	    strcasecmp(cpu_type_name, "AVR16") == 0 ||
@@ -90,6 +91,15 @@ int avr_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
+	}
+
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	CPU_SETTINGS_ADD_REGISTER16("sp", cpu->cd.avr.sp);
+	CPU_SETTINGS_ADD_REGISTER8("sreg", cpu->cd.avr.sreg);
+	for (i=0; i<N_AVR_REGS; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "r%i", i);
+		CPU_SETTINGS_ADD_REGISTER8(tmpstr, cpu->cd.avr.r[i]);
 	}
 
 	return 1;
@@ -155,7 +165,7 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			int r = (i >> 3) + ((i & 7) << 2);
 			if ((i % 8) == 0)
 			        debug("cpu%i:", x);
-		        debug(" r%02i=0x%02x", r, cpu->cd.avr.r[r]);
+		        debug(" r%-2i=0x%02x", r, cpu->cd.avr.r[r]);
 			if ((i % 8) == 7)
 				debug("\n");
 		}
@@ -171,36 +181,6 @@ void avr_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	    (long long)cpu->machine->ninstrs);
 	debug("cpu%i: nr of cycles:       %lli\n", x,
 	    (long long)(cpu->machine->ninstrs + cpu->cd.avr.extra_cycles));
-}
-
-
-/*
- *  avr_cpu_register_match():
- */
-void avr_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-	/*  TODO  */
-
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	} else if (name[0] == 'r' && isdigit((int)name[1])) {
-		int nr = atoi(name + 1);
-		if (nr >= 0 && nr < N_AVR_REGS) {
-			if (writeflag)
-				m->cpus[cpunr]->cd.avr.r[nr] = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->cd.avr.r[nr];
-			*match_register = 1;
-		}
-	}
 }
 
 

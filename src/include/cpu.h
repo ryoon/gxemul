@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.95 2006-09-09 09:04:33 debug Exp $
+ *  $Id: cpu.h,v 1.96 2006-09-19 10:50:08 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -442,6 +442,8 @@ void cpu_init(void);
 #define	INVALIDATE_VADDR_UPPER4		16	/*  useful for PPC emulation  */
 
 
+/*  Note: 64-bit processors running in 32-bit mode use a 32-bit
+    display format, even though the underlying data is 64-bits.  */
 #define	CPU_SETTINGS_ADD_REGISTER64(name, var)				   \
 	settings_add(cpu->settings, name, 1, SETTINGS_TYPE_INT64,	   \
 	    cpu->is_32bit? SETTINGS_FORMAT_HEX32 : SETTINGS_FORMAT_HEX64,  \
@@ -449,6 +451,12 @@ void cpu_init(void);
 #define	CPU_SETTINGS_ADD_REGISTER32(name, var)				   \
 	settings_add(cpu->settings, name, 1, SETTINGS_TYPE_INT32,	   \
 	    SETTINGS_FORMAT_HEX32, (void *) &(var));
+#define	CPU_SETTINGS_ADD_REGISTER16(name, var)				   \
+	settings_add(cpu->settings, name, 1, SETTINGS_TYPE_INT16,	   \
+	    SETTINGS_FORMAT_HEX16, (void *) &(var));
+#define	CPU_SETTINGS_ADD_REGISTER8(name, var)				   \
+	settings_add(cpu->settings, name, 1, SETTINGS_TYPE_INT8,	   \
+	    SETTINGS_FORMAT_HEX8, (void *) &(var));
 
 
 #define CPU_FAMILY_INIT(n,s)	int n ## _cpu_family_init(		\

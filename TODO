@@ -1,12 +1,14 @@
-$Id: TODO,v 1.375 2006-09-16 05:05:35 debug Exp $
+$Id: TODO,v 1.376 2006-09-19 10:50:07 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
 	x)  Settings / expression evaluator:
-		x)  Special handlers for Write! (E.g. MIPS coproc regs)
-		x)  Rewrite all CPUs so that they register registers. :)
+		x)  Convert the remaining cpus to the new framework
+			(specifically PPC registers)
+		x)  Special handlers for Write! (E.g. MIPS coproc regs,
+			or the Alpha/MIPS/SPARC zero register)
 		x)  Begin on the expression evaluator.
 	x)  Clock/timer framework:
 		x)  FIGURE OUT A WAY TO TEST THE 8253 :)
@@ -24,7 +26,8 @@ Implementation:
 	x)  Factor out other things from cpu_*.c? (Turn CPU name
 		detection into a macro?)
 	x)  SH:
-		x)  Argument passing for function calls?
+		x)  Refactor SH4-specific TLB/cache stuff, so that it is
+		    shared between all SH machines.
 	x)  Disassembly, nr of bytes read and given to the cpu specific
 		disassemlby routine? It's too ugly now.
 	x)  Alpha:

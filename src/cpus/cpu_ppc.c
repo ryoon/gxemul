@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.62 2006-09-05 06:45:50 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.63 2006-09-19 10:50:08 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -46,6 +46,7 @@
 #include "ppc_pte.h"
 #include "ppc_spr.h"
 #include "ppc_spr_strings.h"
+#include "settings.h"
 #include "symbol.h"
 
 #define	DYNTRANS_DUALMODE_32
@@ -168,6 +169,34 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	if (cpu->machine->prom_emulation)
 		cpu->cd.ppc.of_emul_addr = 0xfff00000;
 
+	/*  Add all register names to the settings:  */
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	CPU_SETTINGS_ADD_REGISTER64("hi", cpu->cd.mips.hi);
+	for (i=0; i<PPC_NGPRS; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "r%i", i);
+		CPU_SETTINGS_ADD_REGISTER64(tmpstr, cpu->cd.ppc.gpr[i]);
+	}
+
+#if 0
+PPC_NGPRS
+	} else if (strcasecmp(name, "msr") == 0) {
+	} else if (strcasecmp(name, "lr") == 0) {
+	} else if (strcasecmp(name, "cr") == 0) {
+	} else if (strcasecmp(name, "dec") == 0) {
+	} else if (strcasecmp(name, "hdec") == 0) {
+	} else if (strcasecmp(name, "ctr") == 0) {
+			m->cpus[cpunr]->cd.ppc.spr[SPR_CTR] = *valuep;
+	} else if (strcasecmp(name, "xer") == 0) {
+			m->cpus[cpunr]->cd.ppc.spr[SPR_XER] = *valuep;
+	} else if (strcasecmp(name, "fpscr") == 0) {
+			m->cpus[cpunr]->cd.ppc.fpscr = *valuep;
+PPC_NGPRS
+		if (nr >= 0 && nr < PPC_NFPRS) {
+			if (writeflag) {
+				m->cpus[cpunr]->cd.ppc.fpr[nr] = *valuep;
+
+#endif
 	return 1;
 }
 
@@ -507,95 +536,6 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				debug(")");
 			}
 			debug("\n");
-		}
-	}
-}
-
-
-/*
- *  ppc_cpu_register_match():
- */
-void ppc_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	/*  Register name:  */
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	} else if (strcasecmp(name, "msr") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.msr = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.msr;
-		*match_register = 1;
-	} else if (strcasecmp(name, "lr") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.spr[SPR_LR] = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_LR];
-		*match_register = 1;
-	} else if (strcasecmp(name, "cr") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.cr = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.cr;
-		*match_register = 1;
-	} else if (strcasecmp(name, "dec") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.spr[SPR_DEC] = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_DEC];
-		*match_register = 1;
-	} else if (strcasecmp(name, "hdec") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.spr[SPR_HDEC] = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_HDEC];
-		*match_register = 1;
-	} else if (strcasecmp(name, "ctr") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.spr[SPR_CTR] = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_CTR];
-		*match_register = 1;
-	} else if (name[0] == 'r' && isdigit((int)name[1])) {
-		int nr = atoi(name + 1);
-		if (nr >= 0 && nr < PPC_NGPRS) {
-			if (writeflag) {
-				m->cpus[cpunr]->cd.ppc.gpr[nr] = *valuep;
-			} else
-				*valuep = m->cpus[cpunr]->cd.ppc.gpr[nr];
-			*match_register = 1;
-		}
-	} else if (strcasecmp(name, "xer") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.spr[SPR_XER] = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.spr[SPR_XER];
-		*match_register = 1;
-	} else if (strcasecmp(name, "fpscr") == 0) {
-		if (writeflag)
-			m->cpus[cpunr]->cd.ppc.fpscr = *valuep;
-		else
-			*valuep = m->cpus[cpunr]->cd.ppc.fpscr;
-		*match_register = 1;
-	} else if (name[0] == 'f' && isdigit((int)name[1])) {
-		int nr = atoi(name + 1);
-		if (nr >= 0 && nr < PPC_NFPRS) {
-			if (writeflag) {
-				m->cpus[cpunr]->cd.ppc.fpr[nr] = *valuep;
-			} else
-				*valuep = m->cpus[cpunr]->cd.ppc.fpr[nr];
-			*match_register = 1;
 		}
 	}
 }

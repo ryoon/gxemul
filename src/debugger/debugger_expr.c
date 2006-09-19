@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.5 2006-09-16 01:33:27 debug Exp $
+ *  $Id: debugger_expr.c,v 1.6 2006-09-19 10:50:08 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -123,6 +123,10 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 
 		valuebuf[0] = '\0';
 
+		if (writeflag)
+			snprintf(valuebuf, sizeof(valuebuf),
+			    "0x%"PRIx64, *valuep);
+
 		res = settings_access(global_settings, name,
 		    writeflag, valuebuf, sizeof(valuebuf));
 		if (res == SETTINGS_OK)
@@ -167,6 +171,9 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 			if (res == SETTINGS_OK)
 				match_settings = 1;
 		}
+
+		if (match_settings)
+			*valuep = strtoull(valuebuf, NULL, 0);
 	}
 
 	/*  Check for a number match:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.37 2006-09-04 15:35:55 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.38 2006-09-19 10:50:08 debug Exp $
  *
  *  SPARC CPU emulation.
  */
@@ -39,6 +39,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 
@@ -149,6 +150,14 @@ int sparc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		    cpu->cd.sparc.cpu_type.nwindows, MAXWIN);
 		exit(1);
 	}
+
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	CPU_SETTINGS_ADD_REGISTER64("y", cpu->cd.sparc.y);
+	CPU_SETTINGS_ADD_REGISTER64("pstate", cpu->cd.sparc.pstate);
+	for (i=0; i<N_SPARC_REG; i++)
+		CPU_SETTINGS_ADD_REGISTER64(sparc_regnames[i],
+		    cpu->cd.sparc.r[i]);
+	/*  TODO: Handler for writes to the zero register!  */
 
 	return 1;
 }
@@ -278,50 +287,6 @@ void sparc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			}
 		}
 	}
-}
-
-
-/*
- *  sparc_cpu_register_match():
- */
-void sparc_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int i, cpunr = 0;
-
-	/*  CPU number:  */
-	/*  TODO  */
-
-	for (i=0; i<N_SPARC_REG; i++) {
-		if (strcasecmp(name, sparc_regnames[i]) == 0) {
-			if (writeflag && i != SPARC_ZEROREG)
-				m->cpus[cpunr]->cd.sparc.r[i] = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->cd.sparc.r[i];
-			*match_register = 1;
-		}
-	}
-
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else {
-			*valuep = m->cpus[cpunr]->pc;
-		}
-		*match_register = 1;
-	}
-
-	if (strcasecmp(name, "y") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.sparc.y = (uint32_t) *valuep;
-		} else {
-			*valuep = (uint32_t) m->cpus[cpunr]->cd.sparc.y;
-		}
-		*match_register = 1;
-	}
-
-	if (*match_register && m->cpus[cpunr]->is_32bit)
-		(*valuep) &= 0xffffffffULL;
 }
 
 

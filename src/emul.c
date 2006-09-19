@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.267 2006-09-07 11:44:01 debug Exp $
+ *  $Id: emul.c,v 1.268 2006-09-19 10:50:07 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -791,20 +791,13 @@ void emul_destroy(struct emul *emul)
 		free(emul->name);
 	}
 
-	for (i=0; i<emul->n_machines; i++) {
-		char tmpstr[20];
-
+	for (i=0; i<emul->n_machines; i++)
 		machine_destroy(emul->machines[i]);
-
-		snprintf(tmpstr, sizeof(tmpstr), "machine[%i]", i);
-		settings_remove(emul->settings, tmpstr);
-	}
 
 	if (emul->machines != NULL)
 		free(emul->machines);
 
-	/*  Remove any remaining level-1 settings and destroy the
-	    settings object:  */
+	/*  Remove any remaining level-1 settings:  */
 	settings_remove_all(emul->settings);
 	settings_destroy(emul->settings);
 

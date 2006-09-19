@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.687 2006-09-07 11:44:01 debug Exp $
+ *  $Id: machine.c,v 1.688 2006-09-19 10:50:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -128,8 +128,6 @@ struct machine *machine_new(char *name, struct emul *emul)
 	    SETTINGS_TYPE_INT, SETTINGS_FORMAT_YESNO,
 	    (void *) &m->statistics_enabled);
 
-
-
 	return m;
 }
 
@@ -151,7 +149,6 @@ void machine_destroy(struct machine *machine)
 
 	/*  Remove any remaining level-1 settings:  */
 	settings_remove_all(machine->settings);
-
 	settings_destroy(machine->settings);
 
 	free(machine);

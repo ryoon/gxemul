@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.h,v 1.6 2006-09-05 07:30:35 debug Exp $
+ *  $Id: settings.h,v 1.7 2006-09-19 10:50:08 debug Exp $
  */
 
 #include <inttypes.h>
@@ -40,17 +40,21 @@ struct settings;
 /*  Storage types:  */
 #define	SETTINGS_TYPE_SUBSETTINGS	1
 #define	SETTINGS_TYPE_INT		2
-#define	SETTINGS_TYPE_INT32		3
-#define	SETTINGS_TYPE_INT64		4
-#define	SETTINGS_TYPE_STRING		5
+#define	SETTINGS_TYPE_INT8		3
+#define	SETTINGS_TYPE_INT16		4
+#define	SETTINGS_TYPE_INT32		5
+#define	SETTINGS_TYPE_INT64		6
+#define	SETTINGS_TYPE_STRING		7
 
 /*  Presentation formats:  */
 #define	SETTINGS_FORMAT_DECIMAL		1	/*  -123  */
-#define	SETTINGS_FORMAT_HEX32		2	/*  0x80000000  */
-#define	SETTINGS_FORMAT_HEX64		3	/*  0xffffffff80000000  */
-#define	SETTINGS_FORMAT_BOOL		4	/*  true, false  */
-#define	SETTINGS_FORMAT_YESNO		5	/*  yes, no  */
-#define	SETTINGS_FORMAT_STRING		6	/*  %s  */
+#define	SETTINGS_FORMAT_HEX8		2	/*  0x12  */
+#define	SETTINGS_FORMAT_HEX16		3	/*  0x1234  */
+#define	SETTINGS_FORMAT_HEX32		4	/*  0x80000000  */
+#define	SETTINGS_FORMAT_HEX64		5	/*  0xffffffff80000000  */
+#define	SETTINGS_FORMAT_BOOL		6	/*  true, false  */
+#define	SETTINGS_FORMAT_YESNO		7	/*  yes, no  */
+#define	SETTINGS_FORMAT_STRING		8	/*  %s  */
 
 
 /*

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1366 2006-09-16 06:28:45 debug Exp $
+$Id: HISTORY,v 1.1367 2006-09-19 10:50:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3024,3 +3024,10 @@ Changelog for GXemul:
 20060916	Continuing on SH emulation (some more instructions: div0u,
 		div1, rotcl/rotcr, more mov instructions, dt, braf, sets, sett,
 		tst_imm, dmuls.l, subc, ldc_rm_vbr, movt, clrt, clrs, clrmac).
+		Continuing on the settings subsystem (beginning on reading/
+		writing settings, removing bugs, and connecting more cpus to
+		the framework).
+20060919	More work on SH emulation; adding the ldc banked instructions,
+		and attaching a 640x480 framebuffer to the Dreamcast machine
+		mode (NetBSD/dreamcast prints the NetBSD copyright banner :-),
+		and then panics).

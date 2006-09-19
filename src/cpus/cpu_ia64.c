@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ia64.c,v 1.13 2006-07-16 13:32:26 debug Exp $
+ *  $Id: cpu_ia64.c,v 1.14 2006-09-19 10:50:08 debug Exp $
  *
  *  IA64 CPU emulation.
  *
@@ -41,6 +41,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 #include "tmp_ia64_head.c"
@@ -71,6 +72,9 @@ int ia64_cpu_new(struct cpu *cpu, struct memory *mem,
 		debug("%s", cpu->name);
 	}
 
+	/*  Add all register names to the settings:  */
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+
 	return 1;
 }
 
@@ -95,30 +99,6 @@ void ia64_cpu_list_available_types(void)
 	/*  TODO  */
 
 	debug("IA64\n");
-}
-
-
-/*
- *  ia64_cpu_register_match():
- */
-void ia64_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	}
-
-	/*  TODO  */
 }
 
 

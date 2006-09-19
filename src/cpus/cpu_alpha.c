@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.22 2006-09-01 11:39:50 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.23 2006-09-19 10:50:08 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -44,6 +44,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 
 #define	DYNTRANS_8K
@@ -77,6 +78,9 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	if (cpu_type_defs[i].name == NULL)
 		return 0;
 
+	cpu->is_32bit = 0;
+	cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
 	cpu->memory_rw = alpha_memory_rw;
 	cpu->run_instr = alpha_run_instr;
 	cpu->translate_v2p = alpha_translate_v2p;
@@ -84,7 +88,6 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	cpu->invalidate_translation_caches =
 	    alpha_invalidate_translation_caches;
 	cpu->invalidate_code_translation = alpha_invalidate_code_translation;
-	cpu->is_32bit = 0;
 
 	cpu->cd.alpha.cpu_type = cpu_type_defs[i];
 
@@ -104,6 +107,11 @@ int alpha_cpu_new(struct cpu *cpu, struct memory *mem,
 	/*  Bogus initial context (will be overwritten on first
 	    context switch):  */
 	cpu->cd.alpha.ctx = 0x10100;
+
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	for (i=0; i<N_ALPHA_REGS; i++)
+		CPU_SETTINGS_ADD_REGISTER64(alpha_regname[i],
+		    cpu->cd.alpha.r[i]);
 
 	return 1;
 }
@@ -137,39 +145,6 @@ void alpha_cpu_list_available_types(void)
 		i++;
 		if ((i % 4) == 0 || tdefs[i].name == NULL)
 			debug("\n");
-	}
-}
-
-
-/*
- *  alpha_cpu_register_match():
- */
-void alpha_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int i, cpunr = 0;
-
-	/*  CPU number:  */
-
-	/*  TODO  */
-
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	}
-
-	/*  Register names:  */
-	for (i=0; i<N_ALPHA_REGS; i++) {
-		if (strcasecmp(name, alpha_regname[i]) == 0) {
-			if (writeflag)
-				m->cpus[cpunr]->cd.alpha.r[i] = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->cd.alpha.r[i];
-			*match_register = 1;
-		}
 	}
 }
 

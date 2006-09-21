@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.46 2006-08-19 07:58:21 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.47 2006-09-21 11:53:26 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -112,47 +112,13 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
-		unsigned int amount = 1 << DEV_FOOTBRIDGE_TICK_SHIFT;
-
-		if (d->timer_tick_countdown[i] == 0)
-			continue;
-
 		if (d->timer_control[i] & TIMER_MODE_PERIODIC &&
 		    d->timer_control[i] & TIMER_ENABLE) {
 			if (d->pending_timer_interrupts[i] > 0) {
-				d->timer_value[i] = 0;
-				d->timer_tick_countdown[i] = 0;
+				d->timer_value[i] = random() % d->timer_load[i];
 				cpu_interrupt(cpu, IRQ_TIMER_1 + i);
 			}
 			continue;
-		}
-
-		/*
-		 *  The code below this line is probably not used much anymore,
-		 *  and it definitely is not the correct way to do it.
-		 *  When changing/removing this, make sure to test with
-		 *  NetBSD/netwinder, NetBSD/cats, and OpenBSD/cats as
-		 *  guest OSes... (TODO)
-		 */
-
-		if (d->timer_control[i] & TIMER_FCLK_16)
-			amount >>= 4;
-		else if (d->timer_control[i] & TIMER_FCLK_256)
-			amount >>= 8;
-
-		if (d->timer_value[i] > amount)
-			d->timer_value[i] -= amount;
-		else
-			d->timer_value[i] = 0;
-
-		if (d->timer_value[i] == 0) {
-			d->timer_tick_countdown[i] --;
-			if (d->timer_tick_countdown[i] > 0)
-				continue;
-
-			if (d->timer_control[i] & TIMER_ENABLE)
-				cpu_interrupt(cpu, IRQ_TIMER_1 + i);
-			d->timer_tick_countdown[i] = 0;
 		}
 	}
 }

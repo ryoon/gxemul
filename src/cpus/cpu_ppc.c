@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.63 2006-09-19 10:50:08 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.64 2006-09-21 11:53:26 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -171,32 +171,50 @@ int ppc_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 
 	/*  Add all register names to the settings:  */
 	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
-	CPU_SETTINGS_ADD_REGISTER64("hi", cpu->cd.mips.hi);
+	CPU_SETTINGS_ADD_REGISTER64("msr", cpu->cd.ppc.msr);
+	CPU_SETTINGS_ADD_REGISTER64("ctr", cpu->cd.ppc.spr[SPR_CTR]);
+	CPU_SETTINGS_ADD_REGISTER64("xer", cpu->cd.ppc.spr[SPR_XER]);
+	CPU_SETTINGS_ADD_REGISTER64("dec", cpu->cd.ppc.spr[SPR_DEC]);
+	CPU_SETTINGS_ADD_REGISTER64("hdec", cpu->cd.ppc.spr[SPR_HDEC]);
+	CPU_SETTINGS_ADD_REGISTER64("srr0", cpu->cd.ppc.spr[SPR_SRR0]);
+	CPU_SETTINGS_ADD_REGISTER64("srr1", cpu->cd.ppc.spr[SPR_SRR1]);
+	CPU_SETTINGS_ADD_REGISTER64("sdr1", cpu->cd.ppc.spr[SPR_SDR1]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat0u", cpu->cd.ppc.spr[SPR_IBAT0U]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat0l", cpu->cd.ppc.spr[SPR_IBAT0L]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat1u", cpu->cd.ppc.spr[SPR_IBAT1U]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat1l", cpu->cd.ppc.spr[SPR_IBAT1L]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat2u", cpu->cd.ppc.spr[SPR_IBAT2U]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat2l", cpu->cd.ppc.spr[SPR_IBAT2L]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat3u", cpu->cd.ppc.spr[SPR_IBAT3U]);
+	CPU_SETTINGS_ADD_REGISTER64("ibat3l", cpu->cd.ppc.spr[SPR_IBAT3L]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat0u", cpu->cd.ppc.spr[SPR_DBAT0U]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat0l", cpu->cd.ppc.spr[SPR_DBAT0L]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat1u", cpu->cd.ppc.spr[SPR_DBAT1U]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat1l", cpu->cd.ppc.spr[SPR_DBAT1L]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat2u", cpu->cd.ppc.spr[SPR_DBAT2U]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat2l", cpu->cd.ppc.spr[SPR_DBAT2L]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat3u", cpu->cd.ppc.spr[SPR_DBAT3U]);
+	CPU_SETTINGS_ADD_REGISTER64("dbat3l", cpu->cd.ppc.spr[SPR_DBAT3L]);
+	CPU_SETTINGS_ADD_REGISTER64("lr", cpu->cd.ppc.spr[SPR_LR]);
+	CPU_SETTINGS_ADD_REGISTER32("cr", cpu->cd.ppc.cr);
+	CPU_SETTINGS_ADD_REGISTER32("fpscr", cpu->cd.ppc.fpscr);
+	/*  Integer GPRs, floating point registers, and segment registers:  */
 	for (i=0; i<PPC_NGPRS; i++) {
 		char tmpstr[5];
 		snprintf(tmpstr, sizeof(tmpstr), "r%i", i);
 		CPU_SETTINGS_ADD_REGISTER64(tmpstr, cpu->cd.ppc.gpr[i]);
 	}
+	for (i=0; i<PPC_NFPRS; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "f%i", i);
+		CPU_SETTINGS_ADD_REGISTER64(tmpstr, cpu->cd.ppc.fpr[i]);
+	}
+	for (i=0; i<16; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "sr%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.ppc.sr[i]);
+	}
 
-#if 0
-PPC_NGPRS
-	} else if (strcasecmp(name, "msr") == 0) {
-	} else if (strcasecmp(name, "lr") == 0) {
-	} else if (strcasecmp(name, "cr") == 0) {
-	} else if (strcasecmp(name, "dec") == 0) {
-	} else if (strcasecmp(name, "hdec") == 0) {
-	} else if (strcasecmp(name, "ctr") == 0) {
-			m->cpus[cpunr]->cd.ppc.spr[SPR_CTR] = *valuep;
-	} else if (strcasecmp(name, "xer") == 0) {
-			m->cpus[cpunr]->cd.ppc.spr[SPR_XER] = *valuep;
-	} else if (strcasecmp(name, "fpscr") == 0) {
-			m->cpus[cpunr]->cd.ppc.fpscr = *valuep;
-PPC_NGPRS
-		if (nr >= 0 && nr < PPC_NFPRS) {
-			if (writeflag) {
-				m->cpus[cpunr]->cd.ppc.fpr[nr] = *valuep;
-
-#endif
 	return 1;
 }
 
@@ -509,7 +527,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		for (i=0; i<16; i++) {
 			uint32_t s = cpu->cd.ppc.sr[i];
 			debug("cpu%i:", x);
-			debug("  sr%2i = 0x%08x", i, (int)s);
+			debug("  sr%-2i = 0x%08x", i, (int)s);
 			s &= (SR_TYPE | SR_SUKEY | SR_PRKEY | SR_NOEXEC);
 			if (s != 0) {
 				debug("  (");

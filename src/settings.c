@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: settings.c,v 1.13 2006-09-19 10:50:08 debug Exp $
+ *  $Id: settings.c,v 1.14 2006-09-21 11:53:26 debug Exp $
  *
  *  A generic settings object. (This module should be 100% indepedent of GXemul
  *  and hence easily reusable.)  It is basically a tree structure of nodes,
@@ -166,6 +166,103 @@ void settings_destroy(struct settings *settings)
 
 
 /*
+ *  settings_read():
+ *
+ *  Used internally by settings_access() and settings_debugdump().
+ */
+static int settings_read(struct settings *settings, int i, uint64_t *valuep)
+{
+	*valuep = 0;
+
+	switch (settings->storage_type[i]) {
+	case SETTINGS_TYPE_INT:
+		*valuep = *((int *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_INT8:
+		*valuep = *((int8_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_INT16:
+		*valuep = *((int16_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_INT32:
+		*valuep = *((int32_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_INT64:
+		*valuep = *((int64_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_UINT:
+		*valuep = *((uint *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_UINT8:
+		*valuep = *((uint8_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_UINT16:
+		*valuep = *((uint16_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_UINT32:
+		*valuep = *((uint32_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_UINT64:
+		*valuep = *((uint64_t *) settings->ptr[i]);
+		break;
+	case SETTINGS_TYPE_STRING:
+		/*  Note: Strings cannot be read like this.  */
+		break;
+	default:printf("settings_read(): FATAL ERROR! Unknown storage type"
+		    ": %i\n", settings->storage_type[i]);
+		exit(1);
+	}
+
+	return SETTINGS_OK;
+}
+
+
+/*
+ *  settings_write():
+ *
+ *  Used internally by settings_access().
+ */
+static int settings_write(struct settings *settings, int i, uint64_t *valuep)
+{
+	if (!settings->writable[i])
+		return SETTINGS_READONLY;
+
+	switch (settings->storage_type[i]) {
+	case SETTINGS_TYPE_INT:
+	case SETTINGS_TYPE_UINT:
+		*((int *) settings->ptr[i]) = *valuep;
+		break;
+	case SETTINGS_TYPE_INT8:
+	case SETTINGS_TYPE_UINT8:
+		*((int8_t *) settings->ptr[i]) = *valuep;
+		break;
+	case SETTINGS_TYPE_INT16:
+	case SETTINGS_TYPE_UINT16:
+		*((int16_t *) settings->ptr[i]) = *valuep;
+		break;
+	case SETTINGS_TYPE_INT32:
+	case SETTINGS_TYPE_UINT32:
+		*((int32_t *) settings->ptr[i]) = *valuep;
+		break;
+	case SETTINGS_TYPE_INT64:
+	case SETTINGS_TYPE_UINT64:
+		*((int64_t *) settings->ptr[i]) = *valuep;
+		break;
+	case SETTINGS_TYPE_STRING:
+		/*  Note: Strings cannot be read like this.  */
+		printf("settings_write(): ERROR! Strings cannot be "
+		    "written like this.\n");
+		break;
+	default:printf("settings_read(): FATAL ERROR! Unknown storage type"
+		    ": %i\n", settings->storage_type[i]);
+		exit(1);
+	}
+
+	return SETTINGS_OK;
+}
+
+
+/*
  *  settings_debugdump():
  *
  *  Dump settings in a settings object to stdout.
@@ -190,28 +287,7 @@ void settings_debugdump(struct settings *settings, const char *prefix,
 			/*  Normal value:  */
 			printf("%s = ", name);
 
-			switch (settings->storage_type[i]) {
-			case SETTINGS_TYPE_INT:
-				value = *((int *) settings->ptr[i]);
-				break;
-			case SETTINGS_TYPE_INT8:
-				value = *((int8_t *) settings->ptr[i]);
-				break;
-			case SETTINGS_TYPE_INT16:
-				value = *((int16_t *) settings->ptr[i]);
-				break;
-			case SETTINGS_TYPE_INT32:
-				value = *((int32_t *) settings->ptr[i]);
-				break;
-			case SETTINGS_TYPE_INT64:
-				value = *((int64_t *) settings->ptr[i]);
-				break;
-			case SETTINGS_TYPE_STRING:
-				break;
-			default:printf("FATAL ERROR! Unknown storage type"
-				    ": %i\n", settings->storage_type[i]);
-				exit(1);
-			}
+			settings_read(settings, i, &value);
 
 			switch (settings->presentation_format[i]) {
 			case SETTINGS_FORMAT_DECIMAL:
@@ -388,46 +464,12 @@ void settings_remove_all(struct settings *settings)
 
 
 /*
- *  settings_access_read():
- *
- *  Used internally by settings_access().
- */
-static int settings_access_read(struct settings *settings, int i,
-	char *valuebuf, size_t bufsize)
-{
-	/*  TODO  */
-	printf("TODO: settings_access_read()\n");
-
-	return SETTINGS_OK;
-}
-
-
-/*
- *  settings_access_write():
- *
- *  Used internally by settings_access().
- */
-static int settings_access_write(struct settings *settings, int i,
-	char *valuebuf, size_t bufsize)
-{
-	if (!settings->writable[i])
-		return SETTINGS_READONLY;
-
-	/*  TODO  */
-	printf("TODO: settings_access_write()\n");
-
-	return SETTINGS_OK;
-}
-
-
-/*
  *  settings_access():
  *
  *  Read or write a setting. fullname may be something like "settings.x.y".
- *  When writing a value, valuebuf should point to a string containing the
- *  new value (note: always a string). When reading a value, valuebuf should
- *  point to a buffer where the value will be stored (up to bufsize-1 chars,
- *  plus the nul char).
+ *  When writing a value, valuebuf should point to a uint64_t containing the
+ *  new value (note: always a uint64_t). When reading a value, valuebuf should
+ *  point to a uint64_t where the value will be stored.
  *
  *  The return value is one of the following:
  *
@@ -442,7 +484,7 @@ static int settings_access_write(struct settings *settings, int i,
  *		an attempt was made to write to it.
  */
 int settings_access(struct settings *settings, const char *fullname,
-        int writeflag, char *valuebuf, size_t bufsize)
+        int writeflag, uint64_t *valuep)
 {
 	int i;
 
@@ -462,11 +504,9 @@ int settings_access(struct settings *settings, const char *fullname,
 		/*  Found the correct setting?  */
 		if (fullname[settings_name_len] == '\0') {
 			if (writeflag)
-				return settings_access_write(
-				    settings, i, valuebuf, bufsize);
+				return settings_write(settings, i, valuep);
 			else
-				return settings_access_read(
-				    settings, i, valuebuf, bufsize);
+				return settings_read(settings, i, valuep);
 		}
 
 		/*  Found a setting which has sub-settings?  */
@@ -475,7 +515,7 @@ int settings_access(struct settings *settings, const char *fullname,
 			return settings_access(
 			    (struct settings *)settings->ptr[i],
 			    fullname + settings_name_len + 1,
-			    writeflag, valuebuf, bufsize);
+			    writeflag, valuep);
 		}
 	}
 

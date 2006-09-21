@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.6 2006-09-19 10:50:08 debug Exp $
+ *  $Id: debugger_expr.c,v 1.7 2006-09-21 11:53:26 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -118,17 +118,9 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 
 	if (!skip_settings) {
 		char setting_name[400];
-		char valuebuf[50];
 		int res;
 
-		valuebuf[0] = '\0';
-
-		if (writeflag)
-			snprintf(valuebuf, sizeof(valuebuf),
-			    "0x%"PRIx64, *valuep);
-
-		res = settings_access(global_settings, name,
-		    writeflag, valuebuf, sizeof(valuebuf));
+		res = settings_access(global_settings, name, writeflag, valuep);
 		if (res == SETTINGS_OK)
 			match_settings = 1;
 
@@ -136,7 +128,7 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 			snprintf(setting_name, sizeof(setting_name),
 			    GLOBAL_SETTINGS_NAME".%s", name);
 			res = settings_access(global_settings, setting_name,
-			    writeflag, valuebuf, sizeof(valuebuf));
+			    writeflag, valuep);
 			if (res == SETTINGS_OK)
 				match_settings = 1;
 		}
@@ -146,7 +138,7 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 			    GLOBAL_SETTINGS_NAME".emul[%i].%s",
 			    cur_emul_nr, name);
 			res = settings_access(global_settings, setting_name,
-			    writeflag, valuebuf, sizeof(valuebuf));
+			    writeflag, valuep);
 			if (res == SETTINGS_OK)
 				match_settings = 1;
 		}
@@ -156,7 +148,7 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 			    GLOBAL_SETTINGS_NAME".emul[%i].machine[%i].%s",
 			    cur_emul_nr, cur_machine_nr, name);
 			res = settings_access(global_settings, setting_name,
-			    writeflag, valuebuf, sizeof(valuebuf));
+			    writeflag, valuep);
 			if (res == SETTINGS_OK)
 				match_settings = 1;
 		}
@@ -167,13 +159,10 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 			    "cpu[%i].%s", cur_emul_nr, cur_machine_nr,
 			    cur_cpu_nr, name);
 			res = settings_access(global_settings, setting_name,
-			    writeflag, valuebuf, sizeof(valuebuf));
+			    writeflag, valuep);
 			if (res == SETTINGS_OK)
 				match_settings = 1;
 		}
-
-		if (match_settings)
-			*valuep = strtoull(valuebuf, NULL, 0);
 	}
 
 	/*  Check for a number match:  */

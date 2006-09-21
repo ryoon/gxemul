@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_rca180x.h,v 1.1 2006-08-28 16:25:59 debug Exp $
+ *  $Id: cpu_rca180x.h,v 1.2 2006-09-21 11:53:26 debug Exp $
  */
 
 #include "misc.h"
@@ -64,18 +64,17 @@ struct rca180x_cpu {
 	uint16_t	r[N_RCA180X_REGS];	/*  GPRs  */
 	uint8_t		d;		/*  Data register  */
 
-	int		df;		/*  Data flag (1 bit)  */
-	int		ie;		/*  Interrupt enable (1 bit)  */
-	int		q;		/*  Output bit (1 bit)  */
-	int		p;		/*  PC select (4 bits)  */
-	int		x;		/*  Data pointer select (4 bits)  */
-	int		t_x;		/*  X during interrupt  */
-	int		t_p;		/*  P during interrupt  */
-
+	int8_t		df;		/*  Data flag (1 bit)  */
+	int8_t		ie;		/*  Interrupt enable (1 bit)  */
+	int8_t		q;		/*  Output bit (1 bit)  */
+	int8_t		p;		/*  PC select (4 bits)  */
+	int8_t		x;		/*  Data pointer select (4 bits)  */
+	int8_t		t_x;		/*  X during interrupt  */
+	int8_t		t_p;		/*  P during interrupt  */
 
 	/***********************  CHIP8 EMULATION  **************************/
 
-	int		chip8_mode;
+	int8_t		chip8_mode;
 
 	/*
 	 *  General Purpose Registers, and the Index register:

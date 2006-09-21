@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1367 2006-09-19 10:50:07 debug Exp $
+$Id: HISTORY,v 1.1368 2006-09-21 11:53:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3027,7 +3027,10 @@ Changelog for GXemul:
 		Continuing on the settings subsystem (beginning on reading/
 		writing settings, removing bugs, and connecting more cpus to
 		the framework).
-20060919	More work on SH emulation; adding the ldc banked instructions,
+20060919	More work on SH emulation; adding an ldc banked instruction,
 		and attaching a 640x480 framebuffer to the Dreamcast machine
 		mode (NetBSD/dreamcast prints the NetBSD copyright banner :-),
 		and then panics).
+20060920	Continuing on the settings subsystem.
+20060921	Fixing the Footbridge timer stuff so that NetBSD/cats and
+		NetBSD/netwinder boot up without the delays.

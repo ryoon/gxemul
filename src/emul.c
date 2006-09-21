@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.268 2006-09-19 10:50:07 debug Exp $
+ *  $Id: emul.c,v 1.269 2006-09-21 11:53:26 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -565,9 +565,18 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 
 		/*  Convert loadaddr to uncached:  */
 		if ((bootblock_loadaddr & 0xf0000000ULL) != 0x80000000 &&
-		    (bootblock_loadaddr & 0xf0000000ULL) != 0xa0000000)
-			fatal("\nWARNING! Weird load address 0x%08x.\n\n",
-			    (int)bootblock_loadaddr);
+		    (bootblock_loadaddr & 0xf0000000ULL) != 0xa0000000) {
+			fatal("\nWARNING! Weird load address 0x%08"PRIx32
+			    " for SCSI id %i.\n\n",
+			    (uint32_t)bootblock_loadaddr, boot_disk_id);
+			if (bootblock_loadaddr == 0) {
+				fatal("I'm assuming that this is _not_ a "
+				    "DEC bootblock.\nAre you sure you are"
+				    " booting from the correct disk?\n");
+				exit(1);
+			}
+		}
+
 		bootblock_loadaddr &= 0x0fffffffULL;
 		bootblock_loadaddr |= 0xffffffffa0000000ULL;
 

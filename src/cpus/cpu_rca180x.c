@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_rca180x.c,v 1.1 2006-08-28 16:25:59 debug Exp $
+ *  $Id: cpu_rca180x.c,v 1.2 2006-09-21 11:53:26 debug Exp $
  *
  *  RCA180X CPU emulation.
  *
@@ -42,6 +42,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "settings.h"
 #include "symbol.h"
 #include "timer.h"
 
@@ -82,6 +83,8 @@ static void rca180x_timer_tick(struct timer *timer, void *extra)
 int rca180x_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
+	int i;
+
 	if (strcasecmp(cpu_type_name, "RCA1802") != 0)
 		return 0;
 
@@ -123,6 +126,30 @@ int rca180x_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
+	}
+
+	/*  Add all register names to the settings:  */
+	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
+	CPU_SETTINGS_ADD_REGISTER16("index", cpu->cd.rca180x.index);
+	CPU_SETTINGS_ADD_REGISTER16("sp", cpu->cd.rca180x.sp);
+	CPU_SETTINGS_ADD_REGISTER8("d", cpu->cd.rca180x.d);
+	CPU_SETTINGS_ADD_REGISTER8("df", cpu->cd.rca180x.df);
+	CPU_SETTINGS_ADD_REGISTER8("ie", cpu->cd.rca180x.ie);
+	CPU_SETTINGS_ADD_REGISTER8("p", cpu->cd.rca180x.p);
+	CPU_SETTINGS_ADD_REGISTER8("q", cpu->cd.rca180x.q);
+	CPU_SETTINGS_ADD_REGISTER8("x", cpu->cd.rca180x.x);
+	CPU_SETTINGS_ADD_REGISTER8("t_p", cpu->cd.rca180x.t_p);
+	CPU_SETTINGS_ADD_REGISTER8("t_x", cpu->cd.rca180x.t_x);
+	CPU_SETTINGS_ADD_REGISTER8("chip8_mode", cpu->cd.rca180x.chip8_mode);
+	for (i=0; i<N_RCA180X_REGS; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "r%x", i);
+		CPU_SETTINGS_ADD_REGISTER16(tmpstr, cpu->cd.rca180x.r[i]);
+	}
+	for (i=0; i<N_CHIP8_REGS; i++) {
+		char tmpstr[5];
+		snprintf(tmpstr, sizeof(tmpstr), "v%x", i);
+		CPU_SETTINGS_ADD_REGISTER8(tmpstr, cpu->cd.rca180x.v[i]);
 	}
 
 	return 1;
@@ -201,67 +228,6 @@ void rca180x_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			    cpu->cd.rca180x.delay_timer_value,
 			    cpu->cd.rca180x.sound_timer_value);
 		}
-	}
-}
-
-
-/*
- *  rca180x_cpu_register_match():
- */
-void rca180x_cpu_register_match(struct machine *m, char *name,
-	int writeflag, uint64_t *valuep, int *match_register)
-{
-	int cpunr = 0;
-
-	/*  CPU number:  */
-	/*  TODO  */
-
-	if (strcasecmp(name, "pc") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->pc;
-		*match_register = 1;
-	} else if (name[0] == 'v' && isdigit((int)name[1])) {
-		int nr = atoi(name + 1);
-		if (nr >= 0 && nr < N_RCA180X_REGS) {
-			if (writeflag)
-				m->cpus[cpunr]->cd.rca180x.v[nr] = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->cd.rca180x.v[nr];
-			*match_register = 1;
-		}
-	} else if (name[0] == 'v' && isalpha((int)name[1])) {
-		int nr = name[1];
-		if (nr >= 'a' && nr <= 'f')
-			nr = nr - 'a' + 10;
-		if (nr >= 'A' && nr <= 'F')
-			nr = nr - 'A' + 10;
-		if (nr >= 0 && nr < N_RCA180X_REGS) {
-			if (writeflag)
-				m->cpus[cpunr]->cd.rca180x.v[nr] = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->cd.rca180x.v[nr];
-			*match_register = 1;
-		}
-	} else if (strcasecmp(name, "i") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.rca180x.index = *valuep & 0xffff;
-		} else
-			*valuep = m->cpus[cpunr]->cd.rca180x.index & 0xffff;
-		*match_register = 1;
-	} else if (strcasecmp(name, "sp") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.rca180x.sp = *valuep & 0xfff;
-		} else
-			*valuep = m->cpus[cpunr]->cd.rca180x.sp & 0xfff;
-		*match_register = 1;
-	} else if (strcasecmp(name, "chip8_mode") == 0) {
-		if (writeflag) {
-			m->cpus[cpunr]->cd.rca180x.chip8_mode = *valuep;
-		} else
-			*valuep = m->cpus[cpunr]->cd.rca180x.chip8_mode;
-		*match_register = 1;
 	}
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.26 2006-09-19 10:49:57 debug Exp $
+ *  $Id: cpu_sh.c,v 1.27 2006-09-23 03:51:06 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -39,6 +39,7 @@
 #include <ctype.h>
 
 #include "cpu.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -130,6 +131,11 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		char tmpstr[5];
 		snprintf(tmpstr, sizeof(tmpstr), "r%i_bank", i);
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.r_bank[i]);
+	}
+
+	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
+	if (strcasecmp(cpu->cd.sh.cpu_type.name, "SH4") == 0) {
+		device_add(machine, "sh4");
 	}
 
 	return 1;

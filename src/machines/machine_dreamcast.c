@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.5 2006-09-19 10:49:57 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.6 2006-09-23 03:51:06 debug Exp $
  *
  *  Machine for experimenting with NetBSD/dreamcast.
  */
@@ -58,11 +58,6 @@ MACHINE_SETUP(dreamcast)
 		    "------------------------------------------\n");
 
 	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
-
-	dev_ram_init(machine, 0xf0000000, 0x2000, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, 0xf1000000, 0x2000, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, 0xf4000000, 0x4000, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, 0xf5000000, 0x4000, DEV_RAM_RAM, 0x0);
 
 	/*
  	 *  NetBSD/dreamcast uses a 640x480 16-bit framebuffer at 0x05000000.

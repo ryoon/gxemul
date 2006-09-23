@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.97 2006-09-21 11:53:26 debug Exp $
+ *  $Id: cpu.h,v 1.98 2006-09-23 04:10:23 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -357,8 +357,13 @@ struct cpu {
 	 *  If is_halted is true when an interrupt trap occurs, the pointer
 	 *  to the next instruction to execute will be the instruction
 	 *  following the halt instruction, not the halt instrucion itself.
+	 *
+	 *  If has_been_idling is true when printing the number of executed
+	 *  instructions per second, "idling" is printed instead. (The number
+	 *  of instrs per second when idling is meaningless anyway.)
 	 */
 	int		is_halted;
+	int		has_been_idling;
 
 	/*
 	 *  Dynamic translation:

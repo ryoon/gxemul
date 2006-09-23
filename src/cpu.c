@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.358 2006-09-19 10:50:07 debug Exp $
+ *  $Id: cpu.c,v 1.359 2006-09-23 04:10:23 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -444,11 +444,12 @@ void cpu_show_cycles(struct machine *machine, int forced)
 	char *symbol;
 	int64_t mseconds, ninstrs, is, avg;
 	struct timeval tv;
+	struct cpu *cpu = machine->cpus[machine->bootstrap_cpu];
 
 	static int64_t mseconds_last = 0;
 	static int64_t ninstrs_last = -1;
 
-	pc = machine->cpus[machine->bootstrap_cpu]->pc;
+	pc = cpu->pc;
 
 	gettimeofday(&tv, NULL);
 	mseconds = (tv.tv_sec - machine->starttime.tv_sec) * 1000
@@ -475,12 +476,17 @@ void cpu_show_cycles(struct machine *machine, int forced)
 		is = 0;
 	if (avg < 0)
 		avg = 0;
-	printf("; i/s=%"PRIi64" avg=%"PRIi64, is, avg);
+
+	if (cpu->has_been_idling) {
+		printf("; idling");
+		cpu->has_been_idling = 0;
+	} else
+		printf("; i/s=%"PRIi64" avg=%"PRIi64, is, avg);
 
 	symbol = get_symbol_name(&machine->symbol_context, pc, &offset);
 
 	if (machine->ncpus == 1) {
-		if (machine->cpus[machine->bootstrap_cpu]->is_32bit)
+		if (cpu->is_32bit)
 			printf("; pc=0x%08"PRIx32, (uint32_t) pc);
 		else
 			printf("; pc=0x%016"PRIx64, (uint64_t) pc);

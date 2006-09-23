@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.110 2006-09-23 03:52:10 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.111 2006-09-23 04:10:23 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2019,6 +2019,7 @@ return;
 
 	cpu->cd.mips.next_ic = ic;
 	cpu->is_halted = 1;
+	cpu->has_been_idling = 1;
 
 	/*
 	 *  There was no interrupt. Go to sleep.

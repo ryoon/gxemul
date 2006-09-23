@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.6 2006-09-23 03:51:06 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.7 2006-09-23 04:41:22 debug Exp $
  *
  *  Machine for experimenting with NetBSD/dreamcast.
  */
@@ -68,8 +68,7 @@ MACHINE_SETUP(dreamcast)
 	if (!machine->prom_emulation)
 		return;
 
-	/*  NetBSD/dreamcast specific register contents:  */
-	/*  TODO  */
+	/*  NetBSD/dreamcast specific register contents at bootup? TODO  */
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.111 2006-09-23 04:10:23 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.112 2006-09-23 04:41:42 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1997,7 +1997,7 @@ X(wait)
  */
 return;
 
-
+#if 0
 	/*
 	 *  If there is an interrupt, then just return. Otherwise
 	 *  re-run the wait instruction (after a delay).
@@ -2038,6 +2038,7 @@ return;
 		}
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 	}
+#endif
 }
 
 

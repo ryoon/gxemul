@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcsh.c,v 1.4 2006-09-19 10:49:57 debug Exp $
+ *  $Id: machine_hpcsh.c,v 1.5 2006-09-23 04:41:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -73,12 +73,13 @@ MACHINE_SETUP(hpcsh)
 		    "-------------------------------------"
 		    "------------------------------------------\n");
 
+	/*  32 MB in two parts, each included twice (shadowed):  */
 	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
-
-	dev_ram_init(machine, 0xf0000000, 0x2000, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, 0xf1000000, 0x2000, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, 0xf4000000, 0x4000, DEV_RAM_RAM, 0x0);
-	dev_ram_init(machine, 0xf5000000, 0x4000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0x0d000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
+	dev_ram_init(machine, 0x0e000000, 0x01000000, DEV_RAM_MIRROR,
+	    0x01000000);
+	dev_ram_init(machine, 0x0f000000, 0x01000000, DEV_RAM_MIRROR,
+	    0x01000000);
 
 	dev_fb_init(machine, machine->memory, 0x10000000,
 	    VFB_HPC, 640,240, 640,240, 16, machine->machine_name);
@@ -88,6 +89,13 @@ MACHINE_SETUP(hpcsh)
 MACHINE_DEFAULT_CPU(hpcsh)
 {
 	machine->cpu_name = strdup("SH4");
+}
+
+
+MACHINE_DEFAULT_RAM(hpcsh)
+{
+	/*  TODO: Model dependent. */
+	machine->physical_ram_in_mb = 32;
 }
 
 
@@ -102,5 +110,7 @@ MACHINE_REGISTER(hpcsh)
 
 	machine_entry_add_subtype(me, "Jornada 690",
 	    MACHINE_HPCSH_JORNADA690, "jornada690", NULL);
+
+	me->set_default_ram = machine_default_ram_hpcsh;
 }
 

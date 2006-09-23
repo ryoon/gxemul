@@ -1,4 +1,4 @@
-$Id: TODO,v 1.378 2006-09-23 03:52:10 debug Exp $
+$Id: TODO,v 1.379 2006-09-23 04:09:57 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -13,6 +13,7 @@ Implementation:
 		x)  MIPS wait support _and_ the timer framework don't
 		    quite work yet together.
 		x)  Test the 8253? Right now it doesn't seem to be used?
+		x)  Algor runs too fast.
 		x)  NetWinder timeofday is incorrect!
 		x)  Cobalt TODR is incorrect!
 		x)  Malta TODR is correct with NetBSD, but wrong with Linux.
@@ -95,6 +96,7 @@ Documentation:
 		NetBSD/netwinder 3.1_RC3
 		NetBSD/hpcmips 3.1_RC3
 		NetBSD/cobalt 3.1_RC3
+		NetBSD/algor 3.1_RC3
 	x)  Note about sandboxing/security:
 		Not all emulated instructions fail in the way they would
 		do on real hardware (e.g. a userspace program writing to

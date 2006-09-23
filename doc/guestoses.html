@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.177 2006-09-21 12:13:34 debug Exp $
+$Id: guestoses.html,v 1.178 2006-09-23 03:49:02 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -51,8 +51,8 @@ SUCH DAMAGE.
   <li><a href="#netbsdpmaxinstall">NetBSD/pmax 3.1 or 1.6.2</a>
   <li><a href="#netbsdarcinstall">NetBSD/arc 1.6.2</a>
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.1</a>
-  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.0.1</a>
-  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.0.1</a>
+  <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.1</a>
+  <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.1</a>
   <li><a href="#netbsdalgorinstall">NetBSD/algor 3.0.1</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0.1</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.1</a>
@@ -383,7 +383,7 @@ image, from an emulated DECstation 3MAX machine:
 <p>
 <ol>
   <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 </pre>
   <p>
   <li>Create an empty harddisk image, which will be the disk image
@@ -391,17 +391,17 @@ image, from an emulated DECstation 3MAX machine:
 	<b>dd if=/dev/zero of=nbsd_cobalt.img bs=1024 count=1 seek=700000</b>
 
 </pre>
-  <li>Download the generic kernel for Cobalt and the 3.0.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/cobaltcd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/cobaltcd-3.0.1.iso</a>
+  <li>Download the generic kernel for Cobalt and the 3.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/cobaltcd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/cobaltcd-3.1.iso</a>
 
 </pre>
   <li>Start the emulated DECstation machine like this:<pre>
-	<b>gxemul -e 3max -d nbsd_cobalt.img -d cobaltcd-3.0.1.iso netbsd-INSTALL.gz</b>
+	<b>gxemul -e 3max -d nbsd_cobalt.img -d cobaltcd-3.1.iso netbsd-INSTALL.gz</b>
 
 </pre>
-  <li>Log in as root (on the emulated 3MAX machine), and execute the
-	following commands: (adjust according to taste)
+  <li>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
+to simulate a CTRL-C sent to NetBSD/pmax. Then execute the following commands:
 <p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>newfs /dev/sd0c
 mount /dev/cd0c /mnt
@@ -458,7 +458,7 @@ image, from an emulated DECstation 3MAX machine:
 <p>
 <ol>
   <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 </pre>
   <p>
   <li>Create an empty harddisk image, which will be the disk image
@@ -466,14 +466,14 @@ image, from an emulated DECstation 3MAX machine:
 	<b>dd if=/dev/zero of=nbsd_malta.img bs=1024 count=1 seek=700000</b>
 
 </pre>
-  <li>Download the Malta kernel and the 3.0.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/evbmips-mipselcd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/evbmips-mipselcd-3.0.1.iso</a>
+  <li>Download the Malta kernel and the 3.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/evbmips-mipsel/binary/kernel/netbsd-MALTA.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/evbmips-mipselcd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/evbmips-mipselcd-3.1.iso</a>
 
 </pre>
   <p>
   <li>Start the emulated DECstation machine like this:<pre>
-	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd-3.0.1.iso netbsd-INSTALL.gz</b>
+	<b>gxemul -e 3max -d nbsd_malta.img -d evbmips-mipselcd-3.1.iso netbsd-INSTALL.gz</b>
 
 </pre>
   <li>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
@@ -498,7 +498,7 @@ cd /; umount /mnt; umount /mnt2; halt</b>
 
 <p>NOTE: To select a 4Kc (MIPS32) CPU instead of the default 5Kc 
 (MIPS64) CPU, add <tt><b>-C 4Kc</b></tt> to the command line. With NetBSD 
-3.0.1, however, there will be little or no difference in functionality, as
+3.1, however, there will be little or no difference in functionality, as
 NetBSD still runs in 32-bit mode on 64-bit MIPS CPUs. There are two things
 that differ:<ol>
   <li>The dynamic translation core runs faster when emulating 32-bit
@@ -1653,8 +1653,7 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
 
 </pre>
   <li>Download a root filesystem tree:<pre>
-	<a href="ftp://ftp.uni-wuppertal.de/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">ftp://ftp.uni-wuppertal.de/pub/linux/mips/</a>
-	 <a href="ftp://ftp.uni-wuppertal.de/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">mipsel-linux/root/mipsel-root-20011216.tgz</a>
+	<a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz</a>
 	19486676 bytes, md5 = 5bcb725c90209479cd7ead8ad0c4a414
 
 </pre>
@@ -2096,15 +2095,65 @@ fdisk and mke2fs, which are useful for creating Linux paritions on disk images.
 <a name="linux_malta"></a>
 <h3>Linux/Malta:</h3>
 
-<p>I haven't yet found any pre-compiled/packaged distribution of 
-Linux/Malta kernel + userland available at any stable location on the web; 
-the general idea behind Linux/Malta seems to be that the end user always 
-compiles his/her own kernel anyway, applies patches, downloads userland 
-separately, etc.
+<p>The Malta emulation mode is best suited for running <a 
+href="#netbsdevbmipsinstall">NetBSD/evbmips</a>, however, it is possible 
+to experiment with Linux/Malta as well. I haven't yet found any recent 
+pre-compiled/packaged distribution of Linux/Malta kernel + userland 
+available at any stable location on the web; the general idea behind 
+Linux/Malta seems to be that the end user always compiles his/her own 
+kernel anyway, applies patches, downloads userland separately, etc.
 
 <p>For that reason, Linux/Malta support in the emulator is not 
-tested for every release; sometimes it works, sometimes it doesn't work.
+tested for every release (sometimes it works, sometimes it doesn't work), 
+and these instructions are kind of "fuzzy".
 
+<p><ol start="1">
+  <li>Create an empty harddisk image, which will be the root disk
+	that Linux/Malta will be installed onto:<pre>
+	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=5000000</b>
+
+</pre>
+  <li>Download a MIPS root filesystem tree:<pre>
+	<a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz</a>
+	19486676 bytes, md5 = 5bcb725c90209479cd7ead8ad0c4a414
+
+</pre>
+	This is an old Redhat tree from 2001, but it seems to almost work.
+  <p>
+  <li>Download Alec Voropay's precompiled Malta kernel, with ramdisk,
+	and a newer kernel without ramdisk (which will be used later on
+	when booting from disk):<pre>
+	<a href="http://www.nwpi.ru/~alec/mips/vmlinux_2.4.33.2-ide-pci-ramdisk.elf.gz">http://www.nwpi.ru/~alec/mips/vmlinux_2.4.33.2-ide-pci-ramdisk.elf.gz</a>
+	<a href="http://www.nwpi.ru/~alec/mips/vmlinux_2.6.18-rc4-ide-pci-novty.elf.gz">http://www.nwpi.ru/~alec/mips/vmlinux_2.6.18-rc4-ide-pci-novty.elf.gz</a>
+
+</pre>
+  <li>Start the emulator with the ramdisk kernel, create a MS-DOS style
+	MBR on the disk, create the filesystem, and extract the
+	userland files:<pre>
+	<b>gunzip vmlinux_2.*
+	gunzip mipsel-root-20011216.tar
+	gxemul -xemalta -d linux.img -d mipsel-root-20011216.tar vmlinux_2.4.33.2-ide-pci-ramdisk.elf</b>
+	Inside GXemul: Log in as root and execute the following commands:
+	<b>fdisk /dev/hda</b>
+	(enter suitable commands, e.g. <b>n, p, 1, 1, 9921, w, q</b>)
+	<b>mkfs /dev/hda1
+	mount /dev/hda1 /mnt
+	cd /mnt; tar -xf /dev/hdb; cd ..
+	umount /mnt; sync; reboot</b>
+
+</pre>
+</ol>
+
+<p>It should now be possible to boot from the disk image, using the 
+following command:
+
+<p><pre>
+<b>	gxemul -xemalta -d linux.img -o "root=/dev/hda1 rw" vmlinux_2.6.18-rc4-ide-pci-novty.elf</b>
+</pre>
+
+<p>There's a slight problem with this specific Redhat tree, so when you 
+see the message "Configuring kernel parameters:  [  OK  ]", press CTRL-C 
+once.
 
 
 

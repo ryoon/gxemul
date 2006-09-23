@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.10 2006-08-23 15:45:30 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.11 2006-09-23 03:52:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -94,8 +94,9 @@ MACHINE_SETUP(evbmips)
 		bus_pci_add(machine, pci_data, machine->memory,
 		    0, 9, 1, "piix4_ide");
 
-		bus_pci_add(machine, pci_data, machine->memory,
-		    0, 11, 0, "pcn");
+		/*  pcn: Not yet, since it is just a bogus device, so far.  */
+		/*  bus_pci_add(machine, pci_data, machine->memory,
+		    0, 11, 0, "pcn");  */
 
 		device_add(machine, "malta_lcd addr=0x1f000400");
 		break;

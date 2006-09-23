@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.89 2006-09-02 04:55:10 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.90 2006-09-23 03:52:10 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -464,15 +464,6 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			    data[0] & (MC_REGA_RSMASK | MC_REGA_DVMASK);
 			break;
 		case MC_REGB*4:
-#if 0
-OLD CODE
-TODO: Needs to be rewritten to use the new timer framework?
-
-			if (((data[0] ^ d->reg[MC_REGB*4]) & MC_REGB_PIE))
-				d->cycles_left_until_interrupt =
-				    d->interrupt_every_x_cycles;
-#endif
-
 			d->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
 				cpu_interrupt_ack(cpu, d->irq_nr);

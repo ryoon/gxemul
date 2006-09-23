@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.43 2006-08-13 08:34:06 debug Exp $
+ *  $Id: dev_gt.c,v 1.44 2006-09-23 03:52:10 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -44,6 +44,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 #include "gtreg.h"
 
@@ -58,9 +59,13 @@
 
 
 struct gt_data {
-	int		timer0_irqnr;
 	int		pci_irqbase;
 	int		type;
+
+	struct timer	*timer;
+	int		timer0_irqnr;
+	int		interrupt_hz;
+	int		pending_timer0_interrupts;
 
 	/*  Address decode registers:  */
 	uint32_t	decode[GT_N_DECODE_REGS];
@@ -69,13 +74,24 @@ struct gt_data {
 };
 
 
+/*
+ *  timer_tick():
+ *
+ *  Called d->interrupt_hz times per (real-world) second.
+ */
+static void timer_tick(struct timer *timer, void *extra)
+{
+	struct gt_data *d = (struct gt_data *) extra;
+	d->pending_timer0_interrupts ++;
+}
+
+
 DEVICE_TICK(gt)
 {
-	struct gt_data *gt_data = extra;
+	struct gt_data *d = (struct gt_data *) extra;
 
-	/*  TODO: Implement real timer interrupts.  */
-
-	cpu_interrupt(cpu, gt_data->timer0_irqnr);
+	if (d->pending_timer0_interrupts > 0)
+		cpu_interrupt(cpu, d->timer0_irqnr);
 }
 
 
@@ -130,6 +146,9 @@ DEVICE_ACCESS(gt)
 			odata = GTIC_T0EXP;
 			cpu_interrupt_ack(cpu, d->timer0_irqnr);
 
+			if (d->pending_timer0_interrupts > 0)
+				d->pending_timer0_interrupts --;
+
 			debug("[ gt: read from GT_INTR_CAUSE (0x%08x) ]\n",
 			    (int)odata);
 		}
@@ -138,6 +157,21 @@ DEVICE_ACCESS(gt)
 	case GT_PCI0_INTR_ACK:
 		odata = cpu->machine->isa_pic_data.last_int;
 		cpu_interrupt_ack(cpu, d->pci_irqbase + odata);
+		break;
+
+	case GT_TIMER_CTRL:
+		if (writeflag == MEM_WRITE) {
+			if (idata & ENTC0) {
+				/*  TODO: Don't hardcode this.  */
+				d->interrupt_hz = 100;
+				if (d->timer == NULL)
+					d->timer = timer_add(d->interrupt_hz,
+					    timer_tick, d);
+				else
+					timer_update_frequency(d->timer,
+					    d->interrupt_hz);
+			}
+		}
 		break;
 
 	case GT_PCI0_CFG_ADDR:

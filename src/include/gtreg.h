@@ -1,10 +1,14 @@
-/*  GXemul: $Id: gtreg.h,v 1.2 2006-08-13 08:34:06 debug Exp $  */
+/*  GXemul: $Id: gtreg.h,v 1.3 2006-09-23 03:52:10 debug Exp $  */
 /*	$NetBSD: gtreg.h,v 1.2 2005/12/24 20:07:03 perry Exp $	*/
 
 /*
  *  This is basically malta/dev/gtreg.h from NetBSD, with additional
  *  defines that Linux uses. Symbol names are practically the same in
  *  NetBSD and Linux, which simplifies things.
+ *
+ *  Also parts from cobalt/dev/gtreg.h from NetBSD.
+ *
+ *  TODO: Find a better gtreg.h.
  */
 
 #ifndef GTREG_H
@@ -49,11 +53,20 @@
 /* DMA Arbiter Register Map */
 
 /* Timer/Counter Register Map */
-//#define	GT_TC_0		0x850
-//#define	GT_TC_1		0x854
-//#define	GT_TC_2		0x858
-//#define	GT_TC_3		0x85c
-//#define	GT_TC_CONTROL	0x864
+#define GT_TIMER_COUNTER0       0x850
+#define GT_TIMER_COUNTER1       0x854
+#define GT_TIMER_COUNTER2       0x858
+#define GT_TIMER_COUNTER3       0x85c
+
+#define GT_TIMER_CTRL           0x864
+#define  ENTC0                  0x01 
+#define  TCSEL0                 0x02
+#define  ENTC1                  0x04
+#define  TCSEL1                 0x08
+#define  ENTC2                  0x10
+#define  TCSEL2                 0x20
+#define  ENTC3                  0x40
+#define  TCSEL3                 0x80
 
 /* PCI Internal Register Map */
 #define	GT_PCI0_CMD_OFS		0xc00

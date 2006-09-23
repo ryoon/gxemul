@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1368 2006-09-21 11:53:26 debug Exp $
+$Id: HISTORY,v 1.1369 2006-09-23 03:52:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3034,3 +3034,10 @@ Changelog for GXemul:
 20060920	Continuing on the settings subsystem.
 20060921	Fixing the Footbridge timer stuff so that NetBSD/cats and
 		NetBSD/netwinder boot up without the delays.
+20060922	Temporarily hardcoding MIPS timer interrupt to 100 Hz. With
+		'wait' support disabled, NetBSD/malta and Linux/malta run at
+		correct speed.
+20060923	Connecting dev_gt to the timer framework, so that NetBSD/cobalt
+		runs at correct speed.
+		Moving SH4-specific memory mapped registers into its own
+		device (dev_sh4.c).

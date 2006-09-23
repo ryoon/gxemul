@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.55 2006-09-01 13:02:54 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.56 2006-09-23 03:52:10 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -787,6 +787,10 @@ void coproc_register_write(struct cpu *cpu,
 				else
 					hz = (double)cpu->machine->emulated_hz
 					    / (double)compare_diff;
+/*
+ *  TODO: DON'T HARDCODE THIS!
+ */
+hz = 100.0;
 
 				/*  Initialize or re-set the periodic timer:  */
 				if (hz > 0) {

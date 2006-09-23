@@ -1,18 +1,21 @@
-$Id: TODO,v 1.377 2006-09-21 11:53:26 debug Exp $
+$Id: TODO,v 1.378 2006-09-23 03:52:10 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
 	x)  Settings / expression evaluator:
-		x)  Convert the x86 mode to the new framework.
 		x)  Special handlers for Write! (E.g. MIPS coproc regs,
 			or the Alpha/MIPS/SPARC zero register)
+		x)  Value formatter for resulting output.
 		x)  Begin on the expression evaluator.
 	x)  Clock/timer framework:
-		x)  FIGURE OUT A WAY TO TEST THE 8253 :)
-		    Right now it doesn't seem to be used :)
+		x)  MIPS wait support _and_ the timer framework don't
+		    quite work yet together.
+		x)  Test the 8253? Right now it doesn't seem to be used?
 		x)  NetWinder timeofday is incorrect!
+		x)  Cobalt TODR is incorrect!
+		x)  Malta TODR is correct with NetBSD, but wrong with Linux.
 		x)  Go through all other machines, one by one, and fix them.
 	x)  Device registry: Allow devices to be moved around;
 		if there is a collision, return false. It is up
@@ -23,9 +26,6 @@ Implementation:
 		everywhere.
 	x)  Factor out other things from cpu_*.c? (Turn CPU name
 		detection into a macro?)
-	x)  SH:
-		x)  Refactor SH4-specific TLB/cache stuff, so that it is
-		    shared between all SH machines.
 	x)  Disassembly, nr of bytes read and given to the cpu specific
 		disassemlby routine? It's too ugly now.
 	x)  Alpha:
@@ -92,7 +92,9 @@ Documentation:
 		NetBSD/pmax 3.1_RC3
 		NetBSD/hpcmips 3.1_RC3
 		NetBSD/cats 3.1_RC3
-		NetBSD/netwinder 3.1_RC3 (ok, except for the initial TOD)
+		NetBSD/netwinder 3.1_RC3
+		NetBSD/hpcmips 3.1_RC3
+		NetBSD/cobalt 3.1_RC3
 	x)  Note about sandboxing/security:
 		Not all emulated instructions fail in the way they would
 		do on real hardware (e.g. a userspace program writing to

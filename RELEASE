@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.224 2006-09-10 14:05:43 debug Exp $
+$Id: RELEASE,v 1.225 2006-09-23 03:52:10 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -26,8 +26,9 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	seen by guest operating systems, run at the same speed as the
 	host clock.
 
-	So far, the DECstation, MobilePro, NetWinder, and CATS machine
-	modes have been rewritten to use the new clock/timer framework.
+	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS,
+	Malta (evbmips), and Cobalt machine modes have been rewritten to
+	use the new clock/timer framework.
 
     o)	The wdc (standard IDE controller) had a bug which prevented disk
 	images larger than 2 GB to work correctly. This has been fixed.

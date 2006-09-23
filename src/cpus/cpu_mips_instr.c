@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.109 2006-09-07 11:43:23 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.110 2006-09-23 03:52:10 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1989,6 +1989,15 @@ X(deret)
  */
 X(wait)
 {
+
+
+/*
+ *  TODO:  REMOVE THIS return, once the 'wait' instruction works together
+ *         with the new timer framework!
+ */
+return;
+
+
 	/*
 	 *  If there is an interrupt, then just return. Otherwise
 	 *  re-run the wait instruction (after a delay).

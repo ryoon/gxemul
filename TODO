@@ -1,27 +1,58 @@
-$Id: TODO,v 1.379 2006-09-23 04:09:57 debug Exp $
+$Id: TODO,v 1.380 2006-09-26 08:49:35 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 
 Implementation:
+
+__wdccommand_start, wdcwait som tar tid för prep.
+
+    <wdc_exec_command(0xd005e514,0xd60cdd30,0,8,..)>
+      <ata_get_xfer(0,0xd60cdd30,0,8,..)>
+        <0x26c550(&ata_xfer_pool,2,0,8,..)>
+        <0x35c71c(0x3f27000,0,52,8,..)>
+      <ata_exec_xfer(0xd005e4c8,0x3f27000,0,13,..)>
+        <atastart(0xd005e4c8,0x3f27000,0,13,..)>
+          <__wdccommand_start(0xd005e4c8,0x3f27000,0,13,..)>
+            <bsw1(&prep_isa_io_space_tag,0x800001f6,0,176,..)>
+[ wdc: write to SDH: 0xb0 (sectorsize 2, lba=1, drive 1, head 0) ]
+            <wdcwait(0xd005e4c8,72,64,0xbb8,..)>
+              <0x198120(0xd005e4c8,72,64,0xbb8,..)>
+                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+                <delay(100,0,0,0xbb8,..)>
+                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+                <delay(100,0,0,0xbb8,..)>
+                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+                <delay(100,0,0,0xbb8,..)>
+                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+                <delay(100,0,0,0xbb8,..)>
+
+Notera: <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+
 	x)  Settings / expression evaluator:
-		x)  Special handlers for Write! (E.g. MIPS coproc regs,
-			or the Alpha/MIPS/SPARC zero register)
+		x)  Special handlers for Write!
+			+)  MIPS coproc regs
+			+)  Alpha/MIPS/SPARC zero registers
+			+)  x86 64/32/16-bit registers
 		x)  Value formatter for resulting output.
 		x)  Begin on the expression evaluator.
 	x)  Clock/timer framework:
 		x)  MIPS wait support _and_ the timer framework don't
 		    quite work yet together.
+		x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 		x)  Test the 8253? Right now it doesn't seem to be used?
-		x)  Algor runs too fast.
 		x)  NetWinder timeofday is incorrect!
-		x)  Cobalt TODR is incorrect!
-		x)  Malta TODR is correct with NetBSD, but wrong with Linux.
+		x)  Cobalt TOD is incorrect!
+		x)  Malta TOD is correct with NetBSD, but wrong with Linux.
 		x)  Go through all other machines, one by one, and fix them.
-	x)  Device registry: Allow devices to be moved around;
-		if there is a collision, return false. It is up
-		to the caller to handle this situation!
-		NOTE: Translations must be invalidated!
+	x)  Device registry:
+		x)  Allow devices to be moved around; if there is a collision,
+		    return false. It is up to the caller to handle this
+		    situation!
+		x)  NOTE: Translations must be invalidated, both for
+		    registering new devices, and for moving existing ones.
+		    cpu->invalidate translation caches, for all CPUs that
+		    are connected to a specific memory.
 	x)  The TLB dump code could possibly be moved somewhere
 		else? No need to include the dummy functions
 		everywhere.
@@ -29,17 +60,6 @@ Implementation:
 		detection into a macro?)
 	x)  Disassembly, nr of bytes read and given to the cpu specific
 		disassemlby routine? It's too ugly now.
-	x)  Alpha:
-		x)  OSF1 PALcode, Virtual memory support.
-		x)  PALcode replacement! PAL1E etc opcodes...?
-		x)  Interrupt/exception/trap handling.
-		x)  More work on bootup memory and register contents.
-		x)  More Alpha machine types, so it could work with
-		    OpenBSD, FreeBSD, and Linux too?
-	x)  SPARC:
-		x)  Implement Adress space identifiers.
-		x)  Continue on the register windows.
-	x)  Userland emulation?
 	x)  Common dyntrans_abort() function, which stops dyntrans execution,
 		and drops into the debugger (if running with -K).
 	x)  HPCmips:
@@ -76,13 +96,12 @@ Implementation:
 		    to make sure that reuse works!
 		x)  Make OpenBSD work better as a guest OS!
 		x)  DHCP? Debian doesn't actually send DHCP packets, even
-			though it claims to?
+			though it claims to? So it is hard to test.
 		x)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
 		x)  Support VDE (vde.sf.net)? Easiest/cleanest (before a
 		    redesign of the network framework has been done) is
-		    probably to connect it using the current (udp)
-		    solution.
+		    probably to connect it using the current (udp) solution.
 		x)  Allow SLIP connections, possibly PPP, in addition to
 		    ethernet?
 	x)  Implement more ethernet NICs.
@@ -243,11 +262,15 @@ RCA1802/RCA1805, CHIP8:
 		sprites and fonts.
 
 Alpha:
-	o)  OSF1 PALcode, virtual memory (tlbs etc).
-	o)  Get {NetBSD,OpenBSD,Linux}/alpha booting. :)
+	x)  OSF1 PALcode, Virtual memory support.
+	x)  PALcode replacement! PAL1E etc opcodes...?
+	x)  Interrupt/exception/trap handling.
+	x)  More work on bootup memory and register contents.
+	x)  More Alpha machine types, so it could work with
+	    OpenBSD, FreeBSD, and Linux too?
 
 SPARC:
-	o)  Load/stores to alternate address spaces!
+	x)  Implement Adress space identifiers; load/stores etc.
 	o)  Save/restore register windows etc!
 	o)  Finish the subcc and addcc flag computation code.
 	o)  Add more registers (floating point, control regs etc)

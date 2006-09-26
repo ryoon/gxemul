@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.178 2006-09-23 03:49:02 debug Exp $
+$Id: guestoses.html,v 1.179 2006-09-26 08:49:35 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -53,7 +53,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdhpcmipsinstall">NetBSD/hpcmips 3.1</a>
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.1</a>
-  <li><a href="#netbsdalgorinstall">NetBSD/algor 3.0.1</a>
+  <li><a href="#netbsdalgorinstall">NetBSD/algor 3.1</a>
   <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0.1</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.1</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
@@ -549,7 +549,7 @@ image, from an emulated DECstation 3MAX machine:
 <p>
 <ol>
   <li>Download a NetBSD/pmax (DECstation) install RAMDISK kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 </pre>
   <p>
   <li>Create an empty harddisk image, which will be the disk image
@@ -557,14 +557,14 @@ image, from an emulated DECstation 3MAX machine:
 	<b>dd if=/dev/zero of=nbsd_algor.img bs=1024 count=1 seek=700000</b>
 
 </pre>
-  <li>Download the P5064 Algor kernel and the 3.0.1 ISO image:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/algor/binary/kernel/netbsd-P5064.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.0.1/algor/binary/kernel/netbsd-P5064.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/algorcd-3.0.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.0.1/algorcd-3.0.1.iso</a>
+  <li>Download the P5064 Algor kernel and the 3.1 ISO image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/algor/binary/kernel/netbsd-P5064.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/algor/binary/kernel/netbsd-P5064.gz</a>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/algorcd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/algorcd-3.1.iso</a>
 
 </pre>
   <p>
   <li>Start the emulated DECstation machine like this:<pre>
-	<b>gxemul -e 3max -d nbsd_algor.img -d algorcd-3.0.1.iso netbsd-INSTALL.gz</b>
+	<b>gxemul -e 3max -d nbsd_algor.img -d algorcd-3.1.iso netbsd-INSTALL.gz</b>
 
 </pre>
   <li>At the <tt>Terminal type? [rcons]</tt> prompt, type <b>CTRL-B</b>
@@ -2097,20 +2097,18 @@ fdisk and mke2fs, which are useful for creating Linux paritions on disk images.
 
 <p>The Malta emulation mode is best suited for running <a 
 href="#netbsdevbmipsinstall">NetBSD/evbmips</a>, however, it is possible 
-to experiment with Linux/Malta as well. I haven't yet found any recent 
-pre-compiled/packaged distribution of Linux/Malta kernel + userland 
-available at any stable location on the web; the general idea behind 
-Linux/Malta seems to be that the end user always compiles his/her own 
-kernel anyway, applies patches, downloads userland separately, etc.
+to experiment with Linux/Malta as well.
 
-<p>For that reason, Linux/Malta support in the emulator is not 
-tested for every release (sometimes it works, sometimes it doesn't work), 
-and these instructions are kind of "fuzzy".
+<p>The general idea behind Linux/Malta seems to be that the end user 
+always compiles his/her own kernel, applies patches, downloads 
+userland separately, etc. For that reason, Linux/Malta support in the 
+emulator is not tested for every release (sometimes it works, sometimes it 
+doesn't work), and these instructions are kind of "fuzzy".
 
 <p><ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that Linux/Malta will be installed onto:<pre>
-	<b>dd if=/dev/zero of=nbsd_pmax.img bs=1024 count=1 seek=5000000</b>
+	<b>dd if=/dev/zero of=linux.img bs=1024 count=1 seek=5000000</b>
 
 </pre>
   <li>Download a MIPS root filesystem tree:<pre>
@@ -2135,7 +2133,7 @@ and these instructions are kind of "fuzzy".
 	gxemul -xemalta -d linux.img -d mipsel-root-20011216.tar vmlinux_2.4.33.2-ide-pci-ramdisk.elf</b>
 	Inside GXemul: Log in as root and execute the following commands:
 	<b>fdisk /dev/hda</b>
-	(enter suitable commands, e.g. <b>n, p, 1, 1, 9921, w, q</b>)
+	(enter suitable commands, e.g. <b>n, p, 1, 1, 9921, w</b>)
 	<b>mkfs /dev/hda1
 	mount /dev/hda1 /mnt
 	cd /mnt; tar -xf /dev/hdb; cd ..

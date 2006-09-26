@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.225 2006-09-23 03:52:10 debug Exp $
+$Id: RELEASE,v 1.226 2006-09-26 08:49:35 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -27,8 +27,8 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	host clock.
 
 	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS,
-	Malta (evbmips), and Cobalt machine modes have been rewritten to
-	use the new clock/timer framework.
+	Malta (evbmips), Cobalt, and Algor machine modes have been modified
+	to use the new clock/timer framework.
 
     o)	The wdc (standard IDE controller) had a bug which prevented disk
 	images larger than 2 GB to work correctly. This has been fixed.

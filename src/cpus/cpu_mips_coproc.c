@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.56 2006-09-23 03:52:10 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.57 2006-09-26 08:49:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -614,7 +614,8 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_WIRED)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_BADVADDR)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT) {
-		/*  TODO: Increase count ...  */
+		/*  TODO: Increase count in a more meaningful way!  */
+		cp->reg[COP0_COUNT] = (int32_t) (cp->reg[COP0_COUNT] + 1);
 		unimpl = 0;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI)	unimpl = 0;

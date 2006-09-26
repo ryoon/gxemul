@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.65 2006-09-09 09:04:32 debug Exp $
+ *  $Id: cpu_mips.c,v 1.66 2006-09-26 08:49:02 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1082,13 +1082,28 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		}
 		if (hi6 == HI6_SQ_SPECIAL3 &&
 		    cpu->cd.mips.cpu_type.rev != MIPS_R5900) {
+			int msbd, lsb;
 			special6 = instr[0] & 0x3f;
 			debug("%s", special3_names[special6]);
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
-			rd = (instr[1] >> 3) & 31;
+			rd = msbd = (instr[1] >> 3) & 31;
+			lsb = ((instr[1] & 7) << 2) | (instr[0] >> 6);
 
 			switch (special6) {
+
+			case SPECIAL3_EXT:
+			case SPECIAL3_DEXT:
+			case SPECIAL3_DEXTM:
+			case SPECIAL3_DEXTU:
+				if (special6 == SPECIAL3_DEXTM)
+					msbd += 32;
+				if (special6 == SPECIAL3_DEXTU)
+					lsb += 32;
+				debug("\t%s", regname(cpu->machine, rt));
+				debug(",%s", regname(cpu->machine, rs));
+				debug(",%i,%i", lsb, msbd + 1);
+				break;
 
 			case SPECIAL3_RDHWR:
 				debug("\t%s", regname(cpu->machine, rt));

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.112 2006-09-23 04:41:42 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.113 2006-09-26 08:49:03 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1071,6 +1071,20 @@ X(cache)
 
 
 /*
+ *  ext:  Extract bitfield.
+ *
+ *  arg[0] = pointer to rt
+ *  arg[1] = pointer to rs
+ *  arg[2] = (msbd << 5) + lsb
+ */
+X(ext)
+{
+	fatal("ext: todo\n");
+	exit(1);
+}
+
+
+/*
  *  2-register + immediate:
  *
  *  arg[0] = pointer to rs
@@ -1989,15 +2003,6 @@ X(deret)
  */
 X(wait)
 {
-
-
-/*
- *  TODO:  REMOVE THIS return, once the 'wait' instruction works together
- *         with the new timer framework!
- */
-return;
-
-#if 0
 	/*
 	 *  If there is an interrupt, then just return. Otherwise
 	 *  re-run the wait instruction (after a delay).
@@ -2038,7 +2043,6 @@ return;
 		}
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 	}
-#endif
 }
 
 
@@ -4758,6 +4762,18 @@ X(to_be_translated)
 		}
 
 		switch (s6) {
+
+		case SPECIAL3_EXT:
+			{
+				int msbd = rd, lsb = (iword >> 6) & 0x1f;
+				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+				ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rs];
+				ic->arg[2] = (msbd << 5) + lsb;
+				ic->f = instr(ext);
+				if (rt == MIPS_GPR_ZERO)
+					ic->f = instr(nop);
+			}
+			break;
 
 		case SPECIAL3_RDHWR:
 			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];

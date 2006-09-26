@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.10 2006-09-09 09:04:33 debug Exp $
+ *  $Id: machine_algor.c,v 1.11 2006-09-26 08:49:18 debug Exp $
  */
 
 #include <stdio.h>
@@ -45,6 +45,8 @@
 
 MACHINE_SETUP(algor)
 {
+	machine->emulated_hz = 166560000;
+
 	switch (machine->machine_subtype) {
 	case MACHINE_ALGOR_P4032:
 		machine->machine_name = "Algor P4032";

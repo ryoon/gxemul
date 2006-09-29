@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.179 2006-09-26 08:49:35 debug Exp $
+$Id: guestoses.html,v 1.180 2006-09-29 10:16:26 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -100,7 +100,7 @@ not be relevant for this specific release of GXemul.)
   <li><a href="#openbsdsgiinstall">OpenBSD/sgi</a>
   <li><a href="#openbsdarcinstall">OpenBSD/arc 2.3</a>
   <li><a href="#debiancats">Debian GNU/Linux for CATS</a>
-  <li><a href="#linux_malta">Linux/Malta</a>
+  <!-- <li><a href="#linux_malta">Linux/Malta</a> -->
   <li><a href="#linux_qemu_mips">Linux/QEMU_MIPS</a>
   <li><a href="#windows_nt_mips">Windows NT/MIPS</a>
   <li><a href="#netbsdmacppcinstall">NetBSD/macppc 3.0</a>
@@ -2090,7 +2090,7 @@ fdisk and mke2fs, which are useful for creating Linux paritions on disk images.
 
 
 
-
+<!--
 <p><br>
 <a name="linux_malta"></a>
 <h3>Linux/Malta:</h3>
@@ -2118,11 +2118,10 @@ doesn't work), and these instructions are kind of "fuzzy".
 </pre>
 	This is an old Redhat tree from 2001, but it seems to almost work.
   <p>
-  <li>Download Alec Voropay's precompiled Malta kernel, with ramdisk,
-	and a newer kernel without ramdisk (which will be used later on
+  <li>Download one precompiled Malta kernel, with ramdisk,
+	and one without ramdisk (which will be used later on
 	when booting from disk):<pre>
-	<a href="http://www.nwpi.ru/~alec/mips/vmlinux_2.4.33.2-ide-pci-ramdisk.elf.gz">http://www.nwpi.ru/~alec/mips/vmlinux_2.4.33.2-ide-pci-ramdisk.elf.gz</a>
-	<a href="http://www.nwpi.ru/~alec/mips/vmlinux_2.6.18-rc4-ide-pci-novty.elf.gz">http://www.nwpi.ru/~alec/mips/vmlinux_2.6.18-rc4-ide-pci-novty.elf.gz</a>
+	TODO
 
 </pre>
   <li>Start the emulator with the ramdisk kernel, create a MS-DOS style
@@ -2152,7 +2151,7 @@ following command:
 <p>There's a slight problem with this specific Redhat tree, so when you 
 see the message "Configuring kernel parameters:  [  OK  ]", press CTRL-C 
 once.
-
+-->
 
 
 

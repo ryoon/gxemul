@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.113 2006-09-26 08:49:03 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.114 2006-09-29 10:17:50 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -34,6 +34,84 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+/*
+ *  COPROC_AVAILABILITY_CHECK(n) checks for the coprocessor available bit for
+ *  coprocessor number n, and causes a CoProcessor Unusable exception if it
+ *  is not set.  (Note: For coprocessor 0 checks, use cop0_availability_check!)
+ */
+#ifndef	COPROC_AVAILABILITY_CHECK
+#define	COPROC_AVAILABILITY_CHECK(x)		{		\
+		const int cpnr = (x);					\
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page) \
+		    / sizeof(struct mips_instr_call);			\
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)		\
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);			\
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);	\
+		if (!(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &	\
+		    ((1 << cpnr) << STATUS_CU_SHIFT)) ) {		\
+			mips_cpu_exception(cpu, EXCEPTION_CPU,		\
+			    0, 0, cpnr, 0, 0, 0);			\
+			return;						\
+		}							\
+	}
+#endif
+
+
+#ifndef	COP0_AVAILABILITY_CHECK_INCLUDED
+#define	COP0_AVAILABILITY_CHECK_INCLUDED
+/*
+ *  cop0_availability_check() causes a CoProcessor Unusable exception if
+ *  we are currently running in usermode, and the coprocessor available bit
+ *  for coprocessor 0 is not set.
+ *
+ *  Returns 1 if ok (i.e. if the coprocessor was usable), 0 on exceptions.
+ */
+int cop0_availability_check(struct cpu *cpu, struct mips_instr_call *ic)
+{
+	int in_usermode = 0;
+	struct mips_coproc *cp0 = cpu->cd.mips.coproc[0];
+
+	switch (cpu->cd.mips.cpu_type.exc_model) {
+	case EXC3K:
+		/*
+		 *  NOTE: If the KU bit is checked, Linux crashes.
+		 *  It is the PC that counts.
+		 *
+		 *  TODO: Check whether this is true or not for R4000 as well.
+		 */
+		/*  TODO: if (cp0->reg[COP0_STATUS] & MIPS1_SR_KU_CUR)  */
+		if (cpu->pc <= 0x7fffffff)
+			in_usermode = 1;
+		break;
+	default:
+		/*  R4000 etc:  (TODO: How about supervisor mode?)  */
+		if (((cp0->reg[COP0_STATUS] &
+		    STATUS_KSU_MASK) >> STATUS_KSU_SHIFT) != KSU_KERNEL)
+			in_usermode = 1;
+		if (cp0->reg[COP0_STATUS] & (STATUS_ERL | STATUS_EXL))
+			in_usermode = 0;
+		break;
+	}
+
+	if (in_usermode) {
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
+		    / sizeof(struct mips_instr_call);
+		cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
+		    << MIPS_INSTR_ALIGNMENT_SHIFT);
+		cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
+		if (!(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &
+		    (1 << STATUS_CU_SHIFT)) ) {
+			mips_cpu_exception(cpu, EXCEPTION_CPU,
+			    0, 0, /* cpnr */ 0, 0, 0, 0);
+			return 0;
+		}
+	}
+
+	return 1;
+}
+#endif
 
 
 /*
@@ -1762,18 +1840,9 @@ X(dmtc0)
 X(cop1_bc)
 {
 	MODE_int_t old_pc = cpu->pc;
-	const int cpnr = 1;
-	int x, low_pc, cc = ic->arg[0];
+	int x, cc = ic->arg[0];
 
-	low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-	if (!(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
+	COPROC_AVAILABILITY_CHECK(1);
 
 	/*  Get the correct condition code bit:  */
 	if (cc == 0)
@@ -1813,17 +1882,7 @@ X(cop1_bc)
  */
 X(cop1_slow)
 {
-	const int cpnr = 1;
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<< MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-
-	if (!(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
+	COPROC_AVAILABILITY_CHECK(1);
 
 	coproc_function(cpu, cpu->cd.mips.coproc[1], 1, ic->arg[0], 0, 1);
 }
@@ -1850,6 +1909,9 @@ X(break)
 }
 X(reboot)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	cpu->running = 0;
 	debugger_n_steps_left_before_interaction = 0;
 	cpu->cd.mips.next_ic = &nothing_call;
@@ -1912,6 +1974,9 @@ X(promemul)
  */
 X(tlbw)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 	coproc_tlbwri(cpu, ic->arg[0]);
@@ -1926,12 +1991,18 @@ X(tlbw)
  */
 X(tlbp)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 	coproc_tlbpr(cpu, 0);
 }
 X(tlbr)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)<<MIPS_INSTR_ALIGNMENT_SHIFT);
 	cpu->pc |= ic->arg[2];
 	coproc_tlbpr(cpu, 1);
@@ -1943,6 +2014,9 @@ X(tlbr)
  */
 X(rfe)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	/*  Just rotate the interrupt/user bits:  */
 	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] =
 	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & ~0x3f) |
@@ -1961,6 +2035,9 @@ X(rfe)
  */
 X(eret)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_ERL) {
 		cpu->pc = cpu->cd.mips.coproc[0]->reg[COP0_ERROREPC];
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_ERL;
@@ -1981,6 +2058,9 @@ X(eret)
  */
 X(deret)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	/*
 	 *  According to the MIPS64 manual, deret loads PC from the DEPC cop0
 	 *  register, and jumps there immediately. No delay slot.
@@ -1999,9 +2079,9 @@ X(deret)
 
 
 /*
- *  wait: Wait for external interrupt.
+ *  idle:  Called from the implementation of wait, or netbsd_pmax_idle.
  */
-X(wait)
+X(idle)
 {
 	/*
 	 *  If there is an interrupt, then just return. Otherwise
@@ -2010,10 +2090,10 @@ X(wait)
 	uint32_t status = cpu->cd.mips.coproc[0]->reg[COP0_STATUS];
 	uint32_t cause = cpu->cd.mips.coproc[0]->reg[COP0_CAUSE];
 
-	/*  Note: We cannot be here if the CPU is an R2000/R3000,
-	    because they don't implement WAIT.  */
-	if (status & (STATUS_EXL | STATUS_ERL))
-		status &= ~STATUS_IE;
+	if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
+		if (status & (STATUS_EXL | STATUS_ERL))
+			status &= ~STATUS_IE;
+	}
 
 	/*  Ugly R5900 special case:  (TODO: move this?)  */
 	if (cpu->cd.mips.cpu_type.rev == MIPS_R5900 &&
@@ -2043,6 +2123,18 @@ X(wait)
 		}
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
 	}
+}
+
+
+/*
+ *  wait: Wait for external interrupt.
+ */
+X(wait)
+{
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
+	instr(idle)(cpu, ic);
 }
 
 
@@ -2283,21 +2375,7 @@ X(scd)
  */
 X(lwc1)
 {
-	const int cpnr = 1;
-
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-
-	/*  ... but first, let's see if the coprocessor is available:  */
-	if (!(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
+	COPROC_AVAILABILITY_CHECK(1);
 
 #ifdef MODE32
 	mips32_loadstore
@@ -2309,21 +2387,7 @@ X(lwc1)
 }
 X(swc1)
 {
-	const int cpnr = 1;
-
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-
-	/*  ... but first, let's see if the coprocessor is available:  */
-	if (!(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
+	COPROC_AVAILABILITY_CHECK(1);
 
 #ifdef MODE32
 	mips32_loadstore
@@ -2335,24 +2399,11 @@ X(swc1)
 }
 X(ldc1)
 {
-	const int cpnr = 1;
 	int use_fp_pairs =
 	    !(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_FR);
 	uint64_t fpr, *backup_ptr;
 
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-
-	/*  ... but first, let's see if the coprocessor is available:  */
-	if (!(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
+	COPROC_AVAILABILITY_CHECK(1);
 
 	backup_ptr = (uint64_t *) ic->arg[0];
 	ic->arg[0] = (size_t) &fpr;
@@ -2376,24 +2427,11 @@ X(ldc1)
 }
 X(sdc1)
 {
-	const int cpnr = 1;
 	int use_fp_pairs =
 	    !(cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_FR);
 	uint64_t fpr, *backup_ptr;
 
-	/*  Synch. PC and call the generic load/store function:  */
-	int low_pc = ((size_t)ic - (size_t)cpu->cd.mips.cur_ic_page)
-	    / sizeof(struct mips_instr_call);
-	cpu->pc &= ~((MIPS_IC_ENTRIES_PER_PAGE-1)
-	    << MIPS_INSTR_ALIGNMENT_SHIFT);
-	cpu->pc += (low_pc << MIPS_INSTR_ALIGNMENT_SHIFT);
-
-	/*  ... but first, let's see if the coprocessor is available:  */
-	if (!(cpu->cd.mips.coproc[0]->
-	    reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)) ) {
-		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-		return;
-	}
+	COPROC_AVAILABILITY_CHECK(1);
 
 	backup_ptr = (uint64_t *) ic->arg[0];
 	ic->arg[0] = (size_t) &fpr;
@@ -2444,10 +2482,16 @@ X(sdr) { mips_unaligned_loadstore(cpu, ic, 0, sizeof(uint64_t), 1); }
  */
 X(di_r5900)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
 }
 X(ei_r5900)
 {
+	if (!cop0_availability_check(cpu, ic))
+		return;
+
 	cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
 }
 
@@ -3068,6 +3112,35 @@ X(netbsd_r3k_picache_do_inv)
 
 #ifdef MODE32
 /*
+ *  netbsd_pmax_idle():
+ *
+ *  s:  lui     rX,hi
+ *      lw      rY,lo(rX)
+ *      nop
+ *      beq     zr,rY,0x800300dc
+ *      nop
+ */
+X(netbsd_pmax_idle)
+{
+	uint32_t addr, pageindex, i;
+	int32_t *page;
+
+	reg(ic[0].arg[0]) = (int32_t)ic[0].arg[1];
+
+	addr = reg(ic[0].arg[0]) + (int32_t)ic[1].arg[2];
+	pageindex = addr >> 12;
+	i = (addr & 0xfff) >> 2;
+	page = (int32_t *) cpu->cd.mips.host_load[pageindex];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot || page == NULL || page[i] != 0)
+		return;
+
+	instr(idle)(cpu, ic);
+}
+
+
+/*
  *  netbsd_strlen():
  *
  *	lb      rV,0(rX)
@@ -3507,16 +3580,31 @@ void COMBINE(netbsd_r3k_cache_inv)(struct cpu *cpu,
  *
  *	NetBSD's strlen core.
  *	[Conditional] branch, followed by nop.
+ *	NetBSD/pmax' idle loop (and possibly others as well).
  */
 void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 {
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
-#ifdef MODE32
-	if (n_back < 3)
+	if (n_back < 4)
 		return;
 
+#ifdef MODE32
+	if (ic[-4].f == instr(set) &&
+	    ic[-3].f == mips32_loadstore[4 + 1] &&
+	    ic[-3].arg[0] == ic[-1].arg[0] &&
+	    ic[-3].arg[1] == ic[-4].arg[0] &&
+	    ic[-2].f == instr(nop) &&
+	    ic[-1].arg[1] == (size_t) &cpu->cd.mips.gpr[MIPS_GPR_ZERO] &&
+	    ic[-1].arg[2] == (size_t) &ic[-4] &&
+	    ic[-1].f == instr(beq_samepage)) {
+		ic[-4].f = instr(netbsd_pmax_idle);
+		return;
+	}
+#endif
+
+#ifdef MODE32
 	if ((ic[-3].f == mips32_loadstore[1] ||
 	    ic[-3].f == mips32_loadstore[16 + 1]) &&
 	    ic[-3].arg[2] == 0 &&
@@ -3529,9 +3617,6 @@ void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 		return;
 	}
 #endif
-
-	if (n_back < 1)
-		return;
 
 	if (ic[-1].f == instr(bne_samepage)) {
 		ic[-1].f = instr(bne_samepage_nop);

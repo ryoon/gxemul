@@ -1,34 +1,8 @@
-$Id: TODO,v 1.380 2006-09-26 08:49:35 debug Exp $
+$Id: TODO,v 1.381 2006-09-29 10:17:50 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
-
 Implementation:
-
-__wdccommand_start, wdcwait som tar tid för prep.
-
-    <wdc_exec_command(0xd005e514,0xd60cdd30,0,8,..)>
-      <ata_get_xfer(0,0xd60cdd30,0,8,..)>
-        <0x26c550(&ata_xfer_pool,2,0,8,..)>
-        <0x35c71c(0x3f27000,0,52,8,..)>
-      <ata_exec_xfer(0xd005e4c8,0x3f27000,0,13,..)>
-        <atastart(0xd005e4c8,0x3f27000,0,13,..)>
-          <__wdccommand_start(0xd005e4c8,0x3f27000,0,13,..)>
-            <bsw1(&prep_isa_io_space_tag,0x800001f6,0,176,..)>
-[ wdc: write to SDH: 0xb0 (sectorsize 2, lba=1, drive 1, head 0) ]
-            <wdcwait(0xd005e4c8,72,64,0xbb8,..)>
-              <0x198120(0xd005e4c8,72,64,0xbb8,..)>
-                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
-                <delay(100,0,0,0xbb8,..)>
-                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
-                <delay(100,0,0,0xbb8,..)>
-                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
-                <delay(100,0,0,0xbb8,..)>
-                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
-                <delay(100,0,0,0xbb8,..)>
-
-Notera: <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
-
 	x)  Settings / expression evaluator:
 		x)  Special handlers for Write!
 			+)  MIPS coproc regs
@@ -37,8 +11,6 @@ Notera: <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
 		x)  Value formatter for resulting output.
 		x)  Begin on the expression evaluator.
 	x)  Clock/timer framework:
-		x)  MIPS wait support _and_ the timer framework don't
-		    quite work yet together.
 		x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 		x)  Test the 8253? Right now it doesn't seem to be used?
 		x)  NetWinder timeofday is incorrect!
@@ -315,6 +287,24 @@ Debugger:
 POWER/PowerPC:
 	x)  find and fix the bug which causes NetBSD/macppc to fail after
 	    an install!
+	x)  __wdccommand_start, wdcwait som tar tid för prep.
+
+    <wdc_exec_command(0xd005e514,0xd60cdd30,0,8,..)>
+      <ata_get_xfer(0,0xd60cdd30,0,8,..)>
+        <0x26c550(&ata_xfer_pool,2,0,8,..)>
+        <0x35c71c(0x3f27000,0,52,8,..)>
+      <ata_exec_xfer(0xd005e4c8,0x3f27000,0,13,..)>
+        <atastart(0xd005e4c8,0x3f27000,0,13,..)>
+          <__wdccommand_start(0xd005e4c8,0x3f27000,0,13,..)>
+            <bsw1(&prep_isa_io_space_tag,0x800001f6,0,176,..)>
+[ wdc: write to SDH: 0xb0 (sectorsize 2, lba=1, drive 1, head 0) ]
+            <wdcwait(0xd005e4c8,72,64,0xbb8,..)>
+              <0x198120(0xd005e4c8,72,64,0xbb8,..)>
+                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+                <delay(100,0,0,0xbb8,..)>
+
+Notera: <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+
 	x)  PPC optimizations; instr combs
 	x)  64-bit stuff: either Linux on G5, or perhaps some hobbyist
 		version of AIX? (if there exists such a thing)

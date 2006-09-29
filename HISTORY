@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1371 2006-09-26 08:49:35 debug Exp $
+$Id: HISTORY,v 1.1372 2006-09-29 10:17:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3048,3 +3048,8 @@ Changelog for GXemul:
 		instructions: ext, dext, dextm, dextu.
 20060926	The timer framework now works also when the MIPS wait
 		instruction is used.
+20060928	Re-implementing checks for coprocessor availability for MIPS
+		cop0 instructions. (Thanks to Carl van Schaik for noticing the
+		lack of cop0 availability checks.)
+20060929	Implementing an instruction combination hack which treats
+		NetBSD/pmax' idle loop as a wait-like instruction.

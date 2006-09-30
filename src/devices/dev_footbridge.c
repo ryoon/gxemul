@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.47 2006-09-21 11:53:26 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.48 2006-09-30 10:09:19 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -102,9 +102,12 @@ static void reload_timer_value(struct cpu *cpu, struct footbridge_data *d,
 /*
  *  dev_footbridge_tick():
  *
- *  The 4 footbridge timers should decrease every now and then, and cause
- *  interrupts. Periodic interrupts restart as soon as they are acknowledged,
- *  non-periodic interrupts need to be "reloaded" to restart.
+ *  The 4 footbridge timers should decrease and cause interrupts. Periodic
+ *  interrupts restart as soon as they are acknowledged, non-periodic
+ *  interrupts need to be "reloaded" to restart.
+ *
+ *  TODO: Hm. I thought I had solved this, but it didn't quite work.
+ *        This needs to be re-checked against documentation, sometime.
  */
 void dev_footbridge_tick(struct cpu *cpu, void *extra)
 {
@@ -112,13 +115,11 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 	struct footbridge_data *d = (struct footbridge_data *) extra;
 
 	for (i=0; i<N_FOOTBRIDGE_TIMERS; i++) {
-		if (d->timer_control[i] & TIMER_MODE_PERIODIC &&
-		    d->timer_control[i] & TIMER_ENABLE) {
+		if (d->timer_control[i] & TIMER_ENABLE) {
 			if (d->pending_timer_interrupts[i] > 0) {
 				d->timer_value[i] = random() % d->timer_load[i];
 				cpu_interrupt(cpu, IRQ_TIMER_1 + i);
 			}
-			continue;
 		}
 	}
 }

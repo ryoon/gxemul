@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.116 2006-09-30 05:39:44 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.117 2006-09-30 08:17:15 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3150,10 +3150,10 @@ X(netbsd_r3k_picache_do_inv)
 /*
  *  netbsd_pmax_idle():
  *
- *  s:  lui     rX,hi
- *      lw      rY,lo(rX)
+ *  s:  lui     rX, hi
+ *      lw      rY, lo(rX)
  *      nop
- *      beq     zr,rY,0x800300dc
+ *      beq     zr, rY, s
  *      nop
  */
 X(netbsd_pmax_idle)
@@ -3170,6 +3170,44 @@ X(netbsd_pmax_idle)
 
 	/*  Fallback:  */
 	if (cpu->delay_slot || page == NULL || page[i] != 0)
+		return;
+
+	instr(idle)(cpu, ic);
+}
+
+
+/*
+ *  linux_pmax_idle():
+ *
+ *  s:  lui     rX, hi
+ *      lw      rX, lo(rX)
+ *      nop
+ *      bne     zr, rX, ...
+ *      nop
+ *      lw      rX, ofs(gp)
+ *      nop
+ *      beq     zr, rX, s
+ *      nop
+ */
+X(linux_pmax_idle)
+{
+	uint32_t addr, addr2, pageindex, pageindex2, i, i2;
+	int32_t *page, *page2;
+
+	reg(ic[0].arg[0]) = (int32_t)ic[0].arg[1];
+
+	addr = reg(ic[0].arg[0]) + (int32_t)ic[1].arg[2];
+	pageindex = addr >> 12;
+	i = (addr & 0xfff) >> 2;
+	page = (int32_t *) cpu->cd.mips.host_load[pageindex];
+
+	addr2 = reg(ic[5].arg[1]) + (int32_t)ic[5].arg[2];
+	pageindex2 = addr2 >> 12;
+	i2 = (addr2 & 0xfff) >> 2;
+	page2 = (int32_t *) cpu->cd.mips.host_load[pageindex2];
+
+	/*  Fallback:  */
+	if (cpu->delay_slot || page == NULL || page[i] != 0 || page2[i2] != 0)
 		return;
 
 	instr(idle)(cpu, ic);
@@ -3617,16 +3655,37 @@ void COMBINE(netbsd_r3k_cache_inv)(struct cpu *cpu,
  *	NetBSD's strlen core.
  *	[Conditional] branch, followed by nop.
  *	NetBSD/pmax' idle loop (and possibly others as well).
+ *	Linux/pmax' idle loop.
  */
 void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 {
 	int n_back = (low_addr >> MIPS_INSTR_ALIGNMENT_SHIFT)
 	    & (MIPS_IC_ENTRIES_PER_PAGE - 1);
 
-	if (n_back < 4)
+	if (n_back < 8)
 		return;
 
 #ifdef MODE32
+	if (ic[-8].f == instr(set) &&
+	    ic[-7].f == mips32_loadstore[4 + 1] &&
+	    ic[-7].arg[0] == ic[-1].arg[0] &&
+	    ic[-7].arg[0] == ic[-3].arg[0] &&
+	    ic[-7].arg[0] == ic[-5].arg[0] &&
+	    ic[-7].arg[0] == ic[-7].arg[1] &&
+	    ic[-7].arg[0] == ic[-8].arg[0] &&
+	    ic[-6].f == instr(nop) &&
+	    ic[-5].arg[1] == (size_t) &cpu->cd.mips.gpr[MIPS_GPR_ZERO] &&
+	    ic[-5].f == instr(bne_samepage_nop) &&
+	    ic[-4].f == instr(nop) &&
+	    ic[-3].f == mips32_loadstore[4 + 1] &&
+	    ic[-2].f == instr(nop) &&
+	    ic[-1].arg[1] == (size_t) &cpu->cd.mips.gpr[MIPS_GPR_ZERO] &&
+	    ic[-1].arg[2] == (size_t) &ic[-8] &&
+	    ic[-1].f == instr(beq_samepage)) {
+		ic[-8].f = instr(linux_pmax_idle);
+		return;
+	}
+
 	if (ic[-4].f == instr(set) &&
 	    ic[-3].f == mips32_loadstore[4 + 1] &&
 	    ic[-3].arg[0] == ic[-1].arg[0] &&
@@ -3638,9 +3697,7 @@ void COMBINE(nop)(struct cpu *cpu, struct mips_instr_call *ic, int low_addr)
 		ic[-4].f = instr(netbsd_pmax_idle);
 		return;
 	}
-#endif
 
-#ifdef MODE32
 	if ((ic[-3].f == mips32_loadstore[1] ||
 	    ic[-3].f == mips32_loadstore[16 + 1]) &&
 	    ic[-3].arg[2] == 0 &&

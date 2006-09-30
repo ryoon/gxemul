@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1374 2006-09-30 05:39:44 debug Exp $
+$Id: HISTORY,v 1.1375 2006-09-30 08:17:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3061,3 +3061,5 @@ Changelog for GXemul:
 		(seb, seh, wsbh, jalr.hb, jr.hb, synci, ins, dins, dinsu,
 		dinsm, dsbh, dshd, ror, dror, rorv, drorv, dror32). Also
 		implementing seb, seh, dsbh, dshd, and wsbh.
+		Implementing an instruction combination hack for Linux/pmax'
+		idle loop, similar to the NetBSD/pmax case.

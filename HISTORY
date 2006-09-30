@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1372 2006-09-29 10:17:50 debug Exp $
+$Id: HISTORY,v 1.1373 2006-09-30 03:19:17 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3053,3 +3053,7 @@ Changelog for GXemul:
 		lack of cop0 availability checks.)
 20060929	Implementing an instruction combination hack which treats
 		NetBSD/pmax' idle loop as a wait-like instruction.
+20060930	The ENTRYHI_R_MASK was missing in (at least) memory_mips_v2p.c,
+		causing TLB lookups to sometimes succeed when they should have
+		failed. (A big thank you to Juli Mallett for noticing the
+		problem.)

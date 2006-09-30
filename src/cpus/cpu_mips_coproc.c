@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.57 2006-09-26 08:49:03 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.58 2006-09-30 03:19:18 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1683,20 +1683,22 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		break;
 
 	default:if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
-			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
+			oldvaddr = cp->tlbs[index].hi &
+			    (ENTRYHI_VPN2_MASK_R10K | ENTRYHI_R_MASK);
 			/*  44 addressable bits:  */
 			if (oldvaddr & 0x80000000000ULL)
-				oldvaddr |= 0xfffff00000000000ULL;
+				oldvaddr |= 0x3ffff00000000000ULL;
 		} else if (cpu->is_32bit) {
 			/*  MIPS32 etc.:  */
 			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
 			oldvaddr = (int32_t)oldvaddr;
 		} else {
 			/*  Assume MMU4K  */
-			oldvaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+			oldvaddr = cp->tlbs[index].hi &
+			    (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK);
 			/*  40 addressable bits:  */
 			if (oldvaddr & 0x8000000000ULL)
-				oldvaddr |= 0xffffff0000000000ULL;
+				oldvaddr |= 0x3fffff0000000000ULL;
 		}
 
 #if 0
@@ -1730,7 +1732,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		int i;
 		unsigned int asid;
 
-		vaddr1 = cp->reg[COP0_ENTRYHI] & ENTRYHI_VPN2_MASK_R10K;
+		vaddr1 = cp->reg[COP0_ENTRYHI] &
+		    (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K);
 		asid = cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
 		/*  Since this is just a warning, it's probably not necessary
 		    to use R4000 masks etc.  */
@@ -1743,7 +1746,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			    (cp->tlbs[i].hi & ENTRYHI_ASID) != asid)
 				continue;
 
-			vaddr2 = cp->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
+			vaddr2 = cp->tlbs[i].hi &
+			    (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K);
 			if (vaddr1 == vaddr2 && ((cp->tlbs[i].lo0 &
 			    ENTRYLO_V) || (cp->tlbs[i].lo1 & ENTRYLO_V)))
 				fatal("\n[ WARNING! tlbw%s to index 0x%02x "
@@ -1840,20 +1844,22 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		    >> ENTRYLO_PFN_SHIFT) << pfn_shift;
 
 		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
-			vaddr0 = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
+			vaddr0 = cp->tlbs[index].hi &
+			    (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K);
 			/*  44 addressable bits:  */
 			if (vaddr0 & 0x80000000000ULL)
-				vaddr0 |= 0xfffff00000000000ULL;
+				vaddr0 |= 0x3ffff00000000000ULL;
 		} else if (cpu->is_32bit) {
 			/*  MIPS32 etc.:  */
 			vaddr0 = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
 			vaddr0 = (int32_t)vaddr0;
 		} else {
 			/*  Assume MMU4K  */
-			vaddr0 = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+			vaddr0 = cp->tlbs[index].hi &
+			    (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK);
 			/*  40 addressable bits:  */
 			if (vaddr0 & 0x8000000000ULL)
-				vaddr0 |= 0xffffff0000000000ULL;
+				vaddr0 |= 0x3fffff0000000000ULL;
 		}
 
 		vaddr1 = vaddr0 | (1 << vpn_shift);

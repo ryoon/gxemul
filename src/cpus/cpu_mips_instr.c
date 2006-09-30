@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.114 2006-09-29 10:17:50 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.115 2006-09-30 03:19:18 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -3919,6 +3919,8 @@ X(to_be_translated)
 				ic->f = instr(nop);
 			if (ic->f == instr(sll))
 				cpu->cd.mips.combination_check = COMBINE(sll);
+			if (ic->f == instr(nop))
+				cpu->cd.mips.combination_check = COMBINE(nop);
 			break;
 
 		case SPECIAL_ADD:
@@ -4899,9 +4901,6 @@ X(to_be_translated)
 		ic->f = instr(reserved);
 	}
 #endif
-
-	if (ic->f == instr(nop) && cpu->cd.mips.combination_check == NULL)
-		cpu->cd.mips.combination_check = COMBINE(nop);
 
 
 #define	DYNTRANS_TO_BE_TRANSLATED_TAIL

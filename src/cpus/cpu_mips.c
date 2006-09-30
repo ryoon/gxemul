@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.66 2006-09-26 08:49:02 debug Exp $
+ *  $Id: cpu_mips.c,v 1.67 2006-09-30 03:19:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -630,19 +630,14 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				printf("\n");
 				break;
 			default:switch (m->cpus[i]->cd.mips.cpu_type.mmu_model){
-				case MMU10K:
-					printf("vaddr=0x%1x..%011"PRIx64" ",
-					    (int) (hi >> 60), (uint64_t)
-					    (hi&ENTRYHI_VPN2_MASK_R10K));
-					break;
 				case MMU32:
 					printf("vaddr=0x%08"PRIx32" ",
-					    (uint32_t)(hi&ENTRYHI_VPN2_MASK));
+					    (uint32_t) hi);
 					break;
+				case MMU10K:
 				default:/*  R4000 etc.  */
-					printf("vaddr=0x%1x..%010"PRIx64" ",
-					    (int) (hi >> 60),
-					    (uint64_t) (hi&ENTRYHI_VPN2_MASK));
+					printf("vaddr=%016"PRIx64" ",
+					    (uint64_t) hi);
 				}
 				if (hi & TLB_G)
 					printf("(global): ");

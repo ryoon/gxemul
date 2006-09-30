@@ -1,4 +1,4 @@
-$Id: TODO,v 1.381 2006-09-29 10:17:50 debug Exp $
+$Id: TODO,v 1.382 2006-09-30 03:19:18 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -168,7 +168,6 @@ MIPS:
 		x) _MAYBE_ TX79 and R5900 actually differ in their
 		   opcodes? Check this carefully!
 	o)  Dyntrans: Count register updates are probably not 100% correct yet.
-	o)  64-bit ranges in src/cpus/memory_mips_v2p.c
 	o)  Refactor code for performance and readability/maintainability.
 	o)  (Re)implement 128-bit loads/stores for R5900.
 	o)  R4000 and others:

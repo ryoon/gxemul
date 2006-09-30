@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.9 2006-08-12 11:43:13 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.10 2006-09-30 03:19:18 debug Exp $
  */
 
 
@@ -57,13 +57,13 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	const int pmask = 0xfff;
 #else
 #ifdef V2P_MMU10K
-	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK_R10K;
+	const uint64_t vpn2_mask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K;
 #else
 #ifdef V2P_MMU4100
 /* This is ugly  */
-	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK | 0x1800;
+	const uint64_t vpn2_mask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | 0x1800;
 #else
-	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK;
+	const uint64_t vpn2_mask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
 #endif
 #endif
 	int x_64;	/*  non-zero for 64-bit address space accesses  */
@@ -114,25 +114,18 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *					  unmapped, cached
 	 *   00   x    x    0  kseg1   0xa0000000 - 0xbfffffff (0.5GB)
 	 *					  unmapped, uncached
-	 *   00   x    x    0  ksseg   0xc0000000 - 0xdfffffff (0.5GB)
-	 *					  (via TLB)
-	 *   00   x    x    0  kseg3   0xe0000000 - 0xffffffff (0.5GB)
-	 *					  (via TLB)
+	 *   00   x    x    0  ksseg   0xc0000000 - 0xdfffffff (0.5GB) (via TLB)
+	 *   00   x    x    0  kseg3   0xe0000000 - 0xffffffff (0.5GB) (via TLB)
 	 *   00   x    x    1  xksuseg 0 - 0xffffffffff (1TB) (via TLB) (*)
 	 *   00   x    x    1  xksseg  0x4000000000000000 - 0x400000ffffffffff
 	 *					  (1TB)  (via TLB)
 	 *   00   x    x    1  xkphys  0x8000000000000000 - 0xbfffffffffffffff
-	 *					  todo
 	 *   00   x    x    1  xkseg   0xc000000000000000 - 0xc00000ff7fffffff
-	 *					  todo
 	 *   00   x    x    1  ckseg0  0xffffffff80000000 - 0xffffffff9fffffff
-	 *					  like kseg0
 	 *   00   x    x    1  ckseg1  0xffffffffa0000000 - 0xffffffffbfffffff
-	 *					  like kseg1
 	 *   00   x    x    1  cksseg  0xffffffffc0000000 - 0xffffffffdfffffff
-	 *					  like ksseg
 	 *   00   x    x    1  ckseg3  0xffffffffe0000000 - 0xffffffffffffffff
-	 *					  like kseg2
+	 *					  like 0x80000000 - 0xffffffff
 	 *
 	 *  (*) = if ERL=1 then kuseg is not via TLB, but unmapped,
 	 *  uncached physical memory.
@@ -178,21 +171,18 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	pageshift = 12;
 
 	/*
-	 *  Physical addressing on R10000 etc:
+	 *  XKPHYS: 0x8000000000000000 - 0xbfffffffffffffff
 	 *
-	 *  TODO: Probably only accessible in kernel mode.
+	 *  TODO: Is the correct error generated if accessing XKPHYS from
+	 *        usermode?
 	 *
-	 *  0x9000000080000000 = disable L2 cache (?)
-	 *  TODO:  Make this correct.
+	 *  TODO: Magic on SGI machines... Cache control, NUMA, etc.:
+	 *        0x9000000080000000   = disable L2 cache (?)
+	 *        0x90000000a0000000   = something on IP30?
+	 *        0x92.... and 0x96... = NUMA on IP27
 	 */
-	if ((vaddr >> 62) == 0x2) {
-		/*
-		 *  On IP30, addresses such as 0x900000001f600050 are used,
-		 *  but also things like 0x90000000a0000000.  (TODO)
-		 *
-		 *  On IP27 (and probably others), addresses such as
-		 *  0x92... and 0x96... have to do with NUMA stuff.
-		 */
+	if (ksu == KSU_KERNEL &&
+	    (vaddr & ENTRYHI_R_MASK) == 0x8000000000000000) {
 		*return_paddr = vaddr & (((uint64_t)1 << 44) - 1);
 		return 2;
 	}

@@ -25,14 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.10 2006-09-30 03:19:18 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.11 2006-09-30 05:57:08 debug Exp $
  */
 
 
 /*
  *  translate_v2p():
  *
- *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
+ *  Don't call this function if userland_emul is non-NULL, or cpu is NULL.
  *
  *  TODO:  vpn2 is a bad name for R2K/R3K, as it is the actual framenumber.
  *

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005-2006  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_ppc.c,v 1.25 2006-07-14 16:33:28 debug Exp $
+ *  $Id: memory_ppc.c,v 1.26 2006-09-30 05:57:08 debug Exp $
  *
  *  Included from cpu_ppc.c.
  */
@@ -213,7 +213,7 @@ static int ppc_vtp32(struct cpu *cpu, uint32_t vaddr, uint64_t *return_paddr,
 /*
  *  ppc_translate_v2p():
  *
- *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
+ *  Don't call this function if userland_emul is non-NULL, or cpu is NULL.
  *
  *  Return values:
  *	0  Failure

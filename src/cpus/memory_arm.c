@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_arm.c,v 1.36 2006-07-14 16:33:28 debug Exp $
+ *  $Id: memory_arm.c,v 1.37 2006-09-30 05:57:07 debug Exp $
  *
  *
  *  TODO/NOTE:  The B and/or C bits could also cause the return value to
@@ -105,7 +105,7 @@ static int arm_check_access(struct cpu *cpu, int ap, int dav, int user)
 /*
  *  arm_translate_v2p_mmu():
  *
- *  Don't call this function is userland_emul is non-NULL, or cpu is NULL.
+ *  Don't call this function if userland_emul is non-NULL, or cpu is NULL.
  *
  *  Return values:
  *	0  Failure

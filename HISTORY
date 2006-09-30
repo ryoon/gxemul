@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1373 2006-09-30 03:19:17 debug Exp $
+$Id: HISTORY,v 1.1374 2006-09-30 05:39:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3057,3 +3057,7 @@ Changelog for GXemul:
 		causing TLB lookups to sometimes succeed when they should have
 		failed. (A big thank you to Juli Mallett for noticing the
 		problem.)
+		Adding disassembly support for more MIPS64 revision 2 opcodes
+		(seb, seh, wsbh, jalr.hb, jr.hb, synci, ins, dins, dinsu,
+		dinsm, dsbh, dshd, ror, dror, rorv, drorv, dror32). Also
+		implementing seb, seh, dsbh, dshd, and wsbh.

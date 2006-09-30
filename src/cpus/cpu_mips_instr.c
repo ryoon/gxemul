@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.115 2006-09-30 03:19:18 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.116 2006-09-30 05:39:44 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -1160,6 +1160,42 @@ X(ext)
 	fatal("ext: todo\n");
 	exit(1);
 }
+
+
+/*
+ *  dsbh:  Doubleword swap bytes within half-word
+ *  dshd:  Doubleword swap half-words within double-word
+ *  wsbh:  Word swap bytes within half-word
+ *  seb:   Sign-extend byte
+ *  seh:   Sign-extend half-word
+ *
+ *  arg[0] = pointer to rt
+ *  arg[1] = pointer to rd
+ */
+X(dsbh)
+{
+	uint64_t x = reg(ic->arg[0]);
+	x = ((x & 0x00ff00ff00ff00ffULL) << 8)
+	  | ((x & 0xff00ff00ff00ff00ULL) >> 8);
+	reg(ic->arg[1]) = x;
+}
+X(dshd)
+{
+	uint64_t x = reg(ic->arg[0]);
+	x = ((x & 0x000000000000ffffULL) << 48)
+	  | ((x & 0x00000000ffff0000ULL) << 16)
+	  | ((x & 0x0000ffff00000000ULL) >> 16)
+	  | ((x & 0xffff000000000000ULL) >> 48);
+	reg(ic->arg[1]) = x;
+}
+X(wsbh)
+{
+	uint32_t x = reg(ic->arg[0]);
+	x = ((x & 0x00ff00ff) << 8) | ((x & 0xff00ff00) >> 8);
+	reg(ic->arg[1]) = (int32_t) x;
+}
+X(seb) { reg(ic->arg[1]) = (int8_t)reg(ic->arg[0]); }
+X(seh) { reg(ic->arg[1]) = (int16_t)reg(ic->arg[0]); }
 
 
 /*
@@ -3784,7 +3820,7 @@ X(to_be_translated)
 	uint32_t iword, imm;
 	unsigned char *page;
 	unsigned char ib[4];
-	int main_opcode, rt, rs, rd, sa, s6, x64 = 0;
+	int main_opcode, rt, rs, rd, sa, s6, x64 = 0, s10;
 	int in_crosspage_delayslot = 0;
 	void (*samepage_function)(struct cpu *, struct mips_instr_call *);
 	int store, signedness, size;
@@ -3865,6 +3901,7 @@ X(to_be_translated)
 	sa = (iword >>  6) & 31;
 	imm = (int16_t)iword;
 	s6 = iword & 63;
+	s10 = (rs << 5) | sa;
 
 	switch (main_opcode) {
 
@@ -3921,6 +3958,21 @@ X(to_be_translated)
 				cpu->cd.mips.combination_check = COMBINE(sll);
 			if (ic->f == instr(nop))
 				cpu->cd.mips.combination_check = COMBINE(nop);
+
+			/*  Special checks for MIPS32/64 revision 2 opcodes,
+			    such as rotation instructions:  */
+			if (sa >= 0 && rs != 0x00) {
+				switch (rs) {
+				/*  TODO: [d]ror, etc.  */
+				default:goto bad;
+				}
+			}
+			if (sa < 0 && (s10 & 0x1f) != 0) {
+				switch (s10 & 0x1f) {
+				/*  TODO: [d]rorv, etc.  */
+				default:goto bad;
+				}
+			}
 			break;
 
 		case SPECIAL_ADD:
@@ -4851,6 +4903,7 @@ X(to_be_translated)
 		switch (s6) {
 
 		case SPECIAL3_EXT:
+			/*  TODO: Cleanup and extend to DEXT... etc  */
 			{
 				int msbd = rd, lsb = (iword >> 6) & 0x1f;
 				ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
@@ -4859,6 +4912,37 @@ X(to_be_translated)
 				ic->f = instr(ext);
 				if (rt == MIPS_GPR_ZERO)
 					ic->f = instr(nop);
+			}
+			break;
+
+		case SPECIAL3_BSHFL:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rd];
+			switch (s10) {
+			case BSHFL_WSBH:
+				ic->f = instr(wsbh);
+				break;
+			case BSHFL_SEB:
+				ic->f = instr(seb);
+				break;
+			case BSHFL_SEH:
+				ic->f = instr(seh);
+				break;
+			default:goto bad;
+			}
+			break;
+
+		case SPECIAL3_DBSHFL:
+			ic->arg[0] = (size_t)&cpu->cd.mips.gpr[rt];
+			ic->arg[1] = (size_t)&cpu->cd.mips.gpr[rd];
+			switch (s10) {
+			case BSHFL_DSBH:
+				ic->f = instr(dsbh);
+				break;
+			case BSHFL_DSHD:
+				ic->f = instr(dshd);
+				break;
+			default:goto bad;
 			}
 			break;
 

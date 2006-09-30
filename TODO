@@ -1,4 +1,4 @@
-$Id: TODO,v 1.382 2006-09-30 03:19:18 debug Exp $
+$Id: TODO,v 1.383 2006-09-30 05:39:44 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -156,8 +156,6 @@ SMP:
 
 MIPS:
 	+)  Some more work on opcodes.
-		x) The "wait" instruction. How to implement this functionality?
-			(SMP, non-MIPS, interrupt correctness, host idling, ...)
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
 			o)  DROTR32 and similar MIPS64 rev 2 instructions,

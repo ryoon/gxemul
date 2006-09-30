@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.14 2006-08-11 17:43:30 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.15 2006-09-30 05:39:44 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  *
@@ -84,6 +84,17 @@
 	"special_28","special_29","slt", "sltu", "dadd",   "daddu",      "dsub",   "dsubu",	/*  0x28 - 0x2f  */	\
 	"tge",     "tgeu",       "tlt",  "tltu", "teq",    "special_35", "tne",    "special_37",/*  0x30 - 0x37  */	\
 	"dsll",    "special_39", "dsrl", "dsra", "dsll32", "special_3d", "dsrl32", "dsra32"	/*  0x38 - 0x3f  */	}
+
+/*  SPECIAL opcodes, when the rotate bit is set:  */
+#define	SPECIAL_ROT_NAMES	{	\
+	"rot_00",  "rot_01",  "ror",     "rot_03",  "rot_04",  "rot_05",  "rorv",   "rot_07",	/*  0x00 - 0x07  */	\
+	"rot_08",  "rot_09",  "rot_0a",  "rot_0b",  "rot_0c",  "rot_0d",  "rot_0e", "rot_0f",	/*  0x08 - 0x0f  */	\
+	"rot_10",  "rot_11",  "rot_12",  "rot_13",  "rot_14",  "rot_15",  "drorv",  "rot_17",	/*  0x10 - 0x17  */	\
+	"rot_18",  "rot_19",  "rot_1a",  "rot_1b",  "rot_1c",  "rot_1d",  "rot_1e",  "rot_1f",	/*  0x18 - 0x1f  */	\
+	"rot_20",  "rot_21",  "rot_22",  "rot_23",  "rot_24",  "rot_25",  "rot_26",  "rot_27",	/*  0x20 - 0x27  */	\
+	"rot_28",  "rot_29",  "rot_2a",  "rot_2b",  "rot_2c",  "rot_2d",  "rot_2e",  "rot_2f",	/*  0x28 - 0x2f  */	\
+	"rot_30",  "rot_31",  "rot_32",  "rot_33",  "rot_34",  "rot_35",  "rot_36",  "rot_37",	/*  0x30 - 0x37  */	\
+	"rot_38",  "rot_39",  "dror",    "rot_3b",  "rot_3c",  "rot_3d",  "dror32",  "rot_3f"	/*  0x38 - 0x3f  */	}
 
 #define	SPECIAL2_NAMES	{	\
 	"madd",        "maddu",       "mul",         "special2_03", "msub",        "msubu",       "special2_06", "special2_07", /*  0x00 - 0x07  */	\
@@ -429,8 +440,12 @@
 #define	    SPECIAL3_DINSU		    0x06    /*  000110  */
 #define	    SPECIAL3_DINS		    0x07    /*  000111  */
 #define	    SPECIAL3_BSHFL		    0x20    /*  100000  */
-#define	        BSHFL_WSBH			0x02	/*  00010  */
+#define	        BSHFL_WSBH			0x002	/*  00000..00010  */
+#define	        BSHFL_SEB			0x010	/*  00000..10000  */
+#define	        BSHFL_SEH			0x018	/*  00000..11000  */
 #define	    SPECIAL3_DBSHFL		    0x24    /*  100100  */
+#define	        BSHFL_DSBH			0x002	/*  00000..00010  */
+#define	        BSHFL_DSHD			0x005	/*  00000..00101  */
 #define	    SPECIAL3_RDHWR		    0x3b    /*  111011  */
 #define	HI6_LB				0x20	/*  100000  */	/*  MIPS I  */
 #define	HI6_LH				0x21	/*  100001  */	/*  MIPS I  */

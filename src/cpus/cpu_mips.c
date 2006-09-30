@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.67 2006-09-30 03:19:18 debug Exp $
+ *  $Id: cpu_mips.c,v 1.68 2006-09-30 05:39:44 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -61,6 +61,7 @@ static char *exception_names[] = EXCEPTION_NAMES;
 static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
+static char *special_rot_names[] = SPECIAL_ROT_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
 static char *mmi_names[] = MMI_NAMES;
 static char *mmi0_names[] = MMI0_NAMES;
@@ -722,7 +723,7 @@ static const char *cpu_flags(struct cpu *cpu)
 int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	int running, uint64_t dumpaddr)
 {
-	int hi6, special6, regimm5;
+	int hi6, special6, regimm5, sub;
 	int rt, rd, rs, sa, imm, copz, cache_op, which_cache, showtag;
 	uint64_t addr, offset;
 	uint32_t instrword;
@@ -793,6 +794,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		case SPECIAL_DSLL32:
 		case SPECIAL_DSRL32:
 		case SPECIAL_DSRA32:
+			sub = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
 			sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
@@ -806,12 +808,25 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 					debug("ehb");
 				else
 					debug("nop (weird, sa=%i)", sa);
-				goto disasm_ret;
-			} else
+				break;
+			}
+
+			switch (sub) {
+			case 0x00:
 				debug("%s\t%s,",
 				    special_names[special6],
 				    regname(cpu->machine, rd));
 				debug("%s,%i", regname(cpu->machine, rt), sa);
+				break;
+			case 0x01:
+				debug("%s\t%s,",
+				    special_rot_names[special6],
+				    regname(cpu->machine, rd));
+				debug("%s,%i", regname(cpu->machine, rt), sa);
+				break;
+			default:debug("UNIMPLEMENTED special, sub=0x%02x\n",
+				    sub);
+			}
 			break;
 		case SPECIAL_DSRLV:
 		case SPECIAL_DSRAV:
@@ -822,16 +837,33 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
-			debug("%s\t%s",
-			    special_names[special6], regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rt));
-			debug(",%s", regname(cpu->machine, rs));
+			sub = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
+
+			switch (sub) {
+			case 0x00:
+				debug("%s\t%s", special_names[special6],
+				    regname(cpu->machine, rd));
+				debug(",%s", regname(cpu->machine, rt));
+				debug(",%s", regname(cpu->machine, rs));
+				break;
+			case 0x01:
+				debug("%s\t%s", special_rot_names[special6],
+				    regname(cpu->machine, rd));
+				debug(",%s", regname(cpu->machine, rt));
+				debug(",%s", regname(cpu->machine, rs));
+				break;
+			default:debug("UNIMPLEMENTED special, sub=0x%02x\n",
+				    sub);
+			}
 			break;
 		case SPECIAL_JR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    cpu->cd.mips.gpr[rs], &offset);
-			debug("jr\t%s", regname(cpu->machine, rs));
+			/*  .hb = hazard barrier hint on MIPS32/64 rev 2  */
+			debug("jr%s\t%s",
+			    (instr[1] & 0x04) ? ".hb" : "",
+			    regname(cpu->machine, rs));
 			if (running && symbol != NULL)
 				debug("\t<%s>", symbol);
 			break;
@@ -840,7 +872,10 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			rd = (instr[1] >> 3) & 31;
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    cpu->cd.mips.gpr[rs], &offset);
-			debug("jalr\t%s", regname(cpu->machine, rd));
+			/*  .hb = hazard barrier hint on MIPS32/64 rev 2  */
+			debug("jalr%s\t%s",
+			    (instr[1] & 0x04) ? ".hb" : "",
+			    regname(cpu->machine, rd));
 			debug(",%s", regname(cpu->machine, rs));
 			if (running && symbol != NULL)
 				debug("\t<%s>", symbol);
@@ -1077,13 +1112,13 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		}
 		if (hi6 == HI6_SQ_SPECIAL3 &&
 		    cpu->cd.mips.cpu_type.rev != MIPS_R5900) {
-			int msbd, lsb;
+			int msbd, lsb, sub10;
 			special6 = instr[0] & 0x3f;
-			debug("%s", special3_names[special6]);
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = msbd = (instr[1] >> 3) & 31;
 			lsb = ((instr[1] & 7) << 2) | (instr[0] >> 6);
+			sub10 = (rs << 5) | lsb;
 
 			switch (special6) {
 
@@ -1091,6 +1126,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			case SPECIAL3_DEXT:
 			case SPECIAL3_DEXTM:
 			case SPECIAL3_DEXTU:
+				debug("%s", special3_names[special6]);
 				if (special6 == SPECIAL3_DEXTM)
 					msbd += 32;
 				if (special6 == SPECIAL3_DEXTU)
@@ -1100,12 +1136,64 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 				debug(",%i,%i", lsb, msbd + 1);
 				break;
 
+			case SPECIAL3_INS:
+			case SPECIAL3_DINS:
+			case SPECIAL3_DINSM:
+			case SPECIAL3_DINSU:
+				debug("%s", special3_names[special6]);
+				if (special6 == SPECIAL3_DINSM)
+					msbd += 32;
+				if (special6 == SPECIAL3_DINSU) {
+					lsb += 32;
+					msbd += 32;
+				}
+				msbd -= lsb;
+				debug("\t%s", regname(cpu->machine, rt));
+				debug(",%s", regname(cpu->machine, rs));
+				debug(",%i,%i", lsb, msbd + 1);
+				break;
+
+			case SPECIAL3_BSHFL:
+				switch (sub10) {
+				case BSHFL_WSBH:
+				case BSHFL_SEB:
+				case BSHFL_SEH:
+					switch (sub10) {
+					case BSHFL_WSBH: debug("wsbh"); break;
+					case BSHFL_SEB:  debug("seb"); break;
+					case BSHFL_SEH:  debug("seh"); break;
+					}
+					debug("\t%s", regname(cpu->machine,rd));
+					debug(",%s", regname(cpu->machine,rt));
+					break;
+				default:debug("%s", special3_names[special6]);
+					debug("\t(UNIMPLEMENTED)");
+				}
+				break;
+
+			case SPECIAL3_DBSHFL:
+				switch (sub10) {
+				case BSHFL_DSBH:
+				case BSHFL_DSHD:
+					switch (sub10) {
+					case BSHFL_DSBH: debug("dsbh"); break;
+					case BSHFL_DSHD: debug("dshd"); break;
+					}
+					debug("\t%s", regname(cpu->machine,rd));
+					debug(",%s", regname(cpu->machine,rt));
+					break;
+				default:debug("%s", special3_names[special6]);
+					debug("\t(UNIMPLEMENTED)");
+				}
+				break;
+
 			case SPECIAL3_RDHWR:
+				debug("%s", special3_names[special6]);
 				debug("\t%s", regname(cpu->machine, rt));
 				debug(",hwr%i", rd);
 				break;
 
-			default:
+			default:debug("%s", special3_names[special6]);
 				debug("\t(UNIMPLEMENTED)");
 			}
 			break;
@@ -1390,7 +1478,13 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
+		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+		imm = (instr[1] << 8) + instr[0];
+		if (imm >= 32768)               
+			imm -= 65536;
+
 		switch (regimm5) {
+
 		case REGIMM_BLTZ:
 		case REGIMM_BGEZ:
 		case REGIMM_BLTZL:
@@ -1399,11 +1493,6 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		case REGIMM_BLTZALL:
 		case REGIMM_BGEZAL:
 		case REGIMM_BGEZALL:
-			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			imm = (instr[1] << 8) + instr[0];
-			if (imm >= 32768)               
-				imm -= 65536;
-
 			debug("%s\t%s,", regimm_names[regimm5],
 			    regname(cpu->machine, rs));
 
@@ -1414,6 +1503,12 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			else
 				debug("0x%016"PRIx64, (uint64_t) addr);
 			break;
+
+		case REGIMM_SYNCI:
+			debug("%s\t%i(%s)", regimm_names[regimm5],
+			    imm, regname(cpu->machine, rs));
+			break;
+
 		default:
 			debug("unimplemented regimm5 = 0x%02x", regimm5);
 		}

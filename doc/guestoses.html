@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.180 2006-09-29 10:16:26 debug Exp $
+$Id: guestoses.html,v 1.181 2006-10-01 00:26:35 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -54,7 +54,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdcobaltinstall">NetBSD/cobalt 3.1</a>
   <li><a href="#netbsdevbmipsinstall">NetBSD/evbmips 3.1</a>
   <li><a href="#netbsdalgorinstall">NetBSD/algor 3.1</a>
-  <li><a href="#netbsdsgimips">NetBSD/sgimips 3.0.1</a>
+  <li><a href="#netbsdsgimips">NetBSD/sgimips 3.1</a>
   <li><a href="#netbsdcatsinstall">NetBSD/cats 3.1</a>
   <li><a href="#netbsdevbarminstall">NetBSD/evbarm 2.1</a>
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.1</a>
@@ -624,7 +624,7 @@ NetBSD can still run in the emulator, as long as it doesn't use SCSI.
 
 <p>For a simple test with the ramdisk/install kernel, try 
 dowloading<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>and run&nbsp;&nbsp;<b><tt>gxemul -x -e o2 netbsd-INSTALL32_IP3x.gz</tt></b>.
 
@@ -636,7 +636,7 @@ time consuming, but necessary:
 <ol>
   <li>First of all, the "<tt>nfs server</tt>" machine must be set up.
 	This needs to have a 750 MB <tt>/tftpboot</tt> partition.
-	<a href="#netbsdpmaxinstall">Install NetBSD/pmax 3.0.1 from CDROM</a>.
+	<a href="#netbsdpmaxinstall">Install NetBSD/pmax 3.1 from CDROM</a>.
 	(Don't forget to add the extra partition!)
   <p>
   <li>Configure the nfs server machine to act as an nfs server.
@@ -644,7 +644,7 @@ time consuming, but necessary:
 	<b>gxemul -e 3max -d nbsd_pmax.img</b>
 </pre>and enter the following commands as <tt>root</tt>
 	inside the emulator:
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <b>echo hostname=server &gt;&gt; /etc/rc.conf
 echo ifconfig_le0=\"inet 10.0.0.2\" &gt;&gt; /etc/rc.conf
 echo nameserver 10.0.0.254 &gt;&gt; /etc/resolv.conf
@@ -669,27 +669,31 @@ client:\
 echo 10.0.0.1 client &gt; /etc/hosts
 reboot</b>
 </pre></td></tr></table>
-  <li>Start the DECstation emulation again, and download the
-	NetBSD/sgimips distribution sets:<br>(NOTE: This
-	takes quite some time, even if you have a fast network connection.)
-<table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
-<b>cd /tftpboot; ftp -i ftp.se.netbsd.org</b>
-(log in as anonymous...)
-<b>cd /pub/NetBSD/NetBSD-3.0.1/sgimips/binary/sets
-mget base.tgz comp.tgz etc.tgz games.tgz man.tgz misc.tgz text.tgz
-quit
-sh
-for a in *.tgz; do echo $a; tar zxfp $a; rm -f $a; done
-echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
-echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
-dd if=/dev/zero of=swap bs=1024 count=32768
-halt</b>
-</pre></td></tr></table>
-  <li>Download the NetBSD/sgimips GENERIC and INSTALL kernels:<pre>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
-	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.0.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+  <p>
+  <li>Download the NetBSD/sgimips CD-ROM iso image, and the
+	GENERIC and INSTALL kernels:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/sgimipscd-3.1.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/3.1/sgimipscd-3.1.iso</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/sgimips/binary/kernel/netbsd-GENERIC32_IP3x.gz</a>
+	<a href="ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-3.1/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
 
 </pre>
+  <li>Start the DECstation emulation again:<pre>
+	<b>gxemul -e 3max -d nbsd_pmax.img -d sgimipscd-3.1.iso</b>
+
+</pre>and extract the files from the sgimips CD-ROM image to the
+	DECstation disk image:
+<p><table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
+<b>cd /tftpboot; mount /dev/cd0a /mnt
+for a in /mnt/sgimips/binary/sets/[bcegmt]*; do echo $a; tar zxfp $a; done
+echo 10.0.0.2:/tftpboot / nfs rw 0 0 &gt; /tftpboot/etc/fstab
+echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
+echo 10.0.0.254 &gt;&gt; /tftpboot/etc/mygate
+echo nameserver 10.0.0.254 &gt;&gt; /tftpboot/etc/resolv.conf
+echo rc_configured=YES &gt;&gt; /tftpboot/etc/rc.conf
+dd if=/dev/zero of=swap bs=1024 count=65536
+cd /; umount /mnt; halt</b>
+</pre></td></tr></table>
+  <p>
   <li>Create a configuration file called <tt>config_client</tt>:
 <table border="0"><tr><td><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td><pre>
 <font color="#2020cf">!  Configuration file for running NetBSD/sgimips diskless with

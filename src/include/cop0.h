@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.11 2006-05-10 20:04:59 debug Exp $
+ *  $Id: cop0.h,v 1.12 2006-10-02 08:03:16 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
@@ -95,6 +95,7 @@
 #define	COP0_ENTRYHI		10
 /*  R4000 ENTRYHI:  */
 #define	   ENTRYHI_R_MASK	    0xc000000000000000ULL
+#define	   ENTRYHI_R_XKPHYS	    0x8000000000000000ULL
 #define	   ENTRYHI_R_SHIFT	    62
 #define	   ENTRYHI_VPN2_MASK_R10K   0x00000fffffffe000ULL
 #define	   ENTRYHI_VPN2_MASK	    0x000000ffffffe000ULL

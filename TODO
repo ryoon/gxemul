@@ -1,4 +1,4 @@
-$Id: TODO,v 1.384 2006-10-01 00:26:35 debug Exp $
+$Id: TODO,v 1.385 2006-10-02 08:03:16 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -91,6 +91,7 @@ Documentation:
 		NetBSD/hpcmips 3.1_RC3
 		NetBSD/cobalt 3.1_RC3
 		NetBSD/algor 3.1_RC3
+		NetBSD/sgimips 3.1_RC3
 	x)  Note about sandboxing/security:
 		Not all emulated instructions fail in the way they would
 		do on real hardware (e.g. a userspace program writing to
@@ -158,7 +159,7 @@ SMP:
 	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 
 MIPS:
-	+)  Some more work on opcodes.
+	o)  Some more work on opcodes.
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
 			o)  DROTR32 and similar MIPS64 rev 2 instructions,

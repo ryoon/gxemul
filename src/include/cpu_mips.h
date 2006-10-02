@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.47 2006-08-23 15:45:30 debug Exp $
+ *  $Id: cpu_mips.h,v 1.48 2006-10-02 12:59:32 debug Exp $
  */
 
 #include "misc.h"
@@ -94,6 +94,8 @@ struct mips_tlb {
 #define	   MIPS_FCSR_FCC0_SHIFT		   23
 #define	   MIPS_FCSR_FCC1_SHIFT		   25
 
+#define	N_VADDR_TO_TLB_INDEX_ENTRIES	(1 << 20)
+
 struct mips_coproc {
 	int		coproc_nr;
 	uint64_t	reg[N_MIPS_COPROC_REGS];
@@ -101,6 +103,7 @@ struct mips_coproc {
 	/*  Only for COP0:  */
 	struct mips_tlb	*tlbs;
 	int		nr_of_tlbs;
+	uint8_t		*vaddr_page_to_tlb_index;
 
 	/*  Only for COP1:  floating point control registers  */
 	/*  (Maybe also for COP0?)  */

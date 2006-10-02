@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1377 2006-10-02 09:26:53 debug Exp $
+$Id: HISTORY,v 1.1378 2006-10-02 12:59:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3067,6 +3067,8 @@ Changelog for GXemul:
 		files from an iso image, instead of downloading them via ftp.
 20061002	More-than-31-bit userland addresses in memory_mips_v2p.c were
 		not actually working; applying a fix from Carl van Schaik to
-		enable them to work + making some other minor updates (adding
-		kuseg support).
+		enable them to work + making some other updates (adding kuseg
+		support).
 		Fixing hpcmips (vr41xx) timer initialization.
+		Experimenting with O(n)->O(1) reduction in the MIPS TLB lookup
+		loop. Seems to work both for R3000 and non-R3000.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.58 2006-09-30 03:19:18 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.59 2006-10-02 12:59:32 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -386,6 +386,8 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 	if (coproc_nr == 0) {
 		c->nr_of_tlbs = cpu->cd.mips.cpu_type.nr_of_tlb_entries;
 		c->tlbs = zeroed_alloc(c->nr_of_tlbs * sizeof(struct mips_tlb));
+		c->vaddr_page_to_tlb_index = zeroed_alloc(
+		    N_VADDR_TO_TLB_INDEX_ENTRIES);
 
 		/*
 		 *  Start with nothing in the status register. This makes sure
@@ -1680,6 +1682,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		    (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) ))
 			cpu->invalidate_translation_caches(cpu, oldvaddr,
 			    INVALIDATE_VADDR);
+
+		/*  Remove any old vaddr_page to tlb hint:  */
+		cp->vaddr_page_to_tlb_index[((uint32_t)oldvaddr) >> 12] = 0;
+
 		break;
 
 	default:if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
@@ -1701,10 +1707,6 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				oldvaddr |= 0x3fffff0000000000ULL;
 		}
 
-#if 0
-		/*  TODO: FIX THIS! It shouldn't be needed!  */
-		cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-#else
 		/*
 		 *  TODO: non-4KB page sizes!
 		 */
@@ -1714,7 +1716,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		if (cp->tlbs[index].lo1 & ENTRYLO_V)
 			cpu->invalidate_translation_caches(cpu, oldvaddr|0x1000,
 			    INVALIDATE_VADDR);
-#endif
+
+		/*  Remove any old vaddr_page to tlb hint:  */
+		cp->vaddr_page_to_tlb_index[((uint32_t)oldvaddr) >> 12] = 0;
+		cp->vaddr_page_to_tlb_index[((uint32_t)oldvaddr|0x1000)>>12]=0;
 	}
 
 #if 0
@@ -1780,6 +1785,9 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			cpu->invalidate_code_translation(cpu, paddr,
 			    INVALIDATE_PADDR);
 		}
+
+		/*  Set new vaddr_page to tlb index hint:  */
+		cp->vaddr_page_to_tlb_index[((uint32_t)vaddr) >> 12] = index+1;
 
 		if (cp->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) {
 			fatal("Wow! Interesting case; tlbw* while caches"
@@ -1911,6 +1919,14 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		if (memblock != NULL && cp->reg[COP0_ENTRYLO1] & ENTRYLO_V)
 			cpu->update_translation_table(cpu, vaddr1, memblock,
 			    wf1, paddr1);
+
+		/*  Set new vaddr_page to tlb index hint:  */
+		if (vaddr0 == (int64_t)(int32_t)vaddr0)
+			cp->vaddr_page_to_tlb_index[
+			    ((uint32_t)vaddr0) >> 12] = index + 1;
+		if (vaddr1 == (int64_t)(int32_t)vaddr1)
+			cp->vaddr_page_to_tlb_index[
+			    ((uint32_t)vaddr1) >> 12] = index + 1;
 	}
 }
 

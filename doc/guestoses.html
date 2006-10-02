@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.181 2006-10-01 00:26:35 debug Exp $
+$Id: guestoses.html,v 1.182 2006-10-02 09:26:36 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -308,8 +308,9 @@ image, using the following command:<pre>
 
 It is possible to install <a
 href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a> onto a disk
-image, on an an emulated MobilePro 770. (MobilePro 780, 800, and 880 might
-work too, but I don't test those for every release of the emulator.)
+image, on an an emulated MobilePro 770 or 800. (MobilePro 780 and 880 might
+work too, but I don't test those for every release of the emulator. They 
+have unaligned framebuffers, and run a bit slower.)
 
 <p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -335,8 +336,7 @@ NetBSD/hpcmips on an emulated MobilePro 770:
 </pre>
   <p>
   <li>Start the installation like this:<pre>
-	<b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img  \
-	  -d b:hpcmipscd-3.1.iso -j hpcmips/installation/netbsd.gz</b>
+	<b>gxemul -e mobilepro770 -X -d nbsd_hpcmips.img -d b:hpcmipscd-3.1.iso -j hpcmips/installation/netbsd.gz</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real

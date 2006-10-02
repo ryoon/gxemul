@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.226 2006-09-26 08:49:35 debug Exp $
+$Id: RELEASE,v 1.227 2006-10-02 09:26:36 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -22,16 +22,29 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 Changes between release 0.4.2 and 0.4.3 include, among other things:
 
-    o)	There is now a simple framework for letting emulated clocks, as
-	seen by guest operating systems, run at the same speed as the
-	host clock.
+    o)	There is now a simple framework for letting emulated clocks, as seen
+	by guest operating systems, run at the same speed as the host clock.
 
-	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS,
-	Malta (evbmips), Cobalt, and Algor machine modes have been modified
-	to use the new clock/timer framework.
+	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS, Malta
+	(evbmips), Cobalt, and Algor machine modes have been modified to use
+	the new clock/timer framework.
 
     o)	The wdc (standard IDE controller) had a bug which prevented disk
 	images larger than 2 GB to work correctly. This has been fixed.
+
+    o)	For MIPS emulation, some combinations of emulated processor + guest
+	operating system should now work better when idling (i.e. the host
+	should not run at 100% CPU):
+
+	  x)  For MIPS32/MIPS64 and RM5200, the 'wait' instruction should
+	      now work more or less as expected.
+
+	  x)  For VR41xx (e.g. MobilePro) emulation, the standby instruction
+	      should work like the 'wait' instruction.
+
+	  x)  For DECstation (R3000) emulation, there are "instruction
+	      combination" hacks for both NetBSD and Debian, which fakes the
+	      behaviour of the real 'wait' instruction.
 
     o)	The mouse cursor update routines in DECstation (LK201) emulation
 	previously used the fact that guest OSes set the _hardware_

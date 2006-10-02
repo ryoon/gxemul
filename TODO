@@ -1,6 +1,7 @@
-$Id: TODO,v 1.385 2006-10-02 08:03:16 debug Exp $
+$Id: TODO,v 1.386 2006-10-02 09:26:36 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
+
 
 Implementation:
 	x)  MUST:
@@ -38,10 +39,6 @@ Implementation:
 	x)  Common dyntrans_abort() function, which stops dyntrans execution,
 		and drops into the debugger (if running with -K).
 	x)  HPCmips:
-		x)  Wait before enabling the timer!
-		x)  New screenshots, using MobilePro 770?
-		x)  Figure out why Mobilepro800/880 with NetBSD/hpcmips
-		    latest version are unstable during bootup.
 		x)  Mouse/pad support! :)
 		x)  A NIC? (As a PCMCIA device?)
 	x)  Physical vs virtual breakpoints!

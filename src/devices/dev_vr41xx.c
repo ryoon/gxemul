@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.40 2006-09-01 15:19:49 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.41 2006-10-02 09:26:53 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -48,6 +48,7 @@
 #include "bcureg.h"
 #include "vripreg.h"
 #include "vrkiureg.h"
+#include "vr_rtcreg.h"
 
 
 #define	DEV_VR41XX_TICKSHIFT		14
@@ -519,6 +520,18 @@ DEVICE_ACCESS(vr41xx)
 		}
 		break;
 
+	case 0xd0:	/*  RTCL1_L_REG_W  */
+		if (writeflag == MEM_WRITE && idata != 0) {
+			int hz = RTCL1_L_HZ / idata;
+			debug("[ vr41xx: rtc interrupts at %i Hz ]\n", hz);
+			if (d->timer == NULL)
+				d->timer = timer_add(hz, timer_tick, d);
+			else
+				timer_update_frequency(d->timer, hz);
+		}
+		break;
+	case 0xd2:	/*  RTCL1_H_REG_W  */
+		break;
 
 	case 0x108:
 		if (writeflag == MEM_READ)
@@ -643,9 +656,6 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	    0x14000000, eg IBM WorkPad Z50.  */
 	dev_ram_init(machine, 0x15000000, 0x1000000, DEV_RAM_MIRROR,
 	    0x14000000);
-
-	/*  TODO: Don't fix this to 128 Hz!  */
-	timer_add(128, timer_tick, d);
 
 	return d;
 }

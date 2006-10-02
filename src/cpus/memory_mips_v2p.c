@@ -25,16 +25,32 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.11 2006-09-30 05:57:08 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.12 2006-10-02 09:26:05 debug Exp $
  */
 
 
 /*
  *  translate_v2p():
  *
- *  Don't call this function if userland_emul is non-NULL, or cpu is NULL.
+ *  Translate a virtual MIPS address to a physical address, by looking up the
+ *  address in the TLB. On failure, an exception is generated (except for the
+ *  case when FLAG_NOEXCEPTIONS is used).
  *
- *  TODO:  vpn2 is a bad name for R2K/R3K, as it is the actual framenumber.
+ *  Note: This function is long and hairy, it is included several times with
+ *        various defines set, to produce more or less optimized versions of
+ *        the function for different emulated CPU types.
+ *
+ *  V2P_MMU3K       Defined for R2000/R3000 emulation. If it is not defined,
+ *                  R4000+/MIPS32/MIPS64 is presumed.
+ *  V2P_MMU10K      This enables the use of 44 userspace bits, instead of 40.
+ *  V2P_MMU4100     VR41xx processors support 1 KB pages, so their page mask
+ *                  is slightly different. (The emulator only supports 4 KB
+ *                  pages, though.)
+ *  V2P_MMU8K       Not yet. (TODO.)
+ *
+ *
+ *  Note:  Unfortunately, the variable name vpn2 is poorly choosen for R2K/R3K,
+ *         since it actual contains the vpn.
  *
  *  Return values:
  *	0  Failure
@@ -55,16 +71,18 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	const int x_64 = 0;
 	const int n_tlbs = 64;
 	const int pmask = 0xfff;
+	uint64_t xuseg_top;		/*  Well, useg actually.  */
 #else
 #ifdef V2P_MMU10K
 	const uint64_t vpn2_mask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K;
+	uint64_t xuseg_top = ENTRYHI_VPN2_MASK_R10K | 0x1fffULL;
 #else
 #ifdef V2P_MMU4100
-/* This is ugly  */
 	const uint64_t vpn2_mask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | 0x1800;
 #else
 	const uint64_t vpn2_mask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
 #endif
+	uint64_t xuseg_top = ENTRYHI_VPN2_MASK | 0x1fffULL;
 #endif
 	int x_64;	/*  non-zero for 64-bit address space accesses  */
 	int pageshift, n_tlbs;
@@ -89,11 +107,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	status = cp0->reg[COP0_STATUS];
 
 	/*
-	 *  R4000 Address Translation:
+	 *  MIPS R4000+ and MIPS64 Address Translation:
 	 *
-	 *  An address may be in one of the kernel segments, that
-	 *  are directly mapped, or the address can go through the
-	 *  TLBs to be turned into a physical address.
+	 *  An address may be in one of the kernel segments, that are directly
+	 *  mapped to physical addresses, or the address needs to be looked up
+	 *  in the TLB entries.
 	 *
 	 *  KSU: EXL: ERL: X:  Name:   Range:
 	 *  ---- ---- ---- --  -----   ------
@@ -147,28 +165,38 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	vaddr_asid = cp0->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK;
 	vaddr_vpn2 = vaddr & R2K3K_ENTRYHI_VPN_MASK;
 #else
-	/*
-	 *  R4000 and others:
-	 *
-	 *  kx,sx,ux = 0 for 32-bit addressing,
-	 *  1 for 64-bit addressing. 
-	 */
-	n_tlbs = cpu->cd.mips.cpu_type.nr_of_tlb_entries;
-
+	/*  kx,sx,ux = 0 for 32-bit addressing, 1 for 64-bit addressing.  */
 	ksu = (status & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT;
 	if (status & (STATUS_EXL | STATUS_ERL))
 		ksu = KSU_KERNEL;
 
-	/*  Assume KSU_USER.  */
-	x_64 = status & STATUS_UX;
-
-	if (ksu == KSU_KERNEL)
+	switch (ksu) {
+	case KSU_USER:
+		x_64 = status & STATUS_UX;
+		break;
+	case KSU_KERNEL:
 		x_64 = status & STATUS_KX;
-	else if (ksu == KSU_SUPERVISOR)
+		break;
+	case KSU_SUPERVISOR:
 		x_64 = status & STATUS_SX;
+		/*  FALLTHROUGH, since supervisor address spaces are not
+		    really implemented yet.  */
+	default:fatal("memory_mips_v2p.c: ksu=%i not yet implemented yet\n",
+		    ksu);
+		exit(1);
+	}
 
-	/*  This suppresses a compiler warning:  */
+	n_tlbs = cpu->cd.mips.cpu_type.nr_of_tlb_entries;
+
+	/*  Having this here suppresses a compiler warning:  */
 	pageshift = 12;
+
+	/*  KUSEG: 0x00000000 - 0x7fffffff if ERL = 1 and KSU = kernel:  */
+	if (ksu == KSU_KERNEL && (status & STATUS_ERL) &&
+	    vaddr <= 0x7fffffff) {
+		*return_paddr = vaddr & 0x7fffffff;
+		return 2;
+	}
 
 	/*
 	 *  XKPHYS: 0x8000000000000000 - 0xbfffffffffffffff
@@ -181,8 +209,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *        0x90000000a0000000   = something on IP30?
 	 *        0x92.... and 0x96... = NUMA on IP27
 	 */
-	if (ksu == KSU_KERNEL &&
-	    (vaddr & ENTRYHI_R_MASK) == 0x8000000000000000) {
+	if (ksu == KSU_KERNEL && (vaddr & ENTRYHI_R_MASK) == ENTRYHI_R_XKPHYS) {
 		*return_paddr = vaddr & (((uint64_t)1 << 44) - 1);
 		return 2;
 	}
@@ -192,17 +219,16 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	/*  vpn2 depends on pagemask, which is not fixed on R4000  */
 #endif
 
+	/*  If 32-bit, truncate address and sign extend:  */
+	if (x_64 == 0) {
+		vaddr = (int32_t) vaddr;
+		xuseg_top = 0x7fffffff;
+		/*  (Actually useg for R2000/R3000)  */
+	}
 
-	if (vaddr <= 0x7fffffff)
+	if (vaddr <= xuseg_top) {
 		use_tlb = 1;
-	else {
-#if 1
-/*  TODO: This should be removed, but it seems that other
-bugs are triggered.  */
-		/*  Sign-extend vaddr, if necessary:  */
-		if ((vaddr >> 32) == 0 && vaddr & (uint32_t)0x80000000ULL)
-			vaddr |= 0xffffffff00000000ULL;
-#endif
+	} else {
 		if (ksu == KSU_KERNEL) {
 			/*  kseg0, kseg1:  */
 			if (vaddr >= (uint64_t)0xffffffff80000000ULL &&
@@ -211,12 +237,11 @@ bugs are triggered.  */
 				return 2;
 			}
 
-			/*  TODO: supervisor stuff  */
-
 			/*  other segments:  */
 			use_tlb = 1;
-		} else
+		} else {
 			use_tlb = 0;
+		}
 	}
 
 	if (use_tlb) {

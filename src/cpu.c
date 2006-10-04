@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.359 2006-09-23 04:10:23 debug Exp $
+ *  $Id: cpu.c,v 1.360 2006-10-04 11:56:40 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -149,7 +149,7 @@ void cpu_destroy(struct cpu *cpu)
 
 	/*  TODO: This assumes that zeroed_alloc() actually succeeded
 	    with using mmap(), and not malloc()!  */
-	munmap(cpu, sizeof(struct cpu));
+	munmap((void *)cpu, sizeof(struct cpu));
 }
 
 

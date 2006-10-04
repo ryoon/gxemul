@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.688 2006-09-19 10:50:07 debug Exp $
+ *  $Id: machine.c,v 1.689 2006-10-04 11:56:40 debug Exp $
  */
 
 #include <stdio.h>
@@ -626,8 +626,11 @@ int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 {
 	unsigned char data[4];
+
+	/*  TODO: REMOVE THIS once everything is more stable!  */
 	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
+
 	data[0] = (data32 >> 24) & 255;
 	data[1] = (data32 >> 16) & 255;
 	data[2] = (data32 >> 8) & 255;
@@ -651,8 +654,11 @@ int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
 {
 	unsigned char data[2];
+
+	/*  TODO: REMOVE THIS once everything is more stable!  */
 	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
+
 	data[0] = (data16 >> 8) & 255;
 	data[1] = (data16) & 255;
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
@@ -672,6 +678,7 @@ void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
 	size_t psize = 1024;	/*  1024 256 64 16 4 1  */
 
+	/*  TODO: REMOVE THIS once everything is more stable!  */
 	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
 
@@ -751,8 +758,10 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[4];
 
+	/*  TODO: REMOVE THIS once everything is more stable!  */
 	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
+
 	cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
 
@@ -774,8 +783,10 @@ uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[2];
 
+	/*  TODO: REMOVE THIS once everything is more stable!  */
 	if (cpu->machine->arch == ARCH_MIPS && (addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
+
 	cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
 

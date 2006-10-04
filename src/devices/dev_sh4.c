@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.1 2006-09-23 03:51:06 debug Exp $
+ *  $Id: dev_sh4.c,v 1.2 2006-10-04 11:56:21 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -49,14 +49,13 @@
 /*  #define debug fatal  */
 
 struct sh4_data {
-	uint32_t	mmucr;		/*  MMU Control Register  */
-	uint32_t	ccr;		/*  Cache Control Register  */
+	int		dummy;
 };
 
 
 DEVICE_ACCESS(sh4)
 {
-	struct sh4_data *d = (struct sh4_data *) extra;
+	/*  struct sh4_data *d = (struct sh4_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
 
 	if (writeflag == MEM_WRITE)
@@ -66,22 +65,59 @@ DEVICE_ACCESS(sh4)
 
 	switch (relative_addr) {
 
+	case SH4_PTEH:
+		if (writeflag == MEM_READ) {
+			odata = cpu->cd.sh.pteh;
+		} else {
+			cpu->cd.sh.pteh = idata;
+		}
+		break;
+
+	case SH4_PTEL:
+		if (writeflag == MEM_READ) {
+			odata = cpu->cd.sh.ptel;
+		} else {
+			cpu->cd.sh.ptel = idata;
+		}
+		break;
+
+	case SH4_TTB:
+		if (writeflag == MEM_READ) {
+			odata = cpu->cd.sh.ttb;
+		} else {
+			cpu->cd.sh.ttb = idata;
+		}
+		break;
+
+	case SH4_TEA:
+		if (writeflag == MEM_READ) {
+			odata = cpu->cd.sh.tea;
+		} else {
+			cpu->cd.sh.tea = idata;
+		}
+		break;
+
 	case SH4_MMUCR:
 		if (writeflag == MEM_READ) {
-			odata = d->mmucr;
+			odata = cpu->cd.sh.mmucr;
 		} else {
-			d->mmucr = idata;
-			fatal("[ sh4: mmucr = 0x%08"PRIx32" ]\n", d->mmucr);
-			/*  TODO: Implement correct MMU functionality.  */
+			if (idata & SH4_MMUCR_TI) {
+				/*  TLB invalidate.  */
+
+				/*  Should always read back as 0.  */
+				idata &= ~SH4_MMUCR_TI;
+			}
+
+			cpu->cd.sh.mmucr = idata;
 		}
 		break;
 
 	case SH4_CCR:
 		if (writeflag == MEM_READ) {
-			odata = d->ccr;
+			odata = cpu->cd.sh.ccr;
 		} else {
-			d->ccr = idata;
-			debug("[ sh4: ccr = 0x%08"PRIx32" ]\n", d->ccr);
+			cpu->cd.sh.ccr = idata;
+			debug("[ sh4: ccr = 0x%08"PRIx32" ]\n", cpu->cd.sh.ccr);
 		}
 		break;
 

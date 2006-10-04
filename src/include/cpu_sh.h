@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.24 2006-09-19 10:50:08 debug Exp $
+ *  $Id: cpu_sh.h,v 1.25 2006-10-04 11:56:21 debug Exp $
  */
 
 #include "misc.h"
@@ -98,6 +98,21 @@ struct sh_cpu {
 	uint32_t	vbr;		/*  Vector Base Register  */
 	uint32_t	sgr;		/*  Saved General Register  */
 	uint32_t	dbr;		/*  Debug Base Register  */
+
+	/*  Cache control:  */
+	uint32_t	ccr;		/*  Cache Control Register  */
+
+	/*  MMU/TLB registers:  */
+	uint32_t	pteh;		/*  Page Table Entry High  */
+	uint32_t	ptel;		/*  Page Table Entry Low  */
+	uint32_t	ttb;		/*  Translation Table Base  */
+	uint32_t	tea;		/*  TLB Exception Address Register  */
+	uint32_t	mmucr;		/*  MMU Control Register  */
+
+	/*  Exception handling:  */
+	uint32_t	tra;		/*  TRAPA Exception Register  */
+	uint32_t	expevt;		/*  Exception Event Register  */
+	uint32_t	intevt;		/*  Interrupt Event Register  */
 
 
 	/*

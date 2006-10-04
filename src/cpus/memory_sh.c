@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.5 2006-09-19 10:50:08 debug Exp $
+ *  $Id: memory_sh.c,v 1.6 2006-10-04 11:56:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -37,6 +37,8 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "sh4_mmu.h"
+
 
 /*
  *  sh_translate_v2p():
@@ -46,11 +48,21 @@
 int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_paddr, int flags)
 {
+	int user = cpu->cd.sh.sr & SH_SR_MD? 0 : 1;
+
 	vaddr = (uint32_t)vaddr;
 
+	/*  U0/P0: Userspace addresses.  */
 	if (!(vaddr & 0x80000000)) {
 		if (flags & FLAG_NOEXCEPTIONS) {
 			*return_paddr = 0;
+			return 2;
+		}
+
+		/*  Address translation turned off?  */
+		if (!(cpu->cd.sh.mmucr & SH4_MMUCR_AT)) {
+			/*  Then return raw physical address:  */
+			*return_paddr = vaddr & 0x1fffffff;
 			return 2;
 		}
 
@@ -58,27 +70,38 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 		exit(1);
 	}
 
-	/*  Direct-mapped physical memory.  */
+	/*  Store queue region:  */
+	if (vaddr >= 0xe0000000 && vaddr < 0xe4000000) {
+		fatal("Store queue region: TODO! (vaddr=0x%08"PRIx32"\n",
+		    (uint32_t) vaddr);
+		/*  Note/TODO: Take SH4_MMUCR_SQMD into account.  */
+		exit(1);
+	}
+
+	if (user) {
+		fatal("Userspace tried to access non-user space memory."
+		    " TODO: cause exception! (vaddr=0x%08"PRIx32"\n",
+		    (uint32_t) vaddr);
+		exit(1);
+	}
+
+	/*  P1,P2: Direct-mapped physical memory.  */
 	if (vaddr >= 0x80000000 && vaddr < 0xc0000000) {
-		if (!(cpu->cd.sh.sr & SH_SR_MD)) {
-			if (flags & FLAG_NOEXCEPTIONS) {
-				*return_paddr = 0;
-				return 2;
-			}
-
-			fatal("TODO: Userspace tried to access kernel"
-			    " memory?\n");
-			exit(1);
-		}
-
 		*return_paddr = vaddr & 0x1fffffff;
 		return 2;
 	}
 
-	/*  Kernel virtual memory.  */
+	/*  P3: Kernel virtual memory.  */
 	if (vaddr >= 0xc0000000 && vaddr < 0xe0000000) {
 		if (flags & FLAG_NOEXCEPTIONS) {
 			*return_paddr = 0;
+			return 2;
+		}
+
+		/*  Address translation turned off?  */
+		if (!(cpu->cd.sh.mmucr & SH4_MMUCR_AT)) {
+			/*  Then return raw physical address:  */
+			*return_paddr = vaddr & 0x1fffffff;
 			return 2;
 		}
 
@@ -86,25 +109,14 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,
 		exit(1);
 	}
 
-	/*  Special registers mapped at 0xf0000000 .. 0xffffffff:  */
+	/*  P4: Special registers mapped at 0xf0000000 .. 0xffffffff:  */
 	if ((vaddr & 0xf0000000) == 0xf0000000) {
-		if (!(cpu->cd.sh.sr & SH_SR_MD)) {
-			if (flags & FLAG_NOEXCEPTIONS) {
-				*return_paddr = 0;
-				return 2;
-			}
-
-			fatal("TODO: Userspace tried to access special"
-			    " registers?\n");
-			exit(1);
-		}
-
 		*return_paddr = vaddr;
 		return 2;
 	}
 
 	/*  TODO  */
-	fatal("Unknown vaddr 0x%08"PRIx32"\n", (uint32_t)vaddr);
+	fatal("Unimplemented SH vaddr 0x%08"PRIx32"\n", (uint32_t)vaddr);
 	exit(1);
 }
 

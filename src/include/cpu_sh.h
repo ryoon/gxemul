@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.26 2006-10-07 00:36:29 debug Exp $
+ *  $Id: cpu_sh.h,v 1.27 2006-10-07 04:50:26 debug Exp $
  */
 
 #include "misc.h"
@@ -68,10 +68,9 @@ DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 #define	SH_MAX_VPH_TLB_ENTRIES		128
 
 
-/*  For SH5:  #define	SH_N_GPRS		64  */
-/*  For pre-SH5:  */
 #define	SH_N_GPRS		16
 #define	SH_N_GPRS_BANKED	8
+#define	SH_N_FPRS		16
 
 #define	SH_N_UTLB_ENTRIES	64
 
@@ -84,9 +83,11 @@ struct sh_cpu {
 
 	/*  General Purpose Registers:  */
 	uint32_t	r[SH_N_GPRS];
-
-	/*  Saved Banked registers (during mode switch):  */
 	uint32_t	r_bank[SH_N_GPRS_BANKED];
+
+	/*  Floating-Point Registers:  */
+	uint32_t	fr[SH_N_FPRS];
+	uint32_t	xf[SH_N_FPRS];	/*  "Other bank."  */
 
 	uint32_t	mach;		/*  Multiply-Accumulate High  */
 	uint32_t	macl;		/*  Multiply-Accumulate Low  */
@@ -141,6 +142,31 @@ struct sh_cpu {
 #define	SH_SR_BL		0x10000000	/*  Exception/Interrupt Block */
 #define	SH_SR_RB		0x20000000	/*  Register Bank 0/1  */
 #define	SH_SR_MD		0x40000000	/*  Privileged Mode  */
+
+/*  Floating-point status/control register bits:  */
+#define	SH_FPSCR_RM_MASK	0x00000003	/*  Rounding Mode  */
+#define	   SH_FPSCR_RM_NEAREST	       0x0	/*  Round to nearest  */
+#define	   SH_FPSCR_RM_ZERO	       0x1	/*  Round to zero  */
+#define	SH_FPSCR_INEXACT	0x00000004	/*  Inexact exception  */
+#define	SH_FPSCR_UNDERFLOW	0x00000008	/*  Underflow exception  */
+#define	SH_FPSCR_OVERFLOW	0x00000010	/*  Overflow exception  */
+#define	SH_FPSCR_DIV_BY_ZERO	0x00000020	/*  Div by zero exception  */
+#define	SH_FPSCR_INVALID	0x00000040	/*  Invalid exception  */
+#define	SH_FPSCR_EN_INEXACT	0x00000080	/*  Inexact enable  */
+#define	SH_FPSCR_EN_UNDERFLOW	0x00000100	/*  Underflow enable  */
+#define	SH_FPSCR_EN_OVERFLOW	0x00000200	/*  Overflow enable  */
+#define	SH_FPSCR_EN_DIV_BY_ZERO	0x00000400	/*  Div by zero enable  */
+#define	SH_FPSCR_EN_INVALID	0x00000800	/*  Invalid enable  */
+#define	SH_FPSCR_CAUSE_INEXACT	0x00001000	/*  Cause Inexact  */
+#define	SH_FPSCR_CAUSE_UNDERFLOW 0x00002000	/*  Cause Underflow  */
+#define	SH_FPSCR_CAUSE_OVERFLOW	0x00004000	/*  Cause Overflow  */
+#define	SH_FPSCR_CAUSE_DIVBY0	0x00008000	/*  Cause Div by 0  */
+#define	SH_FPSCR_CAUSE_INVALID	0x00010000	/*  Cause Invalid  */
+#define	SH_FPSCR_CAUSE_ERROR	0x00020000	/*  Cause Error  */
+#define	SH_FPSCR_DN_ZERO	0x00040000	/*  Denormalization Mode  */
+#define	SH_FPSCR_PR		0x00080000	/*  Double-Precision Mode  */
+#define	SH_FPSCR_SZ		0x00100000	/*  Double-Precision Size  */
+#define	SH_FPSCR_FR		0x00200000	/*  Register Bank Select  */
 
 
 /*  cpu_sh.c:  */

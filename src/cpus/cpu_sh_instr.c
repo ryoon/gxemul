@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.18 2006-10-07 02:24:54 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.19 2006-10-07 04:50:26 debug Exp $
  *
  *  SH instructions.
  *
@@ -1339,6 +1339,42 @@ X(ldc_rm_sr)
 
 
 /*
+ *  lds_rm_fpul:   Copy Rm into FPUL.
+ *  lds_rm_fpscr:  Copy Rm into FPSCR.
+ *
+ *  arg[1] = ptr to rm
+ */
+X(lds_rm_fpul)
+{
+	if (cpu->cd.sh.sr & SH_SR_FD) {
+		/*  FPU disabled: Cause exception.  */
+		SYNCH_PC;
+		if (cpu->delay_slot)
+			sh_exception(cpu, EXPEVT_FPU_SLOT_DISABLE, 0);
+		else
+			sh_exception(cpu, EXPEVT_FPU_DISABLE, 0);
+		return;
+	}
+
+	cpu->cd.sh.fpul = reg(ic->arg[1]);
+}
+X(lds_rm_fpscr)
+{
+	if (cpu->cd.sh.sr & SH_SR_FD) {
+		/*  FPU disabled: Cause exception.  */
+		SYNCH_PC;
+		if (cpu->delay_slot)
+			sh_exception(cpu, EXPEVT_FPU_SLOT_DISABLE, 0);
+		else
+			sh_exception(cpu, EXPEVT_FPU_DISABLE, 0);
+		return;
+	}
+
+	sh_update_fpscr(cpu, reg(ic->arg[1]));
+}
+
+
+/*
  *  trapa:  Immediate trap.
  *
  *  arg[0] = imm << 2
@@ -1850,6 +1886,19 @@ X(to_be_translated)
 				ic->f = instr(copy_privileged_register);
 				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
 				ic->arg[1] = (size_t)&cpu->cd.sh.spc;
+				break;
+			case 0x5a:	/*  LDS Rm,FPUL  */
+				ic->f = instr(lds_rm_fpul);
+				/*  arg 1 = R8 = Rm  */
+				break;
+			case 0x62:	/*  STS.L FPSCR,@-Rn  */
+				ic->f = instr(mov_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.fpscr;
+				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+				break;
+			case 0x6a:	/*  LDS Rm,FPSCR  */
+				ic->f = instr(lds_rm_fpscr);
+				/*  arg 1 = R8 = Rm  */
 				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%02x\n",
 				    main_opcode, lo8);

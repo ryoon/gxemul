@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.31 2006-10-07 02:24:53 debug Exp $
+ *  $Id: cpu_sh.c,v 1.32 2006-10-07 04:50:26 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -283,9 +283,20 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	}
 
 	if (coprocs & 1) {
+		/*  Floating point:  */
+		debug("cpu%i: fpscr = 0x%08"PRIx32"  fpul = 0x%08"PRIx32
+		    "\n", x, cpu->cd.sh.fpscr, cpu->cd.sh.fpul);
+	}
+
+	if (coprocs & 2) {
 		/*  System registers, etc:  */
-		debug("cpu%i: vbr = 0x%08"PRIx32"\n", x,
-		    (uint32_t)cpu->cd.sh.vbr);
+		debug("cpu%i: vbr = 0x%08"PRIx32"  sgr = 0x%08"PRIx32"\n",
+		    x, cpu->cd.sh.vbr, cpu->cd.sh.sgr);
+		debug("cpu%i: spc = 0x%08"PRIx32"  ssr = 0x%08"PRIx32"\n",
+		    x, cpu->cd.sh.spc, cpu->cd.sh.ssr);
+		debug("cpu%i: expevt = 0x%"PRIx32"  intevt = 0x%"PRIx32
+		    "  tra = 0x%"PRIx32"\n", x, cpu->cd.sh.expevt,
+		    cpu->cd.sh.intevt, cpu->cd.sh.tra);
 
 		for (i=0; i<SH_N_GPRS_BANKED; i++) {
 			if ((i % 2) == 0)
@@ -365,6 +376,28 @@ void sh_update_sr(struct cpu *cpu, uint32_t new_sr)
 	}
 
 	cpu->cd.sh.sr = new_sr;
+}
+
+
+/*
+ *  sh_update_fpscr():
+ *
+ *  Writes a new value to the floating-point status/control register.
+ */
+void sh_update_fpscr(struct cpu *cpu, uint32_t new_fpscr)
+{
+	uint32_t old_fpscr = cpu->cd.sh.fpscr;
+
+	if ((new_fpscr & SH_FPSCR_FR) != (old_fpscr & SH_FPSCR_FR)) {
+		int i;
+		for (i=0; i<SH_N_FPRS; i++) {
+			uint32_t tmp = cpu->cd.sh.fr[i];
+			cpu->cd.sh.fr[i] = cpu->cd.sh.xf[i];
+			cpu->cd.sh.xf[i] = tmp;
+		}
+	}
+
+	cpu->cd.sh.fpscr = new_fpscr;
 }
 
 
@@ -679,6 +712,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("lds.l\t@r%i+,fpul\n", r8);
 		else if (lo8 == 0x5a)
 			debug("lds\tr%i,fpul\n", r8);
+		else if (lo8 == 0x62)
+			debug("sts.l\tfpscr,@-r%i\n", r8);
 		else if (lo8 == 0x6a)
 			debug("lds\tr%i,fpscr\n", r8);
 		else if ((lo8 & 0x8f) == 0x83)
@@ -782,6 +817,13 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		break;
 	case 0xe:
 		debug("mov\t#%i,r%i\n", (int8_t)lo8, r8);
+		break;
+	case 0xf:
+		if (lo8 == 0x2d)
+			debug("float\tfpul,%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else
+			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, lo8);
 		break;
 	default:debug("UNIMPLEMENTED hi4=0x%x\n", hi4);
 	}

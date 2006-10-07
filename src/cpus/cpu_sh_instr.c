@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.17 2006-10-07 01:14:21 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.18 2006-10-07 02:24:54 debug Exp $
  *
  *  SH instructions.
  *
@@ -42,6 +42,14 @@
 		cpu->pc &= ~((SH_IC_ENTRIES_PER_PAGE-1)			\
 		    << SH_INSTR_ALIGNMENT_SHIFT);			\
 		cpu->pc += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);	\
+	}
+
+#define	RES_INST_IF_NOT_MD	{					\
+		if (!(cpu->cd.sh.sr & SH_SR_MD)) {			\
+			SYNCH_PC;					\
+			sh_exception(cpu, EXPEVT_RES_INST, 0);		\
+			return;						\
+		}							\
 	}
 
 
@@ -149,9 +157,10 @@ X(add_imm_rn) { reg(ic->arg[1]) += (int32_t)ic->arg[0]; }
 
 
 /*
- *  mov_b_rm_predec_rn:  mov.b Rm,@-Rn
- *  mov_w_rm_predec_rn:  mov.w Rm,@-Rn
- *  mov_l_rm_predec_rn:  mov.l Rm,@-Rn (and also  sts.l PR,@-Rn)
+ *  mov_b_rm_predec_rn:  mov.b reg,@-Rn
+ *  mov_w_rm_predec_rn:  mov.w reg,@-Rn
+ *  mov_l_rm_predec_rn:  mov.l reg,@-Rn
+ *  stc_l_rm_predec_rn:  mov.l reg,@-Rn, with MD status bit check
  *
  *  arg[0] = ptr to rm  (or other register)
  *  arg[1] = ptr to rn
@@ -207,6 +216,34 @@ X(mov_l_rm_predec_rn)
 	uint32_t addr = reg(ic->arg[1]) - sizeof(uint32_t);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_store[addr >> 12];
 	uint32_t data = reg(ic->arg[0]);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE32_TO_HOST(data);
+	else
+		data = BE32_TO_HOST(data);
+
+	if (p != NULL) {
+		p[(addr & 0xfff) >> 2] = data;
+		reg(ic->arg[1]) = addr;
+	} else {
+		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+		/*  The store was ok:  */
+		reg(ic->arg[1]) = addr;
+	}
+}
+X(stc_l_rm_predec_rn)
+{
+	uint32_t addr = reg(ic->arg[1]) - sizeof(uint32_t);
+	uint32_t *p = (uint32_t *) cpu->cd.sh.host_store[addr >> 12];
+	uint32_t data = reg(ic->arg[0]);
+
+	RES_INST_IF_NOT_MD;
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		data = LE32_TO_HOST(data);
@@ -1241,10 +1278,7 @@ X(sts_macl_rn) { reg(ic->arg[1]) = cpu->cd.sh.macl; }
  */
 X(rte)
 {
-	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
-		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
-		exit(1);
-	}
+	RES_INST_IF_NOT_MD;
 
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
@@ -1267,10 +1301,7 @@ X(ldtlb)
 	int urc = (cpu->cd.sh.mmucr & SH4_MMUCR_URC_MASK)
 	    >> SH4_MMUCR_URC_SHIFT;
 
-	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
-		fatal("ldtlb TODO: Throw RESINST exception, if MD = 0.\n");
-		exit(1);
-	}
+	RES_INST_IF_NOT_MD;
 
 	/*  TODO: Don't invalidate everything!  */
 
@@ -1290,10 +1321,7 @@ X(ldtlb)
  */
 X(copy_privileged_register)
 {
-	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
-		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
-		exit(1);
-	}
+	RES_INST_IF_NOT_MD;
 	reg(ic->arg[1]) = reg(ic->arg[0]);
 }
 
@@ -1305,11 +1333,7 @@ X(copy_privileged_register)
  */
 X(ldc_rm_sr)
 {
-	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
-		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
-		exit(1);
-	}
-
+	RES_INST_IF_NOT_MD;
 	sh_update_sr(cpu, reg(ic->arg[1]));
 }
 
@@ -1706,7 +1730,7 @@ X(to_be_translated)
 			ic->f = instr(shld);
 		} else if ((lo8 & 0x8f) == 0x83) {
 			/*  STC.L Rm_BANK,@-Rn  */
-			ic->f = instr(mov_l_rm_predec_rn);
+			ic->f = instr(stc_l_rm_predec_rn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[
 			    (lo8 >> 4) & 7];	/* m */
 		} else if ((lo8 & 0x8f) == 0x8e) {
@@ -1724,6 +1748,10 @@ X(to_be_translated)
 			case 0x02:	/*  STS.L MACH,@-Rn  */
 				ic->f = instr(mov_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.mach;
+				break;
+			case 0x03:	/*  STC.L SR,@-Rn  */
+				ic->f = instr(stc_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.sr;
 				break;
 			case 0x06:	/*  LDS.L @Rm+,MACH  */
 				ic->f = instr(mov_l_arg1_postinc_to_arg0);
@@ -1815,7 +1843,7 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sh.ssr;
 				break;
 			case 0x43:	/*  STC.L SPC,@-Rn  */
-				ic->f = instr(mov_l_rm_predec_rn);
+				ic->f = instr(stc_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.spc;
 				break;
 			case 0x4e:	/*  LDC rm,SPC  */

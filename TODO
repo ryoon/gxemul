@@ -1,4 +1,4 @@
-$Id: TODO,v 1.389 2006-10-07 02:05:21 debug Exp $
+$Id: TODO,v 1.390 2006-10-07 03:20:19 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
@@ -18,7 +18,6 @@ Implementation:
 		x)  Test the 8253? Right now it doesn't seem to be used?
 		x)  NetWinder timeofday is incorrect!
 		x)  Cobalt TOD is incorrect!
-		x)  Malta TOD is correct with NetBSD, but wrong with Linux.
 		x)  Go through all other machines, one by one, and fix them.
 	x)  The TLB dump code could possibly be moved somewhere
 		else? No need to include the dummy functions

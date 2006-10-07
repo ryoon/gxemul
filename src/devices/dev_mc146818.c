@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.90 2006-09-23 03:52:10 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.91 2006-10-07 03:20:19 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -213,6 +213,12 @@ static void mc146818_update_time(struct mc_data *d)
 	 */
 	switch (d->access_style) {
 	case MC146818_ALGOR:
+		/*
+		 *  NetBSD/evbmips sources indicate that the Algor year base
+		 *  is 1920. This makes the time work with NetBSD in Malta
+		 *  emulation. However, for Linux, commenting out this line
+		 *  works better.  (TODO: Find a way to make both work?)
+		 */
 		d->reg[4 * MC_YEAR] += 80;
 		break;
 	case MC146818_ARC_NEC:

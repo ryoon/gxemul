@@ -1,100 +1,12 @@
-$Id: TODO,v 1.390 2006-10-07 03:20:19 debug Exp $
+$Id: TODO,v 1.391 2006-10-07 04:50:07 debug Exp $
 
-Hm. This file is in random order, and not all parts of it are up-to-date.
+This file is in random order, and not all parts of it are up-to-date.
 
-Implementation:
-	x)  Fix this? Triggered by NetBSD/sgimips? Hm:
-		to_be_translated(): TODO: unimplemented instruction:
-		000000000065102c: 00200800 (d)  rot_00  at,zr,0
-	x)  Settings / expression evaluator:
-		x)  Special handlers for Write!
-			+)  MIPS coproc regs
-			+)  Alpha/MIPS/SPARC zero registers
-			+)  x86 64/32/16-bit registers
-		x)  Value formatter for resulting output.
-		x)  Begin on the expression evaluator.
-	x)  Clock/timer framework:
-		x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
-		x)  Test the 8253? Right now it doesn't seem to be used?
-		x)  NetWinder timeofday is incorrect!
-		x)  Cobalt TOD is incorrect!
-		x)  Go through all other machines, one by one, and fix them.
-	x)  The TLB dump code could possibly be moved somewhere
-		else? No need to include the dummy functions
-		everywhere.
-	x)  Factor out other things from cpu_*.c? (Turn CPU name
-		detection into a macro?)
-	x)  Disassembly, nr of bytes read and given to the cpu specific
-		disassemlby routine? It's too ugly now.
-	x)  Common dyntrans_abort() function, which stops dyntrans execution,
-		and drops into the debugger (if running with -K).
-	x)  HPCmips:
-		x)  Mouse/pad support! :)
-		x)  A NIC? (As a PCMCIA device?)
-	x)  Physical vs virtual breakpoints!
-	x)  See netwinder_reset() in NetBSD; the current "an internal error
-	    occured" message after reboot/halt is too ugly.
-	x)  Revert the dyntrans page template experiment? Hm.
-	x)  Refactor the cpu type detection/initialization/listing.
-		Macro, which can be used as long as the cpu definitions
-		contain a 'name'?
-	x)  Testmachine includes:
-		+ dev_fb block fill and copy
-		+ dev_fb draw characters (from the built-in font)?
-		+ dev_fb input device? mouse pointer coordinates and buttons
-			(allow changes in these to cause interrupts as well?)
-		+ Redefine the halt() function so that it stops "sometimes
-		  soon", i.e. usage in demo code should be:
-			for (;;) {
-				halt();
-			}
-	x)  Nicer MIPS status bits in register dumps.
-	x)  Alignment exceptions (MIPS, PPC, ARM?, ...)
-	x)  Rewrite the networking stack:
-		x)  Fix performance problems caused by only allowing a
-		    single TCP packet to be unacked.
-		x)  Don't hardcode offsets into packets!
-		x)  Test with lower than 100 max tcp/udp connections,
-		    to make sure that reuse works!
-		x)  Make OpenBSD work better as a guest OS!
-		x)  DHCP? Debian doesn't actually send DHCP packets, even
-			though it claims to? So it is hard to test.
-		x)  Multiple networks per emulation, and let different
-		    NICs in machines connect to different networks.
-		x)  Support VDE (vde.sf.net)? Easiest/cleanest (before a
-		    redesign of the network framework has been done) is
-		    probably to connect it using the current (udp) solution.
-		x)  Allow SLIP connections, possibly PPP, in addition to
-		    ethernet?
-	x)  Implement more ethernet NICs.
-	x)  IOP (I2O) device?
-
-Documentation:
-	x)  Note about sandboxing/security:
-		Not all emulated instructions fail in the way they would
-		do on real hardware (e.g. a userspace program writing to
-		a system register might work in GXemul, but it would
-		fail on real hardware).  Sandbox = contain from the
-		host OS. But the emulated programs will run "less
-		securely".
-	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
-	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
-	x)  DEVICE_TICK in technical.html
-	x)  Rewrite the section about experimental devices, after the
-	    framebuffer acceleration has been implemented, and demos
-	    written. (Symbolic names instead of numbers; example
-	    use cases, etc. Mention demo files that use the various
-	    features?)
-	x)  "a very simple linear framebuffer device (for graphics output)"
-	    under "which machines does gxemul emulate" ==> better
-	    description?
-	x)  Better description on how to set up a cross compiler?
-	    Example for MIPS64.
 
 Long-term design:
 	x)  Instruction combination collisions? How to avoid easily...
 	x)  Think about how to do both SHmedia and SHcompact in a reasonable
-	    way!
+	    way! (Or AMD64 long/protected/real, for that matter.)
 	x)  68K emulation; think about how to do variable instruction
 	    lengths across page boundaries.
 	x)  MAINBUS REDESIGN!
@@ -109,8 +21,6 @@ Long-term design:
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
 	x)  Reimplement the config file parser from scratch.
-
--------------------------------------------------------------------------------
 
 Simple Valgrind-like checks?
 	o)  Mark every address with bits which tell whether or not the address
@@ -132,11 +42,12 @@ Simple Valgrind-like checks?
 		    in warnings. (free() must be modified to free the
 		    actually allocated address.)
 
-SMP:
-	o)  dev_mp doesn't work well with dyntrans yet
-	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
-
 MIPS:
+	o)  Nicer MIPS status bits in register dumps.
+	o)  Alignment exceptions.
+	o)  Fix this? Triggered by NetBSD/sgimips? Hm:
+		to_be_translated(): TODO: unimplemented instruction:
+		000000000065102c: 00200800 (d)  rot_00  at,zr,0
 	o)  Some more work on opcodes.
 		x) MIPS64 revision 2.
 			o)  Find out which actual CPUs implement the rev2 ISA!
@@ -159,6 +70,8 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 Dyntrans:
+	o)  dev_mp doesn't work well with dyntrans yet
+	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
 		so that it caches a translation (that is, an instruction
 		word and the instr_call it was translated to the last
@@ -169,6 +82,9 @@ Dyntrans:
 		A debugger command should be possible to use to enable/
 		disable statistics gathering.
 		Configuration file option!
+	x)  Breakpoints:
+		o) Physical vs virtual addresses!
+		o) 32-bit vs 64-bit sign extension for MIPS, and others?
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
@@ -181,7 +97,6 @@ Dyntrans:
 		   hosts...
 
 SuperH:
-	x)  Implement more instructions, exceptions, etc.
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
@@ -248,6 +163,12 @@ Debugger:
 	o)  Try to make the debugger more modular and, if possible, reentrant!
 	o)  Remove the emul command? (But show network info if showing
 		machines?)
+	o)  Settings:
+		x)  Special handlers for Write!
+			+)  MIPS coproc regs
+			+)  Alpha/MIPS/SPARC zero registers
+			+)  x86 64/32/16-bit registers
+		x)  Value formatter for resulting output.
 	o)  Generalize the expression evaluator. (debugger_expr.c?)
 		("help expr" in the debugger to show help about expressions)
 		settable variables	("show nr of instructions on average")
@@ -277,35 +198,39 @@ Debugger:
 POWER/PowerPC:
 	x)  find and fix the bug which causes NetBSD/macppc to fail after
 	    an install!
-	x)  __wdccommand_start, wdcwait som tar tid för prep.
-
-    <wdc_exec_command(0xd005e514,0xd60cdd30,0,8,..)>
-      <ata_get_xfer(0,0xd60cdd30,0,8,..)>
-        <0x26c550(&ata_xfer_pool,2,0,8,..)>
-        <0x35c71c(0x3f27000,0,52,8,..)>
-      <ata_exec_xfer(0xd005e4c8,0x3f27000,0,13,..)>
-        <atastart(0xd005e4c8,0x3f27000,0,13,..)>
-          <__wdccommand_start(0xd005e4c8,0x3f27000,0,13,..)>
-            <bsw1(&prep_isa_io_space_tag,0x800001f6,0,176,..)>
-[ wdc: write to SDH: 0xb0 (sectorsize 2, lba=1, drive 1, head 0) ]
-            <wdcwait(0xd005e4c8,72,64,0xbb8,..)>
-              <0x198120(0xd005e4c8,72,64,0xbb8,..)>
-                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
-                <delay(100,0,0,0xbb8,..)>
-
-Notera: <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
-
+	x)  NetBSD/prep 3.x triggers a possible bug in the emulator:
+	    <wdc_exec_command(0xd005e514,0xd60cdd30,0,8,..)>
+	      <ata_get_xfer(0,0xd60cdd30,0,8,..)>
+	        <0x26c550(&ata_xfer_pool,2,0,8,..)>
+	        <0x35c71c(0x3f27000,0,52,8,..)>
+	      <ata_exec_xfer(0xd005e4c8,0x3f27000,0,13,..)>
+	        <atastart(0xd005e4c8,0x3f27000,0,13,..)>
+	          <__wdccommand_start(0xd005e4c8,0x3f27000,0,13,..)>
+	            <bsw1(&prep_isa_io_space_tag,0x800001f6,0,176,..)>
+		[ wdc: write to SDH: 0xb0 (sectorsize 2, lba=1, drive 1, head 0) ]
+	            <wdcwait(0xd005e4c8,72,64,0xbb8,..)>
+	              <0x198120(0xd005e4c8,72,64,0xbb8,..)>
+	                <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
+	                <delay(100,0,0,0xbb8,..)>
+	    Note: <bsr1(&prep_isa_io_space_tag,0,0,0xbb8,..)>
 	x)  PPC optimizations; instr combs
 	x)  64-bit stuff: either Linux on G5, or perhaps some hobbyist
 		version of AIX? (if there exists such a thing)
 	x)  macppc: adb controller; keyboard (for framebuffer mode)
 	x)  make OpenBSD/macppc work (PCI controller stuff)
+	x)  Alignment exceptions.
 
 Algor:
 	o)  Other models than the P5064?
 	o)  PCI interrupts... needed for stuff like the tlp NIC?
 
+HPCmips:
+	x)  Mouse/pad support! :)
+	x)  A NIC? (As a PCMCIA device?)
+
 ARM:
+	o)  See netwinder_reset() in NetBSD; the current "an internal error
+	    occured" message after reboot/halt is too ugly.
 	o)  ARM "wait"-like instruction?
 	o)  try to get netbsd/evbarm 3.x running (iq80321)
 	o)  make the xscale counter registers (ccnt) work
@@ -313,6 +238,34 @@ ARM:
 	o)  zaurus for openbsd...
 	o)  debian/cats crashes because of unimplemented coproc stuff.
 	    fix this?
+
+Test machines:
+	+ dev_fb block fill and copy
+	+ dev_fb draw characters (from the built-in font)?
+	+ dev_fb input device? mouse pointer coordinates and buttons
+		(allow changes in these to cause interrupts as well?)
+	+ Redefine the halt() function so that it stops "sometimes
+	  soon", i.e. usage in demo code should be:
+		for (;;) {
+			halt();
+		}
+
+Networking:
+	x)  Fix performance problems caused by only allowing a
+	    single TCP packet to be unacked.
+	x)  Don't hardcode offsets into packets!
+	x)  Test with lower than 100 max tcp/udp connections,
+	    to make sure that reuse works!
+	x)  Make OpenBSD work better as a guest OS!
+	x)  DHCP? Debian doesn't actually send DHCP packets, even
+		though it claims to? So it is hard to test.
+	x)  Multiple networks per emulation, and let different
+	    NICs in machines connect to different networks.
+	x)  Support VDE (vde.sf.net)? Easiest/cleanest (before a
+	    redesign of the network framework has been done) is
+	    probably to connect it using the current (udp) solution.
+	x)  Allow SLIP connections, possibly PPP, in addition to
+	    ethernet?
 
 Cache simulation:
 	o)  Command line flags for:
@@ -330,8 +283,28 @@ Cache simulation:
 	    is another option (easier to implement, but very very slow).
 
 Documentation:
-	o)  machines, cpus, devices.
+	x)  Note about sandboxing/security:
+		Not all emulated instructions fail in the way they would
+		do on real hardware (e.g. a userspace program writing to
+		a system register might work in GXemul, but it would
+		fail on real hardware).  Sandbox = contain from the
+		host OS. But the emulated programs will run "less
+		securely".
+	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
+	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
+	x)  DEVICE_TICK in technical.html
+	x)  Rewrite the section about experimental devices, after the
+	    framebuffer acceleration has been implemented, and demos
+	    written. (Symbolic names instead of numbers; example
+	    use cases, etc. Mention demo files that use the various
+	    features?)
+	x)  "a very simple linear framebuffer device (for graphics output)"
+	    under "which machines does gxemul emulate" ==> better
+	    description?
+	x)  Better description on how to set up a cross compiler?
+	    Example for MIPS64.
 	o)  Automagic documentation generation?
+		x)  machines, cpus, devices.
 		x)  REMEMBER that several machines/devices can be in
 			the same source file!
 	o)  Try to rewrite the install instructions for those machines
@@ -345,11 +318,6 @@ More generic out_of_memory error reporting, and check everywhere!
 		You are actually low on RAM. (As trivial as this might sound,
 		Unix systems usually allow processes to allocate virtual
 		memory beyond the amount of RAM in the machine.)
-
-Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
-	Use the debugger's symbolic name stuff. (which will have to be
-	extended soon to support stuff like  "2*x + symbol + y" etc. cool
-	stuff)
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
@@ -374,6 +342,13 @@ PCI:
 	x)  add a "pcn" NIC (AMD PCnet32 Lance 79c970 (PCI 1022:2000)),
 	    could be useful for several machine modes (Malta, Algor, evbarm,
 	    hp700?, macppc, etc.)
+
+x)  Clocks and timers:
+	x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
+	x)  Test the 8253? Right now it doesn't seem to be used?
+	x)  NetWinder timeofday is incorrect!
+	x)  Cobalt TOD is incorrect!
+	x)  Go through all other machines, one by one, and fix them.
 
 Busses:
 	o)  Redesign the entire "mainbus" concept!

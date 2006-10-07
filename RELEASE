@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.227 2006-10-02 09:26:36 debug Exp $
+$Id: RELEASE,v 1.228 2006-10-07 00:36:29 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -26,8 +26,8 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	by guest operating systems, run at the same speed as the host clock.
 
 	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS, Malta
-	(evbmips), Cobalt, and Algor machine modes have been modified to use
-	the new clock/timer framework.
+	(evbmips), Cobalt, Algor, and the testmips machine modes have been
+	modified to use the new clock/timer framework.
 
     o)	The wdc (standard IDE controller) had a bug which prevented disk
 	images larger than 2 GB to work correctly. This has been fixed.
@@ -43,7 +43,7 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	      should work like the 'wait' instruction.
 
 	  x)  For DECstation (R3000) emulation, there are "instruction
-	      combination" hacks for both NetBSD and Debian, which fakes the
+	      combination" hacks for both NetBSD and Debian, faking the
 	      behaviour of the real 'wait' instruction.
 
     o)	The mouse cursor update routines in DECstation (LK201) emulation

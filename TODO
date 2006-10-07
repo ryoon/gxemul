@@ -1,7 +1,9 @@
-$Id: TODO,v 1.386 2006-10-02 09:26:36 debug Exp $
+$Id: TODO,v 1.387 2006-10-07 00:36:29 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
+Testa att flytta MIPS cop0-saker direkt in i cpu->cd.mips, och se
+om det påverkar prestandan.
 
 Implementation:
 	x)  MUST:
@@ -15,6 +17,9 @@ Implementation:
 		x)  Value formatter for resulting output.
 		x)  Begin on the expression evaluator.
 	x)  Clock/timer framework:
+		x)  test-machines:
+			+)  RTC device: date/time, and timer (0 Hz = disable)
+			+)  Add a simple rtc demo
 		x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 		x)  Test the 8253? Right now it doesn't seem to be used?
 		x)  NetWinder timeofday is incorrect!
@@ -80,15 +85,6 @@ Implementation:
 	x)  IOP (I2O) device?
 
 Documentation:
-	x)  Update to NetBSD 3.1 once it has been released. Tested so far:
-		NetBSD/pmax 3.1_RC3
-		NetBSD/hpcmips 3.1_RC3
-		NetBSD/cats 3.1_RC3
-		NetBSD/netwinder 3.1_RC3
-		NetBSD/hpcmips 3.1_RC3
-		NetBSD/cobalt 3.1_RC3
-		NetBSD/algor 3.1_RC3
-		NetBSD/sgimips 3.1_RC3
 	x)  Note about sandboxing/security:
 		Not all emulated instructions fail in the way they would
 		do on real hardware (e.g. a userspace program writing to
@@ -191,14 +187,23 @@ Dyntrans:
 	x)  INVALIDATION should cause translations in _all_ cpus to be
 	    invalidated, e.g. on a write to a write-protected page
 	    (containing code)
-	x)  16-bit encodings? (MIPS16, ARM Thumb, SH3, ...)
+	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
 	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
 	x)  true recompilation backend? think carefully about this,
 	    experiment in a separate project (not in GXemul)
 		o) First test would be to just implement a simple
 		   instruction such as MIPS' addiu or lui, on AMD64
 		   hosts...
-	x)  Idle loop detection? (Depends on target.) This feels ugly.
+
+SuperH:
+	x)  Implement more instructions, exceptions, etc.
+	x)  Instruction tracing should include symbols for branch targets,
+	    and so on...
+	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
+	x)  ldtlb: Don't invalidate everything.
+	x)  Replace pc-relative loads with immediate load, if within the
+	    same page. (Similar to ARM optimization.)
+	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Transputer:
 	x)  Implement support for Helios binaries.
@@ -240,10 +245,11 @@ Alpha:
 	    OpenBSD, FreeBSD, and Linux too?
 
 SPARC:
-	x)  Implement Adress space identifiers; load/stores etc.
+	o)  Implement Adress space identifiers; load/stores etc.
 	o)  Save/restore register windows etc!
 	o)  Finish the subcc and addcc flag computation code.
 	o)  Add more registers (floating point, control regs etc)
+	o)  Exception/trap handling.
 	o)  Disassemly of some more instructions?
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
 	o)  Finish the GDB register stuff.

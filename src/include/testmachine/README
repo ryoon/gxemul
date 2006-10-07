@@ -1,4 +1,4 @@
-$Id: README,v 1.2 2006-07-05 05:38:36 debug Exp $
+$Id: README,v 1.3 2006-10-07 00:36:29 debug Exp $
 
 The files in this directory describe the devices found in GXemul's "test 
 machines". These machines do not match any real-world machines, but they 
@@ -23,6 +23,10 @@ have devices that are similar to those found in real machines:
   o)  ethernet (dev_ether):
 	A very simple ethernet NIC, capable of sending and receiving
 	ethernet frames on the simulated network.
+
+  o)  rtc (dev_rtc):
+	A Real-Time Clock device. Used to retrieve the current time, and
+	to cause periodic interrupts at a specific frequency.
 
 These include files are not released under the same license as GXemul
 itself. The include files are released as public domain, so they can be

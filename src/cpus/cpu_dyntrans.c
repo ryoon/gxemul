@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.128 2006-09-23 03:52:10 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.129 2006-10-07 00:36:29 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -251,7 +251,8 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 		if (cpu->machine->instruction_trace) {
 			/*  TODO/Note: This must be large enough to hold
 			    any instruction for any ISA:  */
-			unsigned char instr[32];
+			unsigned char instr[1 <<
+			    DYNTRANS_INSTR_ALIGNMENT_SHIFT];
 #ifdef DYNTRANS_X86
 			cpu->cd.x86.cursegment = X86_S_CS;
 			cpu->cd.x86.seg_override = 0;

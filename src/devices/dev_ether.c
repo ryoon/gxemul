@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.14 2006-06-15 17:29:38 debug Exp $
+ *  $Id: dev_ether.c,v 1.15 2006-10-07 00:36:29 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -59,10 +59,7 @@ struct ether_data {
 };
 
 
-/*
- *  dev_ether_tick():
- */
-void dev_ether_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(ether)
 {  
 	struct ether_data *d = (struct ether_data *) extra;
 	int r = 0;
@@ -80,9 +77,6 @@ void dev_ether_tick(struct cpu *cpu, void *extra)
 }
 
 
-/*
- *  dev_ether_buf_access():
- */
 DEVICE_ACCESS(ether_buf)
 {
 	struct ether_data *d = (struct ether_data *) extra;

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.25 2006-10-04 11:56:21 debug Exp $
+ *  $Id: cpu_sh.h,v 1.26 2006-10-07 00:36:29 debug Exp $
  */
 
 #include "misc.h"
@@ -73,6 +73,8 @@ DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 #define	SH_N_GPRS		16
 #define	SH_N_GPRS_BANKED	8
 
+#define	SH_N_UTLB_ENTRIES	64
+
 
 struct sh_cpu {
 	struct sh_cpu_type_def cpu_type;
@@ -105,9 +107,12 @@ struct sh_cpu {
 	/*  MMU/TLB registers:  */
 	uint32_t	pteh;		/*  Page Table Entry High  */
 	uint32_t	ptel;		/*  Page Table Entry Low  */
+	uint32_t	ptea;		/*  Page Table Entry A  */
 	uint32_t	ttb;		/*  Translation Table Base  */
 	uint32_t	tea;		/*  TLB Exception Address Register  */
 	uint32_t	mmucr;		/*  MMU Control Register  */
+	uint32_t	utlb_hi[SH_N_UTLB_ENTRIES];
+	uint32_t	utlb_lo[SH_N_UTLB_ENTRIES];
 
 	/*  Exception handling:  */
 	uint32_t	tra;		/*  TRAPA Exception Register  */
@@ -156,6 +161,7 @@ int sh_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 int sh_cpu_family_init(struct cpu_family *);
 
 void sh_update_sr(struct cpu *cpu, uint32_t new_sr);
+void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr);
 
 /*  memory_sh.c:  */
 int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,

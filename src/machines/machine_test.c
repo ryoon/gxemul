@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.19 2006-09-10 14:05:43 debug Exp $
+ *  $Id: machine_test.c,v 1.20 2006-10-07 00:36:29 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -46,6 +46,7 @@
 #include "testmachine/dev_ether.h"
 #include "testmachine/dev_fb.h"
 #include "testmachine/dev_mp.h"
+#include "testmachine/dev_rtc.h"
 
 
 static void default_test(struct machine *machine, struct cpu *cpu)
@@ -70,6 +71,10 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 
 	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=0",
 	    (uint64_t) DEV_ETHER_ADDRESS);
+	device_add(machine, tmpstr);
+
+	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=0",
+	    (uint64_t) DEV_RTC_ADDRESS);
 	device_add(machine, tmpstr);
 }
 
@@ -391,7 +396,7 @@ MACHINE_SETUP(testmips)
 	 *      7       CPU counter
 	 *      6       SMP IPIs
 	 *      5       not used yet
-	 *      4       not used yet
+	 *      4       rtc
 	 *      3       ethernet  
 	 *      2       serial console
 	 */
@@ -420,6 +425,10 @@ MACHINE_SETUP(testmips)
 
 	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=3",
 	    (uint64_t) DEV_ETHER_ADDRESS);
+	device_add(machine, tmpstr);
+
+	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=4",
+	    (uint64_t) DEV_RTC_ADDRESS);
 	device_add(machine, tmpstr);
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1378 2006-10-02 12:59:32 debug Exp $
+$Id: HISTORY,v 1.1379 2006-10-07 00:36:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3072,3 +3072,13 @@ Changelog for GXemul:
 		Fixing hpcmips (vr41xx) timer initialization.
 		Experimenting with O(n)->O(1) reduction in the MIPS TLB lookup
 		loop. Seems to work both for R3000 and non-R3000.
+20061003	Continuing a little on SH emulation (adding more control
+		registers; mini-cleanup of memory_sh.c).
+20061004	Beginning on a dev_rtc, a clock/timer device for the test
+		machines; also adding a demo, and some documentation.
+		Fixing a bug in SH "mov.w @(disp,pc),Rn" (the result wasn't
+		sign-extended), and adding the addc and ldtlb instructions.
+20061005	Contining on SH emulation: virtual to physical address
+		translation, and a skeleton exception mechanism.
+20061006	Adding more SH instructions (various loads and stores, rte,
+		negc, muls.w, various privileged register-move instructions).

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.102 2006-06-12 10:21:12 debug Exp $
+$Id: experiments.html,v 1.103 2006-10-07 00:36:29 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -367,6 +367,70 @@ following experimental devices:
     </td>
   </tr>
 
+  <tr height="15">
+    <td height="15">&nbsp;</td>
+  </tr>
+
+  <tr>
+    <td align="left" valign="top">
+	<a name="expdevices_rtc"><b><tt>rtc</tt>:</b></a>
+	<p>A Real-Time Clock, used to retrieve the current time
+	and to cause periodic interrupts.
+	<p>Source code:&nbsp;&nbsp;<font color="#0000f0"><tt>src/devices/dev_rtc.c</tt></font>
+	<p>Include file:&nbsp;&nbsp;<font color="#0000f0"><tt>dev_rtc.h</tt></font>
+	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x15000000</font>
+    </td>
+    <td></td>
+    <td align="left" valign="top">
+	<table border="0">
+	  <tr>
+	    <td align="left" valign="top"><i><u>Offset:</u></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0000</tt></td>
+	    <td align="left" valign="top">Read: YEAR (e.g. 2006)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0010</tt></td>
+	    <td align="left" valign="top">Read: MONTH (1..12)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0020</tt></td>
+	    <td align="left" valign="top">Read: DAY (1..31)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0030</tt></td>
+	    <td align="left" valign="top">Read: HOUR (0..23)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0040</tt></td>
+	    <td align="left" valign="top">Read: MINUTE (0..59)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0050</tt></td>
+	    <td align="left" valign="top">Read: SECOND (0..59)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0060</tt></td>
+	    <td align="left" valign="top">Read: MICROSECONDS (0..999999)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0100</tt></td>
+	    <td align="left" valign="top">Read: Get the current
+		timer interrupt frequency.<br>Write: Set the timer
+		interrupt frequency. (Writing 0 disables the timer.)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top"><tt>0x0110</tt></td>
+	    <td align="left" valign="top">Read or Write: Acknowledge
+		one timer interrupt. (Note that if multiple interrupts
+		are pending, only one is acknowledged.)</td>
+	  </tr>
+	</table>
+    </td>
+  </tr>
+
 </table></center>
 
 <p>
@@ -424,6 +488,8 @@ what kind of IPI it was.
 			<td>MIPS count/compare interrupt</td></tr>
 		<tr><td align="center">6</td><td></td>
 			<td><tt>mp</tt> (inter-processor interrupts)</td></tr>
+		<tr><td align="center">4</td><td></td>
+			<td><tt>rtc</tt></td></tr>
 		<tr><td align="center">3</td><td></td>
 			<td><tt>ether</tt></td></tr>
 		<tr><td align="center">2</td><td></td>

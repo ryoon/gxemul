@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.2 2006-10-04 11:56:21 debug Exp $
+ *  $Id: dev_sh4.c,v 1.3 2006-10-07 00:36:29 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -42,6 +42,7 @@
 #include "misc.h"
 
 #include "sh4_cache.h"
+#include "sh4_exception.h"
 #include "sh4_mmu.h"
 
 #define	SH4_REG_BASE	0xff000000
@@ -51,6 +52,42 @@
 struct sh4_data {
 	int		dummy;
 };
+
+
+DEVICE_ACCESS(sh4_itlb_aa)
+{
+	/*  TODO: UTLB access. Don't invalidate everything.  */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	cpu_create_or_reset_tc(cpu);
+	return 1;
+}
+
+
+DEVICE_ACCESS(sh4_itlb_da1)
+{
+	/*  TODO: UTLB access. Don't invalidate everything.  */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	cpu_create_or_reset_tc(cpu);
+	return 1;
+}
+
+
+DEVICE_ACCESS(sh4_utlb_aa)
+{
+	/*  TODO: UTLB access. Don't invalidate everything.  */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	cpu_create_or_reset_tc(cpu);
+	return 1;
+}
+
+
+DEVICE_ACCESS(sh4_utlb_da1)
+{
+	/*  TODO: UTLB access. Don't invalidate everything.  */
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	cpu_create_or_reset_tc(cpu);
+	return 1;
+}
 
 
 DEVICE_ACCESS(sh4)
@@ -66,35 +103,38 @@ DEVICE_ACCESS(sh4)
 	switch (relative_addr) {
 
 	case SH4_PTEH:
-		if (writeflag == MEM_READ) {
+		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.pteh;
-		} else {
+		else
 			cpu->cd.sh.pteh = idata;
-		}
 		break;
 
 	case SH4_PTEL:
-		if (writeflag == MEM_READ) {
+		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.ptel;
-		} else {
+		else
 			cpu->cd.sh.ptel = idata;
-		}
 		break;
 
 	case SH4_TTB:
-		if (writeflag == MEM_READ) {
+		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.ttb;
-		} else {
+		else
 			cpu->cd.sh.ttb = idata;
-		}
 		break;
 
 	case SH4_TEA:
-		if (writeflag == MEM_READ) {
+		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.tea;
-		} else {
+		else
 			cpu->cd.sh.tea = idata;
-		}
+		break;
+
+	case SH4_PTEA:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.ptea;
+		else
+			cpu->cd.sh.ptea = idata;
 		break;
 
 	case SH4_MMUCR:
@@ -119,6 +159,27 @@ DEVICE_ACCESS(sh4)
 			cpu->cd.sh.ccr = idata;
 			debug("[ sh4: ccr = 0x%08"PRIx32" ]\n", cpu->cd.sh.ccr);
 		}
+		break;
+
+	case SH4_TRA:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.tra;
+		else
+			cpu->cd.sh.tra = idata;
+		break;
+
+	case SH4_EXPEVT:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.expevt;
+		else
+			cpu->cd.sh.expevt = idata;
+		break;
+
+	case SH4_INTEVT:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intevt;
+		else
+			cpu->cd.sh.intevt = idata;
 		break;
 
 	default:if (writeflag == MEM_READ) {
@@ -150,6 +211,9 @@ DEVINIT(sh4)
 	memory_device_register(machine->memory, devinit->name,
 	    SH4_REG_BASE, 0x01000000, dev_sh4_access, d, DM_DEFAULT, NULL);
 
+	/*  0xe0000000: Store queue.  */
+	dev_ram_init(machine, 0xe0000000, 0x4000000, DEV_RAM_RAM, 0x0);
+
 	/*
 	 *  0xf0000000	SH4_CCIA	I-Cache address array
 	 *  0xf1000000	SH4_CCID	I-Cache data array
@@ -162,6 +226,22 @@ DEVINIT(sh4)
 	dev_ram_init(machine, SH4_CCID, SH4_ICACHE_SIZE, DEV_RAM_RAM, 0x0);
 	dev_ram_init(machine, SH4_CCDA, SH4_DCACHE_SIZE, DEV_RAM_RAM, 0x0);
 	dev_ram_init(machine, SH4_CCDD, SH4_DCACHE_SIZE, DEV_RAM_RAM, 0x0);
+
+	/*  0xf2000000	SH4_ITLB_AA  */
+	memory_device_register(machine->memory, devinit->name, SH4_ITLB_AA,
+	    0x01000000, dev_sh4_utlb_aa_access, d, DM_DEFAULT, NULL);
+
+	/*  0xf3000000	SH4_ITLB_DA1  */
+	memory_device_register(machine->memory, devinit->name, SH4_ITLB_DA1,
+	    0x01000000, dev_sh4_utlb_aa_access, d, DM_DEFAULT, NULL);
+
+	/*  0xf6000000	SH4_UTLB_AA  */
+	memory_device_register(machine->memory, devinit->name, SH4_UTLB_AA,
+	    0x01000000, dev_sh4_utlb_aa_access, d, DM_DEFAULT, NULL);
+
+	/*  0xf7000000	SH4_UTLB_DA1  */
+	memory_device_register(machine->memory, devinit->name, SH4_UTLB_DA1,
+	    0x01000000, dev_sh4_utlb_aa_access, d, DM_DEFAULT, NULL);
 
 	return 1;
 }

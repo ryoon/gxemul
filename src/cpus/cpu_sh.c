@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.28 2006-09-29 10:29:12 debug Exp $
+ *  $Id: cpu_sh.c,v 1.29 2006-10-07 00:36:29 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -46,10 +46,16 @@
 #include "settings.h"
 #include "symbol.h"
 
+#include "sh4_exception.h"
+#include "sh4_mmu.h"
+
 
 #define DYNTRANS_32
 #define DYNTRANS_DELAYSLOT
 #include "tmp_sh_head.c"
+
+
+void sh_pc_to_pointers(struct cpu *);
 
 
 /*
@@ -197,6 +203,8 @@ int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 	case 0x0:
 		if (iword == 0x000b)	/*  rts  */
 			return 1;
+		if (iword == 0x002b)	/*  rte  */
+			return 1;
 		if (lo8 == 0x23)	/*  braf  */
 			return 1;
 		break;
@@ -340,18 +348,78 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 /*
  *  sh_update_sr():
+ *
+ *  Writes a new value to the status register.
  */
 void sh_update_sr(struct cpu *cpu, uint32_t new_sr)
 {
 	uint32_t old_sr = cpu->cd.sh.sr;
 
 	if ((new_sr & SH_SR_RB) != (old_sr & SH_SR_RB)) {
-		fatal("sh_update_sr(): Register bank switching is not"
-		    " implemented yet! TODO\n");
-		exit(1);
+		int i;
+		for (i=0; i<SH_N_GPRS_BANKED; i++) {
+			uint32_t tmp = cpu->cd.sh.r[i];
+			cpu->cd.sh.r[i] = cpu->cd.sh.r_bank[i];
+			cpu->cd.sh.r_bank[i] = tmp;
+		}
 	}
 
 	cpu->cd.sh.sr = new_sr;
+}
+
+
+/*
+ *  sh_exception():
+ *
+ *  Causes an exception.
+ */
+void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
+{
+	uint32_t vbr = cpu->cd.sh.vbr;
+
+	debug("[ exception 0x%03x, vaddr 0x%08"PRIx32" ]\n", expevt, vaddr);
+
+	if (cpu->cd.sh.sr & SH_SR_BL) {
+		fatal("sh_exception(): BL bit already set. TODO\n");
+		/*  This is actually OK in one case, a User Break.  */
+		exit(1);
+	}
+
+	/*  Stuff common to all exceptions:  */
+	cpu->cd.sh.spc = cpu->pc;
+	cpu->cd.sh.ssr = cpu->cd.sh.sr;
+	cpu->cd.sh.sgr = cpu->cd.sh.r[15];
+	cpu->cd.sh.expevt = expevt;
+	sh_update_sr(cpu, cpu->cd.sh.sr | SH_SR_MD | SH_SR_RB | SH_SR_BL);
+
+	if (cpu->delay_slot)
+		cpu->delay_slot = EXCEPTION_IN_DELAY_SLOT;
+	else
+		cpu->delay_slot = NOT_DELAYED;
+
+	/*  Most exceptions set PC to VBR + 0x100.  */
+	cpu->pc = vbr + 0x100;
+
+	/*  Specific cases:  */
+	switch (expevt) {
+
+	case EXPEVT_TLB_MISS_LD:
+	case EXPEVT_TLB_MISS_ST:
+		cpu->pc = vbr + 0x400;
+	case EXPEVT_TLB_PROT_LD:
+	case EXPEVT_TLB_PROT_ST:
+	case EXPEVT_TLB_MOD:
+		cpu->cd.sh.tea = vaddr;
+		cpu->cd.sh.pteh &= SH4_PTEH_VPN_MASK;
+		cpu->cd.sh.pteh |= (vaddr & SH4_PTEH_VPN_MASK);
+		break;
+
+	default:fatal("sh_exception(): exception 0x%x is not yet "
+		    "implemented.\n", expevt);
+		exit(1);
+	}
+
+	sh_pc_to_pointers(cpu);
 }
 
 
@@ -428,8 +496,16 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("movt\tr%i\n", r8);
 		else if (lo8 == 0x2a)
 			debug("sts\tpr,r%i\n", r8);
+		else if (iword == 0x002b)
+			debug("rte\n");
+		else if (lo8 == 0x32)
+			debug("stc\tssr,r%i\n", r8);
+		else if (iword == 0x0038)
+			debug("ldtlb\n");
 		else if (iword == 0x003b)
 			debug("brk\n");
+		else if (lo8 == 0x42)
+			debug("stc\tspc,r%i\n", r8);
 		else if (iword == 0x0048)
 			debug("clrs\n");
 		else if (iword == 0x0058)
@@ -521,6 +597,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("shll\tr%i\n", r8);
 		else if (lo8 == 0x01)
 			debug("shlr\tr%i\n", r8);
+		else if (lo8 == 0x02)
+			debug("sts.l\tmach,@-r%i\n", r8);
 		else if (lo8 == 0x04)
 			debug("rotl\tr%i\n", r8);
 		else if (lo8 == 0x05)
@@ -545,6 +623,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("dt\tr%i\n", r8);
 		else if (lo8 == 0x11)
 			debug("cmp/pz\tr%i\n", r8);
+		else if (lo8 == 0x12)
+			debug("sts.l\tmacl,@-r%i\n", r8);
 		else if (lo8 == 0x15)
 			debug("cmp/pl\tr%i\n", r8);
 		else if (lo8 == 0x16)
@@ -581,12 +661,20 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("jmp\t@r%i\n", r8);
 		else if (lo8 == 0x2e)
 			debug("ldc\tr%i,vbr\n", r8);
+		else if (lo8 == 0x3e)
+			debug("ldc\tr%i,ssr\n", r8);
+		else if (lo8 == 0x43)
+			debug("stc.l\tspc,@-r%i\n", r8);
+		else if (lo8 == 0x4e)
+			debug("ldc\tr%i,spc\n", r8);
 		else if (lo8 == 0x56)
 			debug("lds.l\t@r%i+,fpul\n", r8);
 		else if (lo8 == 0x5a)
 			debug("lds\tr%i,fpul\n", r8);
 		else if (lo8 == 0x6a)
 			debug("lds\tr%i,fpscr\n", r8);
+		else if ((lo8 & 0x8f) == 0x83)
+			debug("stc.l\tr%i_bank,@-r%i\n", (lo8 >> 4) & 7, r8);
 		else if ((lo8 & 0x8f) == 0x8e)
 			debug("ldc\tr%i,r%i_bank\n", r8, (lo8 >> 4) & 7);
 		else

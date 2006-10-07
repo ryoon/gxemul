@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.15 2006-09-19 10:49:57 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.16 2006-10-07 00:36:29 debug Exp $
  *
  *  SH instructions.
  *
@@ -34,6 +34,15 @@
  *  instructions were combined into one function and executed, then it should
  *  be increased by 3.)
  */
+
+
+#define	SYNCH_PC		{					\
+		int low_pc = ((size_t)ic - (size_t)cpu->cd.sh.cur_ic_page) \
+		    / sizeof(struct sh_instr_call);			\
+		cpu->pc &= ~((SH_IC_ENTRIES_PER_PAGE-1)			\
+		    << SH_INSTR_ALIGNMENT_SHIFT);			\
+		cpu->pc += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);	\
+	}
 
 
 /*
@@ -65,6 +74,7 @@ X(clrmac)  { cpu->cd.sh.macl = cpu->cd.sh.mach = 0; }
 /*
  *  mov_rm_rn:     rn = rm
  *  neg_rm_rn:     rn = -rm
+ *  negc_rm_rn:    rn = -rm - t, t = borrow
  *  not_rm_rn:     rn = ~rm
  *  swap_b_rm_rn:  rn = rm with lowest 2 bytes swapped
  *  swap_w_rm_rn:  rn = rm with high and low 16-bit words swapped
@@ -79,6 +89,18 @@ X(clrmac)  { cpu->cd.sh.macl = cpu->cd.sh.mach = 0; }
 X(mov_rm_rn)    { reg(ic->arg[1]) = reg(ic->arg[0]); }
 X(not_rm_rn)    { reg(ic->arg[1]) = ~reg(ic->arg[0]); }
 X(neg_rm_rn)    { reg(ic->arg[1]) = -reg(ic->arg[0]); }
+X(negc_rm_rn)
+{
+	uint64_t res = 0;
+	res -= (uint64_t) reg(ic->arg[0]);
+	if (cpu->cd.sh.sr & SH_SR_T)
+		res --;
+	if ((res >> 32) & 1)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[1]) = (uint32_t) res;
+}
 X(swap_b_rm_rn)
 {
 	uint32_t r = reg(ic->arg[0]);
@@ -128,6 +150,7 @@ X(add_imm_rn) { reg(ic->arg[1]) += (int32_t)ic->arg[0]; }
 
 /*
  *  mov_b_rm_predec_rn:  mov.b Rm,@-Rn
+ *  mov_w_rm_predec_rn:  mov.w Rm,@-Rn
  *  mov_l_rm_predec_rn:  mov.l Rm,@-Rn (and also  sts.l PR,@-Rn)
  *
  *  arg[0] = ptr to rm  (or other register)
@@ -143,12 +166,37 @@ X(mov_b_rm_predec_rn)
 		reg(ic->arg[1]) = addr;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		   sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_b_rm_predec_rn: write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
+		}
+		/*  The store was ok:  */
+		reg(ic->arg[1]) = addr;
+	}
+}
+X(mov_w_rm_predec_rn)
+{
+	uint32_t addr = reg(ic->arg[1]) - sizeof(uint16_t);
+	uint16_t *p = (uint16_t *) cpu->cd.sh.host_store[addr >> 12];
+	uint16_t data = reg(ic->arg[0]);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE16_TO_HOST(data);
+	else
+		data = BE16_TO_HOST(data);
+
+	if (p != NULL) {
+		p[(addr & 0xfff) >> 1] = data;
+		reg(ic->arg[1]) = addr;
+	} else {
+		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
 		}
 		/*  The store was ok:  */
 		reg(ic->arg[1]) = addr;
@@ -170,12 +218,11 @@ X(mov_l_rm_predec_rn)
 		reg(ic->arg[1]) = addr;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		   sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_l_rm_predec_rn: write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 		/*  The store was ok:  */
 		reg(ic->arg[1]) = addr;
@@ -200,12 +247,11 @@ X(mov_l_disp_pc_rn)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 2];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
@@ -245,19 +291,20 @@ X(mov_w_disp_pc_rn)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 1];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
+
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		data = LE16_TO_HOST(data);
 	else
 		data = BE16_TO_HOST(data);
-	reg(ic->arg[1]) = data;
+
+	reg(ic->arg[1]) = (int16_t)data;
 }
 
 
@@ -284,12 +331,11 @@ X(load_b_rm_rn)
 	if (p != NULL) {
 		data = p[addr & 0xfff];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_load_rm_rn: read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 	reg(ic->arg[1]) = data;
@@ -303,12 +349,11 @@ X(load_w_rm_rn)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 1];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
@@ -326,12 +371,11 @@ X(load_l_rm_rn)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 2];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_load_rm_rn: read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 
@@ -349,12 +393,11 @@ X(mov_b_arg1_postinc_to_arg0)
 	if (p != NULL) {
 		data = p[addr & 0xfff];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 	/*  The load was ok:  */
@@ -370,12 +413,11 @@ X(mov_l_arg1_postinc_to_arg0)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 2];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_load_rm_rn: read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 	/*  The load was ok:  */
@@ -395,12 +437,11 @@ X(mov_b_r0_rm_rn)
 	if (p != NULL) {
 		data = p[addr & 0xfff];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_load_rm_rn: read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 
@@ -415,12 +456,11 @@ X(mov_w_r0_rm_rn)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 1];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 
@@ -439,12 +479,11 @@ X(mov_l_r0_rm_rn)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 2];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_load_rm_rn: read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 
@@ -464,12 +503,11 @@ X(mov_l_disp_rm_rn)
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 2];
 	} else {
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_READ, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_load_rm_rn: read failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 
@@ -502,12 +540,11 @@ X(mov_b_store_rm_rn)
 		p[addr & 0xfff] = data;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, &data,
 		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_store_rm_rn: write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 }
@@ -526,12 +563,11 @@ X(mov_w_store_rm_rn)
 		p[(addr & 0xfff) >> 1] = data;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_store_rm_rn: write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 }
@@ -550,12 +586,11 @@ X(mov_l_store_rm_rn)
 		p[(addr & 0xfff) >> 2] = data;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("mov_store_rm_rn: write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 }
@@ -568,12 +603,11 @@ X(mov_b_rm_r0_rn)
 		p[addr & 0xfff] = data;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 }
@@ -592,12 +626,11 @@ X(mov_l_rm_r0_rn)
 		p[(addr & 0xfff) >> 2] = data;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 }
@@ -617,12 +650,11 @@ X(mov_l_rm_disp_rn)
 		p[(addr & 0xfff) >> 2] = data;
 	} else {
 		/*  Slow, using memory_rw():  */
+		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
 		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
-			/*  This should probably be ok, but I just want
-				to catch it when it happens...  */
-			fatal("write failed: TODO\n");
-			exit(1);
+			/*  Exception.  */
+			return;
 		}
 	}
 }
@@ -630,6 +662,7 @@ X(mov_l_rm_disp_rn)
 
 /*
  *  add_rm_rn:  rn = rn + rm
+ *  addc_rm_rn: rn = rn + rm + t
  *  and_rm_rn:  rn = rn & rm
  *  xor_rm_rn:  rn = rn ^ rm
  *  or_rm_rn:   rn = rn | rm
@@ -642,6 +675,18 @@ X(mov_l_rm_disp_rn)
  *  arg[1] = ptr to rn
  */
 X(add_rm_rn) { reg(ic->arg[1]) += reg(ic->arg[0]); }
+X(addc_rm_rn)
+{
+	uint64_t res = reg(ic->arg[1]);
+	res += (uint64_t) reg(ic->arg[0]);
+	if (cpu->cd.sh.sr & SH_SR_T)
+		res ++;
+	if ((res >> 32) & 1)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[1]) = (uint32_t) res;
+}
 X(and_rm_rn) { reg(ic->arg[1]) &= reg(ic->arg[0]); }
 X(xor_rm_rn) { reg(ic->arg[1]) ^= reg(ic->arg[0]); }
 X(or_rm_rn)  { reg(ic->arg[1]) |= reg(ic->arg[0]); }
@@ -710,6 +755,7 @@ X(div1_rm_rn)
 
 /*
  *  mul_l_rm_rn:   MACL = Rm * Rn       (32-bit)
+ *  muls_w_rm_rn:  MACL = Rm * Rn       (signed 16-bit * 16-bit ==> 32-bit)
  *  dmuls_l_rm_rn: MACH:MACL = Rm * Rn  (signed, 64-bit result)
  *  dmulu_l_rm_rn: MACH:MACL = Rm * Rn  (unsigned, 64-bit result)
  *
@@ -719,6 +765,11 @@ X(div1_rm_rn)
 X(mul_l_rm_rn)
 {
 	cpu->cd.sh.macl = reg(ic->arg[0]) * reg(ic->arg[1]);
+}
+X(muls_w_rm_rn)
+{
+	cpu->cd.sh.macl = (int32_t)(int16_t)reg(ic->arg[0]) *
+	    (int32_t)(int16_t)reg(ic->arg[1]);
 }
 X(dmuls_l_rm_rn)
 {
@@ -1151,28 +1202,58 @@ X(sts_macl_rn) { reg(ic->arg[1]) = cpu->cd.sh.macl; }
 
 
 /*
- *  stc_sr_rn: Store SR into Rn
- *
- *  arg[1] = ptr to rn
+ *  rte:  Return from exception.
  */
-X(stc_sr_rn)
+X(rte)
 {
 	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
 		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
 		exit(1);
 	}
 
-	reg(ic->arg[1]) = cpu->cd.sh.sr;
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = cpu->cd.sh.spc;
+		cpu->delay_slot = NOT_DELAYED;
+		sh_update_sr(cpu, cpu->cd.sh.ssr);
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
 }
 
 
 /*
- *  ldc_rm_rn_bank: Copy Rm into banked register.
- *
- *  arg[0] = ptr to rm
- *  arg[1] = ptr to banked register
+ *  ldtlb:  Load UTLB entry.
  */
-X(ldc_rm_rn_bank)
+X(ldtlb)
+{
+	int urc = (cpu->cd.sh.mmucr & SH4_MMUCR_URC_MASK)
+	    >> SH4_MMUCR_URC_SHIFT;
+
+	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
+		fatal("ldtlb TODO: Throw RESINST exception, if MD = 0.\n");
+		exit(1);
+	}
+
+	/*  TODO: Don't invalidate everything!  */
+
+	cpu->cd.sh.utlb_hi[urc] = cpu->cd.sh.pteh;
+	cpu->cd.sh.utlb_lo[urc] = cpu->cd.sh.ptel;
+
+	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+}
+
+
+/*
+ *  copy_privileged_register: Copy normal into privileged register, or vice
+ *                            versa, after checking the MD status bit.
+ *
+ *  arg[0] = ptr to source register
+ *  arg[1] = ptr to destination register
+ */
+X(copy_privileged_register)
 {
 	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
 		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
@@ -1184,7 +1265,6 @@ X(ldc_rm_rn_bank)
 
 /*
  *  ldc_rm_sr:      Copy Rm into SR.
- *  ldc_rm_vbr:     Copy Rm into VBR.
  *
  *  arg[1] = ptr to rm
  */
@@ -1196,15 +1276,6 @@ X(ldc_rm_sr)
 	}
 
 	sh_update_sr(cpu, reg(ic->arg[1]));
-}
-X(ldc_rm_vbr)
-{
-	if (!(cpu->cd.sh.sr & SH_SR_MD)) {
-		fatal("TODO: Throw RESINST exception, if MD = 0.\n");
-		exit(1);
-	}
-
-	cpu->cd.sh.vbr = reg(ic->arg[1]);
 }
 
 
@@ -1424,16 +1495,27 @@ X(to_be_translated)
 		} else if (iword == 0x0028) {
 			/*  CLRMAC  */
 			ic->f = instr(clrmac);
+		} else if (iword == 0x002b) {
+			/*  RTE  */
+			ic->f = instr(rte);
+		} else if (iword == 0x0038) {
+			/*  LDTLB  */
+			ic->f = instr(ldtlb);
 		} else if (iword == 0x0048) {
 			/*  CLRS  */
 			ic->f = instr(clrs);
 		} else if (iword == 0x0058) {
 			/*  SETS  */
 			ic->f = instr(sets);
+		} else if ((lo8 & 0x8f) == 0x82) {
+			/*  STC Rm_BANK, Rn  */
+			ic->f = instr(copy_privileged_register);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[(lo8 >> 4) & 7];
 		} else {
 			switch (lo8) {
 			case 0x02:	/*  STC SR,Rn  */
-				ic->f = instr(stc_sr_rn);
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.sr;
 				break;
 			case 0x09:	/*  NOP  */
 				ic->f = instr(nop);
@@ -1457,6 +1539,14 @@ X(to_be_translated)
 				break;
 			case 0x29:	/*  MOVT Rn  */
 				ic->f = instr(movt_rn);
+				break;
+			case 0x32:	/*  STC SSR,Rn  */
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.ssr;
+				break;
+			case 0x42:	/*  STC SPC,Rn  */
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.spc;
 				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
 				    main_opcode, iword & 0xfff);
@@ -1484,6 +1574,9 @@ X(to_be_translated)
 		case 0x4:	/*  MOV.B Rm,@-Rn  */
 			ic->f = instr(mov_b_rm_predec_rn);
 			break;
+		case 0x5:	/*  MOV.W Rm,@-Rn  */
+			ic->f = instr(mov_w_rm_predec_rn);
+			break;
 		case 0x6:	/*  MOV.L Rm,@-Rn  */
 			ic->f = instr(mov_l_rm_predec_rn);
 			break;
@@ -1501,6 +1594,9 @@ X(to_be_translated)
 			break;
 		case 0xd:	/*  XTRCT Rm,Rn  */
 			ic->f = instr(xtrct_rm_rn);
+			break;
+		case 0xf:	/*  MULS.W Rm,Rn  */
+			ic->f = instr(muls_w_rm_rn);
 			break;
 		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
 			    main_opcode, lo4);
@@ -1543,6 +1639,9 @@ X(to_be_translated)
 		case 0xd:	/*  DMULS.L Rm,Rn  */
 			ic->f = instr(dmuls_l_rm_rn);
 			break;
+		case 0xe:	/*  ADDC Rm,Rn  */
+			ic->f = instr(addc_rm_rn);
+			break;
 		default:fatal("Unimplemented opcode 0x%x,0x%x\n",
 			    main_opcode, lo4);
 			goto bad;
@@ -1554,10 +1653,15 @@ X(to_be_translated)
 			ic->f = instr(shad);
 		} else if (lo4 == 0xd) {
 			ic->f = instr(shld);
+		} else if ((lo8 & 0x8f) == 0x83) {
+			/*  STC.L Rm_BANK,@-Rn  */
+			ic->f = instr(mov_l_rm_predec_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[
+			    (lo8 >> 4) & 7];	/* m */
 		} else if ((lo8 & 0x8f) == 0x8e) {
 			/*  LDC Rm, Rn_BANK  */
-			ic->f = instr(ldc_rm_rn_bank);
-			ic->arg[1] = (size_t)&cpu->cd.sh.r[(lo8 >> 4) & 7];
+			ic->f = instr(copy_privileged_register);
+			ic->arg[1] = (size_t)&cpu->cd.sh.r_bank[(lo8 >> 4) & 7];
 		} else {
 			switch (lo8) {
 			case 0x00:	/*  SHLL Rn  */
@@ -1565,6 +1669,14 @@ X(to_be_translated)
 				break;
 			case 0x01:	/*  SHLR Rn  */
 				ic->f = instr(shlr_rn);
+				break;
+			case 0x02:	/*  STS.L MACH,@-Rn  */
+				ic->f = instr(mov_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.mach;
+				break;
+			case 0x06:	/*  LDS.L @Rm+,MACH  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0);
+				ic->arg[0] = (size_t)&cpu->cd.sh.mach;
 				break;
 			case 0x08:	/*  SHLL2 Rn  */
 				ic->f = instr(shll2_rn);
@@ -1589,8 +1701,16 @@ X(to_be_translated)
 			case 0x11:	/*  CMP/PZ Rn  */
 				ic->f = instr(cmppz_rn);
 				break;
+			case 0x12:	/*  STS.L MACL,@-Rn  */
+				ic->f = instr(mov_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.macl;
+				break;
 			case 0x15:	/*  CMP/PL Rn  */
 				ic->f = instr(cmppl_rn);
+				break;
+			case 0x16:	/*  LDS.L @Rm+,MACL  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0);
+				ic->arg[0] = (size_t)&cpu->cd.sh.macl;
 				break;
 			case 0x18:	/*  SHLL8 Rn  */
 				ic->f = instr(shll8_rn);
@@ -1634,7 +1754,23 @@ X(to_be_translated)
 				ic->arg[1] = (addr & 0xffe) + 4;
 				break;
 			case 0x2e:	/*  LDC Rm,VBR  */
-				ic->f = instr(ldc_rm_vbr);
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
+				ic->arg[1] = (size_t)&cpu->cd.sh.vbr;
+				break;
+			case 0x3e:	/*  LDC rm,SSR  */
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
+				ic->arg[1] = (size_t)&cpu->cd.sh.ssr;
+				break;
+			case 0x43:	/*  STC.L SPC,@-Rn  */
+				ic->f = instr(mov_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.spc;
+				break;
+			case 0x4e:	/*  LDC rm,SPC  */
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
+				ic->arg[1] = (size_t)&cpu->cd.sh.spc;
 				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%02x\n",
 				    main_opcode, lo8);
@@ -1682,6 +1818,9 @@ X(to_be_translated)
 			break;
 		case 0x9:	/*  SWAP.W Rm,Rn  */
 			ic->f = instr(swap_w_rm_rn);
+			break;
+		case 0xa:	/*  NEGC Rm,Rn  */
+			ic->f = instr(negc_rm_rn);
 			break;
 		case 0xb:	/*  NEG Rm,Rn  */
 			ic->f = instr(neg_rm_rn);

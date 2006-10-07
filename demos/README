@@ -19,8 +19,6 @@ Simple demos:
   o)  disk		Reads sectors from a disk image, and dumps the
 			contents in hex and ascii to the console.
 
-  o)  rtc		Real-Time Clock example.
-
 
 License note
 ------------

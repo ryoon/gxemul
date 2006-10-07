@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.8 2006-03-04 12:38:49 debug Exp $
+ *  $Id: dev_z8530.c,v 1.9 2006-10-07 02:05:21 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -92,13 +92,9 @@ static void check_incoming(struct cpu *cpu, struct z8530_data *d)
 }
 
 
-/*
- *  dev_z8530_tick():
- *
- *  Generate transmit and receive interrupts at regular intervals.
- */
-void dev_z8530_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(z8530)
 {
+	/*  Generate transmit and receive interrupts at regular intervals.  */
 	struct z8530_data *d = (struct z8530_data *) extra;
 	int asserted = 0;
 

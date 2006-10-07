@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.31 2006-03-04 12:38:49 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.32 2006-10-07 02:05:21 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -66,10 +66,7 @@ struct wdsc_data {
 };
 
 
-/*
- *  dev_wdsc_tick():
- */
-void dev_wdsc_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(wdsc)
 {
 	struct wdsc_data *d = extra;
 

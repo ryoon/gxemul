@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.68 2006-09-30 05:39:44 debug Exp $
+ *  $Id: cpu_mips.c,v 1.69 2006-10-07 02:05:21 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -684,29 +684,6 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 
 
 /*
- *  cpu_flags():
- *
- *  Returns a pointer to a string containing "(d)" "(j)" "(dj)" or "",
- *  depending on the cpu's current delay_slot and last_was_jumptoself
- *  flags.
- */
-static const char *cpu_flags(struct cpu *cpu)
-{
-	if (cpu->delay_slot) {
-		if (cpu->cd.mips.last_was_jumptoself)
-			return " (dj)";
-		else
-			return " (d)";
-	} else {
-		if (cpu->cd.mips.last_was_jumptoself)
-			return " (j)";
-		else
-			return "";
-	}
-}
-
-
-/*
  *  mips_cpu_disassemble_instr():
  *
  *  Convert an instruction word into human readable format, for instruction
@@ -765,19 +742,14 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	debug(": %02x%02x%02x%02x",
 	    instr[3], instr[2], instr[1], instr[0]);
 
-	if (running)
-		debug("%s", cpu_flags(cpu));
+	if (running && cpu->delay_slot)
+		debug(" (d)");
 
 	debug("\t");
 
 	/*
 	 *  Decode the instruction:
 	 */
-
-	if (cpu->cd.mips.nullify_next && running) {
-		debug("(nullified)");
-		goto disasm_ret;
-	}
 
 	hi6 = (instr[3] >> 2) & 0x3f;
 
@@ -2081,12 +2053,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		/*  debug("[ warning: cpu%i exception while EXL is set,"
 		    " not setting EPC ]\n", cpu->cpu_id);  */
 	} else {
-		if (cpu->delay_slot || cpu->cd.mips.nullify_next) {
+		if (cpu->delay_slot) {
 			reg[COP0_EPC] = cpu->pc - 4;
 			reg[COP0_CAUSE] |= CAUSE_BD;
-
-			/*  TODO: Should the BD flag actually be set
-			    on nullified slots?  */
 		} else {
 			reg[COP0_EPC] = cpu->pc;
 			reg[COP0_CAUSE] &= ~CAUSE_BD;
@@ -2097,8 +2066,6 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		cpu->delay_slot = EXCEPTION_IN_DELAY_SLOT;
 	else
 		cpu->delay_slot = NOT_DELAYED;
-
-	cpu->cd.mips.nullify_next = 0;
 
 	/*  TODO: This is true for MIPS64, but how about others?  */
 	if (reg[COP0_STATUS] & STATUS_BEV)

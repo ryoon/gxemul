@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.48 2006-10-02 12:59:32 debug Exp $
+ *  $Id: cpu_mips.h,v 1.49 2006-10-07 02:05:22 debug Exp $
  */
 
 #include "misc.h"
@@ -168,7 +168,6 @@ struct mips_coproc {
 #define	N_SPECIAL		64
 #define	N_REGIMM		32
 
-/*******************************  OLD:  *****************************/
 
 /*  An "impossible" paddr:  */
 #define	IMPOSSIBLE_PADDR		0x1212343456566767ULL
@@ -187,7 +186,6 @@ struct r4000_cache_line {
 	char		dummy;
 };
 
-/********************************************************************/
 
 #ifdef ONEKPAGE
 #define	MIPS_IC_ENTRIES_SHIFT		8
@@ -210,59 +208,19 @@ struct r4000_cache_line {
 DYNTRANS_MISC_DECLARATIONS(mips,MIPS,uint64_t)
 DYNTRANS_MISC64_DECLARATIONS(mips,MIPS,uint8_t)
 
-#if 0
-struct mips_instr_call {
-	void	(*f)(struct cpu *, struct mips_instr_call *);
-	size_t	arg[MIPS_N_IC_ARGS];
-};
-
-/*  Translation cache struct for each physical page:  */
-struct mips_tc_physpage {
-	struct mips_instr_call ics[MIPS_IC_ENTRIES_PER_PAGE + 3];
-	uint32_t	next_ofs;	/*  or 0 for end of chain  */
-	int		flags;
-	uint64_t	physaddr;
-};
-
-struct mips_vpg_tlb_entry {
-	uint8_t		valid;
-	uint8_t		writeflag;
-	unsigned char	*host_page;
-	int64_t		timestamp;
-	uint64_t	vaddr_page;
-	uint64_t	paddr_page;
-};
-#endif
-
-/********************************************************************/
 
 struct mips_cpu {
 	struct mips_cpu_type_def cpu_type;
 
-	struct mips_coproc *coproc[N_MIPS_COPROCS];
-
-	int		compare_register_set;
-	int		compare_interrupts_pending;
-	struct timer	*timer;
-
-	/*  Special purpose registers:  */
-	uint64_t	hi;
-	uint64_t	lo;
+	/*  General purpose registers:  */
+	uint64_t	gpr[N_MIPS_GPRS];
 
 	/*  Dummy destination register when writing to the zero register:  */
 	uint64_t	scratch;
 
-	/*  General purpose registers:  */
-	uint64_t	gpr[N_MIPS_GPRS];
-
-	int		nullify_next;		/*  set to 1 if next instruction
-							is to be nullified  */
-
-	int		show_trace_delay;	/*  0=normal, > 0 = delay until show_trace  */
-	uint64_t	show_trace_addr;
-
-	int		last_was_jumptoself;
-	int		jump_to_self_reg;
+	/*  Special purpose registers:  */
+	uint64_t	hi;
+	uint64_t	lo;
 
 	int		rmw;		/*  Read-Modify-Write  */
 	int		rmw_len;	/*  Length of rmw modification  */
@@ -285,6 +243,14 @@ struct mips_cpu {
 	uint64_t	lo1;
 	uint32_t	r5900_sa;
 
+	/*  Coprocessors:  */
+	struct mips_coproc *coproc[N_MIPS_COPROCS];
+	uint64_t	cop0_config_select1;
+
+	/*  Count/compare timer:  */
+	int		compare_register_set;
+	int		compare_interrupts_pending;
+	struct timer	*timer;
 
 	/*  Data and Instruction caches:  */
 	unsigned char	*cache[2];
@@ -294,12 +260,6 @@ struct mips_cpu {
 	int		cache_linesize[2];
 	int		cache_mask[2];
 	int		cache_miss_penalty[2];
-
-	/*  Other stuff:  */
-	uint64_t	cop0_config_select1;
-
-
-	/*  NEW DYNTRANS:  */
 
 
 	/*

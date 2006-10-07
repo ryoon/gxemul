@@ -1,9 +1,9 @@
-$Id: TODO,v 1.388 2006-10-07 01:14:21 debug Exp $
+$Id: TODO,v 1.389 2006-10-07 02:05:21 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
 
 Implementation:
-	x)  MUST:
+	x)  Fix this? Triggered by NetBSD/sgimips? Hm:
 		to_be_translated(): TODO: unimplemented instruction:
 		000000000065102c: 00200800 (d)  rot_00  at,zr,0
 	x)  Settings / expression evaluator:
@@ -14,23 +14,12 @@ Implementation:
 		x)  Value formatter for resulting output.
 		x)  Begin on the expression evaluator.
 	x)  Clock/timer framework:
-		x)  test-machines:
-			+)  RTC device: date/time, and timer (0 Hz = disable)
-			+)  Add a simple rtc demo
 		x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 		x)  Test the 8253? Right now it doesn't seem to be used?
 		x)  NetWinder timeofday is incorrect!
 		x)  Cobalt TOD is incorrect!
 		x)  Malta TOD is correct with NetBSD, but wrong with Linux.
 		x)  Go through all other machines, one by one, and fix them.
-	x)  Device registry:
-		x)  Allow devices to be moved around; if there is a collision,
-		    return false. It is up to the caller to handle this
-		    situation!
-		x)  NOTE: Translations must be invalidated, both for
-		    registering new devices, and for moving existing ones.
-		    cpu->invalidate translation caches, for all CPUs that
-		    are connected to a specific memory.
 	x)  The TLB dump code could possibly be moved somewhere
 		else? No need to include the dummy functions
 		everywhere.
@@ -365,7 +354,12 @@ Breakpoints: 32-bit vs 64-bit sign extension for MIPS, warnings, etc.
 
 The Device subsystem:
 	x)  allow devices to be moved and/or changed in size (down to a
-	    minimum size, etc, or up to a max size)
+	    minimum size, etc, or up to a max size); if there is a collision,
+	    return false. It is up to the caller to handle this situation!
+	x)  NOTE: Translations must be invalidated, both for
+	    registering new devices, and for moving existing ones.
+	    cpu->invalidate translation caches, for all CPUs that
+	    are connected to a specific memory.
 	x)  keep track of interrupts and busses? actually, allowing any device
 	    to be a bus might be a nice idea.
 	x)  turn interrupt controllers into devices? :-)

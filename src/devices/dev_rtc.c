@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtc.c,v 1.1 2006-10-07 00:36:29 debug Exp $
+ *  $Id: dev_rtc.c,v 1.2 2006-10-07 01:40:33 debug Exp $
  *
  *  An experimental Real-Time Clock device. It can be used to retrieve the
  *  current system time, and to cause periodic interrupts.
@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "cpu.h"
 #include "device.h"
@@ -50,21 +51,25 @@
 #define	DEV_RTC_TICK_SHIFT	14
 
 struct rtc_data {
-	struct timer	*timer;
 	int		hz;
 	int		irq_nr;
-
 	int		pending_interrupts;
+	struct timer	*timer;
+
+	struct timeval	cur_time;	
 };
 
 
-#if 0
+/*
+ *  timer_tick():
+ *
+ *  This function is called d->hz times per second.
+ */
 static void timer_tick(struct timer *t, void *extra)
 {
         struct rtc_data *d = (struct rtc_data *) extra;
         d->pending_interrupts ++;
 }
-#endif
 
 
 DEVICE_TICK(rtc)
@@ -87,6 +92,42 @@ DEVICE_ACCESS(rtc)
 		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
+	case DEV_RTC_TRIGGER_READ:
+		gettimeofday(&d->cur_time, NULL);
+		break;
+
+	case DEV_RTC_SEC:
+		odata = d->cur_time.tv_sec;
+		break;
+
+	case DEV_RTC_USEC:
+		odata = d->cur_time.tv_usec;
+		break;
+
+	case DEV_RTC_HZ:
+		if (writeflag == MEM_READ) {
+			odata = d->hz;
+		} else {
+			d->hz = idata;
+
+			if (d->hz == 0) {
+				/*  Remove the timer, if any:  */
+				if (d->timer != NULL)
+					timer_remove(d->timer);
+
+				d->timer = NULL;
+				d->pending_interrupts = 0;
+			} else {
+				/*  Add a timer, or update the existing one:  */
+				if (d->timer == NULL)
+					d->timer = timer_add(d->hz,
+					    timer_tick, d);
+				else
+					timer_update_frequency(d->timer, d->hz);
+			}
+		}
+		break;
 
 	case DEV_RTC_INTERRUPT_ACK:
 		if (d->pending_interrupts > 0)

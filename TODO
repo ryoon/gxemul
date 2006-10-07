@@ -1,9 +1,6 @@
-$Id: TODO,v 1.387 2006-10-07 00:36:29 debug Exp $
+$Id: TODO,v 1.388 2006-10-07 01:14:21 debug Exp $
 
 Hm. This file is in random order, and not all parts of it are up-to-date.
-
-Testa att flytta MIPS cop0-saker direkt in i cpu->cd.mips, och se
-om det påverkar prestandan.
 
 Implementation:
 	x)  MUST:
@@ -200,6 +197,7 @@ SuperH:
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
+	x)  TLB direct access via memory!
 	x)  ldtlb: Don't invalidate everything.
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to ARM optimization.)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.16 2006-10-07 00:36:29 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.17 2006-10-07 01:14:21 debug Exp $
  *
  *  SH instructions.
  *
@@ -526,6 +526,7 @@ X(mov_l_disp_rm_rn)
  *  mov_b_rm_r0_rn:     Store Rm to address Rn + R0 (8-bit).
  *  mov_l_rm_r0_rn:     Store Rm to address Rn + R0 (32-bit).
  *  mov_l_rm_disp_rn:   Store Rm to address disp + Rn.
+ *  mov_w_r0_disp_rn:   Store R0 to address disp + Rn (16-bit).
  *
  *  arg[0] = ptr to rm
  *  arg[1] = ptr to rn    (or  Rn+(disp<<4)  for mov_l_rm_disp_rn)
@@ -658,6 +659,28 @@ X(mov_l_rm_disp_rn)
 		}
 	}
 }
+X(mov_w_r0_disp_rn)
+{
+	uint32_t addr = reg(ic->arg[0]) + ic->arg[1];
+	uint16_t *p = (uint16_t *) cpu->cd.sh.host_store[addr >> 12];
+	uint16_t data = cpu->cd.sh.r[0];
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE16_TO_HOST(data);
+	else
+		data = BE16_TO_HOST(data);
+
+	if (p != NULL) {
+		p[(addr & 0xfff) >> 1] = data;
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+}
 
 
 /*
@@ -719,6 +742,7 @@ X(xtrct_rm_rn)
 
 /*
  *  div0u:       Division step 0; prepare for unsigned division.
+ *  div0s_rm_rn: Division step 0; prepare for signed division.
  *  div1_rm_rn:  Division step 1.
  *
  *  arg[0] = ptr to rm
@@ -727,6 +751,17 @@ X(xtrct_rm_rn)
 X(div0u)
 {
 	cpu->cd.sh.sr &= ~(SH_SR_Q | SH_SR_M | SH_SR_T);
+}
+X(div0s_rm_rn)
+{
+	int q = reg(ic->arg[1]) >> 31, m = reg(ic->arg[0]) >> 31;
+	cpu->cd.sh.sr &= ~(SH_SR_Q | SH_SR_M | SH_SR_T);
+	if (q)
+		cpu->cd.sh.sr |= SH_SR_Q;
+	if (m)
+		cpu->cd.sh.sr |= SH_SR_M;
+	if (m ^ q)
+		cpu->cd.sh.sr |= SH_SR_T;
 }
 X(div1_rm_rn)
 {
@@ -1264,7 +1299,7 @@ X(copy_privileged_register)
 
 
 /*
- *  ldc_rm_sr:      Copy Rm into SR.
+ *  ldc_rm_sr:      Copy Rm into SR, after checking the MD status bit.
  *
  *  arg[1] = ptr to rm
  */
@@ -1276,6 +1311,19 @@ X(ldc_rm_sr)
 	}
 
 	sh_update_sr(cpu, reg(ic->arg[1]));
+}
+
+
+/*
+ *  trapa:  Immediate trap.
+ *
+ *  arg[0] = imm << 2
+ */
+X(trapa)
+{
+	SYNCH_PC;
+	cpu->cd.sh.tra = ic->arg[0];
+	sh_exception(cpu, EXPEVT_TRAPA, 0);
 }
 
 
@@ -1580,6 +1628,9 @@ X(to_be_translated)
 		case 0x6:	/*  MOV.L Rm,@-Rn  */
 			ic->f = instr(mov_l_rm_predec_rn);
 			break;
+		case 0x7:	/*  DIV0S Rm,Rn  */
+			ic->f = instr(div0s_rm_rn);
+			break;
 		case 0x8:	/*  TST Rm,Rn  */
 			ic->f = instr(tst_rm_rn);
 			break;
@@ -1855,6 +1906,11 @@ X(to_be_translated)
 		    (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4;
 		switch (r8) {
+		case 0x1:	/*  MOV.W R0,@(disp,Rn)  */
+			ic->f = instr(mov_w_r0_disp_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r4];	/* n */
+			ic->arg[1] = lo4 * 2;
+			break;
 		case 0x8:	/*  CMP/EQ #imm,R0  */
 			ic->f = instr(cmpeq_imm_r0);
 			ic->arg[0] = (int8_t)lo8;
@@ -1893,6 +1949,10 @@ X(to_be_translated)
 
 	case 0xc:
 		switch (r8) {
+		case 0x3:
+			ic->f = instr(trapa);
+			ic->arg[0] = lo8 << 2;
+			break;
 		case 0x7:	/*  MOVA @(disp,pc),R0  */
 			ic->f = instr(mova_r0);
 			ic->arg[0] = lo8 * 4 + (addr &

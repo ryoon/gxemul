@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.29 2006-10-07 00:36:29 debug Exp $
+ *  $Id: cpu_sh.c,v 1.30 2006-10-07 01:14:21 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -414,6 +414,12 @@ void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
 		cpu->cd.sh.pteh |= (vaddr & SH4_PTEH_VPN_MASK);
 		break;
 
+	case EXPEVT_TRAPA:
+		/*  Note: The TRA register is already set by the
+		    implementation of the trapa instruction. See
+		    cpu_sh_instr.c.  */
+		break;
+
 	default:fatal("sh_exception(): exception 0x%x is not yet "
 		    "implemented.\n", expevt);
 		exit(1);
@@ -721,9 +727,11 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		debug("add\t#%i,r%i\n", (int8_t)lo8, r8);
 		break;
 	case 0x8:
-		if (r8 == 0x8)
+		if (r8 == 0x1) {
+			debug("mov.w\tr0,@(%i,r%i)\n", lo4 * 2, r4);
+		} else if (r8 == 0x8) {
 			debug("cmp/eq\t#%i,r0\n", (int8_t)lo8);
-		else if (r8 == 0x9 || r8 == 0xb || r8 == 0xd || r8 == 0xf) {
+		} else if (r8 == 0x9 || r8 == 0xb || r8 == 0xd || r8 == 0xf) {
 			addr = (int8_t)lo8;
 			addr = dumpaddr + 4 + (addr << 1);
 			debug("b%s%s\t0x%x\n",

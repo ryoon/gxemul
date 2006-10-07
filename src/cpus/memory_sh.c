@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.7 2006-10-07 00:36:29 debug Exp $
+ *  $Id: memory_sh.c,v 1.8 2006-10-07 01:14:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -62,7 +62,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 	uint64_t *return_paddr, int flags)
 {
 	int wf = flags & FLAG_WRITEFLAG;
-	int i, urc, require_asid_match, cur_asid;
+	int i, urc, require_asid_match, cur_asid, expevt = 0;
 	uint32_t hi, lo, mask;
 	int sh;		/*  Shared  */
 	int d;		/*  Dirty bit  */
@@ -81,7 +81,6 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 	 */
 	urc = ((cpu->cd.sh.mmucr & SH4_MMUCR_URC_MASK) >>
 	    SH4_MMUCR_URC_SHIFT) + 1;
-urc = random() % SH_N_UTLB_ENTRIES;
 	if (urc == SH_N_UTLB_ENTRIES)
 		urc = 0;
 
@@ -166,16 +165,27 @@ urc = random() % SH_N_UTLB_ENTRIES;
 		return 1;
 	}
 
+
 tlb_miss:
-	sh_exception(cpu, wf? EXPEVT_TLB_MISS_ST : EXPEVT_TLB_MISS_LD, vaddr);
-	return 0;
+	expevt = wf? EXPEVT_TLB_MISS_ST : EXPEVT_TLB_MISS_LD;
+	goto exception;
 
 protection_violation:
-	sh_exception(cpu, wf? EXPEVT_TLB_PROT_ST : EXPEVT_TLB_PROT_LD, vaddr);
-	return 0;
+	expevt = wf? EXPEVT_TLB_PROT_ST : EXPEVT_TLB_PROT_LD;
+	goto exception;
 
 initial_write_exception:
-	sh_exception(cpu, EXPEVT_TLB_MOD, vaddr);
+	expevt = EXPEVT_TLB_MOD;
+
+
+exception:
+	if (flags & FLAG_NOEXCEPTIONS) {
+		*return_paddr = 0;
+		return 2;
+	}
+
+	sh_exception(cpu, expevt, vaddr);
+
 	return 0;
 }
 
@@ -200,11 +210,6 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr, uint64_t *return_paddr,
 	/*  U0/P0: Userspace addresses, or P3: Kernel virtual memory.  */
 	if (!(vaddr & 0x80000000) ||
 	    (vaddr >= 0xc0000000 && vaddr < 0xe0000000)) {
-		if (flags & FLAG_NOEXCEPTIONS) {
-			*return_paddr = 0;
-			return 2;
-		}
-
 		/*  Address translation turned off?  */
 		if (!(cpu->cd.sh.mmucr & SH4_MMUCR_AT)) {
 			/*  Then return raw physical address:  */

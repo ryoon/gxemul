@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.32 2006-10-07 04:50:26 debug Exp $
+ *  $Id: cpu_sh.c,v 1.33 2006-10-07 05:03:03 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -549,6 +549,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("clrs\n");
 		else if (iword == 0x0058)
 			debug("sets\n");
+		else if (lo8 == 0x5a)
+			debug("sts\tfpul,r%i\n", r8);
 		else if ((lo8 & 0x8f) == 0x82)
 			debug("stc\tr%i_bank,r%i\n", (lo8 >> 4) & 7, r8);
 		else if (lo8 == 0x83)
@@ -714,6 +716,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("lds\tr%i,fpul\n", r8);
 		else if (lo8 == 0x62)
 			debug("sts.l\tfpscr,@-r%i\n", r8);
+		else if (lo8 == 0x66)
+			debug("lds.l\t@r%i+,fpscr\n", r8);
 		else if (lo8 == 0x6a)
 			debug("lds\tr%i,fpscr\n", r8);
 		else if ((lo8 & 0x8f) == 0x83)
@@ -819,8 +823,15 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		debug("mov\t#%i,r%i\n", (int8_t)lo8, r8);
 		break;
 	case 0xf:
-		if (lo8 == 0x2d)
+		if (lo4 == 0x3)
+			debug("fdiv\t%sr%i,%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo8 == 0x2d)
 			debug("float\tfpul,%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo8 == 0x3d)
+			debug("ftrc\t%sr%i,fpul\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else
 			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, lo8);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.3 2006-10-07 00:36:29 debug Exp $
+ *  $Id: dev_sh4.c,v 1.4 2006-10-08 02:28:40 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -58,7 +58,6 @@ DEVICE_ACCESS(sh4_itlb_aa)
 {
 	/*  TODO: UTLB access. Don't invalidate everything.  */
 	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-	cpu_create_or_reset_tc(cpu);
 	return 1;
 }
 
@@ -67,7 +66,6 @@ DEVICE_ACCESS(sh4_itlb_da1)
 {
 	/*  TODO: UTLB access. Don't invalidate everything.  */
 	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-	cpu_create_or_reset_tc(cpu);
 	return 1;
 }
 
@@ -76,7 +74,6 @@ DEVICE_ACCESS(sh4_utlb_aa)
 {
 	/*  TODO: UTLB access. Don't invalidate everything.  */
 	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-	cpu_create_or_reset_tc(cpu);
 	return 1;
 }
 
@@ -85,7 +82,6 @@ DEVICE_ACCESS(sh4_utlb_da1)
 {
 	/*  TODO: UTLB access. Don't invalidate everything.  */
 	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
-	cpu_create_or_reset_tc(cpu);
 	return 1;
 }
 
@@ -144,6 +140,11 @@ DEVICE_ACCESS(sh4)
 			if (idata & SH4_MMUCR_TI) {
 				/*  TLB invalidate.  */
 
+				/*  TODO: Only invalidate something specific?
+				    And not everything?  */
+				cpu->invalidate_translation_caches(cpu,
+				    0, INVALIDATE_ALL);
+
 				/*  Should always read back as 0.  */
 				idata &= ~SH4_MMUCR_TI;
 			}
@@ -157,7 +158,6 @@ DEVICE_ACCESS(sh4)
 			odata = cpu->cd.sh.ccr;
 		} else {
 			cpu->cd.sh.ccr = idata;
-			debug("[ sh4: ccr = 0x%08"PRIx32" ]\n", cpu->cd.sh.ccr);
 		}
 		break;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.19 2006-10-07 04:50:26 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.20 2006-10-08 02:28:40 debug Exp $
  *
  *  SH instructions.
  *
@@ -44,12 +44,22 @@
 		cpu->pc += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);	\
 	}
 
-#define	RES_INST_IF_NOT_MD	{					\
-		if (!(cpu->cd.sh.sr & SH_SR_MD)) {			\
-			SYNCH_PC;					\
-			sh_exception(cpu, EXPEVT_RES_INST, 0);		\
-			return;						\
-		}							\
+#define	RES_INST_IF_NOT_MD					\
+	if (!(cpu->cd.sh.sr & SH_SR_MD)) {			\
+		SYNCH_PC;					\
+		sh_exception(cpu, EXPEVT_RES_INST, 0);		\
+		return;						\
+	}
+
+#define	FLOATING_POINT_AVAILABLE_CHECK					\
+	if (cpu->cd.sh.sr & SH_SR_FD) {					\
+		/*  FPU disabled: Cause exception.  */			\
+		SYNCH_PC;						\
+		if (cpu->delay_slot)					\
+			sh_exception(cpu, EXPEVT_FPU_SLOT_DISABLE, 0);	\
+		else							\
+			sh_exception(cpu, EXPEVT_FPU_DISABLE, 0);	\
+		return;							\
 	}
 
 
@@ -355,6 +365,7 @@ X(mov_w_disp_pc_rn)
  *  mov_l_disp_rm_rn:  Load a 32-bit value into Rn from address Rm + disp.
  *  mov_b_arg1_postinc_to_arg0:
  *  mov_l_arg1_postinc_to_arg0:
+ *  mov_l_arg1_postinc_to_arg0_fp:  With FP check.
  *
  *  arg[0] = ptr to rm   (or rm + (lo4 << 4) for disp)
  *  arg[1] = ptr to rn
@@ -446,6 +457,32 @@ X(mov_l_arg1_postinc_to_arg0)
 	uint32_t addr = reg(ic->arg[1]);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
 	uint32_t data;
+
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 2];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+	/*  The load was ok:  */
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE32_TO_HOST(data);
+	else
+		data = BE32_TO_HOST(data);
+	reg(ic->arg[1]) = addr + sizeof(uint32_t);
+	reg(ic->arg[0]) = data;
+}
+X(mov_l_arg1_postinc_to_arg0_fp)
+{
+	uint32_t addr = reg(ic->arg[1]);
+	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint32_t data;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
 
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 2];
@@ -933,6 +970,8 @@ X(cmppl_rn)
 /*
  *  shll_rn:  Shift rn left by 1  (t = bit that was shifted out)
  *  shlr_rn:  Shift rn right by 1 (t = bit that was shifted out)
+ *  rotl_rn:  Shift rn left by 1  (t = bit that was shifted out)
+ *  rotr_rn:  Shift rn right by 1 (t = bit that was shifted out)
  *  shar_rn:  Shift rn right arithmetically by 1 (t = bit that was shifted out)
  *  shllX_rn: Shift rn left logically by X bits
  *  shlrX_rn: Shift rn right logically by X bits
@@ -959,6 +998,24 @@ X(shlr_rn)
 	else
 		cpu->cd.sh.sr &= ~SH_SR_T;
 	reg(ic->arg[1]) = rn >> 1;
+}
+X(rotl_rn)
+{
+	uint32_t rn = reg(ic->arg[1]);
+	if (rn >> 31)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[1]) = (rn << 1) | (rn >> 31);
+}
+X(rotr_rn)
+{
+	uint32_t rn = reg(ic->arg[1]);
+	if (rn & 1)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+	reg(ic->arg[1]) = (rn >> 1) | (rn << 31);
 }
 X(shar_rn)
 {
@@ -1339,42 +1396,6 @@ X(ldc_rm_sr)
 
 
 /*
- *  lds_rm_fpul:   Copy Rm into FPUL.
- *  lds_rm_fpscr:  Copy Rm into FPSCR.
- *
- *  arg[1] = ptr to rm
- */
-X(lds_rm_fpul)
-{
-	if (cpu->cd.sh.sr & SH_SR_FD) {
-		/*  FPU disabled: Cause exception.  */
-		SYNCH_PC;
-		if (cpu->delay_slot)
-			sh_exception(cpu, EXPEVT_FPU_SLOT_DISABLE, 0);
-		else
-			sh_exception(cpu, EXPEVT_FPU_DISABLE, 0);
-		return;
-	}
-
-	cpu->cd.sh.fpul = reg(ic->arg[1]);
-}
-X(lds_rm_fpscr)
-{
-	if (cpu->cd.sh.sr & SH_SR_FD) {
-		/*  FPU disabled: Cause exception.  */
-		SYNCH_PC;
-		if (cpu->delay_slot)
-			sh_exception(cpu, EXPEVT_FPU_SLOT_DISABLE, 0);
-		else
-			sh_exception(cpu, EXPEVT_FPU_DISABLE, 0);
-		return;
-	}
-
-	sh_update_fpscr(cpu, reg(ic->arg[1]));
-}
-
-
-/*
  *  trapa:  Immediate trap.
  *
  *  arg[0] = imm << 2
@@ -1384,6 +1405,138 @@ X(trapa)
 	SYNCH_PC;
 	cpu->cd.sh.tra = ic->arg[0];
 	sh_exception(cpu, EXPEVT_TRAPA, 0);
+}
+
+
+/*
+ *  copy_fp_register:   Copy Rm into FPUL.
+ *  lds_rm_fpscr:       Copy Rm into FPSCR.
+ *
+ *  arg[0] = ptr to source
+ *  arg[1] = ptr to destination
+ */
+X(copy_fp_register)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	reg(ic->arg[1]) = reg(ic->arg[0]);
+}
+X(lds_rm_fpscr)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	sh_update_fpscr(cpu, reg(ic->arg[1]));
+}
+
+
+/*
+ *  float_fpul_frn:  Load FPUL into float register.
+ *
+ *  arg[0] = ptr to float register, or float register pair
+ */
+X(float_fpul_frn)
+{
+	uint32_t fpul = cpu->cd.sh.fpul;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
+		/*  Double-precision, using a pair of registers:  */
+		uint64_t ieee = ieee_store_float_value(fpul, IEEE_FMT_D, 0);
+
+		/*  TODO: little endian vs big endian order?  */
+
+		reg(ic->arg[0]) = (uint32_t) ieee;
+		reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) (ieee >> 32);
+	} else {
+		fatal("float_fpul_frn: TODO: single 32-bit\n");
+		exit(1);
+	}
+}
+
+
+/*
+ *  ftrc_frm_fpul:  Truncate a float register into FPUL.
+ *
+ *  arg[0] = ptr to float register, or float register pair
+ */
+X(ftrc_frm_fpul)
+{
+	struct ieee_float_value op1;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
+		/*  Double-precision, using a pair of registers:  */
+		int64_t r1 = reg(ic->arg[0]) + ((uint64_t)reg(ic->arg[0]
+		    + sizeof(uint32_t)) << 32);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
+		cpu->cd.sh.fpul = op1.f;
+	} else {
+		fatal("ftrc_frm_fpul: TODO: single 32-bit\n");
+		exit(1);
+	}
+}
+
+
+/*
+ *  fdiv_frm_frn:  Floating point division.
+ *
+ *  arg[0] = ptr to float register FRm
+ *  arg[1] = ptr to float register FRn
+ */
+X(fdiv_frm_frn)
+{
+	struct ieee_float_value op1, op2;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
+		/*  Double-precision, using a pair of registers:  */
+		int64_t r1, r2, ieee;
+		double result;
+
+		r1 = reg(ic->arg[0]) + ((uint64_t)reg(ic->arg[0]
+		    + sizeof(uint32_t)) << 32);
+		r2 = reg(ic->arg[1]) + ((uint64_t)reg(ic->arg[1]
+		    + sizeof(uint32_t)) << 32);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
+		ieee_interpret_float_value(r2, &op2, IEEE_FMT_D);
+
+		if (op1.f != 0.0)
+			result = op2.f / op1.f;
+		else
+			result = 0.0;
+
+		ieee = ieee_store_float_value(result, IEEE_FMT_D, 0);
+
+		/*  TODO: little endian vs big endian order?  */
+
+		reg(ic->arg[1]) = (uint32_t) ieee;
+		reg(ic->arg[1] + sizeof(uint32_t)) = (uint32_t) (ieee >> 32);
+	} else {
+		fatal("fdiv_frm_frn: TODO: single 32-bit\n");
+		exit(1);
+	}
+}
+
+
+/*
+ *  prom_emul_dreamcast:
+ */
+X(prom_emul_dreamcast)
+{
+	uint32_t old_pc;
+	SYNCH_PC;
+	old_pc = cpu->pc;
+
+	dreamcast_emul(cpu);
+
+	if (!cpu->running) {
+		cpu->n_translated_instrs --;
+		cpu->cd.sh.next_ic = &nothing_call;
+	} else if ((uint32_t)cpu->pc != old_pc) {
+		/*  The PC value was changed by the PROM call.  */
+		quick_pc_to_pointers(cpu);
+	}
 }
 
 
@@ -1619,6 +1772,9 @@ X(to_be_translated)
 			/*  STC Rm_BANK, Rn  */
 			ic->f = instr(copy_privileged_register);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[(lo8 >> 4) & 7];
+		} else if (iword == 0x00ff) {
+			/*  PROM emulation specifically for Dreamcast  */
+			ic->f = instr(prom_emul_dreamcast);
 		} else {
 			switch (lo8) {
 			case 0x02:	/*  STC SR,Rn  */
@@ -1638,6 +1794,10 @@ X(to_be_translated)
 			case 0x1a:	/*  STS MACL,Rn  */
 				ic->f = instr(sts_macl_rn);
 				break;
+			case 0x22:	/*  STC VBR,Rn  */
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.vbr;
+				break;
 			case 0x23:	/*  BRAF Rn  */
 				ic->f = instr(braf_rn);
 				ic->arg[0] = (int32_t) (addr &
@@ -1655,6 +1815,11 @@ X(to_be_translated)
 			case 0x42:	/*  STC SPC,Rn  */
 				ic->f = instr(copy_privileged_register);
 				ic->arg[0] = (size_t)&cpu->cd.sh.spc;
+				break;
+			case 0x5a:	/*  STS FPUL,Rn  */
+				ic->f = instr(copy_fp_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.fpul;
+				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];
 				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
 				    main_opcode, iword & 0xfff);
@@ -1789,6 +1954,12 @@ X(to_be_translated)
 				ic->f = instr(stc_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.sr;
 				break;
+			case 0x04:	/*  ROTL Rn  */
+				ic->f = instr(rotl_rn);
+				break;
+			case 0x05:	/*  ROTR Rn  */
+				ic->f = instr(rotr_rn);
+				break;
 			case 0x06:	/*  LDS.L @Rm+,MACH  */
 				ic->f = instr(mov_l_arg1_postinc_to_arg0);
 				ic->arg[0] = (size_t)&cpu->cd.sh.mach;
@@ -1888,13 +2059,18 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sh.spc;
 				break;
 			case 0x5a:	/*  LDS Rm,FPUL  */
-				ic->f = instr(lds_rm_fpul);
-				/*  arg 1 = R8 = Rm  */
+				ic->f = instr(copy_fp_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
+				ic->arg[1] = (size_t)&cpu->cd.sh.fpul;
 				break;
 			case 0x62:	/*  STS.L FPSCR,@-Rn  */
 				ic->f = instr(mov_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.fpscr;
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+				break;
+			case 0x66:	/*  LDS.L @Rm+,FPSCR  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0_fp);
+				ic->arg[0] = (size_t)&cpu->cd.sh.fpscr;
 				break;
 			case 0x6a:	/*  LDS Rm,FPSCR  */
 				ic->f = instr(lds_rm_fpscr);
@@ -2069,6 +2245,27 @@ X(to_be_translated)
 		ic->f = instr(mov_imm_rn);
 		ic->arg[0] = (int8_t)lo8;
 		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+		break;
+
+	case 0xf:
+		if (lo4 == 0x3) {
+			/*  FDIV FRm,FRn  */
+			ic->f = instr(fdiv_frm_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
+			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x2d) {
+			/*  FLOAT FPUL,FRn  */
+			ic->f = instr(float_fpul_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x3d) {
+			/*  FTRC FRm,FPUL  */
+			ic->f = instr(ftrc_frm_fpul);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else {
+			fatal("Unimplemented opcode 0x%x,0x%02x\n",
+			    main_opcode, lo8);
+			goto bad;
+		}
 		break;
 
 	default:fatal("Unimplemented main opcode 0x%x\n", main_opcode);

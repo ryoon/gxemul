@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.33 2006-10-07 05:03:03 debug Exp $
+ *  $Id: cpu_sh.c,v 1.34 2006-10-08 02:28:40 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -40,6 +40,7 @@
 
 #include "cpu.h"
 #include "device.h"
+#include "float_emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -275,8 +276,7 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		for (i=0; i<nregs; i++) {
 			if ((i % 4) == 0)
 				debug("cpu%i:", x);
-			debug(" r%-2i = 0x%08x ", i,
-			    (int)cpu->cd.sh.r[i]);
+			debug(" r%-2i = 0x%08x ", i, (int)cpu->cd.sh.r[i]);
 			if ((i % 4) == 3)
 				debug("\n");
 		}
@@ -286,6 +286,14 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		/*  Floating point:  */
 		debug("cpu%i: fpscr = 0x%08"PRIx32"  fpul = 0x%08"PRIx32
 		    "\n", x, cpu->cd.sh.fpscr, cpu->cd.sh.fpul);
+
+		for (i=0; i<SH_N_FPRS; i++) {
+			if ((i % 4) == 0)
+				debug("cpu%i:", x);
+			debug(" fr%-2i=0x%08x ", i, (int)cpu->cd.sh.fr[i]);
+			if ((i % 4) == 3)
+				debug("\n");
+		}
 	}
 
 	if (coprocs & 2) {
@@ -527,6 +535,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("sts\tmacl,r%i\n", r8);
 		else if (iword == 0x001b)
 			debug("sleep\n");
+		else if (lo8 == 0x22)
+			debug("stc\tvbr,r%i\n", r8);
 		else if (lo8 == 0x23)
 			debug("braf\tr%i\n", r8);
 		else if (iword == 0x0028)
@@ -561,6 +571,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("ocbp\t@r%i\n", r8);
 		else if (lo8 == 0xb3)
 			debug("ocbwb\t@r%i\n", r8);
+		else if (iword == 0x00ff)
+			debug("gxemul_dreamcast_prom_emul\n");
 		else
 			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
 		break;
@@ -823,10 +835,20 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		debug("mov\t#%i,r%i\n", (int8_t)lo8, r8);
 		break;
 	case 0xf:
-		if (lo4 == 0x3)
+		if (lo4 == 0x0)
+			debug("fadd\t%sr%i,%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo4 == 0x3)
 			debug("fdiv\t%sr%i,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo4 == 0x8)
+			debug("fmov\t@r%i,%sr%i\n", r4,
+			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
+		else if (lo4 == 0x9)
+			debug("fmov\t@r%i+,%sr%i\n", r4,
+			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
 		else if (lo8 == 0x2d)
 			debug("float\tfpul,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);

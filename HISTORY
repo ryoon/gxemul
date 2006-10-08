@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1382 2006-10-07 04:50:25 debug Exp $
+$Id: HISTORY,v 1.1383 2006-10-08 02:28:40 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3083,5 +3083,8 @@ Changelog for GXemul:
 20061006	Adding more SH instructions (various loads and stores, rte,
 		negc, muls.w, various privileged register-move instructions).
 20061007	More SH instructions: various move instructions, trapa, div0s,
-		some floating-point related stuff.
+		float, fdiv, ftrc.
 		Continuing on dev_rtc; removing the rtc demo.
+20061008	Adding a dummy Dreamcast PROM module. (Homebrew Dreamcast
+		programs using KOS libs need this.)
+		Adding more SH instructions: "stc vbr,rn", rotl, rotr.

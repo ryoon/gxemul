@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.246 2006-09-19 12:29:46 debug Exp $
+ *  $Id: misc.h,v 1.247 2006-10-08 02:28:40 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -164,6 +164,11 @@ struct memory;
 
 /*  dec_prom.c:  */
 int decstation_prom_emul(struct cpu *cpu);
+
+
+/*  dreamcast.c:  */
+void dreamcast_machine_setup(struct machine *);
+int dreamcast_emul(struct cpu *cpu);
 
 
 /*  file.c:  */

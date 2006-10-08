@@ -23,72 +23,99 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- *   
  *
- *  $Id: machine_dreamcast.c,v 1.8 2006-10-08 02:28:40 debug Exp $
  *
- *  Machine for experimenting with NetBSD/dreamcast.
+ *  $Id: dreamcast.c,v 1.1 2006-10-08 02:28:40 debug Exp $
+ *
+ *  Dreamcast PROM emulation.
+ *
+ *  NOTE: This is basically just a dummy module, for now.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include "cpu.h"
-#include "device.h"
-#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+#ifdef ENABLE_SH
 
-MACHINE_SETUP(dreamcast)
+
+/*
+ *  dreamcast_machine_setup():
+ */
+void dreamcast_machine_setup(struct machine *machine)
 {
-	machine->machine_name = "Dreamcast";
+	int i;
+	struct cpu *cpu = machine->cpus[0];
 
-	if (machine->emulated_hz == 0)
-		machine->emulated_hz = 200000000;
-
-	if (!machine->use_x11)
-		fprintf(stderr, "-------------------------------------"
-		    "------------------------------------------\n"
-		    "\n  WARNING!  You are emulating a Dreamcast without -X."
-		    "\n            You will miss graphical output!\n\n"
-		    "-------------------------------------"
-		    "------------------------------------------\n");
-
-	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
-
-	/*
- 	 *  NetBSD/dreamcast uses a 640x480 16-bit framebuffer at 0x05000000.
-	 */
-	dev_fb_init(machine, machine->memory, 0x05000000,
-	    VFB_HPC, 640,480, 640,480, 16, "Dreamcast PVR");
-
-	if (!machine->prom_emulation)
-		return;
-
-	dreamcast_machine_setup(machine);
+	for (i=0; i<0x100; i+=sizeof(uint32_t)) {
+		store_32bit_word(cpu, 0x8c000000 + i, 0x8c000100 + i);
+		store_16bit_word(cpu, 0x8c000100 + i, 0x00ff);
+	}
 }
 
 
-MACHINE_DEFAULT_CPU(dreamcast)
+/*
+ *  dreamcast_emul_gdrom():
+ */
+int dreamcast_emul_gdrom(struct cpu *cpu)
 {
-	/*  Hitachi SH4, 200 MHz  */
-	machine->cpu_name = strdup("SH4");
+	int index = cpu->cd.sh.r[7];
+
+	switch (index) {
+
+	case 3:	/*  Init  */
+		/*  TODO: Do something here?  */
+		break;
+
+	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
+		printf("\n");
+		fatal("[ dreamcast_emul_gdrom(): unimplemented dreamcast gdrom "
+		    "function 0x%"PRIx32" ]\n", index);
+		cpu->running = 0;
+	}
+
+	return 1;
 }
 
 
-MACHINE_DEFAULT_RAM(dreamcast)
+/*
+ *  dreamcast_emul():
+ */
+int dreamcast_emul(struct cpu *cpu)
 {
-	machine->physical_ram_in_mb = 16;
+	int addr = cpu->pc & 0xff;
+
+	switch (addr) {
+
+	case 0x00:
+		/*  Reboot  */
+		cpu->running = 0;
+		break;
+
+	case 0xbc:
+		/*  GD-ROM emulation  */
+		dreamcast_emul_gdrom(cpu);
+		break;
+
+	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
+		printf("\n");
+		fatal("[ dreamcast_emul(): unimplemented dreamcast PROM "
+		    "address 0x%"PRIx32" ]\n", (uint32_t)cpu->pc);
+		cpu->running = 0;
+		return 1;
+	}
+
+	/*  Return from subroutine:  */
+	cpu->pc = cpu->cd.sh.pr;
+
+	return 1;
 }
 
 
-MACHINE_REGISTER(dreamcast)
-{
-	MR_DEFAULT(dreamcast, "Dreamcast", ARCH_SH, MACHINE_DREAMCAST);
-	me->set_default_ram = machine_default_ram_dreamcast;
-	machine_entry_add_alias(me, "dreamcast");
-}
-
+#endif	/*  ENABLE_SH  */

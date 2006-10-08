@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha_palcode.c,v 1.14 2006-09-01 11:39:50 debug Exp $
+ *  $Id: cpu_alpha_palcode.c,v 1.15 2006-10-08 02:28:58 debug Exp $
  *
  *  Alpha PALcode-related functionality.
  *
@@ -95,7 +95,7 @@ void alpha_palcode_name(uint32_t palcode, char *buf, size_t buflen)
 	case 0x86: snprintf(buf, buflen, "PAL_OSF1_imb"); break;
 	case 0x92: snprintf(buf, buflen, "PAL_OSF1_urti"); break;
 	case 0x3fffffe: snprintf(buf, buflen, "GXemul_PROM"); break;
-	default:snprintf(buf, buflen, "UNKNOWN 0x%x", palcode);
+	default:snprintf(buf, buflen, "UNKNOWN 0x%"PRIx32, palcode);
 	}
 }
 

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.72 2006-09-09 09:51:17 debug Exp $
+.\" $Id: gxemul.1,v 1.73 2006-10-08 02:28:58 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -479,7 +479,8 @@ real-world processor.
 .Pp
 .Nm
 is in general not timing-accurate. Some emulation modes
-(DECstation, CATS, NetWinder, and MobilePro) try to make the guest
+(DECstation, CATS, NetWinder, MobilePro (hpcmips), Malta (evbmips),
+Cobalt, and Algor) try to make the guest
 operating system's clock run at the same speed as the host clock.
 However, the number of instructions executed per clock tick can
 obviously vary, depending on the current CPU load on the host.

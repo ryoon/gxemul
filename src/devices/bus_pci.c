@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.71 2006-08-30 15:07:47 debug Exp $
+ *  $Id: bus_pci.c,v 1.72 2006-10-08 02:28:58 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -1071,7 +1071,7 @@ printf("reg = 0x%x\n", reg);
 	case PCI_COMMAND_STATUS_REG:
 		if (value & PCI_COMMAND_IO_ENABLE)
 			enabled = 1;
-printf("  value = 0x%x\n", value);
+printf("  value = 0x%"PRIx32"\n", value);
 		if (wdc0 != NULL)
 			wdc_set_io_enabled(wdc0, enabled);
 		if (wdc1 != NULL)

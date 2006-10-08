@@ -1,4 +1,4 @@
-$Id: TODO,v 1.391 2006-10-07 04:50:07 debug Exp $
+$Id: TODO,v 1.392 2006-10-08 02:28:58 debug Exp $
 
 This file is in random order, and not all parts of it are up-to-date.
 
@@ -21,6 +21,33 @@ Long-term design:
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
 	x)  Reimplement the config file parser from scratch.
+
+Dyntrans:
+	o)  dev_mp doesn't work well with dyntrans yet
+	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
+	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
+		so that it caches a translation (that is, an instruction
+		word and the instr_call it was translated to the last
+		time), so that it doesn't need to do slow
+		to_be_translated for each end of page?
+	x)  Program Counter statistics:
+		Per machine? What about SMP? All data to the same file?
+		A debugger command should be possible to use to enable/
+		disable statistics gathering.
+		Configuration file option!
+	x)  Breakpoints:
+		o) Physical vs virtual addresses!
+		o) 32-bit vs 64-bit sign extension for MIPS, and others?
+	x)  INVALIDATION should cause translations in _all_ cpus to be
+	    invalidated, e.g. on a write to a write-protected page
+	    (containing code)
+	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
+	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
+	x)  true recompilation backend? think carefully about this,
+	    experiment in a separate project (not in GXemul)
+		o) First test would be to just implement a simple
+		   instruction such as MIPS' addiu or lui, on AMD64
+		   hosts...
 
 Simple Valgrind-like checks?
 	o)  Mark every address with bits which tell whether or not the address
@@ -68,33 +95,6 @@ MIPS:
 		x)  memory space, exceptions, ...
 		x)  use cop0 framemask for tlb lookups
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
-
-Dyntrans:
-	o)  dev_mp doesn't work well with dyntrans yet
-	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
-	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
-		so that it caches a translation (that is, an instruction
-		word and the instr_call it was translated to the last
-		time), so that it doesn't need to do slow
-		to_be_translated for each end of page?
-	x)  Program Counter statistics:
-		Per machine? What about SMP? All data to the same file?
-		A debugger command should be possible to use to enable/
-		disable statistics gathering.
-		Configuration file option!
-	x)  Breakpoints:
-		o) Physical vs virtual addresses!
-		o) 32-bit vs 64-bit sign extension for MIPS, and others?
-	x)  INVALIDATION should cause translations in _all_ cpus to be
-	    invalidated, e.g. on a write to a write-protected page
-	    (containing code)
-	x)  16-bit encodings? (MIPS16, ARM Thumb, 32-bit SH on SH64)
-	x)  Lots of other stuff: see src/cpus/README_DYNTRANS
-	x)  true recompilation backend? think carefully about this,
-	    experiment in a separate project (not in GXemul)
-		o) First test would be to just implement a simple
-		   instruction such as MIPS' addiu or lui, on AMD64
-		   hosts...
 
 SuperH:
 	x)  Instruction tracing should include symbols for branch targets,

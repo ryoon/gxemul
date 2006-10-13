@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.9 2006-10-13 05:02:32 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.10 2006-10-13 06:31:51 debug Exp $
  *
  *  Machine for experimenting with NetBSD/dreamcast.
  */
@@ -64,7 +64,7 @@ MACHINE_SETUP(dreamcast)
 	 *
 	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
 	 *  0x00200000 - 0x003fffff	Flash (256 KB)
-	 *  0x005f8000 - ...		Video registers
+	 *  0x005f8000 - ...		PVR registers
 	 *  0x00700000 - ...		SPU registers
 	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)
 	 *  0x01000000 - ...		Parallel port registers
@@ -78,11 +78,7 @@ MACHINE_SETUP(dreamcast)
 
 	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
 
-	/*
- 	 *  NetBSD/dreamcast uses a 640x480 16-bit framebuffer at 0x05000000.
-	 */
-	dev_fb_init(machine, machine->memory, 0x05000000,
-	    VFB_HPC, 640,480, 640,480, 16, "Dreamcast PVR");
+	device_add(machine, "pvr");
 
 	if (!machine->prom_emulation)
 		return;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.35 2006-10-13 05:02:32 debug Exp $
+ *  $Id: cpu_sh.c,v 1.36 2006-10-13 06:31:50 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -567,6 +567,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("sets\n");
 		else if (lo8 == 0x5a)
 			debug("sts\tfpul,r%i\n", r8);
+		else if (lo8 == 0x6a)
+			debug("sts\tfpscr,r%i\n", r8);
 		else if ((lo8 & 0x8f) == 0x82)
 			debug("stc\tr%i_bank,r%i\n", (lo8 >> 4) & 7, r8);
 		else if (lo8 == 0x83)
@@ -875,6 +877,10 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		else if (lo8 == 0x3d)
 			debug("ftrc\t%sr%i,fpul\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo8 == 0x8d)
+			debug("fldi0\tfr%i\n", r8);
+		else if (lo8 == 0x9d)
+			debug("fldi1\tfr%i\n", r8);
 		else if ((iword & 0x01ff) == 0x00fd)
 			debug("fsca\tfpul,dr%i\n", r8);
 		else

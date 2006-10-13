@@ -25,14 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.2 2006-10-13 05:02:32 debug Exp $
+ *  $Id: dreamcast.c,v 1.3 2006-10-13 06:31:51 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
  *  NOTE: This is basically just a dummy module, for now.
  *
  *  See http://mc.pp.se/dc/syscalls.html for a description of what the
- *  PROM syscalls do.
+ *  PROM syscalls do. (The symbolic names in this module are the same as on
+ *  that page.)
  */
 
 #include <stdio.h>
@@ -73,59 +74,70 @@ void dreamcast_machine_setup(struct machine *machine)
 
 
 /*
- *  dreamcast_emul_gdrom():
- */
-int dreamcast_emul_gdrom(struct cpu *cpu)
-{
-	int index = cpu->cd.sh.r[7];
-
-	switch (index) {
-
-	case 3:	/*  Init  */
-		/*  TODO: Do something here?  */
-		break;
-
-	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
-		printf("\n");
-		fatal("[ dreamcast_emul_gdrom(): unimplemented dreamcast gdrom "
-		    "function 0x%"PRIx32" ]\n", index);
-		cpu->running = 0;
-	}
-
-	return 1;
-}
-
-
-/*
  *  dreamcast_emul():
  */
 int dreamcast_emul(struct cpu *cpu)
 {
 	int addr = cpu->pc & 0xff;
+	int r1 = cpu->cd.sh.r[1];
+	int r6 = cpu->cd.sh.r[6];
+	int r7 = cpu->cd.sh.r[7];
 
 	switch (addr) {
 
 	case 0x00:
-		/*  Reboot  */
+		/*  Special case: Reboot  */
 		cpu->running = 0;
+		break;
+
+	case 0xb0:
+		/*  SYSINFO  */
+		switch (r7) {
+		default:fatal("[ SYSINFO: Unimplemented r7=%i ]\n", r7);
+		}
+		break;
+
+	case 0xb4:
+		/*  ROMFONT  */
+		switch (r1) {
+		default:fatal("[ ROMFONT: Unimplemented r1=%i ]\n", r1);
+		}
+		break;
+
+	case 0xb8:
+		/*  FLASHROM  */
+		switch (r7) {
+		default:fatal("[ FLASHROM: Unimplemented r7=%i ]\n", r7);
+		}
 		break;
 
 	case 0xbc:
-		/*  GD-ROM emulation  */
-		dreamcast_emul_gdrom(cpu);
+		switch ((int32_t)r6) {
+		case 0:	/*  GD-ROM emulation  */
+			switch (r7) {
+			case 3:	/*  GDROM_INIT  */
+				/*  TODO: Do something here?  */
+				break;
+			default:fatal("[ GDROM: Unimplemented r7=%i ]\n", r7);
+			}
+			break;
+		default:fatal("[ 0xbc: Unimplemented r6=0x%x ]\n", r6);
+		}
 		break;
 
-	default:cpu_register_dump(cpu->machine, cpu, 1, 0);
-		printf("\n");
-		fatal("[ dreamcast_emul(): unimplemented dreamcast PROM "
-		    "address 0x%"PRIx32" ]\n", (uint32_t)cpu->pc);
-		cpu->running = 0;
-		return 1;
+	default:goto bad;
 	}
 
 	/*  Return from subroutine:  */
 	cpu->pc = cpu->cd.sh.pr;
 
+	return 1;
+
+bad:
+	cpu_register_dump(cpu->machine, cpu, 1, 0);
+	printf("\n");
+	fatal("[ dreamcast_emul(): unimplemented dreamcast PROM call ]\n");
+	cpu->running = 0;
 	return 1;
 }
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.393 2006-10-13 05:01:19 debug Exp $
+$Id: TODO,v 1.394 2006-10-13 06:31:50 debug Exp $
 
 This file is in random order, and not all parts of it are up-to-date.
 
@@ -7,9 +7,6 @@ This file is in random order, and not all parts of it are up-to-date.
 
 Generalized expression evaluator!
 Current CPU/machine/emul in the expression evaluator!
-
-dreamcast prom emulation; at least add fatal TODO messages for
-all known syscalls.
 
 ---------------------------
 

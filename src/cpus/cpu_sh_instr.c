@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.21 2006-10-13 05:02:32 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.22 2006-10-13 06:31:50 debug Exp $
  *
  *  SH instructions.
  *
@@ -1648,6 +1648,23 @@ X(fsca_fpul_drn)
 
 
 /*
+ *  fldi0, fldi1: Load immediate (0.0 or 1.0) into floating point register.
+ *
+ *  arg[0] = ptr to fp register
+ */
+X(fldi0_rn)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	reg(ic->arg[0]) = 0x00000000;
+}
+X(fldi1_rn)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	reg(ic->arg[0]) = 0x3f800000;
+}
+
+
+/*
  *  fadd_frm_frn:  Floating point addition.
  *  fmul_frm_frn:  Floating point multiplication.
  *  fdiv_frm_frn:  Floating point division.
@@ -1775,6 +1792,37 @@ X(fdiv_frm_frn)
 
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
+}
+
+
+/*
+ *  tas_b_rn: Test-and-Set.
+ *
+ *  arg[1] = ptr to Rn
+ */
+X(tas_b_rn)
+{
+	uint32_t addr = reg(ic->arg[1]);
+	uint8_t byte, newbyte;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, &byte, 1, MEM_READ,
+	   CACHE_DATA)) {
+		/*  Exception.  */
+		return;
+	}
+
+	newbyte = byte | 0x80;
+
+	if (!cpu->memory_rw(cpu, cpu->mem, addr, &newbyte, 1, MEM_WRITE,
+	   CACHE_DATA)) {
+		/*  Exception.  */
+		return;
+	}
+
+	if (byte == 0)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
 }
 
 
@@ -2083,6 +2131,15 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.fpul;
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];
 				break;
+			case 0x6a:	/*  STS FPSCR,Rn  */
+				ic->f = instr(copy_fp_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.fpscr;
+				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];
+				break;
+			case 0x83:	/*  PREF @Rn  */
+				/*  Treat as nop for now:  */
+				ic->f = instr(nop);
+				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
 				    main_opcode, iword & 0xfff);
 				goto bad;
@@ -2265,6 +2322,9 @@ X(to_be_translated)
 				break;
 			case 0x19:	/*  SHLR8 Rn  */
 				ic->f = instr(shlr8_rn);
+				break;
+			case 0x1b:	/*  TAS.B @Rn  */
+				ic->f = instr(tas_b_rn);
 				break;
 			case 0x20:	/*  SHAL Rn  */
 				ic->f = instr(shll_rn);  /*  NOTE: shll  */
@@ -2558,6 +2618,14 @@ X(to_be_translated)
 		} else if (lo8 == 0x3d) {
 			/*  FTRC FRm,FPUL  */
 			ic->f = instr(ftrc_frm_fpul);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x8d) {
+			/*  FLDI0 FRm  */
+			ic->f = instr(fldi0_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x9d) {
+			/*  FLDI1 FRm  */
+			ic->f = instr(fldi1_rn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if ((iword & 0x01ff) == 0x00fd) {
 			/*  FSCA FPUL,DRn  */

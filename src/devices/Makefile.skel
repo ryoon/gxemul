@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.125 2006-10-07 00:36:29 debug Exp $
+#  $Id: Makefile.skel,v 1.126 2006-10-13 06:31:51 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -13,7 +13,7 @@ OBJS=lk201.o \
 	dev_dc7085.o dev_ssc.o dev_scc.o dev_ns16550.o dev_8250.o dev_z8530.o \
 	dev_fb.o dev_colorplanemask.o dev_px.o dev_sfb.o dev_pmagja.o \
 	dev_bt459.o dev_bt455.o dev_bt431.o dev_pal.o dev_epcom.o \
-	dev_dec21030.o \
+	dev_dec21030.o dev_pvr.o \
 	dev_vga.o dev_pckbc.o dev_8253.o dev_8259.o dev_pccmos.o \
 	dev_rd94.o dev_jazz.o dev_m700_fb.o dev_fdc.o \
 	dev_sgi_ip19.o dev_sgi_ip20.o dev_sgi_ip22.o dev_sgi_ip30.o \

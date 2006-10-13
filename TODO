@@ -1,6 +1,17 @@
-$Id: TODO,v 1.392 2006-10-08 02:28:58 debug Exp $
+$Id: TODO,v 1.393 2006-10-13 05:01:19 debug Exp $
 
 This file is in random order, and not all parts of it are up-to-date.
+
+
+---------------------------
+
+Generalized expression evaluator!
+Current CPU/machine/emul in the expression evaluator!
+
+dreamcast prom emulation; at least add fatal TODO messages for
+all known syscalls.
+
+---------------------------
 
 
 Long-term design:
@@ -99,11 +110,12 @@ MIPS:
 SuperH:
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
+	x)  Store Queues! (Necessary for Dreamcast Tile Accelerator stuff.)
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  TLB direct access via memory!
 	x)  ldtlb: Don't invalidate everything.
 	x)  Replace pc-relative loads with immediate load, if within the
-	    same page. (Similar to ARM optimization.)
+	    same page. (Similar to the same optimization for ARM.)
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Transputer:
@@ -343,7 +355,7 @@ PCI:
 	    could be useful for several machine modes (Malta, Algor, evbarm,
 	    hp700?, macppc, etc.)
 
-x)  Clocks and timers:
+Clocks and timers:
 	x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
 	x)  Test the 8253? Right now it doesn't seem to be used?
 	x)  NetWinder timeofday is incorrect!
@@ -367,7 +379,8 @@ Config file parser:
 
 Floating point layer:
 	o)  make it common enough to be used by _all_ emulation modes
-	o)  implement more stuff
+	o)  implement correct error/exception handling and rounding modes
+	o)  implement more helper functions (i.e. add, sub, mul...)
 	o)  non-IEEE modes (i.e. x86)?
 
 Userland emulation:

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.228 2006-10-07 00:36:29 debug Exp $
+$Id: RELEASE,v 1.229 2006-10-13 05:01:19 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -29,6 +29,8 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	(evbmips), Cobalt, Algor, and the testmips machine modes have been
 	modified to use the new clock/timer framework.
 
+    o)	... TODO: Generalized expression evaluator!
+
     o)	The wdc (standard IDE controller) had a bug which prevented disk
 	images larger than 2 GB to work correctly. This has been fixed.
 
@@ -42,9 +44,15 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	  x)  For VR41xx (e.g. MobilePro) emulation, the standby instruction
 	      should work like the 'wait' instruction.
 
-	  x)  For DECstation (R3000) emulation, there are "instruction
-	      combination" hacks for both NetBSD and Debian, faking the
-	      behaviour of the real 'wait' instruction.
+	  x)  For R3000 emulation, where there is no hardware wait instruction,
+	      I've implemented "instruction combination" hacks for both
+	      NetBSD/pmax and Debian/pmax, so that their cpu idle loops are
+	      detected and treated almost as a wait instruction.
+
+    o)	MIPS 64-bit address translation (X=1) was not fully working before;
+	TLB exception handling for xkseg and larger-than-2GB-userland should
+	now actually work. (Thanks to Juli Mallett and Carl van Schaik for
+	noticing these problems.)
 
     o)	The mouse cursor update routines in DECstation (LK201) emulation
 	previously used the fact that guest OSes set the _hardware_

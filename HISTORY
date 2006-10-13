@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1383 2006-10-08 02:28:40 debug Exp $
+$Id: HISTORY,v 1.1384 2006-10-13 05:02:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3087,4 +3087,7 @@ Changelog for GXemul:
 		Continuing on dev_rtc; removing the rtc demo.
 20061008	Adding a dummy Dreamcast PROM module. (Homebrew Dreamcast
 		programs using KOS libs need this.)
-		Adding more SH instructions: "stc vbr,rn", rotl, rotr.
+		Adding more SH instructions: "stc vbr,rn", rotl, rotr, fsca,
+		fmul, fadd, various floating-point moves, etc. A 256-byte
+		demo for Dreamcast runs :-)
+20061012	Adding the SH "lds Rm,pr" and bsr instructions.

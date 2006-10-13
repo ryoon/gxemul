@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.8 2006-10-08 02:28:40 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.9 2006-10-13 05:02:32 debug Exp $
  *
  *  Machine for experimenting with NetBSD/dreamcast.
  */
@@ -56,6 +56,25 @@ MACHINE_SETUP(dreamcast)
 		    "\n            You will miss graphical output!\n\n"
 		    "-------------------------------------"
 		    "------------------------------------------\n");
+
+	/*
+	 *  Physical address layout on the Dreamcast, according to
+	 *  http://www.boob.co.uk/docs/Dreamcast_memory.txt and
+	 *  http://www.ludd.luth.se/~jlo/dc/memory.txt:
+	 *
+	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
+	 *  0x00200000 - 0x003fffff	Flash (256 KB)
+	 *  0x005f8000 - ...		Video registers
+	 *  0x00700000 - ...		SPU registers
+	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)
+	 *  0x01000000 - ...		Parallel port registers
+	 *  0x02000000 - ...		CD-ROM port registers
+	 *  0x05000000 - 0x057fffff	Video RAM (8 MB)
+	 *  0x0c000000 - 0x0cffffff	RAM (16 MB)
+	 *  0x10000000 - ...		Tile accelerator (?)
+	 *  0x10800000 - ...		Write-only mirror of Video RAM
+	 *  0x14000000 - ...		G2 (?)
+	 */
 
 	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
 

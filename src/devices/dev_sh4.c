@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.4 2006-10-08 02:28:40 debug Exp $
+ *  $Id: dev_sh4.c,v 1.5 2006-10-13 05:02:32 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -210,6 +210,9 @@ DEVINIT(sh4)
 
 	memory_device_register(machine->memory, devinit->name,
 	    SH4_REG_BASE, 0x01000000, dev_sh4_access, d, DM_DEFAULT, NULL);
+
+	/*  On-chip RAM/cache:  */
+	dev_ram_init(machine, 0x1e000000, 0x8000, DEV_RAM_RAM, 0x0);
 
 	/*  0xe0000000: Store queue.  */
 	dev_ram_init(machine, 0xe0000000, 0x4000000, DEV_RAM_RAM, 0x0);

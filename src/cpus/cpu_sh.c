@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.34 2006-10-08 02:28:40 debug Exp $
+ *  $Id: cpu_sh.c,v 1.35 2006-10-13 05:02:32 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -139,6 +139,11 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		snprintf(tmpstr, sizeof(tmpstr), "r%i_bank", i);
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.r_bank[i]);
 	}
+	for (i=0; i<SH_N_FPRS; i++) {
+		char tmpstr[6];
+		snprintf(tmpstr, sizeof(tmpstr), "fr%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.fr[i]);
+	}
 
 	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
 	if (strcasecmp(cpu->cd.sh.cpu_type.name, "SH4") == 0) {
@@ -224,6 +229,7 @@ int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 		}
 		break;
 	case 0xa:	/*  bra  */
+	case 0xb:	/*  bsr  */
 		return 1;
 	}
 
@@ -753,6 +759,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("mov\tr%i,r%i\n", r4, r8);
 		else if (lo4 == 0x4)
 			debug("mov.b\t@r%i+,r%i\n", r4, r8);
+		else if (lo4 == 0x5)
+			debug("mov.w\t@r%i+,r%i\n", r4, r8);
 		else if (lo4 == 0x6)
 			debug("mov.l\t@r%i+,r%i\n", r4, r8);
 		else if (lo4 == 0x7)
@@ -782,6 +790,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 	case 0x8:
 		if (r8 == 0x1) {
 			debug("mov.w\tr0,@(%i,r%i)\n", lo4 * 2, r4);
+		} else if (r8 == 0x5) {
+			debug("mov.w\t@(%i,r%i),r0\n", lo4 * 2, r4);
 		} else if (r8 == 0x8) {
 			debug("cmp/eq\t#%i,r0\n", (int8_t)lo8);
 		} else if (r8 == 0x9 || r8 == 0xb || r8 == 0xd || r8 == 0xf) {
@@ -839,6 +849,10 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("fadd\t%sr%i,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo4 == 0x2)
+			debug("fmul\t%sr%i,%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo4 == 0x3)
 			debug("fdiv\t%sr%i,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
@@ -849,12 +863,20 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		else if (lo4 == 0x9)
 			debug("fmov\t@r%i+,%sr%i\n", r4,
 			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
+		else if (lo4 == 0xa)
+			debug("fmov\t%sr%i,@r%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r4, r8);
+		else if (lo4 == 0xb)
+			debug("fmov\t%sr%i,@-r%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r4, r8);
 		else if (lo8 == 0x2d)
 			debug("float\tfpul,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo8 == 0x3d)
 			debug("ftrc\t%sr%i,fpul\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if ((iword & 0x01ff) == 0x00fd)
+			debug("fsca\tfpul,dr%i\n", r8);
 		else
 			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, lo8);
 		break;

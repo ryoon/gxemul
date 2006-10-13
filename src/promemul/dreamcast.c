@@ -25,11 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.1 2006-10-08 02:28:40 debug Exp $
+ *  $Id: dreamcast.c,v 1.2 2006-10-13 05:02:32 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
  *  NOTE: This is basically just a dummy module, for now.
+ *
+ *  See http://mc.pp.se/dc/syscalls.html for a description of what the
+ *  PROM syscalls do.
  */
 
 #include <stdio.h>
@@ -47,16 +50,25 @@
 
 /*
  *  dreamcast_machine_setup():
+ *
+ *  Initializes pointers to Dreamcast PROM syscalls.
  */
 void dreamcast_machine_setup(struct machine *machine)
 {
 	int i;
 	struct cpu *cpu = machine->cpus[0];
 
-	for (i=0; i<0x100; i+=sizeof(uint32_t)) {
+	for (i=0xb0; i<=0xbc; i+=sizeof(uint32_t)) {
+		/*  Store pointer to PROM routine...  */
 		store_32bit_word(cpu, 0x8c000000 + i, 0x8c000100 + i);
+
+		/*  ... which contains only 1 instruction, a special
+		    0x00ff opcode which triggers PROM emulation:  */
 		store_16bit_word(cpu, 0x8c000100 + i, 0x00ff);
 	}
+
+	/*  PROM reboot, in case someone jumps to 0xa0000000:  */
+	store_16bit_word(cpu, 0xa0000000, 0x00ff);
 }
 
 

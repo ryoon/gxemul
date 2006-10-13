@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.229 2006-10-13 05:01:19 debug Exp $
+$Id: RELEASE,v 1.230 2006-10-13 07:03:22 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -168,6 +168,8 @@ them like this is in order:
     This product includes software developed by the Alice Group.
 
     This product includes software developed by Ichiro FUKUHARA.
+
+    This product includes software developed by Marcus Comstedt.
 
 Also, src/include/alpha_rpb.h requires the following:
 

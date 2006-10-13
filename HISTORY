@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1385 2006-10-13 06:31:50 debug Exp $
+$Id: HISTORY,v 1.1386 2006-10-13 06:50:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3092,5 +3092,5 @@ Changelog for GXemul:
 		demo for Dreamcast runs :-)
 20061012	Adding the SH "lds Rm,pr" and bsr instructions.
 20061013	More SH instructions: "sts fpscr,rn", tas.b, and some more
-		floating point instructions.
+		floating point instructions, cmp/str, and more moves.
 		Adding a dummy dev_pvr (Dreamcast graphics controller).

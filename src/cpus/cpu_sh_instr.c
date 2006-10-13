@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.22 2006-10-13 06:31:50 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.23 2006-10-13 06:50:34 debug Exp $
  *
  *  SH instructions.
  *
@@ -361,6 +361,8 @@ X(mov_w_disp_pc_rn)
  *  mov_w_r0_rm_rn:    Load an int16_t value into Rn from address Rm + R0.
  *  mov_l_r0_rm_rn:    Load a 32-bit value into Rn from address Rm + R0.
  *  mov_l_disp_rm_rn:  Load a 32-bit value into Rn from address Rm + disp.
+ *  mov_b_disp_rn_r0:  Load an int8_t from Rn+disp into R0.
+ *  mov_w_disp_rn_r0:  Load an int16_t from Rn+disp into R0.
  *  mov_b_arg1_postinc_to_arg0:
  *  mov_l_arg1_postinc_to_arg0:
  *  mov_l_arg1_postinc_to_arg0_fp:  With FP check.
@@ -652,6 +654,48 @@ X(mov_l_disp_rm_rn)
 		data = BE32_TO_HOST(data);
 	reg(ic->arg[1]) = data;
 }
+X(mov_b_disp_rn_r0)
+{
+	uint32_t addr = reg(ic->arg[0]) + ic->arg[1];
+	uint8_t *p = (uint8_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint8_t data;
+
+	if (p != NULL) {
+		data = p[addr & 0xfff];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+
+	cpu->cd.sh.r[0] = (int8_t) data;
+}
+X(mov_w_disp_rn_r0)
+{
+	uint32_t addr = reg(ic->arg[0]) + ic->arg[1];
+	uint16_t *p = (uint16_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint16_t data;
+
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 1];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE16_TO_HOST(data);
+	else
+		data = BE16_TO_HOST(data);
+	cpu->cd.sh.r[0] = (int16_t) data;
+}
 
 
 /*
@@ -664,6 +708,7 @@ X(mov_l_disp_rm_rn)
  *  mov_w_rm_r0_rn:     Store Rm to address Rn + R0 (16-bit).
  *  mov_l_rm_r0_rn:     Store Rm to address Rn + R0 (32-bit).
  *  mov_l_rm_disp_rn:   Store Rm to address disp + Rn.
+ *  mov_b_r0_disp_rn:   Store R0 to address disp + Rn (8-bit).
  *  mov_w_r0_disp_rn:   Store R0 to address disp + Rn (16-bit).
  *
  *  arg[0] = ptr to rm
@@ -863,6 +908,23 @@ X(mov_l_rm_disp_rn)
 		}
 	}
 }
+X(mov_b_r0_disp_rn)
+{
+	uint32_t addr = reg(ic->arg[0]) + ic->arg[1];
+	uint8_t *p = (uint8_t *) cpu->cd.sh.host_store[addr >> 12];
+	uint8_t data = cpu->cd.sh.r[0];
+
+	if (p != NULL) {
+		p[addr & 0xfff] = data;
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+}
 X(mov_w_r0_disp_rn)
 {
 	uint32_t addr = reg(ic->arg[0]) + ic->arg[1];
@@ -1027,14 +1089,15 @@ X(dmulu_l_rm_rn)
 
 
 /*
- *  cmpeq_imm_r0: rn == int8_t immediate
- *  cmpeq_rm_rn:  rn == rm
- *  cmphs_rm_rn:  rn >= rm, unsigned
- *  cmpge_rm_rn:  rn >= rm, signed
- *  cmphi_rm_rn:  rn > rm, unsigned
- *  cmpgt_rm_rn:  rn > rm, signed
- *  cmppz_rn:     rn >= 0, signed
- *  cmppl_rn:     rn > 0, signed
+ *  cmpeq_imm_r0:  rn == int8_t immediate
+ *  cmpeq_rm_rn:   rn == rm
+ *  cmphs_rm_rn:   rn >= rm, unsigned
+ *  cmpge_rm_rn:   rn >= rm, signed
+ *  cmphi_rm_rn:   rn > rm, unsigned
+ *  cmpgt_rm_rn:   rn > rm, signed
+ *  cmppz_rn:      rn >= 0, signed
+ *  cmppl_rn:      rn > 0, signed
+ *  cmp_str_rm_rn: t=1 if any bytes in rm and rn match, 0 otherwise
  *
  *  arg[0] = ptr to rm   (or imm, for cmpeq_imm_r0)
  *  arg[1] = ptr to rn
@@ -1091,6 +1154,23 @@ X(cmppz_rn)
 X(cmppl_rn)
 {
 	if ((int32_t)reg(ic->arg[1]) > 0)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+}
+X(cmp_str_rm_rn)
+{
+	uint32_t r0 = reg(ic->arg[0]), r1 = reg(ic->arg[1]);
+	int t = 0;
+	if ((r0 & 0xff000000) == (r1 & 0xff000000))
+		t = 1;
+	else if ((r0 & 0xff0000) == (r1 & 0xff0000))
+		t = 1;
+	else if ((r0 & 0xff00) == (r1 & 0xff00))
+		t = 1;
+	else if ((r0 & 0xff) == (r1 & 0xff))
+		t = 1;
+	if (t)
 		cpu->cd.sh.sr |= SH_SR_T;
 	else
 		cpu->cd.sh.sr &= ~SH_SR_T;
@@ -2187,6 +2267,9 @@ X(to_be_translated)
 		case 0xb:	/*  OR Rm,Rn  */
 			ic->f = instr(or_rm_rn);
 			break;
+		case 0xc:	/*  CMP/STR Rm,Rn  */
+			ic->f = instr(cmp_str_rm_rn);
+			break;
 		case 0xd:	/*  XTRCT Rm,Rn  */
 			ic->f = instr(xtrct_rm_rn);
 			break;
@@ -2486,8 +2569,23 @@ X(to_be_translated)
 		    (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4;
 		switch (r8) {
+		case 0x0:	/*  MOV.B R0,@(disp,Rn)  */
+			ic->f = instr(mov_b_r0_disp_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r4];	/* n */
+			ic->arg[1] = lo4;
+			break;
 		case 0x1:	/*  MOV.W R0,@(disp,Rn)  */
 			ic->f = instr(mov_w_r0_disp_rn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r4];	/* n */
+			ic->arg[1] = lo4 * 2;
+			break;
+		case 0x4:	/*  MOV.B @(disp,Rn),R0  */
+			ic->f = instr(mov_b_disp_rn_r0);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r4];	/* n */
+			ic->arg[1] = lo4;
+			break;
+		case 0x5:	/*  MOV.W @(disp,Rn),R0  */
+			ic->f = instr(mov_w_disp_rn_r0);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r[r4];	/* n */
 			ic->arg[1] = lo4 * 2;
 			break;

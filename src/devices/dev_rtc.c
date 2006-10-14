@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtc.c,v 1.2 2006-10-07 01:40:33 debug Exp $
+ *  $Id: dev_rtc.c,v 1.3 2006-10-14 23:46:17 debug Exp $
  *
  *  An experimental Real-Time Clock device. It can be used to retrieve the
  *  current system time, and to cause periodic interrupts.
@@ -42,7 +42,6 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "net.h"
 #include "timer.h"
 
 #include "testmachine/dev_rtc.h"
@@ -134,6 +133,10 @@ DEVICE_ACCESS(rtc)
 			d->pending_interrupts --;
 
 		cpu_interrupt_ack(cpu, d->irq_nr);
+
+		/*  TODO: Reassert the interrupt here, if
+		    d->pending_interrupts is still above zero?  */
+
 		break;
 
 	default:if (writeflag == MEM_WRITE) {

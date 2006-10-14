@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.182 2006-10-02 09:26:36 debug Exp $
+$Id: guestoses.html,v 1.183 2006-10-14 23:46:16 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -2190,23 +2190,23 @@ ramdisk kernel:
 href="http://fabrice.bellard.free.fr/qemu/qemu-doc.html">http://fabrice.bellard.free.fr/qemu/qemu-doc.html</a>.
 Sometimes QEMU is faster than GXemul, sometimes it is the other way
 around. A quick (and quite unfair) test on my laptop (1.8 GHz Turion ML32,
-in AMD64 mode) comparing QEMU 0.8.1 installed as a binary package
-from FreeBSD ports with GXemul gave the following result:
+in AMD64 mode) comparing QEMU 0.8.2 (installed from FreeBSD ports)
+with GXemul gave the following result:
 
 <p><pre>
         <b>while true; do ls -l > /dev/null; echo -n .; done</b>
         (80 x 36 dots)
-        QEMU 0.8.1:       13 min 48 sec
+        QEMU 0.8.2:       13 min 52 sec
 	GXemul 0.4.2:      4 min 31 sec
 
 	<b>while true; do /usr/bin/md5sum /usr/bin/* > /dev/null; echo -n .; done</b>
         (80 dots)
-        QEMU 0.8.1:        2 min  9 sec
+        QEMU 0.8.2:        2 min  8 sec
 	GXemul 0.4.2:      5 min 18 sec
 
         <b>while true; do grep hej lib/libtextwrap.so.1 > /dev/null; echo -n .; done</b>
         (80 dots)
-        QEMU 0.8.1:       10 min  5 sec
+        QEMU 0.8.2:        9 min 57 sec
 	GXemul 0.4.2:      1 min 36 sec
 </pre>
 

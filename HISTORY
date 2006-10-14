@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1386 2006-10-13 06:50:34 debug Exp $
+$Id: HISTORY,v 1.1387 2006-10-14 02:30:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3094,3 +3094,5 @@ Changelog for GXemul:
 20061013	More SH instructions: "sts fpscr,rn", tas.b, and some more
 		floating point instructions, cmp/str, and more moves.
 		Adding a dummy dev_pvr (Dreamcast graphics controller).
+20061014	Generalizing the expression evaluator (used in the built-in
+		debugger) to support parentheses and +-*/%^&|.

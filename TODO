@@ -1,15 +1,6 @@
-$Id: TODO,v 1.394 2006-10-13 06:31:50 debug Exp $
+$Id: TODO,v 1.395 2006-10-14 02:30:11 debug Exp $
 
 This file is in random order, and not all parts of it are up-to-date.
-
-
----------------------------
-
-Generalized expression evaluator!
-Current CPU/machine/emul in the expression evaluator!
-
----------------------------
-
 
 Long-term design:
 	x)  Instruction combination collisions? How to avoid easily...
@@ -17,11 +8,9 @@ Long-term design:
 	    way! (Or AMD64 long/protected/real, for that matter.)
 	x)  68K emulation; think about how to do variable instruction
 	    lengths across page boundaries.
-	x)  MAINBUS REDESIGN!
-	x)  PCI redesign:
-		x)  The device subsystem needs to be redesigned to allow
-		    devices to be moved and/or disabled at runtime!
-		x)  Interrupt routing! PCI interrupts, ISA interrupts, etc.
+	x)  Redesign the mainbus concept, including interrupt routing
+	    (including PCI/ISA interrupts) and allow devices to be moved
+	    and disabled/enabled at runtime.
 	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,
 	    it would be reasonably simple to add; in each individual fast
 	    load/store routine = a lot more work, and it would become
@@ -178,30 +167,6 @@ Debugger:
 			+)  Alpha/MIPS/SPARC zero registers
 			+)  x86 64/32/16-bit registers
 		x)  Value formatter for resulting output.
-	o)  Generalize the expression evaluator. (debugger_expr.c?)
-		("help expr" in the debugger to show help about expressions)
-		settable variables	("show nr of instructions on average")
-		emul[x]			defaults to current emul
-		machine[x]		defaults to current machine
-		cpu[x]			defaults to currently focused cpu
-		registers		cpu arch dependent (#-prefix)
-		symbols			@-prefix
-		numeric constants	decimal, hex, and octal ($-prefix)
-		boolean			yes,no, true,false
-		operators (+ - * / % & | ^ !)
-		parentheses for grouping subexpressions
-		NOTE: the change from % to # for register prefix!
-		examples:
-				emul[0].machine[2].cpu[0].pc
-				machine[test2].cpu[1].ra = main
-				settings.show_trace_tree = yes
-		Settings:
-			o)  Read/write a setting given a name. (Read as
-			    string and/or int64_t simultaneously?)
-
-		Help command should have subsections! One for "expressions",
-		mirrored in the documentation, but the internal help should
-		be the one that should be considered correct.
 	o)  see src/debugger.c for more
 
 POWER/PowerPC:

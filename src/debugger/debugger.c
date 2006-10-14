@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.17 2006-09-04 04:50:38 debug Exp $
+ *  $Id: debugger.c,v 1.18 2006-10-14 02:30:12 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -101,8 +101,13 @@ static volatile int ctrl_c;
 
 static int debugger_n_emuls;
 static struct emul **debugger_emuls;
-static struct emul *debugger_emul;
+
+/*  Currently focused CPU, machine, and emulation:  */
+int debugger_cur_cpu;
+int debugger_cur_machine;
+int debugger_cur_emul;
 static struct machine *debugger_machine;
+static struct emul *debugger_emul;
 
 #define	MAX_CMD_BUFLEN		72
 #define	N_PREVIOUS_CMDS		150
@@ -251,23 +256,23 @@ void debugger_assignment(struct machine *m, char *cmd)
 
 	/*  printf("left  = '%s'\nright = '%s'\n", left, right);  */
 
-	res_right = debugger_parse_name(m, right, 0, &tmp);
+	res_right = debugger_parse_expression(m, right, 0, &tmp);
 	switch (res_right) {
-	case NAME_PARSE_NOMATCH:
+	case PARSE_NOMATCH:
 		printf("No match for the right-hand side of the assignment.\n");
 		break;
-	case NAME_PARSE_MULTIPLE:
+	case PARSE_MULTIPLE:
 		printf("Multiple matches for the right-hand side of the "
 		    "assignment.\n");
 		break;
 	default:
-		res_left = debugger_parse_name(m, left, 1, &tmp);
+		res_left = debugger_parse_expression(m, left, 1, &tmp);
 		switch (res_left) {
-		case NAME_PARSE_NOMATCH:
+		case PARSE_NOMATCH:
 			printf("No match for the left-hand side of the "
 			    "assignment.\n");
 			break;
-		case NAME_PARSE_MULTIPLE:
+		case PARSE_MULTIPLE:
 			printf("Multiple matches for the left-hand side "
 			    "of the assignment.\n");
 			break;
@@ -789,6 +794,10 @@ void debugger_init(struct emul **emuls, int n_emuls)
 			debugger_gdb_init(emuls[i]->machines[j]);
 
 	debugger_machine = emuls[0]->machines[0];
+
+	debugger_cur_cpu = 0;
+	debugger_cur_machine = 0;
+	debugger_cur_emul = 0;
 
 	for (i=0; i<N_PREVIOUS_CMDS; i++) {
 		last_cmd[i] = malloc(MAX_CMD_BUFLEN);

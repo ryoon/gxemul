@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.7 2006-09-09 09:04:32 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.8 2006-10-14 02:30:12 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -111,7 +111,7 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 
 		i = m->n_breakpoints;
 
-		res = debugger_parse_name(m, cmd_line + 4, 0, &tmp);
+		res = debugger_parse_expression(m, cmd_line + 4, 0, &tmp);
 		if (!res) {
 			printf("Couldn't parse '%s'\n", cmd_line + 4);
 			return;
@@ -264,10 +264,10 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 		p = strchr(tmps, ' ');
 		if (p != NULL)
 			*p = '\0';
-		r = debugger_parse_name(m, tmps, 0, &tmp);
+		r = debugger_parse_expression(m, tmps, 0, &tmp);
 		free(tmps);
 
-		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
+		if (r == PARSE_NOMATCH || r == PARSE_MULTIPLE) {
 			printf("Unparsable address: %s\n", cmd_line);
 			return;
 		} else {
@@ -299,8 +299,8 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 	if (p != NULL) {
 		while (*p == ' ' && *p)
 			p++;
-		r = debugger_parse_name(m, p, 0, &addr_end);
-		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
+		r = debugger_parse_expression(m, p, 0, &addr_end);
+		if (r == PARSE_NOMATCH || r == PARSE_MULTIPLE) {
 			printf("Unparsable address: %s\n", cmd_line);
 			return;
 		}
@@ -390,57 +390,86 @@ static void debugger_cmd_emuls(struct machine *m, char *cmd_line)
 /*
  *  debugger_cmd_focus():
  *
- *  Changes focus to specific machine (in a specific emulation).
+ *  Changes focus to specific cpu, in a specific machine (in a specific
+ *  emulation).
  */
 static void debugger_cmd_focus(struct machine *m, char *cmd_line)
 {
-	int x = -1, y = -1;
-	char *p;
+	int x = -1, y = -1, z = -1;
+	char *p, *p2;
 
 	if (!cmd_line[0]) {
-		printf("syntax: focus x[,y]\n");
-		printf("where x and y are integers as reported by the"
-		    " 'emuls' command\n");
+		printf("syntax: focus x[,y,[,z]]\n");
+		printf("where x (cpu id), y (machine number), and z (emul "
+		    "number) are integers as\nreported by the 'emuls'"
+		    " command.\n");
 		goto print_current_focus_and_return;
 	}
 
 	x = atoi(cmd_line);
 	p = strchr(cmd_line, ',');
 	if (p == cmd_line) {
-		printf("No machine number specified?\n");
-		printf("syntax: focus x[,y]\n");
+		printf("No cpu number specified?\n");
 		return;
 	}
 
-	if (p != NULL)
-		y = atoi(p + 1);
-
-	if (y != -1) {
-		/*  Change emul:  */
-		if (y < 0 || y >= debugger_n_emuls) {
-			printf("Invalid emul number: %i\n", y);
+	if (p != NULL) {
+		y = atoi(p+1);
+		p2 = strchr(p+1, ',');
+		if (p2 == p+1) {
+			printf("No machine number specified?\n");
 			return;
 		}
 
-		debugger_emul = debugger_emuls[y];
+		if (p2 != NULL)
+			z = atoi(p2 + 1);
+	}
+
+	if (z != -1) {
+		/*  Change emul:  */
+		if (z < 0 || z >= debugger_n_emuls) {
+			printf("Invalid emul number: %i\n", z);
+			return;
+		}
+
+		debugger_cur_emul = z;
+		debugger_emul = debugger_emuls[z];
 
 		/*  This is just in case the machine change below fails...  */
 		debugger_machine = debugger_emul->machines[0];
 	}
 
-	/*  Change machine:  */
-	if (x < 0 || x >= debugger_emul->n_machines) {
-		printf("Invalid machine number: %i\n", x);
+	if (y != -1) {
+		/*  Change machine:  */
+		if (y < 0 || y >= debugger_emul->n_machines) {
+			printf("Invalid machine number: %i\n", y);
+			return;
+		}
+
+		debugger_cur_machine = y;
+		debugger_machine = debugger_emul->machines[y];
+	}
+
+	/*  Change cpu:  */
+	if (x < 0 || x >= debugger_machine->ncpus) {
+		printf("Invalid cpu number: %i\n", x);
 		return;
 	}
 
-	debugger_machine = debugger_emul->machines[x];
+	debugger_cur_cpu = x;
 
 print_current_focus_and_return:
-	printf("current emul: \"%s\"\n", debugger_emul->name == NULL?
-	    "(no name)" : debugger_emul->name);
-	printf("current machine: \"%s\"\n", debugger_machine->name == NULL?
-	    "(no name)" : debugger_machine->name);
+	if (debugger_n_emuls > 1)
+		printf("current emul (%i): \"%s\"\n",
+		    debugger_cur_emul, debugger_emul->name == NULL?
+		    "(no name)" : debugger_emul->name);
+
+	if (debugger_emul->n_machines > 1)
+		printf("current machine (%i): \"%s\"\n",
+		    debugger_cur_machine, debugger_machine->name == NULL?
+		    "(no name)" : debugger_machine->name);
+
+	printf("current cpu (%i)\n", debugger_cur_cpu);
 }
 
 
@@ -628,24 +657,24 @@ static void debugger_cmd_print(struct machine *m, char *cmd_line)
 		return;
 	}
 
-	res = debugger_parse_name(m, cmd_line, 0, &tmp);
+	res = debugger_parse_expression(m, cmd_line, 0, &tmp);
 	switch (res) {
-	case NAME_PARSE_NOMATCH:
+	case PARSE_NOMATCH:
 		printf("No match.\n");
 		break;
-	case NAME_PARSE_MULTIPLE:
+	case PARSE_MULTIPLE:
 		printf("Multiple matches. Try prefixing with %%, $, or @.\n");
 		break;
-	case NAME_PARSE_SETTINGS:
+	case PARSE_SETTINGS:
 		printf("%s = 0x%"PRIx64"\n", cmd_line, (uint64_t)tmp);
 		break;
-	case NAME_PARSE_SYMBOL:
+	case PARSE_SYMBOL:
 		if (m->cpus[0]->is_32bit)
 			printf("%s = 0x%08"PRIx32"\n", cmd_line, (uint32_t)tmp);
 		else
 			printf("%s = 0x%016"PRIx64"\n", cmd_line,(uint64_t)tmp);
 		break;
-	case NAME_PARSE_NUMBER:
+	case PARSE_NUMBER:
 		printf("0x%"PRIx64"\n", (uint64_t) tmp);
 		break;
 	}
@@ -713,36 +742,36 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 	}
 
 	/*  here: q is the address, p is the data.  */
-	res = debugger_parse_name(m, q, 0, &addr);
+	res = debugger_parse_expression(m, q, 0, &addr);
 	switch (res) {
-	case NAME_PARSE_NOMATCH:
+	case PARSE_NOMATCH:
 		printf("Couldn't parse the address.\n");
 		return;
-	case NAME_PARSE_MULTIPLE:
+	case PARSE_MULTIPLE:
 		printf("Multiple matches for the address."
 		    " Try prefixing with %%, $, or @.\n");
 		return;
-	case NAME_PARSE_SETTINGS:
-	case NAME_PARSE_SYMBOL:
-	case NAME_PARSE_NUMBER:
+	case PARSE_SETTINGS:
+	case PARSE_SYMBOL:
+	case PARSE_NUMBER:
 		break;
 	default:
 		printf("INTERNAL ERROR in debugger.c.\n");
 		return;
 	}
 
-	res = debugger_parse_name(m, p, 0, &data);
+	res = debugger_parse_expression(m, p, 0, &data);
 	switch (res) {
-	case NAME_PARSE_NOMATCH:
+	case PARSE_NOMATCH:
 		printf("Couldn't parse the data.\n");
 		return;
-	case NAME_PARSE_MULTIPLE:
+	case PARSE_MULTIPLE:
 		printf("Multiple matches for the data value."
 		    " Try prefixing with %%, $, or @.\n");
 		return;
-	case NAME_PARSE_SETTINGS:
-	case NAME_PARSE_SYMBOL:
-	case NAME_PARSE_NUMBER:
+	case PARSE_SETTINGS:
+	case PARSE_SYMBOL:
+	case PARSE_NUMBER:
 		break;
 	default:
 		printf("INTERNAL ERROR in debugger.c.\n");
@@ -916,7 +945,7 @@ static void debugger_cmd_quit(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_reg(struct machine *m, char *cmd_line)
 {
-	int i, cpuid = -1, coprocnr = -1;
+	int cpuid = debugger_cur_cpu, coprocnr = -1;
 	int gprs, coprocs;
 	char *p;
 
@@ -942,9 +971,7 @@ static void debugger_cmd_reg(struct machine *m, char *cmd_line)
 	gprs = (coprocnr == -1)? 1 : 0;
 	coprocs = (coprocnr == -1)? 0x0 : (1 << coprocnr);
 
-	for (i=0; i<m->ncpus; i++)
-		if (cpuid == -1 || i == cpuid)
-			cpu_register_dump(m, m->cpus[i], gprs, coprocs);
+	cpu_register_dump(m, m->cpus[cpuid], gprs, coprocs);
 }
 
 
@@ -1081,10 +1108,10 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		p = strchr(tmps, ' ');
 		if (p != NULL)
 			*p = '\0';
-		r = debugger_parse_name(m, tmps, 0, &tmp);
+		r = debugger_parse_expression(m, tmps, 0, &tmp);
 		free(tmps);
 
-		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
+		if (r == PARSE_NOMATCH || r == PARSE_MULTIPLE) {
 			printf("Unparsable address: %s\n", cmd_line);
 			return;
 		} else {
@@ -1116,8 +1143,8 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	if (p != NULL) {
 		while (*p == ' ' && *p)
 			p++;
-		r = debugger_parse_name(m, p, 0, &addr_end);
-		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
+		r = debugger_parse_expression(m, p, 0, &addr_end);
+		if (r == PARSE_NOMATCH || r == PARSE_MULTIPLE) {
 			printf("Unparsable address: %s\n", cmd_line);
 			return;
 		}
@@ -1219,8 +1246,8 @@ static struct cmd cmds[] = {
 	{ "emuls", "", 0, debugger_cmd_emuls,
 		"print a summary of all current emuls" },
 
-	{ "focus", "x[,y]", 0, debugger_cmd_focus,
-		"changes focus to machine x (in emul y)" },
+	{ "focus", "x[,y[,z]]", 0, debugger_cmd_focus,
+		"changes focus to cpu x, machine x, emul z" },
 
 	{ "help", "", 0, debugger_cmd_help,
 		"print this help message" },
@@ -1377,11 +1404,13 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 		curlines = 0;
 	}
 
-	printf("\nIn generic assignments, x must be a register, and expr can be"
-	    " a register, a\nnumeric value, or a symbol name (+ an optional "
-	    "numeric offset). In case there\nare multiple matches (i.e. a "
-	    "symbol that has the same name as a register), you\nmay add a "
-	    "prefix character as a hint: '%%' for registers, '@' for symbols,"
-	    " and\n'$' for numeric values. Use 0x for hexadecimal values.\n");
+	printf("\nIn generic assignments, x must be a register or other "
+	    "writable settings\nvariable, and expr can contain registers/"
+	    "settings, numeric values, or symbol\nnames, in combination with"
+	    " parenthesis and + - * / %% ^ | operators.\nIn case there are"
+	    " multiple matches (i.e. a symbol that has the same name as a\n"
+	    "register), you may add a prefix character as a hint: '#' for"
+	    " registers, '@'\nfor symbols, and '$' for numeric values. Use"
+	    " 0x for hexadecimal values.\n");
 }
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.230 2006-10-13 07:03:22 debug Exp $
+$Id: RELEASE,v 1.231 2006-10-14 02:30:11 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -29,7 +29,31 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	(evbmips), Cobalt, Algor, and the testmips machine modes have been
 	modified to use the new clock/timer framework.
 
-    o)	... TODO: Generalized expression evaluator!
+    o)	Some changes to the way expressions are evaluated in the built-in
+	debugger, and some changes in command behaviour:
+
+	  x)  Expressions (including assignments) can now be arbitrarily
+	      complex, using parentheses, and the following operators:
+
+	          + - * /    % (modulo)  ^ (xor)  & (and)  | (or)
+
+	  x)  Some internal emulator variables can now be read/written using
+	      normal expressions. Examples of commands that did not work
+	      earlier, but should work now:
+
+		  print verbose
+		  r5 = sp - arch_pagesize * 4
+		  machine[0].statistics_enabled = 1
+
+	  x)  To force a name to be interpreted as a setting/register name,
+	      a hash sign (#) is now used instead of the percentage sign (%).
+	      (In the new expression evaluator, % means arithmetic modulo.)
+
+	  x)  The 'focus' command now also selects a cpu, in addition to
+	      selecting machine and emul.
+
+	  x)  The 'reg' command only prints registers for one cpu now, not
+	      all cpus in the currently focused machine.
 
     o)	The wdc (standard IDE controller) had a bug which prevented disk
 	images larger than 2 GB to work correctly. This has been fixed.

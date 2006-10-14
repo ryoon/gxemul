@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.129 2006-10-07 00:36:29 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.130 2006-10-14 02:30:11 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -44,6 +44,12 @@ static void gather_statistics(struct cpu *cpu)
 	uint64_t a;
 	int low_pc = ((size_t)cpu->cd.DYNTRANS_ARCH.next_ic - (size_t)
 	    cpu->cd.DYNTRANS_ARCH.cur_ic_page) / sizeof(struct DYNTRANS_IC);
+
+	if (cpu->machine->statistics_file == NULL) {
+		fatal("statistics gathering with no filename set is"
+		    " meaningless\n");
+		return;
+	}
 
 	buf[0] = '\0';
 

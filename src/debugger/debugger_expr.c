@@ -25,14 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.7 2006-09-21 11:53:26 debug Exp $
+ *  $Id: debugger_expr.c,v 1.8 2006-10-14 02:30:12 debug Exp $
  *
  *  Expression evaluator.
  *
  *
  *  TODO:
- *	General expressions, with operators, parentheses etc.
- *	Settings.
  *	Sign-extension only on MIPS?
  *	SPECIAL IMPORTANT CASE: Clear the delay_slot flag when writing
  *		to the pc register.
@@ -53,37 +51,47 @@
 
 extern struct settings *global_settings;
 
+extern int debugger_cur_cpu;
+extern int debugger_cur_machine;
+extern int debugger_cur_emul;
+
 
 /*
  *  debugger_parse_name():
  *
- *  This function reads a string, and tries to match it to a register name,
- *  a symbol, or treat it as a decimal numeric value.
+ *  This function takes a string as input, and tries to match it to a register
+ *  name or a more general "setting", a hexadecimal or decimal numeric value,
+ *  or a registered symbol.
  *
  *  Some examples:
  *
- *	"0x7fff1234"		==> numeric value (hex, in this case)
- *	"pc", "r5", "hi", "t4"	==> register (CPU dependent)
- *	"memcpy+64"		==> symbol (plus offset)
+ *	Settings (including register names):
+ *		verbose
+ *		pc
+ *		r5
  *
- *  Register names can be preceeded by "x:" where x is the CPU number. (CPU
- *  0 is assumed by default.)
+ *	Numeric values:
+ *		12345
+ *		0x7fff1234
+ *
+ *	Symbols:
+ *		memcpy
  *
  *  To force detection of different types, a character can be added in front of
- *  the name: "$" for numeric values, "%" for registers or other settings,
+ *  the name: "$" for numeric values, "#" for registers or other settings,
  *  and "@" for symbols.
  *
  *  Return value is:
  *
- *	NAME_PARSE_NOMATCH	no match
- *	NAME_PARSE_MULTIPLE	multiple matches
+ *	PARSE_NOMATCH		no match
+ *	PARSE_MULTIPLE		multiple matches
  *
  *  or one of these (and then *valuep is read or written, depending on
  *  the writeflag):
  *
- *	NAME_PARSE_SETTINGS	a setting (e.g. a register)
- *	NAME_PARSE_NUMBER	a hex number
- *	NAME_PARSE_SYMBOL	a symbol
+ *	PARSE_SETTINGS		a setting (e.g. a register)
+ *	PARSE_NUMBER		a hex number
+ *	PARSE_SYMBOL		a symbol
  */
 int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	uint64_t *valuep)
@@ -91,13 +99,13 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	int match_settings = 0, match_symbol = 0, match_numeric = 0;
 	int skip_settings, skip_numeric, skip_symbol;
 
-	/*  TODO!!!  */
-	int cur_emul_nr = 0, cur_machine_nr = 0, cur_cpu_nr = 0;
-
 	if (m == NULL || name == NULL) {
 		fprintf(stderr, "debugger_parse_name(): NULL ptr\n");
 		exit(1);
 	}
+
+	while (name[0] == '\t' || name[0] == ' ')
+		name ++;
 
 	/*  Warn about non-signextended values:  */
 	if (writeflag) {
@@ -113,8 +121,8 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	}
 
 	skip_settings = name[0] == '$' || name[0] == '@';
-	skip_numeric  = name[0] == '%' || name[0] == '@';
-	skip_symbol   = name[0] == '$' || name[0] == '%';
+	skip_numeric  = name[0] == '#' || name[0] == '@';
+	skip_symbol   = name[0] == '$' || name[0] == '#';
 
 	if (!skip_settings) {
 		char setting_name[400];
@@ -136,7 +144,7 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 		if (!match_settings) {
 			snprintf(setting_name, sizeof(setting_name),
 			    GLOBAL_SETTINGS_NAME".emul[%i].%s",
-			    cur_emul_nr, name);
+			    debugger_cur_emul, name);
 			res = settings_access(global_settings, setting_name,
 			    writeflag, valuep);
 			if (res == SETTINGS_OK)
@@ -146,7 +154,7 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 		if (!match_settings) {
 			snprintf(setting_name, sizeof(setting_name),
 			    GLOBAL_SETTINGS_NAME".emul[%i].machine[%i].%s",
-			    cur_emul_nr, cur_machine_nr, name);
+			    debugger_cur_emul, debugger_cur_machine, name);
 			res = settings_access(global_settings, setting_name,
 			    writeflag, valuep);
 			if (res == SETTINGS_OK)
@@ -156,8 +164,8 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 		if (!match_settings) {
 			snprintf(setting_name, sizeof(setting_name),
 			    GLOBAL_SETTINGS_NAME".emul[%i].machine[%i]."
-			    "cpu[%i].%s", cur_emul_nr, cur_machine_nr,
-			    cur_cpu_nr, name);
+			    "cpu[%i].%s", debugger_cur_emul,
+			    debugger_cur_machine, debugger_cur_cpu, name);
 			res = settings_access(global_settings, setting_name,
 			    writeflag, valuep);
 			if (res == SETTINGS_OK)
@@ -169,55 +177,221 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	if (!skip_numeric && isdigit((int)name[0])) {
 		uint64_t x;
 		x = strtoull(name, NULL, 0);
-		if (writeflag) {
+		if (writeflag)
 			printf("You cannot assign like that.\n");
-		} else
+		else
 			*valuep = x;
 		match_numeric = 1;
 	}
 
 	/*  Check for a symbol match:  */
 	if (!skip_symbol) {
-		int res;
-		char *p, *sn;
-		uint64_t newaddr, ofs = 0;
-
-		sn = malloc(strlen(name) + 1);
-		if (sn == NULL) {
-			fprintf(stderr, "out of memory in debugger\n");
-			exit(1);
-		}
-		strlcpy(sn, name, strlen(name)+1);
-
-		/*  Is there a '+' in there? Then treat that as an offset:  */
-		p = strchr(sn, '+');
-		if (p != NULL) {
-			*p = '\0';
-			ofs = strtoull(p+1, NULL, 0);
-		}
-
-		res = get_symbol_addr(&m->symbol_context, sn, &newaddr);
-		if (res) {
-			if (writeflag) {
+		uint64_t newaddr;
+		if (get_symbol_addr(&m->symbol_context, name, &newaddr)) {
+			if (writeflag)
 				printf("You cannot assign like that.\n");
-			} else
-				*valuep = newaddr + ofs;
+			else
+				*valuep = newaddr;
 			match_symbol = 1;
 		}
-
-		free(sn);
 	}
 
 	if (match_settings + match_symbol + match_numeric > 1)
-		return NAME_PARSE_MULTIPLE;
+		return PARSE_MULTIPLE;
 
 	if (match_settings)
-		return NAME_PARSE_SETTINGS;
+		return PARSE_SETTINGS;
 	if (match_numeric)
-		return NAME_PARSE_NUMBER;
+		return PARSE_NUMBER;
 	if (match_symbol)
-		return NAME_PARSE_SYMBOL;
+		return PARSE_SYMBOL;
 
-	return NAME_PARSE_NOMATCH;
+	return PARSE_NOMATCH;
+}
+
+
+/*
+ *  debugger_parse_expression()
+ *
+ *  Input:
+ *	writeflag = 0:	expr = an expression to evaluate. The result is
+ *			returned in *valuep.
+ *
+ *	writeflag = 1:	expr = an lvalue name. *valuep is written to that
+ *			lvalue, using debugger_parse_name().
+ *
+ *  Parentheses always have precedence.
+ *  * / and % have second highest precedence.
+ *  + - & | ^ have lowest precedence.
+ *
+ *  Return value on failure is:
+ *
+ *	PARSE_NOMATCH		one or more words in the expression didn't
+ *				match any known symbol/register/number
+ *	PARSE_MULTIPLE		multiple matches within the expression
+ *
+ *  Return value on success is PARSE_NUMBER (for now).
+ *
+ *  TODO: BETTER RETURN VALUE!
+ */
+int debugger_parse_expression(struct machine *m, char *expr, int writeflag,
+	uint64_t *valuep)
+{
+	int prec, res, i, nest;
+	char *copy;
+
+	if (writeflag)
+		return debugger_parse_name(m, expr, writeflag, valuep);
+
+	while (expr[0] == '\t' || expr[0] == ' ')
+		expr ++;
+
+	copy = strdup(expr);
+	if (copy == NULL) {
+		fprintf(stderr, "debugger_parse_expression(): out of memory\n");
+		exit(1);
+	}
+
+	while (copy[0] && copy[strlen(copy)-1] == ' ')
+		copy[strlen(copy)-1] = '\0';
+
+	/*  Find the lowest operator precedence:  */
+	i = 0; prec = 2; nest = 0;
+	while (copy[i] != '\0') {
+		switch (copy[i]) {
+		case '(':
+			nest ++;
+			break;
+		case ')':
+			nest --;
+			break;
+		case '+':
+		case '-':
+		case '^':
+		case '&':
+		case '|':
+			if (nest == 0)
+				prec = 0;
+			break;
+		case '*':
+		case '/':
+		case '%':
+			if (nest == 0 && prec > 1)
+				prec = 1;
+			break;
+		}
+
+		i++;
+	}
+
+	if (nest != 0) {
+		printf("Unmatching parentheses.\n");
+		return PARSE_NOMATCH;
+	}
+
+	if (prec == 2 && copy[0] == '(' && copy[strlen(copy)-1] == ')') {
+		int res;
+		copy[strlen(copy)-1] = '\0';
+		res = debugger_parse_expression(m, copy+1, 0, valuep);
+		free(copy);
+		return res;
+	}
+
+	/*  Split according to the first lowest priority operator:  */
+	i = 0; nest = 0;
+	while (copy[i] != '\0') {
+		switch (copy[i]) {
+		case '(':
+			nest ++;
+			break;
+		case ')':
+			nest --;
+			break;
+		case '*':
+		case '/':
+		case '%':
+			if (prec == 0)
+				break;
+			/*  Fallthrough.  */
+		case '+':
+		case '-':
+		case '^':
+		case '&':
+		case '|':
+			if (nest == 0) {
+				uint64_t left, right;
+				int res1, res2, j;
+				char op = copy[i];
+
+				copy[i] = '\0';
+				j = i;
+				while (j>0 && copy[j-1] == ' ') {
+					copy[j-1] = '\0';
+					j --;
+				}
+
+				res1 = debugger_parse_expression(
+				    m, copy, 0, &left);
+				res2 = debugger_parse_expression(
+				    m, copy + i + 1, 0, &right);
+
+				if (res1 == PARSE_NOMATCH ||
+				    res2 == PARSE_NOMATCH) {
+					res = PARSE_NOMATCH;
+					goto return_failure;
+				}
+
+				if (res1 == PARSE_MULTIPLE ||
+				    res2 == PARSE_MULTIPLE) {
+					res = PARSE_MULTIPLE;
+					goto return_failure;
+				}
+
+				switch (op) {
+				case '+':
+					(*valuep) = left + right;
+					break;
+				case '-':
+					(*valuep) = left - right;
+					break;
+				case '^':
+					(*valuep) = left ^ right;
+					break;
+				case '&':
+					(*valuep) = left & right;
+					break;
+				case '|':
+					(*valuep) = left | right;
+					break;
+				case '*':
+					(*valuep) = left * right;
+					break;
+				case '/':
+					(*valuep) = left / right;
+					break;
+				case '%':
+					(*valuep) = left % right;
+					break;
+				}
+
+				goto return_ok;
+			}
+			break;
+		}
+
+		i ++;
+	}
+
+	res = debugger_parse_name(m, expr, writeflag, valuep);
+	if (res == PARSE_NOMATCH || res == PARSE_MULTIPLE)
+		goto return_failure;
+
+return_ok:
+	free(copy);
+	return PARSE_NUMBER;
+
+return_failure:
+	free(copy);
+	return res;
 }
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.49 2006-10-07 02:05:22 debug Exp $
+ *  $Id: cpu_mips.h,v 1.50 2006-10-14 23:47:37 debug Exp $
  */
 
 #include "misc.h"
@@ -103,7 +103,6 @@ struct mips_coproc {
 	/*  Only for COP0:  */
 	struct mips_tlb	*tlbs;
 	int		nr_of_tlbs;
-	uint8_t		*vaddr_page_to_tlb_index;
 
 	/*  Only for COP1:  floating point control registers  */
 	/*  (Maybe also for COP0?)  */
@@ -222,6 +221,17 @@ struct mips_cpu {
 	uint64_t	hi;
 	uint64_t	lo;
 
+	/*  Coprocessors:  */
+	struct mips_coproc *coproc[N_MIPS_COPROCS];
+	uint64_t	cop0_config_select1;
+
+	int		last_written_tlb_index;
+
+	/*  Count/compare timer:  */
+	int		compare_register_set;
+	int		compare_interrupts_pending;
+	struct timer	*timer;
+
 	int		rmw;		/*  Read-Modify-Write  */
 	int		rmw_len;	/*  Length of rmw modification  */
 	uint64_t	rmw_addr;	/*  Address of rmw modification  */
@@ -242,15 +252,6 @@ struct mips_cpu {
 	uint64_t	hi1;
 	uint64_t	lo1;
 	uint32_t	r5900_sa;
-
-	/*  Coprocessors:  */
-	struct mips_coproc *coproc[N_MIPS_COPROCS];
-	uint64_t	cop0_config_select1;
-
-	/*  Count/compare timer:  */
-	int		compare_register_set;
-	int		compare_interrupts_pending;
-	struct timer	*timer;
 
 	/*  Data and Instruction caches:  */
 	unsigned char	*cache[2];

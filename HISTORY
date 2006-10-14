@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1387 2006-10-14 02:30:11 debug Exp $
+$Id: HISTORY,v 1.1388 2006-10-14 23:47:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3096,3 +3096,5 @@ Changelog for GXemul:
 		Adding a dummy dev_pvr (Dreamcast graphics controller).
 20061014	Generalizing the expression evaluator (used in the built-in
 		debugger) to support parentheses and +-*/%^&|.
+20061015	Removing the experimental tlb index hint code in
+		mips_memory_v2p.c, since it didn't really have any effect.

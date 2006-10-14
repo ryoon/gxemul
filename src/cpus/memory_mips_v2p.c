@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.13 2006-10-02 12:59:32 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.14 2006-10-14 23:47:37 debug Exp $
  */
 
 
@@ -252,29 +252,10 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		int g_bit, v_bit, d_bit;
 		uint64_t cached_hi, cached_lo0;
 		uint64_t entry_vpn2 = 0, entry_asid, pfn;
-		int i_hint = 0, i_end = n_tlbs - 1;
+		int i_end;
 
-		/*
-		 *  vaddr_page_to_tlb_index is an array containing a hint of
-		 *  where in the TLB a virtual address was last entered. The
-		 *  search wraps around, and searches all TLB entries anyway,
-		 *  though, because the hint may be out of synch for several
-		 *  reasons (e.g. multiple processes with different ASIDs
-		 *  using the same virtual address).
-		 *
-		 *  In many cases, this reduces lookups from O(n) to O(1).
-		 */
-		i = 0;
-		if (vaddr == (int64_t)(int32_t)vaddr) {
-			i_hint = cp0->vaddr_page_to_tlb_index[
-			    ((uint32_t)vaddr) >> 12];
-			if (i_hint > 0) {
-				i = i_hint - 1;
-				/*  printf("vaddr=0x%08"PRIx32" hint %i\n",
-				    (uint32_t)vaddr, i);  */
-				i_end = i == 0? n_tlbs-1 : i - 1;
-			}
-		}
+		i = cpu->cd.mips.last_written_tlb_index;
+		i_end = i == 0? n_tlbs-1 : i - 1;
 
 		/*  Scan all TLB entries:  */
 		for (;;) {

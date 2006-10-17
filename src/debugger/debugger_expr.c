@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_expr.c,v 1.8 2006-10-14 02:30:12 debug Exp $
+ *  $Id: debugger_expr.c,v 1.9 2006-10-17 07:56:19 debug Exp $
  *
  *  Expression evaluator.
  *
@@ -232,7 +232,18 @@ int debugger_parse_name(struct machine *m, char *name, int writeflag,
  *
  *  Return value on success is PARSE_NUMBER (for now).
  *
+ *
  *  TODO: BETTER RETURN VALUE!
+ *
+ *  NOTE: This is a quick hack, but hopefully it should work. The internal
+ *        mechanism is to split the expression into a left half and a right
+ *        half around an operator. This operator should be the operator
+ *        in the string which has the lowest precedence (except those that
+ *        are inside parentheses sub-expressions). E.g. if the expression
+ *        is   a * (b + c * d) / e   then the operator with the lowest
+ *        precedence is the first multiplication sign, and the split will
+ *        be:   left  = a
+ *              right = (b+c*d)/e
  */
 int debugger_parse_expression(struct machine *m, char *expr, int writeflag,
 	uint64_t *valuep)

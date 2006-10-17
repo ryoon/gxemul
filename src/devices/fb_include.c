@@ -1,5 +1,5 @@
 /*
- *  $Id: fb_include.c,v 1.2 2005-11-30 21:20:42 debug Exp $
+ *  $Id: fb_include.c,v 1.3 2006-10-17 07:55:53 debug Exp $
  *
  *  Included from dev_fb.c.
  *
@@ -133,11 +133,11 @@ void REDRAW(struct vfb_data *d, int addr, int len)
 			fb_addr >>= 3;
 			switch (d->bit_depth) {
 			case 24:
+			case 32:
 				r = d->framebuffer[fb_addr];
 				g = d->framebuffer[fb_addr + 1];
 				b = d->framebuffer[fb_addr + 2];
 				break;
-			/*  TODO: copy to the scaledown code below  */
 			case 16:
 				if (d->vfb_type == VFB_HPC) {
 					b = d->framebuffer[fb_addr] +
@@ -290,9 +290,45 @@ void REDRAW(struct vfb_data *d, int addr, int len)
 				/*  > 8 bits color.  */
 				switch (d->bit_depth) {
 				case 24:
+				case 32:
 					r = d->framebuffer[fb_addr];
 					g = d->framebuffer[fb_addr + 1];
 					b = d->framebuffer[fb_addr + 2];
+					break;
+				case 16:
+					if (d->vfb_type == VFB_HPC) {
+						b = d->framebuffer[fb_addr] +
+						    (d->framebuffer[fb_addr+1] << 8);
+
+						if (d->color32k) {
+							r = b >> 11;
+							g = b >> 5;
+							r = r & 31;
+							g = (g & 31) * 2;
+							b = b & 31;
+						} else if (d->psp_15bit) {
+							int tmp;
+							r = (b >> 10) & 0x1f;
+							g = (b >>  5) & 0x1f;
+							b = b & 0x1f;
+							g <<= 1;
+							tmp = r; r = b; b = tmp;
+						} else {
+							r = (b >> 11) & 0x1f;
+							g = (b >>  5) & 0x3f;
+							b = b & 0x1f;
+						}
+					} else {
+					    r = d->framebuffer[fb_addr] >> 3;
+/*  HUH? TODO:  */
+					    g = (d->framebuffer[fb_addr] << 5) +
+					      (d->framebuffer[fb_addr + 1] >>5);
+					    b = d->framebuffer[fb_addr + 1]&31;
+					}
+
+					r *= 8;
+					g *= 4;
+					b *= 8;
 					break;
 				default:
 					r = g = b = random() & 255;

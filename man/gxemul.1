@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.73 2006-10-08 02:28:58 debug Exp $
+.\" $Id: gxemul.1,v 1.74 2006-10-17 07:56:19 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -29,7 +29,7 @@
 .\" This is a minimal man page for GXemul. Process this file with
 .\"     groff -man -Tascii gxemul.1    or    nroff -man gxemul.1
 .\"
-.Dd AUGUST 2006
+.Dd OCTOBER 2006
 .Dt GXEMUL 1
 .Os
 .Sh NAME
@@ -381,7 +381,8 @@ option, and entering the commands manually.
 Causes the emulator to skip a call to srandom(). This leads to somewhat
 more deterministic behaviour than running without this option.
 However, if the emulated machine has clocks or timer interrupt sources,
-then this option is meaningless.
+or if user interaction is taking place (e.g. keyboard input at irregular
+intervals), then this option is meaningless.
 .It Fl H
 Display a list of available CPU types, machine types, and userland
 emulation modes. (Most of these don't work. Please read the documentation
@@ -465,7 +466,8 @@ file in the
 .Nm
 source distribution, some are marked as TODO in the source code itself.
 .Pp
-Userland (syscall-only) emulation doesn't really work yet.
+Userland (syscall-only) emulation, i.e. running a userland binary directly 
+without simulating an entire machine, doesn't really work yet.
 .Pp
 The documentation sometimes only reflects the way things worked with 
 the old MIPS emulation mode (prior to 0.4.0), and it is incorrect when

@@ -1,25 +1,21 @@
-$Id: TODO,v 1.395 2006-10-14 02:30:11 debug Exp $
+$Id: TODO,v 1.396 2006-10-17 07:55:53 debug Exp $
 
-This file is in random order, and not all parts of it are up-to-date.
+This file is my "notebook" of things I want to work on in the future.
+It is in random order, and some parts of it might be out-to-date.
 
-Long-term design:
+
+Dyntrans:
 	x)  Instruction combination collisions? How to avoid easily...
 	x)  Think about how to do both SHmedia and SHcompact in a reasonable
 	    way! (Or AMD64 long/protected/real, for that matter.)
 	x)  68K emulation; think about how to do variable instruction
 	    lengths across page boundaries.
-	x)  Redesign the mainbus concept, including interrupt routing
-	    (including PCI/ISA interrupts) and allow devices to be moved
-	    and disabled/enabled at runtime.
 	x)  Dyntrans with valgrind-inspired memory checker. (In memory_rw,
 	    it would be reasonably simple to add; in each individual fast
 	    load/store routine = a lot more work, and it would become
 	    kludgy very fast.)
 	x)  Dyntrans with SMP... lots of work to be done here.
 	x)  Dyntrans with cache emulation... lots of work here as well.
-	x)  Reimplement the config file parser from scratch.
-
-Dyntrans:
 	o)  dev_mp doesn't work well with dyntrans yet
 	o)  In general, IPIs, CAS, LL/SC etc must be made to work with dyntrans
 	x)  Redesign/rethink the delay slot mechanism used for e.g. MIPS,
@@ -69,6 +65,7 @@ Simple Valgrind-like checks?
 MIPS:
 	o)  Nicer MIPS status bits in register dumps.
 	o)  Alignment exceptions.
+	o)  Floating point exception correctness.
 	o)  Fix this? Triggered by NetBSD/sgimips? Hm:
 		to_be_translated(): TODO: unimplemented instruction:
 		000000000065102c: 00200800 (d)  rot_00  at,zr,0
@@ -97,12 +94,21 @@ SuperH:
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
 	x)  Store Queues! (Necessary for Dreamcast Tile Accelerator stuff.)
+	x)  SH4 interrupt controller!
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  TLB direct access via memory!
 	x)  ldtlb: Don't invalidate everything.
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
+	x)  Floating point exception correctness.
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
+
+Dreamcast:
+	x)  PVR:
+		x)  Registers controlling the framebuffer size/type.
+		x)  3D acceleration?
+	x)  Maple bus
+	x)  Get NetBSD/dreamcast, Linux/dreamcast, and homebrew demos running
 
 Transputer:
 	x)  Implement support for Helios binaries.
@@ -139,6 +145,7 @@ Alpha:
 	x)  OSF1 PALcode, Virtual memory support.
 	x)  PALcode replacement! PAL1E etc opcodes...?
 	x)  Interrupt/exception/trap handling.
+	x)  Floating point exception correctness.
 	x)  More work on bootup memory and register contents.
 	x)  More Alpha machine types, so it could work with
 	    OpenBSD, FreeBSD, and Linux too?
@@ -152,6 +159,7 @@ SPARC:
 	o)  Disassemly of some more instructions?
 	o)  Are sll etc 32-bit sign-extending or zero-extending?
 	o)  Finish the GDB register stuff.
+	x)  Floating point exception correctness.
 	o)  SPARC v8, v7 etc?
 
 Debugger:
@@ -192,6 +200,7 @@ POWER/PowerPC:
 		version of AIX? (if there exists such a thing)
 	x)  macppc: adb controller; keyboard (for framebuffer mode)
 	x)  make OpenBSD/macppc work (PCI controller stuff)
+	x)  Floating point exception correctness.
 	x)  Alignment exceptions.
 
 Algor:
@@ -311,11 +320,7 @@ PCI:
 	    together with a mask to get the correct bits. also, not ALL
 	    bits are size bits! (lowest 4 vs lowest 2?)
 	x)  add support for address fixups
-	x)  generalize the interrupt routing stuff (lines etc). this should
-	    be per machine? or per bus, that's better
-	x)  add a "pcn" NIC (AMD PCnet32 Lance 79c970 (PCI 1022:2000)),
-	    could be useful for several machine modes (Malta, Algor, evbarm,
-	    hp700?, macppc, etc.)
+	x)  generalize the interrupt routing stuff (lines etc)
 
 Clocks and timers:
 	x)  DON'T HARDCODE 100 HZ IN cpu_mips_coproc.c!
@@ -326,12 +331,38 @@ Clocks and timers:
 
 Busses:
 	o)  Redesign the entire "mainbus" concept!
-	o)  Busses should be placed in a hierarchical tree!
-	o)  Easily configurable interrupt routing in SMP systems.
-	o)  Specific clock/bus speeds, cpu speeds etc.
+		x)  Busses should be placed in a hierarchical tree (?)
+		x)  Specific clock/bus speeds, cpu speeds etc.
+	o)  Interrupt routing subsystem:
+		x)  IF POSSIBLE, try to make the new system work with the
+		    current system, but print annoying warning messages. :)
+		    Think carefully about this.
+		x)  Registry for all available interrupts.
+			+)  Each interrupt controller (including CPU cores
+			    that can handle interrupts) should register its
+			    interrupts, e.g.
+				cpu[0].irq[3]
+				cpu[0].irq[3].pcmcia_slot[1]
+				cpu[0].irq.pci[3]
+			+)  Note: MIPS cpus have multiple irqs in the core,
+			    while some other CPUs only have one (irq[0]
+			    or just irq).
+		x)  Users should use interrupt _names_ instead of integers
+		    when attaching to an interrupt controller, but when
+		    asserting/deasserting irq lines, small integers must
+		    still be used (for obvious performance reasons).
+		    Figure out a way to do this nicely!
+		x)  Any users need to say whether they need the interrupt line
+		    exclusively or allow shared access.
+		x)  Must work with everything from native IRQs to
+		    TurboChannel/PCI/ISA/ADB/PCMCIA/...
+		x)  Must work with SMP emulation!
+		x)  Make it with device_add(). How does the end user find
+		    out the name of an interrupt controller/line in e.g.
+		    a configuration file?
 	o)  Synchronization over network? or at least in dyntrans within
 	    one emulated machine
-	o)  dev->bus: TurboChannel, PCMCIA, ADB?
+	o)  Convert to real busses: TurboChannel, PCMCIA, ADB
 
 Config file parser:
 	o)  Rewrite it from scratch!
@@ -399,6 +430,8 @@ Save state of the whole emulated machine, to be able to load it back
 	according to its website.))
 
 Better framebuffer and X-windows functionality:
+	o)  It must be possible to change/remove framebuffers during
+	    runtime (e.g. for Dreamcast PVR emulation).
 	o)  -Yx sometimes causes crashes.
 	o)  Simple device access to framebuffer_blockcopyfill() etc,
 	    and text output (using the built-in fonts), for dev_fb.
@@ -409,6 +442,7 @@ Better framebuffer and X-windows functionality:
 	o)  Non-resizable windows?  Or choose scaledown depending
 		on size (and center the image, with a black border).
 	o)  Different scaledown on different windows?
+	o)  Non-integral scale-up? (E.g. 640x480 -> 1024x768)
 	o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 	o)  Bug reported by Elijah Rutschman on MacOS with weird
 	    keys (F5 = cursor down?).

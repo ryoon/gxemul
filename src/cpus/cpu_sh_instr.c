@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.23 2006-10-13 06:50:34 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.24 2006-10-17 07:56:35 debug Exp $
  *
  *  SH instructions.
  *
@@ -364,7 +364,9 @@ X(mov_w_disp_pc_rn)
  *  mov_b_disp_rn_r0:  Load an int8_t from Rn+disp into R0.
  *  mov_w_disp_rn_r0:  Load an int16_t from Rn+disp into R0.
  *  mov_b_arg1_postinc_to_arg0:
+ *  mov_w_arg1_postinc_to_arg0:
  *  mov_l_arg1_postinc_to_arg0:
+ *  mov_l_arg1_postinc_to_arg0_md:  With MD (privilege level) check.
  *  mov_l_arg1_postinc_to_arg0_fp:  With FP check.
  *
  *  arg[0] = ptr to rm   (or rm + (lo4 << 4) for disp)
@@ -515,6 +517,30 @@ X(mov_b_arg1_postinc_to_arg0)
 	reg(ic->arg[1]) = addr + sizeof(int8_t);
 	reg(ic->arg[0]) = data;
 }
+X(mov_w_arg1_postinc_to_arg0)
+{
+	uint32_t addr = reg(ic->arg[1]);
+	uint16_t *p = (uint16_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint16_t data;
+
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 1];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE16_TO_HOST(data);
+	else
+		data = BE16_TO_HOST(data);
+	reg(ic->arg[1]) = addr + sizeof(data);
+	reg(ic->arg[0]) = (int16_t)data;
+}
 X(mov_l_arg1_postinc_to_arg0)
 {
 	uint32_t addr = reg(ic->arg[1]);
@@ -536,7 +562,33 @@ X(mov_l_arg1_postinc_to_arg0)
 		data = LE32_TO_HOST(data);
 	else
 		data = BE32_TO_HOST(data);
-	reg(ic->arg[1]) = addr + sizeof(uint32_t);
+	reg(ic->arg[1]) = addr + sizeof(data);
+	reg(ic->arg[0]) = data;
+}
+X(mov_l_arg1_postinc_to_arg0_md)
+{
+	uint32_t addr = reg(ic->arg[1]);
+	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint32_t data;
+
+	RES_INST_IF_NOT_MD;
+
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 2];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+	/*  The load was ok:  */
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE32_TO_HOST(data);
+	else
+		data = BE32_TO_HOST(data);
+	reg(ic->arg[1]) = addr + sizeof(data);
 	reg(ic->arg[0]) = data;
 }
 X(mov_l_arg1_postinc_to_arg0_fp)
@@ -562,7 +614,7 @@ X(mov_l_arg1_postinc_to_arg0_fp)
 		data = LE32_TO_HOST(data);
 	else
 		data = BE32_TO_HOST(data);
-	reg(ic->arg[1]) = addr + sizeof(uint32_t);
+	reg(ic->arg[1]) = addr + sizeof(data);
 	reg(ic->arg[0]) = data;
 }
 X(mov_b_r0_rm_rn)
@@ -1551,11 +1603,13 @@ X(rts_trace)
 /*
  *  sts_mach_rn: Store MACH into Rn
  *  sts_macl_rn: Store MACL into Rn
+ *  sts_pr_rn:   Store PR into Rn
  *
  *  arg[1] = ptr to rn
  */
 X(sts_mach_rn) { reg(ic->arg[1]) = cpu->cd.sh.mach; }
 X(sts_macl_rn) { reg(ic->arg[1]) = cpu->cd.sh.macl; }
+X(sts_pr_rn)   { reg(ic->arg[1]) = cpu->cd.sh.pr; }
 
 
 /*
@@ -1729,25 +1783,32 @@ X(fsca_fpul_drn)
 
 /*
  *  fldi0, fldi1: Load immediate (0.0 or 1.0) into floating point register.
+ *  fneg:         Negate a floating point register
  *
  *  arg[0] = ptr to fp register
  */
-X(fldi0_rn)
+X(fldi0_frn)
 {
 	FLOATING_POINT_AVAILABLE_CHECK;
 	reg(ic->arg[0]) = 0x00000000;
 }
-X(fldi1_rn)
+X(fldi1_frn)
 {
 	FLOATING_POINT_AVAILABLE_CHECK;
 	reg(ic->arg[0]) = 0x3f800000;
 }
+X(fneg_frn)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	reg(ic->arg[0]) ^= 0x80000000;
+}
 
 
 /*
- *  fadd_frm_frn:  Floating point addition.
- *  fmul_frm_frn:  Floating point multiplication.
- *  fdiv_frm_frn:  Floating point division.
+ *  fadd_frm_frn:     Floating point addition.
+ *  fmul_frm_frn:     Floating point multiplication.
+ *  fdiv_frm_frn:     Floating point division.
+ *  fcmp_gt_frm_frn:  Floating point greater-than comparison.
  *
  *  arg[0] = ptr to float register FRm
  *  arg[1] = ptr to float register FRn
@@ -1872,6 +1933,33 @@ X(fdiv_frm_frn)
 
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
+}
+X(fcmp_gt_frm_frn)
+{
+	struct ieee_float_value op1, op2;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
+		/*  Double-precision, using a pair of registers:  */
+		int64_t r1, r2;
+		r1 = reg(ic->arg[0] + sizeof(uint32_t)) +
+		    ((uint64_t)reg(ic->arg[0]) << 32);
+		r2 = reg(ic->arg[1] + sizeof(uint32_t)) +
+		    ((uint64_t)reg(ic->arg[1]) << 32);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
+		ieee_interpret_float_value(r2, &op2, IEEE_FMT_D);
+	} else {
+		/*  Single-precision:  */
+		uint32_t r1 = reg(ic->arg[0]), r2 = reg(ic->arg[1]);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
+		ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
+	}
+
+	if (op2.f > op1.f)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
 }
 
 
@@ -2198,6 +2286,9 @@ X(to_be_translated)
 			case 0x29:	/*  MOVT Rn  */
 				ic->f = instr(movt_rn);
 				break;
+			case 0x2a:	/*  STS PR,Rn  */
+				ic->f = instr(sts_pr_rn);
+				break;
 			case 0x32:	/*  STC SSR,Rn  */
 				ic->f = instr(copy_privileged_register);
 				ic->arg[0] = (size_t)&cpu->cd.sh.ssr;
@@ -2218,6 +2309,11 @@ X(to_be_translated)
 				break;
 			case 0x83:	/*  PREF @Rn  */
 				/*  Treat as nop for now:  */
+				ic->f = instr(nop);
+				break;
+			case 0xb3:	/*  OCBWB @Rn  */
+				/*  Treat as nop for now:  */
+				/*  TODO: Implement this.  */
 				ic->f = instr(nop);
 				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
@@ -2365,6 +2461,10 @@ X(to_be_translated)
 			case 0x06:	/*  LDS.L @Rm+,MACH  */
 				ic->f = instr(mov_l_arg1_postinc_to_arg0);
 				ic->arg[0] = (size_t)&cpu->cd.sh.mach;
+				break;
+			case 0x07:	/*  LDC.L @Rm+,SR  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0_md);
+				ic->arg[0] = (size_t)&cpu->cd.sh.sr;
 				break;
 			case 0x08:	/*  SHLL2 Rn  */
 				ic->f = instr(shll2_rn);
@@ -2514,6 +2614,12 @@ X(to_be_translated)
 			break;
 		case 0x4:	/*  MOV.B @Rm+,Rn  */
 			ic->f = instr(mov_b_arg1_postinc_to_arg0);
+			/*  Note: Order  */
+			ic->arg[1] = (size_t)&cpu->cd.sh.r[r4];	/* m */
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+			break;
+		case 0x5:	/*  MOV.W @Rm+,Rn  */
+			ic->f = instr(mov_w_arg1_postinc_to_arg0);
 			/*  Note: Order  */
 			ic->arg[1] = (size_t)&cpu->cd.sh.r[r4];	/* m */
 			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* n */
@@ -2689,6 +2795,11 @@ X(to_be_translated)
 			ic->f = instr(fdiv_frm_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
 			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo4 == 0x5) {
+			/*  FCMP/GT FRm,FRn  */
+			ic->f = instr(fcmp_gt_frm_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
+			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo4 == 0x8) {
 			/*  FMOV @Rm,FRn  */
 			ic->f = instr(fmov_rm_frn);
@@ -2717,13 +2828,17 @@ X(to_be_translated)
 			/*  FTRC FRm,FPUL  */
 			ic->f = instr(ftrc_frm_fpul);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x4d) {
+			/*  FNEG FRm  */
+			ic->f = instr(fneg_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo8 == 0x8d) {
 			/*  FLDI0 FRm  */
-			ic->f = instr(fldi0_rn);
+			ic->f = instr(fldi0_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo8 == 0x9d) {
 			/*  FLDI1 FRm  */
-			ic->f = instr(fldi1_rn);
+			ic->f = instr(fldi1_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if ((iword & 0x01ff) == 0x00fd) {
 			/*  FSCA FPUL,DRn  */

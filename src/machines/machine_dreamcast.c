@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.10 2006-10-13 06:31:51 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.11 2006-10-17 07:56:35 debug Exp $
  *
  *  Machine for experimenting with NetBSD/dreamcast.
  */
@@ -76,7 +76,7 @@ MACHINE_SETUP(dreamcast)
 	 *  0x14000000 - ...		G2 (?)
 	 */
 
-	dev_ram_init(machine, 0x0c000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
+	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
 
 	device_add(machine, "pvr");
 
@@ -96,7 +96,7 @@ MACHINE_DEFAULT_CPU(dreamcast)
 
 MACHINE_DEFAULT_RAM(dreamcast)
 {
-	machine->physical_ram_in_mb = 16;
+	machine->physical_ram_in_mb = 2;
 }
 
 

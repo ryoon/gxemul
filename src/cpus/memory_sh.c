@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.8 2006-10-07 01:14:21 debug Exp $
+ *  $Id: memory_sh.c,v 1.9 2006-10-17 07:56:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -249,6 +249,11 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr, uint64_t *return_paddr,
 	/*  P4: Special registers mapped at 0xf0000000 .. 0xffffffff:  */
 	if ((vaddr & 0xf0000000) == 0xf0000000) {
 		*return_paddr = vaddr;
+		return 2;
+	}
+
+	if (flags & FLAG_NOEXCEPTIONS) {
+		*return_paddr = 0;
 		return 2;
 	}
 

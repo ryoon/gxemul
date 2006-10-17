@@ -25,9 +25,15 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.1 2006-10-13 06:31:51 debug Exp $
+ *  $Id: dev_pvr.c,v 1.2 2006-10-17 07:56:35 debug Exp $
  *  
  *  PVR:  Dreamcast Graphics controller.
+ *
+ *  TODO: Almost everything
+ *	x)  Change resolution during runtime? (PAL/NTSC/???)
+ *	x)  Change framebuffer layout in memory during runtime
+ *		(bits per pixel, location, etc)
+ *	x)  3D "Tile Accelerator" engine
  */
 
 #include <stdio.h>
@@ -98,6 +104,12 @@ DEVINIT(pvr)
 	/*  640x480 16-bit framebuffer:  */
 	d->fb = dev_fb_init(machine, machine->memory, PVRREG_FBSTART,
 	    VFB_HPC, 640,480, 640,480, 16, "Dreamcast PVR");
+
+#if 0
+	/*  IP.BIN experiment.  */
+	d->fb = dev_fb_init(machine, machine->memory, PVRREG_FBSTART + 0x200000,
+	    VFB_GENERIC, 640,480, 640,480, 32, "Dreamcast PVR");
+#endif
 
 	return 1;
 }

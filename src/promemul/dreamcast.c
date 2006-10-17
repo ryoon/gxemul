@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.3 2006-10-13 06:31:51 debug Exp $
+ *  $Id: dreamcast.c,v 1.4 2006-10-17 07:56:35 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -87,6 +87,7 @@ int dreamcast_emul(struct cpu *cpu)
 
 	case 0x00:
 		/*  Special case: Reboot  */
+		fatal("[ dreamcast reboot ]\n");
 		cpu->running = 0;
 		break;
 

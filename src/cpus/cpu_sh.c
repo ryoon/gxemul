@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.37 2006-10-13 06:50:34 debug Exp $
+ *  $Id: cpu_sh.c,v 1.38 2006-10-17 07:56:35 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -143,6 +143,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		char tmpstr[6];
 		snprintf(tmpstr, sizeof(tmpstr), "fr%i", i);
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.fr[i]);
+		snprintf(tmpstr, sizeof(tmpstr), "xf%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.xf[i]);
 	}
 
 	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
@@ -300,6 +302,14 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i % 4) == 3)
 				debug("\n");
 		}
+
+		for (i=0; i<SH_N_FPRS; i++) {
+			if ((i % 4) == 0)
+				debug("cpu%i:", x);
+			debug(" xf%-2i=0x%08x ", i, (int)cpu->cd.sh.xf[i]);
+			if ((i % 4) == 3)
+				debug("\n");
+		}
 	}
 
 	if (coprocs & 2) {
@@ -424,12 +434,21 @@ void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
 {
 	uint32_t vbr = cpu->cd.sh.vbr;
 
-	debug("[ exception 0x%03x, vaddr 0x%08"PRIx32" ]\n", expevt, vaddr);
+	debug("[ exception 0x%03x, pc=0x%08x vaddr=0x%08"PRIx32" ]\n",
+	    expevt, (uint32_t)cpu->pc, vaddr);
 
 	if (cpu->cd.sh.sr & SH_SR_BL) {
 		fatal("sh_exception(): BL bit already set. TODO\n");
+
 		/*  This is actually OK in one case, a User Break.  */
-		exit(1);
+		/*  TODO  */
+
+		expevt = EXPEVT_RESET_POWER;
+	}
+
+	if (cpu->delay_slot) {
+		cpu->delay_slot = EXCEPTION_IN_DELAY_SLOT;
+		cpu->pc -= sizeof(uint16_t);
 	}
 
 	/*  Stuff common to all exceptions:  */
@@ -439,16 +458,18 @@ void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
 	cpu->cd.sh.expevt = expevt;
 	sh_update_sr(cpu, cpu->cd.sh.sr | SH_SR_MD | SH_SR_RB | SH_SR_BL);
 
-	if (cpu->delay_slot)
-		cpu->delay_slot = EXCEPTION_IN_DELAY_SLOT;
-	else
-		cpu->delay_slot = NOT_DELAYED;
-
 	/*  Most exceptions set PC to VBR + 0x100.  */
 	cpu->pc = vbr + 0x100;
 
 	/*  Specific cases:  */
 	switch (expevt) {
+
+	case EXPEVT_RESET_POWER:
+	case EXPEVT_RESET_MANUAL:
+		cpu->pc = 0xa0000000;
+		cpu->cd.sh.vbr = 0x00000000;
+		sh_update_sr(cpu, (cpu->cd.sh.sr | SH_SR_IMASK) & ~SH_SR_FD);
+		break;
 
 	case EXPEVT_TLB_MISS_LD:
 	case EXPEVT_TLB_MISS_ST:
@@ -668,6 +689,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("rotr\tr%i\n", r8);
 		else if (lo8 == 0x06)
 			debug("lds.l\t@r%i+,mach\n", r8);
+		else if (lo8 == 0x07)
+			debug("ldc.l\t@r%i+,sr\n", r8);
 		else if (lo8 == 0x08)
 			debug("shll2\tr%i\n", r8);
 		else if (lo8 == 0x09)
@@ -863,6 +886,14 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("fdiv\t%sr%i,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo4 == 0x4)
+			debug("fcmp/eq\t%sr%i,%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo4 == 0x5)
+			debug("fcmp/gt\t%sr%i,%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo4 == 0x8)
 			debug("fmov\t@r%i,%sr%i\n", r4,
 			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
@@ -880,6 +911,9 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo8 == 0x3d)
 			debug("ftrc\t%sr%i,fpul\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo8 == 0x4d)
+			debug("fneg\t%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo8 == 0x8d)
 			debug("fldi0\tfr%i\n", r8);

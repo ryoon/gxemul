@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1388 2006-10-14 23:47:37 debug Exp $
+$Id: HISTORY,v 1.1389 2006-10-17 07:56:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3098,3 +3098,5 @@ Changelog for GXemul:
 		debugger) to support parentheses and +-*/%^&|.
 20061015	Removing the experimental tlb index hint code in
 		mips_memory_v2p.c, since it didn't really have any effect.
+20061017	Minor SH updates; adding the "sts pr,Rn", fcmp/gt, fneg,
+		and some other instructions.

@@ -28,10 +28,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.27 2006-10-07 04:50:26 debug Exp $
+ *  $Id: cpu_sh.h,v 1.28 2006-10-17 10:53:06 debug Exp $
  */
 
 #include "misc.h"
+#include "sh4_cpu.h"
 
 
 struct cpu_family;
@@ -40,13 +41,15 @@ struct cpu_family;
 struct sh_cpu_type_def {
 	char		*name;
 	int		bits;
+	int		arch;
+	uint32_t	pvr;
+	uint32_t	prr;
 };
 
-#define	SH_CPU_TYPE_DEFS	{	\
-	{ "SH3", 32 },			\
-	{ "SH4", 32 },			\
-	{ "SH5", 64 },			\
-	{ NULL, 0 } }
+#define	SH_CPU_TYPE_DEFS		{	    \
+	{ "SH7750", 32, 4, SH4_PVR_SH7750, 0	 }, \
+	{ "SH5",    64, 5, 0,              0	 }, \
+	{ NULL,      0, 0, 0,              0	 }  }
 
 
 /*

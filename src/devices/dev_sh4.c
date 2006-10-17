@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.5 2006-10-13 05:02:32 debug Exp $
+ *  $Id: dev_sh4.c,v 1.6 2006-10-17 10:53:06 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -97,6 +97,14 @@ DEVICE_ACCESS(sh4)
 	relative_addr += SH4_REG_BASE;
 
 	switch (relative_addr) {
+
+	case SH4_PVR_ADDR:
+		odata = cpu->cd.sh.cpu_type.pvr;
+		break;
+
+	case SH4_PRR_ADDR:
+		odata = cpu->cd.sh.cpu_type.prr;
+		break;
 
 	case SH4_PTEH:
 		if (writeflag == MEM_READ)

@@ -25,9 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.2 2006-10-17 07:56:35 debug Exp $
+ *  $Id: dev_pvr.c,v 1.3 2006-10-17 10:53:06 debug Exp $
  *  
- *  PVR:  Dreamcast Graphics controller.
+ *  PowerVR CLX2 (Graphics controller used in the Dreamcast)
  *
  *  TODO: Almost everything
  *	x)  Change resolution during runtime? (PAL/NTSC/???)
@@ -101,11 +101,11 @@ DEVINIT(pvr)
 	memory_device_register(machine->memory, devinit->name,
 	    PVRREG_REGSTART, 0x2000, dev_pvr_access, d, DM_DEFAULT, NULL);
 
+#if 1
 	/*  640x480 16-bit framebuffer:  */
 	d->fb = dev_fb_init(machine, machine->memory, PVRREG_FBSTART,
 	    VFB_HPC, 640,480, 640,480, 16, "Dreamcast PVR");
-
-#if 0
+#else
 	/*  IP.BIN experiment.  */
 	d->fb = dev_fb_init(machine, machine->memory, PVRREG_FBSTART + 0x200000,
 	    VFB_GENERIC, 640,480, 640,480, 32, "Dreamcast PVR");

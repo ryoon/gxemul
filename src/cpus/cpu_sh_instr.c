@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.24 2006-10-17 07:56:35 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.25 2006-10-17 10:53:06 debug Exp $
  *
  *  SH instructions.
  *
@@ -388,7 +388,7 @@ X(load_b_rm_rn)
 			return;
 		}
 	}
-	reg(ic->arg[1]) = data;
+	reg(ic->arg[1]) = (int8_t) data;
 }
 X(load_w_rm_rn)
 {
@@ -615,7 +615,11 @@ X(mov_l_arg1_postinc_to_arg0_fp)
 	else
 		data = BE32_TO_HOST(data);
 	reg(ic->arg[1]) = addr + sizeof(data);
-	reg(ic->arg[0]) = data;
+
+	if (ic->arg[0] == (size_t)cpu->cd.sh.fpscr)
+		sh_update_fpscr(cpu, data);
+	else
+		reg(ic->arg[0]) = data;
 }
 X(mov_b_r0_rm_rn)
 {
@@ -1964,6 +1968,16 @@ X(fcmp_gt_frm_frn)
 
 
 /*
+ *  frchg:  Change register banks.
+ */
+X(frchg)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	sh_update_fpscr(cpu, cpu->cd.sh.fpscr ^ SH_FPSCR_FR);
+}
+
+
+/*
  *  tas_b_rn: Test-and-Set.
  *
  *  arg[1] = ptr to Rn
@@ -2316,6 +2330,11 @@ X(to_be_translated)
 				/*  TODO: Implement this.  */
 				ic->f = instr(nop);
 				break;
+			case 0xc3:	/*  MOVCA.L R0,@Rn  */
+				/*  Treat as nop for now:  */
+				/*  TODO: Implement this.  */
+				ic->f = instr(nop);
+				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
 				    main_opcode, iword & 0xfff);
 				goto bad;
@@ -2432,9 +2451,14 @@ X(to_be_translated)
 			ic->f = instr(stc_l_rm_predec_rn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[
 			    (lo8 >> 4) & 7];	/* m */
+		} else if ((lo8 & 0x8f) == 0x87) {
+			/*   LDC.L @Rm+,Rn_BANK  */
+			ic->f = instr(mov_l_arg1_postinc_to_arg0_md);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[(lo8 >> 4) & 7];
 		} else if ((lo8 & 0x8f) == 0x8e) {
 			/*  LDC Rm, Rn_BANK  */
 			ic->f = instr(copy_privileged_register);
+			ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];
 			ic->arg[1] = (size_t)&cpu->cd.sh.r_bank[(lo8 >> 4) & 7];
 		} else {
 			switch (lo8) {
@@ -2493,12 +2517,20 @@ X(to_be_translated)
 				ic->f = instr(mov_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.macl;
 				break;
+			case 0x13:	/*  STC.L GBR,@-Rn  */
+				ic->f = instr(stc_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.gbr;
+				break;
 			case 0x15:	/*  CMP/PL Rn  */
 				ic->f = instr(cmppl_rn);
 				break;
 			case 0x16:	/*  LDS.L @Rm+,MACL  */
 				ic->f = instr(mov_l_arg1_postinc_to_arg0);
 				ic->arg[0] = (size_t)&cpu->cd.sh.macl;
+				break;
+			case 0x17:	/*  LDC.L @Rm+,GBR  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0_md);
+				ic->arg[0] = (size_t)&cpu->cd.sh.gbr;
 				break;
 			case 0x18:	/*  SHLL8 Rn  */
 				ic->f = instr(shll8_rn);
@@ -2519,6 +2551,10 @@ X(to_be_translated)
 				ic->f = instr(mov_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.pr;	/* m */
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+				break;
+			case 0x23:	/*  STC.L VBR,@-Rn  */
+				ic->f = instr(stc_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.vbr;
 				break;
 			case 0x24:	/*  ROTCL Rn  */
 				ic->f = instr(rotcl_rn);
@@ -2554,6 +2590,14 @@ X(to_be_translated)
 				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
 				ic->arg[1] = (size_t)&cpu->cd.sh.vbr;
 				break;
+			case 0x33:	/*  STC.L SSR,@-Rn  */
+				ic->f = instr(stc_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.ssr;
+				break;
+			case 0x37:	/*  LDC.L @Rm+,SSR  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0_md);
+				ic->arg[0] = (size_t)&cpu->cd.sh.ssr;
+				break;
 			case 0x3e:	/*  LDC rm,SSR  */
 				ic->f = instr(copy_privileged_register);
 				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
@@ -2563,10 +2607,23 @@ X(to_be_translated)
 				ic->f = instr(stc_l_rm_predec_rn);
 				ic->arg[0] = (size_t)&cpu->cd.sh.spc;
 				break;
+			case 0x47:	/*  LDC.L @Rm+,SPC  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0_md);
+				ic->arg[0] = (size_t)&cpu->cd.sh.spc;
+				break;
 			case 0x4e:	/*  LDC rm,SPC  */
 				ic->f = instr(copy_privileged_register);
 				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
 				ic->arg[1] = (size_t)&cpu->cd.sh.spc;
+				break;
+			case 0x52:	/*  STS.L FPUL,@-Rn  */
+				ic->f = instr(mov_l_rm_predec_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.fpul;
+				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
+				break;
+			case 0x56:	/*  LDS.L @Rm+,FPUL  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0_fp);
+				ic->arg[0] = (size_t)&cpu->cd.sh.fpul;
 				break;
 			case 0x5a:	/*  LDS Rm,FPUL  */
 				ic->f = instr(copy_fp_register);
@@ -2844,6 +2901,9 @@ X(to_be_translated)
 			/*  FSCA FPUL,DRn  */
 			ic->f = instr(fsca_fpul_drn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (iword == 0xfbfd) {
+			/*  FRCHG  */
+			ic->f = instr(frchg);
 		} else {
 			fatal("Unimplemented opcode 0x%x,0x%02x\n",
 			    main_opcode, lo8);

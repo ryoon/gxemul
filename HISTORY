@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1389 2006-10-17 07:56:35 debug Exp $
+$Id: HISTORY,v 1.1390 2006-10-17 10:53:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3099,4 +3099,5 @@ Changelog for GXemul:
 20061015	Removing the experimental tlb index hint code in
 		mips_memory_v2p.c, since it didn't really have any effect.
 20061017	Minor SH updates; adding the "sts pr,Rn", fcmp/gt, fneg,
-		and some other instructions.
+		frchg, and some other instructions. Fixing missing sign-
+		extension in a 8-bit load instruction.

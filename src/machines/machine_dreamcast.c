@@ -25,9 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.11 2006-10-17 07:56:35 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.12 2006-10-17 10:53:06 debug Exp $
  *
- *  Machine for experimenting with NetBSD/dreamcast.
+ *  Dreamcast.
+ *
+ *  This machine mode is primarily meant for experimenting with
+ *  NetBSD/dreamcast. (Not playing games. :-)
  */
 
 #include <stdio.h>
@@ -69,11 +72,14 @@ MACHINE_SETUP(dreamcast)
 	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)
 	 *  0x01000000 - ...		Parallel port registers
 	 *  0x02000000 - ...		CD-ROM port registers
+	 *  0x04000000 - 0x047fffff	Video RAM (*)
 	 *  0x05000000 - 0x057fffff	Video RAM (8 MB)
 	 *  0x0c000000 - 0x0cffffff	RAM (16 MB)
 	 *  0x10000000 - ...		Tile accelerator (?)
 	 *  0x10800000 - ...		Write-only mirror of Video RAM
 	 *  0x14000000 - ...		G2 (?)
+	 *
+	 *  (*) = with banks 0 and 1 switched; 64-bit read/write access...
 	 */
 
 	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
@@ -90,7 +96,7 @@ MACHINE_SETUP(dreamcast)
 MACHINE_DEFAULT_CPU(dreamcast)
 {
 	/*  Hitachi SH4, 200 MHz  */
-	machine->cpu_name = strdup("SH4");
+	machine->cpu_name = strdup("SH7750");
 }
 
 

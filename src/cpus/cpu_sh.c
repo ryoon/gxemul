@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.38 2006-10-17 07:56:35 debug Exp $
+ *  $Id: cpu_sh.c,v 1.39 2006-10-17 10:53:06 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -148,9 +148,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	}
 
 	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
-	if (strcasecmp(cpu->cd.sh.cpu_type.name, "SH4") == 0) {
+	if (cpu->cd.sh.cpu_type.arch == 4)
 		device_add(machine, "sh4");
-	}
 
 	return 1;
 }
@@ -486,6 +485,7 @@ void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
 		/*  Note: The TRA register is already set by the
 		    implementation of the trapa instruction. See
 		    cpu_sh_instr.c.  */
+		cpu->cd.sh.spc += sizeof(uint16_t);
 		break;
 
 	default:fatal("sh_exception(): exception 0x%x is not yet "
@@ -600,6 +600,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("ocbp\t@r%i\n", r8);
 		else if (lo8 == 0xb3)
 			debug("ocbwb\t@r%i\n", r8);
+		else if (lo8 == 0xc3)
+			debug("movca.l\tr0,@r%i\n", r8);
 		else if (iword == 0x00ff)
 			debug("gxemul_dreamcast_prom_emul\n");
 		else
@@ -711,10 +713,14 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("cmp/pz\tr%i\n", r8);
 		else if (lo8 == 0x12)
 			debug("sts.l\tmacl,@-r%i\n", r8);
+		else if (lo8 == 0x13)
+			debug("stc.l\tgbr,@-r%i\n", r8);
 		else if (lo8 == 0x15)
 			debug("cmp/pl\tr%i\n", r8);
 		else if (lo8 == 0x16)
 			debug("lds.l\t@r%i+,macl\n", r8);
+		else if (lo8 == 0x17)
+			debug("ldc.l\t@r%i+,gbr\n", r8);
 		else if (lo8 == 0x18)
 			debug("shll8\tr%i\n", r8);
 		else if (lo8 == 0x19)
@@ -731,6 +737,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("shar\tr%i\n", r8);
 		else if (lo8 == 0x22)
 			debug("sts.l\tpr,@-r%i\n", r8);
+		else if (lo8 == 0x23)
+			debug("stc.l\tvbr,@-r%i\n", r8);
 		else if (lo8 == 0x24)
 			debug("rotcl\tr%i\n", r8);
 		else if (lo8 == 0x25)
@@ -747,12 +755,20 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("jmp\t@r%i\n", r8);
 		else if (lo8 == 0x2e)
 			debug("ldc\tr%i,vbr\n", r8);
+		else if (lo8 == 0x33)
+			debug("stc.l\tssr,@-r%i\n", r8);
+		else if (lo8 == 0x37)
+			debug("ldc.l\t@r%i+,ssr\n", r8);
 		else if (lo8 == 0x3e)
 			debug("ldc\tr%i,ssr\n", r8);
 		else if (lo8 == 0x43)
 			debug("stc.l\tspc,@-r%i\n", r8);
+		else if (lo8 == 0x47)
+			debug("ldc.l\t@r%i+,spc\n", r8);
 		else if (lo8 == 0x4e)
 			debug("ldc\tr%i,spc\n", r8);
+		else if (lo8 == 0x52)
+			debug("sts.l\tfpul,@-r%i\n", r8);
 		else if (lo8 == 0x56)
 			debug("lds.l\t@r%i+,fpul\n", r8);
 		else if (lo8 == 0x5a)
@@ -765,6 +781,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("lds\tr%i,fpscr\n", r8);
 		else if ((lo8 & 0x8f) == 0x83)
 			debug("stc.l\tr%i_bank,@-r%i\n", (lo8 >> 4) & 7, r8);
+		else if ((lo8 & 0x8f) == 0x87)
+			debug("ldc.l\t@r%i,r%i_bank\n", r8, (lo8 >> 4) & 7, r8);
 		else if ((lo8 & 0x8f) == 0x8e)
 			debug("ldc\tr%i,r%i_bank\n", r8, (lo8 >> 4) & 7);
 		else
@@ -921,6 +939,10 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("fldi1\tfr%i\n", r8);
 		else if ((iword & 0x01ff) == 0x00fd)
 			debug("fsca\tfpul,dr%i\n", r8);
+		else if (iword == 0xf3fd)
+			debug("fschg\n");
+		else if (iword == 0xfbfd)
+			debug("frchg\n");
 		else
 			debug("UNIMPLEMENTED hi4=0x%x,0x%x\n", hi4, lo8);
 		break;

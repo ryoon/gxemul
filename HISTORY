@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1390 2006-10-17 10:53:05 debug Exp $
+$Id: HISTORY,v 1.1391 2006-10-19 10:15:57 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3100,4 +3100,6 @@ Changelog for GXemul:
 		mips_memory_v2p.c, since it didn't really have any effect.
 20061017	Minor SH updates; adding the "sts pr,Rn", fcmp/gt, fneg,
 		frchg, and some other instructions. Fixing missing sign-
-		extension in a 8-bit load instruction.
+		extension in an 8-bit load instruction.
+20061019	Adding a simple dev_dreamcast_rtc.
+		Implementing memory-mapped access to the SH ITLB/UTLB arrays.

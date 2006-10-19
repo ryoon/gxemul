@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.28 2006-10-17 10:53:06 debug Exp $
+ *  $Id: cpu_sh.h,v 1.29 2006-10-19 10:15:57 debug Exp $
  */
 
 #include "misc.h"
@@ -75,6 +75,7 @@ DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 #define	SH_N_GPRS_BANKED	8
 #define	SH_N_FPRS		16
 
+#define	SH_N_ITLB_ENTRIES	4
 #define	SH_N_UTLB_ENTRIES	64
 
 
@@ -115,6 +116,8 @@ struct sh_cpu {
 	uint32_t	ttb;		/*  Translation Table Base  */
 	uint32_t	tea;		/*  TLB Exception Address Register  */
 	uint32_t	mmucr;		/*  MMU Control Register  */
+	uint32_t	itlb_hi[SH_N_ITLB_ENTRIES];
+	uint32_t	itlb_lo[SH_N_ITLB_ENTRIES];
 	uint32_t	utlb_hi[SH_N_UTLB_ENTRIES];
 	uint32_t	utlb_lo[SH_N_UTLB_ENTRIES];
 

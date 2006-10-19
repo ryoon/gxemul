@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.12 2006-10-17 10:53:06 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.13 2006-10-19 10:15:57 debug Exp $
  *
  *  Dreamcast.
  *
@@ -61,14 +61,16 @@ MACHINE_SETUP(dreamcast)
 		    "------------------------------------------\n");
 
 	/*
-	 *  Physical address layout on the Dreamcast, according to
-	 *  http://www.boob.co.uk/docs/Dreamcast_memory.txt and
+	 *  Physical address layout on the Dreamcast, according to a
+	 *  combination of sources:  NetBSD sources,
+	 *  http://www.boob.co.uk/docs/Dreamcast_memory.txt, and
 	 *  http://www.ludd.luth.se/~jlo/dc/memory.txt:
 	 *
 	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
 	 *  0x00200000 - 0x003fffff	Flash (256 KB)
 	 *  0x005f8000 - ...		PVR registers
 	 *  0x00700000 - ...		SPU registers
+	 *  0x00710000 - 0x00710007	RTC registers
 	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)
 	 *  0x01000000 - ...		Parallel port registers
 	 *  0x02000000 - ...		CD-ROM port registers
@@ -85,6 +87,7 @@ MACHINE_SETUP(dreamcast)
 	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
 
 	device_add(machine, "pvr");
+	device_add(machine, "dreamcast_rtc");
 
 	if (!machine->prom_emulation)
 		return;
@@ -102,6 +105,8 @@ MACHINE_DEFAULT_CPU(dreamcast)
 
 MACHINE_DEFAULT_RAM(dreamcast)
 {
+	/*  Note: This is the size of the boot ROM area, since the
+	    Dreamcast's RAM isn't located at physical address zero.  */
 	machine->physical_ram_in_mb = 2;
 }
 

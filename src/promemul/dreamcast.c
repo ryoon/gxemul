@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.4 2006-10-17 07:56:35 debug Exp $
+ *  $Id: dreamcast.c,v 1.5 2006-10-19 10:15:57 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -59,7 +59,7 @@ void dreamcast_machine_setup(struct machine *machine)
 	int i;
 	struct cpu *cpu = machine->cpus[0];
 
-	for (i=0xb0; i<=0xbc; i+=sizeof(uint32_t)) {
+	for (i=0xb0; i<=0xfc; i+=sizeof(uint32_t)) {
 		/*  Store pointer to PROM routine...  */
 		store_32bit_word(cpu, 0x8c000000 + i, 0x8c000100 + i);
 
@@ -95,6 +95,7 @@ int dreamcast_emul(struct cpu *cpu)
 		/*  SYSINFO  */
 		switch (r7) {
 		default:fatal("[ SYSINFO: Unimplemented r7=%i ]\n", r7);
+			goto bad;
 		}
 		break;
 
@@ -102,6 +103,7 @@ int dreamcast_emul(struct cpu *cpu)
 		/*  ROMFONT  */
 		switch (r1) {
 		default:fatal("[ ROMFONT: Unimplemented r1=%i ]\n", r1);
+			goto bad;
 		}
 		break;
 
@@ -109,6 +111,7 @@ int dreamcast_emul(struct cpu *cpu)
 		/*  FLASHROM  */
 		switch (r7) {
 		default:fatal("[ FLASHROM: Unimplemented r7=%i ]\n", r7);
+			goto bad;
 		}
 		break;
 
@@ -120,11 +123,18 @@ int dreamcast_emul(struct cpu *cpu)
 				/*  TODO: Do something here?  */
 				break;
 			default:fatal("[ GDROM: Unimplemented r7=%i ]\n", r7);
+				goto bad;
 			}
 			break;
 		default:fatal("[ 0xbc: Unimplemented r6=0x%x ]\n", r6);
+			goto bad;
 		}
 		break;
+
+	case 0xe0:
+		/*  0x8c0000e0 is used by KallistOS arch_menu().  */
+		fatal("[ Boot menu? TODO ]\n");
+		goto bad;
 
 	default:goto bad;
 	}

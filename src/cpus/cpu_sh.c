@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.39 2006-10-17 10:53:06 debug Exp $
+ *  $Id: cpu_sh.c,v 1.40 2006-10-19 10:15:57 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -145,6 +145,20 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.fr[i]);
 		snprintf(tmpstr, sizeof(tmpstr), "xf%i", i);
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.xf[i]);
+	}
+	for (i=0; i<SH_N_ITLB_ENTRIES; i++) {
+		char tmpstr[15];
+		snprintf(tmpstr, sizeof(tmpstr), "itlb_hi_%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.itlb_hi[i]);
+		snprintf(tmpstr, sizeof(tmpstr), "itlb_lo_%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.itlb_lo[i]);
+	}
+	for (i=0; i<SH_N_UTLB_ENTRIES; i++) {
+		char tmpstr[15];
+		snprintf(tmpstr, sizeof(tmpstr), "utlb_hi_%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.utlb_hi[i]);
+		snprintf(tmpstr, sizeof(tmpstr), "utlb_lo_%i", i);
+		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.utlb_lo[i]);
 	}
 
 	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
@@ -344,6 +358,25 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  */
 void sh_cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
+	int i, j;
+
+	for (j=0; j<m->ncpus; j++) {
+		struct cpu *cpu = m->cpus[j];
+
+		if (x >= 0 && j != x)
+			continue;
+
+		for (i=0; i<SH_N_ITLB_ENTRIES; i++)
+			printf("cpu%i: itlb_hi_%-2i = 0x%08"PRIx32"  "
+			    "itlb_lo_%-2i = 0x%08"PRIx32"\n", j, i,
+			    (uint32_t) cpu->cd.sh.itlb_hi[i], i,
+			    (uint32_t) cpu->cd.sh.itlb_lo[i]);
+		for (i=0; i<SH_N_UTLB_ENTRIES; i++)
+			printf("cpu%i: utlb_hi_%-2i = 0x%08"PRIx32"  "
+			    "utlb_lo_%-2i = 0x%08"PRIx32"\n", j, i,
+			    (uint32_t) cpu->cd.sh.utlb_hi[i], i,
+			    (uint32_t) cpu->cd.sh.utlb_lo[i]);
+	}
 }
 
 

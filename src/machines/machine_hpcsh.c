@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcsh.c,v 1.5 2006-09-23 04:41:23 debug Exp $
+ *  $Id: machine_hpcsh.c,v 1.6 2006-10-19 10:15:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -88,7 +88,7 @@ MACHINE_SETUP(hpcsh)
 
 MACHINE_DEFAULT_CPU(hpcsh)
 {
-	machine->cpu_name = strdup("SH4");
+	machine->cpu_name = strdup("SH7750");
 }
 
 

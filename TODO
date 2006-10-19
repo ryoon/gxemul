@@ -1,4 +1,4 @@
-$Id: TODO,v 1.396 2006-10-17 07:55:53 debug Exp $
+$Id: TODO,v 1.397 2006-10-19 10:15:57 debug Exp $
 
 This file is my "notebook" of things I want to work on in the future.
 It is in random order, and some parts of it might be out-to-date.
@@ -94,10 +94,11 @@ SuperH:
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
 	x)  Store Queues! (Necessary for Dreamcast Tile Accelerator stuff.)
-	x)  SH4 interrupt controller!
+	x)  SH4 interrupt controller
+	x)  SH4 timers
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
-	x)  TLB direct access via memory!
 	x)  ldtlb: Don't invalidate everything.
+	x)  TLB access via memory: Don't invalidate everything.
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
 	x)  Floating point exception correctness.
@@ -382,7 +383,8 @@ Userland emulation:
 
 Sound:
 	x)  generic sound framework
-	x)  add one or more sound cards as devices
+	x)  add one or more sound cards as devices; add a testmachine
+	    sound card first?
 
 ASC SCSI controller:
 	x)  NetBSD/arc 2.0 uses the ASC controller in a way which GXemul

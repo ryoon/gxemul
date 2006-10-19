@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: misc.html,v 1.64 2006-09-07 11:44:42 debug Exp $
+$Id: misc.html,v 1.65 2006-10-19 10:15:23 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -103,8 +103,8 @@ complement to testing on real hardware.
 	<li>CPU details in GXemul are usually wrong. If your code depends
 	on, say, R10000 or MIPS64 specifics, chances are that GXemul will
 	not be sufficient. One example is different revisions of ISAs;
-	64-bit MIPS instructions which should trigger an exception on a
-	real 32-bit MIPS processor usually execute anyway in GXemul. Another
+	some instructions which should trigger an exception on a
+	real MIPS processor usually execute anyway in GXemul. Another
 	example is if userland code tries to access kernel memory; in some
 	cases there is protection against this, but not in all cases (to get
 	higher performance).

@@ -1,4 +1,4 @@
-/*  GXemul: $Id: sh4_cpu.h,v 1.1 2006-10-17 10:53:06 debug Exp $  */
+/*  GXemul: $Id: sh4_cpu.h,v 1.2 2006-10-19 10:18:02 debug Exp $  */
 /*	$NetBSD: cpu.h,v 1.41 2006/01/21 04:24:12 uwe Exp $	*/
 
 #ifndef	SH4_CPU_H
@@ -204,7 +204,7 @@ extern int want_resched;		/* need_resched() was called */
 /*
  * pull in #defines for kinds of processors
  */
-#include <machine/cputypes.h>
+/*  #include <machine/cputypes.h>  */
 
 /*
  * CTL_MACHDEP definitions.

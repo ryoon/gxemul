@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.30 2006-10-21 02:39:08 debug Exp $
+ *  $Id: cpu_sh.h,v 1.31 2006-10-21 09:25:24 debug Exp $
  */
 
 #include "misc.h"
@@ -108,6 +108,8 @@ struct sh_cpu {
 
 	/*  Cache control:  */
 	uint32_t	ccr;		/*  Cache Control Register  */
+	uint32_t	qacr0;		/*  Queue Address Control Register 0  */
+	uint32_t	qacr1;		/*  Queue Address Control Register 1  */
 
 	/*  MMU/TLB registers:  */
 	uint32_t	pteh;		/*  Page Table Entry High  */

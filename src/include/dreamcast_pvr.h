@@ -1,4 +1,4 @@
-/*  GXemul: $Id: dreamcast_pvr.h,v 1.3 2006-10-21 05:49:06 debug Exp $  */
+/*  GXemul: $Id: dreamcast_pvr.h,v 1.4 2006-10-21 09:25:24 debug Exp $  */
 /*	$NetBSD: pvr.c,v 1.22 2006/04/12 19:38:22 jmmv Exp $	*/
 
 #ifndef	DREAMCAST_PVR_H
@@ -220,6 +220,29 @@
 #define	PVR_SYNC_STAT_INTERLACE_FIELD_EVEN	0x00000400
 #define	PVR_SYNC_STAT_HBLANK			0x00001000
 #define	PVR_SYNC_STAT_VBLANK			0x00002000
+
+#define	PVRREG_TA_OPB_START	0x124
+#define	TA_OPB_START_MASK	0x00ffff80
+
+#define	PVRREG_TA_OB_START	0x128
+#define	TA_OB_START_MASK	0x00fffff8
+
+#define	PVRREG_TA_OPB_END	0x12c
+#define	TA_OPB_END_MASK		0x00ffff80
+
+#define	PVRREG_TA_OB_END	0x130
+#define	TA_OB_END_MASK		0x00fffff8
+
+#define	PVRREG_TA_OPB_POS	0x134
+#define	TA_OPB_POS_MASK		0x00ffff80
+
+#define	PVRREG_TA_OB_POS	0x138
+#define	TA_OB_POS_MASK		0x00fffff8
+
+#define	PVRREG_TILEBUF_SIZE	0x13c
+#define	TILEBUF_SIZE_HEIGHT_MASK  0xffff0000
+#define	TILEBUF_SIZE_HEIGHT_SHIFT 16
+#define	TILEBUF_SIZE_WIDTH_MASK   0x0000ffff
 
 #define	PVRREG_TA_OPB_CFG	0x140
 /*  TODO  */

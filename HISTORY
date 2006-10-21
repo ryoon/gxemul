@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1394 2006-10-21 05:49:05 debug Exp $
+$Id: HISTORY,v 1.1395 2006-10-21 09:25:24 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3108,3 +3108,7 @@ Changelog for GXemul:
 		translation bugs, adding the bsrf instruction.
 		The NetBSD/dreamcast GENERIC_MD kernel now reaches userland :)
 		Adding a dummy dev_dreamcast_asic.c (not really useful yet).
+		Implementing simple support for Store Queues.
+		Beginning on the PVR Tile Accelerator.
+		Trying to generalize the PVR framebuffer to support off-screen
+		drawing, multiple bit-depths, etc.

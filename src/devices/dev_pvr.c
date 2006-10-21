@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.5 2006-10-21 05:49:06 debug Exp $
+ *  $Id: dev_pvr.c,v 1.6 2006-10-21 09:25:24 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast)
+ *
+ *  http://mc.pp.se/dc/pvr.html has a good overview of how the PVR/TA works.
  *
  *  TODO: Almost everything
  *	x)  Change resolution during runtime? (PAL/NTSC/???)
@@ -52,8 +54,13 @@
 
 #define debug fatal
 
+#define	INTERNAL_FB_ADDR	0x300000000ULL
+
 struct pvr_data {
 	struct vfb_data		*fb;
+
+	/*  PVR registers:  */
+	uint32_t		reg[PVRREG_REGSIZE / sizeof(uint32_t)];
 
 	/*  Calculated by pvr_geometry_updated():  */
 	int			xsize, ysize;
@@ -74,13 +81,27 @@ struct pvr_data {
 	int			interlaced;
 	int			h_sync_positive;
 	int			v_sync_positive;
+	/*  TILEBUF_SIZE:  */
+	int			tilebuf_xsize;
+	int			tilebuf_ysize;
 
-	uint32_t		reg[PVRREG_REGSIZE / sizeof(uint32_t)];
+	/*  Tile Accelerator Command Compiler List:  */
+	uint32_t		ta[64 / sizeof(uint32_t)];
+
+	uint8_t			*vram;
 };
 
 
 #define	REG(x)		(d->reg[(x)/sizeof(uint32_t)])
 #define	DEFAULT_WRITE	REG(relative_addr) = idata;
+
+
+/*
+ *  pvr_fb_invalidate():
+ */
+static void pvr_fb_invalidate(struct pvr_data *d, int start, int stop)
+{
+}
 
 
 /*
@@ -121,6 +142,35 @@ static void pvr_geometry_updated(struct pvr_data *d)
 
 
 /*
+ *  pvr_render():
+ *
+ *  Render from the Object Buffer to the framebuffer.
+ */
+static void pvr_render(struct pvr_data *d)
+{
+	int ob_ofs = REG(PVRREG_OB_ADDR);
+	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
+
+	fatal("[ pvr_render: rendering to FB offset 0x%x ]\n", fb_base);
+
+	for (;;) {
+		uint8_t cmd = d->vram[ob_ofs];
+
+		if (cmd == 0)
+			break;
+		else if (cmd == 1) {
+			int x = d->vram[ob_ofs+1], y=d->vram[ob_ofs+2];
+			fatal("rendering pixel at %i,%i\n", x, y);
+			d->vram[fb_base + x + y * d->xsize * 2];
+		} else
+			fatal("pvr_render: internal error, unknown cmd\n");
+
+		ob_ofs += sizeof(uint64_t);
+	}
+}
+
+
+/*
  *  pvr_reset_ta():
  *
  *  Reset the Tile Accelerator.
@@ -128,6 +178,101 @@ static void pvr_geometry_updated(struct pvr_data *d)
 static void pvr_reset_ta(struct pvr_data *d)
 {
 	/*  TODO  */
+}
+
+
+/*
+ *  pvr_ta_init():
+ *
+ *  Initialize the Tile Accelerator. This makes the TA ready to receive
+ *  commands (via address 0x10000000).
+ */
+static void pvr_ta_init(struct pvr_data *d)
+{
+	REG(PVRREG_TA_OPB_POS) = REG(PVRREG_TA_OPB_START);
+	REG(PVRREG_TA_OB_POS) = REG(PVRREG_TA_OB_START);
+}
+
+
+/*
+ *  pvr_ta_command():
+ *
+ *  Read a command (e.g. parts of a polygon primitive) from d->ta[], and output
+ *  "compiled commands" into the Object list and Object Pointer list.
+ */
+static void pvr_ta_command(struct pvr_data *d)
+{
+	int ob_ofs;
+	float x, y, z;
+
+#if 1
+	/*  Dump the Tile Accelerator command for debugging:  */
+	{
+		int i;
+		fatal("TA cmd:");
+		for (i=0; i<8; i++)
+			fatal(" %08x", (int) d->ta[i]);
+		fatal("\n");
+	}
+#endif
+
+	/*
+	 *  TODO: REWRITE!!!
+	 *
+	 *  THis is just a quick hack to see if I can get out at least
+	 *  the pixel coordinates.
+	 */
+
+	x = * ((float *) &d->ta[1]);
+	y = * ((float *) &d->ta[2]);
+	z = * ((float *) &d->ta[3]);
+
+	ob_ofs = REG(PVRREG_TA_OB_POS);
+
+	switch (d->ta[0] >> 28) {
+	case 0x8:
+		break;
+	case 0xe:
+	case 0xf:
+		/*  Point.  */
+		d->vram[ob_ofs + 0] = 1;
+		d->vram[ob_ofs + 1] = x / 8;
+		d->vram[ob_ofs + 2] = y / 8;
+		d->vram[ob_ofs + 3] = z / 8;
+		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
+		break;
+	case 0x0:
+	default:
+		/*  End of list.  */
+		d->vram[ob_ofs + 0] = 0;
+		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
+		break;
+	}
+}
+
+
+DEVICE_ACCESS(pvr_ta)
+{
+	struct pvr_data *d = (struct pvr_data *) extra;
+	uint64_t idata = 0, odata = 0;
+
+	if (writeflag == MEM_WRITE) {
+		idata = memory_readmax64(cpu, data, len);
+		d->ta[relative_addr / sizeof(uint32_t)] = idata;
+
+		if (relative_addr == 0x3c) {
+			fatal("TODO: 64-bit Tile Accelerator command\n");
+			exit(1);
+		}
+
+		if (relative_addr == 0x1c)
+			pvr_ta_command(d);
+	} else {
+		odata = d->ta[relative_addr / sizeof(uint32_t)];
+		memory_writemax64(cpu, data, len, odata);
+	}
+
+	return 1;
 }
 
 
@@ -182,6 +327,7 @@ DEVICE_ACCESS(pvr)
 	case PVRREG_STARTRENDER:
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: STARTRENDER ]\n");
+			pvr_render(d);
 		} else {
 			fatal("[ pvr: huh? read from STARTRENDER ]\n");
 		}
@@ -256,6 +402,7 @@ DEVICE_ACCESS(pvr)
 
 			DEFAULT_WRITE;
 			pvr_geometry_updated(d);
+			pvr_fb_invalidate(d, -1, -1);
 		}
 		break;
 
@@ -268,6 +415,7 @@ DEVICE_ACCESS(pvr)
 			    (int)((idata >> DIWSIZE_LPF_SHIFT) & DIWSIZE_MASK));
 			DEFAULT_WRITE;
 			pvr_geometry_updated(d);
+			pvr_fb_invalidate(d, -1, -1);
 		}
 		break;
 
@@ -343,6 +491,7 @@ DEVICE_ACCESS(pvr)
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: DIWADDRL set to 0x%08"PRIx32" ]\n",
 			    (int) idata);
+			pvr_fb_invalidate(d, -1, -1);
 			DEFAULT_WRITE;
 		}
 		break;
@@ -351,6 +500,7 @@ DEVICE_ACCESS(pvr)
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: DIWADDRS set to 0x%08"PRIx32" ]\n",
 			    (int) idata);
+			pvr_fb_invalidate(d, -1, -1);
 			DEFAULT_WRITE;
 		}
 		break;
@@ -378,12 +528,96 @@ DEVICE_ACCESS(pvr)
 
 			DEFAULT_WRITE;
 			pvr_geometry_updated(d);
+			pvr_fb_invalidate(d, -1, -1);
 		}
 		break;
 
 	case PVRREG_SYNC_STAT:
 		/*  Ugly hack, but it works:  */
 		odata = random();
+		break;
+
+	case PVRREG_TA_OPB_START:
+		if (writeflag == MEM_WRITE) {
+			idata &= TA_OPB_START_MASK;
+			debug("[ pvr: TA_OPB_START set to 0x%x ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_TA_OB_START:
+		if (writeflag == MEM_WRITE) {
+			idata &= TA_OB_START_MASK;
+			debug("[ pvr: TA_OB_START set to 0x%x ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_TA_OPB_END:
+		if (writeflag == MEM_WRITE) {
+			idata &= TA_OPB_END_MASK;
+			debug("[ pvr: TA_OPB_END set to 0x%x ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_TA_OB_END:
+		if (writeflag == MEM_WRITE) {
+			idata &= TA_OB_END_MASK;
+			debug("[ pvr: TA_OB_END set to 0x%x ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_TA_OPB_POS:
+		if (writeflag == MEM_WRITE) {
+			idata &= TA_OPB_POS_MASK;
+			debug("[ pvr: TA_OPB_POS set to 0x%x ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_TA_OB_POS:
+		if (writeflag == MEM_WRITE) {
+			idata &= TA_OB_POS_MASK;
+			debug("[ pvr: TA_OB_POS set to 0x%x ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_TILEBUF_SIZE:
+		if (writeflag == MEM_WRITE) {
+			d->tilebuf_ysize = (idata & TILEBUF_SIZE_HEIGHT_MASK)
+			    >> TILEBUF_SIZE_HEIGHT_SHIFT;
+			d->tilebuf_xsize = idata & TILEBUF_SIZE_WIDTH_MASK;
+			d->tilebuf_xsize ++; d->tilebuf_ysize ++;
+			debug("[ pvr: TILEBUF_SIZE set to %i x %i ]\n",
+			    d->tilebuf_xsize, d->tilebuf_ysize);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_TA_INIT:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: TA_INIT ]\n");
+
+			if (idata & PVR_TA_INIT)
+				pvr_ta_init(d);
+
+			if (idata != PVR_TA_INIT && idata != 0)
+				fatal("{ TA_INIT = 0x%08"PRIx32" is not "
+				    "yet implemented! }", (int) idata);
+
+			/*  Always reset to 0.  */
+			idata = 0;
+			DEFAULT_WRITE;
+		}
 		break;
 
 	default:if (writeflag == MEM_READ) {
@@ -403,6 +637,20 @@ return_ok:
 }
 
 
+DEVICE_ACCESS(pvr_vram)
+{
+	struct pvr_data *d = extra;
+
+	if (writeflag == MEM_READ) {
+		memcpy(data, d->vram + relative_addr, len);
+	} else {
+		memcpy(d->vram + relative_addr, data, len);
+	}
+
+	return 1;
+}
+
+
 DEVINIT(pvr)
 {
 	struct machine *machine = devinit->machine;
@@ -417,15 +665,18 @@ DEVINIT(pvr)
 	    PVRREG_REGSTART, PVRREG_REGSIZE, dev_pvr_access, d,
 	    DM_DEFAULT, NULL);
 
-#if 1
-	/*  640x480 16-bit framebuffer:  */
-	d->fb = dev_fb_init(machine, machine->memory, PVRREG_FBSTART,
-	    VFB_HPC, 640,480, 640,480, 16, "Dreamcast PVR");
-#else
-	/*  IP.BIN experiment.  */
-	d->fb = dev_fb_init(machine, machine->memory, PVRREG_FBSTART + 0x200000,
-	    VFB_GENERIC, 640,480, 640,480, 32, "Dreamcast PVR");
-#endif
+	/*  8 MB video RAM:  */
+	d->vram = zeroed_alloc(8 * 1048576);
+	memory_device_register(machine->memory, "pvr_vram", 0x05000000,
+	    8 * 1048576, dev_pvr_vram_access, (void *)d,
+	    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK
+	    | DM_READS_HAVE_NO_SIDE_EFFECTS, d->vram);
+
+	memory_device_register(machine->memory, "pvr_ta",
+	    0x10000000, sizeof(d->ta), dev_pvr_ta_access, d, DM_DEFAULT, NULL);
+
+	d->fb = dev_fb_init(machine, machine->memory, INTERNAL_FB_ADDR,
+	    VFB_GENERIC, 640,480, 640,480, 24, "Dreamcast PVR");
 
 	return 1;
 }

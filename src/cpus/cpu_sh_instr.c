@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.27 2006-10-21 04:24:17 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.28 2006-10-21 09:25:24 debug Exp $
  *
  *  SH instructions.
  *
@@ -1808,7 +1808,7 @@ X(ftrc_frm_fpul)
  */
 X(fsca_fpul_drn)
 {
-	double fpul = (double)cpu->cd.sh.fpul / 65536.0;
+	double fpul = (double)cpu->cd.sh.fpul / 32768.0;
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
@@ -2007,6 +2007,47 @@ X(frchg)
 {
 	FLOATING_POINT_AVAILABLE_CHECK;
 	sh_update_fpscr(cpu, cpu->cd.sh.fpscr ^ SH_FPSCR_FR);
+}
+
+
+/*
+ *  pref_rn:  Prefetch.
+ *
+ *  arg[1] = ptr to Rn
+ */
+X(pref_rn)
+{
+	uint32_t addr = reg(ic->arg[1]), extaddr;
+	int sq_nr, ofs;
+
+	if (addr < 0xe0000000 || addr >= 0xe4000000)
+		return;
+
+	/*  Send Store Queue contents to external memory:  */
+	extaddr = addr & 0x03ffffe0;
+	sq_nr = addr & 0x20? 1 : 0;
+
+	if (cpu->cd.sh.mmucr & SH4_MMUCR_AT) {
+		fatal("Store Queue to external memory, when "
+		    "MMU enabled: TODO\n");
+		exit(1);
+	}
+
+	if (sq_nr == 0)
+		extaddr |= (((cpu->cd.sh.qacr0 >> 2) & 7) << 26);
+	else
+		extaddr |= (((cpu->cd.sh.qacr1 >> 2) & 7) << 26);
+
+	/*  fatal("extaddr = 0x%08x\n", extaddr);  */
+
+	SYNCH_PC;
+	for (ofs = 0; ofs < 32; ofs += sizeof(uint32_t)) {
+		uint32_t word;
+		cpu->memory_rw(cpu, cpu->mem, 0xe0000000+ofs, (unsigned char *)
+		    &word, sizeof(word), MEM_READ, PHYSICAL);
+		cpu->memory_rw(cpu, cpu->mem, extaddr+ofs, (unsigned char *)
+		    &word, sizeof(word), MEM_WRITE, PHYSICAL);
+	}
 }
 
 
@@ -2365,8 +2406,7 @@ X(to_be_translated)
 				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];
 				break;
 			case 0x83:	/*  PREF @Rn  */
-				/*  Treat as nop for now:  */
-				ic->f = instr(nop);
+				ic->f = instr(pref_rn);
 				break;
 			case 0x93:	/*  OCBI @Rn  */
 				/*  Treat as nop for now:  */

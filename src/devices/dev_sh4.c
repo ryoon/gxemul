@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.9 2006-10-21 03:46:39 debug Exp $
+ *  $Id: dev_sh4.c,v 1.10 2006-10-21 04:24:17 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -413,7 +413,6 @@ DEVICE_ACCESS(sh4)
 		timer_nr ++;
 	case SH4_TCR0:
 		if (writeflag == MEM_READ) {
-printf("PC=%08x\n", (int)cpu->pc);
 			odata = d->timer_control[timer_nr];
 		} else {
 			if (cpu->cd.sh.pclock == 0) {

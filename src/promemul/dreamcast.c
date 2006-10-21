@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.5 2006-10-19 10:15:57 debug Exp $
+ *  $Id: dreamcast.c,v 1.6 2006-10-21 04:24:17 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -49,6 +49,26 @@
 #ifdef ENABLE_SH
 
 
+#define	DREAMCAST_ROMFONT_BASE		0xa0002000
+
+
+/*
+ *  dreamcast_romfont_init()
+ *
+ *  Initialize the ROM font.
+ */
+static void dreamcast_romfont_init(struct machine *machine)
+{
+	struct cpu *cpu = machine->cpus[0];
+	int i;
+
+	/*  TODO: A real font.  */
+
+	for (i=0; i<536496; i+=sizeof(uint32_t))
+		store_32bit_word(cpu, DREAMCAST_ROMFONT_BASE + i, random());
+}
+
+
 /*
  *  dreamcast_machine_setup():
  *
@@ -70,6 +90,8 @@ void dreamcast_machine_setup(struct machine *machine)
 
 	/*  PROM reboot, in case someone jumps to 0xa0000000:  */
 	store_16bit_word(cpu, 0xa0000000, 0x00ff);
+
+	dreamcast_romfont_init(machine);
 }
 
 
@@ -102,6 +124,9 @@ int dreamcast_emul(struct cpu *cpu)
 	case 0xb4:
 		/*  ROMFONT  */
 		switch (r1) {
+		case 0:	/*  ROMFONT_ADDRESS  */
+			cpu->cd.sh.r[0] = DREAMCAST_ROMFONT_BASE;
+			break;
 		default:fatal("[ ROMFONT: Unimplemented r1=%i ]\n", r1);
 			goto bad;
 		}
@@ -119,6 +144,17 @@ int dreamcast_emul(struct cpu *cpu)
 		switch ((int32_t)r6) {
 		case 0:	/*  GD-ROM emulation  */
 			switch (r7) {
+			case 0:	/*  GDROM_SEND_COMMAND  */
+				/*  TODO  */
+				cpu->cd.sh.r[0] = -1;
+				break;
+			case 1:	/*  GDROM_CHECK_COMMAND  */
+				/*  TODO  */
+				cpu->cd.sh.r[0] = 0;
+				break;
+			case 2:	/*  GDROM_MAINLOOP  */
+				/*  TODO  */
+				break;
 			case 3:	/*  GDROM_INIT  */
 				/*  TODO: Do something here?  */
 				break;

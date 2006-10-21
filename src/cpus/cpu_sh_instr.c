@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.26 2006-10-21 02:39:07 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.27 2006-10-21 04:24:17 debug Exp $
  *
  *  SH instructions.
  *
@@ -2366,6 +2366,11 @@ X(to_be_translated)
 				break;
 			case 0x83:	/*  PREF @Rn  */
 				/*  Treat as nop for now:  */
+				ic->f = instr(nop);
+				break;
+			case 0x93:	/*  OCBI @Rn  */
+				/*  Treat as nop for now:  */
+				/*  TODO: Implement this.  */
 				ic->f = instr(nop);
 				break;
 			case 0xa3:	/*  OCBP @Rn  */

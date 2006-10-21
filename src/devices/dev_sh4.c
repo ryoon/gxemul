@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.7 2006-10-19 10:15:57 debug Exp $
+ *  $Id: dev_sh4.c,v 1.8 2006-10-21 02:39:08 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -41,6 +41,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 #include "sh4_cache.h"
 #include "sh4_exception.h"
@@ -55,7 +56,48 @@
 
 struct sh4_data {
 	int		scif_console_handle;
+
+	/*  Timers:  */
+	struct timer	*sh4_timer;
+	uint32_t	timer_start;
+	uint32_t	timer0_count;
+	uint32_t	timer0_restart;
+	uint32_t	timer0_control;
+	int		timer0_interrupts_pending;
+	double		timer0_hz;
 };
+
+
+#define	SH4_PSEUDO_TIMER_HZ	100.0
+
+
+/*
+ *  sh4_timer_tick():
+ *
+ *  This function is called SH4_PSEUDO_TIMER_HZ times per real-world second.
+ *  Its job is to update the SH4 timer counters, and if necessary, increase
+ *  the number of pending interrupts.
+ */
+static void sh4_timer_tick(struct timer *t, void *extra)
+{
+	struct sh4_data *d = (struct sh4_data *) extra;
+
+	/*  TODO: Implement ALL timers, and all modes!  */
+
+	if (d->timer_start & TSTR_STR0) {
+		int32_t old = d->timer0_count;
+
+		d->timer0_count -= d->timer0_hz / SH4_PSEUDO_TIMER_HZ;
+
+		if (old > 0 && (int32_t)d->timer0_count <= 0) {
+			if (d->timer0_control & TCR_UNIE)
+				d->timer0_interrupts_pending ++;
+
+			if (d->timer0_restart != 0)
+				d->timer0_count += d->timer0_restart;
+		}
+	}
+}
 
 
 DEVICE_ACCESS(sh4_itlb_aa)
@@ -119,13 +161,16 @@ DEVICE_ACCESS(sh4_utlb_aa)
 {
 	uint64_t idata = 0, odata = 0;
 	int i, e = (relative_addr & SH4_UTLB_E_MASK) >> SH4_UTLB_E_SHIFT;
-	int a = relative_addr & SH4_UTLB_E_MASK;
+	int a = relative_addr & SH4_UTLB_A;
 
 	if (writeflag == MEM_WRITE) {
 		idata = memory_readmax64(cpu, data, len);
 		if (a) {
+			int n_hits = 0;
 			for (i=0; i<SH_N_UTLB_ENTRIES; i++) {
 				int sh = cpu->cd.sh.utlb_lo[i] & SH4_PTEL_SH;
+				if (!(cpu->cd.sh.utlb_lo[i] & SH4_PTEL_V))
+					continue;
 				if ((cpu->cd.sh.utlb_hi[i] & SH4_PTEH_VPN_MASK)
 				    != (idata & SH4_PTEH_VPN_MASK))
 					continue;
@@ -139,14 +184,18 @@ DEVICE_ACCESS(sh4_utlb_aa)
 					cpu->cd.sh.utlb_lo[i] |= SH4_PTEL_D;
 				if (idata & SH4_UTLB_AA_V)
 					cpu->cd.sh.utlb_lo[i] |= SH4_PTEL_V;
+				n_hits ++;
 			}
-			/*  NOTE/TODO: Multiple hit exception is not
-			    yet implemented.  */
+
+			if (n_hits > 1)
+				sh_exception(cpu,
+				    EXPEVT_RESET_TLB_MULTI_HIT, 0);
 		} else {
 			cpu->cd.sh.utlb_hi[e] &=
 			    ~(SH4_PTEH_VPN_MASK | SH4_PTEH_ASID_MASK);
 			cpu->cd.sh.utlb_hi[e] |= (idata &
 			    (SH4_UTLB_AA_VPN_MASK | SH4_UTLB_AA_ASID_MASK));
+
 			cpu->cd.sh.utlb_lo[e] &= ~(SH4_PTEL_D | SH4_PTEL_V);
 			if (idata & SH4_UTLB_AA_D)
 				cpu->cd.sh.utlb_lo[e] |= SH4_PTEL_D;
@@ -223,8 +272,16 @@ DEVICE_ACCESS(sh4)
 	case SH4_PTEH:
 		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.pteh;
-		else
+		else {
+			int old_asid = cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK;
 			cpu->cd.sh.pteh = idata;
+
+			if ((idata & SH4_PTEH_ASID_MASK) != old_asid) {
+				/*  TODO: Don't invalidate everything?  */
+				cpu->invalidate_translation_caches(
+				    cpu, 0, INVALIDATE_ALL);
+			}
+		}
 		break;
 
 	case SH4_PTEL:
@@ -308,7 +365,67 @@ DEVICE_ACCESS(sh4)
 	/***********************************/
 	/*  TMU: Timer Management Unit (?) */
 
-	/*  TODO. ffd80000 ...  */
+	case SH4_TSTR:
+		if (writeflag == MEM_READ)
+			odata = d->timer_start;
+		else
+			d->timer_start = idata;
+		break;
+
+	case SH4_TCOR0:
+		if (writeflag == MEM_READ)
+			odata = d->timer0_restart;
+		else
+			d->timer0_restart = idata;
+		break;
+
+	case SH4_TCNT0:
+		if (writeflag == MEM_READ)
+			odata = d->timer0_count;
+		else
+			d->timer0_count = idata;
+		break;
+
+	case SH4_TCR0:
+		if (writeflag == MEM_READ)
+			odata = d->timer0_control;
+		else {
+			if (cpu->cd.sh.pclock == 0) {
+				fatal("INTERNAL ERROR: pclock must be set"
+				    " for this machine. Aborting.\n");
+				exit(1);
+			}
+
+			switch (idata & 3) {
+			case TCR_TPSC_P4:
+				d->timer0_hz = cpu->cd.sh.pclock / 4.0;
+				break;
+			case TCR_TPSC_P16:
+				d->timer0_hz = cpu->cd.sh.pclock / 16.0;
+				break;
+			case TCR_TPSC_P64:
+				d->timer0_hz = cpu->cd.sh.pclock / 64.0;
+				break;
+			case TCR_TPSC_P256:
+				d->timer0_hz = cpu->cd.sh.pclock / 256.0;
+				break;
+			}
+
+			debug("[ sh4 timer0 clock set to %f Hz ]\n",
+			    d->timer0_hz);
+
+			if (idata & (TCR_ICPF | TCR_UNF | TCR_ICPE1 |
+			    TCR_ICPE0 | TCR_CKEG1 | TCR_CKEG0
+			    | TCR_TPSC2)) {
+				fatal("Unimplemented SH4 timer control"
+				    " bits: 0x%08"PRIx32". Aborting.\n",
+				    (int) idata);
+				exit(1);
+			}
+
+			d->timer0_control = idata;
+		}
+		break;
 
 
 	/*************************************************/
@@ -393,6 +510,8 @@ DEVINIT(sh4)
 	/*  0xf7000000	SH4_UTLB_DA1  */
 	memory_device_register(machine->memory, devinit->name, SH4_UTLB_DA1,
 	    0x01000000, dev_sh4_utlb_da1_access, d, DM_DEFAULT, NULL);
+
+	d->sh4_timer = timer_add(SH4_PSEUDO_TIMER_HZ, sh4_timer_tick, d);
 
 	return 1;
 }

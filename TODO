@@ -1,7 +1,7 @@
-$Id: TODO,v 1.397 2006-10-19 10:15:57 debug Exp $
+$Id: TODO,v 1.398 2006-10-21 02:39:07 debug Exp $
 
-This file is my "notebook" of things I want to work on in the future.
-It is in random order, and some parts of it might be out-to-date.
+This file is my list of things I want to work on in the future. It is in
+random order, and some parts of it are probably out-to-date by now.
 
 
 Dyntrans:
@@ -95,7 +95,8 @@ SuperH:
 	    and so on...
 	x)  Store Queues! (Necessary for Dreamcast Tile Accelerator stuff.)
 	x)  SH4 interrupt controller
-	x)  SH4 timers
+	x)  SH4 timers:
+		o)  timer 1 and 2, and more interrupt styles (?)
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  ldtlb: Don't invalidate everything.
 	x)  TLB access via memory: Don't invalidate everything.

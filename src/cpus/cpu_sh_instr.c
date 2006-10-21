@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.25 2006-10-17 10:53:06 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.26 2006-10-21 02:39:07 debug Exp $
  *
  *  SH instructions.
  *
@@ -68,6 +68,15 @@
  */
 X(nop)
 {
+}
+
+
+/*
+ *  sleep:  Wait for interrupt
+ */
+X(sleep)
+{
+	/*  TODO  */
 }
 
 
@@ -1380,9 +1389,10 @@ X(shld)
  *  bra:   Branch using PC relative immediace displacement (with delay-slot)
  *  bsr:   Like bra, but also sets PR to the return address
  *  braf:  Like bra, but using a register instead of an immediate
+ *  bsrf:  Like braf, but also sets PR to the return address
  *
  *  arg[0] = immediate offset relative to start of page
- *  arg[1] = ptr to Rn  (for braf)
+ *  arg[1] = ptr to Rn  (for braf/bsrf)
  */
 X(bra)
 {
@@ -1425,6 +1435,23 @@ X(braf_rn)
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		cpu->pc = target;
+		cpu->delay_slot = NOT_DELAYED;
+		quick_pc_to_pointers(cpu);
+	} else
+		cpu->delay_slot = NOT_DELAYED;
+}
+X(bsrf_rn)
+{
+	MODE_int_t target = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1) <<
+	    SH_INSTR_ALIGNMENT_SHIFT);
+	target += ic->arg[0] + reg(ic->arg[1]);
+	cpu->delay_slot = TO_BE_DELAYED;
+	ic[1].f(cpu, ic+1);
+	cpu->n_translated_instrs ++;
+	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
+		SYNCH_PC;
+		cpu->cd.sh.pr = cpu->pc + 4;
 		cpu->pc = target;
 		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
@@ -1689,6 +1716,12 @@ X(ldc_rm_sr)
 X(trapa)
 {
 	SYNCH_PC;
+
+	if (cpu->delay_slot) {
+		sh_exception(cpu, EXPEVT_SLOT_INST, 0);
+		return;
+	}
+
 	cpu->cd.sh.tra = ic->arg[0];
 	sh_exception(cpu, EXPEVT_TRAPA, 0);
 }
@@ -2245,6 +2278,9 @@ X(to_be_translated)
 		} else if (iword == 0x0019) {
 			/*  DIV0U  */
 			ic->f = instr(div0u);
+		} else if (iword == 0x001b) {
+			/*  SLEEP  */
+			ic->f = instr(sleep);
 		} else if (iword == 0x0028) {
 			/*  CLRMAC  */
 			ic->f = instr(clrmac);
@@ -2272,6 +2308,13 @@ X(to_be_translated)
 			case 0x02:	/*  STC SR,Rn  */
 				ic->f = instr(copy_privileged_register);
 				ic->arg[0] = (size_t)&cpu->cd.sh.sr;
+				break;
+			case 0x03:	/*  BSRF Rn  */
+				ic->f = instr(bsrf_rn);
+				ic->arg[0] = (int32_t) (addr &
+				    ((SH_IC_ENTRIES_PER_PAGE-1)
+				    << SH_INSTR_ALIGNMENT_SHIFT) & ~1) + 4;
+				/*  arg[1] is Rn  */
 				break;
 			case 0x09:	/*  NOP  */
 				ic->f = instr(nop);
@@ -2323,6 +2366,11 @@ X(to_be_translated)
 				break;
 			case 0x83:	/*  PREF @Rn  */
 				/*  Treat as nop for now:  */
+				ic->f = instr(nop);
+				break;
+			case 0xa3:	/*  OCBP @Rn  */
+				/*  Treat as nop for now:  */
+				/*  TODO: Implement this.  */
 				ic->f = instr(nop);
 				break;
 			case 0xb3:	/*  OCBWB @Rn  */

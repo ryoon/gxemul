@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.9 2006-10-17 07:56:35 debug Exp $
+ *  $Id: memory_sh.c,v 1.10 2006-10-21 02:39:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -49,10 +49,10 @@
  *  page address, otherwise cause an exception.
  *
  *  The implementation should (hopefully) be quite complete, except for the
- *  following:
+ *  following two issues:
  *
  *	o)  There is really no ITLB yet. The UTLB is searched for both data
- *	    and instruction accesses.
+ *	    and instruction accesses. (TODO. If necessary.)
  *	o)  Multiple matching entries are not detected. (On a real CPU, these
  *	    would cause an exception.)
  *
@@ -62,7 +62,7 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 	uint64_t *return_paddr, int flags)
 {
 	int wf = flags & FLAG_WRITEFLAG;
-	int i, urc, require_asid_match, cur_asid, expevt = 0;
+	int i, urb, urc, require_asid_match, cur_asid, expevt = 0;
 	uint32_t hi, lo, mask;
 	int sh;		/*  Shared  */
 	int d;		/*  Dirty bit  */
@@ -73,19 +73,28 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 	require_asid_match = !(cpu->cd.sh.mmucr & SH4_MMUCR_SV)
 	    || !(cpu->cd.sh.sr & SH_SR_MD);
 
-	/*
-	 *  Increase URC every time the UTLB is accessed. (Note: According to
-	 *  the SH4 manual, the URC should not be increased when running the
-	 *  ldtlb instruction. Perhaps this is a good place? Perhaps it is
-	 *  better to just set it to a random value? TODO: Find out.)
-	 */
-	urc = ((cpu->cd.sh.mmucr & SH4_MMUCR_URC_MASK) >>
-	    SH4_MMUCR_URC_SHIFT) + 1;
-	if (urc == SH_N_UTLB_ENTRIES)
-		urc = 0;
+	if (!(flags & FLAG_NOEXCEPTIONS)) {
+		/*
+		 *  Increase URC every time the UTLB is accessed. (Note:
+		 *  According to the SH4 manual, the URC should not be
+		 *  increased when running the ldtlb instruction. Perhaps this
+		 *  is a good place? Perhaps it is better to just set it to a
+		 *  random value? TODO: Find out.
+		 */
+		urb = (cpu->cd.sh.mmucr & SH4_MMUCR_URB_MASK) >>
+		    SH4_MMUCR_URB_SHIFT;
+		urc = (cpu->cd.sh.mmucr & SH4_MMUCR_URC_MASK) >>
+		    SH4_MMUCR_URC_SHIFT;
 
-	cpu->cd.sh.mmucr &= ~SH4_MMUCR_URC_MASK;
-	cpu->cd.sh.mmucr |= (urc << SH4_MMUCR_URC_SHIFT);
+		/*  fatal("urc = %i  ==>  ", urc);  */
+		urc ++;
+		if (urc == SH_N_UTLB_ENTRIES || (urb > 0 && urc == urb))
+			urc = 0;
+		/*  fatal("%i\n", urc);  */
+
+		cpu->cd.sh.mmucr &= ~SH4_MMUCR_URC_MASK;
+		cpu->cd.sh.mmucr |= (urc << SH4_MMUCR_URC_SHIFT);
+	}
 
 	for (i=0; i<SH_N_UTLB_ENTRIES; i++) {
 		hi = cpu->cd.sh.utlb_hi[i];

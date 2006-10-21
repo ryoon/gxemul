@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.13 2006-10-19 10:15:57 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.14 2006-10-21 02:39:08 debug Exp $
  *
  *  Dreamcast.
  *
@@ -51,6 +51,9 @@ MACHINE_SETUP(dreamcast)
 
 	if (machine->emulated_hz == 0)
 		machine->emulated_hz = 200000000;
+
+	/*  50 MHz SH4 PCLOCK:  */
+	machine->cpus[0]->cd.sh.pclock = 50000000;
 
 	if (!machine->use_x11)
 		fprintf(stderr, "-------------------------------------"

@@ -1,4 +1,4 @@
-/*  GXemul: $Id: dreamcast_pvr.h,v 1.1 2006-10-13 06:31:51 debug Exp $  */
+/*  GXemul: $Id: dreamcast_pvr.h,v 1.2 2006-10-21 02:39:08 debug Exp $  */
 /*	$NetBSD: pvr.c,v 1.22 2006/04/12 19:38:22 jmmv Exp $	*/
 
 #ifndef	DREAMCAST_PVR_H
@@ -77,6 +77,8 @@
 #define	PVRREG_FBSTART		0x05000000
 #define	PVRREG_REGSTART		0x005f8000
 
+#define	PVRREG_REGSIZE		0x00002000
+
 
 #define	PVRREG_ID		0x00
 
@@ -118,6 +120,18 @@
 #define	DIWMODE_COL_RGB888	DIWMODE_COL(2)	/* RGB888, 24-bit */
 #define	DIWMODE_COL_ARGB888	DIWMODE_COL(3)	/* RGB888, 32-bit */
 #define	DIWMODE_C		(1U << 23)	/* 2x clock enable (VGA) */
+#define	DIWMODE_DE_MASK		0x00000001
+#define	DIWMODE_SD_MASK		0x00000002	/*  Line double  */
+#define	DIWMODE_COL_MASK	0x0000000c	/*  Pixel mode  */
+#define	DIWMODE_COL_SHIFT	2
+#define	DIWMODE_EX_MASK		0x00000070	/*  Extend bits  */
+#define	DIWMODE_EX_SHIFT	4
+#define	DIWMODE_TH_MASK		0x0000ff00	/*  ARGB8888 threshold  */
+#define	DIWMODE_TH_SHIFT	8
+#define	DIWMODE_SL_MASK		0x003f0000	/*  Strip Length  */
+#define	DIWMODE_SL_SHIFT	16
+#define	DIWMODE_SE_MASK		0x00400000	/*  Strip Buffer enabled  */
+#define	DIWMODE_C_MASK		0x00800000	/*  Clock double  */
 
 #define	PVRREG_FB_RENDER_CFG	0x48
 /*  TODO  */
@@ -130,6 +144,10 @@
 #define	DIWSIZE_DPL(x)		((x) << 0)	/* pixel data per line */
 #define	DIWSIZE_LPF(x)		((x) << 10)	/* lines per field */
 #define	DIWSIZE_MODULO(x)	((x) << 20)	/* words to skip + 1 */
+#define	DIWSIZE_MASK		0x3ff		/*  All fields are 10 bits.  */
+#define	DIWSIZE_DPL_SHIFT	0
+#define	DIWSIZE_LPF_SHIFT	10
+#define	DIWSIZE_MODULO_SHIFT	20
 
 #define	PVRREG_RASEVTPOS	0xcc
 #define	RASEVTPOS_BOTTOM(x)	((x) << 0)
@@ -141,6 +159,15 @@
 #define	SYNCCONF_I		(1U << 4)	/* interlace */
 #define	SYNCCONF_BC(x)		(1U << 6)	/* broadcast standard */
 #define	SYNCCONF_VO		(1U << 8)	/* video output enable */
+#define	SYNCCONF_VO_MASK	0x00000100
+#define	SYNCCONF_BC_MASK	0x000000c0
+#define	SYNCCONF_BC_SHIFT	6
+#define	SYNCCONF_BC_VGA		  0
+#define	SYNCCONF_BC_NTSC	  1
+#define	SYNCCONF_BC_PAL		  2
+#define	SYNCCONF_I_MASK		0x00000010
+#define	SYNCCONF_HP_MASK	0x00000004	/*  Positive H-sync  */
+#define	SYNCCONF_VP_MASK	0x00000002	/*  Positive V-sync  */
 
 #define	PVRREG_BRDHORZ		0xd4
 #define	BRDHORZ_STOP(x)		((x) << 0)

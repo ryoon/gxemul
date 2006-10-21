@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.40 2006-10-19 10:15:57 debug Exp $
+ *  $Id: cpu_sh.c,v 1.41 2006-10-21 02:39:07 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -225,6 +225,8 @@ int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib)
 		if (iword == 0x000b)	/*  rts  */
 			return 1;
 		if (iword == 0x002b)	/*  rte  */
+			return 1;
+		if (lo8 == 0x03)	/*  bsrf  */
 			return 1;
 		if (lo8 == 0x23)	/*  braf  */
 			return 1;
@@ -510,7 +512,7 @@ void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
 	case EXPEVT_TLB_PROT_ST:
 	case EXPEVT_TLB_MOD:
 		cpu->cd.sh.tea = vaddr;
-		cpu->cd.sh.pteh &= SH4_PTEH_VPN_MASK;
+		cpu->cd.sh.pteh &= ~SH4_PTEH_VPN_MASK;
 		cpu->cd.sh.pteh |= (vaddr & SH4_PTEH_VPN_MASK);
 		break;
 

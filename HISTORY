@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1391 2006-10-19 10:15:57 debug Exp $
+$Id: HISTORY,v 1.1392 2006-10-21 02:39:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3103,3 +3103,7 @@ Changelog for GXemul:
 		extension in an 8-bit load instruction.
 20061019	Adding a simple dev_dreamcast_rtc.
 		Implementing memory-mapped access to the SH ITLB/UTLB arrays.
+20061021	Continuing on various SH and Dreamcast things: timer 0
+		countdown, debug messages for dev_pvr, fixing some virtual
+		address translation bugs, adding the bsrf instruction.
+		The NetBSD/dreamcast GENERIC_MD kernel now reaches userland :)

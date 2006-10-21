@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.29 2006-10-19 10:15:57 debug Exp $
+ *  $Id: cpu_sh.h,v 1.30 2006-10-21 02:39:08 debug Exp $
  */
 
 #include "misc.h"
@@ -126,6 +126,7 @@ struct sh_cpu {
 	uint32_t	expevt;		/*  Exception Event Register  */
 	uint32_t	intevt;		/*  Interrupt Event Register  */
 
+	int		pclock;
 
 	/*
 	 *  Instruction translation cache and Virtual->Physical->Host

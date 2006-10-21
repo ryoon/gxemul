@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.8 2006-10-21 02:39:08 debug Exp $
+ *  $Id: dev_sh4.c,v 1.9 2006-10-21 03:46:39 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -52,6 +52,8 @@
 
 #define	SH4_REG_BASE	0xff000000
 
+#define	N_SH4_TIMERS	3
+
 /*  #define debug fatal  */
 
 struct sh4_data {
@@ -60,11 +62,11 @@ struct sh4_data {
 	/*  Timers:  */
 	struct timer	*sh4_timer;
 	uint32_t	timer_start;
-	uint32_t	timer0_count;
-	uint32_t	timer0_restart;
-	uint32_t	timer0_control;
-	int		timer0_interrupts_pending;
-	double		timer0_hz;
+	uint32_t	timer_count[N_SH4_TIMERS];
+	uint32_t	timer_restart[N_SH4_TIMERS];
+	uint32_t	timer_control[N_SH4_TIMERS];
+	int		timer_interrupts_pending[N_SH4_TIMERS];
+	double		timer_hz[N_SH4_TIMERS];
 };
 
 
@@ -81,20 +83,30 @@ struct sh4_data {
 static void sh4_timer_tick(struct timer *t, void *extra)
 {
 	struct sh4_data *d = (struct sh4_data *) extra;
+	int i;
 
-	/*  TODO: Implement ALL timers, and all modes!  */
+	for (i=0; i<N_SH4_TIMERS; i++) {
+		int32_t old;
 
-	if (d->timer_start & TSTR_STR0) {
-		int32_t old = d->timer0_count;
+		if (!(d->timer_start & (TSTR_STR0 << i)))
+			continue;
 
-		d->timer0_count -= d->timer0_hz / SH4_PSEUDO_TIMER_HZ;
+		old = d->timer_count[i];
+		d->timer_count[i] -= d->timer_hz[i] / SH4_PSEUDO_TIMER_HZ;
 
-		if (old > 0 && (int32_t)d->timer0_count <= 0) {
-			if (d->timer0_control & TCR_UNIE)
-				d->timer0_interrupts_pending ++;
+		/*  TODO: Implement ALL modes!  */
 
-			if (d->timer0_restart != 0)
-				d->timer0_count += d->timer0_restart;
+		if ((int32_t)d->timer_count[i] <= 0) {
+			d->timer_control[i] |= TCR_UNF;
+
+			if (old > 0) {
+				if (d->timer_control[i] & TCR_UNIE)
+					d->timer_interrupts_pending[i] ++;
+	
+				if (d->timer_restart[i] != 0)
+					d->timer_count[i] +=
+					    d->timer_restart[i];
+			}
 		}
 	}
 }
@@ -251,6 +263,7 @@ DEVICE_ACCESS(sh4)
 {
 	struct sh4_data *d = (struct sh4_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	int timer_nr = 0;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
@@ -372,24 +385,37 @@ DEVICE_ACCESS(sh4)
 			d->timer_start = idata;
 		break;
 
+	case SH4_TCOR2:
+		timer_nr ++;
+	case SH4_TCOR1:
+		timer_nr ++;
 	case SH4_TCOR0:
 		if (writeflag == MEM_READ)
-			odata = d->timer0_restart;
+			odata = d->timer_restart[timer_nr];
 		else
-			d->timer0_restart = idata;
+			d->timer_restart[timer_nr] = idata;
 		break;
 
+	case SH4_TCNT2:
+		timer_nr ++;
+	case SH4_TCNT1:
+		timer_nr ++;
 	case SH4_TCNT0:
 		if (writeflag == MEM_READ)
-			odata = d->timer0_count;
+			odata = d->timer_count[timer_nr];
 		else
-			d->timer0_count = idata;
+			d->timer_count[timer_nr] = idata;
 		break;
 
+	case SH4_TCR2:
+		timer_nr ++;
+	case SH4_TCR1:
+		timer_nr ++;
 	case SH4_TCR0:
-		if (writeflag == MEM_READ)
-			odata = d->timer0_control;
-		else {
+		if (writeflag == MEM_READ) {
+printf("PC=%08x\n", (int)cpu->pc);
+			odata = d->timer_control[timer_nr];
+		} else {
 			if (cpu->cd.sh.pclock == 0) {
 				fatal("INTERNAL ERROR: pclock must be set"
 				    " for this machine. Aborting.\n");
@@ -398,21 +424,21 @@ DEVICE_ACCESS(sh4)
 
 			switch (idata & 3) {
 			case TCR_TPSC_P4:
-				d->timer0_hz = cpu->cd.sh.pclock / 4.0;
+				d->timer_hz[timer_nr] = cpu->cd.sh.pclock/4.0;
 				break;
 			case TCR_TPSC_P16:
-				d->timer0_hz = cpu->cd.sh.pclock / 16.0;
+				d->timer_hz[timer_nr] = cpu->cd.sh.pclock/16.0;
 				break;
 			case TCR_TPSC_P64:
-				d->timer0_hz = cpu->cd.sh.pclock / 64.0;
+				d->timer_hz[timer_nr] = cpu->cd.sh.pclock/64.0;
 				break;
 			case TCR_TPSC_P256:
-				d->timer0_hz = cpu->cd.sh.pclock / 256.0;
+				d->timer_hz[timer_nr] = cpu->cd.sh.pclock/256.0;
 				break;
 			}
 
-			debug("[ sh4 timer0 clock set to %f Hz ]\n",
-			    d->timer0_hz);
+			debug("[ sh4 timer %i clock set to %f Hz ]\n",
+			    timer_nr, d->timer_hz[timer_nr]);
 
 			if (idata & (TCR_ICPF | TCR_UNF | TCR_ICPE1 |
 			    TCR_ICPE0 | TCR_CKEG1 | TCR_CKEG0
@@ -423,7 +449,7 @@ DEVICE_ACCESS(sh4)
 				exit(1);
 			}
 
-			d->timer0_control = idata;
+			d->timer_control[timer_nr] = idata;
 		}
 		break;
 
@@ -438,7 +464,7 @@ DEVICE_ACCESS(sh4)
 
 	case SH4_SCIF_BASE + SCIF_SSR:
 		/*  TODO: Implement more of this.  */
-		odata = SCSSR2_TDFE;
+		odata = SCSSR2_TDFE | SCSSR2_TEND;
 		break;
 
 

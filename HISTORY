@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1393 2006-10-21 03:46:39 debug Exp $
+$Id: HISTORY,v 1.1394 2006-10-21 05:49:05 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3107,3 +3107,4 @@ Changelog for GXemul:
 		debug messages for dev_pvr, fixing some virtual address
 		translation bugs, adding the bsrf instruction.
 		The NetBSD/dreamcast GENERIC_MD kernel now reaches userland :)
+		Adding a dummy dev_dreamcast_asic.c (not really useful yet).

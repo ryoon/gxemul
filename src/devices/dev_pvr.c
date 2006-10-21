@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.4 2006-10-21 02:39:08 debug Exp $
+ *  $Id: dev_pvr.c,v 1.5 2006-10-21 05:49:06 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast)
  *
@@ -120,6 +120,17 @@ static void pvr_geometry_updated(struct pvr_data *d)
 }
 
 
+/*
+ *  pvr_reset_ta():
+ *
+ *  Reset the Tile Accelerator.
+ */
+static void pvr_reset_ta(struct pvr_data *d)
+{
+	/*  TODO  */
+}
+
+
 DEVICE_ACCESS(pvr)
 {
 	struct pvr_data *d = (struct pvr_data *) extra;
@@ -132,7 +143,26 @@ DEVICE_ACCESS(pvr)
 	if (writeflag == MEM_READ)
 		odata = d->reg[relative_addr / sizeof(uint32_t)];
 
+	/*  Fog table access:  */
+	if (relative_addr >= PVRREG_FOG_TABLE &&
+	    relative_addr < PVRREG_FOG_TABLE + PVR_FOG_TABLE_SIZE) {
+		if (writeflag == MEM_WRITE)
+			DEFAULT_WRITE;
+		goto return_ok;
+	}
+
 	switch (relative_addr) {
+
+	case PVRREG_ID:
+		/*  ID for Set 5.xx versions of the Dreamcast, according
+		    to http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt:  */
+		odata = 0x17fd11db;
+		break;
+
+	case PVRREG_REVISION:
+		/*  Revision 1.1, for Dreamcast Set 5.2x.  */
+		odata = 0x00000011;
+		break;
 
 	case PVRREG_RESET:
 		if (writeflag == MEM_WRITE) {
@@ -142,10 +172,18 @@ DEVICE_ACCESS(pvr)
 			if (idata & PVR_RESET_PVR)
 				fatal("{ PVR_RESET_PVR: TODO } ");
 			if (idata & PVR_RESET_TA)
-				fatal("{ PVR_RESET_TA: TODO } ");
+				pvr_reset_ta(d);
 			debug("]\n");
 			idata = 0;
 			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_STARTRENDER:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: STARTRENDER ]\n");
+		} else {
+			fatal("[ pvr: huh? read from STARTRENDER ]\n");
 		}
 		break;
 
@@ -233,6 +271,74 @@ DEVICE_ACCESS(pvr)
 		}
 		break;
 
+	case PVRREG_FB_RENDER_ADDR1:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: FB_RENDER_ADDR1 set to 0x%08"PRIx32
+			    " ]\n", (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_FB_RENDER_ADDR2:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: FB_RENDER_ADDR2 set to 0x%08"PRIx32
+			    " ]\n", (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_VRAM_CFG1:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: VRAM_CFG1 set to 0x%08"PRIx32,
+			    (int) idata);
+			if (idata != VRAM_CFG1_GOOD_REFRESH_VALUE)
+				fatal("{ VRAM_CFG1 = 0x%08"PRIx32" is not "
+				    "yet implemented! }", (int) idata);
+			debug(" ]\n");
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_VRAM_CFG2:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: VRAM_CFG2 set to 0x%08"PRIx32,
+			    (int) idata);
+			if (idata != VRAM_CFG2_UNKNOWN_MAGIC)
+				fatal("{ VRAM_CFG2 = 0x%08"PRIx32" is not "
+				    "yet implemented! }", (int) idata);
+			debug(" ]\n");
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_VRAM_CFG3:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: VRAM_CFG3 set to 0x%08"PRIx32,
+			    (int) idata);
+			if (idata != VRAM_CFG3_UNKNOWN_MAGIC)
+				fatal("{ VRAM_CFG3 = 0x%08"PRIx32" is not "
+				    "yet implemented! }", (int) idata);
+			debug(" ]\n");
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_FOG_TABLE_COL:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: FOG_TABLE_COL set to 0x%08"PRIx32" ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_FOG_VERTEX_COL:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: FOG_VERTEX_COL set to 0x%08"PRIx32" ]\n",
+			    (int) idata);
+			DEFAULT_WRITE;
+		}
+		break;
+
 	case PVRREG_DIWADDRL:
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: DIWADDRL set to 0x%08"PRIx32" ]\n",
@@ -289,6 +395,7 @@ DEVICE_ACCESS(pvr)
 		}
 	}
 
+return_ok:
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 

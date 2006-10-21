@@ -1,4 +1,4 @@
-/*  GXemul: $Id: dreamcast_pvr.h,v 1.2 2006-10-21 02:39:08 debug Exp $  */
+/*  GXemul: $Id: dreamcast_pvr.h,v 1.3 2006-10-21 05:49:06 debug Exp $  */
 /*	$NetBSD: pvr.c,v 1.22 2006/04/12 19:38:22 jmmv Exp $	*/
 
 #ifndef	DREAMCAST_PVR_H
@@ -148,6 +148,23 @@
 #define	DIWSIZE_DPL_SHIFT	0
 #define	DIWSIZE_LPF_SHIFT	10
 #define	DIWSIZE_MODULO_SHIFT	20
+
+#define	PVRREG_FB_RENDER_ADDR1	0x60		/*  Odd interlace lines  */
+
+#define	PVRREG_FB_RENDER_ADDR2	0x64		/*  Even interlace lines  */
+
+#define	PVRREG_VRAM_CFG1	0xa0
+#define	VRAM_CFG1_GOOD_REFRESH_VALUE	0x20
+
+#define	PVRREG_VRAM_CFG2	0xa4
+#define	VRAM_CFG2_UNKNOWN_MAGIC	  0x0000001f
+
+#define	PVRREG_VRAM_CFG3	0xa8
+#define	VRAM_CFG3_UNKNOWN_MAGIC	  0x15d1c951
+
+#define	PVRREG_FOG_TABLE_COL	0xb0
+
+#define	PVRREG_FOG_VERTEX_COL	0xb4
 
 #define	PVRREG_RASEVTPOS	0xcc
 #define	RASEVTPOS_BOTTOM(x)	((x) << 0)

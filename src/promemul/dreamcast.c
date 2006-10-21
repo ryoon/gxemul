@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.6 2006-10-21 04:24:17 debug Exp $
+ *  $Id: dreamcast.c,v 1.7 2006-10-21 05:49:06 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -60,12 +60,50 @@
 static void dreamcast_romfont_init(struct machine *machine)
 {
 	struct cpu *cpu = machine->cpus[0];
-	int i;
+	int i, y, v;
+	uint64_t d = DREAMCAST_ROMFONT_BASE;
 
 	/*  TODO: A real font.  */
 
-	for (i=0; i<536496; i+=sizeof(uint32_t))
-		store_32bit_word(cpu, DREAMCAST_ROMFONT_BASE + i, random());
+	/*  288 narrow glyphs (12 x 24 pixels):  */
+	for (i=0; i<288; i++) {
+		for (y=0; y<24; y+=2) {
+			if (y <= 1 || y >= 22)
+				v = 0;
+			else
+				v = random();
+			store_byte(cpu, d++, v & 0x3f);
+			store_byte(cpu, d++, v & 0xc3);
+			store_byte(cpu, d++, v & 0xfc);
+		}
+	}
+
+	/*  7078 wide glyphs (24 x 24 pixels):  */
+	for (i=0; i<7078; i++) {
+		for (y=0; y<24; y++) {
+			if (y <= 1 || y >= 22)
+				v = 0;
+			else
+				v = random();
+			store_byte(cpu, d++, v & 0x3f);
+			store_byte(cpu, d++, v);
+			store_byte(cpu, d++, v & 0xfc);
+		}
+	}
+
+	/*  129 VME icons (32 x 32 pixels):  */
+	for (i=0; i<129; i++) {
+		for (y=0; y<32; y++) {
+			if (y <= 1 || y >= 30)
+				v = 0;
+			else
+				v = random();
+			store_byte(cpu, d++, v & 0x3f);
+			store_byte(cpu, d++, v);
+			store_byte(cpu, d++, v);
+			store_byte(cpu, d++, v & 0xfc);
+		}
+	}
 }
 
 

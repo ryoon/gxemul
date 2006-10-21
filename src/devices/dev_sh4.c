@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.10 2006-10-21 04:24:17 debug Exp $
+ *  $Id: dev_sh4.c,v 1.11 2006-10-21 05:49:06 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -353,6 +353,11 @@ DEVICE_ACCESS(sh4)
 		}
 		break;
 
+	case SH4_QACR0:
+	case SH4_QACR1:
+		/*  TODO. Ignoring for now.  */
+		break;
+
 	case SH4_TRA:
 		if (writeflag == MEM_READ)
 			odata = cpu->cd.sh.tra;
@@ -505,7 +510,7 @@ DEVINIT(sh4)
 	dev_ram_init(machine, 0x1e000000, 0x8000, DEV_RAM_RAM, 0x0);
 
 	/*  0xe0000000: Store queue. TODO  */
-	dev_ram_init(machine, 0xe0000000, 0x4000000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xe0000000, 0x40000, DEV_RAM_RAM, 0x0);
 
 	/*
 	 *  0xf0000000	SH4_CCIA	I-Cache address array

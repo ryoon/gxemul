@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1395 2006-10-21 09:25:24 debug Exp $
+$Id: HISTORY,v 1.1396 2006-10-22 04:20:53 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3110,5 +3110,8 @@ Changelog for GXemul:
 		Adding a dummy dev_dreamcast_asic.c (not really useful yet).
 		Implementing simple support for Store Queues.
 		Beginning on the PVR Tile Accelerator.
-		Trying to generalize the PVR framebuffer to support off-screen
-		drawing, multiple bit-depths, etc.
+20061022	Generalizing the PVR framebuffer to support off-screen drawing,
+		multiple bit-depths, etc. (A small speed penalty, but most
+		likely worth it.)
+		Adding more SH instructions (mulu.w, fcmp/eq, fsub, fmac,
+		fschg, and some more); correcting bugs in "fsca" and "float".

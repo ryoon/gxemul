@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.20 2006-10-07 00:36:29 debug Exp $
+ *  $Id: machine_test.c,v 1.21 2006-10-22 04:20:53 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -530,13 +530,13 @@ MACHINE_SETUP(testsh)
 
 MACHINE_DEFAULT_CPU(baresh)
 {
-	machine->cpu_name = strdup("SH4");
+	machine->cpu_name = strdup("SH7750");
 }
 
 
 MACHINE_DEFAULT_CPU(testsh)
 {
-	machine->cpu_name = strdup("SH4");
+	machine->cpu_name = strdup("SH7750");
 }
 
 

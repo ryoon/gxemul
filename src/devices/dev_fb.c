@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.126 2006-10-21 09:25:24 debug Exp $
+ *  $Id: dev_fb.c,v 1.127 2006-10-22 04:20:53 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -408,11 +408,7 @@ void (*redraw[2 * 4 * 2])(struct vfb_data *, int, int) = {
 #endif	/*  WITH_X11  */
 
 
-/*
- *  dev_fb_tick():
- *
- */
-void dev_fb_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(fb)
 {
 	struct vfb_data *d = extra;
 #ifdef WITH_X11

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.28 2006-10-21 09:25:24 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.29 2006-10-22 04:20:53 debug Exp $
  *
  *  SH instructions.
  *
@@ -477,16 +477,12 @@ X(fmov_rm_frn)
 }
 X(fmov_rm_postinc_frn)
 {
+	int d = cpu->cd.sh.fpscr & SH_FPSCR_SZ;
 	uint32_t addr = reg(ic->arg[0]);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
-	uint32_t data;
+	uint32_t data, data2;
 
 	FLOATING_POINT_AVAILABLE_CHECK;
-
-	if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
-		fatal("fmov_rm_frn: sz=1 (register pair): TODO\n");
-		exit(1);
-	}
 
 	if (p != NULL) {
 		data = p[(addr & 0xfff) >> 2];
@@ -504,7 +500,24 @@ X(fmov_rm_postinc_frn)
 	else
 		data = BE32_TO_HOST(data);
 
+	if (d) {
+		/*  Double-precision load:  */
+		addr += 4;
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned
+		    char *)&data2, sizeof(data2), MEM_READ, CACHE_DATA))
+			return;
+
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			data = LE32_TO_HOST(data2);
+		else
+			data = BE32_TO_HOST(data2);
+		reg(ic->arg[1] + 4) = data2;
+	}
+
 	reg(ic->arg[1]) = data;
+
+
 	reg(ic->arg[0]) = addr + sizeof(uint32_t);
 }
 X(mov_b_arg1_postinc_to_arg0)
@@ -768,7 +781,7 @@ X(mov_w_disp_rn_r0)
  *  mov_w_store_rm_rn:  Store Rm to address Rn (16-bit).
  *  mov_l_store_rm_rn:  Store Rm to address Rn (32-bit).
  *  fmov_frm_rn:        Store FRm to address Rn.
- *  fmov_frm_predec_rn: Store FRm to address Rn - 4, update Rn.
+ *  fmov_frm_predec_rn: Store FRm to address Rn - 4 (or 8), update Rn.
  *  mov_b_rm_r0_rn:     Store Rm to address Rn + R0 (8-bit).
  *  mov_w_rm_r0_rn:     Store Rm to address Rn + R0 (16-bit).
  *  mov_l_rm_r0_rn:     Store Rm to address Rn + R0 (32-bit).
@@ -848,6 +861,11 @@ X(fmov_frm_rn)
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
+	if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+		fatal("fmov_frm_rn: sz=1 (register pair): TODO\n");
+		exit(1);
+	}
+
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		data = LE32_TO_HOST(data);
 	else
@@ -866,7 +884,8 @@ X(fmov_frm_rn)
 }
 X(fmov_frm_predec_rn)
 {
-	uint32_t addr = reg(ic->arg[1]) - sizeof(uint32_t);
+	int d = cpu->cd.sh.fpscr & SH_FPSCR_SZ? 1 : 0;
+	uint32_t addr = reg(ic->arg[1]) - (d? 8 : 4);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_store[addr >> 12];
 	uint32_t data = reg(ic->arg[0]);
 
@@ -886,6 +905,20 @@ X(fmov_frm_predec_rn)
 			/*  Exception.  */
 			return;
 		}
+	}
+
+	if (d) {
+		/*  Store second single-precision floating point word:  */
+		data = reg(ic->arg[0] + 4);
+		addr += 4;
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			data = LE32_TO_HOST(data);
+		else
+			data = BE32_TO_HOST(data);
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned
+		    char *)&data, sizeof(data), MEM_WRITE, CACHE_DATA))
+			return;
 	}
 
 	reg(ic->arg[1]) = addr;
@@ -1122,6 +1155,7 @@ X(div1_rm_rn)
 /*
  *  mul_l_rm_rn:   MACL = Rm * Rn       (32-bit)
  *  muls_w_rm_rn:  MACL = Rm * Rn       (signed 16-bit * 16-bit ==> 32-bit)
+ *  mulu_w_rm_rn:  MACL = Rm * Rn       (unsigned 16-bit * 16-bit ==> 32-bit)
  *  dmuls_l_rm_rn: MACH:MACL = Rm * Rn  (signed, 64-bit result)
  *  dmulu_l_rm_rn: MACH:MACL = Rm * Rn  (unsigned, 64-bit result)
  *
@@ -1136,6 +1170,11 @@ X(muls_w_rm_rn)
 {
 	cpu->cd.sh.macl = (int32_t)(int16_t)reg(ic->arg[0]) *
 	    (int32_t)(int16_t)reg(ic->arg[1]);
+}
+X(mulu_w_rm_rn)
+{
+	cpu->cd.sh.macl = (int32_t)(uint16_t)reg(ic->arg[0]) *
+	    (int32_t)(uint16_t)reg(ic->arg[1]);
 }
 X(dmuls_l_rm_rn)
 {
@@ -1747,13 +1786,30 @@ X(lds_rm_fpscr)
 
 
 /*
+ *  fmov_frm_frn:  Copy one floating-point register (or pair) to another.
+ *
+ *  arg[0] = ptr to source float register or pair
+ *  arg[1] = ptr to destination float register or pair
+ */
+X(fmov_frm_frn)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	reg(ic->arg[1]) = reg(ic->arg[0]);
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_SZ)
+		reg(ic->arg[1] + 4) = reg(ic->arg[0] + 4);
+}
+
+
+/*
  *  float_fpul_frn:  Load FPUL into float register.
  *
  *  arg[0] = ptr to float register, or float register pair
  */
 X(float_fpul_frn)
 {
-	uint32_t fpul = cpu->cd.sh.fpul;
+	int32_t fpul = cpu->cd.sh.fpul;
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
@@ -1843,8 +1899,11 @@ X(fneg_frn)
 
 /*
  *  fadd_frm_frn:     Floating point addition.
+ *  fsub_frm_frn:     Floating point subtraction.
  *  fmul_frm_frn:     Floating point multiplication.
  *  fdiv_frm_frn:     Floating point division.
+ *  fmac_fr0_frm_frn: Multiply-and-accumulate.
+ *  fcmp_eq_frm_frn:  Floating point greater-than comparison.
  *  fcmp_gt_frm_frn:  Floating point greater-than comparison.
  *
  *  arg[0] = ptr to float register FRm
@@ -1883,6 +1942,39 @@ X(fadd_frm_frn)
 		ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
 
 		result = op2.f + op1.f;
+		ieee = ieee_store_float_value(result, IEEE_FMT_S, 0);
+		reg(ic->arg[1]) = (uint32_t) ieee;
+	}
+}
+X(fsub_frm_frn)
+{
+	struct ieee_float_value op1, op2;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
+		/*  Double-precision, using a pair of registers:  */
+		int64_t r1, r2, ieee;
+		double result;
+		r1 = reg(ic->arg[0] + sizeof(uint32_t)) +
+		    ((uint64_t)reg(ic->arg[0]) << 32);
+		r2 = reg(ic->arg[1] + sizeof(uint32_t)) +
+		    ((uint64_t)reg(ic->arg[1]) << 32);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
+		ieee_interpret_float_value(r2, &op2, IEEE_FMT_D);
+		result = op2.f - op1.f;
+		ieee = ieee_store_float_value(result, IEEE_FMT_D, 0);
+		reg(ic->arg[1]) = (uint32_t) (ieee >> 32);
+		reg(ic->arg[1] + sizeof(uint32_t)) = (uint32_t) ieee;
+	} else {
+		/*  Single-precision:  */
+		uint32_t r1, r2, ieee;
+		double result;
+		r1 = reg(ic->arg[0]);
+		r2 = reg(ic->arg[1]);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
+		ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
+		result = op2.f - op1.f;
 		ieee = ieee_store_float_value(result, IEEE_FMT_S, 0);
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
@@ -1971,6 +2063,48 @@ X(fdiv_frm_frn)
 		reg(ic->arg[1]) = (uint32_t) ieee;
 	}
 }
+X(fmac_fr0_frm_frn)
+{
+	struct ieee_float_value op1, op2, op0;
+	uint32_t r1, r2, fr0 = cpu->cd.sh.fr[0], ieee;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	r1 = reg(ic->arg[0]), r2 = reg(ic->arg[1]);
+	ieee_interpret_float_value(fr0, &op0, IEEE_FMT_S);
+	ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
+	ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
+
+	ieee = ieee_store_float_value(op0.f * op1.f + op2.f, IEEE_FMT_S, 0);
+	reg(ic->arg[1]) = ieee;
+}
+X(fcmp_eq_frm_frn)
+{
+	struct ieee_float_value op1, op2;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
+		/*  Double-precision, using a pair of registers:  */
+		int64_t r1, r2;
+		r1 = reg(ic->arg[0] + sizeof(uint32_t)) +
+		    ((uint64_t)reg(ic->arg[0]) << 32);
+		r2 = reg(ic->arg[1] + sizeof(uint32_t)) +
+		    ((uint64_t)reg(ic->arg[1]) << 32);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
+		ieee_interpret_float_value(r2, &op2, IEEE_FMT_D);
+	} else {
+		/*  Single-precision:  */
+		uint32_t r1 = reg(ic->arg[0]), r2 = reg(ic->arg[1]);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
+		ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
+	}
+
+	if (op2.f == op1.f)
+		cpu->cd.sh.sr |= SH_SR_T;
+	else
+		cpu->cd.sh.sr &= ~SH_SR_T;
+}
 X(fcmp_gt_frm_frn)
 {
 	struct ieee_float_value op1, op2;
@@ -2001,12 +2135,18 @@ X(fcmp_gt_frm_frn)
 
 
 /*
- *  frchg:  Change register banks.
+ *  frchg:  Change floating-point register banks.
+ *  fschg:  Change floating-point register size.
  */
 X(frchg)
 {
 	FLOATING_POINT_AVAILABLE_CHECK;
 	sh_update_fpscr(cpu, cpu->cd.sh.fpscr ^ SH_FPSCR_FR);
+}
+X(fschg)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	sh_update_fpscr(cpu, cpu->cd.sh.fpscr ^ SH_FPSCR_SZ);
 }
 
 
@@ -2428,6 +2568,11 @@ X(to_be_translated)
 				/*  TODO: Implement this.  */
 				ic->f = instr(nop);
 				break;
+			case 0xfa:	/*  STC DBR,Rn  */
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.dbr;
+				ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];
+				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%03x\n",
 				    main_opcode, iword & 0xfff);
 				goto bad;
@@ -2480,6 +2625,9 @@ X(to_be_translated)
 			break;
 		case 0xd:	/*  XTRCT Rm,Rn  */
 			ic->f = instr(xtrct_rm_rn);
+			break;
+		case 0xe:	/*  MULU.W Rm,Rn  */
+			ic->f = instr(mulu_w_rm_rn);
 			break;
 		case 0xf:	/*  MULS.W Rm,Rn  */
 			ic->f = instr(muls_w_rm_rn);
@@ -2659,6 +2807,10 @@ X(to_be_translated)
 				ic->f = instr(mov_l_arg1_postinc_to_arg0);
 				ic->arg[0] = (size_t)&cpu->cd.sh.pr;
 				break;
+			case 0x27:	/*  LDC.L @Rm+,VBR  */
+				ic->f = instr(mov_l_arg1_postinc_to_arg0_md);
+				ic->arg[0] = (size_t)&cpu->cd.sh.vbr;
+				break;
 			case 0x28:	/*  SHLL16 Rn  */
 				ic->f = instr(shll16_rn);
 				break;
@@ -2735,6 +2887,11 @@ X(to_be_translated)
 			case 0x6a:	/*  LDS Rm,FPSCR  */
 				ic->f = instr(lds_rm_fpscr);
 				/*  arg 1 = R8 = Rm  */
+				break;
+			case 0xfa:	/*  LDC Rm,DBR  */
+				ic->f = instr(copy_privileged_register);
+				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];
+				ic->arg[1] = (size_t)&cpu->cd.sh.dbr;
 				break;
 			default:fatal("Unimplemented opcode 0x%x,0x%02x\n",
 				    main_opcode, lo8);
@@ -2935,6 +3092,11 @@ X(to_be_translated)
 			ic->f = instr(fadd_frm_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
 			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo4 == 0x1) {
+			/*  FSUB FRm,FRn  */
+			ic->f = instr(fsub_frm_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
+			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo4 == 0x2) {
 			/*  FMUL FRm,FRn  */
 			ic->f = instr(fmul_frm_frn);
@@ -2943,6 +3105,11 @@ X(to_be_translated)
 		} else if (lo4 == 0x3) {
 			/*  FDIV FRm,FRn  */
 			ic->f = instr(fdiv_frm_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
+			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo4 == 0x4) {
+			/*  FCMP/EQ FRm,FRn  */
+			ic->f = instr(fcmp_eq_frm_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
 			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo4 == 0x5) {
@@ -2970,6 +3137,11 @@ X(to_be_translated)
 			ic->f = instr(fmov_frm_predec_rn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];  /* m */
 			ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];
+		} else if (lo4 == 0xc) {
+			/*  FMOV FRm,FRn  */
+			ic->f = instr(fmov_frm_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
+			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo8 == 0x2d) {
 			/*  FLOAT FPUL,FRn  */
 			ic->f = instr(float_fpul_frn);
@@ -2994,9 +3166,17 @@ X(to_be_translated)
 			/*  FSCA FPUL,DRn  */
 			ic->f = instr(fsca_fpul_drn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (iword == 0xf3fd) {
+			/*  FSCHG  */
+			ic->f = instr(fschg);
 		} else if (iword == 0xfbfd) {
 			/*  FRCHG  */
 			ic->f = instr(frchg);
+		} else if (lo4 == 0xe) {
+			/*  FMAC FR0,FRm,FRn  */
+			ic->f = instr(fmac_fr0_frm_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
+			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
 		} else {
 			fatal("Unimplemented opcode 0x%x,0x%02x\n",
 			    main_opcode, lo8);

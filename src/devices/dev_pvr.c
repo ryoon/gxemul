@@ -25,17 +25,15 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.6 2006-10-21 09:25:24 debug Exp $
+ *  $Id: dev_pvr.c,v 1.7 2006-10-22 04:20:53 debug Exp $
  *  
- *  PowerVR CLX2 (Graphics controller used in the Dreamcast)
- *
- *  http://mc.pp.se/dc/pvr.html has a good overview of how the PVR/TA works.
+ *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
+ *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
+ *  http://mc.pp.se/dc/pvr.html, and doing a lot of guessing.
  *
  *  TODO: Almost everything
- *	x)  Change resolution during runtime? (PAL/NTSC/???)
- *	x)  Change framebuffer layout in memory during runtime
- *		(bits per pixel, location, etc)
- *	x)  3D "Tile Accelerator" engine
+ *	x)  Change resolution during runtime (PAL/NTSC/???)
+ *	x)  Lots of work on the 3D "Tile Accelerator" engine.
  */
 
 #include <stdio.h>
@@ -45,6 +43,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
+#include "float_emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -55,15 +54,21 @@
 #define debug fatal
 
 #define	INTERNAL_FB_ADDR	0x300000000ULL
+#define	PVR_FB_TICK_SHIFT	20
 
 struct pvr_data {
 	struct vfb_data		*fb;
+	int			fb_update_x1;
+	int			fb_update_y1;
+	int			fb_update_x2;
+	int			fb_update_y2;
 
 	/*  PVR registers:  */
 	uint32_t		reg[PVRREG_REGSIZE / sizeof(uint32_t)];
 
 	/*  Calculated by pvr_geometry_updated():  */
 	int			xsize, ysize;
+	int			bytes_per_pixel;
 
 	/*  Cached values (from registers):  */
 	/*  DIWMODE:  */
@@ -85,8 +90,12 @@ struct pvr_data {
 	int			tilebuf_xsize;
 	int			tilebuf_ysize;
 
-	/*  Tile Accelerator Command Compiler List:  */
+	/*  Tile Accelerator Command:  */
 	uint32_t		ta[64 / sizeof(uint32_t)];
+
+	/*  Quick-hack wireframe stuff:  */
+	int			first_point;
+	int			last_x, last_y;
 
 	uint8_t			*vram;
 };
@@ -101,6 +110,9 @@ struct pvr_data {
  */
 static void pvr_fb_invalidate(struct pvr_data *d, int start, int stop)
 {
+	d->fb_update_x1 = d->fb_update_y1 = 0;
+	d->fb_update_x2 = d->xsize - 1;
+	d->fb_update_y2 = d->ysize - 1;
 }
 
 
@@ -116,10 +128,17 @@ static void pvr_geometry_updated(struct pvr_data *d)
 	d->ysize = (REG(PVRREG_DIWSIZE) >> DIWSIZE_LPF_SHIFT) & DIWSIZE_MASK;
 
 	/*  E.g. 319x479  =>  320x480  */
-	d->xsize ++; d->ysize ++;
+	d->xsize = (d->xsize + 1) * sizeof(uint32_t);
+	d->ysize ++;
 
-	if (d->clock_double)
-		d->xsize *= 2;
+	switch (d->pixelmode) {
+	case 0:
+	case 1:	d->bytes_per_pixel = 2; break;
+	case 2:	d->bytes_per_pixel = 3; break;
+	case 3:	d->bytes_per_pixel = 4; break;
+	}
+
+	d->xsize /= d->bytes_per_pixel;
 
 	if (d->line_double)
 		d->ysize /= 2;
@@ -145,6 +164,9 @@ static void pvr_geometry_updated(struct pvr_data *d)
  *  pvr_render():
  *
  *  Render from the Object Buffer to the framebuffer.
+ *
+ *  TODO: This function is totally bogus so far, the format of the Object
+ *        Buffer is just a quick made-up hack to see if it works at all.
  */
 static void pvr_render(struct pvr_data *d)
 {
@@ -153,17 +175,43 @@ static void pvr_render(struct pvr_data *d)
 
 	fatal("[ pvr_render: rendering to FB offset 0x%x ]\n", fb_base);
 
+	/*  Clear all pixels first:  */
+	/*  TODO  */
+	memset(d->vram + fb_base, 0, d->xsize * d->ysize * d->bytes_per_pixel);
+
+	d->first_point = 1;
+
 	for (;;) {
 		uint8_t cmd = d->vram[ob_ofs];
 
 		if (cmd == 0)
 			break;
 		else if (cmd == 1) {
-			int x = d->vram[ob_ofs+1], y=d->vram[ob_ofs+2];
-			fatal("rendering pixel at %i,%i\n", x, y);
-			d->vram[fb_base + x + y * d->xsize * 2];
-		} else
+			int i;
+			int x = d->vram[ob_ofs+2] + d->vram[ob_ofs+3] * 256;
+			int y = d->vram[ob_ofs+4] + d->vram[ob_ofs+5] * 256;
+			if (d->first_point) {
+				d->last_x = x; d->last_y = y;
+			}
+
+			/*  Line from lastxy to xy:  */
+			for (i=0; i<100; i++) {
+				int px = (x * i + d->last_x * (100-i)) / 100;
+				int py = (y * i + d->last_y * (100-i)) / 100;
+				if (px > 0 && py > 0 &&
+				    px < d->xsize && py < d->ysize) {
+					d->vram[fb_base + (px + py * d->xsize)*
+					    d->bytes_per_pixel] = 255;
+				}
+			}
+
+			d->last_x = x; d->last_y = y;
+			d->first_point = 0;
+		} else if (cmd == 2) {
+			d->first_point = 1;
+		} else {
 			fatal("pvr_render: internal error, unknown cmd\n");
+		}
 
 		ob_ofs += sizeof(uint64_t);
 	}
@@ -203,7 +251,7 @@ static void pvr_ta_init(struct pvr_data *d)
 static void pvr_ta_command(struct pvr_data *d)
 {
 	int ob_ofs;
-	float x, y, z;
+	float x, y;
 
 #if 1
 	/*  Dump the Tile Accelerator command for debugging:  */
@@ -223,9 +271,12 @@ static void pvr_ta_command(struct pvr_data *d)
 	 *  the pixel coordinates.
 	 */
 
-	x = * ((float *) &d->ta[1]);
-	y = * ((float *) &d->ta[2]);
-	z = * ((float *) &d->ta[3]);
+	{
+		struct ieee_float_value fx, fy;
+		ieee_interpret_float_value(d->ta[1], &fx, IEEE_FMT_S);
+		ieee_interpret_float_value(d->ta[2], &fy, IEEE_FMT_S);
+		x = fx.f; y = fy.f;
+	}
 
 	ob_ofs = REG(PVRREG_TA_OB_POS);
 
@@ -235,11 +286,18 @@ static void pvr_ta_command(struct pvr_data *d)
 	case 0xe:
 	case 0xf:
 		/*  Point.  */
+		x /= 2;
 		d->vram[ob_ofs + 0] = 1;
-		d->vram[ob_ofs + 1] = x / 8;
-		d->vram[ob_ofs + 2] = y / 8;
-		d->vram[ob_ofs + 3] = z / 8;
+		d->vram[ob_ofs + 2] = (int)x & 255;
+		d->vram[ob_ofs + 3] = x / 256;
+		d->vram[ob_ofs + 4] = (int)y & 255;
+		d->vram[ob_ofs + 5] = y / 256;
 		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
+		if ((d->ta[0] >> 28) == 0xf) {
+			/*  Last point.  */
+			d->vram[ob_ofs + 0] = 2;
+			REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
+		}
 		break;
 	case 0x0:
 	default:
@@ -637,15 +695,160 @@ return_ok:
 }
 
 
+DEVICE_TICK(pvr_fb)
+{
+	struct pvr_data *d = extra;
+	uint64_t high, low = (uint64_t)(int64_t) -1;
+	int vram_ofs = REG(PVRREG_DIWADDRL), pixels_to_copy;
+	int y, bytes_per_line = d->xsize * d->bytes_per_pixel;
+	int fb_ofs, p;
+	uint8_t *fb = (uint8_t *) d->fb->framebuffer;
+	uint8_t *vram = (uint8_t *) d->vram;
+
+	memory_device_dyntrans_access(cpu, cpu->mem, extra, &low, &high);
+	if ((int64_t)low != -1) {
+		low -= vram_ofs;
+		high -= vram_ofs;
+
+		/*  Access inside visible part of VRAM?  */
+		if ((int64_t)high >= 0 && (int64_t)low <
+		    bytes_per_line * d->ysize) {
+			int new_y1, new_y2;
+
+			d->fb_update_x1 = 0;
+			d->fb_update_x2 = d->xsize - 1;
+
+			/*  Calculate which line the low and high addresses
+			    correspond to:  */
+			new_y1 = low / bytes_per_line;
+			new_y2 = high / bytes_per_line + 1;
+
+			if (d->fb_update_y1 < 0 || new_y1 < d->fb_update_y1)
+				d->fb_update_y1 = new_y1;
+			if (d->fb_update_y2 < 0 || new_y2 > d->fb_update_y2)
+				d->fb_update_y2 = new_y2;
+
+			if (d->fb_update_y2 >= d->ysize)
+				d->fb_update_y2 = d->ysize - 1;
+		}
+	}
+
+	if (d->fb_update_x1 == -1)
+		return;
+
+	/*  Copy (part of) the VRAM to the framebuffer:  */
+	if (d->fb_update_x2 >= d->fb->xsize)
+		d->fb_update_x2 = d->fb->xsize - 1;
+	if (d->fb_update_y2 >= d->fb->ysize)
+		d->fb_update_y2 = d->fb->ysize - 1;
+
+	vram_ofs += d->fb_update_y1 * bytes_per_line;
+	vram_ofs += d->fb_update_x1 * d->bytes_per_pixel;
+	pixels_to_copy = (d->fb_update_x2 - d->fb_update_x1 + 1);
+	fb_ofs = d->fb_update_y1 * d->fb->bytes_per_line;
+	fb_ofs += d->fb_update_x1 * d->fb->bit_depth / 8;
+
+	/*  Copy the actual pixels: (Four manually inlined, for speed.)  */
+
+	switch (d->pixelmode) {
+	case 0:	/*  RGB0555 (16-bit)  */
+		for (y=d->fb_update_y1; y<=d->fb_update_y2; y++) {
+			int fo = fb_ofs, vo = vram_ofs;
+			for (p=0; p<pixels_to_copy; p++) {
+				/*  0rrrrrgg(high) gggbbbbb(low)  */
+				fb[fo] = (vram[vo+1] << 1) & 0xf8;
+				fb[fo+1] = ((vram[vo] >> 2) & 0x38) +
+				    (vram[vo+1] << 6);
+				fb[fo+2] = (vram[vo] & 0x1f) << 3;
+				fo += 3; vo += 2;
+			}
+			vram_ofs += bytes_per_line;
+			fb_ofs += d->fb->bytes_per_line;
+		}
+		break;
+
+	case 1: /*  RGB565 (16-bit)  */
+		for (y=d->fb_update_y1; y<=d->fb_update_y2; y++) {
+			int fo = fb_ofs, vo = vram_ofs;
+			for (p=0; p<pixels_to_copy; p++) {
+				/*  rrrrrggg(high) gggbbbbb(low)  */
+				fb[fo] = vram[vo+1] & 0xf8;
+				fb[fo+1] = ((vram[vo] >> 3) & 0x1c) +
+				    (vram[vo+1] << 5);
+				fb[fo+2] = (vram[vo] & 0x1f) << 3;
+				fo += 3; vo += 2;
+			}
+			vram_ofs += bytes_per_line;
+			fb_ofs += d->fb->bytes_per_line;
+		}
+		break;
+
+	case 2: /*  RGB888 (24-bit)  */
+		for (y=d->fb_update_y1; y<=d->fb_update_y2; y++) {
+			memcpy(fb+fb_ofs, vram+vram_ofs, 3*pixels_to_copy);
+			vram_ofs += bytes_per_line;
+			fb_ofs += d->fb->bytes_per_line;
+		}
+		break;
+
+	case 3: /*  RGB0888 (32-bit)  */
+		for (y=d->fb_update_y1; y<=d->fb_update_y2; y++) {
+			int fo = fb_ofs, vo = vram_ofs;
+			for (p=0; p<pixels_to_copy; p++) {
+				fb[fo] = vram[vo];
+				fb[fo+1] = vram[vo+1];
+				fb[fo+2] = vram[vo+2];
+				fo += 3; vo += 4;
+			}
+			vram_ofs += bytes_per_line;
+			fb_ofs += d->fb->bytes_per_line;
+		}
+		break;
+	}
+
+	/*
+	 *  Extend the real framebuffer to encompass the area
+	 *  just written to:
+	 */
+
+	if (d->fb_update_x1 < d->fb->update_x1 || d->fb->update_x1 < 0)
+		d->fb->update_x1 = d->fb_update_x1;
+	if (d->fb_update_x2 > d->fb->update_x2 || d->fb->update_x2 < 0)
+		d->fb->update_x2 = d->fb_update_x2;
+	if (d->fb_update_y1 < d->fb->update_y1 || d->fb->update_y1 < 0)
+		d->fb->update_y1 = d->fb_update_y1;
+	if (d->fb_update_y2 > d->fb->update_y2 || d->fb->update_y2 < 0)
+		d->fb->update_y2 = d->fb_update_y2;
+
+	/*  Clear the PVR's update region:  */
+	d->fb_update_x1 = d->fb_update_x2 =
+	    d->fb_update_y1 = d->fb_update_y2 = -1;
+}
+
+
 DEVICE_ACCESS(pvr_vram)
 {
 	struct pvr_data *d = extra;
 
 	if (writeflag == MEM_READ) {
 		memcpy(data, d->vram + relative_addr, len);
-	} else {
-		memcpy(d->vram + relative_addr, data, len);
+		return 1;
 	}
+
+	/*
+	 *  Write to VRAM:
+	 *
+	 *  Calculate which part of the framebuffer this write corresponds to,
+	 *  if any, and increase the update region to encompass the written
+	 *  memory range.
+	 */
+
+	memcpy(d->vram + relative_addr, data, len);
+
+	/*  TODO: Only invalidate a part!  */
+	d->fb_update_x1 = d->fb_update_y1 = 0;
+	d->fb_update_x2 = d->xsize - 1;
+	d->fb_update_y2 = d->ysize - 1;
 
 	return 1;
 }
@@ -675,8 +878,16 @@ DEVINIT(pvr)
 	memory_device_register(machine->memory, "pvr_ta",
 	    0x10000000, sizeof(d->ta), dev_pvr_ta_access, d, DM_DEFAULT, NULL);
 
+	d->xsize = 640;
+	d->ysize = 480;
+	d->pixelmode = 1;	/*  RGB565  */
+	d->bytes_per_pixel = 2;
+
 	d->fb = dev_fb_init(machine, machine->memory, INTERNAL_FB_ADDR,
 	    VFB_GENERIC, 640,480, 640,480, 24, "Dreamcast PVR");
+
+	machine_add_tickfunction(machine, dev_pvr_fb_tick, d,
+	    PVR_FB_TICK_SHIFT, 0.0);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.7 2006-10-21 05:49:06 debug Exp $
+ *  $Id: dreamcast.c,v 1.8 2006-10-22 05:00:08 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -184,7 +184,7 @@ int dreamcast_emul(struct cpu *cpu)
 			switch (r7) {
 			case 0:	/*  GDROM_SEND_COMMAND  */
 				/*  TODO  */
-				cpu->cd.sh.r[0] = -1;
+				cpu->cd.sh.r[0] = (uint32_t) -1;
 				break;
 			case 1:	/*  GDROM_CHECK_COMMAND  */
 				/*  TODO  */

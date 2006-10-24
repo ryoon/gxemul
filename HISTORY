@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1399 2006-10-24 07:54:30 debug Exp $
+$Id: HISTORY,v 1.1400 2006-10-24 09:32:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3120,3 +3120,5 @@ Changelog for GXemul:
 		Correcting disassembly for SH floating point instructions that
 		use the xd* registers.
 		Adding the SH fsts instruction.
+		In memory_device_dyntrans_access(), only the currently used
+		range is now invalidated, and not the entire device range.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.8 2006-10-24 07:16:31 debug Exp $
+ *  $Id: dev_pvr.c,v 1.9 2006-10-24 08:34:58 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -61,7 +61,7 @@
 #define debug fatal
 
 #define	INTERNAL_FB_ADDR	0x300000000ULL
-#define	PVR_FB_TICK_SHIFT	19
+#define	PVR_FB_TICK_SHIFT	20
 
 struct pvr_data {
 	struct vfb_data		*fb;
@@ -102,6 +102,10 @@ struct pvr_data {
 
 	uint8_t			*vram;
 	uint8_t			*vram_alt;
+};
+
+struct pvr_data_alt {
+	struct pvr_data		*d;
 };
 
 
@@ -709,6 +713,39 @@ return_ok:
 }
 
 
+static void extend_update_region(struct pvr_data *d, uint64_t low, 
+	uint64_t high)
+{
+	int vram_ofs = REG(PVRREG_DIWADDRL);
+	int bytes_per_line = d->xsize * d->bytes_per_pixel;
+
+	low -= vram_ofs;
+	high -= vram_ofs;
+
+	/*  Access inside visible part of VRAM?  */
+	if ((int64_t)high >= 0 && (int64_t)low <
+	    bytes_per_line * d->ysize) {
+		int new_y1, new_y2;
+
+		d->fb_update_x1 = 0;
+		d->fb_update_x2 = d->xsize - 1;
+
+		/*  Calculate which line the low and high addresses
+		    correspond to:  */
+		new_y1 = low / bytes_per_line;
+		new_y2 = high / bytes_per_line + 1;
+
+		if (d->fb_update_y1 < 0 || new_y1 < d->fb_update_y1)
+			d->fb_update_y1 = new_y1;
+		if (d->fb_update_y2 < 0 || new_y2 > d->fb_update_y2)
+			d->fb_update_y2 = new_y2;
+
+		if (d->fb_update_y2 >= d->ysize)
+			d->fb_update_y2 = d->ysize - 1;
+	}
+}
+
+
 DEVICE_TICK(pvr_fb)
 {
 	struct pvr_data *d = extra;
@@ -720,32 +757,8 @@ DEVICE_TICK(pvr_fb)
 	uint8_t *vram = (uint8_t *) d->vram;
 
 	memory_device_dyntrans_access(cpu, cpu->mem, extra, &low, &high);
-	if ((int64_t)low != -1) {
-		low -= vram_ofs;
-		high -= vram_ofs;
-
-		/*  Access inside visible part of VRAM?  */
-		if ((int64_t)high >= 0 && (int64_t)low <
-		    bytes_per_line * d->ysize) {
-			int new_y1, new_y2;
-
-			d->fb_update_x1 = 0;
-			d->fb_update_x2 = d->xsize - 1;
-
-			/*  Calculate which line the low and high addresses
-			    correspond to:  */
-			new_y1 = low / bytes_per_line;
-			new_y2 = high / bytes_per_line + 1;
-
-			if (d->fb_update_y1 < 0 || new_y1 < d->fb_update_y1)
-				d->fb_update_y1 = new_y1;
-			if (d->fb_update_y2 < 0 || new_y2 > d->fb_update_y2)
-				d->fb_update_y2 = new_y2;
-
-			if (d->fb_update_y2 >= d->ysize)
-				d->fb_update_y2 = d->ysize - 1;
-		}
-	}
+	if ((int64_t)low != -1)
+		extend_update_region(d, low, high);
 
 	if (d->fb_update_x1 == -1)
 		return;
@@ -843,7 +856,8 @@ DEVICE_TICK(pvr_fb)
 
 DEVICE_ACCESS(pvr_vram_alt)
 {
-	struct pvr_data *d = extra;
+	struct pvr_data_alt *d_alt = extra;
+	struct pvr_data *d = d_alt->d;
 
 	if (writeflag == MEM_READ) {
 		/*  TODO: Copy from real vram!  */
@@ -881,11 +895,7 @@ DEVICE_ACCESS(pvr_vram)
 	 */
 
 	memcpy(d->vram + relative_addr, data, len);
-
-	/*  TODO: Only invalidate a part!  */
-	d->fb_update_x1 = d->fb_update_y1 = 0;
-	d->fb_update_x2 = d->xsize - 1;
-	d->fb_update_y2 = d->ysize - 1;
+	extend_update_region(d, relative_addr, relative_addr + len - 1);
 
 	return 1;
 }
@@ -895,11 +905,15 @@ DEVINIT(pvr)
 {
 	struct machine *machine = devinit->machine;
 	struct pvr_data *d = malloc(sizeof(struct pvr_data));
+	struct pvr_data_alt *d_alt = malloc(sizeof(struct pvr_data_alt));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pvr_data));
+	memset(d_alt, 0, sizeof(struct pvr_data_alt));
+
+	d_alt->d = d;
 
 	memory_device_register(machine->memory, devinit->name,
 	    PVRREG_REGSTART, PVRREG_REGSIZE, dev_pvr_access, d,
@@ -914,8 +928,8 @@ DEVINIT(pvr)
 
 	/*  8 MB video RAM, when accessed at 0xa4000000:  */
 	d->vram_alt = zeroed_alloc(8 * 1048576);
-	memory_device_register(machine->memory, "pvr_vram", 0x04000000,
-	    8 * 1048576, dev_pvr_vram_alt_access, (void *)d,
+	memory_device_register(machine->memory, "pvr_alt_vram", 0x04000000,
+	    8 * 1048576, dev_pvr_vram_alt_access, (void *)d_alt,
 	    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK
 	    | DM_READS_HAVE_NO_SIDE_EFFECTS, d->vram_alt);
 

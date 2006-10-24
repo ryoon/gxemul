@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1398 2006-10-24 07:32:09 debug Exp $
+$Id: HISTORY,v 1.1399 2006-10-24 07:54:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3119,3 +3119,4 @@ Changelog for GXemul:
 		Comsteds's "tatest" example runs :) (wireframe only).
 		Correcting disassembly for SH floating point instructions that
 		use the xd* registers.
+		Adding the SH fsts instruction.

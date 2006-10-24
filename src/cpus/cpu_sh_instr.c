@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.30 2006-10-24 07:16:30 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.31 2006-10-24 07:54:31 debug Exp $
  *
  *  SH instructions.
  *
@@ -3321,6 +3321,11 @@ X(to_be_translated)
 			/*  FMOV FRm,FRn  */
 			ic->f = instr(fmov_frm_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r4];
+			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x0d) {
+			/*  FSTS FPUL,FRn  */
+			ic->f = instr(copy_fp_register);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fpul;
 			ic->arg[1] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo8 == 0x1d) {
 			/*  FLDS FRn,FPUL  */

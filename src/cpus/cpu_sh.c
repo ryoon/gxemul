@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.44 2006-10-24 07:32:09 debug Exp $
+ *  $Id: cpu_sh.c,v 1.45 2006-10-24 07:54:31 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -1014,7 +1014,9 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 				r4 &= ~1; r8 &= ~1;
 			}
 			debug("fmov\t%s%i,%s%i\n", n1, r4, n2, r8);
-		} else if (lo8 == 0x1d)
+		} else if (lo8 == 0x0d)
+			debug("fsts\tfpul,fr%i\n", r8);
+		else if (lo8 == 0x1d)
 			debug("flds\tfr%i,fpul\n", r8);
 		else if (lo8 == 0x2d)
 			debug("float\tfpul,%sr%i\n",

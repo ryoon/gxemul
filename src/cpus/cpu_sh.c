@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.43 2006-10-24 07:16:30 debug Exp $
+ *  $Id: cpu_sh.c,v 1.44 2006-10-24 07:32:09 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -964,25 +964,49 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("fcmp/gt\t%sr%i,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r4,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
-		else if (lo4 == 0x6)
-			debug("fmov\t@(r0,r%i),%sr%i\n", r4,
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
-		else if (lo4 == 0x7)
-			debug("fmov\t%sr%i,@(r0,r%i)\n",
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r4, r8);
-		else if (lo4 == 0x8)
-			debug("fmov\t@r%i,%sr%i\n", r4,
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
-		else if (lo4 == 0x9)
-			debug("fmov\t@r%i+,%sr%i\n", r4,
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
-		else if (lo4 == 0xa)
-			debug("fmov\t%sr%i,@r%i\n",
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r4, r8);
-		else if (lo4 == 0xb)
-			debug("fmov\t%sr%i,@-r%i\n",
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r4, r8);
-		else if (lo4 == 0xc) {
+		else if (lo4 == 0x6) {
+			char *n = "fr";
+			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+				n = (r8 & 1)? "xd" : "dr";
+				r8 &= ~1;
+			}
+			debug("fmov\t@(r0,r%i),%s%i\n", r4, n, r8);
+		} else if (lo4 == 0x7) {
+			char *n = "fr";
+			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+				n = (r4 & 1)? "xd" : "dr";
+				r4 &= ~1;
+			}
+			debug("fmov\t%s%i,@(r0,r%i)\n", n, r4, r8);
+		} else if (lo4 == 0x8) {
+			char *n = "fr";
+			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+				n = (r8 & 1)? "xd" : "dr";
+				r8 &= ~1;
+			}
+			debug("fmov\t@r%i,%s%i\n", r4, n, r8);
+		} else if (lo4 == 0x9) {
+			char *n = "fr";
+			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+				n = (r8 & 1)? "xd" : "dr";
+				r8 &= ~1;
+			}
+			debug("fmov\t@r%i+,%s%i\n", r4, n, r8);
+		} else if (lo4 == 0xa) {
+			char *n = "fr";
+			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+				n = (r4 & 1)? "xd" : "dr";
+				r4 &= ~1;
+			}
+			debug("fmov\t%s%i,@r%i\n", n, r4, r8);
+		} else if (lo4 == 0xb) {
+			char *n = "fr";
+			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+				n = (r4 & 1)? "xd" : "dr";
+				r4 &= ~1;
+			}
+			debug("fmov\t%s%i,@-r%i\n", n, r4, r8);
+		} else if (lo4 == 0xc) {
 			char *n1 = "fr", *n2 = "fr";
 			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
 				n1 = (r4 & 1)? "xd" : "dr";

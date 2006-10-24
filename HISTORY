@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1397 2006-10-24 07:16:30 debug Exp $
+$Id: HISTORY,v 1.1398 2006-10-24 07:32:09 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3117,3 +3117,5 @@ Changelog for GXemul:
 		fschg, and some more); correcting bugs in "fsca" and "float".
 20061024	Adding the SH ftrv (matrix * vector) instruction. Marcus
 		Comsteds's "tatest" example runs :) (wireframe only).
+		Correcting disassembly for SH floating point instructions that
+		use the xd* registers.

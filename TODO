@@ -1,4 +1,4 @@
-$Id: TODO,v 1.399 2006-10-21 03:46:39 debug Exp $
+$Id: TODO,v 1.400 2006-10-24 07:16:30 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -93,9 +93,9 @@ MIPS:
 SuperH:
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
-	x)  Store Queues! (Necessary for Dreamcast Tile Accelerator stuff.)
 	x)  SH4 interrupt controller
 	x)  SH4 timers: more interrupt styles?
+	x)  Make sure that XD floating point loads/stores/moves are correct!
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  ldtlb: Don't invalidate everything.
 	x)  TLB access via memory: Don't invalidate everything.

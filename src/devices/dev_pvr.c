@@ -25,15 +25,22 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.7 2006-10-22 04:20:53 debug Exp $
+ *  $Id: dev_pvr.c,v 1.8 2006-10-24 07:16:31 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
  *  http://mc.pp.se/dc/pvr.html, and doing a lot of guessing.
  *
  *  TODO: Almost everything
+ *
  *	x)  Change resolution during runtime (PAL/NTSC/???)
+ *
  *	x)  Lots of work on the 3D "Tile Accelerator" engine.
+ *		Recognize commands and turn into OpenGL or similar
+ *		commands on the host?
+ *
+ *	x)  Alternative VRAM:  Reads should read from normal VRAM (after
+ *	    transformation). Writes should write to normal VRAM.
  */
 
 #include <stdio.h>
@@ -54,7 +61,7 @@
 #define debug fatal
 
 #define	INTERNAL_FB_ADDR	0x300000000ULL
-#define	PVR_FB_TICK_SHIFT	20
+#define	PVR_FB_TICK_SHIFT	19
 
 struct pvr_data {
 	struct vfb_data		*fb;
@@ -93,11 +100,8 @@ struct pvr_data {
 	/*  Tile Accelerator Command:  */
 	uint32_t		ta[64 / sizeof(uint32_t)];
 
-	/*  Quick-hack wireframe stuff:  */
-	int			first_point;
-	int			last_x, last_y;
-
 	uint8_t			*vram;
+	uint8_t			*vram_alt;
 };
 
 
@@ -160,6 +164,21 @@ static void pvr_geometry_updated(struct pvr_data *d)
 }
 
 
+/*  Ugly quick-hack:  */
+static void line(struct pvr_data *d, int x1, int y1, int x2, int y2)
+{
+	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
+	int i;
+	for (i=0; i<200; i++) {
+		int px = (i * x2 + (200-i) * x1) / 200;
+		int py = (i * y2 + (200-i) * y1) / 200;
+		if (px > 0 && py > 0 && px < d->xsize && py < d->ysize)
+			d->vram[fb_base + (px + py * d->xsize)*
+			    d->bytes_per_pixel] = 255;
+	}
+}
+
+
 /*
  *  pvr_render():
  *
@@ -172,14 +191,16 @@ static void pvr_render(struct pvr_data *d)
 {
 	int ob_ofs = REG(PVRREG_OB_ADDR);
 	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
+	int wf_point_nr;
+	int wf_x[4], wf_y[4];
 
-	fatal("[ pvr_render: rendering to FB offset 0x%x ]\n", fb_base);
+	debug("[ pvr_render: rendering to FB offset 0x%x ]\n", fb_base);
 
 	/*  Clear all pixels first:  */
 	/*  TODO  */
 	memset(d->vram + fb_base, 0, d->xsize * d->ysize * d->bytes_per_pixel);
 
-	d->first_point = 1;
+	wf_point_nr = 0;
 
 	for (;;) {
 		uint8_t cmd = d->vram[ob_ofs];
@@ -187,28 +208,25 @@ static void pvr_render(struct pvr_data *d)
 		if (cmd == 0)
 			break;
 		else if (cmd == 1) {
-			int i;
-			int x = d->vram[ob_ofs+2] + d->vram[ob_ofs+3] * 256;
-			int y = d->vram[ob_ofs+4] + d->vram[ob_ofs+5] * 256;
-			if (d->first_point) {
-				d->last_x = x; d->last_y = y;
+			int px = d->vram[ob_ofs+2] + d->vram[ob_ofs+3] * 256;
+			int py = d->vram[ob_ofs+4] + d->vram[ob_ofs+5] * 256;
+
+			wf_x[wf_point_nr] = px;
+			wf_y[wf_point_nr] = py;
+
+			wf_point_nr ++;
+			if (wf_point_nr == 4) {
+				line(d, wf_x[0], wf_y[0], wf_x[1], wf_y[1]);
+				line(d, wf_x[0], wf_y[0], wf_x[2], wf_y[2]);
+				line(d, wf_x[1], wf_y[1], wf_x[3], wf_y[3]);
+				line(d, wf_x[2], wf_y[2], wf_x[3], wf_y[3]);
+				wf_point_nr = 2;
+				wf_x[0] = wf_x[2]; wf_y[0] = wf_y[2];
+				wf_x[1] = wf_x[3]; wf_y[1] = wf_y[3];
 			}
 
-			/*  Line from lastxy to xy:  */
-			for (i=0; i<100; i++) {
-				int px = (x * i + d->last_x * (100-i)) / 100;
-				int py = (y * i + d->last_y * (100-i)) / 100;
-				if (px > 0 && py > 0 &&
-				    px < d->xsize && py < d->ysize) {
-					d->vram[fb_base + (px + py * d->xsize)*
-					    d->bytes_per_pixel] = 255;
-				}
-			}
-
-			d->last_x = x; d->last_y = y;
-			d->first_point = 0;
 		} else if (cmd == 2) {
-			d->first_point = 1;
+			wf_point_nr = 0;
 		} else {
 			fatal("pvr_render: internal error, unknown cmd\n");
 		}
@@ -251,9 +269,9 @@ static void pvr_ta_init(struct pvr_data *d)
 static void pvr_ta_command(struct pvr_data *d)
 {
 	int ob_ofs;
-	float x, y;
+	int x, y;
 
-#if 1
+#if 0
 	/*  Dump the Tile Accelerator command for debugging:  */
 	{
 		int i;
@@ -282,22 +300,18 @@ static void pvr_ta_command(struct pvr_data *d)
 
 	switch (d->ta[0] >> 28) {
 	case 0x8:
+		d->vram[ob_ofs + 0] = 2;
+		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
 		break;
 	case 0xe:
 	case 0xf:
 		/*  Point.  */
-		x /= 2;
 		d->vram[ob_ofs + 0] = 1;
-		d->vram[ob_ofs + 2] = (int)x & 255;
+		d->vram[ob_ofs + 2] = x & 255;
 		d->vram[ob_ofs + 3] = x / 256;
-		d->vram[ob_ofs + 4] = (int)y & 255;
+		d->vram[ob_ofs + 4] = y & 255;
 		d->vram[ob_ofs + 5] = y / 256;
 		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
-		if ((d->ta[0] >> 28) == 0xf) {
-			/*  Last point.  */
-			d->vram[ob_ofs + 0] = 2;
-			REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
-		}
 		break;
 	case 0x0:
 	default:
@@ -785,6 +799,7 @@ DEVICE_TICK(pvr_fb)
 
 	case 2: /*  RGB888 (24-bit)  */
 		for (y=d->fb_update_y1; y<=d->fb_update_y2; y++) {
+			/*  TODO: Reverse colors, like in the 32-bit case?  */
 			memcpy(fb+fb_ofs, vram+vram_ofs, 3*pixels_to_copy);
 			vram_ofs += bytes_per_line;
 			fb_ofs += d->fb->bytes_per_line;
@@ -795,9 +810,9 @@ DEVICE_TICK(pvr_fb)
 		for (y=d->fb_update_y1; y<=d->fb_update_y2; y++) {
 			int fo = fb_ofs, vo = vram_ofs;
 			for (p=0; p<pixels_to_copy; p++) {
-				fb[fo] = vram[vo];
+				fb[fo] = vram[vo+2];
 				fb[fo+1] = vram[vo+1];
-				fb[fo+2] = vram[vo+2];
+				fb[fo+2] = vram[vo+0];
 				fo += 3; vo += 4;
 			}
 			vram_ofs += bytes_per_line;
@@ -823,6 +838,28 @@ DEVICE_TICK(pvr_fb)
 	/*  Clear the PVR's update region:  */
 	d->fb_update_x1 = d->fb_update_x2 =
 	    d->fb_update_y1 = d->fb_update_y2 = -1;
+}
+
+
+DEVICE_ACCESS(pvr_vram_alt)
+{
+	struct pvr_data *d = extra;
+
+	if (writeflag == MEM_READ) {
+		/*  TODO: Copy from real vram!  */
+		fatal("pvr_vram_alt: copy from real vram!\n");
+		memcpy(data, d->vram_alt + relative_addr, len);
+		return 1;
+	}
+
+	/*
+	 *  Write to alternative VRAM:
+	 */
+
+	/*  TODO: Convert to real vram!  */
+	memcpy(d->vram + relative_addr, data, len);
+
+	return 1;
 }
 
 
@@ -874,6 +911,13 @@ DEVINIT(pvr)
 	    8 * 1048576, dev_pvr_vram_access, (void *)d,
 	    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK
 	    | DM_READS_HAVE_NO_SIDE_EFFECTS, d->vram);
+
+	/*  8 MB video RAM, when accessed at 0xa4000000:  */
+	d->vram_alt = zeroed_alloc(8 * 1048576);
+	memory_device_register(machine->memory, "pvr_vram", 0x04000000,
+	    8 * 1048576, dev_pvr_vram_alt_access, (void *)d,
+	    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK
+	    | DM_READS_HAVE_NO_SIDE_EFFECTS, d->vram_alt);
 
 	memory_device_register(machine->memory, "pvr_ta",
 	    0x10000000, sizeof(d->ta), dev_pvr_ta_access, d, DM_DEFAULT, NULL);

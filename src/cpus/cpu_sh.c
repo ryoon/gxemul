@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.42 2006-10-22 04:20:53 debug Exp $
+ *  $Id: cpu_sh.c,v 1.43 2006-10-24 07:16:30 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -293,8 +293,9 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		debug("cpu%i: pr  = 0x%08"PRIx32, x, (uint32_t)cpu->cd.sh.pr);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		debug("cpu%i: mach = 0x%08"PRIx32"  macl = 0x%08"PRIx32"\n", x,
-		    (uint32_t)cpu->cd.sh.mach, (uint32_t)cpu->cd.sh.macl);
+		debug("cpu%i: mach = 0x%08"PRIx32"  macl = 0x%08"PRIx32
+		    "  gbr = 0x%08"PRIx32"\n", x, (uint32_t)cpu->cd.sh.mach,
+		    (uint32_t)cpu->cd.sh.macl, (uint32_t)cpu->cd.sh.gbr);
 
 		for (i=0; i<nregs; i++) {
 			if ((i % 4) == 0)
@@ -329,8 +330,8 @@ void sh_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 	if (coprocs & 2) {
 		/*  System registers, etc:  */
-		debug("cpu%i: vbr = 0x%08"PRIx32"  sgr = 0x%08"PRIx32"\n",
-		    x, cpu->cd.sh.vbr, cpu->cd.sh.sgr);
+		debug("cpu%i: vbr = 0x%08"PRIx32"  sgr = 0x%08"PRIx32
+		    "\n", x, cpu->cd.sh.vbr, cpu->cd.sh.sgr);
 		debug("cpu%i: spc = 0x%08"PRIx32"  ssr = 0x%08"PRIx32"\n",
 		    x, cpu->cd.sh.spc, cpu->cd.sh.ssr);
 		debug("cpu%i: expevt = 0x%"PRIx32"  intevt = 0x%"PRIx32
@@ -905,7 +906,13 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		debug("%s\t0x%x\n", hi4==0xa? "bra":"bsr", (int)addr);
 		break;
 	case 0xc:
-		if (r8 == 0x3)
+		if (r8 == 0x0)
+			debug("mov.b\tr0,@(%i,gbr)\n", lo8);
+		else if (r8 == 0x1)
+			debug("mov.w\tr0,@(%i,gbr)\n", lo8 * 2);
+		else if (r8 == 0x2)
+			debug("mov.l\tr0,@(%i,gbr)\n", lo8 * 4);
+		else if (r8 == 0x3)
 			debug("trapa\t#%i\n", (uint8_t)lo8);
 		else if (r8 == 0x7) {
 			addr = lo8 * 4 + (dumpaddr & ~3) + 4;
@@ -975,10 +982,16 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		else if (lo4 == 0xb)
 			debug("fmov\t%sr%i,@-r%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r4, r8);
-		else if (lo4 == 0xc)
-			debug("fmov\t%sr%i,%sr%i\n",
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r4,
-			    cpu->cd.sh.fpscr & SH_FPSCR_SZ? "d" : "f", r8);
+		else if (lo4 == 0xc) {
+			char *n1 = "fr", *n2 = "fr";
+			if (cpu->cd.sh.fpscr & SH_FPSCR_SZ) {
+				n1 = (r4 & 1)? "xd" : "dr";
+				n2 = (r8 & 1)? "xd" : "dr";
+				r4 &= ~1; r8 &= ~1;
+			}
+			debug("fmov\t%s%i,%s%i\n", n1, r4, n2, r8);
+		} else if (lo8 == 0x1d)
+			debug("flds\tfr%i,fpul\n", r8);
 		else if (lo8 == 0x2d)
 			debug("float\tfpul,%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
@@ -998,6 +1011,8 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("fschg\n");
 		else if (iword == 0xfbfd)
 			debug("frchg\n");
+		else if ((iword & 0xf3ff) == 0xf1fd)
+			debug("ftrv\txmtrx,fv%i\n", r8 & 0xc);
 		else if (lo4 == 0xe)
 			debug("fmac\tfr0,fr%i,fr%i\n", r4, r8);
 		else

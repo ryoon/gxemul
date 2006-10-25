@@ -1,4 +1,4 @@
-$Id: TODO,v 1.400 2006-10-24 07:16:30 debug Exp $
+$Id: TODO,v 1.401 2006-10-25 09:57:36 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -211,6 +211,13 @@ Algor:
 HPCmips:
 	x)  Mouse/pad support! :)
 	x)  A NIC? (As a PCMCIA device?)
+
+AVR:
+	o)  Everything.
+
+AVR32:
+	o)  Everything. It would be good if there was NetBSD/avr32 to
+	    experiment with...
 
 ARM:
 	o)  See netwinder_reset() in NetBSD; the current "an internal error

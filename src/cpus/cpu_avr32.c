@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr32.c,v 1.1 2006-10-25 09:24:06 debug Exp $
+ *  $Id: cpu_avr32.c,v 1.2 2006-10-25 10:47:27 debug Exp $
  *
  *  AVR32 CPU emulation.
  */
@@ -58,6 +58,15 @@ static char *avr32_single_reg_op_names[32] = {
 	"UNKNOWN_14", "UNKNOWN_15", "UNKNOWN_16", "UNKNOWN_17",
 	"UNKNOWN_18", "UNKNOWN_19", "UNKNOWN_1a", "UNKNOWN_1b",
 	"UNKNOWN_1c", "UNKNOWN_1d", "UNKNOWN_1e", "UNKNOWN_1f"  };
+static char *avr32_dual_reg_op0_names[32] = {
+	"add",        "sub",        "rsub",       "cp.w",
+	"or",         "eor",        "and",        "tst",
+	"andn",       "mov",        "st.w",       "st.h",
+	"st.b",       "st.w",       "st.h",       "st.b",
+	"ld.w",       "ld.sh",      "ld.uh",      "ld.ub" /* ++ */,
+	"ld.w",       "ld.sh",      "ld.uh",      "ld.ub" /* -- */,
+	"ld.ub",      "ld.ub",      "ld.ub",      "ld.ub",
+	"ld.ub",      "ld.ub",      "ld.ub",      "ld.ub"  };
 
 /*
  *  avr32_cpu_new():
@@ -305,6 +314,70 @@ int avr32_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 	r0 = iword & 0xf;
 
 	switch (main_opcode) {
+
+	case 0:
+		/*  [8.2.1]  Two Register Instructions:  */
+		switch (sub_opcode) {
+
+		case 0x0a:
+		case 0x0b:
+		case 0x0c:
+			IWORD16;
+			debug("%s\t%s++,%s\n",
+			    avr32_dual_reg_op0_names[sub_opcode],
+			    avr32_gpr_names[r0], avr32_gpr_names[r9]);
+			break;
+
+		case 0x0d:
+		case 0x0e:
+		case 0x0f:
+			IWORD16;
+			debug("%s\t--%s,%s\n",
+			    avr32_dual_reg_op0_names[sub_opcode],
+			    avr32_gpr_names[r0], avr32_gpr_names[r9]);
+			break;
+
+		case 0x10:
+		case 0x11:
+		case 0x12:
+		case 0x13:
+			IWORD16;
+			debug("%s\t%s,%s++\n",
+			    avr32_dual_reg_op0_names[sub_opcode],
+			    avr32_gpr_names[r0], avr32_gpr_names[r9]);
+			break;
+
+		case 0x14:
+		case 0x15:
+		case 0x16:
+		case 0x17:
+			IWORD16;
+			debug("%s\t%s,--%s\n",
+			    avr32_dual_reg_op0_names[sub_opcode],
+			    avr32_gpr_names[r0], avr32_gpr_names[r9]);
+			break;
+
+		case 0x18:
+		case 0x19:
+		case 0x1a:
+		case 0x1b:
+		case 0x1c:
+		case 0x1d:
+		case 0x1e:
+		case 0x1f:
+			IWORD16;
+			debug("%s\t%s,%s[%i]\n",
+			    avr32_dual_reg_op0_names[sub_opcode],
+			    avr32_gpr_names[r0], avr32_gpr_names[r9],
+			    sub_opcode & 7);
+			break;
+
+		default:IWORD16;
+			debug("%s\t%s,%s\n",
+			    avr32_dual_reg_op0_names[sub_opcode],
+			    avr32_gpr_names[r0], avr32_gpr_names[r9]);
+		}
+		break;
 
 	case 2:
 		switch (opcode_class) {

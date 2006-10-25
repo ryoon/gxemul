@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.21 2006-10-22 04:20:53 debug Exp $
+ *  $Id: machine_test.c,v 1.22 2006-10-25 09:24:06 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -184,6 +184,54 @@ MACHINE_REGISTER(testarm)
 	machine_entry_add_alias(me, "testarm");
 }
 
+
+
+MACHINE_SETUP(bareavr32)
+{
+	machine->machine_name = "Generic \"bare\" AVR32 machine";
+	machine->stable = 1;
+}
+
+
+MACHINE_SETUP(testavr32)
+{
+	machine->machine_name = "AVR32 test machine";
+	machine->stable = 1;
+
+	/*  TODO: interrupts  */
+
+	default_test(machine, cpu);
+}
+
+
+MACHINE_DEFAULT_CPU(bareavr32)
+{
+	machine->cpu_name = strdup("AVR32A");
+}
+
+
+MACHINE_DEFAULT_CPU(testavr32)
+{
+	machine->cpu_name = strdup("AVR32A");
+}
+
+
+MACHINE_REGISTER(bareavr32)
+{
+	MR_DEFAULT(bareavr32, "Generic \"bare\" AVR32 machine",
+	    ARCH_AVR32, MACHINE_BAREAVR32);
+
+	machine_entry_add_alias(me, "bareavr32");
+}
+
+
+MACHINE_REGISTER(testavr32)
+{
+	MR_DEFAULT(testavr32, "Test-machine for AVR32",
+	    ARCH_AVR32, MACHINE_TESTAVR32);
+
+	machine_entry_add_alias(me, "testavr32");
+}
 
 
 MACHINE_SETUP(barehppa)

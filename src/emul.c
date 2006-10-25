@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.269 2006-09-21 11:53:26 debug Exp $
+ *  $Id: emul.c,v 1.270 2006-10-25 09:24:05 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1293,6 +1293,14 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			cpu->pc &= 0xfffff;
 			if (cpu->pc & 1) {
 				fatal("AVR: lowest bit of pc set: TODO\n");
+				exit(1);
+			}
+			break;
+
+		case ARCH_AVR32:
+			cpu->pc = (uint32_t) cpu->pc;
+			if (cpu->pc & 1) {
+				fatal("AVR32: lowest bit of pc set: TODO\n");
 				exit(1);
 			}
 			break;

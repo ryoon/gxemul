@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: generate_head.c,v 1.23 2006-08-11 17:43:30 debug Exp $
+ *  $Id: generate_head.c,v 1.24 2006-10-25 09:24:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -148,6 +148,9 @@ int main(int argc, char *argv[])
 	        printf("static struct %s_instr_call nothing_call = { "
 		    "instr(nothing), {0} };\n", a);
 	} else if (strcasecmp(argv[1], "sh") == 0) {
+	        printf("static struct %s_instr_call nothing_call = { "
+		    "instr(nothing), {0,0} };\n", a);
+	} else if (strcasecmp(argv[1], "avr32") == 0) {
 	        printf("static struct %s_instr_call nothing_call = { "
 		    "instr(nothing), {0,0} };\n", a);
 	} else {

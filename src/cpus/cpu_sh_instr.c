@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.32 2006-10-27 13:12:21 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.33 2006-10-27 15:51:36 debug Exp $
  *
  *  SH instructions.
  *
@@ -76,7 +76,36 @@ X(nop)
  */
 X(sleep)
 {
-	/*  TODO  */
+	/*
+	 *  If there is an interrupt, then just return. Otherwise
+	 *  re-run the sleep instruction (after a delay).
+	 */
+	if (cpu->cd.sh.int_to_assert > 0 && !(cpu->cd.sh.sr & SH_SR_BL)
+	    && ((cpu->cd.sh.sr & SH_SR_IMASK) >> SH_SR_IMASK_SHIFT)
+	    < cpu->cd.sh.int_level)
+		return;
+
+	cpu->cd.sh.next_ic = ic;
+	cpu->is_halted = 1;
+	cpu->has_been_idling = 1;
+
+	/*
+	 *  There was no interrupt. Let the host sleep for a while.
+	 *
+	 *  TODO:
+	 *
+	 *  Think about how to actually implement this usleep stuff,
+	 *  in an SMP and/or timing accurate environment.
+	 */
+
+	if (cpu->machine->ncpus == 1) {
+		static int x = 0;
+		if ((++x) == 600) {
+			usleep(1);
+			x = 0;
+		}
+		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;
+	}
 }
 
 

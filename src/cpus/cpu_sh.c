@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.48 2006-10-27 15:05:30 debug Exp $
+ *  $Id: cpu_sh.c,v 1.49 2006-10-27 15:51:36 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #include "cpu.h"
 #include "device.h"
@@ -426,8 +427,8 @@ int sh_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 		cpu->cd.sh.int_level = (cpu->cd.sh.intc_iprc >> 4) & 0xf;
 
 	irq_nr /= 0x20;
-	word_index = irq_nr / (sizeof(unsigned long)*8);
-	bit_index = irq_nr & ((sizeof(unsigned long)*8) - 1);
+	word_index = irq_nr / (sizeof(uint32_t)*8);
+	bit_index = irq_nr & ((sizeof(uint32_t)*8) - 1);
 
 	cpu->cd.sh.int_pending[word_index] |= (1 << bit_index);
 
@@ -455,13 +456,13 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 		for (i=irq_nr+0x20; i<max; i+=0x20) {
 			int j = i / 0x20;
-			int word_index = j / (sizeof(unsigned long)*8);
-			int bit_index = j & ((sizeof(unsigned long)*8) - 1);
+			int word_index = j / (sizeof(uint32_t)*8);
+			int bit_index = j & ((sizeof(uint32_t)*8) - 1);
 
 			/*  Skip entire word if no bits are set:  */
 			if (bit_index == 0 &&
 			    cpu->cd.sh.int_pending[word_index] == 0)
-				i += (sizeof(unsigned long)*8 - 1) * 0x20;
+				i += (sizeof(uint32_t)*8 - 1) * 0x20;
 			else if (cpu->cd.sh.int_pending[word_index]
 			    & (1 << bit_index)) {
 				cpu->cd.sh.int_to_assert = i;
@@ -471,8 +472,8 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 	}
 
 	irq_nr /= 0x20;
-	word_index = irq_nr / (sizeof(unsigned long)*8);
-	bit_index = irq_nr & ((sizeof(unsigned long)*8) - 1);
+	word_index = irq_nr / (sizeof(uint32_t)*8);
+	bit_index = irq_nr & ((sizeof(uint32_t)*8) - 1);
 
 	cpu->cd.sh.int_pending[word_index] &= ~(1 << bit_index);
 
@@ -549,6 +550,17 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr)
 		/*  TODO  */
 
 		expevt = EXPEVT_RESET_POWER;
+	}
+
+	if (cpu->is_halted) {
+		/*
+		 *  If the exception occurred on a 'sleep' instruction, then let
+		 *  the instruction following the sleep instruction be the one
+		 *  where execution resumes when the interrupt service routine
+		 *  returns.
+		 */
+		cpu->is_halted = 0;
+		cpu->pc += sizeof(uint16_t);
 	}
 
 	if (cpu->delay_slot) {

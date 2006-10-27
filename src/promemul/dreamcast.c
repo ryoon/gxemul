@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.8 2006-10-22 05:00:08 debug Exp $
+ *  $Id: dreamcast.c,v 1.9 2006-10-27 04:22:44 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -49,7 +49,8 @@
 #ifdef ENABLE_SH
 
 
-#define	DREAMCAST_ROMFONT_BASE		0xa0002000
+/*  The ROM FONT seems to be located just after 1MB, in a real Dreamcast:  */
+#define	DREAMCAST_ROMFONT_BASE		0x80100020
 
 
 /*

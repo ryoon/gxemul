@@ -25,12 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.16 2006-10-22 04:20:53 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.17 2006-10-27 04:22:44 debug Exp $
  *
  *  Dreamcast.
- *
- *  This machine mode is primarily meant for experimenting with
- *  NetBSD/dreamcast. (Not playing games. :-)
  */
 
 #include <stdio.h>
@@ -67,12 +64,14 @@ MACHINE_SETUP(dreamcast)
 	 *  Physical address layout on the Dreamcast, according to a
 	 *  combination of sources:  NetBSD sources, KallistOS sources,
 	 *  http://www.boob.co.uk/docs/Dreamcast_memory.txt, and
-	 *  http://www.ludd.luth.se/~jlo/dc/memory.txt:
+	 *  http://www.ludd.luth.se/~jlo/dc/memory.txt, and possibly some
+	 *  others:
 	 *
 	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
 	 *  0x00200000 - 0x003fffff	Flash (256 KB)
 	 *  0x005f6900 - ...		ASIC registers
-	 *  0x005f8000 - ...		PVR registers
+	 *  0x005f6c00 - ...		Maple registers
+	 *  0x005f8000 - 0x005f9fff	PVR registers
 	 *  0x00700000 - ...		SPU registers
 	 *  0x00710000 - 0x00710007	RTC registers
 	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)
@@ -81,9 +80,10 @@ MACHINE_SETUP(dreamcast)
 	 *  0x04000000 - 0x047fffff	Video RAM (*)
 	 *  0x05000000 - 0x057fffff	Video RAM (8 MB)
 	 *  0x0c000000 - 0x0cffffff	RAM (16 MB)
-	 *  0x10000000 - ...		Tile accelerator (?)
+	 *  0x0e000000 - 0x0effffff	Copy of RAM? (*2)
+	 *  0x10000000 - ...		Tile accelerator command area
 	 *  0x10800000 - ...		Write-only mirror of Video RAM
-	 *  0x14000000 - ...		G2 (?)
+	 *  0x14000000 - ...		G2 (?)  Or Modem/Extension port?
 	 *
 	 *  (*) = with banks 0 and 1 switched; 64-bit read/write access...
 	 */
@@ -91,11 +91,12 @@ MACHINE_SETUP(dreamcast)
 	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
 
 	/*  The "luftvarg" 4KB intro uses memory at paddr 0x0ef00000...  */
-	/*  (TODO: Mirror of 0x0c000000?)  */
+	/*  (*2)   (TODO: Make this a _mirror_ of 0x0c000000?)  */
 	dev_ram_init(machine, 0x0e000000, 16 * 1048576, DEV_RAM_RAM, 0);
 
 	device_add(machine, "pvr");
 	device_add(machine, "dreamcast_asic");
+	device_add(machine, "dreamcast_maple");
 	device_add(machine, "dreamcast_rtc");
 
 	if (!machine->prom_emulation)

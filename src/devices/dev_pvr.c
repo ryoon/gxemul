@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.9 2006-10-24 08:34:58 debug Exp $
+ *  $Id: dev_pvr.c,v 1.10 2006-10-27 04:22:44 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -195,7 +195,7 @@ static void pvr_render(struct pvr_data *d)
 {
 	int ob_ofs = REG(PVRREG_OB_ADDR);
 	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
-	int wf_point_nr;
+	int wf_point_nr, texture = 0;
 	int wf_x[4], wf_y[4];
 
 	debug("[ pvr_render: rendering to FB offset 0x%x ]\n", fb_base);
@@ -220,6 +220,7 @@ static void pvr_render(struct pvr_data *d)
 
 			wf_point_nr ++;
 			if (wf_point_nr == 4) {
+#if 1
 				line(d, wf_x[0], wf_y[0], wf_x[1], wf_y[1]);
 				line(d, wf_x[0], wf_y[0], wf_x[2], wf_y[2]);
 				line(d, wf_x[1], wf_y[1], wf_x[3], wf_y[3]);
@@ -227,10 +228,22 @@ static void pvr_render(struct pvr_data *d)
 				wf_point_nr = 2;
 				wf_x[0] = wf_x[2]; wf_y[0] = wf_y[2];
 				wf_x[1] = wf_x[3]; wf_y[1] = wf_y[3];
+#else
+				draw_texture(d, wf_x[0], wf_y[0],
+				    wf_x[1], wf_y[1],
+				    wf_x[2], wf_y[2],
+				    wf_x[3], wf_y[3], texture);
+#endif
 			}
 
 		} else if (cmd == 2) {
 			wf_point_nr = 0;
+			texture = d->vram[ob_ofs+4] + (d->vram[ob_ofs+5]
+			    << 8) + (d->vram[ob_ofs+6] << 16) +
+			    (d->vram[ob_ofs+7] << 24);
+			texture <<= 3;
+			texture &= 0x7fffff;
+			printf("TEXTURE = %x\n", texture);
 		} else {
 			fatal("pvr_render: internal error, unknown cmd\n");
 		}
@@ -305,6 +318,10 @@ static void pvr_ta_command(struct pvr_data *d)
 	switch (d->ta[0] >> 28) {
 	case 0x8:
 		d->vram[ob_ofs + 0] = 2;
+		d->vram[ob_ofs + 4] = d->ta[3];
+		d->vram[ob_ofs + 5] = d->ta[3] >> 8;
+		d->vram[ob_ofs + 6] = d->ta[3] >> 16;
+		d->vram[ob_ofs + 7] = d->ta[3] >> 24;
 		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
 		break;
 	case 0xe:
@@ -858,6 +875,7 @@ DEVICE_ACCESS(pvr_vram_alt)
 {
 	struct pvr_data_alt *d_alt = extra;
 	struct pvr_data *d = d_alt->d;
+	int i;
 
 	if (writeflag == MEM_READ) {
 		/*  TODO: Copy from real vram!  */
@@ -867,11 +885,18 @@ DEVICE_ACCESS(pvr_vram_alt)
 	}
 
 	/*
-	 *  Write to alternative VRAM:
+	 *  Convert writes to alternative VRAM, into normal writes:
 	 */
 
-	/*  TODO: Convert to real vram!  */
-	memcpy(d->vram + relative_addr, data, len);
+	for (i=0; i<len; i++) {
+		int addr = relative_addr + i;
+		uint8_t v = data[i];
+
+		addr = ((addr & 4) << 20) | (addr & 3)
+		    | ((addr & 0x7ffff8) >> 1);
+
+		d->vram[addr] = v;
+	}
 
 	return 1;
 }
@@ -930,8 +955,7 @@ DEVINIT(pvr)
 	d->vram_alt = zeroed_alloc(8 * 1048576);
 	memory_device_register(machine->memory, "pvr_alt_vram", 0x04000000,
 	    8 * 1048576, dev_pvr_vram_alt_access, (void *)d_alt,
-	    DM_DYNTRANS_OK | DM_DYNTRANS_WRITE_OK
-	    | DM_READS_HAVE_NO_SIDE_EFFECTS, d->vram_alt);
+	    DM_DEFAULT, NULL);
 
 	memory_device_register(machine->memory, "pvr_ta",
 	    0x10000000, sizeof(d->ta), dev_pvr_ta_access, d, DM_DEFAULT, NULL);

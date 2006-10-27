@@ -1,4 +1,4 @@
-$Id: TODO,v 1.401 2006-10-25 09:57:36 debug Exp $
+$Id: TODO,v 1.402 2006-10-27 04:22:44 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -95,13 +95,14 @@ SuperH:
 	    and so on...
 	x)  SH4 interrupt controller
 	x)  SH4 timers: more interrupt styles?
-	x)  Make sure that XD floating point loads/stores/moves are correct!
+	x)  SH4 BSC (Bus State Controller)
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  ldtlb: Don't invalidate everything.
 	x)  TLB access via memory: Don't invalidate everything.
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
 	x)  Floating point exception correctness.
+	x)  Floating point speed!
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Dreamcast:
@@ -109,6 +110,7 @@ Dreamcast:
 		x)  Registers controlling the framebuffer size/type.
 		x)  3D acceleration?
 	x)  Maple bus
+	x)  ASIC
 	x)  Get NetBSD/dreamcast, Linux/dreamcast, and homebrew demos running
 
 Transputer:

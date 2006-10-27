@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1402 2006-10-25 10:00:52 debug Exp $
+$Id: HISTORY,v 1.1403 2006-10-27 04:22:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3123,3 +3123,4 @@ Changelog for GXemul:
 		In memory_device_dyntrans_access(), only the currently used
 		range is now invalidated, and not the entire device range.
 20061025	Adding a dummy AVR32 cpu mode skeleton.
+20061026	Various Dreamcast updates; beginning on a Maple bus controller.

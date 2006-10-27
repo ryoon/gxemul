@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.12 2006-10-21 09:25:24 debug Exp $
+ *  $Id: dev_sh4.c,v 1.13 2006-10-27 04:22:44 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -43,6 +43,7 @@
 #include "misc.h"
 #include "timer.h"
 
+#include "sh4_bscreg.h"
 #include "sh4_cache.h"
 #include "sh4_exception.h"
 #include "sh4_mmu.h"
@@ -466,6 +467,16 @@ DEVICE_ACCESS(sh4)
 
 			d->timer_control[timer_nr] = idata;
 		}
+		break;
+
+
+	/*************************************************/
+	/*  BSC: Bus State Controller                    */
+
+	case SH4_RFCR:
+		/*  TODO  */
+		fatal("[ SH4_RFCR: TODO ]\n");
+		odata = 0x11;
 		break;
 
 

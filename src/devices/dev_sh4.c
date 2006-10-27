@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.14 2006-10-27 13:12:21 debug Exp $
+ *  $Id: dev_sh4.c,v 1.15 2006-10-27 15:05:31 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -130,8 +130,10 @@ DEVICE_TICK(sh4)
 	int i;
 
 	for (i=0; i<N_SH4_TIMERS; i++)
-		if (d->timer_interrupts_pending[i] > 0)
+		if (d->timer_interrupts_pending[i] > 0) {
 			cpu_interrupt(cpu, SH_INTEVT_TMU0_TUNI0 + 0x20 * i);
+			d->tcr[i] |= TCR_UNF;
+		}
 }
 
 

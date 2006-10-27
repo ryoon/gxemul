@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.47 2006-10-27 14:14:14 debug Exp $
+ *  $Id: cpu_sh.c,v 1.48 2006-10-27 15:05:30 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -446,14 +446,14 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 		/*
 		 *  Rescan all interrupts to see if any are still asserted.
 		 *
-		 *  Note: The scan only has to go from irq_nr to the max
+		 *  Note: The scan only has to go from irq_nr + 0x20 to the max
 		 *        index, since any lower interrupt cannot be asserted
 		 *        at this time.
 		 */
 		int i, max = 0x1000;
 		cpu->cd.sh.int_to_assert = 0;
 
-		for (i=irq_nr; i<max; i+=0x20) {
+		for (i=irq_nr+0x20; i<max; i+=0x20) {
 			int j = i / 0x20;
 			int word_index = j / (sizeof(unsigned long)*8);
 			int bit_index = j & ((sizeof(unsigned long)*8) - 1);
@@ -474,7 +474,7 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 	word_index = irq_nr / (sizeof(unsigned long)*8);
 	bit_index = irq_nr & ((sizeof(unsigned long)*8) - 1);
 
-	cpu->cd.sh.int_pending[word_index] |= (1 << bit_index);
+	cpu->cd.sh.int_pending[word_index] &= ~(1 << bit_index);
 
 	return 0;
 }

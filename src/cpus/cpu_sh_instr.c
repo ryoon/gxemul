@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.33 2006-10-27 15:51:36 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.34 2006-10-27 16:00:03 debug Exp $
  *
  *  SH instructions.
  *
@@ -2387,6 +2387,8 @@ X(tas_b_rn)
 {
 	uint32_t addr = reg(ic->arg[1]);
 	uint8_t byte, newbyte;
+
+	SYNCH_PC;
 
 	if (!cpu->memory_rw(cpu, cpu->mem, addr, &byte, 1, MEM_READ,
 	   CACHE_DATA)) {

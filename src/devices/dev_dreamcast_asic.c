@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_asic.c,v 1.1 2006-10-21 05:49:06 debug Exp $
+ *  $Id: dev_dreamcast_asic.c,v 1.2 2006-10-27 14:14:14 debug Exp $
  *  
  *  Dreamcast ASIC.
  *
@@ -44,30 +44,65 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "dreamcast_sysasicvar.h"
+#include "sh4_exception.h"
+
 
 #define debug fatal
 
+#define	DREAMCAST_ASIC_TICK_SHIFT	15
+
 struct dreamcast_asic_data {
-	int		dummy;
+	uint32_t	pending_irq[3];
 };
+
+
+DEVICE_TICK(dreamcast_asic)
+{
+	struct dreamcast_asic_data *d = (struct dreamcast_asic_data *) extra;
+	int i;
+
+	for (i=0; i<3; i++)
+		if (d->pending_irq[3] != 0)
+			cpu_interrupt(cpu, SH_INTEVT_IRL9 + 0x40 * i);
+}
 
 
 DEVICE_ACCESS(dreamcast_asic)
 {
-	/*  struct dreamcast_asic_data *d =
-	    (struct dreamcast_asic_data *) extra;  */
+	struct dreamcast_asic_data *d = (struct dreamcast_asic_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	int r;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 
-case 0:
-/*  TODO: Various bits describing events of the PVR, Maple, the
-GD-ROM drive, etc. For now, let's just say that lots of random
-event occur all the time. :)  */
-odata = random();
+	case 0:
+	case 4:
+	case 8:	r = relative_addr / 4;
+		if (writeflag == MEM_READ) {
+			odata = d->pending_irq[r];
+			d->pending_irq[r] = 0;
+			cpu_interrupt_ack(cpu, SH_INTEVT_IRL9 + 0x40 * r);
+		} else {
+			/*  Should only be used interally by GXemul:  */
+			if (idata & 0x100000000ULL) {
+				/*  Set specific bits:  */
+				d->pending_irq[r] |= idata;
+				if (d->pending_irq[r] != 0)
+					cpu_interrupt(cpu,
+					    SH_INTEVT_IRL9 + 0x40 * r);
+			} else {
+				/*  Clear interrupt assertions:  */
+				d->pending_irq[r] &= ~idata;
+				if (d->pending_irq[r] == 0)
+					cpu_interrupt_ack(cpu,
+					    SH_INTEVT_IRL9 + 0x40 * r);
+			}
+		}
+		break;
 
 	default:if (writeflag == MEM_READ) {
 			fatal("[ dreamcast_asic: read from addr 0x%x ]\n",
@@ -96,8 +131,11 @@ DEVINIT(dreamcast_asic)
 	}
 	memset(d, 0, sizeof(struct dreamcast_asic_data));
 
-	memory_device_register(machine->memory, devinit->name,
-	    0x5f6900, 0x100, dev_dreamcast_asic_access, d, DM_DEFAULT, NULL);
+	memory_device_register(machine->memory, devinit->name, SYSASIC_BASE,
+	    SYSASIC_SIZE, dev_dreamcast_asic_access, d, DM_DEFAULT, NULL);
+
+	machine_add_tickfunction(devinit->machine, dev_dreamcast_asic_tick, d,
+	    DREAMCAST_ASIC_TICK_SHIFT, 0.0);
 
 	return 1;
 }

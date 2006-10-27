@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.46 2006-10-27 13:12:21 debug Exp $
+ *  $Id: cpu_sh.c,v 1.47 2006-10-27 14:14:14 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -441,11 +441,6 @@ int sh_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	int word_index, bit_index;
-
-	if (irq_nr < cpu->cd.sh.int_to_assert) {
-		fatal("sh_cpu_interrupt_ack(): Internal error.\n");
-		exit(1);
-	}
 
 	if (cpu->cd.sh.int_to_assert == irq_nr) {
 		/*

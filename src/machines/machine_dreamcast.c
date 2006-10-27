@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.17 2006-10-27 04:22:44 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.18 2006-10-27 09:57:53 debug Exp $
  *
  *  Dreamcast.
  */
@@ -72,6 +72,7 @@ MACHINE_SETUP(dreamcast)
 	 *  0x005f6900 - ...		ASIC registers
 	 *  0x005f6c00 - ...		Maple registers
 	 *  0x005f8000 - 0x005f9fff	PVR registers
+	 *  0x00600000 - ...		LAN Adapter registers
 	 *  0x00700000 - ...		SPU registers
 	 *  0x00710000 - 0x00710007	RTC registers
 	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)

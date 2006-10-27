@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.1 2006-10-27 04:22:44 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.2 2006-10-27 09:58:14 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -34,6 +34,9 @@
  *  DMA transfer sends one or more requests, and for each of these requests
  *  a response is generated (or a timeout if there was no device at the
  *  specific port).
+ *
+ *  See Marcus Comstedt's page (http://mc.pp.se/dc/maplebus.html) for more
+ *  details about the DMA request/responses.
  *
  *  TODO:
  *	"Registry" for devices (e.g. attach a two Controllers, one Keyboard,
@@ -56,15 +59,67 @@
 
 #include "dreamcast_maple.h"
 
+#define	N_MAPLE_PORTS		4
+
 
 #define debug fatal
 
+struct maple_device {
+	struct maple_devinfo devinfo;
+};
+
 struct dreamcast_maple_data {
+	/*  Registers:  */
 	uint32_t	dmaaddr;
 	int		enable;
 	int		timeout;
+
+	/*  Attached devices:  */
+	struct maple_device *device[N_MAPLE_PORTS];
 };
 
+
+/*
+ *  Maple devices:
+ *
+ *  TODO: Figure out strings and numbers of _real_ Maple devices.
+ */
+static struct maple_device maple_device_controller = {
+	{
+		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_CONTROLLER)),	/*  di_func  */
+		{ 0,0,0 },			/*  di_function_data[3]  */
+		0,				/*  di_area_code  */
+		0,				/*  di_connector_direction  */
+		"Dreamcast Controller",		/*  di_product_name  */
+		"di_product_license",		/*  di_product_license  */
+		LE16_TO_HOST(100),		/*  di_standby_power  */
+		LE16_TO_HOST(100)		/*  di_max_power  */
+	}
+};
+static struct maple_device maple_device_keyboard = {
+	{
+		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_KEYBOARD)),/*  di_func  */
+		{ LE32_TO_HOST(2),0,0 },	/*  di_function_data[3]  */
+		0,				/*  di_area_code  */
+		0,				/*  di_connector_direction  */
+		"Keyboard",			/*  di_product_name  */
+		"di_product_license",		/*  di_product_license  */
+		LE16_TO_HOST(100),		/*  di_standby_power  */
+		LE16_TO_HOST(100)		/*  di_max_power  */
+	}
+};
+static struct maple_device maple_device_mouse = {
+	{
+		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_MOUSE)),/*  di_func  */
+		{ 0,0,0 },			/*  di_function_data[3]  */
+		0,				/*  di_area_code  */
+		0,				/*  di_connector_direction  */
+		"Dreamcast Mouse",		/*  di_product_name  */
+		"di_product_license",		/*  di_product_license  */
+		LE16_TO_HOST(100),		/*  di_standby_power  */
+		LE16_TO_HOST(100)		/*  di_max_power  */
+	}
+};
 
 /*
  *  maple_do_dma_xfer():
@@ -103,7 +158,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 	 */
 	for (;;) {
 		uint8_t buf[8];
-		uint32_t receive_addr;
+		uint32_t receive_addr, response_code;
 		int datalen, port, last_message, cmd, to, from, datalen_cmd;
 		int unit;
 
@@ -113,12 +168,19 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 		addr += 8;
 
 		datalen = buf[0] * sizeof(uint32_t);
+		if (buf[1] & 2) {
+			fatal("[ dreamcast_maple: TODO: GUN bit. ]\n");
+			/*  TODO: Set some bits in A05F80C4 to indicate
+			    which raster position a lightgun is pointing
+			    at!  */
+			exit(1);
+		}
 		port = buf[2];
 		last_message = buf[3] & 0x80;
 		receive_addr = buf[4] + (buf[5] << 8) + (buf[6] << 16)
 		    + (buf[7] << 24);
 
-		if (receive_addr & 0xf000001f)
+		if (receive_addr & 0xe000001f)
 			fatal("[ dreamcast_maple: WARNING! receive address 0x"
 			    "%08"PRIx32" isn't valid! ]\n", receive_addr);
 
@@ -134,17 +196,16 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 
 		/*  Decode the unit number:  */
 		unit = 0;
-		switch (from & 0x2f) {
-		case 0x00:
+		switch (to & 0x3f) {
 		case 0x20: unit = 0; break;
 		case 0x01: unit = 1; break;
 		case 0x02: unit = 2; break;
 		case 0x04: unit = 3; break;
 		case 0x08: unit = 4; break;
 		case 0x10: unit = 5; break;
-		default: fatal("[ dreamcast_maple: WARNING! multiple "
-			    "units? Not yet implemented. from=0x%02x ]\n",
-			    from);
+		default: fatal("[ dreamcast_maple: ERROR! multiple "
+			    "units? Not yet implemented. to = 0x%02x ]\n", to);
+			exit(1);
 		}
 
 		debug("[ dreamcast_maple: cmd=0x%02x, port=%c, unit=%i"
@@ -156,7 +217,41 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 		switch (cmd) {
 
 		case MAPLE_COMMAND_DEVINFO:
-			fatal("[ dreamcast_maple: DEVINFO: TODO ]\n");
+			if (d->device[port] == NULL || unit != 0) {
+				/*  No device present: Timeout.  */
+				debug("[ dreamcast_maple: response="
+				    "timeout ]\n");
+				response_code = (uint32_t) -1;
+				response_code = LE32_TO_HOST(response_code);
+				cpu->memory_rw(cpu, cpu->mem, receive_addr,
+				    (void *) &response_code, 4, MEM_WRITE,
+				    NO_EXCEPTIONS | PHYSICAL);
+			} else {
+				/*  Device present:  */
+				int i;
+				struct maple_devinfo *di =
+				    &d->device[port]->devinfo;
+				debug("[ dreamcast_maple: response="
+				    "\"%s\" ]\n", di->di_product_name);
+				response_code = 5 |
+				    (((port << 6) | 0x20) << 8) |
+				    ((port << 6) << 16) |
+				    ((sizeof(struct maple_devinfo) /
+				    sizeof(uint32_t)) << 24);
+				response_code = LE32_TO_HOST(response_code);
+				cpu->memory_rw(cpu, cpu->mem, receive_addr,
+				    (void *) &response_code, 4, MEM_WRITE,
+				    NO_EXCEPTIONS | PHYSICAL);
+				for (i=0; i<sizeof(struct maple_devinfo); i++)
+					cpu->memory_rw(cpu, cpu->mem,
+					    receive_addr + 4 + i,
+					    (char *) di + i, 1, MEM_WRITE,
+					    NO_EXCEPTIONS | PHYSICAL);
+			}
+			break;
+
+		case MAPLE_COMMAND_GETCOND:
+			fatal("[ dreamcast_maple: GETCOND: TODO ]\n");
 			break;
 
 		default:fatal("[ dreamcast_maple: command %i: TODO ]\n", cmd);
@@ -222,6 +317,8 @@ DEVICE_ACCESS(dreamcast_maple)
 	case 0x80:	/*  MAPLE_SPEED  */
 		if (writeflag == MEM_WRITE) {
 			d->timeout = (idata >> 16) & 0xffff;
+			/*  TODO: Bits 8..9 are "speed", but only the value
+			    0 (indicating 2 Mbit/s) should be used.  */
 			debug("[ dreamcast_maple: timeout set to %i ]\n",
 			    d->timeout);
 		} else {
@@ -267,6 +364,12 @@ DEVINIT(dreamcast_maple)
 
 	memory_device_register(machine->memory, devinit->name,
 	    0x5f6c00, 0x100, dev_dreamcast_maple_access, d, DM_DEFAULT, NULL);
+
+	/*  Devices connected to port A..D:  */
+	d->device[0] = &maple_device_controller;
+	d->device[1] = &maple_device_controller;
+	d->device[2] = &maple_device_keyboard;
+	d->device[3] = &maple_device_mouse;
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr32.c,v 1.2 2006-10-25 10:47:27 debug Exp $
+ *  $Id: cpu_avr32.c,v 1.3 2006-10-27 04:21:15 debug Exp $
  *
  *  AVR32 CPU emulation.
  */
@@ -262,7 +262,7 @@ int avr32_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 
 
 #define	IWORD16		debug("%04x     \t", iword);
-#define	IWORD32		debug("%04x %04x\t", iword, iword2);
+#define	IWORD32		{ debug("%04x %04x\t", iword, iword2); len = 4; }
 
 
 /*
@@ -379,6 +379,15 @@ int avr32_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 		}
 		break;
 
+	case 1:
+		/*  [8.2.4]  K8 Immediate and Single Register:  */
+		IWORD16;
+		debug("%s\t%s,%i\n",
+		    iword & 0x1000? "mov" : "sub",
+		    avr32_gpr_names[r0],
+		    ((int8_t)(iword >> 4)) * (r0 == AVR32_SP? 4 : 1));
+		break;
+
 	case 2:
 		switch (opcode_class) {
 
@@ -400,6 +409,7 @@ int avr32_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 
 		case 1:
 			if (opcode_class != 0xa) {
+				IWORD16;
 				debug("UNIMPLEMENTED %i,1,%i\n",
 				    main_opcode, sub_opcode);
 				break;

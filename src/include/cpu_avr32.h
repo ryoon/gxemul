@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_avr32.h,v 1.1 2006-10-25 09:24:06 debug Exp $
+ *  $Id: cpu_avr32.h,v 1.2 2006-10-27 04:22:05 debug Exp $
  */
 
 #include "misc.h"
@@ -69,6 +69,10 @@ DYNTRANS_MISC_DECLARATIONS(avr32,AVR32,uint32_t)
 
 #define	AVR32_GPR_NAMES	{	"r0","r1","r2","r3","r4","r5","r6","r7", \
 				"r8","r9","r10","r11","r12","sp","lr","pc" }
+
+#define	AVR32_SP	13
+#define	AVR32_LR	14
+#define	AVR32_PC	15
 
 struct avr32_cpu {
 	struct avr32_cpu_type_def	cpu_type;

@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_asic.c,v 1.2 2006-10-27 14:14:14 debug Exp $
+ *  $Id: dev_dreamcast_asic.c,v 1.3 2006-10-27 14:37:19 debug Exp $
  *  
  *  Dreamcast ASIC.
  *
- *  NOTE/TODO: This is just a dummy module, so far.
+ *  A simple device which forwards various Dreamcast device events as
+ *  interrupts 13, 11, or 9, to the CPU.
  */
 
 #include <stdio.h>
@@ -54,6 +55,9 @@
 
 struct dreamcast_asic_data {
 	uint32_t	pending_irq[3];
+	uint32_t	mask_13[3];
+	uint32_t	mask_11[3];
+	uint32_t	mask_9[3];
 };
 
 
@@ -62,9 +66,22 @@ DEVICE_TICK(dreamcast_asic)
 	struct dreamcast_asic_data *d = (struct dreamcast_asic_data *) extra;
 	int i;
 
-	for (i=0; i<3; i++)
-		if (d->pending_irq[3] != 0)
-			cpu_interrupt(cpu, SH_INTEVT_IRL9 + 0x40 * i);
+	for (i=0; i<3; i++) {
+		if (d->pending_irq[i] & d->mask_13[i])
+			cpu_interrupt(cpu, SH_INTEVT_IRL13);
+		else
+			cpu_interrupt_ack(cpu, SH_INTEVT_IRL13);
+
+		if (d->pending_irq[i] & d->mask_11[i])
+			cpu_interrupt(cpu, SH_INTEVT_IRL11);
+		else
+			cpu_interrupt_ack(cpu, SH_INTEVT_IRL11);
+
+		if (d->pending_irq[i] & d->mask_9[i])
+			cpu_interrupt(cpu, SH_INTEVT_IRL9);
+		else
+			cpu_interrupt_ack(cpu, SH_INTEVT_IRL9);
+	}
 }
 
 
@@ -77,30 +94,57 @@ DEVICE_ACCESS(dreamcast_asic)
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
+	r = (relative_addr / 4) & 3;
+
 	switch (relative_addr) {
 
 	case 0:
 	case 4:
-	case 8:	r = relative_addr / 4;
-		if (writeflag == MEM_READ) {
+	case 8:	if (writeflag == MEM_READ) {
 			odata = d->pending_irq[r];
-			d->pending_irq[r] = 0;
-			cpu_interrupt_ack(cpu, SH_INTEVT_IRL9 + 0x40 * r);
 		} else {
 			/*  Should only be used interally by GXemul:  */
 			if (idata & 0x100000000ULL) {
 				/*  Set specific bits:  */
 				d->pending_irq[r] |= idata;
-				if (d->pending_irq[r] != 0)
-					cpu_interrupt(cpu,
-					    SH_INTEVT_IRL9 + 0x40 * r);
 			} else {
 				/*  Clear interrupt assertions:  */
 				d->pending_irq[r] &= ~idata;
-				if (d->pending_irq[r] == 0)
-					cpu_interrupt_ack(cpu,
-					    SH_INTEVT_IRL9 + 0x40 * r);
 			}
+			dev_dreamcast_asic_tick(cpu, d);
+		}
+		break;
+
+	case 0x10:
+	case 0x14:
+	case 0x18:
+		if (writeflag == MEM_WRITE) {
+			d->mask_13[r] = idata;
+			dev_dreamcast_asic_tick(cpu, d);
+		} else {
+			odata = d->mask_13[r];
+		}
+		break;
+
+	case 0x20:
+	case 0x24:
+	case 0x28:
+		if (writeflag == MEM_WRITE) {
+			d->mask_11[r] = idata;
+			dev_dreamcast_asic_tick(cpu, d);
+		} else {
+			odata = d->mask_11[r];
+		}
+		break;
+
+	case 0x30:
+	case 0x34:
+	case 0x38:
+		if (writeflag == MEM_WRITE) {
+			d->mask_9[r] = idata;
+			dev_dreamcast_asic_tick(cpu, d);
+		} else {
+			odata = d->mask_9[r];
 		}
 		break;
 

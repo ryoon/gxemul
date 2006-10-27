@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1404 2006-10-27 09:58:13 debug Exp $
+$Id: HISTORY,v 1.1405 2006-10-27 13:12:20 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3126,3 +3126,5 @@ Changelog for GXemul:
 20061026	Various Dreamcast updates; beginning on a Maple bus controller.
 20061027	Continuing on the Maple bus. A Controller, Keyboard, and a
 		Mouse can now be detected by NetBSD and KOS homebrew programs.
+		Cleaning up the SH4 Timer Management Unit, and beginning on
+		SH4 interrupts.

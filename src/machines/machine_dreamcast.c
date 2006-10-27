@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.18 2006-10-27 09:57:53 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.19 2006-10-27 13:12:21 debug Exp $
  *
  *  Dreamcast.
  */
@@ -69,11 +69,12 @@ MACHINE_SETUP(dreamcast)
 	 *
 	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
 	 *  0x00200000 - 0x003fffff	Flash (256 KB)
+	 *  0x0x5f6800 - ...		??? (Something used by ebdemo.elf)
 	 *  0x005f6900 - ...		ASIC registers
-	 *  0x005f6c00 - ...		Maple registers
-	 *  0x005f8000 - 0x005f9fff	PVR registers
+	 *  0x005f6c00 - ...		Maple registers (controller ports)
+	 *  0x005f8000 - 0x005f9fff	PVR registers (graphics)
 	 *  0x00600000 - ...		LAN Adapter registers
-	 *  0x00700000 - ...		SPU registers
+	 *  0x00700000 - ...		SPU registers (sound)
 	 *  0x00710000 - 0x00710007	RTC registers
 	 *  0x00800000 - 0x009fffff	Sound RAM (2 MB)
 	 *  0x01000000 - ...		Parallel port registers

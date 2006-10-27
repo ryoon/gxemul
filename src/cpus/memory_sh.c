@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.10 2006-10-21 02:39:08 debug Exp $
+ *  $Id: memory_sh.c,v 1.11 2006-10-27 13:12:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -193,7 +193,7 @@ exception:
 		return 2;
 	}
 
-	sh_exception(cpu, expevt, vaddr);
+	sh_exception(cpu, expevt, 0, vaddr);
 
 	return 0;
 }
@@ -238,6 +238,11 @@ int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr, uint64_t *return_paddr,
 	}
 
 	if (user) {
+		if (flags & FLAG_NOEXCEPTIONS) {
+			*return_paddr = 0;
+			return 2;
+		}
+
 		fatal("Userspace tried to access non-user space memory."
 		    " TODO: cause exception! (vaddr=0x%08"PRIx32"\n",
 		    (uint32_t) vaddr);

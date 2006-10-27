@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.45 2006-10-24 07:54:31 debug Exp $
+ *  $Id: cpu_sh.c,v 1.46 2006-10-27 13:12:21 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -398,10 +398,39 @@ char *sh_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 
 /*
  *  sh_cpu_interrupt():
+ *
+ *  Note: This gives higher interrupt priority to lower number interrupts.
+ *        Hopefully this is correct.
  */
 int sh_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	fatal("sh_cpu_interrupt(): TODO\n");
+	int word_index, bit_index;
+
+	if (cpu->cd.sh.int_to_assert == 0 || irq_nr < cpu->cd.sh.int_to_assert)
+		cpu->cd.sh.int_to_assert = irq_nr;
+
+	/*
+	 *  TODO: Keep track of all pending interrupts at multiple levels...
+	 *
+	 *  This is just a quick hack:
+	 */
+	cpu->cd.sh.int_level = 1;
+	if (irq_nr == SH_INTEVT_TMU0_TUNI0)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 12) & 0xf;
+	if (irq_nr == SH_INTEVT_TMU1_TUNI1)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 8) & 0xf;
+	if (irq_nr == SH_INTEVT_TMU2_TUNI2)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 4) & 0xf;
+	if (irq_nr >= SH4_INTEVT_SCIF_ERI &&
+	    irq_nr <= SH4_INTEVT_SCIF_TXI)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_iprc >> 4) & 0xf;
+
+	irq_nr /= 0x20;
+	word_index = irq_nr / (sizeof(unsigned long)*8);
+	bit_index = irq_nr & ((sizeof(unsigned long)*8) - 1);
+
+	cpu->cd.sh.int_pending[word_index] |= (1 << bit_index);
+
 	return 0;
 }
 
@@ -411,7 +440,47 @@ int sh_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  */
 int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	/*  fatal("sh_cpu_interrupt_ack(): TODO\n");  */
+	int word_index, bit_index;
+
+	if (irq_nr < cpu->cd.sh.int_to_assert) {
+		fatal("sh_cpu_interrupt_ack(): Internal error.\n");
+		exit(1);
+	}
+
+	if (cpu->cd.sh.int_to_assert == irq_nr) {
+		/*
+		 *  Rescan all interrupts to see if any are still asserted.
+		 *
+		 *  Note: The scan only has to go from irq_nr to the max
+		 *        index, since any lower interrupt cannot be asserted
+		 *        at this time.
+		 */
+		int i, max = 0x1000;
+		cpu->cd.sh.int_to_assert = 0;
+
+		for (i=irq_nr; i<max; i+=0x20) {
+			int j = i / 0x20;
+			int word_index = j / (sizeof(unsigned long)*8);
+			int bit_index = j & ((sizeof(unsigned long)*8) - 1);
+
+			/*  Skip entire word if no bits are set:  */
+			if (bit_index == 0 &&
+			    cpu->cd.sh.int_pending[word_index] == 0)
+				i += (sizeof(unsigned long)*8 - 1) * 0x20;
+			else if (cpu->cd.sh.int_pending[word_index]
+			    & (1 << bit_index)) {
+				cpu->cd.sh.int_to_assert = i;
+				break;
+			}
+		}
+	}
+
+	irq_nr /= 0x20;
+	word_index = irq_nr / (sizeof(unsigned long)*8);
+	bit_index = irq_nr & ((sizeof(unsigned long)*8) - 1);
+
+	cpu->cd.sh.int_pending[word_index] |= (1 << bit_index);
+
 	return 0;
 }
 
@@ -463,19 +532,25 @@ void sh_update_fpscr(struct cpu *cpu, uint32_t new_fpscr)
 /*
  *  sh_exception():
  *
- *  Causes an exception.
+ *  Causes a transfer of control to an exception or interrupt handler.
+ *  If intevt > 0, then it is an interrupt, otherwise an exception.
  */
-void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
+void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr)
 {
 	uint32_t vbr = cpu->cd.sh.vbr;
 
-	debug("[ exception 0x%03x, pc=0x%08x vaddr=0x%08"PRIx32" ]\n",
-	    expevt, (uint32_t)cpu->pc, vaddr);
+	if (intevt > 0)
+		debug("[ interrupt 0x%03x", intevt);
+	else
+		debug("[ exception 0x%03x", expevt);
+
+	debug(", pc=0x%08x vaddr=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc, vaddr);
 
 	if (cpu->cd.sh.sr & SH_SR_BL) {
 		fatal("sh_exception(): BL bit already set. TODO\n");
 
-		/*  This is actually OK in one case, a User Break.  */
+		/*  This is actually OK in two cases: a User Break,
+		    or on NMI interrupts if a special flag is set?  */
 		/*  TODO  */
 
 		expevt = EXPEVT_RESET_POWER;
@@ -490,7 +565,11 @@ void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
 	cpu->cd.sh.spc = cpu->pc;
 	cpu->cd.sh.ssr = cpu->cd.sh.sr;
 	cpu->cd.sh.sgr = cpu->cd.sh.r[15];
-	cpu->cd.sh.expevt = expevt;
+	if (intevt > 0) {
+		cpu->cd.sh.intevt = intevt;
+		expevt = -1;
+	} else
+		cpu->cd.sh.expevt = expevt;
 	sh_update_sr(cpu, cpu->cd.sh.sr | SH_SR_MD | SH_SR_RB | SH_SR_BL);
 
 	/*  Most exceptions set PC to VBR + 0x100.  */
@@ -498,6 +577,10 @@ void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr)
 
 	/*  Specific cases:  */
 	switch (expevt) {
+
+	case -1:	/*  Interrupt  */
+		cpu->pc = vbr + 0x600;
+		break;
 
 	case EXPEVT_RESET_POWER:
 	case EXPEVT_RESET_MANUAL:

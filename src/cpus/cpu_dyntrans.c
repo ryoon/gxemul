@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.131 2006-10-25 09:24:06 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.132 2006-10-27 13:12:20 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -235,6 +235,12 @@ int DYNTRANS_RUN_INSTR(struct cpu *cpu)
 	}
 	if (cpu->cd.ppc.irq_asserted && cpu->cd.ppc.msr & PPC_MSR_EE)
 		ppc_exception(cpu, PPC_EXCEPTION_EI);
+#endif
+#ifdef DYNTRANS_SH
+	if (cpu->cd.sh.int_to_assert > 0 && !(cpu->cd.sh.sr & SH_SR_BL)
+	    && ((cpu->cd.sh.sr & SH_SR_IMASK) >> SH_SR_IMASK_SHIFT)
+	    < cpu->cd.sh.int_level)
+		sh_exception(cpu, 0, cpu->cd.sh.int_to_assert, 0);
 #endif
 
 	cached_pc = cpu->pc;

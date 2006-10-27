@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.13 2006-10-27 04:22:44 debug Exp $
+ *  $Id: dev_sh4.c,v 1.14 2006-10-27 13:12:21 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -46,32 +46,34 @@
 #include "sh4_bscreg.h"
 #include "sh4_cache.h"
 #include "sh4_exception.h"
+#include "sh4_intcreg.h"
 #include "sh4_mmu.h"
 #include "sh4_scifreg.h"
 #include "sh4_tmureg.h"
 
 
-#define	SH4_REG_BASE	0xff000000
-
-#define	N_SH4_TIMERS	3
+#define	SH4_REG_BASE		0xff000000
+#define	SH4_TICK_SHIFT		14
+#define	N_SH4_TIMERS		3
 
 /*  #define debug fatal  */
 
 struct sh4_data {
 	int		scif_console_handle;
 
-	/*  Timers:  */
+	/*  Timer Management Unit:  */
 	struct timer	*sh4_timer;
-	uint32_t	timer_start;
-	uint32_t	timer_count[N_SH4_TIMERS];
-	uint32_t	timer_restart[N_SH4_TIMERS];
-	uint32_t	timer_control[N_SH4_TIMERS];
+	uint32_t	tocr;
+	uint32_t	tstr;
+	uint32_t	tcnt[N_SH4_TIMERS];
+	uint32_t	tcor[N_SH4_TIMERS];
+	uint32_t	tcr[N_SH4_TIMERS];
 	int		timer_interrupts_pending[N_SH4_TIMERS];
 	double		timer_hz[N_SH4_TIMERS];
 };
 
 
-#define	SH4_PSEUDO_TIMER_HZ	100.0
+#define	SH4_PSEUDO_TIMER_HZ	125.0
 
 
 /*
@@ -87,29 +89,49 @@ static void sh4_timer_tick(struct timer *t, void *extra)
 	int i;
 
 	for (i=0; i<N_SH4_TIMERS; i++) {
-		int32_t old;
+		int32_t old = d->tcnt[i];
 
-		if (!(d->timer_start & (TSTR_STR0 << i)))
+		/*  printf("tcnt[%i] = %08x   tcor[%i] = %08x\n",
+		    i, d->tcnt[i], i, d->tcor[i]);  */
+
+		/*  Only update timers that are currently started:  */
+		if (!(d->tstr & (TSTR_STR0 << i)))
 			continue;
 
-		old = d->timer_count[i];
-		d->timer_count[i] -= d->timer_hz[i] / SH4_PSEUDO_TIMER_HZ;
+		/*  Update the current count:  */
+		d->tcnt[i] -= d->timer_hz[i] / SH4_PSEUDO_TIMER_HZ;
 
-		/*  TODO: Implement ALL modes!  */
+		/*  Has the timer underflowed?  */
+		if ((int32_t)d->tcnt[i] < 0 && old >= 0) {
+			d->tcr[i] |= TCR_UNF;
 
-		if ((int32_t)d->timer_count[i] <= 0) {
-			d->timer_control[i] |= TCR_UNF;
+			if (d->tcr[i] & TCR_UNIE)
+				d->timer_interrupts_pending[i] ++;
 
-			if (old > 0) {
-				if (d->timer_control[i] & TCR_UNIE)
-					d->timer_interrupts_pending[i] ++;
-	
-				if (d->timer_restart[i] != 0)
-					d->timer_count[i] +=
-					    d->timer_restart[i];
-			}
+			/*
+			 *  Set tcnt[i] to tcor[i]. Note: Since this function
+			 *  is only called now and then, adding tcor[i] to
+			 *  tcnt[i] produces more correct values for long
+			 *  running timers.
+			 */
+			d->tcnt[i] += d->tcor[i];
+
+			/*  At least make sure that tcnt is non-negative...  */
+			if ((int32_t)d->tcnt[i] < 0)
+				d->tcnt[i] = 0;
 		}
 	}
+}
+
+
+DEVICE_TICK(sh4)
+{
+	struct sh4_data *d = (struct sh4_data *) extra;
+	int i;
+
+	for (i=0; i<N_SH4_TIMERS; i++)
+		if (d->timer_interrupts_pending[i] > 0)
+			cpu_interrupt(cpu, SH_INTEVT_TMU0_TUNI0 + 0x20 * i);
 }
 
 
@@ -202,7 +224,7 @@ DEVICE_ACCESS(sh4_utlb_aa)
 
 			if (n_hits > 1)
 				sh_exception(cpu,
-				    EXPEVT_RESET_TLB_MULTI_HIT, 0);
+				    EXPEVT_RESET_TLB_MULTI_HIT, 0, 0);
 		} else {
 			cpu->cd.sh.utlb_hi[e] &=
 			    ~(SH4_PTEH_VPN_MASK | SH4_PTEH_ASID_MASK);
@@ -392,14 +414,40 @@ DEVICE_ACCESS(sh4)
 		break;
 
 
-	/***********************************/
-	/*  TMU: Timer Management Unit (?) */
+	/********************************/
+	/*  TMU: Timer Management Unit  */
+
+	case SH4_TOCR:
+		/*  Timer Output Control Register  */
+		if (writeflag == MEM_WRITE) {
+			d->tocr = idata;
+			if (idata & TOCR_TCOE)
+				fatal("[ sh4 timer: TCOE not yet "
+				    "implemented ]\n");
+		} else {
+			odata = d->tocr;
+		}
+		break;
 
 	case SH4_TSTR:
-		if (writeflag == MEM_READ)
-			odata = d->timer_start;
-		else
-			d->timer_start = idata;
+		/*  Timer Start Register  */
+		if (writeflag == MEM_READ) {
+			odata = d->tstr;
+		} else {
+			if (idata & 1 && !(d->tstr & 1))
+				debug("[ sh4 timer: starting timer 0 ]\n");
+			if (idata & 2 && !(d->tstr & 2))
+				debug("[ sh4 timer: starting timer 1 ]\n");
+			if (idata & 4 && !(d->tstr & 4))
+				debug("[ sh4 timer: starting timer 2 ]\n");
+			if (!(idata & 1) && d->tstr & 1)
+				debug("[ sh4 timer: stopping timer 0 ]\n");
+			if (!(idata & 2) && d->tstr & 2)
+				debug("[ sh4 timer: stopping timer 1 ]\n");
+			if (!(idata & 4) && d->tstr & 4)
+				debug("[ sh4 timer: stopping timer 2 ]\n");
+			d->tstr = idata;
+		}
 		break;
 
 	case SH4_TCOR2:
@@ -407,10 +455,11 @@ DEVICE_ACCESS(sh4)
 	case SH4_TCOR1:
 		timer_nr ++;
 	case SH4_TCOR0:
+		/*  Timer Constant Register  */
 		if (writeflag == MEM_READ)
-			odata = d->timer_restart[timer_nr];
+			odata = d->tcor[timer_nr];
 		else
-			d->timer_restart[timer_nr] = idata;
+			d->tcor[timer_nr] = idata;
 		break;
 
 	case SH4_TCNT2:
@@ -418,10 +467,11 @@ DEVICE_ACCESS(sh4)
 	case SH4_TCNT1:
 		timer_nr ++;
 	case SH4_TCNT0:
+		/*  Timer Counter Register  */
 		if (writeflag == MEM_READ)
-			odata = d->timer_count[timer_nr];
+			odata = d->tcnt[timer_nr];
 		else
-			d->timer_count[timer_nr] = idata;
+			d->tcnt[timer_nr] = idata;
 		break;
 
 	case SH4_TCR2:
@@ -429,8 +479,9 @@ DEVICE_ACCESS(sh4)
 	case SH4_TCR1:
 		timer_nr ++;
 	case SH4_TCR0:
+		/*  Timer Control Register  */
 		if (writeflag == MEM_READ) {
-			odata = d->timer_control[timer_nr];
+			odata = d->tcr[timer_nr];
 		} else {
 			if (cpu->cd.sh.pclock == 0) {
 				fatal("INTERNAL ERROR: pclock must be set"
@@ -456,16 +507,22 @@ DEVICE_ACCESS(sh4)
 			debug("[ sh4 timer %i clock set to %f Hz ]\n",
 			    timer_nr, d->timer_hz[timer_nr]);
 
-			if (idata & (TCR_ICPF | TCR_UNF | TCR_ICPE1 |
-			    TCR_ICPE0 | TCR_CKEG1 | TCR_CKEG0
-			    | TCR_TPSC2)) {
+			if (idata & (TCR_ICPF | TCR_ICPE1 | TCR_ICPE0 |
+			    TCR_CKEG1 | TCR_CKEG0 | TCR_TPSC2)) {
 				fatal("Unimplemented SH4 timer control"
 				    " bits: 0x%08"PRIx32". Aborting.\n",
 				    (int) idata);
 				exit(1);
 			}
 
-			d->timer_control[timer_nr] = idata;
+			if (d->tcr[timer_nr] & TCR_UNF && !(idata & TCR_UNF)) {
+				cpu_interrupt_ack(cpu, SH_INTEVT_TMU0_TUNI0
+				    + 0x20 * timer_nr);
+				if (d->timer_interrupts_pending[timer_nr] > 0)
+					d->timer_interrupts_pending[timer_nr]--;
+			}
+
+			d->tcr[timer_nr] = idata;
 		}
 		break;
 
@@ -477,6 +534,41 @@ DEVICE_ACCESS(sh4)
 		/*  TODO  */
 		fatal("[ SH4_RFCR: TODO ]\n");
 		odata = 0x11;
+		break;
+
+
+	/*********************************/
+	/*  INTC:  Interrupt Controller  */
+
+	case SH4_ICR:
+		if (writeflag == MEM_WRITE) {
+			if (idata & 0x80) {
+				fatal("SH4 INTC: IRLM not yet "
+				    "supported. TODO\n");
+				exit(1);
+			}
+		}
+		break;
+
+	case SH4_IPRA:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_ipra;
+		else
+			cpu->cd.sh.intc_ipra = idata;
+		break;
+
+	case SH4_IPRB:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_iprb;
+		else
+			cpu->cd.sh.intc_iprb = idata;
+		break;
+
+	case SH4_IPRC:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_iprc;
+		else
+			cpu->cd.sh.intc_iprc = idata;
 		break;
 
 
@@ -564,6 +656,13 @@ DEVINIT(sh4)
 	    0x01000000, dev_sh4_utlb_da1_access, d, DM_DEFAULT, NULL);
 
 	d->sh4_timer = timer_add(SH4_PSEUDO_TIMER_HZ, sh4_timer_tick, d);
+	machine_add_tickfunction(devinit->machine, dev_sh4_tick, d,
+	    SH4_TICK_SHIFT, 0.0);
+
+	/*  Initial Timer values, according to the SH7750 manual:  */
+	d->tcor[0] = 0xffffffff; d->tcnt[0] = 0xffffffff;
+	d->tcor[1] = 0xffffffff; d->tcnt[1] = 0xffffffff;
+	d->tcor[2] = 0xffffffff; d->tcnt[2] = 0xffffffff;
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.31 2006-10-24 07:54:31 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.32 2006-10-27 13:12:21 debug Exp $
  *
  *  SH instructions.
  *
@@ -44,11 +44,11 @@
 		cpu->pc += (low_pc << SH_INSTR_ALIGNMENT_SHIFT);	\
 	}
 
-#define	RES_INST_IF_NOT_MD					\
-	if (!(cpu->cd.sh.sr & SH_SR_MD)) {			\
-		SYNCH_PC;					\
-		sh_exception(cpu, EXPEVT_RES_INST, 0);		\
-		return;						\
+#define	RES_INST_IF_NOT_MD						\
+	if (!(cpu->cd.sh.sr & SH_SR_MD)) {				\
+		SYNCH_PC;						\
+		sh_exception(cpu, EXPEVT_RES_INST, 0, 0);		\
+		return;							\
 	}
 
 #define	FLOATING_POINT_AVAILABLE_CHECK					\
@@ -56,9 +56,9 @@
 		/*  FPU disabled: Cause exception.  */			\
 		SYNCH_PC;						\
 		if (cpu->delay_slot)					\
-			sh_exception(cpu, EXPEVT_FPU_SLOT_DISABLE, 0);	\
+			sh_exception(cpu, EXPEVT_FPU_SLOT_DISABLE, 0, 0);\
 		else							\
-			sh_exception(cpu, EXPEVT_FPU_DISABLE, 0);	\
+			sh_exception(cpu, EXPEVT_FPU_DISABLE, 0, 0);	\
 		return;							\
 	}
 
@@ -1864,12 +1864,12 @@ X(trapa)
 	SYNCH_PC;
 
 	if (cpu->delay_slot) {
-		sh_exception(cpu, EXPEVT_SLOT_INST, 0);
+		sh_exception(cpu, EXPEVT_SLOT_INST, 0, 0);
 		return;
 	}
 
 	cpu->cd.sh.tra = ic->arg[0];
-	sh_exception(cpu, EXPEVT_TRAPA, 0);
+	sh_exception(cpu, EXPEVT_TRAPA, 0, 0);
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.2 2006-10-27 09:58:14 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.3 2006-10-27 13:12:21 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -197,6 +197,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 		/*  Decode the unit number:  */
 		unit = 0;
 		switch (to & 0x3f) {
+		case 0x00:
 		case 0x20: unit = 0; break;
 		case 0x01: unit = 1; break;
 		case 0x02: unit = 2; break;
@@ -252,6 +253,10 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 
 		case MAPLE_COMMAND_GETCOND:
 			fatal("[ dreamcast_maple: GETCOND: TODO ]\n");
+			break;
+
+		case MAPLE_COMMAND_BWRITE:
+			fatal("[ dreamcast_maple: BWRITE: TODO ]\n");
 			break;
 
 		default:fatal("[ dreamcast_maple: command %i: TODO ]\n", cmd);

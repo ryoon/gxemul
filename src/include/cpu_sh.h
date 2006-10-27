@@ -28,7 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.31 2006-10-21 09:25:24 debug Exp $
+ *  $Id: cpu_sh.h,v 1.32 2006-10-27 13:12:21 debug Exp $
+ *
+ *  Note: Many things here are SH4-specific, so it probably doesn't work
+ *        for SH3 emulation.
  */
 
 #include "misc.h"
@@ -128,7 +131,17 @@ struct sh_cpu {
 	uint32_t	expevt;		/*  Exception Event Register  */
 	uint32_t	intevt;		/*  Interrupt Event Register  */
 
+	/*  Interrupt controller:  */
+	uint16_t	intc_ipra;	/*  Interrupt Priority Registers  */
+	uint16_t	intc_iprb;
+	uint16_t	intc_iprc;
+	int16_t		int_to_assert;	/*  Calculated int to assert  */
+	int		int_level;	/*  Calculated int level  */
+	unsigned long	int_pending[0x1000 / 0x20 / (sizeof(unsigned long)*8)];
+
+	/*  Timer/clock functionality:  */
 	int		pclock;
+
 
 	/*
 	 *  Instruction translation cache and Virtual->Physical->Host
@@ -196,7 +209,7 @@ int sh_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 int sh_cpu_family_init(struct cpu_family *);
 
 void sh_update_sr(struct cpu *cpu, uint32_t new_sr);
-void sh_exception(struct cpu *cpu, int expevt, uint32_t vaddr);
+void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr);
 
 /*  memory_sh.c:  */
 int sh_translate_v2p(struct cpu *cpu, uint64_t vaddr,

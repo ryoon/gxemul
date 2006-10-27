@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.54 2006-04-06 18:08:42 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.55 2006-10-27 13:12:21 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -72,15 +72,13 @@ struct ns_data {
 };
 
 
-/*
- *  dev_ns16550_tick():
- *
- *  This function is called at regular intervals. An interrupt is caused to the
- *  CPU if there is a character available for reading, or if the transmitter
- *  slot is empty (i.e. the ns16550 is ready to transmit).
- */
-void dev_ns16550_tick(struct cpu *cpu, void *extra)
+DEVICE_TICK(ns16550)
 {
+	/*
+	 *  This function is called at regular intervals. An interrupt is
+	 *  asserted if there is a character available for reading, or if the
+	 *  transmitter slot is empty (i.e. the ns16550 is ready to transmit).
+	 */
 	struct ns_data *d = extra;
 
 	d->reg[com_iir] &= ~IIR_RXRDY;

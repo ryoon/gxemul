@@ -1,4 +1,4 @@
-$Id: TODO,v 1.402 2006-10-27 04:22:44 debug Exp $
+$Id: TODO,v 1.403 2006-10-27 13:12:20 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -93,8 +93,8 @@ MIPS:
 SuperH:
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
-	x)  SH4 interrupt controller
-	x)  SH4 timers: more interrupt styles?
+	x)  SH4 interrupt controller:
+		x)  Implement correct priorities of interrupts
 	x)  SH4 BSC (Bus State Controller)
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  ldtlb: Don't invalidate everything.
@@ -107,10 +107,15 @@ SuperH:
 
 Dreamcast:
 	x)  PVR:
-		x)  Registers controlling the framebuffer size/type.
-		x)  3D acceleration?
-	x)  Maple bus
-	x)  ASIC
+		x)  Registers controlling the framebuffer size/type
+		x)  Tile Accelerator: Lots of stuff.
+		x)  3D acceleration via OpenGL
+	x)  Maple bus:
+		x)  Keyboard input
+		x)  Controller input
+		x)  Mouse input
+	x)  ASIC:
+		x)  Event Interrupts!
 	x)  Get NetBSD/dreamcast, Linux/dreamcast, and homebrew demos running
 
 Transputer:

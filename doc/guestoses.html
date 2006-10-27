@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.184 2006-10-25 10:08:04 debug Exp $
+$Id: guestoses.html,v 1.185 2006-10-27 04:20:46 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -60,7 +60,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdnetwinderinstall">NetBSD/netwinder 3.1</a>
   <li><a href="#netbsdprepinstall">NetBSD/prep 2.1</a>
   <li><a href="#openbsdpmaxinstall">OpenBSD/pmax 2.8-BETA</a>
-  <li><a href="#openbsdcatsinstall">OpenBSD/cats 3.9</a>
+  <li><a href="#openbsdcatsinstall">OpenBSD/cats 4.0</a>
   <li><a href="#ultrixinstall">Ultrix/RISC 4.5</a>
   <li><a href="#sprite">Sprite for DECstation</a>
   <li><a href="#declinux">Debian GNU/Linux for DECstation</a>
@@ -1272,7 +1272,10 @@ enter <b><tt>rcons</tt></b> if you are using the graphical framebuffer,
 
 It is possible to install and run
 <a href="http://www.openbsd.org/cats.html">OpenBSD/cats</a>
-in GXemul.
+in GXemul. Unfortunately, "The OpenBSD/cats port has been discontinued 
+after the 4.0 release." according to
+<a href="http://www.openbsd.org/cats.html">http://www.openbsd.org/cats.html</a>,
+but 4.0 should run fine.
 
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <a href="20051007-openbsd-cats-installed.png"><img src="20051007-openbsd-cats-installed_small.png"></a>
@@ -1288,24 +1291,24 @@ follow these instructions:
 
 </pre>
   <li>Download the entire cats directory from the ftp server:<pre>
-	<b>wget -np -l 0 -r <a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.9/cats/">ftp://ftp.openbsd.org/pub/OpenBSD/3.9/cats/</a></b>
-	<b>cp ftp.openbsd.org/pub/OpenBSD/3.9/cats/bsd .</b>
-	<b>cp ftp.openbsd.org/pub/OpenBSD/3.9/cats/bsd.rd .</b>
+	<b>wget -np -l 0 -r <a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/cats/">ftp://ftp.se.openbsd.org/pub/OpenBSD/4.0/cats/</a></b>
+	<b>cp ftp.se.openbsd.org/pub/OpenBSD/4.0/cats/bsd .</b>
+	<b>cp ftp.se.openbsd.org/pub/OpenBSD/4.0/cats/bsd.rd .</b>
 
 </pre>
-	(Replace ftp.openbsd.org with a server closer to you, for
+	(Replace ftp.se.openbsd.org with a server closer to you, for
 	increased download speed.)
   <p>
   <li>You now need to make an ISO image of the entire directory you downloaded.
 	(I recommend using <tt>mkisofs</tt> for that purpose. If you don't
 	already have <tt>mkisofs</tt> installed on your system, you need
 	to install it in order to do this.)<pre>
-	<b>mkisofs -allow-lowercase -o openbsd_cats_3.9.iso ftp.openbsd.org/pub/OpenBSD/</b>
-	<b>rm -rf ftp.openbsd.org</b>      <i>(this directory is not needed anymore)</i>
+	<b>mkisofs -allow-lowercase -o openbsd_cats_4.0.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
+	<b>rm -rf ftp.se.openbsd.org</b>      <i>(this directory is not needed anymore)</i>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	<b>gxemul -XEcats -d obsd_cats.img -d openbsd_cats_3.9.iso bsd.rd</b>
+	<b>gxemul -XEcats -d obsd_cats.img -d openbsd_cats_4.0.iso bsd.rd</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD

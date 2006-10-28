@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.17 2006-10-28 10:11:32 debug Exp $
+ *  $Id: dev_sh4.c,v 1.18 2006-10-28 11:50:55 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -446,6 +446,14 @@ DEVICE_ACCESS(sh4)
 			odata = cpu->cd.sh.intevt;
 		else
 			cpu->cd.sh.intevt = idata;
+		break;
+
+
+	/********************************/
+	/*  UBC: User Break Controller  */
+
+	case 0xff200008:    /*  SH4_BBRA  */
+		/*  TODO  */
 		break;
 
 

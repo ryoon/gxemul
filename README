@@ -1,4 +1,4 @@
-$Id: README,v 1.109 2006-08-16 18:55:37 debug Exp $
+$Id: README,v 1.110 2006-10-28 13:04:37 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -18,8 +18,8 @@ emulation modes are available. In some modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
 systems (e.g. NetBSD) run as if they were running on a real machine.
 
-Processors (ARM, MIPS, PowerPC) are emulated using a kind of dynamic 
-translation system. Performance is somewhere between traditional 
+Processors (ARM, MIPS, PowerPC, SuperH) are emulated using a kind of 
+dynamic translation system. Performance is somewhere between traditional 
 interpretation and recompilation into native code. However, the dynamic 
 translation system used in GXemul does not (currently) generate native 
 code, and thus does not require platform-specific back-ends. In plain 

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: intro.html,v 1.98 2006-10-13 05:01:19 debug Exp $
+$Id: intro.html,v 1.99 2006-10-28 13:04:37 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -216,8 +216,9 @@ their original meaning in those xterm windows.
 <h3>Which processor architectures does GXemul emulate?</h3>
 
 The architectures that are emulated well enough to let at least one 
-guest operating system run (per architecture) are ARM, MIPS, and 
-PowerPC.
+guest operating system run (per architecture) are ARM, MIPS, PowerPC,
+and SuperH.
+
 
 
 
@@ -496,7 +497,7 @@ are emulated well enough to run at least one "guest OS":
     <li><b>Cobalt</b> (<a href="guestoses.html#netbsdcobaltinstall">NetBSD/cobalt</a>)
     <li><b>Malta</b> (<a href="guestoses.html#netbsdevbmipsinstall">NetBSD/evbmips</a>)
     <li><b>Algorithmics P5064</b> (<a href="guestoses.html#netbsdalgorinstall">NetBSD/algor</a>)
-    <li><b>SGI O2 (aka IP32)</b> <font color="#0000e0">(<super>*</super>)</font>
+    <li><b>SGI O2 (aka IP32)</b> <font color="#0000e0">(<super>*1</super>)</font>
 	(<a href="guestoses.html#netbsdsgimips">NetBSD/sgi</a>)
   </ul>
   <p>
@@ -504,10 +505,20 @@ are emulated well enough to run at least one "guest OS":
   <ul>
     <li><b>IBM 6050/6070 (PReP, PowerPC Reference Platform)</b> (<a href="guestoses.html#netbsdprepinstall">NetBSD/prep</a>)
   </ul>
+  <p>
+  <li><b><u>SuperH</u></b>
+  <ul>
+    <li><b>Sega Dreamcast</b>
+	<font color="#0000e0">(<super>*2</super>)</font>
+	(<a href="guestoses.html#netbsddreamcast">NetBSD/dreamcast</a>)
+  </ul>
 </ul>
 
-<p><small><font color="#0000e0">(<super>*</super>)</font> =
-Enough for root-on-nfs, but not for disk boot.)</small>
+<p>
+<small><font color="#0000e0">(<super>*1</super>)</font> =
+Enough for root-on-nfs, but not for disk boot.</small>
+<br><small><font color="#0000e0">(<super>*2</super>)</font> =
+Only enough to reach userland; no root-on-nfs yet.</small>
 
 <p>There is code in GXemul for emulation of many other machine types; the
 degree to which these work range from almost being able to run a complete

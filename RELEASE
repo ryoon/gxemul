@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.231 2006-10-14 02:30:11 debug Exp $
+$Id: RELEASE,v 1.232 2006-10-28 13:04:37 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -22,12 +22,15 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 Changes between release 0.4.2 and 0.4.3 include, among other things:
 
+    o)	SuperH (SH4) emulation is now stable enough to let NetBSD/dreamcast
+	reach userland.
+
     o)	There is now a simple framework for letting emulated clocks, as seen
 	by guest operating systems, run at the same speed as the host clock.
 
 	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS, Malta
-	(evbmips), Cobalt, Algor, and the testmips machine modes have been
-	modified to use the new clock/timer framework.
+	(evbmips), Cobalt, Algor, Dreamcast, and the testmips machine modes
+	use the new clock/timer framework.
 
     o)	Some changes to the way expressions are evaluated in the built-in
 	debugger, and some changes in command behaviour:

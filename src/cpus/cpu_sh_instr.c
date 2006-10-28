@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.36 2006-10-28 01:59:23 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.37 2006-10-28 12:13:05 debug Exp $
  *
  *  SH instructions.
  *
@@ -1845,17 +1845,24 @@ X(rte)
  */
 X(ldtlb)
 {
+	uint32_t old_hi, old_lo;
 	int urc = (cpu->cd.sh.mmucr & SH4_MMUCR_URC_MASK)
 	    >> SH4_MMUCR_URC_SHIFT;
 
 	RES_INST_IF_NOT_MD;
 
-	/*  TODO: Don't invalidate everything!  */
+	old_hi = cpu->cd.sh.utlb_hi[urc];
+	old_lo = cpu->cd.sh.utlb_lo[urc];
 
 	cpu->cd.sh.utlb_hi[urc] = cpu->cd.sh.pteh;
 	cpu->cd.sh.utlb_lo[urc] = cpu->cd.sh.ptel;
 
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+	if ((old_lo & SH4_PTEL_SZ_MASK) == SH4_PTEL_SZ_4K)
+		cpu->invalidate_translation_caches(cpu,
+		    old_hi & 0xfffff000, INVALIDATE_VADDR);
+	else
+		cpu->invalidate_translation_caches(cpu,
+		    old_hi & 0xfffff000, INVALIDATE_ALL);
 }
 
 

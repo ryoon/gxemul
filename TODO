@@ -1,4 +1,4 @@
-$Id: TODO,v 1.404 2006-10-28 02:08:25 debug Exp $
+$Id: TODO,v 1.405 2006-10-28 12:13:05 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -97,8 +97,6 @@ SuperH:
 		x)  Implement correct priorities of interrupts
 	x)  SH4 BSC (Bus State Controller)
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
-	x)  ldtlb: Don't invalidate everything.
-	x)  TLB access via memory: Don't invalidate everything.
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
 	x)  Floating point exception correctness.

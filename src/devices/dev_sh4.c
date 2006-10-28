@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.18 2006-10-28 11:50:55 debug Exp $
+ *  $Id: dev_sh4.c,v 1.19 2006-10-28 12:13:06 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -143,6 +143,11 @@ DEVICE_ACCESS(sh4_itlb_aa)
 	int e = (relative_addr & SH4_ITLB_E_MASK) >> SH4_ITLB_E_SHIFT;
 
 	if (writeflag == MEM_WRITE) {
+		int safe_to_invalidate = 0;
+		uint32_t old_hi = cpu->cd.sh.itlb_hi[e];
+		if ((cpu->cd.sh.itlb_lo[e] & SH4_PTEL_SZ_MASK)==SH4_PTEL_SZ_4K)
+			safe_to_invalidate = 1;
+
 		idata = memory_readmax64(cpu, data, len);
 		cpu->cd.sh.itlb_hi[e] &=
 		    ~(SH4_PTEH_VPN_MASK | SH4_PTEH_ASID_MASK);
@@ -151,6 +156,13 @@ DEVICE_ACCESS(sh4_itlb_aa)
 		cpu->cd.sh.itlb_lo[e] &= ~SH4_PTEL_V;
 		if (idata & SH4_ITLB_AA_V)
 			cpu->cd.sh.itlb_lo[e] |= SH4_PTEL_V;
+
+		if (safe_to_invalidate)
+			cpu->invalidate_translation_caches(cpu,
+			    old_hi & ~0xfff, INVALIDATE_VADDR);
+		else
+			cpu->invalidate_translation_caches(cpu,
+			    0, INVALIDATE_ALL);
 	} else {
 		odata = cpu->cd.sh.itlb_hi[e] &
 		    (SH4_ITLB_AA_VPN_MASK | SH4_ITLB_AA_ASID_MASK);
@@ -158,9 +170,6 @@ DEVICE_ACCESS(sh4_itlb_aa)
 			odata |= SH4_ITLB_AA_V;
 		memory_writemax64(cpu, data, len, odata);
 	}
-
-	/*  TODO: Don't invalidate everything.  */
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 	return 1;
 }
@@ -179,16 +188,24 @@ DEVICE_ACCESS(sh4_itlb_da1)
 	}
 
 	if (writeflag == MEM_WRITE) {
+		int safe_to_invalidate = 0;
+		if ((cpu->cd.sh.itlb_lo[e] & SH4_PTEL_SZ_MASK)==SH4_PTEL_SZ_4K)
+			safe_to_invalidate = 1;
+
 		idata = memory_readmax64(cpu, data, len);
 		cpu->cd.sh.itlb_lo[e] &= ~mask;
 		cpu->cd.sh.itlb_lo[e] |= (idata & mask);
+
+		if (safe_to_invalidate)
+			cpu->invalidate_translation_caches(cpu,
+			    cpu->cd.sh.itlb_hi[e] & ~0xfff, INVALIDATE_VADDR);
+		else
+			cpu->invalidate_translation_caches(cpu,
+			    0, INVALIDATE_ALL);
 	} else {
 		odata = cpu->cd.sh.itlb_lo[e] & mask;
 		memory_writemax64(cpu, data, len, odata);
 	}
-
-	/*  TODO: Don't invalidate everything.  */
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 	return 1;
 }
@@ -201,10 +218,12 @@ DEVICE_ACCESS(sh4_utlb_aa)
 	int a = relative_addr & SH4_UTLB_A;
 
 	if (writeflag == MEM_WRITE) {
+		int n_hits = 0;
+		int safe_to_invalidate = 0;
+		uint32_t vaddr_to_invalidate = 0;
+
 		idata = memory_readmax64(cpu, data, len);
 		if (a) {
-			int n_hits = 0;
-
 			for (i=-SH_N_ITLB_ENTRIES; i<SH_N_UTLB_ENTRIES; i++) {
 				uint32_t lo, hi;
 				uint32_t mask = 0xfffff000;
@@ -232,6 +251,12 @@ DEVICE_ACCESS(sh4_utlb_aa)
 
 				if ((hi & mask) != (idata & mask))
 					continue;
+
+				if ((lo & SH4_PTEL_SZ_MASK) ==
+				    SH4_PTEL_SZ_4K) {
+					safe_to_invalidate = 1;
+					vaddr_to_invalidate = hi & mask;
+				}
 
 				if (!sh && (hi & SH4_PTEH_ASID_MASK) !=
 				    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK))
@@ -261,6 +286,13 @@ DEVICE_ACCESS(sh4_utlb_aa)
 				sh_exception(cpu,
 				    EXPEVT_RESET_TLB_MULTI_HIT, 0, 0);
 		} else {
+			if ((cpu->cd.sh.utlb_lo[e] & SH4_PTEL_SZ_MASK) ==
+			    SH4_PTEL_SZ_4K) {
+				safe_to_invalidate = 1;
+				vaddr_to_invalidate =
+				    cpu->cd.sh.utlb_hi[e] & ~0xfff;
+			}
+
 			cpu->cd.sh.utlb_hi[e] &=
 			    ~(SH4_PTEH_VPN_MASK | SH4_PTEH_ASID_MASK);
 			cpu->cd.sh.utlb_hi[e] |= (idata &
@@ -272,6 +304,12 @@ DEVICE_ACCESS(sh4_utlb_aa)
 			if (idata & SH4_UTLB_AA_V)
 				cpu->cd.sh.utlb_lo[e] |= SH4_PTEL_V;
 		}
+
+		if (safe_to_invalidate)
+			cpu->invalidate_translation_caches(cpu,
+			    vaddr_to_invalidate, INVALIDATE_VADDR);
+		else
+			cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 	} else {
 		odata = cpu->cd.sh.utlb_hi[e] &
 		    (SH4_UTLB_AA_VPN_MASK | SH4_UTLB_AA_ASID_MASK);
@@ -281,9 +319,6 @@ DEVICE_ACCESS(sh4_utlb_aa)
 			odata |= SH4_UTLB_AA_V;
 		memory_writemax64(cpu, data, len, odata);
 	}
-
-	/*  TODO: Don't invalidate everything.  */
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 	return 1;
 }
@@ -302,16 +337,24 @@ DEVICE_ACCESS(sh4_utlb_da1)
 	}
 
 	if (writeflag == MEM_WRITE) {
+		int safe_to_invalidate = 0;
+		if ((cpu->cd.sh.utlb_lo[e] & SH4_PTEL_SZ_MASK)==SH4_PTEL_SZ_4K)
+			safe_to_invalidate = 1;
+
 		idata = memory_readmax64(cpu, data, len);
 		cpu->cd.sh.utlb_lo[e] &= ~mask;
 		cpu->cd.sh.utlb_lo[e] |= (idata & mask);
+
+		if (safe_to_invalidate)
+			cpu->invalidate_translation_caches(cpu,
+			    cpu->cd.sh.utlb_hi[e] & ~0xfff, INVALIDATE_VADDR);
+		else
+			cpu->invalidate_translation_caches(cpu,
+			    0, INVALIDATE_ALL);
 	} else {
 		odata = cpu->cd.sh.utlb_lo[e] & mask;
 		memory_writemax64(cpu, data, len, odata);
 	}
-
-	/*  TODO: Don't invalidate everything.  */
-	cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
 
 	return 1;
 }

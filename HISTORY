@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1407 2006-10-27 15:12:03 debug Exp $
+$Id: HISTORY,v 1.1408 2006-10-28 01:37:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3129,3 +3129,4 @@ Changelog for GXemul:
 		Cleaning up the SH4 Timer Management Unit, and beginning on
 		SH4 interrupts.
 		Implementing the Dreamcast SYSASIC.
+20061028	Continuing on the SYSASIC.

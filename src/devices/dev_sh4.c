@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.15 2006-10-27 15:05:31 debug Exp $
+ *  $Id: dev_sh4.c,v 1.16 2006-10-28 01:37:54 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -73,7 +73,7 @@ struct sh4_data {
 };
 
 
-#define	SH4_PSEUDO_TIMER_HZ	125.0
+#define	SH4_PSEUDO_TIMER_HZ	100.0
 
 
 /*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_asic.c,v 1.3 2006-10-27 14:37:19 debug Exp $
+ *  $Id: dev_dreamcast_asic.c,v 1.4 2006-10-28 01:37:54 debug Exp $
  *  
  *  Dreamcast ASIC.
  *
@@ -58,26 +58,46 @@ struct dreamcast_asic_data {
 	uint32_t	mask_13[3];
 	uint32_t	mask_11[3];
 	uint32_t	mask_9[3];
+
+	int		asserted_13;
+	int		asserted_11;
+	int		asserted_9;
 };
 
 
 DEVICE_TICK(dreamcast_asic)
 {
 	struct dreamcast_asic_data *d = (struct dreamcast_asic_data *) extra;
-	int i;
+	int i, old_asserted_13 = d->asserted_13, old_asserted_11 =
+	    d->asserted_11, old_asserted_9 = d->asserted_9;
+
+	d->asserted_13 = d->asserted_11 = d->asserted_9 = 0;
 
 	for (i=0; i<3; i++) {
 		if (d->pending_irq[i] & d->mask_13[i])
+			d->asserted_13 = 1;
+
+		if (d->pending_irq[i] & d->mask_11[i])
+			d->asserted_11 = 1;
+
+		if (d->pending_irq[i] & d->mask_9[i])
+			d->asserted_9 = 1;
+	}
+
+	if (d->asserted_13 != old_asserted_13) {
+		if (d->asserted_13)
 			cpu_interrupt(cpu, SH_INTEVT_IRL13);
 		else
 			cpu_interrupt_ack(cpu, SH_INTEVT_IRL13);
-
-		if (d->pending_irq[i] & d->mask_11[i])
+	}
+	if (d->asserted_11 != old_asserted_11) {
+		if (d->asserted_11)
 			cpu_interrupt(cpu, SH_INTEVT_IRL11);
 		else
 			cpu_interrupt_ack(cpu, SH_INTEVT_IRL11);
-
-		if (d->pending_irq[i] & d->mask_9[i])
+	}
+	if (d->asserted_9 != old_asserted_9) {
+		if (d->asserted_9)
 			cpu_interrupt(cpu, SH_INTEVT_IRL9);
 		else
 			cpu_interrupt_ack(cpu, SH_INTEVT_IRL9);
@@ -95,6 +115,10 @@ DEVICE_ACCESS(dreamcast_asic)
 		idata = memory_readmax64(cpu, data, len);
 
 	r = (relative_addr / 4) & 3;
+	if (r == 3) {
+		fatal("[ dreamcast_asic: Bad address ]\n");
+		r = 0;
+	}
 
 	switch (relative_addr) {
 

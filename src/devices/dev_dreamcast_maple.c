@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.4 2006-10-27 14:14:14 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.5 2006-10-28 01:37:54 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -128,9 +128,7 @@ static struct maple_device maple_device_mouse = {
  */
 void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 {
-	uint64_t tmp1, tmp2;
 	uint32_t addr = d->dmaaddr;
-	uint8_t buf[8];
 
 	if (!d->enable) {
 		fatal("[ maple_do_dma_xfer: not enabled? ]\n");
@@ -160,6 +158,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 	for (;;) {
 		uint32_t receive_addr, response_code;
 		int datalen, port, last_message, cmd, to, from, datalen_cmd;
+		uint8_t buf[8];
 		int unit;
 
 		/*  Read the message' two control words:  */
@@ -269,12 +268,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 	}
 
 	/*  Assert the SYSASIC_EVENT_MAPLE_DMADONE event:  */
-	tmp1 = SYSASIC_EVENT_TO_ADDR(SYSASIC_EVENT_MAPLE_DMADONE);
-	tmp2 = SYSASIC_EVENT_TO_BITMASK(SYSASIC_EVENT_MAPLE_DMADONE);
-	tmp2 |= 0x100000000ULL;		/*  Internal GXemul hack  */
-	memory_writemax64(cpu, buf, 8, tmp2);
-	cpu->memory_rw(cpu, cpu->mem, tmp1, (void *) &tmp2, 8, MEM_WRITE,
-	    PHYSICAL);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_MAPLE_DMADONE);
 }
 
 

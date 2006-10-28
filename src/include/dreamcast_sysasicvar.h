@@ -1,9 +1,10 @@
-/*  GXemul: $Id: dreamcast_sysasicvar.h,v 1.1 2006-10-27 14:14:14 debug Exp $  */
+/*  GXemul: $Id: dreamcast_sysasicvar.h,v 1.2 2006-10-28 01:37:54 debug Exp $  */
 /*  $NetBSD: sysasicvar.h,v 1.5 2005/12/24 23:24:00 perry Exp $  */
 
 /*
- *  Extended with useful macros and also some more event definitions (as used
- *  by KOS programs).
+ *  Extended with useful macros and also some more event definitions
+ *  described in KOS comments by Dan Potter (kos/kernel/arch/dreamcast
+ *  /hardware/asic.c).
  */
 
 #ifndef _DREAMCAST_SYSASICVAR_H_
@@ -48,16 +49,41 @@
 #define	SYSASIC_BASE		0x5f6900
 #define	SYSASIC_SIZE		   0x100
 
-#define SYSASIC_EVENT_MAPLE_DMADONE	12
-#define SYSASIC_EVENT_MAPLE_ERROR	13
-#define SYSASIC_EVENT_GDROM		32
-#define SYSASIC_EVENT_AICA		33
-#define SYSASIC_EVENT_8BIT		34
-#define SYSASIC_EVENT_EXT		35
-#define SYSASIC_EVENT_MAX		65
+#define	SYSASIC_EVENT_RENDERDONE	2	/*  Render Completed  */
+#define	SYSASIC_EVENT_PVR_SCANINT1	3	/*  Scanline interrupt 1  */
+#define	SYSASIC_EVENT_PVR_SCANINT2	4	/*  Scanline interrupt 2  */
+#define	SYSASIC_EVENT_VBLINT		5	/*  VBlank interrupt  */
+#define	SYSASIC_EVENT_OPAQUEDONE	7	/*  Opaque list complete  */
+#define	SYSASIC_EVENT_OPAQUEMODDONE	8	/*  Opaque modifiers complete */
+#define	SYSASIC_EVENT_TRANSDONE		9	/*  Transparent list complete */
+#define	SYSASIC_EVENT_TRANSMODDONE	10	/*  Trans. modifiers complete */
+#define SYSASIC_EVENT_MAPLE_DMADONE	12	/*  Maple DMA complete  */
+#define SYSASIC_EVENT_MAPLE_ERROR	13	/*  Maple error  */
+#define	SYSASIC_EVENT_GDROM_DMA		14	/*  GD-ROM DMA Complete  */
+#define	SYSASIC_EVENT_SPU_DMA		15	/*  SPU DMA Complete  */
+#define	SYSASIC_EVENT_SPU_IRQ		17	/*  SPU Interrupt  */
+#define	SYSASIC_EVENT_PVR_DMA		19	/*  PVR DMA Complete  */
+#define	SYSASIC_EVENT_PVR_PTDONE	21	/*  Punch-through complete  */
+#define SYSASIC_EVENT_GDROM		32	/*  GD-ROM Command status  */
+#define SYSASIC_EVENT_AICA		33	/*  AICA (?)  */
+#define SYSASIC_EVENT_8BIT		34	/*  Modem/Lan adapter  */
+#define SYSASIC_EVENT_EXT		35	/*  PCI/BBA IRQ  */
+#define	SYSASIC_EVENT_PRIMOUTOFMEM	66	/*  Out of primitive mem  */
+#define	SYSASIC_EVENT_MATOUTOFMEM	67	/*  Out of matrix mem  */
 
 #define	SYSASIC_EVENT_TO_ADDR(e)	(SYSASIC_BASE + 4*((e)>>5))
 #define	SYSASIC_EVENT_TO_BITMASK(e)	(1 << ((e) & 31))
+
+#define	SYSASIC_TRIGGER_EVENT(e)	{				\
+	uint8_t buf[8];							\
+	uint64_t tmp1 = SYSASIC_EVENT_TO_ADDR(e);			\
+	uint64_t tmp2 = SYSASIC_EVENT_TO_BITMASK(e);			\
+	tmp2 |= 0x100000000ULL;		/*  Internal GXemul hack  */	\
+	memory_writemax64(cpu, buf, 8, tmp2);				\
+	cpu->memory_rw(cpu, cpu->mem, tmp1, (void *) &tmp2, 8,		\
+	    MEM_WRITE, PHYSICAL);					\
+	}
+
 
 #if 0
 const char *__pure sysasic_intr_string(int /*ipl*/) __attribute__((const));

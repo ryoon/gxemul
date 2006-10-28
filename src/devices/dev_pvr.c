@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.10 2006-10-27 04:22:44 debug Exp $
+ *  $Id: dev_pvr.c,v 1.11 2006-10-28 01:37:54 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -54,8 +54,10 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "timer.h"
 
 #include "dreamcast_pvr.h"
+#include "dreamcast_sysasicvar.h"
 
 
 #define debug fatal
@@ -63,12 +65,17 @@
 #define	INTERNAL_FB_ADDR	0x300000000ULL
 #define	PVR_FB_TICK_SHIFT	20
 
+#define	PVR_VBLANK_HZ		60.0
+
 struct pvr_data {
 	struct vfb_data		*fb;
 	int			fb_update_x1;
 	int			fb_update_y1;
 	int			fb_update_x2;
 	int			fb_update_y2;
+
+	struct timer		*vblank_timer;
+	int			vblank_interrupts_pending;
 
 	/*  PVR registers:  */
 	uint32_t		reg[PVRREG_REGSIZE / sizeof(uint32_t)];
@@ -121,6 +128,19 @@ static void pvr_fb_invalidate(struct pvr_data *d, int start, int stop)
 	d->fb_update_x1 = d->fb_update_y1 = 0;
 	d->fb_update_x2 = d->xsize - 1;
 	d->fb_update_y2 = d->ysize - 1;
+}
+
+
+/*
+ *  pvr_vblank_timer_tick():
+ *
+ *  This function is called PVR_VBLANK_HZ times per real-world second. Its job
+ *  is to fake vertical retrace interrupts.
+ */     
+static void pvr_vblank_timer_tick(struct timer *t, void *extra)
+{
+	struct pvr_data *d = (struct pvr_data *) extra;
+	d->vblank_interrupts_pending ++;
 }
 
 
@@ -773,6 +793,34 @@ DEVICE_TICK(pvr_fb)
 	uint8_t *fb = (uint8_t *) d->fb->framebuffer;
 	uint8_t *vram = (uint8_t *) d->vram;
 
+
+	/*
+	 *  Vertical retrace interrupts:
+	 *
+	 *  TODO: Maybe it would be even more realistic to have the timer run
+	 *        at, say, 60*4 = 240 Hz, and have the following events:
+	 *
+	 *	  (tick & 3) == 0	SYSASIC_EVENT_VBLINT
+	 *	  (tick & 3) == 1	SYSASIC_EVENT_PVR_SCANINT1
+	 *	  (tick & 3) == 2	nothing
+	 *	  (tick & 3) == 3	SYSASIC_EVENT_PVR_SCANINT2
+	 */
+
+	if (d->vblank_interrupts_pending > 0) {
+		SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_VBLINT);
+
+		SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_PVR_SCANINT1);
+		SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_PVR_SCANINT2);
+
+		/*  TODO: For now, I don't care about missed interrupts:  */
+		d->vblank_interrupts_pending = 0;
+	}
+
+
+	/*
+	 *  Framebuffer update:
+	 */
+
 	memory_device_dyntrans_access(cpu, cpu->mem, extra, &low, &high);
 	if ((int64_t)low != -1)
 		extend_update_region(d, low, high);
@@ -967,6 +1015,8 @@ DEVINIT(pvr)
 
 	d->fb = dev_fb_init(machine, machine->memory, INTERNAL_FB_ADDR,
 	    VFB_GENERIC, 640,480, 640,480, 24, "Dreamcast PVR");
+
+	d->vblank_timer = timer_add(PVR_VBLANK_HZ, pvr_vblank_timer_tick, d);
 
 	machine_add_tickfunction(machine, dev_pvr_fb_tick, d,
 	    PVR_FB_TICK_SHIFT, 0.0);

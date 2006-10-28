@@ -1,4 +1,4 @@
-$Id: TODO,v 1.403 2006-10-27 13:12:20 debug Exp $
+$Id: TODO,v 1.404 2006-10-28 02:08:25 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -114,8 +114,8 @@ Dreamcast:
 		x)  Keyboard input
 		x)  Controller input
 		x)  Mouse input
-	x)  ASIC:
-		x)  Event Interrupts!
+	x)  PROM/BIOS calls:
+		x)  GD-ROM emulation
 	x)  Get NetBSD/dreamcast, Linux/dreamcast, and homebrew demos running
 
 Transputer:

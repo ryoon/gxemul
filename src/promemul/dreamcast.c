@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.9 2006-10-27 04:22:44 debug Exp $
+ *  $Id: dreamcast.c,v 1.10 2006-10-28 01:37:44 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -196,6 +196,9 @@ int dreamcast_emul(struct cpu *cpu)
 				break;
 			case 3:	/*  GDROM_INIT  */
 				/*  TODO: Do something here?  */
+				break;
+			case 4:	/*  GDROM_CHECK_DRIVE  */
+				/*  TODO: Return status words  */
 				break;
 			default:fatal("[ GDROM: Unimplemented r7=%i ]\n", r7);
 				goto bad;

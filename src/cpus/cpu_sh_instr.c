@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.35 2006-10-28 01:55:29 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.36 2006-10-28 01:59:23 debug Exp $
  *
  *  SH instructions.
  *
@@ -76,6 +76,8 @@ X(nop)
  */
 X(sleep)
 {
+	RES_INST_IF_NOT_MD;
+
 	/*
 	 *  If there is an interrupt, then just return. Otherwise
 	 *  re-run the sleep instruction (after a delay).

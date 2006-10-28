@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_sh.c,v 1.11 2006-10-27 13:12:21 debug Exp $
+ *  $Id: memory_sh.c,v 1.12 2006-10-28 04:00:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,13 +48,9 @@
  *  check permission bits etc. If everything was ok, then return the physical
  *  page address, otherwise cause an exception.
  *
- *  The implementation should (hopefully) be quite complete, except for the
- *  following two issues:
- *
- *	o)  There is really no ITLB yet. The UTLB is searched for both data
- *	    and instruction accesses. (TODO. If necessary.)
- *	o)  Multiple matching entries are not detected. (On a real CPU, these
- *	    would cause an exception.)
+ *  The implementation should (hopefully) be quite complete, except for lack
+ *  of "Multiple matching entries" detection. (On a real CPU, these would
+ *  cause exceptions.)
  *
  *  Same return values as sh_translate_v2p().
  */
@@ -63,11 +59,12 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 {
 	int wf = flags & FLAG_WRITEFLAG;
 	int i, urb, urc, require_asid_match, cur_asid, expevt = 0;
-	uint32_t hi, lo, mask;
+	uint32_t hi, lo = 0, mask = 0;
 	int sh;		/*  Shared  */
 	int d;		/*  Dirty bit  */
 	int v;		/*  Valid bit  */
 	int pr;		/*  Protection  */
+	int i_start;
 
 	cur_asid = cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK;
 	require_asid_match = !(cpu->cd.sh.mmucr & SH4_MMUCR_SV)
@@ -96,9 +93,23 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 		cpu->cd.sh.mmucr |= (urc << SH4_MMUCR_URC_SHIFT);
 	}
 
-	for (i=0; i<SH_N_UTLB_ENTRIES; i++) {
-		hi = cpu->cd.sh.utlb_hi[i];
-		lo = cpu->cd.sh.utlb_lo[i];
+	/*
+	 *  When doing Instruction lookups, the ITLB should be scanned first.
+	 *  This is done by using negative i. (Ugly hack, but works.)
+	 */
+	if (flags & FLAG_INSTR)
+		i_start = -SH_N_ITLB_ENTRIES;
+	else
+		i_start = 0;
+
+	for (i=i_start; i<SH_N_UTLB_ENTRIES; i++) {
+		if (i<0) {
+			hi = cpu->cd.sh.itlb_hi[i + SH_N_ITLB_ENTRIES];
+			lo = cpu->cd.sh.itlb_lo[i + SH_N_ITLB_ENTRIES];
+		} else {
+			hi = cpu->cd.sh.utlb_hi[i];
+			lo = cpu->cd.sh.utlb_lo[i];
+		}
 		mask = 0xfff00000;
 
 		v = lo & SH4_PTEL_V;
@@ -137,10 +148,21 @@ static int translate_via_mmu(struct cpu *cpu, uint32_t vaddr,
 	*return_paddr = (vaddr & ~mask) | (lo & mask & 0x1fffffff);
 
 	if (flags & FLAG_INSTR) {
-		/*  Instruction access:  */
+		/*
+		 *  Instruction access:
+		 *
+		 *  If a matching entry wasn't found in the ITLB, but in the
+		 *  UTLB, then copy it to a random place in the ITLB.
+		 */
+		if (i >= 0) {
+			int r = random() % SH_N_ITLB_ENTRIES;
+			cpu->cd.sh.itlb_hi[r] = cpu->cd.sh.utlb_hi[i];
+			cpu->cd.sh.itlb_lo[r] = cpu->cd.sh.utlb_lo[i];
+		}
+
+		/*  Permission checks:  */
 		if (cpu->cd.sh.sr & SH_SR_MD)
 			return 1;
-
 		if (!(pr & 2))
 			goto protection_violation;
 

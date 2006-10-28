@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.37 2006-10-28 12:13:05 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.38 2006-10-28 12:24:07 debug Exp $
  *
  *  SH instructions.
  *
@@ -3312,7 +3312,6 @@ X(to_be_translated)
 		ic->f = instr(mov_l_disp_pc_rn);
 		ic->arg[0] = lo8 * 4 + (addr & ((SH_IC_ENTRIES_PER_PAGE-1)
 		    << SH_INSTR_ALIGNMENT_SHIFT) & ~3) + 4;
-		ic->arg[1] = (size_t)&cpu->cd.sh.r[r8];	/* n */
 		break;
 
 	case 0xe:	/*  MOV #imm,Rn  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1411 2006-10-28 10:11:32 debug Exp $
+$Id: HISTORY,v 1.1412 2006-10-28 11:51:14 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3135,3 +3135,5 @@ Changelog for GXemul:
 		Fixing a bug in dev_sh4.c, related to associative writes into
 		the memory-mapped UTLB array. NetBSD/dreamcast now reaches
 		userland stably, and prints the "Terminal type?" message :-]
+		Implementing enough of the Dreamcast keyboard to make NetBSD
+		accept it for input.

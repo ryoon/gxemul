@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.5 2006-10-28 01:37:54 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.6 2006-10-28 11:51:14 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -48,6 +48,7 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "console.h"
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
@@ -75,6 +76,9 @@ struct dreamcast_maple_data {
 
 	/*  Attached devices:  */
 	struct maple_device *device[N_MAPLE_PORTS];
+
+	/*  For keyboard/controller input:  */
+	int		console_handle;
 };
 
 
@@ -120,6 +124,85 @@ static struct maple_device maple_device_mouse = {
 	}
 };
 
+
+/*
+ *  maple_getcond_keyboard_response():
+ *
+ *  Generate a keyboard key-press response. Based on info from Marcus
+ *  Comstedt's page: http://mc.pp.se/dc/kbd.html
+ */
+static void maple_getcond_keyboard_response(struct dreamcast_maple_data *d,
+	struct cpu *cpu, int port, uint32_t receive_addr)
+{
+	int key;
+	uint8_t buf[8];
+	uint32_t response_code, transfer_code;
+
+	transfer_code = (MAPLE_RESPONSE_DATATRF << 24) |
+	    (((port << 6) | 0x20) << 16) |
+	    ((port << 6) << 8) |
+	    3  /*  Transfer length in 32-bit words  */;
+	transfer_code = BE32_TO_HOST(transfer_code);
+	cpu->memory_rw(cpu, cpu->mem, receive_addr, (void *) &transfer_code,
+	    4, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+	receive_addr += 4;
+
+	response_code = BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_KEYBOARD));
+	cpu->memory_rw(cpu, cpu->mem, receive_addr, (void *) &response_code,
+	    4, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+	receive_addr += 4;
+
+	key = console_readchar(d->console_handle);
+
+	/*
+	 *  buf[0] = shift keys (1 = ctrl, 2 = shift)
+	 *  buf[1] = led state
+	 *  buf[2] = key
+	 */
+	memset(buf, 0, 8);
+
+	if (key >= 'a' && key <= 'z')	buf[2] = 4 + key - 'a';
+	if (key >= 'A' && key <= 'Z')	buf[0] = 2, buf[2] = 4 + key - 'A';
+	if (key >= 1 && key <= 26)	buf[0] = 1, buf[2] = 4 + key - 1;
+	if (key >= '1' && key <= '9')	buf[2] = 0x1e + key - '1';
+	if (key == '!')			buf[0] = 2, buf[2] = 0x1e;
+	if (key == '"')			buf[0] = 2, buf[2] = 0x1f;
+	if (key == '#')			buf[0] = 2, buf[2] = 0x20;
+	if (key == '$')			buf[0] = 2, buf[2] = 0x21;
+	if (key == '%')			buf[0] = 2, buf[2] = 0x22;
+	if (key == '^')			buf[0] = 2, buf[2] = 0x23;
+	if (key == '&')			buf[0] = 2, buf[2] = 0x24;
+	if (key == '*')			buf[0] = 2, buf[2] = 0x25;
+	if (key == '(')			buf[0] = 2, buf[2] = 0x26;
+	if (key == '@')			buf[0] = 2, buf[2] = 0x1f;
+	if (key == '\n' || key == '\r')	buf[0] = 0, buf[2] = 0x28;
+	if (key == ')')			buf[0] = 2, buf[2] = 0x27;
+	if (key == '\b')		buf[0] = 0, buf[2] = 0x2a;
+	if (key == '\t')		buf[0] = 0, buf[2] = 0x2b;
+	if (key == ' ')			buf[0] = 0, buf[2] = 0x2c;
+	if (key == '0')			buf[2] = 0x27;
+	if (key == 27)			buf[2] = 0x29;
+	if (key == '-')			buf[2] = 0x2d;
+	if (key == '=')			buf[2] = 0x2e;
+	if (key == '[')			buf[2] = 0x2f;
+	if (key == '\\')		buf[2] = 0x31;
+	if (key == '|')			buf[2] = 0x31, buf[0] = 2;
+	if (key == ']')			buf[2] = 0x32;
+	if (key == ';')			buf[2] = 0x33;
+	if (key == ':')			buf[2] = 0x34;
+	if (key == ',')			buf[2] = 0x36;
+	if (key == '.')			buf[2] = 0x37;
+	if (key == '/')			buf[2] = 0x38;
+	if (key == '<')			buf[2] = 0x36, buf[0] = 2;
+	if (key == '>')			buf[2] = 0x37, buf[0] = 2;
+	if (key == '?')			buf[2] = 0x38, buf[0] = 2;
+	if (key == '+')			buf[2] = 0x57;
+
+	cpu->memory_rw(cpu, cpu->mem, receive_addr, (void *) &buf, 8,
+	    MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+}
+
+
 /*
  *  maple_do_dma_xfer():
  *
@@ -135,8 +218,8 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 		return;
 	}
 
-	debug("[ dreamcast_maple: DMA transfer, dmaaddr = "
-	    "0x%08"PRIx32" ]\n", addr);
+	/*  debug("[ dreamcast_maple: DMA transfer, dmaaddr = "
+	    "0x%08"PRIx32" ]\n", addr);  */
 
 	/*
 	 *  DMA transfers must be 32-byte aligned, according to Marcus
@@ -156,10 +239,10 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 	 *  used by other programs.)
 	 */
 	for (;;) {
-		uint32_t receive_addr, response_code;
+		uint32_t receive_addr, response_code, cond;
 		int datalen, port, last_message, cmd, to, from, datalen_cmd;
-		uint8_t buf[8];
 		int unit;
+		uint8_t buf[8];
 
 		/*  Read the message' two control words:  */
 		cpu->memory_rw(cpu, cpu->mem, addr, (void *) &buf, 8, MEM_READ,
@@ -208,8 +291,9 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 			exit(1);
 		}
 
-		debug("[ dreamcast_maple: cmd=0x%02x, port=%c, unit=%i"
-		    ", datalen=%i words ]\n", cmd, port+'A', unit, datalen_cmd);
+		/*  debug("[ dreamcast_maple: cmd=0x%02x, port=%c, unit=%i"
+		    ", datalen=%i words ]\n", cmd, port+'A', unit,
+		    datalen_cmd);  */
 
 		/*
 		 *  Handle the command:
@@ -219,8 +303,8 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 		case MAPLE_COMMAND_DEVINFO:
 			if (d->device[port] == NULL || unit != 0) {
 				/*  No device present: Timeout.  */
-				debug("[ dreamcast_maple: response="
-				    "timeout ]\n");
+				/*  debug("[ dreamcast_maple: response="
+				    "timeout ]\n");  */
 				response_code = (uint32_t) -1;
 				response_code = LE32_TO_HOST(response_code);
 				cpu->memory_rw(cpu, cpu->mem, receive_addr,
@@ -233,7 +317,7 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 				    &d->device[port]->devinfo;
 				debug("[ dreamcast_maple: response="
 				    "\"%s\" ]\n", di->di_product_name);
-				response_code = 5 |
+				response_code = MAPLE_RESPONSE_DEVINFO |
 				    (((port << 6) | 0x20) << 8) |
 				    ((port << 6) << 16) |
 				    ((sizeof(struct maple_devinfo) /
@@ -251,7 +335,17 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 			break;
 
 		case MAPLE_COMMAND_GETCOND:
-			fatal("[ dreamcast_maple: GETCOND: TODO ]\n");
+			cpu->memory_rw(cpu, cpu->mem, addr, (void *) &buf, 4,
+			    MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+			cond = buf[3] + (buf[2] << 8) + (buf[1] << 16)
+			    + (buf[0] << 24);
+			if (cond & MAPLE_FUNC(MAPLE_FN_KEYBOARD)) {
+				maple_getcond_keyboard_response(
+				    d, cpu, port, receive_addr);
+			} else {
+				fatal("[ dreamcast_maple: WARNING: GETCOND: "
+				    "UNIMPLEMENTED 0x%08"PRIx32" ]\n", cond);
+			}
 			break;
 
 		case MAPLE_COMMAND_BWRITE:
@@ -261,6 +355,8 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 		default:fatal("[ dreamcast_maple: command %i: TODO ]\n", cmd);
 			exit(1);
 		}
+
+		addr += datalen_cmd * 4;
 
 		/*  Last request? Then stop.  */
 		if (last_message)
@@ -378,10 +474,13 @@ DEVINIT(dreamcast_maple)
 	d->device[2] = &maple_device_keyboard;
 	d->device[3] = &maple_device_mouse;
 
+	d->console_handle = console_start_slave_inputonly(machine, "maple", 1);
+	machine->main_console_handle = d->console_handle;
+
 #if 1
 	d->device[0] = NULL;
 	d->device[1] = NULL;
-	d->device[2] = NULL;
+/*	d->device[2] = NULL;  */
 	d->device[3] = NULL;
 #endif
 

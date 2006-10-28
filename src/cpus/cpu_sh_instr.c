@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.34 2006-10-27 16:00:03 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.35 2006-10-28 01:55:29 debug Exp $
  *
  *  SH instructions.
  *
@@ -2066,8 +2066,9 @@ X(ftrv_xmtrx_fvn)
 
 
 /*
- *  fldi: Load immediate (0.0 or 1.0) into floating point register.
- *  fneg: Negate a floating point register
+ *  fldi:  Load immediate (0.0 or 1.0) into floating point register.
+ *  fneg:  Negate a floating point register
+ *  fsqrt: Calculate square root
  *
  *  arg[0] = ptr to fp register
  *  arg[1] = (uint32_t) immediate value (for fldi)
@@ -2081,6 +2082,30 @@ X(fneg_frn)
 {
 	FLOATING_POINT_AVAILABLE_CHECK;
 	reg(ic->arg[0]) ^= 0x80000000;
+}
+X(fsqrt_frn)
+{
+	struct ieee_float_value op1;
+
+	FLOATING_POINT_AVAILABLE_CHECK;
+
+	if (cpu->cd.sh.fpscr & SH_FPSCR_PR) {
+		/*  Double-precision:  */
+		int64_t r1, ieee;
+		r1 = reg(ic->arg[0] + sizeof(uint32_t)) +
+		    ((uint64_t)reg(ic->arg[0]) << 32);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_D);
+		ieee = ieee_store_float_value(sqrt(op1.f), IEEE_FMT_D, 0);
+		reg(ic->arg[0]) = (uint32_t) (ieee >> 32);
+		reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) ieee;
+	} else {
+		/*  Single-precision:  */
+		uint32_t r1, ieee;
+		r1 = reg(ic->arg[0]);
+		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
+		ieee = ieee_store_float_value(sqrt(op1.f), IEEE_FMT_S, 0);
+		reg(ic->arg[0]) = (uint32_t) ieee;
+	}
 }
 
 
@@ -3372,16 +3397,20 @@ X(to_be_translated)
 			ic->f = instr(ftrc_frm_fpul);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo8 == 0x4d) {
-			/*  FNEG FRm  */
+			/*  FNEG FRn  */
 			ic->f = instr(fneg_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x6d) {
+			/*  FSQRT FRn  */
+			ic->f = instr(fsqrt_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo8 == 0x8d) {
-			/*  FLDI0 FRm  */
+			/*  FLDI0 FRn  */
 			ic->f = instr(fldi_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 			ic->arg[1] = 0x00000000;
 		} else if (lo8 == 0x9d) {
-			/*  FLDI1 FRm  */
+			/*  FLDI1 FRn  */
 			ic->f = instr(fldi_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 			ic->arg[1] = 0x3f800000;

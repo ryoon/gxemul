@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1408 2006-10-28 01:37:54 debug Exp $
+$Id: HISTORY,v 1.1409 2006-10-28 01:55:29 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3130,3 +3130,4 @@ Changelog for GXemul:
 		SH4 interrupts.
 		Implementing the Dreamcast SYSASIC.
 20061028	Continuing on the SYSASIC.
+		Adding the SH fsqrt instruction.

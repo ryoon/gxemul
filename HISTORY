@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1410 2006-10-28 04:00:32 debug Exp $
+$Id: HISTORY,v 1.1411 2006-10-28 10:11:32 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3132,3 +3132,6 @@ Changelog for GXemul:
 20061028	Continuing on the SYSASIC.
 		Adding the SH fsqrt instruction.
 		memory_sh.c now actually scans the ITLB.
+		Fixing a bug in dev_sh4.c, related to associative writes into
+		the memory-mapped UTLB array. NetBSD/dreamcast now reaches
+		userland stably, and prints the "Terminal type?" message :-]

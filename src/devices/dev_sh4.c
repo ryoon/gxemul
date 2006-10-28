@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.16 2006-10-28 01:37:54 debug Exp $
+ *  $Id: dev_sh4.c,v 1.17 2006-10-28 10:11:32 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -204,24 +204,57 @@ DEVICE_ACCESS(sh4_utlb_aa)
 		idata = memory_readmax64(cpu, data, len);
 		if (a) {
 			int n_hits = 0;
-			for (i=0; i<SH_N_UTLB_ENTRIES; i++) {
-				int sh = cpu->cd.sh.utlb_lo[i] & SH4_PTEL_SH;
-				if (!(cpu->cd.sh.utlb_lo[i] & SH4_PTEL_V))
+
+			for (i=-SH_N_ITLB_ENTRIES; i<SH_N_UTLB_ENTRIES; i++) {
+				uint32_t lo, hi;
+				uint32_t mask = 0xfffff000;
+				int sh;
+
+				if (i < 0) {
+					lo = cpu->cd.sh.itlb_lo[
+					    i + SH_N_ITLB_ENTRIES];
+					hi = cpu->cd.sh.itlb_hi[
+					    i + SH_N_ITLB_ENTRIES];
+				} else {
+					lo = cpu->cd.sh.utlb_lo[i];
+					hi = cpu->cd.sh.utlb_hi[i];
+				}
+
+				sh = lo & SH4_PTEL_SH;
+				if (!(lo & SH4_PTEL_V))
 					continue;
-				if ((cpu->cd.sh.utlb_hi[i] & SH4_PTEH_VPN_MASK)
-				    != (idata & SH4_PTEH_VPN_MASK))
+
+				switch (lo & SH4_PTEL_SZ_MASK) {
+				case SH4_PTEL_SZ_1K:  mask = 0xfffffc00; break;
+				case SH4_PTEL_SZ_64K: mask = 0xffff0000; break;
+				case SH4_PTEL_SZ_1M:  mask = 0xfff00000; break;
+				}
+
+				if ((hi & mask) != (idata & mask))
 					continue;
-				if (!sh && (cpu->cd.sh.utlb_lo[i] &
-				    SH4_PTEH_ASID_MASK) != (idata &
-				    SH4_PTEH_ASID_MASK))
+
+				if (!sh && (hi & SH4_PTEH_ASID_MASK) !=
+				    (cpu->cd.sh.pteh & SH4_PTEH_ASID_MASK))
 					continue;
-				cpu->cd.sh.utlb_lo[i] &=
-				    ~(SH4_PTEL_D | SH4_PTEL_V);
-				if (idata & SH4_UTLB_AA_D)
-					cpu->cd.sh.utlb_lo[i] |= SH4_PTEL_D;
-				if (idata & SH4_UTLB_AA_V)
-					cpu->cd.sh.utlb_lo[i] |= SH4_PTEL_V;
-				n_hits ++;
+
+				if (i < 0) {
+					cpu->cd.sh.itlb_lo[i] &= ~SH4_PTEL_V;
+					if (idata & SH4_UTLB_AA_V)
+						cpu->cd.sh.itlb_lo[i] |=
+						    SH4_PTEL_V;
+				} else {
+					cpu->cd.sh.utlb_lo[i] &=
+					    ~(SH4_PTEL_D | SH4_PTEL_V);
+					if (idata & SH4_UTLB_AA_D)
+						cpu->cd.sh.utlb_lo[i] |=
+						    SH4_PTEL_D;
+					if (idata & SH4_UTLB_AA_V)
+						cpu->cd.sh.utlb_lo[i] |=
+						    SH4_PTEL_V;
+				}
+
+				if (i >= 0)
+					n_hits ++;
 			}
 
 			if (n_hits > 1)

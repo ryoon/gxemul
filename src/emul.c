@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.270 2006-10-25 09:24:05 debug Exp $
+ *  $Id: emul.c,v 1.271 2006-10-29 05:10:26 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -1740,7 +1740,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 		printf("Press enter to quit.\n");
 		while (!console_charavail(MAIN_CONSOLE)) {
 			x11_check_event(emuls, n_emuls);
-			usleep(1);
+			usleep(10);
 		}
 		console_readchar(MAIN_CONSOLE);
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_instr.c,v 1.117 2006-09-30 08:17:15 debug Exp $
+ *  $Id: cpu_mips_instr.c,v 1.118 2006-10-29 05:10:27 debug Exp $
  *
  *  MIPS instructions.
  *
@@ -2154,7 +2154,7 @@ X(idle)
 	if (cpu->machine->ncpus == 1) {
 		static int x = 0;
 		if ((++x) == 600) {
-			usleep(1);
+			usleep(10);
 			x = 0;
 		}
 		cpu->n_translated_instrs += N_SAFE_DYNTRANS_LIMIT / 6;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.19 2006-10-29 05:10:27 debug Exp $
+ *  $Id: debugger.c,v 1.20 2006-10-29 05:17:21 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -150,7 +150,7 @@ char debugger_readchar(void)
 			be factored out...  */
 
 		/*  Give up some CPU time:  */
-		usleep(10);
+		usleep(10000);
 	}
 	return ch;
 }
@@ -585,11 +585,11 @@ static char *debugger_readline(void)
 		} else if (ch == 27) {
 			/*  Escape codes: (cursor keys etc)  */
 			while ((ch = console_readchar(MAIN_CONSOLE)) < 0)
-				usleep(10);
+				usleep(10000);
 			if (ch == '[' || ch == 'O') {
 				while ((ch = console_readchar(MAIN_CONSOLE))
 				    < 0)
-					usleep(10);
+					usleep(10000);
 				switch (ch) {
 				case '2':	/*  2~ = ins  */
 				case '5':	/*  5~ = pgup  */
@@ -597,14 +597,14 @@ static char *debugger_readline(void)
 					/*  TODO: Ugly hack, but might work.  */
 					while ((ch = console_readchar(
 					    MAIN_CONSOLE)) < 0)
-						usleep(10);
+						usleep(10000);
 					/*  Do nothing for these keys.  */
 					break;
 				case '3':	/*  3~ = delete  */
 					/*  TODO: Ugly hack, but might work.  */
 					while ((ch = console_readchar(
 					    MAIN_CONSOLE)) < 0)
-						usleep(10);
+						usleep(10000);
 					console_makeavail(MAIN_CONSOLE, '\b');
 					break;
 				case 'A':	/*  Up.  */

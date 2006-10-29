@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1415 2006-10-29 05:34:06 debug Exp $
+$Id: HISTORY,v 1.1416 2006-10-29 06:56:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3143,3 +3143,5 @@ Changelog for GXemul:
 20061029	Changing usleep(1) calls in the debugger to to usleep(10000)
 		(according to Brian Foley, this makes GXemul run better on
 		MacOS X).
+		Making the Maple "Controller" do something (enough to barely
+		interact with dcircus.elf).

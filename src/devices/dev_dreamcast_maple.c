@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.7 2006-10-29 05:10:03 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.8 2006-10-29 06:56:12 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -59,10 +59,15 @@
 #include "dreamcast_maple.h"
 #include "dreamcast_sysasicvar.h"
 
-#define	N_MAPLE_PORTS		4
-
 
 #define debug fatal
+
+#define	N_MAPLE_PORTS		4
+
+#define	MAX_CHARS		8192
+#define	MAX_CONTROLLER_DATA	4096
+
+#define	MAPLE_TICK_SHIFT	17
 
 struct maple_device {
 	struct maple_devinfo devinfo;
@@ -79,6 +84,10 @@ struct dreamcast_maple_data {
 
 	/*  For keyboard/controller input:  */
 	int		console_handle;
+	uint8_t		char_queue[MAX_CHARS];
+	uint16_t	controller_queue[MAX_CONTROLLER_DATA];
+	int		char_queue_head, char_queue_tail;
+	int		controller_queue_head, controller_queue_tail;
 };
 
 
@@ -111,6 +120,7 @@ static struct maple_device maple_device_keyboard = {
 		LE16_TO_HOST(100)		/*  di_max_power  */
 	}
 };
+#if 0
 static struct maple_device maple_device_mouse = {
 	{
 		BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_MOUSE)),/*  di_func  */
@@ -123,6 +133,151 @@ static struct maple_device maple_device_mouse = {
 		LE16_TO_HOST(100)		/*  di_max_power  */
 	}
 };
+#endif
+
+
+DEVICE_TICK(maple)
+{
+	struct dreamcast_maple_data *d = (struct dreamcast_maple_data *) extra;
+	int control_bits, key = console_readchar(d->console_handle);
+
+	if (key < 0)
+		return;
+
+	/*  Add to the keyboard queue:  */
+	d->char_queue[d->char_queue_head] = key;
+	d->char_queue_head = (d->char_queue_head + 1) % MAX_CHARS;
+	if (d->char_queue_head == d->char_queue_tail)
+		fatal("[ dreamcast_maple: KEYBOARD QUEUE OVERRUN! ]\n");
+
+	control_bits = 0;
+	switch (key) {
+	case 'a':
+	case 'A':
+		control_bits = 0x0004;
+		break;
+	case 'b':
+	case 'B':
+		control_bits = 0x0002;
+		break;
+	case 'c':
+	case 'C':
+		control_bits = 0x0001;
+		break;
+	case 'x':
+	case 'X':
+		control_bits = 0x0400;
+		break;
+	case 'y':
+	case 'Y':
+		control_bits = 0x0200;
+		break;
+	case 'z':
+	case 'Z':
+		control_bits = 0x0100;
+		break;
+	case 's':
+	case 'S':	/*  Start  */
+		control_bits = 0x0008;
+		break;
+	case '8':	/*  up  */
+		control_bits = 0x0010;
+		break;
+	case '2':	/*  down  */
+	case 'k':
+		control_bits = 0x0020;
+		break;
+	case '4':	/*  left  */
+	case 'u':
+		control_bits = 0x0040;
+		break;
+	case '6':	/*  right  */
+	case 'o':
+		control_bits = 0x0080;
+		break;
+	}
+
+	if (control_bits != 0) {
+		/*  Add to the controller queue:  */
+		d->controller_queue[d->controller_queue_head] = control_bits;
+		d->controller_queue_head =
+		    (d->controller_queue_head + 1) % MAX_CONTROLLER_DATA;
+		if (d->controller_queue_head == d->controller_queue_tail)
+			fatal("[ dreamcast_maple: CONTROLLER QUEUE "
+			    "OVERRUN! ]\n");
+	}
+}
+
+
+static int get_key(struct dreamcast_maple_data *d)
+{
+	int key = d->char_queue[d->char_queue_tail];
+	if (d->char_queue_head == d->char_queue_tail)
+		return -1;
+
+	d->char_queue_tail = (d->char_queue_tail + 1) % MAX_CHARS;
+	return key;
+}
+
+
+static int get_controller(struct dreamcast_maple_data *d)
+{
+	int c = d->controller_queue[d->controller_queue_tail];
+	if (d->controller_queue_head == d->controller_queue_tail)
+		return 0;
+
+	d->controller_queue_tail = (d->controller_queue_tail + 1)
+	    % MAX_CONTROLLER_DATA;
+	return c;
+}
+
+
+/*
+ *  maple_getcond_controller_response():
+ *
+ *  Generate a controller response. Based on info from Marcus
+ *  Comstedt's page: http://mc.pp.se/dc/controller.html
+ */
+static void maple_getcond_controller_response(struct dreamcast_maple_data *d,
+	struct cpu *cpu, int port, uint32_t receive_addr)
+{
+	uint8_t buf[8];
+	uint32_t response_code, transfer_code;
+	int c;
+
+	transfer_code = (MAPLE_RESPONSE_DATATRF << 24) |
+	    (((port << 6) | 0x20) << 16) |
+	    ((port << 6) << 8) |
+	    3  /*  Transfer length in 32-bit words  */;
+	transfer_code = BE32_TO_HOST(transfer_code);
+	cpu->memory_rw(cpu, cpu->mem, receive_addr, (void *) &transfer_code,
+	    4, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+	receive_addr += 4;
+
+	response_code = BE32_TO_HOST(MAPLE_FUNC(MAPLE_FN_CONTROLLER));
+	cpu->memory_rw(cpu, cpu->mem, receive_addr, (void *) &response_code,
+	    4, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+	receive_addr += 4;
+
+	c = get_controller(d);
+
+	/*
+	 *  buf[0..1] = little endian button bitfield
+	 *  buf[2] = right analogue trigger (0-255)
+	 *  buf[3] = left analogue trigger (0-255)
+	 *  buf[4] = analogue joystick X (0-255)
+	 *  buf[5] = analogue joystick Y (0-255)
+	 *  buf[6] = second analogue joystick X (0-255)
+	 *  buf[7] = second analogue joystick Y (0-255)
+	 */
+	memset(buf, 0, 8);
+	buf[0] = c & 0xff;
+	buf[1] = c >> 8;
+	buf[4] = buf[5] = buf[6] = buf[7] = 0;
+
+	cpu->memory_rw(cpu, cpu->mem, receive_addr, (void *) &buf, 8,
+	    MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+}
 
 
 /*
@@ -152,7 +307,7 @@ static void maple_getcond_keyboard_response(struct dreamcast_maple_data *d,
 	    4, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
 	receive_addr += 4;
 
-	key = console_readchar(d->console_handle);
+	key = get_key(d);
 
 	/*
 	 *  buf[0] = shift keys (1 = ctrl, 2 = shift)
@@ -315,8 +470,8 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 				int i;
 				struct maple_devinfo *di =
 				    &d->device[port]->devinfo;
-				debug("[ dreamcast_maple: response="
-				    "\"%s\" ]\n", di->di_product_name);
+				/*  debug("[ dreamcast_maple: response="
+				    "\"%s\" ]\n", di->di_product_name);  */
 				response_code = MAPLE_RESPONSE_DEVINFO |
 				    (((port << 6) | 0x20) << 8) |
 				    ((port << 6) << 16) |
@@ -339,7 +494,10 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 			    MEM_READ, NO_EXCEPTIONS | PHYSICAL);
 			cond = buf[3] + (buf[2] << 8) + (buf[1] << 16)
 			    + (buf[0] << 24);
-			if (cond & MAPLE_FUNC(MAPLE_FN_KEYBOARD)) {
+			if (cond & MAPLE_FUNC(MAPLE_FN_CONTROLLER)) {
+				maple_getcond_controller_response(
+				    d, cpu, port, receive_addr);
+			} else if (cond & MAPLE_FUNC(MAPLE_FN_KEYBOARD)) {
 				maple_getcond_keyboard_response(
 				    d, cpu, port, receive_addr);
 			} else {
@@ -470,19 +628,15 @@ DEVINIT(dreamcast_maple)
 
 	/*  Devices connected to port A..D:  */
 	d->device[0] = &maple_device_controller;
-	d->device[1] = &maple_device_controller;
+	d->device[1] = NULL;
 	d->device[2] = &maple_device_keyboard;
-	d->device[3] = &maple_device_mouse;
+	d->device[3] = NULL;	/*  TODO:  &maple_device_mouse;  */
 
 	d->console_handle = console_start_slave_inputonly(machine, "maple", 1);
 	machine->main_console_handle = d->console_handle;
 
-#if 1
-	d->device[0] = NULL;
-	d->device[1] = NULL;
-/*	d->device[2] = NULL;  */
-	d->device[3] = NULL;
-#endif
+	machine_add_tickfunction(devinit->machine, dev_maple_tick, d,
+	    MAPLE_TICK_SHIFT, 0.0);
 
 	return 1;
 }

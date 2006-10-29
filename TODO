@@ -1,4 +1,4 @@
-$Id: TODO,v 1.405 2006-10-28 12:13:05 debug Exp $
+$Id: TODO,v 1.406 2006-10-29 06:56:12 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -109,8 +109,7 @@ Dreamcast:
 		x)  Tile Accelerator: Lots of stuff.
 		x)  3D acceleration via OpenGL
 	x)  Maple bus:
-		x)  Keyboard input
-		x)  Controller input
+		x)  Correct controller input
 		x)  Mouse input
 	x)  PROM/BIOS calls:
 		x)  GD-ROM emulation

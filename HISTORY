@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1414 2006-10-29 05:16:52 debug Exp $
+$Id: HISTORY,v 1.1415 2006-10-29 05:34:06 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3138,6 +3138,8 @@ Changelog for GXemul:
 		Implementing enough of the Dreamcast keyboard to make NetBSD
 		accept it for input.
 		Enabling SuperH for stable (non-development) builds.
+		Adding NetBSD/dreamcast to the documentation, although it
+		doesn't support root-on-nfs yet.
 20061029	Changing usleep(1) calls in the debugger to to usleep(10000)
 		(according to Brian Foley, this makes GXemul run better on
 		MacOS X).

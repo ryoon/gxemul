@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.6 2006-10-28 11:51:14 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.7 2006-10-29 05:10:03 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -328,8 +328,8 @@ void maple_do_dma_xfer(struct cpu *cpu, struct dreamcast_maple_data *d)
 				    NO_EXCEPTIONS | PHYSICAL);
 				for (i=0; i<sizeof(struct maple_devinfo); i++)
 					cpu->memory_rw(cpu, cpu->mem,
-					    receive_addr + 4 + i,
-					    (char *) di + i, 1, MEM_WRITE,
+					    receive_addr + 4 + i, (unsigned
+					    char *) di + i, 1, MEM_WRITE,
 					    NO_EXCEPTIONS | PHYSICAL);
 			}
 			break;

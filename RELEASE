@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.232 2006-10-28 13:04:37 debug Exp $
+$Id: RELEASE,v 1.233 2006-10-29 05:10:40 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -29,7 +29,7 @@ Changes between release 0.4.2 and 0.4.3 include, among other things:
 	by guest operating systems, run at the same speed as the host clock.
 
 	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS, Malta
-	(evbmips), Cobalt, Algor, Dreamcast, and the testmips machine modes
+	(evbmips), Cobalt, Algor, Dreamcast, and testmips machine modes
 	use the new clock/timer framework.
 
     o)	Some changes to the way expressions are evaluated in the built-in

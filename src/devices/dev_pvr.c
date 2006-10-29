@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.11 2006-10-28 01:37:54 debug Exp $
+ *  $Id: dev_pvr.c,v 1.12 2006-10-29 06:55:57 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -63,7 +63,7 @@
 #define debug fatal
 
 #define	INTERNAL_FB_ADDR	0x300000000ULL
-#define	PVR_FB_TICK_SHIFT	20
+#define	PVR_FB_TICK_SHIFT	19
 
 #define	PVR_VBLANK_HZ		60.0
 
@@ -211,7 +211,7 @@ static void line(struct pvr_data *d, int x1, int y1, int x2, int y2)
  *  TODO: This function is totally bogus so far, the format of the Object
  *        Buffer is just a quick made-up hack to see if it works at all.
  */
-static void pvr_render(struct pvr_data *d)
+static void pvr_render(struct cpu *cpu, struct pvr_data *d)
 {
 	int ob_ofs = REG(PVRREG_OB_ADDR);
 	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
@@ -270,6 +270,11 @@ static void pvr_render(struct pvr_data *d)
 
 		ob_ofs += sizeof(uint64_t);
 	}
+
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEDONE);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEMODDONE);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSDONE);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSMODDONE);
 }
 
 
@@ -290,10 +295,13 @@ static void pvr_reset_ta(struct pvr_data *d)
  *  Initialize the Tile Accelerator. This makes the TA ready to receive
  *  commands (via address 0x10000000).
  */
-static void pvr_ta_init(struct pvr_data *d)
+static void pvr_ta_init(struct cpu *cpu, struct pvr_data *d)
 {
 	REG(PVRREG_TA_OPB_POS) = REG(PVRREG_TA_OPB_START);
 	REG(PVRREG_TA_OB_POS) = REG(PVRREG_TA_OB_START);
+
+	/*  TODO: Hack to make tatest run.  */
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEDONE);
 }
 
 
@@ -303,10 +311,12 @@ static void pvr_ta_init(struct pvr_data *d)
  *  Read a command (e.g. parts of a polygon primitive) from d->ta[], and output
  *  "compiled commands" into the Object list and Object Pointer list.
  */
-static void pvr_ta_command(struct pvr_data *d)
+static void pvr_ta_command(struct pvr_data *d, int list_ofs)
 {
 	int ob_ofs;
 	int x, y;
+
+	/*  TODO: list_ofs  */
 
 #if 0
 	/*  Dump the Tile Accelerator command for debugging:  */
@@ -373,13 +383,10 @@ DEVICE_ACCESS(pvr_ta)
 		idata = memory_readmax64(cpu, data, len);
 		d->ta[relative_addr / sizeof(uint32_t)] = idata;
 
-		if (relative_addr == 0x3c) {
-			fatal("TODO: 64-bit Tile Accelerator command\n");
-			exit(1);
-		}
-
 		if (relative_addr == 0x1c)
-			pvr_ta_command(d);
+			pvr_ta_command(d, 0);
+		if (relative_addr == 0x3c)
+			pvr_ta_command(d, 0x20);
 	} else {
 		odata = d->ta[relative_addr / sizeof(uint32_t)];
 		memory_writemax64(cpu, data, len, odata);
@@ -440,7 +447,7 @@ DEVICE_ACCESS(pvr)
 	case PVRREG_STARTRENDER:
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: STARTRENDER ]\n");
-			pvr_render(d);
+			pvr_render(cpu, d);
 		} else {
 			fatal("[ pvr: huh? read from STARTRENDER ]\n");
 		}
@@ -721,7 +728,7 @@ DEVICE_ACCESS(pvr)
 			debug("[ pvr: TA_INIT ]\n");
 
 			if (idata & PVR_TA_INIT)
-				pvr_ta_init(d);
+				pvr_ta_init(cpu, d);
 
 			if (idata != PVR_TA_INIT && idata != 0)
 				fatal("{ TA_INIT = 0x%08"PRIx32" is not "

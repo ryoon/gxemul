@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.19 2006-10-27 13:12:21 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.20 2006-10-29 06:55:57 debug Exp $
  *
  *  Dreamcast.
  */
@@ -89,6 +89,8 @@ MACHINE_SETUP(dreamcast)
 	 *
 	 *  (*) = with banks 0 and 1 switched; 64-bit read/write access...
 	 */
+
+	dev_ram_init(machine, 0x08000000, 2 * 1048576, DEV_RAM_RAM, 0);
 
 	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
 

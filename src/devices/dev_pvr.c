@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.12 2006-10-29 06:55:57 debug Exp $
+ *  $Id: dev_pvr.c,v 1.13 2006-10-30 04:47:48 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -41,6 +41,14 @@
  *
  *	x)  Alternative VRAM:  Reads should read from normal VRAM (after
  *	    transformation). Writes should write to normal VRAM.
+ *
+ *
+ *  Multiple lists of various kinds (6?).
+ *  Lists growing downwards!
+ *  Pixel clip for rendering.
+ *  Real Rendering, using OpenGL if possible.
+ *  Tile bins... with 6 pointers for each tile (?)
+ *  PVR DMA.
  */
 
 #include <stdio.h>
@@ -290,6 +298,17 @@ static void pvr_reset_ta(struct pvr_data *d)
 
 
 /*
+ *  pvr_reset():
+ *
+ *  Reset the PVR.
+ */
+static void pvr_reset(struct pvr_data *d)
+{
+	/*  TODO  */
+}
+
+
+/*
  *  pvr_ta_init():
  *
  *  Initialize the Tile Accelerator. This makes the TA ready to receive
@@ -432,10 +451,8 @@ DEVICE_ACCESS(pvr)
 	case PVRREG_RESET:
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: RESET ");
-			if (idata & PVR_RESET_BUS)
-				fatal("{ PVR_RESET_BUS: TODO } ");
 			if (idata & PVR_RESET_PVR)
-				fatal("{ PVR_RESET_PVR: TODO } ");
+				pvr_reset(d);
 			if (idata & PVR_RESET_TA)
 				pvr_reset_ta(d);
 			debug("]\n");
@@ -1024,6 +1041,9 @@ DEVINIT(pvr)
 	    VFB_GENERIC, 640,480, 640,480, 24, "Dreamcast PVR");
 
 	d->vblank_timer = timer_add(PVR_VBLANK_HZ, pvr_vblank_timer_tick, d);
+
+	pvr_reset(d);
+	pvr_reset_ta(d);
 
 	machine_add_tickfunction(machine, dev_pvr_fb_tick, d,
 	    PVR_FB_TICK_SHIFT, 0.0);

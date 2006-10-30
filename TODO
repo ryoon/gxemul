@@ -1,4 +1,4 @@
-$Id: TODO,v 1.406 2006-10-29 06:56:12 debug Exp $
+$Id: TODO,v 1.407 2006-10-30 04:47:48 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -91,6 +91,7 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 SuperH:
+	x)  DMA (0xffa00000)
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on...
 	x)  SH4 interrupt controller:
@@ -104,10 +105,7 @@ SuperH:
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Dreamcast:
-	x)  PVR:
-		x)  Registers controlling the framebuffer size/type
-		x)  Tile Accelerator: Lots of stuff.
-		x)  3D acceleration via OpenGL
+	x)  PVR:  see dev_pvr.c
 	x)  Maple bus:
 		x)  Correct controller input
 		x)  Mouse input

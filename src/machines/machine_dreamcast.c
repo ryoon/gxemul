@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.20 2006-10-29 06:55:57 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.21 2006-10-30 04:47:48 debug Exp $
  *
  *  Dreamcast.
  */
@@ -62,14 +62,14 @@ MACHINE_SETUP(dreamcast)
 
 	/*
 	 *  Physical address layout on the Dreamcast, according to a
-	 *  combination of sources:  NetBSD sources, KallistOS sources,
+	 *  combination of sources:  NetBSD sources, KalistOS sources,
 	 *  http://www.boob.co.uk/docs/Dreamcast_memory.txt, and
 	 *  http://www.ludd.luth.se/~jlo/dc/memory.txt, and possibly some
 	 *  others:
 	 *
 	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
 	 *  0x00200000 - 0x003fffff	Flash (256 KB)
-	 *  0x0x5f6800 - ...		??? (Something used by ebdemo.elf)
+	 *  0x005f6800 - ...		PVR DMA register
 	 *  0x005f6900 - ...		ASIC registers
 	 *  0x005f6c00 - ...		Maple registers (controller ports)
 	 *  0x005f8000 - 0x005f9fff	PVR registers (graphics)

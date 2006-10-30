@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.13 2006-10-30 04:47:48 debug Exp $
+ *  $Id: dev_pvr.c,v 1.14 2006-10-30 06:43:28 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -176,6 +176,9 @@ static void pvr_geometry_updated(struct pvr_data *d)
 
 	d->xsize /= d->bytes_per_pixel;
 
+	if (REG(PVRREG_DIWCONF) & DIWCONF_LR)
+		d->xsize /= 2;
+
 	if (d->line_double)
 		d->ysize /= 2;
 
@@ -293,6 +296,8 @@ static void pvr_render(struct cpu *cpu, struct pvr_data *d)
  */
 static void pvr_reset_ta(struct pvr_data *d)
 {
+	REG(PVRREG_DIWCONF) = DIWCONF_MAGIC;
+
 	/*  TODO  */
 }
 
@@ -321,6 +326,9 @@ static void pvr_ta_init(struct cpu *cpu, struct pvr_data *d)
 
 	/*  TODO: Hack to make tatest run.  */
 	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEDONE);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEMODDONE);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSDONE);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSMODDONE);
 }
 
 
@@ -474,10 +482,12 @@ DEVICE_ACCESS(pvr)
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: OB_ADDR set to 0x%08"PRIx32" ]\n",
 			    (uint32_t)(idata & PVR_OB_ADDR_MASK));
-			if (idata & ~PVR_OB_ADDR_MASK)
-				fatal("[ pvr: OB_ADDR: WARNING: Unknown"
+			if (idata & ~PVR_OB_ADDR_MASK) {
+				fatal("[ pvr: OB_ADDR: Fatal error: Unknown"
 				    " bits set: 0x%08"PRIx32" ]\n",
 				    (uint32_t)(idata & ~PVR_OB_ADDR_MASK));
+				exit(1);
+			}
 			idata &= PVR_OB_ADDR_MASK;
 			DEFAULT_WRITE;
 		}
@@ -492,6 +502,20 @@ DEVICE_ACCESS(pvr)
 				    " bits set: 0x%08"PRIx32" ]\n",
 				    (uint32_t)(idata & ~PVR_TILEBUF_ADDR_MASK));
 			idata &= PVR_TILEBUF_ADDR_MASK;
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_SPANSORT:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: SPANSORT: ");
+			if (idata & PVR_SPANSORT_SPAN0)
+				debug("SPAN0 ");
+			if (idata & PVR_SPANSORT_SPAN1)
+				debug("SPAN1 ");
+			if (idata & PVR_SPANSORT_TSP_CACHE_ENABLE)
+				debug("TSP_CACHE_ENABLE ");
+			debug("]\n");
 			DEFAULT_WRITE;
 		}
 		break;
@@ -624,6 +648,15 @@ DEVICE_ACCESS(pvr)
 		}
 		break;
 
+	case PVRREG_FB_RENDER_MODULO:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: PVRREG_FB_RENDER_MODULO set to %i ]\n",
+			    (int) idata);
+			/*  TODO  */
+			DEFAULT_WRITE;
+		}
+		break;
+
 	case PVRREG_DIWADDRL:
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: DIWADDRL set to 0x%08"PRIx32" ]\n",
@@ -638,6 +671,16 @@ DEVICE_ACCESS(pvr)
 			debug("[ pvr: DIWADDRS set to 0x%08"PRIx32" ]\n",
 			    (int) idata);
 			pvr_fb_invalidate(d, -1, -1);
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_RASEVTPOS:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: RASEVTPOS pos1=%i pos2=%i ]\n",
+			    (int)((idata & RASEVTPOS_POS1_MASK)
+			    >> RASEVTPOS_POS1_SHIFT),
+			    (int)(idata & RASEVTPOS_POS2_MASK));
 			DEFAULT_WRITE;
 		}
 		break;
@@ -669,13 +712,82 @@ DEVICE_ACCESS(pvr)
 		}
 		break;
 
+	case PVRREG_BRDHORZ:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: BRDHORZ start=%i stop=%i ]\n",
+			    (int)((idata & BRDHORZ_START_MASK)
+			    >> BRDHORZ_START_SHIFT),
+			    (int)(idata & BRDHORZ_STOP_MASK));
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_SYNCSIZE:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: SYNCSIZE v=%i h=%i ]\n",
+			    (int)((idata & SYNCSIZE_V_MASK)
+			    >> SYNCSIZE_V_SHIFT),
+			    (int)(idata & SYNCSIZE_H_MASK));
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_BRDVERT:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: BRDVERT start=%i stop=%i ]\n",
+			    (int)((idata & BRDVERT_START_MASK)
+			    >> BRDVERT_START_SHIFT),
+			    (int)(idata & BRDVERT_STOP_MASK));
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_DIWCONF:
+		if (writeflag == MEM_WRITE) {
+			if ((idata & DIWCONF_MAGIC_MASK) !=
+			    DIWCONF_MAGIC) {
+				fatal("PVRREG_DIWCONF magic not set to "
+				    "Magic value. 0x%08x\n", (int)idata);
+				exit(1);
+			}
+			if (idata & DIWCONF_BLANK)
+				debug("[ pvr: PVRREG_DIWCONF: BLANK: TODO ]\n");
+
+			DEFAULT_WRITE;
+			pvr_geometry_updated(d);
+		}
+		break;
+
+	case PVRREG_DIWHSTRT:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: DIWHSTRT hpos=%i ]\n",
+			    (int)(idata & DIWVSTRT_HPOS_MASK));
+			DEFAULT_WRITE;
+		}
+		break;
+
+	case PVRREG_DIWVSTRT:
+		if (writeflag == MEM_WRITE) {
+			debug("[ pvr: DIWVSTRT v2=%i v1=%i ]\n",
+			    (int)((idata & DIWVSTRT_V2_MASK)
+			    >> DIWVSTRT_V2_SHIFT),
+			    (int)(idata & DIWVSTRT_V1_MASK));
+			DEFAULT_WRITE;
+		}
+		break;
+
 	case PVRREG_SYNC_STAT:
-		/*  Ugly hack, but it works:  */
+		/*  TODO. Ugly hack, but it works:  */
 		odata = random();
 		break;
 
 	case PVRREG_TA_OPB_START:
 		if (writeflag == MEM_WRITE) {
+			if (idata & ~TA_OPB_START_MASK) {
+				fatal("[ pvr: UNEXPECTED bits in "
+				    "TA_OPB_START: 0x%08x ]\n", (int)idata);
+				exit(1);
+			}
 			idata &= TA_OPB_START_MASK;
 			debug("[ pvr: TA_OPB_START set to 0x%x ]\n",
 			    (int) idata);
@@ -685,6 +797,11 @@ DEVICE_ACCESS(pvr)
 
 	case PVRREG_TA_OB_START:
 		if (writeflag == MEM_WRITE) {
+			if (idata & ~TA_OB_START_MASK) {
+				fatal("[ pvr: UNEXPECTED bits in "
+				    "TA_OB_START: 0x%08x ]\n", (int)idata);
+				exit(1);
+			}
 			idata &= TA_OB_START_MASK;
 			debug("[ pvr: TA_OB_START set to 0x%x ]\n",
 			    (int) idata);
@@ -950,9 +1067,13 @@ DEVICE_ACCESS(pvr_vram_alt)
 	int i;
 
 	if (writeflag == MEM_READ) {
-		/*  TODO: Copy from real vram!  */
-		fatal("pvr_vram_alt: copy from real vram!\n");
-		memcpy(data, d->vram_alt + relative_addr, len);
+		/*  Copy from real vram:  */
+		for (i=0; i<len; i++) {
+			int addr = relative_addr + i;
+			addr = ((addr & 0x3ffffc) << 1) | (addr & 3)
+			    | ((addr & 0x400000) >> 20);
+			data[i] = d->vram[addr];
+		}
 		return 1;
 	}
 

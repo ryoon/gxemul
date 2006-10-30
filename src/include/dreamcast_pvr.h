@@ -1,4 +1,4 @@
-/*  GXemul: $Id: dreamcast_pvr.h,v 1.4 2006-10-21 09:25:24 debug Exp $  */
+/*  GXemul: $Id: dreamcast_pvr.h,v 1.5 2006-10-30 06:43:28 debug Exp $  */
 /*	$NetBSD: pvr.c,v 1.22 2006/04/12 19:38:22 jmmv Exp $	*/
 
 #ifndef	DREAMCAST_PVR_H
@@ -136,6 +136,10 @@
 #define	PVRREG_FB_RENDER_CFG	0x48
 /*  TODO  */
 
+#define	PVRREG_FB_RENDER_MODULO	0x4c
+#define	FB_RENDER_MODULO_MASK	0x000001ff
+/*  TODO  */
+
 #define	PVRREG_DIWADDRL		0x50
 
 #define	PVRREG_DIWADDRS		0x54
@@ -167,6 +171,9 @@
 #define	PVRREG_FOG_VERTEX_COL	0xb4
 
 #define	PVRREG_RASEVTPOS	0xcc
+#define	RASEVTPOS_POS2_MASK	0x000003ff
+#define	RASEVTPOS_POS1_MASK	0x03ff0000
+#define	RASEVTPOS_POS1_SHIFT	16
 #define	RASEVTPOS_BOTTOM(x)	((x) << 0)
 #define	RASEVTPOS_TOP(x)	((x) << 16)
 
@@ -187,24 +194,39 @@
 #define	SYNCCONF_VP_MASK	0x00000002	/*  Positive V-sync  */
 
 #define	PVRREG_BRDHORZ		0xd4
+#define	BRDHORZ_STOP_MASK	0x0000ffff
+#define	BRDHORZ_START_MASK	0xffff0000
+#define	BRDHORZ_START_SHIFT	16
 #define	BRDHORZ_STOP(x)		((x) << 0)
 #define	BRDHORZ_START(x)	((x) << 16)
 
 #define	PVRREG_SYNCSIZE		0xd8
+#define	SYNCSIZE_H_MASK		0x0000ffff
+#define	SYNCSIZE_V_MASK		0xffff0000
+#define	SYNCSIZE_V_SHIFT	16
 #define	SYNCSIZE_H(x)		((x) << 0)
 #define	SYNCSIZE_V(x)		((x) << 16)
 
 #define	PVRREG_BRDVERT		0xdc
+#define	BRDVERT_STOP_MASK	0x0000ffff
+#define	BRDVERT_START_MASK	0xffff0000
+#define	BRDVERT_START_SHIFT	16
 #define	BRDVERT_STOP(x)		((x) << 0)
 #define	BRDVERT_START(x)	((x) << 16)
 
 #define	PVRREG_DIWCONF		0xe8
-#define	DIWCONF_LR		(1U << 8)	/* low-res */
+#define	DIWCONF_BLANK		(1U << 3)	/*  blank screen  */
+#define	DIWCONF_LR		(1U << 8)	/*  low-res (320 horizontal)  */
+#define	DIWCONF_MAGIC_MASK	0x003f0000
 #define	DIWCONF_MAGIC		(22 << 16)
 
 #define	PVRREG_DIWHSTRT		0xec
+#define	DIWVSTRT_HPOS_MASK	0x000003ff
 
 #define	PVRREG_DIWVSTRT		0xf0
+#define	DIWVSTRT_V1_MASK	0x000003ff
+#define	DIWVSTRT_V2_MASK	0x03ff0000
+#define	DIWVSTRT_V2_SHIFT	16
 #define	DIWVSTRT_V1(x)		((x) << 0)
 #define	DIWVSTRT_V2(x)		((x) << 16)
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.21 2006-10-30 04:47:48 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.22 2006-10-30 05:09:59 debug Exp $
  *
  *  Dreamcast.
  */
@@ -72,6 +72,8 @@ MACHINE_SETUP(dreamcast)
 	 *  0x005f6800 - ...		PVR DMA register
 	 *  0x005f6900 - ...		ASIC registers
 	 *  0x005f6c00 - ...		Maple registers (controller ports)
+	 *  0x005f74e4 - ...		??? CDROM
+	 *  0x005f7800 - ...		G2 DMA registers
 	 *  0x005f8000 - 0x005f9fff	PVR registers (graphics)
 	 *  0x00600000 - ...		LAN Adapter registers
 	 *  0x00700000 - ...		SPU registers (sound)
@@ -85,12 +87,13 @@ MACHINE_SETUP(dreamcast)
 	 *  0x0e000000 - 0x0effffff	Copy of RAM? (*2)
 	 *  0x10000000 - ...		Tile accelerator command area
 	 *  0x10800000 - ...		Write-only mirror of Video RAM
+	 *  0x11000000 - ...		PVR DMA area??
 	 *  0x14000000 - ...		G2 (?)  Or Modem/Extension port?
 	 *
 	 *  (*) = with banks 0 and 1 switched; 64-bit read/write access...
 	 */
 
-	dev_ram_init(machine, 0x08000000, 2 * 1048576, DEV_RAM_RAM, 0);
+	dev_ram_init(machine, 0x00800000, 2 * 1048576, DEV_RAM_RAM, 0);
 
 	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
 

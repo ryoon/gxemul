@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.51 2006-10-28 12:13:05 debug Exp $
+ *  $Id: cpu_sh.c,v 1.52 2006-10-31 08:43:14 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -132,6 +132,8 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	CPU_SETTINGS_ADD_REGISTER32("gbr", cpu->cd.sh.gbr);
 	CPU_SETTINGS_ADD_REGISTER32("macl", cpu->cd.sh.macl);
 	CPU_SETTINGS_ADD_REGISTER32("mach", cpu->cd.sh.mach);
+	CPU_SETTINGS_ADD_REGISTER32("fpscr", cpu->cd.sh.fpscr);
+	CPU_SETTINGS_ADD_REGISTER32("fpul", cpu->cd.sh.fpul);
 	for (i=0; i<SH_N_GPRS; i++) {
 		char tmpstr[5];
 		snprintf(tmpstr, sizeof(tmpstr), "r%i", i);
@@ -1124,6 +1126,9 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo8 == 0x4d)
 			debug("fneg\t%sr%i\n",
+			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
+		else if (lo8 == 0x5d)
+			debug("fabs\t%sr%i\n",
 			    cpu->cd.sh.fpscr & SH_FPSCR_PR? "d" : "f", r8);
 		else if (lo8 == 0x6d)
 			debug("fsqrt\t%sr%i\n",

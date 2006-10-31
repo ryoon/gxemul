@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.40 2006-10-31 08:27:26 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.41 2006-10-31 08:43:14 debug Exp $
  *
  *  SH instructions.
  *
@@ -2077,6 +2077,7 @@ X(ftrv_xmtrx_fvn)
 /*
  *  fldi:  Load immediate (0.0 or 1.0) into floating point register.
  *  fneg:  Negate a floating point register
+ *  fabs:  Get the absolute value of a floating point register
  *  fsqrt: Calculate square root
  *
  *  arg[0] = ptr to fp register
@@ -2090,7 +2091,14 @@ X(fldi_frn)
 X(fneg_frn)
 {
 	FLOATING_POINT_AVAILABLE_CHECK;
+	/*  Note: This also works for double-precision.  */
 	reg(ic->arg[0]) ^= 0x80000000;
+}
+X(fabs_frn)
+{
+	FLOATING_POINT_AVAILABLE_CHECK;
+	/*  Note: This also works for double-precision.  */
+	reg(ic->arg[0]) &= 0x7fffffff;
 }
 X(fsqrt_frn)
 {
@@ -3407,6 +3415,10 @@ X(to_be_translated)
 		} else if (lo8 == 0x4d) {
 			/*  FNEG FRn  */
 			ic->f = instr(fneg_frn);
+			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
+		} else if (lo8 == 0x5d) {
+			/*  FABS FRn  */
+			ic->f = instr(fabs_frn);
 			ic->arg[0] = (size_t)&cpu->cd.sh.fr[r8];
 		} else if (lo8 == 0x6d) {
 			/*  FSQRT FRn  */

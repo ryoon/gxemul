@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.20 2006-10-19 10:15:23 debug Exp $
+ *  $Id: console.c,v 1.21 2006-10-31 08:26:38 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -542,7 +542,7 @@ void console_slave(char *arg)
 	int inputd;
 	int len;
 	char *p;
-	char buf[400];
+	char buf[16384];
 
 	/*  arg = '3,6' or similar, input and output descriptors  */
 	/*  printf("console_slave(): arg = '%s'\n", arg);  */
@@ -588,7 +588,7 @@ void console_slave(char *arg)
 			write(console_slave_outputd, buf, len);
 		}
 
-		usleep(100);
+		usleep(10000);
 	}
 }
 

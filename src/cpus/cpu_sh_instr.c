@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.42 2006-10-31 09:27:03 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.43 2006-10-31 11:07:05 debug Exp $
  *
  *  SH instructions.
  *
@@ -404,6 +404,9 @@ X(mov_w_disp_pc_rn)
  *  mov_l_disp_rm_rn:  Load a 32-bit value into Rn from address Rm + disp.
  *  mov_b_disp_rn_r0:  Load an int8_t from Rn+disp into R0.
  *  mov_w_disp_rn_r0:  Load an int16_t from Rn+disp into R0.
+ *  mov_b_disp_gbr_r0: Load an int8_t from GBR+disp into R0.
+ *  mov_w_disp_gbr_r0: Load an int16_t from GBR+disp into R0.
+ *  mov_l_disp_gbr_r0: Load an int32_t from GBR+disp into R0.
  *  mov_b_arg1_postinc_to_arg0:
  *  mov_w_arg1_postinc_to_arg0:
  *  mov_l_arg1_postinc_to_arg0:
@@ -581,6 +584,65 @@ X(fmov_rm_postinc_frn)
 	reg(ic->arg[1]) = data;
 
 	reg(ic->arg[0]) = addr + sizeof(uint32_t);
+}
+X(mov_b_disp_gbr_r0)
+{
+	uint32_t addr = cpu->cd.sh.gbr + ic->arg[1];
+	int8_t *p = (int8_t *) cpu->cd.sh.host_load[addr >> 12];
+	int8_t data;
+	if (p != NULL) {
+		data = p[addr & 0xfff];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+	cpu->cd.sh.r[0] = data;
+}
+X(mov_w_disp_gbr_r0)
+{
+	uint32_t addr = cpu->cd.sh.gbr + ic->arg[1];
+	int16_t *p = (int16_t *) cpu->cd.sh.host_load[addr >> 12];
+	int16_t data;
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 1];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE16_TO_HOST(data);
+	else
+		data = BE16_TO_HOST(data);
+	cpu->cd.sh.r[0] = data;
+}
+X(mov_l_disp_gbr_r0)
+{
+	uint32_t addr = cpu->cd.sh.gbr + ic->arg[1];
+	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
+	uint32_t data;
+	if (p != NULL) {
+		data = p[(addr & 0xfff) >> 2];
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		data = LE32_TO_HOST(data);
+	else
+		data = BE32_TO_HOST(data);
+	cpu->cd.sh.r[0] = data;
 }
 X(mov_b_arg1_postinc_to_arg0)
 {
@@ -848,6 +910,7 @@ X(mov_w_disp_rn_r0)
  *  mov_b_rm_r0_rn:     Store Rm to address Rn + R0 (8-bit).
  *  mov_w_rm_r0_rn:     Store Rm to address Rn + R0 (16-bit).
  *  mov_l_rm_r0_rn:     Store Rm to address Rn + R0 (32-bit).
+ *  mov_b_r0_disp_gbr:  Store R0 to address disp + GBR (8-bit).
  *  mov_w_r0_disp_gbr:  Store R0 to address disp + GBR (16-bit).
  *  mov_l_r0_disp_gbr:  Store R0 to address disp + GBR (32-bit).
  *  mov_l_rm_disp_rn:   Store Rm to address disp + Rn.
@@ -1068,6 +1131,22 @@ X(mov_l_rm_r0_rn)
 
 	if (p != NULL) {
 		p[(addr & 0xfff) >> 2] = data;
+	} else {
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		    sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+}
+X(mov_b_r0_disp_gbr)
+{
+	uint32_t addr = cpu->cd.sh.gbr + ic->arg[1];
+	uint8_t *p = (uint8_t *) cpu->cd.sh.host_store[addr >> 12];
+	uint8_t data = cpu->cd.sh.r[0];
+	if (p != NULL) {
+		p[addr & 0xfff] = data;
 	} else {
 		SYNCH_PC;
 		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
@@ -1590,13 +1669,15 @@ X(bsr)
 {
 	MODE_int_t target = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1) <<
 	    SH_INSTR_ALIGNMENT_SHIFT);
+	uint32_t old_pc;
+	SYNCH_PC;
+	old_pc = cpu->pc;
 	target += ic->arg[0];
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
-		SYNCH_PC;
-		cpu->cd.sh.pr = cpu->pc + 4;
+		cpu->cd.sh.pr = old_pc + 4;
 		cpu->pc = target;
 		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
@@ -1622,13 +1703,15 @@ X(bsrf_rn)
 {
 	MODE_int_t target = cpu->pc & ~((SH_IC_ENTRIES_PER_PAGE-1) <<
 	    SH_INSTR_ALIGNMENT_SHIFT);
+	uint32_t old_pc;
+	SYNCH_PC;
+	old_pc = cpu->pc;
 	target += ic->arg[0] + reg(ic->arg[1]);
 	cpu->delay_slot = TO_BE_DELAYED;
 	ic[1].f(cpu, ic+1);
 	cpu->n_translated_instrs ++;
 	if (!(cpu->delay_slot & EXCEPTION_IN_DELAY_SLOT)) {
-		SYNCH_PC;
-		cpu->cd.sh.pr = cpu->pc + 4;
+		cpu->cd.sh.pr = old_pc + 4;
 		cpu->pc = target;
 		cpu->delay_slot = NOT_DELAYED;
 		quick_pc_to_pointers(cpu);
@@ -3275,6 +3358,10 @@ X(to_be_translated)
 
 	case 0xc:
 		switch (r8) {
+		case 0x0:
+			ic->f = instr(mov_b_r0_disp_gbr);
+			ic->arg[1] = lo8;
+			break;
 		case 0x1:
 			ic->f = instr(mov_w_r0_disp_gbr);
 			ic->arg[1] = lo8 << 1;
@@ -3286,6 +3373,18 @@ X(to_be_translated)
 		case 0x3:
 			ic->f = instr(trapa);
 			ic->arg[0] = lo8 << 2;
+			break;
+		case 0x4:
+			ic->f = instr(mov_b_disp_gbr_r0);
+			ic->arg[1] = lo8;
+			break;
+		case 0x5:
+			ic->f = instr(mov_w_disp_gbr_r0);
+			ic->arg[1] = lo8 << 1;
+			break;
+		case 0x6:
+			ic->f = instr(mov_l_disp_gbr_r0);
+			ic->arg[1] = lo8 << 2;
 			break;
 		case 0x7:	/*  MOVA @(disp,pc),R0  */
 			ic->f = instr(mova_r0);

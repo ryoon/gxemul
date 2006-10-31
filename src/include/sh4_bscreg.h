@@ -1,4 +1,4 @@
-/*  GXemul: $Id: sh4_bscreg.h,v 1.1 2006-10-27 04:22:44 debug Exp $  */
+/*  GXemul: $Id: sh4_bscreg.h,v 1.2 2006-10-31 11:07:05 debug Exp $  */
 /*	$NetBSD: bscreg.h,v 1.6 2005/12/11 12:18:58 christos Exp $	*/
 
 #ifndef _SH3_BSCREG_H_
@@ -60,6 +60,8 @@
 #define	SH4_RTCNT		0xff800020	/* 16bit */
 #define	SH4_RTCOR		0xff800024	/* 16bit */
 #define	SH4_RFCR		0xff800028	/* 16bit */
+#define	SH4_UNKNOWN_2C		0xff80002c	/*  ???  */
+#define	SH4_UNKNOWN_30		0xff800030	/*  ???  */
 #define	SH4_BCR3		0xff800050	/* 16bit: SH7751R */
 #define	SH4_BCR4		0xfe0a00f0	/* 32bit: SH7751R */
 

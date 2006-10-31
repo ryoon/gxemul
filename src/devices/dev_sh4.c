@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.19 2006-10-28 12:13:06 debug Exp $
+ *  $Id: dev_sh4.c,v 1.20 2006-10-31 11:07:05 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -60,6 +60,10 @@
 
 struct sh4_data {
 	int		scif_console_handle;
+
+	/*  Bus State Controller:  */
+	uint32_t	unknown_2c;
+	uint32_t	unknown_30;
 
 	/*  Timer Management Unit:  */
 	struct timer	*sh4_timer;
@@ -622,6 +626,38 @@ DEVICE_ACCESS(sh4)
 		odata = 0x11;
 		break;
 
+#if 0
+	case SH4_UNKNOWN_2C:
+		/*  Not really part of the BSC? The 2C and 30 registers
+		    have to do with I/O pins... TODO  */
+		/*
+		 *  TODO:  Perhaps this isn't actually part of the Bus State
+		 *         controller?  Marcus Comstedt's video.s tutorial on
+		 *         how to output video on the Dreamcast indicates that
+		 *         this is a way to sense which video cable is
+		 *         connected.
+		 */
+		if (writeflag == MEM_WRITE) {
+			d->unknown_2c = idata;
+			d->unknown_30 = idata;
+		} else
+			odata = d->unknown_2c;
+		break;
+#endif
+
+#if 1
+	case SH4_UNKNOWN_30:
+		if (writeflag == MEM_WRITE)
+			d->unknown_30 = idata;
+		else {
+			odata = d->unknown_30;
+
+			/*  SUPER-UGLY HACK!  TODO  */
+			d->unknown_30 ++;
+		}
+		break;
+#endif
+
 
 	/*********************************/
 	/*  INTC:  Interrupt Controller  */
@@ -710,7 +746,7 @@ DEVINIT(sh4)
 	dev_ram_init(machine, 0x1e000000, 0x8000, DEV_RAM_RAM, 0x0);
 
 	/*  0xe0000000: Store queues:  */
-	dev_ram_init(machine, 0xe0000000, 32 * 2, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xe0000000, 0x04000000, DEV_RAM_RAM, 0x0);
 
 	/*
 	 *  0xf0000000	SH4_CCIA	I-Cache address array

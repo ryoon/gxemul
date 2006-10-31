@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.15 2006-10-31 08:27:26 debug Exp $
+ *  $Id: dev_pvr.c,v 1.16 2006-10-31 11:07:05 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -331,8 +331,7 @@ static void pvr_ta_init(struct cpu *cpu, struct pvr_data *d)
  */
 static void pvr_ta_command(struct cpu *cpu, struct pvr_data *d, int list_ofs)
 {
-	int ob_ofs;
-	int x, y;
+	int ob_ofs, x, y;
 	uint32_t *ta = &d->ta[list_ofs];
 
 #if 0

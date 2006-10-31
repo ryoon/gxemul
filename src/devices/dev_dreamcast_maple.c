@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_maple.c,v 1.8 2006-10-29 06:56:12 debug Exp $
+ *  $Id: dev_dreamcast_maple.c,v 1.9 2006-10-31 08:27:26 debug Exp $
  *  
  *  Dreamcast "Maple" bus controller.
  *
@@ -259,7 +259,8 @@ static void maple_getcond_controller_response(struct dreamcast_maple_data *d,
 	    4, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
 	receive_addr += 4;
 
-	c = get_controller(d);
+	/*  NOTE: Inverse of the buttons pressed!  */
+	c = ~get_controller(d);
 
 	/*
 	 *  buf[0..1] = little endian button bitfield

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1417 2006-10-30 06:43:27 debug Exp $
+$Id: HISTORY,v 1.1418 2006-10-31 08:27:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3145,4 +3145,5 @@ Changelog for GXemul:
 		MacOS X).
 		Making the Maple "Controller" do something (enough to barely
 		interact with dcircus.elf).
-20061030	Minor PVR updates.
+20061030-31	Some progress on the PVR. More test programs start running (but
+		with strange output).

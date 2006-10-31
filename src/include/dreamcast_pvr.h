@@ -1,4 +1,4 @@
-/*  GXemul: $Id: dreamcast_pvr.h,v 1.5 2006-10-30 06:43:28 debug Exp $  */
+/*  GXemul: $Id: dreamcast_pvr.h,v 1.6 2006-10-31 08:27:26 debug Exp $  */
 /*	$NetBSD: pvr.c,v 1.22 2006/04/12 19:38:22 jmmv Exp $	*/
 
 #ifndef	DREAMCAST_PVR_H
@@ -267,7 +267,16 @@
 #define	TILEBUF_SIZE_WIDTH_MASK   0x0000ffff
 
 #define	PVRREG_TA_OPB_CFG	0x140
-/*  TODO  */
+#define	TA_OPB_CFG_OPAQUEPOLY_MASK	0x00000003
+#define	TA_OPB_CFG_OPAQUEMOD_MASK	0x00000030
+#define	TA_OPB_CFG_OPAQUEMOD_SHIFT	         4
+#define	TA_OPB_CFG_TRANSPOLY_MASK	0x00000300
+#define	TA_OPB_CFG_TRANSPOLY_SHIFT	         8
+#define	TA_OPB_CFG_TRANSMOD_MASK	0x00003000
+#define	TA_OPB_CFG_TRANSMOD_SHIFT	        12
+#define	TA_OPB_CFG_PUNCHTHROUGH_MASK	0x00030000
+#define	TA_OPB_CFG_PUNCHTHROUGH_SHIFT	        16
+#define	TA_OPB_CFG_OPBDIR		0x00100000
 
 #define	PVRREG_TA_INIT		0x144
 #define	PVR_TA_INIT		0x80000000

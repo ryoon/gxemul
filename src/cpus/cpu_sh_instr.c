@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.39 2006-10-29 05:10:27 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.40 2006-10-31 08:27:26 debug Exp $
  *
  *  SH instructions.
  *
@@ -2295,7 +2295,6 @@ X(fmac_fr0_frm_frn)
 	ieee_interpret_float_value(fr0, &op0, IEEE_FMT_S);
 	ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
 	ieee_interpret_float_value(r2, &op2, IEEE_FMT_S);
-
 	ieee = ieee_store_float_value(op0.f * op1.f + op2.f, IEEE_FMT_S, 0);
 	reg(ic->arg[1]) = ieee;
 }
@@ -2404,7 +2403,8 @@ X(pref_rn)
 	SYNCH_PC;
 	for (ofs = 0; ofs < 32; ofs += sizeof(uint32_t)) {
 		uint32_t word;
-		cpu->memory_rw(cpu, cpu->mem, 0xe0000000+ofs, (unsigned char *)
+		cpu->memory_rw(cpu, cpu->mem, 0xe0000000 + ofs
+		    + sq_nr * 0x20, (unsigned char *)
 		    &word, sizeof(word), MEM_READ, PHYSICAL);
 		cpu->memory_rw(cpu, cpu->mem, extaddr+ofs, (unsigned char *)
 		    &word, sizeof(word), MEM_WRITE, PHYSICAL);

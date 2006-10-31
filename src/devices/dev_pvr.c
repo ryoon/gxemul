@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.14 2006-10-30 06:43:28 debug Exp $
+ *  $Id: dev_pvr.c,v 1.15 2006-10-31 08:27:26 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -282,10 +282,7 @@ static void pvr_render(struct cpu *cpu, struct pvr_data *d)
 		ob_ofs += sizeof(uint64_t);
 	}
 
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEDONE);
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEMODDONE);
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSDONE);
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSMODDONE);
+	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_RENDERDONE);
 }
 
 
@@ -297,8 +294,6 @@ static void pvr_render(struct cpu *cpu, struct pvr_data *d)
 static void pvr_reset_ta(struct pvr_data *d)
 {
 	REG(PVRREG_DIWCONF) = DIWCONF_MAGIC;
-
-	/*  TODO  */
 }
 
 
@@ -324,11 +319,7 @@ static void pvr_ta_init(struct cpu *cpu, struct pvr_data *d)
 	REG(PVRREG_TA_OPB_POS) = REG(PVRREG_TA_OPB_START);
 	REG(PVRREG_TA_OB_POS) = REG(PVRREG_TA_OB_START);
 
-	/*  TODO: Hack to make tatest run.  */
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEDONE);
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEMODDONE);
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSDONE);
-	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSMODDONE);
+//	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_RENDERDONE);
 }
 
 
@@ -338,12 +329,11 @@ static void pvr_ta_init(struct cpu *cpu, struct pvr_data *d)
  *  Read a command (e.g. parts of a polygon primitive) from d->ta[], and output
  *  "compiled commands" into the Object list and Object Pointer list.
  */
-static void pvr_ta_command(struct pvr_data *d, int list_ofs)
+static void pvr_ta_command(struct cpu *cpu, struct pvr_data *d, int list_ofs)
 {
 	int ob_ofs;
 	int x, y;
-
-	/*  TODO: list_ofs  */
+	uint32_t *ta = &d->ta[list_ofs];
 
 #if 0
 	/*  Dump the Tile Accelerator command for debugging:  */
@@ -351,7 +341,7 @@ static void pvr_ta_command(struct pvr_data *d, int list_ofs)
 		int i;
 		fatal("TA cmd:");
 		for (i=0; i<8; i++)
-			fatal(" %08x", (int) d->ta[i]);
+			fatal(" %08x", (int) ta[i]);
 		fatal("\n");
 	}
 #endif
@@ -365,20 +355,20 @@ static void pvr_ta_command(struct pvr_data *d, int list_ofs)
 
 	{
 		struct ieee_float_value fx, fy;
-		ieee_interpret_float_value(d->ta[1], &fx, IEEE_FMT_S);
-		ieee_interpret_float_value(d->ta[2], &fy, IEEE_FMT_S);
+		ieee_interpret_float_value(ta[1], &fx, IEEE_FMT_S);
+		ieee_interpret_float_value(ta[2], &fy, IEEE_FMT_S);
 		x = fx.f; y = fy.f;
 	}
 
 	ob_ofs = REG(PVRREG_TA_OB_POS);
 
-	switch (d->ta[0] >> 28) {
+	switch (ta[0] >> 28) {
 	case 0x8:
 		d->vram[ob_ofs + 0] = 2;
-		d->vram[ob_ofs + 4] = d->ta[3];
-		d->vram[ob_ofs + 5] = d->ta[3] >> 8;
-		d->vram[ob_ofs + 6] = d->ta[3] >> 16;
-		d->vram[ob_ofs + 7] = d->ta[3] >> 24;
+		d->vram[ob_ofs + 4] = ta[3];
+		d->vram[ob_ofs + 5] = ta[3] >> 8;
+		d->vram[ob_ofs + 6] = ta[3] >> 16;
+		d->vram[ob_ofs + 7] = ta[3] >> 24;
 		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
 		break;
 	case 0xe:
@@ -392,11 +382,31 @@ static void pvr_ta_command(struct pvr_data *d, int list_ofs)
 		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
 		break;
 	case 0x0:
-	default:
-		/*  End of list.  */
-		d->vram[ob_ofs + 0] = 0;
-		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
+		if (ta[1] == 0) {
+			/*  End of list.  */
+			uint32_t opb_cfg = REG(PVRREG_TA_OPB_CFG);
+			d->vram[ob_ofs + 0] = 0;
+			REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
+			if (opb_cfg & TA_OPB_CFG_OPAQUEPOLY_MASK)
+				SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_OPAQUEDONE);
+			if (opb_cfg & TA_OPB_CFG_OPAQUEMOD_MASK)
+				SYSASIC_TRIGGER_EVENT(
+				    SYSASIC_EVENT_OPAQUEMODDONE);
+			if (opb_cfg & TA_OPB_CFG_TRANSPOLY_MASK)
+				SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_TRANSDONE);
+			if (opb_cfg & TA_OPB_CFG_TRANSMOD_MASK)
+				SYSASIC_TRIGGER_EVENT(
+				    SYSASIC_EVENT_TRANSMODDONE);
+			if (opb_cfg & TA_OPB_CFG_PUNCHTHROUGH_MASK)
+				SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_PVR_PTDONE);
+		}
 		break;
+	case 2:	/*  Ignore for now.  */
+	case 3:	/*  Ignore for now.  */
+		/*  TODO  */
+		break;
+	default:fatal("Unimplemented top TA nibble %i\n", ta[0] >> 28);
+		exit(1);
 	}
 }
 
@@ -408,12 +418,15 @@ DEVICE_ACCESS(pvr_ta)
 
 	if (writeflag == MEM_WRITE) {
 		idata = memory_readmax64(cpu, data, len);
+
+		/*  Write to the tile accelerator command buffer:  */
 		d->ta[relative_addr / sizeof(uint32_t)] = idata;
 
+		/*  Execute the command, after a complete write:  */
 		if (relative_addr == 0x1c)
-			pvr_ta_command(d, 0);
+			pvr_ta_command(cpu, d, 0);
 		if (relative_addr == 0x3c)
-			pvr_ta_command(d, 0x20);
+			pvr_ta_command(cpu, d, 8);
 	} else {
 		odata = d->ta[relative_addr / sizeof(uint32_t)];
 		memory_writemax64(cpu, data, len, odata);
@@ -482,13 +495,14 @@ DEVICE_ACCESS(pvr)
 		if (writeflag == MEM_WRITE) {
 			debug("[ pvr: OB_ADDR set to 0x%08"PRIx32" ]\n",
 			    (uint32_t)(idata & PVR_OB_ADDR_MASK));
-			if (idata & ~PVR_OB_ADDR_MASK) {
+			/*  if (idata & ~PVR_OB_ADDR_MASK) {
 				fatal("[ pvr: OB_ADDR: Fatal error: Unknown"
 				    " bits set: 0x%08"PRIx32" ]\n",
 				    (uint32_t)(idata & ~PVR_OB_ADDR_MASK));
 				exit(1);
 			}
 			idata &= PVR_OB_ADDR_MASK;
+			*/
 			DEFAULT_WRITE;
 		}
 		break;
@@ -745,7 +759,8 @@ DEVICE_ACCESS(pvr)
 	case PVRREG_DIWCONF:
 		if (writeflag == MEM_WRITE) {
 			if ((idata & DIWCONF_MAGIC_MASK) !=
-			    DIWCONF_MAGIC) {
+			    DIWCONF_MAGIC && (idata & DIWCONF_MAGIC_MASK)
+			    != 0) {
 				fatal("PVRREG_DIWCONF magic not set to "
 				    "Magic value. 0x%08x\n", (int)idata);
 				exit(1);
@@ -880,6 +895,7 @@ DEVICE_ACCESS(pvr)
 		} else {
 			fatal("[ pvr: write to UNIMPLEMENTED addr 0x%x: 0x%x"
 			    " ]\n", (int)relative_addr, (int)idata);
+			DEFAULT_WRITE;
 		}
 	}
 
@@ -949,7 +965,6 @@ DEVICE_TICK(pvr_fb)
 
 	if (d->vblank_interrupts_pending > 0) {
 		SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_VBLINT);
-
 		SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_PVR_SCANINT1);
 		SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_PVR_SCANINT2);
 
@@ -1070,8 +1085,8 @@ DEVICE_ACCESS(pvr_vram_alt)
 		/*  Copy from real vram:  */
 		for (i=0; i<len; i++) {
 			int addr = relative_addr + i;
-			addr = ((addr & 0x3ffffc) << 1) | (addr & 3)
-			    | ((addr & 0x400000) >> 20);
+			addr = ((addr & 4) << 20) | (addr & 3)
+			    | ((addr & 0x7ffff8) >> 1);
 			data[i] = d->vram[addr];
 		}
 		return 1;
@@ -1083,12 +1098,9 @@ DEVICE_ACCESS(pvr_vram_alt)
 
 	for (i=0; i<len; i++) {
 		int addr = relative_addr + i;
-		uint8_t v = data[i];
-
 		addr = ((addr & 4) << 20) | (addr & 3)
 		    | ((addr & 0x7ffff8) >> 1);
-
-		d->vram[addr] = v;
+		d->vram[addr] = data[i];
 	}
 
 	return 1;

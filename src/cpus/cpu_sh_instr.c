@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.41 2006-10-31 08:43:14 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.42 2006-10-31 09:27:03 debug Exp $
  *
  *  SH instructions.
  *
@@ -2117,11 +2117,10 @@ X(fsqrt_frn)
 		reg(ic->arg[0] + sizeof(uint32_t)) = (uint32_t) ieee;
 	} else {
 		/*  Single-precision:  */
-		uint32_t r1, ieee;
-		r1 = reg(ic->arg[0]);
+		int32_t ieee, r1 = reg(ic->arg[0]);
 		ieee_interpret_float_value(r1, &op1, IEEE_FMT_S);
 		ieee = ieee_store_float_value(sqrt(op1.f), IEEE_FMT_S, 0);
-		reg(ic->arg[0]) = (uint32_t) ieee;
+		reg(ic->arg[0]) = ieee;
 	}
 }
 
@@ -2295,7 +2294,7 @@ X(fdiv_frm_frn)
 X(fmac_fr0_frm_frn)
 {
 	struct ieee_float_value op1, op2, op0;
-	uint32_t r1, r2, fr0 = cpu->cd.sh.fr[0], ieee;
+	int32_t r1, r2, fr0 = cpu->cd.sh.fr[0], ieee;
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 

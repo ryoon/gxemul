@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.11 2006-11-02 05:43:44 debug Exp $
+ *  $Id: dreamcast.c,v 1.12 2006-11-02 06:47:14 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -176,7 +176,7 @@ int dreamcast_emul(struct cpu *cpu)
 		switch (r7) {
 		case 0:	/*  FLASHROM_INFO  */
 			/*  TODO  */
-			cpu->cd.sh.r[0] = (int32_t) -1;
+			cpu->cd.sh.r[0] = (uint32_t) -1;
 			break;
 		default:fatal("[ FLASHROM: Unimplemented r7=%i ]\n", r7);
 			goto bad;

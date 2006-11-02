@@ -1,4 +1,4 @@
-$Id: TODO,v 1.408 2006-10-31 08:27:26 debug Exp $
+$Id: TODO,v 1.409 2006-11-02 05:43:43 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -105,13 +105,27 @@ SuperH:
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Dreamcast:
-	x)  PVR:  see dev_pvr.c
+	x)  CD image bootup:
+		0)  Find IP.BIN, and load it to 0x8c008000.
+		1)  Run code at 0x8c008300 (SEGA license code).
+		2)  When the license code runs a "boot menu" syscall,
+		    load the 1ST_READ.BIN file (unscrambled?) to 0x8c010000.
+		3)  Run code at 0x8c00b800 (Bootstrap 1). This will in turn
+		    jump to 0x8c00e000 (Bootstrap 2), and then jump to
+		    0x8c010000, to start the program.
+		(Try with e.g. Comstedt's Serial IP Slave, to make sure it
+		works as expected.)
+	x)  PVR:  Lots of stuff. See dev_pvr.c.
 	x)  Maple bus:
 		x)  Correct controller input
 		x)  Mouse input
 	x)  PROM/BIOS calls:
 		x)  GD-ROM emulation
-	x)  Get NetBSD/dreamcast, Linux/dreamcast, and homebrew demos running
+	x)  NetBSD/dreamcast: Root on nfs?
+	x)  Linux/dreamcast? (The gentoo kernel currently crashes.)
+	x)  More homebrew demos/games.
+	x)  Sound emulation (ARM cpu).
+	x)  VME processor emulation?
 
 Transputer:
 	x)  Implement support for Helios binaries.
@@ -242,6 +256,14 @@ Test machines:
 		for (;;) {
 			halt();
 		}
+
+Better CD Image file support:
+	x)  Support CD formats that contain more than 1 track, e.g.
+	    CDI files (?). These can then contain a mixture of e.g. sound
+	    and data tracks, and booting from an ISO filesystem path
+	    would boot from [by default] the first data track.
+	    (This would make sense for e.g. Dreamcast CD images, or
+	    possibly other live-CD formats.)
 
 Networking:
 	x)  Fix performance problems caused by only allowing a

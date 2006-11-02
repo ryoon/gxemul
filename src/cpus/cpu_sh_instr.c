@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.43 2006-10-31 11:07:05 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.44 2006-11-02 05:43:43 debug Exp $
  *
  *  SH instructions.
  *
@@ -512,9 +512,8 @@ X(fmov_rm_frn)
 }
 X(fmov_r0_rm_frn)
 {
-	uint32_t addr = reg(ic->arg[0]) + cpu->cd.sh.r[0];
+	uint32_t data, addr = reg(ic->arg[0]) + cpu->cd.sh.r[0];
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
-	uint32_t data;
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
@@ -544,9 +543,16 @@ X(fmov_r0_rm_frn)
 X(fmov_rm_postinc_frn)
 {
 	int d = cpu->cd.sh.fpscr & SH_FPSCR_SZ;
-	uint32_t addr = reg(ic->arg[0]);
+	uint32_t data, data2, addr = reg(ic->arg[0]);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_load[addr >> 12];
-	uint32_t data, data2;
+	size_t r1 = ic->arg[1];
+
+	if (d) {
+		/*  xd instead of dr?  */
+		int ofs = (r1 - (size_t)&cpu->cd.sh.fr[0]) / sizeof(uint32_t);
+		if (ofs & 1)
+			r1 = (size_t)&cpu->cd.sh.xf[ofs & ~1];
+	}
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
@@ -578,11 +584,10 @@ X(fmov_rm_postinc_frn)
 			data2 = LE32_TO_HOST(data2);
 		else
 			data2 = BE32_TO_HOST(data2);
-		reg(ic->arg[1] + 4) = data2;
+		reg(r1 + 4) = data2;
 	}
 
-	reg(ic->arg[1]) = data;
-
+	reg(r1) = data;
 	reg(ic->arg[0]) = addr + sizeof(uint32_t);
 }
 X(mov_b_disp_gbr_r0)
@@ -1043,9 +1048,18 @@ X(fmov_frm_r0_rn)
 X(fmov_frm_predec_rn)
 {
 	int d = cpu->cd.sh.fpscr & SH_FPSCR_SZ? 1 : 0;
-	uint32_t addr = reg(ic->arg[1]) - (d? 8 : 4);
+	uint32_t data, addr = reg(ic->arg[1]) - (d? 8 : 4);
 	uint32_t *p = (uint32_t *) cpu->cd.sh.host_store[addr >> 12];
-	uint32_t data = reg(ic->arg[0]);
+	size_t r0 = ic->arg[0];
+
+	if (d) {
+		/*  xd instead of dr?  */
+		int ofs0 = (r0 - (size_t)&cpu->cd.sh.fr[0]) / sizeof(uint32_t);
+		if (ofs0 & 1)
+			r0 = (size_t)&cpu->cd.sh.xf[ofs0 & ~1];
+	}
+
+	data = reg(r0);
 
 	FLOATING_POINT_AVAILABLE_CHECK;
 
@@ -1067,7 +1081,7 @@ X(fmov_frm_predec_rn)
 
 	if (d) {
 		/*  Store second single-precision floating point word:  */
-		data = reg(ic->arg[0] + 4);
+		data = reg(r0 + 4);
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			data = LE32_TO_HOST(data);
 		else

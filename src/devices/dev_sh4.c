@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.20 2006-10-31 11:07:05 debug Exp $
+ *  $Id: dev_sh4.c,v 1.21 2006-11-02 05:43:44 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  */
@@ -705,8 +705,22 @@ DEVICE_ACCESS(sh4)
 	case SH4_SCIF_BASE + SCIF_SSR:
 		/*  TODO: Implement more of this.  */
 		odata = SCSSR2_TDFE | SCSSR2_TEND;
+		if (console_charavail(d->scif_console_handle))
+			odata |= SCSSR2_DR;
 		break;
 
+	case SH4_SCIF_BASE + SCIF_FRDR:
+		{
+			int x = console_readchar(d->scif_console_handle);
+			if (x == 13)
+				x = 10;
+			odata = x < 0? 0 : x;
+		}
+		break;
+
+	case SH4_SCIF_BASE + SCIF_FDR:
+		odata = console_charavail(d->scif_console_handle);
+		break;
 
 	/*************************************************/
 
@@ -746,7 +760,7 @@ DEVINIT(sh4)
 	dev_ram_init(machine, 0x1e000000, 0x8000, DEV_RAM_RAM, 0x0);
 
 	/*  0xe0000000: Store queues:  */
-	dev_ram_init(machine, 0xe0000000, 0x04000000, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0xe0000000, 32 * 2, DEV_RAM_RAM, 0x0);
 
 	/*
 	 *  0xf0000000	SH4_CCIA	I-Cache address array

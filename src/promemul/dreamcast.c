@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.10 2006-10-28 01:37:44 debug Exp $
+ *  $Id: dreamcast.c,v 1.11 2006-11-02 05:43:44 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -174,6 +174,10 @@ int dreamcast_emul(struct cpu *cpu)
 	case 0xb8:
 		/*  FLASHROM  */
 		switch (r7) {
+		case 0:	/*  FLASHROM_INFO  */
+			/*  TODO  */
+			cpu->cd.sh.r[0] = (int32_t) -1;
+			break;
 		default:fatal("[ FLASHROM: Unimplemented r7=%i ]\n", r7);
 			goto bad;
 		}
@@ -210,7 +214,22 @@ int dreamcast_emul(struct cpu *cpu)
 		break;
 
 	case 0xe0:
-		/*  0x8c0000e0 is used by KallistOS arch_menu().  */
+		/*
+		 *  This seems to have two uses:
+		 *
+		 *  1. KalistOS calls this from arch_menu(), i.e. to return
+		 *     from a running program.
+		 *  2. The "licence code" in the IP.BIN code when booting from
+		 *     a bootable CD image calls this once the license screen
+		 *     has been displayed, and it wants the ROM to jump to
+		 *     0x8c00b800 ("Bootstrap 1").
+		 *
+		 *  The easiest way to support both is probably to keep track
+		 *  of whether the IP.BIN code was started by the (software)
+		 *  ROM emulation code, or not.
+		 *
+		 *  TODO
+		 */
 		fatal("[ Boot menu? TODO ]\n");
 		goto bad;
 

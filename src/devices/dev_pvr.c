@@ -25,11 +25,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.16 2006-10-31 11:07:05 debug Exp $
+ *  $Id: dev_pvr.c,v 1.17 2006-11-02 05:43:44 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
- *  http://mc.pp.se/dc/pvr.html, and doing a lot of guessing.
+ *  http://mc.pp.se/dc/pvr.html, source code of various demos and KalistOS,
+ *  and doing a lot of guessing.
  *
  *  TODO: Almost everything
  *
@@ -38,10 +39,10 @@
  *	x)  Lots of work on the 3D "Tile Accelerator" engine.
  *		Recognize commands and turn into OpenGL or similar
  *		commands on the host?
+ *		Color clipping.
+ *		Wire-frame when running on a host without XGL?
  *
- *	x)  Alternative VRAM:  Reads should read from normal VRAM (after
- *	    transformation). Writes should write to normal VRAM.
- *
+ *	x)  Border?
  *
  *  Multiple lists of various kinds (6?).
  *  Lists growing downwards!
@@ -204,12 +205,15 @@ static void line(struct pvr_data *d, int x1, int y1, int x2, int y2)
 {
 	int fb_base = REG(PVRREG_FB_RENDER_ADDR1);
 	int i;
-	for (i=0; i<200; i++) {
-		int px = (i * x2 + (200-i) * x1) / 200;
-		int py = (i * y2 + (200-i) * y1) / 200;
-		if (px > 0 && py > 0 && px < d->xsize && py < d->ysize)
+	for (i=0; i<256; i++) {
+		int px = (i * x2 + (256-i) * x1) >> 8;
+		int py = (i * y2 + (256-i) * y1) >> 8;
+		if (px > 0 && py > 0 && px < d->xsize && py < d->ysize) {
 			d->vram[fb_base + (px + py * d->xsize)*
 			    d->bytes_per_pixel] = 255;
+			d->vram[fb_base + (px + py * d->xsize)*
+			    d->bytes_per_pixel + 1] = 255;
+		}
 	}
 }
 
@@ -243,8 +247,8 @@ static void pvr_render(struct cpu *cpu, struct pvr_data *d)
 		if (cmd == 0)
 			break;
 		else if (cmd == 1) {
-			int px = d->vram[ob_ofs+2] + d->vram[ob_ofs+3] * 256;
-			int py = d->vram[ob_ofs+4] + d->vram[ob_ofs+5] * 256;
+			int16_t px = d->vram[ob_ofs+2] + d->vram[ob_ofs+3]*256;
+			int16_t py = d->vram[ob_ofs+4] + d->vram[ob_ofs+5]*256;
 
 			wf_x[wf_point_nr] = px;
 			wf_y[wf_point_nr] = py;
@@ -256,7 +260,7 @@ static void pvr_render(struct cpu *cpu, struct pvr_data *d)
 				line(d, wf_x[0], wf_y[0], wf_x[2], wf_y[2]);
 				line(d, wf_x[1], wf_y[1], wf_x[3], wf_y[3]);
 				line(d, wf_x[2], wf_y[2], wf_x[3], wf_y[3]);
-				wf_point_nr = 2;
+				wf_point_nr = 0;
 				wf_x[0] = wf_x[2]; wf_y[0] = wf_y[2];
 				wf_x[1] = wf_x[3]; wf_y[1] = wf_y[3];
 #else
@@ -318,8 +322,6 @@ static void pvr_ta_init(struct cpu *cpu, struct pvr_data *d)
 {
 	REG(PVRREG_TA_OPB_POS) = REG(PVRREG_TA_OPB_START);
 	REG(PVRREG_TA_OB_POS) = REG(PVRREG_TA_OB_START);
-
-//	SYSASIC_TRIGGER_EVENT(SYSASIC_EVENT_RENDERDONE);
 }
 
 
@@ -331,7 +333,8 @@ static void pvr_ta_init(struct cpu *cpu, struct pvr_data *d)
  */
 static void pvr_ta_command(struct cpu *cpu, struct pvr_data *d, int list_ofs)
 {
-	int ob_ofs, x, y;
+	int ob_ofs;
+	int16_t x, y;
 	uint32_t *ta = &d->ta[list_ofs];
 
 #if 0
@@ -375,9 +378,9 @@ static void pvr_ta_command(struct cpu *cpu, struct pvr_data *d, int list_ofs)
 		/*  Point.  */
 		d->vram[ob_ofs + 0] = 1;
 		d->vram[ob_ofs + 2] = x & 255;
-		d->vram[ob_ofs + 3] = x / 256;
+		d->vram[ob_ofs + 3] = x >> 8;
 		d->vram[ob_ofs + 4] = y & 255;
-		d->vram[ob_ofs + 5] = y / 256;
+		d->vram[ob_ofs + 5] = y >> 8;
 		REG(PVRREG_TA_OB_POS) = ob_ofs + sizeof(uint64_t);
 		break;
 	case 0x0:

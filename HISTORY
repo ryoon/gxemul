@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1419 2006-10-31 11:07:04 debug Exp $
+$Id: HISTORY,v 1.1420 2006-11-02 05:43:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3148,3 +3148,4 @@ Changelog for GXemul:
 20061030-31	Some progress on the PVR. More test programs start running (but
 		with strange output).
 		Various other SH4-related updates.
+20061102	Various Dreamcast and SH4 updates; more KOS demos run now.

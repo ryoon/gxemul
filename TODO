@@ -1,4 +1,4 @@
-$Id: TODO,v 1.409 2006-11-02 05:43:43 debug Exp $
+$Id: TODO,v 1.410 2006-11-06 05:32:38 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -115,6 +115,7 @@ Dreamcast:
 		    0x8c010000, to start the program.
 		(Try with e.g. Comstedt's Serial IP Slave, to make sure it
 		works as expected.)
+	x)  LAN adapter.
 	x)  PVR:  Lots of stuff. See dev_pvr.c.
 	x)  Maple bus:
 		x)  Correct controller input

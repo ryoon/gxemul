@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.23 2006-10-31 11:07:05 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.24 2006-11-06 05:32:38 debug Exp $
  *
  *  Dreamcast.
  */
@@ -78,7 +78,7 @@ MACHINE_SETUP(dreamcast)
 	 *  0x005f7800 - ...		G2 DMA registers
 	 *  0x005f7c00 - ...		???
 	 *  0x005f8000 - 0x005f9fff	PVR registers (graphics)
-	 *  0x00600000 - ...		LAN Adapter registers
+	 *  0x00600400 - 0x0060047f	LAN Adapter (MB86967) registers
 	 *  0x00700000 - ...		SPU registers (sound)
 	 *  0x00702c00 -		Cable select and AICA (?) (*3)
 	 *  0x00710000 - 0x00710007	RTC registers
@@ -90,7 +90,7 @@ MACHINE_SETUP(dreamcast)
 	 *  0x0c000000 - 0x0cffffff	RAM (16 MB)
 	 *  0x0e000000 - 0x0effffff	Copy of RAM? (*2)
 	 *  0x10000000 - ...		Tile accelerator command area
-	 *  0x10800000 - ...		Write-only mirror of Video RAM
+	 *  0x10800000 - ...		Write-only mirror of Video RAM (?)
 	 *  0x11000000 - ...		PVR DMA area??
 	 *  0x14000000 - ...		G2 (?)  Or Modem/Extension port?
 	 *
@@ -107,6 +107,7 @@ MACHINE_SETUP(dreamcast)
 	dev_ram_init(machine, 0x0e000000, 16 * 1048576, DEV_RAM_RAM, 0);
 
 	device_add(machine, "pvr");
+	device_add(machine, "mb8696x addr=0x600400 addr_mult=4");
 	device_add(machine, "dreamcast_asic");
 	device_add(machine, "dreamcast_maple");
 	device_add(machine, "dreamcast_rtc");

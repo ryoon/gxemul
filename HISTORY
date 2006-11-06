@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1420 2006-11-02 05:43:43 debug Exp $
+$Id: HISTORY,v 1.1421 2006-11-06 05:32:37 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3149,3 +3149,9 @@ Changelog for GXemul:
 		with strange output).
 		Various other SH4-related updates.
 20061102	Various Dreamcast and SH4 updates; more KOS demos run now.
+20061104	Adding a skeleton dev_mb8696x.c (the Dreamcast's LAN adapter).
+20061105	Continuing on the MB8696x; NetBSD/dreamcast detects it as mbe0.
+		Testing for the release.
+
+==============  RELEASE 0.4.3  ==============
+

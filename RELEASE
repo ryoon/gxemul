@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.233 2006-10-29 05:10:40 debug Exp $
+$Id: RELEASE,v 1.234 2006-11-06 05:32:38 debug Exp $
 
 Working on what will become 0.4.3.
 
@@ -22,8 +22,8 @@ systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 Changes between release 0.4.2 and 0.4.3 include, among other things:
 
-    o)	SuperH (SH4) emulation is now stable enough to let NetBSD/dreamcast
-	reach userland.
+    o)	SuperH (SH4) emulation is now stable enough to let a NetBSD/dreamcast
+	GENERIC_MD (ramdisk) kernel reach userland.
 
     o)	There is now a simple framework for letting emulated clocks, as seen
 	by guest operating systems, run at the same speed as the host clock.

@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.187 2006-11-06 05:31:38 debug Exp $
+$Id: guestoses.html,v 1.188 2006-11-08 01:20:52 debug Exp $
 
 Copyright (C) 2003-2006  Anders Gavare.  All rights reserved.
 
@@ -1125,28 +1125,7 @@ system type, and init path.
 <a name="netbsddreamcast"></a>
 <h3>NetBSD/dreamcast:</h3>
 
-<font color="#000095">SuperH emulation is very new in GXemul. This is 
-still highly experimental.</font>
-
-<p>It is possible to run <a href="http://www.netbsd.org/Ports/dreamcast/">NetBSD/dreamcast</a>
-3.1 in GXemul. Only enough of the Dreamcast is emulated to let a NetBSD
-ramdisk kernel reach userland; no network interface is emulated yet, so 
-root-on-nfs is not possible.
-
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="20061029-netbsd-dreamcast.png"><img src="20061029-netbsd-dreamcast_small.png"></a>
-
-<p>Download the 3.1 kernel and symbols here:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.gz</a>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-3.1/dreamcast/binary/kernel/netbsd-GENERIC_MD.symbols.gz</a>
-</pre>
-
-<p>Start NetBSD/dreamcast using the following command line:<pre>
-	<b>gxemul -XEdreamcast netbsd-GENERIC_MD.*</b>
-
-</pre>
-
-
+Moved <a href="dreamcast.html#netbsd_generic_md">here</a>.
 
 
 

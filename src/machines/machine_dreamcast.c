@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.25 2006-11-08 01:21:27 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.26 2006-11-08 03:01:29 debug Exp $
  *
  *  Dreamcast.
  */
@@ -98,6 +98,8 @@ MACHINE_SETUP(dreamcast)
 	 *  (*) = with banks 0 and 1 switched; 64-bit read/write access...
 	 *  (*3) = See VOUTC in Linux' drivers/video/pvr2fb.c.
 	 */
+
+	dev_ram_init(machine, 0x00702c00, 4, DEV_RAM_RAM, 0);
 
 	dev_ram_init(machine, 0x00800000, 2 * 1048576, DEV_RAM_RAM, 0);
 

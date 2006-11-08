@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.97 2006-09-07 11:44:01 debug Exp $
+ *  $Id: memory_rw.c,v 1.98 2006-11-08 03:01:29 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -373,56 +373,9 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		} else
 #endif /* MIPS */
 		{
-			if (paddr >= mem->physical_max) {
-				uint64_t offset, old_pc = cpu->pc;
-				char *symbol;
-
-				/*  This allows for example OS kernels to probe
-				    memory a few KBs past the end of memory,
-				    without giving too many warnings.  */
-				if (!quiet_mode && !no_exceptions && paddr >=
-				    mem->physical_max + 0x40000) {
-					fatal("[ memory_rw(): writeflag=%i ",
-					    writeflag);
-					if (writeflag) {
-						unsigned int i;
-						debug("data={", writeflag);
-						if (len > 16) {
-							int start2 = len-16;
-							for (i=0; i<16; i++)
-								debug("%s%02x",
-								    i?",":"",
-								    data[i]);
-							debug(" .. ");
-							if (start2 < 16)
-								start2 = 16;
-							for (i=start2; i<len;
-							    i++)
-								debug("%s%02x",
-								    i?",":"",
-								    data[i]);
-						} else
-							for (i=0; i<len; i++)
-								debug("%s%02x",
-								    i?",":"",
-								    data[i]);
-						debug("}");
-					}
-
-					fatal(" paddr=0x%llx >= physical_max"
-					    "; pc=", (long long)paddr);
-					if (cpu->is_32bit)
-						fatal("0x%08x",(int)old_pc);
-					else
-						fatal("0x%016llx",
-						    (long long)old_pc);
-					symbol = get_symbol_name(
-					    &cpu->machine->symbol_context,
-					    old_pc, &offset);
-					fatal(" <%s> ]\n",
-					    symbol? symbol : " no symbol ");
-				}
-			}
+			if (paddr >= mem->physical_max && !no_exceptions)
+				memory_warn_about_unimplemented_addr
+				    (cpu, mem, writeflag, paddr, data, len);
 
 			if (writeflag == MEM_READ) {
 #ifdef MEM_X86

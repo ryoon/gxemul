@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1422 2006-11-08 01:21:26 debug Exp $
+$Id: HISTORY,v 1.1423 2006-11-08 03:01:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3162,3 +3162,5 @@ Changelog for GXemul:
 		Moving Dreamcast-specific stuff in the documentation to its
 		own page (dreamcast.html).
 		Adding a border to the Dreamcast PVR framebuffer.
+20061108	Adding a -T command line option (again?), for halting the
+		emulator on unimplemented memory accesses.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.136 2006-10-25 09:24:06 debug Exp $
+ *  $Id: machine.h,v 1.137 2006-11-08 03:01:29 debug Exp $
  */
 
 #include <sys/types.h>
@@ -197,7 +197,7 @@ struct machine {
 	int	breakpoint_flags[MAX_BREAKPOINTS];
 
 	/*  Cache sizes: (1 << x) x=0 for default values  */
-	/*  TODO: these are _PER CPU_!  */
+	/*  TODO: these should be _PER CPU_!  */
 	int	cache_picache;
 	int	cache_pdcache;
 	int	cache_secondary;
@@ -206,6 +206,7 @@ struct machine {
 	int	cache_secondary_linesize;
 
 	int	dbe_on_nonexistant_memaccess;
+	int	halt_on_nonexistant_memaccess;
 	int	instruction_trace;
 	int	show_nr_of_instructions;
 	int	show_trace_tree;

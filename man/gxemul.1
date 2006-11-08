@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.77 2006-11-08 01:21:26 debug Exp $
+.\" $Id: gxemul.1,v 1.78 2006-11-08 03:01:29 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -320,6 +320,8 @@ is added to the command line).
 .Pp
 If a value is missing (e.g. the end-of-page slot does not really have a 
 known physical address), it is written out as just a dash ("-").
+.It Fl T
+Halt if the emulated program attempts to access non-existing memory.
 .It Fl t
 Show a trace tree of all function calls being made.
 .It Fl U

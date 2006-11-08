@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.285 2006-11-08 01:21:27 debug Exp $
+ *  $Id: main.c,v 1.286 2006-11-08 03:01:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -245,7 +245,7 @@ static void usage(int longusage)
 	printf("                0-7    force a specific ID\n");
 	printf("  -G port   listen to gdb remote connections on this port\n");
 	printf("  -I hz     set the main cpu frequency to hz (not used by "
-	    "all combinations\n            of machines and guest OSes)");
+	    "all combinations\n            of machines and guest OSes)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable dyntrans instruction combinations\n");
 	printf("  -j name   set the name of the kernel; for DECstation "
@@ -286,6 +286,7 @@ static void usage(int longusage)
 	printf("                d    disable statistics gathering at "
 	    "startup\n");
 	printf("                o    overwrite instead of append\n");
+	printf("  -T        halt on non-existant memory accesses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef WITH_X11
@@ -354,7 +355,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 	struct machine *m = emul_add_machine(emul, "default");
 
 	char *opts =
-	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:tU"
+	    "C:c:Dd:E:e:G:HhI:iJj:KM:Nn:Oo:p:QqRrSs:TtU"
 #ifdef UNSTABLE_DEVEL
 	    "u:"
 #endif
@@ -513,6 +514,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul,
 			break;
 		case 's':
 			machine_statistics_init(m, optarg);
+			msopts = 1;
+			break;
+		case 'T':
+			m->halt_on_nonexistant_memaccess = 1;
 			msopts = 1;
 			break;
 		case 't':

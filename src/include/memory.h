@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.52 2006-09-01 15:42:59 debug Exp $
+ *  $Id: memory.h,v 1.53 2006-11-08 03:01:29 debug Exp $
  *
  *  Memory related functions.
  */
@@ -164,6 +164,9 @@ void memory_device_register(struct memory *mem, const char *,
 void memory_device_remove(struct memory *mem, int i);
 
 uint64_t memory_checksum(struct memory *mem);
+
+void memory_warn_about_unimplemented_addr(struct cpu *cpu, struct memory *mem,
+	int writeflag, uint64_t paddr, uint8_t *data, size_t len);
 
 
 #endif	/*  MEMORY_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.44 2006-11-02 05:43:43 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.45 2006-11-08 03:01:29 debug Exp $
  *
  *  SH instructions.
  *
@@ -3112,6 +3112,11 @@ X(to_be_translated)
 				break;
 			case 0x1b:	/*  TAS.B @Rn  */
 				ic->f = instr(tas_b_rn);
+				break;
+			case 0x1e:	/*  LDC Rm,GBR  */
+				ic->f = instr(mov_rm_rn);
+				ic->arg[0] = (size_t)&cpu->cd.sh.r[r8];	/* m */
+				ic->arg[1] = (size_t)&cpu->cd.sh.gbr;
 				break;
 			case 0x20:	/*  SHAL Rn  */
 				ic->f = instr(shll_rn);  /*  NOTE: shll  */

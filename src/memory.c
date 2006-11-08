@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.199 2006-10-24 09:32:48 debug Exp $
+ *  $Id: memory.c,v 1.200 2006-11-08 03:01:29 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -43,6 +43,7 @@
 
 
 extern int verbose;
+extern int quiet_mode;
 
 
 /*
@@ -618,5 +619,64 @@ uint64_t memory_checksum(struct memory *mem)
 	}
 
 	return checksum;
+}
+
+
+/*
+ *  memory_warn_about_unimplemented_addr():
+ *
+ *  Called from memory_rw whenever memory outside of the physical address space
+ *  is accessed (and quiet_mode isn't set).
+ */
+void memory_warn_about_unimplemented_addr(struct cpu *cpu, struct memory *mem,
+	int writeflag, uint64_t paddr, uint8_t *data, size_t len)
+{
+	uint64_t offset, old_pc = cpu->pc;
+	char *symbol;
+
+	/*
+	 *  This allows guest OS kernels to probe memory a few KBs past the
+	 *  end of memory, without giving too many warnings.
+	 */
+	if (paddr < mem->physical_max + 0x40000)
+		return;
+
+	if (!cpu->machine->halt_on_nonexistant_memaccess && quiet_mode)
+		return;
+
+	fatal("[ memory_rw(): %s ", writeflag? "write":"read");
+
+	if (writeflag) {
+		unsigned int i;
+		debug("data={", writeflag);
+		if (len > 16) {
+			int start2 = len-16;
+			for (i=0; i<16; i++)
+				debug("%s%02x", i?",":"", data[i]);
+			debug(" .. ");
+			if (start2 < 16)
+				start2 = 16;
+			for (i=start2; i<len; i++)
+				debug("%s%02x", i?",":"", data[i]);
+		} else
+			for (i=0; i<len; i++)
+				debug("%s%02x", i?",":"", data[i]);
+		debug("} ");
+	}
+
+	fatal("paddr=0x%llx >= physical_max; pc=", (long long)paddr);
+	if (cpu->is_32bit)
+		fatal("0x%08"PRIx32, (uint32_t) old_pc);
+	else
+		fatal("0x%016"PRIx64, (uint64_t) old_pc);
+	symbol = get_symbol_name(&cpu->machine->symbol_context,
+	    old_pc, &offset);
+	fatal(" <%s> ]\n", symbol? symbol : " no symbol ");
+
+	if (cpu->machine->halt_on_nonexistant_memaccess) {
+		/*  TODO: Halt in a nicer way. Not possible with the
+		    current dyntrans system...  */
+		exit(1);
+	}
 }
 

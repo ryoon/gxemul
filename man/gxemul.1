@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.76 2006-11-04 06:40:20 debug Exp $
+.\" $Id: gxemul.1,v 1.77 2006-11-08 01:21:26 debug Exp $
 .\"
 .\" Copyright (C) 2004-2006  Anders Gavare.  All rights reserved.
 .\"
@@ -158,6 +158,10 @@ Override the default geometry; use H heads and S sectors-per-track.
 (The number of cylinders is calculated automatically.)
 .It i
 IDE. (This is the default for most machine types.)
+.It oOFS;
+Set the base offset for an ISO9660 filesystem on a disk image. The default 
+is 0. A suitable offset when booting from Dreamcast ISO9660 filesystem 
+images, which are offset by 11702 sectors, is 23965696.
 .It r
 Read-only (don't allow changes to be written to the file).
 .It s

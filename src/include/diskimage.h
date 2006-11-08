@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.32 2006-09-05 06:13:27 debug Exp $
+ *  $Id: diskimage.h,v 1.33 2006-11-08 01:21:27 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -59,6 +59,7 @@ struct diskimage {
 	int		sectors_per_track;
 
 	off_t		total_size;
+	int64_t		override_base_offset;
 	int		logical_block_size;
 
 	int		writable;
@@ -110,6 +111,7 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp,
 
 
 int64_t diskimage_getsize(struct machine *machine, int id, int type);
+int64_t diskimage_get_baseoffset(struct machine *machine, int id, int type);
 void diskimage_getchs(struct machine *machine, int id, int type,
 	int *c, int *h, int *s);
 int diskimage_scsicommand(struct cpu *cpu, int id, int type,

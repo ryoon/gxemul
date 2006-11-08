@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.234 2006-11-06 05:32:38 debug Exp $
+$Id: RELEASE,v 1.235 2006-11-08 01:21:26 debug Exp $
 
-Working on what will become 0.4.3.
+Working on what will become 0.4.4.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.3
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.4
 ================================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -20,84 +20,9 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 
-Changes between release 0.4.2 and 0.4.3 include, among other things:
+Changes between release 0.4.3 and 0.4.4 include, among other things:
 
-    o)	SuperH (SH4) emulation is now stable enough to let a NetBSD/dreamcast
-	GENERIC_MD (ramdisk) kernel reach userland.
-
-    o)	There is now a simple framework for letting emulated clocks, as seen
-	by guest operating systems, run at the same speed as the host clock.
-
-	So far, the DECstation, MobilePro (hpcmips), NetWinder, CATS, Malta
-	(evbmips), Cobalt, Algor, Dreamcast, and testmips machine modes
-	use the new clock/timer framework.
-
-    o)	Some changes to the way expressions are evaluated in the built-in
-	debugger, and some changes in command behaviour:
-
-	  x)  Expressions (including assignments) can now be arbitrarily
-	      complex, using parentheses, and the following operators:
-
-	          + - * /    % (modulo)  ^ (xor)  & (and)  | (or)
-
-	  x)  Some internal emulator variables can now be read/written using
-	      normal expressions. Examples of commands that did not work
-	      earlier, but should work now:
-
-		  print verbose
-		  r5 = sp - arch_pagesize * 4
-		  machine[0].statistics_enabled = 1
-
-	  x)  To force a name to be interpreted as a setting/register name,
-	      a hash sign (#) is now used instead of the percentage sign (%).
-	      (In the new expression evaluator, % means arithmetic modulo.)
-
-	  x)  The 'focus' command now also selects a cpu, in addition to
-	      selecting machine and emul.
-
-	  x)  The 'reg' command only prints registers for one cpu now, not
-	      all cpus in the currently focused machine.
-
-    o)	The wdc (standard IDE controller) had a bug which prevented disk
-	images larger than 2 GB to work correctly. This has been fixed.
-
-    o)	For MIPS emulation, some combinations of emulated processor + guest
-	operating system should now work better when idling (i.e. the host
-	should not run at 100% CPU):
-
-	  x)  For MIPS32/MIPS64 and RM5200, the 'wait' instruction should
-	      now work more or less as expected.
-
-	  x)  For VR41xx (e.g. MobilePro) emulation, the standby instruction
-	      should work like the 'wait' instruction.
-
-	  x)  For R3000 emulation, where there is no hardware wait instruction,
-	      I've implemented "instruction combination" hacks for both
-	      NetBSD/pmax and Debian/pmax, so that their cpu idle loops are
-	      detected and treated almost as a wait instruction.
-
-    o)	MIPS 64-bit address translation (X=1) was not fully working before;
-	TLB exception handling for xkseg and larger-than-2GB-userland should
-	now actually work. (Thanks to Juli Mallett and Carl van Schaik for
-	noticing these problems.)
-
-    o)	The mouse cursor update routines in DECstation (LK201) emulation
-	previously used the fact that guest OSes set the _hardware_
-	cursor position. In order to support X Windows when emulating
-	modern versions of NetBSD/pmax, which don't set the hardware
-	position anymore, a workaround has been implemented which only
-	sends relative coordinates to the guest OS. This has two drawbacks:
-
-	1. Ultrix emulation with dual- and tripple-head emulation will
-	   most likely feel very strange. It will still work, though.
-
-	2. Cursor movement feels "accelerated", because the emulator
-	   sends unaccelerated movements to the guest OS, which then
-	   accelerates them. This can however be compensated to some
-	   degree by running 'xset m 1 0' in the guest OS.
-
-	Having weird accelerated mouse movement is better than having no
-	mouse support at all, so this change was necessary.
+    o)	TODO
 
 Please read the HISTORY files for more details.
 

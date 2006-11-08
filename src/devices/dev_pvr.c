@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pvr.c,v 1.17 2006-11-02 05:43:44 debug Exp $
+ *  $Id: dev_pvr.c,v 1.18 2006-11-08 01:21:27 debug Exp $
  *  
  *  PowerVR CLX2 (Graphics controller used in the Dreamcast). Implemented by
  *  reading http://www.ludd.luth.se/~jlo/dc/powervr-reg.txt and
@@ -41,8 +41,6 @@
  *		commands on the host?
  *		Color clipping.
  *		Wire-frame when running on a host without XGL?
- *
- *	x)  Border?
  *
  *  Multiple lists of various kinds (6?).
  *  Lists growing downwards!
@@ -75,6 +73,7 @@
 #define	PVR_FB_TICK_SHIFT	19
 
 #define	PVR_VBLANK_HZ		60.0
+#define	PVR_MARGIN		16
 
 struct pvr_data {
 	struct vfb_data		*fb;
@@ -103,6 +102,8 @@ struct pvr_data {
 	int			pixelmode;
 	int			line_double;
 	int			display_enabled;
+	/*  BRDCOLR:  */
+	int			border_updated;
 	/*  SYNCCONF:  */
 	int			video_enabled;
 	int			broadcast_standard;
@@ -161,6 +162,9 @@ static void pvr_vblank_timer_tick(struct timer *t, void *extra)
  */
 static void pvr_geometry_updated(struct pvr_data *d)
 {
+	/*  Make sure to redraw border on geometry changes.  */
+	d->border_updated = 1;
+
 	d->xsize = (REG(PVRREG_DIWSIZE) >> DIWSIZE_DPL_SHIFT) & DIWSIZE_MASK;
 	d->ysize = (REG(PVRREG_DIWSIZE) >> DIWSIZE_LPF_SHIFT) & DIWSIZE_MASK;
 
@@ -541,6 +545,7 @@ DEVICE_ACCESS(pvr)
 			debug("[ pvr: BRDCOLR set to 0x%06"PRIx32" ]\n",
 			    (int)idata);
 			DEFAULT_WRITE;
+			d->border_updated = 1;
 		}
 		break;
 
@@ -979,6 +984,33 @@ DEVICE_TICK(pvr_fb)
 	 *  Framebuffer update:
 	 */
 
+	/*  Border changed?  */
+	if (d->border_updated) {
+		/*  Fill border with border color:  */
+		int rgb = REG(PVRREG_BRDCOLR), addr = 0;
+		int x, y, b = rgb & 0xff, g = (rgb >> 8) & 0xff, r = rgb >> 16;
+		int skiplen = (d->fb->xsize-2*PVR_MARGIN) * d->fb->bit_depth/8;
+
+		for (y=0; y<d->fb->ysize; y++) {
+			int xskip = y < PVR_MARGIN || y >=
+			    d->fb->ysize - PVR_MARGIN? -1 : PVR_MARGIN;
+			for (x=0; x<d->fb->xsize; x++) {
+				if (x == xskip) {
+					x = d->fb->xsize - PVR_MARGIN;
+					addr += skiplen;
+				}
+				fb[addr] = r;
+				fb[addr+1] = g;
+				fb[addr+2] = b;
+				addr += 3;
+			}
+		}
+
+		/*  Full redraw of the framebuffer:  */
+		d->fb->update_x1 = 0; d->fb->update_x2 = d->fb->xsize - 1;
+		d->fb->update_y1 = 0; d->fb->update_y2 = d->fb->ysize - 1;
+	}
+
 	memory_device_dyntrans_access(cpu, cpu->mem, extra, &low, &high);
 	if ((int64_t)low != -1)
 		extend_update_region(d, low, high);
@@ -987,16 +1019,16 @@ DEVICE_TICK(pvr_fb)
 		return;
 
 	/*  Copy (part of) the VRAM to the framebuffer:  */
-	if (d->fb_update_x2 >= d->fb->xsize)
-		d->fb_update_x2 = d->fb->xsize - 1;
-	if (d->fb_update_y2 >= d->fb->ysize)
-		d->fb_update_y2 = d->fb->ysize - 1;
+	if (d->fb_update_x2 >= d->xsize)
+		d->fb_update_x2 = d->xsize - 1;
+	if (d->fb_update_y2 >= d->ysize)
+		d->fb_update_y2 = d->ysize - 1;
 
 	vram_ofs += d->fb_update_y1 * bytes_per_line;
 	vram_ofs += d->fb_update_x1 * d->bytes_per_pixel;
 	pixels_to_copy = (d->fb_update_x2 - d->fb_update_x1 + 1);
-	fb_ofs = d->fb_update_y1 * d->fb->bytes_per_line;
-	fb_ofs += d->fb_update_x1 * d->fb->bit_depth / 8;
+	fb_ofs = (d->fb_update_y1 + PVR_MARGIN) * d->fb->bytes_per_line;
+	fb_ofs += (d->fb_update_x1 + PVR_MARGIN) * d->fb->bit_depth / 8;
 
 	/*  Copy the actual pixels: (Four manually inlined, for speed.)  */
 
@@ -1061,6 +1093,10 @@ DEVICE_TICK(pvr_fb)
 	 *  Extend the real framebuffer to encompass the area
 	 *  just written to:
 	 */
+
+	/*  Offset to take the margin into account first...  */
+	d->fb_update_x1 += PVR_MARGIN; d->fb_update_y1 += PVR_MARGIN;
+	d->fb_update_x2 += PVR_MARGIN; d->fb_update_y2 += PVR_MARGIN;
 
 	if (d->fb_update_x1 < d->fb->update_x1 || d->fb->update_x1 < 0)
 		d->fb->update_x1 = d->fb_update_x1;
@@ -1173,7 +1209,9 @@ DEVINIT(pvr)
 	d->bytes_per_pixel = 2;
 
 	d->fb = dev_fb_init(machine, machine->memory, INTERNAL_FB_ADDR,
-	    VFB_GENERIC, 640,480, 640,480, 24, "Dreamcast PVR");
+	    VFB_GENERIC, d->xsize + PVR_MARGIN*2, d->ysize + PVR_MARGIN*2,
+	    d->xsize + PVR_MARGIN*2, d->ysize + PVR_MARGIN*2,
+	    24, "Dreamcast PVR");
 
 	d->vblank_timer = timer_add(PVR_VBLANK_HZ, pvr_vblank_timer_tick, d);
 

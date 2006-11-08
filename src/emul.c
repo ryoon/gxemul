@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.272 2006-10-31 08:26:56 debug Exp $
+ *  $Id: emul.c,v 1.273 2006-11-08 01:21:26 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -55,6 +55,9 @@
 #include "sgi_arcbios.h"
 #include "timer.h"
 #include "x11.h"
+
+
+/*  #define ISO_DEBUG  */
 
 
 extern int extra_argc;
@@ -223,7 +226,9 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 	dirofs = (int64_t)(buf[0x8c] + (buf[0x8d] << 8) + (buf[0x8e] << 16) +
 	    ((uint64_t)buf[0x8f] << 24)) * 2048;
 
-	/*  debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);  */
+#ifdef ISO_DEBUG
+	debug("root = %i bytes at 0x%llx\n", dirlen, (long long)dirofs);
+#endif
 
 	dirbuf = malloc(dirlen);
 	if (dirbuf == NULL) {
@@ -258,22 +263,30 @@ static int iso_load_bootblock(struct machine *m, struct cpu *cpu,
 		if (p == NULL)
 			p = strchr(filename, '\\');
 
-		/*  debug("%i%s: %i, %i, \"", filenr, filenr == found_dir?
-		    " [CURRENT]" : "", x, y);  */
+#ifdef ISO_DEBUG
+		debug("%i%s: %i, %i, \"", filenr, filenr == found_dir?
+		    " [CURRENT]" : "", x, y);
+#endif
 		for (i=0; i<nlen && i<sizeof(direntry)-1; i++)
 			if (dp[i]) {
 				direntry[i] = dp[i];
-				/*  debug("%c", dp[i]);  */
+#ifdef ISO_DEBUG
+				debug("%c", dp[i]);
+#endif
 			} else
 				break;
-		/*  debug("\"\n");  */
+#ifdef ISO_DEBUG
+		debug("\"\n");
+#endif
 		direntry[i] = '\0';
 
 		/*  A directory name match?  */
-		if (p != NULL && strncasecmp(filename, direntry, nlen) == 0
-		    && nlen == (size_t)p - (size_t)filename && found_dir == y) {
+		if ((p != NULL && strncasecmp(filename, direntry, nlen) == 0
+		    && nlen == (size_t)p - (size_t)filename && found_dir == y)
+		    || (p == NULL && direntry[0] == '\0') ) {
 			found_dir = filenr;
-			filename = p+1;
+			if (p != NULL)
+				filename = p+1;
 			dirofs = 2048 * (int64_t)x;
 		}
 
@@ -532,14 +545,71 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 	    iso_type, retval = 0;
 	unsigned char minibuf[0x20];
 	unsigned char *bootblock_buf;
-	uint64_t bootblock_offset;
+	uint64_t bootblock_offset, base_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
 
 	boot_disk_id = diskimage_bootdev(m, &boot_disk_type);
 	if (boot_disk_id < 0)
 		return 0;
 
+	base_offset = diskimage_get_baseoffset(m, boot_disk_id, boot_disk_type);
+
 	switch (m->machine_type) {
+
+	case MACHINE_DREAMCAST:
+		if (!diskimage_is_a_cdrom(cpu->machine, boot_disk_id,
+		    boot_disk_type)) {
+			fatal("The Dreamcast emulation mode can only boot"
+			    " from CD images, not from other disk types.\n");
+			exit(1);
+		}
+
+		bootblock_buf = malloc(32768);
+		if (bootblock_buf == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(1);
+		}
+
+		debug("loading Dreamcast IP.BIN from %s id %i\n",
+		    diskimage_types[boot_disk_type], boot_disk_id);
+
+		res = diskimage_access(m, boot_disk_id, boot_disk_type,
+		    0, base_offset, bootblock_buf, 0x8000);
+		if (!res) {
+			fatal("Couldn't read the disk image. Aborting.\n");
+			return 0;
+		}
+
+		if (strncmp(bootblock_buf, "SEGA ", 5) != 0) {
+			fatal("This is not a Dreamcast IP.BIN header.\n");
+			free(bootblock_buf);
+			return 0;
+		}
+
+		/*  Store IP.BIN at 0x8c008000, and set entry point.  */
+		store_buf(cpu, 0x8c008000, (char *)bootblock_buf, 32768);
+		cpu->pc = 0x8c008300;
+
+		/*  Remember the name of the file to boot (1ST_READ.BIN):  */
+		if (cpu->machine->boot_kernel_filename == NULL ||
+		    cpu->machine->boot_kernel_filename[0] == '\0') {
+			int i = 0x60;
+			while (i < 0x70) {
+				if (bootblock_buf[i] == ' ')
+					bootblock_buf[i] = 0;
+				i ++;
+			}
+			cpu->machine->boot_kernel_filename = strdup(
+			    bootblock_buf + 0x60);
+		}
+
+		debug("boot filename: %s\n",
+		    cpu->machine->boot_kernel_filename);
+
+		free(bootblock_buf);
+
+		break;
+
 	case MACHINE_PMAX:
 		/*
 		 *  The first few bytes of a disk contains information about
@@ -678,7 +748,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 	 *  Try reading a kernel manually from the disk. The code here
 	 *  does not rely on machine-dependent boot blocks etc.
 	 */
-	/*  ISO9660: (0x800 bytes at 0x8000)  */
+	/*  ISO9660: (0x800 bytes at 0x8000 + base_offset)  */
 	bootblock_buf = malloc(0x800);
 	if (bootblock_buf == NULL) {
 		fprintf(stderr, "Out of memory.\n");
@@ -686,7 +756,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 	}
 
 	res = diskimage_access(m, boot_disk_id, boot_disk_type,
-	    0, 0x8000, bootblock_buf, 0x800);
+	    0, base_offset + 0x8000, bootblock_buf, 0x800);
 	if (!res) {
 		fatal("Couldn't read the disk image. Aborting.\n");
 		return 0;

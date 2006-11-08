@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.53 2006-10-31 11:07:05 debug Exp $
+ *  $Id: cpu_sh.c,v 1.54 2006-11-08 01:21:27 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -132,6 +132,9 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	CPU_SETTINGS_ADD_REGISTER32("gbr", cpu->cd.sh.gbr);
 	CPU_SETTINGS_ADD_REGISTER32("macl", cpu->cd.sh.macl);
 	CPU_SETTINGS_ADD_REGISTER32("mach", cpu->cd.sh.mach);
+	CPU_SETTINGS_ADD_REGISTER32("expevt", cpu->cd.sh.expevt);
+	CPU_SETTINGS_ADD_REGISTER32("intevt", cpu->cd.sh.intevt);
+	CPU_SETTINGS_ADD_REGISTER32("tra", cpu->cd.sh.tra);
 	CPU_SETTINGS_ADD_REGISTER32("fpscr", cpu->cd.sh.fpscr);
 	CPU_SETTINGS_ADD_REGISTER32("fpul", cpu->cd.sh.fpul);
 	for (i=0; i<SH_N_GPRS; i++) {

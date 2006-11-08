@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.12 2006-11-02 06:47:14 debug Exp $
+ *  $Id: dreamcast.c,v 1.13 2006-11-08 01:21:27 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -51,6 +51,8 @@
 
 /*  The ROM FONT seems to be located just after 1MB, in a real Dreamcast:  */
 #define	DREAMCAST_ROMFONT_BASE		0x80100020
+
+static int booting_from_cdrom = 0;
 
 
 /*
@@ -130,6 +132,9 @@ void dreamcast_machine_setup(struct machine *machine)
 	/*  PROM reboot, in case someone jumps to 0xa0000000:  */
 	store_16bit_word(cpu, 0xa0000000, 0x00ff);
 
+	/*  Special hack to initiate a CDROM boot sequence:  */
+	store_16bit_word(cpu, 0x8c000104, 0x00ff);
+
 	dreamcast_romfont_init(machine);
 }
 
@@ -151,6 +156,19 @@ int dreamcast_emul(struct cpu *cpu)
 		fatal("[ dreamcast reboot ]\n");
 		cpu->running = 0;
 		break;
+
+	case 0x04:
+		/*
+		 *  GXemul hack:
+		 *
+		 *  By jumping to this address (0x8c000104), a "boot from
+		 *  CDROM" is simulated. Control is transfered to the license
+		 *  code in the loaded IP.BIN file.
+		 */
+		debug("[ dreamcast boot from CDROM ]\n");
+		booting_from_cdrom = 1;
+		cpu->pc = 0x8c008300;
+		return 1;
 
 	case 0xb0:
 		/*  SYSINFO  */
@@ -227,11 +245,17 @@ int dreamcast_emul(struct cpu *cpu)
 		 *  The easiest way to support both is probably to keep track
 		 *  of whether the IP.BIN code was started by the (software)
 		 *  ROM emulation code, or not.
-		 *
-		 *  TODO
 		 */
-		fatal("[ Boot menu? TODO ]\n");
-		goto bad;
+		if (booting_from_cdrom) {
+			fatal("[ dreamcast: Switching to bootstrap 1 ]\n");
+			booting_from_cdrom = 0;
+			cpu->pc = 0x8c00b800;
+			return 1;
+		} else {
+			fatal("[ dreamcast: Returning to main menu. ]\n");
+			cpu->running = 0;
+		}
+		break;
 
 	default:goto bad;
 	}

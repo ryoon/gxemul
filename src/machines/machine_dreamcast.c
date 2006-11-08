@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.24 2006-11-06 05:32:38 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.25 2006-11-08 01:21:27 debug Exp $
  *
  *  Dreamcast.
  */
@@ -73,8 +73,9 @@ MACHINE_SETUP(dreamcast)
 	 *  0x005f6800 - ...		PVR DMA register
 	 *  0x005f6900 - ...		ASIC registers
 	 *  0x005f6c00 - ...		Maple registers (controller ports)
+	 *  0x005f7000 - ...		GDROM DMA?
 	 *  0x005f7400 - ...		???
-	 *  0x005f74e4 - ...		??? CDROM
+	 *  0x005f74e4 - ...		??? GDROM???
 	 *  0x005f7800 - ...		G2 DMA registers
 	 *  0x005f7c00 - ...		???
 	 *  0x005f8000 - 0x005f9fff	PVR registers (graphics)

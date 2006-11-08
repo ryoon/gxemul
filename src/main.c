@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.284 2006-09-19 10:50:08 debug Exp $
+ *  $Id: main.c,v 1.285 2006-11-08 01:21:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -236,6 +236,8 @@ static void usage(int longusage)
 	printf("                gH;S;  set geometry to H heads and S"
 	    " sectors-per-track\n");
 	printf("                i      IDE\n");
+	printf("                oOFS;  set base offset to OFS (for ISO9660"
+	    " filesystems)\n");
 	printf("                r      read-only (don't allow changes to the"
 	    " file)\n");
 	printf("                s      SCSI\n");

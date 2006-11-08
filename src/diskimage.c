@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.114 2006-09-07 11:44:01 debug Exp $
+ *  $Id: diskimage.c,v 1.115 2006-11-08 01:21:26 debug Exp $
  *
  *  Disk image support.
  *
@@ -276,6 +276,25 @@ int64_t diskimage_getsize(struct machine *machine, int id, int type)
 	while (d != NULL) {
 		if (d->type == type && d->id == id)
 			return d->total_size;
+		d = d->next;
+	}
+	return -1;
+}
+
+
+/*
+ *  diskimage_get_baseoffset():
+ *
+ *  Returns -1 if the specified disk id/type does not exists, otherwise
+ *  the base offset of the disk image is returned.
+ */
+int64_t diskimage_get_baseoffset(struct machine *machine, int id, int type)
+{
+	struct diskimage *d = machine->first_diskimage;
+
+	while (d != NULL) {
+		if (d->type == type && d->id == id)
+			return d->override_base_offset;
 		d = d->next;
 	}
 	return -1;
@@ -1401,6 +1420,14 @@ int diskimage_access(struct machine *machine, int id, int type, int writeflag,
 		return 0;
 	}
 
+	offset -= d->override_base_offset;
+	if (offset < 0 && offset + d->override_base_offset >= 0) {
+		debug("[ reading before start of disk image ]\n");
+		/*  Returning zeros.  */
+		memset(buf, 0, len);
+		return 1;
+	}
+
 	return diskimage__internal_access(d, writeflag, offset, buf, len);
 }
 
@@ -1419,6 +1446,7 @@ int diskimage_access(struct machine *machine, int id, int type, int writeflag,
  *	gH;S;	set geometry (H=heads, S=sectors per track, cylinders are
  *		automatically calculated). (This is ignored for floppies.)
  *	i	IDE (instead of SCSI)
+ *	oOFS;	set base offset in bytes, when booting from an ISO9660 fs
  *	r       read-only (don't allow changes to the file)
  *	s	SCSI (this is the default)
  *	t	tape
@@ -1431,10 +1459,11 @@ int diskimage_add(struct machine *machine, char *fname)
 {
 	struct diskimage *d, *d2;
 	int id = 0, override_heads=0, override_spt=0;
-	int64_t bytespercyl;
+	int64_t bytespercyl, override_base_offset=0;
 	char *cp;
 	int prefix_b=0, prefix_c=0, prefix_d=0, prefix_f=0, prefix_g=0;
-	int prefix_i=0, prefix_r=0, prefix_s=0, prefix_t=0, prefix_id = -1;
+	int prefix_i=0, prefix_r=0, prefix_s=0, prefix_t=0, prefix_id=-1;
+	int prefix_o=0;
 
 	if (fname == NULL) {
 		fprintf(stderr, "diskimage_add(): NULL ptr\n");
@@ -1493,6 +1522,20 @@ int diskimage_add(struct machine *machine, char *fname)
 			case 'i':
 				prefix_i = 1;
 				break;
+			case 'o':
+				prefix_o = 1;
+				override_base_offset = atoi(fname);
+				while (*fname != '\0' && *fname != ':'
+				    && *fname != ';')
+					fname ++;
+				if (*fname == ':' || *fname == ';')
+					fname ++;
+				if (override_base_offset < 0) {
+					fatal("Bad base offset: %"PRIi64
+					    "\n", override_base_offset);
+					exit(1);
+				}
+				break;
 			case 'r':
 				prefix_r = 1;
 				break;
@@ -1549,6 +1592,9 @@ int diskimage_add(struct machine *machine, char *fname)
 		d->type = DISKIMAGE_FLOPPY;
 	if (prefix_s)
 		d->type = DISKIMAGE_SCSI;
+
+	if (prefix_o)
+		d->override_base_offset = override_base_offset;
 
 	d->fname = strdup(fname);
 	if (d->fname == NULL) {

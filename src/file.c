@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.135 2006-10-27 04:21:15 debug Exp $
+ *  $Id: file.c,v 1.136 2006-11-08 01:21:26 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -2084,6 +2084,31 @@ void file_load(struct machine *machine, struct memory *mem,
 	if (size == 1474560)
 		fprintf(stderr, "Hm... this file is the size of a 1.44 MB "
 		    "floppy image. Maybe you forgot the\n-d switch?\n");
+
+	/*
+	 *  Ugly hack for Dreamcast:  When booting from a Dreamcast CDROM
+	 *  image, we extract a temporary file into /tmp/gxemul.*, but this
+	 *  is a "scrambled" raw binary. This code unscrambles it, and loads
+	 *  it as a raw binary.
+	 */
+	if (machine->machine_type == MACHINE_DREAMCAST &&
+	    strncmp(filename, "/tmp/gxemul.", 12) == 0) {
+		char *tmp_filename = malloc(strlen(filename) + 100);
+		snprintf(tmp_filename, strlen(filename) + 100,
+		    "%s.descrambled", filename);
+		debug("descrambling into %s\n", tmp_filename);
+		dreamcast_descramble(filename, tmp_filename);
+
+		snprintf(tmp_filename, strlen(filename) + 100,
+		    "0x8c010000:%s.descrambled", filename);
+		debug("loading descrambled Dreamcast binary\n");
+		file_load_raw(machine, mem, tmp_filename, entrypointp);
+		free(tmp_filename);
+
+		/*  Hack: Start a "boot from CDROM" sequence:  */
+		*entrypointp = 0x8c000104;
+		goto ret;
+	}
 
 	/*
 	 *  Last resort:  symbol definitions from nm (or nm -S):

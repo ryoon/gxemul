@@ -1,4 +1,4 @@
-$Id: TODO,v 1.410 2006-11-06 05:32:38 debug Exp $
+$Id: TODO,v 1.411 2006-11-08 01:21:26 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -97,6 +97,7 @@ SuperH:
 	x)  SH4 interrupt controller:
 		x)  Implement correct priorities of interrupts
 	x)  SH4 BSC (Bus State Controller)
+	x)  SH4 RTC
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
@@ -105,24 +106,15 @@ SuperH:
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Dreamcast:
-	x)  CD image bootup:
-		0)  Find IP.BIN, and load it to 0x8c008000.
-		1)  Run code at 0x8c008300 (SEGA license code).
-		2)  When the license code runs a "boot menu" syscall,
-		    load the 1ST_READ.BIN file (unscrambled?) to 0x8c010000.
-		3)  Run code at 0x8c00b800 (Bootstrap 1). This will in turn
-		    jump to 0x8c00e000 (Bootstrap 2), and then jump to
-		    0x8c010000, to start the program.
-		(Try with e.g. Comstedt's Serial IP Slave, to make sure it
-		works as expected.)
-	x)  LAN adapter.
+	x)  LAN adapter.  NetBSD root-on-nfs
 	x)  PVR:  Lots of stuff. See dev_pvr.c.
+	x)  GDROM
+	x)  PCI bridge/bus?
 	x)  Maple bus:
 		x)  Correct controller input
 		x)  Mouse input
 	x)  PROM/BIOS calls:
 		x)  GD-ROM emulation
-	x)  NetBSD/dreamcast: Root on nfs?
 	x)  Linux/dreamcast? (The gentoo kernel currently crashes.)
 	x)  More homebrew demos/games.
 	x)  Sound emulation (ARM cpu).

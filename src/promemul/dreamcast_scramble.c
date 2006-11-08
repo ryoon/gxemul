@@ -1,5 +1,5 @@
 /*
- *  GXemul: $Id: dreamcast_scramble.c,v 1.1 2006-11-08 01:21:27 debug Exp $
+ *  GXemul: $Id: dreamcast_scramble.c,v 1.2 2006-11-08 03:03:27 debug Exp $
  *
  *  This is from Marcus Comstedt's Dreamcast development files
  *  (http://mc.pp.se/dc/files/scramble.c). Public Domain, according to
@@ -24,7 +24,7 @@ void my_srand(unsigned int n)
   seed = n & 0xffff;
 }
 
-unsigned int my_rand()
+unsigned int my_rand(void)
 {
   seed = (seed * 2109 + 9273) & 0x7fff;
   return (seed + 0xc000) & 0xffff;

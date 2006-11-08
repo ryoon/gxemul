@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.273 2006-11-08 01:21:26 debug Exp $
+ *  $Id: emul.c,v 1.274 2006-11-08 03:03:27 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -580,7 +580,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 			return 0;
 		}
 
-		if (strncmp(bootblock_buf, "SEGA ", 5) != 0) {
+		if (strncmp((char *)bootblock_buf, "SEGA ", 5) != 0) {
 			fatal("This is not a Dreamcast IP.BIN header.\n");
 			free(bootblock_buf);
 			return 0;
@@ -600,7 +600,7 @@ static int load_bootblock(struct machine *m, struct cpu *cpu,
 				i ++;
 			}
 			cpu->machine->boot_kernel_filename = strdup(
-			    bootblock_buf + 0x60);
+			    (char *)bootblock_buf + 0x60);
 		}
 
 		debug("boot filename: %s\n",

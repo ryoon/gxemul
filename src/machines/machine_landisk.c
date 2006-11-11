@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_landisk.c,v 1.1 2006-11-11 01:02:17 debug Exp $
+ *  $Id: machine_landisk.c,v 1.2 2006-11-11 18:39:02 debug Exp $
  *
  *  SH4-based LANDISK.
  */
@@ -52,7 +52,7 @@ MACHINE_SETUP(landisk)
 	/*  50 MHz SH4 PCLOCK:  */
 	machine->cpus[0]->cd.sh.pclock = 50000000;
 
-	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
+	dev_ram_init(machine, 0x0c000000, 64 * 1048576, DEV_RAM_RAM, 0x0);
 
 
 	if (!machine->prom_emulation)

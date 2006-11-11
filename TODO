@@ -1,4 +1,4 @@
-$Id: TODO,v 1.412 2006-11-11 01:02:16 debug Exp $
+$Id: TODO,v 1.413 2006-11-11 18:39:02 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -96,6 +96,7 @@ SuperH:
 	    copy individual 32-bit words.
 	x)  SH4 BSC (Bus State Controller)
 	x)  SH4 RTC
+	x)  SH4 SCIF: Serial _interrupts_
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on, to make the output more human readable.
 	x)  SH4 interrupt controller:
@@ -109,7 +110,7 @@ SuperH:
 
 Dreamcast:
 	x)  G2 DMA
-	x)  LAN adapter.  NetBSD root-on-nfs
+	x)  LAN adapter (dev_mb8696x.c).  NetBSD root-on-nfs.
 	x)  PVR:  Lots of stuff. See dev_pvr.c.
 	x)  GDROM
 	x)  PCI bridge/bus?

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.22 2006-11-11 01:02:17 debug Exp $
+ *  $Id: dev_sh4.c,v 1.23 2006-11-11 18:39:02 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -73,6 +73,11 @@
 #endif
 
 struct sh4_data {
+	/*  SCIF (Serial controller):  */
+	uint16_t	scif_smr;
+	uint8_t		scif_brr;
+	uint16_t	scif_scr;
+	uint16_t	scif_fcr;
 	int		scif_console_handle;
 
 	/*  Bus State Controller:  */
@@ -917,6 +922,30 @@ DEVICE_ACCESS(sh4)
 	/*************************************************/
 	/*  SCIF: Serial Controller Interface with FIFO  */
 
+	case SH4_SCIF_BASE + SCIF_SMR:
+		if (writeflag == MEM_WRITE) {
+			d->scif_smr = idata;
+		} else {
+			odata = d->scif_smr;
+		}
+		break;
+
+	case SH4_SCIF_BASE + SCIF_BRR:
+		if (writeflag == MEM_WRITE) {
+			d->scif_brr = idata;
+		} else {
+			odata = d->scif_brr;
+		}
+		break;
+
+	case SH4_SCIF_BASE + SCIF_SCR:
+		if (writeflag == MEM_WRITE) {
+			d->scif_scr = idata;
+		} else {
+			odata = d->scif_scr;
+		}
+		break;
+
 	case SH4_SCIF_BASE + SCIF_FTDR:
 		if (writeflag == MEM_WRITE)
 			console_putchar(d->scif_console_handle, idata);
@@ -935,6 +964,14 @@ DEVICE_ACCESS(sh4)
 			if (x == 13)
 				x = 10;
 			odata = x < 0? 0 : x;
+		}
+		break;
+
+	case SH4_SCIF_BASE + SCIF_FCR:
+		if (writeflag == MEM_WRITE) {
+			d->scif_fcr = idata;
+		} else {
+			odata = d->scif_fcr;
 		}
 		break;
 

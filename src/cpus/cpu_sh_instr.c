@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.45 2006-11-08 03:01:29 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.46 2006-11-11 01:02:17 debug Exp $
  *
  *  SH instructions.
  *
@@ -192,6 +192,84 @@ X(tst_imm_r0)
 		cpu->cd.sh.sr &= ~SH_SR_T;
 	else
 		cpu->cd.sh.sr |= SH_SR_T;
+}
+
+
+/*
+ *  xor_b_imm_r0_gbr:  mem[r0+gbr] |= imm
+ *  or_b_imm_r0_gbr:   mem[r0+gbr] ^= imm
+ *  and_b_imm_r0_gbr:  mem[r0+gbr] &= imm
+ *
+ *  arg[0] = imm
+ */
+X(xor_b_imm_r0_gbr)
+{
+	uint32_t addr = cpu->cd.sh.gbr + cpu->cd.sh.r[0];
+	uint8_t *p = (uint8_t *) cpu->cd.sh.host_store[addr >> 12];
+
+	if (p != NULL) {
+		p[addr & 0xfff] ^= ic->arg[0];
+	} else {
+		uint8_t data;
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+		data ^= ic->arg[0];
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+}
+X(or_b_imm_r0_gbr)
+{
+	uint32_t addr = cpu->cd.sh.gbr + cpu->cd.sh.r[0];
+	uint8_t *p = (uint8_t *) cpu->cd.sh.host_store[addr >> 12];
+
+	if (p != NULL) {
+		p[addr & 0xfff] |= ic->arg[0];
+	} else {
+		uint8_t data;
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+		data |= ic->arg[0];
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
+}
+X(and_b_imm_r0_gbr)
+{
+	uint32_t addr = cpu->cd.sh.gbr + cpu->cd.sh.r[0];
+	uint8_t *p = (uint8_t *) cpu->cd.sh.host_store[addr >> 12];
+
+	if (p != NULL) {
+		p[addr & 0xfff] &= ic->arg[0];
+	} else {
+		uint8_t data;
+		SYNCH_PC;
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_READ, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+		data &= ic->arg[0];
+		if (!cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)&data,
+		   sizeof(data), MEM_WRITE, CACHE_DATA)) {
+			/*  Exception.  */
+			return;
+		}
+	}
 }
 
 
@@ -3425,6 +3503,18 @@ X(to_be_translated)
 			break;
 		case 0xb:	/*  OR #imm,R0  */
 			ic->f = instr(or_imm_r0);
+			ic->arg[0] = lo8;
+			break;
+		case 0xd:	/*  AND.B #imm,@(R0,GBR)  */
+			ic->f = instr(and_b_imm_r0_gbr);
+			ic->arg[0] = lo8;
+			break;
+		case 0xe:	/*  XOR.B #imm,@(R0,GBR)  */
+			ic->f = instr(xor_b_imm_r0_gbr);
+			ic->arg[0] = lo8;
+			break;
+		case 0xf:	/*  OR.B #imm,@(R0,GBR)  */
+			ic->f = instr(or_b_imm_r0_gbr);
 			ic->arg[0] = lo8;
 			break;
 		default:fatal("Unimplemented opcode 0x%x,0x%x\n",

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.411 2006-11-08 01:21:26 debug Exp $
+$Id: TODO,v 1.412 2006-11-11 01:02:16 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -92,20 +92,23 @@ MIPS:
 
 SuperH:
 	x)  DMA (0xffa00000)
-	x)  Instruction tracing should include symbols for branch targets,
-	    and so on...
-	x)  SH4 interrupt controller:
-		x)  Implement correct priorities of interrupts
+	x)  Store queues can copy 32 bytes at a time, there's no need to
+	    copy individual 32-bit words.
 	x)  SH4 BSC (Bus State Controller)
 	x)  SH4 RTC
+	x)  Instruction tracing should include symbols for branch targets,
+	    and so on, to make the output more human readable.
+	x)  SH4 interrupt controller:
+		x)  Implement correct priorities of interrupts
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
-	x)  Floating point exception correctness.
 	x)  Floating point speed!
+	x)  Floating point exception correctness.
 	x)  Think carefully about how to implement SH5/SH64 (for evbsh5).
 
 Dreamcast:
+	x)  G2 DMA
 	x)  LAN adapter.  NetBSD root-on-nfs
 	x)  PVR:  Lots of stuff. See dev_pvr.c.
 	x)  GDROM
@@ -113,12 +116,17 @@ Dreamcast:
 	x)  Maple bus:
 		x)  Correct controller input
 		x)  Mouse input
-	x)  PROM/BIOS calls:
+	x)  Software emulation of BIOS calls:
 		x)  GD-ROM emulation
+		x)  Use the VGA font as a fake ROM font. (Better than
+		    nothing.)
 	x)  Linux/dreamcast? (The gentoo kernel currently crashes.)
 	x)  More homebrew demos/games.
-	x)  Sound emulation (ARM cpu).
-	x)  VME processor emulation?
+	x)  SPU: Sound emulation (ARM cpu).
+	x)  VME processor emulation? "(Sanyo LC8670 "Potato")" according to
+	    Wikipedia, LC86K87 according to Comstedt's page. See
+	    http://www.maushammer.com/vmu.html for a good description of
+	    the differences between LC86104C and the one used in the VME.
 
 Transputer:
 	x)  Implement support for Helios binaries.
@@ -376,13 +384,14 @@ Busses:
 		    when attaching to an interrupt controller, but when
 		    asserting/deasserting irq lines, small integers must
 		    still be used (for obvious performance reasons).
-		    Figure out a way to do this nicely!
+		    Or rather: A pointer to the interrupt handler, and
+		    an integer identifying the interrupt in that handler.
 		x)  Any users need to say whether they need the interrupt line
 		    exclusively or allow shared access.
 		x)  Must work with everything from native IRQs to
 		    TurboChannel/PCI/ISA/ADB/PCMCIA/...
 		x)  Must work with SMP emulation!
-		x)  Make it with device_add(). How does the end user find
+		x)  Make it work with device_add(). How does the end user find
 		    out the name of an interrupt controller/line in e.g.
 		    a configuration file?
 	o)  Synchronization over network? or at least in dyntrans within

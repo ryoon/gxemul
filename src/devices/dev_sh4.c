@@ -25,9 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.21 2006-11-02 05:43:44 debug Exp $
+ *  $Id: dev_sh4.c,v 1.22 2006-11-11 01:02:17 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
+ *
+ *  TODO: Lots and lots of stuff.
  */
 
 #include <stdio.h>
@@ -45,9 +47,11 @@
 
 #include "sh4_bscreg.h"
 #include "sh4_cache.h"
+#include "sh4_dmacreg.h"
 #include "sh4_exception.h"
 #include "sh4_intcreg.h"
 #include "sh4_mmu.h"
+#include "sh4_rtcreg.h"
 #include "sh4_scifreg.h"
 #include "sh4_tmureg.h"
 
@@ -56,14 +60,40 @@
 #define	SH4_TICK_SHIFT		14
 #define	N_SH4_TIMERS		3
 
+/*  General-purpose I/O stuff:  */
+#define	SH4_PCTRA		0xff80002c
+#define	SH4_PDTRA		0xff800030
+#define	SH4_PCTRB		0xff800040
+#define	SH4_PDTRB		0xff800044
+#define	SH4_GPIOIC		0xff800048
+
+#ifdef UNSTABLE_DEVEL
+#define SH4_DEGUG
 /*  #define debug fatal  */
+#endif
 
 struct sh4_data {
 	int		scif_console_handle;
 
 	/*  Bus State Controller:  */
-	uint32_t	unknown_2c;
-	uint32_t	unknown_30;
+	uint32_t	bsc_bcr1;
+	uint16_t	bsc_bcr2;
+	uint32_t	bsc_wcr1;
+	uint32_t	bsc_wcr2;
+	uint32_t	bsc_mcr;
+	uint16_t	bsc_rtcsr;
+	uint16_t	bsc_rtcor;
+	uint16_t	bsc_rfcr;
+
+	/*  GPIO:  */
+	uint32_t	pctra;		/*  Port Control Register A  */
+	uint32_t	pdtra;		/*  Port Data Register A  */
+	uint32_t	pctrb;		/*  Port Control Register B  */
+	uint32_t	pdtrb;		/*  Port Data Register B  */
+
+	/*  SD-RAM:  */
+	uint16_t	sdmr2;
+	uint16_t	sdmr3;
 
 	/*  Timer Management Unit:  */
 	struct timer	*sh4_timer;
@@ -74,6 +104,9 @@ struct sh4_data {
 	uint32_t	tcr[N_SH4_TIMERS];
 	int		timer_interrupts_pending[N_SH4_TIMERS];
 	double		timer_hz[N_SH4_TIMERS];
+
+	/*  RTC:  */
+	uint8_t		rtc_rcr1;
 };
 
 
@@ -86,11 +119,21 @@ struct sh4_data {
  *  This function is called SH4_PSEUDO_TIMER_HZ times per real-world second.
  *  Its job is to update the SH4 timer counters, and if necessary, increase
  *  the number of pending interrupts.
+ *
+ *  Also, RAM Refresh is also faked here.
  */
 static void sh4_timer_tick(struct timer *t, void *extra)
 {
 	struct sh4_data *d = (struct sh4_data *) extra;
 	int i;
+
+	/*  Fake RAM refresh:  */
+	d->bsc_rfcr ++;
+	if (d->bsc_rtcsr & (RTCSR_CMIE | RTCSR_OVIE)) {
+		fatal("sh4: RTCSR_CMIE | RTCSR_OVIE: TODO\n");
+		/*  TODO: Implement refresh interrupts etc.  */
+		exit(1);
+	}
 
 	for (i=0; i<N_SH4_TIMERS; i++) {
 		int32_t old = d->tcnt[i];
@@ -368,12 +411,27 @@ DEVICE_ACCESS(sh4)
 {
 	struct sh4_data *d = (struct sh4_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int timer_nr = 0;
+	int timer_nr = 0, dma_channel = 0;
 
 	if (writeflag == MEM_WRITE)
 		idata = memory_readmax64(cpu, data, len);
 
 	relative_addr += SH4_REG_BASE;
+
+
+	/*  SD-RAM access uses address only:  */
+	if (relative_addr >= 0xff900000 && relative_addr <= 0xff97ffff) {
+		/*  Possibly not 100% correct... TODO  */
+		int v = (relative_addr >> 2) & 0xffff;
+		if (relative_addr & 0x00040000)
+			d->sdmr3 = v;
+		else
+			d->sdmr2 = v;
+		debug("[ sh4: sdmr%i set to 0x%04"PRIx16" ]\n",
+		    relative_addr & 0x00040000? 3 : 2, v);
+		return 1;
+	}
+
 
 	switch (relative_addr) {
 
@@ -618,45 +676,200 @@ DEVICE_ACCESS(sh4)
 
 
 	/*************************************************/
-	/*  BSC: Bus State Controller                    */
+	/*  DMAC: DMA Controller                         */
 
-	case SH4_RFCR:
-		/*  TODO  */
-		fatal("[ SH4_RFCR: TODO ]\n");
-		odata = 0x11;
+	case SH4_SAR3:
+		dma_channel ++;
+	case SH4_SAR2:
+		dma_channel ++;
+	case SH4_SAR1:
+		dma_channel ++;
+	case SH4_SAR0:
+		dma_channel ++;
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.dmac_sar[dma_channel];
+		else
+			cpu->cd.sh.dmac_sar[dma_channel] = idata;
 		break;
 
-#if 0
-	case SH4_UNKNOWN_2C:
-		/*  Not really part of the BSC? The 2C and 30 registers
-		    have to do with I/O pins... TODO  */
-		/*
-		 *  TODO:  Perhaps this isn't actually part of the Bus State
-		 *         controller?  Marcus Comstedt's video.s tutorial on
-		 *         how to output video on the Dreamcast indicates that
-		 *         this is a way to sense which video cable is
-		 *         connected.
-		 */
-		if (writeflag == MEM_WRITE) {
-			d->unknown_2c = idata;
-			d->unknown_30 = idata;
-		} else
-			odata = d->unknown_2c;
+	case SH4_DAR3:
+		dma_channel ++;
+	case SH4_DAR2:
+		dma_channel ++;
+	case SH4_DAR1:
+		dma_channel ++;
+	case SH4_DAR0:
+		dma_channel ++;
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.dmac_dar[dma_channel];
+		else
+			cpu->cd.sh.dmac_dar[dma_channel] = idata;
 		break;
-#endif
 
-#if 1
-	case SH4_UNKNOWN_30:
-		if (writeflag == MEM_WRITE)
-			d->unknown_30 = idata;
+	case SH4_DMATCR3:
+		dma_channel ++;
+	case SH4_DMATCR2:
+		dma_channel ++;
+	case SH4_DMATCR1:
+		dma_channel ++;
+	case SH4_DMATCR0:
+		dma_channel ++;
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.dmac_tcr[dma_channel] & 0x00ffffff;
 		else {
-			odata = d->unknown_30;
+			if (idata & ~0x00ffffff) {
+				fatal("[ SH4 DMA: Attempt to set top 8 "
+				    "bits of the count register? 0x%08"
+				    PRIx32" ]\n", (uint32_t) idata);
+				exit(1);
+			}
 
-			/*  SUPER-UGLY HACK!  TODO  */
-			d->unknown_30 ++;
+			/*  Special case: writing 0 to the count register
+			    means 16777216:  */
+			if (idata == 0)
+				idata = 0x01000000;
+			cpu->cd.sh.dmac_tcr[dma_channel] = idata;
 		}
 		break;
-#endif
+
+	case SH4_CHCR3:
+		dma_channel ++;
+	case SH4_CHCR2:
+		dma_channel ++;
+	case SH4_CHCR1:
+		dma_channel ++;
+	case SH4_CHCR0:
+		dma_channel ++;
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.dmac_chcr[dma_channel];
+		else {
+			/*  IP.BIN sets this to 0x12c0, and I want to know if
+			    some other guest OS uses other values.  */
+			if (idata != 0x12c0) {
+				fatal("[ SH4 DMA: Attempt to set chcr "
+				    "to 0x%08"PRIx32" ]\n", (uint32_t) idata);
+				exit(1);
+			}
+
+			cpu->cd.sh.dmac_chcr[dma_channel] = idata;
+		}
+		break;
+
+
+	/*************************************************/
+	/*  BSC: Bus State Controller                    */
+
+	case SH4_BCR1:
+		if (writeflag == MEM_WRITE)
+			d->bsc_bcr1 = idata & 0x033efffd;
+		else {
+			odata = d->bsc_bcr1;
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				odata |= BCR1_LITTLE_ENDIAN;
+		}
+		break;
+
+	case SH4_BCR2:
+		if (len != sizeof(uint16_t)) {
+			fatal("Non-16-bit SH4_BCR2 access?\n");
+			exit(1);
+		}
+		if (writeflag == MEM_WRITE)
+			d->bsc_bcr2 = idata & 0x3ffd;
+		else
+			odata = d->bsc_bcr2;
+		break;
+
+	case SH4_WCR1:
+		if (writeflag == MEM_WRITE)
+			d->bsc_wcr1 = idata & 0x77777777;
+		else
+			odata = d->bsc_wcr1;
+		break;
+
+	case SH4_WCR2:
+		if (writeflag == MEM_WRITE)
+			d->bsc_wcr2 = idata & 0xfffeefff;
+		else
+			odata = d->bsc_wcr2;
+		break;
+
+	case SH4_MCR:
+		if (writeflag == MEM_WRITE)
+			d->bsc_mcr = idata & 0xf8bbffff;
+		else
+			odata = d->bsc_mcr;
+		break;
+
+	case SH4_RTCSR:
+		/*
+		 *  Refresh Time Control/Status Register. Called RTCSR in
+		 *  NetBSD, but RTSCR in the SH7750 manual?
+		 */
+		if (writeflag == MEM_WRITE) {
+			idata &= 0x00ff;
+			if (idata & RTCSR_CMF) {
+				idata = (idata & ~RTCSR_CMF)
+				    | (d->bsc_rtcsr & RTCSR_CMF);
+			}
+			d->bsc_rtcsr = idata & 0x00ff;
+		} else
+			odata = d->bsc_rtcsr;
+		break;
+
+	case SH4_RTCOR:
+		/*  Refresh Time Constant Register (8 bits):  */
+		if (writeflag == MEM_WRITE)
+			d->bsc_rtcor = idata & 0x00ff;
+		else
+			odata = d->bsc_rtcor & 0x00ff;
+		break;
+
+	case SH4_RFCR:
+		/*  Refresh Count Register (10 bits):  */
+		if (writeflag == MEM_WRITE)
+			d->bsc_rfcr = idata & 0x03ff;
+		else
+			odata = d->bsc_rfcr & 0x03ff;
+		break;
+
+
+	/*******************************************/
+	/*  GPIO:  General-purpose I/O controller  */
+
+	case SH4_PCTRA:
+		if (writeflag == MEM_WRITE)
+			d->pctra = idata;
+		else
+			odata = d->pctra;
+		break;
+
+	case SH4_PDTRA:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sh4: pdtra: write: TODO ]\n");
+			d->pdtra = idata;
+		} else {
+			debug("[ sh4: pdtra: read: TODO ]\n");
+			odata = d->pdtra;
+		}
+		break;
+
+	case SH4_PCTRB:
+		if (writeflag == MEM_WRITE)
+			d->pctrb = idata;
+		else
+			odata = d->pctrb;
+		break;
+
+	case SH4_PDTRB:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sh4: pdtrb: write: TODO ]\n");
+			d->pdtrb = idata;
+		} else {
+			debug("[ sh4: pdtrb: read: TODO ]\n");
+			odata = d->pdtrb;
+		}
+		break;
 
 
 	/*********************************/
@@ -693,6 +906,13 @@ DEVICE_ACCESS(sh4)
 			cpu->cd.sh.intc_iprc = idata;
 		break;
 
+	case SH4_IPRD:
+		if (writeflag == MEM_READ)
+			odata = cpu->cd.sh.intc_iprd;
+		else
+			cpu->cd.sh.intc_iprd = idata;
+		break;
+
 
 	/*************************************************/
 	/*  SCIF: Serial Controller Interface with FIFO  */
@@ -722,6 +942,22 @@ DEVICE_ACCESS(sh4)
 		odata = console_charavail(d->scif_console_handle);
 		break;
 
+
+	/*************************************************/
+
+	case SH4_RCR1:
+		if (writeflag == MEM_READ)
+			odata = d->rtc_rcr1;
+		else {
+			d->rtc_rcr1 = idata;
+			if (idata & 0x18) {
+				fatal("SH4: TODO: RTC interrupt enable\n");
+				exit(1);
+			}
+		}
+		break;
+
+
 	/*************************************************/
 
 	default:if (writeflag == MEM_READ) {
@@ -731,6 +967,9 @@ DEVICE_ACCESS(sh4)
 			fatal("[ sh4: write to addr 0x%x: 0x%x ]\n",
 			    (int)relative_addr, (int)idata);
 		}
+#ifdef SH4_DEGUG
+		exit(1);
+#endif
 	}
 
 	if (writeflag == MEM_READ)
@@ -799,6 +1038,11 @@ DEVINIT(sh4)
 	d->tcor[0] = 0xffffffff; d->tcnt[0] = 0xffffffff;
 	d->tcor[1] = 0xffffffff; d->tcnt[1] = 0xffffffff;
 	d->tcor[2] = 0xffffffff; d->tcnt[2] = 0xffffffff;
+
+	/*  Bus State Controller initial values:  */
+	d->bsc_bcr2 = 0x3ffc;
+	d->bsc_wcr1 = 0x77777777;
+	d->bsc_wcr2 = 0xfffeefff;
 
 	return 1;
 }

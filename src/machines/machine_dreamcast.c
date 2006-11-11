@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.26 2006-11-08 03:01:29 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.27 2006-11-11 01:02:17 debug Exp $
  *
  *  Dreamcast.
  */
@@ -70,13 +70,13 @@ MACHINE_SETUP(dreamcast)
 	 *
 	 *  0x00000000 - 0x001fffff	Boot ROM (2 MB)
 	 *  0x00200000 - 0x003fffff	Flash (256 KB)
-	 *  0x005f6800 - ...		PVR DMA register
+	 *  0x005f6800 - ...		G2 DMA registers
 	 *  0x005f6900 - ...		ASIC registers
 	 *  0x005f6c00 - ...		Maple registers (controller ports)
-	 *  0x005f7000 - ...		GDROM DMA?
+	 *  0x005f7000 - ...		GDROM registers
 	 *  0x005f7400 - ...		???
-	 *  0x005f74e4 - ...		??? GDROM???
-	 *  0x005f7800 - ...		G2 DMA registers
+	 *  0x005f74e4 - ...		GDROM re-enable disabled drive (?)
+	 *  0x005f7800 - ...		G2 External DMA registers
 	 *  0x005f7c00 - ...		???
 	 *  0x005f8000 - 0x005f9fff	PVR registers (graphics)
 	 *  0x00600400 - 0x0060047f	LAN Adapter (MB86967) registers
@@ -112,6 +112,8 @@ MACHINE_SETUP(dreamcast)
 	device_add(machine, "pvr");
 	device_add(machine, "mb8696x addr=0x600400 addr_mult=4");
 	device_add(machine, "dreamcast_asic");
+	device_add(machine, "dreamcast_g2");
+	device_add(machine, "dreamcast_gdrom");
 	device_add(machine, "dreamcast_maple");
 	device_add(machine, "dreamcast_rtc");
 

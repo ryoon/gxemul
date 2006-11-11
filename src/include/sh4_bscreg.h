@@ -1,5 +1,8 @@
-/*  GXemul: $Id: sh4_bscreg.h,v 1.2 2006-10-31 11:07:05 debug Exp $  */
+/*  GXemul: $Id: sh4_bscreg.h,v 1.3 2006-11-11 01:02:17 debug Exp $  */
 /*	$NetBSD: bscreg.h,v 1.6 2005/12/11 12:18:58 christos Exp $	*/
+
+/*  This file has been extended with useful bitfield definitions from
+    the SH7750 manual.  */
 
 #ifndef _SH3_BSCREG_H_
 #define	_SH3_BSCREG_H_
@@ -65,9 +68,17 @@
 #define	SH4_BCR3		0xff800050	/* 16bit: SH7751R */
 #define	SH4_BCR4		0xfe0a00f0	/* 32bit: SH7751R */
 
+#define	BCR1_LITTLE_ENDIAN	(1 << 31)
 #define	BCR1_MASTER		(1 << 30)
 #define	BCR1_BREQEN		(1 << 19)
 
 #define	BCR2_PORTEN		(1 << 0)
+
+#define	RTCSR_CMF		(1 << 7)
+#define	RTCSR_CMIE		(1 << 6)
+#define	RTCSR_CKS		0x0038
+#define	RTCSR_OVF		(1 << 2)
+#define	RTCSR_OVIE		(1 << 1)
+#define	RTCSR_LMTS		(1 << 0)
 
 #endif	/* !_SH3_BSCREG_H_ */

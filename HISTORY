@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1423 2006-11-08 03:01:28 debug Exp $
+$Id: HISTORY,v 1.1424 2006-11-11 01:02:16 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3164,3 +3164,9 @@ Changelog for GXemul:
 		Adding a border to the Dreamcast PVR framebuffer.
 20061108	Adding a -T command line option (again?), for halting the
 		emulator on unimplemented memory accesses.
+20061109	Continuing on various SH4 and Dreamcast related things.
+		The emulator should now halt on more unimplemented device
+		accesses, instead of just printing a warning, forcing me to
+		actually implement missing stuff :)
+20061111	Continuing on SH4 and Dreamcast stuff.
+		Adding a bogus Landisk (SH4) machine mode.

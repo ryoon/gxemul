@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.33 2006-10-27 15:51:37 debug Exp $
+ *  $Id: cpu_sh.h,v 1.34 2006-11-11 01:02:17 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -135,12 +135,19 @@ struct sh_cpu {
 	uint16_t	intc_ipra;	/*  Interrupt Priority Registers  */
 	uint16_t	intc_iprb;
 	uint16_t	intc_iprc;
+	uint16_t	intc_iprd;
 	int16_t		int_to_assert;	/*  Calculated int to assert  */
 	int		int_level;	/*  Calculated int level  */
 	uint32_t	int_pending[0x1000 / 0x20 / (sizeof(uint32_t)*8)];
 
 	/*  Timer/clock functionality:  */
 	int		pclock;
+
+	/*  DMA Controller: (4 channels)  */
+	uint32_t	dmac_sar[4];
+	uint32_t	dmac_dar[4];
+	uint32_t	dmac_tcr[4];
+	uint32_t	dmac_chcr[4];
 
 
 	/*

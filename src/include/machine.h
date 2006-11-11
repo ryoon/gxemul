@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.137 2006-11-08 03:01:29 debug Exp $
+ *  $Id: machine.h,v 1.138 2006-11-11 01:02:17 debug Exp $
  */
 
 #include <sys/types.h>
@@ -373,6 +373,7 @@ struct machine {
 #define	MACHINE_TESTSH		9001
 #define	MACHINE_HPCSH		9002
 #define	MACHINE_DREAMCAST	9003
+#define	MACHINE_LANDISK		9004
 
 /*  HPPA:  */
 #define	MACHINE_BAREHPPA	10000

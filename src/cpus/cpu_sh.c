@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.54 2006-11-08 01:21:27 debug Exp $
+ *  $Id: cpu_sh.c,v 1.55 2006-11-11 01:02:17 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -669,13 +669,19 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("stc\tsr,r%i\n", r8);
 		else if (lo8 == 0x03)
 			debug("bsrf\tr%i\n", r8);
-		else if (lo4 == 0x4)
-			debug("mov.b\tr%i,@(r0,r%i)\n", r4, r8);
-		else if (lo4 == 0x5)
-			debug("mov.w\tr%i,@(r0,r%i)\n", r4, r8);
-		else if (lo4 == 0x6)
-			debug("mov.l\tr%i,@(r0,r%i)\n", r4, r8);
-		else if (lo4 == 0x7)
+		else if (lo4 >= 4 && lo4 <= 6) {
+			if (lo4 == 0x4)
+				debug("mov.b\tr%i,@(r0,r%i)", r4, r8);
+			else if (lo4 == 0x5)
+				debug("mov.w\tr%i,@(r0,r%i)", r4, r8);
+			else if (lo4 == 0x6)
+				debug("mov.l\tr%i,@(r0,r%i)", r4, r8);
+			if (running) {
+				debug("\t; r0+r%i = 0x%08"PRIx32, r8,
+				    cpu->cd.sh.r[0] + cpu->cd.sh.r[r8]);
+			}
+			debug("\n");
+		} else if (lo4 == 0x7)
 			debug("mul.l\tr%i,r%i\n", r4, r8);
 		else if (iword == 0x0008)
 			debug("clrt\n");
@@ -685,13 +691,19 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("sts\tmach,r%i\n", r8);
 		else if (iword == 0x000b)
 			debug("rts\n");
-		else if (lo4 == 0xc)
-			debug("mov.b\t@(r0,r%i),r%i\n", r4, r8);
-		else if (lo4 == 0xd)
-			debug("mov.w\t@(r0,r%i),r%i\n", r4, r8);
-		else if (lo4 == 0xe)
-			debug("mov.l\t@(r0,r%i),r%i\n", r4, r8);
-		else if (lo8 == 0x12)
+		else if (lo4 >= 0xc && lo4 <= 0xe) {
+			if (lo4 == 0xc)
+				debug("mov.b\t@(r0,r%i),r%i", r4, r8);
+			else if (lo4 == 0xd)
+				debug("mov.w\t@(r0,r%i),r%i", r4, r8);
+			else if (lo4 == 0xe)
+				debug("mov.l\t@(r0,r%i),r%i", r4, r8);
+			if (running) {
+				debug("\t; r0+r%i = 0x%08"PRIx32, r4,
+				    cpu->cd.sh.r[0] + cpu->cd.sh.r[r4]);
+			}
+			debug("\n");
+		} else if (lo8 == 0x12)
 			debug("stc\tgbr,r%i\n", r8);
 		else if (iword == 0x0018)
 			debug("sett\n");
@@ -749,7 +761,12 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
 		break;
 	case 0x1:
-		debug("mov.l\tr%i,@(%i,r%i)\n", r4, lo4 * 4, r8);
+		debug("mov.l\tr%i,@(%i,r%i)", r4, lo4 * 4, r8);
+		if (running) {
+			debug("\t; r%i+%i = 0x%08"PRIx32, r8, lo4 * 4,
+			    cpu->cd.sh.r[r8] + lo4 * 4);
+		}
+		debug("\n");
 		break;
 	case 0x2:
 		if (lo4 == 0x0)
@@ -934,7 +951,12 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);
 		break;
 	case 0x5:
-		debug("mov.l\t@(%i,r%i),r%i\n", lo4 * 4, r4, r8);
+		debug("mov.l\t@(%i,r%i),r%i", lo4 * 4, r4, r8);
+		if (running) {
+			debug("\t; r%i+%i = 0x%08"PRIx32, r4, lo4 * 4,
+			    cpu->cd.sh.r[r4] + lo4 * 4);
+		}
+		debug("\n");
 		break;
 	case 0x6:
 		if (lo4 == 0x0)
@@ -976,14 +998,26 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 		debug("add\t#%i,r%i\n", (int8_t)lo8, r8);
 		break;
 	case 0x8:
-		if (r8 == 0x0) {
-			debug("mov.b\tr0,@(%i,r%i)\n", lo4, r4);
-		} else if (r8 == 0x1) {
-			debug("mov.w\tr0,@(%i,r%i)\n", lo4 * 2, r4);
-		} else if (r8 == 0x4) {
-			debug("mov.b\t@(%i,r%i),r0\n", lo4, r4);
-		} else if (r8 == 0x5) {
-			debug("mov.w\t@(%i,r%i),r0\n", lo4 * 2, r4);
+		if (r8 == 0 || r8 == 4) {
+			if (r8 == 0x0)
+				debug("mov.b\tr0,@(%i,r%i)", lo4, r4);
+			else if (r8 == 0x4)
+				debug("mov.b\t@(%i,r%i),r0", lo4, r4);
+			if (running) {
+				debug("\t; r%i+%i = 0x%08"PRIx32, r4, lo4,
+				    cpu->cd.sh.r[r4] + lo4);
+			}
+			debug("\n");
+		} else if (r8 == 1 || r8 == 5) {
+			if (r8 == 0x1)
+				debug("mov.w\tr0,@(%i,r%i)", lo4 * 2, r4);
+			else if (r8 == 0x5)
+				debug("mov.w\t@(%i,r%i),r0", lo4 * 2, r4);
+			if (running) {
+				debug("\t; r%i+%i = 0x%08"PRIx32, r4, lo4 * 2,
+				    cpu->cd.sh.r[r4] + lo4 * 2);
+			}
+			debug("\n");
 		} else if (r8 == 0x8) {
 			debug("cmp/eq\t#%i,r0\n", (int8_t)lo8);
 		} else if (r8 == 0x9 || r8 == 0xb || r8 == 0xd || r8 == 0xf) {

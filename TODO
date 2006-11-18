@@ -1,4 +1,4 @@
-$Id: TODO,v 1.413 2006-11-11 18:39:02 debug Exp $
+$Id: TODO,v 1.414 2006-11-18 18:43:25 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -91,11 +91,12 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 SuperH:
-	x)  DMA (0xffa00000)
+	x)  SH4 DMA (0xffa00000)
+	x)  SH4 UBC (0xff200000)
 	x)  Store queues can copy 32 bytes at a time, there's no need to
 	    copy individual 32-bit words.
 	x)  SH4 BSC (Bus State Controller)
-	x)  SH4 RTC
+	x)  SH4 RTC: Read the host's clock.
 	x)  SH4 SCIF: Serial _interrupts_
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on, to make the output more human readable.
@@ -113,6 +114,7 @@ Dreamcast:
 	x)  LAN adapter (dev_mb8696x.c).  NetBSD root-on-nfs.
 	x)  PVR:  Lots of stuff. See dev_pvr.c.
 	x)  GDROM
+	x)  Modem
 	x)  PCI bridge/bus?
 	x)  Maple bus:
 		x)  Correct controller input

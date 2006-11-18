@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.55 2006-11-11 01:02:17 debug Exp $
+ *  $Id: cpu_sh.c,v 1.56 2006-11-18 18:43:26 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -473,6 +473,21 @@ int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 			else if (cpu->cd.sh.int_pending[word_index]
 			    & (1 << bit_index)) {
 				cpu->cd.sh.int_to_assert = i;
+
+
+/*  Hack. TODO: Fix.  */
+	cpu->cd.sh.int_level = 1;
+	if (i == SH_INTEVT_TMU0_TUNI0)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 12) & 0xf;
+	if (i == SH_INTEVT_TMU1_TUNI1)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 8) & 0xf;
+	if (i == SH_INTEVT_TMU2_TUNI2)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_ipra >> 4) & 0xf;
+	if (i >= SH4_INTEVT_SCIF_ERI &&
+	    i <= SH4_INTEVT_SCIF_TXI)
+		cpu->cd.sh.int_level = (cpu->cd.sh.intc_iprc >> 4) & 0xf;
+
+
 				break;
 			}
 		}
@@ -627,6 +642,17 @@ void sh_exception(struct cpu *cpu, int expevt, int intevt, uint32_t vaddr)
 		cpu->cd.sh.spc += sizeof(uint16_t);
 		break;
 
+#if 0
+	/*  Not yet. It's probably better to abort the emulator for now,
+	    to detect this condition. It is unlikely to happen in normal
+	    software.  */
+	case EXPEVT_RES_INST:
+		break;
+#endif
+
+	case EXPEVT_FPU_DISABLE:
+		break;
+
 	default:fatal("sh_exception(): exception 0x%x is not yet "
 		    "implemented.\n", expevt);
 		exit(1);
@@ -755,7 +781,7 @@ int sh_cpu_disassemble_instr_compact(struct cpu *cpu, unsigned char *instr,
 			debug("movca.l\tr0,@r%i\n", r8);
 		else if (lo8 == 0xfa)
 			debug("stc\tdbr,r%i\n", r8);
-		else if (iword == 0x00ff)
+		else if (iword == SH_INVALID_INSTR)
 			debug("gxemul_dreamcast_prom_emul\n");
 		else
 			debug("UNIMPLEMENTED hi4=0x%x, lo8=0x%02x\n", hi4, lo8);

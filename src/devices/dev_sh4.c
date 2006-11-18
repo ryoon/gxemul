@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.23 2006-11-11 18:39:02 debug Exp $
+ *  $Id: dev_sh4.c,v 1.24 2006-11-18 18:43:26 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -111,6 +111,7 @@ struct sh4_data {
 	double		timer_hz[N_SH4_TIMERS];
 
 	/*  RTC:  */
+	uint32_t	rtc_reg[14];	/*  Excluding rcr1 and 2  */
 	uint8_t		rtc_rcr1;
 };
 
@@ -422,7 +423,6 @@ DEVICE_ACCESS(sh4)
 		idata = memory_readmax64(cpu, data, len);
 
 	relative_addr += SH4_REG_BASE;
-
 
 	/*  SD-RAM access uses address only:  */
 	if (relative_addr >= 0xff900000 && relative_addr <= 0xff97ffff) {
@@ -982,6 +982,27 @@ DEVICE_ACCESS(sh4)
 
 	/*************************************************/
 
+	case SH4_RSECCNT:
+	case SH4_RMINCNT:
+	case SH4_RHRCNT:
+	case SH4_RWKCNT:
+	case SH4_RDAYCNT:
+	case SH4_RMONCNT:
+	case SH4_RYRCNT:
+	case SH4_RSECAR:
+	case SH4_RMINAR:
+	case SH4_RHRAR:
+	case SH4_RWKAR:
+	case SH4_RDAYAR:
+	case SH4_RMONAR:
+		if (writeflag == MEM_WRITE) {
+			d->rtc_reg[(relative_addr - 0xffc80000) / 4] = idata;
+		} else {
+			/*  TODO: Update rtc_reg based on host's date/time.  */
+			odata = d->rtc_reg[(relative_addr - 0xffc80000) / 4];
+		}
+		break;
+
 	case SH4_RCR1:
 		if (writeflag == MEM_READ)
 			odata = d->rtc_rcr1;
@@ -1005,7 +1026,7 @@ DEVICE_ACCESS(sh4)
 			    (int)relative_addr, (int)idata);
 		}
 #ifdef SH4_DEGUG
-		exit(1);
+//		exit(1);
 #endif
 	}
 

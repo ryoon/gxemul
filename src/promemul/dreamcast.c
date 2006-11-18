@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dreamcast.c,v 1.13 2006-11-08 01:21:27 debug Exp $
+ *  $Id: dreamcast.c,v 1.14 2006-11-18 18:43:26 debug Exp $
  *
  *  Dreamcast PROM emulation.
  *
@@ -120,20 +120,17 @@ void dreamcast_machine_setup(struct machine *machine)
 	int i;
 	struct cpu *cpu = machine->cpus[0];
 
-	for (i=0xb0; i<=0xfc; i+=sizeof(uint32_t)) {
+	for (i=0; i<0x50; i+=sizeof(uint32_t)) {
 		/*  Store pointer to PROM routine...  */
-		store_32bit_word(cpu, 0x8c000000 + i, 0x8c000100 + i);
+		store_32bit_word(cpu, 0x8c0000b0 + i, 0x8c000040 + i);
 
 		/*  ... which contains only 1 instruction, a special
-		    0x00ff opcode which triggers PROM emulation:  */
-		store_16bit_word(cpu, 0x8c000100 + i, 0x00ff);
+		    opcode which triggers PROM emulation:  */
+		store_16bit_word(cpu, 0x8c000040 + i, SH_INVALID_INSTR);
 	}
 
 	/*  PROM reboot, in case someone jumps to 0xa0000000:  */
-	store_16bit_word(cpu, 0xa0000000, 0x00ff);
-
-	/*  Special hack to initiate a CDROM boot sequence:  */
-	store_16bit_word(cpu, 0x8c000104, 0x00ff);
+	store_16bit_word(cpu, 0xa0000000, SH_INVALID_INSTR);
 
 	dreamcast_romfont_init(machine);
 }
@@ -144,31 +141,19 @@ void dreamcast_machine_setup(struct machine *machine)
  */
 int dreamcast_emul(struct cpu *cpu)
 {
-	int addr = cpu->pc & 0xff;
+	int addr = (cpu->pc & 0xff) - 0x40 + 0xb0;
 	int r1 = cpu->cd.sh.r[1];
 	int r6 = cpu->cd.sh.r[6];
 	int r7 = cpu->cd.sh.r[7];
 
-	switch (addr) {
-
-	case 0x00:
-		/*  Special case: Reboot  */
-		fatal("[ dreamcast reboot ]\n");
+	/*  Special case: Reboot  */
+	if ((uint32_t)cpu->pc == 0xa0000000) {
+	 	fatal("[ dreamcast reboot ]\n");
 		cpu->running = 0;
-		break;
-
-	case 0x04:
-		/*
-		 *  GXemul hack:
-		 *
-		 *  By jumping to this address (0x8c000104), a "boot from
-		 *  CDROM" is simulated. Control is transfered to the license
-		 *  code in the loaded IP.BIN file.
-		 */
-		debug("[ dreamcast boot from CDROM ]\n");
-		booting_from_cdrom = 1;
-		cpu->pc = 0x8c008300;
 		return 1;
+	}
+
+	switch (addr) {
 
 	case 0xb0:
 		/*  SYSINFO  */
@@ -257,6 +242,19 @@ int dreamcast_emul(struct cpu *cpu)
 		}
 		break;
 
+	case 0xf0:
+		/*
+		 *  GXemul hack:
+		 *
+		 *  By jumping to this address (0x8c000080), a "boot from
+		 *  CDROM" is simulated. Control is transfered to the license
+		 *  code in the loaded IP.BIN file.
+		 */
+		debug("[ dreamcast boot from CDROM ]\n");
+		booting_from_cdrom = 1;
+		cpu->pc = 0x8c008300;
+		return 1;
+
 	default:goto bad;
 	}
 
@@ -268,7 +266,8 @@ int dreamcast_emul(struct cpu *cpu)
 bad:
 	cpu_register_dump(cpu->machine, cpu, 1, 0);
 	printf("\n");
-	fatal("[ dreamcast_emul(): unimplemented dreamcast PROM call ]\n");
+	fatal("[ dreamcast_emul(): unimplemented dreamcast PROM call, "
+	    "pc=0x%08"PRIx32" ]\n", (uint32_t)cpu->pc);
 	cpu->running = 0;
 	return 1;
 }

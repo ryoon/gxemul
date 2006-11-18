@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dreamcast_g2.c,v 1.1 2006-11-11 01:03:01 debug Exp $
+ *  $Id: dev_dreamcast_g2.c,v 1.2 2006-11-18 18:43:26 debug Exp $
  *  
  *  Dreamcast G2 bus.
  *
@@ -129,7 +129,7 @@ DEVICE_ACCESS(dreamcast_g2)
 		} else {
 			/*  0x20 means G2 DMA in progress?  */
 			/*  0x11 = mask which has to do with AICA  */
-			odata = 0x11;
+			odata = 0x11 * (random() & 1);
 		}
 		break;
 

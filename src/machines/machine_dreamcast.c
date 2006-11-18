@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_dreamcast.c,v 1.27 2006-11-11 01:02:17 debug Exp $
+ *  $Id: machine_dreamcast.c,v 1.28 2006-11-18 18:43:26 debug Exp $
  *
  *  Dreamcast.
  */
@@ -101,7 +101,14 @@ MACHINE_SETUP(dreamcast)
 
 	dev_ram_init(machine, 0x00702c00, 4, DEV_RAM_RAM, 0);
 
+	/*  Sound RAM:  */
 	dev_ram_init(machine, 0x00800000, 2 * 1048576, DEV_RAM_RAM, 0);
+
+	/*
+	 *  HACK!  TODO: Remove this device at 0x00a00000 once NetBSD has
+	 *  been fixed to not clear 6 MB beyound the sound RAM area.
+	 */
+	dev_ram_init(machine, 0x00a00000, 6 * 1048576, DEV_RAM_RAM, 0);
 
 	dev_ram_init(machine, 0x0c000000, 16 * 1048576, DEV_RAM_RAM, 0x0);
 

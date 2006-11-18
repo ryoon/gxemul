@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh_instr.c,v 1.46 2006-11-11 01:02:17 debug Exp $
+ *  $Id: cpu_sh_instr.c,v 1.47 2006-11-18 18:43:26 debug Exp $
  *
  *  SH instructions.
  *
@@ -2886,7 +2886,7 @@ X(to_be_translated)
 			/*  STC Rm_BANK, Rn  */
 			ic->f = instr(copy_privileged_register);
 			ic->arg[0] = (size_t)&cpu->cd.sh.r_bank[(lo8 >> 4) & 7];
-		} else if (iword == 0x00ff) {
+		} else if (iword == SH_INVALID_INSTR) {
 			/*  PROM emulation specifically for Dreamcast  */
 			ic->f = instr(prom_emul_dreamcast);
 		} else {

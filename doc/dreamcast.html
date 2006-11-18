@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: dreamcast.html,v 1.2 2006-11-11 01:02:16 debug Exp $
+$Id: dreamcast.html,v 1.3 2006-11-18 18:43:26 debug Exp $
 
 Copyright (C) 2006  Anders Gavare.  All rights reserved.
 
@@ -49,6 +49,7 @@ SUCH DAMAGE.
   <li><a href="#intro">Introduction</a>
   <li><a href="#netbsd_generic_md">NetBSD/dreamcast GENERIC_MD</a>
   <li><a href="#netbsd_live_cd">NetBSD/dreamcast Live CD</a>
+  <li><a href="#linux_live_cd">Linux/dreamcast Live CD</a>
 </ul>
 
 
@@ -64,7 +65,8 @@ This page contains information about the Dreamcast emulation mode in
 GXemul. It's not a very long page, but I thought it would be best to 
 gather everything Dreamcast-specific in one place.
 
-<p>My main goal with Dreamcast emulation is to let NetBSD/dreamcast run, 
+<p>My main goal with Dreamcast emulation is to let
+<a href="http://www.netbsd.org/Ports/dreamcast/">NetBSD/dreamcast</a> run, 
 similar to how it runs on a real machine. I am also experimenting with 
 other programs, such as simple demo programs that use KOS, and Marcus 
 Comstedt's tutorial programs. These sometimes work to a certain degree.
@@ -130,13 +132,39 @@ to attempt to boot directly from the image:<pre>
 	<b>gxemul -XEdreamcast -d co23965696:livecd.raw</b>
 </pre>
 
-The <tt><b>c</b></tt> disk image option is necessary to treat the raw
+(The <tt><b>c</b></tt> disk image option is necessary to treat the raw
 file as a CDROM image, and the <tt><b>o</b></tt> part is needed because
-the ISO9660 filesystem in the image is offset by 11702 sectors (2048
-bytes each).
+the ISO9660 filesystem in the image is offset by 11702 sectors, i.e. 2048
+bytes each.)
+
+<p>At the <b><tt>root device:</tt></b> prompt, type 
+<b><tt>gdrom0</tt></b>. For <b><tt>dump device</tt></b> and
+<b><tt>file system</tt></b>, just press Enter.
 
 <p><font color="#ff0000">2006-11-07: NOTE: It does not work yet, because the 
 GDROM isn't actually emulated.</font>
+
+
+
+
+
+
+<p><br>
+<a name="linux_live_cd"></a>
+<h3>Linux/dreamcast Live CD:</h3>
+
+A Linux/dreamcast Live CD ISO image can be found here:<pre>
+	<a href="http://ftp.riken.go.jp/pub/misc/Japan/m17n.org/super-h/CD-R/lc2000.iso">http://ftp.riken.go.jp/pub/misc/Japan/m17n.org/super-h/CD-R/lc2000.iso</a>
+</pre>
+
+Once you have downloaded the ISO image, type the following command to 
+attempt to boot directly from the image:<pre>
+	<b>gxemul -XEdreamcast -d co23965696:lc2000.iso</b>
+</pre>
+
+<p><font color="#ff0000">2006-11-12: NOTE: This does not work yet.</font>
+
+
 
 
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.34 2006-11-11 01:02:17 debug Exp $
+ *  $Id: cpu_sh.h,v 1.35 2006-11-18 18:43:26 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
@@ -80,6 +80,8 @@ DYNTRANS_MISC_DECLARATIONS(sh,SH,uint32_t)
 
 #define	SH_N_ITLB_ENTRIES	4
 #define	SH_N_UTLB_ENTRIES	64
+
+#define	SH_INVALID_INSTR	0x00fb
 
 
 struct sh_cpu {

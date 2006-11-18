@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1424 2006-11-11 01:02:16 debug Exp $
+$Id: HISTORY,v 1.1425 2006-11-18 18:43:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3170,3 +3170,7 @@ Changelog for GXemul:
 		actually implement missing stuff :)
 20061111	Continuing on SH4 and Dreamcast stuff.
 		Adding a bogus Landisk (SH4) machine mode.
+20061112	Implementing some parts of the Dreamcast GDROM device. With
+		some ugly hacks, NetBSD can (barely) mount an ISO image.
+20061113	NetBSD/dreamcast now starts booting from the Live CD image,
+		but crashes randomly quite early on in the boot process.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.136 2006-11-08 01:21:26 debug Exp $
+ *  $Id: file.c,v 1.137 2006-11-18 18:43:26 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory. File formats recognized so far are:
@@ -2087,7 +2087,7 @@ void file_load(struct machine *machine, struct memory *mem,
 
 	/*
 	 *  Ugly hack for Dreamcast:  When booting from a Dreamcast CDROM
-	 *  image, we extract a temporary file into /tmp/gxemul.*, but this
+	 *  image, a temporary file is extracted into /tmp/gxemul.*, but this
 	 *  is a "scrambled" raw binary. This code unscrambles it, and loads
 	 *  it as a raw binary.
 	 */
@@ -2106,7 +2106,7 @@ void file_load(struct machine *machine, struct memory *mem,
 		free(tmp_filename);
 
 		/*  Hack: Start a "boot from CDROM" sequence:  */
-		*entrypointp = 0x8c000104;
+		*entrypointp = 0x8c000080;
 		goto ret;
 	}
 

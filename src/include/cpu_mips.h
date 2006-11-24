@@ -28,9 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.50 2006-10-14 23:47:37 debug Exp $
+ *  $Id: cpu_mips.h,v 1.51 2006-11-24 16:45:56 debug Exp $
  */
 
+#include "interrupt.h"
 #include "misc.h"
 
 struct cpu_family;
@@ -275,6 +276,8 @@ struct mips_cpu {
 
 
 /*  cpu_mips.c:  */
+void mips_cpu_interrupt_assert(struct interrupt *interrupt);
+void mips_cpu_interrupt_deassert(struct interrupt *interrupt);
 int mips_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib);
 void mips_cpu_tlbdump(struct machine *m, int x, int rawflag);
 void mips_cpu_register_match(struct machine *m, char *name, 

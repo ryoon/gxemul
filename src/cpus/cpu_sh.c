@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.56 2006-11-18 18:43:26 debug Exp $
+ *  $Id: cpu_sh.c,v 1.57 2006-11-24 16:45:56 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -42,6 +42,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "float_emul.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -60,6 +61,8 @@
 extern int quiet_mode;
 
 void sh_pc_to_pointers(struct cpu *);
+int sh_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
+int sh_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 
 
 /*
@@ -169,11 +172,46 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		CPU_SETTINGS_ADD_REGISTER32(tmpstr, cpu->cd.sh.utlb_lo[i]);
 	}
 
+	/*  Register the CPU's interrupts:  */
+	for (i=SH_INTEVT_NMI; i<0x1000; i+=0x20) {
+		struct interrupt template;
+		char name[50];
+		snprintf(name, sizeof(name),
+		    "emul[0].machine[0].cpu[%i].irq[0x%x]", cpu->cpu_id, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = name;
+		template.extra = cpu;
+		template.interrupt_assert = sh_cpu_interrupt_assert;
+		template.interrupt_deassert = sh_cpu_interrupt_deassert;
+		interrupt_handler_register(&template);
+	}
+
 	/*  SH4-specific memory mapped registers, TLBs, caches, etc:  */
 	if (cpu->cd.sh.cpu_type.arch == 4)
 		device_add(machine, "sh4");
 
 	return 1;
+}
+
+
+/*
+ *  sh_cpu_interrupt_assert():
+ */
+void sh_cpu_interrupt_assert(struct interrupt *interrupt)
+{
+	struct cpu *cpu = interrupt->extra;
+	sh_cpu_interrupt(cpu, interrupt->line);
+}
+
+
+/*
+ *  sh_cpu_interrupt_deassert():
+ */
+void sh_cpu_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct cpu *cpu = interrupt->extra;
+	sh_cpu_interrupt_ack(cpu, interrupt->line);
 }
 
 

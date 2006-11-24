@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.138 2006-11-11 01:02:17 debug Exp $
+ *  $Id: machine.h,v 1.139 2006-11-24 16:45:57 debug Exp $
  */
 
 #include <sys/types.h>
@@ -106,6 +106,9 @@ struct machine {
 
 	/*  Name as choosen by the user:  */
 	char	*name;
+
+	/*  Full "path" to the machine, e.g. "emul[0].machine[0]":  */
+	char	*path;
 
 	int	arch;			/*  ARCH_MIPS, ARCH_PPC, ..  */
 	int	machine_type;		/*  MACHINE_PMAX, ..  */
@@ -526,7 +529,7 @@ void automachine_init(void);
 
 
 /*  machine.c:  */
-struct machine *machine_new(char *name, struct emul *emul);
+struct machine *machine_new(char *name, struct emul *emul, int id);
 void machine_destroy(struct machine *machine);
 int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch);

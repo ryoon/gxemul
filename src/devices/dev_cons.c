@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.37 2006-07-23 14:37:34 debug Exp $
+ *  $Id: dev_cons.c,v 1.38 2006-11-24 16:45:56 debug Exp $
  *  
  *  A simple console device, useful for simple tests.
  *
@@ -55,13 +55,12 @@
 
 DEVICE_TICK(cons)
 {
-	struct cpu *c = cpu->machine->cpus[0];
 	struct cons_data *d = extra;
 
-	cpu_interrupt_ack(c, d->irq_nr);
+	INTERRUPT_DEASSERT(d->irq);
 
 	if (console_charavail(d->console_handle))
-		cpu_interrupt(c, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 }
 
 
@@ -135,7 +134,8 @@ DEVINIT(cons)
 	else
 		snprintf(name3, nlen, "%s", devinit->name);
 
-	d->irq_nr = devinit->irq_nr;
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
+
 	d->in_use = devinit->in_use;
 	d->console_handle = console_start_slave(devinit->machine, name3,
 	    d->in_use);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.26 2006-04-06 19:17:37 debug Exp $
+ *  $Id: device.c,v 1.27 2006-11-24 16:45:55 debug Exp $
  *
  *  Device registry framework.
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "device.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -264,7 +265,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 	struct device_entry *p;
 	struct devinit devinit;
 	char *s2, *s3;
-	size_t len;
+	size_t len, interrupt_path_len = strlen(machine->path) + 20;
 	int quoted;
 
 	memset(&devinit, 0, sizeof(struct devinit));
@@ -287,7 +288,15 @@ void *device_add(struct machine *machine, char *name_and_params)
 	}
 	memcpy(devinit.name, name_and_params, len);
 	devinit.name[len] = '\0';
-	devinit.dma_irq_nr = -1;
+
+	/*  Allocate space for the default interrupt name:  */
+	devinit.interrupt_path = malloc(interrupt_path_len + 1);
+	if (devinit.interrupt_path == NULL) {
+		fprintf(stderr, "device_add(): out of memory\n");
+		exit(1);
+	}
+	snprintf(devinit.interrupt_path, interrupt_path_len,
+	    "%s.cpu[%i]", machine->path, machine->bootstrap_cpu);
 
 	p = device_lookup(devinit.name);
 	if (p == NULL) {
@@ -343,8 +352,11 @@ void *device_add(struct machine *machine, char *name_and_params)
 			}
 		} else if (strncmp(s2, "irq=", 4) == 0) {
 			devinit.irq_nr = mystrtoull(s3, NULL, 0);
-		} else if (strncmp(s2, "dma_irq=", 8) == 0) {
-			devinit.dma_irq_nr = mystrtoull(s3, NULL, 0);
+
+			/*  New-style interrupt path:  */
+			snprintf(devinit.interrupt_path, interrupt_path_len,
+			    "%s.cpu[%i].%s", machine->path,
+			    machine->bootstrap_cpu, s3);
 		} else if (strncmp(s2, "in_use=", 7) == 0) {
 			devinit.in_use = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "name2=", 6) == 0) {
@@ -401,6 +413,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 			goto return_fail;
 	}
 
+	free(devinit.interrupt_path);
 	free(devinit.name);
 	return devinit.return_ptr;
 

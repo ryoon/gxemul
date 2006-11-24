@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.1425 2006-11-18 18:43:25 debug Exp $
+$Id: HISTORY,v 1.1426 2006-11-24 16:45:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -3140,7 +3140,7 @@ Changelog for GXemul:
 		Enabling SuperH for stable (non-development) builds.
 		Adding NetBSD/dreamcast to the documentation, although it
 		doesn't support root-on-nfs yet.
-20061029	Changing usleep(1) calls in the debugger to to usleep(10000)
+20061029	Changing usleep(1) calls in the debugger to usleep(10000)
 		(according to Brian Foley, this makes GXemul run better on
 		MacOS X).
 		Making the Maple "Controller" do something (enough to barely
@@ -3174,3 +3174,8 @@ Changelog for GXemul:
 		some ugly hacks, NetBSD can (barely) mount an ISO image.
 20061113	NetBSD/dreamcast now starts booting from the Live CD image,
 		but crashes randomly quite early on in the boot process.
+20061122	Beginning on a skeleton interrupt.h and interrupt.c for the
+		new interrupt subsystem.
+20061124	Continuing on the new interrupt system; taking the first steps
+		to attempt to connect CPUs and devices to it. Many things will
+		probably break from now on.

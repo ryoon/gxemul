@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.24 2006-11-18 18:43:26 debug Exp $
+ *  $Id: dev_sh4.c,v 1.25 2006-11-24 16:45:56 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -40,6 +40,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "devices.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -102,6 +103,7 @@ struct sh4_data {
 
 	/*  Timer Management Unit:  */
 	struct timer	*sh4_timer;
+	struct interrupt timer_irq[4];
 	uint32_t	tocr;
 	uint32_t	tstr;
 	uint32_t	tcnt[N_SH4_TIMERS];
@@ -184,7 +186,7 @@ DEVICE_TICK(sh4)
 
 	for (i=0; i<N_SH4_TIMERS; i++)
 		if (d->timer_interrupts_pending[i] > 0) {
-			cpu_interrupt(cpu, SH_INTEVT_TMU0_TUNI0 + 0x20 * i);
+			INTERRUPT_ASSERT(d->timer_irq[i]);
 			d->tcr[i] |= TCR_UNF;
 		}
 }
@@ -669,8 +671,7 @@ DEVICE_ACCESS(sh4)
 			}
 
 			if (d->tcr[timer_nr] & TCR_UNF && !(idata & TCR_UNF)) {
-				cpu_interrupt_ack(cpu, SH_INTEVT_TMU0_TUNI0
-				    + 0x20 * timer_nr);
+				INTERRUPT_DEASSERT(d->timer_irq[timer_nr]);
 				if (d->timer_interrupts_pending[timer_nr] > 0)
 					d->timer_interrupts_pending[timer_nr]--;
 			}
@@ -1039,6 +1040,7 @@ DEVICE_ACCESS(sh4)
 
 DEVINIT(sh4)
 {
+	char tmp[200];
 	struct machine *machine = devinit->machine;
 	struct sh4_data *d = malloc(sizeof(struct sh4_data));
 	if (d == NULL) {
@@ -1096,6 +1098,25 @@ DEVINIT(sh4)
 	d->tcor[0] = 0xffffffff; d->tcnt[0] = 0xffffffff;
 	d->tcor[1] = 0xffffffff; d->tcnt[1] = 0xffffffff;
 	d->tcor[2] = 0xffffffff; d->tcnt[2] = 0xffffffff;
+
+	snprintf(tmp, sizeof(tmp), "emul[0].machine[0].cpu[0].irq[0x%x]",
+	    SH_INTEVT_TMU0_TUNI0);
+	if (!interrupt_handler_lookup(tmp, &d->timer_irq[0])) {
+		fatal("Could not find interrupt '%s'.\n", tmp);
+		exit(1);
+	}
+	snprintf(tmp, sizeof(tmp), "emul[0].machine[0].cpu[0].irq[0x%x]",
+	    SH_INTEVT_TMU1_TUNI1);
+	if (!interrupt_handler_lookup(tmp, &d->timer_irq[1])) {
+		fatal("Could not find interrupt '%s'.\n", tmp);
+		exit(1);
+	}
+	snprintf(tmp, sizeof(tmp), "emul[0].machine[0].cpu[0].irq[0x%x]",
+	    SH_INTEVT_TMU2_TUNI2);
+	if (!interrupt_handler_lookup(tmp, &d->timer_irq[2])) {
+		fatal("Could not find interrupt '%s'.\n", tmp);
+		exit(1);
+	}
 
 	/*  Bus State Controller initial values:  */
 	d->bsc_bcr2 = 0x3ffc;

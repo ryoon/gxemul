@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_z8530.c,v 1.9 2006-10-07 02:05:21 debug Exp $
+ *  $Id: dev_z8530.c,v 1.10 2006-11-24 16:45:56 debug Exp $
  *  
  *  Zilog "zs" serial controller (Z8530).
  *
@@ -62,7 +62,6 @@
 
 struct z8530_data {
 	int		irq_nr;
-	int		dma_irq_nr;
 	int		irq_asserted;
 	int		addr_mult;
 
@@ -212,7 +211,6 @@ DEVINIT(z8530)
 	}
 	memset(d, 0, sizeof(struct z8530_data));
 	d->irq_nr     = devinit->irq_nr;
-	d->dma_irq_nr = devinit->dma_irq_nr;
 	d->addr_mult  = devinit->addr_mult;
 
 	snprintf(tmp, sizeof(tmp), "%s [ch-b]", devinit->name);

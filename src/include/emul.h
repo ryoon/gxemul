@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.39 2006-09-05 06:13:27 debug Exp $
+ *  $Id: emul.h,v 1.40 2006-11-24 16:45:57 debug Exp $
  */
 
 #include "misc.h"
@@ -41,6 +41,8 @@ struct emul {
 	struct settings	*settings;
 
 	char		*name;
+
+	char		*path;			/*  e.g. "emul[0]"  */
 
 	int		next_serial_nr;
 	struct net	*net;
@@ -56,7 +58,7 @@ struct emul {
 
 
 /*  emul.c:  */
-struct emul *emul_new(char *name);
+struct emul *emul_new(char *name, int id);
 void emul_destroy(struct emul *emul);
 
 struct machine *emul_add_machine(struct emul *e, char *name);
@@ -64,7 +66,7 @@ void emul_machine_setup(struct machine *machine, int n_load, char **load_names,
 	int n_devices, char **device_names);
 void emul_dumpinfo(struct emul *e);
 void emul_simple_init(struct emul *emul);
-struct emul *emul_create_from_configfile(char *fname);
+struct emul *emul_create_from_configfile(char *fname, int id);
 void emul_run(struct emul **emuls, int n_emuls);
 
 

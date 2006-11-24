@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.274 2006-11-08 03:03:27 debug Exp $
+ *  $Id: emul.c,v 1.275 2006-11-24 16:45:56 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -817,7 +817,7 @@ ret_ok:
  *
  *  Returns a reasonably initialized struct emul.
  */
-struct emul *emul_new(char *name)
+struct emul *emul_new(char *name, int id)
 {
 	struct emul *e;
 	e = malloc(sizeof(struct emul));
@@ -827,6 +827,13 @@ struct emul *emul_new(char *name)
 	}
 
 	memset(e, 0, sizeof(struct emul));
+
+	e->path = malloc(15);
+	if (e->path == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	snprintf(e->path, 15, "emul[%i]", id);
 
 	e->settings = settings_new();
 
@@ -898,7 +905,7 @@ struct machine *emul_add_machine(struct emul *e, char *name)
 	char tmpstr[20];
 	int i;
 
-	m = machine_new(name, e);
+	m = machine_new(name, e, e->n_machines);
 	m->serial_nr = (e->next_serial_nr ++);
 
 	i = e->n_machines;
@@ -1629,10 +1636,10 @@ void emul_simple_init(struct emul *emul)
  *
  *  Create an emul struct by reading settings from a configuration file.
  */
-struct emul *emul_create_from_configfile(char *fname)
+struct emul *emul_create_from_configfile(char *fname, int id)
 {
 	int iadd = DEBUG_INDENTATION;
-	struct emul *e = emul_new(fname);
+	struct emul *e = emul_new(fname, id);
 
 	debug("Creating emulation from configfile \"%s\":\n", fname);
 	debug_indentation(iadd);

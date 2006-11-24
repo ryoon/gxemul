@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.361 2006-10-25 09:24:05 debug Exp $
+ *  $Id: cpu.c,v 1.362 2006-11-24 16:45:55 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -75,6 +75,14 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	}
 
 	cpu = zeroed_alloc(sizeof(struct cpu));
+
+	cpu->path = malloc(strlen(machine->path) + 15);
+	if (cpu->path == NULL) {
+		fprintf(stderr, "cpu_new(): out of memory\n");
+		exit(1);
+	}
+	snprintf(cpu->path, strlen(machine->path) + 15,
+	    "%s.cpu[%i]", machine->path, cpu_id);
 
 	cpu->memory_rw  = NULL;
 	cpu->name       = cpu_type_name;
@@ -146,6 +154,9 @@ void cpu_destroy(struct cpu *cpu)
 	settings_remove_all(cpu->settings);
 
 	settings_destroy(cpu->settings);
+
+	if (cpu->path != NULL)
+		free(cpu->path);
 
 	/*  TODO: This assumes that zeroed_alloc() actually succeeded
 	    with using mmap(), and not malloc()!  */

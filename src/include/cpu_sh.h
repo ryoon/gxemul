@@ -28,12 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.h,v 1.35 2006-11-18 18:43:26 debug Exp $
+ *  $Id: cpu_sh.h,v 1.36 2006-11-24 16:45:56 debug Exp $
  *
  *  Note: Many things here are SH4-specific, so it probably doesn't work
  *        for SH3 emulation.
  */
 
+#include "interrupt.h"
 #include "misc.h"
 #include "sh4_cpu.h"
 
@@ -201,6 +202,8 @@ struct sh_cpu {
 
 
 /*  cpu_sh.c:  */
+void sh_cpu_interrupt_assert(struct interrupt *interrupt);
+void sh_cpu_interrupt_deassert(struct interrupt *interrupt);
 int sh_cpu_instruction_has_delayslot(struct cpu *cpu, unsigned char *ib);
 int sh_run_instr(struct cpu *cpu);
 void sh_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,

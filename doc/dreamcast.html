@@ -10,7 +10,7 @@
 
 <!--
 
-$Id: dreamcast.html,v 1.3 2006-11-18 18:43:26 debug Exp $
+$Id: dreamcast.html,v 1.4 2006-11-24 16:45:55 debug Exp $
 
 Copyright (C) 2006  Anders Gavare.  All rights reserved.
 
@@ -65,11 +65,12 @@ This page contains information about the Dreamcast emulation mode in
 GXemul. It's not a very long page, but I thought it would be best to 
 gather everything Dreamcast-specific in one place.
 
-<p>My main goal with Dreamcast emulation is to let
-<a href="http://www.netbsd.org/Ports/dreamcast/">NetBSD/dreamcast</a> run, 
+<p>My main goal with Dreamcast emulation is to let <a 
+href="http://www.netbsd.org/Ports/dreamcast/">NetBSD/dreamcast</a> run, 
 similar to how it runs on a real machine. I am also experimenting with 
-other programs, such as simple demo programs that use KOS, and Marcus 
-Comstedt's tutorial programs. These sometimes work to a certain degree.
+other programs, such as Linux and simple demo programs that use KOS, and 
+Marcus Comstedt's tutorial programs. These sometimes work to a certain 
+degree.
 
 <p>Games (especially commercial games) are very unlikely to run.
 
@@ -141,8 +142,9 @@ bytes each.)
 <b><tt>gdrom0</tt></b>. For <b><tt>dump device</tt></b> and
 <b><tt>file system</tt></b>, just press Enter.
 
-<p><font color="#ff0000">2006-11-07: NOTE: It does not work yet, because the 
-GDROM isn't actually emulated.</font>
+<p><font color="#ff0000">2006-11-23: NOTE: It does not work yet;
+NetBSD starts booting from gdrom0, but crashes randomly after that.
+</font>
 
 
 

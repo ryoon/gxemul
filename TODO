@@ -1,4 +1,4 @@
-$Id: TODO,v 1.414 2006-11-18 18:43:25 debug Exp $
+$Id: TODO,v 1.415 2006-11-24 16:45:55 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
@@ -91,6 +91,8 @@ MIPS:
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
 
 SuperH:
+	x)  SH4 interrupt controller:
+		x)  Implement correct priorities of interrupts
 	x)  SH4 DMA (0xffa00000)
 	x)  SH4 UBC (0xff200000)
 	x)  Store queues can copy 32 bytes at a time, there's no need to
@@ -100,8 +102,6 @@ SuperH:
 	x)  SH4 SCIF: Serial _interrupts_
 	x)  Instruction tracing should include symbols for branch targets,
 	    and so on, to make the output more human readable.
-	x)  SH4 interrupt controller:
-		x)  Implement correct priorities of interrupts
 	x)  NetBSD/evbsh3, dreamcast, mmeye, hpcsh! Linux?
 	x)  Replace pc-relative loads with immediate load, if within the
 	    same page. (Similar to the same optimization for ARM.)
@@ -120,10 +120,11 @@ Dreamcast:
 		x)  Correct controller input
 		x)  Mouse input
 	x)  Software emulation of BIOS calls:
-		x)  GD-ROM emulation
+		x)  GD-ROM emulation: Use the GDROM device.
 		x)  Use the VGA font as a fake ROM font. (Better than
 		    nothing.)
 	x)  Linux/dreamcast? (The gentoo kernel currently crashes.)
+	x)  Make as many as possible of the KOS examples run!
 	x)  More homebrew demos/games.
 	x)  SPU: Sound emulation (ARM cpu).
 	x)  VME processor emulation? "(Sanyo LC8670 "Potato")" according to
@@ -190,6 +191,8 @@ Debugger:
 	o)  Try to make the debugger more modular and, if possible, reentrant!
 	o)  Remove the emul command? (But show network info if showing
 		machines?)
+	o)  Evaluate expressions within []? That would allow stuff like
+		cpu[x] where x is an expression.
 	o)  Settings:
 		x)  Special handlers for Write!
 			+)  MIPS coproc regs
@@ -311,7 +314,12 @@ Documentation:
 		securely".
 	x)  Try NetBSD/arc 4.x! (It seems to work with disk images!)
 	x)  NetBSD/pmax 4 install instructions: xterm instead of vt100!
-	x)  DEVICE_TICK in technical.html
+	x)  BETTER DEVICE EXAMPLES!
+		o)  Move away from technical.html to somewhere new.
+		o)  DEVICE_TICK
+		o)  Implement example devices using interrupts, dyntrans
+		    memory access, etc.?
+	x)  Document the dyntrans core?
 	x)  Rewrite the section about experimental devices, after the
 	    framebuffer acceleration has been implemented, and demos
 	    written. (Symbolic names instead of numbers; example
@@ -371,32 +379,18 @@ Busses:
 		x)  Specific clock/bus speeds, cpu speeds etc.
 	o)  Interrupt routing subsystem:
 		x)  IF POSSIBLE, try to make the new system work with the
-		    current system, but print annoying warning messages. :)
-		    Think carefully about this.
-		x)  Registry for all available interrupts.
-			+)  Each interrupt controller (including CPU cores
-			    that can handle interrupts) should register its
-			    interrupts, e.g.
-				cpu[0].irq[3]
-				cpu[0].irq[3].pcmcia_slot[1]
-				cpu[0].irq.pci[3]
-			+)  Note: MIPS cpus have multiple irqs in the core,
-			    while some other CPUs only have one (irq[0]
-			    or just irq).
-		x)  Users should use interrupt _names_ instead of integers
-		    when attaching to an interrupt controller, but when
-		    asserting/deasserting irq lines, small integers must
-		    still be used (for obvious performance reasons).
-		    Or rather: A pointer to the interrupt handler, and
-		    an integer identifying the interrupt in that handler.
-		x)  Any users need to say whether they need the interrupt line
-		    exclusively or allow shared access.
+		    current system, but print annoying warning messages
+		    during startup.
+		x)  Add a debugger command to list available interrupts?
 		x)  Must work with everything from native IRQs to
 		    TurboChannel/PCI/ISA/ADB/PCMCIA/...
-		x)  Must work with SMP emulation!
+		x)  Must work with SMP emulation! I.e. it should be totally
+		    CPU independent.
 		x)  Make it work with device_add(). How does the end user find
 		    out the name of an interrupt controller/line in e.g.
-		    a configuration file?
+		    a configuration file? -vvv could print available/registered
+		    interrupts...
+		x)  CONVERT ALL DEVICES and CPUs.
 	o)  Synchronization over network? or at least in dyntrans within
 	    one emulated machine
 	o)  Convert to real busses: TurboChannel, PCMCIA, ADB
@@ -421,6 +415,7 @@ Sound:
 	x)  generic sound framework
 	x)  add one or more sound cards as devices; add a testmachine
 	    sound card first?
+	x)  Dreamcast sound? Generic PCI sound cards?
 
 ASC SCSI controller:
 	x)  NetBSD/arc 2.0 uses the ASC controller in a way which GXemul

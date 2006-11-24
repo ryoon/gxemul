@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.235 2006-11-08 01:21:26 debug Exp $
+$Id: RELEASE,v 1.236 2006-11-24 16:45:55 debug Exp $
 
-Working on what will become 0.4.4.
+Working on what will become 0.5.0.
 
 ------------------------------------------------------------------------------
 
-Release notes for Gavare's eXperimental Emulator (GXemul), 0.4.4
+Release notes for Gavare's eXperimental Emulator (GXemul), 0.5.0
 ================================================================
 
 Copyright (C) 2003-2006  Anders Gavare.
@@ -20,7 +20,7 @@ be regarded as "working" in GXemul. The best working guest operating
 systems are probably NetBSD/pmax, NetBSD/cats, and OpenBSD/cats.
 
 
-Changes between release 0.4.3 and 0.4.4 include, among other things:
+Changes between release 0.4.3 and 0.5.0 include, among other things:
 
     o)	TODO
 

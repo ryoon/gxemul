@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.69 2006-10-07 02:05:21 debug Exp $
+ *  $Id: cpu_mips.c,v 1.70 2006-11-24 16:45:56 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -302,6 +302,20 @@ int mips_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 		}
 
 		debug(")");
+	}
+
+	/*  Register the CPU's interrupts:  */
+	for (i=2; i<8; i++) {
+		struct interrupt template;
+		char name[50];
+		snprintf(name, sizeof(name), "%s.%i", cpu->path, i);
+		memset(&template, 0, sizeof(template));
+		template.line = i;
+		template.name = name;
+		template.extra = cpu;
+		template.interrupt_assert = mips_cpu_interrupt_assert;
+		template.interrupt_deassert = mips_cpu_interrupt_deassert;
+		interrupt_handler_register(&template);
 	}
 
 	/*  System coprocessor (0), and FPU (1):  */
@@ -1800,6 +1814,26 @@ char *mips_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 
 	fatal("mips_cpu_gdb_stub(): cmd='%s' TODO\n", cmd);
 	return NULL;
+}
+
+
+/*
+ *  mips_cpu_interrupt_assert():
+ */
+void mips_cpu_interrupt_assert(struct interrupt *interrupt)
+{
+	struct cpu *cpu = interrupt->extra;
+	mips_cpu_interrupt(cpu, interrupt->line);
+}
+
+
+/*
+ *  mips_cpu_interrupt_deassert():
+ */
+void mips_cpu_interrupt_deassert(struct interrupt *interrupt)
+{
+	struct cpu *cpu = interrupt->extra;
+	mips_cpu_interrupt_ack(cpu, interrupt->line);
 }
 
 

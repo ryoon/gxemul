@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger_cmds.c,v 1.8 2006-10-14 02:30:12 debug Exp $
+ *  $Id: debugger_cmds.c,v 1.9 2006-11-24 16:45:56 debug Exp $
  *
  *  Debugger commands. Included from debugger.c.
  */
@@ -1407,7 +1407,7 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 	printf("\nIn generic assignments, x must be a register or other "
 	    "writable settings\nvariable, and expr can contain registers/"
 	    "settings, numeric values, or symbol\nnames, in combination with"
-	    " parenthesis and + - * / %% ^ | operators.\nIn case there are"
+	    " parenthesis and + - * / & %% ^ | operators.\nIn case there are"
 	    " multiple matches (i.e. a symbol that has the same name as a\n"
 	    "register), you may add a prefix character as a hint: '#' for"
 	    " registers, '@'\nfor symbols, and '$' for numeric values. Use"

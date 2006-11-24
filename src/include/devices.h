@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.218 2006-10-02 09:26:53 debug Exp $
+ *  $Id: devices.h,v 1.219 2006-11-24 16:45:56 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -38,6 +38,8 @@
 
 #include <sys/types.h>
 #include <inttypes.h>
+
+#include "interrupt.h"
 
 struct cpu;
 struct machine;
@@ -150,9 +152,9 @@ void dev_bt459_init(struct machine *machine, struct memory *mem,
 
 /*  dev_cons.c:  */
 struct cons_data {
-	int	console_handle;
-	int	irq_nr;
-	int	in_use;
+	int			console_handle;
+	int			in_use;
+	struct interrupt	irq;
 };
 
 /*  dev_colorplanemask.c:  */

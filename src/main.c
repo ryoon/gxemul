@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.286 2006-11-08 03:01:29 debug Exp $
+ *  $Id: main.c,v 1.287 2006-11-24 16:45:56 debug Exp $
  */
 
 #include <stdio.h>
@@ -760,7 +760,7 @@ int main(int argc, char *argv[])
 
 	/*  Allocate space for a simple emul setup:  */
 	n_emuls = 1;
-	emuls[0] = emul_new(NULL);
+	emuls[0] = emul_new(NULL, 0);
 	if (emuls[0] == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -838,7 +838,7 @@ int main(int argc, char *argv[])
 			}
 
 			emuls[n_emuls - 1] =
-			    emul_create_from_configfile(s);
+			    emul_create_from_configfile(s, n_emuls - 1);
 
 			snprintf(tmpstr, sizeof(tmpstr), "emul[%i]", n_emuls-1);
 			settings_add(global_settings, tmpstr, 1,

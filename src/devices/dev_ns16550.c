@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.55 2006-10-27 13:12:21 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.56 2006-11-24 17:29:07 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -40,6 +40,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "device.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -55,10 +56,11 @@
 struct ns_data {
 	int		addrmult;
 	int		in_use;
-	int		irqnr;
 	char		*name;
 	int		console_handle;
 	int		enable_fifo;
+
+	struct interrupt irq;
 
 	unsigned char	reg[DEV_NS16550_LENGTH];
 	unsigned char	fcr;		/*  FIFO control register  */
@@ -94,13 +96,13 @@ DEVICE_TICK(ns16550)
 	    ((d->reg[com_ier] & IER_ERXRDY) && (d->reg[com_iir] & IIR_RXRDY))) {
 		d->reg[com_iir] &= ~IIR_NOPEND;
 		if (d->reg[com_mcr] & MCR_IENABLE) {
-			cpu_interrupt(cpu, d->irqnr);
+			INTERRUPT_ASSERT(d->irq);
 			d->int_asserted = 1;
 		}
 	} else {
 		d->reg[com_iir] |= IIR_NOPEND;
 		if (d->int_asserted)
-			cpu_interrupt_ack(cpu, d->irqnr);
+			INTERRUPT_DEASSERT(d->irq);
 		d->int_asserted = 0;
 	}
 }
@@ -332,7 +334,7 @@ DEVINIT(ns16550)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ns_data));
-	d->irqnr	= devinit->irq_nr;
+
 	d->addrmult	= devinit->addr_mult;
 	d->in_use	= devinit->in_use;
 	d->enable_fifo	= 1;
@@ -345,6 +347,8 @@ DEVINIT(ns16550)
 	d->console_handle =
 	    console_start_slave(devinit->machine, devinit->name2 != NULL?
 	    devinit->name2 : devinit->name, d->in_use);
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	nlen = strlen(devinit->name) + 10;
 	if (devinit->name2 != NULL)

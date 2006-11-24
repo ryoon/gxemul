@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.27 2006-11-24 16:45:55 debug Exp $
+ *  $Id: device.c,v 1.28 2006-11-24 17:29:07 debug Exp $
  *
  *  Device registry framework.
  */
@@ -357,6 +357,8 @@ void *device_add(struct machine *machine, char *name_and_params)
 			snprintf(devinit.interrupt_path, interrupt_path_len,
 			    "%s.cpu[%i].%s", machine->path,
 			    machine->bootstrap_cpu, s3);
+			if (strchr(devinit.interrupt_path, ' ') != NULL)
+				*strchr(devinit.interrupt_path, ' ') = '\0';
 		} else if (strncmp(s2, "in_use=", 7) == 0) {
 			devinit.in_use = mystrtoull(s3, NULL, 0);
 		} else if (strncmp(s2, "name2=", 6) == 0) {

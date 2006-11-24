@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_x86.c,v 1.2 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_x86.c,v 1.3 2006-11-24 17:29:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -60,7 +60,8 @@ MACHINE_SETUP(x86)
 
 	machine->md_interrupt = x86_pc_interrupt;
 
-	bus_isa_init(machine, BUS_ISA_IDE0 | BUS_ISA_IDE1 | BUS_ISA_VGA |
+	bus_isa_init(machine, machine->path,
+	    BUS_ISA_IDE0 | BUS_ISA_IDE1 | BUS_ISA_VGA |
 	    BUS_ISA_PCKBC_FORCE_USE |
 	    (machine->machine_subtype == MACHINE_X86_XT?
 	    BUS_ISA_NO_SECOND_PIC : 0) | BUS_ISA_FDC,

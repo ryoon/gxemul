@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.5 2006-06-30 20:22:54 debug Exp $
+ *  $Id: machine_arc.c,v 1.6 2006-11-24 17:29:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -354,7 +354,7 @@ Not yet.
 		    MACHINE_NAME_MAXBUF);
 
 		/*  TODO: IRQs!  */
-		bus_isa_init(machine, 0, 0x900000000ULL,
+		bus_isa_init(machine, machine->path, 0, 0x900000000ULL,
 		    0x100000000ULL, 8, 24);
 #if 0
 		snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=0 addr="

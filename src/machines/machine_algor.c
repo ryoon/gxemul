@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.11 2006-09-26 08:49:18 debug Exp $
+ *  $Id: machine_algor.c,v 1.12 2006-11-24 17:29:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -75,7 +75,8 @@ MACHINE_SETUP(algor)
 
 	device_add(machine, "algor addr=0x1ff00000");
 
-	bus_isa_init(machine, BUS_ISA_FDC, 0x1d000000, 0x10000000, 8, 24);
+	bus_isa_init(machine, machine->path, BUS_ISA_FDC,
+	    0x1d000000, 0x10000000, 8, 24);
 
 	bus_pci_add(machine, machine->md_int.v3_data->pci_data,
 	    machine->memory, 0, 0, 0, "dec21143");

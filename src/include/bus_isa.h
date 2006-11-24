@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_isa.h,v 1.4 2006-01-16 01:45:50 debug Exp $
+ *  $Id: bus_isa.h,v 1.5 2006-11-24 17:29:07 debug Exp $
  *
  *  ISA bus.
  */
@@ -47,6 +47,7 @@ struct bus_isa_data {
 #endif	/*  BUS_ISA_C  */
 
 struct bus_isa_data *bus_isa_init(struct machine *machine,
+	char *interrupt_base_path,
 	uint32_t bus_isa_flags, uint64_t isa_portbase, uint64_t isa_membase,
 	int isa_irqbase, int reassert_irq);
 

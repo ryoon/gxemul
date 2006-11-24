@@ -25,11 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.37 2006-07-01 21:15:46 debug Exp $
+ *  $Id: dev_mp.c,v 1.38 2006-11-24 17:29:07 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
  *  multiprocessor controller used in any real machine.
+ *
+ *  TODO: Non-MIPS support.
  */
 
 #include <stdio.h>

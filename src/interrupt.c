@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.1 2006-11-24 16:46:13 debug Exp $
+ *  $Id: interrupt.c,v 1.2 2006-11-24 17:29:07 debug Exp $
  *
  *  The interrupt subsystem.
  */
@@ -190,8 +190,8 @@ void interrupt_connect(struct interrupt *in, int exclusive)
 	}
 
 	fatal("Internal error in interrupt_connect(): name '%s' not "
-	    "found?\n", in->name);
-	exit(1);
+	    "found? Dumping core for debugging.\n", in->name);
+	abort();
 }
 
 

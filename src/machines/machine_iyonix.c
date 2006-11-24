@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iyonix.c,v 1.5 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_iyonix.c,v 1.6 2006-11-24 17:29:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -53,7 +53,8 @@ MACHINE_SETUP(iyonix)
 
 	device_add(machine, "ns16550 irq=0 addr=0xfe800000 in_use=0");
 
-	bus_isa_init(machine, 0, 0x90000000ULL, 0x98000000ULL, 32, 48);
+	bus_isa_init(machine, machine->path, 0,
+	    0x90000000ULL, 0x98000000ULL, 32, 48);
 
 	device_add(machine, "i80321 addr=0xffffe000");
 

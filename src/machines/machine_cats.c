@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.5 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_cats.c,v 1.6 2006-11-24 17:29:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -80,7 +80,7 @@ MACHINE_SETUP(cats)
 	/*  OpenBSD reboot needs 0xf??????? to be mapped to phys.:  */
 	dev_ram_init(machine, 0xf0000000, 0x1000000, DEV_RAM_MIRROR, 0x0);
 
-	bus_isa_init(machine, BUS_ISA_PCKBC_FORCE_USE |
+	bus_isa_init(machine, machine->path, BUS_ISA_PCKBC_FORCE_USE |
 	    BUS_ISA_PCKBC_NONPCSTYLE, 0x7c000000, 0x80000000, 32, 48);
 
 	bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,

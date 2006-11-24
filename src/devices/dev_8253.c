@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8253.c,v 1.16 2006-08-22 15:13:03 debug Exp $
+ *  $Id: dev_8253.c,v 1.17 2006-11-24 17:29:07 debug Exp $
  *
  *  Intel 8253/8254 Programmable Interval Timer
  *
@@ -44,6 +44,7 @@
 #include "cpu.h"
 #include "device.h"
 #include "emul.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -70,7 +71,7 @@ struct pit8253_data {
 	int		hz[3];
 
 	struct timer	*timer0;
-	int		irq0_nr;
+	struct interrupt irq;
 	int		pending_interrupts_timer0;
 };
 
@@ -97,7 +98,7 @@ DEVICE_TICK(8253)
 
 	case I8253_TIMER_INTTC:
 		if (d->pending_interrupts_timer0 > 0)
-			cpu_interrupt(cpu, d->irq0_nr);
+			INTERRUPT_ASSERT(d->irq);
 		break;
 
 	case I8253_TIMER_SQWAVE:
@@ -247,8 +248,10 @@ DEVINIT(8253)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pit8253_data));
-	d->irq0_nr = devinit->irq_nr;
+
 	d->in_use = devinit->in_use;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	/*  Don't cause interrupt, by default.  */
 	d->mode[0] = I8253_TIMER_RATEGEN;

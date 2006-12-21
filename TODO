@@ -1,7 +1,40 @@
-$Id: TODO,v 1.415 2006-11-24 16:45:55 debug Exp $
+$Id: TODO,v 1.416 2006-12-21 09:22:26 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
+
+
+----------------------------------------------------------------------------
+
+
+2006-12-22: Because of lack of spare time, it might be best to concentrate 
+work on the emulator in "work packages". A possible list of such work 
+packages could be:
+
+  x)  Redesign of the interrupt subsystem.  (*)
+      This includes many aspects: prepare to get SMP working (again :-),
+      making it easier to reuse PCI/ISA bus code, possibly also some
+      performance improvements? And of course, cleaner code :)
+
+  x)  Redesign of the networking subsystem, at least the NAT translation
+      part. The current way of allowing raw ethernet frames to be
+      transfered to/from the emulator via UDP should probably be extended
+      to allow the frames to be transmitted other ways as well.
+
+  x)  Debugging: Think more about SMP debugging, etc. Right now, the
+      debugger is a mess. Also, a better connection to GDB would be
+      very nice to have.
+
+  x)  Experiment with more CPU archs; the ones I want to concentrate on
+      next are probably Alpha and SPARC, but possibly also non-fixed-length
+      ISAs such as AVR32 (if there are easily available pre-compiled
+      operating system binaries available for that arch). The latter would
+      require more design work on the dyntrans system, though.
+
+(*)  This is what I plan for the next release, 0.5.0.
+
+
+----------------------------------------------------------------------------
 
 
 Dyntrans:
@@ -96,7 +129,7 @@ SuperH:
 	x)  SH4 DMA (0xffa00000)
 	x)  SH4 UBC (0xff200000)
 	x)  Store queues can copy 32 bytes at a time, there's no need to
-	    copy individual 32-bit words.
+	    copy individual 32-bit words. (Performance improvement.)
 	x)  SH4 BSC (Bus State Controller)
 	x)  SH4 RTC: Read the host's clock.
 	x)  SH4 SCIF: Serial _interrupts_
@@ -174,7 +207,7 @@ Alpha:
 
 SPARC:
 	o)  Implement Adress space identifiers; load/stores etc.
-	o)  Save/restore register windows etc!
+	o)  Save/restore register windows etc! Both v9 and pre-v9!
 	o)  Finish the subcc and addcc flag computation code.
 	o)  Add more registers (floating point, control regs etc)
 	o)  Exception/trap handling.

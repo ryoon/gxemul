@@ -1,34 +1,15 @@
-$Id: TODO,v 1.417 2006-12-26 16:33:00 debug Exp $
+$Id: TODO,v 1.418 2006-12-28 12:09:32 debug Exp $
 
 This file is my list of things I want to work on in the future. It is in
 random order, and some parts of it are probably out-to-date by now.
 
-
-X) Before line
-/*  reg[COP0_PAGEMASK] = cpu->cd.mips.coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
-in cpu_mips.c is not correct for R10000 according to Lemote's Godson patches
-for GXemul. TODO: Go through all register definitions according to
-http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_263.html#HEADING334
-and make sure everything works with R10000. Then test with OpenBSD/sgi?
-
-Rewrite with 80 columns, separate into subfunctions if necessary. 
-cpu_mips.c is one of the few "old" files which doesn't adhere to the
-80 column format!
-
-This will have to wait until interrupts work again, though.
-
-x) Profile using profil(2) on FreeBSD.
-   Make this a configure + runtime option! (But don't expose it officially,
-   since it is only usable during development.)
-
 ----------------------------------------------------------------------------
-
 
 Because of lack of spare time, it might be best to concentrate work on the 
 emulator in "work packages". A possible list of such work packages could 
 be (in no specific order):
 
-  x)  Redesign of the interrupt subsystem.  (*)
+  x)  Redesign of the interrupt subsystem.
       This includes many aspects: prepare to get SMP working (again :-),
       making it easier to reuse PCI/ISA bus code, possibly also some
       performance improvements? And of course, cleaner code :)
@@ -54,9 +35,6 @@ be (in no specific order):
       require more design work on the dyntrans system, though.
 
   x)  Userland emulation (e.g. NetBSD syscall emulation).
-
-
-(*)  This is what I plan for the next release, 0.5.0.
 
 
 ----------------------------------------------------------------------------
@@ -144,6 +122,13 @@ MIPS:
 		x)  watchhi/watchlo exceptions, and other exception
 		    handling details
 	o)  R10000 and others:  (R12000, R14000 ?)
+		x)  The code before the line
+			/*  reg[COP0_PAGEMASK] = cpu->cd.mips.coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
+		    in cpu_mips.c is not correct for R10000 according to
+		    Lemote's Godson patches for GXemul. TODO: Go through all
+		    register definitions according to http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_263.html#HEADING334
+		    and make sure everything works with R10000.
+		    Then test with OpenBSD/sgi?
 		x)  memory space, exceptions, ...
 		x)  use cop0 framemask for tlb lookups
 		    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)

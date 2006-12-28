@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_rca180x.c,v 1.2 2006-09-21 11:53:26 debug Exp $
+ *  $Id: cpu_rca180x.c,v 1.3 2006-12-28 12:09:33 debug Exp $
  *
  *  RCA180X CPU emulation.
  *
@@ -80,8 +80,8 @@ static void rca180x_timer_tick(struct timer *timer, void *extra)
  *  Returns 1 on success, 0 if there was no matching RCA180X processor with
  *  this cpu_type_name.
  */
-int rca180x_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
-	int cpu_id, char *cpu_type_name)
+int rca180x_cpu_new(struct cpu *cpu, struct memory *mem,
+	struct machine *machine, int cpu_id, char *cpu_type_name)
 {
 	int i;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_test.c,v 1.22 2006-10-25 09:24:06 debug Exp $
+ *  $Id: machine_test.c,v 1.23 2006-12-28 12:09:35 debug Exp $
  *
  *  Various "test" machines (bare machines with just a CPU, or a bare machine
  *  plus some experimental devices).
@@ -53,7 +53,7 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 {
 	char tmpstr[1000];
 
-	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=0",
+	snprintf(tmpstr, sizeof(tmpstr), "cons addr=0x%"PRIx64" irq=none",
 	    (uint64_t) DEV_CONS_ADDRESS);
 	machine->main_console_handle = (size_t)device_add(machine, tmpstr);
 
@@ -69,11 +69,11 @@ static void default_test(struct machine *machine, struct cpu *cpu)
 	    (uint64_t) DEV_DISK_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=0",
+	snprintf(tmpstr, sizeof(tmpstr), "ether addr=0x%"PRIx64" irq=none",
 	    (uint64_t) DEV_ETHER_ADDRESS);
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=0",
+	snprintf(tmpstr, sizeof(tmpstr), "rtc addr=0x%"PRIx64" irq=none",
 	    (uint64_t) DEV_RTC_ADDRESS);
 	device_add(machine, tmpstr);
 }

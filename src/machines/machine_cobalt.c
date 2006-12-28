@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.4 2006-08-12 19:31:36 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.5 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_pci.h"
@@ -70,7 +71,11 @@ MACHINE_SETUP(cobalt)
 	machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
 	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=24 addr=0x100000a0");
 	machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
-	machine->md_interrupt = isa8_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = isa8_interrupt;
+
 	machine->isa_pic_data.native_irq = 6;
 
 	dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);

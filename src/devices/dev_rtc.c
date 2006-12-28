@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rtc.c,v 1.3 2006-10-14 23:46:17 debug Exp $
+ *  $Id: dev_rtc.c,v 1.4 2006-12-28 12:09:34 debug Exp $
  *
  *  An experimental Real-Time Clock device. It can be used to retrieve the
  *  current system time, and to cause periodic interrupts.
@@ -50,12 +50,13 @@
 #define	DEV_RTC_TICK_SHIFT	14
 
 struct rtc_data {
-	int		hz;
-	int		irq_nr;
-	int		pending_interrupts;
-	struct timer	*timer;
+	struct interrupt	irq;
+	int			pending_interrupts;
 
-	struct timeval	cur_time;	
+	int			hz;
+	struct timer		*timer;
+
+	struct timeval		cur_time;	
 };
 
 
@@ -76,9 +77,9 @@ DEVICE_TICK(rtc)
 	struct rtc_data *d = (struct rtc_data *) extra;
 
 	if (d->pending_interrupts > 0)
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 	else
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		INTERRUPT_DEASSERT(d->irq);
 }
 
 
@@ -132,7 +133,7 @@ DEVICE_ACCESS(rtc)
 		if (d->pending_interrupts > 0)
 			d->pending_interrupts --;
 
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		INTERRUPT_DEASSERT(d->irq);
 
 		/*  TODO: Reassert the interrupt here, if
 		    d->pending_interrupts is still above zero?  */
@@ -165,7 +166,8 @@ DEVINIT(rtc)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct rtc_data));
-	d->irq_nr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_RTC_LENGTH, dev_rtc_access, (void *)d,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_m68k.c,v 1.14 2006-09-19 10:50:08 debug Exp $
+ *  $Id: cpu_m68k.c,v 1.15 2006-12-28 12:09:33 debug Exp $
  *
  *  Motorola 68K CPU emulation.
  */
@@ -276,7 +276,8 @@ int m68k_cpu_disassemble_instr(struct cpu *cpu, unsigned char *ib,
 			if (ib[1] >= 0x50 && ib[1] <= 0x57) {
 				print_two(ib, &len);
 				print_spaces(len);
-				debug("linkw\t%%%s,#%i\n", m68k_aname[ib[1] & 7],
+				debug("linkw\t%%%s,#%i\n",
+				    m68k_aname[ib[1] & 7],
 				    ((ib[2] << 8) + ib[3]));
 			} else if (ib[1] >= 0x58 && ib[1] <= 0x5f) {
 				print_spaces(len);

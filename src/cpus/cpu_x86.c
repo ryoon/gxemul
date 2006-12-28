@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.18 2006-09-23 03:49:02 debug Exp $
+ *  $Id: cpu_x86.c,v 1.19 2006-12-28 12:09:33 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -433,6 +433,8 @@ char *x86_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 }
 
 
+// TODO: REWRITE!
+#if 0
 /*
  *  x86_cpu_interrupt():
  *
@@ -467,6 +469,7 @@ int x86_cpu_interrupt_ack(struct cpu *cpu, uint64_t nr)
 
         return 1;
 }
+#endif
 
 
 /*  (NOTE: Don't use the lowest 3 bits in these defines)  */

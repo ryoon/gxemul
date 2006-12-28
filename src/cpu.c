@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.362 2006-11-24 16:45:55 debug Exp $
+ *  $Id: cpu.c,v 1.363 2006-12-28 12:09:33 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -238,35 +238,24 @@ char *cpu_gdb_stub(struct cpu *cpu, char *cmd)
 
 /*
  *  cpu_interrupt():
+ *  cpu_interrupt_ack():
  *
- *  Assert an interrupt.
- *  Return value is 1 if the interrupt was asserted, 0 otherwise.
+ *  LEGACY stuff; cpu_interrupt and cpu_interrupt_ack should not be used
+ *  anymore!
  */
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	if (cpu->machine->cpu_family == NULL ||
-	    cpu->machine->cpu_family->interrupt == NULL) {
-		fatal("cpu_interrupt(): NULL\n");
-		return 0;
-	} else
-		return cpu->machine->cpu_family->interrupt(cpu, irq_nr);
+	fatal("cpu_interrupt(): Legacy function, should not be"
+	    " called anymore.\n");
+	abort();
+	return 0;
 }
-
-
-/*
- *  cpu_interrupt_ack():
- *
- *  Acknowledge an interrupt.
- *  Return value is 1 if the interrupt was deasserted, 0 otherwise.
- */
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	if (cpu->machine->cpu_family == NULL ||
-	    cpu->machine->cpu_family->interrupt_ack == NULL) {
-		/*  debug("cpu_interrupt_ack(): NULL\n");  */
-		return 0;
-	} else
-		return cpu->machine->cpu_family->interrupt_ack(cpu, irq_nr);
+	fatal("cpu_interrupt_ack(): Legacy function, should not be"
+	    " called anymore.\n");
+	abort();
+	return 0;
 }
 
 

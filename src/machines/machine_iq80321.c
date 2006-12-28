@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_iq80321.c,v 1.19 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_iq80321.c,v 1.20 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_pci.h"
@@ -55,7 +56,9 @@ MACHINE_SETUP(iq80321)
 	machine->machine_name = "Intel IQ80321";
 	machine->stable = 1;
 
-	machine->md_interrupt = i80321_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = i80321_interrupt;
 	cpu->cd.arm.coproc[6] = arm_coproc_i80321_6;
 
 	i80321_data = device_add(machine, "i80321 addr=0xffffe000");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.34 2006-03-04 12:38:48 debug Exp $
+ *  $Id: dev_px.c,v 1.35 2006-12-28 12:09:34 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -107,7 +107,7 @@ void dev_px_tick(struct cpu *cpu, void *extra)
 	struct px_data *d = extra;
 
 	if (d->intr & STIC_INT_P_EN)		/*  or _WE ?  */
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 #endif
 }
 
@@ -751,7 +751,7 @@ odata = random();
  *  dev_px_init():
  */
 void dev_px_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int px_type, int irq_nr)
+	uint64_t baseaddr, int px_type, char *irq_path)
 {
 	struct px_data *d;
 
@@ -763,7 +763,8 @@ void dev_px_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct px_data));
 
 	d->type = px_type;
-	d->irq_nr = irq_nr;
+
+	INTERRUPT_CONNECT(irq_path, d->irq);
 
 	d->xconfig = d->yconfig = 0;	/*  4x1  */
 
@@ -807,13 +808,13 @@ void dev_px_init(struct machine *machine, struct memory *mem,
 	switch (d->type) {
 	case DEV_PX_TYPE_PX:
 		dev_bt459_init(machine, mem, baseaddr + 0x200000, 0,
-		    d->vfb_data, 8, irq_nr, BT459_PX);
+		    d->vfb_data, 8, irq_path, BT459_PX);
 		break;
 	case DEV_PX_TYPE_PXG:
 	case DEV_PX_TYPE_PXGPLUS:
 	case DEV_PX_TYPE_PXGPLUSTURBO:
 		dev_bt459_init(machine, mem, baseaddr + 0x300000, 0,
-		    d->vfb_data, d->bitdepth, irq_nr, BT459_PX);
+		    d->vfb_data, d->bitdepth, irq_path, BT459_PX);
 		break;
 	default:
 		fatal("dev_px_init(): unimplemented px_type\n");

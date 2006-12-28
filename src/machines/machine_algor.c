@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_algor.c,v 1.12 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_algor.c,v 1.13 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -68,7 +68,9 @@ MACHINE_SETUP(algor)
 	 */
 
 	machine->md_int.v3_data = dev_v3_init(machine, machine->memory);
-	machine->md_interrupt = isa8_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = isa8_interrupt;
 	machine->isa_pic_data.native_irq = 2;		/*  Primary: ISA  */
 	machine->isa_pic_data.secondary_mask1 = 0x18;
 	machine->isa_pic_data.native_secondary_irq = 4;	/*  Secondary: Local  */

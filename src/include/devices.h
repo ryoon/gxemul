@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.219 2006-11-24 16:45:56 debug Exp $
+ *  $Id: devices.h,v 1.220 2006-12-28 12:09:34 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -91,7 +91,7 @@ struct algor_data {
 #define	DEV_ASC_PICA		2
 int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_asc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, void *turbochannel, int mode,
+	char *irq_path, void *turbochannel, int mode,
 	size_t (*dma_controller)(void *dma_controller_data,
 		unsigned char *data, size_t len, int writeflag),
 	void *dma_controller_data);
@@ -126,15 +126,21 @@ struct bebox_data {
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20
 #define	DEV_BT431_NREGS			0x800	/*  ?  */
-int dev_bt431_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+int dev_bt431_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
 struct vfb_data;
-void dev_bt431_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int color_fb_flag);
+void dev_bt431_init(struct memory *mem, uint64_t baseaddr,
+	struct vfb_data *vfb_data, int color_fb_flag);
 
 /*  dev_bt455.c:  */
 #define	DEV_BT455_LENGTH		0x20
-int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+int dev_bt455_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
 struct vfb_data;
-void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data);
+void dev_bt455_init(struct memory *mem, uint64_t baseaddr,
+	struct vfb_data *vfb_data);
 
 /*  dev_bt459.c:  */
 #define	DEV_BT459_LENGTH		0x20
@@ -148,7 +154,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem,
 struct vfb_data;
 void dev_bt459_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t baseaddr_irq, struct vfb_data *vfb_data,
-	int color_fb_flag, int irq_nr, int type);
+	int color_fb_flag, char *irq_path, int type);
 
 /*  dev_cons.c:  */
 struct cons_data {
@@ -404,7 +410,7 @@ int dev_le_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 void dev_le_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end,
-	int irq_nr, int len);
+	char *irq_path, int len);
 
 /*  dev_m700_fb.c:  */
 #define	DEV_M700_FB_LENGTH		0x10000		/*  TODO?  */
@@ -491,8 +497,11 @@ struct ps2_data *dev_ps2_stuff_init(struct machine *machine, struct memory *mem,
 
 /*  dev_pmagja.c:  */
 #define	DEV_PMAGJA_LENGTH		0x3c0000
-int dev_pmagja_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_pmagja_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr);
+int dev_pmagja_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_pmagja_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, char *irq_path);
 
 /*  dev_prep.c:  */
 struct prep_data {
@@ -501,17 +510,17 @@ struct prep_data {
 
 /*  dev_px.c:  */
 struct px_data {
-	struct memory	*fb_mem;
-	struct vfb_data	*vfb_data;
-	int		type;
-	char		*px_name;
-	int		irq_nr;
-	int		bitdepth;
-	int		xconfig;
-	int		yconfig;
+	struct memory		*fb_mem;
+	struct vfb_data		*vfb_data;
+	int			type;
+	char			*px_name;
+	struct interrupt	irq;
+	int			bitdepth;
+	int			xconfig;
+	int			yconfig;
 
-	uint32_t	intr;
-	unsigned char	sram[128 * 1024];
+	uint32_t		intr;
+	unsigned char		sram[128 * 1024];
 };
 /*  TODO: perhaps these types are wrong?  */
 #define	DEV_PX_TYPE_PX			0
@@ -521,8 +530,8 @@ struct px_data {
 #define	DEV_PX_LENGTH			0x3c0000
 int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *);
-void dev_px_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
-	int px_type, int irq_nr);
+void dev_px_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int px_type, char *irq_path);
 
 /*  dev_ram.c:  */
 #define	DEV_RAM_RAM				0
@@ -654,7 +663,7 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 	int slot_nr, uint64_t baseaddr, uint64_t endaddr, char *device_name,
-	int irq);
+	char *irq_path);
 
 /*  dev_uninorth.c:  */
 struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,

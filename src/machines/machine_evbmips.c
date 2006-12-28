@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.12 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.13 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -67,7 +67,10 @@ MACHINE_SETUP(evbmips)
 			cpu->byte_order = EMUL_BIG_ENDIAN;
 		}
 
-		machine->md_interrupt = isa8_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+
+//		machine->md_interrupt = isa8_interrupt;
 		machine->isa_pic_data.native_irq = 2;
 
 		bus_isa_init(machine, machine->path, 0,
@@ -116,7 +119,9 @@ MACHINE_SETUP(evbmips)
 			    "meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
-		machine->md_interrupt = au1x00_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = au1x00_interrupt;
 		machine->md_int.au1x00_ic_data = dev_au1x00_init(machine,
 		    machine->memory);
 
@@ -141,8 +146,9 @@ MACHINE_SETUP(evbmips)
 	case MACHINE_EVBMIPS_PB1000:
 		machine->machine_name = "PB1000 (evbmips)";
 		cpu->byte_order = EMUL_BIG_ENDIAN;
-
-		machine->md_interrupt = au1x00_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = au1x00_interrupt;
 		machine->md_int.au1x00_ic_data = dev_au1x00_init(machine,
 		    machine->memory);
 		/*  TODO  */

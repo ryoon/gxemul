@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_hpcmips.c,v 1.3 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_hpcmips.c,v 1.4 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -89,7 +89,9 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4131);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -121,7 +123,10 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4121);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -147,7 +152,10 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4121);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -173,7 +181,9 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4121);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -199,7 +209,9 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4121);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -225,7 +237,9 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4121);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */
@@ -251,7 +265,9 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4181);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		/*  TODO: Hm... irq 17 according to linux, but
 		    VRIP_INTR_SIU (=9) here?  */
@@ -292,7 +308,9 @@ MACHINE_SETUP(hpcmips)
 
 		machine->md_int.vr41xx_data = dev_vr41xx_init(machine,
 		    machine->memory, 4121);
-		machine->md_interrupt = vr41xx_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = vr41xx_interrupt;
 
 		hpc_platid_cpu_arch = 1;	/*  MIPS  */
 		hpc_platid_cpu_series = 1;	/*  VR  */

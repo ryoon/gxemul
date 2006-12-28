@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_dyntrans.c,v 1.132 2006-10-27 13:12:20 debug Exp $
+ *  $Id: cpu_dyntrans.c,v 1.133 2006-12-28 12:09:33 debug Exp $
  *
  *  Common dyntrans routines. Included from cpu_*.c.
  */
@@ -685,9 +685,10 @@ void DYNTRANS_PC_TO_POINTERS_GENERIC(struct cpu *cpu)
 			}
 #else
 			x1 = (cached_pc >> (64-DYNTRANS_L1N)) & mask1;
-			x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N)) & mask2;
-			x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N-DYNTRANS_L3N))
-			    & mask3;
+			x2 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N))
+			    & mask2;
+			x3 = (cached_pc >> (64-DYNTRANS_L1N-DYNTRANS_L2N
+			    - DYNTRANS_L3N)) & mask3;
 			l2 = cpu->cd.DYNTRANS_ARCH.l1_64[x1];
 			l3 = l2->l3[x2];
 			if (l3->host_load[x3] != NULL) {

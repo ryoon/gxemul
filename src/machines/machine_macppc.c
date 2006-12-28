@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_macppc.c,v 1.5 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_macppc.c,v 1.6 2006-12-28 12:09:34 debug Exp $
  *
  *  NOTE: Currently, these are skeletons for generic PowerMac G3, G4, and G5
  *        systems. They do not model real PowerMacs, but should be enough to
@@ -33,6 +33,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cpu.h"
@@ -62,7 +63,10 @@ MACHINE_SETUP(macppc)
 
 	machine->md_int.gc_data = dev_gc_init(machine, machine->memory,
 	    0xf3000000, 64);
-	machine->md_interrupt = gc_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = gc_interrupt;
 
 	pci_data = dev_uninorth_init(machine, machine->memory, 0xe2000000,
 	    64 /*  isa irq base */, 0 /*  pci irq: TODO */);

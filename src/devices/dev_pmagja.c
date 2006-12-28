@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.19 2006-01-01 13:17:16 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.20 2006-12-28 12:09:34 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -50,17 +50,17 @@
 /*  #define JA_DEBUG  */
 
 struct pmagja_data {
-	int		irq_nr;
-	struct memory	*fb_mem;
-	struct vfb_data	*vfb_data;
+	struct interrupt	irq;
+	struct memory		*fb_mem;
+	struct vfb_data		*vfb_data;
 
-	unsigned char	pixeldata[XSIZE * YSIZE];
+	unsigned char		pixeldata[XSIZE * YSIZE];
 
-	int		current_r;
-	int		current_g;
-	int		current_b;
+	int			current_r;
+	int			current_g;
+	int			current_b;
 
-	int		pip_offset;
+	int			pip_offset;
 };
 
 
@@ -202,7 +202,7 @@ for (i=0; i<len; i++)
  *  dev_pmagja_init():
  */
 void dev_pmagja_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr)
+	uint64_t baseaddr, char *irq_path)
 {
 	struct pmagja_data *d;
 
@@ -213,7 +213,7 @@ void dev_pmagja_init(struct machine *machine, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct pmagja_data));
 
-	d->irq_nr = irq_nr;
+	INTERRUPT_CONNECT(irq_path, d->irq);
 
 	d->fb_mem = memory_new(XSIZE * YSIZE * 3, machine->arch);
 	if (d->fb_mem == NULL) {
@@ -229,7 +229,7 @@ void dev_pmagja_init(struct machine *machine, struct memory *mem,
 
 	/*  TODO: not bt459, but a bt463:  */
 	dev_bt459_init(machine, mem, baseaddr + 0x40000, 0, d->vfb_data, 8,
-	    irq_nr, 0);	/*  palette  (TODO: type)  */
+	    irq_path, 0);	/*  palette  (TODO: type)  */
 	dev_bt431_init(mem, baseaddr + 0x40010, d->vfb_data, 8);  /*  cursor  */
 
 	memory_device_register(mem, "pmagja", baseaddr + PMAGJA_FIRSTOFFSET,

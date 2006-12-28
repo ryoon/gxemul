@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.6 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_cats.c,v 1.7 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_isa.h"
@@ -62,7 +63,11 @@ MACHINE_SETUP(cats)
 
 	machine->md_int.footbridge_data =
 	    device_add(machine, "footbridge addr=0x42000000");
-	machine->md_interrupt = isa32_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = isa32_interrupt;
+
 	machine->isa_pic_data.native_irq = 10;
 
 	/*  DC21285_ROM_BASE (256 KB at 0x41000000)  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.6 2006-08-30 15:07:47 debug Exp $
+ *  $Id: machine_sgi.c,v 1.7 2006-12-28 12:09:35 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -231,7 +231,10 @@ Why is this here? TODO
 		dev_ram_init(machine, 0x88000000ULL,
 		    128 * 1048576, DEV_RAM_MIRROR, 0x08000000);
 */
-		machine->md_interrupt = sgi_ip22_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = sgi_ip22_interrupt;
 
 		/*
 		 *  According to NetBSD 1.6.2:
@@ -356,7 +359,10 @@ Why is this here? TODO
 
 		machine->md_int.sgi_ip30_data =
 		    dev_sgi_ip30_init(machine, mem, 0x0ff00000);
-		machine->md_interrupt = sgi_ip30_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = sgi_ip30_interrupt;
 
 		dev_ram_init(machine, 0xa0000000ULL, 128 * 1048576,
 		    DEV_RAM_MIRROR | DEV_RAM_MIGHT_POINT_TO_DEVICES,
@@ -445,7 +451,9 @@ Why is this here? TODO
 
 		machine->md_int.ip32.mace_data =
 		    dev_mace_init(mem, 0x1f310000, 2);
-		machine->md_interrupt = sgi_ip32_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = sgi_ip32_interrupt;
 
 		/*
 		 *  IRQ mapping is really ugly.  TODO: fix

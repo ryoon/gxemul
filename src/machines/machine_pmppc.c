@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.3 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.4 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_pci.h"
@@ -54,7 +55,10 @@ MACHINE_SETUP(pmppc)
 	dev_pmppc_init(machine->memory);
 
 	machine->md_int.cpc700_data = dev_cpc700_init(machine, machine->memory);
-	machine->md_interrupt = cpc700_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = cpc700_interrupt;
 
 	/*  RTC at "ext int 5" = "int 25" in IBM jargon, int
 	    31-25 = 6 for the rest of us.  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: interrupt.c,v 1.2 2006-11-24 17:29:07 debug Exp $
+ *  $Id: interrupt.c,v 1.3 2006-12-28 12:09:33 debug Exp $
  *
  *  The interrupt subsystem.
  */
@@ -50,6 +50,13 @@ static struct interrupt_handler *interrupt_handlers = NULL;
 
 
 /*
+ *  Dummy interrupt assert/deassert for "no interrupt" interrupts:
+ */
+void no_interrupt_assert(struct interrupt *i) { }
+void no_interrupt_deassert(struct interrupt *i) { }
+
+
+/*
  *  interrupt_handler_register():
  *
  *  Add an interrupt handler to the interrupt subsystem. The 'template'
@@ -57,7 +64,7 @@ static struct interrupt_handler *interrupt_handlers = NULL;
  *
  *  Name is of the form "emul[0].machine[0].cpu[0].irq[3].isa[14]" etc.
  *
- *  If there already is a handler with this name, the emulator exits.
+ *  If there already is a handler with this name, the emulator aborts.
  */
 void interrupt_handler_register(struct interrupt *template)
 {
@@ -150,6 +157,13 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 
 	printf("interrupt_handler_lookup(\"%s\")\n", name);
 
+	if (name[0] == '\0') {
+		/*  No interrupt:  */
+		memset(template, 0, sizeof(struct interrupt));
+		template->interrupt_assert = no_interrupt_assert;
+		template->interrupt_deassert = no_interrupt_deassert;
+	}
+
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
 		if (strcmp(name, interrupt_handlers[i].template.name) != 0)
 			continue;
@@ -170,6 +184,12 @@ int interrupt_handler_lookup(char *name, struct interrupt *template)
 void interrupt_connect(struct interrupt *in, int exclusive)
 {
 	int i;
+
+printf("interrupt_connect(\"%s\")\n", in->name);
+
+	if (in->name == NULL || in->name[0] == '\0')
+		return;
+
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
 		if (strcmp(in->name, interrupt_handlers[i].template.name) != 0)
 			continue;
@@ -203,6 +223,10 @@ void interrupt_connect(struct interrupt *in, int exclusive)
 void interrupt_disconnect(struct interrupt *in, int exclusive)
 {
 	int i;
+
+	if (in->name == NULL || in->name[0] == '\0')
+		return;
+
 	for (i=0; i<nr_of_interrupt_handlers; i++) {
 		if (strcmp(in->name, interrupt_handlers[i].template.name) != 0)
 			continue;

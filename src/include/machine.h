@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.139 2006-11-24 16:45:57 debug Exp $
+ *  $Id: machine.h,v 1.140 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <sys/types.h>
@@ -151,9 +151,6 @@ struct machine {
 	void	(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
 	void	*tick_extra[MAX_TICK_FUNCTIONS];
 	double	tick_hz[MAX_TICK_FUNCTIONS];
-
-	void	(*md_interrupt)(struct machine *m, struct cpu *cpu,
-		    int irq_nr, int assert);
 
 	char	*cpu_name;  /*  TODO: remove this, there could be several
 				cpus with different names in a machine  */

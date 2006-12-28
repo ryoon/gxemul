@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_mvmeppc.c,v 1.10 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_mvmeppc.c,v 1.11 2006-12-28 12:09:34 debug Exp $
  *
  *  MVMEPPC machines (for experimenting with NetBSD/mvmeppc or RTEMS).
  *  (ftp://ftp.netbsd.org/pub/NetBSD/arch/mvmeppc/snapshot/20020302/README)
@@ -64,7 +64,10 @@ MACHINE_SETUP(mvmeppc)
 
 		machine->md_int.prep_data = device_add(machine, "prep");
 		machine->isa_pic_data.native_irq = 1;   /*  Semi-bogus  */
-		machine->md_interrupt = isa32_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = isa32_interrupt;
 
 		pci_data = dev_eagle_init(machine, machine->memory,
 		    32 /*  isa irq base */, 0 /*  pci irq: TODO */);

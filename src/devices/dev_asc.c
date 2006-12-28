@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.81 2006-07-21 16:55:41 debug Exp $
+ *  $Id: dev_asc.c,v 1.82 2006-12-28 12:09:34 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models and PICA-61.
  *
@@ -101,7 +101,7 @@ struct asc_data {
 	int		mode;
 
 	void		*turbochannel;
-	int		irq_nr;
+	struct interrupt irq;
 	int		irq_caused_last_time;
 
 	/*  Current state and transfer:  */
@@ -157,7 +157,7 @@ DEVICE_TICK(asc)
 	struct asc_data *d = extra;
 
 	if (d->reg_ro[NCR_STAT] & NCRSTAT_INT)
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 }
 
 
@@ -1196,7 +1196,7 @@ break;
 			d->reg_ro[NCR_STAT] = PHASE_COMMAND;
 		}
 
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		INTERRUPT_DEASSERT(d->irq);
 	}
 
 	if (regnr == NCR_CFG1) {
@@ -1226,8 +1226,7 @@ break;
  *  Register an 'asc' device.
  */
 void dev_asc_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, void *turbochannel,
-	int mode,
+	uint64_t baseaddr, char *irq_path, void *turbochannel, int mode,
 	size_t (*dma_controller)(void *dma_controller_data,
 		unsigned char *data, size_t len, int writeflag),
 	void *dma_controller_data)
@@ -1240,7 +1239,8 @@ void dev_asc_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct asc_data));
-	d->irq_nr       = irq_nr;
+
+	INTERRUPT_CONNECT(irq_path, d->irq);
 	d->turbochannel = turbochannel;
 	d->mode         = mode;
 

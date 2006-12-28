@@ -25,13 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.4 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_bebox.c,v 1.5 2006-12-28 12:09:34 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/Ports/bebox/ for more info.)
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_isa.h"
@@ -53,7 +54,10 @@ MACHINE_SETUP(bebox)
 
 	machine->md_int.bebox_data = device_add(machine, "bebox");
 	machine->isa_pic_data.native_irq = 5;
-	machine->md_interrupt = isa32_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = isa32_interrupt;
 
 	pci_data = dev_eagle_init(machine, machine->memory,
 	    32 /*  isa irq base */, 0 /*  pci irq: TODO */);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.51 2006-07-14 16:33:28 debug Exp $
+ *  $Id: dev_le.c,v 1.52 2006-12-28 12:09:34 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -85,7 +85,7 @@ extern int quiet_mode;
 
 
 struct le_data {
-	int		irq_nr;
+	struct interrupt irq;
 
 	uint64_t	buf_start;
 	uint64_t	buf_end;
@@ -541,9 +541,9 @@ void dev_le_tick(struct cpu *cpu, void *extra)
 	le_register_fix(cpu->machine->emul->net, d);
 
 	if (d->reg[0] & LE_INTR && d->reg[0] & LE_INEA)
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 	else
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		INTERRUPT_DEASSERT(d->irq);
 }
 
 
@@ -765,7 +765,7 @@ do_return:
  *  dev_le_init():
  */
 void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
-	uint64_t buf_start, uint64_t buf_end, int irq_nr, int len)
+	uint64_t buf_start, uint64_t buf_end, char *irq_path, int len)
 {
 	char *name2;
 	size_t nlen = 55;
@@ -777,7 +777,8 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	}
 
 	memset(d, 0, sizeof(struct le_data));
-	d->irq_nr    = irq_nr;
+
+	INTERRUPT_CONNECT(irq_path, d->irq);
 
 	d->sram = malloc(SRAM_SIZE);
 	if (d->sram == NULL) {

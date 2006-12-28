@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.287 2006-11-24 16:45:56 debug Exp $
+ *  $Id: main.c,v 1.288 2006-12-28 12:09:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -714,6 +714,13 @@ int main(int argc, char *argv[])
 	int i;
 
 
+#ifdef USE_PROFIL
+	uint16_t samples[0x100000];
+	memset(samples, 0, sizeof(samples));
+	profil((char *)samples, sizeof(samples), (vm_offset_t) 0x400000, 8192);
+#endif
+
+
 	progname = argv[0];
 
 
@@ -875,6 +882,18 @@ int main(int argc, char *argv[])
 
 	settings_remove_all(global_settings);
 	settings_destroy(global_settings);
+
+#ifdef USE_PROFIL
+{
+	int i;
+	FILE *f = fopen("output.txt", "w");
+	for (i=0; i<sizeof(samples) / sizeof(uint16_t); ++i) {
+		if (samples[i] != 0)
+			fprintf(f, "%i %p\n", samples[i],
+			    (void *) (size_t) (0x400000 + i * 16));
+	}
+}
+#endif
 
 	return 0;
 }

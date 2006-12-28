@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.13 2006-06-24 10:19:19 debug Exp $
+ *  $Id: machine_pmax.c,v 1.14 2006-12-28 12:09:34 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -60,8 +60,8 @@ MACHINE_SETUP(pmax)
 	char *framebuffer_console_name, *serial_console_name, *init_bootpath;
 	int color_fb_flag, i;
 	int boot_scsi_boardnumber = 3, boot_net_boardnumber = 3;
-	char *turbochannel_default_gfx_card = "PMAG-BA";
-		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA  */
+//	char *turbochannel_default_gfx_card = "PMAG-BA";
+//		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA  */
 	struct xx {
 		struct btinfo_magic a;
 		struct btinfo_bootpath b;
@@ -120,9 +120,10 @@ MACHINE_SETUP(pmax)
 		    &fb->color_plane_mask);
 		dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette,
 		    color_fb_flag);
+		snprintf(tmpstr, sizeof(tmpstr), "%i", KN01_INT_LANCE);
 		dev_le_init(machine, mem, KN01_SYS_LANCE,
 		    KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END,
-		    KN01_INT_LANCE, 4*1048576);
+		    tmpstr, 4*1048576);
 		dev_sii_init(machine, mem, KN01_SYS_SII, KN01_SYS_SII_B_START,
 		    KN01_SYS_SII_B_END, KN01_INT_SII);
 		dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ,
@@ -167,7 +168,9 @@ MACHINE_SETUP(pmax)
 		 */
 
 		/*  KN02 interrupts:  */
-		machine->md_interrupt = kn02_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = kn02_interrupt;
 
 		/*
 		 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -178,6 +181,9 @@ MACHINE_SETUP(pmax)
 		 *  cards that occupy several slots. How to solve
 		 *  this nicely?
 		 */
+fatal("TODO: turbochannel init rewrite!\n");
+abort();
+#if 0
 		dev_turbochannel_init(machine, mem, 0,
 		    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
 		    machine->n_gfx_cards >= 1?
@@ -207,6 +213,7 @@ MACHINE_SETUP(pmax)
 		dev_turbochannel_init(machine, mem, 6,
 		    KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END,
 		    "PMAD-AA", KN02_IP_LANCE +8);
+#endif
 
 		/*  TURBOchannel slot 7 is system stuff.  */
 		machine->main_console_handle =
@@ -235,7 +242,9 @@ MACHINE_SETUP(pmax)
 			    "have more than 128MB RAM. Continuing anyway.\n");
 
 		/*  KMIN interrupts:  */
-		machine->md_interrupt = kmin_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = kmin_interrupt;
 
 		/*
 		 *  tc0 at mainbus0: 12.5 MHz clock  (0x10000000,slotsize=64MB)
@@ -256,16 +265,20 @@ MACHINE_SETUP(pmax)
 		 */
 		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
 		    mem, 0x1c000000, 0);
-		dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE + 8,
-		    4 * 65536);
+fatal("TODO: kmin dev_le_init.\n");
+abort();
+//		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
+//		    KMIN_INTR_LANCE + 8, 4 * 65536);
 		dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 + 8,
 		    machine->use_x11, 0, 1);
 		dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 + 8,
 		    machine->use_x11, 1, 1);
 		dev_mc146818_init(machine, mem, 0x1c200000, KMIN_INTR_CLOCK + 8,
 		    MC146818_DEC, 1);
-		dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
-		    NULL, DEV_ASC_DEC, NULL, NULL);
+fatal("TODO: kmin asc init\n");
+abort();
+//		dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
+//		    NULL, DEV_ASC_DEC, NULL, NULL);
 
 		/*
 		 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -274,6 +287,9 @@ MACHINE_SETUP(pmax)
 		 *
 		 *  TODO: irqs 
 		 */
+fatal("TODO: turbochannel init rewrite!\n");
+abort();
+#if 0
 		dev_turbochannel_init(machine, mem, 0, 0x10000000, 0x103fffff,
 		    machine->n_gfx_cards >= 1?
 			turbochannel_default_gfx_card : "", KMIN_INT_TC0);
@@ -285,7 +301,7 @@ MACHINE_SETUP(pmax)
 		dev_turbochannel_init(machine, mem, 2, 0x18000000, 0x183fffff,
 		    machine->n_gfx_cards >= 3?
 			turbochannel_default_gfx_card : "", KMIN_INT_TC2);
-
+#endif
 		/*  (kmin shared irq numbers (IP) are offset by +8 in the
 		    emulator)  */
 		/*  kmin_csr = dev_kmin_init(cpu, mem, KMIN_REG_INTR);  */
@@ -307,7 +323,9 @@ MACHINE_SETUP(pmax)
 			    "have more than 480MB RAM. Continuing anyway.\n");
 
 		/*  KN03 interrupts:  */
-		machine->md_interrupt = kn03_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = kn03_interrupt;
 
 		/*
 		 *  tc0 at mainbus0: 25 MHz clock (slot 0)	(0x1e000000)
@@ -326,8 +344,10 @@ MACHINE_SETUP(pmax)
 		machine->md_int.dec_ioasic_data = dev_dec_ioasic_init(cpu,
 		    mem, 0x1f800000, 0);
 
-		dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0,
-		    KN03_INTR_LANCE +8, 4 * 65536);
+fatal("TODO: kn03 dev_le_init rewrite\n");
+abort();
+//		dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0,
+//		    KN03_INTR_LANCE +8, 4 * 65536);
 
 		machine->md_int.dec_ioasic_data->dma_func[3] =
 		    dev_scc_dma_func;
@@ -342,8 +362,10 @@ MACHINE_SETUP(pmax)
 
 		dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC,
 		    MC146818_DEC, 1);
-		dev_asc_init(machine, mem, KN03_SYS_SCSI,
-		    KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
+fatal("TODO: asc init rewrite\n");
+abort();
+//		dev_asc_init(machine, mem, KN03_SYS_SCSI,
+//		    KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
 		/*
 		 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -352,6 +374,9 @@ MACHINE_SETUP(pmax)
 		 *
 		 *  TODO: irqs 
 		 */
+fatal("TODO: turbochannel rewrite init\n");
+abort();
+#if 0
 		dev_turbochannel_init(machine, mem, 0,
 		    KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END,
 		    machine->n_gfx_cards >= 1?
@@ -369,6 +394,7 @@ MACHINE_SETUP(pmax)
 		    machine->n_gfx_cards >= 3?
 			turbochannel_default_gfx_card : "",
 		    KN03_INTR_TC_2 +8);
+#endif
 
 		/*  TODO: interrupts  */
 		/*  shared (turbochannel) interrupts are +8  */
@@ -459,7 +485,10 @@ MACHINE_SETUP(pmax)
 			    "have more than 40MB RAM. Continuing anyway.\n");
 
 		/*  Maxine interrupts:  */
-		machine->md_interrupt = maxine_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+
+//		machine->md_interrupt = maxine_interrupt;
 
 		/*
 		 *  Something at address 0xca00000. (?)
@@ -487,6 +516,9 @@ MACHINE_SETUP(pmax)
 		machine->md_int.dec_ioasic_data =
 		    dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 
+fatal("TODO: turbochannel rewrite!\n");
+abort();
+#if 0
 		/*  TURBOchannel slots (0 and 1):  */
 		dev_turbochannel_init(machine, mem, 0,
 		    0x10000000, 0x103fffff,
@@ -505,19 +537,23 @@ MACHINE_SETUP(pmax)
 		 */
 		dev_turbochannel_init(machine, mem, 2,
 		    0x8000000, 0xbffffff, "PMAG-DV", 0);
-
+#endif
 		/*
 		 *  TURBOchannel slot 3: fixed, ioasic
 		 *  (the system stuff), 0x1c000000
 		 */
-		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
-		    XINE_INTR_LANCE +8, 4*65536);
+fatal("TODO: xine dev_le_init rewrite\n");
+abort();
+//		dev_le_init(machine, mem, 0x1c0c0000, 0, 0,
+//		    XINE_INTR_LANCE +8, 4*65536);
 		dev_scc_init(machine, mem, 0x1c100000,
 		    XINE_INTR_SCC_0 +8, machine->use_x11, 0, 1);
 		dev_mc146818_init(machine, mem, 0x1c200000,
 		    XINE_INT_TOY, MC146818_DEC, 1);
-		dev_asc_init(machine, mem, 0x1c300000,
-		    XINE_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
+fatal("TODO: xine asc init rewrite\n");
+abort();
+//		dev_asc_init(machine, mem, 0x1c300000,
+//		    XINE_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
 		framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb?  */
 		serial_console_name      = "osconsole=3";
@@ -588,7 +624,9 @@ MACHINE_SETUP(pmax)
 			    "Continuing anyway.\n");
 
 		/*  KN230 interrupts:  */
-		machine->md_interrupt = kn230_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = kn230_interrupt;
 
 		/*
 		 *  According to NetBSD/pmax:
@@ -606,9 +644,12 @@ MACHINE_SETUP(pmax)
 		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2,
 		    KN230_CSR_INTR_OPT1, machine->use_x11);
 			NOTE: CSR_INTR  */
-		dev_le_init(machine, mem, KN230_SYS_LANCE,
-		    KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END,
-		    KN230_CSR_INTR_LANCE, 4*1048576);
+
+fatal("TODO: kn230 dev_le_init rewrite\n");
+exit(1);
+//		dev_le_init(machine, mem, KN230_SYS_LANCE,
+//		    KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END,
+//		    KN230_CSR_INTR_LANCE, 4*1048576);
 		dev_sii_init(machine, mem, KN230_SYS_SII,
 		    KN230_SYS_SII_B_START, KN230_SYS_SII_B_END,
 		    KN230_CSR_INTR_SII);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.6 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_arc.c,v 1.7 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -238,7 +238,10 @@ MACHINE_SETUP(arc)
 
 		machine->md_int.jazz_data = device_add(machine,
 		    "jazz addr=0x80000000");
-		machine->md_interrupt = jazz_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = jazz_interrupt;
 
 		i = dev_pckbc_init(machine, mem, 0x80005000ULL,
 		    PCKBC_JAZZ, 8 + 6, 8 + 7,
@@ -283,9 +286,11 @@ MACHINE_SETUP(arc)
 		/*  irq 8 + 4  */
 		device_add(machine, "sn addr=0x80001000 irq=12");
 
-		dev_asc_init(machine, mem, 0x80002000ULL, 8 + 5, NULL,
-		    DEV_ASC_PICA, dev_jazz_dma_controller,
-		    machine->md_int.jazz_data);
+fatal("TODO: Rewrite initialization of dev_asc_init for PICA!\n");
+abort();
+//		dev_asc_init(machine, mem, 0x80002000ULL, 8 + 5, NULL,
+//		    DEV_ASC_PICA, dev_jazz_dma_controller,
+//		    machine->md_int.jazz_data);
 
 		device_add(machine, "fdc addr=0x80003000, irq=0");
 
@@ -315,7 +320,9 @@ Not yet.
 
 		machine->md_int.jazz_data = device_add(machine,
 		    "jazz addr=0x80000000");
-		machine->md_interrupt = jazz_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//		machine->md_interrupt = jazz_interrupt;
 
 		dev_mc146818_init(machine, mem,
 		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);

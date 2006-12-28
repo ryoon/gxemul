@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.70 2006-11-24 16:45:56 debug Exp $
+ *  $Id: cpu_mips.c,v 1.71 2006-12-28 12:09:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1842,19 +1842,13 @@ void mips_cpu_interrupt_deassert(struct interrupt *interrupt)
  *
  *  Cause an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
  *  interrupt. 0 and 1 are ignored (software interrupts).
- *
- *  If irq_nr is >= 8, then this function calls md_interrupt().
  */
 int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(cpu->machine,
-			    cpu, irq_nr, 1);
-		else
-			fatal("mips_cpu_interrupt(): irq_nr = %i, "
-			    "but md_interrupt = NULL ?\n", irq_nr);
-		return 1;
+		fatal("mips_cpu_interrupt(): irq_nr = %i; perhaps this is"
+		    " caused by legacy code (?). aborting...\n", irq_nr);
+		abort();
 	}
 
 	if (irq_nr < 2)
@@ -1872,20 +1866,13 @@ int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  *
  *  Acknowledge an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
  *  interrupt.  Interrupts 0..1 are ignored (software interrupts).
- *
- *  If irq_nr is >= 8, then it is machine dependent, and md_interrupt() is
- *  called.
  */
 int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(cpu->machine, cpu,
-			    irq_nr, 0);
-		else
-			fatal("mips_cpu_interrupt_ack(): irq_nr = %i, "
-			    "but md_interrupt = NULL ?\n", irq_nr);
-		return 1;
+		fatal("mips_cpu_interrupt_ack(): irq_nr = %i; perhaps this is"
+		    " caused by legacy code (?). aborting...\n", irq_nr);
+		abort();
 	}
 
 	if (irq_nr < 2)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_playstation2.c,v 1.6 2006-06-30 20:22:54 debug Exp $
+ *  $Id: machine_playstation2.c,v 1.7 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -95,7 +95,9 @@ MACHINE_SETUP(playstation2)
 	/*  irq = 8 + 32 + 1 (SBUS/USB)  */
 	device_add(machine, "ohci addr=0x1f801600 irq=41");
 
-	machine->md_interrupt = ps2_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = ps2_interrupt;
 
 	/*  Set the Harddisk controller present flag, if either
 	    disk 0 or 1 is present:  */

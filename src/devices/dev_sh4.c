@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sh4.c,v 1.25 2006-11-24 16:45:56 debug Exp $
+ *  $Id: dev_sh4.c,v 1.26 2006-12-28 12:09:34 debug Exp $
  *  
  *  SH4 processor specific memory mapped registers (0xf0000000 - 0xffffffff).
  *
@@ -364,7 +364,8 @@ DEVICE_ACCESS(sh4_utlb_aa)
 			cpu->invalidate_translation_caches(cpu,
 			    vaddr_to_invalidate, INVALIDATE_VADDR);
 		else
-			cpu->invalidate_translation_caches(cpu, 0, INVALIDATE_ALL);
+			cpu->invalidate_translation_caches(cpu, 0,
+			    INVALIDATE_ALL);
 	} else {
 		odata = cpu->cd.sh.utlb_hi[e] &
 		    (SH4_UTLB_AA_VPN_MASK | SH4_UTLB_AA_ASID_MASK);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ether.c,v 1.15 2006-10-07 00:36:29 debug Exp $
+ *  $Id: dev_ether.c,v 1.16 2006-12-28 12:09:34 debug Exp $
  *
  *  Basic "ethernet" network device. This is a simple test device which can
  *  be used to send and receive packets to/from a simulated ethernet network.
@@ -49,13 +49,13 @@
 #define	DEV_ETHER_TICK_SHIFT	14
 
 struct ether_data {
-	unsigned char	buf[DEV_ETHER_BUFFER_SIZE];
-	unsigned char	mac[6];
+	unsigned char		buf[DEV_ETHER_BUFFER_SIZE];
+	unsigned char		mac[6];
 
-	int		status;
-	int		packet_len;
+	int			status;
+	int			packet_len;
 
-	int		irq_nr;
+	struct interrupt	irq;
 };
 
 
@@ -71,9 +71,9 @@ DEVICE_TICK(ether)
 		d->status |= DEV_ETHER_STATUS_MORE_PACKETS_AVAILABLE;
 
 	if (d->status)
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 	else
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		INTERRUPT_DEASSERT(d->irq);
 }
 
 
@@ -108,7 +108,7 @@ DEVICE_ACCESS(ether)
 		if (writeflag == MEM_READ) {
 			odata = d->status;
 			d->status = 0;
-			cpu_interrupt_ack(cpu, d->irq_nr);
+			INTERRUPT_DEASSERT(d->irq);
 		} else
 			fatal("[ ether: WARNING: write to status ]\n");
 		break;
@@ -211,7 +211,8 @@ DEVINIT(ether)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ether_data));
-	d->irq_nr = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	net_generate_unique_mac(devinit->machine, d->mac);
 	snprintf(tmp, sizeof(tmp), "%02x:%02x:%02x:%02x:%02x:%02x",

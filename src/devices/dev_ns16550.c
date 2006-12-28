@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.56 2006-11-24 17:29:07 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.57 2006-12-28 12:09:34 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -108,9 +108,6 @@ DEVICE_TICK(ns16550)
 }
 
 
-/*
- *  dev_ns16550_access():
- */
 DEVICE_ACCESS(ns16550)
 {
 	uint64_t idata = 0, odata=0;

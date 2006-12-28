@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.101 2006-11-24 16:45:56 debug Exp $
+ *  $Id: cpu.h,v 1.102 2006-12-28 12:09:34 debug Exp $
  *
  *  CPU-related definitions.
  */
@@ -258,13 +258,6 @@ struct cpu_family {
 	void			(*tlbdump)(struct machine *m, int x,
 				    int rawflag);
 
-	/*  Assert an interrupt.  */
-	int			(*interrupt)(struct cpu *cpu, uint64_t irq_nr);
-
-	/*  De-assert an interrupt.  */
-	int			(*interrupt_ack)(struct cpu *cpu,
-				    uint64_t irq_nr);
-
 	/*  Print architecture-specific function call arguments.
 	    (This is called for each function call, if running with -t.)  */
 	void			(*functioncall_trace)(struct cpu *,
@@ -478,8 +471,6 @@ void cpu_init(void);
 	fp->disassemble_instr = n ## _cpu_disassemble_instr;		\
 	fp->register_dump = n ## _cpu_register_dump;			\
 	fp->dumpinfo = n ## _cpu_dumpinfo;				\
-	fp->interrupt = n ## _cpu_interrupt; 				\
-	fp->interrupt_ack = n ## _cpu_interrupt_ack;			\
 	fp->functioncall_trace = n ## _cpu_functioncall_trace;		\
 	fp->gdb_stub = n ## _cpu_gdb_stub;				\
 	fp->tlbdump = n ## _cpu_tlbdump;				\

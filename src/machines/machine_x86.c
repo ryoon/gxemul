@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_x86.c,v 1.3 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_x86.c,v 1.4 2006-12-28 12:09:35 debug Exp $
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_isa.h"
@@ -58,7 +59,9 @@ MACHINE_SETUP(x86)
 	else
 		machine->machine_name = "Generic x86 PC";
 
-	machine->md_interrupt = x86_pc_interrupt;
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = x86_pc_interrupt;
 
 	bus_isa_init(machine, machine->path,
 	    BUS_ISA_IDE0 | BUS_ISA_IDE1 | BUS_ISA_VGA |

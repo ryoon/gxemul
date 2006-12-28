@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.64 2006-09-21 11:53:26 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.65 2006-12-28 12:09:33 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -656,6 +656,8 @@ char *ppc_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 }
 
 
+// TODO: Rewrite this legacy stuff:
+#if 0
 /*
  *  ppc_cpu_interrupt():
  *
@@ -696,6 +698,7 @@ int ppc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 	}
 	return 1;
 }
+#endif
 
 
 /*

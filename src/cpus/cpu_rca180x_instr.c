@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_rca180x_instr.c,v 1.1 2006-08-28 16:25:59 debug Exp $
+ *  $Id: cpu_rca180x_instr.c,v 1.2 2006-12-28 12:09:33 debug Exp $
  *
  *  RCA180X instructions.
  *
@@ -250,8 +250,8 @@ X(jsr)
 
 	/*  Push return address to the stack:  */
 	cpu->cd.rca180x.sp -= sizeof(uint16_t);
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.sp, (unsigned char *)&pc12,
-	    sizeof(pc12), MEM_WRITE, PHYSICAL);
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.sp,
+	    (unsigned char *)&pc12, sizeof(pc12), MEM_WRITE, PHYSICAL);
 
 	cpu->cd.rca180x.next_ic = (struct rca180x_instr_call *) ic->arg[0];
 }
@@ -265,8 +265,8 @@ X(rts)
 	uint16_t pc12;
 
 	/*  Pop return address to the stack:  */
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.sp, (unsigned char *)&pc12,
-	    sizeof(pc12), MEM_READ, PHYSICAL);
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.sp,
+	    (unsigned char *)&pc12, sizeof(pc12), MEM_READ, PHYSICAL);
 	cpu->cd.rca180x.sp += sizeof(uint16_t);
 
 	cpu->pc = pc12 & 0xfff;
@@ -380,7 +380,8 @@ X(str)
 	int r;
 	for (r=0; r<=ic->arg[0]; r++) {
 		cpu->memory_rw(cpu, cpu->mem, cpu->cd.rca180x.index++,
-		    &cpu->cd.rca180x.v[r], sizeof(uint8_t), MEM_WRITE, PHYSICAL);
+		    &cpu->cd.rca180x.v[r], sizeof(uint8_t), MEM_WRITE,
+		    PHYSICAL);
 	}
 }
 
@@ -436,10 +437,10 @@ X(end_of_page)
 /*
  *  rca180x_instr_to_be_translated():
  *
- *  Translate an instruction word into an rca180x_instr_call. ic is filled in with
- *  valid data for the translated instruction, or a "nothing" instruction if
- *  there was a translation failure. The newly translated instruction is then
- *  executed.
+ *  Translate an instruction word into an rca180x_instr_call. ic is filled in
+ *  with valid data for the translated instruction, or a "nothing" instruction
+ *  if there was a translation failure. The newly translated instruction is
+ *  then executed.
  */
 X(to_be_translated)
 {

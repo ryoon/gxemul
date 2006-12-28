@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_transputer_instr.c,v 1.6 2006-07-23 19:36:14 debug Exp $
+ *  $Id: cpu_transputer_instr.c,v 1.7 2006-12-28 12:09:33 debug Exp $
  *
  *  INMOS transputer instructions.
  *
@@ -393,10 +393,10 @@ X(end_of_page)
 /*
  *  transputer_instr_to_be_translated():
  *
- *  Translate an instruction word into an transputer_instr_call. ic is filled in with
- *  valid data for the translated instruction, or a "nothing" instruction if
- *  there was a translation failure. The newly translated instruction is then
- *  executed.
+ *  Translate an instruction word into an transputer_instr_call. ic is filled
+ *  in with valid data for the translated instruction, or a "nothing"
+ *  instruction if there was a translation failure. The newly translated
+ *  instruction is then executed.
  */
 X(to_be_translated)
 {

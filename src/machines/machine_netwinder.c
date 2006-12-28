@@ -25,10 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.6 2006-11-24 17:29:07 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.7 2006-12-28 12:09:34 debug Exp $
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "bus_isa.h"
@@ -55,7 +56,11 @@ MACHINE_SETUP(netwinder)
 
 	machine->md_int.footbridge_data =
 	    device_add(machine, "footbridge addr=0x42000000");
-	machine->md_interrupt = isa32_interrupt;
+
+fatal("TODO: Legacy rewrite\n");
+abort();
+//	machine->md_interrupt = isa32_interrupt;
+
 	machine->isa_pic_data.native_irq = 11;
 
 	bus_isa_init(machine, machine->path, 0,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_arm.c,v 1.65 2006-12-28 12:09:33 debug Exp $
+ *  $Id: cpu_arm.c,v 1.66 2006-12-29 23:05:24 debug Exp $
  *
  *  ARM CPU emulation.
  *
@@ -42,6 +42,7 @@
 
 #include "arm_cpu_types.h"
 #include "cpu.h"
+#include "interrupt.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -67,6 +68,9 @@ static int arm_exception_to_mode[N_ARM_EXCEPTIONS] = ARM_EXCEPTION_TO_MODE;
 /*  For quick_pc_to_pointers():  */
 void arm_pc_to_pointers(struct cpu *cpu);
 #include "quick_pc_to_pointers.h"
+
+void arm_irq_interrupt_assert(struct interrupt *interrupt);
+void arm_irq_interrupt_deassert(struct interrupt *interrupt);
 
 
 /*
@@ -168,6 +172,24 @@ int arm_cpu_new(struct cpu *cpu, struct memory *mem,
 	CPU_SETTINGS_ADD_REGISTER64("pc", cpu->pc);
 	for (i=0; i<N_ARM_REGS - 1; i++)
 		CPU_SETTINGS_ADD_REGISTER32(arm_regname[i], cpu->cd.arm.r[i]);
+
+	/*  Register the CPU's "IRQ" and "FIQ" interrupts:  */
+	{
+		struct interrupt template;
+		char name[50];
+		snprintf(name, sizeof(name), "%s.irq", cpu->path);
+
+                memset(&template, 0, sizeof(template));
+                template.line = 0;
+                template.name = name;
+                template.extra = cpu;
+                template.interrupt_assert = arm_irq_interrupt_assert;
+                template.interrupt_deassert = arm_irq_interrupt_deassert;
+                interrupt_handler_register(&template);
+
+		/*  FIQ: TODO  */
+        }
+
 
 	return 1;
 }
@@ -776,52 +798,24 @@ char *arm_cpu_gdb_stub(struct cpu *cpu, char *cmd)
 }
 
 
-// TODO: Rewrite the legacy ARM interrupt code
-#if 0
 /*
- *  arm_cpu_interrupt():
- *
- *  0..31 are used as footbridge interrupt numbers, 32..47 = ISA,
- *  64 is used as a "re-assert" signal to cpu->machine->md_interrupt().
- *
- *  TODO: don't hardcode to footbridge!
+ *  arm_irq_interrupt_assert():
  */
-int arm_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
+void arm_irq_interrupt_assert(struct interrupt *interrupt)
 {
-	/*  fatal("arm_cpu_interrupt(): 0x%x\n", (int)irq_nr);  */
-	if (irq_nr <= 64) {
-		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(cpu->machine,
-			    cpu, irq_nr, 1);
-		else
-			fatal("arm_cpu_interrupt(): irq_nr=%i md_interrupt =="
-			    " NULL\n", (int)irq_nr);
-	} else {
-		/*  Assert ARM IRQs:  */
-		cpu->cd.arm.irq_asserted = 1;
-	}
-
-	return 1;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
+	cpu->cd.arm.irq_asserted = 1;
 }
 
 
 /*
- *  arm_cpu_interrupt_ack():
+ *  arm_irq_interrupt_deassert():
  */
-int arm_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
+void arm_irq_interrupt_deassert(struct interrupt *interrupt)
 {
-	if (irq_nr <= 64) {
-		if (cpu->machine->md_interrupt != NULL)
-			cpu->machine->md_interrupt(cpu->machine,
-			    cpu, irq_nr, 0);
-	} else {
-		/*  De-assert ARM IRQs:  */
-		cpu->cd.arm.irq_asserted = 0;
-	}
-
-	return 1;
+	struct cpu *cpu = (struct cpu *) interrupt->extra;
+	cpu->cd.arm.irq_asserted = 0;
 }
-#endif
 
 
 /*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.9 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.10 2006-12-29 23:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,6 +44,8 @@
 
 MACHINE_SETUP(netwinder)
 {
+	char tmpstr[300];
+
 	machine->machine_name = "NetWinder";
 	machine->stable = 1;
 
@@ -54,15 +56,9 @@ MACHINE_SETUP(netwinder)
 	/*  CPU at 63.75 MHz, according to NetBSD's netwinder_machdep.c.  */
 	machine->emulated_hz = 63750000;
 
-	machine->md_int.footbridge_data =
-	    device_add(machine, "footbridge addr=0x42000000");
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = isa32_interrupt;
-//	machine->isa_pic_data.native_irq = 11;
-
-	bus_isa_init(machine, machine->path, 0, 0x7c000000, 0x80000000);
+	snprintf(tmpstr, sizeof(tmpstr), "footbridge irq=%s.cpu[%i].irq"
+	    " addr=0x42000000", machine->path, machine->bootstrap_cpu);
+	machine->md_int.footbridge_data = device_add(machine, tmpstr);
 
 	if (machine->use_x11) {
 		bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,

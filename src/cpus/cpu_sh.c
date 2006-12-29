@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sh.c,v 1.57 2006-11-24 16:45:56 debug Exp $
+ *  $Id: cpu_sh.c,v 1.58 2006-12-29 23:05:24 debug Exp $
  *
  *  Hitachi SuperH ("SH") CPU emulation.
  *
@@ -176,8 +176,7 @@ int sh_cpu_new(struct cpu *cpu, struct memory *mem, struct machine *machine,
 	for (i=SH_INTEVT_NMI; i<0x1000; i+=0x20) {
 		struct interrupt template;
 		char name[50];
-		snprintf(name, sizeof(name),
-		    "emul[0].machine[0].cpu[%i].irq[0x%x]", cpu->cpu_id, i);
+		snprintf(name, sizeof(name), "%s.irq[0x%x]", cpu->path, i);
 		memset(&template, 0, sizeof(template));
 		template.line = i;
 		template.name = name;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.30 2006-12-29 21:05:06 debug Exp $
+ *  $Id: device.c,v 1.31 2006-12-29 23:05:24 debug Exp $
  *
  *  Device registry framework.
  */
@@ -265,7 +265,7 @@ void *device_add(struct machine *machine, char *name_and_params)
 	struct device_entry *p;
 	struct devinit devinit;
 	char *s2, *s3;
-	size_t len, interrupt_path_len = strlen(machine->path) + 20;
+	size_t len, interrupt_path_len = strlen(machine->path) + 100;
 	int quoted;
 
 	memset(&devinit, 0, sizeof(struct devinit));

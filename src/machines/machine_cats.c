@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.9 2006-12-29 22:05:25 debug Exp $
+ *  $Id: machine_cats.c,v 1.10 2006-12-29 23:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,7 +48,7 @@
 MACHINE_SETUP(cats)
 {
 	struct ebsaboot ebsaboot;
-	char bs[300];
+	char bs[300], tmpstr[400];
 	int boot_id = machine->bootdev_id >= 0? machine->bootdev_id : 0;
 
 	machine->machine_name = "CATS evaluation board";
@@ -61,13 +61,9 @@ MACHINE_SETUP(cats)
 		fprintf(stderr, "WARNING! Real CATS machines cannot"
 		    " have more than 256 MB RAM. Continuing anyway.\n");
 
-	machine->md_int.footbridge_data =
-	    device_add(machine, "footbridge addr=0x42000000");
-
-fatal("TODO: Legacy rewrite\n");
-abort();
-//	machine->md_interrupt = isa32_interrupt;
-//	machine->isa_pic_data.native_irq = 10;
+	snprintf(tmpstr, sizeof(tmpstr), "footbridge irq=%s.cpu[%i].irq"
+	    " addr=0x42000000", machine->path, machine->bootstrap_cpu);
+	machine->md_int.footbridge_data = device_add(machine, tmpstr);
 
 	/*  DC21285_ROM_BASE (256 KB at 0x41000000)  */
 	dev_ram_init(machine, 0x41000000, 256 * 1024, DEV_RAM_RAM, 0);
@@ -83,9 +79,6 @@ abort();
 
 	/*  OpenBSD reboot needs 0xf??????? to be mapped to phys.:  */
 	dev_ram_init(machine, 0xf0000000, 0x1000000, DEV_RAM_MIRROR, 0x0);
-
-	bus_isa_init(machine, machine->path, BUS_ISA_PCKBC_FORCE_USE |
-	    BUS_ISA_PCKBC_NONPCSTYLE, 0x7c000000, 0x80000000);
 
 	bus_pci_add(machine, machine->md_int.footbridge_data->pcibus,
 	    machine->memory, 0xc0, 8, 0, "s3_virge");

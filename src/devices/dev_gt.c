@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.44 2006-09-23 03:52:10 debug Exp $
+ *  $Id: dev_gt.c,v 1.45 2006-12-29 23:05:24 debug Exp $
  *  
  *  Galileo Technology GT-64xxx PCI controller.
  *
@@ -296,7 +296,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	d->decode[GT_PCI0M1REMAP_OFS / 8] = d->decode[GT_PCI0M1LD_OFS / 8];
 
 	d->pci_data = bus_pci_init(machine,
-	    pciirq, pci_io_offset, pci_mem_offset,
+	    "TODO irq stuff!", pci_io_offset, pci_mem_offset,
 	    pci_portbase, pci_membase, pci_irqbase,
 	    isa_portbase, isa_membase, isa_irqbase);
 

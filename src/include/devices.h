@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.222 2006-12-29 22:05:25 debug Exp $
+ *  $Id: devices.h,v 1.223 2006-12-29 23:05:25 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -297,6 +297,8 @@ struct footbridge_data {
 
 	uint32_t        fiq_status;
 	uint32_t        fiq_enable;
+
+	struct interrupt irq;
 }; 
 
 /*  dev_gc.c:  */

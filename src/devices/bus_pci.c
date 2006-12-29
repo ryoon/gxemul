@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.72 2006-10-08 02:28:58 debug Exp $
+ *  $Id: bus_pci.c,v 1.73 2006-12-29 23:05:24 debug Exp $
  *  
  *  Generic PCI bus framework. This is not a normal "device", but is used by
  *  individual PCI controllers and devices.
@@ -48,6 +48,7 @@
 
 #define BUS_PCI_C
 
+#include "bus_isa.h"
 #include "bus_pci.h"
 #include "cpu.h"
 #include "device.h"
@@ -376,7 +377,7 @@ void bus_pci_debug_dump(void *extra)
  *  This doesn't register a device, but instead returns a pointer to a struct
  *  which should be passed to other bus_pci functions when accessing the bus.
  *
- *  irq_nr is the (optional) IRQ nr that this PCI bus interrupts at.
+ *  irq_path is the interrupt path to the PCI controller.
  *
  *  pci_portbase, pci_membase, and pci_irqbase are the port, memory, and
  *  interrupt bases for PCI devices (as found in the configuration registers).
@@ -387,7 +388,7 @@ void bus_pci_debug_dump(void *extra)
  *  isa_portbase, isa_membase, and isa_irqbase are the port, memory, and
  *  interrupt bases for legacy ISA devices.
  */
-struct pci_data *bus_pci_init(struct machine *machine, int irq_nr,
+struct pci_data *bus_pci_init(struct machine *machine, char *irq_path,
 	uint64_t pci_actual_io_offset, uint64_t pci_actual_mem_offset,
 	uint64_t pci_portbase, uint64_t pci_membase, int pci_irqbase,
 	uint64_t isa_portbase, uint64_t isa_membase, int isa_irqbase)
@@ -400,7 +401,7 @@ struct pci_data *bus_pci_init(struct machine *machine, int irq_nr,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pci_data));
-	d->irq_nr                = irq_nr;
+	d->irq_path              = strdup(irq_path);
 	d->pci_actual_io_offset  = pci_actual_io_offset;
 	d->pci_actual_mem_offset = pci_actual_mem_offset;
 	d->pci_portbase          = pci_portbase;
@@ -497,6 +498,8 @@ PCIINIT(s3_virge)
 
 PCIINIT(ali_m1543)
 {
+	char tmpstr[300];
+
 	PCI_SET_DATA(PCI_ID_REG,
 	    PCI_ID_CODE(PCI_VENDOR_ALI, PCI_PRODUCT_ALI_M1543));
 
@@ -509,6 +512,18 @@ PCIINIT(ali_m1543)
 	/*  Linux uses these to detect which IRQ the IDE controller uses:  */
 	PCI_SET_DATA(0x44, 0x0000000e);
 	PCI_SET_DATA(0x58, 0x00000003);
+
+	switch (machine->machine_type) {
+	case MACHINE_CATS:
+		/*  CATS interrupts at footbridge irq 10:  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.10", pd->pcibus->irq_path);
+		bus_isa_init(machine, tmpstr,
+		    BUS_ISA_PCKBC_FORCE_USE | BUS_ISA_PCKBC_NONPCSTYLE,
+		    0x7c000000, 0x80000000);
+		break;
+	default:fatal("ali_m1543 init: unimplemented machine type\n");
+		exit(1);
+	}
 }
 
 PCIINIT(ali_m5229)
@@ -1044,6 +1059,8 @@ PCIINIT(vt82c586_ide)
 
 PCIINIT(symphony_83c553)
 {
+	char tmpstr[300];
+
 	PCI_SET_DATA(PCI_ID_REG, PCI_ID_CODE(PCI_VENDOR_SYMPHONY,
 	    PCI_PRODUCT_SYMPHONY_83C553));
 
@@ -1052,6 +1069,16 @@ PCIINIT(symphony_83c553)
 
 	PCI_SET_DATA(PCI_BHLC_REG,
 	    PCI_BHLC_CODE(0,0, 1 /* multi-function */, 0x40,0));
+
+	switch (machine->machine_type) {
+	case MACHINE_NETWINDER:
+		/*  NetWinder interrupts at footbridge irq 11:  */
+		snprintf(tmpstr, sizeof(tmpstr), "%s.11", pd->pcibus->irq_path);
+		bus_isa_init(machine, tmpstr, 0, 0x7c000000, 0x80000000);
+		break;
+	default:fatal("symphony_83c553 init: unimplemented machine type\n");
+		exit(1);
+	}
 }
 
 struct symphony_82c105_extra {

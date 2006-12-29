@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_footbridge.c,v 1.48 2006-09-30 10:09:19 debug Exp $
+ *  $Id: dev_footbridge.c,v 1.49 2006-12-29 23:05:24 debug Exp $
  *
  *  Footbridge. Used in Netwinder and Cats.
  *
@@ -122,6 +122,26 @@ void dev_footbridge_tick(struct cpu *cpu, void *extra)
 			}
 		}
 	}
+}
+
+
+/*
+ *  footbridge_interrupt_assert():
+ */
+void footbridge_interrupt_assert(struct interrupt *interrupt)
+{
+	fatal("footbridge_interrupt_assert: TODO\n");
+	exit(1);
+}
+
+
+/*
+ *  footbridge_interrupt_deassert():
+ */
+void footbridge_interrupt_deassert(struct interrupt *interrupt)
+{
+	fatal("footbridge_interrupt_deassert: TODO\n");
+	exit(1);
 }
 
 
@@ -429,6 +449,7 @@ DEVICE_ACCESS(footbridge)
 DEVINIT(footbridge)
 {
 	struct footbridge_data *d;
+	char irq_path[300];
 	uint64_t pci_addr = 0x7b000000;
 	int i;
 
@@ -438,6 +459,9 @@ DEVINIT(footbridge)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct footbridge_data));
+
+	/*  Connect to the CPU which this footbridge will interrupt:  */
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 
 	/*  DC21285 register access:  */
 	memory_device_register(devinit->machine->memory, devinit->name,
@@ -451,10 +475,30 @@ DEVINIT(footbridge)
 	/*  The "fcom" console:  */
 	d->console_handle = console_start_slave(devinit->machine, "fcom", 0);
 
+	/*  Register 32 footbridge interrupts:  */
+	snprintf(irq_path, sizeof(irq_path), "%s.footbridge",
+	    devinit->interrupt_path);
+	for (i=0; i<32; i++) {
+		struct interrupt interrupt_template;
+		char tmpstr[200];
+
+		memset(&interrupt_template, 0, sizeof(interrupt_template));
+		interrupt_template.line = i;
+		snprintf(tmpstr, sizeof(tmpstr), "%s.%i", irq_path, i);
+		interrupt_template.name = tmpstr;
+
+		interrupt_template.extra = d;
+		interrupt_template.interrupt_assert =
+		    footbridge_interrupt_assert;
+		interrupt_template.interrupt_deassert =
+		    footbridge_interrupt_deassert;
+		interrupt_handler_register(&interrupt_template);
+	}
+
 	/*  A PCI bus:  */
 	d->pcibus = bus_pci_init(
 	    devinit->machine,
-	    devinit->irq_nr,	/*  PCI controller irq  */
+	    irq_path,
 	    0x7c000000,		/*  PCI device io offset  */
 	    0x80000000,		/*  PCI device mem offset  */
 	    0x00000000,		/*  PCI port base  */

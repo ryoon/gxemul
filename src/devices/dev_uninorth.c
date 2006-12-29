@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_uninorth.c,v 1.4 2006-01-01 13:17:18 debug Exp $
+ *  $Id: dev_uninorth.c,v 1.5 2006-12-29 23:05:24 debug Exp $
  *  
  *  Uni-North PCI controller (as used by MacPPC).
  */
@@ -144,7 +144,7 @@ struct pci_data *dev_uninorth_init(struct machine *machine, struct memory *mem,
 	isa_membase    = 0xd3000000ULL;
 
 	/*  Create a PCI bus:  */
-	d->pci_data = bus_pci_init(machine, pciirq,
+	d->pci_data = bus_pci_init(machine, "TODO: irq stuff",
 	    pci_io_offset, pci_mem_offset,
 	    pci_portbase, pci_membase, pci_irqbase,
 	    isa_portbase, isa_membase, isa_irqbase);

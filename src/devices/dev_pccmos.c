@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pccmos.c,v 1.24 2006-07-11 04:44:09 debug Exp $
+ *  $Id: dev_pccmos.c,v 1.25 2006-12-29 22:05:24 debug Exp $
  *  
  *  PC CMOS/RTC device (ISA ports 0x70 and 0x71).
  *
@@ -56,9 +56,6 @@ struct pccmos_data {
 };
 
 
-/*
- *  dev_pccmos_access():
- */
 DEVICE_ACCESS(pccmos)
 {
 	struct pccmos_data *d = (struct pccmos_data *) extra;
@@ -117,7 +114,7 @@ DEVICE_ACCESS(pccmos)
 DEVINIT(pccmos)
 {
 	struct pccmos_data *d = malloc(sizeof(struct pccmos_data));
-	int irq_nr, type = MC146818_PC_CMOS, len = DEV_PCCMOS_LENGTH;
+	int type = MC146818_PC_CMOS, len = DEV_PCCMOS_LENGTH;
 
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -125,50 +122,32 @@ DEVINIT(pccmos)
 	}
 	memset(d, 0, sizeof(struct pccmos_data));
 
-	/*
-	 *  Different machines use different IRQ schemes.
-	 */
 	switch (devinit->machine->machine_type) {
 	case MACHINE_CATS:
 	case MACHINE_NETWINDER:
-		irq_nr = 32 + 8;
 		type = MC146818_CATS;
 		d->ram[0x48] = 20;		/*  century  */
 		len = DEV_PCCMOS_LENGTH * 2;
 		break;
 	case MACHINE_ALGOR:
-		irq_nr = 8 + 8;
 		type = MC146818_ALGOR;
 		break;
 	case MACHINE_ARC:
 		fatal("\nARC pccmos: TODO\n\n");
-		irq_nr = 8 + 8;	/*  TODO  */
 		type = MC146818_ALGOR;
 		break;
 	case MACHINE_EVBMIPS:
 		/*  Malta etc.  */
-		irq_nr = 8 + 8;
 		type = MC146818_ALGOR;
 		break;
 	case MACHINE_QEMU_MIPS:
-		irq_nr = 8 + 8;		/*  TODO. Bogus so far.  */
-		break;
 	case MACHINE_X86:
-		irq_nr = 16;	/*  "No" irq  */
-		break;
 	case MACHINE_BEBOX:
 	case MACHINE_PREP:
 	case MACHINE_MVMEPPC:
-		irq_nr = 32 + 8;
-		break;
 	case MACHINE_SHARK:
 	case MACHINE_IYONIX:
-		/*  TODO  */
-		irq_nr = 32 + 8;
-		break;
 	case MACHINE_ALPHA:
-		/*  TODO  */
-		irq_nr = 32 + 8;
 		break;
 	default:fatal("devinit_pccmos(): unimplemented machine type"
 		    " %i\n", devinit->machine->machine_type);
@@ -180,7 +159,7 @@ DEVINIT(pccmos)
 	    DM_DEFAULT, NULL);
 
 	dev_mc146818_init(devinit->machine, devinit->machine->memory,
-	    PCCMOS_MC146818_FAKE_ADDR, irq_nr, type, 1);
+	    PCCMOS_MC146818_FAKE_ADDR, devinit->interrupt_path, type, 1);
 
 	return 1;
 }

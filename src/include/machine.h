@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.140 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine.h,v 1.141 2006-12-29 22:05:25 debug Exp $
  */
 
 #include <sys/types.h>
@@ -80,10 +80,6 @@ struct isa_pic_data {
 
 	int			*pending_timer_interrupts;
 	int			last_int;
-
-	int			native_irq;
-	int			native_secondary_irq;
-	uint8_t			secondary_mask1;
 };
 
 

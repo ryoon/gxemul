@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmax.c,v 1.14 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_pmax.c,v 1.15 2006-12-29 22:05:25 debug Exp $
  *
  *  DECstation ("PMAX") machine description.
  */
@@ -128,8 +128,11 @@ MACHINE_SETUP(pmax)
 		    KN01_SYS_SII_B_END, KN01_INT_SII);
 		dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ,
 		    machine->use_x11);
-		dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK,
-		    MC146818_DEC, 1);
+fatal("TODO: mc146818 irq\n");
+abort();
+//		dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, 
+//KN01_INT_CLOCK,
+//		    MC146818_DEC, 1);
 		dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 		framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -219,8 +222,10 @@ abort();
 		machine->main_console_handle =
 		    dev_dc7085_init(machine, mem,
 		    KN02_SYS_DZ, KN02_IP_DZ +8, machine->use_x11);
-		dev_mc146818_init(machine, mem,
-		    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
+fatal("TODO: mc146818 irq\n");
+abort();
+//		dev_mc146818_init(machine, mem,
+//		    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
 		machine->md_int.kn02_csr =
 		    dev_kn02_init(cpu, mem, KN02_SYS_CSR);
@@ -273,8 +278,11 @@ abort();
 		    machine->use_x11, 0, 1);
 		dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 + 8,
 		    machine->use_x11, 1, 1);
-		dev_mc146818_init(machine, mem, 0x1c200000, KMIN_INTR_CLOCK + 8,
-		    MC146818_DEC, 1);
+fatal("TODO: mc146818 irq\n");
+abort();
+//		dev_mc146818_init(machine, mem, 0x1c200000, 
+//KMIN_INTR_CLOCK + 8,
+//		    MC146818_DEC, 1);
 fatal("TODO: kmin asc init\n");
 abort();
 //		dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
@@ -360,8 +368,10 @@ abort();
 		    dev_scc_init(machine, mem, KN03_SYS_SCC_1,
 		    KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 
-		dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC,
-		    MC146818_DEC, 1);
+fatal("TODO: mc146818 irq\n");
+abort();
+//		dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC,
+//		    MC146818_DEC, 1);
 fatal("TODO: asc init rewrite\n");
 abort();
 //		dev_asc_init(machine, mem, KN03_SYS_SCSI,
@@ -548,8 +558,10 @@ abort();
 //		    XINE_INTR_LANCE +8, 4*65536);
 		dev_scc_init(machine, mem, 0x1c100000,
 		    XINE_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-		dev_mc146818_init(machine, mem, 0x1c200000,
-		    XINE_INT_TOY, MC146818_DEC, 1);
+fatal("TODO: mc146818 irq\n");
+abort();
+//		dev_mc146818_init(machine, mem, 0x1c200000,
+//		    XINE_INT_TOY, MC146818_DEC, 1);
 fatal("TODO: xine asc init rewrite\n");
 abort();
 //		dev_asc_init(machine, mem, 0x1c300000,
@@ -634,8 +646,10 @@ abort();
 		 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 		 *  sii0 at ibus0 addr 0x1a000000
 		 */
-		dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, 4,
-		    MC146818_DEC, 1);
+fatal("TODO: mc146818 irq\n");
+abort();
+//		dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, 4,
+//		    MC146818_DEC, 1);
 		dev_dc7085_init(machine, mem, KN230_SYS_DZ0,
 		    KN230_CSR_INTR_DZ0, machine->use_x11);/*  NOTE: CSR_INTR  */
 		/* dev_dc7085_init(machine, mem, KN230_SYS_DZ1,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_qemu.c,v 1.8 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_qemu.c,v 1.9 2006-12-29 22:05:25 debug Exp $
  *
  *  This file contains semi-bogus machine descriptions for experimental
  *  machines, mimicing those emulated by Fabrice Bellard's QEMU.
@@ -140,7 +140,7 @@ MACHINE_SETUP(qemu_mips)
 fatal("TODO: Legacy rewrite\n");
 abort();
 //	machine->md_interrupt = isa8_interrupt;
-	machine->isa_pic_data.native_irq = 2;
+//	machine->isa_pic_data.native_irq = 2;
 
 	if (!machine->prom_emulation)
 		return;

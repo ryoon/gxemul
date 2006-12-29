@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_pmppc.c,v 1.4 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_pmppc.c,v 1.5 2006-12-29 22:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -62,8 +62,8 @@ abort();
 
 	/*  RTC at "ext int 5" = "int 25" in IBM jargon, int
 	    31-25 = 6 for the rest of us.  */
-	dev_mc146818_init(machine, machine->memory, 0x7ff00000, 31-25,
-	    MC146818_PMPPC, 1);
+//	dev_mc146818_init(machine, machine->memory, 0x7ff00000, 31-25,
+//	    MC146818_PMPPC, 1);
 
 	bus_pci_add(machine, machine->md_int.cpc700_data->pci_data,
 	    machine->memory, 0, 8, 0, "dec21143");

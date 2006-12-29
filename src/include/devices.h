@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.221 2006-12-29 21:05:06 debug Exp $
+ *  $Id: devices.h,v 1.222 2006-12-29 22:05:25 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -445,7 +445,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *);
 void dev_mc146818_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
+	uint64_t baseaddr, char *irq_path, int access_style, int addrdiv);
 
 /*  dev_pckbc.c:  */
 #define	DEV_PCKBC_LENGTH		0x10

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_prep.c,v 1.11 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_prep.c,v 1.12 2006-12-29 22:05:25 debug Exp $
  *
  *  Machines conforming to the PowerPC Reference Platform specs.
  */
@@ -63,7 +63,7 @@ MACHINE_SETUP(prep)
 			machine->emulated_hz = 20000000;
 
 		machine->md_int.prep_data = device_add(machine, "prep");
-		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
+//		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
 
 fatal("TODO: Legacy rewrite\n");
 abort();
@@ -91,7 +91,7 @@ abort();
 		model_name = "MOT MVME2400";
 
 		machine->md_int.prep_data = device_add(machine, "prep");
-		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
+//		machine->isa_pic_data.native_irq = 1;	/*  Semi-bogus  */
 
 fatal("TODO: Legacy rewrite\n");
 abort();

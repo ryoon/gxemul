@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_wdc.c,v 1.69 2006-08-30 17:14:25 debug Exp $
+ *  $Id: dev_wdc.c,v 1.70 2006-12-29 22:05:24 debug Exp $
  *
  *  Standard "wdc" IDE controller.
  */
@@ -65,7 +65,7 @@ extern int quiet_mode;
 /*  #define debug fatal  */
 
 struct wdc_data {
-	int		irq_nr;
+	struct interrupt irq;
 	int		addr_mult;
 	int		base_drive;
 	int		data_debug;
@@ -124,7 +124,7 @@ void dev_wdc_tick(struct cpu *cpu, void *extra)
 		d->delayed_interrupt --;
 
 	if (old_di == 1 || d->int_asserted) {
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 		d->int_asserted = 1;
 	}
 }
@@ -903,7 +903,7 @@ DEVICE_ACCESS(wdc)
 			if (!quiet_mode)
 				debug("[ wdc: read from STATUS: 0x%02x ]\n",
 				    (int)odata);
-			cpu_interrupt_ack(cpu, d->irq_nr);
+			INTERRUPT_DEASSERT(d->irq);
 			d->int_asserted = 0;
 			d->delayed_interrupt = 0;
 		} else {
@@ -952,7 +952,8 @@ DEVINIT(wdc)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct wdc_data));
-	d->irq_nr     = devinit->irq_nr;
+
+	INTERRUPT_CONNECT(devinit->interrupt_path, d->irq);
 	d->addr_mult  = devinit->addr_mult;
 	d->data_debug = 1;
 	d->io_enabled = 1;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_isa.c,v 1.11 2006-12-29 21:05:06 debug Exp $
+ *  $Id: bus_isa.c,v 1.12 2006-12-29 22:05:24 debug Exp $
  *  
  *  Generic ISA bus. This is not a normal device, but it can be used as a quick
  *  way of adding most of the common legacy ISA devices to a machine.
@@ -62,14 +62,65 @@ void bus_isa_debug_dump(void *extra)
 
 
 /*
+ *  isa_interrupt_common():
+ */
+void isa_interrupt_common(struct bus_isa_data *d, int old_isa_assert)
+{
+	int new_isa_assert, x;
+
+	/*  Any interrupt assertions on PIC2 go to irq 2 on PIC1  */
+	/*  (TODO: don't hardcode this here)  */
+	if (d->pic2->irr & ~d->pic2->ier)
+		d->pic1->irr |= 0x04;
+	else
+		d->pic1->irr &= ~0x04;
+
+	new_isa_assert = d->pic1->irr & ~d->pic1->ier;
+
+	if (old_isa_assert == new_isa_assert)
+		return;
+
+	if (!new_isa_assert) {
+		INTERRUPT_DEASSERT(d->irq);
+		return;
+	}
+
+	for (x=0; x<16; x++) {
+		if (x == 2)
+			continue;
+
+		if (x < 8 && (d->pic1->irr & ~d->pic1->ier & (1 << x)))
+			break;
+
+		if (x >= 8 && (d->pic2->irr & ~d->pic2->ier & (1 << (x&7))))
+			break;
+	}
+
+	*d->ptr_to_last_int = x;
+
+	INTERRUPT_ASSERT(d->irq);
+}
+
+
+/*
  *  isa_interrupt_assert():
  *
  *  Called whenever an ISA device asserts an interrupt (0..15).
  */
 void isa_interrupt_assert(struct interrupt *interrupt)
 {
-	fatal("isa_interrupt_assert: TODO\n");
-	exit(1);
+	struct bus_isa_data *d = interrupt->extra;
+	int old_isa_assert, line = interrupt->line;
+	int mask = 1 << (line & 7);
+
+	old_isa_assert = d->pic1->irr & ~d->pic1->ier;
+
+	if (line < 8)
+		d->pic1->irr |= mask;
+	else if (d->pic2 != NULL)
+		d->pic2->irr |= mask;
+
+	isa_interrupt_common(d, old_isa_assert);
 }
 
 
@@ -80,8 +131,25 @@ void isa_interrupt_assert(struct interrupt *interrupt)
  */
 void isa_interrupt_deassert(struct interrupt *interrupt)
 {
-	fatal("isa_interrupt_deassert: TODO\n");
-	exit(1);
+	struct bus_isa_data *d = interrupt->extra;
+	int line = interrupt->line, mask = 1 << (line & 7);
+	int old_irr1 = d->pic1->irr, old_isa_assert;
+
+	old_isa_assert = old_irr1 & ~d->pic1->ier;
+
+	if (line < 8)
+		d->pic1->irr &= ~mask;
+	else if (d->pic2 != NULL)
+		d->pic2->irr &= ~mask;
+
+	/*  If IRQ 0 has been cleared, then this is a timer interrupt.
+	    Let's ack it here:  */
+	if (old_irr1 & 1 && !(d->pic1->irr & 1) &&
+	    d->ptr_to_pending_timer_interrupts != NULL &&
+            (*d->ptr_to_pending_timer_interrupts) > 0)
+                (*d->ptr_to_pending_timer_interrupts) --;
+
+	isa_interrupt_common(d, old_isa_assert);
 }
 
 
@@ -157,7 +225,10 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 
 	snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.-1 addr=0x%llx",
 	    interrupt_base_path, (long long)(isa_portbase + 0x20));
-	machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
+	d->pic1 = machine->isa_pic_data.pic1 = device_add(machine, tmpstr);
+	d->ptr_to_pending_timer_interrupts =
+	    machine->isa_pic_data.pending_timer_interrupts;
+	d->ptr_to_last_int = &machine->isa_pic_data.last_int;
 
 	if (bus_isa_flags & BUS_ISA_NO_SECOND_PIC)
 		bus_isa_flags &= ~BUS_ISA_NO_SECOND_PIC;
@@ -165,7 +236,8 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 		snprintf(tmpstr, sizeof(tmpstr), "8259 irq=%s.isa.-1 addr="
 		    "0x%llx", interrupt_base_path,
 		    (long long)(isa_portbase + 0xa0));
-		machine->isa_pic_data.pic2 = device_add(machine, tmpstr);
+		d->pic2 = machine->isa_pic_data.pic2 =
+		    device_add(machine, tmpstr);
 	}
 
 	snprintf(tmpstr, sizeof(tmpstr), "8253 irq=%s.isa.%i addr=0x%llx "
@@ -173,8 +245,8 @@ struct bus_isa_data *bus_isa_init(struct machine *machine,
 	    (long long)(isa_portbase + 0x40));
 	device_add(machine, tmpstr);
 
-	snprintf(tmpstr, sizeof(tmpstr), "pccmos addr=0x%llx",
-	    (long long)(isa_portbase + 0x70));
+	snprintf(tmpstr, sizeof(tmpstr), "pccmos irq=%s.isa.%i addr=0x%llx",
+	    interrupt_base_path, 8, (long long)(isa_portbase + 0x70));
 	device_add(machine, tmpstr);
 
 	snprintf(tmpstr, sizeof(tmpstr), "ns16550 irq=%s.isa.%i addr=0x%llx "

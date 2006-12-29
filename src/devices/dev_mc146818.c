@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.91 2006-10-07 03:20:19 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.92 2006-12-29 22:05:24 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some other machines is also similar to the MC146818.)
@@ -76,7 +76,7 @@ struct mc_data {
 	int		timebase_hz;
 	int		interrupt_hz;
 	int		old_interrupt_hz;
-	int		irq_nr;
+	struct interrupt irq;
 	struct timer	*timer;
 	volatile int	pending_timer_interrupts;
 
@@ -139,7 +139,7 @@ DEVICE_TICK(mc146818)
 		}
 #endif
 
-		cpu_interrupt(cpu, d->irq_nr);
+		INTERRUPT_ASSERT(d->irq);
 
 		d->reg[MC_REGC * 4] |= MC_REGC_PF;
 	}
@@ -472,7 +472,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		case MC_REGB*4:
 			d->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
-				cpu_interrupt_ack(cpu, d->irq_nr);
+				INTERRUPT_DEASSERT(d->irq);
 			}
 
 			/*  debug("[ mc146818: write to MC_REGB, data[0] "
@@ -566,7 +566,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		data[0] = d->reg[relative_addr];
 
 		if (relative_addr == MC_REGC*4) {
-			cpu_interrupt_ack(cpu, d->irq_nr);
+			INTERRUPT_DEASSERT(d->irq);
 
 			/*
 			 *  Acknowledging an interrupt decreases the
@@ -600,7 +600,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
  *  so it contains both rtc related stuff and the station's Ethernet address.
  */
 void dev_mc146818_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int access_style, int addrdiv)
+	uint64_t baseaddr, char *irq_path, int access_style, int addrdiv)
 {
 	unsigned char ether_address[6];
 	int i, dev_len;
@@ -613,9 +613,11 @@ void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	}
 
 	memset(d, 0, sizeof(struct mc_data));
-	d->irq_nr        = irq_nr;
+
 	d->access_style  = access_style;
 	d->addrdiv       = addrdiv;
+
+	INTERRUPT_CONNECT(irq_path, d->irq);
 
 	d->use_bcd = 0;
 	switch (access_style) {

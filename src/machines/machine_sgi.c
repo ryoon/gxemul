@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_sgi.c,v 1.8 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_sgi.c,v 1.9 2006-12-29 22:05:25 debug Exp $
  *
  *  Machine descriptions for Silicon Graphics' MIPS-based machines.
  *
@@ -509,8 +509,10 @@ abort();
 		}
 #endif
 
-		dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) +
-		    MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
+fatal("TODO: legacy SGI rewrite\n");
+abort();
+//		dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) +
+//		    MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
 		machine->main_console_handle = (size_t)device_add(machine,
 		    "z8530 addr=0x1fbd9830 irq=0 addr_mult=4");
 

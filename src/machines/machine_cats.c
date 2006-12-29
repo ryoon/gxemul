@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cats.c,v 1.8 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_cats.c,v 1.9 2006-12-29 22:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -67,8 +67,7 @@ MACHINE_SETUP(cats)
 fatal("TODO: Legacy rewrite\n");
 abort();
 //	machine->md_interrupt = isa32_interrupt;
-
-	machine->isa_pic_data.native_irq = 10;
+//	machine->isa_pic_data.native_irq = 10;
 
 	/*  DC21285_ROM_BASE (256 KB at 0x41000000)  */
 	dev_ram_init(machine, 0x41000000, 256 * 1024, DEV_RAM_RAM, 0);

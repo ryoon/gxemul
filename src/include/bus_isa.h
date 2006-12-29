@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_isa.h,v 1.6 2006-12-29 21:05:06 debug Exp $
+ *  $Id: bus_isa.h,v 1.7 2006-12-29 22:05:24 debug Exp $
  *
  *  ISA bus.
  */
@@ -40,6 +40,12 @@
 
 struct bus_isa_data {
 	struct interrupt irq;
+
+	struct pic8259_data* pic1;
+	struct pic8259_data* pic2;
+	int		*ptr_to_pending_timer_interrupts;
+	int		*ptr_to_last_int;
+
 	uint64_t	isa_portbase;
 	uint64_t	isa_membase;
 };

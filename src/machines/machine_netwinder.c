@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_netwinder.c,v 1.8 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_netwinder.c,v 1.9 2006-12-29 22:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -60,8 +60,7 @@ MACHINE_SETUP(netwinder)
 fatal("TODO: Legacy rewrite\n");
 abort();
 //	machine->md_interrupt = isa32_interrupt;
-
-	machine->isa_pic_data.native_irq = 11;
+//	machine->isa_pic_data.native_irq = 11;
 
 	bus_isa_init(machine, machine->path, 0, 0x7c000000, 0x80000000);
 

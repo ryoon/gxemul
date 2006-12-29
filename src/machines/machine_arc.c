@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_arc.c,v 1.8 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_arc.c,v 1.9 2006-12-29 22:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -296,8 +296,8 @@ abort();
 
 		device_add(machine, "fdc addr=0x80003000, irq=0");
 
-		dev_mc146818_init(machine, mem,
-		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
+//		dev_mc146818_init(machine, mem,
+//		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
 #if 0
 Not yet.
@@ -326,8 +326,8 @@ fatal("TODO: Legacy rewrite\n");
 abort();
 //		machine->md_interrupt = jazz_interrupt;
 
-		dev_mc146818_init(machine, mem,
-		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
+//		dev_mc146818_init(machine, mem,
+//		    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
 		i = 0;		/*  TODO: Yuck!  */
 #if 0

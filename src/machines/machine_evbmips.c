@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_evbmips.c,v 1.14 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_evbmips.c,v 1.15 2006-12-29 22:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -71,7 +71,7 @@ fatal("TODO: Legacy rewrite\n");
 abort();
 
 //		machine->md_interrupt = isa8_interrupt;
-		machine->isa_pic_data.native_irq = 2;
+//		machine->isa_pic_data.native_irq = 2;
 
 		bus_isa_init(machine, machine->path, 0,
 		    0x18000000, 0x10000000);

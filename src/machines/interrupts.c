@@ -25,12 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: interrupts.c,v 1.11 2006-08-17 16:49:22 debug Exp $
+ *  $Id: interrupts.c,v 1.12 2006-12-29 22:05:25 debug Exp $
  *
  *  Machine-dependent interrupt glue.
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cpu.h"
@@ -767,6 +768,9 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		m->isa_pic_data.last_int = x;
 	}
 
+fatal("TODO: legacy interrupt stuff.\n");
+abort();
+#if 0
 	if (m->isa_pic_data.secondary_mask1 &
 	    m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier)
 		cpu_interrupt(cpu, m->isa_pic_data.native_secondary_irq);
@@ -778,6 +782,7 @@ void isa8_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		cpu_interrupt(cpu, m->isa_pic_data.native_irq);
 	else
 		cpu_interrupt_ack(cpu, m->isa_pic_data.native_irq);
+#endif
 }
 
 
@@ -884,6 +889,9 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 	/*  Now, PIC1:  */
 	new_isa_assert = m->isa_pic_data.pic1->irr & ~m->isa_pic_data.pic1->ier;
 	if (old_isa_assert != new_isa_assert || irq_nr == 48) {
+fatal("TODO: legacy interrupt stuff\n");
+abort();
+#if 0
 		if (new_isa_assert) {
 			int x;
 			for (x=0; x<16; x++) {
@@ -901,6 +909,7 @@ void isa32_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		} else
 			cpu_interrupt_ack(cpu, m->isa_pic_data.native_irq);
 		return;
+#endif
 	}
 
 	switch (m->machine_type) {

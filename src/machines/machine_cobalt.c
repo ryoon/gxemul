@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_cobalt.c,v 1.5 2006-12-28 12:09:34 debug Exp $
+ *  $Id: machine_cobalt.c,v 1.6 2006-12-29 22:05:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -75,8 +75,7 @@ MACHINE_SETUP(cobalt)
 fatal("TODO: Legacy rewrite\n");
 abort();
 //	machine->md_interrupt = isa8_interrupt;
-
-	machine->isa_pic_data.native_irq = 6;
+//	machine->isa_pic_data.native_irq = 6;
 
 	dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
 

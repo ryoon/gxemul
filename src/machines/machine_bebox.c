@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: machine_bebox.c,v 1.6 2006-12-29 21:05:06 debug Exp $
+ *  $Id: machine_bebox.c,v 1.7 2006-12-29 22:05:25 debug Exp $
  *
  *  Experimental machine for running NetBSD/bebox (see
  *  http://www.netbsd.org/Ports/bebox/ for more info.)
@@ -53,7 +53,7 @@ MACHINE_SETUP(bebox)
 	machine->machine_name = "BeBox";
 
 	machine->md_int.bebox_data = device_add(machine, "bebox");
-	machine->isa_pic_data.native_irq = 5;
+//	machine->isa_pic_data.native_irq = 5;
 
 fatal("TODO: Legacy rewrite\n");
 abort();
